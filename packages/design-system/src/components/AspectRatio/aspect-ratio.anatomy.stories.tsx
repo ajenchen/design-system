@@ -35,7 +35,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>AspectRatio 是 container 型 primitive:外層(container)鎖定 `ratio` 數值,內層 children 填滿。典型 consumer 傳 img + `className="w-full h-full object-cover"` 讓圖填滿不變形。</Desc>
+        <Desc>AspectRatio 是 container 型 primitive:外層(container)鎖定 <code>ratio</code> 數值,內層 children 填滿。典型 consumer 傳 img + <code>className=&quot;w-full h-full object-cover&quot;</code> 讓圖填滿不變形。</Desc>
         <div className="flex gap-6 items-start">
           <div className="w-[320px]">
             <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden ring-1 ring-dashed ring-border">
@@ -156,12 +156,12 @@ const STD_RATIOS = [
   { label: '16/9', value: 16 / 9, use: '寬螢幕 hero / 影片 embed / feature 截圖', seed: 'std-16-9' },
   { label: '4/3', value: 4 / 3, use: '產品照 / screenshot / 老電視比例', seed: 'std-4-3' },
   { label: '1/1', value: 1, use: 'Avatar / 方圖貼文 / icon preview', seed: 'std-1-1' },
-  { label: '3/4', value: 3 / 4, use: '直式 portrait / 手機截圖', seed: 'std-3-4' },
-  { label: '21/9', value: 21 / 9, use: 'Ultra-wide hero / movie poster', seed: 'std-21-9' },
+  { label: '3/4', value: 3 / 4, use: '直式 portrait / 服飾商品直式照', seed: 'std-3-4' },
+  { label: '21/9', value: 21 / 9, use: 'Ultra-wide hero / 儀表板頂部公告橫幅', seed: 'std-21-9' },
 ]
 
 export const StandardRatios: Story = {
-  name: '標準 比例 視覺對照',
+  name: '標準比例視覺對照',
   render: () => (
     <div>
       <H3>DS 標準 ratio</H3>
@@ -197,7 +197,8 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      {/* 標題 → 一段文字 = tight(純文字的內容之間是 tight,A4;原本寫死 mb-2 = 8、不跟密度) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"本元件為純視覺呈現,無 keyboard / ARIA role / focus state 需求。Consumer 包 AspectRatio 進互動容器(Button / Card / Link)時 a11y 由容器決定。"}</p>
     </div>
   ),

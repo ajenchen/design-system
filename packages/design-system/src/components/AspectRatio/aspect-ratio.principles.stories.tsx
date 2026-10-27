@@ -62,7 +62,7 @@ export const UsageGuidance: Story = {
           title="✅ 使用 — 多張圖片需要統一比例(carousel / product grid)"
           note="輪播 / 產品列表各張圖原始比例不一,包 AspectRatio + object-cover 強制對齊,視覺整齊劃一"
         >
-          {/* @layout-space-magic-ok: 同質圖片格(gallery tiles)8px(layoutSpace.spec.md:165 同質清單列) */}
+          {/* @layout-space-magic-ok: 圖片格之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
           <div className="grid grid-cols-3 gap-2 w-[480px]">
             {['grid-a', 'grid-b', 'grid-c'].map(s => (
               <AspectRatio key={s} ratio={1} className="bg-muted rounded-md overflow-hidden">
@@ -124,8 +124,9 @@ export const UsageGuidance: Story = {
         >
           <div className="w-[320px] border border-dashed border-error rounded-md p-[var(--layout-space-loose)]">
             <AspectRatio ratio={1} className="bg-muted rounded-md p-[var(--layout-space-loose)]">
+              {/* 標題(+ 說明)→ 欄位 = loose(A4:標題區 → 它底下的內容) */}
               <h4 className="text-h6 font-medium mb-[var(--item-gap-label-desc-reading)]">表單標題</h4>
-              <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">這裡有一些說明文字,長度不固定。</div>
+              <div className="text-caption text-fg-muted mb-[var(--layout-space-loose)]">這裡有一些說明文字,長度不固定。</div>
               <Input placeholder="輸入內容" aria-label="表單內容" />
             </AspectRatio>
           </div>
@@ -152,7 +153,8 @@ export const UsageGuidance: Story = {
       <UsageSection kind="siblings">
         <p className="text-caption text-fg-muted max-w-[720px]">
           AspectRatio 無直接近親元件。語意「鎖死容器比例」是獨立 concern,不與其他 layout primitive 重疊
-          (Box / flex / grid 都不鎖比例)。與 Skeleton 是<strong>疊用</strong>關係(見「PlaceholderAndSkeleton」 story),不是替代關係。
+          (Box / flex / grid 都不鎖比例)。與 Skeleton 是<strong>疊用</strong>關係(見{' '}
+          <StoryLink kind="Design System/Components/AspectRatio/設計原則" name="灰底占位與 Skeleton 的分界">灰底占位與 Skeleton 的分界</StoryLink>),不是替代關係。
         </p>
       </UsageSection>
     </TutorialPage>
@@ -160,14 +162,14 @@ export const UsageGuidance: Story = {
 }
 
 // @story-history: 教「如何選 ratio」的決策邏輯(原則層),不是「5 個 ratio 長怎樣」
-//   的視覺對照——後者 SSOT 在 anatomy「標準 比例 視覺對照」(StandardRatios)。此處只給判斷準則
+//   的視覺對照——後者 SSOT 在 anatomy「標準比例視覺對照」(StandardRatios)。此處只給判斷準則
 //   + LinkTo,不重畫 5 張圖(per 2026-05-30 EXAMPLE_REDUNDANT prune,避免 3 file 各畫一次)。
 const RATIO_RULES = [
   { label: '16/9', when: '橫向、寬螢幕,要「影片 / 電影」感但不到 ultra-wide', example: 'Airbnb listing hero、YouTube 縮圖、onboarding tour 截圖' },
   { label: '4/3', when: '橫向但要更方,容納更多垂直內容', example: 'Stripe product listing、Notion gallery cover' },
   { label: '1/1', when: 'feed grid 要對齊一致、無方向偏好', example: 'Instagram 貼文、Dribbble shot 縮圖' },
-  { label: '3/4', when: '直向,呈現「站立」視覺', example: '人物 portrait、iOS App Store screenshot' },
-  { label: '21/9', when: '極寬幅,強化 cinematic 視覺', example: 'Netflix 首頁 hero、電影海報' },
+  { label: '3/4', when: '直向,呈現「站立」視覺', example: '人物 portrait、服飾電商的商品直式照' },
+  { label: '21/9', when: '極寬幅,強化 cinematic 視覺', example: '儀表板頂部的公告橫幅、活動頁首橫幅' },
 ]
 
 export const RatioChoice: Story = {
@@ -178,14 +180,14 @@ export const RatioChoice: Story = {
       <ExampleGroup>
         <p className="text-caption text-fg-muted max-w-[720px]">
           先看內容方向(橫 / 方 / 直),再對到下方的判斷準則即可選定。五個 ratio 的並排視覺對照見{' '}
-          <StoryLink kind="Design System/Components/AspectRatio/設計規格" name="標準 比例 視覺對照">設計規格 → 標準 比例 視覺對照</StoryLink>
+          <StoryLink kind="Design System/Components/AspectRatio/設計規格" name="標準比例視覺對照">設計規格 → 標準比例視覺對照</StoryLink>
           ,此處只講「怎麼選」的決策邏輯,不重畫圖。
         </p>
 
-        {/* @layout-space-magic-ok: 比例判斷準則同質列(.map)(layoutSpace.spec.md:165 同質清單列) */}
+        {/* @layout-space-magic-ok: 判斷準則列之間 20px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
         <div className="flex flex-col gap-5 max-w-[720px]">
           {RATIO_RULES.map(r => (
-            // @layout-space-magic-ok: 準則列內 比例標籤 ↔ 說明(列幾何)(layoutSpace.spec.md:165 同質清單列)
+            // @layout-space-magic-ok: 準則列內比例標籤 ↔ 說明 16px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
             <div key={r.label} className="flex gap-4 items-baseline">
               <div className="w-[60px] shrink-0 text-body font-mono font-bold text-foreground">{r.label}</div>
               <div className="flex-1">
@@ -243,7 +245,7 @@ export const ChildrenFillRule: Story = {
 }
 
 export const PlaceholderAndSkeleton: Story = {
-  name: '背景-muted 占位 與 Skeleton 的分界',
+  name: '灰底占位與 Skeleton 的分界',
   render: () => (
     <TutorialPage>
       <TutorialRule
@@ -272,8 +274,8 @@ export const PlaceholderAndSkeleton: Story = {
         title="分界 — 兩者可疊用,職責不同"
         note="AspectRatio = container 鎖比例(解決 CLS);Skeleton = loading state 視覺。「鎖比例」與「標示 loading」是兩個獨立問題,疊用是 慣用組合"
       >
-        {/* @layout-space-magic-ok: 同質圖片格 gallery tiles(layoutSpace.spec.md:165 同質清單列) */}
-        <div className="grid grid-cols-3 gap-2 w-[480px]">
+        {/* @layout-space-magic-ok: 圖片格之間 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 是 gap-3;7ec9cb61 改成 gap-2 沒有依據,改回) */}
+        <div className="grid grid-cols-3 gap-3 w-[480px]">
           {[1, 2, 3].map(i => (
             <AspectRatio key={i} ratio={1} className="rounded-md overflow-hidden">
               <Skeleton className="w-full h-full" />

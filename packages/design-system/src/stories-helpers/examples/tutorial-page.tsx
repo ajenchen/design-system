@@ -9,18 +9,22 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *
  * 決定出處:user 2026-10-07「第一題照你建議」,採 AI 同日建議 ② —— 規則之間 = 段落之間 = loose × 2(md 32 / lg 48)、
  * 範例之間維持 loose、段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁、所有教學頁收成一個共用元件
- * (governance/planning/2026-09-25-interaction-and-hover-remediation.md P7 列)。
+ * (governance/planning/2026-09-25-interaction-and-hover-remediation.md P7 列)。2026-10-27 user 回 Q2「照你建議」
+ * (t3-dispatch triage Q2 甲):① 展示頁 / 設計規格頁一頁多則有標題的範例上下疊,範例之間也是 loose × 2(`ExampleStack`);
+ * ② 段落標題 → 段落內第一則規則 = loose × 2(跟規則 ↔ 規則一樣)。
  *
  * 間距(只在這裡寫一次):
  * - **規則 ↔ 規則 = 段落 ↔ 段落 = `calc(var(--layout-space-loose) * 2)`**:從 loose 推出,所以永遠是「範例之間」的兩倍、跟著密度走;
  *   不借 `--layout-space-bottom` —— 那個 token 的語意是「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」(layoutSpace.spec.md:13),
- *   段落之間只是值可能剛好一樣。也不是公開 token:這一級只定義在教學頁(layoutSpace.spec.md 規則 3 的指標)。
+ *   段落之間只是值可能剛好一樣。也不是公開 token:這一級只用在 Storybook 文件頁(教學頁、Tokens / Patterns 文件頁、
+ *   展示 / 設計規格頁的範例堆疊),不用在產品頁(layoutSpace.spec.md 規則 3 的指標)。
  * - 規則標題 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`:text-h6 14 / 1.3 + text-caption 12 / 1.3 正是 item-anatomy
  *   「Label ↔ Desc 間距」scanning 那一型);規則標題區(標題 + 說明)→ 範例區 = `--layout-space-loose`(user 2026-10-21 A4 甲:
  *   標題 + 說明是整組內容的標題、不是第一則內容的小標,內容之間是 loose,它到內容也是 loose;layoutSpace.spec.md 規則 3
  *   「標題(+ 說明)→ 它底下的並列內容」)。規則內容是一段文字 / 清單(段落)時,標題區 → 文字與文字之間都是 tight(內容之間本來就是 tight)。
  *   兩種用法與值只寫在 `ExampleSection`(下方),規則、展示頁的範例區段、設計規格頁的 `H3` / `Desc` 都從它來。
- * - 段落標題 → 段落內第一則規則 = `--layout-space-tight`(值待 user 決定,這次不動)。
+ * - 段落標題 → 段落內第一則規則 = loose × 2(同規則 ↔ 規則;Q2 ②):段落標題上下等距,靠 24px 半粗體 + 底線分出它屬於下面。
+ * - 一頁多則有標題的範例(`ExampleSection`)上下疊 = loose × 2(`ExampleStack`,Q2 ①):標題離上一則比離自己的內容遠。
  * - 範例 ↔ 範例 = loose、說明 ↔ 它說的範例 = tight:照舊由 `CaptionedExamples` / `ExampleGroup` 擁有(example-captions.tsx)。
  * - 間距一律由外層 gap 給,各塊不留自己的下方 margin —— 最後一塊下面不會多出空白(Carbon:元件不帶 margin,定位交給外層)。
  *
@@ -76,11 +80,11 @@ export interface TutorialSectionProps {
   children: React.ReactNode
 }
 
-/** 段落:`<h2>` text-h3 半粗體 + 淺分隔線;段落裡的規則之間 loose × 2。 */
+/** 段落:`<h2>` text-h3 半粗體 + 淺分隔線;段落標題 → 第一則規則、規則之間都是 loose × 2。 */
 export function TutorialSection({ title, children }: TutorialSectionProps) {
   return (
-    <section data-tutorial-section="" className="flex flex-col gap-[var(--layout-space-tight)]">
-      {/* @layout-space-magic-ok: 標題字與底線的距離(同一個標題元素的 micro)(layoutSpace.spec.md:166 micro) */}
+    <section data-tutorial-section="" className={BLOCK_STACK}>
+      {/* @layout-space-magic-ok: 段落標題字 ↔ 自己的底線 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7);沿用已發布值(main 各頁 23 個段落標題是 pb-1 / pb-2 兩種,收成一份時取 pb-2) */}
       <h2 className="text-h3 font-semibold text-foreground pb-2 border-b border-divider">{title}</h2>
       <div className={BLOCK_STACK}>{children}</div>
     </section>
@@ -116,7 +120,7 @@ export interface TutorialListProps {
  * 8 份圓點在外、3 份圓點在內),沒有圓點的清單讀起來像一串連著的句子。
  */
 export function TutorialList({ children }: TutorialListProps) {
-  // @layout-space-magic-ok: 清單的列距 = 同一個清單裡的同質列(layoutSpace.spec.md:165 同質清單列);左縮排 = 圓點自己的位置(清單本身的幾何)
+  // @layout-space-magic-ok: 清單左縮排 20px、列距 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7);沿用已發布值(main 各頁清單 `list-disc pl-5 space-y-1`)
   return <ul className="list-disc pl-5 space-y-1">{children}</ul>
 }
 
@@ -148,6 +152,15 @@ export function SectionTitle({ className, ...rest }: React.HTMLAttributes<HTMLHe
 /** 範例區段的說明:`text-caption` + `text-fg-muted`(color.spec.md「文字 / Icon 層級」caption 列),最寬 720px。 */
 export function SectionDescription({ className, ...rest }: React.HTMLAttributes<HTMLParagraphElement>) {
   return <p className={cn('text-caption max-w-[720px] text-fg-muted', className)} {...rest} />
+}
+
+/**
+ * 一頁多則有標題的範例上下疊(展示頁 / 設計規格頁;2026-10-27 user 回 Q2「照你建議」①):範例之間 = loose × 2,
+ * 跟教學頁規則之間同一級(值 = 本檔 `BLOCK_STACK`,全 repo 只寫在這裡)。子節點是 `ExampleSection` 或「小標 + 內容」的區塊;
+ * `className` 只放寬度 / 對齊。
+ */
+export function ExampleStack({ className, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div data-example-stack="" className={cn(BLOCK_STACK, className)} {...rest} />
 }
 
 export interface ExampleSectionProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {

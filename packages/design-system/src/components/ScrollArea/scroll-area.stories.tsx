@@ -14,6 +14,7 @@ import {
 } from '@/design-system/components/Sidebar/sidebar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
+import { STRIPE_PRODUCTS, PRODUCT_COLUMNS } from '@/design-system/stories-helpers/data/stripe-products'
 
 const meta: Meta = {
   title: 'Design System/Components/ScrollArea/展示',
@@ -27,21 +28,40 @@ export default meta
 type Story = StoryObj
 
 // ── Data ──────────────────────────────────────────────────────────────────────
+// 稽核 L094 / M090:議題 / PR 改成一般產品的真實內容(原本全是這套 DS 自己的 bug);狀態欄改用 DataTable 的 select 欄 + Tag
+//(column-types.ts `display: 'tag'`),不再手刻圓點 + inline 色;商品表與設計規格 / 設計原則頁共用 stories-helpers 那一份。
 
 // Linear-style issue list
-const LINEAR_ISSUES: Array<{ id: string; title: string; status: string; assignee: string }> = [
-  { id: 'ENG-1204', title: 'DataTable 水平捲動在 Windows 跑版 17px', status: 'In Progress', assignee: 'Alice Chen' },
-  { id: 'ENG-1203', title: 'Sheet body 長內容捲動時標題浮動行為不一致', status: 'In Review', assignee: 'Bob Liu' },
-  { id: 'DES-872', title: 'Sidebar 深色模式 hover 色與 active 色太接近', status: 'Todo', assignee: 'Carol Wang' },
-  { id: 'ENG-1199', title: 'PeoplePicker 選中多人後換行邏輯錯誤', status: 'In Progress', assignee: 'David Kuo' },
-  { id: 'ENG-1198', title: 'Combobox 鍵盤 arrow 導覽跳過 disabled option', status: 'Done', assignee: 'Eve Lin' },
-  { id: 'DES-870', title: 'Toast 在 dark mode 與 Dialog 疊層時色階不夠', status: 'Todo', assignee: 'Frank Ho' },
-  { id: 'ENG-1195', title: 'DatePicker 時區 UTC+0 下一日顯示錯誤', status: 'Backlog', assignee: 'Grace Tsai' },
-  { id: 'ENG-1192', title: 'Tabs 在小螢幕水平溢出時箭頭 hit area 太窄', status: 'In Progress', assignee: 'Henry Wu' },
-  { id: 'DES-865', title: 'Typography scale 在 1.2x 密度下 body-lg 與 h3 過近', status: 'In Review', assignee: 'Ivy Chang' },
-  { id: 'ENG-1188', title: 'Tooltip delay 全站預設值從 0ms 調回 300ms', status: 'Done', assignee: 'Jack Lee' },
-  { id: 'ENG-1185', title: 'DropdownMenu nested submenu 在 RTL 定位錯誤', status: 'Todo', assignee: 'Kate Lin' },
-  { id: 'ENG-1183', title: 'Slider 拖曳時 thumb 偏移半個像素(視覺毛邊)', status: 'In Progress', assignee: 'Leo Hsu' },
+const LINEAR_ISSUES: Array<{ id: string; title: string; status: string }> = [
+  { id: 'ENG-1204', title: '結帳頁信用卡欄位在 Safari 自動填入失效', status: 'In Progress' },
+  { id: 'ENG-1203', title: '匯出 CSV 時中文欄名變成亂碼', status: 'In Review' },
+  { id: 'DES-872', title: '儀表板圖表載入超過 5 秒,沒有載入狀態', status: 'Todo' },
+  { id: 'ENG-1199', title: '邀請成員的信件被 Gmail 歸到垃圾郵件', status: 'In Progress' },
+  { id: 'ENG-1198', title: '發票 PDF 金額沒有千分位', status: 'Done' },
+  { id: 'DES-870', title: '訂閱方案降級後仍看得到進階報表', status: 'Todo' },
+  { id: 'ENG-1195', title: '搜尋結果翻到第 2 頁後排序被重設', status: 'Backlog' },
+  { id: 'ENG-1192', title: '密碼重設連結 24 小時才過期(應為 1 小時)', status: 'In Progress' },
+  { id: 'DES-865', title: '切換工作區後通知鈴鐺的未讀數沒有更新', status: 'In Review' },
+  { id: 'ENG-1188', title: 'SSO 登入後回到首頁,不是原本要開的頁面', status: 'Done' },
+  { id: 'ENG-1185', title: '附件超過 25 MB 時沒有任何錯誤提示', status: 'Todo' },
+  { id: 'ENG-1183', title: '時區設為 UTC+0 時排程日期少一天', status: 'In Progress' },
+]
+
+const ISSUE_STATUS_OPTIONS = [
+  { value: 'Backlog', label: 'Backlog', tagVariant: 'neutral' },
+  { value: 'Todo', label: 'Todo', tagVariant: 'neutral' },
+  { value: 'In Progress', label: 'In Progress', tagVariant: 'blue' },
+  { value: 'In Review', label: 'In Review', tagVariant: 'yellow' },
+  { value: 'Done', label: 'Done', tagVariant: 'green' },
+]
+
+type Issue = (typeof LINEAR_ISSUES)[number]
+const issueCol = createColumnHelper<Issue>()
+
+const ISSUE_COLUMNS = [
+  issueCol.accessor('id', { header: 'ID', meta: { type: 'string', width: 100 } }),
+  issueCol.accessor('title', { header: 'Title', meta: { type: 'string', width: 330 } }),
+  issueCol.accessor('status', { header: 'Status', meta: { type: 'select', options: ISSUE_STATUS_OPTIONS, display: 'tag', width: 130 } }),
 ]
 
 // Notion-style sidebar nav
@@ -51,54 +71,10 @@ const NOTION_NAV = [
   { section: 'Shared', items: ['Product handbook', 'Brand guidelines', 'Customer interviews', 'Competitive analysis', 'Press & media kit'] },
 ]
 
-// Stripe-style wide product table (triggers horizontal scroll)
-const STRIPE_PRODUCTS: Array<{ sku: string; name: string; category: string; stock: number; price: string; margin: string; channel: string; status: string }> = [
-  { sku: 'PRO-001', name: 'Stripe Atlas 新創設立方案', category: 'Incorporation', stock: 128, price: '$500.00', margin: '42%', channel: 'Direct', status: 'Active' },
-  { sku: 'PRO-002', name: 'Stripe Radar 詐欺偵測加購', category: 'Add-on',        stock: 256, price: '$0.05/tx', margin: '78%', channel: 'Direct', status: 'Active' },
-  { sku: 'PRO-003', name: 'Stripe Tax 自動稅額計算',     category: 'Compliance',   stock: 64,  price: '$0.50/tx', margin: '65%', channel: 'Partner', status: 'Active' },
-  { sku: 'PRO-004', name: 'Stripe Connect 分潤平台帳號',   category: 'Platform',     stock: 32,  price: '$2/acct',  margin: '55%', channel: 'Direct', status: 'Beta'   },
-  { sku: 'PRO-005', name: 'Stripe Issuing 實體卡發行',     category: 'Cards',        stock: 16,  price: '$3/card',  margin: '38%', channel: 'Partner', status: 'Active' },
-  { sku: 'PRO-006', name: 'Stripe Climate 碳移除貢獻',     category: 'Sustainability', stock: 8,  price: '1% gross', margin: '—',  channel: 'Direct', status: 'Active' },
-]
-
-const STATUS_COLORS: Record<string, string> = {
-  'In Progress': 'var(--info)',
-  'In Review':   'var(--warning)',
-  'Todo':        'var(--fg-muted)',
-  'Done':        'var(--success)',
-  'Backlog':     'var(--fg-muted)',
-  'Active':      'var(--success)',
-  'Beta':        'var(--info)',
-}
-
 // ── DataTable columns ─────────────────────────────────────────────────────────
 // 消費真 <DataTable>(per data-table.spec.md「簡單展示也用 DataTable」:不維護第二個靜態 Table 元件)。
 // ScrollArea 包 height="auto" DataTable = scroll-area.spec.md「Orientation」段 canonical 組合:
 // 捲動完全由 ScrollArea own(DataTable 無高度約束 + min-w-max 不啟內部捲軸)。
-
-type StripeProduct = (typeof STRIPE_PRODUCTS)[number]
-const productCol = createColumnHelper<StripeProduct>()
-
-const PRODUCT_COLUMNS = [
-  productCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),
-  productCol.accessor('name', { header: 'Product', meta: { type: 'string', width: 240 } }),
-  productCol.accessor('category', { header: 'Category', meta: { type: 'string', width: 130 } }),
-  productCol.accessor('stock', { header: 'Stock', meta: { type: 'number', width: 90 } }),
-  productCol.accessor('price', { header: 'Price', meta: { type: 'string', align: 'right', width: 110 } }),
-  productCol.accessor('margin', { header: 'Margin', meta: { type: 'string', align: 'right', width: 90 } }),
-  productCol.accessor('channel', { header: 'Channel', meta: { type: 'string', width: 100 } }),
-  productCol.accessor('status', {
-    header: 'Status',
-    meta: { width: 110 },
-    cell: (info) => (
-      // @layout-space-magic-ok: 狀態圓點 ↔ 狀態文字(行內 micro)(layoutSpace.spec.md:166 micro)
-      <span className="inline-flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[info.getValue()] }} />
-        {info.getValue()}
-      </span>
-    ),
-  }),
-]
 
 interface PullRequest {
   id: string
@@ -112,28 +88,37 @@ interface PullRequest {
   deletions: number
 }
 
-const PR_TITLES = [
-  'feat: ScrollArea overlay scrollbar for cross-OS consistency',
-  'fix: DataTable pinned column shadow on horizontal scroll',
-  'refactor: extract drag-visual SSOT for row + column reorder',
-  'docs: clarify density vs size boundary in tokens README',
-  'fix: Sheet body scroll chain forwards flex-col h-full',
-  'feat: Combobox keyboard navigation skips disabled options',
+const PR_SAMPLES = [
+  { title: 'feat: 結帳頁支援 Apple Pay', branch: 'feat/checkout-apple-pay' },
+  { title: 'fix: 匯出 CSV 中文欄名亂碼', branch: 'fix/csv-utf8-bom' },
+  { title: 'refactor: 抽出訂單金額計算的共用函式', branch: 'refactor/order-total' },
+  { title: 'docs: 補上 Webhook 重送機制說明', branch: 'docs/webhook-retry' },
+  { title: 'fix: 搜尋翻頁後保留排序', branch: 'fix/search-sort-persist' },
+  { title: 'feat: 邀請成員時可以指定預設角色', branch: 'feat/invite-default-role' },
 ]
 
 const PR_AUTHORS = ['@alice-chen', '@bob-liu', '@carol-wang', '@david-kuo', '@eve-lin', '@frank-ho']
 
+// CI 檢查結果:大多數通過,每 6 筆有 1 筆失敗、1 筆還在跑
+const PR_CHECKS = ['passing', 'passing', 'failing', 'passing', 'pending', 'passing']
+
 const PULL_REQUESTS: PullRequest[] = Array.from({ length: 18 }, (_, i) => ({
   id: `#${4210 - i}`,
-  title: PR_TITLES[i % PR_TITLES.length],
+  title: PR_SAMPLES[i % PR_SAMPLES.length].title,
   author: PR_AUTHORS[i % PR_AUTHORS.length],
   reviewer: `${PR_AUTHORS[(i + 1) % PR_AUTHORS.length]}, ${PR_AUTHORS[(i + 2) % PR_AUTHORS.length]}`,
   base: 'main',
-  compare: 'feat/scroll-area',
-  checks: '12 / 12 passing',
+  compare: PR_SAMPLES[i % PR_SAMPLES.length].branch,
+  checks: PR_CHECKS[i % PR_CHECKS.length],
   additions: 128 + i * 7,
   deletions: 24 + i * 3,
 }))
+
+const CHECK_OPTIONS = [
+  { value: 'passing', label: '12 / 12 passing', tagVariant: 'green' },
+  { value: 'failing', label: '1 failing', tagVariant: 'red' },
+  { value: 'pending', label: 'Running', tagVariant: 'yellow' },
+]
 
 const prCol = createColumnHelper<PullRequest>()
 
@@ -143,18 +128,8 @@ const PR_COLUMNS = [
   prCol.accessor('author', { header: 'Author', meta: { type: 'string', width: 130 } }),
   prCol.accessor('reviewer', { header: 'Reviewer', meta: { type: 'string', width: 190 } }),
   prCol.accessor('base', { header: 'Base', meta: { type: 'string', width: 90 } }),
-  prCol.accessor('compare', { header: 'Compare', meta: { type: 'string', width: 150 } }),
-  prCol.accessor('checks', {
-    header: 'Checks',
-    meta: { width: 140 },
-    cell: (info) => (
-      // @layout-space-magic-ok: 狀態圓點 ↔ 狀態文字(行內 micro)(layoutSpace.spec.md:166 micro)
-      <span className="inline-flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
-        {info.getValue()}
-      </span>
-    ),
-  }),
+  prCol.accessor('compare', { header: 'Compare', meta: { type: 'string', width: 200 } }),
+  prCol.accessor('checks', { header: 'Checks', meta: { type: 'select', options: CHECK_OPTIONS, display: 'tag', width: 160 } }),
   prCol.accessor('additions', {
     header: 'Additions',
     meta: { width: 110, align: 'right' },
@@ -176,31 +151,16 @@ export const VerticalIssueList: Story = {
       <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         長 issue 清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,不吃寬度。
       </p>
+      {/* 議題清單直接用 DataTable(稽核 M090:原本每一列都是手刻 div + 手刻狀態圓點);捲動由外層 ScrollArea 擁有 */}
       <ScrollArea className="h-[320px] border border-border rounded-lg">
-        {/* 列是靜態 div(無 onClick、不能聚焦)→ 不給 hover 底色與 cursor-pointer:hover 回饋要誠實回答「再點會發生什麼」
-            (item-anatomy.spec.md「選中 × 互動疊加」表)。本則示範的是 ScrollArea 捲動,不是可點的議題列 */}
-        {/* @layout-space-magic-ok: 有框容器裡的列集合,wrapper 自己加上下 8px(item-anatomy.spec.md:367 實作規則:Story demo 在 bordered container 展示 row 集合時 wrapper 自己加 py-2) */}
-        <div className="py-2">
-          {LINEAR_ISSUES.map((issue) => (
-            // @layout-space-magic-ok: 議題列外框內距 12 / 8px 與欄距 12px 是這串靜態示範列自己的固定幾何(layoutSpace.spec.md:168);列與列相接,沒有列距
-            <div key={issue.id} className="flex items-center gap-3 px-3 py-2">
-              <span className="text-caption font-mono text-fg-muted shrink-0 w-20">{issue.id}</span>
-              <span className="text-body flex-1 truncate">{issue.title}</span>
-              {/* @layout-space-magic-ok: 狀態圓點 ↔ 狀態文字(行內 micro)(layoutSpace.spec.md:166 micro) */}
-              <span className="inline-flex items-center gap-1.5 text-footnote shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[issue.status] }} />
-                <span className="text-fg-secondary">{issue.status}</span>
-              </span>
-            </div>
-          ))}
-        </div>
+        <DataTable columns={ISSUE_COLUMNS} data={LINEAR_ISSUES} getRowId={(issue) => issue.id} height="auto" bordered={false} />
       </ScrollArea>
     </div>
   ),
 }
 
 export const SidebarNav: Story = {
-  name: '垂直捲動 — Notion 側欄 導覽',
+  name: '垂直捲動 — Notion 側欄導覽',
   render: function SidebarNavStory() {
     const [activeId, setActiveId] = React.useState('Engineering wiki')
     return (
@@ -242,7 +202,7 @@ export const HorizontalProductTable: Story = {
       <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         8 欄商品表(SKU / Name / Category / Stock / Price / Margin / Channel / Status)欄寬總和超出
         640px 容器 → 用{' '}
-        {/* @layout-space-magic-ok: 句子裡的行內 code 左右 4px 內距(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 句子裡的行內 code 左右 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
         <code className="font-mono text-footnote bg-muted px-1 rounded">orientation=&quot;horizontal&quot;</code> scrollbar。
         比 native 的優勢:Windows 不吃 17px,右邊 Status 欄不被裁切。
         表格本體消費真 DataTable(height=&quot;auto&quot; 無高度約束,捲動由 ScrollArea own)。
@@ -263,7 +223,7 @@ export const BothDirections: Story = {
     <div className="max-w-[560px]">
       <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
         容器 560×280px、內容寬 &gt; 560、高 &gt; 280,同時渲染 vertical + horizontal scrollbar
-        (wrapper 已內建 vertical,consumer 只需再渲染一個 horizontal,見 scroll-area.spec.md「Orientation」)。
+        (wrapper 已內建 vertical,consumer 只需再渲染一個 horizontal)。
         表格本體消費真 DataTable(height=&quot;auto&quot;,雙向捲動完全由 ScrollArea own)。
       </p>
       <ScrollArea className="h-[280px] border border-border rounded-lg">

@@ -7,6 +7,8 @@ import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Badge } from './badge'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { BpZone, PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection, SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Badge/設計規格',
@@ -42,19 +44,11 @@ const VARIANT_DESC: Record<VariantKey, string> = {
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared UI Components
 
-   NOTE: Kept local (not imported from `_anatomy/anatomy-utils`) because the
-   Button-family inspector layout diverges visually from the 通用 helpers:
-   H3 `text-h6 font-semibold` (not `text-body font-bold mb-2`), Desc has no
-   bottom margin, Th/Td use `p-2 border-b border-divider` row style, and
-   Swatch defaults to `size="md"` for inline token chips.
+   小標 + 說明 + 內容 = 共用 `ExampleSection`(tutorial-page.tsx;A4:標題 ↔ 說明 2px、標題區 → 內容 loose);
+   TkVal / Swatch / PropRow / BpZone = anatomy-utils 共用版(原本逐字抄一份;Swatch 共用版預設 sm,本頁的色塊照舊傳 md)。
+   Th / Td 留在本頁:列樣式 `p-2 border-b border-divider` 跟共用版(四邊框 + 底色表頭)不同。
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
@@ -62,35 +56,8 @@ const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) =
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
 
-/** Token name (primary) + resolved value (secondary) */
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: value === 'white' ? '#fff' : `var(${value})` }} />
-}
-
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -103,14 +70,6 @@ const Z = {
   dim:   { text: '#d04040' },
 }
 
-const BpZone = ({ w, color, label, sub }: { w: number; color: typeof Z.pad; label: string; sub?: string }) => (
-  <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
-    style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
-    <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
-  </div>
-)
-
 /* ═══════════════════════════════════════════════════════════════════════════
    1. 元件總覽
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -119,12 +78,11 @@ export const Overview = {
   name: '元件總覽',
   render: () => (
     <div className="flex flex-col gap-8">
-      {/* Anatomy */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>Badge 有兩種模式：Count（數字膠囊）與 Dot（純色圓點）。Count 模式個位數為正圓，多位數自動展開為膠囊。</Desc>
-        </div>
+      {/* Anatomy(A4:標題 ↔ 說明 2px、標題區 → 結構圖 loose —— ExampleSection) */}
+      <ExampleSection
+        title="結構（Anatomy）"
+        description="Badge 有兩種模式：Count（數字膠囊）與 Dot（純色圓點）。Count 模式個位數為正圓，多位數自動展開為膠囊。"
+      >
         <div className="flex gap-8">
           {/* Count mode */}
           <div className="flex flex-col gap-2 items-start">
@@ -160,11 +118,10 @@ export const Overview = {
             <span className="text-[10px] text-fg-muted font-mono">6×6px · 無文字</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Variant catalog */}
-      <div className="flex flex-col gap-3">
-        <H3>Variant 一覽</H3>
+      <ExampleSection title="Variant 一覽">
         <div className="flex flex-col gap-2">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-4">
@@ -174,11 +131,10 @@ export const Overview = {
             </div>
           ))}
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props table */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -194,7 +150,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -262,7 +218,8 @@ const InspectorInner = () => {
                   style={{ width: 40, height: 40, background: Z.dim.text + '15', border: `2px solid ${Z.dim.text}22` }}>
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="text-[11px] font-mono font-bold" style={{ color: Z.dim.text }}>6px</span>
-                    <span className="text-[9px] font-mono opacity-70" style={{ color: Z.dim.text }}>dot</span>
+                    {/* 淡化的次要標註 = 色彩 token(不用數字透明度;opacity.spec.md 只有 disabled 一個 role) */}
+                    <span className="text-[9px] font-mono text-fg-muted">dot</span>
                   </div>
                 </div>
                 <div className="ml-3 flex flex-col gap-0.5">
@@ -360,13 +317,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇 variant 與模式，即時查看所有 token。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇 variant 與模式，即時查看所有 token。色塊即時渲染，切 dark mode 自動更新。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -377,12 +330,9 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
+    // 標題區 → 三塊對照 = loose(A4);三塊之間維持原本的 32
+    <ExampleSection title="Variant 色彩對照" description="Badge 沒有互動狀態，每個 variant 只有一組色彩。色塊即時渲染，切 dark mode 自動更新。">
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Variant 色彩對照</H3>
-        <Desc>Badge 沒有互動狀態，每個 variant 只有一組色彩。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
-
       {/* Count mode */}
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">Count 模式</span>
@@ -404,13 +354,13 @@ export const ColorMatrix = {
                     </td>
                     <td className="p-3 border-b border-divider align-middle">
                       <span className="inline-flex items-center gap-1.5">
-                        <Swatch value={c.bg} />
+                        <Swatch value={c.bg} size="md" />
                         <span className="font-mono text-[12px] text-fg-secondary">{c.bg}</span>
                       </span>
                     </td>
                     <td className="p-3 border-b border-divider align-middle">
                       <span className="inline-flex items-center gap-1.5">
-                        <Swatch value={c.text} />
+                        <Swatch value={c.text} size="md" />
                         <span className="font-mono text-[12px] text-fg-secondary">{c.text}</span>
                       </span>
                     </td>
@@ -440,7 +390,7 @@ export const ColorMatrix = {
                     <td className="p-3 border-b border-divider align-middle">
                       {(v === 'critical' || v === 'high') ? (
                         <span className="inline-flex items-center gap-1.5">
-                          <Swatch value={c.bg} />
+                          <Swatch value={c.bg} size="md" />
                           <span className="font-mono text-[12px] text-fg-secondary">{c.bg}</span>
                         </span>
                       ) : <span className="text-fg-muted text-caption">—</span>}
@@ -456,7 +406,7 @@ export const ColorMatrix = {
       {/* Button pairing guidance */}
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">容器 Contrast floor 對照</span>
-        <Desc>容器 bg 決定 badge 的 contrast floor（可見度下限）——badge 至少要到此層級才看得清。Floor 是下限不是上限：semantic 永遠可往上升（floor 以上的所有層級都合法）。critical 的紅白對比在任何底色都清楚，不受 floor 限制。</Desc>
+        <SectionDescription>容器 bg 決定 badge 的 contrast floor（可見度下限）——badge 至少要到此層級才看得清。Floor 是下限不是上限：semantic 永遠可往上升（floor 以上的所有層級都合法）。critical 的紅白對比在任何底色都清楚，不受 floor 限制。</SectionDescription>
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead><tr><Th>容器</Th><Th>Contrast floor（最低層級）</Th></tr></thead>
@@ -474,6 +424,7 @@ export const ColorMatrix = {
         </div>
       </div>
     </div>
+    </ExampleSection>
   ),
 }
 
@@ -484,12 +435,9 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
+    // 標題區 → 兩塊對照 = loose(A4);兩塊之間維持原本的 32
+    <ExampleSection title="尺寸 Token 對照" description="Badge 只有兩種固定尺寸模式，不隨 density 變化。Count 模式高 16px，Dot 模式 6×6px。">
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>尺寸 Token 對照</H3>
-        <Desc>Badge 只有兩種固定尺寸模式，不隨 density 變化。Count 模式高 16px，Dot 模式 6×6px。</Desc>
-      </div>
-
       {/* Token comparison */}
       <div className="overflow-x-auto">
         <table className="border-collapse text-caption">
@@ -563,6 +511,7 @@ export const SizeMatrix = {
         </div>
       </div>
     </div>
+    </ExampleSection>
   ),
 }
 
@@ -571,8 +520,9 @@ export const SizeMatrix = {
 export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
-    <div className="max-w-3xl text-body text-fg-secondary flex flex-col gap-3">
-      <h3 className="text-h5 text-foreground mb-1">無障礙設計</h3>
+    // 標題 → 一段文字 = tight、文字之間 = tight(純文字的內容之間是 tight,A4;原本 mb-1 + gap-3 = 16 / 12 寫死、不跟密度)
+    <div className="max-w-3xl text-body text-fg-secondary flex flex-col gap-[var(--layout-space-tight)]">
+      <h3 className="text-h5 text-foreground">無障礙設計</h3>
       <p>Badge 不可聚焦、無鍵盤互動（非互動元件），但不是完全無語意：元件預設帶 <code className="font-mono text-fg-secondary">role="status"</code>（live region，計數變化可被 screen reader 播報），consumer 可傳 <code className="font-mono text-fg-secondary">role</code> override。</p>
       <ul className="list-disc pl-5 space-y-1 text-caption text-fg-muted">
         <li><span className="font-mono text-fg-secondary">role="status"</span>：元件預設（forwardRef render，consumer 可傳 role override），計數更新時自動播報，不需 consumer 設定。</li>
@@ -580,7 +530,7 @@ export const Accessibility = {
         <li>Dot 模式：無文字 → screen reader 看不到 → <span className="font-mono text-fg-secondary">aria-label</span> 為必填。</li>
         <li>色彩不獨立承載語意（color-blind）：level 不能只靠紅 / 藍 / 灰，需搭配 count 數字或 aria-label。</li>
       </ul>
-      <p className="text-caption text-fg-muted">完整 aria-label 整合 / dot 必填 / color-blind 反例 demo 見「設計原則」頁的「無障礙必備」story；keyboard / focus 由宿主互動容器（Button / Card / Link）負責。</p>
+      <p className="text-caption text-fg-muted">完整 aria-label 整合 / dot 必填 / color-blind 反例 demo 見{' '}<StoryLink kind="Design System/Components/Badge/設計原則" name="無障礙必備">設計原則 → 無障礙必備</StoryLink>；keyboard / focus 由宿主互動容器（Button / Card / Link）負責。</p>
     </div>
   ),
 }

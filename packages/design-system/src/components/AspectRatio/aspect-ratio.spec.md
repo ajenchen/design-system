@@ -61,8 +61,8 @@ AspectRatio 是純結構 layout 元件：只建立比例 box，不擁有 media s
 | `16/9`(寬螢幕) | onboarding / tour 截圖(Coachmark 預設)、video embed、hero banner |
 | `4/3`(傳統) | 產品照片、screenshot |
 | `1/1`(方形) | Avatar、icon preview、Instagram-style 貼文 |
-| `3/4`(直式) | 人物 portrait 照、手機截圖 |
-| `21/9`(ultrawide) | hero section banner、movie poster |
+| `3/4`(直式) | 人物 portrait 照、商品直式照 |
+| `21/9`(ultrawide) | hero section banner、儀表板頂部公告橫幅 |
 
 **數值計算**:consumer 傳 `ratio={16/9}`(= 1.7777...),Radix 內部自動 padding-bottom `56.25%`。
 

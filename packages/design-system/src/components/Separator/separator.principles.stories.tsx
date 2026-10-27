@@ -1,15 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
-import { Pencil, Copy, Trash2 } from 'lucide-react'
 import { Separator } from './separator'
-import { Button } from '@/design-system/components/Button/button'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
@@ -22,8 +13,6 @@ type Story = StoryObj
 
 
 const TutorialRule = createTutorialRule({ examples: true })
-// 範例只有一顆打開選單的按鈕:範例維持自然寬度(naturalWidth),不逐顆寫 self-start(T15)
-const TriggerRule = createTutorialRule({ examples: true, naturalWidth: true })
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -55,26 +44,12 @@ export const UsageGuidance: Story = {
       </UsageSection>
 
       <UsageSection kind="whenNot">
+        {/* 稽核 L124:原本三則 ❌ 都沒有範例、說明只是重複 note,而且內容跟設計規格的 token 對照表重複 —— 併成一則,token 分工改連過去 */}
         <TutorialRule
-          title="❌ 不用 Separator 元件做元件固定結構的邊框"
-          note="Dialog / Sidebar header-footer 的邊界用 CSS border，不用 Separator 元件。Separator 只用 consumer 手動放置的分隔。Notion dialog 的 header bottom 邊界是 CSS，不是 Separator"
-        >
-          <ExampleCaption warn>固定結構邊界 → CSS border-divider，不用元件</ExampleCaption>
-        </TutorialRule>
-
-        <TutorialRule
-          title="❌ 不用 --border token 做分隔線"
-          note="分隔線一律用 --divider（較淡），--border 只用控件邊框。Jira menu 項目間的線用 --divider"
-        >
-          <ExampleCaption warn>分隔線 → --divider，--border 只用容器邊框</ExampleCaption>
-        </TutorialRule>
-
-        <TutorialRule
-          title="❌ 不用 Separator 做裝飾性邊框"
-          note="輪廓邊框（Input / Card / DataTable 邊線）用 CSS border-border，不用 Separator。Separator 有 role 語意，裝飾邊不需要"
-        >
-          <ExampleCaption warn>裝飾邊框 → CSS border-border，Separator 只用分隔內容</ExampleCaption>
-        </TutorialRule>
+          title="❌ 不用 Separator 元件畫元件本身的邊框"
+          note={<>Dialog / Sidebar header-footer 的邊界、Input / Card / DataTable 的輪廓邊框,都是元件自己的 CSS 邊框,不用 Separator 元件 —— Separator 有 role 語意,只用在 consumer 手動放置的分隔。分隔線用 --divider、控件邊框用 --border,兩個 token 的分工見{' '}
+            <StoryLink kind="Design System/Components/Separator/設計規格" name="設計變數規則（--divider vs --border）">設計規格 → 設計變數規則</StoryLink></>}
+        />
       </UsageSection>
 
       <UsageSection kind="siblings">
@@ -92,23 +67,22 @@ export const DecorativeSemanticRule: Story = {
   name: '裝飾性 vs 語意分隔（讀屏的差別）',
   render: () => (
     <TutorialPage>
-      <TriggerRule
+      <TutorialRule
         title="預設 decorative=true — 純視覺分隔,screen reader 跳過"
         note="大多數場景(settings panel 內的區塊分組、同一列 meta 資訊分組、menu 項目分組)屬視覺性分隔。讓 screen reader 跳過,避免語意噪音。toolbar / action region 的按鈕群分隔不走 Separator,用 ButtonGroup + ButtonDivider"
       >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="tertiary" size="sm">更多操作</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem startIcon={Pencil}>重新命名</DropdownMenuItem>
-            <DropdownMenuItem startIcon={Copy}>複製連結</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem startIcon={Trash2}>刪除</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <ExampleCaption>↑ DropdownMenu 的 separator 讓「編輯類」與「破壞類」視覺分組,a11y 已由 Radix 處理</ExampleCaption>
-      </TriggerRule>
+        {/* 稽核 L124:原本拿 DropdownMenuSeparator 當範例,但那是選單自己的分隔元件(展示頁「垂直」旁的註解寫明不是 consumer 手放的場景);
+            改用 consumer 自己放的 Separator —— 展示頁「垂直」那條文件 meta 列 */}
+        {/* 同一行 meta 文字 ↔ 分隔線 8px = 行內 item 的 micro 幾何(值同展示頁「垂直」;範例區是直排 flex,inline-flex 會被排成一整列) */}
+        <div className="inline-flex h-4 items-center gap-2 text-caption text-fg-secondary">
+          <span>陳雅婷 更新於 2026/04/18</span>
+          <Separator orientation="vertical" />
+          <span>12 頁</span>
+          <Separator orientation="vertical" />
+          <span>2.4 MB</span>
+        </div>
+        <ExampleCaption>↑ 同一列 meta 資訊之間的直線只是視覺分組,讀屏跳過(decorative 預設 true)</ExampleCaption>
+      </TutorialRule>
 
       <TutorialRule
         title="明確結構性分組(語意分隔)→ decorative={false}"

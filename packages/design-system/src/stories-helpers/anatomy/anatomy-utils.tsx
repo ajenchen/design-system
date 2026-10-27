@@ -150,12 +150,15 @@ export const INPUT_ZONES = {
   dim: { text: '#d04040' },
 }
 
-/** 結構圖的一個區塊(寬度固定、虛線左右框、置中標籤 + 小字註記)。 */
+/**
+ * 結構圖的一個區塊(寬度固定、虛線左右框、置中標籤 + 小字註記)。
+ * 小字註記淡化 = 色彩 token `text-fg-muted`(2026-10-28 BA-opacity:原本區塊色 + `opacity-70`;opacity.spec.md 的 opacity 只給 disabled 一個 role)。
+ */
 export const BpZone = ({ w, color, label, sub }: { w: number; color: ZoneColor; label: string; sub?: string }) => (
   <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
     style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
     <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
+    {sub && <span className="text-[9px] font-mono leading-none text-fg-muted">{sub}</span>}
   </div>
 )
 

@@ -29,14 +29,15 @@ type Layout = 'column' | 'wrap'
 /**
  * 範例的說明(2026-10-20 收成一份;之前 54 個 story 檔各自抄一份 `Label`,其中 44 份逐字相同、3 份字色改成 fg-secondary、
  * 2 份改成 span + font-medium —— 同一個值散在 54 處,只要有一頁照舊寫就漂)。
- * - 字級 `text-footnote` + 行高 `leading-normal`:typography.spec.md Token 表 text-footnote「storybook 註解」與 :69
- *   「leading-normal 僅 stories `<p>` 補 10px footnote 段落呼吸感」—— 本元件就是那個 `<p>`;
+ * - 字級 `text-footnote`,行高照字級本身(typography.spec.md「line-height 覆蓋」:「`text-caption`（12px）/ `text-footnote`（10px）：全部 lh 1.3 固定（小字不適合 1.5）」);
+ *   2026-10-28 前另加 `leading-normal`(1.5,同檔「僅 stories `<p>` 補 10px footnote 段落呼吸感」那句例外),10px 字行高 15、
+ *   跟主規則打架 —— 拿掉,行高 13(ssot「只知會」④:story 說明 10px 字的行高 15 → 13);
  * - 字色 `text-fg-muted`:color.spec.md「文字 / Icon 層級」caption 列;
  * - `warn` = 反例的說明(`text-error font-medium`,沿用 44 份原本的寫法)。
  * 各頁不再自定說明元件(閘:scripts/tutorial-page-invariant.mjs)。
  */
 export function ExampleCaption({ children, warn }: { children: React.ReactNode; warn?: boolean }) {
-  return <p className={cn('text-footnote leading-normal', warn ? 'text-error font-medium' : 'text-fg-muted')}>{children}</p>
+  return <p className={cn('text-footnote', warn ? 'text-error font-medium' : 'text-fg-muted')}>{children}</p>
 }
 
 /** 範例區容器:column = 範例上下堆疊;wrap = 範例橫排、放不下換行(縮圖 / 卡片類範例)。兩者範例之間都是 loose。 */

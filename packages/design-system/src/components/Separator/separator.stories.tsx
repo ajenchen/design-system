@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { User, Bell, Shield } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Separator } from './separator'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
-import { MenuItem } from '@/design-system/components/Menu/menu-item'
+import { ItemPrefix, ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 const meta: Meta<typeof Separator> = {
   title: 'Design System/Components/Separator/展示',
@@ -21,33 +22,27 @@ export default meta
 type Story = StoryObj<typeof Separator>
 
 /* ── Horizontal(預設)──────────────────────────────────────────────── */
-// Settings page / overview panel 的分段 rows。**每個 row 消費 MenuItem**(Family 1 item-anatomy
-// 正式消費者),有 icon prefix + label + description;Separator 切出 row group 之間的視覺分段。
-// 對應 iOS Settings / Notion Workspace settings / Linear user settings canonical。
+// 帳號設定總覽的分段:每一段是一列靜態資訊(圖示 + 標題 + 說明,item-anatomy 的 ItemPrefix + ItemContent)。
+// 這幾列不可點 → 沒有滑過底色、不出手指游標(D17「如果row不能被點擊就不會有hover底色吧？」;稽核 M026:原本用選單列 MenuItem,
+// 滑過會變色、點了卻沒反應)。外層不另包手刻卡片;Separator 切出段與段之間的邊界,段 ↔ 分隔線 = loose
+// (並列的段落,layoutSpace.spec.md 規則 3;同下方「在 DescriptionList 區塊之間」)。
+const SettingsSection = ({ icon: Icon, label, description }: { icon: LucideIcon; label: string; description: string }) => (
+  // 圖示 ↔ 文字 8px = 列內 prefix ↔ content(item-anatomy.spec.md「消費元件預設」prefix ↔ content gap 8px,行內 item 的 micro 幾何)
+  <div className="inline-flex items-start gap-2">
+    <ItemPrefix><Icon size={16} aria-hidden /></ItemPrefix>
+    <ItemContent label={label} description={description} mode="scanning" />
+  </div>
+)
+
 export const Horizontal: Story = {
   name: '水平',
   render: () => (
-    <div role="group" aria-label="settings sections demo" className="border border-border rounded-lg max-w-md overflow-hidden">
-      <MenuItem role="presentation"
-        startIcon={User}
-        description="Email、時區、顯示語言"
-      >
-        帳號設定
-      </MenuItem>
+    <div className="flex max-w-md flex-col gap-[var(--layout-space-loose)]">
+      <SettingsSection icon={User} label="帳號設定" description="Email、時區、顯示語言" />
       <Separator />
-      <MenuItem role="presentation"
-        startIcon={Bell}
-        description="Email / 推播通知規則"
-      >
-        通知
-      </MenuItem>
+      <SettingsSection icon={Bell} label="通知" description="Email / 推播通知規則" />
       <Separator />
-      <MenuItem role="presentation"
-        startIcon={Shield}
-        description="資料分享範圍、權限層級"
-      >
-        隱私
-      </MenuItem>
+      <SettingsSection icon={Shield} label="隱私" description="資料分享範圍、權限層級" />
     </div>
   ),
 }
@@ -62,7 +57,7 @@ export const Horizontal: Story = {
 export const Vertical: Story = {
   name: '垂直',
   render: () => (
-    // @layout-space-magic-ok: 同一行 meta 文字 ↔ 分隔線的行內微間距(layoutSpace.spec.md:166 micro 間距)
+    // @layout-space-magic-ok: 同一行 meta 文字 ↔ 分隔線 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 的「垂直」範例同為 gap-2)
     <div className="flex h-4 items-center gap-2 text-caption text-fg-secondary">
       <span>陳雅婷 更新於 2026/04/18</span>
       <Separator orientation="vertical" />

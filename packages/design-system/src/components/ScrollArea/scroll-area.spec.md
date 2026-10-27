@@ -88,7 +88,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 ## 禁止事項
 
-- ❌ **不用於全頁捲動**——document scroll 保持 native,ScrollArea 是 sub-region 工具。強行包整頁會遮掉瀏覽器 reader mode / native pull-to-refresh 等 OS 能力
+- ❌ **不用於全頁捲動**——document scroll 保持 native,ScrollArea 是 sub-region 工具。強行包整頁會遮掉瀏覽器 reader mode 等 OS 能力
 - ❌ **不用於單行 truncate**——`text-overflow: ellipsis` 就夠,用 ScrollArea 等於讓使用者水平捲動看一行字,UX 扭曲
 - ❌ **不巢狀 ScrollArea**——使用者捲動時分不清是哪個 scope 捲動(外層還是內層?),焦點管理混亂。需要巢狀結構時重新設計 layout(如拆成 Tabs / Accordion)
 - ❌ **不在 Viewport 直接設 overflow**——Radix 已在 Viewport 內部處理 overflow 機制,手動設會破壞 primitive(scrollbar 偵測失效 / thumb 位置錯亂)

@@ -46,7 +46,7 @@
  *   (R5) TutorialPage 的 className / style 不得帶間距(gap / space / m* / p*,含前綴;margin / padding / gap 的 style 鍵)—— 間距由共用元件擁有;
  *        也不得帶字級 / 字色(text-*)—— 內文字級 text-body 由共用元件擁有(2026-10-20 T2)。
  *   (R6) createTutorialRule(…) 只能在 module 層呼叫(寫在 render 裡會每次重建元件;story-rules.md「元件一律定義在 module 層」)。
- *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則間距。
+ *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則 / 範例堆疊間距。
  *   (R8) tutorial-page.tsx 本身仍是 ②:塊距 = calc(var(--layout-space-loose)*2)、不出現 --layout-space-bottom、
  *        段落標題 <h2> = text-h3 + font-semibold + border-divider、規則標題 <h3> = text-h6 + font-semibold;
  *        (2026-10-20)頁根有 text-body、使用指引三段段名 = 何時用 / 何時不用 / 和相近元件怎麼選、沒有 noteTone、
@@ -744,7 +744,7 @@ export function checkTutorialFile(file, text) {
 export function checkLooseTimesTwo(file, text) {
   if (file === HELPER) return []
   const out = []
-  text.split('\n').forEach((l, i) => { if (LOOSE_TIMES_TWO.test(l)) out.push({ rule: 'R7', file, line: i + 1, message: '「loose × 2」寫在共用元件以外 = 手寫段落 / 規則間距 —— 改用 TutorialPage / TutorialSection(stories-helpers/examples/tutorial-page.tsx)' }) })
+  text.split('\n').forEach((l, i) => { if (LOOSE_TIMES_TWO.test(l)) out.push({ rule: 'R7', file, line: i + 1, message: '「loose × 2」寫在共用元件以外 = 手寫段落 / 規則 / 範例堆疊間距 —— 改用 TutorialPage / TutorialSection / ExampleStack(stories-helpers/examples/tutorial-page.tsx)' }) })
   return out
 }
 

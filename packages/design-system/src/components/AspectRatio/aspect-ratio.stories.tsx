@@ -2,10 +2,11 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { AspectRatio } from './aspect-ratio'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 /**
  * AspectRatio 展示——固定長寬比容器,常用於圖片 / 截圖 / illustration 鎖比例。
- * 展示範例對標世界級產品的真實情境(Stripe product 卡、YouTube cinematic banner),
+ * 展示範例對標世界級產品的真實情境(Stripe product 卡、儀表板頂部的公告橫幅),
  * consumer 包 <img className="w-full h-full object-cover" /> 是標準用法。
  * 全比例對照矩陣由設計規格層 StandardRatios owns。設計規則詳見 `aspect-ratio.spec.md`。
  */
@@ -25,17 +26,17 @@ type Story = StoryObj
 // HeroBanner16x9 / SquareAvatar1x1 / CommonRatios retired 2026-07-14 per audit Dim 24(story 重複性):
 // 比例是數值 prop 非 affordance,逐值 story 無獨立教學原則;全比例對照矩陣已由
 // anatomy StandardRatios(aspect-ratio.anatomy.stories.tsx,5 ratio 含 21/9 / 3/4)owns。
-// 展示層保留真實業務場景:ProductPhoto4x3(教 CLS 防坍塌)+ Ultrawide21x9(cinematic 寬幅情境)。
+// 展示層保留真實業務場景:ProductPhoto4x3(教 CLS 防坍塌)+ Ultrawide21x9(儀表板頂部的寬幅公告橫幅)。
 
 export const ProductPhoto4x3: Story = {
   name: '4/3 產品照片 + 防版面跳動對照',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-[900px]">
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">Stripe product listing — 防 CLS 坍塌</h3>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[600px]">
-          產品卡用 4/3 統一 thumbnail 高度。即使圖片還沒載入(或 src 無效),容器仍鎖死比例 → 頁面 layout 不跳動(CLS = 0)。
-        </p>
+    // 兩則有標題的範例上下疊:範例之間 loose × 2(ExampleStack);各則標題 ↔ 說明 2px、標題區 → 內容 loose(ExampleSection)
+    <ExampleStack className="max-w-[900px]">
+      <ExampleSection
+        title="Stripe product listing — 防 CLS 坍塌"
+        description="產品卡用 4/3 統一 thumbnail 高度。即使圖片還沒載入(或 src 無效),容器仍鎖死比例 → 頁面 layout 不跳動(CLS = 0)。"
+      >
         <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {[
             { seed: 'headphones', title: 'Wireless Headphones', price: 'NT$ 3,990' },
@@ -56,38 +57,37 @@ export const ProductPhoto4x3: Story = {
             </div>
           ))}
         </div>
-      </div>
+      </ExampleSection>
 
-      <div>
-        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">對照:未載入狀態</h3>
-        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[600px]">
-          Src 未 ready 時,AspectRatio 仍維持 bg-muted 的 placeholder 空間,不坍塌成 0 高。
-        </p>
+      <ExampleSection
+        title="對照:未載入狀態"
+        description="Src 未 ready 時,AspectRatio 仍維持 bg-muted 的 placeholder 空間,不坍塌成 0 高。"
+      >
         <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {[1, 2, 3].map(i => (
             <AspectRatio key={i} ratio={4 / 3} className="bg-muted rounded-lg" />
           ))}
         </div>
-      </div>
-    </div>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
 export const Ultrawide21x9: Story = {
-  name: '21:9 影院橫幅',
+  name: '21:9 儀表板公告橫幅',
   render: () => (
-    <div className="max-w-[900px]">
-      <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">YouTube cinematic / movie poster</h3>
-      <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)] max-w-[600px]">
-        Ultra-wide hero banner、movie poster、影片縮圖 cinematic 版本——21/9 強化「電影感」寬幅視覺。
-      </p>
+    <ExampleSection
+      className="max-w-[900px]"
+      title="儀表板頂部的季度活動公告"
+      description="寬幅公告橫幅放在儀表板最上方:21/9 讓圖片佔滿整條寬度,高度卻只有寬度的四成多,不會把下方的數據擠出首屏。"
+    >
       <AspectRatio ratio={21 / 9} className="bg-muted rounded-lg overflow-hidden">
         <img
           src="https://picsum.photos/seed/cinematic/1260/540"
-          alt="Cinematic landscape banner"
+          alt="儀表板頂部的季度活動公告橫幅"
           className="w-full h-full object-cover"
         />
       </AspectRatio>
-    </div>
+    </ExampleSection>
   ),
 }
