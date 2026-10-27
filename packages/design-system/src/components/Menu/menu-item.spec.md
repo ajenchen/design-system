@@ -155,7 +155,7 @@ Menu 的設計目的是「**快速掃視多個選項挑一個**」。垂直空�
 | 狀態 | 背景 | 文字 | 觸發方式 |
 |---|---|---|---|
 | default | transparent | foreground | — |
-| hover | `--neutral-hover` | foreground | 滑鼠 hover |
+| hover | `--neutral-hover` | foreground | 滑鼠 hover —— 只有點了會有反應的列(自己是選項、有 `onClick`,或巢在 DropdownMenu / cmdk 裡由外層畫);靜態預覽(`role="presentation"`、沒有 `onClick`)不變色、不出手指游標(稽核 M040;同 `../FileItem/file-item.spec.md`「滑過」) |
 | selected（單選） | `--neutral-selected` | foreground | bg 高亮（不用 ✓ 勾號，避免影響 prefix 對齊） |
 | **selected × hover（疊加）** | `--neutral-selected`（**selected 勝,釘住不變**） | foreground | owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)。2026-07-04 Q2:bg 是唯一選中指示器,hover 不得洗掉;code = selected 時關 hover bg(menu-item.tsx)。對齊 Ant Menu `:not(-item-selected)` / VS Code list `:hover:not(.selected)` |
 | **鍵盤焦點／游標（未選中）** | transparent（**不上底色**）+ **畫框**（`focus-ring-inset`,2px 內描邊） | foreground | owner = `ds-canonical/references/focus-canonical.md` 規則二。**user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」;2026-09-09 之前這格是 `bg-neutral-hover`（與 hover 同色、不畫框,AI 推導自 Material／Radix／cmdk 慣例,已撤回）。本節點拿真焦點的常駐用法,滑鼠若停在游標列上,hover 底色照上方 hover 列另外出現（底色 + 框都在）;巢在 cmdk／Radix 內時反白只有一個主人,鍵盤搬走反白後滑鼠停留列**沒有** hover 底色（owner = focus-canonical 規則一「兩類元件」,2026-09-09 下午）|
