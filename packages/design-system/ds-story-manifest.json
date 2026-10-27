@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-20T06:43:04.374Z"
+    "generatedAt": "2026-10-27T19:14:10.859Z"
   },
   "components": {
     "accordion": {
@@ -1831,6 +1831,8 @@
           "design-system-components-treeview-展示--stepper",
           "design-system-components-treeview-展示--step-navigation-contract",
           "design-system-components-treeview-展示--with-checkbox",
+          "design-system-components-treeview-展示--with-checkbox-keyboard-contract",
+          "design-system-components-treeview-展示--row-actions-keyboard-contract",
           "design-system-components-treeview-展示--row-actions",
           "design-system-components-treeview-展示--delete-handoff",
           "design-system-components-treeview-展示--long-label",
@@ -1857,5 +1859,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1025
+  "totalStories": 1027
 }

@@ -435,7 +435,7 @@ Source(AI 讀此看官方範例): src/components/TreeView/
 ### Sizes
 - **sm**: 緊湊清單(與 md 同視覺,保留供密度語意)
 - **md**: default 一般導覽樹
-- **lg**: touch / 大字級
+- **lg**: 大字級
 
 # Patterns
 
