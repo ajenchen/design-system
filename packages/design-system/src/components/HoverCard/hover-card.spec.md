@@ -42,7 +42,7 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 | 純文字提示（icon 用途、shortcut）| `Tooltip` | 見下「與 Tooltip 的分界」 |
 | 點擊觸發（非 hover） | `Popover` | HoverCard 觸發是 hover，點擊用 Popover |
 | 需要阻斷背景的流程 | `Dialog` | HoverCard 非阻斷、hover 離開自動消失 |
-| 關鍵資訊（必須被看到）| 直接顯示在畫面上 | 要滑過停 0.7 秒才開、滑開就收,使用者不知道那裡藏著東西,關鍵資訊不可只靠 HoverCard |
+| 關鍵資訊（必須被看到）| 直接顯示在畫面上 | 要滑過停 0.7 秒才開、滑開就收,使用者不知道那裡藏著東西,關鍵資訊不可只靠 HoverCard〔UD-U1021-27〕 |
 
 ---
 
@@ -113,7 +113,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 
 ## 禁止事項
 
-- ❌ 把關鍵資訊放在 HoverCard — 要滑過停 0.7 秒才開、滑鼠路過就收,卡內按鈕鍵盤也進不去(見 A11y 預設),關鍵資訊會被錯過;關鍵 info 直接顯示或 Popover(click 觸發)
+- ❌ 把關鍵資訊放在 HoverCard — 要滑過停 0.7 秒才開、滑鼠路過就收,卡內按鈕鍵盤也進不去(見 A11y 預設),關鍵資訊會被錯過〔UD-U1021-27〕;關鍵 info 直接顯示或 Popover(click 觸發)
 - ❌ HoverCard 內塞表單 / 多步流程 — hover 離開可能誤關閉,複雜互動用 Dialog / Sheet
 - ❌ HoverCard 自帶 bg / border / shadow / padding 套在 HoverCardContent 上 — HoverCard 是純行為 primitive,視覺由 consumer ProfileCard / OverflowIndicator 各自決定(見「純行為 primitive」段)
 - ❌ HoverCard delay 設 0(立即彈出)— 滑鼠掃過所有 trigger 都彈,視覺雜訊;delay tier SSOT 見 `tokens/motion/motion.spec.md`(rich 700ms open / close 200ms;2026-06-11 起 HoverCard Root 內建預設,裸用即得 canonical,consumer 可 per-instance override — 如 OverflowIndicator 傳 plain)
@@ -123,7 +123,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 
 - 「HoverCard 內的按鈕鍵盤可達」——錯。Radix 把 content 內 tabbable node 設 `tabindex="-1"`,鍵盤使用者進不了卡片(見 A11y 預設);需鍵盤可達的互動浮層用 Popover
 - 「HoverCard = 大一點的 Tooltip」——錯。Tooltip 純文字不可互動;HoverCard 是 interactive surface(分界 SSOT 見上方)
-- 「滑過一定看得到卡」——要滑過停 0.7 秒(`tokens/motion/motion.spec.md` rich)才開、滑開就收;關鍵資訊不可只放 HoverCard(見禁止事項)
+- 「滑過一定看得到卡」——要滑過停 0.7 秒(`tokens/motion/motion.spec.md` rich)才開、滑開就收;關鍵資訊不可只放 HoverCard〔UD-U1021-27〕(見禁止事項)
 
 ## 邊界案例 / 空值
 

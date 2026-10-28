@@ -108,7 +108,7 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 - `onSkip` / `onNext` / `onPrev` — footer 按鈕 callback;無 callback 不渲染該按鈕
 - `isLastStep` — `true` 影響 CTA 文字(見下方「CTA 語義表」)
 - `doneLabel` — 單步驟 CTA 自訂文字(預設 `'知道了'`)
-- `labels` — footer 文案覆寫 `Partial<{ previous; skip; next; finish; step(current, total) }>`,與 DS 預設合併(同 `../FileViewer/file-viewer.spec.md` 的 `labels` 先例)。**DS 預設文案 = 中文**(`../../lib/i18n/README.md`「Fallback chain」3:上一步 / 略過 / 下一步 / 完成 / 第 N 步,共 M 步);2026-10-20 前寫死英文 Previous / Skip / Next / Done / `N of M`、而且不能覆寫,跟同一張卡的「知道了」「使用技巧」兩種語言並排(獨立驗證 OV-10)
+- `labels` — footer 文案覆寫 `Partial<{ previous; skip; next; finish; step(current, total) }>`,與 DS 預設合併(同 `../FileViewer/file-viewer.spec.md` 的 `labels` 先例)。**DS 預設文案 = 中文**〔UD-U1021-20〕(`../../lib/i18n/README.md`「Fallback chain」3:上一步 / 略過 / 下一步 / 完成 / 第 N 步,共 M 步);2026-10-20 前寫死英文 Previous / Skip / Next / Done / `N of M`、而且不能覆寫,跟同一張卡的「知道了」「使用技巧」兩種語言並排(獨立驗證 OV-10)
 - `open` / `onOpenChange` — controlled 控制(多步 tour 由 consumer 管理)
 - `side` / `align` / `sideOffset` — 定位,對齊 Popover props(**`align` 跟隨 trigger 位置:左 → start / 中 → center / 右 → end**,見 `popover.spec.md`「Align 對齊 canonical」SSOT)
 

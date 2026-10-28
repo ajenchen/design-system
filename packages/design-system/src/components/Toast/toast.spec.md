@@ -133,7 +133,7 @@ toast({
 
 ## 落點(以整個視窗為準,不避讓)
 
-**規則**:Toast 一律以整個視窗為準(套件預設角落),不為側欄、面板、入口鈕或輸入框避讓。
+**規則**:Toast 一律以整個視窗為準(套件預設角落),不為側欄、面板、入口鈕或輸入框避讓〔UD-H31〕。
 
 - 角落 = `<Toaster position>`(app 層設定一次,預設右下);邊距 = sonner 預設:桌機離視窗邊 24px,寬度 600px 以下(手機)16px 且整列滿寬(sonner `src/index.tsx` `VIEWPORT_OFFSET = '24px'` / `MOBILE_VIEWPORT_OFFSET = '16px'`,https://github.com/emilkowalski/sonner/blob/8e4662b39255120b62138312058f5d77c0139a5e/src/index.tsx#L25-L28)。
 - `<Toaster />` 不傳 `offset` / `mobileOffset` / `style`,DS 也不量任何元件的位置來推 Toast。代理面板並排或浮層、入口鈕在家或貼邊、頁面捲動,Toast 都在同一個位置,可能疊在它們上面 —— 刻意如此,不是 bug(`../AgentPanel/agent-panel.spec.md`、`../AgentPanel/agent-panel-fab.spec.md` 各有一行指回本節)。
