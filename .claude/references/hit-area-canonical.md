@@ -67,6 +67,7 @@
 
 - 每一層各自照自己那一條判。〔AI〕
 - 能操作的宿主裡有自己的按鈕:指到按鈕時,宿主保留自己的滑過、按鈕往上一階;按下去打到最上面那個亮著、能操作的東西。顏色 → `color.spec.md`「巢狀滑過」;命中的讀法 → 下方「巢狀時要逐個控件讀」。〔user #4;資料表格列裡的按鈕同理是 AI 推導〕
+  - 例:可編輯的**表格連結格**(2026-10-13)= 能操作的宿主(滑過出淺框、點格進編輯),裡面的網址文字是連結:指到網址文字時格的淺框照樣在、文字出底線,按下去開連結;按在格的其他地方進編輯。滑過才出現的鉛筆(二-2 的形狀,但宿主能操作,所以宿主也照一-1)按下去進編輯。〔user 2026-10-13 對 AI 建議乙「跟其他可編輯格一樣進入編輯,只有點網址文字才開連結;這和你 9/26 給 LinkInput 定的規則是同一句話。」回「照你建議做到完美並自行驗證到完美」;規則住 `components/DataTable/data-table.spec.md`「Navigate-valued cell 通用類別」〕
 - 提示卡開著時,指標移到卡上,卡所在的範圍不算原元件的位置。〔user N50 補充②;[WCAG 2.2 SC 1.4.13](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)〕
 - 半透明的淡底蓋在別的內容上會透出來:`color.spec.md`「Drop target」段把元件自己的淡底(`-subtle`)限在「底下沒有別人的內容」的地方,而深色主題的 `-subtle` 是半透明的(同段 2026-09-25 更正)。會互相疊住的(頭像堆疊)用挖空讓它們不重疊。〔AI 建議,頭像挖空 (B) 列入 09-26 寫入清單、user 選「同意，寫入」〕
 
@@ -169,7 +170,7 @@ rdg 該 cell 變 active、Glide 直接選列。
 
 | 適用 | 不適用 |
 |---|---|
-| **控件**(按鈕、行內動作、指示點、把手):可見回饋形狀 ≡ 命中區,禁止可見形狀之外**沒有任何回饋**的隱形帶 | **資料表格的 cell**:格本來就是互動單位(聚焦 / range / active / 選列),它的回饋畫在列上是世界級常態 |
+| **控件**(按鈕、行內動作、指示點、把手):可見回饋形狀 ≡ 命中區,禁止可見形狀之外**沒有任何回饋**的隱形帶。**格裡的連結也是控件**:連結的命中區 = 網址文字本身(`components/LinkInput/link-input.spec.md`「Link 狀態」,2026-10-13 起所有模式與表格連結格) | **資料表格的 cell**:格本來就是互動單位(聚焦 / range / active / 選列),它的回饋畫在列上是世界級常態 |
 
 **列的懸停底色是掃視輔助**(= 滑過原則三-2 例外①;Carbon 原文與網址見「世界級對照」),它既不宣告「這一列可點」,也不用來推導「格內留白不可點」。
 我先前從它推出「列不可點時,格內留白不得掛 onClick」—— **那一步是我自己加的,四家全否證,已撤回。**
@@ -225,10 +226,10 @@ rdg 該 cell 變 active、Glide 直接選列。
 ### 外擴的硬限制(3 與 4 的具體檢查)
 
 - **不得越出宿主**:外擴後的盒子仍必須落在它所屬的容器內。越界的那一截會蓋在別人的內容上,就是上面說的隱形帶。
-- **不得蓋住別的可點目標**:同類目標並排時,外擴量以**相切零重疊**為上限。現成的算法在 `carousel.tsx:409`(指示點外擴那行的註解):
+- **不得蓋住別的可點目標**:同類目標並排時,外擴量以**相切零重疊**為上限。現成的算法在 `carousel.tsx#CarouselDots`(指示點外擴那行的註解):
   點 6px + 間距 6px → 中心距 12px,所以水平只能各外擴 3px,「再寬必互搶點擊」。
-- **不得蓋住別人的把手**:反過來也成立 —— 鄰居不得蓋住外擴出去的那一截。`resize-handle.spec.md:97` 已經寫明
-  鄰格不得蓋住把手外側,`resize-handle.spec.md:67` 給了 `z-index: 1` 的機械作法與閘。
+- **不得蓋住別人的把手**:反過來也成立 —— 鄰居不得蓋住外擴出去的那一截。`resize-handle.spec.md`「邊界案例」的「同列多 handle 並存」已經寫明
+  鄰格不得蓋住把手外側,`resize-handle.spec.md`「視覺 canonical(對齊 DataTable v11)」的「命中區」條給了 `z-index: 1` 的機械作法與閘。
 - **不得推遠浮層錨點**:掛 tooltip / popover 的目標,外擴會把浮層的錨點跟著推走(`agent-panel.spec.md`「不外推」條,:463-464)。
   這種目標基本上就不該外擴。
 
@@ -242,13 +243,13 @@ rdg 該 cell 變 active、Glide 直接選列。
 | 2 | `Button iconOnly`(Pagination 上下頁等)| 整個 button 盒(底色填滿)| 同一個盒 —— `aspect-square p-0`(`button.tsx:374` `ICON_ONLY_BASE`,`:536` 套用)| 相等 | ✅ |
 | 3 | `AgentFabDock` 主鈕(家 40 / 貼邊 28)| button 的 border box(圓角也在 button 上)| 同一個盒,並有機械閘逐點驗(`agent-panel.spec.md`「遮擋與貼邊」段 :457-504,`scripts/agent-fab-hit-area-invariant.mjs` H1/H4/H5)| 相等 | ✅ 本規則的原點 |
 | 4 | `Slider` thumb | `h-4 w-4 rounded-full`(`slider.tsx:166`)| 同一個盒,無外擴 | 相等 | ✅ |
-| 5 | `FileItem` 整列主動作 | 整列 | 整列;透明覆蓋 button 是 `pointer-events-none`,只收鍵盤(`file-item.tsx:332-338` `keyboardPrimaryAction`,理由在 `file-item.spec.md`「Row primary action 鍵盤可達且不 nested-interactive」條 :423)| 相等 | ✅ |
-| 6 | `ResizeHandle` 的 1px 線 | 1px 線(距外緣 3px)| 7px 命中區,外推 3px(`resize-handle.tsx:15`,`resize-handle.spec.md:65` `:67`)| 命中 > 可視 | ✅ **線的例外,理由與世界級對照(含 URL)已在該 spec** |
-| 7 | `CarouselDots` 指示點 | 6×6 圓點(現張 24×6)| 12×24(現張 30×24);垂直 ±9、水平 ±3(`carousel.tsx:411`)| 命中 > 可視 | ✅ **點的例外,2026-09-24 逐案裁定並實測**:理由 / 外擴量 / 三家原始碼對照 / 實測數字都在 `carousel.spec.md`「指示點的命中區」。相鄰命中盒間隙 **0.00px**(相切零重疊);命中盒下緣在 carousel 根之內 3px(不越出宿主);帶底下是 carousel 視窗 div(非可點目標)。對照組:關掉 `::before` 命中收回 6×6 |
+| 5 | `FileItem` 整列主動作 | 整列 | 整列;透明覆蓋 button 是 `pointer-events-none`,只收鍵盤(`file-item.tsx#keyboardPrimaryAction`,理由在 `file-item.spec.md`「Row primary action 鍵盤可達且不 nested-interactive」條 :423)| 相等 | ✅ |
+| 6 | `ResizeHandle` 的 1px 線 | 1px 線(距外緣 3px)| 7px 命中區,外推 3px(`resize-handle.tsx#HIT_ZONE`、`resize-handle.tsx#HIT_OUTSET`,`resize-handle.spec.md`「視覺 canonical(對齊 DataTable v11)」)| 命中 > 可視 | ✅ **線的例外,理由與世界級對照(含 URL)已在該 spec** |
+| 7 | `CarouselDots` 指示點 | 6×6 圓點(現張 24×6)| 12×24(現張 30×24);垂直 ±9、水平 ±3(`carousel.tsx#CarouselDots`)| 命中 > 可視 | ✅ **點的例外,2026-09-24 逐案裁定並實測**:理由 / 外擴量 / 三家原始碼對照 / 實測數字都在 `carousel.spec.md`「指示點的命中區」。相鄰命中盒間隙 **0.00px**(相切零重疊);命中盒下緣在 carousel 根之內 3px(不越出宿主);帶底下是 carousel 視窗 div(非可點目標)。對照組:關掉 `::before` 命中收回 6×6 |
 | 8 | `DateGrid` 日期格 | 28×28(md)的**圓**(`rounded-full`;懸停 1.5px 藍圈畫在它身上,`date-grid.tsx:491`)| 同一個圓(`date-grid.tsx:482` 起的 `day_button`,已無 `::before`)| 相等 | ✅ **2026-09-24 修正**:原 `before:-inset-[2px]` 名義 2px、**實測最遠外推 9.33px**(`::before` 是方的,把圓四角外面也吃進去),非線非點吃不到例外 → 移除,改用根因層作法「只在指標真的離開整張格陣時才清停留日」(MUI 同款,`date-grid.tsx:193` `data-day-grid` + `handleDayMouseLeave` :300 / `handleGridMouseOver` :319)。修後圓內 2188 點全命中 0 漏、圓外最遠 1.10px(抗鋸齒容差內);跨格不閃實測框最少 17 格,對照組拔錨點掉到 0。**2026-09-26**:可點日子方格裡、圓以外的四個角與格間縫,指標經過時停留日照舊(角不再閃,實測偏離中線 6–14 步 → 0);預覽亮著時在縫或角裡點下去 = 確認預覽的那一天(一-6,是整個元件確認預覽、不是圓外擴;沒有預覽時點了沒反應)。全文 → `date-grid.spec.md`「日期格的命中區 = 可視形狀」(那節寫明藍圈就畫在這顆圓上,所以可視形狀 = 懸停回饋形狀)「縫與角裡的點擊」 |
-| 9 | `Calendar` 月檢視的日期數字鈕 | 今天:24 高的 `bg-info` pill;平日:只有數字字面,沒有任何形狀(`calendar.tsx:615` 起的日期鈕)| `min-w-6 h-6` = 24×24(同上)| 相等(真正的目標是**整格**)| ✅ **2026-09-24 逐案裁定 + 實測**:懸停回饋是整格 `hover:bg-neutral-hover`,而整格正是命中區(cell div 的 onClick)。右上角數字鈕不是第二個目標,是同一目標的鍵盤入口 —— 自己零 hover 樣式(掃全 stylesheet 命中它的 `:hover` 規則 = 0 條)、平日底色恆透明、完全落在格內。24px 圓盒是**今天 pill 的高度 + 焦點框幾何**,不是最小點擊尺寸;原註解「WCAG 2.5.8 ≥24」已撤回(`calendar.tsx:654`)。全文 → `calendar.spec.md`「命中區」條(:164) |
-| 10 | `SidebarGroupAction` / `SidebarMenuAction` | 懸停底色 **18×18**(實測) | 同一塊 18×18 | 相等 | ✅ **2026-09-24 兩次修正**:(1) 拿掉 `after:-inset-2 after:md:hidden` 那圈只在 `<md` 生效、每邊 8px 的隱形帶 —— 實測上下各越出宿主 `<li>` 2px 並蓋掉緊貼的下一列列鈕(兩列間距實測 0.00px);(2) 發現它們本來就是 **shadcn 原樣帶進來的手刻品**(`b7b34721`),寫死 `w-5` = **16 圖示裝在 20 盒裡**,而 `inline-action.spec.md` 的尺寸表只有 16/18 與 20/22 兩種組合,**20 兩種都不是** —— 同一個檔案 `:826` 的收合箭頭早就在消費 `ItemInlineActionButton`。依 M23 / M30 改為委派 primitive,API 隨之從 children 改成 `icon` prop(breaking,刻意不留 children 後備:M23(f))。全文 → `sidebar.spec.md`「行內動作的命中區 = 懸停底色」
-| 11 | `Steps` sm 指示點 | 8×8 圓點(`steps.tsx:20-24` `INDICATOR_SIZE.sm`)| **它不是命中目標** —— 24 的盒掛在 `aria-hidden` 的 `<span>` 上(`steps.tsx:775-778`),真正可點的是整列 header(`steps.tsx:526-527` `StepItemHeader`,`role="button"`);實測打在點正中心,收到事件的就是那一列 | 無外擴可言 | ✅ **2026-09-24 正名 + 逐案裁定**:`SM_HIT_AREA` → `SM_INDICATOR_BOX`(`steps.tsx:41`),它是排版欄寬(`INDICATOR_BOX_WIDTH`,`steps.tsx:43-47`)不是命中區。header 無懸停底色 → 依契約退化條款,判準回到可視形狀:命中 = header 自己的盒,一個 `-inset` 都沒有。全文 → `steps.spec.md`「指示點不是命中目標」 |
+| 9 | `Calendar` 月檢視的日期數字鈕 | 今天:24 高的 `bg-info` pill;平日:只有數字字面,沒有任何形狀(`calendar.tsx#Calendar` 裡 `min-w-6 h-6` 的日期鈕)| `min-w-6 h-6` = 24×24(同上)| 相等(真正的目標是**整格**)| ✅ **2026-09-24 逐案裁定 + 實測**:懸停回饋是整格 `hover:bg-neutral-hover`,而整格正是命中區(cell div 的 onClick)。右上角數字鈕不是第二個目標,是同一目標的鍵盤入口 —— 自己零 hover 樣式(掃全 stylesheet 命中它的 `:hover` 規則 = 0 條)、平日底色恆透明、完全落在格內。24px 圓盒是**今天 pill 的高度 + 焦點框幾何**,不是最小點擊尺寸;原註解「WCAG 2.5.8 ≥24」已撤回(撤回說明寫在 `calendar.tsx#Calendar` 原處)。全文 → `calendar.spec.md`「命中區」條(:164) |
+| 10 | `SidebarGroupAction` / `SidebarMenuAction` | 懸停底色 **18×18**(實測) | 同一塊 18×18 | 相等 | ✅ **2026-09-24 兩次修正**:(1) 拿掉 `after:-inset-2 after:md:hidden` 那圈只在 `<md` 生效、每邊 8px 的隱形帶 —— 實測上下各越出宿主 `<li>` 2px 並蓋掉緊貼的下一列列鈕(兩列間距實測 0.00px);(2) 發現它們本來就是 **從 shadcn 改寫進來的手刻品**(誕生 `4e53ff99`;`b7b34721` 只是搬家改名,2026-10-27 更正),寫死 `w-5` = **16 圖示裝在 20 盒裡**,而 `inline-action.spec.md` 的尺寸表只有 16/18 與 20/22 兩種組合,**20 兩種都不是** —— 同一個檔案 `sidebar.tsx#SidebarGroupLabel` 的收合箭頭早就在消費 `ItemInlineActionButton`。依 M23 / M30 改為委派 primitive,API 隨之從 children 改成 `icon` prop(breaking,刻意不留 children 後備:M23(f))。全文 → `sidebar.spec.md`「行內動作的命中區 = 懸停底色」
+| 11 | `Steps` sm 指示點 | 8×8 圓點(`steps.tsx#INDICATOR_SIZE` 的 `sm`)| **它不是命中目標** —— 24 的盒掛在 `aria-hidden` 的 `<span>` 上(`steps.tsx#SmIndicator` 最外層那個 span),真正可點的是整列 header(`steps.tsx#StepItemHeader`,`role="button"`);實測打在點正中心,收到事件的就是那一列 | 無外擴可言 | ✅ **2026-09-24 正名 + 逐案裁定**:`SM_HIT_AREA` → `SM_INDICATOR_BOX`(`steps.tsx#SM_INDICATOR_BOX`),它是排版欄寬(`steps.tsx#INDICATOR_BOX_WIDTH`)不是命中區。header 無懸停底色 → 依契約退化條款,判準回到可視形狀:命中 = header 自己的盒,一個 `-inset` 都沒有。全文 → `steps.spec.md`「指示點不是命中目標」 |
 | 12 | `Rating`(可以點的評分;2026-09-26 起只有整星,唯讀改精簡版「★ 4.7」不在本表) | 每顆星自己的盒(sm 20×20 / md、lg 24×24);星形 glyph 是裝在裡面的**內容** | 同一個盒(`rating.tsx` `StarIcon`)| 相等,**零外擴** | ✅ **2026-09-24 逐案裁定**:實測命中盒 = icon 盒 24×24、逐點擁有者地圖無一點漏接。glyph 比盒小是契約明文允許的「內容」;若改成貼星形輪廓,星角凹口會變成點不到的死區 = 踩到契約的另一邊。**2026-09-26**:星與星之間的 4px `gap-1`,預覽亮著時點下去 = 確認預覽值(一-6,是容器確認預覽、不是某顆星外擴)。**2026-09-27**:容器改成內容高(= 星列),沒有上下留白;sm 的星 20 不為了 24 地板撐大命中盒(地板管自帶盒子的獨立元件,見 `uiSize.spec.md`「元件高度地板」)。全文 → `rating.spec.md`「命中區」 |
 | 13 | `DataTable` 選取欄(列身格 + 表頭全選格)| checkbox 本體 16×16;懸停回饋在**整列** | **整格**(約 40px),容器 div 掛 `onClick` + `cursor-pointer` | 命中 ≠ 懸停回饋形狀 | ✅ **不適用本規則**。2026-09-24 我曾拿本規則把這格的 `onClick` 拿掉,**當天改回來** —— 四家一手原始碼顯示「hover 畫在列、點擊目標卻是格」是常態(0/4 支持我的前提),且**沒有任何一家讓選取格的留白變成死區**。完整經過寫在 `data-table.tsx` 該段長註解與上方「適用範圍」節 |
 | 14 | `DataTable` 排序表頭左區 | 整個左區,懸停回饋是 `hover:text-foreground` | 同一個左區(`role="button"` + `tabIndex` 就掛在它身上) | 相等 | ✅ 同上，表格不適用本規則;這一列本來就沒有隱形帶 |
@@ -319,13 +320,13 @@ rdg 該 cell 變 active、Glide 直接選列。
 | 內容 | 來源 | 性質 |
 |---|---|---|
 | 命中區 = 可視形狀(AgentPanel 入口鈕) | user 2026-09-04,原文 `agent-panel.spec.md`「遮擋與貼邊」段 :457-458 | **user 拍板** |
-| 「看得到的每一點都點得到、點得到的每一點都看得到」這個措辭 | `agent-panel.spec.md:459` | **本 DS 規格的改寫**,不是 user 逐字 |
+| 「看得到的每一點都點得到、點得到的每一點都看得到」這個措辭 | `agent-panel-fab.spec.md`「AgentFab(浮動開關鈕;附屬資產)」(2026-09-27 拆檔前在 agent-panel.spec.md) | **本 DS 規格的改寫**,不是 user 逐字 |
 | 升成全 DS 預設(不只 AgentPanel) | AI 2026-09-24 從 inline action 的裁示推導;全 repo 查無「第 3 項裁示」原話(2026-09-27 更正,先前誤標 user 拍板) | **AI 推導**,隨整份原則由 user 條件式同意 |
 | inline action 命中 = 懸停底色(18 / 18 / 22) | 提問 user 2026-09-24 逐字:「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧?都是 18*18」(問句,不是拍板);核准 = 待辦總帳 B1 user 原話:「「側欄按鈕從 20 改成 18」這按照我們的ds設計規則改的，可以通過」 | **user 拍板**(B1 原話;2026-09-27 更正,先前把問句當拍板) |
 | 不以觸控尺寸建議當依據 | user 2026-09-24 逐字:「此外我們在做的是web component ，你他媽不要一直拿觸控裝置的設計原則來規範吧？滑鼠的指標是可以比手指頭精細很多的欸」(待辦總帳 N23 列;2026-09-27 還原被刪的語氣詞) | **user 拍板** |
 | 「線與點」是唯一例外形狀 | AI 2026-09-24 推導(可視形狀先天當不了目標的才准外擴);全 repo 查無「第 3 項裁示」原話(2026-09-27 更正,先前誤標 user 拍板) | **AI 推導**,隨整份原則由 user 條件式同意 |
 | 外擴不得越出宿主 / 不得蓋住別的可點目標 | user 2026-09-04,原文 `agent-panel.spec.md`「不外推」條 :463-464(「外推會生出隱形帶,搶走底下內容的點擊」) | **user 拍板的後果敘述**,條文化由本檔完成 |
-| 相切零重疊的上限算法 | `carousel.tsx:409-411` 既有實作 | **既有 code 的既成作法**,本檔只是引用 |
+| 相切零重疊的上限算法 | `carousel.tsx#CarouselDots` 既有實作 | **既有 code 的既成作法**,本檔只是引用 |
 | 上表的**初次盤點**(當時 12 列) | 2026-09-24 grep + Read(三輪字串簽名) | **AI 盤點,且不完整** —— 第 13 列證明三輪掃不到「父層掛 onClick」這種形狀,已補第 4 輪 |
 | 第 7 / 8 / 10 / 11 / 12 列的**逐案裁定與修正** | 2026-09-24 逐列實測(真 `page.mouse.click` + `elementFromPoint` 逐點掃描,每一條都附「該紅會紅」的對照組),依上方三條 user 裁示機械落地 | **AI 依既有裁示執行**;判定理由與實測數字住在各元件自己的 `spec.md`,本檔只記結論 |
 | 第 9 列(`Calendar`) | 2026-09-24 逐案裁定 + 實測,結論在 `calendar.spec.md`「命中區」條(:164) | **AI 依既有裁示執行**;已結案改判 ✅ |

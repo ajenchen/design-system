@@ -84,6 +84,7 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 ## 邊界案例
 
 - **count ≤ 0**:元件自行不渲染(return `null`)——「無溢出」時 consumer 不需條件渲染
+- **量尺 `OverflowIndicatorMeasure`**(2026-10-13,@internal):與觸發點同一套外觀(同一支 class,寬度逐像素相同)、不能互動(不可聚焦、沒有浮出清單、讀屏略過、不帶 `data-overflow-indicator`)。給「先量『+N』多寬再決定收幾個」的呼叫端在沒有溢出時留在 DOM 裡量:單行 Tag 列 `./overflow-tag-list.tsx`(Combobox 多選、AgentPanel 附件列)沒有東西要收時渲染它、數字是全部收起時的 N,由呼叫端藏起來(絕對定位、看不見)。數字放在**一個**帶 `data-overflow-count` 的文字節點裡(指示器與量尺同一支 `OverflowCount`):呼叫端要知道別的數字多寬時,暫時改這個節點的字、量、改回來 —— 數字的字寬不一樣,不能拿一個數字的寬代表另一個。修前沒溢出時「+N」不渲染,第一次決定只能猜它多寬(猜 60px、實際 33–35px;`../Combobox/combobox.spec.md`「單行溢出」)
 - **Loading**:OverflowIndicator 是同步 count + children primitive，API 無 loading prop；隱藏項目的資料生命週期由擁有資料的 host row / picker own。
 - **大數值**:`+N` 原樣顯示(無 `99+` 縮寫),trigger `min-w` 起步、隨位數自然加寬
 - **極窄容器 / 貼 viewport 邊**:浮層定位與翻邊由 HoverCard(Radix collision)處理,見 `hover-card.spec.md`
@@ -118,6 +119,8 @@ OverflowIndicator 是 **composite**(HoverCard trigger + tag-styled `+N` span + H
 - **identity root = trigger pill span**:ref 指向 hover 前即顯示的 `+N` 計數 pill(非 portal 內的 HoverCard content);consumer 取得 ref 可量測 / 定位 trigger
 - **`...props` spread 到 trigger pill**:`Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'>` 的 DOM attribute(如 `aria-*` / `data-*` / event handler)落在 trigger span 上
 - **HoverCard content 不暴露 ref**:浮層內容在 portal(DOM 離散),由底層 HoverCard 管理,不透過 OverflowIndicator 控制
+- **內容層 prop 兩支:`onContentMouseDown`**(2026-09-30):按在浮出清單上的 mousedown。消費者用它把「按在自己的零件上焦點不動」的判準延伸到這張卡 —— 卡在另一個 portal,消費者容器上的 mousedown 判準以 DOM 包含判斷、看不到它。兩個使用者、同一支判準(`../../lib/pointer-press.ts` `keepFocusOnPointerPress`):Combobox 搜尋框握著焦點時,按卡裡的 Tag × 焦點不離開搜尋框(規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段);AgentPanel 輸入盒 textarea 握著焦點時,按附件 +N 卡裡的 × 焦點與打到一半的字都留在輸入盒(2026-10-01,待辦總帳 OE30;`../AgentPanel/agent-panel.spec.md`「AgentPromptInput」)。卡裡的名片(Avatar hoverCard,另一個 portal、另一個控件)不受影響。按在卡上的 **click** 照 React 元件樹冒泡回 +N 所在的容器;Combobox 觸發欄位的開關只認 target 在觸發欄位 DOM 裡的 click、不理它(`../SelectMenu/select-menu.spec.md`「觸發欄位的開關」),本元件不另寫(2026-10-01)
+- **`contentId`**(2026-10-07):浮出清單的 id。消費者用它把這張卡算成**同一個欄位**的零件(卡在另一個 portal、不是觸發點的 DOM 子孫):唯一使用者 Combobox 的欄位 blur 判準(`../../lib/composite-field-focus.ts` `useCompositeFieldBlur` 的 `extra`,經 SelectMenu `fieldParts`)—— 按卡裡的 Tag × 時焦點搬進卡,不算離開欄位,接 `useFormValidation` 的驗證不會在這一下跑(`../Combobox/combobox.spec.md`「表單整合」)
 
 若 consumer 需要程式化控制 HoverCard content(custom Portal / content ref),應改用 HoverCard + Tag 自組。`displayName = 'OverflowIndicator'` 保留。
 

@@ -27,7 +27,7 @@
 | focus-visible | `outline: 2px solid var(--ring)`,**往外**(offset +2px,吃 `styles/base.css` 全域規則,元件不寫任何 class) | focus-canonical「問題二」:2026-09-10 逐站點實測 —— 26 個真實站點 × sm/md/lg,四周最小淨空 5–192px(最小值 4.00 = Breadcrumb 兩側分隔符,canonical「4.00 算放得下」),DPR2 逐像素數框帶零裁切。**列不裁它**:截斷是 label 自己的 `truncate`(兄弟節點),不是祖先。先前寫「往內、上下各被裁 1px」是把 **Tag 宿主**的量測(h-6 + 1px 邊框 + `overflow-hidden` → 淨空 3px、sm 1px)套到整個元件種類;依 canonical「往內由外層元件承擔」,那一處的 `focus-ring-inset` 在 `tag.tsx` TagDismiss。對照 SidebarMenuAction 同樣往外 |
 | 宿主 disabled | 不渲染 inline action | — |
 
-**Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(Button spec「loading」段:CircularProgress + 自動 disabled + `aria-busy`),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
+**Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(Button spec「loading」段:CircularProgress + 可聚焦的停用 —— `aria-busy` / `aria-disabled`、擋掉觸發、焦點留在鈕上),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
 
 **Overlay trigger canonical**(2026-04-29 訂 / 2026-05-02 改 / 2026-05-05 prop 化):trigger 透過 `asChild` 作 DropdownMenu / Popover / Tooltip / HoverCard trigger 時,Radix 自動 set `data-state="open"`,**trigger 維持 host hover 樣式**直到浮層關閉。對齊**狀態極簡派**(shadcn / Radix Themes / Material — 不另開 4th token);避免 state 增生 + 跨 host(neutral / colored)規則同步。
 
@@ -162,6 +162,7 @@ Q3. Row 多大?
 | Tag dismiss X | Pill body | Inline Action(colored host 繼承色)| Embedded |
 | Menu / TreeView / SidebarMenuButton / SelectionItem suffix | Row inline flow | Inline Action | Inline with content |
 | SidebarGroup header chevron | Aux toggle | Inline Action | Inline header toggle |
+| **Accordion 標題列 ChevronDown**(`accordion.tsx#AccordionTrigger`,`aria-hidden`)| 整條標題列就是開合按鈕(Radix `AccordionPrimitive.Trigger`)| **Decorative**(不是 action)| 決策樹 Q1「icon 點了要做事嗎?」否(`:133-134`):點 chevron 等於點標題列,host 是 click target(`:126`);對照 SidebarGroup header chevron —— 那顆自己是可點的 toggle,所以是 Inline Action(2026-10-01 補列,待辦總帳 N81)|
 | Select ChevronDown / DatePicker Calendar / Combobox ChevronDown | Field chrome(裝飾)| **Decorative**(不是 action)| Click falls through;host 是 trigger |
 | **FileItem compact**(row 24)| Row slot | Button xs iconOnly(`var(--field-height-xs)` 容器 + data-unbounded 收斂到 1lh)| 2026-04-23 user 統一 rich + compact 同 primitive,不撐高 row(見 file-item.tsx 註解)|
 | **FileItem rich**(row 56 sm/md rich)| Row slot | Button xs iconOnly(24 固定)| ≤ 24 cap,不放大 |

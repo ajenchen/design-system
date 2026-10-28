@@ -49,7 +49,7 @@ export const ColorMatrix: Story = {
     return (
       <div className="flex flex-col gap-10">
         <div>
-          <div className="text-h6 font-semibold text-foreground mb-2">TimePicker 色彩分兩層</div>
+          <h3 className="text-h6 font-semibold text-foreground mb-2">TimePicker 色彩分兩層</h3>
           <div className="text-caption text-fg-muted max-w-[720px]">
             Trigger 層走 Field Controls family 色彩(與 Input / Select 共用);Panel 層 column item 走 SelectMenu / MenuItem family 色彩(與 Select dropdown / DropdownMenu 共用)。TimePicker 本身無色彩變體——色彩完全繼承上游 主檔。
           </div>
@@ -57,7 +57,7 @@ export const ColorMatrix: Story = {
 
         {/* Trigger layer */}
         <div className="flex flex-col gap-2">
-          <div className="text-h6 font-semibold text-foreground">第 1 層:觸發欄位(沿用一般輸入欄位配色)</div>
+          <h4 className="text-h6 font-semibold text-foreground">第 1 層:觸發欄位(沿用一般輸入欄位配色)</h4>
           <div className="text-caption text-fg-muted mb-2">色彩與 Input / Select 等輸入欄位共用同一套規則。</div>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse min-w-[640px]">
@@ -118,12 +118,12 @@ export const ColorMatrix: Story = {
 
         {/* Panel layer */}
         <div className="flex flex-col gap-2">
-          <div className="text-h6 font-semibold text-foreground">第 2 層:面板裡的時 / 分 / 秒選項(沿用下拉選單配色)</div>
+          <h4 className="text-h6 font-semibold text-foreground">第 2 層:面板裡的時 / 分 / 秒選項(沿用下拉選單配色)</h4>
           <div className="text-caption text-fg-muted mb-2">
             選項的 hover / 選中 / 停用配色,與下拉選單(Select / 選單項目)的選取狀態共用同一套規則。
           </div>
           <div className="text-caption text-fg-secondary mb-3 max-w-[720px]">
-            <strong>關鍵決策:selected 走 neutral 非 primary</strong>(對齊 SelectMenu 設計準則)。TimePicker panel 是「列表選中」語意,跟 SelectMenu / MenuItem 同流派;DatePicker date cell 用 `--primary` 是因為那是「最終選定日期」的強 affordance(確定性),兩者不同語意,不互調。
+            <strong>關鍵決策:selected 走 neutral 非 primary</strong>(對齊 SelectMenu 設計準則)。TimePicker panel 是「列表選中」語意,跟 SelectMenu / MenuItem 同流派;DatePicker date cell 用 <code>--primary</code> 是因為那是「最終選定日期」的強 affordance(確定性),兩者不同語意,不互調。
           </div>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse min-w-[640px]">
@@ -159,7 +159,7 @@ export const ColorMatrix: Story = {
             </table>
           </div>
           <div className="text-caption text-fg-muted mt-3">
-            對照 DatePicker `ColorMatrix` 的 date cell selected 用 `--primary` — 那是「提交語意」;TimePicker 是「正在挑選」中的中間態,neutral-selected 與 Ant Design / Google Calendar TimePicker 一致。點開本頁 TimePicker trigger 可直接看到 Panel selected 的視覺效果。
+            對照 DatePicker <code>ColorMatrix</code> 的 date cell selected 用 <code>--primary</code> — 那是「提交語意」;TimePicker 是「正在挑選」中的中間態,neutral-selected 與 Ant Design / Google Calendar TimePicker 一致。點開本頁 TimePicker trigger 可直接看到 Panel selected 的視覺效果。
           </div>
         </div>
       </div>
@@ -265,7 +265,7 @@ export const Accessibility: Story = {
   render: () => (
     <div className="flex flex-col gap-6 max-w-3xl text-body">
       <section>
-        <h3 className="text-body font-bold mb-2">ARIA roles</h3>
+        <h3 className="text-h6 font-semibold mb-2">ARIA roles</h3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li>Trigger:<code>role="combobox"</code> + <code>aria-expanded={`{open}`}</code>;在 <code>{'<Field>'}</code> 內以 <code>aria-labelledby</code> 指向 field label(無 Field 時 consumer 需自帶 <code>aria-label</code>)</li>
           <li>Panel:每欄(時 / 分 / 秒)<code>role="listbox"</code></li>
@@ -274,7 +274,7 @@ export const Accessibility: Story = {
         </ul>
       </section>
       <section>
-        <h3 className="text-body font-bold mb-2">鍵盤導覽(WAI-ARIA listbox pattern)</h3>
+        <h3 className="text-h6 font-semibold mb-2">鍵盤導覽(WAI-ARIA listbox pattern)</h3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li>Trigger:<kbd>Space</kbd> / <kbd>Enter</kbd> / <kbd>↓</kbd> 開 panel(對齊 APG combobox + Select)</li>
           <li>Panel 開啟:<kbd>Esc</kbd> 關閉 + focus return to trigger</li>

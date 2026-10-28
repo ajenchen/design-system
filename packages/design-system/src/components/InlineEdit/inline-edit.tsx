@@ -1,6 +1,6 @@
 // ── 消費的 SSOT ──
 // - components/Field/field-controls.spec.md(「軸二 就地編輯 host」段:InlineEdit = view↔edit 二態疊在 Field 之上;edit-in-place + editable 閘)
-// - components/Field/field-edit-keys.ts(makeEditSettleKeyHandler = Enter/Esc + 中文 IME guard 結算 SSOT,與 DataTable cell 同源)
+// - components/Field/field-edit-keys.ts(editSettleKeyProps = Enter/Esc + 中文 IME guard 結算 SSOT + Esc 層宣告,與 DataTable cell 同源)
 // - components/Field/field-wrapper.tsx(fieldViewGeometry = view 幾何 class SSOT〔純值/標題路徑〕;fieldDisplayTextClass = view 字級)
 // - components/Input/input.tsx / Textarea/textarea.tsx(預設 renderEdit;不重刻 input chrome)
 // - components/Field/field-context.ts(useFieldContext / useResolvedFieldSize;接 size/orientation/labelId cascade)
@@ -28,7 +28,7 @@ import { Textarea } from '@/design-system/components/Textarea/textarea'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useRegisterFieldPreferredSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
 import { fieldDisplayTextClass, fieldViewGeometry } from '@/design-system/components/Field/field-wrapper'
-import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
+import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
@@ -283,7 +283,7 @@ function InlineEditImpl<T = string>(
   //   horizontal → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
   //   ⚠️ **移除舊 `fieldCtx &&` gate(root cause)**:standalone 預設 orientation='vertical'(:131),舊 gate 讓
   //     standalone 掉到 `w-full` 無 -mx → 內容內縮 field-px 不對齊 label(圖一/圖二 bug)。spec Model A
-  //     (field-controls.spec.md:71「orientation-aware -mx / vertical 貼 label」)只依 orientation、不依 fieldCtx。
+  //     (field-controls.spec.md「Field 框架地圖」InlineEdit 段:「orientation-aware `-mx`(vertical 含 standalone 貼 label / horizontal 對齊 sibling;不依 fieldCtx)」)只依 orientation、不依 fieldCtx。
   //     -mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
   //     (detail panel / card;stories 容器 layout-space-loose 16px > field-px 12px 天然吸收)。
   const alignBleed =
@@ -316,8 +316,9 @@ function InlineEditImpl<T = string>(
         aria-label={label}
         onChange={(e) => setDraftValue(e.target.value as unknown as T)}
         onBlur={() => commit(false)}
-        // 多行:plain Enter=換行、Esc=cancel、Cmd/Ctrl+Enter=commit —— 全走 makeEditSettleKeyHandler SSOT。
-        onKeyDown={makeEditSettleKeyHandler({ onCommit: () => commit(true), onCancel: cancel, commitOnEnter: false })}
+        // 多行:plain Enter=換行、Esc=cancel、Cmd/Ctrl+Enter=commit —— 全走 editSettleKeyProps SSOT(含 Esc 層宣告:
+        // 編輯中是焦點所在控件自己的一層,放在 Dialog / Sheet 裡第一下 Esc 只取消編輯、不關浮層;lib/overlay-escape.ts)。
+        {...editSettleKeyProps({ onCommit: () => commit(true), onCancel: cancel, commitOnEnter: false })}
       />
     ) : (
       <Input
@@ -328,7 +329,7 @@ function InlineEditImpl<T = string>(
         aria-label={label}
         onChange={(e) => setDraftValue(e.target.value as unknown as T)}
         onBlur={() => commit(false)}
-        onKeyDown={makeEditSettleKeyHandler({ onCommit: () => commit(true), onCancel: cancel })}
+        {...editSettleKeyProps({ onCommit: () => commit(true), onCancel: cancel })}
       />
     )
     const editNode = renderEdit ? renderEdit(editProps) : defaultEditNode
@@ -412,7 +413,7 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :397 的 `[&:has(button:focus-visible)]:border-primary`)
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :398 的 `[&:has(button:focus-visible)]:border-primary`)
               className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
             />
           )}

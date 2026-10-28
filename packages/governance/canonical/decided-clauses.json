@@ -16,7 +16,7 @@
       "ref": "agent-v14.B-narrow-drawer",
       "source": "governance/planning/2026-09-06-agent-principles-v14.md",
       "decidedOn": "2026-09-06",
-      "statement": "寬螢幕讓具資格的內容與 agent 並列可操作;窄螢幕以抽屜蓋滿宿主,宿主暫不可操作。",
+      "statement": "agent 並排時讓具資格的內容與 agent 並列可操作;agent 為浮層時(何時變浮層由 AppShell「版面規則」以各區最小寬現算,2026-10-14 取代原「寬 / 窄螢幕」斷點)以浮層蓋住宿主,宿主暫不可操作;浮層時從 agent 導向宿主 → agent 收成入口鈕。",
       "allOf": ["窄", "agent"],
       "anyOf": ["抽屜", "蓋滿", "蓋板", "兩邊都能用"],
       "why": "v14『曾經的待決題』表明文列為已答:『窄螢幕要不要兩邊都能用 → 已答 —— 不要,窄螢幕抽屜蓋滿』。"

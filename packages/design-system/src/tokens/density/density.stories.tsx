@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Button } from '@/design-system/components/Button/button'
+import { TutorialPage, TutorialSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Density',
@@ -31,6 +32,7 @@ type Story = StoryObj
 
 function ColHeader({ cols = '180px 1fr 80px 1fr 80px' }: { cols?: string }) {
   return (
+    // @layout-space-magic-ok: token 表表頭列幾何(layoutSpace.spec.md:165 同質清單列)
     <div className="grid gap-x-4 pb-2 border-b border-border mb-1" style={{ gridTemplateColumns: cols }}>
       <span />
       <span className="text-caption text-fg-muted">md（預設）</span>
@@ -48,6 +50,7 @@ function TokenRow({
   attr: string; isSolid?: boolean; cols?: string
 }) {
   return (
+    // @layout-space-magic-ok: token 表同質列(layoutSpace.spec.md:165 同質清單列)
     <div className="grid items-center gap-x-4 border-b border-border py-3 last:border-0"
       style={{ gridTemplateColumns: cols }}>
       <div>
@@ -98,6 +101,7 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
       </span>
     </div>
     <div style={{ padding: `var(--layout-space-tight) var(--layout-space-loose)` }}>
+      {/* @layout-space-magic-ok: 密度示意頁內三條同質佔位列(layoutSpace.spec.md:165 同質清單列) */}
       <div className="space-y-2">
         {[1, 2, 3].map(i => (
           <div key={i} className="h-8 rounded-md bg-neutral-hover" />
@@ -111,8 +115,9 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
       className="flex items-center justify-center">
       <span className="text-caption text-fg-muted">bottom 48 — 內容 → action 結論留白</span>
     </div>
+    {/* 動作列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
     <div
-      className="flex justify-end"
+      className="flex"
       style={{ padding: `0 var(--layout-space-loose) var(--layout-space-tight)` }}
     >
       <Button variant="primary">儲存變更</Button>
@@ -132,6 +137,7 @@ export const Overview: Story = {
   render: () => {
     function Row({ label, token, isSolid }: { label: string; token: string; isSolid: boolean }) {
       return (
+        // @layout-space-magic-ok: token 表同質列(layoutSpace.spec.md:165 同質清單列)
         <div className="grid items-center gap-x-4 border-b border-border py-2.5 last:border-0"
           style={{ gridTemplateColumns: '200px 1fr 1fr' }}>
           <code className="text-caption font-medium text-fg-secondary">{label}</code>
@@ -152,20 +158,24 @@ export const Overview: Story = {
     }
     return (
       <div className="max-w-2xl">
+        {/* @layout-space-magic-ok: token 表表頭列幾何(layoutSpace.spec.md:165 同質清單列) */}
         <div className="grid gap-x-4 pb-2 border-b border-border mb-1"
           style={{ gridTemplateColumns: '200px 1fr 1fr' }}>
           <span />
           <span className="text-caption text-fg-muted">md（預設）</span>
           <span className="text-caption text-fg-muted">lg</span>
         </div>
+        {/* @layout-space-magic-ok: token 表分組標題列的列內距(layoutSpace.spec.md:165 同質清單列) */}
         <p className="py-2 text-caption font-medium text-fg-muted">Field Height</p>
         <Row label="--field-height-lg" token="--field-height-lg" isSolid />
         <Row label="--field-height-md" token="--field-height-md" isSolid />
         <Row label="--field-height-sm" token="--field-height-sm" isSolid />
+        {/* @layout-space-magic-ok: token 表分組標題列的列內距(layoutSpace.spec.md:165 同質清單列) */}
         <p className="py-2 text-caption font-medium text-fg-muted">Table Row</p>
         <Row label="--table-row-lg" token="--table-row-lg" isSolid />
         <Row label="--table-row-md" token="--table-row-md" isSolid />
         <Row label="--table-row-sm" token="--table-row-sm" isSolid />
+        {/* @layout-space-magic-ok: token 表分組標題列的列內距(layoutSpace.spec.md:165 同質清單列) */}
         <p className="py-2 text-caption font-medium text-fg-muted">Layout Space — 版面間距</p>
         <Row label="--layout-space-loose" token="--layout-space-loose" isSolid={false} />
         <Row label="--layout-space-tight" token="--layout-space-tight" isSolid={false} />
@@ -187,23 +197,26 @@ export const UISize: Story = {
     },
   },
   render: () => (
-    <div className="max-w-2xl space-y-6">
-      <div>
-        <p className="mb-2 text-caption font-medium text-fg-muted">Field Height（Button、Input、SelectionItem）</p>
-        <ColHeader />
-        <TokenRow attr="data-ui-size" token="--field-height-xs" md="24px" lg="24px" />
-        <TokenRow attr="data-ui-size" token="--field-height-sm" md="28px" lg="32px" />
-        <TokenRow attr="data-ui-size" token="--field-height-md" md="32px" lg="36px" />
-        <TokenRow attr="data-ui-size" token="--field-height-lg" md="36px" lg="40px" />
-      </div>
-      <div>
-        <p className="mb-2 text-caption font-medium text-fg-muted">Table Row（DataTable）</p>
-        <ColHeader />
-        <TokenRow attr="data-ui-size" token="--table-row-sm" md="32px" lg="40px" />
-        <TokenRow attr="data-ui-size" token="--table-row-md" md="40px" lg="48px" />
-        <TokenRow attr="data-ui-size" token="--table-row-lg" md="48px" lg="56px" />
-      </div>
-    </div>
+    // 段落 = 共用教學頁元件的 TutorialSection(2026-10-20 T7 甲:原本兩組表格之間只有 loose,與組內「標題 → 表格」同一個量級)
+    <TutorialPage className="max-w-2xl">
+      <TutorialSection title="Field Height（Button、Input、SelectionItem）">
+        <div>
+          <ColHeader />
+          <TokenRow attr="data-ui-size" token="--field-height-xs" md="24px" lg="24px" />
+          <TokenRow attr="data-ui-size" token="--field-height-sm" md="28px" lg="32px" />
+          <TokenRow attr="data-ui-size" token="--field-height-md" md="32px" lg="36px" />
+          <TokenRow attr="data-ui-size" token="--field-height-lg" md="36px" lg="40px" />
+        </div>
+      </TutorialSection>
+      <TutorialSection title="Table Row（DataTable）">
+        <div>
+          <ColHeader />
+          <TokenRow attr="data-ui-size" token="--table-row-sm" md="32px" lg="40px" />
+          <TokenRow attr="data-ui-size" token="--table-row-md" md="40px" lg="48px" />
+          <TokenRow attr="data-ui-size" token="--table-row-lg" md="48px" lg="56px" />
+        </div>
+      </TutorialSection>
+    </TutorialPage>
   ),
 }
 

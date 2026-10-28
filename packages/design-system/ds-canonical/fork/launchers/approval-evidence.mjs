@@ -69,18 +69,27 @@ function toolResultText(content) {
 // 放大視窗不放寬任何判準,只是把判準本來就該讀到的輸入還原;檔案本來就整份讀進記憶體,額外成本只有解析。
 const TRANSCRIPT_PARSE_WINDOWS = [4, 16, 64, 256].map((mib) => mib * 1024 * 1024)
 
-// 視窗夠不夠,要看的是「有沒有**真人**訊息」,不是「有沒有 role=user 的 record」——
-// harness 的背景通知、工具結果、壓縮摘要都是 role=user 卻不是使用者說的話(判準與下方主迴圈同一組)。
+/**
+ * 這筆 transcript record 是不是**使用者本人說的話**;是就回傳那段文字,不是就回空字串。
+ * 唯一住所(M17):本檔的解析視窗、主迴圈,以及 scripts/run-provider-hook.mjs 的 transcript 錨點
+ * (N47 ⑤,2026-10-07)都呼叫這一支。role=user 不等於使用者:工具結果、harness 背景通知、
+ * skill / reference 注入的 meta 紀錄、壓縮摘要都是 role=user 卻不是使用者說的話
+ * (2026-09-02 / 09-12 錨例見下方主迴圈;M36(a):AI 轉述永遠不是 user 權威)。
+ */
+export function userVoiceText(record) {
+  const message = record?.message || record
+  if (message?.role !== 'user') return ''
+  if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') return ''
+  const text = textContent(message.content).trim()
+  if (!text) return ''
+  if (/^\[SYSTEM NOTIFICATION\b/u.test(text) || text.includes('<task-notification>')) return ''
+  if (/^This session is being continued from a previous conversation/u.test(text)) return ''
+  return text
+}
+
+// 視窗夠不夠,要看的是「有沒有**真人**訊息」,不是「有沒有 role=user 的 record」(判準 = userVoiceText)。
 function hasGenuineUserRecord(records) {
-  return records.some((record) => {
-    const message = record?.message || record
-    if (message?.role !== 'user') return false
-    if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') return false
-    const text = textContent(message.content).trim()
-    if (!text) return false
-    if (/^\[SYSTEM NOTIFICATION\b/u.test(text) || text.includes('<task-notification>')) return false
-    return !/^This session is being continued from a previous conversation/u.test(text)
-  })
+  return records.some((record) => userVoiceText(record) !== '')
 }
 
 function transcriptState(transcriptPath) {
@@ -137,26 +146,14 @@ function transcriptState(transcriptPath) {
         }
       }
     }
-    const text = textContent(message.content).trim()
+    // userVoiceText 排除(各自的錨例):harness 背景通知(task / monitor notification,banner 自己就說
+    // 不是 user input;當成 latest 會擠掉真正待決的指示,其自由文字摘要還可能誤配 approval / denial)、
+    // skill / reference 注入的 meta 紀錄(`isMeta` + `sourceToolUseID`;2026-09-02 錨:載入的
+    // workflow-authoring reference 擠掉 user 的真指示)、壓縮摘要(由 ASSISTANT 撰寫;2026-09-12 錨:
+    // 摘要成了 latest,之後每個改動都拿 AI 的文字判,reasonCode TARGET_BOUND_DISCUSSION_OR_QUESTION,
+    // 真指示就在上兩筆;排除它是**加嚴**:摘要轉述「user 已核准 X」會讓 AI 自己的話授權 AI 自己的改動)。
+    const text = userVoiceText(record)
     if (!text) continue
-    // Harness-authored background events (task/monitor notifications) are recorded as
-    // user-role text but are explicitly NOT user input — their own banner says so. They must
-    // never count as user speech: as "latest user message" they would displace a genuine
-    // pending decision, and their free-form summaries could pattern-match approval or denial.
-    if (/^\[SYSTEM NOTIFICATION\b/u.test(text) || text.includes('<task-notification>')) continue
-    // Harness-injected meta records (skill / reference text loaded by a tool call: `isMeta` +
-    // `sourceToolUseID`) are likewise not the user's voice — 2026-09-02 anchor: a loaded
-    // workflow-authoring reference displaced the user's real directive as "latest user message".
-    if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') continue
-    // Context-compaction summaries are recorded as user-role text but are written by the
-    // ASSISTANT, not the user — 2026-09-12 anchor: after a compaction the summary became the
-    // "latest user message", so every later substantive edit was judged against AI-authored
-    // prose instead of the user's actual directive (observed reasonCode:
-    // TARGET_BOUND_DISCUSSION_OR_QUESTION, while the user's real message sat two records above).
-    // Excluding them is a TIGHTENING, and that is the point: a summary quoting or paraphrasing
-    // earlier approval ("the user approved X") would otherwise let the assistant's own words
-    // authorize the assistant's own edit. M36(a): 引用 ≠ 決定,AI 轉述永遠不是 user 權威。
-    if (/^This session is being continued from a previous conversation/u.test(text)) continue
     userMessages.push(text)
     lastUserRecordIndex = index
     plainUserRecordIndexes.push(index)
@@ -438,6 +435,52 @@ const stripCodeComments = (value) => String(value || '')
   .replaceAll(/(^|[^:])\/\/[^\r\n]*/gu, '$1 ')
 
 /**
+ * 判 UI 用的「操作程式碼」視圖(N47 ②,2026-10-07):`operationText` 是每筆操作一行
+ * `JSON.stringify(candidate)`,換行都被跳脫成 `\n` 兩個字元。直接在那一行上剝 `//` 行註解,
+ * 第一個 `//` 就把**同一行後面整筆操作**當註解吃掉 —— new_string 只要先出現一行註解,後面的
+ * className / 樣式改動就被判成工程放行(M37:剝註解量的是「一行 JSON」,要保證的是「程式碼」)。
+ * 這裡先解回每個字串欄位的原文(真的換行),再逐欄剝註解;`edits` 陣列不重複展開(每筆 edit 本身就是
+ * 獨立一行 candidate)。解不開的行原樣保留、不剝 —— 文字只會更多,UI 判定只會更嚴。
+ */
+function operationCodeView(operationText) {
+  const parts = []
+  for (const line of String(operationText || '').split('\n')) {
+    if (!line.trim()) continue
+    let candidate
+    try {
+      candidate = JSON.parse(line)
+    } catch {
+      parts.push(line)
+      continue
+    }
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      parts.push(line)
+      continue
+    }
+    for (const [key, value] of Object.entries(candidate)) {
+      if (key === 'edits') continue
+      if (typeof value === 'string') parts.push(stripCodeComments(value))
+      else if (value !== null && typeof value === 'object') parts.push(JSON.stringify(value))
+    }
+  }
+  return normalizedUnicodeText(parts.join('\n'))
+}
+
+/**
+ * 這筆操作碰不碰 UI(N47 ② 的收尾,2026-10-07 複核):**兩種視圖的聯集,任一命中就算 UI**。
+ * - 舊視圖 = 呼叫端原本的寫法(整行 JSON 直接剝註解):它把換行看成 `\n` 兩個字元,所以多行 JSX 文字
+ *   `<Button>⏎  儲存變更⏎</Button>` 在它眼裡是同一行、會命中「標籤之間的文字」;它的洞是 `//` 吃掉整行。
+ * - 新視圖 = operationCodeView(逐欄解回原文再剝註解):補上 `//` 那個洞,但換行變真的換行。
+ * 只換成新視圖會讓多行 JSX 文案改動變成「工程」放行(複核實測:改前擋、改後放行)—— 修一個洞開另一個洞。
+ * 聯集保證**改後不會比改前鬆**:舊視圖命中的照舊命中,新視圖只會多抓(UI_OPERATION_MARKERS 第 4 條
+ * 同時允許跨行,讓「註解在前 + 多行 JSX 文字」這種兩個視圖各缺一半的寫法也命中)。
+ */
+function operationTouchesUi(rawOperationView, operationText) {
+  return matchesAny(UI_OPERATION_MARKERS, stripCodeComments(rawOperationView))
+    || matchesAny(UI_OPERATION_MARKERS, operationCodeView(operationText))
+}
+
+/**
  * 純註解操作(2026-09-15):把上面「註解不算」推到底。
  * old / new 剝掉註解與空白後一模一樣的 Edit,執行結果零差異,不可能是產品/UI/UX 決策 ——
  * 它唯一能改的是說明文字。這種操作不需要 exact target binding,也不需要 user 在最新訊息裡再授權一次;
@@ -453,11 +496,19 @@ const stripCodeComments = (value) => String(value || '')
  * `.css` 只有 `/* *​/` 註解、沒有轉譯器,只做 (1)。拿不到 typescript(消費者 repo 未安裝)→ 不算純註解(fail closed)。
  * Write / 找不到檔案 / old 不存在或不唯一 / old === new → 一律不算。
  */
-let typescriptModule = null
-try {
-  typescriptModule = createRequire(import.meta.url)('typescript')
-} catch {
-  typescriptModule = null
+// Loaded on first use, not at import: scripts/run-provider-hook.mjs imports this module for
+// `userVoiceText` on every transcript-consuming hook batch, and the TypeScript compiler is only
+// needed by the comment-only check below.
+let typescriptModule
+function loadTypescript() {
+  if (typescriptModule === undefined) {
+    try {
+      typescriptModule = createRequire(import.meta.url)('typescript')
+    } catch {
+      typescriptModule = null
+    }
+  }
+  return typescriptModule
 }
 const stripCssComments = (value) => String(value || '').replaceAll(/\/\*[\s\S]*?\*\//gu, ' ')
 const collapseWhitespace = (value) => String(value || '').replace(/\s+/gu, ' ').trim()
@@ -486,8 +537,16 @@ function commentOnlyOperation(hookInput, target) {
   const strip = isCss ? stripCssComments : stripCodeComments
   let after = before
   for (const edit of edits) {
-    const oldString = String(edit?.old_string ?? '')
-    const newString = String(edit?.new_string ?? '')
+    // 替換文字必須**拿得到**,拿不到不准當成空字串(2026-10-07,N47 同族):經 scripts/run-provider-hook.mjs
+    // 的 event-v1 正規化後,Edit 的 new_string 改放在 `content`、原欄位不再出現。舊寫法 `new_string ?? ''`
+    // 把「這筆把舊註解換成註解 + 一整段 UI 程式碼」讀成「刪掉那行舊註解」→ 剝註解後前後相同 → 判成純註解放行
+    //(實測:old_string 是一行註解、content 夾帶 className 改動,經 adapter 回 COMMENT_ONLY_OPERATION_NO_RUNTIME_EFFECT)。
+    // 單筆 Edit 的 adapter 形狀以 content 為替換文字;其餘拿不到就不算純註解(fail closed)。
+    const oldString = typeof edit?.old_string === 'string' ? edit.old_string : ''
+    const newString = typeof edit?.new_string === 'string'
+      ? edit.new_string
+      : (toolName === 'Edit' && typeof edit?.content === 'string' ? edit.content : null)
+    if (newString === null) return false
     if (!oldString || oldString === newString) return false
     const first = after.indexOf(oldString)
     if (first < 0) return false
@@ -501,15 +560,16 @@ function commentOnlyOperation(hookInput, target) {
   if (after === before) return false
   if (collapseWhitespace(strip(before)) !== collapseWhitespace(strip(after))) return false
   if (isCss) return true
-  if (!typescriptModule) return false
-  const emit = (source) => typescriptModule.transpileModule(source, {
+  const typescript = loadTypescript()
+  if (!typescript) return false
+  const emit = (source) => typescript.transpileModule(source, {
     fileName: filePath,
     reportDiagnostics: false,
     compilerOptions: {
       removeComments: true,
-      jsx: typescriptModule.JsxEmit.Preserve,
-      target: typescriptModule.ScriptTarget.ESNext,
-      module: typescriptModule.ModuleKind.ESNext,
+      jsx: typescript.JsxEmit.Preserve,
+      target: typescript.ScriptTarget.ESNext,
+      module: typescript.ModuleKind.ESNext,
       sourceMap: false,
     },
   }).outputText
@@ -541,7 +601,9 @@ const UI_OPERATION_MARKERS = [
   /\b(?:className|style|css|tailwind|padding|margin|gap|color|background|width|height|hover|focus|animation|transition|opacity|border|shadow|radius|variant|disabled|tabIndex|role)\b/iu,
   /\b(?:onClick|onChange|onSubmit|onKeyDown|onKeyUp|onPointerDown|onPointerUp|onDrag|onDrop|navigate|router|route|href|placeholder|aria-[a-z-]+|label|copy|textContent)\b/iu,
   /\b(?:navigation|navigationFlow|workflow|informationArchitecture|visualHierarchy|typography|fontFamily|fontSize|fontWeight|lineHeight|letterSpacing|userVisible|userFacingStatus|statusLabel|contentSemantics|componentContract|designToken|designRule)\b/iu,
-  />[^<>{}\r\n][^<>{}\r\n]*</u,
+  // 標籤之間的文字(JSX 文案)。可以跨行:多行 JSX `<Button>⏎  儲存變更⏎</Button>` 的文字在解碼後的視圖裡
+  // 前後都是真的換行(N47 ② 複核;舊的整行 JSON 視圖把換行看成 `\n` 兩個字元,本來就等於跨行)。
+  />[^<>{}][^<>{}]*</u,
   /(?:使用者可感知|產品語意|設計意圖|元件契約|資訊架構|工作流程|導覽|視覺層級|樣式|顏色|字體排印|間距|留白|佈局|布局|尺寸|懸停|動畫|互動|內容語意|文案|圖示|圓角|陰影|邊框|設計規則)/u,
 ]
 
@@ -565,7 +627,7 @@ const DESTRUCTIVE_OR_BYPASS_OPERATION_MARKERS = [
 
 const ENGINEERING_INTENT_PATTERNS = [
   /\b(?:bug|bugfix|fix|repair|correct|refactor|test|testing|governance|infra|infrastructure|remediation|regression|root\s+cause|type\s+error|typescript|compile|build|ci|hook|parser|schema|drift|ssot|source-level|a11y|accessibility|wcag|conformance|alignment|mechanical|synchroni[sz]e|restore|parity)\b/iu,
-  // 效能是 AGENTS.md:129「Bug fix / clean / refactor / 命名一致 / **perf** / a11y / test / audit / verify | **AUTO**」
+  // 效能是 AGENTS.md「# 自主執行 canonical」表「Bug fix / clean / refactor / 命名一致 / **perf** / a11y / test / audit / verify | **AUTO**」
   // 明列的自主類別,但詞彙表漏了它(2026-09-16 錨:user「要確保效能有最佳化過吧?但不要改壞原本好的東西」被判 UI 取捨擋下)。
   /(?:效能|最佳化|優化|加速|變慢|卡頓|延遲|記憶體|洩漏)/u,
   /\b(?:perf(?:ormance)?|optimi[sz](?:e|ation)|latency|throughput|memory\s+leak)\b/iu,
@@ -805,7 +867,7 @@ const GLOBAL_UI_SCOPE_PATTERN =
   /(?:(?:所有|任何|全部)\s*(?:產品|design-system|DS)?\s*(?:ui|ux|介面|界面|視覺|互動|產品設計)|\b(?:all|every)\s+(?:product\s+|design-system\s+)?(?:ui|ux|visual|interaction)s?\b)/iu
 
 const GLOBAL_REMEDIATION_SCOPE_PATTERN =
-  // 「確保效能有最佳化過」這種沒點名 target 的工程指示 = 全域 remediation scope(AGENTS.md:129 perf = AUTO);
+  // 「確保效能有最佳化過」這種沒點名 target 的工程指示 = 全域 remediation scope(AGENTS.md「# 自主執行 canonical」perf = AUTO);
   // 2026-09-16 錨:它原本連 scope 都綁不到,被判 EXACT_UI_UX_TARGET_BINDING_MISSING。
   /(?:(?:效能|perf(?:ormance)?)\s*(?:有|要|已)?\s*(?:被)?\s*(?:最佳化|優化|optimi[sz]ed?)|(?:最佳化|優化)\s*(?:一下)?\s*(?:效能|perf(?:ormance)?)|(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准|相關問題|問題|缺陷|bug).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
 
@@ -1141,7 +1203,7 @@ function engineeringScopeDecision(message, target) {
   //   「要確保效能有最佳化過,但不要改壞原本好的東西」            → 擋(UNKNOWN)
   //   「要確保效能有最佳化過,但不要改壞原本好的東西。hover 底色維持原樣」 → 放行
   // 加上 UI 字眼反而變鬆,方向與 fail-closed 相反。純工程的全域指示風險**低於**混了 UI 的版本,
-  // 依 AGENTS.md:129(Bug fix / refactor / perf / a11y / test → AUTO)本來就該是 AUTO。
+  // 依 AGENTS.md「# 自主執行 canonical」(Bug fix / refactor / perf / a11y / test → AUTO)本來就該是 AUTO。
   // 這裡只補上缺的那一半:子句本身要有工程語彙、要落在全域修復範圍,且**該子句不得帶任何 UI 取捨語彙或選擇問句**
   // (帶了就走既有的 UI 路徑照舊 fail closed),不放寬 (d)(e) 既有行為。
   for (const clause of messageClauses(normalized)) {
@@ -1341,9 +1403,9 @@ function classifyLatestAuthorizationUnscoped(message, {
   }
   const targetIsEngineering = matchesAny(ENGINEERING_TARGET_PATTERNS, normalizedTarget)
   const hasOperationEvidence = normalizeText(operationText).length > 0
-  const operationHasUiIntent = matchesAny(
-    UI_OPERATION_MARKERS,
-    stripCodeComments(pendingOperationText ?? operationText),
+  const operationHasUiIntent = operationTouchesUi(
+    pendingOperationText ?? operationText,
+    pendingOperationText ?? operationText,
   )
   const operationRequiresHumanAction = matchesAny(HUMAN_ONLY_OPERATION_MARKERS, operationText)
   const operationIsDestructiveOrBypass = matchesAny(
@@ -1502,7 +1564,7 @@ function classifyOperationAuthorizationUnscoped({
       reasonCode: 'ENGINEERING_SAFETY_GATE_REQUIRED',
     }
   }
-  if (matchesAny(UI_OPERATION_MARKERS, stripCodeComments(normalizedOperation))) {
+  if (operationTouchesUi(normalizedOperation, operationText)) {
     return {
       ...base,
       decisionDomain: 'product-ui-ux',
@@ -1672,11 +1734,318 @@ export function authorizationEvidence(transcriptPath, {
   }
 }
 
+// ── Bash 指令可能寫到的受管路徑(N47 ①;2026-10-07 複核)────────────────────────────────────────
+// check_substantive_edit_approval_preflight.sh 先在 bash 裡用便宜的比對判「這個指令會不會寫檔」(絕大多數唯讀指令
+// 在那裡就放行),判為會寫才呼叫這裡算「可能寫到哪些路徑」。路徑解析原本也寫在 bash 裡,但 bash 3.2(macOS
+// /bin/bash)的 ${var//…} 是平方時間、每段一個子行程,1,500 行的 heredoc 要十幾秒;這裡一次處理完。
+// 要保證的性質是「寫入的檔案在不在受管目錄」,不是「命令字串裡有沒有某串字」(M37):
+// - 每個 .tsx/.ts/.css token(含 glob)依「執行當下可能所在的每個目錄」解析:起點 = payload cwd(provider 入口
+//   轉交;沒有就用目前目錄 = 專案根目錄),每遇到 `cd` / `pushd` / `git -C` 就**加入**新目錄、不丟掉舊的 ——
+//   cd 可能只在子 shell / `bash -c` 裡生效,之後的指令仍在原處;兩處都解析只會多擋、不會漏擋。
+// - 目錄參數(find / git checkout·restore·ls-files / rsync / cp / mv / install / prettier / eslint / biome /
+//   stylelint,或結果餵給 xargs / while read / find -exec 的列檔指令)落在受管範圍內、或是受管根目錄的祖先
+//   (`find .`、`prettier --write packages`)→ 算寫入受管檔(以 `<目錄>/__bulk_target__.tsx` 代表)。
+// - 每段先剝不改變「在哪裡、寫什麼」的外殼:前導括號 / 引號、env 指派、sudo / env / command / exec / nohup / time /
+//   xargs / eval / npx、`bash|sh|zsh -c`、`pnpm|yarn|npm exec|dlx`。
+const SHELL_WRAPPER_PATTERNS = [
+  /^[\s(){}!"']+/u,
+  /^[A-Za-z_][A-Za-z0-9_]*=\S*\s+/u,
+  /^(?:sudo|command|exec|nohup|time|builtin|env|xargs|eval|npx|bunx)(?:\s+-\S+)*\s+/u,
+  /^(?:bash|sh|zsh|dash|ksh)(?:\s+-[A-Za-z]+)*\s+-[A-Za-z]*c\s+/u,
+  /^(?:pnpm|yarn|npm)\s+(?:exec|dlx|x)\s+(?:--\s+)?/u,
+]
+const SHELL_BULK_WRITER_WORDS = new Set(['find', 'rsync', 'cp', 'mv', 'install', 'prettier', 'eslint', 'biome', 'stylelint'])
+const SHELL_GOVERNED_EXTENSION = /\.(?:tsx|ts|css)$/u
+// 與 hook 的 GOVERNED_PATHS case 同三類受管範圍(套在「目錄 + /」上)
+const SHELL_GOVERNED_DIRECTORY = /\/(?:packages\/design-system\/src|apps|node_modules\/@qijenchen\/design-system)\//u
+const SHELL_MAX_WORKING_DIRECTORIES = 16
+
+// 「這個路徑是不是核准閘要判的受管產品檔」—— 與 check_substantive_edit_approval_preflight.sh 的 GOVERNED_PATHS
+// case 同一套規則(bash 的 case `*` 也吃 `/`):三類範圍,扣掉 story / 測試 / scripts / stories-helpers。
+// 給 scripts/run-provider-hook.mjs 在閘缺工具、自己跑不起來時判「這次呼叫在不在它的範圍內」(G4 複核二)。
+// hook 內那段 case 沒改成呼叫這裡,是為了不讓每一次 Edit 多一個 node 行程;兩者一致由 hook 測試 §18n 逐條比對。
+export function isGovernedApprovalTarget(path) {
+  const value = String(path || '')
+  const scoped = /(?:^|\/)(?:packages\/design-system\/src|apps)\/.*\.(?:tsx|ts|css)$/u.test(value)
+    || /(?:^|\/)node_modules\/@qijenchen\/design-system\//u.test(value)
+  if (!scoped) return false
+  return !/(?:\.stories\.tsx$|\.test\.|\.spec\.ts$|\/scripts\/|\/stories-helpers\/)/u.test(value)
+}
+
+// heredoc 主體若只是「資料」—— 接收者是 cat / tee,而且結果沒有再接管線 —— 主體裡出現的路徑就不是寫入目標:
+// `cat > $TMPDIR/notes.md <<'EOF'` 的筆記裡提到某個 .tsx,原本會被當成要寫那個 .tsx 而擋下(N47 ④ 同族,
+// 2026-10-07 複核二)。接收者是 shell / 直譯器 / git apply / patch,或結果再接管線(`cat <<EOF | bash`)時,
+// 主體就是會被執行或套用的內容,照舊逐行掃描。
+function heredocOperators(line) {
+  // `<<<`(here-string)不是 heredoc:前後都不能再接 `<`
+  return [...line.matchAll(/(?<!<)<<(?!<)(-?)\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\2/gu)]
+}
+
+function inertHeredocConsumer(before, after) {
+  if (/(?:^|[^|])\|(?!\|)/u.test(after.replace(/\|\|/gu, ''))) return false
+  const segment = before.split(/&&|\|\||;|\|/u).pop() || ''
+  const word = unwrapShellSegment(segment).split(/\s/u, 1)[0]
+  return word === 'cat' || word === 'tee'
+}
+
+function withoutInertHeredocBodies(text) {
+  const lines = text.split('\n')
+  const kept = []
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]
+    kept.push(line)
+    const operators = heredocOperators(line)
+    if (operators.length !== 1) continue
+    const [operator] = operators
+    const stripTabs = operator[1] === '-'
+    const delimiter = operator[3]
+    let end = index + 1
+    while (end < lines.length && (stripTabs ? lines[end].replace(/^\t+/u, '') : lines[end]) !== delimiter) end += 1
+    if (end >= lines.length) continue
+    if (!inertHeredocConsumer(line.slice(0, operator.index), line.slice(operator.index + operator[0].length))) continue
+    index = end - 1
+  }
+  return kept.join('\n')
+}
+
+// 套補丁的指令(git apply / git am / patch)寫到哪些檔,要看補丁內容:指令字串裡通常沒有 .tsx 字樣
+//(`git apply fix.patch`、`patch -p1 < fix.patch`),原本因此算不出目標而放行 —— 先把補丁寫到不受管的暫存檔、
+// 再套用,就繞過了核准閘(N47 ① 複核二,2026-10-07)。這裡讀補丁檔的 diff 標頭算出目標(每個路徑都用
+// 「去掉 0–3 層前綴」× 每個可能的工作目錄與它的 git 根目錄解析,只會多擋);補丁從 stdin / 管線來而讀不到檔時,
+// 保守地把工作目錄底下的受管根目錄當成目標。`git apply --check / --stat / --numstat / --summary`(沒有 --apply)
+// 不寫檔,不算。
+const PATCH_FILE_MAX_BYTES = 16 * 1024 * 1024
+const PATCH_SEGMENT = /^(?:git(?:\s+-C\s+\S+)?\s+(apply|am)|patch)(?:\s|$)/u
+
+function readPatchText(path) {
+  try {
+    const info = statSync(path)
+    if (!info.isFile() || info.size > PATCH_FILE_MAX_BYTES) return null
+    const text = readFileSync(path, 'utf8')
+    return /^(?:diff |--- |\+\+\+ |From [0-9a-f]{7,40} )/mu.test(text) ? text : null
+  } catch {
+    return null
+  }
+}
+
+function patchHeaderPaths(text) {
+  const paths = new Set()
+  const add = (raw) => {
+    const value = String(raw || '').split('\t')[0].trim().replace(/^"(.*)"$/u, '$1')
+    if (value && value !== '/dev/null') paths.add(value)
+  }
+  for (const line of text.split('\n')) {
+    let match = /^diff --git (\S+) (\S+)/u.exec(line)
+    if (match) {
+      add(match[1])
+      add(match[2])
+      continue
+    }
+    match = /^(?:\+\+\+|---) (.+)$/u.exec(line)
+    if (match) {
+      add(match[1])
+      continue
+    }
+    match = /^(?:rename|copy) (?:from|to) (.+)$/u.exec(line)
+    if (match) add(match[1])
+  }
+  return [...paths]
+}
+
+function gitTopLevel(directory) {
+  let current = directory
+  for (let depth = 0; depth < 64; depth += 1) {
+    if (existsSync(resolvePath(current, '.git'))) return current
+    const parent = resolvePath(current, '..')
+    if (parent === current) return null
+    current = parent
+  }
+  return null
+}
+
+function patchApplyTargets(segment, directories, commandText, isDirectory) {
+  const [, gitSubcommand] = PATCH_SEGMENT.exec(segment) || []
+  const tokens = segment.split(/[\s'"`(),<>\\]+/u).filter(Boolean)
+  if (gitSubcommand === 'apply'
+    && tokens.some((token) => ['--check', '--stat', '--numstat', '--summary'].includes(token))
+    && !tokens.includes('--apply')) {
+    return []
+  }
+  // `--directory=目錄`(git apply 在路徑前加前綴;patch 先切到該目錄)與 patch 的 `-d 目錄`
+  const prefixes = tokens
+    .map((token, index) => /^--directory=(.+)$/u.exec(token)?.[1] || (token === '-d' ? tokens[index + 1] || '' : ''))
+    .filter(Boolean)
+  const bases = new Set()
+  for (const directory of directories) {
+    bases.add(directory)
+    const top = gitTopLevel(directory)
+    if (top) bases.add(top)
+  }
+  const operandFiles = [
+    ...tokens.slice(1).filter((token) => !token.startsWith('-') && !['apply', 'am'].includes(token)),
+    // patch 的 `-i 檔` 已在上面(非選項字詞);`--input=檔` 要拆開
+    ...tokens.map((token) => /^--input=(.+)$/u.exec(token)?.[1] || '').filter(Boolean),
+  ]
+  let patches = []
+  for (const directory of directories) {
+    for (const token of operandFiles) {
+      const text = readPatchText(resolvePath(directory, token))
+      if (text) patches.push(text)
+    }
+  }
+  if (!patches.length && /^(?:diff --git |\+\+\+ )/mu.test(commandText)) {
+    // 補丁直接寫在指令裡(`git apply <<'EOF'` 的 heredoc 主體):就用指令本身的標頭
+    patches.push(commandText)
+  }
+  if (!patches.length) {
+    // 補丁從管線 / stdin 來(`cat fix.patch | git apply`):改看同一行指令裡其他看起來像補丁的檔
+    for (const directory of directories) {
+      for (const token of commandText.split(/[\s'"`(),<>|;&\\]+/u)) {
+        if (!token || token.startsWith('-')) continue
+        const text = readPatchText(resolvePath(directory, token))
+        if (text) patches.push(text)
+      }
+    }
+  }
+  const targets = new Set()
+  if (!patches.length) {
+    for (const base of bases) {
+      for (const target of governedTargetsUnderDirectory(base, isDirectory)) targets.add(target)
+    }
+    return [...targets]
+  }
+  patches = [...new Set(patches)]
+  for (const text of patches) {
+    for (const path of patchHeaderPaths(text)) {
+      const parts = path.split('/').filter(Boolean)
+      for (let strip = 0; strip <= Math.min(3, parts.length - 1); strip += 1) {
+        const relative = parts.slice(strip).join('/')
+        for (const prefix of ['', ...prefixes]) {
+          const candidate = prefix ? `${prefix}/${relative}` : relative
+          for (const base of bases) {
+            const absolute = path.startsWith('/') && strip === 0 ? path : resolvePath(base, candidate)
+            if (isGovernedApprovalTarget(absolute)) targets.add(absolute)
+          }
+        }
+      }
+    }
+  }
+  return [...targets]
+}
+
+function unwrapShellSegment(segment) {
+  let current = String(segment || '')
+  for (;;) {
+    let next = current
+    for (const pattern of SHELL_WRAPPER_PATTERNS) next = next.replace(pattern, '')
+    if (next === current) return current.trim()
+    current = next
+  }
+}
+
+// find 的名稱過濾全是非 ts/tsx/css 副檔名(`-name '*.md'`)→ 這段 find 的結果碰不到受管檔
+function findNamesExcludeGoverned(segment) {
+  const names = [...segment.matchAll(/-i?name\s+["']?([^"'\s]+)["']?/gu)].map((match) => match[1])
+  if (!names.length) return false
+  return names.every((name) => {
+    if (/\.(?:tsx|ts|css)$/u.test(name) || name.endsWith('*') || /\.\{/u.test(name)) return false
+    return (name.split('/').pop() || '').includes('.')
+  })
+}
+
+function isExistingDirectory(path) {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+function governedTargetsUnderDirectory(directory, isDirectory) {
+  if (SHELL_GOVERNED_DIRECTORY.test(`${directory}/`)) return [`${directory}/__bulk_target__.tsx`]
+  const targets = []
+  for (const relative of [
+    'packages/design-system/src', 'design-system/src', 'src', 'apps',
+    'node_modules/@qijenchen/design-system', '@qijenchen/design-system', 'design-system',
+  ]) {
+    const root = resolvePath(directory, relative)
+    if (SHELL_GOVERNED_DIRECTORY.test(`${root}/`) && isDirectory(root)) targets.push(`${root}/__bulk_target__.tsx`)
+  }
+  return targets
+}
+
+export function bashCommandWriteTargets(command, cwd, { isDirectory = isExistingDirectory } = {}) {
+  const text = withoutInertHeredocBodies(String(command || ''))
+  const home = process.env.HOME || '/'
+  const workingDirectories = [typeof cwd === 'string' && cwd.startsWith('/') ? cwd : process.cwd()]
+  const resultsFeedAnotherCommand = /xargs|while\s+read|-exec\b|-execdir\b|-ok\s|-okdir\b/u.test(text)
+  const targets = new Set()
+  for (const rawSegment of text.split(/&&|\|\||;|\||\n/u)) {
+    const segment = unwrapShellSegment(rawSegment)
+    if (!segment) continue
+    const changeDirectory = /^(?:cd|pushd)\s+(\S+)/u.exec(segment)
+    if (changeDirectory) {
+      const directory = changeDirectory[1].replace(/^["']|["']$/gu, '')
+      const added = workingDirectories.map((current) => {
+        if (directory === '~' || directory.startsWith('~/')) return resolvePath(home, `.${directory.slice(1)}`)
+        return resolvePath(current, directory)
+      })
+      if (workingDirectories.length < SHELL_MAX_WORKING_DIRECTORIES) workingDirectories.push(...added)
+      continue
+    }
+    const segmentDirectories = [...workingDirectories]
+    const gitDirectory = /^git\s+-C\s+(\S+)/u.exec(segment)
+    if (gitDirectory) {
+      for (const current of workingDirectories) segmentDirectories.push(resolvePath(current, gitDirectory[1]))
+    }
+    if (PATCH_SEGMENT.test(segment)) {
+      for (const target of patchApplyTargets(segment, segmentDirectories, text, isDirectory)) targets.add(target)
+    }
+    const word = segment.split(/\s/u, 1)[0]
+    let directoryArguments = resultsFeedAnotherCommand
+      || SHELL_BULK_WRITER_WORDS.has(word)
+      || /^git(?:\s+-C\s+\S+)?\s+(?:checkout|restore|ls-files)(?:\s|$)/u.test(segment)
+    if (word === 'find' && findNamesExcludeGoverned(segment)) directoryArguments = false
+    for (const token of segment.split(/[\s'"`(),<>=\\]+/u)) {
+      if (!token) continue
+      if (SHELL_GOVERNED_EXTENSION.test(token)) {
+        for (const current of segmentDirectories) targets.add(resolvePath(current, token))
+        continue
+      }
+      if (!directoryArguments || /^-|[$*?{}]/u.test(token)) continue
+      const leaf = token.split('/').pop() || ''
+      if (!(token === '.' || token === '..' || token.endsWith('/') || !leaf.includes('.'))) continue
+      for (const current of segmentDirectories) {
+        for (const target of governedTargetsUnderDirectory(resolvePath(current, token), isDirectory)) targets.add(target)
+      }
+    }
+  }
+  return [...targets]
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const transcriptPath = argument('--transcript')
   const target = argument('--target')
   const readHookInput = process.argv.includes('--hook-input-stdin')
   const operationOnly = process.argv.includes('--operation-only')
+  if (process.argv.includes('--governed-target')) {
+    // 測試用(hook 測試 §18n):印出單一路徑是否為本閘的受管目標,讓 shell 測試不必用 node -e 內嵌程式碼
+    process.stdout.write(`${isGovernedApprovalTarget(argument('--governed-target') || '')}\n`)
+    process.exit(0)
+  }
+  if (process.argv.includes('--bash-write-targets')) {
+    // 輸出:每行一個可能被寫到的絕對路徑(可能是空的);hook input 讀不了 → exit 3,由 hook 以完整性錯誤處理
+    let targets
+    try {
+      const hookInput = JSON.parse(readFileSync(0, 'utf8'))
+      targets = bashCommandWriteTargets(hookInput?.tool_input?.command, hookInput?.cwd)
+    } catch (error) {
+      process.stderr.write(`bash write target extraction failed:${error?.message || 'unknown'}\n`)
+      process.exit(3)
+    }
+    process.stdout.write(targets.length ? `${targets.join('\n')}\n` : '')
+    process.exit(0)
+  }
   let evidence
   try {
     if (!target) throw new Error('missing --target')

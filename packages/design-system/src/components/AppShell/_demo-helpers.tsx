@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   User,
   LogOut,
+  FolderKanban,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -21,14 +22,15 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
-  useSidebar,
+  useSidebarSurface,
 } from '@/design-system/components/Sidebar/sidebar'
-import { useAppShell } from '@/design-system/components/AppShell/app-shell'
+import { useAppShell, type PanelWidthRange } from '@/design-system/components/AppShell/app-shell'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import {
   ItemAvatar,
@@ -55,6 +57,13 @@ export const MAIN_NAV = [
   { id: 'insights', label: 'Insights', icon: BarChart3 },
   { id: 'calendar', label: 'Calendar', icon: Calendar },
   { id: 'settings', label: 'Settings', icon: Settings },
+] as const
+
+// ── 專案(可收合群組;「版面規則」示範頁用)────────────────────────────
+/** Acme 的進行中專案(側欄的「專案」區段;示範資料)。 */
+export const ACME_PROJECTS = [
+  { id: 'proj-checkout', label: 'Q4 結帳改版' },
+  { id: 'proj-mobile', label: '行動版 App 3.0' },
 ] as const
 
 // ── WorkspaceBrand(對齊 sidebar.stories.tsx)────────────────────────────
@@ -117,42 +126,68 @@ export const UserFooter = () => (
 // `includeUserFooter` default true(primary-sidebar:帳號在 sidebar 底)。`false` 用於 primary-header:
 // 帳號入口移到 globalHeader 右側 AccountMenu(GitHub/Gmail/Slack 慣例;見 app-shell.spec.md 帳號入口放置 SSOT)。
 
+/**
+ * Acme 示範產品給 Menu 的寬度設定(app-shell.spec.md「版面規則」§1:Menu 的最大寬 DS 沒有既有值,產品必給)。
+ * 最小 / 初始 = DS 預設 240(`--sidebar-width-min` / `--sidebar-width`,user 2026-05-21 定);最大 320 = 示範產品自己的值
+ * (多留 80px 給較長的專案名稱;示範用,不是 DS 規則)。
+ */
+export const ACME_MENU_WIDTH: PanelWidthRange = { min: 240, initial: 240, max: 320 }
+
+/**
+ * Acme 側欄頂排 —— **每一份自己判斷**(Menu 浮層開著時 Sidebar 的 children 畫兩份:版面上的細列 + 浮層;`sidebar.spec.md`「同一份內容、畫兩份」)。
+ * 浮層精修(2026-06-18 v2;2026-10-14 改條件;2026-10-15 改成每一份自己判斷):Menu 浮層(Sheet,z-50)從視窗頂端起、蓋住 globalHeader →
+ * primary-header 把品牌 + 帳號放 globalHeader,浮層內就看不到、浮層變孤兒,故在**浮層那一份**補回。
+ * **每 mode 鏡像自己桌面的帳號家**(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」浮層精修):
+ *   - primary-header:桌面帳號在 globalHeader 右(brand 左 / account 右)→ 浮層把整條 globalHeader 搬進 SidebarHeader
+ *     (brand + flex-1 + AccountMenu;**SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同 primitive** = 結構 SSOT,非手刻對齊),
+ *     **不放 SidebarFooter**(footer 是 primary-sidebar 慣例;對齊 Material modal navigation drawer「帳號 switcher 放 drawer header,非 footer」)。
+ *   - primary-sidebar:桌面帳號在 sidebar 底(SidebarFooter)→ 頂排 = brand(兩份都有,細列只露出品牌方塊)。
+ * 被浮層蓋住的細列那一份**不補**(細列在浮層開著時保留、版面不跳,sidebar.spec.md「放不下時」)。判斷讀 `useSidebarSurface()`(這一份畫在哪),
+ * 不讀 `useAppShell().display.menu`(整個 Menu 的顯示方式,兩份同時是 "overlay")—— 2026-10-14 版讀後者,primary-header 叫出浮層時細列那一份
+ * 也長出標頭:細列圖示下跳 48px、品牌與帳號各 3 份(2026-10-15 r1b 複驗 F4)。「只能出現一次」= 同一時間看得到的只有一份。
+ */
+function AcmeSidebarHeader({ includeWorkspaceBrand }: { includeWorkspaceBrand: boolean }) {
+  const { layout } = useAppShell()
+  const menuIsOverlay = useSidebarSurface() === 'overlay'
+  if (!includeWorkspaceBrand && !menuIsOverlay) return null
+  // primary-header 的 Menu 浮層:帳號入口鏡像 globalHeader 放 SidebarHeader 右(SidebarHeader = ChromeHeader 基底,
+  // 與 GlobalHeader「brand 左 + flex-1 + account 右」完全同結構 → avatar 24px + 右緣距 px-loose 由 construction 保證)。
+  const headerHasAccount = layout === 'primary-header' && menuIsOverlay
+  return (
+    <SidebarHeader>
+      <WorkspaceBrand />
+      {headerHasAccount && (
+        <>
+          <div className="flex-1" />
+          <AccountMenu />
+        </>
+      )}
+    </SidebarHeader>
+  )
+}
+
 export function AcmeSidebar({
-  viewportInsetTop,
   includeWorkspaceBrand = true,
   includeUserFooter = true,
+  widthRange = ACME_MENU_WIDTH,
+  collapsible = 'icon',
+  includeProjects = false,
 }: {
-  viewportInsetTop?: string
   includeWorkspaceBrand?: boolean
   includeUserFooter?: boolean
+  /** Menu 寬度設定(預設 = Acme 示範產品的值;「版面規則」示範頁換成 user 例子的數字)。 */
+  widthRange?: PanelWidthRange
+  /** `icon` = 有細列(收起時只剩圖示,預設,同 Sidebar IconCollapse baseline);`offcanvas` = 收起整個不見。 */
+  collapsible?: 'icon' | 'offcanvas'
+  /**
+   * 加上可收合的「專案」群組(預設收起;`value="projects"`)。「版面規則」示範頁用來示範 Menu 浮層與版面上兩份內容共用展開狀態
+   * (sidebar.spec.md「同一份內容、畫兩份」):在浮層裡展開、收回、放寬回並排,群組仍是展開的。
+   */
+  includeProjects?: boolean
 } = {}) {
-  // Responsive 品牌/帳號(2026-06-18 v2):小螢幕 sidebar 收成 Sheet(z-50)打開時會「蓋住」globalHeader →
-  // primary-header 把品牌+帳號放 globalHeader,Sheet 內就看不到、drawer 變孤兒。故 mobile 時在 sidebar 內補回。
-  // **每 mode 鏡像自己桌面的帳號家**(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」Responsive 精修):
-  //   - primary-header:桌面帳號在 globalHeader 右(brand 左 / account 右)→ Sheet 內把整條 globalHeader 搬進
-  //     SidebarHeader(brand + flex-1 + AccountMenu;**SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同
-  //     primitive** = 結構 SSOT,非手刻對齊),**不放 SidebarFooter**(footer 是 primary-sidebar 慣例;
-  //     對齊 Material modal navigation drawer「帳號 switcher 放 drawer header,非 footer」)。
-  //   - primary-sidebar:桌面帳號在 sidebar 底(SidebarFooter)→ Sheet 維持 header=brand / footer=UserFooter(不變)。
-  // desktop(globalHeader 可見)維持 headerless/footerless,不重複。「只能出現一次」= 同一時間一次,per breakpoint 判定。
-  const { isMobile } = useSidebar()
-  const { layout } = useAppShell()
-  // primary-header 收成 Sheet:帳號入口鏡像 globalHeader 放 SidebarHeader 右(SidebarHeader = ChromeHeader 基底,
-  // 與 GlobalHeader「brand 左 + flex-1 + account 右」完全同結構 → avatar 24px + 右緣距 px-loose 由 construction 保證)。
-  const headerHasAccount = layout === 'primary-header' && isMobile
   return (
-    <Sidebar collapsible="icon" viewportInsetTop={viewportInsetTop}>
-      {(includeWorkspaceBrand || isMobile) && (
-        <SidebarHeader>
-          <WorkspaceBrand />
-          {headerHasAccount && (
-            <>
-              <div className="flex-1" />
-              <AccountMenu />
-            </>
-          )}
-        </SidebarHeader>
-      )}
+    <Sidebar collapsible={collapsible} widthRange={widthRange}>
+      <AcmeSidebarHeader includeWorkspaceBrand={includeWorkspaceBrand} />
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -171,9 +206,26 @@ export function AcmeSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {includeProjects && (
+          // 細列沒地方放展開的清單 → 細列時整組不顯示(同 Sidebar IconCollapse baseline 的 Projects 群組)
+          <SidebarGroup collapsible value="projects" defaultOpen={false} className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroupLabel>專案</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {ACME_PROJECTS.map((project) => (
+                  <SidebarMenuItem key={project.id}>
+                    <SidebarMenuButton id={project.id} startIcon={FolderKanban} tooltip={project.label}>
+                      {project.label}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       {/* Footer 只 primary-sidebar(帳號在 sidebar 底);primary-header 帳號改放 SidebarHeader 右(見上),
-          mobile 也不放 footer(誤用他 mode 慣例)。 */}
+          Menu 浮層時也不放 footer(誤用他 mode 慣例)。 */}
       {includeUserFooter && (
         <SidebarFooter>
           <UserFooter />

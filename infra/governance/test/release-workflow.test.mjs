@@ -30,6 +30,7 @@ import {
   validateConsumerCheckProvenance,
   consentCoversHead,
   consumerStepAction,
+  nextConsumerVersion,
   productContentDigest,
   productChangeSinceBaseline,
   publishedBaselineRef,
@@ -884,6 +885,10 @@ test('排程監看的紅燈要有觀眾 —— 發布報告必須印出最新一
   assert.match(reportBlock, /classifyScheduledMonitorRun\(latestScheduledMonitorRun\(observation\.repository, 'visual-regression\.yml'\)\)/,
     'printReport 必須真的去讀最新一次週跑')
   assert.match(reportBlock, /每週視覺回歸監看/, '而且必須印給人看')
+  // 2026-10-14:visual-regression.yml 也接 PR 分支的重拍請求(push)與 dispatch —— 「最新的一次」必須篩成排程那一次,
+  // 否則 PR 分支上一次重拍的結論會被印成「每週監看」(M37:拿「這支 workflow 最新一次」代替「週跑最新一次」)
+  const monitorRead = src.slice(src.indexOf('function latestScheduledMonitorRun('), src.indexOf('function releaseRepository('))
+  assert.match(monitorRead, /\/runs\?event=schedule&per_page=1`/, '週跑結論只能讀 event=schedule 的那一次')
   // 只講不擋:五步 status 表不得含它,runner 也不得因它 invariant
   const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
   assert.doesNotMatch(statusBlock, /visual-regression|ScheduledMonitor/, '排程監看不得進五步判定(canonical:preview/canary/監看一律 non-blocking)')
@@ -1066,3 +1071,14 @@ test('預覽可見集合不得退回 2026-09-20 修掉的破口', () => {
     'packages/storybook-config/dist/preview.js',
   ]) assert.equal(hit(p), false, `${p} 不進 bundle,不該讓 user 重新確認`)
 })
+
+test('consumer 鏈:少跳一版時先派手上那一版的下一版,不是目前這一版(2026-09-30 WM 145 vs beta.147)', () => {
+  const tags = ['v0.1.0-beta.147', 'v0.1.0-beta.146', 'v0.1.0-beta.145', 'v0.1.0-beta.144']
+  assert.equal(nextConsumerVersion('0.1.0-beta.145', tags, '0.1.0-beta.147'), '0.1.0-beta.146', 'WM 停在 145 → 先派 146')
+  assert.equal(nextConsumerVersion('0.1.0-beta.146', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '146 的下一版就是目前這一版')
+  assert.equal(nextConsumerVersion('0.1.0-beta.146', tags.slice(1), '0.1.0-beta.147'), '0.1.0-beta.147', '本地 tag 還沒 fetch 到 147 → 退回目前這一版')
+  assert.equal(nextConsumerVersion(null, tags, '0.1.0-beta.147'), '0.1.0-beta.147', 'installed 讀不到 → 維持舊行為,不多假設')
+  assert.equal(nextConsumerVersion('0.1.0-beta.999', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '不在鏈上 → 目前這一版')
+  assert.equal(nextConsumerVersion('0.1.0-beta.147', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '已是最新 → 目前這一版')
+})
+

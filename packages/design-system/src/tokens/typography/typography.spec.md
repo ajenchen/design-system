@@ -22,7 +22,7 @@ Typography 由三個獨立維度組成，分開疊加：
 **font-weight 等同 `<strong>` 的疊加邏輯：**
 - 不加 = 400，一般文字
 - `font-medium` = 500，行內中等強調
-- `font-bold` = 700，強調（等同 `<strong>`）
+- `font-bold` = 700，強調（等同 `<strong>`）。**以上三階是元件與產品範例的全部字重**;`font-semibold`(600)只用在文件外框的標題 —— 教學頁的段落標題與規則標題(`stories-helpers/examples/tutorial-page.tsx`):來源 user 2026-10-07「第一題照你建議」,採 AI 同日建議 ②「段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁」(`ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」);設計規格頁的小標(`stories-helpers/anatomy/anatomy-utils.tsx` `H3`;main `ec7466f5` 是 `font-bold`)與展示頁畫布上的分組小標(main 只有 4 處:Avatar 3、item-anatomy 1)改成 600,是本 PR `7ec9cb61`(2026-10-07 AI 全 DS 範例掃除)改的,沒有 user 原話 ——【AI 推導,待拍板:留 600 / 回到 main 的 `font-bold`】。元件、pattern、token 原始碼不得出現 `font-semibold`(閘 `scripts/owner-claims-invariant.mjs` C4;r1b OTH-06)
 
 
 ## Token 表
@@ -84,8 +84,8 @@ Typography 由三個獨立維度組成，分開疊加：
 
 | 尺寸 | 段落（閱讀） | 標題（掃視 + bold） |
 |---|---|---|
-| 16px | `text-body-lg`（lh 1.5） | `text-h5`（lh 1.3，加 `font-medium`/`font-semibold`） |
-| 14px | `text-body`（lh 1.5） | `text-h6`（lh 1.3，加 `font-medium`/`font-semibold`） |
+| 16px | `text-body-lg`（lh 1.5） | `text-h5`（lh 1.3，加 `font-medium`） |
+| 14px | `text-body`（lh 1.5） | `text-h6`（lh 1.3，加 `font-medium`） |
 
 **結論**：90% 情境用 token 預設就對；唯一覆寫 = body/body-lg 進單行固定高度容器套 `leading-compact`。
 

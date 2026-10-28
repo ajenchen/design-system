@@ -362,17 +362,39 @@ test('protected-base reconstruction uses the independent lock-digested npm runti
   const previousValidation = source.indexOf('const previousCorpus = validateInstalledForkCorpus(sandbox)')
   const targetInstall = source.indexOf("cli, 'install',", previousValidation)
   const overlayApply = source.indexOf('npmRuntime.applyInstalledSecurityOverlay(sandbox)', targetInstall)
+  const baseAudit = source.indexOf('const baseVulnerabilityAudit = runAuditFindingsJson(cli, sandbox', baseInstall)
   const signatureAudit = source.indexOf("cli, 'audit', 'signatures'", overlayApply)
-  const vulnerabilityAudit = source.indexOf('runVerifiedHighVulnerabilityAudit(process.execPath', signatureAudit)
+  const candidateAudit = source.indexOf('const candidateVulnerabilityAudit = runAuditFindingsJson(cli, sandbox', signatureAudit)
+  const differential = source.indexOf('assertNoIntroducedAuditFindings(diffAuditFindings(baseVulnerabilityAudit.findings, candidateVulnerabilityAudit.findings)', candidateAudit)
+  // 2026-09-30:升級交易的弱點裁決改為差集 —— base 稽核必須在 protected base 安裝後、目標版安裝前;
+  // candidate 稽核在 overlay 與簽章稽核之後;裁決只擋 introduced(與 DS anchor 同一份 lib 實作)。
   assert.ok(
     baseInstall > 0
-      && baseInstall < previousValidation
+      && baseInstall < baseAudit
+      && baseAudit < previousValidation
       && previousValidation < targetInstall
       && targetInstall < overlayApply
       && overlayApply < signatureAudit
-      && signatureAudit < vulnerabilityAudit,
+      && signatureAudit < candidateAudit
+      && candidateAudit < differential,
   )
-  assert.match(source.slice(vulnerabilityAudit), /cli, 'audit', '--audit-level=high', '--json'/)
+  assert.doesNotMatch(source, /runVerifiedHighVulnerabilityAudit/, 'the upgrade transaction must not fall back to the exact-shape enforce audit')
+})
+
+test('upgrade transaction blocks only findings the upgrade introduces and reports inherited ones', async () => {
+  const { assertNoIntroducedAuditFindings, diffAuditFindings, parseAuditFindings } = await import('./lib/governance-dependency-bootstrap.mjs')
+  const report = (entries) => JSON.stringify({ auditReportVersion: 2, vulnerabilities: Object.fromEntries(entries.map(([name, source, url]) => [name, { name, severity: 'high', range: '<9', via: [{ source, url }] }])) })
+  const base = parseAuditFindings(report([['brace-expansion', 1240107, 'https://github.com/advisories/GHSA-qhr7-859c-m2p7']]), 'protected-base', 'GOV-UPGRADE-DEPENDENCY-001')
+  const lines = []
+  const inheritedOnly = diffAuditFindings(base, parseAuditFindings(report([['brace-expansion', 1240107, 'https://github.com/advisories/GHSA-qhr7-859c-m2p7']]), 'candidate', 'GOV-UPGRADE-DEPENDENCY-001'))
+  assert.doesNotThrow(() => assertNoIntroducedAuditFindings(inheritedOnly, { prefix: 'GOV-UPGRADE-DEPENDENCY-001', subject: 'upgrade to 0.1.0-beta.148', report: (line) => lines.push(line) }))
+  assert.ok(lines.some((line) => line.includes('brace-expansion')), 'an inherited finding is still reported')
+  const introduced = diffAuditFindings(base, parseAuditFindings(report([
+    ['brace-expansion', 1240107, 'https://github.com/advisories/GHSA-qhr7-859c-m2p7'],
+    ['fast-uri', 1240200, 'https://github.com/advisories/GHSA-hrr3-gc8f-f4qj'],
+  ]), 'candidate', 'GOV-UPGRADE-DEPENDENCY-001'))
+  assert.throws(() => assertNoIntroducedAuditFindings(introduced, { prefix: 'GOV-UPGRADE-DEPENDENCY-001', subject: 'upgrade to 0.1.0-beta.148', report: () => {} }), /GOV-UPGRADE-DEPENDENCY-001:upgrade to 0\.1\.0-beta\.148 introduces 1 vulnerability finding\(s\)[\s\S]*fast-uri/)
+  assert.throws(() => parseAuditFindings('not json', 'candidate', 'GOV-UPGRADE-DEPENDENCY-001'), /GOV-UPGRADE-DEPENDENCY-001:candidate npm audit did not produce JSON/, 'a broken audit is never read as "no findings"')
 })
 
 const git = (cwd, args, input = undefined) => {

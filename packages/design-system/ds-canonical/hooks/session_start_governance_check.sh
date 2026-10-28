@@ -129,7 +129,7 @@ if [ -n "$BENCH_DIR" ] && [ -x "$BENCH_FETCHER" ]; then
     SHOULD_AUTO_FETCH=1
     FETCH_REASON="never fetched"
   else
-    # GNU coreutils first, BSD/macOS second — same portability order as stop_passive_logging.sh:181.
+    # GNU coreutils first, BSD/macOS second — same portability order as stop_passive_logging.sh:161.
     # Without the GNU form this silently returned 0 on Linux, which made every staleness window
     # look infinitely old on containerized hosts.
     LAST_TS=$(stat -c '%Y' "$LAST_FETCH_FILE" 2>/dev/null || stat -f '%m' "$LAST_FETCH_FILE" 2>/dev/null || echo "0")
@@ -360,8 +360,8 @@ elif [ -n "$PRUNE_TRIGGERS" ]; then
 else
   MSG="🧭 Governance hygiene reminder (SessionStart):${QUARTERLY_DUE}\nNot blocking — address inline when convenient."
 fi
-# fail-open:無 jq(eg. 殘缺 PATH / minimal cloud sandbox)→ 靜默 exit 0,不吐 malformed JSON(2026-05-30 硬化)
-command -v jq >/dev/null 2>&1 || exit 0
+# jq 不在時不再由各 hook 自己靜默 exit 0(G4,2026-10-07):唯一入口 scripts/run-provider-hook.mjs 在 hook 的
+# PATH 放探針(CLOSED_HOOK_TOOL_LABELS),本 hook 一呼叫 jq 就被標成「沒有跑完」並列名給模型,同組其他 hook 照常。
 ESCAPED=$(printf '%b' "$MSG" | jq -Rs .)
 printf '{"governanceContext":{"hookEventName":"SessionStart","message":%s}}\n' "$ESCAPED"
 exit 0

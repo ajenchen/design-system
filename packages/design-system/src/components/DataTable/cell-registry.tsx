@@ -31,10 +31,10 @@ import { TimePicker as TimePickerPublic } from '@/design-system/components/TimeP
 import { PeoplePicker as PeoplePickerPublic } from '@/design-system/components/PeoplePicker/people-picker'
 import { LinkInput as LinkInputPublic } from '@/design-system/components/LinkInput/link-input'
 import { Checkbox as CheckboxPublic } from '@/design-system/components/Checkbox/checkbox'
-import { Button } from '@/design-system/components/Button/button'
+import { ItemInlineAction, itemSuffixHoverRevealClass } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditableProvider } from '@/design-system/components/Field/field-context'
-import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
+import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
 
 // ── @internal naked variant 通道(2026-07-14 API 策展 E,user 拍板「全部收窄」)──────────────
@@ -55,6 +55,9 @@ const Checkbox = CheckboxPublic as WithFieldVariantInternal<typeof CheckboxPubli
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+/** 格裡「編輯入口」(連結格的鉛筆)外層標記:一般模式編輯結束後焦點回到這裡(data-table.tsx restoreCellSelection;2026-10-13 待辦總帳 Q3d I)。 */
+export const CELL_EDIT_ENTRY_ATTR = 'data-dt-cell-edit-entry'
+
 export type CellMode = 'view' | 'edit'
 export type CellSize = 'sm' | 'md' | 'lg'
 
@@ -66,8 +69,11 @@ export interface CellComponentProps {
   mode: CellMode
   size: CellSize
   /** 該 cell 的 accessible name(= 欄標題)。naked Field 控件在 cell 內無 FieldLabel,
-   *  漏此名 → editor 成無名控件(axe aria-input-field-name / select-name)。由 renderCellContent
-   *  從 columnDef.header 解析後注入。對齊 AG Grid / MUI X「editor aria-label = column headerName」。 */
+   *  漏此名 → editor 成無名控件(axe aria-input-field-name / select-name)。由 data-table.tsx 的
+   *  `columnAccessibleName`(欄標題字串,不是字串時用欄 id)解析後注入 —— 兩條畫格子的路(MemoCellSlot 與
+   *  試算表浮層編輯器 activeEditorRender)都傳;**全部 10 個 cell 元件的編輯器都接上**(2026-10-13 待辦總帳 Q3d J:
+   *  此前只有 String / Number 收這個參數、而且兩條路都沒傳 —— 宣告了卻沒有任何地方接上)。
+   *  對齊 AG Grid / MUI X「editor aria-label = column headerName」。 */
   ariaLabel?: string
   autoRowHeight: boolean
   /** 該 cell 是否可編。replaces 舊 `meta._editable` 私有 flag(Phase C M1 hack 移除)。 */
@@ -81,7 +87,7 @@ export interface CellComponentProps {
   onCommitLive?: (next: unknown) => void
   /** Esc 取消編輯,不 commit。 */
   onCancel?: () => void
-  /** URL cell 專用:hover 顯示的 Pencil 鈕 → 進 edit mode(read mode 保留 link click 語意)。 */
+  /** URL cell 專用:滑過格 / 鍵盤聚焦時出現的 Pencil → 進 edit mode(網址文字本身保留開連結的語意)。 */
   onRequestEdit?: () => void
   /** Per-keystroke draft propagation(2026-05-10 Phase 7 D.3 portal Field virtualizer unmount preserve draft):
    *  Edit mode 內部 input onChange/onValueChange 每 keystroke 呼叫 onDraft,讓 lifted draft state(in
@@ -103,7 +109,9 @@ function makeKeyHandler(
   // (2026-07-09 抽出;原本 InlineEdit 漏 IME guard = bug,現同源)。value 讀取為 input-specific,留本地。
   // commitOnF2:格子裡的編輯器再按一次 F2 = 結算、回到格導覽(keyboard-model-canonical.md「F2 恆為進到格裡的控件,
   // 再按一次回到格導覽」;2026-09-29 前 F2 只有進格的一半,出格只剩 Escape / Enter)。
-  return makeEditSettleKeyHandler({
+  // 2026-10-01 回傳的是一組 props(onKeyDown + data-escape-layer):格編輯中是焦點所在控件自己的一層,表格放在 Dialog / Sheet 裡時
+  // 第一下 Esc 只取消編輯、不關浮層(lib/overlay-escape.ts;keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」)
+  return editSettleKeyProps({
     onCommit: (e) => {
       const raw = (e.target as HTMLInputElement).value
       onCommit?.(parseValue ? parseValue(raw) : raw)
@@ -139,7 +147,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
   const v = value != null ? String(value) : ''
   if (mode === 'view') {
     // size 必傳:DataTable cell 字級隨 size 變(sm/md text-body / lg text-body-lg),
-    // 對齊 Field family size→font SSOT(field-wrapper.tsx:60-64)。漏傳 → fallback md → lg 表格
+    // 對齊 Field family size→font SSOT(field-wrapper.tsx#fieldWrapperStyles)。漏傳 → fallback md → lg 表格
     // 字卡 14px 跟 Select/Date 等有傳 size 的 cell 不一致(2026-06-08 user 抓 frozen string 欄字偏小)。
     return autoRowHeight
       ? <Textarea variant="naked" mode="view" value={v} size={size} className={clampClass} aria-label={ariaLabel} />
@@ -163,9 +171,9 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
         defaultValue={v}
         onChange={(e) => onDraft?.((e.target as HTMLTextAreaElement).value)}
         onBlur={(e) => onCommit?.((e.target as HTMLTextAreaElement).value)}
-        // 多行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc + Cmd/Ctrl+Enter commit;
+        // 多行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc 分層 + Cmd/Ctrl+Enter commit;
         // plain Enter=換行)。commitOnEnter:false → 純 Enter 不攔。
-        onKeyDown={makeEditSettleKeyHandler({
+        {...editSettleKeyProps({
           onCommit: (e) => onCommit?.((e.target as HTMLTextAreaElement).value),
           onCancel: () => onCancel?.(),
           commitOnEnter: false,
@@ -182,7 +190,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
       defaultValue={v}
       onChange={(e) => onDraft?.(e.target.value)}
       onBlur={(e) => onCommit?.(e.target.value)}
-      onKeyDown={makeKeyHandler(onCommit, onCancel)}
+      {...makeKeyHandler(onCommit, onCancel)}
     />
   )
 }
@@ -192,7 +200,7 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft, aria
   const isCurrency = meta?.type === 'currency'
   const prefix = isCurrency ? (meta?.prefix ?? '$') : meta?.prefix
   // React #310 fix:useState 必在 view early-return 前無條件呼叫。同一 memo'd cell instance
-  // 在 view↔edit 切換時被重用(render site 無 key={mode},data-table.tsx:1352),hook 數量不可變,
+  // 在 view↔edit 切換時被重用(render site = data-table.tsx `MemoCellSlot`,無 key={mode}),hook 數量不可變,
   // 否則 Rules of Hooks violation → React #310 crash。對齊 combobox/select hoist pattern。
   const initial = typeof value === 'number' ? value : null
   const [localValue, setLocalValue] = React.useState<number | null>(initial)
@@ -229,9 +237,9 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft, aria
       suffix={meta?.suffix}
       precision={meta?.precision}
       onBlur={() => onCommit?.(localValue)}
-      // 單行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc + Enter commit)。
+      // 單行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc 分層 + Enter commit)。
       // commit localValue(controlled state,非 e.target.value)。
-      onKeyDown={makeEditSettleKeyHandler({
+      {...editSettleKeyProps({
         onCommit: () => onCommit?.(localValue),
         onCancel: () => onCancel?.(),
       })}
@@ -250,7 +258,7 @@ const dismissOnClose = (onCancel?: () => void) => (open: boolean) => { if (!open
 // Fix:`key={mode}` 強制 React unmount + remount,每次切 mode 都重跑 useState init。
 // 對齊 Notion / Airtable cell-as-input「view 跟 edit 是不同 mount cycle」語義。
 
-function DateCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
+function DateCell({ value, meta, mode, size, onCommit, onCancel, ariaLabel }: CellComponentProps) {
   if (mode === 'view') {
     return (
       <DatePicker
@@ -273,6 +281,7 @@ function DateCell({ value, meta, mode, size, onCommit, onCancel }: CellComponent
       key="edit"
       autoFocus
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       value={typeof value === 'string' ? value : null}
       showTime={meta?.includeTime === true}
@@ -283,7 +292,7 @@ function DateCell({ value, meta, mode, size, onCommit, onCancel }: CellComponent
   )
 }
 
-function TimeCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
+function TimeCell({ value, meta, mode, size, onCommit, onCancel, ariaLabel }: CellComponentProps) {
   if (mode === 'view') {
     return (
       <TimePicker
@@ -302,6 +311,7 @@ function TimeCell({ value, meta, mode, size, onCommit, onCancel }: CellComponent
     <TimePicker
       key="edit"
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       value={typeof value === 'string' ? value : null}
       showSeconds={meta?.showSeconds === true}
@@ -314,7 +324,7 @@ function TimeCell({ value, meta, mode, size, onCommit, onCancel }: CellComponent
   )
 }
 
-function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
+function SelectCell({ value, meta, mode, size, onCommit, onCancel, ariaLabel }: CellComponentProps) {
   // View canonical(2026-05-05):cell IS variant,default plain text(no Tag pill 疊在 cell border 內)。
   // Consumer 可在 column meta.display='tag' opt-in 內容導向的 Tag 視覺(category 含色彩標籤等)。
   // 對齊 JTable / AG Grid「renderer/editor 視覺一致」canonical。
@@ -339,6 +349,7 @@ function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellCompone
       key="edit"
       autoFocus
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       selectedItemRenderer={meta?.selectedItemRenderer}
       options={meta?.options ?? []}
@@ -354,7 +365,7 @@ function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellCompone
   )
 }
 
-function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive, onCancel }: CellComponentProps) {
+function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive, onCancel, ariaLabel }: CellComponentProps) {
   const wrap = autoRowHeight && meta?.wrap === true
   if (mode === 'view') {
     return (
@@ -376,6 +387,7 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive,
     <Combobox
       key="edit"
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       options={meta?.options ?? []}
       value={Array.isArray(value) ? (value as string[]) : []}
@@ -386,7 +398,7 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive,
   )
 }
 
-function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellComponentProps) {
+function PersonCell({ value, mode, size, onCommit, onCancel, meta, ariaLabel }: CellComponentProps) {
   if (mode === 'view') {
     // 2026-07-08 A 案:view 態零恆顯 icon(同 DateCell 註)
     return <PeoplePicker key="view" variant="naked" mode="view" value={value as PersonValue | null} size={size} />
@@ -395,6 +407,7 @@ function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellCompone
     <PeoplePicker
       key="edit"
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       value={value as PersonValue | null}
       people={meta?.people ?? []}
@@ -406,7 +419,7 @@ function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellCompone
   )
 }
 
-function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta }: CellComponentProps) {
+function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta, ariaLabel }: CellComponentProps) {
   if (mode === 'view') {
     // 2026-07-08 A 案:view 態零恆顯 icon(同 DateCell 註)
     return <PeoplePicker key="view" variant="naked" mode="view" value={(value as PersonValue[]) ?? []} size={size} />
@@ -417,6 +430,7 @@ function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta }: Ce
     <PeoplePicker
       key="edit"
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       value={Array.isArray(value) ? (value as PersonValue[]) : []}
       people={meta?.people ?? []}
@@ -427,7 +441,7 @@ function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta }: Ce
   )
 }
 
-function BooleanCell({ value, mode, meta, size, isEditable, onCommit }: CellComponentProps) {
+function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel }: CellComponentProps) {
   // boolean 不分 read/edit mode — view 渲 mode='view' 純展示;editable 時直接 toggle Checkbox。
   // 不可編(!isEditable)→ 走 view branch,Checkbox mode="view" 純展示不接 onCheckedChange。
   if (mode === 'view' && !isEditable) {
@@ -439,19 +453,24 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit }: CellComp
       size={size === 'lg' ? 'lg' : 'md'}
       checked={value === true}
       onCheckedChange={(checked) => onCommit?.(checked === true)}
-      aria-label={meta?.ariaLabel ?? '切換'}
+      // 名字:consumer 明給的 meta.ariaLabel > 欄標題(ariaLabel)> DS 預設「切換」(此前欄標題沒接上,一律唸「切換」)
+      aria-label={meta?.ariaLabel ?? ariaLabel ?? '切換'} // i18n-allow: DS default checkbox label(最後一層 fallback)
     />
   )
 }
 
 /**
- * UrlCell(2026-07-14 docblock 對齊實作):
- *   view branch = `<LinkInput mode="view">`(URL parse / hostname
- *   顯示一致性 SSOT);editable 互動:hover 時右側出 Pencil 鈕 → 進 edit(保留 link click 語意)。
- *   edit branch = plain `<Input variant="naked">`(LinkInput edit 的 controlled value 衝突
- *   revert,詳下方 edit branch 註解);URL 驗證 deferred 到 onCommit(consumer 端 validate)。
+ * UrlCell(2026-10-13 對齊 user 拍板乙,待辦總帳 Q3f):
+ *   view branch = `<LinkInput mode="view">`(URL parse / hostname 顯示 / 不合法的值畫成一般文字,SSOT 在 LinkInput);
+ *   連結只有網址文字那麼寬(LinkInput `renderLinkAnchor`)。editable 時**跟其他可編輯格一樣**:滑過出淺框、
+ *   點格的其他地方進編輯(由 data-table.tsx 的點格規則處理),只有點網址文字開連結;右側 Pencil 照舊在滑過格 / 鍵盤走到時出現,
+ *   是鍵盤的編輯入口(格本身不是 Tab 停靠點,同 link-input.spec.md「外框本身不是 tab stop,鍵盤走 Pencil」)。
+ *   Pencil 是行內小按鈕 `ItemInlineAction`(inline-action.spec.md 判斷樹「在宿主內部 → 行內小按鈕」與實例表
+ *   「DataTable 格裡的編輯提示」,與 LinkInput 欄位裡的鉛筆同一種;2026-10-13 前是 24px 有框的 Button tertiary xs)。
+ *   edit branch = plain `<Input variant="naked">`(LinkInput edit 預設顯示成連結,格子需要直接打字 —— data-table.spec.md 編輯表 url 列寫明);
+ *   URL 驗證留給 consumer 的 onCellCommit(data-table.spec.md cellErrors,表格不另加內建驗證)。
  */
-function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit, onCancel }: CellComponentProps) {
+function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit, onCancel, ariaLabel }: CellComponentProps) {
   if (mode === 'view') {
     // showDisplayEndIcon ← D path Phase 2(2026-05-08):Field naked wrapper 包 anchor,與 Input edit 同 chrome。
     // LinkInput 此 prop = wrapper-only(無 icon,field.spec.md L6 例外)→ A 案(2026-07-08)不撤;
@@ -461,25 +480,25 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
     )
     // 不可編 URL 不顯 Pencil affordance(純 view 顯示連結,無編輯入口)
     if (!isEditable) return display
-    // editable read mode:hover Pencil 鈕(對齊 spec 第十二段「url:read = 連結 + Pencil」)
+    // editable read mode:連結 + 滑過 / 聚焦出現的 Pencil(data-table.spec.md 編輯表 url 列;點格其他地方進編輯由 data-table.tsx 格的點擊規則處理)
     return (
       <span className="group/cell relative flex items-center w-full"> {/* @naked-row-mode-allow: URL hover-Pencil 是 inline action 不是 value content,items-center 鎖 Pencil 對齊行高第一行(autoRow 跟 fixed 皆同視覺正確) */}
         <span className="flex-1 min-w-0">{display}</span>
-        <Button
-          variant="tertiary"
-          size="xs"
-          iconOnly
-          startIcon={Pencil}
-          aria-label="編輯連結"
-          // focus 揭示為 a11y 必要條件(2026-08-05 收尾稽核抓:原本只有 hover → 鍵盤 Tab
-          // 到一顆看不見的按鈕)。契約與 guard:scripts/test-hover-revealed-affordances.mjs
-          // 滑過 / 聚焦時瞬間出現,不淡入(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 延伸到滑過才出現的按鈕,待辦總帳 L9 / N4(3))
-          className={cn('ml-1 opacity-0 group-hover/cell:opacity-100 group-focus-within/cell:opacity-100')}
-          onClick={(e) => {
-            e.stopPropagation()
-            onRequestEdit?.()
-          }}
-        />
+        {/* 滑過格 / 鍵盤聚焦時才出現(data-table.spec.md 編輯表 url 列;focus 揭示為 a11y 必要條件,契約與 guard:
+            scripts/test-hover-revealed-affordances.mjs);滑過 / 聚焦時瞬間出現,不淡入(tokens/motion/motion.spec.md「hover 回饋不做過渡」)。
+            外層 span 接住 click 不再往上冒:鉛筆已經進編輯,不讓格的點擊規則再處理一次(試算表模式下第一下只選格的那條)。 */}
+        {/* 出現規則消費 item-anatomy 的同一份(`itemSuffixHoverRevealClass('cell')` = 滑過格 / 格裡有鍵盤焦點):用 `group-has-[:focus-visible]`
+            不用 `group-focus-within` —— 後者滑鼠點一下連結也成立,鉛筆會一直亮到焦點離開(2026-10-21 前這裡自抄一份就是這樣,r1b DT-06)。 */}
+        <span
+          {...{ [CELL_EDIT_ENTRY_ATTR]: '' }}
+          className={cn('ml-1 flex shrink-0', itemSuffixHoverRevealClass('cell'))}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ItemInlineAction
+            size={size}
+            action={{ icon: Pencil, label: '編輯連結', onClick: () => onRequestEdit?.() }} // i18n-allow: DS default inline-action label(同 LinkInput 欄位的鉛筆)
+          />
+        </span>
       </span>
     )
   }
@@ -492,10 +511,11 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
     <Input
       autoFocus
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       defaultValue={value != null ? String(value) : ''}
       onBlur={(e) => onCommit?.(e.target.value)}
-      onKeyDown={makeKeyHandler(onCommit, onCancel)}
+      {...makeKeyHandler(onCommit, onCancel)}
     />
   )
 }

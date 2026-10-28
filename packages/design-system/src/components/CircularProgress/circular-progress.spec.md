@@ -100,8 +100,8 @@ export interface CircularProgressProps extends React.HTMLAttributes<HTMLSpanElem
 | 獨立使用 | **24**(預設) | 不傳 |
 | Button startIcon loading | `iconSize`(16 / 20) | Button 內部程式化 `<CircularProgress size={iconSize}/>` |
 | Field endAction loading | `ICON_SIZE[size]`(16 / 16 / 20) | Input / Field 內部程式化(`loading` prop) |
-| 選單訊息列(`CommandLoading`,載入列前綴) | `ICON_SIZE[size]`(sm/md 16 / lg 20) | Command 內部程式化(`command.tsx:185`);與同列選項的圖示同刻度,2026-09-08 |
-| 搜尋列 / Select・Combobox・PeoplePicker 觸發點 loading | `ICON_SIZE[size]` / `iconSize`(16 / 20) | CommandInput・trigger 內部程式化(`command.tsx:110`、`select.tsx:734`、`combobox.tsx:847`) |
+| 選單訊息列(`CommandLoading`,載入列前綴) | `ICON_SIZE[size]`(sm/md 16 / lg 20) | Command 內部程式化(`command.tsx#CommandLoading`);與同列選項的圖示同刻度,2026-09-08 |
+| Select・Combobox・PeoplePicker 觸發點 loading | `iconSize`(16 / 20) | trigger 內部程式化(`select.tsx#CustomSelect`、`select.tsx#NativeSelect`、`combobox.tsx#chevronEl`);搜尋列 2026-09-09 起不轉圈(user 拍板,見 `command.tsx#CommandInput` 的註解) |
 | 取代 Avatar | 與 Avatar size 相同 | Consumer 傳 |
 | Empty overlay 全頁 loading(有 description) | **48** | Empty 範例與 story convention;**下拉選單不是 48 的使用者**(2026-09-08 起載入列走上方 16 / 20) |
 | 大型 card 中央 | 32–48 | Consumer 判 |

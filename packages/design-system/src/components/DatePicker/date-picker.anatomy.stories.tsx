@@ -898,7 +898,7 @@ export const CalendarTokens = {
               <strong>State stacking</strong>:today + selected → selected 勝出(藍底白字圓);today + range-middle → track 灰底 + underline 仍可見。
             </p>
             <p className="text-footnote text-fg-muted mt-2">
-              <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 `bg-neutral-selected`(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,對齊 Google / Notion / Ant)。
+              <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 <code>bg-neutral-selected</code>(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,對齊 Google / Notion / Ant)。
             </p>
           </div>
         </div>
@@ -938,8 +938,8 @@ export const Accessibility = {
       <section>
         <h3 className="text-body font-bold mb-2">鍵盤</h3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
-          <li>Trigger 開 popover(<kbd>Space</kbd> / <kbd>Enter</kbd>):單一 DatePicker 的 <code>{`<div role="combobox">`}</code> 無 native Enter/Space→click,由元件<strong>自建 <code>onKeyDown</code></strong> 補開(date-picker.tsx:554;Radix PopoverTrigger 只 compose onClick)。Range 雙 trigger 為 native <code>{`<button>`}</code> onClick 開啟(同非 Radix Popover 內建)</li>
-          <li>Popover 開啟 <kbd>Esc</kbd> 關閉 + 回焦:單一 DatePicker 用 PopoverTrigger → Radix <strong>內建</strong> <code>triggerRef.focus()</code> 回焦;Range 只有 PopoverAnchor(triggerRef 恆 null,內建回焦為 no-op),改由元件<strong>自建 <code>onCloseAutoFocus</code></strong> 手動回焦 active 端 button(date-picker.tsx:1020-1026,守 WCAG 2.4.3)</li>
+          <li>Trigger 開 popover(<kbd>Space</kbd> / <kbd>Enter</kbd>):單一 DatePicker 的 <code>{`<div role="combobox">`}</code> 無 native Enter/Space→click,由元件<strong>自建 <code>onKeyDown</code></strong> 補開(date-picker.tsx#DatePicker;Radix PopoverTrigger 只 compose onClick)。Range 雙 trigger 為 native <code>{`<button>`}</code> onClick 開啟(同非 Radix Popover 內建)</li>
+          <li>Popover 開啟 <kbd>Esc</kbd> 關閉 + 回焦:單一 DatePicker 用 PopoverTrigger → Radix <strong>內建</strong> <code>triggerRef.focus()</code> 回焦;Range 只有 PopoverAnchor(triggerRef 恆 null,內建回焦為 no-op),改由元件<strong>自建 <code>onCloseAutoFocus</code></strong> 手動回焦 active 端 button(date-picker.tsx#DatePickerRange,守 WCAG 2.4.3)</li>
           <li>DateGrid(react-day-picker v9 內建):<kbd>←</kbd> <kbd>→</kbd> 切日 / <kbd>PgUp</kbd> <kbd>PgDn</kbd> 切月 / <kbd>Home</kbd> <kbd>End</kbd> 行首尾</li>
           <li>showTime:<kbd>Tab</kbd> 從 calendar 跳到右側 time panel,各 column <kbd>↑</kbd> <kbd>↓</kbd> 切 option</li>
         </ul>

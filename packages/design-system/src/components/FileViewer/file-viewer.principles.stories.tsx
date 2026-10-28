@@ -1,5 +1,4 @@
 import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Trash2, FolderOpen, Info, Keyboard } from 'lucide-react'
 import { FileViewer, type FileInfo } from './file-viewer'
@@ -13,11 +12,13 @@ import {
   DialogFooter,
 } from '@/design-system/components/Dialog/dialog'
 import { Button } from '@/design-system/components/Button/button'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 /**
  * FileViewer 設計原則(do / don't)——使用判斷指南。
  *
- * Rule / Label 共用模式對齊 Dialog / Sheet principles。每條 Rule 必搭配真實業務場景
+ * Rule / ExampleCaption 共用模式對齊 Dialog / Sheet principles(範例說明 = stories-helpers/examples/example-captions.tsx)。每條 Rule 必搭配真實業務場景
  * (Jira / Notion / Figma / Gmail 等)與 live 互動,避免 Lorem ipsum / A/B/C。
  */
 
@@ -30,41 +31,21 @@ type Story = StoryObj
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const Rule = ({
-  title,
-  note,
-  children,
-}: {
-  title: string
-  note?: string
-  children: React.ReactNode
-}) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && (
-      <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">
-        {note}
-      </p>
-    )}
-    <div className="flex flex-wrap gap-3 items-start">{children}</div>
-  </div>
-)
+// 快捷鍵 ↔ 對應 button 對照表(「快捷鍵總覽」Rule 的資料;資料驅動讓每一欄的儲存格幾何只寫一次)
+const SHORTCUT_TABLE_HEADERS = ['鍵', '行為', '對應 button'] as const
+const SHORTCUT_TABLE_ROWS: ReadonlyArray<readonly [key: string, action: string, button: string]> = [
+  // 動作欄寫使用者看得懂的中文、按鈕欄寫畫面上那顆鈕的名字(與元件的 aria-label / 選單文字同一組字;2026-10-20 前中英混寫,獨立驗證 OV-10 同族)
+  ['Esc', '關閉檢視器', '工具列「關閉檢視器」'],
+  ['← / →', '上 / 下一個檔案', '畫面兩側的「上一個 / 下一個檔案」+ 點縮圖列'],
+  ['+ / =', '放大', '工具列「放大」、縮放選單的百分比'],
+  ['-', '縮小', '工具列「縮小」、縮放選單的百分比'],
+  ['0', '重設為 100%', '縮放比例輸入 100%'],
+  ['F', '符合頁面', '縮放選單「符合頁面」'],
+  ['I', '展開 / 收合詳細資訊面板', '工具列「展開 / 收合詳細資訊面板」'],
+]
 
-const Label = ({
-  children,
-  warn,
-}: {
-  children: React.ReactNode
-  warn?: boolean
-}) => (
-  <p
-    className={`text-footnote leading-normal ${
-      warn ? 'text-error font-medium' : 'text-fg-muted'
-    }`}
-  >
-    {children}
-  </p>
-)
+
+const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
 // Real file sources — picsum.photos seeded images(與 stories.tsx 一致)
 const img = (seed: string, w = 1600, h = 1000) =>
@@ -100,34 +81,28 @@ export const UsageGuidance: Story = {
   render: () => {
     const [fvOpen, setFvOpen] = React.useState(false)
     return (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-        <p>適合 FileViewer 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-        <ul className="space-y-1">
+    <TutorialPage>
+      <UsageSection kind="when">
+        <p>主任務是「看檔案內容」:多張附件快速瀏覽、設計稿放大看細節、證件 / 文件檢閱、信件多附件預覽。</p>
+        <TutorialList>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="Jira — 附件多圖檢視"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Jira — 附件多圖檢視</span></LinkTo>
+            <StoryLink kind="Design System/Components/FileViewer/展示" name="Jira — 附件多圖檢視">Jira — 附件多圖檢視</StoryLink>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="Notion — 頁內配圖相簿"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Notion — 頁面配圖相簿瀏覽</span></LinkTo>
+            <StoryLink kind="Design System/Components/FileViewer/展示" name="Notion — 頁內配圖相簿">Notion — 頁面配圖相簿瀏覽</StoryLink>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="Figma — 單檔縮放聚焦"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Figma — 設計稿單檔縮放聚焦檢視</span></LinkTo>
+            <StoryLink kind="Design System/Components/FileViewer/展示" name="Figma — 單檔縮放聚焦">Figma — 設計稿單檔縮放聚焦檢視</StoryLink>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="Gmail — 多附件預覽"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Gmail — 信件多附件快速預覽</span></LinkTo>
+            <StoryLink kind="Design System/Components/FileViewer/展示" name="Gmail — 多附件預覽">Gmail — 信件多附件快速預覽</StoryLink>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="活動相集 — 縮圖膠卷展開"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">活動相集 — 開啟縮圖膠卷瀏覽跳轉</span></LinkTo>
+            <StoryLink kind="Design System/Components/FileViewer/展示" name="活動相集 — 縮圖膠卷展開">活動相集 — 開啟縮圖膠卷瀏覽跳轉</StoryLink>
           </li>
-        </ul>
-        <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-      </div>
-
-      {/* vs 近親 + 何時不用 — 原 WhenNotToUse(FileViewer vs Dialog) */}
-      <div>
-        <Rule
-          title="vs 近親元件 — 檢視檔案內容用 FileViewer(viewport-fill + dark canvas)"
+        </TutorialList>
+        <TutorialRule
+          title="FileViewer — 看檔案內容(佔滿畫面 + 深色底)"
           note="Jira ticket 附件檢視、Notion 配圖預覽、Figma design review、Gmail 多附件預覽。主任務是「看 content」,需要 viewport 最大化 + dark 底襯托媒體。FileViewer 固定 fullscreen + toolbar chrome,避免 Dialog 的 maxWidth inset 把 media 擠小"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setFvOpen(true)}>
@@ -139,11 +114,13 @@ export const UsageGuidance: Story = {
             onOpenChange={setFvOpen}
             showFilmstrip
           />
-          <Label>↑ 看 content 是主任務 → FileViewer,viewport 佔滿螢幕</Label>
-        </Rule>
+          <ExampleCaption>↑ 看 content 是主任務 → FileViewer,viewport 佔滿螢幕</ExampleCaption>
+        </TutorialRule>
+      </UsageSection>
 
-        <Rule
-          title="何時不用 / 替代元件 — 確認 / 表單 / 決策用 Dialog"
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 確認 / 表單 / 決策:用 Dialog"
           note="「確定要刪除專案?」「建立新客戶」這類聚焦決策或短表單場景,要用 Dialog。Dialog 是居中 modal(maxWidth 400–720),讓文字決策強制聚焦;若改用 FileViewer,使用者會因為 fullscreen dark 底感到突兀(「看圖」的視覺期待沒出現)"
         >
           <Dialog>
@@ -152,7 +129,7 @@ export const UsageGuidance: Story = {
                 永久刪除專案
               </Button>
             </DialogTrigger>
-            <DialogContent autoHeight maxWidth={440}>
+            <DialogContent height="hug" maxWidth={440}>
               <DialogHeader>
                 <DialogTitle>確定要永久刪除此專案?</DialogTitle>
               </DialogHeader>
@@ -167,21 +144,30 @@ export const UsageGuidance: Story = {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Label>↑ 破壞性決策 → Dialog(文字聚焦,不是看 content)</Label>
-        </Rule>
+          <ExampleCaption>↑ 破壞性決策 → Dialog(文字聚焦,不是看 content)</ExampleCaption>
+        </TutorialRule>
+        <TutorialList>
+          <li>單張圖片直接放在頁面裡 → 圖片 / AspectRatio:不需要全螢幕與工具列</li>
+          <li>上傳清單的一列 → FileItem:清單是列表,FileViewer 是打開後的全螢幕預覽</li>
+          <li>要編輯檔案(標註、裁切)→ 專屬編輯器:FileViewer 只負責檢視</li>
+          <li>短說明浮層 → Popover / HoverCard:輕量、不擋畫面</li>
+        </TutorialList>
+      </UsageSection>
 
-        <Rule
-          title="vs 近親元件 — 判準:「我要讓使用者看什麼」?"
+      <UsageSection kind="siblings">
+        <TutorialRule
+          title="判準:要讓使用者看什麼?"
           note="看文字決策 / 表單欄位 → Dialog(居中、maxWidth、light 底)。看媒體 content(圖 / PDF / 影片 / 設計稿)→ FileViewer(fullscreen、dark 底、toolbar chrome)"
         >
-          <Label>FileViewer:Jira 附件、Notion 配圖、Figma design、Gmail 附件、產品 gallery</Label>
-          <Label>Dialog:建立 / 編輯 / 刪除確認、付款確認、登出多裝置</Label>
-        </Rule>
-      </div>
-    </div>
+          <ExampleCaption>FileViewer:Jira 附件、Notion 配圖、Figma design、Gmail 附件、產品 gallery</ExampleCaption>
+          <ExampleCaption>Dialog:建立 / 編輯 / 刪除確認、付款確認、登出多裝置</ExampleCaption>
+        </TutorialRule>
+      </UsageSection>
+    </TutorialPage>
     )
   },
 }
+
 
 // ── Rule 2:Info panel 預設關 ─────────────────────────────────────────────────
 
@@ -209,8 +195,8 @@ export const InfoPanelDefaultRule: Story = {
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ 預設關 info panel,user 主動按 I / Info 才打開"
           note="世界級一致:Figma file preview / Notion attachment viewer / Google Photos / Dropbox preview 皆預設關 info。Viewer 主任務是看 content,metadata 是輔助;若預設打開,viewport 被右側 320 px 佔走、90% 情境沒人讀 metadata,是逆優化"
         >
@@ -224,16 +210,16 @@ export const InfoPanelDefaultRule: Story = {
             readOnly
             showFilmstrip
           />
-          <Label>↑ 打開時 info panel 是關的;按 I 或 toolbar Info button 才出現</Label>
-        </Rule>
+          <ExampleCaption>↑ 打開時 info panel 是關的;按 I 或 toolbar Info button 才出現</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 預設開 info panel = 把閱讀式工作區強加到 viewer"
           note="部分新手 DS 實作會把 info 預設打開「怕使用者找不到」。正確做法是 toolbar Info button 明顯 + keyboard shortcut I 可及;一次性 discovery(首次打開 hint)比 persistent 侵佔 viewport 更好"
         >
-          <Label warn>↑ 預設開啟 = 永久把 viewport 砍掉 320 px,90% 使用者沒在讀 metadata</Label>
-        </Rule>
-      </div>
+          <ExampleCaption warn>↑ 預設開啟 = 永久把 viewport 砍掉 320 px,90% 使用者沒在讀 metadata</ExampleCaption>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -255,8 +241,8 @@ export const CloseButtonPositionRule: Story = {
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ toolbar 順序 — zoom → info → download → close(影響力遞增)"
           note="DS 設計準則三方交集:(1) action-bar「全局 primary 在最右」影響力遞增;(2) Notice dismiss X always rightmost;(3) Dialog close 靠右的跨平台慣例(macOS / Windows / Web 一致)。zoom 影響單檔 transform / info 影響 layout / download 搬內容出 viewer / close 卸載 DialogContent 子樹(shell state 保留於恆掛載外層)— 影響越大越右"
         >
@@ -269,23 +255,23 @@ export const CloseButtonPositionRule: Story = {
             onOpenChange={setOpen}
             readOnly
           />
-          <Label>↑ 觀察 toolbar 右側:ZoomInput → Info → Download → X</Label>
-        </Rule>
+          <ExampleCaption>↑ 觀察 toolbar 右側:ZoomInput → Info → Download → X</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 把 close 放左上(像早期 macOS 視窗)"
           note="Web / Windows 慣例是右上 X,只有舊 macOS 視窗 chrome 用左上。Web 檔案 viewer 一致用右上 X — 把 close 放左會讓使用者找不到。Radix DialogPrimitive 本身不限位置,是本 DS 的規範要求"
         >
-          <Label warn>↑ close 左上在 Web / 檔案 viewer 是罕見 convention,違反跨 DS 慣例</Label>
-        </Rule>
+          <ExampleCaption warn>↑ close 左上在 Web / 檔案 viewer 是罕見 convention,違反跨 DS 慣例</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ close 飄離 toolbar(放 viewport 邊緣角落)"
           note="部分早期 lightbox 把 close X 浮在 viewport 右上角(脫離 toolbar)。這違反「所有 viewer 控制都集中在 toolbar」的可發現性原則 — 使用者視線會在 toolbar / 角落之間跳動"
         >
-          <Label warn>↑ close 要與其他 chrome 同層 toolbar,不漂浮在 viewport 角落</Label>
-        </Rule>
-      </div>
+          <ExampleCaption warn>↑ close 要與其他 chrome 同層 toolbar,不漂浮在 viewport 角落</ExampleCaption>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -324,8 +310,8 @@ export const FilmstripRule: Story = {
     const [focusOpen, setFocusOpen] = React.useState(false)
     const [browseOpen, setBrowseOpen] = React.useState(false)
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ 單檔 / focus 檢視 — 不顯示 filmstrip"
           note="Figma design review 單檔 zoom 看細節、Notion 文件單張配圖、Gmail 單附件。這類場景 viewport 是唯一主角,filmstrip 無內容可顯示只是佔 96 px 下方空間"
         >
@@ -338,10 +324,10 @@ export const FilmstripRule: Story = {
             onOpenChange={setFocusOpen}
             readOnly
           />
-          <Label>↑ 單檔場景 不傳 showFilmstrip;files.length=1 時 shell 也自動隱藏</Label>
-        </Rule>
+          <ExampleCaption>↑ 單檔場景 不傳 showFilmstrip;files.length=1 時 shell 也自動隱藏</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="✅ 多檔 browsing — 顯示 filmstrip(可視覽 + 快速跳轉)"
           note="Jira 多附件、Notion gallery、Gmail 多附件、活動相集。filmstrip 提供「總覽 + 快速跳轉」— 使用者既能知道「還有幾張沒看」,也能直接點跳到想看那張。←→ 與 filmstrip 點擊是兩種互補互動"
         >
@@ -354,17 +340,17 @@ export const FilmstripRule: Story = {
             onOpenChange={setBrowseOpen}
             showFilmstrip
           />
-          <Label>↑ browsing 場景 傳 showFilmstrip;5 張同時可視 + 點擊跳轉</Label>
-        </Rule>
+          <ExampleCaption>↑ browsing 場景 傳 showFilmstrip;5 張同時可視 + 點擊跳轉</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="判準 — 「使用者需要看總覽嗎」?"
           note="需要總覽(知道還有幾張 / 想跳到某張)→ showFilmstrip。不需要總覽(單檔 focus,或每張都必看完)→ 省略 showFilmstrip。Shell 在 files.length < 2 時自動隱藏,consumer 不需額外判斷"
         >
-          <Label>filmstrip on:Jira 附件 / 活動相集 / 產品 gallery / Notion 多圖</Label>
-          <Label>filmstrip off:Figma 單檔 review / Gmail 單附件 / 錯誤 screenshot 單張</Label>
-        </Rule>
-      </div>
+          <ExampleCaption>filmstrip on:Jira 附件 / 活動相集 / 產品 gallery / Notion 多圖</ExampleCaption>
+          <ExampleCaption>filmstrip off:Figma 單檔 review / Gmail 單附件 / 錯誤 screenshot 單張</ExampleCaption>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -400,8 +386,8 @@ export const ReadOnlyRule: Story = {
     const [roOpen, setRoOpen] = React.useState(false)
     const [editState, setEditState] = React.useState(editableFiles)
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ 可編輯 — 檔案擁有者 / admin,editing 即時儲存"
           note="onDescriptionChange 在 textarea onBlur 觸發,consumer 負責持久化(call API)。textarea 就是普通編輯介面,沒有「儲存」按鈕 — 避免使用者疑惑「要不要按儲存」。世界級 parallel:Google Photos / Notion 的 caption 編輯都是 inline blur-save"
         >
@@ -418,27 +404,27 @@ export const ReadOnlyRule: Story = {
               )
             }
           />
-          <Label>↑ 按 I 打開 info panel,修改說明後 blur,state 自動更新</Label>
-        </Rule>
+          <ExampleCaption>↑ 按 I 打開 info panel,修改說明後 blur,state 自動更新</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="✅ readOnly — 其他人上傳的 / 公開公告 / 只讀 link 分享"
-          note="readOnly=true 時說明區依 DS Textarea readonly canonical:有值 → 可聚焦選取但不可改的 native readonly textarea;空值 → view div 顯 emptyDisplay(`-`,非 placeholder);onDescriptionChange 不觸發。故 readonly 無 description 時顯示 `-`,不會出現「為這個檔案加上說明...」的編輯誘導 placeholder"
+          note={<>readOnly=true 時說明區依 DS Textarea readonly canonical:有值 → 可聚焦選取但不可改的 native readonly textarea;空值 → view div 顯 emptyDisplay(<code>-</code>,非 placeholder);onDescriptionChange 不觸發。故 readonly 無 description 時顯示 <code>-</code>,不會出現「為這個檔案加上說明...」的編輯誘導 placeholder</>}
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setRoOpen(true)}>
             開啟公司公告(readOnly)
           </Button>
           <FileViewer files={publicFiles} open={roOpen} onOpenChange={setRoOpen} readOnly />
-          <Label>↑ 按 I 打開 info panel;readonly 有值 = 可聚焦選取但不可改的 textarea,無值 = 顯 `-`</Label>
-        </Rule>
+          <ExampleCaption>↑ 按 I 打開 info panel;readonly 有值 = 可聚焦選取但不可改的 textarea,無值 = 顯 <code>-</code></ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不要用 disabled 取代 readOnly"
           note="disabled = 完全無法互動(無法 focus / copy);readOnly = 可 focus / 可 select / 可 copy,只是不能改。Viewer 的 description 即便不能改也要能 select 複製,所以必須用 readOnly 不是 disabled"
         >
-          <Label warn>↑ disabled 會讓使用者連 copy 都不能 — 不符 viewer 的展示定位</Label>
-        </Rule>
-      </div>
+          <ExampleCaption warn>↑ disabled 會讓使用者連 copy 都不能 — 不符 viewer 的展示定位</ExampleCaption>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -465,8 +451,8 @@ export const NoNestedOverlayRule: Story = {
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ InfoPanel 直接在 viewer 內 split(flex row)"
           note="FileViewer 本身就是 fullscreen modal,右側 InfoPanel 透過 flex-row 切出 320 px region,不另外開 Sheet 或 Dialog。好處:單層 focus-trap、單層 Esc 語義(按 Esc 直接關 viewer)、視覺無多層 overlay 疊加"
         >
@@ -474,23 +460,23 @@ export const NoNestedOverlayRule: Story = {
             開啟 Dashboard review + info panel
           </Button>
           <FileViewer files={splitFiles} open={open} onOpenChange={setOpen} readOnly />
-          <Label>↑ InfoPanel 在 viewer 內 split;按 Esc / X 直接關 viewer</Label>
-        </Rule>
+          <ExampleCaption>↑ InfoPanel 在 viewer 內 split;按 Esc / X 直接關 viewer</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不要在 viewer 內再開 Sheet / Dialog(例:info panel 用 Sheet)"
           note="部分 DS 把 detail info 做成獨立 Sheet,開進 viewer 後變成 Dialog-on-Dialog。結果:(1) 兩層 focus-trap 打架 — Esc 不知道關哪個;(2) 兩層 overlay 疊加視覺混亂;(3) 鍵盤 shortcut 意圖模糊(I 鍵在哪個 context?)。一律 split,不 nest"
         >
-          <Label warn>↑ Sheet on FileViewer = focus-trap 雙層 + Esc 語義衝突 + 視覺多層 overlay</Label>
-        </Rule>
+          <ExampleCaption warn>↑ Sheet on FileViewer = focus-trap 雙層 + Esc 語義衝突 + 視覺多層 overlay</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 不要從 viewer 內開另一個 viewer(nested viewer)"
           note="viewer 疊 viewer 焦點陷阱崩壞。要在 viewer 內展示另一個檔案,改用 filmstrip 切換 index(這是 filmstrip 的核心用途)。viewer 只能有一層 active"
         >
-          <Label warn>↑ 檔案 A viewer 內點「相關檔案 B」再開 B viewer = 崩壞 focus management</Label>
-        </Rule>
-      </div>
+          <ExampleCaption warn>↑ 檔案 A viewer 內點「相關檔案 B」再開 B viewer = 崩壞 focus management</ExampleCaption>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -513,25 +499,25 @@ export const DarkModeLockedRule: Story = {
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
-      <div>
-        <Rule
-          title={'✅ Viewer chrome 永遠 dark(`data-theme="dark"` subtree)'}
-          note={'Viewer 是「內容展示 chrome」而非 content-of-app。類比 Tooltip 永久 dark、全螢幕影片播放器 UI 永遠暗色、專業修圖軟體(Photoshop / Figma)UI 暗色。Dark 底讓圖片 / media 顯色最自然 — 亮底會跟任何含白邊的圖片打架。本 DS 用 `data-theme="dark"` subtree 鎖定,背景頁面 theme 不影響 viewer'}
+      <TutorialPage>
+        <TutorialRule
+          title={<>✅ Viewer chrome 永遠 dark(<code>data-theme="dark"</code> subtree)</>}
+          note={<>{'Viewer 是「內容展示 chrome」而非 content-of-app。類比 Tooltip 永久 dark、全螢幕影片播放器 UI 永遠暗色、專業修圖軟體(Photoshop / Figma)UI 暗色。Dark 底讓圖片 / media 顯色最自然 — 亮底會跟任何含白邊的圖片打架。本 DS 用 '}<code>data-theme="dark"</code>{' subtree 鎖定,背景頁面 theme 不影響 viewer'}</>}
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setOpen(true)}>
             開啟 viewer(不管頁面 theme 為何,chrome 永遠 dark)
           </Button>
           <FileViewer files={darkDemoFiles} open={open} onOpenChange={setOpen} readOnly />
-          <Label>↑ 切換全站 theme 到 light,viewer chrome 仍 dark</Label>
-        </Rule>
+          <ExampleCaption>↑ 切換全站 theme 到 light,viewer chrome 仍 dark</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ 讓 viewer chrome 跟 app theme 走(light / dark 都出現)"
           note="Light viewer chrome 的問題:(1) 大部分內容圖帶白邊,light 底跟圖片白邊融在一起看不見邊界;(2) light chrome 亮度跟 content 亮度接近,使用者視覺焦點被 chrome 搶走、無法專注 content;(3) 世界級 parallel 全是 dark chrome(Google Photos / Figma / Dropbox / macOS Preview)— 跟業界違反 convention"
         >
-          <Label warn>↑ Light viewer chrome 破壞媒體顯色 + 視覺焦點,且違反世界級 convention</Label>
-        </Rule>
-      </div>
+          <ExampleCaption warn>↑ Light viewer chrome 破壞媒體顯色 + 視覺焦點,且違反世界級 convention</ExampleCaption>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }
@@ -552,8 +538,8 @@ export const KeyboardShortcutRule: Story = {
   render: () => {
     const [open, setOpen] = React.useState(false)
     return (
-      <div>
-        <Rule
+      <TutorialPage>
+        <TutorialRule
           title="✅ Shortcut 加速 power user,不替代 button"
           note="所有 keyboard 動作都有 toolbar button / viewport arrow 對應 — ← → 對應 prev/next arrow,I 對應 Info button,+/-/0/F 對應 ZoomInput dropdown,Esc 對應 close X。Power user 按鍵快;一般 user / tablet / touch 用 button。少一組 → a11y 斷裂 / mobile 不可用"
         >
@@ -567,70 +553,46 @@ export const KeyboardShortcutRule: Story = {
             readOnly
             showFilmstrip
           />
-          <Label>↑ 可用 ← →、I、+ -、0、F、Esc;也可點 toolbar / viewport arrow / filmstrip</Label>
-        </Rule>
+          <ExampleCaption>↑ 可用 ← →、I、+ -、0、F、Esc;也可點 toolbar / viewport arrow / filmstrip</ExampleCaption>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="快捷鍵總覽(每個都有對應 button)"
-          note="設計時 keyboard ↔ button 對應表寫進 spec(見 file-viewer.spec.md「鍵盤支援」段)。這個對應關係不是實作細節,是 a11y 的結構承諾 — 任何新增 shortcut 都必須同步新增對應 button"
+          note="設計時 keyboard ↔ button 對應表要寫進規格。這個對應關係不是實作細節,是 a11y 的結構承諾 — 任何新增 shortcut 都必須同步新增對應 button"
         >
-          <div className="w-full max-w-[640px] rounded-md border border-border p-3">
+          <div className="w-full max-w-[640px] rounded-md border border-border p-[var(--layout-space-loose)]">
             <table className="w-full text-caption">
               <thead className="text-fg-muted">
                 <tr>
-                  <th className="text-left font-normal pb-1">鍵</th>
-                  <th className="text-left font-normal pb-1">行為</th>
-                  <th className="text-left font-normal pb-1">對應 button</th>
+                  {SHORTCUT_TABLE_HEADERS.map((header) => (
+                    // @layout-space-magic-ok: 說明表格表頭儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列)
+                    <th key={header} className="text-left font-normal pb-1">{header}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="text-foreground">
-                <tr>
-                  <td className="font-mono py-0.5">Esc</td>
-                  <td className="py-0.5">關閉 viewer</td>
-                  <td className="py-0.5">toolbar X</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">← / →</td>
-                  <td className="py-0.5">上 / 下一個檔案</td>
-                  <td className="py-0.5">viewport prev/next arrow + filmstrip 點擊</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">+ / =</td>
-                  <td className="py-0.5">Zoom in</td>
-                  <td className="py-0.5">ZoomInput dropdown preset</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">-</td>
-                  <td className="py-0.5">Zoom out</td>
-                  <td className="py-0.5">ZoomInput dropdown preset</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">0</td>
-                  <td className="py-0.5">重設為 100%</td>
-                  <td className="py-0.5">ZoomInput 輸入 100%</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">F</td>
-                  <td className="py-0.5">Fit to page</td>
-                  <td className="py-0.5">ZoomInput dropdown「Fit to page」</td>
-                </tr>
-                <tr>
-                  <td className="font-mono py-0.5">I</td>
-                  <td className="py-0.5">Toggle Info panel</td>
-                  <td className="py-0.5">toolbar Info button</td>
-                </tr>
+                {SHORTCUT_TABLE_ROWS.map(([shortcut, action, button]) => (
+                  <tr key={shortcut}>
+                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
+                    <td className="font-mono py-0.5">{shortcut}</td>
+                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
+                    <td className="py-0.5">{action}</td>
+                    {/* @layout-space-magic-ok: 說明表格同質列的儲存格內距(列幾何)(layoutSpace.spec.md:165 同質清單列) */}
+                    <td className="py-0.5">{button}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </Rule>
+        </TutorialRule>
 
-        <Rule
+        <TutorialRule
           title="❌ Input / Textarea focus 時仍觸發 shortcut"
           note="使用者在 InfoPanel textarea 打 description 時按「-」(想寫減號 / 破折號),若沒排除會被 zoom out 劫持,字打不進去。本 DS 的 shell 已內建排除邏輯(tag === INPUT / TEXTAREA / contentEditable 時跳過)— 未來加新 shortcut 也必須遵守"
         >
-          <Label warn>↑ 打字時被 shortcut 劫持 = 功能 bug + 信任破壞(使用者以為鍵盤壞了)</Label>
-        </Rule>
-      </div>
+          <ExampleCaption warn>↑ 打字時被 shortcut 劫持 = 功能 bug + 信任破壞(使用者以為鍵盤壞了)</ExampleCaption>
+        </TutorialRule>
+      </TutorialPage>
     )
   },
 }

@@ -3,6 +3,7 @@
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 
 // ── Field Wrapper Styles ────────────────────────────────────────────────────
 // 所有 Field 元件共用的 input wrapper 樣式。
@@ -114,8 +115,8 @@ export const fieldWrapperStyles = cva(
     // truncate-with-ellipsis(`Alexander Hamilton Zhang` 直接被 cell overflow-hidden 硬裁無 `...`
     // 甚至蓋住相鄰 cell `—` indicator,圖二 user round 2 直接抓 trigger 越界證據)。
     // 修一處全 Field family 跟動(Input/Select/Combobox/DatePicker/TimePicker/LinkInput/
-    // Textarea/NumberInput/PeoplePicker)— 對齊 M17/M19/M23 一處 SSOT + data-table.spec.md:233
-    // 「禁硬裁無 ellipsis」DS canonical + MUI X DataGrid / Ant Table column.ellipsis 共識。
+    // Textarea/NumberInput/PeoplePicker)— 對齊 M17/M19/M23 一處 SSOT + data-table.spec.md「十一、Cell 單行截斷原則」
+    // (空間不足一律 ellipsis,不硬裁)DS canonical + MUI X DataGrid / Ant Table column.ellipsis 共識。
     // 2026-07-08 width 軸:`w-full` 從 base 移入 `width` variant(fill = 原行為 default,
     // 零回歸;hug = w-fit 依內容收縮)。詳 field-controls.spec.md「寬度軸(width: fill / hug)」。
     'inline-flex items-center min-w-0 rounded-md',
@@ -196,7 +197,7 @@ export const fieldWrapperStyles = cva(
       //   Codex verdict:「naked 把 chrome stripping 跟 slot anatomy stripping 混在一起。
       //   chrome stripping 合理(去 padding / border / rounded);slot anatomy stripping 不合理
       //   (prefix / content / suffix gap 仍是 item anatomy slot canonical `gap-2`)」
-      //   Fix:移除 `!gap-0`,讓 Field family base `gap-2`(field-wrapper.tsx:50)透出來。
+      //   Fix:移除 `!gap-0`,讓 Field family base `gap-2`(field-wrapper.tsx#fieldWrapperStyles)透出來。
       //   Cite:item-anatomy.spec.md L46-50 / L113-122 partial consumer canonical;
       //   field-controls.spec.md L22 Field Controls 視覺對齊 Family 1 Menu item layout。
       //   特殊 stack / multi-pill 場景若需 zero-gap,該 component spec 明文例外,不全域 strip。
@@ -261,10 +262,10 @@ export const fieldWrapperStyles = cva(
 export const bareInputStyles = [
   // 2026-05-15 Q1 真 root cause fix(per codex Round 4 cite-based verdict):
   // 加 `truncate` — 原 bareInputStyles 含 `flex-1 min-w-0` 但無 `truncate / text-overflow` policy。
-  // 當 Select `searchable && open` 切 raw `<input placeholder=...>` branch(select.tsx:178),
+  // 當 Select `searchable && open` 切 raw `<input placeholder=...>` branch(select.tsx#CustomSelectTriggerContent),
   // bareInputStyles 套上,placeholder 無 ellipsis → narrow cell(<160px)硬裁無 `...`(user round 3
   // 圖一證據)。加 truncate 後 `<input>` `text-overflow: ellipsis` 啟動,符合 user 「placeholder 直接被截掉沒有變...」
-  // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md:233「禁硬裁無 ellipsis」+ field-controls.spec.md:286
+  // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md「十一、Cell 單行截斷原則」(空間不足一律 ellipsis)+ field-controls.spec.md「共享 contract」
   // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
   // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的 focus-within:!border-primary
@@ -300,14 +301,6 @@ export const bareInputStyles = [
 // 世界級同向(出處逐行列在 `Input/input.spec.md`「點外框 = 點輸入處」):MUI InputBase、Primer TextInput、rc-input(Ant)
 // 都是點外框就聚焦輸入處,MUI 與本 DS 一樣外框用文字游標。
 
-/**
- * 外框裡本身可操作、照它自己行為走的東西:點它不把焦點搶給 input。
- * 另一個消費者:LinkInput 連結狀態的外框(點「不是這些東西」的地方 = 按鉛筆進入編輯,link-input.spec.md「Link 狀態」)。
- * 兩處共用這一份清單,不各寫一份。
- */
-export const FIELD_CHROME_OWN_TARGET =
-  'button, a[href], input, textarea, select, [role="button"], [role="link"], [contenteditable="true"]'
-
 /** 可打字欄位的外框游標(field-controls.spec.md「游標指引」:input → cursor-text)。停用時不掛(停用自有 cursor-not-allowed)。 */
 export const FIELD_TEXT_ENTRY_CURSOR = 'cursor-text'
 
@@ -322,8 +315,9 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
   if (!input || input.disabled) return
   const target = event.target
   if (!(target instanceof Element) || target === input) return
-  const own = target.closest(FIELD_CHROME_OWN_TARGET)
-  if (own && own !== chrome && chrome.contains(own)) return
+  // 外框裡本身可操作的東西(行內動作鈕 / 連結 / 另一個輸入)照它自己的行為走,不把焦點搶給 input。
+  // 「哪些東西自有行為」與 LinkInput 連結態外框、cmdk 選單共用一份判準(lib/pointer-press.ts,2026-09-30 自本檔搬出)
+  if (isOwnPointerTarget(chrome, target)) return
   event.preventDefault()
   input.focus()
   // 插入點落在點的那一側:點在輸入處右邊(右內距 / 右邊框)→ 放最後,左邊 → 放最前,與直接點在文字右側空白的原生行為一致。
@@ -334,6 +328,19 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
     if (event.clientX >= box.right) input.setSelectionRange(end, end)
     else if (event.clientX <= box.left) input.setSelectionRange(0, 0)
   }
+}
+
+/**
+ * 欄位裡會隨這一下動作卸載的按鈕(一鍵清空 ×;Combobox Tag × 落到最後一顆時同一個 owner):焦點若在它身上,先交給 owner
+ * (觸發欄位內的搜尋框,沒有就是觸發欄位本身),焦點不隨 DOM 卸載掉到 body(combobox.spec.md「Tag 操作」同一條:
+ * 「焦點不可因 DOM unmount 掉到 body」)。焦點不在它身上(搜尋框握著焦點、Safari 點按鈕不給焦點)→ 不動。
+ * 世界級:rc-select 清空後聚焦容器(https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L711-L721)。
+ * 2026-09-30 前:Select「清除選取」、Combobox / PeoplePicker「清除全部」用鍵盤按下後焦點落在 body(實測)。
+ */
+export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined, owner: HTMLElement | null | undefined): void {
+  const active = leaving?.ownerDocument.activeElement
+  if (!leaving || !owner || !active || !leaving.contains(active)) return
+  owner.focus({ preventScroll: true })
 }
 
 // ── Naked Variant Cell Row-Mode Alignment Propagation ──────────────────────
@@ -363,7 +370,7 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
  *   - Y:只有 wrap 模式套(單行由 wrapper `items-center` 置中,結果與 Y 相同);第一行 tag 的 y 因此
  *     恆等於單行時的 y,切換 wrap 不位移(舊 `py-1` 寫死 4px 會差 1px)。
  * Tag 高度消費同一個 token `--tag-height-*`(tokens/uiSize/uiSize.css),沒有第二份字面值。
- * 消費者:Combobox(四條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
+ * 消費者:Combobox(三條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
  */
 export const fieldTagInsetX: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',

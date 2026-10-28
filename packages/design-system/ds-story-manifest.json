@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-29T06:35:03.111Z"
+    "generatedAt": "2026-10-20T06:43:04.374Z"
   },
   "components": {
     "accordion": {
@@ -73,7 +73,6 @@
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
-          "design-system-components-agentpanel-展示--overlay-on-narrow-stage",
           "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
@@ -90,7 +89,9 @@
           "design-system-components-agentpanel-設計規格--accessibility"
         ],
         "設計原則": [
-          "design-system-components-agentpanel-設計原則--usage-guidance"
+          "design-system-components-agentpanel-設計原則--usage-guidance",
+          "design-system-components-agentpanel-設計原則--content-guidelines",
+          "design-system-components-agentpanel-設計原則--motion-rule"
         ]
       },
       "openSnapshotIds": [
@@ -130,7 +131,10 @@
         "展示": [
           "design-system-components-appshell-展示--primary-sidebar",
           "design-system-components-appshell-展示--primary-sidebar-with-tabs",
-          "design-system-components-appshell-展示--primary-header"
+          "design-system-components-appshell-展示--primary-header",
+          "design-system-components-appshell-展示--four-regions",
+          "design-system-components-appshell-展示--agent-overlay",
+          "design-system-components-appshell-展示--menu-overlay"
         ],
         "設計規格": [
           "design-system-components-appshell-設計規格--overview",
@@ -141,6 +145,7 @@
         ],
         "設計原則": [
           "design-system-components-appshell-設計原則--usage-guidance",
+          "design-system-components-appshell-設計原則--composition-rules",
           "design-system-components-appshell-設計原則--layout-mode-rule"
         ]
       },
@@ -210,6 +215,7 @@
         ],
         "設計原則": [
           "design-system-components-badge-設計原則--usage-guidance",
+          "design-system-components-badge-設計原則--dot-vs-count-rule",
           "design-system-components-badge-設計原則--default-low-rule",
           "design-system-components-badge-設計原則--contrast-floor-rule",
           "design-system-components-badge-設計原則--accessibility-rule",
@@ -373,6 +379,7 @@
         ],
         "設計原則": [
           "design-system-components-chart-設計原則--usage-guidance",
+          "design-system-components-chart-設計原則--implementation-rule",
           "design-system-components-chart-設計原則--chart-type-rule",
           "design-system-components-chart-設計原則--category-token-rule",
           "design-system-components-chart-設計原則--five-category-limit-rule",
@@ -490,6 +497,9 @@
           "design-system-components-combobox-展示--with-error",
           "design-system-components-combobox-展示--size-alignment",
           "design-system-components-combobox-展示--searchable",
+          "design-system-components-combobox-展示--searchable-inline-wrap",
+          "design-system-components-combobox-展示--inline-search-focus-contract",
+          "design-system-components-combobox-展示--field-keys-contract",
           "design-system-components-combobox-展示--loading-first-open",
           "design-system-components-combobox-展示--value-loading",
           "design-system-components-combobox-展示--remote-search-hint",
@@ -497,6 +507,7 @@
           "design-system-components-combobox-展示--unrestricted-option",
           "design-system-components-combobox-展示--unrestricted-contract",
           "design-system-components-combobox-展示--unrestricted-search",
+          "design-system-components-combobox-展示--unrestricted-inline-search",
           "design-system-components-combobox-展示--unrestricted-message-states",
           "design-system-components-combobox-展示--unrestricted-off-inert",
           "design-system-components-combobox-展示--in-data-table"
@@ -755,6 +766,7 @@
         ],
         "設計原則": [
           "design-system-components-dropdownmenu-設計原則--usage-guidance",
+          "design-system-components-dropdownmenu-設計原則--group-vs-separator-rule",
           "design-system-components-dropdownmenu-設計原則--item-type-rule",
           "design-system-components-dropdownmenu-設計原則--destructive-rule",
           "design-system-components-dropdownmenu-設計原則--suffix-rule"
@@ -805,7 +817,8 @@
           "design-system-components-field-展示--with-slider",
           "design-system-components-field-展示--slider-aligns-with-other-fields",
           "design-system-components-field-展示--slider-with-live-number-input",
-          "design-system-components-field-展示--form-validation"
+          "design-system-components-field-展示--form-validation",
+          "design-system-components-field-展示--inline-search-yield-width-contract"
         ],
         "設計規格": [
           "design-system-components-field-設計規格--overview",
@@ -841,7 +854,9 @@
           "design-system-components-fieldcontrolgroup-設計規格--accessibility"
         ],
         "設計原則": [
-          "design-system-components-fieldcontrolgroup-設計原則--usage-guidance"
+          "design-system-components-fieldcontrolgroup-設計原則--usage-guidance",
+          "design-system-components-fieldcontrolgroup-設計原則--content-guidelines",
+          "design-system-components-fieldcontrolgroup-設計原則--size-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -899,6 +914,7 @@
         ],
         "設計原則": [
           "design-system-components-fileupload-設計原則--usage-guidance",
+          "design-system-components-fileupload-設計原則--dropzone-visual-rule",
           "design-system-components-fileupload-設計原則--multiple-rule",
           "design-system-components-fileupload-設計原則--division-of-labor-rule",
           "design-system-components-fileupload-設計原則--error-feedback-rule"
@@ -1180,9 +1196,11 @@
           "design-system-components-peoplepicker-展示--single",
           "design-system-components-peoplepicker-展示--with-error",
           "design-system-components-peoplepicker-展示--multi",
+          "design-system-components-peoplepicker-展示--multi-inline-search",
           "design-system-components-peoplepicker-展示--hug-width-multi-stack",
           "design-system-components-peoplepicker-展示--multi-remove-focus-contract",
           "design-system-components-peoplepicker-展示--stack-remove-overlay-probe",
+          "design-system-components-peoplepicker-展示--overflow-remove-focus-contract",
           "design-system-components-peoplepicker-展示--clearable",
           "design-system-components-peoplepicker-展示--size-alignment",
           "design-system-components-peoplepicker-展示--async-directory-load",
@@ -1312,7 +1330,6 @@
       "tiers": {
         "展示": [
           "design-system-components-rating-展示--read-only-product-rating",
-          "design-system-components-rating-展示--interactive-review",
           "design-system-components-rating-展示--in-field"
         ],
         "設計規格": [
@@ -1325,6 +1342,7 @@
         ],
         "設計原則": [
           "design-system-components-rating-設計原則--usage-guidance",
+          "design-system-components-rating-設計原則--interactive-vs-read-only-rule",
           "design-system-components-rating-設計原則--whole-stars-and-compact",
           "design-system-components-rating-設計原則--yellow-star-convention"
         ]
@@ -1602,8 +1620,7 @@
         "展示": [
           "design-system-components-steps-展示--default",
           "design-system-components-steps-展示--non-linear",
-          "design-system-components-steps-展示--horizontal",
-          "design-system-components-steps-展示--multiple-expansion"
+          "design-system-components-steps-展示--horizontal"
         ],
         "設計規格": [
           "design-system-components-steps-設計規格--overview",
@@ -1644,6 +1661,7 @@
         ],
         "設計原則": [
           "design-system-components-switch-設計原則--usage-guidance",
+          "design-system-components-switch-設計原則--readonly-vs-disabled-rule",
           "design-system-components-switch-設計原則--disabled-opacity-rule"
         ]
       },
@@ -1811,6 +1829,7 @@
           "design-system-components-treeview-展示--file-browser",
           "design-system-components-treeview-展示--action-hover-state",
           "design-system-components-treeview-展示--stepper",
+          "design-system-components-treeview-展示--step-navigation-contract",
           "design-system-components-treeview-展示--with-checkbox",
           "design-system-components-treeview-展示--row-actions",
           "design-system-components-treeview-展示--delete-handoff",
@@ -1838,5 +1857,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1006
+  "totalStories": 1025
 }

@@ -127,7 +127,7 @@ export function PerfDebugOverlay() {
     // ── 模式輪播:每 4 秒換一種,各自統計「移動中出幀間隔」 ──
     // 消融四組。B/C 在 user 機器上量過:關掉反而更慢(53 / 79 / 144ms,且 C 只有 20 筆)——
     // 因果上不成立,代表那是雜訊,兩者都不是元兇。所以換成更有針對性的組合:
-    //   D 關掉「hover 才出現的行內動作鈕」(data-table.tsx:3629 的 group-hover:inline-flex)——
+    //   D 關掉「hover 才出現的行內動作鈕」(data-table.tsx 表頭 `data-col-menu` 那層的 group-hover:inline-flex)——
     //     它一出現就改變同列的版面,是 hover 期間唯一會動到版面的東西。
     //   E 全關(底色 + 動作鈕 + 骨架底),當作上界:E 若還是慢,成本就不在這些視覺效果裡。
     const OFF_BG = '[data-hovered]{background-color:transparent !important}'

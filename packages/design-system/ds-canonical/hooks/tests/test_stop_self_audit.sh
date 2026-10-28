@@ -25,6 +25,8 @@ GIT_DIR="$(git -C "$PROJECT_DIR" rev-parse --absolute-git-dir)"
 GIT_DIR="$(cd "$GIT_DIR" && pwd -P)"
 EVIDENCE_ROOT="$GIT_DIR/governance-runtime/evidence"
 cp "$REPO_ROOT/scripts/lib/governance-runtime-evidence.mjs" "$PROJECT_DIR/scripts/lib/governance-runtime-evidence.mjs"
+# Mechanism 3 動態門檻的唯一實作(hook 呼叫 `--thresholds`;Tests 25-27)
+cp "$REPO_ROOT/scripts/calc-self-audit-baseline.mjs" "$PROJECT_DIR/scripts/calc-self-audit-baseline.mjs"
 cp "$REPO_ROOT/packages/governance/src/closed-tool-execution.mjs" "$PROJECT_DIR/scripts/lib/closed-tool-execution.mjs"
 cat > "$PROJECT_DIR/scripts/verify-deep-audit-coverage.mjs" <<'VERIFY_FIXTURE'
 import { existsSync, readFileSync } from 'node:fs'
@@ -190,11 +192,17 @@ T2="$USER_MSG
 "'{"message":{"role":"assistant","content":[{"type":"text","text":"已修完,verified ✓ 全部 done"}]}}'
 run_test "Test 2: claim+no-verify → block" 1 "$T2"
 
-# Test 3: claim「verified」+ tsc 跑過 → no block
+# Test 3: claim「verified」+ build:lib 跑過 → no block
 T3="$USER_MSG
 "'{"message":{"role":"assistant","content":[{"type":"text","text":"已修完,verified"}]}}
+{"message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"npm run build:lib"}}]}}'
+run_test "Test 3: claim+build:lib → no block" 0 "$T3"
+
+# Test 3b(2026-10-07,N14(b) 補完):只跑裸 `npx tsc -b` 不算驗證 —— 本 repo 的 tsc -b 不檢查 DS 原始碼
+T3B="$USER_MSG
+"'{"message":{"role":"assistant","content":[{"type":"text","text":"已修完,verified"}]}}
 {"message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"npx tsc -b"}}]}}'
-run_test "Test 3: claim+tsc → no block" 0 "$T3"
+run_test "Test 3b: claim+只有 tsc -b → block" 1 "$T3B"
 
 # Test 4: claim「verified」+「撤回 claim」escape → no block
 T4="$USER_MSG
@@ -326,7 +334,7 @@ fi
 LARGE_WITH_VERIFY_TRANSCRIPT="$TMPDIR/large-with-verify.jsonl"
 printf '%s\n' "$USER_MSG" > "$LARGE_WITH_VERIFY_TRANSCRIPT"
 printf '%s\n' \
-  '{"message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"npx tsc -b"}}]}}' \
+  '{"message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"npm run build:lib"}}]}}' \
   >> "$LARGE_WITH_VERIFY_TRANSCRIPT"
 jq -cRs '{message:{role:"assistant",content:[{type:"text",text:.}]}}' \
   < "$LARGE_CLAIM_TEXT" >> "$LARGE_WITH_VERIFY_TRANSCRIPT"
@@ -514,8 +522,45 @@ run_test "Test 23: 本 turn 沒被擋,只是一般教學 → no block" 0 "$T23"
 
 T24=$(self_lock_transcript \
   'Permission to use Bash with command git branch -D foo has been denied.' \
-  '改用 git plumbing 繞過該限制:已執行 git update-ref -d refs/heads/foo,分支已刪除。')
-run_test "Test 24: 被擋後自己走等價傳輸、沒交辦 → no block" 0 "$T24"
+  '刪除本機分支被分類器擋下;依規則停在這一步,不換指令繞過,完成報告會寫明擋在哪一步與理由。')
+run_test "Test 24: 被擋後停在該處、記入完成報告、沒交辦 → no block" 0 "$T24"
+
+# Tests 25-27:Mechanism 3 動態門檻(2026-10-07 收掉原 TODO)。遙測開著、樣本 ≥ 100 → max(共識下限, mean+2σ);
+# 樣本不足或沒開遙測 → 共識下限 5。觀察面 = 遙測開著時 hook 寫的 self-audit-warnings.jsonl。
+threshold_transcript() {
+  local i
+  for i in 1 2 3 4 5 6; do
+    jq -nc --arg t "請確保第 $i 件事做完" '{message:{role:"user",content:[{type:"text",text:$t}]}}'
+  done
+  jq -nc '{message:{role:"assistant",content:[{type:"text",text:"好,繼續處理。"}]}}'
+}
+run_threshold_case() {
+  # $1 = state 子目錄名;$2 = baseline 樣本(空字串 = 不放檔)
+  local state="$GIT_DIR/governance-runtime/$1" transcript="$TMPDIR/threshold-$1.jsonl"
+  mkdir -p "$state"
+  [ -n "$2" ] && printf '%s' "$2" > "$state/self-audit-baseline-counts.jsonl"
+  threshold_transcript > "$transcript"
+  jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"threshold",last_assistant_message:"好,繼續處理。"}' \
+    | GOVERNANCE_TELEMETRY_OPT_IN=1 GOVERNANCE_READ_ONLY=0 GOVERNANCE_STATE_DIR="$state" bash "$HOOK" >/dev/null 2>&1
+  THRESHOLD_WARNINGS=$(cat "$state/self-audit-warnings.jsonl" 2>/dev/null || true)
+}
+expect_trigger_warning() {
+  local name="$1" want="$2" needle="$3"
+  local got=0
+  printf '%s' "$THRESHOLD_WARNINGS" | grep -qF "trigger-phrase 累計 6 次" && got=1
+  if [ "$got" = "$want" ] && { [ -z "$needle" ] || printf '%s' "$THRESHOLD_WARNINGS" | grep -qF "$needle"; }; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (trigger warning present=$got, want=$want)"; FAIL=$((FAIL+1))
+  fi
+}
+run_threshold_case "state-fixed" ""
+expect_trigger_warning "Test 25: 沒有基線樣本 → 共識下限 5,6 次會提醒" 1 "門檻 5"
+HIGH_BASELINE=$(for i in $(seq 1 120); do [ $((i % 2)) -eq 0 ] && t=4 || t=8; printf '{"trigger":%d,"topic":2,"fired":false}\n' "$t"; done)
+run_threshold_case "state-dynamic" "$HIGH_BASELINE"
+expect_trigger_warning "Test 26: 120 筆基線 mean 6 / σ 2 → 動態門檻 10,6 次不再提醒" 0 ""
+run_threshold_case "state-sparse" "$(printf '%s\n' "$HIGH_BASELINE" | head -n 99)"
+expect_trigger_warning "Test 27: 樣本只有 99 筆 → 仍用共識下限 5" 1 "門檻 5"
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

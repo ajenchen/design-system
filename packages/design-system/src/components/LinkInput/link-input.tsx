@@ -3,10 +3,12 @@ import { Pencil } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_CHROME_OWN_TARGET, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
+import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
+import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
@@ -33,22 +35,79 @@ function formatHostname(url: string): string {
 // edit mode 內 link state(showLink branch)也共用此 helper,確保「編輯態的 link 顯示」與
 // view mode 的視覺完全一致(SSOT)。
 // 連結 hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
+// **連結的可點範圍 = 網址文字本身**(link-input.spec.md「Link 狀態」;2026-10-13 起所有模式適用,待辦總帳 Q3a):
+// `inline-block` 讓盒子只有文字那麼寬,`max-w-full` + truncate 讓太長時縮到外層寬並截斷,`align-top` 抵掉
+// inline-block + overflow 時基線落到下緣的那一截(靜止畫面 0 像素差,靠左 / 靠右 / 置中三種對齊不動)。
+// 2026-10-13 前是 `block`:block 盒子撐滿外層,文字右邊看起來空白的那一段點下去會開網頁 —— 09-26 只把編輯模式那一支的外層
+// 改成 flex 修掉,唯讀 / 檢視模式與表格連結格(用檢視模式)仍是整行連結。改這一處,全部模式一起好。
+// 不用 `w-fit`:block + w-fit 會讓靠右 / 置中的連結欄文字跑到左邊(實測靠右時文字左緣 1546 → 1480)。
 function renderLinkAnchor(value: string, label?: string) {
-  const displayText = label || formatHostname(value)
+  const displayText = linkDisplayText(value, label)
   return (
     <a
       href={value}
       target="_blank"
       rel="noopener noreferrer"
-      className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
+      className="inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
-          display="block":anchor 是 block container(對照 breadcrumb.tsx anchor 內同型消費)。 */}
+          display="block":anchor 是 inline-block 容器,裡面照樣是 block formatting context,截斷照常運作(對照 breadcrumb.tsx anchor 內同型消費)。 */}
       <TruncatedText display="block">{displayText}</TruncatedText>
     </a>
   )
 }
+
+/** 站內路徑:以 `/` 開頭、解析後仍在同一個網站(擋掉 `//host`、`/\\host`、夾 tab 換行的那些被瀏覽器正規化成別的網站的寫法)。 */
+const SAME_SITE_PROBE = 'https://same-site.invalid'
+function isSameSitePath(value: string): boolean {
+  if (!value.startsWith('/')) return false
+  try {
+    return new URL(value, SAME_SITE_PROBE).origin === SAME_SITE_PROBE
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 顯示一個網址值:能安全點的才畫成連結,其他一律畫成一般文字(2026-10-13,待辦總帳 Q3e)。
+ * 能點 = 合法的 http(s) 網址(與編輯模式「只有合法才顯示成連結」同一支 `isValidUrl`,link-input.spec.md「驗證」)
+ * **或站內路徑**(`/projects/8821/tasks/4821` 這種同一個網站裡的位址 —— 修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;
+ * 它解析後一定是本站的 http(s),不是「不合法的字」,不在這次要修的範圍)。
+ * 唯讀 / 檢視模式與表格連結格(`DataTable/cell-registry.tsx` UrlCell 用檢視模式)都經這裡 ——
+ * 打字少了 https://、`javascript:` / `data:` 開頭、中間有空白的字,一律不會成為 `href`。編輯模式的驗證不變(只收 http(s))。
+ */
+function renderLinkValue(value: string, label?: string) {
+  if (isLinkable(value)) return renderLinkAnchor(value, label)
+  return <TruncatedText display="block">{linkDisplayText(value, label)}</TruncatedText>
+}
+
+/** 能安全點的值(合法 http(s) 網址或站內路徑;見上方 renderLinkValue) */
+function isLinkable(value: string): boolean {
+  return isValidUrl(value) || isSameSitePath(value)
+}
+
+/**
+ * 一個網址值在畫面上顯示的字 —— 連結、一般文字、停用的灰字**同一份**(2026-10-21,r1b fields F2 收成一支):
+ * 有 `label` 用 label;能點的顯示主機名(`formatHostname`);其他顯示原字串 —— 不走 formatHostname:`mailto:` / `tel:` / `javascript:` / `data:`
+ * 解析得動、hostname 卻是空的,會整格空白(2026-10-13 探針實測)。2026-10-21 前停用那一支另寫 `label || formatHostname(value)`,
+ * 這幾種值在停用時被畫成「-」(看起來像沒填;唯讀 / 檢視顯示原字串,link-input.spec.md「readonly / disabled」)。
+ */
+function linkDisplayText(value: string, label?: string): string {
+  if (label) return label
+  return isLinkable(value) ? formatHostname(value) : value
+}
+
+/**
+ * 裝著連結的那一層外殼:**只給 `min-w-0`(在 flex 裡縮得下),不裁切**(2026-10-21,r1b DT-01)。
+ * 截斷由被截的那個葉節點自己做 —— 連結 = `renderLinkAnchor` 的 `inline-block max-w-full truncate`、不是連結的值 = `TruncatedText`、
+ * 空值與停用的純文字各自 `block truncate`。外殼若再 `truncate`(`overflow:hidden`),連結的焦點框(全域外描邊,往外 2px)
+ * 會被裁到只剩右邊一條 2px、看起來像文字游標 —— 2026-10-21 前鍵盤停在表格連結格與唯讀 / 檢視的連結上都是這樣。
+ * `ds-canonical/references/focus-canonical.md`「問題二」→「正當障礙」:截斷用的 wrapper 不是正當障礙,修 wrapper、框照樣往外
+ *(DataTable 開關格 2026-09-07 同一例);編輯模式連結狀態那一支本來就是 `flex-1 min-w-0 flex`,不裁。
+ * 閘:`scripts/data-table-link-cell-invariant.mjs` L8(焦點框四邊真的畫出來,截圖比對)。
+ */
+const LINK_HOST_CLASS = 'min-w-0'
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -104,6 +163,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
+      onBlur: onBlurProp,
+      onKeyDown: onKeyDownProp,
       ...props
     },
     ref
@@ -133,11 +194,25 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     const [localValue, setLocalValue] = React.useState(value ?? '')
     const [localError, setLocalError] = React.useState(false)
     const inputRef = React.useRef<HTMLInputElement | null>(null)
+    const pencilRef = React.useRef<HTMLButtonElement | null>(null)
+    // 鍵盤結算(Enter 提交 / Esc 取消)後焦點去哪(同 InlineEdit「退出 edit 態(focus 分流)」):結算讓輸入框卸載(切回連結狀態)時,
+    // 焦點本來會掉到 body → 交給鉛筆(編輯入口);輸入框還在(網址無效 / 清空)就留在輸入框。只在焦點真的掉了才接手,焦點已被別處接走不搶。
+    // 2026-10-01 前 Enter 走 blur、Esc 後焦點掉到 body(實測);同日第一版在 keydown 當下同步聚焦鉛筆、沒 preventDefault,
+    // 同一下 Enter 的 keypress 落到鉛筆上又把編輯打開 —— 現改走 Field/field-edit-keys.ts(它會 preventDefault),焦點在 commit 之後才搬。
+    const returnFocusRef = React.useRef(false)
 
     // Sync external value → local
     React.useEffect(() => {
       if (!editing) setLocalValue(value ?? '')
     }, [value, editing])
+
+    React.useEffect(() => {
+      if (!returnFocusRef.current || editing) return
+      returnFocusRef.current = false
+      const active = document.activeElement
+      if (active && active !== document.body && active.isConnected) return
+      pencilRef.current?.focus()
+    })
 
     // Merge refs
     const setRef = React.useCallback((el: HTMLInputElement | null) => {
@@ -165,17 +240,18 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         // — 對齊跨 Field family view 視覺尺寸統一。原無 font-size class → 用 browser default
         // 字體 → 跟其他 Field view 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
-        return <span className={cn(fieldDisplayTextClass(size), 'block truncate')}>{renderLinkAnchor(value, label)}</span>
+        // 外層不裁:截斷由裡面的連結 / TruncatedText 自己做(見 LINK_HOST_CLASS)
+        return <span className={cn(fieldDisplayTextClass(size), 'block', LINK_HOST_CLASS)}>{renderLinkValue(value, label)}</span>
       }
       return (
         <div
           className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), className)}
           data-field-mode="view"
         >
-          <span className="flex-1 min-w-0 truncate">
+          <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {value
-              ? renderLinkAnchor(value, label)
-              : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
+              ? renderLinkValue(value, label)
+              : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
             }
           </span>
         </div>
@@ -199,7 +275,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 研究後照做;規則與出處 link-input.spec.md「Link 狀態」)。
     // 外框滑過會變色(Field 家族 hover:border-border-hover),變色的地方點下去就要有反應 ——
     // hit-area-canonical.md 要防的「看到亮起來卻點不到」。連結與鉛筆照它們自己的行為走:
-    // 判斷用 Field 家族共用的「外框裡自有行為的東西」清單(field-wrapper.tsx FIELD_CHROME_OWN_TARGET),不另寫一份。
+    // 判斷用全 DS 共用的「容器裡自有行為的東西」判準(lib/pointer-press.ts;Field 外框、cmdk 選單同一份),不另寫一份。
     // 用 click 不用 mousedown:與鉛筆同一個觸發時機;按下後拖出外框才放開,click 落在外框之外的共同祖先,不會觸發這裡。
     // 拖曳選字不是點一下:按在空白處、拖過網址文字、在外框裡放開,瀏覽器仍會在外框上發 click;
     // 此時直接看「外框裡有沒有被選起來的文字」,有就不進編輯(量的就是要保護的那件事,不拿移動距離當代理)。
@@ -207,28 +283,35 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       const chrome = event.currentTarget
       const target = event.target
       if (!(target instanceof Element)) return
-      const own = target.closest(FIELD_CHROME_OWN_TARGET)
-      if (own && own !== chrome && chrome.contains(own)) return
+      if (isOwnPointerTarget(chrome, target)) return
       const selection = window.getSelection()
       if (selection && !selection.isCollapsed && selection.anchorNode && chrome.contains(selection.anchorNode)) return
       handleEdit()
     }
 
-    const handleBlur = () => {
-      setEditing(false)
+    /** 結算草稿(blur / Enter 共用):空白 = 清值;合法 = 提交;不合法 = 紅框、留在輸入框。回傳是否離開了編輯態。 */
+    const settleDraft = () => {
       const trimmed = localValue.trim()
       if (!trimmed) {
         // Empty is OK — clear value
         setLocalError(false)
+        setEditing(false)
         onChange?.('')
-        return
+        return true
       }
       if (isValidUrl(trimmed)) {
         setLocalError(false)
+        setEditing(false)
         onChange?.(trimmed)
-      } else {
-        setLocalError(true)
+        return true
       }
+      setLocalError(true)
+      return false
+    }
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      settleDraft()
+      onBlurProp?.(e)
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,19 +320,34 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       if (localError) setLocalError(false)
     }
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') inputRef.current?.blur()
-      if (e.key === 'Escape') {
+    // Esc 層(ds-canonical/references/keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」):正在編輯、或有打了還沒存的字,
+    // 這一下 Esc 歸本元件(放在 Dialog / Sheet 裡第一下只取消編輯、不關浮層);乾淨的輸入框沒有這一層。
+    const ownsEscape = editing || localError || localValue !== (value ?? '')
+    // Enter / Esc 走全 DS 就地編輯鍵盤結算 SSOT(Field/field-edit-keys.ts:IME guard + preventDefault + Esc 分層);2026-10-01 前這裡自己寫
+    const settleKeys = editSettleKeyProps({
+      onCommit: () => { returnFocusRef.current = true; settleDraft() },
+      onCancel: () => {
+        returnFocusRef.current = true
         setLocalValue(value ?? '')
         setLocalError(false)
         setEditing(false)
-      }
+      },
+      escapeLayer: ownsEscape,
+    })
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // 自己的草稿 / 編輯態是同一個 `<input>` 上更內層的那一層:Esc 先歸它,consumer 自己接的 onKeyDown 下一下才輪到
+      //(LinkInput 不是 useFormValidation getInputProps 的支援對象:連結狀態不渲 input,表單的 props 到不了 —— 待辦總帳 N85)
+      if (e.key === 'Escape' && ownsEscape) { settleKeys.onKeyDown(e); return }
+      // 其餘鍵 consumer 先跑、擋了預設就不走元件的(同 Rating / Select / NumberInput 的寫法;2026-10-01 前 `{...props}` 在後,consumer 的 onKeyDown 整支蓋掉元件的)
+      onKeyDownProp?.(e)
+      if (e.defaultPrevented) return
+      settleKeys.onKeyDown(e)
     }
 
-    // readonly — 顯示藍色連結（可點擊）
+    // readonly — 顯示藍色連結（可點擊);值不是合法 http(s) 網址時畫成一般文字(renderLinkValue)
     // disabled — 顯示純文字 fg-disabled（不可點擊）
     if (!isEditable) {
-      const displayText = value ? (label || formatHostname(value)) : null
+      const displayText = value ? linkDisplayText(value, label) : null
       return (
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}
@@ -258,14 +356,14 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           // 否則 axe 把灰化連結文字當一般文字誤報 color-contrast(modes / 色彩對照 / 尺寸對照三則 story)
           aria-disabled={resolvedMode === 'disabled' || undefined}
         >
-          <span className="flex-1 min-w-0 truncate">
+          <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {resolvedMode === 'disabled'
               ? (displayText
-                  ? <span className="text-fg-disabled">{displayText}</span>
-                  : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
+                  ? <span className="block truncate text-fg-disabled">{displayText}</span>
+                  : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
               : (value
-                  ? renderLinkAnchor(value, label)
-                  : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
+                  ? renderLinkValue(value, label)
+                  : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
             }
           </span>
         </div>
@@ -285,13 +383,14 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           data-error={error ? '' : undefined}
           onClick={handleLinkChromeClick}
         >
-          {/* flex:連結是 flex item,寬度 = 文字本身、太長時縮到欄寬截斷(min-w-0 + truncate)。
-              不撐滿整行 —— 文字右邊看起來空白的那一段屬於外框,點下去進入編輯,不是開網頁。
-              只改這個分支:view / readonly 的外框沒有第二個動作,連結維持原樣。 */}
+          {/* 連結的寬度 = 文字本身、太長時縮到欄寬截斷 —— 由連結自己保證(renderLinkAnchor 的 inline-block + max-w-full),
+              所有模式同一句(2026-10-13 起;此前只有這一支靠外層 flex 縮回文字寬,唯讀 / 檢視仍撐滿整行)。
+              文字右邊看起來空白的那一段屬於外框,點下去進入編輯,不是開網頁。flex 外層保留:讓截斷吃得到外框扣掉鉛筆後的寬度。 */}
           <span className="flex-1 min-w-0 flex">
             {value && renderLinkAnchor(value, label)}
           </span>
           <ItemInlineAction
+            ref={pencilRef}
             size={size ?? 'md'}
             action={{ icon: Pencil, label: '編輯連結', onClick: handleEdit }} // i18n-allow: DS default inline-action label
           />
@@ -317,10 +416,6 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           ref={setRef}
           type="url"
           id={idProp ?? fieldCtx?.id}
-          value={localValue}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           aria-invalid={error || undefined}
           aria-required={fieldCtx?.required || undefined}
@@ -328,6 +423,13 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
           className={bareInputStyles}
           {...props}
+          // 元件自己的 handler 列在 {...props} 之後(consumer 的在 handler 內先跑);settleKeys 帶的 Esc 層宣告(data-escape-layer)一起掛,
+          // 它的 onKeyDown 由下一行的 handleKeyDown 包住(先分 Esc 歸誰、再 consumer、再結算)
+          {...settleKeys}
+          value={localValue}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
         />
       </div>
     )

@@ -54,9 +54,10 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['autoHeight', 'boolean', 'false', 'true=隨內容 / false=填滿 viewport(body 捲動)'],
+                ['height', "'fill' | 'hug'", "'fill'", "'hug'=隨內容長高 / 'fill'=填滿可用高度(body 捲動);判準:開啟期間內容高度會不會變(舊名 autoHeight 已停用)"],
+                ['maxHeight', 'string | number', '—', '只能選更矮的上限:min(視窗可用高度, 此值)'],
                 ['maxWidth', 'string | number', "'512px'", 'Content 最大寬度(傳 number 視為 px,亦可傳 CSS 值如 32rem),受 viewport inset 限制'],
-                ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作 cluster(prev/next/⋮);DS 自動在 actions 與 Close X 間放 ButtonDivider(關閉誤觸保護,action-bar.spec.md:281)'],
+                ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作 cluster(prev/next/⋮);DS 自動在 actions 與 Close X 間放 ButtonDivider(關閉誤觸保護,action-bar.spec.md「五、分隔線規則」)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -73,12 +74,12 @@ export const Inspector: Story = {
   parameters: {
     docs: {
       story: openOverlayDocsStory('520px'),
-      description: { story: '右側 Controls 切 DialogContent props 即時 render,取代 Figma inspect。調整 `maxWidth` / `autoHeight` 看寬度 tier 與高度模式差異。Dialog 預設 open=true,直接展示內容不需 trigger。' },
+      description: { story: '右側 Controls 切 DialogContent props 即時 render,取代 Figma inspect。調整 `maxWidth` / `height` 看寬度 tier 與高度模式差異。Dialog 預設 open=true,直接展示內容不需 trigger。' },
     },
   },
   args: {
     maxWidth: 512,
-    autoHeight: true,
+    height: 'hug',
   },
   argTypes: {
     maxWidth: {
@@ -86,9 +87,10 @@ export const Inspector: Story = {
       options: [400, 480, 512, 560, 720],
       description: '400=confirmation / 480=simple form / 512★default / 560=detailed / 720=rich',
     },
-    autoHeight: {
-      control: 'boolean',
-      description: 'true=隨內容 / false=填滿 viewport(body 捲動,防內容跳動)',
+    height: {
+      control: 'inline-radio',
+      options: ['fill', 'hug'],
+      description: "'hug'=隨內容 / 'fill'=填滿可用高度(body 捲動,防內容跳動)",
     },
   },
   render: (args) => (
@@ -123,7 +125,7 @@ export const Inspector: Story = {
 }
 
 export const HeightBehavior: Story = {
-  name: '高度行為（預設填滿 vs autoHeight）',
+  name: '高度行為(預設填滿 vs 隨內容)',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -177,13 +179,13 @@ export const HeightBehavior: Story = {
       </div>
 
       <div>
-        <H3>autoHeight</H3>
+        <H3>隨內容長高(height="hug")</H3>
         <Desc>高度隨內容,超過 viewport 時套 max-height 安全帽。適合內容量已知且穩定的場景(確認框、短表單)。</Desc>
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="tertiary">autoHeight(短確認)</Button>
+            <Button variant="tertiary">隨內容長高(短確認)</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={440}>
+          <DialogContent height="hug" maxWidth={440}>
             <DialogHeader>
               <DialogTitle>確認儲存?</DialogTitle>
             </DialogHeader>
@@ -237,7 +239,7 @@ export const SizeMatrix: Story = {
               <DialogTrigger asChild>
                 <Button variant="tertiary" size="sm">maxWidth={w}</Button>
               </DialogTrigger>
-              <DialogContent autoHeight maxWidth={w}>
+              <DialogContent height="hug" maxWidth={w}>
                 <DialogHeader>
                   <DialogTitle>示範 Dialog({w}px)</DialogTitle>
                 </DialogHeader>
@@ -254,7 +256,7 @@ export const SizeMatrix: Story = {
         </div>
         <p className="text-footnote text-fg-muted mt-3">
           Dialog 在 viewport 小於 `maxWidth + 96px` 時自動縮到 inset 內——48px 四邊 viewport padding
-          是硬上限(token: `--layout-space-bottom`)。
+          是硬上限(token: `--layout-space-viewport-inset`)。
         </p>
       </div>
     </div>
@@ -298,7 +300,7 @@ export const StateBehavior: Story = {
           <DialogTrigger asChild>
             <Button variant="tertiary">預設 Dialog(試 ESC / 點 overlay)</Button>
           </DialogTrigger>
-          <DialogContent autoHeight maxWidth={440}>
+          <DialogContent height="hug" maxWidth={440}>
             <DialogHeader>
               <DialogTitle>一般表單 Dialog</DialogTitle>
             </DialogHeader>
@@ -324,7 +326,7 @@ export const StateBehavior: Story = {
             <Button variant="tertiary" startIcon={Trash2}>Force-decide Dialog(禁 ESC / overlay)</Button>
           </DialogTrigger>
           <DialogContent
-            autoHeight
+            height="hug"
             maxWidth={440}
             onEscapeKeyDown={(e) => e.preventDefault()}
             onPointerDownOutside={(e) => e.preventDefault()}
@@ -379,7 +381,7 @@ export const ColorMatrix: Story = {
               <tr><Td>Header / Footer 垂直 padding</Td><Td mono>--layout-space-tight</Td><Td>12/16 px</Td></tr>
               <tr><Td>Body 垂直 padding(top)</Td><Td mono>--layout-space-tight</Td><Td>12/16 px</Td></tr>
               <tr><Td>Body 垂直 padding(bottom)</Td><Td mono>--layout-space-bottom</Td><Td>48 px(固定)</Td></tr>
-              <tr><Td>Viewport inset(四邊)</Td><Td mono>--layout-space-bottom</Td><Td>48 px(四邊統一)</Td></tr>
+              <tr><Td>Viewport inset(四邊)</Td><Td mono>--layout-space-viewport-inset</Td><Td>48 px(四邊統一)</Td></tr>
               <tr><Td>Footer 按鈕間距</Td><Td mono>gap-2</Td><Td>8 px</Td></tr>
             </tbody>
           </table>
@@ -412,7 +414,7 @@ export const ColorMatrix: Story = {
             <tbody>
               <tr><Td>進場</Td><Td mono>fade-in-0 + zoom-in-95(從中心淡入 + 輕微縮放,不位移)</Td><Td mono>--motion-duration-surface / --motion-easing-enter</Td></tr>
               <tr><Td>離場</Td><Td mono>fade-out-0 + zoom-out-95</Td><Td mono>--motion-duration-surface / --motion-easing-exit</Td></tr>
-              <tr><Td>reduced-motion</Td><Td mono>motion-reduce:animate-none</Td><Td>—</Td></tr>
+              <tr><Td>reduced-motion</Td><Td mono>不播(surfaceMotion 只在 motion-safe 下宣告動畫)</Td><Td>—</Td></tr>
             </tbody>
           </table>
         </div>

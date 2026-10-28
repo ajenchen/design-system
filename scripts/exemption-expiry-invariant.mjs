@@ -545,7 +545,12 @@ export function selftest(now = todayUtc(), log = console.log) {
   // 時間是輸入:同一份輸入,now 往前推 2 天,beta(181 天)就變成 179 天 → 不過期
   const earlier = evaluate({ now: new Date(now.getTime() - 2 * DAY), files, registries, baseline: { reviewAfterDays: REVIEW_AFTER_DAYS, entries: [] } })
   check(earlier.markers.find((m) => m.marker === '@beta-allow')?.kind === 'ok', 'now 往前 2 天 → 181 天那筆變 179 天,不過期(時間是輸入)')
-  check(evaluate({ now, files: [], registries: [], baseline: b }).markers.length === 0 && verdictOf(evaluate({ now, files: [], registries: [], baseline: b })).status === 'INSTRUMENT-FAIL', '0 檔 0 標記 → INSTRUMENT-FAIL(沒量到 ≠ 沒有)')
+  // 通過行**不得印出儀器失效的字面標記**:共用判讀(lib/gate-selftest-meta.mjs classifyGateRun)看到輸出裡有那個字就判儀器失效 ——
+  // 2026-10-14 前這一行照印,meta-test 的對照組因此在 main 與 PR 都紅「對照組儀器失效」(SM2b ②,夜間被依賴安裝擋著從沒被看見)。
+  // 判讀不放寬(放寬會漏判真正的儀器失效),改的是這裡的措辭;狀態值本身照舊比對。失敗行照印字面,紅就是紅。
+  const emptyVerdict = verdictOf(evaluate({ now, files: [], registries: [], baseline: b })).status
+  check(evaluate({ now, files: [], registries: [], baseline: b }).markers.length === 0 && emptyVerdict === 'INSTRUMENT-FAIL',
+    emptyVerdict === 'INSTRUMENT-FAIL' ? '0 檔 0 標記 → 判為儀器失效(沒量到 ≠ 沒有)' : `0 檔 0 標記應判為儀器失效,實得 ${emptyVerdict}`)
   log(bad ? `\n✗ selftest ${bad} 項不符` : '\n✓ selftest:無主 / 過期會紅、合法 / 有主會放、長得像的不算、棘輪與時間輸入都成立')
   return bad === 0
 }

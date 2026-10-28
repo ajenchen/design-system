@@ -50,7 +50,7 @@ TreeView、DataTable row 與 DataTable column 都使用 `@dnd-kit/core` 的
 > 補救路徑登記在 `data-table.spec.md`「列重排的鍵盤與單指標路徑」段:先補 WCAG 2.5.7 要求的
 > 「上移／下移」選單項(同時解本 invariant),再議是否加 modifier+arrow 加速器。
 > **加速器需要一個「目前在哪一列」的游標,而 DataTable 尚無 roving/virtual focus
-> (`data-table.spec.md:671`);勾選狀態不可充當該游標 —— 違反 `tree-view.spec.md:130`
+> (`data-table.spec.md`「A11y 預設」的 **Focus** 段);勾選狀態不可充當該游標 —— 違反 `tree-view.spec.md:133`
 > 「焦點跟選取分離」。**
 
 7. **同一能力跨元件必進 SSOT;SSOT 不夠就以世界級方式擴充 SSOT,不得分岔**
@@ -78,6 +78,14 @@ TreeView、DataTable row 與 DataTable column 都使用 `@dnd-kit/core` 的
    dnd-kit `KeyboardSensor` 是「按住 → 方向鍵搬 → 放開」的抓取模式,啟動鍵 Enter / 空白鍵正是樹的「選取目前列」
    (`tree-view.tsx` 鍵盤重排段註解;2026-09-25 更正:舊理由「因 `aria-activedescendant`」在列改為真焦點後已不成立,待辦總帳 B9)；
    DataTable 無 `SortableContext`，不可誤套 `sortableKeyboardCoordinates`。
+
+8. **拖曳中的 `Esc` 只取消拖曳,不關外層浮層、不動容器自己的 `Esc`**(2026-10-01,AI 推導;跨元件規則住
+   `keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」表的「拖曳中」列)。dnd-kit 的 KeyboardSensor 把 `Esc` 當取消鍵、
+   PointerSensor 在 document 上聽 `Esc` 取消指標拖曳,**兩者都不看 `defaultPrevented`**,所以拖曳一定會被取消;問題是同一下還會被
+   Popover / Dialog 關掉(排序面板 / 欄位面板裡鍵盤搬條件時按 `Esc`,2026-10-01 實測一下少兩層),DataTable 自己的 `Esc`(清格游標)也跟著動。
+   四個 `DndContext` 一律 spread `lib/drag-announcements.ts` `useDragAccessibility().escapeLayer` 到裝著可拖項目的容器:拖曳中掛上
+   `data-escape-layer` 讓浮層守門留住這一下,並在捕獲階段把它標成**獨占**(`lib/overlay-escape.ts` `claimEscape`),容器與其他控件的
+   `isEscapeForControl` 都讀到 false。閘:`scripts/escape-and-focus-contract-invariant.mjs` E-drag / E-drag-table。
 
 ## Collision canonical
 

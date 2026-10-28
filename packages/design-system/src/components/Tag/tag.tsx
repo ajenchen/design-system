@@ -216,7 +216,7 @@ function TagInner(
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):
-      // 用 CSS var `--combobox-tag-area-inline-size`(由 Combobox useOverflowCount JS-injected)取代
+      // 用 CSS var `--combobox-tag-area-inline-size`(由 `../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount` 寫在容器上)取代
       // `min(100%, 10rem)` cyclic percentage。CSS Sizing 3 §5.2.1:percentage 在 indefinite containing
       // block 退化為 initial value → Round 4 的 100% 沒 enforce。改 explicit px 值(JS measured)避此 trap。
       // unbounded=true:cap = inject 寬(回 cell-as-input narrow cell 原 behavior)
@@ -237,7 +237,7 @@ function TagInner(
   )
 
   // 永遠 wrap Tooltip、以 open 控制可見(對齊 truncated-text.spec.md:49「永遠 wrap」+ :55「❌ 條件 wrap」canonical
-  // + useTruncated 家族;tooltip.principles.stories.tsx:190「沒被截斷就不該顯示 tooltip」由 open={false} 機械保證)。
+  // + useTruncated 家族;tooltip.principles.stories.tsx#NeedsTooltipRule「沒被截斷就不該顯示 tooltip」由 open={false} 機械保證)。
   // 未截斷 open={false} → tooltip 靜默(TooltipTrigger asChild 只把 handler/data-state 合併到 tag div,零多餘 DOM、
   // 視覺與裸 tag 等價,pixel-identical)。always-wrap 保 tag div 生命週期穩定 → isTruncated false→true 不 remount:
   // 先前條件-wrap(未截斷回裸 tag / 截斷才 wrap)切換 JSX 樹會 remount tag div,但 useTruncated deps=[children] 未變

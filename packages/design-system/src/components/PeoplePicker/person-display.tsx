@@ -32,7 +32,7 @@ export interface PersonData {
    *  不是「user 沒設定」。ProfileCard 在 undefined 期間隱藏整 status block,**禁** render「Status not set」
    *  placeholder 文字。 */
   status?: 'online' | 'away' | 'busy' | 'offline'
-  /** Status 訊息(ProfileCard status section)。只在 status defined 時 render,缺則顯 `—` placeholder。
+  /** Status 訊息(ProfileCard status section)。只在 status defined 時 render,缺則顯半形 `-` placeholder(同 profile-card.tsx `FIELD_PLACEHOLDER`)。
    *  Status undefined 整 block skip(無 statusMessage 也跟著 skip)。 */
   statusMessage?: React.ReactNode
   /** **2026-05-07 v15.7 user directive**:ProfileCard default 只 render `id` + `employeeNumber`,
@@ -155,7 +155,15 @@ function PersonAvatar({
 // outer 改 items-start + Avatar 外包 ItemPrefix primitive consumption。單行視覺 = items-center 等效;
 // 多行(autoRowHeight cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
 // 對齊 TreeView / MenuItem / SelectionItem 共用 ItemPrefix wrap chevron/icon/avatar canonical。
-function PersonDisplay({ value, size = 'md', disabled = false, onRemove }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void }) {
+function PersonDisplay({ value, size = 'md', disabled = false, onRemove, nameYielded = false }: {
+  value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void
+  /**
+   * @internal PeoplePicker 多人只選 1 位 × 欄位內搜尋框開著時用(people-picker.spec.md §C open + inline-search 列,2026-10-07 待辦總帳 K4):
+   * 名字讓位給搜尋框 —— 頭像留在原位,名字的位置空出來給插入點。名字那一格換成零寬的佔位,頭像到它之間仍是同一個 `gap-2`,
+   * 所以接在後面的搜尋框剛好從原本名字的那條線開始(打開前後字不跳位);整顆不撐滿(不帶 `w-full`),搜尋框才排得進同一列。
+   */
+  nameYielded?: boolean
+}) {
 const emptyDisplay = useFieldEmptyDisplay()
   if (!value) return <span className="text-foreground">{emptyDisplay}</span>
 
@@ -167,14 +175,14 @@ const emptyDisplay = useFieldEmptyDisplay()
   // + inner name span `flex-1 min-w-0 truncate` 真實 truncate-with-ellipsis 顯示。
   // 對齊 GitHub Primer ActionList / Slack users_select / Atlassian UserPicker truncation canonical。
   return (
-    <span className="flex items-start gap-2 min-w-0 w-full">
+    <span className={cn('flex items-start gap-2 min-w-0', !nameYielded && 'w-full')}>
       <ItemPrefix>
         <span className="relative inline-flex group/avatar">
           <PersonAvatar person={person} size={size} disabled={disabled} />
           {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
         </span>
       </ItemPrefix>
-      <span className="truncate flex-1 min-w-0">{person.name}</span>
+      {nameYielded ? <span aria-hidden className="w-0" /> : <span className="truncate flex-1 min-w-0">{person.name}</span>}
     </span>
   )
 }
@@ -203,7 +211,7 @@ function MultiPersonDisplay({
   /**
    * 2026-05-15 codex Round 5 C+ SSOT fix:`measured=true` 啟動 container-width 量測(取代 hardcode `max ?? 3`)
    * → view + edit stack 同 algorithm(同 cell width → 同 overflow 判斷),不再 view 用固定 3 vs edit
-   * 用 useOverflowCount。對齊 field-controls.spec.md:286 「4-mode 共享 renderer」contract + user round 3
+   * 用 useOverflowCount。對齊 field-controls.spec.md「共享 contract」(a) 4-mode 共享 renderer contract + user round 3
    * verbatim「同空間兩判斷點」SSOT directive。Default false 保 backward compat(non-cell context 仍 max ?? 3)。
    */
   measured?: boolean
@@ -218,7 +226,7 @@ function MultiPersonDisplay({
   // 2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus):消費 shared `avatar-stack-overflow`
   // primitive。原 inline canvas-based formula 是 dual-implementation 違反 user SSOT「同 cell width 同
   // overflow 判斷」(edit path 用 Combobox useOverflowCount DOM offsetWidth / view path 用 inline
-  // canvas)。**抽 primitive 統一**:view + edit 共用 `getAvatarStackVisibleCount` formula。
+  // canvas;以上是 2026-05-15 當時 —— useOverflowCount 2026-10-13 起住 ../OverflowIndicator/overflow-tag-list.tsx、量 getBoundingClientRect)。**抽 primitive 統一**:view + edit 共用 `getAvatarStackVisibleCount` formula。
   // SSOT in `./avatar-stack-overflow.ts`,M14 mechanical guard 防 future drift。
   const containerRef = React.useRef<HTMLSpanElement>(null)
   const [measuredCount, setMeasuredCount] = React.useState<number | null>(null)
@@ -241,7 +249,7 @@ function MultiPersonDisplay({
     const box = el.parentElement ?? el
     // **2026-09-07(B1)修:`width='hug'` 下量父層還是會自我回饋。**
     //
-    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx:134)—— 它的寬度
+    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx#fieldWrapperStyles)—— 它的寬度
     // **就是內容決定的**,所以裡面那層 `flex-1 min-w-0` 也跟著內容縮:少畫一顆 →
     // 父層變窄 → 再少畫一顆,棘輪只是往上搬了一層,沒有被拆掉。
     //

@@ -35,15 +35,17 @@ import './column-types' // ColumnMeta declaration merging
 // ── Person sample data canonical ──
 // 對齊 ProfileCard.stories「Default」預設呈現:name + subtitle + status + statusMessage + fields
 // avatar.spec.md DS-wide:所有 person avatar hover 必出現 ProfileCard,展示資訊一致(不可精簡)
+// 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「defaultFieldValues 優於 fields 同名 label」;閘 overlay-story-contract S8)
 import type { PersonData } from '@/design-system/components/PeoplePicker/person-display'
+import { productCatalog } from '@/design-system/stories-helpers/data/product-catalog'
 
 const SELLERS: PersonData[] = [
-  { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/128?u=alice', description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', fields: [{ label: 'ID', value: 'AWW001' }, { label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
-  { name: 'Bob Christopher Chen', avatarUrl: 'https://i.pravatar.cc/128?u=bob', description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', fields: [{ label: 'ID', value: 'BCC002' }, { label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
-  { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/128?u=carol', description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', fields: [{ label: 'ID', value: 'CL003' }, { label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
-  { name: 'Alexander Hamilton Zhang', avatarUrl: 'https://i.pravatar.cc/128?u=alex', description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', fields: [{ label: 'ID', value: 'AHZ004' }, { label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
-  { name: 'David Wu', avatarUrl: 'https://i.pravatar.cc/128?u=david', description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', fields: [{ label: 'ID', value: 'DW005' }, { label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
-  { name: 'Elizabeth Montgomery Johnson', avatarUrl: 'https://i.pravatar.cc/128?u=elizabeth', description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', fields: [{ label: 'ID', value: 'EMJ006' }, { label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
+  { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/128?u=alice', description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
+  { name: 'Bob Christopher Chen', avatarUrl: 'https://i.pravatar.cc/128?u=bob', description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', id: 'BCC002', employeeNumber: 'EMP-1002', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
+  { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/128?u=carol', description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', id: 'CL003', employeeNumber: 'EMP-1003', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
+  { name: 'Alexander Hamilton Zhang', avatarUrl: 'https://i.pravatar.cc/128?u=alex', description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'AHZ004', employeeNumber: 'EMP-1004', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
+  { name: 'David Wu', avatarUrl: 'https://i.pravatar.cc/128?u=david', description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', id: 'DW005', employeeNumber: 'EMP-1005', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
+  { name: 'Elizabeth Montgomery Johnson', avatarUrl: 'https://i.pravatar.cc/128?u=elizabeth', description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', id: 'EMJ006', employeeNumber: 'EMP-1006', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
 ]
 
 interface Product {
@@ -73,34 +75,41 @@ const dataWithNotes: Product[] = sampleData.map((p, i) => ({
     : 'Standard delivery.',
 }))
 
-// 真實商品名池（品名 × 規格版本組合，避免 "Product item N" 佔位符）
-const PRODUCT_NAMES: Record<string, string[]> = {
-  Electronics: ['Wireless Bluetooth Headphones', 'USB-C 7-in-1 Hub', 'Mechanical Keyboard', '4K Webcam', 'Portable SSD 1TB', '65W GaN Charger', 'Noise-Cancelling Earbuds', 'Ergonomic Wireless Mouse'],
-  Furniture: ['Ergonomic Office Chair', 'Standing Desk Converter', '5-Tier Bookshelf', 'Storage Cabinet', '3-Seat Fabric Sofa', 'Bedside Table', 'Coat Rack Stand', 'Adjustable Monitor Arm'],
-  Food: ['Organic Green Tea 100 Bags', 'Single-Origin Coffee Beans', 'Mixed Nuts Gift Box', 'Dark Chocolate Bar', 'Rolled Oats 1kg', 'Manuka Honey Jar', 'Herbal Tea Sampler', 'Cold-Pressed Olive Oil'],
-  Lifestyle: ['Stainless Steel Water Bottle', 'Scented Candle Set', 'Cordless Vacuum Cleaner', 'HEPA Air Purifier', 'Leather Notebook A5', 'Non-Slip Yoga Mat', 'Aroma Diffuser', 'Weighted Blanket'],
-}
-const PRODUCT_EDITIONS = ['Standard', 'Pro', 'Lite', 'Max', 'Mini', '2-Pack', 'Bundle', 'Refill']
-
+// 大量資料(虛擬捲動 / 分頁 / 排序示範):商品目錄的單一住所 = stories-helpers/data/product-catalog.ts
+//(2026-10-20 R1b-T7:原本本檔、設計原則頁、設計規格頁各寫一支產生器;本檔原本的品名池與算法原樣搬過去,輸出逐筆相同)。
+// 本檔只再對應賣家欄。
 function generateLargeData(count: number): Product[] {
-  const categories = ['Electronics', 'Furniture', 'Food', 'Lifestyle']
-  const stocks = ['In stock', 'Low stock', 'Out of stock', 'Pre-order']
-  return Array.from({ length: count }, (_, i) => {
-    const category = categories[i % 4]
-    const names = PRODUCT_NAMES[category]
-    const baseName = names[i % names.length]
-    const edition = PRODUCT_EDITIONS[Math.floor(i / names.length) % PRODUCT_EDITIONS.length]
-    return {
-      sku: `PRD-${String(i + 1).padStart(4, '0')}`,
-      name: `${baseName} (${edition})`,
-      category,
-      stock: stocks[i % 4],
-      seller: SELLERS[i % SELLERS.length],
-      updatedAt: `2025/03/${String(1 + (i % 28)).padStart(2, '0')}`,
-      price: Math.round(100 + Math.random() * 9900),
-    }
-  })
+  return productCatalog(count).map((c) => ({
+    sku: c.sku,
+    name: c.name,
+    category: c.category,
+    stock: c.stock,
+    seller: SELLERS[c.index % SELLERS.length],
+    updatedAt: c.updatedAt,
+    price: c.price,
+  }))
 }
+
+// ── 範例區段(標題 + 說明 + 範例):本檔唯一一份 ──────────────────────────────────────────────
+// 2026-10-21(r1b NEW-3):原本本檔同一段標題 markup 手抄 14 份(另有 6 份在篩選面板夾具),旁邊這個 Section 只被用了 5 次;
+// 前一次把標題從 text-body font-bold 改成 text-h6 font-semibold 就得逐份改。現在全部經這裡,值一個字都沒變:
+//   標題 = text-h6 font-semibold text-foreground、標題 → 說明 / 範例 = mb-[--layout-space-tight]、說明 = text-caption text-fg-muted + mb-tight。
+//   (這兩段間距是照抄前的原值。「標題 ↔ 說明」該是多少,`tokens/layoutSpace/layoutSpace.spec.md` 沒有明文:規則 3 表「跨範疇 + 直接 functional 交互」
+//   那一列(a6390356 時 :76,「heading → labeled content」)與「內容區裡用 typography 打的小標題」那一段(:101)只講標題 → 被它標示的內容,
+//   沒講標題 ↔ 它自己的說明 —— 規範缺口,待 user 拍板,登記在待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` R1b-DT7;拍板前不改。)
+// 寬度不是區段的事:篩選面板那幾段要 680px 上限(面板的閱讀寬),由呼叫端傳 className(FILTER_SECTION_WIDTH)。
+// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
+// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
+// 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
+// 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
+const Section = ({ title, note, className, children, ...rest }: { title: string; note?: React.ReactNode; className?: string; children: React.ReactNode } & Omit<React.HTMLAttributes<HTMLElement>, 'title'>) => (
+  <section className={className} {...rest}>
+    <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">{title}</h3>
+    {note ? <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">{note}</p> : null}
+    {children}
+  </section>
+)
+const FILTER_SECTION_WIDTH = 'w-full max-w-[680px]'
 
 // ── Column Definitions ───────────────────────────────────────────────────────
 
@@ -167,14 +176,12 @@ export const ColumnResize: Story = {
     const [widths, setWidths] = React.useState<Record<string, number>>({})
     const [pinnedWidths, setPinnedWidths] = React.useState<Record<string, number>>({})
     return (
-      <div className="flex flex-col gap-8 max-w-5xl">
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">基本 — 全 data column 可拖</h3>
-          <p className="text-caption text-fg-muted mb-3">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-5xl">
+        <Section title="基本 — 全 data column 可拖" note={<>
             拖 header 右側分隔線可調整欄寬。滑到分隔線上會變色提示,拖動時會跟著游標即時調整。
             勾選欄等系統欄位寬度固定,不可調整。
             <br />目前各欄寬度:{JSON.stringify(widths)}
-          </p>
+          </>}>
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
@@ -182,13 +189,11 @@ export const ColumnResize: Story = {
             enableColumnResize
             onColumnResize={(id, w) => setWidths(prev => ({ ...prev, [id]: w }))}
           />
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">欄位釘選與欄寬調整並存</h3>
-          <p className="text-caption text-fg-muted mb-3">
+        </Section>
+        <Section title="欄位釘選與欄寬調整並存" note={<>
             把 SKU 跟產品名稱固定在左側,依然可以拖動分隔線調整這兩欄的寬度。
             <br />目前各欄寬度:{JSON.stringify(pinnedWidths)}
-          </p>
+          </>}>
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
@@ -197,7 +202,7 @@ export const ColumnResize: Story = {
             enableColumnResize
             onColumnResize={(id, w) => setPinnedWidths(prev => ({ ...prev, [id]: w }))}
           />
-        </div>
+        </Section>
       </div>
     )
   },
@@ -233,7 +238,7 @@ export const ColumnReorder: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-5xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-5xl">
         <p className="text-caption text-fg-muted">
           開啟欄位重排(enableColumnReorder)後,拖住欄標題即可移動整欄:拖曳中欄位以半透明
           浮影跟著游標,目標欄的左或右邊緣會出現落點提示線(依游標位置判定放在前或後)。
@@ -286,7 +291,7 @@ export const RowAutoHeightInlineEdit: Story = {
     ]
     return (
       <div className="max-w-5xl">
-        <p className="text-caption text-fg-muted mb-2">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           autoRowHeight=true。Note 欄位 wrap text 撐高 row。其他單行 cell 在高 row 中應頂對齊。
           Click 任一 cell 進 edit:文字位置 view↔edit 不偏移(仍頂對齊),
           frame 填 cell,Field 自帶 state ring(focus-within → primary)。
@@ -317,25 +322,19 @@ export const RowAutoHeight: Story = {
           : 'Standard delivery.',
     })), [])
     return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">固定行高（預設）</h3>
-        <p className="text-caption text-fg-muted mb-3">所有內容垂直置中，文字截斷</p>
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <Section title="固定行高（預設）" note="所有內容垂直置中，文字截斷">
         <DataTable columns={baseColumns} data={sampleData} height="auto" />
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自動行高（autoRowHeight）</h3>
-        <p className="text-caption text-fg-muted mb-3">內容頂部對齊，wrap 欄位可撐高 row</p>
+      </Section>
+      <Section title="自動行高（autoRowHeight）" note="內容頂部對齊，wrap 欄位可撐高 row">
         <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
-      </div>
+      </Section>
       {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
           另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
           (M15:沒有 story 覆蓋的狀態等於沒被截圖驗過)。三區同一列必須等高，機械閘 I15 逐列比對。 */}
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions</h3>
-        <p className="text-caption text-fg-muted mb-3">
+      <Section title="自動行高 × 釘選欄 × Row Actions" note={<>
           撐高的欄位在中段，釘選欄與 actions 在左右兩個獨立容器；同一列三區必須等高
-        </p>
+        </>}>
         <DataTable
           columns={columnsWithNote}
           data={dataWithNotes}
@@ -349,14 +348,12 @@ export const RowAutoHeight: Story = {
             </>
           )}
         />
-      </div>
+      </Section>
       {/* 同一個缺陷在虛擬模式下的版本:列的位移 `vr.start` 只由 center 的量測推出,pinned 區
           比 center 高的列會直接壓到下一列的位置。共用列高之後 center 量到的就是共用值,三區同解。 */}
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions × 虛擬捲動</h3>
-        <p className="text-caption text-fg-muted mb-3">
+      <Section title="自動行高 × 釘選欄 × Row Actions × 虛擬捲動" note={<>
           50 筆(超過虛擬門檻 30);捲動時被撐高的列進出視窗，三區仍須逐列等高
-        </p>
+        </>}>
         <DataTable
           columns={columnsWithNote}
           data={virtualNotes}
@@ -370,7 +367,7 @@ export const RowAutoHeight: Story = {
             </>
           )}
         />
-      </div>
+      </Section>
     </div>
     )
   },
@@ -381,13 +378,11 @@ export const RowAutoHeight: Story = {
 export const EmptyState: Story = {
   name: '空狀態',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">預設空狀態</h3>
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <Section title="預設空狀態">
         <DataTable columns={baseColumns} data={[]} />
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">自訂空狀態</h3>
+      </Section>
+      <Section title="自訂空狀態">
         <DataTable
           columns={baseColumns}
           data={[]}
@@ -395,7 +390,7 @@ export const EmptyState: Story = {
             <Empty title="尚無商品" description="點擊上方「新增」開始建立" />
           }
         />
-      </div>
+      </Section>
     </div>
   ),
 }
@@ -407,27 +402,23 @@ export const ContainerHeight: Story = {
   render: () => {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
-      <div className="flex flex-col gap-10">
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-1">無約束</h3>
-          <p className="text-caption text-fg-muted mb-3">height="auto"，table 高度完全取決於內容，不出現捲軸</p>
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <Section title="無約束" note={<>height="auto"，table 高度完全取決於內容，不出現捲軸</>}>
           <DataTable columns={baseColumns} data={sampleData} height="auto" />
-        </div>
+        </Section>
 
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-1">有約束</h3>
-          <p className="text-caption text-fg-muted mb-3">height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</p>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-footnote text-fg-muted mb-3">3 筆資料</p>
+        <Section title="有約束" note={<>height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
+          <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+              <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">3 筆資料</p>
               <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="300px" />
             </div>
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-footnote text-fg-muted mb-3">50 筆資料</p>
+            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+              <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">50 筆資料</p>
               <DataTable columns={baseColumns} data={manyRows} height="300px" />
             </div>
           </div>
-        </div>
+        </Section>
       </div>
     )
   },
@@ -437,10 +428,8 @@ export const ContainerHeight: Story = {
 export const RowActions: Story = {
   name: '列操作',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">Row Actions（常駐）</h3>
-        <p className="text-caption text-fg-muted mb-3">actions 在獨立的右側固定欄位，常駐顯示。full-height 分隔線標示 frozen 邊界。</p>
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <Section title="Row Actions（常駐）" note="actions 在獨立的右側固定欄位，常駐顯示。full-height 分隔線標示 frozen 邊界。">
         <DataTable
           columns={baseColumns}
           data={sampleData}
@@ -452,10 +441,8 @@ export const RowActions: Story = {
             </>
           )}
         />
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">3+ actions：MoreVertical 收納</h3>
-        <p className="text-caption text-fg-muted mb-3">前 1-2 個高頻 action inline + MoreVertical dropdown</p>
+      </Section>
+      <Section title="3+ actions：MoreVertical 收納" note="前 1-2 個高頻 action inline + MoreVertical dropdown">
         <DataTable
           columns={baseColumns}
           data={sampleData.slice(0, 3)}
@@ -467,7 +454,7 @@ export const RowActions: Story = {
             </>
           )}
         />
-      </div>
+      </Section>
     </div>
   ),
 }
@@ -478,10 +465,8 @@ export const PinnedColumns: Story = {
   render: () => {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
-      <div className="flex flex-col gap-8">
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">Left pinned + Row Actions（水平捲動）</h3>
-          <p className="text-caption text-fg-muted mb-3">SKU 固定左側，actions 固定右側，中間水平捲動。</p>
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <Section title="Left pinned + Row Actions（水平捲動）" note="SKU 固定左側，actions 固定右側，中間水平捲動。">
           <div style={{ maxWidth: 700 }}>
             <DataTable
               columns={columnsWithPrice}
@@ -496,10 +481,8 @@ export const PinnedColumns: Story = {
               )}
             />
           </div>
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">垂直捲動 + Pinned + Row Actions</h3>
-          <p className="text-caption text-fg-muted mb-3">header 固定頂部，SKU 固定左側，actions 固定右側，50 筆資料垂直捲動。</p>
+        </Section>
+        <Section title="垂直捲動 + Pinned + Row Actions" note="header 固定頂部，SKU 固定左側，actions 固定右側，50 筆資料垂直捲動。">
           <div style={{ maxWidth: 700 }}>
             <DataTable
               columns={columnsWithPrice}
@@ -514,7 +497,7 @@ export const PinnedColumns: Story = {
               )}
             />
           </div>
-        </div>
+        </Section>
       </div>
     )
   },
@@ -606,6 +589,14 @@ interface EditableProduct {
   releaseDate: string
   reminderTime: string
 }
+// 供應商頁(連結欄):每個商品各自的供應商網站 —— 表格只顯示網址的主機名,四列同一個主機名等於這一欄什麼都沒說
+//(2026-10-21 前四列都是 shop.example.com,r1b DT-07)。用 example.com 子網域,不指向真實公司。
+const SUPPLIER_URLS = [
+  'https://sonic.example.com/headphones/wh-500',
+  'https://ergo.example.com/chairs/lumbar-pro',
+  'https://leafy.example.com/tea/organic-green-100',
+  'https://hubco.example.com/adapters/usb-c-7in1',
+]
 const editableSampleData: EditableProduct[] = sampleData.slice(0, 4).map((p, i) => ({
   sku: p.sku,
   name: p.name,
@@ -616,7 +607,7 @@ const editableSampleData: EditableProduct[] = sampleData.slice(0, 4).map((p, i) 
   owner: SAMPLE_PEOPLE[i],
   reviewers: i % 2 === 0 ? [SAMPLE_PEOPLE[(i + 1) % 4], SAMPLE_PEOPLE[(i + 2) % 4]] : [SAMPLE_PEOPLE[(i + 3) % 4]],
   inStock: p.stock === 'In stock',
-  url: 'https://shop.example.com/' + p.sku.toLowerCase(),
+  url: SUPPLIER_URLS[i],
   price: p.price ?? 0,
   releaseDate: `2025-0${(i % 9) + 1}-15`,
   reminderTime: `0${9 + i}:30`,
@@ -624,24 +615,35 @@ const editableSampleData: EditableProduct[] = sampleData.slice(0, 4).map((p, i) 
 
 export const InlineEdit: Story = {
   name: '就地編輯',
+  parameters: {
+    docs: {
+      description: {
+        // 各欄的資料型別放在這裡,不寫進欄標題 —— 欄標題就是格內編輯器的名字(data-table.spec.md 鍵盤段「格內編輯器的 accessible name = 欄標題」),
+        // 寫成「Product (string)」讀屏就念出型別(2026-10-21 前,r1b DT-07)
+        story:
+          '每一欄對應一種 `meta.type`:Product = `string`、Qty = `number`、Category / Stock = `select`、Tags = `multiSelect`、' +
+          'Owner = `person`、Reviewers = `multiPerson`、Available = `boolean`、Supplier = `url`、Price = `currency`、Release = `date`、Reminder = `time`;SKU 唯讀。',
+      },
+    },
+  },
   render: () => {
     const [data, setData] = React.useState(editableSampleData)
     const editCol = createColumnHelper<EditableProduct>()
     const editableColumns = React.useMemo(
       () => [
         editCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),  // 唯讀
-        editCol.accessor('name', { header: 'Product (string)', meta: { type: 'string', editable: true, width: 200 } }),
-        editCol.accessor('qty', { header: 'Qty (number)', meta: { type: 'number', editable: true, width: 110 } }),
-        editCol.accessor('category', { header: 'Category (select)', meta: { type: 'select', options: CATEGORY_OPTIONS, editable: true, width: 150 } }),
-        editCol.accessor('stock', { header: 'Stock (select)', meta: { type: 'select', options: STOCK_OPTIONS, editable: true, width: 140 } }),
-        editCol.accessor('tags', { header: 'Tags (multiSelect)', meta: { type: 'multiSelect', options: TAG_OPTIONS, editable: true, width: 180 } }),
-        editCol.accessor('owner', { header: 'Owner (person)', meta: { type: 'person', people: SAMPLE_PEOPLE, editable: true, width: 160 } }),
-        editCol.accessor('reviewers', { header: 'Reviewers (multiPerson)', meta: { type: 'multiPerson', people: SAMPLE_PEOPLE, editable: true, width: 180 } }),
-        editCol.accessor('inStock', { header: 'In (boolean)', meta: { type: 'boolean', editable: true, width: 90 } }),
-        editCol.accessor('url', { header: 'URL', meta: { type: 'url', editable: true, width: 180 } }),
-        editCol.accessor('price', { header: 'Price (currency)', meta: { type: 'currency', prefix: '$', editable: true, width: 130 } }),
-        editCol.accessor('releaseDate', { header: 'Release (date)', meta: { type: 'date', editable: true, width: 140 } }),
-        editCol.accessor('reminderTime', { header: 'Reminder (time)', meta: { type: 'time', editable: true, width: 130 } }),
+        editCol.accessor('name', { header: 'Product', meta: { type: 'string', editable: true, width: 200 } }),
+        editCol.accessor('qty', { header: 'Qty', meta: { type: 'number', editable: true, width: 110 } }),
+        editCol.accessor('category', { header: 'Category', meta: { type: 'select', options: CATEGORY_OPTIONS, editable: true, width: 150 } }),
+        editCol.accessor('stock', { header: 'Stock', meta: { type: 'select', options: STOCK_OPTIONS, editable: true, width: 140 } }),
+        editCol.accessor('tags', { header: 'Tags', meta: { type: 'multiSelect', options: TAG_OPTIONS, editable: true, width: 180 } }),
+        editCol.accessor('owner', { header: 'Owner', meta: { type: 'person', people: SAMPLE_PEOPLE, editable: true, width: 160 } }),
+        editCol.accessor('reviewers', { header: 'Reviewers', meta: { type: 'multiPerson', people: SAMPLE_PEOPLE, editable: true, width: 180 } }),
+        editCol.accessor('inStock', { header: 'Available', meta: { type: 'boolean', editable: true, width: 90 } }),
+        editCol.accessor('url', { header: 'Supplier', meta: { type: 'url', editable: true, width: 180 } }),
+        editCol.accessor('price', { header: 'Price', meta: { type: 'currency', prefix: '$', editable: true, width: 130 } }),
+        editCol.accessor('releaseDate', { header: 'Release', meta: { type: 'date', editable: true, width: 140 } }),
+        editCol.accessor('reminderTime', { header: 'Reminder', meta: { type: 'time', editable: true, width: 130 } }),
       ],
       []
     )
@@ -650,9 +652,9 @@ export const InlineEdit: Story = {
     }
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           所有資料型別都能就地編輯:文字、數字、金額、日期、時間、單/多選、人員、人員列表、開關、連結。
-          SKU 是唯讀的;開關欄位直接點即可切換;連結欄位 hover 才顯示鉛筆改值,直接點開連結;
+          SKU 是唯讀的;開關欄位直接點即可切換;連結欄位點網址文字開連結,點格的其他地方跟其他欄位一樣進編輯;
           其他點一下進編輯,Enter 或失焦存檔,Esc 取消。
         </p>
         <DataTable
@@ -683,10 +685,12 @@ export const InlineEdit: Story = {
  *
  * 驗證點:
  *   - hover editable cell → 1px overlay 邊框 var(--border-hover)
- *   - sku(readonly)/ inStock(boolean)/ url(openAction)→ 不出現 hover overlay(Contract 15)
+ *   - sku(readonly)/ inStock(boolean)→ 不出現 hover overlay(Contract 15);url 2026-10-13 起跟其他可編輯格一樣出 hover overlay
+ *     (user 拍板乙,待辦總帳 Q3f:點網址文字開連結,點格的其他地方照點格規則)
  *   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
  *     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
- *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關 / 連結不進)
+ *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;連結格 click 2 進編輯、
+ *     Enter / F2 把焦點放進格裡的連結(Tab 到鉛筆,F2 / Esc 回格導覽);開關格 Enter / F2 把焦點放到勾選框)
  *   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
  *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
  *     -1px 剛好壓 cell 邊線;dtCellGrid right-edge inset divider + row border-b 共軌)
@@ -703,8 +707,8 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
         editCol.accessor('name', { header: 'Product', meta: { type: 'string', editable: true, width: 200 } }),
         editCol.accessor('qty', { header: 'Qty', meta: { type: 'number', editable: true, width: 110 } }),
         editCol.accessor('category', { header: 'Category', meta: { type: 'select', options: CATEGORY_OPTIONS, editable: true, width: 150 } }),
-        editCol.accessor('inStock', { header: 'In', meta: { type: 'boolean', editable: true, width: 90 } }),
-        editCol.accessor('url', { header: 'URL', meta: { type: 'url', editable: true, width: 180 } }),
+        editCol.accessor('inStock', { header: 'Available', meta: { type: 'boolean', editable: true, width: 90 } }),
+        editCol.accessor('url', { header: 'Supplier', meta: { type: 'url', editable: true, width: 180 } }),
       ],
       []
     )
@@ -713,10 +717,11 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
     }
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
-          方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關 / 連結欄位沒有 hover 提示
-          (這些格子點第二次也不進編輯:開關直接點勾選框切換,連結點文字開啟)。
+          方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關欄位沒有 hover 提示
+          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位點網址文字開連結,點格的其他地方跟其他格一樣。
+          格游標停在連結或開關格時按 Enter / F2,焦點進到格裡的連結或勾選框;再按 F2 或 Esc 回到格導覽。
         </p>
         <DataTable
           columns={editableColumns}
@@ -819,7 +824,7 @@ export const CellErrors: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           欄位驗證錯誤直接顯示在內容下方,不蓋住資料。一格多個錯誤分行條列。點進該格編輯時暫時隱藏錯誤,
           交給使用者修正;commit 後由 app 端決定是否還要顯示。
@@ -875,7 +880,7 @@ export const CellErrorsFixedRowOverride: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           表格本身是固定行高(沒開 autoRowHeight),但 PRD-001 跟 PRD-003 有錯誤訊息 → 這兩 row
           自動撐高顯示訊息;PRD-002、PRD-004 沒錯誤,維持原本的固定行高,內容垂直置中。
@@ -958,7 +963,7 @@ export const NestedRows: Story = {
       <div>
         {/* 實作:forward TanStack getSubRows;縮排共用 --tree-indent-{sm,md,lg} token(跨 TreeView
             設計語言);chevron click stopPropagation 不觸發 row select。 */}
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           樹狀表格:點列首的三角形展開 / 收合子任務,子任務逐層縮排(與 TreeView 同一套縮排節奏);
           點三角形只切換展開,不會順帶選取整列。
         </p>
@@ -1042,7 +1047,7 @@ export const NestedRowsWithDrag: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-3xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-3xl">
         <p className="text-caption text-fg-muted">
           Tree-table drag 設計準則:top-level rows 可拖(handle 浮在 row 左緣),
           sub-rows 無 handle 不可拖(對齊 Notion 保守)。Cross-parent drop 過濾,
@@ -1306,7 +1311,7 @@ export const SelectionKeyboardAndShift: Story = {
     const [selection, setSelection] = React.useState<string[]>([])
     const data = generateLargeData(15)
     return (
-      <div className="flex flex-col gap-2 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           試試:點第一 row checkbox → <kbd>Shift</kbd>+點第五 row → 1-5 全選 ·
           整 table 點任意 row 後按 <kbd>Cmd/Ctrl+A</kbd> 全選 · 按 <kbd>Esc</kbd> 清除 ·
@@ -1333,7 +1338,7 @@ export const SelectionSingleMode: Story = {
   render: () => {
     const [selection, setSelection] = React.useState<string[]>([])
     return (
-      <div className="flex flex-col gap-2 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           <code>selectable=&quot;single&quot;</code>:每次只選一個,點新 row 自動清舊 row。
           視覺用 <strong>Radio</strong>(對齊 Material DataGrid / Polaris IndexTable 共識),
@@ -1360,7 +1365,7 @@ export const SelectionDisabledRows: Story = {
   render: () => {
     const [selection, setSelection] = React.useState<string[]>([])
     return (
-      <div className="flex flex-col gap-2 max-w-4xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
           Out of stock 商品不可選 — 只 disable checkbox,row 內容正常 render(對齊 spec L2 五)。
         </p>
@@ -1540,20 +1545,9 @@ export const FilterPanelEmpty: Story = {
  * 合併理由(user 2026-09-06):七支 story 讓同一個面板有七個入口,讀的人得逐一點開才知道差別。
  * 逐支讀完後確認**沒有任何一支是重複的** —— 平鋪 / 巢狀 / 相對時間 / 已改動 / 長標籤各自展示
  * 不同的東西,所以這是「合併入口」不是「刪內容」:五種情境原封不動搬進同一支,各自帶標題。
- * 「空狀態」與「標籤與條件上限」維持獨立(前者是唯一的無條件態;後者帶互動測試,不動它最安全)。
+ * 「空狀態」與「標籤與條件上限」維持獨立(前者是唯一的無條件態;後者是帶互動測試的自動化夾具,2026-10-21 起標 test-only、不給讀者看)。
+ * 各情境的標題 + 說明走本檔的 `Section`(檔頭「範例區段」,寬度上限由這裡傳 FILTER_SECTION_WIDTH)。
  */
-// 2026-09-17:這個元件本來定義在 story 的 `render()` 裡面。React 用「元件函式的身分」判斷是不是同一棵樹,
-// 每次 setState 都會重新建立一個新的函式 → React 視為換了元件 → 底下整棵樹**卸載重掛**。
-// 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
-// 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
-const Section = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
-  <section className="w-full max-w-[680px]">
-    <h3 className="text-body font-medium mb-1">{title}</h3>
-    {note ? <p className="text-caption text-fg-muted mb-3">{note}</p> : null}
-    {children}
-  </section>
-)
-
 export const FilterPanelStates: Story = {
   name: '進階篩選 — 各種狀態',
   render: () => {
@@ -1627,20 +1621,20 @@ export const FilterPanelStates: Story = {
     }))
 
     return (
-      <div className="flex flex-col gap-8">
-        <Section title="已填條件">
+      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+        <Section title="已填條件" className={FILTER_SECTION_WIDTH}>
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
         </Section>
 
-        <Section title="巢狀群組">
+        <Section title="巢狀群組" className={FILTER_SECTION_WIDTH}>
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} />
         </Section>
 
-        <Section title="相對時間" note="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
+        <Section title="相對時間" className={FILTER_SECTION_WIDTH} note="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} />
         </Section>
 
-        <Section title="已改動" note="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
+        <Section title="已改動" className={FILTER_SECTION_WIDTH} note="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
           <DataTableFilterPanel
             columns={[...FILTER_COLUMNS]}
             value={modified}
@@ -1649,7 +1643,7 @@ export const FilterPanelStates: Story = {
           />
         </Section>
 
-        <Section title="長標籤溢出" note="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
+        <Section title="長標籤溢出" className={FILTER_SECTION_WIDTH} note="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
           <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
         </Section>
       </div>
@@ -1703,9 +1697,8 @@ const FilterPanelLabelsAndLimitHarness = () => {
   const [prefillConsumed, setPrefillConsumed] = React.useState(false)
 
   return (
-    <div className="flex flex-col gap-10">
-      <div data-testid="filter-label-child-pickers">
-        <h3 className="text-body font-medium mb-2">English child-picker labels</h3>
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      <Section data-testid="filter-label-child-pickers" title="English child-picker labels">
         <DataTableFilterPanel
           columns={[...FILTER_CHILD_PICKER_COLUMNS]}
           value={childPickerLabels}
@@ -1713,10 +1706,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </div>
+      </Section>
 
-      <div data-testid="filter-limit-flat">
-        <h3 className="text-body font-medium mb-2">English labels + flat cap</h3>
+      <Section data-testid="filter-limit-flat" title="English labels + flat cap">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={flat}
@@ -1724,10 +1716,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </div>
+      </Section>
 
-      <div data-testid="filter-limit-nested-condition">
-        <h3 className="text-body font-medium mb-2">Nested condition cap</h3>
+      <Section data-testid="filter-limit-nested-condition" title="Nested condition cap">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedCondition}
@@ -1735,10 +1726,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </div>
+      </Section>
 
-      <div data-testid="filter-limit-nested-group">
-        <h3 className="text-body font-medium mb-2">Nested group cap</h3>
+      <Section data-testid="filter-limit-nested-group" title="Nested group cap">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedGroup}
@@ -1746,10 +1736,9 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </div>
+      </Section>
 
-      <div data-testid="filter-limit-mount-zero">
-        <h3 className="text-body font-medium mb-2">Initial mount at zero capacity</h3>
+      <Section data-testid="filter-limit-mount-zero" title="Initial mount at zero capacity">
         <DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={mountCapZero}
@@ -1757,11 +1746,10 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={0}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </div>
+      </Section>
 
-      <div data-testid="filter-limit-prefill">
-        <h3 className="text-body font-medium mb-2">Prefill at capacity</h3>
-        <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-2">
+      <Section data-testid="filter-limit-prefill" title="Prefill at capacity">
+        <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
           Prefill consumed: {prefillConsumed ? 'yes' : 'no'}
         </p>
         <DataTableFilterPanel
@@ -1776,13 +1764,17 @@ const FilterPanelLabelsAndLimitHarness = () => {
           maxConditions={1}
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
-      </div>
+      </Section>
     </div>
   )
 }
 
+// 自動化夾具(test-only,2026-10-21 r1b DT-05):畫布是給 play 斷言用的六組狀態(英文子選單標籤、上限邊界、預填),不是讀者看的情境 ——
+// story-rules.md「Technical probe visibility」:只服務 automation 的 story 標 test-only(不進側欄與 Autodocs,index / 直接網址 / a11y / 互動 runner 照跑)。
+// 修前沒有 tags,側欄與 docs 頁都看得到 'English child-picker labels'、'Prefill consumed: yes' 這類夾具標題。回歸清單:scripts/test-storybook-test-only-semantics.mjs。
 export const FilterPanelLabelsAndLimit: Story = {
   name: '進階篩選 — 標籤與條件上限',
+  tags: ['test-only'],
   render: () => <FilterPanelLabelsAndLimitHarness />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -1813,12 +1805,14 @@ export const FilterPanelLabelsAndLimit: Story = {
     await expect(flat.getByText('Past 7 days')).toBeInTheDocument()
     await userEvent.click(flat.getByRole('button', { name: 'Add filter' }))
     await waitFor(() => expect(flat.getAllByLabelText('Filter field')).toHaveLength(2))
-    await expect(flat.getByRole('button', { name: 'Add filter' })).toBeDisabled()
+    // 剛按下去的那顆鈕握著焦點時變停用 → 不轉原生 disabled、改 aria-disabled(button.tsx 可聚焦的停用,2026-10-01;焦點不掉到 body);
+    // 沒被按的同族鈕照舊原生 disabled(下方)
+    await expect(flat.getByRole('button', { name: 'Add filter' })).toHaveAttribute('aria-disabled', 'true')
 
     const nestedCondition = within(canvas.getByTestId('filter-limit-nested-condition'))
     await userEvent.click(nestedCondition.getByRole('button', { name: 'Add nested filter' }))
     await waitFor(() => expect(nestedCondition.getAllByLabelText('Filter field')).toHaveLength(2))
-    await expect(nestedCondition.getByRole('button', { name: 'Add nested filter' })).toBeDisabled()
+    await expect(nestedCondition.getByRole('button', { name: 'Add nested filter' })).toHaveAttribute('aria-disabled', 'true')
     await expect(nestedCondition.getByRole('button', { name: 'Add filter group' })).toBeDisabled()
 
     const nestedGroup = within(canvas.getByTestId('filter-limit-nested-group'))
@@ -1827,7 +1821,7 @@ export const FilterPanelLabelsAndLimit: Story = {
     for (const button of nestedGroup.getAllByRole('button', { name: 'Add nested filter' })) {
       await expect(button).toBeDisabled()
     }
-    await expect(nestedGroup.getByRole('button', { name: 'Add filter group' })).toBeDisabled()
+    await expect(nestedGroup.getByRole('button', { name: 'Add filter group' })).toHaveAttribute('aria-disabled', 'true')
 
     const mountCapZero = within(canvas.getByTestId('filter-limit-mount-zero'))
     await expect(mountCapZero.queryAllByLabelText('Filter field')).toHaveLength(0)
@@ -1869,7 +1863,7 @@ export const RowDragInteractive: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-3xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-3xl">
         <p className="text-caption text-fg-muted">
           handle 浮在 row 左緣（不佔 column 空間，Jira 設計準則）。pinned-left（SKU）+ pinned-right（Updated）+
           center 中段欄。拖曳時 source 列留在原位（半透明壓住視覺），2px 主色落點提示線在左固定欄、
@@ -1918,7 +1912,7 @@ export const RowDragWithVirtualization: Story = {
       })
     }
     return (
-      <div className="flex flex-col gap-3 max-w-3xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-3xl">
         {/* 實作(v3):enableRowDrag 自動拉高 overscan ≥ 5;drag 期間 freeze measureElement;
             snapToCursorModifier 讓 ghost 對齊游標(不鎖軸)— 三者合修「拖曳 + 捲動錯位」。 */}
         <p className="text-caption text-fg-muted">
@@ -2372,16 +2366,16 @@ const orderColumns: ColumnDef<OrderRow>[] = [
 export const WithPagination: Story = {
   name: '分頁',
   render: () => (
-    <div className="mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] flex flex-col gap-8">
+    <div className="mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-loose)]">
       <div>
-        <p className="text-caption text-fg-muted mb-2">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           預設形態:`pagination` 傳 true — 128 筆 / 每頁 20 = 7 頁,分頁列間距 tight、頁碼靠右
           (spec「L5:分頁」canonical);與虛擬滾動互斥(分頁時 useVirtual 關閉)。
         </p>
         <DataTable columns={orderColumns} data={ORDER_ROWS} pagination getRowId={(row) => row.id} />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-2">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           完整形態:「共 N 筆」opt-in(showTotal)+ 每頁筆數 Select(pageSizeOptions)——
           左資訊右頁碼 justify-between;換每頁筆數自動回第 1 頁;filter 縮小自動 clamp 當前頁。
         </p>

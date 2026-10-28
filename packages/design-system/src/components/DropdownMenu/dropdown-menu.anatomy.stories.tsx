@@ -483,7 +483,9 @@ const ItemPreview = ({ size, danger, state, icon: Icon, label, shortcut }: {
       style={{ paddingTop: `calc((var(--field-height-${size}) - 1lh) / 2)`, paddingBottom: `calc((var(--field-height-${size}) - 1lh) / 2)` }}>
       <div className="h-[1lh] flex items-center shrink-0"><Icon size={iconPx} /></div>
       <span>{label}</span>
-      {shortcut && <span className="h-[1lh] flex items-center ml-auto text-caption text-fg-muted shrink-0 gap-2">{shortcut}</span>}
+      {/* 後綴槽的 1lh 要用**列的字級**算(同 menu-item.tsx 的後綴槽:槽在列字級裡、caption 字放在槽內)。2026-10-27 前 text-caption 寫在槽上,
+          1lh 變成 caption 的行高,⌘C / ⌘E 比標籤第一行中線高 1.3px(側欄群組動作「+」偏上的同族掃描,scripts/row-suffix-first-line-invariant.mjs) */}
+      {shortcut && <span className="h-[1lh] flex items-center ml-auto shrink-0 gap-2"><span className="text-caption text-fg-muted">{shortcut}</span></span>}
     </div>
   )
 }

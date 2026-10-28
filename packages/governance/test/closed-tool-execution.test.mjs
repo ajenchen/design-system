@@ -20,6 +20,7 @@ import { resolve } from 'node:path'
 import test from 'node:test'
 import {
   assertClosedGitLocalConfiguration,
+  CLOSED_HOOK_TOOL_LABELS,
   closedGitSafeDirectories,
   materializeClosedHookToolProfile,
   runClosedGit,
@@ -59,6 +60,14 @@ test('closed hook tool profile binds child node to the realpath-canonicalized ru
     createHash('sha256').update(readFileSync(runningInterpreter)).digest('hex'),
     'closed node provenance must digest-bind exactly the running interpreter bytes',
   )
+})
+
+// G4(2026-10-07):密封工具組與 open profile 驗的是同一份宣告(CLOSED_HOOK_TOOL_LABELS);
+// jq 必在其中 —— 58 支 bash hook 都靠它讀輸入,缺了就是「每支都讀到空欄位而放行」。
+test('the sealed hook tool profile pins exactly the one declared hook tool set, jq included', () => {
+  assert.ok(CLOSED_HOOK_TOOL_LABELS.includes('jq'))
+  const profile = materializeClosedHookToolProfile()
+  assert.deepEqual(Object.keys(profile.executables).sort(), [...CLOSED_HOOK_TOOL_LABELS].sort())
 })
 
 test('a symlink alias of the running interpreter canonicalizes to the same closed node source', t => {

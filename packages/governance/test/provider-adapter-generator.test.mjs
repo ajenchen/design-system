@@ -1384,6 +1384,36 @@ process.stdout.write(JSON.stringify({governanceContext:{hookEventName:'PreToolUs
   assert.equal(transcriptMutationResult.status, 70)
   assert.match(transcriptMutationResult.stderr, /TRANSCRIPT_SNAPSHOT_CHANGED/)
 
+  // N47 ⑤ 同族:這個 fixture 沒有 hooks/lib/approval-evidence.mjs(判定「user 的話」的唯一函式)。
+  // 上面那份短 transcript 一筆都不用丟,不需要錨點,照常走到 TRANSCRIPT_SNAPSHOT_CHANGED;
+  // 快照一旦必須丟掉較早的紀錄,就保證不了還留著本回合 user 的話 → strict 以完整性錯誤停下。
+  const anchorlessLongTurn = resolve(fixture, 'batch-transcript-anchorless.jsonl')
+  await writeFile(anchorlessLongTurn, `{"type":"user","message":{"role":"user","content":"safe"}}\n${'{"type":"assistant","message":{"role":"assistant","content":"working"}}\n'.repeat(1300)}`)
+  const anchorlessResult = spawnSync(process.execPath, [
+    '--',
+    'scripts/run-provider-hook.mjs',
+    '--provider',
+    'claude',
+    '--event',
+    'UserPromptSubmit',
+    '--group',
+    '0',
+  ], {
+    cwd: fixture,
+    env: {
+      ...process.env,
+      GOVERNANCE_READ_ONLY: '1',
+    },
+    input: `${JSON.stringify({
+      hook_event_name: 'UserPromptSubmit',
+      prompt: 'safe prompt',
+      transcript_path: anchorlessLongTurn,
+    })}\n`,
+    encoding: 'utf8',
+  })
+  assert.equal(anchorlessResult.status, 70, anchorlessResult.stderr)
+  assert.match(anchorlessResult.stderr, /TRANSCRIPT_TURN_ANCHOR_UNAVAILABLE/)
+
   const shortDeadline = launchAsync({
     group: 9,
     extraArguments: ['--test-short-batch-runtime'],
@@ -1658,6 +1688,38 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   assert.match(JSON.parse(triggered.stdout).hookSpecificOutput.additionalContext, /M26 Propose-without-benchmark/)
   await assertSnapshotCleaned()
 
+  // 2026-09-27 與 2026-10-13 CI 各紅一次(0 !== 70):「成長中的 transcript 必 70」只在 runner 的**每一次**
+  // 擷取(TRANSCRIPT_SNAPSHOT_ATTEMPTS 次,中間各退避 4ms)都看到成長時才成立 —— stable-required 用盡重試才擋。
+  // 09-27 的修法用了單發探針 `--test-transcript-transition-probe`:它只在第一次擷取等到變動,第二、三次
+  // 擷取完全沒有探針,仍然靠背景寫入器剛好在那 <1ms 的窗內追加;寫入器被共享 runner 延遲超過一次退避,
+  // runner 就拿到**合法的**靜止切面 → exit 0(暫停寫入器即可 100% 重現)。所以那次修法只把三個窗釘住一個,
+  // 「寫入器還活著 ⇒ runner 每次都看到變動」仍是時序代理(M37)。改法:用每次擷取都停的
+  // `--test-transcript-transition-probe-every-attempt`,並由**探針的就緒標記**驅動追加 —— 每一次擷取都在
+  // 兩次固定區段讀取之間被追加一筆,與寫入器的排程無關;背景寫入器照舊持續追加(真實的「邊寫邊驗」),
+  // 但判定不再依賴它。探針等不到變動會以 TRANSCRIPT_TEST_TRANSITION_NOT_OBSERVED 紅,不會假綠。
+  const transcriptSnapshotAttempts = Number(runnerSource.match(/^const TRANSCRIPT_SNAPSHOT_ATTEMPTS = (\d+)$/m)?.[1])
+  assert.equal(Number.isInteger(transcriptSnapshotAttempts) && transcriptSnapshotAttempts > 0, true,
+    'the growing-transcript tests must know how many bounded snapshot attempts the runner makes')
+  const launchWithProbeDrivenGrowth = (transcriptPath, appendAtProbe) => {
+    const probe = { output: '', ready: 0, appended: 0, pending: [] }
+    const invocation = launch(
+      'claude',
+      'check_propose_without_benchmark.sh',
+      { hook_event_name: 'UserPromptSubmit', prompt: 'Hi', transcript_path: transcriptPath },
+      { NODE_ENV: 'test' },
+      ['--test-transcript-transition-probe-every-attempt'],
+      (chunk) => {
+        probe.output += chunk
+        const markers = probe.output.split('TRANSCRIPT_TEST_TRANSITION_PROBE_READY').length - 1
+        while (probe.ready < markers) {
+          probe.ready += 1
+          probe.pending.push(appendAtProbe().then(() => { probe.appended += 1 }))
+        }
+      },
+    )
+    return { probe, completion: invocation.completion }
+  }
+
   const liveAppendTranscript = resolve(fixture, 'live-append.jsonl')
   await writeFile(liveAppendTranscript, record.repeat(2600), { mode: 0o600 })
   const liveAppendHandle = await open(liveAppendTranscript, 'a')
@@ -1670,22 +1732,27 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
       await wait(1)
     }
   })()
-  await wait(8)
+  // 「開檔前已在追加」用條件等,不用固定睡眠猜寫入器跑了幾次
+  while (appendCount <= 2) await wait(1)
   let liveAppendResult
+  let liveAppendProbe
   try {
-    // 2026-09-27 CI 紅一次(0 !== 70;之前多次全綠):runner 的擷取窗只有一次讀取加兩次 stat(遠小於 1ms),
-    // 寫入器每 1–2ms 追加一筆 —— 只要事件迴圈或共享 runner 把寫入器延遲一下,runner 就拿到一個**合法的**
-    // 靜止切面而 exit 0。「寫入器還活著 ⇒ runner 必看到變動」是時序代理(M37),跟下面 optional-append
-    // 2026-09-23 那次同一種病。改用 runner 自己的測試探針:第一次讀取之後**等到真的觀察到 metadata 變動**
-    // 才做第二次讀取,於是「成長中的 transcript 必 70」不再靠排程運氣;探針等不到變動會以
-    // TRANSCRIPT_TEST_TRANSITION_NOT_OBSERVED 紅,不會假綠。
-    liveAppendResult = await runAsync('claude', 'Hi', liveAppendTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
+    const invocation = launchWithProbeDrivenGrowth(
+      liveAppendTranscript,
+      () => liveAppendHandle.appendFile(`${JSON.stringify({ type: 'system', probeAppend: true })}\n`),
+    )
+    liveAppendProbe = invocation.probe
+    liveAppendResult = await invocation.completion
+    await Promise.all(liveAppendProbe.pending)
   } finally {
     appendActive = false
     await appendLoop
     await liveAppendHandle.close()
   }
   assert.equal(appendCount > 2, true, 'writer must append before open and throughout bounded verification')
+  assert.equal(liveAppendProbe.ready, transcriptSnapshotAttempts,
+    `every bounded snapshot attempt must be probed and observe growth:${liveAppendResult.stderr}`)
+  assert.equal(liveAppendProbe.appended, liveAppendProbe.ready, 'each probed attempt must receive its append')
   assert.equal(liveAppendResult.status, 70)
   assert.equal(liveAppendResult.stdout, '')
   assert.match(liveAppendResult.stderr, /GOVERNANCE_INTEGRITY:/)
@@ -1708,17 +1775,27 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
       await wait(1)
     }
   })()
-  await wait(8)
+  while (partialAppendCount <= 2) await wait(1)
   let livePartialResult
+  let livePartialProbe
   try {
-    // 同上:成長中的半截記錄也要用探針把「變動落在兩次讀取之間」釘死,不靠排程運氣
-    livePartialResult = await runAsync('claude', 'Hi', livePartialTranscript, { NODE_ENV: 'test' }, ['--test-transcript-transition-probe'])
+    // 同上:成長中的半截記錄,每一次擷取的兩次讀取之間都由探針標記驅動追加,不靠排程運氣
+    const invocation = launchWithProbeDrivenGrowth(
+      livePartialTranscript,
+      () => livePartialHandle.appendFile('x'.repeat(1024)),
+    )
+    livePartialProbe = invocation.probe
+    livePartialResult = await invocation.completion
+    await Promise.all(livePartialProbe.pending)
   } finally {
     partialActive = false
     await partialLoop
     await livePartialHandle.close()
   }
   assert.equal(partialAppendCount > 2, true, 'partial record writer must remain active during verification')
+  assert.equal(livePartialProbe.ready, transcriptSnapshotAttempts,
+    `every bounded snapshot attempt must be probed and observe partial-record growth:${livePartialResult.stderr}`)
+  assert.equal(livePartialProbe.appended, livePartialProbe.ready, 'each probed attempt must receive its append')
   assert.equal(livePartialResult.status, 70)
   assert.equal(livePartialResult.stdout, '')
   assert.match(livePartialResult.stderr, /GOVERNANCE_INTEGRITY:/)
@@ -1899,17 +1976,35 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   assert.match(withdrawalResult.stderr, /TARGET_BOUND_DENIAL_OR_REVOCATION/)
   await assertSnapshotCleaned()
 
-  const prunedApprovalTranscript = resolve(fixture, 'approval-pruned-by-record-budget.jsonl')
+  // N47 ⑤(2026-10-07):user 那則訊息之後超過 1,200 筆紀錄,快照仍要帶著它(錨點),判定不得隨回合長度漂移。
+  // 2026-07-28 這裡原本釘的是「被筆數擠掉 → 擋」—— 正是 N47 ⑤ 的症狀(長回合後所有受管寫入 NO_USER_MESSAGE);
+  // approval-evidence 自 2026-09-16 起同一立場:放大視窗不放寬判準,只把判準本來就該讀到的輸入還原。
+  const anchoredApprovalTranscript = resolve(fixture, 'approval-beyond-record-budget.jsonl')
   const postApprovalRecords = Array.from({ length: 1200 }, (_, index) =>
     `${JSON.stringify({ type: 'system', sequence: index })}\n`).join('')
-  await writeFile(prunedApprovalTranscript, `${approvedUserRecord}${postApprovalRecords}`, { mode: 0o600 })
-  const prunedApprovalResult = execute(
+  await writeFile(anchoredApprovalTranscript, `${approvedUserRecord}${postApprovalRecords}`, { mode: 0o600 })
+  const anchoredApprovalResult = execute(
     'claude',
     'check_substantive_edit_approval_preflight.sh',
-    approvalPayload(prunedApprovalTranscript),
+    approvalPayload(anchoredApprovalTranscript),
   )
-  assert.equal(prunedApprovalResult.status, 2)
-  assert.match(prunedApprovalResult.stderr, /BLOCKER: Pre-action gate/)
+  assert.equal(anchoredApprovalResult.status, 0, anchoredApprovalResult.stderr)
+  await assertSnapshotCleaned()
+
+  // 對照組:錨點只補「最新一則」user 的話 —— 尾端有更新的撤回時,撤回勝出,不會拿更早的核准蓋掉它
+  const revokedAfterBudgetTranscript = resolve(fixture, 'approval-revoked-after-record-budget.jsonl')
+  const revocationRecord = `${JSON.stringify({
+    type: 'user',
+    message: { role: 'user', content: 'do not modify apps/template/src/App.tsx' },
+  })}\n`
+  await writeFile(revokedAfterBudgetTranscript, `${approvedUserRecord}${postApprovalRecords}${revocationRecord}`, { mode: 0o600 })
+  const revokedAfterBudgetResult = execute(
+    'claude',
+    'check_substantive_edit_approval_preflight.sh',
+    approvalPayload(revokedAfterBudgetTranscript),
+  )
+  assert.equal(revokedAfterBudgetResult.status, 2)
+  assert.match(revokedAfterBudgetResult.stderr, /TARGET_BOUND_DENIAL_OR_REVOCATION/)
   await assertSnapshotCleaned()
 
   const emptyTranscript = resolve(fixture, 'empty.jsonl')
@@ -2219,6 +2314,59 @@ test('Claude hooks validate and materialize a bounded tail from large transcript
   assert.match(codexWithoutTranscript.stderr, /GOVERNANCE_INTEGRITY:/)
   assert.match(codexWithoutTranscript.stderr, /VERSIONED_TRANSCRIPT_REQUIRED/)
   await assertSnapshotCleaned()
+})
+
+test('Claude transcript snapshot keeps the latest user message beyond the bounded tail (N47 ⑤)', async (t) => {
+  // 2026-09-26/27 實錄:長回合裡 user 那則訊息之後累積 2,804 / 3,723 筆紀錄,超過 1,200 筆上限,
+  // 快照裡沒有 user 訊息 → 核准閘回 NO_USER_MESSAGE,之後所有受管寫入一律擋,不論 user 說過什麼。
+  const fixture = await mkdtemp(resolve(repoRoot, '.tmp-provider-turn-anchor-'))
+  const snapshotTemp = resolve(fixture, 'private-tmp')
+  await mkdir(snapshotTemp, { mode: 0o700 })
+  t.after(() => rm(fixture, { recursive: true, force: true }))
+  const runner = resolve(repoRoot, 'scripts/run-provider-hook.mjs')
+  const target = 'packages/design-system/src/components/Button/button.tsx'
+  const firstLine = (await readFile(resolve(repoRoot, target), 'utf8')).split('\n')[0]
+  const execute = (transcriptPath) => spawnSync(process.execPath, [
+    '--', runner, '--provider', 'claude', '--hook', 'check_substantive_edit_approval_preflight.sh',
+  ], {
+    cwd: repoRoot,
+    env: { ...process.env, GOVERNANCE_READ_ONLY: '1', TMPDIR: snapshotTemp },
+    input: `${JSON.stringify({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Edit',
+      tool_input: {
+        file_path: target,
+        old_string: firstLine,
+        new_string: `${firstLine}\nconst normalizedValue = normalizeValue(value)`,
+      },
+      transcript_path: transcriptPath,
+    })}\n`,
+    encoding: 'utf8',
+    maxBuffer: 2 * 1024 * 1024,
+  })
+  const userRecord = (text) => `${JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'text', text }] } })}\n`
+  const filler = `${JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: 'running checks' }] } })}\n`
+  const notification = `${JSON.stringify({ type: 'user', message: { role: 'user', content: '<task-notification>\n<task-id>x</task-id>\n</task-notification>' } })}\n`
+
+  // 紅面:user 訊息後面墊 1,300 筆(超過 1,200 筆上限)+ 中間夾背景通知(role=user 卻不是使用者的話)
+  const longTurn = resolve(fixture, 'long-turn.jsonl')
+  await writeFile(longTurn, `${userRecord('請修復 Button 的 TypeScript null bug')}${filler.repeat(650)}${notification}${filler.repeat(650)}`, { mode: 0o600 })
+  const anchored = execute(longTurn)
+  assert.equal(anchored.status, 0, `the user's message must survive the bounded tail:\n${anchored.stderr}`)
+
+  // 對照組 1:同樣長度,但 user 訊息是 UI 取捨問句 → 錨點帶進來後仍依它擋(錨點不是放寬)
+  const longQuestion = resolve(fixture, 'long-question.jsonl')
+  await writeFile(longQuestion, `${userRecord('Button 要不要改成藍色?')}${filler.repeat(1300)}`, { mode: 0o600 })
+  const question = execute(longQuestion)
+  assert.equal(question.status, 2, question.stderr)
+  assert.match(question.stderr, /TARGET_BOUND_DISCUSSION_OR_QUESTION/)
+
+  // 對照組 2:整份 transcript 根本沒有 user 的話(只有背景通知)→ 沒有錨點可補,維持 fail closed
+  const noUser = resolve(fixture, 'no-user.jsonl')
+  await writeFile(noUser, `${notification}${filler.repeat(1300)}`, { mode: 0o600 })
+  const missing = execute(noUser)
+  assert.equal(missing.status, 2, missing.stderr)
+  assert.match(missing.stderr, /NO_USER_MESSAGE/)
 })
 
 test('runner classifies every contract bootstrap failure as integrity code 70 for both providers', async (t) => {

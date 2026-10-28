@@ -89,9 +89,9 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 │   Description                  │
 ├────────────────────────────────┤
 │ Footer(justify-between)        │  ← 左 step 計數 / 右 actions
-│   1 of 3       [Skip] [Next]   │     多步驟第一步:有 Skip,無 Prev
-│   2 of 3  [Prev] [Next]        │     多步驟中段:有 Prev,Skip 自動隱藏
-│                  [知道了]      │     單步驟:無 step / Prev / Skip,只 CTA
+│ 第 1 步,共 3 步 [略過][下一步] │     多步驟第一步:有略過,無上一步
+│ 第 2 步,共 3 步 [上一步][下一步]│     多步驟中段:有上一步,略過自動隱藏
+│                  [知道了]      │     單步驟:無步驟計數 / 上一步 / 略過,只 CTA
 └────────────────────────────────┘
 ```
 
@@ -104,25 +104,26 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 - `image` — ReactNode 媒體區;不傳則不渲染
 - `mediaRatio` — Media 長寬比(預設 `16/9`,見「Media 區規則」)
 - `title` / `description` — 文字內容;兩個都不傳則整個 Body 不渲染
-- `step` — `{ current, total }`;有值則 footer 左側顯示 `2 of 3`
+- `step` — `{ current, total }`;有值則 footer 左側顯示步驟計數(預設「第 2 步,共 3 步」,與 Steps 的讀屏文字同一句話)
 - `onSkip` / `onNext` / `onPrev` — footer 按鈕 callback;無 callback 不渲染該按鈕
 - `isLastStep` — `true` 影響 CTA 文字(見下方「CTA 語義表」)
 - `doneLabel` — 單步驟 CTA 自訂文字(預設 `'知道了'`)
+- `labels` — footer 文案覆寫 `Partial<{ previous; skip; next; finish; step(current, total) }>`,與 DS 預設合併(同 `../FileViewer/file-viewer.spec.md` 的 `labels` 先例)。**DS 預設文案 = 中文**(`../../lib/i18n/README.md`「Fallback chain」3:上一步 / 略過 / 下一步 / 完成 / 第 N 步,共 M 步);2026-10-20 前寫死英文 Previous / Skip / Next / Done / `N of M`、而且不能覆寫,跟同一張卡的「知道了」「使用技巧」兩種語言並排(獨立驗證 OV-10)
 - `open` / `onOpenChange` — controlled 控制(多步 tour 由 consumer 管理)
 - `side` / `align` / `sideOffset` — 定位,對齊 Popover props(**`align` 跟隨 trigger 位置:左 → start / 中 → center / 右 → end**,見 `popover.spec.md`「Align 對齊 canonical」SSOT)
 
 ### CTA 語義表(世界級 canonical)
 
-| 情境 | `onPrev` | `isLastStep` | CTA 文字 | Skip 顯示? |
+| 情境 | `onPrev` | `isLastStep` | CTA 文字 | 略過鍵顯示? |
 |------|----------|--------------|----------|-----------|
 | **單步驟**(只 1 步) | — | `true` | `doneLabel ?? '知道了'` | 否(單步驟無 skip 意義) |
-| Multi 第一步 | — | `false` | `Next` | **是**(尚未投入進度) |
-| Multi 中間步 | ✓ | `false` | `Next` | 否(有 Prev 時不再 Skip) |
-| Multi 最後步 | ✓ | `true` | `Done` | 否 |
+| Multi 第一步 | — | `false` | `labels.next`(預設「下一步」) | **是**(尚未投入進度) |
+| Multi 中間步 | ✓ | `false` | `labels.next`(預設「下一步」) | 否(有上一步時不再略過) |
+| Multi 最後步 | ✓ | `true` | `labels.finish`(預設「完成」) | 否 |
 
-**為什麼單步驟 CTA 不叫 "Next"**:Next 語義隱含「還有下一步」,single step 用 Next 使用者會困惑「後面還有嗎?」。Apple HIG / Intercom / Pendo 同樣慣例:single-step tip / onboarding toast 一律用「知道了 / Got it / Start」類完成詞。
+**為什麼單步驟 CTA 不叫「下一步」**:「下一步」語義隱含「還有下一步」,single step 用它使用者會困惑「後面還有嗎?」。Apple HIG / Intercom / Pendo 同樣慣例:single-step tip / onboarding toast 一律用「知道了 / Got it / Start」類完成詞。
 
-**為什麼有 Prev 時不顯示 Skip**:使用者按 Next 進到 step 2+ 代表已投入進度,此時同時出現「Prev(回上一步)」和「Skip(放棄全部)」語義衝突。Linear / Shepherd.js / Pendo tour 都在第 2 步後隱藏 Skip;想退出的使用者按 Esc / 關閉圖示即可(Radix 預設 Esc = dismiss)。
+**為什麼有上一步時不顯示略過**:使用者按「下一步」進到 step 2+ 代表已投入進度,此時同時出現「上一步(回上一步)」和「略過(放棄全部)」語義衝突。Linear / Shepherd.js / Pendo tour 都在第 2 步後隱藏 Skip;想退出的使用者按 Esc / 關閉圖示即可(Radix 預設 Esc = dismiss)。
 
 ---
 
@@ -152,8 +153,8 @@ const steps = [
 
 **設計建議**:
 - **≤ 5 步**——超過使用者疲勞,改用靜態 onboarding 頁面
-- **Skip 在傳 `onPrev` 時隱藏**——由 `onPrev` 是否存在決定(非讀 `step.current`):有 `onPrev`(通常為第 2+ 步)即自動隱藏 Skip;單步驟也不顯示(canonical,見上方「CTA 語義表」)。想退出走 Esc / header Close 按鈕
-- **最後一步 `isLastStep`**——Next → Done 語意切換,讓使用者知道「這是最後一步」
+- **略過鍵在傳 `onPrev` 時隱藏**——由 `onPrev` 是否存在決定(非讀 `step.current`):有 `onPrev`(通常為第 2+ 步)即自動隱藏略過鍵;單步驟也不顯示(canonical,見上方「CTA 語義表」)。想退出走 Esc / header Close 按鈕
+- **最後一步 `isLastStep`**——「下一步」→「完成」語意切換,讓使用者知道「這是最後一步」
 - **每步 anchor 到對應 feature**——不 anchor 或 anchor 到無關元素 = 失去「教 X 怎麼用」的精準性
 - **Multi-step 建議傳 `kind="tips"` 或 `"new-features"`**——header 讓使用者一眼看出 tour 性質 / 何時結束的預期
 
@@ -161,13 +162,20 @@ const steps = [
 
 ## Footer 按鈕順序
 
-Previous(可選)→ Skip(可選)→ Next / Done。動作順序由可逆導覽、退出流程、提交當前步驟三種語意排列:
+上一步(可選)→ 略過(可選)→ 下一步 / 完成。
 
-- **Previous 最左**——回到上一步(負方向,視覺權重低)
-- **Skip 中間**——exit escape hatch,tertiary 不搶焦點;**未傳 `onPrev` 時顯示**(有 `onPrev` 或單步則隱藏,見 CTA 語義表)
-- **Next / Done 最右**——推進主動線(正方向,primary 視覺權重高);**Coachmark 抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,非第一個 CTA),避免使用者還在讀 body 時按 Enter 誤推進;想推進者按 Tab 即達 CTA 再 Enter(單步無 header 一下即達;有 header 或多步時 Close X / Previous / Skip 在推進 CTA 前,需多按幾下;焦點已在 content 內,不觸發 non-modal focus-outside dismiss;2026-07-05 D4 修)
+**對齊與順序的 owner 都不在本檔**(三份,依序):
+1. **對齊 = 浮層頁腳一律靠右**:`../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」表的「排版」列 —— `SurfaceFooter` 是 `justify-end`,單側有內容(本檔左側的步驟計數)時用 `justify-between`,先例就是 Coachmark;`PopoverFooter` 是它的純轉發。所以**單步卡(沒有計數)也靠右** —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」(primary 不放左側)。
+2. **順序 = 全局排序**:`../../patterns/action-bar/action-bar.spec.md`「全局排序」(`primary > secondary > tertiary > text`;**靠右對齊時 primary 在最右**、靠左對齊時 primary 在最左)。本 footer 靠右 → 推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。
+3. **頁面裡的步驟列不套本段**:頁面裡跟著內容、沒有標題的一排「上一步 / 下一步」走 `action-bar.spec.md`「對齊方向的決定」(沒有標題 → 靠左)+ 同一條全局排序(靠左 → primary「下一步」在最左);放在頁面置底 footer 的(TreeView 步驟導覽右半邊,2026-10-20 user「Q1照建議」)照 `SurfaceFooter` 靠右、primary 在最右 —— 那是第 1 點同一個 owner,不是引本段。本段的結果(primary 在最右)來自「浮層頁腳靠右」,不是步驟流程的通則,別處不得引本段當依據(AI 查證,2026-10-20:TreeView 步驟引導的註解引本段當依據、排成靠左的「上一步 | 下一步」,與全局排序相反 —— 本段原本只寫 Coachmark 自己的語意理由、沒有指回 owner,是被錯引的原因;盤查由 user 2026-10-20 的提問觸發:「我們應該也有定義何時primary放右何時放左吧？為何沒注意？為何會漂移？我們有SSOT吧？」)。
 
-第 1 步通常無 Previous;最後步 Next 改 Done(由 `isLastStep` 控制)。單步驟 CTA 改 `'知道了'`。
+下面三點只說明本 footer 各鍵的語意:
+
+- **上一步**——回到上一步(負方向,tertiary,視覺權重低)
+- **略過**——exit escape hatch,tertiary 不搶焦點;**未傳 `onPrev` 時顯示**(有 `onPrev` 或單步則隱藏,見 CTA 語義表)
+- **下一步 / 完成 最右**——推進主動線(primary;靠右對齊 → 全局排序的 primary 在最右);**Coachmark 抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,非第一個 CTA),避免使用者還在讀 body 時按 Enter 誤推進;想推進者按 Tab 即達 CTA 再 Enter(單步無 header 一下即達;有 header 或多步時 Close X / 上一步 / 略過 在推進 CTA 前,需多按幾下;焦點已在 content 內,不觸發 non-modal focus-outside dismiss;2026-07-05 D4 修)
+
+第 1 步通常無上一步;最後步「下一步」改「完成」(由 `isLastStep` 控制)。單步驟 CTA 改 `'知道了'`。
 
 ---
 
@@ -192,9 +200,9 @@ Previous(可選)→ Skip(可選)→ Next / Done。動作順序由可逆導覽、
 - ❌ **不用 Coachmark 做確認框**——確認破壞性動作必須阻斷流程,改用 `Dialog`
 - ❌ **Media 區不放互動元件**——按鈕 / 輸入 / checkbox 一律走 footer。Media 是視覺說明不是互動區
 - ❌ **Description 不寫超過 3 行**——Coachmark 是快速說明,超過 3 行改用 Dialog + 完整 body 或連結到說明文件
-- ❌ **不強迫完成 tour**——永遠提供退出機制(Esc / header Close / 第一步 Skip)。沒有退出的 onboarding 讓使用者感到被綁架,反而降低完成率。註:header Close 僅在傳 `kind`(有 header)時才 render;無 `kind` 的 multi-step tour 第 2+ 步退出靠 Esc(永遠可用),multi-step 務必傳 `kind` 以提供 header Close 退出入口
-- ❌ **單步驟 CTA 不叫 "Next"**——沒有下一步就不用 Next 字眼,用 `'知道了' / 'Got it' / 'Start'`
-- ❌ **有 Prev 時不同時顯示 Skip**——使用者投入進度後兩個退出路徑衝突(見 CTA 語義表)
+- ❌ **不強迫完成 tour**——永遠提供退出機制(Esc / header Close / 第一步略過鍵)。沒有退出的 onboarding 讓使用者感到被綁架,反而降低完成率。註:header Close 僅在傳 `kind`(有 header)時才 render;無 `kind` 的 multi-step tour 第 2+ 步退出靠 Esc(永遠可用),multi-step 務必傳 `kind` 以提供 header Close 退出入口
+- ❌ **單步驟 CTA 不叫「下一步」**——沒有下一步就不用這個字眼,用 `'知道了'`(或 consumer 經 `doneLabel` 傳「開始使用」這類完成詞)
+- ❌ **有上一步時不同時顯示略過**——使用者投入進度後兩個退出路徑衝突(見 CTA 語義表)
 - ❌ **不自包視覺 token**——bg / shadow / radius / padding 一律繼承 Popover,改視覺就改 Popover
 - ❌ **不在 Coachmark 內放 nested Popover / Dialog**——層級混亂焦點崩壞,複雜互動結束 tour 後再開
 
@@ -202,10 +210,10 @@ Previous(可選)→ Skip(可選)→ Next / Done。動作順序由可逆導覽、
 
 ## A11y 預設
 
-- **焦點管理**:Coachmark **刻意抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,對齊 `dialog.tsx` 的 `?? content` fallback canonical)——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(焦點在容器上按 Enter 無動作);按 Tab 移到 content 內第一個 tabbable(單步無 header 即推進 CTA;有 header 會先到 PopoverHeader 右上 Close X,多步則先經 Previous / Skip)。焦點**不**停在 trigger:non-modal Popover 焦點在 content 樹外時按 Tab 會觸發 focus-outside dismiss 誤關閉浮層,CTA 鍵盤永遠到不了(2026-07-05 D4 修;dismiss 機制詳 `popover.spec.md` A11y 段)。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
-- **Esc 關閉**:預設啟用——user 按 Esc 透過 Radix `onOpenChange` 關閉浮層(效果等同退出),**不觸發 `onSkip` callback**(Esc 是「關閉浮層」非「明確 skip」;若需區分 Esc-退出 vs Skip-按鈕 的追蹤事件,consumer 在 Skip 按鈕的 `onSkip` 處理)
+- **焦點管理**:Coachmark **刻意抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,對齊 `dialog.tsx` 的 `?? content` fallback canonical)——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(焦點在容器上按 Enter 無動作);按 Tab 移到 content 內第一個 tabbable(單步無 header 即推進 CTA;有 header 會先到 PopoverHeader 右上 Close X,多步則先經上一步 / 略過)。焦點**不**停在 trigger:non-modal Popover 焦點在 content 樹外時按 Tab 會觸發 focus-outside dismiss 誤關閉浮層,CTA 鍵盤永遠到不了(2026-07-05 D4 修;dismiss 機制詳 `popover.spec.md` A11y 段)。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
+- **Esc 關閉**:預設啟用——user 按 Esc 透過 Radix `onOpenChange` 關閉浮層(效果等同退出),**不觸發 `onSkip` callback**(Esc 是「關閉浮層」非「明確 skip」;若需區分 Esc-退出 vs Skip-按鈕 的追蹤事件,consumer 在略過鍵的 `onSkip` 處理)
 - **ARIA**:trigger 自動 `aria-expanded` / `aria-controls`,content `role="dialog"`(Radix 預設)
-- **Step 計數 tabular-nums**:螢幕閱讀器讀「2 of 3」語意清楚
+- **Step 計數 tabular-nums**:螢幕閱讀器讀「第 2 步,共 3 步」語意清楚(完整句子,與 Steps 讀屏文字同一句)
 
 ---
 

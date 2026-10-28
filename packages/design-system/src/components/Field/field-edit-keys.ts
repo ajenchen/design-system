@@ -1,6 +1,6 @@
 // @internal — DS-internal 單元(edit-in-place 鍵盤結算 SSOT);consumer 用 InlineEdit / DataTable,不直用。
 // ── 消費的 SSOT ──
-// (本檔即是被消費的 SSOT;不 import 其他 canonical)
+// - lib/overlay-escape.ts(Esc 分層:就地編輯中的草稿是焦點所在控件自己的一層,浮層守門留給它;Radix 已用掉的那一下不取消)
 //
 // ── 為什麼存在 ──
 // 「就地編輯(edit-in-place)」的鍵盤結算契約 —— Enter=commit / Esc=cancel + **中文 IME 組字 guard** ——
@@ -18,17 +18,26 @@
 //
 // ── 新增 edit-in-place host 的規矩(2026-07-10)──
 // 之後任何新的「就地編輯」host(第 3 個以上),**Enter/Esc/Cmd·Ctrl+Enter/IME 組字結算一律消費本
-// helper**,禁再手刻 `isComposing || keyCode===229` guard 或 Enter/Esc dispatch —— 現有 3 host
-// (cell string / cell number / InlineEdit multiline)已全數收斂於此,手刻 = drift 回頭路(正是 2026-07
-// 之前 InlineEdit 漏 IME guard 的病根)。單行傳 `commitOnEnter` 預設;多行傳 `commitOnEnter:false`
+// helper**,禁再手刻 Enter/Esc dispatch(組字判準本身住 `lib/ime-composition.ts` `isImeComposing`,全 DS 一支) —— 現有 host
+// (cell string / cell number / cell url / InlineEdit / LinkInput)已全數收斂於此,手刻 = drift 回頭路(正是 2026-07
+// 之前 InlineEdit 漏 IME guard 的病根;2026-10-01 LinkInput 自己寫的 Enter 沒 preventDefault,同一下 Enter 的 keypress 落到剛拿到焦點的鉛筆上,
+// 提交完又重開編輯 —— 第二次證明)。單行傳 `commitOnEnter` 預設;多行傳 `commitOnEnter:false`
 // (本 helper 內建 Cmd/Ctrl+Enter=commit)。此為文件層 SSOT 規矩,不另設 hook(host 少 + 避治理膨脹)。
+//
+// ── Esc 分層(2026-10-01;規則 ds-canonical/references/keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」)──
+// 就地編輯中的草稿是焦點所在控件自己的一層:放在 Dialog / Sheet / Popover 裡時,第一下 Esc 只取消編輯、浮層不關,第二下才關。
+// 機制:`editSettleKeyProps` 把 `data-escape-layer` 與 onKeyDown 一起給 host spread(編輯中才掛),浮層守門(`lib/overlay-escape.ts`
+// `withOverlayEscape`)看到標記就留住這一下;handler 的 Escape 分支先問 `isEscapeForControl` —— Radix 已用掉的那一下(host 自己的彈出層
+// 剛被關掉)不取消編輯。2026-10-01 前這裡只在 React handler 處理,Radix 在 document 捕獲階段早一步把浮層關了(一下少兩層,待辦總帳 N68)。
 
 import type * as React from 'react'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { escapeLayerProps, isEscapeForControl, type EscapeLayerProps } from '@/design-system/lib/overlay-escape'
 
 export interface EditSettleKeyOptions {
   /** Enter(非組字中)→ 呼叫。已 preventDefault。 */
   onCommit: (e: React.KeyboardEvent) => void
-  /** Escape(非組字中)→ 呼叫。已 preventDefault。 */
+  /** Escape(非組字中、而且這一下歸本控件)→ 呼叫。已 preventDefault。 */
   onCancel: (e: React.KeyboardEvent) => void
   /**
    * Enter 是否 = commit。預設 true。
@@ -55,9 +64,11 @@ export interface EditSettleKeyOptions {
 export function makeEditSettleKeyHandler(opts: EditSettleKeyOptions) {
   const commitOnEnter = opts.commitOnEnter ?? true
   return (e: React.KeyboardEvent) => {
-    // IME 組字 guard(見檔頭)—— 對齊 cell-registry 既有寫法 + data-table nav handler。
-    if (e.nativeEvent.isComposing || (e.nativeEvent as { keyCode?: number }).keyCode === 229) return
+    // IME 組字 guard(見檔頭;判準唯一住所 lib/ime-composition.ts,2026-09-30 自本檔與另六處手寫收成一支)
+    if (isImeComposing(e)) return
     if (e.key === 'Escape') {
+      // 這一下已被 Radix 用來關 host 自己的彈出層(或被別的控件獨占)→ 不取消編輯(一下只少一層)
+      if (!isEscapeForControl(e)) return
       e.preventDefault()
       opts.onCancel(e)
     } else if (e.key === 'F2' && opts.commitOnF2) {
@@ -75,4 +86,18 @@ export function makeEditSettleKeyHandler(opts: EditSettleKeyOptions) {
       }
     }
   }
+}
+
+export interface EditSettleKeyProps extends EscapeLayerProps {
+  onKeyDown: (e: React.KeyboardEvent) => void
+}
+
+/**
+ * host 直接 spread 到編輯控件上的一組:結算 handler + Esc 層宣告(`data-escape-layer`,編輯中才掛)。
+ * `escapeLayer` 預設 true(host 渲染本控件就是在編輯中);LinkInput 這種「輸入框在沒有合法值時也一直在」的 host
+ * 傳自己的判斷(正在編輯、或有打了還沒存的字才算一層)。
+ */
+export function editSettleKeyProps(opts: EditSettleKeyOptions & { escapeLayer?: boolean }): EditSettleKeyProps {
+  const { escapeLayer = true, ...settle } = opts
+  return { onKeyDown: makeEditSettleKeyHandler(settle), ...escapeLayerProps(escapeLayer) }
 }

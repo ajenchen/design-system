@@ -379,7 +379,7 @@ Row 集合是**內容(content)**,不是區段(region)。加 py 到 row 集合會
 - **相鄰 group 之間用 `border-divider` 分隔**
 - **兩個 group 之間視覺 gap = 8(上 bottom)+ 8(下 top)= 16px + border**
 
-Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。**訊息列也住在 group 裡**(沒有結果 / 載入中的 `MenuItem message` 由 `CommandEmpty` 用 `MenuGroup` 包起來,`components/Command/command.tsx:165-169`),所以 0 筆時的浮層邊界留白仍是同一份 8px,不另造。
+Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。**訊息列也住在 group 裡**(沒有結果 / 載入中的 `MenuItem message` 由 `CommandEmpty` 用 `MenuGroup` 包起來,`components/Command/command.tsx#CommandEmpty`),所以 0 筆時的浮層邊界留白仍是同一份 8px,不另造。
 
 ### 兩種 CSS 實作(視覺等價,差別在 padding 住哪層)
 
@@ -708,7 +708,7 @@ Canonical 對齊模式判斷:`MenuItem` 的 `isBlockAlign = avatarPx > 24 && !!d
 完全相同(同一個 commit 建的先例,註解原文「form / cell 同 12px content gutter SSOT」)。
 
 **為什麼不讓 row 直接吃 `--field-px`**:同一個浮層可能同時有欄位控件與列 ——
-`components/DataTable/data-table-column-visibility-panel.tsx:186` 的搜尋框(12px)與 `:266` 的列(16px)
+`components/DataTable/data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel` 的搜尋框(12px)與 `components/DataTable/data-table-column-visibility-panel.tsx#VisibilityRow` 的列(16px)
 就是並存的。直接吃會變成「調列就把欄位一起拉走」。獨立 named token 才表達得出來。
 
 **客製方式**:在**清單容器**設一次(inline style),整棵子樹的 row 一起換 ——
@@ -1059,11 +1059,16 @@ World-class benchmark(6 家 DS):
 
 ```tsx
 // Prefix(TreeItem)
-<ChevronRight className="transition-transform [data-expanded=true]_&:rotate-90" />
+<ChevronRight className={cn(disclosureIndicatorMotion, isExpanded && 'rotate-90')} />
 
 // Suffix(SidebarGroup collapsible trigger)
-<ChevronDown className="transition-transform [[data-state=open]_&]:rotate-180" />
+<ChevronDown className={cn(disclosureIndicatorMotion, '[[data-state=open]>&]:rotate-180')} />
+
+// 打開浮層的觸發點(Select / Combobox)
+<ChevronDown className={cn(overlayIndicatorMotion(open), open && 'rotate-180')} />
 ```
+
+本節只管**轉多少度**(位置決定)。**轉多快、什麼曲線**不在這裡寫:箭頭跟它打開的東西同一個時長與曲線,原地展開吃 `disclosureIndicatorMotion`(200ms、ease-out)、打開浮層吃 `overlayIndicatorMotion(open)`(150ms、打開進場曲線 / 收起出場曲線)—— owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`(2026-10-13;原本範例寫裸的 `transition-transform`,實際各元件 150 / 200ms 各寫各的)。旋轉寫在會轉的圖示本身,不從父層用 `[&…>svg]:rotate-*` 去轉子元素;角度看**自己那顆觸發鈕**的狀態(直接父層 `[[data-state=open]>&]` 或命名 group),不寫 `[[data-state=open]_&]` —— 那是「任一層祖先打開」,側欄放進 Sheet(本身 `data-state="open"`)時收合的箭頭也會轉。
 
 ---
 
@@ -1180,6 +1185,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `inline-action.spec.md`
 - `layoutSpace.spec.md`
 - `menu-item.spec.md`
+- `motion.spec.md`
 - `notice.spec.md`
 - `overlay-surface.spec.md`
 - `select-menu.spec.md`

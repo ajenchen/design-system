@@ -494,7 +494,7 @@ export const StateBehavior = {
                 locale={zhTW}
               />
             </div>
-            <p className="text-[11px] text-fg-muted max-w-[260px] leading-relaxed">
+            <p className="text-caption text-fg-muted max-w-[260px]">
               點擊設定唯一選擇。再次點已選日 = 清除選取(react-day-picker v9 single mode 預設 toggle-off,未傳 required);點新日取代舊選。DatePicker 使用此 mode。
             </p>
           </div>
@@ -511,7 +511,7 @@ export const StateBehavior = {
                 locale={zhTW}
               />
             </div>
-            <p className="text-[11px] text-fg-muted max-w-[260px] leading-relaxed">
+            <p className="text-caption text-fg-muted max-w-[260px]">
               可勾選多個不連續日期。點已選日 = 取消。值型別為 Date[]。
             </p>
           </div>
@@ -528,7 +528,7 @@ export const StateBehavior = {
                 locale={zhTW}
               />
             </div>
-            <p className="text-[11px] text-fg-muted max-w-[260px] leading-relaxed">
+            <p className="text-caption text-fg-muted max-w-[260px]">
               第一次點設 from、第二次點設 to,中間自動填滿。值型別 {'{ from; to? }'}。
             </p>
           </div>

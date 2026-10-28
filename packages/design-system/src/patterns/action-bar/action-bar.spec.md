@@ -106,7 +106,7 @@ Search 的角色**不由「產品核心是不是搜尋」決定**，而由——
 業務操作（primary 在業務層最左）  ┆  工具操作  全域溢出
 ```
 
-**對齊方向的決定**：操作列有標題時，標題在左、按鈕靠右（最常見）。操作列沒有標題時，按鈕靠左——空白放在右邊不會造成視覺斷裂，但空白放在左邊會讓按鈕群組像是漂在半空。
+**對齊方向的決定**：操作列有標題時，標題在左、按鈕靠右（最常見）。操作列沒有標題時，按鈕靠左——空白放在右邊不會造成視覺斷裂，但空白放在左邊會讓按鈕群組像是漂在半空。 **適用範圍**(2026-10-20 補在同一行,不移動被引用的行號;規則沒變):對齊方向與下方「全局排序」適用於 DS 裡每一排按鈕 —— 工具列、卡片操作列、表單 / 頁面底部的動作列,以及頁面裡的步驟流程(「下一步 / 上一步」也是一排業務操作:沒有標題 → 靠左,primary「下一步」在最左)。浮層頁腳(Dialog / Sheet / Popover 的 footer)靠右 —— Dialog 頁腳的 owner 是 `components/Dialog/dialog.spec.md:178`(按鈕靠右 `justify-end`),Sheet / Popover 頁腳都是 `SurfaceFooter` 的純轉發、owner 是 `patterns/overlay-surface/overlay-surface.spec.md:237`(`justify-end`)—— 排法就是本節「靠右 → primary 最右」;頁面裡的置底 footer 也是 `SurfaceFooter`、同樣靠右(例:TreeView 步驟導覽右半邊的「上一步 / 下一步」,user 2026-10-20「Q1照建議」;`components/TreeView/tree-view.spec.md`「步驟導覽樹」),所以「沒有標題 → 靠左」只管跟著內容的那一排;Coachmark 頁腳左側是步數、按鈕群靠右(`components/Coachmark/coachmark.spec.md`「Footer 按鈕順序」),同樣是靠右的情形,不能拿來推論沒有標題的頁面步驟列。機械:`scripts/action-row-order-invariant.mjs`(全 DS story 與範本裡的按鈕列,CI 必跑;垂直堆疊依 `components/Button/button.spec.md`「垂直排列」最想被點的在最上方)。
 
 ---
 
@@ -277,7 +277,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 **孤立檢查（結果導向的自我驗證）**：任何一顆按鈕若左右兩側都有線，代表其中一條沒有真正的理由 —— 回頭逐條檢查理由，刪掉對不上的那條。
 
-**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：Dialog 標題列（`dialog.tsx:184-193`）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
+**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：Dialog 標題列（`dialog.tsx#DialogHeader`）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
 
 **切換按鈕**：`text` + `pressed` toggle——依預設（未啟用）狀態決定位置與分隔線；切為啟用（`pressed=true`）時不移動、不調整分隔線（啟用態不是 variant，見三節）。
 
@@ -487,8 +487,10 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 - `bulk-action-bar.spec.md`
 - `button.spec.md`
 - `calendar.spec.md`
+- `coachmark.spec.md`
 - `data-table.spec.md`
 - `file-viewer.spec.md`
 - `popover.spec.md`
 - `separator.spec.md`
+- `steps.spec.md`
 - `toast.spec.md`

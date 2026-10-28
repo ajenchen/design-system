@@ -4,12 +4,23 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 import {
   Folder, FileText, FileCode, Image, Settings,
-  CheckCircle2, Circle, Minus, MoreVertical, Plus, Trash2,
+  MoreVertical, Plus, Trash2,
   type LucideIcon,
 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
+import type { StepResult } from './tree-step-navigation'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { Field, FieldError, FieldGroup, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { Select } from '@/design-system/components/Select/select'
+import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
+import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/展示',
@@ -28,6 +39,7 @@ type Story = StoryObj
 export const FileBrowser: Story = {
   name: '檔案瀏覽',
   render: () => (
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own)
     <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
       <TreeView aria-label="檔案瀏覽" defaultExpandedIds={['src', 'components']}>
         <TreeItem id="src" icon={Folder} label="src">
@@ -76,33 +88,396 @@ export const ActionHoverState: Story = {
   },
 }
 
-// ── Stepper ─────────────────────────────────────────────────────────────
+// ── 步驟導覽樹:商家收款帳戶啟用(tree-view.spec.md「步驟導覽樹」「步驟結果」)──────────────
+// 真實情境:商家在金流後台開通收款帳戶。左邊是步驟樹(三個大步驟都**沒有自己的頁面**,只把子步驟分組 → selectable={false}),
+// 右邊是目前那一步的整頁內容(user 2026-10-01:「…點擊左側菜單選項右側body就會有對應內容」)。按「下一步」先驗證這一頁:
+// 過了 → 這一步列尾畫成功、前往下一步;沒過 → 列尾畫失敗、停在這一頁。「上一步」不驗證。
+// 有自己頁面的大步驟很少見,依 user 2026-10-07「2. …此情境若確認真的少之又少就不要展示範例…」**不做範例**(規格只寫規則)。
+type OnboardingStepId = 'company' | 'owner' | 'bank' | 'payout' | 'review' | 'agree'
+const ONBOARDING_GROUPS: { id: string; label: string; steps: { id: OnboardingStepId; label: string }[] }[] = [
+  { id: 'merchant', label: '1. 商家資料', steps: [{ id: 'company', label: '公司基本資料' }, { id: 'owner', label: '負責人身分驗證' }] },
+  { id: 'settlement', label: '2. 收款設定', steps: [{ id: 'bank', label: '收款銀行帳戶' }, { id: 'payout', label: '撥款週期' }] },
+  { id: 'confirm', label: '3. 確認送出', steps: [{ id: 'review', label: '核對資料' }, { id: 'agree', label: '同意條款並送出' }] },
+]
+const ONBOARDING_ORDER = ONBOARDING_GROUPS.flatMap((g) => g.steps)
+const BANK_OPTIONS = [
+  { value: '004', label: '004 臺灣銀行' },
+  { value: '012', label: '012 台北富邦銀行' },
+  { value: '013', label: '013 國泰世華銀行' },
+  { value: '822', label: '822 中國信託商業銀行' },
+]
+const PAYOUT_LABEL: Record<string, string> = { daily: '每個營業日撥款', weekly: '每週一撥款', monthly: '每月 1 日撥款' }
+interface MerchantDraft {
+  companyName: string; taxId: string; address: string
+  ownerName: string; ownerIdNo: string
+  bankCode: string; accountNo: string; accountName: string
+  payoutCycle: string; agreed: boolean
+}
+const INITIAL_DRAFT: MerchantDraft = {
+  companyName: '晨光咖啡有限公司', taxId: '24536806', address: '台北市大安區復興南路一段 390 號',
+  ownerName: '林雅婷', ownerIdNo: 'A223456789',
+  bankCode: '', accountNo: '', accountName: '',
+  payoutCycle: 'weekly', agreed: false,
+}
+const required = (label: string) => (v: unknown) => (String(v ?? '').trim() ? undefined : `${label}必填`)
+/** 中華民國身分證字號:1 個大寫英文字母 + 9 個數字,而且檢查碼要對(字母換成兩位數代碼後加權總和 % 10 === 0)。
+ *  2026-10-21(r1b TV-01):原本只驗格式,範例預設的 A223456789 格式正確、頁上沒有任何錯誤,樹上卻掛著「上一次送出沒過」的紅叉;
+ *  這個號碼的檢查碼其實不對(加權總和 138),補上檢查碼這一關,紅叉才有頁上看得到的理由(tree-view.spec.md「步驟結果」判斷法)。 */
+const TW_ID_LETTERS = 'ABCDEFGHJKLMNPQRSTUVXYWZIO' // 索引 + 10 = 字母代碼(A=10 … H=17、J=18 … V=29、X=30、Y=31、W=32、Z=33、I=34、O=35)
+const validateTaiwanId = (v: unknown) => {
+  const id = String(v ?? '')
+  if (!/^[A-Z][12]\d{8}$/.test(id)) return '身分證字號格式是 1 個大寫英文字母加 9 個數字'
+  const code = TW_ID_LETTERS.indexOf(id[0]) + 10
+  const digits = [Math.floor(code / 10), code % 10, ...id.slice(1).split('').map(Number)]
+  const weights = [1, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1]
+  return digits.reduce((sum, d, i) => sum + d * weights[i], 0) % 10 === 0 ? undefined : '身分證字號檢查碼不正確'
+}
 
-const StepDone = () => <CheckCircle2 size={16} className="text-success" />
-const StepActive = () => <Circle size={16} className="text-primary" />
-const StepPending = () => <Minus size={16} className="text-fg-muted" />
+/** 一頁的版面:內容區(標題、說明、欄位,內容長就在這一區裡捲)+ 右半邊置底的 footer(上一步 / 下一步)。
+ *  user 2026-10-20「Q1照建議」= 採 AI 建議甲「右半邊置底 footer」(連同當時附的逐段值表;r1b OTH-03 的結論):
+ *  - footer = SurfaceFooter(overlay-surface.spec.md「底部區域:按鈕列 vs 列式」的按鈕列;justify-end 靠右、按鈕間 8、上分隔線、上下 tight、左右 loose)。
+ *    靠右 → 全局排序 primary 在最右:[上一步 tertiary][下一步 primary](action-bar.spec.md「全局排序」);第一步不渲染上一步。
+ *    footer 只在右半邊,左邊的樹全高(overlay-surface.spec.md「欄底 footer 釘在所屬欄內」);「下一步」每一步都在同一個位置。
+ *  - 內容區 = 沒有標題列的 Surface body:上 tight(overlay-surface.spec.md 的 SurfaceBody `py-tight`)、左右 loose、
+ *    下 bottom(body 自己的下內距,同 dialog.tsx DialogBody `pb-[var(--layout-space-bottom)]`);長內容在內容區裡捲(ScrollArea,
+ *    overlay-surface.spec.md「Body overflow canonical」)。
+ *  - 標題 ↔ 說明 = `--item-gap-label-desc-reading-lg`(2px,同 DialogTitle / DialogDescription,dialog.spec.md「Header 可成長」;
+ *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 第一個欄位 = tight(layoutSpace.spec.md 規則 3「heading → labeled content」)
+ *  - 標題字級同 DialogTitle(dialog.tsx `text-body-lg font-medium`) */
+function OnboardingPage({ title, description, children, onSubmit, onBack, submitLabel = '下一步', submitting }: {
+  title: string; description: string; children: React.ReactNode; onSubmit: (e?: React.FormEvent) => void
+  onBack?: () => void; submitLabel?: string; submitting?: boolean
+}) {
+  return (
+    <form onSubmit={onSubmit} aria-label={title} className="flex flex-col flex-1 min-h-0">
+      <ScrollArea fillX className="flex-1 min-h-0">
+        <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+          <h3 className="text-body-lg font-medium text-foreground">{title}</h3>
+          <p className="mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary">{description}</p>
+          <div className="mt-[var(--layout-space-tight)]">{children}</div>
+        </div>
+      </ScrollArea>
+      <SurfaceFooter>
+        {onBack && <Button type="button" variant="tertiary" onClick={onBack}>上一步</Button>}
+        <Button type="submit" variant="primary" loading={submitting}>{submitLabel}</Button>
+      </SurfaceFooter>
+    </form>
+  )
+}
+
+interface OnboardingStepProps {
+  draft: MerchantDraft
+  /** 這一頁驗證通過:存值、列尾畫成功、前往下一步 */
+  onPass: (patch: Partial<MerchantDraft>) => void
+  /** 這一頁驗證沒過:列尾畫失敗、停在這一頁 */
+  onFail: () => void
+  onBack?: () => void
+  /** 範例開始前就已經送出過、沒過的那一頁(useOnboardingForm 的 failedBefore) */
+  failedBefore?: boolean
+}
+/** 送出一頁:useFormValidation 驗過才會呼叫 onSubmit;沒呼叫 = 沒過。
+ *  `failedBefore`:這一頁在範例開始之前就送出過、沒過(樹上已經是紅叉)→ 掛上時把每一欄照「離開欄位」那一條驗一次,
+ *  錯誤與 aria-invalid 跟著出現 —— 點開這一步,頁上看得到它為什麼失敗(tree-view.spec.md「步驟結果」判斷法;r1b TV-01)。
+ *  範例開始之後的失敗不需要這一步:每一頁都一直掛著(見 MerchantOnboarding),上一次送出的值與錯誤原封不動留著。 */
+function useOnboardingForm<T extends Record<string, unknown>>(initialValues: T, validate: Partial<Record<keyof T, (v: T[keyof T]) => string | undefined>>, onPass: (v: T) => void, onFail: () => void, failedBefore = false) {
+  const passed = React.useRef(false)
+  const form = useFormValidation<T>({ initialValues, validate, onSubmit: (v) => { passed.current = true; onPass(v) } })
+  React.useEffect(() => {
+    if (!failedBefore) return
+    for (const name of Object.keys(validate)) form.getInputProps(name as keyof T & string).onBlur()
+    // 只在掛上時跑一次:之後的錯誤由使用者自己的離開欄位 / 送出決定
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const submit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    passed.current = false
+    await form.handleSubmit()
+    if (!passed.current) onFail()
+  }
+  return { form, submit }
+}
+
+function CompanyStep({ draft, onPass, onFail }: OnboardingStepProps) {
+  const { form, submit } = useOnboardingForm(
+    { companyName: draft.companyName, taxId: draft.taxId, address: draft.address },
+    { companyName: required('公司名稱'), taxId: (v) => (/^\d{8}$/.test(String(v)) ? undefined : '統一編號是 8 位數字'), address: required('營業地址') },
+    onPass, onFail,
+  )
+  return (
+    <OnboardingPage title="公司基本資料" description="與經濟部商工登記資料相同,撥款與發票都會用到。" onSubmit={submit} submitting={form.isSubmitting}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.companyName}><FieldLabel>公司名稱</FieldLabel><Input {...form.getInputProps('companyName')} /><FieldError>{form.errors.companyName}</FieldError></Field>
+        <Field required invalid={!!form.errors.taxId}><FieldLabel>統一編號</FieldLabel><Input inputMode="numeric" {...form.getInputProps('taxId')} /><FieldError>{form.errors.taxId}</FieldError></Field>
+        <Field required invalid={!!form.errors.address}><FieldLabel>營業地址</FieldLabel><Input {...form.getInputProps('address')} /><FieldError>{form.errors.address}</FieldError></Field>
+      </FieldGroup>
+    </OnboardingPage>
+  )
+}
+
+function OwnerStep({ draft, onPass, onFail, onBack, failedBefore }: OnboardingStepProps) {
+  const { form, submit } = useOnboardingForm(
+    { ownerName: draft.ownerName, ownerIdNo: draft.ownerIdNo },
+    { ownerName: required('負責人姓名'), ownerIdNo: validateTaiwanId },
+    onPass, onFail, failedBefore,
+  )
+  return (
+    <OnboardingPage title="負責人身分驗證" description="依洗錢防制法需核對公司負責人身分,資料只用於這次審核。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.ownerName}><FieldLabel>負責人姓名</FieldLabel><Input {...form.getInputProps('ownerName')} /><FieldError>{form.errors.ownerName}</FieldError></Field>
+        <Field required invalid={!!form.errors.ownerIdNo}><FieldLabel>身分證字號</FieldLabel><Input {...form.getInputProps('ownerIdNo')} /><FieldError>{form.errors.ownerIdNo}</FieldError></Field>
+      </FieldGroup>
+    </OnboardingPage>
+  )
+}
+
+function BankStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
+  const { form, submit } = useOnboardingForm(
+    { bankCode: draft.bankCode, accountNo: draft.accountNo, accountName: draft.accountName },
+    { bankCode: required('收款銀行'), accountNo: (v) => (/^\d{10,14}$/.test(String(v)) ? undefined : '帳號是 10 到 14 位數字'), accountName: required('戶名') },
+    onPass, onFail,
+  )
+  return (
+    <OnboardingPage title="收款銀行帳戶" description="戶名必須與公司名稱相同,撥款才不會被退回。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.bankCode}><FieldLabel>收款銀行</FieldLabel><Select aria-label="收款銀行" placeholder="選擇銀行" options={BANK_OPTIONS} {...form.getInputProps('bankCode')} /><FieldError>{form.errors.bankCode}</FieldError></Field>
+        <Field required invalid={!!form.errors.accountNo}><FieldLabel>帳號</FieldLabel><Input inputMode="numeric" {...form.getInputProps('accountNo')} /><FieldError>{form.errors.accountNo}</FieldError></Field>
+        <Field required invalid={!!form.errors.accountName}><FieldLabel>戶名</FieldLabel><Input {...form.getInputProps('accountName')} /><FieldError>{form.errors.accountName}</FieldError></Field>
+      </FieldGroup>
+    </OnboardingPage>
+  )
+}
+
+function PayoutStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
+  const { form, submit } = useOnboardingForm({ payoutCycle: draft.payoutCycle }, {}, onPass, onFail)
+  return (
+    <OnboardingPage title="撥款週期" description="款項扣除手續費後,依你選的週期撥入收款帳戶。之後可在設定裡更改。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
+      <Field>
+        <FieldLabel>撥款週期</FieldLabel>
+        <RadioGroup value={form.values.payoutCycle} onValueChange={(v) => form.setFieldValue('payoutCycle', v)}>
+          {Object.entries(PAYOUT_LABEL).map(([value, label]) => <RadioGroupItem key={value} value={value} label={label} />)}
+        </RadioGroup>
+      </Field>
+    </OnboardingPage>
+  )
+}
+
+function ReviewStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
+  const { form, submit } = useOnboardingForm({}, {}, onPass, onFail)
+  const bank = BANK_OPTIONS.find((b) => b.value === draft.bankCode)?.label ?? '(尚未填寫)'
+  return (
+    <OnboardingPage title="核對資料" description="送出後由審核團隊在 2 個工作天內完成,期間無法修改。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
+      <DescriptionList cols={1}>
+        <DescriptionItem label="公司名稱">{draft.companyName}</DescriptionItem>
+        <DescriptionItem label="統一編號">{draft.taxId}</DescriptionItem>
+        <DescriptionItem label="負責人">{draft.ownerName}</DescriptionItem>
+        <DescriptionItem label="收款帳戶">{draft.accountNo ? `${bank} ${draft.accountNo}` : bank}</DescriptionItem>
+        <DescriptionItem label="撥款週期">{PAYOUT_LABEL[draft.payoutCycle]}</DescriptionItem>
+      </DescriptionList>
+    </OnboardingPage>
+  )
+}
+
+function AgreeStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
+  const { form, submit } = useOnboardingForm(
+    { agreed: draft.agreed },
+    { agreed: (v) => (v === true ? undefined : '請先閱讀並同意收款服務條款') },
+    (v) => { onPass(v); toast({ variant: 'success', title: '已送出審核,結果會寄到負責人信箱' }) }, onFail,
+  )
+  return (
+    <OnboardingPage title="同意條款並送出" description="《收款服務條款》說明手續費、撥款時程與爭議款處理方式。" onSubmit={submit} onBack={onBack} submitLabel="送出審核" submitting={form.isSubmitting}>
+      {/* 單一同意勾選框放在 Field 裡要包 CheckboxGroup,選項文字才不會被 FieldLabel 接管(checkbox.spec.md「insideGroup && insideField → 保留 label」);
+          值走 setFieldValue(checkbox.spec.md「表單驗證接線」v1 邊界) */}
+      <Field required invalid={!!form.errors.agreed}>
+        <FieldLabel>收款服務條款</FieldLabel>
+        <CheckboxGroup>
+          <Checkbox name="agreed" label="我已閱讀並同意《收款服務條款》" checked={form.values.agreed} onCheckedChange={(c) => form.setFieldValue('agreed', c === true)} />
+        </CheckboxGroup>
+        <FieldError>{form.errors.agreed}</FieldError>
+      </Field>
+    </OnboardingPage>
+  )
+}
+
+const ONBOARDING_PAGES: Record<OnboardingStepId, (p: OnboardingStepProps) => React.ReactElement> = {
+  company: CompanyStep, owner: OwnerStep, bank: BankStep, payout: PayoutStep, review: ReviewStep, agree: AgreeStep,
+}
+
+// 範例開始時的進度:「公司基本資料」已完成;「負責人身分驗證」上一次送出沒過(身分證字號檢查碼不對,頁上看得到)。
+// 「1. 商家資料」收著 → 替它代顯「其中有錯誤」
+const SEEDED_RESULTS: Partial<Record<OnboardingStepId, StepResult>> = { company: 'completed', owner: 'error' }
+
+function MerchantOnboarding() {
+  const [current, setCurrent] = React.useState<OnboardingStepId>('bank')
+  const [results, setResults] = React.useState<Partial<Record<OnboardingStepId, StepResult>>>(SEEDED_RESULTS)
+  const [expanded, setExpanded] = React.useState(() => new Set(['settlement']))
+  const [draft, setDraft] = React.useState(INITIAL_DRAFT)
+  const selectedIds = React.useMemo(() => new Set([current]), [current])
+  // 用頁面上的「下一步 / 上一步」換頁後,焦點交給樹上「你在哪」那一列(aria-current="step",收起時是代顯的大步驟)——
+  // 按下去的那顆按鈕跟著原頁一起藏起來,焦點不能掉到 <body>(keyboard-model-canonical.md「焦點不可因 DOM unmount 掉到 body」)。
+  // 落點選樹上目前那一步:跟「在樹上按 Enter 換頁」時焦點停的位置相同,讀屏念得出現在到哪一步,下一個 Tab 進到這一頁的第一欄(r1b TV-02)。
+  const treeRef = React.useRef<HTMLDivElement>(null)
+  const focusTreeAfterNav = React.useRef(false)
+  const goTo = (id: OnboardingStepId) => { focusTreeAfterNav.current = true; setCurrent(id) }
+  React.useEffect(() => {
+    if (!focusTreeAfterNav.current) return
+    focusTreeAfterNav.current = false
+    treeRef.current?.querySelector<HTMLElement>('[aria-current="step"]')?.focus()
+  }, [current])
+  return (
+    <>
+      <Toaster />
+      {/* 固定高度(沿用原本的 460px 當高度):內容區才會在自己裡面捲、footer 才釘得住(原本 min-h 讓外框跟著內容長,footer 位置每頁不同) */}
+      <div className="flex w-[760px] h-[460px] overflow-hidden rounded-lg border border-divider bg-surface">
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        <nav aria-label="開通進度" className="w-[240px] shrink-0 border-r border-divider py-2">
+          <TreeView
+            ref={treeRef}
+            aria-label="收款帳戶開通步驟"
+            expandOnSelect
+            selectedIds={selectedIds}
+            onSelectedChange={(ids) => { const id = [...ids][0] as OnboardingStepId | undefined; if (id) setCurrent(id) }}
+            expandedIds={expanded}
+            onExpandedChange={setExpanded}
+          >
+            {ONBOARDING_GROUPS.map((group) => (
+              <TreeItem key={group.id} id={group.id} label={group.label} selectable={false}>
+                {group.steps.map((step) => <TreeItem key={step.id} id={step.id} label={step.label} status={results[step.id]} />)}
+              </TreeItem>
+            ))}
+          </TreeView>
+        </nav>
+        {/* 每一頁都一直掛著,只露出目前那一頁(2026-10-21,r1b TV-01):換頁不再卸載上一頁,頁上打的字、上一次送出的錯誤
+            回來時都還在 —— 修前以 key={current} 換頁,回到送出失敗的那一頁時頁上 0 個錯誤,樹上卻還是紅叉。 */}
+        <section aria-label="目前步驟" className="flex-1 min-w-0 min-h-0 flex flex-col">
+          {ONBOARDING_ORDER.map((step, index) => {
+            const Page = ONBOARDING_PAGES[step.id]
+            const next = ONBOARDING_ORDER[index + 1]
+            return (
+              <div key={step.id} className={step.id === current ? 'flex flex-col flex-1 min-h-0' : 'hidden'}>
+                <Page
+                  draft={draft}
+                  failedBefore={SEEDED_RESULTS[step.id] === 'error'}
+                  onPass={(patch) => {
+                    setDraft((d) => ({ ...d, ...patch }))
+                    setResults((r) => ({ ...r, [step.id]: 'completed' }))
+                    if (next) goTo(next.id)
+                  }}
+                  onFail={() => setResults((r) => ({ ...r, [step.id]: 'error' }))}
+                  onBack={index > 0 ? () => goTo(ONBOARDING_ORDER[index - 1].id) : undefined}
+                />
+              </div>
+            )
+          })}
+        </section>
+      </div>
+    </>
+  )
+}
 
 export const Stepper: Story = {
   name: '步驟引導',
-  render: () => (
-    <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '商家開通收款帳戶:左邊步驟樹、右邊是目前那一步的整頁內容。三個大步驟都沒有自己的頁面(`selectable={false}`),只把子步驟分組 —— ' +
+          '點大步驟的文字會到它底下的第一個子步驟並展開;目前那一步已在裡面、而且看得到時,點它就是開 / 合(同一列的連點只算一下)。' +
+          '灰底是「你在哪」;大步驟收起時,灰底與列尾結果一起移到它身上(例如「1. 商家資料」收著,替裡面的「負責人身分驗證」代顯紅叉)。' +
+          '按「下一步」先驗證這一頁:過了列尾畫綠勾並前往下一步,沒過畫紅叉並停在這一頁。換頁不會清掉頁上的東西:回到有紅叉的那一頁,錯誤還在。' +
+          '鍵盤:Enter / 空白鍵 = 到那一步,原地開合用 → / ←;用頁面上的「下一步 / 上一步」換頁後,焦點回到樹上目前那一步。',
+      },
+    },
+  },
+  render: () => <MerchantOnboarding />,
+}
+
+// ── 步驟導覽樹契約夾具(test-only;scripts/tree-view-step-navigation-invariant.mjs 量的就是這三棵樹)──────────
+// 不給讀者看(test-only 不進側欄與文件頁):有自己頁面的大步驟依 user 2026-10-07 不做範例,它的規則只由這個夾具與閘守住。
+// 三棵樹:沒有自己頁面的大步驟(含巢狀)/ 有自己頁面的大步驟 / 沒開 expandOnSelect 的一般樹(對照:行為不得改變)。
+// 每棵樹的選取與展開由這裡持有(受控),外層 data-selected / data-expanded 給閘讀;window.__treeStepFixture[name] 讓閘把狀態重設成指定的起點。
+interface StepFixtureState { selected: string | null; expanded: string[] }
+function StepFixtureTree({ name, label, initial, expandOnSelect = true, children }: {
+  name: string; label: string; initial: StepFixtureState; expandOnSelect?: boolean; children: React.ReactNode
+}) {
+  const [selected, setSelected] = React.useState(initial.selected)
+  const [expanded, setExpanded] = React.useState(() => new Set(initial.expanded))
+  React.useEffect(() => {
+    // 閘用的掛鉤:scripts/tree-view-step-navigation-invariant.mjs 經 window.__treeStepFixture 把狀態重設成起點(f0dbaf5a 加,2026-10-14 複查)
+    const w = window as unknown as { __treeStepFixture?: Record<string, (s: StepFixtureState) => void> }
+    w.__treeStepFixture = { ...w.__treeStepFixture, [name]: (s) => { setSelected(s.selected); setExpanded(new Set(s.expanded)) } }
+  }, [name])
+  const selectedIds = React.useMemo(() => new Set(selected ? [selected] : []), [selected])
+  return (
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own)
+    <div
+      data-step-fixture={name}
+      data-selected={selected ?? ''}
+      data-expanded={[...expanded].sort().join(',')}
+      className="w-[300px] rounded-lg border border-divider bg-surface py-2"
+    >
       <TreeView
-        aria-label="申請流程"
-        expandOnSelect
-        defaultExpandedIds={['step1', 'step2']}
-        defaultSelectedIds={['step2-card']}
+        aria-label={label}
+        expandOnSelect={expandOnSelect}
+        selectedIds={selectedIds}
+        onSelectedChange={(ids) => setSelected([...ids][0] ?? null)}
+        expandedIds={expanded}
+        onExpandedChange={setExpanded}
       >
-        <TreeItem id="step1" indicator={<StepDone />} label="1. 個人資料">
-          <TreeItem id="step1-name" indicator={<StepDone />} label="姓名" />
-          <TreeItem id="step1-addr" indicator={<StepDone />} label="地址" />
-          <TreeItem id="step1-contact" indicator={<StepDone />} label="聯絡方式" />
-        </TreeItem>
-        <TreeItem id="step2" indicator={<StepActive />} label="2. 付款方式">
-          <TreeItem id="step2-card" indicator={<StepActive />} label="信用卡號碼" />
-          <TreeItem id="step2-billing" indicator={<StepPending />} label="帳單地址" />
-        </TreeItem>
-        <TreeItem id="step3" indicator={<StepPending />} label="3. 確認送出" />
+        {children}
       </TreeView>
+    </div>
+  )
+}
+
+const fixtureMore = { icon: MoreVertical, label: '更多動作', onClick: () => {} }
+
+export const StepNavigationContract: Story = {
+  name: '步驟導覽契約夾具',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-wrap items-start gap-[var(--layout-space-loose)]">
+      <StepFixtureTree name="pageless" label="門市開通步驟" initial={{ selected: 'p2a', expanded: ['p2'] }}>
+        <TreeItem id="p1" label="1. 商家資料" selectable={false}>
+          <TreeItem id="p1a" label="公司基本資料" status="completed" inlineActions={[fixtureMore]} />
+          <TreeItem id="p1b" label="負責人身分驗證" status="completed" />
+        </TreeItem>
+        <TreeItem id="p2" label="2. 收款設定" selectable={false}>
+          <TreeItem id="p2a" label="收款銀行帳戶" status="error" />
+          <TreeItem id="p2b" label="撥款週期" />
+        </TreeItem>
+        <TreeItem id="p3" label="3. 門市設定" selectable={false}>
+          <TreeItem id="p3n" label="收銀機" selectable={false}>
+            <TreeItem id="p3n1" label="連線設定" status="completed" />
+            <TreeItem id="p3n2" label="發票機" />
+          </TreeItem>
+          <TreeItem id="p3c" label="營業時間" status="completed" />
+        </TreeItem>
+      </StepFixtureTree>
+      <StepFixtureTree name="page" label="建置執行紀錄" initial={{ selected: 'h3', expanded: [] }}>
+        <TreeItem id="h1" label="建置" status="error">
+          <TreeItem id="h1a" label="安裝相依套件" status="completed" />
+          <TreeItem id="h1b" label="執行單元測試" status="error" />
+        </TreeItem>
+        <TreeItem id="h2" label="部署" status="completed">
+          <TreeItem id="h2a" label="上傳映像檔" status="completed" />
+        </TreeItem>
+        <TreeItem id="h3" label="通知" />
+      </StepFixtureTree>
+      {/* 停用 × 步驟結果(2026-10-21,r1b TV-04):送出後鎖住、不能再改的步驟 —— 列尾的勾 / 叉一律停用色,靠形狀分辨
+          (tree-view.spec.md「步驟結果 → 停用的列」,M24 disabled > 其他)。修前沒有任何 story 畫出這一格,閘量不到 */}
+      {/* 列名不與同頁其他夾具樹重複:閘用無障礙樹的列名對照說明(S1 / S2) */}
+      <StepFixtureTree name="locked" label="已送出的開通申請" initial={{ selected: null, expanded: ['lk'] }}>
+        <TreeItem id="lk" label="1. 申請資料(審核中)" selectable={false}>
+          <TreeItem id="lk1" label="營業登記資料" status="completed" disabled />
+          <TreeItem id="lk2" label="代表人證件(退件)" status="error" disabled />
+        </TreeItem>
+      </StepFixtureTree>
+      <StepFixtureTree name="plain" label="專案檔案" initial={{ selected: 'f2', expanded: [] }} expandOnSelect={false}>
+        <TreeItem id="f1" icon={Folder} label="設計稿">
+          <TreeItem id="f1a" icon={FileText} label="首頁.fig" />
+        </TreeItem>
+        <TreeItem id="f2" icon={FileText} label="需求.md" />
+      </StepFixtureTree>
     </div>
   ),
 }
@@ -151,6 +526,7 @@ const CheckboxTree = () => {
   return (
     <div>
       <button type="button" className="sr-only">樹狀清單之前</button>
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
       <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView
           selectionMode="multiple"
@@ -245,8 +621,10 @@ const RowActionsTree = () => {
   const more = (name: string) => ({ icon: MoreVertical, label: '更多動作', onClick: () => setLastAction(`更多動作 —「${name}」`) })
   const add = (name: string) => ({ icon: Plus, label: '新增頁面', onClick: () => setLastAction(`新增頁面 —「${name}」`) })
   return (
-    <div className="flex flex-col gap-2">
+    // 樹 ↔ 它下方的動作讀數 = tight(控件 → 它的讀數,layoutSpace.spec.md 規則 3);前後兩顆 sr-only 鈕絕對定位、不佔版位
+    <ExampleGroup>
       <button type="button" className="sr-only">樹狀清單之前</button>
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
       <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView aria-label="產品文件" defaultExpandedIds={['requirements']} defaultSelectedIds={['checkout-prd']}>
           <TreeItem id="requirements" icon={Folder} label="產品需求" inlineActions={[more('產品需求'), add('產品需求')]}>
@@ -263,7 +641,7 @@ const RowActionsTree = () => {
         {lastAction ? `最近一次動作:${lastAction}` : '尚未執行任何動作'}
       </p>
       <button type="button" className="sr-only">樹狀清單之後</button>
-    </div>
+    </ExampleGroup>
   )
 }
 
@@ -377,8 +755,10 @@ const DeleteHandoffTree = () => {
     </TreeItem>
   ))
   return (
-    <div className="flex flex-col gap-2">
+    // 前後兩顆 sr-only 鈕絕對定位、不佔版位 → 版面上只有樹框一個子節點,不設 gap(原本的 8px 不作用)
+    <div className="flex flex-col">
       <button type="button" className="sr-only">樹狀清單之前</button>
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
       <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView aria-label="知識庫" defaultExpandedIds={['handbook']}>{renderNodes(nodes)}</TreeView>
       </div>
@@ -442,9 +822,10 @@ export const DeleteHandoff: Story = {
 export const LongLabel: Story = {
   name: '長標籤',
   render: () => (
-    <div className="flex gap-8 items-start">
-      <div className="flex flex-col gap-2">
+    <div className="flex gap-[var(--layout-space-loose)] items-start">
+      <ExampleGroup>
         <span className="text-caption font-medium text-fg-muted">預設 truncate</span>
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
           <TreeView aria-label="產品設計檔案樹（截斷）" defaultExpandedIds={['proj']}>
             <TreeItem id="proj" icon={Folder} label="2026 產品品牌識別設計提案">
@@ -453,9 +834,10 @@ export const LongLabel: Story = {
             </TreeItem>
           </TreeView>
         </div>
-      </div>
-      <div className="flex flex-col gap-2">
+      </ExampleGroup>
+      <ExampleGroup>
         <span className="text-caption font-medium text-fg-muted">label 換行（移除 truncate）</span>
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
         <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
           <TreeView aria-label="產品設計檔案樹（換行）" defaultExpandedIds={['proj2']}>
             <TreeItem id="proj2" icon={Folder} label={<span className="break-words whitespace-normal">2026 產品品牌識別設計提案完整版</span>}>
@@ -464,7 +846,7 @@ export const LongLabel: Story = {
             </TreeItem>
           </TreeView>
         </div>
-      </div>
+      </ExampleGroup>
     </div>
   ),
 }
@@ -532,12 +914,14 @@ export const DragAndDrop: Story = {
     const [log, setLog] = React.useState<string[]>([])
 
     return (
-      <div className="flex gap-6 items-start">
-        <div className="flex flex-col gap-2">
+      // 示範欄 ↔ 紀錄欄並列 = loose;說明 → 樹 → 重設鈕 = tight(說明在替樹命名、重設鈕直接作用在這棵樹,layoutSpace.spec.md 規則 3)
+      <div className="flex gap-[var(--layout-space-loose)] items-start">
+        <ExampleGroup>
           <p className="text-caption text-fg-muted max-w-xs">
             Figma 風格:整列拖曳,items 真的會移動。拖到其他 node 上方(before) / 下方(after) / 中間(inside 成為子項)。
             鍵盤同樣可重排:Tab 聚焦樹、↑↓ 移到目標後,Cmd/Ctrl+Shift+↑↓ 同層移動、→ 移入資料夾、← 移出到上層(每按一下立即生效,結果會播報給螢幕閱讀器)。
           </p>
+          {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
           <div className="w-[280px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
             <TreeView
               aria-label="拖曳排序"
@@ -559,10 +943,13 @@ export const DragAndDrop: Story = {
           <Button variant="tertiary" size="sm" className="self-start" onClick={() => setTree(INITIAL_TREE)}>
             重設
           </Button>
-        </div>
+        </ExampleGroup>
         <div className="w-[240px]">
-          <p className="text-caption font-medium text-fg-muted mb-2">移動紀錄</p>
-          <div className="flex flex-col gap-1 text-[11px] font-mono text-fg-secondary">
+          <p className="text-caption font-medium text-fg-muted mb-[var(--layout-space-tight)]">移動紀錄</p>
+          {/* 字級走 token(typography.spec.md 禁止事項「不要硬寫 font-size」):與上面「移動紀錄」標題同一級 text-caption(12px,「元件內次要說明」);
+              2026-10-21 前寫死 11px(r1b TV-05)。紀錄是節點 id,保留等寬字。 */}
+          {/* @layout-space-magic-ok: 移動紀錄是一串同質的紀錄列,列距 4px(layoutSpace.spec.md:165 同質清單列) */}
+          <div className="flex flex-col gap-1 text-caption font-mono text-fg-secondary">
             {log.length === 0 && <span className="text-fg-muted">拖曳 node 後這裡會顯示</span>}
             {log.map((l, i) => <span key={i}>{l}</span>)}
           </div>

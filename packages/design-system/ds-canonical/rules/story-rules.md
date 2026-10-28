@@ -14,7 +14,7 @@ paths:
 |---|------|-----------|------|-----------|
 | 1 展示 | `*.stories.tsx` | trait-based v2 | `check_story_invariants.sh` R3 category | 29 |
 | 2 設計規格 | `*.anatomy.stories.tsx` | 6-canonical(Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior / Accessibility)| —(6-canonical 由 Dim 13 batch verify + `compile-stories.mjs --check` 兜底;`check_story_invariants.sh` R1 = 展示層 hand-craft 偵測,2026-06-11 起豁免 anatomy 檔)| 13 |
-| 3 設計原則 | `*.principles.stories.tsx` | ONE complete `UsageGuidance` sufficient；split style 才需 ≥ 2 個 distinct decision dimensions；額外 story 必須 earn existence | `check_canonical_propagation.sh` E.1 principles | 30 |
+| 3 設計原則 | `*.principles.stories.tsx` | ONE complete `UsageGuidance` sufficient；split style 才需 ≥ 2 個 distinct decision dimensions；額外 story 必須 earn existence；版面一律用 `src/stories-helpers/examples/tutorial-page.tsx`(category-templates.md「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`) | `check_canonical_propagation.sh` E.1 principles | 30 |
 
 ## Title 命名
 
@@ -86,12 +86,12 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 
 ## 預設開啟的模態浮層 story(2026-09-09 user 抓到 docs 頁疊框)
 
-- **規則**:`Dialog` / `Sheet` / `FileViewer` / `CommandDialog` 這類 `position: fixed` 模態浮層,凡 story 一渲染就開著(`defaultOpen`、`open={true}`、`useState(true)` 餵 `open`),**必**帶 `parameters: { docs: { story: openOverlayDocsStory('<iframe 高度>') } }`(helper:`stories-helpers/overlay/open-overlay-docs.ts` = Storybook 官方 `docs.story.inline: false` + `height`,<https://storybook.js.org/docs/api/doc-blocks/doc-block-story>)。標 `tags: ['test-only']` 的 probe 已被 shared preview 的 `docs.stories.filter` 排除在 Autodocs 外,免帶。
+- **規則**:`Dialog` / `Sheet` / `FileViewer` / `CommandDialog` 這類 `position: fixed` 模態浮層,凡 story 一渲染就開著(`defaultOpen`、`open={true}`、`useState(true)` 餵 `open`),**必**帶 `parameters: { docs: { story: openOverlayDocsStory('<iframe 高度>') } }`(helper:`stories-helpers/overlay/open-overlay-docs.ts` = Storybook 官方 `docs.story.inline: false` + `height`,<https://storybook.js.org/docs/api/doc-blocks/doc-block-story>)。標 `tags: ['test-only']` 的 probe 已被 shared preview 的 `docs.stories.filter` 排除在 Autodocs 外,免帶。**AppShell 裡預設開著的 AI agent 也算**(`agent` 放 `AgentPanelDock defaultOpen`):放不下時它就是浮層(遮罩 + 宿主 inert + 焦點進面板,`components/AppShell/app-shell.spec.md`「版面規則」§9),docs 畫布約 1000px 寬一定放不下 —— 2026-10-15 r1b 複驗 F3:AppShell 展示 docs 兩則互相 inert、× 與遮罩都按不到、整頁卡死。story body 只放一個 module 層元件時,「預設開著」要寫在 story 上看得到(例:由 story 傳 `agent`),閘才追得到。
 - **為什麼是這個機制**(三案對照後選最乾淨的一個):(a) `docs.story.inline:false` —— docs 每個 story 各自 iframe,不疊;canvas 一個位元不變,截圖 / a11y / 互動閘照跑;只加一行 parameter;(b) preview decorator 在 `viewMode==='docs'` 關掉 defaultOpen —— decorator 碰不到 story render 內部的 prop,要 DS 元件另讀 Storybook 專用 context 才做得到,把測試工具語意塞進元件;(c) 改 `play()` 開啟 + docs 不 autoplay(Storybook 預設 docs 不跑 play)—— 要改寫 30+ 檔的開啟方式,且截圖閘全部要改成「等 play 跑完」,還違背 M15 已 codify 的「Radix defaultOpen 對 Portal 自動生效」canonical。
 - **meta 是 `layout: 'centered'` 的檔案改用 `parameters: openOverlayParameters('<高度>')`**(= `layout: 'padded'` + 同一組 docs 參數):SB 8.6 Canvas block 的 layout 取值順序是 `parameters.layout` 先於 `docs.canvas.layout`,docs 專用參數蓋不過 meta;centered 的 docs 畫布是 flex 置中、iframe 縮成內建 300px(對話框被擠到 204px,2026-09-09 實測)。canvas 只差觸發鈕從置中變左上,對話框本來就 fixed 置中。
 - **不拿掉 defaultOpen**:M15 規定 stakeholder flow 必須有開著的快照 story;本規則只管 docs 的渲染方式。
 - **錨點錄**(Dialog docs 頁,1280×800):修前 4 個可見 `[role=dialog]` + 7 個 fixed 開啟節點疊在同一份文件;修後 0 個(各自進 iframe)。
-- **閘**:`scripts/dialog-coexistence-invariant.mjs`「docs 隔離」段 —— 靜態掃全部 `*.stories.tsx`(模態浮層 + 預設開啟 + 非 test-only 卻缺 `openOverlayDocsStory(` / `openOverlayParameters(` / `inline: false` → 紅)+ 瀏覽器量 Dialog docs 頁 `[role=dialog]` 可見數必 0、每個隔離 iframe ≥ 600px 寬、canvas OpenSnapshot 仍開著。
+- **閘**:`scripts/dialog-coexistence-invariant.mjs`「docs 隔離」段 —— 靜態掃全部 `*.stories.tsx`(模態浮層 + 預設開啟 + 非 test-only 卻缺 `openOverlayDocsStory(` / `openOverlayParameters(` / `inline: false` → 紅;追進 story 用到的同檔 module 層元件;AppShell 裡 `AgentPanelDock defaultOpen` 算預設開啟)+ 瀏覽器量 Dialog docs 頁 `[role=dialog]` 可見數必 0、每個隔離 iframe ≥ 600px 寬、canvas OpenSnapshot 仍開著;AppShell / AgentPanel 展示 docs 頁在 1440 與 1180 視窗頂層 `[inert]` = 0、焦點不在 story 裡。
 
 ## 元件一律定義在 module 層,禁寫在 `render()` 裡(2026-09-17)
 

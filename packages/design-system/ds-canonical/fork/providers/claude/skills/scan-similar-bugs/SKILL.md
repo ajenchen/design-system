@@ -111,13 +111,13 @@ Execution:
 按 Phase 1.5 authority classifier 執行。每修一檔:
 - 用 Edit(不 Write,降風險)
 - 修完 grep 該 anti-pattern 應 0 match
-- npx tsc --noEmit 必過
+- 型別留到 Phase 3 一次驗(`npm run build`);根目錄 tsconfig 是 `files: []` 時 `npx tsc --noEmit` 一個檔都不檢查,不算
 
 ### Phase 3 — Visual / unit verify
 
 - Visual:跑 `use the active browser/Storybook screenshot workflow and preserve visual evidence` 或 dim-specific scan
 - Unit:跑 `npm run governance:check`
-- TSC:`npx tsc -b`
+- 型別:`npm run build`(設計系統本庫的 `tsc -b` 不檢查 DS 原始碼,不算)
 - 全綠才繼續
 
 ### Phase 4 — Final report + memory + new defense

@@ -267,6 +267,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 - 2026-08-11 一日連環五鎖:build graph journal 死鎖(復原全刪全蓋碰禁寫目標)/ authority fingerprint 把自家 index-publish 誤判竄改 / blanket 授權辨識漏「開頭裸可以」/ `gh auth status` 帳號級體檢擋 repo-scoped token / gh Go TLS 拒 sandbox 代理——五層全是自家機制,user 原話「不要再說有人擋你了,完全沒有」;逐層拆除後 release 全自動走通,零 user 指令。
 - 2026-08-28 hooks/scripts symlink 本地殘影(8/1 舊版 generator 合法生成、8/2 佈局改版後無人能寫回):我先誤稱「我們自己沙箱設的保護」(實查自家 settings `denyWrite=[]`,鎖是 Claude Code 對 hook 設定目錄的**平台內建**防注入保護),再指 `! git restore` 給 user(對話內 `!` 與 Bash **同一個沙箱**,必再被擋 = 指死路),user 原話「你不要再作繭自縛了,我說要做就做」;正解一行 `git update-index --skip-worktree`(只寫 `.git` 可寫區,不碰被鎖路徑)→ codify M36(b') 第 4 問(鎖的主人是誰 + 交 user 的指令必先驗證不在同牆內)。
 - 2026-09-23 「只有你能按」:重拍 visual baseline 要觸發 workflow,我憑上次的 403 記憶寫「我的 token 沒權限代按,是帳號層級的事」,叫 user 去 GitHub 按,連續 12 輪 30 分鐘監看空等;user 反問「為何你不能自己按」(而且他那台裝置根本沒登入,按鈕不會出現)。當場照 M36(b') 逐題探:workflow_dispatch 403 是真的,但**同一把 token 發 repository_dispatch 回 204**——擋住的不是帳號權限,是我們自己的 workflow 只監聽按鈕事件(第 3 問「有沒有已驗證可通的等價傳輸」從沒問過)。正解:workflow 多聽 `repository_dispatch: types:[visual-regression-run]`,三種觸發的輸入收斂到 job env 兩個變數。**憑記憶宣稱被擋 = 沒有探;宣稱前的四問要每次重跑,不能沿用上一次的答案。**
+- 2026-10-14 AppShell 規格讀錯(M18 Q0 + M36(a) 同一次):user 寫好一份 AppShell 版面規則(四區、誰並排誰變浮層、可拉上限、寬度紀錄),AI 派代理「拿它跟現行 DS 與世界級比較」,第一輪報告用舊設計概念轉述新設計(「960 蓋板門檻會變成浮動的」—— 規格裡根本沒有門檻)、把外部規則與 AI 舊計畫當成限制(Carbon「同一時間只展開一個浮層」與 DS 允許疊 modal 矛盾,`dialog.spec.md`「禁止事項」的 nested Dialog 收窄條;「Sidebar 拖寬要 RFC + 拍板」是 AI 2026-05-21 提的施工順序(`197401cc`,`resize-handle.spec.md`「Roadmap(用 user 既有的 v2 framing)」;commit 訊息記 user 以「都照你建議做」概括採納),是流程閘不是 user 禁止)、另提一個與規格第 6 節矛盾的分配算法,並把規格已回答的事列成「沒定義」;反駁關卡只核對引文與行號,AI 轉述前也沒拿 user 原文逐條對。user 原話「你到底有沒有讀懂我的規格啊？」、「為何規格會讀錯？？？？？」。**修法**:(1) user 給的規格先寫成可執行模型、user 舉的數字例子全部算對,才拿去比 DS / 世界級;(2) 問 user 前每一題先分「規格已回答 / AI 讀錯 / 真的沒寫」,只問第三類;(3) 反駁關卡必查「規格是否已回答」與「有沒有偷加 user 沒寫的規則」,任何限制先查出處是 user、DS 規格、外部還是 AI 舊計畫。待辦總帳 Q5。
 - 四路同 provider 對抗審查查不到 (a) 類(reviewer 無對話紀錄),故必須以 M36 rule + 來源總帳格式機械化。
 
 ## 失敗記憶索引搬家(2026-09-21)
@@ -304,6 +305,9 @@ Visual Regression 改成在釘死的 Playwright 容器裡跑之後,連續兩次�
 ### `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼**
 
 | `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼** | 不只是「不 emit declaration」——2026-09-06 實證:`data-table.tsx` 少傳一個必填 prop(TS2741),`npx tsc -b --force` 回 **0**,`npm run build:lib` 才報錯。**「tsc -b 通過」不構成型別正確的證據**,任何 .tsx 改動的型別驗證一律以 `npm run build:lib` 為準 |
+
+2026-10-07 同族全掃(M10):2026-09-29 只改了 `self-verify.md`,另有 11 份 skill / rule 仍寫「`npx tsc -b` 無錯」當型別證明,`stop_self_audit.sh` Mechanism 1 也把裸 `npx tsc` 當驗證證據 —— 一併改成 `npm run build:lib`(fork 投影自動換成產品 repo 的 `npm run build`),裸 `tsc -b` 不再能讓「宣告完成」過關(`test_stop_self_audit.sh` Test 3b)。
+同日複核再補一族:另有 4 份 skill 參考檔寫「`npx tsc --noEmit` 必過 / 無錯」當型別證明 —— 根目錄 tsconfig 是 `files: []`,實測 `npx tsc --noEmit --listFilesOnly` 列出 **0** 個檔,比 `tsc -b` 更糟(永遠綠);而第一輪改寫時把幾份 skill 裡「禁 `--noEmit`」的提醒一起刪了,正本一度沒有任何一處記得這件事。現在全部改成 `npm run build:lib`(story 檔加 `npm run typecheck:stories`),提醒收在 bootstrap 失敗記憶索引 `tsc -b` 那一列與 `self-verify.md` Post-edit 列;`stop_passive_logging.sh` 的 R1(turn 動 .ts 就跑根目錄 `tsc -b --noEmit` 記錯誤數)退役 —— 量錯範圍、macOS 沒有 `timeout` 指令所以從沒真的跑過、記錄檔沒有讀者。
 
 ### hook 測試直跑留 fixture `.git/` 進 corpus
 
@@ -463,3 +467,17 @@ WM `Sync Design System` run 36303338183(repository_dispatch)在第 6 步「Apply
   **同層**(`dirname(repoRoot)`),沙箱只准寫 repo 內 → 把 repo clone 到 `$TMPDIR` 底下一層再跑;(2) 交易內的封閉 npm 執行環境
   刻意不透傳 `HTTPS_PROXY`,沙箱網路又只走代理 → 本機跑不到重建那一步,所以根因改用「讀 code + 對照組小 repo + 修法測試」三件證據收斂,
   而不是等一次完整重現。
+
+## M37 第十二種形狀:治理閘自己的代理量(2026-10-07,待辦總帳 N47 / N34 / G4 / G3)
+
+同一天在 hook 與 adapter 裡抓到五個「拿當下剛好成立的量代替要保證的性質」,全部有修前紅、修後綠的對照組:
+
+| 要保證的性質 | 實際拿來判斷的量 | 兩者分開的情境 | 修法 |
+|---|---|---|---|
+| hook 快照裡有「這一回合 user 說的話」 | transcript 尾端 1,200 筆 | 長回合(實錄 2,804 / 3,723 筆)→ 核准閘 `NO_USER_MESSAGE`,所有受管寫入一律擋 | `scripts/run-provider-hook.mjs` 快照補「最近一則 user 本人的話」當錨點(判準 = `approval-evidence.mjs#userVoiceText`,同一支) |
+| 這筆 Edit 只改了註解 | `new_string ?? ''` | 經 adapter 正規化後 new_string 改放在 `content` → 讀成「刪掉那行註解」→ 夾帶 UI 程式碼也判成純註解放行 | 拿不到替換文字就不算純註解;單筆 Edit 以 `content` 為準 |
+| 改動的程式碼有沒有 UI 字眼 | 在**一行 JSON** 上剝 `//` 註解 | 第一個 `//` 把同一行後面整筆操作吃掉 | 先解回欄位原文再逐欄剝。**複核**:只換成新視圖會讓換行變真的換行,「標籤之間的文字」規則不跨行 → 多行 JSX 文案改動變成工程放行(修一個洞開一個洞);改為新舊兩種視圖的聯集(任一命中就算 UI)+ 該規則可跨行,保證改後不比改前鬆(§18l3–18l6) |
+| 寫入的檔案在受管目錄 | 命令字串裡有沒有 `packages/design-system/src/` 這串字 | `cd` 進去用相對路徑、`perl -0pi` / `sed -E -i` | 依 cwd + `cd` 解析絕對路徑;旗標任何位置都認。**複核**:(1) 正式入口 `run-provider-hook.mjs` 原本把 payload 的 cwd 丟掉 —— 直接呼叫 hook 才擋、經入口放行,繞過入口的測試是假綠 → 入口轉交驗證過的 cwd(`packages/governance/test/plugin-hook-runtime.test.mjs` 經入口測);(2) 同族補齊 `bash -c` / `sh -c` 內層、`git checkout` / `git restore` 的路徑、rsync、install、`write_text` / `write_bytes`、`--write` / `--fix`,以及 find / git ls-files / 格式化工具的目錄參數;cd 只「加入」可能的目錄、不丟舊的(子 shell 裡的 cd 不影響外面);路徑解析搬到 `approval-evidence.mjs#bashCommandWriteTargets`(bash 3.2 的字串替換是平方時間,1,500 行 heredoc 要十幾秒)(§18m);(3) 刻意不涵蓋刪除(rm / git rm / find -delete):Edit / Write 工具無法刪檔,擋下就沒有任何授權途徑,屬另一個政策問題。**複核二**:套補丁(`git apply 檔`、`patch -p1 < 檔`、`git am 檔`)指令字串裡沒有 .tsx 字樣 → 先把補丁寫到暫存檔再套用就繞過閘;改讀補丁標頭算目標(讀不到就保守擋受管根目錄,`--check` / `--stat` 不算);反方向,`cat > 筆記.md <<'EOF'` 主體裡提到的 .tsx 被當成寫入目標而誤擋 → 只有接收者是 cat / tee 且不再接管線時,主體當資料不掃(§18o) |
+| hook 檢查通過 | 子程序 exit 0 | 缺 jq 時每支 hook 讀到空欄位、走早退的 `exit 0` | **複核後的做法**:缺的工具換成探針放在 hook PATH 最後,這支 hook **實際呼叫了**才算受影響(直接量性質,不猜需求):PreToolUse 上負責擋的閘(outputMode blocking / governance-context-or-block)→ 擋下這次呼叫並說明缺什麼、怎麼裝;其他 hook → 只降級它自己、列名給模型。第一版「缺任一工具就整批跳過」會讓只用 bash / jq / node 的核准閘在缺 perl / python3 時一起失效(改前擋、改後放行)。**複核二**:「閘跑不起來 → 這次呼叫一律擋」又把**任何呼叫**當成閘要判的寫入(同一種代理):缺 jq 時連 `ls`、`git status`、`brew install jq` 都擋,AI 無法自己把工具裝回來(M36(b) 自鎖);開了紀錄又缺 python3 時,只是 `_log-fire.sh` 的旁路紀錄寫不成,核准閘就被當成跑不起來。現在(`provider-hook-output-transport.mjs#classifyBlindHookCall`,判斷在 node、不依賴缺的工具):唯讀指令與「只安裝缺的工具」的指令永遠放行(仍列入降級名單),其餘只有落在那道閘自己的範圍內才擋(核准閘 = 受管產品檔、一人一分支閘 = 開分支 / push;判不出範圍的閘保守視為在範圍內);旁路紀錄標記 `GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL` 不算需要該工具(`packages/governance/test/plugin-hook-runtime.test.mjs`「G4 複核二」三條,改前紅、改後綠) |
+
+另:一支 hook 自己的失敗(啟動失敗、逾時、輸出超量、非 UTF-8、被 signal 砍)過去讓整個設定群組跳過(UserPromptSubmit 三支一起消失),現在只降級它自己,而且降級名單跟著這一批的結果交給模型 —— 「沒跑成」不得讀成「通過」。**複核補上**:hook 印出保留的完整性標記(每支 canonical hook 共用的 `governance_hook_integrity_fail` 就是這條路)原本在一般模式仍讓整組跳過、只寫 stderr —— 一般模式的「fail closed」對 adapter 的意思其實是「整批放行」;現在同樣只降級那一支(嚴格模式維持 exit 70),入口自己出錯而整批跳過時也經 context 通道告訴模型。稽核維度的「擋 / 只提醒」原本靠散文自述(39 維只有部分標),dim 57 的散文還停在升級前的 WARN;現在由 `registrations.json` 的 outputMode 推導,推不出來的才逐條寫規則出處(`scripts/audit-coverage-matrix.mjs`)。

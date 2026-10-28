@@ -71,7 +71,7 @@ benchmark:
 
 - **Token**:`<Button iconOnly size="sm" dismiss />`(28px @ md / 32px @ lg)
 - **永遠 size="sm"**(不論家族 / density):chrome / overlay header 內 button 一律 sm。**廣化(2026-06-12 user 拍板)**:header 內**所有 field-height 控件**(Button / Input / Select / SegmentedControl / Combobox 等)一律 `sm`,禁混雜不同 field height(Tabs 跟齊 chrome 高度,唯一例外 = 「Tabs 取代整個 header」的 standalone `size="lg"`,見上方表)
-- 對齊 既有 `dialog.tsx:132-153` + `sheet.tsx:122-139` + `popover.tsx:87-110`(Dialog/Sheet/Popover 已內建 close X)
+- 對齊 既有 `dialog.tsx#DialogHeader` + `sheet.tsx#SheetHeader` + `popover.tsx#PopoverHeader`(Dialog/Sheet/Popover 已內建 close X)
 
 ### 4.5 Chrome header avatar SSOT(2026-05-21 codify per user directive;2026-06-17 擴涵 account entry)
 
@@ -110,9 +110,9 @@ benchmark:
 | **Overlay header**(Dialog / Sheet / Popover)| **transparent** | Overlay 自身 `bg-surface-raised`,header 透明繼承 | `<SurfaceHeader>`(SurfaceHeader 內無 bg) |
 
 **反 pattern 錨例**(2026-05-20 修正):
-- `app-shell.tsx:268` aside built-in header `bg-surface` 疊在 aside `bg-surface`(規則 6 nested case 違反)→ 撤回
-- `_demo-helpers.tsx:131` PageHeader 自刻 `<header>` + `bg-surface` → migrate 消費 ChromeHeader + 保 `bg-surface`(top-level 合法)
-- `sidebar.stories.tsx:113` Sidebar IconCollapse demo 自刻 header + `bg-surface` → 後續一併 migrate(同 PageHeader 路徑)
+- `app-shell.tsx`(2026-05-20 當時第 268 行)aside built-in header `bg-surface` 疊在 aside `bg-surface`(規則 6 nested case 違反)→ 撤回
+- `_demo-helpers.tsx`(當時第 131 行)PageHeader 自刻 `<header>` + `bg-surface` → migrate 消費 ChromeHeader + 保 `bg-surface`(top-level 合法)
+- `sidebar.stories.tsx`(當時第 113 行)Sidebar IconCollapse demo 自刻 header + `bg-surface` → 後續一併 migrate(同 PageHeader 路徑)
 
 ### 7. Element contract(實作層,2026-05-20)
 
@@ -128,7 +128,7 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 **規則**:**Header 是 semantic owner**(「這 surface 需要 bottom border 分區」是 header 的概念決定),**Paint owner 隨 state 變**:
 - `withTabs={false}` → header 自畫(`border-b border-divider`)
-- `withTabs={true}` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`TABS_LIST_BASE` tabs.tsx:116 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)
+- `withTabs={true}` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)
 
 **這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = withTabs 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:185-187`),paint owner 不在 tabs 會讓 underline 失去 base line。
 

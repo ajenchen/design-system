@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils'
  * 2026-09-02 v2 升級為 value-driven:user directive「若雙方使用全然一致,務必變成同一個元件確保 SSOT」)。
  *
  * ── 定位 ──
- * 統一 DataTable 欄寬 / AgentPanel 面板寬(未來 Sidebar / Aside)的命中區、cursor、視覺 line、
+ * 統一 DataTable 欄寬 / AppShell 四區(Menu、Right panel、AI agent,含兩種浮層)的命中區、cursor、視覺 line、
  * pointer 拖拉、鍵盤(←/→ 或 ↑/↓、Home/End)與 ARIA `separator` 契約。consumer 只持有尺寸 state,
- * 把 `value / min / max` 交進來,接 `onValueChange`(拖拉中 live + 鍵盤每步)/ `onValueCommit`(放開)。
+ * 把 `value / min / max` 交進來,接 `onValueChange`(拖拉中 live + 鍵盤每步)/ `onValueCommit`(一次調整結束:
+ * 放開且按下到放開有位移、鍵盤每步;**只點一下不 commit** —— AppShell「版面規則」§7)。
  *
  * ── 消費的 SSOT ──
  * - tokens: [--border-hover, --divider, --primary, --ring, --table-cell-py(只 DataTable consumer 用)]
@@ -62,8 +63,24 @@ export interface ResizeHandleProps
   lineInsetEnd?: string
   /** 拖拉中每次移動 + 鍵盤每步(live)。 */
   onValueChange: (next: number) => void
-  /** 放開(pointerup / pointercancel)一次;鍵盤每步亦視為 commit。 */
+  /**
+   * 一次調整結束時一次:放開(pointerup / pointercancel)**且放開點與按下點的距離不是 0**;鍵盤每步亦視為 commit。
+   * 只點一下沒有拖(或拖出去又回到原點放開)不算調整,不發(2026-10-14 AppShell「版面規則」§7:寬度紀錄只記使用者真的調整過的寬;
+   * 判準看放開點與按下點的距離,不數 pointermove —— `AGENTS.md`「失敗記憶索引」拖曳 vs 點擊)。
+   */
   onValueCommit?: (final: number) => void
+  /**
+   * 拖拉開始 / 結束(`true` / `false`)。結束一定會發,不管這次有沒有 commit —— consumer 用它收掉「拖拉中」的暫時狀態
+   * (只點一下、或拖出去又回到原點放開時不會有 commit,沒有這個訊號 consumer 會一直以為還在拖)。鍵盤調整不經過這裡。
+   */
+  onDraggingChange?: (dragging: boolean) => void
+  /**
+   * 按下把手時把 pointerdown **擋在把手這裡**,不讓祖先收到(預設 false)。只給「祖先另有 pointerdown 使用者、會把這一下當成自己的手勢」的
+   * consumer 打開 —— DataTable 欄寬:表頭格掛著 dnd-kit 欄位拖曳,不擋的話拉欄寬會變成拖欄位。
+   * 預設不擋(2026-10-14 審查抓到):擋下的 pointerdown 也到不了 document,Radix DismissableLayer 靠 document 上那一下把「按在層裡」的旗標歸零;
+   * 旗標沒歸零,下一次點浮層外會被當成點在裡面 —— Menu 浮層拖過把手之後點外面收不起來(AppShell「版面規則」§3、D:26)。
+   */
+  isolatePointerDown?: boolean
 }
 
 const DEFAULT_STEP = 16
@@ -87,6 +104,8 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
       lineInsetEnd,
       onValueChange,
       onValueCommit,
+      onDraggingChange,
+      isolatePointerDown = false,
       className,
       style: extraStyle,
       onPointerDownCapture,
@@ -97,9 +116,9 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
     const isHorizontal = direction === 'horizontal'
     const sign = position === 'end' ? 1 : -1
     const [dragging, setDragging] = React.useState(false)
-    const dragRef = React.useRef<{ start: number; startValue: number; pointerId: number } | null>(null)
-    const latest = React.useRef({ value, min, max, onValueChange, onValueCommit })
-    latest.current = { value, min, max, onValueChange, onValueCommit }
+    const dragRef = React.useRef<{ start: number; startValue: number; pointerId: number; emitted: boolean } | null>(null)
+    const latest = React.useRef({ value, min, max, onValueChange, onValueCommit, onDraggingChange })
+    latest.current = { value, min, max, onValueChange, onValueCommit, onDraggingChange }
 
     const clamp = React.useCallback((next: number) => {
       const upper = latest.current.max
@@ -109,21 +128,24 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
     const handlePointerDownCapture = (e: React.PointerEvent<HTMLSpanElement>) => {
       onPointerDownCapture?.(e)
       if (disabled || e.button !== 0) return
-      // capture + stopPropagation:不讓 dnd-kit 欄位拖曳搶到 pointerdown(DataTable);preventDefault:防選字/捲動。
-      e.stopPropagation()
+      // stopPropagation 只在 consumer 要求時(`isolatePointerDown`:DataTable 欄寬,不讓 dnd-kit 欄位拖曳搶到 pointerdown);
+      // 一律擋會連 document 都收不到這一下,Radix 浮層的「按在層裡」旗標就不歸零(見 prop 說明)。preventDefault:防選字 / 捲動。
+      if (isolatePointerDown) e.stopPropagation()
       e.preventDefault()
       const target = e.currentTarget
-      dragRef.current = { start: isHorizontal ? e.clientX : e.clientY, startValue: latest.current.value, pointerId: e.pointerId }
+      dragRef.current = { start: isHorizontal ? e.clientX : e.clientY, startValue: latest.current.value, pointerId: e.pointerId, emitted: false }
       try {
         target.setPointerCapture(e.pointerId)
       } catch {
         /* 舊瀏覽器無 pointer capture:仍靠 window 事件 */
       }
       setDragging(true)
+      latest.current.onDraggingChange?.(true)
       const onMove = (ev: PointerEvent) => {
         const drag = dragRef.current
         if (!drag || ev.pointerId !== drag.pointerId) return
         const current = isHorizontal ? ev.clientX : ev.clientY
+        drag.emitted = true
         latest.current.onValueChange(clamp(drag.startValue + (current - drag.start) * sign))
       }
       const finish = (ev: PointerEvent) => {
@@ -140,9 +162,16 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
         }
         setDragging(false)
         const current = isHorizontal ? ev.clientX : ev.clientY
-        const final = clamp(drag.startValue + (current - drag.start) * sign)
-        latest.current.onValueChange(final)
-        latest.current.onValueCommit?.(final)
+        if (current !== drag.start) {
+          // 有位移 = 一次調整:最後一格 live + commit
+          const final = clamp(drag.startValue + (current - drag.start) * sign)
+          latest.current.onValueChange(final)
+          latest.current.onValueCommit?.(final)
+        } else if (drag.emitted) {
+          // 拖出去又回到原點放開:畫面回到起點,但不算調整、不 commit(「版面規則」§7)
+          latest.current.onValueChange(drag.startValue)
+        }
+        latest.current.onDraggingChange?.(false)
       }
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', finish)

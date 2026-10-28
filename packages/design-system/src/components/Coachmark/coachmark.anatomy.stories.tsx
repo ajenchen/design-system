@@ -49,11 +49,11 @@ export const Overview: Story = {
           >
             <Button variant="primary" startIcon={Bot}>AI 助理</Button>
           </Coachmark>
-          <div className="text-caption text-fg-secondary max-w-[280px] leading-relaxed">
+          <div className="text-caption text-fg-secondary max-w-[280px]">
             <ul className="list-disc pl-4 space-y-1.5">
               <li><b>Media</b> — 可選,預設 16:9 比例,邊緣切齊靠外殼 p-0 overflow-hidden 裁切</li>
               <li><b>Body</b> — Title(text-body-lg font-medium) + Description(text-body text-fg-secondary)</li>
-              <li><b>Footer</b> — justify-between;左 step 計數 / 右 actions(有 Previous 時為 Previous + Next;第一步無 Previous 時為 Skip + Next)</li>
+              <li><b>Footer</b> — justify-between;左 step 計數 / 右 actions(有上一步時為「上一步 + 下一步」;第一步沒有上一步時為「略過 + 下一步」)</li>
             </ul>
           </div>
         </div>
@@ -87,12 +87,13 @@ export const Overview: Story = {
               <tr><Td mono>mediaRatio</Td><Td mono>number</Td><Td mono>16/9</Td><Td>media 長寬比(寬/高);可傳 4/3 / 1/1 / 3/4 覆寫</Td></tr>
               <tr><Td mono>title</Td><Td mono>ReactNode</Td><Td mono>—</Td><Td>標題(text-body-lg font-medium)</Td></tr>
               <tr><Td mono>description</Td><Td mono>ReactNode</Td><Td mono>—</Td><Td>說明文字(text-body text-fg-secondary)</Td></tr>
-              <tr><Td mono>step</Td><Td mono>{'{ current, total }'}</Td><Td mono>—</Td><Td>步驟計數;有值 footer 左顯示「2 of 3」</Td></tr>
-              <tr><Td mono>onSkip</Td><Td mono>() =&gt; void</Td><Td mono>—</Td><Td>Skip 按鈕;不傳則不渲染</Td></tr>
-              <tr><Td mono>onNext</Td><Td mono>() =&gt; void</Td><Td mono>—</Td><Td>Next 按鈕;不傳則不渲染</Td></tr>
-              <tr><Td mono>onPrev</Td><Td mono>() =&gt; void</Td><Td mono>—</Td><Td>Previous 按鈕(第 2+ 步);不傳則不渲染</Td></tr>
-              <tr><Td mono>isLastStep</Td><Td mono>boolean</Td><Td mono>false</Td><Td>true 時 Next 文字改 Done</Td></tr>
+              <tr><Td mono>step</Td><Td mono>{'{ current, total }'}</Td><Td mono>—</Td><Td>步驟計數;有值 footer 左顯示「第 2 步,共 3 步」</Td></tr>
+              <tr><Td mono>onSkip</Td><Td mono>() =&gt; void</Td><Td mono>—</Td><Td>略過鍵;不傳則不渲染</Td></tr>
+              <tr><Td mono>onNext</Td><Td mono>() =&gt; void</Td><Td mono>—</Td><Td>推進鍵(下一步 / 完成 / 知道了);不傳則不渲染</Td></tr>
+              <tr><Td mono>onPrev</Td><Td mono>() =&gt; void</Td><Td mono>—</Td><Td>上一步(第 2+ 步);不傳則不渲染</Td></tr>
+              <tr><Td mono>isLastStep</Td><Td mono>boolean</Td><Td mono>false</Td><Td>true 時「下一步」改「完成」(單步驟改 doneLabel)</Td></tr>
               <tr><Td mono>doneLabel</Td><Td mono>string</Td><Td mono>'知道了'</Td><Td>single-step 完成 CTA 文字(僅單步驟使用)</Td></tr>
+              <tr><Td mono>labels</Td><Td mono>{'Partial<{ previous; skip; next; finish; step(current, total) }>'}</Td><Td mono>上一步 / 略過 / 下一步 / 完成 / 第 N 步,共 M 步</Td><Td>footer 文案覆寫,與 DS 預設合併(DS 預設文案 = 中文,lib/i18n/README.md「Fallback chain」)</Td></tr>
               <tr><Td mono>side</Td><Td mono>'top' | 'right' | 'bottom' | 'left'</Td><Td mono>'bottom'</Td><Td>對齊 Popover props</Td></tr>
               <tr><Td mono>align</Td><Td mono>'start' | 'center' | 'end'</Td><Td mono>'center'</Td><Td>對齊 Popover props</Td></tr>
               <tr><Td mono>sideOffset</Td><Td mono>number</Td><Td mono>8</Td><Td>跟 Popover 一致的浮層間距(8px)</Td></tr>
@@ -168,9 +169,9 @@ export const Inspector: Story = {
                 <tr><Td>Footer layout</Td><Td mono>justify-between(左 step / 右 actions)</Td></tr>
                 <tr><Td>Footer actions gap</Td><Td mono>gap-2</Td></tr>
                 <tr><Td>Step typography</Td><Td mono>text-body text-fg-secondary tabular-nums</Td></tr>
-                <tr><Td>Button size</Td><Td mono>sm(Previous / Skip / Next 全 sm)</Td></tr>
-                <tr><Td>Previous / Skip variant</Td><Td mono>tertiary</Td></tr>
-                <tr><Td>Next variant</Td><Td mono>primary</Td></tr>
+                <tr><Td>Button size</Td><Td mono>sm(上一步 / 略過 / 下一步 全 sm)</Td></tr>
+                <tr><Td>上一步 / 略過 variant</Td><Td mono>tertiary</Td></tr>
+                <tr><Td>下一步 / 完成 variant</Td><Td mono>primary</Td></tr>
                 <tr><Td>sideOffset</Td><Td mono>8px(對齊 Popover DS 設計準則)</Td></tr>
                 <tr><Td>Layout-space</Td><Td mono>繼承 Popover(鎖 layout-space md;ui-size 繼承 page)</Td></tr>
               </tbody>
@@ -268,7 +269,7 @@ export const StateBehavior: Story = {
         <div>
           <H3>單步 Coachmark(無 step,僅完成 CTA「知道了」)</H3>
           <Desc>
-            最簡 Coachmark:單一完成 CTA(`doneLabel`,預設「知道了」),無 step 計數、無 Skip(單步 skip 與關閉語義重複,對齊 spec.md CTA 語義表 L116)。Esc 關閉。
+            最簡 Coachmark:單一完成 CTA(`doneLabel`,預設「知道了」),無 step 計數、無略過鍵(單步略過與關閉語義重複,對齊 spec.md「CTA 語義表」)。Esc 關閉。
           </Desc>
           <div className="flex items-start gap-6">
             <Coachmark
@@ -276,28 +277,28 @@ export const StateBehavior: Story = {
               onOpenChange={setSingleOpen}
               image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
               title="試試 AI 助理"
-              description="單步 Coachmark,僅一個完成 CTA(知道了),無 step / Skip。"
+              description="單步 Coachmark,僅一個完成 CTA(知道了),無步驟計數 / 略過鍵。"
               isLastStep
               onNext={() => setSingleOpen(false)}
               side="right"
               align="start"
             >
-              <Button variant="primary" size="sm">Anchor</Button>
+              <Button variant="primary" size="sm" startIcon={Bot}>AI 助理</Button>
             </Coachmark>
             <Button variant="tertiary" size="sm" onClick={() => setSingleOpen(true)}>重新開啟</Button>
           </div>
         </div>
 
         <div>
-          <H3>多步 Tour(current of total,含 Previous)</H3>
+          <H3>多步 Tour(第 N 步,共 M 步;含上一步)</H3>
           <Desc>
-            Consumer 管理 `step` state;每步傳不同 `current`。第 2+ 步顯示 Previous,最後步 Next 文字變 Done(isLastStep)。Footer 左側 step 計數使用 `tabular-nums` 讓數字等寬,切換步驟時不跳動。
+            Consumer 管理 `step` state;每步傳不同 `current`。第 2+ 步顯示「上一步」,最後步「下一步」變「完成」(isLastStep)。Footer 左側 step 計數使用 `tabular-nums` 讓數字等寬,切換步驟時不跳動。
           </Desc>
           <div className="flex items-start gap-6">
             <Coachmark
               open={tourOpen}
               onOpenChange={setTourOpen}
-              image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Users} label={`Step ${tourStep + 1}`} />}
+              image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Users} label={`步驟 ${tourStep + 1}`} />}
               title={`步驟 ${tourStep + 1}:${['建立 Workspace', '邀請成員', '建立專案'][tourStep]}`}
               description="多步 tour 由 consumer 管理 current step,每步渲染一個 Coachmark anchor 到對應 feature。"
               step={{ current: tourStep + 1, total: tourTotal }}
@@ -308,12 +309,12 @@ export const StateBehavior: Story = {
               side="right"
               align="start"
             >
-              <Button variant="primary" size="sm" startIcon={Users}>Step {tourStep + 1}</Button>
+              <Button variant="primary" size="sm" startIcon={Users}>步驟 {tourStep + 1}</Button>
             </Coachmark>
             <div className="flex flex-col gap-2 text-caption">
               <span>目前:step {tourStep + 1} / {tourTotal}</span>
-              <span className="text-fg-muted">{isLast ? 'isLastStep = true → Next 變 Done' : 'isLastStep = false → Next'}</span>
-              <Button variant="tertiary" size="sm" onClick={() => { setTourStep(0); setTourOpen(true) }}>重設</Button>
+              <span className="text-fg-muted">{isLast ? 'isLastStep = true → 推進鍵是「完成」' : 'isLastStep = false → 推進鍵是「下一步」'}</span>
+              <Button className="self-start" variant="tertiary" size="sm" onClick={() => { setTourStep(0); setTourOpen(true) }}>重設</Button>
             </div>
           </div>
         </div>
@@ -328,10 +329,10 @@ export const StateBehavior: Story = {
               <thead><tr><Th>情境</Th><Th>Footer 渲染</Th></tr></thead>
               <tbody>
                 <tr><Td>無 step、無 callback</Td><Td>Footer 不渲染(僅 media + body)</Td></tr>
-                <tr><Td>只 onNext</Td><Td>Footer 有 Next;左側保留 space(justify-between)</Td></tr>
-                <tr><Td>step + onSkip + onNext</Td><Td>左 step 計數 / 右 Skip + Next</Td></tr>
-                <tr><Td>step + onPrev + onSkip + onNext</Td><Td>左 step 計數 / 右 Previous + Next(有 onPrev 時 Skip 被抑制,見 CTA 語義表)</Td></tr>
-                <tr><Td>isLastStep + onNext</Td><Td>Next 文字 → Done</Td></tr>
+                <tr><Td>只 onNext</Td><Td>Footer 有推進鍵;左側保留 space(justify-between)</Td></tr>
+                <tr><Td>step + onSkip + onNext</Td><Td>左 step 計數 / 右 略過 + 下一步</Td></tr>
+                <tr><Td>step + onPrev + onSkip + onNext</Td><Td>左 step 計數 / 右 上一步 + 下一步(有 onPrev 時略過鍵被抑制,見 CTA 語義表)</Td></tr>
+                <tr><Td>isLastStep + onNext</Td><Td>「下一步」→「完成」</Td></tr>
               </tbody>
             </table>
           </div>
@@ -355,7 +356,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `coachmark.spec.md` 「A11y 預設」段。摘要:\n\n-   焦點管理  :開啟時焦點落在內容區、不自動跳到按鈕,避免你還在讀內容時誤觸;按 Tab 才移到按鈕(單步、無標題列時一下即達推進鍵;有標題列 / 多步會先到關閉 X / 上一步 / 略過);關閉後焦點回到觸發元素\n-   Esc 關閉  :預設啟用——user 按 Esc 透過 Radix onOpenChange 關閉浮層(效果等同退出),但不觸發 onSkip callback(Esc 是「關閉浮層」非「明確 skip」)\n-   ARIA  :trigger 自動  aria-expanded  /  aria-controls ,content  role=\"dialog\" (Radix 預設)\n-   Step 計數 tabular-nums  :螢幕閱讀器讀「2 of 3」語意清楚"}</p>
+      <p className="whitespace-pre-line">{"詳 `coachmark.spec.md` 「A11y 預設」段。摘要:\n\n-   焦點管理  :開啟時焦點落在內容區、不自動跳到按鈕,避免你還在讀內容時誤觸;按 Tab 才移到按鈕(單步、無標題列時一下即達推進鍵;有標題列 / 多步會先到關閉 X / 上一步 / 略過);關閉後焦點回到觸發元素\n-   Esc 關閉  :預設啟用——user 按 Esc 透過 Radix onOpenChange 關閉浮層(效果等同退出),但不觸發 onSkip callback(Esc 是「關閉浮層」非「明確 skip」)\n-   ARIA  :trigger 自動  aria-expanded  /  aria-controls ,content  role=\"dialog\" (Radix 預設)\n-   Step 計數 tabular-nums  :螢幕閱讀器讀「第 2 步,共 3 步」語意清楚"}</p>
     </div>
   ),
 }

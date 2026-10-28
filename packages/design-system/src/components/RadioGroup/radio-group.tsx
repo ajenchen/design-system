@@ -170,7 +170,7 @@ const RadioGroup = React.forwardRef<
         // aria-required-children 就是 radio,這棵樹在結構上本來就是壞的。
         //
         // 改成 role="group" 是**對齊本 DS 既有先例**(M23):Select 的 ReadonlyDisplay
-        //(select.tsx:374 起)就是純 <span> / <div>,**不掛任何 role**。
+        //(select.tsx#ReadonlyDisplay)就是純 <span> / <div>,**不掛任何 role**。
         // aria-readonly 同時拿掉 —— WAI-ARIA 1.2 沒把它列進 group 的支援屬性
         //(axe 的 aria-allowed-attr 會抓;rating.tsx 唯讀分支 role=img 記過同一個坑)。
         // 唯讀語意已由「裡面根本沒有可互動控件」表達,與 Select 一致。

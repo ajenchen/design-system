@@ -299,7 +299,8 @@ export function DataTableInteractionLayer({
           <CellRingOverlay rect={toRelRect(hoverGeo.rect, hoverGeo.clipRect)} kind="hover" />
         </ClipMask>
       )}
-      {/* SelectionRing — kind=selected(DS 焦點框 `focus-ring-inset`)z 2;幾何與 hover 同一個 rect / ClipMask */}
+      {/* SelectionRing — kind=selected(DS 焦點框 `focus-ring-inset`)z 2;幾何與 hover 同一個 rect / ClipMask。
+          格裡的控件被鍵盤聚焦、自己畫框時這一圈收起(data-table.css 的 `:has([role='gridcell'] :focus-visible)`,一次只一個指示器) */}
       {selectedGeo && (
         <ClipMask clipRect={selectedGeo.clipRect}>
           <CellRingOverlay

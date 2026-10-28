@@ -62,8 +62,9 @@ const PaletteDemo = () => {
   }, [])
 
   return (
-    <div className="flex flex-col gap-3 max-w-xl">
-      <Button variant="tertiary" startIcon={Search} onClick={() => setOpen(true)}>搜尋或輸入指令…(⌘K)</Button>
+    <div className="flex flex-col max-w-xl">
+      {/* 開對話框的按鈕宣告彈出型別與開合(Radix DialogTrigger 會自動帶;指令面板沒有 DialogTrigger,由按鈕自己寫) */}
+      <Button className="self-start" variant="tertiary" startIcon={Search} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>搜尋或輸入指令…(⌘K)</Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="搜尋 issue、人員,或輸入指令…" />
         <CommandEmpty>沒有結果</CommandEmpty>
@@ -105,7 +106,7 @@ export const InlineCommand: Story = {
   parameters: { docs: { description: { story: 'Gmail 式左側資料夾清單直接嵌在頁面上,沒有 Dialog 外殼;依規格必須自帶邊框容器。' } } },
   render: () => (
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
-      <Command>
+      <Command label="搜尋信件或資料夾">
         <CommandInput placeholder="搜尋信件或資料夾…" />
         <CommandEmpty>沒有結果</CommandEmpty>
         <CommandList>
@@ -132,9 +133,9 @@ const ActionCommandDemo = () => {
   const [lastAction, setLastAction] = useState<string | null>(null)
 
   return (
-    <div className="flex flex-col gap-3 max-w-md">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-md">
       <div className="rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
-        <Command>
+        <Command label="指令">
           <CommandInput placeholder="輸入指令…" />
           <CommandEmpty>沒有結果</CommandEmpty>
           <CommandList>
@@ -173,7 +174,7 @@ const NoResultsDemo = () => {
   const [search, setSearch] = useState('行銷活動')
   return (
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
-      <Command>
+      <Command label="搜尋專案">
         <CommandInput placeholder="搜尋專案…" value={search} onValueChange={setSearch} />
         <CommandEmpty>沒有結果</CommandEmpty>
         <CommandList>
@@ -202,7 +203,7 @@ export const LoadingFirstOpen: Story = {
   parameters: { docs: { description: { story: 'Linear 專案切換清單剛打開,專案還沒從 API 回來:清單裡只有一列「載入專案中」訊息列——與一筆結果等高,不用大轉圈撐高;搜尋列照常可打字、不另外轉圈(載入指示只在清單內)。' } } },
   render: () => (
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
-      <Command>
+      <Command label="搜尋專案">
         <CommandInput placeholder="搜尋專案…" />
         <CommandEmpty><CommandLoading label="載入專案中" /></CommandEmpty>
         <CommandList>

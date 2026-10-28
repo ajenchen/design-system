@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tokens/motion/disclosure-motion'
 
 /**
  * Accordion — Radix Accordion + 本 DS token
@@ -49,7 +50,7 @@ const AccordionTrigger = React.forwardRef<
         'flex flex-1 items-center justify-between gap-2',
         'py-4 text-body font-medium text-foreground text-left',
         // hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
-        // 下方箭頭的 transition-transform 是展開狀態的旋轉,不是 hover 觸發,保留。
+        // 下方箭頭的旋轉是展開狀態的動畫,不是 hover 觸發,保留(時長與曲線見箭頭本身)。
         'hover:text-fg-secondary',
         // 內描邊:trigger 撐滿標題列高,往外 +2px 實測會壓到下方的內容區(2026-09-07 量測)
         'focus-visible:focus-ring-inset',
@@ -61,15 +62,16 @@ const AccordionTrigger = React.forwardRef<
         // 2026-05-31 M24:disabled 時 chevron(icon 載體)亦降 text-fg-disabled,不停留 text-fg-muted
         //（muted=neutral-7 比 disabled=neutral-6 深 → 層級顛倒)。覆寫 chevron 自身 text-fg-muted。
         'disabled:[&>svg]:text-fg-disabled',
-        "[&[data-state=open]>svg]:rotate-180",
         className,
       )}
       {...props}
     >
       {children}
+      {/* 旋轉寫在箭頭本身(父層打開時轉 180°),時長與曲線跟內容的高度動畫同一份(disclosureIndicatorMotion;
+          motion.spec.md「展開箭頭跟它打開的東西同步」)—— 會轉的元素自己帶過渡,閘 motion-ssot-invariant M6 才看得到它 */}
       <ChevronDown
         size={16}
-        className="shrink-0 text-fg-muted transition-transform duration-200 motion-reduce:duration-0"
+        className={cn('shrink-0 text-fg-muted', disclosureIndicatorMotion, '[[data-state=open]>&]:rotate-180')}
         aria-hidden
       />
     </AccordionPrimitive.Trigger>
@@ -85,10 +87,9 @@ const AccordionContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
-    className={cn(
-      'overflow-hidden text-body text-fg-secondary',
-      'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down motion-reduce:animate-none',
-    )}
+    // 高度動畫 / 收尾 / 減少動態 = disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView、AgentPanel 思考塊同一份 ——
+    // Accordion.Content 內部就是 Collapsible.Content,同一節點也有 --radix-collapsible-content-height,共用 collapsible keyframe)
+    className={cn(disclosureMotion, 'text-body text-fg-secondary')}
     {...props}
   >
     <div className={cn('pb-4', className)}>{children}</div>

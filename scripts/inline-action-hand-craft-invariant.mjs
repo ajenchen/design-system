@@ -2,7 +2,7 @@
 /**
  * @gate-contract
  *   保證: DS 原始碼(packages/design-system/src/**\/*.tsx,含 stories)裡沒有「手刻的行內動作鈕」——
- *         (A) 只放圖示的原生 `<button>`(inline-action.spec.md:253「❌ 自刻 `<button><X /></button>`」);
+ *         (A) 只放圖示的原生 `<button>`(inline-action.spec.md「Dismiss canonical — X close only」的「❌ 禁止」:「自刻 `<button><X /></button>`」);
  *         (B) 放在列 / 項目宿主(TreeItem / MenuItem / SidebarMenuButton / Tag / Chip / Breadcrumb …)子樹裡的
  *             icon-only `<Button>` 或原生 `<button>`(inline-action.spec.md:161-163、:217「Host 走宣告式 API … 不自刻 button JSX」)。
  *         合法例外只准寫在 ALLOWLIST,每筆帶理由與 spec 出處;清單裡對不到任何命中的條目 = 過期豁免 → 紅。
@@ -27,7 +27,7 @@
 // 尺寸 / 命中區的 owner:`ds-canonical/references/hit-area-canonical.md`(滑過底色的形狀 ≡ 命中區;TreeItem 列 18 / lg 22)。
 //
 // 為什麼需要(2026-09-24 → 09-27,待辦總帳 N22):TreeView 的展開箭頭 2026-09-26 之前是一顆手刻的 16×16 `<button>`
-// (tree-view.tsx:1315 註解),滑過底色與點擊範圍都只有 16,跟 primitive 的 18 差 2px —— 同一種鈕兩個長相。
+// (當時 tree-view.tsx `TreeItem` 箭頭的註解),滑過底色與點擊範圍都只有 16,跟 primitive 的 18 差 2px —— 同一種鈕兩個長相。
 // 09-24 AI 承諾「全 DS 掃手刻 + 新閘擋手刻」。掃完(2026-09-27)現況只剩兩顆有 spec 明文的例外(見 ALLOWLIST);
 // 這支閘讓下一顆手刻在寫下去的當天就紅,而不是等 user 在畫面上看到 2px 的差。
 //
@@ -49,7 +49,7 @@
 //   · 帶可見文字的 <button> 沒用 <Button>(不是行內動作;Button 家族的事);
 //   · 列上 icon-only <Button> 在 ROW_HOSTS 之外的手刻列(div 列):列高 ≥ 28 時 spec:130 決策樹本來就允許 Button xs,
 //     靜態掃描分不出列高,寧可不判也不誤判;
-//   · spec 之間的張力(data-table.spec.md:789 的 Trash text Button vs inline-action.spec.md:184 同列不混用)—— 那是 spec 的裁決,
+//   · spec 之間的張力(data-table.spec.md「四、UI canonical」的 Trash text Button vs inline-action.spec.md「Same-row consistency rule(防混用)」)—— 那是 spec 的裁決,
 //     不是這支閘能定的;命中的那幾顆都在 ROW_HOSTS 之外,本閘不碰。
 //
 //   node scripts/inline-action-hand-craft-invariant.mjs                判定(exit 0 = 0 筆違規且允許清單全對得到)
@@ -74,9 +74,9 @@ const SPEC = 'packages/design-system/src/patterns/element-anatomy/inline-action.
 const PRIMITIVE_FILE = 'src/patterns/element-anatomy/item-anatomy.tsx'
 
 /**
- * 行內動作由宿主宣告式渲染的元件(inline-action.spec.md:157-179 Real case 表「Inline Action」列 + :217 已遷移清單)。
+ * 行內動作由宿主宣告式渲染的元件(inline-action.spec.md「Predicate:Inline Action vs Button iconOnly(canonical)」Real case 表「Inline Action」列 + 同檔「Inline action 共用元件」已遷移清單)。
  * 子樹裡出現 icon-only 的 <Button> / 原生 <button> = 手刻。**不放** DataTable / FileItem / DialogHeader / Notice
- * —— 那些位置 spec 明寫 Button(data-table.spec.md:590 / :845 / :891;notice.spec.md:71;inline-action.spec.md:164-169)。
+ * —— 那些位置 spec 明寫 Button(data-table.spec.md「九、Row Actions」與「四、UI canonical」;notice.spec.md:71;inline-action.spec.md Real case 表的 Button 列)。
  */
 const ROW_HOSTS = new Set([
   'MenuItem', 'DropdownMenuItem', 'DropdownMenuCheckboxItem', 'DropdownMenuRadioItem', 'DropdownMenuSubTrigger', 'ContextMenuItem',
@@ -97,7 +97,7 @@ const ALLOWLIST = [
   {
     key: 'src/components/PeoplePicker/person-display.tsx#X',
     reason: 'PeoplePicker 堆疊模式頭像角落的 12×12 移除徽章(AvatarDismissOverlay):不是列上的行內動作,是疊在頭像上的 badge 型 ×,幾何(top -1 / right -4 / 12px)是 user 2026-05-07 v15.15 確認的不對稱 canonical,顯隱規則 2026-08-05 user 否決恆顯;待辦總帳 N22 原句「PeoplePicker × 只在 A18 以尺寸追」—— 尺寸由 A18 追,本閘不判。',
-    spec: 'packages/design-system/src/components/PeoplePicker/person-display.tsx:380-401(Visual canonical 註解,含 user 確認紀錄)+ governance/planning/2026-09-25-interaction-and-hover-remediation.md N22 列',
+    spec: 'packages/design-system/src/components/PeoplePicker/person-display.tsx#AvatarDismissOverlay(Visual canonical 註解,含 user 確認紀錄)+ governance/planning/2026-09-25-interaction-and-hover-remediation.md N22 列',
   },
 ]
 

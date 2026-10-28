@@ -111,7 +111,7 @@ col.accessor('price', {
 - **Invalid input**(non-numeric):input 為 `type="text" inputMode="decimal"`,onChange 以 `Number(raw)` parse,NaN 時忽略不觸發 `onChange`(value 維持原值);搭配 Field validation 渲 error variant(`aria-invalid="true"` + wrapper `border-error`(hover 時 `border-error-hover`)+ 下方 error message)。
 - **輸入中間態**(`-`、`1.`、`0.0` 等 parse 後 lossy 的 raw 字串,2026-07-05 D4 codify):edit mode 以 internal draft string 承載——輸入期間 DOM 顯示 draft 原字串(負號、尾點不被 controlled 回寫吃掉),parse 成功即時同步 `onChange(parsed)`;blur / Enter commit(清 draft、顯示回 committed value,不合法殘字自然還原)、Escape 棄未提交 draft 字串、顯示回 committed value(NumberInput 為 live-commit,每次合法 parse 即 onChange,故非回復 pre-edit 原值;真 revert 需另存 snapshot,屬 API 擴充)。value 面語意不變:`''` / `'-'` 視為 `null`。draft 與 committed value 分層是為了同時保留可繼續輸入的文字與對外數值契約。
 - **負數 / 超大數字**:`toLocaleString(locale)` 自動處理負號與千分位分組,無特殊 prop。
-- **科學記號輸入**(`1e5`):`Number(raw)` parse 為 `100000`,非 NaN 即觸發 `onChange`(`number-input.tsx:150-152`)。
+- **科學記號輸入**(`1e5`):`Number(raw)` parse 為 `100000`,非 NaN 即觸發 `onChange`(`number-input.tsx#NumberInput` 的 `Number(raw)`)。
 - **精度上限**:`precision` > 6 為禁止事項(浮點精度雜訊),極端精度走 `Input` + 自驗證。
 - **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。edit/table alignment 不在本檔另立支援決策。
 - **Dark mode / density**:走 Field SSOT,不獨立 own。

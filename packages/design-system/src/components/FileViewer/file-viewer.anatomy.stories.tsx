@@ -110,7 +110,7 @@ export const Overview: Story = {
 
         {/* Anatomy 示意圖(純 slot 標示,不是 live viewer) */}
         <div
-          className="rounded-lg overflow-hidden border border-border"
+          className="rounded-lg overflow-hidden border border-border text-foreground"
           data-theme="dark"
           style={{ maxWidth: 960 }}
         >
@@ -252,7 +252,7 @@ export const Overview: Story = {
                 ['showFilmstrip', 'boolean', 'false', 'true && files.length>1 → 顯示 filmstrip'],
                 ['allowDownload', 'boolean', 'true', 'true → toolbar 顯示 download 按鈕'],
                 ['onDownload', '(file: FileInfo) => void', '—', '自訂 download(跨域檔案必傳)'],
-                ['labels', 'FileViewerLabels', 'DEFAULT_LABELS', 'i18n 文案 override(partial,與 DS 預設 merge;15 keys 覆蓋 toolbar / InfoPanel / filmstrip 的 aria-label 與 placeholder)'],
+                ['labels', 'FileViewerLabels', 'DEFAULT_LABELS', 'i18n 文案 override(partial,與 DS 預設 merge;覆蓋 toolbar / 縮放選單 / InfoPanel / filmstrip 的 aria-label 與 placeholder,完整 key 見 FileViewerLabels)'],
               ] as const).map(([p, t, d, desc]) => (
                 <tr key={p}>
                   <Td mono>{p}</Td>
@@ -353,7 +353,7 @@ export const Inspector: Story = {
             readOnly={readOnly}
             allowDownload={allowDownload}
           />
-          <p className="text-footnote text-fg-muted mt-2 leading-relaxed">
+          <p className="text-footnote text-fg-muted mt-2 leading-normal">
             提醒:filmstrip 需 `showFilmstrip && files.length &gt; 1` 才顯示;
             prev/next arrow 需 `files.length &gt; 1`;切換 files 時 shell 不重設 zoom,由 renderer onLoad 重新 fit-page。
           </p>
@@ -484,7 +484,7 @@ export const ColorMatrix: Story = {
         <H3>Chrome 分層對照</H3>
         <div
           data-theme="dark"
-          className="rounded-lg overflow-hidden border border-border"
+          className="rounded-lg overflow-hidden border border-border text-foreground"
           style={{ width: 720 }}
         >
           <div className="bg-canvas">
@@ -924,51 +924,51 @@ export const StateBehavior: Story = {
             <tbody>
               <tr>
                 <Td mono>Esc</Td>
-                <Td>關閉 viewer</Td>
+                <Td>關閉檢視器</Td>
                 <Td>Radix 預設</Td>
-                <Td>toolbar X</Td>
+                <Td>工具列「關閉檢視器」</Td>
               </tr>
               <tr>
                 <Td mono>←</Td>
                 <Td>上一個檔案</Td>
                 <Td mono>files.length &gt; 1</Td>
-                <Td>viewport prev arrow</Td>
+                <Td>畫面左側「上一個檔案」</Td>
               </tr>
               <tr>
                 <Td mono>→</Td>
                 <Td>下一個檔案</Td>
                 <Td mono>files.length &gt; 1</Td>
-                <Td>viewport next arrow</Td>
+                <Td>畫面右側「下一個檔案」</Td>
               </tr>
               <tr>
                 <Td mono>+ / =</Td>
-                <Td>Zoom in(下一個 preset)</Td>
+                <Td>放大(下一個百分比)</Td>
                 <Td mono>capabilities.zoom</Td>
-                <Td>ZoomInput dropdown</Td>
+                <Td>工具列「放大」、縮放選單的百分比</Td>
               </tr>
               <tr>
                 <Td mono>-</Td>
-                <Td>Zoom out</Td>
+                <Td>縮小(上一個百分比)</Td>
                 <Td mono>capabilities.zoom</Td>
-                <Td>ZoomInput dropdown</Td>
+                <Td>工具列「縮小」、縮放選單的百分比</Td>
               </tr>
               <tr>
                 <Td mono>0</Td>
-                <Td>Reset zoom 100%</Td>
+                <Td>重設為 100%</Td>
                 <Td mono>capabilities.zoom</Td>
-                <Td>ZoomInput 輸入 100</Td>
+                <Td>縮放比例輸入 100%</Td>
               </tr>
               <tr>
                 <Td mono>F</Td>
-                <Td>Fit to page</Td>
+                <Td>符合頁面</Td>
                 <Td mono>capabilities.zoom</Td>
-                <Td>ZoomInput dropdown Fit to page</Td>
+                <Td>縮放選單「符合頁面」</Td>
               </tr>
               <tr>
                 <Td mono>I</Td>
-                <Td>Toggle InfoPanel</Td>
+                <Td>展開 / 收合詳細資訊面板</Td>
                 <Td>永遠</Td>
-                <Td>toolbar Info button</Td>
+                <Td>工具列「展開 / 收合詳細資訊面板」</Td>
               </tr>
             </tbody>
           </table>
@@ -1075,7 +1075,7 @@ registerFileRenderer({
   component: PDFRenderer, // 消費 react-pdf,emit pageNumber capability
 })`}</code>
         </pre>
-        <p className="text-footnote text-fg-muted mt-2 leading-relaxed">
+        <p className="text-footnote text-fg-muted mt-2 leading-normal">
           {'Renderer 透過 `onCapabilitiesChange({ zoom, rotate, pageNumber })` 告訴 shell 當前支援什麼 affordance。Shell 據此動態顯示 toolbar 內容。'}
         </p>
       </div>

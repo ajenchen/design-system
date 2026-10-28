@@ -29,28 +29,28 @@
     "audit:a11y": "node scripts/audit-consumer-a11y.mjs"
   },
   "dependencies": {
-    "@qijenchen/design-system": "0.1.0-beta.147",
-    "@qijenchen/storybook-config": "0.1.0-beta.147",
+    "@qijenchen/design-system": "0.1.0-beta.148",
+    "@qijenchen/storybook-config": "0.1.0-beta.148",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "8.6.18",
+    "@storybook/addon-docs": "8.6.19",
     "axe-core": "4.12.1",
-    "@storybook/react": "8.6.18",
-    "@storybook/react-vite": "8.6.18",
+    "@storybook/react": "8.6.19",
+    "@storybook/react-vite": "8.6.19",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "npm": "11.19.0",
-    "npm-runtime-brace-expansion-patch": "npm:brace-expansion@5.0.9",
+    "npm-runtime-brace-expansion-patch": "npm:brace-expansion@5.0.12",
     "npm-runtime-tar-patch": "npm:tar@7.5.22",
     "playwright": "^1.60.0",
-    "storybook": "8.6.18",
+    "storybook": "8.6.19",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
-    "vite": "6.4.3"
+    "vite": "6.4.4"
   },
   "overrides": {
     "@storybook/addon-actions": {

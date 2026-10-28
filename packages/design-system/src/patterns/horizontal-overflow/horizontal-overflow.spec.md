@@ -193,7 +193,7 @@ return (
 - `components/FileViewer/file-viewer.tsx` — Filmstrip(直接組裝 `useScrollEdges` / `useScrollByPage` / `buildFadeMask` / `OverflowScrollArrow`)
 
 **Non-consumers**(2026-05-10 retire from「未來」清單 — prior prediction stale,spec 已明文不消費):
-- ~~`components/Steps/steps.tsx`~~ — `steps.spec.md:347`「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+ L358「步驟 ≤ 5、水平空間充足」→ 設計上不 overflow
+- ~~`components/Steps/steps.tsx`~~ — `steps.spec.md`「水平模式無 content」「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+「Orientation」段「步驟 ≤ 5、重視「進度條」感、水平空間充足」→ 設計上不 overflow(指標用段名:原本的 `:347` / `L358` 已指到別處,r1b OTH-02 同族)
 - ~~`components/SegmentedControl/*`~~ — `segmented-control.spec.md`「規模限制與邊界案例」段「**不支援 overflow / scroll**——若選項可能超出容器寬度,代表選錯元件了」+「最多 5 個 item」→ 設計上拒絕 overflow
 
 新消費者必須加到這個清單,並且**只從本 module import** overflow 相關的 primitive,不允許自己複製。

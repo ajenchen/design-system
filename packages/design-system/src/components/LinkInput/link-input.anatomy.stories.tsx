@@ -739,7 +739,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `link-input.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :native  <input type=\"url\">  element 預設 a11y;label 關聯靠  id ( fieldCtx.id )+ FieldLabel  <label htmlFor> (native  for  機制);input 上另設  aria-invalid  /  aria-describedby (error 時  aria-errormessage )。\n\n  Keyboard 行為  :\n\n- Tab — focus 進輸入框\n- 字母鍵 — 輸入\n- Enter — 提交,觸發 blur 驗證\n- Esc — 取消編輯,回復原值,不觸發驗證\n\n  Focus  :原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的  focus-within:!border-primary  提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <p className="whitespace-pre-line">{"詳 "}<code>{"link-input.spec.md"}</code>{" 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :native  <input type=\"url\">  element 預設 a11y;label 關聯靠  id ( fieldCtx.id )+ FieldLabel  <label htmlFor> (native  for  機制);input 上另設  aria-invalid  /  aria-describedby (error 時  aria-errormessage )。\n\n  Keyboard 行為  :\n\n- Tab — focus 進輸入框\n- 字母鍵 — 輸入\n- Enter — 提交,觸發 blur 驗證\n- Esc — 取消編輯,回復原值,不觸發驗證\n\n  Focus  :原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的  focus-within:!border-primary  提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
     </div>
   ),
 }

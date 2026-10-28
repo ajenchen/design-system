@@ -446,7 +446,7 @@ Report format:
 - `ComponentName L2: extra story 6 name='6. Orientation(horizontal)' 含英文 context`
 - `ComponentName L3: density dual values in SizeMatrix column`
 - `ComponentName: 6-canonical + name 覆寫完整 + extras [StandardRatios='7. 標準比例'] — OK`
-- `ComponentName: missing StateBehavior — rationale found at badge.spec.md:L45 ✓`
+- `ComponentName: missing StateBehavior — rationale found at badge.spec.md:<行> ✓`
 
 End: `N checked, L1 V1 violations, L2 V2 violations, L3 V3 content issues. Top 5 worst: [list]`. Under 900 words. Don't fix.
 ```
@@ -1273,7 +1273,7 @@ For each component:
 
 錨例(2026-05-17 Phase 1 漏抓):
 - `file-viewer.spec.md` L103 寫「Known drift:h-14 硬寫不消費 token」
-- 但 `file-viewer.tsx:333` 已 `h-[var(--chrome-header-height)]` migrate 完成
+- 但當時的 `file-viewer.tsx`(第 333 行)已 `h-[var(--chrome-header-height)]` migrate 完成
 - → spec.md 那段該刪 / 該改寫 rationale,3+ 次 `--deep` 都沒抓到
 
 Report ONLY violations。Format:

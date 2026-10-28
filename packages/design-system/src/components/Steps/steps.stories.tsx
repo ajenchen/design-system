@@ -3,7 +3,6 @@
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { expect, within } from '@storybook/test'
 import { Check } from 'lucide-react'
 import {
   Steps,
@@ -13,6 +12,10 @@ import {
   StepContent,
 } from './steps'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { Field, FieldError, FieldGroup, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/展示',
@@ -29,23 +32,94 @@ type Story = StoryObj<typeof Steps>
 
 // ── 典型 wizard ──────────────────────────────────────────────────────────
 
+// 註冊精靈:每一步是一張真的表單(結構同 field.stories.tsx「表單驗證」的 CreateProjectForm:FieldGroup + useFormValidation);
+// 按「下一步」先驗證這一頁 —— 過了把這一步記成已完成、前往下一步,沒過停在這一頁、焦點到第一個錯的欄位(form-validation.spec.md 規則 8)。
+// 2026-10-21 前這三步只有一句「請輸入你的姓名、電子郵件與電話」、沒有任何欄位(r1b OTH-04)。
+// 按鈕只放「下一步」,最後一步是「送出」;回頭 = 點正上方已完成的步驟(user 2026-10-20「照你建議」= A1 甲;steps.spec.md「目前那一步底下的按鈕」)。
+interface SignUpDraft { name: string; email: string; phone: string; username: string; password: string }
+const EMPTY_SIGN_UP: SignUpDraft = { name: '', email: '', phone: '', username: '', password: '' }
+const requiredText = (label: string) => (v: unknown) => (String(v ?? '').trim() ? undefined : `${label}必填`)
+
+/** 一步的表單:欄位 + 往前那一顆鈕。間距:欄位之間由 FieldGroup 擁有(loose);最後的欄位 → 按鈕照 layoutSpace.spec.md 規則 4 第 1 列(bottom)。 */
+function SignUpStepForm({ label, submitLabel, onSubmit, children }: { label: string; submitLabel: string; onSubmit: (e?: React.FormEvent) => void; children: React.ReactNode }) {
+  return (
+    <form onSubmit={onSubmit} aria-label={label}>
+      {children}
+      <ButtonGroup className="mt-[var(--layout-space-bottom)]">
+        <Button type="submit" variant="primary">{submitLabel}</Button>
+      </ButtonGroup>
+    </form>
+  )
+}
+
+function ContactStep({ draft, onPass }: { draft: SignUpDraft; onPass: (patch: Partial<SignUpDraft>) => void }) {
+  const form = useFormValidation({
+    initialValues: { name: draft.name, email: draft.email, phone: draft.phone },
+    validate: {
+      name: requiredText('姓名'),
+      email: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : '電子郵件格式不正確'),
+      phone: (v) => (/^0\d{8,9}$/.test(String(v).replace(/[\s-]/g, '')) ? undefined : '電話是 0 開頭的 9 到 10 位數字'),
+    },
+    onSubmit: onPass,
+  })
+  return (
+    <SignUpStepForm label="基本資料" submitLabel="下一步" onSubmit={form.handleSubmit}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.name}><FieldLabel>姓名</FieldLabel><Input autoComplete="name" {...form.getInputProps('name')} /><FieldError>{form.errors.name}</FieldError></Field>
+        <Field required invalid={!!form.errors.email}><FieldLabel>電子郵件</FieldLabel><Input inputMode="email" autoComplete="email" {...form.getInputProps('email')} /><FieldError>{form.errors.email}</FieldError></Field>
+        <Field required invalid={!!form.errors.phone}><FieldLabel>電話</FieldLabel><Input inputMode="tel" autoComplete="tel" {...form.getInputProps('phone')} /><FieldError>{form.errors.phone}</FieldError></Field>
+      </FieldGroup>
+    </SignUpStepForm>
+  )
+}
+
+function AccountStep({ draft, onPass }: { draft: SignUpDraft; onPass: (patch: Partial<SignUpDraft>) => void }) {
+  const form = useFormValidation({
+    initialValues: { username: draft.username, password: draft.password },
+    validate: {
+      username: (v) => (String(v ?? '').trim().length >= 3 ? undefined : '使用者名稱至少 3 個字元'),
+      password: (v) => (String(v ?? '').length >= 8 ? undefined : '密碼至少 8 個字元'),
+    },
+    onSubmit: onPass,
+  })
+  return (
+    <SignUpStepForm label="帳號設定" submitLabel="下一步" onSubmit={form.handleSubmit}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.username}><FieldLabel>使用者名稱</FieldLabel><Input autoComplete="username" {...form.getInputProps('username')} /><FieldError>{form.errors.username}</FieldError></Field>
+        <Field required invalid={!!form.errors.password}><FieldLabel>密碼</FieldLabel><Input type="password" autoComplete="new-password" {...form.getInputProps('password')} /><FieldError>{form.errors.password}</FieldError></Field>
+      </FieldGroup>
+    </SignUpStepForm>
+  )
+}
+
+/** 最後一步:核對剛填的資料(唯讀資訊展示 → DescriptionList,field.spec.md「Field vs DescriptionList」),送出。 */
+function ReviewStep({ draft, onSubmit }: { draft: SignUpDraft; onSubmit: () => void }) {
+  return (
+    <SignUpStepForm label="確認並送出" submitLabel="送出" onSubmit={(e) => { e?.preventDefault(); onSubmit() }}>
+      <DescriptionList cols={1}>
+        <DescriptionItem label="姓名">{draft.name}</DescriptionItem>
+        <DescriptionItem label="電子郵件">{draft.email}</DescriptionItem>
+        <DescriptionItem label="電話">{draft.phone}</DescriptionItem>
+        <DescriptionItem label="使用者名稱">{draft.username}</DescriptionItem>
+      </DescriptionList>
+    </SignUpStepForm>
+  )
+}
+
 export const Default: Story = {
   name: '預設',
   render: () => {
     const [value, setValue] = React.useState('info')
     const [completed, setCompleted] = React.useState<string[]>([])
     const [submitted, setSubmitted] = React.useState(false)
+    const [draft, setDraft] = React.useState<SignUpDraft>(EMPTY_SIGN_UP)
 
-    const advance = () => {
+    const advance = (patch: Partial<SignUpDraft>) => {
       const nextMap: Record<string, string> = { info: 'account', account: 'review' }
+      setDraft((d) => ({ ...d, ...patch }))
       setCompleted(prev => Array.from(new Set([...prev, value])))
       const next = nextMap[value]
       if (next) setValue(next)
-    }
-    const back = () => {
-      const prevMap: Record<string, string> = { account: 'info', review: 'account' }
-      const prev = prevMap[value]
-      if (prev) setValue(prev)
     }
     const submit = () => {
       setCompleted(prev => Array.from(new Set([...prev, 'review'])))
@@ -55,6 +129,7 @@ export const Default: Story = {
       setValue('info')
       setCompleted([])
       setSubmitted(false)
+      setDraft(EMPTY_SIGN_UP)
     }
 
     // ── Pattern A:submit 在最後一步,送出後整個 wizard 替換成 success banner ──
@@ -62,9 +137,12 @@ export const Default: Story = {
     // success card;「再填一份申請」是成功頁的真實產品 action(Google Forms
     // 「Submit another response」同款,https://support.google.com/docs/answer/2839588),
     // 非 demo 治具。
+    // 間距(layoutSpace.spec.md):有框卡片內距 = loose(規則 1);標題列 → 說明 = tight(規則 3 labeling);
+    // 最後的內容 → 動作鈕 = bottom(規則 4,:127)
     if (submitted) {
       return (
-        <div className="w-[480px] flex flex-col gap-4 p-6 bg-muted rounded-md border border-border">
+        <div className="w-[480px] flex flex-col p-[var(--layout-space-loose)] bg-muted rounded-md border border-border">
+          {/* @layout-space-magic-ok: 結果圖示 ↔ 標題(同一列的行內 micro)(layoutSpace.spec.md:166 micro) */}
           <div className="flex items-center gap-3">
             <span className="h-8 w-8 rounded-full bg-info flex items-center justify-center shrink-0">
               <Check className="text-white" size={20} strokeWidth={2.5} aria-hidden />
@@ -73,14 +151,14 @@ export const Default: Story = {
               已成功送出申請
             </span>
           </div>
-          <p className="text-body text-fg-secondary">
+          <p className="mt-[var(--layout-space-tight)] text-body text-fg-secondary">
             我們會盡快處理,結果將寄送至您的電子信箱。
           </p>
-          <div>
+          <ButtonGroup className="mt-[var(--layout-space-bottom)]">
             <Button variant="tertiary" onClick={reset}>
               再填一份申請
             </Button>
-          </div>
+          </ButtonGroup>
         </div>
       )
     }
@@ -88,6 +166,7 @@ export const Default: Story = {
     return (
       <div className="w-[480px]">
         <Steps
+          aria-label="註冊流程進度"
           value={value}
           onValueChange={setValue}
           completedValues={completed}
@@ -96,14 +175,7 @@ export const Default: Story = {
             <StepLabel>基本資料</StepLabel>
             <StepDescription>填寫姓名與聯絡方式</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請輸入你的姓名、電子郵件與電話。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                </div>
-              </div>
+              <ContactStep draft={draft} onPass={advance} />
             </StepContent>
           </StepItem>
 
@@ -111,17 +183,7 @@ export const Default: Story = {
             <StepLabel>帳號設定</StepLabel>
             <StepDescription>選擇使用者名稱與密碼</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  設定登入帳號。使用者名稱至少 3 個字元。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <AccountStep draft={draft} onPass={advance} />
             </StepContent>
           </StepItem>
 
@@ -129,17 +191,7 @@ export const Default: Story = {
             <StepLabel>確認並送出</StepLabel>
             <StepDescription>送出前最後檢查</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請確認所有欄位正確,按下送出後系統會建立您的帳號。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={submit}>送出</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <ReviewStep draft={draft} onSubmit={submit} />
             </StepContent>
           </StepItem>
         </Steps>
@@ -165,6 +217,7 @@ export const NonLinear: Story = {
     return (
       <div className="w-[360px]">
         <Steps
+          aria-label="工作區設定進度"
           value={value}
           onValueChange={setValue}
           completedValues={['overview']}
@@ -201,6 +254,7 @@ export const Horizontal: Story = {
     return (
       <div className="w-full max-w-3xl">
         <Steps
+          aria-label="結帳進度"
           value={value}
           onValueChange={setValue}
           completedValues={['cart', 'address']}
@@ -231,77 +285,13 @@ export const Horizontal: Story = {
   },
 }
 
-// ── Multiple expansion ─────────────────────────────────────────────────
-
-export const MultipleExpansion: Story = {
-  name: '多重展開模式',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  parameters: { demoFocus: 'keep' },
-  render: () => (
-    <div className="w-[480px]">
-      <p className="text-caption text-fg-secondary mb-4">
-        點 step header 切換展開(並更新 value)。本例顯式傳 `defaultExpanded="all"` 全部展開起手(預設 `"none"`)。
-      </p>
-      <Steps
-        defaultValue="b"
-        completedValues={['a']}
-        expansion="multiple"
-        defaultExpanded="all"
-        linear={false}
-      >
-        <StepItem value="a">
-          <StepLabel>安裝套件</StepLabel>
-          <StepDescription>執行 npm install</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              npm install @qijenchen/design-system
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="b">
-          <StepLabel>匯入元件</StepLabel>
-          <StepDescription>從 design-system 引入</StepDescription>
-          <StepContent>
-            <div
-              tabIndex={0}
-              role="region"
-              aria-label="Steps 元件匯入範例程式碼"
-              className="max-w-full overflow-x-auto rounded-md bg-muted focus-visible:focus-ring-inset"
-            >
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"import { Steps } from '@/design-system/components/Steps/steps'"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="c">
-          <StepLabel>設定 provider</StepLabel>
-          <StepDescription>包在 App 最外層</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"<TooltipProvider>{children}</TooltipProvider>"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-      </Steps>
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const scrollRegion = canvas.getByRole('region', {
-      name: 'Steps 元件匯入範例程式碼',
-    })
-
-    await expect(scrollRegion.scrollWidth).toBeGreaterThan(scrollRegion.clientWidth)
-    await expect(scrollRegion).toHaveAttribute('tabindex', '0')
-    scrollRegion.focus()
-    await expect(scrollRegion).toHaveFocus()
-  },
-}
+// @story-history: MultipleExpansion(多重展開模式,安裝指南三步可同時展開)retired 2026-09-30 —
+//   整個「可同時打開多步」模式(`expansion="multiple"` / `defaultExpanded` / controlled `expanded`)隨之退役:
+//   Steps 的內容區只跟著目前那一步(steps.spec.md「內容跟著目前那一步」);安裝指南這種「讀者自己開合、沒有目前位置」
+//   的編號說明改用 Accordion(steps.spec.md「何時不用」第二張表)。
+//   user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」(AI 建議、user 採納,條件見原話)。
+//   本則的 play 原本順帶驗證 StepContent 內 consumer 自己的捲動區可聚焦;退役後 DS 內沒有任何 story 示範這條
+//   (steps.spec.md「A11y 預設」如實寫明),規則文字保留為指引。
 
 // @story-history: MixedDescription(欄節奏驗證 grid)retired 2026-06-11 per audit
 //   EXAMPLE_REDUNDANT — indicator 對齊 label 第一行的 column rhythm 已由 anatomy「欄位節奏」+

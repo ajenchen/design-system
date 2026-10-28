@@ -31,19 +31,19 @@ const STATUS_OPTIONS = ['待處理', '進行中', '已完成', '已封存'] as c
  *
  * body 主體就是一份可選清單 → 走 `overlay-surface.spec.md`「List-as-region in overlay body」:
  * body 撤掉 chrome padding、`CommandGroup` 自帶 `py-2` 給上下呼吸、item 自帶 `px-loose`。
- * 容器用 `Command`(cmdk)而不是裸 `MenuItem`:`menu-item.spec.md:246` 要求選單項目待在提供鍵盤
+ * 容器用 `Command`(cmdk)而不是裸 `MenuItem`:`menu-item.spec.md`「何時用 / 何時不用」要求選單項目待在提供鍵盤
  * 導覽與 listbox 結構的容器內,`Command` 自帶方向鍵與 `role="listbox"`(`SelectMenu` 內部走同一條路)。
  * **列的水平內距是唯一要客製的東西**,而且**設在清單容器上、不是設在每一列**:
  * 列的內距讀 `--item-px`(owner = `item-anatomy.spec.md`「Token: `--item-px`」,預設 `var(--field-px)` 12px);
  * 這裡在 `Command` 根設一次 `var(--layout-space-loose)`(16px),整份清單(含空狀態 / 載入中訊息列)一起換。
  *
  * 目的是讓**列的最前緣**(這裡是勾選框)對齊 header 標題與 footer 按鈕左緣
- * (`overlay-surface.spec.md:100` 第 2 條 + `:202` footer 同一條對齊線)。**對齊的是前緣不是文字** ——
+ * (`overlay-surface.spec.md`「Canonical pattern」第 2 條 + 同檔「底部區域:按鈕列 vs 列式」footer 同一條對齊線)。**對齊的是前緣不是文字** ——
  * `item-anatomy.spec.md:423` content 槽的 x 是剩餘空間、`:665`/`:671` 跨群組不強求文字對齊、
  * `:677` 把「為了讓文字齊左而改前綴尺寸」列為錯誤示範。
  *
  * **禁止寫在單列的 `className`**:`CommandItem` 是兩層,外層 cmdk Item 負責「反白底色鋪滿整列」恆為
- * `p-0`(`command.tsx:326`),內層 `MenuItem` 才帶內距(`:352-366`)。寫在 className 會落在外層與內層相加 ——
+ * `p-0`(`command.tsx#CommandItem`),內層 `MenuItem` 才帶內距(同一個宣告)。寫在 className 會落在外層與內層相加 ——
  * 2026-09-17 實測 16+12=28px,標題在 17px、勾選框跑到 29px。機械閘 `scripts/overlay-list-as-region-invariant.mjs`。
  */
 function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {

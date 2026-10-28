@@ -4,6 +4,7 @@
 // Policy remains in the hook corpus and hook-independent CI; this adapter never invents a rule.
 
 import {
+  accessSync,
   chmodSync,
   closeSync,
   constants as fsConstants,
@@ -20,6 +21,8 @@ import {
   readSync,
   realpathSync,
   rmSync,
+  statSync,
+  writeFileSync,
   writeSync,
 } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
@@ -30,6 +33,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { TextDecoder } from 'node:util'
 import { isContainedPath } from './lib/canonical-path-containment.mjs'
 import {
+  CLOSED_HOOK_TOOL_LABELS,
   materializeClosedHookToolProfile,
   resolveClosedPrivateRuntimeBase,
   runClosedGit,
@@ -47,9 +51,17 @@ const closedPrivateRuntimeBase = () => (
 // Hooks are write-time accelerators, not the trust boundary — final enforcement lives in
 // the provider-neutral verifier, protected CI, and required checks. By default an adapter
 // or infrastructure failure degrades to one warning line and skips the hook batch
-// (fail-open, exit 0). GOVERNANCE_HOOK_STRICT=1 (implied under NODE_ENV=test) restores the
-// fail-closed integrity semantics, and the strict lane also keeps the sealed corpus,
-// pinned tool profile, and transcript guards of the high-assurance deployment.
+// (fail-open, exit 0); a failure attributable to ONE hook (crash, timeout, malformed output, its own
+// integrity marker, or a hook tool it actually invoked that is not installed) degrades only that hook,
+// and the model is told, through the provider context channel, which checks did not run (never a
+// silent pass). One exception is fail-closed even here: a PreToolUse hook whose job is to block
+// (outputMode blocking / governance-context-or-block) that cannot run because a tool it needs is
+// missing blocks the tool call when that call is one it exists to judge — otherwise a missing jq would
+// silently switch the approval gate off. Read-only commands and installing the missing tool always pass
+// (classifyBlindHookCall), so the gate can never lock the agent out of restoring it (G4 複核二).
+// GOVERNANCE_HOOK_STRICT=1 (implied under NODE_ENV=test) restores the fail-closed integrity
+// semantics, and the strict lane also keeps the sealed corpus, pinned tool profile, and
+// transcript guards of the high-assurance deployment.
 const hookStrictIntegrity = process.env.GOVERNANCE_HOOK_STRICT === '1'
   || process.env.NODE_ENV === 'test'
 const sealedHookGuardsEnabled = process.env.GOVERNANCE_HOOK_SEALED_CORPUS === '1'
@@ -64,6 +76,7 @@ const TRANSCRIPT_TEST_SIGNAL_TIMEOUT_MS = 2000
 const MAX_PROVIDER_HOOK_INPUT_BYTES = 64 * 1024 * 1024
 const MAX_PROVIDER_HOOK_CHILD_INPUT_BYTES = 16 * 1024 * 1024
 const MAX_PROVIDER_HOOK_SESSION_IDENTIFIER_BYTES = 4096
+const MAX_PROVIDER_HOOK_CWD_BYTES = 4096
 const MAX_PROVIDER_HOOK_CHILD_OUTPUT_BYTES = 1024 * 1024
 const MAX_PROVIDER_HOOK_CHANGED_FILE_COUNT = 256
 const MAX_PROVIDER_HOOK_DESCRIPTOR_COUNT = 64
@@ -83,6 +96,10 @@ const MAX_HOOK_CORPUS_ENTRY_BYTES = 4 * 1024 * 1024
 const MAX_HOOK_CORPUS_SNAPSHOT_BYTES = 64 * 1024 * 1024
 const MAX_HOOK_CORPUS_SNAPSHOT_ENTRIES = 4096
 const HOOK_CORPUS_TEST_RELEASE_TIMEOUT_MS = 2000
+// Turn anchor (N47 ⑤, 2026-10-07): when the bounded tail holds no record of the user's own voice,
+// the latest one is looked up in the bytes before the tail — at most this far back, in these steps.
+const TRANSCRIPT_TURN_ANCHOR_SCAN_BYTES = 256 * 1024 * 1024
+const TRANSCRIPT_TURN_ANCHOR_CHUNK_BYTES = 8 * 1024 * 1024
 const AUTHORITY_DECISION_RECEIPT_CONTRACT_PATH = 'packages/governance/src/authority-decision-evidence.mjs'
 const PYTHON_ISOLATED_HOOK_BOOTSTRAP = [
   'import os, runpy, sys',
@@ -93,6 +110,14 @@ const PYTHON_ISOLATED_HOOK_BOOTSTRAP = [
 ].join('\n')
 const transcriptTestTransitionProbeEnabled = process.env.NODE_ENV === 'test'
   && process.argv.includes('--test-transcript-transition-probe')
+// Same test-only probe, applied to every snapshot attempt instead of the first one only. A growing
+// transcript is rejected (stable-required) only when every bounded attempt observes growth; with the
+// single-shot probe the later attempts were unprobed, so a writer the scheduler delayed past one
+// retry backoff handed the runner a legal quiescent cut and the "growing transcript ⇒ 70" test went
+// green-or-red on scheduling (CI 2026-09-27 and 2026-10-13, M37). Mutually exclusive with the
+// single-shot probe, whose poison tests need the retry after their one transition to run unprobed.
+const transcriptTestTransitionProbeEveryAttempt = process.env.NODE_ENV === 'test'
+  && process.argv.includes('--test-transcript-transition-probe-every-attempt')
 const transcriptTestSignalProbeEnabled = process.env.NODE_ENV === 'test'
   && process.argv.includes('--test-transcript-snapshot-signal-probe')
 const hookCorpusTestReleaseProbeEnabled = process.env.NODE_ENV === 'test'
@@ -299,6 +324,7 @@ let formatProviderHookContext
 let formatProviderStopDecision
 let interpretProviderHookChildResult
 let classifyProviderHookChildFailure
+let classifyBlindHookCall
 let buildProviderHookStdinInvocation
 let sanitizeProviderHookEnvironment
 let providerHookExecutablePath
@@ -342,12 +368,14 @@ try {
   formatProviderStopDecision = outputTransport.formatProviderStopDecision
   interpretProviderHookChildResult = outputTransport.interpretProviderHookChildResult
   classifyProviderHookChildFailure = outputTransport.classifyProviderHookChildFailure
+  classifyBlindHookCall = outputTransport.classifyBlindHookCall
   if (typeof buildProviderHookStdinInvocation !== 'function'
     || typeof sanitizeProviderHookEnvironment !== 'function'
     || typeof formatProviderHookContext !== 'function'
     || typeof formatProviderStopDecision !== 'function'
     || typeof interpretProviderHookChildResult !== 'function'
     || typeof classifyProviderHookChildFailure !== 'function'
+    || typeof classifyBlindHookCall !== 'function'
     || typeof providerHookExecutablePath !== 'string'
     || !providerHookExecutablePath) {
     throw new TypeError('provider hook output transport exports are invalid')
@@ -402,6 +430,11 @@ function warnDegraded(message) {
   writeStderrRecord(`GOVERNANCE_WARNING: ${String(message).slice(0, 900)}`)
 }
 
+// Event whose context channel carries the ordinary-lane failure notice (set once the event is known),
+// and whether batch output has begun on stdout (a second JSON record would corrupt it).
+let failureNoticeEvent = null
+let providerStdoutCommitted = false
+
 function fail(message) {
   const rawDetail = String(message).startsWith('GOVERNANCE_INTEGRITY:')
     ? String(message)
@@ -414,7 +447,18 @@ function fail(message) {
   terminateActiveHookChildren('SIGKILL')
   cleanupPrivateSnapshots()
   if (!hookStrictIntegrity) {
-    writeStderrRecord(`GOVERNANCE_WARNING: hooks skipped (fail-open): ${detail.replace(/^GOVERNANCE_INTEGRITY: /, '')}`)
+    const reason = detail.replace(/^GOVERNANCE_INTEGRITY: /, '')
+    writeStderrRecord(`GOVERNANCE_WARNING: hooks skipped (fail-open): ${reason}`)
+    // stderr alone is invisible to the model on exit 0 (N34 複核):the skipped batch is also announced
+    // through the provider context channel, unless batch output has already started on stdout.
+    if (failureNoticeEvent && !providerStdoutCommitted) {
+      emitGovernanceNotice(
+        failureNoticeEvent,
+        `⚠️ 治理檢查這次整批沒有執行(執行入口出錯,依一般模式放行):${reason.slice(0, 600)}。`
+          + '這一批 hook 的檢查等於沒做,不能當成「檢查通過」。',
+        { stderr: false },
+      )
+    }
     process.exit(0)
   }
   writeStderrRecord(detail)
@@ -424,6 +468,7 @@ function fail(message) {
 function failIntegrity(message) {
   fail(message)
 }
+
 
 const unexpectedFailureDetail = (error) => {
   const code = typeof error?.code === 'string' ? error.code : error?.name || 'UNKNOWN'
@@ -779,8 +824,13 @@ function readExactAt(handle, length, position, descriptor) {
 }
 
 function awaitFailClosedTestTranscriptTransition(handle, captured, descriptor) {
-  if (!transcriptTestTransitionProbeEnabled || transcriptTestTransitionProbeConsumed) return
-  transcriptTestTransitionProbeConsumed = true
+  if (transcriptTestTransitionProbeEnabled && transcriptTestTransitionProbeEveryAttempt) {
+    fail(`provider hook adapter blocked:${descriptor.hook}:TRANSCRIPT_TEST_TRANSITION_PROBE_MODES_EXCLUSIVE`)
+  }
+  if (!transcriptTestTransitionProbeEveryAttempt) {
+    if (!transcriptTestTransitionProbeEnabled || transcriptTestTransitionProbeConsumed) return
+    transcriptTestTransitionProbeConsumed = true
+  }
   // This test-only scheduling probe cannot make a transcript acceptable. It waits for a real
   // metadata transition after the first fixed-range read and blocks if the bounded observation
   // window expires. The poison test uses the ready marker to place a rewrite deterministically
@@ -897,18 +947,116 @@ function parsedTranscriptTail(range, sourceBytes, access, descriptor) {
   return { incomplete, records }
 }
 
-function materializeTranscriptRecords(records, access, descriptor) {
-  if (records.length === 0) fail(`provider hook adapter blocked:${descriptor.hook}:TRANSCRIPT_EMPTY`)
-  const selected = []
-  let selectedBytes = 0
-  for (let index = records.length - 1; index >= 0 && selected.length < access.maximumRetainedRecordCount; index -= 1) {
-    const lineBytes = Buffer.byteLength(records[index], 'utf8') + 1
-    if (selectedBytes + lineBytes > access.maximumMaterializedBytes) break
-    selected.unshift(records[index])
-    selectedBytes += lineBytes
+// The user's own voice, judged by the one predicate the authorization helper uses
+// (hooks/lib/approval-evidence.mjs#userVoiceText); loaded before transcript verification. A load
+// failure only matters when the snapshot actually drops records — then the snapshot can no longer
+// promise it still holds the current turn's user message (strict: exit 70; open: one warning).
+let transcriptUserVoiceText = null
+let transcriptAnchorUnavailable = ''
+let transcriptAnchorWarned = false
+function isUserVoiceLine(line) {
+  if (!transcriptUserVoiceText || !line.includes('"user"')) return false
+  try {
+    return transcriptUserVoiceText(JSON.parse(line)) !== ''
+  } catch {
+    return false
   }
+}
+
+// N47 ⑤ root cause: "the last 1200 records" was standing in for "the current turn" (M37). After a
+// long autonomous turn (2026-09-26/27: 2,804 and 3,723 records after the user's message) the user's
+// message fell outside the snapshot, so every governed write was blocked as NO_USER_MESSAGE no
+// matter what the user had said. The snapshot now keeps that message: first among the records the
+// bounded read already parsed but the cap dropped, then in the append-only bytes before the read
+// (bounded backward scan, each window read twice and compared). Not found → no anchor (unchanged).
+function transcriptTurnAnchor({ handle, range, excludedRecords, access, descriptor, captured }) {
+  for (let index = excludedRecords.length - 1; index >= 0; index -= 1) {
+    if (isUserVoiceLine(excludedRecords[index])) return excludedRecords[index]
+  }
+  if (range.readStart === 0) return null
+  const firstNewline = range.body.indexOf(0x0a)
+  if (firstNewline < 0) return null
+  let end = range.readStart + firstNewline + 1
+  let carry = Buffer.alloc(0)
+  let scanned = 0
+  while (end > 0 && scanned < TRANSCRIPT_TURN_ANCHOR_SCAN_BYTES) {
+    const start = Math.max(0, end - TRANSCRIPT_TURN_ANCHOR_CHUNK_BYTES)
+    const chunk = readExactAt(handle, end - start, start, descriptor)
+    scanned += chunk.length
+    const window = carry.length ? Buffer.concat([chunk, carry]) : chunk
+    let completeFrom = 0
+    if (start > 0) {
+      const newline = window.indexOf(0x0a)
+      if (newline < 0) {
+        if (window.length > access.maximumRecordBytes + 2) return null
+        carry = window
+        end = start
+        continue
+      }
+      completeFrom = newline + 1
+      carry = window.subarray(0, newline + 1)
+    } else {
+      carry = Buffer.alloc(0)
+    }
+    const lines = window.subarray(completeFrom).toString('utf8').split('\n')
+    for (let index = lines.length - 1; index >= 0; index -= 1) {
+      const line = lines[index].endsWith('\r') ? lines[index].slice(0, -1) : lines[index]
+      if (!line || Buffer.byteLength(line, 'utf8') > access.maximumRecordBytes) continue
+      if (!isUserVoiceLine(line)) continue
+      const reread = readExactAt(handle, chunk.length, start, descriptor)
+      const after = fstatSync(handle, { bigint: true })
+      if (!reread.equals(chunk) || !sameTranscriptIdentity(captured, after) || after.size < captured.size) return null
+      return line
+    }
+    end = start
+  }
+  return null
+}
+
+function materializeTranscriptRecords(records, access, descriptor, { anchorFor = null, excludesEarlierBytes = false } = {}) {
+  if (records.length === 0) fail(`provider hook adapter blocked:${descriptor.hook}:TRANSCRIPT_EMPTY`)
+  const selectTail = (maximumCount, maximumBytes) => {
+    const tail = []
+    let tailBytes = 0
+    let startIndex = records.length
+    for (let index = records.length - 1; index >= 0 && tail.length < maximumCount; index -= 1) {
+      const lineBytes = Buffer.byteLength(records[index], 'utf8') + 1
+      if (tailBytes + lineBytes > maximumBytes) break
+      tail.unshift(records[index])
+      tailBytes += lineBytes
+      startIndex = index
+    }
+    return { tail, startIndex }
+  }
+  let { tail: selected, startIndex } = selectTail(access.maximumRetainedRecordCount, access.maximumMaterializedBytes)
   if (selected.length === 0) {
     fail(`provider hook adapter blocked:${descriptor.hook}:TRANSCRIPT_TAIL_BUDGET_EXCEEDED`)
+  }
+  if (anchorFor && !transcriptUserVoiceText && (startIndex > 0 || excludesEarlierBytes)) {
+    const detail = `${descriptor.hook}:TRANSCRIPT_TURN_ANCHOR_UNAVAILABLE:${transcriptAnchorUnavailable || 'unknown'}`
+    if (hookStrictIntegrity) failIntegrity(`provider hook adapter blocked:${detail}`)
+    if (!transcriptAnchorWarned) {
+      transcriptAnchorWarned = true
+      warnDegraded(`transcript turn anchor unavailable; hooks see only the bounded tail:${detail}`)
+    }
+  }
+  // Newest first: in an ordinary turn the user's message sits near the end and the scan stops there.
+  let tailHasUserVoice = false
+  for (let index = selected.length - 1; index >= 0 && anchorFor && transcriptUserVoiceText; index -= 1) {
+    if (isUserVoiceLine(selected[index])) {
+      tailHasUserVoice = true
+      break
+    }
+  }
+  if (anchorFor && transcriptUserVoiceText && !tailHasUserVoice) {
+    const anchor = anchorFor(records.slice(0, startIndex))
+    if (anchor) {
+      const anchored = selectTail(
+        access.maximumRetainedRecordCount - 1,
+        access.maximumMaterializedBytes - (Buffer.byteLength(anchor, 'utf8') + 1),
+      )
+      if (anchored.tail.length > 0) selected = [anchor, ...anchored.tail]
+    }
   }
   const materialized = Buffer.from(`${selected.join('\n')}\n`, 'utf8')
   if (materialized.length > access.maximumMaterializedBytes) {
@@ -1158,7 +1306,17 @@ function verifiedVersionedTranscript(provider, descriptor, candidate) {
       if (!parsed.incomplete) {
         materialized = sourceBytes === 0
           ? Buffer.alloc(0)
-          : materializeTranscriptRecords(parsed.records, contract.access, descriptor)
+          : materializeTranscriptRecords(parsed.records, contract.access, descriptor, {
+            excludesEarlierBytes: range.readStart > 0,
+            anchorFor: (excludedRecords) => transcriptTurnAnchor({
+              handle,
+              range,
+              excludedRecords,
+              access: contract.access,
+              descriptor,
+              captured,
+            }),
+          })
         break
       }
       stableTrailingFailure(descriptor, parsed.incomplete)
@@ -1388,26 +1546,110 @@ if (targetRole) {
 }
 function createOpenHookToolProfile() {
   const firstExisting = (candidates) => candidates.find((candidate) => existsSync(candidate)) || ''
+  const executablePath = process.env.PATH
+    || '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin'
+  // Hooks call git / jq / perl / python3 BY NAME, so the property that must hold is "the name
+  // resolves on the PATH the child receives" — not "a file exists at one hard-coded location"
+  // (M37). Before 2026-10-07 nothing checked it: with jq absent every jq-reading hook got empty
+  // fields, took its early `exit 0`, and reported a clean pass (58 bash hooks call jq; exactly one
+  // guarded it, silently). One declared tool set (CLOSED_HOOK_TOOL_LABELS, shared with the sealed
+  // profile) is verified once here instead of 58 per-hook guards.
+  const resolvesOnHookPath = (label) => executablePath.split(':').some((directory) => {
+    if (!directory || !isAbsolute(directory)) return false
+    const candidate = join(directory, label)
+    try {
+      if (!statSync(candidate).isFile()) return false
+      accessSync(candidate, fsConstants.X_OK)
+      return true
+    } catch {
+      return false
+    }
+  })
+  const executables = Object.freeze({
+    bash: firstExisting(['/bin/bash', '/usr/bin/bash']),
+    git: firstExisting(['/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git']),
+    jq: firstExisting(['/usr/bin/jq', '/opt/homebrew/bin/jq', '/usr/local/bin/jq']),
+    node: process.execPath,
+    python3: firstExisting(['/usr/bin/python3', '/opt/homebrew/bin/python3', '/usr/local/bin/python3']),
+  })
+  const missingTools = CLOSED_HOOK_TOOL_LABELS.filter((label) => {
+    if (label === 'node') return !executables.node
+    if (label === 'bash') return !executables.bash || !resolvesOnHookPath('bash')
+    return !resolvesOnHookPath(label)
+  })
+  // G4 複核(2026-10-07):缺工具時**不再整批跳過**(那樣連只需要 bash / jq / node 的核准閘也一起失效)。
+  // 判準改成「這支 hook 這次**實際呼叫了**缺的工具」—— 直接量要保證的性質,而不是猜它需要什麼(M37):
+  // 每個缺的工具在 PATH 最後放一支探針,被呼叫就留下記錄並以 127 結束(與找不到指令同一個結束碼),
+  // 派送迴圈在每支 hook 跑完後讀記錄。沒用到缺的工具的 hook 照常執行、照常擋。
+  const probes = materializeMissingToolProbes(missingTools.filter((label) => !['bash', 'node'].includes(label)))
   return Object.freeze({
-    executables: Object.freeze({
-      bash: firstExisting(['/bin/bash', '/usr/bin/bash']),
-      git: firstExisting(['/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git']),
-      jq: firstExisting(['/usr/bin/jq', '/opt/homebrew/bin/jq', '/usr/local/bin/jq']),
-      node: process.execPath,
-      python3: firstExisting(['/usr/bin/python3', '/opt/homebrew/bin/python3', '/usr/local/bin/python3']),
-    }),
-    executablePath: process.env.PATH
-      || '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin',
+    executables,
+    executablePath: probes ? `${executablePath}:${probes.bin}` : executablePath,
     homeDirectory: process.env.HOME || tmpdir(),
     tempDirectory: tmpdir(),
     profileSha256: 'unsealed',
+    missingTools: Object.freeze(missingTools),
+    missingToolHits: probes?.hits || null,
     verify: () => {},
   })
 }
 
-const hookToolProfile = sealedHookGuardsEnabled
-  ? materializeClosedHookToolProfile({ repoRoot: PROJECT_ROOT })
-  : createOpenHookToolProfile()
+const missingToolProbeRoots = new Set()
+process.on('exit', () => {
+  for (const root of missingToolProbeRoots) {
+    try { rmSync(root, { recursive: true, force: true }) } catch {}
+  }
+})
+function materializeMissingToolProbes(labels) {
+  if (!labels.length) return null
+  const root = mkdtempSync(join(tmpdir(), 'governance-hook-tool-probe-'))
+  missingToolProbeRoots.add(root)
+  const bin = join(root, 'bin')
+  const hits = join(root, 'hits')
+  mkdirSync(bin, { mode: 0o700 })
+  mkdirSync(hits, { mode: 0o700 })
+  const quoted = (value) => `'${String(value).replaceAll("'", "'\\''")}'`
+  // 旁路呼叫(hooks/_log-fire.sh 的紀錄:檔頭寫明「失敗也不影響 hook」)會設 GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL=1;
+  // 那種呼叫不算「這支 hook 需要這個工具」—— 否則開了紀錄又缺 python3 時,只是紀錄寫不成,核准閘就被當成跑不起來
+  //(G4 複核二)。這個變數不在子行程環境白名單裡,外部帶不進來,只有 hook 自己的旁路程式碼能設。
+  for (const label of labels) {
+    writeFileSync(join(bin, label), [
+      '#!/bin/sh',
+      'if [ "${GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL:-}" != 1 ]; then',
+      `  : > ${quoted(join(hits, label))} 2>/dev/null`,
+      `  printf '%s\\n' ${quoted(`GOVERNANCE_WARNING: hook tool missing: ${label}`)} >&2`,
+      'fi',
+      'exit 127',
+      '',
+    ].join('\n'), { mode: 0o700 })
+  }
+  return { bin, hits }
+}
+
+// Labels of missing tools the last child actually invoked; the record is cleared for the next child.
+function takeMissingToolHits() {
+  const hits = hookToolProfile.missingToolHits
+  if (!hits) return []
+  let labels = []
+  try {
+    labels = readdirSync(hits).sort()
+    for (const label of labels) rmSync(join(hits, label), { force: true })
+  } catch {
+    labels = ['<probe-unreadable>']
+  }
+  return labels
+}
+
+let hookToolProfile
+try {
+  hookToolProfile = sealedHookGuardsEnabled
+    ? materializeClosedHookToolProfile({ repoRoot: PROJECT_ROOT })
+    : createOpenHookToolProfile()
+} catch (error) {
+  // The sealed lane pins the same tool set; a missing interpreter there is named, not an
+  // anonymous "internal failure".
+  failIntegrity(`provider hook adapter blocked:HOOK_TOOL_PROFILE_UNAVAILABLE:${error?.message || 'unknown'}`)
+}
 hookToolProfile.verify()
 
 const registeredDescriptors = Object.entries(registrations.hooks || {}).flatMap(([event, groups]) =>
@@ -1427,6 +1669,38 @@ const requestedGroup = batchMode
   : null
 if (batchMode && !requestedGroup) {
   fail(`provider hook adapter blocked:event/group is not registered:${requestedEvent}:${requestedGroupText}`)
+}
+// From here on an ordinary-lane failure is announced on this event's context channel (fail()).
+failureNoticeEvent = requestedEvent
+  ?? registeredDescriptors.find((item) => item.descriptor.hook === hookName)?.event
+  ?? null
+
+// A degraded or skipped hook must never read as a clean pass. In the ordinary lane the adapter is
+// fail-open by design (hooks accelerate; protected CI is the trust boundary), so the honest outcome
+// is a model-visible notice through the provider's own context channel — stderr alone is invisible
+// to the model on exit 0 (M37: 沒觀察到 ≠ 沒發生).
+function emitGovernanceNotice(event, message, { stderr = true } = {}) {
+  if (stderr) writeStderrRecord(`GOVERNANCE_WARNING: ${String(message).slice(0, 900)}`)
+  let output = null
+  try {
+    output = formatProviderHookContext({
+      transport: provider.runtime?.contextOutputTransport,
+      event,
+      message,
+    })
+  } catch {
+    output = null
+  }
+  if (!output) return
+  // Runs before the batch output budget exists; the notice is one small fixed record, so it is
+  // written synchronously like writeStderrRecord instead of through writeBoundedProviderOutput.
+  const record = Buffer.from(`${JSON.stringify(output)}\n`, 'utf8')
+  let offset = 0
+  while (offset < record.length) {
+    const count = writeSync(1, record, offset, record.length - offset)
+    if (count <= 0) break
+    offset += count
+  }
 }
 
 const inputChunks = []
@@ -1556,6 +1830,7 @@ if (hookInput.records.length > MAX_PROVIDER_HOOK_CHANGED_FILE_COUNT) {
   fail(`provider hook adapter blocked:changed-file count exceeds ${MAX_PROVIDER_HOOK_CHANGED_FILE_COUNT}`)
 }
 const { event, tool, operation } = hookInput.normalized
+failureNoticeEvent = event || failureNoticeEvent
 const matcherMatches = (matcher) => !matcher || matcher.split('|').includes(tool)
 let selectedRegistrations
 if (singleHookMode) {
@@ -1645,6 +1920,17 @@ if (input.session_id !== undefined && input.session_id !== null) {
 }
 if (event === 'UserPromptSubmit') copyOptionalString(normalizedBase, 'prompt', input.prompt)
 if (event === 'Stop') copyOptionalString(normalizedBase, 'last_assistant_message', input.last_assistant_message)
+// N47 ①(2026-10-07 複核):Bash 指令在 provider 延續的工作目錄裡執行,相對路徑要依它解析。原本這裡沒有轉交
+// cwd,hook 只能退回專案根目錄 —— 於是在 packages/design-system 底下下 `sed -i … src/x.tsx` 經正式入口放行、
+// 直接呼叫 hook 才擋(測試繞過入口 = 假綠)。只轉交「絕對路徑、無 NUL、有長度上限」的字串;其餘一律不轉交
+//(hook 視為沒有 cwd,退回專案根目錄 —— 與改前相同,不會更鬆)。
+if (tool === 'Bash' && input.cwd !== undefined && input.cwd !== null) {
+  if (typeof input.cwd !== 'string') fail('provider hook adapter blocked:cwd must be a string')
+  if (Buffer.byteLength(input.cwd, 'utf8') > MAX_PROVIDER_HOOK_CWD_BYTES) {
+    fail(`provider hook adapter blocked:cwd exceeds ${MAX_PROVIDER_HOOK_CWD_BYTES} bytes`)
+  }
+  if (isAbsolute(input.cwd) && !input.cwd.includes('\0')) normalizedBase.cwd = input.cwd
+}
 if (event === 'PostToolUse' && ['Agent', 'Task', 'Workflow'].includes(tool)) {
   if (typeof input.tool_response === 'string') {
     normalizedBase.tool_response = input.tool_response
@@ -1716,7 +2002,12 @@ const preparedDescriptors = selectedRegistrations.map((registered) => {
     fail(`provider hook adapter blocked:canonical hook executable is missing or unsafe:${selectedHookName}`)
   }
   const runtime = hookToolProfile.executables[descriptor.runtime]
-  if (!runtime) fail(`provider hook adapter blocked:unsupported runtime:${descriptor.runtime}`)
+  // An interpreter the open profile could not find is a missing hook tool for THIS hook (G4 複核),
+  // handled in the dispatch loop like any other missing tool — not a reason to skip the whole batch.
+  const missingRuntime = !runtime && hookToolProfile.missingTools?.includes(descriptor.runtime)
+    ? descriptor.runtime
+    : ''
+  if (!runtime && !missingRuntime) fail(`provider hook adapter blocked:unsupported runtime:${descriptor.runtime}`)
   const runtimeArguments = descriptor.runtime === 'python3'
     ? ['-I', '-c', PYTHON_ISOLATED_HOOK_BOOTSTRAP, hookPath]
     : [hookPath]
@@ -1727,6 +2018,7 @@ const preparedDescriptors = selectedRegistrations.map((registered) => {
     hookPath,
     runtime,
     runtimeArguments,
+    missingRuntime,
     outputMode,
     inputContract,
     peer,
@@ -1737,6 +2029,18 @@ const transcriptDescriptors = preparedDescriptors
   .filter((item) => item.descriptor.transcript && item.descriptor.transcript !== 'none')
 const transcriptVerifier = transcriptDescriptors.find((item) =>
   item.descriptor.transcript === 'stable-required') ?? transcriptDescriptors[0] ?? null
+if (transcriptVerifier) {
+  // One predicate for "the user's own voice" (M17): the same export the authorization helper uses.
+  try {
+    const helperPath = resolve(hookRoot, 'lib/approval-evidence.mjs')
+    if (!isContainedPath(hookRoot, helperPath)) throw new Error('approval evidence helper escaped the hook root')
+    const helper = await import(pathToFileURL(helperPath).href)
+    if (typeof helper.userVoiceText !== 'function') throw new TypeError('userVoiceText export is missing')
+    transcriptUserVoiceText = helper.userVoiceText
+  } catch (error) {
+    transcriptAnchorUnavailable = String(error?.message || 'unknown').slice(0, 300)
+  }
+}
 const verifiedTranscriptSnapshot = transcriptVerifier
   ? verifiedVersionedTranscript(provider, transcriptVerifier.descriptor, input.transcript_path)
   : null
@@ -1916,9 +2220,10 @@ function strictChildOutput(value, channel, selectedHookName) {
     failIntegrity(`provider hook child ${channel} capture is not a byte buffer:${selectedHookName}`)
   }
   try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(value)
+    return { text: new TextDecoder('utf-8', { fatal: true }).decode(value) }
   } catch {
-    failIntegrity(`provider hook child ${channel} is not strict UTF-8:${selectedHookName}`)
+    // One hook's malformed output is attributable to that hook (N34): the dispatch loop degrades it.
+    return { failure: `provider hook child ${channel} is not strict UTF-8:${selectedHookName}` }
   }
 }
 
@@ -1958,9 +2263,10 @@ function appendBoundedChildOutput({ chunks, channel, state, chunk, prepared, chi
   }
   if (!Number.isSafeInteger(aggregateChildOutputBytes)
     || aggregateChildOutputBytes > MAX_PROVIDER_HOOK_AGGREGATE_OUTPUT_BYTES) {
-    state.failure ||= `provider hook aggregate child output exceeds ${MAX_PROVIDER_HOOK_AGGREGATE_OUTPUT_BYTES} bytes`
+    // The aggregate budget belongs to the whole batch, not to the child that happened to cross it.
+    state.batchFailure ||= `provider hook aggregate child output exceeds ${MAX_PROVIDER_HOOK_AGGREGATE_OUTPUT_BYTES} bytes`
   }
-  if (state.failure) {
+  if (state.failure || state.batchFailure) {
     signalChildTree(child, 'SIGKILL')
     return
   }
@@ -1983,6 +2289,7 @@ async function runProviderHookChild({ prepared, environment: childEnvironment, i
   const stderrChunks = []
   const state = {
     failure: '',
+    batchFailure: '',
     launchError: null,
     timedOut: false,
     stdout: { bytes: 0, name: 'stdout' },
@@ -2037,18 +2344,32 @@ async function runProviderHookChild({ prepared, environment: childEnvironment, i
     hookToolProfile.verify()
   }
   if (signalShutdownStarted) await new Promise(() => {})
+  // N34(2026-10-07):a failure attributable to THIS child (could not launch, own timeout, own
+  // output over budget, stdin error, killed by a signal) degrades only this hook in the ordinary
+  // lane; the rest of the settings group keeps enforcing. Before, each of these killed the whole
+  // group (UserPromptSubmit: one broken hook → all three skipped). Strict lanes and children that
+  // emit the reserved integrity marker still fail closed; batch-level budgets still end the batch.
+  const capturedStderr = Buffer.concat(stderrChunks, state.stderr.bytes).toString('utf8')
+  const childFailure = (detail) => {
+    if (classifyProviderHookChildFailure({ strict: hookStrictIntegrity, stderr: capturedStderr }) !== 'degrade-hook') {
+      failIntegrity(detail)
+    }
+    remainingProviderHookBatchMs(`after-child:${prepared.hookName}`)
+    return { degraded: detail }
+  }
   if (state.launchError) {
-    failIntegrity(`provider hook child execution failed:${prepared.hookName}:${state.launchError.code || 'UNKNOWN'}`)
+    return childFailure(`provider hook child execution failed:${prepared.hookName}:${state.launchError.code || 'UNKNOWN'}`)
   }
   if (state.timedOut) {
     if (batchDeadlineOwnsTimeout) {
       failIntegrity(`provider hook batch exceeded ${providerHookBatchRuntimeLimitMs}ms:during-child:${prepared.hookName}`)
     }
-    failIntegrity(`provider hook child timed out after ${PROVIDER_HOOK_CHILD_TIMEOUT_MS}ms:${prepared.hookName}`)
+    return childFailure(`provider hook child timed out after ${PROVIDER_HOOK_CHILD_TIMEOUT_MS}ms:${prepared.hookName}`)
   }
-  if (state.failure) failIntegrity(state.failure)
+  if (state.batchFailure) failIntegrity(state.batchFailure)
+  if (state.failure) return childFailure(state.failure)
   if (completionResult.status === null || completionResult.signal) {
-    failIntegrity(`provider hook child terminated without an exit record:${prepared.hookName}:${completionResult.signal || 'unknown'}`)
+    return childFailure(`provider hook child terminated without an exit record:${prepared.hookName}:${completionResult.signal || 'unknown'}`)
   }
   remainingProviderHookBatchMs(`after-child:${prepared.hookName}`)
   return {
@@ -2059,6 +2380,104 @@ async function runProviderHookChild({ prepared, environment: childEnvironment, i
 }
 
 let governanceDecision = null
+// Every hook that did not complete its check this batch (N34). None of them is a clean pass, so the
+// list is surfaced to the model with the batch result instead of living only on stderr.
+const degradedHooks = []
+function recordDegradedHook(hookName, detail) {
+  warnDegraded(`hook degraded (this hook only): ${detail}`)
+  degradedHooks.push({ hookName, detail: String(detail).slice(0, 300) })
+}
+const missingHookToolLabels = new Set()
+function missingToolInstallHint() {
+  if (!missingHookToolLabels.size) return ''
+  const labels = [...missingHookToolLabels].sort().join(' ')
+  return `請安裝缺的工具後再繼續(macOS:brew install ${labels};Debian/Ubuntu:sudo apt-get install -y ${labels})。`
+}
+// G4 複核二:閘看不見時,用來判「這次呼叫在不在它的管轄範圍」的資料。只在真的有閘缺工具時才算一次。
+// 受管目標的判斷沿用核准閘自己的 helper(hooks/lib/approval-evidence.mjs,與 hook 的 case 同一套規則);
+// helper 載不到 → governedTargets 為 null,classifyBlindHookCall 保守視為在範圍內。
+let blindGateCallContext = null
+async function blindGateContext() {
+  if (blindGateCallContext) return blindGateCallContext
+  const command = tool === 'Bash' && typeof rawToolInput.command === 'string' ? rawToolInput.command : ''
+  let governedTargets = null
+  try {
+    const helperPath = resolve(hookRoot, 'lib/approval-evidence.mjs')
+    if (!isContainedPath(hookRoot, helperPath)) throw new Error('approval evidence helper escaped the hook root')
+    const helper = await import(pathToFileURL(helperPath).href)
+    if (typeof helper.isGovernedApprovalTarget !== 'function' || typeof helper.bashCommandWriteTargets !== 'function') {
+      throw new TypeError('approval evidence scope exports are missing')
+    }
+    const candidates = [
+      ...changedFiles.map((file) => resolve(PROJECT_ROOT, file.path)),
+      ...(command ? helper.bashCommandWriteTargets(command, normalizedBase.cwd || PROJECT_ROOT) : []),
+    ]
+    governedTargets = candidates.filter((path) => helper.isGovernedApprovalTarget(path))
+  } catch (error) {
+    warnDegraded(`missing-tool scope helper unavailable (gate treated as in scope): ${String(error?.message || error).slice(0, 200)}`)
+    governedTargets = null
+  }
+  blindGateCallContext = { command, governedTargets }
+  return blindGateCallContext
+}
+const BLIND_GATE_LANE_TEXT = Object.freeze({
+  restore: '這次是安裝缺的工具,放行',
+  'read-only': '這次是唯讀指令,放行',
+  'outside-gate-scope': '這次的呼叫不在這道閘的範圍內,放行',
+})
+function degradationNotice() {
+  if (!degradedHooks.length) return ''
+  const names = [...new Set(degradedHooks.map((item) => item.hookName))]
+  const hint = missingToolInstallHint()
+  return `⚠️ 治理檢查降級:這一批有 ${names.length} 支 hook 沒有跑完(${names.join('、')}),`
+    + '它們這次的檢查等於沒做,不能當成通過;同組其他 hook 照常執行。'
+    + (hint ? ` ${hint}` : '')
+    + ` 細節:${degradedHooks.map((item) => item.detail).join(' | ')}`
+}
+// G4 複核(2026-10-07):一支 hook 用到沒裝的工具時,只有它受影響。
+// - PreToolUse 上負責擋的 hook(outputMode blocking / governance-context-or-block):它跑不起來時放行,等於這道閘
+//   在缺工具的機器上整個關掉(核准閘缺 jq 就是這樣)→ 這次呼叫若落在它要判的範圍內,擋下(fail closed)。
+// - G4 複核二:但「範圍」只到它要判的寫入為止。唯讀指令、只安裝缺的工具的指令、以及不在這道閘範圍內的呼叫
+//   一律放行(classifyBlindHookCall,判斷在 node 裡做、不依賴缺的工具)—— 上一版缺 jq 時連 `ls`、`git status`、
+//   `brew install jq` 都擋,AI 沒辦法自己把工具裝回來(M36(b) 自鎖)。放行時這道閘仍記成「沒有跑」並告訴模型。
+// - 其餘 hook:只降級它自己,列進給模型看的降級名單,同組其他 hook 照常執行。
+async function handleMissingHookTools(prepared, labels) {
+  for (const label of labels) missingHookToolLabels.add(label)
+  const detail = `HOOK_TOOL_MISSING:${labels.join(',')}:${prepared.hookName}`
+  const blocksWrites = prepared.registered.event === 'PreToolUse'
+    && ['blocking', 'governance-context-or-block'].includes(prepared.outputMode)
+  if (!blocksWrites) {
+    recordDegradedHook(prepared.hookName, detail)
+    return
+  }
+  const context = await blindGateContext()
+  const verdict = classifyBlindHookCall({
+    hookName: prepared.hookName,
+    tool,
+    command: context.command,
+    missingTools: hookToolProfile.missingTools || [],
+    scope: {
+      governedTargets: context.governedTargets,
+      peerCli: prepared.peer?.runtime?.cli?.executable || '',
+    },
+  })
+  if (!verdict.block) {
+    recordDegradedHook(prepared.hookName, `${detail}(${BLIND_GATE_LANE_TEXT[verdict.lane] || verdict.lane})`)
+    return
+  }
+  const notice = degradationNotice()
+  await writeBoundedProviderOutput(
+    process.stderr,
+    '🚨 BLOCKER: 治理閘缺工具,這次寫入先擋下(fail closed)\n'
+      + `  - 閘:${prepared.hookName}(寫入前把關;它這次跑不起來,而這次呼叫落在它要判的範圍內 —— 看不見就不能放行)\n`
+      + `  - 缺的工具:${labels.join('、')}(hook 的查找路徑:${hookToolProfile.executablePath})\n`
+      + `  - 怎麼裝:${missingToolInstallHint()}\n`
+      + '  - 不會被擋:唯讀指令(ls、cat、grep、git status / log / diff 等)與只安裝缺的工具的指令照常放行;裝好後重試這次寫入即可。\n'
+      + `  [GOVERNANCE_WARNING ${detail}]\n${notice ? `\n${notice}\n` : ''}`,
+    `missing-tool:${prepared.hookName}`,
+  )
+  process.exit(provider.blockingExitCode)
+}
 const governanceContexts = []
 dispatch:
 for (const prepared of preparedDescriptors) {
@@ -2139,7 +2558,12 @@ for (const prepared of preparedDescriptors) {
     if (verifiedTranscriptSnapshot && descriptorHasTranscript) {
       verifyPrivateTranscriptSnapshot(verifiedTranscriptSnapshot, prepared.descriptor)
     }
+    if (prepared.missingRuntime) {
+      await handleMissingHookTools(prepared, [prepared.missingRuntime])
+      continue dispatch
+    }
     observeBatch(`invoke:${prepared.hookName}:${changedFile?.path || '<event>'}`)
+    takeMissingToolHits()
     const result = await runProviderHookChild({
       prepared,
       environment: invocationEnvironment,
@@ -2148,8 +2572,26 @@ for (const prepared of preparedDescriptors) {
     if (verifiedTranscriptSnapshot && descriptorHasTranscript) {
       verifyPrivateTranscriptSnapshot(verifiedTranscriptSnapshot, prepared.descriptor)
     }
-    const stdout = strictChildOutput(result.stdout, 'stdout', prepared.hookName)
-    const stderr = strictChildOutput(result.stderr, 'stderr', prepared.hookName)
+    // G4:這支 hook 實際呼叫了沒裝的工具 → 它這次的結果(含「沒事」)都不可信
+    const missingToolsInvoked = takeMissingToolHits()
+    if (missingToolsInvoked.length) {
+      await handleMissingHookTools(prepared, missingToolsInvoked)
+      continue dispatch
+    }
+    if (result.degraded) {
+      recordDegradedHook(prepared.hookName, result.degraded)
+      continue
+    }
+    const decodedStdout = strictChildOutput(result.stdout, 'stdout', prepared.hookName)
+    const decodedStderr = strictChildOutput(result.stderr, 'stderr', prepared.hookName)
+    const outputFailure = decodedStdout.failure || decodedStderr.failure
+    if (outputFailure) {
+      if (hookStrictIntegrity) failIntegrity(outputFailure)
+      recordDegradedHook(prepared.hookName, outputFailure)
+      continue
+    }
+    const stdout = decodedStdout.text
+    const stderr = decodedStderr.text
     const status = result.status
     if (prepared.outputMode === 'diagnostic') {
       if (status !== 0) {
@@ -2157,16 +2599,22 @@ for (const prepared of preparedDescriptors) {
         if (classifyProviderHookChildFailure({ strict: hookStrictIntegrity, stderr }) === 'degrade-hook') {
           // One crashed diagnostic hook must not silence its whole settings group
           // (baton §7 item 8): warn for this hook only, keep enforcing the rest.
-          warnDegraded(`hook degraded (this hook only): ${prepared.hookName}: exit-${status}: ${detail || 'no diagnostic'}`)
+          recordDegradedHook(prepared.hookName, `${prepared.hookName}: exit-${status}: ${detail || 'no diagnostic'}`)
           continue
         }
         failIntegrity(`provider diagnostic hook failed:${prepared.hookName}:exit-${status}:${detail || 'no diagnostic'}`)
       }
       if (stdout.length) {
-        failIntegrity(`provider hook adapter blocked:${prepared.hookName}:raw success stdout is forbidden`)
+        const detail = `provider hook adapter blocked:${prepared.hookName}:raw success stdout is forbidden`
+        if (classifyProviderHookChildFailure({ strict: hookStrictIntegrity, stderr }) !== 'degrade-hook') failIntegrity(detail)
+        recordDegradedHook(prepared.hookName, detail)
+        continue
       }
       if (stderr.includes('GOVERNANCE_INTEGRITY:')) {
-        failIntegrity(`provider diagnostic hook emitted the reserved integrity marker:${prepared.hookName}`)
+        const detail = `provider diagnostic hook emitted the reserved integrity marker:${prepared.hookName}`
+        if (hookStrictIntegrity) failIntegrity(detail)
+        recordDegradedHook(prepared.hookName, detail)
+        continue
       }
       if (stderr) await writeBoundedProviderOutput(process.stderr, stderr, `diagnostic:${prepared.hookName}`)
       continue
@@ -2187,13 +2635,18 @@ for (const prepared of preparedDescriptors) {
         // Crashed/malformed enforcement output is never reported as success: it
         // surfaces as a per-hook degradation warning while the remaining hooks in
         // the group still run (previously the whole group was skipped silently).
-        warnDegraded(`hook degraded (this hook only): ${detail}`)
+        recordDegradedHook(prepared.hookName, detail)
         continue
       }
       failIntegrity(`provider hook adapter blocked:${detail}`)
     }
     if (interpreted.kind === 'policy-block') {
-      await writeBoundedProviderOutput(process.stderr, `${interpreted.reason}\n`, `policy:${prepared.hookName}`)
+      const notice = degradationNotice()
+      await writeBoundedProviderOutput(
+        process.stderr,
+        `${interpreted.reason}\n${notice ? `\n${notice}\n` : ''}`,
+        `policy:${prepared.hookName}`,
+      )
       process.exit(provider.blockingExitCode)
     }
     if (interpreted.kind === 'governance-context') {
@@ -2213,10 +2666,16 @@ for (const prepared of preparedDescriptors) {
   }
 }
 
+const batchDegradationNotice = degradationNotice()
+if (batchDegradationNotice) {
+  if (governanceDecision) governanceDecision.reason = `${governanceDecision.reason}\n\n${batchDegradationNotice}`
+  else governanceContexts.push(batchDegradationNotice)
+}
 if (governanceDecision) {
   const transport = provider.runtime?.stopDecisionTransport
   const output = formatProviderStopDecision({ transport, reason: governanceDecision.reason })
   if (output) {
+    providerStdoutCommitted = true
     await writeBoundedProviderOutput(process.stdout, `${JSON.stringify(output)}\n`, 'stop-decision')
     process.exit(0)
   }
@@ -2231,6 +2690,7 @@ if (governanceContexts.length) {
   const transport = provider.runtime?.contextOutputTransport
   const output = formatProviderHookContext({ transport, event, message })
   if (output) {
+    providerStdoutCommitted = true
     await writeBoundedProviderOutput(process.stdout, `${JSON.stringify(output)}\n`, 'governance-context')
     process.exit(0)
   }

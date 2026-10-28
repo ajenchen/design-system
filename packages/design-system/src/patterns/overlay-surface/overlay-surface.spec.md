@@ -2,7 +2,7 @@
 pattern: overlay-surface
 internal: true
 family: composite  # composes SurfaceHeader/Body/Footer,非 Family 1-4 row element
-scope: overlay shell sub-components (SurfaceHeader / SurfaceBody / SurfaceFooter + padding SSOT) — DS-internal consumer only(Dialog / Sheet / Popover / Coachmark wrap;HoverCard 未納入,見「何時不用」)
+scope: overlay / 常駐面板 / 頁面置底按鈕列的 shell sub-components (SurfaceHeader / SurfaceBody / SurfaceFooter + padding SSOT) — DS 元件內部消費(誰在用以 import 為準,不在這裡列舉:列舉一定會漏、會過期);非 DS 元件經 subpath 包裝後使用(ui-development.md「Internal primitive」:internal ≠ 禁用);HoverCard 未納入,見「何時不用」
 ---
 
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
@@ -61,7 +61,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 **Rationale**:
 - Native scrollbar 跨 OS 不一致(macOS overlay / Windows 永遠吃 ~17px 寬度)——Dialog / Sheet 內容會因 OS 不同跑版
-- ScrollArea(Radix primitive)用自建 overlay 捲軸 → **跨 OS 一致不吃寬度**,捲動時浮現
+- ScrollArea(Radix primitive)用自建 overlay 捲軸 → **跨 OS 一致不吃寬度**,指標在捲動區上時浮現(只用鍵盤捲動時不浮現)
 - SSOT 見 `components/ScrollArea/scroll-area.spec.md`「何時用」已列明「Sheet / Dialog body 太長」
 
 **實作模板**:
@@ -192,7 +192,7 @@ list 不再是 body 唯一 region → **不該撤 body chrome padding**(撤了�
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
   `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:370`),DataTable 的欄位顯示面板也已經是
-  (`data-table-column-visibility-panel.tsx:196`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
+  (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。
 - **容器必須提供鍵盤與 listbox 結構**:裸用 `MenuItem` 是 `components/Menu/menu-item.spec.md`
@@ -348,7 +348,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 寫 Popover / Dialog / Sheet 內容必消費 `SurfaceHeader/Body/Footer`(或上層 `PopoverHeader/...`),**禁自刻 `<div className="px-loose ... border-(b|t)">` 取代**。
 
-**Why**:primitive 自帶 padding token + PopoverHeader auto close X(popover.tsx:104-109,`!hideClose` 條件渲染)+ PopoverTitle typography + `data-popover-body` autofocus 標記;自刻 = padding/border/close X/title 大小 4 向 drift 起點(對齊 mindset #2)。
+**Why**:primitive 自帶 padding token + PopoverHeader auto close X(popover.tsx#PopoverHeader,`!hideClose` 條件渲染)+ PopoverTitle typography + `data-popover-body` autofocus 標記;自刻 = padding/border/close X/title 大小 4 向 drift 起點(對齊 mindset #2)。
 
 **Hook**:`.claude/hooks/post_edit_dispatcher.sh`(原 `check_overlay_handcraft.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)攔此 pattern;escape hatch `// overlay-handcraft-allow: <reason>` 同/前行。
 

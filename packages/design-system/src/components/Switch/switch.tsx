@@ -360,6 +360,9 @@ const Switch = React.forwardRef<
         }}
         className={cn(
           'inline-flex items-start gap-3 select-none',
+          // 容器設跟標籤同一字級,下方 h-[1lh] 的 1lh 才是標籤那一行的行高(同 selection-item.tsx「容器設 text-body / text-body-lg 建立 1lh context」)。
+          // 2026-10-27 前沒設,1lh 取的是外層字級:外層 16/24 時開關比標籤第一行中線低 1.5px(外層 14/21 時剛好 0 —— 對不對齊取決於別人家的字級)。
+          sizeKey === 'lg' ? 'text-body-lg' : 'text-body',
           effectiveDisabled ? 'cursor-not-allowed' : effectiveReadOnly ? 'cursor-default' : 'cursor-pointer'
         )}
       >

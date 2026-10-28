@@ -70,7 +70,7 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 |------|------------|---------|-----------|
 | `sm` | 20px | Field sm、sm 列(緊湊清單、表格 sm) | field sm |
 | `md` | 24px | **預設**。一般表單、md 列、獨立擺放 | field md |
-| `lg` | 24px | Field lg、送出評分的主 CTA 區塊 | field lg |
+| `lg` | 24px | Field lg、lg 列 | field lg |
 
 ### 唯讀精簡版（一顆星 + 數值 + 評論數）
 
@@ -110,25 +110,25 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ### 放入 Field 的可組合性
 
-Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制):
+Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制)。驗證走 `useFormValidation`(`../Field/form-validation.spec.md`:blur + submit,不在初始 / 操作中即時報錯 —— error 由 `form.errors` 驅動,不是 `rating === 0` 立即判,那會讓初始未觸碰的欄位直接紅框);送出評分是新建,`intent: 'create'` → 送出鈕永遠可按(同該 spec「Submit Button 狀態」)。送出成功 → Toast「評分已送出」(該 spec「A11y 預設 › Submit 成功宣告」,user 2026-10-01 拍板 Toast),送出後同一欄切唯讀。完整可執行版(含送出鈕與 Toast)= 本元件展示「包在 Field 內」,結構同 `../Field/field.stories.tsx` CreateProjectForm:
 
 ```tsx
-// 驗證時機走 form-validation.spec.md canonical(blur + submit,不在初始 / 操作中即時報錯)
-// —— error 由 form.errors 驅動,非 `rating === 0` 立即判(那會讓初始未觸碰欄位直接紅框)。
+const [submitted, setSubmitted] = useState(false) // 送出成功 → 切唯讀;<form>、送出鈕與 <Toaster /> 見展示「包在 Field 內」
 const form = useFormValidation({
   initialValues: { rating: 0 },
+  intent: 'create',
   validate: { rating: (v) => (v === 0 ? '請至少給 1 星' : undefined) },
-  onSubmit: async (values) => { /* ... */ },
+  onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
 })
 
-<Field invalid={!!form.errors.rating}>
-  <FieldLabel required>整體滿意度</FieldLabel>
-  <Rating {...form.getInputProps('rating')} size="md" />
+<Field required invalid={!!form.errors.rating} mode={submitted ? 'readonly' : 'edit'}>
+  <FieldLabel>整體滿意度</FieldLabel>
+  <Rating {...form.getInputProps('rating')} />
   <FieldError>{form.errors.rating}</FieldError>
 </Field>
 ```
 
-列高由 Field 控件槽(`min-h-field-md` + `items-center`)供給,Rating 本身只有內容高,不需 consumer 額外調整 min-h。`aria-invalid` 透過 FieldContext 自動傳入,視覺錯誤提示由 FieldError 承擔。`<Field mode="readonly">` 內的 Rating 自動變成唯讀精簡版。
+列高由 Field 控件槽(`min-h-field-md` + `items-center`)供給,Rating 本身只有內容高,不需 consumer 額外調整 min-h。`aria-invalid` 與 `aria-errormessage`(有錯時指向 FieldError)透過 FieldContext 自動接在 `role="slider"` 上(`rating.tsx`;同 `../Field/form-validation.spec.md`「A11y 預設」),視覺錯誤提示由 FieldError 承擔。`getInputProps` 的 `name` 落在評分根節點上,而根節點可聚焦(`tabIndex=0`),所以送出驗證失敗時 useFormValidation 以 DOM `name` 找得到它並把焦點移過去(規則 8;2026-09-30 實測:滑鼠送出後焦點在評分、不畫鍵盤框,鍵盤送出後焦點在評分、畫框)—— Rating 屬於 `../Field/form-validation.spec.md`「可執行層」v1 邊界 (b)「找到帶該 name 的元素就 focus」那一類,不是例外。`getInputProps` 帶的 `onKeyDown`(規則 4 Escape)與元件自己的方向鍵並存 —— 元件的 handler 列在 `{...props}` 之後、先跑 consumer 的再跑自己的,不會被蓋掉(方向鍵 / Home / End 在 Field 內照常);Escape 在評分上同樣照規則 4 生效,也不是例外(2026-10-01 實測,淺深兩色相同:點第 3 顆後按 Escape → 回到 0 顆、不報錯、焦點留在評分,再按 Tab 離開 → 照規則 2 驗證、出現「請至少給 1 星」;先空送出出錯再點第 4 顆 → 錯誤當下消失、`aria-invalid` 拿掉,送出後唯讀「★ 4」底下不留錯誤)。`<Field mode="readonly">` 內的 Rating 自動變成唯讀精簡版;送出後就是這樣切換(展示「包在 Field 內」)。
 
 ---
 
@@ -208,9 +208,9 @@ const form = useFormValidation({
 | 量的東西 | 結果 |
 |---|---|
 | 整星命中盒 vs icon 盒(2026-09-24,設計規格--元件檢閱器 md) | `24×24` vs `24×24` —— **完全重合,零外擴**(同次量的半顆區已隨半顆設定移除而作廢) |
-| 從第 3 顆星中心移進 3 與 4 之間的縫,點下去(2026-09-26,展示--送出評分流程 lg:星 24、縫 4;淺深兩色結果相同;2026-09-27 容器改內容高後重量,結果同) | 縫的擁有者 = 容器(`role="slider"`),游標 `pointer`,值 0 → **3** |
-| 對照:從元件外直接落進 3 與 4 之間的縫(沒碰到任何星),點下去 | 游標 `auto`,值維持 **0** —— 證明沒有預覽時縫不收點擊 |
-| 對照:直接點第 4 顆星 | 值 → **4** —— 證明這支量具量得到點擊改值 |
+| 從第 3 顆星中心移進 3 與 4 之間的縫,點下去(2026-09-30 重量於展示--包在 Field 內 md:星 24、縫 4,與原量的 lg 同幾何;淺深兩色結果相同。原量 2026-09-26 於已移除的「送出評分流程」,2026-09-27 容器改內容高後重量,結果同) | 縫的擁有者 = 容器(`role="slider"`),游標 `pointer`,值 0 → **3** |
+| 對照:從元件外直接落進 3 與 4 之間的縫(沒碰到任何星),點下去(同上重量) | 游標 `auto`,值維持 **0** —— 證明沒有預覽時縫不收點擊 |
+| 對照:直接點第 4 顆星(同上重量) | 值 → **4** —— 證明這支量具量得到點擊改值 |
 
 ⚠️ 量測教訓:第一版測試沒有先把指標移出元件,殘留的 `hoverValue` 改變了畫面與點擊結果,量到的是上一次互動的殘影。
 **量 hover 驅動的元件前必須先讓它回到靜止態**(移出元件觸發 root 的 `onMouseLeave`)—— 縫裡點下去的結果取決於有沒有預覽亮著,這條更要守。
@@ -234,7 +234,6 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 | Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的星;借 `--divider` semantic alias(neutral-4,user 2026-05-09 拍板),與分隔線同級的 muted-fill。只出現在可以點的評分(唯讀精簡版沒有空星) |
 | 唯讀數值 | `text-foreground` | `--color-neutral-9` | 精簡版的數值(取一位小數),`tabular-nums` |
 | 唯讀評論數 | `text-fg-secondary` | `--color-neutral-8` | 精簡版括號內的評論數,千分位 |
-| 唯讀星與字的尺寸 | 見「Size — 唯讀精簡版」 | — | 星走 icon tier;星與數值的縫 `gap-1` 4px,與星和星之間同值(Rating 內只有一種縫) |
 | Hover 預覽 | 改 `fill`（不改尺寸） | — | interactive 時 hover 把游標所在星之前（含）的星填色預覽（只有整顆）；星星尺寸不變 |
 | Focus ring | `:focus-visible`(全域規則,無 class)+ `rounded-md` | — | 鍵盤 focus 時整個 Rating 容器(= 貼著星列的內容盒,2026-09-27 起不再是 field-height 盒)顯示全域 `:focus-visible` 外描邊（`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class,圓角跟著 `rounded-md`;**per-star 無 ring / border / outline**——focus 視覺由 parent container 統一承擔）|
 | Gap between stars | `gap-1` | 4px | 可以點的星與星之間的間距，不隨 size 變化 |
@@ -280,8 +279,6 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 - **超界 value**:可以點的評分 `> max` 全滿、`< 0` 全空,鍵盤增減恆 clamp 0–max;唯讀先 clamp 到 0–max 再顯示(`max=5` 時 7 → 「★ 5」)。
 - **count**:只在唯讀顯示,以執行環境語系加千分位(`toLocaleString()`,`12843` → `12,843`);`count={0}` 顯示「(0)」;不傳就不顯示括號。可以點的評分忽略 `count`。
 - **readOnly + disabled / loading 同時成立**:仍是精簡版,整塊淡化(`opacity-disabled`)+ 對應的 `aria-disabled` / `aria-busy`。
-- **max 上限**:預設 5(世界級慣例,見 Props 表);**不設超過 7**,原因見「禁止事項」。唯讀精簡版不畫 `max` 顆星,`max` 只用來 clamp。
-- **Disabled / Loading**:整塊 dim(`opacity-disabled`),兩者視覺同、語義與 ARIA 不同 — 見「Interactive vs ReadOnly」表 +「Loading canonical」段。
 - **Dark mode**:`--warning` / `--divider` / `--foreground` / `--fg-secondary` semantic token 自動 adapt,Rating 不 own dark token。
 
 ## 相關

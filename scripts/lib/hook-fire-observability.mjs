@@ -9,7 +9,7 @@
  * 而本 repo 的記錄器**預設就是關的**:
  *   packages/design-system/ds-canonical/hooks/_log-fire.sh
  *     [ "${GOVERNANCE_TELEMETRY_OPT_IN:-0}" = "1" ] || return 1
- *   scripts/run-provider-hook.mjs:1794 只把外界的環境變數往下傳,沒有預設開;
+ *   scripts/run-provider-hook.mjs#telemetryOptIn 只把外界的環境變數往下傳,沒有預設開;
  *   scripts/managed-host-assurance.mjs:1620 與 scripts/governance-check.mjs:2980 明寫 '0'。
  * 所以「零筆」是**預設狀態**,不是觀察結果。拿它去提名 retire,等於用沒插電的電表
  * 證明這棟樓沒人住 —— 2026-09-24 這支稽核就把全部 60 支 hook 標成 dead。

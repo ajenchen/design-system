@@ -8,6 +8,7 @@ import { Trash2, Archive, Download } from 'lucide-react'
 import { BulkActionBar } from './bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Button } from '@/design-system/components/Button/button'
+import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 const meta: Meta = {
   title: 'Design System/Components/BulkActionBar/設計規格',
@@ -106,7 +107,7 @@ function SelectionStateDemo() {
         <Button variant="tertiary" size="sm" onClick={() => setCount(3)}>3</Button>
         <Button variant="tertiary" size="sm" onClick={() => setCount(15)}>15</Button>
       </div>
-      <div className="border border-dashed border-border-muted rounded-md min-h-[60px]">
+      <div className="border border-dashed border-border rounded-md min-h-[60px]">
         <BulkActionBar
           selection={Array.from({ length: count }, (_, i) => `x-${i}`)}
           actions={
@@ -135,20 +136,18 @@ function InspectorInner() {
   return (
     <div className="grid grid-cols-[280px_1fr] gap-6 max-w-4xl">
       <div className="flex flex-col gap-4 text-caption">
+        {/* 多選一的控制列消費 SegmentedControl(button.spec.md「何時不用」多選一 → SegmentedControl;同 item-anatomy.stories.tsx Inspector)——
+            2026-10-21 前畫成一排 Button、選中那顆換成 primary:選中不是 variant(action-bar.spec.md「業務操作」、pagination.spec.md「vs Button secondary」) */}
         <ControlGroup label="selection.length">
-          {[0, 3, 15, 50].map(n => (
-            <Button key={n} variant={selectionCount === n ? 'primary' : 'tertiary'} size="sm" onClick={() => setSelectionCount(n)}>
-              {n}
-            </Button>
-          ))}
+          <SegmentedControl size="sm" aria-label="selection.length" value={String(selectionCount)} onValueChange={(v) => setSelectionCount(Number(v))}>
+            {[0, 3, 15, 50].map(n => <SegmentedControlItem key={n} value={String(n)}>{n}</SegmentedControlItem>)}
+          </SegmentedControl>
         </ControlGroup>
 
         <ControlGroup label="hiddenByFilter">
-          {[0, 2, 10].map(n => (
-            <Button key={n} variant={hidden === n ? 'primary' : 'tertiary'} size="sm" onClick={() => setHidden(n)}>
-              {n}
-            </Button>
-          ))}
+          <SegmentedControl size="sm" aria-label="hiddenByFilter" value={String(hidden)} onValueChange={(v) => setHidden(Number(v))}>
+            {[0, 2, 10].map(n => <SegmentedControlItem key={n} value={String(n)}>{n}</SegmentedControlItem>)}
+          </SegmentedControl>
         </ControlGroup>
       </div>
 

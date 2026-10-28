@@ -166,7 +166,7 @@ export const Overview: Story = {
                   <Td mono>value</Td>
                   <Td mono>string | string[] | null</Td>
                   <Td mono>undefined</Td>
-                  <Td>當前值（單選 string / 多選 string[]）；單 / 多選由 `multiple` prop 決定，非 value 型別</Td>
+                  <Td>當前值（單選 string / 多選 string[]）；單 / 多選由 <code>multiple</code> prop 決定，非 value 型別</Td>
                 </tr>
                 <tr>
                   <Td mono>multiple</Td>
@@ -523,7 +523,7 @@ export const ModeMatrix: Story = {
             <div className="flex flex-col gap-2">
               <span className="text-footnote text-fg-muted font-mono">Simple single</span>
               <SelectMenu options={statusOptions} value={single} onValueChange={(v) => setSingle(v as string)}>
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   {statusOptions.find((o) => o.value === single)?.label}
                 </Button>
               </SelectMenu>
@@ -537,7 +537,7 @@ export const ModeMatrix: Story = {
                 onValueChange={(v) => setSearch(v as string)}
                 searchable
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   {search ? reviewerOptions.find((o) => o.value === search)?.label : '選擇 reviewer'}
                 </Button>
               </SelectMenu>
@@ -551,7 +551,7 @@ export const ModeMatrix: Story = {
                 onValueChange={(v) => setMulti(v as string[])}
                 multiple
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   已選 {multi.length} 項
                 </Button>
               </SelectMenu>
@@ -566,7 +566,7 @@ export const ModeMatrix: Story = {
                 multiple
                 searchable
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   Reviewer {multiSearch.length > 0 ? `(${multiSearch.length})` : ''}
                 </Button>
               </SelectMenu>
@@ -590,7 +590,7 @@ export const ModeMatrix: Story = {
                   setCreatable((prev) => [...prev, v])
                 }}
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   Tags {creatable.length > 0 ? `(${creatable.length})` : ''}
                 </Button>
               </SelectMenu>
@@ -606,7 +606,7 @@ export const ModeMatrix: Story = {
                 multiple
                 searchable
               >
-                <Button variant="tertiary" size="md">
+                <Button className="self-start" variant="tertiary" size="md">
                   Labels ({grouped.length})
                 </Button>
               </SelectMenu>
@@ -641,7 +641,7 @@ export const SizeMatrix: Story = {
           <Desc>
             size 傳遞到浮層內的 CommandInput / MenuItem,三者統一尺寸。RowSizeProvider 確保所有 slot 自動讀取正確
             size,不需在每個 item 重設。size prop 決定 tier(sm/md/lg);實際像素隨 page density(2026-06-15:
-            PopoverContent 改鎖 `layout-space=md`、ui-size 繼承 page → 下拉項目跟觸發點 / 頁面 density 一致,
+            PopoverContent 改鎖 <code>layout-space=md</code>、ui-size 繼承 page → 下拉項目跟觸發點 / 頁面 density 一致,
             不再被鎖死 md-scale)。下表為 md page 的 field-height 值。
           </Desc>
           <div className="overflow-x-auto">
@@ -837,7 +837,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `select-menu.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :基於  cmdk  library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — focus trigger\n- Enter / Space — 開啟 menu(trigger 由 consumer 經 PopoverTrigger asChild 提供:Select / Combobox 的 trigger 是 role=\"combobox\" 容器自綁 Enter / Space handler;若 consumer 用 DS Button 則由 native click 觸發)\n- ↑/↓ — 導覽 options(menu 開啟後)\n- Enter — 選擇\n- Space(menu 開啟 + 單選、不可打字)— 與 Enter 相同:選定反白那一項、收起、焦點回觸發欄位(待辦總帳 L7)\n- 字母鍵 — type-ahead 過濾(search 模式)\n- Tab / Shift+Tab(menu 開啟 + 單選)— 選定反白那一項、收起,焦點走到觸發欄位的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格;頁面上已沒有下一格時留在觸發欄位;待辦總帳 B11)\n- Tab / Shift+Tab(menu 開啟 + 多選)— 行為不變:在面板裡繞圈(浮層內搜尋框 → 清單 → footer 的全選按鈕 → 回第一格);全選是真的 <button>,天生在 Tab 序裡(2026-09-17 起取代原本的 role=\"checkbox\" 全選列)。觸發欄位因此宣告 aria-haspopup=\"dialog\"(焦點會進到面板),單選宣告 listbox\n- Enter / Space(focus 在全選按鈕)— 切換全選 / 全清(瀏覽器原生按鈕行為)\n- Esc — 關閉、不選定\n\n  Focus  :menu 開啟時 active-descendant 虛擬焦點落在第一個 / 已選 option(aria-activedescendant 高亮,非 DOM focus);searchable 時 DOM focus 給搜尋 input;非 searchable 時 DOM focus 移到 cmdk 的 [cmdk-root](Command 元素,見 handleNonSearchableAutoFocus),讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效;option 無 tabIndex,DOM focus 不落在 option 上。選完 / Esc 關閉時 focus 回 trigger;單選按 Tab 收起時焦點直接走到下一格、不回 trigger。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <p className="whitespace-pre-line">{"詳 "}<code>{"select-menu.spec.md"}</code>{" 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :基於  cmdk  library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — focus trigger\n- Enter / Space — 開啟 menu(trigger 由 consumer 經 PopoverTrigger asChild 提供:Select / Combobox 的 trigger 是 role=\"combobox\" 容器自綁 Enter / Space handler;若 consumer 用 DS Button 則由 native click 觸發)\n- ↑/↓ — 導覽 options(menu 開啟後)\n- Enter — 選擇\n- Space(menu 開啟 + 單選、不可打字)— 與 Enter 相同:選定反白那一項、收起、焦點回觸發欄位(待辦總帳 L7)\n- 字母鍵 — type-ahead 過濾(search 模式);焦點在觸發欄位本身時打字 = 打開 menu、字進搜尋框(待辦總帳 K3)\n- Backspace(關鍵字空白)— 等於按最後一個值的 ×:多選刪最後一個 Tag,Select 單選只在 clearable 時清值;讀屏念「已移除『X』」(待辦總帳 K1)\n- Tab / Shift+Tab(menu 開啟 + 單選)— 選定反白那一項、收起,焦點走到觸發欄位的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格;頁面上已沒有下一格時留在觸發欄位;待辦總帳 B11)\n- Tab / Shift+Tab(menu 開啟 + 多選)— 行為不變:在面板裡繞圈(浮層內搜尋框 → 清單 → footer 的全選按鈕 → 回第一格);全選是真的 <button>,天生在 Tab 序裡(2026-09-17 起取代原本的 role=\"checkbox\" 全選列)。觸發欄位因此宣告 aria-haspopup=\"dialog\"(焦點會進到面板),單選宣告 listbox\n- Enter / Space(focus 在全選按鈕)— 切換全選 / 全清(瀏覽器原生按鈕行為)\n- Esc — 關閉、不選定\n\n  Focus  :menu 開啟時 active-descendant 虛擬焦點落在第一個 / 已選 option(aria-activedescendant 高亮,非 DOM focus);searchable 時 DOM focus 給搜尋 input(浮層內或觸發欄位內);浮層開著時滑鼠點選項與 Enter 相同、焦點不離開它,它帶 aria-activedescendant 指向反白選項;非 searchable 時 DOM focus 移到 cmdk 的 [cmdk-root](Command 元素,見 handleNonSearchableAutoFocus),讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效;option 無 tabIndex,DOM focus 不落在 option 上。選完 / Esc 關閉時 focus 回 trigger;單選按 Tab 收起時焦點直接走到下一格、不回 trigger。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
     </div>
   ),
 }

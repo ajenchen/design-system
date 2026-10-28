@@ -1,5 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
+import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 import { X, Clock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -8,6 +9,7 @@ import {
   fieldWrapperStyles,
   bareInputStyles,
   fieldDisplayTextClass,
+  keepFieldFocusBeforeUnmount,
 } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -116,6 +118,8 @@ export interface TimePickerProps
       'onChange' | 'placeholder' | 'defaultValue'
     > {
   mode?: FieldMode
+  /** 表單欄位名稱(`useFormValidation` 規則 8 以它定位、聚焦;掛在可聚焦的觸發欄位上)。 */
+  name?: string
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
   error?: boolean
@@ -182,6 +186,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       defaultOpen = false,
       onOpenChange,
       id: idProp,
+      name,
+      onBlur: onBlurProp,
+      onKeyDown: onKeyDownProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
       ...props
@@ -191,6 +198,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const fieldCtx = useFieldContext()
     const size = useResolvedFieldSize(sizeProp)  // B 組 cascade fix
     const error = useResolvedFieldInvalid(errorProp)
+    // 觸發欄位 + 它的面板 = 同一個欄位(lib/composite-field-focus.ts):面板用這個 id 讓 onBlur 認得「焦點只是搬進面板」
+    const popupId = React.useId()
     const disabled = useResolvedFieldDisabled(disabledProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="view"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
@@ -206,6 +215,13 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const showClear = clearable && !!value && isEditable
     const [open, setOpenState] = React.useState(defaultOpen)
     const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
+    // 觸發欄位 + 它的面板 = 同一個欄位(lib/composite-field-focus.ts,待辦總帳 N83):焦點搬進面板不算離開;從欄位離開、從面板直接離開
+    // (開著點空白處 / 點下一格)都算,consumer 的 onBlur 只跑一次(2026-10-21 r1b fields F1:修前只掛在觸發欄位,從面板直接離開時收不到 blur)。
+    // 兩邊都掛:觸發欄位經 PopoverTrigger、面板經 PopoverContent。hook 必在下方 early return 之前
+    const fieldTriggerRef = React.useRef<HTMLButtonElement>(null) // 型別跟 PopoverTrigger(Radix Trigger 的 ref 型別);asChild 時拿到的是欄位的 div(同 select-menu-keyboard.ts triggerRef)
+    const fieldFocus = useCompositeFieldBlur<React.FocusEvent<HTMLDivElement>>({
+      onBlur: onBlurProp, popupId, triggerRef: fieldTriggerRef,
+    })
 
     const currentParts = React.useMemo(() => isoToTimeParts(value), [value])
     // draft = panel 開啟期間的暫存:供 eager commit(每次欄選 commitDraft 即 commit)+ disabledTime 重算;OK 按鈕只 setOpen(false) 關 Panel,不做 commit
@@ -278,7 +294,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           className={cn(fieldWrapperStyles({ mode: 'view', variant, size }), className)}
           data-field-mode="view"
         >
-          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md:183 view 態元件自管 truncation) */}
+          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
           <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? formatTime(value, { formatOptions, locale }) : emptyDisplay}
           </TruncatedText>
@@ -341,8 +357,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             (@radix-ui/react-popover index.js:145),不 inject 任何 onKeyDown。原生 <button>
             靠瀏覽器在 Enter/Space 自動派發 click 才能開;但本 trigger 是 <div role=combobox>,
             div 不會自動派發 click → 鍵盤使用者打不開 panel。故顯式加 onKeyDown
-            (對齊 select.tsx:609-619 既有 canonical + WAI-ARIA APG combobox required keys)。 */}
-        <PopoverTrigger asChild>
+            (對齊 select.tsx#CustomSelect 的 onKeyDown 既有 canonical + WAI-ARIA APG combobox required keys)。 */}
+        <PopoverTrigger asChild ref={fieldTriggerRef} {...fieldFocus.trigger}>
           <div
             ref={ref}
             id={idProp ?? fieldCtx?.id}
@@ -356,20 +372,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
             aria-haspopup="dialog"
             aria-expanded={open}
-            onKeyDown={(e) => {
-              if (disabled) return
-              // 2026-07-14 dim-10 修:內層「清除時間」ItemInlineAction button 的 Enter/Space
-              // 會 bubble 到本 handler 被 preventDefault 吞掉(按鈕 activation 被取消、panel 反而開)。
-              // trigger 鍵盤邏輯只在事件源自 trigger div 本身時執行。
-              if (e.target !== e.currentTarget) return
-              // Enter / Space / ArrowDown / Alt+ArrowDown → 開 panel(APG combobox required + Select canonical)
-              if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-                e.preventDefault()
-                setOpen(true)
-              }
-              // Escape → 關(Radix Content 已自帶,trigger 補位對齊 select.tsx:597)
-              if (e.key === 'Escape') setOpen(false)
-            }}
+            aria-controls={open ? popupId : undefined}
             data-field-mode="edit"
             data-error={error ? '' : undefined}
             className={cn(
@@ -379,7 +382,29 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               'focus-visible:outline-none',
               className,
             )}
+            // consumer 的 data-* 等先 spread;元件自己的 handler 列在後面、在 handler 內先呼叫 consumer 的
+            // (2026-10-01 前 `{...props}` 在後 → `useFormValidation` getInputProps 帶來的 onKeyDown 整支蓋掉元件的,鍵盤打不開面板)
             {...props}
+            // 表單欄位名稱掛在可聚焦的觸發欄位(規則 8 以 name 定位、聚焦)
+            // 轉型:div 的型別沒有 name(規則 8 = form-validation.spec.md;68d7860d 加,2026-10-14 複查)
+            {...(name ? ({ name } as unknown as React.HTMLAttributes<HTMLDivElement>) : null)}
+            onKeyDown={(e) => {
+              if (disabled) return
+              // consumer 先跑(getInputProps 的 Esc 回復:只在這一下歸它時,lib/overlay-escape.ts),擋了預設就不走元件的
+              onKeyDownProp?.(e)
+              if (e.defaultPrevented) return
+              // 2026-07-14 dim-10 修:內層「清除時間」ItemInlineAction button 的 Enter/Space
+              // 會 bubble 到本 handler 被 preventDefault 吞掉(按鈕 activation 被取消、panel 反而開)。
+              // trigger 鍵盤邏輯只在事件源自 trigger div 本身時執行。
+              if (e.target !== e.currentTarget) return
+              // Enter / Space / ArrowDown / Alt+ArrowDown → 開 panel(APG combobox required + Select canonical)
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault()
+                setOpen(true)
+              }
+              // Escape → 關(Radix Content 已自帶,trigger 補位對齊 select.tsx#CustomSelect 的 onKeyDown)
+              if (e.key === 'Escape') setOpen(false)
+            }}
           >
             {/* 截斷必附 tooltip(tooltip.spec.md:32)— trigger div 自身是 hover 目標、無疊層,
                 值 span 直接消費 TruncatedText(對照 date-picker Range edit trigger 同型) */}
@@ -394,6 +419,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
                   label: '清除時間', // i18n-allow: DS default inline-action label
                   onClick: (e) => {
                     e?.stopPropagation()
+                    // 按鈕隨清空卸載:焦點在它身上先交回觸發欄位,不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount;2026-09-30 前實測落在 body)
+                    if (e) keepFieldFocusBeforeUnmount(e.currentTarget, e.currentTarget.closest<HTMLElement>('[role="combobox"]'))
                     onChange?.('')
                   },
                 }}
@@ -407,8 +434,12 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           </div>
         </PopoverTrigger>
         {/* a11y(2026-07-14 dim-10):Radix PopoverContent 輸出 role="dialog",無 title 需
-            accessible name(WAI-ARIA dialog required);對齊 date-picker.tsx:1040「日期區間選擇」同款 DS default。 */}
+            accessible name(WAI-ARIA dialog required);對齊 date-picker.tsx#DatePickerRange「日期區間選擇」同款 DS default。 */}
         <PopoverContent
+          id={popupId}
+          {...fieldFocus.popup}
+          // 關掉的那一下補量欄位的 blur(fieldFocus.popupClosed,lib/composite-field-focus.ts)
+          onCloseAutoFocus={fieldFocus.popupClosed}
           className="w-auto p-0"
           align="start"
           aria-label="選擇時間" /* i18n-allow: DS default dialog label */

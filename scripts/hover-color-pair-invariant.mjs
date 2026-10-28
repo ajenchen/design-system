@@ -3,7 +3,7 @@
  * 「靜止時同色的一對顏色,hover 之後必須還是同色」全 DS 掃描(2026-09-11)
  *
  * user 截圖回報:Switch hover 時白色圓浮出一圈灰邊。根因(switch.tsx:313 修前)——
- * `switch.spec.md:100` 逐字要求 OFF thumb 邊框「neutral-5,**與 OFF track 同色**」,
+ * `2ac80297:packages/design-system/src/components/Switch/switch.spec.md:100` 逐字要求 OFF thumb 邊框「neutral-5,**與 OFF track 同色**」,
  * 而 2026-07-06 給 track 加了 hover 升階(`switch.tsx:71-72`)卻**沒給 thumb 邊框對應的 hover**
  * → 實測 hover 下 track `oklch(0 0 0 / 0.25)`、thumb 邊框仍 `oklch(0 0 0 / 0.15)`,
  * 那圈本來刻意「看不見」的邊就浮出來了。

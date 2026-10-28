@@ -126,11 +126,11 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
     Primer / shadcn / Polaris / Bootstrap / Atlassian / Angular Material / GOV.UK / Mantine / EUI / Base Web / Vuetify 皆 0。
     主流解是**收合頁碼**(Atlassian `max = 7` 插省略號、Carbon PaginationNav 在 `isSm` 砍到 4 顆、Ant `pageBufferSize`)。
   - **我們的數字**:砍完頭尾的最後一階 = 5 格 × 28px + 4 × gap 4px = **156px**;DS 定義的最窄容器是側欄面板下限
-    240px(`app-shell.tsx:111`),扣內距約 208px —— 支援得到的寬度都放得下,不需要捲。
+    240px(`../../tokens/uiSize/uiSize.css#--sidebar-width-min`),扣內距約 208px —— 支援得到的寬度都放得下,不需要捲。
   - **連帶修掉的副作用**:`overflow-x-auto` 常掛時,CSS 規範讓另一軸也算成 auto,於是**每一個寬度**都在裁上下 ——
     焦點框(實測往外的框上下像素 0 / 0)、陰影、浮層一起被切。拿掉之後這三件同時解決,分頁按鈕的焦點框
     因此回到預設的**往外**(`ds-canonical/references/focus-canonical.md:485`「≥ 4px 往外」)。
-  - **原本那條捲動的來歷(據實留檔)**:commit `0eff9ab6`(2026-09-04)依我們自己的 `tabs.spec.md:235` 類推而來,
+  - **原本那條捲動的來歷(據實留檔)**:commit `0eff9ab6`(2026-09-04)依我們自己的 `tabs.spec.md`「極長 label」條(當時第 235 行)類推而來,
     **沒有任何 user 原話核准**;查證時另發現連 Radix Tabs 原始碼也零 overflow,那條 Tabs 規範同樣是我們自己寫的。
   - **不消費 `<ScrollArea orientation="horizontal">`**:理由不變(它的 affordance 是 ChevronLeft/Right,跟分頁自己的
     上下頁箭頭長得一模一樣,同一列會分不清「捲動」還是「翻頁」);現在更直接 —— 分頁列根本不捲。
@@ -155,7 +155,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 | `page` 越界(< 1 或 > 總頁數) | 防禦性 clamp 後渲染(顯示層不炸);糾正責任在 consumer / DataTable(接資料變動時同步 clamp) |
 | `pageSize <= 0`(consumer contract violation) | 防禦 clamp 至 1(不渲染垃圾格位、totalPages 不會變 Infinity/NaN) |
 | 極大總頁數(500+) | 摺疊規則不變(恆 ≤ 7 格);數字鈕寬度容納 3-4 位數自然撐開 |
-| 邊界頁 disabled 時 focus 落點 | 接受 focus 掉落(對齊 Ant / MUI 行為);不做 focus 轉移 |
+| 邊界頁 disabled 時 focus 落點 | 按到頭的那一下,箭頭在握著焦點時變停用 → Button 不轉原生 `disabled`、焦點留在原鈕(`aria-disabled` 可聚焦停用,焦點離開後才回原生 disabled)。不做 focus 轉移。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」(2026-10-01;本列原寫「接受 focus 掉落(對齊 Ant / MUI)」,查無 user 原話、與全 DS「焦點不掉到 body」相反,AI 推導改寫) |
 
 ## Loading / 空值
 

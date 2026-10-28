@@ -40,6 +40,10 @@ const index = JSON.parse(fs.readFileSync(path.join(server.snapshot?.dir ?? root,
 const WANT = [/agentpanel-展示--url-registry-demo$/u, /datatable-展示--with-bulk-actions$/u, /datatable-展示--roadmap-all-in-one$/u, /appshell-展示--primary-sidebar-with-tabs$/u]
 const STORIES = WANT.map((re) => Object.values(index.entries).find((e) => e.type === 'story' && re.test(e.id))?.id)
 const WIDTHS = [320, 360, 400, 480, 768]
+// AppShell 的示範(2026-10-14 起):Main 有最小寬 600(app-shell.spec.md「版面規則」§1、§8),視窗比它窄時整個殼水平捲、工具列寬停在
+// Main 最小寬 —— 320–768 這幾格量到的都是同一個寬,量不到想量的情況(D:30 清單 #108)。改取「Main 真的會變寬變窄」的視窗寬:
+// 1024(Menu 收成細列、Main 守 600)、1280、1600(Menu 與詳情並排,Main 隨視窗變寬)。
+const WIDTHS_FOR = (id) => (/appshell-展示--/u.test(id ?? '') ? [1024, 1280, 1600] : WIDTHS)
 // 頁面端(openStory 的 waitFor):**被量的東西**都在了 —— 搜尋框,以及它同一列的操作群裡至少一顆鈕(PROBE 量的就是這兩個)
 const TOOLBAR_READY = () => Boolean(document.querySelector('[data-toolbar-search]')?.parentElement?.querySelector('[data-toolbar-actions]')?.lastElementChild)
 // 頁面端(openStory 的 probe:最後一個靜止影格的同一個 task 裡執行;以原始碼序列化傳入,不得引用外部變數)
@@ -66,7 +70,7 @@ const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok)
 for (const [i, id] of STORIES.entries()) {
   if (!id) { rec(false, `找不到示範 story:${WANT[i]}`); continue }
   const name = id.replace(/^design-system-components-/u, '')
-  for (const w of WIDTHS) {
+  for (const w of WIDTHS_FOR(id)) {
     await page.setViewportSize({ width: w, height: 900 })
     let r
     let floor = NaN
@@ -125,7 +129,8 @@ if (SELFTEST) {
   process.exit(ok ? 0 : 1)
 }
 // 每一格都要有下落:量到,或以儀器失效記名(上方已紅)—— 兩者都沒有的格子才是這裡要抓的「靜默消失」
-rec(measured + instrumentFails.length === STORIES.length * WIDTHS.length, `取樣:${measured} 格${instrumentFails.length ? `(另 ${instrumentFails.length} 格沒量到,已記儀器失效)` : ''}(需 ${STORIES.length} 支示範 × ${WIDTHS.length} 個寬度)`)
+const CELLS = STORIES.reduce((sum, id) => sum + WIDTHS_FOR(id).length, 0)
+rec(measured + instrumentFails.length === CELLS, `取樣:${measured} 格${instrumentFails.length ? `(另 ${instrumentFails.length} 格沒量到,已記儀器失效)` : ''}(需 ${STORIES.length} 支示範 × 各自的寬度 = ${CELLS} 格)`)
 if (tight) console.log(`  · ${tight} 格是空間連下限都放不下的極窄組合(只驗下限守住;action-bar.spec.md 七:本輪不收合搜尋框)`)
 console.log(failed || instrumentFails.length ? `✗ action-bar-toolbar ${failed} 條失敗、${instrumentFails.length} 格沒量到(SSOT:action-bar.spec.md 七「搜尋框」)` : `✅ action-bar-toolbar PASS(${measured} 格)`)
 process.exit(failed || instrumentFails.length ? 1 : 0)

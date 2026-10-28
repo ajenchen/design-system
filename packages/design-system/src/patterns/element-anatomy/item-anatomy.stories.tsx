@@ -4,7 +4,7 @@ import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import {
   Mail, Bell, Settings, Star, ChevronRight, Globe, Lock,
-  Trash2, X, MoreVertical, Download, RotateCw, Share2, RefreshCw,
+  Trash2, MoreVertical, Download, RotateCw, Share2, RefreshCw,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
@@ -12,32 +12,21 @@ import { SelectionItem } from '@/design-system/components/SelectionControl/selec
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 /** Person avatar hover canonical helper — avatar.spec.md DS-wide rule:
  *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含)
  *  真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)*/
 const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
-const personHover = (name: string, subtitle?: string) => (
-  <ProfileCard
-    name={name}
-    subtitle={subtitle ?? 'Design｜D-0042｜EMP-1001'}
-    avatar={{ src: avatarSrc(name), alt: name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday!"
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+// 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
+const personHover = (name: string, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
 import { Button } from '@/design-system/components/Button/button'
-import { Separator } from '@/design-system/components/Separator/separator'
-import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { Alert } from '@/design-system/components/Alert/alert'
+import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { cn } from '@/lib/utils'
+import { TutorialPage, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Patterns/Item Anatomy',
@@ -175,20 +164,20 @@ const READING_SPECS: Record<SizeKey, TypoSpec> = {
    Shared UI Components
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
+// 規則外框 = 共用教學頁元件(2026-10-20 T8:原本本檔自抄 H3 / Desc 與 span 小標的教學框;規則之間 loose × 2、
+// 規則標題 h3 text-h6 半粗體、說明 text-caption,由 tutorial-page.tsx 擁有)。規則的內容是一段示範 / 表格,子節點照順序以 tight 排。
+const TutorialRule = createTutorialRule()
 const Th = ({ children }: { children: React.ReactNode }) => (
+  // @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
 const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) => (
+  // @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
 
 const TkVal = ({ token, value }: { token: string; value?: string }) => (
+  // @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
   <div className="flex flex-col gap-0.5">
     <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
     {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
@@ -205,7 +194,9 @@ const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) =
 }
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
+  // @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
+    {/* @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
     <span className="text-[11px] text-fg-muted font-medium w-[88px] shrink-0 pt-0.5 flex items-center gap-1.5">
       {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
       {label}
@@ -250,6 +241,7 @@ const MenuFrame = ({ children, width = 320 }: { children: React.ReactNode; width
   <div
     role="group"
     aria-label="Anatomy inspector menu preview"
+    // @layout-space-magic-ok: MenuFrame 模擬選單容器 py 8px = 列集合上下呼吸(item-anatomy.spec.md:352 MenuGroup py 8px;layoutSpace.spec.md:113 同範疇 spec-own)
     className="rounded-lg bg-surface-raised border border-border overflow-hidden py-2"
     style={{ width, boxShadow: 'var(--elevation-200)' }}
   >
@@ -285,6 +277,7 @@ const ListItemPreview = ({ size, startIcon: StartIcon, avatar, label, descriptio
     : 'h-[1lh]'
 
   return (
+    // @layout-space-magic-ok: ListItemPreview 頁面級列表列幾何 px 16px py 12px gap 12px(item-anatomy.spec.md:1029 / :1031;layoutSpace.spec.md:113 同範疇 spec-own)
     <div className={`flex items-start gap-3 px-4 py-3 ${size === 'lg' ? 'text-body-lg' : 'text-body'}`}>
       {(StartIcon || avatar) && (
         <div className={`${alignClass} flex items-center shrink-0`}>
@@ -445,10 +438,13 @@ const InspectorInner = () => {
     effectiveDescClamp === 3 ? 'line-clamp-3' : ''
 
   return (
+    // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
     <div className="flex flex-col gap-6">
       {/* Controls — 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項;
           取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
+      {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
       <div className="flex flex-col gap-2.5">
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">情境</span>
           <SegmentedControl size="sm" aria-label="情境" value={consumer} onValueChange={(v) => setConsumer(v as ConsumerKey)}>
@@ -458,12 +454,14 @@ const InspectorInner = () => {
           </SegmentedControl>
           <span className="text-[10px] text-fg-muted font-mono">{CONSUMER_DISPLAY[consumer].sub}</span>
         </div>
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">Size</span>
           <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
             {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
           </SegmentedControl>
         </div>
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">hasPrefix</span>
           <SegmentedControl size="sm" aria-label="hasPrefix" value={hasPrefix ? 'on' : 'off'} onValueChange={(v) => setHasPrefix(v === 'on')}>
@@ -477,6 +475,7 @@ const InspectorInner = () => {
           )}
         </div>
         {hasPrefix && (
+          // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-24 shrink-0">prefixType</span>
             <SegmentedControl size="sm" aria-label="prefixType" value={prefixType} onValueChange={(v) => setPrefixType(v as PrefixType)}>
@@ -486,6 +485,7 @@ const InspectorInner = () => {
           </div>
         )}
         {/* SelectionItem avatar 沒有 block 模式(left checkbox + block avatar = 歪斜) */}
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">label 內容長度</span>
           <SegmentedControl size="sm" aria-label="label 內容長度" value={labelLength} onValueChange={(v) => setLabelLength(v as ContentLength)}>
@@ -494,6 +494,7 @@ const InspectorInner = () => {
             <SegmentedControlItem value="long">long</SegmentedControlItem>
           </SegmentedControl>
         </div>
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">label clamp</span>
           {/* 值有數字(1 / 2)也有字串(preset / unbounded);SegmentedControl 的 value 是字串 → 轉 String、回寫時還原型別 */}
@@ -506,6 +507,7 @@ const InspectorInner = () => {
             <SegmentedControlItem value="unbounded">∞</SegmentedControlItem>
           </SegmentedControl>
         </div>
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">description</span>
           <SegmentedControl size="sm" aria-label="description" value={descContent} onValueChange={(v) => setDescContent(v as DescContent)}>
@@ -516,6 +518,7 @@ const InspectorInner = () => {
           </SegmentedControl>
         </div>
         {hasDescription && (
+          // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-fg-muted w-24 shrink-0">desc clamp</span>
             {/* 值有數字(1 / 2)也有字串(preset / unbounded);SegmentedControl 的 value 是字串 → 轉 String、回寫時還原型別 */}
@@ -529,6 +532,7 @@ const InspectorInner = () => {
             </SegmentedControl>
           </div>
         )}
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-24 shrink-0">hasSuffix</span>
           <SegmentedControl size="sm" aria-label="hasSuffix" value={hasSuffix ? 'on' : 'off'} onValueChange={(v) => setHasSuffix(v === 'on')}>
@@ -539,10 +543,13 @@ const InspectorInner = () => {
       </div>
 
       {/* Preview + Panel */}
+      {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
       <div className="flex gap-8 items-start">
         {/* Left: live preview + blueprint */}
+        {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
         <div className="flex flex-col gap-6 min-w-[440px]">
           {/* Live preview */}
+          {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
           <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             {consumer === 'MenuItem' && (
               <MenuFrame width={360}>
@@ -590,8 +597,10 @@ const InspectorInner = () => {
           </div>
 
           {/* Blueprint */}
+          {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
           <div className="flex flex-col gap-3">
             {/* Legend */}
+            {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
             <div className="flex items-center gap-4 text-[11px] flex-wrap">
               {[
                 ...(hasPx ? [{ c: Z.pad, l: 'Padding' }] : []),
@@ -602,6 +611,7 @@ const InspectorInner = () => {
                 { c: Z.spacer, l: 'flex-1 spacer' },
                 ...(effectiveHasSuffix ? [{ c: Z.suffix, l: 'Suffix' }] : []),
               ].map(({ c, l }) => (
+                // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
                 <span key={l} className="inline-flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-md" style={{ background: c.bg, border: `1.5px dashed ${c.border}` }} />
                   <span className="font-medium" style={{ color: c.text }}>{l}</span>
@@ -691,6 +701,7 @@ const InspectorInner = () => {
                     line-clamp class 演示 max-lines 截斷;若內容超過 clamp,瀏覽器自動加 ellipsis。
                   */}
                   <div
+                    // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
                     className="flex flex-col shrink-0 justify-center py-1"
                     style={{
                       width: 220,
@@ -700,6 +711,7 @@ const InspectorInner = () => {
                     }}
                   >
                     <span
+                      // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
                       className={cn('text-[12px] font-mono font-bold leading-snug px-2 break-words', labelClampClass)}
                       style={{ color: Z.label.text }}
                     >
@@ -709,6 +721,7 @@ const InspectorInner = () => {
                       <>
                         <div className="h-0.5" />
                         <span
+                          // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
                           className={cn('text-[10px] font-mono leading-snug px-2 opacity-80 break-words', descClampClass)}
                           style={{ color: Z.label.text }}
                         >
@@ -752,13 +765,16 @@ const InspectorInner = () => {
               </div>
 
               {/* Height annotation — 文字版,不再需要精確 px(高度由 Label box 內容決定) */}
+              {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
               <div className="ml-4 flex items-start pt-2">
-                <div className="text-[10px] font-mono text-fg-muted leading-relaxed">
+                <div className="text-footnote font-mono text-fg-muted">
+                  {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
                   <div className="text-fg-secondary font-bold mb-1">高度公式</div>
                   <div>= padding-y × 2</div>
                   <div>+ label content height</div>
                   {hasDescription && <div>+ 2px(label-desc gap)</div>}
                   {hasDescription && <div>+ desc content height</div>}
+                  {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
                   <div className="mt-2 text-fg-muted">內容多行 → 自然撐高</div>
                   <div className="text-fg-muted">padding-y 不變</div>
                 </div>
@@ -768,25 +784,30 @@ const InspectorInner = () => {
             {/* 對齊規則 annotation */}
             {effectiveHasPrefix && (
               <div
+                // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
                 className="rounded-md px-3 py-2 text-[11px] flex items-start gap-2"
                 style={{
                   background: isBlockAlign ? 'rgba(166,208,245,0.18)' : 'rgba(199,178,230,0.18)',
                   border: `1px dashed ${isBlockAlign ? Z.icon.border : Z.label.border}`,
                 }}
               >
+                {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
                 <span className="font-mono font-bold mt-0.5 shrink-0" style={{ color: isBlockAlign ? Z.icon.text : Z.label.text }}>
                   {isBlockAlign ? '◫ Block 對齊' : '— Inline 對齊'}
                 </span>
-                <span className="text-fg-secondary leading-relaxed">{alignDesc}</span>
+                <span className="text-fg-secondary">{alignDesc}</span>
               </div>
             )}
 
             {/* Clamp 政策說明 */}
+            {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
             <div className="rounded-md px-3 py-2 text-[11px] bg-muted border border-divider flex flex-col gap-1">
+              {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-fg-secondary">Clamp 政策</span>
                 <span className="text-fg-muted">由 consumer 透過 prop 決定(每個 consumer 有預設,可 per-instance override)</span>
               </div>
+              {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
               <div className="flex flex-wrap gap-x-4 font-mono text-[10px] text-fg-secondary">
                 <span>
                   <code>labelMaxLines</code> = <strong>{effectiveLabelClamp ?? '∞ (unbounded)'}</strong>
@@ -799,6 +820,7 @@ const InspectorInner = () => {
                 </span>
               </div>
               {hasDescription && (
+                // @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面)
                 <div className="flex flex-wrap gap-x-4 font-mono text-[10px] text-fg-secondary">
                   <span>
                     <code>descMaxLines</code> = <strong>{effectiveDescClamp ?? '∞ (unbounded)'}</strong>
@@ -810,7 +832,7 @@ const InspectorInner = () => {
                   </span>
                 </div>
               )}
-              <div className="text-[10px] text-fg-muted leading-relaxed">
+              <div className="text-footnote text-fg-muted">
                 行數是 <strong>內容長度 + 容器寬 + clamp</strong> 三者共同決定的 emergent 結果,不是離散設定值。
                 左側 live preview 和右側藍圖同步反映相同的 clamp—改 toggle 兩邊一起變。
                 <br />
@@ -819,6 +841,7 @@ const InspectorInner = () => {
             </div>
 
             {/* Annotations below the blueprint */}
+            {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] font-mono text-fg-muted">
               {hasPx && <span><strong style={{ color: Z.pad.text }}>padding-x</strong> = {pxPx}</span>}
               {effectiveHasPrefix && <span><strong style={{ color: Z.icon.text }}>prefix-content gap</strong> = {gapPx}</span>}
@@ -830,15 +853,18 @@ const InspectorInner = () => {
 
         {/* Right: Inspect panel */}
         <div className="w-[320px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+          {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-foreground">Inspect</span>
+              <span className="text-caption font-semibold text-foreground">Inspect</span>
               <span className="text-[10px] font-mono text-fg-muted">{preset.label}</span>
             </div>
           </div>
 
           {/* LAYOUT */}
+          {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
           <div className="px-4 py-1">
+            {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
             <PropRow label="padding-y" dot={Z.pad.text}>
               <TkVal token={preset.py} value={preset.pyDesc} />
@@ -863,7 +889,9 @@ const InspectorInner = () => {
           </div>
 
           {/* TYPOGRAPHY */}
+          {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
           <div className="px-4 py-1">
+            {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Typography</span></div>
             <PropRow label="Label"><TkVal token={spec.labelFont} value={spec.labelSize} /></PropRow>
             <PropRow label="Label lh"><TkVal token={preset.mode === 'scanning' ? 'leading-compact' : 'default'} value={spec.labelLh} /></PropRow>
@@ -896,7 +924,9 @@ const InspectorInner = () => {
           </div>
 
           {/* ALIGNMENT */}
+          {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
           <div className="px-4 py-1 pb-3">
+            {/* @layout-space-magic-ok: Inspector 內部(控制列 / 預覽框 / 量測標註 / 屬性面板)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Alignment</span></div>
             <PropRow label="outer"><TkVal token="flex items-start" /></PropRow>
             <PropRow label="prefix align"><TkVal token={alignContainer} value={alignDesc} /></PropRow>
@@ -916,16 +946,14 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>Item Layout 檢閱器</H3>
-        <Desc>
-          Item Layout 是抽象對齊系統，不是固定元件。每個消費元件提供自己的間距（padding、gap），
-          但共用相同的三區域結構和對齊規則。切換 Consumer 可看到不同元件的預設值。
-        </Desc>
-      </div>
-      <InspectorInner />
-    </div>
+    <TutorialPage>
+      <TutorialRule
+        title="Item Layout 檢閱器"
+        note="Item Layout 是抽象對齊系統，不是固定元件。每個消費元件提供自己的間距（padding、gap）， 但共用相同的三區域結構和對齊規則。切換 Consumer 可看到不同元件的預設值。"
+      >
+        <InspectorInner />
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -936,128 +964,128 @@ export const Inspector = {
 export const AlignmentThreshold = {
   name: '對齊容器（24px 閾值）',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-1">
-        <H3>對齊規則 — Prefix 與 Suffix 各自獨立</H3>
-        <Desc>
-          <strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline);
-          &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。
-          <br />
-          <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。
-          理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的——
-          業界 convention(Apple Mail / Gmail / iOS Settings / Material / Polaris)全部如此。
-        </Desc>
-      </div>
-
-      {/* Side-by-side comparison */}
-      <div className="flex gap-12 items-start">
-        {/* Inline: <= 24px */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-caption font-semibold text-foreground">&le; 24px — Inline 對齊</span>
-            <span className="text-[11px] text-fg-muted">icon (16/20px), checkbox (16/20px)</span>
-          </div>
-
-          {/* Blueprint diagram — LARGE */}
-          <div className="flex flex-col gap-3">
-            <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
-              <div className="flex items-center justify-center shrink-0"
-                style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[14px] font-mono font-bold" style={{ color: Z.icon.text }}>prefix</span>
-                  <span className="text-[11px] font-mono font-semibold" style={{ color: Z.icon.text }}>一行文字高度</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-center shrink-0"
-                style={{ width: 48, height: '100%', background: Z.gap.bg }}>
-                <span className="text-[13px] font-mono font-bold" style={{ color: Z.gap.text }}>gap</span>
-              </div>
-              <div className="flex flex-col items-center justify-center shrink-0"
-                style={{ width: 120, height: '100%', background: Z.label.bg }}>
-                <span className="text-[14px] font-mono font-bold" style={{ color: Z.label.text }}>Label</span>
-                <span className="text-[10px] font-mono mt-1 opacity-60" style={{ color: Z.gap.text }}>--item-gap-label-desc-*</span>
-                <span className="text-[12px] font-mono opacity-80" style={{ color: Z.label.text }}>description</span>
-              </div>
-              <div className="flex items-center justify-center shrink-0"
-                style={{ width: 72, height: '100%', background: Z.suffix.bg, borderLeft: `1.5px dashed ${Z.suffix.border}` }}>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[14px] font-mono font-bold" style={{ color: Z.suffix.text }}>suffix</span>
-                  <span className="text-[11px] font-mono font-semibold" style={{ color: Z.suffix.text }}>一行文字高度</span>
-                </div>
-              </div>
+    <TutorialPage>
+      <TutorialRule
+        title="對齊規則 — Prefix 與 Suffix 各自獨立"
+        note={<><strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline); &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。 <br /> <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。 理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的—— 業界 convention(Apple Mail / Gmail / iOS Settings / Material / Polaris)全部如此。</>}
+      >
+        {/* Side-by-side comparison */}
+        <div className="flex gap-[var(--layout-space-loose)] items-start">
+          {/* Inline: <= 24px */}
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="flex flex-col gap-[var(--layout-space-tight)]">
+              <h4 className="text-h6 font-semibold text-foreground">&le; 24px — Inline 對齊</h4>
+              <span className="text-caption text-fg-muted">icon (16/20px), checkbox (16/20px)</span>
             </div>
-            <span className="text-[11px] text-fg-muted">prefix center = label 第一行垂直中心，suffix 使用相同的 一行文字高度</span>
-          </div>
 
-          {/* Live example */}
-          <MenuFrame width={360}>
-            <MenuItem role="presentation" size="md" startIcon={Mail} description="每日寄送摘要信件" tag={<Tag size="md" color="blue">Pro</Tag>}>
-              電子郵件通知
-            </MenuItem>
-            <MenuItem role="presentation" size="md" startIcon={Bell} description="瀏覽器推送即時通知" tag={<Tag size="md" color="green">Free</Tag>}>
-              推送通知
-            </MenuItem>
-          </MenuFrame>
-        </div>
-
-        {/* Block: > 24px */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-caption font-semibold text-foreground">&gt; 24px — Block 對齊</span>
-            <span className="text-[11px] text-fg-muted">avatar (32/40px) with description</span>
-          </div>
-
-          {/* Blueprint diagram — LARGE */}
-          <div className="flex flex-col gap-3">
-            <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
-              <div className="flex items-center justify-center shrink-0"
-                style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[14px] font-mono font-bold" style={{ color: Z.icon.text }}>prefix</span>
-                  <span className="text-[9px] font-mono" style={{ color: Z.icon.text }}>label行高</span>
-                  <span className="text-[9px] font-mono" style={{ color: Z.icon.text }}>+2px+desc行高</span>
+            {/* Blueprint diagram — LARGE */}
+            <div className="flex flex-col gap-[var(--layout-space-tight)]">
+              <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
+                <div className="flex items-center justify-center shrink-0"
+                  style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
+                  {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-[14px] font-mono font-bold" style={{ color: Z.icon.text }}>prefix</span>
+                    <span className="text-[11px] font-mono font-semibold" style={{ color: Z.icon.text }}>一行文字高度</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center shrink-0"
+                  style={{ width: 48, height: '100%', background: Z.gap.bg }}>
+                  <span className="text-[13px] font-mono font-bold" style={{ color: Z.gap.text }}>gap</span>
+                </div>
+                <div className="flex flex-col items-center justify-center shrink-0"
+                  style={{ width: 120, height: '100%', background: Z.label.bg }}>
+                  <span className="text-[14px] font-mono font-bold" style={{ color: Z.label.text }}>Label</span>
+                  {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
+                  <span className="text-[10px] font-mono mt-1 opacity-60" style={{ color: Z.gap.text }}>--item-gap-label-desc-*</span>
+                  <span className="text-[12px] font-mono opacity-80" style={{ color: Z.label.text }}>description</span>
+                </div>
+                <div className="flex items-center justify-center shrink-0"
+                  style={{ width: 72, height: '100%', background: Z.suffix.bg, borderLeft: `1.5px dashed ${Z.suffix.border}` }}>
+                  {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-[14px] font-mono font-bold" style={{ color: Z.suffix.text }}>suffix</span>
+                    <span className="text-[11px] font-mono font-semibold" style={{ color: Z.suffix.text }}>一行文字高度</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-center shrink-0"
-                style={{ width: 48, height: '100%', background: Z.gap.bg }}>
-                <span className="text-[13px] font-mono font-bold" style={{ color: Z.gap.text }}>gap</span>
-              </div>
-              <div className="flex flex-col items-center justify-center shrink-0"
-                style={{ width: 120, height: '100%', background: Z.label.bg }}>
-                <span className="text-[14px] font-mono font-bold" style={{ color: Z.label.text }}>Label</span>
-                <span className="text-[10px] font-mono mt-1 opacity-60" style={{ color: Z.gap.text }}>--item-gap-label-desc-*</span>
-                <span className="text-[12px] font-mono opacity-80" style={{ color: Z.label.text }}>description</span>
-              </div>
-              <div className="flex items-start justify-center shrink-0 pt-3"
-                style={{ width: 72, height: '100%', background: Z.suffix.bg, borderLeft: `1.5px dashed ${Z.suffix.border}` }}>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[14px] font-mono font-bold" style={{ color: Z.suffix.text }}>suffix</span>
-                  <span className="text-[10px] font-mono font-semibold" style={{ color: Z.suffix.text }}>一行文字高度</span>
-                  <span className="text-[9px] font-mono opacity-80" style={{ color: Z.suffix.text }}>對齊第一行 label</span>
-                </div>
-              </div>
+              <span className="text-caption text-fg-muted">prefix center = label 第一行垂直中心，suffix 使用相同的 一行文字高度</span>
             </div>
-            <span className="text-[11px] text-fg-muted">
-              prefix center = label + description 文字塊中心(block);
-              <strong>suffix 永遠對齊第一行 label,跟 prefix 解耦</strong>
-            </span>
+
+            {/* Live example */}
+            <MenuFrame width={360}>
+              <MenuItem role="presentation" size="md" startIcon={Mail} description="每日寄送摘要信件" tag={<Tag size="md" color="blue">Pro</Tag>}>
+                電子郵件通知
+              </MenuItem>
+              <MenuItem role="presentation" size="md" startIcon={Bell} description="瀏覽器推送即時通知" tag={<Tag size="md" color="green">Free</Tag>}>
+                推送通知
+              </MenuItem>
+            </MenuFrame>
           </div>
 
-          {/* Live example */}
-          <MenuFrame width={360}>
-            <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
-              Alice Chen
-            </MenuItem>
-            <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Bob Wang", 64), alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
-              Bob Wang
-            </MenuItem>
-          </MenuFrame>
-        </div>
-      </div>
+          {/* Block: > 24px */}
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="flex flex-col gap-[var(--layout-space-tight)]">
+              <h4 className="text-h6 font-semibold text-foreground">&gt; 24px — Block 對齊</h4>
+              <span className="text-caption text-fg-muted">avatar (32/40px) with description</span>
+            </div>
 
+            {/* Blueprint diagram — LARGE */}
+            <div className="flex flex-col gap-[var(--layout-space-tight)]">
+              <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
+                <div className="flex items-center justify-center shrink-0"
+                  style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
+                  {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[14px] font-mono font-bold" style={{ color: Z.icon.text }}>prefix</span>
+                    <span className="text-[9px] font-mono" style={{ color: Z.icon.text }}>label行高</span>
+                    <span className="text-[9px] font-mono" style={{ color: Z.icon.text }}>+2px+desc行高</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center shrink-0"
+                  style={{ width: 48, height: '100%', background: Z.gap.bg }}>
+                  <span className="text-[13px] font-mono font-bold" style={{ color: Z.gap.text }}>gap</span>
+                </div>
+                <div className="flex flex-col items-center justify-center shrink-0"
+                  style={{ width: 120, height: '100%', background: Z.label.bg }}>
+                  <span className="text-[14px] font-mono font-bold" style={{ color: Z.label.text }}>Label</span>
+                  {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
+                  <span className="text-[10px] font-mono mt-1 opacity-60" style={{ color: Z.gap.text }}>--item-gap-label-desc-*</span>
+                  <span className="text-[12px] font-mono opacity-80" style={{ color: Z.label.text }}>description</span>
+                </div>
+                {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
+                <div className="flex items-start justify-center shrink-0 pt-3"
+                  style={{ width: 72, height: '100%', background: Z.suffix.bg, borderLeft: `1.5px dashed ${Z.suffix.border}` }}>
+                  {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)— Item Anatomy 單檔 pattern 的設計規格 / Inspector 量測工具版面,檔頭 :2 @anatomy-exempt 自述為 pattern 自身 anatomy(layoutSpace.spec.md:159-176 量測工具版面) */}
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-[14px] font-mono font-bold" style={{ color: Z.suffix.text }}>suffix</span>
+                    <span className="text-[10px] font-mono font-semibold" style={{ color: Z.suffix.text }}>一行文字高度</span>
+                    <span className="text-[9px] font-mono opacity-80" style={{ color: Z.suffix.text }}>對齊第一行 label</span>
+                  </div>
+                </div>
+              </div>
+              <span className="text-caption text-fg-muted">
+                prefix center = label + description 文字塊中心(block);
+                <strong>suffix 永遠對齊第一行 label,跟 prefix 解耦</strong>
+              </span>
+            </div>
+
+            {/* Live example */}
+            <MenuFrame width={360}>
+              <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
+                Alice Chen
+              </MenuItem>
+              <MenuItem role="presentation" size="md" avatar={{ src: avatarSrc("Bob Wang", 64), alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
+                Bob Wang
+              </MenuItem>
+            </MenuFrame>
+          </div>
+        </div>
+      </TutorialRule>
       {/* Rules table */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">對齊規則總覽</span>
+      <TutorialRule
+        title="對齊規則總覽"
+      >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead><tr><Th>對象</Th><Th>條件</Th><Th>對齊容器</Th><Th>對齊目標</Th></tr></thead>
@@ -1089,14 +1117,14 @@ export const AlignmentThreshold = {
             </tbody>
           </table>
         </div>
-        <p className="text-[11px] text-fg-muted max-w-[720px]">
+        <p className="text-caption text-fg-muted max-w-[720px]">
           ※ Suffix 不跟 prefix 同步是有意的設計:suffix 是 label 的 metadata
           (Tag / Chevron / 時間 / 計數),不是整個 item 的。對齊 label 第一行讓使用者
           眼睛從 label 自然往右掃到 suffix,不被打斷。Apple Mail / Gmail / iOS Settings /
           Material / Polaris 全部如此。
         </p>
-      </div>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -1107,70 +1135,71 @@ export const AlignmentThreshold = {
 export const ReadingModes = {
   name: '閱讀模式比較',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-1">
-        <H3>掃描模式 vs 閱讀模式</H3>
-        <Desc>
-          同一套佈局結構，typography 策略依閱讀場景調整。掃描模式用於浮層（一掃而過），
-          閱讀模式用於頁面/表單（仔細閱讀）。差異在行高和 description 字體。
-        </Desc>
-      </div>
-
-      {/* Side-by-side at all sizes */}
-      <div className="flex gap-12 items-start">
-        {/* Scanning */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-caption font-semibold text-foreground">掃描模式（Scanning）</span>
-            <span className="text-[11px] text-fg-muted">浮層 / overlay — MenuItem, ComboboxItem</span>
-          </div>
-          {SIZES.map((sz) => (
-            <div key={sz} className="flex items-start gap-3">
-              <span className="text-[12px] text-fg-muted w-6 shrink-0 pt-2 font-mono font-semibold">{sz}</span>
-              <MenuFrame width={300}>
-                <MenuItem role="presentation" size={sz} startIcon={Mail} description="每日寄送摘要信件">
-                  電子郵件通知
-                </MenuItem>
-              </MenuFrame>
+    <TutorialPage>
+      <TutorialRule
+        title="掃描模式 vs 閱讀模式"
+        note="同一套佈局結構，typography 策略依閱讀場景調整。掃描模式用於浮層（一掃而過）， 閱讀模式用於頁面/表單（仔細閱讀）。差異在行高和 description 字體。"
+      >
+        {/* Side-by-side at all sizes */}
+        <div className="flex gap-[var(--layout-space-loose)] items-start">
+          {/* Scanning */}
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="flex flex-col gap-[var(--layout-space-tight)]">
+              <h4 className="text-h6 font-semibold text-foreground">掃描模式（Scanning）</h4>
+              <span className="text-caption text-fg-muted">浮層 / overlay — MenuItem, ComboboxItem</span>
             </div>
-          ))}
-          <div className="mt-1 flex flex-col gap-1 text-[11px] text-fg-muted">
-            <p><strong>Label:</strong> leading-compact (1.3)</p>
-            <p><strong>Desc:</strong> 降一級字體 + fg-secondary</p>
-            <p><strong>Gap:</strong> --item-gap-label-desc-scanning (2px,sm/md)/ -scanning-lg (lg)</p>
-          </div>
-        </div>
-
-        {/* Reading */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-caption font-semibold text-foreground">閱讀模式（Reading）</span>
-            <span className="text-[11px] text-fg-muted">頁面 / 表單 — SelectionItem (Checkbox/RadioGroup)</span>
-          </div>
-          {SIZES.map((sz) => (
-            <div key={sz} className="flex items-start gap-3">
-              <span className="text-[12px] text-fg-muted w-6 shrink-0 pt-2 font-mono font-semibold">{sz}</span>
-              <div className="w-[300px]">
-                <SelectionItem
-                  size={sz}
-                  control={<Checkbox size={sz} checked={true} aria-label={`${sz} 尺寸電子郵件通知`} />}
-                  label="電子郵件通知"
-                  description="每日寄送摘要信件到您的電子信箱"
-                />
+            {SIZES.map((sz) => (
+              <div key={sz} className="flex items-start gap-[var(--layout-space-tight)]">
+                {/* @layout-space-magic-ok: 尺寸矩陣的尺寸標籤 pt 8px 對齊列首文字,量測版面、本檔檔頭 :2 @anatomy-exempt(layoutSpace.spec.md:159-176 量測工具版面) */}
+                <span className="text-[12px] text-fg-muted w-6 shrink-0 pt-2 font-mono font-semibold">{sz}</span>
+                <MenuFrame width={300}>
+                  <MenuItem role="presentation" size={sz} startIcon={Mail} description="每日寄送摘要信件">
+                    電子郵件通知
+                  </MenuItem>
+                </MenuFrame>
               </div>
+            ))}
+            {/* @layout-space-magic-ok: 模式註記三行同一文字塊的行距 4px(micro)(layoutSpace.spec.md:166 micro) */}
+            <div className="flex flex-col gap-1 text-caption text-fg-muted">
+              <p><strong>Label:</strong> leading-compact (1.3)</p>
+              <p><strong>Desc:</strong> 降一級字體 + fg-secondary</p>
+              <p><strong>Gap:</strong> --item-gap-label-desc-scanning (2px,sm/md)/ -scanning-lg (lg)</p>
             </div>
-          ))}
-          <div className="mt-1 flex flex-col gap-1 text-[11px] text-fg-muted">
-            <p><strong>Label:</strong> default line-height (1.5)</p>
-            <p><strong>Desc:</strong> 同字體 + fg-secondary（僅顏色區分）</p>
-            <p><strong>Gap:</strong> --item-gap-label-desc-reading (2px,sm/md)/ -reading-lg (lg)</p>
+          </div>
+
+          {/* Reading */}
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="flex flex-col gap-[var(--layout-space-tight)]">
+              <h4 className="text-h6 font-semibold text-foreground">閱讀模式（Reading）</h4>
+              <span className="text-caption text-fg-muted">頁面 / 表單 — SelectionItem (Checkbox/RadioGroup)</span>
+            </div>
+            {SIZES.map((sz) => (
+              <div key={sz} className="flex items-start gap-[var(--layout-space-tight)]">
+                {/* @layout-space-magic-ok: 尺寸矩陣的尺寸標籤 pt 8px 對齊列首文字,量測版面、本檔檔頭 :2 @anatomy-exempt(layoutSpace.spec.md:159-176 量測工具版面) */}
+                <span className="text-[12px] text-fg-muted w-6 shrink-0 pt-2 font-mono font-semibold">{sz}</span>
+                <div className="w-[300px]">
+                  <SelectionItem
+                    size={sz}
+                    control={<Checkbox size={sz} checked={true} aria-label={`${sz} 尺寸電子郵件通知`} />}
+                    label="電子郵件通知"
+                    description="每日寄送摘要信件到您的電子信箱"
+                  />
+                </div>
+              </div>
+            ))}
+            {/* @layout-space-magic-ok: 模式註記三行同一文字塊的行距 4px(micro)(layoutSpace.spec.md:166 micro) */}
+            <div className="flex flex-col gap-1 text-caption text-fg-muted">
+              <p><strong>Label:</strong> default line-height (1.5)</p>
+              <p><strong>Desc:</strong> 同字體 + fg-secondary（僅顏色區分）</p>
+              <p><strong>Gap:</strong> --item-gap-label-desc-reading (2px,sm/md)/ -reading-lg (lg)</p>
+            </div>
           </div>
         </div>
-      </div>
-
+      </TutorialRule>
       {/* Token comparison table */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Typography Token 對照表</span>
+      <TutorialRule
+        title="Typography Token 對照表"
+      >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead>
@@ -1201,8 +1230,8 @@ export const ReadingModes = {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -1213,18 +1242,15 @@ export const ReadingModes = {
 export const IconColorsAndPresets = {
   name: '圖示色彩 + 消費元件預設',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-1">
-        <H3>Icon 色彩原則</H3>
-        <Desc>
-          一條統一規則：icon 代表 label 內容或類別時，與 label 同色（foreground）。
-          icon 純粹指示方向/展開/導覽時，fg-muted。Suffix value 文字與 label 同字體大小，只降色不降級。
-        </Desc>
-      </div>
-
+    <TutorialPage>
+      <TutorialRule
+        title="Icon 色彩原則"
+        note="一條統一規則：icon 代表 label 內容或類別時，與 label 同色（foreground）。 icon 純粹指示方向/展開/導覽時，fg-muted。Suffix value 文字與 label 同字體大小，只降色不降級。"
+      />
       {/* Color rule table */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">色彩判斷規則</span>
+      <TutorialRule
+        title="色彩判斷規則"
+      >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead><tr><Th>判斷</Th><Th>顏色</Th><Th>範例</Th></tr></thead>
@@ -1282,15 +1308,15 @@ export const IconColorsAndPresets = {
             </tbody>
           </table>
         </div>
-      </div>
-
+      </TutorialRule>
       {/* Visual reference — live examples */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">視覺參考</span>
-        <div className="flex gap-8 items-start">
+      <TutorialRule
+        title="視覺參考"
+      >
+        <div className="flex gap-[var(--layout-space-loose)] items-start">
           {/* Prefix icons: inherit foreground */}
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-fg-muted font-medium">Prefix icon = foreground（代表內容）</span>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <span className="text-caption text-fg-muted font-medium">Prefix icon = foreground（代表內容）</span>
             <MenuFrame width={260}>
               <MenuItem role="presentation" size="md" startIcon={Mail}>電子郵件</MenuItem>
               <MenuItem role="presentation" size="md" startIcon={Settings}>設定</MenuItem>
@@ -1299,13 +1325,14 @@ export const IconColorsAndPresets = {
           </div>
 
           {/* Suffix indicator: fg-muted */}
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-fg-muted font-medium">Suffix indicator = fg-muted（指示方向）</span>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <span className="text-caption text-fg-muted font-medium">Suffix indicator = fg-muted（指示方向）</span>
             <MenuFrame width={280}>
               <MenuItem role="presentation"
                 size="md"
                 startIcon={Globe}
                 endContent={
+                  // @layout-space-magic-ok: 模擬列 suffix:文字 ↔ ChevronRight 4px,同 Button / Chip suffix wrapper 的槽內距(chip.spec.md:74-76;layoutSpace.spec.md:113 同範疇 spec-own)
                   <div className="h-[1lh] flex items-center gap-1 ml-auto">
                     <span className="text-body text-fg-muted">English</span>
                     <ChevronRight size={16} className="text-fg-muted" />
@@ -1329,8 +1356,8 @@ export const IconColorsAndPresets = {
           </div>
 
           {/* Danger: same color as label */}
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-fg-muted font-medium">危險操作 = 與 label 同色（text-error）</span>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <span className="text-caption text-fg-muted font-medium">危險操作 = 與 label 同色（text-error）</span>
             <MenuFrame width={260}>
               <MenuItem role="presentation" size="md" startIcon={Trash2} className="text-error">
                 刪除專案
@@ -1338,14 +1365,12 @@ export const IconColorsAndPresets = {
             </MenuFrame>
           </div>
         </div>
-      </div>
-
+      </TutorialRule>
       {/* Consumer preset comparison */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-caption font-semibold text-foreground">消費元件預設比較</span>
-          <span className="text-[11px] text-fg-muted">每個元件自訂間距，但結構和對齊規則不變</span>
-        </div>
+      <TutorialRule
+        title="消費元件預設比較"
+        note="每個元件自訂間距，但結構和對齊規則不變"
+      >
 
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
@@ -1376,14 +1401,14 @@ export const IconColorsAndPresets = {
             </tbody>
           </table>
         </div>
-      </div>
-
+      </TutorialRule>
       {/* Live consumer examples */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">消費元件即時範例（md size）</span>
-        <div className="flex gap-8 items-start">
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-fg-muted font-medium">MenuItem</span>
+      <TutorialRule
+        title="消費元件即時範例（md size）"
+      >
+        <div className="flex gap-[var(--layout-space-loose)] items-start">
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <span className="text-caption text-fg-muted font-medium">MenuItem</span>
             <MenuFrame width={280}>
               <MenuItem role="presentation" size="md" startIcon={Mail} description="每日寄送摘要信件">
                 電子郵件通知
@@ -1394,8 +1419,8 @@ export const IconColorsAndPresets = {
             </MenuFrame>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-fg-muted font-medium">SelectionItem</span>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <span className="text-caption text-fg-muted font-medium">SelectionItem</span>
             <div className="w-[280px]">
               <SelectionItem
                 size="md"
@@ -1411,8 +1436,8 @@ export const IconColorsAndPresets = {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-fg-muted font-medium">ListItem（模擬）</span>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <span className="text-caption text-fg-muted font-medium">ListItem（模擬）</span>
             <div className="w-[280px] rounded-lg border border-divider overflow-hidden bg-surface">
               <ListItemPreview
                 size="md"
@@ -1431,8 +1456,8 @@ export const IconColorsAndPresets = {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
@@ -1444,17 +1469,21 @@ export const InlineActionHoverState = {
   name: '行內動作懸停狀態',
   tags: ['test-only'],
   render: () => (
-    <div className="flex w-[360px] items-center gap-3 rounded-md border border-divider bg-surface px-3 py-2">
+    // 列尾動作住 ItemSuffix(h-[1lh]),對齊標題第一行 —— 不是整塊「標題 + 說明」的中間(item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」);
+    // 容器設 text-body 讓 1lh = 標題那一行的行高(2026-10-27 前這列是 items-center,⋮ 比標題中線低約 8px)
+    <div className="flex w-[360px] items-start gap-3 rounded-md border border-divider bg-surface px-3 py-2 text-body">
       <div className="min-w-0 flex-1">
         <p className="truncate text-body font-medium text-foreground">正式環境部署</p>
         <p className="truncate text-caption text-fg-secondary">版本 v2.4.0 · 5 分鐘前</p>
       </div>
-      <ItemInlineActionButton
-        icon={MoreVertical}
-        size="md"
-        aria-label="更多部署操作"
-        data-visual-hover-target
-      />
+      <ItemSuffix>
+        <ItemInlineActionButton
+          icon={MoreVertical}
+          size="md"
+          aria-label="更多部署操作"
+          data-visual-hover-target
+        />
+      </ItemSuffix>
     </div>
   ),
 }
@@ -1462,19 +1491,15 @@ export const InlineActionHoverState = {
 export const IconActionPrimitiveDecision = {
   name: '圖示動作通用零件決策',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-1">
-        <H3>Icon 相關動作用哪個 primitive?(3 步決策)</H3>
-        <Desc>
-          DS 跨元件 icon action 的設計準則。接到「要放一個 icon 可點擊」的需求,跑下方 3 步決策樹——
-          不要直覺寫 <code className="font-mono">&lt;button&gt;&lt;X /&gt;&lt;/button&gt;</code>。Primitive 選錯會造成 same-row 幾何不一致、gap token 被吃掉、
-          或 chrome corner close 無法跟 refresh / share 並排分群。
-        </Desc>
-      </div>
-
+    <TutorialPage>
+      <TutorialRule
+        title="Icon 相關動作用哪個 primitive?(3 步決策)"
+        note={<>DS 跨元件 icon action 的設計準則。接到「要放一個 icon 可點擊」的需求,跑下方 3 步決策樹—— 不要直覺寫 <code className="font-mono">&lt;button&gt;&lt;X /&gt;&lt;/button&gt;</code>。Primitive 選錯會造成 same-row 幾何不一致、gap token 被吃掉、 或 chrome corner close 無法跟 refresh / share 並排分群。</>}
+      />
       {/* Decision tree visual */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-foreground">決策樹</span>
+      <TutorialRule
+        title="決策樹"
+      >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead>
@@ -1514,15 +1539,15 @@ export const IconActionPrimitiveDecision = {
             </tbody>
           </table>
         </div>
-        <p className="text-[11px] text-fg-muted max-w-[780px] leading-relaxed">
+        <p className="text-caption text-fg-muted max-w-[720px]">
           <strong>核心原則:Row dedicated action 永遠 &le; 24px cap</strong>,不隨 row tier 放大——超過 24 的 action
           會搶 content 視覺焦點,違反「資料 &gt; 行動」的視覺階層(世界級對照:Linear / Notion / Figma 全部 &le; 24)。
         </p>
-      </div>
-
+      </TutorialRule>
       {/* Real case table */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-foreground">實戰情境對照</span>
+      <TutorialRule
+        title="實戰情境對照"
+      >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead>
@@ -1542,22 +1567,17 @@ export const IconActionPrimitiveDecision = {
               <tr><Td><strong>FileItem rich</strong>(row 56)</Td><Td>Row slot</Td><Td mono>Button xs iconOnly</Td><Td>&le; 24 cap,不放大</Td></tr>
               <tr><Td><strong>DataTable row action</strong></Td><Td>Row dedicated column</Td><Td mono>Button xs iconOnly</Td><Td>&le; 24 cap(跨 tier 固定)</Td></tr>
               <tr><Td><strong>Dialog / Sheet chrome corner close</strong></Td><Td>Action group region</Td><Td mono>Button sm iconOnly dismiss</Td><Td>corner 屬 action group,可與 refresh / share 並排</Td></tr>
-              <tr><Td><strong>Alert / Toast / Coachmark close</strong></Td><Td>Action group region</Td><Td mono>Button sm iconOnly dismiss</Td><Td>同上</Td></tr>
-              <tr><Td><strong>Popover close</strong></Td><Td>Action group region</Td><Td mono>Button sm iconOnly dismiss</Td><Td>同上</Td></tr>
+              <tr><Td><strong>Alert / Toast close</strong></Td><Td>Action group region</Td><Td mono>Button xs iconOnly dismiss</Td><Td>notification banner 家族(Alert / Toast)的關閉鈕固定 xs,refresh / share 同列也統一 xs</Td></tr>
+              <tr><Td><strong>Popover / Coachmark close</strong></Td><Td>Action group region</Td><Td mono>Button sm iconOnly dismiss</Td><Td>同 Dialog / Sheet(overlay header)</Td></tr>
             </tbody>
           </table>
         </div>
-      </div>
-
+      </TutorialRule>
       {/* Dismiss X canonical */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-foreground">Dismiss 嚴格定義 — X close only</span>
-        <Desc>
-          <code className="font-mono">dismiss</code> prop 僅屬 <strong>X(close)</strong>icon——
-          「關閉 surface / 忽略訊息」的語意。Trash / Delete / Clear / Remove 都<strong>不算 dismiss</strong>,
-          即使視覺上也是 icon-only button,callback 用 <code className="font-mono">onDelete</code> / <code className="font-mono">onRemove</code> / <code className="font-mono">onClear</code>。
-          世界級對照:Material IconButton close / Polaris Banner.onDismiss / Apple HIG window close — 全部 icon = X。
-        </Desc>
+      <TutorialRule
+        title="Dismiss 嚴格定義 — X close only"
+        note={<><code className="font-mono">dismiss</code> prop 僅屬 <strong>X(close)</strong>icon—— 「關閉 surface / 忽略訊息」的語意。Trash / Delete / Clear / Remove 都<strong>不算 dismiss</strong>, 即使視覺上也是 icon-only button,callback 用 <code className="font-mono">onDelete</code> / <code className="font-mono">onRemove</code> / <code className="font-mono">onClear</code>。 世界級對照:Material IconButton close / Polaris Banner.onDismiss / Apple HIG window close — 全部 icon = X。</>}
+      >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead>
@@ -1569,85 +1589,79 @@ export const IconActionPrimitiveDecision = {
               </tr>
             </thead>
             <tbody>
-              <tr><Td>Dismiss(關閉 surface)</Td><Td mono>X</Td><Td mono>onClose / onDismiss</Td><Td>Button `dismiss` prop(chrome corner)或 Inline Action(chrome padding)</Td></tr>
+              <tr><Td>Dismiss(關閉 surface)</Td><Td mono>X</Td><Td mono>onClose / onDismiss</Td><Td>Button <code>dismiss</code> prop(chrome corner)或 Inline Action(chrome padding)</Td></tr>
               <tr><Td>Delete(刪除資料)</Td><Td mono>Trash2</Td><Td mono>onDelete</Td><Td>依 Q2/Q3 決策,<strong>不套 dismiss prop</strong></Td></tr>
               <tr><Td>Clear(清空欄位)</Td><Td mono>X</Td><Td mono>onClear</Td><Td>Inline Action(Field chrome padding)</Td></tr>
               <tr><Td>Remove(從集合移除)</Td><Td mono>X / Trash2</Td><Td mono>onRemove</Td><Td>依 Q2/Q3 決策</Td></tr>
             </tbody>
           </table>
         </div>
-      </div>
-
+      </TutorialRule>
       {/* Live case: Alert chrome corner action group */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-foreground">Live case — Alert chrome corner action group 佈局</span>
-        <Desc>
-          Chrome corner close 屬 <strong>action group region</strong>——實務上 close 左側可加 refresh / share 等
-          輔助動作(用 Separator 分群),所以必須用 Button iconOnly(與群內其他 action 同 primitive),不可用 Inline Action。
-        </Desc>
-        <div className="flex items-start gap-3 p-4 rounded-md border border-border bg-surface-raised max-w-lg">
-          <div className="flex-1 flex flex-col gap-1">
-            <span className="text-body font-semibold text-foreground">新版本可用</span>
-            <span className="text-caption text-fg-muted">點擊重新整理載入最新版。</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新整理" />
-            <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-            <Separator orientation="vertical" className="h-5 mx-1" />
-            <Button variant="text" size="sm" dismiss startIcon={X} aria-label="關閉" />
-          </div>
-        </div>
-        <p className="text-[11px] text-fg-muted max-w-[780px] leading-relaxed">
-          ✅ refresh / share / close 都是 Button sm iconOnly,Separator 分群(action 群 vs dismiss 群)。close 套
-          <code className="font-mono"> dismiss</code> prop 自動弱化(icon fg-muted → hover fg-secondary)。
-          <br />❌ 禁止把 close 改寫成 Inline Action(會造成 same-row primitive 混用,gap 視覺斷裂)。
-        </p>
-      </div>
-
+      <TutorialRule
+        title="Live case — Alert chrome corner action group 佈局"
+        note={<>Chrome corner close 屬 <strong>action group region</strong>——實務上 close 左側可加 refresh / share 等 輔助動作(ButtonDivider 分群,由 Alert 自動放),所以必須用 Button iconOnly(與群內其他 action 同 primitive),不可用 Inline Action。</>}
+      >
+        <Alert
+          variant="info"
+          appearance="subtle"
+          title="新版本可用"
+          description="點擊重新整理載入最新版。"
+          onDismiss={() => {}}
+          endContent={
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={RefreshCw} aria-label="重新整理" />
+              <Button variant="text" size="xs" iconOnly startIcon={Share2} aria-label="分享" />
+            </>
+          }
+          className="max-w-lg"
+        />
+        {/* 2026-10-20 T6:原本是手寫的 <p>(caption 字級 + 720 限寬,長得像規則說明)把 ✅ / ❌ 兩句用 <br /> 接在一起;範例的說明一律 ExampleCaption */}
+        <ExampleCaption>↑ ✅ refresh / share / close 都是 Button xs iconOnly(notification banner 家族固定 xs),ButtonDivider 分群(action 群 vs dismiss 群,由 Alert 自動放,consumer 不自刻)。close 套 <code className="font-mono">dismiss</code> prop 自動弱化(icon fg-muted → hover fg-secondary)。</ExampleCaption>
+        <ExampleCaption warn>❌ 禁止把 close 改寫成 Inline Action(會造成 same-row primitive 混用,gap 視覺斷裂)。</ExampleCaption>
+      </TutorialRule>
       {/* Same-row consistency */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-foreground">Same-row consistency — 同 row 所有 icon action 必同一類</span>
-        <Desc>
-          同一 action row(suffix slot / chrome corner)<strong>所有 icon action 必用相同 primitive</strong>——
-          不混 Inline Action + Button iconOnly。混用會造成 box 尺寸不一致,gap token 視覺被吃掉(參考
-          <code className="font-mono"> .claude/rules/ui-development.md </code>「同 flex 列的互動 slot 幾何鐵律」)。
-        </Desc>
-        <div className="flex flex-col gap-3 max-w-xl">
+      <TutorialRule
+        title="Same-row consistency — 同 row 所有 icon action 必同一類"
+        note={<>同一 action row(suffix slot / chrome corner)<strong>所有 icon action 必用相同 primitive</strong>—— 不混 Inline Action + Button iconOnly。混用會造成 box 尺寸不一致,gap token 視覺被吃掉(同一個 flex 列裡的互動槽位幾何必須一致)。</>}
+      >
+        <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xl">
+          {/* @layout-space-magic-ok: 模擬清單列的列幾何(列內距 12px / 8px + 標籤 ↔ 動作群 12px)(layoutSpace.spec.md:168 元件自身微幾何) */}
           <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-surface">
-            <span className="flex-1 text-caption text-fg-secondary">✅ 都用 Button xs iconOnly(24 固定,gap-1 穩定)</span>
-            <div className="flex items-center gap-1">
+            <span className="flex-1 text-caption text-fg-secondary">✅ 都用 Button xs iconOnly(24 固定,同一個 ItemSuffix 槽)</span>
+            {/* 列尾動作群消費 suffix 槽 primitive 本身(ItemSuffix 自帶 8px 槽距),不手刻同值的 div */}
+            <ItemSuffix>
               <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label="重試" />
               <Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />
               <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多" />
-            </div>
+            </ItemSuffix>
           </div>
-          <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-surface">
-            <span className="flex-1 text-caption text-fg-secondary">✅ compact row:都用 Inline Action(icon 16,hover-bg 18,size="sm",gap-2)</span>
-            <div className="flex items-center gap-2">
+          {/* 這一列的說明在 max-w-xl 裡折成兩行:列尾槽 ItemSuffix(h-[1lh])對齊第一行(item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」),
+              容器 text-caption 讓 1lh = 說明那一行的行高。2026-10-27 前是 items-center,三顆落在兩行正中、比第一行中線低 7.8px;上下兩列單行,items-center 本來就 0,不動 */}
+          {/* @layout-space-magic-ok: 模擬清單列的列幾何(列內距 + 標籤 ↔ 動作群)(layoutSpace.spec.md:168 元件自身微幾何) */}
+          <div className="flex items-start gap-3 px-3 py-2 text-caption rounded-md border border-border bg-surface">
+            <span className="flex-1 text-caption text-fg-secondary">✅ compact row:都用 Inline Action(icon 16,hover-bg 18,size="sm",同一個 ItemSuffix 槽)</span>
+            <ItemSuffix>
               <ItemInlineActionButton icon={RotateCw} size="sm" aria-label="重試" />
               <ItemInlineActionButton icon={Download} size="sm" aria-label="下載" />
               <ItemInlineActionButton icon={MoreVertical} size="sm" aria-label="更多" />
-            </div>
+            </ItemSuffix>
           </div>
+          {/* @layout-space-magic-ok: 模擬清單列的列幾何(列內距 + 標籤 ↔ 動作群)(layoutSpace.spec.md:168 元件自身微幾何) */}
           <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-error bg-surface">
             <span className="flex-1 text-caption text-error-text">❌ 禁止混 Inline Action + Button(box 尺寸不一致)</span>
-            <div className="flex items-center gap-2">
+            <ItemSuffix>
               <ItemInlineActionButton icon={RotateCw} size="sm" aria-label="重試" />
               <Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />
-            </div>
+            </ItemSuffix>
           </div>
         </div>
-      </div>
-
+      </TutorialRule>
       {/* Overflow menu icon canonical */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-foreground">Overflow menu icon — <code className="font-mono">MoreVertical</code>,禁用 <code className="font-mono">MoreHorizontal</code></span>
-        <Desc>
-          Overflow menu(「更多動作」下拉)一律用 <strong>MoreVertical</strong>(縱向三點)。
-          <code className="font-mono"> MoreHorizontal</code>(橫向三點)只保留給 Breadcrumb path ellipsis 語意
-          (「沿路徑省略中間項」),不得用於 overflow menu。世界級對照:Linear / Notion / GitHub / Figma 全部如此。
-        </Desc>
-      </div>
-    </div>
+      <TutorialRule
+        title={<>Overflow menu icon — <code className="font-mono">MoreVertical</code>,禁用 <code className="font-mono">MoreHorizontal</code></>}
+        note={<>Overflow menu(「更多動作」下拉)一律用 <strong>MoreVertical</strong>(縱向三點)。 <code className="font-mono"> MoreHorizontal</code>(橫向三點)只保留給 Breadcrumb path ellipsis 語意 (「沿路徑省略中間項」),不得用於 overflow menu。世界級對照:Linear / Notion / GitHub / Figma 全部如此。</>}
+      />
+    </TutorialPage>
   ),
 }

@@ -1,7 +1,8 @@
 import type { Meta } from '@storybook/react'
 import { Building2 } from 'lucide-react'
 import { Avatar } from './avatar'
-import { MenuItem } from '@/design-system/components/Menu/menu-item'
+import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'
+import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 // Fallback story 必須可離線重現：成功路徑用內嵌 SVG，失敗路徑用同源 404。
 // 外部 avatar host 或 DNS 失敗網址會讓 a11y/visual runner 的 networkidle 不穩定。
@@ -27,14 +28,14 @@ export default meta
 export const Modes = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <h3 className="text-h6 font-semibold text-foreground">四種內容模式</h3>
         <p className="text-caption text-fg-muted max-w-[720px]">
           按優先順序：有 src 顯示圖片 → 有 icon 顯示 Icon → 有 alt 顯示首字。都沒有時預設顯示 User icon。
         </p>
       </div>
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-[var(--layout-space-loose)]">
         {/* 刻意示範內容模式優先序:Text fallback / 預設 User icon 兩項**必須**無 src(fallback 行為
             示範 story,2026-07-08 demo 人像真實化 sweep 豁免保留) */}
         {[
@@ -43,10 +44,10 @@ export const Modes = {
           { label: 'Text fallback', el: <Avatar size={40} alt="Bob" color="purple" /> },
           { label: '預設（無任何 prop）', el: <Avatar size={40} /> },
         ].map(({ label, el }) => (
-          <div key={label} className="flex flex-col items-center gap-2">
+          <ExampleGroup key={label} align="center">
             {el}
             <span className="text-caption text-fg-muted">{label}</span>
-          </div>
+          </ExampleGroup>
         ))}
       </div>
     </div>
@@ -65,26 +66,26 @@ export const Modes = {
 export const Fallback = {
   name: '備援顯示',
   render: () => (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <h3 className="text-h6 font-semibold text-foreground">Fallback 行為</h3>
         <p className="text-caption text-fg-muted max-w-[720px]">
           圖片載入失敗時，自動降級：有 alt 顯示首字，無 alt 顯示預設 User icon。
         </p>
       </div>
-      <div className="flex items-center gap-8">
-        <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center gap-[var(--layout-space-loose)]">
+        <ExampleGroup align="center">
           <Avatar size={40} src={fallbackDemoImage} alt="Alice" />
           <span className="text-caption text-fg-muted">圖片正常載入</span>
-        </div>
-        <div className="flex flex-col items-center gap-2">
+        </ExampleGroup>
+        <ExampleGroup align="center">
           <Avatar size={40} src={missingAvatarImage} alt="Bob" color="green" />
           <span className="text-caption text-fg-muted">圖片失敗 + 有 alt → 首字</span>
-        </div>
-        <div className="flex flex-col items-center gap-2">
+        </ExampleGroup>
+        <ExampleGroup align="center">
           <Avatar size={40} src={missingAvatarImage} color="yellow" />
           <span className="text-caption text-fg-muted">圖片失敗 + 無 alt → User icon</span>
-        </div>
+        </ExampleGroup>
       </div>
     </div>
   ),
@@ -97,57 +98,53 @@ export const Fallback = {
 export const InContext = {
   name: '情境用例',
   render: () => (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <h3 className="text-h6 font-semibold text-foreground">In Context — MenuItem</h3>
         <p className="text-caption text-fg-muted max-w-[720px]">
           Avatar 作為 MenuItem 的 avatar slot，尺寸由 item-layout 系統決定。
         </p>
       </div>
-      <div className="flex gap-8">
-        <div className="flex flex-col gap-2">
+      <div className="flex gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption font-medium text-fg-secondary">無 description（inline）</span>
-          <div
-            role="group"
-            aria-label="無說明文字的成員選單"
-            className="w-[280px] border border-divider rounded-lg py-1 bg-surface"
-          >
-            <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice" }}>
-              Alice Chen
-            </MenuItem>
-            <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "blue" }}>
-              Bob Wang
-            </MenuItem>
-            <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=carol-lee", alt: "Carol", color: "purple" }}>
-              Carol Lee
-            </MenuItem>
+          <div className="w-[280px] border border-divider rounded-lg bg-surface">
+            <MenuGroup aria-label="無說明文字的成員選單">
+              <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice" }}>
+                Alice Chen
+              </MenuItem>
+              <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "blue" }}>
+                Bob Wang
+              </MenuItem>
+              <MenuItem role="presentation" avatar={{ src: "https://i.pravatar.cc/48?u=carol-lee", alt: "Carol", color: "purple" }}>
+                Carol Lee
+              </MenuItem>
+            </MenuGroup>
           </div>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption font-medium text-fg-secondary">有 description（block）</span>
-          <div
-            role="group"
-            aria-label="含職稱說明的成員選單"
-            className="w-[320px] border border-divider rounded-lg py-1 bg-surface"
-          >
-            <MenuItem role="presentation"
-              avatar={{ src: "https://i.pravatar.cc/64?u=alice-chen", alt: "Alice" }}
-              description="前端工程師"
-            >
-              Alice Chen
-            </MenuItem>
-            <MenuItem role="presentation"
-              avatar={{ src: "https://i.pravatar.cc/64?u=carol-lee", alt: "Carol", color: "magenta" }}
-              description="產品設計師"
-            >
-              Carol Lee
-            </MenuItem>
-            <MenuItem role="presentation"
-              avatar={{ src: "https://i.pravatar.cc/64?u=dave-lin", alt: "Dave", color: "turquoise" }}
-              description="跨部門協作專案"
-            >
-              Dave Lin
-            </MenuItem>
+          <div className="w-[320px] border border-divider rounded-lg bg-surface">
+            <MenuGroup aria-label="含職稱說明的成員選單">
+              <MenuItem role="presentation"
+                avatar={{ src: "https://i.pravatar.cc/64?u=alice-chen", alt: "Alice" }}
+                description="前端工程師"
+              >
+                Alice Chen
+              </MenuItem>
+              <MenuItem role="presentation"
+                avatar={{ src: "https://i.pravatar.cc/64?u=carol-lee", alt: "Carol", color: "magenta" }}
+                description="產品設計師"
+              >
+                Carol Lee
+              </MenuItem>
+              <MenuItem role="presentation"
+                avatar={{ src: "https://i.pravatar.cc/64?u=dave-lin", alt: "Dave", color: "turquoise" }}
+                description="跨部門協作專案"
+              >
+                Dave Lin
+              </MenuItem>
+            </MenuGroup>
           </div>
         </div>
       </div>

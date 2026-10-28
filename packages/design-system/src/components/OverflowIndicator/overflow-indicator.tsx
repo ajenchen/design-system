@@ -4,7 +4,7 @@
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
+import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_TOOLTIP_SURFACE_CLASS } from '@/design-system/components/HoverCard/hover-card'
 import { tagVariants } from '@/design-system/components/Tag/tag'
 import { AVATAR_STACK_CUTOUT_CLASS, avatarStackCutoutStyle } from '@/design-system/components/Avatar/avatar'
 import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
@@ -42,6 +42,54 @@ export interface OverflowIndicatorProps
   size?: 'sm' | 'md' | 'lg'
   children: React.ReactNode
   className?: string
+  /**
+   * 按在浮出清單(HoverCard 內容,portal)上的 mousedown(2026-09-30)。消費者用它把「按在自己的零件上焦點不動」的判準
+   * 延伸到這張卡 —— 浮出清單在另一個 portal,consumer 自己容器上的 mousedown 判準以 DOM 包含判斷、看不到它。
+   * 兩個使用者,同一支判準(`lib/pointer-press.ts` `keepFocusOnPointerPress`):Combobox 搜尋框握著焦點時,按卡裡的 Tag × 焦點不離開搜尋框
+   * (規則 `SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段);AgentPanel 輸入盒 textarea 握著焦點時,按附件 +N 卡裡的 × 焦點與打到一半的字
+   * 都留在輸入盒(2026-10-01,待辦總帳 OE30;`AgentPanel/agent-panel.spec.md`「AgentPromptInput」)。
+   */
+  onContentMouseDown?: React.MouseEventHandler<HTMLDivElement>
+  /**
+   * 浮出清單(HoverCard 內容,portal)的 id(2026-10-07)。消費者用它把這張卡算成自己的零件 —— 卡在另一個 portal,不是觸發點的 DOM 子孫。
+   * 唯一用途:Combobox 的「觸發區 + 它的彈出層 = 同一個欄位」判準(`lib/composite-field-focus.ts` `useCompositeFieldBlur` 的 `extra`,經 SelectMenu `fieldParts`):按卡裡的 Tag × 時焦點搬進卡,
+   * 不算離開欄位(規則 `Field/form-validation.spec.md` v1 邊界 (a);修前非搜尋型 Combobox 按卡裡的 × 就觸發 consumer 的 onBlur 驗證)。
+   */
+  contentId?: string
+}
+
+/**
+ * 觸發點的外觀(形狀 × 尺寸)—— `OverflowIndicator` 與它的量尺 `OverflowIndicatorMeasure` 共用這一份,兩者寬度才會逐像素相同。
+ * 游標一般箭頭:+N 只浮出名單、點下去沒有作用(overflow-indicator.spec.md「也沒有 click 切換」;hit-area-canonical.md 滑過原則三-1)。
+ */
+function triggerClassName(shape: 'circle' | 'tag', size: 'sm' | 'md' | 'lg') {
+  return shape === 'tag'
+    ? cn(tagVariants({ color: 'neutral', size }), 'cursor-default')
+    : cn('relative shrink-0 rounded-full inline-grid place-content-center', 'text-foreground font-medium leading-none cursor-default', triggerText[size])
+}
+const circleSizeStyle = (size: 'sm' | 'md' | 'lg'): React.CSSProperties => ({ height: OVERFLOW_INDICATOR_CIRCLE_PX[size], minWidth: OVERFLOW_INDICATOR_CIRCLE_PX[size] })
+
+/**
+ * 「+N」的字(指示器與量尺共用)。整串是**一個**文字節點、外層帶 `data-overflow-count`:
+ * 量測端(`useOverflowCount`)要知道「+3」「+12」各多寬時,直接改這個節點的字、量、再改回來 —— 數字的字寬不一樣
+ *(本 repo 實測 +1 33.02 / +2 34.97 / +4 35.53 / +10 41.69px),不能拿一個數字的寬代表另一個(2026-10-13 獨立驗證抓到)。
+ */
+function OverflowCount({ count, className }: { count: number; className: string }) {
+  return <span className={className} data-overflow-count="">{`+${count}`}</span>
+}
+
+/**
+ * @internal「+N」的量尺(2026-10-13):與 `OverflowIndicator` 的觸發點同一套外觀、同一個字,但不能互動 —— 不可聚焦、沒有浮出清單、讀屏略過。
+ * 給「先量『+N』多寬、再決定收幾個」的呼叫端用(`./overflow-tag-list.tsx` `useOverflowCount`;Combobox 與 AgentPanel 輸入盒附件列經它):沒有東西要收的時候,它代替指示器留在 DOM 裡讓呼叫端量,
+ * 由呼叫端把它藏起來(不佔位、看不見)。修前沒溢出時「+N」不渲染,第一次決定只能猜它多寬(猜 60px、實際 33–35px;combobox.spec.md「單行溢出」)。
+ * 不帶 `data-overflow-indicator`(那是「畫面上有一顆『+N』」的標記,閘與測試以它找指示器)。
+ */
+export function OverflowIndicatorMeasure({ count, shape = 'circle', size = 'md' }: { count: number; shape?: 'circle' | 'tag'; size?: 'sm' | 'md' | 'lg' }) {
+  return shape === 'tag' ? (
+    <span aria-hidden className={triggerClassName('tag', size)}><OverflowCount className="px-1" count={count} /></span>
+  ) : (
+    <span aria-hidden className={triggerClassName('circle', size)} style={circleSizeStyle(size)}><OverflowCount className="relative" count={count} /></span>
+  )
 }
 
 function ShrinkWrapList({ children }: { children: React.ReactNode }) {
@@ -95,7 +143,7 @@ function ShrinkWrapList({ children }: { children: React.ReactNode }) {
 
 const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorProps>(
   function OverflowIndicator(
-    { count, shape = 'circle', size = 'md', children, className, style, ...props },
+    { count, shape = 'circle', size = 'md', children, className, style, onContentMouseDown, contentId, ...props },
     ref,
   ) {
     if (count <= 0) return null
@@ -112,11 +160,11 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         tabIndex={0}
         // 游標一般箭頭:+N 只浮出名單、點下去沒有作用(overflow-indicator.spec.md「也沒有 click 切換」;
         // hit-area-canonical.md 滑過原則三-1「不能讓人以為點下去會做事」)
-        className={cn(tagVariants({ color: 'neutral', size }), 'cursor-default', className)}
+        className={cn(triggerClassName('tag', size), className)}
         style={style}
         {...props}
       >
-        <span className="px-1">+{count}</span>
+        <OverflowCount className="px-1" count={count} />
       </span>
     ) : (
       // circle = 頭像堆疊的尾端(avatar.spec.md「頭像堆疊(疊在一起時)」)。
@@ -131,13 +179,8 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         data-overflow-indicator=""
         data-avatar-stack=""
         tabIndex={0}
-        className={cn(
-          'relative shrink-0 rounded-full inline-grid place-content-center',
-          'text-foreground font-medium leading-none cursor-default', // 同上方 tag 形狀:只浮出名單,點了沒作用 → 不用手形
-          triggerText[size],
-          className,
-        )}
-        style={{ height: OVERFLOW_INDICATOR_CIRCLE_PX[size], minWidth: OVERFLOW_INDICATOR_CIRCLE_PX[size], ...style }}
+        className={cn(triggerClassName('circle', size), className)}
+        style={{ ...circleSizeStyle(size), ...style }}
         {...props}
       >
         <span
@@ -145,7 +188,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
           className={cn('absolute inset-0 rounded-full bg-secondary', AVATAR_STACK_CUTOUT_CLASS)}
           style={avatarStackCutoutStyle(OVERFLOW_INDICATOR_CIRCLE_PX[size])}
         />
-        <span className="relative">+{count}</span>
+        <OverflowCount className="relative" count={count} />
       </span>
     )
 
@@ -158,7 +201,9 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         <HoverCardTrigger asChild>
           {trigger}
         </HoverCardTrigger>
-        <HoverCardContent className="bg-tooltip rounded-lg" data-theme="dark">
+        {/* 深色 tooltip 殼 = hover-card.tsx HOVER_CARD_TOOLTIP_SURFACE_CLASS(含 text-foreground:data-theme 只換變數不換已繼承的 color,
+            2026-10-20 前只寫 data-theme → 淺色頁上清單是黑字配深底 1.92:1,獨立驗證 OV-02) */}
+        <HoverCardContent id={contentId} className={HOVER_CARD_TOOLTIP_SURFACE_CLASS} data-theme="dark" onMouseDown={onContentMouseDown}>
           <ShrinkWrapList>{children}</ShrinkWrapList>
         </HoverCardContent>
       </HoverCard>

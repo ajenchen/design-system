@@ -352,7 +352,7 @@ export function applyRovingAction(action: RovingKeyAction, host: RovingDomHost):
       return
     case 'leave':
       // 焦點在項目裡的東西上時先放回這一項(整串唯一那顆 0),**不擋預設**:瀏覽器接著從這一項往下 / 往上走 = 一下離開。
-      // 往前若不先放回,Shift+Tab 會先落回本項(X7 修的就是這個);往後在焦點鎖(手機抽屜 = Radix FocusScope)裡,
+      // 往前若不先放回,Shift+Tab 會先落回本項(X7 修的就是這個);往後在焦點鎖(Menu 左側浮層等 Sheet / Dialog = Radix FocusScope)裡,
       // 鎖判斷「是不是最後一顆」看的是 tabindex≥0 的元素,-1 的按鈕永遠不是它 → 不先放回就繞不回開頭
       //(@radix-ui/react-focus-scope@1.1.7 dist/index.mjs:106-121)。焦點已在這一項上時 focus() 不做任何事。
       item.focus(focusOptions)

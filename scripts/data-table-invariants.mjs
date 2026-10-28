@@ -181,7 +181,7 @@ for (const [colIdx, expected] of Object.entries(expectedMinWidths)) {
 // **覆蓋範圍 2026-09-04 從 4 種型別擴到 13 種**(缺陷 T)。原本只跑 RowAutoHeightInlineEdit 的
 // string / select / textarea / currency 四種;date / time / person / multiPerson / boolean / url /
 // multiSelect / number / tag 的 0-delta **只有推導、沒有斷言過**。`InlineEdit` story 本來就把 13 種
-// 型別全部放進可編輯欄(data-table.stories.tsx:625-637),缺的只是把閘指過去 —— 不必新增 story。
+// 型別全部放進可編輯欄(data-table.stories.tsx#InlineEdit),缺的只是把閘指過去 —— 不必新增 story。
 const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[role="row"][data-row-index]') => {
   await loadStory(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, waitSelector)
   for (const t of cellTypes) {
@@ -199,7 +199,7 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
     }
 
     if (t.editEntry === 'pencil') {
-      // url 型別的入口不是點格 / 鍵盤,是滑過格子後才出現的 Pencil 鈕(cell-registry.tsx UrlCell `aria-label="編輯連結"`;
+      // url 量 Pencil 這個入口(點格入口由 data-table-link-cell-invariant L2 量;cell-registry.tsx UrlCell `aria-label="編輯連結"`;
       // 缺陷 T,2026-09-29 補):真的把指標移進格子讓它顯出來,再點鈕本身 —— 不用 JS `.click()` 跳過揭示(M32)。
       await page.mouse.move(display.left + display.width / 2, display.top + display.height / 2)
       await page.waitForTimeout(200) // 等滑過揭示(hover 回饋不做過渡,這裡等的是 hover 事件派發後的重繪)
@@ -208,7 +208,10 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
         const btn = cell?.querySelector('button[aria-label="編輯連結"]')
         if (!btn) return null
         const r = btn.getBoundingClientRect()
-        return { x: r.left + r.width / 2, y: r.top + r.height / 2, opacity: getComputedStyle(btn).opacity, w: r.width }
+        // 有效不透明度 = 一路乘到格子(2026-10-13 起揭示的 opacity class 掛在鉛筆外層的 span 上,按鈕自己恆 1)
+        let opacity = 1
+        for (let el = btn; el && el !== cell; el = el.parentElement) opacity *= Number(getComputedStyle(el).opacity)
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2, opacity, w: r.width }
       }, t)
       if (!pencil || pencil.w === 0 || Number(pencil.opacity) === 0) {
         record('I1', `${t.label} display↔edit cell width 一致`, false, `滑過後找不到可見的 Pencil 鈕(I1 真測路徑未進入):${JSON.stringify(pencil)}`)
@@ -235,15 +238,14 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
 
     if (!edit) {
       // 沒進 edit mode。**只有 boolean 是設計上就沒有 in-cell 編輯欄位的**(Checkbox 直接 toggle);
-      // `data-table.tsx` 的鍵盤進 edit 判斷寫死 `meta.type !== 'boolean' && meta.type !== 'url'` 是**入口排除**,
-      // url 仍有 in-cell 編輯欄位,只是入口是滑過後的 Pencil(上方 `editEntry: 'pencil'` 路徑;2026-09-29 之前這裡把 url
-      // 也寫成「設計上就沒有」而跳過,缺陷 T 登記待補的就是這一格)。boolean 標成 SKIP 並印出來,
+      // url 有 in-cell 編輯欄位,這裡量 Pencil 這個入口(上方 `editEntry: 'pencil'` 路徑;點格入口由 data-table-link-cell-invariant L2 量;
+      // 2026-09-29 之前這裡把 url 也寫成「設計上就沒有」而跳過,缺陷 T 登記待補的就是這一格)。boolean 標成 SKIP 並印出來,
       // 讓覆蓋範圍是「明示的」而不是「靜默的」;其餘型別沒進 edit 就是真的壞了,照樣紅。
       // (2026-09-04 逐格實測校正:multiSelect / person / multiPerson / date / time **都有**
       //  in-cell Field —— date 會同時開 Popover,但 cell 內仍有 `data-field-mode="edit"`。
       //  原本我憑印象把這五種標成「走 Popover 不適用」,量過才發現是錯的。)
       if (t.noInCellField) {
-        console.log(`⏭  I1-4 ${t.label} — 設計上無 in-cell 編輯欄位(Checkbox 直接 toggle;data-table.tsx 鍵盤 edit 判斷明文排除),不適用 0-delta 斷言`)
+        console.log(`⏭  I1-4 ${t.label} — 設計上無 in-cell 編輯欄位(Checkbox 直接 toggle;試算表 Enter / F2 進格內的勾選框、不進編輯器),不適用 0-delta 斷言`)
         continue
       }
       record('I1', `${t.label} display↔edit cell width 一致`, false, 'no edit field — I1 真測路徑未進入')
@@ -273,7 +275,7 @@ await checkDisplayEditStability('design-system-components-datatable-展示--row-
   { row: 2, col: 3, label: 'Note PRD-0003 long-wrap' },
 ])
 
-// (b) 固定行高 + inline edit:補齊其餘九種型別(缺陷 T)。欄序見 data-table.stories.tsx:625-637。
+// (b) 固定行高 + inline edit:補齊其餘九種型別(缺陷 T)。欄序見 data-table.stories.tsx#InlineEdit。
 await checkDisplayEditStability('design-system-components-datatable-展示--inline-edit', [
   { row: 0, col: 0, label: 'SKU(string readonly)', skipEdit: true },
   { row: 0, col: 1, label: 'Product(string)' },
@@ -284,7 +286,7 @@ await checkDisplayEditStability('design-system-components-datatable-展示--inli
   { row: 0, col: 6, label: 'Owner(person)' },
   { row: 0, col: 7, label: 'Reviewers(multiPerson)' },
   { row: 0, col: 8, label: 'In(boolean)', noInCellField: true },
-  // url:入口是滑過後的 Pencil 鈕(缺陷 T「登記待補」→ 2026-09-29 補上;edit 態是 naked Input,帶 data-field-mode="edit")
+  // url 量 Pencil 這個入口(點格入口由 data-table-link-cell-invariant L2 量;缺陷 T「登記待補」→ 2026-09-29 補上;edit 態是 naked Input,帶 data-field-mode="edit")
   { row: 0, col: 9, label: 'URL(url,Pencil 入口)', editEntry: 'pencil' },
   { row: 0, col: 10, label: 'Price(currency)' },
   { row: 0, col: 11, label: 'Release(date)' },
@@ -523,12 +525,6 @@ if (!widthReport) {
     widthReport.worstLeft <= 0.5,
     `worst left delta ${widthReport.worstLeft.toFixed(2)}px`,
   )
-  record(
-    'I11',
-    'header 與 body 的水平捲動範圍相等(否則捲到最右端 header 會落後一個捲軸寬)',
-    Math.abs(widthReport.headerRange - widthReport.bodyRange) <= 0.5,
-    `header ${widthReport.headerRange} vs body ${widthReport.bodyRange}`,
-  )
   if (!widthReport.hasHorizontalOverflow) {
     record(
       'I11',
@@ -537,6 +533,28 @@ if (!widthReport) {
       `Σ widths ${widthReport.sumWidths.toFixed(1)} vs body ${widthReport.bodyContentWidth}`,
     )
   }
+}
+
+// I11 續:header 與 body 的水平捲動範圍相等(2026-10-13 搬過來):原本量在上面的 virtual-scroll @2600 寬 ——
+// 那則 story 在這個寬度**根本沒有水平溢出**,0 比 0 是空轉(待辦總帳 Q2a 調查抓到),而且它沒開欄寬調整,
+// 凸出的把手(多 3px)那一型結構上量不到。改量兩則**有欄寬調整**、在 900 寬下**真的有水平溢出**的表;沒有溢出 = 儀器失效(紅),不是通過。
+// 兩邊範圍不等的後果:捲到最右端 header 落後 / 超前 —— 少一個捲軸寬(spacer 的那一半)或多凸出去的把手(clip 的那一半)。
+{
+  const prevViewport = page.viewportSize()
+  await page.setViewportSize({ width: 900, height: 800 })
+  for (const id of ['roadmap-all-in-one', 'column-resize']) {
+    await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--${id}&viewMode=story`, '[data-datatable-header-panel="center"]')
+    const ranges = await page.evaluate(() => [...document.querySelectorAll('[data-datatable-hscroll]')].map((bp) => {
+      const hp = bp.closest('[role="table"], [role="grid"]')?.querySelector('[data-datatable-header-panel="center"]')
+      return hp ? { header: hp.scrollWidth - hp.clientWidth, body: bp.scrollWidth - bp.clientWidth } : null
+    }).filter(Boolean))
+    if (ranges.length === 0) { record('I11', `${id}:儀器`, false, 'INSTRUMENT-FAIL 找不到表頭 / 表身中央區'); continue }
+    ranges.forEach((r, i) => {
+      if (!(r.body > 0)) { record('I11', `${id} 表 ${i + 1}:儀器`, false, `INSTRUMENT-FAIL 900 寬下沒有水平溢出(可捲 ${r.body})—— 這條斷言會空轉`); return }
+      record('I11', `${id} 表 ${i + 1}:header 與 body 的水平捲動範圍相等(真的有水平溢出,可捲 ${r.body})`, Math.abs(r.header - r.body) <= 0.5, `header ${r.header} vs body ${r.body}`)
+    })
+  }
+  await page.setViewportSize(prevViewport)
 }
 
 // ── I11c:「算一次」對**三個區**都成立(2026-09-03 補;原本 I11/I11b 只取 panel="center")──
@@ -1328,6 +1346,10 @@ const syncReport = await page.evaluate(async () => {
       // 寫完 center 就結束:header 的事件由元件寫入時瀏覽器自己送,閘不得再補一顆(見 write 註解)。
       await write(cb, 'x', max)
       r.noBounce = { max, center: cb.scrollLeft, header: header.scrollLeft }
+      // 從 header 那一邊推到底(使用者指標停在表頭上捲):header 寫到它自己的最大值 → 元件把 center 推過去 → 兩邊相等
+      await write(cb, 'x', 0)
+      await write(header, 'x', header.scrollWidth - header.clientWidth)
+      r.fromHeader = { center: cb.scrollLeft, header: header.scrollLeft, max }
       // 把 header 的可捲範圍縮小 40px(縮它的內容盒,不碰 body,才不會被補償邏輯抵消):
       // center 捲到 max → header 被夾在 max−40 → 那一筆事件值 = 被夾後的值 → 必須被認出並吞掉,center 不得被推回
       const inner = header.firstElementChild
@@ -1337,6 +1359,14 @@ const syncReport = await page.evaluate(async () => {
       await write(cb, 'x', max)
       r.mismatch = { center: cb.scrollLeft, expected: max, header: header.scrollLeft,
         headerRange: header.scrollWidth - header.clientWidth }
+      inner.style.minWidth = prevMin
+      await write(cb, 'x', 0)
+      // I19c 保險(2026-10-13,待辦總帳 Q2a):header 的可捲範圍**比 center 大** 40px(不論多出來的是凸出的把手、取整還是量錯)。
+      // center 到底被夾住、位置沒變就不發 scroll 事件 —— 修前 header 停在 center 到不了的地方。元件必須當場把 header 拉回 center。
+      inner.style.minWidth = `${inner.getBoundingClientRect().width + 40}px`
+      await write(cb, 'x', max)
+      await write(header, 'x', header.scrollWidth - header.clientWidth)
+      r.headerWider = { center: cb.scrollLeft, header: header.scrollLeft, max, headerRange: header.scrollWidth - header.clientWidth }
       inner.style.minWidth = prevMin
       await write(cb, 'x', 0)
     }
@@ -1363,6 +1393,17 @@ syncReport.forEach((r, i) => {
     record('I19b', `表 ${i + 1}:header 可捲範圍被縮小時,被夾過的那一筆被吞掉、center 不被推回(缺陷 γ)`,
       r.mismatch.center === r.mismatch.expected,
       `center ${r.mismatch.center}(應停在 ${r.mismatch.expected};header 被夾在 ${r.mismatch.header},其可捲範圍 ${r.mismatch.headerRange})`)
+    // 2026-10-13(待辦總帳 Q2a):原本 header 落後 / 超前也算通過 —— 只看「center 沒被推回」。補上 header = center:
+    // header 可捲範圍被縮小時,header 停在它自己的最大值(能跟多遠跟多遠);自然狀態下從 header 那一邊推到底,兩邊相等。
+    record('I19b', `表 ${i + 1}:header 可捲範圍被縮小時,header 跟到它自己的最大值(不落後更多)`,
+      r.mismatch.header === r.mismatch.headerRange,
+      `header ${r.mismatch.header}(其可捲範圍 ${r.mismatch.headerRange})`)
+    record('I19b', `表 ${i + 1}:從 header 那一邊推到底 → header = center = 最大值`,
+      r.fromHeader.center === r.fromHeader.max && r.fromHeader.header === r.fromHeader.center,
+      `center ${r.fromHeader.center} / header ${r.fromHeader.header}(max ${r.fromHeader.max})`)
+    record('I19c', `表 ${i + 1}:header 可捲範圍比 center 大 40px、center 已到底被夾住 → header 當場被拉回 center(保險)`,
+      r.headerWider.headerRange > r.headerWider.max && r.headerWider.center === r.headerWider.max && r.headerWider.header === r.headerWider.center,
+      `center ${r.headerWider.center} / header ${r.headerWider.header}(center max ${r.headerWider.max},header 可捲 ${r.headerWider.headerRange})`)
   } else {
     console.log(`⏭  I18a/I19 表 ${i + 1} — center 沒有水平溢出,不適用`)
   }
@@ -1667,11 +1708,10 @@ if (!beforeFit) {
 
 /* ── I24:url 型別的 view↔edit 0-delta(缺陷 T 的漏網型別)──
  * I1–I4 的 harness 把 url 標成 `noInCellField`(「設計上沒有 in-cell 編輯欄位」)—— 那句只對 boolean 成立。
- * url 只是**進入路徑**不同:cell click 走連結、Enter/F2 被排除(data-table.tsx `NON_EDIT_TYPES`),但 hover
- * 出現的 Pencil(`aria-label="編輯連結"`,cell-registry.tsx UrlCell)按下去就渲染 `<Input variant="naked">`,
+ * url 有 in-cell 編輯欄位:滑過 / 聚焦出現的 Pencil(`aria-label="編輯連結"`,cell-registry.tsx UrlCell)按下去就渲染 `<Input variant="naked">`,
  * wrapper 帶 `data-field-mode="edit"`;spec 第十二段 url 列與 navigate-valued 通用類別第 4 條都要求「edit
  * 觸發後 = 一般 field 行為契約,與其他型別零特例」,所以 (2)(3)(4) 三條不變條件對 url 同樣成立、也同樣可量。
- * 這裡走真正的入口(hover cell → click Pencil),量的三個 delta 與 I1–I4 同門檻。
+ * 這裡走 Pencil 這個入口(hover cell → click Pencil;點格入口由 data-table-link-cell-invariant L2 量),量的三個 delta 與 I1–I4 同門檻。
  */
 await loadStory(I20_PLUS_STORY('inline-edit'), '[role="row"][data-row-index]')
 const URL_CELL = { row: 0, col: 9 } // 欄序見 data-table.stories.tsx InlineEdit editableColumns(col 9 = url)
@@ -1827,7 +1867,7 @@ if (!nestedGeom.d0?.btn || !nestedGeom.d1?.btn || !nestedGeom.d1leaf || !nestedG
  * 根 invariant:事件委派的 target 守衛必以 `Element` 判定(lucide 圖示是 `SVGElement`,`instanceof
  * HTMLElement` 恆 false → onMouseOut 誤判「離開列」刪掉 data-hovered、onMouseOver 又 early return)。
  * AG Grid v33 走 per-row mouseenter/mouseleave(rowCtrl.ts#L1486-L1522),沒有這個坑;本 DS 三區同步
- * hover 是已記載的模型差異,所以要自己守。spec:整列 hover = neutral-hover(data-table.spec.md:276)。
+ * hover 是已記載的模型差異,所以要自己守。spec:整列 hover = neutral-hover(data-table.spec.md「八、Row 狀態」「hover 用 neutral-hover」)。
  * 用 Playwright 真實 `page.mouse.move` 依序停在 (a) center cell 文字 (b) rowActions 的 Pencil svg
  * (c) 左釘選 cell,每步斷言該列在三區都有 data-hovered **而且** computed 背景 === --neutral-hover 的解析值
  * (probe 同 scope 解析,不是看屬性有沒有);移出表格後底色回到透明。
@@ -2413,10 +2453,27 @@ for (const [label, r, c, kind] of [
   const cursorOf = () => page.evaluate(() => document.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null)
   const startCursor = await cursorOf()
   // 目標格裡找一個「屬於那一格、不在互動控件裡」的落點(由右往左掃;開關與連結的控件靠左,空白在右)
-  const point = await page.evaluate((id) => {
+  // **連結格另算**(2026-10-13,待辦總帳 Q3a):要驗的是「看起來空白的地方」—— 取網址文字**畫出來的範圍**右邊、鉛筆左邊的正中間,
+  // 不看那一點的 DOM 是不是連結元素。修前的挑法(「不在任何連結元素裡的點」)永遠挑不到「看起來空白、其實還在連結盒裡」的那一段
+  // (連結是 block、撐滿整格),所以閘一直綠 —— 拿「不在連結元素裡」代替了「看起來是空白」(M37)。對照組 7777b61c 必紅(點下去開連結)。
+  const point = await page.evaluate(([id, kind]) => {
     const cell = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)
     if (!cell) return null
     const b = cell.getBoundingClientRect()
+    if (kind === 'link') {
+      const a = cell.querySelector('a[href]')
+      const pencil = cell.querySelector('[data-dt-cell-edit-entry] button, button[aria-label="編輯連結"]')
+      if (!a || !pencil) return null
+      const walker = document.createTreeWalker(a, NodeFilter.SHOW_TEXT)
+      let right = -Infinity
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        if (!n.textContent.trim()) continue
+        const range = document.createRange(); range.selectNodeContents(n); right = Math.max(right, range.getBoundingClientRect().right)
+      }
+      const pl = pencil.getBoundingClientRect().left
+      if (!Number.isFinite(right) || pl - right < 8) return null
+      return { x: (right + 2 + pl - 2) / 2, y: b.y + b.height / 2 }
+    }
     const interactive = 'a[href], button, input, textarea, select, [role="checkbox"], [role="switch"], [role="combobox"]'
     for (const y of [b.y + b.height / 2, b.y + 4, b.y + b.height - 4]) {
       for (let x = b.x + b.width - 6; x > b.x + 3; x -= 2) {
@@ -2425,7 +2482,7 @@ for (const [label, r, c, kind] of [
       }
     }
     return null
-  }, targetId)
+  }, [targetId, kind])
   const checkedOf = () => page.evaluate((id) => document.querySelector(`[data-cell-id="${CSS.escape(id)}"] [role="checkbox"]`)?.getAttribute('aria-checked') ?? null, targetId)
   const checkedBefore = await checkedOf()
   const urlBefore = page.url()

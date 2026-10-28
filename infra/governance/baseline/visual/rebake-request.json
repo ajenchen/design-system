@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "branch": "fix/undici-advisory-shape-2026-09-30",
+  "update_baseline": true,
+  "reference_ref": "",
+  "reason": "R3:PR #169 改到的精選基準圖在合併前重拍,給 user 逐張看「可以改」",
+  "requestedAt": "2026-10-14T02:47:03Z"
+}

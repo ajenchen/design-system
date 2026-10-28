@@ -28,10 +28,10 @@ export default meta
 type Story = StoryObj<typeof ProgressBar>
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-body font-bold text-foreground mb-2">{children}</h3>
+  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
 )
 const SectionDesc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{children}</p>
+  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
 )
 
 // ── Default(基本範例) ──────────────────────────────────────────────────
@@ -54,12 +54,13 @@ export const Default: Story = {
 export const BatchTask: Story = {
   name: '批次任務進度',
   render: () => (
-    <div className="flex flex-col gap-4 w-[460px]">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] w-[460px]">
       <SectionTitle>CSV 匯入進度(Linear bulk import / Airtable 匯入)</SectionTitle>
       <SectionDesc>
         匯入 1,250 筆客戶資料。單一 prominent 進度條,使用者會盯著整個流程完成。
       </SectionDesc>
-      <div className="flex flex-col gap-3 border border-border rounded-md p-5 bg-surface">
+      <div className="flex flex-col gap-[var(--layout-space-tight)] border border-border rounded-md p-[var(--layout-space-loose)] bg-surface">
+        {/* @layout-space-magic-ok: 匯入卡標頭列 圖示 ↔ 標題 ↔ 計數(同一列行內 micro)(layoutSpace.spec.md:166 micro) */}
         <div className="flex items-center gap-2">
           <TableIcon size={18} className="text-primary shrink-0" />
           <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
@@ -97,6 +98,7 @@ const quotaColumns: ColumnDef<QuotaRow>[] = [
     id: 'name',
     header: '專案',
     cell: ({ row }) => (
+      // @layout-space-magic-ok: 表格儲存格內 圖示 ↔ 專案名(layoutSpace.spec.md:166 micro)
       <div className="flex items-center gap-2">
         <FileText size={16} className="text-fg-muted shrink-0" />
         {row.original.name}
@@ -121,7 +123,7 @@ const quotaColumns: ColumnDef<QuotaRow>[] = [
 export const InlineTableCell: Story = {
   name: 'DataTable 儲存格內進度',
   render: () => (
-    <div className="flex flex-col gap-4 w-[560px]">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] w-[560px]">
       <SectionTitle>配額使用率(DataTable inline)</SectionTitle>
       <SectionDesc>
         Table cell 內顯示配額使用率(4px 細線不搶走主要欄位的閱讀重量)。value affix 讓使用者快速讀數字。

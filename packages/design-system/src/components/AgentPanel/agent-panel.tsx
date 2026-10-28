@@ -3,9 +3,10 @@
  * AgentPanel 家族 — 智慧代理面板(9 元件;附屬資產 AgentLogo/AgentFab 另檔)。
  *
  * ── 消費的 SSOT ──
- * - 容器:右側欄=bg-surface + border-l border-divider(app-shell aside 前例);
- *   寬 --agent-panel-width(uiSize.css;可拖拉 360–640 且 ≤50vw,把手=ResizeHandle pattern,
- *   鍵盤等價=WAI-ARIA separator 同 DataTable 欄寬慣例);開合 --motion-duration-surface。
+ * - 容器:右側欄=bg-surface + 左緣分隔線(可拖時 = ResizeHandle 的 1px line);形態(並排 / 浮層)、可拉範圍、寬度紀錄
+ *   = AppShell「版面規則」(app-shell.spec.md;在 AppShell 裡由 AppShell 算,單獨使用時同一支 layout-model 只算自己);
+ *   預設寬 360 / 400 / 640(本檔 AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX,沒有 CSS token);把手=ResizeHandle pattern,
+ *   鍵盤等價=WAI-ARIA separator 同 DataTable 欄寬慣例;開合 --motion-duration-surface。
  * - 標題列:ChromeHeader(header-canonical;chrome 內控件一律 sm);品牌區=gap-2+24 標誌;
  *   標題+chevron=單一複合觸發鈕:**原生 `<button>`,不包 Button 殼**(Button 會多出左 9 / 右 5 內距
  *   與 28 高的懸停底,見 agent-panel.spec.md「禁用 Button 殼」);語意仍同 Polaris disclosure /
@@ -17,10 +18,10 @@
  *   行內動作=ItemSuffix hoverReveal + ItemInlineAction(懸停/鍵盤 focus-visible 浮出);思考列=CircularProgress 16。
  * - 訊息:氣泡 bg-secondary/rounded-md/8/12;附件=Chip assist 分支(chip.spec.md),相互 4;
  *   輪距 40=8+24(Button text xs)+8。
- * - 思考塊:Radix Collapsible+animate-accordion(base.css;Sidebar 同法);chevron=accordion 慣例
+ * - 思考塊:Radix Collapsible+disclosureMotion(tokens/motion/disclosure-motion.ts;與 TreeView / Accordion 同一份);chevron=accordion 慣例
  *   (裝飾指示、色同 Select 觸發器 chevron);微光僅標題+最新行(agent-panel.css);完成步驟 fg-secondary。
  * - 輸入盒:欄位家族內距(--field-control-py-md/--field-px/text-body;32 等高鐵律);
- *   附件列=Tag md 單列 + OverflowIndicator(+N,useOverflowIndices 量測);送出/停止=Button primary xs。
+ *   附件列=Tag md 單列 + 超寬 +N(OverflowTagList,與 Combobox 多選同一份量測);送出/停止=Button primary xs。
  * - 決策卡:SurfaceHeader(compact)+SurfaceFooter(overlay-surface);選項=灰底卡(--secondary、
  *   rounded-md、內距 8/12、整卡可點)包 RadioGroup md(Popover all-sm 律之拍板豁免;footer 鈕 sm 守律);
  *   一題一問步進(跳過 / 上一題 / 下一題 / 送出);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay。
@@ -79,6 +80,10 @@ import {
   CommandItem,
   CommandList,
 } from '@/design-system/components/Command/command'
+import { captureFocusOrigin, returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { useEscapeRegion } from '@/design-system/lib/overlay-escape'
+import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import {
   ItemInlineAction,
@@ -86,8 +91,7 @@ import {
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
-import { useOverflowIndices } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
-import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
+import { OverflowTagList, TAG_ROW_CONTAINER_CLASS } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -96,7 +100,7 @@ import { SelectionItem } from '@/design-system/components/SelectionControl/selec
 import { Chip } from '@/design-system/components/Chip/chip'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Input } from '@/design-system/components/Input/input'
-import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import {
   Dialog,
   DialogBody,
@@ -106,99 +110,87 @@ import {
   DialogTitle,
 } from '@/design-system/components/Dialog/dialog'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
+import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tokens/motion/disclosure-motion'
+import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
+import { AgentPanelDockContext } from './agent-panel-dock-context'
+import {
+  useAppShellPanel,
+  useAppShellPanelOpen,
+  useAppShellRegistry,
+  type PanelWidthRange,
+} from '@/design-system/components/AppShell/app-shell-context'
+import {
+  computeStandaloneAgentLayout,
+  recordAfterUserResize,
+  resolveDisplayedWidth,
+} from '@/design-system/components/AppShell/layout-model'
 import './agent-panel.css'
 
 /* ────────────────────────────────────────────────────────────────────────────
  * 1. AgentPanel(容器;可拖拉寬度)
  * ──────────────────────────────────────────────────────────────────────── */
 
-/** 拖拉寬度界限(spec「AgentPanel」節;token 鏡像:--agent-panel-width-min / -max)。 */
+/** 產品沒設時的寬度設定(spec「Token」節:面板寬只住這裡,2026-10-15 退役 `--agent-panel-width`)。範圍 / 紀錄 / 實際顯示寬的規則住 app-shell.spec.md「版面規則」§1、§5、§7、§9。 */
 const PANEL_WIDTH_DEFAULT = 400
 const PANEL_WIDTH_MIN = 360
 const PANEL_WIDTH_MAX = 640
 const PANEL_RESIZE_KEY_STEP = 16
+const DEFAULT_WIDTH_RANGE: PanelWidthRange = { min: PANEL_WIDTH_MIN, initial: PANEL_WIDTH_DEFAULT, max: PANEL_WIDTH_MAX }
+const DEFAULT_CONTENT_TYPE = 'conversation'
 
-/**
- * 並排時面板寬的上限,由**容器寬**推導。
- *
- * 三個已定的量互鎖(2026-09-07 G3):
- *   面板 ≥ 360(`PANEL_WIDTH_MIN`)
- *   面板 ≤ 舞台的 3/5(user 2026-09-07 裁示 #5:「50% 基準由視窗改舞台」定了「一半」;2026-09-09 放寬到 3/5,見下)
- *   並排時 舞台 = 容器 − 面板
- * 三條合起來:面板 ≤ (容器 − 面板) × 3/5 ⇒ **面板 ≤ 容器 × 3/8**。
- * 再套下限 360 ⇒ **並排只在容器 ≥ 960 時成立**;更窄就翻成蓋板(見 `resolveIsOverlay`)。
- * 2026-09-09 user 拍板「我覺得 960px 作為 agent 蓋板的斷點應該可以」:把 2026-09-07 的「面板 ≤ 舞台一半」放寬到 3/5(舞台 600 = Material
- * medium 視窗下緣、DataTable 5 欄各 120px),360 下限不動;原本三鎖的唯一解 1080 因此變成 960。
- *
- * 為什麼不是量視窗:面板住在容器裡,不是住在視窗裡。視窗 1920 但容器只有 800 的版面
- * (側欄 + 主內容 + 面板)用視窗算會給出 640 的上限,面板一寬舞台就被擠爆。
- *
- * clampPanelWidth 與 ResizeHandle 的 `max`(→ aria-valuemax)**必須讀同一個函式** ——
- * 2026-09-07 G5:先前 `max` 寫死 640,螢幕閱讀器念的數字與實際停的位置不一樣。
- */
-function resolvePanelWidthMax(containerPx: number) {
-  // 還沒佈局(0)時不能拿去算,否則會鎖進最小值且不再復原(同 person-display 的 <=0 守衛)
-  if (!containerPx || containerPx <= 0) return PANEL_WIDTH_MAX
-  return Math.min(PANEL_WIDTH_MAX, Math.max(Math.floor(containerPx * 3 / 8), PANEL_WIDTH_MIN))
-}
-
-/** 容器窄到並排放不下(面板 360 之後舞台會不足面板兩倍)→ 翻成蓋板:覆蓋宿主、左留視窗內距、底下鋪遮罩。 */
-function resolveIsOverlay(containerPx: number) {
-  if (!containerPx || containerPx <= 0) return false
-  return containerPx < AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER
-}
-
-/**
- * 並排斷點:容器至少要這麼寬,面板才放得下且舞台仍有面板的 5/3(360 × 8/3 = 960)。
- * 匯出讓消費端可以用同一個數字排版,不必自己抄一個 960。
- */
-export const AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER = Math.ceil(PANEL_WIDTH_MIN * 8 / 3)
-
-/** 面板形態:並排(flex 兄弟)或蓋板(absolute 覆蓋宿主、左留 `--layout-space-viewport-inset`);同時標在根節點 `data-agent-panel-mode`。 */
+/** 面板形態:並排(flex 兄弟)或浮層(absolute 貼右、照紀錄寬、左側至少留 `--layout-space-viewport-inset`);同時標在根節點 `data-agent-panel-mode`。 */
 export type AgentPanelMode = 'side-by-side' | 'overlay'
-
-function clampPanelWidth(width: number, containerPx: number) {
-  return Math.min(Math.max(width, PANEL_WIDTH_MIN), resolvePanelWidthMax(containerPx))
-}
 
 export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   /** 面板開合;false 時不渲染(關閉後由 AgentFab 承接入口,兩者互斥)。 */
   open?: boolean
-  /** 受控寬度(px);省略=非受控,起於 defaultWidth。 */
+  /** 目前顯示的內容類型(同一類型的不同資料共用寬度設定與紀錄;`app-shell.spec.md`「版面規則」§1)。省略 = `'conversation'`。 */
+  contentType?: string
+  /** 這種內容類型的最小 / 初始 / 最大寬(px);省略 = DS 預設 360 / 400 / 640(`AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`)。 */
+  widthRange?: PanelWidthRange
+  /** 受控的寬度紀錄(px);省略=非受控。實際顯示寬 = 紀錄夾在此刻允許的範圍(「版面規則」§7)。 */
   width?: number
-  /** 非受控初始寬;預設 --agent-panel-width 400。 */
+  /** 非受控的起始紀錄(產品自存、重新整理後還原);省略 = 沒調過,以 `widthRange.initial` 為目標。 */
   defaultWidth?: number
   /** 寬度變更時回報(**拖曳中每一格都發**,受控 consumer 才有即時回饋)。 */
   onWidthChange?: (width: number) => void
-  /** 拖拉放開 / 鍵盤一步結束時回報一次(要落地儲存的接這個;DS 不持久化,產品自存)。 */
+  /** 一次調整結束時回報新紀錄(拖曳放開且有位移、鍵盤每按一下;只點一下不發 —— 「版面規則」§7)。要落地儲存的接這個;DS 不持久化,產品自存。 */
   onWidthCommit?: (width: number) => void
-  /** 可拖拉(左緣把手);預設 true。Sheet 承載時同樣可拖。 */
+  /** 可拖拉(左緣把手;並排與浮層都可拖,U:4、U:55);預設 true。 */
   resizable?: boolean
   /**
-   * 蓋板態(容器 < 960,面板覆蓋宿主)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
+   * **不在 AppShell 裡**單獨使用時,宿主那一側的最小寬(px)。面板「只算自己」(D:30 清單 N14):宿主寬 − 這個值 ≥ 面板最小寬 → 並排,否則浮層;
+   * 沒有固定門檻(`../AppShell/layout-model.ts` `computeStandaloneAgentLayout`)。省略 = 0(只要放得下面板自己的最小寬就並排)。
+   * 在 AppShell 裡不用 —— 由 AppShell 的 `mainMinWidth` 與其他面板一起排(「版面規則」§3)。
+   */
+  hostMinWidth?: number
+  /**
+   * 浮層態(面板蓋在宿主上)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
    * 同一支 primitive(`lib/overlay-coexistence.ts`)。v14 條 B 說的「宿主暫不可操作」只講**宿主**;
-   * 宿主之外的瀏覽器 chrome(網址列、上一頁 / 下一頁、重新整理)不是宿主,蓋板時不得被抑制
+   * 宿主之外的瀏覽器 chrome(網址列、上一頁 / 下一頁、重新整理)不是宿主,浮層時不得被抑制
    * (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」)。
    * 並排態不抑制任何東西,此 prop 無作用。面板自己永遠在保留集合裡,不必傳。
    */
   persistentElements?: () => Element[]
   /**
-   * 形態(並排 / 蓋板)改變時回報;量到容器之後才發第一次,之後只在形態真的翻轉時發。
-   * 用途:蓋板態下「代理內導向舞台的動作」(內部連結、有網址的 modal)要把代理收成入口鈕、讓舞台顯示目標
-   * (v14 條 B,2026-09-09 user 推翻「抽屜保持開啟」的 AI 推導)。**面板不知道連結**,所以收合是消費端的責任:
-   * 用這個回呼記住目前形態,在自己的內部導航裡「蓋板且開著 → `onOpenChange(false)`」;並排態不收。
-   * 詳 spec「與 app 的推擠與斷點」蓋板小節。
+   * 形態(並排 / 浮層)改變時回報;面板看得到、形態算出來之後才發第一次,之後只在形態真的翻轉時發。
+   * 用途:浮層態下「代理內導向 Main 的動作」(內部連結、有網址的 modal)要把代理收成入口鈕、讓 Main 顯示目標
+   * (v14 條 B,2026-09-09 user 推翻「抽屜保持開啟」的 AI 推導;2026-10-14 D:23 保留)。**面板不知道連結**,所以收合是消費端的責任:
+   * 用這個回呼記住目前形態,在自己的內部導航裡「浮層且開著 → `onOpenChange(false)`」;並排態不收。
+   * 詳 spec「形態:並排 / 浮層」後段「浮層時從代理導向 Main」。
    */
   onModeChange?: (mode: AgentPanelMode) => void
   /**
-   * 蓋板態下**點擊面板外的遮罩**時通知消費端關閉面板(2026-09-17 user 裁示,取代 2026-09-16 的「點了不關」)。
+   * 浮層態下**點擊面板外的遮罩**或**按 Esc**(面板裡沒有更內層時)通知消費端關閉面板
+   * (遮罩:2026-09-17 user 裁示,取代 2026-09-16 的「點了不關」;Esc:2026-10-14 D:22,見 spec「Esc 與關閉語意」)。
    *
    * 命名依據 `ds-canonical/references/props-naming.md`:`onClose` = 「關閉 overlay session —— 浮層關閉回背景」,
    * 與 Dialog / Sheet / Popover / FileViewer 同一個名字同一個語意(不是 `onDismiss`,那是「暫時訊息被忽略」)。
    *
    * **面板不自己關**:`open` 一直是消費端控的(同 `onModeChange` 那段的分工),所以這裡只發通知。
-   * 並排態沒有遮罩,此 prop 無作用。
+   * 並排態沒有遮罩、Esc 也不關,此 prop 無作用。
    *
    * **必填,不是可選**(2026-09-18 修正):第一版寫成 `onClose?:`,理由是「向後相容,既有 consumer 一行都不用改」——
    * 結果就是**沒傳的那些照舊點了不關**,而全庫最像產品的那則範例(`agent-panel.stories.tsx` 的 URL 註冊表示意)剛好沒傳,
@@ -209,16 +201,72 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   onClose: () => void
 }
 
+/**
+ * 元素在整頁疊放脈絡裡的層級:由內往外走,最外層「有定位、z-index 不是 auto」的祖先的 z-index(沒有 = 0)。
+ * `../../tokens/elevation/elevation.spec.md`「疊放順序」的全域列就是在這一層比大小。
+ */
+function rootStackLevel(el: Element): number {
+  let level = 0
+  const body = el.ownerDocument.body
+  for (let node: Element | null = el; node && node !== body; node = node.parentElement) {
+    const cs = getComputedStyle(node)
+    if (cs.position !== 'static' && cs.zIndex !== 'auto') level = Number(cs.zIndex) || 0
+  }
+  return level
+}
+
+/**
+ * 浮層開始抑制宿主的那一刻,**已經開著、疊在 AI agent 浮層上面**的層(一般確認框、Menu 浮層 —— Sheet;層級表第 6 列 `z-50` > 第 5 列 `z-[45]`)。
+ * 它們不是「被蓋住的宿主」,照樣要能操作(`../AppShell/app-shell.spec.md`「版面規則」§9 浮層可以同時存在多個,誰在上面照層級表;
+ * `../Dialog/dialog.spec.md` 層級)。並存 modal(第 4 列 `z-40`)刻意在 AI agent 浮層底下(v14 推導第 4 題),不在此列。
+ * 由來(2026-10-14 審查抓到):Menu 浮層開著、或確認框開著時把視窗縮窄 → AI agent 變浮層 → 那一層被設成 inert:畫在最上面卻點不到、焦點掉到 body,
+ * 滑鼠使用者卡住,只有 Esc 救得回來。
+ */
+function openLayersAbove(panel: Element | null): Element[] {
+  if (!panel) return []
+  const panelLevel = rootStackLevel(panel)
+  return Array.from(panel.ownerDocument.querySelectorAll('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]'))
+    .filter((el) => !panel.contains(el) && rootStackLevel(el) > panelLevel)
+}
+
+/** 單獨使用時:往上找到**第一個有盒子的**祖先(宿主)。 */
+function resolveHostElement(panel: HTMLElement | null): HTMLElement | null {
+  // 直接抓 parentElement 會踩到兩種「沒有盒子」的包層:
+  //   `display: contents` —— AgentPanelDock 為了「關閉時不卸載」包的那層(2026-09-07 踩過)
+  //   `display: none`     —— **同一個包層在面板關閉時的樣子**(2026-09-08 跨模型審查抓到)
+  // 第一版只跳過 contents,於是「初始關閉 → 打開」這條路量到的是 display:none 那層,clientWidth = 0 → 宿主寬卡在 0。
+  // **這是 G2(keep-mounted)與量宿主互相踩到:兩支閘各自都綠,合起來才壞。**
+  let node = panel?.parentElement ?? null
+  while (node && (getComputedStyle(node).display === 'contents' || getComputedStyle(node).display === 'none')) {
+    node = node.parentElement
+  }
+  return node
+}
+
+/** 量 token 的實際寬(浮層另一側留白 `--layout-space-viewport-inset`;不寫死 48)。 */
+function measureTokenWidth(host: HTMLElement, cssWidth: string): number {
+  const probe = host.ownerDocument.createElement('div')
+  probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;height:0;width:${cssWidth}`
+  host.appendChild(probe)
+  const width = probe.getBoundingClientRect().width
+  probe.remove()
+  return width
+}
+
+// code-quality-allow: long-function — 容器 = 兩種形態(AppShell 裡 / 單獨使用)× 兩種顯示(並排 / 浮層)的單一實作;拆開會讓遮罩、抑制、Esc、把手的啟用條件各寫兩份
 const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
   (
     {
       open = true,
       onClose,
+      contentType = DEFAULT_CONTENT_TYPE,
+      widthRange = DEFAULT_WIDTH_RANGE,
       width,
-      defaultWidth = PANEL_WIDTH_DEFAULT,
+      defaultWidth,
       onWidthChange,
       onWidthCommit,
       resizable = true,
+      hostMinWidth = 0,
       persistentElements,
       onModeChange,
       className,
@@ -228,47 +276,56 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     },
     ref,
   ) => {
-    // 量**容器**(面板的父層)而不是視窗:面板住在容器裡。用 ResizeObserver 而不是
-    // window resize —— 版面可能因為側欄收合、分頁切換而改變,那些都不會發 window resize。
-    // aria-valuemax 也吃這個值(G5:先前寫死 640,螢幕閱讀器念的與實際停的位置不一樣)。
+    const dock = React.useContext(AgentPanelDockContext)
     const rootRef = React.useRef<HTMLDivElement | null>(null)
+    // 把手以 aria-controls 指向面板本身(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`);consumer 給了 id 就用它的
+    const autoId = React.useId()
+    const panelId = props.id ?? autoId
+
+    // ── 在 AppShell 裡:登記寬度設定與開關,版面(形態、可拉範圍、顯示寬)由 AppShell 算(「版面規則」;面板自己不算)──
+    const registry = useAppShellRegistry()
+    const inShell = !!registry
+    const shellPanel = useAppShellPanel(
+      'agent',
+      inShell ? { contentType, widthRange, defaultWidth, width } : null,
+      { onWidthChange, onWidthCommit },
+    )
+    // 開關紀錄 = Dock 的開關 × 本元件的 `open`;§4 連帶關閉時 AppShell 代為關閉(有 Dock 走 Dock,沒有走 onClose)
+    const effectiveOpen = open && (dock ? dock.open : true)
+    useAppShellPanelOpen('agent', effectiveOpen, (next) => {
+      if (next) return
+      if (dock) dock.setOpen(false)
+      else onClose()
+    })
+
+    // ── 單獨使用(D:30 清單 N14「AgentPanel 只算自己」):量宿主寬,用同一支 layout-model 只排 AI agent 一區 ──
+    // 量**宿主**(面板的父層)而不是視窗:面板住在宿主裡。用 ResizeObserver 而不是 window resize ——
+    // 版面可能因為側欄收合、分頁切換而改變,那些都不會發 window resize。
     const hostRef = React.useRef<HTMLElement | null>(null)
-    const [containerPx, setContainerPx] = React.useState(0)
+    const [hostPx, setHostPx] = React.useState(0)
+    const [edgeGap, setEdgeGap] = React.useState(0)
     const [selfVisible, setSelfVisible] = React.useState(false)
     React.useLayoutEffect(() => {
-      // 往上找到**第一個有盒子的**祖先。直接抓 parentElement 會踩到兩種「沒有盒子」的包層:
-      //   `display: contents` —— AgentPanelDock 為了「關閉時不卸載」包的那層(2026-09-07 踩過)
-      //   `display: none`     —— **同一個包層在面板關閉時的樣子**(2026-09-08 跨模型審查抓到)
-      // 第一版只跳過 contents,於是「初始關閉 → 打開」這條路量到的是 display:none 那層,
-      // clientWidth = 0 → `if (w > 0)` 永不觸發 → containerPx 卡在 0
-      // → 上限永遠 640、蓋板永不觸發。實測 800px 容器仍並排 400px。
-      // **這是 G2(keep-mounted)與 G3(容器斷點)互相踩到:兩支閘各自都綠,合起來才壞。**
-      const resolveHost = () => {
-        let node = rootRef.current?.parentElement ?? null
-        while (node && (getComputedStyle(node).display === 'contents' || getComputedStyle(node).display === 'none')) {
-          node = node.parentElement
-        }
-        return node
-      }
-      let host = resolveHost()
+      let host = resolveHostElement(rootRef.current)
       let ro: ResizeObserver | null = null
       const measure = () => {
-        // **每次都重新解析宿主**:面板從關閉變成開啟時,原本 `display: none` 的包層會變成
-        // `contents`,真正的宿主因此改變。這個 effect 是空依賴、不會重跑,
-        // 所以重綁只能發生在這裡 —— 否則打開之後永遠量著開啟前解析到的那個節點。
-        const next = resolveHost()
+        // **每次都重新解析宿主**:面板從關閉變成開啟時,原本 `display: none` 的包層會變成 `contents`,真正的宿主因此改變。
+        const next = resolveHostElement(rootRef.current)
         if (next !== host) {
           if (host && ro) ro.unobserve(host)
           host = next
           if (host && ro) ro.observe(host)
         }
         hostRef.current = host
-        // 面板自己有沒有版面:Dock 關閉時是 display:none,那時**不能**保持整頁抑制(R3 反例:
-        // 窄版 Panel 隱藏後背景仍 inert)。
+        // 面板自己有沒有版面:Dock 關閉時是 display:none,那時**不能**保持整頁抑制(R3 反例:隱藏後背景仍 inert)。
         setSelfVisible((rootRef.current?.clientWidth ?? 0) > 0)
         const w = host?.clientWidth ?? 0
         // 沒有版面時量到的 0 不代表任何事,不拿去更新(同 person-display / AgentConversation)
-        if (w > 0) setContainerPx(w)
+        if (w > 0) setHostPx(w)
+        if (host) {
+          const gap = measureTokenWidth(host, 'var(--layout-space-viewport-inset)')
+          if (gap > 0) setEdgeGap(gap)
+        }
       }
       ro = new ResizeObserver(measure)
       if (host) ro.observe(host)
@@ -277,103 +334,111 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       measure()
       return () => ro?.disconnect()
     }, [])
-    const widthMax = resolvePanelWidthMax(containerPx)
-    const isOverlay = resolveIsOverlay(containerPx)
-    const mode: AgentPanelMode = isOverlay ? 'overlay' : 'side-by-side'
-    // 形態回報:**量到容器才發**(containerPx 初值 0 會被 resolveIsOverlay 讀成蓋板,那不是形態、是還沒量);
-    // 回呼走 ref,消費端傳 inline 箭頭函式也不會每次 render 重發。
+    const [uncontrolledRecord, setUncontrolledRecord] = React.useState<number | undefined>(defaultWidth)
+    const [liveWidth, setLiveWidth] = React.useState<number | null>(null)
+    const record = width ?? uncontrolledRecord
+    const standalone = !inShell && hostPx > 0
+      ? computeStandaloneAgentLayout({
+          availableWidth: hostPx,
+          hostMinWidth,
+          overlayEdgeGap: edgeGap,
+          range: widthRange,
+          target: record ?? widthRange.initial,
+        })
+      : null
+
+    // ── 此刻的樣子(兩條路收成同一組值)──
+    const mode: AgentPanelMode | null = inShell
+      ? shellPanel?.display === 'overlay' ? 'overlay' : shellPanel?.display === 'side-by-side' ? 'side-by-side' : null
+      : standalone?.display ?? null
+    const isOverlay = mode === 'overlay'
+    const range = inShell ? shellPanel?.range : standalone?.range
+    const shownWidth = inShell
+      ? shellPanel?.width
+      : standalone && (liveWidth !== null ? resolveDisplayedWidth(liveWidth, standalone.range) : standalone.width)
+    const known = mode !== null && shownWidth !== undefined && shownWidth !== null && !!range
+    const visible = known && selfVisible
+
+    // 單獨使用的調寬:紀錄 = 一次調整結束時此刻顯示的寬(D:19;只點一下沒拖不寫,由 ResizeHandle 不發 commit 保證)
+    const standaloneResize = {
+      onResize: (next: number) => {
+        if (!standalone) return
+        const shown = resolveDisplayedWidth(next, standalone.range)
+        setLiveWidth(shown)
+        onWidthChange?.(shown)
+      },
+      onResizeCommit: (next: number) => {
+        if (!standalone) return
+        const nextRecord = recordAfterUserResize({ previousRecord: record, displayedWidth: resolveDisplayedWidth(next, standalone.range), moved: true })
+        setLiveWidth(null)
+        if (nextRecord === undefined) return
+        if (width === undefined) setUncontrolledRecord(nextRecord)
+        onWidthCommit?.(nextRecord)
+      },
+      onDraggingChange: (dragging: boolean) => { if (!dragging) setLiveWidth(null) },
+    }
+    const resize = inShell && shellPanel
+      ? { onResize: shellPanel.onResize, onResizeCommit: shellPanel.onResizeCommit, onDraggingChange: shellPanel.onDraggingChange }
+      : standaloneResize
+
+    // 形態回報:**看得到、算出來才發**;回呼走 ref,消費端傳 inline 箭頭函式也不會每次 render 重發。
     const onModeChangeRef = React.useRef(onModeChange)
     onModeChangeRef.current = onModeChange
-    const measured = containerPx > 0
     React.useEffect(() => {
-      if (measured) onModeChangeRef.current?.(mode)
-    }, [mode, measured])
+      if (mode && visible) onModeChangeRef.current?.(mode)
+    }, [mode, visible])
 
-    // v14 條 B:「窄螢幕以抽屜覆蓋宿主(左留視窗內距、底下鋪遮罩),**宿主暫不可操作**」
-    //(遮罩的點擊行為 2026-09-17 改為關閉面板,見下方 showScrim 與 `onClose`)。
+    // v14 條 B:「以抽屜覆蓋宿主(左留視窗內距、底下鋪遮罩),**宿主暫不可操作**」(2026-10-14 起讀作「浮層時」)。
     // 「覆蓋 + 遮罩」是視覺、「不可操作」是行為 —— 兩件事,只做前者的話鍵盤照樣走得進去。
-    // 實測(2026-09-08 跨模型審查)蓋板態下宿主 20 個控件有 19 個仍可聚焦,Enter 會執行。
-    //
+    // 實測(2026-09-08 跨模型審查)浮層態下宿主 20 個控件有 19 個仍可聚焦,Enter 會執行。
     // 用共用的並存 primitive 而不是「對兄弟節點設 inert」:兄弟迴圈只涵蓋宿主 DOM 裡的節點,
-    // **body portal 出去的浮層(Dialog / FileViewer)完全不在裡面** ——
-    // 窄版時那個 modal 會既蓋在上面又可以操作,兩條都違反條 B。
-    // `suppressOthers([面板])` 是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
-    // 保留集合 = 面板自己 + 呼叫端指定的宿主外常駐區(瀏覽器 chrome 等;見 `persistentElements` 說明)。
-    // 蓋板態的遮罩也在保留集合裡:它必須**接住**留白處的指標(不被 suppressOthers 設成 inert),否則點擊會穿過去
+    // **body portal 出去的浮層(Dialog / FileViewer)完全不在裡面**。
+    // `inertOutside([面板])`(lib/overlay-coexistence.ts)是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
+    // 保留集合 = 面板自己 + 遮罩 + 呼叫端指定的宿主外常駐區(瀏覽器 chrome 等;見 `persistentElements` 說明)。
+    // 遮罩在保留集合裡:它必須**接住**留白處的指標(不被 inertOutside 設成 inert),否則點擊會穿過去
     // 打到底下 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user:「點擊露出的遮罩會關閉 agent panel 底下的 modal」)。
-    // 它在算洞時不會把自己或別的遮罩當洞(overlay-coexistence.ts boxes():遮罩不是洞)。
     const scrimRef = React.useRef<HTMLDivElement | null>(null)
     const keepPanel = React.useCallback(
       () => [rootRef.current as Element | null, scrimRef.current as Element | null, ...(persistentElements?.() ?? [])].filter((el): el is Element => !!el),
       [persistentElements],
     )
-    // **量到之前不要動手**:`containerPx` 初值是 0,而 `resolveIsOverlay(0)` 會回 true
-    // (0 < 960)。若不加這個條件,面板一掛載就先把整頁(含同時開著的對話框)抑制掉,
-    // 等量測回來才解除 —— 實測那一下足以讓對話框帶著 inert 卡住,框內按鈕永遠 focus 不進去。
-    // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
-    useOverlayCoexistence(containerPx > 0 && isOverlay && selfVisible, keepPanel)
+    // **算出形態之前不要動手**:不知道是不是浮層時先抑制整頁,會讓同時開著的對話框帶著 inert 卡住(2026-09-08 實測)。
+    const overlayActive = isOverlay && visible
+    // 抑制時另外保留「此刻已開著、疊在浮層上面的層」(上方 `openLayersAbove`);遮罩挖洞仍只看 keepPanel(上面那些層本來就畫在遮罩上方)
+    const keepForInert = React.useCallback(() => [...keepPanel(), ...openLayersAbove(rootRef.current)], [keepPanel])
+    useOverlayCoexistence(overlayActive, keepForInert)
 
-    // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md`「Esc 與關閉語意」三條表,2026-09-07 訂):
+    // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md`「Esc 與關閉語意」,2026-10-14 依形態分開):
     //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動
-    //   焦點在面板內、面板內沒有浮層 → **什麼都不關**
+    //   焦點在面板內、面板內沒有浮層 → **並排**什麼都不關;**浮層**關閉面板(= ×;D:22)
     //   焦點在面板外 → 關該區自己的浮層,**不跨區碰面板**
-    // 但 Radix 的 `useEscapeKeydown` 在 **document 上用 capture** 監聽,
-    // `dismissable-layer.tsx` 只把 Esc 送給「疊最上層」而**不看焦點在哪一區**。
-    // 後果:舞台上開著 modal 時,在 agent 輸入框打字按 Esc 會關掉那個 modal —— 正是跨區。
-    //
-    // 攔法:掛在 **`window`** 的 capture 階段。捕獲順序是 window → document → …,
-    // 所以它一定跑在 Radix 的 document capture 之前 —— 這是**結構上的先後**,
-    // 不是「誰先註冊誰先跑」那種靠掛載順序的僥倖。
-    // (第一版掛在 document 上,實測失敗:Dialog 在 JSX 裡排在面板前面,
-    //  它的監聽先註冊、先跑、先 dismiss,我的 preventDefault 根本來不及。)
-    // Radix 的 handler 寫著 `if (!event.defaultPrevented && onDismiss)` —— 看到已被
-    // preventDefault 就不會 dismiss。不用 `stopImmediatePropagation`,那會連別人的合法處理一起吃掉。
-    //
-    // 會搶焦點的浮層(Popover / DropdownMenu / Dialog)因為焦點已經不在面板內,
-    // 這裡不攔,它們照樣被自己的 layer 關掉 —— 那正是第一列要的行為。
-    React.useEffect(() => {
-      const onKeyDownCapture = (event: KeyboardEvent) => {
-        if (event.key !== 'Escape') return
-        const panel = rootRef.current
-        const active = document.activeElement
-        if (!panel || !active || !panel.contains(active)) return
-        // 面板內若正開著 Tooltip(不搶焦點的浮層),這一下 Esc 該關它(spec:545 第一列),
-        // 不能被我們吃掉 —— R3 實測 Tooltip 的 Esc 因此失效。
-        if (document.querySelector('[role="tooltip"]')) return
-        event.preventDefault()
-      }
-      window.addEventListener('keydown', onKeyDownCapture, { capture: true })
-      return () => window.removeEventListener('keydown', onKeyDownCapture, { capture: true })
-    }, [])
-    const [uncontrolledWidth, setUncontrolledWidth] = React.useState(defaultWidth)
-    const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth, containerPx)
+    // 判定全 DS 一支 lib/overlay-escape.ts `useEscapeRegion`(含 Tooltip 特例、輸入法、欄位自己那一層);面板永不進 Radix DismissableLayer(負向鐵律)。
+    useEscapeRegion(rootRef, { onEscapeClose: overlayActive ? onClose : undefined })
 
-    const applyWidth = React.useCallback(
-      (next: number, commit: boolean) => {
-        const clamped = clampPanelWidth(next, containerPx)
-        if (width === undefined) setUncontrolledWidth(clamped)
-        // 每一格都發 onWidthChange:受控 consumer 才有拖曳中的即時回饋(原本只在放開時發 = 整段拖曳畫面不動);
-        // 放開 / 鍵盤一步再發 onWidthCommit,要落地儲存的接這個。
-        onWidthChange?.(clamped)
-        if (commit) onWidthCommit?.(clamped)
-      },
-      [width, onWidthChange, onWidthCommit, containerPx],
-    )
+    // 浮層形態**開啟時焦點進面板**(同 Dialog / Sheet;spec「Esc 與關閉語意」焦點段,AI 推導 WCAG 2.4.3);並排不移焦。
+    // 「開啟」= 面板從看不到變看得到;已開著、只因版面變窄而變成浮層的不算。
+    const wasVisibleRef = React.useRef(false)
+    React.useEffect(() => {
+      const was = wasVisibleRef.current
+      wasVisibleRef.current = visible
+      if (!visible || was || !isOverlay) return
+      const root = rootRef.current
+      if (!root || root.contains(document.activeElement)) return
+      const target = root.querySelector<HTMLElement>('textarea:not([disabled])') ?? root
+      target.focus({ preventScroll: true })
+    }, [visible, isOverlay])
 
     if (!open) return null
-    // 蓋板態的遮罩(2026-09-16 user:「底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應…單純只是用來讓使用者知道 agent panel 底下還有東西」):
+    // 浮層態的遮罩(2026-09-16 user:「底下會有滿版的遮罩…單純只是用來讓使用者知道 agent panel 底下還有東西」;2026-09-17 改為點擊關閉):
     // 重用 Dialog 並存時的同一支 `CoexistenceMask`(z-30、`--overlay`、替 persistentElements 挖洞),不手刻第二份遮罩(M17 / M23)。
-    // - `absolute`:遮罩跟面板一樣覆蓋**容器**,不是視窗(spec「量的是容器不是視窗」;tailwind-merge 讓它覆掉預設的 `fixed`);
-    // - 遮罩**接住**指標:點留白處 = 點到遮罩本身(→ `onClose`,見下)。第一版寫成 `pointer-events-none`,點擊穿過去
-    //   打到底下並存 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user 第二次回報);所以它要在保留集合裡(不被設 inert)
-    //   而且 Dialog 的並存遮罩算洞時把它當「遮罩不是洞」跳過(overlay-coexistence.ts `boxes()`),否則常駐殼裡多了一張全舞台的盒子,
-    //   Dialog 的遮罩會被整張挖空(2026-09-09 入口鈕裁切圖層的同款根因)。modal 的外部點擊守衛(createPersistentGuard)看到
+    // - `absolute`:遮罩跟面板一樣以**定位祖先**為準(AppShell 裡 = AppShell 根節點,單獨使用 = 宿主;tailwind-merge 讓它覆掉預設的 `fixed`);
+    // - 遮罩**接住**指標:點留白處 = 點到遮罩本身(→ `onClose`);它要在保留集合裡(不被設 inert),
+    //   而且 Dialog 的並存遮罩算洞時把它當「遮罩不是洞」跳過(overlay-coexistence.ts `boxes()`)。modal 的外部點擊守衛(createPersistentGuard)看到
     //   目標在保留區子樹裡就不關 —— 遮罩是常駐殼的子節點,自然在裡面。
-    // - 只在量到容器且真的是蓋板時渲染(與 useOverlayCoexistence 的啟用條件同一組);
     // - 是面板根節點的**兄弟**不是子節點:根節點 z-[45] 自成堆疊脈絡,放進去遮罩就會壓過並存 modal(z-40),違反 dialog.spec 層級梯。
-    // 幾何與「點遮罩關閉面板」由 `scripts/agent-panel-breakpoint.mjs` 機械守住;
+    // 幾何與「點遮罩關閉面板」由 `scripts/app-shell-layout-invariant.mjs` 機械守住;
     // 「`onClose` 必填、不得以 callback 有無當行為閘」由 `scripts/agent-panel-fixed-anatomy-invariant.mjs` 守住。
-    const showScrim = containerPx > 0 && isOverlay && selfVisible
+    const showScrim = overlayActive
     return (
       <>
         {showScrim && (
@@ -382,11 +447,8 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
             keep={keepPanel}
             data-agent-panel-scrim=""
             // 點遮罩關面板(2026-09-17 user 裁示,取代 2026-09-16 的「點了不關」;兩條裁示逐字都在 spec 的來源總帳)。
-            // 這一改讓它**回到** DS 既有的浮層語言:`../Dialog/dialog.spec.md`「Overlay click:點擊 overlay 關閉」、
-            // 「洞外點下去是外部點擊 → 關閉(modal 語意)」—— 先前的「點了不關」才是那條線上的例外。
-            // 並存 modal 時只關面板、modal 留著(2026-09-17 user 選 a 案):遮罩在面板的保留集合裡,
-            // 並存 modal 的外部點擊守衛看到目標落在保留區子樹內就不關,所以並存邏輯一行都不用動;
-            // 面板收掉後 modal 自然完整露出。鍵盤路徑不受影響(Esc 照舊)。
+            // 這一改讓它**回到** DS 既有的浮層語言:`../Dialog/dialog.spec.md`「Overlay click:點擊 overlay 關閉」。
+            // 並存 modal 時只關面板、modal 留著(2026-09-17 user 選 a 案)。鍵盤路徑:浮層時 Esc 同樣關閉(上方 useEscapeRegion)。
             onClick={onClose}
             className="absolute animate-in fade-in-0 duration-[var(--motion-duration-surface)] motion-reduce:animate-none"
           />
@@ -397,60 +459,53 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
             if (typeof ref === 'function') ref(node)
             else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
           }}
+          id={panelId}
           role="complementary"
           aria-label="智慧代理" // i18n-allow: DS 預設,props 展開在後可覆寫
-          // 蓋板態要讓 AT 知道它現在是蓋在內容上的一層,不是並排的一欄
-          data-agent-panel-mode={mode}
+          // 浮層要讓 AT 與閘知道它現在是蓋在內容上的一層,不是並排的一欄
+          data-agent-panel-mode={mode ?? undefined}
+          data-app-shell-panel={inShell ? 'agent' : undefined}
+          tabIndex={-1}
           className={cn(
-            // 不再 `overflow-hidden`(2026-09-29,待辦總帳 OE1;DataTable 表頭格 2026-09-10 AD63 同一條):它會把左緣把手
-            // 跨到宿主那側的外側 3px 裁掉,7px 命中區只剩面板內的 4px 可點 —— resize-handle.spec.md「命中區」明寫
-            // 消費端容器不得用 overflow:hidden 裁到它、要壓 flex `min-width:auto` 改 `min-w-0`。橫向不裁;縱向改 `overflow-y-clip`
+            // 不 `overflow-hidden`(2026-09-29,待辦總帳 OE1):它會把左緣把手跨到宿主那側的外側 3px 裁掉,7px 命中區只剩面板內的 4px 可點 ——
+            // resize-handle.spec.md「命中區」明寫消費端容器不得用 overflow:hidden 裁到它、要壓 flex `min-width:auto` 改 `min-w-0`。橫向不裁;縱向改 `overflow-y-clip`
             // (與 overflow-x:visible 並存不會被升成 auto、不成為捲動容器),讓貼底浮層的 slide-in 仍照舊被面板底緣裁住。
-            // 閘:`scripts/agent-panel-breakpoint.mjs`「OE1 把手外側」(左緣外 2px 必命中把手;對照組注入 overflow:hidden 必紅)。
-            'relative flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-y-clip bg-surface',
-            // 2026-09-07 G3:容器窄到並排放不下(< 960;2026-09-09 由 1080 放寬)就翻成蓋板。
-            // 2026-09-16 user 裁示:蓋板不再蓋滿 —— 上下右貼齊容器、左邊留 Dialog 同一顆 `--layout-space-viewport-inset`(48px),
-            // 底下鋪遮罩讓人知道面板下面還有東西(遮罩見上方 showScrim)。「蓋滿」原是 v14 條 B 的字,同日改字(v14 來源總帳 2026-09-16)。
-            // 用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,
-            // 而且回到寬螢幕時宿主不需要重新排版(避免來回切換時內容跳動)。
-            // z-[60] 而不是 z-20:v14 條 B 的推導第 4 題「窄螢幕,agent 點有 URL 的 Modal →
-            // 宿主開啟 Modal;agent 抽屜保持開啟,**Modal 在被蓋住的宿主區**」——
-            // modal 必須在 agent **後方**。Dialog 是 body portal 且 `z-50`(dialog.tsx:46/113),
-            // 而這個面板的祖先是 `position:relative; z-index:auto`(不建立堆疊脈絡),
-            // 所以它直接跟 z-50 比大小 —— 用 z-20 會反過來被 modal 蓋住(2026-09-08 實測)。
-            // 兩者的大小關係由 `scripts/agent-panel-breakpoint.mjs` 機械守住,不靠這行註解。
-            // z-[45]:高於**並存面**(Dialog/FileViewer 有 persistentElements 時 z-40 —— v14 推導第 4 題
-            // 「窄螢幕,URL Modal 在被蓋住的宿主區」),低於**一般確認框**(z-50 —— 條 A「沒有 URL 的
-            // Modal 阻擋其餘介面,包含 agent」)。第一版寫 z-[60] 把所有 Dialog 都壓在下面,
-            // 連確認框也被面板蓋住(R3 實測),那是把「URL Modal 在後方」錯推成「所有 Dialog 在後方」。
-            // 蓋板 = 遮蓋型浮層:底色與陰影跟 Sheet 同一組(sheet.tsx `bg-surface-raised shadow-[var(--elevation-200)]`)——
-            // `--surface` 在深色模式是半透明(semantic.css「非遮蓋型容器」),蓋在宿主上會讓底下文字透出來;
-            // `--elevation-300` 不存在(最高階 200),舊寫法等於沒有陰影、留白處看到的是硬切線(2026-09-16 驗證抓到)。
-            isOverlay && 'absolute inset-y-0 right-0 left-[var(--layout-space-viewport-inset)] z-[45] bg-surface-raised shadow-[var(--elevation-200)]',
+            // @focus-suppress E — E 浮層程式落點;承擔者:tabIndex=-1 的面板殼,只在浮層形態開啟、面板內沒有輸入盒時被上方 effect 程式聚焦,本身不可操作;內部控件各自有指示
+            'relative flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-y-clip bg-surface outline-none',
+            // 浮層(2026-10-14 起由版面決定,沒有固定門檻):右貼齊、上下貼齊定位祖先;寬 = 紀錄夾在「版面規則」§9 的範圍,
+            // 左側至少留 `--layout-space-viewport-inset`(範圍保證,不再撐滿「容器 − 48」)。用 absolute 而不是把宿主推走:浮層不佔並排空間(U:53)。
+            // z-[45]:高於**並存面**(Dialog/FileViewer 有 persistentElements 時 z-40 —— v14 推導第 4 題「URL Modal 在被蓋住的宿主區」),
+            // 低於**一般確認框**(z-50 —— 條 A「沒有 URL 的 Modal 阻擋其餘介面,包含 agent」);整張表 → elevation.spec.md「疊放順序」。
+            // 浮層 = 遮蓋型浮層:底色與陰影跟 Sheet 同一組(sheet.tsx `bg-surface-raised shadow-[var(--elevation-200)]`)——
+            // `--surface` 在深色模式是半透明(semantic.css「非遮蓋型容器」),蓋在宿主上會讓底下文字透出來。
+            isOverlay && 'absolute inset-y-0 right-0 z-[45] bg-surface-raised shadow-[var(--elevation-200)]',
             // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
             // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
             !resizable && !isOverlay && 'border-l border-divider',
             'animate-in fade-in-0 slide-in-from-right-4 duration-[var(--motion-duration-surface)] motion-reduce:animate-none',
             className,
           )}
-          // 蓋板態寬度 = 容器 − 左內距(由上面的 inset-y-0 / right-0 / left-[inset] 決定),不吃拖曳出來的值(拖曳把手在蓋板態也不渲染)
-          style={{ ...(isOverlay ? null : { width: resolvedWidth }), ...style }}
+          // 寬度還沒算出來(單獨使用、宿主還沒量到)的那一格先用初始寬,量到之前不畫浮層
+          style={{ width: known ? (shownWidth as number) : widthRange.initial, ...style }}
           {...props}
         >
-          {resizable && !isOverlay && (
-            // 同一顆 ResizeHandle 擁有視覺 / 拖拉 / 鍵盤 / ARIA(DataTable 欄寬同元件,2026-09-02 SSOT 收斂);
-            // 面板寬 clamp(360–640 且 ≤50vw)由 applyWidth 負責。
+          {resizable && known && range && (
+            // 同一顆 ResizeHandle 擁有視覺 / 拖拉 / 鍵盤 / ARIA(DataTable 欄寬同元件,2026-09-02 SSOT 收斂);並排與浮層都可拖(U:4、U:55)。
+            // `max`(→ aria-valuemax)= 此刻真的停得住的上限(並排 = 可拉上限 §5,浮層 = §9 的範圍),與實際停的位置同一個值(2026-09-07 G5)。
             <ResizeHandle
               direction="horizontal"
               position="start"
-              value={resolvedWidth}
-              min={PANEL_WIDTH_MIN}
-              max={widthMax}
+              value={shownWidth as number}
+              min={range.min}
+              max={range.max}
               step={PANEL_RESIZE_KEY_STEP}
-              ariaLabel="調整面板寬度" // i18n-allow: DS 預設文案
+              // 名稱帶出面板自己的名字(= 上方 aria-label 預設「智慧代理」):Right panel 的把手原本同名「調整面板寬度」,兩顆分不出來(WCAG 2.4.6;2026-10-15 r1b 複驗 F9)
+              ariaLabel="調整智慧代理寬度" // i18n-allow: DS 預設文案
+              ariaControls={panelId}
               className="z-10"
-              onValueChange={(next) => applyWidth(next, false)}
-              onValueCommit={(next) => applyWidth(next, true)}
+              onValueChange={resize.onResize}
+              onValueCommit={resize.onResizeCommit}
+              onDraggingChange={resize.onDraggingChange}
             />
           )}
           {children}
@@ -623,11 +678,19 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
     const [renameTarget, setRenameTarget] = React.useState<AgentConversationSummary | null>(null)
     const [deleteTarget, setDeleteTarget] = React.useState<AgentConversationSummary | null>(null)
     const triggerRef = React.useRef<HTMLButtonElement>(null)
-    /** Dialog 關閉後焦點回歷史觸發鈕(Popover 已因焦點外移關閉;WCAG 2.4.3)。 */
-    // Dialog 關閉後焦點:歷史浮層仍開 → 交給 Radix 還原到觸發它的行內動作(改名/刪除);浮層已關
-    // → 延到下一個 macrotask 回標題觸發(晚於 FocusScope 還原到已消失元素 → body 的動作,2026-09-02 實測)。
-    const historyOpenRef = React.useRef(historyOpen)
-    historyOpenRef.current = historyOpen
+    // 改名 / 刪除對話框關閉後焦點(WCAG 2.4.3):還給開啟它的那顆行內動作鈕;那一列已跟著歷史浮層收起(焦點外移)→ 回標題觸發鈕。
+    // 對話框是受控開啟、沒有 DialogTrigger,Radix 沒有東西可還 → 由 lib/overlay-focus-return.ts 還(全 DS 一支:沒有觸發點 + modal,
+    // 開啟者不在了走 fallback)。2026-09-30 前這裡另寫一份:關閉時 setTimeout 0 聚焦標題(浮層仍開就交給 Radix),是第六份平行實作。
+    const dialogOpenerRef = React.useRef<HTMLElement | null>(null)
+    const openDialog = (open: () => void) => {
+      dialogOpenerRef.current = captureFocusOrigin()
+      open()
+    }
+    const returnFocusFromDialog = (event: Event) => {
+      const opener = dialogOpenerRef.current
+      dialogOpenerRef.current = null
+      returnFocusToOpener(event, opener, { noTrigger: true, modal: true, fallback: () => triggerRef.current })
+    }
     // 觸發器失去版面時關掉歷史浮層(2026-09-10 實測兩條路徑):宿主用 display:none 收起 keep-mounted 的面板
     // (AgentPanelDock,路由切換 / 全域快捷鍵這類不經指標與焦點的關閉)、或 Storybook 把整頁 docs 藏起來 —— 浮層 portal 到 body
     // 不會跟著消失,Radix 對 0×0 的錨點會把它定位到視窗左上角 (0, 8),焦點還留在裡面。ResizeObserver 在元素變成
@@ -641,12 +704,6 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
       ro.observe(el)
       return () => ro.disconnect()
     }, [historyOpen])
-    const returnFocus = () => {
-      window.setTimeout(() => {
-        if (historyOpenRef.current) return
-        triggerRef.current?.focus({ preventScroll: true })
-      }, 0)
-    }
 
     const groups = React.useMemo(() => {
       const order: string[] = []
@@ -688,11 +745,12 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                     禁手刻 truncate span。 */}
                 <TruncatedText className="text-body-lg font-medium">{title}</TruncatedText>
                 {/* 指示 chevron 與 Select 觸發器逐字同款:同色 text-fg-muted、同線粗、同「字級↔icon tier」
-                    (標題 text-body-lg = Select lg → ICON_SIZE.lg 20)、開啟時 rotate-180。 */}
+                    (標題 text-body-lg = Select lg → ICON_SIZE.lg 20)、開啟時 rotate-180;旋轉跟它打開的歷史浮層
+                    同一個時長與曲線(overlayIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。 */}
                 <ChevronDown
                   size={ICON_SIZE.lg}
                   aria-hidden
-                  className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', historyOpen && 'rotate-180')}
+                  className={cn('shrink-0 text-fg-muted', overlayIndicatorMotion(historyOpen), historyOpen && 'rotate-180')}
                 />
               </button>
             </PopoverTrigger>
@@ -703,6 +761,9 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
               align="start"
               aria-label="歷史對話" // i18n-allow: DS 預設文案
               className="overflow-hidden p-0"
+              // 滑鼠挑一則對話收起 → 焦點回標題但不畫鍵盤框(打過字之後尤其會冒出來;規則與唯一實作住 lib/overlay-focus-return.ts,
+              // SelectMenu 同一支);鍵盤收起與「改名 / 刪除開了對話框」照原本(交還 Radix / 不搶)
+              onCloseAutoFocus={(e) => returnFocusToOpener(e, triggerRef.current)}
             >
               <Command label="歷史對話">
                 {/* 搜尋列幾何 = CommandInput SSOT(2026-09-08 刪掉這裡的第二份 py/h 覆寫) */}
@@ -726,8 +787,8 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                               onSelectConversation?.(conversation.id)
                               setHistoryOpen(false)
                             }}
-                            onRename={() => setRenameTarget(conversation)}
-                            onDelete={() => setDeleteTarget(conversation)}
+                            onRename={() => openDialog(() => setRenameTarget(conversation))}
+                            onDelete={() => openDialog(() => setDeleteTarget(conversation))}
                           />
                         ))}
                       </CommandGroup>
@@ -755,30 +816,24 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
           <AgentRenameDialog
             conversation={renameTarget}
             onOpenChange={(next) => {
-              if (!next) {
-                setRenameTarget(null)
-                returnFocus()
-              }
+              if (!next) setRenameTarget(null)
             }}
             onConfirm={(nextTitle) => {
               onRenameConversation?.(renameTarget.id, nextTitle)
               setRenameTarget(null)
-              returnFocus()
             }}
+            onCloseAutoFocus={returnFocusFromDialog}
           />
         )}
         {deleteTarget && (
           <Dialog
             open
             onOpenChange={(next) => {
-              if (!next) {
-                setDeleteTarget(null)
-                returnFocus()
-              }
+              if (!next) setDeleteTarget(null)
             }}
           >
-            {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-            <DialogContent autoHeight maxWidth={440}>
+            {/* 確認框/短表單:height="hug" 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
+            <DialogContent height="hug" maxWidth={440} onCloseAutoFocus={returnFocusFromDialog}>
               <DialogHeader>
                 <DialogTitle>刪除對話</DialogTitle>
               </DialogHeader>
@@ -786,7 +841,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 確定刪除「{deleteTarget.title}」?此動作立即生效且不可復原。
               </DialogBody>
               <DialogFooter>
-                <Button variant="tertiary" onClick={() => { setDeleteTarget(null); returnFocus() }}>
+                <Button variant="tertiary" onClick={() => setDeleteTarget(null)}>
                   取消
                 </Button>
                 <Button
@@ -795,7 +850,6 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                   onClick={() => {
                     onDeleteConversation?.(deleteTarget.id)
                     setDeleteTarget(null)
-                    returnFocus()
                   }}
                 >
                   刪除
@@ -810,59 +864,69 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
 )
 AgentPanelHeader.displayName = 'AgentPanelHeader'
 
-/** 改名 Dialog:Field+Input 預填全選;儲存=更新類 dirty 規則;空名 blur 顯錯;Esc=Dialog 取消。 */
+/** 改名 Dialog:Field+Input 預填全選;驗證走 `useFormValidation`(更新類:沒改停用、空白按「儲存」才報錯並移焦點);Enter=儲存;Esc 先回復名稱、再按一次才關。 */
 function AgentRenameDialog({
   conversation,
   onOpenChange,
   onConfirm,
+  onCloseAutoFocus,
 }: {
   conversation: AgentConversationSummary
   onOpenChange: (open: boolean) => void
   onConfirm: (title: string) => void
+  /** 關閉後焦點還給誰(由開啟它的標題列決定,見 AgentPanelHeader returnFocusFromDialog) */
+  onCloseAutoFocus: (event: Event) => void
 }) {
-  const [value, setValue] = React.useState(conversation.title)
-  const [touched, setTouched] = React.useState(false)
-  const trimmed = value.trim()
-  const dirty = trimmed !== conversation.title
-  const empty = trimmed.length === 0
-  const showError = touched && empty
-  const commit = () => {
-    setTouched(true)
-    if (empty || !dirty) return
-    onConfirm(trimmed)
-  }
+  // 走 form-validation 可執行層(2026-10-01,待辦總帳 N70;規格 agent-panel.spec.md「改名」):規則 1(焦點在欄位裡不報錯)/ 2(離開才驗,指標按著時延到
+  // 按壓完成 —— 清空後直接按「取消」不再被長出來的錯誤推走,N67 同根)/ 4(Esc 回復,放在 Dialog 裡第一下只回復、第二下才關,N68)/ 7 / 8(按「儲存」才
+  // 報「名稱不可空白」並把焦點移到欄位)。2026-10-01 前這裡自己寫 touched / onBlur / `disabled={!dirty || empty}`:焦點還在欄位裡清空就當場報錯(違規則 1)、
+  // 清空直接按取消那一下落空(實測取消鈕上緣 150.8 → 204.8)、Esc 一下關整個對話框。「空白時儲存停用」沒有 user 原話,且與 hook 的 submitDisabled
+  //(只看 pristine / 送出中)衝突 —— 再加 `|| empty` 就是第二份規則(M17 / M30);規則 1 下空白錯誤在聚焦時看不到,停用鈕就變成規格自己點名的
+  // 「讓使用者猜為什麼按不了」。改成可按、按了報錯並移焦點。
+  const form = useFormValidation({
+    initialValues: { title: conversation.title },
+    intent: 'update',
+    validate: { title: (v) => (String(v).trim() ? undefined : '名稱不可空白') }, // i18n-allow: DS 預設文案
+    onSubmit: ({ title }) => {
+      const trimmed = String(title).trim()
+      // 修剪後與原名相同 = 只改了空白,不算改名:只關閉、不呼叫 onConfirm(保留原語意)
+      if (trimmed === conversation.title) { onOpenChange(false); return }
+      onConfirm(trimmed)
+    },
+  })
+  const titleProps = form.getInputProps('title')
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
-      <DialogContent autoHeight maxWidth={440}>
+      {/* 確認框/短表單:height="hug" 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
+      <DialogContent height="hug" maxWidth={440} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle>改名對話</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <Field required invalid={showError}>
+          {/* 沒有 <form>:footer 鈕 onClick={() => void form.handleSubmit()}(form-validation.spec.md R8b 的寫法);不包 <form> 以免切斷 Dialog 的 flex 鏈(M25) */}
+          <Field required invalid={!!form.errors.title}>
             <FieldLabel>名稱</FieldLabel>
             <Input
-              value={value}
-              error={showError}
-              onChange={(e) => setValue(e.target.value)}
+              {...titleProps}
+              error={!!form.errors.title}
               onFocus={(e) => e.currentTarget.select()}
-              onBlur={() => setTouched(true)}
               onKeyDown={(e) => {
-                // form-validation:Enter=等同 blur(觸發驗證並提交);Esc 由 Dialog 承接=取消。
-                if (e.key === 'Enter') {
+                titleProps.onKeyDown(e)
+                // 規則 3:Enter = 儲存。輸入法選字的 Enter 不提交(判準 lib/ime-composition.ts;2026-09-30 前沒有 → 用注音改名,按 Enter 選字就直接存了半截)
+                if (e.key === 'Enter' && !isImeComposing(e)) {
                   e.preventDefault()
-                  commit()
+                  void form.handleSubmit()
                 }
               }}
             />
-            {showError && <FieldError>名稱不可空白</FieldError>}
+            <FieldError>{form.errors.title}</FieldError>
           </Field>
         </DialogBody>
         <DialogFooter>
           <Button variant="tertiary" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button variant="primary" disabled={!dirty || empty} onClick={commit}>
+          <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>
             儲存
           </Button>
         </DialogFooter>
@@ -1079,16 +1143,15 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
           <span className={cn(thinking && 'agent-shimmer')}>
             {thinking ? '思考中' : '思考過程'}
           </span>
-          {/* chevron=裝飾指示(accordion 慣例),不吃微光;色同 Select 觸發器 chevron(fg-muted)。 */}
+          {/* chevron=裝飾指示(accordion 慣例),不吃微光;色同 Select 觸發器 chevron(fg-muted)。
+              旋轉跟下方思考內容的高度動畫同一個時長與曲線(disclosureIndicatorMotion;motion.spec.md「展開箭頭跟它打開的東西同步」)。 */}
           <ChevronDown
             size={16}
             aria-hidden
-            className="shrink-0 text-fg-muted transition-transform duration-[var(--motion-duration-overlay)] motion-reduce:duration-0 group-data-[state=open]/agent-thinking:rotate-180"
+            className={cn('shrink-0 text-fg-muted', disclosureIndicatorMotion, 'group-data-[state=open]/agent-thinking:rotate-180')}
           />
         </CollapsiblePrimitive.Trigger>
-        <CollapsiblePrimitive.Content
-          className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up motion-reduce:animate-none"
-        >
+        <CollapsiblePrimitive.Content className={disclosureMotion}>
           {/* 完成步驟=fg-secondary(2026-09-02 拍板;原 muted 太淺);微光行基色由 agent-panel.css 自管。 */}
           <div className="mt-2 flex flex-col gap-1 border-l border-divider pl-3 text-fg-secondary">
             {steps?.map((step, index) => <div key={index}>{step}</div>)}
@@ -1133,9 +1196,11 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
         'mt-2 flex h-6 items-center gap-2',
         // 常駐(最後一則)= 在流內佔位,底部才能守 --layout-space-bottom;懸停顯示 = 絕對定位於輪距內,
         // 出現/消失完全不推擠版面(輪距 40 ≥ 8+24+8)。
+        // 鍵盤那一條用 has-[:focus-visible] 不用 focus-within(2026-10-21,r1b DT-06 同族):滑鼠點「複製」focus-within 就成立,
+        // 指標移開後工具列一直亮到焦點離開(理由的住所 = item-anatomy.tsx `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc;閘 scripts/test-hover-revealed-affordances.mjs)。
         pinned
           ? 'relative opacity-100'
-          : 'absolute left-0 top-full opacity-0 group-hover/agent-message:opacity-100 focus-within:opacity-100',
+          : 'absolute left-0 top-full opacity-0 group-hover/agent-message:opacity-100 has-[:focus-visible]:opacity-100',
         className,
       )}
       {...props}
@@ -1178,44 +1243,45 @@ export interface AgentPromptInputProps
   placeholder?: string
 }
 
-/** 附件單列 + 超寬 +N(useOverflowIndices 量測;Combobox 多選 Tag 區同族)。 */
+/**
+ * 附件單列 + 超寬 +N —— 放得下幾顆由 `OverflowTagList` 決定(與 Combobox 多選的 Tag 列同一份實作,2026-10-13)。
+ * 修前用 `useOverflowIndices` + 寫死 48px 給「+N」留位,而且全部放得下也照留:最後一顆放得下卻被收進「+1」(與 Combobox 標籤格「+2」同一個缺口)。
+ */
 function PromptAttachmentRow({
   attachments,
   onRemove,
+  owner,
 }: {
   attachments: AgentPromptAttachment[]
   onRemove: (attachment: AgentPromptAttachment) => void
+  /** 這個複合輸入控件的主人(textarea):移除後焦點接力的終點、按 +N 卡裡的零件時焦點不離開它 */
+  owner: React.RefObject<HTMLTextAreaElement | null>
 }) {
-  const { containerRef, registerItem, overflowIndices } = useOverflowIndices<HTMLDivElement>({
-    reserveTriggerWidth: 48,
-  })
-  const hidden = new Set(overflowIndices)
-  const hiddenItems = attachments.filter((_, i) => hidden.has(i))
+  const rowRef = React.useRef<HTMLDivElement>(null)
+  const items = attachments.map((attachment) => ({ value: attachment.id, label: attachment.label }))
+  // 移除後的焦點接力(2026-10-01,待辦總帳 OE30;combobox.spec.md「Tag 操作 › 個別移除」同一條,全 DS 一支 lib/collection-removal-focus.ts):
+  // 焦點在某顆 × 上(鍵盤、或 textarea 沒握著焦點時滑鼠按下)→ 下一顆 × → 前一顆 → textarea;+N 卡裡的 × → 直接回 textarea。
+  // 修前焦點隨 × 卸載掉到 body,接著打的字不見(實測)。textarea 握著焦點時按 × 本來就不搬焦點(下方 onMouseDown / onOverflowMouseDown)。
+  const remove = (id: string) => {
+    const attachment = attachments.find((a) => a.id === id)
+    if (!attachment) return
+    focusAfterCollectionRemoval(rowRef.current, { owner: owner.current })
+    onRemove(attachment)
+  }
   return (
-    // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。
-    // 被藏的 Tag 留在 flow 內、排到 +N 之後(order-last)並隱形:useOverflowIndices 每次重量都拿得到
-    // 真實位置(抽離 flow 會在放寬時被誤判「可見」而失去 +N,2026-09-02 實測)。
-    <div ref={containerRef} className="flex items-center gap-1 overflow-hidden px-1 pt-1">
-      {attachments.map((attachment, index) => (
-        <div
-          key={attachment.id}
-          ref={registerItem(index)}
-          className={cn('shrink-0', hidden.has(index) && 'invisible order-last')}
-        >
-          <Tag size="md" onRemove={() => onRemove(attachment)}>
-            {attachment.label}
-          </Tag>
-        </div>
-      ))}
-      {hiddenItems.length > 0 && (
-        <OverflowIndicator count={hiddenItems.length} shape="tag" size="md">
-          {hiddenItems.map((attachment) => (
-            <Tag key={attachment.id} size="md" onRemove={() => onRemove(attachment)}>
-              {attachment.label}
-            </Tag>
-          ))}
-        </OverflowIndicator>
-      )}
+    // 附件列 28:Tag 相互間距 4、距內緣 4;單列不換行,溢出以 +N 收納。TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、
+    // `isolate` = 附件 Tag 的疊放值只在這一列裡比(與 Combobox 的 Tag 列同一個常數;OverflowTagList 檔頭)。
+    <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-hidden px-1 pt-1')}>
+      <OverflowTagList
+        items={items}
+        size="md"
+        wrap={false}
+        renderTag={(item) => <Tag size="md" onRemove={() => remove(item.value)}>{item.label}</Tag>}
+        renderHiddenTag={(item, onRemoveHidden) => <Tag size="md" onRemove={onRemoveHidden}>{item.label}</Tag>}
+        onRemove={remove}
+        // 浮出清單在另一個 portal,外框的 onMouseDown 看不到它 → 卡上掛同一支判準(同 Combobox `keepSearchFocus`;OverflowIndicator `onContentMouseDown`)
+        onOverflowMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, owner.current)}
+      />
     </div>
   )
 }
@@ -1242,6 +1308,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
       if (busy || !canSubmit) return
       onSubmit()
     }
+    const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
     return (
       <div
         ref={ref}
@@ -1254,16 +1321,22 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
           className,
         )}
         {...props}
+        // textarea 握著焦點時,用滑鼠按這個複合輸入控件的零件(附件 ×、+、送出、停止、空白處)焦點與正在打的字都留在輸入盒,click 照常
+        //(2026-10-01,待辦總帳 OE30;判準全 DS 一支 lib/pointer-press.ts keepFocusOnPointerPress,Select / Combobox 觸發欄位同一支;
+        // 修前 Chrome 在 mousedown 把焦點交給那顆 ×、移除後掉到 body,接著打的字不見,實測)。+、送出、停止是同根延伸(AI 推導)。
+        onMouseDown={(e) => { props.onMouseDown?.(e); keepFocusOnPointerPress(e, e.currentTarget, textareaRef.current) }}
       >
         {attachments.length > 0 && (
-          <PromptAttachmentRow attachments={attachments} onRemove={onRemoveAttachment} />
+          <PromptAttachmentRow attachments={attachments} onRemove={onRemoveAttachment} owner={textareaRef} />
         )}
         <textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
           onKeyDown={(e) => {
-            // 按 Enter 送出、Shift+Enter 換行(拍板)。
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            // 按 Enter 送出、Shift+Enter 換行(拍板)。輸入法選字的 Enter 不送出(判準 lib/ime-composition.ts;2026-09-30 前只看
+            // isComposing,Safari 用注音按 Enter 選字時那一顆 isComposing 已是 false、只剩 keyCode 229 → 訊息被直接送出)
+            if (e.key === 'Enter' && !e.shiftKey && !isImeComposing(e)) {
               e.preventDefault()
               submit()
             }

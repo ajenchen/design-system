@@ -86,19 +86,19 @@ ProfileCard 使用單一元件級寬度，HoverCard 浮層量測由它決定且�
 Action 區的 layout **永遠等寬均分容器寬度**——multiple actions 每個 Button 取相同 `1fr` 寬、single action 撐滿整個 ProfileCard width。實作(grid 等寬均分 class)見 `profile-card.tsx` Action 區註解。
 
 ```
-[ Chat      ][ Audio call ▾ ]   ← 2 個 action:各 50%
-[     Message           ]       ← 1 個 action:100%
-[ Follow  ][ Message ][ ...]    ← 3 個 action:各 33%
+[ 傳訊息    ][ 語音通話 ▾ ]     ← 2 個 action:各 50%
+[       傳訊息          ]       ← 1 個 action:100%
+[ 追蹤  ][ 傳訊息 ][ ...]       ← 3 個 action:各 33%
 ```
 
 **為什麼等寬均分**:
-- ProfileCard 是**人員關係卡**,action 是 relationship actions(Chat / Audio / Message / Follow)——這類動作視覺權重對等,無主次之分,等寬最直覺
+- ProfileCard 是**人員關係卡**,action 是 relationship actions(傳訊息 / 語音通話 / 追蹤)——這類動作視覺權重對等,無主次之分,等寬最直覺
 - Single action 撐滿讓「行動列」永遠占滿 card 底部,視覺節奏一致(不會「單一 button 孤零零縮在左邊」)
 - action row 全部等寬，讓各動作擁有相同的命中區與視覺優先序
 
 **Consumer 跨 story / 跨 consumer 必須用同一組 canonical actions**:
 
-ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,canonical 由 profile-card.tsx export 的 `ProfileCardDefaultActions` 元件承載)。story / principles / consumer code 不要每個範例改成不同 action——同一個元件在不同 demo 下出現 3 種不同 action 組合,讓 consumer 誤以為 action 會隨情境自動變。**例外**:要展示 single-action / 3-action 數量差異時才改,並明示「這是展示 action 數量變化」。
+ProfileCard 的 default actions **是「傳訊息 + 語音通話」**(chat app 標配,canonical 由 profile-card.tsx export 的 `ProfileCardDefaultActions` 元件承載;文案可經它的 `labels` 覆寫)。story / principles / consumer code 不要每個範例改成不同 action——同一個元件在不同 demo 下出現 3 種不同 action 組合,讓 consumer 誤以為 action 會隨情境自動變。**例外**:要展示 single-action / 3-action 數量差異時才改,並明示「這是展示 action 數量變化」。
 
 ## Profile Header
 
@@ -120,6 +120,20 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 
 只在傳入 `onViewMore` callback 時顯示。
 
+## 文案(DS 預設 = 中文,全部可覆寫)
+
+DS 預設文案的語言照 `../../lib/i18n/README.md`「Fallback chain」:1 consumer prop → 3 DS 預設中文(第 2 層 `I18nProvider` 本元件**還沒接** —— 同 README「Migration status」,目前沒有任何元件讀它;經 PersonDisplay / PeoplePicker / DataTable 人員格浮出的名片因此還換不了字,見 `../PeoplePicker/person-display.tsx` `buildPersonProfileCard`):
+
+| 位置 | DS 預設 | 覆寫 |
+|---|---|---|
+| 預設動作(`ProfileCardDefaultActions`) | 傳訊息 / 語音通話 | `ProfileCardDefaultActions` 的 `labels={{ chat, audioCall }}` |
+| 狀態標籤 | 線上 / 離開 / 忙碌 / 離線(與 `../Avatar/avatar.anatomy.stories.tsx`「Status presence dot」同一組字) | `labels={{ status: { online, away, busy, offline } }}`(可只給部分) |
+| 狀態訊息欄名 | 狀態訊息 | `labels={{ statusMessage }}` |
+| 兩個預設欄位 | ID / 員工編號(「ID」是通用縮寫,不翻;同上方「Info Fields」) | `labels={{ id, employeeNumber }}` |
+| 查看更多 | 查看更多 | `viewMoreLabel`(既有 prop) |
+
+2026-10-20 前以上全是寫死的英文(Chat / Audio call / Online / Status message / Employee number / View more),而且除了 `viewMoreLabel` 都不能覆寫 —— 中文頁面裡的人員卡兩種語言並排(獨立驗證 OV-10)。預設欄位的去重以「目前生效的欄名」比對 consumer `fields` 的 label;舊寫法用 `fields` 傳同名欄位的 story 已全部改走 `defaultFieldValues`(dev 模式會警告舊寫法)。
+
 ## 設計決策
 
 - **固定寬度而非 min/max**：HoverCard 內容量可預期，固定寬度讓不同人員共用穩定的 panel measure
@@ -131,6 +145,7 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 ## 邊界案例
 
 - **Name / Subtitle 超長**:自然換行撐高 header,不截斷(text column 最小高度對齊 avatar,見「Profile Header」)
+- **欄位值超長**:值在自己那一欄內斷行,不畫進旁邊那一欄;有空白的值(「Engineering / Platform」「Senior Product Designer」)只在空白處斷,沒有空白的長字串(email / URL)放不下時才在字中斷 —— 值外包 `break-words`(`overflow-wrap: break-word`)。依據 `../DescriptionList/description-list.spec.md`「無障礙」長值換行的直式兩條:自然流文字依字詞換行;無空白長字串由 consumer 讓它能斷。那一句寫的 `break-all` 是給「整個值就是一串無空白 token」的 consumer;ProfileCard 的欄位是 consumer 任意傳的值、兩種都有,`break-all` 會讓多字值從字中間斷,所以用 `break-words` 同時守兩條。(例:DataTable 就地編輯滑過 Bob Lin 的名片,`break-all` 會畫成「Engineering / Platfor」+「m」)。2026-10-20 前沒加 → 設計規格頁的 `ada.chen@example.com` 疊在「團隊」那欄上(閘 `scripts/overlay-story-contract-invariant.mjs` R13 不畫進旁欄 + R14 多字值只在空白處斷)
 - **Status / statusMessage 缺值**:status undefined = loading transient → 整 status block 隱藏(v12 rule,見「結構」);ProfileCard **無整卡 loading prop**,資料未到的整卡呈現由 consumer 決定
 - **Info fields 缺值**:default fields 永遠 render,缺資料顯半形 `-` placeholder(`text-foreground`——對齊 DS 空值顯示 canonical:不可編輯供檢視的空值同 readonly 值色;section 結構不收合);consumer `fields` label 撞 default 時 consumer 值 win(dedup canonical,詳 `profile-card.tsx`)
 - **內容過長**:Body 在固定高度內以 ScrollArea 捲動,不 clamp 行數(見「Status 區」)

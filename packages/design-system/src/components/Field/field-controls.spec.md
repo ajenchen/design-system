@@ -216,6 +216,19 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 
 - 鋪線範圍:`fieldWrapperStyles` cva 軸(SSOT)+ Select / Combobox / DatePicker / PeoplePicker 轉發 `width?: FieldWidth`(型別 `Field/field-types.ts`)
 - **何時不用**:form 直欄(fill 對齊)、DataTable cell(naked 已 `!h-full` 滿格,cell 寬由 column 管)
+- **欄位內搜尋讓位不改欄寬**(2026-10-07,待辦總帳 K4):可搜尋欄位打開時,值裡用文字畫的部分(只選「不限」、PeoplePicker 多人只選 1 位的名字)讓位給欄位內搜尋框,
+  它原本的寬留在搜尋框那一格 —— hug 欄位打開前後、打的字沒超過那段值之前欄寬不變(規則 `../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」、
+  `../PeoplePicker/people-picker.spec.md` §C;probe `field.stories.tsx`「欄位內搜尋讓位 × 欄寬驗證」(probe 元件在 `_field-contract-probes.tsx`),閘 `scripts/searchable-field-keys-invariant.mjs`)。
+  **單選同一條**(2026-10-13,待辦 K7):Select(含 PeoplePicker 單人)依內容寬時,打開後搜尋框那一格 = 兩把看不見的量尺取大 ——
+  關著時那一段值的樣子(值的圖示 / consumer renderer,例如頭像 + 名字 / Tag / 提示字)與打的字 + 插入點;輸入框填滿那一格、自己不帶寬。
+  打開前後欄寬不變,打的字比值寬才跟著長(修前打開就撐成原生輸入框的固有寬,PeoplePicker 單人 151 → 204px;`../Select/select.tsx` `CustomSelectTriggerContent`)。
+  **多選文字標籤不再縮成只剩「+N」**(2026-10-13,待辦 K6):標籤可見數改量「全部攤開」那一刻的寬(Tag 全顯示、「+N」轉成看不見的量尺),
+  不受上一次決定影響,也與 Tag 寬同一種小數單位 —— 三顆放得下就三顆都在,容器(`max-w-full`)真的放不下才收進「+N」;
+  **父層再變寬就放回去**:欄位外框的父層也被觀察(依內容寬時只有它會在空間回來時變),與 PeoplePicker 頭像串看的是同一層
+  (修前用欄位自己的 hug 寬量、整數 `clientWidth`,互為因果:「Electronics × Furniture × +1」279.8px,三顆都放應為 313.4px;
+  2026-10-13 第一版只拆了「量自己」那一半、沒看父層:窄容器 192 → 400px 停在「Electronics +2」、120 → 400px 停在「+3」,獨立驗證抓到。
+  規則 `../Combobox/combobox.spec.md`「單行溢出」,與 PeoplePicker 頭像串 2026-09-07 拆的棘輪同一類,`../PeoplePicker/people-picker.stories.tsx`「寬度貼合內容 × 多人」;
+  閘 `scripts/tag-overflow-room-invariant.mjs`(含父層 192 → 400 → 120 → 400px 那一段),probe 同上)
 - Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`(https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/select.tsx)/ Radix Select Trigger intrinsic sizing(https://www.radix-ui.com/primitives/docs/components/select)
 
 ---
@@ -293,7 +306,7 @@ Select 支援兩種顯示模式（`display` prop）：
 
 `selectedItemRenderer` 設定時優先於 plain / tag 預設呈現,且 **4 mode(edit/view/readonly/disabled)共享**(共享 contract (a),見下方)— view 態渲染 renderer 輸出(值內容),無 chrome 無 chevron。
 
-`tag` 模式的 edit 用 hidden select overlay(跟 Combobox 同模式),Tag 用 `pointer-events-none`,點擊穿透到 select。右側元素右緣 = `--field-px`(見上方「右側元素」canonical;tag 模式 readonly/disabled 必 re-assert)。
+`tag` 模式在觸控裝置(`NativeSelect`)的 edit 用 hidden select overlay,Tag 用 `pointer-events-none`,點擊穿透到 select(`../Select/select.spec.md`「tag 模式」;桌機由自建觸發欄位開 SelectMenu。Combobox 不分裝置只有自建浮層、沒有這層 overlay,`../Combobox/combobox.spec.md`「單一路徑（不分裝置）」)。右側元素右緣 = `--field-px`(見上方「右側元素」canonical;tag 模式 readonly/disabled 必 re-assert)。
 
 tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding，確保文字與邊框有足夠間距。
 
@@ -448,6 +461,7 @@ col.accessor('status', {
 - `select-menu.spec.md`
 - `select.spec.md`
 - `slider.spec.md`
+- `steps.spec.md`
 - `switch.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`

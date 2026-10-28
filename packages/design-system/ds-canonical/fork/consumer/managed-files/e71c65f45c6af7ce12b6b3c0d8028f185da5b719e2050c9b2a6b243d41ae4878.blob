@@ -134,12 +134,15 @@ export async function auditUrlWithAxe({
     const page = await (await browser.newContext()).newPage()
     // 共用的「真的渲染完成了」:document 模式 = 根節點(#root / main / body)有內容、document/script/stylesheet
     // 沒有缺檔、沒有頁面例外、渲染期間發出的請求全部結束、版面靜止 —— 任何一項不成立就丟,不量。
+    // images: false(2026-10-14):axe 的裁決不看像素,圖片載到或載不到造成的 DOM 變化(<img> 換成縮寫)在 requestsSettled
+    // 等到每個請求有結果之後就已發生;這支會被鏡像到 consumer repo 跑,不在那裡新增「遠端圖連不到 = 儀器失效」這種與 a11y 無關的紅。
     try {
       await openStory(page, url, {
         storybook: false,
         label: app,
         notFound,
         requestsSettled: true,
+        images: false,
         settleFrames,
         healthTimeoutMs,
       })

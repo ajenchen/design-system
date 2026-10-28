@@ -13,6 +13,9 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
+import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
+import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -24,11 +27,11 @@ import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@
  * `--chrome-header-height` 48/56)。詳 dialog.spec.md「Density」節。
  *
  * ── Viewport Inset ──
- * Modal 與 viewport 四邊保持 layout-space-bottom (48px) 最小間距。
+ * Modal 與 viewport 四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見下方 DIALOG_INSET_VAR)。
  *
  * ── 高度行為 ──
  * 預設：height 填滿 viewport（扣除 inset），body 捲動。防止動態內容跳動。
- * autoHeight（boolean）：高度隨內容，超過 viewport 時 max-height 安全帽。
+ * height="hug"：高度隨內容，超過 viewport 時 max-height 安全帽(舊名 autoHeight 已停用,見 dialog.spec.md「高度軸」)。
  */
 
 // 並存設定**一次到位**:在 Root 傳 `persistentElements`,Root 自動走 `modal={false}`,
@@ -36,13 +39,18 @@ import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@
 // Root 的 modal 互相打架 —— 忘了 `modal={false}` 時 Radix 仍執行 hideOthers(content),
 // 保留區不會變可用;跨模型審查 2026-09-08 R3 指出)。FileViewer 已是同款自動推導。
 const DialogCoexistContext = React.createContext<(() => Element[]) | undefined>(undefined)
+// Content 要知道自己是不是 modal(關閉後還焦點:modal 按遮罩收起也還、非 modal 點外面不搶;lib/overlay-focus-return.ts)。
+// Radix 沒有把 modal 暴露給 Content,由 Root 經 context 交下去(並存 persistentElements 時為 false,同下方 Root 的推導)。
+const DialogModalContext = React.createContext<boolean>(true)
 type DialogRootProps = React.ComponentProps<typeof DialogPrimitive.Root> & {
   /** 並存區域(中性契約):這個對話框開著時仍然可用的節點。傳了就自動非模態。 */
   persistentElements?: () => Element[]
 }
 const Dialog = ({ persistentElements, modal, ...props }: DialogRootProps) => (
   <DialogCoexistContext.Provider value={persistentElements}>
-    <DialogPrimitive.Root modal={persistentElements ? false : modal} {...props} />
+    <DialogModalContext.Provider value={persistentElements ? false : (modal ?? true)}>
+      <DialogPrimitive.Root modal={persistentElements ? false : modal} {...props} />
+    </DialogModalContext.Provider>
   </DialogCoexistContext.Provider>
 )
 Dialog.displayName = 'Dialog'
@@ -66,8 +74,7 @@ const DialogOverlay = React.forwardRef<
       "fixed inset-0 z-50 bg-overlay",
       // 遮罩與內容同一組時長 / 曲線(dialog.spec.md「動畫」表;2026-09-09 Codex R13 抓到規格寫 250ms、遮罩實際吃 tw-animate 預設 150ms/ease)
       surfaceMotion,
-      "data-[state=open]:animate-in data-[state=closed]:animate-out",
-      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0",
       className,
     )}
     {...props}
@@ -135,9 +142,17 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, ...props }, ref) => {
+>(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
   const persistentElementsCtx = React.useContext(DialogCoexistContext)
   const persistentElements = persistentElementsProp ?? persistentElementsCtx
+  const modal = React.useContext(DialogModalContext) && !persistentElementsProp
+  // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29):受控 `open`、沒有 DialogTrigger 開的對話框,Radix 沒有東西可還 → 焦點掉到 body。
+  // 內容掛上時記下開啟者(住在選單裡的開啟者改記選單的觸發鈕),關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;
+  // consumer 自己接了 onOpenAutoFocus / onCloseAutoFocus 的(AgentPanel 改名 / 刪除對話框)照舊先跑、擋了預設就不接。
+  // FileViewer 不經 DialogContent(直接用 Radix Dialog),2026-10-20 起同樣消費這支 hook。
+  const focusReturn = useTriggerlessFocusReturn(modal)
+  // 沒有 DialogDescription(DS 允許只有標題)時不寫 aria-describedby —— Radix 預設指向一個不存在的 id(lib/overlay-description.ts;獨立驗證 OV-15)
+  const descriptionPresence = useDescriptionPresence('aria-describedby' in props)
   // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
   // 而 effect 跑的時候 ref 可能還沒填 —— 實測就是這樣,保留集合只剩常駐區,
   // **對話框自己被 inert 掉**(2026-09-08,對照組那一條當場紅)。
@@ -237,16 +252,26 @@ const DialogContent = React.forwardRef<
   // 預設 Radix 會 focus first tabbable = close X → Button iconOnly 的 focus-triggered
   // tooltip 會立即顯示「關閉」,user-hostile。此 callback 攔截:先找 body 第一個
   // input/textarea/select/button(排除 data-dismiss)focus;找不到就 focus container(不 focus X)。
+  // 2026-10-01:consumer 的 onOpenAutoFocus 不再被 `{...props}` 整支蓋掉 —— 先記開啟者、再跑 consumer 的、consumer 沒擋預設才走 DS 預設落點。
+  // 選擇器排除 `aria-disabled="true"`:忙碌 / 握著焦點時被停用的 Button 不轉原生 disabled(button.tsx 可聚焦的停用),不該成為開啟時的落點。
   const handleOpenAutoFocus = (e: Event) => {
+    focusReturn.onOpenAutoFocus(e)
+    onOpenAutoFocus?.(e)
+    if (e.defaultPrevented) return
     e.preventDefault()
     const content = e.currentTarget as HTMLElement
     const firstBodyTarget = content.querySelector<HTMLElement>(
-      '[data-dialog-body] input:not([disabled]),[data-dialog-body] textarea:not([disabled]),[data-dialog-body] select:not([disabled]),[data-dialog-body] button:not([disabled]):not([data-dismiss])'
+      '[data-dialog-body] input:not([disabled]),[data-dialog-body] textarea:not([disabled]),[data-dialog-body] select:not([disabled]),[data-dialog-body] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
     )
     const firstFooterButton = content.querySelector<HTMLElement>(
-      '[data-dialog-footer] button:not([disabled]):not([data-dismiss])'
+      '[data-dialog-footer] button:not([disabled]):not([aria-disabled="true"]):not([data-dismiss])'
     )
     ;(firstBodyTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
+  }
+  // consumer 的先跑、擋了預設就不接(AgentPanel 改名 / 刪除對話框自己的接線勝出);沒擋 → DS 預設還給開啟者
+  const handleCloseAutoFocus = (e: Event) => {
+    onCloseAutoFocus?.(e)
+    focusReturn.onCloseAutoFocus(e)
   }
 
   const content = (
@@ -260,9 +285,10 @@ const DialogContent = React.forwardRef<
       // 「modal 要寬鬆」需求在 lg 階自然滿足(Polaris modal 16 = 世界級下限,證明 md 16 合格);「button 不撐高
       // header」由 ui-size 繼承 page 解決(button=page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
       onOpenAutoFocus={handleOpenAutoFocus}
+      onCloseAutoFocus={handleCloseAutoFocus}
       {...guardOutside}
       className={cn(
-        // 並存面(有 persistentElements)降到 z-40:窄版時常駐區(AgentPanel 蓋板 z-[45])要蓋在
+        // 並存面(有 persistentElements)降到 z-40:AI agent 浮層時常駐區(AgentPanel 浮層 z-[45])要蓋在
         // **它**上面;沒有 URL 的一般確認框維持 z-50,必須蓋在常駐區上面(v14 條 A)。
         persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
                            : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
@@ -272,17 +298,16 @@ const DialogContent = React.forwardRef<
         // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
         // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
         "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
-        // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;時長 / 曲線 / reduced-motion 由
-        // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit)。
+        // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;何時播 / 時長 / 曲線 / 收尾 / reduced-motion 由
+        // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit,這裡只寫幾何)。
         // 2026-09-09 user 抓到「從左上角飛到中間」:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`
         // 是為了在 keyframe 的 `transform` 裡重寫置中位移(v3 的 -translate-x-1/2 也走 transform,會被 keyframe 蓋掉);
         // Tailwind v4 的 -translate-x-1/2 改寫進獨立的 `translate` 屬性,不再被 keyframe 蓋掉,兩者相加 = 第一幀
         // 中心落在視窗中心左 w/2、上 0.48h 處(實測 -240px / -90.72px)。shadcn v4 版本已把這兩組 class 拿掉。
         // 閘:scripts/dialog-coexistence-invariant.mjs「進場第一幀」(靜態禁同用 + 第一幀幾何 + 對照組)。
         surfaceMotion,
-        "data-[state=open]:animate-in data-[state=closed]:animate-out",
-        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0",
+        "data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95",
         className,
       )}
       style={{
@@ -291,9 +316,13 @@ const DialogContent = React.forwardRef<
         ...heightStyle,
         ...style,
       }}
+      {...descriptionPresence.descriptionPresenceProps}
       {...props}
+      // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層
+      //(改過的欄位 / 就地編輯中 / 格游標 / 拖曳中)且在這一層裡面 → 留給控件、不關;其餘照舊關閉
+      onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentEl)}
     >
-      {children}
+      <DescriptionPresenceContext.Provider value={descriptionPresence.register}>{children}</DescriptionPresenceContext.Provider>
     </DialogPrimitive.Content>
   )
 
@@ -325,7 +354,7 @@ export interface DialogHeaderProps extends SurfaceHeaderProps {
    * Header 級操作 cluster(2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)。
    *
    * 提供時 render 在 Close X 左側,DS 自動在 actions 與 Close 之間放 `<ButtonDivider>`
-   * (action-bar.spec.md:281「最右側為關閉/解除按鈕 → 分隔線必須(誤觸保護)」;
+   * (action-bar.spec.md「五、分隔線規則」第 3 條誤觸保護:關閉 / 解除鈕的左側緊鄰其他操作按鈕 → 必加;
    * 幾何 = ButtonDivider mx-1 於 gap-2 cluster → 12px 對稱,同 spec「分隔線幾何」段)。
    *
    * 用例:任務詳情 prev/next 導覽、header 級溢出選單(⋮)。
@@ -364,7 +393,7 @@ const DialogHeader = React.forwardRef<
       <div className="flex-1 min-w-0">{children}</div>
       {actions != null ? (
         // actions 提供 → 右側一體 cluster:{actions} + ButtonDivider + Close。
-        // 分隔線 = 關閉保護 canonical(action-bar.spec.md:281),由 DS 放,consumer 零自刻。
+        // 分隔線 = 關閉保護 canonical(action-bar.spec.md「五、分隔線規則」),由 DS 放,consumer 零自刻。
         // gap-2 + ButtonDivider mx-1 = 兩側 12px 對稱(action-bar.spec.md「分隔線幾何」)。
         <div className="flex items-center gap-2 shrink-0">
           {actions}
@@ -447,15 +476,19 @@ DialogTitle.displayName = DialogPrimitive.Title.displayName
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
-    ref={ref}
-    // title → description 間距 canonical:DialogTitle 是 body-lg(16)+ desc body(14)→ reading-lg token
-    // (label tier 決定 token 選擇;item-anatomy Family 2 reading-family token 對照表)
-    className={cn("mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary", className)}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  // 向 DialogContent 登記「有說明」:沒有任何說明時 DialogContent 不寫 aria-describedby(lib/overlay-description.ts)
+  useRegisterDescription()
+  return (
+    <DialogPrimitive.Description
+      ref={ref}
+      // title → description 間距 canonical:DialogTitle 是 body-lg(16)+ desc body(14)→ reading-lg token
+      // (label tier 決定 token 選擇;item-anatomy Family 2 reading-family token 對照表)
+      className={cn("mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary", className)}
+      {...props}
+    />
+  )
+})
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)

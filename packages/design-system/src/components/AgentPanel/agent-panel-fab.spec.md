@@ -1,6 +1,6 @@
 # AgentFab / AgentFabDock 設計原則(AgentPanel 家族附屬資產;獨立 SSOT)
 
-> **本 spec 是 AgentPanel 家族入口鈕的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentFab(浮動開關鈕;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);內容零改動,只加本檔頭、檔尾指標,與 N23 / N36 兩處改寫(見該處標註))。家族定位 / Token / 何時用 / 動畫總表 / 關閉語意 / 禁止事項仍住 `./agent-panel.spec.md`;程式碼對應 `agent-panel-fab.tsx`(`AgentFab` / `AgentFabDock`)與 `agent-panel.tsx`(`AgentPanelDock`)。
+> **本 spec 是 AgentPanel 家族入口鈕的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentFab(浮動開關鈕;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);抽出當下內容零改動,只加本檔頭、檔尾指標,與 N23 / N36 兩處改寫(見該處標註);之後的增修見各段日期 —— 2026-10-13 / 10-14 入口鈕與 Toast 的「Toast 不為入口鈕讓位」「層級」兩段)。家族定位 / Token / 何時用 / 動畫總表 / 關閉語意 / 禁止事項仍住 `./agent-panel.spec.md`;程式碼對應 `agent-panel-fab.tsx`(`AgentFab` / `AgentFabDock`)與 `agent-panel.tsx`(`AgentPanelDock`)。
 >
 > **Layout Family**:同 `agent-panel.spec.md`(self-contained 容器家族);入口鈕是圓形 iconOnly 按鈕,本檔不另立 family。
 
@@ -29,6 +29,9 @@
   都用它,不各自寫一份 `open ? panel : fab`(「入口鈕三態」那個 story 例外:它展示的是獨立 `AgentFab` 的三種標誌狀態,沒有面板可互斥)。
   **一個舞台一個 Dock**:家的座標只有一組(右下角離邊 loose),同一個 relative 容器內放兩個 `AgentPanelDock` 會像素級重疊;
   要在同一頁擺兩個代理入口,請各自給不同的 relative 舞台(2026-09-03 稽核補上的不變式)。
+  **Toast 不為入口鈕讓位**:入口鈕在家時 Toast 仍落在套件預設角落,可能蓋住入口鈕 —— 刻意如此,不是 bug
+  (user 2026-10-13 決定;規則、原話與理由只住 `../Toast/toast.spec.md`「落點」)。入口鈕不向 Toast 登記或提供任何幾何。
+  **層級**:入口鈕的提示(「問我或推走我」/「開啟智慧代理」,DS Tooltip)與 Toast 重疊時提示在上 —— 全 DS 層級表 `../../tokens/elevation/elevation.spec.md`「疊放順序」(Tooltip `z-[70]` > Toast `z-[60]`;入口鈕本身在常駐框架列 `z-20`,在所有浮層之下)。閘:`scripts/layer-order-invariant.mjs` 情境 A。
 - **遮擋與貼邊**(`AgentFabDock`;演進:2026-09-02 拖到邊 → hover 小鈕 → 拖曳自由座標 → 2026-09-03 user 拍板
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
   位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
@@ -149,3 +152,4 @@
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `agent-panel.spec.md`
+- `toast.spec.md`

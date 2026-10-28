@@ -195,9 +195,53 @@ function analyzeAppShellPrimaryHeader() {
     ) return true
     return false
   }
-  const positiveIsMobile = (expression) => {
-    const current = unwrap(expression)
-    return ts.isIdentifier(current) && current.text === 'isMobile'
+  // 正向「這一份畫在 Menu 浮層裡」條件(2026-10-15 起;app-shell.spec.md 兩條「浮層精修」= 只補在浮層那一份,
+  // sidebar.spec.md「同一份內容、畫兩份」):`useSidebarSurface() === 'overlay'`(或反過來寫),或檔內 const 識別字、
+  // 初始值就是這個判斷式(或是 `useSidebarSurface()` 本身、再拿去比 'overlay')。只認內容、不認名字(M37)。
+  // 不再豁免:2026-10-14 版的 `<x>.menu === 'overlay'`(讀整個 Menu 的 `useAppShell().display.menu`,兩份同時成立 →
+  // 被蓋住的細列那一份也長出標頭,2026-10-15 r1b 複驗 F4)與「名叫 menuIsOverlay」(名字不保證內容);
+  // 2026-10-14 前的 `isMobile`(768 斷點)隨斷點退場。
+  const constInitializers = new Map()
+  const indexConsts = (node) => {
+    if (
+      ts.isVariableDeclaration(node)
+      && ts.isIdentifier(node.name)
+      && node.initializer
+      && (node.parent.flags & ts.NodeFlags.Const) !== 0
+    ) {
+      const name = node.name.text
+      constInitializers.set(name, constInitializers.has(name) ? null : node.initializer)
+    }
+    ts.forEachChild(node, indexConsts)
+  }
+  indexConsts(sourceFile)
+  const constValue = (node) => {
+    const current = unwrap(node)
+    return ts.isIdentifier(current) ? constInitializers.get(current.text) ?? null : null
+  }
+  const isOverlayLiteral = (node) => ts.isStringLiteral(unwrap(node)) && unwrap(node).text === 'overlay'
+  const isSurfaceCall = (node) => {
+    const current = unwrap(node)
+    if (!ts.isCallExpression(current)) return false
+    const callee = unwrap(current.expression)
+    return (ts.isIdentifier(callee) && callee.text === 'useSidebarSurface')
+      || (ts.isPropertyAccessExpression(callee) && callee.name.text === 'useSidebarSurface')
+  }
+  const isSurfaceValue = (node) => {
+    if (isSurfaceCall(node)) return true
+    const init = constValue(node)
+    return Boolean(init && isSurfaceCall(init))
+  }
+  const isSurfaceOverlayComparison = (node) => {
+    const current = unwrap(node)
+    return ts.isBinaryExpression(current)
+      && current.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+      && ((isSurfaceValue(current.left) && isOverlayLiteral(current.right)) || (isOverlayLiteral(current.left) && isSurfaceValue(current.right)))
+  }
+  const positiveMenuOverlay = (expression) => {
+    if (isSurfaceOverlayComparison(expression)) return true
+    const init = constValue(expression)
+    return Boolean(init && isSurfaceOverlayComparison(init))
   }
   const isWithin = (node, container) => (
     node.pos >= container.pos && node.end <= container.end
@@ -206,17 +250,17 @@ function analyzeAppShellPrimaryHeader() {
     const opening = openingOf(node)
     return Boolean(opening && named(opening.tagName, 'AppShell'))
   }
-  const mobileGuarded = (node, boundary) => {
+  const menuOverlayGuarded = (node, boundary) => {
     for (let current = node.parent; current && current !== boundary; current = current.parent) {
       if (
         ts.isBinaryExpression(current)
         && current.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
-        && positiveIsMobile(current.left)
+        && positiveMenuOverlay(current.left)
         && isWithin(node, current.right)
       ) return true
       if (
         ts.isConditionalExpression(current)
-        && positiveIsMobile(current.condition)
+        && positiveMenuOverlay(current.condition)
         && isWithin(node, current.whenTrue)
       ) return true
     }
@@ -239,7 +283,7 @@ function analyzeAppShellPrimaryHeader() {
         if (
           childOpening
           && named(childOpening.tagName, 'SidebarHeader')
-          && !mobileGuarded(node, appShell)
+          && !menuOverlayGuarded(node, appShell)
         ) v2 += 1
         if (childOpening && named(childOpening.tagName, 'SidebarFooter')) v3 += 1
       }

@@ -3,7 +3,7 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { TimePicker } from './time-picker'
-import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldError, FieldGroup } from '@/design-system/components/Field/field'
 
 const meta: Meta<typeof TimePicker> = {
   title: 'Design System/Components/TimePicker/展示',
@@ -32,21 +32,21 @@ type Story = StoryObj<typeof TimePicker>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6 w-80">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] w-80">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">edit</h3>
         <TimePicker value="14:30" onChange={() => {}} aria-label="會議時段(edit mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">view</h3>
         <TimePicker mode="view" value="14:30" aria-label="會議時段(view 模式示範)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">readonly</h3>
         <TimePicker mode="readonly" value="14:30" aria-label="會議時段(readonly mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <h3 className="text-h6 font-semibold text-foreground mb-[var(--layout-space-tight)]">disabled</h3>
         <TimePicker mode="disabled" value="14:30" aria-label="會議時段(disabled mode demo)" />
       </div>
     </div>
@@ -65,7 +65,7 @@ export const MeetingSlot: Story = {
     const [start, setStart] = React.useState<string>('09:00')
     const [end, setEnd] = React.useState<string>('10:00')
     return (
-      <div className="flex flex-col gap-4 w-80">
+      <FieldGroup className="w-80">
         <Field>
           <FieldLabel>會議開始</FieldLabel>
           <TimePicker value={start} onChange={setStart} minuteStep={15} />
@@ -74,7 +74,7 @@ export const MeetingSlot: Story = {
           <FieldLabel>會議結束</FieldLabel>
           <TimePicker value={end} onChange={setEnd} minuteStep={15} />
         </Field>
-      </div>
+      </FieldGroup>
     )
   },
 }
@@ -108,6 +108,7 @@ export const ShopBusinessHours: Story = {
     return (
       <Field>
         <FieldLabel>營業時段</FieldLabel>
+        {/* @layout-space-magic-ok: 營業時段 開店 → 關店兩個時間欄位 = 同一組值的起迄,規則 5 gap 8px(layoutSpace.spec.md:140 規則 5) */}
         <div className="flex items-center gap-2">
           <TimePicker value={open} onChange={setOpen} placeholder="開店時間" />
           <span className="text-fg-muted">→</span>

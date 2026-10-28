@@ -8,8 +8,8 @@
 # 永久 codify — SSOT canonical 必 P0 BLOCKER,不分級。
 #
 # Anchor:user 質疑「content 自動繼承 layoutSpace SSOT 嗎?」
-# - app-shell.spec.md:205 明文 `<main>` landmark padding=0 (intentional)
-# - app-shell.spec.md:207-212 consumer 必遵循 layoutSpace.spec.md 6 條規則 + 親疏 3 級
+# - app-shell.spec.md「Main slot」明文 `<main>` landmark padding=0 (intentional)
+# - app-shell.spec.md「Main slot」consumer 必遵循 layoutSpace.spec.md 6 條規則 + 親疏 3 級
 #
 # PostToolUse Edit/Write detect magic Tailwind spacing → P0 BLOCKER exit 2
 # 強制改 token OR 加 `// @layout-space-magic-ok: <rationale>` escape comment(per-line)。

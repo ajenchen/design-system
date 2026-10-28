@@ -211,7 +211,7 @@ else{
 // F4 的正確測法:**不重抄公式**,而是驗「宣稱的上限」與「按 End 真正停的位置」一致。
 // 先前這裡抄了一份 `min(640, ⌊視窗/2⌋)`,G3 把幾何改成由容器推導之後就整組假紅 ——
 // **閘不該複製被測對象的公式**,那等於把同一件事寫兩遍,改一邊就壞。
-// 上限本身怎麼算由 `scripts/agent-panel-breakpoint.mjs` 負責。
+// 上限本身怎麼算是 AppShell「版面規則」的事(`layout-model.ts`;判定表 test-app-shell-layout-model.mjs、真頁面 scripts/app-shell-layout-invariant.mjs)。
 for(const vw of [1600,1280,1080]){
   await pg.setViewportSize({width:vw,height:800})
   // 等面板本身(量的是它的寬度);調寬把手在不在是這一條的產品裁決,不拿來當 waitFor

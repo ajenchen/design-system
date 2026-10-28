@@ -21,7 +21,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Textarea 是多行 Input——native `&lt;textarea&gt;` + 橋接 DS token。不同於 Input:沒有 field-height(高度由 rows / min-h 決定)、沒有 startIcon / endAction。</Desc>
+        <Desc>Textarea 是多行 Input——native <code>&lt;textarea&gt;</code> + 橋接 DS token。不同於 Input:沒有 field-height(高度由 rows / min-h 決定)、沒有 startIcon / endAction。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <Textarea rows={3} placeholder="請輸入留言..." aria-label="留言" />
         </div>
@@ -103,12 +103,12 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-6 max-w-md">
       <div>
         <H3>Size = sm / md</H3>
-        <Desc>`text-body`(14px)。常見 form / comment 場景。</Desc>
+        <Desc><code>text-body</code>(14px)。常見 form / comment 場景。</Desc>
         <Textarea size="sm" rows={3} placeholder="寫下您的意見..." aria-label="意見（小尺寸）" />
       </div>
       <div>
         <H3>Size = lg</H3>
-        <Desc>`text-body-lg`(16px)。長篇閱讀場景(bio editor、article body)。</Desc>
+        <Desc><code>text-body-lg</code>(16px)。長篇閱讀場景(bio editor、article body)。</Desc>
         <Textarea size="lg" rows={3} placeholder="介紹您自己..." aria-label="自我介紹（大尺寸）" />
       </div>
     </div>
@@ -178,7 +178,7 @@ export const ColorMatrix: Story = {
         <Desc>
           Textarea 作為 Field Control,mode 規則對齊 Input 但 readonly 呈現不同
           (Textarea readonly 保留 padding,用 bg-readonly 底色標示閱讀區;Input readonly 是緊湊底色)。Error border 跟其他
-          Field Controls 共用 `--error` 語意色。
+          Field Controls 共用 <code>--error</code> 語意色。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
@@ -271,7 +271,7 @@ export const RowsResizeMatrix: Story = {
     <div className="flex flex-col gap-6 max-w-md">
       <div>
         <H3>rows 控制預設可見行數</H3>
-        <Desc>`rows` 決定初始高度——使用者可透過右下角 `resize-y` handle 垂直拖拉調整。</Desc>
+        <Desc><code>rows</code> 決定初始高度——使用者可透過右下角 <code>resize-y</code> handle 垂直拖拉調整。</Desc>
         <div className="flex flex-col gap-3">
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">rows=2</div>
@@ -286,12 +286,12 @@ export const RowsResizeMatrix: Story = {
 
       <div>
         <H3>resize-y 垂直可調,水平禁止</H3>
-        <Desc>永遠 `resize-y`(使用者可垂直拖大 / 拖小)。禁止 `resize-x` 或 `resize: both`——水平 resize 破壞 form 佈局。</Desc>
+        <Desc>永遠 <code>resize-y</code>(使用者可垂直拖大 / 拖小)。禁止 <code>resize-x</code> 或 <code>resize: both</code>——水平 resize 破壞 form 佈局。</Desc>
       </div>
 
       <div>
         <H3>min-h-* 覆寫最小高度</H3>
-        <Desc>Consumer 可透過 Tailwind utility 覆寫最小高度(如 `min-h-[120px]`)。</Desc>
+        <Desc>Consumer 可透過 Tailwind utility 覆寫最小高度(如 <code>min-h-[120px]</code>)。</Desc>
       </div>
     </div>
   ),

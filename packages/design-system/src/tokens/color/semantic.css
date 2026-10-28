@@ -428,7 +428,7 @@
   /* Scrollbar — Lane / chrome / thumb(2026-05-09 抽 SSOT,DataTable fake + ScrollArea 共享)
      Track 用 --muted(靜態 lane,非 disabled 元件 bg);Thumb 用 --border(中性低對比 chrome)。
      對齊 shadcn ScrollArea(thumb=bg-border)/ MUI X DataGrid scrollbar slot / AG Grid grid theme tokens。
-     避免直接借 --bg-disabled(color.spec.md:169 語意 drift)— bg-disabled 是互動元件 disabled bg,跟 scrollbar lane 不同。
+     避免直接借 --bg-disabled(color.spec.md「Disabled 狀態」語意 drift;原指標 :169 已移到別段,r1b OTH-02 同族)— bg-disabled 是互動元件 disabled bg,跟 scrollbar lane 不同。
      配對:靜止 --scrollbar-thumb → 滑過 --scrollbar-thumb-hover(= --border → --border-hover 下一階;登記於 color.spec.md「Hover 換色配對總則」)。 */
   --scrollbar-track:       var(--muted);
   --scrollbar-thumb:       var(--border);

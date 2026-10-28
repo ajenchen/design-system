@@ -151,10 +151,10 @@ Toolbar 右側 `X` + InfoPanel header `X` **都走 `<Button iconOnly dismiss siz
 
 ### Prev/Next 檔案切換(idle-fade,對齊 Google Photos / Dropbox lightbox / Carousel)
 
-viewport 左右的 `<` `>` 切檔案箭頭**預設 opacity-0**,由 React state `armVisible` 控制浮現:viewport `onMouseMove` 顯示 → 持續 **2.5s 無 mouse move** 自動淡出 → `onMouseLeave` 立即隱藏(JS idle-timer 機制,對齊 Google Photos lightbox 風格);另加 `focus-within:opacity-100`(a11y CSS fallback,鍵盤 focus 強制顯示)。理由:
+viewport 左右的 `<` `>` 切檔案箭頭**預設 opacity-0**,由 React state `armVisible` 控制浮現:viewport `onMouseMove` 顯示 → 持續 **2.5s 無 mouse move** 自動淡出 → `onMouseLeave` 立即隱藏(JS idle-timer 機制,對齊 Google Photos lightbox 風格);另加 `has-[:focus-visible]:opacity-100`(a11y CSS fallback,鍵盤聚焦強制顯示)。理由:
 
 - **世界級對照**:Google Photos / Dropbox preview / PhotoSwipe / Instagram lightbox 皆 hover/idle-fade — 常駐箭頭干擾 media(檔案)閱讀。**用 JS idle-timer 而非純 CSS `group-hover`**:CSS hover 在滑鼠停留時箭頭恆顯,idle-timer 才能做到「停留也淡出」的世界級沉浸體驗
-- **a11y**:鍵盤 focus 時強制顯示(`focus-within:opacity-100`,不 hover 也知道有箭頭可用)
+- **a11y**:鍵盤聚焦時強制顯示(`has-[:focus-visible]:opacity-100` + `pointer-events-auto`,不 hover 也知道有箭頭可用)。不用 `focus-within`(2026-10-21,r1b DT-06 同族):滑鼠點過箭頭也會成立,箭頭就不再隨 2.5s idle 淡出(理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc)
 - **邊界**:第一/最後一張時直接不 render(非 disabled state,避免視覺噪音)
 - 對齊 `components/Carousel/carousel.spec.md`「Arrow 行為」canonical
 
@@ -205,11 +205,11 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 - **Zoom anchor(中心點)canonical**:
   - **Wheel zoom** — anchor 固定在 **cursor pointer 位置**(react-zoom-pan-pinch default)。user 滑鼠指哪,zoom 就以那點為中心,避免正在檢視的內容在縮放時「跑掉」
   - **± button zoom / preset / fit / input 打字**(沒 cursor 位置時)— 走 library canonical `api.centerView(targetScale, 200)`,自動處理 scale + 置中 + animation + bounds。**不自算 `setTransform`**(動畫期間讀 stale positionX 會漂)
-  - **Fit to width / page** — 算 scale emit 回 shell,經由 `centerView` 重新置中
+  - **符合寬度 / 符合頁面(fit-width / fit-page)** — 算 scale emit 回 shell,經由 `centerView` 重新置中
   - **100% 重設**(user 按 `0` 鍵;雙擊是 fit↔100% 條件式 toggle,見下「雙擊」bullet)— `centerZoomedOut: true` 讓 ≤100% 時自動 center,避免內容停在容器角落
   - 結果:**wheel / pinch** 以指標為 anchor,zoom 完視覺焦點不漂移(世界級 media viewer 共識);**按鈕 / preset / fit / 輸入打字**走 `centerView`,焦點**重置為內容幾何中心**(非保持指標焦點)—— 兩條 zoom 路徑 anchor 行為不同
 - Min scale 10%,max scale 400%
-- **雙擊 = toggle fit-page ↔ 100%**(對齊 Apple Photos / Preview.app / Imgur / PhotoSwipe canonical):當前 zoom 在 fit-page ±5pt 內 → 跳 100% natural;否則 → 回 fit-page。`0` 鍵才是固定重設 100%(`file-viewer.tsx:863`),兩者不同(`image-renderer.tsx:144`)
+- **雙擊 = toggle fit-page ↔ 100%**(對齊 Apple Photos / Preview.app / Imgur / PhotoSwipe canonical):當前 zoom 在 fit-page ±5pt 內 → 跳 100% natural;否則 → 回 fit-page。`0` 鍵才是固定重設 100%(`file-viewer.tsx#FileViewer` 的鍵盤處理),兩者不同(`image-renderer.tsx:144`)
 - 切換檔案時 shell **不重設 zoom**——把「下一張該怎麼初始化 zoom」的決定權交給 renderer:image-renderer 自己 watch `file.url` 變化 → reset loaded → onLoad → 重 fit-page(含 cache 命中時 `<img complete>` 主動觸發,避免 onLoad 不 fire 卡在上一張的 zoom)。原本 shell `setZoom(100)` 在 cache 命中時會卡 100% 不 fit,已移除
 
 ### 畫布自適應(container resize reflow,2026-07-08 codify — 原只活在 code 註解)
@@ -255,8 +255,8 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 - 直接輸入數字 + Enter 套用;輸入非法值 blur 時還原為上一個有效值
 - 範圍 **10–400**(對齊 `ImageRenderer.MIN_SCALE = 0.1` / `MAX_SCALE = 4.0`);± 按鈕在邊界 disabled
-- ± 按鈕跳到下一個 preset(`10 / 25 / 50 / 75 / 100 / 125 / 150 / 200 / 400`),不是固定 step
-- ⌄ DropdownMenu 內容分兩組:**Fit options 在上**(Fit to width / Fit to page)/ **preset 百分比在下**,`<DropdownMenuSeparator />` 分組
+- ± 按鈕跳到下一個 preset(`10 / 25 / 50 / 75 / 100 / 125 / 150 / 200 / 400`),不是固定 step;讀屏名稱走 `labels.zoomOut` / `labels.zoomIn`(DS 預設「縮小」「放大」—— 2026-10-20 前寫死在元件裡、是工具列唯一兩顆不能經 `labels` 覆寫的鈕)
+- ⌄ DropdownMenu 內容分兩組:**符合選項在上**(符合寬度 / 符合頁面;文字走 `labels.fitWidth` / `labels.fitPage`,DS 預設中文 —— 2026-10-20 前寫死英文 Fit to width / Fit to page、不能覆寫)/ **preset 百分比在下**,`<DropdownMenuSeparator />` 分組
 - 當前 zoom 在 preset 中的那項視覺標示 `bg-neutral-selected`
 
 ### 同 flex 列幾何鐵律(`packages/design-system/ds-canonical/references/ui-dev-rules.md` canonical)
@@ -299,13 +299,13 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 | 鍵 | 行為 | 生效條件 |
 |---|------|---------|
-| `Esc` | 關閉 viewer | Radix Dialog 預設 |
+| `Esc` | 關閉 viewer;**輸入法組字中的 Esc 不關**(縮放比例 / 描述輸入框用輸入法選字時按的 Esc 是在取消選字);**焦點所在的控件宣告了自己還有一層時那一下歸控件**(全 DS 一條,`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)—— 兩條都由 `../../lib/overlay-escape.ts` `withOverlayEscape` 掛在本元件的 `DialogPrimitive.Content`(2026-10-01;同日上午的 `withImeSafeEscape` 併入) | Radix Dialog 預設(<https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L102-L110>) |
 | `ArrowLeft` | 上一個檔案 | `files.length > 1` |
 | `ArrowRight` | 下一個檔案 | `files.length > 1` |
 | `+` / `=` | zoom in(下一個 preset) | `capabilities.zoom === true` |
 | `-` | zoom out(上一個 preset) | `capabilities.zoom === true` |
 | `0` | 重設 zoom 到 100% | `capabilities.zoom === true` |
-| `F` | Fit to page | `capabilities.zoom === true` |
+| `F` | 符合頁面(fit-page) | `capabilities.zoom === true` |
 | `I` | 切換 InfoPanel | 永遠 |
 
 **焦點在 input / textarea / contentEditable 時不觸發**——避免 user 打字時被快捷鍵劫持(寫入 description 打到 `-` 不應 zoom out)。此排除**僅適用 FileViewer 自管的快捷鍵**(← → / +・−・0 / F / I)。**例外 `Esc`**:由 Radix DismissableLayer 以 document capture-phase 監聽,不受此排除影響 —— 在 InfoPanel description textarea 內按 Esc 仍會關閉整個 viewer(未 blur 的 draft 不觸發持久化)。
@@ -359,7 +359,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 ## A11y 預設
 
 Radix DialogPrimitive 自動處理:
-- `role="dialog"`(**不輸出 `aria-modal`**;`react-dialog@1.1.x` 只設 role / `aria-labelledby` / `aria-describedby`,modal 隔離改由下方 focus trap + `hideOthers` 的 `aria-hidden` 達成)
+- `role="dialog"`(**不輸出 `aria-modal`**;`react-dialog@1.1.x` 只設 role / `aria-labelledby` / `aria-describedby`,modal 隔離改由下方 focus trap + `hideOthers` 的 `aria-hidden` 達成)。檢視器沒有說明元件,DS 把 Radix 預設的 `aria-describedby` 拿掉(否則指向不存在的 id;2026-10-20 前即是,獨立驗證 OV-15;規則同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定)
 - `<DialogPrimitive.Title>`(sr-only)自動成 `aria-labelledby` 目標——screen reader 開啟時讀「檔案檢視器:{file.name}」
 - Focus trap:焦點**進入 Content 後**鎖在 viewer 內(FocusScope)
 - Esc 關閉(Radix DismissableLayer,document capture-phase 監聽)
@@ -369,6 +369,7 @@ Radix DialogPrimitive 自動處理:
 - 所有 iconOnly button 皆有 `aria-label`(中文,跟 DS 其他元件風格一致)
 - Filmstrip `role="group"` + `aria-label` + thumb `<button>` + `aria-current`(非 tablist;見「Filmstrip 規則」段理由)
 - InfoPanel 用 `<aside aria-label="檔案詳細資訊">` 語意標記
+- **關閉後焦點還給開啟者**(2026-09-30):FileViewer 由受控 `open` 開、沒有 Radix 觸發點,Radix 沒有東西可還 —— 此前關閉後焦點掉到 body(實測)。現在與 `DialogContent` / `SheetContent` 消費同一支預設 `../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn`(2026-10-20 起;`../Dialog/dialog.spec.md`「Focus return」):`onOpenAutoFocus` 最先記下當下握著焦點的元素(縮圖 / 「預覽」鈕…);**開啟者住在會跟著關掉的選單裡**(附件列「⋯」選單的「預覽」)→ 改記那個選單的觸發鈕(`persistentOpenerOf`)。`onCloseAutoFocus` 先跑 consumer 的 handler、沒被擋就還(標準 modal:按遮罩收起也還;並存模式 `persistentElements` 為非 modal:按在常駐區收起不搶;指標收起不畫鍵盤框)。2026-09-30 → 2026-10-20 本元件自己記開啟者、少了改記選單觸發鈕那一步 —— 從選單項開、關閉後焦點掉到 body(獨立驗證 OV-01 實測);閘 `scripts/escape-and-focus-contract-invariant.mjs` F-menu-fileviewer。
 - `DialogContent` 固定 `tabIndex={-1}`；`onOpenAutoFocus` 先執行 consumer handler,若未被取消則阻止 Radix 把焦點送到第一個 toolbar control,並主動 `focus({ preventScroll: true })` fullscreen shell。開啟後焦點立即位於 viewer/FocusScope 內,不留在被 `aria-hidden` 的背景 trigger,也不因首個 icon button focus 而誤觸 tooltip。consumer 若有專屬初始焦點可在 handler 中 `preventDefault()` 後自行聚焦。
 
 ---
@@ -379,7 +380,7 @@ Radix DialogPrimitive 自動處理:
 - `../DropdownMenu/dropdown-menu.spec.md` — ZoomInput preset / fit 選單消費(取代先前 Popover)
 - `../Empty/empty.spec.md` — FallbackRenderer 佈局
 - `../AspectRatio/aspect-ratio.spec.md` — Filmstrip thumb 固定比例
-- `../ScrollArea/scroll-area.spec.md` — InfoPanel body 高度受限時 scroll(`file-viewer.tsx:493`);filmstrip 不用 ScrollArea(刻意走 fade-mask,屬 horizontal-overflow pattern)
+- `../ScrollArea/scroll-area.spec.md` — InfoPanel body 高度受限時 scroll(`file-viewer.tsx#InfoPanel`);filmstrip 不用 ScrollArea(刻意走 fade-mask,屬 horizontal-overflow pattern)
 - `../../patterns/horizontal-overflow/horizontal-overflow.spec.md` — Filmstrip 水平捲動 + fade mask
 - `../../patterns/action-bar/action-bar.spec.md` — Toolbar 按鈕順序 canonical
 - `../FileItem/file-item.spec.md` — 上傳清單列元件(與 FileViewer 不同用途,FileItem 是 list item,FileViewer 是 fullscreen preview)

@@ -14,23 +14,10 @@ import { OverflowIndicator } from './overflow-indicator'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
-const personHover = (name: string, src?: string) => (
-  <ProfileCard
-    name={name}
-    subtitle="Design｜D-0042｜EMP-1001"
-    avatar={{ src, alt: name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday."
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+// 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
+const personHover = (name: string, src?: string) => samplePersonCard({ name, avatarSrc: src })
 const P = { A: 'Alan Chen', B: 'Betty Wu', C: 'Charlie Lee' } as const
 // 真實人像(2026-07-08 sweep):u=EMP-100x 對齊 dialog.stories.tsx MEMBERS 同名人物(跨 story 同人同照)
 const P_SRC = { A: 'https://i.pravatar.cc/48?u=EMP-1001', B: 'https://i.pravatar.cc/48?u=EMP-1002', C: 'https://i.pravatar.cc/48?u=EMP-1003' } as const
@@ -121,7 +108,7 @@ export const Overview: Story = {
               <tr>
                 <Td mono>HoverCardContent</Td>
                 <Td>展開容器(深色 tooltip 風格)</Td>
-                <Td mono>bg-tooltip · data-theme="dark" · rounded-lg</Td>
+                <Td mono>HOVER_CARD_TOOLTIP_SURFACE_CLASS(bg-tooltip · text-foreground · rounded-lg)· data-theme="dark"</Td>
               </tr>
               <tr>
                 <Td mono>ShrinkWrapList</Td>
@@ -175,6 +162,19 @@ export const Overview: Story = {
                 <Td mono>string</Td>
                 <Td mono>undefined</Td>
                 <Td>額外套到 trigger pill 上(頭像堆疊不需要:疊合幾何由 Avatar 的堆疊 SSOT 負責)</Td>
+              </tr>
+              {/* 2026-10-21 r1b fields F7:以下兩個 prop 2026-09-30 / 10-07 加進 overflow-indicator.tsx,速查表沒跟上 */}
+              <tr>
+                <Td mono>onContentMouseDown</Td>
+                <Td mono>MouseEventHandler</Td>
+                <Td mono>undefined</Td>
+                <Td>按在浮出清單上的 mousedown:讓使用端把「按在自己的零件上焦點不動」延伸到這張卡(Combobox 搜尋框、AgentPanel 輸入盒握著焦點時按卡裡的 ×)</Td>
+              </tr>
+              <tr>
+                <Td mono>contentId</Td>
+                <Td mono>string</Td>
+                <Td mono>undefined</Td>
+                <Td>浮出清單的 id:讓使用端把這張卡算成同一個欄位的零件(Combobox 按卡裡的 × 不算離開欄位)</Td>
               </tr>
             </tbody>
           </table>

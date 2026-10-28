@@ -73,7 +73,7 @@ export const Overview: Story = {
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'context.size 傳給 input-class control(Input / NumberInput / Select);primitive 不讀'],
                 ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'context.mode 傳給 Field Controls'],
-                ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),view×naked 用 transparent border;2026-07-09 `bare` 退役"],
+                ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),view×naked 用 transparent border;2026-07-09 bare 退役"],
                 ['controlLayout', "'inline' | 'block'", '(自動偵測)', '逃生艙:覆寫 control area 佈局(consumer 手寫 JSX 當 control 無法偵測時用)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -267,7 +267,7 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>三種 Size — 對齊 field-height 系統</H3>
-        <Desc>Field 的 size 透過 context 傳遞給 input-class control(Input / NumberInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker 等,皆經 useResolvedFieldSize 解析),控制其內部高度對齊 `--field-height-*` tier(見 uiSize.spec.md)。Slider / Switch / Checkbox / Rating 等 primitive 的 edit 態維持原生尺寸、不隨 Field size 變高(Switch / Checkbox 仍經 useResolvedFieldSize 解析 size,僅用於 readonly 灰框 chrome;Rating 的星 px 跟解析出的 size 走(20/24/24),但不套容器高;Slider 完全不讀 context size。見 field.spec.md「為什麼 primitive 不自己變高」),其行高節奏改由 Field control-area 的 min-h-field-{'{size}'} 提供——同一 Field 內所有 control 因此自動對齊高度。</Desc>
+        <Desc>Field 的 size 透過 context 傳遞給 input-class control(Input / NumberInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker 等,皆經 useResolvedFieldSize 解析),控制其內部高度對齊 <code>--field-height-*</code> tier(見 uiSize.spec.md)。Slider / Switch / Checkbox / Rating 等 primitive 的 edit 態維持原生尺寸、不隨 Field size 變高(Switch / Checkbox 仍經 useResolvedFieldSize 解析 size,僅用於 readonly 灰框 chrome;Rating 的星 px 跟解析出的 size 走(20/24/24),但不套容器高;Slider 完全不讀 context size。見 field.spec.md「為什麼 primitive 不自己變高」),其行高節奏改由 Field control-area 的 min-h-field-{'{size}'} 提供——同一 Field 內所有 control 因此自動對齊高度。</Desc>
         <div className="grid grid-cols-3 gap-6">
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="border border-dashed border-divider rounded-md p-4">
@@ -434,9 +434,9 @@ export const ColorMatrix: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Field 本身不畫這些色——只透過 `context`(mode / invalid / disabled / required / size)把
+          Field 本身不畫這些色——只透過 <code>context</code>(mode / invalid / disabled / required / size)把
           state 傳給子元件,由 FieldLabel / FieldDescription / FieldError 和 Field Controls(Input /
-          NumberInput / etc.)各自渲染對應視覺。詳見 `field-controls.spec.md`。
+          NumberInput / etc.)各自渲染對應視覺。詳見 <code>field-controls.spec.md</code>。
         </p>
       </div>
 
@@ -487,7 +487,7 @@ export const FieldGroupBehavior: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>FieldGroup — 管理多 Field 垂直間距</H3>
-        <Desc>FieldGroup 統一管理欄位垂直間距 —— 單一值 `--layout-space-loose`(md 16px / lg 24px),隨 density 一起縮放。沒有 per-instance 選檔:表單間距是系統級設定,不需 consumer 手算,也不該每個表單各自挑。</Desc>
+        <Desc>FieldGroup 統一管理欄位垂直間距 —— 單一值 <code>--layout-space-loose</code>(md 16px / lg 24px),隨 density 一起縮放。沒有 per-instance 選檔:表單間距是系統級設定,不需 consumer 手算,也不該每個表單各自挑。</Desc>
         <div className="grid grid-cols-2 gap-6 max-w-4xl">
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">vertical orientation</div>
