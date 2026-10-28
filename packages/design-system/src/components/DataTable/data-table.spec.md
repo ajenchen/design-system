@@ -331,7 +331,7 @@ preserveSelectionOnFilter?: boolean   // default false
 
 - **位置**:最左,自動 left-pin(不論 consumer pin 哪些 cols)
 - **寬度**:固定 40px(system col;不可 resize、不可隱藏)
-- **顯示時機**:**always visible**；selection affordance 不依賴 pointer hover，鍵盤使用者直接 Tab 得到、滑鼠使用者不必先滑過才知道這列可以勾〔UD-U1021-27〕
+- **顯示時機**:**always visible**；selection affordance 不依賴 pointer hover，鍵盤使用者直接 Tab 得到、滑鼠使用者不必先滑過才知道這列可以勾〔UD-C27〕
 - **Header tri-state**:none / indeterminate / all,使用既有 Checkbox `indeterminate` prop
 
 ### 三、全選邏輯(2-step pattern + 反向選取 inverted)
@@ -674,7 +674,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 
 > APG grid full keyboard model(Home/End、Ctrl+Home/End、PageUp/PageDown、roving cell action)為 `role="grid"` future tier 目標,**尚未實作**。**已實作的一段(2026-10-13)**:格裡裝控件的格(連結格、開關格)Enter / F2 進到格裡的控件、F2 / Esc 回格導覽(APG "Editing and Navigating Inside a Cell")—— 閘 `scripts/data-table-link-cell-invariant.mjs`。
 
-**Focus**:table root `tabIndex=0` **僅在 selection enabled 或 `spreadsheetMode` 時**(否則 `undefined` = 不可 focus);cell 目前無 roving `tabindex=-1` 機制。**根節點與格游標框不同時出現**(2026-09-26〔UD-U1021-28〕):`spreadsheetMode` 有格游標時畫在那一格(`focus-ring-inset`,只在焦點在格線區裡時畫;Tab 到表頭控件時收起、位置保留),根節點不畫;沒有格游標(Esc 之後)與勾選列模式由根節點畫 `focus-visible:focus-ring-inset`(規則與依據見「試算表模式」段)。互動元素(勾選框 / 排序 header / 展開鈕 / row action / 連結格的連結與鉛筆)各自 focusable + focus-visible ring(`outline: 2px solid var(--ring)`),**四邊都要畫得出來**(2026-10-21,r1b DT-01 / DT-02;`../../../ds-canonical/references/focus-canonical.md`「問題二」):連結往外 —— 包著它的截斷 wrapper 不是正當障礙,修 wrapper 不改內描邊(`../LinkInput/link-input.tsx` `LINK_HOST_CLASS`,修前只剩右邊一條 2px);**可拖的欄頭**(`enableColumnReorder`,欄頭本身是 Tab 停靠點、Space 提起重排)撐滿表頭列、左右貼鄰欄,四周淨空 0 → 往內 `focus-visible:focus-ring-inset`(修前上下被表頭面板裁掉、最後一欄連右邊也沒有);排序區(欄頭裡的 role=button)四周 7–12px,往外。APG grid roving-tabindex focus model 為 future tier 目標,尚未實作 → 見 [WAI APG keyboard model](https://www.w3.org/WAI/ARIA/apg/patterns/grid/#keyboardinteraction)。
+**Focus**:table root `tabIndex=0` **僅在 selection enabled 或 `spreadsheetMode` 時**(否則 `undefined` = 不可 focus);cell 目前無 roving `tabindex=-1` 機制。**根節點與格游標框不同時出現**(2026-09-26):`spreadsheetMode` 有格游標時畫在那一格(`focus-ring-inset`,只在焦點在格線區裡時畫;Tab 到表頭控件時收起、位置保留),根節點不畫;沒有格游標(Esc 之後)與勾選列模式由根節點畫 `focus-visible:focus-ring-inset`(規則與依據見「試算表模式」段)。互動元素(勾選框 / 排序 header / 展開鈕 / row action / 連結格的連結與鉛筆)各自 focusable + focus-visible ring(`outline: 2px solid var(--ring)`),**四邊都要畫得出來**(2026-10-21,r1b DT-01 / DT-02〔UD-U1021-28〕;`../../../ds-canonical/references/focus-canonical.md`「問題二」):連結往外 —— 包著它的截斷 wrapper 不是正當障礙,修 wrapper 不改內描邊(`../LinkInput/link-input.tsx` `LINK_HOST_CLASS`,修前只剩右邊一條 2px);**可拖的欄頭**(`enableColumnReorder`,欄頭本身是 Tab 停靠點、Space 提起重排)撐滿表頭列、左右貼鄰欄,四周淨空 0 → 往內 `focus-visible:focus-ring-inset`(修前上下被表頭面板裁掉、最後一欄連右邊也沒有);排序區(欄頭裡的 role=button)四周 7–12px,往外。APG grid roving-tabindex focus model 為 future tier 目標,尚未實作 → 見 [WAI APG keyboard model](https://www.w3.org/WAI/ARIA/apg/patterns/grid/#keyboardinteraction)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
