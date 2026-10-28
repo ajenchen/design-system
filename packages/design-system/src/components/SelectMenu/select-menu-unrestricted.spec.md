@@ -155,7 +155,7 @@ cmdk 的 `defaultFilter` 是公開匯出(`node_modules/cmdk` 的 `exports`),直�
 |---|---|---|
 | `scripts/unrestricted-option-invariant.mjs` | 自成一組排最上 + 分隔線畫在下一組、互斥三條、欄位三條路徑(編輯 / 唯讀 / 檢視)都是純文字且與一般填值同左緣不同色、三態訊息列不受影響 | 四件事各弄壞一次,**每條各自都要被抓到**(只看「有沒有紅」會讓一條掩護其他三條) |
 | `scripts/select-all-footer-invariant.mjs` | 全選按鈕的字與勾選狀態綁死時,分母已排除「不限」列 | `--selftest-unrestricted` 拔掉 `data-unrestricted` 記號,必須紅 |
-| `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位的水平內距是標準 `--field-px`(量沒有 Tag / 頭像 / 前置元素時的第一段文字)| 把每個受管欄位的左內距推 6px,必須紅 |
+| `scripts/field-text-left-edge-invariant.mjs` | **全庫**:欄位的水平內距是標準 `--field-px`(量的是沒有 Tag / 頭像 / 畫得出來的前置元素時,第一段畫得出來的字);每則 story 量到的欄位數不少於 `scripts/field-text-left-edge-inventory.json` | 四組,以閘檔頭 `@gate-contract` 與「對照組 `--selftest`」段為準:左內距推 6px 必紅;最前面塞畫得出來的方塊 → 覆蓋清單必點名;塞讀屏專用播報區(空的、帶字兩種裁法)→ 個數不少、零偏離,而且每趟至少要有一個欄位騙得過「有盒子就算畫得出來」的舊判準,否則判「對照組沒有作用」紅 |
 | `scripts/searchable-field-keys-invariant.mjs` | 只選「不限」× 欄位內搜尋框:關著與不可搜尋的「不限」同位置同色(窄欄位長標籤截斷寬、依內容寬的欄寬也相同)、打開變灰色提示且讀屏略過、打字讓位、字刪光回來、換行模式欄高不變、依內容寬時打開與打字欄寬不變;Backspace 刪掉「不限」;一鍵清空後反白落在「不限」那一列(story `combobox.stories.tsx`「不限 × 欄位內搜尋」;依內容寬與窄欄位長標籤兩對在 `../Field/field.stories.tsx`「欄位內搜尋讓位 × 欄寬驗證」;都是 test-only) | 在頁面上讓「不限」打開後仍是黑字、打字時仍並排,或拿掉讓位後留下寬的量尺,K4 那幾列必須紅(對修前建置實跑同樣紅) |
 
 前兩支在 CI 的 `verify-browser-select-all` job、第三支在 `verify-browser-field-edges` job、第四支在 `verify-browser-searchable-fields` job 裡跑(各自用該 job 的 storybook build)。
