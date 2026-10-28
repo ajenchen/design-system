@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // meta-test for sidebar-standalone-collapse-invariant —— 現況必綠、對照組(把 2026-10-14 的 Sidebar 寫法餵給靜態掃描器;頁面上把收起的外框寬
 // 釘回 --sidebar-width、拿掉寬 0 那份的 inert、把細列的內層釘回展開寬 = 2026-05-21 → 10-27 的「Tooltip 離細列 201px」、拿掉細列捲動區的 fillX(放了骨架列 / 搜尋框的細列)、拿掉細列列鈕的 !pr-0(預留列尾動作右內距的列鈕)、
-// Tooltip 外殼右移、細列捲軸藏起 / 加寬、捲軸軌道接指標 / 滑塊不接指標)必紅(gate-meta-test 家族)。
+// Tooltip 外殼右移、細列捲軸藏起 / 加寬)必紅(gate-meta-test 家族)。
 // 需要已 build 的 storybook-static;略過只認閘印出的 MISSING-BUILD / STALE-BUILD / SKIPPED-ENV,INSTRUMENT-FAIL 一律紅
 //(判定由共用實作 lib/gate-selftest-meta.mjs 負責,不在這裡另寫一份)。出處:2026-10-15 r1b 複驗 F1。
 import { runGateSelftestMeta } from './lib/gate-selftest-meta.mjs'

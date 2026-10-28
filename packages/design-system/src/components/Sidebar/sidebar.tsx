@@ -862,7 +862,7 @@ const SidebarContent = React.forwardRef<
       // 所有列鈕跟著變寬 → Tooltip 離細列不是 8px、焦點框右邊被裁。列鈕自己的內距由 sidebarMenuButtonVariants 的 `!pr-0` 管。
       // 收成細列時捲動區寬 = 細列寬(見 Sidebar 的 innerWidth):內容比視窗高時,指標在細列上(含用滾輪捲動)照 ScrollArea 通則浮出直捲軸,
       // 只用鍵盤捲動時不出捲軸、聚焦項自己捲進視野(Radix `type="hover"` 只聽 pointerenter / pointerleave;`../ScrollArea/scroll-area.spec.md`
-      // 「為什麼需要 ScrollArea」);捲軸貼細列右緣、不蓋到圖示與頭像,軌道不接指標 —— 列鈕被捲軸蓋到的那段照樣點得到、會變色、會開 Tooltip,只有滑塊畫到的那一小段歸滑塊(ScrollArea 通則,`../ScrollArea/scroll-area.spec.md`「A11y 預設」的「Pointer 支援」;展開時同一條)(`scripts/sidebar-standalone-collapse-invariant.mjs` 量)。
+      // 「為什麼需要 ScrollArea」);捲軸貼細列右緣、不蓋到圖示與頭像(`scripts/sidebar-standalone-collapse-invariant.mjs` 量)。
       // 2026-04-22(`76ef90ee`)這裡寫的是相反的「icon-collapsed 時不會露出 scroll chrome」;2026-05-21 起內層保持展開寬,捲軸其實一直在、只是畫在被裁掉的右緣。
       // 2026-10-21 user 回 E3(確認頁備註,UTC 09:23):「ds規定本來就應該盡量讓使用者在各種情況下都能看完完整內容吧？如果不出現捲軸要如何看完完整內容？？？」→ 細列也出捲軸。
       // 捲動區本身不當 Tab 停靠點(viewportTabIndex={-1};待辦總帳 B9,依 `../ScrollArea/scroll-area.spec.md:103`「內容已有自帶 focusable + 鍵盤處理的元素」時傳 -1):內容是一串串自帶方向鍵的 SidebarMenu,焦點落進任何一項都會把它捲進視野;先前 Tab 第一站是這個捲動區(「混合內容」實測第 1 站),停在上面按 ↓ 焦點不動。

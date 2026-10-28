@@ -73,7 +73,7 @@ const ScrollArea = React.forwardRef<
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
-    <ScrollAreaPrimitive.Corner className="pointer-events-none" />
+    <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>
 ))
 ScrollArea.displayName = 'ScrollArea'
@@ -85,12 +85,8 @@ const ScrollBar = React.forwardRef<
   <ScrollAreaPrimitive.ScrollAreaScrollbar
     ref={ref}
     orientation={orientation}
-    // 只有滑塊接指標:軌道(與兩條捲軸都在時的角落 Corner)是透明的,浮在內容上卻接走點擊 = 滑塊之外沒有任何回饋的隱形帶,
-    // 底下看得到的列鈕點不到、滑過不變、不開 Tooltip(`ds-canonical/references/hit-area-canonical.md`「一-4 細則」:控件的懸停回饋形狀 ≡ 命中區;
-    // 本 DS 的捲軸只有滑塊有懸停回饋)。軌道讓給底下的內容,滑塊 `pointer-events-auto` 照常拖曳(Radix 的拖曳處理掛在捲軸上,滑塊的事件冒泡上去);
-    // 滾輪在軌道上照樣捲(事件落到捲動區本身)。Radix 預設點軌道會讓滑塊中心跳到點的位置,這個功能因此不提供。
     className={cn(
-      'pointer-events-none flex touch-none select-none transition-colors',
+      'flex touch-none select-none transition-colors',
       orientation === 'vertical' && 'h-full w-2.5 border-l border-l-transparent p-[1px]',
       orientation === 'horizontal' && 'h-2.5 flex-col border-t border-t-transparent p-[1px]',
       className,
@@ -103,7 +99,7 @@ const ScrollBar = React.forwardRef<
          前身直接 `bg-border` borrowing(2026-04 ship)→ semantic alias 收斂 SSOT(避免 thumb 視覺
          未來演化時誤動 Field/Input/Checkbox border 視覺)。對齊 shadcn ScrollArea source `bg-border`。 */}
     <ScrollAreaPrimitive.ScrollAreaThumb
-      className={cn('pointer-events-auto relative flex-1 rounded-full bg-[var(--scrollbar-thumb)] hover:bg-[var(--scrollbar-thumb-hover)]')}
+      className={cn('relative flex-1 rounded-full bg-[var(--scrollbar-thumb)] hover:bg-[var(--scrollbar-thumb-hover)]')}
     />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ))

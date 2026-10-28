@@ -14,11 +14,7 @@
  *           `SidebarMenuSkeleton showIcon` 與 `SidebarInput` 的同幾何元素(最小寬比細列寬 → 撐開捲動區內容層:SidebarContent 的 ScrollArea 開 `fillX` 管);
  *           第一顆列鈕掛上「有列尾動作」時的預留右內距(左內距 + 右內距比細列寬 → 撐開列鈕自己:列鈕細列時 `!pr-0` 管)。
  *         細列內容比視窗高時(1440×230:完整佈局標準與寬鬆密度、混合前綴標準密度、AppShell 主側欄標準與寬鬆密度)滑過細列:
- *           R5 直捲軸出現、整條在細列看得到的範圍內、命中測試打得到它;R6 捲軸那一欄不與任何圖示 / 頭像那一欄重疊;
-           R7 捲軸浮出時,列鈕伸到捲軸底下的那段照樣點得到 —— 沿每顆列鈕中線逐 px 命中測試,滑塊畫到的地方 = 滑塊、其餘(含透明軌道)= 列鈕;
-              真指標停在軌道上:列鈕 :hover、細列列鈕的 Tooltip 打開;按住滑塊拖 24px 捲動位置往下、軌道上滾輪往上捲動位置往上
-              (scroll-area.spec.md「A11y 預設」的「Pointer 支援」;hit-area-canonical「一-4 細則」)。展開的側欄同一個 ScrollArea、同一條規則,
-              另量 R7(完整佈局標準 / 寬鬆密度,1440×230 不收起;AppShell 主側欄展開時另有把手蓋住捲軸的缺陷,見 SCROLL_CASES 註解)。
+ *           R5 直捲軸出現、整條在細列看得到的範圍內、命中測試打得到它;R6 捲軸那一欄不與任何圖示 / 頭像那一欄重疊。
  *         另有靜態段:全 DS 的 `.tsx` / `.ts` 沒有任何元素在自己身上同時帶 `group` 與 `group-*` 變體、或 `peer` 與 `peer-*` 變體
  *         (Tailwind 的 `group-*` 編譯成後代選擇器、`peer-*` 編譯成兄弟選擇器,都比不到自己 → 靜默失效;2026-10-14 Sidebar 收合寬就是這樣失效的)。
  *         一個元素的 class 來源 = `className=` 屬性與 `cn(` / `clsx(` / `twMerge(` / `cva(` 的引數(TypeScript 語法樹;疊加變體、具名 group 都算)。
@@ -31,11 +27,10 @@
  *           → 每一則細列 story(含 AppShell)R1 紅、R2 / R3 / R4 / R5 都紅;
  *           拿掉 `fillX`(內容層放回 Radix 預設的 `display: table`)→ 放了骨架列 / 搜尋框的細列 R1–R4 都紅(標準 / 寬鬆);
  *           拿掉列鈕的 `!pr-0` → 預留列尾動作右內距的細列 R1–R4 都紅(標準 / 寬鬆);
- *           Tooltip 外殼右移 4px → R2、R3 紅;細列捲軸 visibility:hidden(= 不出捲軸)→ R5 紅;捲軸加寬到 28px → R6 紅;
-           捲軸軌道接指標(= 2026-10-28 修前:軌道蓋住列鈕右側約 10px)→ 每一格捲軸 case(細列與展開)R7 紅;滑塊也不接指標(拖不動)→ 每一格 R7 紅。
+ *           Tooltip 外殼右移 4px → R2、R3 紅;細列捲軸 visibility:hidden(= 不出捲軸)→ R5 紅;捲軸加寬到 28px → R6 紅。
  *       story 開不起來 = 儀器失效,點名 story、exit 1。該有 Tooltip 的列鈕一格都沒量到、聚焦後不是 :focus-visible、焦點框往外畫(本量法只量往內畫的框)、
- *       細列內容沒有比視窗高(量不到捲軸)= 儀器失效(量不到不等於沒問題,M37 第八形);R7 沒有列鈕伸到軌道底下、找不到離開滑塊的列 = 該格紅(不放行)。
- *   綠: 六則 story 收起 / 展開兩步都符合、R1–R7 全部相符(含寬鬆密度、放了骨架列 / 搜尋框 / 預留動作內距的細列、AppShell 細列捲軸、展開時的捲軸)、靜態段 0 違規時綠。寬度比到 0.75px(瀏覽器以小數 px 排版),Tooltip 間距比到 1px。
+ *       細列內容沒有比視窗高(量不到捲軸)= 儀器失效(量不到不等於沒問題,M37 第八形)。
+ *   綠: 六則 story 收起 / 展開兩步都符合、R1–R6 全部相符(含寬鬆密度、放了骨架列 / 搜尋框 / 預留動作內距的細列、AppShell 細列捲軸)、靜態段 0 違規時綠。寬度比到 0.75px(瀏覽器以小數 px 排版),Tooltip 間距比到 1px。
  *
  * 出處:2026-10-15 r1b 複驗 F1(P0)—— 單獨使用的 Sidebar `icon` / `offcanvas` 收起後外框仍 240(main 是 48 / 0),offcanvas 還把看得到的選單設 inert +
  * aria-hidden(看得到、點不到、讀不到)。根因:sidebar.tsx 把 `group-data-[collapsible=…]:!w-…` 寫在帶 `group` 的那個元素自己身上。
@@ -46,9 +41,6 @@
  * 量它等於拿症狀的原因當答案(M37)。放骨架列 / 搜尋框那幾格:2026-10-27 獨立審查實測 —— 細列放 `SidebarMenuSkeleton showIcon`,Radix 的 `display: table` 內容層被撐到 56
  * (寬鬆 72)、放 `SidebarInput` 被撐到 212,所有列鈕跟著變寬,Tooltip 離細列 17px(寬鬆 13px)/ 173px、焦點框右邊被裁;第一版只靠列鈕自己的右內距歸零,
  * 只壓住已知的那一個元素(M12 表層修法)。內容層鎖住之後,列鈕自己的內距仍可能比細列寬(有列尾動作的列),所以兩件事各量一組。R5 / R6:2026-10-21 user 回 E3:「ds規定本來就應該盡量讓使用者在各種情況下都能看完完整內容吧？如果不出現捲軸要如何看完完整內容？？？」。
- * R7:2026-10-27 獨立審查實測 —— E3 乙的細列捲軸浮出時蓋住每顆列鈕右側約 10px(標準密度 x36–47、寬鬆 x56–67 打到捲軸),選中底色與焦點框畫到 47、
- * 點與 Tooltip 只到 36;展開時同樣蓋住 x230–240。依據 hit-area-canonical「一-4 細則」與 2026-09-04 user 原話(registry D12):
- * 「按鈕的視覺=觸發事件的範圍=會觸發tooltip的範圍，而tooltip一定會跟觸發點距離8px,這就完完全全是我們icon only button的元件邏輯也是普世的設計吧？」
  *
  * Run: `node scripts/sidebar-standalone-collapse-invariant.mjs [--static=<dir>] [--selftest]`(預設讀 `storybook-static`)
  */
@@ -222,19 +214,13 @@ const STRESSORS = { skeleton: '細列放骨架列', input: '細列放搜尋框',
 const STRESS_RAILS = Object.keys(STRESSORS).flatMap((stressor) => ['md', 'lg'].map((density) => ({ id: 'design-system-components-sidebar-展示--icon-collapse', density, stressor })))
 // 細列內容比視窗高:視窗 1440×230(收起後 = 標頭 + 捲動區 + 帳號列,捲動區放不下主選單)。完整佈局與 AppShell 主側欄量兩種密度(圖示);
 // 混合前綴量標準密度(頭像 24 比圖示寬,細列 48 時頭像右緣 36、捲軸左緣 37,是最貼的一格)
-// expanded = 不收起、量展開的側欄(只量 R7:捲軸蓋到的那段列鈕點不點得到;展開與細列同一個 ScrollArea、同一條規則)
 const SCROLL_CASES = [
   { id: 'design-system-components-sidebar-展示--icon-collapse', kind: 'standalone', density: 'md', viewport: { width: 1440, height: 230 } },
   { id: 'design-system-components-sidebar-展示--icon-collapse', kind: 'standalone', density: 'lg', viewport: { width: 1440, height: 230 } },
   { id: 'design-system-components-sidebar-展示--integration-sidebar', kind: 'standalone', density: 'md', viewport: { width: 1440, height: 230 } },
   { id: 'design-system-components-appshell-展示--primary-sidebar', kind: 'shell', density: 'md', viewport: { width: 1440, height: 230 } },
   { id: 'design-system-components-appshell-展示--primary-sidebar', kind: 'shell', density: 'lg', viewport: { width: 1440, height: 230 } },
-  { id: 'design-system-components-sidebar-展示--icon-collapse', kind: 'standalone', density: 'md', viewport: { width: 1440, height: 230 }, expanded: true },
-  { id: 'design-system-components-sidebar-展示--icon-collapse', kind: 'standalone', density: 'lg', viewport: { width: 1440, height: 230 }, expanded: true },
 ]
-// AppShell 主側欄展開時不量 R7:面板縮放把手(ResizeHandle,7px 命中帶、跨在側欄右緣)蓋住側欄 x236–243,含捲軸右側 4px 與滑塊右半 ——
-// 4efc3afa(本條規則之前)就是這樣,不是捲軸軌道的問題,是把手外擴蓋到別的可點目標(hit-area-canonical「外擴的硬限制」);另案,修好後補這一格。
-const scrollPrefix = (c) => `${short(c.id)} ${c.viewport.width}×${c.viewport.height} ${densityName(c.density)}密度 ${c.expanded ? '展開' : '收起'}`
 const DEFAULT_VIEWPORT = { width: 1440, height: 900 }
 const short = (id) => id.replace('design-system-components-sidebar-', '').replace('design-system-components-appshell-', 'AppShell ')
 const densityName = (d) => (d === 'lg' ? '寬鬆' : '標準')
@@ -332,51 +318,6 @@ function railProbe({ kind, op, role }) {
         return { label: label(btn), left: r2(r.left), right: r2(r.right) }
       }))
     return { ...base, bar: { state: bar.getAttribute('data-state'), left: r2(bb.left), right: r2(bb.right), visLeft: bv.left, visRight: bv.right, thumbHeight: tb ? r2(tb.height) : 0, hit: !!hit && bar.contains(hit) }, icons }
-  }
-  if (op === 'reach' || op === 'reachState') {
-    // R7:捲軸浮出時,列鈕伸到捲軸底下的那段點不點得到 —— 沿每顆伸到捲軸底下的列鈕中線逐 px 命中測試:
-    // 滑塊畫到的地方 = 滑塊,其餘(含透明軌道)= 列鈕(hit-area-canonical「一-4 細則」;scroll-area.spec.md「A11y 預設」的「Pointer 支援」)
-    const vp = frame.querySelector('[data-sidebar="content"] [data-radix-scroll-area-viewport]')
-    const bar = vp?.parentElement.querySelector(':scope > [data-orientation="vertical"]')
-    if (op === 'reachState') {
-      const t = document.querySelector('[data-reach-probe]')
-      const id = t?.getAttribute('aria-describedby')
-      return { scrollTop: vp ? r2(vp.scrollTop) : null, hover: !!t?.matches(':hover'), tip: !!id && document.getElementById(id)?.getAttribute('role') === 'tooltip', thumbHover: !!bar?.firstElementChild?.matches(':hover') }
-    }
-    if (!bar) return { err: '沒有直捲軸' }
-    document.querySelectorAll('[data-reach-probe]').forEach((el) => el.removeAttribute('data-reach-probe'))
-    const bb = bar.getBoundingClientRect(), vpb = vp.getBoundingClientRect()
-    const thumb = bar.firstElementChild, tb = thumb && thumb.getBoundingClientRect().height > 0 ? thumb.getBoundingClientRect() : null
-    // 一個取樣點 = [x, x+1) × [y, y+1) 那一格(見下方取樣的註解)。整格在滑塊中段裡 = core(一定打到滑塊);整格碰不到滑塊 = out(一定打到列鈕);
-    // 其餘 = cap:滑塊兩端是半圓(rounded-full,命中測試照圓角裁)、或那一格只碰到滑塊的一部分,兩種結果都算對
-    const cap = tb ? tb.width / 2 : 0
-    const where = (x, y) => (!tb || x + 1 <= tb.left || x >= tb.right || y + 1 <= tb.top || y >= tb.bottom ? 'out'
-      : x >= tb.left && x + 1 <= tb.right && y >= tb.top + cap && y + 1 <= tb.bottom - cap ? 'core' : 'cap')
-    const miss = []
-    let rows = 0, trackPts = 0, thumbPts = 0, cand = null
-    for (const btn of [...vp.querySelectorAll('[data-sidebar="menu-button"]')].filter(rendered)) {
-      const b = btn.getBoundingClientRect(), v = visibleX(btn), y = b.top + b.height / 2
-      if (y < vpb.top + 1 || y > vpb.bottom - 1 || v.right <= bb.left + 1) continue // 捲出視野、或沒伸到捲軸底下的列不量
-      rows += 1
-      const bad = []
-      for (let x = Math.ceil(v.left); x < Math.floor(v.right); x += 1) {
-        // Chrome 的命中測試把一個點當成 [x, x+1) 那一格:2026-10-28 實測滑塊 39–46,x38 → 列鈕、x38.25 → 滑塊、x45.75 → 滑塊、x46 → 列鈕;
-        // 所以取整數 x = 量第 x 個 px(取 x + 0.25 會同時碰到第 x + 1 個 px,邊界上那一格會判給右邊的鄰居)
-        const px = x
-        const h = document.elementFromPoint(px, y)
-        const got = !h ? '沒有東西' : h === btn || btn.contains(h) ? '列鈕' : thumb && (h === thumb || thumb.contains(h)) ? '滑塊' : bar.contains(h) ? '軌道' : (h.getAttribute('data-sidebar') || h.tagName.toLowerCase())
-        const w = where(px, y)
-        if (px >= bb.left && px < bb.right) { if (w === 'core') thumbPts += 1; else if (w === 'out') trackPts += 1 }
-        if (!(w === 'core' ? got === '滑塊' : w === 'cap' ? got === '滑塊' || got === '列鈕' : got === '列鈕')) bad.push(`x${x}→${got}`)
-      }
-      if (bad.length) miss.push(`「${label(btn)}」${bad.length} 點(${bad[0]} … ${bad[bad.length - 1]})`)
-      // 真指標要停的點:軌道上、離滑塊上下各 ≥ 2px 的那一列
-      if (!cand && tb && (y < tb.top - 2 || y > tb.bottom + 2)) {
-        cand = { x: r2((bb.left + Math.min(v.right, bb.right)) / 2), y: r2(y), label: label(btn) }
-        btn.setAttribute('data-reach-probe', '')
-      }
-    }
-    return { bar: `${r2(bb.left)}–${r2(bb.right)}`, thumb: tb ? { x: r2(tb.left + tb.width / 2), y: r2(tb.top + tb.height / 2), span: `${r2(tb.left)}–${r2(tb.right)} × ${r2(tb.top)}–${r2(tb.bottom)}` } : null, rows, trackPts, thumbPts, miss, cand }
   }
   const t = document.querySelector(`[data-rail-probe="${role}"]`)
   if (!t) return { err: `找不到量測對象「${role}」` }
@@ -566,87 +507,25 @@ async function railCells(page, kind, prefix, tooltip) {
   return out
 }
 
-/**
- * R5 / R6:細列內容比視窗高時滑過細列,直捲軸看得到、不蓋到圖示。R7(細列與展開都量):捲軸浮出時列鈕伸到捲軸底下的那段點得到。
- * kind 同 railProbe;expanded = 量展開的側欄(只量 R7);tooltip = 細列列鈕有 Tooltip(R7 的真指標那一步另等 Tooltip 打開)
- */
-async function scrollCells(page, kind, prefix, { expanded = false, tooltip = false } = {}) {
+/** R5 / R6:細列內容比視窗高時滑過細列,直捲軸看得到、不蓋到圖示。kind 同 railProbe */
+async function scrollCells(page, kind, prefix) {
   const s0 = await page.evaluate(railProbe, { kind, op: 'scroll' })
   if (s0.err) throw new RailInstrumentError(`${prefix}:${s0.err}`)
-  if (!(s0.overflow >= 1)) throw new RailInstrumentError(`${prefix}:${expanded ? '側欄' : '細列'}內容沒有比捲動區高(超出 ${s0.overflow}px),量不到捲軸`)
+  if (!(s0.overflow >= 1)) throw new RailInstrumentError(`${prefix}:細列內容沒有比捲動區高(超出 ${s0.overflow}px),量不到捲軸`)
   await page.mouse.move(s0.point.x, s0.point.y)
   const shown = await page.waitForFunction(railScrollbarShown, { kind }, { timeout: 3000 }).then(() => true, () => false)
   if (shown) await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
   const s = await page.evaluate(railProbe, { kind, op: 'scroll' })
   const bar = s.bar
+  const inside = !!bar && bar.left >= bar.visLeft - TOL && bar.right <= bar.visRight + TOL
   const out = []
-  if (!expanded) {
-    const inside = !!bar && bar.left >= bar.visLeft - TOL && bar.right <= bar.visRight + TOL
-    out.push({ ok: shown && inside && bar.hit && bar.thumbHeight > 0, label: `${prefix}:R5 滑過細列時直捲軸浮出、整條在細列看得到的範圍內、命中測試打得到`,
-      detail: bar ? `捲軸 ${bar.left}–${bar.right}(${bar.state})、看得到 ${bar.visRight > bar.visLeft ? `${bar.visLeft}–${bar.visRight}` : '無(整條被裁掉)'}、滑塊高 ${bar.thumbHeight}、命中 ${bar.hit};內容超出 ${s.overflow}px` : `滑過 3 秒內沒有捲軸;內容超出 ${s.overflow}px` })
-    const over = bar ? s.icons.filter((i) => bar.left < i.right - TOL && bar.right > i.left + TOL) : []
-    out.push({ ok: !!bar && s.icons.length > 0 && !over.length, label: `${prefix}:R6 細列直捲軸那一欄不與任何圖示 / 頭像那一欄重疊`,
-      detail: !bar ? '沒有捲軸' : over.length ? over.map((i) => `「${i.label}」${i.left}–${i.right} × 捲軸 ${bar.left}–${bar.right}`).join(';') : `${s.icons.length} 個圖示都在捲軸(${bar.left}–${bar.right})左邊` })
-  }
-  out.push(await reachCell(page, kind, prefix, shown, tooltip && !expanded))
+  out.push({ ok: shown && inside && bar.hit && bar.thumbHeight > 0, label: `${prefix}:R5 滑過細列時直捲軸浮出、整條在細列看得到的範圍內、命中測試打得到`,
+    detail: bar ? `捲軸 ${bar.left}–${bar.right}(${bar.state})、看得到 ${bar.visRight > bar.visLeft ? `${bar.visLeft}–${bar.visRight}` : '無(整條被裁掉)'}、滑塊高 ${bar.thumbHeight}、命中 ${bar.hit};內容超出 ${s.overflow}px` : `滑過 3 秒內沒有捲軸;內容超出 ${s.overflow}px` })
+  const over = bar ? s.icons.filter((i) => bar.left < i.right - TOL && bar.right > i.left + TOL) : []
+  out.push({ ok: !!bar && s.icons.length > 0 && !over.length, label: `${prefix}:R6 細列直捲軸那一欄不與任何圖示 / 頭像那一欄重疊`,
+    detail: !bar ? '沒有捲軸' : over.length ? over.map((i) => `「${i.label}」${i.left}–${i.right} × 捲軸 ${bar.left}–${bar.right}`).join(';') : `${s.icons.length} 個圖示都在捲軸(${bar.left}–${bar.right})左邊` })
   await parkPointer(page)
   return out
-}
-
-/**
- * R7:捲軸浮出時,列鈕伸到捲軸底下的那段照樣點得到 —— 軌道透明、不接指標,只有滑塊畫到的地方歸滑塊;滑塊照樣拖得動、滾輪照樣捲。
- * (a) 逐 px 命中測試(railProbe op=reach);(b) 真指標停在軌道上(離開滑塊上下的那一列):列鈕 :hover 成立、細列列鈕的 Tooltip 打開;
- * (c) 真指標按住滑塊往下拖 24px:捲動位置往下;(d) 指標回軌道上滾輪往上:捲動位置往上。任一步不成立、或量不到(沒有列鈕伸到軌道底下)都紅,不丟例外
- * (對照組「細列內層釘回展開寬」會讓捲軸整條被裁掉,那時本格紅、其他格照量)。
- */
-async function reachCell(page, kind, prefix, shown, tooltip) {
-  const label = `${prefix}:R7 捲軸浮出時,列鈕伸到捲軸底下的那段照樣點得到(軌道不接指標、只有滑塊畫到的地方歸滑塊)、滑塊拖得動、滾輪捲得動`
-  if (!shown) return { ok: false, label, detail: '滑過 3 秒內沒有捲軸(量不到)' }
-  const r = await page.evaluate(railProbe, { kind, op: 'reach' })
-  if (r.err) return { ok: false, label, detail: r.err }
-  const notes = [`捲軸 ${r.bar}、滑塊 ${r.thumb?.span ?? '無'};${r.rows} 顆列鈕伸到捲軸底下,軌道上 ${r.trackPts} 點、滑塊中段 ${r.thumbPts} 點`]
-  let ok = r.rows > 0 && r.trackPts > 0 && !r.miss.length
-  if (!(r.rows > 0 && r.trackPts > 0)) notes.push('沒有列鈕伸到軌道底下(量不到)')
-  if (r.miss.length) notes.push(`命中不對:${r.miss.join(';')}`)
-  const state = () => page.evaluate(railProbe, { kind, op: 'reachState' })
-  const waitScroll = async (from) => { // 等捲動位置離開 from 並停下(滾輪可能是平滑捲動);約 2 秒(60 × 兩幀)不動 = 沒捲
-    let prev = from
-    for (let i = 0; i < 60; i += 1) {
-      await page.evaluate(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))))
-      const st = (await state()).scrollTop
-      if (st !== from && st === prev) return st
-      prev = st
-    }
-    return prev
-  }
-  if (r.cand) {
-    await page.mouse.move(r.cand.x, r.cand.y)
-    const hovered = await page.waitForFunction(() => !!document.querySelector('[data-reach-probe]')?.matches(':hover'), null, { timeout: 3000 }).then(() => true, () => false)
-    const tipOpen = tooltip
-      ? await page.waitForFunction(() => { const t = document.querySelector('[data-reach-probe]'); const id = t?.getAttribute('aria-describedby'); return !!id && document.getElementById(id)?.getAttribute('role') === 'tooltip' }, null, { timeout: 5000 }).then(() => true, () => false)
-      : null
-    if (!hovered || tipOpen === false) ok = false
-    notes.push(`指標停在軌道上(${r.cand.x}, ${r.cand.y},「${r.cand.label}」):列鈕 :hover ${hovered}${tooltip ? `、Tooltip ${tipOpen ? '開' : '沒開'}` : ''}`)
-  } else { ok = false; notes.push('找不到離開滑塊上下的列(真指標那一步量不到)') }
-  if (r.thumb) {
-    await page.mouse.move(r.thumb.x, r.thumb.y)
-    const st0 = (await state()).scrollTop
-    await page.mouse.down()
-    await page.mouse.move(r.thumb.x, r.thumb.y + 24, { steps: 6 })
-    await page.mouse.up()
-    const st1 = await waitScroll(st0)
-    const dragged = st1 > st0 + 1
-    let wheeled = null
-    if (r.cand) {
-      await page.mouse.move(r.cand.x, r.cand.y)
-      await page.mouse.wheel(0, -400)
-      const st2 = await waitScroll(st1)
-      wheeled = st2 < st1 - 1
-      notes.push(`拖滑塊 24px:捲動位置 ${st0} → ${st1};軌道上滾輪往上:${st1} → ${st2}`)
-    } else notes.push(`拖滑塊 24px:捲動位置 ${st0} → ${st1}`)
-    if (!dragged || wheeled === false) ok = false
-  } else { ok = false; notes.push('沒有滑塊(拖曳那一步量不到)') }
-  return { ok, label, detail: notes.join(';') }
 }
 
 function judge(story, step, m) {
@@ -743,12 +622,12 @@ async function runPages(page, sv, sabotage, only = null) {
       if (only && !only.scroll) continue
       await page.setViewportSize(c.viewport)
       if (!(await open(c.id, densityQuery(c.density)))) return { instrumentFail: true, results }
-      if (!c.expanded) await page.click('[data-sidebar="trigger"]')
+      await page.click('[data-sidebar="trigger"]')
       const settled = await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
-      const prefix = scrollPrefix(c)
+      const prefix = `${short(c.id)} ${c.viewport.width}×${c.viewport.height} ${densityName(c.density)}密度 收起`
       if (!settled.ok) { results.push({ ok: false, label: prefix, detail: '等不到版面靜止(儀器失效)' }); continue }
       await parkPointer(page)
-      results.push(...await scrollCells(page, c.kind, prefix, { expanded: !!c.expanded, tooltip: true }))
+      results.push(...await scrollCells(page, c.kind, prefix))
     }
   } catch (error) {
     if (!(error instanceof RailInstrumentError)) throw error
@@ -800,13 +679,6 @@ const PAGE_SABOTAGE = [
   ['細列捲軸加寬到 28px(蓋到圖示)', { css: '[data-collapsible="icon"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"]{width:28px!important}' },
     { scroll: true },
     (res) => redAt(res, /:R6 /)],
-  // 2026-10-28 修前的實際狀態:捲軸軌道接指標(Radix 預設),浮出時蓋住列鈕右側約 10px —— 那段點不到、滑過不變、不開 Tooltip
-  ['捲軸軌道接指標(列鈕被軌道蓋住的那段點不到)', { css: '[data-sidebar="content"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"]{pointer-events:auto!important}' },
-    { scroll: true },
-    (res) => SCROLL_CASES.every((c) => res.some((r) => !r.ok && r.label.startsWith(scrollPrefix(c)) && /:R7 /.test(r.label)))],
-  ['滑塊也不接指標(拖不動)', { css: '[data-sidebar="content"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"] > *{pointer-events:none!important}' },
-    { scroll: true },
-    (res) => SCROLL_CASES.every((c) => res.some((r) => !r.ok && r.label.startsWith(scrollPrefix(c)) && /:R7 /.test(r.label)))],
 ]
 
 // ── 跑 ──
@@ -869,5 +741,5 @@ await br.close(); await sv.stop()
 if (problems.length) { console.log(`\n✗ ${SELFTEST ? 'selftest' : '單獨使用的 Sidebar 收合'}:\n  ${problems.join('\n  ')}`); process.exit(1) }
 console.log(SELFTEST
   ? `\n✓ selftest:靜態對照組與 ${PAGE_SABOTAGE.length} 種頁面破壞各自讓閘紅 —— 量具會紅`
-  : `\n✅ 單獨使用的 Sidebar:${STORIES.length} 則 story 收起 / 展開的寬度與可操作性、細列(含 AppShell ${SHELL_RAILS.length} 則、寬鬆密度 ${DENSITY_RAILS.length} 則、放骨架列 / 搜尋框 / 預留動作內距 ${STRESS_RAILS.length} 格)的列鈕版面 / Tooltip 間距 / 焦點框四邊、捲軸(${SCROLL_CASES.length} 種組合,含 AppShell 與展開時;捲軸蓋到的那段列鈕點得到)都符合、靜態段 0 違規`)
+  : `\n✅ 單獨使用的 Sidebar:${STORIES.length} 則 story 收起 / 展開的寬度與可操作性、細列(含 AppShell ${SHELL_RAILS.length} 則、寬鬆密度 ${DENSITY_RAILS.length} 則、放骨架列 / 搜尋框 / 預留動作內距 ${STRESS_RAILS.length} 格)的列鈕版面 / Tooltip 間距 / 焦點框四邊、細列捲軸(${SCROLL_CASES.length} 種組合,含 AppShell)都符合、靜態段 0 違規`)
 process.exit(0)
