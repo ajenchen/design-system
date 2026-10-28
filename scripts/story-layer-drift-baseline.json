@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 57,
     "story-counter-example": 5,
-    "layout-space-magic-ok": 354
+    "layout-space-magic-ok": 345
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -116,12 +116,9 @@
     },
     "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 7,
+        "count": 4,
         "hits": [
-          "04a30a3c1324",
-          "26799ec616eb",
-          "de5d6f1a74dd",
-          "e18dbca74007",
+          "7b69709cc717",
           "e7035f58379d",
           "ed0d4093a9b6",
           "ed0d4093a9b6"
@@ -130,11 +127,9 @@
     },
     "packages/design-system/src/components/Carousel/carousel.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 4,
+        "count": 2,
         "hits": [
-          "1d9238bae749",
-          "55875df613bc",
-          "95e1c0052083",
+          "2a3d2a7e2791",
           "d7784dd691c1"
         ]
       }
@@ -259,22 +254,11 @@
         ]
       }
     },
-    "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 4,
-        "hits": [
-          "2795d1fb3659",
-          "2b48009b3d5c",
-          "75bfa413bc1f",
-          "a6ff3f6579e0"
-        ]
-      }
-    },
     "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "62c82fef2f31"
+          "e47cb50d97b8"
         ]
       }
     },

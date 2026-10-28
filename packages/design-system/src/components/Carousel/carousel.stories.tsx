@@ -60,11 +60,11 @@ export const HomepageHeroBanner = {
           {heroBanners.map((b) => (
             <CarouselItem key={b.city}>
               <div
-                // @layout-space-magic-ok: 360px 高主視覺圖上文字離圖邊 32px 是構圖留白(視覺平衡),不是容器 macro 間距(layoutSpace.spec.md:167 視覺平衡)
+                // @layout-space-magic-ok: 主視覺圖上文字離圖邊 32px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
                 className="relative h-[360px] rounded-lg overflow-hidden flex items-end p-8 bg-cover bg-center"
                 style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${b.image})` }}
               >
-                {/* @layout-space-magic-ok: 大字級主視覺的構圖節奏:小字 eyebrow ↔ text-h2 城市名 ↔ 標語各 4px,是圖上大字排版的視覺平衡,不是卡片「標題 ↔ 說明」(那一種用 --item-gap-label-desc-*)(layoutSpace.spec.md:167 視覺平衡) */}
+                {/* @layout-space-magic-ok: 主視覺圖上小字 ↔ 城市名 ↔ 標語各 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 是各一個 mb-1,同值) */}
                 <div className="text-on-emphasis relative z-10 flex flex-col gap-1">
                   <div className="text-caption font-medium">推薦目的地</div>
                   <div className="text-h2 font-bold">{b.city}</div>

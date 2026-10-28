@@ -37,7 +37,7 @@ const photoBackground = (image: string) => `linear-gradient(180deg, rgba(0,0,0,0
 
 const PhotoSlide = ({ label, image, height = 160 }: { label: string; image: string; height?: number }) => (
   <div
-    // @layout-space-magic-ok: 140–160px 高的小型照片樣本卡,文字離邊 20px 是這種小卡的構圖留白(已發布版就是 20px;規格沒寫這個值,不補規格、不改值)
+    // @layout-space-magic-ok: 照片樣本卡文字離邊 20px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
     className="rounded-lg overflow-hidden flex items-end p-5 text-on-emphasis bg-cover bg-center"
     style={{ backgroundImage: photoBackground(image), height }}
   >
@@ -123,13 +123,13 @@ export const UsageGuidance: Story = {
           note="色弱使用者無法靠色相辨識。本 DS 的 active dot 加寬至 24px(4 倍 inactive 寬度),是 Ant Design / Swiper 的世界級慣例——寬度變化更容易被感知。"
         >
           <div className="flex items-center gap-[var(--layout-space-loose)]">
-            {/* @layout-space-magic-ok: 同一列裡「✅/❌ 符號 + 樣本 + 一兩個字」的行內群(example-captions 明文不收的行內 micro)(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 同一列裡「✅/❌ 符號 + 樣本 + 一兩個字」之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <div className="flex items-center gap-2">
               <span className="text-caption text-fg-muted">✅</span>
               <DotsSample label="指示點示範:現張加寬" />
               <span className="text-footnote text-fg-muted">寬度變化</span>
             </div>
-            {/* @layout-space-magic-ok: 行內 ✅/❌ 標記 ↔ 指示點樣本 ↔ 標籤(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 行內 ✅/❌ 標記 ↔ 指示點樣本 ↔ 標籤 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <div className="flex items-center gap-2">
               <span className="text-caption text-error">❌</span>
               {/* 反例:現張那一點改回 6px 寬、只換成資訊藍 —— 只靠顏色區分 */}
@@ -311,7 +311,7 @@ export const ItemCountLimit: Story = {
         note="超過 7 張,使用者『找不到特定項』——不記得想看的那張在第幾張,要按多次才到。dots 也變得過密難以點擊。應改用 Grid(一眼看全)或 thumbnail + preview pattern。"
       >
         <ExampleGroup className="w-[600px]">
-          {/* @layout-space-magic-ok: 相簿 grid 同質縮圖格距 gap 8px(一串同類縮圖 = 同質 list)(layoutSpace.spec.md:165 同質清單列) */}
+          {/* @layout-space-magic-ok: 相簿縮圖格之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
           <div className="grid grid-cols-4 gap-2">
             {PRODUCT_PHOTOS.map((seed) => (
               <div key={seed} className="aspect-square rounded-md bg-cover bg-center" style={{ backgroundImage: `url(https://picsum.photos/seed/${seed}/240/240)` }} />
