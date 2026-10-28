@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:5663f07c94730344d21b5d4e5b9b05f92608b37bd3dc6ccd635d027c7b3aa4e5",
+      "hash": "sha256:96b2db6dcb1bacbbcd3f92e494d62aac6fb7d847ffce30f98719a7f69b12740e",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:358c6cccce3d22d65fe7c46fc91aa4095d0970e6e2fcb14bcaa79d8f697fcddb",
+      "hash": "sha256:173cef06dd370a1afa55892694bc04afb2740bc5afd3e359c70dfee346ff1c10",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139527,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:013e243a3fa2d2229f092a7337ccb25572a2b8e591f59144f1b89e269d05b49a",
+  "inputDigest": "sha256:f1eef4c2bac321ef2eec3dcb1ecc326af24b9b17d4d6d104b05dcf06fe0553b3",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:ed74e6a3f338867d70834b5b810cfe64d97e67959b16c6165bd746bc8d4c2f9e",
+  "snapshotDigest": "sha256:dd3c257799c19a384bb7d45940fbc1cfd0987211451e8534d4078bfb9453c7ae",
   "sources": [
     {
       "hash": "sha256:3c0ddad14d45e8c2606ae26a65d58c0358f76b4d8fecf6446ed54f0af77f812a",
@@ -3587,8 +3587,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 663,
-      "hash": "sha256:46350d798c81aedba10a79ca6908c04271c6c774e54b4efc7007040c1ad4ca82",
+      "files": 664,
+      "hash": "sha256:9a8da1f78a66c812ffaeefeddba58e18158076218c7bf4f68d61c4558869cb80",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
