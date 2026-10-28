@@ -75,6 +75,7 @@ const EditModeProbe = () => {
 export const ModesRemoveFocusContract: Story = {
   name: '移除焦點接力驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/src/components/Combobox/combobox.spec.md:126「Keyboard focus 在移除後依序交給下一個可見 Tag remove button」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <EditModeProbe />,
@@ -224,6 +225,7 @@ const InlineSearchProbe = () => {
 export const InlineSearchFocusContract: Story = {
   name: '欄位內搜尋焦點驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的焦點
+  // @example-basis: packages/design-system/src/components/Combobox/combobox.spec.md:191「開啟後插入點就在這裡,打字即過濾」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <InlineSearchProbe />,

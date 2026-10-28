@@ -223,7 +223,7 @@ export const RangePopoverOpen: Story = {
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
     return (
-      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值,原寫法 style paddingBottom: 480)
       <div className="pb-[480px]">
         <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
       </div>
@@ -239,7 +239,7 @@ export const ShowTimePopoverOpen: Story = {
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
     return (
-      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值,原寫法 style paddingBottom: 480)
       <div className="pb-[480px]">
         <DatePicker showTime value={v} onChange={setV} className="max-w-xs" />
       </div>
@@ -255,7 +255,7 @@ export const NeedConfirmDateOnlyOpen: Story = {
   render: () => {
     const [effectiveDate, setEffectiveDate] = React.useState('2026-08-01')
     return (
-      // @layout-space-magic-ok: 展開快照在欄位下方保留 420px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 420px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值,原寫法 style paddingBottom: 420)
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xs pb-[420px]">
         <p className="text-caption text-fg-muted">
           合約生效日選錯成本高:點日期先暫存,按「確定」才真正寫入。
@@ -278,7 +278,7 @@ export const ShowTimeRangePopoverOpen: Story = {
       '2026-04-20T18:00:00',
     ])
     return (
-      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+      // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值,原寫法 style paddingBottom: 480)
       <div className="pb-[480px]">
         <DatePicker.Range showTime value={range} onChange={setRange} className="max-w-md" />
       </div>
@@ -317,7 +317,7 @@ const rangePreviewPlay = (which: 'start' | 'end', hoverDay: string) => async ({ 
 const RangePreviewCanvas = () => {
   const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
   return (
-    // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準)
+    // @layout-space-magic-ok: 展開快照在欄位下方保留 480px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值,原寫法 style paddingBottom: 480)
     <div className="pb-[480px]">
       <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
     </div>

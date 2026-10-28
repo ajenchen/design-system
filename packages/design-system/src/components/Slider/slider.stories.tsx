@@ -119,7 +119,7 @@ export const OnCommit: Story = {
             step={100}
           />
         </Field>
-        {/* @layout-space-magic-ok: 兩行讀數(即時預覽 / 已套用查詢)同一文字塊 4px(行內 micro;layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 兩行讀數(即時預覽 / 已套用查詢)同一文字塊 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值) */}
         <div className="flex flex-col gap-1 text-caption">
           <span className="text-fg-secondary">即時預覽:${preview[0]}</span>
           <span className="text-foreground font-medium">已套用查詢:${applied[0]}</span>

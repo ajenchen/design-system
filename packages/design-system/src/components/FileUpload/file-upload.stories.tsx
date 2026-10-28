@@ -124,6 +124,7 @@ export const WithFileList = {
 export const FileListRemoveFocusContract = {
   name: '移除焦點接力驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:117「移除焦點:在 callback 前把 focus 交給下一項 remove button」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <FileListDemo />,
@@ -139,6 +140,7 @@ export const FileListRemoveFocusContract = {
 export const FileListKeyboardContract = {
   name: '檔案清單鍵盤走法驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:163「上 / 下一列,不繞回」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <FileListDemo />,

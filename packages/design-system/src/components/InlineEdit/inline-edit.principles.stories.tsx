@@ -100,7 +100,7 @@ export const VsControlView: Story = {
         <thead>
           <tr className="border-b-2 border-border text-left text-caption font-semibold text-fg-muted">
             {SIBLING_HEADERS.map((header, c) => (
-              // @layout-space-magic-ok: 說明表格的儲存格內距:上下 8px 是同質列的列距(layoutSpace.spec.md:165 同質清單列),右 16px 是欄與欄之間(最後一欄不加)
+              // @layout-space-magic-ok: 說明表格的儲存格內距:上下 8px、欄與欄之間右 16px(最後一欄不加)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值)
               <th key={header} className={cn('py-2', c < SIBLING_HEADERS.length - 1 && 'pr-4')}>{header}</th>
             ))}
           </tr>
@@ -109,7 +109,7 @@ export const VsControlView: Story = {
           {SIBLING_ROWS.map((row, r) => (
             <tr key={row[0]} className={cn('align-top', r < SIBLING_ROWS.length - 1 && 'border-b border-divider')}>
               {row.map((cell, c) => (
-                // @layout-space-magic-ok: 說明表格的儲存格內距:上下 8px 是同質列的列距(layoutSpace.spec.md:165 同質清單列),右 16px 是欄與欄之間(最後一欄不加)
+                // @layout-space-magic-ok: 說明表格的儲存格內距:上下 8px、欄與欄之間右 16px(最後一欄不加)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值)
                 <td key={c} className={cn('py-2', c < row.length - 1 && 'pr-4', c === 0 && 'font-medium text-foreground')}>{cell}</td>
               ))}
             </tr>

@@ -219,6 +219,7 @@ export const HugWidthMultiStack: Story = {
 export const MultiRemoveFocusContract: Story = {
   name: '移除焦點接力驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/src/components/PeoplePicker/people-picker.spec.md:331「下一個 remove control → 前一個 → owner combobox trigger」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <MultiPicker />,
@@ -242,6 +243,7 @@ export const MultiRemoveFocusContract: Story = {
 export const StackRemoveOverlayProbe: Story = {
   name: '移除鈕完整性驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/src/components/Avatar/avatar.spec.md:229「在標籤被滑過 / 焦點在標籤內時(與 × 顯示的條件相同)才打開那個洞」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <MultiPicker />,

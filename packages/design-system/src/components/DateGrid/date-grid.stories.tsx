@@ -115,7 +115,7 @@ export const Multiple: Story = {
             />
             <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
               已選 <span className="font-medium text-foreground">{dates.length}</span> 天:
-              <span /* @layout-space-magic-ok: 同一行讀數裡「已選 N 天:」↔ 日期清單的行內 4px(layoutSpace.spec.md:166 micro) */ className="ml-1 text-fg-secondary">
+              <span /* @layout-space-magic-ok: 同一行讀數裡「已選 N 天:」↔ 日期清單的行內 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值) */ className="ml-1 text-fg-secondary">
                 {dates.length ? dates.map(formatDate).join('、') : '尚未選擇'}
               </span>
             </div>

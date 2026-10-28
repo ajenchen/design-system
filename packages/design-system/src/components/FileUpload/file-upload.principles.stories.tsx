@@ -199,7 +199,7 @@ export const DivisionOfLaborRule: Story = {
           title="✅ FileUpload 觸發 + FileItem 顯示"
           note="本範例走 consumer 自組清單:FileUpload 負責拖放偵測 + 觸發選檔,已上傳清單由 consumer 用 FileItem map 渲染。DS 同時支援第二條路——把清單交給 FileUpload 的 files prop 內建渲染(見下一則規則);兩條路都合法,差別只在觸發與清單狀態由誰持有,重點是都不重畫 FileItem 內部視覺。這正是 Notion / Slack / Figma 的附件 flow 做法。"
         >
-          {/* @layout-space-magic-ok: FileUpload → consumer 自組的 compact FileItem 清單 4px,與內建 files 清單同值(file-upload.tsx fileListClassName compact 模式 gap 4px / mt 4px;file-item.spec.md:264 List wrapper canonical) */}
+          {/* @layout-space-magic-ok: FileUpload ↔ 它的檔案清單 = layoutSpace.spec.md「親疏 3 級」的同範疇 bundled(FileUpload+FileList),值由元件決定 —— 跟內建 files 清單 compact 同為 4px(file-upload.tsx fileListClassName);FileUpload 規格沒寫這個值、不由 AI 補進規格(F-S7)。這個 4px 是 7ec9cb61 加的,已發布版(ec7466f5)兩者之間是範例框的 gap-3 */}
           <div className="flex flex-col gap-1">
             <FileUpload
               multiple
@@ -216,7 +216,7 @@ export const DivisionOfLaborRule: Story = {
               }
             />
             {files.length > 0 && (
-              // @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:264 List wrapper canonical;layoutSpace.spec.md:113 同範疇 spec-own)
+              // @layout-space-magic-ok: compact FileItem 清單列距 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值)
               <div className="flex flex-col gap-1">
                 {files.map((f, i) => (
                   <FileItem

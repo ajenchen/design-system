@@ -143,41 +143,41 @@ export const Overview = {
         <div className="flex gap-8">
           {/* Link state anatomy */}
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-medium">edit — link 狀態</span>
+            <span className="text-caption text-fg-muted font-medium">edit — link 狀態</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
               {[
                 { name: 'link text', color: 'info' },
                 { name: 'Pencil action', color: 'error' },
               ].map((s) => (
-                <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+                <span key={s.name} className="rounded px-2 py-1 text-caption font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">text-primary · hover:underline · 點擊開啟連結</span>
+            <span className="text-footnote text-fg-muted font-mono">text-primary · hover:underline · 點擊開啟連結</span>
           </div>
 
           {/* Input state anatomy */}
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-medium">edit — input 狀態</span>
+            <span className="text-caption text-fg-muted font-medium">edit — input 狀態</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
               {[
                 { name: 'bareInput', color: 'success' },
               ].map((s) => (
-                <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+                <span key={s.name} className="rounded px-2 py-1 text-caption font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">無值 / 正在編輯 / URL 格式錯誤</span>
+            <span className="text-footnote text-fg-muted font-mono">無值 / 正在編輯 / URL 格式錯誤</span>
           </div>
 
           {/* Readonly */}
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-medium">readonly</span>
+            <span className="text-caption text-fg-muted font-medium">readonly</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5">
-              <span className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+              <span className="rounded px-2 py-1 text-caption font-mono border border-dashed"
                 style={{ borderColor: 'var(--info)', backgroundColor: 'var(--info-subtle)', color: 'var(--info)' }}>link text</span>
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">藍色連結可點擊，無 Pencil</span>
+            <span className="text-footnote text-fg-muted font-mono">藍色連結可點擊，無 Pencil</span>
           </div>
         </div>
       </ExampleSection>
@@ -259,13 +259,13 @@ const InspectorInner = () => {
           取代手刻 Tab:它靜止借 neutral-hover、hover 借 neutral-active,是 color.spec.md 成對 token 的錯配) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">Mode</span>
+          <span className="text-caption text-fg-muted w-16 shrink-0">Mode</span>
           <SegmentedControl size="sm" aria-label="Mode" value={mode} onValueChange={(v) => setMode(v as ModeKey)}>
             {MODES.map((m) => <SegmentedControlItem key={m} value={m}>{m}</SegmentedControlItem>)}
           </SegmentedControl>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">State</span>
+          <span className="text-caption text-fg-muted w-16 shrink-0">State</span>
           {/* 非 edit 模式只有 link 狀態:原本是「點了沒反應」的靜默 no-op,改用元件自身的個別 item disabled
               (segmented-control.spec.md「disabled」);當前值恆為 link,不會落在停用項上 */}
           <SegmentedControl size="sm" aria-label="State" value={editState} onValueChange={(v) => setEditState(v as EditStateKey)}>
@@ -275,10 +275,10 @@ const InspectorInner = () => {
               </SegmentedControlItem>
             ))}
           </SegmentedControl>
-          {mode !== 'edit' && <span className="text-[11px] text-fg-muted">readonly / disabled 只有 link 狀態</span>}
+          {mode !== 'edit' && <span className="text-caption text-fg-muted">readonly / disabled 只有 link 狀態</span>}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
+          <span className="text-caption text-fg-muted w-16 shrink-0">Size</span>
           <SegmentedControl size="sm" aria-label="Size" value={size} onValueChange={(v) => setSize(v as SizeKey)}>
             {SIZES.map((sz) => <SegmentedControlItem key={sz} value={sz}>{sz}</SegmentedControlItem>)}
           </SegmentedControl>
@@ -312,7 +312,7 @@ const InspectorInner = () => {
 
           {/* Blueprint */}
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-4 text-[10px]">
+            <div className="flex items-center gap-4 text-footnote">
               {[
                 { c: Z.pad, l: '左右內距' },
                 ...(showPencil ? [{ c: Z.label, l: 'Link text' }, { c: Z.gap, l: '間距' }, { c: Z.action, l: 'Pencil' }] : [{ c: Z.label, l: 'bareInput' }]),
@@ -346,20 +346,20 @@ const InspectorInner = () => {
                 <div className="ml-1.5"><TkVal token={s.heightToken} value={s.height} /></div>
               </div>
             </div>
-            <p className="text-[10px] text-fg-muted">寬度為示意比例，實際由內容決定</p>
+            <p className="text-footnote text-fg-muted">寬度為示意比例，實際由內容決定</p>
           </div>
         </div>
 
         {/* Right: inspect panel */}
         <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
-            <span className="text-[12px] font-semibold text-foreground">Inspect</span>
+            <span className="text-caption font-semibold text-foreground">Inspect</span>
           </div>
 
           {/* COLOR */}
           {colors && (
             <div className="px-4 py-1">
-              <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Color</span></div>
+              <div className="py-2 border-b border-divider"><span className="text-footnote font-semibold text-fg-muted uppercase tracking-wider">Color</span></div>
               <PropRow label="Fill"><TokenValue value={colors.wrapper.bg} /></PropRow>
               <PropRow label="Text"><TokenValue value={colors.value} /></PropRow>
               <PropRow label="Stroke"><TokenValue value={colors.wrapper.border} /></PropRow>
@@ -376,7 +376,7 @@ const InspectorInner = () => {
 
           {/* LAYOUT */}
           <div className="px-4 py-1">
-            <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
+            <div className="py-2 border-b border-divider"><span className="text-footnote font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
             <PropRow label="高度" dot={Z.dim.text}><TkVal token={s.heightToken} value={s.height} /></PropRow>
             <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={s.pxToken} value={`${s.px}px`} /></PropRow>
             <PropRow label="元素間距" dot={Z.gap.text}><TkVal token={s.gapToken} value={`${s.gap}px`} /></PropRow>
@@ -386,14 +386,14 @@ const InspectorInner = () => {
 
           {/* TYPOGRAPHY */}
           <div className="px-4 py-1">
-            <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Typography</span></div>
+            <div className="py-2 border-b border-divider"><span className="text-footnote font-semibold text-fg-muted uppercase tracking-wider">Typography</span></div>
             <PropRow label="Font"><TkVal token={s.fontToken} value={s.font} /></PropRow>
             <PropRow label="Weight"><TkVal token="font-normal" value="400" /></PropRow>
           </div>
 
           {/* STYLE */}
           <div className="px-4 py-1 pb-3">
-            <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
+            <div className="py-2 border-b border-divider"><span className="text-footnote font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
             <PropRow label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
             <PropRow label="Border"><TkVal token="border" value="1px solid" /></PropRow>
             <PropRow label="Focus"><TkVal token="border-primary" value="1px" /></PropRow>
@@ -452,7 +452,7 @@ export const ColorMatrix = {
                         <TokenAnnotation colors={c.wrapper} />
                       </td>
                       <td className="p-3 border-b border-divider align-top">
-                        <span className="inline-flex items-center gap-1 text-[10px]">
+                        <span className="inline-flex items-center gap-1 text-footnote">
                           <Swatch value={c.value} size="sm" />
                           <span className="font-mono text-fg-secondary">{c.value}</span>
                         </span>
@@ -460,19 +460,19 @@ export const ColorMatrix = {
                       <td className="p-3 border-b border-divider align-top">
                         {c.pencil !== '—' ? (
                           <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1 text-[10px]">
+                            <span className="inline-flex items-center gap-1 text-footnote">
                               <Swatch value={c.pencil} size="sm" />
                               <span className="font-mono text-fg-secondary">{c.pencil}</span>
                               <span className="text-fg-muted">default</span>
                             </span>
-                            <span className="inline-flex items-center gap-1 text-[10px]">
+                            <span className="inline-flex items-center gap-1 text-footnote">
                               <Swatch value={c.pencilHover} size="sm" />
                               <span className="font-mono text-fg-secondary">{c.pencilHover}</span>
                               <span className="text-fg-muted">hover</span>
                             </span>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-fg-muted">—</span>
+                          <span className="text-footnote text-fg-muted">—</span>
                         )}
                       </td>
                     </tr>
@@ -510,7 +510,7 @@ export const ColorMatrix = {
                         <TokenAnnotation colors={c.wrapper} />
                       </td>
                       <td className="p-3 border-b border-divider align-top">
-                        <span className="inline-flex items-center gap-1 text-[10px]">
+                        <span className="inline-flex items-center gap-1 text-footnote">
                           <Swatch value={c.value} size="sm" />
                           <span className="font-mono text-fg-secondary">{c.value}</span>
                         </span>
@@ -545,7 +545,7 @@ export const ColorMatrix = {
                   <Td>
                     <span className="inline-flex items-center gap-2">
                       <TokenValue value="--primary-hover" />
-                      <span className="text-[10px] text-fg-muted">+ underline</span>
+                      <span className="text-footnote text-fg-muted">+ underline</span>
                     </span>
                   </Td>
                   <Td>—</Td>
@@ -612,7 +612,7 @@ export const SizeMatrix = {
                     return (
                       <Td key={sz} mono>
                         {token && <div className="text-fg-secondary">{token}</div>}
-                        {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
+                        {sub && <div className="text-fg-muted text-footnote">{sub}</div>}
                       </Td>
                     )
                   })}
@@ -628,7 +628,7 @@ export const SizeMatrix = {
           <div className="flex flex-col gap-3">
             {SIZES.map((sz) => (
               <div key={sz} className="flex items-center gap-4">
-                <span className="text-[11px] text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
+                <span className="text-caption text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
                 <LiveLinkInput mode="edit" size={sz} value="https://github.com" className="max-w-xs" />
               </div>
             ))}
@@ -640,7 +640,7 @@ export const SizeMatrix = {
           <div className="flex flex-col gap-3">
             {SIZES.map((sz) => (
               <div key={sz} className="flex items-center gap-4">
-                <span className="text-[11px] text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
+                <span className="text-caption text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
                 <LiveLinkInput mode="edit" size={sz} value="" className="max-w-xs" />
               </div>
             ))}
@@ -652,7 +652,7 @@ export const SizeMatrix = {
           <div className="flex flex-col gap-3">
             {(['readonly', 'disabled'] as const).map((m) => (
               <div key={m} className="flex items-center gap-4">
-                <span className="text-[11px] text-fg-muted w-16 shrink-0 font-mono">{m}</span>
+                <span className="text-caption text-fg-muted w-16 shrink-0 font-mono">{m}</span>
                 <LinkInput mode={m} value="https://github.com" className="max-w-xs" />
               </div>
             ))}
