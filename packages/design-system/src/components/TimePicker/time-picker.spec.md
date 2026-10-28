@@ -231,7 +231,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 
 ## 為何無 Range(MVP)
 
-user 若需「from-to」時間範圍,用**兩個 `<TimePicker>` 並列 + 中間 `<ArrowRight>`**(對齊 Ant `TimePicker.RangePicker` 的 composition 思路)。內建 Range 暫不 MVP 實作,因為:
+user 若需 from-to 時間範圍,用**兩個 `<TimePicker>` 並列 + 中間 `<ArrowRight>`**(對齊 Ant `TimePicker.RangePicker` 的 composition 思路)。內建 Range 暫不 MVP 實作,因為:
 
 1. 大部分「時間範圍」情境是**營業時間 / 會議時段**,consumer 端用兩個 TimePicker 組合語意更清晰
 2. 未來若出現大量 Range 需求(如 shift 排班表),再抽 `<TimePicker.Range>` sub-composition,對齊 DatePicker.Range 的 API pattern

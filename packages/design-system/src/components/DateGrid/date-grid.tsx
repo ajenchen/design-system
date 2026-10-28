@@ -368,7 +368,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
   // 世界級:React Aria 預設就是「在月曆裡、但不在按鈕上放開 = 確認正在預覽的區間」(`useRangeCalendar.ts#L23-L32` 預設 `select`:
   // "select the currently hovered range of dates."、`#L80-L86` 的條件 `!target.closest('button, [role="button"]')`,
   // https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts#L80-L86 );
-  // MUI X、Chakra 在縫裡點沒反應(R21 實測)—— 本 DS 取前者,理由是 user 的原則「滑過有變化的地方,點下去要有反應」(待辦總帳 N50)。
+  // MUI X、Chakra 在縫裡點沒反應(R21 實測)—— 本 DS 取前者,理由是 user 的原則:滑過有變化的地方,點下去要有反應(待辦總帳 N50)。
   const handleGridClick =
     onDayMouseLeave &&
     ((event: React.MouseEvent<HTMLTableElement>) => {
@@ -513,7 +513,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // range 中段(淺灰底)由 range_middle 的 !bg-primary 覆寫回藍(2026-07-07 user 拍板)。
           '[&[data-selected=true]>button]:after:bg-on-emphasis',
         ),
-        // 2026-09-07 修 M24 違反(user 抓圖:「明明都是 disabled,有些字比較深有些比較淺」):
+        // 2026-09-07 修 M24 違反(user 抓圖:「明明都是disabled的日期,有些日期的文字比較深有些比較淺」):
         // outside 與 disabled 是兩個獨立 modifier,RDP 會把兩個 className 都串上同一格。
         // 兩條 utility 特異性相同 → 由 stylesheet 順序決勝,實測 `text-fg-muted`(neutral-7,45%)
         // 贏過 `text-fg-disabled`(neutral-6,25%),導致**非本月又不可選的日子反而比本月不可選的更深**。

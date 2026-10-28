@@ -66,7 +66,7 @@ InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 f
 - **對齊 root invariant**:固定 `-mx-[--field-px]` 要能把值/tag/avatar 左緣拉到 label x=0,**充要條件 = 委派控件 view 左 px 恆 = field-px**。故 InlineEdit **兩條 view 路徑都用同一個 `fieldViewGeometry`(field-px + min-h + py)**:純值/標題路徑直接套;**委派控件路徑(renderRead)也用 `fieldViewGeometry` 包住**(委派控件 bare view 皆 0px 左內距 → 包住後統一 field-px)。這樣 tag/avatar/date 全對齊 label(不碰任何控件的 tagPadding)。
 - **vertical(預設,含 standalone)** → `-mx-[var(--field-px)]` + `w-[calc(100%+2*var(--field-px))]`:整塊拉到欄左緣 → 值/tag 左緣落 label x=0。**-mx 只依 orientation、不依 fieldCtx**(spec Model A 原意;舊 `fieldCtx &&` gate 讓 standalone 不對齊 = bug,已移除)。-mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
 - **horizontal** → `w-full min-w-0`,**不用 -mx**:值內縮 px = 對齊 sibling 控件
-- **edit 態完全繼承原 field**(Jira 式,user 2026-07-17 拍板):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(= Jira 式,可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
+- **edit 態完全繼承原 field**(Jira 式,2026-07-17 記為 user 拍板,來源不明:登記簿查無原話):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(= Jira 式,可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
 
 **多行(multiline)**:view = `items-start py-2`,**= Textarea edit `py-2`**(textarea.tsx base)——`scripts/inline-edit-view-geometry-invariant.mjs` 機械鎖此契約(Textarea py 一改即紅)。
 
@@ -74,13 +74,13 @@ InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 f
 
 **點得到的範圍 = 底色範圍**(2026-09-26,待辦總帳 N53⑤):隱形 Pressable 用 `-inset-px` 蓋滿外框的 border box(含那圈 1px 透明邊框),滑過底色亮到哪、點下去就進 edit 到哪。先前是 `inset-0`,只蓋到 padding box —— 外圈 1px 亮著卻點不進 edit(實測一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點),正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。修的是命中區、不是底色:底色與 edit 輸入框逐 pixel 對齊是本條不變量,不能縮。畫面不變,只有那 1px 的游標與點擊結果改變。世界級對照:Atlassian inline-edit 的讀取態把點擊與滑過底色掛在**同一個元素**上,兩者天生同一個盒([`read-view.js#L56`](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js) `onClick: onReadViewClick`、同一個 div 的 `className`(#L62)帶滑過樣式)。
 
-**尺寸預設 = `sm`**（2026-07-09 user 拍板）:view 態無邊框、視覺即純文字,尺寸過大會使版面鬆散;consumer 可傳 `size` 覆寫,標題場景另用 `readClassName` 疊大字級。
+**尺寸預設 = `sm`**（2026-07-09 user 拍板〔UD-J12〕）:view 態無邊框、視覺即純文字,尺寸過大會使版面鬆散;consumer 可傳 `size` 覆寫,標題場景另用 `readClassName` 疊大字級。
 
 **在 `<Field>` 內也是 `sm`**(2026-07-28 user 拍板):Field 的預設 `md` 是「沒人決定過」的預設值,不得壓過本元件宣告的 `sm`。實作雙通道 —— 靜態 `InlineEdit.fieldPreferredSize = 'sm'` 供 Field 直接子元件同步偵測,加上掛載時的 `useRegisterFieldPreferredSize('sm')` 補位(包 wrapper / `React.memo` / HOC 會遮蔽靜態);控件自身尺寸則由 `useResolvedFieldSize` 依 `sizeExplicit` 同步解析,不等註冊。**唯有 consumer 顯式 `size`(在 Field 或 InlineEdit 上)才覆寫**。機制與失效語意 owner → `Field/field.spec.md`「Control 偏好尺寸（`fieldPreferredSize`）SSOT」。
 
 **單行 view 恆一行**(2026-07-28 user 拍板):`multiline=false` 的 view 態溢出**不換行**,一律 ellipsis,且**截斷才顯 tooltip**顯示完整值(規則 owner:`Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容。」+ `truncated-text.spec.md`)。**實作 = `useTruncated` 自組而非 `<TruncatedText>`**:view 上疊著透明 Pressable(click-to-edit 入口)會吞掉內層所有 hover,tooltip trigger 必須掛在**整個 view 容器**、量測留在內層值 span —— 這正是 truncated-text.spec 對「trigger 需自控」場景指定的 escape(2026-07-28 user 實測抓到 primitive 直用時 tooltip 永不開)。委派 view(`renderRead`)同一條規則、同一個外層 Tooltip:委派控件自帶的截斷 tooltip(Input `<TruncatedText>` / Tag)trigger 在內層,editable 時同樣被 Pressable 攔截 —— 故外層容器 Tooltip 一併服務委派路徑:`useTruncated` 傳自訂 `measure`(`hooks/use-truncated.ts` options.measure 即為此類自訂策略開的口)走訪 wrapper 子樹,任一 `.truncate` 後代溢出即視為截斷;tooltip 內容 = wrapper 當下 DOM 的 `textContent`(完整格式化文字;非 string `T` 不可 `String(value)`)。`editable=false` 不渲染 Pressable → 委派控件自身 tooltip 可達,外層讓位不重複顯示。多行(`multiline`)維持 `pre-wrap` 忠實呈現。
 
-**多行 edit 高度隨內容**(2026-07-28 user 拍板):view 態高度由內容決定,edit 態必須同源,否則 read↔edit 跳高。預設 `Textarea autoSize`(`field-sizing: content`),consumer 以 `editMaxRows` 設上限、超過改捲動。與 DataTable cell 共用同一份 `autoSize` 實作(原本只有 cell 有呼叫端膠水 → 兩者漂移)。
+**多行 edit 高度隨內容**(2026-07-28 記為 user 拍板,來源不明:登記簿查無原話):view 態高度由內容決定,edit 態必須同源,否則 read↔edit 跳高。預設 `Textarea autoSize`(`field-sizing: content`),consumer 以 `editMaxRows` 設上限、超過改捲動。與 DataTable cell 共用同一份 `autoSize` 實作(原本只有 cell 有呼叫端膠水 → 兩者漂移)。
 
 **核心不變量:view 態 hover = 背景 tint;view 態 focus = Field 藍框（`border-primary`）,與 edit 態同源。** hover（滑鼠懸停）用底色、focus（鍵盤選中）用藍框——藍框是 edit focus 的預覽,view→edit 一路都是藍框、不會 ring→框跳一下;靜止（無 hover/focus）則透明邊框不可見 = 純值。
 

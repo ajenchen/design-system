@@ -170,7 +170,7 @@ Dismiss 是 Inline Action，icon 色**依宿主是否有色彩分兩支**(判斷
 
 | 模式 | Icon 色 | Hover 背景 | Active 背景 |
 |---|---|---|---|
-| **neutral subtle**(預設) | `fg-muted` → hover `fg-secondary`(中性宿主走 inline-action 預設分支,**不** override primitive;2026-07-30 user 拍板) | `--neutral-hover` | `--neutral-active` |
+| **neutral subtle**(預設) | `fg-muted` → hover `fg-secondary`(中性宿主走 inline-action 預設分支,**不** override primitive;2026-07-30 user 拍板〔UD-J08〕) | `--neutral-hover` | `--neutral-active` |
 | 有色 subtle(categorical step-1 淺底) | 繼承 Tag 文字色 | `--neutral-hover` | `--neutral-active` |
 | solid（有色） | 繼承 Tag 文字色 | `--{hue}-hover`（如 `--blue-hover`） | `--{hue}-active` |
 | solid neutral | `--inverse-fg` | `--inverse-neutral-hover` | `--inverse-neutral-active` |

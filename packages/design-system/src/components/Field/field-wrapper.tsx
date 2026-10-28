@@ -111,7 +111,7 @@ export const fieldWrapperStyles = cva(
     //   各 Field 元件 wrapper 同時加 `data-field-mode={resolvedMode}` 屬性,bareInputStyles 即可
     //   依 mode 切 placeholder color。User canonical:disabled 顯著性優於 muted。
     'group/field',
-    // 2026-05-15 H1 root cause fix(user #1 verbatim 拍板「照你跟codex有共識的最佳建議做」+ codex round 1 verify cite 5/5):
+    // 2026-05-15 H1 root cause fix(user #1 拍板照 AI 與 codex 有共識的最佳建議做 + codex round 1 verify cite 5/5):
     // 加 `min-w-0` 於 base — Field wrapper 為 cell-as-input substrate(DataTable / Form 上下文),
     // parent grid/flex cell 限寬時 wrapper 子 flex children 需 min-w-0 才能縮 + truncate。
     // 之前 SSOT 缺 → `selectedItemRenderer` / value text / Multi tag area 在 narrow cell 無法
@@ -189,7 +189,7 @@ export const fieldWrapperStyles = cva(
       //
       // ── 2026-05-06 v14:revert v12 → v9 baseline + keep v13.3 ──
       // v12 `!absolute -inset-px` autoRowHeight 不相容(Field 抽 layout flow → cell 塌 42px;
-      // user production 報「Field 沒撐滿 cell, 比沒改之前還糟糕一百萬倍」)→ revert。
+      // user production 回報 Field 沒撐滿 cell、比改之前還糟)→ revert。
       //
       // v14 = v9 baseline border-based state machine + v13.3 focus !important。
       // 暫接受視覺:Field.border-l 跟 prev cell.border-r 視覺 2px 雙線(待另案研究 seamless
@@ -415,7 +415,7 @@ export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-star
 // 直接 ship = workflow 違反。Revert 回 v15.13 outline+offset:-1(原 user-accepted 路徑),
 // 等 user 拍板 4-邊覆蓋路徑才 ship。
 //
-// User 並指出我視覺分析又錯:「我就是只有看到只有右邊被蓋掉,上面下面左邊都會露出 cell 的邊框」
+// User 並指出我視覺分析又錯:只有右邊被蓋掉,上面、下面、左邊都會露出 cell 的邊框
 // 我之前錯說「right + bottom 都覆蓋」,bottom 真實 row border-b 在 cell.outer 外 1px,outline 蓋不到。
 //
 // 真實 4-邊狀態(re-verified):

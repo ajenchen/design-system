@@ -345,8 +345,8 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
           <span aria-hidden className="invisible col-start-1 row-start-1 justify-self-start h-0 overflow-hidden whitespace-nowrap pointer-events-none inline-flex items-center gap-2">{closedValue}</span>
           <span aria-hidden className="invisible col-start-1 row-start-1 justify-self-start h-0 whitespace-pre pointer-events-none">{`${search} `}</span>
           {showSelectedOverlay && (
-            // 2026-05-16 Bug B 真 root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user verbatim
-            // 「修了一百次還沒好」+ codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
+            // 2026-05-16 Bug B 真 root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user 指出修了很多次還沒好
+            // + codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
             // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
             // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
             // 對齊 `person-display.tsx:148` 既有 DS canonical:outer flex container + inner truncate 真實 box。

@@ -122,7 +122,7 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 | ON · hover | `bg-primary-hover` | 同上 | primary check |
 | Disabled | 套 `opacity-disabled`（整體透明度降級）;**hover 不升階** | 同 ON/OFF | 同 ON/OFF |
 | Readonly(standalone)| 視覺同一般態;**hover 不升階**(指標停在 label 上也一樣:ON 釘 `bg-primary`、OFF 釘 `bg-border`) | 但 `pointer-events-none` + click guard + `aria-readonly` | — |
-| Readonly(Field 內,2026-06-12 user 拍板)| 不渲染 toggle — 改渲染 `fieldWrapperStyles` readonly 灰框(= Input readonly 同源)+ 勾/叉 icon(view 同款值語言) | role="switch" + aria-checked + aria-readonly + 可 focus | — |
+| Readonly(Field 內,2026-06-12 user 拍板〔UD-J05〕)| 不渲染 toggle — 改渲染 `fieldWrapperStyles` readonly 灰框(= Input readonly 同源)+ 勾/叉 icon(view 同款值語言) | role="switch" + aria-checked + aria-readonly + 可 focus | — |
 
 ### Disabled 用 `opacity`
 

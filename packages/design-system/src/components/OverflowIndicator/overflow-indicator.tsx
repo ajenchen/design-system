@@ -198,7 +198,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
       </span>
     )
 
-    // 2026-05-18 fix(per user audit「所有 hovercard 應消費 hover delay token」+ motion.spec.md SSOT):
+    // 2026-05-18 fix(per user audit:所有 hovercard 應消費 hover delay token + motion.spec.md SSOT):
     // plain tier(純列表展開、無 fetch)= MOTION_DELAY_PLAIN_MS,per motion.spec.md 對照表 row;
     // close = MOTION_DELAY_CLOSE_MS。2026-06-11 修:2026-05-18 token 遷移誤挑 rich(原 hardcode 200/300
     // 兩 tier 皆非,遷移未對照 spec 表)— popup 可互動性由 close 緩衝保障,與 open tier 無關。

@@ -262,7 +262,7 @@ function useOverflowCount({
 export type OverflowTagShape = 'circle' | 'tag'
 
 // 2026-05-16 fix:overflow chip wrapper 必能跟 tag wrapper 套同 overlap class
-// (per user 物理模型「avatar 和 +N 都是同尺寸圓形 + 同 step」)。原 chip wrapper
+// (per user 物理模型:avatar 和 +N 都是同尺寸圓形 + 同 step)。原 chip wrapper
 // 只有 `shrink-0`,在 stack 模式 -ml-0.5 不 apply → chip 不 overlap → 視覺多 22px
 // 額外空間 → length=4→4 / length=5→2+3 saw bug 物理根因。
 // PeoplePicker stack mode pass `'-ml-0.5 first:ml-0 relative inline-flex'` 對齊。
@@ -309,7 +309,7 @@ export interface OverflowTagListProps {
   /**
    * 2026-05-15 Bug 3 fix:override visible count via formula-based primitive(PeoplePicker stack
    * 用 `avatar-stack-overflow` primitive deterministic formula 計算 visible,bypass DOM offsetWidth
-   * measurement)。對齊 user SSOT「同 cell width 同 overflow 判斷」。
+   * measurement)。對齊 user 要求的 SSOT:同 cell width 同 overflow 判斷。
    */
   visibleCountOverride?: number
 }

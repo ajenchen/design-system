@@ -119,7 +119,7 @@ function ComboboxTagStack({
   // parent 下不認領完整可用寬度 → OverflowTagList 量得寬度小於 edit path → 顯 `+N` 多於 edit。
   // edit path tagAreaRef wrapper 已是 `flex-1 min-w-0`(CustomCombobox),
   // view 必對稱才 SSOT。
-  // 2026-05-15 F1 Q3 fix(per user round 3 verbatim「單人選取時 Tag 越界蓋 indicator」):
+  // 2026-05-15 F1 Q3 fix(per user round 3 指出單人選取時 Tag 越界蓋住 indicator):
   // `overflow-visible` → `overflow-hidden` 讓 narrow cell width 強制 clip(Tag 內建 truncate
   // 處理 text ellipsis,stack `-ml-0.5` 負 margin 在 wrapper 內不受影響)。對齊
   // `data-table.spec.md`「十一、Cell 單行截斷原則」(空間不足一律 ellipsis,不硬裁)+ MUI X / Ant Table column.ellipsis 共識。
@@ -323,7 +323,7 @@ export interface ComboboxProps {
    * 2026-05-15 Bug 3 fix:override visible count via formula-based primitive(opt-in;default 走
    * DOM-based `useOverflowCount`)。PeoplePicker stack mode 用 `avatar-stack-overflow` primitive
    * deterministic formula 計算 visible count,forward 給 Combobox bypass DOM offsetWidth
-   * measurement,避免 dual-algorithm drift。對齊 user SSOT「同 cell width 同 overflow 判斷」。
+   * measurement,避免 dual-algorithm drift。對齊 user 要求的 SSOT:同 cell width 同 overflow 判斷。
    */
   visibleCountOverride?: number
   /**
@@ -440,8 +440,8 @@ function ReadonlyMultiSelect({
   )
 }
 
-// 2026-05-16 Bug A root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user verbatim
-// 「圖二/圖三 同 180px 不同 length 不同 visible — 跟 user 一開始抓的問題一模一樣」):
+// 2026-05-16 Bug A root cause fix(Claude+Codex M31 Step 5 比稿 consensus,user 指出
+// 圖二 / 圖三同 180px、不同 length 卻不同 visible,跟一開始抓的問題一模一樣):
 // 公開 `Combobox.forwardRef` 之前用 `(props, _ref)` 把 ref drop,內部 `CustomCombobox`
 // 從未拿 ref → PeoplePicker `stackContainerRef.current` 永遠 null →
 // `useLayoutEffect` early return → `visibleCountOverride` 永遠 undefined →

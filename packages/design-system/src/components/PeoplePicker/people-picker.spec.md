@@ -193,7 +193,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 **規則一句話**:`placeholder = (visible_avatar_exists) ? '' : (selectedLabel ?? triggerEmptyPlaceholder)`。
 
-**搜尋預設模式(2026-05-15 user 拍板)**:多選系列 default `searchIn='menu'`(panel-top search)。`searchIn='trigger'` 為 opt-in。Single mode 永遠 inline-search(Select 慣例)。
+**搜尋預設模式(2026-05-15 user 拍板〔UD-J37〕)**:多選系列 default `searchIn='menu'`(panel-top search)。`searchIn='trigger'` 為 opt-in。Single mode 永遠 inline-search(Select 慣例)。
 
 #### F. Cell-edit ↔ Field-edit 一致性 invariant
 

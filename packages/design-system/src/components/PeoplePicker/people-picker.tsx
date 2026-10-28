@@ -575,12 +575,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       yieldedTagText={soleName}
       // 2026-05-16 真 root cause fix:overflow chip wrapper 套同 `-ml-0.5` 讓 chip 物理上
       // 跟 avatar 同 slot(等寬同 step,non-overlapping 多 24px 區塊不再 saw)。對齊 user
-      // 「avatars 和 +N 都是同尺寸圓形,空間最多容固定數量圓形」物理模型 directive +
+      // 物理模型 directive(avatars 和 +N 都是同尺寸圓形,空間最多容固定數量圓形)+
       // MUI AvatarGroup / Primer AvatarStack 共識(`AvatarGroup.js` L54-59 same negative margin)。
       overflowWrapperClassName="-ml-[var(--avatar-stack-overlap)] first:ml-0 relative inline-flex"
       tagAreaGapPx={0}
       tagAreaPaddingLeftPx={undefined}
-      // 2026-05-12 Round 7 fix(user 抓 image 2「+N tag 應該圓形不是矩形」+ 對齊 GitHub picker idiom):
+      // 2026-05-12 Round 7 fix(user 抓 image 2:+N tag 應該圓形不是矩形 + 對齊 GitHub picker idiom):
       // Combobox default `overflowShape='tag'`(矩形 chip,文字 Combobox 慣例);PeoplePicker stack
       // mode pass `'circle'`(圓形 avatar-shape,跟 avatar 一樣大)。對齊 MultiPersonDisplay readonly path
       // 既有 OverflowIndicator default 'circle' SSOT。
