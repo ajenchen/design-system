@@ -47,24 +47,6 @@
       ]
     },
     {
-      "key": "08474a67f4af3660",
-      "name": "orderColumns",
-      "lines": 6,
-      "files": [
-        "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx",
-        "packages/design-system/src/components/DataTable/data-table.stories.tsx"
-      ]
-    },
-    {
-      "key": "6afddaf8e744c3d7",
-      "name": "Product",
-      "lines": 8,
-      "files": [
-        "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx",
-        "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx"
-      ]
-    },
-    {
       "key": "2f127eaf59eae719",
       "name": "PRODUCT_COLUMNS",
       "lines": 10,
