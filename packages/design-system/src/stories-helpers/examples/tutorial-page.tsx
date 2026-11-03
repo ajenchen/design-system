@@ -9,7 +9,7 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *
  * 決定出處:user 2026-10-07「第一題照你建議」,採 AI 同日建議 ② —— 規則之間 = 段落之間 = loose × 2(md 32 / lg 48)、
  * 範例之間維持 loose、段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁、所有教學頁收成一個共用元件
- * (governance/planning/2026-09-25-interaction-and-hover-remediation.md P7 列)。2026-10-27 user 回 Q2「照你建議」
+ * (governance/planning/2026-09-25-interaction-and-hover-remediation.md P7 列)。user 2026-10-27 21:31 回「Q2照你建議」
  * (t3-dispatch triage Q2 甲):① 展示頁 / 設計規格頁一頁多則有標題的範例上下疊,範例之間也是 loose × 2(`ExampleStack`);
  * ② 段落標題 → 段落內第一則規則 = loose × 2(跟規則 ↔ 規則一樣)。
  *
@@ -143,7 +143,7 @@ export function StoryLink({ kind, name, children }: StoryLinkProps) {
 
 /**
  * 範例區段的標題(2026-10-27 A4):`text-h6` 半粗體。規則標題、展示頁的範例區段標題、設計規格頁的 `H3` 都是這一個
- * (category-templates.md「教學框的間距與標題」;字重 600:2026-10-27 user 回 Q2「照你建議」③ 維持 600,定案句在 typography.spec.md 字重刻度那句)。
+ * (category-templates.md「教學框的間距與標題」;字重 600:user 2026-10-27 21:31 回「Q2照你建議」③ 維持 600,定案句在 typography.spec.md 字重刻度那句)。
  */
 export function SectionTitle({ className, ...rest }: React.HTMLAttributes<HTMLHeadingElement>) {
   return <h3 className={cn('text-h6 font-semibold text-foreground', className)} {...rest} />
@@ -155,7 +155,7 @@ export function SectionDescription({ className, ...rest }: React.HTMLAttributes<
 }
 
 /**
- * 一頁多則有標題的範例上下疊(展示頁 / 設計規格頁;2026-10-27 user 回 Q2「照你建議」①):範例之間 = loose × 2,
+ * 一頁多則有標題的範例上下疊(展示頁 / 設計規格頁;user 2026-10-27 21:31 回「Q2照你建議」①):範例之間 = loose × 2,
  * 跟教學頁規則之間同一級(值 = 本檔 `BLOCK_STACK`,全 repo 只寫在這裡)。子節點是 `ExampleSection` 或「小標 + 內容」的區塊;
  * `className` 只放寬度 / 對齊。
  */

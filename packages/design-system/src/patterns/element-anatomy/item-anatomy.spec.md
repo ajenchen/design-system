@@ -168,7 +168,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **預設文字色**(SidebarMenuButton、TreeItem): `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
 - **Hover**(有列底色的列;沒有列底色的設定列 / 勾選框列不適用): `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
 - **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
-- **選中 × 互動疊加（2026-08-11 user 拍板:對 AI 列的清單(第一項「滑鼠 hover 選中項釘住不變」)回「可以，做到完整完美並自行驗證到完美無誤沒有任何偏移」;鍵盤兩列以下表各列日期為準；本格是全家族唯一 owner，消費者禁自行發明）**：
+- **選中 × 互動疊加（2026-08-11 user 拍板:對 AI 列的檔案清單(第一列 AI 寫的改法『滑鼠 hover 選中項釘住不變』)回「可以，做到完整完美並自行驗證到完美無誤沒有任何偏移」;鍵盤兩列以下表各列日期為準；本格是全家族唯一 owner，消費者禁自行發明）**：
 
   | 疊加 | 指示 | 理由 |
   |---|---|---|

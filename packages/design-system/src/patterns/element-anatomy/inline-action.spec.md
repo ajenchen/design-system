@@ -79,7 +79,7 @@ Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。�
 | TreeItem lg | 20px | 22px | rounded-md | 22px | 20px |
 | Panel list row(visibility / sort / filter panels)| 16px | 18px | rounded-md | 18px | 16px |
 
-**「可點範圍」欄恆等於「Hover 背景」欄**(user 2026-09-24 逐字:「重點是要讓 inline action 的可點擊範圍跟其 hover 底色一樣吧？都是18*18」)——
+**「可點範圍」欄恆等於「Hover 背景」欄**(user 2026-09-24 逐字:「重點是要讓inline action 的可點擊範圍跟其hover底色一樣吧？都是18*18」)——
 那塊底色就是使用者看得到的形狀,看得到的每一點都要點得到。跨元件規則與唯一例外的 owner = `ds-canonical/references/hit-area-canonical.md`;
 本表只放本元件的值,不重述規則。**排版佔位不變,仍是 icon 尺寸**(16 / 20):多出來的 2px 靠溢出(absolute / negative margin)承擔,不吃版位 —— 見上方「視覺規則」3 與下方 Consumer wrapping rule。
 
