@@ -447,7 +447,7 @@ export const DecisionCardOptional: Story = {
       <AgentPanel onClose={close}>
         <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
-          <AgentMessage role="agent">語氣與發布時間都定了。封面圖、署名與要標記的組可以不選,不選就照草稿發。</AgentMessage>
+          <AgentMessage role="agent">語氣與發布時間都定了。封面圖我先選了建議的那張,不要可以清掉;署名與要標記的組可以不選,沒選的就照草稿。</AgentMessage>
         </AgentConversation>
         <div className="relative">
           <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />

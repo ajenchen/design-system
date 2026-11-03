@@ -7,9 +7,11 @@
  *         左緣 = 題目標題左緣(overlay-surface.spec.md「要對齊誰」:只有 SurfaceHeader 時對齊標題)、垂直中線 = 右側兩鈕;
  *         長相 = 同一列的「跳過」(同為 tertiary sm:高、字級、字重、顏色、底色、左右內距、圓角)。
  *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息。
- *         量的是 getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked、input.value,不讀 class(M37)。
- *   紅: --selftest 逐一補回六種病(每種開一次新頁):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
- *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「跳過」不同 —— 各自必須被指名紅
+ *         讀屏:必答單選題的 radiogroup aria-required="true",選填單選題不是(field.spec.md「SR 識別路徑」)。
+ *         量的是 getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked、aria-required、input.value,不讀 class(M37)。
+ *   紅: --selftest 逐一補回九種病(每種開一次新頁):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
+ *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「跳過」不同 ⑦ 鍵盤走到「清除選取」的路上選取被換掉
+ *       ⑧ 必答題的 radiogroup 沒有 aria-required ⑨ 選填題的 radiogroup 也標 aria-required —— 各自必須被指名紅
  *   綠: 現行 agent-panel.tsx(clearSelection / showClear)全綠;修前(本項基底 d27563f1:沒有 optional、沒有清除鈕)
  *       的建置配上本項新增的 story:鈕不在 → O1 起一串紅、選填沒選按「下一題」跳錯誤 → 紅(本機實測,見 commit 說明)
  *
@@ -26,6 +28,9 @@
  *
  * 選填 story(DecisionCardOptional)三題:第 1 題單選預選建議解(一打開鈕就在)、第 2 題單選不預選、第 3 題複選;必答對照用 DecisionCardOpen 第 1 題。
  * 每一下點擊都是真滑鼠(page.mouse,含 mousedown);鍵盤用 page.keyboard。點完等兩層 setTimeout(0) 再讀。
+ * 鍵盤走到「清除選取」用 Shift+Tab 從右側「跳過」倒退一步(O6 / O7),不從第一個圓往前 Tab:往前會經過「其他」輸入格,
+ * 而規格「聚焦即選中「其他」」讓那一步把選取換成「其他」—— 量到的就不是「清掉使用者選的那一個」。那條往前的路線
+ * (選填題只用鍵盤做不到「不答就前進」)交 user 決定(new-items/n6-decision-clear/answer.md「要 user 決定」①),定案前不在這支閘裡。
  * 開不起來 / 量途中找不到元素 → 儀器失效(exit 2),不是產品裁決,也絕不當成通過。
  *
  * Run: `node scripts/agent-decision-card-clear-invariant.mjs [--selftest] [--static-dir <Storybook 建置>]`
@@ -100,6 +105,22 @@ const FAULTS = {
     what: '⑥ 鈕的長相跟「跳過」不同(換成實心底)',
     script: SICK(`() => { for (const b of ${FIND_CLEAR}()) if (b.style.backgroundColor !== 'rgb(0, 0, 255)') b.style.backgroundColor = 'rgb(0, 0, 255)' }`),
   },
+  routeSelect: {
+    expect: ['O6', 'O7'],
+    what: '⑦ 鍵盤走到「清除選取」的路上選取被換掉(焦點一到鈕上就改選「其他」)',
+    script: `document.addEventListener('focusin', (e) => { const b = e.target instanceof Element && e.target.closest('button'); if (!b || b.textContent.trim() !== '${CLEAR}') return; const o = [...document.querySelectorAll('[role="radio"]')].pop(); if (o && o.getAttribute('aria-checked') !== 'true') o.click() }, true)`,
+  },
+  ariaMissing: {
+    scope: 'required',
+    expect: ['O16'],
+    what: '⑧ 必答題的 radiogroup 沒有 aria-required',
+    script: SICK(`() => { for (const g of document.querySelectorAll('[role="radiogroup"]')) if (g.getAttribute('aria-required') !== 'false') g.setAttribute('aria-required', 'false') }`),
+  },
+  ariaEverywhere: {
+    expect: ['O17'],
+    what: '⑨ 選填題的 radiogroup 也標 aria-required',
+    script: SICK(`() => { for (const g of document.querySelectorAll('[role="radiogroup"]')) if (g.getAttribute('aria-required') !== 'true') g.setAttribute('aria-required', 'true') }`),
+  },
 }
 
 const flushOn = (page) => page.evaluate(() => new Promise((r) => setTimeout(() => setTimeout(r, 0), 0)))
@@ -134,6 +155,7 @@ const readCard = (page) => page.evaluate(({ CARD, CLEAR }) => {
   // 「清除選取」不論在哪都算(必答題不該有;有就是錯):整張卡裡找,不只 footer
   const clears = [...root.querySelectorAll('button')].filter((b) => b.textContent.trim() === CLEAR && b.checkVisibility())
   const controls = [...root.querySelectorAll('[role="radio"], [role="checkbox"]')]
+  const radiogroup = root.querySelector('[role="radiogroup"]')
   const input = root.querySelector('input[aria-label="其他(自由輸入)"]')
   const err = root.querySelector('[data-field-slot="error"]')
   const a = document.activeElement
@@ -146,6 +168,7 @@ const readCard = (page) => page.evaluate(({ CARD, CLEAR }) => {
     clearCount: clears.length,
     clear: clears[0] ? { rect: rect(clears[0]), look: look(clears[0]), inFooter: !!footer?.contains(clears[0]), firstInFooter: footer ? [...footer.querySelectorAll('button')][0] === clears[0] : false } : null,
     controls: controls.map((c) => ({ id: c.id, role: c.getAttribute('role'), checked: c.getAttribute('aria-checked') })),
+    groupRequired: radiogroup ? radiogroup.getAttribute('aria-required') : '(沒有 radiogroup)',
     cards: cards.map(rect),
     input: input ? { value: input.value } : null,
     error: err ? err.textContent : null,
@@ -169,6 +192,8 @@ async function runOptional(fault) {
   let s = await readCard(page)
   if (!s || s.step !== '1 / 3' || s.cards.length !== 3) throw new Error(`第 1 題應為 3 張單選卡(1 / 3),讀到 ${s?.step}、${s?.cards.length} 張`)
   if (s.controls[0].checked !== 'true') throw new Error('第 1 題(預選建議解)一開始沒有選取 —— story 不是本閘要量的形狀')
+  record('O17', '選填單選題的 radiogroup 不標 aria-required(選填 = 可以不答)', s.groupRequired !== 'true', `aria-required = ${s.groupRequired}`)
+  if (fault === 'ariaEverywhere') return results
 
   // ── 第 1 題(選填、預選建議解):一打開就有選取 → 鈕一打開就在 ──
   record('O1', '第 1 題(選填、預選建議解)一打開就有選取,「清除選取」一打開就在 footer、是 footer 的第一顆',
@@ -207,23 +232,28 @@ async function runOptional(fault) {
   } else { pre('O4', '滑鼠按了清掉', '鈕不在'); pre('O5', '消失 / 再出現不跳', '鈕不在') }
   if (fault === 'jump') return results
 
-  // ── 鍵盤:選第一個圓(Space)→ Tab 到「清除選取」→ Enter / Space ──
+  // ── 鍵盤:選第一個圓(Space)→ 從右側「跳過」Shift+Tab 一步到「清除選取」(路線理由見檔頭「量法」)→ 按之前選取仍是第一個圓 → Enter / Space ──
   for (const key of ['Enter', 'Space']) {
     const id = key === 'Enter' ? 'O6' : 'O7'
+    const label = `鍵盤:從「跳過」Shift+Tab 一步到「清除選取」、途中選取不變,按 ${key} → 都沒選、鈕消失、焦點在第一個圓(不在 body)`
     await page.evaluate((cid) => document.getElementById(cid)?.focus(), s.controls[0].id)
     await press('Space')
     s = await readCard(page)
-    if (s.controls[0].checked !== 'true') { pre(id, `鍵盤 ${key}`, `焦點在第一個圓按 Space 沒選中(${JSON.stringify(s.controls.map((c) => c.checked))})`); continue }
-    let reached = false
-    for (let i = 0; i < 6 && !reached; i++) { await press('Tab'); s = await readCard(page); reached = s.active?.text === CLEAR }
-    if (!reached) { record(id, `鍵盤:Tab 走得到「清除選取」,按 ${key} 清掉、焦點回第一個圓`, false, `Tab 6 次沒停在「清除選取」(最後焦點 ${JSON.stringify(s.active)})`); continue }
+    if (s.controls[0].checked !== 'true') { pre(id, label, `焦點在第一個圓按 Space 沒選中(${JSON.stringify(s.controls.map((c) => c.checked))})`); continue }
+    const focusedSkip = await page.evaluate((names) => { const b = [...document.querySelectorAll('[data-slot="surface-footer"] button')].find((x) => names.includes(x.textContent.trim())); b?.focus(); return !!b && document.activeElement === b }, NAV)
+    if (!focusedSkip) { pre(id, label, '右側「跳過 / 上一題」聚焦不到'); continue }
+    await press('Shift+Tab')
+    s = await readCard(page)
+    if (s.active?.text !== CLEAR) { record(id, label, false, `Shift+Tab 一步沒停在「清除選取」(焦點 ${JSON.stringify(s.active)})`); continue }
+    const kept = s.controls[0].checked === 'true' && s.controls.slice(1).every((c) => c.checked !== 'true')
+    if (!kept) { record(id, label, false, `走到「清除選取」時選取已經被換掉:${JSON.stringify(s.controls.map((c) => c.checked))}(應為第一個圓)`); continue }
     await press(key)
     s = await readCard(page)
-    record(id, `鍵盤:Tab 走得到「清除選取」,按 ${key} → 都沒選、鈕消失、焦點在第一個圓(不在 body)`,
+    record(id, label,
       noneChecked(s) && s.clearCount === 0 && s.active?.id === s.controls[0].id && !s.active?.isBody,
       JSON.stringify({ checked: s.controls.map((c) => c.checked), clear: s.clearCount, active: s.active }))
   }
-  if (fault === 'focus') return results
+  if (fault === 'focus' || fault === 'routeSelect') return results
 
   // ── 「其他」:點卡 → 聚焦輸入格(選中「其他」)→ 打字 → 清除:字一起清 ──
   const otherCard = s.cards[2]
@@ -307,6 +337,9 @@ async function runRequired(fault) {
   await open(REQUIRED_STORY, fault)
   let s = await readCard(page)
   if (!s || s.step !== '1 / 3') throw new Error(`必答對照 story 第 1 題讀不到(${s?.step})`)
+  results.push({ id: 'O16', label: '必答單選題的 radiogroup 帶 aria-required="true"(field.spec.md「SR 識別路徑」)', pass: s.groupRequired === 'true',
+    detail: `aria-required = ${s.groupRequired}` })
+  if (fault === 'ariaMissing') return results
   const preselected = s.controls[0].checked === 'true'
   await pickRadio(s, 1)
   s = await readCard(page)
@@ -320,8 +353,9 @@ const report = []
 for (const fault of runs) {
   try {
     const results = []
-    if (fault !== 'required') results.push(...await runOptional(fault))
-    if (!fault || fault === 'required') results.push(...await runRequired(fault))
+    const scope = fault === 'required' ? 'required' : (FAULTS[fault]?.scope ?? (fault ? 'optional' : 'both'))
+    if (scope !== 'required') results.push(...await runOptional(fault))
+    if (scope !== 'optional') results.push(...await runRequired(fault))
     report.push({ fault, results })
   } catch (error) {
     const msg = error instanceof StoryRenderInstrumentError ? error.message : (error?.message ?? String(error))
@@ -344,7 +378,7 @@ if (SELFTEST) {
     ok = ok && caught
     console.log(`${caught ? '✓' : '✗'} selftest ${f.what}:${caught ? `被 ${f.expect.join(' / ')} 指名紅` : `沒抓到(該紅 ${f.expect.join(' / ')},實際紅 ${red.join(' / ') || '無'}${r.error ? `;途中 ${r.error}` : ''})`}`)
   }
-  console.log(ok ? '\n✓ selftest:六種病都被指名,量具會紅' : '\n✗ selftest:沒抓全(這支閘是假綠)')
+  console.log(ok ? `\n✓ selftest:${report.length} 種病都被指名,量具會紅` : '\n✗ selftest:沒抓全(這支閘是假綠)')
   process.exit(ok ? 0 : 1)
 }
 

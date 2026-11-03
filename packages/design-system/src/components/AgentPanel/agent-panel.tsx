@@ -1428,6 +1428,7 @@ export interface AgentDecisionQuestion {
    * (GOV.UK radios:「Users cannot go back to having no option selected once they have selected one」)。
    * 必答題不出現:「沒有選取」不是有效答案,清掉只會卡在錯誤上(同 `../Select/select.spec.md`「何時開 clearable」)。
    * 複選題的方框本來就能逐一取消,選填只放寬「至少一項」、不加清除鈕。
+   * 讀屏:必答單選題的 radiogroup 帶 aria-required="true"(選填 = "false");複選群組是 role="group",不帶。
    */
   optional?: boolean
 }
@@ -1686,6 +1687,8 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
           // 「其他」選中而文字空白:輸入格紅框 + aria-invalid(Input 自己接),aria-errormessage 指向下方錯誤訊息(field.spec.md「驗證與 aria 屬性」)
           error={errorKind === 'other'}
           aria-errormessage={errorKind === 'other' ? errorId : undefined}
+          // 聚焦即選中「其他」(agent-decision-card.spec.md 選項卡條)。【待確認】只用 Tab 經過這格也會選中「其他」:選填題因此無法只用鍵盤
+          // 「不答就前進」(清除 → 焦點回第一個圓 → Tab 又經過這格 → 又選中);必答題 Tab 經過也會把預選的建議解換成「其他」。改不改交 user。
           onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
           onChange={(e) => {
             clearError(question.id)
@@ -1816,6 +1819,10 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                 // 沒選(noDefault 單選):radiogroup 本身帶 aria-invalid + aria-errormessage(WAI-ARIA 1.2 兩者都適用於 radiogroup、不適用於 radio)
                 aria-invalid={groupInvalid || undefined}
                 aria-errormessage={groupInvalid ? errorId : undefined}
+                // 必答(沒有 `optional`)= radiogroup aria-required="true"(`../Field/field.spec.md`「SR 識別路徑」:required 由控件的 aria-required 承擔;
+                // WAI-ARIA 1.2 aria-required 適用 radiogroup,https://www.w3.org/TR/wai-aria-1.2/#aria-required);選填 = "false"(= Radix 原本的預設輸出)。
+                // 複選不帶:CheckboxGroup 是 role="group",不在 aria-required 的適用角色裡(axe aria-allowed-attr 會抓),每個方框各帶又會變成「每一項都要勾」。
+                aria-required={!question.optional}
                 className="flex flex-col gap-2"
               >
                 {allOptions.map((option) => {
