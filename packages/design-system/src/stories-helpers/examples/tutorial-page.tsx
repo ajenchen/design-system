@@ -143,7 +143,7 @@ export function StoryLink({ kind, name, children }: StoryLinkProps) {
 
 /**
  * 範例區段的標題(2026-10-27 A4):`text-h6` 半粗體。規則標題、展示頁的範例區段標題、設計規格頁的 `H3` 都是這一個
- * (category-templates.md「教學框的間距與標題」;字重 600 是本 PR 的現況,typography.spec.md 字重刻度那句記著待 user 決定)。
+ * (category-templates.md「教學框的間距與標題」;字重 600:2026-10-27 user 回 Q2「照你建議」③ 維持 600,定案句在 typography.spec.md 字重刻度那句)。
  */
 export function SectionTitle({ className, ...rest }: React.HTMLAttributes<HTMLHeadingElement>) {
   return <h3 className={cn('text-h6 font-semibold text-foreground', className)} {...rest} />
