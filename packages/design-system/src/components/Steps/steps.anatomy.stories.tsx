@@ -466,7 +466,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <H3 paragraph>無障礙設計</H3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <ul className="ml-5 list-disc space-y-1">
         <li>
           W3C APG 沒有正式的步驟條 pattern,本元件照{' '}

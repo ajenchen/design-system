@@ -489,7 +489,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <H3 paragraph>無障礙設計</H3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <ul className="ml-5 list-disc space-y-1">
         <li>鍵盤:<kbd>Tab</kbd> 到標題列,<kbd>Enter</kbd> / <kbd>Space</kbd> 展開或收合;<kbd>↑</kbd> <kbd>↓</kbd> 在標題列之間移動,<kbd>Home</kbd> / <kbd>End</kbd> 到第一個 / 最後一個。</li>
         <li>ARIA:標題列帶 <code>aria-expanded</code> / <code>aria-controls</code>,內容區是 <code>role="region"</code> + <code>aria-labelledby</code>(由 Radix Accordion 處理,用的時候不用另外加)。</li>

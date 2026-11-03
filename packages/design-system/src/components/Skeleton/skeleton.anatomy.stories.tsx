@@ -138,7 +138,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <H3 paragraph>無障礙設計</H3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p>本元件為純視覺呈現,無 keyboard / ARIA role / focus state 需求。Consumer 包 Skeleton 進互動容器(Button / Card / Link)時 a11y 由容器決定。</p>
     </div>
   ),

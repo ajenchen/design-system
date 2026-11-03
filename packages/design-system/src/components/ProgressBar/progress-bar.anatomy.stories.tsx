@@ -432,7 +432,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <H3 paragraph>無障礙設計</H3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <ul className="ml-5 list-disc space-y-1">
         <li>Radix Progress 自動提供 <code>role="progressbar"</code>、<code>aria-valuenow</code> / <code>aria-valuemin</code> / <code>aria-valuemax</code>;要念成「上傳中 45%」這種句子時,由使用的地方傳 <code>aria-valuetext</code>。</li>
         <li>每一條進度都要有名字(<code>aria-label</code>,例:「檔案上傳進度」),螢幕閱讀器才分得出是哪一件事的進度。</li>
