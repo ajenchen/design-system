@@ -164,7 +164,7 @@ export const NoPermission: Story = {
   render: () => (
     <>
       <Toaster />
-      {/* @layout-space-magic-ok: 有框容器包 Empty 的外框留白由容器決定且刻意不隨 density(empty.spec.md「間距」的「Outer padding 由 consumer 容器決定」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+      {/* @layout-space-magic-ok: 有框容器包 Empty 的外框內距 32px —— empty.spec.md「間距」只寫「Outer padding 由 consumer 容器決定」、沒寫這個值,不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
       <div className="border border-border rounded-lg p-8 max-w-md">
         <Empty
           icon={Lock}

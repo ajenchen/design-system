@@ -145,7 +145,7 @@ const quotaColumns: ColumnDef<QuotaRow>[] = [
     id: 'name',
     header: '專案',
     cell: ({ row }) => (
-      // @layout-space-magic-ok: 表格儲存格內 圖示 ↔ 專案名(layoutSpace.spec.md:166 micro)
+      // @layout-space-magic-ok: 表格儲存格內 圖示 ↔ 專案名 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值)
       <div className="flex items-center gap-2">
         <FileText size={16} className="text-fg-muted shrink-0" />
         {row.original.name}

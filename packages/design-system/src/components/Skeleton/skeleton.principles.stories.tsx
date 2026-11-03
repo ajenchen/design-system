@@ -43,7 +43,7 @@ export const UsageGuidance: Story = {
           title="❌ 不用 Skeleton 做裝飾"
           note="Skeleton 是 loading 語意,不是視覺裝飾元件。把它當灰色色塊用會混淆使用者對「載入中」的認知"
         >
-          {/* @layout-space-magic-ok: 灰色圓點 ↔ 旁邊的說明文字(同一列 micro)(layoutSpace.spec.md:166 micro) */}
+          {/* @layout-space-magic-ok: 灰色圓點 ↔ 旁邊的說明文字 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             <Skeleton className="h-8 w-8 rounded-full" />
             <span className="text-body">分隔用的灰色圓點</span>
@@ -68,7 +68,7 @@ export const UsageGuidance: Story = {
           title="❌ 不要 mix 資料跟 skeleton 在同一 row"
           note="同一個 row 裡一半顯示真實資料、一半顯示 skeleton,視覺上會像「半載入」狀態,使用者不知道這筆資料到底算不算讀完。Row 是原子單位,要嘛全 skeleton 要嘛全真實"
         >
-          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro) */}
+          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」:ALL person avatars,無例外;稽核 M010)——
                 反例示範的是「半載入」,已經載入的頭像行為仍跟正式產品一樣 */}
@@ -95,10 +95,10 @@ export const UsageGuidance: Story = {
           note="初次載入 list / table / card grid 時使用。Skeleton 的形狀貼近真實內容,資料回來後版面不跳動,使用者預期不被打破"
         >
           <div className="flex flex-col w-72 border border-border rounded-lg p-[var(--layout-space-loose)]">
-            {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
             <div className="flex items-center gap-3">
               <Skeleton className="h-10 w-10 rounded-full" />
-              {/* @layout-space-magic-ok: 骨架文字行之間(同一文字區)(layoutSpace.spec.md:166 micro) */}
+              {/* @layout-space-magic-ok: 骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
               <div className="flex flex-col gap-2 flex-1">
                 <Skeleton className="h-4 w-3/5" />
                 <Skeleton className="h-3 w-1/3" />
@@ -140,10 +140,10 @@ export const ShapeMatchRule: Story = {
       >
         {/* 2026-06-11:改為「載入中 vs 載入完成」對照(原單卡 demo 與使用指引「vs 近親元件」段重複)。 */}
         <ExampleGroup>
-          {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro) */}
+          {/* @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             <Skeleton className="h-10 w-10 rounded-full" />
-            {/* @layout-space-magic-ok: 骨架文字行之間(同一文字區)(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
             <div className="flex flex-col gap-2 flex-1">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-48" />
@@ -152,7 +152,7 @@ export const ShapeMatchRule: Story = {
           <ExampleCaption>載入中 — 圓形對應頭像、兩行對應名字 + 最新訊息</ExampleCaption>
         </ExampleGroup>
         <ExampleGroup>
-          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro) */}
+          {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」;稽核 M010) */}
             <Avatar alt="林雅婷" size={40} color="blue" className="shrink-0" hoverCard={samplePersonCard({ name: '林雅婷' })} />
@@ -169,7 +169,7 @@ export const ShapeMatchRule: Story = {
         title="❌ 過度代表——塞太多 skeleton 讓畫面看起來「很重」"
         note="skeleton 密度超過真實內容會讓使用者以為「資料很多」,實際回來卻很少,體感是畫面縮水"
       >
-        {/* @layout-space-magic-ok: 七行骨架行之間(同一文字區的行距)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 七行骨架行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
         <div className="flex flex-col gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
@@ -186,7 +186,7 @@ export const ShapeMatchRule: Story = {
         title="❌ 不代表——形狀完全不對應真實內容"
         note="拿方形佔位代表圓形 avatar、拿短色塊代表段落,資料回來後版面大幅跳動"
       >
-        {/* @layout-space-magic-ok: 方形色塊 ↔ 短色塊(反例的兩個佔位,同一列 micro)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 反例的兩個佔位(方形色塊 ↔ 短色塊)12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
         <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-4 w-8" />
@@ -205,7 +205,7 @@ export const DurationRule: Story = {
         title="✅ 短暫顯示(1–3s)——初次載入完成即替換為真實內容"
         note="Skeleton 的語意是「資料很快會來」。短時間出現後被真實內容取代,是它設計上最順暢的樣子"
       >
-        {/* @layout-space-magic-ok: 標題骨架 ↔ 副標骨架(同一文字區的行距)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 標題骨架 ↔ 副標骨架 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
         <div className="flex flex-col gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-3 w-3/4" />

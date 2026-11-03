@@ -41,7 +41,7 @@ export const UsageGuidance: Story = {
           title="❌ 不用 CircularProgress 當常駐視覺裝飾"
           note="語意鎖「正在載入、正在處理」。永遠旋轉的裝飾會讓 a11y 使用者(螢幕閱讀器)持續收到 loading 通知,也讓視覺使用者無法判斷何時結束"
         >
-          {/* @layout-space-magic-ok: 示範卡內 圖示 ↔ 文字(卡內行內 micro)(layoutSpace.spec.md:166 micro) */}
+          {/* @layout-space-magic-ok: 示範卡內 圖示 ↔ 文字 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
           <div className="flex items-center gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             <CircularProgress aria-label="載入中（裝飾誤用示範）" />
             <span className="text-body">歡迎使用本系統</span>
@@ -56,7 +56,7 @@ export const UsageGuidance: Story = {
           {/* 一串同質的載入列(語意清單 ul / li;列距 8px 由 micro 分類器認得的清單結構擁有) */}
           <ul aria-label="載入中的項目" className="flex flex-col gap-2 w-72">
             {Array.from({ length: 4 }).map((_, i) => (
-              // @layout-space-magic-ok: 載入列外框內距 12 / 8px 是這張示範列自己的固定幾何(layoutSpace.spec.md:168);列內 旋轉指示 ↔ 文字 8px 是 micro(layoutSpace.spec.md:166),指示依 item-anatomy.spec.md:285 包進 ItemPrefix
+              // @layout-space-magic-ok: 載入列的外框內距 12 / 8px、列內 旋轉指示 ↔ 文字 8px —— 規格沒寫這兩個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值);指示照 item-anatomy.spec.md「Prefix 垂直對齊」包進 ItemPrefix
               <li key={i} className="flex items-start gap-2 border border-border rounded-md px-3 py-2 text-body">
                 {/* size=16 = field-inline canonical;此例為反例(不該多個一起轉)。 */}
                 <ItemPrefix>
@@ -95,7 +95,7 @@ export const UsageGuidance: Story = {
               <ExampleCaption warn>❌ 穩態停留 100% → 使用者困惑</ExampleCaption>
             </ExampleGroup>
             <ExampleGroup align="center">
-              {/* @layout-space-magic-ok: 完成態 圖示 ↔ 文字(行內 micro)(layoutSpace.spec.md:166 micro) */}
+              {/* @layout-space-magic-ok: 完成態 圖示 ↔ 文字 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
               <div className="inline-flex items-center gap-2 text-success">
                 <Check size={16} aria-hidden />
                 <span className="text-body">已完成</span>
@@ -119,10 +119,10 @@ export const UsageGuidance: Story = {
           title="Skeleton — 內容佔位(佈局已知、等資料填入)"
           note="List / table / card grid 初次載入——佈局結構確定,只差資料。用 Skeleton 讓版面先定型,避免資料回來時跳動"
         >
-          {/* @layout-space-magic-ok: 骨架列內 頭像佔位 ↔ 文字佔位(同一列的 micro)(layoutSpace.spec.md:166 micro) */}
+          {/* @layout-space-magic-ok: 骨架列 頭像佔位 ↔ 文字佔位 12px = 載入後那一列的 item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 w-72 border border-border rounded-lg p-[var(--layout-space-loose)]">
             <Skeleton className="h-10 w-10 rounded-full" />
-            {/* @layout-space-magic-ok: 骨架文字兩行之間(同一文字區的 micro)(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 骨架文字兩行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
             <div className="flex flex-col gap-2 flex-1">
               <Skeleton className="h-4 w-3/5" />
               <Skeleton className="h-3 w-1/3" />
@@ -246,7 +246,7 @@ export const SizeMatchContextRule: Story = {
         title="24px(預設)— row primitive 的 loading footer、card 內 inline loading"
         note="中等尺寸,放在 row / card 內容區,視覺重量足夠吸引注意但不喧賓奪主"
       >
-        {/* @layout-space-magic-ok: 載入列內 旋轉指示 ↔ 文字(卡內行內 micro)(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 載入列內 旋轉指示 ↔ 文字 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
         <div className="flex items-center justify-center gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
           <CircularProgress size={24} aria-label="載入更多留言" />
           <span className="text-body text-fg-muted">載入更多留言...</span>

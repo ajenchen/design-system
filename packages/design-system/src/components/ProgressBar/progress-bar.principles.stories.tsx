@@ -82,7 +82,7 @@ export const UsageGuidance: Story = {
           note="使用者看到進度條預期會推進。若無法量化,任何假進度(隨機加 % 撐場面)都會讓使用者懷疑 app 壞掉。未知進度一律改用 CircularProgress(indeterminate)。"
         >
           <Frame>
-            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
             <div className="flex items-center gap-3">
               <CircularProgress aria-label="計算中" />
               <span className="text-body">計算統計報表中...</span>
@@ -106,7 +106,7 @@ export const UsageGuidance: Story = {
           <Frame width={480}>
             {/* 上傳列表載體 = FileItem(compact list gap-1 canonical;內部消費 ProgressBar)—
                 不手組 Paperclip + 檔名 + ProgressBar(見下方「檔案上傳 UI → 用 FileItem」rule) */}
-            {/* @layout-space-magic-ok: compact FileItem 清單 gap 4px(file-item.spec.md:264)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+            {/* @layout-space-magic-ok: compact FileItem 清單 4px = file-item.spec.md「List wrapper canonical(多 item 間距)」compact form `gap-1`(已發布同值) */}
             <div className="flex flex-col gap-1">
               <FileItem mode="compact" name="會議記錄_0418.docx" status="completed" />
               <FileItem mode="compact" name="簡報素材.zip" status="uploading" progress={62} />
@@ -141,7 +141,7 @@ export const UsageGuidance: Story = {
 
           <Frame>
             {/* 轉圈 24 ≤ 24 → 住前綴槽 ItemPrefix(h-[1lh])對齊標題第一行(item-anatomy.spec.md「24px 閾值對齊規則」);容器 text-body 建立 1lh */}
-            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 行內 進度 ↔ 文字 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
             <div className="flex items-start gap-3 text-body">
               <ItemPrefix>
                 <CircularProgress aria-label="驗證信用卡中" />
@@ -167,7 +167,7 @@ export const UsageGuidance: Story = {
           note="FileItem 是檔案情境的 標準消費端 primitive(檔名 / icon / 進度 / status / actions 一條龍),內部自己會消費 ProgressBar。自組 raw ProgressBar + 檔名 + Paperclip + 狀態 icon 會讓 consumer 每次重覆發明一套檔案列表 layout,視覺/行為漂移無可避免。世界級對照:Ant Design Upload 內部用 Progress,consumer 不直接拼裝。"
         >
           <Frame>
-            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數(行內 micro)(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 卡片標頭列內 圖示 / 名稱 ↔ 讀數 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
             <div className="flex items-center gap-2 mb-[var(--layout-space-tight)]">
               <Paperclip size={16} className="text-fg-muted" />
               <span className="text-body flex-1">附件_會議記錄.docx</span>

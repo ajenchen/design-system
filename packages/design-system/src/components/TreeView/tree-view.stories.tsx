@@ -42,7 +42,7 @@ type Story = StoryObj
 export const FileBrowser: Story = {
   name: '檔案瀏覽',
   render: () => (
-    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own)
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句)
     <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
       <TreeView aria-label="檔案瀏覽" defaultExpandedIds={['src', 'components']}>
         <TreeItem id="src" icon={Folder} label="src">
@@ -332,7 +332,7 @@ function MerchantOnboarding() {
       <Toaster />
       {/* 固定高度(沿用原本的 460px 當高度):內容區才會在自己裡面捲、footer 才釘得住(原本 min-h 讓外框跟著內容長,footer 位置每頁不同) */}
       <div className="flex w-[760px] h-[460px] overflow-hidden rounded-lg border border-divider bg-surface">
-        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
         <nav aria-label="開通進度" className="w-[240px] shrink-0 border-r border-divider py-2">
           <TreeView
             ref={treeRef}
@@ -412,7 +412,7 @@ function StepFixtureTree({ name, label, initial, stepNavigation = true, expandOn
   }, [name])
   const selectedIds = React.useMemo(() => new Set(selected ? [selected] : []), [selected])
   return (
-    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own)
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句)
     <div
       data-step-fixture={name}
       data-selected={selected ?? ''}
@@ -539,7 +539,7 @@ const CheckboxTree = () => {
   return (
     <div>
       <button type="button" className="sr-only">樹狀清單之前</button>
-      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
       <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView
           selectionMode="multiple"
@@ -645,7 +645,7 @@ const RowActionsContractTree = () => {
     // 樹 ↔ 它下方的動作讀數 = tight(控件 → 它的讀數,layoutSpace.spec.md 規則 3);前後兩顆 sr-only 鈕絕對定位、不佔版位
     <ExampleGroup>
       <button type="button" className="sr-only">樹狀清單之前</button>
-      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
       <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView aria-label="產品文件" defaultExpandedIds={['requirements']} defaultSelectedIds={['checkout-prd']}>
           <TreeItem id="requirements" icon={Folder} label="產品需求" inlineActions={[more('產品需求'), add('產品需求')]}>
@@ -832,7 +832,7 @@ const RowActionsTree = () => {
   return (
     <>
       <Toaster />
-      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
       <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView aria-label="產品文件" expandedIds={expanded} onExpandedChange={setExpanded} defaultSelectedIds={['checkout-prd']}>
           {renderDocs(nodes)}
@@ -883,7 +883,7 @@ const DeleteHandoffTree = () => {
     // 前後兩顆 sr-only 鈕絕對定位、不佔版位 → 版面上只有樹框一個子節點,不設 gap(原本的 8px 不作用)
     <div className="flex flex-col">
       <button type="button" className="sr-only">樹狀清單之前</button>
-      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+      {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
       <div className="w-[320px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
         <TreeView aria-label="知識庫" defaultExpandedIds={['handbook']}>{renderNodes(nodes)}</TreeView>
       </div>
@@ -955,7 +955,7 @@ export const LongLabel: Story = {
     docs: { description: { story: '名稱放不下時單行截斷;只有真的被截斷的那一列,滑鼠停在名稱上才出現完整名稱。' } },
   },
   render: () => (
-    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own)
+    // @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句)
     <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
       <TreeView aria-label="產品設計檔案樹" defaultExpandedIds={['proj']}>
         <TreeItem id="proj" icon={Folder} label="2026 產品品牌識別設計提案">
@@ -1035,7 +1035,7 @@ export const DragAndDrop: Story = {
           Figma 風格:整列拖曳,項目真的會移動。拖到其他項目上方 / 下方 / 中間(成為它的子項)。
           鍵盤同樣可重排:Tab 聚焦樹、↑↓ 移到目標後,Cmd/Ctrl+Shift+↑↓ 同層移動、→ 移入資料夾、← 移出到上層(每按一下立即生效,結果會播報給螢幕閱讀器)。
         </p>
-        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊(tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
         <div className="w-[280px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
           <TreeView
             aria-label="拖曳排序"

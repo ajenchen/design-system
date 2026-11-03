@@ -32,10 +32,10 @@ type Story = StoryObj
 export const UserProfileCard: Story = {
   name: '個人資料卡載入',
   render: () => (
-    // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 列的 prefix ↔ content,載入後是頁面列表列 gap 12px(item-anatomy.spec.md:1031)(layoutSpace.spec.md:166 micro)
+    // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值)
     <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
       <Skeleton className="h-12 w-12 rounded-full" />
-      {/* @layout-space-magic-ok: 骨架文字區兩行(名稱 / 副標)之間(layoutSpace.spec.md:166 micro) */}
+      {/* @layout-space-magic-ok: 骨架文字區兩行(名稱 / 副標)之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
       <div className="flex flex-col gap-2 flex-1">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-48" />
@@ -89,7 +89,7 @@ const loadingColumns: ColumnDef<LoadingRow>[] = [
     header: '客戶',
     meta: { width: 200 },
     cell: () => (
-      // @layout-space-magic-ok: 表格儲存格骨架 頭像 ↔ 名稱(layoutSpace.spec.md:166 micro)
+      // @layout-space-magic-ok: 表格儲存格骨架 頭像 ↔ 名稱 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值)
       <div className="flex items-center gap-2">
         <Skeleton className="h-6 w-6 rounded-full" />
         <Skeleton className="h-4 w-24" />
@@ -117,19 +117,19 @@ export const DocumentLoading: Story = {
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <Skeleton className="h-8 w-1/2" />
-        {/* @layout-space-magic-ok: 作者列 頭像 ↔ 名字(layoutSpace.spec.md:166 micro) */}
+        {/* @layout-space-magic-ok: 作者列 頭像 ↔ 名字 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
         <div className="flex items-center gap-2">
           <Skeleton className="h-5 w-5 rounded-full" />
           <Skeleton className="h-3 w-32" />
         </div>
       </div>
-      {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
+      {/* @layout-space-magic-ok: 同一段的骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
       <div className="flex flex-col gap-2">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-4/5" />
       </div>
-      {/* @layout-space-magic-ok: 段內行距 8px(同一段的文字行)(layoutSpace.spec.md:166 micro) */}
+      {/* @layout-space-magic-ok: 同一段的骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
       <div className="flex flex-col gap-2">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />

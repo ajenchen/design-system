@@ -97,7 +97,7 @@ export const UsageGuidance: Story = {
           note="Empty 代表「已經查過、確定沒有」;loading 是「還沒查完、不確定有沒有」。直接顯示 Empty 會讓使用者以為資料真的沒有,然後一秒後內容跳出來,視覺跳動破壞信任"
         >
           <Example>
-            {/* @layout-space-magic-ok: 骨架文字行之間(同一文字區的 micro)(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 骨架文字行之間 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
             <div className="flex flex-col gap-3">
               <Skeleton className="h-5 w-2/3" />
               <Skeleton className="h-4 w-full" />
