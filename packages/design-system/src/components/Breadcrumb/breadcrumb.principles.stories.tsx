@@ -336,7 +336,9 @@ export const ScopeRule: Story = {
               換成本身就能用的搜尋框(打得進字),反例照樣成立、畫面上不留死按鈕(F-S2;範例依據 Q-specimen 判可推導) */}
           <Input size="sm" placeholder="搜尋元件" aria-label="搜尋元件" startIcon={Search} className="w-48" />
         </div>
-        <ExampleCaption warn>↑ 搜尋與按鈕應該放 page header / action bar,不塞進 breadcrumb</ExampleCaption>
+        {/* 說明字只陳述 breadcrumb.spec.md:228「不得在 Breadcrumb 裡嵌入複雜互動元素」(dropdown、search、avatar picker);
+            規格沒寫搜尋該放哪裡,這裡不替規格補一句 */}
+        <ExampleCaption warn>↑ 搜尋這類複雜互動元素不塞進 breadcrumb</ExampleCaption>
       </TutorialRule>
     </TutorialPage>
   ),

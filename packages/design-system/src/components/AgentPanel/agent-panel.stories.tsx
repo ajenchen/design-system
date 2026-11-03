@@ -225,10 +225,11 @@ export const Attachments: Story = {
 
 const COMPLAINT_SUMMARY = '摘要草稿:8 月 12–18 日北倉出貨延遲客訴 214 件,佔全季物流客訴 62%;建議颱風週啟動備援出貨與主動通知。'
 
+// 底部 48 的出處(開發用,不進文件頁):--layout-space-bottom;user 2026-09-02 23:14 原話,見 agent-panel.spec.md「3. AgentConversation」(SH-pa8)
 /**
  * 多則回覆:只有代理**最後一則**的工具列常駐,其餘回覆懸停(或鍵盤聚焦到工具列)才淡入,而且工具列
  * 絕對定位在 40px 輪距內,出現與消失都不推擠版面;判定由 AgentConversation 自動完成,consumer 不設 pinned。
- * 捲到最底時,最後一則工具列到輸入盒 = --layout-space-bottom 48(user 2026-09-02 23:14 原話,見 agent-panel.spec.md「3. AgentConversation」)。
+ * 捲到最底時,最後一則的工具列離輸入盒 48px。
  */
 export const MultipleReplies: Story = {
   name: '多則回覆:工具列常駐與懸停',
@@ -816,7 +817,7 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
         </DialogBody>
         <DialogFooter>
           <Button id="demo-task-cancel" variant="tertiary" onClick={onCancel}>取消</Button>
-          {/* 停用照表單的送出狀態:新建永遠可按、更新要有改動才可按(form-validation.spec.md「Submit Button 狀態」);標題空白由送出時的驗證報在欄位上(FieldError)。
+          {/* 停用照表單的送出狀態:新建不看填了沒、填對沒,一律可按、更新要有改動才可按(form-validation.spec.md「Submit Button 狀態」);標題空白由送出時的驗證報在欄位上(FieldError)。
               送出走 hook 的 handleSubmit(規則 7 / 8)。2026-10-07 起這裡寫成「標題空白就停用」並附一句「漂移棘輪已記這一筆」—— 棘輪其實沒有這一筆(稽核 H10) */}
           <Button id="demo-task-save" variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
         </DialogFooter>

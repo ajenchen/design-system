@@ -224,17 +224,18 @@ export const ColorMatrix: Story = {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                {/* ⋯ 點得開:列出被收起的中間層級(同展示「可互動省略」;稽核 L029) */}
+                {/* ⋯ 點得開:列出被收起的中間層級(同展示「可互動省略」;稽核 L029)。選單項照元件自己收合時的做法渲染成連結
+                    (breadcrumb.tsx 自動收合的選單項 = `<a href>`、不攔點擊),目的地跟這一則其他節點一樣是 href="#" */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <BreadcrumbEllipsis />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuItem asChild>
-                      <a href="#" onClick={(e) => e.preventDefault()}>成長行銷</a>
+                      <a href="#">成長行銷</a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href="#" onClick={(e) => e.preventDefault()}>電子郵件</a>
+                      <a href="#">電子郵件</a>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

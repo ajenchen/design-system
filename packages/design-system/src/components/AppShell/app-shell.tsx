@@ -186,6 +186,8 @@ const TOKEN_GUESS: TokenWidths = { rail: 48, edgeGap: 48, sidebarMin: 240, sideb
 function SkipToMain() {
   // 讀屏名稱與連結字:I18nProvider 的 `app-shell.skipLinks` / `app-shell.skipToMain` → DS 預設中文
   // (lib/i18n/README.md「Fallback chain」;user F1 預設語言是中文、WM 要能換英文。原本寫死英文 "Skip links" / "Skip to main content")
+  // 連結字「跳到主要內容」沿用 DS 已有的說法(elevation.spec.md 疊放表 AppShell 那一列);nav 讀屏名稱「跳過連結」DS 原本沒有說法,是 AI 擬的
+  // (照英文 Skip links 直譯),列在最終確認頁的文案清單給 user 看
   const { t } = useI18n()
   return (
     <nav aria-label={t('app-shell', 'skipLinks', '跳過連結') /* i18n-allow: DS 預設 */}>

@@ -32,8 +32,9 @@ export const GlobalHeaderEntry: StoryObj = {
   name: '全域標頭帳號入口',
   render: () => (
     <ChromeHeader className="bg-surface">
-      {/* @layout-space-magic-ok: 品牌 Avatar ↔ 工作區名稱 8px = 同一個品牌標記內部的間距,layoutSpace.spec.md「該用 token(縮放)vs 刻意固定(magic number 合法)的邊界」表「micro / icon / 控件內部 間距(gap-1/2、icon padding)」(已發布值) */}
-      <div className="flex items-center gap-2 min-w-0">
+      {/* 品牌 Avatar ↔ 工作區名稱 8px = 同一個行內標記(圖示 + 名稱)內部的間距:inline-flex 行內群,utility-registry canonical_micro_geometry 的分類器認得,
+          不需要放行章(值沿用已發布版)。這一格是 ChromeHeader 的 flex 子項,inline-flex 在 flex 容器裡照樣算成 flex,畫面不變 */}
+      <div className="inline-flex items-center gap-2 min-w-0">
         {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical; sync with --chrome-header-avatar-size */}
         <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
         <span className="text-body-lg font-medium truncate">Acme Inc</span>

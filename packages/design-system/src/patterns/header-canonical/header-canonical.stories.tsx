@@ -80,9 +80,11 @@ function Closable({ children }: { children: (close: () => void) => ReactNode }) 
   return <>{children(() => setOpen(false))}</>
 }
 
-/** 檔案預覽的放大檔位(放大一次 +25%,最大 200%);到上限時放大鈕停用 */
-const ZOOM_STEP = 25
-const ZOOM_MAX = 200
+// 檔案預覽的放大檔位 = FileViewer 的定案檔位(file-viewer.tsx 的 ZOOM_PRESETS 與 nextZoomIn;那兩個沒有對外出口,這裡照抄同一組數字,
+// 不另訂一套;抽成共用交整合)。放大一次 = 跳到下一檔,到最後一檔(400%)時放大鈕停用。
+const ZOOM_PRESETS = [10, 25, 50, 75, 100, 125, 150, 200, 400]
+const ZOOM_MAX = ZOOM_PRESETS[ZOOM_PRESETS.length - 1]
+const nextZoomIn = (current: number) => ZOOM_PRESETS.find((p) => p > current) ?? ZOOM_MAX
 
 // 最常見:標題 + 動作列(對標 FileViewer Toolbar / Sidebar header)
 function SingleRowDemo() {
@@ -110,7 +112,7 @@ function SingleRowDemo() {
                   startIcon={ZoomIn}
                   aria-label="放大"
                   disabled={zoom >= ZOOM_MAX}
-                  onClick={() => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))}
+                  onClick={() => setZoom(nextZoomIn)}
                 />
                 <Button
                   iconOnly
