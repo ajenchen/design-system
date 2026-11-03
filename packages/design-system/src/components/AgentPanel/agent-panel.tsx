@@ -1439,7 +1439,8 @@ const RECOMMENDED_SUFFIX = '(建議)'
 const MULTI_JOIN = '\n'
 /** 按「下一題 / 送出」時這一題沒過的錯誤訊息(句型照 DS 既有範例:select.stories「請選擇出貨倉庫」、combobox.stories「請至少選擇一個商品類別」、
  *  field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,見 agent-decision-card.spec.md「步進」)。
- *  三句是新的元件預設文案(產品文案語意):AI 依上述句型擬的建議,【待確認】—— user 換字時只改這裡。 */
+ *  三句是新的元件預設文案(產品文案語意):AI 依上述句型擬的建議,【待確認】—— user 換字時改這裡,
+ *  閘 `scripts/agent-decision-card-validation-invariant.mjs` 的 TEXT 一起改。 */
 const DECISION_ERROR_TEXT = {
   single: '請選擇一個選項', // i18n-allow: DS 預設文案
   multi: '請至少選擇一個選項', // i18n-allow: DS 預設文案

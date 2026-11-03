@@ -51,6 +51,7 @@ const SELFTEST = process.argv.includes('--selftest')
 const CARD = '[class~="group/agent-option"]'
 const CONTROL = '[role="checkbox"], [role="radio"]'
 const OTHER_INPUT = 'input[aria-label="其他(自由輸入)"]'
+// 錯誤文案【待確認】(agent-panel.tsx DECISION_ERROR_TEXT,AI 擬的建議、交 user 定);user 換字時兩邊一起改
 const TEXT = { other: '請輸入其他選項', multi: '請至少選擇一個選項' }
 
 // 建置不比被驗的原始碼舊(lib/launch-browser.mjs requireFreshStorybookBuild):決策卡本體、FieldError、Input 的錯誤框、按壓延後。
