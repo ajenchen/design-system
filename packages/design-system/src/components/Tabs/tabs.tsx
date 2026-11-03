@@ -499,7 +499,7 @@ const tabsTriggerVariants = cva(
     'after:bg-transparent after:transition-colors after:duration-150',
     // hover（未選）：文字轉深
     'hover:text-foreground',
-    // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層 (Recommended)」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+    // 巢狀 hover(2026-09-25,user 選了 AI 列的選項『卡片保留、按鈕再亮一層 (Recommended)』;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
     // 指標在這個 tab 的 inlineAction 上時,tab 保留上一行的 hover 字色,action 再亮自己那層。
     // action 依 ARIA required-children 被 portal 到 tablist 外(見 TabsTrigger 的 portal 註解),指標在它上面時 trigger 不算 :hover,
     // CSS 也寫不出「哪顆 action 對應哪個 trigger」→ 由 portal 外層 span 的 pointerenter/leave 在 trigger 上標 `data-action-hover`。
@@ -596,7 +596,7 @@ const TabsTrigger = React.forwardRef<
   )
   const [actionPos, setActionPos] = React.useState<{ left: number; top: number; height: number } | null>(null)
 
-  // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層 (Recommended)」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+  // 巢狀 hover(2026-09-25,user 選了 AI 列的選項『卡片保留、按鈕再亮一層 (Recommended)』;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
   // 指標在 portal 出去的 action 上時,在 trigger 標 `data-action-hover`,cva 的 `data-[action-hover]:text-foreground` 讀它。
   // - 用**原生** pointerenter/leave,不用 React 的 onPointerEnter/Leave:React 依元件樹算進出,而 inlineAction 裡的
   //   DropdownMenuContent 是這個 span 的元件樹後代(DOM 卻在 body)—— 指標移進選單時 React 不發 leave,選單關掉時節點卸載

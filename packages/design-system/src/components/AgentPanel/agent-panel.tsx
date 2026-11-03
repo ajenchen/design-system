@@ -1191,7 +1191,7 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
     <div
       ref={ref}
       className={cn(
-        // 懸停/鍵盤聚焦時「出現」是滑過造成的變化 → 瞬間出現、不淡入(user 2026-09-26 對「全部瞬間」延伸(AI 的題目名)答「確定這樣才是一致設計語言就做」到所有滑過造成的變化;
+        // 懸停/鍵盤聚焦時「出現」是滑過造成的變化 → 瞬間出現、不淡入(hover 底色瞬間 = user 2026-09-10「第三題改成全部瞬間」;延伸到所有滑過造成的變化 = 2026-09-26 待辦總帳 L9 那一題 user 答「確定這樣才是一致設計語言就做」;
         // SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」;待辦總帳 L9)。訊息進場的淡入是另一件事(內容出現),不在此。
         'mt-2 flex h-6 items-center gap-2',
         // 常駐(最後一則)= 在流內佔位,底部才能守 --layout-space-bottom;懸停顯示 = 絕對定位於輪距內,

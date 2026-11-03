@@ -234,7 +234,7 @@ const PRIORITY_COLOR = {
  * - Status / Priority marker → Tag color-coded(per tag.spec.md status use case)
  * - Metadata fields → DescriptionList + DescriptionItem(per description-list.spec.md「Profile / detail panel 的屬性列表」use case)
  *
- * 2026-10-28:原本面板底部還有「分派給我」「標記完成」兩顆按鈕 —— 沒有規格依據、按了沒反應,user 訊息裡也查無「分派 / 標記完成」;
+ * 2026-10-28:原本面板底部還有「分派給我」「標記完成」兩顆按鈕 —— 沒有規格依據、按了沒反應,user 訊息裡搜『分派』『標記完成』都是 0 筆;
  * 詳情面板該放哪些動作是產品內容,範例不替產品決定,拿掉(稽核 M057;ssot PA5)。面板只示範內容。
  */
 function IssueDetail({ issue }: { issue: Issue | null }) {
