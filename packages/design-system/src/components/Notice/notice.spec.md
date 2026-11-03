@@ -67,7 +67,7 @@ item-layout 4-slot：
 [status icon?]  [title + description?]  [endContent?]  [dismiss X?]
 ```
 
-- Icon: 16px，`h-[1lh]` inline 對齊 first line
+- 垂直對齊:status icon(16px)、endContent、dismiss X 都放在一行高的槽(`h-[1lh]`;icon 在 `ItemPrefix`,endContent 與 X 同在一個 `ItemSuffix`),中線對齊**第一行**(= title 那一行;title 單行截斷)。有 description 時三者仍留在第一行,不隨整塊置中 —— 即 `patterns/element-anatomy/item-anatomy.spec.md`「Prefix 垂直對齊」與「24px 閾值對齊規則(Prefix)與 Suffix inline 對齊」的 prefix / suffix 規則
 - Dismiss X: `<Button iconOnly dismiss size="xs" />` — chrome corner action group region(Cat 3)。xs 是 **Notification banner family canonical**(Notice / Alert / Toast inherit):ephemeral banner `px-4 py-3` 固定不隨 density,dismiss 邊角小 affordance 輕量不搶眼。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」(overlay header 走 sm native + 負 margin trick;只有 notification banner family 用 xs)+ `patterns/element-anatomy/inline-action.spec.md`「Dismiss canonical — X close only」
 - endContent: 通常放 `<Button variant="tertiary" size="xs">`
 

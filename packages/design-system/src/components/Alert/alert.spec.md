@@ -113,10 +113,10 @@ SSOT 詳見 `patterns/element-anatomy/inline-action.spec.md`「Predicate:Inline 
 Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action —— endContent 內容 + close X 並排:
 
 ```
-┌─ Alert ────────────────── [⟲] │ [X] ┐   ← 右側操作區 action group(endContent + close X,Button xs)
-│ [icon] Title                         │     endContent(CTA / refresh / share 等)+ ButtonDivider + close X
-│ Description                          │
-└──────────────────────────────────────┘
+┌─ Alert ────────────────────────────────┐
+│ [icon] Title                 [⟲] │ [X] │   ← 右側操作區 action group(endContent + ButtonDivider + close X,皆 Button xs)
+│        Description                     │     endContent = CTA / refresh / share 等;icon 與右側操作區都對齊第一行(Title 那一行),
+└────────────────────────────────────────┘     有 Description 時仍留在第一行,不隨整塊置中
 ```
 
 **規則**:
