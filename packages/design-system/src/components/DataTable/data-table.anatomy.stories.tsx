@@ -302,7 +302,7 @@ export const Features: Story = {
       <div className="flex flex-col gap-8">
         <div>
           <H3>排序(enableSorting)</H3>
-          <Desc>Column 的 <code>enableSorting: true</code> 啟用排序。點擊 header 切換 asc / desc / none 三態,header 右側顯示向上 / 向下箭頭(ArrowUp / ArrowDown)指示目前排序方向。</Desc>
+          <Desc>Column 的 <code>enableSorting: true</code> 啟用排序。點擊 header 依序切換升冪 / 降冪 / 清除三態(並清掉其他欄的排序),標題後顯示向上 / 向下箭頭(ArrowUp / ArrowDown)指示目前排序方向;Shift+點擊把這一欄加進多重排序,被排序的欄在箭頭右側多一個順位數字(第 10 個以後「9+」)。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 
@@ -357,7 +357,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td>Sort icon(排序中)</Td>
                 <Td><TokenCell token="--fg-secondary" display="fg-secondary" /></Td>
-                <Td>已套排序(0/1 欄)的欄位顯示升/降冪箭頭;multi-sort(≥2 欄)隱藏箭頭走 SortManager</Td>
+                <Td>已套排序的欄位顯示升/降冪箭頭;多重排序(≥2 欄)時箭頭右側多一個順位數字,與箭頭同色</Td>
               </tr>
               <tr>
                 <Td>欄位選單 ⌄(hover)</Td>

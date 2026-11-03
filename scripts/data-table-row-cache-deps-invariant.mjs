@@ -57,6 +57,7 @@ const ALLOW_HEADER = {
   prevColumnSizingRef: 'useRef;只在事件當下讀寫',
   tableRef: 'useRef;只在事件當下讀 .current',
   headerIdBase: 'React.useId() 回傳值,元件生命週期內恆定(欄頭 id / 欄寬把手 aria-controls 的前綴)',
+  applyHeaderSorting: 'useCallback([table]),身分恆定;只在事件當下呼叫(表頭點擊 / 鍵盤 / ⌄ 選單),不是 render 輸入(2026-11-03 多重排序)',
   table: ALLOW_ROW.table,
 }
 const TARGETS = [

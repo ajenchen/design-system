@@ -54,6 +54,7 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
+import { sortingAfterHeaderActivate, sortingFromColumnMenu, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -236,7 +237,7 @@ export interface DataTableProps<TData>
   onColumnVisibilityChange?: (next: Record<string, boolean>) => void
 
   // ── L3 Sort(排序)──
-  /** 啟用多欄排序(shift+click 加 secondary;單擊仍 replace);default true,對齊 AG Grid / Material */
+  /** 啟用多重排序(Shift+點擊 / Shift+Enter / Shift+Space 把這一欄加進排序、表頭顯示「箭頭 + 順位數字」;一般點擊仍只用這一欄);default true,對齊 AG Grid。規則 → data-table.spec.md「Multi-sort header」列 */
   enableMultiSort?: boolean
 
   // ── L3 Filter trigger(callback only — UI in consumer)──
@@ -1776,6 +1777,20 @@ function DataTableInner<TData>(
     columnResizeMode: 'onChange',
   })
 
+  // ── 表頭排序(2026-11-03,user 2026-10-30 多重排序規格;判定的唯一住所 = lib/sort-cycle.ts)──────────────
+  // 表頭點擊、表頭鍵盤、⌄ 欄位選單都經這一支:以**表格此刻的排序**(受控時 = consumer 的 state,也就是排序面板寫的那一份)算出下一個,
+  // 用**值**(不是 updater)交給 TanStack → 上面的 onSortingChange:內部 state 與 consumer 拿到同一個值,不會各自從舊值推出兩個答案。
+  // 修前走 TanStack 內建 `getToggleSortingHandler`:一般點擊多重排序的最後一欄不清掉其他欄、數字 / 人員欄第一下是降冪(實測見 sort-cycle.ts 檔頭)。
+  const [sortAnnouncement, setSortAnnouncement] = React.useState('')
+  const applyHeaderSorting = React.useCallback((compute: (current: SortingState) => SortingState) => {
+    const next = compute(table.getState().sorting ?? [])
+    table.setSorting(next)
+    setSortAnnouncement(sortChangeAnnouncement(next, (id) => {
+      const column = table.getColumn(id)
+      return column ? columnAccessibleName(column) : id
+    }))
+  }, [table])
+
   // v13.2:onColumnResize callback 透過 useEffect 觀測 columnSizing state 變動 fire(uncontrolled state pattern)
   // 2026-07-06 D3 fix:兌現 prop docblock「commit-on-pointerup,非 live」契約 —
   // columnResizeMode:'onChange' 讓 drag 中 columnSizing 每 mousemove 變一次(視覺即時跟動,
@@ -3246,7 +3261,9 @@ function DataTableInner<TData>(
   // 不再有 DataTable-level cell indicator code path — 跨元件 SSOT 對齊 Field family。
 
   // L4 row drag:sort active 時 drag handle disabled(對齊 Notion / Airtable 共識)
-  const dragDisabled = sorting.length > 0
+  // 讀**表格此刻的排序**(`table.getState()`),不讀內部 `sorting`:consumer 以 tableOptions.state.sorting 受控、
+  // 只從排序面板(DataTableSortManager)加排序時,內部那份一直是 [] —— 修前表格明明在排序,列把手照樣能拖(2026-11-03 實測,專案排程範例)。
+  const dragDisabled = (table.getState().sorting?.length ?? 0) > 0
 
   // ── L4 Row drag v2:nested rows + parent map ─────────────────────────────────
   // v2 cross-parent fix:全 row 各自掛 useDraggable/useDroppable(含 sub-rows;v15 無 SortableContext),
@@ -3989,13 +4006,19 @@ function DataTableInner<TData>(
     // Indicator inline collapse:已套才顯;未套不顯(任何混雜組合不推 — 對齊 AG Grid / Notion)
     const canSort = header.column.getCanSort()
     const sortDir = header.column.getIsSorted() // false | 'asc' | 'desc'
-    // **A fix(2026-05-04)**:multi-sort(≥2)hide header arrow + 取消排序 option
-    //   理由:無 order 編號的單個 arrow 在 multi-sort 下是 partial info → 反而混淆
-    //   user 走 SortManager panel 看完整 priority(SSOT)
-    //   1 sort 仍秀 arrow(完整資訊);0 sort 自然不秀(canSort && sortDir 短路)
-    const isMultiSort = (table.getState().sorting?.length ?? 0) > 1
+    // 多重排序(≥2 欄)時每個被排序的欄顯示「箭頭 + 順位數字」(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
+    // 2026-05-04 的 K7 在多重排序時把箭頭與「取消排序」藏起來,理由是「沒有順位編號的箭頭是片段資訊」—— 有了順位數字,那個理由不成立,兩者都恢復。
+    // 只有一欄排序時不顯示數字(`sortPriorityLabel` 回 null);0 欄自然不顯示(canSort && sortDir 短路)。
+    const sortingState = table.getState().sorting ?? []
+    const priorityLabel = canSort && sortDir ? sortPriorityLabel(sortingState, header.column.id) : null
+    const priorityDescription = canSort && sortDir ? sortPriorityDescription(sortingState, header.column.id) : null
+    const priorityDescriptionId = priorityDescription ? `${columnHeaderDomId(headerIdBase, header.column.id)}-sort-priority` : undefined
     const SortIcon = sortDir === 'asc' ? ArrowUp : ArrowDown // 未套不渲染;套用後二擇一
-    const sortHandler = canSort ? header.column.getToggleSortingHandler() : undefined
+    // Shift+點擊 / Shift+Enter / Shift+Space = 多重排序(這張表允許、這一欄也允許時);判定在 lib/sort-cycle.ts
+    const activateSort = (shiftKey: boolean) => {
+      const additive = shiftKey && enableMultiSort && header.column.getCanMultiSort()
+      applyHeaderSorting((current) => sortingAfterHeaderActivate(current, header.column.id, additive))
+    }
     return (
       <div
         key={header.id}
@@ -4030,13 +4053,16 @@ function DataTableInner<TData>(
         )}
         style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
       >
-        {/* 左區:label + sort indicator(整區 click → toggle sort;Shift+click 加 secondary,enableMultiSort 啟用時) */}
+        {/* 左區:label + sort indicator(整區 click → 升冪 → 降冪 → 清除,並清掉其他欄;Shift+click 只動這一欄、加進多重排序,enableMultiSort 啟用時) */}
         <div
           role={canSort ? 'button' : undefined}
           tabIndex={canSort ? 0 : undefined}
-          onClick={sortHandler}
-          // any-allow: event-cast — TanStack getToggleSortingHandler 內部會 narrow,接受 KeyboardEvent
-          onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortHandler?.(e as any) } } : undefined}
+          onClick={canSort ? (e) => activateSort(e.shiftKey) : undefined}
+          // 鍵盤等價(WCAG 2.1.1「Shift+點擊做得到的,鍵盤也要做得到」;data-table.spec.md 鍵盤段):Enter / Space = 點擊、Shift+Enter / Shift+Space = Shift+點擊。
+          // AG Grid v33 表頭同一個鍵(headerCellCtrl.ts onEnterKeyDown:`progressSort(column, e.shiftKey)`)。
+          onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateSort(e.shiftKey) } } : undefined}
+          // 多重排序時讀屏的順位(「排序順位 2」);畫面上的數字 aria-hidden —— 不然排序區的名字會變成「標題2」
+          aria-describedby={priorityDescriptionId}
           className={cn(
             // 焦點框 = 全域 `:focus-visible` 外描邊(往外,理由見下方 `canSort && 'rounded-md'` 那段 2026-09-10 註解);這裡不能留 outline-none ——
             // 那會把這個 tab stop 的框整個吃掉(H2a 同款)。2026-10-21 前這句寫「由 canSort 那行的 focus-ring-inset 負責」,與下方「改回往外」矛盾(r1b DT-02)。
@@ -4061,16 +4087,27 @@ function DataTableInner<TData>(
           <TruncatedText className="min-w-0">
             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
           </TruncatedText>
-          {canSort && sortDir && !isMultiSort && (
-            // 2026-05-18 改 per user 拍板:DataTable sort 跟 row size 變(轉述)+「做完」approval:
-            // 原固定 14 違反 uiSize.spec.md Icon Tier(sm/md→16, lg→20)。改 ICON_SIZE[size]
-            // 隨 DataTable size prop 變。
-            // 顏色不釘死(2026-08-18 user 拍板:與 label 同色連動(轉述)):繼承點擊區文字色 —
-            // 靜止 fg-secondary、hover 隨父層 hover:text-foreground 與 label 同升。禁 fg-muted
-            //(muted 家 = 永遠在場的裝飾/affordance 標記;排序箭頭 = 套用後才出現的狀態資訊)、
-            // 禁 primary。SSOT → data-table.spec.md「Header cell internal」表 sort arrow 顏色列。
-            <SortIcon size={ICON_SIZE[size]} aria-hidden className="shrink-0" />
+          {canSort && sortDir && (
+            // 排序指示 = 箭頭 + (多重排序時)順位數字,一個單位、同進同出,佔原本單一箭頭的位置(label 之後、gap-1);
+            // 寬高由「箭頭 + 數字」決定(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
+            // 箭頭 ↔ 數字 2px(`gap-0.5`;user 2026-10-30「我認為視覺上2px比較好看」)—— 比 label ↔ 指示的 4px(gap-1)近一級,
+            // 數字跟著箭頭成組、不跟 label 成組(親疏看間距,ds-canonical/rules/ui-development.md「gap 只看親疏」)。
+            <span data-sort-indicator="" className="inline-flex items-center gap-0.5 shrink-0">
+              {/* 2026-05-18 改 per user 拍板:DataTable sort 跟 row size 變(轉述)+「做完」approval:
+                  原固定 14 違反 uiSize.spec.md Icon Tier(sm/md→16, lg→20)。改 ICON_SIZE[size] 隨 DataTable size prop 變。
+                  顏色不釘死(2026-08-18 user 拍板:與 label 同色連動(轉述)):繼承點擊區文字色 —
+                  靜止 fg-secondary、hover 隨父層 hover:text-foreground 與 label 同升。禁 fg-muted
+                  (muted 家 = 永遠在場的裝飾/affordance 標記;排序箭頭 = 套用後才出現的狀態資訊)、
+                  禁 primary。SSOT → data-table.spec.md「Header cell internal」表 sort arrow 顏色列。 */}
+              <SortIcon size={ICON_SIZE[size]} aria-hidden className="shrink-0" />
+              {/* 順位數字:字級 / 行高 / 字重繼承表頭字(fieldDisplayTextClass(size),與 label 同一個),顏色繼承點擊區 = 與箭頭同一個 currentColor;
+                  1–9 照寫、第 10 個以後「9+」(lib/sort-cycle.ts sortPriorityLabel)。aria-hidden:讀屏的順位走上面的 aria-describedby。 */}
+              {priorityLabel && <span data-sort-priority="" aria-hidden className="shrink-0">{priorityLabel}</span>}
+            </span>
           )}
+          {/* `hidden` 而不是 sr-only:sr-only 的字會算進排序區(role=button)的名字;被 aria-describedby 直接指到的 hidden 節點仍算描述
+              (accname 1.2 §4.3.2 step 2A「not directly referenced by aria-labelledby or aria-describedby」)。 */}
+          {priorityDescription && <span id={priorityDescriptionId} hidden>{priorityDescription}</span>}
         </div>
         {/* 右區:⌄ menu(滑過整格 / 格裡有鍵盤焦點 / 選單開著才顯;**不顯示時不佔位**)
             **Layout canonical**(2026-05-06 v3 user explicit rule):不顯示時不佔位,label 取得整個 header width;
@@ -4106,9 +4143,11 @@ function DataTableInner<TData>(
             <DropdownMenuContent align="end">
               {canSort && (
                 <>
-                  <DropdownMenuItem startIcon={ArrowUp} onClick={() => header.column.toggleSorting(false, false)}>升冪排序</DropdownMenuItem>
-                  <DropdownMenuItem startIcon={ArrowDown} onClick={() => header.column.toggleSorting(true, false)}>降冪排序</DropdownMenuItem>
-                  {sortDir && !isMultiSort && <DropdownMenuItem startIcon={XIcon} onClick={() => header.column.clearSorting()}>取消排序</DropdownMenuItem>}
+                  {/* 三項的結果住 lib/sort-cycle.ts `sortingFromColumnMenu`:升冪 / 降冪 = 一般點擊同一種(清掉其他欄、只用這一欄);
+                      取消排序 = 只拿掉這一欄、後面順位往前補。多重排序時「取消排序」恢復顯示(K7 理由消失,見上方 priorityLabel 註解)。 */}
+                  <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'asc'))}>升冪排序</DropdownMenuItem>
+                  <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'desc'))}>降冪排序</DropdownMenuItem>
+                  {sortDir && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, null))}>取消排序</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                 </>
               )}
@@ -5709,17 +5748,33 @@ function DataTableInner<TData>(
     )
   }
 
+  // 從表頭改排序後的播報區(polite;句子由 lib/sort-cycle.ts `sortChangeAnnouncement` 產生,寫入點在表頭的 `applyHeaderSorting`)。
+  // **放在表格根節點之前、當兄弟**:根節點是 role=table / grid,裡面只准 row / rowgroup —— 播報區放進去 axe aria-required-children 會紅
+  // (2026-11-03 實測:role=status 與無 role 的 aria-live div 都被判「children which are not allowed」)。放在**前面**而不是後面(拖曳播報區在後面):
+  // Tailwind v4 的 `space-y-*` / `divide-y-*` 選的是 `:not(:last-child)`,放後面會讓表格不再是最後一個子元素、多出下方間距;
+  // sr-only 是 absolute,不佔 flex / grid 的位置也不吃 gap。
+  const sortLiveRegion = (
+    <div role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-sort-live-region="">{sortAnnouncement}</div>
+  )
   if (enabled && mode === 'single') {
     return (
-      <RadioGroupPrimitive.Root
-        value={selection.mode === 'include' ? (selection.ids[0] ?? '') : ''}
-        onValueChange={(v) => v && setSelection({ mode: 'include', ids: [v] })}
-      >
-        {wrapWithDnd(composedContent)}
-      </RadioGroupPrimitive.Root>
+      <>
+        {sortLiveRegion}
+        <RadioGroupPrimitive.Root
+          value={selection.mode === 'include' ? (selection.ids[0] ?? '') : ''}
+          onValueChange={(v) => v && setSelection({ mode: 'include', ids: [v] })}
+        >
+          {wrapWithDnd(composedContent)}
+        </RadioGroupPrimitive.Root>
+      </>
     )
   }
-  return wrapWithDnd(composedContent)
+  return (
+    <>
+      {sortLiveRegion}
+      {wrapWithDnd(composedContent)}
+    </>
+  )
 }
 
 export const DataTable = React.forwardRef(DataTableInner) as <TData>(
