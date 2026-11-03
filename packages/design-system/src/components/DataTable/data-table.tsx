@@ -4398,9 +4398,22 @@ function DataTableInner<TData>(
   }
   const renderBodyRows = (cols: Column<TData, unknown>[], isCenter: boolean, isRight: boolean, regionWidth: number) => {
     if (isEmpty && isCenter) {
-      // 有框容器 → 垂直置中(design principle)
-      if (emptyState && typeof emptyState !== 'string') return <div className="flex-1 flex items-center justify-center py-12">{emptyState}</div>
-      return <div className="flex-1 flex items-center justify-center py-12"><Empty description={typeof emptyState === 'string' ? emptyState : '沒有資料'} /></div> // i18n-allow: DS default fallback; consumer override via emptyState prop
+      // 有框容器 → 垂直置中(design principle)。
+      // 空狀態包成跨全欄的一列一格(role 跟根節點走:table → row > cell、grid → row > gridcell):空狀態的 Action 槽放按鈕
+      //(empty.spec.md「Action」)時,按鈕才落在表格合法的子節點裡 —— 直接放在 table 底下、不在任何列 / 格之內的可互動元素,
+      // axe 判 aria-required-children(critical;2026-10-28 DataTable「空狀態」放「新增商品」實測)。同 Ant Design Table(rc-table)把空狀態畫成
+      // 跨全欄的一列一格(`${prefixCls}-placeholder` + `colSpan={flattenColumns.length}`,
+      // https://github.com/react-component/table/blob/057acc818680ec824244698bc87d16be00c6f572/src/Body/index.tsx#L118-L130)。版面不變:列是一般區塊,置中那層的 class 原樣搬到格上。
+      const emptyContent = emptyState && typeof emptyState !== 'string'
+        ? emptyState
+        : <Empty description={typeof emptyState === 'string' ? emptyState : '沒有資料'} /> // i18n-allow: DS default fallback; consumer override via emptyState prop
+      return (
+        <div role="row" aria-rowindex={2}>
+          <div role={spreadsheetMode ? 'gridcell' : 'cell'} aria-colspan={table.getVisibleLeafColumns().length} className="flex-1 flex items-center justify-center py-12">
+            {emptyContent}
+          </div>
+        </div>
+      )
     }
     if (isEmpty) return null
 
@@ -4825,7 +4838,7 @@ function DataTableInner<TData>(
       // 行為:**永遠 hug rows**,只在被約束時才 cap + body shrink + V scroll。
       // 簡單需求:有約束 → rows 沒超就 hug;超就 cap+scroll;RWD 同理。
       style={isFillHeight ? { maxHeight: height } : undefined}
-      // L5 分頁:aria-rowcount = 全集筆數非當頁(ARIA 規範;getPrePaginationRowModel = filter 後全集)
+      // L5 分頁:aria-rowcount = 全集筆數非當頁(ARIA 規範;getPrePaginationRowModel = filter 後全集)+ 表頭一列;空表再 + 空狀態那一列(見 renderBodyRows)
       // 2026-09-07:**`spreadsheetMode` 時才宣稱 grid**。
       // ARIA 的 `grid` 是「容器管理鍵盤導覽、儲存格可聚焦」的複合元件;
       // spreadsheet 模式正是如此(方向鍵移動儲存格游標、Enter/F2 進編輯)。
@@ -4834,7 +4847,7 @@ function DataTableInner<TData>(
       // 攔去朗讀而不是傳給我們。
       // 非 spreadsheet 的表格維持 `table`:那裡儲存格不可聚焦,宣稱 grid 會讓 AT 進入
       // 它提供不了的互動模式(比宣稱 table 更糟)。
-      role={spreadsheetMode ? 'grid' : 'table'} aria-rowcount={(paginationEnabled ? table.getPrePaginationRowModel().rows.length : rows.length) + 1}
+      role={spreadsheetMode ? 'grid' : 'table'} aria-rowcount={(paginationEnabled ? table.getPrePaginationRowModel().rows.length : rows.length) + (isEmpty ? 2 : 1)}
       // Phase 9 Issue 12 fix(2026-05-10 codex 抓):**single tabIndex prop**,合併 selection
       // 跟 spreadsheet 兩 path。React 在 dup props 只 keep last 是 silent regression risk。
       tabIndex={enabled || spreadsheetMode ? 0 : undefined}
@@ -5058,8 +5071,8 @@ function DataTableInner<TData>(
           // 打斷 table→row ownership(修 scrollable-region-focusable 反引爆 required-children,
           // 與 Tabs 2026-07-18 決策1 同型)。rowgroup = W3C ARIA 1.2 合法 table 子代 + 可具名
           // (Name from author §5.2.8.4)+ 容納 rows,兩規則唯一同時滿足解。
-          // 空表例外:Empty 塊非 row → 不掛 rowgroup;空表無 overflow 也無需 tabIndex/名稱。
-          role={isEmpty ? undefined : 'rowgroup'}
+          // 空表:Empty 塊包成一列一格(見 renderBodyRows),同樣是這個 rowgroup 的列;空表無 overflow,不需 tabIndex/名稱。
+          role="rowgroup"
           tabIndex={enabled || spreadsheetMode || isEmpty ? undefined : 0}
           aria-label={enabled || spreadsheetMode || isEmpty ? undefined : '表格內容,可捲動'}
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
