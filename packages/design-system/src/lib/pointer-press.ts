@@ -9,6 +9,11 @@
  *     欄位空白處都不把焦點搬走;Combobox「+N」浮出清單(另一個 portal)由它自己掛同一支(OverflowIndicator `onContentMouseDown`)
  *   - AgentPanel 輸入盒(`components/AgentPanel/agent-panel.tsx` AgentPromptInput 外框 + 附件「+N」浮出清單,2026-10-01 待辦總帳 OE30):
  *     textarea 握著焦點時,按附件 ×、+、送出、停止,焦點與正在打的字都留在輸入盒(同一個複合輸入控件的零件)
+ *   - DataTable 連結格(`components/DataTable/data-table.tsx` `clickIsForCellContent`):點格進編輯,點在格裡自有行為的東西上
+ *     (網址文字 = 連結)照原生、不進編輯(`components/DataTable/data-table.spec.md`「Navigate-valued cell 通用類別」第 1 條「點的規則」)
+ *   - AgentPanel 決策卡選項卡(`components/AgentPanel/agent-panel.tsx` `pressOptionCard`,2026-11-03):點卡 = 點控件一次 ——
+ *     控件與 SelectionItem 的 `<label for>` 照原生、「其他」輸入格外框歸輸入格,其餘由卡轉給控件
+ *     (`components/AgentPanel/agent-decision-card.spec.md`「整卡可點」)
  * 用 mousedown 擋預設、不等 click:click 之前焦點早已被瀏覽器搬走(blur → focus 閃一下)。
  * 世界級同一手法:rc-select 清單 `onMouseDown` → `event.preventDefault()`
  * (https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/OptionList.tsx#L79-L81)、

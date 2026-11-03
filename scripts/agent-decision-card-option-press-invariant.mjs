@@ -3,13 +3,14 @@
  * @gate-contract
  *   保證: AgentDecisionCard 的灰底選項卡,卡內**每一點**用滑鼠點一下 = 那張卡的控件**恰好切換一次**(複選:勾 ↔ 不勾;單選:被選中),
  *         其他卡不動;「其他」卡的輸入格外框裡點 = 選中「其他」(不會被切掉);卡與卡之間的 8px 點了不選任何一張;
- *         方向鍵選到「其他」、Space 勾「其他」都不把焦點搶進輸入格,滑鼠點「其他」卡(輸入格以外)讓它被選中時焦點進輸入格。
+ *         方向鍵選到「其他」、焦點在「其他」上按 Space(單選的圓 / 複選的方框)都不把焦點搶進輸入格,
+ *         滑鼠點「其他」卡(輸入格以外)讓它被選中時焦點進輸入格。
  *         量的是控件 aria-checked 在這一下點擊裡**變了幾次**(MutationObserver 逐筆記)與 document.activeElement,不讀 class(M37)。
  *   紅: --selftest 在頁面裡補回三種舊病:點標籤時多一個主人再轉一次給控件(2026-11-03 前「點標籤那一整行切兩次抵銷」)、
- *       點「其他」輸入格外框時多切一次(同日前「外框按下聚焦已選中、放開卡又切掉」)、方向鍵選到「其他」後把焦點拉進輸入格
- *       → 三組檢查(標籤列 / 外框 / 方向鍵)都必須各自指名紅
+ *       點「其他」輸入格外框時多切一次(同日前「外框按下聚焦已選中、放開卡又切掉」)、鍵盤(方向鍵 / Space)選中「其他」的圓後
+ *       把焦點拉進輸入格 → 四條檢查(標籤列 / 外框 / 方向鍵 K1 / 單選 Space K3)都必須各自指名紅
  *   綠: 現行 agent-panel.tsx(pressOptionCard:控件與 `<label for>` 自己轉、「其他」外框歸輸入格、其餘由卡轉一次給控件)必須全綠;
- *       修前(108a736f)的建置跑這支:複選三張具名卡的標籤列與「其他」外框全紅、方向鍵那條紅(本機實測,見 commit 說明)
+ *       修前(108a736f)的建置跑這支:複選三張具名卡的標籤列與「其他」外框全紅、方向鍵 K1 與單選 Space K3 紅(本機實測,見 commit 說明)
  *
  * ── 為什麼有這支 ──
  *
@@ -17,7 +18,8 @@
  * 根因:卡的 onClick 把「抵達卡的每一下點擊」都當成「user 指了這張卡」,自己呼叫 toggle;但同一下點擊早已有別的主人 ——
  *   · 標籤 `<label for>`:瀏覽器再轉一次點擊給控件(HTML label 啟動行為)→ 卡切一次 + 控件切一次 = 抵銷(單選同值,看不出)
  *   · 「其他」輸入格的外框:按下時外框把焦點交給輸入格(field-wrapper.tsx focusFieldInputFromChrome)→ onFocus 選中;放開時卡又切一次
- *   · 方向鍵:Radix 以程式 click() 選中單選圓,冒泡到卡 → 卡以為是滑鼠點,把焦點拉進輸入格(違反 spec「鍵盤方向鍵選中不搶焦點」)
+ *   · 方向鍵 / 單選圓上按 Space:Radix 以程式 click()、瀏覽器以鍵盤合成的 click 選中單選圓,冒泡到卡 → 卡以為是滑鼠點,
+ *     把焦點拉進輸入格(違反 spec「鍵盤方向鍵選中不搶焦點」與 APG radio「Space: checks the focused radio button」—— 焦點不動)
  * 規則:`hit-area-canonical.md` 一-1(滑過有變化的地方點下去必須觸發)、一-4(卡 = 控件的標籤盒子,「點下去等於點控件」);
  * 「其他」卡的聚焦與方向鍵:`agent-decision-card.spec.md`「8. AgentDecisionCard」選項卡條。
  *
@@ -25,10 +27,17 @@
  *
  * 決策卡三題步進(DecisionCardOpen):第 1 題單選(3 張卡)、第 3 題複選(4 張卡,含「其他」)。
  * 每張卡:格點(複選 8px、單選 12px)+ 每個區域的代表點(控件中心、標籤字中心、說明字中心、卡四角內 2px、「其他」外框四邊的內距中心、
- * 輸入格中心、外框四個圓角外)。每一點:先在頁面裡掛 MutationObserver 記全部控件的 aria-checked、記 elementFromPoint 落在哪個區域 → 真滑鼠點一下
+ * 輸入格中心、外框圓角外)。「外框圓角外」不用固定位移:Chromium 圓角的命中判定逐角不同(實測圓角 4px 時左上角往內 0.25–2px
+ * 都命中外框本身、右下角往內 1px 仍落在外框外),所以每個角沿對角線往內每 0.25px 找第一個「在外框的矩形裡、elementFromPoint
+ * 卻不在外框裡」的點;按下時再斷言它的命中區域是卡(region = card),點位跑回外框裡就紅,不會悄悄變成「輸入格」那一類。
+ * 圓角 > 0 卻四個角都找不到 → 儀器失效(exit 2);圓角 = 0 → 沒有這一區,印一行說明。
+ * 每一點:先在頁面裡掛 MutationObserver 記全部控件的 aria-checked、記 elementFromPoint 落在哪個區域 → 真滑鼠點一下
  * (page.mouse.click,含 mousedown —— 外框聚焦是按下時發生的)→ 等點擊排的 setTimeout(0) 跑完(FIFO:我們的 setTimeout 排在它後面)
  * → 讀這一下裡每個控件 aria-checked 變了幾次。兩次切換若被 React 合批會是「0 次」,沒合批會是「2 次」,兩種都抓得到。
  * 單選每一點之前目標卡必須是「未選中」,否則這一下看不出效果(交錯點不同卡;必要時先點別張卡的圓)。
+ * 格點依序點,點與點之間**不**清焦點 —— 刻意的:「焦點已在輸入格裡、再點外框 / 輸入格」這種狀態也一併量到。代價是修前建置上
+ * 「輸入格」那一組的紅有一部分是外框那個病的連帶(外框那一下把「其他」切掉、焦點留在輸入格,下一點點輸入格就不再觸發聚焦即選中),
+ * 不代表輸入格本身壞了;要逐區歸因時改用每點先清焦點的量法。
  *
  * 載入:共用 openStory(lib/launch-browser.mjs);換題後 settleAfterInteraction + 等第 3 題的勾選框本身出現。
  * 開不起來 → 儀器失效(exit 2,INSTRUMENT-FAIL),不是產品裁決,也絕不當成通過。
@@ -37,7 +46,7 @@
  *      (併在 `npm run test:agent-panel-invariants`;`--static-dir` 預設 ./storybook-static)
  */
 
-import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireFreshStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -55,7 +64,15 @@ const CARD = '[class~="group/agent-option"]'
 const CONTROL = '[role="checkbox"], [role="radio"]'
 const OTHER_INPUT = 'input[aria-label="其他(自由輸入)"]'
 
-requireStorybookBuild(join(STATIC, 'index.json'))
+// 建置存在、且不比被驗的原始碼舊:lib/launch-browser.mjs requireFreshStorybookBuild(全部瀏覽器閘同一份;2026-09-27,待辦總帳 C5)。
+// 列的是這支量到的行為的原始碼:選項卡的點擊歸屬(agent-panel.tsx pressOptionCard)、「容器裡自有行為的東西」判準(pointer-press.ts)、
+// 「其他」外框按下聚焦輸入格(field-wrapper.tsx focusFieldInputFromChrome)、標籤 `<label for>`(selection-item.tsx)。
+requireFreshStorybookBuild(STATIC, [
+  'packages/design-system/src/components/AgentPanel/agent-panel.tsx',
+  'packages/design-system/src/lib/pointer-press.ts',
+  'packages/design-system/src/components/Field/field-wrapper.tsx',
+  'packages/design-system/src/components/SelectionControl/selection-item.tsx',
+])
 
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', ')) })
@@ -99,7 +116,7 @@ const injectFaults = (page) => page.addScriptTag({ content: `
       const card = chrome.closest(CARD)
       if (card) queueMicrotask(() => card.querySelector(CONTROL).click())
     }, true)
-    // ③ 方向鍵:程式選中「其他」的圓之後把焦點拉進輸入格(舊版:Radix 的 click() 冒泡到卡,卡當成滑鼠點)
+    // ③ 鍵盤:方向鍵(Radix 程式 click())或 Space(鍵盤合成 click)選中「其他」的圓之後把焦點拉進輸入格(舊版:冒泡到卡,卡當成滑鼠點)
     document.addEventListener('click', (e) => {
       if (e.detail !== 0 || !(e.target instanceof Element) || e.target.getAttribute('role') !== 'radio') return
       const card = e.target.closest(CARD)
@@ -134,7 +151,8 @@ const readCards = () => page.evaluate(({ CARD, CONTROL, OTHER_INPUT }) => {
     const r = range.getBoundingClientRect()
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
   }
-  return [...document.querySelectorAll(CARD)].map((card, index) => {
+  const cornerReport = []
+  const cards = [...document.querySelectorAll(CARD)].map((card, index) => {
     const box = rectOf(card)
     const control = card.querySelector(CONTROL)
     const label = card.querySelector('label')
@@ -163,17 +181,38 @@ const readCards = () => page.evaluate(({ CARD, CONTROL, OTHER_INPUT }) => {
         { name: '外框右內距', x: (i.right + f.right) / 2, y: i.y + i.height / 2 },
         { name: '輸入格中心', x: i.x + i.width / 2, y: i.y + i.height / 2 },
         { name: '輸入格左縮排', x: (box.x + f.left) / 2 + 4, y: i.y + i.height / 2 },
-        // 外框四個圓角外的那一點點:在外框的矩形裡、但在圓角外 → 不是輸入格,是卡(點了要切換)。
-        // 2026-11-03 第一版用一層矩形 div 包外框當「輸入格的地盤」,這四角就成了點了沒反應的死點(5px 格點掃到 1 點,8px 格點掃不到)
-        { name: '外框左上圓角外', x: f.left + 0.5, y: f.top + 0.5 },
-        { name: '外框右上圓角外', x: f.right - 0.5, y: f.top + 0.5 },
-        { name: '外框左下圓角外', x: f.left + 0.5, y: f.bottom - 0.5 },
-        { name: '外框右下圓角外', x: f.right - 0.5, y: f.bottom - 0.5 },
       )
+      // 外框圓角外的那一點點:在外框的矩形裡、但在圓角外 → 不是輸入格,是卡(點了要切換)。
+      // 2026-11-03 第一版用一層矩形 div 包外框當「輸入格的地盤」,這些點就成了點了沒反應的死點(5px 格點掃到 1 點,8px 格點掃不到)。
+      // 固定位移不可靠(檔頭「量法」):逐角沿對角線往內找第一個真的不在外框裡的點,並標 expect = card 讓按下時再驗一次。
+      const radius = Math.max(...['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius']
+        .map((k) => parseFloat(getComputedStyle(chrome)[k]) || 0))
+      const corners = [['左上', f.left, f.top, 1, 1], ['右上', f.right, f.top, -1, 1], ['左下', f.left, f.bottom, 1, -1], ['右下', f.right, f.bottom, -1, -1]]
+      let found = 0
+      for (const [corner, cx, cy, dx, dy] of corners) {
+        for (let d = 0; d <= 2; d += 0.25) {
+          const x = cx + dx * d
+          const y = cy + dy * d
+          if (x < f.left || x >= f.right || y < f.top || y >= f.bottom) continue
+          const el = document.elementFromPoint(x, y)
+          if (!el || chrome.contains(el) || !card.contains(el)) continue
+          points.push({ name: `外框${corner}圓角外`, x, y, expect: 'card', offset: d })
+          found += 1
+          break
+        }
+      }
+      cornerReport.push({ card: index, radius, found })
     }
     return { index, box, label: label.textContent, controlId: control.id, role: control.getAttribute('role'), points }
   })
-}, { CARD, CONTROL, OTHER_INPUT })
+  return { cards, cornerReport }
+}, { CARD, CONTROL, OTHER_INPUT }).then(({ cards, cornerReport }) => {
+  for (const c of cornerReport) {
+    if (c.radius > 0 && c.found === 0) throw new Error(`卡${c.card}「其他」外框圓角 ${c.radius}px,四個角卻都找不到「在外框矩形裡、不在外框裡」的點 —— 圓角外這一區量不到`)
+    record(`C${c.card}`, `卡${c.card}「其他」外框圓角外代表點${c.radius > 0 ? `:圓角 ${c.radius}px,找到 ${c.found} / 4 個角` : ':圓角 0,沒有圓角外這一區'}`, true)
+  }
+  return cards
+})
 
 /** 一點:掛記錄器 + 判命中區域 → 真滑鼠點 → 讀這一下每個控件 aria-checked 變了幾次、最後是什麼。 */
 async function pressAt(x, y) {
@@ -238,6 +277,7 @@ async function sweepCheckbox(cards) {
       if (r.card !== card.index) { tally(`複選卡${card.index}「${card.label}」| 命中不是這張卡`, false, `${where} 命中 ${r.card}`); continue }
       const others = Object.entries(r.changes).filter(([k, n]) => k !== id && n > 0)
       const region = r.region
+      if (p.expect && region !== p.expect) { tally(`複選卡${card.index}「${card.label}」| 代表點「${p.name}」命中 ${region}(該 ${p.expect})—— 點位跑出它代表的區域,量具失準`, false, where); continue }
       let pass
       let because
       if (region === 'input' || region === 'field-chrome') {
@@ -272,6 +312,7 @@ async function sweepRadio(cards) {
       const r = await pressAt(p.x, p.y)
       const where = `${p.kind === 'grid' ? '' : p.name}${rel(card, p)}`
       if (r.card !== card.index) { tally(`單選卡${card.index}「${card.label}」| 命中不是這張卡`, false, `${where} 命中 ${r.card}`); continue }
+      if (p.expect && r.region !== p.expect) { tally(`單選卡${card.index}「${card.label}」| 代表點「${p.name}」命中 ${r.region}(該 ${p.expect})—— 點位跑出它代表的區域,量具失準`, false, where); continue }
       const changedOthers = Object.entries(r.changes).filter(([k2, n]) => k2 !== id && n > 1)
       const pass = r.checked[id] === true && (r.changes[id] ?? 0) === 1 && Object.values(r.checked).filter(Boolean).length === 1 && changedOthers.length === 0
       tally(`單選卡${card.index}「${card.label}」| ${r.region} | ${pass ? '選中這張' : `點後 ${r.checked[id] ? '已選' : '未選'}、本卡變 ${r.changes[id] ?? 0} 次`}`, pass, where)
@@ -293,6 +334,19 @@ async function sweepGaps(cards, label) {
   }
 }
 
+/** 從現在起記每個控件 aria-checked 變了幾次;readObserved(id) 收回並回傳該控件的次數。 */
+const observeChecked = () => page.evaluate(({ CONTROL }) => {
+  window.__optionPress?.disconnect()
+  window.__optionPressChanges = {}
+  window.__optionPress = new MutationObserver((rs) => rs.forEach((r) => { window.__optionPressChanges[r.target.id] = (window.__optionPressChanges[r.target.id] ?? 0) + 1 }))
+  for (const el of document.querySelectorAll(CONTROL)) window.__optionPress.observe(el, { attributes: true, attributeFilter: ['aria-checked'] })
+}, { CONTROL })
+const readObserved = (id) => page.evaluate((id) => {
+  window.__optionPress.takeRecords().forEach((r) => { window.__optionPressChanges[r.target.id] = (window.__optionPressChanges[r.target.id] ?? 0) + 1 })
+  window.__optionPress.disconnect()
+  return window.__optionPressChanges[id] ?? 0
+}, id)
+const activeId = () => page.evaluate(() => document.activeElement?.id ?? null)
 const activeRole = () => page.evaluate(() => { const a = document.activeElement; return a ? (a.matches('input') ? 'input' : a.getAttribute('role') ?? a.tagName) : null })
 const focusControl = (id) => page.evaluate((id) => document.getElementById(id).focus(), id)
 
@@ -324,6 +378,22 @@ try {
     await page.keyboard.up('ArrowDown')
     record('K1', '單選:方向鍵選到「其他」,焦點留在圓上、不被拉進輸入格', role === 'radio', `焦點在 ${role}`)
   }
+  // 焦點在「其他」的圓上(未選)按 Space → 選中、焦點留在圓上(APG radio:Space「checks the focused radio button」,焦點不動;
+  // spec 只有滑鼠 / 觸控點「其他」卡才自動聚焦輸入格)。2026-11-03 前:Space 合成的 click 冒泡到卡 → 焦點被搬進輸入格。
+  {
+    await page.locator(`[id="${cards[0].controlId}"]`).click()
+    await flush()
+    await focusControl(cards[2].controlId)
+    await observeChecked()
+    await page.keyboard.press('Space')
+    await flush()
+    const n = await readObserved(cards[2].controlId)
+    const checked = (await states())[cards[2].controlId]
+    const role = await activeRole()
+    const onOther = (await activeId()) === cards[2].controlId
+    record('K3', '單選:焦點在「其他」的圓上按 Space → 選中、焦點留在圓上、不被拉進輸入格',
+      checked === true && n === 1 && role === 'radio' && onOther, `選中=${checked}、變 ${n} 次、焦點在 ${role}${onOther ? '' : '(不是「其他」的圓)'}`)
+  }
   // 回到第一項(其他 + 空字 = 下一題停用),換到第 3 題
   await page.locator(`[id="${cards[0].controlId}"]`).click()
   await flush()
@@ -352,14 +422,10 @@ try {
   {
     await setOther(false)
     await focusControl(other.controlId)
-    await page.evaluate(({ CONTROL }) => {
-      window.__optionPressChanges = {}
-      window.__optionPress = new MutationObserver((rs) => rs.forEach((r) => { window.__optionPressChanges[r.target.id] = (window.__optionPressChanges[r.target.id] ?? 0) + 1 }))
-      for (const el of document.querySelectorAll(CONTROL)) window.__optionPress.observe(el, { attributes: true, attributeFilter: ['aria-checked'] })
-    }, { CONTROL })
+    await observeChecked()
     await page.keyboard.press('Space')
     await flush()
-    const n = await page.evaluate((id) => { window.__optionPress.takeRecords().forEach((r) => { window.__optionPressChanges[r.target.id] = (window.__optionPressChanges[r.target.id] ?? 0) + 1 }); window.__optionPress.disconnect(); return window.__optionPressChanges[id] ?? 0 }, other.controlId)
+    const n = await readObserved(other.controlId)
     const role = await activeRole()
     record('K2', '複選:Space 勾「其他」恰好切一次、焦點留在勾選框', n === 1 && role === 'checkbox', `變 ${n} 次、焦點在 ${role}`)
   }
@@ -395,16 +461,17 @@ for (const [key, g] of groups) {
 const points = [...groups.values()].reduce((s, g) => s + g.n, 0)
 
 if (SELFTEST) {
-  // 紅在對的地方才算數:三種補回的舊病各自被指名
+  // 紅在對的地方才算數:三種補回的舊病各自被指名(第三種「鍵盤選中後搶焦點」要被方向鍵 K1 與單選 Space K3 兩條都抓到)
   const caughtLabel = failures.some((l) => l.includes('複選卡') && l.includes('| label |'))
   const caughtChrome = failures.some((l) => l.includes('「其他」') && l.includes('| field-chrome |'))
   const caughtArrow = failures.some((l) => l.includes('K1'))
+  const caughtSpace = failures.some((l) => l.includes('K3'))
   console.log(passes.join('\n'))
   if (failures.length) console.error('\n' + failures.join('\n'))
-  const ok = measuredSomething && caughtLabel && caughtChrome && caughtArrow
+  const ok = measuredSomething && caughtLabel && caughtChrome && caughtArrow && caughtSpace
   console.log(ok
-    ? '\n✓ selftest:補回的三種舊病(標籤多一個主人 / 「其他」外框多切一次 / 方向鍵搶焦點)都被指名,量具會紅'
-    : `\n✗ selftest:沒抓全 —— 標籤 ${caughtLabel ? '✓' : '✗'}、外框 ${caughtChrome ? '✓' : '✗'}、方向鍵 ${caughtArrow ? '✓' : '✗'}(這支閘是假綠)`)
+    ? '\n✓ selftest:補回的三種舊病(標籤多一個主人 / 「其他」外框多切一次 / 鍵盤選中後搶焦點 —— 方向鍵 K1 與 Space K3)都被指名,量具會紅'
+    : `\n✗ selftest:沒抓全 —— 標籤 ${caughtLabel ? '✓' : '✗'}、外框 ${caughtChrome ? '✓' : '✗'}、方向鍵 K1 ${caughtArrow ? '✓' : '✗'}、Space K3 ${caughtSpace ? '✓' : '✗'}(這支閘是假綠)`)
   process.exit(ok ? 0 : 1)
 }
 

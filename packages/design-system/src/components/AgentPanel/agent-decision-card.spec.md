@@ -17,7 +17,8 @@
   「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
   [Polaris ChoiceChildren 同款](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Choice/Choice.module.css);
   距卡右/下各 12);聚焦即選中「其他」;**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
-  鍵盤方向鍵選中不搶焦點(APG radio roving,Tab 一步即到);radio `aria-controls` 指向 Input。
+  鍵盤選中不搶焦點 —— 方向鍵(APG radio roving)、焦點在圓 / 方框上按 Space(APG radio「Space: checks the focused radio button」,
+  <https://www.w3.org/WAI/ARIA/apg/patterns/radio/>)都只改選取狀態、焦點留在原處,Tab 一步即到 Input;radio `aria-controls` 指向 Input。
   幾何:一般卡 8+21+2+21+8 = 60;「其他」卡 8+21+8+32+12 = 81。
 - 選項卡滑過(2026-09-26 AI 建議,列在「其餘建議」、user 未另提 → AI 判讀照建議做;user 的問句見上;待辦總帳 B12):指標在整張卡的**任何位置**(內距、圓與字的空隙、說明文字、「其他」卡的輸入格),
   卡內的圓(複選是方框)照它被自己的 label 滑過時的樣子變色 —— 顏色即 `../Checkbox/checkbox.spec.md`「狀態」Radio / Checkbox 表的 hover 列,

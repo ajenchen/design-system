@@ -1566,11 +1566,14 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     //   · 落在「其他」輸入格的外框裡 → 輸入格自己負責(聚焦即選中)
     //   · 其餘(內距、圓與字的空隙、說明文字)→ 卡把這一下轉給控件:`control.click()`,切換只由控件做
     // 2026-11-03 前卡自己呼叫 toggle、label 又照常轉發 → 點標籤那一整行切兩次抵銷(複選看得出,單選同值看不出);
-    // 點「其他」輸入格的外框:按下時聚焦已選中、放開時卡再切一次 → 又抵銷(user 2026-10-29「多選的那道題目的選項那麼難按」)。
+    // 點「其他」輸入格的外框:按下時聚焦已選中、放開時卡再切一次 → 又抵銷(user 2026-10-29 第十一輪問句「為何多選的那道題目的選項那麼難按？」)。
     // 「其他」卡另有聚焦:滑鼠 / 觸控點下去(detail ≥ 1)且這一下讓它被選中 → 聚焦輸入格。鍵盤 Space、方向鍵、label 與卡轉給控件的
-    // 那一下都是 detail 0 的虛擬點擊(React Aria `isVirtualClick` 同一判準,
-    // https://github.com/adobe/react-spectrum/blob/6dec77beccf0545a04318e6a01b8eb9cbe2dccc6/packages/react-aria/src/utils/isVirtualEvent.ts#L19-L40),
-    // 不搶焦點 —— 方向鍵選到「其他」焦點留在圓上(APG radio roving);2026-11-03 前方向鍵選到它會被拉進輸入格。
+    // 那一下都是 detail 0 的虛擬點擊 —— 取 React Aria `isVirtualClick` 裡 `detail === 0` 那一條判法
+    // (https://github.com/adobe/react-spectrum/blob/6dec77beccf0545a04318e6a01b8eb9cbe2dccc6/packages/react-aria/src/utils/isVirtualEvent.ts#L19-L40;
+    // 它另外把讀屏 + Firefox、Android TalkBack 的點擊也判成虛擬,本元件沒有取那兩條,那兩種照指標點擊處理;
+    // DS 內 agent-panel-fab.tsx 認鍵盤合成的 click 也是 detail === 0 這一條),不搶焦點 ——
+    // 方向鍵選到「其他」、焦點在「其他」的圓上按 Space,焦點都留在圓上(APG radio roving;Space「checks the focused radio button」,
+    // https://www.w3.org/WAI/ARIA/apg/patterns/radio/);2026-11-03 前兩者都會把焦點拉進輸入格。
     const pressOptionCard = (event: React.MouseEvent<HTMLDivElement>, controlId: string, selectsOther: boolean) => {
       const card = event.currentTarget
       const target = event.target
