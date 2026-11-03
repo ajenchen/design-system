@@ -23,6 +23,7 @@
 //   (如 `<Select mode="view" display="tag">`),不可自刻 —— 格式化 SSOT 住在該控件的 view mode。
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { isOnDetachedLayer } from '@/design-system/lib/composite-field-focus'
 import { Input } from '@/design-system/components/Input/input'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
@@ -113,6 +114,9 @@ export interface InlineEditProps<T = string> {
  * view 態用隱形 Pressable(絕對定位 `<button>` 疊於內容上)—— 讓 `as="h1"` 等標題標籤保留文件大綱
  * a11y,同時提供鍵盤 focus + Enter 進 edit(HTML 內容模型不允許 heading 巢狀於 button,故分離)。
  */
+/** edit 控件會開的浮層(Radix popper 殼 / Radix Select 清單 / listbox / dialog);哪一層算「本 edit 開的」由 isOnDetachedLayer 判(不裝著這個 edit 的那一層) */
+const EDIT_OVERLAY_SELECTOR = '[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]'
+
 function InlineEditImpl<T = string>(
   {
     value,
@@ -198,6 +202,8 @@ function InlineEditImpl<T = string>(
   // portal-aware:overlay 控件(Select/DatePicker)開的 Radix popper/listbox 是 portaled 出子樹,
   //   焦點在其中時**不誤結算**(dropdown 操作中);真正離開(都不在 edit 子樹 + 不在本 edit 的 overlay)才 commit。
   // rAF 延一拍讓焦點落定(Radix 關 popover 時焦點先回 trigger,避免 blur 瞬間誤判)。
+  // 「本 edit 開的 overlay」= 不裝著這個 edit 的那一層(isOnDetachedLayer,2026-11-03):InlineEdit 放在 Dialog / Sheet / Popover 裡時,
+  //   宿主本身也是 dialog / popper —— 修前「任何一層都算本 edit 的」,點宿主空白、Tab 到宿主裡的下一格都不結算,卡在 edit。
   const handleEditBlur = React.useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     const wrapper = e.currentTarget
     requestAnimationFrame(() => {
@@ -205,7 +211,7 @@ function InlineEditImpl<T = string>(
       const active = document.activeElement
       if (active && wrapper.contains(active)) return // 仍在 edit 子樹(如 trigger)
       // 焦點在本 edit 開的 Radix overlay 內 → dropdown 操作中,不結算
-      if (active && active.closest('[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]')) return
+      if (active && isOnDetachedLayer(active, wrapper, EDIT_OVERLAY_SELECTOR)) return
       commit(false) // blur 離開 → 回 view(滑鼠路徑不搶焦)
     })
   }, [commit])
@@ -236,8 +242,8 @@ function InlineEditImpl<T = string>(
       if (!target) return
       const box = editContainerRef.current
       if (box && box.contains(target)) return // 點在 edit 子樹內(trigger 等)
-      // 點在本 edit 開的 Radix overlay 內(popper / listbox / dialog)→ dropdown 操作中,不結算
-      if (target.closest('[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]')) return
+      // 點在本 edit 開的 Radix overlay 內(popper / listbox / dialog;不裝著這個 edit 的那一層)→ dropdown 操作中,不結算
+      if (isOnDetachedLayer(target, box, EDIT_OVERLAY_SELECTOR)) return
       commit(false)
     }
     document.addEventListener('pointerdown', onPointerDown, true)

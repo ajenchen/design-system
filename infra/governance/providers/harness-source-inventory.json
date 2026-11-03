@@ -711,6 +711,7 @@
           "scripts/test-motion-ssot-invariant.mjs",
           "scripts/test-named-constant-drift-invariant.mjs",
           "scripts/test-naming-structure-invariant.mjs",
+          "scripts/test-overlay-nested-dismiss-invariant.mjs",
           "scripts/test-owner-claims-invariant.mjs",
           "scripts/test-produce-hook-enforced-evidence.mjs",
           "scripts/test-product-template-scaffold-lock.mjs",

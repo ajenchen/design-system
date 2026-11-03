@@ -1075,6 +1075,11 @@ jobs:
           # 不需要 storybook(原始碼打包進空白頁),本機約 90 秒。
           # 對照組(--selftest,突變清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)在 verify-browser-escape-focus-control(2026-10-14 從 verify-browser-select-all 拆出)。
           node scripts/escape-and-focus-contract-invariant.mjs
+          # 浮層裡的欄位點外關閉(2026-11-03;user 2026-10-30「篩選 / 排序面板的欄位選單點外不關、可同時開好幾個」):Popover / Dialog / Sheet ×
+          # SelectMenu 家族六種 + DatePicker / TimePicker / DropdownMenu,加 DataTable 排序 / 篩選面板 —— 開著點宿主空白 / 點下一格,前一個必關、
+          # 同時開著 ≤ 1、Esc 一層一層關;Combobox「+N」卡不算外面;InlineEdit(編輯控件 = Select)在浮層裡點外回檢視。
+          # 不需要 storybook(原始碼打包進空白頁);--selftest 三個單一根因突變各自剛好紅該紅的列、對照列全程綠。
+          npm run test:overlay-nested-dismiss
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
           # E0 關閉時收起動畫真的有播;E1 / E2 JS 收尾晚到 200ms 每一格都不得長回來;N1 每種打開方式都播看得見的進場

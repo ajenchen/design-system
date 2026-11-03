@@ -12,7 +12,7 @@ import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem, type CommandActiveOption } from '@/design-system/components/Command/command'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
-import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
+import { isOnDetachedLayer, useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
 // cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
 // 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
 import { defaultFilter } from 'cmdk'
@@ -576,16 +576,18 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         // OverflowIndicator HoverCard popup(獨立 Radix portal,DOM 不在 SelectMenu
         // PopoverContent 內)— Radix DismissableLayer document-level pointerdown +
         // focusin 偵測「outside」→ SelectMenu 被誤關閉。
-        // 攔 `onInteractOutside`(統一 pointerdown + focusin),檢查 click target 是否
-        // 在另一個 Radix portal wrapper(`[data-radix-popper-content-wrapper]`),
-        // 是 → preventDefault 取消 close。對齊 Ant Design Select multiSelect tagRender
+        // 攔 `onInteractOutside`(統一 pointerdown + focusin),按在欄位自己掛在另一層的零件上
+        // → preventDefault 取消 close。對齊 Ant Design Select multiSelect tagRender
         // 行為(連續移除不關 dropdown)。
+        // **2026-11-03**:「另一層」= 不裝著這個欄位的那一層(lib/composite-field-focus.ts isOnDetachedLayer)。
+        // 修前認的是「任何一個 popper 殼」—— 欄位放在 Popover 面板裡時面板自己也是 popper 殼,
+        // 點面板空白、點面板裡的下一格都被當成按在自己身上:DataTable 篩選 / 排序面板的選單點外不關、可同時開好幾個(user 2026-10-30 回報)。
         // SSOT propagation:fix 在 SelectMenu level → Combobox / 所有 SelectMenu
         // consumer 自動受益。
         onInteractOutside={(e) => {
-          const target = e.detail.originalEvent.target as HTMLElement | null
-          // 另一個 portal(+N 浮出清單)/ 指標按在觸發欄位本身都不是「按在外面」(後者 2026-10-07,理由見 select-menu-keyboard.ts isPointerOnTrigger)
-          if (target?.closest('[data-radix-popper-content-wrapper]') || isPointerOnTrigger(e.detail.originalEvent, popupKeys.triggerRef.current)) {
+          const target = e.detail.originalEvent.target
+          // 欄位自己的另一層(+N 浮出清單)/ 指標按在觸發欄位本身都不是「按在外面」(後者 2026-10-07,理由見 select-menu-keyboard.ts isPointerOnTrigger)
+          if (isOnDetachedLayer(target, popupKeys.triggerRef.current) || isPointerOnTrigger(e.detail.originalEvent, popupKeys.triggerRef.current)) {
             e.preventDefault()
           }
         }}

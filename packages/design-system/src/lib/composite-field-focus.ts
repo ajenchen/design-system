@@ -56,6 +56,25 @@ export function isWithinCompositeField(target: EventTarget | null, parts: Compos
   return false
 }
 
+/** Radix 浮層殼:Popover / HoverCard / DropdownMenu / Tooltip 的內容都包在 body 下的這一層裡(`@radix-ui/react-popper` 的 wrapper)。 */
+const POPPER_LAYER_SELECTOR = '[data-radix-popper-content-wrapper]'
+
+/**
+ * 「按在欄位自己掛在另一層的零件上」的判準(2026-11-03;user 2026-10-30 第十五輪回報 DataTable 篩選 / 排序面板的欄位選單點外不關、可同時開好幾個)。
+ * 欄位的某些零件掛在另一個 portal(Combobox「+N」浮出清單、卡片裡頭像的名片),按在那裡不是「按在外面」;但**裝著這個欄位的那一層**
+ * (欄位放在 Popover 面板裡時,面板自己也是一個 popper 殼)不是欄位的零件 —— 點它的空白處、點它裡面的下一格,都是外面,
+ * 照 Radix DismissableLayer 關(`patterns/overlay-surface/overlay-surface.spec.md`「Esc / 點外面關閉」;浮層疊浮層一層一層關)。
+ * 回 true = target 在某一層浮層裡,而那一層與它外面的每一層都**不裝著** `field`。`field` 拿不到時退回「任何一層都算」(修前的行為)。
+ * 修前兩處各寫一份「按在任何一層浮層裡 = 自己的」(SelectMenu `onInteractOutside`、InlineEdit 點外結算),把裝著自己的宿主也算進去(M37)。
+ */
+export function isOnDetachedLayer(target: EventTarget | null, field: Element | null | undefined, selector: string = POPPER_LAYER_SELECTOR): boolean {
+  const start = target instanceof Element ? target : target instanceof Node ? target.parentElement : null
+  let layer = start?.closest(selector) ?? null
+  if (!layer) return false
+  for (; layer; layer = layer.parentElement?.closest(selector) ?? null) if (field && layer.contains(field)) return false
+  return true
+}
+
 /** FocusEvent 裡本判準用得到的部分(React 合成事件與原生事件都符合)。 */
 export interface FocusEventLike {
   readonly currentTarget: EventTarget | null
