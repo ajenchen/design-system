@@ -170,7 +170,7 @@ const InspectorView = () => {
 
           <div>
             <H3>藍圖(Blueprint)</H3>
-            <Desc>Trigger 為 <code>py-4</code>(vertical padding),水平寬度由父容器決定。Chevron 16px,旋轉跟內容同一份時長與曲線(<code>disclosureIndicatorMotion</code>:200ms、ease-out)。Content 有 <code>pb-4</code>,高度動畫消費共用的 <code>disclosureMotion</code>(200ms、關閉後保持高度 0、減少動態不播;與 TreeView / AgentPanel 思考塊同一份)。</Desc>
+            <Desc>Trigger 為 <code>py-4</code>(vertical padding),水平寬度由父容器決定。Chevron 16px,旋轉跟內容同一份時長與曲線(<code>disclosureIndicatorMotion</code>:200ms、ease-out)。Content 有 <code>pb-4</code>,高度動畫消費共用的 <code>disclosureMotion</code>(200ms、關閉後保持高度 0、減少動態不播;與 TreeView / AgentPanel 思考塊同一份)。動畫跑的時候裁切內容,打開而且停下來之後就不裁,內容裡的焦點框才不會被切掉。</Desc>
             <div className="border border-border rounded-lg p-4 max-w-[520px] bg-muted/40">
               <div className="border border-dashed border-primary-hover py-1 px-2 rounded mb-2">
                 <div className="flex items-center justify-between gap-2">
@@ -184,7 +184,7 @@ const InspectorView = () => {
               <div className="border border-dashed border-fg-muted py-2 px-2 rounded">
                 <p className="text-body text-fg-secondary">Content 區</p>
                 <p className="text-footnote text-fg-muted mt-1 font-mono">
-                  pb-4 · text-body · text-fg-secondary · overflow-hidden
+                  pb-4 · text-body · text-fg-secondary · overflow-hidden(打開且動畫停下後 overflow-visible)
                 </p>
               </div>
               <p className="text-footnote text-fg-muted mt-3 font-mono">

@@ -10,6 +10,9 @@
  *
  * 組成:
  *   - `overflow-hidden`:高度動畫靠裁切,少了它收合途中內容會溢出 —— 屬於動畫本身的前提,所以住在這裡。
+ *     打開而且動畫停下來之後,裁切只剩把內容裡往外畫的焦點框切掉的副作用:Accordion 在這個狀態加 `overflow-visible`
+ *     (accordion.tsx `useOpenAndSettled`)。TreeView 子項、AgentPanel 思考塊維持裁切 —— 2026-11-03 實測
+ *     兩者打開時裡面沒有被切到的焦點框(TreeView 列是內描邊,列內往外畫的鈕離容器邊 ≥ 4px;思考塊裡沒有可聚焦元素)。
  *   - 時長 `--motion-duration-disclosure`(motion.css;值 = 三個消費者現況實際渲染的 200ms,待辦總帳 T8)。
  *     曲線 `ease-out` = tw-animate-css collapsible 工具類的預設 `var(--tw-ease, ease-out)`;2026-10-13 起寫明在
  *     `DISCLOSURE_TIMING`(值不變),讓內容與箭頭從同一個常數拿時長與曲線(見下「箭頭」)。注意是 CSS 關鍵字 `ease-out`

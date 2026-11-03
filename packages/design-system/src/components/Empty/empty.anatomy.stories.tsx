@@ -10,7 +10,7 @@
 //     例外:disabled context state(disabled prop,2026-06-03 加)非互動但元件支援——
 //     title / description / icon glyph 轉 text-fg-disabled(供 FileUpload disabled 消費)。
 import type { Meta, StoryObj } from '@storybook/react'
-import { Inbox, Search, FileText, FolderOpen, Bell, Users, ClipboardList } from 'lucide-react'
+import { Inbox, Search, SearchX, FileText, FolderOpen, Bell, Users, ClipboardList } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
@@ -201,7 +201,7 @@ export const SlotCombinations: Story = {
             </thead>
             <tbody>
               <tr><Td>最低(僅提示)</Td><Td mono>description</Td><Td>DataTable 無資料、篩選無結果</Td></tr>
-              <tr><Td>輕引導</Td><Td mono>icon + description</Td><Td>資料夾 / 區塊是空的、不需要下一步</Td></tr>
+              <tr><Td>輕引導</Td><Td mono>icon + description</Td><Td>搜尋頁 / 篩選後的列表無結果</Td></tr>
               <tr><Td>中引導</Td><Td mono>icon + title + description</Td><Td>收件匣空、無留言</Td></tr>
               <tr><Td>初次引導(full)</Td><Td mono>icon + title + description + action</Td><Td>第一次使用功能、onboarding empty</Td></tr>
             </tbody>
@@ -216,10 +216,11 @@ export const SlotCombinations: Story = {
         </div>
       </div>
 
+      {/* 情境與文案照 empty.spec.md「消費範例」的「搜尋頁 / 篩選後的列表無結果」那一則;下拉選單的 0 筆不是 Empty 的場景(同檔「何時不用」,稽核 M022) */}
       <div>
-        <H3>圖示 + 說明(資料夾是空的)</H3>
+        <H3>圖示 + 說明(搜尋頁無結果)</H3>
         <div className="border border-border rounded-lg p-8 max-w-md">
-          <Empty icon={FolderOpen} description="這個資料夾還沒有檔案" className="py-6" />
+          <Empty icon={SearchX} description="找不到符合的結果" className="py-6" />
         </div>
       </div>
 

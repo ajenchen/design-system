@@ -31,8 +31,10 @@ type Story = StoryObj<typeof Empty>
 // 每一則的按鈕都做它說的那件事(稽核 L020:清除篩選 → 清單恢復、建立 → 開 Dialog;user 2026-09-08 F-S2 看得到的按鈕都要能動)。
 // 前兩則放在 Empty 真正的住處 —— DataTable 的空狀態(empty.spec.md「現有消費者」DataTable 列)。
 // 動作放在表格上方(搜尋框的清除鈕、工具列的「建立任務」),空狀態只寫說明 —— 同 DataTable 設計原則「空 / 錯誤 / 載入中的對應元件」
-//(emptyState = Empty + 「點擊上方「新增商品」開始建立第一筆」)。DataTable 空表時 Empty 是表格角色的直接子代,裡面放按鈕會被 axe
-// aria-required-children 判成不合法的子代(data-table.spec.md「空表例外:Empty 塊非 row」)。
+// 那則正例的寫法(emptyState 的說明指向上方的「新增商品」)。
+// 為什麼不把按鈕放進空狀態:這是 2026-10-28 a11y 閘的實測結果(AI 量的,不是規格原文)—— 按鈕放進 DataTable 空狀態,axe 判
+// aria-required-children。data-table.spec.md 的 ARIA 段只寫到空表時 Empty 塊不掛 rowgroup、也不帶 tabIndex / 名稱,沒有講按鈕;
+// 根因(空狀態能不能放動作)交 data 家族處理。
 
 /* ── 搜尋無結果:訂單表搜客戶,清除搜尋 → 清單回來 ─────────────────────────── */
 function OrderSearch() {
@@ -42,7 +44,7 @@ function OrderSearch() {
     // 搜尋框 → 表格 = tight(搜尋的值驅動下面的清單 = functional 交互,layoutSpace.spec.md「具體推導 walkthrough」範例 2)
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xl">
       <div className="max-w-xs">
-        {/* 清除鈕 = Input 的 endAction(input.spec.md「清除內容(有值時才顯示)」) */}
+        {/* 清除鈕 = Input 的 endAction(input.spec.md「endAction 的常見模式」表的「清除內容」列:有值時出現、清空後消失) */}
         <Input
           size="sm"
           aria-label="搜尋客戶"
