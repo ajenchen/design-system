@@ -1524,13 +1524,14 @@ function DataTableInner<TData>(
   const [rangeFocus, setRangeFocus] = React.useState<string | null>(null)
   // 焦點在不在格線區(根節點 / 格內 / 浮層編輯器)—— 格游標框只在 true 時畫,位置由 selectedCellId 保留(見根節點 onFocus)
   const [gridHasFocus, setGridHasFocus] = React.useState(false)
-  // 2026-05-12 click-outside canonical(user 抓:選完 range 後點任何地方該清掉 / 選 cell 後點別處該取消(轉述)):
-  // 對齊 Excel / Google Sheets / Notion / Airtable cell-selection canonical — pointerdown 落在
+  // 2026-05-12 click-outside(**出處:程式既有行為 / user 原話查無,AI 判讀**):這段原本引「user 抓『選完 range 後點任何地方該清掉 / 選 cell 後點別處該取消』」,
+  // 2026-11-03 查無原文(05-12 當天沒有任何 user 訊息紀錄留存),不當 user 定案;規格 data-table.spec.md「試算表模式」同一條標【待確認】。
+  // 原註解稱對齊 Excel / Google Sheets / Notion / Airtable cell-selection(未驗證)— pointerdown 落在
   // table outer 外 → clear selection + range。內 cell click 由 onClick 自處理(不衝突)。
   // 「外」= **本表**的外框以外(2026-11-03,n2 同族掃 / 交接稽核 G-18):修前寫成 `!target.closest('[data-data-table-outer]')`,
   // 「按在**任何一張**表的外框裡」被當成按在本表裡 —— 同一頁兩張試算表時點另一張表的格,本表的區間底色與游標都留著
   // (點頁面空白卻會清,同一條規則兩種結果);本表裝在另一張表的格子裡時,點外層表格也不清。用「同一類容器的任何一個」
-  // 代替「這一個」(M37),與 SelectMenu / InlineEdit 點外判斷同日修的是同一個形狀(lib/composite-field-focus.ts isOnDetachedLayer)。
+  // 代替「這一個」(M37),與 SelectMenu / InlineEdit 點外判斷同日修的是同一個形狀(lib/composite-field-focus.ts useOwnTreeEvents)。
   // tableRef 宣告在下方;handler 在事件發生時才讀 `.current`,那時早已掛上。閘:scripts/data-table-click-outside-invariant.mjs。
   React.useEffect(() => {
     if (!spreadsheetMode) return

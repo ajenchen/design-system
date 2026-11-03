@@ -284,7 +284,7 @@ CoexistenceMask.displayName = 'CoexistenceMask'
  *       「點擊展開後的選單選項…會直接關閉當前開啟的 dialog」;鍵盤 Enter 不會,因為指標不在選單上、沒有那次還焦點)。
  *       所以三道認法:觸發器的 `aria-controls` / `aria-owns`(開著時)→ 浮層自己的 `aria-labelledby` 指回觸發器(Radix menu
  *       關閉中仍在)→ 認過一次的浮層 id 記憶(其他浮層的關閉階段)。屬性還在時以屬性為準(觸發器已不在保留區 → 不算)。
- *   (3) 目標在疊在上面的另一個 dialog 裡(沒有 URL 的確認框;v14 第 9 題「取消後兩邊恢復」)。
+ *   (3) 目標在疊在上面的另一個 dialog 裡(沒有 URL 的確認框;v14 第 9 題「取消後兩邊恢復」)—— 裝著本浮層的外層 dialog 不算(它是宿主)。
  * @param keep     保留節點(同 useOverlayCoexistence 的 keep)
  * @param getSelf  並存浮層自己的內容節點(第 3 條要排除自己)
  */
@@ -314,7 +314,11 @@ export function createPersistentGuard(keep: CoexistenceTargets, getSelf: () => E
       }
       if (confirmed.has(cur.id)) return true
     }
+    // (3)「疊在上面的」另一個 dialog —— 裝著本浮層的外層 dialog 不算(2026-11-03):`portalContainer` 指到另一個 dialog 裡面的容器時,
+    // 外層 dialog 是本浮層的宿主,不是疊在上面的確認框;修前「自己以外的任何一個 dialog」連宿主也算,點宿主空白不關(與 SelectMenu
+    // 「任何一個 popper 殼」同一個形狀;閘 scripts/overlay-nested-dismiss-invariant.mjs C 列)
     const other = start?.closest('[role="dialog"]')
-    return !!other && other !== getSelf()
+    const self = getSelf()
+    return !!other && other !== self && !(self && other.contains(self))
   }
 }

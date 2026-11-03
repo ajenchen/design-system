@@ -23,7 +23,7 @@
 //   (如 `<Select mode="view" display="tag">`),不可自刻 —— 格式化 SSOT 住在該控件的 view mode。
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { isOnDetachedLayer } from '@/design-system/lib/composite-field-focus'
+import { useOwnTreeEvents } from '@/design-system/lib/composite-field-focus'
 import { Input } from '@/design-system/components/Input/input'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
@@ -114,9 +114,6 @@ export interface InlineEditProps<T = string> {
  * view 態用隱形 Pressable(絕對定位 `<button>` 疊於內容上)—— 讓 `as="h1"` 等標題標籤保留文件大綱
  * a11y,同時提供鍵盤 focus + Enter 進 edit(HTML 內容模型不允許 heading 巢狀於 button,故分離)。
  */
-/** edit 控件會開的浮層(Radix popper 殼 / Radix Select 清單 / listbox / dialog);哪一層算「本 edit 開的」由 isOnDetachedLayer 判(不裝著這個 edit 的那一層) */
-const EDIT_OVERLAY_SELECTOR = '[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]'
-
 function InlineEditImpl<T = string>(
   {
     value,
@@ -164,6 +161,8 @@ function InlineEditImpl<T = string>(
     },
     [ref],
   )
+  // 編輯容器的元件樹(含 edit 控件 portal 出去的選單 / 日曆)經過哪些事件 —— 點外結算用它認「本 edit 開的浮層」(lib/composite-field-focus.ts useOwnTreeEvents)
+  const ownTree = useOwnTreeEvents()
 
   const setDraftValue = React.useCallback((next: T) => {
     draftRef.current = next
@@ -202,19 +201,20 @@ function InlineEditImpl<T = string>(
   // portal-aware:overlay 控件(Select/DatePicker)開的 Radix popper/listbox 是 portaled 出子樹,
   //   焦點在其中時**不誤結算**(dropdown 操作中);真正離開(都不在 edit 子樹 + 不在本 edit 的 overlay)才 commit。
   // rAF 延一拍讓焦點落定(Radix 關 popover 時焦點先回 trigger,避免 blur 瞬間誤判)。
-  // 「本 edit 開的 overlay」= 不裝著這個 edit 的那一層(isOnDetachedLayer,2026-11-03):InlineEdit 放在 Dialog / Sheet / Popover 裡時,
-  //   宿主本身也是 dialog / popper —— 修前「任何一層都算本 edit 的」,點宿主空白、Tab 到宿主裡的下一格都不結算,卡在 edit。
+  // 「本 edit 開的 overlay」以元件樹認(2026-11-03,lib/composite-field-focus.ts useOwnTreeEvents):焦點此刻在編輯容器的元件樹裡
+  //   (含 edit 控件 portal 出去的選單)才算。修前認的是「任何 popper / listbox / dialog」—— InlineEdit 放在 Dialog / Sheet / Popover 裡時
+  //   宿主本身也是 dialog / popper,點宿主空白、Tab 到宿主裡的下一格都不結算,卡在 edit。
   const handleEditBlur = React.useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     const wrapper = e.currentTarget
     requestAnimationFrame(() => {
       if (finalizedRef.current) return
       const active = document.activeElement
       if (active && wrapper.contains(active)) return // 仍在 edit 子樹(如 trigger)
-      // 焦點在本 edit 開的 Radix overlay 內 → dropdown 操作中,不結算
-      if (active && isOnDetachedLayer(active, wrapper, EDIT_OVERLAY_SELECTOR)) return
+      // 焦點在本 edit 開的 overlay 內(元件樹上的子孫)→ dropdown 操作中,不結算
+      if (ownTree.focusInside()) return
       commit(false) // blur 離開 → 回 view(滑鼠路徑不搶焦)
     })
-  }, [commit])
+  }, [commit, ownTree])
 
   // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
   //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
@@ -242,13 +242,13 @@ function InlineEditImpl<T = string>(
       if (!target) return
       const box = editContainerRef.current
       if (box && box.contains(target)) return // 點在 edit 子樹內(trigger 等)
-      // 點在本 edit 開的 Radix overlay 內(popper / listbox / dialog;不裝著這個 edit 的那一層)→ dropdown 操作中,不結算
-      if (isOnDetachedLayer(target, box, EDIT_OVERLAY_SELECTOR)) return
-      commit(false)
+      // 點在本 edit 開的 overlay 內(edit 控件的選單 / 日曆;元件樹上的子孫,lib/composite-field-focus.ts useOwnTreeEvents)→ dropdown 操作中,不結算。
+      // 這支掛在 document 的捕獲階段(比 React 早收到,consumer 在冒泡階段擋掉事件也照樣結算),元件樹的記號要等這一下派送到 React 才有 → 派送完再判。
+      window.setTimeout(() => { if (!finalizedRef.current && !ownTree.owns(e)) commit(false) }, 0)
     }
     document.addEventListener('pointerdown', onPointerDown, true)
     return () => document.removeEventListener('pointerdown', onPointerDown, true)
-  }, [editing, commit])
+  }, [editing, commit, ownTree])
 
   const isEmpty =
     value == null || (value as unknown) === '' || (Array.isArray(value) && value.length === 0)
@@ -343,7 +343,7 @@ function InlineEditImpl<T = string>(
       // exit SSOT 雙保險:onBlur(focusout,tab-out / 非 overlay 控件)+ document pointerdown-outside(overlay
       //   點外面 Radix 送焦回 trigger 時 focusout 不觸發之補位)。任何 edit 控件離開 → 回 view。
       // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding — Jira 式,user 2026-07-17 拍板)。
-      <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur}>
+      <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur} {...ownTree.capture}>
         {editNode}
       </div>
     )

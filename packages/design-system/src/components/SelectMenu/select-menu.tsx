@@ -12,7 +12,7 @@ import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem, type CommandActiveOption } from '@/design-system/components/Command/command'
 import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
-import { isOnDetachedLayer, useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
+import { useCompositeFieldBlur, useOwnTreeEvents } from '@/design-system/lib/composite-field-focus'
 // cmdk 的預設比對函式(公開匯出)。遠端模式 cmdk 不過濾,要自己比 ——
 // 用**同一支**函式,才不會本機一套標準、遠端另一套(見下方「不限與搜尋」)。
 import { defaultFilter } from 'cmdk'
@@ -525,6 +525,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
 
   // 觸發欄位 + 清單浮層 = 同一個欄位:兩邊掛同一組 focus / blur、關的那一下補量(lib/composite-field-focus.ts;Select / Combobox 的 onBlur 經這裡)
   const fieldFocus = useCompositeFieldBlur<React.FocusEvent<HTMLDivElement>>({ onBlur: onFieldBlur, popupId: contentId, extra: fieldParts, triggerRef: popupKeys.triggerRef })
+  // 觸發欄位的元件樹(含它掛在另一層的零件:「+N」浮出清單、卡片裡頭像的名片)經過哪些事件 —— 下方 onInteractOutside 用它認「按在自己的零件上」
+  const ownTree = useOwnTreeEvents()
 
   // ── 觸發欄位的開關只認「按在觸發欄位 DOM 裡」的 click(2026-10-01;規則 spec「A11y 預設」Focus 段「觸發欄位的開關」)──
   // React 合成事件會穿過 portal 沿元件樹冒泡(同 TreeView handleKeyDownCapture 的判斷):觸發欄位裡的頭像名片、「+N」浮出清單
@@ -548,7 +550,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   return (
     <Popover open={open} onOpenChange={handlePopoverOpenChange}>
       {/* B11:可打字搜尋時焦點在觸發欄位內的輸入框,Tab 規則要掛在這裡(不可打字時掛在下方 Command) */}
-      <PopoverTrigger asChild ref={popupKeys.triggerRef} onKeyDown={popupKeys.onKeyDown} onClick={handleTriggerClick} {...fieldFocus.trigger}>{children}</PopoverTrigger>
+      <PopoverTrigger asChild ref={popupKeys.triggerRef} onKeyDown={popupKeys.onKeyDown} onClick={handleTriggerClick} {...fieldFocus.trigger} {...ownTree.capture}>{children}</PopoverTrigger>
       <RowSizeProvider value={size}>
       <PopoverContent
         ref={popupKeys.contentRef}
@@ -579,15 +581,15 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         // 攔 `onInteractOutside`(統一 pointerdown + focusin),按在欄位自己掛在另一層的零件上
         // → preventDefault 取消 close。對齊 Ant Design Select multiSelect tagRender
         // 行為(連續移除不關 dropdown)。
-        // **2026-11-03**:「另一層」= 不裝著這個欄位的那一層(lib/composite-field-focus.ts isOnDetachedLayer)。
-        // 修前認的是「任何一個 popper 殼」—— 欄位放在 Popover 面板裡時面板自己也是 popper 殼,
-        // 點面板空白、點面板裡的下一格都被當成按在自己身上:DataTable 篩選 / 排序面板的選單點外不關、可同時開好幾個(user 2026-10-30 回報)。
+        // **2026-11-03**:「欄位自己的零件」以元件樹認 —— 這一下事件有沒有經過觸發欄位(lib/composite-field-focus.ts useOwnTreeEvents;
+        // 同 Radix DismissableLayer 判斷「按在這一層裡」的機制)。修前認的是「任何一個 popper 殼」—— 欄位放在 Popover 面板裡時面板自己也是
+        // popper 殼,點面板空白、點面板裡的下一格都被當成按在自己身上:DataTable 篩選 / 排序面板的選單點外不關、可同時開好幾個
+        // (user 2026-10-30 回報);同一天的第一版改成「不裝著這個欄位的那一層」,同一個面板裡**另一個**欄位的「+N」卡又被當成自己的。
         // SSOT propagation:fix 在 SelectMenu level → Combobox / 所有 SelectMenu
         // consumer 自動受益。
         onInteractOutside={(e) => {
-          const target = e.detail.originalEvent.target
-          // 欄位自己的另一層(+N 浮出清單)/ 指標按在觸發欄位本身都不是「按在外面」(後者 2026-10-07,理由見 select-menu-keyboard.ts isPointerOnTrigger)
-          if (isOnDetachedLayer(target, popupKeys.triggerRef.current) || isPointerOnTrigger(e.detail.originalEvent, popupKeys.triggerRef.current)) {
+          // 欄位自己的零件(+N 浮出清單、卡片裡的名片)/ 指標按在觸發欄位本身都不是「按在外面」(後者 2026-10-07,理由見 select-menu-keyboard.ts isPointerOnTrigger)
+          if (ownTree.owns(e.detail.originalEvent) || isPointerOnTrigger(e.detail.originalEvent, popupKeys.triggerRef.current)) {
             e.preventDefault()
           }
         }}

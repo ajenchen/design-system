@@ -56,23 +56,49 @@ export function isWithinCompositeField(target: EventTarget | null, parts: Compos
   return false
 }
 
-/** Radix 浮層殼:Popover / HoverCard / DropdownMenu / Tooltip 的內容都包在 body 下的這一層裡(`@radix-ui/react-popper` 的 wrapper)。 */
-const POPPER_LAYER_SELECTOR = '[data-radix-popper-content-wrapper]'
+/** 本元件的元件樹經過了哪些事件(見 `useOwnTreeEvents`)。 */
+export interface OwnTreeEvents {
+  /**
+   * 掛在元件的根(SelectMenu:觸發欄位;InlineEdit:編輯容器)。只記錄、不攔、不改事件。
+   * React 的合成事件沿**元件樹**傳遞、會穿過 portal,所以元件自己掛在另一層的零件(Combobox「+N」浮出清單、卡片裡頭像的名片、
+   * InlineEdit 編輯控件開的選單)上發生的事件,也會經過這裡。
+   */
+  capture: {
+    onPointerDownCapture: (event: React.SyntheticEvent) => void
+    onFocusCapture: (event: React.SyntheticEvent) => void
+    onBlurCapture: () => void
+  }
+  /** 這**一個**原生事件有沒有經過本元件的元件樹。React 在 root / portal 容器上收事件 —— 要等事件派送到那裡之後才問得準(document 冒泡階段或之後)。 */
+  owns: (event: Event | null | undefined) => boolean
+  /** 焦點此刻是不是在本元件的元件樹裡(最近一次焦點移動是進來、還沒離開) */
+  focusInside: () => boolean
+}
 
 /**
- * 「按在欄位自己掛在另一層的零件上」的判準(2026-11-03;user 2026-10-30 第十五輪回報 DataTable 篩選 / 排序面板的欄位選單點外不關、可同時開好幾個)。
- * 欄位的某些零件掛在另一個 portal(Combobox「+N」浮出清單、卡片裡頭像的名片),按在那裡不是「按在外面」;但**裝著這個欄位的那一層**
- * (欄位放在 Popover 面板裡時,面板自己也是一個 popper 殼)不是欄位的零件 —— 點它的空白處、點它裡面的下一格,都是外面,
- * 照 Radix DismissableLayer 關(`patterns/overlay-surface/overlay-surface.spec.md`「Esc / 點外面關閉」;浮層疊浮層一層一層關)。
- * 回 true = target 在某一層浮層裡,而那一層與它外面的每一層都**不裝著** `field`。`field` 拿不到時退回「任何一層都算」(修前的行為)。
- * 修前兩處各寫一份「按在任何一層浮層裡 = 自己的」(SelectMenu `onInteractOutside`、InlineEdit 點外結算),把裝著自己的宿主也算進去(M37)。
+ * 「這一下按 / 聚焦是不是發生在**這個元件自己**的零件上」的判準(2026-11-03;user 2026-10-30 第十五輪回報 DataTable 篩選 / 排序面板的
+ * 欄位選單點外不關、可同時開好幾個)。以**元件樹**認,不以 DOM 位置猜:元件掛在另一層(portal)的零件在 DOM 上不是它的子孫,
+ * 在 React 元件樹上是。在元件的根掛捕獲階段的 handler,記下經過的那一個原生事件;之後收到「按在外面」的通知時問的是
+ * 「**這一個事件**有沒有經過我」。Radix DismissableLayer 判斷「按在這一層裡」用的是同一個機制(`isPointerInsideReactTreeRef` /
+ * `isFocusInsideReactTreeRef`,「ensures we check React component tree (not just DOM tree)」,
+ * https://github.com/radix-ui/primitives/blob/d8b1ffadc6fe0bd2486816751953dfadf14b3357/packages/react/dismissable-layer/src/dismissable-layer.tsx#L221-L296、#L302-L326)。
+ * 裝著這個元件的宿主(Popover 面板 / Dialog / Sheet)是它的**祖先**、同一個宿主裡的另一個欄位(連同那個欄位的「+N」卡)是**兄弟**,
+ * 兩者的事件都不經過它 → 是外面,照 Radix 關(`patterns/overlay-surface/overlay-surface.spec.md`「Esc / 點外面關閉」)。
+ * 修前是代理(M37):SelectMenu「按在任何一個 Radix popper 殼裡」、InlineEdit「按在任何 popper / listbox / dialog 裡」都算自己的 ——
+ * 宿主也是殼;11-03 第一版改成「按在不裝著它的那一層」,另一個欄位的「+N」卡又被算成自己的(獨立審查實測抓到)。
  */
-export function isOnDetachedLayer(target: EventTarget | null, field: Element | null | undefined, selector: string = POPPER_LAYER_SELECTOR): boolean {
-  const start = target instanceof Element ? target : target instanceof Node ? target.parentElement : null
-  let layer = start?.closest(selector) ?? null
-  if (!layer) return false
-  for (; layer; layer = layer.parentElement?.closest(selector) ?? null) if (field && layer.contains(field)) return false
-  return true
+export function useOwnTreeEvents(): OwnTreeEvents {
+  const seen = React.useRef<WeakSet<Event>>(new WeakSet())
+  const focusInsideRef = React.useRef(false)
+  return React.useMemo<OwnTreeEvents>(() => ({
+    capture: {
+      onPointerDownCapture: (event) => { seen.current.add(event.nativeEvent) },
+      onFocusCapture: (event) => { seen.current.add(event.nativeEvent); focusInsideRef.current = true },
+      // 在樹裡移動 = 先 blur 再 focus(focusout 先於 focusin),離開樹 = 只有 blur
+      onBlurCapture: () => { focusInsideRef.current = false },
+    },
+    owns: (event) => !!event && seen.current.has(event),
+    focusInside: () => focusInsideRef.current,
+  }), [])
 }
 
 /** FocusEvent 裡本判準用得到的部分(React 合成事件與原生事件都符合)。 */

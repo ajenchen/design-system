@@ -1075,14 +1075,6 @@ jobs:
           # 不需要 storybook(原始碼打包進空白頁),本機約 90 秒。
           # 對照組(--selftest,突變清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)在 verify-browser-escape-focus-control(2026-10-14 從 verify-browser-select-all 拆出)。
           node scripts/escape-and-focus-contract-invariant.mjs
-          # 浮層裡的欄位點外關閉(2026-11-03;user 2026-10-30「篩選 / 排序面板的欄位選單點外不關、可同時開好幾個」):Popover / Dialog / Sheet ×
-          # SelectMenu 家族六種 + DatePicker / TimePicker / DropdownMenu,加 DataTable 排序 / 篩選面板 —— 開著點宿主空白 / 點下一格,前一個必關、
-          # 同時開著 ≤ 1、Esc 一層一層關;Combobox「+N」卡不算外面;InlineEdit(編輯控件 = Select)在浮層裡點外回檢視。
-          # 不需要 storybook(原始碼打包進空白頁);--selftest 三個單一根因突變各自剛好紅該紅的列、對照列全程綠。
-          npm run test:overlay-nested-dismiss
-          # 試算表點外清除認本表(2026-11-03;同一個形狀的第三處):同一頁兩張試算表時點另一張表的格、表格裝在另一張表的格子裡時點外層表格,
-          # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;--selftest 一個根因突變。
-          npm run test:data-table-click-outside
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
           # E0 關閉時收起動畫真的有播;E1 / E2 JS 收尾晚到 200ms 每一格都不得長回來;N1 每種打開方式都播看得見的進場
@@ -1090,6 +1082,63 @@ jobs:
           # meta-test = 現況必綠 + 對照組必紅。
           npm run test:open-close-motion
 
+
+  verify-browser-nested-dismiss:
+    # 2026-11-03 拆自 verify-browser-overlay(照 2026-10-14 G10 的做法拆平行 job、不調高上限,上限沿用原 job 的 25;準備步驟與原 job 逐字相同)。
+    # 原 job 最近 15 次 CI p50 16.4 / p90 18.7 / 最大 19.2 分(上限 25,p90 佔 75%)。浮層點外關閉閘的判定本機 137–148 秒、對照組(基準 + 全部突變)
+    # 單線 607 秒 —— 兩支疊進原 job 估 +13 分 ≈ 29 分,撞上限被取消(取消 = 那一輪沒有裁決,發布閘 fail closed);只放判定也 +2.5 分、p90 ≈ 87%,
+    # 已在 2026-10-21 escape-focus-control 判為要拆的區間(86–92%)。所以兩支都搬到這裡,原 job 的閘清單與 108a736f 相同。
+    # 兩格 matrix 各跑一半突變(--shard,腳本檔頭);每一格的基準 = 一趟完整判定,所以判定每個 PR 都跑兩次;覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed)。
+    # 每格 2 條 lane 並行(--lanes=2,每條一個瀏覽器)。本機量測與估計寫在下方 run 註解。兩格都過 needs.<job>.result 才是 success(fan-in 不變)。
+    name: Verify browser(overlay nested dismiss)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['0/2', '1/2']
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Nested overlay dismiss + spreadsheet click-outside (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 浮層裡的欄位點外關閉(2026-11-03;user 2026-10-30「篩選 / 排序面板的欄位選單點外不關、可同時開好幾個」):Popover / Dialog / Sheet ×
+          # SelectMenu 家族六種 + DatePicker / TimePicker / DropdownMenu,加 DataTable 排序 / 篩選面板 —— 開著點宿主空白 → 前一個必關;點下一格 → 前一個關、
+          # SelectMenu 家族一下就打開下一格(剛好 1 個、是它的);Esc 一層一層關;Combobox「+N」卡不算外面、另一個欄位的「+N」卡是外面;
+          # InlineEdit(編輯控件 = Select)在浮層裡點外 / Tab 離開回檢視(兩條路各自量);並存對話框 portal 進外層 dialog 時點外層會關。
+          # 不需要 storybook(原始碼打包進空白頁)。對照組:單一根因突變(清單與個數以腳本的 MUTANTS 為準,這裡不抄數字)各自剛好紅該紅的列、對照列全程綠。
+          # 本機(8 核、負載 2.6–4.2)判定 148 秒;--selftest --lanes=2 第 0 片(基準 + 4 突變)495 秒、第 1 片(基準 + 3 突變)453 秒 → 估每格 CI 約 9–11 分
+          # (同類閘 escape-and-focus 對照組 CI / 本機 ≈ 1.1)+ 準備約 1–2 分(原 job 最近 15 次安裝 + build 合計 40–64 秒)≈ 上限 25 分的 45%。
+          node scripts/overlay-nested-dismiss-invariant.mjs --selftest --shard="$SHARD" --lanes=2
+          # 試算表點外清除認本表(2026-11-03;同一個形狀的第三處):同一頁兩張試算表時點另一張表的格、表格裝在另一張表的格子裡時點外層表格,
+          # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
+          # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 兩格都跑(不寫條件式)。
+          npm run test:data-table-click-outside
+        env:
+          SHARD: ${{ matrix.shard }}
 
   verify-browser-interaction:
     name: Verify browser(component + interaction gates)
@@ -1705,7 +1754,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -1730,12 +1779,13 @@ jobs:
           BROWSER_CURSOR: ${{ needs.verify-browser-cursor.result }}
           BROWSER_ESCAPE_FOCUS_CONTROL: ${{ needs.verify-browser-escape-focus-control.result }}
           BROWSER_FOOTER_GUTTER: ${{ needs.verify-browser-footer-gutter.result }}
+          BROWSER_NESTED_DISMISS: ${{ needs.verify-browser-nested-dismiss.result }}
           HOOKS_LINUX: ${{ needs.hooks-linux.result }}
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
