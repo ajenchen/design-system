@@ -399,6 +399,65 @@ export const DecisionCardSingle: Story = {
   render: () => <DecisionCardScene questions={[THREE_QUESTIONS[0]]} intro="只剩語氣沒定,選一個就能繼續。" />,
 }
 
+/** 選填題(`optional`):不答也能前進(送出值是空字串)。三題各示範一種:
+ *  1. 單選、不預選(署名 = 稱謂類,產題守則 8 例外)—— 選了之後 footer 左側出現「清除選取」,按了清掉答案、鈕消失,再選又出現;
+ *  2. 單選、預選建議解 —— 一開始就有選取,「清除選取」一開始就在;
+ *  3. 複選 —— 方框本來就能逐一取消,沒有「清除選取」;一項都不勾照常送出。
+ *  題目與選項是 AI 依產題守則擬的(user 10-30 只提了「選填單選 + 清除」,沒有指定範例內容)。 */
+const OPTIONAL_QUESTIONS = [
+  {
+    id: 'signature',
+    label: '公告要用誰的名義署名?',
+    optional: true,
+    noDefault: true,
+    options: [
+      { value: 'team', label: '產品團隊', description: '以部門名義發出' },
+      { value: 'cpo', label: '王小明', description: '以產品長個人名義發出' },
+    ],
+  },
+  {
+    id: 'cover',
+    label: '公告要附哪張封面圖?',
+    optional: true,
+    options: [
+      { value: 'screenshot', label: '新版首頁截圖', description: '直接看到改版後的樣子' },
+      { value: 'keyvisual', label: '活動主視覺', description: '跟行銷素材同一套' },
+    ],
+  },
+  {
+    id: 'mentions',
+    label: '公告要標記哪些組?',
+    optional: true,
+    multiSelect: true,
+    options: [
+      { value: 'support', label: '@客服組', description: '先準備客人會問的問題' },
+      { value: 'sales', label: '@業務組', description: '主動通知大客戶' },
+      { value: 'design', label: '@設計組', description: '確認截圖與主視覺' },
+    ],
+  },
+]
+
+/** 決策卡選填題(OpenSnapshot):第 1 題不預選,選了之後 footer 左側出現「清除選取」;規則見 agent-decision-card.spec.md「步進」。 */
+export const DecisionCardOptional: Story = {
+  name: '決策卡選填題',
+  render: () => (
+    <PanelFrame>
+      {({ close }) => (
+      <AgentPanel onClose={close}>
+        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
+        <AgentConversation>
+          <AgentMessage role="agent">語氣與發布時間都定了。署名、封面圖與要標記的組可以不選,不選就照草稿發。</AgentMessage>
+        </AgentConversation>
+        <div className="relative">
+          <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
+          <AgentDecisionCard questions={OPTIONAL_QUESTIONS} onSubmit={noop} onSkip={noop} />
+        </div>
+      </AgentPanel>
+      )}
+    </PanelFrame>
+  ),
+}
+
 /** 決策回執:拍板後在對話流中的靜態紀錄。 */
 export const DecisionSummaryInFlow: Story = {
   name: '決策回執',

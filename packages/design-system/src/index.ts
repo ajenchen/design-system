@@ -41,6 +41,7 @@ export type {
   AgentAttachment,
   AgentConversationProps,
   AgentConversationSummary,
+  AgentDecisionCardLabels,
   AgentDecisionCardProps,
   AgentDecisionOption,
   AgentDecisionQuestion,

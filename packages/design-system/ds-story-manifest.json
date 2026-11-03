@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-10-27T23:06:59.607Z"
+    "generatedAt": "2026-11-03T19:32:25.635Z"
   },
   "components": {
     "accordion": {
@@ -71,6 +71,7 @@
           "design-system-components-agentpanel-展示--decision-card-open",
           "design-system-components-agentpanel-展示--title-truncated",
           "design-system-components-agentpanel-展示--decision-card-single",
+          "design-system-components-agentpanel-展示--decision-card-optional",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
           "design-system-components-agentpanel-展示--fab",
@@ -1855,5 +1856,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1023
+  "totalStories": 1024
 }

@@ -35,14 +35,17 @@
   同形(整卡可點、滑過只變圓;Joy UI 已於 2026-03-11 自 MUI 主 repo 移除,只作曾經的做法);Carbon RadioTile 改換卡片底色
   ([_tile.scss#L62-L73](https://github.com/carbon-design-system/carbon/blob/7e8c8f7db6dd2ed98c4947b78b37614f43eda920/packages/styles/scss/components/tile/_tile.scss#L62-L73)),
   本 DS 不採 —— 單選狀態表的底色欄一律不變(`../Checkbox/checkbox.spec.md`「狀態 › Radio」)。
-- 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起左鈕換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
-- 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
+- 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
+- 步進:**一題一步**,footer 右側兩鈕:前=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
-  2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
+  2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);後=「下一題」、末步「送出」;header × 恆為跳過。
   「下一題」/「送出」恆可按(新建表單,`../Field/form-validation.spec.md`「Submit Button 狀態」),只在按下時驗這一題(「其他」要不要填看「其他」選了沒 = 跨欄位,規則 9):
-  沒選或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後(距離【待確認】:現行 = 卡間距 8,user 2026-10-29 問句中的提案;另一案 = Field 內部 gap-1 4);
+  沒選(選填題 `optional` 除外:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後(距離【待確認】:現行 = 卡間距 8,user 2026-10-29 問句中的提案;另一案 = Field 內部 gap-1 4);
   焦點移到第一個出錯的控件(沒選 → 第一個圓 / 方框,「其他」→ 輸入格並帶錯誤框;只聚焦不置中捲動,產題守則 13)。清除與 aria 接線照規則 5 與 `../Field/field.spec.md`「驗證與 aria 屬性」;
   本卡沒有 Field context:`aria-errormessage` 掛在 radiogroup / 每個方框 / 輸入格(WAI-ARIA 1.2 不適用於 radio 與 group),複選群組另帶 `aria-invalid`(同 `../Checkbox/checkbox-group.tsx`)。
+  選填單選題有選取時(含預選),footer 左側出現「清除選取」(user 2026-10-30 提案;tertiary sm,左 = 操作選取、右 = 提交,`../../patterns/overlay-surface/overlay-surface.spec.md`「選取類浮層的 footer 內容順序」):
+  按了清掉答案與「其他」的字、鈕消失、焦點交給第一個圓(同 `../Select/select.spec.md`「Clearable」清除後焦點),右側兩鈕不動;
+  必答題沒有(「何時開 clearable」:必須有選擇不開),複選題沒有(方框本來就能取消)。
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
 - 進出=淡入+下滑 8、`--motion-duration-overlay`。
@@ -77,8 +80,8 @@
 10. ⚙ **單選為預設;答案本質可複選才 `multiSelect`**(「要包含哪些章節?」):複選改 CheckboxGroup、選項不得互斥、
     **不預選**、仍附「其他」。([SDK multiSelect](https://code.claude.com/docs/en/agent-sdk/user-input);
     [GOV.UK checkboxes 不預選](https://design-system.service.gov.uk/components/checkboxes/))
-11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip;footer 只有兩鈕(第一題 跳過/下一題,之後 上一題/下一題|送出)。
-    ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html);[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
+11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip;footer 右側只有兩鈕(第一題 跳過/下一題,之後 上一題/下一題|送出),左側只有選填單選題的「清除選取」。
+    ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html) —— 限兩顆的理由是第三顆(「Learn more」)會把人帶離、任務沒做完,「清除選取」留在卡上,不在此限;[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
 12. **題與題互不依賴**:後題不因前題答案改變;需要分支 → 下一回合另開一張卡。
     ([NN/g wizards self-sufficient steps](https://www.nngroup.com/articles/wizards/))
 13. **每步不需捲動即可讀完**(面板寬內 4 選項+描述皆單行);描述過長=精簡,不截斷

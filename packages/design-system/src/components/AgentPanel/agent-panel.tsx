@@ -24,7 +24,8 @@
  *   附件列=Tag md 單列 + 超寬 +N(OverflowTagList,與 Combobox 多選同一份量測);送出/停止=Button primary xs。
  * - 決策卡:SurfaceHeader(compact)+SurfaceFooter(overlay-surface);選項=灰底卡(--secondary、
  *   rounded-md、內距 8/12、整卡可點)包 RadioGroup md(Popover all-sm 律之拍板豁免;footer 鈕 sm 守律);
- *   一題一問步進(跳過 / 上一題 / 下一題 / 送出);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay。
+ *   一題一問步進(跳過 / 上一題 / 下一題 / 送出);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay;
+ *   選填單選題有選取時 footer 左側「清除選取」(選取類浮層 footer 順序,overlay-surface.spec.md;Select clearable 的有值才出現 / 焦點交回)。
  * - 改名/刪除:Dialog(header md+X;body Field+Input;footer md 鈕;刪除=primary+danger;
  *   form-validation:儲存 dirty 規則、空名 blur 顯錯;Esc=Dialog 取消)。
  * - 空狀態:Empty icon slot 接 AgentLogo 招喚態。
@@ -61,7 +62,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
-import { fieldChromeStyles } from '@/design-system/components/Field/field-wrapper'
+import { fieldChromeStyles, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -1421,31 +1422,83 @@ export interface AgentDecisionQuestion {
   noDefault?: boolean
   /** 答案本質可複選才開(產題守則 10):改 CheckboxGroup、不預選、值以 `\n` 連接。 */
   multiSelect?: boolean
+  /**
+   * 選填:不答也能按「下一題 / 送出」(送出值 = 空字串)。預設必答(沒選就用錯誤訊息擋下,agent-decision-card.spec.md「步進」)。
+   * 單選選填題有選取時(含預選的建議解),footer 左側出現「清除選取」,按了回到沒有選取 —— 單選圓選了就回不去「都沒選」
+   * (GOV.UK radios:「Users cannot go back to having no option selected once they have selected one」)。
+   * 必答題不出現:「沒有選取」不是有效答案,清掉只會卡在錯誤上(同 `../Select/select.spec.md`「何時開 clearable」)。
+   * 複選題的方框本來就能逐一取消,選填只放寬「至少一項」、不加清除鈕。
+   */
+  optional?: boolean
 }
 
 export interface AgentDecisionCardProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSubmit' | 'title'> {
   /** ≤3 題;一題一問步進,N>1 時標題列顯示「n / N」。 */
   questions: AgentDecisionQuestion[]
-  /** 全部作答後送出:answers[questionId] = 選項值或「其他」文字(複選以 `\n` 連接)。 */
+  /** 全部作答後送出:answers[questionId] = 選項值或「其他」文字(複選以 `\n` 連接;選填題沒答 = 空字串)。 */
   onSubmit?: (answers: Record<string, string>) => void
   /** 跳過=採預設值繼續(Skip 鈕與 header × 同一行為);回傳目前預設/已選值。 */
   onSkip?: (answers: Record<string, string>) => void
+  /** 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。 */
+  labels?: Partial<AgentDecisionCardLabels>
+}
+
+/** 決策卡自帶的文字(全部可覆寫)。 */
+export interface AgentDecisionCardLabels {
+  /** footer 第一題的鈕與 header ×(aria-label):跳過 = 用預設繼續 */
+  skip: string
+  /** 第二題起 footer 的回頭鈕 */
+  previous: string
+  /** 推進到下一題 */
+  next: string
+  /** 末題送出 */
+  submit: string
+  /** 選填單選題有選取時 footer 左側的清除鈕 */
+  clearSelection: string
+  /** 元件附加在最後的「其他」選項 */
+  other: string
+  /** 「其他」輸入格的 placeholder */
+  otherPlaceholder: string
+  /** 「其他」輸入格的 aria-label */
+  otherAriaLabel: string
+  /** 預選項(建議解)label 後的標記 */
+  recommendedSuffix: string
+  /** 按「下一題 / 送出」這一題沒過:單選沒選 */
+  errorSingle: string
+  /** 同上:複選一項都沒勾 */
+  errorMulti: string
+  /** 同上:「其他」選中而文字空白 */
+  errorOther: string
 }
 
 const OTHER_VALUE = '__agent_decision_other__'
 const OTHER_LABEL = '其他'
 const RECOMMENDED_SUFFIX = '(建議)'
 const MULTI_JOIN = '\n'
-/** 按「下一題 / 送出」時這一題沒過的錯誤訊息(句型照 DS 既有範例:select.stories「請選擇出貨倉庫」、combobox.stories「請至少選擇一個商品類別」、
- *  field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,見 agent-decision-card.spec.md「步進」)。
- *  三句是新的元件預設文案(產品文案語意):AI 依上述句型擬的建議,【待確認】—— user 換字時改這裡,
- *  閘 `scripts/agent-decision-card-validation-invariant.mjs` 的 TEXT 一起改。 */
-const DECISION_ERROR_TEXT = {
-  single: '請選擇一個選項', // i18n-allow: DS 預設文案
-  multi: '請至少選擇一個選項', // i18n-allow: DS 預設文案
-  other: '請輸入其他選項', // i18n-allow: DS 預設文案(同「其他」輸入格的 placeholder 用字)
-} as const
+/**
+ * DS 預設文字(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫(同 Coachmark `DEFAULT_LABELS`)。
+ * - `clearSelection`:同 Select 單選一鍵清空的「清除選取」(select.tsx)與 BulkActionBar `clear` —— 清掉選了的那一個,全 DS 一種說法。
+ * - `error*`:按「下一題 / 送出」時這一題沒過的錯誤訊息(句型照 DS 既有範例:select.stories「請選擇出貨倉庫」、
+ *   combobox.stories「請至少選擇一個商品類別」、field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,
+ *   見 agent-decision-card.spec.md「步進」)。三句是新的元件預設文案(產品文案語意):AI 依上述句型擬的建議,【待確認】——
+ *   user 換字時改這裡,閘 `scripts/agent-decision-card-validation-invariant.mjs` 的 TEXT 一起改。
+ */
+// i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
+const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
+  skip: '跳過',
+  previous: '上一題',
+  next: '下一題',
+  submit: '送出',
+  clearSelection: '清除選取',
+  other: OTHER_LABEL,
+  otherPlaceholder: '輸入其他選項',
+  otherAriaLabel: '其他(自由輸入)',
+  recommendedSuffix: RECOMMENDED_SUFFIX,
+  errorSingle: '請選擇一個選項',
+  errorMulti: '請至少選擇一個選項',
+  errorOther: '請輸入其他選項',
+}
 type DecisionError = 'empty' | 'other'
 
 /** 產題守則機械層(agent-decision-card.spec.md §8「產題守則」⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
@@ -1481,10 +1534,11 @@ function initialAnswer(q: AgentDecisionQuestion) {
 const splitMulti = (v: string | undefined) => (v ? v.split(MULTI_JOIN).filter(Boolean) : [])
 
 /** 這一題能不能前進(產題守則 7「空字串不得前進」、10 複選至少一項;單選 noDefault 初值是空字串):
- *  沒選 → 'empty';「其他」選中而文字空白 → 'other'(兩者互斥:選了「其他」就不是沒選)。 */
+ *  沒選 → 'empty'(選填題沒選不算錯);「其他」選中而文字空白 → 'other'(兩者互斥:選了「其他」就不是沒選;
+ *  選填題也一樣 —— 選了「其他」卻沒寫是什麼,不是「不答」,要不答就按「清除選取」)。 */
 function decisionError(q: AgentDecisionQuestion, answer: string, other: string): DecisionError | undefined {
   const picked = q.multiSelect ? splitMulti(answer) : answer ? [answer] : []
-  if (picked.length === 0) return 'empty'
+  if (picked.length === 0) return q.optional ? undefined : 'empty'
   if (picked.includes(OTHER_VALUE) && other.trim() === '') return 'other'
   return undefined
 }
@@ -1508,7 +1562,8 @@ const OPTION_CHECKBOX_HOVER =
   'group-hover/agent-option:border-border-hover data-[state=checked]:group-hover/agent-option:bg-primary-hover data-[state=checked]:group-hover/agent-option:border-primary-hover'
 
 const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProps>(
-  ({ questions, onSubmit, onSkip, className, ...props }, ref) => {
+  ({ questions, onSubmit, onSkip, labels: labelsOverride, className, ...props }, ref) => {
+    const labels = { ...DEFAULT_DECISION_LABELS, ...labelsOverride }
     const titleId = React.useId()
     const otherInputId = React.useId()
     const optionIdBase = React.useId()
@@ -1584,15 +1639,15 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const selectedSet = new Set(multi ? splitMulti(answers[question.id]) : [answers[question.id]])
     const errorKind = errors[question.id]
     const errorText =
-      errorKind === 'other' ? DECISION_ERROR_TEXT.other
-        : errorKind === 'empty' ? (multi ? DECISION_ERROR_TEXT.multi : DECISION_ERROR_TEXT.single)
+      errorKind === 'other' ? labels.errorOther
+        : errorKind === 'empty' ? (multi ? labels.errorMulti : labels.errorSingle)
           : undefined
     const groupInvalid = errorKind === 'empty'
     const recommendedValue =
       !multi && !question.noDefault ? (question.defaultValue ?? question.options[0]?.value) : undefined
     const optionLabel = (option: AgentDecisionOption | { value: string; label: string }) =>
-      option.value === recommendedValue ? `${option.label}${RECOMMENDED_SUFFIX}` : option.label
-    const allOptions = [...question.options, { value: OTHER_VALUE, label: OTHER_LABEL }]
+      option.value === recommendedValue ? `${option.label}${labels.recommendedSuffix}` : option.label
+    const allOptions = [...question.options, { value: OTHER_VALUE, label: labels.other }]
     // 下一題 / 送出恆可按(form-validation.spec.md「Submit Button 狀態」新建那列:不看填了沒、填對沒 —— 決策卡的答案每次都是新填的,
     // 沒有「已存的值」可比;同 TreeView 步驟導覽樹範例的「下一步」)。按下時驗這一題(規則 7):沒過就不前進,錯誤訊息出現在最後一張
     // 選項卡之後,焦點移到第一個出錯的控件(規則 8):沒選 → 第一個選項的圓 / 方框;「其他」文字空白 → 輸入格。
@@ -1604,6 +1659,18 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       setErrors((prev) => ({ ...prev, [question.id]: kind }))
       document.getElementById(kind === 'other' ? otherInputId : `${optionIdBase}-${allOptions[0].value}`)?.focus()
     }
+    // 「清除選取」(選填單選題,有選取時才渲染;agent-decision-card.spec.md「步進」):這一題回到沒有選取 ——
+    // 答案與「其他」打到一半的字一起清(同 Select「Clearable」清除後回到 placeholder、打到一半的關鍵字一起清),錯誤一併清掉(值變了,規則 5)。
+    // 鈕隨清除卸載:焦點在它身上(鍵盤 Enter / 空白、Chrome 滑鼠按下)時先交給第一個圓 —— APG radio「沒有選取時,Tab 進群組落在第一個」
+    // (https://www.w3.org/WAI/ARIA/apg/patterns/radio/),不掉到 body;交接走 Field 共用的 keepFieldFocusBeforeUnmount(Select / Combobox / DatePicker 同一支)。
+    // 讀屏:焦點換到第一個圓,讀屏念它「未選取」—— 不另加播報(同 Select 一鍵清空;DS 只在焦點不動時才補念,select-menu-removal-status.tsx)。
+    const showClear = !multi && Boolean(question.optional) && (answers[question.id] ?? '') !== ''
+    const clearSelection = (event: React.MouseEvent<HTMLButtonElement>) => {
+      keepFieldFocusBeforeUnmount(event.currentTarget, document.getElementById(`${optionIdBase}-${allOptions[0].value}`))
+      clearError(question.id)
+      setAnswers((prev) => ({ ...prev, [question.id]: '' }))
+      setOtherText((prev) => ({ ...prev, [question.id]: '' }))
+    }
     const renderOtherInput = () => (
       // 「其他」卡:常駐 32 高輸入格;label 行框↔Input 8(mt-2);距卡右/下各 12(卡 px 12;卡 py 8 + mb 4);
       // 左縮排 24 = radio 16 + gap 8,與 label 對齊(Polaris ChoiceChildren 同款)。
@@ -1613,8 +1680,8 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         <Input
           id={otherInputId}
           value={otherText[question.id] ?? ''}
-          placeholder="輸入其他選項"
-          aria-label="其他(自由輸入)"
+          placeholder={labels.otherPlaceholder}
+          aria-label={labels.otherAriaLabel}
           aria-describedby={titleId}
           // 「其他」選中而文字空白:輸入格紅框 + aria-invalid(Input 自己接),aria-errormessage 指向下方錯誤訊息(field.spec.md「驗證與 aria 屬性」)
           error={errorKind === 'other'}
@@ -1689,7 +1756,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
               {question.label}
             </span>
           </div>
-          <Button dismiss size="sm" startIcon={XIcon} aria-label="跳過" onClick={skip} />
+          <Button dismiss size="sm" startIcon={XIcon} aria-label={labels.skip} onClick={skip} />
         </SurfaceHeader>
         {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。
             錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後(agent-decision-card.spec.md「步進」);
@@ -1786,27 +1853,38 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
             <FieldError id={errorId}>{errorText}</FieldError>
           </div>
         </ScrollArea>
-        {/* footer:第一題=跳過(用預設繼續)、第二題起=上一題(答案保留;Material Stepper Back / GOV.UK Back 同款);
-            右=下一題 / 送出(末題);鈕 sm 守 Popover all-sm 律;無上分隔線;× 恆為跳過。 */}
-        <SurfaceFooter className="border-t-0">
-          {step > 0 ? (
-            <Button variant="tertiary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>
-              上一題
+        {/* footer:右側兩鈕 —— 第一題=跳過(用預設繼續)、第二題起=上一題(答案保留;Material Stepper Back / GOV.UK Back 同款),
+            右=下一題 / 送出(末題);左側 = 操作選取的「清除選取」(選填單選題有選取時才有;選取類浮層 footer 順序:左操作選取、右提交,
+            overlay-surface.spec.md;排法照 Coachmark footer 的 justify-between + 右側一組,沒有清除鈕時左邊留空 span,右側兩鈕的位置不因它出現 / 消失而動)。
+            鈕 sm 守 Popover all-sm 律;清除與跳過 / 上一題同為 tertiary(同 SelectMenu 多選 footer 的全選 / 取消全選);無上分隔線;× 恆為跳過。 */}
+        <SurfaceFooter className="justify-between border-t-0">
+          {showClear ? (
+            <Button variant="tertiary" size="sm" onClick={clearSelection}>
+              {labels.clearSelection}
             </Button>
           ) : (
-            <Button variant="tertiary" size="sm" onClick={skip}>
-              跳過
-            </Button>
+            <span aria-hidden />
           )}
-          {isLast ? (
-            <Button variant="primary" size="sm" onClick={() => advance(() => onSubmit?.(resolvedAnswers()))}>
-              送出
-            </Button>
-          ) : (
-            <Button variant="primary" size="sm" onClick={() => advance(() => setStep((s) => s + 1))}>
-              下一題
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {step > 0 ? (
+              <Button variant="tertiary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>
+                {labels.previous}
+              </Button>
+            ) : (
+              <Button variant="tertiary" size="sm" onClick={skip}>
+                {labels.skip}
+              </Button>
+            )}
+            {isLast ? (
+              <Button variant="primary" size="sm" onClick={() => advance(() => onSubmit?.(resolvedAnswers()))}>
+                {labels.submit}
+              </Button>
+            ) : (
+              <Button variant="primary" size="sm" onClick={() => advance(() => setStep((s) => s + 1))}>
+                {labels.next}
+              </Button>
+            )}
+          </div>
         </SurfaceFooter>
       </div>
     )

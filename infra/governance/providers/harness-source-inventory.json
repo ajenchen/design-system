@@ -417,6 +417,7 @@
         "totalTimeoutMs": 2700000,
         "members": [
           "scripts/test-a11y-corpus-invariant.mjs",
+          "scripts/test-agent-decision-card-clear-invariant.mjs",
           "scripts/test-app-shell-layout-invariant.mjs",
           "scripts/test-data-table-handle-clip-invariant.mjs",
           "scripts/test-data-table-overscan-adaptive-invariant.mjs",
