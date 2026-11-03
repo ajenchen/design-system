@@ -39,8 +39,12 @@
  * 確保沒有漂，且有ssot且不改壞任何原本好的地方」
  * 實測(108a736f 與已發布 beta.147):圖示、動作鈕、分隔線、× 對標題那一行全部 0.0px,notice.tsx 28 個版本都是「外框 items-start +
  * 兩個 h-[1lh] 槽」,沒有漂移;但沒有任何閘量這個性質(Alert / Toast 只有像素基準圖,比的是「跟上次一樣」)。Alert 與 Toast 不覆寫 Notice
- * 的對齊,所以 Alert 兩則(低調 / 實心 × 五色帶說明、右上操作群組帶分隔線與 ×)+ 真的 sonner Toast 一則,就量到 Notice 第一行上會出現的
- * 每一種東西(狀態圖示、文字動作鈕、純圖示動作鈕、分隔線、×)與 Alert / Toast 的每一種外殼(低調、實心兩層、Toast 三層)。
+ * 的對齊,所以 Alert 三則(低調 / 實心 × 五色帶說明、右上操作群組帶分隔線與 ×、出現位置「內嵌 vs 固定」)+ 真的 sonner Toast 一則,
+ * 就量到 Notice 第一行上會出現的每一種東西(狀態圖示、文字動作鈕、純圖示動作鈕、分隔線、×)與 Alert / Toast 的每一種外殼
+ * (低調、實心兩層、Toast 三層;位置 inline 與 fixed)。fixed 是唯一往 Notice 根節點塞 class 的外殼(alert.tsx 的
+ * `placement === 'fixed' ? 'px-…'`,Notice 用 `cn(NOTICE_LAYOUT, className)`):在那裡多寫一個 items-center 就會蓋掉 items-start,
+ * 只量 inline 量不到(2026-11-04 實測:在那裡加 items-center 的臨時建置,沒有這一則時本閘 146 處全綠;加了這一則,只有固定位置的
+ * 「系統維護中」標準 / 寬鬆兩處紅、圖示低 11.5px,其餘 148 處照綠)。
  * Alert / Toast 的「第一行文字」= 通知容器裡第一段不在按鈕裡的文字(= 標題,單行截斷):不能沿用下面的「往上找」——
  * × 往上第一個有字的祖先是右側槽,會先找到同一槽裡動作鈕的字(突變實測:改回往上找,Toast 的分隔線與 × 拿「查看」當第一行,
  * 主跑照綠、selftest (c)(d) 紅 —— 這條錯只有對照組抓得到)。
@@ -92,6 +96,8 @@ const TARGETS = [
   // Alert / Toast(共用底座 Notice),全部是多行(標題 + 說明):低調 / 實心 × 五色(neutral 沒有狀態圖示)、右上操作群組(重新整理 / 分享 / 分隔線 / ×)
   { id: 'design-system-components-alert-展示--with-description', min: { 'notice-prefix': 8, 'notice-suffix': 10 } },
   { id: 'design-system-components-alert-展示--corner-action-group', min: { 'notice-prefix': 1, 'notice-suffix': 4 } },
+  // 出現位置:inline(即將到期)與 fixed(系統維護中)各一則,都是標題 + 一行說明、沒有動作鈕 —— fixed 會往 Notice 根節點塞 class(見檔頭)
+  { id: 'design-system-components-alert-設計規格--placement-matrix', min: { 'notice-prefix': 2 } },
   // 真的 sonner Toast:按「匯入資料」打開一則(warning,標題 + 說明 + 查看 + 分隔線 + ×);只開一則 —— 堆疊中的後幾則被縮放,位移量不等於 3
   { id: 'design-system-components-toast-展示--interactive', min: { 'notice-prefix': 1, 'notice-suffix': 3 }, waitFor: ['button', '匯入資料'], openToast: '匯入資料' },
 ]
@@ -389,6 +395,7 @@ requireFreshStorybookBuild(S, [
   'packages/design-system/src/components/Notice/notice.tsx',
   'packages/design-system/src/components/Alert/alert.tsx',
   'packages/design-system/src/components/Alert/alert.stories.tsx',
+  'packages/design-system/src/components/Alert/alert.anatomy.stories.tsx',
   'packages/design-system/src/components/Toast/toast.tsx',
   'packages/design-system/src/components/Toast/toast.stories.tsx',
 ])

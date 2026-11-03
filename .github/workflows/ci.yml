@@ -1184,7 +1184,7 @@ jobs:
     # 原 job 最近 15 次 CI p90 22.6 分 / 上限 25(90%)。本 job = 原步驟後半:Field 內 Tag 內距、側欄鍵盤、openStory 兩面對照、view 字級、
     # Dialog 並存與捲動鎖、浮層快捷鍵作用域、虛擬捲動壓力、Devmode 幾何、Header Tabs 插槽、選單訊息列、Steps 兩支,與改到元件的視覺稽核;
     # 逐支計時合計 528–666 秒,估約 13 分。2026-10-27 加 row-suffix-first-line(主跑 + --selftest,本機實測約 50 秒;CI 未實測);
-    # 2026-11-04 納入 Alert / Toast 3 則後本機約 77 秒(主跑 17 + selftest 60)。
+    # 2026-11-04 納入 Alert / Toast 4 則(含 Alert 固定位置那則)後本機約 73–77 秒(主跑 15–17 + selftest 58–60)。
     name: Verify browser(field, dialog and steps gates + changed-component visual audit)
     runs-on: ubuntu-24.04
     timeout-minutes: 25

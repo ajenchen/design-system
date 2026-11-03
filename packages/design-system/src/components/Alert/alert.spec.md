@@ -114,7 +114,7 @@ Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action
 
 ```
 ┌─ Alert ────────────────────────────────┐
-│ [icon] Title                 [⟲] │ [X] │   ← 右側操作區 action group(endContent + ButtonDivider + close X,皆 Button xs)
+│ [icon] Title                 [⟲] │ [X] │   ← 右側操作區 action group(endContent 與 close X 皆 Button xs;兩者之間的 ButtonDivider 由 Notice 自動放)
 │        Description                     │     endContent = CTA / refresh / share 等;icon 與右側操作區都對齊第一行(Title 那一行),
 └────────────────────────────────────────┘     有 Description 時仍留在第一行,不隨整塊置中
 ```
@@ -132,7 +132,7 @@ Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action
 
 ### Multi corner action 場景
 
-多顆角落動作走上一節:其他動作放 `endContent`,close X 由 `dismissible` + `onDismiss` 渲染(X 僅在傳 `onDismiss` 時渲染——controlled-only,無 handler 的 X 是死按鈕;對齊 Polaris Banner `onDismiss`-driven,2026-07-05 D4,詳 `../Notice/notice.spec.md`「邊界案例」),兩者之間的分隔線由 Notice 基座自動放。
+多顆角落動作走上一節:其他動作放 `endContent`,close X 由 `dismissible` + `onDismiss` 渲染(X 僅在傳 `onDismiss` 時渲染——controlled-only,無 handler 的 X 是死按鈕;對齊 Polaris Banner `onDismiss`-driven,2026-07-05 D4,詳 `../Notice/notice.spec.md`「邊界案例」),兩者之間的分隔線由 Notice 基座自動放。Alert 不另開內建 corner action API,要加時走 Checkpoint 3 決策(M8 benchmark + consumer survey),不預先投機擴 API。
 
 ---
 
