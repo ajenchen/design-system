@@ -1492,7 +1492,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const titleId = React.useId()
     const otherInputId = React.useId()
     const optionIdBase = React.useId()
-    const otherFieldRef = React.useRef<HTMLDivElement>(null)
+    const otherFieldRowRef = React.useRef<HTMLDivElement>(null)
     if (import.meta.env?.DEV) warnDecisionRules(questions)
     const [step, setStep] = React.useState(0)
     const [answers, setAnswers] = React.useState<Record<string, string>>(() =>
@@ -1541,20 +1541,18 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const renderOtherInput = () => (
       // 「其他」卡:常駐 32 高輸入格;label 行框↔Input 8(mt-2);距卡右/下各 12(卡 px 12;卡 py 8 + mb 4);
       // 左縮排 24 = radio 16 + gap 8,與 label 對齊(Polaris ChoiceChildren 同款)。
-      // 內層 div 剛好包住 Input 外框(不帶任何樣式,幾何不變):外框整塊都是輸入處(field-controls.spec.md「點擊與游標原則」),
-      // 按在這裡由輸入格自己負責(聚焦即選中「其他」),卡不再動手 —— 判定見下方 pressOptionCard。
-      <div className="mb-1 mt-2 pl-6">
-        <div ref={otherFieldRef}>
-          <Input
-            id={otherInputId}
-            value={otherText[question.id] ?? ''}
-            placeholder="輸入其他選項"
-            aria-label="其他(自由輸入)"
-            aria-describedby={titleId}
-            onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
-            onChange={(e) => setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))}
-          />
-        </div>
+      // otherFieldRowRef:這一列唯一的子元素就是 Input 的外框 —— 外框整塊都是輸入處(field-controls.spec.md「點擊與游標原則」),
+      // 按在外框裡由輸入格自己負責(聚焦即選中「其他」);縮排 24 與外框圓角外的那一點點仍是卡 —— 判定見下方 pressOptionCard。
+      <div ref={otherFieldRowRef} className="mb-1 mt-2 pl-6">
+        <Input
+          id={otherInputId}
+          value={otherText[question.id] ?? ''}
+          placeholder="輸入其他選項"
+          aria-label="其他(自由輸入)"
+          aria-describedby={titleId}
+          onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
+          onChange={(e) => setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))}
+        />
       </div>
     )
     // 滑鼠/觸控點整張「其他」卡 → 聚焦輸入格(明確指向意圖);鍵盤方向鍵選中不搶焦點(APG radio roving),Tab 一步即到。
@@ -1577,7 +1575,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       const card = event.currentTarget
       const target = event.target
       if (!(target instanceof Element)) return
-      if (otherFieldRef.current?.contains(target)) return
+      if (otherFieldRowRef.current?.firstElementChild?.contains(target)) return
       const label = target.closest('label')
       if (!isOwnPointerTarget(card, target) && !(label && card.contains(label))) {
         document.getElementById(controlId)?.click()

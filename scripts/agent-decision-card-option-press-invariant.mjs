@@ -25,7 +25,7 @@
  *
  * 決策卡三題步進(DecisionCardOpen):第 1 題單選(3 張卡)、第 3 題複選(4 張卡,含「其他」)。
  * 每張卡:格點(複選 8px、單選 12px)+ 每個區域的代表點(控件中心、標籤字中心、說明字中心、卡四角內 2px、「其他」外框四邊的內距中心、
- * 輸入格中心)。每一點:先在頁面裡掛 MutationObserver 記全部控件的 aria-checked、記 elementFromPoint 落在哪個區域 → 真滑鼠點一下
+ * 輸入格中心、外框四個圓角外)。每一點:先在頁面裡掛 MutationObserver 記全部控件的 aria-checked、記 elementFromPoint 落在哪個區域 → 真滑鼠點一下
  * (page.mouse.click,含 mousedown —— 外框聚焦是按下時發生的)→ 等點擊排的 setTimeout(0) 跑完(FIFO:我們的 setTimeout 排在它後面)
  * → 讀這一下裡每個控件 aria-checked 變了幾次。兩次切換若被 React 合批會是「0 次」,沒合批會是「2 次」,兩種都抓得到。
  * 單選每一點之前目標卡必須是「未選中」,否則這一下看不出效果(交錯點不同卡;必要時先點別張卡的圓)。
@@ -163,6 +163,12 @@ const readCards = () => page.evaluate(({ CARD, CONTROL, OTHER_INPUT }) => {
         { name: '外框右內距', x: (i.right + f.right) / 2, y: i.y + i.height / 2 },
         { name: '輸入格中心', x: i.x + i.width / 2, y: i.y + i.height / 2 },
         { name: '輸入格左縮排', x: (box.x + f.left) / 2 + 4, y: i.y + i.height / 2 },
+        // 外框四個圓角外的那一點點:在外框的矩形裡、但在圓角外 → 不是輸入格,是卡(點了要切換)。
+        // 2026-11-03 第一版用一層矩形 div 包外框當「輸入格的地盤」,這四角就成了點了沒反應的死點(5px 格點掃到 1 點,8px 格點掃不到)
+        { name: '外框左上圓角外', x: f.left + 0.5, y: f.top + 0.5 },
+        { name: '外框右上圓角外', x: f.right - 0.5, y: f.top + 0.5 },
+        { name: '外框左下圓角外', x: f.left + 0.5, y: f.bottom - 0.5 },
+        { name: '外框右下圓角外', x: f.right - 0.5, y: f.bottom - 0.5 },
       )
     }
     return { index, box, label: label.textContent, controlId: control.id, role: control.getAttribute('role'), points }
