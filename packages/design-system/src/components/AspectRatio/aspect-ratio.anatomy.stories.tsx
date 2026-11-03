@@ -156,7 +156,7 @@ const STD_RATIOS = [
   { label: '16/9', value: 16 / 9, use: '寬螢幕 hero / 影片 embed / feature 截圖', seed: 'std-16-9' },
   { label: '4/3', value: 4 / 3, use: '產品照 / screenshot / 老電視比例', seed: 'std-4-3' },
   { label: '1/1', value: 1, use: 'Avatar / 方圖貼文 / icon preview', seed: 'std-1-1' },
-  { label: '3/4', value: 3 / 4, use: '直式 portrait / 服飾商品直式照', seed: 'std-3-4' },
+  { label: '3/4', value: 3 / 4, use: '直式 portrait / 手機截圖', seed: 'std-3-4' },
   { label: '21/9', value: 21 / 9, use: 'Ultra-wide hero / 儀表板頂部公告橫幅', seed: 'std-21-9' },
 ]
 

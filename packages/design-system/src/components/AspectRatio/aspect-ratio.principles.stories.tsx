@@ -168,7 +168,7 @@ const RATIO_RULES = [
   { label: '16/9', when: '橫向、寬螢幕,要「影片 / 電影」感但不到 ultra-wide', example: 'Airbnb listing hero、YouTube 縮圖、onboarding tour 截圖' },
   { label: '4/3', when: '橫向但要更方,容納更多垂直內容', example: 'Stripe product listing、Notion gallery cover' },
   { label: '1/1', when: 'feed grid 要對齊一致、無方向偏好', example: 'Instagram 貼文、Dribbble shot 縮圖' },
-  { label: '3/4', when: '直向,呈現「站立」視覺', example: '人物 portrait、服飾電商的商品直式照' },
+  { label: '3/4', when: '直向,呈現「站立」視覺', example: '人物 portrait、iOS App Store screenshot' },
   { label: '21/9', when: '極寬幅,強化 cinematic 視覺', example: '儀表板頂部的公告橫幅、活動頁首橫幅' },
 ]
 
