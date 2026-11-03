@@ -683,6 +683,7 @@
           "scripts/test-code-pointer-liveness-invariant.mjs",
           "scripts/test-composite-role-keyboard-invariant.mjs",
           "scripts/test-consumer-source-harness.mjs",
+          "scripts/test-data-table-click-outside-invariant.mjs",
           "scripts/test-data-table-row-cache-deps-invariant.mjs",
           "scripts/test-data-table-tree-view-doc-invariant.mjs",
           "scripts/test-drag-announcement-invariant.mjs",

@@ -1080,6 +1080,9 @@ jobs:
           # 同時開著 ≤ 1、Esc 一層一層關;Combobox「+N」卡不算外面;InlineEdit(編輯控件 = Select)在浮層裡點外回檢視。
           # 不需要 storybook(原始碼打包進空白頁);--selftest 三個單一根因突變各自剛好紅該紅的列、對照列全程綠。
           npm run test:overlay-nested-dismiss
+          # 試算表點外清除認本表(2026-11-03;同一個形狀的第三處):同一頁兩張試算表時點另一張表的格、表格裝在另一張表的格子裡時點外層表格,
+          # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;--selftest 一個根因突變。
+          npm run test:data-table-click-outside
           # 開合動畫(2026-10-07 / 10-13,待辦總帳 T6 / T7 / T10 / T11 / T12;本機合計約 60 秒):11 個成員(TreeView / Accordion /
           # AgentPanel 思考塊 / Dialog / Sheet / FileViewer / Popover / Tooltip / HoverCard / DropdownMenu 含子選單 / Select)——
           # E0 關閉時收起動畫真的有播;E1 / E2 JS 收尾晚到 200ms 每一格都不得長回來;N1 每種打開方式都播看得見的進場
