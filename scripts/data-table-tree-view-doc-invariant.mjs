@@ -10,7 +10,8 @@
  *            一般模式 Enter / F2 那一條(頁面寫了、規格段落沒有),或那一條指的 `cellIsTabStop` 已不在 data-table.tsx;
  *         P7 兩個元件的 story 名稱有中文字之間的機翻空格;
  *         P8 進版控的檔案指向不進版控的東西(「交付報告」、`tmp/wip-…`、invention-audit 的 decisions.json、只存在那裡的「待決題 D12」編號、
- *            工作資料夾的 `ssot-consolidated/` 與 `user-answers-*.md` 原話檔 —— 不寫 tmp/ 前綴也是同一個死指標,2026-11-03 n4 兩支閘漏網)。
+ *            工作資料夾的 `ssot-consolidated/` 與 `user-answers-<日期>.md` 原話檔 —— 不寫 tmp/ 前綴也是同一個死指標,2026-11-03 n4 兩支閘漏網;
+ *            只抓「資料夾 /」與「檔名 .md」,不抓不帶 .md 的字串(t5 provenance 測試裡的 `/user-answers-2026-10-21/` 是比對用的正規式,不是指標))。
  *   紅: 任一條命中 → 指名 file:line 與修法,exit 1;`--selftest` 用修前逐字原文做成的合成檔證明七條(P2–P8)各在指定行紅,
  *       同時證明修後的寫法 0 筆(兩面對照,M32)。
  *   綠: 現況 0 筆時綠。純靜態(讀檔 + 正規表示式)、不讀時間、不開瀏覽器,同一份工作樹重複跑結果相同;
@@ -160,7 +161,7 @@ export function storyNameHits(path, text) {
 }
 
 // ── P8:指向不進版控的東西 ─────────────────────────────────────────────────────────────────────
-const UNVERSIONED_POINTER = /交付報告|tmp\/wip-|invention-audit\/|decisions\.json|待決題 D\d+|ssot-consolidated\/|user-answers-/g
+const UNVERSIONED_POINTER = /交付報告|tmp\/wip-|invention-audit\/|decisions\.json|待決題 D\d+|ssot-consolidated\/|user-answers-[\d-]+\.md/g
 export function unversionedPointerHits(path, text) {
   const hits = []
   text.split('\n').forEach((line, i) => {
@@ -306,6 +307,7 @@ function selftest() {
     '//   沒講標題 ↔ 它自己的說明 —— 規範缺口,待 user 拍板,登記在待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` R1b-DT7;拍板前不改。)',
     ' *  (而且「DS 只做桌機」這個前提還有兩題等 user 決定:「lg 密度給什麼情境用」「Tooltip 規格裡的觸控理由怎麼改」),本閘不替它決定。',
     "const ESCAPE_KEY = 'Escape' // D12 不是待決題編號的寫法不算",
+    "  assert.ok(!reg.entries.some((e) => verifiedBy(e).some((s) => /user-answers-2026-10-21/.test(s.locator))), '沒有任何驗過的條目拿 user-answers(原話的出處)當驗證來源')",
     ' * 規格(user 2026-10-30 15:26 / 17:08 / 17:09(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列):',
     ' * 規格來源:user 2026-10-30 15:26 / 17:08(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列。本表直接驗的幾句原話:',
   ].join('\n')
