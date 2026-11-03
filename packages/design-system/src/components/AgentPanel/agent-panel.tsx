@@ -82,7 +82,7 @@ import {
 } from '@/design-system/components/Command/command'
 import { captureFocusOrigin, returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 import { useEscapeRegion } from '@/design-system/lib/overlay-escape'
-import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { isOwnPointerTarget, keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import {
@@ -1492,6 +1492,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const titleId = React.useId()
     const otherInputId = React.useId()
     const optionIdBase = React.useId()
+    const otherFieldRef = React.useRef<HTMLDivElement>(null)
     if (import.meta.env?.DEV) warnDecisionRules(questions)
     const [step, setStep] = React.useState(0)
     const [answers, setAnswers] = React.useState<Record<string, string>>(() =>
@@ -1540,26 +1541,53 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const renderOtherInput = () => (
       // 「其他」卡:常駐 32 高輸入格;label 行框↔Input 8(mt-2);距卡右/下各 12(卡 px 12;卡 py 8 + mb 4);
       // 左縮排 24 = radio 16 + gap 8,與 label 對齊(Polaris ChoiceChildren 同款)。
+      // 內層 div 剛好包住 Input 外框(不帶任何樣式,幾何不變):外框整塊都是輸入處(field-controls.spec.md「點擊與游標原則」),
+      // 按在這裡由輸入格自己負責(聚焦即選中「其他」),卡不再動手 —— 判定見下方 pressOptionCard。
       <div className="mb-1 mt-2 pl-6">
-        <Input
-          id={otherInputId}
-          value={otherText[question.id] ?? ''}
-          placeholder="輸入其他選項"
-          aria-label="其他(自由輸入)"
-          aria-describedby={titleId}
-          onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
-          onChange={(e) => setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))}
-          onClick={(e) => e.stopPropagation()}
-        />
+        <div ref={otherFieldRef}>
+          <Input
+            id={otherInputId}
+            value={otherText[question.id] ?? ''}
+            placeholder="輸入其他選項"
+            aria-label="其他(自由輸入)"
+            aria-describedby={titleId}
+            onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
+            onChange={(e) => setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))}
+          />
+        </div>
       </div>
     )
     // 滑鼠/觸控點整張「其他」卡 → 聚焦輸入格(明確指向意圖);鍵盤方向鍵選中不搶焦點(APG radio roving),Tab 一步即到。
     const focusOtherInput = () =>
       window.setTimeout(() => (document.getElementById(otherInputId) as HTMLInputElement | null)?.focus(), 0)
+    // 選項卡的點擊:卡 = 控件的標籤盒子,點卡裡任何一點 = 點控件一次(hit-area-canonical.md 一-4「點下去等於點控件」)。
+    // 一次點擊只能有一個主人切換,照 HTML label 的啟動行為分 —— WHATWG:label 對「落在它 interactive content 後代上」的點擊
+    // 什麼都不做(https://html.spec.whatwg.org/multipage/forms.html#the-label-element):
+    //   · 落在控件、或 SelectionItem 的 `<label for>` 上 → 控件自己切換 / 瀏覽器把這一下轉給控件一次;
+    //     判準 = DS 共用的「容器裡自有行為的東西」(lib/pointer-press.ts isOwnPointerTarget)再加 label(WHATWG 把 label 列為 interactive content)
+    //   · 落在「其他」輸入格的外框裡 → 輸入格自己負責(聚焦即選中)
+    //   · 其餘(內距、圓與字的空隙、說明文字)→ 卡把這一下轉給控件:`control.click()`,切換只由控件做
+    // 2026-11-03 前卡自己呼叫 toggle、label 又照常轉發 → 點標籤那一整行切兩次抵銷(複選看得出,單選同值看不出);
+    // 點「其他」輸入格的外框:按下時聚焦已選中、放開時卡再切一次 → 又抵銷(user 2026-10-29「多選的那道題目的選項那麼難按」)。
+    // 「其他」卡另有聚焦:滑鼠 / 觸控點下去(detail ≥ 1)且這一下讓它被選中 → 聚焦輸入格。鍵盤 Space、方向鍵、label 與卡轉給控件的
+    // 那一下都是 detail 0 的虛擬點擊(React Aria `isVirtualClick` 同一判準,
+    // https://github.com/adobe/react-spectrum/blob/6dec77beccf0545a04318e6a01b8eb9cbe2dccc6/packages/react-aria/src/utils/isVirtualEvent.ts#L19-L40),
+    // 不搶焦點 —— 方向鍵選到「其他」焦點留在圓上(APG radio roving);2026-11-03 前方向鍵選到它會被拉進輸入格。
+    const pressOptionCard = (event: React.MouseEvent<HTMLDivElement>, controlId: string, selectsOther: boolean) => {
+      const card = event.currentTarget
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (otherFieldRef.current?.contains(target)) return
+      const label = target.closest('label')
+      if (!isOwnPointerTarget(card, target) && !(label && card.contains(label))) {
+        document.getElementById(controlId)?.click()
+      }
+      if (selectsOther && event.detail > 0) focusOtherInput()
+    }
     // 灰底選項卡 = 唯一行距 owner(py 8);SelectionItem 自帶 py((32−1lh)/2=5.5)歸零,避免 double padding
     // (checkbox.spec.md 零外部 gap 鐵律的反向:間距只能有一個 owner)。
     // 滑過:卡片 = 具名群組 `group/agent-option`,自己不掛任何滑過樣式,只帶動卡內控件(OPTION_RADIO_HOVER /
-    // OPTION_CHECKBOX_HOVER,理由與鏡射來源見其上方註解)。命中區 = 整卡 onClick = 滑過回饋的範圍。
+    // OPTION_CHECKBOX_HOVER,理由與鏡射來源見其上方註解)。命中區 = 整卡(pressOptionCard)= 滑過回饋的範圍。
     const cardClass = 'group/agent-option cursor-pointer rounded-md bg-secondary px-3 py-2'
     return (
       <div
@@ -1606,10 +1634,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                     key={option.value}
                     data-state={checked ? 'checked' : 'unchecked'}
                     className={cardClass}
-                    onClick={() => {
-                      toggle(option.value, !checked)
-                      if (isOther && !checked) focusOtherInput()
-                    }}
+                    onClick={(e) => pressOptionCard(e, `${optionIdBase}-${option.value}`, isOther && !checked)}
                   >
                     <SelectionItem
                       size="md"
@@ -1621,7 +1646,6 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                           size="md"
                           checked={checked}
                           onCheckedChange={(next) => toggle(option.value, next === true)}
-                          onClick={(e) => e.stopPropagation()}
                           aria-controls={isOther ? otherInputId : undefined}
                           className={OPTION_CHECKBOX_HOVER}
                         />
@@ -1650,10 +1674,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                     key={option.value}
                     data-state={checked ? 'checked' : 'unchecked'}
                     className={cardClass}
-                    onClick={() => {
-                      select(option.value)
-                      if (isOther) focusOtherInput()
-                    }}
+                    onClick={(e) => pressOptionCard(e, `${optionIdBase}-${option.value}`, isOther)}
                   >
                     <SelectionItem
                       size="md"

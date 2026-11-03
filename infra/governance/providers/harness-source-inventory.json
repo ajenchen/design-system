@@ -564,6 +564,7 @@
         ],
         "totalTimeoutMs": 2700000,
         "members": [
+          "scripts/test-agent-decision-card-option-press-invariant.mjs",
           "scripts/test-color-scheme-invariant.mjs",
           "scripts/test-data-table-link-cell-invariant.mjs",
           "scripts/test-data-table-row-under-pointer-invariant.mjs",

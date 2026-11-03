@@ -37,7 +37,7 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "d8614d76138d19bd7178caca0f76ec739870485b4a9eda939ec2d68480c7cb36",
+    "sha256": "ec52ad8d5c3aa49f6016f5ddb9dce7c72a30d15f9a22b2cf04c5465d647327af",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
