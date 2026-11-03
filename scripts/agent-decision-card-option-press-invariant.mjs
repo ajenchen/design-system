@@ -394,7 +394,7 @@ try {
     record('K3', '單選:焦點在「其他」的圓上按 Space → 選中、焦點留在圓上、不被拉進輸入格',
       checked === true && n === 1 && role === 'radio' && onOther, `選中=${checked}、變 ${n} 次、焦點在 ${role}${onOther ? '' : '(不是「其他」的圓)'}`)
   }
-  // 回到第一項(其他 + 空字 = 下一題停用),換到第 3 題
+  // 回到第一項(其他 + 空字 = 按了會出錯、不前進,所以先選第一項),換到第 3 題
   await page.locator(`[id="${cards[0].controlId}"]`).click()
   await flush()
   for (let i = 0; i < 2; i++) {

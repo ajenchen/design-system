@@ -19,7 +19,7 @@
  * ── 方法論對應(form-validation.spec.md 規則 1-9)──
  * 1 Focus 中不顯示錯誤     → 驗證只在 blur / submit 跑(無 onChange 驗證路徑)
  * 2 Blur 時驗證            → getInputProps().onBlur 跑 validate[name];指標按著時的離開延到這一下按壓完成
- *                            (click 已送出)才驗 —— 見 settlePress(2026-10-01,待辦總帳 N67)
+ *                            (click 已送出)才驗 —— 見 lib/press-settle.ts(2026-10-01,待辦總帳 N67)
  * 3 Enter 等同 blur        → form 內 Enter 觸發 submit(全驗,超集);單行控件原生行為
  * 4 Escape 取消回復原值    → getInputProps().onKeyDown Escape → 寫回 dirty 比對基準 + 清 error。欄位改過時 getInputProps 另掛
  *                            `data-escape-layer`:放在 Dialog / Sheet / Popover 裡,第一下 Esc 回復、浮層不關,第二下才關
@@ -54,6 +54,7 @@ import { useForm } from 'react-hook-form'
 import type { FieldValues, Path, PathValue, DefaultValues } from 'react-hook-form'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 import { ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl, type EscapeLayerScope } from '@/design-system/lib/overlay-escape'
+import { cancelAfterPress, isPointerPressed, retainPressTracking, runAfterPress } from '@/design-system/lib/press-settle'
 
 export interface UseFormValidationOptions<T extends FieldValues> {
   /** 表單初始值(Update 場景 = 現有資料;dirty 比對基準) */
@@ -146,77 +147,12 @@ const OWNER_ATTR = 'data-form-validation'
 const ownerOf = (el: Element) => el.closest(`[${OWNER_ATTR}]`)?.getAttribute(OWNER_ATTR) ?? null
 
 // ─── 規則 2 的延後:指標按著時離開的欄位,等這一下按壓完成才驗(2026-10-01,待辦總帳 N67)────────────────
-// 滑鼠按下欄位下方的按鈕時,欄位在 mousedown 的預設動作裡就 blur;若當場驗證,錯誤訊息在按下與放開之間長出來、
-// 把按鈕往下推(CreateProjectForm 送出鈕 25px、置中對話框的 footer 271.6 → 321.6),放開時指標已不在按鈕上 →
-// 這一下 click 落空,送出 / 取消都沒發生。根層修法:按著指標時的 blur 先記下,按壓結束(pointerup / mouseup)
-// 後再等一個 macrotask 才驗 —— pointerup → mouseup → click 在同一個 task 內派送完,版面變化必然落在 click 之後
-// (Chromium 實測事件序,滑鼠與觸控點一下都是,紀錄在待辦總帳 N67)。鍵盤離開(Tab)沒有按著的指標,照舊立刻驗。
-// 觸控點一下時焦點在補發的 mousedown 才移動(在 touch 的 pointerup 之後),所以 mousedown / mouseup 也算按壓。
-// 按壓結束 = pointerup / mouseup,或這一下已不會有 click:瀏覽器取消它(pointercancel)、原生拖曳結束(dragend)、
-// 右鍵選單、視窗失焦。按住連結 / 圖片拖一段是原生拖曳:Chromium 送 dragstart → pointercancel → dragend,**不送 mouseup**
-// —— 只放掉 pointer 的話 mousedown 留下的「按著」永遠等不到結束,這一格不驗、之後鍵盤離開也全被延後,直到下一次滑鼠點擊
-// (2026-10-01 驗證抓到後修,待辦總帳 N67;閘 R2d-drag)。按壓是整頁的事,全頁一份,有 hook 實例掛著時才掛監聽。
-/** 按著的 pointer:pointerId → pointerType */
-const pressedPointers = new Map<number, string>()
-let mousePressed = false
-const afterPress = new Set<() => void>()
-let pressTrackingUsers = 0
-
-const isPointerPressed = () => pressedPointers.size > 0 || mousePressed
-
-function settlePress() {
-  if (isPointerPressed() || afterPress.size === 0) return
-  const due = Array.from(afterPress)
-  afterPress.clear()
-  setTimeout(() => { for (const run of due) run() }, 0)
-}
-const onPointerDown = (e: Event) => { const p = e as PointerEvent; pressedPointers.set(p.pointerId, p.pointerType) }
-const onPointerEnd = (e: Event) => { pressedPointers.delete((e as PointerEvent).pointerId); settlePress() }
-/** 取消 = 這一下不會有 click,也不會有 mouseup。滑鼠與筆共用一個游標、一組 mousedown / mouseup:Chromium 開始原生拖曳時
- *  取消的是 mouse#1,按下的是筆也一樣(CDP 模擬實測:按下 pen#2、取消 mouse#1)—— 所以非觸控的取消結束**所有**滑鼠類按壓。
- *  觸控各自獨立,它的 mousedown 只在點一下成功(pointerup 之後)才補發,取消了就沒有,只放掉它自己 */
-const onPointerCancel = (e: Event) => {
-  const p = e as PointerEvent
-  if (p.pointerType === 'touch') pressedPointers.delete(p.pointerId)
-  else {
-    for (const [id, type] of pressedPointers) if (type !== 'touch') pressedPointers.delete(id)
-    mousePressed = false
-  }
-  settlePress()
-}
-const onMouseDown = () => { mousePressed = true }
-const onMouseUp = () => { mousePressed = false; settlePress() }
-const onPressAbandoned = () => { pressedPointers.clear(); mousePressed = false; settlePress() }
-const PRESS_LISTENERS: ReadonlyArray<readonly [string, (e: Event) => void]> = [
-  ['pointerdown', onPointerDown],
-  ['pointerup', onPointerEnd],
-  ['pointercancel', onPointerCancel],
-  ['mousedown', onMouseDown],
-  ['mouseup', onMouseUp],
-  // 原生拖曳結束本身。Chromium 實測每次拖曳都先送 pointercancel(上面已結束按壓),這是第二道;拖曳來源在拖曳中被移出
-  // 頁面時 dragend 到不了 window(實測),所以第一道不能是它
-  ['dragend', onPressAbandoned],
-  ['contextmenu', onPressAbandoned],
-]
-
-/** 掛上整頁的按壓追蹤(引用計數,捕獲階段 —— 比任何元件的 handler 早看到);回傳的函式卸下 */
-function retainPressTracking(): () => void {
-  if (pressTrackingUsers++ === 0) {
-    for (const [type, fn] of PRESS_LISTENERS) window.addEventListener(type, fn, true)
-    window.addEventListener('blur', onPressAbandoned)
-  }
-  return () => {
-    if (--pressTrackingUsers > 0) return
-    for (const [type, fn] of PRESS_LISTENERS) window.removeEventListener(type, fn, true)
-    window.removeEventListener('blur', onPressAbandoned)
-    pressedPointers.clear()
-    mousePressed = false
-  }
-}
+// 整頁的按壓追蹤(哪些事件算按下 / 按完、原生拖曳與觸控的細節、根因與實測)住 `lib/press-settle.ts`,與 AgentPanel 決策卡共用同一份
+// (2026-11-04 自本檔搬出)。鍵盤離開(Tab)沒有按著的指標,照舊立刻驗。
 
 /** 撤掉一個實例所有還沒跑的延後驗證(送出會全驗 / 重設清空 / 卸載 —— 事後補跑都是錯的) */
 function dropPendingBlur(pending: Map<string, () => void>) {
-  for (const run of pending.values()) afterPress.delete(run)
+  for (const run of pending.values()) cancelAfterPress(run)
   pending.clear()
 }
 
@@ -292,7 +228,7 @@ export function useFormValidation<T extends FieldValues>(
     [form, validate],
   )
 
-  // 規則 2 的延後(見上方 settlePress):這個實例「按著指標時離開、還沒驗」的欄位 → 待跑的那一筆
+  // 規則 2 的延後(lib/press-settle.ts):這個實例「按著指標時離開、還沒驗」的欄位 → 待跑的那一筆
   const pendingBlur = React.useRef(new Map<string, () => void>())
   const mounted = React.useRef(false)
   React.useEffect(() => {
@@ -322,9 +258,9 @@ export function useFormValidation<T extends FieldValues>(
         if (!refocused) validateField(name)
       }
       const previous = pending.get(name)
-      if (previous) afterPress.delete(previous)
+      if (previous) cancelAfterPress(previous)
       pending.set(name, run)
-      afterPress.add(run)
+      runAfterPress(run)
     },
     [owner, validateField],
   )
@@ -345,7 +281,7 @@ export function useFormValidation<T extends FieldValues>(
             shouldDirty: true,
           })
         },
-        // 規則 2:blur 驗證(focus 中永不驗 = 規則 1 自然成立);指標按著時的離開延到按壓完成才驗(見 settlePress)
+        // 規則 2:blur 驗證(focus 中永不驗 = 規則 1 自然成立);指標按著時的離開延到按壓完成才驗(lib/press-settle.ts)
         onBlur: (event?: unknown) => {
           if (isPointerPressed()) deferBlurValidation(name, event)
           else validateField(name)

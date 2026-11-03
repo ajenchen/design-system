@@ -428,7 +428,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 // 根因:WHATWG「focus fixup rule」—— 握有焦點的元素被原生 `disabled` 時,焦點被重設到 viewport(= `<body>`)
 // (https://github.com/whatwg/html/blob/92f248013013096b5a780afffd8377fb9a6eba87/source#L123634-L123645 "It might also happen to an input
 // element when the element gets disabled.")。全 DS 一整族「按了之後自己變停用」都因此掉焦點:送出中 / 存檔後的送出鈕(N69)、分頁到頭、
-// 縮放到極限、輪播到端點、加條件到上限、新對話、送出後輸入盒變空、決策卡下一題。
+// 縮放到極限、輪播到端點、加條件到上限、新對話、送出後輸入盒變空。
 // 修法在 Button 根層,兩種情況不轉成原生 disabled,改 `aria-disabled="true"` + `data-disabled-focusable` + 擋掉觸發:
 //   (1) 忙碌(`loading`)一律 —— React Aria isPending "disables press and hover events while retaining focusability"
 //       (https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria-components/src/Button.tsx#L89-L93)、

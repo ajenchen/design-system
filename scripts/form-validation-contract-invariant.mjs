@@ -70,6 +70,7 @@
  * 延後的驗證永遠不跑 → R2d-drag / R2d-later;延後的驗證不管焦點回來了沒 → R1-refocus;
  * 原生拖曳不算按壓結束(pointercancel 只放掉 pointer、不聽 dragend = 驗證抓到的那一版)→ R2d-drag;
  * 取消只結束被取消的那一個 pointer(筆的按壓留著,來源被移出頁面時 dragend 也救不回)→ R2d-drag;
+ * (上面「觸控補發 / 延後永遠不跑 / 原生拖曳 / 取消只結束一個」四個突變的目標是 lib/press-settle.ts —— 整頁按壓追蹤 2026-11-04 自 hook 搬出、與決策卡共用)
  * Escape 改回 resetField 另連帶 R4-dialog / R4-one-layer / R4-saved(對話框裡同一個回復);
  * 欄位改過不掛 Esc 層 / 浮層守門不看標記 → R4-dialog / R4-one-layer / R4-saved(都是「對話框裡改過的欄位按 Esc」);
  * DialogContent 不記開啟者 → R-return;Button loading 走原生 disabled → R9-busy;Button 握著焦點時仍轉原生 disabled → R9-saved;
@@ -187,12 +188,14 @@ const MUTANTS = [
   },
   {
     id: 'no-touch-compat-press',
+    file: 'lib/press-settle.ts',
     what: '按壓只認 pointer 事件:觸控點一下補發的 mousedown / mouseup 不算按壓',
     expectRed: ['R2d-touch'],
     apply: (src) => replaceOnce(src, /\n  \['mousedown', onMouseDown\],\n  \['mouseup', onMouseUp\],\n/, '\n'),
   },
   {
     id: 'drop-deferred',
+    file: 'lib/press-settle.ts',
     what: '延後的驗證永遠不跑(按壓結束後沒有補驗)',
     expectRed: ['R2d-drag', 'R2d-later'],
     apply: (src) => replaceOnce(src,
@@ -209,6 +212,7 @@ const MUTANTS = [
   },
   {
     id: 'no-drag-press-end',
+    file: 'lib/press-settle.ts',
     what: '原生拖曳不算按壓結束:pointercancel 只放掉 pointer、不聽 dragend(2026-10-01 延後的第一版,驗證抓到)',
     expectRed: ['R2d-drag'],
     apply: (src) => replaceOnce(
@@ -217,6 +221,7 @@ const MUTANTS = [
   },
   {
     id: 'cancel-own-pointer-only',
+    file: 'lib/press-settle.ts',
     what: '非觸控的取消只結束被取消的那一個 pointer(按下 pen#2、取消 mouse#1 → 筆的按壓留著)',
     expectRed: ['R2d-drag'],
     apply: (src) => replaceOnce(src,

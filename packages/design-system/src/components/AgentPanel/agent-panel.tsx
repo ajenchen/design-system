@@ -83,6 +83,7 @@ import {
 import { captureFocusOrigin, returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
 import { useEscapeRegion } from '@/design-system/lib/overlay-escape'
 import { isOwnPointerTarget, keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { cancelAfterPress, isPointerPressed, retainPressTracking, runAfterPress } from '@/design-system/lib/press-settle'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import {
@@ -1437,7 +1438,8 @@ const OTHER_LABEL = '其他'
 const RECOMMENDED_SUFFIX = '(建議)'
 const MULTI_JOIN = '\n'
 /** 按「下一題 / 送出」時這一題沒過的錯誤訊息(句型照 DS 既有範例:select.stories「請選擇出貨倉庫」、combobox.stories「請至少選擇一個商品類別」、
- *  field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,見 agent-decision-card.spec.md「步進」)。 */
+ *  field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,見 agent-decision-card.spec.md「步進」)。
+ *  三句是新的元件預設文案(產品文案語意):AI 依上述句型擬的建議,【待確認】—— user 換字時只改這裡。 */
 const DECISION_ERROR_TEXT = {
   single: '請選擇一個選項', // i18n-allow: DS 預設文案
   multi: '請至少選擇一個選項', // i18n-allow: DS 預設文案
@@ -1519,28 +1521,15 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const [otherText, setOtherText] = React.useState<Record<string, string>>({})
     /** 每一題按「下一題 / 送出」沒過時記下的錯誤;上一題 / 回來時原樣留著(同 TreeView 步驟導覽樹範例:上一次送出的值與錯誤留著)。 */
     const [errors, setErrors] = React.useState<Record<string, DecisionError | undefined>>({})
-    // 按著指標的那一下:按下 → 放開(含取消、原生拖曳結束、右鍵選單、視窗失焦)之間不改版面,要清的錯誤排到這一下按完之後
-    // (理由見下方 clearError;事件序 pointerup → mouseup → click 同一個 task 派送完,setTimeout 0 必落在 click 之後 ——
-    // 與 use-form-validation.ts 規則 2 的延後同一條,待辦總帳 N67。觸控:焦點在補發的 mousedown 才移動,所以 mousedown 也算按下)。
-    const pressing = React.useRef(false)
+    // 按著指標的那一下要清的錯誤,排到這一下按完之後(理由見下方 clearError;整頁的按壓追蹤與 useFormValidation 規則 2 的延後共用
+    // `lib/press-settle.ts`,待辦總帳 N67)。這個實例還沒跑的那一筆:被新的取代、卸載時撤掉。
     const pendingClear = React.useRef<(() => void) | null>(null)
     React.useEffect(() => {
-      const start = () => { pressing.current = true }
-      const settle = () => {
-        pressing.current = false
-        const run = pendingClear.current
-        pendingClear.current = null
-        if (run) window.setTimeout(run, 0)
-      }
-      const STARTS = ['pointerdown', 'mousedown'] as const
-      const ENDS = ['pointerup', 'pointercancel', 'mouseup', 'dragend', 'contextmenu'] as const
-      for (const type of STARTS) window.addEventListener(type, start, true)
-      for (const type of ENDS) window.addEventListener(type, settle, true)
-      window.addEventListener('blur', settle)
+      const release = retainPressTracking()
       return () => {
-        for (const type of STARTS) window.removeEventListener(type, start, true)
-        for (const type of ENDS) window.removeEventListener(type, settle, true)
-        window.removeEventListener('blur', settle)
+        if (pendingClear.current) cancelAfterPress(pendingClear.current)
+        pendingClear.current = null
+        release()
       }
     }, [])
     const resolveOne = (q: AgentDecisionQuestion) => {
@@ -1564,9 +1553,15 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     // 這一下 click 落到別的元素上(複選「其他」會被卡轉給方框而切掉)。
     const clearError = (id: string) => {
       if (!errors[id]) return
-      const run = () => setErrors((prev) => (prev[id] ? { ...prev, [id]: undefined } : prev))
-      if (pressing.current) pendingClear.current = run
-      else run()
+      const clear = () => setErrors((prev) => (prev[id] ? { ...prev, [id]: undefined } : prev))
+      if (!isPointerPressed()) return clear()
+      if (pendingClear.current) cancelAfterPress(pendingClear.current)
+      const run = () => {
+        if (pendingClear.current === run) pendingClear.current = null
+        clear()
+      }
+      pendingClear.current = run
+      runAfterPress(run)
     }
     const select = (value: string) => {
       if ((answers[question.id] ?? '') !== value) clearError(question.id)
@@ -1696,8 +1691,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
           <Button dismiss size="sm" startIcon={XIcon} aria-label="跳過" onClick={skip} />
         </SurfaceHeader>
         {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。
-            錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後、同一個 gap 8 堆疊裡
-            (agent-decision-card.spec.md「步進」);沒有錯誤時 FieldError 不渲染、不佔位。 */}
+            錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後(agent-decision-card.spec.md「步進」);
+            沒有錯誤時 FieldError 不渲染、不佔位。與最後一張卡的距離【待確認】:現行放進選項卡同一個 gap 8 堆疊 = user 2026-10-29 問句裡的提案
+            (「跟最後一個選項距離=選項跟選項之間的距離」),不是既有規範推出的;另一案 = Field 內部 gap-1 4。user 選定後改這裡,閘 `scripts/agent-decision-card-validation-invariant.mjs` E4 / E10 一起改。 */}
         <ScrollArea fillX className="min-h-0">
           <div className="flex flex-col gap-2 px-[var(--layout-space-loose)]">
             {multi ? (

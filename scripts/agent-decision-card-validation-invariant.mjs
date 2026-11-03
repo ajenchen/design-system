@@ -2,7 +2,9 @@
 /**
  * @gate-contract
  *   保證: AgentDecisionCard 的「下一題 / 送出」恆可按(沒選、「其他」文字空白時都不停用);按下時這一題沒過 →
- *         不前進,錯誤訊息出現在最後一張選項卡之後、與卡間距同距(卡 i+1 上緣 − 卡 i 下緣)、左緣對齊選項卡,
+ *         不前進,錯誤訊息出現在最後一張選項卡之後、左緣對齊選項卡;與最後一張卡的距離守的是**現行值** = 卡間距(卡 i+1 上緣 − 卡 i 下緣)
+ *         —— 這個距離【待確認】(user 2026-10-29 問句中的提案,另一案 = Field 內部 gap-1 4;agent-decision-card.spec.md「步進」),
+ *         user 選定後 E4 / E10 與 agent-panel.tsx 一起改;
  *         字級 / 行高 / 字重 / 顏色等於 Field 裡的 FieldError(量 Field「垂直」story 的「密碼長度不足」),role="alert";
  *         焦點移到第一個出錯的控件(「其他」空白 → 輸入格;複選沒勾 → 第一個方框);「其他」那一種輸入格的框色 = Field 裡出錯的
  *         Input 框色、aria-invalid + aria-errormessage 指向錯誤訊息;複選沒勾 → 群組 aria-invalid、每個方框 aria-invalid +
@@ -12,7 +14,7 @@
  *         不讀 class(M37)。
  *   紅: --selftest 逐一補回五種病(每種開一次新頁):① 主鈕被停用 ② 錯誤訊息比卡間距近 4px ③ 按下後焦點沒去第一個錯
  *       ④ 按著「其他」輸入格的那一下錯誤就消失(按下與放開之間版面移動)⑤ 錯誤訊息字級跟 Field 不同 —— 各自必須被指名紅
- *   綠: 現行 agent-panel.tsx(advance / clearError / FieldError 放在選項卡同一個 gap 8 堆疊)全綠;
+ *   綠: 現行 agent-panel.tsx(advance / clearError / FieldError 放在選項卡同一個 gap 8 堆疊;按壓延後走 lib/press-settle.ts)全綠;
  *       修前(56dda7ce,disabled={!canAdvance})的建置:主鈕停用 → B1 / B2 紅,按了沒有錯誤訊息 → E 系列紅(本機實測,見 commit 說明)
  *
  * ── 為什麼有這支 ──
@@ -51,12 +53,13 @@ const CONTROL = '[role="checkbox"], [role="radio"]'
 const OTHER_INPUT = 'input[aria-label="其他(自由輸入)"]'
 const TEXT = { other: '請輸入其他選項', multi: '請至少選擇一個選項' }
 
-// 建置不比被驗的原始碼舊(lib/launch-browser.mjs requireFreshStorybookBuild):決策卡本體、FieldError、Input 的錯誤框。
+// 建置不比被驗的原始碼舊(lib/launch-browser.mjs requireFreshStorybookBuild):決策卡本體、FieldError、Input 的錯誤框、按壓延後。
 requireFreshStorybookBuild(STATIC, [
   'packages/design-system/src/components/AgentPanel/agent-panel.tsx',
   'packages/design-system/src/components/Field/field.tsx',
   'packages/design-system/src/components/Input/input.tsx',
   'packages/design-system/src/components/Field/field-wrapper.tsx',
+  'packages/design-system/src/lib/press-settle.ts',
 ])
 
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -202,7 +205,7 @@ async function runCard(ref, fault) {
       record('E3', '錯誤訊息字級 / 行高 / 字重 / 字族 / 顏色 = Field 的 FieldError', sameFont, `決策卡 ${JSON.stringify(s.error.font)} vs Field ${JSON.stringify(ref.font)}`)
       const gapCards = s.cards[1].y - s.cards[0].bottom
       const gapError = s.error.rect.y - s.cards[s.cards.length - 1].bottom
-      record('E4', '錯誤訊息在最後一張卡之後,距離 = 卡間距(8)、左緣對齊選項卡',
+      record('E4', '錯誤訊息在最後一張卡之後、左緣對齊選項卡;距離 = 現行值卡間距 8(【待確認】user 提案,另一案 Field gap-1 4)',
         near(gapError, gapCards) && near(gapCards, 8) && near(s.error.rect.x, s.cards[0].x),
         `卡間距 ${gapCards.toFixed(2)}、錯誤距最後一張卡 ${gapError.toFixed(2)}、左緣 ${s.error.rect.x.toFixed(2)} vs 卡 ${s.cards[0].x.toFixed(2)}`)
     } else {
@@ -253,7 +256,7 @@ async function runCard(ref, fault) {
       JSON.stringify({ group: s.group, controls: s.controls.map((c) => [c.invalid, c.errormessage]), errorId: s.error?.id }))
     if (s.error) {
       const gapError = s.error.rect.y - s.cards[s.cards.length - 1].bottom
-      record('E10', '複選:錯誤訊息距最後一張卡 = 卡間距', near(gapError, s.cards[1].y - s.cards[0].bottom), `錯誤距 ${gapError.toFixed(2)}`)
+      record('E10', '複選:錯誤訊息距最後一張卡 = 現行值卡間距(【待確認】,同 E4)', near(gapError, s.cards[1].y - s.cards[0].bottom), `錯誤距 ${gapError.toFixed(2)}`)
     }
     // 點一張具名卡的標籤 → 恰好勾上、錯誤在這一下點完之後清掉;再點一次取消,回到一項都沒勾
     const slack = s.cards[0]
