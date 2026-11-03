@@ -595,6 +595,7 @@ export const WithCheckboxKeyboardContract: Story = {
   name: '多選 — 鍵盤路線',
   tags: ['test-only'],
   // play 造出的鍵盤焦點就是本則要驗的東西(story-rules「示範 = 滑鼠使用者」:留著焦點的 story 必須標 keep)
+  // @example-basis: packages/design-system/ds-canonical/rules/story-rules.md「示範 = 滑鼠使用者」段:「滑鼠移過 / 鍵盤聚焦、焦點鎖、焦點接力、play 裡明寫 `.focus()` 或 `userEvent.keyboard`」
   parameters: { demoFocus: 'keep' },
   render: () => <CheckboxTree />,
   play: async ({ canvasElement }) => {
@@ -672,6 +673,7 @@ export const RowActionsKeyboardContract: Story = {
   tags: ['test-only'],
   parameters: {
     // play 用鍵盤走完整條路線(story-rules「示範 = 滑鼠使用者」:示範焦點的 story 必須標 keep)
+    // @example-basis: packages/design-system/ds-canonical/rules/story-rules.md「示範 = 滑鼠使用者」段:「滑鼠移過 / 鍵盤聚焦、焦點鎖、焦點接力、play 裡明寫 `.focus()` 或 `userEvent.keyboard`」
     demoFocus: 'keep',
     docs: {
       description: {
@@ -897,6 +899,7 @@ export const DeleteHandoff: Story = {
   name: '刪除後焦點接力',
   tags: ['test-only'],
   parameters: {
+    // @example-basis: packages/design-system/ds-canonical/rules/story-rules.md「示範 = 滑鼠使用者」段:「滑鼠移過 / 鍵盤聚焦、焦點鎖、焦點接力、play 裡明寫 `.focus()` 或 `userEvent.keyboard`」
     demoFocus: 'keep',
     docs: {
       description: {
