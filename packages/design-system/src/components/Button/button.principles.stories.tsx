@@ -27,8 +27,10 @@ type Story = StoryObj
 // 並列的獨立範例之間 loose、說明貼著它說的範例 tight(CaptionedExamples);同一組動作的鈕用 ButtonGroup(鈕距由群組擁有); items-center 維持本頁原本的垂直置中(不同尺寸的鈕並排時對齊中線)
 const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap', examplesClassName: 'items-center' })
 
-// 2026-10-28 BA-specimen:範例裡的按鈕都要能按(F-S2),各自接上按鈕本來的行為(stories-helpers/examples/demo-actions.tsx):
-// 一次性動作跳 Toast、開關切 pressed、帶下拉 / 溢出的打開選單、後面還有確認的危險動作先開確認框(button.spec.md「danger prop — 語意意圖」表)。
+// 2026-10-28 BA-specimen:範例裡的按鈕接上按鈕本來的行為(stories-helpers/examples/demo-actions.tsx):結果本來就不在畫面上的
+// 一次性動作(送出 / 儲存 / 匯出…)跳 Toast、開關切 pressed、帶下拉 / 溢出的打開選單、後面還有確認的危險動作先開確認框
+// (button.spec.md「danger prop — 語意意圖」表)。結果應該出現在畫面上、這裡卻沒有那個畫面的(取消、開啟、前往、預覽、查看更多)
+// 不接,不替它編一句「已…」(登記簿 A13;要不要有反應等 user 決定,見 demo-actions.tsx 檔頭)。
 const NOTIFICATIONS = [
   { label: '張雅婷在「Q3 行銷預算」提到你', description: '10 分鐘前' },
   { label: '「官網改版」的截止日改為 11/15', description: '1 小時前' },
@@ -120,7 +122,7 @@ export const VariantRule: Story = {
         title="tertiary — 最常用的非主要按鈕（日常預設選擇）"
         note="確認/取消配對的取消方、輔助操作、卡片 CTA 幾乎都用 tertiary"
       >
-        <Button variant="tertiary" onClick={done('已取消,變更沒有儲存')}>取消</Button>
+        <Button variant="tertiary">取消</Button>
         <Button variant="tertiary" startIcon={Save} onClick={done('已另存一份草稿')}>另存草稿</Button>
         <Button variant="tertiary" startIcon={Download} onClick={done('已匯出「Q3 訂單.csv」')}>匯出</Button>
       </TutorialRule>
@@ -130,8 +132,8 @@ export const VariantRule: Story = {
         note="不需特別強調的操作；工具列 icon-only 按鈕常用 text"
       >
         <Button variant="text" startIcon={RefreshCw} onClick={done('已重新整理')}>重新整理</Button>
-        <Button variant="text" onClick={done('已載入下一頁的 20 筆')}>查看更多</Button>
-        <DemoMenu open items={SETTINGS_MENU}><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></DemoMenu>
+        <Button variant="text">查看更多</Button>
+        <DemoMenu items={SETTINGS_MENU}><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></DemoMenu>
       </TutorialRule>
 
       <TutorialRule
@@ -152,7 +154,7 @@ export const VariantRule: Story = {
         title="link — 帶使用者前往其他頁面的按鈕"
         note="視覺上像連結但需要 button 行為（React Router、事件處理）。放在內容區，不用於操作列，不嵌入段落文字（段落內用 HTML <a> 代替）"
       >
-        <Button variant="link" onClick={done('已開啟設定頁')}>前往設定</Button>
+        <Button variant="link">前往設定</Button>
       </TutorialRule>
     </TutorialPage>
   ),
@@ -165,7 +167,7 @@ export const PrimaryRule: Story = {
       <TutorialRule title="✅ 正確 — 唯一的 primary" note="單一最強視覺入口讓使用者立即辨識主要路徑;其餘動作降為 tertiary,避免同一操作區出現競爭焦點。">
         <ButtonGroup>
           <Button variant="primary" onClick={done('已確認送出')}>確認</Button>
-          <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
+          <Button variant="tertiary">取消</Button>
         </ButtonGroup>
       </TutorialRule>
 
@@ -187,7 +189,7 @@ export const PrimaryRule: Story = {
           // @layout-space-magic-ok: 卡片列內 名稱 ↔ 行內按鈕 12px(名稱 flex-1 撐滿、按鈕貼右,只在名稱很長時才當最小間隔)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
           <div key={name} className="border border-border rounded-lg px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] flex items-center gap-3 min-w-40">
             <span className="text-body flex-1">{name}</span>
-            <Button variant="tertiary" size="sm" onClick={done(`已開啟「${name}」`)}>開啟</Button>
+            <Button variant="tertiary" size="sm">開啟</Button>
           </div>
         ))}
       </TutorialRule>
@@ -205,7 +207,7 @@ export const DangerRule: Story = {
       >
         <ButtonGroup>
           <Button variant="primary" danger startIcon={Trash2} onClick={done('已永久刪除「舊版官網素材」')}>永久刪除</Button>
-          <Button variant="tertiary" onClick={done('已取消,檔案沒有刪除')}>取消</Button>
+          <Button variant="tertiary">取消</Button>
         </ButtonGroup>
       </TutorialRule>
 
@@ -253,7 +255,7 @@ export const IconRule: Story = {
         note="告訴使用者「點這裡還有更多」，不描述動作本身"
       >
         <DemoMenu align="start" items={['只看我負責的', '只看未完成']}><Button variant="tertiary" endIcon={ChevronDown}>篩選條件</Button></DemoMenu>
-        <DemoMenu open align="start" title="通知 · 3 則" items={NOTIFICATIONS}><Button variant="tertiary" startIcon={Bell} endIcon={ChevronDown}>通知</Button></DemoMenu>
+        <DemoMenu align="start" title="通知 · 3 則" items={NOTIFICATIONS}><Button variant="tertiary" startIcon={Bell} endIcon={ChevronDown}>通知</Button></DemoMenu>
       </TutorialRule>
 
       <TutorialRule
@@ -268,7 +270,7 @@ export const IconRule: Story = {
         title="icon + 下拉指示 — 無文字 dropdown trigger"
         note="不加 iconOnly（保留 endIcon 展開指示）；必須設定 aria-label —— 畫面上沒有字,Button 自動用它顯示 tooltip(同 icon-only)"
       >
-        <DemoMenu open align="start" items={SETTINGS_MENU}><Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown} aria-label="設定選項" /></DemoMenu>
+        <DemoMenu align="start" items={SETTINGS_MENU}><Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown} aria-label="設定選項" /></DemoMenu>
         <ExampleCaption>↑ startIcon 描述功能，endIcon 指示展開，兩者並存</ExampleCaption>
       </TutorialRule>
 
@@ -276,7 +278,7 @@ export const IconRule: Story = {
         title="icon + overlay 角標 — 通知類按鈕"
         note={<>用 <code>overlayBadge</code> prop 傳入 Badge,Button 內部自動把 badge 中心對齊 icon top-right corner(Material BadgedBox 設計準則)——不手刻 <code>relative + absolute -top-1 -right-1</code> 讓 badge 飄到按鈕 chrome 邊緣</>}
       >
-        <DemoMenu open align="start" title="通知 · 3 則" items={NOTIFICATIONS}>
+        <DemoMenu align="start" title="通知 · 3 則" items={NOTIFICATIONS}>
           <Button
             variant="tertiary"
             size="sm"
@@ -296,7 +298,7 @@ export const IconRule: Story = {
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出「Q3 訂單.csv」')} />
           <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
-          <DemoMenu items={['移動到資料夾', '複製一份']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
+          <DemoMenu items={['移動到資料夾', { label: '複製一份', done: '已複製一份' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
         </ButtonGroup>
         <ExampleCaption>↑ MoreVertical 在群組末端，左側不加分隔線</ExampleCaption>
       </TutorialRule>
@@ -316,8 +318,8 @@ export const OrderRule: Story = {
           <Button variant="primary" onClick={done('已發布文件')}>發布</Button>
           <Button variant="secondary" onClick={done('已儲存草稿')}>儲存草稿</Button>
           <ConfirmAction {...DISCARD}>{(open) => <Button variant="secondary" danger onClick={open}>放棄變更</Button>}</ConfirmAction>
-          <Button variant="tertiary" onClick={done('已開啟預覽')}>預覽</Button>
-          <Button variant="text" onClick={done('已開啟版本紀錄')}>查看歷史</Button>
+          <Button variant="tertiary">預覽</Button>
+          <Button variant="text">查看歷史</Button>
         </ButtonGroup>
       </TutorialRule>
 
@@ -332,14 +334,14 @@ export const OrderRule: Story = {
           <div className="flex items-center gap-[var(--layout-space-tight)]">
             <ButtonGroup align="start">
               <Button variant="primary" onClick={done('已確認送出')}>確認</Button>
-              <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
+              <Button variant="tertiary">取消</Button>
             </ButtonGroup>
             <ExampleCaption>沒有標題 → 靠左，primary 最左（表單頁底、頁面步驟列）</ExampleCaption>
           </div>
           <div className="flex items-center justify-between w-full">
             <ExampleCaption>有標題（標題在左）或浮層頁腳 → 靠右，primary 最右</ExampleCaption>
             <ButtonGroup align="end">
-              <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
+              <Button variant="tertiary">取消</Button>
               <Button variant="primary" onClick={done('已確認送出')}>確認</Button>
             </ButtonGroup>
           </div>
@@ -353,7 +355,7 @@ export const OrderRule: Story = {
         <div className="w-[200px]">
           <ButtonGroup orientation="vertical">
             <Button variant="primary" onClick={done('已確認送出')}>確認送出</Button>
-            <Button variant="tertiary" onClick={done('已取消,內容沒有送出')}>取消</Button>
+            <Button variant="tertiary">取消</Button>
           </ButtonGroup>
         </div>
       </TutorialRule>

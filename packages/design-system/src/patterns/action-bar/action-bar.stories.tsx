@@ -50,7 +50,9 @@ const TutorialRule = createTutorialRule({ examples: true })
    - 溢出(···、更多格式、更多插入)與設定 = 打開它收的選單;說明 = 打開說明浮層;
    - 刪除(text + danger)= 先開確認框再刪(button.spec.md「danger prop」表:text + danger「工具列刪除 icon(有後續確認)」);
    - 關閉 ✕ = 收起這條操作列,原位留「重新開啟」(同 header-canonical 總覽的 Closable);
-   - 其餘一次性動作(匯出 / 新增 / 儲存 / 發佈 / 上傳 / 插入…)= 做完跳 Toast(UD-B26「然後送出成功跳提示」)。 */
+   - 結果本來就不在畫面上的一次性動作(匯出 / 新增 / 儲存 / 發佈 / 複製連結…)= 做完跳 Toast(UD-B26「然後送出成功跳提示」);
+   - 結果應該出現在畫面上、這裡卻沒有那個畫面的(編輯、插入、復原 / 重做、上傳要先選檔、套用格式或篩選)不接,
+     不替它編一句「已…」(登記簿 A13;要不要有反應等 user 決定,見 demo-actions.tsx 檔頭)。 */
 const CloseToolbarContext = createContext<() => void>(() => undefined)
 
 const ToolbarFrame = ({ title, children }: { title?: string; children: ReactNode }) => {
@@ -235,7 +237,7 @@ export const Structure: Story = {
           <ButtonGroup>
             <Button variant="tertiary" size="sm" startIcon={Save} onClick={done('已儲存草稿')}>儲存草稿</Button>
             <Button variant="primary" size="sm" onClick={done('已發佈文件')}>發佈</Button>
-            <DemoMenu items={['複製連結', '移動到資料夾']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
+            <DemoMenu items={[{ label: '複製連結', done: '已複製連結' }, '移動到資料夾']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" /></DemoMenu>
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>有框按鈕結尾（tertiary + primary）→ 接無框工具操作：沒有對上任何加線理由，所以不加</ExampleCaption>
@@ -254,7 +256,7 @@ export const Dividers: Story = {
       >
           <ToolbarFrame title="檔案操作">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
               <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出檔案')} />
               <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
             </ButtonGroup>
@@ -262,7 +264,7 @@ export const Dividers: Story = {
           <ExampleCaption>✅ 同類別操作 — 間距即可，不加分隔線</ExampleCaption>
           <ToolbarFrame title="檔案操作">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
               <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" onClick={done('已匯出檔案')} />
               <ButtonDivider />
               <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
@@ -277,7 +279,7 @@ export const Dividers: Story = {
       >
         <ToolbarFrame title="面板">
           <ButtonGroup>
-            <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+            <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
             <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
             <ButtonDivider />
             <CloseToolbar>{(close) => <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={close} />}</CloseToolbar>
@@ -292,17 +294,17 @@ export const Dividers: Story = {
       >
           <ToolbarFrame title="文件">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
               <Button variant="text" size="sm" iconOnly startIcon={Save} aria-label="儲存" onClick={done('已儲存文件')} />
               <ButtonDivider />
               <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
-              <DemoMenu items={['邀請成員', '匯出 PDF']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
+              <DemoMenu items={['邀請成員', { label: '匯出 PDF', done: '已匯出 PDF' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>編輯操作 vs 協作操作，功能域不同，分隔線可選</ExampleCaption>
           <ToolbarFrame title="檔案">
             <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" onClick={done('已進入編輯模式')} />
+              <Button variant="text" size="sm" iconOnly startIcon={Edit} aria-label="編輯" />
               <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" onClick={done('已複製分享連結')} />
               <ButtonDivider />
               <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={open} />}</ConfirmDelete>
@@ -331,7 +333,7 @@ export const Dividers: Story = {
       >
         <ToolbarFrame title="資料管理">
           <ButtonGroup>
-            <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 個檔案')}>上傳</Button>
+            <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
             <DemoMenu items={['從雲端硬碟匯入', '上傳整個資料夾']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多上傳操作" /></DemoMenu>
             <ButtonDivider />
             <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入資料')} />
@@ -394,7 +396,7 @@ export const Dividers: Story = {
               <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
               <ButtonDivider />
               <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入資料表')} />
-              <DemoMenu items={['匯出 CSV', '列印']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
+              <DemoMenu items={[{ label: '匯出 CSV', done: '已匯出 CSV' }, '列印']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>有固定工具 → 業務操作（無框）接工具操作（無框），邊界不可見 → 在第一個工具按鈕 ↺ 左側加分隔線</ExampleCaption>
@@ -454,7 +456,7 @@ export const Overflow: Story = {
               <Button variant="primary" size="sm" startIcon={Plus} onClick={done('已新增「未命名專案」')}>新增</Button>
               <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入專案列表')} />
               <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
-              <DemoMenu items={['封存專案', '複製專案範本']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
+              <DemoMenu items={[{ label: '封存專案', done: '已封存專案' }, { label: '複製專案範本', done: '已複製專案範本' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>有框結尾 → 無分隔 → 工具 ↺ ⚙ ···</ExampleCaption>
@@ -464,7 +466,7 @@ export const Overflow: Story = {
               <Toggle>{(on, flip) => <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={on} onClick={flip} />}</Toggle>
               <ButtonDivider />
               <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" onClick={done('已重新載入資料表')} />
-              <DemoMenu items={['匯出 CSV', '列印']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
+              <DemoMenu items={[{ label: '匯出 CSV', done: '已匯出 CSV' }, '列印']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="全部操作" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>無框結尾 → 分隔線（業務接工具，同為無框）→ 固定工具 ↺ ···</ExampleCaption>
@@ -483,16 +485,16 @@ export const Overflow: Story = {
             <DemoMenu items={['套用刪除線', '套用程式碼格式']}><Button variant="text" size="sm" iconOnly startIcon={ChevronDown} aria-label="更多格式" /></DemoMenu>
             <ButtonDivider />
             {/* 群組 B：插入元素（無溢出，全部攤開） */}
-            <Button variant="text" size="sm" iconOnly startIcon={CheckSquare} aria-label="核取方塊" onClick={done('已插入核取方塊')} />
-            <Button variant="text" size="sm" iconOnly startIcon={ImageIcon} aria-label="圖片" onClick={done('已插入圖片')} />
-            <Button variant="text" size="sm" iconOnly startIcon={AtSign} aria-label="提及" onClick={done('已插入提及')} />
-            <Button variant="text" size="sm" iconOnly startIcon={Smile} aria-label="表情" onClick={done('已插入表情')} />
-            <Button variant="text" size="sm" iconOnly startIcon={Link2} aria-label="連結" onClick={done('已插入連結')} />
+            <Button variant="text" size="sm" iconOnly startIcon={CheckSquare} aria-label="核取方塊" />
+            <Button variant="text" size="sm" iconOnly startIcon={ImageIcon} aria-label="圖片" />
+            <Button variant="text" size="sm" iconOnly startIcon={AtSign} aria-label="提及" />
+            <Button variant="text" size="sm" iconOnly startIcon={Smile} aria-label="表情" />
+            <Button variant="text" size="sm" iconOnly startIcon={Link2} aria-label="連結" />
             <DemoMenu items={['插入表格', '插入分隔線']}><Button variant="text" size="sm" iconOnly startIcon={Plus} aria-label="更多插入" /></DemoMenu>
             <ButtonDivider />
             {/* 群組 C：歷史操作（無溢出） */}
-            <Button variant="text" size="sm" iconOnly startIcon={Undo2} aria-label="復原" onClick={done('已復原上一步')} />
-            <Button variant="text" size="sm" iconOnly startIcon={Redo2} aria-label="重做" onClick={done('已重做上一步')} />
+            <Button variant="text" size="sm" iconOnly startIcon={Undo2} aria-label="復原" />
+            <Button variant="text" size="sm" iconOnly startIcon={Redo2} aria-label="重做" />
           </ButtonGroup>
         </ToolbarFrame>
         <ExampleCaption>格式群組有溢出；插入群組全部攤開；歷史群組無溢出。各群組依自身低頻操作決定是否需要溢出。</ExampleCaption>
@@ -562,7 +564,7 @@ export const CommonMistakes: Story = {
               <ButtonDivider />
               <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
               <ButtonDivider />
-              <DemoMenu items={['匯出任務', '封存已完成']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
+              <DemoMenu items={[{ label: '匯出任務', done: '已匯出任務' }, { label: '封存已完成', done: '已封存已完成的任務' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ ⚙ 兩側都有分隔線，被孤立</ExampleCaption>
@@ -571,7 +573,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" startIcon={Plus} onClick={done('已新增「未命名任務」')}>新增</Button>
               <ButtonDivider />
               <SettingsMenuTrigger><Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" /></SettingsMenuTrigger>
-              <DemoMenu items={['匯出任務', '封存已完成']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
+              <DemoMenu items={[{ label: '匯出任務', done: '已匯出任務' }, { label: '封存已完成', done: '已封存已完成的任務' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 一條分隔線標記角色邊界，工具層內不再加</ExampleCaption>
@@ -583,18 +585,18 @@ export const CommonMistakes: Story = {
       >
           <ToolbarFrame title="文件">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 份文件')}>上傳</Button>
+              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
               <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
               <ButtonDivider />
-              <DemoMenu items={['移動到資料夾', '複製連結']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
+              <DemoMenu items={['移動到資料夾', { label: '複製連結', done: '已複製連結' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ 無角色邊界，分隔線無意義</ExampleCaption>
           <ToolbarFrame title="文件">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 份文件')}>上傳</Button>
+              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
               <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出 3 份文件')}>匯出</Button>
-              <DemoMenu items={['移動到資料夾', '複製連結']}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
+              <DemoMenu items={['移動到資料夾', { label: '複製連結', done: '已複製連結' }]}><Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" /></DemoMenu>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption>✅ 無工具層，溢出直接接在末端</ExampleCaption>
@@ -606,14 +608,14 @@ export const CommonMistakes: Story = {
       >
           <ToolbarFrame title="檔案">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 個檔案')}>上傳</Button>
+              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
               <Button variant="text" size="sm" onClick={done('已匯出檔案')}>匯出</Button>
             </ButtonGroup>
           </ToolbarFrame>
           <ExampleCaption warn>❌ 同優先等級，一個有 icon 一個沒有</ExampleCaption>
           <ToolbarFrame title="檔案">
             <ButtonGroup>
-              <Button variant="text" size="sm" startIcon={Upload} onClick={done('已上傳 2 個檔案')}>上傳</Button>
+              <Button variant="text" size="sm" startIcon={Upload}>上傳</Button>
               <Button variant="text" size="sm" startIcon={Download} onClick={done('已匯出檔案')}>匯出</Button>
             </ButtonGroup>
           </ToolbarFrame>

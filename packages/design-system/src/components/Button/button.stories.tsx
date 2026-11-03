@@ -81,18 +81,19 @@ type Story = StoryObj<typeof Button>
 // 2026-05-18 加(user 指出頁面開頭就是按下狀態;原話已不可考,此為轉述):Default story 放最頂,
 // 入口顯預設 variant 五連發(primary / secondary / tertiary / text / link),
 // 讓 user 第一眼看到按鈕長什麼樣 — 而非 transient state demo。
-// 2026-10-28 BA-specimen:畫面上的按鈕都要能按(F-S2),各自接上按鈕本來的行為(stories-helpers/examples/demo-actions.tsx):
-// 一次性動作跳 Toast、開關切 pressed、帶下拉的打開選單、後面還有確認的危險動作先開確認框(button.spec.md「danger prop — 語意意圖」表)。
+// 2026-10-28 BA-specimen:按鈕接上按鈕本來的行為(stories-helpers/examples/demo-actions.tsx):結果本來就不在畫面上的一次性動作
+// (送出 / 儲存 / 匯出 / 下載 / 刪除…)跳 Toast、開關切 pressed、帶下拉的打開選單、後面還有確認的危險動作先開確認框
+// (button.spec.md「danger prop — 語意意圖」表)。結果應該出現在畫面上、這裡卻沒有那個畫面的(取消、重設表單、查看、開啟、搜尋…)
+// 不接 —— Toast 說「已…」會宣稱沒發生的事(登記簿 A13);點了要不要有反應併進「純比外觀的按鈕格」那題給 user 決定。
 export const Default: Story = {
   name: '預設',
   render: () => (
     <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
       <Button variant="primary" onClick={done('已送出請假申請')}>送出申請</Button>
       <Button variant="secondary" onClick={done('已儲存草稿')}>儲存草稿</Button>
-      <Button variant="tertiary" onClick={done('已取消,申請內容沒有送出')}>取消</Button>
-      {/* 「重設表單」= 讀者看不懂要做什麼的重設鈕(登記簿 A19),換成表單裡常見的低強調動作 */}
-      <Button variant="text" onClick={done('已儲存進度,稍後可以繼續填寫')}>稍後再填</Button>
-      <Button variant="link" onClick={done('已開啟填寫說明')}>查看填寫說明</Button>
+      <Button variant="tertiary">取消</Button>
+      <Button variant="text">重設表單</Button>
+      <Button variant="link">查看填寫說明</Button>
     </div>
   ),
 }
@@ -185,15 +186,15 @@ export const WithBadge: Story = {
       <ExampleGroup>
         <p className="text-caption text-fg-muted">badge — inline 計數</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <DemoMenu open align="start" title="通知 · 3 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button></DemoMenu>
-          <DemoMenu open align="start" title="訊息 · 12 則未讀" items={MESSAGES}><Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button></DemoMenu>
+          <DemoMenu align="start" title="通知 · 3 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button></DemoMenu>
+          <DemoMenu align="start" title="訊息 · 12 則未讀" items={MESSAGES}><Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button></DemoMenu>
         </div>
       </ExampleGroup>
       <ExampleGroup>
         <p className="text-caption text-fg-muted">badge + endIcon compound</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <DemoMenu open align="start" title="通知 · 5 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button></DemoMenu>
-          <DemoMenu open align="start" title="待辦 · 2 件" items={TODOS}><Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button></DemoMenu>
+          <DemoMenu align="start" title="通知 · 5 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button></DemoMenu>
+          <DemoMenu align="start" title="待辦 · 2 件" items={TODOS}><Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button></DemoMenu>
         </div>
       </ExampleGroup>
     </div>
@@ -211,8 +212,8 @@ export const IconOnly: Story = {
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" onClick={done('已新增「未命名文件」')} />
           <Button size="sm" iconOnly variant="secondary" startIcon={Download}  aria-label="下載" onClick={done('已下載「2026 Q3 營收報告.pdf」')} />
-          <Button size="sm" iconOnly variant="tertiary"  startIcon={Search}    aria-label="搜尋" onClick={done('已開啟搜尋')} />
-          <DemoMenu open items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定" /></DemoMenu>
+          <Button size="sm" iconOnly variant="tertiary"  startIcon={Search}    aria-label="搜尋" />
+          <DemoMenu items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定" /></DemoMenu>
           <DemoToggle defaultOn>{(on, flip) => <Button size="sm" iconOnly variant="text" pressed={on} onClick={flip} startIcon={Maximize2} aria-label={on ? '全螢幕（開啟中）' : '全螢幕'} />}</DemoToggle>
         </div>
       </ExampleGroup>
@@ -227,10 +228,10 @@ export const IconOnly: Story = {
       <ExampleGroup>
         <p className="text-caption text-fg-muted">sizes — variant="text"</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
-          <DemoMenu open items={SETTINGS_MENU}><Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" /></DemoMenu>
-          <DemoMenu open items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" /></DemoMenu>
-          <DemoMenu open items={SETTINGS_MENU}><Button size="md" iconOnly variant="text" startIcon={Settings} aria-label="設定 md" /></DemoMenu>
-          <DemoMenu open items={SETTINGS_MENU}><Button size="lg" iconOnly variant="text" startIcon={Settings} aria-label="設定 lg" /></DemoMenu>
+          <DemoMenu items={SETTINGS_MENU}><Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" /></DemoMenu>
+          <DemoMenu items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" /></DemoMenu>
+          <DemoMenu items={SETTINGS_MENU}><Button size="md" iconOnly variant="text" startIcon={Settings} aria-label="設定 md" /></DemoMenu>
+          <DemoMenu items={SETTINGS_MENU}><Button size="lg" iconOnly variant="text" startIcon={Settings} aria-label="設定 lg" /></DemoMenu>
         </div>
       </ExampleGroup>
     </div>
@@ -343,7 +344,7 @@ export const FullWidth: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <Button variant="primary" fullWidth onClick={done('已送出訂單')}>確認送出</Button>
-      <Button variant="tertiary" fullWidth onClick={done('已取消,訂單沒有送出')}>取消</Button>
+      <Button variant="tertiary" fullWidth>取消</Button>
       <Button variant="primary" danger fullWidth startIcon={Trash2} onClick={done('已永久刪除訂單 #4210')}>永久刪除</Button>
     </div>
   ),

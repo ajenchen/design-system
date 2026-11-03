@@ -22,7 +22,7 @@ type Story = StoryObj
 const TutorialRule = createTutorialRule({ examples: true, naturalWidth: true, examplesClassName: 'max-w-md' })
 
 /* 範例裡帶計數的按鈕都要能按(F-S2:畫面上看得到的按鈕都要能動),接的是按鈕本來的行為、不另造演出:
-   Badge 計的是「有幾則」,按下按鈕 = 打開它計的那一串(最新幾則;選單標題寫「是什麼、共幾則」);點其中一則 = 開啟那一則(Toast 回饋)。
+   Badge 計的是「有幾則」,按下按鈕 = 打開它計的那一串(最新幾則;選單標題寫「是什麼、共幾則」);點其中一則 = 收起選單(開啟那一則是另一個畫面,這裡沒有,不替它編一句「已開啟」—— demo-actions.tsx 檔頭)。
    選單 = stories-helpers/examples/demo-actions.tsx 的 DemoMenu(Action Bar / Button 頁同一份)。 */
 type CountEntry = DemoMenuEntry
 
@@ -52,7 +52,7 @@ const NEW_IN_SETTINGS: CountEntry[] = [
 
 /** 帶計數的入口:按下打開它計的那一串 */
 const CountMenu = ({ title, entries, children }: { title: string; entries: CountEntry[]; children: React.ReactElement }) => (
-  <DemoMenu title={title} items={entries} open align="start">{children}</DemoMenu>
+  <DemoMenu title={title} items={entries} align="start">{children}</DemoMenu>
 )
 
 // ── WhenToUse — 何時使用 Badge ──────────────────────
