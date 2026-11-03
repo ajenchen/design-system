@@ -54,7 +54,7 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
-import { sortingAfterHeaderActivate, sortingFromColumnMenu, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
+import { sortingAfterHeaderActivate, sortingFromColumnMenu, columnMenuShowsCancelSort, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -4007,7 +4007,8 @@ function DataTableInner<TData>(
     const canSort = header.column.getCanSort()
     const sortDir = header.column.getIsSorted() // false | 'asc' | 'desc'
     // 多重排序(≥2 欄)時每個被排序的欄顯示「箭頭 + 順位數字」(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
-    // 2026-05-04 的 K7 在多重排序時把箭頭與「取消排序」藏起來,理由是「沒有順位編號的箭頭是片段資訊」—— 有了順位數字,那個理由不成立,兩者都恢復。
+    // 2026-05-04 的 K7 在多重排序時把箭頭與「取消排序」藏起來,理由是「沒有順位編號的箭頭是片段資訊」—— 有了順位數字,箭頭恢復;
+    // ⌄ 選單的「取消排序」在多重排序時仍不顯示:按了要拿掉這一欄還是清掉全部,要 user 決定(lib/sort-cycle.ts `columnMenuShowsCancelSort`)。
     // 只有一欄排序時不顯示數字(`sortPriorityLabel` 回 null);0 欄自然不顯示(canSort && sortDir 短路)。
     const sortingState = table.getState().sorting ?? []
     const priorityLabel = canSort && sortDir ? sortPriorityLabel(sortingState, header.column.id) : null
@@ -4090,8 +4091,9 @@ function DataTableInner<TData>(
           {canSort && sortDir && (
             // 排序指示 = 箭頭 + (多重排序時)順位數字,一個單位、同進同出,佔原本單一箭頭的位置(label 之後、gap-1);
             // 寬高由「箭頭 + 數字」決定(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
-            // 箭頭 ↔ 數字 2px(`gap-0.5`;user 2026-10-30「我認為視覺上2px比較好看」)—— 比 label ↔ 指示的 4px(gap-1)近一級,
-            // 數字跟著箭頭成組、不跟 label 成組(親疏看間距,ds-canonical/rules/ui-development.md「gap 只看親疏」)。
+            // 箭頭 ↔ 數字 2px(`gap-0.5`)= user 2026-10-30 視覺偏好(「不用給我看2px和4px的差異,我自己早就看過了,我認為視覺上2px比較好看,主要是不確定合理性」)
+            // + AI 合理性查證(data-table.spec.md 同一列):元件內間距由該列自管;2px 比 label ↔ 指示的 4px(gap-1)近一級,數字跟著箭頭成組、不跟 label 成組 ——
+            // 依 tokens/layoutSpace/layoutSpace.spec.md 規則 3「gap 只看親疏不看 role」的親疏原理(Gestalt proximity)類推(同範疇的間距該規則交給元件 spec 自管)。
             <span data-sort-indicator="" className="inline-flex items-center gap-0.5 shrink-0">
               {/* 2026-05-18 改 per user 拍板:DataTable sort 跟 row size 變(轉述)+「做完」approval:
                   原固定 14 違反 uiSize.spec.md Icon Tier(sm/md→16, lg→20)。改 ICON_SIZE[size] 隨 DataTable size prop 變。
@@ -4144,10 +4146,10 @@ function DataTableInner<TData>(
               {canSort && (
                 <>
                   {/* 三項的結果住 lib/sort-cycle.ts `sortingFromColumnMenu`:升冪 / 降冪 = 一般點擊同一種(清掉其他欄、只用這一欄);
-                      取消排序 = 只拿掉這一欄、後面順位往前補。多重排序時「取消排序」恢復顯示(K7 理由消失,見上方 priorityLabel 註解)。 */}
+                      取消排序只在只有這一欄排序時出現(`columnMenuShowsCancelSort`;多重排序時按了的結果要 user 決定,見上方 priorityLabel 註解)。 */}
                   <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'asc'))}>升冪排序</DropdownMenuItem>
                   <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'desc'))}>降冪排序</DropdownMenuItem>
-                  {sortDir && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, null))}>取消排序</DropdownMenuItem>}
+                  {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, null))}>取消排序</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                 </>
               )}

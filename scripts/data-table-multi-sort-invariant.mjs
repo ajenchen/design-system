@@ -5,22 +5,28 @@
  *        P 狀態轉移:真點擊 / Shift+點擊 / Enter / Shift+Enter / Space / Shift+Space 的每一步,表頭讀出來的排序(aria-sort + 畫出來的順位數字)
  *          = 判定表寫的那個(一般點擊清掉其他欄、Shift 只動這一欄、清除後往前補、數字欄第一下升冪);
  *        N 數字:只有一欄排序不顯示數字、≥2 欄每個被排序的欄都有、第 10 個以後「9+」、箭頭與數字同進同出;
- *        G 長相:數字在箭頭右側、間距 2px、字級 / 行高 / 字重 = 表頭字、顏色 = 箭頭(靜止與滑過都相等)、垂直置中、
- *          指示佔原本單一箭頭的位置(label 之後 4px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
- *        M ⌄ 選單:多重排序時有「取消排序」、按了只拿掉這一欄;「降冪排序」只用這一欄;
+ *        G 長相(md 專案排程 + 設計規格「元件檢閱器」sm / lg 兩種尺寸):數字在箭頭右側、間距 2px、字級 / 行高 / 字重 = 表頭字、顏色 = 箭頭
+ *          (靜止與滑過都相等)、垂直置中、指示佔原本單一箭頭的位置(label 之後 4px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
+ *        M ⌄ 選單:多重排序時**沒有**「取消排序」(按了拿掉這一欄還是清掉全部待 user 決定,決定前同修前)、只有一欄排序時有且按了 = 沒有排序;
+ *          「降冪排序」只用這一欄;
  *        A 讀屏:順位走 aria-describedby(「排序順位 N」,9+ 時照實說)、數字 aria-hidden、播報區在表格根節點外、播報句子;
+ *          多重排序狀態(3 欄、11 欄 9+、lg 尺寸)跑 axe(wcag2a / wcag2aa,同 a11y 閘 `scripts/audit-a11y.mjs`),違規不比同一則 story 沒排序時多
+ *          —— 全 DS 像素 / a11y 閘只拍 story 初始狀態,而沒有任何 story 一開始就多重排序,這個狀態只有本閘看得到;
  *        S 與排序面板雙向同步:表頭改 → 面板列序與方向相同;面板改方向 / 刪除 → 表頭跟著變;只從面板加排序時列把手不可拖;
  *        U 不受控的表格(內部 state)同一套行為。
  *   紅: --selftest 在頁面注入各組破法(丟掉 Shift 的點擊與按鍵 / 數字藏起來 / 間距改 4px / 數字換字級與顏色 / 數字搬到箭頭左邊 /
- *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 藏起「取消排序」/ 「9+」改寫成數字),各組必紅,對照列必綠;
- *        108a736f 的建置跑(`--build=<那份建置>`,2026-11-03 實測):P / N / M / A / S / U 紅 40 項(另 G 1 項;多重排序藏箭頭、一般點擊最後一欄不清掉其他欄、
- *        數字 / 人員欄第一下降冪、沒有播報區、只從面板加排序時列把手可拖),G 量不到箭頭 → INSTRUMENT-FAIL(exit 2)。
- *        本機(負載 25–30):判定 40 秒、--selftest 71 秒(13 種破法 49 列應紅全紅、148 列對照列全綠)。
+ *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 只有一欄時藏起「取消排序」/ 多重排序時塞進「取消排序」/
+ *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法),各組必紅,對照列必綠;
+ *        108a736f 的建置跑(`--build=<那份建置>`,2026-11-04 實測):紅 43 項(P 13 / N 10 / A 9 / G 3 / M 2 / S 3 / U 3;多重排序藏箭頭、一般點擊最後一欄
+ *        不清掉其他欄、數字 / 人員欄第一下降冪、沒有播報區、只從面板加排序時列把手可拖),G 與 11 欄 axe 量不到箭頭 / 9+ → INSTRUMENT-FAIL(exit 2);
+ *        「多重排序時 ⌄ 沒有取消排序」在 108a736f 也綠 —— 這條本來就是「同修前」。
+ *        其餘本機實測數字(判定列數、--selftest 應紅 / 對照列數、秒數)寫在交付時的 log,不抄進這裡(抄了就會過期 —— 11-03 這裡曾寫 148,實為 147)。
  *   綠: 修好的建置全綠;找不到表頭 / 排序區 / 面板 / 選單項等量不到的情況以 INSTRUMENT-FAIL 紅,不當成通過。
  * ─────
- * 規格(user 2026-10-30 第十五〜十七輪,逐字在工作資料夾 ssot-consolidated/user-answers-2026-10-27.md;規範住 data-table.spec.md「Multi-sort header」列):
+ * 規格(user 2026-10-30 15:26 / 17:08 / 17:09(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列):
  *   「有被排序的 column 才會秀出‘箭頭+數字’,數字最多 9+,」「數字字體與column標頭字體一樣但顏色與箭頭一樣,」
- *   「數字在箭頭右邊且距離箭頭 2px?」(10-30 第十七輪定 2px:「我認為視覺上2px比較好看」)「然後箭頭與數字同進同出,」
+ *   「數字在箭頭右邊且距離箭頭 2px?我不確定距離2px好還是距離4px,目前比較偏向2px,」
+ *   (17:09:「不用給我看2px和4px的差異,我自己早就看過了,我認為視覺上2px比較好看,主要是不確定合理性」—— 2px = user 視覺偏好 + AI 合理性查證,查證在該列)「然後箭頭與數字同進同出,」
  *   「佔位和排版的方式與以前只有一個箭頭時類似,」「若只有單一 sort沒有多重sort則不顯示數字,」;4 點追問「1. 就用ds的字眼就好」「2. a」「3. 對」「4. 不要限制欄數,超過一律9+」。
  * 判定的純函式另有判定表 `scripts/test-data-table-sort-cycle.mjs`(本閘驗的是「頁面真的照它排」,M37:呼叫端與判定兩邊都要測)。
  * 開 story 一律經 lib/launch-browser.mjs 的 openStory(開不起來 = 儀器失效,exit 2);每一步之後 settleAfterInteraction(不用固定睡眠)。
@@ -30,6 +36,7 @@ import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction, waitForFocusStable, parkPointer, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { AxeBuilder } from '@axe-core/playwright'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
@@ -40,6 +47,8 @@ if (!buildArg) requireFreshStorybookBuild(STATIC, ['packages/design-system/src/c
 
 const ROADMAP = `iframe.html?id=${encodeURIComponent('design-system-components-datatable-展示--roadmap-all-in-one')}&viewMode=story`
 const FEATURES = `iframe.html?id=${encodeURIComponent('design-system-components-datatable-設計規格--features')}&viewMode=story`
+// 設計規格「元件檢閱器」:size 是 story 的 args(sm / md / lg),用網址的 args 切 —— 全 DS 只有這則可排序的表能切尺寸
+const INSPECTOR = (size) => `iframe.html?id=${encodeURIComponent('design-system-components-datatable-設計規格--inspector')}&viewMode=story&args=size:${size}`
 const HEADERS_READY = () => document.querySelectorAll('[role="columnheader"][data-column-id] [role="button"]').length >= 3
 
 let failCount = 0
@@ -90,6 +99,7 @@ async function injectBreak(kind) {
     'height-grow': '[data-sort-priority]{line-height:44px!important}',
     'number-offset': '[data-sort-priority]{position:relative!important;top:3px!important}',
     'menu-cancel-hidden': '[role="menuitem"]:has(svg.lucide-x){display:none!important}',
+    'num-role-img': '',
   }[kind]
   if (css) { await page.addStyleTag({ content: css }); return }
   await page.evaluate(([kind, sel]) => {
@@ -120,6 +130,22 @@ async function injectBreak(kind) {
         if (host && !host.querySelector('[data-sort-priority]')) { const n = document.createElement('span'); n.setAttribute('data-sort-priority', ''); n.textContent = '1'; host.appendChild(n) }
       }
       new MutationObserver(add).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-sort'] })
+    }
+    if (kind === 'menu-cancel-shown') {
+      // 多重排序時 ⌄ 選單打開就塞一個「取消排序」(= 沒照「多重排序時不出,待 user 決定」)
+      const add = () => {
+        const sortedCount = document.querySelectorAll('[role="columnheader"][aria-sort="ascending"], [role="columnheader"][aria-sort="descending"]').length
+        for (const menu of document.querySelectorAll('[role="menu"]')) {
+          if (sortedCount < 2 || [...menu.querySelectorAll('[role="menuitem"]')].some((m) => (m.textContent || '').trim() === '取消排序')) continue
+          const item = document.createElement('div'); item.setAttribute('role', 'menuitem'); item.textContent = '取消排序'; menu.appendChild(item)
+        }
+      }
+      new MutationObserver(add).observe(document.body, { subtree: true, childList: true })
+    }
+    if (kind === 'num-role-img') {
+      // 數字從讀屏裡露出來、而且變成沒有名字的圖(axe role-img-alt;只有多重排序時有數字,沒排序的基準不受影響)
+      const mark = () => { for (const n of document.querySelectorAll('[data-sort-priority]')) if (n.getAttribute('role') !== 'img') { n.removeAttribute('aria-hidden'); n.setAttribute('role', 'img') } }
+      new MutationObserver(mark).observe(document.body, { subtree: true, childList: true, characterData: true })
     }
     if (kind === 'nine-plus-numeric') {
       // 「9+」改寫成實際順位(= 沒有上限)
@@ -272,22 +298,40 @@ const near = (a, b, tol) => a != null && b != null && Math.abs(a - b) <= tol
 
 /** 每一列 `hitBy` = 會讓它紅的破法;--selftest 下不在 hitBy 的破法 → 對照列(必須綠) */
 const gcheck = (breaks, hitBy, name, pass, detail) => check('G', name, pass, detail, { control: !hitBy.some((b) => breaks.includes(b)) })
-async function geometryChecks(tag, breaks) {
-  if (!(await open(ROADMAP, breaks))) return
-  const headerH0 = (await geo('title'))?.header?.h
+/**
+ * 量哪一張表:`single` 先一般點擊(只有一欄排序)、再 Shift+點擊 `second`(多重排序);`other` 量表頭高度。
+ * `expect` = 這個尺寸應有的箭頭寬與表頭字級(uiSize Icon Tier:sm / md 16、lg 20;fieldDisplayTextClass:sm / md text-body、lg text-body-lg)——
+ * 量到的不符 = 網址的 args 沒生效、量的不是要量的尺寸 → INSTRUMENT-FAIL,不讀成通過。
+ */
+const G_ROADMAP = { url: ROADMAP, single: 'status', second: 'priority', other: 'title', names: ['狀態(1)', '優先級(2)'] }
+const G_INSPECTOR = (size) => ({ url: INSPECTOR(size), single: 'category', second: 'stock', other: 'name', names: [`${size} Category(1)`, `${size} Stock(2)`], expect: { arrowW: size === 'lg' ? 20 : 16, fontPx: size === 'lg' ? null : '14px', notFontPx: size === 'lg' ? '14px' : null, headerBelow: size === 'sm' ? 38 : null } })
+async function geometryChecks(tag, breaks, target = G_ROADMAP) {
+  if (!(await open(target.url, breaks))) return
+  const { single: c1, second: c2, other } = target
+  const headerH0 = (await geo(other))?.header?.h
   // 只有一欄排序
-  await act('click', 'status')
-  const single = await geo('status')
+  await act('click', c1)
+  const single = await geo(c1)
   if (!single?.arrow || !single?.indicator) { instrument(`G ${tag}`, `只有一欄排序時量不到箭頭 ${JSON.stringify(single)}`); return }
+  if (target.expect) {
+    const e = target.expect
+    const off = [
+      !near(single.arrow.w, e.arrowW, 0.5) && `箭頭寬 ${single.arrow.w}(應 ${e.arrowW})`,
+      e.fontPx && single.labelFont?.size !== e.fontPx && `表頭字 ${single.labelFont?.size}(應 ${e.fontPx})`,
+      e.notFontPx && single.labelFont?.size === e.notFontPx && `表頭字 ${single.labelFont?.size}(lg 不應是 ${e.notFontPx})`,
+      e.headerBelow && !(headerH0 < e.headerBelow) && `表頭高 ${headerH0}(sm 應低於 md 的 ${e.headerBelow})`,
+    ].filter(Boolean)
+    if (off.length) { instrument(`G ${tag} 尺寸`, `量到的不是要量的尺寸:${off.join(';')}`); return }
+  }
   gcheck(breaks, ['number-in-single'], `${tag} 只有一欄排序:指示 = 一個箭頭(寬 ${single.arrow.w}px),沒有數字`, near(single.indicator.w, single.arrow.w, 0.5) && single.num === null, `指示寬 ${single.indicator.w} 數字 ${JSON.stringify(single.num)}`)
   gcheck(breaks, ['slot-shift'], `${tag} 只有一欄排序:箭頭在 label 盒之後 4px(同修前)`, near(single.indicator.l - (single.label?.r ?? NaN), 4, 0.5), `${(single.indicator.l - (single.label?.r ?? NaN)).toFixed(2)}px`)
   const rs = await readHeaders()
   gcheck(breaks, ['number-in-single'], `${tag} 只有一欄排序:同進同出(沒有數字)`, rs.outOfSync.length === 0, rs.outOfSync.join(';'))
   if (breaks.includes('number-in-single')) return
   // 多重排序
-  await act('shift', 'priority')
-  const a = await geo('status'); const b = await geo('priority')
-  for (const [name, g] of [['狀態(1)', a], ['優先級(2)', b]]) {
+  await act('shift', c2)
+  const a = await geo(c1); const b = await geo(c2)
+  for (const [name, g] of [[target.names[0], a], [target.names[1], b]]) {
     if (!g?.num || !g?.arrow) { instrument(`G ${tag} ${name}`, `多重排序時量不到箭頭與數字 ${JSON.stringify(g)}`); continue }
     const gap = g.num.l - g.arrow.r
     gcheck(breaks, ['number-left'], `${tag} ${name} 數字在箭頭右側`, g.num.l >= g.arrow.r - 0.01, `箭頭右緣 ${g.arrow.r.toFixed(2)} 數字左緣 ${g.num.l.toFixed(2)}`)
@@ -300,21 +344,26 @@ async function geometryChecks(tag, breaks) {
     gcheck(breaks, ['gap-4'], `${tag} ${name} 指示寬 = 箭頭 + 2 + 數字`, near(g.indicator.w, g.arrow.w + 2 + g.num.w, 0.6), `指示 ${g.indicator.w.toFixed(2)} 箭頭 ${g.arrow.w} 數字 ${g.num.w.toFixed(2)}`)
     gcheck(breaks, ['height-grow', 'number-style'], `${tag} ${name} 指示高 = 表頭字的行高(數字沒有把指示撐得比 label 高)`, near(g.indicator.h, g.label?.h, 0.5), `指示 ${g.indicator.h.toFixed(2)} label ${g.label?.h}`)
   }
-  const headerH2 = (await geo('title'))?.header?.h
+  const headerH2 = (await geo(other))?.header?.h
   // 表頭列高由列高 token 定死,數字撐高也不會讓它變(破法「數字撐高」實測仍 38)—— 這列只當對照列,撐高由上面「指示高」那列抓
   gcheck(breaks, [], `${tag} 表頭高度不因數字改變(無排序 ${headerH0} / 多重排序 ${headerH2})`, near(headerH0, headerH2, 0.5), '')
   // 滑過:數字與箭頭一起變色(都繼承排序區的 hover 字色)
-  const box = await sortButton('priority').boundingBox()
+  const box = await sortButton(c2).boundingBox()
   await page.mouse.move(box.x + 4, box.y + box.height / 2); await settle()
-  const hv = await geo('priority')
+  const hv = await geo(c2)
   gcheck(breaks, ['number-style'], `${tag} 滑過排序區:數字顏色 = 箭頭顏色,且與靜止時不同(真的跟著變)`, !!hv?.numFont && hv.numFont.color === hv.arrowColor && hv.arrowColor !== b?.arrowColor, `滑過 數字 ${hv?.numFont?.color} 箭頭 ${hv?.arrowColor};靜止箭頭 ${b?.arrowColor}`)
   await parkPointer(page); await settle()
 }
 if (SELFTEST) {
   for (const [tag, br] of [['[破法:間距 4px]', 'gap-4'], ['[破法:數字字級與顏色]', 'number-style'], ['[破法:數字在左]', 'number-left'], ['[破法:指示右移]', 'slot-shift'],
     ['[破法:數字撐高]', 'height-grow'], ['[破法:數字偏下]', 'number-offset'], ['[破法:只有一欄也出數字]', 'number-in-single']]) await geometryChecks(tag, [br])
+  // sm / lg 也要會紅(不只 md):各跑一種長相破法
+  await geometryChecks('[lg 破法:間距 4px]', ['gap-4'], G_INSPECTOR('lg'))
+  await geometryChecks('[sm 破法:數字字級與顏色]', ['number-style'], G_INSPECTOR('sm'))
 } else {
   await geometryChecks('', [])
+  await geometryChecks('[sm]', [], G_INSPECTOR('sm'))
+  await geometryChecks('[lg]', [], G_INSPECTOR('lg'))
 }
 
 // ═══ M ⌄ 欄位選單 + A 讀屏 ═══════════════════════════════════════════════════════════════
@@ -326,9 +375,9 @@ async function openColumnMenu(col, name) {
   await trigger.first().click(); await settle()
   return true
 }
-for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['aria-stripped', 'live-silent']] : [[]]) {
+for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-shown'], ['aria-stripped', 'live-silent']] : [[]]) {
   if (!(await open(ROADMAP, breaks))) continue
-  const menuBreak = breaks.includes('menu-cancel-hidden'); const ariaBreak = breaks.includes('aria-stripped')
+  const hideBreak = breaks.includes('menu-cancel-hidden'); const showBreak = breaks.includes('menu-cancel-shown'); const ariaBreak = breaks.includes('aria-stripped')
   await act('click', 'title'); await act('shift', 'status'); await act('shift', 'priority')
   // A:順位描述、數字 aria-hidden、名字不含數字、播報區在根節點外
   const a11y = await page.evaluate(() => {
@@ -348,26 +397,74 @@ for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['aria-stripped', 'live
   check('A', '排序區的名字仍是欄標題「狀態」(數字與描述不進名字)', nameOk, '', { control: !ariaBreak })
   check('A', '播報區在表格根節點外、role=status、polite', !!a11y.live && !a11y.live.inTable && a11y.live.role === 'status' && a11y.live.politeness === 'polite', JSON.stringify(a11y.live), { control: true })
   check('A', '播報區唸出整串排序', a11y.live?.text === '排序:1 標題 升冪,2 狀態 升冪,3 優先級 升冪', `實得「${a11y.live?.text}」`, { control: !breaks.includes('live-silent') })
-  // M:多重排序時 ⌄ 有「取消排序」,按了只拿掉這一欄
+  // M:多重排序時 ⌄ 沒有「取消排序」—— 按了要拿掉這一欄還是清掉全部,規格沒寫、DS 前例與世界級相反,待 user 決定;決定前同修前(spec「Multi-sort header」列)
   if (await openColumnMenu('status', '狀態')) {
     const cancel = page.getByRole('menuitem', { name: '取消排序' })
     const asc = page.getByRole('menuitem', { name: '升冪排序' })
     check('M', '多重排序時 ⌄ 選單有「升冪排序」', (await asc.count()) === 1, '', { control: true })
+    const has = (await cancel.count()) >= 1 && (await cancel.first().isVisible())
+    check('M', '多重排序時 ⌄ 選單沒有「取消排序」(按了的結果待 user 決定,決定前同修前)', !has, '', { control: !showBreak })
+    await page.keyboard.press('Escape'); await parkPointer(page); await settle()
+  }
+  if (!hideBreak && !showBreak) {
+    if (await openColumnMenu('priority', '優先級')) {
+      await page.getByRole('menuitem', { name: '降冪排序' }).click(); await parkPointer(page); await settle()
+      const r = await readHeaders()
+      check('M', '多重排序的最後一欄按「降冪排序」→ 只用這一欄(修前其他欄留著)', r.state === 'priority↓', `實得「${r.state}」`, { control: true })
+      const d = await page.evaluate(() => document.querySelector('[role="columnheader"][data-column-id="priority"] [role="button"]')?.hasAttribute('aria-describedby'))
+      check('A', '回到只有一欄排序 → 沒有順位描述', d === false, `aria-describedby 存在=${d}`, { control: true })
+    }
+  } else {
+    await act('click', 'priority') // 一般點擊多重排序裡升冪的優先級 → 只剩「priority↓」,跟上面選單那條同一個起點
+  }
+  // M:只有一欄排序時 ⌄ 有「取消排序」,按了 = 沒有排序(同修前)
+  if (await openColumnMenu('priority', '優先級')) {
+    const cancel = page.getByRole('menuitem', { name: '取消排序' })
     const has = (await cancel.count()) === 1 && (await cancel.isVisible())
-    check('M', '多重排序時 ⌄ 選單有「取消排序」(K7 修前藏起來)', has, '', { control: !menuBreak })
+    check('M', '只有一欄排序時 ⌄ 選單有「取消排序」', has, '', { control: !hideBreak })
     if (has) {
       await cancel.click(); await parkPointer(page); await settle()
       const r = await readHeaders()
-      check('M', '「取消排序」只拿掉這一欄、後面往前補 → 「title↑1 priority↑2」', r.state === 'title↑1 priority↑2', `實得「${r.state}」`, { control: true })
-    } else await page.keyboard.press('Escape')
-    await settle()
+      check('M', '只有一欄排序時按「取消排序」→ 沒有排序', r.state === '', `實得「${r.state || '(無)'}」`, { control: true })
+    } else { await page.keyboard.press('Escape'); await settle() }
   }
-  if (!menuBreak && await openColumnMenu('priority', '優先級')) {
-    await page.getByRole('menuitem', { name: '降冪排序' }).click(); await parkPointer(page); await settle()
-    const r = await readHeaders()
-    check('M', '多重排序的最後一欄按「降冪排序」→ 只用這一欄(修前其他欄留著)', r.state === 'priority↓', `實得「${r.state}」`, { control: true })
-    const d = await page.evaluate(() => document.querySelector('[role="columnheader"][data-column-id="priority"] [role="button"]')?.hasAttribute('aria-describedby'))
-    check('A', '回到只有一欄排序 → 沒有順位描述', d === false, `aria-describedby 存在=${d}`, { control: true })
+}
+
+// ═══ A axe:多重排序狀態(3 欄、11 欄 9+、lg 尺寸)═══════════════════════════════════════════
+// 全 DS a11y 閘只掃 story 的初始狀態,沒有 story 一開始就多重排序 → 這個狀態只在這裡掃。規則同 a11y 閘(scripts/audit-a11y.mjs:wcag2a + wcag2aa);
+// 比的是「同一則 story、沒排序時」的違規數,任何規則的節點數變多 = 多重排序帶進來的新違規。
+const axeCounts = async () => {
+  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+  return Object.fromEntries(r.violations.map((v) => [v.id, v.nodes.length]))
+}
+const moreThan = (now, base) => Object.entries(now).filter(([id, n]) => n > (base[id] ?? 0)).map(([id, n]) => `${id} ${base[id] ?? 0} → ${n}`)
+const ELEVEN_FROM_THREE = ELEVEN.filter((c) => !['title', 'status', 'priority'].includes(c))
+for (const breaks of SELFTEST ? [['num-role-img']] : [[]]) {
+  const imgBreak = breaks.includes('num-role-img')
+  if (await open(ROADMAP, breaks)) {
+    const base = await axeCounts()
+    console.log(`  axe 基準(專案排程、沒排序):${JSON.stringify(base)}`)
+    await act('click', 'title'); await act('shift', 'status'); await act('shift', 'priority')
+    const three = await axeCounts(); const d3 = moreThan(three, base)
+    check('A', 'axe 多重排序 3 欄:違規不比沒排序時多', d3.length === 0, d3.join(';') || JSON.stringify(three), { control: !imgBreak })
+    for (const col of ELEVEN_FROM_THREE) await act('shift', col)
+    const r11 = await readHeaders()
+    if (r11.rows.length !== 11 || !r11.rows.some((r) => r.num === '9+')) instrument('A axe 11 欄', `沒有排到 11 欄 / 沒有 9+:「${r11.state}」`)
+    else {
+      const eleven = await axeCounts(); const d11 = moreThan(eleven, base)
+      check('A', 'axe 多重排序 11 欄(含 9+):違規不比沒排序時多', d11.length === 0, d11.join(';') || JSON.stringify(eleven), { control: !imgBreak })
+    }
+  }
+  if (await open(INSPECTOR('lg'), breaks)) {
+    const base = await axeCounts()
+    console.log(`  axe 基準(元件檢閱器 lg、沒排序):${JSON.stringify(base)}`)
+    await act('click', 'category'); await act('shift', 'stock'); await act('shift', 'price')
+    const lg = await readHeaders()
+    if (lg.rows.length !== 3) instrument('A axe lg', `沒有排到 3 欄:「${lg.state}」`)
+    else {
+      const now = await axeCounts(); const d = moreThan(now, base)
+      check('A', 'axe lg 多重排序 3 欄:違規不比沒排序時多', d.length === 0, d.join(';') || JSON.stringify(now), { control: !imgBreak })
+    }
   }
 }
 

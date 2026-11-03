@@ -4,16 +4,17 @@
  *   保證: DataTable 表頭排序的判定(components/DataTable/lib/sort-cycle.ts)對每一種狀態轉移都回
  *        data-table.spec.md「Multi-sort header」列寫的那個結果:循環 = 升冪 → 降冪 → 清除;一般點擊清掉其他欄、這一欄從目前方向切下一個;
  *        Shift+點擊只動這一欄(不在排序裡 → 加到最後、升冪;在排序裡 → 循環下一步、順位不動;清除 → 後面順位往前補);
- *        ⌄ 選單升冪 / 降冪 = 只用這一欄、取消排序 = 只拿掉這一欄;順位數字只在 ≥2 欄排序時出現、1–9 照寫、第 10 個以後「9+」;
+ *        ⌄ 選單升冪 / 降冪 = 只用這一欄;「取消排序」只在只有這一欄排序時出現(多重排序時按了的結果待 user 決定,決定前同修前);
+ *        順位數字只在 ≥2 欄排序時出現、1–9 照寫、第 10 個以後「9+」;
  *        讀屏描述照實說第幾;播報句型。另驗呼叫端(data-table.tsx)真的消費這支判定,而不是 TanStack 內建的切換。
  *   紅: 判定表任一格與純函式輸出不符即 exit 1(判定表列的是**期望值**,不是抄輸出);
  *        `--selftest` 以修前的行為(TanStack v8.21.3 `toggleSorting` 的 add / toggle / replace / remove 分支,原樣搬進來)當對照組,
  *        判定表必須抓到 ≥ 4 格不符,抓不到 = 判定表沒在驗這條規則 → exit 1。
  *   綠: 全部相符時綠;純函式無時鐘、無隨機、無 DOM,重複跑結果恆等。
  *
- * 規格來源:user 2026-10-30 第十五〜十七輪(逐字在工作資料夾 ssot-consolidated/user-answers-2026-10-27.md):
+ * 規格來源:user 2026-10-30 15:26 / 17:08(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列。本表直接驗的幾句原話:
  *   「依序為'把此column加入sort並 first->last', 'last->first', '清除排序'」「1. 就用ds的字眼就好」「2. a」「3. 對」「4. 不要限制欄數,超過一律9+」
- * Shift+點擊排序中的欄「順位不動」是 AI 推導(與排序面板改方向同一個結果),寫在 sort-cycle.ts 檔頭。
+ * Shift+點擊排序中的欄「順位不動」與「第一下一律升冪、不分欄型」是 AI 推導(前者依排序面板,後者依 DS 文件一直寫的 asc → desc → none),推導寫在 sort-cycle.ts 檔頭。
  *
  * Run: `node scripts/test-data-table-sort-cycle.mjs`(`--selftest` 跑對照組)
  */
@@ -63,6 +64,8 @@ const legacy = (() => {
       if (existing) return old.map((d) => (d.id === id ? { ...d, desc: dir === 'desc' } : d))
       return [{ id, desc: dir === 'desc' }]
     },
+    // 修前 ⌄ 選單:`sortDir && !isMultiSort` 才出「取消排序」—— 與修後(待 user 決定前)相同,判定表 3b 在對照組也綠
+    columnMenuShowsCancelSort: (old, id) => old.length === 1 && old[0].id === id,
     // 修前:多重排序時表頭不顯示任何東西(K7)
     sortPriorityLabel: () => null,
     sortPriorityDescription: () => null,
@@ -127,11 +130,21 @@ const MENU = [
   ['降冪排序 / 多重排序裡的最後一欄 → 只用這一欄', 'title↑ status↑', 'status', 'desc', 'status↓'],
   ['升冪排序 / 多重排序裡的第一欄 → 只用這一欄', 'title↓ status↑', 'title', 'asc', 'title↑'],
   ['升冪排序 / 沒排序的欄 → 只用這一欄', 'title↑', 'status', 'asc', 'status↑'],
-  ['取消排序 / 多重排序的中間欄 → 只拿掉它、後面往前補', 'title↑ status↓ priority↑', 'status', null, 'title↑ priority↑'],
   ['取消排序 / 唯一一欄 → 沒有排序', 'title↑', 'title', null, '(無)'],
 ]
 for (const [name, from, col, dir, want] of MENU) {
   row(`選單 ${name}`, show(impl.sortingFromColumnMenu(S(from), col, dir)), want)
+}
+// ── 判定表 3b:⌄ 選單要不要出「取消排序」(多重排序時不出:按了拿掉這一欄還是清掉全部,待 user 決定;決定前同修前)──
+const MENU_CANCEL = [
+  ['唯一一欄排序、就是這欄 → 出', 'title↑', 'title', 'true'],
+  ['唯一一欄排序、不是這欄 → 不出', 'title↑', 'status', 'false'],
+  ['沒有排序 → 不出', '', 'title', 'false'],
+  ['多重排序、這欄在裡面 → 不出(待 user 決定)', 'title↑ status↓', 'status', 'false'],
+  ['多重排序、這欄是第一欄 → 不出(待 user 決定)', 'title↑ status↓', 'title', 'false'],
+]
+for (const [name, from, col, want] of MENU_CANCEL) {
+  row(`選單「取消排序」${name}`, String(impl.columnMenuShowsCancelSort(S(from), col)), want)
 }
 
 // ── 判定表 4:順位數字 / 讀屏描述 ──
@@ -164,6 +177,7 @@ if (!SELFTEST) {
     ['點擊帶 Shift', /onClick=\{canSort \? \(e\) => activateSort\(e\.shiftKey\)/],
     ['Enter / Space 帶 Shift', /if \(e\.key === 'Enter' \|\| e\.key === ' '\) \{ e\.preventDefault\(\); activateSort\(e\.shiftKey\) \}/],
     ['⌄ 選單三項經 sortingFromColumnMenu', /sortingFromColumnMenu\(current, header\.column\.id, 'asc'\)[\s\S]*sortingFromColumnMenu\(current, header\.column\.id, 'desc'\)[\s\S]*sortingFromColumnMenu\(current, header\.column\.id, null\)/],
+    ['⌄ 選單「取消排序」出不出經 columnMenuShowsCancelSort', /\{columnMenuShowsCancelSort\(sortingState, header\.column\.id\) && <DropdownMenuItem startIcon=\{XIcon\}/],
     ['數字經 sortPriorityLabel', /sortPriorityLabel\(sortingState, header\.column\.id\)/],
     ['播報經 sortChangeAnnouncement', /setSortAnnouncement\(sortChangeAnnouncement\(next,/],
   ]

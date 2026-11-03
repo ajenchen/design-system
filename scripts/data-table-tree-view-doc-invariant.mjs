@@ -9,7 +9,8 @@
  *         P6 DataTable 設計規格「無障礙與鍵盤」沒寫格內鍵盤(F2)與編輯器名稱;它指回的 data-table.spec.md「Keyboard 行為」沒有
  *            一般模式 Enter / F2 那一條(頁面寫了、規格段落沒有),或那一條指的 `cellIsTabStop` 已不在 data-table.tsx;
  *         P7 兩個元件的 story 名稱有中文字之間的機翻空格;
- *         P8 進版控的檔案指向不進版控的東西(「交付報告」、`tmp/wip-…`、invention-audit 的 decisions.json、只存在那裡的「待決題 D12」編號)。
+ *         P8 進版控的檔案指向不進版控的東西(「交付報告」、`tmp/wip-…`、invention-audit 的 decisions.json、只存在那裡的「待決題 D12」編號、
+ *            工作資料夾的 `ssot-consolidated/` 與 `user-answers-*.md` 原話檔 —— 不寫 tmp/ 前綴也是同一個死指標,2026-11-03 n4 兩支閘漏網)。
  *   紅: 任一條命中 → 指名 file:line 與修法,exit 1;`--selftest` 用修前逐字原文做成的合成檔證明七條(P2–P8)各在指定行紅,
  *       同時證明修後的寫法 0 筆(兩面對照,M32)。
  *   綠: 現況 0 筆時綠。純靜態(讀檔 + 正規表示式)、不讀時間、不開瀏覽器,同一份工作樹重複跑結果相同;
@@ -159,7 +160,7 @@ export function storyNameHits(path, text) {
 }
 
 // ── P8:指向不進版控的東西 ─────────────────────────────────────────────────────────────────────
-const UNVERSIONED_POINTER = /交付報告|tmp\/wip-|invention-audit\/|decisions\.json|待決題 D\d+/g
+const UNVERSIONED_POINTER = /交付報告|tmp\/wip-|invention-audit\/|decisions\.json|待決題 D\d+|ssot-consolidated\/|user-answers-/g
 export function unversionedPointerHits(path, text) {
   const hits = []
   text.split('\n').forEach((line, i) => {
@@ -295,13 +296,18 @@ function selftest() {
     ' *      清單在 r1b datatable 交付報告;本閘只守這兩個元件(已清零)。',
     ' *  (而且「DS 只做桌機」的前提另有待決題 D12 / D18),本閘不替它決定。',
     '見 tmp/wip-2026-10-13/invention-audit/decisions/decisions.json',
+    // 2026-11-03 n4 兩支閘的修前原文(沒寫 tmp/ 前綴,舊的正規式抓不到)
+    ' * 規格(user 2026-10-30 第十五〜十七輪,逐字在工作資料夾 ssot-consolidated/user-answers-2026-10-27.md;規範住 data-table.spec.md「Multi-sort header」列):',
+    ' * 規格來源:user 2026-10-30 第十五〜十七輪(逐字在工作資料夾 ssot-consolidated/user-answers-2026-10-27.md):',
   ].join('\n')
   const p8 = unversionedPointerHits('x', p8Before).map((h) => h.line).join(',')
-  expect(p8 === '1,2,3,4,5,5,5', `P8 修前四處 + 一行 tmp 路徑應各紅(:1 :2 :3 :4 與 :5 三個),實得 ${p8}`)
+  expect(p8 === '1,2,3,4,5,5,5,6,6,7,7', `P8 修前四處 + 一行 tmp 路徑 + n4 兩行原話檔指標應各紅(:1 :2 :3 :4、:5 三個、:6 :7 各兩個),實得 ${p8}`)
   const p8After = [
     '//   沒講標題 ↔ 它自己的說明 —— 規範缺口,待 user 拍板,登記在待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` R1b-DT7;拍板前不改。)',
     ' *  (而且「DS 只做桌機」這個前提還有兩題等 user 決定:「lg 密度給什麼情境用」「Tooltip 規格裡的觸控理由怎麼改」),本閘不替它決定。',
     "const ESCAPE_KEY = 'Escape' // D12 不是待決題編號的寫法不算",
+    ' * 規格(user 2026-10-30 15:26 / 17:08 / 17:09(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列):',
+    ' * 規格來源:user 2026-10-30 15:26 / 17:08(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列。本表直接驗的幾句原話:',
   ].join('\n')
   expect(unversionedPointerHits('x', p8After).length === 0, `P8 修後寫法應 0 筆,實得 ${JSON.stringify(unversionedPointerHits('x', p8After))}`)
   return problems
