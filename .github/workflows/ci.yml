@@ -717,6 +717,11 @@ jobs:
           # 另量 transform: scale() 祖先下操作欄寬 / 填滿高度 / 多區列高不變。對照組(--selftest)先證明會紅;7777b61c 實測紅 31 項。
           # 本機 63 秒 + 對照組約 40 秒(CI 約本機 1.2–1.4 倍 → 約 2.5 分);本 job 拆出可搜尋選單焦點閘之後約 11 分 / 上限 25。
           npm run test:data-table-header-scroll-sync
+          # 多重排序表頭「箭頭 + 順位數字」+ Shift+點擊(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列):
+          # 判定表(純函式 lib/sort-cycle.ts,幾毫秒;--selftest 以 TanStack 修前分支當對照組)+ 真瀏覽器(狀態轉移、9+、長相、⌄ 選單、讀屏、
+          # 與排序面板雙向同步、不受控表格;--selftest 注入 13 種破法)。跟上面兩支同屬表頭,放這個 job:本機判定 40 秒 + 對照組 71 秒(負載 25–30;CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          npm run test:data-table-sort-cycle
+          npm run test:data-table-multi-sort
           # dpr2 的內容延遲不在 CI 斷言(零殼 / 擷取 / 空白仍斷言):共享 2 vCPU runner 在 dpr2 是 raster 成本決定延遲,幀距正常 16ms 卻
           # p95 72 / 最長 100(8277f858);本機 2× 節流對照 main p95 83 / 117 vs 本分支 0 / 17、4× 235 / 268 vs 132 / 148 ——
           # 本分支嚴格優於 main,runner 的數字是機器不是表格。延遲在 dpr1 斷言(runner 上穩定 0);dpr2 的回歸對照用本機節流跑 main vs 分支(AD62)。
