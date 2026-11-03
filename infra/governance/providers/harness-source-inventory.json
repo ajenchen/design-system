@@ -602,6 +602,7 @@
         ],
         "totalTimeoutMs": 2700000,
         "members": [
+          "scripts/test-agent-decision-card-validation-invariant.mjs",
           "scripts/test-agent-logo-continuity-invariant.mjs",
           "scripts/test-data-table-column-divider-invariant.mjs",
           "scripts/test-data-table-hover-exclusivity-invariant.mjs",

@@ -1436,6 +1436,14 @@ const OTHER_VALUE = '__agent_decision_other__'
 const OTHER_LABEL = '其他'
 const RECOMMENDED_SUFFIX = '(建議)'
 const MULTI_JOIN = '\n'
+/** 按「下一題 / 送出」時這一題沒過的錯誤訊息(句型照 DS 既有範例:select.stories「請選擇出貨倉庫」、combobox.stories「請至少選擇一個商品類別」、
+ *  field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,見 agent-decision-card.spec.md「步進」)。 */
+const DECISION_ERROR_TEXT = {
+  single: '請選擇一個選項', // i18n-allow: DS 預設文案
+  multi: '請至少選擇一個選項', // i18n-allow: DS 預設文案
+  other: '請輸入其他選項', // i18n-allow: DS 預設文案(同「其他」輸入格的 placeholder 用字)
+} as const
+type DecisionError = 'empty' | 'other'
 
 /** 產題守則機械層(agent-decision-card.spec.md §8「產題守則」⚙ 條):DEV 只警告不阻擋,內容規則靠稽核。 */
 function warnDecisionRules(questions: AgentDecisionQuestion[]) {
@@ -1469,6 +1477,15 @@ function initialAnswer(q: AgentDecisionQuestion) {
 /** 複選值 = 已勾選 value 集合(含 OTHER_VALUE),以 `\n` 連接存於 answers。 */
 const splitMulti = (v: string | undefined) => (v ? v.split(MULTI_JOIN).filter(Boolean) : [])
 
+/** 這一題能不能前進(產題守則 7「空字串不得前進」、10 複選至少一項;單選 noDefault 初值是空字串):
+ *  沒選 → 'empty';「其他」選中而文字空白 → 'other'(兩者互斥:選了「其他」就不是沒選)。 */
+function decisionError(q: AgentDecisionQuestion, answer: string, other: string): DecisionError | undefined {
+  const picked = q.multiSelect ? splitMulti(answer) : answer ? [answer] : []
+  if (picked.length === 0) return 'empty'
+  if (picked.includes(OTHER_VALUE) && other.trim() === '') return 'other'
+  return undefined
+}
+
 /**
  * 選項卡的滑過(2026-09-26 user 同意;待辦總帳 B12;規則住 agent-decision-card.spec.md「8. AgentDecisionCard」選項卡條):
  * 指標在整張卡的任何位置 → 卡內的圓(複選是方框)照它被自己的 `<label for>` 滑過時的樣子變色;卡片灰底、字色都不變。
@@ -1492,6 +1509,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const titleId = React.useId()
     const otherInputId = React.useId()
     const optionIdBase = React.useId()
+    const errorId = React.useId()
     const otherFieldRowRef = React.useRef<HTMLDivElement>(null)
     if (import.meta.env?.DEV) warnDecisionRules(questions)
     const [step, setStep] = React.useState(0)
@@ -1499,6 +1517,32 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       Object.fromEntries(questions.map((q) => [q.id, initialAnswer(q)])),
     )
     const [otherText, setOtherText] = React.useState<Record<string, string>>({})
+    /** 每一題按「下一題 / 送出」沒過時記下的錯誤;上一題 / 回來時原樣留著(同 TreeView 步驟導覽樹範例:上一次送出的值與錯誤留著)。 */
+    const [errors, setErrors] = React.useState<Record<string, DecisionError | undefined>>({})
+    // 按著指標的那一下:按下 → 放開(含取消、原生拖曳結束、右鍵選單、視窗失焦)之間不改版面,要清的錯誤排到這一下按完之後
+    // (理由見下方 clearError;事件序 pointerup → mouseup → click 同一個 task 派送完,setTimeout 0 必落在 click 之後 ——
+    // 與 use-form-validation.ts 規則 2 的延後同一條,待辦總帳 N67。觸控:焦點在補發的 mousedown 才移動,所以 mousedown 也算按下)。
+    const pressing = React.useRef(false)
+    const pendingClear = React.useRef<(() => void) | null>(null)
+    React.useEffect(() => {
+      const start = () => { pressing.current = true }
+      const settle = () => {
+        pressing.current = false
+        const run = pendingClear.current
+        pendingClear.current = null
+        if (run) window.setTimeout(run, 0)
+      }
+      const STARTS = ['pointerdown', 'mousedown'] as const
+      const ENDS = ['pointerup', 'pointercancel', 'mouseup', 'dragend', 'contextmenu'] as const
+      for (const type of STARTS) window.addEventListener(type, start, true)
+      for (const type of ENDS) window.addEventListener(type, settle, true)
+      window.addEventListener('blur', settle)
+      return () => {
+        for (const type of STARTS) window.removeEventListener(type, start, true)
+        for (const type of ENDS) window.removeEventListener(type, settle, true)
+        window.removeEventListener('blur', settle)
+      }
+    }, [])
     const resolveOne = (q: AgentDecisionQuestion) => {
       const other = (otherText[q.id] ?? '').trim()
       if (q.multiSelect) {
@@ -1514,30 +1558,56 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const total = questions.length
     const question = questions[Math.min(step, total - 1)]
     const isLast = step >= total - 1
-    const select = (value: string) => setAnswers((prev) => ({ ...prev, [question.id]: value }))
-    const toggle = (value: string, checked: boolean) =>
+    // 改了這一題的答案(換選、勾 / 取消勾、在「其他」打字)就清掉這一題的錯誤(form-validation.spec.md 規則 5「開始編輯時立即清除 error」);
+    // 值沒變(點已選中的那張、聚焦已選中的「其他」)不算改。按著指標的那一下改了值(按下「其他」輸入格 = 聚焦即選中)→ 等這一下按完才清:
+    // 決策卡貼底往上長,錯誤一消失,上面每一張卡都往下移一行;按下與放開之間版面一動,放開時指標已不在同一處,
+    // 這一下 click 落到別的元素上(複選「其他」會被卡轉給方框而切掉)。
+    const clearError = (id: string) => {
+      if (!errors[id]) return
+      const run = () => setErrors((prev) => (prev[id] ? { ...prev, [id]: undefined } : prev))
+      if (pressing.current) pendingClear.current = run
+      else run()
+    }
+    const select = (value: string) => {
+      if ((answers[question.id] ?? '') !== value) clearError(question.id)
+      setAnswers((prev) => ({ ...prev, [question.id]: value }))
+    }
+    const toggle = (value: string, checked: boolean) => {
+      if (splitMulti(answers[question.id]).includes(value) !== checked) clearError(question.id)
       setAnswers((prev) => {
         const set = new Set(splitMulti(prev[question.id]))
         if (checked) set.add(value)
         else set.delete(value)
         return { ...prev, [question.id]: [...set].join(MULTI_JOIN) }
       })
+    }
     const skip = () => onSkip?.(resolvedAnswers())
 
     if (!question) return null
     const multi = Boolean(question.multiSelect)
     const selectedSet = new Set(multi ? splitMulti(answers[question.id]) : [answers[question.id]])
-    const otherSelected = selectedSet.has(OTHER_VALUE)
-    // 「其他」選中而文字為空 → 不得前進/送出(產題守則 7);複選一項未勾 → 亦不得前進。
-    const canAdvance =
-      (!otherSelected || (otherText[question.id] ?? '').trim() !== '') &&
-      // 複選至少一項;單選必須有值 —— noDefault 的單選初值是空字串,沒補這一條會送出空答案。
-      (multi ? selectedSet.size > 0 : (answers[question.id] ?? '') !== '')
+    const errorKind = errors[question.id]
+    const errorText =
+      errorKind === 'other' ? DECISION_ERROR_TEXT.other
+        : errorKind === 'empty' ? (multi ? DECISION_ERROR_TEXT.multi : DECISION_ERROR_TEXT.single)
+          : undefined
+    const groupInvalid = errorKind === 'empty'
     const recommendedValue =
       !multi && !question.noDefault ? (question.defaultValue ?? question.options[0]?.value) : undefined
     const optionLabel = (option: AgentDecisionOption | { value: string; label: string }) =>
       option.value === recommendedValue ? `${option.label}${RECOMMENDED_SUFFIX}` : option.label
     const allOptions = [...question.options, { value: OTHER_VALUE, label: OTHER_LABEL }]
+    // 下一題 / 送出恆可按(form-validation.spec.md「Submit Button 狀態」新建那列:不看填了沒、填對沒 —— 決策卡的答案每次都是新填的,
+    // 沒有「已存的值」可比;同 TreeView 步驟導覽樹範例的「下一步」)。按下時驗這一題(規則 7):沒過就不前進,錯誤訊息出現在最後一張
+    // 選項卡之後,焦點移到第一個出錯的控件(規則 8):沒選 → 第一個選項的圓 / 方框;「其他」文字空白 → 輸入格。
+    // 只 focus、不另外 scrollIntoView:決策卡每步不需捲動即可讀完(產題守則 13),focus 本身會把它捲進視野;
+    // 主動置中會連帶捲動面板與頁面。2026-11-04 前這兩顆在沒選時 disabled(2026-09-02 加,查無 user 原話)。
+    const advance = (pass: () => void) => {
+      const kind = decisionError(question, answers[question.id] ?? '', otherText[question.id] ?? '')
+      if (!kind) return pass()
+      setErrors((prev) => ({ ...prev, [question.id]: kind }))
+      document.getElementById(kind === 'other' ? otherInputId : `${optionIdBase}-${allOptions[0].value}`)?.focus()
+    }
     const renderOtherInput = () => (
       // 「其他」卡:常駐 32 高輸入格;label 行框↔Input 8(mt-2);距卡右/下各 12(卡 px 12;卡 py 8 + mb 4);
       // 左縮排 24 = radio 16 + gap 8,與 label 對齊(Polaris ChoiceChildren 同款)。
@@ -1550,8 +1620,14 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
           placeholder="輸入其他選項"
           aria-label="其他(自由輸入)"
           aria-describedby={titleId}
+          // 「其他」選中而文字空白:輸入格紅框 + aria-invalid(Input 自己接),aria-errormessage 指向下方錯誤訊息(field.spec.md「驗證與 aria 屬性」)
+          error={errorKind === 'other'}
+          aria-errormessage={errorKind === 'other' ? errorId : undefined}
           onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
-          onChange={(e) => setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))}
+          onChange={(e) => {
+            clearError(question.id)
+            setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))
+          }}
         />
       </div>
     )
@@ -1619,86 +1695,99 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
           </div>
           <Button dismiss size="sm" startIcon={XIcon} aria-label="跳過" onClick={skip} />
         </SurfaceHeader>
-        {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。 */}
+        {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。
+            錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後、同一個 gap 8 堆疊裡
+            (agent-decision-card.spec.md「步進」);沒有錯誤時 FieldError 不渲染、不佔位。 */}
         <ScrollArea fillX className="min-h-0">
-          {multi ? (
-            <CheckboxGroup
-              key={question.id}
-              aria-labelledby={titleId}
-              className="flex flex-col gap-2 px-[var(--layout-space-loose)]"
-            >
-              {allOptions.map((option) => {
-                const isOther = option.value === OTHER_VALUE
-                const checked = selectedSet.has(option.value)
-                return (
-                  <div
-                    key={option.value}
-                    data-state={checked ? 'checked' : 'unchecked'}
-                    className={cardClass}
-                    onClick={(e) => pressOptionCard(e, `${optionIdBase}-${option.value}`, isOther && !checked)}
-                  >
-                    <SelectionItem
-                      size="md"
-                      className="py-0"
-                      htmlFor={`${optionIdBase}-${option.value}`}
-                      control={
-                        <Checkbox
-                          id={`${optionIdBase}-${option.value}`}
-                          size="md"
-                          checked={checked}
-                          onCheckedChange={(next) => toggle(option.value, next === true)}
-                          aria-controls={isOther ? otherInputId : undefined}
-                          className={OPTION_CHECKBOX_HOVER}
-                        />
-                      }
-                      label={optionLabel(option)}
-                      description={isOther ? undefined : (option as AgentDecisionOption).description}
-                    />
-                    {isOther && renderOtherInput()}
-                  </div>
-                )
-              })}
-            </CheckboxGroup>
-          ) : (
-            <RadioGroup
-              key={question.id}
-              value={answers[question.id] ?? ''}
-              onValueChange={select}
-              aria-labelledby={titleId}
-              className="flex flex-col gap-2 px-[var(--layout-space-loose)]"
-            >
-              {allOptions.map((option) => {
-                const isOther = option.value === OTHER_VALUE
-                const checked = selectedSet.has(option.value)
-                return (
-                  <div
-                    key={option.value}
-                    data-state={checked ? 'checked' : 'unchecked'}
-                    className={cardClass}
-                    onClick={(e) => pressOptionCard(e, `${optionIdBase}-${option.value}`, isOther)}
-                  >
-                    <SelectionItem
-                      size="md"
-                      className="py-0"
-                      htmlFor={`${optionIdBase}-${option.value}`}
-                      control={
-                        <RadioGroupItem
-                          id={`${optionIdBase}-${option.value}`}
-                          value={option.value}
-                          size="md"
-                          aria-controls={isOther ? otherInputId : undefined}
-                          className={OPTION_RADIO_HOVER}
-                        />
-                      }
-                      label={optionLabel(option)}
-                      description={isOther ? undefined : (option as AgentDecisionOption).description}
-                    />
-                    {isOther && renderOtherInput()}
-                  </div>
-                )
-              })}
-            </RadioGroup>
-          )}
+          <div className="flex flex-col gap-2 px-[var(--layout-space-loose)]">
+            {multi ? (
+              <CheckboxGroup
+                key={question.id}
+                aria-labelledby={titleId}
+                // 沒勾任何一項:群組標 aria-invalid(同 checkbox-group.tsx 在 Field 裡的接法);aria-errormessage 依 WAI-ARIA 1.2 只能掛在
+                // checkbox(group 不在它的適用角色),所以下面每個方框各自帶 —— 焦點移到第一個方框時讀得到錯誤
+                aria-invalid={groupInvalid || undefined}
+                className="flex flex-col gap-2"
+              >
+                {allOptions.map((option) => {
+                  const isOther = option.value === OTHER_VALUE
+                  const checked = selectedSet.has(option.value)
+                  return (
+                    <div
+                      key={option.value}
+                      data-state={checked ? 'checked' : 'unchecked'}
+                      className={cardClass}
+                      onClick={(e) => pressOptionCard(e, `${optionIdBase}-${option.value}`, isOther && !checked)}
+                    >
+                      <SelectionItem
+                        size="md"
+                        className="py-0"
+                        htmlFor={`${optionIdBase}-${option.value}`}
+                        control={
+                          <Checkbox
+                            id={`${optionIdBase}-${option.value}`}
+                            size="md"
+                            checked={checked}
+                            onCheckedChange={(next) => toggle(option.value, next === true)}
+                            aria-invalid={groupInvalid || undefined}
+                            aria-errormessage={groupInvalid ? errorId : undefined}
+                            aria-controls={isOther ? otherInputId : undefined}
+                            className={OPTION_CHECKBOX_HOVER}
+                          />
+                        }
+                        label={optionLabel(option)}
+                        description={isOther ? undefined : (option as AgentDecisionOption).description}
+                      />
+                      {isOther && renderOtherInput()}
+                    </div>
+                  )
+                })}
+              </CheckboxGroup>
+            ) : (
+              <RadioGroup
+                key={question.id}
+                value={answers[question.id] ?? ''}
+                onValueChange={select}
+                aria-labelledby={titleId}
+                // 沒選(noDefault 單選):radiogroup 本身帶 aria-invalid + aria-errormessage(WAI-ARIA 1.2 兩者都適用於 radiogroup、不適用於 radio)
+                aria-invalid={groupInvalid || undefined}
+                aria-errormessage={groupInvalid ? errorId : undefined}
+                className="flex flex-col gap-2"
+              >
+                {allOptions.map((option) => {
+                  const isOther = option.value === OTHER_VALUE
+                  const checked = selectedSet.has(option.value)
+                  return (
+                    <div
+                      key={option.value}
+                      data-state={checked ? 'checked' : 'unchecked'}
+                      className={cardClass}
+                      onClick={(e) => pressOptionCard(e, `${optionIdBase}-${option.value}`, isOther)}
+                    >
+                      <SelectionItem
+                        size="md"
+                        className="py-0"
+                        htmlFor={`${optionIdBase}-${option.value}`}
+                        control={
+                          <RadioGroupItem
+                            id={`${optionIdBase}-${option.value}`}
+                            value={option.value}
+                            size="md"
+                            aria-controls={isOther ? otherInputId : undefined}
+                            className={OPTION_RADIO_HOVER}
+                          />
+                        }
+                        label={optionLabel(option)}
+                        description={isOther ? undefined : (option as AgentDecisionOption).description}
+                      />
+                      {isOther && renderOtherInput()}
+                    </div>
+                  )
+                })}
+              </RadioGroup>
+            )}
+            <FieldError id={errorId}>{errorText}</FieldError>
+          </div>
         </ScrollArea>
         {/* footer:第一題=跳過(用預設繼續)、第二題起=上一題(答案保留;Material Stepper Back / GOV.UK Back 同款);
             右=下一題 / 送出(末題);鈕 sm 守 Popover all-sm 律;無上分隔線;× 恆為跳過。 */}
@@ -1713,11 +1802,11 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
             </Button>
           )}
           {isLast ? (
-            <Button variant="primary" size="sm" disabled={!canAdvance} onClick={() => onSubmit?.(resolvedAnswers())}>
+            <Button variant="primary" size="sm" onClick={() => advance(() => onSubmit?.(resolvedAnswers()))}>
               送出
             </Button>
           ) : (
-            <Button variant="primary" size="sm" disabled={!canAdvance} onClick={() => setStep((s) => s + 1)}>
+            <Button variant="primary" size="sm" onClick={() => advance(() => setStep((s) => s + 1))}>
               下一題
             </Button>
           )}

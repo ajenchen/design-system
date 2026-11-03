@@ -39,7 +39,13 @@
 - 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
   2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
-  「其他」選中而文字為空 → 下一題/送出 disabled。
+  「下一題」/「送出」恆可按 —— 決策卡的答案每次都是新填的,屬新建表單(`../Field/form-validation.spec.md`「Submit Button 狀態」新建那列;
+  按了才驗這一頁同 `../Steps/steps.spec.md`「目前那一步底下的按鈕」的「下一步」),按下時驗這一題:沒選(複選一項都沒勾、`noDefault` 單選沒選)
+  或「其他」選中而文字空白 → 不前進,`FieldError`(與欄位錯誤同一個元件)放在最後一張選項卡之後、距離 = 卡間距 8(選項區的間距歸本卡,
+  不套 Field 內部的 4;選項之間有間距時錯誤訊息與它同距 = [Polaris ChoiceList](https://github.com/Shopify/polaris/blob/5131f8a68b366f55a6e9e3a9e2dd624d4989cd33/polaris-react/src/components/ChoiceList/ChoiceList.tsx#L132-L150) 小螢幕版),
+  「其他」那一種另讓輸入格紅框;焦點移到第一個出錯的控件(沒選 → 第一個選項的圓 / 方框,「其他」→ 輸入格;form-validation 規則 8);
+  改答案、打字即清掉(規則 5;按著指標的那一下改了答案,等這一下按完才清,版面不在按下與放開之間移動)。
+  讀屏:radiogroup / 每個方框 / 輸入格帶 `aria-invalid` + `aria-errormessage`(WAI-ARIA 1.2 這兩個屬性不適用於 radio 與 group),錯誤訊息 `role="alert"`。
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
 - 進出=淡入+下滑 8、`--motion-duration-overlay`。
