@@ -72,7 +72,7 @@ benchmark:
 Sub-component:`<AppShellAside title={...} contentType={...} widthRange={{ min, initial, max }} defaultWidth? onWidthCommit?>` —— 寬度 = 這種內容類型的最小 / 初始 / 最大(「版面規則」§1;同一 `contentType` 的不同資料共用設定與寬度紀錄)。**title prop required**(= `<aside aria-label>`)。2026-10-14 前的 `width: number | { md, xl }` 依視窗挑寬與 240 / 640 硬夾隨「版面規則」退場(破壞性)。Menu(`<Sidebar widthRange contentType>`)與 AI agent(`<AgentPanel widthRange contentType>`)的寬度設定同一形狀、同一個名字 `widthRange`(不叫 `width`:AgentPanel 的 `width` 早已是「受控寬度紀錄」);`defaultWidth` / `onWidthCommit` = 產品自存紀錄的還原與接收(§7)。`mainMinWidth`、`contentType`、`widthRange`、`agent` slot、`requestAside`、`navigateFromAgent` 是 2026-10-14 為落地「版面規則」新增的 API(AI 建議的形狀,工程決定)。
 `portalContainer`(2026-10-15,工程決定;r1b 複驗 F10):AppShell 的正常用法是撐滿視窗,這時省略、Menu 浮層照 Sheet 預設傳送到 body;AppShell 放在比視窗小、帶 transform 的容器裡(story 的模擬瀏覽器畫布、嵌入式預覽)時傳那個容器,Menu 浮層與遮罩以它為準、不跑出容器 —— AI agent 浮層本來就以 AppShell 根節點定位(§9)。與 `DialogContent` / `SheetContent` 的 `portalContainer` 同名同義(`../Dialog/dialog.spec.md`)。
 
-**Aside body padding(內容自帶,刻意 Pattern B)**:`<AppShellAside>` 的 body(ScrollArea 內)**不自帶 px/py**,由 consumer 塞入的 children 自行負責留白(對齊 `layoutSpace.spec.md` 規則 1B「父層/內容管 padding」的裸結構路線,同 Table / DataTable)。**理由**:aside 內容異質(清單需 hover 貼邊滿版、表格需 flush、表單才需 padding),框架統一加 padding 反而破壞清單/表格。與 Dialog / Sheet body 自帶 `px-loose pt-tight pb-bottom`(`../Dialog/dialog.tsx` DialogBody、`../Sheet/sheet.tsx` SheetBody)的差異是**刻意**的(那兩者內容較單一)。consumer 放需留白的內容時,自帶 `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`(範例 `app-shell.stories.tsx` 即如此)。
+**Aside body padding(內容自帶,刻意 Pattern B)**:`<AppShellAside>` 的 body(ScrollArea 內)**不自帶 px/py**,由 consumer 塞入的 children 自行負責留白(對齊 `layoutSpace.spec.md` 規則 1B「父層/內容管 padding」的裸結構路線,同 Table / DataTable)。**理由**:aside 內容異質(清單需 hover 貼邊滿版、表格需 flush、表單才需 padding),框架統一加 padding 反而破壞清單/表格。與 Dialog / Sheet body 自帶 `px-loose pt-tight pb-bottom`(`../Dialog/dialog.tsx` DialogBody、`../Sheet/sheet.tsx` SheetBody)的差異是**刻意**的(那兩者內容較單一)。consumer 放需留白的內容時,自帶 `px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]`(範例 `app-shell.stories.tsx` 即如此):右欄高度撐滿版面欄,最後是一般元素時底部 = `bottom` 48(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 第 1 列);最後是無框清單時底部 0、清單自帶內距(同表第 3 列)。
 
 **Aside 開關控制(刻意單向,2026-07-17 user 拍板)**:`asideOpen` / `onAsideOpenChange` 提供完整 **controlled** 路徑;uncontrolled fallback 初值**刻意固定關閉**(`useState(false)`),**不提供 `defaultAsideOpen`**。理由:側邊詳情面板實務上幾乎一定由 app 的 route / 選取狀態驅動,初值固定關閉是合理預設,額外加 `defaultAsideOpen` 偏 YAGNI。對齊 Dim 26 dual-mode canonical 的「刻意單一模式 → 補 rationale」例外機制。未來真有 uncontrolled 初值需求再加(additive,不破壞)。
 
@@ -352,6 +352,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 - 規則 1:水平 padding(3 patterns 並存 — bounded surface 自帶 / 純 layout 父層管 / list item 自帶)
 - 規則 2:頂部(Header → 第一個元素的 gap)
 - 規則 3:元素間 gap(只看親疏)
+- 規則 4:底部(Main 高度撐滿 → 最後是一般元素時底部 `bottom` 48;有框區塊 `loose`、無框清單 0)
 - 規則 6:Chrome 表面水平 padding 統一 `loose`
 
 **禁止**:AppShell.Main 強制 padding(會跟內部 DataTable / naked list 衝突 + 違反規則 1B「純 layout primitive 無邊界 → 父層管」)。

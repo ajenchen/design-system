@@ -98,7 +98,7 @@ benchmark:
 
 ### Horizontal orientation(divided=true)
 
-- 每個 item `py-[var(--layout-space-tight)]`(density-aware,形成 cell-like row 高度)
+- 每個 item `py-[var(--layout-space-tight)]`(density-aware,形成 cell-like row 高度);**最後一個 item 不帶下內距**(`last:pb-0`,同不分隔模式的 `last:mb-0`),底部由容器給 —— 最後一列沒有底線,下方就是容器底,同一段距離只由一層給(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 核心句)。第一個 item 的上內距不動(FileViewer「檔案資訊」標題 → 第一列 = 列 → 列靠它)
 - 每個 item 底部 `border-b border-divider`,`last:border-b-0`——row 之間視覺格線,key 長度不一時易於對齊掃描
 - **何時開 divided**:長列表(≥ 4 rows)/ key 長度差異大(短 vs 長 label 並排易顯亂) → divided 可對齊格線;短列表(< 4 rows)且 key 長度相近 → 不需 divided(border 反而噪音)
 - **使用判準**:divided 適用需要逐列掃描與明確 row boundary 的 file info / settings 表面；單一短清單不為裝飾而強加 divider

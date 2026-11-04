@@ -10,7 +10,7 @@ Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放
 |-------|----|----|------|
 | `--layout-space-loose` | 16px | 24px | 主間距:容器水平 padding、parallel 元素 gap、bounded region 呼吸空間 |
 | `--layout-space-tight` | 12px | 16px | 緊湊間距:Header → element、functional 交互的元素之間 |
-| `--layout-space-bottom` | 48px | 48px | 結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底 |
+| `--layout-space-bottom` | 48px | 48px | 結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底(容器會擋住頁面或高度撐滿時;規則 4 第 1 列)|
 | `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它;AppShell 的 AI agent 浮層左側、Menu 浮層右側「至少留」也吃它 —— user 2026-10-14 規格「另一側至少保留 48px」,`../../components/AppShell/app-shell.spec.md`「版面規則」§9)|
 
 **Co-located:item-gap tokens** — `layoutSpace.css` 另定義 `--item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg}`(皆 2px):**非**巨觀 layout token,是 item 內 label ↔ description 的 typography-mode-aware micro gap;設計 SSOT 在 `item-anatomy.spec.md`「Label ↔ Desc 間距」段,本檔只是 CSS 住所。修改值 / 加 mode → 走 item-anatomy spec。
@@ -124,12 +124,12 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 
 | 情境(後面有沒有 footer 都一樣)| gap | 概念 |
 |------|-----|------|
-| **element(欄位 / 文字 / 按鈕)→ Dialog / Sheet body 底** | `bottom`(48)| **結論留白** |
+| **element(欄位 / 文字 / 按鈕)→ 容器底,容器會擋住頁面或高度撐滿可用空間** | `bottom`(48)| **結論留白** |
 | **bounded region → 容器底** | `loose` | **Spatial 邊界** |
 | **unbounded region → 容器底** | **0**(list 自帶 py 撐)| **Spatial 邊界** |
-| **element → 其他容器底**(Dialog / Sheet 以外:AppShell 右欄、整頁、Popover 家族、卡片…)| 【待拍板】| **Spatial 邊界** |
+| **element → 容器底,容器不擋頁面、高度貼著內容** | 與頂部同值(值由元件自己的內距給)| **Spatial 邊界(上下對稱)** |
 
-**Note**:Dialog / Sheet body `pb-bottom 48` 是第 1 列的實作,**不是元件特例**。表格 → 「**底部 chrome band**」(Alert / BulkActionBar / Status bar)= 第 2 列的 `loose`,band 裡有沒有 action 都一樣。
+**Note**:Dialog / Sheet body `pb-bottom 48` 是第 1 列的實作,**不是元件特例**。表格 → 「**底部 chrome band**」(Alert / BulkActionBar / Status bar)= 第 2 列的 `loose`,band 裡有沒有 action 都一樣。**第 1 / 4 列怎麼分**:看容器自己,不列名單 —— 會不會擋住頁面(modal)、高度由視窗 / 版面欄決定(撐滿)還是由內容決定。這兩個條件是 DS 給 / 不給 48 時原本就寫下的理由:`../../patterns/overlay-surface/overlay-surface.spec.md`『`pb-bottom` 保留 Dialog / Sheet「大容器底部多一拍」的 canonical』,Popover 不給是因為『Popover 無 viewport-fill、內容預期短』。出處:user 2026-10-28 看過 AppShell 右欄 IssueDetail、右欄訂單詳情、整頁 Main、Insights 頁、FileViewer 資訊面板依此改成 48 的前後圖,回「這個沒問題」;同日對頁面卡片(不擋頁面、貼內容 → 四邊 16)回「頁面上的卡片照你建議」。
 
 ### 規則 5:橫排 Input Gap(固定不隨 density)
 
@@ -212,7 +212,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 | 容器水平左右 padding | **規則 1** | 元件有無視覺邊界? | 有 → A 元件自帶 `px-loose` / 無 → B 父層管 / list-with-hover-row → C item 自帶 |
 | Header → 第一個元素 gap | **規則 2** | 第一個元素 role | bounded region → `loose` / unbounded region → **0**(list 自帶 py 撐)/ element → `tight` |
 | 兩元素之間 gap | **規則 3** | 親疏 | 同範疇 → 元件 spec own(跳)/ 跨範疇相關 → `tight` / 跨範疇 parallel → `loose` |
-| 最後內容 → 容器底 | **規則 4** | 元件 role(element 再看哪種容器)| element → Dialog / Sheet body 底 `bottom`(48)、其他容器【待拍板】/ bounded → `loose` / unbounded → **0** |
+| 最後內容 → 容器底 | **規則 4** | 元件 role(element 再看哪種容器)| element → 容器擋頁面或撐滿 = `bottom`(48)、不擋頁面又貼內容 = 與頂部同值(元件自己的內距)/ bounded → `loose` / unbounded → **0** |
 | 橫排並列 input 之間 gap | **規則 5** | 內容語意緊密度 | 同組值起迄 → `gap-2`(8) / 不同組並列 → `gap-4`(16) |
 | Chrome 表面水平 padding | **規則 6** | (永遠) | `loose` |
 

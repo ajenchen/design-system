@@ -67,8 +67,9 @@ export const Overview: Story = {
           header={<PageHeader title="Dashboard" />}
           aside={
             <AppShellAside title="訂單詳情" contentType="order-detail" widthRange={ORDER_DETAIL_WIDTH}>
-              {/* 面板內容自帶留白(px/py),示範 aside slot 不強制內距、由內容自管;key / value = DescriptionList(同展示頁議題詳情) */}
-              <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+              {/* 面板內容自帶留白,示範 aside slot 不強制內距、由內容自管;key / value = DescriptionList(同展示頁議題詳情)。
+                  底部 = bottom 48:右欄撐滿、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列) */}
+              <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
                 <DescriptionList orientation="horizontal" divided>
                   <DescriptionItem label="訂單編號">#SO-20481</DescriptionItem>
                   <DescriptionItem label="客戶">陳怡君</DescriptionItem>
@@ -193,11 +194,15 @@ function CompleteSprintAction() {
   )
 }
 
-/** Main 裡的即時讀數:各區此刻的顯示方式(`useAppShell().display`)+ 頁面動作。 */
+/**
+ * Main 裡的即時讀數:各區此刻的顯示方式(`useAppShell().display`)+ 頁面動作。
+ * 讀數清單 → 跟在後面的按鈕 = loose(按鈕跟在內容後,上方一律 loose;最後一個 DescriptionList 列不自帶下內距,這段只由 space-y 給);
+ * 按鈕 → Main 底 = bottom 48(整頁 Main 撐滿、最後是一般元素,layoutSpace.spec.md 規則 4 第 1 列)。
+ */
 function LayoutReadout() {
   const { display } = useAppShell()
   return (
-    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-[var(--layout-space-tight)]">
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] space-y-[var(--layout-space-loose)]">
       <DescriptionList orientation="horizontal" divided>
         <DescriptionItem label="Menu"><span data-readout="menu">{DISPLAY_LABEL[display.menu]}</span></DescriptionItem>
         <DescriptionItem label="Right panel"><span data-readout="right">{DISPLAY_LABEL[display.right]}</span></DescriptionItem>
@@ -267,7 +272,8 @@ function LayoutRuleDemo(raw: LayoutRuleArgs) {
         header={<RuleDemoHeader />}
         aside={
           <AppShellAside title="ENG-1042" contentType="issue-detail" widthRange={args.right}>
-            <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-body">登入後 redirect 失敗 —— Alan Chen 處理中,週五到期</div>
+            {/* 右欄撐滿、最後是一般元素 → 底 bottom 48(layoutSpace.spec.md 規則 4 第 1 列) */}
+            <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] text-body">登入後 redirect 失敗 —— Alan Chen 處理中,週五到期</div>
           </AppShellAside>
         }
         asideOpen={asideOpen}

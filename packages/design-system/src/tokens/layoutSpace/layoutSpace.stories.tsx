@@ -60,7 +60,7 @@ export const Overview: Story = {
 
           <SpaceRow utility="--layout-space-tight" mdValue="12px" lgValue="16px" usage="header / footer 上下 padding;緊密 inline gap" />
           <SpaceRow utility="--layout-space-loose" mdValue="16px" lgValue="24px" usage="surface 左右 padding;tabs trigger gap;form field 間距" />
-          <SpaceRow utility="--layout-space-bottom" mdValue="48px" lgValue="48px" usage="body 收尾的結論留白(Dialog / Sheet body 底部;固定,不隨 density)" />
+          <SpaceRow utility="--layout-space-bottom" mdValue="48px" lgValue="48px" usage="body 收尾的結論留白(會擋住頁面或高度撐滿的容器,例如 Dialog / Sheet body 底部;固定,不隨 density)" />
           <SpaceRow utility="--layout-space-viewport-inset" mdValue="48px" lgValue="48px" usage="浮層外殼 → 視窗邊的安全距離(Dialog 高度上限與最大寬度;AppShell 的 AI agent 浮層左側、Menu 浮層右側至少留這麼多;固定,不隨 density)" />
         </div>
       </TutorialSection>
@@ -70,7 +70,7 @@ export const Overview: Story = {
           <TutorialList>
             <li>跨範疇 + functional 交互 → <code>tight</code>(12/16);同範疇 / bundled → 元件 spec 自管</li>
             <li>跨範疇 + parallel → <code>loose</code>(16/24)</li>
-            <li>最後內容 → action buttons → <code>bottom</code>(48 固定);後面沒有 action 的容器底依角色走 <code>loose</code> / <code>tight</code> / 0</li>
+            <li>容器底看最後一個東西:一般元素(欄位 / 文字 / 按鈕)→ 容器會擋住頁面或高度撐滿時 <code>bottom</code>(48,不隨 density),不擋頁面、高度貼著內容時跟頂部同值;有框區塊 → <code>loose</code>;無框清單 → 0</li>
           </TutorialList>
         </div>
       </TutorialSection>

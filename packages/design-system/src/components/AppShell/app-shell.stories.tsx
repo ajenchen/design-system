@@ -236,17 +236,19 @@ const PRIORITY_COLOR = {
  *
  * 2026-10-28:原本面板底部還有「分派給我」「標記完成」兩顆按鈕 —— 沒有規格依據、按了沒反應,user 訊息裡搜『分派』『標記完成』都是 0 筆;
  * 詳情面板該放哪些動作是產品內容,範例不替產品決定,拿掉(稽核 M057;ssot PA5)。面板只示範內容。
+ * 底部 = bottom 48:右欄高度撐滿版面欄、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28「這個沒問題」)。
+ * 最後一個 DescriptionList 列不自帶下內距(description-list.tsx `last:pb-0`),底部只由這一層給。
  */
 function IssueDetail({ issue }: { issue: Issue | null }) {
   if (!issue) {
     return (
-      <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-fg-muted">
+      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] text-fg-muted">
         選一個 issue 看詳情
       </div>
     )
   }
   return (
-    <div className="flex flex-col px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+    <div className="flex flex-col px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <ItemContent

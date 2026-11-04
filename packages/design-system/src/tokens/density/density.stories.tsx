@@ -99,7 +99,7 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
         {mode.toUpperCase()} density
       </span>
     </div>
-    <div style={{ padding: `var(--layout-space-tight) var(--layout-space-loose)` }}>
+    <div style={{ padding: `var(--layout-space-tight) var(--layout-space-loose) 0` }}>
       {/* @layout-space-magic-ok: 密度示意頁內三條同質佔位列 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
       <div className="space-y-2">
         {[1, 2, 3].map(i => (
@@ -107,19 +107,19 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
         ))}
       </div>
     </div>
-    {/* 2026-07-14 audit Dim 68:bottom 是「內容 → action buttons」結論留白(layoutSpace.spec.md
-        規則 4 line 1)— 原 demo 把它畫成無 action 的通用頁尾 band = 教錯用法。補 action row
-        讓 48px 留白真的落在 content 與 commitment 之間。 */}
-    <div style={{ height: 'var(--layout-space-bottom)', borderTop: '1px dashed var(--border)' }}
-      className="flex items-center justify-center">
-      <span className="text-caption text-fg-muted">bottom 48 — 內容 → action 結論留白</span>
-    </div>
-    {/* 動作列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
+    {/* 按鈕跟在內容後:上方 = loose(layoutSpace.spec.md 規則 3;規則 4 核心「內容 → 按鈕」跟「最後一個東西 → 容器底邊」是兩回事)。
+        動作列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
     <div
       className="flex"
-      style={{ padding: `0 var(--layout-space-loose) var(--layout-space-tight)` }}
+      style={{ padding: `var(--layout-space-loose) var(--layout-space-loose) 0` }}
     >
       <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已儲存變更' })}>儲存變更</Button>
+    </div>
+    {/* 按鈕 → 整頁底 = bottom 48:整頁高度撐滿、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28 對整頁 Main 改 48
+        回「這個沒問題」)。2026-07-14 audit Dim 68 之後這段 48 一度畫在「內容 → 按鈕」之間,照規則 4 改回 body 最後一個元素之下。 */}
+    <div style={{ height: 'var(--layout-space-bottom)', borderTop: '1px dashed var(--border)' }}
+      className="flex items-center justify-center">
+      <span className="text-caption text-fg-muted">bottom 48 — 最後一個元素 → 整頁底</span>
     </div>
   </div>
 )

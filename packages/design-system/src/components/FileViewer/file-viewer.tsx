@@ -513,14 +513,16 @@ const InfoPanel = React.memo(function InfoPanel({
       </ChromeHeader>
 
       {/* Panel body — header(shrink-0)上常駐 + body 走 ScrollArea(高度小時內容可捲動)。
-          padding 對齊 layoutSpace v6 規則 4「bounded region → 容器底(無 action buttons)= loose」。
+          底部 = bottom 48:資訊面板最後是一般元素(layoutSpace.spec.md「檔案資訊」DescriptionList = element),
+          FileViewer 會擋住頁面而且高度撐滿 → 規則 4 第 1 列(user 2026-10-28「這個沒問題」)。最後一個 DescriptionList 列
+          不自帶下內距(description-list.tsx `last:pb-0`),這段距離只由這一層給。
           gap 對齊 v6 規則 3「跨範疇 parallel = loose」(說明 vs 檔案資訊兩個獨立 functional sections,
           屬「跨範疇 + 不相關」)— 從 gap-4 寫死改為 token-aware loose。 */}
       <ScrollArea className="flex-1 min-h-0">
         <div className={cn(
           'flex flex-col gap-[var(--layout-space-loose)]',
           'px-[var(--layout-space-loose)]',
-          'pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]',
+          'pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]',
         )}>
         {/* 說明 — 用 DS Field + FieldLabel + Textarea(2026-04-20 B12 決策:
             FileViewer 一律消費 DS Field 家族,不手刻 `<span>label` + raw control) */}

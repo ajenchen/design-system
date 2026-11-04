@@ -332,10 +332,12 @@ export function PageHeader({
 /**
  * Insights 頁(本週 Sprint 的燃盡摘要):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
  * —— 兩處同一份真實頁面內容(稽核 L117:總覽的 Main 原本是一段說明文字,說明搬到 docs)。
+ * 底部 = bottom 48:整頁 Main 高度撐滿、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28「這個沒問題」);
+ * 最後一個 DescriptionList 列不自帶下內距(description-list.tsx `last:pb-0`),底部只由這一層給。
  */
 export function InsightsView() {
   return (
-    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
       <DescriptionList orientation="horizontal" divided>
         <DescriptionItem label="Sprint">Sprint 42(5/18 – 5/29)</DescriptionItem>
         <DescriptionItem label="已完成">12 / 18 筆議題</DescriptionItem>

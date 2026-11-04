@@ -62,7 +62,7 @@ export const Overview: Story = {
               <tr><Td mono>vertical</Td><Td>columns 之間水平 gap</Td><Td mono>gap-x-4(16px)</Td><Td>cols &gt; 1 時欄間距</Td></tr>
               <tr><Td mono>horizontal(divided=false)</Td><Td>items 之間垂直 gap</Td><Td mono>mb-[var(--layout-space-tight)] last:mb-0</Td><Td>等同 vertical 的 items gap,density-aware</Td></tr>
               <tr><Td mono>horizontal(divided=false)</Td><Td>label ↔ value</Td><Td mono>justify-between + gap-4</Td><Td>最小 16px,content 之間自然拉開</Td></tr>
-              <tr><Td mono>horizontal(divided=true)</Td><Td>每 item 上下 padding</Td><Td mono>py-[var(--layout-space-tight)]</Td><Td>density-aware,形成 cell-like row 高度;row 間有 border-b border-divider 對齊格線</Td></tr>
+              <tr><Td mono>horizontal(divided=true)</Td><Td>每 item 上下 padding</Td><Td mono>py-[var(--layout-space-tight)] last:pb-0</Td><Td>density-aware,形成 cell-like row 高度;row 間有 border-b border-divider 對齊格線;最後一個 item 不帶下內距,底部由容器給(同不分隔模式的 last:mb-0)</Td></tr>
             </tbody>
           </table>
         </div>
