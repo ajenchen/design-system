@@ -63,7 +63,8 @@
  *   N-esc-tab-modal    (2026-10-27 待辦總帳 R1b-FN1b)Dialog / Sheet(DialogTrigger / SheetTrigger 開)Esc 收起後、收起動畫還在播時按 Tab → 焦點走到
  *                      觸發鈕的下一格;同一段空窗裡觸發鈕到 <html> 的祖先鏈沒有 aria-hidden(Radix modal 的 hideOthers 卸載才撤 —— 修前焦點還進讀屏看不到的區域)、
  *                      淡出中的內容 inert;另一格「對話框裡的儲存鈕非同步關閉(setTimeout 後 setOpen(false))」同樣要求(不是離散事件裡的更新)
- *                     (修前 Tab 被吃掉:焦點等內容卸載才回觸發鈕)。FileViewer 那一格由 data 家族 DA-esc-tab 加
+ *                     (修前 Tab 被吃掉:焦點等內容卸載才回觸發鈕)。FileViewer 那一格(2026-11-04,data 家族 DA-esc-tab):一般按鈕以受控 open
+ *                     開 FileViewer(沒有 Radix 觸發點,開啟者由 useTriggerlessFocusReturn 記)→ 同上三件事
  *   CTRL-leave(對照)  彈出層關著時 Tab 離開必填 Select → 驗證跑一次
  *   B-overflow         必填 Combobox(非搜尋型,窄欄位、四個 Tag)焦點在觸發區,用滑鼠按「+N」浮出清單裡的 ×(焦點搬進卡)→ consumer 的 onBlur 不跑;
  *                      焦點移到欄位外的按鈕 → 跑一次
@@ -249,8 +250,8 @@ const MUTANTS = [
     file: 'components/FileViewer/file-viewer.tsx',
     expectRed: ['F-menu-fileviewer'],
     apply: (src) => replaceOnce(
-      replaceOnce(src, /import \{ useTriggerlessFocusReturn \} from "@\/design-system\/lib\/overlay-focus-return"/,
-        'import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"'),
+      replaceOnce(src, /import \{ useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf \} from "@\/design-system\/lib\/overlay-focus-return"/,
+        'import { captureFocusOrigin, returnFocusToOpener, useExitStartFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"'),
       /const focusReturn = useTriggerlessFocusReturn\(!persistentElements\)/,
       'const privateOpenerRef = React.useRef<HTMLElement | null>(null)\n  const focusReturn = { onOpenAutoFocus: () => { privateOpenerRef.current = captureFocusOrigin() }, onCloseAutoFocus: (event: Event) => { const opener = privateOpenerRef.current; privateOpenerRef.current = null; returnFocusToOpener(event, opener, { noTrigger: true, modal: !persistentElements }) } }'),
   },
@@ -348,6 +349,13 @@ const MUTANTS = [
     file: 'lib/overlay-focus-return.ts',
     expectRed: ['N-esc-tab', 'N-esc-tab-modal'],
     apply: (src) => replaceOnce(src, /if \(closed && !handledRef\.current && node\.isConnected\) \{/, 'if (false) {'),
+  },
+  {
+    id: 'fileviewer-exit-start-off',
+    what: 'FileViewer 沒接收起那一刻的歸還(等內容卸載才還;2026-11-04 DA-esc-tab 之前的形狀,Dialog / Sheet 已在 10-27 接上)',
+    file: 'components/FileViewer/file-viewer.tsx',
+    expectRed: ['N-esc-tab-modal'],
+    apply: (src) => replaceOnce(src, /if \(isModal\) exitFocus\.ref\(node\)/, 'void exitFocus'),
   },
   {
     id: 'modal-exit-keeps-aria-hidden',
@@ -685,7 +693,8 @@ function ModalExitScene() {
   const [dlg, setDlg] = React.useState(false)
   const [sheet, setSheet] = React.useState(false)
   const [save, setSave] = React.useState(false)
-  window.__closeScene = () => { setDlg(false); setSheet(false); setSave(false) }
+  const [viewer, setViewer] = React.useState(false)
+  window.__closeScene = () => { setDlg(false); setSheet(false); setSave(false); setViewer(false) }
   return (
     <div style={{ display: 'flex', gap: 12, padding: 16 }}>
       <Dialog open={dlg} onOpenChange={setDlg}>
@@ -712,6 +721,11 @@ function ModalExitScene() {
         </DialogContent>
       </Dialog>
       <button type="button">之後三</button>
+      {/* FileViewer:受控 open、沒有觸發點(附件縮圖 / 「預覽」鈕開的那種);開啟者由 useTriggerlessFocusReturn 記 */}
+      <Button data-exit-trigger="fileviewer" onClick={() => setViewer(true)}>預覽合約</Button>
+      <FileViewer data-exit-probe="fileviewer" open={viewer} onOpenChange={setViewer}
+        files={[{ id: 'fv1', url: 'about:blank', name: '2026-Q3-合約.zip', mimeType: 'application/zip', size: 2048 }]} />
+      <button type="button">之後四</button>
     </div>
   )
 }
@@ -1255,6 +1269,8 @@ async function runChecks(page) {
     { key: 'sheet', next: 'BUTTON:之後二', close: async () => { await page.keyboard.press('Escape') } },
     // 非同步關閉:鍵盤按「儲存」,50ms 後 setOpen(false) —— 不是離散事件裡的更新(存檔成功後關閉的常見寫法)
     { key: 'save', next: 'BUTTON:之後三', close: async () => { await d.focus('[data-exit-save]'); await page.keyboard.press('Enter') } },
+    // FileViewer(2026-11-04,DA-esc-tab):受控 open、沒有觸發點 —— 開啟者是一般按鈕,Esc 收起後同樣要在收起那一刻還
+    { key: 'fileviewer', next: 'BUTTON:之後四', close: async () => { await page.keyboard.press('Escape') } },
   ]
   const modalExit = {}
   for (const c of MODAL_EXIT) {
@@ -1281,7 +1297,7 @@ async function runChecks(page) {
       await slow.evaluate((n) => n.remove()).catch(() => {})
     }
   }
-  check('N-esc-tab-modal', 'contract', 'Dialog / Sheet 由觸發鈕開:Esc 收起後、收起動畫還在播時按 Tab → 焦點走到觸發鈕的下一格;同一段空窗裡觸發鈕的祖先鏈沒有 aria-hidden、淡出中的內容 inert;對話框裡的「儲存」非同步關閉也一樣(修前 Tab 被吃掉:焦點等內容卸載才回觸發鈕,期間觸發鈕在 aria-hidden 底下)',
+  check('N-esc-tab-modal', 'contract', 'Dialog / Sheet 由觸發鈕開、FileViewer 由一般按鈕受控開:Esc 收起後、收起動畫還在播時按 Tab → 焦點走到觸發鈕的下一格;同一段空窗裡觸發鈕的祖先鏈沒有 aria-hidden、淡出中的內容 inert;對話框裡的「儲存」非同步關閉也一樣(修前 Tab 被吃掉:焦點等內容卸載才回觸發鈕,期間觸發鈕在 aria-hidden 底下)',
     MODAL_EXIT.every((c) => modalExit[c.key].active === c.next && modalExit[c.key].during.hidden.length === 0 && modalExit[c.key].during.inert === true), modalExit)
   // 對照:彈出層關著時 Tab 離開 —— 量具看得到 blur 與錯誤(全部突變都必須綠)
   await scene('leave')
