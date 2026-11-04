@@ -458,7 +458,11 @@ try {
 
 check('CI 只跑判定與 selftest,永遠不跑 --write-baseline', () => {
   const pkg = JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).scripts ?? {}
-  assert.equal(pkg['test:story-layer-drift'], `node ${SELF} --selftest && node ${SELF}`)
+  // 要保證的是「CI 叫的這支 npm script 真的跑了 selftest 與判定」,不是整串字逐字相等 ——
+  // 158286ad 起同一支 script 後面串了 test:data-table-tree-view-doc(讓那支閘有 CI 呼叫者),逐字相等會把這種正確的串接判紅。
+  const steps = String(pkg['test:story-layer-drift'] ?? '').split(/\s*&&\s*/)
+  assert.ok(steps.includes(`node ${SELF} --selftest`), 'test:story-layer-drift 必須跑 --selftest')
+  assert.ok(steps.includes(`node ${SELF}`), 'test:story-layer-drift 必須跑判定')
   for (const [name, cmd] of Object.entries(pkg)) assert.ok(!(cmd.includes(SELF) && cmd.includes('--write-baseline')), `package.json ${name} 不得跑 --write-baseline`)
   const workflowsDir = join(REPO, '.github/workflows')
   for (const f of readdirSync(workflowsDir).filter((n) => /\.ya?ml$/.test(n))) {
