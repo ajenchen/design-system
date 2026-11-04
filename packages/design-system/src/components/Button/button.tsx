@@ -252,7 +252,7 @@ const buttonVariants = cva(
         ],
       },
       // neutral tone:灰底(neutral-selected family)— 可取消的切換鈕;導覽 / 目前頁不用它(選中列規則,item-anatomy.spec.md「選中 × 互動疊加」)
-      // 階梯值 selected → -selected-hover → -selected-active(2→3→4):user 2026-09-25 選「甲：保留，維持 2→3→4 (Recommended)」
+      // 階梯值 selected → -selected-hover → -selected-active(2→3→4):user 2026-09-25 選『甲：保留，維持 2→3→4 (Recommended)』
       // (選項由 AI 提供;待辦總帳 B5)。下方開啟中 / aria-disabled 各條都是「跟著本分支的 hover / 靜止 token 走」,改階梯時同一 compound 內一起改。
       // 2026-09-29(待辦總帳 N7):secondary 從這一組拆出去(下一組)—— 它的靜止底是 `--surface`(「底」),已按下要**疊層**不換底:
       // 深色 --surface 與 --neutral-selected 都是白 8%,換底後已按下 = 未按下(#1E1E1E = #1E1E1E);tertiary / text 是透明底,換底沒問題。

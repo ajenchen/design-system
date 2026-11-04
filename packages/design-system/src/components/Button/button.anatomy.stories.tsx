@@ -654,7 +654,7 @@ export const StateBehavior = {
 }
 
 /* ── 灰色已按下切換鈕(pressedTone="neutral")的平常 / 滑過 / 按住 ───────────────
-   2026-09-25 待辦總帳 B5:user 選「甲：保留，維持 2→3→4 (Recommended)」後補的第一則畫面(之前零則)。
+   2026-09-25 待辦總帳 B5:user 選『甲：保留，維持 2→3→4 (Recommended)』(選項由 AI 提供)後補的第一則畫面(之前零則)。
    「滑過」欄用開啟中快照畫:button.spec.md「狀態疊加」表 —— 開啟中 = 自己的 hover(pressed × 開啟中 = pressed × hover),
    所以 `data-state="open"`(Radix 開著浮層時寫在觸發鈕上的同一個屬性)就是滑過的靜態畫面(M15:不必真人滑過也截得到)。
    「按住」沒有靜態等價物,只列 token 色塊;真的按住由驗收階段用指標量。 */

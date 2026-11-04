@@ -36,8 +36,8 @@ import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
  * 世界級對照同向:MUI OutlinedInput / Ant Input / Fluent Input 的 readOnly **完全不改焦點樣式**(它們的唯讀
  * 靜止態與可編輯態本來就長一樣),Carbon 與 Polaris 雖然唯讀另有靜止樣式,但焦點指示同樣**與可編輯態相同**。
  * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**
- *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出「為何不是模擬 field control focus 的樣式?
- * field control focus 應該是 1px 的 border?」,改為現在這版並撤回那個具名外描邊 utility。
+ *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出(18:46,逐字):
+ *「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？」,改為現在這版並撤回那個具名外描邊 utility。
  */
 export type FieldChromeHost =
   /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
