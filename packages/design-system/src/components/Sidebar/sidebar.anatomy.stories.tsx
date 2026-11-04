@@ -625,7 +625,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-10">
         {/* Collapse modes */}
         <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">行為 1:三種 collapsible 模式</span>
+          <span className="text-caption font-medium text-fg-secondary">三種收合模式</span>
           <SectionDescription>
             <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 68) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
           </SectionDescription>
@@ -638,7 +638,7 @@ export const StateBehavior: Story = {
 
         {/* Live toggle demo */}
         <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">行為 2:Cmd+B / SidebarTrigger 切換 open state</span>
+          <span className="text-caption font-medium text-fg-secondary">用 Cmd/Ctrl+B 或 SidebarTrigger 展開與收合</span>
           <SectionDescription>
             SidebarProvider 內建 Cmd+B (Mac) / Ctrl+B (Win) 全域快捷鍵,同時 SidebarTrigger iconOnly Button 作為視覺 toggle。open state 寫入 cookie(7 天);跨 session 還原需 consumer 讀 cookie 後傳 defaultOpen(詳 spec「持久化與快捷鍵」)。
           </SectionDescription>
@@ -692,7 +692,7 @@ export const StateBehavior: Story = {
 
         {/* Icon mode — tooltip for item labels */}
         <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">行為 3:Icon mode 時 label 隱藏 → Tooltip 代償</span>
+          <span className="text-caption font-medium text-fg-secondary">收成細列時用 Tooltip 補上標籤</span>
           <SectionDescription>
             collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 <code>tooltip</code> prop,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(<code>tooltip</code> prop)。
           </SectionDescription>
