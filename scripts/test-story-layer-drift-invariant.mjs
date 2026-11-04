@@ -243,21 +243,27 @@ check('story 標記引用的每一個 `*.spec.md:N` 都指得到(檔在、行號
     const name = f.split('/').pop()
     specs.set(name, [...(specs.get(name) ?? []), f])
   }
+  const MARKER_RE = /@(?:layout-space-magic-ok|story-counter-example):[^\n]*/g
+  const CITE_RE = /([A-Za-z][\w-]*\.spec\.md):(\d+)(?:-(\d+))?/g
+  const citesIn = (text) => [...text.matchAll(MARKER_RE)].flatMap((m) => [...m[0].matchAll(CITE_RE)])
   const dangling = []
-  let cites = 0
-  for (const rel of listScope()) {
-    const text = readFileSync(join(REPO, rel), 'utf8')
-    for (const m of text.matchAll(/@(?:layout-space-magic-ok|story-counter-example):[^\n]*/g)) {
-      for (const c of m[0].matchAll(/([A-Za-z][\w-]*\.spec\.md):(\d+)(?:-(\d+))?/g)) {
-        cites++
-        const candidates = specs.get(c[1]) ?? []
-        const last = Number(c[3] ?? c[2])
-        if (!candidates.length) dangling.push(`${rel}:${c[0]}(找不到 ${c[1]})`)
-        else if (!candidates.some((f) => readFileSync(join(REPO, f), 'utf8').split('\n').length >= last)) dangling.push(`${rel}:${c[0]}(超出檔尾)`)
-      }
+  const scope = listScope()
+  for (const rel of scope) {
+    for (const c of citesIn(readFileSync(join(REPO, rel), 'utf8'))) {
+      const candidates = specs.get(c[1]) ?? []
+      const last = Number(c[3] ?? c[2])
+      if (!candidates.length) dangling.push(`${rel}:${c[0]}(找不到 ${c[1]})`)
+      else if (!candidates.some((f) => readFileSync(join(REPO, f), 'utf8').split('\n').length >= last)) dangling.push(`${rel}:${c[0]}(超出檔尾)`)
     }
   }
-  assert.ok(cites >= 300, `標記引用太少(${cites}),掃描可能壞了`)
+  // 儀器證據不拿真實引用數當下限:C6(owner-claims)要「檔名:行號」改宣告名 / 段名,真實引用只會變少
+  // (2026-10-28 basic 家族放行章改引段名,371 → 275,原本的 ≥ 300 下限因此假紅 —— 量具在指控一個正確的改動)。
+  // 改成兩件跟改寫無關的事:掃到的檔數(同 assertRealScan 的下限),與正對照(一段含兩個引用的標記必須數到 2、且都指得到檔)。
+  assert.ok(scope.length >= 150, `掃到的 story 檔太少(${scope.length}),掃描可能壞了`)
+  const positive = '{/* @layout-space-magic-ok: 夾具(layoutSpace.spec.md:13;tag.spec.md:1-2) */}' // @cite-fixture:正對照
+  const hits = citesIn(positive)
+  assert.equal(hits.length, 2, `正對照應數到 2 個引用,實得 ${hits.length}`)
+  assert.ok(hits.every((c) => (specs.get(c[1]) ?? []).some((f) => readFileSync(join(REPO, f), 'utf8').split('\n').length >= Number(c[3] ?? c[2]))), '正對照的引用應指得到檔')
   assert.deepEqual(dangling, [])
   // 對照組:一個指到檔尾之外的引用必須被抓到
   const fake = '{/* @layout-space-magic-ok: 夾具(layoutSpace.spec.md:99999) */}' // @cite-fixture:故意指到檔尾之外的對照組
