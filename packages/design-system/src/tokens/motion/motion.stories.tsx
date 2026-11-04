@@ -214,7 +214,9 @@ export const DelayFeel: Story = {
                 欄位只有預設的帳號 ID / 員工編號,不另加「所在地 / 上班時間」。
                 外殼 = hover-card.tsx HOVER_CARD_SURFACE_CLASS(與 Avatar hoverCard 內建同一份):不設內距、不設寬度 —— 寬度由 ProfileCard 自己決定 */}
             <HoverCardContent className={HOVER_CARD_SURFACE_CLASS}>
-              {samplePersonCard({ name: '陳美惠', subtitle: 'Design｜MEIHUI｜2048731', id: 'MEIHUI', employeeNumber: '2048731' })}
+              {/* 句子叫讀者「請找她確認」→ 名片要是在線的(共用樣本預設是「離開 / 休假中,週一回來」,跟句子自相矛盾;tokens 審查第 11 則);
+                  在線訊息沿用名錄 SAMPLE_PEOPLE 既有的同一句,不另寫 */}
+              {samplePersonCard({ name: '陳美惠', subtitle: 'Design｜MEIHUI｜2048731', id: 'MEIHUI', employeeNumber: '2048731', status: 'online', statusMessage: '在座位上,可以直接找我' })}
             </HoverCardContent>
           </HoverCard>
           確認,她負責這一季的設計系統整合。
