@@ -96,12 +96,13 @@ export const LaunchWeek: Story = {
 export const ContentPublishingSchedule: Story = {
   name: '內容發佈月曆',
   render: () => {
+    // 五種內容各一色;只用字與底色對比 ≥ 4.5 的色相(green / orange 事件色的字對比 3.71 / 3.82,不到 WCAG AA 4.5;色票本身怎麼改是 tokens 的題目,不在範例裡處理)
     const events: CalendarEvent[] = [
       { id: 'p1', title: '週五 newsletter', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' },
       { id: 'p2', title: 'Blog: 設計系統 v2', start: `${thisMonth}-07`, end: `${thisMonth}-07`, color: 'purple' },
       { id: 'p3', title: 'YouTube: tutorial ep 3', start: `${thisMonth}-10`, end: `${thisMonth}-10`, color: 'red' },
-      { id: 'p4', title: 'Podcast: interview', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'green' },
-      { id: 'p5', title: 'Product announcement', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'orange' },
+      { id: 'p4', title: 'Podcast: interview', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'turquoise' },
+      { id: 'p5', title: 'Product announcement', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'magenta' },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
