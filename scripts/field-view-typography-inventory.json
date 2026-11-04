@@ -1,0 +1,15 @@
+{
+  "note": "field-view-typography-invariant 的覆蓋清單:有值文字、這次量到的四模式 story(記 1)。只准由本閘 --write-inventory 重寫;清單裡的 story 不在建置裡或沒量到就紅。",
+  "generatedBy": "node scripts/field-view-typography-invariant.mjs --write-inventory",
+  "storyCount": 8,
+  "stories": {
+    "design-system-components-combobox-展示--modes": 1,
+    "design-system-components-datepicker-展示--modes": 1,
+    "design-system-components-input-展示--modes": 1,
+    "design-system-components-linkinput-展示--modes": 1,
+    "design-system-components-numberinput-展示--modes": 1,
+    "design-system-components-radiogroup-展示--modes": 1,
+    "design-system-components-select-展示--modes": 1,
+    "design-system-components-timepicker-展示--modes": 1
+  }
+}

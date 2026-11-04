@@ -3,9 +3,9 @@
  * Field 家族 view 模式字級不變條件(2026-09-15,user 抓 RadioGroup 四模式的 view 字比選項大)。
  *
  * @gate-contract
- *   保證: 每一則 Field「四模式」story 裡,view 段值文字的 computed font-size / line-height 等於同一則 story edit 段的值文字(同一顆控件、同一個 size);清單上每一則 story 都必須真的量到,或落在下方 DECLARED 具名豁免且當場確認理由仍成立
- *   紅: view 值文字硬改 16px(RadioGroup 修前的樣子)→ 每一則被量的 story 都指名紅;story 永遠渲染不出來(擋掉它的 story 檔)→ 以「儀器失效」指名紅,不得算成略過
- *   綠: 現況必綠;story 檔故意晚 3 秒才到(舊寫法「load + 固定 600ms」必然看不到)仍必須量到而且綠 —— 等的是被量的元素本身,與機器快慢無關
+ *   保證: 每一則 Field「四模式」story 裡,view 段值文字的 computed font-size / line-height 等於同一則 story edit 段的值文字(同一顆控件、同一個 size);清單上每一則 story 都必須真的量到,或落在下方 DECLARED 具名豁免且當場確認理由仍成立;覆蓋清單(scripts/field-view-typography-inventory.json,由本閘 --write-inventory 量出)裡每一則都還在建置裡、而且這次量到
+ *   紅: view 值文字硬改 16px(RadioGroup 修前的樣子)→ 每一則被量的 story 都指名紅;story 永遠渲染不出來(擋掉它的 story 檔)→ 以「儀器失效」指名紅,不得算成略過;清單裡的 story 改名 / 刪掉 / 這次沒量到 → 指名紅
+ *   綠: 現況必綠;story 檔故意晚 3 秒才到(舊寫法「load + 固定 600ms」必然看不到)仍必須量到而且綠 —— 等的是被量的元素本身,與機器快慢無關;--selftest 對照組 D:清單抽 2 則把 view 段標題改掉(探針認不出)→ 覆蓋比對必須點名、破壞必須真的讓它量不到
  *
  * SSOT:field-controls.spec.md「(e) View typography canonical」—— view 路徑**必**消費 size 對應的字級 token
  *(sm/md → text-body 14px、lg → text-body-lg 16px),禁裸 span 吃瀏覽器預設 16px。
@@ -32,7 +32,13 @@
  *  A. 每則被量 story 的 view 值文字硬改 16px → 每一則都必須紅(量具會紅)。
  *  B. RadioGroup 的 story 檔晚 3 秒到 → 舊寫法(load + 固定 600ms)必須看不到(證明延遲有效)、本閘必須等到並量到綠。
  *  C. RadioGroup 的 story 檔被擋掉 → 本閘必須判「儀器失效」並指名 radiogroup,不是略過。
- * 用法:node scripts/field-view-typography-invariant.mjs [--static=<dir>] [--selftest]
+ *  D. 覆蓋清單抽 2 則,網址帶 g13break=1(初始化腳本把 view 段標題改字,PROBE 找不到 view 段)→ 這兩則必須量不到,而且覆蓋比對點名它們。
+ *
+ * ── 2026-10-28 覆蓋清單(總帳 G13;做法同 field-text-left-edge 的 G12)──
+ * 原本的地板是「量到 ≥ 4 則才綠」,要量哪幾則則由 story id 的樣子(`-展示--modes$`)決定 —— 四模式 story 若改了匯出名、或展示頁拆掉那一則,
+ * 它就靜靜地不在清單上,剩下的照樣 ≥ 4、照樣綠(M37:「量到幾則」不是「該量的都量到了」)。現在量到的每一則記進覆蓋清單
+ *(由本閘 `--write-inventory` 量出;那一趟有任何紅就拒寫;CI 永不寫):清單裡的 story 不在建置裡、或這次沒量到 → 紅並點名;多出來的 → 印「清單還沒記」。
+ * 用法:node scripts/field-view-typography-invariant.mjs [--static=<dir>] [--selftest] [--write-inventory]
  */
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -41,6 +47,11 @@ import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
+const WRITE_INVENTORY = process.argv.includes('--write-inventory')
+const INVENTORY = path.join(REPO, 'scripts/field-view-typography-inventory.json')
+// 對照組 D:清單排序後取前幾則;網址帶 BREAK_PARAM 時初始化腳本把 view 段標題改字(只在那個網址生效)
+const COVERAGE_CONTROL_SAMPLES = 2
+const BREAK_PARAM = 'g13break=1'
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
 // 從本次獨佔的建置快照供檔(lib/a11y-static-server.mjs),不再讀活的 storybook-static —— 2026-09-24 別的 agent 同時 build-storybook 清空目錄,導致本機誤紅。
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
@@ -50,7 +61,7 @@ const index = JSON.parse(fs.readFileSync(path.join(server.snapshot?.dir ?? root,
 const ENTRIES = Object.values(index.entries).filter((e) => e.type === 'story' && /^design-system-components-[a-z]+-展示--modes$/u.test(e.id)).sort((a, b) => a.id.localeCompare(b.id))
 const STORIES = ENTRIES.map((e) => e.id)
 const shortName = (id) => id.replace(/^design-system-components-|-展示--modes$/gu, '')
-const storyUrl = (id) => `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`
+const storyUrl = (id, extra = '') => `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story${extra}`
 // 等「story 渲染出來」與「值文字出現」各自的上限。慢機器只會等久一點,不會因此改變判定。
 const APPEAR_MS = 20000
 
@@ -66,15 +77,23 @@ const DECLARED = new Map([
 const PROBE = ({ kind, wait = false, sabotage = false }) => {
   const heads = [...document.querySelectorAll('#storybook-root h3')]
   // 段落 = <h3>edit|view</h3> 之後、下一個 <h3> 之前的兄弟節點;直接一層的 <p> 是 story 的說明文字,不是控件,不量。
+  // 2026-10-28:四模式 story 改用共用 ExampleSection(`[data-example-section]` = 標題區〔h3 + 說明〕+ 內容,FL-a4)後,
+  // h3 的兄弟只剩說明 → 舊寫法找到 0 個節點、整支「量不到」。段落改認結構:h3 在 ExampleSection 裡 → 那一格除了標題區以外的子節點;
+  // 不在 → 照舊的兄弟節點。認的是 DS 共用元件自己掛的記號,不是 class 字串。
   const section = (label) => {
     const h = heads.find((x) => x.textContent.trim().toLowerCase() === label); if (!h) return null
+    const box = h.closest('[data-example-section]')
+    if (box) return [...box.children].filter((n) => !n.contains(h) && n.tagName !== 'P')
     const nodes = []; for (let n = h.nextElementSibling; n && n.tagName !== 'H3'; n = n.nextElementSibling) if (n.tagName !== 'P') nodes.push(n)
     return nodes
   }
   // 值文字 = 控件裡(文件順序)第一個自己直接含字的元素,或可見、有值的 <input> / <textarea>(edit 的值住在 input 裡,不是文字節點)。
+  // <p> 一律是 story 的說明文字(Field 家族控件本身不渲染 <p>)—— 2026-11-04:四模式 story 把「樣本 + 說明」包進共用 ExampleGroup 之後,
+  // 說明從段落的直接一層移到下一層,上面 section() 的直接一層過濾擋不到;這裡在任何深度都跳過 <p> 整棵子樹,規則跟直接一層那條相同。
+  const skipCaption = { acceptNode: (n) => (n.nodeType === Node.ELEMENT_NODE && n.tagName === 'P' ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) }
   const valueCarrier = (nodes) => {
     for (const top of nodes) {
-      const walker = document.createTreeWalker(top, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
+      const walker = document.createTreeWalker(top, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, skipCaption)
       for (let n = walker.currentNode; n; n = walker.nextNode()) {
         if (n.nodeType === Node.TEXT_NODE) { if (n.textContent.trim() && n.parentElement) return { el: n.parentElement, text: n.textContent.trim() }; continue }
         if ((n.tagName === 'INPUT' || n.tagName === 'TEXTAREA') && n.type !== 'hidden' && n.value.trim()
@@ -103,19 +122,55 @@ const PROBE = ({ kind, wait = false, sabotage = false }) => {
 }
 
 const browser = await launchBrowser(); const ctx = await browser.newContext({ viewport: { width: 1200, height: 1400 }, deviceScaleFactor: 1 }); const page = await ctx.newPage()
+// 對照組 D 用:只在網址帶 BREAK_PARAM 時,把 <h3>view</h3> 一出現就改字(PROBE 以段標題找 view 段 → 找不到)
+await page.addInitScript((param) => {
+  if (!location.search.includes(param)) return
+  const rename = () => { for (const h of document.querySelectorAll('#storybook-root h3')) if (h.textContent.trim().toLowerCase() === 'view') h.textContent = 'view(對照組)' }
+  new MutationObserver(rename).observe(document, { subtree: true, childList: true, characterData: true })
+}, BREAK_PARAM)
+
+/** 讀覆蓋清單:{ ok, stories, why } —— 缺檔、格式不對、空清單都不是 ok */
+function readInventory() {
+  if (!fs.existsSync(INVENTORY)) return { ok: false, why: '讀不到覆蓋清單 scripts/field-view-typography-inventory.json(先在本機跑 --write-inventory)' }
+  try {
+    const j = JSON.parse(fs.readFileSync(INVENTORY, 'utf8'))
+    const stories = j && typeof j.stories === 'object' && j.stories ? j.stories : null
+    if (!stories) return { ok: false, why: '覆蓋清單格式不對(缺 stories 物件)' }
+    const bad = Object.entries(stories).filter(([, n]) => !Number.isInteger(n) || n <= 0)
+    if (bad.length) return { ok: false, why: `覆蓋清單格式不對(記數不是正整數:${bad.map(([k]) => k).slice(0, 5).join(', ')})` }
+    if (!Object.keys(stories).length) return { ok: false, why: '覆蓋清單是空的' }
+    return { ok: true, stories }
+  } catch (error) {
+    return { ok: false, why: `覆蓋清單讀不懂:${String(error?.message || error)}` }
+  }
+}
+/** 覆蓋比對(純函式):清單裡的 story 不在建置裡 / 這次少量 → 列出;多出來的另列 */
+function compareCoverage(recorded, measured, { buildIds }) {
+  const missing = []; const fewer = []; const more = []
+  for (const [id, n] of Object.entries(recorded)) {
+    if (!buildIds.has(id)) { missing.push({ story: id, recorded: n }); continue }
+    const got = measured[id] ?? 0
+    if (got < n) fewer.push({ story: id, recorded: n, measured: got })
+  }
+  for (const [id, n] of Object.entries(measured)) if ((recorded[id] ?? 0) < n) more.push({ story: id, recorded: recorded[id] ?? 0, measured: n })
+  return { missing, fewer, more }
+}
+const buildIds = new Set(Object.values(index.entries).filter((e) => e.type === 'story').map((e) => e.id))
+/** 每則 story 這次有沒有量到(量到 = 1;覆蓋清單比對 / 重寫用) */
+const perStory = {}
 
 /**
  * 開一則 story,等被量的元素出現,再分類。回傳 status:
  *   measured(量到)/ declared-skip(具名豁免且當場確認)/ stale-declaration(豁免理由已不成立)/
  *   not-rendered(儀器失效:story 沒渲染)/ unmeasurable(story 渲染了,但等不到值文字)
  */
-async function inspectStory(id, { sabotage = false, appearTimeout = APPEAR_MS } = {}) {
+async function inspectStory(id, { sabotage = false, appearTimeout = APPEAR_MS, urlExtra = '' } = {}) {
   const name = shortName(id)
   const declared = DECLARED.get(name)
   const kind = declared?.kind ?? 'measure'
   try {
     // 渲染完成(含 play)+ render-health + 被量的元素本身(值文字 / 圖示 / 段標題)—— 等的與量的是同一支 PROBE。
-    await openStory(page, storyUrl(id), {
+    await openStory(page, storyUrl(id, urlExtra), {
       waitFor: PROBE, waitForArg: { kind, wait: true }, waitForPolling: 100,
       timeoutMs: appearTimeout, navigationTimeoutMs: 90000, notFound: server.notFound,
     })
@@ -177,7 +232,11 @@ async function withChunkRoute(entry, mode, fn) {
 
 let selftestOk = true
 try {
-  for (const id of STORIES) report(await inspectStory(id, { sabotage: SELFTEST }))
+  for (const id of STORIES) {
+    const r = await inspectStory(id, { sabotage: SELFTEST })
+    if (r.status === 'measured') perStory[id] = 1
+    report(r)
+  }
   for (const name of DECLARED.keys()) {
     if (!STORIES.some((id) => shortName(id) === name)) { count['stale-declaration']++; console.log(`✗ DECLARED 豁免「${name}」找不到對應的四模式 story —— 清單已腐爛,移除該項`) }
   }
@@ -212,19 +271,61 @@ try {
         ? `✓ selftest 對照組 C:radiogroup 的 story 檔被擋掉 → 判「儀器失效」並指名(${c.result.detail.slice(0, 120)})`
         : `✗ selftest 對照組 C 失效:攔到 ${c.hits()} 次、結果=${JSON.stringify(c.result).slice(0, 200)} —— 永遠不渲染的 story 沒被判紅`)
     }
-    selftestOk = A && B && C
+    // D 覆蓋清單:抽清單裡前幾則,用帶 BREAK_PARAM 的網址(view 段標題被改字)再量一次 —— 必須量不到,而且覆蓋比對要點名
+    const inv = readInventory()
+    let D = false
+    if (!inv.ok) console.log(`✗ selftest 對照組 D:${inv.why}`)
+    else {
+      const sample = Object.keys(inv.stories).sort().slice(0, COVERAGE_CONTROL_SAMPLES)
+      const control = []
+      for (const sid of sample) {
+        const intact = await inspectStory(sid)
+        const broken = await inspectStory(sid, { urlExtra: `&${BREAK_PARAM}`, appearTimeout: 5000 })
+        control.push({ story: sid, recorded: inv.stories[sid], intact: intact.status === 'measured' ? 1 : 0, broken: broken.status === 'measured' ? 1 : 0, brokenStatus: broken.status })
+      }
+      const { fewer } = compareCoverage(Object.fromEntries(control.map((c) => [c.story, c.recorded])), Object.fromEntries(control.map((c) => [c.story, c.broken])), { buildIds })
+      const named = new Set(fewer.map((x) => x.story))
+      for (const c of control) console.log(`  D ${shortName(c.story)}:清單記 ${c.recorded},原樣量到 ${c.intact},改掉 view 段標題後 ${c.broken}(${c.brokenStatus})→ ${named.has(c.story) ? '覆蓋比對點名 ✓' : '覆蓋比對沒點名 ✗'}`)
+      const effective = control.some((c) => c.broken < c.intact)
+      D = control.length > 0 && effective && control.every((c) => named.has(c.story))
+      console.log(D ? '✓ selftest 對照組 D:覆蓋清單裡的 story 量不到時點得出是哪一則(破壞真的讓它量不到)' : `✗ selftest 對照組 D 失效:${!effective ? '破壞沒有讓任何一則真的量不到 —— 對照組沒有作用' : '量不到卻沒被點名 —— 覆蓋比對失效'}`)
+    }
+    selftestOk = A && B && C && D
   }
 } catch (e) { report404(); throw e }
 finally { await browser.close(); await server.stop() }
 
 if (SELFTEST) {
-  console.log(selftestOk ? '✓ selftest:三組對照都成立 —— 量具會紅、晚到會等、沒渲染會指名紅' : '✗ selftest:對照組不成立 —— 這支閘的綠燈不算證據')
+  console.log(selftestOk ? '✓ selftest:四組對照都成立 —— 量具會紅、晚到會等、沒渲染會指名紅、清單裡的 story 量不到會指名紅' : '✗ selftest:對照組不成立 —— 這支閘的綠燈不算證據')
   if (!selftestOk) report404()
   process.exit(selftestOk ? 0 : 1)
 }
-const floorOk = count.measured >= 4
-console.log(`${floorOk ? '✓' : '✗'} 取樣:${count.measured} 則有值文字的四模式 story 被量到(需 ≥ 4);具名豁免 ${count['declared-skip']} 則;共 ${STORIES.length} 則`)
-const failed = redCount() + (floorOk ? 0 : 1)
+// 覆蓋清單取代原本的固定地板「量到 ≥ 4 則」(檔頭 2026-10-28 段)
+if (WRITE_INVENTORY) {
+  if (process.env.CI) { console.log('✗ CI 不准寫覆蓋清單(--write-inventory 只在本機,寫完隨 PR 送審)'); process.exit(1) }
+  if (redCount()) { console.log(`✗ 這一趟有 ${redCount()} 則紅,拒寫覆蓋清單(先修)`); process.exit(1) }
+  const sorted = Object.fromEntries(Object.entries(perStory).sort(([a], [b]) => a.localeCompare(b)))
+  fs.writeFileSync(INVENTORY, JSON.stringify({
+    note: 'field-view-typography-invariant 的覆蓋清單:有值文字、這次量到的四模式 story(記 1)。只准由本閘 --write-inventory 重寫;清單裡的 story 不在建置裡或沒量到就紅。',
+    generatedBy: 'node scripts/field-view-typography-invariant.mjs --write-inventory',
+    storyCount: Object.keys(sorted).length,
+    stories: sorted,
+  }, null, 2) + '\n')
+  console.log(`已寫覆蓋清單:${Object.keys(sorted).length} 則 story`)
+  process.exit(0)
+}
+const inv = readInventory()
+let coverageFails = 0
+if (!inv.ok) { coverageFails = 1; console.log(`✗ 覆蓋清單:${inv.why} —— 這一趟沒有覆蓋基準,不能當綠燈`) }
+else {
+  const { missing, fewer, more } = compareCoverage(inv.stories, perStory, { buildIds })
+  console.log(`覆蓋清單:記 ${Object.keys(inv.stories).length} 則;這次量到 ${count.measured} 則;具名豁免 ${count['declared-skip']} 則;共 ${STORIES.length} 則四模式 story`)
+  for (const m of more) console.log(`  · 清單還沒記:${shortName(m.story)}(跑 --write-inventory 收進來)`)
+  for (const m of missing) console.log(`  ✗ 清單裡的 story 不在建置裡:${m.story}(改名或刪掉了 —— 四模式 story 的匯出名改了就不會被 -展示--modes 找到)`)
+  for (const x of fewer) console.log(`  ✗ 清單裡的 story 這次沒量到:${shortName(x.story)}(清單記 ${x.recorded},這次 ${x.measured})`)
+  coverageFails = missing.length + fewer.length
+}
+const failed = redCount() + coverageFails
 if (count['not-rendered']) console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${count['not-rendered']} 則 story 沒渲染完成 —— 儀器失效(沒量到),不是產品裁決,也不算通過`)
 console.log(failed ? `✗ field-view-typography ${failed} 條失敗(SSOT:field-controls.spec.md (e) View typography canonical)` : `✅ field-view-typography PASS(${count.measured} 則 story)`)
 if (failed) report404()
