@@ -200,9 +200,10 @@ export const DelayFeel: Story = {
                   e.preventDefault()
                   openMeihuiProfile()
                 }}
-                // 連結長相照 color.spec.md「連結 hover = 換色(`text-primary-hover`),不用底線」
+                // 滑過 = 換色(color.spec.md「連結 hover = 換色」,不是滑過才加底線);句子裡的連結平常就畫底線
+                // (agent-panel.spec.md 內文連結「+ 底線,長文閱讀需要底線可掃描」;只靠顏色分不出它是連結 = a11y link-in-text-block)
                 // @layout-space-magic-ok: 句子裡的行內人名連結左右 4px(行內文字 micro) —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
-                className="text-primary hover:text-primary-hover mx-1 cursor-pointer"
+                className="text-primary hover:text-primary-hover underline underline-offset-2 mx-1 cursor-pointer"
               >
                 陳美惠
               </a>
