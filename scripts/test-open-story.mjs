@@ -13,8 +13,8 @@
  *       不做示範圖代換、替真站沒有的網址捏造圖、waitForImages 不等靜止)各自至少讓一題紅
  *   紅(計時器帳本 / 截圖前的確定性,2026-10-14):滑過後 600ms 才掛上的提示、渲染排下 700ms 才出現的提示,帶 pendingTimers 卻在提示出現 / 淡入跑完前回傳;
  *       已取消或超過門檻(2000ms)的計時器擋住靜止;輪詢式短計時器被當成「已經停了」;要求看帳本、文件裡沒有帳本卻沒丟 timer-ledger;
- *       prepareStableScreenshot 之後轉圈相隔 350ms 的兩張不同、清快取後縮小顯示的圖畫成空白;圖片就緒又呼叫 decode() —— 任一成立即紅。
- *       對照組:不帶 pendingTimers 的同一題 5 次內可達「提示還沒出現」、沒先準備的轉圈兩張不同、把 decode() 放回的副本被靜態查抓到
+ *       prepareStableScreenshot 之後轉圈(CSS 動畫或 SVG SMIL)相隔 350ms 的兩張不同、清快取後縮小顯示的圖畫成空白;圖片就緒又呼叫 decode() —— 任一成立即紅。
+ *       對照組:不帶 pendingTimers 的同一題 5 次內可達「提示還沒出現」、沒先準備的轉圈(CSS / SMIL 各一)兩張不同、把 decode() 放回的副本被靜態查抓到
  *   綠: 正常 story 必須成功;圖晚 2.5 秒到、CSS 背景圖晚 2 秒到、版面長完才掛上的晚到圖、互動後才掛上的圖都必須等到(關掉 images 的對照量到還沒載完);
  *       RFC 保留名稱與同源 404 照拍(列在 deterministicFailures)、視窗外 lazy 圖不等;示範圖主機預設換成同尺寸本機合成圖(321×123);story 檔故意晚 3 秒才到(同一段固定睡 600ms 必然看不到)、play 1.5 秒後才把焦點移走、渲染完成後版面還要長 45 個影格、允許 afterEach 時卡在 afterEach 的 story、管理介面 iframe 裡的 story、preview 靜止但管理介面還要重畫 45 個影格、preview 等待途中自己重新載入一次,都必須等到並成功 —— 全部是本機造的合成 Storybook 頁(startA11yStaticServer 供檔 + page.route 攔截),判定只看訊號本身、與機器快慢無關;有 storybook-static 時另在真實建置上驗同樣三題(真實 story 成功、不存在的 id、被擋的 story 檔)。同檔另驗同一支 lib 的指標落點(2026-10-01):ownSurfacePosition 必須點在觸發欄位自己的表面(不在 Tag / 頭像 / 按鈕 / Radix 觸發點上)、整格被蓋住回 ok:false,parkPointer 必須停在沒有滑過反應的位置 —— 合成頁與真實建置(PeoplePicker「多人 × 欄位內搜尋」第 3 格正中央是頭像)兩面:舊點法(點正中央、指標留在原地)必須重現「名片卡蓋住下一格」,helper 必須讓下一格點得到
  *
@@ -598,6 +598,27 @@ try {
     check('prepareStableScreenshot:轉圈相隔 350ms 各拍一次 —— 沒先準備的兩張不同(5 次內可達);先準備的兩張逐位元組相同(停在第 0 毫秒)',
       bareDiffer && stableA === stableB && prepA.frozenAnimations >= 1 && prepB.frozenAnimations >= 1,
       `沒準備:${bareDiffer ? '不同' : '相同(對照組失效)'};準備後:${stableA === stableB ? '相同' : '不同'}(停住 ${prepA.frozenAnimations} / ${prepB.frozenAnimations} 個無限動畫)`)
+    // (a') SVG 的 SMIL 動畫(<animate>,不在 document.getAnimations() 裡;AgentPanel 標誌類 story 就是這種,MASTER-TODO 3k / SH-x4):
+    //      沒先準備的兩張相隔 350ms 不同(5 次內可達);先準備的兩張逐位元組相同(停在第 0 秒),frozenSvgTimelines ≥ 1
+    const SMIL_HTML = `<!doctype html><html><body style="margin:0;background:#fff"><svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Assistant is thinking">
+      <circle cx="60" cy="60" r="20" fill="#0b5cff"><animate attributeName="r" values="12;48;12" dur="900ms" repeatCount="indefinite"/></circle></svg></body></html>`
+    const smilShot = () => page.screenshot({ clip: { x: 0, y: 0, width: 120, height: 120 } })
+    let smilBareDiffer = false
+    for (let i = 0; i < 5 && !smilBareDiffer; i++) {
+      await page.goto('about:blank'); await page.setContent(SMIL_HTML)
+      const first = digest(await smilShot()); await page.waitForTimeout(350)
+      smilBareDiffer = first !== digest(await smilShot())
+    }
+    await page.goto('about:blank'); await page.setContent(SMIL_HTML)
+    const smilPrepA = await prepareStableScreenshot(page, { label: 'smil' })
+    const smilStableA = digest(await smilShot())
+    await page.goto('about:blank'); await page.setContent(SMIL_HTML)
+    await page.waitForTimeout(350)
+    const smilPrepB = await prepareStableScreenshot(page, { label: 'smil' })
+    const smilStableB = digest(await smilShot())
+    check('prepareStableScreenshot:SVG SMIL 動畫相隔 350ms 各拍一次 —— 沒先準備的兩張不同(5 次內可達);先準備的兩張逐位元組相同(停在第 0 秒)',
+      smilBareDiffer && smilStableA === smilStableB && smilPrepA.frozenSvgTimelines >= 1 && smilPrepB.frozenSvgTimelines >= 1,
+      `沒準備:${smilBareDiffer ? '不同' : '相同(對照組失效)'};準備後:${smilStableA === smilStableB ? '相同' : '不同'}(停住 ${smilPrepA.frozenSvgTimelines} / ${smilPrepB.frozenSvgTimelines} 份 SVG 時間軸)`)
     // (b) 縮小顯示的圖(1600×1000 → 320×200),清快取後截圖中心仍是圖(合成圖的棋盤格不是純白底)
     const IMG = 'https://images.synthetic-cdn.dev/stable/1600/1000.png'
     const imgRoute = (route) => route.fulfill({ status: 200, contentType: 'image/png', body: demoImagePng(IMG, { width: 1600, height: 1000 }) })

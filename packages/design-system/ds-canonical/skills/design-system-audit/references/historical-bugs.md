@@ -394,7 +394,7 @@ consumer 裝得上,由 beta.143 以 incident release 取代(帳本尾端改成 `
 
   **而新閘的第一版自己就犯了它要防的那條(M37)**:它拿「`registrations.json` 裡有幾群」當「這個 provider 該派工哪幾群」,於是對 codex 報假紅 —— codex 的 `runtime.transcript.stability` 是 `unstable-opaque`,而該群唯一的 hook 宣告 `transcript: "stable-required"`,依 `resolveProviderHookEligibility` 它對 codex **本來就不適用**,那一群在 codex 檢視裡不存在是正確的。修法是**逐 provider 呼叫產生器用的同一支適用性函式**,不自己重寫規則;selftest 為此加了第四格對照組(同一份過期檢視:對 claude 必紅、對 codex 必綠)。判準再記一次:**寫完閘立刻問「我拿來判斷的這個值,在它要防的那種事故裡還成立嗎」,而且要用一個不是拿來建構它的 provider / 元件去試打。**
 
-- **2026-09-24 同日再犯,這次是「把一層的規則外推到另一層,而且沒做 benchmark」**:user 對**行內動作按鈕**裁示「可點擊範圍跟 hover 底色一樣,都是 18*18」,我把它升成全 DS 的「懸停回饋的形狀 ≡ 命中區」,然後**拿它去拆 DataTable 選取格的 `onClick`** —— 理由寫「那一格自己沒有懸停回饋(變色的是整列)」。user 當場反問:「如果表格是每一欄的垂直格線都畫出來的那種,其 checkbox 所在的 cell 一整個就是可以被點擊的視覺範圍啊,為何要把可觸控範圍改到只剩 checkbox?」
+- **2026-09-24 同日再犯,這次是「把一層的規則外推到另一層,而且沒做 benchmark」**:user 對**行內動作按鈕**說「重點是要讓inline action 的可點擊範圍跟其hover底色一樣吧？都是18*18」(2026-09-24 15:20;問句,核准見 hit-area-canonical.md 來源總帳 B1),我把它升成全 DS 的「懸停回饋的形狀 ≡ 命中區」,然後**拿它去拆 DataTable 選取格的 `onClick`** —— 理由寫「那一格自己沒有懸停回饋(變色的是整列)」。user 當場反問:「如果表格是每一欄的垂直格線都畫出來的那種,其 checkbox 所在的 cell 一整個就是可以被點擊的視覺範圍啊,為何要把可觸控範圍改到只剩 checkbox?」
 
   查四家一手原始碼後,**我那條前提在四家裡 0/4 成立**:AG Grid / MUI X / react-data-grid 全都是「hover 回饋畫在**列**、點擊目標卻是**格**」,命中區跟懸停回饋形狀不一致是**常態**;react-data-grid 更是每個 cell 四邊都有格線、hover 仍在列、選取欄 checkbox 仍只有 20px。而且**四家沒有任何一家讓選取格的空白處變成死區**(聚焦該 cell / focus outline / active cell / 直接選列)。當天改回來。
 

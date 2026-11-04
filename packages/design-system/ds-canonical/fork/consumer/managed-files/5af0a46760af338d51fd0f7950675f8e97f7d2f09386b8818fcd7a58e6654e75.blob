@@ -1027,9 +1027,11 @@ export async function settleAfterInteraction(target, { frames = 10, capMs = 10_0
 // 要保證的性質(逐字):**截圖那一格的像素只由「畫面的最終狀態」決定,不由「怎麼走到這個狀態」的時序決定。**
 // 做法(都在靜止判定成立之後、截圖之前):
 //   (1) 每個無限動畫(document.getAnimations() 裡 endTime 無限、正在跑的)暫停在第 0 毫秒 —— 使用者看到的第一格;有限動畫此時已跑完(靜止判定);
+//       SVG 的 SMIL 動畫(<animate> / <animateTransform> …)不在 getAnimations() 裡,同一件事用每個 <svg> 的 pauseAnimations() + setCurrentTime(0) 做;
 //   (2) 清掉這個分頁的圖片解碼 / 光柵快取(CDP Memory.simulatePressureNotification critical),再等 frames 格靜止 ——
 //       截圖那一格的圖一律從原始位元組、在最終尺寸重新解碼與光柵。圖片就緒那一步也不再呼叫 decode()(它鎖住的原尺寸解碼清不掉)。
-// 文字游標:Playwright 截圖預設 caret:'hide',不另處理。SMIL 與 rAF 驅動的動畫不在 (1) 裡(精選場景目前沒有;有了會在穩定性比對裡現形)。
+// 文字游標:Playwright 截圖預設 caret:'hide',不另處理。rAF 驅動的動畫(逐幀改屬性)不在 (1) 裡,由 (2) 之後的靜止判定擋(還在動 = 等不到靜止 = 儀器失效)。
+// SMIL 在 2026-11-04 補進 (1)(MASTER-TODO 3k / SH-x4):AgentPanel 標誌動畫類 5 則 × 4 格,同一份建置用舊拍法連拍兩次 18 格有差,補了之後 0 差。
 // 失敗(清不掉快取 / 等不到靜止)= 儀器失效(kind 'capture-not-stable'),不靜默照拍。
 // 實測(本機,真站位元組 + 隨機延遲):只拿掉 decode() → 8 則有圖的場景剩 2 則跨載入不同;拿掉 decode() + 清快取 → 全部與「圖立刻到」那一次逐位元組相同;
 // 保留 decode() + 清快取 → 更糟(Dialog 名單 6 次 6 種),所以兩步都要。
@@ -1038,7 +1040,7 @@ export async function settleAfterInteraction(target, { frames = 10, capMs = 10_0
  * 截圖之前呼叫(靜止判定已成立之後):無限動畫停在第 0 毫秒、清圖片解碼 / 光柵快取、再等 frames 格靜止(「截圖前的確定性」區塊)。
  * @param {object} page  Playwright 的 Page(要開 CDP session)
  * @param {{ frames?: number, capMs?: number, label?: string }} [options]
- * @returns {Promise<{ frozenAnimations: number, framesWaited: number }>}
+ * @returns {Promise<{ frozenAnimations: number, frozenSvgTimelines: number, framesWaited: number }>}
  * @throws {StoryRenderInstrumentError} kind 'capture-not-stable':清不掉快取或等不到靜止
  */
 export async function prepareStableScreenshot(page, { frames = 3, capMs = 10_000, label = '' } = {}) {
@@ -1057,6 +1059,17 @@ export async function prepareStableScreenshot(page, { frames = 3, capMs = 10_000
     }
     return n
   })
+  // SMIL:時間軸屬於每份 <svg> 文件片段;有沒有 <animate> 都停在第 0 秒(沒有動畫的 svg 停了也不變)。只數「裡面真的有 SMIL 動畫」的那幾份
+  const frozenSvgTimelines = await page.evaluate(() => {
+    let n = 0
+    for (const svg of document.querySelectorAll('svg')) {
+      if (typeof svg.pauseAnimations !== 'function') continue
+      svg.pauseAnimations()
+      svg.setCurrentTime(0)
+      if (svg.querySelector('animate, animateTransform, animateMotion, set')) n++
+    }
+    return n
+  })
   let cdp = null
   try {
     cdp = await page.context().newCDPSession(page)
@@ -1068,7 +1081,7 @@ export async function prepareStableScreenshot(page, { frames = 3, capMs = 10_000
   }
   const settled = await page.evaluate(waitForQuietFrames, { frames, capMs })
   if (!settled.ok) throw fail(`清快取後 ${capMs / 1000} 秒內版面沒有連續靜止 ${frames} 個影格(等了 ${settled.framesWaited} 格,期間變動 ${settled.lateChanges} 次)`)
-  return { frozenAnimations, framesWaited: settled.framesWaited }
+  return { frozenAnimations, frozenSvgTimelines, framesWaited: settled.framesWaited }
 }
 
 // 頁面端:焦點連續 frames 個影格落在同一個元素上。**以 page.evaluate 序列化傳入,不得引用外部變數。**
