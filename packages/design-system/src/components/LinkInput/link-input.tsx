@@ -25,9 +25,21 @@ function isHttpUrl(value: string): boolean {
 const LOOKS_LIKE_WEB_ADDRESS = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}(?::\d{1,5})?(?:[/?#]\S*)?$/i
 
 /**
+ * 「頂級網域」要是真的頂級網域(link-input.spec.md「驗證」):主機名結尾是下面這些檔案副檔名的字是檔名(`report.pdf`、`invoice-2026.xlsx`、`node.js`),
+ * 不是網址 —— 這些副檔名沒有一個是頂級網域(IANA 頂級網域清單 2026-11-03 版逐一查過)。副檔名剛好也是頂級網域的(`.md`、`.zip`、`.ai` …)不在這裡。
+ */
+const FILE_EXTENSIONS_NOT_TLD = new Set([
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf', 'txt', 'key', 'numbers', 'pages',
+  'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf', 'log', 'lock', 'env',
+  'html', 'htm', 'css', 'scss', 'less', 'js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'vue', 'php', 'rb', 'go', 'kt', 'swift', 'cpp', 'cs', 'sql',
+  'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tif', 'tiff', 'heic', 'psd', 'sketch', 'fig',
+  'avi', 'mkv', 'wav', 'flac', 'mpeg', 'rar', 'tar', 'gz', 'tgz', 'dmg', 'exe', 'msi', 'apk', 'ipa', 'iso', 'bak', 'tmp',
+])
+
+/**
  * 網址值 → 可以安全點的網頁網址(link-input.spec.md「驗證」;F2 乙,2026-10-21 確認頁):
  * 已經是 http(s) 網址 → 原樣;沒寫協定、看起來像網址(`www.acme.com`、`acme.com/pricing`)→ 補 `https://`;
- * 其他(`javascript:` / `data:` / `mailto:` / `ftp:` 等別的協定、信箱、中間有空白的字)→ null,永遠不會變成 href。
+ * 其他(`javascript:` / `data:` / `mailto:` / `ftp:` 等別的協定、信箱、中間有空白的字、檔名 `report.pdf`)→ null,永遠不會變成 href。
  * 顯示(唯讀 / 檢視 / 表格連結格)與編輯模式的驗證、提交都經這一支。
  */
 function toWebUrl(value: string): string | null {
@@ -35,6 +47,8 @@ function toWebUrl(value: string): string | null {
   if (!v || /\s/.test(v)) return null
   if (isHttpUrl(v)) return v
   if (!LOOKS_LIKE_WEB_ADDRESS.test(v)) return null
+  const host = v.split(/[:/?#]/, 1)[0]
+  if (FILE_EXTENSIONS_NOT_TLD.has(host.slice(host.lastIndexOf('.') + 1).toLowerCase())) return null
   const candidate = `https://${v}`
   return isHttpUrl(candidate) ? candidate : null
 }

@@ -86,7 +86,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 **不在 `useFormValidation` `getInputProps` 的 v1 支援清單**(`../Field/form-validation.spec.md` v1 邊界 (a),2026-10-01 實測):連結狀態不渲 `<input>`,`getInputProps` 帶的 `name` / 歸屬標記 / Esc 層 / handler 到不了 —— 連結狀態下改過的值按 Esc 不回復(表單那一層輪不到),規則 8 也找不到帶 name 的元素;從輸入狀態被表單回復成合法網址時輸入框卸載、焦點掉到對話框殼。要接上得先定它在連結狀態的欄位語意(待辦總帳 N85)。
 
-URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但看起來就是網址的字自動補 `https://`**(主機名 = 「標籤.標籤…頂級網域」,可帶埠號與路徑,例:`www.acme.com`、`acme.com/pricing`;2026-10-21 確認頁 F2 乙)。其他協定(`javascript:` / `data:` / `mailto:` / `ftp:` …)、信箱、中間有空白的字一律不合法。判斷只有一支 `link-input.tsx` `toWebUrl`:編輯模式的驗證與提交(提交的值是補好 `https://` 的完整網址)、唯讀 / 檢視 / 表格連結格的顯示都經它。
+URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但看起來就是網址的字自動補 `https://`**(主機名 = 「標籤.標籤…頂級網域」,頂級網域要是真的頂級網域,可帶埠號與路徑,例:`www.acme.com`、`acme.com/pricing`;2026-10-21 確認頁 F2 乙)。其他協定(`javascript:` / `data:` / `mailto:` / `ftp:` …)、信箱、中間有空白的字、結尾是檔案副檔名而那個副檔名不是頂級網域的檔名(`report.pdf`、`node.js`)一律不合法。判斷只有一支 `link-input.tsx` `toWebUrl`:編輯模式的驗證與提交(提交的值是補好 `https://` 的完整網址)、唯讀 / 檢視 / 表格連結格的顯示都經它。
 
 ---
 

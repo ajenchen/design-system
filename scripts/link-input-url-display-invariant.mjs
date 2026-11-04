@@ -4,6 +4,7 @@
  *   保證: LinkInput 的 view / readonly / disabled / edit 與 DataTable 連結格,只有網頁網址(http(s) 開頭,或看起來像網址而補上 https://)與檢視時的站內路徑畫成連結,其他值是一般文字,所有 href 只能是 http(s) 或同一個網站
  *   紅: 判定表對「不合法的值畫成連結」「javascript: href」「合法網址沒畫成連結」「//host 畫成連結」「站內路徑沒畫成連結」「停用時字與唯讀不同」「網址樣字沒補 https://」各一個合成輸出必紅;
  *       52abc933 的原始碼紅 18 格(網址樣字三種 × 停用以外六種模式:F2 乙前畫成一般文字);
+ *       1d98db88 的原始碼紅 15 格(檔名 report.pdf / invoice-2026.xlsx / node.js × 檢視 / 外框檢視 / 唯讀 / 表格可編 / 表格不可編:補上 https:// 畫成連結,2026-11-04 fields 審查 12);
  *       7777b61c 的原始碼跑紅 140 格;a6390356 的原始碼紅停用 7 格(javascript: 三種寫法 / data: / mailto: / tel: 被畫成「-」,ftp: 只剩主機名,2026-10-21 r1b fields F2)
  *   綠: 修好的原始碼每一種模式 × 每一種值全綠(MODES × VALID / SAME_SITE / INVALID,數量以本檔為準);真的渲染時合法網址與站內路徑必須讀到連結(儀器有眼睛),否則 selftest 紅
  * ─────
@@ -41,7 +42,9 @@ export const SAME_SITE = ['/projects/8821/tasks/4821']
 export const LOOKS_LIKE = ['www.example.com/pricing', 'acme.com', 'docs.acme.io/guide?x=1#y']
 export const INVALID = ['ops@example.com', 'acme', 'javascript:alert(1)', 'JAVASCRIPT:alert(1)', ' javascript:alert(1)', 'data:text/html,<b>x</b>', 'mailto:ops@example.com', 'tel:+886223456789', 'ftp://files.example.com/a', 'shop example',
   // 以 / 開頭、卻會被瀏覽器正規化成別的網站的寫法 —— 不是站內路徑
-  '//evil.example/x', '/\\evil.example', '/\t/evil.example']
+  '//evil.example/x', '/\\evil.example', '/\t/evil.example',
+  // 檔名:形狀像「標籤.標籤」,但結尾的副檔名不是頂級網域(link-input.spec.md「驗證」:頂級網域要是真的)—— 不是網址,不補 https://
+  'report.pdf', 'invoice-2026.xlsx', 'node.js']
 const ALL = [...VALID, ...LOOKS_LIKE, ...SAME_SITE, ...INVALID]
 export const MODES = ['view', 'viewChrome', 'readonly', 'disabled', 'edit', 'cellEditable', 'cellReadonly']
 
