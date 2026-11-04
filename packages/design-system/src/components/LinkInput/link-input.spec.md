@@ -71,7 +71,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 ### View 模式幾何（不包 wrapper）
 
-`mode="view"` 預設（`showDisplayEndIcon=false`）渲染**裸 anchor / span**——不包 `fieldWrapperStyles`（無 h-field 高度；左側 0 與 `../Field/field-controls.spec.md` 共享 contract (d)「view×default 左側歸 0、值齊標籤」結果相同,2026-10-21 起高度以外不再是例外）（backward compat；2026-07-16 VERIFY 記錄為例外而非對齊 code）。需要與 cell edit 像素對齊時走 `showDisplayEndIcon=true` opt-in（Field naked wrapper 包覆 anchor）。typography 仍消費 contract (e)（`fieldDisplayTextClass`）。
+`mode="view"` 預設（`showDisplayEndIcon=false`）渲染**裸 anchor / span**——不包 `fieldWrapperStyles`（無 h-field 高度；左側 0 與 `../Field/field-controls.spec.md` 共享 contract (d)「view×default 左側歸 0、值齊標籤」結果相同,2026-10-21 起高度以外不再是例外）（backward compat；2026-07-16 VERIFY 記錄為例外而非對齊 code）。需要與 cell edit 像素對齊時走 `showDisplayEndIcon=true` opt-in（Field naked wrapper 包覆 anchor）。typography 仍消費 contract (e)（`fieldDisplayTextClass`）。**檢視態的編輯入口(`viewEditAction`,目前只有 DataTable 可編輯的連結格用)**:給了才在外殼裡畫右側槽(`ItemSuffix`)+ 一顆 Button `iconOnly` `variant="text"` `size="xs"`「編輯連結」(24、無框;網址 → 鈕吃外殼 `gap-2`;以後加複製放同一個槽、多顆 `gap-2`)—— 依模式自己換:欄位編輯態的鉛筆是行內小按鈕 `ItemInlineAction`,表格格(naked × view)是這顆;單一主人,表格不另外畫。`revealGroup` 給了 = 只在那個群組滑過 / 鍵盤焦點時出現(瞬間、不淡入);鈕自己 `stopPropagation`,按下呼叫 `onClick`(宿主決定怎麼進編輯);外層帶 `data-link-edit-entry`(宿主找它做編輯結束的焦點歸還)。依據 `../../patterns/element-anatomy/inline-action.spec.md` 實例表「DataTable body cell internal — 檢視態滑過才出現的動作」(user 2026-10-28「Q4用乙'」)。
 
 ---
 

@@ -2467,7 +2467,7 @@ for (const [label, r, c, kind] of [
     const b = cell.getBoundingClientRect()
     if (kind === 'link') {
       const a = cell.querySelector('a[href]')
-      const pencil = cell.querySelector('[data-dt-cell-edit-entry] button, button[aria-label="編輯連結"]')
+      const pencil = cell.querySelector('[data-link-edit-entry] button, button[aria-label="編輯連結"]')
       if (!a || !pencil) return null
       const walker = document.createTreeWalker(a, NodeFilter.SHOW_TEXT)
       let right = -Infinity

@@ -29,7 +29,9 @@
  *      2026-10-21 加(r1b NEW-2 複驗缺陷 4,data-table.spec.md「Keyboard 行為」一般模式 Enter / F2 那一條):一般模式可編輯的格本身是
  *      Tab 停靠點(`data-table.tsx` 的 `cellIsTabStop`;唯讀格不是 —— 對照列),焦點在格上 Enter / F2 進編輯,Esc 後焦點回到那一格
  *   L5 每一種格的編輯器都有名字 = 欄標題(Q3d J)
- *   L6 表格的鉛筆 = 行內小按鈕(16×16、無框),與 LinkInput 欄位那顆同一種(Q3b)
+ *   L6 表格的鉛筆 = Button text xs(24×24、無框、透明底;2026-10-28 user「Q4用乙'」,inline-action.spec.md 實例表
+ *      「DataTable body cell internal — 檢視態滑過才出現的動作」),由 LinkInput 自己畫在外殼的右側槽(帶 data-link-edit-entry);
+ *      2026-10-13 – 10-28 是行內小按鈕 16×16(Q3b),那時的建置跑本閘 L6 必紅
  *   L7 存進不合法的網址(`javascript:` / 信箱)後,格裡顯示一般文字、沒有任何 `href` 是 `javascript:`(Q3e;看起來像網址的字會補 https:// 當連結,LinkInput F2 乙,不再是不合法值)
  *   L8 焦點框四邊真的畫出來(2026-10-21,r1b DT-01 / DT-02):同一個元素截兩張圖 —— 有框、把框強制關掉 —— 逐邊比對框那一圈的像素,
  *      四邊各至少一半有變才算畫出來(M32:不信 computed style,修前 computed outline 一切正常、畫出來只剩右邊一條 2px)。
@@ -39,7 +41,7 @@
  *      對照列:滑鼠點勾選框(控件不畫框)→ 格游標框照留(仍只有一個)
  * 對照組:`--build=<7777b61c 的建置>` 跑,L1(唯讀 / 檢視 / 表格)、L2 改變的那幾區、滑過淺框、L3、L4、L5、L6、L7 必紅。
  * `--selftest`:不改產品,在頁面注入破法(連結改回 block / 攔下格的點擊 / 攔下 Enter·F2 / 把焦點丟回 body / 拿掉名字 /
- *   鉛筆改回 24px 有框 / 塞一個 javascript: 連結),各組斷言必須紅(儀器先證明它會紅,M32)。
+ *   鉛筆改回 16px 行內小按鈕或加框 / 塞一個 javascript: 連結),各組斷言必須紅(儀器先證明它會紅,M32)。
  * 開 story 一律經 lib/launch-browser.mjs 的 openStory(開不起來 = 儀器失效,exit 2)。
  *   node scripts/data-table-link-cell-invariant.mjs [--build=<storybook 建置目錄>] [--selftest]
  */
@@ -112,7 +114,8 @@ async function injectBreaks(kind) {
   if (kind === 'L1' || kind === 'L2') await page.addStyleTag({ content: 'a[href]{display:block!important;width:100%!important}' })
   // 滑過不出框:L2 的淺框兩列
   if (kind === 'L2') await page.addStyleTag({ content: '*{outline-style:none!important}' })
-  if (kind === 'L6') await page.addStyleTag({ content: '[data-dt-cell-edit-entry] button, [data-cell-id] button[aria-label="編輯連結"]{width:24px!important;height:24px!important;border:1px solid red!important}' })
+  // L6:鉛筆改回 16px(= 2026-10-13 – 10-28 的行內小按鈕)而且加框(= 乙 tertiary 有框)—— 任一都要紅
+  if (kind === 'L6') await page.addStyleTag({ content: '[data-link-edit-entry] button, [data-cell-id] button[aria-label="編輯連結"]{width:16px!important;height:16px!important;min-width:16px!important;border:1px solid red!important}' })
   // L8:連結外面包回會裁切的 wrapper(= a6390356 的 `truncate` 外殼)、可拖欄頭的框改回往外(= 修前)
   if (kind === 'L8') await page.addStyleTag({ content: 'span:has(> a[href]){overflow:hidden!important} [role="columnheader"][aria-roledescription]:focus-visible{outline-offset:var(--stack-gap,2px)!important}' })
   // L9:格游標框強制畫出(= 修前兩個指示)
@@ -148,7 +151,7 @@ async function injectBreaks(kind) {
       // 拿掉格內編輯器的名字
       const strip = () => {
         for (const el of document.querySelectorAll('[data-cell-id] [aria-label], [data-active-editor-host] [aria-label]')) {
-          if (!el.closest('[data-dt-cell-edit-entry]') && el.getAttribute('aria-label') !== '') el.setAttribute('aria-label', '')
+          if (!el.closest('[data-link-edit-entry]') && el.getAttribute('aria-label') !== '') el.setAttribute('aria-label', '')
         }
       }
       new MutationObserver(strip).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-label'] })
@@ -198,7 +201,7 @@ const linkCellGeo = (cellId) => page.evaluate((cellId) => {
     }
     if (Number.isFinite(l)) text = { x: l, y: t, w: rr - l, h: bb - t, r: rr, b: bb }
   }
-  const pencil = cell.querySelector('[data-dt-cell-edit-entry] button') ?? cell.querySelector('button[aria-label="編輯連結"]')
+  const pencil = cell.querySelector('[data-link-edit-entry] button') ?? cell.querySelector('button[aria-label="編輯連結"]')
   return { cell: rect(cell), anchor: a ? rect(a) : null, text, pencil: pencil ? rect(pencil) : null, href: a?.getAttribute('href') ?? null }
 }, cellId)
 
@@ -586,7 +589,7 @@ for (const key of ['normal', 'roadmap']) {
         // 連結格經鉛筆進編輯(名字跟點擊區無關;點擊區由 L2 量);其他格點中間
         if (colId === 'url') {
           await page.mouse.move(g.x + g.w / 2, g.y + g.h / 2); await settle()
-          const pb = await page.evaluate((id) => { const b = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`).querySelector('[data-dt-cell-edit-entry] button, button[aria-label="編輯連結"]')?.getBoundingClientRect(); return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null }, id)
+          const pb = await page.evaluate((id) => { const b = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`).querySelector('[data-link-edit-entry] button, button[aria-label="編輯連結"]')?.getBoundingClientRect(); return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null }, id)
           if (pb) await page.mouse.click(pb.x, pb.y)
         } else await page.mouse.click(g.x + g.w / 2, g.y + g.h / 2)
         await settle()
@@ -608,7 +611,10 @@ for (const key of ['normal', 'roadmap']) {
   }
 }
 
-// ── L6:鉛筆 = 行內小按鈕 ─────────────────────────────────────────────────────────────────────
+// ── L6:鉛筆 = Button text xs(24、無框)──────────────────────────────────────────────────────────
+// 「無框」量的是看得到的框:Button 每個 variant 都有 1px `border-transparent` 佔位(button.tsx 基底),tertiary 才把框色換成 border-border;
+// 所以比框色是不是透明,不比框寬(框寬 0 在 Button 上永遠不成立,那樣量 = 對照組也綠不了)
+const TRANSPARENT = /rgba\(0, 0, 0, 0\)|transparent/
 {
   currentBreak = 'L6'
   if (await open(TABLES.normal.url, '[data-column-id="url"] a[href]')) {
@@ -617,14 +623,14 @@ for (const key of ['normal', 'roadmap']) {
     await page.mouse.move(g.cell.x + g.cell.w / 2, g.cell.y + g.cell.h / 2); await settle()
     const look = await page.evaluate((id) => {
       const cell = document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`)
-      const btn = cell.querySelector('[data-dt-cell-edit-entry] button') ?? cell.querySelector('button[aria-label="編輯連結"]')
+      const btn = cell.querySelector('[data-link-edit-entry] button') ?? cell.querySelector('button[aria-label="編輯連結"]')
       if (!btn) return null
       const cs = getComputedStyle(btn); const b = btn.getBoundingClientRect()
       const op = parseFloat(getComputedStyle(btn.parentElement).opacity) * parseFloat(cs.opacity)
-      return { w: b.width, h: b.height, border: parseFloat(cs.borderTopWidth) + parseFloat(cs.borderLeftWidth), bg: cs.backgroundColor, opacity: op }
+      return { w: b.width, h: b.height, borderColor: cs.borderTopColor, bg: cs.backgroundColor, opacity: op, inEntry: !!btn.closest('[data-link-edit-entry]') }
     }, id)
     if (!look) instrument('L6', '找不到表格連結格的鉛筆')
-    else check('L6', '表格連結格的鉛筆 = 行內小按鈕(md 16×16、無框、透明底,滑過格時看得到)', look.w === 16 && look.h === 16 && look.border === 0 && /rgba\(0, 0, 0, 0\)|transparent/.test(look.bg) && look.opacity > 0.99, JSON.stringify(look))
+    else check('L6', '表格連結格的鉛筆 = Button text xs(24×24、框與底都透明,滑過格時看得到,由 LinkInput 的編輯入口槽畫)', look.w === 24 && look.h === 24 && TRANSPARENT.test(look.borderColor) && TRANSPARENT.test(look.bg) && look.opacity > 0.99 && look.inEntry, JSON.stringify(look))
   }
 }
 

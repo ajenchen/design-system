@@ -18,8 +18,7 @@
 
 import * as React from 'react'
 import type { ComponentType } from 'react'
-import { Pencil } from 'lucide-react'
-import { cn, lineClampClass } from '@/lib/utils'
+import { lineClampClass } from '@/lib/utils'
 import type { ColumnType } from './column-types'
 import { Input as InputPublic } from '@/design-system/components/Input/input'
 import { Textarea as TextareaPublic } from '@/design-system/components/Textarea/textarea'
@@ -29,9 +28,8 @@ import { Combobox as ComboboxPublic } from '@/design-system/components/Combobox/
 import { DatePicker as DatePickerPublic } from '@/design-system/components/DatePicker/date-picker'
 import { TimePicker as TimePickerPublic } from '@/design-system/components/TimePicker/time-picker'
 import { PeoplePicker as PeoplePickerPublic } from '@/design-system/components/PeoplePicker/people-picker'
-import { LinkInput as LinkInputPublic } from '@/design-system/components/LinkInput/link-input'
+import { LinkInput as LinkInputPublic, LINK_INPUT_EDIT_ENTRY_ATTR } from '@/design-system/components/LinkInput/link-input'
 import { Checkbox as CheckboxPublic } from '@/design-system/components/Checkbox/checkbox'
-import { ItemInlineAction, itemSuffixHoverRevealClass } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditableProvider } from '@/design-system/components/Field/field-context'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
@@ -55,8 +53,11 @@ const Checkbox = CheckboxPublic as WithFieldVariantInternal<typeof CheckboxPubli
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-/** 格裡「編輯入口」(連結格的鉛筆)外層標記:一般模式編輯結束後焦點回到這裡(data-table.tsx restoreCellSelection;2026-10-13 待辦總帳 Q3d I)。 */
-export const CELL_EDIT_ENTRY_ATTR = 'data-dt-cell-edit-entry'
+/**
+ * 格裡「編輯入口」(連結格的鉛筆)外層標記:一般模式編輯結束後焦點回到這裡(data-table.tsx restoreCellSelection;2026-10-13 待辦總帳 Q3d I)。
+ * 2026-10-28 user「Q4用乙'」起鉛筆由 LinkInput 自己畫(`viewEditAction`),標記也是 LinkInput 的 —— 表格認得欄位的標記,欄位不認得表格。
+ */
+export const CELL_EDIT_ENTRY_ATTR = LINK_INPUT_EDIT_ENTRY_ATTR
 
 export type CellMode = 'view' | 'edit'
 export type CellSize = 'sm' | 'md' | 'lg'
@@ -465,41 +466,32 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel 
  *   連結只有網址文字那麼寬(LinkInput `renderLinkAnchor`)。editable 時**跟其他可編輯格一樣**:滑過出淺框、
  *   點格的其他地方進編輯(由 data-table.tsx 的點格規則處理),只有點網址文字開連結;右側 Pencil 照舊在滑過格 / 鍵盤走到時出現,
  *   是鍵盤的編輯入口(格本身不是 Tab 停靠點,同 link-input.spec.md「外框本身不是 tab stop,鍵盤走 Pencil」)。
- *   Pencil 是行內小按鈕 `ItemInlineAction`(inline-action.spec.md 判斷樹「在宿主內部 → 行內小按鈕」與實例表
- *   「DataTable 格裡的編輯提示」,與 LinkInput 欄位裡的鉛筆同一種;2026-10-13 前是 24px 有框的 Button tertiary xs)。
+ *   Pencil = Button text xs iconOnly(24、無框;2026-10-28 user「Q4用乙'」,inline-action.spec.md 實例表
+ *   「DataTable body cell internal — 檢視態滑過才出現的動作」),由 LinkInput 的 `viewEditAction` 自己畫(單一主人);
+ *   表格只給出現時機(`revealGroup: 'cell'` = 滑過格 / 格裡有鍵盤焦點,td 帶 `group/cell`)與按下去做什麼(`onRequestEdit`)。
+ *   演進:2026-10-13 前是 24px 有框的 Button tertiary xs(表格自己拼在 LinkInput 外面)→ 2026-10-13 行內小按鈕 ItemInlineAction → 本版。
  *   edit branch = plain `<Input variant="naked">`(LinkInput edit 預設顯示成連結,格子需要直接打字 —— data-table.spec.md 編輯表 url 列寫明);
  *   URL 驗證留給 consumer 的 onCellCommit(data-table.spec.md cellErrors,表格不另加內建驗證)。
  */
 function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit, onCancel, ariaLabel }: CellComponentProps) {
   if (mode === 'view') {
     // showDisplayEndIcon ← D path Phase 2(2026-05-08):Field naked wrapper 包 anchor,與 Input edit 同 chrome。
-    // LinkInput 此 prop = wrapper-only(無 icon,field.spec.md L6 例外)→ A 案(2026-07-08)不撤;
-    // 但修 I1:原無條件 true 違反「= isEditable」knob 等式(field-controls.spec.md cell 例外),改等式。
-    const display = (
-      <LinkInput variant="naked" mode="view" value={value as string | null} label={meta?.linkLabel} size={size} showDisplayEndIcon={isEditable === true} />
-    )
-    // 不可編 URL 不顯 Pencil affordance(純 view 顯示連結,無編輯入口)
-    if (!isEditable) return display
-    // editable read mode:連結 + 滑過 / 聚焦出現的 Pencil(data-table.spec.md 編輯表 url 列;點格其他地方進編輯由 data-table.tsx 格的點擊規則處理)
+    // 修 I1:原無條件 true 違反「= isEditable」knob 等式(field-controls.spec.md cell 例外),改等式。
+    // 可編輯時再給 viewEditAction:鉛筆由 LinkInput 畫在自己外殼的右側槽(data-table.spec.md 編輯表 url 列;
+    // 點格其他地方進編輯由 data-table.tsx 格的點擊規則處理)。出現時機 = `revealGroup: 'cell'`(item-anatomy ItemSuffix
+    // hoverReveal 同一份:滑過格 / 格裡有鍵盤焦點,`group-has-[:focus-visible]` 不用 focus-within —— r1b DT-06;瞬間出現不淡入;
+    // guard scripts/test-hover-revealed-affordances.mjs)。鈕自己 stopPropagation:鉛筆已經進編輯,不讓格的點擊規則再處理一次。
+    // 不可編 URL 不給(純 view 顯示連結,無編輯入口)。
     return (
-      <span className="group/cell relative flex items-center w-full"> {/* @naked-row-mode-allow: URL hover-Pencil 是 inline action 不是 value content,items-center 鎖 Pencil 對齊行高第一行(autoRow 跟 fixed 皆同視覺正確) */}
-        <span className="flex-1 min-w-0">{display}</span>
-        {/* 滑過格 / 鍵盤聚焦時才出現(data-table.spec.md 編輯表 url 列;focus 揭示為 a11y 必要條件,契約與 guard:
-            scripts/test-hover-revealed-affordances.mjs);滑過 / 聚焦時瞬間出現,不淡入(tokens/motion/motion.spec.md「hover 回饋不做過渡」)。
-            外層 span 接住 click 不再往上冒:鉛筆已經進編輯,不讓格的點擊規則再處理一次(試算表模式下第一下只選格的那條)。 */}
-        {/* 出現規則消費 item-anatomy 的同一份(`itemSuffixHoverRevealClass('cell')` = 滑過格 / 格裡有鍵盤焦點):用 `group-has-[:focus-visible]`
-            不用 `group-focus-within` —— 後者滑鼠點一下連結也成立,鉛筆會一直亮到焦點離開(2026-10-21 前這裡自抄一份就是這樣,r1b DT-06)。 */}
-        <span
-          {...{ [CELL_EDIT_ENTRY_ATTR]: '' }}
-          className={cn('ml-1 flex shrink-0', itemSuffixHoverRevealClass('cell'))}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ItemInlineAction
-            size={size}
-            action={{ icon: Pencil, label: '編輯連結', onClick: () => onRequestEdit?.() }} // i18n-allow: DS default inline-action label(同 LinkInput 欄位的鉛筆)
-          />
-        </span>
-      </span>
+      <LinkInput
+        variant="naked"
+        mode="view"
+        value={value as string | null}
+        label={meta?.linkLabel}
+        size={size}
+        showDisplayEndIcon={isEditable === true}
+        viewEditAction={isEditable ? { onClick: () => onRequestEdit?.(), revealGroup: 'cell' } : undefined}
+      />
     )
   }
   // edit mode value pre-fill canonical(2026-05-05):LinkInput edit `value` prop 強制 controlled

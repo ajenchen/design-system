@@ -6,7 +6,8 @@ import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-sys
 import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
 import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemInlineAction, ItemSuffix, type ItemSuffixHoverGroup } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 
@@ -141,6 +142,24 @@ function linkDisplayText(value: string, label?: string): string {
  */
 const LINK_HOST_CLASS = 'min-w-0'
 
+/**
+ * @internal — 檢視態編輯入口那一層的標記(`viewEditAction`)。宿主用它找鈕做「編輯結束後焦點歸還」—— 標記是 LinkInput 自己的,
+ * 不帶任何宿主字眼:欄位不知道表格(`.claude/planning/cell-indicator-ssot-rfc.md` 否決選項 3 的理由「Field 知道 DataTable context = leak」)。
+ */
+export const LINK_INPUT_EDIT_ENTRY_ATTR = 'data-link-edit-entry'
+
+/**
+ * @internal — 檢視態(view × 外殼)的編輯入口,只給 DataTable 連結格(跟 naked variant 同一條 cell 通道)。2026-10-28 user「Q4用乙'」:表格網址格滑過才出現的鉛筆是 Button text xs(24、無框),
+ * 由 LinkInput 依模式自己換(欄位編輯態 = 行內小按鈕,這裡 = Button xs),宿主只管出現時機與按下去做什麼。
+ * 依據 `patterns/element-anatomy/inline-action.spec.md` 實例表「DataTable body cell internal — 檢視態滑過才出現的動作」。
+ */
+export interface LinkInputViewEditAction {
+  /** 按下「編輯連結」:宿主決定怎麼進編輯(DataTable 連結格 = `onRequestEdit`)。鈕自己 stopPropagation,不讓宿主的點擊規則再處理一次 */
+  onClick: () => void
+  /** 只在這個群組滑過 / 鍵盤焦點時出現(宿主元素要帶 `group/<名>`;瞬間出現不淡入)。不給 = 一直顯示 */
+  revealGroup?: ItemSuffixHoverGroup
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export interface LinkInputProps
@@ -171,9 +190,15 @@ export interface LinkInputProps
    * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 anchor,backward compat)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)包覆 anchor,
    * 與 cell edit (`<Input naked>`) 同 DOM 結構,消除 Layer-B padding mismatch。
-   * **本元件 edit 無 endIcon(UrlCell 用 plain Input edit)→ view 也無 ItemSuffix**(僅 wrapper)。
+   * **本元件沒有型別 icon**(edit 無 endIcon,UrlCell 用 plain Input edit)→ 這個開關只給 wrapper;
+   * 可編輯時的編輯入口另由 `viewEditAction` 畫(那是 action,不是型別 icon)。
    */
   showDisplayEndIcon?: boolean
+  /**
+   * @internal — view 態的編輯入口(2026-10-28 user「Q4用乙'」):給了才在外殼裡畫右側槽 + Button text xs「編輯連結」(24、無框),
+   * view 一律走外殼(同 `showDisplayEndIcon=true`)。目前只有 DataTable 可編輯的連結格傳。見 `LinkInputViewEditAction`。
+   */
+  viewEditAction?: LinkInputViewEditAction
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -191,6 +216,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       disabled: disabledProp,
       label,
       showDisplayEndIcon = false,
+      viewEditAction,
       readOnly,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
@@ -258,15 +284,17 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     React.useEffect(() => () => { if (focusRafIdRef.current) cancelAnimationFrame(focusRafIdRef.current) }, [])
 
     // ── mode='view' ─────────────────────────────────────────────────────
-    // 純展示:無 input chrome / 無 hover affordance / 無 Pencil edit 入口。
+    // 純展示:無 input chrome / 無 hover affordance;編輯入口只有宿主給 `viewEditAction` 時才有(下方)。
     // 取代既有 LinkInputDisplay sub-component(2026-05-05 Phase B3 retire)。
     // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor — backward compat;左側 0 與 contract (d)
     // (view×default 左側歸 0、值齊標籤)結果相同,只少 h-field 高度,見 link-input.spec.md
     // 「View 模式幾何(不包 wrapper)」。
     // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper 包覆 anchor,
-    // 與 cell edit (`<Input naked>`) 同 DOM 結構消除像素偏移(無 ItemSuffix,因 edit 也無 endIcon)。
+    // 與 cell edit (`<Input naked>`) 同 DOM 結構消除像素偏移(沒有型別 icon)。
+    // `viewEditAction`(2026-10-28 user「Q4用乙'」):外殼裡的右側槽畫「編輯連結」Button text xs(24、無框),
+    // 吃外殼 `gap-2`(網址 → 鈕 8);24 高的鈕用 data-unbounded 負 margin 收進 `h-[1lh]` 槽,不撐高列(同 FileItem 列尾槽)。
     if (resolvedMode === 'view') {
-      if (!showDisplayEndIcon) {
+      if (!showDisplayEndIcon && !viewEditAction) {
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):非 D-path bare
         // anchor / span 必套 `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)
         // — 對齊跨 Field family view 視覺尺寸統一。原無 font-size class → 用 browser default
@@ -286,6 +314,23 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
               : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
             }
           </span>
+          {viewEditAction && (
+            <ItemSuffix
+              {...{ [LINK_INPUT_EDIT_ENTRY_ATTR]: '' }}
+              hoverReveal={viewEditAction.revealGroup != null}
+              hoverGroup={viewEditAction.revealGroup}
+              className="[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]"
+            >
+              <Button
+                variant="text"
+                size="xs"
+                iconOnly
+                startIcon={Pencil}
+                aria-label="編輯連結" // i18n-allow: DS default inline-action label(同編輯態那顆鉛筆)
+                onClick={(e) => { e.stopPropagation(); viewEditAction.onClick() }}
+              />
+            </ItemSuffix>
+          )}
         </div>
       )
     }

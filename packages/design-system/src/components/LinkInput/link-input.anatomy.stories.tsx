@@ -198,7 +198,7 @@ export const Overview = {
                 ['placeholder', 'string', "'https://'", '空值時的佔位文字'],
                 ['disabled', 'boolean', 'false', '等同 mode="disabled"'],
                 ['label', 'string', '—', '自訂顯示文字（覆蓋自動 hostname 提取）'],
-                ['showDisplayEndIcon', 'boolean', 'false', 'view 態改包 Field naked wrapper（D-path opt-in，DataTable cell view↔edit 像素對齊；本元件 edit 無 endIcon，故僅 wrapper 無 ItemSuffix）'],
+                ['showDisplayEndIcon', 'boolean', 'false', 'view 態改包 Field naked wrapper（D-path opt-in，DataTable cell view↔edit 像素對齊；本元件沒有型別 icon，故只給 wrapper；DataTable 可編輯連結格的「編輯連結」鈕另由內部的 viewEditAction 畫在外殼右側槽，Button text xs、滑過格才出現）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

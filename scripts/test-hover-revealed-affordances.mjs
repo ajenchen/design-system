@@ -58,9 +58,11 @@ const REGISTRY = [
     // 2026-09-26 起側欄不再自抄一份 gating 字串,改消費 ItemSuffix 的 hoverReveal(待辦總帳〇節「按鍵規則合併」C-7 / L9;
     // sidebar.spec.md「Inline actions」出現時機列)。class 契約由上一筆 item-anatomy 驗;這一筆改驗「真的消費那一份、
     // 而且沒有又抄回一份」—— 抄回來就是兩個住所(M17),下次改出現方式會漏。
+    // 錨點釘在 inline actions 那個 ItemSuffix 的 hoverReveal 那一行,不用第一個 `<ItemSuffix`:a103c40b 把群組動作「+」放進標題列的
+    // 列尾槽之後,檔內第一個 `<ItemSuffix` 變成那一個(不滑過才出現),取錨點後 2500 字看不到 inline actions 的 hoverReveal → 假紅。
     label: 'Sidebar menu-item action(消費 ItemSuffix hoverReveal)',
     file: 'packages/design-system/src/components/Sidebar/sidebar.tsx',
-    anchor: '<ItemSuffix',
+    anchor: 'hoverReveal={actionsReveal === "hover"}',
     scope: 'menu-item',
     consumes: [/hoverReveal=\{[^}]+\}/, /hoverGroup="menu-item"/],
   },
@@ -92,30 +94,33 @@ const REGISTRY = [
     hoverReveal: /armVisible \? 'opacity-100'/,
   })),
   {
-    // 2026-10-13 鉛筆改成行內小按鈕 ItemInlineAction(待辦總帳 Q3b),揭示 class 掛在包住它的那層 span(帶編輯入口標記);
-    // 2026-10-21(r1b DT-06)起不再自抄一份 gating 字串,改消費 item-anatomy 的 `itemSuffixHoverRevealClass('cell')`
-    //(class 契約由上面 item-anatomy 那一筆驗;這一筆驗「真的消費那一份、而且沒有又抄回一份」)
-    label: 'DataTable url cell 編輯連結(消費 itemSuffixHoverRevealClass)',
-    file: 'packages/design-system/src/components/DataTable/cell-registry.tsx',
-    anchor: "[CELL_EDIT_ENTRY_ATTR]: ''",
+    // 表格連結格的「編輯連結」:2026-10-13 鉛筆改成行內小按鈕(待辦總帳 Q3b);2026-10-21(r1b DT-06)起不再自抄 gating 字串;
+    // 2026-10-28 user「Q4用乙'」起鉛筆 = Button text xs,由 LinkInput 在自己外殼裡的 ItemSuffix 畫(viewEditAction),
+    // 出現時機由宿主給群組名(revealGroup)。class 契約由上面 item-anatomy 那一筆驗;這兩筆驗「真的消費 ItemSuffix hoverReveal、
+    // 宿主真的給了 cell 群組、而且兩個檔都沒有又抄回一份」。
+    label: 'LinkInput 檢視態編輯入口(消費 ItemSuffix hoverReveal,群組由宿主給)',
+    file: 'packages/design-system/src/components/LinkInput/link-input.tsx',
+    anchor: '[LINK_INPUT_EDIT_ENTRY_ATTR]: \'\'',
     scope: 'cell',
-    consumes: [/itemSuffixHoverRevealClass\('cell'\)/],
+    consumes: [/hoverReveal=\{[^}]+\}/, /hoverGroup=\{[^}]+\}/],
+  },
+  {
+    label: 'DataTable url cell 編輯連結(給 LinkInput revealGroup: cell)',
+    file: 'packages/design-system/src/components/DataTable/cell-registry.tsx',
+    anchor: 'viewEditAction={',
+    scope: 'cell',
+    consumes: [/revealGroup: 'cell'/],
   },
 ]
 
 /**
- * 鍵盤揭示用 focus-within 的例外(每一筆都要寫得出為什麼、誰要決定):
- * - PeoplePicker 頭像疊的移除 ×:檔內註解寫的是「觸控 focus-within 也顯」—— 點一下頭像就把 × 叫出來,是觸控路徑的刻意設計;
- *   但 people-picker.spec.md「觸控裝置」又說 stack 的移除鈕是 hover-reveal、觸控改由 pill 降階承擔。兩句要由 PeoplePicker 的 owner 收斂
- *  (而且「DS 只做桌機」這個前提還有兩題等 user 決定:「lg 密度給什麼情境用」「Tooltip 規格裡的觸控理由怎麼改」),本閘不替它決定。
- *   轉交登記在待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` 的 R1b-DT2 列。
- * - Avatar 自己的挖洞(`AVATAR_OWN_CUTOUT_CLASS`):移除 × 底下的洞,打開條件必須與 × 本身顯示的條件相同(avatar.tsx 同段 JSDoc),
- *   所以與上一筆**成對**:× 改了洞不改 = 滑鼠點過頭像後洞開著、× 卻不見(或反過來)。同一列 R1b-DT2。
+ * 鍵盤揭示用 focus-within 的例外(每一筆都要寫得出為什麼、誰要決定)。目前 0 筆:
+ * 原本成對的兩筆(PeoplePicker 頭像疊的移除 × `group-focus-within/avatar:opacity-100`、Avatar 自己的挖洞
+ * `group-focus-within/avatar:[--avatar-dismiss-on:1]`,待辦總帳 R1b-DT2)已由 FL-dismiss-focus(b836d4b0)與 OV-dismiss-focus(8ce71fcf)
+ * 一起改成 `:focus-visible` 系 —— 依據 user 10-14「我們ds本來就不是給mobile用」,觸控那條理由拿掉;兩邊同時改,× 與洞的出現條件沒有分家。
+ * 例外過期就紅的機制保留:以後要加例外,照上面寫理由、誰要決定、成對的那一筆。
  */
-const FOCUS_WITHIN_REVEAL_EXCEPTIONS = new Map([
-  ['packages/design-system/src/components/PeoplePicker/person-display.tsx', { match: 'group-focus-within/avatar:opacity-100', pair: 'packages/design-system/src/components/Avatar/avatar.tsx' }],
-  ['packages/design-system/src/components/Avatar/avatar.tsx', { match: 'group-focus-within/avatar:[--avatar-dismiss-on:1]', pair: 'packages/design-system/src/components/PeoplePicker/person-display.tsx' }],
-])
+const FOCUS_WITHIN_REVEAL_EXCEPTIONS = new Map([])
 
 /**
  * focus-within 系變體 + 揭示用的 utility(見檔頭)。前面不准接字母 / 連字號(`has-` 之類的別的變體不算);
@@ -251,7 +256,7 @@ for (const entry of REGISTRY) {
   const stale = [...FOCUS_WITHIN_REVEAL_EXCEPTIONS].filter(([rel]) => !exceptionHits.has(rel))
     .map(([rel, e]) => `${rel}:例外「${e.match}」已不在檔內 → 從 FOCUS_WITHIN_REVEAL_EXCEPTIONS 刪掉;它與 ${e.pair} 成對,那一邊也要一起改成 :focus-visible 系`)
   if (found.length) {
-    console.error(`✗ 鍵盤揭示用了 focus-within(滑鼠點一下也成立 → 東西一直亮著),改用 has-[:focus-visible] / group-has-[:focus-visible] / itemSuffixHoverRevealClass:\n    - ${found.join('\n    - ')}`)
+    console.error(`✗ 鍵盤揭示用了 focus-within(滑鼠點一下也成立 → 東西一直亮著),改用 has-[:focus-visible] / group-has-[:focus-visible] / <ItemSuffix hoverReveal>:\n    - ${found.join('\n    - ')}`)
     failures += 1
   }
   if (stale.length) {
