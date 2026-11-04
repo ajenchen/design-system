@@ -88,6 +88,8 @@ export const STORIES = Object.freeze([
   'design-system-components-peoplepicker-設計原則--usage-guidance',
   // 依內容寬的多選文字標籤(K6):三顆放得下 / 窄容器放不下
   'design-system-components-field-展示--inline-search-yield-width-contract',
+  // 純顯示齊標籤的量測錨點(fields FL-pc4,C1 甲;test-only)—— 純顯示一覽裡的多選欄位有單行 Tag 列(垂直、水平兩種標籤位置各一條)
+  'design-system-components-field-展示--view-alignment-contract',
   // AgentPanel 輸入盒附件列(與 Combobox 同一份 OverflowTagList)
   'design-system-components-agentpanel-展示--attachments',
   'design-system-components-agentpanel-展示--resizable-width',
