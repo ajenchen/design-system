@@ -36,7 +36,6 @@ const STORIES = [
   // 展示
   ['design-system-components-peoplepicker-展示--single',         'showcase-single'],
   ['design-system-components-peoplepicker-展示--multi',          'showcase-multi'],
-  ['design-system-components-peoplepicker-展示--size-alignment', 'showcase-size'],
   // Anatomy
   ['design-system-components-peoplepicker-設計規格--overview',     'anatomy-overview'],
   ['design-system-components-peoplepicker-設計規格--inspector',    'anatomy-inspector'],
