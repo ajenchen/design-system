@@ -5,7 +5,6 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { Switch } from '@/design-system/components/Switch/switch'
-import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { Plus } from 'lucide-react'
 import { TutorialPage, TutorialSection, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
@@ -32,10 +31,9 @@ type Story = StoryObj
 export const Overview: Story = {
   name: '總覽',
   render: () => (
-    <>
-    {/* 段落 = 共用教學頁元件 TutorialSection(2026-10-20 T7 甲,與 Elevation / Color / UI Size 等 token 頁同一種段落):
-        段落之間 loose × 2(md 32 / lg 48)、段落標題 h2 + 淺分隔線 —— 原本 space-y-loose 讓四個圓角段之間只剩 16px,
-        與段內「名稱 → 樣本」幾乎一樣近;名稱列原本是 12px 的 code + 說明(手刻的段落標題) */}
+    // 段落 = 共用教學頁元件 TutorialSection(2026-10-20 T7 甲,與 Elevation / Color / UI Size 等 token 頁同一種段落):
+    // 段落之間 loose × 2(md 32 / lg 48)、段落標題 h2 + 淺分隔線 —— 原本 space-y-loose 讓四個圓角段之間只剩 16px,
+    // 與段內「名稱 → 樣本」幾乎一樣近;名稱列原本是 12px 的 code + 說明(手刻的段落標題)
     <TutorialPage className="max-w-2xl">
       <TutorialSection title="rounded-xs(2px)— 極小 indicator(≤ 10px)">
         <div className="flex flex-wrap gap-[var(--layout-space-tight)] items-center">
@@ -52,9 +50,10 @@ export const Overview: Story = {
         <div className="flex flex-wrap gap-[var(--layout-space-loose)] items-center">
           {/* 2026-10-01:Input / Tag 原為手刻仿製(自帶 12px / 8px 水平內距),改消費真元件 —— 圓角樣本必須就是元件本身,
               元件改了這裡跟著變,不會出現「token 頁的 Tag 與真 Tag 長得不一樣」的漂移。
-              樣本字用真實情境(story-rules.md「❌ 佔位符」);DS 沒有 Card 元件,原本那個手畫的「Card」框拿掉(登記簿 B01 不亂造 DS 沒有的元件);
-              按鈕按了跳 Toast(登記簿 A16「一堆按鈕都無法正常反應」) */}
-          <Button variant="primary" startIcon={Plus} onClick={() => toast({ variant: 'success', title: '已新增任務' })}>新增任務</Button>
+              樣本字用真實情境(story-rules.md「❌ 佔位符」);DS 沒有 Card 元件,原本那個手畫的「Card」框拿掉(登記簿 B01 不亂造 DS 沒有的元件)。
+              「新增任務」是圓角樣本、這頁沒有任務清單:按了跳「已新增任務」會宣稱一件畫面上沒發生的事(登記簿 A13),先不接;
+              點了要不要有反應,跟「純比外觀的按鈕格」併成同一題等 user 決定(在那之前不替它編結果) */}
+          <Button variant="primary" startIcon={Plus}>新增任務</Button>
           <div className="w-40"><Input placeholder="搜尋專案" aria-label="搜尋專案" /></div>
           <Tag>設計稿</Tag>
         </div>
@@ -84,8 +83,5 @@ export const Overview: Story = {
         </div>
       </TutorialSection>
     </TutorialPage>
-    {/* 「新增任務」的回饋 Toast(toast.spec.md:每個獨立 story root 一個 Toaster) */}
-    <Toaster />
-    </>
   ),
 }
