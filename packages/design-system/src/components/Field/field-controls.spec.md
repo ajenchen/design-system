@@ -369,7 +369,7 @@ View 的消費者:
 
 **readonly native input 兩派統一**(2026-07-08):Input / Textarea 的 readonly **空值** 改走 view-span 顯 `-`(原走 native `<input readOnly>` 吐 native placeholder / 空白);readonly **有值** 仍走 native input 保留選取/複製語意。NumberInput 早已 `resolvedMode !== 'edit'` 統一走 span,無需改(readonly 的 span 外框照「Focus 行為」仍是 tab stop:`field-wrapper.tsx#readonlyTabStopProps`,與 Select 類唯讀觸發器同一支)。「有值」判定(2026-07-14 補註,dual-model consensus;不改空值顯 `-` 規則本身):uncontrolled(只傳 `defaultValue`)同樣算有值 —— 機械層 = `useControllable` 內部 resolved value(defaultValue 初始 + 打字寫回,native element 由 `value={resolved}` 內部驅動)+ form.reset() bridge(HTML reset 不發 input event → uncontrolled 掛 form `reset` listener 把 resolved 歸位 defaultValue),切 view / readonly(native element unmount/remount)後判定與 DOM 真值一致、不顯 stale 值;controlled 純 passthrough 行為不變。
 
-**空值符號顏色**(2026-07-09 user 拍板 verbatim「「-」代表的是不可編輯只拿來供檢視的值所以應該跟readonly 的value同樣顏色吧」):不可編輯「-」= `text-foreground`(同 readonly value 色,非 placeholder 提示的裝飾語意);disabled → `text-fg-disabled`(M24)。SSOT helper = `field-context.ts` `fieldEmptyColorClass(resolvedMode)`,全 Field family view/readonly/disabled 空值 span 消費(禁散寫 `text-fg-muted`)。
+**空值符號顏色**(2026-07-09 user 拍板〔UD-J02〕verbatim「「-」代表的是不可編輯只拿來供檢視的值所以應該跟readonly 的value同樣顏色吧」):不可編輯「-」= `text-foreground`(同 readonly value 色,非 placeholder 提示的裝飾語意);disabled → `text-fg-disabled`(M24)。SSOT helper = `field-context.ts` `fieldEmptyColorClass(resolvedMode)`,全 Field family view/readonly/disabled 空值 span 消費(禁散寫 `text-fg-muted`)。
 
 **例外表**(唯一去處,禁散落各元件 spec):
 - **boolean** → 顯示 unchecked 狀態(非空白非 dash)
