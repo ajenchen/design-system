@@ -364,7 +364,7 @@ export const Accessibility = {
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       {/* 原本一整段 whitespace-pre-line 字串(Markdown 連結語法原樣顯示)→ 改成真的段落、清單與連結;段落之間 tight(同一段文字流) */}
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        <p>ARIA / Pattern:沿用 Radix tooltip 的無障礙預設(role / aria-* / 鍵盤導覽),細節見 <a className="text-primary hover:text-primary-hover" href="https://www.radix-ui.com/primitives/docs/components/tooltip#accessibility" target="_blank" rel="noreferrer">Radix Accessibility 文件</a>。</p>
+        <p>ARIA / Pattern:沿用 Radix tooltip 的無障礙預設(role / aria-* / 鍵盤導覽),細節見 <a className="text-primary underline hover:text-primary-hover" href="https://www.radix-ui.com/primitives/docs/components/tooltip#accessibility" target="_blank" rel="noreferrer">Radix Accessibility 文件</a>。</p>
         <p>鍵盤行為:</p>
         <ul className="list-disc pl-5">
           <li>Tab — focus 到觸發器時顯示</li>
