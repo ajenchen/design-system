@@ -13,7 +13,7 @@
 |------|---------|---------------|---------|
 | **Numbered Role Scale** | Radix Colors | 12 step scale，每個 step 號碼本身就是 role（step-9=solid bg、step-10=solid hover），light/dark scale 各自獨立定義值 | 工程量極大——需要重新設計每個色相 × 12 step × 2 mode = 192 個值，且全部 consumer 改 step 號 |
 | **Semantic State Token**（**我們**） | Atlassian DS、GitHub Primer | 互動狀態用 semantic token (`--{hue}-hover` / `--{hue}-active`)，每個 mode 預先計算值 | ✓ 選這個 |
-| **State Layer Overlay** | Material Design 3([state layers](https://m3.material.io/foundations/interaction/states/state-layers)) | 互動狀態用透明 overlay（state layer），不改變底色 | 只拒絕**彩色 / 色相色的底**用疊層:改用疊層會跟 Button 用 solid shade change 的視覺語言不一致——同設計系統內互動回饋會分裂成兩種風格。中性色階半透明、低段可相加,疊一層等於往下一階,畫面不分裂;本 DS 只在「底」(`--canvas` / `--surface` / `--surface-raised`)上用疊層(`bg-interaction-hover` / `-active`),其餘中性填色(`--secondary`…)照換色,範圍見下方「Hover 換色配對總則」(2026-09-25 user 選「採用，底色不換、疊一層 (Recommended)」;這一條刻意偏離 Atlassian 的表面換色,[atlassian.design/foundations/elevation](https://atlassian.design/foundations/elevation)) |
+| **State Layer Overlay** | Material Design 3([state layers](https://m3.material.io/foundations/interaction/states/state-layers)) | 互動狀態用透明 overlay（state layer），不改變底色 | 只拒絕**彩色 / 色相色的底**用疊層:改用疊層會跟 Button 用 solid shade change 的視覺語言不一致——同設計系統內互動回饋會分裂成兩種風格。中性色階半透明、低段可相加,疊一層等於往下一階,畫面不分裂;本 DS 只在「底」(`--canvas` / `--surface` / `--surface-raised`)上用疊層(`bg-interaction-hover` / `-active`),其餘中性填色(`--secondary`…)照換色,範圍見下方「Hover 換色配對總則」(2026-09-25 user 選『採用，底色不換、疊一層 (Recommended)』,選項由 AI 寫;這一條刻意偏離 Atlassian 的表面換色,[atlassian.design/foundations/elevation](https://atlassian.design/foundations/elevation)) |
 | **Consumer-side Mode Handling** | Tailwind CSS | 由 consumer 自己處理 dark mode 變體 (`hover:bg-blue-600 dark:hover:bg-blue-400`) | Token 系統的價值就是封裝 mode 知識，把它推給 consumer 等於放棄抽象化 |
 
 ### 為什麼選 Atlassian 流派
@@ -742,7 +742,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | 平常底色 | 滑過 / 按住時 | 理由 |
 |---|---|---|
 | 透明(列、選單項、文字鈕) | 把底色換成 `--neutral-hover` / `--neutral-active` | 透明底的配對就是這一對 |
-| **「底」**:`--canvas` / `--surface` / `--surface-raised`(頁面、卡片、浮層容器這類層色) | **底色不換,在上面疊一層**:`hover:bg-interaction-hover` / `active:bg-interaction-active`(= 把 `--neutral-hover` / `--neutral-active` 畫成 background-image,在底色之上、內容之下,範圍與底色相同;開啟中同滑過,`data-[state=open]:bg-interaction-hover`) | 底是「它在哪一層」的顏色,互動不該把它換成別的東西;深色的 `--surface` 本身是白 8% 半透明,換成 `--neutral-hover`(白 4%)會**變暗**(實測 FileItem 卡片 `#1D1D1D`→`#141414`),按住換成 `--neutral-active`(白 8%)則完全沒反應;疊一層兩個主題、任何容器裡方向都對,與透明列滑過同色。預期值(R14 實測):淺 `#FFFFFF`→滑過 `#FAFAFA`→按住 `#F5F5F5`;深(`--surface` 在頁面上)`#1D1D1D`→`#262626`→`#2E2E2E`。user 2026-09-25 選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」) |
+| **「底」**:`--canvas` / `--surface` / `--surface-raised`(頁面、卡片、浮層容器這類層色) | **底色不換,在上面疊一層**:`hover:bg-interaction-hover` / `active:bg-interaction-active`(= 把 `--neutral-hover` / `--neutral-active` 畫成 background-image,在底色之上、內容之下,範圍與底色相同;開啟中同滑過,`data-[state=open]:bg-interaction-hover`) | 底是「它在哪一層」的顏色,互動不該把它換成別的東西;深色的 `--surface` 本身是白 8% 半透明,換成 `--neutral-hover`(白 4%)會**變暗**(實測 FileItem 卡片 `#1D1D1D`→`#141414`),按住換成 `--neutral-active`(白 8%)則完全沒反應;疊一層兩個主題、任何容器裡方向都對,與透明列滑過同色。預期值(R14 實測):淺 `#FFFFFF`→滑過 `#FAFAFA`→按住 `#F5F5F5`;深(`--surface` 在頁面上)`#1D1D1D`→`#262626`→`#2E2E2E`。user 2026-09-25 選『採用，底色不換、疊一層 (Recommended)』(題目限定『同一型態下,平常底色是「底」(surface 類)的東西』;題目與選項都是 AI 寫的) |
 | 元件自己的填色:`--secondary`、強調與狀態色、`--surface-strong`、`--neutral-selected`(已按下型態)… | 換成**它自己的配對** —— 同一條色階的下一階(`--secondary` → `--secondary-hover` / `--secondary-active`,2026-09-25 新增;淺 `#F0F0F0`→`#E8E8E8`→`#D9D9D9`,深約 `#272727`→`#2F2F2F`→`#474747`,頁面底上計算值) | 填色是元件本身的顏色,照本檔開頭「架構流派定位」的換色流派 |
 
 **借用別的底色的配對一律禁止**(例:有底色的元素換成透明底專用的 `--neutral-hover`)。疊層 utility 是 background-image,已在 `lib/utils.ts` 登記為 tailwind-merge `bg-image` 群組(不登記的話 `cn('bg-surface', 'bg-interaction-hover')` 會把底色刪掉);背景圖不做過渡,`motion/motion.spec.md`「hover 回饋不做過渡」天然成立。
@@ -751,7 +751,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 **巢狀滑過(全 DS 唯一住所;各元件 spec 只寫「怎麼蓋」並指回這裡)**:可點的宿主(卡片、列、分頁)裡還有自己的按鈕時,指到按鈕上 —— 宿主保留自己的滑過色,**按鈕自己的滑過色疊在卡片的滑過色上,沿同一把灰階再往上一階**(淺色更深、深色更亮)。按鈕多半是透明底,它換上的 `--neutral-hover` 本身是半透明,自然疊在宿主那一層上;預期值(R14 §7.3 計算):宿主為「底」時淺 `#FAFAFA`→按鈕 `#F5F5F5`、深 `#262626`→`#2F2F2F`。依據:user 2026-09-25 在『滑到可點卡片內的按鈕上時』一題選『卡片保留、按鈕再亮一層 (Recommended)』(題目與選項都是 AI 寫的);同日原話「要點了會有反應的才加，並確保加上去之後不會有任何視覺奇怪的地方，且按鈕的互動樣式也是自然疊加上去吧？用再亮一層這樣的措辭是否不夠精準？」(待辦總帳 B12 記為已決)—— 所以規則寫「往上一階」,不寫「再亮」(淺色其實是變深)。套到側欄列、Tabs、DataTable 列與表頭是 AI 依此推導(各元件 spec 標明);與「懸停回饋 = 命中區」的關係見 `ds-canonical/references/hit-area-canonical.md`「巢狀時要逐個控件讀」段:最上面那一層(按鈕自己的)才是這一下會點到的目標。
 
-- 錨例 1(2026-09-25,Calendar 非當月格):靜止 `bg-muted`,滑過卻換成透明底的配對 `--neutral-hover` → 兩個主題都反向(淺 `#F5F5F5`→`#FAFAFA` 變淺、深 `#2F2F2F`→`#262626` 變暗)。修法(026d5788,user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供)= 格子改回透明,跟當月格同一對。
+- 錨例 1(2026-09-25,Calendar 非當月格):靜止 `bg-muted`,滑過卻換成透明底的配對 `--neutral-hover` → 兩個主題都反向(淺 `#F5F5F5`→`#FAFAFA` 變淺、深 `#2F2F2F`→`#262626` 變暗)。修法(026d5788,user 選『可以，拿掉底色 (Recommended)』,選項由 AI 提供)= 格子改回透明,跟當月格同一對。
 - 錨例 2(2026-09-07,已按下的切換鈕):已按下的靜止底是 neutral-2,滑過值 `--neutral-selected-hover` 卻指到 neutral-1 —— 等於借了透明底 `--neutral-hover` 的值,按下與未按下在滑過時像素完全相同;改成 neutral-3(自己的下一階)才分得出來(下方階梯表)。
 - **能不能當可互動元素的靜止底**:`--secondary` 可以 —— 「Static Subtle Background」段表格 `bg-secondary` 列定義它「存在且微淡可辨 — 元素是正常狀態,但需要退後一級」;`--muted` 不可以 —— 同表 `bg-muted` 列定義它「靜態非互動 surface — 退化 / placeholder / locked 視覺」。(2026-09-25 拿掉原本的行號,本檔一改就漂)
 - 疊層只用在「底」:彩色 / 色相色的底、元件自己的填色都換色,不疊(理由見本檔開頭「架構流派定位」)。底色本身換不掉的圖片 / 媒體,改元素自己的不透明度(例:Carousel 圓點,`carousel.spec.md`「視覺規格(photo overlay convention)」)。
@@ -795,7 +795,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Utility | Token | 用途 |
 |---|---|---|
 | `bg-neutral-selected` | neutral-2 | 持續 selected rest；**選中列被滑鼠 hover 時亦釘住此值不變** |
-| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**;選中列滑過釘住,owner `item-anatomy.spec.md`「選中 × 互動疊加」）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。值是 AI 於 2026-09-07 改的(當時 user 是問句);2026-09-25 user 選「甲：保留，維持 2→3→4 (Recommended)」(選項由 AI 提供)。舊文說原值在表達 Fluent 的「hover 預告釋放」,查無一手依據,撤回;舊文「與 Carbon / Atlassian 一致」只對一半,改為:同方向(選中後滑過更強調)的一手前例有 Atlassian 選中鈕 `color.background.selected` → `.hovered` → `.pressed`([all-tokens](https://atlassian.design/components/tokens/all-tokens))與 Carbon 表格選中列 `layer-selected` → `layer-selected-hover`([@carbon/styles 1.116.0 `css/styles.css`](https://cdn.jsdelivr.net/npm/@carbon/styles@1.116.0/css/styles.css) `.cds--data-table--selected:hover`);Carbon 選中的圖示鈕則是滑過不變(同檔 `.cds--btn--icon-only.cds--btn--selected`) |
+| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**;選中列滑過釘住,owner `item-anatomy.spec.md`「選中 × 互動疊加」）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。值是 AI 於 2026-09-07 改的(當時 user 是問句);2026-09-25 user 選『甲：保留，維持 2→3→4 (Recommended)』(選項由 AI 提供)。舊文說原值在表達 Fluent 的「hover 預告釋放」,查無一手依據,撤回;舊文「與 Carbon / Atlassian 一致」只對一半,改為:同方向(選中後滑過更強調)的一手前例有 Atlassian 選中鈕 `color.background.selected` → `.hovered` → `.pressed`([all-tokens](https://atlassian.design/components/tokens/all-tokens))與 Carbon 表格選中列 `layer-selected` → `layer-selected-hover`([@carbon/styles 1.116.0 `css/styles.css`](https://cdn.jsdelivr.net/npm/@carbon/styles@1.116.0/css/styles.css) `.cds--data-table--selected:hover`);Carbon 選中的圖示鈕則是滑過不變(同檔 `.cds--btn--icon-only.cds--btn--selected`) |
 | ~~`bg-neutral-selected-focus`~~ | — | **2026-09-07 退役**。原用途是「鍵盤焦點停在選中列 → 底色深一階」；user 拍板改為**畫框**（`focus-ring-inset`），底色通道不再承載第二個意義。owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格 |
 | `bg-neutral-selected-active` | neutral-4 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正）。2026-09-07 由 neutral-3 上調:`-hover` 佔走 neutral-3 後不上調就會變成 hover 與按壓同值 |
 
@@ -820,7 +820,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 ## Static Subtle Background — `bg-muted` vs `bg-secondary` 使用原則(SSOT)
 
-> **2026-05-20 v3 consolidation**(user 要求全盤查 spec 是否曾寫過具體的舉一反三、是否有矛盾 —— 轉述;那段對話紀錄已不存在、登記簿查無原話):原 L647-678 重複 3 處場景列表 + 「status indicator drift」已移除,本段為**單一 SSOT**。
+> **2026-05-20 v3 consolidation**(user 要求全盤查 spec 是否曾寫過具體的舉一反三、是否有矛盾 —— 轉述;那段對話紀錄已不存在、登記簿查無原話):原本重複 3 處的場景列表 + 「status indicator drift」已移除,本段為**單一 SSOT**。
 
 兩者都是靜態中性背景,但傳達的**元素狀態**不同。**核心問句**:「這個元素是『還沒準備好 / 不可操作 / placeholder』嗎?」
 

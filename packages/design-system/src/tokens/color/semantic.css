@@ -183,7 +183,7 @@
   color-scheme: light;
 
   /* Surface — 2026-05-20 fix(user 抓 raw oklch 違反 semantic 直指 primitive 規則):
-     從 raw oklch(1 0 0) 改指 primitive --color-white(L66 absolute anchor) */
+     從 raw oklch(1 0 0) 改指 primitive --color-white(primitives.css 同名宣告,absolute anchor) */
   --canvas:               var(--color-white);
   --surface:              var(--color-white);
   --surface-raised:       var(--color-white);
@@ -385,7 +385,7 @@
        **來源更正(2026-09-25,依 R13 查證;待辦總帳 B5)**:本段原本整段標「2026-08-11 user 拍板」,
        但那天 user 談的是**選中的列**(而且是問句),沒有談切換鈕;下面 -hover / -active 兩行的值
        是 AI 在 2026-09-07 改的(07760448),當時 user 的訊息是問句、沒有明確同意。
-       2026-09-25 user 對灰色已按下切換鈕選「甲：保留，維持 2→3→4 (Recommended)」(選項由 AI 提供),
+       2026-09-25 user 對灰色已按下切換鈕選『甲：保留，維持 2→3→4 (Recommended)』(選項由 AI 提供),
        這組值自此才有 user 的決定。
        -hover  = 可取消切換鈕專屬(列元件禁用本 token;選中列滑過釘住,見 item-anatomy.spec.md)
                  **2026-09-07 由「變淺」改為「變深」**:原本是 neutral-1。neutral-1 正好就是
@@ -417,7 +417,7 @@
   /* 判斷:「這元素是『還沒準備好 / 不可操作 / placeholder』嗎?」是 → muted / 否,只是視覺退後 → secondary */
   --muted:                var(--color-neutral-2);  /* 退化 / placeholder / locked surface:Skeleton / DataTable header / Alert neutral / scrollbar track */
   --secondary:            var(--color-neutral-3);  /* 存在但視覺退後一級;用途清單 SSOT 在 color.spec.md「Static Subtle Background」表,本行不重列 */
-  /* secondary 當「可點元素的平常底色」時的配對(2026-09-25 新增;待辦總帳 B8 / B12,user 選「採用，底色不換、疊一層 (Recommended)」,
+  /* secondary 當「可點元素的平常底色」時的配對(2026-09-25 新增;待辦總帳 B8 / B12,user 選『採用，底色不換、疊一層 (Recommended)』(選項由 AI 寫),
      該題同時定下「元件自己的填色(secondary…)→ 換成自己的下一階」;SSOT = color.spec.md「Hover 換色配對總則」)。
      同一條色階往下一階,寫法照 --neutral-selected 家族:半透明 primitive、只寫在 ②,深色由 primitives.css 的 alpha 翻轉自動換值,
      不需 ③ 覆寫。三態預期 hex 只寫在 color.spec.md「Hover 換色配對總則」表「元件自己的填色」列(頁面底上計算值,深色量測可能差 1/255)。
@@ -541,7 +541,7 @@
 
   /* Inverse — dark mode 反轉（深字 + 黑色透明的滑過/按壓配對,換色非疊層）
      配對值為 light mode neutral-* 的鏡射（black @ 2% / 4%）
-     2026-05-20 fix:raw oklch → primitive --black-a85(既有 alpha token,L46)*/
+     2026-05-20 fix:raw oklch → primitive --black-a85(既有 alpha token,primitives.css 同名宣告)*/
   --inverse-fg:               var(--black-a85);
   --inverse-neutral-hover:    var(--black-a02);
   --inverse-neutral-active:   var(--black-a04);
@@ -671,7 +671,7 @@
 }
 
 /* ── 「底」的滑過 / 按住 = 疊一層(2026-09-25;SSOT = color.spec.md「Hover 換色配對總則」,待辦總帳 B8)──
-   user 選「採用，底色不換、疊一層 (Recommended)」(題目限定「同一型態下,平常底色是「底」(surface 類)的東西」)。
+   user 選『採用，底色不換、疊一層 (Recommended)』(題目限定『同一型態下,平常底色是「底」(surface 類)的東西』;題目與選項都是 AI 寫的)。
    只給平常底色是 --canvas / --surface / --surface-raised 的可點元素、在**同一型態內**的滑過 / 按住用:
    底色(background-color)不動,把 --neutral-hover / --neutral-active 畫成一層 background-image ——
    畫在底色之上、內容之下,範圍與底色相同(預設 border-box:半透明框的像素跟透明元素換色時一樣微變,不留外圈)。
