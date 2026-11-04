@@ -3,18 +3,12 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Switch } from './switch'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
-import { Button } from '@/design-system/components/Button/button'
-import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { Field, FieldError } from '@/design-system/components/Field/field'
-import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/Switch/設計原則',
   parameters: { layout: 'padded' },
-  // 範例的送出成功跳 Toast(form-validation.spec.md「Submit 成功宣告」);Toaster 一頁一個,放 decorators(同 Toast 設計原則頁)
-  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -32,8 +26,6 @@ export const UsageGuidance: Story = {
   render: () => {
     const [bluetooth, setBluetooth] = React.useState(true)
     const [agreeTerms, setAgreeTerms] = React.useState(false)
-    // 送出:沒勾就在欄位下方出錯誤、勾了就跳 Toast;取消:把勾選還原(稽核 M061)
-    const [termsError, setTermsError] = React.useState(false)
     return (
     <TutorialPage>
       <UsageSection kind="when">
@@ -63,20 +55,16 @@ export const UsageGuidance: Story = {
           title="❌ 表單裡的同意 / 勾選:用 Checkbox"
           note="「我同意服務條款」是「勾選 → 送出 → 法律成立」的書面行為。Switch 的物理開關隱喻暗示「我打開了接受條款這個功能」——心智錯位且違反約定俗成(全球沒有 form 用 Switch 同意條款)"
         >
+          {/* 單一同意 = 直接 Checkbox + label prop、不包 Field(field.spec.md「何時不用」:單一 Checkbox(勾選同意)→ 直接 Checkbox + label prop)——
+              包進 Field 時 Checkbox 的 label 由 FieldLabel 接管、自己的字不畫(checkbox.spec.md「insideField && !insideGroup → 抑制 label」),
+              畫面上只剩一個沒有字、讀屏也沒有名字的勾選框。原本的「送出 / 取消」兩顆鈕按了沒反應(稽核 M061),照稽核另一個修法拿掉,
+              「旁邊有送出」已寫在本則說明與下方 caption */}
           <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
-            <Field invalid={termsError}>
-              <Checkbox
-                label="我同意服務條款與隱私政策"
-                checked={agreeTerms}
-                onCheckedChange={(v) => { setAgreeTerms(v === true); setTermsError(false) }}
-              />
-              {termsError && <FieldError>勾選同意後才能送出</FieldError>}
-            </Field>
-            {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-            <ButtonGroup className="mt-[var(--layout-space-loose)]">
-              <Button variant="primary" onClick={() => { if (!agreeTerms) { setTermsError(true); return } toast({ variant: 'success', title: '已送出' }) }}>送出</Button>
-              <Button variant="tertiary" onClick={() => { setAgreeTerms(false); setTermsError(false) }}>取消</Button>
-            </ButtonGroup>
+            <Checkbox
+              label="我同意服務條款與隱私政策"
+              checked={agreeTerms}
+              onCheckedChange={(v) => setAgreeTerms(v === true)}
+            />
           </div>
           <ExampleCaption>↑ Form 內同意條款用 Checkbox,隨 submit 才成立</ExampleCaption>
         </TutorialRule>

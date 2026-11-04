@@ -681,7 +681,7 @@ export const SizeMatrix = {
           <div className="flex flex-col gap-3">
             {SIZES.map((sz) => (
               <div key={sz} className="flex items-center gap-3">
-                <Combobox mode="readonly" size={sz} options={categoryOptions} value={['electronics', 'food']} className="w-64" />
+                <Combobox mode="readonly" size={sz} options={categoryOptions} value={['electronics', 'food']} className="w-64" aria-label={`商品分類(readonly ${sz} 範例)`} />
                 <span className="text-caption text-fg-secondary font-mono">size=&quot;{sz}&quot;</span>
               </div>
             ))}
@@ -738,6 +738,7 @@ export const StateBehavior = {
                 mode="readonly"
                 options={categoryOptions}
                 value={allValues}
+                aria-label="商品分類(readonly 溢出範例)"
               />
             </div>
             <span className="text-[11px] text-fg-secondary">readonly 的 +N hover 一樣顯示隱藏項，但 Tag 沒有 dismiss 按鈕</span>
@@ -768,6 +769,7 @@ export const StateBehavior = {
                     options={categoryOptions}
                     value={allValues}
                     wrap
+                    aria-label="產品分類(readonly 換行模式範例)"
                   />
                 </div>
               </div>
