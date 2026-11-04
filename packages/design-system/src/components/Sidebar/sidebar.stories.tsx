@@ -4,7 +4,7 @@ import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   LayoutDashboard, Inbox, Users, Settings, Folder, FileText, FileCode, Plus, MoreVertical,
-  User, LogOut,
+  User, LogOut, StarOff,
 } from 'lucide-react'
 import {
   SidebarProvider,
@@ -24,7 +24,9 @@ import {
 } from './sidebar'
 import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
 import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
-import { ItemAvatar, ItemLabel } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemAvatar, ItemLabel, ItemInlineAction, ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import {
   DropdownMenu,
@@ -303,6 +305,40 @@ const PROJECTS_TREE = [
   { id: 'analytics', label: 'Analytics', icon: Folder },
 ]
 
+// 收藏(Favorites 群組):真實專案名,沿用同檔「群組動作」的專案(稽核 M095:原本 alpha / beta / gamma 是佔位符)
+const FAVORITES_SEED = [
+  { id: 'fav-checkout', label: '結帳流程改版' },
+  { id: 'fav-reconcile', label: '對帳批次' },
+  { id: 'fav-notify', label: '支付失敗通知' },
+]
+const treeLabel = (id: string) => PROJECTS_TREE.flatMap((p) => [p, ...(p.children ?? [])]).find((n) => n.id === id)?.label
+
+/** 收藏列的兩顆動作鈕(寫法同 TreeView 展示的 DocRowActions:⋯ = 真的 DropdownMenu、＋ = 宣告式行內動作):
+ *  「更多動作 → 取消收藏」把這一列拿掉;「新增」在這個專案新增一筆議題(Toast 回報,同 UD-B26「送出跳 Toast」)。 */
+function FavoriteRowActions({ project, onUnfavorite }: { project: string; onUnfavorite: () => void }) {
+  return (
+    <>
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <ItemInlineActionButton icon={MoreVertical} aria-label="更多動作" overlayTrigger />
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>更多動作</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem startIcon={StarOff} onClick={onUnfavorite}>取消收藏</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+    <ItemInlineAction action={{ icon: Plus, label: '新增', onClick: () => toast({ variant: 'success', title: `已在「${project}」新增一筆議題` }) }} />
+    </>
+  )
+}
+// 插槽裡放兩顆鈕:SidebarMenuButton 插槽模式只預留一顆的寬(sidebar.tsx「Slot mode 預設按 1 icon 預留(consumer 寬度自控)」),
+// 照它說的由 consumer 補到兩顆 = loose + 2 × 16 + 8 + 0.5rem(與宣告式 inlineActions 兩顆時同一條公式)
+const TWO_ACTION_SLOT_PR = '!pr-[calc(var(--layout-space-loose)+2.5rem+0.5rem)]'
+
 export const MixedContent: Story = {
   name: '混合內容',
   parameters: { docs: { description: { story: '上方 `SidebarMenu` 是 designer 設計好的主導覽,下方 `TreeView` 是使用者自建的 project 資料。整個 sidebar 同時只有一個 active,切到 icon 模式後 TreeView 整段隱藏。' } } },
@@ -316,6 +352,8 @@ export const MixedContent: Story = {
     const [showAllProjects, setShowAllProjects] = React.useState(false)
     const visibleProjects = showAllProjects ? PROJECTS_TREE : PROJECTS_TREE.slice(0, 2)
     const remainingCount = PROJECTS_TREE.length - 2
+    const [favorites, setFavorites] = React.useState(FAVORITES_SEED)
+    const [showArchived, setShowArchived] = React.useState(true)
 
     return (
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
@@ -398,37 +436,34 @@ export const MixedContent: Story = {
               <SidebarGroupLabel>Favorites</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {['alpha', 'beta', 'gamma'].map((name) => (
-                    <SidebarMenuItem key={name}>
+                  {favorites.map((fav) => (
+                    <SidebarMenuItem key={fav.id}>
                       <SidebarMenuButton
-                        id={`fav-${name}`}
+                        id={fav.id}
                         startIcon={Folder}
                         actionsReveal="hover"
-                        inlineActions={[
-                          { icon: MoreVertical, label: '更多動作', onClick: () => {} },
-                          { icon: Plus, label: '新增', onClick: () => {} },
-                        ]}
+                        className={TWO_ACTION_SLOT_PR}
+                        inlineActionsSlot={<FavoriteRowActions project={fav.label} onUnfavorite={() => setFavorites((list) => list.filter((x) => x.id !== fav.id))} />}
                       >
-                        {name}
+                        {fav.label}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
                   {/* Disabled favorite(已封存專案):host disabled 時 inline actions
-                      整組不渲染——hover 也不出現 ⋯/＋,不可操作就不暗示可操作
+                      整組不渲染——hover 也不出現 ⋯,不可操作就不暗示可操作
                       (sidebar.spec.md「Host disabled 時」+ inline-action.spec.md 宿主 disabled 規則)。 */}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      startIcon={Folder}
-                      disabled
-                      actionsReveal="hover"
-                      inlineActions={[
-                        { icon: MoreVertical, label: '更多動作', onClick: () => {} },
-                        { icon: Plus, label: '新增', onClick: () => {} },
-                      ]}
-                    >
-                      delta（已封存）
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {showArchived && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        startIcon={Folder}
+                        disabled
+                        actionsReveal="hover"
+                        inlineActionsSlot={<FavoriteRowActions project="發票寄送" onUnfavorite={() => setShowArchived(false)} />}
+                      >
+                        發票寄送（已封存）
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -439,10 +474,9 @@ export const MixedContent: Story = {
         </Sidebar>
 
         <PageContent
-          title={isInMainNav
-            ? MAIN_NAV.find((n) => n.id === activeId)?.label ?? ''
-            : activeId}
+          title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? treeLabel(activeId) ?? favorites.find((x) => x.id === activeId)?.label ?? ''}
         />
+        <Toaster />
       </SidebarProvider>
     )
   },

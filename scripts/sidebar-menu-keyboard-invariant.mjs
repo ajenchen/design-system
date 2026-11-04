@@ -211,68 +211,69 @@ export async function runSidebarKeyboardChecks(page, story) {
     }
   }
 
+  // 收藏列 2026-11-05 起是真實專案名(A-M095:原本 alpha / beta / gamma / delta 是佔位符),⋯ 是真的 DropdownMenu(插槽),＋ 照舊
   if (story === 'mixed') {
-    // 找「我的最愛」那一串:Tab 走到首項是 alpha 的那一串
+    // 找「我的最愛」那一串:Tab 走到首項是 結帳流程改版 的那一串
     await focusDocumentStart(page)
     let d = { kind: 'none' }
-    for (let i = 0; i < 20; i++) { d = await press(page, 'Tab'); if (d.kind === 'row' && d.rowLabel === 'alpha') break }
-    rec(d.rowLabel === 'alpha', 'S5', `mixed:Tab 進「我的最愛」落在第一項 alpha(實得「${d.label}」)`)
+    for (let i = 0; i < 20; i++) { d = await press(page, 'Tab'); if (d.kind === 'row' && d.rowLabel === '結帳流程改版') break }
+    rec(d.rowLabel === '結帳流程改版', 'S5', `mixed:Tab 進「我的最愛」落在第一項 結帳流程改版(實得「${d.label}」)`)
     const favIndex = d.menuIndex
     const revealed = await page.waitForFunction(() => {
       const li = document.activeElement?.closest('li'); const r = li?.querySelector('[data-sidebar="menu-inline-actions"]')
       return r && getComputedStyle(r).opacity === '1'
     }, null, { timeout: 2000 }).then(() => true, () => false)
-    rec(revealed, 'S6', 'mixed:焦點在 alpha 列 → 它的滑過才出現鈕 opacity 1')
+    rec(revealed, 'S6', 'mixed:焦點在 結帳流程改版 列 → 它的滑過才出現鈕 opacity 1')
 
     d = await press(page, 'ArrowRight')
-    rec(d.kind === 'action' && d.label === '更多動作' && d.rowLabel === 'alpha', 'S3', `mixed:→ 進 alpha 的第一顆動作鈕「更多動作」(實得 ${d.kind}「${d.label}」/列「${d.rowLabel}」)`)
+    rec(d.kind === 'action' && d.label === '更多動作' && d.rowLabel === '結帳流程改版', 'S3', `mixed:→ 進 結帳流程改版 的第一顆動作鈕「更多動作」(實得 ${d.kind}「${d.label}」/列「${d.rowLabel}」)`)
     const revealedOnAction = await page.waitForFunction(() => {
       const li = document.activeElement?.closest('li'); const r = li?.querySelector('[data-sidebar="menu-inline-actions"]')
       return r && getComputedStyle(r).opacity === '1'
     }, null, { timeout: 2000 }).then(() => true, () => false)
     rec(revealedOnAction, 'S6', 'mixed:焦點在動作鈕上 → 同列的滑過才出現鈕仍 opacity 1')
     d = await press(page, 'ArrowRight')
-    rec(d.label === '新增' && d.rowLabel === 'alpha', 'S3', `mixed:再 → 到「新增」(實得「${d.label}」)`)
+    rec(d.label === '新增' && d.rowLabel === '結帳流程改版', 'S3', `mixed:再 → 到「新增」(實得「${d.label}」)`)
     d = await press(page, 'ArrowRight')
-    rec(d.label === '新增' && d.rowLabel === 'alpha', 'S3', `mixed:最後一顆再 → 停住(實得「${d.label}」)`)
+    rec(d.label === '新增' && d.rowLabel === '結帳流程改版', 'S3', `mixed:最後一顆再 → 停住(實得「${d.label}」)`)
     d = await press(page, 'ArrowLeft')
     rec(d.label === '更多動作', 'S3', `mixed:← 回上一顆「更多動作」(實得「${d.label}」)`)
     d = await press(page, 'ArrowLeft')
-    rec(d.kind === 'row' && d.rowLabel === 'alpha', 'S3', `mixed:第一顆 ← 回到列 alpha(實得 ${d.kind}「${d.label}」)`)
+    rec(d.kind === 'row' && d.rowLabel === '結帳流程改版', 'S3', `mixed:第一顆 ← 回到列 結帳流程改版(實得 ${d.kind}「${d.label}」)`)
 
     d = await press(page, 'ArrowDown')
-    rec(d.kind === 'row' && d.rowLabel === 'beta', 'S2', `mixed:↓ → beta(實得「${d.label}」)`)
+    rec(d.kind === 'row' && d.rowLabel === '對帳批次', 'S2', `mixed:↓ → 對帳批次(實得「${d.label}」)`)
     d = await press(page, 'ArrowDown')
-    rec(d.rowLabel === 'gamma', 'S2', `mixed:↓ → gamma(實得「${d.label}」)`)
+    rec(d.rowLabel === '支付失敗通知', 'S2', `mixed:↓ → 支付失敗通知(實得「${d.label}」)`)
     d = await press(page, 'ArrowDown')
-    rec(d.rowLabel === 'gamma', 'S2', `mixed:最後一個可用項再 ↓ 停住(delta 已封存 = disabled 被跳過、不繞回;實得「${d.label}」)`)
+    rec(d.rowLabel === '支付失敗通知', 'S2', `mixed:最後一個可用項再 ↓ 停住(發票寄送(已封存) = disabled 被跳過、不繞回;實得「${d.label}」)`)
     d = await press(page, 'Home')
-    rec(d.rowLabel === 'alpha', 'S2', `mixed:Home → alpha(實得「${d.label}」)`)
+    rec(d.rowLabel === '結帳流程改版', 'S2', `mixed:Home → 結帳流程改版(實得「${d.label}」)`)
     d = await press(page, 'ArrowUp')
-    rec(d.rowLabel === 'alpha', 'S2', `mixed:第一項再 ↑ 停住(實得「${d.label}」)`)
+    rec(d.rowLabel === '結帳流程改版', 'S2', `mixed:第一項再 ↑ 停住(實得「${d.label}」)`)
     d = await press(page, 'End')
-    rec(d.rowLabel === 'gamma', 'S2', `mixed:End → gamma(實得「${d.label}」)`)
+    rec(d.rowLabel === '支付失敗通知', 'S2', `mixed:End → 支付失敗通知(實得「${d.label}」)`)
     d = await press(page, 'ArrowUp')
-    rec(d.rowLabel === 'beta', 'S2', `mixed:↑ → beta(實得「${d.label}」)`)
+    rec(d.rowLabel === '對帳批次', 'S2', `mixed:↑ → 對帳批次(實得「${d.label}」)`)
 
     d = await press(page, 'ArrowRight')
     d = await press(page, 'ArrowDown')
-    rec(d.kind === 'row' && d.rowLabel === 'gamma', 'S4', `mixed:beta 的動作鈕上 ↓ → gamma 列(實得 ${d.kind}「${d.label}」)`)
+    rec(d.kind === 'row' && d.rowLabel === '支付失敗通知', 'S4', `mixed:對帳批次 的動作鈕上 ↓ → 支付失敗通知 列(實得 ${d.kind}「${d.label}」)`)
     d = await press(page, 'ArrowRight')
     d = await press(page, 'ArrowUp')
-    rec(d.kind === 'row' && d.rowLabel === 'beta', 'S4', `mixed:gamma 的動作鈕上 ↑ → beta 列(實得 ${d.kind}「${d.label}」)`)
+    rec(d.kind === 'row' && d.rowLabel === '對帳批次', 'S4', `mixed:支付失敗通知 的動作鈕上 ↑ → 對帳批次 列(實得 ${d.kind}「${d.label}」)`)
 
-    // S5:從動作鈕 Tab 一下離開這一串;Shift+Tab 回來落在上次那一項(beta)
+    // S5:從動作鈕 Tab 一下離開這一串;Shift+Tab 回來落在上次那一項(對帳批次)
     d = await press(page, 'ArrowRight')
     d = await press(page, 'Tab')
     rec(d.menuIndex !== favIndex, 'S5', `mixed:動作鈕上 Tab 一下離開「我的最愛」(落在「${d.label}」)`)
     d = await press(page, 'Shift+Tab')
-    rec(d.menuIndex === favIndex && d.kind === 'row' && d.rowLabel === 'beta', 'S5', `mixed:Shift+Tab 回來落在上次那一項 beta(實得 ${d.kind}「${d.label}」)`)
+    rec(d.menuIndex === favIndex && d.kind === 'row' && d.rowLabel === '對帳批次', 'S5', `mixed:Shift+Tab 回來落在上次那一項 對帳批次(實得 ${d.kind}「${d.label}」)`)
     d = await press(page, 'ArrowRight')
     d = await press(page, 'Shift+Tab')
     rec(d.menuIndex !== favIndex, 'S5', `mixed:動作鈕上 Shift+Tab 一下往前離開「我的最愛」(落在「${d.label}」)`)
     d = await press(page, 'Tab')
-    rec(d.menuIndex === favIndex && d.rowLabel === 'beta', 'S5', `mixed:再 Tab 回來仍是 beta(實得「${d.label}」)`)
+    rec(d.menuIndex === favIndex && d.rowLabel === '對帳批次', 'S5', `mixed:再 Tab 回來仍是 對帳批次(實得「${d.label}」)`)
     d = await press(page, 'Tab')
     rec(d.menuIndex !== favIndex, 'S5', `mixed:列上 Tab 一下離開「我的最愛」(落在「${d.label}」)`)
 
@@ -299,14 +300,14 @@ export async function runSidebarKeyboardChecks(page, story) {
     // S9(指標):兩顆動作鈕之間的空隙歸列 —— 滑過時列亮著,點下去就要導覽(待辦總帳 N53 ①,2026-09-26;
     // sidebar.spec.md「Inline actions」、hit-area-canonical.md「看到亮起來卻點不到」)。對照點:空隙旁 1px 進到按鈕的懸停底色裡 = 按鈕自己。
     const gap = await page.evaluate(() => {
-      const btn = [...document.querySelectorAll('[data-sidebar="menu-button"]')].find((b) => b.textContent?.trim() === 'alpha')
+      const btn = [...document.querySelectorAll('[data-sidebar="menu-button"]')].find((b) => b.textContent?.trim() === '結帳流程改版')
       const li = btn?.closest('li')
       const acts = li ? [...li.querySelectorAll('[data-sidebar="menu-inline-actions"] button')] : []
       if (!btn || acts.length < 2) return null
       const a = acts[0].getBoundingClientRect(); const b = acts[1].getBoundingClientRect()
       return { x: (a.right + b.left) / 2, y: (a.top + a.bottom) / 2, inBtnX: a.right, gapWidth: b.left - a.right }
     })
-    if (!gap || !(gap.gapWidth > 2)) rec(false, 'S9', `mixed:量不到 alpha 兩顆動作鈕之間的空隙(${JSON.stringify(gap)})—— 儀器失效,不是通過`)
+    if (!gap || !(gap.gapWidth > 2)) rec(false, 'S9', `mixed:量不到 結帳流程改版 兩顆動作鈕之間的空隙(${JSON.stringify(gap)})—— 儀器失效,不是通過`)
     else {
       await page.mouse.move(gap.x, gap.y)
       const hit = await page.evaluate(({ x, y, inBtnX }) => {
@@ -315,9 +316,9 @@ export async function runSidebarKeyboardChecks(page, story) {
         return { gap: who(document.elementFromPoint(x, y)), control: who(document.elementFromPoint(inBtnX, y)) }
       }, gap)
       await page.mouse.click(gap.x, gap.y)
-      const active = await page.evaluate(() => [...document.querySelectorAll('[data-sidebar="menu-button"]')].find((b) => b.textContent?.trim() === 'alpha')?.getAttribute('aria-current'))
-      rec(hit.gap === 'row:alpha' && hit.control === 'action:更多動作' && active === 'page', 'S9',
-        `mixed:alpha 兩顆動作鈕之間的空隙點下去 = 列(命中 ${hit.gap};對照點按鈕底色內 → ${hit.control};點後 aria-current=${active})`)
+      const active = await page.evaluate(() => [...document.querySelectorAll('[data-sidebar="menu-button"]')].find((b) => b.textContent?.trim() === '結帳流程改版')?.getAttribute('aria-current'))
+      rec(hit.gap === 'row:結帳流程改版' && hit.control === 'action:更多動作' && active === 'page', 'S9',
+        `mixed:結帳流程改版 兩顆動作鈕之間的空隙點下去 = 列(命中 ${hit.gap};對照點按鈕底色內 → ${hit.control};點後 aria-current=${active})`)
       await page.mouse.move(0, 0)
     }
   }
