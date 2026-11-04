@@ -2,6 +2,12 @@
 /**
  * sync-template-canonical-app.mjs — single-SSOT guard for the template dashboard App.
  *
+ * @gate-contract
+ *   保證: 範本本體 apps/template/src/App.tsx 與隨 npm 出貨的副本 ds-canonical/templates/dashboard-app.tsx 逐字相同
+ *         (receiver 每次發版 `cp 副本 → App.tsx`,副本落後 = 範本改動被靜默蓋回舊版)
+ *   紅: 副本弄壞一行 → --check 指名 DRIFT 並 exit 1;副本不見 → exit 2(儀器失效,不讀成通過);對照組在 scripts/test-sync-template-canonical-app.mjs 的拋棄式小樹
+ *   綠: 兩檔逐字相同時 exit 0;純讀檔比對,重複跑結果相同
+ *
  * 2026-06-07 C2 fix(deep root-cause investigation):published ds-product-template 的 receiver
  * (sync-design-system.yml「Sync DS canonical template」)每次 release 都 `cp ds-canonical/templates/
  * dashboard-app.tsx → apps/template/src/App.tsx`。但 dashboard-app.tsx 是「手動凍結副本」,跟真正

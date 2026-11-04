@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 // Periodic content-quality audit for Storybook stories.
+/**
+ * @gate-contract
+ *   保證: Storybook story 的內容品質不漂移 —— 非 anatomy 的序號名、literal Markdown / 反引號(棘輪只准往下)、Autodocs 缺說明、
+ *         anatomy 顯示名漂移、兩個 CSF 共用 title 等(下面 Detects 清單逐條),--check 在 PR 必過跑(2026-11-04 起,原本只在夜間 meta lane)
+ *   紅: 注入任一條違規(序號名、literal 反引號、缺 Autodocs 說明…)→ --check 必須指名該檔並 exit 1;對照組 19 面在 scripts/test-audit-content-quality.mjs
+ *   綠: 現況 0 筆時 exit 0;純靜態、不讀時間,同一棵樹重複跑結果相同
+ */
 // Catches drift that write-time hooks miss — runs across ALL files, not single edit.
 //
 // Modes:

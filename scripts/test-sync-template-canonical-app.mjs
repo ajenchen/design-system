@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: sync-template-canonical-app --check 在該紅的時候會紅、該綠的時候會綠,而且 CI 真的有叫它
+ *   紅: 拋棄式小樹裡副本弄壞一行必須 exit 1、副本不見必須 exit 2;任一面沒照預期本測試就紅;現況漂移也紅
+ *   綠: 兩檔相同與同步之後必須 exit 0;只寫暫存目錄、repo 零寫入
+ */
 // meta-test for sync-template-canonical-app --check(2026-11-04,template 家族交整合 3):
 // 範本本體 apps/template/src/App.tsx ↔ 隨 npm 出貨的副本 ds-canonical/templates/dashboard-app.tsx 必須逐字相同 ——
 // 範本 receiver 每次發版都 `cp 副本 → App.tsx`,副本落後就把範本改動靜默蓋回舊版。這支 --check 從 2026-06-07 寫好到今天
