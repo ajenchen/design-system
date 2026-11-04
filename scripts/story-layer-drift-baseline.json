@@ -15,16 +15,15 @@
     "hardcoded-spacing": 0,
     "div-heading": 0,
     "unknown-typography": 0,
-    "story-counter-example": 5,
-    "layout-space-magic-ok": 327
+    "story-counter-example": 4,
+    "layout-space-magic-ok": 310
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 2,
+        "count": 1,
         "hits": [
-          "0120f2b23f62",
-          "580f866cc11a"
+          "0120f2b23f62"
         ]
       }
     },
@@ -35,8 +34,8 @@
           "4ec43176031c",
           "53e1508b5d93",
           "8340d7767714",
-          "9f5ed5964047",
           "bf89226d4740",
+          "c3f70974c8c1",
           "c839fbfeaba9",
           "dd598861dfd3",
           "f3ceec75d331"
@@ -105,15 +104,6 @@
         ]
       }
     },
-    "packages/design-system/src/components/Calendar/calendar.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 2,
-        "hits": [
-          "1860c547d0ac",
-          "8b1904bbd4cd"
-        ]
-      }
-    },
     "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx": {
       "layout-space-magic-ok": {
         "count": 4,
@@ -160,7 +150,7 @@
       "layout-space-magic-ok": {
         "count": 1,
         "hits": [
-          "757fb04786b7"
+          "61980984cfad"
         ]
       }
     },
@@ -193,17 +183,12 @@
     },
     "packages/design-system/src/components/Dialog/dialog.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 9,
+        "count": 4,
         "hits": [
-          "0ffb06756a09",
-          "67daabda3d14",
           "8308568ef322",
           "8529cb87aa04",
           "ae71e1307129",
-          "ae71e1307129",
-          "be04eef5be9a",
-          "f36b3ba04e14",
-          "f7c8d4c72b57"
+          "ae71e1307129"
         ]
       }
     },
@@ -272,17 +257,15 @@
     },
     "packages/design-system/src/components/HoverCard/hover-card.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 11,
+        "count": 9,
         "hits": [
           "0ae634e2e536",
-          "2325c9a2078c",
           "2e050b08ce98",
+          "486dd95b484c",
           "636d860773c4",
-          "6af1211534a4",
+          "6f10bf86396c",
           "7257f09b0745",
           "bdc291b6bbce",
-          "d4f0e1490d1b",
-          "e99451353abd",
           "f1474d938ee1",
           "fcf8cc5eb9d8"
         ]
@@ -315,14 +298,6 @@
         "count": 1,
         "hits": [
           "8de37197d71c"
-        ]
-      }
-    },
-    "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "ed0d4093a9b6"
         ]
       }
     },
@@ -482,21 +457,7 @@
         ]
       }
     },
-    "packages/design-system/src/components/Switch/switch.stories.tsx": {
-      "layout-space-magic-ok": {
-        "count": 1,
-        "hits": [
-          "d801408cdf37"
-        ]
-      }
-    },
     "packages/design-system/src/components/Tag/tag.principles.stories.tsx": {
-      "story-counter-example": {
-        "count": 1,
-        "hits": [
-          "7e690a6c850d"
-        ]
-      },
       "layout-space-magic-ok": {
         "count": 10,
         "hits": [
@@ -541,11 +502,9 @@
     },
     "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 3,
+        "count": 1,
         "hits": [
-          "39987fdb7aa5",
-          "8a0296678df5",
-          "983b08ad0532"
+          "8a0296678df5"
         ]
       }
     },
@@ -671,13 +630,10 @@
     },
     "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 5,
+        "count": 2,
         "hits": [
-          "135b4311e5be",
-          "528ae58bc8fc",
-          "528ae58bc8fc",
-          "528ae58bc8fc",
-          "95ce0f32f0b5"
+          "132756b23aca",
+          "528ae58bc8fc"
         ]
       }
     },
@@ -775,7 +731,7 @@
       "layout-space-magic-ok": {
         "count": 4,
         "hits": [
-          "2325c9a2078c",
+          "12dc45ba9f04",
           "9f35d4d3e58c",
           "d8b5f4ec45d9",
           "dcb4041b33e0"
