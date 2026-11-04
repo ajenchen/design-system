@@ -5,8 +5,8 @@
  *         (2026-10-01 全樹 213 個 story:展示 81 / 設計原則 66 / 設計規格 66、數百顆 Button、上千段 class 字串),不是儀器壞掉後的空集合。
  *   紅: 閘的 --selftest 任一格不符 → 本測試紅;把 selftest 的儀器換成壞的(分類器永遠說 micro / 永遠說不是 micro、
  *       字級集合讀成空的)selftest 必須自己回 false;在重建後的 Rating 原文裡把送出鈕改回「給分前停用」必須在那一行紅;
- *       真檔突變:tag.principles 拿掉 `@story-counter-example` → 那一行紅;同一段連標記搬進展示層 → 仍紅;
- *       time-picker.anatomy 的 h4 標題改回 div → (c) 在那一行紅;
+ *       真檔突變:skeleton.principles 拿掉 `@story-counter-example` → 那一行紅;同一段連標記搬進展示層 → 仍紅;
+ *       description-list 展示的 h3 標題改回 div → (c) 在那一行紅(規格層真檔 time-picker.anatomy 照樣 0 筆);
  *       spec 出處行(typography.spec.md:43、sidebar.spec.md:264、story-rules.md「三層定位」:15-17 /「Technical probe visibility」等)被改掉、
  *       ci.yml 出現 --write-baseline、CI 不再呼叫 test:story-layer-drift → 紅;
  *       「基準不得比 base 寬」以 HEAD 那棵樹的真資料走:多記一筆 / 替新檔預留 → 紅,反例標記多 → 只列 review;--base 打錯 → 儀器失效;
@@ -166,30 +166,37 @@ check('全樹一次判(檔與檔之間墊空白行)與逐檔判,結果逐筆相�
   }
 })
 
-const TAG_PRINCIPLES = 'packages/design-system/src/components/Tag/tag.principles.stories.tsx'
-const TAG_SHOWCASE = 'packages/design-system/src/components/Tag/tag.stories.tsx'
-check('突變:真檔 tag.principles 拿掉 @story-counter-example → 那一行紅;同一份原文當展示層看 → 標記不算數、仍紅並說明', () => {
-  const text = readFileSync(join(REPO, TAG_PRINCIPLES), 'utf8')
+// 錨點(2026-11-05 整合改):原本是 tag.principles,fields 4c441afc 把那則反例改寫、檔內已沒有 @story-counter-example;
+// 換成仍帶反例標記、被標那一行是寫死間距(外層 Skeleton 加 p-3)的 skeleton.principles。
+const COUNTER_PRINCIPLES = 'packages/design-system/src/components/Skeleton/skeleton.principles.stories.tsx'
+const COUNTER_SHOWCASE = 'packages/design-system/src/components/Skeleton/skeleton.stories.tsx'
+check('突變:真檔 skeleton.principles 拿掉 @story-counter-example → 那一行紅;同一份原文當展示層看 → 標記不算數、仍紅並說明', () => {
+  const text = readFileSync(join(REPO, COUNTER_PRINCIPLES), 'utf8')
   const lines = text.split('\n')
   const markerAt = lines.findIndex((l) => l.includes('@story-counter-example:')) + 1
-  assert.ok(markerAt > 0, `${TAG_PRINCIPLES} 找不到 @story-counter-example(被改寫了?請更新本突變的錨點)`)
-  assert.deepEqual(analyzeSource(TAG_PRINCIPLES, text, instruments).hits, [], `${TAG_PRINCIPLES} 目前應 0 筆`)
+  assert.ok(markerAt > 0, `${COUNTER_PRINCIPLES} 找不到 @story-counter-example(被改寫了?請更新本突變的錨點)`)
+  assert.deepEqual(analyzeSource(COUNTER_PRINCIPLES, text, instruments).hits, [], `${COUNTER_PRINCIPLES} 目前應 0 筆`)
   const stripped = [...lines.slice(0, markerAt - 1), ...lines.slice(markerAt)].join('\n')
-  const hits = analyzeSource(TAG_PRINCIPLES, stripped, instruments).hits
+  const hits = analyzeSource(COUNTER_PRINCIPLES, stripped, instruments).hits
   assert.deepEqual(keys(hits), [`hardcoded-spacing@${markerAt}`], '拿掉反例標記後,原本被標的那一行(上移一行)應紅')
-  const asShowcase = analyzeSource(TAG_SHOWCASE, text, instruments).hits.filter((h) => h.line === markerAt + 1)
+  const asShowcase = analyzeSource(COUNTER_SHOWCASE, text, instruments).hits.filter((h) => h.line === markerAt + 1)
   assert.ok(asShowcase.length === 1 && asShowcase[0].note?.includes('只在設計原則層'), `同一份原文當展示層看,被標的那一行應仍紅並說明,實得 ${JSON.stringify(asShowcase)}`)
 })
 
 const TIME_PICKER_ANATOMY = 'packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx'
-check('突變:真檔 time-picker.anatomy 的 h4 標題改回 div → (c) 在那一行紅;規格層的寫死間距照樣 0 筆', () => {
-  const text = readFileSync(join(REPO, TIME_PICKER_ANATOMY), 'utf8')
+// 錨點(2026-11-05 整合改):原本在 time-picker.anatomy 找單行 h4 標題 —— fields 44a1c83f 把那些標題收進共用 ExampleSection,
+// 全庫設計規格檔已沒有「字級 + 字重」的單行標題可突變(git grep 0 筆)。突變改用展示層真檔 description-list.stories.tsx 的
+// h3「訂單摘要」;「規格層真檔的寫死間距照樣 0 筆」仍量 time-picker.anatomy(55 處寫死間距類 class,判定 0 筆 = 規格層不收)。
+const HEADING_REAL = 'packages/design-system/src/components/DescriptionList/description-list.stories.tsx'
+check('突變:真檔 description-list 展示的 h3 標題改回 div → (c) 在那一行紅;規格層真檔 time-picker.anatomy 的寫死間距照樣 0 筆', () => {
+  assert.deepEqual(analyzeSource(TIME_PICKER_ANATOMY, readFileSync(join(REPO, TIME_PICKER_ANATOMY), 'utf8'), instruments).hits, [], `${TIME_PICKER_ANATOMY} 目前應 0 筆`)
+  const text = readFileSync(join(REPO, HEADING_REAL), 'utf8')
   const lines = text.split('\n')
-  const at = lines.findIndex((l) => /<h4 className="text-h6 font-semibold[^"]*">[^<]+<\/h4>/.test(l)) + 1
-  assert.ok(at > 0, `${TIME_PICKER_ANATOMY} 找不到單行 h4 標題(被改寫了?請更新本突變的錨點)`)
-  assert.deepEqual(analyzeSource(TIME_PICKER_ANATOMY, text, instruments).hits, [], `${TIME_PICKER_ANATOMY} 目前應 0 筆`)
-  lines[at - 1] = lines[at - 1].replace('<h4 ', '<div ').replace('</h4>', '</div>')
-  assert.deepEqual(keys(analyzeSource(TIME_PICKER_ANATOMY, lines.join('\n'), instruments).hits), [`div-heading@${at}`])
+  const at = lines.findIndex((l) => /<h([1-6]) className="text-h6 font-(?:semibold|medium)[^"]*">[^<]+<\/h\1>/.test(l)) + 1
+  assert.ok(at > 0, `${HEADING_REAL} 找不到單行 h1–h6 標題(被改寫了?請更新本突變的錨點)`)
+  assert.deepEqual(analyzeSource(HEADING_REAL, text, instruments).hits, [], `${HEADING_REAL} 目前應 0 筆`)
+  lines[at - 1] = lines[at - 1].replace(/<h[1-6] /, '<div ').replace(/<\/h[1-6]>/, '</div>')
+  assert.deepEqual(keys(analyzeSource(HEADING_REAL, lines.join('\n'), instruments).hits), [`div-heading@${at}`])
 })
 
 const ratingNow = readFileSync(join(REPO, RATING_STORY), 'utf8')
