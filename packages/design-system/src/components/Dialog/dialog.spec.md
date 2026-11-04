@@ -36,10 +36,10 @@ Modal 對話框，基於 Radix Dialog。用於**需要使用者注意力、阻�
 |------|------|------|
 | 短暫的操作回饋（成功 / 失敗訊息）| `Toast` | Dialog 會阻斷流程，Toast 非阻斷 |
 | 持久的頁面內通知 | `Alert` | Alert 是 inline 嵌入，不浮起 |
-| 手機全屏編輯 | `Sheet` (bottom / fullscreen) | Dialog 預設 viewport inset,行動裝置用 Sheet 更自然 |
 | 側邊操作面板（不需完全阻斷）| `Sheet` | Sheet 從側邊滑入，視覺更輕、常搭配列表 detail |
 | 浮動的精簡選單 | `DropdownMenu` / `Popover` | Dialog 是 modal,DropdownMenu/Popover 是輕量浮層 |
 | Hover 才出現的輔助資訊 | `Tooltip` / `HoverCard` | Dialog 需要明確觸發,hover 不該是 modal 觸發 |
+| 手機全屏編輯 | `Sheet` (bottom / fullscreen) | Dialog 預設 viewport inset,行動裝置用 Sheet 更自然 |
 
 ---
 
