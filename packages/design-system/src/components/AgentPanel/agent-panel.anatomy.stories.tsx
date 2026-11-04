@@ -16,6 +16,7 @@ import { AgentThinking } from './agent-panel'
 import { Slider } from '@/design-system/components/Slider/slider'
 import { Toaster } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { useAgentDemo, toolbarActions, DemoConversation } from '@/design-system/stories-helpers/scene/agent-demo'
 
 const meta: Meta<typeof AgentPanel> = {
@@ -100,8 +101,8 @@ const InspectorView = () => {
     <Toaster />
     <div className="flex flex-col gap-6 p-8">
       <div className="grid grid-cols-[1fr_340px] gap-6">
-        {/* 左:即時預覽 + 藍圖 */}
-        <div className="flex flex-col gap-6">
+        {/* 左:即時預覽 + 藍圖 —— 兩則有標題的範例上下疊:範例之間 loose × 2(ExampleStack,Q2 ①);原本寫死 gap-6(24,不跟密度) */}
+        <ExampleStack>
           <div>
             <H3>即時預覽</H3>
             <Desc>
@@ -166,7 +167,7 @@ const InspectorView = () => {
               </p>
             </div>
           </div>
-        </div>
+        </ExampleStack>
 
         {/* 右:Inspect 面板 */}
         <div>
@@ -223,36 +224,39 @@ const InspectorView = () => {
 export const SizeMatrix: Story = {
   name: '尺寸對照表',
   render: () => (
-    <div className="space-y-6 p-12">
-      <section>
-        <H3>標誌</H3>
-        <Desc>同一造型,不設簡化檔(2026-09-02 拍板);尺寸由消費點決定。</Desc>
-        <div className="mt-2 flex items-end gap-8">
-          {[16, 24, 32, 48].map((size) => (
-            <div key={size} className="flex flex-col items-center gap-2">
-              <AgentLogo state="still" size={size} label={`標誌 ${size}px`} />
-              <span className="text-caption text-fg-muted">{size}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section>
-        <H3>尺寸來源</H3>
-        <table className="mt-2 w-full text-body">
-          <thead>
-            <tr><Th>用途</Th><Th>值</Th><Th>Token 來源</Th></tr>
-          </thead>
-          <tbody>
-            <tr><Td>入口鈕(家)</Td><Td mono>40</Td><Td><TokenCell token="--field-height-lg" display="lg 密度 40" /></Td></tr>
-            <tr><Td>入口鈕(貼邊)</Td><Td mono>28</Td><Td><TokenCell token="--field-height-sm" /></Td></tr>
-            <tr><Td>貼邊帶寬</Td><Td mono>36</Td><Td><TokenCell token="--field-height-md" /></Td></tr>
-            <tr><Td>面板寬(預設 / 最小 / 最大)</Td><Td mono>400 / 360 / 640</Td><Td>AGENT_PANEL_WIDTH_DEFAULT / MIN / MAX(TS 常數,非 token)</Td></tr>
-            <tr><Td>標題列高</Td><Td mono>48 / 56</Td><Td><TokenCell token="--chrome-header-height" display="md / lg density" /></Td></tr>
-            <tr><Td>訊息輪距</Td><Td mono>40</Td><Td>8 + 24(工具列)+ 8</Td></tr>
-            <tr><Td>最後一則 → 輸入盒</Td><Td mono>48</Td><Td><TokenCell token="--layout-space-bottom" /></Td></tr>
-          </tbody>
-        </table>
-      </section>
+    // 兩段有標題的對照上下疊:段之間 loose × 2(ExampleStack,Q2 ①);原本寫死 space-y-6(24,不跟密度)
+    <div className="p-12">
+      <ExampleStack>
+        <section>
+          <H3>標誌</H3>
+          <Desc>同一造型,不設簡化檔(2026-09-02 拍板);尺寸由消費點決定。</Desc>
+          <div className="mt-2 flex items-end gap-8">
+            {[16, 24, 32, 48].map((size) => (
+              <div key={size} className="flex flex-col items-center gap-2">
+                <AgentLogo state="still" size={size} label={`標誌 ${size}px`} />
+                <span className="text-caption text-fg-muted">{size}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section>
+          <H3>尺寸來源</H3>
+          <table className="mt-2 w-full text-body">
+            <thead>
+              <tr><Th>用途</Th><Th>值</Th><Th>Token 來源</Th></tr>
+            </thead>
+            <tbody>
+              <tr><Td>入口鈕(家)</Td><Td mono>40</Td><Td><TokenCell token="--field-height-lg" display="lg 密度 40" /></Td></tr>
+              <tr><Td>入口鈕(貼邊)</Td><Td mono>28</Td><Td><TokenCell token="--field-height-sm" /></Td></tr>
+              <tr><Td>貼邊帶寬</Td><Td mono>36</Td><Td><TokenCell token="--field-height-md" /></Td></tr>
+              <tr><Td>面板寬(預設 / 最小 / 最大)</Td><Td mono>400 / 360 / 640</Td><Td>AGENT_PANEL_WIDTH_DEFAULT / MIN / MAX(TS 常數,非 token)</Td></tr>
+              <tr><Td>標題列高</Td><Td mono>48 / 56</Td><Td><TokenCell token="--chrome-header-height" display="md / lg density" /></Td></tr>
+              <tr><Td>訊息輪距</Td><Td mono>40</Td><Td>8 + 24(工具列)+ 8</Td></tr>
+              <tr><Td>最後一則 → 輸入盒</Td><Td mono>48</Td><Td><TokenCell token="--layout-space-bottom" /></Td></tr>
+            </tbody>
+          </table>
+        </section>
+      </ExampleStack>
     </div>
   ),
 }
@@ -261,31 +265,34 @@ export const SizeMatrix: Story = {
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => (
-    <div className="space-y-6 p-12">
-      <section>
-        <H3>品牌兩極(入口鈕環 / 光圈)</H3>
-        <Desc>單一數值來源在 agent-panel-logo.tsx 的 AGENT_BRAND;等於自家色階,不隨主題改。</Desc>
-        <table className="mt-2 w-full text-body">
-          <thead><tr><Th /><Th>值</Th><Th>色階</Th></tr></thead>
-          <tbody>
-            <tr><Td><Swatch value={AGENT_BRAND.blue} /> 藍</Td><Td mono>{AGENT_BRAND.blue}</Td><Td><TokenCell token="--color-blue-4" /></Td></tr>
-            <tr><Td><Swatch value={AGENT_BRAND.purple} /> 紫</Td><Td mono>{AGENT_BRAND.purple}</Td><Td><TokenCell token="--color-purple-4" /></Td></tr>
-          </tbody>
-        </table>
-      </section>
-      <section>
-        <H3>面與訊息</H3>
-        <table className="mt-2 w-full text-body">
-          <thead><tr><Th>用途</Th><Th>Token</Th></tr></thead>
-          <tbody>
-            <tr><Td>面板底 / 入口鈕面</Td><Td><TokenCell token="--surface" display="--surface / --surface-raised" /></Td></tr>
-            <tr><Td>我方氣泡</Td><Td><TokenCell token="--secondary" /></Td></tr>
-            <tr><Td>代理內文連結</Td><Td><TokenCell token="--primary" display="--primary / hover --primary-hover" /></Td></tr>
-            <tr><Td>左緣分隔線</Td><Td><TokenCell token="--divider" /></Td></tr>
-            <tr><Td>停靠帶底 / 邊框</Td><Td><TokenCell token="--drop-target" display="--drop-target / --drop-target-border" /></Td></tr>
-          </tbody>
-        </table>
-      </section>
+    // 兩段有標題的對照上下疊:段之間 loose × 2(ExampleStack,Q2 ①);原本寫死 space-y-6(24,不跟密度)
+    <div className="p-12">
+      <ExampleStack>
+        <section>
+          <H3>品牌兩極(入口鈕環 / 光圈)</H3>
+          <Desc>單一數值來源在 agent-panel-logo.tsx 的 AGENT_BRAND;等於自家色階,不隨主題改。</Desc>
+          <table className="mt-2 w-full text-body">
+            <thead><tr><Th /><Th>值</Th><Th>色階</Th></tr></thead>
+            <tbody>
+              <tr><Td><Swatch value={AGENT_BRAND.blue} /> 藍</Td><Td mono>{AGENT_BRAND.blue}</Td><Td><TokenCell token="--color-blue-4" /></Td></tr>
+              <tr><Td><Swatch value={AGENT_BRAND.purple} /> 紫</Td><Td mono>{AGENT_BRAND.purple}</Td><Td><TokenCell token="--color-purple-4" /></Td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section>
+          <H3>面與訊息</H3>
+          <table className="mt-2 w-full text-body">
+            <thead><tr><Th>用途</Th><Th>Token</Th></tr></thead>
+            <tbody>
+              <tr><Td>面板底 / 入口鈕面</Td><Td><TokenCell token="--surface" display="--surface / --surface-raised" /></Td></tr>
+              <tr><Td>我方氣泡</Td><Td><TokenCell token="--secondary" /></Td></tr>
+              <tr><Td>代理內文連結</Td><Td><TokenCell token="--primary" display="--primary / hover --primary-hover" /></Td></tr>
+              <tr><Td>左緣分隔線</Td><Td><TokenCell token="--divider" /></Td></tr>
+              <tr><Td>停靠帶底 / 邊框</Td><Td><TokenCell token="--drop-target" display="--drop-target / --drop-target-border" /></Td></tr>
+            </tbody>
+          </table>
+        </section>
+      </ExampleStack>
     </div>
   ),
 }

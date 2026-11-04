@@ -30,6 +30,7 @@ import {
 } from '@/design-system/components/AgentPanel/agent-panel'
 import { AgentPanelDock } from '@/design-system/components/AgentPanel/agent-panel-fab'
 import { useAgentDemo, DemoConversation } from '@/design-system/stories-helpers/scene/agent-demo'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof AppShell> = {
   title: 'Design System/Components/AppShell/設計規格',
@@ -91,43 +92,46 @@ export const Overview: Story = {
 export const LayoutModeDiagram: Story = {
   name: '兩種布局模式對照圖',
   render: () => (
-    // 間距(A4,layoutSpace.spec.md 規則 3):標題 → 它底下的並列內容 = loose、兩個並列區段之間 = loose(md 16 / lg 24);
+    // 間距(A4,layoutSpace.spec.md 規則 3):標題 → 它底下的並列內容 = loose(md 16 / lg 24);兩個有標題的區段上下疊 = loose × 2
+    // (ExampleStack,Q2 ①:區段標題離上一段比離自己的圖遠);
     // 對照圖 ↔ 它下面那句說明 = tight(說明替緊鄰的圖命名,規則 3「labeling」)。原本寫死 space-y-6 / space-y-2(24 / 8,不跟密度)
     <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] flex flex-col gap-[var(--layout-space-loose)] text-body">
       <h2 className="text-h4">兩 mode 對照</h2>
-      <section className="flex flex-col gap-[var(--layout-space-loose)]">
-        <h3 className="text-h5">primary-sidebar(Linear / Notion / Figma 派)</h3>
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <div className="flex gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
-            <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>頂天立地</div>
-            <div className="flex-1 flex flex-col">
-              <div className="bg-surface-strong px-2 py-1">Header(在 main col 內,當前頁 toolbar)</div>
-              <div className="bg-canvas flex-1 px-2 py-6 text-fg-muted">Main content</div>
+        <ExampleStack>
+        <section className="flex flex-col gap-[var(--layout-space-loose)]">
+          <h3 className="text-h5">primary-sidebar(Linear / Notion / Figma 派)</h3>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="flex gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
+              <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>頂天立地</div>
+              <div className="flex-1 flex flex-col">
+                <div className="bg-surface-strong px-2 py-1">Header(在 main col 內,當前頁 toolbar)</div>
+                <div className="bg-canvas flex-1 px-2 py-6 text-fg-muted">Main content</div>
+              </div>
+              <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel<br/>頂天</div>
+              <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent<br/>頂天</div>
             </div>
-            <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel<br/>頂天</div>
-            <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent<br/>頂天</div>
+            <p className="text-fg-muted">Header scope = <strong>local toolbar</strong>(當前頁 actions / breadcrumb / page-level filter)。Workspace 多寡無關,Notion / Linear 多 workspace 也用 primary-sidebar。</p>
           </div>
-          <p className="text-fg-muted">Header scope = <strong>local toolbar</strong>(當前頁 actions / breadcrumb / page-level filter)。Workspace 多寡無關,Notion / Linear 多 workspace 也用 primary-sidebar。</p>
-        </div>
-      </section>
-      <section className="flex flex-col gap-[var(--layout-space-loose)]">
-        <h3 className="text-h5">primary-header(GitHub / Slack / Gmail 派)</h3>
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <div className="flex flex-col gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
-            <div className="bg-surface-strong px-2 py-1 text-center">Header(global bar,橫跨整 viewport)</div>
-            <div className="flex">
-              <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>(在 header 下)</div>
-              <div className="flex-1 bg-canvas px-2 py-6 text-fg-muted">Main content</div>
-              <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel</div>
-              <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent</div>
+        </section>
+        <section className="flex flex-col gap-[var(--layout-space-loose)]">
+          <h3 className="text-h5">primary-header(GitHub / Slack / Gmail 派)</h3>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <div className="flex flex-col gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
+              <div className="bg-surface-strong px-2 py-1 text-center">Header(global bar,橫跨整 viewport)</div>
+              <div className="flex">
+                <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>(在 header 下)</div>
+                <div className="flex-1 bg-canvas px-2 py-6 text-fg-muted">Main content</div>
+                <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">Right panel</div>
+                <div className="w-24 bg-surface-strong px-2 py-8 text-center text-fg-muted">AI agent</div>
+              </div>
             </div>
+            <p className="text-fg-muted">
+              Header scope = <strong>global bar</strong>(account / workspace switcher / notifications / 跨頁導覽)。
+              Workspace 多寡無關 — GitHub / Gmail multi account 也用此 layout,真正的 distinguisher 是 header 是「local 還是 global」。
+            </p>
           </div>
-          <p className="text-fg-muted">
-            Header scope = <strong>global bar</strong>(account / workspace switcher / notifications / 跨頁導覽)。
-            Workspace 多寡無關 — GitHub / Gmail multi account 也用此 layout,真正的 distinguisher 是 header 是「local 還是 global」。
-          </p>
-        </div>
-      </section>
+        </section>
+        </ExampleStack>
     </div>
   ),
 }
@@ -349,31 +353,33 @@ export const Accessibility: Story = {
 }
 
 // Size matrix:各區寬度設定的對照(DS 預設 vs 產品設定 + 可拉上限算例)。
-// 間距(A4,layoutSpace.spec.md 規則 3):兩組(寬度設定 / 可拉上限算例)之間 = loose;每組標題 → 它下面的清單 = tight
+// 間距(A4,layoutSpace.spec.md 規則 3):兩組(寬度設定 / 可拉上限算例)有標題、上下疊 → 組之間 = loose × 2(ExampleStack,Q2 ①);每組標題 → 它下面的清單 = tight
 // (清單是純文字,內容之間是 tight);最後一句註記 ↔ 它說的算例 = tight。原本寫死 space-y-3 = 12(不跟密度)
 export const SizeMatrix: Story = {
   name: '尺寸對照表',
   render: () => (
-    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] flex flex-col gap-[var(--layout-space-loose)] text-body">
-      <section className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h2 className="text-h4">各區寬度設定(依內容類型:最小 / 初始 / 最大)</h2>
-        <ul className="space-y-2 list-disc pl-5">
-          <li>Main:只有最小寬,AppShell 的 <code>mainMinWidth</code> 必填(DS 不替產品挑);填滿其他並排面板沒用到的空間</li>
-          <li>Menu:產品沒設時最小 / 初始 240(<code>--sidebar-width-min</code> / <code>--sidebar-width</code>);最大寬產品必給</li>
-          <li>Right panel:產品沒設時 240 / 320 / 640(<code>AppShellAside</code> <code>widthRange</code>)</li>
-          <li>AI agent:產品沒設時 360 / 400 / 640(<code>AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX</code>)</li>
-          <li>Menu 細列:<code>--sidebar-width-icon</code>(標準密度 48 / 寬鬆密度 68),不能拖</li>
-        </ul>
-      </section>
-      <section className="flex flex-col gap-[var(--layout-space-tight)]">
-        <h2 className="text-h4">可拉上限算例(Main 600、Menu 200–240、Right 250–500、AI agent 350–700)</h2>
-        <ul className="space-y-2 list-disc pl-5">
-          <li>版面寬 1600:剩餘 200 先均分,Menu 到 240 停,其餘兩個各再加 80 → 上限 240 / 330 / 430,全部拉滿時 Main 剛好 600</li>
-          <li>版面寬 2200:三個都到最大寬 240 / 500 / 700,多出的 760 留給 Main</li>
-          <li>浮層:最小寬 ~ min(最大寬, 版面寬 − 48);版面寬 320、最小 300 → 暫時顯示 272,寬度紀錄不變</li>
-        </ul>
-        <p className="text-caption text-fg-muted">DS 不再硬夾任何寬度、不依視窗挑寬(2026-10-14 前的 240 / 640 硬夾與 <code>{'{'} md, xl {'}'}</code> 退場);上限不取整。</p>
-      </section>
+    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-body">
+        <ExampleStack>
+        <section className="flex flex-col gap-[var(--layout-space-tight)]">
+          <h2 className="text-h4">各區寬度設定(依內容類型:最小 / 初始 / 最大)</h2>
+          <ul className="space-y-2 list-disc pl-5">
+            <li>Main:只有最小寬,AppShell 的 <code>mainMinWidth</code> 必填(DS 不替產品挑);填滿其他並排面板沒用到的空間</li>
+            <li>Menu:產品沒設時最小 / 初始 240(<code>--sidebar-width-min</code> / <code>--sidebar-width</code>);最大寬產品必給</li>
+            <li>Right panel:產品沒設時 240 / 320 / 640(<code>AppShellAside</code> <code>widthRange</code>)</li>
+            <li>AI agent:產品沒設時 360 / 400 / 640(<code>AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX</code>)</li>
+            <li>Menu 細列:<code>--sidebar-width-icon</code>(標準密度 48 / 寬鬆密度 68),不能拖</li>
+          </ul>
+        </section>
+        <section className="flex flex-col gap-[var(--layout-space-tight)]">
+          <h2 className="text-h4">可拉上限算例(Main 600、Menu 200–240、Right 250–500、AI agent 350–700)</h2>
+          <ul className="space-y-2 list-disc pl-5">
+            <li>版面寬 1600:剩餘 200 先均分,Menu 到 240 停,其餘兩個各再加 80 → 上限 240 / 330 / 430,全部拉滿時 Main 剛好 600</li>
+            <li>版面寬 2200:三個都到最大寬 240 / 500 / 700,多出的 760 留給 Main</li>
+            <li>浮層:最小寬 ~ min(最大寬, 版面寬 − 48);版面寬 320、最小 300 → 暫時顯示 272,寬度紀錄不變</li>
+          </ul>
+          <p className="text-caption text-fg-muted">DS 不再硬夾任何寬度、不依視窗挑寬(2026-10-14 前的 240 / 640 硬夾與 <code>{'{'} md, xl {'}'}</code> 退場);上限不取整。</p>
+        </section>
+        </ExampleStack>
     </div>
   ),
 }

@@ -17,7 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Breadcrumb> = {
   title: 'Design System/Components/Breadcrumb/展示',
@@ -129,8 +129,8 @@ export const DeclarativeAutoCollapse: Story = {
     },
   },
   render: () => (
-    // 範例之間 = loose(並列的範例,layoutSpace.spec.md 規則 3);每一則的標題 → 範例由 ExampleSection 給(A4)
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
+    // 四則有標題的範例上下疊:範例之間 loose × 2(ExampleStack,Q2 ①;標題離上一則比離自己的範例遠);每一則的標題 → 範例由 ExampleSection 給(A4)
+    <ExampleStack className="max-w-2xl">
       <ExampleSection title="3 層:全部顯示">
         <Breadcrumb>
           <BreadcrumbList
@@ -189,7 +189,7 @@ export const DeclarativeAutoCollapse: Story = {
           />
         </Breadcrumb>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 
