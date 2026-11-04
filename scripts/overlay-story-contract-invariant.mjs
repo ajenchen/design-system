@@ -119,6 +119,41 @@ function inTestOnlyStory(node) {
   return false
 }
 
+/**
+ * S9 的範圍:文案物件(`XxxLabels`)屬於名字是 `Xxx` 的那支元件 —— 量的是「這支元件的讀屏名稱都走它的文案物件」,
+ * 不是「這個檔案裡出現過 export interface …Labels」(M37:檔案 ≠ 元件)。
+ * 2026-11-05 整合時現形:n6 在 agent-panel.tsx 匯出 AgentDecisionCardLabels(決策卡的文案物件),同一支檔還住著
+ * AgentPanel / AgentPanelHeader / AgentPromptInput / AgentToolbar —— 它們沒有文案物件,檔案層級的判法把它們的 12 個讀屏名稱
+ * 全算成「決策卡寫死」而紅;那 12 個其實是 AgentPanel 本身還沒有文案物件(另案,不是決策卡的病)。
+ * 範圍 = 擁有者宣告 + 它(遞迴)用到的同檔頂層宣告(FileViewer 的縮小鈕若寫在只被 FileViewer 用的小元件裡,照樣在範圍內 ——
+ * OV-10 原本要抓的那種);頂層的 JSX(不在任何具名宣告裡)一律在範圍內。檔裡找不到任何一個擁有者宣告 → 退回整個檔案(保守)。
+ */
+function s9ScopeOf(sf, src) {
+  const owners = [...src.matchAll(/export interface ([A-Z][A-Za-z]*)Labels\b/g)].map((m) => m[1])
+  if (owners.length === 0) return () => false
+  const declName = (st) => st.name?.text ?? (ts.isVariableStatement(st) ? st.declarationList.declarations.map((d) => d.name.getText())[0] : null)
+  const byName = new Map()
+  for (const st of sf.statements) { const n = declName(st); if (n) byName.set(n, st) }
+  const roots = owners.filter((o) => byName.has(o))
+  if (roots.length !== owners.length) return () => true
+  const reach = new Set()
+  const queue = [...roots]
+  while (queue.length) {
+    const n = queue.shift()
+    if (reach.has(n)) continue
+    reach.add(n)
+    const st = byName.get(n)
+    const walk = (node) => { if (ts.isIdentifier(node) && byName.has(node.text) && !reach.has(node.text)) queue.push(node.text); ts.forEachChild(node, walk) }
+    walk(st)
+  }
+  return (node) => {
+    let top = node
+    while (top.parent && top.parent !== sf) top = top.parent
+    const n = declName(top)
+    return !n || reach.has(n)
+  }
+}
+
 function runStatic(files, { quiet = false } = {}) {
   const red = {}
   const add = (id, msg) => { (red[id] ??= []).push(msg) }
@@ -146,6 +181,7 @@ function runStatic(files, { quiet = false } = {}) {
     // S9:這支元件有對外的文案物件(`export interface XxxLabels`)→ 讀屏名稱一律走它,不准寫死字串
     const labelsInterface = /export interface ([A-Z][A-Za-z]*Labels)\b/.exec(src)?.[1] ?? null
     if (labelsInterface) labelledComponents++
+    const s9InScope = s9ScopeOf(sf, src)
     const lineOf = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1
     const visit = (node) => {
       const opening = ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node) ? node : null
@@ -169,8 +205,8 @@ function runStatic(files, { quiet = false } = {}) {
           const cls = attrText(attrs.get('className')) ?? ''
           if (!/HOVER_CARD_(?:TOOLTIP_)?SURFACE_CLASS/.test(cls)) add('S2', `${where} <HoverCardContent> 的外殼沒有消費 HOVER_CARD_SURFACE_CLASS / HOVER_CARD_TOOLTIP_SURFACE_CLASS(手抄的殼漏陰影 / 字色,OV-V03 / OV-02)`)
         }
-        // S9 有文案物件的元件不寫死讀屏名稱
-        if (labelsInterface) {
+        // S9 有文案物件的元件不寫死讀屏名稱(範圍 = 擁有文案物件的那支元件與它用到的同檔宣告,見 s9ScopeOf)
+        if (labelsInterface && s9InScope(opening)) {
           const al = attrs.get('aria-label')
           const init = al?.initializer
           const literal = init && (ts.isStringLiteral(init) ? init : ts.isJsxExpression(init) && init.expression && ts.isStringLiteralLike(init.expression) ? init.expression : null)
@@ -927,6 +963,8 @@ const STATIC_MUTANTS = [
   // S8:profile-card.anatomy 2026-10-20 前的寫法 —— 員工編號寫在 fields(預設標籤是英文時畫成兩列,改中文後被去重)
   // S9:FileViewer 2026-10-20 前的縮小鈕 —— 元件有 FileViewerLabels,這顆卻寫死
   ['S9', 'packages/design-system/src/__selftest__/file-viewer-before.tsx', 'export interface FileViewerLabels { zoomInput?: string }\nconst h = <Button iconOnly startIcon={Minus} aria-label="縮小" />'],
+  // S9 同族(範圍收到擁有者之後仍要紅):寫死的鈕放在只被擁有者用到的同檔小元件裡,檔裡另有一支不相干的元件
+  ['S9', 'packages/design-system/src/__selftest__/file-viewer-helper-before.tsx', 'export interface FileViewerLabels { zoomOut?: string }\nfunction ZoomControls() { return <Button iconOnly startIcon={Minus} aria-label="縮小" /> }\nfunction FileViewer({ labels }: { labels?: FileViewerLabels }) { return <div><ZoomControls /></div> }\nfunction OtherPanel() { return <div /> }'],
   ['S8', 'packages/design-system/src/__selftest__/profile-card-anatomy-before.stories.tsx', "const g = <ProfileCard name=\"Ada Chen\" fields={[{ label: 'Email', value: 'ada.chen@example.com' }, { label: '員工編號', value: '#E-2048' }]} />"],
   // S8 同族:DataTable 範例 2026-10-21 前的人員資料 —— ID 寫在 PersonData.fields
   ['S8', 'packages/design-system/src/__selftest__/data-table-people-before.tsx', "const p = [{ name: 'Alice Wonderland Wang', description: 'Sales｜Tokyo｜EMP-1001', fields: [{ label: 'ID', value: 'AWW001' }, { label: '部門', value: 'Sales / APAC' }] }]"],
@@ -963,6 +1001,8 @@ const STATIC_MUTANTS = [
 const STATIC_CLEAN = [
   ['packages/design-system/src/__selftest__/clean-ime.ts', '// 2026-10-01 上午曾在這裡放 `withImeSafeEscape`(浮層的 `onEscapeKeyDown`:組字中的 Esc 不關那一層)。同日下午「這一下 Esc 由誰處理」'],
   ['packages/design-system/src/__selftest__/clean-focus-return.ts', ' * 2026-09-30 之前的五份:Command `returnFocusAfterCommandClose`(SelectMenu / AgentPanel 歷史 / CommandDialog)、Sidebar 窄版抽屜、\n * AppShell 窄版側欄、DatePicker 區間、AgentPanel 入口鈕右鍵選單各寫一份「記開啟者 + 關閉時還」,判準各不相同'],
+  // S9:一支檔住兩支元件,文案物件只屬於其中一支(agent-panel.tsx 的形狀):另一支沒有文案物件,它的讀屏名稱不算「決策卡寫死」
+  ['packages/design-system/src/__selftest__/clean-multi-component.tsx', "export interface AgentDecisionCardLabels { skip?: string }\nconst DEFAULT_LABELS: AgentDecisionCardLabels = { skip: '跳過' }\nfunction AgentDecisionCard({ labels }: { labels?: AgentDecisionCardLabels }) { const l = { ...DEFAULT_LABELS, ...labels }; return <Button aria-label={l.skip} /> }\nfunction AgentPanelHeader() { return <Button aria-label=\"新對話\" /> }"],
 ]
 
 // ─── 主程式 ──────────────────────────────────────────────────────────────────
