@@ -272,8 +272,8 @@ export const NoInteractionRule: Story = {
               <Tag>已出貨</Tag>
             </DescriptionItem>
             <DescriptionItem label="物流追蹤">
-              {/* 連結照 color.spec.md 連結規範:text-primary、滑過換 primary-hover、不加底線;點了真的開物流查詢(新分頁) */}
-              <a href="https://www.fedex.com/fedextrack/?trknbr=1234567890" target="_blank" rel="noreferrer" className="text-primary hover:text-primary-hover">
+              {/* 連結長相維持起點 a103c40b 的已發布版(text-primary + 底線、滑過換 primary-hover;color.spec.md 那條「不用底線」講的是滑過回饋,不是拿掉平常的底線 —— 派工更正 E 節);點了真的開物流查詢(新分頁) */}
+              <a href="https://www.fedex.com/fedextrack/?trknbr=1234567890" target="_blank" rel="noreferrer" className="text-primary hover:text-primary-hover underline">
                 FedEx #1234567890
               </a>
             </DescriptionItem>

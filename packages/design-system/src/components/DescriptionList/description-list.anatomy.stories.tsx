@@ -228,7 +228,7 @@ export const StateBehavior: Story = {
               <Tag>已出貨</Tag>
             </DescriptionItem>
             <DescriptionItem label="物流追蹤">
-              <a href="https://www.fedex.com/fedextrack/?trknbr=1234567890" target="_blank" rel="noreferrer" className="text-primary hover:text-primary-hover">
+              <a href="https://www.fedex.com/fedextrack/?trknbr=1234567890" target="_blank" rel="noreferrer" className="text-primary hover:text-primary-hover underline">
                 FedEx #1234567890
               </a>
             </DescriptionItem>
