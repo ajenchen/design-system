@@ -31,7 +31,7 @@ Cycle waste:edit → ship → BLOCKER → revert → re-propose。每多一次 =
 
 ## Mechanical strength
 
-- Hook `check_substantive_edit_approval_preflight.sh` 與 `stop_self_audit.sh` 共用 `hooks/lib/approval-evidence.mjs`，依 exact target、current operation 與 decision domain 分類。
+- Hook `check_substantive_edit_approval_preflight.sh` 與 `stop_self_audit.sh` 共用 `packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs`，依 exact target、current operation 與 decision domain 分類。
 - `engineering-remediation` PASS；`product-ui-ux` 缺 exact choice、denial/revocation、discussion 及 `unknown` 都 fail closed。泛用 keyword 或 peer retract 不可偽造 decision。
 
 ## How to apply

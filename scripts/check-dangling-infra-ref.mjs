@@ -53,6 +53,9 @@ const EXCLUDE = /\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
 // 這類通用字 — 否則任一行只要含「(e.g., …)」或「每則 … 範例」就讓真 dangling ref 假綠放行
 // (anchor:check_story_anatomy.sh 被同行 `(e.g., "Badge …")` 假 annotate;
 //  check_principles_canonical.sh 被 `Rule note + 範例` 假 annotate)。
+// 2026-11-04(總帳 SM5)試過把「退役」「已刪」加進來:governance/memory/reference_auto_mode_sandbox_boundaries.md 有一行同時寫
+// 「該鏡像 2026-08-04 已退役」與一個**活的** approval-evidence.mjs 引用 —— 擴字會把那個活引用一起放掉(marker 是整行判)。
+// 所以不擴字;兩句歷史句改在句子裡寫明「檔案已不存在」。
 const ANNOTATED = /retired|未實作|planned|待\s*ship|deprecated|mindset enforcement|@[a-z-]+-skip|@[a-z-]+-allow|folded|rename →|不存在/i
 
 // ── infra name patterns(hook / script)──
@@ -187,13 +190,12 @@ function workflowRefToRepoPath(name, checkoutPaths) {
   return p ? rest.slice(p.length + 1) : rest
 }
 
-// skip self-evidently-non-infra mjs(config / vendor)—— 只用在散文文件。
-// 判「是不是 infra 腳本」看**檔名**,不看整條路徑(2026-10-14):先前拿整條路徑比開頭,任何帶目錄的寫法
-// (`packages/governance/test/plugin-hook-runtime.test.mjs`、`scripts/check-x.mjs`)開頭都不是這些字 → 整條被略過、
-// 從沒驗過存不存在 —— 把裸檔名改寫成完整路徑會「轉綠」,但綠的原因是沒檢查,不是檔案在(M37)。
-// workflow 不套這張清單:workflow 裡的 .mjs 就是 CI 要跑(或註解在講 CI 跑)的那支,不需要拿檔名猜它是不是 infra ——
-// 2026-10-14 實測 14 支 workflow 共 194 筆 .mjs 引用,檔名開頭對得上這張清單的只有 35 筆,套用就等於八成不檢查。
-const INFRA_MJS_NAME = /^(check|sync|audit|dispatch|verify|build|setup|test|deploy|create|lint|score|extract|compose|dogfood|plugin)/
+// 散文文件的 .mjs 一律驗存在(2026-11-04,總帳 SM5):原本散文只檢查「檔名開頭是 check / sync / audit … 那張清單」的 .mjs,
+// 其餘略過 —— 裸檔名 `consumerctl.mjs`、`approval-evidence.mjs` 這種不在清單裡的,寫錯、搬走、刪掉都從沒被驗過(拿「檔名像不像
+// infra」當「要不要驗」的代理,M37)。拿掉過濾後實測 19 筆:14 筆裸檔名 / 半截路徑(改成完整路徑)、3 筆套件建置產物
+// `dist/index.mjs`(node_modules 裡第三方套件的檔,不是 repo 檔 → BUILD_ARTIFACT 排除)、2 筆早已寫明退役 / 已刪的歷史句(句子裡補「檔案已不存在」,ANNOTATED 不擴字,理由見上)。
+// workflow 原本就不套過濾(2026-10-14)。
+const BUILD_ARTIFACT = /^dist\//
 
 const bucketB = [] // dangling-live(no annotation)= FAIL
 const bucketA = [] // annotated-retired = disclosed OK
@@ -214,7 +216,7 @@ for (const f of files) {
     const line = workflow ? normalizeWorkflowLine(raw) : raw
     const refs = [...line.matchAll(HOOK_RE), ...line.matchAll(MJS_RE)].map((m) => m[1])
     for (const name of refs) {
-      if (!workflow && name.endsWith('.mjs') && !INFRA_MJS_NAME.test(name.split('/').pop())) continue
+      if (BUILD_ARTIFACT.test(name)) continue
       const target = workflow ? workflowRefToRepoPath(name, checkoutPaths) : name
       if (resolvesOnDisk(target)) continue
       const key = `${f}:${i + 1}:${name}`

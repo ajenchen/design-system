@@ -38,6 +38,18 @@ import {
   validateProviderRegistryDocument as validateRuntimeProviderRegistry,
 } from '../../../scripts/lib/provider-runtime-validation.mjs'
 import { validateProviderRegistrySemantics } from '../../../scripts/lib/provider-runtime-contract.mjs'
+
+// 「等某件事發生」的上限只有一個來源 = harness 執行器的逾時(infra/governance/providers/harness-registry.json 的
+// runner.defaultTimeoutMs,run-harnesses 用同一個數字殺掉整支測試)。2026-11-04 之前這裡各自寫死 3 / 2 / 1.5 秒:
+// 負載高(本機 30 以上)時子行程光啟動就超過 3 秒,產品沒壞也紅(MASTER-TODO 3f;r1d / fields-b2 / capture-images 各記過一次)。
+// 等待一律等事件本身(標記出現 / 子行程結束),子行程先結束就立刻失敗;「夠快」的斷言改量性質本身(hook 有沒有自己跑完),不量牆上時鐘。
+const HARNESS_TIMEOUT_MS = JSON.parse(await readFile(new URL('../../../infra/governance/providers/harness-registry.json', import.meta.url), 'utf8')).runner.defaultTimeoutMs
+const EVENT_WAIT_MS = Math.floor(HARNESS_TIMEOUT_MS / 10)
+assert.ok(Number.isSafeInteger(EVENT_WAIT_MS) && EVENT_WAIT_MS > 0, 'harness-registry runner.defaultTimeoutMs 讀不到')
+const raceEvent = (promise, label) => {
+  let timer
+  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label}(等了 ${EVENT_WAIT_MS}ms)`)), EVENT_WAIT_MS) })]).finally(() => clearTimeout(timer))
+}
 import { checkProviderRuntimeValidator } from '../../../scripts/gen-provider-runtime-validator.mjs'
 import { resolveProviderReviewBinding } from '../src/provider-review-binding.mjs'
 
@@ -842,6 +854,7 @@ wait "$descendant"
 `)
   await writeFile(resolve(hookDirectory, 'batch-delay.sh'), `
 sleep 5
+if [ -n "\${GOVERNANCE_TEST_BATCH_DELAY_DONE:-}" ]; then printf 'finished\\n' > "$GOVERNANCE_TEST_BATCH_DELAY_DONE"; fi
 `)
   await writeFile(resolve(hookDirectory, 'batch-large-context.mjs'), `
 for await (const _chunk of process.stdin) {}
@@ -853,7 +866,7 @@ process.stdout.write(JSON.stringify({
 }))
 `)
   await writeFile(resolve(hookDirectory, 'batch-clean-parent-orphan.sh'), `
-/bin/bash -c 'trap "" TERM; exec /bin/sleep 30' >/dev/null 2>&1 &
+/bin/bash -c 'trap "" TERM; exec /bin/sleep 600' >/dev/null 2>&1 &
 printf '%s\\n' "$!" > "$GOVERNANCE_TEST_BATCH_CLEAN_DESCENDANT_LOG"
 exit 0
 `)
@@ -1224,7 +1237,8 @@ process.stdout.write(JSON.stringify({governanceContext:{hookEventName:'PreToolUs
   })
   let snapshotProbe = ''
   await new Promise((accept, reject) => {
-    const timer = setTimeout(() => reject(new Error('hook corpus snapshot probe timed out')), 3000)
+    const timer = setTimeout(() => reject(new Error(`hook corpus snapshot probe timed out(等了 ${EVENT_WAIT_MS}ms)`)), EVENT_WAIT_MS)
+    snapshotInvocation.completion.then((early) => { clearTimeout(timer); reject(new Error(`hook corpus snapshot probe 在印出 READY 之前就結束(status ${early.status}):${early.stderr}`)) })
     const inspect = () => {
       snapshotProbe = Buffer.concat(snapshotInvocation.stderr).toString('utf8')
       if (!snapshotProbe.includes('HOOK_CORPUS_SNAPSHOT_READY:')) return
@@ -1342,7 +1356,8 @@ process.stdout.write(JSON.stringify({governanceContext:{hookEventName:'PreToolUs
   cleanDescendantPid = Number((await readFile(cleanDescendantLog, 'utf8')).trim())
   assert.equal(Number.isSafeInteger(cleanDescendantPid) && cleanDescendantPid > 0, true)
   let cleanDescendantAlive = true
-  const cleanDescendantDeadline = Date.now() + 1500
+  // 子孫自己要睡 600 秒才會結束,遠長於 EVENT_WAIT_MS:等得到它消失 = runner 清掉的,不是它自己睡完
+  const cleanDescendantDeadline = Date.now() + EVENT_WAIT_MS
   while (Date.now() < cleanDescendantDeadline) {
     try {
       process.kill(cleanDescendantPid, 0)
@@ -1414,15 +1429,17 @@ process.stdout.write(JSON.stringify({governanceContext:{hookEventName:'PreToolUs
   assert.equal(anchorlessResult.status, 70, anchorlessResult.stderr)
   assert.match(anchorlessResult.stderr, /TRANSCRIPT_TURN_ANCHOR_UNAVAILABLE/)
 
+  const delayDone = resolve(fixture, 'batch-delay-finished.log')
   const shortDeadline = launchAsync({
     group: 9,
     extraArguments: ['--test-short-batch-runtime'],
+    extraEnvironment: { GOVERNANCE_TEST_BATCH_DELAY_DONE: delayDone },
   })
-  const deadlineStartedAt = Date.now()
-  const deadlineResult = await shortDeadline.completion
+  const deadlineResult = await raceEvent(shortDeadline.completion, 'overall batch deadline 沒有結束子行程')
   assert.equal(deadlineResult.status, 70)
   assert.match(deadlineResult.stderr, /provider hook batch exceeded 750ms/)
-  assert.ok(Date.now() - deadlineStartedAt < 3000, 'overall batch deadline must terminate the active child promptly')
+  // 性質本身:batch-delay.sh 睡 5 秒後才寫完成標記 —— runner 回來時標記不在 = 是期限把它停掉,不是等它自己跑完
+  await assert.rejects(lstat(delayDone), /ENOENT/, 'overall batch deadline must terminate the active child before it finishes on its own')
 
   const signalLog = resolve(fixture, 'signal-tree.log')
   const signalInvocation = launchAsync({
@@ -1430,8 +1447,10 @@ process.stdout.write(JSON.stringify({governanceContext:{hookEventName:'PreToolUs
     extraEnvironment: { GOVERNANCE_TEST_BATCH_SIGNAL_LOG: signalLog },
   })
   let signalRows = []
-  const signalReadyDeadline = Date.now() + 3000
-  while (Date.now() < signalReadyDeadline) {
+  let signalExited = false
+  signalInvocation.completion.then(() => { signalExited = true })
+  const signalReadyDeadline = Date.now() + EVENT_WAIT_MS
+  while (Date.now() < signalReadyDeadline && !signalExited) {
     try {
       signalRows = (await readFile(signalLog, 'utf8')).trim().split('\n')
       if (signalRows.length === 3) break
@@ -1446,14 +1465,13 @@ process.stdout.write(JSON.stringify({governanceContext:{hookEventName:'PreToolUs
   const signalSnapshotRoot = signalRows[0].slice(0, -snapshotSuffix.length)
   const descendantPid = Number(signalRows[2])
   assert.equal(Number.isSafeInteger(descendantPid) && descendantPid > 0, true)
-  const signalStartedAt = Date.now()
   assert.equal(signalInvocation.child.kill('SIGTERM'), true)
-  const signalResult = await signalInvocation.completion
+  // 子孫行程忽略 TERM、永遠不會自己結束:runner 沒清乾淨就會一直卡著 —— 等得到結束本身就證明清理有界
+  const signalResult = await raceEvent(signalInvocation.completion, 'signal cleanup must remain bounded')
   assert.deepEqual({ signal: signalResult.signal, status: signalResult.status }, { signal: null, status: 143 }, signalResult.stderr)
-  assert.ok(Date.now() - signalStartedAt < 2000, 'signal cleanup must remain bounded')
   await assert.rejects(lstat(signalSnapshotRoot), /ENOENT/)
   let descendantAlive = true
-  const descendantDeadline = Date.now() + 1500
+  const descendantDeadline = Date.now() + EVENT_WAIT_MS
   while (Date.now() < descendantDeadline) {
     try {
       process.kill(descendantPid, 0)

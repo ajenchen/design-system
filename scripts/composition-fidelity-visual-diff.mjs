@@ -52,6 +52,67 @@ const args = Object.fromEntries(process.argv.slice(2).map(a => {
   const i = a.indexOf('='); return i < 0 ? [a.replace(/^--/, ''), true] : [a.slice(2, i), a.slice(i + 1)]
 }))
 
+// ── DOM 雙軌比對(純函式;--selftest 驗)──────────────────────────────────────────────────
+// 每個節點的鍵 = 祖先路徑(tag[role].class)+「同一條路徑第幾個出現」(DFS 順序)。2026-11-04(總帳 SM6)之前只用路徑當鍵:
+// 缺 / 多用 Set 比「有沒有這條路徑」、樣式用 Object.fromEntries(path → 節點)比 —— 同路徑的兄弟節點只留最後一個,
+// 三個兄弟少一個量不到(Set 不變)、中間那個樣式不同也量不到(拿去跟最後一個比)。拿「路徑」當「那一個節點」是代理(M37)。
+export function flattenDom(node, out = [], path = '') {
+  if (!node) return out
+  const here = `${path}/${node.tag}${node.role ? `[role=${node.role}]` : ''}${node.class ? `.${node.class.replace(/\s+/g, '.')}` : ''}`
+  out.push({ path: here, role: node.role, class: node.class, data: node.data, styles: node.styles })
+  for (const c of node.children || []) flattenDom(c, out, here)
+  return out
+}
+function keyed(nodes) {
+  const seen = new Map()
+  return nodes.map((x) => { const k = seen.get(x.path) ?? 0; seen.set(x.path, k + 1); return { ...x, key: `${x.path}#${k}` } })
+}
+export function domDiff(baselineDom, consumerDom) {
+  const a = keyed(flattenDom(baselineDom))
+  const b = keyed(flattenDom(consumerDom))
+  const aByKey = new Map(a.map((x) => [x.key, x]))
+  const bKeys = new Set(b.map((x) => x.key))
+  const missingInConsumer = a.filter((x) => !bKeys.has(x.key)).map((x) => x.key)
+  const extraInConsumer = b.filter((x) => !aByKey.has(x.key)).map((x) => x.key)
+  const styleDrifts = []
+  for (const node of b) {
+    const ref = aByKey.get(node.key)
+    if (!ref) continue
+    for (const k of Object.keys(ref.styles)) {
+      if (ref.styles[k] !== node.styles[k]) styleDrifts.push({ path: node.key, prop: k, baseline: ref.styles[k], consumer: node.styles[k] })
+    }
+  }
+  return {
+    missing: missingInConsumer.length,
+    extra: extraInConsumer.length,
+    styleDrifts: styleDrifts.length,
+    sample: { missing: missingInConsumer.slice(0, 5), extra: extraInConsumer.slice(0, 5), styles: styleDrifts.slice(0, 10) },
+  }
+}
+function domDiffSelftest() {
+  const fails = []
+  const expect = (c, m) => { if (!c) fails.push(m) }
+  const el = (cls, color = 'rgb(0, 0, 0)', children = []) => ({ tag: 'div', role: null, class: cls, data: {}, styles: { color }, children })
+  const tree = (kids) => el('root', 'rgb(0, 0, 0)', kids)
+  const same = domDiff(tree([el('row'), el('row'), el('row')]), tree([el('row'), el('row'), el('row')]))
+  expect(same.missing === 0 && same.extra === 0 && same.styleDrifts === 0, '同路徑三個兄弟、兩邊一樣 → 0 差')
+  const midChanged = domDiff(tree([el('row'), el('row', 'rgb(255, 0, 0)'), el('row')]), tree([el('row'), el('row'), el('row')]))
+  expect(midChanged.styleDrifts === 1 && midChanged.sample.styles[0].path.endsWith('.row#1'), `同路徑三個兄弟、中間那個樣式不同 → 1 筆並點名第 2 個(#1),實得 ${JSON.stringify(midChanged.sample.styles)}`)
+  const oneMissing = domDiff(tree([el('row'), el('row'), el('row')]), tree([el('row'), el('row')]))
+  expect(oneMissing.missing === 1 && oneMissing.extra === 0 && oneMissing.sample.missing[0].endsWith('.row#2'), `三個兄弟少一個 → 缺 1(#2),實得 缺 ${oneMissing.missing} / 多 ${oneMissing.extra}`)
+  const oneExtra = domDiff(tree([el('row')]), tree([el('row'), el('row')]))
+  expect(oneExtra.extra === 1 && oneExtra.missing === 0, '多一個兄弟 → 多 1')
+  const nested = domDiff(tree([el('row', 'rgb(0, 0, 0)', [el('cell')]), el('row', 'rgb(0, 0, 0)', [el('cell', 'rgb(1, 2, 3)')])]), tree([el('row', 'rgb(0, 0, 0)', [el('cell')]), el('row', 'rgb(0, 0, 0)', [el('cell')])]))
+  expect(nested.styleDrifts === 1 && nested.sample.styles[0].path.endsWith('.cell#1'), '第二列裡的格子樣式不同 → 點名第二個 cell')
+  return fails
+}
+if (args.selftest) {
+  const fails = domDiffSelftest()
+  if (fails.length) { console.error(`✗ composition-fidelity DOM 比對 selftest:\n  ${fails.join('\n  ')}`); process.exit(1) }
+  console.log('✓ composition-fidelity DOM 比對 selftest:同路徑兄弟逐節點比(中間那個改樣式、少一個、多一個、巢狀第二列)各點名,一樣的 0 差')
+  process.exit(0)
+}
+
 // v2 (2026-05-27 M31 synthesis Step 5):G1-G5 fixes + 2 enhancements
 // G1 hardcoded id → parse storybook-static/index.json 動態 derive
 // G2 no CI gate → consumed by .github/workflows/composition-fidelity.yml
@@ -364,39 +425,6 @@ for (const m of identityMappings) {
         || document.body
       return snapshot(storyRoot)
     })
-  }
-  function flattenDom(node, out = [], path = '') {
-    if (!node) return out
-    const here = `${path}/${node.tag}${node.role ? `[role=${node.role}]` : ''}${node.class ? `.${node.class.replace(/\s+/g, '.')}` : ''}`
-    out.push({ path: here, role: node.role, class: node.class, data: node.data, styles: node.styles })
-    for (const c of node.children || []) flattenDom(c, out, here)
-    return out
-  }
-  function domDiff(baselineDom, consumerDom) {
-    const a = flattenDom(baselineDom)
-    const b = flattenDom(consumerDom)
-    const pathsA = new Set(a.map(x => x.path))
-    const pathsB = new Set(b.map(x => x.path))
-    const missingInConsumer = [...pathsA].filter(p => !pathsB.has(p))
-    const extraInConsumer = [...pathsB].filter(p => !pathsA.has(p))
-    // Style drift on shared paths
-    const styleDrifts = []
-    const aByPath = Object.fromEntries(a.map(x => [x.path, x]))
-    for (const node of b) {
-      const ref = aByPath[node.path]
-      if (!ref) continue
-      for (const k of Object.keys(ref.styles)) {
-        if (ref.styles[k] !== node.styles[k]) {
-          styleDrifts.push({ path: node.path, prop: k, baseline: ref.styles[k], consumer: node.styles[k] })
-        }
-      }
-    }
-    return {
-      missing: missingInConsumer.length,
-      extra: extraInConsumer.length,
-      styleDrifts: styleDrifts.length,
-      sample: { missing: missingInConsumer.slice(0, 5), extra: extraInConsumer.slice(0, 5), styles: styleDrifts.slice(0, 10) },
-    }
   }
   let baselineDom, consumerDom
   // 開 story:原本 domcontentloaded + 固定睡 800ms 當「已渲染」的代理 —— story 檔缺檔時截到的是 Storybook 錯誤頁,

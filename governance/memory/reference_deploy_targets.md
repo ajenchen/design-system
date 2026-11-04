@@ -56,7 +56,7 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 **本 template 已內建(免費機制)**:
 - `template/ds-product-template/netlify/edge-functions/basic-auth.ts` — 讀 `Authorization` header → 比對 Netlify env var `STORYBOOK_BASIC_AUTH`(格式 `user:pass`,多組空格分隔；帳號／密碼皆不可空白或含空格)。未設／格式錯誤回 503 fail closed；設定有效但帳密缺失／錯誤回 401 + `WWW-Authenticate`(瀏覽器原生帳密彈窗)；只有正確帳密才 pass-through 到 Storybook。
 - `netlify.toml` 已 wire `[[edge_functions]]` path="/*" function="basic-auth"。
-- 舊 `scripts/inject-basic-auth.mjs`(build-time 寫 `_headers`)**已刪** — 前提錯(`_headers` 是 Pro),且根本沒被打包進 fork repo。
+- 舊 `scripts/inject-basic-auth.mjs`(build-time 寫 `_headers`)**已刪**(檔案已不存在)— 前提錯(`_headers` 是 Pro),且根本沒被打包進 fork repo。
 
 **fork user 設定(最短安全路徑)**:`npm run setup:netlify` 只做唯讀診斷，以 `NETLIFY-CLI-AUTO-INSTALL-BLOCKED-001` 明示封鎖 CLI 安裝／執行，並列出 Dashboard 流程後 exit 2，不可被 automation 誤認為 setup 已完成。Fork user 在 Netlify Dashboard 選 **Add new project → Import an existing project → GitHub** 連目前 repo，再到 Project configuration → Environment variables 加 `STORYBOOK_BASIC_AUTH` = `user:password`，下次 deploy 即由 template 內建 Edge Function 跳帳密彈窗。帳密只存 Netlify，不進 Git。
 

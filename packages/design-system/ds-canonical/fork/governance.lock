@@ -95,7 +95,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/performance-audit/SKILL.md",
-      "sha256": "627c8fa6a37d3cd75a716abc6f477e0db321865dfb6e4cfe8efd03c442973761",
+      "sha256": "4e4ce82eaab3cd9f0711732c7e6eff7d604c1917b108233558cfbfebc1ffa422",
       "source": "providers/codex/skills/performance-audit",
       "classification": null,
       "destination": null
@@ -1039,7 +1039,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/performance-audit/SKILL.md",
-      "sha256": "5659167c166c9687a8e9c1bc5c6b4a0d522bb2fdbeb5108c819db32e0f489a85",
+      "sha256": "82af6928acd75857f4d5ed5b407b214015d429cf0d1947e4f9069d51afa8a45c",
       "source": "skills/performance-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1279,7 +1279,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/performance-audit/SKILL.md",
-      "sha256": "627c8fa6a37d3cd75a716abc6f477e0db321865dfb6e4cfe8efd03c442973761",
+      "sha256": "4e4ce82eaab3cd9f0711732c7e6eff7d604c1917b108233558cfbfebc1ffa422",
       "source": "skills/performance-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1559,7 +1559,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/performance-audit/SKILL.md",
-      "sha256": "9353b7b54df0a1142178ba9cc47a84867da15c38954bc9f921243ef420370f0c",
+      "sha256": "301ed430f5280da4f087c7d89c5af09096802e8245128f5686b46263b7a69eb0",
       "source": null,
       "classification": null,
       "destination": null

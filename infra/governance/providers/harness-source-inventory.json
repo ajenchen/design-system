@@ -400,6 +400,7 @@
       "scripts/run-gate-meta-tests.mjs"
     ],
     "members": [
+      "scripts/test-a11y-corpus-invariant.mjs",
       "scripts/test-action-bar-toolbar-invariant.mjs",
       "scripts/test-action-row-order-invariant.mjs",
       "scripts/test-agent-fab-drag-click-invariant.mjs",
@@ -518,6 +519,7 @@
       "scripts/test-rating-field-size-invariant.mjs",
       "scripts/test-release-finalizer-mirror-handoff.mjs",
       "scripts/test-repository-hygiene-invariant.mjs",
+      "scripts/test-root-exports-invariant.mjs",
       "scripts/test-row-suffix-first-line-invariant.mjs",
       "scripts/test-rsync-checksum-invariant.mjs",
       "scripts/test-run-deterministic-deep-audit.mjs",
@@ -544,6 +546,7 @@
       "scripts/test-switch-thumb-ring-invariant.mjs",
       "scripts/test-sync-memory.mjs",
       "scripts/test-sync-plugin-aliases.mjs",
+      "scripts/test-sync-template-canonical-app.mjs",
       "scripts/test-tag-overflow-room-invariant.mjs",
       "scripts/test-toast-viewport-placement-invariant.mjs",
       "scripts/test-token-creation-invariant.mjs",

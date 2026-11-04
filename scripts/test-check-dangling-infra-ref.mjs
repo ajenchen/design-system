@@ -3,7 +3,7 @@
 //
 // @gate-contract
 //   保證: check-dangling-infra-ref 在該紅的時候會紅、該綠的時候會綠,掃描本身壞掉時報儀器失效,而且呼叫端 repo 本身目前沒有懸空的 infra 引用
-//   紅: 隔離夾具裡注入不存在的 hook 名、裸 .mjs 檔名指到 scripts / hooks / 根目錄以外、完整路徑指到不存在的檔、
+//   紅: 隔離夾具裡注入不存在的 hook 名、裸 .mjs 檔名指到 scripts / hooks / 根目錄以外(檔名開頭像不像 infra 都一樣)、完整路徑指到不存在的檔、
 //       workflow 呼叫不存在的 .mjs(檔名開頭是不是 check / build 都一樣)→ 閘必須 exit 非 0;
 //       宣告要掃的目錄有檔卻 0 份收進來、整個根目錄 0 份文件 → 閘必須以 INSTRUMENT-FAIL 紅;任何一面沒照預期,本測試就紅並指名是哪一面
 //   綠: 呼叫端 repo 與只有一份乾淨文件的夾具必須 exit 0;「完整路徑、檔案在」「workflow 帶簽出前綴、檔案在」必須 exit 0
@@ -71,6 +71,10 @@ try {
     ['(a) 裸檔名指到 scripts / hooks / 根目錄以外的檔', '# Fixture\n- 經入口測:`plugin-meta-probe.test.mjs`\n', 'red'],
     ['(b) 同一個檔寫完整路徑(檔案在)', '# Fixture\n- 經入口測:`packages/governance/test/plugin-meta-probe.test.mjs`\n', 'green'],
     ['(c) 完整路徑、檔案不在', '# Fixture\n- 經入口測:`packages/governance/test/plugin-meta-probe-gone.test.mjs`\n', 'red'],
+    // 2026-11-04(總帳 SM5):散文的 .mjs 不再看檔名開頭決定驗不驗 —— (g) 的檔名開頭(consumer-)不在舊清單,修前被略過而綠
+    ['(g) 裸檔名、檔名開頭不像 infra(consumerctl.mjs 那一型)、檔案不在 scripts / hooks / 根目錄', '# Fixture\n- 截掉 `consumer-meta-probe.mjs` 兩個 caller\n', 'red'],
+    ['(h) 第三方套件建置產物 dist/index.mjs(不是 repo 檔)', '# Fixture\n- 本 repo 2.1.16 `dist/index.mjs` 逐字對驗\n', 'green'],
+    ['(i) 同一行寫明檔案已不存在的歷史句', '# Fixture\n- 舊 `scripts/inject-meta-probe.mjs` **已刪**(檔案已不存在)\n', 'green'],
   ]
   for (const [label, body, expect] of faces) {
     writeFileSync(target, body)

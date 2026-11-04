@@ -54,6 +54,9 @@ jobs:
         run: |
           npm run build-storybook
           /usr/bin/git diff --exit-code -- packages/design-system/ds-story-manifest.json
+          # a11y 基線的 story 清單 = 這次建置的 story 清單(2026-11-04,總帳 SM4):加 / 刪 / 改名 story 沒跑
+          # `npm run a11y:check -- --baseline-write`,以前要等隔天夜間 a11y 全掃才紅;這裡只比清單(不開瀏覽器,約 1 秒)。
+          npm run test:a11y-corpus
           # 2026-09-29(OE18 盤點):隨 npm 出貨的 llms.txt / llms-full.txt 檔頭自稱「CI --check 守」,但從沒接進任何 workflow,
           # 提交的檔停在 beta.132 過期 14 版沒人知道。build-storybook 鏈尾已重生,這裡驗 git 樹沒有漂移 + 對照組會紅。
           npm run check:llms-txt
@@ -176,6 +179,14 @@ jobs:
           # 宣告真的用了 token、用了就要登記)、lib/README 每個模組的公開 / @internal 與 root barrel 一致、Button loading 不再被說成「自動 disabled」、
           # 元件原始碼只用三階字重(font-semibold 只給文件外框)、story 裡每個 <Steps> 有名字。修前的樹五條全紅(46 / 14 / 4 / 2 / 19)。純靜態,約 2 秒。
           npm run test:owner-claims
+          # npm root 出口被拿掉一定要寫明(2026-11-04,r1b others 九-3):hook / 元件常數 / 型別(useIsNarrowViewport、StepsExpansion 等)
+          # 被拿掉時 C2 量不到。比「上一次發布的 tag 的 index.ts 出口全集 vs 現在」(TypeScript 展開 export * / export type),
+          # 拿掉的名字必須登記在 scripts/root-exports-removals.json(= 發布說明「破壞性變更」的來源)。修前(沒有登記)紅 27 筆。純靜態,約 5 秒。
+          npm run test:root-exports
+          # 範本本體 apps/template/src/App.tsx ↔ 隨 npm 出貨的副本 ds-canonical/templates/dashboard-app.tsx 逐字相同(2026-11-04 接線):
+          # receiver 每次發版 `cp 副本 → App.tsx`,副本落後就把範本改動靜默蓋回舊版;--check 2026-06-07 就寫好,卻沒有任何執行面呼叫,
+          # 副本從 08-02 漂移兩個多月沒人看見。meta-test 在拋棄式小樹裡證明副本弄壞一行會紅。純靜態,約 1 秒。
+          npm run test:template-canonical-app
           # 結構圖色塊(2026-10-21,r1b fields 複驗 D2):同一列裡不同色名必須畫成不同顏色 —— Combobox 結構圖的搜尋框用 primary,
           # 與 chevron 的 info 同是 --color-blue-6,畫出來一模一樣。照 semantic.css / primitives.css 展開到底,淺色深色都比。純靜態,約 1 秒。
           npm run test:anatomy-chip-palette
@@ -267,6 +278,10 @@ jobs:
           # 2026-09-21 之前也沒有任何 workflow 呼叫它,而它是紅的:4 個 story 名混英文
           # (hug / POC / Dialog / agent),最早一筆自 beta.132 起就在。
           npm run --silent story-quality:check
+          # Storybook 內容品質(2026-11-04 接進必過,原本只在夜間 gate-meta lane 經 meta-test 的「現況必綠」跑到):
+          # 非 anatomy 的序號名、literal Markdown / 反引號(棘輪 content-quality-backtick-baseline.json 只准往下)、
+          # Autodocs 缺說明、anatomy 顯示名漂移、兩個 CSF 共用 title 等。對照組在 scripts/test-audit-content-quality.mjs。純靜態,約 3 秒。
+          npm run test:content-quality
 
       - name: Cloud portability gates (provider config survivability)
         run: |
@@ -964,6 +979,8 @@ jobs:
       # 指令與排程逐字相同(同一份 storybook build 已含樣板 story);本機約 5 秒,這個 job 預估 7–8 分(上限 15)。
       - name: Composition fidelity —— 樣板複製品 vs DS canonical(像素 + DOM)
         run: |
+          # DOM 比對以「路徑 + 同路徑第幾個」逐節點比(2026-11-04,總帳 SM6):對照組 = 同路徑三個兄弟改中間那個 / 少一個,修前兩種都量成 0。
+          node scripts/composition-fidelity-visual-diff.mjs --selftest
           node scripts/composition-fidelity-visual-diff.mjs \
             --ds-static=storybook-static \
             --consumer-static=storybook-static \

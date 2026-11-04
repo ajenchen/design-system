@@ -15,12 +15,16 @@
  * 用法:
  *   node scripts/sync-template-canonical-app.mjs           # 同步 SSOT → COPY(寫)
  *   node scripts/sync-template-canonical-app.mjs --check    # 驗 SSOT == COPY,漂移 exit 1(deterministic audit chain gate)
+ *   --root=<dir>                                            # 對另一棵樹跑(meta-test 的拋棄式小樹;預設 = 本 repo)
+ *
+ * 2026-11-04:接進 CI(npm run test:template-canonical-app);對照組在 scripts/test-sync-template-canonical-app.mjs。
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const rootArg = process.argv.find((a) => a.startsWith('--root='))
+const ROOT = rootArg ? rootArg.slice('--root='.length) : join(dirname(fileURLToPath(import.meta.url)), '..')
 const SSOT = join(ROOT, 'apps/template/src/App.tsx')
 const COPY = join(ROOT, 'packages/design-system/ds-canonical/templates/dashboard-app.tsx')
 const CHECK = process.argv.includes('--check')
