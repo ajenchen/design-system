@@ -1677,7 +1677,7 @@ export function authorizationEvidence(transcriptPath, {
     // grants nothing without the genuine selection event.
     // 只判 user 自己回答的那段:harness 把 assistant 的題目原文也寫進 tool_result(`The user answered: "題目"="回答"`),
     // 題目裡的「要怎麼處理?」「(Recommended)」不是 user 的猶豫。「照你建議做」是接受建議,不是「還在建議」
-    //(2026-09-15:user 選了「對齊規格(Recommended)」並寫「照你建議做…確保不要改壞既有」,卻被判成 tentative + denial 擋下)。
+    //(2026-09-15:user 選了『對齊規格(Recommended)』(選項由 AI 提供)並寫「照你建議做…確保不要改壞既有」,卻被判成 tentative + denial 擋下)。
     const answerNormalized = normalizeText(selectionAnswerOnly(selection.answerText))
     const answerForIntent = withoutAcceptancePhrases(answerNormalized)
     const answerIsClean = answerNormalized

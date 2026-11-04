@@ -21,7 +21,7 @@
 //
 // SSOT:`packages/design-system/src/tokens/color/color.spec.md`「Hover 換色配對總則」(階梯表旁)
 //       + 同檔「架構流派定位」(:10-16 選 Atlassian / Primer 的換色流派;彩色 / 色相色的底拒絕疊層,
-//       唯一例外是「底」—— 2026-09-25 user 選「採用，底色不換、疊一層 (Recommended)」,待辦總帳 B8 / C12②)。
+//       唯一例外是「底」—— 2026-09-25 user 選『採用，底色不換、疊一層 (Recommended)』(選項由 AI 提供),待辦總帳 B8 / C12②)。
 //
 // 2026-09-25 C12② 擴充(本閘第二版):
 //   ① 認得 B8 的「底」疊層寫法:`bg-surface hover:bg-interaction-hover` 合法;「底」直接換成 --neutral-*(滑過或按住)仍紅 ——
@@ -107,7 +107,7 @@ function readBridge(css) {
 
 /**
  * 「底」= 平常底色是頁面 / 容器 / 浮層層色的那三個 token(color.spec.md「Hover 換色配對總則」表「底」列;
- * 2026-09-25 user 選「採用，底色不換、疊一層 (Recommended)」)。這是設計規則的名單,不是從 CSS 推得出來的事實,
+ * 2026-09-25 user 選『採用，底色不換、疊一層 (Recommended)』,選項由 AI 提供)。這是設計規則的名單,不是從 CSS 推得出來的事實,
  * 所以寫在這裡;selftest 會驗三個都真的定義在 semantic.css(改名就紅),不會因為名字對不上而默默放行。
  */
 export const BASE_SURFACES = ['--canvas', '--surface', '--surface-raised']
