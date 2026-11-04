@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
  * - **有 URL 的 modal 傳送到「舞台」**(story 自己建的左欄,帶 transform):modal 與遮罩只佔宿主面積,代理面板在舞台外、
  *   完全不被蓋(v14 條 B「並列可操作」;並排時舞台 = 畫布扣掉並排的代理面板,誰並排由 app-shell.spec.md「版面規則」決定);
  *   **沒有 URL 的確認框傳送到畫布**(`canvasRef`),蓋住整個 app 含代理(v14 條 A)。
- * - 說明文字放 `caption`(畫布下方),不放進畫布或代理面板裡;**整頁示範不放備註**(2026-09-09 user:「我認為示意那個模擬瀏覽器下方的備注可以拿掉」,登記簿 A35),
+ * - 說明文字不放進畫布或代理面板裡,畫布下方也不放;**整頁示範不放備註**(2026-09-09 user:「我認為示意那個模擬瀏覽器下方的備注可以拿掉」,登記簿 A35),
  *   說明寫在 `docs.description`,畫布用 `height="fill"` 撐滿 story(與 story 邊界四周留 `--layout-space-loose`,由外層 wrapper 給)。
  */
 export interface SimulatedBrowserProps {
@@ -34,12 +34,10 @@ export interface SimulatedBrowserProps {
   onReload?: () => void
   /** 網址列的 id(閘用來讀模擬網址) */
   locationId?: string
-  /** 畫布下方的說明(在畫布外) */
-  caption?: React.ReactNode
   children: React.ReactNode
 }
 
-export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = false, canForward = false, height = 640, canvasRef, toolbarRef, locationId = 'demo-location', caption, children }: SimulatedBrowserProps) {
+export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = false, canForward = false, height = 640, canvasRef, toolbarRef, locationId = 'demo-location', children }: SimulatedBrowserProps) {
   // 工具列與畫布是兄弟:外框的圓角與邊線拆成上半(工具列)/ 下半(畫布)各自畫,
   // 視覺仍是一個瀏覽器窗,但 DOM 上工具列不在畫布(= 代理量測與抑制的宿主容器)裡。
   const fill = height === 'fill'
@@ -65,7 +63,6 @@ export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = f
       >
         {children}
       </div>
-      {caption && <p className="mt-2 text-caption text-fg-muted">{caption}</p>}
     </div>
   )
 }
