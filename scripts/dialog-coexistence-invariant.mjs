@@ -55,6 +55,7 @@ import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { startDialogCoexistenceFixture, FixtureInstrumentError, COEXIST_FIXTURE_SOURCE } from './lib/dialog-coexistence-fixture.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const argValue = (flag) => { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : undefined }
@@ -215,6 +216,17 @@ requireStorybookBuild(join(STATIC, 'iframe.html'), '先 npm run build-storybook,
 const sv = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 const story = (id, mode = 'story') => `${sv.origin}/iframe.html?id=` + encodeURIComponent(id) + `&viewMode=${mode}`
+// 並存夾具(B 並存路徑 / G 幾何):2026-11 起不是 story(user 2026-09-11「Dialog的並存範例給我刪掉」,登記簿 A33),
+// 由 lib/dialog-coexistence-fixture.mjs 從原始碼打包、配同一份建置的 CSS 開(夾具 = scripts/test-fixtures/dialog-coexistence/fixture.tsx)
+let fx = null
+if (!SELFTEST) try {
+  fx = await startDialogCoexistenceFixture(sv.servedRoot)
+} catch (error) {
+  if (!(error instanceof FixtureInstrumentError)) throw error
+  if (out.length) console.log(out.join('\n'))
+  console.error(`\n✗ INSTRUMENT-FAIL ${error.message}(${COEXIST_FIXTURE_SOURCE})`)
+  await sv.stop(); process.exit(1)
+}
 
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
@@ -229,7 +241,7 @@ async function open(url, options = {}) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error
     if (out.length) console.log(out.join('\n'))
     console.error(`\n✗ ${error.message}`)
-    await browser.close(); await sv.stop(); process.exit(1)
+    await browser.close(); await sv.stop(); await fx?.stop(); process.exit(1)
   }
 }
 
@@ -253,7 +265,7 @@ if (!SELFTEST) {
   // ── (B) 並存路徑 ────────────────────────────────────────────────────────
   // 等 story 真的渲染(共享 runner 上固定 900ms 不夠:a646b6c2 讀回「找不到 #coexist-aside-input」;本機與前幾次 CI 都過)——
   // 等被量的元素本身;對話框開啟後 inertOutside 套上 inert 的那次重畫由靜止判定涵蓋(原本另睡 600ms)
-  await open(story('design-system-components-dialog-展示--coexistence-poc'), { waitFor: '#coexist-aside-input' })
+  await open(fx.url, { waitFor: '#coexist-aside-input', notFound: fx.notFound })
   const asideInput = await probe('#coexist-aside-input')
   const bgBtn = await probe('#coexist-background-btn')
 
@@ -328,7 +340,7 @@ if (!SELFTEST) {
   // 不以遮罩當 waitFor:遮罩是被驗的產品行為,沒出現要照實紅成「G … missing」,不能被讀成「沒量到」。
   // 渲染完成 + 靜止之後在同一個 task 裡量(原本 goto / 等遮罩兩處 .catch(() => {}) 吞掉,再固定睡 500ms)。
   {
-    const { probe: g } = await open(story('design-system-components-dialog-展示--coexistence-poc'), { probe: GEO })
+    const { probe: g } = await open(fx.url, { probe: GEO, notFound: fx.notFound })
     ck('G 對話框不與常駐側欄相交(v14 條 B 並列可操作)', !g.missing && !g.intersects, JSON.stringify(g.missing ?? { D: g.D, P: g.P }))
     ck('G 遮罩 = 舞台矩形(只佔宿主面積)', !g.missing && g.maskEqStage, JSON.stringify(g.missing ?? { M: g.M, S: g.S }))
     ck('G 側欄中心點點得到自己(沒被遮罩蓋)', !g.missing && g.panelHit)
@@ -456,7 +468,7 @@ if (!SELFTEST) {
   ck('對照組 M:偏移方向 = 左上(dx<0 且 dy<0,即「從左上角飛入」)', !c.missing && c.first.dx < -1 && c.first.dy < -1)
 }
 
-await browser.close(); await sv.stop()
+await browser.close(); await sv.stop(); await fx?.stop()
 console.log(out.join('\n'))
 console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組全紅(儀器有效)' : '並存 / 進場第一幀 / docs 隔離 全通過'}`)
 process.exit(fail ? 1 : 0)

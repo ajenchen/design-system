@@ -338,6 +338,7 @@ if (STATIC_ONLY || (!SELFTEST && failed > 0) || (SELFTEST && (redBy['S-ctl'] || 
 
 // ── R 真建置 ───────────────────────────────────────────────────────────────
 const { startA11yStaticServer } = await import('./lib/a11y-static-server.mjs')
+const { startDialogCoexistenceFixture, FixtureInstrumentError } = await import('./lib/dialog-coexistence-fixture.mjs')
 const { INSTRUMENT_FAIL_MARKER, launchBrowser, openStory, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } = await import('./lib/launch-browser.mjs')
 
 const root = path.resolve(REPO, arg('static', 'storybook-static'))
@@ -434,11 +435,13 @@ async function settle(label) {
     if (!s.ok) throw new Error(`${WAIT_MS / 1000} 秒內沒有靜止(${JSON.stringify(s)})`)
   })
 }
-async function scenario(name, storyId, waitFor, body, { viewport = VIEWPORT } = {}) {
+/** target = story id(字串),或不是 story 的夾具頁 { url, notFound }(E2 並存 Dialog,lib/dialog-coexistence-fixture.mjs) */
+async function scenario(name, target, waitFor, body, { viewport = VIEWPORT } = {}) {
   current = name
   await page.setViewportSize(viewport)
+  const url = typeof target === 'string' ? `${server.origin}/iframe.html?id=${encodeURIComponent(target)}&viewMode=story` : target.url
   try {
-    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(storyId)}&viewMode=story`, { waitFor, settleFrames: 10, notFound: server.notFound })
+    await openStory(page, url, { waitFor, settleFrames: 10, notFound: typeof target === 'string' ? server.notFound : target.notFound })
   } catch (error) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error
     console.log(`✗ 情境 ${name}:${error.message}`)
@@ -789,9 +792,18 @@ for (const [name, storyId, minRows, label] of D_STORIES) {
 }
 
 // ── E 並存 modal 的本體 z-40(Dialog 與 FileViewer 同一格;表第 4 列)、一般 FileViewer z-50(第 6 列)────────────────
+// E2 的並存 Dialog 不是 story(user 2026-09-11「Dialog的並存範例給我刪掉」,登記簿 A33):夾具由 lib/dialog-coexistence-fixture.mjs
+// 從原始碼打包、配同一份建置的 CSS 開;打包 / 找 CSS 失敗 → 下面的迴圈照「找不到」記成儀器失效
+let coexistFixture = null
+try {
+  coexistFixture = await startDialogCoexistenceFixture(server.servedRoot)
+} catch (error) {
+  if (!(error instanceof FixtureInstrumentError)) throw error
+  console.log(`✗ 情境 E2 夾具:${error.message}`)
+}
 const E_STORIES = [
   ['E1', findEntry(/components-fileviewer-展示--coexistence-contract$/), '40', 'FileViewer 並存(persistentElements)的本體'],
-  ['E2', findEntry(/components-dialog-展示--coexistence-poc$/), '40', 'Dialog 並存(persistentElements)的本體'],
+  ['E2', coexistFixture && { url: coexistFixture.url, notFound: coexistFixture.notFound }, '40', 'Dialog 並存(persistentElements)的本體(夾具)'],
   ['E3', findEntry(/components-fileviewer-展示--open-snapshot$/), '50', 'FileViewer 一般(modal)的本體'],
 ]
 for (const [name, storyId, want, label] of E_STORIES) {
@@ -812,6 +824,7 @@ for (const [name, storyId, want, label] of E_STORIES) {
     rec(zs[0] === want, `${label} z-index = ${want}`, `量到 ${zs[0]}`)
   })
 }
+await coexistFixture?.stop()
 
 await browser.close()
 await server.stop()

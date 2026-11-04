@@ -1,10 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import { useCallback, useRef } from 'react'
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
 import {
-  DialogDescription,
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
 } from './dialog'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
@@ -711,58 +709,4 @@ export const FocusTrapControlNoDialog: Story = {
       <Button variant="tertiary" id="poc-outside-after">背景鈕(後)</Button>
     </div>
   ),
-}
-
-// 並存契約的測試夾具(不是展示範例;test-only,側欄與 docs 都看不到)。
-// 2026-09-11 user 要求刪掉 Dialog 的並存範例 —— 側欄看得到的那支展示範例已移除;`persistentElements` 能力本身沒有退役
-// (dialog.spec.md「並存(persistentElements)」),它的機械斷言需要一個掛載目標,所以場景縮到剛好夠閘用的最小 DOM。
-// 要連這個夾具也刪,就得把 scripts/dialog-coexistence-invariant.mjs 等閘改成自己掛夾具(稽核 H02,交整合步驟與治理家族一起做)。
-export const CoexistencePoc: Story = {
-  name: '測試夾具 — 並存區域(persistentElements)',
-  tags: ['test-only'],
-  parameters: { layout: 'fullscreen' },
-  render: () => {
-    const Fixture = () => {
-      const [stage, setStage] = useState<HTMLDivElement | null>(null)
-      const asideRef = useRef<HTMLElement | null>(null)
-      const keep = useCallback(() => [asideRef.current].filter((el): el is HTMLElement => !!el), [])
-      const [open, setOpen] = useState(true)
-      const [inside, setInside] = useState('')
-      const [aside, setAside] = useState('')
-      return (
-        <div className="flex h-svh">
-          <div ref={setStage} className="relative flex min-w-0 flex-1 flex-col gap-2 overflow-hidden p-4" style={{ transform: 'translateZ(0)' }}>
-            <Button id="coexist-background-btn" variant="primary" onClick={() => setOpen(true)}>開啟</Button>
-            {stage && (
-              <Dialog open={open} onOpenChange={setOpen} persistentElements={keep}>
-                <DialogContent maxWidth={480} height="hug" portalContainer={stage}>
-                  <DialogHeader>
-                    <DialogTitle>任務 #4821</DialogTitle>
-                    <DialogDescription>並存契約夾具</DialogDescription>
-                  </DialogHeader>
-                  <DialogBody>
-                    <Field id="coexist-inside-input">
-                      <FieldLabel>留言</FieldLabel>
-                      <Input value={inside} onChange={(e) => setInside(e.target.value)} />
-                    </Field>
-                  </DialogBody>
-                  <DialogFooter>
-                    <Button id="coexist-inside-btn" variant="primary" disabled={!inside.trim()} onClick={() => setOpen(false)}>儲存</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-          <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider bg-surface p-[var(--layout-space-loose)]">
-            <Field id="coexist-aside-input">
-              <FieldLabel>新增評論</FieldLabel>
-              <Input value={aside} onChange={(e) => setAside(e.target.value)} />
-            </Field>
-            <div><Button id="coexist-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => setAside('')}>送出</Button></div>
-          </aside>
-        </div>
-      )
-    }
-    return <Fixture />
-  },
 }
