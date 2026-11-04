@@ -3,9 +3,9 @@
   "generatedBy": "scripts/exemption-expiry-invariant.mjs --update-baseline",
   "reviewAfterDays": 180,
   "recordedAt": "2026-11-05",
-  "count": 428,
+  "count": 427,
   "byKind": {
-    "unanchored": 398,
+    "unanchored": 397,
     "expired": 30
   },
   "entries": [
@@ -960,14 +960,6 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — header render 含 selection tri-state / sort indicator / column"
-    },
-    {
-      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|ba68ed80f6b0",
-      "family": "cq",
-      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
-      "marker": "any-allow",
-      "kind": "unanchored",
-      "hint": "// any-allow: event-cast — TanStack getToggleSortingHandler 內部會 narrow,接受 KeyboardEvent"
     },
     {
       "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|da39a3ee5e6b#4",
