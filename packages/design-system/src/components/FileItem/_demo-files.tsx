@@ -22,7 +22,9 @@ import { PopoverTitle } from '@/design-system/components/Popover/popover'
 export type DemoFileStatus = 'uploading' | 'completed' | 'error'
 
 export interface DemoFile {
-  id: string
+  /** 這一筆上傳的識別:同一個檔可以上傳很多次、每次一筆(命名同 Ant Design Upload 的 UploadFile.uid,https://ant.design/components/upload#uploadfile)。
+   *  不用 id:`name` + `id` 是人員範例資料的形狀,overlay-story-contract S12 會拿它比「同一個人只有一組 ID」,同檔同一張照片的三種狀態因此被當成同一人三個編號(2026-11-04 審查) */
+  uid: string
   name: string
   mimeType: string
   /** 不傳 = 已上傳的靜態附件(無進度條、無狀態圖示) */
@@ -83,14 +85,14 @@ export function useFileDemo(initial: readonly DemoFile[], { clickable = true }: 
 
   const remove = React.useCallback((id: string) => {
     window.clearInterval(timers.current.get(id))
-    setFiles((fs) => fs.filter((f) => f.id !== id))
+    setFiles((fs) => fs.filter((f) => f.uid !== id))
   }, [])
   const retry = React.useCallback((id: string) => {
     window.clearInterval(timers.current.get(id))
-    setFiles((fs) => fs.map((f) => (f.id === id ? { ...f, status: 'uploading', progress: 0, uploadingText: undefined } : f)))
+    setFiles((fs) => fs.map((f) => (f.uid === id ? { ...f, status: 'uploading', progress: 0, uploadingText: undefined } : f)))
     timers.current.set(id, window.setInterval(() => {
       setFiles((fs) => fs.map((f) => {
-        if (f.id !== id || f.status !== 'uploading') return f
+        if (f.uid !== id || f.status !== 'uploading') return f
         const progress = Math.min(100, (f.progress ?? 0) + RETRY_STEP)
         if (progress < 100) return { ...f, progress }
         window.clearInterval(timers.current.get(id))
@@ -102,8 +104,8 @@ export function useFileDemo(initial: readonly DemoFile[], { clickable = true }: 
 
   const openable = files.filter((f) => f.status === undefined || f.status === 'completed')
   const [viewing, setViewing] = React.useState<number | null>(null)
-  const open = (id: string) => setViewing(openable.findIndex((o) => o.id === id))
-  const viewerFiles: FileInfo[] = openable.map((f) => ({ id: f.id, name: f.name, url: f.url ?? f.thumbnailSrc ?? '', mimeType: f.mimeType, description: f.size }))
+  const open = (id: string) => setViewing(openable.findIndex((o) => o.uid === id))
+  const viewerFiles: FileInfo[] = openable.map((f) => ({ id: f.uid, name: f.name, url: f.url ?? f.thumbnailSrc ?? '', mimeType: f.mimeType, description: f.size }))
   const viewer = (
     <FileViewer files={viewerFiles} open={viewing !== null} onOpenChange={(o) => { if (!o) setViewing(null) }} index={viewing ?? 0} onIndexChange={setViewing} />
   )
@@ -119,12 +121,12 @@ export function useFileDemo(initial: readonly DemoFile[], { clickable = true }: 
           ? (f.errorLog === false ? (f.errorText ?? 'There’s something wrong.') : <ErrorWithLog text={f.errorText ?? 'There’s something wrong.'} file={f.name} />)
           : (f.description ?? f.size),
     onDownload: f.status === 'completed' ? () => download(f) : undefined,
-    onRetry: f.status === 'error' ? () => retry(f.id) : undefined,
+    onRetry: f.status === 'error' ? () => retry(f.uid) : undefined,
     onClick: clickable && (f.status === undefined || f.status === 'completed')
-      ? () => open(f.id)
+      ? () => open(f.uid)
       : undefined,
     // 列內操作的讀屏名稱帶檔名(file-item.anatomy.stories.tsx「無障礙與鍵盤」:只寫「刪除」分不出是哪一列)
-    actions: <Button size="xs" iconOnly variant="text" startIcon={Trash2} aria-label={`刪除 ${f.name}`} onClick={() => remove(f.id)} />,
+    actions: <Button size="xs" iconOnly variant="text" startIcon={Trash2} aria-label={`刪除 ${f.name}`} onClick={() => remove(f.uid)} />,
   })
 
   return { files, itemProps, viewer, open, remove, retry, download }
@@ -209,8 +211,8 @@ export function UploadManagerPanel({
         {expanded && (
           <SurfaceBody className="flex flex-col gap-0 !px-0 !py-[calc(var(--layout-space-tight)/2)]">
             {demo.files.map((f) => (
-              <FileItem key={f.id} mode={mode} surface="upload-manager" {...demo.itemProps(f)}
-                {...(f.id === hoverTargetId ? { 'data-visual-hover-target': true } : {})} />
+              <FileItem key={f.uid} mode={mode} surface="upload-manager" {...demo.itemProps(f)}
+                {...(f.uid === hoverTargetId ? { 'data-visual-hover-target': true } : {})} />
             ))}
           </SurfaceBody>
         )}

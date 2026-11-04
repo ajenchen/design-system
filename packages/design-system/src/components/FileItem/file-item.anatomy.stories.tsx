@@ -294,10 +294,10 @@ export const SizeMatrix: Story = {
 // 取消 / 移除 = 那一列拿掉;重試 = 回到上傳中、跑完變完成;已完成的列滑過時綠勾換成下載(hover-swap,不再另放一顆下載鈕);
 // static.pdf 點列用 FileViewer 開,它的下載鈕跳通知。
 const STATE_FILES: DemoFile[] = [
-  { id: 'state-uploading', name: 'uploading.pdf', mimeType: 'application/pdf', status: 'uploading', progress: 60, uploadingText: '2.4 MB · 上傳中 60%', size: '2.4 MB' },
-  { id: 'state-completed', name: 'completed.pdf', mimeType: 'application/pdf', status: 'completed', size: '2.4 MB', description: '2.4 MB · 已上傳' },
-  { id: 'state-error', name: 'error.pdf', mimeType: 'application/pdf', status: 'error', size: '2.4 MB', errorText: '網路中斷,請重試', errorLog: false },
-  { id: 'state-static', name: 'static.pdf', mimeType: 'application/pdf', size: '1.2 MB', description: '已儲存 · 1.2 MB' },
+  { uid: 'state-uploading', name: 'uploading.pdf', mimeType: 'application/pdf', status: 'uploading', progress: 60, uploadingText: '2.4 MB · 上傳中 60%', size: '2.4 MB' },
+  { uid: 'state-completed', name: 'completed.pdf', mimeType: 'application/pdf', status: 'completed', size: '2.4 MB', description: '2.4 MB · 已上傳' },
+  { uid: 'state-error', name: 'error.pdf', mimeType: 'application/pdf', status: 'error', size: '2.4 MB', errorText: '網路中斷,請重試', errorLog: false },
+  { uid: 'state-static', name: 'static.pdf', mimeType: 'application/pdf', size: '1.2 MB', description: '已儲存 · 1.2 MB' },
 ]
 
 export const StateBehavior: Story = {
@@ -319,21 +319,21 @@ export const StateBehavior: Story = {
               {demo.files.map((f) => {
                 const base = demo.itemProps(f)
                 if (f.status === 'uploading') {
-                  return <FileItem key={f.id} mode="rich" {...base} actions={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`取消上傳 ${f.name}`} onClick={() => demo.remove(f.id)} />} />
+                  return <FileItem key={f.uid} mode="rich" {...base} actions={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`取消上傳 ${f.name}`} onClick={() => demo.remove(f.uid)} />} />
                 }
-                if (f.status === 'completed') return <FileItem key={f.id} mode="rich" {...base} actions={undefined} />
+                if (f.status === 'completed') return <FileItem key={f.uid} mode="rich" {...base} actions={undefined} />
                 if (f.status === 'error') {
                   // 兩顆動作鈕直接交給 actions 槽:槽距由元件的 ItemSuffix 擁有(8px),不自己包一層 flex
                   return (
-                    <FileItem key={f.id} mode="rich" {...base} onRetry={undefined}
+                    <FileItem key={f.uid} mode="rich" {...base} onRetry={undefined}
                       actions={<>
-                        <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label={`重試 ${f.name}`} onClick={() => demo.retry(f.id)} />
-                        <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`移除 ${f.name}`} onClick={() => demo.remove(f.id)} />
+                        <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label={`重試 ${f.name}`} onClick={() => demo.retry(f.uid)} />
+                        <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`移除 ${f.name}`} onClick={() => demo.remove(f.uid)} />
                       </>} />
                   )
                 }
                 return (
-                  <FileItem key={f.id} mode="rich" {...base} onClick={() => demo.open(f.id)}
+                  <FileItem key={f.uid} mode="rich" {...base} onClick={() => demo.open(f.uid)}
                     actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label={`下載 ${f.name}`} onClick={() => demo.download(f)} />} />
                 )
               })}

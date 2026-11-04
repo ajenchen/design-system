@@ -26,13 +26,17 @@ export default meta
 
 // 同一張人像照(圖片檔,縮圖就是照片本身)的三種狀態;上傳中 40% = 3.0 / 7.5 MB,完成後 7.5 MB,前後對得上(之前上傳中寫 5.7 MB of 7.5MB、完成後寫 5.7 MB)
 const RICH_FILES: DemoFile[] = [
-  { id: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
-  { id: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan', url: 'https://i.pravatar.cc/800?u=alan' },
-  { id: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan', url: 'https://i.pravatar.cc/800?u=alan' },
+  { uid: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
 ]
 
 export const Rich = {
   name: '豐富樣式',
+  // 示範焦點是本則的主題(起點 a103c40b 就是這個示範畫面):鍵盤 Tab 進「已完成」那列,狀態圖示換成下載鈕、焦點框落在同一列的刪除鈕。
+  // 2026-11-04 審查:驗證用的 Enter / 點刪除斷言留在 test-only「整列鍵盤契約」—— 本則的鈕接上真的行為之後,那兩下會真的開檔 / 刪列;本則只用 Tab 造出同一個焦點狀態。
+  // @example-basis: packages/design-system/src/components/FileItem/file-item.spec.md:425「Primary button 與下載／重試／移除皆為 sibling」
+  parameters: { demoFocus: 'keep' },
   render: function RichStory() {
     // rich(預設 form surface)各 status 展示:uploading / completed(保留 100% 完成條)/ error;完成的那列點了用 FileViewer 開
     const demo = useFileDemo(RICH_FILES)
@@ -42,16 +46,24 @@ export const Rich = {
         {/* Rich 永遠 border card → list wrapper gap 8px 防邊框相黏 */}
         {/* @layout-space-magic-ok: rich FileItem 清單列距 8px(file-item.spec.md:268 多 item 間距表 Rich + surface=form 那一列 gap-2) */}
         <div className="flex flex-col gap-2 max-w-md">
-          {demo.files.map((f) => <FileItem key={f.id} mode="rich" {...demo.itemProps(f)} />)}
+          {demo.files.map((f) => <FileItem key={f.uid} mode="rich" {...demo.itemProps(f)} />)}
         </div>
         {demo.viewer}
       </>
     )
   },
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    // 只有「已完成」那列可以點開,所以「開啟 Alan Profile.png」只有一顆;從它 Tab 兩下:下載(滑過 / 聚焦時換上的那顆)→ 刪除
+    const open = await within(canvasElement).findByRole('button', { name: '開啟 Alan Profile.png' })
+    const row = open.parentElement as HTMLElement
+    open.focus()
+    await userEvent.tab()
+    await userEvent.tab()
+    await expect(within(row).getByRole('button', { name: '刪除 Alan Profile.png' })).toHaveFocus()
+  },
 }
 
-// 整列鍵盤契約(test-only 夾具):2026-10-28 自「豐富樣式」搬出 —— 讀者看的那則不放驗證用的 play 與示範焦點
-// (之前一載入垃圾桶鈕上就畫著鍵盤藍框,讀者明明沒用鍵盤;user 2026-09-23「我不要用滑鼠看範例結果直接就看到鍵盤焦點，我當下明明就沒有用鍵盤操作」)。斷言照搬:
+// 整列鍵盤契約(test-only 夾具):2026-10-28 自「豐富樣式」搬出驗證用的斷言(示範焦點 2026-11-04 放回「豐富樣式」,見上)。斷言照搬:
 // Tab 到整列那顆隱形鈕按 Enter 只開一次;點同一列的刪除鈕只刪除、不連帶開檔。
 const keyboardOpen = fn()
 const keyboardDelete = fn()
@@ -86,9 +98,9 @@ export const RichRowKeyboardContract = {
 }
 
 const COMPACT_FILES: DemoFile[] = [
-  { id: 'compact-uploading', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'uploading', progress: 60, size: '48 KB' },
-  { id: 'compact-error', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'error', size: '48 KB' },
-  { id: 'compact-completed', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
+  { uid: 'compact-uploading', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'uploading', progress: 60, size: '48 KB' },
+  { uid: 'compact-error', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'error', size: '48 KB' },
+  { uid: 'compact-completed', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
 ]
 
 export const Compact = {
@@ -102,7 +114,7 @@ export const Compact = {
         {/* list wrapper gap 4px 簡化 canonical — compact list 統一 4px,不論純/混合(2026-04-23) */}
         {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
         <div className="flex flex-col gap-1 max-w-md">
-          {demo.files.map((f) => <FileItem key={f.id} mode="compact" {...demo.itemProps(f)} />)}
+          {demo.files.map((f) => <FileItem key={f.uid} mode="compact" {...demo.itemProps(f)} />)}
         </div>
         {demo.viewer}
       </>
@@ -112,12 +124,12 @@ export const Compact = {
 
 // 懸停替換:試算表與 PDF 沒有圖片縮圖,不放人臉照片 —— 走 FileItem 自己的檔案類型退回呈現
 const HOVER_RICH: DemoFile[] = [
-  { id: 'hover-xlsx', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
-  { id: 'hover-pdf', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
+  { uid: 'hover-xlsx', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
+  { uid: 'hover-pdf', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
 ]
 const HOVER_COMPACT: DemoFile[] = [
-  { id: 'hover-csv', name: 'data-2024-q1.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
-  { id: 'hover-json', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+  { uid: 'hover-csv', name: 'data-2024-q1.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
+  { uid: 'hover-json', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
 ]
 
 export const HoverSwap = {
@@ -137,12 +149,12 @@ export const HoverSwap = {
           {/* @layout-space-magic-ok: rich FileItem 清單列距 8px(file-item.spec.md:268 多 item 間距表 Rich + surface=form 那一列 gap-2) */}
           <div className="flex flex-col gap-2">
             {rich.files.map((f, i) => (
-              <FileItem key={f.id} mode="rich" {...rich.itemProps(f)} {...(i === 0 ? { 'data-visual-hover-target': true } : {})} />
+              <FileItem key={f.uid} mode="rich" {...rich.itemProps(f)} {...(i === 0 ? { 'data-visual-hover-target': true } : {})} />
             ))}
           </div>
           {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
           <div className="flex flex-col gap-1">
-            {compact.files.map((f) => <FileItem key={f.id} mode="compact" {...compact.itemProps(f)} />)}
+            {compact.files.map((f) => <FileItem key={f.uid} mode="compact" {...compact.itemProps(f)} />)}
           </div>
         </div>
       </>
@@ -152,12 +164,12 @@ export const HoverSwap = {
 
 // 已上傳的附件:點列用 FileViewer 開;「圖片」區段只放圖片檔(之前把 報告.pdf / 合約附件.docx 放在圖片區)
 const ATTACHMENT_IMAGES: DemoFile[] = [
-  { id: 'attach-1', name: '活動主視覺.jpg', mimeType: 'image/jpeg', size: '2.3 MB', thumbnailSrc: 'https://picsum.photos/seed/event-key-visual/1200/800' },
-  { id: 'attach-2', name: '會場平面圖.png', mimeType: 'image/png', size: '1.1 MB', thumbnailSrc: 'https://picsum.photos/seed/venue-floor-plan/1200/800' },
+  { uid: 'attach-1', name: '活動主視覺.jpg', mimeType: 'image/jpeg', size: '2.3 MB', thumbnailSrc: 'https://picsum.photos/seed/event-key-visual/1200/800' },
+  { uid: 'attach-2', name: '會場平面圖.png', mimeType: 'image/png', size: '1.1 MB', thumbnailSrc: 'https://picsum.photos/seed/venue-floor-plan/1200/800' },
 ]
 const ATTACHMENT_DOCUMENTS: DemoFile[] = [
-  { id: 'attach-3', name: 'data.csv', mimeType: 'text/csv', size: '47 KB' },
-  { id: 'attach-4', name: 'backup.json', mimeType: 'application/json', size: '313 KB' },
+  { uid: 'attach-3', name: 'data.csv', mimeType: 'text/csv', size: '47 KB' },
+  { uid: 'attach-4', name: 'backup.json', mimeType: 'application/json', size: '313 KB' },
 ]
 
 export const Clickable = {
@@ -176,14 +188,14 @@ export const Clickable = {
             <h3 className="text-caption font-medium text-fg-muted">圖片</h3>
             {/* @layout-space-magic-ok: rich FileItem 清單列距 8px(file-item.spec.md:268 多 item 間距表 Rich + surface=form 那一列 gap-2) */}
             <div className="flex flex-col gap-2">
-              {images.files.map((f) => <FileItem key={f.id} mode="rich" {...images.itemProps(f)} />)}
+              {images.files.map((f) => <FileItem key={f.uid} mode="rich" {...images.itemProps(f)} />)}
             </div>
           </div>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <h3 className="text-caption font-medium text-fg-muted">文件</h3>
             {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
             <div className="flex flex-col gap-1">
-              {documents.files.map((f) => <FileItem key={f.id} mode="compact" {...documents.itemProps(f)} />)}
+              {documents.files.map((f) => <FileItem key={f.uid} mode="compact" {...documents.itemProps(f)} />)}
             </div>
           </div>
         </div>
@@ -200,10 +212,10 @@ export const Clickable = {
 //    業務語義互斥(表單情境完成後 consumer 會清掉 status 轉靜態)。
 // 這 mixed 情境只含:上傳中(uploading/error)+ 已存附件(saved attachments,無 status)
 const COMPACT_MIXED: DemoFile[] = [
-  { id: 'mixed-uploading', name: '圖片草稿.png', mimeType: 'image/png', status: 'uploading', progress: 40, size: '1.8 MB' },
-  { id: 'mixed-reply', name: '回覆範本.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: '64 KB' },
-  { id: 'mixed-error', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
-  { id: 'mixed-cover', name: '附件封面.pdf', mimeType: 'application/pdf', size: '220 KB' },
+  { uid: 'mixed-uploading', name: '圖片草稿.png', mimeType: 'image/png', status: 'uploading', progress: 40, size: '1.8 MB' },
+  { uid: 'mixed-reply', name: '回覆範本.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: '64 KB' },
+  { uid: 'mixed-error', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+  { uid: 'mixed-cover', name: '附件封面.pdf', mimeType: 'application/pdf', size: '220 KB' },
 ]
 
 export const CompactMixed = {
@@ -215,7 +227,7 @@ export const CompactMixed = {
         <Toaster />
         {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
         <div className="flex flex-col gap-1 max-w-md">
-          {demo.files.map((f) => <FileItem key={f.id} mode="compact" {...demo.itemProps(f)} />)}
+          {demo.files.map((f) => <FileItem key={f.uid} mode="compact" {...demo.itemProps(f)} />)}
         </div>
         {demo.viewer}
       </>
@@ -230,9 +242,9 @@ export const CompactMixed = {
 //   - 標頭只有收合鈕(傳輸中只能收合);全部成功 5 秒後整個面板收起,滑過 / 聚焦時暫停;有失敗就不收起
 // 試算表與 PDF 沒有圖片縮圖,不放人臉照片。
 const UPLOAD_MANAGER_RICH: DemoFile[] = [
-  { id: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
-  { id: 'um-rich-completed', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
-  { id: 'um-rich-error', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
+  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'um-rich-completed', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
+  { uid: 'um-rich-error', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
 ]
 
 export const UploadManagerSurface = {
@@ -248,9 +260,9 @@ export const UploadManagerSurface = {
 // compact 的面板:body 寫法與 rich 相同(左右 0、上下 tight/2、列間 0),差別只在列本身 ——
 // compact 列上 tight/2、下 tight/2 + 8(文字↔bar 6 + bar 2),bar 離列底 tight/2(file-item.tsx 的 compactPadBlock)。
 const UPLOAD_MANAGER_COMPACT: DemoFile[] = [
-  { id: 'um-compact-uploading', name: '季度報告.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', status: 'uploading', progress: 60, size: '1.4 MB' },
-  { id: 'um-compact-completed', name: '客戶名單.csv', mimeType: 'text/csv', status: 'completed', size: '86 KB' },
-  { id: 'um-compact-error', name: '封面.png', mimeType: 'image/png', status: 'error', size: '2.2 MB' },
+  { uid: 'um-compact-uploading', name: '季度報告.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', status: 'uploading', progress: 60, size: '1.4 MB' },
+  { uid: 'um-compact-completed', name: '客戶名單.csv', mimeType: 'text/csv', status: 'completed', size: '86 KB' },
+  { uid: 'um-compact-error', name: '封面.png', mimeType: 'image/png', status: 'error', size: '2.2 MB' },
 ]
 
 export const UploadManagerCompactSurface = {

@@ -35,21 +35,21 @@ function FileSample({ file, actions, openOnClick = false }: {
   return (
     <>
       {demo.files.map((f) => (
-        <FileItem key={f.id} mode="rich" {...demo.itemProps(f)} onDownload={undefined} onRetry={undefined}
-          onClick={openOnClick ? () => demo.open(f.id) : undefined} actions={actions?.(f, demo)} />
+        <FileItem key={f.uid} mode="rich" {...demo.itemProps(f)} onDownload={undefined} onRetry={undefined}
+          onClick={openOnClick ? () => demo.open(f.uid) : undefined} actions={actions?.(f, demo)} />
       ))}
       {demo.viewer}
     </>
   )
 }
 const cancelButton = (f: DemoFile, demo: FileDemo) => (
-  <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`取消上傳 ${f.name}`} onClick={() => demo.remove(f.id)} />
+  <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`取消上傳 ${f.name}`} onClick={() => demo.remove(f.uid)} />
 )
 const retryButton = (f: DemoFile, demo: FileDemo) => (
-  <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label={`重試 ${f.name}`} onClick={() => demo.retry(f.id)} />
+  <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label={`重試 ${f.name}`} onClick={() => demo.retry(f.uid)} />
 )
 const removeButton = (f: DemoFile, demo: FileDemo) => (
-  <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`移除 ${f.name}`} onClick={() => demo.remove(f.id)} />
+  <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`移除 ${f.name}`} onClick={() => demo.remove(f.uid)} />
 )
 const downloadButton = (f: DemoFile, demo: FileDemo) => (
   <Button variant="text" size="xs" iconOnly startIcon={Download} aria-label={`下載 ${f.name}`} onClick={() => demo.download(f)} />
@@ -187,7 +187,7 @@ export const StatusProgressRule: Story = {
         note="失敗必須清楚告知原因——不只顯示「失敗」,要有具體錯誤訊息讓使用者知道怎麼修。compact 模式下 error 會強制顯示 description"
       >
         <FileSample
-          file={{ id: 'rule-broken', name: 'broken-file.pdf', mimeType: 'application/pdf', status: 'error', size: '2.0 MB', errorText: '檔案損毀,請重新上傳', errorLog: false }}
+          file={{ uid: 'rule-broken', name: 'broken-file.pdf', mimeType: 'application/pdf', status: 'error', size: '2.0 MB', errorText: '檔案損毀,請重新上傳', errorLog: false }}
           actions={(f, demo) => (f.status === 'error' ? retryButton(f, demo) : undefined)}
         />
       </TutorialRule>
@@ -197,7 +197,7 @@ export const StatusProgressRule: Story = {
         note="上傳已完成且已保存,不需要進度 / 狀態標示。可傳 onClick 讓整個 item 變可點擊下載"
       >
         <FileSample
-          file={{ id: 'rule-contract', name: 'final-contract.pdf', mimeType: 'application/pdf', size: '2.1 MB', description: '已簽署 · 2.1 MB' }}
+          file={{ uid: 'rule-contract', name: 'final-contract.pdf', mimeType: 'application/pdf', size: '2.1 MB', description: '已簽署 · 2.1 MB' }}
           openOnClick
           actions={downloadButton}
         />
@@ -217,7 +217,7 @@ export const ActionsRule: Story = {
         note="上傳進行中使用者應該可以取消。用 X icon 表達「取消上傳」"
       >
         <FileSample
-          file={{ id: 'rule-video', name: 'massive-video.mov', mimeType: 'video/quicktime', status: 'uploading', progress: 12, uploadingText: '450 MB · 上傳中 12%', size: '450 MB' }}
+          file={{ uid: 'rule-video', name: 'massive-video.mov', mimeType: 'video/quicktime', status: 'uploading', progress: 12, uploadingText: '450 MB · 上傳中 12%', size: '450 MB' }}
           actions={cancelButton}
         />
       </TutorialRule>
@@ -227,7 +227,7 @@ export const ActionsRule: Story = {
         note="失敗時使用者需要兩個選項——重試(可能只是暫時網路問題)或移除(放棄這個檔案)"
       >
         <FileSample
-          file={{ id: 'rule-failed', name: 'failed-upload.pdf', mimeType: 'application/pdf', status: 'error', size: '1.6 MB', errorText: '網路中斷,請重試', errorLog: false }}
+          file={{ uid: 'rule-failed', name: 'failed-upload.pdf', mimeType: 'application/pdf', status: 'error', size: '1.6 MB', errorText: '網路中斷,請重試', errorLog: false }}
           actions={(f, demo) => (
             f.status === 'uploading' ? cancelButton(f, demo)
               : f.status === 'completed' ? downloadButton(f, demo)
@@ -242,7 +242,7 @@ export const ActionsRule: Story = {
         note="完成後使用者可以下載或查看。action 不必是 dismiss,重點在後續可能的動作"
       >
         <FileSample
-          file={{ id: 'rule-report', name: 'report-final.pdf', mimeType: 'application/pdf', status: 'completed', size: '3.2 MB', description: '上傳完成 · 3.2 MB' }}
+          file={{ uid: 'rule-report', name: 'report-final.pdf', mimeType: 'application/pdf', status: 'completed', size: '3.2 MB', description: '上傳完成 · 3.2 MB' }}
           actions={downloadButton}
         />
       </TutorialRule>
