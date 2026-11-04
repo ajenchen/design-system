@@ -137,7 +137,7 @@ export const ContentTypeChoice: Story = {
         <MiniSidebar activeId="dashboard">
           <SidebarHeader>
             {/* Chrome header canonical:raw <Avatar size={24}> per header-canonical.spec.md:57-72 + text-body-lg per chrome typography */}
-            {/* @layout-space-magic-ok: 頭像 ↔ 名稱(layoutSpace.spec.md:166 micro) */}
+            {/* @layout-space-magic-ok: 品牌 Avatar ↔ 名稱 8px —— 規格沒寫 8 這個值(layoutSpace.spec.md「刻意固定值 OK」表只把這類列為 micro / 控件內部間距,sidebar.spec.md「Chrome 內的 text element」只定字級),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <div className="flex items-center gap-2">
               <Avatar size={24} shape="square" color="blue" solid alt="Acme" />
               <span className="text-body-lg font-medium">Acme Inc</span>
