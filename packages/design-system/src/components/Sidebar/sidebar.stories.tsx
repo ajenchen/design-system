@@ -3,8 +3,7 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
-  LayoutDashboard, Inbox, Users, Settings, Bell,
-  Folder, FileText, FileCode, Plus, MoreVertical,
+  LayoutDashboard, Inbox, Users, Settings, Folder, FileText, FileCode, Plus, MoreVertical,
   User, LogOut,
 } from 'lucide-react'
 import {
@@ -23,6 +22,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from './sidebar'
+import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
 import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
 import { ItemAvatar, ItemLabel } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
@@ -47,15 +47,6 @@ const meta: Meta = {
 export default meta
 
 type Story = StoryObj
-
-// ── 主導覽(設計好的 1 層扁平,每項必須有 icon 以支援 icon 模式)──────────
-const MAIN_NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'inbox', label: 'Inbox', icon: Inbox },
-  { id: 'team', label: 'Team', icon: Users },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'settings', label: 'Settings', icon: Settings },
-] as const
 
 // ── 共用元件 ─────────────────────────────────────────────────────────────
 

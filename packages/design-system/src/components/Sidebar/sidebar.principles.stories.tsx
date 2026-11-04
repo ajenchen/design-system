@@ -5,7 +5,7 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
-  LayoutDashboard, Inbox, Users, Settings, Bell, Folder, FileText, FileCode,
+  Inbox, Users, Settings, Folder, FileText, FileCode,
 } from 'lucide-react'
 import {
   SidebarProvider,
@@ -18,6 +18,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from './sidebar'
+import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
 import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -55,14 +56,6 @@ const MiniSidebar = ({
     </SidebarProvider>
   </div>
 )
-
-const MAIN_NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'inbox', label: 'Inbox', icon: Inbox },
-  { id: 'team', label: 'Team', icon: Users },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'settings', label: 'Settings', icon: Settings },
-] as const
 
 const renderMainNav = (_activeId?: string) => (
   <SidebarMenu>

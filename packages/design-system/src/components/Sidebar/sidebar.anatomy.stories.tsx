@@ -20,6 +20,7 @@ import {
 import { ItemAvatar } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
+import { TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計規格',
@@ -50,13 +51,6 @@ const Th = ({ children }: { children: React.ReactNode }) => (
 )
 const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) => (
   <td className={`p-2 border-b border-divider align-top text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
-)
-
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
 )
 
 const Swatch = ({ value }: { value: string }) => (

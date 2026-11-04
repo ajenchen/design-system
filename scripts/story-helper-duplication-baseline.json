@@ -1,15 +1,5 @@
 {
   "note": "story 檔之間逐字相同的頂層宣告(6 行以上)的棘輪基準(scripts/story-helper-duplication-invariant.mjs)。每一組只准減少:新的一組 / 一組多了檔 = 紅;少了檔要在同一個 PR 本機跑 --write-baseline 收緊(CI 永遠不跑 --write-baseline)。2026-10-20 建閘時鎖進的 20 組是既有的抄本(收斂另排,見待辦總帳 R1b-T10);同一個用途要共用就放進 packages/design-system/src/stories-helpers/。",
   "generatedBy": "node scripts/story-helper-duplication-invariant.mjs --write-baseline",
-  "groups": [
-    {
-      "key": "4fe5743788f33f40",
-      "name": "MAIN_NAV",
-      "lines": 7,
-      "files": [
-        "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx",
-        "packages/design-system/src/components/Sidebar/sidebar.stories.tsx"
-      ]
-    }
-  ]
+  "groups": []
 }
