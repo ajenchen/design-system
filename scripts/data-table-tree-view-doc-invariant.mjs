@@ -2,14 +2,15 @@
 /**
  * @gate-contract
  *   保證: DataTable / TreeView 的規格、程式註解與 story 不再出現 r1b(2026-10-21)抓到的八種「文件說的跟程式不一樣」:
- *         P1 指向 data-table.tsx / tree-view.tsx 的行號指標(DS 原始碼、ds-canonical、scripts 全掃 —— 一律改成符號指法);
+ *         P1(指向 data-table.tsx / tree-view.tsx 的行號指標)2026-11-04 收進 owner-claims C6(d)(`scripts/owner-claims-invariant.mjs`
+ *            的 `SYMBOL_ONLY_TARGETS`:引用解析、歷史引用與合成夾具的排除只有 C6 一份實作),本閘不再重量;
  *         P2 虛擬捲動門檻寫的數字 ≠ data-table.tsx 的 VIRTUAL_THRESHOLD;P3 規格說列拖曳「無客製 live region」而程式其實渲染了 drag.liveRegion;
  *         P4 tree-view 把 indicator 寫成畫步驟結果的位置(退役說法 stepper status dot);P5 data-table.stories.tsx 在 Section 以外手抄區段標題;
  *         P6 DataTable 設計規格「無障礙與鍵盤」沒寫格內鍵盤(F2)與編輯器名稱;它指回的 data-table.spec.md「Keyboard 行為」沒有
  *            一般模式 Enter / F2 那一條(頁面寫了、規格段落沒有),或那一條指的 `cellIsTabStop` 已不在 data-table.tsx;
  *         P7 兩個元件的 story 名稱有中文字之間的機翻空格;
  *         P8 進版控的檔案指向不進版控的東西(「交付報告」、`tmp/wip-…`、invention-audit 的 decisions.json、只存在那裡的「待決題 D12」編號)。
- *   紅: 任一條命中 → 指名 file:line 與修法,exit 1;`--selftest` 用修前逐字原文做成的合成檔證明八條各在指定行紅,
+ *   紅: 任一條命中 → 指名 file:line 與修法,exit 1;`--selftest` 用修前逐字原文做成的合成檔證明七條(P2–P8)各在指定行紅,
  *       同時證明修後的寫法 0 筆(兩面對照,M32)。
  *   綠: 現況 0 筆時綠。純靜態(讀檔 + 正規表示式)、不讀時間、不開瀏覽器,同一份工作樹重複跑結果相同;
  *       掃到 0 個檔、讀不到 VIRTUAL_THRESHOLD、讀不到「無障礙與鍵盤」那則 story、讀不到規格「Keyboard 行為」段 = 儀器失效(exit 2),不讀成通過。
@@ -17,8 +18,7 @@
  * 為什麼一支閘收八條:八條都是同一個病 —— 一件事寫在兩個住所(程式 + 文件 / 註解 / 範例),改了一邊另一邊不會紅(M17、M37 第四形狀
  * 「閘存在 ≠ 有人量」)。r1b 驗證時 14 個指向這兩支檔的行號全部過期、教學頁四個門檻數字彼此矛盾、規格把已經有的播報寫成缺口。
  * 各條的規則住所:
- *   P1 符號指法 —— `DataTable/active-editor-controller.ts` 檔頭「符號指法免行號漂移」;只收這兩支檔(全 family 最大、改最勤的兩支,
- *      r1b 實測指向它們的行號 100% 過期)。指向其他檔的行號不在本閘範圍(數百處,另題)。
+ *   P1 符號指法 —— 已移到 owner-claims C6(d)(規則住所不變:`DataTable/active-editor-controller.ts` 檔頭「符號指法免行號漂移」)。
  *   P2 `data-table.spec.md`「二、高度模式」→「虛擬捲動什麼時候啟用」(數字只住那一句與常數)。
  *   P3 `data-table.spec.md`「拖曳播報(已有,不是待補)」。
  *   P4 `tree-view.spec.md` 禁止事項「❌ 不得用 indicator 畫步驟結果——用 status」。
@@ -50,17 +50,6 @@ const FILES = {
   dataTableAnatomy: `${DT}/data-table.anatomy.stories.tsx`,
   treeViewTsx: `${TV}/tree-view.tsx`,
   treeViewSpec: `${TV}/tree-view.spec.md`,
-}
-
-// ── P1:行號指標 ─────────────────────────────────────────────────────────────────────────────
-/** 指向這兩支檔的「檔名:行號」。`data-table.tsx#Symbol` / 「data-table.tsx 的 `Symbol`」是對的寫法,不算(@cite-fixture:`Symbol` 是示意名,不是真的宣告) */
-const LINE_POINTER = /\b(data-table|tree-view)\.tsx:\d+/g
-export function linePointerHits(path, text) {
-  const hits = []
-  text.split('\n').forEach((line, i) => {
-    for (const m of line.matchAll(LINE_POINTER)) hits.push({ rule: 'P1', path, line: i + 1, found: m[0], fix: '改成符號指法(`data-table.tsx` 的 `函式名 / 常數名` 或「某段」),行號會隨每次改檔漂移' })
-  })
-  return hits
 }
 
 // ── P2:虛擬捲動門檻 ───────────────────────────────────────────────────────────────────────────
@@ -195,10 +184,9 @@ function walk(dir, out = []) {
 export function analyze(files, read) {
   const hits = []
   const instrument = []
-  // P1
+  // P8 的檔案清單(P1 已收進 owner-claims C6(d))
   const scanned = files.filter((f) => f !== SELF && f !== META)
-  if (scanned.length === 0) instrument.push('P1 掃到 0 個檔')
-  for (const f of scanned) hits.push(...linePointerHits(f, read(f)))
+  if (scanned.length === 0) instrument.push('P8 掃到 0 個檔')
   // P2
   const tsx = read(FILES.dataTableTsx)
   const threshold = readVirtualThreshold(tsx)
@@ -225,7 +213,7 @@ export function analyze(files, read) {
   const named = files.filter((f) => (f.startsWith(`${DT}/`) || f.startsWith(`${TV}/`)) && /\.stories\.tsx$/.test(f))
   if (named.length === 0) instrument.push('P7 掃到 0 個 story 檔')
   for (const f of named) hits.push(...storyNameHits(f, read(f)))
-  // P8(與 P1 同一份檔案清單)
+  // P8
   for (const f of scanned) hits.push(...unversionedPointerHits(f, read(f)))
   return { hits, instrument, scanned: scanned.length, threshold }
 }
@@ -234,10 +222,6 @@ export function analyze(files, read) {
 function selftest() {
   const problems = []
   const expect = (cond, msg) => { if (!cond) problems.push(msg) }
-  // P1(@cite-fixture:下面兩句是 a6390356 修前逐字原文,舊行號故意保留 —— 它們就是要被 P1 抓到的對照組,不可被 --fix-moved-cites 改號)
-  expect(linePointerHits('x', '正解是修 wrapper(`data-table.tsx:2085` 的 `isKnownCompound` 補 `boolean`),').length === 1, 'P1 修前 focus-canonical.md:514 應紅')
-  expect(linePointerHits('x', '    // (tree-view.tsx:1244-1266),不再用 `ChevronDown` 反轉').length === 1, 'P1 修前 data-table.tsx 的 tree-view 範圍指標應紅')
-  expect(linePointerHits('x', '正解是修 wrapper(`data-table.tsx` 的 `isKnownCompound` 補 `boolean`),').length === 0, 'P1 符號指法應 0 筆')
   // P2(a6390356 data-table.principles.stories.tsx「虛擬捲動時機」的四句)
   const before = [
     `          title="height='auto' — 少量資料(< 50 筆),全部渲染"`,
@@ -321,7 +305,7 @@ if (SELFTEST) {
     console.log(`✗ data-table-tree-view-doc selftest:\n  ${problems.join('\n  ')}`)
     process.exit(1)
   }
-  console.log('✓ data-table-tree-view-doc selftest:P1–P8 各自在修前原文紅、修後寫法 0 筆(兩面對照)')
+  console.log('✓ data-table-tree-view-doc selftest:P2–P8 各自在修前原文紅、修後寫法 0 筆(兩面對照;P1 在 owner-claims C6(d))')
   process.exit(0)
 }
 
@@ -338,4 +322,4 @@ if (hits.length) {
   console.log(`\n✗ data-table-tree-view-doc:${hits.length} 筆(掃 ${scanned} 檔;VIRTUAL_THRESHOLD = ${threshold})`)
   process.exit(1)
 }
-console.log(`✓ data-table-tree-view-doc:P1–P8 0 筆(掃 ${scanned} 檔;VIRTUAL_THRESHOLD = ${threshold})`)
+console.log(`✓ data-table-tree-view-doc:P2–P8 0 筆(掃 ${scanned} 檔;VIRTUAL_THRESHOLD = ${threshold})`)

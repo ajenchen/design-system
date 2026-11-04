@@ -54,7 +54,7 @@
 
 **6 維度 → skill**:D1 設計語言 / D2 程式語言 / D3 效能 / D4 UX / D5 視覺 / D6 原則自檢,各維對應的 skill 與判準 owner 在 `skills/design-system-audit/`(含 `references/audit-prompts.md` 判準 SSOT),本檔不重述對照表。
 
-**Consistency 類稽核必 Phase 0 全掃再判**。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11 user directive):先全 DS 掃完(NO-SAMPLE)→ 跨元件去重 → **最後一次**列決策清單給 user 拍板;**禁**途中逐元件問。
+**Consistency 類稽核必 Phase 0 全掃再判**。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11;來源不明):先全 DS 掃完(NO-SAMPLE)→ 跨元件去重 → **最後一次**列決策清單給 user 拍板;**禁**途中逐元件問。
 
 **Audit-vs-execute 分權**:判準與 `# 自主執行 canonical` 的分權表**同一份**,本節不重述 —— 只有改變產品／UI／UX SSOT 且存在真實取捨才 STOP、batch-at-end 給 user 拍板;其餘依 Standing Authorization AUTO。對齊／表達統一／清 duplicate／補 pointer 一律 AUTO。
 

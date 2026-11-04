@@ -10,7 +10,8 @@
  *     C5 story 裡每個 <Steps> 都有 aria-label / aria-labelledby(steps.spec.md「A11y 預設」root aria-label 命名此流程);
  *     C6 DS(src、ds-canonical)與 scripts/ 裡的「檔名:行號」引用指得到東西:(a) 不指空行、不超出檔尾;(b) 被引用的檔改過之後,
  *        引用寫下時那一行還在原位(位移 / 被刪改且位移 = 紅;基準 = base,這次變更才寫的引用改拿寫下它的 commit);
- *        (c)「檔名#宣告」引用的宣告存在。歷史紀錄寫 `<sha>:路徑:N` / 「當時第 N 行」;合成夾具標 @cite-fixture。
+ *        (c)「檔名#宣告」引用的宣告存在;(d) 只准符號指法的檔(SYMBOL_ONLY_TARGETS:data-table.tsx / tree-view.tsx)一律不准被行號引用。
+ *        歷史紀錄寫 `<sha>:路徑:N` / 「當時第 N 行」;合成夾具標 @cite-fixture。
  *   紅: 任一條有違規 → 指名 file:line / 登記項並 exit 1;--selftest 以合成正反例證明六條各在指定處紅(每條至少一組兩面對照)。
  *   綠: 現況六條 0 筆;靜態(TypeScript AST + 文字;C6(b) 另讀 git diff / blame),不讀時間、不開瀏覽器,重複跑結果相同;任一條讀不到它的
  *       owner 段落 / 掃到 0 個檔 / CI 找不到 base = 儀器失效(exit 2),不讀成通過。`--root=<樹>` 對另一棵工作樹跑(例:修前的樹必紅,證明量具會紅);
@@ -289,6 +290,10 @@ export function findUnnamedSteps(file, text) {
 //       base = 與 story-layer-drift 同一支 resolveBase(PR = origin/<GITHUB_BASE_REF> 的 merge-base、CI push = HEAD^、本機 origin/main)。
 //   (c) `檔名#宣告` 引用:那個檔裡要有這個具名宣告(任何深度,含 interface 成員與 import 進來的名字;CSS = 宣告的自訂屬性 / class)—— 否則改成宣告名
 //       只是把無聲過期從行號搬到名字。
+//   (d) 只准符號指法的檔(SYMBOL_ONLY_TARGETS):指向它們的「檔名:行號」不論對不對都紅,一律寫宣告名 / 段名。規則住所 =
+//       `DataTable/active-editor-controller.ts` 檔頭「符號指法免行號漂移」;只收這兩支(全 family 最大、改最勤 —— r1b 2026-10-21 實測指向它們的
+//       14 個行號 100% 過期)。原本是 data-table-tree-view-doc 的 P1(另一套正規式掃同一件事),2026-11-04 收進本條:引用怎麼解析、
+//       歷史引用 / 合成夾具怎麼排除只有 C6 一份實作,一條規則一支閘(M17)。
 // 範圍:DS 原始碼與文件(src、ds-canonical,不含產生的 fork / 執行期 .claude)與 scripts/ 的閘。governance/planning 是當天的紀錄,不掃。
 export const CITE_ROOTS = ['packages/design-system/src', 'packages/design-system/ds-canonical', 'scripts']
 const CITE_RESOLVE_ROOTS = [...CITE_ROOTS, '.github/workflows']
@@ -298,6 +303,7 @@ const GENERIC_BASENAMES = new Set(['index.ts', 'index.tsx', 'index.js', 'index.m
 export const LINE_CITE_RE = /((?:[\w.@-]+\/)*[\w.@-]+\.(?:md|tsx|ts|css|mjs|js|cjs|json|ya?ml|sh))`?[ \t]*:[ \t]*L?(\d+)(?:[ \t]*[-–][ \t]*L?(\d+))?(?![\d%A-Za-z])/g
 export const ANCHOR_CITE_RE = /((?:[\w.@-]+\/)*[\w.@-]+\.(?:tsx|ts|css|mjs|js))`?#((?:--)?[A-Za-z_$][\w$-]*)/g
 export const CITE_FIXTURE_MARK = '@cite-fixture'
+export const SYMBOL_ONLY_TARGETS = ['packages/design-system/src/components/DataTable/data-table.tsx', 'packages/design-system/src/components/TreeView/tree-view.tsx']
 /**
  * 釘在某個 commit 的歷史引用不追:`<sha>:<路徑>:N`(git 原生寫法,`git show` 驗得到)或「<sha> 檔名:N」。
  * 歷史紀錄寫的是「當時」的那一行,拿現在的檔去比只會誤紅;要寫現況就用宣告名 / 段名。
@@ -377,6 +383,14 @@ export function findBrokenLineCites(cites, linesOf) {
     else if (!L[c.n - 1].trim()) problems.push({ where: `${c.from}:${c.line}`, msg: `「${c.raw}」指到 ${c.target} 的空行` })
   }
   return problems
+}
+
+/** (d) 指向只准符號指法的檔的行號引用(純函式;不論行號對不對都紅) */
+export function findSymbolOnlyLineCites(cites, targets = SYMBOL_ONLY_TARGETS) {
+  return cites.filter((c) => targets.includes(c.target)).map((c) => ({
+    where: `${c.from}:${c.line}`,
+    msg: `「${c.raw}」用行號指 ${posix.basename(c.target)} —— 這支檔只准符號指法(寫宣告名 / 段名,例「${posix.basename(c.target)} 的 \`函式名\`」或 \`${posix.basename(c.target)}#宣告\`;DataTable/active-editor-controller.ts 檔頭「符號指法免行號漂移」)`,
+  }))
 }
 
 /** `git diff -U0` 原文 → Map<檔, { hunks:[{a,b,c,d}], added:Set<新行號> }>(純函式) */
@@ -527,6 +541,7 @@ export function scanCites(root, { argv = [], env = process.env, fix = false } = 
   const cites = scope.flatMap((f) => extractLineCites(f, textOf(f), resolveCite))
   if (cites.length < 200) throw new InstrumentError(`C6 只讀到 ${cites.length} 個「檔名:行號」引用(DS 有上千個)—— 解析壞了`)
   const broken = findBrokenLineCites(cites, linesOf)
+  const symbolOnly = findSymbolOnlyLineCites(cites)
   const anchors = scope.flatMap((f) => findBrokenAnchors(f, textOf(f), resolveCite, namesOf))
   let moved = []
   let baseNote = '(本機沒有可比對的 base,(b) 略過;CI 一定會比)'
@@ -585,7 +600,7 @@ export function scanCites(root, { argv = [], env = process.env, fix = false } = 
     const after = scanCites(root, { argv, env, fix: false })
     return { problems: after.problems, fixed: [...byFile.values()].reduce((n, v) => n + v.length, 0), cites: after.cites, baseNote }
   }
-  return { problems: [...broken, ...anchors, ...moved], fixed: 0, cites: cites.length, baseNote }
+  return { problems: [...broken, ...symbolOnly, ...anchors, ...moved], fixed: 0, cites: cites.length, baseNote }
 }
 
 // ─── 全樹 ────────────────────────────────────────────────────────────────────
@@ -719,6 +734,12 @@ export function runSelftest() {
   const namesOf = (q) => declaredNames(q, tree[q])
   const anchorsOf = (t) => findBrokenAnchors(from, t, resolveX, namesOf).length
   expect(anchorsOf('x.tsx#A / x.tsx#Y / x.tsx#inner / x.tsx#size / x.tsx#L42 / x.tsx#${k} / ../../tokens/t.css#--tok-a') === 0 && anchorsOf('x.tsx#Gone') === 1 && anchorsOf('../../tokens/t.css#--tok-gone') === 1, 'C6(c):頂層 / import / 函式內 / interface 成員 / CSS 自訂屬性都算宣告;#L42、樣板不算錨點;找不到的名字紅')
+  // C6(d):x.tsx 當作只准符號指法的檔(用真的 SYMBOL_ONLY_TARGETS 會被 C6 自己掃到;兩面對照:原 P1 修前逐字原文的寫法紅、符號指法 0 筆)
+  const onlyX = ['packages/design-system/src/components/X/x.tsx']
+  const symbolOnlyOf = (t) => findSymbolOnlyLineCites(extractLineCites(from, t, resolveX), onlyX).length
+  expect(symbolOnlyOf('正解是修 wrapper(`x.tsx:2` 的 `isKnownCompound` 補 `boolean`),') === 1 && symbolOnlyOf('    // (x.tsx:2-4),不再用 `ChevronDown` 反轉') === 1 && symbolOnlyOf('見 x.spec.md:3') === 0, 'C6(d):只准符號指法的檔被行號引用 → 紅(指得到也紅、範圍也紅);別的檔的行號不歸本條')
+  expect(symbolOnlyOf('正解是修 wrapper(`x.tsx` 的 `isKnownCompound` 補 `boolean`),') === 0 && symbolOnlyOf('`x.tsx#A`') === 0 && symbolOnlyOf('`9935caf9:packages/design-system/src/components/X/x.tsx:2`') === 0, 'C6(d):符號指法 / 檔名#宣告 / 釘在 commit 的歷史引用 → 0 筆')
+  expect(SYMBOL_ONLY_TARGETS.length === 2 && SYMBOL_ONLY_TARGETS.every((t) => /\/(data-table|tree-view)\.tsx$/.test(t)), 'C6(d):清單就是 DataTable / TreeView 兩支(與 active-editor-controller.ts 檔頭的範圍一致)')
   return { ok, fails }
 }
 

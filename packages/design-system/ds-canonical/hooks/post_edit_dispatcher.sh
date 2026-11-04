@@ -1,12 +1,14 @@
 #!/bin/bash
-# post_edit_dispatcher.sh — orchestrate 9 lib helper rules (PostToolUse Write|Edit|MultiEdit)
+# post_edit_dispatcher.sh — orchestrate 8 lib helper rules (PostToolUse Write|Edit|MultiEdit)
 #
 # 2026-05-13 /knowledge-prune consolidation:
 #   Per AGENTS.md governance hook count budget (canonical soft/hard threshold;Anthropic ~15 guideline)
 #   Pre-consolidation: 32 hooks → BLOCKER 30 cap breached
 #   This dispatcher folds 9 lib/_*.sh helpers into one hook registration
 #   Lib helpers remain as standalone testable files (renamed `_*` per Unix internal-helper convention)
-#   Current registration impact: 9 helper rules behind 1 registered dispatcher.
+#   Current registration impact: 8 helper rules behind 1 registered dispatcher(2026-10-28 退役
+#   _layout_space_canonical.sh:它教的是 v1 的 block 相鄰判法(block 相鄰 = tight、inline ↔ inline = loose),且用 grep -m
+#   截斷;間距看 layoutSpace.spec.md 規則 3 親疏。檔案留在 hooks/retired/)。
 #
 # Pattern: read stdin INPUT once,pipe to each required helper sequentially,collect their JSON outputs
 # Each helper:
@@ -113,12 +115,11 @@ run_helper() {
   fi
 }
 
-# Run 9 helpers sequentially (all silent-fail / exit 0 / additive warnings)
+# Run 8 helpers sequentially (all silent-fail / exit 0 / additive warnings)
 for helper in \
   "$LIB_DIR/_token_hygiene.sh" \
   "$LIB_DIR/_hardcoded_strings.sh" \
   "$LIB_DIR/_code_quality.sh" \
-  "$LIB_DIR/_layout_space_canonical.sh" \
   "$LIB_DIR/_person_data_richness.sh" \
   "$LIB_DIR/_overlay_handcraft.sh" \
   "$LIB_DIR/_cva_default_sync.sh" \

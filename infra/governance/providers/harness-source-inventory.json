@@ -183,7 +183,6 @@
         "packages/design-system/ds-canonical/hooks/tests/test_check_hardcoded_strings.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_header_with_tabs_border.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_item_list_gap.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_layout_space_canonical.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_layout_space_magic_numbers.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_main_branch_workbench.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_naming_and_abstraction.sh",

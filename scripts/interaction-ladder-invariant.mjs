@@ -21,7 +21,7 @@
 // 只有把整條階梯排在一起才看得出來。
 //
 // **2026-09-25 擴大到所有 `-hover` token**:第一版只讀 `--neutral*` 開頭、而且兩條階梯是寫死的 ——
-// 之後新增的配對 token(例:`--surface-hover` / `--secondary-hover`)這支閘看不到,
+// 之後新增的配對 token(例:`--surface-strong-hover` / `--secondary-hover`)這支閘看不到,
 // 跳階、反向、撞到自己的靜止底都不會紅。現在階梯從 semantic.css 現讀:每個 `--X-hover` 的靜止底 =
 //   `--X` 有定義 → `--X`;淺色值是 `var(--color-X-5)` → `--color-X-6`(色相 hover = step-5);都不是 → 透明(第 0 階)。
 // 按壓 = `--X-active`(有定義才算)。

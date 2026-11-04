@@ -34,14 +34,14 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 | Trait | 何時宣告 | Required stories(traits 觸發後必有) |
 |-------|---------|----------------------------------|
-| `hasVariants` | ≥ 2 visual variants(primary/secondary/danger 等) | `AllVariants` 對照 grid,**或** ≥ 2 個 per-variant exports |
-| `hasSizes` | ≥ 2 sizes(sm/md/lg 等) | `AllSizes` merged grid(❌ 禁止 per-size 拆 `Small`+`Medium`+`Large`) |
+| `hasVariants` | ≥ 2 visual variants(primary/secondary/danger 等) | variant 對照格放設計規格層 `ColorMatrix`(展示層不放),**或** ≥ 2 個 per-variant exports |
+| `hasSizes` | ≥ 2 sizes(sm/md/lg 等) | 尺寸對照格放設計規格層 `SizeMatrix`(展示層不放;❌ 禁止 per-size 拆 `Small`+`Medium`+`Large`) |
 | `hasInteractiveStates` | hover / focus / disabled / loading 任一可見 | `Disabled` own story(`Loading` 視 prop / `Error` 視 validation 而定) |
-| `isOverlay` | Dialog / Sheet / Popover / Tooltip / Drawer 類 portal-rendered | `OpenSnapshot` story(`defaultOpen` / `useState(true)` 對齊 M15)+ ≥ 3 業務 scenarios |
+| `isOverlay` | Dialog / Sheet / Popover / Tooltip / Drawer 類 portal-rendered | `OpenSnapshot` story(`defaultOpen` / `useState(true)` 對齊 M15;Dialog / Sheet 類模態浮層這則標 `test-only`、讀者看的範例按了才開,見 `packages/design-system/ds-canonical/rules/story-rules.md`「預設開啟的模態浮層 story」)+ ≥ 3 業務 scenarios |
 | `isInputLike` | text / number / search / textarea field | `WithError` + `WithHelpText` + `WithIcon` merged grid |
-| `isSelectionMulti` | Checkbox / Radio / 多選 toggle | `States`(checked/unchecked/indeterminate/disabled)+ `VerticalGroup` + `Disabled`(group level) |
-| `isSelectionSingle` | Switch / 單一 toggle(無群組概念) | `States` only(對齊 Material/Polaris/Carbon Switch idiom — 無 group story) |
-| `isMatrixHeavy` | Avatar / Skeleton / Spinner / Badge / Slider 等 token × size 正交視覺軸 | ≥ 4 matrix stories(`Modes` / `Shapes` / `Colors` / `AllSizes` 任 4) |
+| `isSelectionMulti` | Checkbox / Radio / 多選 toggle | `VerticalGroup` + `Disabled`(group level);checked/unchecked/indeterminate/disabled 對照格放設計規格層 `StateBehavior`(展示層不放) |
+| `isSelectionSingle` | Switch / 單一 toggle(無群組概念) | 狀態對照格放設計規格層 `StateBehavior`(展示層不放),展示層只放真實情境(對齊 Material/Polaris/Carbon Switch idiom — 無 group story) |
+| `isMatrixHeavy` | Avatar / Skeleton / Spinner / Badge / Slider 等 token × size 正交視覺軸 | ≥ 4 matrix stories(`Modes` / `Shapes` / `Colors` / 設計規格層 `SizeMatrix` 任 4) |
 | `isStructural` | DataTable / Steps / Tabs / Accordion 結構主導 | 每結構變體 1 story(無固定數,過 earn-existence) |
 | `isInternal` | L3 building block(被其他元件消費) | 1 個代表性 primitive story + ≤ 1 composition scenario(寬鬆,Internal/ 命名空間下；不強迫命名 `Default`) |
 
@@ -160,17 +160,17 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 | 該放 principles | 該放 anatomy | 該放 showcase |
 |-----------------|--------------|---------------|
-| Do/don't 視覺對照 | Token / size matrix | 真實場景 + variant grid |
-| 跟近親元件比較 | Inspector 數值 | AllVariants / AllSizes |
+| Do/don't 視覺對照 | Token / size matrix | 真實場景 |
+| 跟近親元件比較 | Inspector 數值 + AllVariants / AllSizes 對照 | — |
 | 何時用 / 不該用 | StateBehavior 視覺 | Disabled / Loading state demo |
 | 文案 / 內容 guidelines | ColorMatrix | 業務 scenario 範例 |
 
-**禁止**:do/don't 對照放 showcase(屬 principles)/ token table 放 showcase(屬 anatomy)/ 純 variant grid 無 rule 放 principles(屬 showcase)。
+**禁止**:do/don't 對照放 showcase(屬 principles)/ token table 放 showcase(屬 anatomy)/ 純 variant / size / 狀態對照格放 principles 或 showcase(屬 anatomy)。
 
 ## 教學框的間距與標題(2026-10-01;段落層級 2026-10-14)
 
-- **教學頁的版面只有一個住所** `src/stories-helpers/examples/tutorial-page.tsx`(2026-10-14):每則教學 story 以 `<TutorialPage>` 起頭,段落用 `<TutorialSection title>`,規則用每頁一行 `createTutorialRule({ examples: true, … })` 產出的 `<TutorialRule title note>`(規則的內容是範例 → 給 `examples: true`,走 `CaptionedExamples`,範例的說明一律 `ExampleCaption`;是一段文字 / 清單 → 不給)。不在各頁自定 Rule / Section(看結構不看名字:自己畫標題、再接內容的小元件就是,不論叫什麼)、不手寫 `<h2>` / `<section>`、不拿別的容器包規則或段落(包在下一層也一樣)、頁 / 段落裡的區塊不自帶上下 margin / padding、不放撐高度的空白塊(class 加 `sm:` / `[&>*+*]:` 前綴、寫成 `style` 都算)、不在 `TutorialPage` 放間距。範圍 = 全部設計原則頁(`*.principles.stories.tsx`)+ Patterns 文件頁的教學框 + **Tokens / Patterns 文件頁的段落**(2026-10-20 T7 甲:token 頁段落之間原本只剩 loose,與段落內同量級、段落分不開;`layoutSpace.spec.md` 規則 3 同步一句);產品範例與展示頁不套用。 **單一住所**(2026-10-20,教學頁稽核 T2 / T3 / T6):頁裡沒寫字級的內文 = `text-body`(`TutorialPage` 擁有,`typography.spec.md:39`;各頁不在頁根寫字級);範例說明 = `ExampleCaption`(`warn` = 反例);說明清單 = `TutorialList`(圓點 + 縮排 + 列距);跳到別則 story = `StoryLink`;使用指引三段 = `UsageSection`。各頁不自抄同功能的小元件。
-- **規則 ↔ 規則 = 段落 ↔ 段落 = `--layout-space-loose` × 2**(md 32 / lg 48;`calc(var(--layout-space-loose) * 2)`,只寫在 tutorial-page.tsx):從 loose 推出,所以永遠是「範例組 ↔ 範例組」的兩倍、跟著密度走;**不借 `--layout-space-bottom`**(它的語意是 `layoutSpace.spec.md:13`「結論留白:內容到 action buttons」,值剛好可能一樣而已)。間距由外層 gap 一次給,各塊不留自己的下方 margin(頁尾不多空白)。出處:user 2026-10-07 原話「第一題照你建議」,採 AI 同日的建議 ②(規則之間 = 段落之間 = loose × 2、範例之間維持 loose、段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁、所有教學頁收成一個共用元件;待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` P7 列)。
+- **教學頁的版面只有一個住所** `src/stories-helpers/examples/tutorial-page.tsx`(2026-10-14):每則教學 story 以 `<TutorialPage>` 起頭,段落用 `<TutorialSection title>`,規則用每頁一行 `createTutorialRule({ examples: true, … })` 產出的 `<TutorialRule title note>`(規則的內容是範例 → 給 `examples: true`,走 `CaptionedExamples`,範例的說明一律 `ExampleCaption`;是一段文字 / 清單 → 不給)。不在各頁自定 Rule / Section(看結構不看名字:自己畫標題、再接內容的小元件就是,不論叫什麼)、不手寫 `<h2>` / `<section>`、不拿別的容器包規則或段落(包在下一層也一樣)、頁 / 段落裡的區塊不自帶上下 margin / padding、不放撐高度的空白塊(class 加 `sm:` / `[&>*+*]:` 前綴、寫成 `style` 都算)、不在 `TutorialPage` 放間距。範圍 = 全部設計原則頁(`*.principles.stories.tsx`)+ Patterns 文件頁的教學框 + **Tokens / Patterns 文件頁的段落**(2026-10-20 T7 甲:token 頁段落之間原本只剩 loose,與段落內同量級、段落分不開;`layoutSpace.spec.md` 規則 3 同步一句)+ 展示頁 / 設計規格頁「一則一個標題」的範例堆疊(範例 ↔ 範例,2026-10-27 Q2 ①);產品範例不套用。 **單一住所**(2026-10-20,教學頁稽核 T2 / T3 / T6):頁裡沒寫字級的內文 = `text-body`(`TutorialPage` 擁有,`typography.spec.md:39`;各頁不在頁根寫字級);範例說明 = `ExampleCaption`(`warn` = 反例);說明清單 = `TutorialList`(圓點 + 縮排 + 列距);跳到別則 story = `StoryLink`;使用指引三段 = `UsageSection`。各頁不自抄同功能的小元件。
+- **規則 ↔ 規則 = 段落 ↔ 段落 = `--layout-space-loose` × 2**(md 32 / lg 48;`calc(var(--layout-space-loose) * 2)`,只寫在 tutorial-page.tsx):從 loose 推出,所以永遠是「範例組 ↔ 範例組」的兩倍、跟著密度走;**不借 `--layout-space-bottom`**(它的語意是 `layoutSpace.spec.md:13`「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」,值剛好可能一樣而已)。間距由外層 gap 一次給,各塊不留自己的下方 margin(頁尾不多空白)。出處:user 2026-10-07 原話「第一題照你建議」,採 AI 同日的建議 ②(規則之間 = 段落之間 = loose × 2、範例之間維持 loose、段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁、所有教學頁收成一個共用元件;待辦總帳 `governance/planning/2026-09-25-interaction-and-hover-remediation.md` P7 列)。
 - **範例 ↔ 它的說明** = `--layout-space-tight`(`layoutSpace.spec.md` 規則 3 labeling);**範例組 ↔ 範例組** = `--layout-space-loose`。住所 `src/stories-helpers/examples/example-captions.tsx`:規則的範例區一律 `<CaptionedExamples>`(`createTutorialRule({ examples: true })` 已內建;說明元件 `ExampleCaption` 只有這一份,自動併進它說的範例),手寫的「樣本 + 說明」小格用 `<ExampleGroup>`;只有一則說明貼著一個樣本的單格,直接在說明上寫 `mb-` / `mt-[var(--layout-space-tight)]` 是同一個值。不在各頁自寫其他值或外框。 **對錯記號**只用 ✅ / ❌:寫在規則標題(這條規則是要 / 不要)或 `ExampleCaption`(這一則範例是對 / 錯);說明開頭的 ↑ / ← 指向它說的那則範例;清單項與手寫標題不帶對錯記號(要分對錯就拆成規則)。同一列「✅/❌ 符號 + 樣本 + 一兩個字」的行內群照 `example-captions.tsx` 不收。程式碼字樣用 `<code>`(canvas 不解析 Markdown,反引號會原樣顯示)。
 - **教學框說明文字(Rule 的 note)** = `text-caption` + `text-fg-muted`(`color.spec.md`「文字 / Icon 層級」caption 列;2026-10-20 起不再逐頁選字色),行高用字級本身的 1.3,不疊 `leading-relaxed`(`typography.spec.md:50-53`「`text-caption`（12px）/ `text-footnote`（10px）：全部 lh 1.3 固定」)。
 - **卡片 / 列裡「標題 ↔ 說明」**(同一個文字塊)= `--item-gap-label-desc-*`(`item-anatomy.spec.md`「Label ↔ Desc 間距」),不是 tight、不是寫死 4 / 8px。

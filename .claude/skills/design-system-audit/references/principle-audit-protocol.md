@@ -291,7 +291,7 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 ### 2026-04-21 Session 已收錄 FP
 
 - **SSOT reciprocal 以 `##` heading 為唯一格式** → FALSE。inline prose pointer「詳見 `X.spec.md`「Y」」也是合法 reciprocal。flag 前要完整 grep target spec 找 anchor 再判。
-- **「缺 dark mode section」** → FALSE,若 spec 用 semantic token(`--primary` / `--fg` 等)= 自動豁免;若有 pointer 到 color.spec.md = 豁免。
+- **「缺 dark mode section」** → FALSE,若 spec 用 semantic token(`--primary` / `--foreground` 等)= 自動豁免;若有 pointer 到 color.spec.md = 豁免。
 - **「缺 empty state」** → FALSE,若 spec 寫「empty 由 consumer 用 <Empty>」= 豁免。
 - **「anatomy 缺 Inspector」** → 2026-04-21 revert applicable-where-meaningful → 改回 strict-by-default。但確實 props < 2 的(Separator / Skeleton / CircularProgress)有 hard rationale 豁免。
 - **「ARIA / tabIndex 不對」** → FALSE,若 wrap Radix primitive(Radix 處理)= 豁免。grep import 確認。

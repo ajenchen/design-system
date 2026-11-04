@@ -12,7 +12,7 @@ AGENTS.md `# SSOT 消費 canonical` 的詳表 + 反例。主章留核心 + point
 | **Row / item 結構**(prefix / content / suffix slot)| `patterns/element-anatomy/item-anatomy.spec.md`(Family 1+2 SSOT) |
 | **連續 item list wrapper gap** | `patterns/element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」— 公式:permanent standalone card/pill → 必 gap;permanent flush / transparent → 0 gap。元件專屬 gap 值 + mixed 混合情境決策表查該元件 spec「List wrapper canonical」節 |
 | **視覺容器 breathing**(自建或 override 帶 bg/border/shadow 的 div)| `patterns/element-anatomy/element-anatomy.spec.md`「視覺容器 breathing invariant」— 有視覺邊界容器必有 inner padding。責任在父容器,子元件 w-full responsive 不變 |
-| **Label ↔ Description gap**(2px)| Token `--item-gap-label-desc` + Primitive `<ItemContent>` — 改 token 一處 → 全 DS 同步。Consumer 2 擇 1:(a) token:`mt-[var(--item-gap-label-desc)]`(b) primitive:`<ItemContent label description descriptionTone>`。偏離必 spec 明文 rationale |
+| **Label ↔ Description gap**(2px)| Token `--item-gap-label-desc-<mode>[-lg]`(4 變體,依 reading / scanning × size 選,`patterns/element-anatomy/item-anatomy.spec.md`「兩種閱讀模式」)+ Primitive `<ItemContent>` — 改 token 一處 → 全 DS 同步。Consumer 2 擇 1:(a) token:`mt-[var(--item-gap-label-desc-<mode>[-lg])]`(b) primitive:`<ItemContent label description descriptionTone>`。偏離必 spec 明文 rationale |
 | **Dismiss / inline action / overflow menu**| `patterns/element-anatomy/item-anatomy.spec.md`「Dismiss 按鈕 canonical」+「Inline Action 設計規格」+「常用 icon canonical」 |
 | **按鈕排列 / 群組 / 分隔**| `patterns/action-bar/action-bar.spec.md` |
 | **Header 高度 / chrome padding**| `tokens/uiSize/uiSize.spec.md`(`--chrome-header-height`)+ `tokens/layoutSpace/layoutSpace.spec.md` |
@@ -20,7 +20,7 @@ AGENTS.md `# SSOT 消費 canonical` 的詳表 + 反例。主章留核心 + point
 | **Header 跨家族視覺契約**(border / padding / withTabs / dismiss size 連動)| `patterns/header-canonical/header-canonical.spec.md` — SSOT for chrome + overlay header 兩家族;含 withTabs 6 lockstep rules(W1 border auto-suppress / W2 padding align / W3 tabs size 對應 / W4 flush stack / W5 md future tier / W6 default sm)|
 | **Overlay chrome dismiss / unbounded button**| `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical v5」 |
 | **Overlay title size**(modal 16 vs non-modal 14)| `patterns/overlay-surface/overlay-surface.spec.md`「Overlay title typography canonical」 |
-| **Form field gap**| `components/Field/field.spec.md` +「layoutSpace 規則 3:跟 block 相鄰 = tight,inline ↔ inline = loose」 |
+| **Form field gap**| `components/Field/field.spec.md` + 看關係 → `tokens/layoutSpace/layoutSpace.spec.md`「規則 3:元素間 gap(只看親疏,role 無關)」 |
 | **Icon 選擇 / 尺寸**| `packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」「Icon canonical」+ `ui-dev-rules.md`「Icon size 來源分層規則」 |
 | **浮層 header / body / footer**| `patterns/overlay-surface/overlay-surface.spec.md` |
 | **Scrollbar / 滾動**| `components/ScrollArea/scroll-area.spec.md` +「horizontal-overflow pattern」 |

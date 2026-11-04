@@ -63,7 +63,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/delivery-handoff/references/inventory-checklist.md",
-      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "sha256": "2d7c5bd0a57715516fc85b3964ed03216186f05778d4cdcb3286e8f46bbca9b2",
       "source": "providers/codex/skills/delivery-handoff",
       "classification": null,
       "destination": null
@@ -695,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "23b0e3ca1993cb2f10f5d030f6de1063ed91ba5f3e98fa9208030cba809feb45",
+      "sha256": "b3816a928818f61979ba88f04ac90ab14bf71ac285a7230e22e1afe0d6589c64",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -751,7 +751,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "17b4e9ae2fbef78c64545237f2266bac5b0bdb19385ff1be1da506049e854e5e",
+      "sha256": "e96fcb804d4e297e0994172978669ed7a96a545589db11dbbb67ed3e7a4749aa",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -1007,7 +1007,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/delivery-handoff/references/inventory-checklist.md",
-      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "sha256": "2d7c5bd0a57715516fc85b3964ed03216186f05778d4cdcb3286e8f46bbca9b2",
       "source": "skills/delivery-handoff/references/inventory-checklist.md",
       "classification": null,
       "destination": null
@@ -1247,7 +1247,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/delivery-handoff/references/inventory-checklist.md",
-      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "sha256": "2d7c5bd0a57715516fc85b3964ed03216186f05778d4cdcb3286e8f46bbca9b2",
       "source": "skills/delivery-handoff/references/inventory-checklist.md",
       "classification": null,
       "destination": null
@@ -1527,7 +1527,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/delivery-handoff/references/inventory-checklist.md",
-      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "sha256": "2d7c5bd0a57715516fc85b3964ed03216186f05778d4cdcb3286e8f46bbca9b2",
       "source": null,
       "classification": null,
       "destination": null
