@@ -132,7 +132,7 @@ DS 預設文案的語言照 `../../lib/i18n/README.md`「Fallback chain」:1 con
 | 兩個預設欄位 | ID / 員工編號(「ID」是通用縮寫,不翻;同上方「Info Fields」) | `labels={{ id, employeeNumber }}`;`profile-card.id` / `.employeeNumber` |
 | 查看更多 | 查看更多 | `viewMoreLabel`(既有 prop);`profile-card.viewMore` |
 
-2026-10-20 前以上全是寫死的英文(Chat / Audio call / Online / Status message / Employee number / View more),而且除了 `viewMoreLabel` 都不能覆寫 —— 中文頁面裡的人員卡兩種語言並排(獨立驗證 OV-10)。預設欄位的去重以「目前生效的欄名」比對 consumer `fields` 的 label;舊寫法用 `fields` 傳同名欄位的 story 已全部改走 `defaultFieldValues`(dev 模式會警告舊寫法)。
+實作沿革:2026-10-20 前以上全是寫死的英文(Chat / Audio call / Online / Status message / Employee number / View more),而且除了 `viewMoreLabel` 都沒有覆寫的管道 —— 中文頁面裡的人員卡兩種語言並排(獨立驗證 OV-10)。預設欄位的去重以「目前生效的欄名」比對 consumer `fields` 的 label;舊寫法用 `fields` 傳同名欄位的 story 已全部改走 `defaultFieldValues`(dev 模式會警告舊寫法)。
 
 ## 設計決策
 

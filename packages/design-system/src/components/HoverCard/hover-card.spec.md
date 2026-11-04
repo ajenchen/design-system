@@ -76,7 +76,7 @@ HoverCardContent 只提供：
 | ProfileCard(Avatar `hoverCard` 內建)/ 連結、儲存庫等內容預覽 | 亮色 card(`bg-surface-raised` + `text-foreground` + `border` + `rounded-lg` + `elevation-200`;跟隨頁面主題,不含內距) | `HOVER_CARD_SURFACE_CLASS` |
 | OverflowIndicator 溢出清單 | 深色 tooltip 風格(`bg-tooltip` + `text-foreground` + `rounded-lg`,**與 `data-theme="dark"` 寫在同一個元素**) | `HOVER_CARD_TOOLTIP_SURFACE_CLASS` |
 
-**深色殼必含字色**:CSS 的 `color` 繼承的是外層**已解析**的值,`data-theme="dark"` 只換變數、不換 color —— 只寫 data-theme 的深色殼在淺色頁上是黑字配深底(2026-10-20 前量到 1.92:1,違反下方 A11y「WCAG AA ≥ 4.5:1」)。規則同 `../Alert/alert.tsx` 檔頭「data-theme 必須搭配 text-foreground」與 M3;閘 `scripts/overlay-story-contract-invariant.mjs`(S1 換主題的元素都宣告字色、R1 深色清單在淺 / 深兩種頁面的實測對比)。
+**實作 —— 深色殼帶字色**:CSS 的 `color` 繼承的是外層**已解析**的值,`data-theme="dark"` 只換變數、不換 color —— 只寫 data-theme 的深色殼在淺色頁上是黑字配深底(2026-10-20 前量到 1.92:1,低於下方 A11y「WCAG AA ≥ 4.5:1」)。同 `../Alert/alert.tsx` 檔頭「data-theme 必須搭配 text-foreground」與 M3;閘 `scripts/overlay-story-contract-invariant.mjs`(S1 換主題的元素都宣告字色、R1 深色清單在淺 / 深兩種頁面的實測對比)。
 
 ## sideOffset
 

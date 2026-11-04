@@ -111,7 +111,7 @@ Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間�
 會 → `fill`;不會 → `hug`。理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 ——
 先把可用高度穩定下來、讓 body 自己捲,外框就不動了。**現在預期不會變、但未來會加入異步 section 的,選 `fill`。**
 
-`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。**DS 內部(元件、story、閘的夾具)一律不再使用**(2026-10-20 把 30 處用法遷完 —— 27 處在 DS 原始碼(CommandDialog、AgentPanel 改名 / 刪除對話框、各頁 story)、3 處在閘的夾具;獨立驗證 OV-09:設計原則頁還在教舊名);保留這個 prop 只為了既有 consumer 不壞。閘 `scripts/overlay-story-contract-invariant.mjs` S3(DS 原始碼與閘夾具裡任何 `<DialogContent autoHeight>` 都紅)。
+實作:`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。**DS 內部(元件、story、閘的夾具)已沒有用法**(2026-10-20 把 30 處用法遷完 —— 27 處在 DS 原始碼(CommandDialog、AgentPanel 改名 / 刪除對話框、各頁 story)、3 處在閘的夾具;獨立驗證 OV-09:設計原則頁還在教舊名);這個 prop 留著,既有 consumer 才不會壞。閘 `scripts/overlay-story-contract-invariant.mjs` S3(DS 原始碼與閘夾具裡任何 `<DialogContent autoHeight>` 都紅)。
 
 **世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`)、
 Atlassian(`if (!input) return 'auto'`)、Polaris(只宣告 `max-height`)、Carbon(size 綁 48/72/84/96% 上限)、
@@ -163,7 +163,7 @@ Radix Tabs Root 是裸 `display: block` + `min-height: auto`,夾在中間時整�
 Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「作用於整個 dialog 內容」的操作)走 `<DialogHeader actions={…}>` slot,**不**塞 children 自刻右側 cluster。
 
 - **何時用**:操作對象是 dialog 承載的記錄本身(切換上下筆、複製連結、更多選單)。欄位級操作仍歸 body;confirm / cancel 歸 footer。
-- **分隔線由 DS 自動放**:actions 與內建 Close X 之間 DS 渲 `<ButtonDivider>` — `action-bar.spec.md`「五、分隔線規則」第 3 條誤觸保護(關閉 / 解除鈕的左側緊鄰其他操作按鈕 → 必加);幾何 = ButtonDivider `mx-1` 於 `gap-2` cluster → 兩側 12px 對稱(同 spec「分隔線幾何」段)。
+- **分隔線**:依 `../../patterns/action-bar/action-bar.spec.md:263`「誤觸保護」(「五、分隔線規則」第 3 條)。實作:actions 與內建 Close X 之間 DS 渲 `<ButtonDivider>`;幾何見同 spec「分隔線幾何」段(ButtonDivider `mx-1` 於 `gap-2` cluster,兩側各 12px)。
 - **按鈕形態**:`<Button variant="text" iconOnly …>`(text variant 自動 `data-unbounded`,不撐高 chrome header;對齊 action-bar「溢出按鈕一律最低視覺重量」)。
 - ❌ **禁**:consumer 在 children 內自刻 cluster + divider(分隔線落點歸 DS,自刻 = 漏分隔線 / 幾何 drift 根因 — 2026-07-08 WM 詳情 header 錨例)。
 
@@ -195,8 +195,8 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 | 進場 | `fade-in-0` + `zoom-in-95`(opacity 0→1、scale 0.95→1,transform-origin 中心) | `--motion-duration-surface` 250ms / `--motion-easing-enter` |
 | 離場 | `fade-out-0` + `zoom-out-95` | `--motion-duration-surface` 250ms / `--motion-easing-exit` |
 | Overlay | 只 fade | 同上 |
-| 收尾 | 關閉後保持最後一格(透明 / 縮小)直到卸載(surfaceMotion 內建 `holdClosedEndState`,不靠 Radix 的執行期補丁;`tokens/motion/motion.spec.md`「開合動畫」) | — |
-| `prefers-reduced-motion` | 不播:surfaceMotion 只在 `motion-safe:` 下宣告動畫(2026-10-07 前寫的 `motion-reduce:animate-none` 權重輸給 `data-[state=…]:animate-*`,從沒生效,待辦總帳 T7) | — |
+| 收尾 | 依 `../../tokens/motion/motion.spec.md:136`「怎麼收尾 —— 關閉後的樣子由 CSS 保持」;實作:surfaceMotion 內建 `holdClosedEndState`,關閉後保持最後一格(透明 / 縮小)直到卸載 | — |
+| `prefers-reduced-motion` | 依 `../../tokens/motion/motion.spec.md:134`「何時播 —— 只在 `motion-safe:` 底下宣告動畫」;實作:surfaceMotion 同一份(2026-10-07 前寫的 `motion-reduce:animate-none` 權重輸給 `data-[state=…]:animate-*`,從沒生效,待辦總帳 T7) | — |
 
 **為何不用 slide(置中位移)**:置中靠 `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`。shadcn v3 時代 DialogContent 另掛 `slide-in-from-left-1/2 slide-in-from-top-[48%]`,那是因為 Tailwind v3 的 `-translate-x-1/2` 走 `transform`,會被 keyframe 的 `transform` 整個蓋掉,所以要在 keyframe 裡把置中位移再寫一次(v3 dialog 原始碼:<https://ui.shadcn.com/r/styles/new-york/dialog.json>)。Tailwind v4 的 `-translate-x-1/2` 改寫進獨立的 `translate` 屬性(<https://tailwindcss.com/docs/translate>,`translate: calc(1/2 * -100%) var(--tw-translate-y)`),不再被 keyframe 蓋掉;而 tw-animate-css 的 `@keyframes enter` 仍是 `transform: translate3d(var(--tw-enter-translate-x), var(--tw-enter-translate-y), 0) scale3d(…)`(`node_modules/tw-animate-css/dist/tw-animate.css`)。兩個位移相加 → 第一幀中心落在視窗中心**左 w/2、上 0.48h**(480×189 的確認框實測 −240px / −90.72px),看起來就是從左上角飛進來。shadcn v4 版本已把這兩組 class 拿掉(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>:`translate-x-[-50%] translate-y-[-50%] … data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95`,無 slide)。
 
