@@ -29,7 +29,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 // Issue 3 cleanup(2026-05-10):ScrollArea / ButtonDivider / ItemPrefix / ItemLabel /
 // ItemInlineActionButton / ROW_PADDING_BY_SIZE / cn / DnD / dragSourceStyle imports retired —
 // 全 column visibility row state machine 移到 <DataTableColumnVisibilityPanel> primitive。
@@ -99,11 +99,9 @@ function generateLargeData(count: number): Product[] {
 // ── 範例區段(標題 + 說明 + 範例)──────────────────────────────────────────────────────────────────
 // 2026-10-28 起改用共用的 `ExampleSection`(stories-helpers/examples/tutorial-page.tsx):標題 ↔ 說明 2px、標題區 → 範例 loose,
 // 跟著密度走(user 2026-10-21 A4「我認為標題+說明 -> 內容之間的距離應該 loose」;之前本檔自己的 Section 寫死 tight)。
-// 一頁多則有標題的範例上下疊時,範例之間用下面這個常數(現值 loose,同改之前每段各寫一次的值)。
-// 10-27 已定要放大成 loose × 2,但這個值依 tutorial-page 閘 R7 只准寫在 stories-helpers/examples/tutorial-page.tsx,
-// 要等那支檔開出給展示 / 設計規格頁用的範例堆疊出口(basic 家族)再改,不在這裡自己寫一份。
+// 一頁多則有標題的範例上下疊 → 共用的 `ExampleStack`(範例之間 loose × 2,user 2026-10-27 Q2「照你建議」①;
+// 值依 tutorial-page 閘 R7 只寫在 stories-helpers/examples/tutorial-page.tsx)。
 // 寬度不是區段的事:篩選面板那幾段要 680px 上限(面板的閱讀寬),由呼叫端傳 className(FILTER_SECTION_WIDTH)。
-const EXAMPLE_STACK = 'flex flex-col gap-[var(--layout-space-loose)]'
 const FILTER_SECTION_WIDTH = 'w-full max-w-[680px]'
 
 // ── 範例裡的按鈕都接上真的反應(2026-10-28)────────────────────────────────────────────────────────
@@ -315,7 +313,7 @@ export const ColumnResize: Story = {
   // 欄寬由 DataTable 自己的狀態管)
   render: () => {
     return (
-      <div className={`${EXAMPLE_STACK} max-w-5xl`}>
+      <ExampleStack className="max-w-5xl">
         <ExampleSection title="基本 — 全 data column 可拖" description={<>
             拖 header 右側分隔線可調整欄寬。滑到分隔線上會變色提示,拖動時會跟著游標即時調整。
             勾選欄等系統欄位寬度固定,不可調整。
@@ -336,7 +334,7 @@ export const ColumnResize: Story = {
             enableColumnResize
           />
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }
@@ -442,14 +440,14 @@ export const RowAutoHeightInlineEdit: Story = {
 export const RowAutoHeightModes: Story = {
   name: '自動行高',
   render: () => (
-    <div className={EXAMPLE_STACK}>
+    <ExampleStack>
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
         <DataTable columns={baseColumns} data={sampleData} height="auto" />
       </ExampleSection>
       <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
         <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -470,7 +468,7 @@ export const RowAutoHeight: Story = {
           : 'Standard delivery.',
     })), [])
     return (
-    <div className={EXAMPLE_STACK}>
+    <ExampleStack>
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
         <DataTable columns={baseColumns} data={sampleData} height="auto" />
       </ExampleSection>
@@ -516,7 +514,7 @@ export const RowAutoHeight: Story = {
           )}
         />
       </ExampleSection>
-    </div>
+    </ExampleStack>
     )
   },
 }
@@ -533,7 +531,7 @@ export const EmptyState: Story = {
     return (
       <>
         <Toaster />
-        <div className={EXAMPLE_STACK}>
+        <ExampleStack>
           <ExampleSection title="預設空狀態">
             <DataTable columns={baseColumns} data={[]} />
           </ExampleSection>
@@ -550,7 +548,7 @@ export const EmptyState: Story = {
               }
             />
           </ExampleSection>
-        </div>
+        </ExampleStack>
         <NameFormDialog
           open={creating}
           onOpenChange={setCreating}
@@ -575,7 +573,7 @@ export const ContainerHeight: Story = {
   render: () => {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
-      <div className={EXAMPLE_STACK}>
+      <ExampleStack>
         <ExampleSection title="無約束" description={<>height="auto"，table 高度完全取決於內容，不出現捲軸</>}>
           <DataTable columns={baseColumns} data={sampleData} height="auto" />
         </ExampleSection>
@@ -592,7 +590,7 @@ export const ContainerHeight: Story = {
             </div>
           </div>
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }
@@ -607,7 +605,7 @@ export const RowActions: Story = {
     return (
       <>
         <Toaster />
-        <div className={EXAMPLE_STACK}>
+        <ExampleStack>
           <ExampleSection title="Row Actions（常駐）" description="actions 在獨立的右側固定欄位，常駐顯示。full-height 分隔線標示 frozen 邊界。">
             <DataTable
               columns={baseColumns}
@@ -626,7 +624,7 @@ export const RowActions: Story = {
               rowActions={(row) => <>{more.editButton(row)}{more.moreMenu(row)}</>}
             />
           </ExampleSection>
-        </div>
+        </ExampleStack>
         {inline.dialogs}
         {more.dialogs}
       </>
@@ -645,7 +643,7 @@ export const PinnedColumns: Story = {
     return (
       <>
         <Toaster />
-        <div className={EXAMPLE_STACK}>
+        <ExampleStack>
           <ExampleSection title="Left pinned + Row Actions（水平捲動）" description="SKU 固定左側，actions 固定右側，中間水平捲動。">
             <div style={{ maxWidth: 700 }}>
               <DataTable
@@ -668,7 +666,7 @@ export const PinnedColumns: Story = {
               />
             </div>
           </ExampleSection>
-        </div>
+        </ExampleStack>
         {few.dialogs}
         {many.dialogs}
       </>
@@ -1811,7 +1809,7 @@ export const FilterPanelStates: Story = {
     }))
 
     return (
-      <div className={EXAMPLE_STACK}>
+      <ExampleStack>
         <ExampleSection title="已填條件" className={FILTER_SECTION_WIDTH}>
           <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
         </ExampleSection>
@@ -1836,7 +1834,7 @@ export const FilterPanelStates: Story = {
         <ExampleSection title="長標籤溢出" className={FILTER_SECTION_WIDTH} description="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
           <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }
@@ -1887,7 +1885,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
   const [prefillConsumed, setPrefillConsumed] = React.useState(false)
 
   return (
-    <div className={EXAMPLE_STACK}>
+    <ExampleStack>
       <ExampleSection data-testid="filter-label-child-pickers" title="English child-picker labels">
         <DataTableFilterPanel
           columns={[...FILTER_CHILD_PICKER_COLUMNS]}
@@ -1955,7 +1953,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
           labels={FILTER_PANEL_ENGLISH_LABELS}
         />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   )
 }
 
@@ -2586,18 +2584,20 @@ export const WithPagination: Story = {
     docs: { description: { story: '上面是預設形態:128 筆訂單、每頁 20 筆共 7 頁,頁碼列靠右。下面是完整形態:左邊顯示「第幾筆到第幾筆、共幾筆」,右邊可以換每頁筆數;換每頁筆數會回到第 1 頁。分頁時不會同時開虛擬捲動。' } },
   },
   render: () => (
-    <div className={`mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] ${EXAMPLE_STACK}`}>
-      <ExampleSection title="預設形態">
-        <DataTable columns={orderColumns} data={ORDER_ROWS} pagination getRowId={(row) => row.id} />
-      </ExampleSection>
-      <ExampleSection title="完整形態" description="顯示總筆數,並可切換每頁筆數">
-        <DataTable
-          columns={orderColumns}
-          data={ORDER_ROWS}
-          pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
-          getRowId={(row) => row.id}
-        />
-      </ExampleSection>
+    <div className="mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)]">
+      <ExampleStack>
+        <ExampleSection title="預設形態">
+          <DataTable columns={orderColumns} data={ORDER_ROWS} pagination getRowId={(row) => row.id} />
+        </ExampleSection>
+        <ExampleSection title="完整形態" description="顯示總筆數,並可切換每頁筆數">
+          <DataTable
+            columns={orderColumns}
+            data={ORDER_ROWS}
+            pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
+            getRowId={(row) => row.id}
+          />
+        </ExampleSection>
+      </ExampleStack>
     </div>
   ),
 }

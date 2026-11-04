@@ -6,6 +6,7 @@ import { useFileDemo, type DemoFile } from './_demo-files'
 import { Button } from '@/design-system/components/Button/button'
 import { Toaster } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof FileItem> = {
   title: 'Design System/Components/FileItem/設計規格',
@@ -307,8 +308,8 @@ export const StateBehavior: Story = {
     return (
       <>
         <Toaster />
-        {/* 兩則有標題的範例上下疊:10-27 已定範例之間放大成 loose × 2,等 tutorial-page.tsx 開出共用出口再改(值維持原樣) */}
-        <div className="flex flex-col gap-4 max-w-lg">
+        {/* 兩則有標題的範例上下疊 → 範例之間 loose × 2(共用 ExampleStack;user 2026-10-27 Q2「照你建議」①) */}
+        <ExampleStack className="max-w-lg">
           <div>
             <H3>所有狀態對照</H3>
             <Desc>
@@ -354,7 +355,7 @@ export const StateBehavior: Story = {
               </table>
             </div>
           </div>
-        </div>
+        </ExampleStack>
         {demo.viewer}
       </>
     )
