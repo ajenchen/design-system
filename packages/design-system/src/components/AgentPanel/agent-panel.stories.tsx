@@ -449,6 +449,60 @@ export const DecisionCardOptional: Story = {
   ),
 }
 
+/** 決策卡錯誤狀態(OpenSnapshot,play 按主鈕;M15 不留只有點了才看得到的狀態):「下一題 / 送出」恆可按,這一題沒過就不前進,
+ *  錯誤訊息放在最後一張選項卡之後、焦點移到第一個出錯的控件。play 依序走兩種錯:
+ *  1. 第 1 題選「其他」卻沒填字就按「下一題」→「請輸入其他選項」;填好再按就前進,第 2 題用預選的建議解;
+ *  2. 第 3 題(複選)一項都沒勾就按「送出」→「請至少選擇一個選項」,停在這個畫面。
+ *  規則見 agent-decision-card.spec.md「步進」(錯誤訊息的距離與文案【待確認】,寫在同一段)。 */
+export const DecisionCardErrors: Story = {
+  name: '決策卡錯誤狀態',
+  render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
+  play: async ({ canvasElement }) => {
+    const { expect, userEvent, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 含「跳過」鈕的 role="group"(第 1 題標題列 × 與 footer 各一顆「跳過」,取第一顆)
+    const card = () => within(canvas.getAllByRole('button', { name: '跳過' })[0].closest('[role="group"]') as HTMLElement)
+    const otherInput = () => card().getByRole('textbox', { name: '其他(自由輸入)' })
+    // 第 1 題:按下「其他」輸入格 = 選中「其他」;文字留空就按「下一題」
+    await userEvent.click(otherInput())
+    await userEvent.click(card().getByRole('button', { name: '下一題' }))
+    await expect(await card().findByText('請輸入其他選項')).toBeVisible()
+    // 填好就前進;第 2 題用預選的建議解
+    await userEvent.type(otherInput(), '比照上次改版公告')
+    await userEvent.click(card().getByRole('button', { name: '下一題' }))
+    await card().findByText('2 / 3')
+    await userEvent.click(card().getByRole('button', { name: '下一題' }))
+    // 第 3 題(複選):一項都沒勾就按「送出」
+    await card().findByText('3 / 3')
+    await userEvent.click(card().getByRole('button', { name: '送出' }))
+    await expect(await card().findByText('請至少選擇一個選項')).toBeVisible()
+  },
+}
+
+/** 必答的署名題:署名 = 身分稱謂類,單選不預選建議解(產題守則 8 例外 `noDefault`),沒有「(建議)」、一個都沒選,後果寫進描述;
+ *  沒選就按「送出」會出現「請選擇一個選項」、焦點去第一個圓(閘 agent-decision-card-validation-invariant 的不預選那一路)。
+ *  與「決策卡選填題」第 2 題同一類,差在這題必答。 */
+const SIGNATURE_QUESTION: AgentDecisionQuestion = {
+  id: 'signature',
+  label: '公告要用誰的名義發出?',
+  noDefault: true,
+  options: [
+    { value: 'team', label: '產品團隊', description: '以部門名義發出,不需要個人同意' },
+    { value: 'cpo', label: '王小明', description: '以產品長個人名義發出,發出後就掛在他名下' },
+  ],
+}
+
+/** 決策卡不預選單選(`noDefault`):一打開沒有任何選取、沒有「(建議)」;規則見 agent-decision-card.spec.md 產題守則 8。 */
+export const DecisionCardNoDefault: Story = {
+  name: '決策卡不預選單選',
+  render: () => (
+    <DecisionCardScene
+      questions={[SIGNATURE_QUESTION]}
+      intro="公告兩個版本都定稿了,只差署名。署名代表誰為這份公告負責,這題我不先幫你選。"
+    />
+  ),
+}
+
 /** 決策回執:拍板後在對話流中的靜態紀錄。 */
 export const DecisionSummaryInFlow: Story = {
   name: '決策回執',

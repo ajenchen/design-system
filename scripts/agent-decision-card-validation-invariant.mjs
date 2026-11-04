@@ -5,15 +5,19 @@
  *         不前進,錯誤訊息出現在最後一張選項卡之後、左緣對齊選項卡;與最後一張卡的距離守的是**現行值** = 卡間距(卡 i+1 上緣 − 卡 i 下緣)
  *         —— 這個距離【待確認】(user 2026-10-29 問句中的提案,另一案 = Field 內部 gap-1 4;agent-decision-card.spec.md「步進」),
  *         user 選定後 E4 / E10 與 agent-panel.tsx 一起改;
- *         字級 / 行高 / 字重 / 顏色等於 Field 裡的 FieldError(量 Field「垂直」story 的「密碼長度不足」),role="alert";
+ *         字級 / 行高 / 字重 / 顏色等於 Field 裡的 FieldError(量 Field「垂直」story 裡出錯那一欄的 FieldError),role="alert";
  *         焦點移到第一個出錯的控件(「其他」空白 → 輸入格;複選沒勾 → 第一個方框);「其他」那一種輸入格的框色 = Field 裡出錯的
  *         Input 框色、aria-invalid + aria-errormessage 指向錯誤訊息;複選沒勾 → 群組 aria-invalid、每個方框 aria-invalid +
  *         aria-errormessage;改答案 / 打字即清掉;按著滑鼠的那一下改了答案(按下「其他」輸入格 = 聚焦即選中),按下到放開之間
  *         版面不動、放開後「其他」恰好是勾上的、焦點在輸入格、錯誤才清;填好之後按下去照常前進;footer 按鈕位置在錯誤出現前後不變。
+ *         不預選的單選(`noDefault`,N 系列):一打開沒有任何選取、沒有「(建議)」;沒選就按「送出」→ 不送出、錯誤「請選擇一個選項」
+ *         (距離 / 字樣同上)、radiogroup 本身 aria-invalid + aria-errormessage(WAI-ARIA 1.2 兩者適用於 radiogroup、不適用於 radio)、
+ *         焦點在第一個圓;選了即清,再按「送出」照常送出(卡片收起)。
  *         量的是 disabled / aria-disabled 屬性、getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked,
  *         不讀 class(M37)。
  *   紅: --selftest 逐一補回五種病(每種開一次新頁):① 主鈕被停用 ② 錯誤訊息比卡間距近 4px ③ 按下後焦點沒去第一個錯
- *       ④ 按著「其他」輸入格的那一下錯誤就消失(按下與放開之間版面移動)⑤ 錯誤訊息字級跟 Field 不同 —— 各自必須被指名紅
+ *       ④ 按著「其他」輸入格的那一下錯誤就消失(按下與放開之間版面移動)⑤ 錯誤訊息字級跟 Field 不同 —— 各自必須被指名紅;
+ *       ①②③⑤ 在不預選那一路也必須各自被指名(N2 / N6 / N5 / N7;④ 只有「其他」輸入格那一路有)
  *   綠: 現行 agent-panel.tsx(advance / clearError / FieldError 放在選項卡同一個 gap 8 堆疊;按壓延後走 lib/press-settle.ts)全綠;
  *       修前(56dda7ce,disabled={!canAdvance})的建置:主鈕停用 → B1 / B2 紅,按了沒有錯誤訊息 → E 系列紅(本機實測,見 commit 說明)
  *
@@ -28,6 +32,7 @@
  *
  * 參照:先開 Field「垂直」story,量出錯欄位的 FieldError(字級 / 行高 / 字重 / 字族 / 顏色)與出錯 Input 外框的框色。
  * 決策卡三題步進(DecisionCardOpen):第 1 題單選(「其他」空白那一種)、第 3 題複選(沒勾那一種 + 按著指標的那一下)。
+ * 決策卡不預選單選(DecisionCardNoDefault,必答的署名題 noDefault):沒選那一種(取代 n5 只有本機探針的 probe-nodefault-single)。
  * 每一下點擊都是真滑鼠(page.mouse,含 mousedown);點完等兩層 setTimeout(0)(點擊排的計時器跑完、React 重畫)再讀。
  * 開不起來 / 量途中找不到元素 → 儀器失效(exit 2),不是產品裁決,也絕不當成通過。
  *
@@ -46,17 +51,20 @@ const staticDirArg = process.argv.find((a) => a.startsWith('--static-dir='))?.sl
   ?? (process.argv.includes('--static-dir') ? process.argv[process.argv.indexOf('--static-dir') + 1] : null)
 const STATIC = resolve(staticDirArg ?? join(ROOT, 'storybook-static'))
 const CARD_STORY = 'design-system-components-agentpanel-展示--decision-card-open'
+const NODEFAULT_STORY = 'design-system-components-agentpanel-展示--decision-card-no-default'
 const FIELD_STORY = 'design-system-components-field-展示--vertical'
 const SELFTEST = process.argv.includes('--selftest')
 const CARD = '[class~="group/agent-option"]'
 const CONTROL = '[role="checkbox"], [role="radio"]'
 const OTHER_INPUT = 'input[aria-label="其他(自由輸入)"]'
-// 錯誤文案【待確認】(agent-panel.tsx DEFAULT_DECISION_LABELS 的 errorOther / errorMulti,AI 擬的建議、交 user 定);user 換字時兩邊一起改
-const TEXT = { other: '請輸入其他選項', multi: '請至少選擇一個選項' }
+// 錯誤文案【待確認】(agent-panel.tsx DEFAULT_DECISION_LABELS 的 errorOther / errorMulti / errorSingle,AI 擬的建議、交 user 定);user 換字時兩邊一起改
+const TEXT = { other: '請輸入其他選項', multi: '請至少選擇一個選項', single: '請選擇一個選項' }
+const RECOMMENDED_SUFFIX = '(建議)' // agent-panel.tsx RECOMMENDED_SUFFIX
 
-// 建置不比被驗的原始碼舊(lib/launch-browser.mjs requireFreshStorybookBuild):決策卡本體、FieldError、Input 的錯誤框、按壓延後。
+// 建置不比被驗的原始碼舊(lib/launch-browser.mjs requireFreshStorybookBuild):決策卡本體、兩則 story、FieldError、Input 的錯誤框、按壓延後。
 requireFreshStorybookBuild(STATIC, [
   'packages/design-system/src/components/AgentPanel/agent-panel.tsx',
+  'packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx',
   'packages/design-system/src/components/Field/field.tsx',
   'packages/design-system/src/components/Input/input.tsx',
   'packages/design-system/src/components/Field/field-wrapper.tsx',
@@ -71,17 +79,18 @@ const storyUrl = (id) => `${server.origin}/iframe.html?id=${encodeURIComponent(i
 /** 對照組(只在 --selftest):每種病一段頁面層注入,不改元件原始碼 —— 量具抓不到它們,就抓不到它們回來。 */
 const FAULTS = {
   disabled: {
-    expect: ['B1'],
+    expect: ['B1', 'N2'],
     what: '① 主鈕被停用(修前 disabled={!canAdvance})',
-    script: `new MutationObserver(() => { for (const b of document.querySelectorAll('button')) { const t = b.textContent.trim(); if ((t === '下一題' || t === '送出') && !b.disabled) b.disabled = true } }).observe(document.documentElement, { subtree: true, childList: true, attributes: true })`,
+    // 注入當下先停用一次:頁面在注入後若沒有再變動(不預選單選那則一打開就靜止),只掛 MutationObserver 永遠不會觸發 → 對照組假綠
+    script: `(() => { const off = () => { for (const b of document.querySelectorAll('button')) { const t = b.textContent.trim(); if ((t === '下一題' || t === '送出') && !b.disabled) b.disabled = true } }; off(); new MutationObserver(off).observe(document.documentElement, { subtree: true, childList: true, attributes: true }) })()`,
   },
   gap: {
-    expect: ['E4'],
+    expect: ['E4', 'N6'],
     what: '② 錯誤訊息比卡間距近 4px',
     css: `[data-field-slot="error"] { margin-top: -4px !important }`,
   },
   focus: {
-    expect: ['E5'],
+    expect: ['E5', 'N5'],
     what: '③ 按下後焦點沒去第一個錯',
     script: `document.addEventListener('click', (e) => { const b = e.target instanceof Element && e.target.closest('button'); const t = b && b.textContent.trim(); if (t === '下一題' || t === '送出') setTimeout(() => document.activeElement && document.activeElement.blur(), 0) }, true)`,
   },
@@ -91,7 +100,7 @@ const FAULTS = {
     css: `div:has(> [role="group"] input:focus) > [data-field-slot="error"] { display: none !important }`,
   },
   type: {
-    expect: ['E3'],
+    expect: ['E3', 'N7'],
     what: '⑤ 錯誤訊息字級跟 Field 不同',
     css: `[data-field-slot="error"] { font-size: 12px !important }`,
   },
@@ -120,23 +129,28 @@ async function open(id, waitFor, fault = null) {
   return page
 }
 
-/** Field 參照:出錯欄位的 FieldError 字樣與出錯 Input 的框色。 */
+/** Field 參照:出錯欄位的 FieldError 字樣與出錯 Input 的框色。
+ *  認的是結構(出錯的 Field 裡有 Input 與 FieldError),不認範例文案:原本比對字「密碼長度不足」,fields 家族 a1594483 把
+ *  Field「垂直」story 的錯誤字改成「請輸入密碼」後,這裡在整合樹上變成 INSTRUMENT-FAIL —— 量的是 FieldError 的字樣與框色,
+ *  不是那句話(M37:別拿當下剛好成立的文案當身分)。 */
 async function readFieldReference() {
   await open(FIELD_STORY, '[data-field-slot="error"]')
   const ref = await page.evaluate(() => {
-    const err = document.querySelector('[data-field-slot="error"]')
-    const field = err.closest('[data-field-invalid]')
+    const err = document.querySelector('[data-field-invalid] [data-field-slot="error"]')
+    const field = err?.closest('[data-field-invalid]')
     const input = field?.querySelector('input')
     const chrome = input?.closest('[data-field-mode]')
+    if (!err || !input) return { found: false, text: err?.textContent ?? null, invalidBorder: null }
     const cs = getComputedStyle(err)
     const ch = chrome && chrome !== field ? getComputedStyle(chrome) : null
     return {
+      found: true,
       font: { fontSize: cs.fontSize, lineHeight: cs.lineHeight, fontWeight: cs.fontWeight, fontFamily: cs.fontFamily, color: cs.color },
       invalidBorder: ch && parseFloat(ch.borderTopWidth) > 0 ? ch.borderTopColor : null,
       text: err.textContent,
     }
   })
-  if (ref.text !== '密碼長度不足' || !ref.invalidBorder) throw new Error(`Field 參照讀不到(錯誤字「${ref.text}」、框色 ${ref.invalidBorder})`)
+  if (!ref.found || !ref.text?.trim() || !ref.invalidBorder) throw new Error(`Field 參照讀不到(出錯的 Field ${ref.found ? '有' : '沒有'} Input 與 FieldError、錯誤字「${ref.text}」、框色 ${ref.invalidBorder})`)
   return ref
 }
 
@@ -303,9 +317,76 @@ async function runCard(ref, fault) {
     await clickCenter(page, (await readCard(page)).primary.rect)
     await settleAfterInteraction(page, { frames: 5 })
     s = await readCard(page)
-    record('A2', '「其他」填好後按「送出」→ 沒有錯誤訊息', !s.error, s.error?.text ?? '')
+    // 讀不到卡 = 已送出、卡片收起(story 的場景送出後就把卡收掉,答案記成決策回執)—— 這正是「沒有錯誤、照常送出」;
+    // 整合樹上收起得比量測快,原本直接讀 s.error 變成 INSTRUMENT-FAIL(null),不是產品病
+    record('A2', '「其他」填好後按「送出」→ 沒有錯誤訊息(照常送出,卡片收起或仍在但無錯誤)', !s || !s.error, s ? (s.error?.text ?? '') : '卡片已收起')
     return { results, reached: true }
   }
+}
+
+/**
+ * 不預選的單選(N 系列):DecisionCardNoDefault 只有一題必答的署名題(noDefault),兩個選項 +「其他」= 3 張卡、3 個圓。
+ * 在 --selftest 裡同一組頁面層注入也要在這一路被指名(①②③⑤;④ 只在「其他」輸入格那一路)。
+ */
+async function runNoDefault(ref, fault) {
+  const results = []
+  const record = (id, label, pass, detail = '') => results.push({ id, label, pass, detail })
+  await open(NODEFAULT_STORY, CARD, fault)
+  let s = await readCard(page)
+  if (!s || s.cards.length !== 3) throw new Error(`不預選單選應為 3 張單選卡,讀到 ${s?.cards.length}`)
+  const cardText = await page.evaluate((CARD) => [...document.querySelectorAll(CARD)].map((c) => c.textContent).join('|'), CARD)
+  record('N1', `一打開沒有任何選取(每個圓 aria-checked=false)、沒有「${RECOMMENDED_SUFFIX}」`,
+    s.controls.length === 3 && s.controls.every((c) => c.role === 'radio' && c.checked === 'false') && !cardText.includes(RECOMMENDED_SUFFIX),
+    JSON.stringify({ controls: s.controls.map((c) => [c.role, c.checked]), recommended: cardText.includes(RECOMMENDED_SUFFIX) }))
+  record('N2', '沒選:「送出」可按(沒有 disabled / aria-disabled / data-disabled)',
+    !!s.primary && s.primary.text === '送出' && !s.primary.disabled && s.primary.ariaDisabled !== 'true' && !s.primary.dataDisabled,
+    JSON.stringify(s.primary && { text: s.primary.text, disabled: s.primary.disabled, ariaDisabled: s.primary.ariaDisabled, dataDisabled: s.primary.dataDisabled }))
+  const before = s
+  await clickCenter(page, s.primary.rect)
+  await settleAfterInteraction(page, { frames: 5 })
+  await settleTransitions(page)
+  s = await readCard(page)
+  if (!s) {
+    // 卡片收起 = 沒選也送出去了(產品病,不是儀器失效):後面每條都記「前置不成立」
+    record('N3', `沒選就按「送出」→ 不送出、錯誤「${TEXT.single}」`, false, '卡片收起了:沒選也送出')
+    for (const id of ['N4', 'N5', 'N6', 'N7', 'N8', 'N9']) record(id, '不預選單選', false, '前置不成立:卡片已收起')
+    return { results, reached: true }
+  }
+  record('N3', `沒選就按「送出」→ 不送出、錯誤「${TEXT.single}」、role="alert"、看得見`,
+    s.error?.text === TEXT.single && s.error.role === 'alert' && s.error.visible,
+    JSON.stringify(s.error && { text: s.error.text, role: s.error.role, visible: s.error.visible }))
+  record('N4', 'radiogroup 本身 aria-invalid=true、aria-errormessage 指向錯誤訊息',
+    !!s.error && s.group?.role === 'radiogroup' && s.group.invalid === 'true' && s.group.errormessage === s.error.id,
+    JSON.stringify({ group: s.group, errorId: s.error?.id }))
+  record('N5', '焦點在第一個圓(第一個出錯的控件)', !!s.active && s.active.id === s.controls[0]?.id, `焦點 ${JSON.stringify(s.active)}、第一個圓 ${s.controls[0]?.id}`)
+  if (s.error) {
+    const gapCards = s.cards[1].y - s.cards[0].bottom
+    const gapError = s.error.rect.y - s.cards[s.cards.length - 1].bottom
+    record('N6', '錯誤訊息在最後一張卡之後、左緣對齊選項卡;距離 = 卡間距 8(【待確認】,同 E4)',
+      near(gapError, gapCards) && near(gapCards, 8) && near(s.error.rect.x, s.cards[0].x),
+      `卡間距 ${gapCards.toFixed(2)}、錯誤距最後一張卡 ${gapError.toFixed(2)}、左緣 ${s.error.rect.x.toFixed(2)} vs 卡 ${s.cards[0].x.toFixed(2)}`)
+    const sameFont = Object.keys(ref.font).every((k) => s.error.font[k] === ref.font[k])
+    record('N7', '錯誤訊息字級 / 行高 / 字重 / 字族 / 顏色 = Field 的 FieldError', sameFont, `決策卡 ${JSON.stringify(s.error.font)} vs Field ${JSON.stringify(ref.font)}`)
+  } else {
+    record('N6', '錯誤訊息距離 = 卡間距', false, '沒有錯誤訊息')
+    record('N7', '錯誤訊息字樣 = Field 的 FieldError', false, '沒有錯誤訊息')
+  }
+  record('N8a', '錯誤出現前後 footer「送出」位置不變', !!s.primary && near(s.primary.rect.y, before.primary.rect.y) && near(s.primary.rect.x, before.primary.rect.x),
+    `y ${before.primary.rect.y.toFixed(2)} → ${s.primary?.rect.y.toFixed(2)}`)
+  if (fault) return { results, reached: true }
+
+  // 選第一項 → 錯誤清掉;再按「送出」→ 照常送出(卡片收起)
+  const first = s.cards[0]
+  await page.mouse.click(first.x + 40, first.y + 14)
+  await flushOn(page)
+  s = await readCard(page)
+  record('N8', '點第一張卡 → 恰好選中第一個圓、錯誤清掉、radiogroup 不再 aria-invalid',
+    !!s && s.controls[0].checked === 'true' && !s.error && s.group?.invalid !== 'true',
+    JSON.stringify(s && { checked: s.controls.map((c) => c.checked), error: s.error?.text, group: s.group }))
+  await clickCenter(page, s.primary.rect)
+  const closed = await page.waitForFunction((sel) => !document.querySelector(sel), CARD, { timeout: 5_000 }).then(() => true, () => false)
+  record('N9', '選了之後按「送出」→ 照常送出(決策卡收起)', closed, closed ? '' : '5 秒內卡片沒有收起')
+  return { results, reached: true }
 }
 
 let ref
@@ -321,7 +402,10 @@ const runs = SELFTEST ? Object.keys(FAULTS) : [null]
 const report = []
 for (const fault of runs) {
   try {
-    report.push({ fault, ...(await runCard(ref, fault)) })
+    const card = await runCard(ref, fault)
+    // ④(press)只有「其他」輸入格那一路有,不預選那一路不跑
+    const noDefault = fault === 'press' ? { results: [] } : await runNoDefault(ref, fault)
+    report.push({ fault, results: [...card.results, ...noDefault.results], reached: card.reached })
   } catch (error) {
     const msg = error instanceof StoryRenderInstrumentError ? error.message : (error?.message ?? String(error))
     if (!SELFTEST) {

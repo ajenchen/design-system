@@ -323,7 +323,7 @@ Source(AI 讀此看官方範例): src/components/Sidebar/
 ### Sizes
 - **sm**: 次導覽 / 設定頁分類 / 緊湊空間;對齊 field-height-sm
 - **md**: 預設 — 應用程式主導覽 row;對齊 TreeView / MenuItem 同 size 視覺無縫
-- **lg**: 重要主導覽(高 touch 區、horizontal headroom 大)、icon-prominent workspace switcher
+- **lg**: 重要主導覽(horizontal headroom 大)、icon-prominent workspace switcher
 
 ## Skeleton(family self-contained)
 

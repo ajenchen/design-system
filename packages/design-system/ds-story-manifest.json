@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-03T19:32:25.635Z"
+    "generatedAt": "2026-11-04T21:28:59.130Z"
   },
   "components": {
     "accordion": {
@@ -72,6 +72,8 @@
           "design-system-components-agentpanel-展示--title-truncated",
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-card-optional",
+          "design-system-components-agentpanel-展示--decision-card-errors",
+          "design-system-components-agentpanel-展示--decision-card-no-default",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
           "design-system-components-agentpanel-展示--fab",
@@ -721,8 +723,7 @@
           "design-system-components-dialog-展示--with-tabs-in-header",
           "design-system-components-dialog-展示--open-snapshot",
           "design-system-components-dialog-展示--focus-trap-with-concurrent-overlay",
-          "design-system-components-dialog-展示--focus-trap-control-no-dialog",
-          "design-system-components-dialog-展示--coexistence-poc"
+          "design-system-components-dialog-展示--focus-trap-control-no-dialog"
         ],
         "設計規格": [
           "design-system-components-dialog-設計規格--overview",
@@ -1856,5 +1857,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1024
+  "totalStories": 1025
 }
