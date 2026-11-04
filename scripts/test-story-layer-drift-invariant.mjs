@@ -210,7 +210,7 @@ check('規則出處仍在(spec 行被改掉,閘的說明就會指錯地方)', ()
     ['packages/design-system/src/tokens/typography/typography.spec.md', 43, '視覺標題 ≠ 語義標題'],
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 306, '元素間 gap 硬寫'],
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 159, '刻意固定'],
-    ['packages/design-system/src/components/Field/form-validation.spec.md', 15, '永遠 enabled'],
+    ['packages/design-system/src/components/Field/form-validation.spec.md', 15, '不看填了沒、填對沒,一律 enabled'],
     ['packages/design-system/src/components/Field/form-validation.spec.md', 146, 'disabled-until-dirty'],
     // (c) 不收 span 的出處:chrome 文字(workspace brand / user name)明文用 span + text-body-lg font-medium
     ['packages/design-system/src/components/Sidebar/sidebar.spec.md', 264, 'text-body-lg font-medium'],
