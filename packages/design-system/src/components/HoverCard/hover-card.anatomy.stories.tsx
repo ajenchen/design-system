@@ -92,12 +92,12 @@ export const VisualVariants: Story = {
             <HoverCard>
               <HoverCardTrigger asChild>
                 {/* 行內 @mention 用可聚焦的連結(hover-card.spec.md A11y「Trigger 的可聚焦性需 consumer 自補」;Tab 到它就開卡) */}
-                {/* 連結照連結規範(藍字、滑過換色、不加底線;color.spec.md);點下去 = 前往個人頁(範例裡記到 Actions 面板) */}
+                {/* 句子裡的人名連結:平常有底線、滑過換色(color.spec.md「連結 hover = 換色」講的是滑過狀態,不是拿掉平常的底線;corrections E);點下去 = 前往個人頁(範例裡記到 Actions 面板) */}
                 <a
                   href="#member-ada-chen"
                   onClick={demoNavigate('Ada Chen 的個人頁')}
                   // @layout-space-magic-ok: 句子裡的行內人名連結左右 4px = 已發布版展示頁「連結預覽卡」同一種行內連結的值(F-S8),規格沒寫(放行章 (d))
-                  className="text-primary hover:text-primary-hover mx-1"
+                  className="text-primary underline underline-offset-2 hover:text-primary-hover mx-1"
                 >
                   @Ada Chen
                 </a>

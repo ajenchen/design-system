@@ -77,7 +77,7 @@ export const UsageGuidance: Story = {
                 href="https://help.acme.com/user-manual"
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary hover:text-primary-hover inline-flex items-center gap-1"
+                className="text-primary underline hover:text-primary-hover inline-flex items-center gap-1"
               >
                 使用者手冊 <ExternalLink size={12} />
               </a>
@@ -99,8 +99,8 @@ export const UsageGuidance: Story = {
             <HoverCardTrigger asChild>
               {/* 觸發點要能用 Tab 抵達(hover-card.spec.md A11y「Tab — 進入 trigger」「Trigger 的可聚焦性需 consumer 自補」):
                   @mention 是連結 —— 2026-10-20 前是不可聚焦的 <span>,鍵盤使用者打不開這張卡(獨立驗證 OV-V02) */}
-              {/* 連結照連結規範(藍字、滑過換色、不加底線);帶連結的文字人名可以觸發名片(avatar.spec.md「何時用」,D11) */}
-              <a href="#member-ada-chen" onClick={demoNavigate('Ada Chen 的個人頁')} className="text-primary hover:text-primary-hover">@Ada Chen</a>
+              {/* 句子裡的人名連結:平常有底線、滑過換色(color.spec.md「連結 hover = 換色」講的是滑過狀態;corrections E);帶連結的文字人名可以觸發名片(avatar.spec.md「何時用」,D11) */}
+              <a href="#member-ada-chen" onClick={demoNavigate('Ada Chen 的個人頁')} className="text-primary underline underline-offset-2 hover:text-primary-hover">@Ada Chen</a>
             </HoverCardTrigger>
             {/* 人員內容一律 ProfileCard(內容與 chrome 的 owner)。外殼 = hover-card.tsx HOVER_CARD_SURFACE_CLASS(與 Avatar hoverCard 內建同一份):
                 不設內距、不設寬度 —— 寬度由 ProfileCard 自己決定(profile-card.spec.md「寬度(元件級常數)」),外殼另給寬度會把卡片右側裁掉 */}

@@ -77,13 +77,13 @@ export const LinkPreview: Story = {
         本次 sprint 的重點是
         <HoverCard>
           <HoverCardTrigger asChild>
-            {/* 連結照連結規範:藍字、滑過換色、不加底線(color.spec.md「連結 hover = 換色(text-primary-hover),不用底線」;PE6);
+            {/* 句子裡的連結:平常有底線、滑過換色(color.spec.md「連結 hover = 換色(text-primary-hover),不用底線」講的是滑過狀態,不是拿掉平常的底線;corrections E;PE6);
                 點下去 = 前往文件(範例裡記到 Actions 面板,demoNavigate) */}
             <a
               href="#q2-okr-roadmap"
               onClick={demoNavigate('Q2 OKR roadmap')}
               // @layout-space-magic-ok: 句子裡的行內連結左右 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
-              className="text-primary hover:text-primary-hover mx-1"
+              className="text-primary underline underline-offset-2 hover:text-primary-hover mx-1"
             >
               Q2 OKR roadmap
             </a>
@@ -206,7 +206,7 @@ export const RepoCard: Story = {
               href="#platform-monitoring"
               onClick={demoNavigate('platform/monitoring 儲存庫')}
               // @layout-space-magic-ok: 句子裡的行內連結左右 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
-              className="text-primary hover:text-primary-hover mx-1 font-mono"
+              className="text-primary underline underline-offset-2 hover:text-primary-hover mx-1 font-mono"
             >
               platform/monitoring
             </a>
