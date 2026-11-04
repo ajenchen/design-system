@@ -59,6 +59,9 @@ export const Rich = {
     open.focus()
     await userEvent.tab()
     await userEvent.tab()
+    // 鍵盤聚焦到 icon-only 鈕會自動出它的 Tooltip(button.tsx icon-only 自動 tooltip);起點那張示範圖是點擊聚焦、沒有 Tooltip ——
+    // 按一下 Esc 收掉 Tooltip(焦點留在刪除鈕),畫面回到起點那張(2026-11-04 全 DS 像素比對抓到)
+    await userEvent.keyboard('{Escape}')
     await expect(within(row).getByRole('button', { name: '刪除 Alan Profile.png' })).toHaveFocus()
   },
 }
