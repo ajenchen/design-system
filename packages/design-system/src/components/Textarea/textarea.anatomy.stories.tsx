@@ -7,6 +7,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Textarea } from './textarea'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Textarea/設計規格',
@@ -100,7 +101,7 @@ export const Inspector: Story = {
 export const SizeMatrix: Story = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-md">
+    <ExampleStack className="max-w-md">
       <div>
         <H3>Size = sm / md</H3>
         <Desc><code>text-body</code>(14px)。常見 form / comment 場景。</Desc>
@@ -111,14 +112,14 @@ export const SizeMatrix: Story = {
         <Desc><code>text-body-lg</code>(16px)。長篇閱讀場景(bio editor、article body)。</Desc>
         <Textarea size="lg" rows={3} placeholder="介紹您自己..." aria-label="自我介紹（大尺寸）" />
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
 export const ModeMatrix: Story = {
   name: '模式對照（編輯 / 展示 / 唯讀 / 停用）',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-md">
+    <ExampleStack className="max-w-md">
       <div>
         <H3>edit(預設)</H3>
         <Textarea
@@ -165,7 +166,7 @@ export const ModeMatrix: Story = {
           aria-label="退件原因（錯誤狀態）"
         />
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 

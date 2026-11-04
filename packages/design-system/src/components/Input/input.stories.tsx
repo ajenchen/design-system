@@ -4,7 +4,7 @@ import { Search, Eye, EyeOff, X } from 'lucide-react'
 import { Input } from './input'
 import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Input> = {
   title: 'Design System/Components/Input/展示',
@@ -22,7 +22,7 @@ type Story = StoryObj<typeof Input>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+    <ExampleStack className="max-w-sm">
       <ExampleSection title="edit" description="Focus 時邊框變 primary">
         <Input defaultValue="Wireless Bluetooth Headphones" placeholder="輸入商品名稱" aria-label="商品名稱(edit mode demo)" />
       </ExampleSection>
@@ -42,7 +42,7 @@ export const Modes: Story = {
           <TooltipContent>此欄位在免費方案中不可用</TooltipContent>
         </Tooltip>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

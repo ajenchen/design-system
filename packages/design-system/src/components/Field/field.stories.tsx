@@ -18,7 +18,7 @@ import { Rating } from '@/design-system/components/Rating/rating'
 import { FileUpload } from '@/design-system/components/FileUpload/file-upload'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { InlineSearchYieldWidthProbe, ViewAlignmentProbe } from './_field-contract-probes'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/展示',
@@ -181,7 +181,7 @@ export const HorizontalLabelAlignment: Story = {
   // 驗證用(標籤第一行對齊控件中線的公式):不是讀者看的表單情境 → test-only(story-rules.md「Technical probe visibility」)
   tags: ['test-only'],
   render: () => (
-    <div className="max-w-3xl flex flex-col gap-[var(--layout-space-loose)]">
+    <ExampleStack className="max-w-3xl">
       <ExampleSection title="驗證：單行 label 與 input 中線對齊" description={<>Label 是單行時，文字應與 input 的文字中線完全對齊。
           這是 padding-top: calc((field-height - 1lh) / 2) 的基本情境。</>}>
         <Field orientation="horizontal" labelWidth="160px">
@@ -224,7 +224,7 @@ export const HorizontalLabelAlignment: Story = {
           </div>
         </div>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -235,7 +235,7 @@ export const MixedControlAlignment: Story = {
   // 驗證用(控件區高度節奏):不是讀者看的表單情境 → test-only(story-rules.md「Technical probe visibility」)
   tags: ['test-only'],
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-3xl">
+    <ExampleStack className="max-w-3xl">
       <ExampleSection title="垂直 Field：Input / Checkbox / Switch 高度節奏一致" description={<>每個欄位的控件區都有相同的最小高度,讓整欄看起來節奏一致。
           文字輸入框會撐滿整個高度,勾選框與開關則維持原本尺寸並在區內垂直置中。</>}>
         <FieldGroup>
@@ -288,7 +288,7 @@ export const MixedControlAlignment: Story = {
           </Field>
         </FieldGroup>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -299,7 +299,7 @@ export const SegmentedControlInField: Story = {
   // 驗證用(size / 中線 / disabled 透傳):不是讀者看的表單情境 → test-only(story-rules.md「Technical probe visibility」)
   tags: ['test-only'],
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-3xl">
+    <ExampleStack className="max-w-3xl">
       <ExampleSection title="Vertical：SegmentedControl 自動繼承 Field size" description={<>分段控制器放進欄位後,會自動沿用欄位設定的尺寸,不需要再單獨指定——跟按鈕、輸入框的做法一致。
           整個欄位改尺寸時,分段控制器也會跟著一起縮放。</>}>
         <FieldGroup>
@@ -375,7 +375,7 @@ export const SegmentedControlInField: Story = {
           </SegmentedControl>
         </Field>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -388,7 +388,7 @@ export const SegmentedControlInField: Story = {
 export const BlockControlRadioGroup: Story = {
   name: '區塊內控制元件 — RadioGroup',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-3xl">
+    <ExampleStack className="max-w-3xl">
       <ExampleSection title="Vertical:RadioGroup 在 control area 內堆疊" description={<>單選群組會讓欄位自動切換成「多行區塊」排版——
           控件區不固定高度,而是把第一個選項的中線對齊到單行控件的中線位置。
           使用時不需要額外傳任何設定。</>}>
@@ -439,7 +439,7 @@ export const BlockControlRadioGroup: Story = {
           </Field>
         </FieldGroup>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

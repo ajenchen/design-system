@@ -4,7 +4,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from './person-display'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/展示',
@@ -67,7 +67,7 @@ const samplePeople = [
 const SinglePicker = () => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
   return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+    <ExampleStack className="max-w-xs">
       <ExampleSection title="edit（可互動）">
         <PeoplePicker value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} aria-label="負責人(edit mode demo)" />
       </ExampleSection>
@@ -80,7 +80,7 @@ const SinglePicker = () => {
       <ExampleSection title="disabled">
         <PeoplePicker mode="disabled" value={samplePeople[0]} />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   )
 }
 
@@ -115,14 +115,14 @@ const MultiPicker = () => {
   const [val, setVal] = React.useState<PersonValue[]>(samplePeople.slice(0, 4))
   const readonlyVal = samplePeople.slice(0, 4)
   return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+    <ExampleStack className="max-w-xs">
       <ExampleSection title="edit（可互動,多選）">
         <PeoplePicker value={val} people={samplePeople} onChange={setVal} aria-label="專案協作者(edit multi demo)" />
       </ExampleSection>
       <ExampleSection title="readonly">
         <PeoplePicker mode="readonly" value={readonlyVal} />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   )
 }
 
@@ -144,7 +144,7 @@ const InlineSearchAttendees = () => {
   const [cc, setCc] = React.useState<PersonValue[]>([])
   return (
     // 版面:區塊之間 layout-space-loose;區段標題 → 內容 = loose(共用 ExampleSection,user 2026-10-21 A4 甲);多個欄位走 FieldGroup
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+    <ExampleStack className="max-w-xs">
       <ExampleSection title="頭像堆疊(預設)">
         <FieldGroup>
           <Field>
@@ -169,7 +169,7 @@ const InlineSearchAttendees = () => {
           </Field>
         </FieldGroup>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   )
 }
 
@@ -282,14 +282,14 @@ const ClearablePicker = () => {
   const [delegate, setDelegate] = React.useState<PersonValue | null>(samplePeople[1])
   const [watchers, setWatchers] = React.useState<PersonValue[]>(samplePeople.slice(2, 5))
   return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+    <ExampleStack className="max-w-xs">
       <ExampleSection title="單人(代理人,選填)">
         <PeoplePicker clearable value={delegate} people={samplePeople} onChange={(v) => setDelegate(v[0] ?? null)} aria-label="代理人(選填)" />
       </ExampleSection>
       <ExampleSection title="多人(觀察者,選填)">
         <PeoplePicker clearable value={watchers} people={samplePeople} onChange={setWatchers} aria-label="觀察者(選填)" />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   )
 }
 

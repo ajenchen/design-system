@@ -8,7 +8,7 @@ import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 import { CATEGORY_OPTIONS as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const statusOptions = [
   { value: 'in_stock', label: 'In stock', tagVariant: 'green' },
@@ -34,7 +34,7 @@ export const Modes: Story = {
   render: () => {
     const [value, setValue] = React.useState('in_stock')
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+      <ExampleStack className="max-w-xs">
         <ExampleSection title="edit">
           <Select options={statusOptions} value={value} onChange={setValue} aria-label="庫存狀態(編輯)" />
         </ExampleSection>
@@ -50,7 +50,7 @@ export const Modes: Story = {
         <ExampleSection title="readonly(空值)">
           <Select mode="readonly" options={statusOptions} value={null} aria-label="庫存狀態(唯讀,尚未填寫)" />
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }

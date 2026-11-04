@@ -5,7 +5,7 @@ import { useState, useEffect, type ComponentProps } from 'react'
 import { DatePicker } from './date-picker'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { BpZone, PropRow, Swatch, TkVal, TokenAnnotation, INPUT_ZONES as Z } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/DatePicker/設計規格',
@@ -848,7 +848,7 @@ export const CalendarTokens = {
 export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-3xl text-body">
+    <ExampleStack className="max-w-3xl text-body">
       <ExampleSection title="ARIA roles" paragraph>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li>Trigger:<code>{`<div role="combobox" tabIndex={0}>`}</code> + <code>aria-haspopup="dialog"</code> + <code>aria-expanded={`{open}`}</code></li>
@@ -865,6 +865,6 @@ export const Accessibility = {
           <li>showTime:<kbd>Tab</kbd> 從 calendar 跳到右側 time panel,各 column <kbd>↑</kbd> <kbd>↓</kbd> 切 option</li>
         </ul>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }

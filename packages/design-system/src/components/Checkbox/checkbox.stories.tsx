@@ -4,7 +4,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Checkbox } from './checkbox'
 import { CheckboxGroup } from './checkbox-group'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<typeof Checkbox> = {
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof Checkbox>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+    <ExampleStack className="max-w-sm">
       <ExampleSection title="edit">
         <Checkbox defaultChecked aria-label="同意條款(edit mode demo)" />
       </ExampleSection>
@@ -39,7 +39,7 @@ export const Modes: Story = {
       <ExampleSection title="disabled">
         <Checkbox disabled checked aria-label="同意條款(disabled mode demo)" />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

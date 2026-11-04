@@ -3,7 +3,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { DatePicker } from './date-picker'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof DatePicker> = {
   title: 'Design System/Components/DatePicker/展示',
@@ -93,7 +93,7 @@ export const TypedInput: Story = {
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+    <ExampleStack className="max-w-xs">
       <ExampleSection title="edit">
         <LiveDatePicker value="2026-04-02" />
       </ExampleSection>
@@ -107,7 +107,7 @@ export const Modes: Story = {
         <DatePicker mode="disabled" value="2026-04-02" />
       </ExampleSection>
       {/* 空值(null)與完整 state 矩陣由 anatomy 的 StateBehavior / ColorMatrix 擁有,不在此重複 */}
-    </div>
+    </ExampleStack>
   ),
 }
 

@@ -3,6 +3,7 @@ import { useState, type ComponentProps } from 'react'
 import { PeoplePicker } from './people-picker'
 import type { PersonData } from './person-display'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/設計規格',
@@ -149,7 +150,7 @@ export const Inspector: Story = {
 export const ModeMatrix: Story = {
   name: '模式對照',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-md">
+    <ExampleStack className="max-w-md">
       <div>
         <H3>edit(預設)</H3>
         <Desc>Field 樣式 + 展開觸發 Popover + Command 搜尋。</Desc>
@@ -173,7 +174,7 @@ export const ModeMatrix: Story = {
         <H3>readonly(empty)</H3>
         <PeoplePicker mode="readonly" people={SAMPLE_PEOPLE} value={null} />
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 

@@ -23,6 +23,7 @@ const P = { A: 'Alan Chen', B: 'Betty Wu', C: 'Charlie Lee' } as const
 // 真實人像(2026-07-08 sweep):u=EMP-100x 對齊 dialog.stories.tsx MEMBERS 同名人物(跨 story 同人同照)
 const P_SRC = { A: 'https://i.pravatar.cc/48?u=EMP-1001', B: 'https://i.pravatar.cc/48?u=EMP-1002', C: 'https://i.pravatar.cc/48?u=EMP-1003' } as const
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/OverflowIndicator/設計規格',
@@ -231,7 +232,7 @@ function OverflowInspector() {
 
   return (
     <div className="grid grid-cols-[1fr_320px] gap-8 max-w-5xl">
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>即時預覽</H3>
           <div className="p-6 rounded-md border border-divider bg-muted flex items-center gap-4">
@@ -259,9 +260,9 @@ function OverflowInspector() {
             </dl>
           </div>
         </div>
-      </div>
+      </ExampleStack>
 
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>Shape</H3>
           {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項);取代手刻 pill:它靜止借 neutral-hover、hover 借 neutral-active(color.spec.md 成對 token 錯配) */}
@@ -322,7 +323,7 @@ function OverflowInspector() {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleStack>
     </div>
   )
 }

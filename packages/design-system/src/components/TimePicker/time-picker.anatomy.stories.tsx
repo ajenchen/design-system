@@ -10,7 +10,7 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { TimePicker } from './time-picker'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 /**
  * TimePicker 設計規格 — 完整技術規格。anatomy 7 story(6-canonical 去 StateBehavior,
@@ -257,7 +257,7 @@ export const Inspector: Story = {
 export const Accessibility: Story = {
   name: '無障礙與鍵盤',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-3xl text-body">
+    <ExampleStack className="max-w-3xl text-body">
       <ExampleSection title="ARIA roles" paragraph>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li>Trigger:<code>role="combobox"</code> + <code>aria-expanded={`{open}`}</code>;在 <code>{'<Field>'}</code> 內以 <code>aria-labelledby</code> 指向 field label(無 Field 時 consumer 需自帶 <code>aria-label</code>)</li>
@@ -275,6 +275,6 @@ export const Accessibility: Story = {
           <li><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> 切換 column(時 → 分 → 秒)</li>
         </ul>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }

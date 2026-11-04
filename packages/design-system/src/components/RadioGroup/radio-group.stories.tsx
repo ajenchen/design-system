@@ -3,7 +3,7 @@ import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
 import { Button } from '@/design-system/components/Button/button'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof RadioGroupItem> = {
   title: 'Design System/Components/RadioGroup/展示',
@@ -25,7 +25,7 @@ type Story = StoryObj<typeof RadioGroupItem>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
+    <ExampleStack className="max-w-md">
       <ExampleSection title="edit">
         <RadioGroup defaultValue="yearly" aria-label="付款方案(edit mode demo)">
           <RadioGroupItem value="monthly" label="月付方案" />
@@ -56,7 +56,7 @@ export const Modes: Story = {
           <RadioGroupItem value="lifetime" label="終身方案" />
         </RadioGroup>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

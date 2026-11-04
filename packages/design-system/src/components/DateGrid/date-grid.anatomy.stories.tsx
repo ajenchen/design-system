@@ -4,7 +4,7 @@ import { zhTW } from 'date-fns/locale/zh-TW'
 import type { DateRange } from 'react-day-picker'
 import { DateGrid } from './date-grid'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/DateGrid/設計規格',
@@ -557,7 +557,7 @@ export const StateBehavior = {
 export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-3xl text-body">
+    <ExampleStack className="max-w-3xl text-body">
       <section>
         <H3 paragraph>ARIA roles(react-day-picker v9 內建,本 DS 不重寫)</H3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
@@ -581,6 +581,6 @@ export const Accessibility = {
           <li><kbd>Space</kbd> / <kbd>Enter</kbd> select(觸發 onSelect)</li>
         </ul>
       </section>
-    </div>
+    </ExampleStack>
   ),
 }

@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react'
 import { TimePicker } from './time-picker'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { Field, FieldLabel, FieldError, FieldGroup } from '@/design-system/components/Field/field'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof TimePicker> = {
   title: 'Design System/Components/TimePicker/展示',
@@ -42,7 +42,7 @@ function LiveTimePicker({ value: initial, ...rest }: React.ComponentProps<typeof
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] w-80">
+    <ExampleStack className="w-80">
       <ExampleSection title="edit">
         <LiveTimePicker value="14:30" aria-label="會議時段(edit mode demo)" />
       </ExampleSection>
@@ -55,7 +55,7 @@ export const Modes: Story = {
       <ExampleSection title="disabled">
         <TimePicker mode="disabled" value="14:30" aria-label="會議時段(disabled mode demo)" />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

@@ -9,7 +9,7 @@ import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import '@/design-system/components/DataTable/column-types'
 import { CATEGORY_OPTIONS_WITH_CLOTHING as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Combobox> = {
   title: 'Design System/Components/Combobox/展示',
@@ -40,7 +40,7 @@ export const Modes: Story = {
   render: () => {
     const [value, setValue] = React.useState(['electronics', 'food', 'lifestyle'])
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+      <ExampleStack className="max-w-sm">
         <ExampleSection title="edit">
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
         </ExampleSection>
@@ -56,7 +56,7 @@ export const Modes: Story = {
         <ExampleSection title="readonly(空值)">
           <Combobox mode="readonly" options={categoryOptions} value={[]} aria-label="類別(readonly empty demo)" />
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }
@@ -405,14 +405,14 @@ export const UnrestrictedOption: Story = {
     const [category, setCategory] = React.useState<string[]>(['electronics'])
     const [any, setAny] = React.useState<string[]>(['__unrestricted__'])
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+      <ExampleStack className="max-w-sm">
         <ExampleSection title="清單最上面多一列,下面自動有分隔線">
           <Combobox unrestricted options={categoryOptions} value={category} onChange={setCategory} aria-label="商品類別" />
         </ExampleSection>
         <ExampleSection title="只選「不限」時,欄位是純文字不是 tag">
           <Combobox unrestricted options={categoryOptions} value={any} onChange={setAny} aria-label="商品類別(不限)" />
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }
@@ -424,7 +424,7 @@ export const UnrestrictedContract: Story = {
   name: '不限:欄位顯示契約',
   tags: ['test-only'],
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+    <ExampleStack className="max-w-sm">
       <ExampleSection title="關著(對照:一般選項渲 tag)">
         <LiveCombobox options={categoryOptions} value={['electronics']} aria-label="類別(不限關閉)" />
       </ExampleSection>
@@ -440,7 +440,7 @@ export const UnrestrictedContract: Story = {
       <ExampleSection title="自訂文字(對照:佔位字左緣)">
         <LiveCombobox unrestricted unrestrictedLabel="全部地區" options={categoryOptions} value={[]} aria-label="銷售地區(自訂不限文字)" />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -488,14 +488,14 @@ export const UnrestrictedSearch: Story = {
   render: function UnrestrictedSearchStory() {
     const [local, setLocal] = React.useState<string[]>([])
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+      <ExampleStack className="max-w-sm">
         <ExampleSection title="本機過濾 —— 打「不限」找得到,打別的字它消失">
           <Combobox unrestricted searchable options={categoryOptions} value={local} onChange={setLocal} aria-label="類別(本機搜尋,不限開啟)" />
         </ExampleSection>
         <ExampleSection title="遠端搜尋 —— 等結果回傳才跟一般選項一起出現">
           <UnrestrictedRemoteSearchProbe />
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }
@@ -512,7 +512,7 @@ function UnrestrictedInlineSearchProbe() {
   const [empty, setEmpty] = React.useState<string[]>([])
   const [narrow, setNarrow] = React.useState<string[]>(['__unrestricted__'])
   return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+    <ExampleStack className="max-w-sm">
       <ExampleSection title="只選「不限」· 欄位內搜尋">
         <Combobox unrestricted searchable searchIn="trigger" clearable options={categoryOptions} value={inline} onChange={setInline}
           placeholder="選擇商品類別…" aria-label="商品類別(欄位內搜尋)" />
@@ -530,7 +530,7 @@ function UnrestrictedInlineSearchProbe() {
             aria-label="商品類別(窄欄位換行)" />
         </div>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   )
 }
 export const UnrestrictedInlineSearch: Story = {
@@ -545,14 +545,14 @@ export const UnrestrictedMessageStates: Story = {
   name: '不限:訊息列三態不受影響',
   tags: ['test-only'],
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+    <ExampleStack className="max-w-sm">
       <ExampleSection title="0 筆選項 —— 顯示「沒有選項」,不出現不限">
         <LiveCombobox unrestricted options={[]} value={[]} defaultOpen aria-label="空清單(不限開啟)" />
       </ExampleSection>
       <ExampleSection title="載入中 —— 顯示載入列,不出現不限">
         <LiveCombobox unrestricted optionsLoading options={[]} value={[]} aria-label="載入中(不限開啟)" />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

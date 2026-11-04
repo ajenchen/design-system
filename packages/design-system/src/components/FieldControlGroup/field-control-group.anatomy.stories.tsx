@@ -9,7 +9,7 @@ import { FieldControlGroup } from './field-control-group'
 import { Select } from '@/design-system/components/Select/select'
 import { Input } from '@/design-system/components/Input/input'
 import { OPERATOR_REGISTRY } from '@/design-system/components/DataTable/filter-operators'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof FieldControlGroup> = {
   title: 'Design System/Components/FieldControlGroup/設計規格',
@@ -32,7 +32,7 @@ const OPS = OPERATOR_REGISTRY.string
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
-    <div className="flex flex-col gap-6 w-[520px]">
+    <ExampleStack className="w-[520px]">
       <ExampleSection title="接合機制" paragraph>
         <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
           <li>子 controls 保留自身 border + radius(不 strip)</li>
@@ -48,7 +48,7 @@ export const Overview: Story = {
           <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

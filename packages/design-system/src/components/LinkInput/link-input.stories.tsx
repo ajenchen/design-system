@@ -3,7 +3,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { LinkInput } from './link-input'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof LinkInput> = {
   title: 'Design System/Components/LinkInput/展示',
@@ -75,7 +75,7 @@ export const Modes: Story = {
 function ModesDemo() {
   const [value, setValue] = React.useState('https://github.com')
   return (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+    <ExampleStack className="max-w-sm">
       <ExampleSection title="edit">
         <LinkInput value={value} onChange={setValue} />
       </ExampleSection>
@@ -91,7 +91,7 @@ function ModesDemo() {
       <ExampleSection title="readonly(空值)">
         <LinkInput mode="readonly" value={null} />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   )
 }
 

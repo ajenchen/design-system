@@ -6,7 +6,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { NumberInput } from './number-input'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import '@/design-system/components/DataTable/column-types'
 
 const meta: Meta<typeof NumberInput> = {
@@ -27,7 +27,7 @@ export const Modes: Story = {
   render: () => {
     const [value, setValue] = React.useState<number | null>(2490)
     return (
-      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
+      <ExampleStack className="max-w-xs">
         <ExampleSection title="edit">
           <NumberInput value={value} onChange={setValue} prefix="$" aria-label="價格(edit mode demo)" />
         </ExampleSection>
@@ -40,7 +40,7 @@ export const Modes: Story = {
         <ExampleSection title="disabled">
           <NumberInput mode="disabled" value={value} prefix="$" aria-label="價格(disabled mode demo)" />
         </ExampleSection>
-      </div>
+      </ExampleStack>
     )
   },
 }

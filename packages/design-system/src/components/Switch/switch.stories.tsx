@@ -1,7 +1,7 @@
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix / 狀態(States)story 的 md/lg 對照 owns size showcase;Default scenario 由 四模式(Modes) / 狀態(States) / 搭配標籤(WithLabel)等真實業務情境 story 覆蓋,不另開抽象 Default/AllSizes。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Switch } from './switch'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<typeof Switch> = {
@@ -19,7 +19,7 @@ type Story = StoryObj<typeof Switch>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
+    <ExampleStack className="max-w-sm">
       <ExampleSection title="edit">
         <Switch defaultChecked aria-label="啟用通知(edit mode demo)" />
       </ExampleSection>
@@ -35,7 +35,7 @@ export const Modes: Story = {
       <ExampleSection title="disabled">
         <Switch disabled checked aria-label="啟用通知(disabled demo)" />
       </ExampleSection>
-    </div>
+    </ExampleStack>
   ),
 }
 

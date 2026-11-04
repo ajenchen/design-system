@@ -13,6 +13,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/SelectMenu/設計規格',
@@ -283,7 +284,7 @@ function SelectMenuInspector() {
 
   return (
     <div className="grid grid-cols-[1fr_320px] gap-8 max-w-5xl">
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>即時預覽</H3>
           <div className="flex items-start gap-4">
@@ -357,9 +358,9 @@ function SelectMenuInspector() {
             </p>
           </div>
         </div>
-      </div>
+      </ExampleStack>
 
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>Size</H3>
           {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項);取代手刻 pill:它靜止借 neutral-hover、hover 借 neutral-active(color.spec.md 成對 token 錯配) */}
@@ -412,7 +413,7 @@ function SelectMenuInspector() {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleStack>
     </div>
   )
 }
