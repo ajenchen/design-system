@@ -85,9 +85,14 @@ const PANEL = () => {
 // Tag 的身分證是 `data-tag-text`(tag.tsx:234),不是 class 字串。
 const FIELDS = () => {
   const headings = [...document.querySelectorAll('h3')]
+  // 2026-11-04(fields FL-a4 把這則的區段改成共用 ExampleSection 之後假紅):h3 包在 ExampleSection 的標題區(`[data-example-section]` 第一格,
+  // h3 + 說明)裡,h3 的下一個兄弟是說明或沒有 → 這裡改認 DS 共用元件自己掛的記號:在 ExampleSection 裡就取那一格裡標題區以外的第一個子節點,
+  // 不在就照舊取 h3 的下一個兄弟(同 field-view-typography 閘 2026-10-28 的做法)。
   const panel = (prefix) => {
     const h = headings.find((x) => (x.textContent || '').startsWith(prefix))
-    return h ? h.nextElementSibling : null
+    if (!h) return null
+    const sec = h.closest('[data-example-section]')
+    return sec ? [...sec.children].find((n) => !n.contains(h)) ?? null : h.nextElementSibling
   }
   const read = (wrap) => {
     if (!wrap) return null
@@ -154,7 +159,9 @@ const BREAK = {
   // C:讓只選「不限」的欄位長出一顆 Tag(退化成「不限是一個被選中的項目」)
   欄位: () => {
     const h = [...document.querySelectorAll('h3')].find((x) => (x.textContent || '').startsWith('只選「不限」—— 欄'))
-    const wrap = h?.nextElementSibling
+    // 與上面 FIELDS 的 panel() 同一種找法(ExampleSection 裡取標題區以外那一格)—— 破壞找不到欄位 = 對照組不成立
+    const sec = h?.closest('[data-example-section]')
+    const wrap = sec ? [...sec.children].find((n) => !n.contains(h)) : h?.nextElementSibling
     const el = wrap && [...wrap.querySelectorAll('span')].find((s) => s.childElementCount === 0 && (s.textContent || '').trim())
     if (!el) return false
     el.setAttribute('data-tag-text', '')
