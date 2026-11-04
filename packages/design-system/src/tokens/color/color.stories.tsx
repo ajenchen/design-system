@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Color',
@@ -145,12 +146,19 @@ export const Primitives: Story = {
                   <span className="text-caption text-fg-muted">{name}</span>
                   {semantic && <span className="text-footnote text-[var(--primary)] font-medium">→ {semantic}</span>}
                 </div>
+                {/* 滑過色票顯示它的 token 全名(已發布版用瀏覽器原生 title,改用 DS Tooltip —— 登記簿 B07 有元件就用元件)。
+                    列名 + 欄號推不出 neutral 這列的全名(畫的是 -opaque 版,另有一顆同名不帶 -opaque 的),畫面不夠清楚 → 用 tooltip 補充
+                    (tooltip.spec.md「何時用」);全名不是只靠 tooltip:頁尾那句也寫了 neutral 顯示 opaque 版 */}
                 {[1,2,3,4,5,6,7,8,9].map(n => (
-                  <div
-                    key={n}
-                    className="h-6 rounded-md border border-[var(--black-a06)]"
-                    style={{ background: `var(--color-${name}-${n}${suffix})` }}
-                  />
+                  <Tooltip key={n}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="h-6 rounded-md border border-[var(--black-a06)]"
+                        style={{ background: `var(--color-${name}-${n}${suffix})` }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>{`--color-${name}-${n}${suffix}`}</TooltipContent>
+                  </Tooltip>
                 ))}
               </div>
             )
