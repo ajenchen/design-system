@@ -131,8 +131,9 @@ export function storyBlocks(src) {
   const starts = [...src.matchAll(/^(?:export\s+)?(?:function|const|let|type|interface|class)\s/gm)].map((m) => m.index)
   return idx.map((e) => ({ name: e.name, body: src.slice(e.at, starts.find((at) => at > e.at) ?? src.length) }))
 }
-export function docsIsolationViolations(src) {
-  const bad = []
+/** 每一則 story 的 docs 隔離狀態:預設開著(模態浮層 / AppShell 裡的 AI agent)才列;testOnly / isolated 照原始碼判 */
+export function docsOpenStories(src) {
+  const out = []
   const components = moduleComponents(src)
   for (const block of storyBlocks(src)) {
     // 判開不開:story 自己 + 它用到的同檔 module 層元件;判有沒有帶隔離參數:只看 story 自己(參數只能寫在 story 上)
@@ -147,9 +148,16 @@ export function docsIsolationViolations(src) {
     if (!opensByDefault) continue
     const testOnly = /tags:\s*\[[^\]]*'test-only'/.test(block.body)
     const isolated = /openOverlay(?:DocsStory|Parameters)\(/.test(block.body) || /inline:\s*false/.test(block.body)
-    if (!testOnly && !isolated) bad.push(b.name)
+    out.push({ name: b.name, testOnly, isolated })
   }
-  return bad
+  return out
+}
+export function docsIsolationViolations(src) {
+  return docsOpenStories(src).filter((s) => !s.testOnly && !s.isolated).map((s) => s.name)
+}
+/** docs 頁上會進 iframe 的 story 數 = 預設開著、不是 test-only、帶隔離參數的那幾則(test-only 不進 docs 頁) */
+export function docsIsolatedCount(src) {
+  return docsOpenStories(src).filter((s) => !s.testOnly && s.isolated).length
 }
 function staticDocsScan() {
   const files = walk(join(REPO, 'packages/design-system/src'), (n) => n.endsWith('.stories.tsx'))
@@ -176,6 +184,8 @@ function staticSelftest() {
   ck('selftest D:帶 openOverlayDocsStory 不得誤報', docsIsolationViolations(mk("  parameters: { docs: { story: openOverlayDocsStory('560px') } },")).length === 0)
   ck('selftest D:帶 openOverlayParameters 不得誤報', docsIsolationViolations(mk("  parameters: openOverlayParameters('560px'),")).length === 0)
   ck('selftest D:test-only probe 不得誤報', docsIsolationViolations(mk("  tags: ['test-only'],")).length === 0)
+  ck('selftest D:docs 期望 iframe 數 —— 帶隔離參數的預設開啟 story 算 1', docsIsolatedCount(mk("  parameters: openOverlayParameters('560px'),")) === 1)
+  ck('selftest D:docs 期望 iframe 數 —— test-only / 關著的 / 缺參數的都不算', docsIsolatedCount(mk("  tags: ['test-only'],\n  parameters: openOverlayParameters('560px'),")) === 0 && docsIsolatedCount(mk('', 'Dialog')) === 0 && docsIsolatedCount(mk('')) === 0)
   ck('selftest D:關著的 Dialog 不得誤報', docsIsolationViolations(mk('', 'Dialog')).length === 0)
   ck('selftest D:useState(true) 餵 open 也算預設開啟', docsIsolationViolations(`export const Y = {\n  render: () => { const [open, setOpen] = useState(true); return <Dialog open={open} onOpenChange={setOpen}><DialogContent /></Dialog> },\n}\n`).length === 1)
   // 2026-10-15(r1b 複驗 F3):body 只有一個 module 層元件 → 追進去;AppShell 裡預設開著的 AI agent 算
@@ -348,9 +358,13 @@ if (!SELFTEST) {
       },
     })
     ck('D docs 頁頂層文件沒有可見的 dialog(修前 4 個)', d.rendered && d.dialogs === 0, `dialogs=${d.dialogs} fixedOpen=${d.fixedOpen} rendered=${d.rendered}`)
-    ck('D docs 頁真的用 iframe 隔離了預設開啟的 story(不是沒渲染)', d.iframes >= 1, `iframes=${d.iframes}`)
+    // 期望的 iframe 數照 Dialog 展示原始碼算(預設開著、非 test-only、帶隔離參數的 story 數):2026-10-28 D2 甲(user「不要給我一進頁就開著」)
+    // 之後展示全部改成按了才開 → 0 則、0 個 iframe 才對;原本寫死「≥ 1」等於把「Dialog docs 一定有預設開著的 story」當成要保證的性質(M37)。
+    // 隔離機制本身仍由下方 AppShell / AgentPanel 展示 docs(預設開著 AI agent,≥ 2 / ≥ 1 個 iframe)與上一條「頂層 0 個 dialog」把關。
+    const expectIframes = docsIsolatedCount(readFileSync(join(REPO, 'packages/design-system/src/components/Dialog/dialog.stories.tsx'), 'utf8'))
+    ck(`D docs 頁預設開啟的 story 都用 iframe 隔離(原始碼算出 ${expectIframes} 則;不是沒渲染)`, d.iframes === expectIframes, `iframes=${d.iframes} expected=${expectIframes}`)
     // meta layout:'centered' 會把隔離的 iframe 縮成內建 300px(對話框被擠到 204px);openOverlayParameters 用 padded 撐滿
-    ck('D 隔離的 iframe 有撐滿 docs 畫布(每個 ≥ 600px,centered 縮成 300px 就是回歸)', d.widths.length > 0 && d.widths.every((w) => w >= 600), `widths=${d.widths.join(',')}`)
+    if (expectIframes > 0) ck('D 隔離的 iframe 有撐滿 docs 畫布(每個 ≥ 600px,centered 縮成 300px 就是回歸)', d.widths.length === expectIframes && d.widths.every((w) => w >= 600), `widths=${d.widths.join(',')}`)
     // 不以對話框當 waitFor:「OpenSnapshot 開著」正是這條要驗的產品行為;渲染完成 + 靜止後量(原本 .catch 吞掉 + 固定睡 600ms)
     const { probe: snapshotOpen } = await open(story('design-system-components-dialog-展示--open-snapshot'), {
       probe: () => !!document.querySelector('[role="dialog"][data-state="open"]'),
