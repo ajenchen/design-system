@@ -25,7 +25,7 @@ import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Chip, ChipGroup } from '@/design-system/components/Chip/chip'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/Notice/設計規格',
@@ -238,7 +238,7 @@ function NoticeInspector() {
   return (
     <div className="grid grid-cols-[1fr_320px] gap-8 max-w-5xl">
       {/* Left: live preview */}
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>即時預覽</H3>
           {/* 切任何設定就重新掛上(key),按過「封存草稿」或 × 移除後切一下就回來 */}
@@ -268,10 +268,10 @@ function NoticeInspector() {
             </dl>
           </div>
         </div>
-      </div>
+      </ExampleStack>
 
       {/* Right: inspect panel */}
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>Variant</H3>
           {/* 5 個互斥選項放在 320px 右欄:SegmentedControl 連體不換行、放不下(segmented-control.spec.md「不支援 overflow…
@@ -328,7 +328,7 @@ function NoticeInspector() {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleStack>
     </div>
   )
 }
@@ -340,7 +340,7 @@ function NoticeInspector() {
 export const VariantIconMap: Story = {
   name: '變體 × 圖示對照',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>變體 × icon × 語意</H3>
         <Desc>
@@ -428,7 +428,7 @@ export const VariantIconMap: Story = {
           ))}
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 

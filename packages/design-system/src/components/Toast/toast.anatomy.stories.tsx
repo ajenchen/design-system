@@ -8,6 +8,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { toast, Toaster } from './toast'
 import { Button } from '@/design-system/components/Button/button'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Toast/設計規格',
@@ -139,7 +140,7 @@ export const Inspector: Story = {
 export const ContainerArchitecture: Story = {
   name: '容器三層架構',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>為什麼分三層</H3>
         <Desc>
@@ -162,14 +163,14 @@ export const ContainerArchitecture: Story = {
           </table>
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>與 Alert 共用 Notice primitive 與三層 theme 架構(variant × theme 映射各自不同)</H3>
         <div className="overflow-x-auto">
@@ -204,7 +205,7 @@ export const ColorMatrix: Story = {
         </div>
         <Toaster />
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
