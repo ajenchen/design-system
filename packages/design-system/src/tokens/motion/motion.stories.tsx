@@ -158,8 +158,9 @@ export const Overview: Story = {
 /* 延遲體感 — 用真實 consumer 展示三個 token 的實際時序(非模擬動畫):
    Tooltip 走全域 TooltipProvider delayDuration=500(= plain);
    HoverCard Root 預設 openDelay=700 / closeDelay=200(= rich / close)。
-   示範裡看得到的按鈕與連結都有反應(登記簿 A16「一堆按鈕都無法正常反應」):下載 = 跳 Toast;
-   人名連結 = 在 Storybook「Actions」面板記一筆要去哪(讀者點了不會真的離開 Storybook;稽核 M102「展示層可以接 Storybook action」)。 */
+   示範裡看得到的按鈕與連結都有反應(登記簿 A16「一堆按鈕都無法正常反應」):下載 = 跳 Toast(下載的結果本來就不在畫面上);
+   人名連結 = 在 Storybook「Actions」面板記一筆要去哪(讀者點了不會真的離開 Storybook)。用 Storybook action 是 AI 推導:
+   稽核 M102 說「展示層可以接 Storybook action」講的是 ProfileCard 的預設動作鈕,這裡比照用在人名連結上。 */
 const openMeihuiProfile = fn().mockName('前往 陳美惠 的個人頁')
 
 export const DelayFeel: Story = {
