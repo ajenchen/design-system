@@ -174,7 +174,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時依序推導：有效 disabled（prop 或 <Field disabled>）→ fieldCtx.mode → native readOnly → edit；顯式 mode prop 永遠最優先（field-context.ts useResolvedFieldMode）'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時依序推導：有效 disabled（prop 或 <Field disabled>）→ fieldCtx.mode → native readOnly → edit；顯式 mode prop 永遠最優先'],
                 ['variant', "'default'", "'default'", '視覺 chrome（正交於 mode；公開型別僅 default，2026-07-14 收窄）；naked = cell-as-input substrate（@internal）：edit×naked 自畫 border-based state machine（border → hover → focus-within primary → error 紅框），view×naked 才由 host cell 提供視覺邊框；bare 2026-07-09 退役'],
                 ['error', 'boolean', 'false', '紅色邊框僅 edit 模式生效；aria-invalid 不分 mode（readonly / disabled 渲染的 input 同樣帶）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],

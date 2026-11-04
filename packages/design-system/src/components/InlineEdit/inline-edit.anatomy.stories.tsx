@@ -96,8 +96,7 @@ export const ColorMatrix: Story = {
   render: () => (
     <div className="max-w-[860px] space-y-6">
       <p className="text-body text-fg-secondary">
-        InlineEdit 只擁有 view 態的 affordance；edit 態直接委派 Field control。下表對齊
-        <code> inline-edit.tsx</code> 的 state class，沒有另造一套 palette。
+        InlineEdit 只擁有 view 態的 affordance；edit 態直接委派 Field control。下表對齊元件程式裡的 state class，沒有另造一套 palette。
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-caption">

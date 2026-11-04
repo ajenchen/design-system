@@ -681,7 +681,7 @@ export const SizeMatrix = {
         {/* ── tag mode additional tokens ── */}
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">tag 模式額外 token</span>
-          <Desc>tag 模式的 padding 用 calc() 公式讓 Tag 四邊等距：px = (field-height − 2px 邊框 − tag-height) / 2（sm/md 3px、lg 5px；SSOT：Field/field-wrapper.tsx fieldTagInsetX）。右側 paddingRight 固定 12px（--field-px token）。</Desc>
+          <Desc>tag 模式的 padding 用 calc() 公式讓 Tag 四邊等距：px = (field-height − 2px 邊框 − tag-height) / 2（sm/md 3px、lg 5px）。右側 paddingRight 固定 12px（--field-px token）。</Desc>
           <div className="overflow-x-auto">
             <table className="border-collapse text-caption">
               <thead><tr>

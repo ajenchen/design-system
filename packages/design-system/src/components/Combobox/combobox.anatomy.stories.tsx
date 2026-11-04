@@ -575,7 +575,7 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。tagPadding 用 calc() 計算確保 Tag 四邊等距——公式為 (field-height − 2px 邊框 − tag-height) / 2，sm/md 3px、lg 5px（SSOT：Field/field-wrapper.tsx fieldTagInsetX/Y）。Tag 間距固定 4px (GAP constant)。">
+    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。tagPadding 用 calc() 計算確保 Tag 四邊等距——公式為 (field-height − 2px 邊框 − tag-height) / 2，sm/md 3px、lg 5px。Tag 間距固定 4px。">
       <div className="flex flex-col gap-8">
 
         {/* Token comparison table */}
