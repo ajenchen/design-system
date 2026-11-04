@@ -13,5 +13,134 @@
     "components/FileViewer/file-viewer.js": 35.7,
     "components/Select/select.js": 33.2,
     "components/AgentPanel/agent-panel-fab.js": 29.1
+  },
+  "sizeLimit": {
+    "_meta": {
+      "generatedAt": "2026-11-04",
+      "unit": "kB = 1000 bytes(size-limit 的單位;上面 totalKB / entriesKB 是 1024 進位)",
+      "rule": "每項設現值 +10%(含相依套件、壓縮後;react / react-dom 列在 ignore 的不算);與上面的原始 byte budget 同一支 --init 重設、同一個 headroom"
+    },
+    "checks": [
+      {
+        "name": "DS bundle(production app build,all chunks)",
+        "path": "dist/assets/*.js",
+        "limit": "78.4 kB",
+        "gzip": true
+      },
+      {
+        "name": "DS CSS(globals + tokens)",
+        "path": "dist/assets/index-*.css",
+        "limit": "30.4 kB",
+        "gzip": true
+      },
+      {
+        "name": "Button(foundation primitive)",
+        "path": "packages/design-system/dist/components/Button/button.js",
+        "limit": "33.7 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "DataTable(heaviest — filter+sort+drag+virtual)",
+        "path": "packages/design-system/dist/components/DataTable/data-table.js",
+        "limit": "213.6 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "FileViewer(complex composition)",
+        "path": "packages/design-system/dist/components/FileViewer/file-viewer.js",
+        "limit": "98.9 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Calendar(date grid + a11y)",
+        "path": "packages/design-system/dist/components/Calendar/calendar.js",
+        "limit": "44.6 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Chart(recharts wrapper)",
+        "path": "packages/design-system/dist/components/Chart/chart.js",
+        "limit": "94.2 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Sidebar(compound + collapse + tooltip)",
+        "path": "packages/design-system/dist/components/Sidebar/sidebar.js",
+        "limit": "69.1 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Combobox(input + listbox + filter)",
+        "path": "packages/design-system/dist/components/Combobox/combobox.js",
+        "limit": "85.7 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "AppShell(layout primitive)",
+        "path": "packages/design-system/dist/components/AppShell/app-shell.js",
+        "limit": "46.1 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Dialog(modal overlay)",
+        "path": "packages/design-system/dist/components/Dialog/dialog.js",
+        "limit": "52.9 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      }
+    ]
   }
 }

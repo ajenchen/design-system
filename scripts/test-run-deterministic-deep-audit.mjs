@@ -103,6 +103,8 @@ test('execution plan exactly closes the 25 deterministic matrix dimensions and c
   assert.deepEqual(state.dimensionByNumber.get(50).coverage.include, [
     'package.json',
     'package-lock.json',
+    '.size-limit.mjs',
+    'scripts/check-bundle-size.mjs',
     'tsconfig.json',
     'tsconfig.app.json',
     'tsconfig.node.json',

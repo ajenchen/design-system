@@ -591,8 +591,8 @@
     },
     "50": {
       "name": "Bundle size budget per component",
-      "ssot": "package.json size-limit + per-component manifest",
-      "hook": "TBD"
+      "ssot": "packages/design-system/bundle-budget.json(原始 byte totalKB/entriesKB + 含相依 gzip 的 sizeLimit 段;.size-limit.mjs 由 sizeLimit 段推導)",
+      "hook": "scripts/check-bundle-size.mjs --check(CI verify-static)"
     },
     "51": {
       "name": "Theme / density visual matrix",

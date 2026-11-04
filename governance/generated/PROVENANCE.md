@@ -14,10 +14,10 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 |---|---|---|
 | agent-bootstrap | `AGENTS.md` | `sha256:cda38443418fae9bda0c0e7d9c0775344bc4cdcba05dded0e0b0b94200ade4ba` |
 | audit-coverage-matrix-source | `scripts/audit-coverage-matrix.mjs` | `sha256:4318271043d863a18500470e462e977b9048357c9040adbe4b2e6e763e295bcb` |
-| audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:8d36bd7441c04f5e2433611e8be95aded7b4fe78dff3cb39638626cb565b1478` |
+| audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:bd42739408a0203f6571deb842b979a68862d65157d3b6668b31c26907847241` |
 | authority-decision-evidence-library | `packages/governance/src/authority-decision-evidence.mjs` | `sha256:6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781` |
-| bundle-size-gate | `scripts/check-bundle-size.mjs` | `sha256:3ef9dcba2a27e7c3abd44be251fed9c1cd2d396df10bdf992bb8a1299626c0c5` |
-| bundle-size-gate-tests | `scripts/test-check-bundle-size.mjs` | `sha256:16a3600a35589a8440ee72af356573ed60455ebcdd9e56302e2c7e7a93e68e6b` |
+| bundle-size-gate | `scripts/check-bundle-size.mjs` | `sha256:34294996aa0470a9f91f6bc4b5984a9f30d08f1a6271c821ca021902cfdb7c64` |
+| bundle-size-gate-tests | `scripts/test-check-bundle-size.mjs` | `sha256:e0953d2769eb0d246d863cd7c9d471ca0d238ef3ca2563970b509fa33f4e2a2f` |
 | canonical-adapter-templates | `packages/design-system/ds-canonical/adapters` | `sha256:1a4c8976c4441778ff5f61c1ab511f5a204e7e7df08d662fbad3389e2dc3acc1` |
 | canonical-commands | `packages/design-system/ds-canonical/commands` | `sha256:d91576af179c5c2da2a348ce66485f082c3ee2d00b23a50b6c3734075e30120f` |
 | canonical-hook-approval-evidence-helper | `packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs` | `sha256:171c76753691af7bbe9eeef01261ba6cd9afb5ce332baa2d170352d63604d896` |
@@ -27,9 +27,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:f22e0be346e6c3ac422f835347b28456aa7dc81c06d5b497b166d570c07fdf69` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:e9591a8959a1d69cec82582e2cb479983ff4311c0e91893368fc18a3c82a41b8` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:9e52317d105f7bb3caa6e98375035e268d013091da7e2cb484f8c5aeae48a772` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:9d5aabb2b1e2f1325b439e450a0cd685d55efefa15b78f29a203353d170b4eda` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:37da43d615712bf2541662975a6dd210392dbc7e3bcf01cd41eba7413be49c8b` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:1ca2b0b11af6a28fb6e8c420664c09aec6b8a1c33e2663b48fb999d1bc52a7b5` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:36a45d32bc02f245b01348bbbf0ea525dee3486603194bf5957a51715a908067` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:6fbeb7e00cc24c9d2525fa0f991b8fc81be7a2cdeb03ab5ecb391baa44b42fd6` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:7f0c57816b6a1bcdadd7faecd8a2293b6822a2ce6bc7f6113e34cf5930e3ed67` |
@@ -64,11 +64,11 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-ci-observation-schema | `scripts/schemas/ci-evidence-observation.schema.json` | `sha256:770f54aecf0426a7dfce16b326c151a6b16f14015d138ac7323d552e9b367e70` |
 | deep-audit-coverage-tests | `scripts/test-verify-deep-audit-coverage.mjs` | `sha256:85d7a7c3d1c99cc8746b84f4ee90be277b4d024f3e3453653374f6aa355eac83` |
 | deep-audit-coverage-verifier | `scripts/verify-deep-audit-coverage.mjs` | `sha256:9ae163b9b4b47a39dd52a77bc98f6f333a7c83fd015e8768830ad5b43da390b9` |
-| deep-audit-deterministic-plan | `scripts/deep-audit-deterministic-plan.json` | `sha256:a1dbf0cd397f19f36df434451d257ac5431581dc9a0239c5cadefa3ffe848c83` |
+| deep-audit-deterministic-plan | `scripts/deep-audit-deterministic-plan.json` | `sha256:381865d585dc39ef37e961b1238386cbf79dab43b21a2dbbb275359d5c650adf` |
 | deep-audit-deterministic-plan-library | `scripts/lib/deep-audit-deterministic-plan.mjs` | `sha256:695096fe789c0befd8ac6b00cc9390131eaaea1b6ec92bd80dc934cc7f2b7d45` |
 | deep-audit-deterministic-plan-schema | `scripts/schemas/deep-audit-deterministic-plan.schema.json` | `sha256:f9bba1dc63dc13b631b04b426f65e4a6e94851ba6ca378173d371d08647d39a0` |
 | deep-audit-deterministic-runner | `scripts/run-deterministic-deep-audit.mjs` | `sha256:f03e904ce98d598743caea865268b560215c6a057fd16fe2267cee6ca7d662be` |
-| deep-audit-deterministic-tests | `scripts/test-run-deterministic-deep-audit.mjs` | `sha256:d2ac6ae710c1ad7ae57033a159932cadadf328cb97a398c2a70916ac5ed2d899` |
+| deep-audit-deterministic-tests | `scripts/test-run-deterministic-deep-audit.mjs` | `sha256:f3d56718b0415f0746cd0b793f20d170a119779845815324a344ef3f4a91f68d` |
 | deep-audit-evidence-contract | `scripts/lib/deep-audit-evidence-contract.mjs` | `sha256:9dcdfe87cd14abe71bc5f304fdea47e62e3ae478a2642ca0b6fb818f01d46f5d` |
 | deep-audit-evidence-contract-schema | `scripts/schemas/deep-audit-evidence-contract.schema.json` | `sha256:97f354890a767b9f9063972bb1831a9590e9857b5a66f7d13e8cc1e9a1dba4e8` |
 | deep-audit-evidence-schema-parity-tests | `scripts/test-deep-audit-evidence-schema-parity.mjs` | `sha256:68d4797da5a4e07b169d804a748801c9a03e33b139e87439b76f06414a87dfea` |
@@ -235,7 +235,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-playwright-runtime-tests | `infra/governance/test/playwright-runtime.test.mjs` | `sha256:401b08d5317a1ff7bdf0f55ca59ac4d63a59fd409ac17d1873d884c1f7b1de03` |
 | governance-playwright-setup-cli | `scripts/ensure-playwright-browsers.mjs` | `sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e` |
 | governance-precommit-entrypoint | `.husky/pre-commit` | `sha256:1f30cc0a2adbe919ed785e2fcb0f5c2adbf4d86fdffbde081ea67a3978b579cc` |
-| governance-root-script-registry | `package.json` | `sha256:9e69dfca166326496d94bf9f82426ced1bbf9712dc45bd5c7e63bf623d440d72` |
+| governance-root-script-registry | `package.json` | `sha256:5211271fa249bbc4bf871835ea20f472f7e352b3a1ee96409e6d1cc5dbba8a99` |
 | governance-runtime-dependency-closure-library | `scripts/lib/runtime-dependency-closure.mjs` | `sha256:7b62005925db6916b43bfb7238e1cec3721848332e641ff0614f75176f621ca6` |
 | governance-runtime-ignore-policy | `infra/governance/runtime/.gitignore` | `sha256:240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d` |
 | governance-trust-registry-corpus | `infra/governance/trust/` | `sha256:7ca35caafa680838f9aac85754f08d5ac6f87192cb84157cbbfe9040e3b5ad0c` |
@@ -306,7 +306,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:beb2a852c5371133b4f37e80fa69eb6719e21fc7c9153bd6feab726af44c4008` |
 | provider-neutral-memory | `governance/memory` | `sha256:279aee8116c621663aa80a4a6fefe3eaaad6182e18d924c695d6c1b5dc10a241` |
-| provider-neutral-planning-ledger | `governance/planning` | `sha256:65ac8ca90d2541d80296b4e2ecc9847a9160702a7581c1b1767546d58afa1cc4` |
+| provider-neutral-planning-ledger | `governance/planning` | `sha256:901b953468adb2742fc5105cae9c88fd95f2934f789ef1179121e911658a4c56` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f` |
 | provider-review-binding-library | `packages/governance/src/provider-review-binding.mjs` | `sha256:00fd8e1f7193dc0d76b8c3d586889c51b8f8ff47e991a4682e6105937f3a3514` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:d6850fb4893c1fb6673795548b420786ef6b7167914e8b9b8abcd6b9277cc01c` |
+| repository-automation-corpus | `scripts` | `sha256:b4cc60158f0b58cc4738b637dea458d0fe02311629c554ae6f665cb64d3c80eb` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

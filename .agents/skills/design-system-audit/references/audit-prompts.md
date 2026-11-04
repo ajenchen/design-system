@@ -1207,9 +1207,9 @@ Per-file grep `packages/design-system/src/**/*.{tsx,css}` + consumer code,對 `u
 
 ## 50. Bundle size budget per component(2026-05-17 新增,codex Q5 verdict)
 
-**Type**: Absolute / **Canonical**: `package.json` `size-limit` 段 + per-component manifest / **Home**: spec.md「bundle impact」段
+**Type**: Absolute / **Canonical**: `packages/design-system/bundle-budget.json`(原始 byte `totalKB`/`entriesKB` + 含相依 gzip 的 `sizeLimit` 段;根目錄 `.size-limit.mjs` 只由 `sizeLimit` 段推導)/ **Home**: spec.md「bundle impact」段
 
-Per component gzip size 上限(eg. Button ≤ 5KB / DataTable ≤ 50KB);CI fail if regress > 10%。對齊 Material UI `size-limit` + Material Web 公開 tracking + Ant tree-shake article + Polaris bundle audit。需 `size-limit` pkg integration。
+Per component gzip size 上限(eg. Button ≤ 5KB / DataTable ≤ 50KB);CI fail if regress > 10%。對齊 Material UI `size-limit` + Material Web 公開 tracking + Ant tree-shake article + Polaris bundle audit。兩種上限同一份檔、同一支 `node scripts/check-bundle-size.mjs --init` 重設(2026-10-14 前 size-limit 上限另住 package.json,06-11 設定後沒人重設,排程 monitor 連紅;待辦總帳 SM3);package.json 再長出 `size-limit` 段或 `.size-limit.mjs` 被改成寫死陣列,`check:bundle-size` 紅。
 
 ## 51. Theme / density visual matrix(2026-05-17 新增,codex Q5 verdict)
 
