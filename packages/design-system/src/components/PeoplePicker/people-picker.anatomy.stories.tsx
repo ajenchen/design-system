@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState, type ComponentProps } from 'react'
+import { SAMPLE_PEOPLE as PEOPLE_DIRECTORY, samplePersonData } from '@/design-system/stories-helpers/scene/person-card'
 import { PeoplePicker } from './people-picker'
 import type { PersonData } from './person-display'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -19,15 +20,9 @@ function LivePeoplePicker({ value: initial, ...rest }: ComponentProps<typeof Peo
 }
 
 
-// Person sample data canonical:對齊 ProfileCard 預設呈現(name + subtitle + status + statusMessage + fields)
-// avatar.spec.md DS-wide canonical:所有 person avatar hover 必出 ProfileCard,展示資訊不可精簡
-// 兩個預設欄位(ID / 員工編號)走 PersonData 的 id / employeeNumber,不寫進 fields —— 2026-10-21 前 ID 寫在 fields:被去重後排到「員工編號」後面,員工編號則是「-」、副標卻寫著 EMP-xxxx(profile-card.spec.md「文案(DS 預設 = 中文,全部可覆寫)」:預設欄位以生效的欄名去重,同名欄位走 `defaultFieldValues`;閘 overlay-story-contract S8)
-const SAMPLE_PEOPLE: PersonData[] = [
-  { name: 'Ada Chen', avatarUrl: 'https://i.pravatar.cc/128?img=1', description: 'Engineering｜Taipei｜EMP-2001', status: 'online', statusMessage: '今日 OnCall。', id: 'ADA001', employeeNumber: 'EMP-2001', fields: [{ label: '部門', value: 'Platform' }, { label: '時區', value: 'TST (GMT+8)' }] },
-  { name: 'Alice Wang', avatarUrl: 'https://i.pravatar.cc/128?img=5', description: 'Engineering｜Tokyo｜EMP-2002', status: 'busy', statusMessage: '深度工作中,12:00 後可聊。', id: 'AW002', employeeNumber: 'EMP-2002', fields: [{ label: '部門', value: 'Platform' }, { label: '時區', value: 'JST (GMT+9)' }] },
-  { name: 'Bob Chen', avatarUrl: 'https://i.pravatar.cc/128?img=12', description: 'Engineering｜Singapore｜EMP-2003', status: 'online', statusMessage: '可線上協助。', id: 'BC003', employeeNumber: 'EMP-2003', fields: [{ label: '部門', value: 'Infrastructure' }, { label: '時區', value: 'SGT (GMT+8)' }] },
-  { name: 'Diana Lin', avatarUrl: 'https://i.pravatar.cc/128?img=20', description: 'Engineering｜Sydney｜EMP-2004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'DL004', employeeNumber: 'EMP-2004', fields: [{ label: '部門', value: 'Mobile' }, { label: '時區', value: 'AEST (GMT+10)' }] },
-]
+// 範例人員走全 DS 同一份名錄(stories-helpers/scene/person-card.tsx 的 SAMPLE_PEOPLE:同一個人在每一頁是同一組 ID / 員工編號 / 狀態,
+// 名片內容與預設動作也由那裡統一給)—— 登記簿 B22(user 2026-04-23)。之前本頁自己寫一份(ADA001 / EMP-2001 這類編號),跟其他頁的同一個人對不上。
+const SAMPLE_PEOPLE: PersonData[] = [PEOPLE_DIRECTORY.ada, PEOPLE_DIRECTORY.alice, PEOPLE_DIRECTORY.bob, PEOPLE_DIRECTORY.carol].map(samplePersonData)
 
 export const Overview: Story = {
   name: '元件總覽',
@@ -416,8 +411,8 @@ export const PersonValueType: Story = {
           <div>
             <div className="text-caption text-fg-muted mb-1">字串 value(顯示 initials)</div>
             <LivePeoplePicker
-              people={['Ada Chen', 'Alice Wang', 'Bob Chen']}
-              value="Ada Chen"
+              people={SAMPLE_PEOPLE.slice(0, 3).map((p) => p.name)}
+              value={SAMPLE_PEOPLE[0].name}
               aria-label="負責人（字串值）"
             />
           </div>
