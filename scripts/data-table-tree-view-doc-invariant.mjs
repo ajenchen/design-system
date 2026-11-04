@@ -17,7 +17,7 @@
  *   綠: 現況 0 筆時綠。純靜態(讀檔 + 正規表示式)、不讀時間、不開瀏覽器,同一份工作樹重複跑結果相同;
  *       掃到 0 個檔、讀不到 VIRTUAL_THRESHOLD、讀不到「無障礙與鍵盤」那則 story、讀不到規格「Keyboard 行為」段 = 儀器失效(exit 2),不讀成通過。
  *
- * 為什麼一支閘收八條:八條都是同一個病 —— 一件事寫在兩個住所(程式 + 文件 / 註解 / 範例),改了一邊另一邊不會紅(M17、M37 第四形狀
+ * 為什麼一支閘收七條(原本八條,P1 2026-11-04 移到 owner-claims C6(d)):七條都是同一個病 —— 一件事寫在兩個住所(程式 + 文件 / 註解 / 範例),改了一邊另一邊不會紅(M17、M37 第四形狀
  * 「閘存在 ≠ 有人量」)。r1b 驗證時 14 個指向這兩支檔的行號全部過期、教學頁四個門檻數字彼此矛盾、規格把已經有的播報寫成缺口。
  * 各條的規則住所:
  *   P1 符號指法 —— 已移到 owner-claims C6(d)(規則住所不變:`DataTable/active-editor-controller.ts` 檔頭「符號指法免行號漂移」)。
@@ -161,7 +161,9 @@ export function storyNameHits(path, text) {
 }
 
 // ── P8:指向不進版控的東西 ─────────────────────────────────────────────────────────────────────
-const UNVERSIONED_POINTER = /交付報告|tmp\/wip-|invention-audit\/|decisions\.json|待決題 D\d+|ssot-consolidated\/|user-answers-[\d-]+\.md/g
+// decisions.json 前面不准緊貼字母 / 數字 / 底線 / 連字號:`governance/decisions/user-decisions.json` 是進版控的決策登記簿,不是死指標
+// (與 t5 線同一刀 `(?<![\w-])decisions\.json`,兩線合併取聯集)。invention-audit 那份是 `decisions/decisions.json`,前面是 /,照抓。
+const UNVERSIONED_POINTER = /交付報告|tmp\/wip-|invention-audit\/|(?<![\w-])decisions\.json|待決題 D\d+|ssot-consolidated\/|user-answers-[\d-]+\.md/g
 export function unversionedPointerHits(path, text) {
   const hits = []
   text.split('\n').forEach((line, i) => {
@@ -310,6 +312,8 @@ function selftest() {
     "  assert.ok(!reg.entries.some((e) => verifiedBy(e).some((s) => /user-answers-2026-10-21/.test(s.locator))), '沒有任何驗過的條目拿 user-answers(原話的出處)當驗證來源')",
     ' * 規格(user 2026-10-30 15:26 / 17:08 / 17:09(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列):',
     ' * 規格來源:user 2026-10-30 15:26 / 17:08(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列。本表直接驗的幾句原話:',
+    // 進版控的決策登記簿(t5 線):檔名結尾也是 decisions.json,但前面緊貼連字號 → 不是 invention-audit 那份,不算死指標
+    ' * 決策出處住 governance/decisions/user-decisions.json(進版控)。',
   ].join('\n')
   expect(unversionedPointerHits('x', p8After).length === 0, `P8 修後寫法應 0 筆,實得 ${JSON.stringify(unversionedPointerHits('x', p8After))}`)
   return problems
