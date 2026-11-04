@@ -30,7 +30,7 @@
  *      Tab 停靠點(`data-table.tsx` 的 `cellIsTabStop`;唯讀格不是 —— 對照列),焦點在格上 Enter / F2 進編輯,Esc 後焦點回到那一格
  *   L5 每一種格的編輯器都有名字 = 欄標題(Q3d J)
  *   L6 表格的鉛筆 = 行內小按鈕(16×16、無框),與 LinkInput 欄位那顆同一種(Q3b)
- *   L7 存進不合法的網址(`javascript:` / 少了 https://)後,格裡顯示一般文字、沒有任何 `href` 是 `javascript:`(Q3e)
+ *   L7 存進不合法的網址(`javascript:` / 信箱)後,格裡顯示一般文字、沒有任何 `href` 是 `javascript:`(Q3e;看起來像網址的字會補 https:// 當連結,LinkInput F2 乙,不再是不合法值)
  *   L8 焦點框四邊真的畫出來(2026-10-21,r1b DT-01 / DT-02):同一個元素截兩張圖 —— 有框、把框強制關掉 —— 逐邊比對框那一圈的像素,
  *      四邊各至少一半有變才算畫出來(M32:不信 computed style,修前 computed outline 一切正常、畫出來只剩右邊一條 2px)。
  *      量:一般模式 Tab 到連結、試算表 Enter 進連結、LinkInput 唯讀 / 檢視的連結、可拖欄頭(每一欄,含最後一欄);對照列:同一格的鉛筆
@@ -631,7 +631,7 @@ for (const key of ['normal', 'roadmap']) {
 // ── L7:不合法的網址存進去 → 一般文字、沒有 javascript: 的 href ─────────────────────────────────
 {
   currentBreak = 'L7'
-  for (const [row, value] of [[1, 'javascript:alert(1)'], [2, 'www.example.com/pricing']]) {
+  for (const [row, value] of [[1, 'javascript:alert(1)'], [2, 'ops@example.com']]) {
     if (!(await open(TABLES.normal.url, '[data-column-id="url"] a[href]'))) break
     const id = await cellIdAt(row, 'url')
     const g = await linkCellGeo(id)
