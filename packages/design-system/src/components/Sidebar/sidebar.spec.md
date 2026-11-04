@@ -19,7 +19,7 @@ sizes:
     world-class: ["Linear sidebar default", "Notion sidebar default", "Figma left panel"]
   lg:
     px: 36
-    when: "重要主導覽(高 touch 區、horizontal headroom 大)、icon-prominent workspace switcher"
+    when: "重要主導覽(horizontal headroom 大)、icon-prominent workspace switcher"
     world-class: ["Slack workspace sidebar large", "Discord server list large"]
 traits:
   - hasVariants

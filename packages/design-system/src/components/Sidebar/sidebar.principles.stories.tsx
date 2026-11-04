@@ -409,7 +409,7 @@ export const IconModeRules: Story = {
         note={
           <>
             不要讓 icon hover 秀出完整的子項 flyout / popover menu——這是 2000 年代 cascading menu 的反模式,
-            對 touch / 鍵盤 / accessibility 都失敗。NN/g 多年警告。
+            對鍵盤與無障礙都失敗。NN/g 多年警告。
           </>
         }
       />
