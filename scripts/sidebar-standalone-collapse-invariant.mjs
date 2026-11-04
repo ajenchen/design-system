@@ -234,10 +234,13 @@ const short = (id) => id.replace('design-system-components-sidebar-', '').replac
 const densityName = (d) => (d === 'lg' ? '寬鬆' : '標準')
 const densityQuery = (d) => `&globals=${encodeURIComponent(`density:${d}`)}`
 
+// 「單獨使用的 Sidebar 外框」= 頁上第一顆開關(閘按的就是它)控制的那一個:外框往上找到第一個也裝著那顆開關的祖先,
+// 那個祖先裡只有它一個外框 = 同一個 SidebarProvider。頁上沒有開關 → 取第一個。2026-11-05 起設計規格「狀態行為」
+// 在可切換的那格之前多了三格固定狀態的真 Sidebar(A-M070),「頁上第一個外框」不再是開關控制的那個(M37:第一個 ≠ 被按的那個)。
 /** 頁面端:單獨使用的 Sidebar 外框(帶 data-side / data-state、不在 AppShell 裡)與它的選單項 */
 function measure() {
   const r2 = (n) => Math.round(n * 100) / 100
-  const frame = [...document.querySelectorAll('[data-side][data-state]')].find((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]'))
+  const frame = ((fs, tr) => fs.find((el) => { if (!tr) return true; let p = el.parentElement; while (p && !p.contains(tr)) p = p.parentElement; return !!p && fs.filter((x) => p.contains(x)).length === 1 }))([...document.querySelectorAll('[data-side][data-state]')].filter((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]')), document.querySelector('[data-sidebar="trigger"]'))
   if (!frame) return { err: '找不到單獨使用的 Sidebar 外框([data-side][data-state])' }
   // token 的實際寬:在同一個 SidebarProvider 底下放探針(變數可能被 consumer 覆寫,不寫死 240 / 48)
   const host = frame.parentElement
@@ -271,7 +274,7 @@ function railProbe({ kind, op, role }) {
   const r2 = (n) => Math.round(n * 100) / 100
   const frame = kind === 'shell'
     ? document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay])')
-    : [...document.querySelectorAll('[data-side][data-state]')].find((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]'))
+    : ((fs, tr) => fs.find((el) => { if (!tr) return true; let p = el.parentElement; while (p && !p.contains(tr)) p = p.parentElement; return !!p && fs.filter((x) => p.contains(x)).length === 1 }))([...document.querySelectorAll('[data-side][data-state]')].filter((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]')), document.querySelector('[data-sidebar="trigger"]'))
   if (!frame) return { err: `找不到${kind === 'shell' ? ' AppShell 版面上的' : '單獨使用的'} Sidebar 外框` }
   // 看得到的水平範圍 = 元素矩形與每一層 overflow-x 不是 visible 的祖先的 padding box 取交集(clip / hidden / auto / scroll 都會裁)
   const visibleX = (el) => {
@@ -423,7 +426,7 @@ function tipState({ role, open }) {
 function railScrollbarShown({ kind }) {
   const frame = kind === 'shell'
     ? document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay])')
-    : [...document.querySelectorAll('[data-side][data-state]')].find((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]'))
+    : ((fs, tr) => fs.find((el) => { if (!tr) return true; let p = el.parentElement; while (p && !p.contains(tr)) p = p.parentElement; return !!p && fs.filter((x) => p.contains(x)).length === 1 }))([...document.querySelectorAll('[data-side][data-state]')].filter((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]')), document.querySelector('[data-sidebar="trigger"]'))
   const vp = frame?.querySelector('[data-sidebar="content"] [data-radix-scroll-area-viewport]')
   return vp?.parentElement.querySelector(':scope > [data-orientation="vertical"]')?.getAttribute('data-state') === 'visible'
 }
@@ -441,7 +444,7 @@ function railScrollbarShown({ kind }) {
  */
 function injectStressor({ stressor }) {
   const r2 = (n) => Math.round(n * 100) / 100
-  const frame = [...document.querySelectorAll('[data-side][data-state]')].find((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]'))
+  const frame = ((fs, tr) => fs.find((el) => { if (!tr) return true; let p = el.parentElement; while (p && !p.contains(tr)) p = p.parentElement; return !!p && fs.filter((x) => p.contains(x)).length === 1 }))([...document.querySelectorAll('[data-side][data-state]')].filter((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]')), document.querySelector('[data-sidebar="trigger"]'))
   const content = frame?.querySelector('[data-sidebar="content"]')
   const layer = content?.querySelector('[data-radix-scroll-area-viewport] > div')
   if (!layer) return { err: '找不到細列捲動區的內容層' }

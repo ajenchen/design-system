@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { LayoutDashboard, Inbox, Users, Settings, Bell, Folder, Plus } from 'lucide-react'
+import { LayoutDashboard, Inbox, Folder, Plus } from 'lucide-react'
 import {
   SidebarProvider,
   SidebarHeader,
@@ -22,6 +22,7 @@ import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { H3, Desc, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { SectionDescription } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計規格',
@@ -65,14 +66,6 @@ const SidebarPreview = ({
   withGroups?: boolean
 }) => {
   const [projects, setProjects] = React.useState(['結帳流程改版', '對帳批次'])
-  const MAIN_NAV = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'inbox', label: 'Inbox', icon: Inbox },
-    { id: 'team', label: 'Team', icon: Users },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ] as const
-
   return (
     <div
       className="relative border border-divider rounded-lg overflow-hidden bg-surface"
@@ -497,64 +490,47 @@ export const ColorMatrix: Story = {
 // 5. 狀態行為 — Collapse modes / 放不下時(AppShell 的 Menu)/ Active restoration
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Static visual frame showing Sidebar at specific collapsible state */
-const CollapsedFrame = ({
-  variant,
-  label,
-  width,
-  collapsed,
-}: {
-  variant: 'expanded' | 'icon' | 'offcanvas'
-  label: string
-  width: number
-  collapsed?: boolean
-}) => {
-  return (
-    <div className="flex flex-col gap-2 items-start">
-      <span className="text-[11px] text-fg-muted font-mono">{label}</span>
-      <div className="relative border border-divider rounded-lg overflow-hidden bg-canvas" style={{ width: 420, height: 220 }}>
-        {/* Sidebar shell */}
-        <div
-          className="absolute top-0 bottom-0 left-0 border-r border-divider bg-surface transition-all duration-200"
-          style={{
-            width: collapsed && variant === 'offcanvas' ? 0 : width,
-            opacity: collapsed && variant === 'offcanvas' ? 0 : 1,
-          }}
-        >
-          <div className="h-10 border-b border-divider flex items-center px-3">
-            <div className="w-6 h-6 rounded-md bg-primary shrink-0" />
-            {!collapsed && variant !== 'icon' && <div className="ml-2 text-caption font-medium truncate">Acme Inc</div>}
-            {variant === 'icon' && !collapsed && <div className="ml-2 text-caption font-medium truncate">Acme Inc</div>}
-          </div>
-          <div className="flex flex-col px-2 py-2 gap-0.5">
-            {['Dashboard', 'Inbox', 'Team', 'Settings'].map((l, i) => (
-              <div key={l} className="flex items-center h-8 px-2 gap-2 rounded-md"
-                style={{
-                  backgroundColor: i === 0 ? 'var(--neutral-selected)' : 'transparent',
-                  color: i === 0 ? 'var(--foreground)' : 'var(--fg-secondary)',
-                }}
-              >
-                <div className="w-4 h-4 rounded bg-current opacity-60 shrink-0" />
-                {variant !== 'icon' && !collapsed && <span className="text-caption truncate">{l}</span>}
+/** 狀態行為的靜態格:真的 SidebarProvider + Sidebar(作法同本檔 SidebarPreview 與下方「展開與收合」那格),開關狀態固定在 `open`。
+ *  品牌 = chrome header 標準寫法(raw Avatar 24 + text-body-lg font-medium,sidebar.spec.md「Header — brand」);收成細列時名稱隱藏、Avatar 置中。 */
+const CollapseModeFrame = ({ label, collapsible, open }: { label: string; collapsible: 'icon' | 'offcanvas'; open: boolean }) => (
+  <div className="flex flex-col gap-2 items-start">
+    <Label>{label}</Label>
+    <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 420, height: 220 }}>
+      <SidebarProvider defaultOpen={open} defaultActiveId="dashboard" style={{ minHeight: 'auto', height: '100%' }}>
+        <div className="flex w-full h-full">
+          <Sidebar side="left" collapsible={collapsible}>
+            <SidebarHeader>
+              <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
+                <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
+                <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
               </div>
-            ))}
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {MAIN_NAV.filter((item) => item.id !== 'notifications').map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton id={item.id} startIcon={item.icon}>
+                          {item.label}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+          <div className="flex-1 flex flex-col min-w-0">
+            <ChromeHeader className="bg-surface">
+              <span className="text-body-lg font-medium">Dashboard</span>
+            </ChromeHeader>
           </div>
         </div>
-        {/* Main */}
-        <div
-          className="absolute top-0 bottom-0 right-0 left-0 px-4 py-3"
-          style={{ left: collapsed && variant === 'offcanvas' ? 0 : width }}
-        >
-          <div className="h-10 border-b border-divider mb-3 flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-neutral-hover shrink-0" />
-            <span className="text-caption text-fg-muted">page header</span>
-          </div>
-          <div className="text-[11px] text-fg-muted">主內容區域</div>
-        </div>
-      </div>
+      </SidebarProvider>
     </div>
-  )
-}
+  </div>
+)
 
 // 2026-05-17 ship per audit Dim 45 strict re-run — cva variant matrix codify
 // SidebarMenuButton cva 有 variant: { default, meta } 兩個值,本 story 展示 default vs meta 區別
@@ -630,9 +606,9 @@ export const StateBehavior: Story = {
             <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 68) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
           </SectionDescription>
           <div className="flex flex-wrap gap-6">
-            <CollapsedFrame variant="expanded" label='collapsible="icon" · expanded' width={240} collapsed={false} />
-            <CollapsedFrame variant="icon" label='collapsible="icon" · collapsed(icon mode)' width={48} collapsed />
-            <CollapsedFrame variant="offcanvas" label='collapsible="offcanvas" · collapsed(hidden)' width={240} collapsed />
+            <CollapseModeFrame label='collapsible="icon" · expanded' collapsible="icon" open />
+            <CollapseModeFrame label='collapsible="icon" · collapsed(icon mode)' collapsible="icon" open={false} />
+            <CollapseModeFrame label='collapsible="offcanvas" · collapsed(hidden)' collapsible="offcanvas" open={false} />
           </div>
         </div>
 
@@ -641,27 +617,23 @@ export const StateBehavior: Story = {
           <span className="text-caption font-medium text-fg-secondary">用 Cmd/Ctrl+B 或 SidebarTrigger 展開與收合</span>
           <SectionDescription>
             SidebarProvider 內建 Cmd+B (Mac) / Ctrl+B (Win) 全域快捷鍵,同時 SidebarTrigger iconOnly Button 作為視覺 toggle。open state 寫入 cookie(7 天);跨 session 還原需 consumer 讀 cookie 後傳 defaultOpen(詳 spec「持久化與快捷鍵」)。
+            點下方的 SidebarTrigger 或按 Cmd/Ctrl+B,sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 68),再按一次展開。
           </SectionDescription>
           <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
             <SidebarProvider style={{ minHeight: 'auto', height: '100%' }}>
               <div className="flex w-full h-full">
                 <Sidebar side="left" collapsible="icon">
                   <SidebarHeader>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-primary shrink-0" />
-                      <span className="text-body font-medium truncate">Acme Inc</span>
+                    <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
+                      <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
+                      <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
                     </div>
                   </SidebarHeader>
                   <SidebarContent>
                     <SidebarGroup>
                       <SidebarGroupContent>
                         <SidebarMenu>
-                          {[
-                            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                            { id: 'inbox', label: 'Inbox', icon: Inbox },
-                            { id: 'team', label: 'Team', icon: Users },
-                            { id: 'settings', label: 'Settings', icon: Settings },
-                          ].map((item) => (
+                          {MAIN_NAV.filter((item) => item.id !== 'notifications').map((item) => (
                             <SidebarMenuItem key={item.id}>
                               <SidebarMenuButton id={item.id} startIcon={item.icon}>
                                 {item.label}
@@ -681,9 +653,6 @@ export const StateBehavior: Story = {
                     <SidebarTrigger />
                     <span className="text-body-lg font-medium">Dashboard</span>
                   </ChromeHeader>
-                  <div className="flex-1 px-4 py-3 text-caption text-fg-muted">
-                    點 SidebarTrigger 或按 Cmd/Ctrl+B,觀察 sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 68)。再按一次展開。
-                  </div>
                 </div>
               </div>
             </SidebarProvider>
