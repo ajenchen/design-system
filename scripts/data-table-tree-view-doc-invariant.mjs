@@ -107,7 +107,9 @@ export function handCopiedHeadingHits(path, text) {
   // 唯一合法的一份:Section 小元件自己(它的 JSX 裡用 {title})
   const own = at.filter((n) => lines[n - 1].includes('{title}'))
   return at.filter((n) => !own.includes(n)).map((n) => ({ rule: 'P5', path, line: n, found: lines[n - 1].trim().slice(0, 60), fix: '改用本檔的 <Section title note>(檔頭「範例區段」),標題 / 說明 / 間距只住一份' }))
-    .concat(own.length === 1 ? [] : [{ rule: 'P5', path, line: own[0] ?? 1, found: `Section 小元件 ${own.length} 份`, fix: 'Section 小元件只准一份' }])
+    // 改用共用的 ExampleSection(stories-helpers/examples/tutorial-page.tsx)後本檔沒有自己的一份:0 份 + 真的渲染共用版(JSX `<ExampleSection`,
+    // 只在註解 / import 提到不算)也合法(data 家族 handoff/GV-dttv-p5-suggestion.diff;gov report §五 10 四方合併的 (d))
+    .concat(own.length === 1 || (own.length === 0 && /<ExampleSection\b/.test(text)) ? [] : [{ rule: 'P5', path, line: own[0] ?? 1, found: `Section 小元件 ${own.length} 份`, fix: 'Section 小元件只准一份(或改用共用的 ExampleSection)' }])
 }
 
 // ── P6:無障礙頁 ───────────────────────────────────────────────────────────────────────────────
@@ -258,6 +260,12 @@ function selftest() {
   const p5 = handCopiedHeadingHits('x', storiesBefore).map((h) => h.line).join(',')
   expect(p5 === '5', `P5 修前手抄的那一行(:5)應紅、Section 自己那一行不算,實得 ${p5}`)
   expect(handCopiedHeadingHits('x', storiesBefore.split('\n').slice(0, 3).join('\n')).length === 0, 'P5 只剩 Section 一份時應 0 筆')
+  // P5 共用版放行的兩面:0 份 + 渲染 <ExampleSection → 0 筆;0 份又沒用共用版 / 只在註解與 import 提到 / 兩份 → 仍紅
+  const sharedImport = "import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'"
+  expect(handCopiedHeadingHits('x', [sharedImport, '      <ExampleSection title="固定行高(預設)">', '      </ExampleSection>'].join('\n')).length === 0, 'P5 本檔 0 份、改用共用 ExampleSection 時應 0 筆')
+  expect(handCopiedHeadingHits('x', ['      <div>', '      </div>'].join('\n')).some((h) => /0 份/.test(h.found)), 'P5 本檔 0 份又沒用共用版時應紅')
+  expect(handCopiedHeadingHits('x', [sharedImport, '// 範例區段改用 ExampleSection', '      <div>'].join('\n')).some((h) => /0 份/.test(h.found)), 'P5 只在 import / 註解提到 ExampleSection、沒有真的渲染時應紅')
+  expect(handCopiedHeadingHits('x', [storiesBefore.split('\n').slice(0, 3).join('\n'), storiesBefore.split('\n').slice(0, 3).join('\n'), '      <ExampleSection title="x" />'].join('\n')).some((h) => /2 份/.test(h.found)), 'P5 兩份 Section 小元件時即使也用了共用版仍應紅')
   // P6
   const a11yBefore = "export const Accessibility = {\n  name: '無障礙與鍵盤',\n  render: () => (<p>{\"  鍵盤  :一般表格模式下,用 Tab 進入表格後可操作排序與勾選;方向鍵在儲存格之間移動是試算表模式才開啟的功能\"}</p>),\n}\n"
   expect((a11yPageHits('x', a11yBefore) ?? []).length === 2, 'P6 修前(沒有 F2、沒有編輯器名稱)應紅兩筆')
