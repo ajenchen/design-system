@@ -885,14 +885,16 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
     radixDefault: (event) => { radixTriggerOf(event.currentTarget instanceof Element ? event.currentTarget : null)?.focus() },
     modal: true,
   })
+  // 先取出 ref 再用(同 PopoverContent 的 attachExitFocus;理由見 DialogContent 同一段)
+  const attachExitFocus = exitFocus.ref
   const setContentRef = React.useCallback(
     (node: HTMLDivElement | null) => {
       contentRef.current = node
-      if (isModal) exitFocus.ref(node)
+      if (isModal) attachExitFocus(node)
       if (typeof ref === 'function') ref(node)
       else if (ref) ref.current = node
     },
-    [ref, isModal, exitFocus.ref],
+    [ref, isModal, attachExitFocus],
   )
 
   // Index:uncontrolled fallback

@@ -280,12 +280,15 @@ const DialogContent = React.forwardRef<
     radixDefault: (e) => { radixTriggerOf(e.currentTarget instanceof Element ? e.currentTarget : null)?.focus() },
     modal: true,
   })
+  // 先取出 ref 再用(同 PopoverContent 的 attachExitFocus):直接呼叫 `exitFocus.ref(node)` 是物件方法呼叫,
+  // react-hooks/exhaustive-deps 要整個 exitFocus 進相依(check:react-hooks 紅);取出來的函式就是同一個參照,行為不變
+  const attachExitFocus = exitFocus.ref
   const composedRef = React.useCallback((node: HTMLDivElement | null) => {
     setContentEl(node)
-    if (modal) exitFocus.ref(node)
+    if (modal) attachExitFocus(node)
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
-  }, [ref, modal, exitFocus.ref])
+  }, [ref, modal, attachExitFocus])
 
   const content = (
     <DialogPrimitive.Content

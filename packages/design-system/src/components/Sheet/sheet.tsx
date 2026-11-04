@@ -165,12 +165,14 @@ const SheetContent = React.forwardRef<
     radixDefault: (e) => { radixTriggerOf(e.currentTarget instanceof Element ? e.currentTarget : null)?.focus() },
     modal: true,
   })
+  // 先取出 ref 再用(同 PopoverContent 的 attachExitFocus;理由見 DialogContent 同一段)
+  const attachExitFocus = exitFocus.ref
   const composedRef = React.useCallback((node: HTMLDivElement | null) => {
     contentRef.current = node
-    if (modal) exitFocus.ref(node)
+    if (modal) attachExitFocus(node)
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
-  }, [ref, modal, exitFocus.ref])
+  }, [ref, modal, attachExitFocus])
   return (
     <SheetPortal container={portalContainer ?? undefined}>
       <SheetOverlay />
