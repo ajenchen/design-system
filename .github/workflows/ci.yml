@@ -639,8 +639,10 @@ jobs:
         run: |
           npx --no-install playwright install chromium
           # 虛擬游標模態閘的**對照組**(2026-09-29,待辦總帳 G5):`test:virtual-cursor-modality` 只跑現況,它的 --selftest
-          # (把游標列釘回舊行為 → 100 條游標長相斷言必須全紅)在整個 repo 沒有任何執行面跑過 —— 夜間 harness 的 meta-test
-          # 包裝在沒有 storybook-static 的拋棄式快照裡恆略過。現況那趟在 verify-browser-cursor(上限 15);對照組 CI 逐支計時 102–139 秒,
+          # (把游標列釘回舊行為 → 100 條游標長相斷言必須全紅)當時在整個 repo 沒有任何執行面跑過 —— 夜間 harness 的 meta-test
+          # 包裝在沒有 storybook-static 的拋棄式快照裡恆略過;2026-11-04 夜間 meta-test 拆 lane(總帳 SM2)後,它改在會先建 storybook 的
+          # browser lane 跑(哪一條見 infra/governance/providers/harness-source-inventory.json pairedMeta.lanes 的 members),這裡仍是 PR 必過的那一趟。
+          # 現況那趟在 verify-browser-cursor(上限 15);對照組 CI 逐支計時 102–139 秒,
           # 照 2026-09-15 按預算拆 job 的先例放在這裡(原本在 verify-browser-datatable-perception,2026-10-14 拆出)。
           node scripts/virtual-cursor-modality-invariant.mjs --selftest
           # useFormValidation 契約的**對照組**(2026-10-01):判定在 verify-browser-interaction,

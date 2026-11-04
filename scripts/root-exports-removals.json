@@ -1,5 +1,5 @@
 {
-  "$comment": "root-exports-invariant 的登記清單:上一次發布(key = 該版 tag)時是 npm root 出口、現在拿掉(或從執行期降成只剩型別)的名字。這份就是發布說明「破壞性變更 → root 出口」的來源;下一次發布後,舊 tag 那一段整段刪掉(閘會紅)。kind:value = 執行期(dist index.mjs 有)/ type = 只有型別(.d.ts)。",
+  "$comment": "root-exports-invariant 的登記清單:上一次發布(key = 該版 tag)時是 npm root 出口、現在拿掉(或從執行期降成只剩型別)的名字。這份就是發布說明「破壞性變更 → root 出口」的來源;發版前用 --notes=<發布說明草稿> 驗這一版說明逐一寫了這些名字;下一次發布後,先用 --notes=<那一版實際發出去的說明> 驗過全部收錄,再把舊 tag 那一段整段刪掉(閘會紅提醒)。kind:value = 執行期(dist index.mjs 有)/ type = 只有型別(.d.ts)。",
   "releases": {
     "v0.1.0-beta.147": [
       {

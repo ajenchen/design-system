@@ -6,7 +6,7 @@
 #   Pre-consolidation: 32 hooks → BLOCKER 30 cap breached
 #   This dispatcher folds 9 lib/_*.sh helpers into one hook registration
 #   Lib helpers remain as standalone testable files (renamed `_*` per Unix internal-helper convention)
-#   Current registration impact: 8 helper rules behind 1 registered dispatcher(2026-10-28 退役
+#   Current registration impact: 8 helper rules behind 1 registered dispatcher(2026-11-04 退役
 #   _layout_space_canonical.sh:它教的是 v1 的 block 相鄰判法(block 相鄰 = tight、inline ↔ inline = loose),且用 grep -m
 #   截斷;間距看 layoutSpace.spec.md 規則 3 親疏。檔案留在 hooks/retired/)。
 #
