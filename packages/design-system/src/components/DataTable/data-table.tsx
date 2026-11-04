@@ -369,7 +369,7 @@ const columnHeaderDomId = (base: string, columnId: string): string => `${base}co
  * 格裡自己能操作的東西(試算表模式 Enter / F2 把焦點放進格裡時,落在第一個;2026-10-13 待辦總帳 Q3c):
  * 連結格 = 網址連結 → 鉛筆;開關格 = 勾選框。W3C APG grid "Editing and Navigating Inside a Cell":
  * Enter / F2 "If the cell contains one or more widgets, places focus on the first widget."
- * (owner `ds-canonical/references/keyboard-model-canonical.md`「`F2` 為什麼一定要有」那一節:F2 恆為進到格裡的控件,再按一次回到格導覽)。
+ * (owner `ds-canonical/references/keyboard-model-canonical.md`「進格用什麼鍵 › 規則」那一段:F2 恆為進到格裡的控件,再按一次回到格導覽)。
  */
 const CELL_WIDGET_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), [role="checkbox"]:not([aria-disabled="true"])'
 
@@ -3808,7 +3808,7 @@ function DataTableInner<TData>(
       }
       // 格內模式 → 格導覽(2026-10-13,待辦總帳 Q3c):焦點在某一格裡的控件上(連結 / 鉛筆 / 勾選框)時,
       // F2 或 Esc 把焦點收回表格根節點、格游標停在那一格。W3C APG grid:"A subsequent press of F2 restores grid navigation
-      // functions." / "Escape: restores grid navigation."(owner keyboard-model-canonical.md「`F2` 為什麼一定要有」那一節:出格一律 Escape,F2 亦可)。
+      // functions." / "Escape: restores grid navigation."(owner keyboard-model-canonical.md「進格用什麼鍵 › 規則」那一段:出格一律 Escape,F2 亦可)。
       // 在編輯器裡(editingCellId)的 F2 / Esc 屬於編輯器(結算 / 取消),不走這裡。
       if (spreadsheetMode && targetIsEmbeddedControl && editingCellId == null && (e.key === 'F2' || e.key === 'Escape')) {
         const cellEl = spreadsheetKbTarget?.closest<HTMLElement>('[data-cell-id]')
