@@ -4083,8 +4083,11 @@ function DataTableInner<TData>(
         {/* @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給) */}
         <div data-col-menu className={cn(
           'shrink-0 inline-flex w-0 overflow-hidden opacity-0',
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-hover:w-auto group-hover:ml-2 group-hover:overflow-visible group-hover:opacity-100',
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-has-[:focus-visible]:w-auto group-has-[:focus-visible]:ml-2 group-has-[:focus-visible]:overflow-visible group-has-[:focus-visible]:opacity-100',
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
         )}>
           <DropdownMenu>

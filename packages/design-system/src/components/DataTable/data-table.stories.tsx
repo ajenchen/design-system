@@ -1428,7 +1428,7 @@ export const WithBulkActions: Story = {
         {(showHint || selectedCount > 0) && (
           <div className="flex flex-col">
             {showHint && (
-              // 提示列的動作放 Alert 自己的 endContent,用 Button variant="link"(button.tsx「內文連結」那一型)——
+              // 提示列的動作放 Alert 自己的 endContent,用 Button variant="link"(button.tsx「內文連結(inline reading)」那一型)——
               // 之前是句子裡的原生 <button>,還附了「DS 尚無 inline text link primitive、Alert 無 action slot」的豁免標記,兩句都不成立
               <Alert
                 variant="neutral"
