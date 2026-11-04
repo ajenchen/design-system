@@ -1,11 +1,21 @@
 name: Governance harnesses(nightly)
 
-# The full 13-domain governance harness suite (~65 minutes) is deliberately kept
-# out of the PR gate (ci.yml documents that trade-off). Until now it had NO CI
-# execution lane at all, so harness-only tests could rot on main for days
-# (2026-08-04/05 lean audit: three such breakages). This nightly lane bounds
-# that rot window to one day without slowing pull requests. It is not a
-# required check and never blocks the five-step release.
+# The full 13-domain governance harness suite is deliberately kept out of the
+# PR gate (ci.yml documents that trade-off). Until now it had NO CI execution
+# lane at all, so harness-only tests could rot on main for days (2026-08-04/05
+# lean audit: three such breakages). This nightly lane bounds that rot window
+# to one day without slowing pull requests. It is not a required check and
+# never blocks the five-step release.
+#
+# Job deadline (2026-10-14, remediation ledger SM2): the gate meta-tests now run
+# as separate lanes (infra/governance/providers/harness-source-inventory.json
+# pairedMeta.lanes), each with an explicit lane budget that the runner enforces
+# itself; the Harness outer deadline per lane is that budget + 60 s. The job
+# deadline must cover every meta lane at its full outer deadline plus a 45-minute
+# reserve for setup and the non-meta suites (measured 2026-09-28: ~2 min setup,
+# ~25 min non-meta), so a slow lane is always reported by name by the runner
+# instead of the whole job being cancelled. That inequality is asserted by
+# infra/governance/test/harness-registry.test.mjs against the registry.
 on:
   schedule:
     - cron: '0 3 * * *'
@@ -22,7 +32,7 @@ jobs:
   all-harness:
     name: All-Harness(full governance suite)
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 355
     steps:
       - name: Checkout protected main
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

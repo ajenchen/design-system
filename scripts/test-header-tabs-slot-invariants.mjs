@@ -8,13 +8,13 @@
 // render 值,不是 source 字面)。
 //
 // 兩個 runtime-gate 專屬處理(vs 純 source-reading gate 的 meta-test;同 test-data-table-invariants.mjs):
-//   1) 前置:此 gate 需 built storybook-static。canonical gate-meta runner 的 snapshot 刻意不複製
-//      ignored build output,所以此 meta-test 只在 disposable snapshot 內自行 build;不會回寫 caller。
+//   1) 前置:此 gate 需 built storybook-static。gate-meta lane 裡由宣告 storybook: "lane-build" 的 lane 先建好
+//      (scripts/run-gate-meta-tests.mjs);這支自己不再建(2026-10-14 起,SM2)。
 //   2) 注入目標 CSS 檔名帶 build hash(preview-<hash>.css)→ 動態掃 assets/*.css 找含該 token 宣告
 //      的檔,不寫死。token 在 layoutSpace.css 有 3 處宣告(root / lg override / md reset)→ 全域
 //      replace + 掃所有含宣告的 css 檔(只改第一處可能被 cascade 後宣告蓋回 → meta-test 假紅)。
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, existsSync, readdirSync, realpathSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resignBuildManifest } from './lib/storybook-static-snapshot.mjs'
@@ -30,37 +30,14 @@ const runGate = () => {
   return { status: result.status ?? 1, text: `${result.stdout ?? ''}${result.stderr ?? ''}` }
 }
 
-// 前置:canonical runner 不會把 ignored storybook-static 帶入 snapshot。只允許在已標記的
-// disposable snapshot 自行建立,避免單獨執行 meta-test 時意外寫入 caller 工作區。
+// 前置:需要已 build 的 storybook-static。gate-meta lane 裡**唯一**的建置者是 lane 本身
+// (pairedMeta.lanes 裡 storybook: "lane-build" 的 lane 先 build 一次再跑成員,scripts/run-gate-meta-tests.mjs)。
+// 2026-10-14 以前這裡會在拋棄式快照裡自己 build —— 於是排在它後面、本來「缺建置 → 略過」的瀏覽器 meta-test
+// 全部變成真跑,夜間 45 分鐘上限連 7 晚被撐爆(待辦總帳 SM2)。缺建置就照實紅,不再順手建。
 const STATIC = join(ROOT, 'storybook-static')
 if (!existsSync(STATIC)) {
-  const disposableRoot = process.env.GOVERNANCE_DISPOSABLE_SNAPSHOT_ROOT
-  if (!disposableRoot || realpathSync(disposableRoot) !== realpathSync(ROOT)) {
-    console.error('✗ storybook-static 缺 — 先 `npm run build-storybook`(header-tabs-slot-invariants 需 built artifact 才能跑)')
-    process.exit(1)
-  }
-  // A clean snapshot has no ignored workspace dist either.  Build the library
-  // surface first so storybook-config can resolve @qijenchen/design-system.
-  for (const [label, args] of [
-    ['library prerequisite', ['run', '--silent', 'build:lib']],
-    ['Storybook', ['run', '--silent', 'build-storybook']],
-  ]) {
-    const build = spawnSync('npm', args, {
-      cwd: ROOT,
-      env: process.env,
-      encoding: 'utf8',
-      maxBuffer: 32 * 1024 * 1024,
-    })
-    if (build.status !== 0) {
-      const detail = `${build.stderr || build.stdout || build.error?.message || build.signal || 'unknown failure'}`.trim()
-      console.error(`✗ disposable snapshot ${label} build 失敗:${detail.slice(-2000)}`)
-      process.exit(1)
-    }
-  }
-  if (!existsSync(STATIC)) {
-    console.error('✗ disposable snapshot Storybook build exit 0 但未產生 storybook-static')
-    process.exit(1)
-  }
+  console.error('✗ storybook-static 缺 — 先 `npm run build-storybook`(header-tabs-slot-invariants 需 built artifact 才能跑;gate-meta lane 由宣告 storybook: "lane-build" 的 lane 先建好)')
+  process.exit(1)
 }
 
 // 找注入目標:含 `--layout-space-loose:` 宣告的 built CSS(檔名帶 build hash → 動態掃,禁寫死;

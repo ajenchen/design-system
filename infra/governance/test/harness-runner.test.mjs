@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
@@ -35,7 +35,7 @@ const registry = readHarnessRegistry()
 const inventory = readHarnessSourceInventory()
 const executionOwnedLocalSources = new Set([
   ...inventory.suites.flatMap(suite => suite.members),
-  ...inventory.pairedMeta.members,
+  ...inventory.pairedMeta.lanes.flatMap(lane => lane.members),
   ...inventory.direct,
 ])
 const expectedExecutionOwnedLocalSources = executionOwnedLocalSources.size
@@ -522,6 +522,48 @@ test('real executor has a bounded timeout and strips external credentials/proces
     assert.equal(result.isolatedHomeRemoved, true)
   } finally {
     rmSync(timeoutRoot, { recursive: true, force: true })
+  }
+})
+
+test('isolated HOME cleanup repairs owner permissions a killed command left read-only, without following symlinks', async () => {
+  // 2026-09-22 → 09-28:run-gate-meta-tests 在 45 分鐘被砍,closed hook tool profile 的 0o500 根目錄沒機會收尾,
+  // harness 清 HOME 一律 EACCES(isolatedHomeRemoved: false)。這裡重現同一個形狀:唯讀目錄裡有檔 + 指向外部檔的 symlink,
+  // 而且一面正常結束、一面被逾時砍掉 —— 兩面都必須刪得乾淨,外部檔的權限不得被改。
+  const probeRoot = mkdtempSync(resolve(tmpdir(), 'governance-harness-readonly-residue-'))
+  try {
+    const outsideTarget = join(probeRoot, 'outside-target.txt')
+    writeFileSync(outsideTarget, 'outside\n')
+    chmodSync(outsideTarget, 0o444)
+    for (const [label, tail, expectedStatus] of [
+      ['exits', '', 'passed'],
+      ['hangs', 'setInterval(() => {}, 1000)', 'timed-out'],
+    ]) {
+      const probe = join(probeRoot, `readonly-residue-${label}.mjs`)
+      writeFileSync(probe, [
+        "import { chmodSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs'",
+        "import { join } from 'node:path'",
+        "const locked = join(process.env.HOME, 'tmp', 'qijenchen-closed-hook-tools-probe')",
+        "mkdirSync(join(locked, 'nested'), { recursive: true })",
+        "writeFileSync(join(locked, 'nested', 'residue.txt'), 'x')",
+        `symlinkSync(${JSON.stringify(outsideTarget)}, join(locked, 'git'))`,
+        "chmodSync(join(locked, 'nested'), 0o500)",
+        'chmodSync(locked, 0o500)',
+        tail,
+      ].join('\n'))
+      const result = await executeHarnessCommand(['node', probe], {
+        repoRoot: DEFAULT_REPO_ROOT,
+        timeoutMs: 2_000,
+        environment: { PATH: process.env.PATH },
+        stdio: 'ignore',
+      })
+      assert.equal(result.status, expectedStatus, `${label}:${result.error}`)
+      assert.equal(result.isolatedHomeRemoved, true, `${label}:${result.error}`)
+      assert.equal(result.error, null)
+    }
+    assert.equal(lstatSync(outsideTarget).mode & 0o777, 0o444, 'cleanup followed a symlink and changed the target mode')
+  } finally {
+    chmodSync(probeRoot, 0o700)
+    rmSync(probeRoot, { recursive: true, force: true })
   }
 })
 

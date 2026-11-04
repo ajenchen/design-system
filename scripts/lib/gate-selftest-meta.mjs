@@ -62,6 +62,9 @@ const SKIP_PATTERN = new RegExp(`${literal(SKIPPED_ENV_MARKER)}|Failed to launch
 // 而 `pagination-narrow-ladder-invariant` 與 `agent-fab-hit-area-invariant` 是 **1**
 // (原文:`✗ storybook-static missing. Run \`npm run build-storybook\` first.`)。
 // 認訊息而不是只認退出碼:訊息是閘自己印的、語意明確,退出碼在各閘之間不一致。
+// **2026-10-14 起(SM2)**:gate-meta 分 lane。storybook: "absent" 的 lane 保證沒有建置,在那裡印出這個略過 =
+// 放錯 lane,runner(scripts/run-gate-meta-tests.mjs)判紅並指名;storybook: "lane-build" 的 lane 先 build 再跑,
+// 並宣告 GOVERNANCE_BROWSER_REQUIRED=1 —— 下面第 3 步就把缺建置判成 prerequisite-required(紅)。
 // MISSING-BUILD 是 2026-09-25 起的標準標記(launch-browser.mjs requireStorybookBuild);
 // 後兩句是更早的閘已經在印的訊息,保留辨認。
 const MISSING_PREREQUISITE_MESSAGE = new RegExp(
