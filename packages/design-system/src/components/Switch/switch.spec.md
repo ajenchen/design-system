@@ -181,7 +181,7 @@ Switch 可透過 `label` / `description` props 內部直接渲染一整列設定
 
 一列一個開關的設定列(有沒有說明都一樣)用上方自帶標題的 `<Switch label description>`,**toggle 在列尾、標題左對齊**，讓列與列對齊並加快掃描;列與列之間照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「跨範疇 + parallel」= `loose`(每列各管一件事)。`<Field orientation="horizontal">` 裡的 Switch 跟其他控件同起點,**不自動靠右,不需要 consumer 傳 className**。
 
-**混合表單**(同表單有 Input / SegmentedControl 等其他控件)= Form-edit 情境 → Switch 與其他控件**左對齊**(預設即是,不用再傳 `className="ml-0"`)。錨例:`field.stories.tsx`「SegmentedControl 作為 Field 控制元件」混合表單段(2026-06-10 user 拍板修正)。
+**混合表單**(同表單有 Input / SegmentedControl 等其他控件)= Form-edit 情境 → Switch 與其他控件**左對齊**(預設即是,不用再傳 `className="ml-0"`)。錨例:`field.stories.tsx`「SegmentedControl 作為 Field 控制元件」混合表單段(2026-06-10 記為 user 拍板修正,來源不明:登記簿查無原話)。
 
 自帶標題的設定列視覺上等同於 horizontal `<DescriptionItem>`(label 左 / value 右 `justify-between`)——同一個心智模型:**label 描述、trailing slot 呈現狀態**(value 或 toggle)。
 
