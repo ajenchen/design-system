@@ -79,8 +79,8 @@ function OverflowCount({ count, className }: { count: number; className: string 
 }
 
 /**
- * tag 形「+N」字的左右內距:指示器與量尺共用這一個值,兩邊才逐像素同寬。值 = 已發布版(ec7466f5 的 `<span className="px-1">+{count}</span>`)原樣保留;
- * 規格沒寫這個值,不另補規格(layoutSpace.spec.md 規則 6 / F-S8:既有畫面不改)。
+ * tag 形「+N」字的左右內距:指示器與量尺共用這一個值,兩邊才逐像素同寬。
+ * 規格沒寫這個值 → 照已發布版(ec7466f5 的 `<span className="px-1">+{count}</span>`)原值保留、不另補規格(F-S8:既有畫面不經 user 同意不改)。
  */
 const TAG_COUNT_INSET_X = 'px-1'
 

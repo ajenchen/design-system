@@ -40,23 +40,27 @@ const SHAPES: ShapeKey[] = ['circle', 'tag']
 // 真實隱藏項目池(reviewer / assignee 溢出情境;count 可調,超出池長度時循環)— 取代編號 placeholder
 const HIDDEN_REVIEWERS = ['林思妤', '陳柏宇', 'Aisha Khan', '黃冠霖', 'Diego Santos', '王品澄', 'Nadia Petrova', '張哲瑋']
 
-// 規格頁的 +N 浮層裡放真的內容(稽核 L085):圓形 = 隱藏的人(同 PersonDisplay 的人員 Tag:neutral sm Tag + 16px 頭像 + 名片),
-// 標籤形 = 隱藏的標籤;不寫「預覽」「N 人隱藏」這種佔位字
+// 規格頁的 +N 浮層裡放真的內容(稽核 L085「換成真實內容(隱藏的人名 / 標籤…)」),不寫「預覽」「N 人隱藏」這種佔位字。
+// 圓形 = 隱藏的人:每人一列的名字,與已發布版(main ec7466f5)元件檢閱器同一份寫法 —— 人員清單長相(每人一列 / 人員 Tag 橫排)
+// 待 user 決定(稽核 M083),決定前不在規格頁先改成其中一種。標籤形 = 隱藏的標籤:同產品 OverflowTagList 的預設(`<Tag size="sm">`)。
 const HIDDEN_LABELS = ['付款流程', '前端', 'QA', '無障礙', '效能', '設計審查', '文件', '後端']
+function HiddenPeople({ count }: { count: number }) {
+  return (
+    <div className="flex flex-col gap-1 text-caption min-w-[140px]">
+      {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
+        <span key={i}>{HIDDEN_REVIEWERS[i % HIDDEN_REVIEWERS.length]}</span>
+      ))}
+      {count > 8 && <span className="text-fg-muted">…及其他 {count - 8} 位</span>}
+    </div>
+  )
+}
 function HiddenItems({ shape, count }: { shape: ShapeKey; count: number }) {
-  const n = Math.min(count, 8)
+  if (shape === 'circle') return <HiddenPeople count={count} />
   return (
     <>
-      {Array.from({ length: n }).map((_, i) =>
-        shape === 'circle' ? (
-          <Tag key={i} color="neutral" size="sm" avatar={<Avatar size={16} src={`https://i.pravatar.cc/48?u=hidden-${i}`} alt={HIDDEN_REVIEWERS[i]} hoverCard={personHover(HIDDEN_REVIEWERS[i], `https://i.pravatar.cc/96?u=hidden-${i}`)} />}>
-            {HIDDEN_REVIEWERS[i]}
-          </Tag>
-        ) : (
-          <Tag key={i} color="neutral" size="sm">{HIDDEN_LABELS[i]}</Tag>
-        ),
-      )}
-      {count > 8 && <span className="text-caption text-fg-muted">…及其他 {count - 8} {shape === 'circle' ? '位' : '個'}</span>}
+      {HIDDEN_LABELS.slice(0, Math.min(count, HIDDEN_LABELS.length)).map((label) => (
+        <Tag key={label} size="sm">{label}</Tag>
+      ))}
     </>
   )
 }
@@ -233,7 +237,7 @@ function OverflowInspector() {
           <div className="p-6 rounded-md border border-divider bg-muted flex items-center gap-4">
             <span className="text-caption text-fg-muted">hover 看展開:</span>
             <OverflowIndicator count={count} shape={shape} size={size}>
-              <HiddenItems shape={shape} count={count} />
+              <HiddenPeople count={count} />
             </OverflowIndicator>
           </div>
         </div>
