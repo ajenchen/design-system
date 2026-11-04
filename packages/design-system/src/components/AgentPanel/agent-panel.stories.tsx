@@ -405,7 +405,7 @@ export const DecisionCardSingle: Story = {
  *  2. 單選、不預選(署名 = 稱謂類,產題守則 8 例外)—— 沒選時沒有鈕,選了之後才出現;
  *  3. 複選 —— 方框本來就能逐一取消,沒有「清除選取」;一項都不勾照常送出。
  *  題目與選項是 AI 依產題守則擬的(user 10-30 只提了「選填單選 + 清除」,沒有指定範例內容)。 */
-const OPTIONAL_QUESTIONS = [
+const OPTIONAL_QUESTIONS: AgentDecisionQuestion[] = [
   {
     id: 'cover',
     label: '公告要附哪張封面圖?',
@@ -442,20 +442,10 @@ const OPTIONAL_QUESTIONS = [
 export const DecisionCardOptional: Story = {
   name: '決策卡選填題',
   render: () => (
-    <PanelFrame>
-      {({ close }) => (
-      <AgentPanel onClose={close}>
-        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
-        <AgentConversation>
-          <AgentMessage role="agent">語氣與發布時間都定了。封面圖我先選了建議的那張,不要可以清掉;署名與要標記的組可以不選,沒選的就照草稿。</AgentMessage>
-        </AgentConversation>
-        <div className="relative">
-          <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-          <AgentDecisionCard questions={OPTIONAL_QUESTIONS} onSubmit={noop} onSkip={noop} />
-        </div>
-      </AgentPanel>
-      )}
-    </PanelFrame>
+    <DecisionCardScene
+      questions={OPTIONAL_QUESTIONS}
+      intro="語氣與發布時間都定了。封面圖我先選了建議的那張,不要可以清掉;署名與要標記的組可以不選,沒選的就照草稿。"
+    />
   ),
 }
 

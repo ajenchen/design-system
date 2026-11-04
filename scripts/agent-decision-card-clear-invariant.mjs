@@ -328,7 +328,10 @@ async function runOptional(fault) {
   await clickCenter(btn(s, PRIMARY).rect)
   await settleAfterInteraction(page, { frames: 5 })
   s = await readCard(page)
-  record('O14', '選填複選一項都不勾按「送出」→ 沒有錯誤訊息', !!s && !s.error && noneChecked(s), `錯誤 ${s?.error ?? '無'}`)
+  // 範例的送出 = 真的送出(共用 DecisionCardScene:卡收起、對話多一則決策回執),所以「照常送出」量的是卡收起 + 回執出現;
+  // 沒過驗證時卡留著、錯誤訊息掛在卡裡 → s 不是 null,本條紅。
+  const receipt = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
+  record('O14', '選填複選一項都不勾按「送出」→ 照常送出(卡收起、對話多一則決策回執)、沒有錯誤訊息', s === null && receipt, s ? `卡還在、錯誤 ${s.error ?? '無'}` : `回執 ${receipt ? '有' : '沒有'}`)
   return results
 }
 
