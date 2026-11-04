@@ -1981,8 +1981,13 @@ for (const [storyName, label, steps] of [
   record('I27a', 'availablePx 不得取自頭像串自己的寬度',
     /availablePx\b/.test(code) && !/availablePx[\s:=]+el\.clientWidth/.test(code),
     /availablePx[\s:=]+el\.clientWidth/.test(code) ? '仍在量自己(棘輪未拆)' : 'ok')
+  // 2026-11-04(fields FL-f3 把守衛改成 `if (availablePx <= 0) { lastAvailable = -1; return }` —— 重設上次量到的值再早退,
+  // 版面回來時才會重量)後這條假紅:守的是「≤ 0 就不拿去算、直接離開」,不是「return 緊接在 if 後面」這個寫法。
+  // 現在接受單行 return 與「區塊裡最後是 return」兩種寫法;區塊裡若在 return 前就拿 availablePx 去算(呼叫函式),照樣紅。
+  const guard = code.match(/if\s*\(availablePx\s*<=\s*0\)\s*(return\b|\{([^{}]*)\})/)
+  const guardOk = Boolean(guard) && (guard[1] === 'return' || (/\breturn\b\s*;?\s*$/.test(guard[2].trim()) && !/availablePx\s*[,)]/.test(guard[2])))
   record('I27a', '寬度 ≤ 0(尚未佈局)時不得拿去算,否則會鎖進收縮態',
-    /if\s*\(availablePx\s*<=\s*0\)\s*return/.test(code), '缺少 <=0 早退守衛')
+    guardOk, guard ? `守衛寫法:${guard[0].replace(/\s+/g, ' ').slice(0, 80)}` : '缺少 <=0 早退守衛')
 }
 await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, ':is([role="cell"], [role="gridcell"])')
 {
