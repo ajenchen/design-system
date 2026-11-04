@@ -1467,7 +1467,7 @@ const sidebarMenuButtonVariants = cva(
     //   (https://github.com/mui/material-ui/blob/86f517337f96df28a31cc97f4b5f4a7b5efba066/docs/data/material/components/drawers/MiniDrawer.tsx#L24-L43 、#L152)。
     // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     "hover:bg-neutral-hover hover:text-foreground",
-    // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = sidebar.spec.md「Inline actions」段「指標在動作鈕上時(巢狀 hover)」):
+    // 巢狀 hover(2026-09-25,user 選『卡片保留、按鈕再亮一層 (Recommended)』,選項由 AI 提供;SSOT = sidebar.spec.md「Inline actions」段「指標在動作鈕上時(巢狀 hover)」):
     // 指標移到同一列的動作鈕(inlineActions 的 suffix span / SidebarMenuAction)上,列保留上一行的 hover,動作鈕再亮自己那層。
     // 需要這兩行是因為動作鈕是列鈕的**同層兄弟**(避免 button 包 button,見下方 suffixNode 註解)—— 指標在兄弟上時列鈕不算 :hover。
     // - `~` 只往後找:動作必須排在列鈕後面(兩個內建出口都是;SidebarMenuAction 的 peer-data 也早就要求這個順序)。
@@ -1497,7 +1497,7 @@ const sidebarMenuButtonVariants = cva(
     // 2026-09-07「A5畫框」只補了當前項,2026-09-09 user 拍板後全部畫框、焦點不再改底色)。
     "data-[active=true]:hover:bg-neutral-selected",
     "group-has-[[data-sidebar=menu-action]]/menu-item:pr-8",
-    // 2026-05-21 v5 restore label 硬隱藏(user 抓「label 沒消失」):
+    // 2026-05-21 v5 restore label 硬隱藏(user 回報收合後 label 沒有消失;原話查無,轉述):
     // C* outer overflow-x:hidden 理論 clip,但 label.x=40 在 sidebar-width-icon=48 內 → 首字
     // 部分可見。instant 切換非 main animation,跟 C* 「不用 display:none 做主
     // 動畫」不衝突(label 不參與 width 動畫,純 final state)。
@@ -1757,7 +1757,7 @@ const SidebarMenuButton = React.forwardRef<
         // 「不出」= 不讓它開(`open={false}`),不是開了再藏:2026-10-14 前寫 TooltipContent `hidden`,Radix 照樣進 open 狀態 →
         // 登記 DismissableLayer(Menu 浮層裡第一下 Esc 被它吃掉、要按兩下才收回)+ aria-describedby 指向跟標籤同字的提示(報讀念兩次)
         // (2026-10-15 r1b 複驗 N3)。永遠包著 Tooltip、只切 `open`:元素樹不換,收合 / 展開時列鈕不重掛、焦點不掉 ——
-        // 全 DS 同一條寫法(`../../patterns/element-anatomy/truncated-text.spec.md`「永遠 wrap Tooltip、`open={… ? undefined : false}`」)。
+        // 全 DS 同一條寫法(`../../patterns/element-anatomy/truncated-text.spec.md`「永遠 wrap Tooltip、`open={isTruncated ? undefined : false}`」)。
         const railTooltip = surface.surface === "flow" && surface.state === "collapsed"
         return (
           <Tooltip open={railTooltip ? undefined : false}>

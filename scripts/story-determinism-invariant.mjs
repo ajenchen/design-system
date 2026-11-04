@@ -11,7 +11,8 @@
  * 為什麼有這支(2026-10-20,教學頁稽核 N3):DataTable 虛擬捲動的教學範例用 `Product 0001…0500` + Math.random 價格,
  *   同一份建置兩次載入,Product 0001 一次 $65、一次 $2,336 —— 畫面截圖、像素比對與視覺基準圖都無法重現,而且是佔位內容
  *   (example-selection.md:19)。同族另兩處(data-table.anatomy、data-table.stories 的價格)一併改成決定性產生器;
- *   sidebar.stories.tsx:152 早在 2026-06-02 就因同一個理由改成固定值,但一直只靠紀律,沒有任何閘。
+ *   Sidebar 展示頁 PageContent 的指標卡早在 2026-06-02 就因同一個理由改成固定值(那四張卡 2026-11-05 隨 SB-d6 換成共用的 InsightsView),
+ *   但一直只靠紀律,沒有任何閘。
  *
  *   node scripts/story-determinism-invariant.mjs              判定(exit 0 綠 / 1 紅 / 2 儀器失效)
  *   node scripts/story-determinism-invariant.mjs --selftest   對照組
