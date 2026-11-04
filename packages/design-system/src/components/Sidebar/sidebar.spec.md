@@ -687,7 +687,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 | `--sidebar-width-icon` | `calc(2 * var(--layout-space-loose) + var(--sidebar-menu-icon-size))` | icon 模式寬度(2026-05-21 v3 撤回 `3rem` hardcode,改 geometry formula 保證 icon center x = loose + icon/2 在展開/收合一致;**md = 2×16+16 = 48 / lg = 2×24+20 = 68**,跟 chrome-header-height 解耦)|
 | `--sidebar-menu-icon-size` | `1rem` (16px) | sidebar menu icon 大小(per ICON_SIZE.sm/md=16);size=lg 罕見 case override `1.25rem` |
 
-**用 rem**：跟隨 root font-size，支援 accessibility 等比例縮放。**不用 layoutSpace / uiSize 推導**：sidebar width 是容器維度，不是間距或元件內高度，語意不同；耦合會讓寬度跟間距連動。**15rem** = 上表 user 2026-05-21 定的 240;浮層與並排共用同一份寬度紀錄,沒有浮層專用寬(2026-10-14 前的 `--sidebar-width-mobile` 18rem 隨 768 抽屜退場)。`--sidebar-width-icon` 用 geometry formula(2026-05-21 v3)`calc(2*loose + icon-size)` 保證 collapse/expand icon center x 一致。
+**用 rem**：跟隨 root font-size，支援 accessibility 等比例縮放。**不用 layoutSpace / uiSize 推導**：sidebar width 是容器維度，不是間距或元件內高度，語意不同；耦合會讓寬度跟間距連動。**15rem** = 240,user 2026-05-21 原話定的(逐字見上表 `--sidebar-width` 那列,commit `e58576a6`);浮層與並排共用同一份寬度紀錄,沒有浮層專用寬(2026-10-14 前的 `--sidebar-width-mobile` 18rem 隨 768 抽屜退場)。`--sidebar-width-icon` 用 geometry formula(2026-05-21 v3)`calc(2*loose + icon-size)` 保證 collapse/expand icon center x 一致。
 
 ---
 
