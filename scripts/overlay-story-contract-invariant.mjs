@@ -535,19 +535,13 @@ async function runRuntime({ mutateRow = null } = {}) {
       }
     }
 
-    // R2 亮色卡陰影 + R3 說明對齊(TriggerShowcase)
-    for (const density of ['md', 'lg']) {
-      await open('design-system-internal-hovercard-展示--trigger-showcase', { density })
-      await mutate('R3')
-      const tops = await page.evaluate(() => [...document.querySelectorAll('#storybook-root span')].filter((s) => /^trigger:/.test(s.textContent.trim())).map((s) => s.getBoundingClientRect().top))
-      if (tops.length !== 3) fail(`觸發點類型與延遲:說明數 ${tops.length}(應為 3)`)
-      rec('R3', Math.max(...tops) - Math.min(...tops) <= 0.5, `TriggerShowcase ${density}:三則說明上緣 ${tops.map((t) => t.toFixed(1)).join(' / ')}`)
-    }
+    // R2 亮色卡陰影(TriggerShowcase「觸發延遲」)
+    // 2026-10-28 稽核 M017(overlay 0ea107d1):這則只留 DS 實際用到的那一種觸發點(人員頭像),「Button / 文字連結」兩個
+    // 觸發點與三則 trigger: 說明一起拿掉 → R3「並排說明同一條線」在這則已無對象(R3 仍由下方 HoverCard 原則頁與 CircularProgress 原則頁量);
+    // R2 照量剩下的頭像觸發點
     await open('design-system-internal-hovercard-展示--trigger-showcase')
     for (const [sel, what] of [
       ['#storybook-root [role="img"][aria-label="Ada Chen"], #storybook-root button[aria-label="Ada Chen 個人資訊"]', 'trigger: Avatar'],
-      ['#storybook-root button:has-text("查看位置")', 'trigger: Button'],
-      ['#storybook-root a:has-text("PR #1,234")', 'trigger: text link'],
     ]) {
       await openHoverCard(sel, what)
       await mutate('R2')
@@ -663,6 +657,8 @@ async function runRuntime({ mutateRow = null } = {}) {
     // R7 aria-describedby
     for (const id of ['design-system-components-dialog-展示--open-snapshot', 'design-system-components-dialog-展示--list-body', 'design-system-components-dialog-展示--header-actions', 'design-system-components-sheet-展示--open-snapshot', 'design-system-components-fileviewer-展示--open-snapshot']) {
       await open(id)
+      // 展示 story 按了才開(D2 甲,2026-10-28):沒有開著的對話框就點 story 裡第一顆看得見的鈕(= 觸發鈕);open-snapshot 本來就開著
+      if (!(await page.locator('[role="dialog"][data-state="open"]').count())) await page.locator('#storybook-root button:visible').first().click({ timeout: 10_000 }).catch(() => {})
       await waitFor(() => !!document.querySelector('[role="dialog"][data-state="open"]'), null, `${id} 開著的對話框`)
       await settle(300)
       await mutate('R7')
@@ -757,6 +753,8 @@ async function runRuntime({ mutateRow = null } = {}) {
 
     // R12 Dialog 成員名片
     await open('design-system-components-dialog-展示--list-body')
+    // 「查看成員」按了才開(D2 甲,2026-10-28)
+    await page.getByRole('button', { name: '查看成員' }).click({ timeout: 10_000 }).catch(() => {})
     await waitFor(() => !!document.querySelector('[role="dialog"][data-state="open"] [role="listitem"]'), null, '成員列表打開')
     const row = await page.evaluate(() => { const li = document.querySelector('[role="dialog"][data-state="open"] [role="listitem"]'); return li ? [...li.querySelectorAll('span')].map((s) => s.textContent.trim()).filter(Boolean) : null })
     await openHoverCard('[role="dialog"][data-state="open"] [role="listitem"] [role="img"]', '第一位成員的頭像')
@@ -778,7 +776,17 @@ async function runRuntime({ mutateRow = null } = {}) {
     await open('design-system-components-profilecard-設計規格--overview')
     await mutate('R13')
     const spill = await page.evaluate(() => {
-      const out = { cells: 0, bad: [] }
+      const out = { cells: 0, bad: [], probeLines: 0 }
+      // 合成探針(2026-11-04):名片範例 10-28 改讀共用名錄(稽核 H06 / M102,ID / 員工編號都短),原本靠範例裡的長 Email
+      // 才量得到「沒有空白的長值撐出欄外」—— 沒有長值 = 這條量不到東西。寫一個沒有空白的長值進第一個兩欄欄位再量
+      const twoCol = [...document.querySelectorAll('#storybook-root dl.grid')].filter((dl) => getComputedStyle(dl).gridTemplateColumns.split(' ').length >= 2)
+      const probeDd = twoCol.flatMap((dl) => [...dl.querySelectorAll('dd')])[0]
+      const probe = probeDd ? (probeDd.querySelector(':scope > span') ?? probeDd) : null
+      if (probe) {
+        probe.textContent = 'ada.chen.design-engineering@example.com'
+        const r = document.createRange(); r.selectNodeContents(probe)
+        out.probeLines = new Set([...r.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top))).size
+      }
       for (const dl of document.querySelectorAll('#storybook-root dl.grid')) {
         const tracks = getComputedStyle(dl).gridTemplateColumns.split(' ').map(parseFloat)
         if (tracks.length < 2) continue
@@ -799,6 +807,8 @@ async function runRuntime({ mutateRow = null } = {}) {
       return out
     })
     if (!spill.cells) fail('ProfileCard 設計規格 Overview:找不到兩欄欄位(dl.grid dd)')
+    // 探針在修好的元件裡必須斷成兩行以上(沒斷 = 欄比字寬,探針沒測到東西 → 儀器失效);拆掉修法的對照組不檢查這點(它本來就不斷、改成溢出)
+    if (!SELFTEST && spill.probeLines < 2) fail(`ProfileCard 設計規格 Overview:R13 探針沒有換行(${spill.probeLines} 行)—— 欄比字寬,量不到溢出`)
     rec('R13', spill.bad.length === 0, spill.bad.join('、'))
 
     // R14 多字欄位值只在空白處斷:把兩個真實的多字值(覆核抓到的「Engineering / Platform」、合成探針「Senior Product Designer」)
@@ -862,8 +872,12 @@ const MUTATIONS = {
   R1: () => { for (const c of document.querySelectorAll('[data-radix-popper-content-wrapper] > [data-theme="dark"][data-state]')) c.classList.remove('text-foreground') },
   R2: () => { for (const c of document.querySelectorAll('[data-radix-popper-content-wrapper] > [data-state]')) c.style.boxShadow = 'none' },
   R3: () => {
-    const s = [...document.querySelectorAll('#storybook-root span, #storybook-root p')].find((x) => /^trigger:|^Tooltip(純文字提示)$/.test(x.textContent.trim()))
-    if (s) s.style.marginTop = '6px'
+    // 拆掉真正的修法:「範例在上、說明在下」的並排列靠下對齊(items-end)改回修前的 items-center(OV-13:說明差 9.5px)。
+    // 2026-11-04 前對照組是把 TriggerShowcase 第一則「trigger:」說明加 margin-top 6px —— 那三則說明 10-28 隨稽核 M017 拿掉後,
+    // 對照組只剩 HoverCard 原則頁這列,而 items-end 的列裡加 margin-top 位置不變(群組往上長)= 對照組不會紅(量具無效)
+    const cap = [...document.querySelectorAll('#storybook-root p')].find((x) => x.textContent.trim() === 'Tooltip(純文字提示)')
+    const row = cap?.parentElement?.parentElement
+    if (row) row.style.alignItems = 'center'
   },
   R4: () => { const a = [...document.querySelectorAll('#storybook-root a')].find((x) => /@Ada Chen/.test(x.textContent)); if (a) { a.setAttribute('tabindex', '-1'); a.setAttribute('title', '此設定影響全域') } },
   R5: () => { for (const b of document.querySelectorAll('[role="dialog"].w-80 button')) b.replaceWith(b.cloneNode(true)) },
