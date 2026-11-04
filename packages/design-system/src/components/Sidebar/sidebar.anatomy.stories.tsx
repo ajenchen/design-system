@@ -21,7 +21,7 @@ import { ItemAvatar } from '@/design-system/patterns/element-anatomy/item-anatom
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { H3, Desc, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { SectionDescription } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
 
 const meta: Meta = {
@@ -394,7 +394,7 @@ export const SizeMatrix: Story = {
             </tbody>
           </table>
           <p className="text-caption text-fg-muted">
-            Token 的 md / lg density 解析值見 <code>tokens/uiSize/uiSize.spec.md</code>。
+            各 token 在標準 / 寬鬆密度的實際值見 <StoryLink kind="Design System/Tokens/UiSize" name="總覽">UiSize 設計變數</StoryLink>。
           </p>
         </div>
       </div>
@@ -675,7 +675,7 @@ export const StateBehavior: Story = {
             <li>open state 寫 cookie <code>sidebar_state</code>(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 <code>defaultOpen</code>(避免 SSR hydration flash)。</li>
             <li>放在 AppShell 裡時,Menu 何時並排、何時暫藏(有細列就只剩細列)、何時變左側浮層,全部照 AppShell「版面規則」(用各區最小寬現算,沒有 768 斷點;2026-10-14)。暫藏時按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層按 Esc 或點外面收回細列。<code>collapsible="none"</code> 不能用在 AppShell 的 Menu 位置;不在 AppShell 裡時 Sidebar 一律並排。</li>
             <li>Icon mode 下 active item 的 <code>bg-neutral-selected</code> 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
-            <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):<code>defaultPrevented</code>(app editor 已處理同鍵時不 double-fire)/ <code>isComposing</code>(IME 組字中不攔)/ 可編輯 target(<code>input</code> / <code>textarea</code> / <code>contentEditable</code> 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 <code>disableShortcut</code> opt-out。</li>
+            <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard:<code>defaultPrevented</code>(app editor 已處理同鍵時不 double-fire)/ <code>isComposing</code>(IME 組字中不攔)/ 可編輯 target(<code>input</code> / <code>textarea</code> / <code>contentEditable</code> 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 <code>disableShortcut</code> opt-out。</li>
           </ul>
         </div>
       </div>
@@ -715,12 +715,12 @@ export const ChromeTokens: Story = {
             <tr>
               <Td><TkVal token="--sidebar-width-icon" value="calc(2 × loose + icon)" /></Td>
               <Td mono>calc()</Td>
-              <Td>icon 收合模式寬度(2026-05-21 v3 改 geometry formula;md = 2×16+16 = 48 / lg = 2×24+20 = 68,保證 icon center x 展開/收合一致)</Td>
+              <Td>icon 收合模式寬度(= 左右各一個 loose + 圖示寬:md 2×16+16 = 48 / lg 2×24+20 = 68,展開與收合時圖示中心 x 不動)</Td>
             </tr>
             <tr>
               <Td><TkVal token="--sidebar-menu-icon-size" value="1rem (16px)" /></Td>
               <Td mono>1rem</Td>
-              <Td>menu icon 大小(per ICON_SIZE.sm/md=16);size=lg 罕見 case override</Td>
+              <Td>menu icon 大小(sm / md 16px;size = lg 的列另外覆寫成 20px)</Td>
             </tr>
           </tbody>
         </table>
@@ -741,7 +741,7 @@ export const ChromeTokens: Story = {
           <tbody>
             <tr>
               <Td mono>--chrome-header-height</Td>
-              <Td>Sidebar header 固定高度（footer 為 content-based，不消費此 token）；density 解析值見 uiSize.spec.md</Td>
+              <Td>Sidebar header 固定高度（footer 為 content-based，不消費此 token）；標準 / 寬鬆密度的實際值見 <StoryLink kind="Design System/Tokens/UiSize" name="總覽">UiSize 設計變數</StoryLink></Td>
             </tr>
           </tbody>
         </table>
@@ -751,13 +751,15 @@ export const ChromeTokens: Story = {
 }
 
 // ── Accessibility ─────────────────────────────────────────────────────────
+// 追溯(不進畫面,稽核 L134 / A02):Cmd/Ctrl+B 三道 guard = 2026-07-05 稽核 D4;方向鍵與 Tab = 2026-09-25 待辦總帳 B9;
+// 收合寬公式 = 2026-05-21 v3(ChromeTokens 表)。
 // 2026-05-17 ship per audit Dim 13(story-rules.md 6-canonical 含 Accessibility)
 export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發,但有三道 guard(2026-07-05 D4):app 已處理同鍵(defaultPrevented)/ IME 組字中(isComposing)/ 可編輯 target(input / textarea / contentEditable 內讓位給 bold 等編輯語意)時不 toggle。仍無 disableShortcut opt-out。\n\n-   方向鍵與 Tab(2026-09-25,待辦總帳 B9):每一串 SidebarMenu 只佔一個 Tab 停靠點,Tab 進來落在上次停的那一項(沒停過就是當前頁,再沒有就是第一項),再按一下 Tab 就離開這一串。↑↓ 換項目、Home / End 到第一 / 最後一項;→ 進這一列自己的小按鈕(更多動作、新增等),←→ 在小按鈕之間移動,第一顆按 ← 回到項目;小按鈕上按 ↑↓ 直接換到上下一項。只在滑過時出現的小按鈕,鍵盤焦點在這一列時照樣顯示。側欄捲動區本身不是停靠點。完整按鍵表見 sidebar.spec.md「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   放不下時的左側浮層(2026-10-14 起沒有 768 斷點):放在 AppShell 裡且 Menu 放不下時,按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層的無障礙名稱是「選單」;焦點進浮層、Tab 只在浮層裡走,Esc 或點浮層外收回細列。SidebarTrigger 直接登記自己為開啟者,快捷鍵則記錄當下焦點,收回後由 onCloseAutoFocus 還給仍掛著的開啟者。展開的 Menu(並排或浮層)看得到字,選單項不掛提示,第一下 Esc 就收回;只有細列的圖示才有提示。單獨使用(不在 AppShell 裡)時一律並排,沒有浮層。"}</p>
+      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發,但有三道 guard:app 已處理同鍵(defaultPrevented)/ IME 組字中(isComposing)/ 可編輯 target(input / textarea / contentEditable 內讓位給 bold 等編輯語意)時不 toggle。仍無 disableShortcut opt-out。\n\n-   方向鍵與 Tab:每一串 SidebarMenu 只佔一個 Tab 停靠點,Tab 進來落在上次停的那一項(沒停過就是當前頁,再沒有就是第一項),再按一下 Tab 就離開這一串。↑↓ 換項目、Home / End 到第一 / 最後一項;→ 進這一列自己的小按鈕(更多動作、新增等),←→ 在小按鈕之間移動,第一顆按 ← 回到項目;小按鈕上按 ↑↓ 直接換到上下一項。只在滑過時出現的小按鈕,鍵盤焦點在這一列時照樣顯示。側欄捲動區本身不是停靠點。完整按鍵表見 Sidebar 規格「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   放不下時的左側浮層(2026-10-14 起沒有 768 斷點):放在 AppShell 裡且 Menu 放不下時,按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層的無障礙名稱是「選單」;焦點進浮層、Tab 只在浮層裡走,Esc 或點浮層外收回細列。SidebarTrigger 直接登記自己為開啟者,快捷鍵則記錄當下焦點,收回後由 onCloseAutoFocus 還給仍掛著的開啟者。展開的 Menu(並排或浮層)看得到字,選單項不掛提示,第一下 Esc 就收回;只有細列的圖示才有提示。單獨使用(不在 AppShell 裡)時一律並排,沒有浮層。"}</p>
     </div>
   ),
 }
