@@ -25,6 +25,7 @@ import { ChromeHeader } from "@/design-system/patterns/header-canonical/chrome-h
 import { isImeComposing } from "@/design-system/lib/ime-composition"
 import { captureFocusOrigin, returnFocusToOpener } from "@/design-system/lib/overlay-focus-return"
 import { ResizeHandle } from "@/design-system/patterns/resize-handle/resize-handle"
+import { useI18n } from "@/design-system/lib/i18n/i18n-context"
 import {
   useAppShellPanel,
   useAppShellPanelOpen,
@@ -438,6 +439,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const sidebar = useSidebar()
     const internals = React.useContext(SidebarInternalsContext)
     const registry = useAppShellRegistry()
+    const { t } = useI18n()
     const inShell = !!registry
 
     // 開發階段警告(掛上或條件改變時一次,不是每次 render)
@@ -571,7 +573,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               min={panel.range.min}
               max={panel.range.max}
               step={SIDEBAR_RESIZE_KEY_STEP}
-              ariaLabel="調整選單寬度" // i18n-allow: DS 預設文案
+              ariaLabel={t("sidebar", "resizeHandle", "調整選單寬度") /* i18n-allow: DS 預設文案 */}
               ariaControls={menuId}
               onValueChange={panel.onResize}
               onValueCommit={panel.onResizeCommit}
@@ -627,6 +629,8 @@ function SidebarOverlay({
   const lastWidthRef = React.useRef<number | undefined>(undefined)
   if (open && panel.width !== undefined) lastWidthRef.current = panel.width
   const width = open ? panel.width : lastWidthRef.current
+  // 讀屏文字預設中文、經 <I18nProvider labels={{ sidebar: { … } }}> 可換字(lib/i18n/README.md「Fallback chain」;F1 甲「預設語言是中文」)
+  const { t } = useI18n()
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onDismiss() }}>
       <SheetContent
@@ -657,7 +661,7 @@ function SidebarOverlay({
             不包 SheetHeader:它內建「關閉」×,包在 sr-only 裡只是被裁小、仍在 Tab 順序 —— 2026-10-14 前浮層第一個 Tab 停在看不見的「關閉」、
             還在 Dashboard 上浮出「關閉」提示(2026-10-15 r1b 複驗 N2;WCAG 2.4.3 / 2.4.7)。收回用 Esc、點浮層外或 ⌘B(app-shell.spec.md「版面規則」§9)。
             名稱用中文「選單」(同一元件的把手「調整選單寬度」;N4,AGENTS.md「命名與語言一致性」)。 */}
-        <SheetTitle className="sr-only">選單</SheetTitle>{/* i18n-allow: DS 預設文案 */}
+        <SheetTitle className="sr-only">{t("sidebar", "overlayTitle", "選單") /* i18n-allow: DS 預設文案 */}</SheetTitle>
         <div className="flex h-full w-full flex-col overflow-hidden">
           <SidebarSurfaceContext.Provider value={{ state: "expanded", surface: "overlay" }}>
             {children}
@@ -672,7 +676,7 @@ function SidebarOverlay({
             min={panel.range.min}
             max={panel.range.max}
             step={SIDEBAR_RESIZE_KEY_STEP}
-            ariaLabel="調整選單寬度" // i18n-allow: DS 預設文案
+            ariaLabel={t("sidebar", "resizeHandle", "調整選單寬度") /* i18n-allow: DS 預設文案 */}
             ariaControls={menuId}
             onValueChange={panel.onResize}
             onValueCommit={panel.onResizeCommit}
