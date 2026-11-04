@@ -228,7 +228,20 @@ export const GroupHeaderRules: Story = {
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>Projects</SidebarGroupLabel>
-              <SidebarGroupContent>{renderMainNav()}</SidebarGroupContent>
+              {/* 標題底下放它自己的項目(稽核 L039:原本放的是 Dashboard / Inbox 主導覽,標題與內容對不上);專案名同本頁其他範例 */}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton id="web-app" startIcon={Folder}>Web App</SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton id="mobile-app" startIcon={Folder}>Mobile App</SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton id="docs" startIcon={FileText}>Docs</SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
         </MiniSidebar>
