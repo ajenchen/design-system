@@ -147,7 +147,7 @@ Radix 關閉時先把 `data-state` 改成 `closed`、等收起動畫的 `animati
 
 (2)**Popover 收起從沒播過動畫 —— 已修(2026-10-13,待辦總帳 T11)**。原因:`components/Popover/popover.tsx` 在 `PopoverPrimitive.Portal` 與 Content 之間包了 `PopoverTitleContext.Provider`(eff41482);Portal 外層那個 Presence(`@radix-ui/react-popover` `dist/index.mjs:110`)經 Slot 把 ref 交給 Portal 的直接子元素,落在 Provider 上拿不到節點、讀不到 animation-name,關閉當下整個卸載。修法:Provider 搬到 Portal 外面(React context 本來就穿得過 Portal,PopoverTitle 自動接 `aria-labelledby` 的行為不變)。結果:**Select / Combobox / DatePicker / 篩選面板等所有 Popover 消費者,關閉時都多一段 150ms 淡出 + 縮到 95%**(`--motion-duration-overlay`、出場曲線)—— 這是本檔第一句本來就寫的行為,不是新決定。閘:`open-close-motion-invariant.mjs` E0(關閉當下就卸載 = 紅,1ef86547 的建置 Popover 紅)與新成員 Select(Popover 消費者 + 觸發點箭頭)。關閉之後才量東西的瀏覽器閘,一律等真正的終態(`document.getAnimations()` 跑完、目標卸載),不得放寬門檻。
 
-**同一條的鍵盤面(2026-10-21,r1b fields N1)**:收起動畫只改畫面,**不延後焦點歸還** —— 焦點在關閉的那一刻就還給觸發點、淡出中的浮層 `inert`(`../../lib/overlay-focus-return.ts` `useExitStartFocusReturn`,PopoverContent 掛;同樣有收起動畫的 Dialog / Sheet / FileViewer 尚未做到,見 `ds-canonical/references/keyboard-model-canonical.md`「既有偏差與修法」,待辦總帳 R1b-FN1b)。(2) 落地時沒有這一條:Radix 要等內容卸載才還焦點,Esc 後 150ms 內按 Tab 被吃掉(焦點停在原欄位;可搜尋 Select 掉到 body),當時把 (2) 記成「純畫面變化」不成立。
+**同一條的鍵盤面(2026-10-21,r1b fields N1)**:收起動畫只改畫面,**不延後焦點歸還** —— 焦點在關閉的那一刻就還給觸發點、淡出中的浮層 `inert`(`../../lib/overlay-focus-return.ts` `useExitStartFocusReturn`,PopoverContent 掛;同樣有收起動畫的 Dialog / Sheet / FileViewer 走同一支的 `modal` 路徑 —— 收起那一刻同時撤掉這次開啟加上的 aria-hidden,原委見 `ds-canonical/references/keyboard-model-canonical.md`「既有偏差與修法」,待辦總帳 R1b-FN1b)。(2) 落地時沒有這一條:Radix 要等內容卸載才還焦點,Esc 後 150ms 內按 Tab 被吃掉(焦點停在原欄位;可搜尋 Select 掉到 body),當時把 (2) 記成「純畫面變化」不成立。
 
 (3)**展開箭頭與內容的時長不同步 —— 已決定並落地(2026-10-13)**,見下一段「展開箭頭跟它打開的東西同步」。
 
