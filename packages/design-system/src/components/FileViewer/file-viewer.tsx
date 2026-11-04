@@ -53,7 +53,7 @@ import type {
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { isImeComposing } from "@/design-system/lib/ime-composition"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
-import { useTriggerlessFocusReturn } from "@/design-system/lib/overlay-focus-return"
+import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"
 
 /**
  * FileViewer — 可延伸的網頁檔案 preview shell(modal fullscreen)
@@ -855,13 +855,42 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   // (persistentOpenerOf)。2026-10-20 前本元件自己記 captureFocusOrigin、少了這一步 → 從選單項開、關閉後焦點掉到 body(獨立驗證 OV-01 實測)。
   // 並存(persistentElements)時 Radix Root 走 modal={false} → 非 modal:按在常駐區收起不搶。
   const focusReturn = useTriggerlessFocusReturn(!persistentElements)
+  // FileViewer 是 fullscreen content-consumption dialog:開啟即把焦點放到 shell,讓 Radix FocusScope 立即接管、但不誤觸第一個 toolbar
+  // control / Tooltip。先記開啟者(FocusScope 派發這個事件時焦點還沒搬進來;住在選單裡的開啟者改記選單的觸發鈕),
+  // 再跑 consumer 的;consumer 沒擋預設才由本元件阻止 Radix default 並聚焦 Content。
+  const handleOpenAutoFocus = (event: Event) => {
+    focusReturn.onOpenAutoFocus(event)
+    onOpenAutoFocus?.(event)
+    if (event.defaultPrevented) return
+    event.preventDefault()
+    contentRef.current?.focus({ preventScroll: true })
+  }
+  // 關閉 → 焦點還給開啟者(consumer 的 handler 先跑、擋了預設就不接;並存模式非 modal:按在常駐區收起不搶)
+  const handleCloseAutoFocus = (event: Event) => {
+    onCloseAutoFocus?.(event)
+    focusReturn.onCloseAutoFocus(event)
+  }
+  // 還焦點的時機 = 關閉的那一刻,不等收起動畫(keyboard-model-canonical.md「關了之後焦點去哪」;待辦總帳 R1b-FN1b),跟 DialogContent /
+  // SheetContent 接同一支(lib/overlay-focus-return.ts useExitStartFocusReturn `modal: true`):修前 Esc 之後在收起動畫期間按 Tab,
+  // Tab 在淡出的檢視器裡走掉、動畫播完焦點才回開啟者(Tab 被吃掉);同一支也撤掉這次開啟加上的 aria-hidden、淡出中的內容 inert。
+  // 只接 Radix modal:並存(persistentElements → Root 走 modal={false})的宿主 inert 綁在內容卸載(lib/overlay-coexistence.ts),
+  // 提早還會還進 inert 的區域 → 照舊卸載時還(同 DialogContent)。radixDefault 同 DialogContent;FileViewer 由受控 open 開、沒有 Radix 觸發點,
+  // 這一步什麼都不做,開啟者由 focusReturn 還。
+  const isModal = !persistentElements
+  const exitFocus = useExitStartFocusReturn({
+    onCloseAutoFocus: handleCloseAutoFocus,
+    onOpenAutoFocus: handleOpenAutoFocus,
+    radixDefault: (event) => { radixTriggerOf(event.currentTarget instanceof Element ? event.currentTarget : null)?.focus() },
+    modal: true,
+  })
   const setContentRef = React.useCallback(
     (node: HTMLDivElement | null) => {
       contentRef.current = node
+      if (isModal) exitFocus.ref(node)
       if (typeof ref === 'function') ref(node)
       else if (ref) ref.current = node
     },
-    [ref],
+    [ref, isModal, exitFocus.ref],
   )
 
   // Index:uncontrolled fallback
@@ -1084,22 +1113,9 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
             'data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95',
             className,
           )}
-          // FileViewer 是 fullscreen content-consumption dialog：開啟即把焦點放到 shell，
-          // 讓 Radix FocusScope 立即接管、但不誤觸第一個 toolbar control/Tooltip。
-          // Consumer handler 可先取消；未取消時由本元件阻止 Radix default 並聚焦 Content。
-          onOpenAutoFocus={(event) => {
-            // 先記開啟者(FocusScope 派發這個事件時焦點還沒搬進來;住在選單裡的開啟者改記選單的觸發鈕)
-            focusReturn.onOpenAutoFocus(event)
-            onOpenAutoFocus?.(event)
-            if (event.defaultPrevented) return
-            event.preventDefault()
-            contentRef.current?.focus({ preventScroll: true })
-          }}
-          // 關閉 → 焦點還給開啟者(consumer 的 handler 先跑、擋了預設就不接;並存模式非 modal:按在常駐區收起不搶)
-          onCloseAutoFocus={(event) => {
-            onCloseAutoFocus?.(event)
-            focusReturn.onCloseAutoFocus(event)
-          }}
+          // 開啟落點 / 關閉還焦點見上方 handleOpenAutoFocus / handleCloseAutoFocus / exitFocus
+          onOpenAutoFocus={handleOpenAutoFocus}
+          onCloseAutoFocus={isModal ? exitFocus.onCloseAutoFocus : handleCloseAutoFocus}
           // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):縮放比例輸入框用輸入法組字中不關;
           // 焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉
           onEscapeKeyDown={withOverlayEscape(onEscapeKeyDown, () => contentRef.current)}
