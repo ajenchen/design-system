@@ -95,10 +95,11 @@ function measurePage({ kinds, sabotage }) {
     'menu-action': () => [...document.querySelectorAll('[data-sidebar="menu-action"]')],
     'switch-label': () => [...document.querySelectorAll('label button[role="switch"]')],
     'hover-target': () => [...document.querySelectorAll('[data-visual-hover-target]')],
-    // 「同一列只放同一類圖示動作」那三列(✅ / ✅ / ❌):列 = 那段說明文字的父層
-    'item-suffix-row': () => [...document.querySelectorAll('span')]
-      .filter((s) => /^(✅ 都用 Button xs iconOnly|✅ compact row|❌ 禁止混 Inline Action)/.test(s.textContent.trim()))
-      .flatMap((s) => [...s.parentElement.querySelectorAll('button')]),
+    // 「同一列只放同一類圖示動作」那三列(✅ / ✅ / ❌):2026-10-28 稽核 L061 把說明移到列下方的 ExampleCaption(<p>),
+    // 列 = 那段說明的前一個兄弟元素(檔案列 FileItem / 精簡列 ItemContent + ItemSuffix)
+    'item-suffix-row': () => [...document.querySelectorAll('p')]
+      .filter((p) => /^(✅ 都用 Button xs iconOnly|✅ 精簡列|❌ 禁止混 Inline Action)/.test(p.textContent.trim()))
+      .flatMap((p) => [...(p.previousElementSibling?.querySelectorAll('button') ?? [])]),
     'row-spinner': () => [...document.querySelectorAll('[aria-label="驗證信用卡中"]')],
     // Slider 原則頁「對照 Switch」那四格(Rest / Disabled × ON / OFF):小標 + 開關樣本
     'state-switch': () => [...document.querySelectorAll('button[role="switch"][aria-label^="啟用（"]')],
@@ -198,7 +199,7 @@ const WAIT_FOR = {
   'group-action': ['[data-sidebar="group-action"]'], 'group-chevron': ['[data-sidebar="group-label"] button[aria-expanded]'],
   'menu-inline-action': ['[data-sidebar="menu-inline-actions"]'], 'menu-action': ['[data-sidebar="menu-action"]'],
   'switch-label': ['label button[role="switch"]'], 'hover-target': ['[data-visual-hover-target]'],
-  'item-suffix-row': ['span', '✅ compact row'], 'row-spinner': ['[aria-label="驗證信用卡中"]'],
+  'item-suffix-row': ['p', '✅ 精簡列'], 'row-spinner': ['[aria-label="驗證信用卡中"]'],
   'state-switch': ['button[role="switch"][aria-label^="啟用（"]'], 'month-nav': ['button[aria-label="下一個月"]'],
   'menu-shortcut': ['span', '⌘'],
 }
