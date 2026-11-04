@@ -15,7 +15,7 @@
  *       掃到 0 檔或 0 列 = 儀器失效(exit 2),不讀成通過。
  *
  * SSOT:patterns/action-bar/action-bar.spec.md 第二節「對齊方向的決定」(:109)與第三節「全局排序」「danger 位置」(:121–:122);
- *       components/Button/button.spec.md「按鈕排列 › 垂直排列」;浮層 footer 靠右的 owner = components/Dialog/dialog.spec.md:178
+ *       components/Button/button.spec.md「按鈕排列 › 垂直排列」;浮層 footer 靠右的 owner = components/Dialog/dialog.spec.md:177
  *       「Footer 按鈕」(按鈕靠右 justify-end)+ patterns/overlay-surface/overlay-surface.spec.md:237(SurfaceFooter justify-end,
  *       Sheet / Popover 頁腳純轉發);
  *       ButtonGroup 擁有群組內鈕距(components/Button/button-group.tsx 檔頭:「負責群組內的間距(gap 8px)與對齊方式」)。
@@ -210,7 +210,7 @@ export const SLOT_OWNERS = {
   // 批次操作緊接在「已選 N 項」與分隔線後、由左往右排(bulk-action-bar.tsx 的 actions 容器 `flex … flex-1`;spec「結構」圖)
   'BulkActionBar.actions': { align: 'start', titled: false, cite: 'components/BulkActionBar/bulk-action-bar.tsx:172-173(actions 容器 flex-1,接在計數與分隔線後)+ bulk-action-bar.spec.md「結構」' },
   // 標題在左、header 操作在右上(Close X 左側)
-  'DialogHeader.actions': { align: 'end', titled: true, cite: 'components/Dialog/dialog.spec.md:161「Header actions slot」' },
+  'DialogHeader.actions': { align: 'end', titled: true, cite: 'components/Dialog/dialog.spec.md:160「Header actions slot」' },
   // 右側操作區(對齊第一行、靠右)
   'Alert.endContent': { align: 'end', titled: true, cite: 'components/Alert/alert.spec.md:94 / :113「右側操作區」' },
   'Notice.endContent': { align: 'end', titled: true, cite: 'components/Notice/notice.spec.md:67「Layout」[title + description] [endContent] [dismiss X]' },

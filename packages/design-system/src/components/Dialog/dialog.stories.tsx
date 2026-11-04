@@ -652,7 +652,7 @@ export const OpenSnapshot = {
    量測由 `scripts/dialog-focus-trap-poc.mjs` 執行。 */
 export const FocusTrapWithConcurrentOverlay: Story = {
   name: '焦點鎖 × 並存浮層',
-  // @example-basis: dialog.spec.md:283「焦點鎖在 Dialog 內，Tab 循環不逃出」
+  // @example-basis: dialog.spec.md:282「焦點鎖在 Dialog 內，Tab 循環不逃出」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
@@ -692,7 +692,7 @@ export const FocusTrapWithConcurrentOverlay: Story = {
 export const FocusTrapControlNoDialog: Story = {
   name: '同一版面沒有對話框時的焦點順序',
   // 上一則的對照組(同一版面拿掉 Dialog,Tab 走得到背景鈕),示範的是同一句焦點規格:
-  // @example-basis: dialog.spec.md:283「焦點鎖在 Dialog 內，Tab 循環不逃出」
+  // @example-basis: dialog.spec.md:282「焦點鎖在 Dialog 內，Tab 循環不逃出」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
