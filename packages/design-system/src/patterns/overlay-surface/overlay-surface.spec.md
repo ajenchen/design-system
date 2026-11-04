@@ -201,7 +201,7 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
   `CommandGroup` 自帶的 `py-2` 正好就是本 pattern 要的上下呼吸。
   canonical 實作見 `components/Popover/popover.stories.tsx` 的 `StatusFilterPanel`。
 - **不適用**:那些列**根本不能被選**時(例如成員名單、通知設定這種展示列)—— 那不是選單,
-  走上面「何時該用 MenuItem vs hand-craft」表。**能被選的列不存在「reading mode」的情況**。
+  走上面「何時該用 MenuItem vs hand-craft」表(一列一個開關的設定列走 `../../components/Switch/switch.spec.md`「設定列 vs 水平 Field」)。**能被選的列不存在「reading mode」的情況**。
 
 ### M11 state walk hover 檢查(**僅當 item 有 hover / selected 底色時適用**;三題必同時 ✓)
 

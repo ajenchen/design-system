@@ -17,23 +17,15 @@ import { DescriptionList, DescriptionItem } from '@/design-system/components/Des
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
-import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
 /**
- * 通知設定 — flush 中 item(title + desc + right-side Switch)
- * in-modal 直接設定 pattern(對齊 Gmail 通知設定 / macOS Sys Prefs / Notion prefs)
+ * 通知設定 —— 對話框裡直接改的設定列(對齊 Gmail 通知設定 / macOS 系統設定 / Notion 偏好設定)
  *
- * **Item-anatomy Family 2 reading mode 套用(2026-04-22 v3 修正,user 指出 Switch 是 suffix)**:
- * - Row 結構 = Family 2 reading(無 prefix、content: title+desc、suffix: Switch)
- * - Switch **包 `<ItemSuffix>`**:suffix h-[1lh] 對齊 **title 第一行**(≤ 24px suffix 的 canonical,
- *   見 item-anatomy.spec.md「24px 閾值對齊規則」)—— 不是 items-center 對齊文字塊中心
- *   世界級對照:macOS System Prefs / iOS Settings / Gmail notif / Notion 皆 suffix control
- *   對齊 title 第一行(不 center 文字塊)
- * - 外層 flex 用 `items-start`(讓 content 自然 flow,suffix 由 h-[1lh] 對齊第一行)
- * - title / description gap = `--item-gap-label-desc-scanning`(2px)
- * - description 色 = `text-fg-secondary`(neutral-8)
- * - **無 row hover**:只有 Switch 互動
+ * 一列一個開關 = 自帶標題的 `<Switch label description>`(switch.spec.md「設定列 vs 水平 Field」,2026-10-21 S1 甲):
+ * 標題 + 說明在左、開關在列尾對齊標題第一行、整列可點、讀屏名稱只念標題;單行列高 = 欄位高(2026-10-27 Q6 甲),
+ * 列與列之間 = loose(layoutSpace.spec.md 規則 3 跨範疇 + parallel:每列各管一件事,不是同一組選項)。
+ * 外框走 DialogBody 預設(頂 tight、底 bottom = A-S7:最後一個元素是一般元素);字級由 Switch 自帶(reading:標題 text-body、說明 14px)。
  */
 function NotificationSettings() {
   const [email, setEmail] = useState(true)
@@ -53,29 +45,10 @@ function NotificationSettings() {
         <DialogHeader>
           <DialogTitle>通知設定</DialogTitle>
         </DialogHeader>
-        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:91「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
-          <div className="flex flex-col py-2">
+        <DialogBody>
+          <div className="flex flex-col gap-[var(--layout-space-loose)]">
             {items.map((n) => (
-              // item-anatomy Family 2:[content: title + desc(--item-gap-label-desc-scanning gap)] [ItemSuffix: Switch]
-              // items-start(let content flow);suffix h-[1lh] 對齊 title 第一行(24px 閾值 canonical)
-              // px-loose:content 對齊 header/footer 的 loose padding(body flush 無水平 padding)
-              <div
-                key={n.key}
-                // layoutSpace.spec.md:165 的「一串同類 rows」管不到彼此不相干的設定列,不拿它背書;設定列改用 Switch 帶標籤的列另案處理
-                // @layout-space-magic-ok: 設定列範例原值(與已發布版同值,F-S8):列上下 8px、內容 ↔ 後綴開關 12px —— 規格沒寫這兩個值(放行章 (d))
-                className="flex items-start gap-3 py-2 px-[var(--layout-space-loose)]"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-body font-medium">{n.title}</div>
-                  {/* --item-gap-label-desc-scanning = 2px title↔desc gap(item-anatomy canonical);neutral-8 = fg-secondary */}
-                  <div className="mt-[var(--item-gap-label-desc-scanning)] text-caption text-fg-secondary">{n.desc}</div>
-                </div>
-                {/* Suffix: Switch — ItemSuffix h-[1lh] 對齊 title 第一行(≤ 24px suffix 的設計準則) */}
-                <ItemSuffix>
-                  <Switch checked={n.checked} onCheckedChange={n.onChange} />
-                </ItemSuffix>
-              </div>
+              <Switch key={n.key} label={n.title} description={n.desc} checked={n.checked} onCheckedChange={n.onChange} />
             ))}
           </div>
         </DialogBody>
@@ -614,23 +587,14 @@ export const WithTabsInHeader = {
                 </DescriptionList>
               </TabsContent>
               <TabsContent value="integrations" className="mt-0">
-                {/* 設定列 = item-anatomy Family 2 reading row([content] [ItemSuffix: Switch]),與本檔「通知設定」示範同一結構
-                    (2026-09-29 待辦總帳 OD5:先前手刻 flex justify-between,是同檔已有先例的平行實作;M23(d) 最相近同目的 canonical)。
-                    沒有 desc 的列 suffix 仍以 h-[1lh] 對齊 label 第一行;世界級對照同上方註解(macOS / iOS Settings、Gmail、Notion 皆 suffix control)。 */}
-                <div className="flex flex-col">
+                {/* 設定列:與本檔「通知設定」同一個寫法 —— 自帶標題的 <Switch label>(switch.spec.md「設定列 vs 水平 Field」),列與列之間 loose */}
+                <div className="flex flex-col gap-[var(--layout-space-loose)]">
                   {[
                     { key: 'slack', label: 'Slack 通知', on: true },
                     { key: 'github', label: 'GitHub PR 同步', on: true },
                     { key: 'linear', label: 'Linear issue 連動', on: false },
                   ].map((it) => (
-                    // layoutSpace.spec.md:165 的「一串同類 rows」管不到彼此不相干的設定列,不拿它背書;設定列改用 Switch 帶標籤的列另案處理
-                    // @layout-space-magic-ok: 設定列範例原值(與已發布版同值,F-S8):列上下 8px、內容 ↔ 後綴開關 12px —— 規格沒寫這兩個值(放行章 (d))
-                    <div key={it.key} className="flex items-start gap-3 py-2">
-                      <div className="min-w-0 flex-1 text-body">{it.label}</div>
-                      <ItemSuffix>
-                        <Switch defaultChecked={it.on} aria-label={it.label} />
-                      </ItemSuffix>
-                    </div>
+                    <Switch key={it.key} label={it.label} defaultChecked={it.on} />
                   ))}
                 </div>
               </TabsContent>
