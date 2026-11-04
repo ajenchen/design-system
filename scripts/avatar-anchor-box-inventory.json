@@ -1,8 +1,8 @@
 {
   "note": "avatar-anchor-box-invariant 的覆蓋清單:每則 story 量到幾個 hover card 觸發點的 Avatar。只准由本閘 --write-inventory 全掃重寫;少量就紅。",
   "generatedBy": "node scripts/avatar-anchor-box-invariant.mjs --write-inventory",
-  "storyCount": 68,
-  "triggerCount": 494,
+  "storyCount": 76,
+  "triggerCount": 535,
   "stories": {
     "design-system-components-agentpanel-展示--unsaved-changes-guard": 1,
     "design-system-components-avatar-展示--fallback": 2,
@@ -25,6 +25,7 @@
     "design-system-components-datatable-展示--roadmap-perf-budget": 46,
     "design-system-components-datatable-展示--row-actions": 9,
     "design-system-components-datatable-展示--row-auto-height": 30,
+    "design-system-components-datatable-展示--row-auto-height-modes": 12,
     "design-system-components-datatable-展示--row-drag-interactive": 6,
     "design-system-components-datatable-展示--row-drag-with-virtualization": 18,
     "design-system-components-datatable-展示--selection-disabled-rows": 6,
@@ -32,7 +33,8 @@
     "design-system-components-datatable-展示--selection-single-mode": 6,
     "design-system-components-datatable-展示--virtual-scroll": 18,
     "design-system-components-datatable-展示--with-bulk-actions": 6,
-    "design-system-components-field-展示--inline-search-yield-width-contract": 4,
+    "design-system-components-field-展示--inline-search-yield-width-contract": 18,
+    "design-system-components-field-展示--view-alignment-contract": 6,
     "design-system-components-peoplepicker-展示--async-directory-load": 2,
     "design-system-components-peoplepicker-展示--clearable": 4,
     "design-system-components-peoplepicker-展示--hug-width-multi-stack": 12,
@@ -41,7 +43,6 @@
     "design-system-components-peoplepicker-展示--multi-remove-focus-contract": 4,
     "design-system-components-peoplepicker-展示--overflow-remove-focus-contract": 12,
     "design-system-components-peoplepicker-展示--single": 3,
-    "design-system-components-peoplepicker-展示--size-alignment": 3,
     "design-system-components-peoplepicker-展示--stack-remove-overlay-probe": 8,
     "design-system-components-peoplepicker-展示--value-loading": 1,
     "design-system-components-peoplepicker-設計原則--single-vs-multi-rule": 3,
@@ -58,6 +59,10 @@
     "design-system-components-profilecard-設計原則--trigger-context-rule": 1,
     "design-system-components-profilecard-設計原則--usage-guidance": 2,
     "design-system-components-profilecard-設計規格--hover-card-integration": 3,
+    "design-system-components-skeleton-設計原則--shape-match-rule": 1,
+    "design-system-components-skeleton-設計原則--usage-guidance": 1,
+    "design-system-components-tag-展示--with-avatar": 2,
+    "design-system-components-tag-設計原則--icon-rule": 2,
     "design-system-internal-hovercard-展示--overflow-list": 3,
     "design-system-internal-hovercard-展示--person-profile-card": 1,
     "design-system-internal-hovercard-展示--trigger-showcase": 1,
@@ -71,6 +76,9 @@
     "design-system-internal-overflowindicator-展示--avatar-stack-overflow": 3,
     "design-system-internal-overflowindicator-展示--table-row-assignees": 6,
     "design-system-internal-overflowindicator-設計規格--size-matrix": 3,
-    "design-system-patterns-item-anatomy--alignment-threshold": 2
+    "design-system-internal-selectioncontrol-展示--with-prefix-avatar-block": 3,
+    "design-system-internal-selectioncontrol-設計規格--prefix-alignment": 2,
+    "design-system-patterns-item-anatomy--alignment-threshold": 2,
+    "design-system-tokens-radius--overview": 1
   }
 }
