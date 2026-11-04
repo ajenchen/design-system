@@ -129,11 +129,11 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 
 | 情況 | 指示器 | 依據 |
 |---|---|---|
-| **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」 |
+| **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 01:06 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」 |
 | **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx#fieldDefaultChromeCompounds`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
 | **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`) | **2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
 
-| **唯讀的 Field 控件**(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 Checkbox・Switch・RadioGroup / 唯讀觸發器 —— 可 Tab、不可編輯) | **不畫外框**;指示 = **邊框轉主色 1px**,與可編輯的同一個欄位完全一樣 | **2026-09-10 兩次修正後定案**(user 原話:「為何不是模擬 field control focus 的樣式?field control focus 應該是 1px 的 border?對吧?」)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。歷程:`ring-*` idiom 於 0cad81e8 退役時沒有補替代品 → 唯讀一度**零指示**(WCAG 2.4.7);同日上午先補成全域外描邊,下午依 user 指正改為與編輯態同一種。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` 完全不改焦點樣式;Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣與可編輯態相同。落地:`field-wrapper.tsx` readonly compound(`focus-within:!border-primary` + `focus-visible:outline-none`,@focus-suppress C)|
+| **唯讀的 Field 控件**(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 Checkbox・Switch・RadioGroup / 唯讀觸發器 —— 可 Tab、不可編輯) | **不畫外框**;指示 = **邊框轉主色 1px**,與可編輯的同一個欄位完全一樣 | **2026-09-10 兩次修正後定案**(user 原話:「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？對吧？」(2026-09-10 18:46))。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。歷程:`ring-*` idiom 於 0cad81e8 退役時沒有補替代品 → 唯讀一度**零指示**(WCAG 2.4.7);同日上午先補成全域外描邊,下午依 user 指正改為與編輯態同一種。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` 完全不改焦點樣式;Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣與可編輯態相同。落地:`field-wrapper.tsx` readonly compound(`focus-within:!border-primary` + `focus-visible:outline-none`,@focus-suppress C)|
 
 **底色只有兩個主人:滑鼠 hover 與「選中」。** 鍵盤游標不借用它們的顏色
 (user 2026-09-07:「不要一下用底色一下用邊框來標示焦點」;2026-09-09:「都不需要上底色」)。疊加時各說各的:
@@ -301,7 +301,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 「滑鼠停著不算搶,只有 pointer move 才算」「兩種畫法永遠不同時出現」「開啟時的落點用開啟那一下的輸入畫」 | **AI 依 cmdk `onPointerMove` / Radix `onPointerMove` 一手來源歸納**(搶的動作就是 pointermove 事件本身);主 session 的先驗判斷,非 user 決定 |
 | 「不搶反白的常駐清單裡 hover 底色與鍵盤框是兩個獨立狀態,可以同時出現」 | **AI 歸納**:瀏覽器 `:hover` / `:focus-visible` 獨立、Material 3 hover state layer 與 focus ring 是兩個元素;VS Code 因焦點列自帶 focusBackground 才排除 hover(部分反例,DS 焦點不佔底色通道所以可疊)。user 2026-09-06 原話「鍵盤焦點若在在選單選項上會同時有焦點框以及滑鼠hover上去的底色吧?」是問句,且 2026-09-09 下午已把浮層選單那半邊改成「不同時出現」 |
 | 「修改範疇只有會搶反白的元件;TimePicker 焦點落點順手修」 | user 問「這個更改範疇應該只有會搶反白的元件吧?還是還有其他相關地方要修正?」(問句);**AI 依 DS-wide grep 回答**:`hover:` 只在 CommandItem / DropdownMenu 需要拿掉,常駐清單一行不改;TimePicker 是通盤複查抓到的既有缺口(A 類框畫錯元素),與本題無關但同屬「框畫在哪」 |
-| **「鍵盤游標一律畫框、不上底色;唯一不畫框的例外是插入點控件」(規則二現行版)** | **user 2026-09-09 拍板**,逐字:「我基本上都說以畫框為主」「會搶反白的,我當時只有說“除了畫框還要上底色來模擬滑鼠”,那就表示都要畫框吧?」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」「就是基本上都是畫框,唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」 |
+| **「鍵盤游標一律畫框、不上底色;唯一不畫框的例外是插入點控件」(規則二現行版)** | **user 2026-09-09 01:06 拍板**,逐字:「我基本上都說以畫框為主」「會搶反白的,我當時只有說“除了畫框還要上底色來模擬滑鼠”,那就表示都要畫框吧？」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」「就是基本上都是畫框,唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」 |
 | ~~「底色空著(選單／清單選項,未被選中)→ 用 hover 同色底當游標,不畫框」(舊規則二第一列、舊 D 類、舊判斷程序第 6 步)~~ | **AI 推導自 Radix / cmdk / shadcn 慣例**(經 `menu-item.spec.md` 舊句「以背景高亮而非畫 outline ring」),**不是 user 決定**。**2026-09-09 user 撤回**,逐字:「“底色空著(選單／清單選項,未被選中) 用 hover 同色底當游標,不畫框”我們他媽到底哪有定義過這個?」「此外鍵盤焦點框怎麼畫的原則呢?“單一狀態控制項”這個又是如何具體判別?鍵盤焦點框的整理根本不完整」。本檔 2026-09-06〜09-08 三版都把這條當成「既有 canonical 本來就有的答案」寫進規則,那是把 AI 推論升格成定案(M36(a)),一併撤回 |
 | 「會搶反白的地方,鍵盤焦點 = hover 樣式 + 藍框」 | **user 2026-09-07 原話**:「反正就是會搶反白的地方的鍵盤焦點會有hover的樣式+藍框?你確認是這樣的話,那我可以接受」——這句已經是「都要畫框」;「+hover 樣式」的部分由 user 2026-09-09 自己收斂成「都不需要上底色」(底色只在滑鼠真的停在那一列時,照 hover 規則出現) |
 | 「一個藍色 focus ring 就已經夠顯眼了,同時要再加上其他樣式根本畫蛇添足」「不要一下用底色一下用邊框來標示焦點」 | **user 2026-09-06〜09-07 原話**,「一個項目只有一個指示器」與「不上底色」的立檔依據 |
@@ -505,7 +505,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 **量到 < 4px 時,第一個問題永遠是「這個障礙為什麼在這裡」,不是「那就往內畫」。**
 
-實際踩過的坑(2026-09-07,user 質疑「四周視覺明明是空的,為何要往內描邊」後查出):
+實際踩過的坑(2026-09-07,user 15:49 質疑「若該元素四周的視覺就是空蕩蕩的,到底為何要往內描邊?」後查出):
 DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「往內」。
 但**到儲存格邊其實有 11.5 / 62 / 11.5 / 12 px 空白** —— 卡住它的是一個
 `truncate min-w-0`(padding 0、`overflow:hidden`)的**文字截斷** wrapper,

@@ -155,7 +155,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:956e3e6da8916f62f82e2b54063e645d98920fe33e3502e301aeb46277575879",
+      "hash": "sha256:2b889e2a201a8ff66a6cc8fb7a47f9c59fd4e170dc350b911c1f0706286801ed",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -177,7 +177,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:9fa7cca96437464dd7e9eb6f6dbf906d0e8a43f47b734aa87abdd01e9a6f2dd4",
+      "hash": "sha256:007af36e1093e676bcab816647ecd0f9bd5bb2b6f9c62934531b1ad30ac0c69b",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3456,10 +3456,10 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:e2d52fdafbb7f8b930a609007ee75f2ec3814441833e1c6ba1f643008d6d6e20",
+          "expectedTargetDigest": "sha256:2933e17b028430494dc57df1162aff1cb0cedcc5469c1506d22a600f879fe4b2",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:e55983ec5df25e7cef50950bcec5ac5a2736c9e1573f4ee26e6c025771f84cd0",
-          "targetDigest": "sha256:e2d52fdafbb7f8b930a609007ee75f2ec3814441833e1c6ba1f643008d6d6e20"
+          "sourceDigest": "sha256:b67de16290b9ef63541e0586c924c65c011118d7d574be4f568232ccef3c12e1",
+          "targetDigest": "sha256:2933e17b028430494dc57df1162aff1cb0cedcc5469c1506d22a600f879fe4b2"
         },
         {
           "expectedTargetDigest": "sha256:aa92ec8c02d08e0de289622ca641acea0621186e6508c8b7bf9e415d1ba32456",
@@ -3679,10 +3679,10 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:d336ba3130539baf88ee0940270a80daf4a9c04925bc87efcead7e9409444c20",
+          "expectedTargetDigest": "sha256:4e2ba8fecab8c5b3624c40a000945b1ba67f2a92106ef3398abe673aadaf8cee",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:e55983ec5df25e7cef50950bcec5ac5a2736c9e1573f4ee26e6c025771f84cd0",
-          "targetDigest": "sha256:d336ba3130539baf88ee0940270a80daf4a9c04925bc87efcead7e9409444c20"
+          "sourceDigest": "sha256:b67de16290b9ef63541e0586c924c65c011118d7d574be4f568232ccef3c12e1",
+          "targetDigest": "sha256:4e2ba8fecab8c5b3624c40a000945b1ba67f2a92106ef3398abe673aadaf8cee"
         },
         {
           "expectedTargetDigest": "sha256:ea09df77193adf7cf92d5ac5d4472b1abd9d2e18f216b560de779c7cecf7e7a3",

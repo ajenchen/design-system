@@ -27,9 +27,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:f22e0be346e6c3ac422f835347b28456aa7dc81c06d5b497b166d570c07fdf69` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:fc57890ffd43d04a10e38cffdd40e1d81b7a97dfe022a8ee645c0ed950b1992a` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:9e52317d105f7bb3caa6e98375035e268d013091da7e2cb484f8c5aeae48a772` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:956e3e6da8916f62f82e2b54063e645d98920fe33e3502e301aeb46277575879` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:2b889e2a201a8ff66a6cc8fb7a47f9c59fd4e170dc350b911c1f0706286801ed` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:1ca2b0b11af6a28fb6e8c420664c09aec6b8a1c33e2663b48fb999d1bc52a7b5` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:9fa7cca96437464dd7e9eb6f6dbf906d0e8a43f47b734aa87abdd01e9a6f2dd4` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:007af36e1093e676bcab816647ecd0f9bd5bb2b6f9c62934531b1ad30ac0c69b` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:7f0c57816b6a1bcdadd7faecd8a2293b6822a2ce6bc7f6113e34cf5930e3ed67` |
