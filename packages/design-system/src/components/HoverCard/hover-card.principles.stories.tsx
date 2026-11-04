@@ -9,8 +9,10 @@ import { ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent, HOVER_CARD_SURFACE_CLASS } from './hover-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Button } from '@/design-system/components/Button/button'
 import { FieldLabel } from '@/design-system/components/Field/field'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { demoNavigate } from '@/design-system/stories-helpers/scene/demo-actions'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
@@ -32,6 +34,8 @@ const TriggerRule = createTutorialRule({ examples: true, naturalWidth: true, exa
 
 export const UsageGuidance: Story = {
   name: '使用指引',
+  // 反例「刪除帳號」按下去跳的 Toast 要有地方出現(同 popover.principles 的 decorator 寫法;放在版面外,不吃 TutorialPage 的間距)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
   render: () => (
     <TutorialPage>
       <UsageSection kind="when">
@@ -58,14 +62,23 @@ export const UsageGuidance: Story = {
       </UsageSection>
 
       <UsageSection kind="whenNot">
-        {/* 理由換成桌機事實(F8 甲:不拿觸控當理由,登記簿 C27 / C28);原本的反例(primary danger 觸發鈕 + 手刻紅框卡)拿掉,
-            只留規則與說明(稽核 M019:反例鈕是 DS 沒有的寫法、紅框卡不是 DS 元件) */}
-        <TutorialRule
+        {/* 理由換成桌機事實(F8 甲:不拿觸控當理由,登記簿 C27 / C28)。反例照稽核 M019 改寫、不拿掉:觸發鈕 secondary + danger
+            (登記簿 E14 破壞性按鈕不用 primary;DS 沒有 tertiary + danger),卡片內容用 DS 的 ItemContent、不再手刻紅框;
+            按下去照反例的情境直接刪掉、跳 Toast(登記簿 A16:看得到的按鈕都要能動)—— 警告只在滑過的卡裡,沒停下來看的人就這樣刪了 */}
+        <TriggerRule
           title="❌ 關鍵資訊不放 HoverCard"
           note="HoverCard 要滑過停一下才出現、滑開就收,鍵盤使用者也進不了卡內;關鍵資訊(錯誤警告、必要操作說明、付款條款)只靠 HoverCard,使用者很容易錯過 —— 直接顯示在畫面上,要確認的動作用 Dialog"
         >
-          <ExampleCaption warn>刪除警告只放在滑過才出現的卡裡 → 沒停下來看的人點按鈕前根本沒看到 → 改用 Dialog 確認</ExampleCaption>
-        </TutorialRule>
+          <HoverCard>
+            <HoverCardTrigger asChild>
+              <Button variant="secondary" danger onClick={() => toast({ variant: 'success', title: '帳號已刪除' })}>刪除帳號</Button>
+            </HoverCardTrigger>
+            <HoverCardContent className={cn(HOVER_CARD_SURFACE_CLASS, 'p-[var(--layout-space-loose)]')}>
+              <ItemContent className="w-64" label="永久刪除警告" description="此動作會永久刪除所有資料" mode="scanning" />
+            </HoverCardContent>
+          </HoverCard>
+          <ExampleCaption warn>↑ 刪除警告只放在滑過才出現的卡裡 → 沒停下來看的人點按鈕前根本沒看到 → 改用 Dialog 確認</ExampleCaption>
+        </TriggerRule>
 
         <TutorialRule
           title="✅ 補充資訊 / 預覽 / 人員卡適合 HoverCard"
