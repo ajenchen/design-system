@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { OverflowIndicator } from './overflow-indicator'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
-import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
@@ -103,12 +102,17 @@ export const AvatarStackOverflow: Story = {
         ))}
         <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(3, 4)}>
           <OverflowIndicator count={reviewers.length - 3} shape="circle" size="md">
-            {/* 隱藏的人員 = 與 PersonDisplay 同一種人員 Tag(neutral sm Tag + 16px 頭像 + 名片;person-display.tsx 的 +N 清單寫法,稽核 M083) */}
-            {reviewers.slice(3).map((p) => (
-              <Tag key={p.name} color="neutral" size="sm" avatar={<Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={16} hoverCard={personHoverCard(p)} />}>
-                {p.name}
-              </Tag>
-            ))}
+            {/* 每人一列(頭像 + 名字,頭像接名片)—— 同 HoverCard 展示「溢出清單」;浮層家族範例契約 R15「深色溢出清單每人一列」量的就是這一則 */}
+            {/* @layout-space-magic-ok: +N 浮層內人員列之間 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
+            <div className="flex flex-col gap-1 min-w-[160px] text-caption">
+              {reviewers.slice(3).map((p) => (
+                // @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
+                <div key={p.name} className="flex items-center gap-2">
+                  <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} hoverCard={personHoverCard(p)} />
+                  <span>{p.name}</span>
+                </div>
+              ))}
+            </div>
           </OverflowIndicator>
         </span>
       </div>
@@ -188,12 +192,17 @@ const assigneeColumns: ColumnDef<AssigneeRow>[] = [
           {hidden.length > 0 && (
             <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(visible.length, stackCount)}>
               <OverflowIndicator count={hidden.length} shape="circle" size="sm">
-                {/* 隱藏的人員 = 與 PersonDisplay 同一種人員 Tag(neutral sm Tag + 16px 頭像 + 名片;person-display.tsx 的 +N 清單寫法,稽核 M083) */}
-                {hidden.map((p) => (
-                  <Tag key={p.name} color="neutral" size="sm" avatar={<Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={16} hoverCard={personHoverCard(p)} />}>
-                    {p.name}
-                  </Tag>
-                ))}
+                {/* 每人一列 —— 同上一則「人員頭像疊合與 +N」 */}
+                {/* @layout-space-magic-ok: +N 浮層內人員列之間 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
+                <div className="flex flex-col gap-1 min-w-[140px]">
+                  {hidden.map((p) => (
+                    // @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
+                    <div key={p.name} className="flex items-center gap-2">
+                      <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} hoverCard={personHoverCard(p)} />
+                      <span>{p.name}</span>
+                    </div>
+                  ))}
+                </div>
               </OverflowIndicator>
             </span>
           )}
