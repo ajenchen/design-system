@@ -20,7 +20,8 @@ import {
 import { ItemAvatar } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
-import { TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { H3, Desc, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { SectionDescription } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計規格',
@@ -31,18 +32,9 @@ export default meta
 type Story = StoryObj
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
-// NOTE: Kept local (not imported from `_anatomy/anatomy-utils`) because the
-// Button-family inspector layout diverges visually (H3 `text-h6 font-semibold`,
-// no Desc bottom margin, Th/Td `p-2 border-b divider`) and this file's Swatch
-// signature differs (no `size` prop, includes `mr-1.5`) — used inline in
-// token-chip displays throughout this anatomy.
-
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
+// H3 / Desc 用共用版(anatomy-utils:小標 ↔ 說明 2px、標題區 → 並列內容 loose,2026-10-21 A4 甲;SB-a4)——
+// 間距由這兩個元件的下方 margin 給,所以包它們的區塊不再用 flex gap。
+// 仍留本地的:Th / Td(`p-2 border-b divider`,與共用版的格線表不同)、Swatch(沒有 `size`、帶 `mr-1.5`)、Label。
 const Label = ({ children }: { children: React.ReactNode }) => (
   <span className="text-footnote font-medium text-fg-muted">{children}</span>
 )
@@ -167,23 +159,21 @@ export const Overview: Story = {
   name: '元件總覽',
   render: () => (
     <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>結構（Anatomy）</H3>
         <Desc>
           Sidebar 是三段式結構——SidebarHeader（固定高 <code>--chrome-header-height</code>）、SidebarContent（可捲動）、SidebarFooter（高度由內容決定，shrink-0 靠底 + border-t）。
           Content 內放一或多個 SidebarGroup，每個 group 有 py-2 呼吸空間 + 自動內縮分隔線。
           Group 內放 SidebarMenu（扁平 row）或 TreeView（階層 row），兩者共用 item-layout row geometry。
         </Desc>
-      </div>
-
-      <div className="flex gap-8 items-start">
-        <div className="flex flex-col gap-2">
-          <Label>展開狀態</Label>
-          <SidebarPreview />
-        </div>
-        <div className="flex flex-col gap-2 max-w-md">
-          <Label>結構樹</Label>
-          <pre className="text-caption font-mono text-fg-secondary bg-canvas p-4 rounded-md border border-divider">{`SidebarProvider
+        <div className="flex gap-8 items-start">
+          <div className="flex flex-col gap-2">
+            <Label>展開狀態</Label>
+            <SidebarPreview />
+          </div>
+          <div className="flex flex-col gap-2 max-w-md">
+            <Label>結構樹</Label>
+            <pre className="text-caption font-mono text-fg-secondary bg-canvas p-4 rounded-md border border-divider">{`SidebarProvider
   Sidebar
     SidebarHeader          ← h-[var(--chrome-header-height)]
     SidebarContent         ← flex-1 + ScrollArea 捲動
@@ -197,11 +187,12 @@ export const Overview: Story = {
     SidebarFooter          ← shrink-0 py-2 border-t (高度由內容決定)
   SidebarTrigger           ← 放主內容 header
 `}</pre>
+          </div>
         </div>
       </div>
 
       {/* Primary exports table */}
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>Primary exports</H3>
         <table className="min-w-full text-left border-collapse">
           <thead>
@@ -341,77 +332,78 @@ export const SizeMatrix: Story = {
   name: '尺寸對照表',
   render: () => (
     <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>Row size 變體</H3>
         <Desc>
           SidebarMenuButton 和 SidebarGroupLabel 共用 item-layout 公式,sm/md/lg 三種尺寸跟 TreeView / MenuItem 完全對齊;
           標題列列尾的 + (SidebarGroupAction)與收合箭頭住同一個列尾槽(ItemSuffix,h-[1lh]),圖示中線對齊標題文字。
           <code>SidebarProvider</code> 的 size prop 會自動 propagate 到所有 row 元件,不用每個 button 各自傳。
         </Desc>
+        <div className="flex gap-6 items-start flex-wrap">
+          {(['sm', 'md', 'lg'] as const).map((s) => (
+            <div key={s} className="flex flex-col gap-2">
+              <Label>size = &quot;{s}&quot;</Label>
+              <SidebarPreview size={s} withGroups />
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="flex gap-6 items-start flex-wrap">
-        {(['sm', 'md', 'lg'] as const).map((s) => (
-          <div key={s} className="flex flex-col gap-2">
-            <Label>size = &quot;{s}&quot;</Label>
-            <SidebarPreview size={s} withGroups />
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>Token 公式</H3>
-        <table className="min-w-full text-left border-collapse">
-          <thead>
-            <tr>
-              <Th>Property</Th>
-              <Th>sm</Th>
-              <Th>md</Th>
-              <Th>lg</Th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <Td>Row height (field-height)</Td>
-              <Td mono>--field-height-sm</Td>
-              <Td mono>--field-height-md</Td>
-              <Td mono>--field-height-lg</Td>
-            </tr>
-            <tr>
-              <Td>Horizontal padding</Td>
-              <Td mono>var(--layout-space-loose)</Td>
-              <Td mono>var(--layout-space-loose)</Td>
-              <Td mono>var(--layout-space-loose)</Td>
-            </tr>
-            <tr>
-              <Td>Vertical padding formula</Td>
-              <Td mono>calc((sm-1lh)/2)</Td>
-              <Td mono>calc((md-1lh)/2)</Td>
-              <Td mono>calc((lg-1lh)/2)</Td>
-            </tr>
-            <tr>
-              <Td>Text</Td>
-              <Td mono>text-body (14px)</Td>
-              <Td mono>text-body (14px)</Td>
-              <Td mono>text-body-lg (16px)</Td>
-            </tr>
-            <tr>
-              <Td>Icon</Td>
-              <Td mono>size-4 (16px)</Td>
-              <Td mono>size-4 (16px)</Td>
-              <Td mono>size-5 (20px)</Td>
-            </tr>
-            <tr>
-              <Td>Font weight</Td>
-              <Td mono>font-medium</Td>
-              <Td mono>font-medium</Td>
-              <Td mono>font-medium</Td>
-            </tr>
-          </tbody>
-        </table>
-        <p className="text-caption text-fg-muted">
-          Token 的 md / lg density 解析值見 <code>tokens/uiSize/uiSize.spec.md</code>。
-        </p>
+        <div className="flex flex-col gap-2">
+          <table className="min-w-full text-left border-collapse">
+            <thead>
+              <tr>
+                <Th>Property</Th>
+                <Th>sm</Th>
+                <Th>md</Th>
+                <Th>lg</Th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <Td>Row height (field-height)</Td>
+                <Td mono>--field-height-sm</Td>
+                <Td mono>--field-height-md</Td>
+                <Td mono>--field-height-lg</Td>
+              </tr>
+              <tr>
+                <Td>Horizontal padding</Td>
+                <Td mono>var(--layout-space-loose)</Td>
+                <Td mono>var(--layout-space-loose)</Td>
+                <Td mono>var(--layout-space-loose)</Td>
+              </tr>
+              <tr>
+                <Td>Vertical padding formula</Td>
+                <Td mono>calc((sm-1lh)/2)</Td>
+                <Td mono>calc((md-1lh)/2)</Td>
+                <Td mono>calc((lg-1lh)/2)</Td>
+              </tr>
+              <tr>
+                <Td>Text</Td>
+                <Td mono>text-body (14px)</Td>
+                <Td mono>text-body (14px)</Td>
+                <Td mono>text-body-lg (16px)</Td>
+              </tr>
+              <tr>
+                <Td>Icon</Td>
+                <Td mono>size-4 (16px)</Td>
+                <Td mono>size-4 (16px)</Td>
+                <Td mono>size-5 (20px)</Td>
+              </tr>
+              <tr>
+                <Td>Font weight</Td>
+                <Td mono>font-medium</Td>
+                <Td mono>font-medium</Td>
+                <Td mono>font-medium</Td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-caption text-fg-muted">
+            Token 的 md / lg density 解析值見 <code>tokens/uiSize/uiSize.spec.md</code>。
+          </p>
+        </div>
       </div>
     </div>
   ),
@@ -425,7 +417,7 @@ export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => (
     <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>SidebarMenuButton 狀態</H3>
         <Desc>
           跟 TreeItem / MenuItem 共用同一組 semantic token。Default → hover → selected 的色彩都一致。
@@ -468,7 +460,7 @@ export const ColorMatrix: Story = {
         </table>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>SidebarGroupLabel</H3>
         <table className="min-w-full text-left border-collapse">
           <thead>
@@ -571,7 +563,7 @@ export const VariantMatrix: Story = {
   // 2026-06-11:改用真 SidebarMenuButton 渲染(原為手繪灰塊 mock row,違 production-grade composition fidelity)
   render: () => (
     <div className="flex flex-col gap-6 max-w-md">
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>variant=&quot;default&quot;(導覽 item)</H3>
         <Desc>正常導覽目的地。文字 <code>text-fg-secondary</code> + <code>font-medium</code>,參與 single-selection,可 active。</Desc>
         <div className="border border-border rounded-md p-3 bg-surface">
@@ -590,7 +582,7 @@ export const VariantMatrix: Story = {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>variant=&quot;meta&quot;(命令 row,非導覽目的地)</H3>
         <Desc>
           section 底部的命令(「查看更多 / 載入更多 / + 新增專案」)。文字退到 <code>text-fg-muted</code> + <code>font-normal</code>,
@@ -624,100 +616,99 @@ export const VariantMatrix: Story = {
 export const StateBehavior: Story = {
   name: '狀態行為',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-1">
-        <H3>狀態行為</H3>
-        <Desc>
-          Sidebar 層級特有的狀態:collapse / expand 三種模式、放不下時(在 AppShell 裡由版面決定並排 / 暫藏 / 左側浮層)、active item single-selection、open state cookie 持久化。
-          Item-level default / hover / active / selected / disabled 色彩由 <code>ColorMatrix</code> 作為 state-driven 矩陣完整呈現(共用 item-anatomy row primitive 主檔);本 story 展示 container 層的結構狀態切換。
-        </Desc>
-      </div>
-
-      {/* Collapse modes */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 1:三種 collapsible 模式</span>
-        <Desc>
-          <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 68) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
-        </Desc>
-        <div className="flex flex-wrap gap-6">
-          <CollapsedFrame variant="expanded" label='collapsible="icon" · expanded' width={240} collapsed={false} />
-          <CollapsedFrame variant="icon" label='collapsible="icon" · collapsed(icon mode)' width={48} collapsed />
-          <CollapsedFrame variant="offcanvas" label='collapsible="offcanvas" · collapsed(hidden)' width={240} collapsed />
+    <div>
+      <H3>狀態行為</H3>
+      <Desc>
+        Sidebar 層級特有的狀態:collapse / expand 三種模式、放不下時(在 AppShell 裡由版面決定並排 / 暫藏 / 左側浮層)、active item single-selection、open state cookie 持久化。
+        Item-level default / hover / active / selected / disabled 色彩由 <code>ColorMatrix</code> 作為 state-driven 矩陣完整呈現(共用 item-anatomy row primitive 主檔);本 story 展示 container 層的結構狀態切換。
+      </Desc>
+      <div className="flex flex-col gap-10">
+        {/* Collapse modes */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">行為 1:三種 collapsible 模式</span>
+          <SectionDescription>
+            <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 68) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
+          </SectionDescription>
+          <div className="flex flex-wrap gap-6">
+            <CollapsedFrame variant="expanded" label='collapsible="icon" · expanded' width={240} collapsed={false} />
+            <CollapsedFrame variant="icon" label='collapsible="icon" · collapsed(icon mode)' width={48} collapsed />
+            <CollapsedFrame variant="offcanvas" label='collapsible="offcanvas" · collapsed(hidden)' width={240} collapsed />
+          </div>
         </div>
-      </div>
 
-      {/* Live toggle demo */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 2:Cmd+B / SidebarTrigger 切換 open state</span>
-        <Desc>
-          SidebarProvider 內建 Cmd+B (Mac) / Ctrl+B (Win) 全域快捷鍵,同時 SidebarTrigger iconOnly Button 作為視覺 toggle。open state 寫入 cookie(7 天);跨 session 還原需 consumer 讀 cookie 後傳 defaultOpen(詳 spec「持久化與快捷鍵」)。
-        </Desc>
-        <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
-          <SidebarProvider style={{ minHeight: 'auto', height: '100%' }}>
-            <div className="flex w-full h-full">
-              <Sidebar side="left" collapsible="icon">
-                <SidebarHeader>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-6 h-6 rounded-md bg-primary shrink-0" />
-                    <span className="text-body font-medium truncate">Acme Inc</span>
+        {/* Live toggle demo */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">行為 2:Cmd+B / SidebarTrigger 切換 open state</span>
+          <SectionDescription>
+            SidebarProvider 內建 Cmd+B (Mac) / Ctrl+B (Win) 全域快捷鍵,同時 SidebarTrigger iconOnly Button 作為視覺 toggle。open state 寫入 cookie(7 天);跨 session 還原需 consumer 讀 cookie 後傳 defaultOpen(詳 spec「持久化與快捷鍵」)。
+          </SectionDescription>
+          <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
+            <SidebarProvider style={{ minHeight: 'auto', height: '100%' }}>
+              <div className="flex w-full h-full">
+                <Sidebar side="left" collapsible="icon">
+                  <SidebarHeader>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-primary shrink-0" />
+                      <span className="text-body font-medium truncate">Acme Inc</span>
+                    </div>
+                  </SidebarHeader>
+                  <SidebarContent>
+                    <SidebarGroup>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {[
+                            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                            { id: 'inbox', label: 'Inbox', icon: Inbox },
+                            { id: 'team', label: 'Team', icon: Users },
+                            { id: 'settings', label: 'Settings', icon: Settings },
+                          ].map((item) => (
+                            <SidebarMenuItem key={item.id}>
+                              <SidebarMenuButton id={item.id} startIcon={item.icon}>
+                                {item.label}
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
+                  </SidebarContent>
+                </Sidebar>
+                <div className="flex-1 flex flex-col">
+                  {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
+                      與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
+                      「Chrome header 不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
+                  <ChromeHeader className="bg-surface">
+                    <SidebarTrigger />
+                    <span className="text-body-lg font-medium">Dashboard</span>
+                  </ChromeHeader>
+                  <div className="flex-1 px-4 py-3 text-caption text-fg-muted">
+                    點 SidebarTrigger 或按 Cmd/Ctrl+B,觀察 sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 68)。再按一次展開。
                   </div>
-                </SidebarHeader>
-                <SidebarContent>
-                  <SidebarGroup>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {[
-                          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                          { id: 'inbox', label: 'Inbox', icon: Inbox },
-                          { id: 'team', label: 'Team', icon: Users },
-                          { id: 'settings', label: 'Settings', icon: Settings },
-                        ].map((item) => (
-                          <SidebarMenuItem key={item.id}>
-                            <SidebarMenuButton id={item.id} startIcon={item.icon}>
-                              {item.label}
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </SidebarGroup>
-                </SidebarContent>
-              </Sidebar>
-              <div className="flex-1 flex flex-col">
-                {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
-                    與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
-                    「Chrome header 不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
-                <ChromeHeader className="bg-surface">
-                  <SidebarTrigger />
-                  <span className="text-body-lg font-medium">Dashboard</span>
-                </ChromeHeader>
-                <div className="flex-1 px-4 py-3 text-caption text-fg-muted">
-                  點 SidebarTrigger 或按 Cmd/Ctrl+B,觀察 sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 68)。再按一次展開。
                 </div>
               </div>
-            </div>
-          </SidebarProvider>
+            </SidebarProvider>
+          </div>
         </div>
-      </div>
 
-      {/* Icon mode — tooltip for item labels */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 3:Icon mode 時 label 隱藏 → Tooltip 代償</span>
-        <Desc>
-          collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 <code>tooltip</code> prop,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(<code>tooltip</code> prop)。
-        </Desc>
-      </div>
+        {/* Icon mode — tooltip for item labels */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">行為 3:Icon mode 時 label 隱藏 → Tooltip 代償</span>
+          <SectionDescription>
+            collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 <code>tooltip</code> prop,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(<code>tooltip</code> prop)。
+          </SectionDescription>
+        </div>
 
-      {/* Rule notes */}
-      <div className="flex flex-col gap-2 pt-4 border-t border-divider">
-        <span className="text-caption font-medium text-fg-secondary">行為規則</span>
-        <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
-          <li><code>collapsible="offcanvas"</code> 用於主內容為主的 app(sidebar 是啟動器,使用者常關);<code>collapsible="icon"</code> 用於深度導覽 app(sidebar 是常駐工作區)。</li>
-          <li>open state 寫 cookie <code>sidebar_state</code>(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 <code>defaultOpen</code>(避免 SSR hydration flash)。</li>
-          <li>放在 AppShell 裡時,Menu 何時並排、何時暫藏(有細列就只剩細列)、何時變左側浮層,全部照 AppShell「版面規則」(用各區最小寬現算,沒有 768 斷點;2026-10-14)。暫藏時按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層按 Esc 或點外面收回細列。<code>collapsible="none"</code> 不能用在 AppShell 的 Menu 位置;不在 AppShell 裡時 Sidebar 一律並排。</li>
-          <li>Icon mode 下 active item 的 <code>bg-neutral-selected</code> 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
-          <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):<code>defaultPrevented</code>(app editor 已處理同鍵時不 double-fire)/ <code>isComposing</code>(IME 組字中不攔)/ 可編輯 target(<code>input</code> / <code>textarea</code> / <code>contentEditable</code> 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 <code>disableShortcut</code> opt-out。</li>
-        </ul>
+        {/* Rule notes */}
+        <div className="flex flex-col gap-2 pt-4 border-t border-divider">
+          <span className="text-caption font-medium text-fg-secondary">行為規則</span>
+          <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
+            <li><code>collapsible="offcanvas"</code> 用於主內容為主的 app(sidebar 是啟動器,使用者常關);<code>collapsible="icon"</code> 用於深度導覽 app(sidebar 是常駐工作區)。</li>
+            <li>open state 寫 cookie <code>sidebar_state</code>(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 <code>defaultOpen</code>(避免 SSR hydration flash)。</li>
+            <li>放在 AppShell 裡時,Menu 何時並排、何時暫藏(有細列就只剩細列)、何時變左側浮層,全部照 AppShell「版面規則」(用各區最小寬現算,沒有 768 斷點;2026-10-14)。暫藏時按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層按 Esc 或點外面收回細列。<code>collapsible="none"</code> 不能用在 AppShell 的 Menu 位置;不在 AppShell 裡時 Sidebar 一律並排。</li>
+            <li>Icon mode 下 active item 的 <code>bg-neutral-selected</code> 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
+            <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):<code>defaultPrevented</code>(app editor 已處理同鍵時不 double-fire)/ <code>isComposing</code>(IME 組字中不攔)/ 可編輯 target(<code>input</code> / <code>textarea</code> / <code>contentEditable</code> 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 <code>disableShortcut</code> opt-out。</li>
+          </ul>
+        </div>
       </div>
     </div>
   ),
@@ -731,7 +722,7 @@ export const ChromeTokens: Story = {
   name: '寬度與框架設計變數',
   render: () => (
     <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>Sidebar 寬度 tokens</H3>
         <table className="min-w-full text-left border-collapse">
           <thead>
@@ -766,7 +757,7 @@ export const ChromeTokens: Story = {
         </table>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div>
         <H3>Chrome header token(共享)</H3>
         <Desc>
           SidebarHeader / 主內容 page header 都用這個 token,確保跨元件同高對齊。Density-responsive。（SidebarFooter 為 content-based，高度由內容決定，不消費此 token。）
