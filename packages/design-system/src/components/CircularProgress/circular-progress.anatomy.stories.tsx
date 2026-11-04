@@ -12,7 +12,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { CircularProgress } from './circular-progress'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
-import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 /**
@@ -92,7 +92,7 @@ export const Overview: Story = {
 export const UsageInButton: Story = {
   name: '在 Button 載入中狀態內',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>Button loading</H3>
         <Desc>
@@ -115,14 +115,14 @@ export const UsageInButton: Story = {
           <Button variant="tertiary" size="lg" iconOnly loading aria-label="載入中" />
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
 export const UsageInline: Story = {
   name: '行內使用',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3 paragraph>Cell / Table row 局部 loading</H3>
         {/* 2026-10-27 前這裡是手刻的有框列(稽核 L057);放進真的 DataTable 儲存格的樣子只住展示頁那一則 */}
@@ -163,7 +163,7 @@ export const UsageInline: Story = {
           <CircularProgress value={90} affix="value" aria-label="上傳進度 90%" />
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 

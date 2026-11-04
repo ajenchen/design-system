@@ -15,6 +15,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 // 範例裡的按鈕做它說的那件事(稽核 L020;user 2026-09-08 F-S2 看得到的按鈕都要能動)
@@ -156,7 +157,7 @@ export const Inspector: InspectorStory = {
 export const ScenarioMatrix: Story = {
   name: '常見場景',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>Table 空資料</H3>
         <div className="border border-border rounded-lg p-8">
@@ -175,7 +176,7 @@ export const ScenarioMatrix: Story = {
           />
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 

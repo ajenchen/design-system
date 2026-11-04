@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Folder, FileText, Image, Users, User, Pencil, Trash2 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { Button } from '@/design-system/components/Button/button'
 import { Dialog, DialogBody, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/design-system/components/Dialog/dialog'
 import { Field, FieldError, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
@@ -521,7 +521,7 @@ function StateBehaviorDemo() {
 export const KeyboardMatrix: Story = {
   name: '鍵盤導覽（樹狀表格）',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>鍵盤操作對照 — 焦點在列上</H3>
         <Desc>整棵樹在 Tab 路上只佔一站(列上的 roving tabindex)。Tab 進來落在上次停的那一列,沒有就落在選中的列,再沒有就第一列。重排鍵位(最後三列)僅在 <code>draggable</code> 時生效,每按一下立即 commit(發出 onDragEnd,同 pointer 契約)。</Desc>
@@ -559,7 +559,7 @@ export const KeyboardMatrix: Story = {
           </table>
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 

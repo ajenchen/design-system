@@ -9,6 +9,7 @@ import {
   AccordionContent,
 } from './accordion'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Accordion/設計規格',
@@ -141,7 +142,7 @@ const InspectorView = () => {
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-[1fr_320px] gap-6">
         {/* 左:即時預覽 + 藍圖 */}
-        <div className="flex flex-col gap-6">
+        <ExampleStack>
           <div>
             <H3>即時預覽</H3>
             <div className="border border-border rounded-lg p-4">
@@ -192,7 +193,7 @@ const InspectorView = () => {
               </p>
             </div>
           </div>
-        </div>
+        </ExampleStack>
 
         {/* 右:Inspect 面板 */}
         <div>
