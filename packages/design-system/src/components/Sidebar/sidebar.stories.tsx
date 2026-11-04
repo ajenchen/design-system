@@ -35,6 +35,7 @@ import {
   DropdownMenuGroup,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
+import { InsightsView } from '@/design-system/components/AppShell/_demo-helpers'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/展示',
@@ -123,8 +124,11 @@ const UserFooter = () => (
  * header-canonical.spec.md「6. Background ownership」段:top-level chrome
  * 自畫 bg-surface;Element canonical:ChromeHeader 內部用 `<header>`)。
  * Trigger 是唯一的 sidebar 切換入口。
+ * 主區放真實頁面內容(D6 甲,user 10-21「D6 照你建議」:不做手刻指標卡、不亂造元件)—— 同一份 InsightsView
+ * (AppShell 展示與設計規格「元件總覽」的 Main 也是它:本週 Sprint 摘要,DescriptionList 組成);
+ * 每則的說明寫在 parameters.docs.description.story(story-rules「整頁情境」:畫布不放便條)。
  */
-const PageContent = ({ title, description }: { title: string; description: React.ReactNode }) => (
+const PageContent = ({ title }: { title: string }) => (
   <main className="flex-1 flex flex-col min-w-0 min-h-svh bg-canvas">
     <ChromeHeader className="bg-surface">
       {/* 不加 -ml-1(shadcn 原版的 offset 是補償 Button 的 px-3;我們 text iconOnly 是 p-0 無 padding,
@@ -134,21 +138,9 @@ const PageContent = ({ title, description }: { title: string; description: React
           平等 sibling。「當下在哪頁」的訊號由 sidebar active item 負責,不靠 title 字重 */}
       <h1 className="text-body-lg font-medium">{title}</h1>
     </ChromeHeader>
-    {/* 2026-07-04 dim 90:macro 間距對齊 layout-space token(同 87dbc9cd template DashboardPage
-        已拍板 pattern;本檔是 R8 registry archetype,錯 rhythm 會被 consumer 機械複製)*/}
-    <div className="flex-1 overflow-auto px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+    <div className="flex-1 overflow-auto">
       <div className="max-w-2xl">
-        <p className="text-body text-fg-secondary mb-[var(--layout-space-loose)]">{description}</p>
-        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
-          {/* 固定值(非 Math.random)— story 是 visual baseline,必確定性,否則每次 build 像素不同 = composition-fidelity / visual regression 無法比對(2026-06-02 fix)*/}
-          {([['專案數量', 24], ['團隊成員', 8], ['本週提交', 47], ['待處理', 3]] as const).map(([t, v]) => (
-            <div key={t} className="rounded-lg border border-divider bg-surface p-[var(--layout-space-loose)]">
-              <p className="text-caption text-fg-muted">{t}</p>
-              {/* @layout-space-magic-ok: 指標卡 標籤 ↔ 數值 4px(同一張卡內 label ↔ value 的 micro)(layoutSpace.spec.md:166 micro) */}
-              <p className="text-h5 font-semibold mt-1">{v}</p>
-            </div>
-          ))}
-        </div>
+        <InsightsView />
       </div>
     </div>
   </main>
@@ -158,6 +150,7 @@ const PageContent = ({ title, description }: { title: string; description: React
 
 export const IconCollapse: Story = {
   name: '完整佈局',
+  parameters: { docs: { description: { story: '扁平主導覽用 `SidebarMenu`,每項必須有 icon。點左上角 **SidebarTrigger**(灰框按鈕)或按 ⌘B 切換收合;收合後變 icon rail,滑過顯示 tooltip。' } } },
   render: () => {
     const [activeId, setActiveId] = React.useState<string>('dashboard')
 
@@ -193,16 +186,6 @@ export const IconCollapse: Story = {
 
         <PageContent
           title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
-          description={
-            <>
-              {/* @layout-space-magic-ok: 說明文字裡行內 code / kbd 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
-              扁平主導覽用 <code className="text-caption px-1 bg-neutral-hover rounded">SidebarMenu</code>,
-              每項必須有 icon。點左上角 <strong>SidebarTrigger</strong>(灰框按鈕)或按
-              {/* @layout-space-magic-ok: 說明文字裡行內 kbd 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
-              <kbd className="text-caption px-1 bg-neutral-hover rounded">⌘B</kbd> 切換收合。
-              收合後變 icon rail,hover 顯示 tooltip。
-            </>
-          }
         />
       </SidebarProvider>
     )
@@ -245,7 +228,7 @@ const PROJECTS_SEED = [
 const PROJECTS_BACKLOG = ['會員等級重算', '發票寄送']
 export const GroupAction: Story = {
   name: '群組動作',
-  parameters: { docs: { description: { story: '群組標題列右端的行內動作鈕(`SidebarGroupAction`,`icon` 必填,放在 `SidebarGroupLabel` 之後、`SidebarGroupContent` 之前,按鈕會住進標題列的列尾槽,圖示中線對齊標題文字):清單型群組的「新增一筆」入口,這裡是「所有專案」的「建立專案」。它委派 `ItemInlineActionButton`,懸停底色就是命中區;側欄收成 icon 模式時整顆隱藏(標題也不在了)。' } } },
+  parameters: { docs: { description: { story: '群組標題列右端的行內動作鈕(`SidebarGroupAction`,`icon` 必填,放在 `SidebarGroupLabel` 之後、`SidebarGroupContent` 之前,按鈕會住進標題列的列尾槽,圖示中線對齊標題文字):清單型群組的「新增一筆」入口,這裡是「所有專案」的「建立專案」。它委派 `ItemInlineActionButton`,懸停底色就是命中區;側欄收成 icon 模式時整顆隱藏(標題也不在了)。按下去把下一個專案加進清單。' } } },
   render: function GroupActionStory() {
     const [activeId, setActiveId] = React.useState<string>('checkout')
     const [projects, setProjects] = React.useState(PROJECTS_SEED)
@@ -296,14 +279,6 @@ export const GroupAction: Story = {
         </Sidebar>
         <PageContent
           title={projects.find((p) => p.id === activeId)?.label ?? MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
-          description={
-            <>
-              {/* @layout-space-magic-ok: 說明文字裡行內 code 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
-              「所有專案」群組標題列右端是 <code className="text-caption px-1 bg-neutral-hover rounded">SidebarGroupAction</code>
-              (建立專案):滑過才有底色,底色就是命中區;按下去把下一個專案加進清單。
-              點左上角 <strong>SidebarTrigger</strong> 收成 icon 模式,群組標題與這顆鈕一起隱藏。
-            </>
-          }
         />
       </SidebarProvider>
     )
@@ -330,6 +305,7 @@ const PROJECTS_TREE = [
 
 export const MixedContent: Story = {
   name: '混合內容',
+  parameters: { docs: { description: { story: '上方 `SidebarMenu` 是 designer 設計好的主導覽,下方 `TreeView` 是使用者自建的 project 資料。整個 sidebar 同時只有一個 active,切到 icon 模式後 TreeView 整段隱藏。' } } },
   render: () => {
     // 單一 active state 跨整個 sidebar——SidebarProvider 內建 single-selection,
     // 每個 SidebarMenuButton 只要傳 `id`,點擊自動 setActiveId、isActive 自動算。
@@ -466,14 +442,6 @@ export const MixedContent: Story = {
           title={isInMainNav
             ? MAIN_NAV.find((n) => n.id === activeId)?.label ?? ''
             : activeId}
-          description={
-            <>
-              {/* @layout-space-magic-ok: 說明文字裡行內 code 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
-              上方 <code className="text-caption px-1 bg-neutral-hover rounded">SidebarMenu</code> 是 designer 設計好的主導覽,
-              下方 <code /* @layout-space-magic-ok: 句子裡的行內 code 內距 4px(行內文字 micro;標記放標籤內,另起註解行會吃掉兩段文字間的空白)(layoutSpace.spec.md:166 micro) */ className="text-caption px-1 bg-neutral-hover rounded">TreeView</code> 是使用者自建的 project 資料。
-              整個 sidebar 同時只有一個 active,切到 icon 模式後 TreeView 整段隱藏。
-            </>
-          }
         />
       </SidebarProvider>
     )
@@ -484,6 +452,7 @@ export const MixedContent: Story = {
 
 export const Offcanvas: Story = {
   name: '抽屜收合（離畫面外）',
+  parameters: { docs: { description: { story: 'Offcanvas 模式:收合時整個 sidebar 滑出畫面。重新展開的唯一方法是點左上角 **SidebarTrigger** 或按 ⌘B。' } } },
   render: () => {
     const [activeId, setActiveId] = React.useState<string>('dashboard')
 
@@ -515,13 +484,6 @@ export const Offcanvas: Story = {
 
         <PageContent
           title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
-          description={
-            <>
-              Offcanvas 模式:收合時整個 sidebar 滑出畫面。重新展開的唯一方法是點左上角
-              {/* @layout-space-magic-ok: 說明文字裡行內 kbd 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
-              <strong> SidebarTrigger </strong>或按 <kbd className="text-caption px-1 bg-neutral-hover rounded">⌘B</kbd>。
-            </>
-          }
         />
       </SidebarProvider>
     )
@@ -532,6 +494,7 @@ export const Offcanvas: Story = {
 
 export const IntegrationSidebar: Story = {
   name: '混合前綴',
+  parameters: { docs: { description: { story: '開啟 `uniformPrefix` 後,icon 導覽項與帶 logo 的整合項會對齊到同一條左緣,讓文字起點一致(如 Notion / Raycast / Linear 的整合區)。預設關閉。' } } },
   render: () => {
     const [activeId, setActiveId] = React.useState<string>('home')
 
@@ -596,14 +559,6 @@ export const IntegrationSidebar: Story = {
         <PageContent
           title={
             [...NAV_ITEMS, ...INTEGRATIONS].find((n) => n.id === activeId)?.label ?? 'Home'
-          }
-          description={
-            <>
-              {/* @layout-space-magic-ok: 說明文字裡行內 code 膠囊左右 4px(行內文字 micro)(layoutSpace.spec.md:166 micro) */}
-              開啟 <code className="text-caption px-1 bg-neutral-hover rounded">uniformPrefix</code>
-              {' '}後,icon 導覽項與帶 logo 的整合項會對齊到同一條左緣,讓文字起點一致
-              (如 Notion / Raycast / Linear 的整合區)。預設關閉。
-            </>
           }
         />
       </SidebarProvider>
