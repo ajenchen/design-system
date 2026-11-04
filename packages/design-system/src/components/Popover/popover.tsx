@@ -151,7 +151,7 @@ const PopoverContent = React.forwardRef<
           // Layout-space lock(2026-06-15 canonical,原 data-density="md" 改為只鎖 layout-space):Popover 是
           // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;但
           // **ui-size 不鎖、繼承 page** → 內部 field 控件 / dismiss 按鈕隨 page 放大,跟觸發點一致(decouple)。
-          // [data-layout-space="md"] 有 reset selector(layoutSpace.css L31)→ lg page 上正確 reset 回 md。
+          // [data-layout-space="md"] 有 reset selector(layoutSpace.css「md reset selector」那段)→ lg page 上正確 reset 回 md。
           data-layout-space="md"
           onOpenAutoFocus={(e) => { interactedOutsideRef.current = false; resolvedOpenAutoFocus(e) }}
           onCloseAutoFocus={(e) => { exitFocus.onCloseAutoFocus(e); interactedOutsideRef.current = false }}
