@@ -16,7 +16,7 @@
     "div-heading": 0,
     "unknown-typography": 0,
     "story-counter-example": 4,
-    "layout-space-magic-ok": 310
+    "layout-space-magic-ok": 302
   },
   "files": {
     "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx": {
@@ -387,17 +387,9 @@
     },
     "packages/design-system/src/components/Sidebar/sidebar.stories.tsx": {
       "layout-space-magic-ok": {
-        "count": 9,
+        "count": 1,
         "hits": [
-          "44a435fe8cfa",
-          "4b97a85064be",
-          "55be4150b209",
-          "68b433fb350b",
-          "787c31ff55f7",
-          "7f336741f777",
-          "a4f480005ad2",
-          "f3cc13c3f2fc",
-          "fa490716a95a"
+          "f3cc13c3f2fc"
         ]
       }
     },
