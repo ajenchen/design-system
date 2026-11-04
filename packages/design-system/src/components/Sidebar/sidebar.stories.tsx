@@ -153,7 +153,7 @@ const PageContent = ({ title, description }: { title: string; description: React
           {([['專案數量', 24], ['團隊成員', 8], ['本週提交', 47], ['待處理', 3]] as const).map(([t, v]) => (
             <div key={t} className="rounded-lg border border-divider bg-surface p-[var(--layout-space-loose)]">
               <p className="text-caption text-fg-muted">{t}</p>
-              {/* @layout-space-magic-ok: 指標卡 標籤 ↔ 數值 4px(同一張卡內 label ↔ value 的 micro;apps/template App.tsx metric-card 既有註記)(layoutSpace.spec.md:166 micro) */}
+              {/* @layout-space-magic-ok: 指標卡 標籤 ↔ 數值 4px(同一張卡內 label ↔ value 的 micro)(layoutSpace.spec.md:166 micro) */}
               <p className="text-h5 font-semibold mt-1">{v}</p>
             </div>
           ))}
