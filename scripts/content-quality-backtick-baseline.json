@@ -2,10 +2,8 @@
   "_meta": {
     "purpose": "scripts/audit-content-quality.mjs Check 4f 的棘輪:非教學頁(設計規格 / 展示頁)story 畫面上的 Markdown 反引號(會原樣顯示),2026-10-21 r1b fields F8 把範圍從教學頁擴到全 DS 時既有的檔與「不同字樣數」。只准往下:檔不在表上 / 數字變大 = 紅;修掉後跑 `node scripts/audit-content-quality.mjs --update-backtick-baseline` 收緊。教學頁(*.principles + tokens / patterns 文件頁)不吃棘輪,一律 0(T12)。2026-10-21 r1b fields 複驗 D1:偵測從「JSX 子節點與屬性」擴到所有會上畫面的字串(資料陣列 / 物件裡的字串也算)後,Carousel 設計規格多量到 3 個原本就顯示在畫面上的字樣(loop / align / dragFree,Props 表陣列),26 → 29 是量具更正、不是內容變多;擴充後的逐檔數字與 storybook 建置的畫面文字掃描(43 檔)完全相同。",
     "recordedAt": "2026-10-21",
-    "files": 1,
-    "samples": 24
+    "files": 0,
+    "samples": 0
   },
-  "files": {
-    "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx": 24
-  }
+  "files": {}
 }

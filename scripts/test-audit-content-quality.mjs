@@ -84,19 +84,37 @@ try {
 } finally {
   writeFileSync(specTarget, specOrig)
 }
-const ratchetBaseline = JSON.parse(readFileSync(join(repoRoot, 'scripts/content-quality-backtick-baseline.json'), 'utf8')).files
-const ratchetFile = Object.keys(ratchetBaseline)[0]
-if (!ratchetFile) { console.error('✗ 反引號棘輪表是空的 —— 下面的「數字變大」對照組沒有東西可測'); ok = false }
-else {
+const ratchetPath = join(repoRoot, 'scripts/content-quality-backtick-baseline.json')
+const ratchetRaw = readFileSync(ratchetPath, 'utf8')
+let ratchetFile = Object.keys(JSON.parse(ratchetRaw).files)[0]
+// 棘輪清零之後(2026-11-05 最後一檔 Sidebar 設計規格的 24 個收掉)表是空的,「表上的檔數字變大」這條規則仍在程式裡、
+// 沒有真資料可測 → 臨時登記一檔 allowed = 1 造對照組,兩面都驗:多 1 個字樣(= 1,沒超過)綠、多 2 個(> 1)紅;結束還原表。
+const synthetic = !ratchetFile
+if (synthetic) {
+  ratchetFile = 'packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx'
+  const table = JSON.parse(ratchetRaw)
+  table.files = { [ratchetFile]: 1 }
+  writeFileSync(ratchetPath, JSON.stringify(table, null, 2) + '\n')
+}
+{
   const ratchetTarget = join(repoRoot, ratchetFile)
   const ratchetOrig = readFileSync(ratchetTarget, 'utf8')
+  const probe = (n) => ratchetOrig + Array.from({ length: n }, (_, i) =>
+    `\nexport const InjectedRatchetBacktick${i} = {\n  name: '棘輪表上的檔多一個反引號 ${i}',\n  render: () => <p>多了一個 \`zz-ratchet-probe-${i}\` 字樣</p>,\n};\n`).join('')
   try {
-    writeFileSync(ratchetTarget, ratchetOrig + `\nexport const InjectedRatchetBacktick = {\n  name: '棘輪表上的檔多一個反引號',\n  render: () => <p>多了一個 \`zz-ratchet-probe\` 字樣</p>,\n};\n`)
+    if (synthetic) {
+      writeFileSync(ratchetTarget, probe(1))
+      const within = run()
+      if (within !== 0) { console.error(`✗ 臨時棘輪表 allowed = 1、檔裡 1 個字樣(沒超過)卻 FAIL(exit ${within})`); ok = false }
+      else console.log('✓ 臨時棘輪表:字樣數 = 上限時通過(exit 0)')
+    }
+    writeFileSync(ratchetTarget, probe(synthetic ? 2 : 1))
     const code = run()
     if (code === 0) { console.error(`✗ 棘輪表上的檔(${ratchetFile})反引號字樣變多後 gate 未 FAIL`); ok = false }
-    else console.log('✓ 棘輪表上的檔字樣變多被抓(exit ' + code + ')')
+    else console.log('✓ 棘輪表上的檔字樣變多被抓(exit ' + code + ')' + (synthetic ? '(臨時登記;正式表已清零)' : ''))
   } finally {
     writeFileSync(ratchetTarget, ratchetOrig)
+    if (synthetic) writeFileSync(ratchetPath, ratchetRaw)
   }
 }
 

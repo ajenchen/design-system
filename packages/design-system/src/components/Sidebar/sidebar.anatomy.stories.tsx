@@ -176,7 +176,7 @@ export const Overview: Story = {
       <div className="flex flex-col gap-2">
         <H3>結構（Anatomy）</H3>
         <Desc>
-          Sidebar 是三段式結構——SidebarHeader（固定高 `--chrome-header-height`）、SidebarContent（可捲動）、SidebarFooter（高度由內容決定，shrink-0 靠底 + border-t）。
+          Sidebar 是三段式結構——SidebarHeader（固定高 <code>--chrome-header-height</code>）、SidebarContent（可捲動）、SidebarFooter（高度由內容決定，shrink-0 靠底 + border-t）。
           Content 內放一或多個 SidebarGroup，每個 group 有 py-2 呼吸空間 + 自動內縮分隔線。
           Group 內放 SidebarMenu（扁平 row）或 TreeView（階層 row），兩者共用 item-layout row geometry。
         </Desc>
@@ -235,7 +235,7 @@ export const Overview: Story = {
               <Td mono>SidebarHeader</Td>
               <Td>Chrome slot</Td>
               <Td>—</Td>
-              <Td>固定高度槽位(`--chrome-header-height`)</Td>
+              <Td>固定高度槽位(<code>--chrome-header-height</code>)</Td>
             </tr>
             <tr>
               <Td mono>SidebarFooter</Td>
@@ -271,7 +271,7 @@ export const Overview: Story = {
               <Td mono>SidebarMenuBadge</Td>
               <Td>Row suffix</Td>
               <Td>—</Td>
-              <Td>wrap 專案 `Badge` 元件,絕對定位</Td>
+              <Td>wrap 專案 <code>Badge</code> 元件,絕對定位</Td>
             </tr>
             <tr>
               <Td mono>SidebarMenuSkeleton</Td>
@@ -352,7 +352,7 @@ export const SizeMatrix: Story = {
         <Desc>
           SidebarMenuButton 和 SidebarGroupLabel 共用 item-layout 公式,sm/md/lg 三種尺寸跟 TreeView / MenuItem 完全對齊;
           標題列列尾的 + (SidebarGroupAction)與收合箭頭住同一個列尾槽(ItemSuffix,h-[1lh]),圖示中線對齊標題文字。
-          `SidebarProvider` 的 size prop 會自動 propagate 到所有 row 元件,不用每個 button 各自傳。
+          <code>SidebarProvider</code> 的 size prop 會自動 propagate 到所有 row 元件,不用每個 button 各自傳。
         </Desc>
       </div>
 
@@ -416,7 +416,7 @@ export const SizeMatrix: Story = {
           </tbody>
         </table>
         <p className="text-caption text-fg-muted">
-          Token 的 md / lg density 解析值見 `tokens/uiSize/uiSize.spec.md`。
+          Token 的 md / lg density 解析值見 <code>tokens/uiSize/uiSize.spec.md</code>。
         </p>
       </div>
     </div>
@@ -459,7 +459,7 @@ export const ColorMatrix: Story = {
               <Td mono>500</Td>
             </tr>
             <tr>
-              <Td>selected (`data-active`)</Td>
+              <Td>selected (<code>data-active</code>)</Td>
               <Td><Swatch value="--neutral-selected" />bg-neutral-selected</Td>
               <Td><Swatch value="--foreground" />text-foreground</Td>
               <Td mono>500 (不加重)</Td>
@@ -635,7 +635,7 @@ export const StateBehavior: Story = {
         <H3>狀態行為</H3>
         <Desc>
           Sidebar 層級特有的狀態:collapse / expand 三種模式、放不下時(在 AppShell 裡由版面決定並排 / 暫藏 / 左側浮層)、active item single-selection、open state cookie 持久化。
-          Item-level default / hover / active / selected / disabled 色彩由 `ColorMatrix` 作為 state-driven 矩陣完整呈現(共用 item-anatomy row primitive 主檔);本 story 展示 container 層的結構狀態切換。
+          Item-level default / hover / active / selected / disabled 色彩由 <code>ColorMatrix</code> 作為 state-driven 矩陣完整呈現(共用 item-anatomy row primitive 主檔);本 story 展示 container 層的結構狀態切換。
         </Desc>
       </div>
 
@@ -643,7 +643,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 1:三種 collapsible 模式</span>
         <Desc>
-          `collapsible` prop 控制收合策略:`offcanvas`(預設)= 整條 sidebar 滑出視窗外 / `icon` = 收縮到細列只留 icon(`--sidebar-width-icon`:標準密度 48 / 寬鬆密度 68) / `none` = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 `icon`(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 `offcanvas`(sidebar 只是啟動器)。
+          <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 68) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
         </Desc>
         <div className="flex flex-wrap gap-6">
           <CollapsedFrame variant="expanded" label='collapsible="icon" · expanded' width={240} collapsed={false} />
@@ -710,7 +710,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 3:Icon mode 時 label 隱藏 → Tooltip 代償</span>
         <Desc>
-          collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 `tooltip` prop,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(`tooltip` prop)。
+          collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 <code>tooltip</code> prop,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(<code>tooltip</code> prop)。
         </Desc>
       </div>
 
@@ -718,11 +718,11 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-2 pt-4 border-t border-divider">
         <span className="text-caption font-medium text-fg-secondary">行為規則</span>
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
-          <li>`collapsible="offcanvas"` 用於主內容為主的 app(sidebar 是啟動器,使用者常關);`collapsible="icon"` 用於深度導覽 app(sidebar 是常駐工作區)。</li>
-          <li>open state 寫 cookie `sidebar_state`(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 `defaultOpen`(避免 SSR hydration flash)。</li>
-          <li>放在 AppShell 裡時,Menu 何時並排、何時暫藏(有細列就只剩細列)、何時變左側浮層,全部照 AppShell「版面規則」(用各區最小寬現算,沒有 768 斷點;2026-10-14)。暫藏時按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層按 Esc 或點外面收回細列。`collapsible="none"` 不能用在 AppShell 的 Menu 位置;不在 AppShell 裡時 Sidebar 一律並排。</li>
-          <li>Icon mode 下 active item 的 `bg-neutral-selected` 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
-          <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):`defaultPrevented`(app editor 已處理同鍵時不 double-fire)/ `isComposing`(IME 組字中不攔)/ 可編輯 target(`input` / `textarea` / `contentEditable` 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 `disableShortcut` opt-out。</li>
+          <li><code>collapsible="offcanvas"</code> 用於主內容為主的 app(sidebar 是啟動器,使用者常關);<code>collapsible="icon"</code> 用於深度導覽 app(sidebar 是常駐工作區)。</li>
+          <li>open state 寫 cookie <code>sidebar_state</code>(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 <code>defaultOpen</code>(避免 SSR hydration flash)。</li>
+          <li>放在 AppShell 裡時,Menu 何時並排、何時暫藏(有細列就只剩細列)、何時變左側浮層,全部照 AppShell「版面規則」(用各區最小寬現算,沒有 768 斷點;2026-10-14)。暫藏時按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層按 Esc 或點外面收回細列。<code>collapsible="none"</code> 不能用在 AppShell 的 Menu 位置;不在 AppShell 裡時 Sidebar 一律並排。</li>
+          <li>Icon mode 下 active item 的 <code>bg-neutral-selected</code> 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
+          <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):<code>defaultPrevented</code>(app editor 已處理同鍵時不 double-fire)/ <code>isComposing</code>(IME 組字中不攔)/ 可編輯 target(<code>input</code> / <code>textarea</code> / <code>contentEditable</code> 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 <code>disableShortcut</code> opt-out。</li>
         </ul>
       </div>
     </div>
