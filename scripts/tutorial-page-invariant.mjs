@@ -20,7 +20,7 @@
  *
  * SSOT:packages/design-system/src/stories-helpers/examples/tutorial-page.tsx(元件與 ② 的出處);
  *       packages/design-system/ds-canonical/skills/story-writing/references/category-templates.md「教學框的間距與標題」(規範文字);
- *       packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 3(指標:這一級只定義在教學頁)。
+ *       packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 3(指標:這一級只用在 Storybook 文件頁 —— 教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊;不用在產品頁)。
  *
  * 為什麼要有這支(2026-10-14):研究時 66 個設計原則頁 + Action Bar 教學框各自抄一份 Rule / Section,段落標題至少 6 種長相、
  * 段落之間的間距有 16 / 32 / 33 三種(gap + 下方 margin 疊加、或分隔線 + 內距)—— 同一個值散在 60 個檔,只要有一頁照舊寫,② 就漂回去。
