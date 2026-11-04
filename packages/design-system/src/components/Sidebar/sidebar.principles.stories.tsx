@@ -297,7 +297,7 @@ export const SettingsScenario: Story = {
       />
 
       <TutorialRule
-        title="A. 頁內第二層導覽(推薦,最世界級)"
+        title="頁內第二層導覽(推薦,最世界級)"
         note={
           <>
             Sidebar 只放一顆 Settings,點進去後在 Settings 頁面內部用 Tabs / 左側 rail 呈現子頁。
@@ -307,7 +307,7 @@ export const SettingsScenario: Story = {
       />
 
       <TutorialRule
-        title="B. SidebarGroup 扁平化"
+        title="SidebarGroup 扁平化"
         note="若子頁等重要且需一鍵直達,用 SidebarGroupLabel 當純視覺分段標題,子項全部是獨立頂層 SidebarMenuItem。少見,只在子項確實高頻使用時才用。"
       >
         {/* 導覽項必帶穩定 id(sidebar.spec.md「禁止:SidebarMenuButton 不傳 id」)—
@@ -337,7 +337,7 @@ export const SettingsScenario: Story = {
       </TutorialRule>
 
       <TutorialRule
-        title="C. 使用者選單開設定"
+        title="使用者選單開設定"
         note={
           <>
             Settings 不在 sidebar,從 footer 的 user menu / avatar dropdown 觸發 modal 或快捷鍵(<code>Cmd+,</code>)。
@@ -348,7 +348,7 @@ export const SettingsScenario: Story = {
 
       <TutorialRule
         title="❌ 不要用 SidebarMenuSub 做巢狀 menu"
-        note="本 design system 完全不 export SidebarMenuSub / SidebarMenuSubItem。需要「父項 + 多個子項」結構 → 用 A(頁內導覽)或 TreeView。"
+        note="本 design system 完全不 export SidebarMenuSub / SidebarMenuSubItem。需要「父項 + 多個子項」結構 → 用頁內第二層導覽或 TreeView。"
       />
     </TutorialPage>
   ),
@@ -361,12 +361,12 @@ export const IconModeRules: Story = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        title="規則 1:icon rail 上的每顆 icon 必須可導覽"
+        title="icon rail 上的每顆 icon 必須可導覽"
         note="絕對不可有「點了沒反應」或「點了只是展開選單」的 icon。icon 列是收合狀態下唯一的導覽介面。"
       />
 
       <TutorialRule
-        title="規則 2:純分組 header 不可用 SidebarMenuItem"
+        title="純分組 header 不可用 SidebarMenuItem"
         note={
           <>
             只是用來分組下方 children 的項目(沒有自己的頁面),<strong>必須用 SidebarGroup + SidebarGroupLabel</strong>。
@@ -376,12 +376,12 @@ export const IconModeRules: Story = {
       />
 
       <TutorialRule
-        title="規則 3:TreeView 在 icon 模式整個隱藏"
+        title="TreeView 在 icon 模式整個隱藏"
         note="不做 icon 化、不做 flyout、不做 popover。Tree 無法壓縮成單排 icon,Gmail / Linear / Notion 一致採「隱藏」策略。"
       />
 
       <TutorialRule
-        title="規則 4:重新看階層資料的唯一路徑 = 展開 sidebar"
+        title="重新看階層資料的唯一路徑 = 展開 sidebar"
         note={
           <>
             Sidebar 收合時若使用者想瀏覽隱藏的 tree,<strong>唯一方法是重新展開 sidebar</strong>(點 Trigger 或按 ⌘B)。
