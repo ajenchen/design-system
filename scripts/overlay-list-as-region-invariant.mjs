@@ -8,7 +8,7 @@
  * header 標題、footer 按鈕左緣落在同一條線上。
  *
  * **對齊的是列的前緣,不是文字**:列有前綴(勾選框 / icon / 頭像)時文字本來就會被推開
- * (`item-anatomy.spec.md:423` content 槽佔剩餘空間;`:677` 為了讓文字齊左而改前綴尺寸是錯誤示範)。
+ * (`item-anatomy.spec.md:421` content 槽佔剩餘空間;`:677` 為了讓文字齊左而改前綴尺寸是錯誤示範)。
  *
  * 2026-09-17 錨:`CommandItem` 是兩層 —— 外層 cmdk Item 恆為 `p-0`(反白底色要鋪滿整列),
  * 內層 `MenuItem` 才帶 `px-3`。把 `px-loose` 寫進 `className` 會落在外層變成 16+12=28px,

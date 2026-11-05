@@ -5002,7 +5002,7 @@ function DataTableInner<TData>(
         // 唯讀表格鍵盤聚焦捲動盒時,焦點框由根節點畫(捲動盒自己的框會被黏住區蓋掉,見捲動盒上的 @focus-suppress C)。
         dataTableVariants({ bordered }), 'relative', 'has-[>[data-datatable-hscroll]:focus-visible]:focus-ring-inset', isFillHeight && 'flex flex-col',
         hasCellCursor
-          // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx:220
+          // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx:221
           ? 'focus-visible:outline-none'
           // `not-data-pointer-focus`(3f G-16):上方 2026-05-12 user 抓到的「按 shift…table 外圈…藍色邊框」2026-11-05 仍重現 ——
           // 點選取格空白處焦點落在這裡,再 Shift+點就出框(「觸發條件已經不存在」只量了點勾選框)。

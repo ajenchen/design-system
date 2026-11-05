@@ -132,7 +132,7 @@ H3 `hug` 真的隨內容長高而 `fill` 不隨內容變、H4 `maxHeight` 只能
 預設 512px，consumer 可透過 `maxWidth` prop 調整。型別 `string | number`（傳 number 視為 px）。
 
 **父層契約(2026-09-12 補,原本漏了)**:DialogContent 必須是 `flex flex-col` + `max-h` + **`overflow-hidden min-h-0`**。
-這不是新規定 —— `patterns/overlay-surface/overlay-surface.tsx:180-182` 逐字寫著「parent(PopoverContent /
+這不是新規定 —— `patterns/overlay-surface/overlay-surface.tsx:182-184` 逐字寫著「parent(PopoverContent /
 HoverCardContent / Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」,Popover 與 HoverCard 一直有,
 **Dialog 與 Sheet 漏了**(user 2026-09-12 截圖:視窗變矮時 dialog body 內容直接畫到圓角容器外面)。
 
@@ -194,8 +194,8 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 | 進場 | `fade-in-0` + `zoom-in-95`(opacity 0→1、scale 0.95→1,transform-origin 中心) | `--motion-duration-surface` 250ms / `--motion-easing-enter` |
 | 離場 | `fade-out-0` + `zoom-out-95` | `--motion-duration-surface` 250ms / `--motion-easing-exit` |
 | Overlay | 只 fade | 同上 |
-| 收尾 | 依 `../../tokens/motion/motion.spec.md:136`「怎麼收尾 —— 關閉後的樣子由 CSS 保持」;實作:surfaceMotion 內建 `holdClosedEndState`,關閉後保持最後一格(透明 / 縮小)直到卸載 | — |
-| `prefers-reduced-motion` | 依 `../../tokens/motion/motion.spec.md:134`「何時播 —— 只在 `motion-safe:` 底下宣告動畫」;實作:surfaceMotion 同一份(2026-10-07 前寫的 `motion-reduce:animate-none` 權重輸給 `data-[state=…]:animate-*`,從沒生效,待辦總帳 T7) | — |
+| 收尾 | 依 `../../tokens/motion/motion.spec.md:133`「怎麼收尾 —— 關閉後的樣子由 CSS 保持」;實作:surfaceMotion 內建 `holdClosedEndState`,關閉後保持最後一格(透明 / 縮小)直到卸載 | — |
+| `prefers-reduced-motion` | 依 `../../tokens/motion/motion.spec.md:131`「何時播 —— 只在 `motion-safe:` 底下宣告動畫」;實作:surfaceMotion 同一份(2026-10-07 前寫的 `motion-reduce:animate-none` 權重輸給 `data-[state=…]:animate-*`,從沒生效,待辦總帳 T7) | — |
 
 **為何不用 slide(置中位移)**:置中靠 `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`。shadcn v3 時代 DialogContent 另掛 `slide-in-from-left-1/2 slide-in-from-top-[48%]`,那是因為 Tailwind v3 的 `-translate-x-1/2` 走 `transform`,會被 keyframe 的 `transform` 整個蓋掉,所以要在 keyframe 裡把置中位移再寫一次(v3 dialog 原始碼:<https://ui.shadcn.com/r/styles/new-york/dialog.json>)。Tailwind v4 的 `-translate-x-1/2` 改寫進獨立的 `translate` 屬性(<https://tailwindcss.com/docs/translate>,`translate: calc(1/2 * -100%) var(--tw-translate-y)`),不再被 keyframe 蓋掉;而 tw-animate-css 的 `@keyframes enter` 仍是 `transform: translate3d(var(--tw-enter-translate-x), var(--tw-enter-translate-y), 0) scale3d(…)`(`node_modules/tw-animate-css/dist/tw-animate.css`)。兩個位移相加 → 第一幀中心落在視窗中心**左 w/2、上 0.48h**(480×189 的確認框實測 −240px / −90.72px),看起來就是從左上角飛進來。shadcn v4 版本已把這兩組 class 拿掉(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>:`translate-x-[-50%] translate-y-[-50%] … data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95`,無 slide)。
 

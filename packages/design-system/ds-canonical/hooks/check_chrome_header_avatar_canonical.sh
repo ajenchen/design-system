@@ -2,7 +2,7 @@
 # check_chrome_header_avatar_canonical.sh — PreToolUse Edit/Write 攔 chrome header descendant 用 ItemAvatar(2026-05-27)
 #
 # Per user 2026-05-27 抓 UserFooter vertical stack drift + codex collab Step 4 cite battle:
-#   header-canonical.spec.md:57-72 + sidebar.spec.md:241-247 + item-anatomy.spec.md:513-537 明文:
+#   header-canonical.spec.md:57-72 + sidebar.spec.md:241-247 + item-anatomy.spec.md:512-536 明文:
 #   「Chrome header 不是 row context → 必 raw <Avatar size={24}>,禁 <ItemAvatar>(會誤啟動 row anatomy lookup)」
 #
 # Detection:
@@ -83,7 +83,7 @@ cat >&2 <<EOF
 Canonical citation:
   - header-canonical.spec.md:57-72:「Chrome header 不是 row context → 必用 raw <Avatar size={24}>,禁用 <ItemAvatar>(會誤啟動 row anatomy lookup)」
   - sidebar.spec.md:241-247:「consumer 用 raw <Avatar size={24}>(chrome header 不是 row context → 不該用 <ItemAvatar>)」
-  - item-anatomy.spec.md:513-537:「ItemAvatar scope = row context only;Chrome header 有自己的 canonical = raw <Avatar size={24}>」
+  - item-anatomy.spec.md:512-536:「ItemAvatar scope = row context only;Chrome header 有自己的 canonical = raw <Avatar size={24}>」
 
 修法(per DS canonical):
   ❌ <SidebarHeader>

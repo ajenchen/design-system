@@ -39,7 +39,7 @@ const STATUS_OPTIONS = ['待處理', '進行中', '已完成', '已封存'] as c
  *
  * 目的是讓**列的最前緣**(這裡是勾選框)對齊 header 標題與 footer 按鈕左緣
  * (`overlay-surface.spec.md`「Canonical pattern」第 2 條 + 同檔「底部區域:按鈕列 vs 列式」footer 同一條對齊線)。**對齊的是前緣不是文字** ——
- * `item-anatomy.spec.md:423` content 槽的 x 是剩餘空間、`:665`/`:671` 跨群組不強求文字對齊、
+ * `item-anatomy.spec.md:421` content 槽的 x 是剩餘空間、`:665`/`:671` 跨群組不強求文字對齊、
  * `:677` 把「為了讓文字齊左而改前綴尺寸」列為錯誤示範。
  *
  * **禁止寫在單列的 `className`**:`CommandItem` 是兩層,外層 cmdk Item 負責「反白底色鋪滿整列」恆為

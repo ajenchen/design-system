@@ -68,7 +68,7 @@ interface DataTableInteractionLayerProps {
  *
  * 修前:覆蓋層是 `position: fixed; inset: 0` 的一整層,每個 overlay 用 `getBoundingClientRect()` 量格子在視窗裡的位置,
  * 捲動時靠 `window` 的 scroll(capture)→ rAF → setState → 重繪去追 —— 捲動是合成器先畫、這條路晚一到兩格才到,
- * 試算表的格游標框與編輯框在捲動中**落後格子一到兩格**(待辦總帳 Q2c,`data-table-interaction-layer.tsx:172-179` 那一段)。
+ * 試算表的格游標框與編輯框在捲動中**落後格子一到兩格**(待辦總帳 Q2c,`data-table-interaction-layer.tsx:173-180` 那一段)。
  * 部分露出的格要另外用面板的可視框裁切(ClipMask,Issue 6)。
  *
  * 現在:三種覆蓋層都 portal 進**那一格自己的 DOM**(格是 `position: relative; overflow: hidden`,見 data-table.tsx 的格 class),

@@ -524,10 +524,10 @@ if grep -q 'text-white' <<<"$CONTENT" && \
   VIOLATIONS="${VIOLATIONS}  - 亮色底(yellow/amber/orange/lime step-6)配 text-white = 對比違規 → 消費 CAT_SOLID / CAT_SOLID_TOKENS pair(深字桶自帶 text-on-emphasis-dark;tokens/categorical-color.ts)。特例 → @cat-solid-ok: <rationale>\n"
 fi
 # C18 計數串接:element children 出現 {label} ({count/length/total})。attr(aria-label)字串層合法
-# — regex 錨 children 的 > 前綴,attribute 不中(item-anatomy.spec.md:176 禁括號串接)。
+# — regex 錨 children 的 > 前綴,attribute 不中(item-anatomy.spec.md:187 禁括號串接)。
 if grep -qE '>[^<]*\{[a-zA-Z0-9_.]+\} *\(\{[a-zA-Z0-9_.]*(count|Count|length|total)[a-zA-Z0-9_.]*\}\)' <<<"$CONTENT" && \
    ! grep -q '@count-in-label-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - 計數括號串接 {label} ({count}) → row header 用「標題左、純數字右 space-between + tabular-nums」(item-anatomy.spec.md:176);互動元素(tab/chip/button)用 badge slot。aria/純文字匯出層 → @count-in-label-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - 計數括號串接 {label} ({count}) → row header 用「標題左、純數字右 space-between + tabular-nums」(item-anatomy.spec.md:187);互動元素(tab/chip/button)用 badge slot。aria/純文字匯出層 → @count-in-label-ok: <rationale>\n"
 fi
 # C17 分隔線幾何:vertical Separator 無 mx- = 黏按鈕。2026-08-07 起 action region 群組線的
 # 唯一實作是 <ButtonDivider/>(長度由「該列最高元件 − inset」自動算,mx 內建);Separator 只剩

@@ -365,7 +365,7 @@ M1+M17 違反 — 該消費 L1 primitive。
   <ItemPrefix><StartIcon /></ItemPrefix>
   <ItemSuffix>{chevron}</ItemSuffix>
 
-\`<ItemPrefix>\` / \`<ItemSuffix>\` 永遠 \`h-[1lh] shrink-0 flex items-center\`(item-anatomy.spec.md:175+190)。
+\`<ItemPrefix>\` / \`<ItemSuffix>\` 永遠 \`h-[1lh] shrink-0 flex items-center\`(item-anatomy.spec.md:281-283)。
 例外:行尾 \`// @row-slot-handcraft-allow: <reason>\`
 
 EOF

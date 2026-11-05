@@ -448,7 +448,7 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
 //   <ItemPrefix><StartIcon /></ItemPrefix>     // 對 Input.startIcon / Select.startIcon
 //   <ItemSuffix>{chevron}</ItemSuffix>          // 對 Combobox / DatePicker / PeoplePicker chevron
 //
-// **`h-[1lh]` 普世正確**(item-anatomy.spec.md:190-191 verbatim):
+// **`h-[1lh]` 普世正確**(依據 item-anatomy.spec.md:281-283「Prefix 垂直對齊」):
 //   - 單行 wrapper items-center → slot 1lh 在 cell 高度中心 = 第一行中線(視覺 = items-center)
 //   - 多行 wrapper items-start  → slot 1lh 鎖頂 = 第一行中線
 //   不需 conditional `group-data-[row-mode=auto]/cell:` — 我前 v4 自加的 conditional 是過度設計。

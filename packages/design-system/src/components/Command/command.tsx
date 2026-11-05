@@ -537,7 +537,7 @@ export function CommandEmptyStatus({ loading = false, text }: { loading?: boolea
  *
  * 2026-09-07 修(user 指出 Command 群組標題跟 SelectMenu 不是同一種設計語言):
  * 這裡原本手寫 `px-3 py-1.5 text-caption font-medium text-fg-muted` ——
- * 而 SSOT(`patterns/element-anatomy/item-anatomy.spec.md:188`「Row header(分組標題)」)寫的是
+ * 而 SSOT(`patterns/element-anatomy/item-anatomy.spec.md:186`「Row header(分組標題)」)寫的是
  * 「用 `MenuItem header={true}` 模式,`font-medium text-fg-muted` + 與 items **完全相同**的
  * row geometry(同 px / 同 py / **同 text size**)」。
  * 差在字級:手寫的是 `text-caption`(12px),canonical 要求與項目同級(14px)。

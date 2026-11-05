@@ -83,7 +83,7 @@ export const VerticalGroup: Story = {
 export const Horizontal: Story = {
   name: '水平排列',
   render: () => (
-    // @layout-space-magic-ok: 水平選項群組:選擇控件家族水平 16px(checkbox.spec.md:304 / :306,SelectionItem 共用)(layoutSpace.spec.md:113 同範疇 spec-own)
+    // @layout-space-magic-ok: 水平選項群組:選擇控件家族水平 16px(checkbox.spec.md:303 / :306,SelectionItem 共用)(layoutSpace.spec.md:113 同範疇 spec-own)
     <RadioGroup defaultValue="light" orientation="horizontal" className="flex flex-wrap gap-4 max-w-md">
       <RadioGroupItem value="light" label="淺色" />
       <RadioGroupItem value="dark" label="深色" />

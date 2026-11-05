@@ -72,7 +72,7 @@ export const ACME_PROJECTS = [
 // 2026-05-21 v15 — Chrome header avatar SSOT, semantic-correct revise(per user 抓 v14
 // RowSizeProvider hijack 是 semantic 漂移 + 「想辦法在語言正確下修到正確」directive):
 //
-// Chrome header **不是 row context**(per `item-anatomy.spec.md:550` 規則 scope 是 row primitive
+// Chrome header **不是 row context**(per `item-anatomy.spec.md:549` 規則 scope 是 row primitive
 // consumer + `header-canonical.spec.md` 4.5 chrome header avatar SSOT)。Chrome header avatar
 // 是 spec-level canonical 24px、density-fixed、row-size-fixed,跟 row-anatomy 的 sm/md/lg
 // lookup 邏輯無關。

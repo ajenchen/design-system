@@ -13,7 +13,7 @@
  *   H3 `height="hug"` 真的隨內容長高(內容少就矮),`fill` 不隨內容變
  *   H4 `maxHeight` 只能更矮:傳比視窗大的值不得超過視窗;傳小的值要生效
  *   H5 視窗變矮時「內容溢出走 body 捲動」(`dialog.spec.md`「maxWidth」逐字)——**每一支 dialog story** 都要
- *      (a) 沒有任何後代畫到容器外(容器自己 `overflow: hidden`,對齊 `overlay-surface.tsx:180-182`
+ *      (a) 沒有任何後代畫到容器外(容器自己 `overflow: hidden`,對齊 `overlay-surface.tsx:182-184`
  *          明文要求的父層契約:「parent…是 flex flex-col + max-h + overflow-hidden」)
  *      (b) 內容搆得到:捲動區 `scrollHeight > clientHeight` 時,捲到底之後最後一個互動元素要完整可見
  *      H5 是 2026-09-12 user 截圖「dialog body 內容超出容器」的防線。當時 H1-H4 全綠 ——

@@ -124,7 +124,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - Popover padding **四邊對稱** 12px(= `--layout-space-tight` @ md density,實作走 `p-3`)
 - **左右對稱**:prev/next chevron button 中心 = 第一/最後一欄日期 cell 中心;chevron 到 popover 邊距 = 最邊欄日期到 popover 邊距 = 12px
 - **上下對稱**:month caption 到 popover top 距離 = 最後一排日期到 popover bottom 距離 = 12px(均從 `p-3` 繼承)
-- day cell 與 week header 尺寸 SSOT → `date-grid.spec.md:120`(消費 `--field-height-sm` token,density-aware:md=28×28 / lg=32×32)
+- day cell 與 week header 尺寸 SSOT → `date-grid.spec.md:116`(消費 `--field-height-sm` token,density-aware:md=28×28 / lg=32×32)
 
 ### Typed input(Issue 10,2026-05-10 opt-in)
 
@@ -381,7 +381,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 - **Invalid date input**:Field validation 處理 `aria-invalid="true"` + error border + 下方 error message;DatePicker 本身不 own validation 規則。
 - **極長格式化日期**:trigger 文字單行 `truncate`(ellipsis),不換行不撐高(View / Edit / typeable / Range 雙 input 皆同);實際截斷時 hover / focus 顯完整值 tooltip(僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容。」):View 路徑消費 `<TruncatedText>`;Edit trigger 與 Range 兩端 button 為 interactive host,消費 `useTruncated` 自組(trigger = host、量測內層值 span,SSOT `patterns/element-anatomy/truncated-text.spec.md`「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組),popover 開啟時靜默。typeable `<input>` 可捲動編輯,無截斷補救需求。
 - **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。trigger / Range / DateGrid 不在本檔另立支援決策。
-- **Dark mode / density**:走 Field + Popover SSOT 自動 adapt;DateGrid 內 cell 尺寸 density-aware(消費 `--field-height-sm`:md=28×28 / lg=32×32,對齊 L128 + `date-grid.spec.md:120`),隨 density 縮放而非固定。
+- **Dark mode / density**:走 Field + Popover SSOT 自動 adapt;DateGrid 內 cell 尺寸 density-aware(消費 `--field-height-sm`:md=28×28 / lg=32×32,對齊 L128 + `date-grid.spec.md:116`),隨 density 縮放而非固定。
 
 ---
 

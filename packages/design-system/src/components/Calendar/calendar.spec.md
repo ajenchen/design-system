@@ -325,7 +325,7 @@ Toolbar 的 prev / 今天 / next / 新事件 CTA 是格陣外的標準控件,各
 **刻意不實作的 APG 選配鍵**([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L219-L220)):
 
 - `Control+Home` / `Control+End`(整個格陣的第一 / 最後一格):APG Data Grid 有列,但 Date Picker Dialog 參考實作的格陣 keydown handler 沒有這兩個 case;月曆的「第一 / 最後一格」是上/下月的溢出日,語意上不是使用者想去的地方,`PageUp/PageDown` 已覆蓋跨月需求([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L219-L220)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/js/datepicker-dialog.js#L718-L800))。
-- `Shift+←/→`(切月)、`Shift+↑/↓`(切年):`DateGrid`(react-day-picker v9)有,本元件不跟。APG Data Grid 把 `Shift+方向鍵` 定義為 "Extends selection one cell to the right/left/up/down",在 `grid` 語意下拿它當跨月鍵會與規範衝突;跨月跨年由 `PageUp/PageDown` 與 `Shift+PageUp/PageDown` 承接(與 `date-grid.spec.md:311` 的 `PageUp/Down 切月、Shift+PageUp/Down 切年` 對齊)。
+- `Shift+←/→`(切月)、`Shift+↑/↓`(切年):`DateGrid`(react-day-picker v9)有,本元件不跟。APG Data Grid 把 `Shift+方向鍵` 定義為 "Extends selection one cell to the right/left/up/down",在 `grid` 語意下拿它當跨月鍵會與規範衝突;跨月跨年由 `PageUp/PageDown` 與 `Shift+PageUp/PageDown` 承接(與 `date-grid.spec.md:307` 的 `PageUp/Down 切月、Shift+PageUp/Down 切年` 對齊)。
 - `Control+Space` / `Shift+Space` / `Control+A` 等選取鍵:本元件沒有 cell / row 選取模型(見「禁止事項」——event 資料是 consumer 責任),無對應功能。
 
 **Keyboard 後續增量**:

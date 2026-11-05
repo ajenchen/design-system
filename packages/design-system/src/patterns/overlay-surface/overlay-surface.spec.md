@@ -47,7 +47,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
-- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:183 恆套)矛盾。consumer 依浮層類型:
+- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:185 恆套)矛盾。consumer 依浮層類型:
 - **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScrollKeyboard` story(test-only)的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
   - **Dialog / Sheet**:consumer **不直接 wrap SurfaceBody**——走 ScrollArea canonical(下節),padding 搬到 ScrollArea viewport 內層 div
@@ -115,7 +115,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 1. **Item 自帶 `px-loose`**:item 水平 padding 由 item 自己承擔,body 的 chrome padding 撤為 0
 2. **列的最前緣對齊 header title**:item 的 padding-box 左緣 = chrome `px-loose` 起點 = header title 左緣 X 軸對齊。
    **對齊的是列的前緣,不是文字** —— 列有前綴(勾選框 / icon / 頭像)時,文字自然被前綴推開,那是對的。
-   依據:`../element-anatomy/item-anatomy.spec.md:423`(content 槽佔剩餘空間,沒有自己的 x 錨點)、
+   依據:`../element-anatomy/item-anatomy.spec.md:421`(content 槽佔剩餘空間,沒有自己的 x 錨點)、
    `:665`(label x 受前綴尺寸影響,對齊只在同 group 內成立)、`:671`(跨 group 永不強求)、
    `:677`(為了讓文字齊左而改前綴尺寸 = 錯誤示範)。同一條線的 footer 版本見下方「Footer px」段,
    對齊的同樣是按鈕左緣而非按鈕文字。

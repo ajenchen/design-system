@@ -309,7 +309,7 @@ const DialogContent = React.forwardRef<
         persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
                            : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
         // `overflow-hidden min-h-0` 是 overlay-surface primitive 明文要求的父層契約
-        // (`overlay-surface.tsx:180-182` 逐字:「parent(PopoverContent / HoverCardContent /
+        // (`overlay-surface.tsx:182-184` 逐字:「parent(PopoverContent / HoverCardContent /
         // Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」)。Popover/HoverCard 一直有,
         // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
         // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
