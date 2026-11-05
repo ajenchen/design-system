@@ -296,7 +296,8 @@ const outlineAround = (cellId) => page.evaluate((cellId) => {
   const cb = cell.getBoundingClientRect()
   const drawn = (el) => { const cs = getComputedStyle(el); return cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1 && cs.outlineColor !== 'rgba(0, 0, 0, 0)' && cs.outlineColor !== 'transparent' }
   if (drawn(cell)) return 'cell'
-  for (const el of document.querySelectorAll('[aria-hidden] div')) {
+  // 覆蓋層框:修前畫在表格外的固定層(`[aria-hidden]` 的子孫 div);2026-11-05(Q2b / Q2c)起 portal 進格子裡、框本身就是 `aria-hidden` 的 div
+  for (const el of document.querySelectorAll('div[aria-hidden], [aria-hidden] div')) {
     const b = el.getBoundingClientRect()
     if (Math.abs(b.x - cb.x) < 1.5 && Math.abs(b.y - cb.y) < 1.5 && Math.abs(b.width - cb.width) < 1.5 && Math.abs(b.height - cb.height) < 1.5 && drawn(el)) return 'overlay'
   }

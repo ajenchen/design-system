@@ -486,6 +486,9 @@ const widthReport = await page.evaluate(() => {
   const hp = document.querySelector('[data-datatable-header-panel="center"]')
   const bp = document.querySelector('[data-datatable-panel="center"]')
   if (!hp || !bp) return null
+  // 捲動盒:2026-11-05(Q2b)起表頭與三區共用一個(`[data-datatable-hscroll]`);修前表身中央區自己就是它、表頭中央區另一個。
+  const bs = bp.closest('[data-datatable-hscroll]') ?? bp
+  const hs = hp.closest('[data-datatable-hscroll]') ?? hp
   const heads = [...hp.querySelectorAll('[role="columnheader"]')]
   const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
   const cells = row ? [...row.querySelectorAll(':is([role="cell"], [role="gridcell"])')] : []
@@ -502,11 +505,11 @@ const widthReport = await page.evaluate(() => {
     columns: n,
     worstWidth,
     worstLeft,
-    headerRange: hp.scrollWidth - hp.clientWidth,
-    bodyRange: bp.scrollWidth - bp.clientWidth,
+    headerRange: hs.scrollWidth - hs.clientWidth,
+    bodyRange: bs.scrollWidth - bs.clientWidth,
     sumWidths: cells.reduce((a, c) => a + c.getBoundingClientRect().width, 0),
     bodyContentWidth: bp.clientWidth,
-    hasHorizontalOverflow: bp.scrollWidth > bp.clientWidth,
+    hasHorizontalOverflow: bs.scrollWidth > bs.clientWidth,
   }
 })
 if (!widthReport) {
@@ -546,7 +549,9 @@ if (!widthReport) {
     await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--${id}&viewMode=story`, '[data-datatable-header-panel="center"]')
     const ranges = await page.evaluate(() => [...document.querySelectorAll('[data-datatable-hscroll]')].map((bp) => {
       const hp = bp.closest('[role="table"], [role="grid"]')?.querySelector('[data-datatable-header-panel="center"]')
-      return hp ? { header: hp.scrollWidth - hp.clientWidth, body: bp.scrollWidth - bp.clientWidth } : null
+      // 表頭的捲動盒:修前是表頭中央區自己;2026-11-05(Q2b)起與表身共用 `[data-datatable-hscroll]`
+      const hs = hp ? (hp.closest('[data-datatable-hscroll]') ?? hp) : null
+      return hs ? { header: hs.scrollWidth - hs.clientWidth, body: bp.scrollWidth - bp.clientWidth } : null
     }).filter(Boolean))
     if (ranges.length === 0) { record('I11', `${id}:儀器`, false, 'INSTRUMENT-FAIL 找不到表頭 / 表身中央區'); continue }
     ranges.forEach((r, i) => {
@@ -670,14 +675,15 @@ const simulated = await page.evaluate(async (border) => {
   const bp = document.querySelector('[data-datatable-panel="center"]')
   const hp = document.querySelector('[data-datatable-header-panel="center"]')
   if (!bp || !hp) return null
-  const baseline = bp.offsetWidth - bp.clientWidth
-  // 缺陷 I 的橫軸 spacer:元件量的是 `header.clientWidth − body.clientWidth`,寫進 header 內層 wrapper 的
-  // `minWidth = centerColsWidth + vScrollbarSpacer`;body 內層 wrapper 的 `minWidth = centerColsWidth`。
-  // 兩個 inline 值相減就是 spacer 本身,注入後必須恰好長出 `border`。
+  // 2026-11-05(Q2b):注入點是**捲動盒**(表頭與三區共用的那一個;修前 = 表身中央區自己)。
+  const bs = bp.closest('[data-datatable-hscroll]') ?? bp
+  const hs = hp.closest('[data-datatable-hscroll]') ?? hp
+  const baseline = bs.offsetWidth - bs.clientWidth
+  // 修前(兩個捲動盒)要靠表頭內層 `minWidth = centerColsWidth + vScrollbarSpacer` 補捲軸寬(缺陷 I 的橫軸 spacer);
+  // 單一捲動盒之後兩個內層 minWidth 必須**相等**(沒有 spacer 這回事),捲動範圍由同一個盒子決定。
   const headInner = hp.firstElementChild
   const bodyInner = bp.querySelector(':scope > div:not([role="presentation"])')
-  const spacerBefore = hp.clientWidth - bp.clientWidth
-  bp.style.borderRight = `${border}px solid transparent`
+  bs.style.borderRight = `${border}px solid transparent`
   // **等收斂再量,不要用固定延遲**(2026-09-03:固定 250ms 會量在重排中途,CI 因此拿到
   // 「Σ 780 vs body 531」這種前後不一致的快照而誤紅)。改成輪詢到「欄寬總和連續兩次相同」為止。
   const sumNow = () => {
@@ -708,20 +714,19 @@ const simulated = await page.evaluate(async (border) => {
   }
   const out = {
     baseline,
-    gutter: bp.offsetWidth - bp.clientWidth,
+    gutter: bs.offsetWidth - bs.clientWidth,
     columns: n,
     worstWidth,
     worstLeft,
-    headerRange: hp.scrollWidth - hp.clientWidth,
-    bodyRange: bp.scrollWidth - bp.clientWidth,
+    shared: hs === bs,
+    headerRange: hs.scrollWidth - hs.clientWidth,
+    bodyRange: bs.scrollWidth - bs.clientWidth,
     sumWidths: cells.reduce((a, c) => a + c.getBoundingClientRect().width, 0),
     bodyContentWidth: bp.clientWidth,
-    spacerBefore,
-    spacerAfter: hp.clientWidth - bp.clientWidth,
     headInnerMin: headInner ? parseFloat(headInner.style.minWidth) : null,
     bodyInnerMin: bodyInner ? parseFloat(bodyInner.style.minWidth) : null,
   }
-  bp.style.borderRight = ''
+  bs.style.borderRight = ''
   return out
 }, SIM_BORDER)
 if (!simulated) {
@@ -749,20 +754,20 @@ if (!simulated) {
   // **2026-09-05 補回捲動範圍與 spacer 的斷言**(稽核 2-09 / 2-19)。2026-09-03 這裡曾寫「RO 看不到透明
   // 邊框造成的變化,所以元件不可能重量、這兩條恆為 false」而刻意不斷言;那個理由在缺陷 S 的寬度哨兵
   // (`width:100%`、0 高,I16 實測會跟著內容盒縮)進來之後已不成立 —— 哨兵的 border-box 真的變了,
-  // RO 一定響,元件會重量、重繪。所以現在可以、也必須斷言:注入後 header 與 body 的水平捲動範圍仍相等
-  // (缺陷 I 的橫軸 spacer 在 CI 終於有真閘;拿掉 `+ vScrollbarSpacer` 這裡就紅),且 header 內層 minWidth
-  // 比 body 內層恰好多出「注入前的 spacer + 注入量」。
+  // RO 一定響,元件會重量、重繪。所以現在可以、也必須斷言:注入後 header 與 body 的水平捲動範圍仍相等。
+  // 2026-11-05(待辦總帳 Q2b):表頭與三區改成同一個捲動盒,修前那條「header 內層 minWidth = body + spacer」
+  // 不再有對象 —— 改斷言「同一個捲動盒 + 兩個內層 minWidth 相等」(把表頭拆回自己的捲動盒,這裡就紅)。
   record(
     'I11b',
-    `注入 ${SIM_BORDER}px 後 header 與 body 的水平捲動範圍仍相等(缺陷 I 橫軸 spacer 真閘)`,
-    Math.abs(simulated.headerRange - simulated.bodyRange) <= 0.5,
-    `header ${simulated.headerRange} vs body ${simulated.bodyRange}(spacer ${simulated.spacerBefore} → ${simulated.spacerAfter})`,
+    `注入 ${SIM_BORDER}px 後 header 與 body 的水平捲動範圍仍相等,而且是同一個捲動盒(2026-11-05 Q2b;修前靠缺陷 I 的橫軸 spacer)`,
+    simulated.shared && Math.abs(simulated.headerRange - simulated.bodyRange) <= 0.5,
+    `header ${simulated.headerRange} vs body ${simulated.bodyRange};共用捲動盒 ${simulated.shared}`,
   )
   record(
     'I11b',
-    `header 內層 minWidth === centerColsWidth + spacer(spacer 恰好長 ${SIM_BORDER})`,
+    `header 內層 minWidth === body 內層 minWidth(單一捲動盒不需要 spacer)`,
     simulated.headInnerMin != null && simulated.bodyInnerMin != null
-      && Math.abs(simulated.headInnerMin - simulated.bodyInnerMin - (simulated.spacerBefore + SIM_BORDER)) <= 0.5,
+      && Math.abs(simulated.headInnerMin - simulated.bodyInnerMin) <= 0.5,
     `header inner ${simulated.headInnerMin} − body inner ${simulated.bodyInnerMin} = ${simulated.headInnerMin != null && simulated.bodyInnerMin != null ? (simulated.headInnerMin - simulated.bodyInnerMin).toFixed(1) : 'n/a'}(應 ${simulated.spacerBefore} + ${SIM_BORDER};沒跟上 = 補償停在過期值)`,
   )
 }
@@ -947,13 +952,12 @@ for (const g of geom) {
   await page.waitForTimeout(120) // 等還原邊框後的重繪
 }
 
-// ── I12:水平捲軸只吃掉 center 的高度,pinned 區必須補等高(2026-09-03,同一根因的縱軸孿生)──
-// center body 自己有 overflow-x:auto,捲軸佔掉它 15px 高;pinned 區沒有捲軸 →
-// 不補的話 pinned 會比 center 多露出一條列(實測 300 vs 285)。AG Grid 是把水平捲軸放到
-// 三個 row container 之外(ag-fake-horizontal-scroll 是 .ag-root 的 flex 子項),達成同一個結果;
-// 我們留在 center 內、改用等高 padding-bottom 補平(對照 MUI X 的 scrollbar filler 思路)。
-// 與 I11b 同樣用透明邊框造出「捲軸佔位」:啟動已拿掉 Playwright 的 `--hide-scrollbars`,CI 現在有真 gutter,
-// 這條注入在真 gutter 之上再加 15px,期望值寫成「注入前 + 注入量」(真 gutter 10 → 25),兩種環境都成立。
+// ── I12:水平捲軸佔掉的高度,三區看得到的列必須一致(2026-09-03,同一根因的縱軸孿生;2026-11-05 改寫)──
+// 修前三區各自是盒子:center 有 overflow-x:auto,捲軸佔掉它 15px 高,pinned 區沒有捲軸 → 要補等高的透明下邊框,
+// 否則 pinned 會比 center 多露出一條列(實測 300 vs 285)。2026-11-05(待辦總帳 Q2b)起表頭與三區在**同一個捲動盒**裡
+// (AG Grid v36 / MUI X 同結構),捲軸只吃掉那一個盒子的高度、三區一起被裁 —— 補償沒有對象了。要守的性質不變,直接量它:
+// 在捲動盒上造出佔版面的水平捲軸高度(透明下邊框,同 I11b),捲到最底,三區**最後一列的底**都必須正好貼在捲動盒可視框底
+// (= 最後一列在三區都完整露出、而且同高)。期望值寫成「注入前 + 注入量」,真 gutter 存在時也成立。
 await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="left"]')
 const SIM_H_BORDER = 15
 const pinnedReport = await page.evaluate(async (border) => {
@@ -963,54 +967,46 @@ const pinnedReport = await page.evaluate(async (border) => {
   const left = [...document.querySelectorAll('[data-datatable-panel="left"]')][idx]
   const right = [...document.querySelectorAll('[data-datatable-panel="right"]')][idx]
   if (!center || !left) return null
-  const hGutterBefore = center.offsetHeight - center.clientHeight
-  center.style.borderBottom = `${border}px solid transparent`
+  const sc = center.closest('[data-datatable-hscroll]') ?? center
+  const hGutterBefore = sc.offsetHeight - sc.clientHeight
+  sc.style.borderBottom = `${border}px solid transparent`
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
   await new Promise((r) => setTimeout(r, 200))
-  // clientHeight 已排除 border,所以它就是「裁切邊以內的可視高」——這正是要比的量。
-  // (padding 版本量不到:overflow 裁在 padding box,clientHeight 含 padding,列會畫進去。)
-  const out = {
-    hGutterBefore,
-    hGutter: center.offsetHeight - center.clientHeight,
-    leftPadding: parseFloat(getComputedStyle(left).borderBottomWidth || '0'),
-    rightPadding: right ? parseFloat(getComputedStyle(right).borderBottomWidth || '0') : null,
-    centerVisible: center.clientHeight,
-    leftVisible: left.clientHeight,
-    rightVisible: right ? right.clientHeight : null,
-    maxScroll: [
-      left.scrollHeight - left.clientHeight,
-      center.scrollHeight - center.clientHeight,
-      right ? right.scrollHeight - right.clientHeight : null,
-    ],
+  sc.scrollTop = sc.scrollHeight
+  for (let i = 0; i < 20; i++) await new Promise((r) => requestAnimationFrame(r))
+  const lastBottom = (panel) => {
+    if (!panel) return null
+    const rows = [...panel.querySelectorAll('[role="row"][data-row-index]')]
+    if (!rows.length) return null
+    const last = rows.reduce((a, r) => (Number(r.dataset.rowIndex) > Number(a.dataset.rowIndex) ? r : a))
+    return { index: Number(last.dataset.rowIndex), bottom: +last.getBoundingClientRect().bottom.toFixed(2) }
   }
-  center.style.borderBottom = ''
+  const r = sc.getBoundingClientRect()
+  const out = {
+    shared: sc !== center && sc.contains(left),
+    hGutterBefore,
+    hGutter: sc.offsetHeight - sc.clientHeight,
+    clipBottom: +(r.top + sc.clientTop + sc.clientHeight).toFixed(2),
+    last: { left: lastBottom(left), center: lastBottom(center), right: lastBottom(right) },
+  }
+  sc.style.borderBottom = ''
+  sc.scrollTop = 0
   return out
 }, SIM_H_BORDER)
 if (!pinnedReport) {
   record('I12', 'pinned + center body panel 存在', false, 'panel selector 找不到')
 } else {
-  record('I12', `造出佔版面的水平捲軸高度(hGutter = 注入前 + ${SIM_H_BORDER};補償分支確實被走到)`,
+  record('I12', `造出佔版面的水平捲軸高度(hGutter = 注入前 + ${SIM_H_BORDER};捲軸佔位的分支確實被走到)`,
     Math.abs(pinnedReport.hGutter - (pinnedReport.hGutterBefore + SIM_H_BORDER)) <= 0.5,
     `注入前 ${pinnedReport.hGutterBefore} + ${SIM_H_BORDER} → 量到 ${pinnedReport.hGutter}px`)
+  record('I12', '三區在同一個捲動盒裡(水平捲軸只吃掉那一個盒子的高度,不需要任何補償)', pinnedReport.shared, '')
+  const L = pinnedReport.last
+  const sameRow = L.left && L.center && L.left.index === L.center.index && (!L.right || L.right.index === L.center.index)
   record(
     'I12',
-    'pinned 區補的透明下邊框等於 center 被水平捲軸吃掉的高度',
-    Math.abs(pinnedReport.leftPadding - pinnedReport.hGutter) <= 0.5,
-    `left border-bottom ${pinnedReport.leftPadding} vs hGutter ${pinnedReport.hGutter}`,
-  )
-  record(
-    'I12',
-    'pinned 與 center 的裁切邊以內可視列高一致(否則 pinned 會多露出一條列)',
-    Math.abs(pinnedReport.leftVisible - pinnedReport.centerVisible) <= 0.5
-      && (pinnedReport.rightVisible == null || Math.abs(pinnedReport.rightVisible - pinnedReport.centerVisible) <= 0.5),
-    `left ${pinnedReport.leftVisible} / center ${pinnedReport.centerVisible} / right ${pinnedReport.rightVisible}`,
-  )
-  record(
-    'I12',
-    '三區可捲動量一致(補的空間不能藏住最後一列)',
-    Math.abs(pinnedReport.maxScroll[0] - pinnedReport.maxScroll[1]) <= 0.5
-      && (pinnedReport.maxScroll[2] == null || Math.abs(pinnedReport.maxScroll[2] - pinnedReport.maxScroll[1]) <= 0.5),
-    `maxScroll ${JSON.stringify(pinnedReport.maxScroll)}`,
+    '捲到最底:三區最後一列是同一列,底緣都正好貼在捲動盒可視框底(最後一列完整露出、pinned 不多露也不少露)',
+    !!sameRow && [L.left, L.center, L.right].filter(Boolean).every((x) => Math.abs(x.bottom - pinnedReport.clipBottom) <= 0.5),
+    `可視框底 ${pinnedReport.clipBottom};${JSON.stringify(L)}`,
   )
 }
 
@@ -1115,13 +1111,14 @@ rowHeightReport.forEach((t, i) => {
  *
  * **驗的是結果,不是 CSS 前提**(2026-09-05 稽核 2-19):第一版只在同一個同步 task 裡「注入 → 量 → 還原 → 量」,
  * 哨兵寬 === clientWidth 這種 `width:100%` 的 CSS 事實在有沒有 `ro.observe(sentinel)` 時都成立,RO 回呼根本
- * 沒機會在兩次量測之間跑 —— 把整條機制拿掉也全綠。現在注入後**等到 RO → 重量 → 重繪收斂**,斷言 header
- * 內層 wrapper 的 `minWidth`(= centerColsWidth + vScrollbarSpacer)不經任何 React 事件(列數不變)就恰好長
- * 20px,還原後回到原值;補償停在過期值就紅。
+ * 沒機會在兩次量測之間跑 —— 把整條機制拿掉也全綠。現在注入後**等到 RO → 重量 → 重繪收斂**,斷言結果;停在過期值就紅。
+ * 結果是什麼(2026-11-05 改,待辦總帳 Q2b):修前是 header 內層 wrapper 的 `minWidth`(= centerColsWidth + vScrollbarSpacer)恰好長 20px;
+ * 單一捲動盒之後沒有 spacer,內容盒縮減的直接結果是**中央欄寬重新分配**:中央區填滿時(沒有水平溢出),Σ 中央欄寬 = 捲動盒內容寬 − 兩側釘選寬,
+ * 內容盒縮 20px 後不經任何 React 事件(列數不變)就恰好少 20,還原後回到原值。有水平溢出的表欄寬本來就不跟可用寬走,略過(至少要有一張量得到)。
  */
-await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-hscroll]')
 const SIM_V_BORDER = 20
-const sentinelReport = await page.evaluate(async (simPx) => {
+// pinned-columns(有釘選、有水平溢出:量哨兵本身)+ virtual-scroll(本檔視窗 2600 寬下中央區填滿、沒有水平溢出:量「欄寬跟著內容盒走」的結果)
+const sentinelProbe = async (simPx) => {
   // rAF 在被隱藏/節流的頁籤裡不會觸發,所以跟計時器賽跑:哪個先到算哪個。
   // (只用 rAF 會在隱藏頁籤裡永遠掛住;只用計時器則在可見頁籤裡可能量在重繪之前。)
   const frames = () => new Promise((r) => {
@@ -1142,11 +1139,18 @@ const sentinelReport = await page.evaluate(async (simPx) => {
   for (const b of document.querySelectorAll('[data-datatable-hscroll]')) {
     const sen = b.querySelector(':scope > [role="presentation"]')
     if (!sen) { out.push({ hasSentinel: false }); continue }
-    const headInner = b.closest('[role="table"]')?.querySelector('[data-datatable-header-panel="center"]')?.firstElementChild
-    const headMin = () => (headInner ? parseFloat(headInner.style.minWidth) || 0 : null)
+    const table = b.closest('[role="table"], [role="grid"]')
+    const centerPanel = table?.querySelector('[data-datatable-panel="center"]')
+    // 中央欄寬總和(第一列有格的列)與中央區可用寬(捲動盒內容寬 − 兩側釘選面板寬)
+    const centerSum = () => {
+      const row = centerPanel ? [...centerPanel.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])')) : null
+      return row ? +[...row.querySelectorAll(':scope > :is([role="cell"], [role="gridcell"])')].reduce((a, c) => a + c.offsetWidth, 0).toFixed(1) : null
+    }
+    const pinnedW = () => ['left', 'right'].map((side) => table?.querySelector(`[data-datatable-panel="${side}"]`)?.offsetWidth ?? 0).reduce((a, x) => a + x, 0)
+    const headMin = () => centerSum()
     const rows = () => b.querySelectorAll('[role="row"]').length
     const senW = () => +sen.getBoundingClientRect().width.toFixed(2)
-    const natural = { sen: senW(), client: b.clientWidth, h: sen.getBoundingClientRect().height, headMin: headMin(), rows: rows() }
+    const natural = { sen: senW(), client: b.clientWidth, h: sen.getBoundingClientRect().height, headMin: headMin(), rows: rows(), avail: b.clientWidth - pinnedW(), overflow: b.scrollWidth > b.clientWidth }
     // 造出與「垂直捲軸出現」同型的內容盒縮減
     const prev = b.style.borderRight
     b.style.borderRight = `${simPx}px solid transparent`
@@ -1161,12 +1165,18 @@ const sentinelReport = await page.evaluate(async (simPx) => {
     const restored = { sen: senW(), client: b.clientWidth }
     await settle(headMin)
     restored.headMin = headMin()
-    out.push({ hasSentinel: true, ariaHidden: sen.getAttribute('aria-hidden') !== null, hasHeader: headInner != null, natural, shrunk, settled, restored })
+    out.push({ hasSentinel: true, ariaHidden: sen.getAttribute('aria-hidden') !== null, hasHeader: centerPanel != null && natural.headMin != null, natural, shrunk, settled, restored })
   }
   return out
-}, SIM_V_BORDER)
+}
+const sentinelReport = []
+for (const id of ['pinned-columns', 'virtual-scroll']) {
+  await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--${id}&viewMode=story`, '[data-datatable-hscroll]')
+  sentinelReport.push(...await page.evaluate(sentinelProbe, SIM_V_BORDER))
+}
 
 record('I16', `真的量到 center body(否則下面的斷言是空轉)`, sentinelReport.length > 0, `量到 ${sentinelReport.length} 個`)
+let fillTables = 0
 sentinelReport.forEach((r, i) => {
   record('I16', `表 ${i + 1}:寬度哨兵存在、0 高、不進無障礙樹`, r.hasSentinel && r.natural?.h === 0 && r.ariaHidden,
     JSON.stringify({ hasSentinel: r.hasSentinel, h: r.natural?.h, ariaHidden: r.ariaHidden }))
@@ -1178,14 +1188,18 @@ sentinelReport.forEach((r, i) => {
     `${r.natural.sen} → ${r.shrunk.sen}(clientWidth ${r.natural.client} → ${r.shrunk.client})`)
   record('I16', `表 ${i + 1}:還原後回到原值(哨兵不會卡住)`, Math.abs(r.restored.sen - r.natural.sen) <= 0.5,
     `${r.shrunk.sen} → ${r.restored.sen}(原 ${r.natural.sen})`)
-  // 缺陷 S 的結果本身:補償要不經 React 事件就跟上(列數不變 = 沒有任何 React 狀態變化推動重量)。
-  record('I16', `表 ${i + 1}:內容盒縮 ${SIM_V_BORDER}px 後 header 內層 minWidth 不經 React 事件就長 ${SIM_V_BORDER}(缺陷 S 結果)`,
-    r.hasHeader && Math.abs(r.settled.headMin - r.natural.headMin - SIM_V_BORDER) <= 0.5 && r.settled.rows === r.natural.rows,
-    `header inner minWidth ${r.natural.headMin} → ${r.settled.headMin}(應 +${SIM_V_BORDER});列數 ${r.natural.rows} → ${r.settled.rows}(沒跟上 = RO 沒響、補償停在過期值)`)
-  record('I16', `表 ${i + 1}:還原後 header 內層 minWidth 回到原值`,
-    r.hasHeader && Math.abs(r.restored.headMin - r.natural.headMin) <= 0.5,
+  // 缺陷 S 的結果本身:中央欄寬要不經 React 事件就跟上(列數不變 = 沒有任何 React 狀態變化推動重量)。
+  // 只量「中央區填滿」的表(沒有水平溢出、Σ 中央欄寬 = 可用寬);有水平溢出的表欄寬不跟可用寬走,這條對它是空轉。
+  if (r.natural.overflow || r.natural.headMin == null || Math.abs(r.natural.headMin - r.natural.avail) > 1) return
+  fillTables++
+  record('I16', `表 ${i + 1}:內容盒縮 ${SIM_V_BORDER}px 後中央欄寬不經 React 事件就少 ${SIM_V_BORDER}(缺陷 S 結果)`,
+    r.hasHeader && Math.abs(r.natural.headMin - r.settled.headMin - SIM_V_BORDER) <= 1 && r.settled.rows === r.natural.rows,
+    `Σ 中央欄寬 ${r.natural.headMin} → ${r.settled.headMin}(應 −${SIM_V_BORDER});列數 ${r.natural.rows} → ${r.settled.rows}(沒跟上 = RO 沒響、欄寬停在過期值)`)
+  record('I16', `表 ${i + 1}:還原後中央欄寬回到原值`,
+    r.hasHeader && Math.abs(r.restored.headMin - r.natural.headMin) <= 1,
     `${r.settled.headMin} → ${r.restored.headMin}(原 ${r.natural.headMin})`)
 })
+record('I16', '至少一張中央區填滿的表量到「欄寬跟著內容盒走」(否則上面的結果斷言全是空轉)', fillTables > 0, `量到 ${fillTables} 張`)
 
 /* ── I17:捲軸帶與釘選欄滾輪(2026-09-05)────────────────────────────────────────
  * 兩個都是實測抓到、而且都是「看起來有做、其實沒作用」的那一類:
@@ -1204,59 +1218,70 @@ sentinelReport.forEach((r, i) => {
  * `::-webkit-scrollbar` 客製加回去、或改回 `auto`,這裡就紅(Chromium Aura:預設 15 × 2/3 = 10)。
  */
 await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="left"]')
+// 2026-11-05(待辦總帳 Q2b):三區與表頭在同一個捲動盒裡,釘選欄上的滾輪是**瀏覽器原生**捲動(修前靠 makeBindPinnedPanel 轉發)。
+// 原生捲動只有真的輸入才會發生(`dispatchEvent(new WheelEvent)` 不觸發預設動作),所以滾輪那半改用 page.mouse.wheel 在釘選欄上推;
+// 裝飾軌道改成根節點上的 `[data-dt-scrollbar-trough]`(外層畫凍結邊界線、內層才是 `overflow-x: scroll` 的空軌道)。
 const scrollUxReport = await page.evaluate(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   const out = []
   for (const cb of document.querySelectorAll('[data-datatable-hscroll]')) {
-    const wrap = cb.parentElement
-    const left = wrap.querySelector(':scope > [data-datatable-panel="left"]')
-    const troughs = [...wrap.querySelectorAll(':scope > [aria-hidden]')].filter((e) => String(e.className).includes('overflow-x-scroll'))
+    const table = cb.closest('[role="table"], [role="grid"]')
+    const left = table?.querySelector('[data-datatable-panel="left"]')
+    const right = table?.querySelector('[data-datatable-panel="right"]')
+    const troughs = [...(table?.querySelectorAll('[data-dt-scrollbar-trough]') ?? [])]
     const gutter = cb.offsetHeight - cb.clientHeight
     const scrollbarWidth = getComputedStyle(cb).scrollbarWidth
     const bandTop = cb.getBoundingClientRect().bottom - gutter
-    cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll')); await sleep(30)
+    cb.scrollTop = 0; await sleep(30)
     const before = troughs.map((t) => +t.getBoundingClientRect().top.toFixed(2))
-    cb.scrollTop = 200; cb.dispatchEvent(new Event('scroll')); await sleep(60)
+    cb.scrollTop = 200; await sleep(60)
     const after = troughs.map((t) => +t.getBoundingClientRect().top.toFixed(2))
-    cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll')); await sleep(30)
-    // 滾輪轉發:只有 center 真的能垂直捲時才該生效(捲不動時要讓事件冒泡給頁面)
-    const canScrollY = cb.scrollHeight > cb.clientHeight
-    const canScrollX = cb.scrollWidth > cb.clientWidth
-    const right = wrap.querySelector(':scope > [data-datatable-panel="right"]')
-    let wheelDelta = null, wheelRight = null, wheelShift = null
-    if (left && canScrollY) {
-      cb.scrollTop = 0
-      left.dispatchEvent(new WheelEvent('wheel', { deltaY: 180, bubbles: true, cancelable: true }))
-      await sleep(50)
-      wheelDelta = cb.scrollTop
-      cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll'))
-    }
-    // 右側面板是另一個監聽,不能只驗左側(2026-09-05 稽核:先前只驗左側 = 右側監聽拿掉也全綠)
-    if (right && canScrollY) {
-      cb.scrollTop = 0
-      right.dispatchEvent(new WheelEvent('wheel', { deltaY: 180, bubbles: true, cancelable: true }))
-      await sleep(50)
-      wheelRight = cb.scrollTop
-      cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll'))
-    }
-    // Shift+滾輪 = 橫向(Firefox / Windows 給 deltaY + shiftKey):要跟 center body 原生與 v33 一致
-    if (left && canScrollX) {
-      cb.scrollLeft = 0; cb.scrollTop = 0
-      left.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, deltaX: 0, shiftKey: true, bubbles: true, cancelable: true }))
-      await sleep(50)
-      wheelShift = { x: cb.scrollLeft, y: cb.scrollTop }
-      cb.scrollLeft = 0; cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll'))
+    cb.scrollTop = 0; await sleep(30)
+    // 指標要落在釘選欄**看得到的列**上(表頭下方、捲軸上方)
+    const head = table?.querySelector('.dtHeaderRowGroup, [data-datatable-header-panel]')
+    const headBottom = head ? head.getBoundingClientRect().bottom : cb.getBoundingClientRect().top
+    const pt = (panel) => {
+      if (!panel) return null
+      const r = panel.getBoundingClientRect(), c = cb.getBoundingClientRect()
+      return { x: r.left + Math.min(40, r.width / 2), y: Math.min(headBottom + 30, c.bottom - gutter - 10) }
     }
     out.push({
       gutter, scrollbarWidth, troughs: troughs.length,
       aligned: troughs.every((t) => Math.abs(t.getBoundingClientRect().top - bandTop) <= 0.5),
       stable: JSON.stringify(before) === JSON.stringify(after),
-      canScrollY, canScrollX, wheelDelta, wheelRight, wheelShift,
+      canScrollY: cb.scrollHeight > cb.clientHeight, canScrollX: cb.scrollWidth > cb.clientWidth,
+      leftPt: pt(left), rightPt: pt(right),
+      // 中央欄上的一點:左釘選區右緣往右 60px(同一條 y)
+      centerPt: (() => { const l = left?.getBoundingClientRect(); const y = pt(left ?? cb)?.y; return y == null ? null : { x: (l ? l.right : cb.getBoundingClientRect().left) + 60, y } })(),
     })
   }
   return out
 })
+// 釘選欄上的真滾輪(左 / 右 / 左 + Shift)
+for (let i = 0; i < scrollUxReport.length; i++) {
+  const r = scrollUxReport[i]
+  const readPos = () => page.evaluate((i) => { const c = document.querySelectorAll('[data-datatable-hscroll]')[i]; return { x: c.scrollLeft, y: c.scrollTop } }, i)
+  const reset = () => page.evaluate((i) => { const c = document.querySelectorAll('[data-datatable-hscroll]')[i]; c.scrollLeft = 0; c.scrollTop = 0 }, i)
+  const settleI17 = async () => (await settleAfterInteraction(page, { frames: 10 })).ok
+  const wheelAt = async (pt, dx, dy, shift = false) => {
+    await reset(); await settleI17()
+    await page.mouse.move(pt.x, pt.y)
+    if (shift) await page.keyboard.down('Shift')
+    await page.mouse.wheel(dx, dy)
+    if (shift) await page.keyboard.up('Shift')
+    await settleI17()
+    const pos = await readPos()
+    await reset()
+    return pos
+  }
+  r.wheelDelta = r.canScrollY && r.leftPt ? (await wheelAt(r.leftPt, 0, 180)).y : null
+  r.wheelRight = r.canScrollY && r.rightPt ? (await wheelAt(r.rightPt, 0, 180)).y : null
+  // Shift+滾輪:釘選欄上與中央欄上必須是**同一個**結果(瀏覽器怎麼解讀 Shift+滾輪由平台決定 —— Windows / Linux 的 Chromium
+  // 會轉成橫向,macOS 由系統直接送 deltaX;修前的轉發器自己決定要不要轉,所以斷言的是「與中央欄原生一致」,不是寫死某個平台的值)。
+  r.wheelShift = r.canScrollX && r.leftPt && r.centerPt ? { pinned: await wheelAt(r.leftPt, 0, 120, true), center: await wheelAt(r.centerPt, 0, 120, true) } : null
+}
 record('I17', `真的量到 center body(否則下面的斷言是空轉)`, scrollUxReport.length > 0, `量到 ${scrollUxReport.length} 張表`)
+let shiftWheelMoved = 0
 scrollUxReport.forEach((r, i) => {
   if (r.gutter > 0) {
     record('I17a', `表 ${i + 1}:裝飾軌道與真捲軸帶同一條線(gutter ${r.gutter}px)`, r.troughs > 0 && r.aligned,
@@ -1281,140 +1306,100 @@ scrollUxReport.forEach((r, i) => {
     recordUnverified('I17e', `表 ${i + 1}:center body 捲軸在 Chromium 走原生、佔位 ≥ 15px`, reason)
   }
   if (r.canScrollY) {
-    record('I17c', `表 ${i + 1}:左釘選欄滾輪轉發到 center`, r.wheelDelta === 180,
-      `wheel(0,180) 之後 center scrollTop = ${r.wheelDelta}(0 = 釘選欄吃不到滾輪)`)
+    record('I17c', `表 ${i + 1}:指標在左釘選欄上滾輪,整張表往下捲(單一捲動盒的原生捲動)`, r.wheelDelta === 180,
+      `wheel(0,180) 之後捲動盒 scrollTop = ${r.wheelDelta}(0 = 釘選欄吃不到滾輪)`)
     if (r.wheelRight !== null) {
-      record('I17c', `表 ${i + 1}:右釘選欄滾輪轉發到 center`, r.wheelRight === 180,
-        `wheel(0,180) 之後 center scrollTop = ${r.wheelRight}`)
+      record('I17c', `表 ${i + 1}:指標在右釘選欄上滾輪,整張表往下捲`, r.wheelRight === 180,
+        `wheel(0,180) 之後捲動盒 scrollTop = ${r.wheelRight}`)
     }
   } else {
     console.log(`⏭  I17c 表 ${i + 1} — center 沒有垂直溢出,滾輪本來就該冒泡給頁面,不適用`)
   }
   if (r.wheelShift) {
-    record('I17d', `表 ${i + 1}:釘選欄 Shift+滾輪 = 橫向(與 center 原生、v33 gridBodyCtrl.ts#L394-L411 同義)`,
-      r.wheelShift.x === 120 && r.wheelShift.y === 0,
-      `shift+wheel(0,120) 之後 center scrollLeft = ${r.wheelShift.x} / scrollTop = ${r.wheelShift.y}(應 120 / 0)`)
+    const { pinned: wp, center: wc } = r.wheelShift
+    if (wc.x > 0 || wc.y > 0) shiftWheelMoved++
+    record('I17d', `表 ${i + 1}:釘選欄上的 Shift+滾輪與中央欄上同一個結果(瀏覽器原生;v33 gridBodyCtrl.ts#L394-L411 同義)`,
+      wp.x === wc.x && wp.y === wc.y,
+      `釘選欄 scrollLeft/Top = ${wp.x}/${wp.y};中央欄 = ${wc.x}/${wc.y}`)
   }
 })
 
-/* ── I18 / I19:次要區導回 center、程式化同步不回彈(2026-09-05 稽核補閘)────────────────
- * 缺陷 C(次要區被瀏覽器捲動要導回 center)與缺陷 γ(程式化寫入不得回推 center)先前都只有
- * 手動 Chrome 實測 —— 把 onSecondaryScroll 或 writtenRef 整段拿掉,所有既有閘照樣全綠。
- * 這裡量 scrollLeft / scrollTop 的數值,不看屬性。頁籤隱藏時瀏覽器不派發 scroll 事件,所以每次寫入後
- * 手動 dispatch,並等兩幀讓 React 的 onScroll 跑完。
+// Shift+滾輪那條的空轉防線:至少一張表真的被 Shift+滾輪捲動(平台把它解讀成橫向或縱向都算;全部 0 = 量不到「同一個結果」)
+record('I17d', '至少一張表的 Shift+滾輪真的捲動了(否則上面的「同一個結果」可能是 0 = 0 的空轉)', shiftWheelMoved > 0, `捲動了 ${shiftWheelMoved} 張`)
+
+/* ── I18 / I19:表頭 / 釘選區不會被單獨捲走、捲到底不回彈(2026-09-05 稽核補閘;2026-11-05 改寫)────────────────
+ * 修前三區與表頭是各自的捲動盒,靠 JS 互相同步:缺陷 C(瀏覽器因焦點自己捲了次要區 → 永久錯位,要導回 center)、
+ * 缺陷 γ(程式化寫入被夾住時回推 center → 回彈)都是那套同步的病,這裡原本量的是導回與防回彈的機制。
+ * 2026-11-05(待辦總帳 Q2b)起表頭與三區在**同一個捲動盒**裡,表頭中央區與釘選面板**不是捲動盒**,上述兩種病沒有發生的位置。
+ * 要守的使用者性質不變,直接量:
+ *   I18a 表頭中央區 / 釘選面板不是捲動盒 —— 對它們寫 scrollLeft / scrollTop 不會動(修前會動,然後要靠導回);
+ *   I18b 讓瀏覽器自己把表頭最後一欄捲進視野(scrollIntoView = 焦點捲動同一條路)→ 捲的是共用捲動盒,表頭與表身每欄左緣仍重合;
+ *   I19a 捲動盒捲到最右,兩幀後仍在最右(不回彈),表頭與表身最後一欄右緣重合。
  */
 const syncReport = await page.evaluate(async () => {
-  const settle = (ms = 200) => new Promise((r) => setTimeout(r, ms))
-  /**
-   * 寫一個捲動位置,然後等瀏覽器把整條事件鏈跑完。
-   *
-   * **絕不對「下游」元素補送 scroll 事件**(2026-09-05 兩次 CI 紅燈的真正原因,job 101317387250 /
-   * 101320337631 皆 `I19b center 382 應 392`):
-   * 寫 center 之後,元件會把值寫進 header,瀏覽器**自己**會為 header 送一顆 scroll,
-   * 防回彈紀錄在那一顆就被正確吞掉並清除。此時若閘再對 header 補送第二顆,它找不到紀錄,
-   * 就會把 header 被夾過的值推回 center —— 那是閘自己製造出來的失敗,現實中不存在
-   * (真實瀏覽器一次寫入只會有一顆事件)。
-   * 補送只保留給「連被寫入的那個元素自己都沒收到事件」的環境(隱藏頁籤不派發 scroll),
-   * 而且只補在被寫入的那個元素上。
-   */
-  const write = async (el, axis, value) => {
-    let saw = false
-    const mark = () => { saw = true }
-    el.addEventListener('scroll', mark)
-    const before = axis === 'x' ? el.scrollLeft : el.scrollTop
-    if (axis === 'x') el.scrollLeft = value
-    else el.scrollTop = value
-    const after = axis === 'x' ? el.scrollLeft : el.scrollTop
-    await settle()
-    if (!saw && after !== before) el.dispatchEvent(new Event('scroll'))
-    el.removeEventListener('scroll', mark)
-    await settle()
+  const frames = (n = 3) => new Promise((r) => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f) })
+  const edges = (header, panel) => {
+    const heads = [...header.querySelectorAll('[role="columnheader"]')]
+    const row = [...panel.querySelectorAll('[role="row"]')].find((x) => x.querySelector(':is([role="cell"], [role="gridcell"])'))
+    const cells = row ? [...row.querySelectorAll(':scope > :is([role="cell"], [role="gridcell"])')] : []
+    const n = Math.min(heads.length, cells.length)
+    let worst = 0
+    for (let i = 0; i < n; i++) worst = Math.max(worst, Math.abs(heads[i].getBoundingClientRect().left - cells[i].getBoundingClientRect().left))
+    const lastH = heads[heads.length - 1]?.getBoundingClientRect().right ?? null
+    const lastC = cells[cells.length - 1]?.getBoundingClientRect().right ?? null
+    return { n, worst: +worst.toFixed(2), lastDelta: lastH != null && lastC != null ? +Math.abs(lastH - lastC).toFixed(2) : null }
   }
   const out = []
   for (const cb of document.querySelectorAll('[data-datatable-hscroll]')) {
-    const wrap = cb.parentElement
-    const left = wrap.querySelector(':scope > [data-datatable-panel="left"]')
-    const right = wrap.querySelector(':scope > [data-datatable-panel="right"]')
-    const header = cb.closest('[role="table"]')?.querySelector('[data-datatable-header-panel="center"]')
+    const table = cb.closest('[role="table"], [role="grid"]')
+    const header = table?.querySelector('[data-datatable-header-panel="center"]')
+    const panel = table?.querySelector('[data-datatable-panel="center"]')
+    const pinned = ['left', 'right'].map((side) => table?.querySelector(`[data-datatable-panel="${side}"]`)).filter(Boolean)
     const r = { canX: cb.scrollWidth > cb.clientWidth, canY: cb.scrollHeight > cb.clientHeight }
-    if (r.canX && header) {
-      await write(cb, 'x', 0)
-      // 這一顆是「使用者捲 header」——header 才是被寫入的元素,補送(若需要)也只補在它身上。
-      await write(header, 'x', 200)
-      r.headerRedirect = { center: cb.scrollLeft, header: header.scrollLeft }
-      const max = cb.scrollWidth - cb.clientWidth
-      // 寫完 center 就結束:header 的事件由元件寫入時瀏覽器自己送,閘不得再補一顆(見 write 註解)。
-      await write(cb, 'x', max)
-      r.noBounce = { max, center: cb.scrollLeft, header: header.scrollLeft }
-      // 從 header 那一邊推到底(使用者指標停在表頭上捲):header 寫到它自己的最大值 → 元件把 center 推過去 → 兩邊相等
-      await write(cb, 'x', 0)
-      await write(header, 'x', header.scrollWidth - header.clientWidth)
-      r.fromHeader = { center: cb.scrollLeft, header: header.scrollLeft, max }
-      // 把 header 的可捲範圍縮小 40px(縮它的內容盒,不碰 body,才不會被補償邏輯抵消):
-      // center 捲到 max → header 被夾在 max−40 → 那一筆事件值 = 被夾後的值 → 必須被認出並吞掉,center 不得被推回
-      const inner = header.firstElementChild
-      const prevMin = inner.style.minWidth
-      inner.style.minWidth = `${inner.getBoundingClientRect().width - 40}px`
-      await write(cb, 'x', 0)
-      await write(cb, 'x', max)
-      r.mismatch = { center: cb.scrollLeft, expected: max, header: header.scrollLeft,
-        headerRange: header.scrollWidth - header.clientWidth }
-      inner.style.minWidth = prevMin
-      await write(cb, 'x', 0)
-      // I19c 保險(2026-10-13,待辦總帳 Q2a):header 的可捲範圍**比 center 大** 40px(不論多出來的是凸出的把手、取整還是量錯)。
-      // center 到底被夾住、位置沒變就不發 scroll 事件 —— 修前 header 停在 center 到不了的地方。元件必須當場把 header 拉回 center。
-      inner.style.minWidth = `${inner.getBoundingClientRect().width + 40}px`
-      await write(cb, 'x', max)
-      await write(header, 'x', header.scrollWidth - header.clientWidth)
-      r.headerWider = { center: cb.scrollLeft, header: header.scrollLeft, max, headerRange: header.scrollWidth - header.clientWidth }
-      inner.style.minWidth = prevMin
-      await write(cb, 'x', 0)
-    }
-    if (r.canY && left) {
-      await write(cb, 'y', 0)
-      // 使用者捲左釘選欄 → 元件導回 center → center 的事件由瀏覽器自己送,右側跟著校準;閘不補送。
-      await write(left, 'y', 300)
-      r.leftRedirect = { center: cb.scrollTop, left: left.scrollTop, right: right ? right.scrollTop : null }
-      await write(cb, 'y', 0)
+    if (header && panel) {
+      // I18a:對表頭中央區 / 釘選面板寫捲動位置
+      header.scrollLeft = 200
+      for (const p of pinned) p.scrollTop = 300
+      await frames()
+      r.secondary = { header: header.scrollLeft, pinned: pinned.map((p) => p.scrollTop), shared: header.closest('[data-datatable-hscroll]') === cb && pinned.every((p) => p.closest('[data-datatable-hscroll]') === cb) }
+      if (r.canX) {
+        // I18b:瀏覽器自己把表頭最後一欄捲進視野
+        cb.scrollLeft = 0; await frames()
+        const heads = header.querySelectorAll('[role="columnheader"]')
+        heads[heads.length - 1]?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+        await frames()
+        r.intoView = { scrolled: cb.scrollLeft, ...edges(header, panel) }
+        // I19a:捲到最右不回彈
+        const max = cb.scrollWidth - cb.clientWidth
+        cb.scrollLeft = max; await frames(4)
+        r.noBounce = { max, at: cb.scrollLeft, ...edges(header, panel) }
+        cb.scrollLeft = 0; await frames()
+      }
     }
     out.push(r)
   }
   return out
 })
 record('I18', `真的量到 center body(否則下面的斷言是空轉)`, syncReport.length > 0, `量到 ${syncReport.length} 張表`)
+let syncMeasured = 0
 syncReport.forEach((r, i) => {
-  if (r.headerRedirect) {
-    record('I18a', `表 ${i + 1}:header 被捲動 200 → 導回 center(缺陷 C)`,
-      r.headerRedirect.center === 200 && r.headerRedirect.header === 200,
-      `center ${r.headerRedirect.center} / header ${r.headerRedirect.header}(應 200 / 200)`)
-    record('I19a', `表 ${i + 1}:center 捲到最右不回彈,header 跟上`,
-      r.noBounce.center === r.noBounce.max && r.noBounce.header === r.noBounce.max,
-      `max ${r.noBounce.max}:center ${r.noBounce.center} / header ${r.noBounce.header}`)
-    record('I19b', `表 ${i + 1}:header 可捲範圍被縮小時,被夾過的那一筆被吞掉、center 不被推回(缺陷 γ)`,
-      r.mismatch.center === r.mismatch.expected,
-      `center ${r.mismatch.center}(應停在 ${r.mismatch.expected};header 被夾在 ${r.mismatch.header},其可捲範圍 ${r.mismatch.headerRange})`)
-    // 2026-10-13(待辦總帳 Q2a):原本 header 落後 / 超前也算通過 —— 只看「center 沒被推回」。補上 header = center:
-    // header 可捲範圍被縮小時,header 停在它自己的最大值(能跟多遠跟多遠);自然狀態下從 header 那一邊推到底,兩邊相等。
-    record('I19b', `表 ${i + 1}:header 可捲範圍被縮小時,header 跟到它自己的最大值(不落後更多)`,
-      r.mismatch.header === r.mismatch.headerRange,
-      `header ${r.mismatch.header}(其可捲範圍 ${r.mismatch.headerRange})`)
-    record('I19b', `表 ${i + 1}:從 header 那一邊推到底 → header = center = 最大值`,
-      r.fromHeader.center === r.fromHeader.max && r.fromHeader.header === r.fromHeader.center,
-      `center ${r.fromHeader.center} / header ${r.fromHeader.header}(max ${r.fromHeader.max})`)
-    record('I19c', `表 ${i + 1}:header 可捲範圍比 center 大 40px、center 已到底被夾住 → header 當場被拉回 center(保險)`,
-      r.headerWider.headerRange > r.headerWider.max && r.headerWider.center === r.headerWider.max && r.headerWider.header === r.headerWider.center,
-      `center ${r.headerWider.center} / header ${r.headerWider.header}(center max ${r.headerWider.max},header 可捲 ${r.headerWider.headerRange})`)
+  if (!r.secondary) return
+  syncMeasured++
+  record('I18a', `表 ${i + 1}:表頭中央區與釘選面板在共用捲動盒裡、本身不是捲動盒(寫 scrollLeft / scrollTop 不會動)`,
+    r.secondary.shared && r.secondary.header === 0 && r.secondary.pinned.every((v) => v === 0),
+    JSON.stringify(r.secondary))
+  if (r.intoView) {
+    record('I18b', `表 ${i + 1}:瀏覽器把表頭最後一欄捲進視野 → 捲的是共用捲動盒,表頭與表身每欄左緣仍重合`,
+      r.intoView.scrolled > 0 && r.intoView.n >= 2 && r.intoView.worst <= 0.5,
+      JSON.stringify(r.intoView))
+    record('I19a', `表 ${i + 1}:捲到最右兩幀後仍在最右(不回彈),表頭與表身最後一欄右緣重合`,
+      r.noBounce.at === r.noBounce.max && r.noBounce.lastDelta != null && r.noBounce.lastDelta <= 0.5,
+      JSON.stringify(r.noBounce))
   } else {
-    console.log(`⏭  I18a/I19 表 ${i + 1} — center 沒有水平溢出,不適用`)
-  }
-  if (r.leftRedirect) {
-    record('I18b', `表 ${i + 1}:左釘選欄被捲動 300 → 導回 center 並校準右側(缺陷 C)`,
-      r.leftRedirect.center === 300 && (r.leftRedirect.right === null || r.leftRedirect.right === 300),
-      `center ${r.leftRedirect.center} / right ${r.leftRedirect.right}(應 300 / 300)`)
-  } else {
-    console.log(`⏭  I18b 表 ${i + 1} — center 沒有垂直溢出,不適用`)
+    console.log(`⏭  I18b/I19a 表 ${i + 1} — 沒有水平溢出,不適用`)
   }
 })
+record('I18', '至少一張表量到表頭與釘選面板(否則上面的斷言是空轉)', syncMeasured > 0, `量到 ${syncMeasured} 張`)
 
 /* ── I20–I26:2026-09-05 對抗式稽核補閘(缺陷 E / A / N / L / T + 一-04 / 一-05)────────────
  * 共同背景:這七條「已修」的修正本身都在 invariant 層,但**沒有任何一條有 runtime 閘**——把修正整段
@@ -2053,48 +2038,62 @@ await loadStory(`${BASE}/iframe.html?id=design-system-components-peoplepicker-�
 }
 
 
-/* ── I28:dark mode 底色分層 —— 三區與表頭必須同層 ─────────────────────────────
+/* ── I28:dark mode 底色分層 —— 三區與表頭看起來必須同層 ─────────────────────────────
  * 根 invariant:`--surface` 在 dark 是**半透明**白 8%,所以「誰宣告 bg-surface」不是等價選擇 ——
- * 多宣告一層就多疊一次,亮度會差。root(`dataTableVariants`)本來就宣告了 bg-surface;
- * 若列區容器或釘選面板再宣告一次,body 就疊兩層、而 header 列群組只有 root 一層,
- * dark mode 下表身比表頭亮(2026-09-06 實際發生過:修捲軸接縫時多加了一層)。
- *
+ * 多宣告一層就多疊一次,亮度會差(2026-09-06 實際發生過:修捲軸接縫時多加了一層,捲軸帶左右與中間亮度差約 60%;
+ * 同日又一次表頭表身反轉)。
  * **為什麼要專門為 dark mode 開一條**:本檔其餘所有斷言都跑在預設(亮色)主題,而 light 的
  * `--surface` 是不透明的,疊幾層都看不出來 —— 這一整類缺陷在亮色下**結構上不可見**。
- * 同日兩個視覺回歸(捲軸接縫、表頭表身反轉)都只在 dark mode 顯現,亮色閘全綠。 */
+ * 2026-11-05(待辦總帳 Q2b)改量**像素**而不是「誰宣告了底色」:單一捲動盒裡中央的列會從黏住的表頭與釘選面板底下捲過去,
+ * 那幾個黏住盒**必須**自己畫不透明底(canvas + surface [+ muted],data-table.css「黏住區的不透明底」)—— 修前的斷言
+ * 「釘選面板不得宣告底色」量的是當時的機制,不是性質。性質是:深色主題下,同一張表的
+ *   (1) 釘選表身與中央表身同色、(2) 釘選表頭與中央表頭同色、(3) 表頭比表身多一層 muted(表頭 ≠ 表身,而且比表身亮)。
+ * 「同色」容許 1/255:同一個合成結果在不同合成路徑(合成器圖層 vs 光柵)差一個取整單位,肉眼不可分(2026-11-05 原型實測 29 / 30);
+ * 2026-09-06 那種疊錯一層差 ~20 單位,遠超過這個容差。取樣點 = 格子內距裡的一點(避開文字、線、捲軸)。 */
 await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story&globals=theme:dark`, '[role="row"]')
 {
   const tone = await page.evaluate(() => {
     const cb = document.querySelector('[data-datatable-hscroll]')
     if (!cb) return null
-    const row = cb.parentElement
-    const hdr = document.querySelector('.dtHeaderRowGroup')
-    const root = hdr ? hdr.closest('[class*="rounded-md"]') : null
-    const bg = (el) => (el ? getComputedStyle(el).backgroundColor : null)
-    const TRANSPARENT = 'rgba(0, 0, 0, 0)'
+    const table = cb.closest('[role="table"], [role="grid"]')
+    const pick = (sel) => {
+      const el = table.querySelector(sel)
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { x: Math.round(r.left + 3), y: Math.round(r.top + 3) }
+    }
+    const firstCell = (side) => `[data-datatable-panel="${side}"] [role="row"][data-row-index="1"] > :is([role="cell"], [role="gridcell"])`
     return {
-      theme: document.documentElement.getAttribute('data-theme')
-        || (document.body.getAttribute('data-theme') || '(none)'),
-      rootBg: bg(root),
-      headerBg: bg(hdr),
-      bodyBg: bg(row),
-      panelBgs: [...row.children].filter((el) => !el.hasAttribute('data-datatable-hscroll')
-        && !/overflow-x-scroll/.test(el.className)).map((el) => bg(el)),
-      TRANSPARENT,
+      theme: document.documentElement.getAttribute('data-theme') || (document.body.getAttribute('data-theme') || '(none)'),
+      pts: {
+        bodyLeft: pick(firstCell('left')),
+        bodyCenter: pick(firstCell('center')),
+        bodyRight: pick(firstCell('right')),
+        headLeft: pick('[data-datatable-header-panel="left"] [role="columnheader"]'),
+        headCenter: pick('[data-datatable-header-panel="center"] [role="columnheader"]'),
+        headRight: pick('[data-datatable-header-panel="right"] [role="columnheader"]'),
+      },
     }
   })
-  if (!tone) record('I28', 'dark mode 表格結構取得(否則以下斷言空轉)', false, '找不到 hscroll 容器')
-  else {
-    record('I28', `真的處在 dark 主題(theme=${tone.theme})`,
-      tone.theme === 'dark', `data-theme=${tone.theme}`)
-    record('I28', `root 是唯一宣告底色的那一層(root=${tone.rootBg})`,
-      !!tone.rootBg && tone.rootBg !== tone.TRANSPARENT, `root ${tone.rootBg}`)
-    record('I28', '列區容器不得再宣告底色(否則 body 疊兩層、表身比表頭亮)',
-      tone.bodyBg === tone.TRANSPARENT, `body ${tone.bodyBg}`)
-    record('I28', '釘選面板不得各自宣告底色(否則捲軸帶左右與中間不同色)',
-      tone.panelBgs.every((b) => b === tone.TRANSPARENT), `panels ${JSON.stringify(tone.panelBgs)}`)
-    record('I28', '表頭列群組與列區同層(兩者都不自畫,皆由 root 提供)',
-      tone.headerBg === tone.bodyBg, `header ${tone.headerBg} / body ${tone.bodyBg}`)
+  if (!tone || !tone.pts.bodyLeft || !tone.pts.bodyCenter || !tone.pts.headLeft || !tone.pts.headCenter) {
+    record('I28', 'dark mode 表格結構取得(否則以下斷言空轉)', false, `INSTRUMENT-FAIL 取樣點 ${JSON.stringify(tone?.pts ?? null)}`)
+  } else {
+    record('I28', `真的處在 dark 主題(theme=${tone.theme})`, tone.theme === 'dark', `data-theme=${tone.theme}`)
+    await page.mouse.move(0, 0)
+    await settleAfterInteraction(page, { frames: 10 })
+    const img = decodePng(await page.screenshot())
+    const c = Object.fromEntries(Object.entries(tone.pts).map(([k, p]) => [k, p ? px(img, p.x, p.y) : null]))
+    const near = (a, b) => !!a && !!b && a.every((v, i) => Math.abs(v - b[i]) <= 1)
+    const luma = (a) => a[0] + a[1] + a[2]
+    record('I28', '釘選表身與中央表身同色(±1;疊錯一層差 ~20)',
+      near(c.bodyLeft, c.bodyCenter) && (!c.bodyRight || near(c.bodyRight, c.bodyCenter)),
+      `left ${c.bodyLeft} / center ${c.bodyCenter} / right ${c.bodyRight}`)
+    record('I28', '釘選表頭與中央表頭同色(±1)',
+      near(c.headLeft, c.headCenter) && (!c.headRight || near(c.headRight, c.headCenter)),
+      `left ${c.headLeft} / center ${c.headCenter} / right ${c.headRight}`)
+    record('I28', '表頭比表身多一層 muted(深色:表頭比表身亮,且差距遠大於取整)',
+      luma(c.headCenter) - luma(c.bodyCenter) >= 15,
+      `head ${c.headCenter} / body ${c.bodyCenter}`)
   }
 }
 
@@ -2403,7 +2402,8 @@ const settled = async () => (await settleAfterInteraction(page, { frames: 10 }))
     await loadStory(CURSOR_URL, SHEET_READY)
     const virtual = await page.evaluate(() => {
       const rows = document.querySelectorAll('[role="row"][data-row-index]').length
-      const body = document.querySelector('[data-datatable-panel="center"]')
+      const center = document.querySelector('[data-datatable-panel="center"]')
+      const body = center?.closest('[data-datatable-hscroll]') ?? center
       return { renderedRows: rows, scrollable: !!body && body.scrollHeight > body.clientHeight + 1 }
     })
     const c0 = await sheetCellBox(await sheetCellId(0, 1))
@@ -2417,10 +2417,15 @@ const settled = async () => (await settleAfterInteraction(page, { frames: 10 }))
         const ring = document.querySelector('[data-selected-cell-id]')
         const id = ring?.getAttribute('data-selected-cell-id')
         const cell = id ? document.querySelector(`[data-cell-id="${CSS.escape(id)}"]`) : null
-        const body = document.querySelector('[data-datatable-panel="center"]')
+        // 可視範圍 = 捲動盒的內容盒,再扣掉盒內黏頂的表頭(2026-11-05 Q2b 起表頭在同一個捲動盒裡;修前捲動盒就是中央表身面板)
+        const center = document.querySelector('[data-datatable-panel="center"]')
+        const body = center?.closest('[data-datatable-hscroll]') ?? center
+        const head = document.querySelector('.dtHeaderRowGroup')
         if (!cell || !body) return { mounted: !!cell, inView: false }
-        const c = cell.getBoundingClientRect(), b = body.getBoundingClientRect()
-        return { mounted: true, inView: c.top >= b.top - 0.5 && c.bottom <= b.bottom + 0.5, cellTop: c.top, bodyTop: b.top, bodyBottom: b.bottom }
+        const c = cell.getBoundingClientRect(), r = body.getBoundingClientRect()
+        const top = body.contains(head) ? head.getBoundingClientRect().bottom : r.top + body.clientTop
+        const bottom = r.top + body.clientTop + body.clientHeight
+        return { mounted: true, inView: c.top >= top - 0.5 && c.bottom <= bottom + 0.5, cellTop: c.top, bodyTop: top, bodyBottom: bottom }
       })
       if (!ok) record('I32', '虛擬捲動下游標格捲進可視範圍:儀器', false, 'INSTRUMENT-FAIL 互動後版面沒有靜止')
       else {
@@ -2646,6 +2651,9 @@ for (const [label, r, c, kind] of [
 // SSOT:data-table.spec.md「二、高度模式」。兩面對照(改前的建置實測):父層加 40px 內距 → 表身底比外框底多 39px、
 // 表頭墊高 20px → 多 19px(外框 overflow:hidden 把水平捲軸與最後一列裁掉)。改後兩者都要 ≤ 1px,且 body 上限恰好少掉注入量。
 // 量法:取像素(getBoundingClientRect),不是讀 style 字面;每次注入後等版面連續靜止(100ms 穩定窗 + rAF 都在裡面)。
+// 2026-11-05(待辦總帳 Q2b):表頭住進表身的捲動盒之後,「body 上限」改量**可視列帶高**(= 捲動盒內容盒高 − 盒內黏頂表頭高;
+// 修前 = 中央表身面板的內容盒高)—— 那才是使用者看得到幾列的量,也是兩代結構共通的量。表頭墊高時捲動盒的上限不必重算
+// (表頭在盒內,列帶自然變矮),所以等的是「列帶高換了值」,不是某個 style 字面。表頭一律取 `.dtHeaderRowGroup`(根節點的第一個子元素修後是捲動盒)。
 {
   // 本段自己印每一條(檔尾只印失敗;這段是 2026-09-29 新閘,通過與否都要看得到)
   const rec = (label, ok, detail = '') => { record('I37', label, ok, detail); console.log(`${ok ? '✓' : '✗'} I37 | ${label}${detail ? ' | ' + detail : ''}`) }
@@ -2653,22 +2661,38 @@ for (const [label, r, c, kind] of [
   await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--roadmap-all-in-one&viewMode=story`, '[data-datatable-panel="center"] [role="row"]')
   const measureFill = () => page.evaluate(() => {
     const root = document.querySelector('[role="table"], [role="grid"]')
-    const body = document.querySelector('[data-datatable-panel="center"]')
-    if (!root || !body) return null
+    const center = document.querySelector('[data-datatable-panel="center"]')
+    const body = center?.closest('[data-datatable-hscroll]') ?? center
+    const head = document.querySelector('.dtHeaderRowGroup')
+    if (!root || !body || !head) return null
     let parent = root.parentElement
     while (parent && getComputedStyle(parent).display === 'contents') parent = parent.parentElement
     const pcs = getComputedStyle(parent)
     const pr = parent.getBoundingClientRect()
     const px = (v) => parseFloat(v) || 0
-    const R = root.getBoundingClientRect(), B = body.getBoundingClientRect(), H = root.firstElementChild.getBoundingClientRect()
-    return { rootBottom: R.bottom, parentContentBottom: pr.bottom - px(pcs.paddingBottom) - px(pcs.borderBottomWidth), bodyBottom: B.bottom, bodyMax: px(body.style.maxHeight), headerH: H.height, overflow: getComputedStyle(root).overflow, rows: body.querySelectorAll('[role="row"]').length }
+    const R = root.getBoundingClientRect(), B = body.getBoundingClientRect(), H = head.getBoundingClientRect()
+    const band = body.clientHeight - (body.contains(head) ? head.offsetHeight : 0)
+    return { rootBottom: R.bottom, parentContentBottom: pr.bottom - px(pcs.paddingBottom) - px(pcs.borderBottomWidth), bodyBottom: B.bottom, bodyMax: band, headerH: H.height, overflow: getComputedStyle(root).overflow, rows: body.querySelectorAll('[role="row"]').length }
   })
   // 注入之後等的是**上限真的被重算**(body 的 maxHeight 換了值;元件 100ms 穩定窗 + rAF 都在裡面),不是固定睡眠也不是「版面靜了」
   // 的代理(靜止判定會在穩定窗還沒到之前就回來,2026-09-29 第一版就是這樣量到 590 → 590);3 秒還沒換 = 沒重算(產品裁決,紅)。
+  const bandNow = () => {
+    const center = document.querySelector('[data-datatable-panel="center"]')
+    const body = center?.closest('[data-datatable-hscroll]') ?? center
+    const head = document.querySelector('.dtHeaderRowGroup')
+    return body && head ? body.clientHeight - (body.contains(head) ? head.offsetHeight : 0) : null
+  }
   const inject = async (fn, arg) => {
-    const before = await page.evaluate(() => document.querySelector('[data-datatable-panel="center"]')?.style.maxHeight ?? null)
+    const before = await page.evaluate(bandNow)
     await page.evaluate(fn, arg)
-    const changed = await page.waitForFunction((prev) => (document.querySelector('[data-datatable-panel="center"]')?.style.maxHeight ?? null) !== prev, before, { timeout: 3000, polling: 'raf' }).then(() => true).catch(() => false)
+    // (bandNow 的同一段算式;page 函式不能閉包外面的函式,也不准用 new Function 動態組 —— 來源政策)
+    const changed = await page.waitForFunction((prev) => {
+      const center = document.querySelector('[data-datatable-panel="center"]')
+      const body = center?.closest('[data-datatable-hscroll]') ?? center
+      const head = document.querySelector('.dtHeaderRowGroup')
+      const now = body && head ? body.clientHeight - (body.contains(head) ? head.offsetHeight : 0) : null
+      return now !== prev
+    }, before, { timeout: 3000, polling: 'raf' }).then(() => true).catch(() => false)
     const s = await settleAfterInteraction(page, { frames: 10, capMs: 4000 })
     return changed && s.ok
   }
@@ -2686,11 +2710,11 @@ for (const [label, r, c, kind] of [
     await inject(() => { let p = document.querySelector('[role="table"], [role="grid"]').parentElement; while (p && getComputedStyle(p).display === 'contents') p = p.parentElement; p.style.paddingBottom = '' })
     const restored = await measureFill()
     rec('拿掉內距後 body 上限回到原值', Math.abs(restored.bodyMax - fillBase.bodyMax) <= 1, `${restored.bodyMax} vs ${fillBase.bodyMax}`)
-    const headOk = await inject((n) => { document.querySelector('[role="table"], [role="grid"]').firstElementChild.style.paddingBottom = `${n}px` }, HEAD)
+    const headOk = await inject((n) => { document.querySelector('.dtHeaderRowGroup').style.paddingBottom = `${n}px` }, HEAD)
     const tallHeader = await measureFill()
-    rec(`表頭墊高 ${HEAD}px(父層盒子不變):表身重算、底 ≤ 外框底(表頭在觀察名單上)`, headOk && tallHeader.headerH >= fillBase.headerH + HEAD - 1 && tallHeader.bodyBottom <= tallHeader.rootBottom + 1, JSON.stringify(tallHeader))
+    rec(`表頭墊高 ${HEAD}px(父層盒子不變):可視列帶跟著變矮、底 ≤ 外框底`, headOk && tallHeader.headerH >= fillBase.headerH + HEAD - 1 && tallHeader.bodyBottom <= tallHeader.rootBottom + 1, JSON.stringify(tallHeader))
     rec(`表頭墊高 ${HEAD}px:body 上限恰好少 ${HEAD}(±1)`, Math.abs((fillBase.bodyMax - tallHeader.bodyMax) - HEAD) <= 1, `${fillBase.bodyMax} → ${tallHeader.bodyMax}`)
-    await inject(() => { document.querySelector('[role="table"], [role="grid"]').firstElementChild.style.paddingBottom = '' })
+    await inject(() => { document.querySelector('.dtHeaderRowGroup').style.paddingBottom = '' })
   }
 }
 

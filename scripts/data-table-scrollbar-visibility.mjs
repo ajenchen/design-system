@@ -171,13 +171,20 @@ const INSPECT = `(() => {
       const over = { right: +(r.right - pad.right).toFixed(2), bottom: +(r.bottom - pad.bottom).toFixed(2), left: +(pad.left - r.left).toFixed(2), top: +(pad.top - r.top).toFixed(2) }
       if (Object.values(over).some((v) => v > 0.5)) item.clips.push({ ancestor: a.tagName.toLowerCase() + '.' + [...a.classList].slice(0, 3).join('.'), over })
     }
-    const who = (x, y) => { const e = document.elementFromPoint(x, y); return e && (e === el || el.contains(e)) ? 'self' : (e ? e.tagName.toLowerCase() + '.' + [...e.classList].slice(0, 2).join('.') : 'NONE') }
-    const midY = r.top + Math.min(120, r.height / 2), midX = r.left + Math.min(120, r.width / 2)
+    // 2026-11-05(待辦總帳 Q2b):捲軸佔版面的平台上,看得見的那條捲軸是**同一張表自己的**代理捲軸 / 裝飾軌道 / 表頭墊片
+    // (data-dt-scrollbar-* 那幾個,正好蓋在原生捲軸上);它們命中也算「沒被別的東西蓋住」。要擋的仍是外來的遮蓋物。
+    const root = el.closest('[role="table"], [role="grid"]') ?? el.parentElement
+    const own = (e) => e === el || el.contains(e) || (!!root && root.contains(e) && !!e.closest('[data-dt-scrollbar-proxy], [data-dt-scrollbar-trough], [data-dt-scrollbar-header-filler]'))
+    const who = (x, y) => { const e = document.elementFromPoint(x, y); return e && own(e) ? 'self' : (e ? e.tagName.toLowerCase() + '.' + [...e.classList].slice(0, 2).join('.') : 'NONE') }
+    // 垂直捲軸從表頭下方開始(表頭在捲動盒裡時;上方那一段是表頭色的墊片,不是捲軸)
+    const head = el.querySelector('.dtHeaderRowGroup')
+    const vTop = head ? Math.max(r.top, head.getBoundingClientRect().bottom) : r.top
+    const midY = vTop + Math.min(120, (r.bottom - vTop) / 2), midX = r.left + Math.min(120, r.width / 2)
     const vw = innerWidth, vh = innerHeight
     if (hasV && sbV > 0) {
       item.cover.vOuter = who(r.right - 2, midY); item.cover.vInner = who(r.right - sbV + 2, midY)
       // 外側一半的長條,避開兩端圓角(8px)與 V/H 交會方塊,且裁到視窗內
-      const x = r.right - sbV / 2, y0 = Math.max(0, r.top + 8), y1 = Math.min(vh, r.bottom - (hasH ? sbH : 0) - 8)
+      const x = r.right - sbV / 2, y0 = Math.max(0, vTop + 8), y1 = Math.min(vh, r.bottom - (hasH ? sbH : 0) - 8)
       if (y1 - y0 >= 20) item.strips.v = { x, y: y0, width: sbV / 2 - 1, height: y1 - y0 }
     }
     if (hasH && sbH > 0) {
@@ -210,7 +217,8 @@ const STRIPS_NOW = `((i) => {
   const r = el.getBoundingClientRect(), sbV = el.offsetWidth - el.clientWidth, sbH = el.offsetHeight - el.clientHeight
   const hasV = el.scrollHeight > el.clientHeight + 1, hasH = el.scrollWidth > el.clientWidth + 1
   const strips = {}
-  if (hasV && sbV > 0) { const x = r.right - sbV / 2, y0 = Math.max(0, r.top + 8), y1 = Math.min(innerHeight, r.bottom - (hasH ? sbH : 0) - 8); if (y1 - y0 >= 20) strips.v = { x, y: y0, width: sbV / 2 - 1, height: y1 - y0 } }
+  const head = el.querySelector('.dtHeaderRowGroup'), vTop = head ? Math.max(r.top, head.getBoundingClientRect().bottom) : r.top
+  if (hasV && sbV > 0) { const x = r.right - sbV / 2, y0 = Math.max(0, vTop + 8), y1 = Math.min(innerHeight, r.bottom - (hasH ? sbH : 0) - 8); if (y1 - y0 >= 20) strips.v = { x, y: y0, width: sbV / 2 - 1, height: y1 - y0 } }
   if (hasH && sbH > 0) { const y = r.bottom - sbH / 2, x0 = Math.max(0, r.left + 8), x1 = Math.min(innerWidth, r.right - (hasV ? sbV : 0) - 8); if (x1 - x0 >= 20 && y < innerHeight) strips.h = { x: x0, y, width: x1 - x0, height: sbH / 2 - 1 } }
   return strips
 })`

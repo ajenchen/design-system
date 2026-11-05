@@ -52,7 +52,7 @@ const ALLOW_HEADER = {
   getRegionHeaders: 'render-time helper,本閘已展開其自由變數',
   headerCellEl: 'render-time helper,本閘已展開其自由變數',
   isLastInRegion: 'render-time helper,本閘已展開其自由變數',
-  centerBodyRef: 'useRef;只在事件當下讀 .current(auto-fit),不是 render 輸入',
+  centerBodyWidthRef: 'useRef;只在事件當下讀 .current(auto-fit 的量測上限 = 中央區可視寬;2026-11-05 Q2b 起取代捲動盒 centerBodyRef),不是 render 輸入',
   liveColumnResizeRef: 'useRef;只在事件當下讀寫',
   prevColumnSizingRef: 'useRef;只在事件當下讀寫',
   tableRef: 'useRef;只在事件當下讀 .current',
