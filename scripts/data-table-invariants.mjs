@@ -2715,6 +2715,107 @@ for (const [label, r, c, kind] of [
   }
 }
 
+// ── I38:按捲軸不改焦點(2026-11-05 審查 D1)──────────────────────────────────────────────────────
+// 看得見的捲軸是代理捲軸(f2ecd9e1 起);滑鼠按在代理上,Chromium 會把焦點給它(tabIndex −1 擋不住)。修前(原生捲軸)按捲軸不改焦點;
+// data-table.spec.md「Cell 選取與鍵盤」只允許焦點**離開**格線區時收框 —— 點 / 拖捲軸不是離開。f2ecd9e1 的 onFocus 直接 blur,
+// 焦點掉到 body:試算表格游標框消失、↓ 不動;唯讀表格聚焦捲動盒後點捲軸,焦點與表格外框焦點框都沒了。
+// 本檔已拿掉 --hide-scrollbars(佔版面捲軸,= Windows / Mac 接滑鼠);真的用滑鼠按代理捲軸(軌道一下 + 拖拇指一段)。
+// 對照組:f2ecd9e1 建置必紅;修前結構 4efc5799(原生捲軸)必綠。
+{
+  const I38_VIEW = { width: 1280, height: 900 }
+  const prevView = page.viewportSize()
+  await page.setViewportSize(I38_VIEW)
+  const proxyGeom = (rootSel) => page.evaluate((rootSel) => {
+    const root = document.querySelector(rootSel)
+    if (!root) return null
+    const sc = root.querySelector('[data-datatable-hscroll]') ?? root
+    // 垂直捲得動的那一個(修前是中央表身、修後是唯一的捲動盒);代理捲軸(有的話)疊在它右側
+    const vs = [sc, ...root.querySelectorAll('*')].find((e) => /(auto|scroll)/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight + 5 && !e.hasAttribute('data-dt-scrollbar-proxy'))
+    if (!vs) return null
+    const b = vs.getBoundingClientRect()
+    const gutter = vs.offsetWidth - vs.clientWidth
+    return { gutter, track: { x: b.left + vs.offsetWidth - 5, y: b.top + b.height * 0.8 }, thumb: { x: b.left + vs.offsetWidth - 5, y: b.top + Math.min(60, b.height * 0.15) }, scrollTop: vs.scrollTop }
+  }, rootSel)
+  const focusState = (rootSel) => page.evaluate((rootSel) => {
+    const root = document.querySelector(rootSel)
+    const a = document.activeElement
+    let fv = false
+    try { fv = !!a && a.matches(':focus-visible') } catch { /* 舊瀏覽器 */ }
+    return {
+      active: a === document.body ? 'BODY' : a === root ? 'root' : a?.hasAttribute('data-datatable-hscroll') ? 'scroller' : a?.hasAttribute('data-dt-scrollbar-proxy') ? 'proxy' : (a?.tagName ?? 'none'),
+      focusVisible: fv,
+      sel: root?.querySelector('[data-selected-cell-id]')?.getAttribute('data-selected-cell-id') ?? null,
+    }
+  }, rootSel)
+  const press = async (pt, dragTo) => {
+    await page.mouse.move(pt.x, pt.y); await page.mouse.down()
+    if (dragTo) await page.mouse.move(dragTo.x, dragTo.y, { steps: 6 })
+    await page.mouse.up()
+    await settleAfterInteraction(page, { frames: 8 })
+  }
+
+  // (a) 試算表:點格 → 按代理捲軸(軌道 / 拖拇指)→ 焦點仍在 grid 根、格游標還在、↓ 照走
+  for (const how of ['軌道點一下', '拖拇指']) {
+    await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--spreadsheet-cursor-contract&viewMode=story`, '[role="grid"] [data-cell-id]')
+    const rootSel = '[role="grid"][data-data-table-outer]'
+    const g0 = await proxyGeom(rootSel)
+    if (!g0 || g0.gutter < 10) {
+      if (isBrowserRequired()) record('I38', `試算表 ${how}:佔版面捲軸存在`, false, `gutter ${g0?.gutter}(必需瀏覽器 lane 應有 classic 捲軸)`)
+      else recordUnverified('I38', `試算表 ${how}`, `gutter ${g0?.gutter}px(overlay 捲軸環境)`)
+      continue
+    }
+    const cell = await page.evaluate(() => { const e = document.querySelector('[role="grid"] [data-cell-id][data-column-id="name"]'); const b = e.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2, id: e.getAttribute('data-cell-id') } })
+    await page.mouse.click(cell.x, cell.y)
+    await settleAfterInteraction(page, { frames: 6 })
+    const s0 = await focusState(rootSel)
+    record('I38', `試算表 ${how}:前置 —— 點格後焦點在 grid 根、格游標 = ${cell.id}`, s0.active === 'root' && s0.sel === cell.id, JSON.stringify(s0))
+    await press(how === '拖拇指' ? g0.thumb : g0.track, how === '拖拇指' ? { x: g0.thumb.x, y: g0.thumb.y + 40 } : null)
+    const g1 = await proxyGeom(rootSel)
+    const s1 = await focusState(rootSel)
+    record('I38', `試算表 ${how}:捲動盒真的捲了(${g0.scrollTop} → ${g1?.scrollTop})`, (g1?.scrollTop ?? 0) > g0.scrollTop, '沒捲 = 沒按到捲軸,下面兩條是空轉')
+    record('I38', `試算表 ${how}:焦點仍在 grid 根、格游標仍是 ${cell.id}(不是掉到 body)`, s1.active === 'root' && s1.sel === cell.id, JSON.stringify(s1))
+    await page.keyboard.press('ArrowDown')
+    await settleAfterInteraction(page, { frames: 6 })
+    const s2 = await focusState(rootSel)
+    record('I38', `試算表 ${how}:之後按 ↓ 格游標往下一列(${cell.id} → ${s2.sel})`, s2.active === 'root' && s2.sel != null && s2.sel !== cell.id, JSON.stringify(s2))
+  }
+
+  // (b) 唯讀表格:鍵盤聚焦捲動盒 → 點代理捲軸軌道 → 焦點仍在捲動盒、焦點框照畫(鍵盤來的)、方向鍵仍捲得動
+  await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="left"]')
+  {
+    const rootSel = '[data-i38-root]'
+    const tagged = await page.evaluate(() => {
+      const roots = [...document.querySelectorAll('[data-data-table-outer]')]
+      const root = roots.find((r) => { const sc = r.querySelector('[data-datatable-hscroll]'); return sc && sc.tabIndex === 0 && sc.scrollHeight > sc.clientHeight + 5 })
+      if (!root) return false
+      root.setAttribute('data-i38-root', '')
+      return true
+    })
+    const g0 = tagged ? await proxyGeom(rootSel) : null
+    if (!g0 || g0.gutter < 10) {
+      if (isBrowserRequired() || !tagged) record('I38', '唯讀表格:找得到會垂直捲、可聚焦捲動盒的表格且有佔版面捲軸', false, `tagged ${tagged} gutter ${g0?.gutter}`)
+      else recordUnverified('I38', '唯讀表格點捲軸', `gutter ${g0?.gutter}px(overlay 捲軸環境)`)
+    } else {
+      await page.evaluate(() => document.querySelector('[data-i38-root] [data-datatable-hscroll]').focus())
+      await page.keyboard.press('ArrowDown')
+      await settleAfterInteraction(page, { frames: 6 })
+      const s0 = await focusState(rootSel)
+      record('I38', '唯讀表格:前置 —— 捲動盒有焦點且畫焦點框(鍵盤)', s0.active === 'scroller' && s0.focusVisible, JSON.stringify(s0))
+      const before = (await proxyGeom(rootSel)).scrollTop
+      await press(g0.track, null)
+      const mid = (await proxyGeom(rootSel)).scrollTop
+      const s1 = await focusState(rootSel)
+      record('I38', `唯讀表格:點捲軸軌道真的捲了(${before} → ${mid})`, mid > before, '沒捲 = 沒按到捲軸')
+      record('I38', '唯讀表格:點捲軸後焦點仍在捲動盒、焦點框照畫(修前原生捲軸按下不改焦點)', s1.active === 'scroller' && s1.focusVisible, JSON.stringify(s1))
+      await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown')
+      await settleAfterInteraction(page, { frames: 6 })
+      const after = (await proxyGeom(rootSel)).scrollTop
+      record('I38', `唯讀表格:之後方向鍵仍捲得動(${mid} → ${after})`, after > mid, '')
+    }
+  }
+  await page.setViewportSize(prevView)
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

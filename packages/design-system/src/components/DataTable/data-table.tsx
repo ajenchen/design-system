@@ -2846,6 +2846,35 @@ function DataTableInner<TData>(
         onPointerLeave: (e: React.PointerEvent<HTMLDivElement>) => e.currentTarget.removeAttribute('data-dt-active'),
       }
     : {}
+  // 代理捲軸被滑鼠按下時,Chromium 會把焦點給它(tabIndex −1 擋不住滑鼠聚焦;MUI X GridVirtualScrollbar 同一個現象)。
+  // 焦點不能留在 aria-hidden 的代理上(axe aria-hidden-focus),**也不能丟到 body**:修前原生捲軸按下去不改焦點,
+  // data-table.spec.md「Cell 選取與鍵盤」只允許焦點**離開**格線區時收起格游標框 —— 點捲軸不是離開(2026-11-05 審查 D1:
+  // 修前 onFocus 直接 blur,試算表點 / 拖捲軸後格游標框消失、↓ 不動;唯讀表格聚焦捲動盒後點捲軸,焦點掉到 body)。
+  // 做法:pointerdown(焦點還沒動)記下當時的焦點與它是否正顯示焦點框;代理一被聚焦就把焦點還回去,焦點框狀態照舊
+  // (`focusVisible`:鍵盤聚焦來的照樣畫框、滑鼠來的照樣不畫,= 原生捲軸「焦點根本沒動」的結果)。按下前沒有焦點才 blur。
+  const proxyFocusReturnRef = React.useRef<{ el: HTMLElement; visible: boolean } | null>(null)
+  const proxyFocusGuard = {
+    onPointerDown: () => {
+      const a = document.activeElement
+      let visible = false
+      try { visible = a instanceof HTMLElement && a.matches(':focus-visible') } catch { /* 不支援 :focus-visible 的瀏覽器:當成滑鼠來的 */ }
+      proxyFocusReturnRef.current = a instanceof HTMLElement && a !== document.body ? { el: a, visible } : null
+    },
+    onFocus: (e: React.FocusEvent<HTMLDivElement>) => {
+      // 代理在根節點裡:這個 focus 事件還會冒泡到根節點的 onFocus(試算表模式據 e.target 判「焦點在不在格線區」),
+      // 而焦點在下面就被還回去了 —— 冒上去的是一個已經過時的事件,會把剛還回去的狀態蓋成「不在格線區」(格游標框收起)。
+      e.stopPropagation()
+      const rec = proxyFocusReturnRef.current
+      proxyFocusReturnRef.current = null
+      const prev = rec?.el ?? (e.relatedTarget instanceof HTMLElement ? e.relatedTarget : null)
+      if (prev && prev.isConnected && prev !== e.currentTarget) {
+        // `focusVisible` 是 FocusOptions 的新欄位(Chromium 147 / Firefox 104 起);不認得的瀏覽器忽略,退回瀏覽器自己的判斷
+        prev.focus({ preventScroll: true, focusVisible: rec?.visible ?? false } as FocusOptions)
+      } else {
+        e.currentTarget.blur()
+      }
+    },
+  }
   // 代理捲軸剛掛上(捲軸剛出現)或捲動範圍變了的時候,捲動盒可能早已不在 0 —— 先對齊一次,不等下一個 scroll 事件。
   React.useLayoutEffect(() => {
     const sc = scrollerRef.current
@@ -2866,9 +2895,10 @@ function DataTableInner<TData>(
           {...proxyActive}
           onScroll={() => onProxyScroll('y')}
           // tabIndex=-1 仍擋不住滑鼠點下去就把焦點給它(捲動盒預設可聚焦);焦點留在 aria-hidden 的元素上 = axe aria-hidden-focus。
-          // MUI X 同一個處理(GridVirtualScrollbar「tabIndex does not prevent focus with a mouse click」→ onFocus blur)。
-          onFocus={(e) => e.currentTarget.blur()}
-          // @focus-suppress N — 代理捲軸 aria-hidden、tabIndex −1、一被聚焦就 blur:鍵盤到不了也不該到(鍵盤捲動走捲動盒本身,它有自己的焦點框)
+          // MUI X 同一個現象(GridVirtualScrollbar「tabIndex does not prevent focus with a mouse click」);本 DS 把焦點還給按下前的元素
+          // (`proxyFocusGuard`,見上),不像 MUI X 直接 blur —— blur 會把焦點丟到 body(2026-11-05 審查 D1)。
+          {...proxyFocusGuard}
+          // @focus-suppress N — 代理捲軸 aria-hidden、tabIndex −1、一被聚焦就把焦點還回去:鍵盤到不了也不該到(鍵盤捲動走捲動盒本身,它有自己的焦點框)
           className="dtScrollbarProxy absolute right-0 overflow-y-scroll overflow-x-hidden outline-none"
           style={{ top: headerH, bottom: overlayScrollbars ? 0 : hScrollbarGutter, width: vProxySize, zIndex: 1 }}
         >
@@ -2896,7 +2926,7 @@ function DataTableInner<TData>(
           {...overlayAttr}
           {...proxyActive}
           onScroll={() => onProxyScroll('x')}
-          onFocus={(e) => e.currentTarget.blur()}
+          {...proxyFocusGuard}
           // @focus-suppress N — 同上(水平代理捲軸)
           className="dtScrollbarProxy absolute bottom-0 overflow-x-scroll overflow-y-hidden outline-none"
           style={{ left: leftWidth, right: rightWidth + (overlayScrollbars ? 0 : vScrollbarGutter), height: hProxySize, zIndex: 1 }}
