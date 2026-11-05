@@ -93,7 +93,7 @@ function useNarrowTier(navRef: React.RefObject<HTMLElement>) {
 }
 
 // 摺疊演算法照 MUI usePagination(1/1 配置);兩顆 ellipsis 用 distinct 穩定 key
-// (Breadcrumb Math.random key remount 前車之鑑,breadcrumb.tsx:208-210)。
+// (Breadcrumb Math.random key remount 前車之鑑,breadcrumb.tsx:212-214)。
 function getPaginationRange(
   page: number,
   totalPages: number,

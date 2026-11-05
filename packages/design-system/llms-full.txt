@@ -63,7 +63,7 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Breadcrumb/
 
 ### Sizes
-- **sm**: Dialog / panel / drawer 內;text-body(14)+ icon 16,建議配 text-h4(20)title。對齊 BREADCRUMB_TEXT_CLASS.sm + BREADCRUMB_ICON_SIZE.sm(breadcrumb.tsx:124-136)
+- **sm**: Dialog / panel / drawer 內;text-body(14)+ icon 16,建議配 text-h4(20)title。對齊 BREADCRUMB_TEXT_CLASS.sm + BREADCRUMB_ICON_SIZE.sm(breadcrumb.tsx:128-140)
 - **md**: 預設 — 一般頁面 header;text-body(14)+ icon 16,建議配 text-h3(24)title
 - **lg**: Detail page hero / landing;text-body-lg(16)+ icon 20,建議配 text-h2(32)title
 

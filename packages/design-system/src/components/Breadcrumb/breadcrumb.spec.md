@@ -4,7 +4,7 @@ family: composite
 variants: {}
 sizes:
   sm:
-    when: "Dialog / panel / drawer 內;text-body(14)+ icon 16,建議配 text-h4(20)title。對齊 BREADCRUMB_TEXT_CLASS.sm + BREADCRUMB_ICON_SIZE.sm(breadcrumb.tsx:124-136)"
+    when: "Dialog / panel / drawer 內;text-body(14)+ icon 16,建議配 text-h4(20)title。對齊 BREADCRUMB_TEXT_CLASS.sm + BREADCRUMB_ICON_SIZE.sm(breadcrumb.tsx:128-140)"
     world-class: ["Atlassian Breadcrumb", "Ant Design Breadcrumb"]
   md:
     when: "預設 — 一般頁面 header;text-body(14)+ icon 16,建議配 text-h3(24)title"

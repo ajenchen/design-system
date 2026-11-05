@@ -349,7 +349,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
             // + codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
             // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
             // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
-            // 對齊 `person-display.tsx:148` 既有 DS canonical:outer flex container + inner truncate 真實 box。
+            // 對齊 `person-display.tsx:150` 既有 DS canonical:outer flex container + inner truncate 真實 box。
             // DS-wide grep 29 個 truncate 都遵此 pattern,只本處違反 — 修齊。
             // 2026-10-13:疊在搜尋框那一格(不是整段):有起始圖示時名字從輸入處開始,不再壓在圖示上。
             <span
@@ -736,7 +736,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
     // display 的值 span 是截斷元素;trigger = 整個 combobox host(interactive host,hover 直達)、
     // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;
-    // 範本 inline-edit.tsx:251。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
+    // 範本 inline-edit.tsx:257。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
     // deps 含 open:searchable && open 切搜尋 input branch 時值 span 會 unmount,關閉重掛後
     // effect 需重跑重新 observe(Tag always-wrap 教訓:RO 卡在 detached node → isTruncated 凍結)。
     // hook 必在下方 resolvedMode early return 之前(React #310 hook-count 鐵律,見上方註解)。

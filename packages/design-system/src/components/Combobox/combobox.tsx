@@ -662,7 +662,7 @@ function CustomCombobox({
       // 跟 DatePicker(:608)/ TimePicker(:378)一致 —— 否則同一顆控件會有兩個焦點指示。
       // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
-      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:66)
+      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:67)
       className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
         // 換行幾何只在有 Tag 時成立(view / 唯讀兩條路徑同一個判斷):空值 /「不限」時照單行欄位置中 ——
         // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md「Control area:Inline vs Block」:「control 第一行內容的中線」都錨在 field-height/2)

@@ -185,7 +185,7 @@ function dayKey(date: Date): string {
 // 預設事件 tile 抽出 component:截斷 tooltip 需 useTruncated(hook 不能在 map callback 內)。
 // 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);tile 是 interactive host
 // (role=button,hover 直達)→ trigger = tile 本體、量測內層文字 span — useTruncated 自組
-// pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:251 + tag.tsx)。
+// pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:257 + tag.tsx)。
 function MonthEventTile({
   event,
   colorClass,

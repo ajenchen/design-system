@@ -245,7 +245,7 @@ function MultiPersonDisplay({
     // 空間還回來也**永遠回不去**。線上實測 grpW=46 / cellW=180 即此循環的證據 ——
     // 這就是「明明還有空間卻顯示成溢出、重整才會好」的真因(GitHub main 同樣有,非本次改壞)。
     //
-    // 三個 `measured` 消費點(people-picker.tsx:260 / 281 / 308)的父層分別是
+    // 三個 `measured` 消費點(people-picker.tsx:262 / 281 / 308)的父層分別是
     // `flex w-full min-w-0` 與 `flex-1 min-w-0`,寬度由外層決定、**不受本元件內容影響**,
     // 量它才是 `getAvatarStackVisibleCount` jsdoc 講的 availablePx。
     const box = el.parentElement ?? el
@@ -263,7 +263,7 @@ function MultiPersonDisplay({
     //
     // fill 模式下這條公式與原本的「量父層」逐像素相同(wrapper 寬由容器決定,
     // slot = wrapper − 開銷,相減回來就是容器寬 − 開銷),所以**不需要分兩條路**;
-    // 沒有 field wrapper 的用法(people-picker.tsx:256 那個 `flex w-full min-w-0`)
+    // 沒有 field wrapper 的用法(people-picker.tsx:258 那個 `flex w-full min-w-0`)
     // 找不到 `[data-field-mode]`,自然落回原本的量父層。
     // 2026-10-28:這段量法搬進 `avatar-stack-overflow.ts` `measureStackAvailablePx`,編輯態(people-picker.tsx)同一支
     //(編輯態原本量自己那一格,依內容寬時同一個棘輪,r-F3 缺陷 K)。

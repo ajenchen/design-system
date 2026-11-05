@@ -77,7 +77,7 @@ Multi 模式搜尋文案公開 `searchPlaceholder` / `searchAriaLabel`，分別�
 PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為人員清單通常規模較大且使用者記得人名關鍵字（符合 Select spec「Searchable 開啟判斷」的「label 性質」主判準：人名是獨特關鍵字）。
 
 - **搜尋 placeholder**：預設「搜尋人員…」，可透過 `searchPlaceholder` 覆寫。**僅 multi 模式 panel-top search（`searchIn='menu'`，default）生效**——single mode wrap `<Select searchable>` 走 inline-trigger 搜尋，提示取自 `placeholder`（Select 無 searchPlaceholder prop）；multi `searchIn='trigger'` inline 搜尋同理走 placeholder 規則（見「Trigger display SSOT canonical table」§E）
-- **空狀態**：預設「沒有人員」(2026-09-08 一句到底,`people-picker.tsx:154`),透過 `emptyText` 覆寫;渲成選單的一列 `MenuItem message`(與 1 筆結果等高、無最小高度、不用 `Empty`),SSOT `../SelectMenu/select-menu.spec.md`「Empty state」
+- **空狀態**：預設「沒有人員」(2026-09-08 一句到底,`people-picker.tsx:156`),透過 `emptyText` 覆寫;渲成選單的一列 `MenuItem message`(與 1 筆結果等高、無最小高度、不用 `Empty`),SSOT `../SelectMenu/select-menu.spec.md`「Empty state」
 
 ---
 
@@ -150,7 +150,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | state | trigger 顯示 |
 |---|---|
 | 空、closed | placeholder「請選擇人員」+ 按空間 ellipsis |
-| 選 1 人、closed | avatar + 人名 + 按空間 ellipsis(`PersonDisplay`,`person-display.tsx:137-152`)|
+| 選 1 人、closed | avatar + 人名 + 按空間 ellipsis(`PersonDisplay`,`person-display.tsx:139-154`)|
 | open + inline-search、未選 | input cursor + placeholder「請選擇人員」(trigger empty placeholder,**不**用「搜尋…」)|
 | open + inline-search、選 1 人 | input cursor + 該人名 overlay(本人名字當記憶提示,按空間 ellipsis;`select.tsx` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` + `showSelectedOverlay` span 顯人名,2026-05-15 Bug 2 fix 改 span overlay 取代原 native placeholder)|
 | open + panel-search、選 1 人 | avatar + 人名 + ellipsis(搜尋框在 panel 內,trigger 視覺不變)|
@@ -177,8 +177,8 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 共享項 | SSOT owner |
 |---|---|
 | Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx#PeoplePicker` `!px-[var(--field-px)]` inject(form context)/ `!px-[var(--table-cell-px)]`(naked variant table cell)|
-| Avatar+人名視覺 | `person-display.tsx:137-152` `PersonDisplay`(共享 renderer)|
-| 人名按空間 ellipsis | `person-display.tsx:150` `truncate flex-1 min-w-0` |
+| Avatar+人名視覺 | `person-display.tsx:139-154` `PersonDisplay`(共享 renderer)|
+| 人名按空間 ellipsis | `person-display.tsx:152` `truncate flex-1 min-w-0` |
 | Placeholder ellipsis(inline-search active 時)| `field-wrapper.tsx#bareInputStyles` 含 `truncate` |
 | Empty-state inline-search placeholder(未選時 → trigger empty placeholder) | `select.tsx` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` / `combobox.tsx` CustomCombobox 欄位內搜尋框(空值也渲染,`placeholder` 屬性顯示 trigger empty placeholder;2026-09-30 修 —— 此前空值分支沒有輸入框,這一格自 2026-05-15 起引用的是走不到的程式碼)|
 
@@ -219,7 +219,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上**單人**(wrapped Select)切至 native 分支(下拉 = 原生 `<select>` picker);**多人**(wrapped Combobox)不分裝置只有自建浮層一條路(2026-09-18 起,`../Combobox/combobox.spec.md`「單一路徑（不分裝置）」;2026-10-21 更正本句原寫「Select / Combobox 切至 native 分支」)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
 
 - **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
-- **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:184` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx#buildCellWithSurface` 的 `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
+- **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:186` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx#buildCellWithSurface` 的 `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
 - **顯示層 pointer 契約**:renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 `[&_button]` 回收」三件套 — pill 上的 X 照常可點(移除成員)。**2026-09-18 更正**:原文說 pill 本體 tap 會「穿透喚起原生 picker」,那是舊觸控路徑的機制;Combobox 已無原生路徑(見 `combobox.spec.md`「單一路徑(不分裝置)」),新增成員改為點欄位開同一套自訂浮層
 - **選單**:單人觸控走原生 `<select>` picker(Select 的觸控路徑,`../Select/select.spec.md`「實作:裝置自適應雙路徑」);原生選項無法渲 avatar 屬平台限制。多人(Combobox)觸控開的是與桌機同一套自建浮層,avatar + description 選項照常(2026-10-21 更正:原句寫「Combobox 觸控 SSOT」走原生 picker,該路徑 2026-09-18 已移除)
 - 一鍵清空 X(`clearable`):單人由基座 native 分支(NativeSelect)自行渲染;多人與桌機同一個 Combobox 觸發區,觸控同樣可用
@@ -280,7 +280,7 @@ PeoplePicker 是 **composite Field Control**(Field shell + Avatar + SelectMenu),
 
 ## shadcn passthrough 例外說明
 
-PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox>`(multi)),其主 API 為 declarative(value / onChange / size / mode / people...)。**有套 `forwardRef` + HTML root props spread**(codex P2 fix 2026-05-07 v15.10,`people-picker.tsx:111` / L53 / L131 `...rest`):
+PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox>`(multi)),其主 API 為 declarative(value / onChange / size / mode / people...)。**有套 `forwardRef` + HTML root props spread**(codex P2 fix 2026-05-07 v15.10,`people-picker.tsx:113` / L53 / L131 `...rest`):
 
 - **forwardRef + 單一 root**:`PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'>`,ref 與 `...rest`(`id` / `data-testid` / `onBlur` / `onFocus` / `aria-*` 等 HTML root props)forward 到內部 trigger 容器(readonly/disabled root div、或 wrapped Select / Combobox 的 root),對齊 DS 既有 Combobox / Select 慣例
 - **`onChange` 走 Omit**:本元件 onChange 用 `(value: PersonValue[]) => void` custom signature,跟 HTMLAttributes onChange 衝突,故 Omit

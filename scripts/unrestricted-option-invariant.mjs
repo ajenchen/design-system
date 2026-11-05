@@ -82,7 +82,7 @@ const PANEL = () => {
 }
 
 // 欄位:用 h3 標題定位每一格,量「最裡層那個有字的 span」相對欄位框左緣的位移、顏色、是否在 Tag 裡。
-// Tag 的身分證是 `data-tag-text`(tag.tsx:234),不是 class 字串。
+// Tag 的身分證是 `data-tag-text`(tag.tsx:237),不是 class 字串。
 const FIELDS = () => {
   const headings = [...document.querySelectorAll('h3')]
   // 2026-11-04(fields FL-a4 把這則的區段改成共用 ExampleSection 之後假紅):h3 包在 ExampleSection 的標題區(`[data-example-section]` 第一格,
