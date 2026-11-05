@@ -355,7 +355,8 @@ const MUTANTS = [
     what: 'FileViewer 沒接收起那一刻的歸還(等內容卸載才還;2026-11-04 DA-esc-tab 之前的形狀,Dialog / Sheet 已在 10-27 接上)',
     file: 'components/FileViewer/file-viewer.tsx',
     expectRed: ['N-esc-tab-modal'],
-    apply: (src) => replaceOnce(src, /if \(isModal\) exitFocus\.ref\(node\)/, 'void exitFocus'),
+    // 錨點跟著 50bce1a3 改:先取出 `const attachExitFocus = exitFocus.ref` 再在 callback 裡呼叫(check:react-hooks 的 exhaustive-deps)
+    apply: (src) => replaceOnce(src, /if \(isModal\) attachExitFocus\(node\)/, 'void attachExitFocus'),
   },
   {
     id: 'modal-exit-keeps-aria-hidden',
