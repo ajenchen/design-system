@@ -244,6 +244,19 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
 
+**各欄型照什麼排序**(2026-11-05,待辦 3f;實作 `./lib/column-sorting.ts`,data-table.tsx 欄位前處理對每個有 `meta.type`、沒自帶 `sortingFn` 的欄掛上)。修前這一型的比法從沒實作,全部落到 TanStack v8.21.3 的自動判斷 `getAutoSortingFn`([RowSorting.ts#L308-L334](https://github.com/TanStack/table/blob/v8.21.3/packages/table-core/src/features/RowSorting.ts#L308-L334)):它取 `flatRows.slice(10)`(**跳過**前 10 列),值是物件就落到 `basic`(兩個不同物件恆回 -1)—— 人員 / 多人欄排出來是亂的,字串欄 ≤ 10 列分大小寫、> 10 列不分。
+
+| 欄型 | 照什麼排 | 依據 |
+|---|---|---|
+| string / url / time | 文字;不分大小寫、數字段照數值(「第 2 版」在「第 10 版」前、9:30 在 10:00 前)| TanStack 內建 `alphanumeric` = 自動判斷看得到字串時本來會選的那支([sortingFns.ts#L5-L10](https://github.com/TanStack/table/blob/v8.21.3/packages/table-core/src/sortingFns.ts#L5-L10)),只是不再隨列數變 |
+| number / currency / boolean | 數值;false 在 true 前 | 同修前(自動判斷給的 `basic`) |
+| date | 時間先後(Date / ISO 字串 / 毫秒數都認;空值最小)| 同一欄可能混用字串與 Date,照時間比才不受格式影響 |
+| person | **名字**,比法同文字欄 | 人員值只有名字可當識別(`string \| { name, avatarUrl?, description? }`),格上顯示的也是名字;Airtable 官方:「Single user fields can be used as a sort field. In this case, the user's name will be used to sort.」([Sort list](https://support.airtable.com/docs/airtable-automation-action-sort-list));AG Grid v33 物件型欄照顯示文字比([dataTypeService.ts#L499-L512](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/columns/dataTypeService.ts#L499-L512)) |
+| multiPerson | 照格上由左到右的順序逐人比名字;前面都相同時人少的在前;沒有人最小 | **AI 推導**:單人規則的延伸 + AG Grid 物件型「照顯示內容比」;多人格只畫頭像,順序就是畫面上的順序 |
+| select / multiSelect | **待 user 決定**(選項順序 / 畫面上的字 / 原始值,世界級不一致);決定前同修前:select 照原始值、multiSelect 照原始值接起來的字串 | Airtable 照選項順序(「Single and multiple select fields are sorted according to the order of the options in the field's customization menu」,[Sorting records](https://support.airtable.com/articles/8716174546-sorting-records-in-airtable-views))、Notion 照選項順序(「For Select and Multi-select properties, you get to define what sorting order means.」,[Views, filters & sorts](https://www.notion.com/help/views-filters-and-sorts))、MUI X v7 `singleSelect` 照原始值([gridSingleSelectColDef.tsx#L22](https://github.com/mui/mui-x/blob/v7.29.0/packages/x-data-grid/src/colDef/gridSingleSelectColDef.tsx#L22) `sortComparator: gridStringOrNumberComparator`),規格沒寫 → 2026-11-05 已提給 user,決定後改這一列與判定表 |
+
+空值:`undefined` 由 TanStack `sortUndefined`(預設 1,升冪排最後)先處理;`null`、空字串、空陣列在各型比法裡當最小(與修前文字欄一致)。consumer 自己寫的 `sortingFn` 照 consumer 的。閘:判定表 `scripts/test-data-table-column-sorting.mjs`(真的用 TanStack 排、≤ 10 列與 > 10 列同序、呼叫端有掛)+ 瀏覽器 `scripts/data-table-column-sorting-invariant.mjs`(專案排程 500 列捲過一遍逐列比)。
+
 ### 八、Row 狀態
 
 - **不使用斑馬紋**——hover 狀態已足夠區分行，斑馬紋疊加會產生多種背景色組合，增加視覺雜訊

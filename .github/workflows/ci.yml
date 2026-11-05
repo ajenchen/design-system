@@ -722,6 +722,9 @@ jobs:
           # 與排序面板雙向同步、不受控表格;--selftest 注入 13 種破法)。跟上面兩支同屬表頭,放這個 job:本機判定 40 秒 + 對照組 71 秒(負載 25–30;CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
           npm run test:data-table-sort-cycle
           npm run test:data-table-multi-sort
+          # 各欄型的排序比法(2026-11-05,待辦 3f;data-table.spec.md「七、Column Type」排序表):判定表真的用 TanStack 排(≤ 10 / > 10 列同序、
+          # 呼叫端有掛;--selftest 換回修前的自動判斷必紅)+ 真瀏覽器(專案排程 500 列捲過一遍逐列比;人員 / 多人,文字為對照列)。同屬表頭排序,放這個 job。
+          npm run test:data-table-column-sorting
           # dpr2 的內容延遲不在 CI 斷言(零殼 / 擷取 / 空白仍斷言):共享 2 vCPU runner 在 dpr2 是 raster 成本決定延遲,幀距正常 16ms 卻
           # p95 72 / 最長 100(8277f858);本機 2× 節流對照 main p95 83 / 117 vs 本分支 0 / 17、4× 235 / 268 vs 132 / 148 ——
           # 本分支嚴格優於 main,runner 的數字是機器不是表格。延遲在 dpr1 斷言(runner 上穩定 0);dpr2 的回歸對照用本機節流跑 main vs 分支(AD62)。

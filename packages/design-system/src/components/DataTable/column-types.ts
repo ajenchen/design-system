@@ -28,7 +28,7 @@ export type ColumnType = (typeof columnTypes)[number]
 export interface ColumnTypeConfig {
   /** Default horizontal alignment */
   align: 'left' | 'right' | 'center'
-  // L3: sortingFn
+  // L3: sortingFn → 不放在這張表:各型比法住 `./lib/column-sorting.ts`(data-table.tsx 前處理掛上;data-table.spec.md「七、Column Type」排序表)
   // L4: filterVariant, filterFn
   // L5: cellRenderer, cellEditor
 }

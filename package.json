@@ -136,6 +136,7 @@
     "test:data-table-header-scroll-sync": "node scripts/data-table-header-scroll-sync.mjs --selftest && node scripts/data-table-header-scroll-sync.mjs",
     "test:data-table-link-cell": "node scripts/data-table-link-cell-invariant.mjs --selftest && node scripts/data-table-link-cell-invariant.mjs",
     "test:data-table-multi-sort": "node scripts/data-table-multi-sort-invariant.mjs --selftest && node scripts/data-table-multi-sort-invariant.mjs",
+    "test:data-table-column-sorting": "node scripts/test-data-table-column-sorting.mjs && node scripts/test-data-table-column-sorting.mjs --selftest && node scripts/data-table-column-sorting-invariant.mjs --selftest && node scripts/data-table-column-sorting-invariant.mjs",
     "test:data-table-sort-cycle": "node scripts/test-data-table-sort-cycle.mjs && node scripts/test-data-table-sort-cycle.mjs --selftest",
     "test:link-input-url-display": "node scripts/test-link-input-url-display-invariant.mjs",
     "test:data-table-handle-clip": "node scripts/data-table-handle-clip-invariant.mjs --selftest && node scripts/data-table-handle-clip-invariant.mjs",

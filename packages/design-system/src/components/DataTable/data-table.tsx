@@ -31,6 +31,7 @@ import {
   getPaginationRowModel,
   flexRender,
   type ColumnDef,
+  type SortingFn,
   type SortingState,
   type TableOptions,
   type Column,
@@ -55,6 +56,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
 import { sortingAfterHeaderActivate, sortingFromColumnMenu, columnMenuShowsCancelSort, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
+import { sortingFnForColumnType } from './lib/column-sorting'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -1661,15 +1663,17 @@ function DataTableInner<TData>(
   //   resize state 正常運作。**Back-compat**:consumer 寫 root `size` 仍 work(meta.width 沒設則
   //   不覆蓋 root)。新 code 一律用 meta.width。
   const dsProcessedColumns = React.useMemo<ColumnDef<TData>[]>(() => {
+  // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表)。
     return columns.map((c) => {
-      const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number } | undefined
+      const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number; type?: ColumnType } | undefined
       if (!meta) return c
-      const cAny = c as { size?: number; minSize?: number; maxSize?: number }
-      const updates: { size?: number; minSize?: number; maxSize?: number } = {}
+      const cAny = c as { size?: number; minSize?: number; maxSize?: number; sortingFn?: unknown }
+      const updates: { size?: number; minSize?: number; maxSize?: number; sortingFn?: SortingFn<TData> } = {}
       if (meta.width !== undefined && cAny.size === undefined) updates.size = meta.width
       if (meta.minWidth !== undefined && cAny.minSize === undefined) updates.minSize = meta.minWidth
       if (meta.maxWidth !== undefined && cAny.maxSize === undefined) updates.maxSize = meta.maxWidth
       return Object.keys(updates).length > 0 ? ({ ...c, ...updates } as ColumnDef<TData>) : c
+      if (meta.type !== undefined && cAny.sortingFn === undefined) updates.sortingFn = sortingFnForColumnType<TData>(meta.type)
     })
   }, [columns])
 
