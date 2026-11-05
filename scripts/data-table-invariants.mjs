@@ -833,27 +833,49 @@ const dist = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Ma
 
 await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, '[data-datatable-panel="center"]')
 
-// 幾何:表頭列群組(底線的宿主)、列區外層(邊界線的宿主)、釘選面板寬。
+// 幾何:表頭列群組(底線的宿主)、表格外框(截圖範圍 / 列區底)、釘選面板寬、捲動盒。
+// **兩代結構都要找得到表頭**(2026-11-05 審查 D5 同族):修前表頭列群組帶 `role="rowgroup"`、表身中央面板自己是捲動盒;
+// 2026-11-05(Q2b)起 rowgroup 是唯一的兩軸捲動盒,表頭列群組改成一般 div。原本用 `[role="rowgroup"].dtHeaderRowGroup`
+// 找表頭,結構一換就回 null → `if (!g.headRow) continue` 把 I13 整組靜默跳過(q2b 那輪 invariants 3 份 log 的 I13 都是 0 條),
+// 「沒量到」被記成「沒事」(M37 第八形)。現在:表頭只認 class、捲動盒取最近的 `[data-datatable-hscroll]`(修前退回面板自己),
+// 且「每張表都真的量到表頭底線」本身是一條斷言(I13g),找不到就紅。
 const geom = await page.evaluate(() => {
   const centers = [...document.querySelectorAll('[data-datatable-panel="center"]')]
   return centers.map((c, i) => {
-    const bodyWrap = c.parentElement
-    const root = bodyWrap.parentElement
-    const headRow = root.querySelector('[role="rowgroup"].dtHeaderRowGroup')
+    const root = c.closest('[role="table"], [role="grid"]') ?? c.parentElement.parentElement
+    const sc = c.closest('[data-datatable-hscroll]') ?? c
+    const headRow = root.querySelector('.dtHeaderRowGroup')
     const r = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, right: b.right, bottom: b.bottom } }
     const hl = root.querySelector('[data-datatable-header-panel="left"]')
     const hr = root.querySelector('[data-datatable-header-panel="right"]')
+    const rb = root.getBoundingClientRect(), cs = getComputedStyle(root)
     return {
       table: i,
       root: r(root),
+      // 列區底 = 表格外框內緣底(含水平捲軸那一列:捲軸佔版面時,釘選區下方那一段由裝飾軌道接著畫邊界線)
+      innerBottom: rb.bottom - (parseFloat(cs.borderBottomWidth) || 0),
       headRow: headRow ? r(headRow) : null,
-      bodyWrap: r(bodyWrap),
       leftW: hl ? Math.round(hl.getBoundingClientRect().width) : 0,
       rightW: hr ? Math.round(hr.getBoundingClientRect().width) : 0,
-      maxScroll: c.scrollWidth - c.clientWidth,
+      // 凍結邊界線的 x:左釘選區右緣內 1px(`.dtPanelBoundaryRight::after` right:0)、右釘選區左緣(`.dtPanelBoundaryLeft::after` left:0)
+      leftLineX: hl ? hl.getBoundingClientRect().right - 1 : 0,
+      rightLineX: hr ? hr.getBoundingClientRect().x : 0,
+      hGutter: Math.round(sc.offsetHeight - sc.clientHeight),
+      maxScroll: sc.scrollWidth - sc.clientWidth,
+      // data-table.spec.md「a11y」rowgroup 句(2026-11-05 審查 D5 改寫):唯一的兩軸捲動盒套 role=rowgroup,表頭列與表身列都直接歸它
+      rowgroupIsScroller: sc.getAttribute('role') === 'rowgroup' && root.querySelectorAll('[role="rowgroup"]').length === 1,
+      rowsOwnedByScroller: [...root.querySelectorAll('[role="row"]')].every((row) => row.parentElement.closest('[role="rowgroup"]') === sc),
+      rowCount: root.querySelectorAll('[role="row"]').length,
     }
   })
 })
+for (const g of geom) {
+  record('I13r', `pinned-columns 表格 ${g.table}:唯一的 rowgroup 就是捲動盒,${g.rowCount} 列(含表頭列)都直接歸它(data-table.spec.md a11y rowgroup 句)`,
+    g.rowCount > 1 && g.rowgroupIsScroller && g.rowsOwnedByScroller, `rowgroup 是捲動盒 ${g.rowgroupIsScroller} / 列都歸它 ${g.rowsOwnedByScroller}`)
+}
+record('I13g', `pinned-columns 每張表都找得到表頭列群組(${geom.filter((g) => g.headRow).length} / ${geom.length})`,
+  geom.length > 0 && geom.every((g) => g.headRow), '找不到表頭 = I13a–c 整組會被跳過(結構換代後選擇器沒跟上)')
+
 
 // 沿一條線逐點取像素,回傳「與第一點的最大色差」與「與旁邊底色的最小色差」。
 const scanLine = (img, ox, oy, pts, refPts) => {
@@ -876,80 +898,55 @@ for (const g of geom) {
   record('I13a', `表格 ${g.table} 真的有水平捲動量(否則 scrollLeft=max 那一態是空轉)`, g.maxScroll > 0, `maxScroll ${g.maxScroll}(story 在 2600px 視窗下已不溢出?)`)
   for (const state of ['scrollLeft=0', 'scrollLeft=max']) {
     if (state === 'scrollLeft=max' && g.maxScroll > 0) {
-      await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; c.scrollLeft = c.scrollWidth - c.clientWidth }, g.table)
+      await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; const sc = c.closest('[data-datatable-hscroll]') ?? c; sc.scrollLeft = sc.scrollWidth - sc.clientWidth }, g.table)
       await page.waitForTimeout(120) // 等 scrollLeft 改動後的重繪(sticky / 底線跟著捲動重畫)
     } else if (state === 'scrollLeft=max') continue
     const img = await shot()
     // I13a 表頭底線:底緣那一列像素,從表格內緣左到內緣右(避開圓角 4px)
     const yLine = g.headRow.bottom - 1
     const onPts = [], offPts = []
+    // 只掃看得見的那一段:2026-11-05 起表頭列群組在捲動盒的內容裡、寬 = 全部欄寬(可能比表格寬),超出外框的部分不是畫面
+    const x0 = Math.max(g.headRow.x, g.root.x) + 4, x1 = Math.min(g.headRow.right, g.root.right) - 5
     for (let i = 0; i < N; i++) {
-      const x = lerp(g.headRow.x + 4, g.headRow.right - 5, i)
+      const x = lerp(x0, x1, i)
       onPts.push([x, yLine]); offPts.push([x, yLine - 4]) // 參照:表頭底色
     }
     const a = scanLine(img, ox, oy, onPts, offPts)
     record('I13a', `表格 ${g.table} 表頭底線整條畫得出來(${state},${a.n} 點)`, a.drift <= 12, `取樣點最大色差 ${a.drift}(>12 = 有一段沒畫;捲動時線若跟著內容走,右側會整段缺)`)
     record('I13c', `表格 ${g.table} 表頭底線與表頭底色可分辨(${state})`, a.contrast >= 4, `最小對比 ${a.contrast}(<4 = 整條都沒畫,取樣點當然彼此一致)`)
   }
-  await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; c.scrollLeft = 0 }, g.table)
+  await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; const sc = c.closest('[data-datatable-hscroll]') ?? c; sc.scrollLeft = 0 }, g.table)
   await page.waitForTimeout(120) // 等捲回 0 的重繪
 
   // I13b 凍結邊界線:從表頭頂掃到列區底(含捲軸讓位帶),整條必須同色
-  // **先把讓位帶造出來再掃**(2026-09-05 稽核 1-07 / 2-16):這條「含讓位帶」的宣稱先前只在有 classic 捲軸的
-  // 機器上成立 —— Playwright 預設 `--hide-scrollbars` 下 gutter = 0,釘選面板沒有透明下邊框,線只要畫到
-  // padding box 底就過,把宿主搬回會裁切的面板也全綠。做法比照 I11b / I12:在兩個釘選面板既有的
-  // 透明下邊框上**再加** 15px(自然狀態有真 gutter 時就是 gutter + 15),列區外層跟著長高,線必須跟到新的
-  // 底緣;取樣最後一點落在讓位帶裡,面板宿主的 `::after bottom:0` 在那裡是被裁掉的 → 會紅。
-  const SIM_BAND_BORDER = 15
-  const band = await page.evaluate(({ i, extra }) => {
-    const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]
-    const wrap = c.parentElement
-    const root = wrap.parentElement
-    const panels = ['left', 'right'].map((s) => wrap.querySelector(`:scope > [data-datatable-panel="${s}"]`)).filter(Boolean)
-    const natural = panels.map((p) => parseFloat(getComputedStyle(p).borderBottomWidth) || 0)
-    panels.forEach((p, k) => {
-      p.dataset.i13bPrevBorder = p.style.borderBottom
-      p.style.borderBottom = `${natural[k] + extra}px solid transparent`
-    })
-    void wrap.offsetHeight
-    const r = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, right: b.right, bottom: b.bottom } }
-    return {
-      natural,
-      injected: panels.map((p) => parseFloat(getComputedStyle(p).borderBottomWidth) || 0),
-      root: r(root),
-      bodyWrap: r(wrap),
-    }
-  }, { i: g.table, extra: SIM_BAND_BORDER })
-  // 非空轉守衛:讓位帶必須真的存在(面板 border-bottom ≥ 注入量),否則「含讓位帶」那段掃的是空氣。
-  record('I13b', `表格 ${g.table} 讓位帶真的存在(釘選面板 border-bottom ≥ ${SIM_BAND_BORDER}px)`,
-    band.injected.length > 0 && band.injected.every((v) => v >= SIM_BAND_BORDER - 0.5),
-    `自然 gutter ${JSON.stringify(band.natural)} → 注入後 ${JSON.stringify(band.injected)}`)
-  const img2 = decodePng(await page.screenshot({ clip: { x: Math.floor(band.root.x), y: Math.floor(band.root.y), width: Math.ceil(band.root.w), height: Math.ceil(band.root.h) } }))
-  const ox2 = Math.floor(band.root.x), oy2 = Math.floor(band.root.y)
-  const top = g.headRow.y + 2, bot = band.bodyWrap.bottom - 2
+  // 2026-11-05(Q2b)起只有一個捲動盒:捲軸佔版面時,水平捲軸那一列在**捲動盒自己的底部**,釘選區下方那一段由
+  // 裝飾軌道(`data-dt-scrollbar-trough`,同一組 `dtPanelBoundary*`)接著畫線。本檔已拿掉 --hide-scrollbars,
+  // 捲軸是真的(classic 15px)—— 讓位帶是自然存在的,不必再在面板上造透明邊框(修前那種注入只模擬了舊結構的補償)。
+  // 非空轉守衛:讓位帶真的存在(捲動盒 offsetHeight − clientHeight ≥ 10);量不到時,必需瀏覽器的 lane 紅、其他環境記「未驗」。
+  if (g.hGutter < 10) {
+    if (process.env.GOVERNANCE_BROWSER_REQUIRED === '1') record('I13b', `表格 ${g.table} 讓位帶真的存在(水平捲軸佔版面)`, false, `gutter ${g.hGutter}px(必需瀏覽器 lane 已拿掉 --hide-scrollbars,應有 classic 捲軸)`)
+    else recordUnverified('I13b', `表格 ${g.table} 凍結邊界線含讓位帶`, `gutter ${g.hGutter}px(overlay 捲軸環境,讓位帶不存在)`)
+    continue
+  }
+  record('I13b', `表格 ${g.table} 讓位帶真的存在(水平捲軸佔版面 ${g.hGutter}px)`, true)
+  const img2 = await shot()
+  const top = g.headRow.y + 2, bot = g.innerBottom - 2
   for (const [side, lineX, refDx] of [
-    ['left', band.bodyWrap.x + g.leftW - 1, -3],
-    ['right', band.bodyWrap.right - g.rightW, 3],
+    ['left', g.leftLineX, -3],
+    ['right', g.rightLineX, 3],
   ]) {
     if ((side === 'left' ? g.leftW : g.rightW) === 0) continue
     const onPts = [], offPts = []
     for (let i = 0; i < N; i++) {
       const y = lerp(top, bot, i)
+      // 跳過與表頭底線交叉的那一列像素:兩條半透明 1px 線疊在一起本來就比較深(實測 202 vs 線 222),不是「有一段沒畫」
+      if (Math.abs(y - (g.headRow.bottom - 1)) < 1.5) continue
       onPts.push([lineX, y]); offPts.push([lineX + refDx, y])
     }
-    const b = scanLine(img2, ox2, oy2, onPts, offPts)
-    record('I13b', `表格 ${g.table} ${side} 凍結邊界線從表頭頂畫到列區底(含 ${SIM_BAND_BORDER}px 模擬讓位帶,${b.n} 點)`, b.drift <= 12, `取樣點最大色差 ${b.drift}(>12 = 底部捲軸帶那一段沒畫出來 —— 面板自己 overflow:hidden 會在 padding box 裁掉)`)
+    const b = scanLine(img2, ox, oy, onPts, offPts)
+    record('I13b', `表格 ${g.table} ${side} 凍結邊界線從表頭頂畫到列區底(含 ${g.hGutter}px 讓位帶,${b.n} 點)`, b.drift <= 12, `取樣點最大色差 ${b.drift}(>12 = 有一段沒畫出來 —— 典型是捲軸那一列的裝飾軌道沒接上線)`)
     record('I13c', `表格 ${g.table} ${side} 凍結邊界線與相鄰底色可分辨`, b.contrast >= 4, `最小對比 ${b.contrast}`)
   }
-  // 還原注入,不讓後面的閘(I12)量到被動過的面板。
-  await page.evaluate((i) => {
-    const wrap = [...document.querySelectorAll('[data-datatable-panel="center"]')][i].parentElement
-    for (const p of wrap.querySelectorAll(':scope > [data-datatable-panel="left"], :scope > [data-datatable-panel="right"]')) {
-      p.style.borderBottom = p.dataset.i13bPrevBorder || ''
-      delete p.dataset.i13bPrevBorder
-    }
-  }, g.table)
-  await page.waitForTimeout(120) // 等還原邊框後的重繪
 }
 
 // ── I12:水平捲軸佔掉的高度,三區看得到的列必須一致(2026-09-03,同一根因的縱軸孿生;2026-11-05 改寫)──
