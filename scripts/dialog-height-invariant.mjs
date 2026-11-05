@@ -192,9 +192,25 @@ try {
       // dialog」—— 慢的機器上 180ms 內還沒掛上,這支就被記成「沒開出 dialog 而不適用」,H5 覆蓋率靜默縮水。
       // 現在只點看得見、沒停用的按鈕;點擊失敗 = 儀器失效(點名);點完等版面連續 10 個影格靜止(settleAfterInteraction,
       // 用影格不用毫秒)再判斷 —— 靜止後仍沒有 dialog 才是可靠的「這顆鈕不開 dialog」。
-      const triggers = await page.locator('#storybook-root button:visible:not([disabled]):not([aria-disabled="true"])').all().catch(() => [])
+      // 2026-11-05(整合):Playwright 的 :visible 只看外框非空,把「滑過才出現」的鈕(DataTable 表頭的欄位選單:外層 w-0 opacity-0,
+      // 滑過表頭才 w-auto)也算看得見;點它時滑鼠一移上表頭它就展開、位置跑掉 → 點擊逾時被記成儀器失效(data 家族加了欄位選單之後,
+      // 兩則試算表 story 在 data 家族自己的 HEAD 上就這樣)。改成只挑**使用者現在看得到、點得到**的鈕:捲進視窗後
+      // checkVisibility(含 opacity)且中心點命中的就是它自己(M37:Playwright 的 visible ≠ 使用者看得到);仍是最多兩顆。
+      const candidates = await page.locator('#storybook-root button:visible:not([disabled]):not([aria-disabled="true"])').all().catch(() => [])
+      const triggers = []
+      for (const c of candidates) {
+        if (triggers.length >= 2) break
+        const reachable = await c.evaluate((el) => {
+          el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+          if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false
+          const r = el.getBoundingClientRect()
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+          return !!hit && (hit === el || el.contains(hit))
+        }).catch(() => false)
+        if (reachable) triggers.push(c)
+      }
       let triggerFailure = null
-      for (const t of triggers.slice(0, 2)) {
+      for (const t of triggers) {
         if (await page.locator('[role="dialog"]').count() > 0) break
         try { await t.click({ timeout: 10_000 }) } catch (error) { triggerFailure = `點觸發鈕失敗(看得見、沒停用):${String(error?.message ?? error).split('\n')[0]}`; break }
         const settled = await settleAfterInteraction(page, { frames: 10 })

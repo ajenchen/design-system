@@ -94,7 +94,11 @@ const TARGETS = [
   { id: 'design-system-internal-dategrid-展示--single', min: { 'month-nav': 2 } },
   { id: 'design-system-components-dropdownmenu-設計規格--inspector', min: { 'menu-shortcut': 2 } },
   // Alert / Toast(共用底座 Notice),全部是多行(標題 + 說明):低調 / 實心 × 五色(neutral 沒有狀態圖示)、右上操作群組(重新整理 / 分享 / 分隔線 / ×)
-  { id: 'design-system-components-alert-展示--with-description', min: { 'notice-prefix': 8, 'notice-suffix': 10 } },
+  // 2026-11-05 整合:basic 0e2eeba9(稽核 M103「展示層每則一個真實情境」)把「含說明文字」改成一則、沒有 × —— n1 寫這兩列時它還是
+  // 低調 / 實心 × 五色共 10 則(8 個圖示、10 個右側操作)。五色 × 兩種外觀的多行樣本改量設計規格「色彩對照表」(subtle 5 + solid 3,
+  // 全部標題 + 說明,neutral 沒有圖示 → 7);右側操作區的多行樣本由下方「右上角操作群組」(4)與 Toast(3)承接
+  { id: 'design-system-components-alert-展示--with-description', min: { 'notice-prefix': 1 } },
+  { id: 'design-system-components-alert-設計規格--color-matrix', min: { 'notice-prefix': 7 } },
   { id: 'design-system-components-alert-展示--corner-action-group', min: { 'notice-prefix': 1, 'notice-suffix': 4 } },
   // 出現位置:inline(即將到期)與 fixed(系統維護中)各一則,都是標題 + 一行說明、沒有動作鈕 —— fixed 會往 Notice 根節點塞 class(見檔頭)
   { id: 'design-system-components-alert-設計規格--placement-matrix', min: { 'notice-prefix': 2 } },

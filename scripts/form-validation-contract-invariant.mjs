@@ -323,7 +323,9 @@ const MUTANTS = [
     what: 'Dialog「表單」打開時不 reset()(送出成功關掉再打開,上次打的字還在)',
     file: 'components/Dialog/dialog.stories.tsx',
     expectRed: ['T-dialog'],
-    apply: (src) => replaceOnce(src, /if \(next\) form\.reset\(\)/, 'if (false) form.reset()'),
+    // 錨在「表單」那一則的函式裡(同下方 Sheet「建立新專案」的寫法):overlay 33fedbce 在同檔加了「邀請成員」(InviteMemberDialog),
+    // 也是打開時 reset(),只認 `if (next) form.reset()` 會命中 2 次、突變建置直接失敗
+    apply: (src) => replaceOnce(src, /(function CreateProjectDialogForm\(\) \{[\s\S]*?)if \(next\) form\.reset\(\)/, '$1if (false) form.reset()'),
   },
   {
     id: 'toast-sheet-edit-removed',
