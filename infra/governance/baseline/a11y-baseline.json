@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-04T22:02:30.519Z",
+    "generatedAt": "2026-11-05T05:37:34.768Z",
     "stories": 1075,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
