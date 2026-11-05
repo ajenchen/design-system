@@ -380,6 +380,10 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
   assert.deepEqual(mirrorManifest.overrides, {
     '@storybook/addon-actions': { uuid: '11.1.1' },
     '@joshwooding/vite-plugin-react-docgen-typescript': '0.6.4',
+    // 2026-11-05:GHSA-3g3m-2fjr-6pw4 / GHSA-g3hv-75wg-m249 —— storybook → docgen 外掛 → glob 13 → minimatch 10 在 consumer 樹上,
+    // 修正只在新大版;與根 package.json 同一組 overrides(根樹實測 eslint / typescript-eslint / storybook 建置照常)。
+    glob: '14.0.3',
+    minimatch: '11.0.4',
     postcss: '8.5.23',
   })
   assert.deepEqual(

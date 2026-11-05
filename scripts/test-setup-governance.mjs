@@ -468,7 +468,7 @@ test('fresh exact dual-overlay lock supports verified install, audits, and the a
   assert.ok(existsSync(value.poisonedUserConfig) && existsSync(value.poisonedGlobalConfig), 'poison fixtures must not be used or removed')
 })
 
-test('canonical product template keeps both exact runtime-overlay aliases and three reviewed overrides', () => {
+test('canonical product template keeps both exact runtime-overlay aliases and five reviewed overrides', () => {
   const templatePackage = JSON.parse(readFileSync('template/ds-product-template/package.json', 'utf8'))
   assert.deepEqual({
     'npm-runtime-brace-expansion-patch': templatePackage.devDependencies['npm-runtime-brace-expansion-patch'],
@@ -480,6 +480,10 @@ test('canonical product template keeps both exact runtime-overlay aliases and th
   assert.deepEqual(templatePackage.overrides, {
     '@storybook/addon-actions': { uuid: '11.1.1' },
     '@joshwooding/vite-plugin-react-docgen-typescript': '0.6.4',
+    // 2026-11-05:GHSA-3g3m-2fjr-6pw4 / GHSA-g3hv-75wg-m249 —— storybook → docgen 外掛 → glob 13 → minimatch 10 在 consumer 樹上,
+    // 修正只在新大版;與根 package.json 同一組 overrides(根樹實測 eslint / typescript-eslint / storybook 建置照常)。
+    glob: '14.0.3',
+    minimatch: '11.0.4',
     postcss: '8.5.23',
   })
 })
@@ -996,6 +1000,146 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
         : new RegExp(`unremediated high/moderate finding:${name}\\(`)
       assert.throws(() => evaluate(withProject), expected, `${name}:專案相依的通報不可被認列,必紅並指名`)
     }
+  }
+  // 2026-11-05:上游 10-30 發 GHSA-g3hv-75wg-m249(minimatch)/ GHSA-3g3m-2fjr-6pw4(glob)之後,治理版 npm 11.19.0 對本 commit
+  // 鎖檔(根樹 minimatch / glob 已 overrides 到 11.0.4 / 14.0.3、vite 6.4.5)跑出的真實形狀:npm 內建的 minimatch / glob 兩個根、
+  // 29 個只經它們受影響的內建套件、npm 那筆 via 變 26 個名字且 range 變 `*`。PR #169 2a051b59 那輪每個 job 都死在
+  // 「…unremediated high/moderate finding:@eslint/config-array(…)」—— 那一筆(根樹)必須照舊紅,認列只給 npm 內建樹。
+  {
+    const closureTable = [ // [name, range, via, effects] —— 11-05 實測,順序 = npm audit 回傳順序
+      ['@npmcli/arborist', '>=6.2.6', ['@npmcli/map-workspaces', '@npmcli/metavuln-calculator', '@npmcli/package-json', '@npmcli/run-script', 'cacache', 'minimatch', 'npm-registry-fetch', 'pacote'], ['libnpmdiff', 'libnpmexec', 'libnpmfund', 'libnpmpack', 'npm']],
+      ['@npmcli/config', '>=8.3.4', ['@npmcli/map-workspaces', '@npmcli/package-json'], ['npm']],
+      ['@npmcli/map-workspaces', '>=3.0.3', ['@npmcli/package-json', 'glob', 'minimatch'], ['@npmcli/arborist', '@npmcli/config', 'npm']],
+      ['@npmcli/metavuln-calculator', '>=7.0.0', ['cacache', 'pacote'], ['@npmcli/arborist', 'npm']],
+      ['@npmcli/package-json', '>=3.1.0', ['glob'], ['@npmcli/arborist', '@npmcli/config', '@npmcli/map-workspaces', '@npmcli/run-script', 'init-package-json', 'libnpmexec', 'libnpmpublish', 'npm', 'pacote']],
+      ['@npmcli/run-script', '>=7.0.4', ['@npmcli/package-json'], ['@npmcli/arborist', 'libnpmexec', 'libnpmpack', 'libnpmversion', 'npm', 'pacote']],
+      ['@sigstore/sign', '>=2.0.0', ['make-fetch-happen'], ['sigstore']],
+      ['@sigstore/tuf', '*', ['tuf-js'], ['npm', 'sigstore']],
+      ['@tufjs/models', '>=1.0.1', ['minimatch'], ['tuf-js']],
+      ['cacache', '>=17.0.5', ['glob'], ['@npmcli/arborist', '@npmcli/metavuln-calculator', 'make-fetch-happen', 'npm', 'pacote']],
+      ['ignore-walk', '>=6.0.2', ['minimatch'], ['npm-packlist']],
+      ['init-package-json', '>=6.0.1', ['@npmcli/package-json'], ['npm']],
+      ['libnpmaccess', '>=8.0.0-pre.0', ['npm-registry-fetch'], ['npm']],
+      ['libnpmdiff', '>=5.0.14', ['@npmcli/arborist', 'minimatch', 'pacote'], ['npm']],
+      ['libnpmexec', '>=5.0.14', ['@npmcli/arborist', '@npmcli/package-json', '@npmcli/run-script', 'pacote'], ['npm']],
+      ['libnpmfund', '>=4.0.14', ['@npmcli/arborist'], ['npm']],
+      ['libnpmorg', '>=6.0.0-pre.0', ['npm-registry-fetch'], ['npm']],
+      ['libnpmpack', '>=5.0.14', ['@npmcli/arborist', '@npmcli/run-script', 'pacote'], ['npm']],
+      ['libnpmpublish', '>=9.0.0-pre.0', ['@npmcli/package-json', 'npm-registry-fetch', 'sigstore'], ['npm']],
+      ['libnpmsearch', '>=7.0.0-pre.0', ['npm-registry-fetch'], ['npm']],
+      ['libnpmteam', '>=6.0.0-pre.0', ['npm-registry-fetch'], ['npm']],
+      ['libnpmversion', '>=6.0.0', ['@npmcli/run-script'], ['npm']],
+      ['make-fetch-happen', '>=13.0.0', ['cacache'], ['@sigstore/sign', 'npm', 'npm-registry-fetch', 'tuf-js']],
+      ['npm-packlist', '>=8.0.1', ['ignore-walk'], ['pacote']],
+      ['npm-profile', '>=9.0.0', ['npm-registry-fetch'], ['npm']],
+      ['npm-registry-fetch', '>=16.0.0', ['make-fetch-happen'], ['@npmcli/arborist', 'libnpmaccess', 'libnpmorg', 'libnpmpublish', 'libnpmsearch', 'libnpmteam', 'npm', 'npm-profile', 'pacote']],
+      ['pacote', '>=17.0.0', ['@npmcli/package-json', '@npmcli/run-script', 'cacache', 'npm-packlist', 'npm-registry-fetch', 'sigstore'], ['@npmcli/arborist', '@npmcli/metavuln-calculator', 'libnpmdiff', 'libnpmexec', 'libnpmpack', 'npm']],
+      ['sigstore', '>=1.6.0', ['@sigstore/sign', '@sigstore/tuf'], ['libnpmpublish', 'pacote']],
+      ['tuf-js', '>=1.1.2', ['@tufjs/models', 'make-fetch-happen'], ['@sigstore/tuf']],
+    ]
+    const globAdvisory = { source: 1244013, name: 'glob', dependency: 'glob', title: 'fixture title is non-authoritative', url: 'https://github.com/advisories/GHSA-3g3m-2fjr-6pw4', severity: 'moderate', range: '>=9.0.0 <=14.0.1' }
+    const minimatchAdvisory = { source: 1244623, name: 'minimatch', dependency: 'minimatch', title: 'fixture title is non-authoritative', url: 'https://github.com/advisories/GHSA-g3hv-75wg-m249', severity: 'moderate', range: '>=7.0.0 <11.0.1' }
+    const npmVia = ['@npmcli/arborist', '@npmcli/config', '@npmcli/map-workspaces', '@npmcli/metavuln-calculator', '@npmcli/package-json',
+      '@npmcli/run-script', '@sigstore/tuf', 'cacache', 'glob', 'init-package-json', 'libnpmaccess', 'libnpmdiff', 'libnpmexec', 'libnpmfund',
+      'libnpmorg', 'libnpmpack', 'libnpmpublish', 'libnpmsearch', 'libnpmteam', 'libnpmversion', 'make-fetch-happen', 'minimatch',
+      'npm-profile', 'npm-registry-fetch', 'pacote', 'tar']
+    const recount = (value) => {
+      const counts = { info: 0, low: 0, moderate: 0, high: 0, critical: 0 }
+      for (const entry of Object.values(value.vulnerabilities)) counts[entry.severity] += 1
+      value.metadata.vulnerabilities = { ...counts, total: Object.keys(value.vulnerabilities).length }
+      return value
+    }
+    const withGlobClosure = structuredClone(report)
+    withGlobClosure.vulnerabilities.glob = {
+      name: 'glob', severity: 'moderate', isDirect: false, via: [structuredClone(globAdvisory), 'minimatch'],
+      effects: ['@npmcli/map-workspaces', '@npmcli/package-json', 'cacache', 'npm'], range: '9.0.0 - 14.0.1',
+      nodes: ['node_modules/npm/node_modules/glob'], fixAvailable: { name: 'npm', version: '9.6.2', isSemVerMajor: true },
+    }
+    withGlobClosure.vulnerabilities.minimatch = {
+      name: 'minimatch', severity: 'moderate', isDirect: false, via: [structuredClone(minimatchAdvisory)],
+      effects: ['@npmcli/arborist', '@npmcli/map-workspaces', '@tufjs/models', 'glob', 'ignore-walk', 'libnpmdiff', 'npm'], range: '7.0.0 - 11.0.0',
+      nodes: ['node_modules/npm/node_modules/minimatch'], fixAvailable: { name: 'npm', version: '9.6.2', isSemVerMajor: true },
+    }
+    for (const [name, range, via, effects] of closureTable) {
+      withGlobClosure.vulnerabilities[name] = {
+        name, severity: 'moderate', isDirect: false, via, effects, range,
+        nodes: [`node_modules/npm/node_modules/${name}`], fixAvailable: { name: 'npm', version: '9.6.2', isSemVerMajor: true },
+      }
+    }
+    withGlobClosure.vulnerabilities.npm.via = [...npmVia]
+    withGlobClosure.vulnerabilities.npm.range = '*'
+    recount(withGlobClosure)
+    const expectedNames = [...Object.keys(report.vulnerabilities), 'glob', 'minimatch', ...closureTable.map(([name]) => name)]
+    assert.deepEqual(
+      [...evaluate(withGlobClosure).remediatedFindings].sort(),
+      [...new Set(expectedNames)].sort(),
+      '11-05 真實形狀(根樹已升版,只剩 npm 內建樹)必須放行',
+    )
+    const closureMessage = (name) => new RegExp(`npm audit ${name.replace(/[/@.-]/g, '\\$&')} finding differs from the acknowledged bundled minimatch/glob closure`)
+    const mutate = (fn) => { const value = structuredClone(withGlobClosure); fn(value.vulnerabilities); return recount(value) }
+
+    // 根樹那筆(CI 2a051b59 逐字):專案自己的相依不可認列 —— 必紅並指名。
+    assert.throws(() => evaluate(mutate((v) => {
+      v['@eslint/config-array'] = { name: '@eslint/config-array', severity: 'moderate', isDirect: false, via: ['minimatch'], effects: ['eslint'], range: '>=0.23.0', nodes: ['node_modules/@eslint/config-array'] }
+    })), /unremediated high\/moderate finding:@eslint\/config-array\(severity=moderate range=>=0\.23\.0 nodes=node_modules\/@eslint\/config-array effects=eslint via=minimatch\)/, '根樹 @eslint/config-array 必紅(與 CI 訊息逐字相同)')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.vite = { name: 'vite', severity: 'moderate', isDirect: true, via: [{ source: 1243858, name: 'vite', dependency: 'vite', url: 'https://github.com/advisories/GHSA-8g5g-mxqh-grgj', severity: 'moderate', range: '=6.4.4' }], effects: [], range: '6.4.4', nodes: ['node_modules/vite'] }
+    })), /unremediated high\/moderate finding:vite\(/, 'vite 6.4.4(GHSA-8g5g-mxqh-grgj)只能升版,必紅')
+    // 修前的 minimatch:根樹 + 內建兩個節點 → 必紅(overrides 被拿掉就是這個形狀)。
+    assert.throws(() => evaluate(mutate((v) => {
+      v.minimatch.nodes = ['node_modules/minimatch', 'node_modules/npm/node_modules/minimatch']
+    })), /npm audit minimatch finding differs from the acknowledged bundled preimage/, 'minimatch 多出根樹節點必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.minimatch.effects = [...v.minimatch.effects, 'eslint']
+    })), /npm audit minimatch finding differs from the acknowledged bundled preimage/, 'minimatch 的影響範圍離開 npm 內建樹必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.minimatch.via = [...v.minimatch.via, { ...minimatchAdvisory, source: 1249999, url: 'https://github.com/advisories/GHSA-xxxx-xxxx-xxxx' }]
+    })), /npm audit minimatch finding differs from the acknowledged bundled preimage/, 'minimatch 多一則通報必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.minimatch.range = '7.0.0 - 11.0.1'
+    })), /npm audit minimatch finding differs from the acknowledged bundled preimage/, 'minimatch range 改變必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.glob.via = [structuredClone(globAdvisory)]
+    })), /npm audit glob finding differs from the acknowledged bundled preimage/, 'glob 少了經 minimatch 那條 = 形狀變了,必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.glob.nodes = ['node_modules/glob', 'node_modules/npm/node_modules/glob']
+    })), /npm audit glob finding differs from the acknowledged bundled preimage/, 'glob 多出根樹節點必紅')
+    // 29 個內建套件:認列的是「只經兩個根、只在內建樹」這個性質,不是名字白名單。
+    assert.throws(() => evaluate(mutate((v) => {
+      v.cacache.via = [...v.cacache.via, { source: 1249998, name: 'cacache', dependency: 'cacache', url: 'https://github.com/advisories/GHSA-yyyy-yyyy-yyyy', severity: 'moderate', range: '<20.0.5' }]
+    })), closureMessage('cacache'), '內建套件帶自己的通報必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.pacote.nodes = ['node_modules/npm/node_modules/pacote', 'node_modules/pacote']
+    })), closureMessage('pacote'), '內建套件多出根樹節點必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v['ignore-walk'].via = ['minimatch', 'brace-expansion']
+    })), closureMessage('ignore-walk'), 'via 指到清單外的名字必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v['@sigstore/sign'].effects = [...v['@sigstore/sign'].effects, 'eslint']
+    })), closureMessage('@sigstore/sign'), '影響範圍離開 npm 內建樹必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v['tuf-js'].severity = 'high'
+    })), closureMessage('tuf-js'), '嚴重度改變必紅')
+    // @tufjs/models 不在 npm 那筆的 via 裡,所以這一格只有「via 的名字必須在同一份報告」那條規則能抓(npm 規則幫不上忙)。
+    assert.throws(() => evaluate(mutate((v) => {
+      delete v['@tufjs/models']
+    })), closureMessage('tuf-js'), 'via 指到的名字不在同一份報告 = 那個根沒被驗過,必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      delete v['make-fetch-happen']
+    })), /finding differs from the acknowledged bundled minimatch\/glob closure|npm metavulnerability differs/, 'npm via 指到的名字不在同一份報告必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v['node-gyp'] = { name: 'node-gyp', severity: 'moderate', isDirect: false, via: ['minimatch'], effects: ['npm'], range: '>=10.0.0', nodes: ['node_modules/npm/node_modules/node-gyp'] }
+    })), /unremediated high\/moderate finding:node-gyp\(/, '清單外的新內建套件必紅(名字逐字釘)')
+    // npm 那筆:via 剛好 26 個名字;多一條、少一條都紅;只經 tar 的舊形狀仍照舊三件性質。
+    assert.throws(() => evaluate(mutate((v) => {
+      v.npm.via = [...v.npm.via, 'ssri']
+    })), /npm metavulnerability differs/, 'npm via 多一條必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.npm.via = v.npm.via.filter((entry) => entry !== 'minimatch')
+    })), /npm metavulnerability differs/, 'npm via 少一條必紅')
+    assert.throws(() => evaluate(mutate((v) => {
+      v.npm.range = '<=10.9.8 || 12.0.0-pre.0.0 - 12.2.2'
+    })), /npm metavulnerability differs/, '治理版 11.19.0 不在範圍必紅')
   }
   // 2026-10-06 對照組(M32):http-cache-semantics / postcss-selector-parser 的認列是 exact shape,不是名字白名單。
   // (a) 認列之前的判定 = 這兩筆一律是未處理 finding:把 evaluator 換回「沒有這兩段」等價於把它們改名 —— 必紅且指名。

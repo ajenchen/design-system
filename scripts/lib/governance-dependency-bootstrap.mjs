@@ -329,6 +329,61 @@ function matchesVerifiedBraceExpansionAuditPreimage(finding) {
   ))
 }
 
+// 2026-11-05:上游 2026-10-30T23:09Z 發 GHSA-g3hv-75wg-m249(minimatch,moderate,>=7.0.0 <11.0.1)與
+// GHSA-3g3m-2fjr-6pw4(glob,moderate,>=9.0.0 <=14.0.1),修正只在新大版(minimatch 11.0.1 / glob 14.0.2)。
+// 專案自己樹上的 minimatch 10.2.5 / glob 13.0.6 已用 package.json overrides 真升到 11.0.4 / 14.0.3(不認列)。
+// 剩下的是 npm 11.19.0 **內建**的那兩份:npm 最新 11.21.2 / 12.2.2(2026-11-04)仍宣告 minimatch ^10.2.5、glob ^13.0.6,
+// 沒有任何 npm release 帶修正版;修補層換成 minimatch 11 會讓 npm 自己的 glob 13 壞掉(11 拿掉 makeRe / regexp / AST,
+// glob 13 的 Pattern 依賴它們),所以只能逐字認列。曝險:minimatch 那則要「攻擊者能提供 glob 樣式」且 optimizationLevel >= 2;
+// npm 內用到樣式的是 map-workspaces(我們自己 package.json 的 workspaces)、ignore-walk / npm-packlist(我們自己套件的
+// files / .npmignore,只在 pack / publish 我們自己的套件時跑)、@tufjs/models(sigstore TUF 已簽章中繼資料的委派路徑),
+// 沒有外部可控的樣式;glob 那則只影響「靠 AbortSignal 限制走訪成本」的呼叫者,npm 內沒有人這樣用。dev-only CLI,不進產品。
+// 這兩則讓 npm 內 29 個套件變成「只因它們而受影響」的 metavulnerability(自己沒有任何 advisory,via 全是名字)。
+// 要保證的性質不是那 29 條 range 字串(registry 依各套件版本清單算出,上游一發版就變,M37),而是:
+// (1) 只存在於 npm 內建的那一份節點;(2) 沒有自己的 advisory;(3) via 只指向本清單或兩個根(minimatch / glob),
+// 而且那些名字真的在同一份報告裡、各自也通過認列;(4) effects 不離開 npm 的內建樹。名字清單逐字釘(npm 是 exact 11.19.0,
+// 內部相依圖不會自己變),多一個、少一個節點、帶自己的 advisory、via 指到清單外 —— 一律 fail closed。
+const NPM_BUNDLED_GLOB_ADVISORY_ROOTS = Object.freeze(['glob', 'minimatch'])
+const NPM_BUNDLED_GLOB_ADVISORY_CLOSURE = Object.freeze([
+  '@npmcli/arborist', '@npmcli/config', '@npmcli/map-workspaces', '@npmcli/metavuln-calculator',
+  '@npmcli/package-json', '@npmcli/run-script', '@sigstore/sign', '@sigstore/tuf', '@tufjs/models',
+  'cacache', 'ignore-walk', 'init-package-json', 'libnpmaccess', 'libnpmdiff', 'libnpmexec', 'libnpmfund',
+  'libnpmorg', 'libnpmpack', 'libnpmpublish', 'libnpmsearch', 'libnpmteam', 'libnpmversion',
+  'make-fetch-happen', 'npm-packlist', 'npm-profile', 'npm-registry-fetch', 'pacote', 'sigstore', 'tuf-js',
+])
+// npm 那筆 metavulnerability 在這兩則之後的 via(npm 的直接相依裡受影響的那些)= tar + 上面兩個根 + 清單中 npm 直接依賴的 23 個。
+const NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE = Object.freeze([
+  '@npmcli/arborist', '@npmcli/config', '@npmcli/map-workspaces', '@npmcli/metavuln-calculator',
+  '@npmcli/package-json', '@npmcli/run-script', '@sigstore/tuf', 'cacache', 'glob', 'init-package-json',
+  'libnpmaccess', 'libnpmdiff', 'libnpmexec', 'libnpmfund', 'libnpmorg', 'libnpmpack', 'libnpmpublish',
+  'libnpmsearch', 'libnpmteam', 'libnpmversion', 'make-fetch-happen', 'minimatch', 'npm-profile',
+  'npm-registry-fetch', 'pacote', 'tar',
+])
+
+function sameNameSet(value, expected) {
+  return Array.isArray(value)
+    && value.every((entry) => typeof entry === 'string')
+    && value.length === expected.length
+    && [...value].sort().every((entry, index) => entry === [...expected].sort()[index])
+}
+
+function isBundledGlobClosureName(name) {
+  return NPM_BUNDLED_GLOB_ADVISORY_CLOSURE.includes(name) || NPM_BUNDLED_GLOB_ADVISORY_ROOTS.includes(name)
+}
+
+// via 裡的 advisory 物件逐字比,名字(metavulnerability 指標)另比;兩者都要剛好。
+function matchesAdvisoriesAndNameVia(finding, name, advisories, nameVia) {
+  if (!Array.isArray(finding.via)) return false
+  const objects = finding.via.filter((entry) => typeof entry !== 'string')
+  const names = finding.via.filter((entry) => typeof entry === 'string')
+  return matchesExactAdvisorySet({ via: objects }, name, advisories) && sameNameSet(names, nameVia)
+}
+
+function effectsStayInsideBundledGlobClosure(finding) {
+  return Array.isArray(finding.effects)
+    && finding.effects.every((effect) => effect === 'npm' || isBundledGlobClosureName(effect))
+}
+
 // 帶出實際形狀(2026-09-04 立、2026-09-23 擴到每一個分支):只印名字的話,判斷「該修版本、該擴 overlay、
 // 還是誤報」需要在本機重建一次同樣的樹才看得到 range 與路徑,而 CI 與本機的樹常常不一樣(fast-uri 就是這樣:
 // 同一個 commit,`Verify` 5 筆、authority candidate 6 筆,多的那筆只有 CI 看得到)。2026-09-22 再一次:npm 那筆
@@ -423,7 +478,7 @@ export function nextPatchVersion(text) {
   return `${core[0]}.${core[1]}.${core[2] + 1}`
 }
 
-function assertRemediatedFinding(name, finding) {
+function assertRemediatedFinding(name, finding, findings = {}) {
   invariant(finding && typeof finding === 'object' && !Array.isArray(finding), `npm audit finding is malformed:${name}`)
   invariant(finding.name === name, `npm audit finding identity drifted:${name}`)
   const shape = describeFindingShape(finding)
@@ -577,6 +632,52 @@ function assertRemediatedFinding(name, finding) {
     )
     return
   }
+  if (name === 'minimatch') {
+    // 2026-11-05:見 NPM_BUNDLED_GLOB_ADVISORY_CLOSURE 上方說明。只認列 npm 內建那一份(根樹那份已真升到 11.0.4);
+    // 根樹再出現 minimatch 節點(overrides 被拿掉、某個相依改釘)= 專案自己的相依又受影響 → 必紅。
+    invariant(
+      finding.severity === 'moderate'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/minimatch'])
+        && finding.range === '7.0.0 - 11.0.0'
+        && matchesExactAdvisorySet(finding, 'minimatch', [
+          { source: 1244623, range: '>=7.0.0 <11.0.1', url: 'https://github.com/advisories/GHSA-g3hv-75wg-m249', severity: 'moderate' },
+        ])
+        && effectsStayInsideBundledGlobClosure(finding),
+      `npm audit minimatch finding differs from the acknowledged bundled preimage(${shape})`,
+    )
+    return
+  }
+  if (name === 'glob') {
+    // 2026-11-05:同上;npm 內建的 glob 13.0.6 自己有 GHSA-3g3m-2fjr-6pw4,另外經內建 minimatch 受影響(via 多一個名字)。
+    invariant(
+      finding.severity === 'moderate'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/glob'])
+        && finding.range === '9.0.0 - 14.0.1'
+        && matchesAdvisoriesAndNameVia(finding, 'glob', [
+          { source: 1244013, range: '>=9.0.0 <=14.0.1', url: 'https://github.com/advisories/GHSA-3g3m-2fjr-6pw4', severity: 'moderate' },
+        ], ['minimatch'])
+        && Object.hasOwn(findings, 'minimatch')
+        && effectsStayInsideBundledGlobClosure(finding),
+      `npm audit glob finding differs from the acknowledged bundled preimage(${shape})`,
+    )
+    return
+  }
+  if (NPM_BUNDLED_GLOB_ADVISORY_CLOSURE.includes(name)) {
+    // 2026-11-05:npm 內建、只經 minimatch / glob 受影響的 29 個套件(見常數上方說明)。range 不釘(上游發版就變)。
+    invariant(
+      finding.severity === 'moderate'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, [`node_modules/npm/node_modules/${name}`])
+        && Array.isArray(finding.via)
+        && finding.via.length > 0
+        && finding.via.every((entry) => typeof entry === 'string' && isBundledGlobClosureName(entry) && Object.hasOwn(findings, entry))
+        && effectsStayInsideBundledGlobClosure(finding),
+      `npm audit ${name} finding differs from the acknowledged bundled minimatch/glob closure(${shape})`,
+    )
+    return
+  }
   if (name === 'tar') {
     // 2026-08-28 upstream re-score: GHSA-r292-9mhp-454m moderate→high (CVSS 7.5), advisory source
     // renumbered 1124287→1145647, patched tar = 7.5.21. Our security overlay already ships 7.5.22,
@@ -605,16 +706,27 @@ function assertRemediatedFinding(name, finding) {
     // stays tracked in the cloud-compat baton alongside ip-address/undici. The rest of the range
     // (10.x / 12.x clauses) describes versions we do not run and changes with every upstream
     // release — see the 2026-09-23 note above metavulnerabilityRangeCovers.
+    //
+    // 2026-11-05:minimatch / glob 兩則之後 via 變成 tar + 26 個名字,range 變 `*`(沒有任何 npm release 帶修正版的
+    // minimatch / glob,所以「下一個 patch 不在範圍」這條在這個形狀下不可能成立)。只接受兩種形狀:
+    //   (A) 只經 tar:原本三件性質照驗;
+    //   (B) via 剛好等於 NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE,而且 via 的每個名字都在同一份報告裡(各自另有認列):
+    //       治理版仍被列為受影響;不再要求下一個 patch 不在範圍。多一條、少一條 via 都 fail closed。
     const governed = GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION
+    const common = finding.severity === 'high'
+      && finding.isDirect === true
+      && exactArray(finding.nodes, ['node_modules/npm'])
+      && exactArray(finding.effects, [])
+      && typeof finding.range === 'string'
+      && metavulnerabilityRangeCovers(finding.range, governed)
+    const tarOnly = common
+      && exactArray(finding.via, ['tar'])
+      && !metavulnerabilityRangeCovers(finding.range, nextPatchVersion(governed))
+    const withGlobClosure = common
+      && sameNameSet(finding.via, NPM_METAVULNERABILITY_VIA_WITH_GLOB_CLOSURE)
+      && finding.via.every((entry) => Object.hasOwn(findings, entry))
     invariant(
-      finding.severity === 'high'
-        && finding.isDirect === true
-        && exactArray(finding.via, ['tar'])
-        && exactArray(finding.nodes, ['node_modules/npm'])
-        && exactArray(finding.effects, [])
-        && typeof finding.range === 'string'
-        && metavulnerabilityRangeCovers(finding.range, governed)
-        && !metavulnerabilityRangeCovers(finding.range, nextPatchVersion(governed)),
+      tarOnly || withGlobClosure,
       `npm audit npm metavulnerability differs from the verified tar overlay closure(${shape})`,
     )
     return
@@ -676,7 +788,7 @@ export function evaluateVerifiedHighVulnerabilityAudit({
     if (finding?.severity === 'high') counted.high += 1
     else if (finding?.severity === 'moderate') counted.moderate += 1
     else continue
-    assertRemediatedFinding(name, finding)
+    assertRemediatedFinding(name, finding, report.vulnerabilities)
     remediated.push(name)
   }
   invariant(

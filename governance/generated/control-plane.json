@@ -1053,12 +1053,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4b4e253558de2235364de548f7b8b7716ddfa8b6f3adfaf9f23e218ffcfc82e7",
+      "hash": "sha256:0beeb71f8f71d23c03641311a8287392f72a8658e9b1a18a593207f7c3027684",
       "id": "exact-governance-dependency-bootstrap-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/governance-dependency-bootstrap.mjs",
-      "size": 57995,
+      "size": 65661,
       "type": "file"
     },
     {
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ef281db971f74cf5ac8416714c33842ccc53511de47bb7497c360ed55c1837d8",
+      "hash": "sha256:9b4a73c5f1459ba7e168a01d7db3ee2a94fab7f29c2831dfe85d5295969f97ef",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 29475,
+      "size": 29524,
       "type": "file"
     },
     {
@@ -2413,7 +2413,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:f4641f90ff1d6efbf899e3a7f677064bce1f249e75453766d66295b5db3c696d",
+      "hash": "sha256:ac43e9255a933da736e672e21d25370773f84632210110e47a118f379e40c66b",
       "id": "product-seed-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2469,12 +2469,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a76d6ca6abd91375e3404f955ec60b53fb7bcde4e2bb601ea93dfd313e41f220",
+      "hash": "sha256:fcd3f081cd86cd833022c693037ba73420da82fad7f3e5bf63cb7b768c5b67c9",
       "id": "product-template-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/package.json",
-      "size": 2534,
+      "size": 2583,
       "type": "file"
     },
     {
@@ -3076,7 +3076,7 @@
         "scripts/generated/"
       ],
       "files": 690,
-      "hash": "sha256:53fe0e6305671e4e3813d0f8f475027b050db7d126b23af0bf5f50f54d6aa737",
+      "hash": "sha256:00b689764b6f772be6e22c141c45c405146ff52033e1c0e86e39c0d665b8e6cd",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3256,12 +3256,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:cd2ee8d34ccc413804d79096c0fff5bc24c049d4c2352a93a995f404c970a51d",
+      "hash": "sha256:bcc17c72eaed26b5763afca515689c6f6c1d4ff311cd148c2fb9c40286689dbc",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package-lock.json",
-      "size": 329635,
+      "size": 330056,
       "type": "file"
     }
   ],

@@ -322,13 +322,15 @@
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.5.4",
     "typescript-eslint": "8.71.0",
-    "vite": "6.4.4"
+    "vite": "6.4.5"
   },
   "overrides": {
     "@storybook/addon-actions": {
       "uuid": "11.1.1"
     },
     "@joshwooding/vite-plugin-react-docgen-typescript": "0.6.4",
+    "glob": "14.0.3",
+    "minimatch": "11.0.4",
     "postcss": "8.5.23"
   }
 }
