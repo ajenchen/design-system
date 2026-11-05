@@ -156,6 +156,7 @@ export function DataTableInteractionLayer({
   // 掛載那一次 commit 裡,父層(根節點)的 ref 在子元件的 layout effect **之後**才接上 → 讀到 null。
   // 那種時候(而且確實有目標要畫)等一格再解析一次;之後的 commit 根節點 ref 早已穩定(data-table.tsx `setTableRef`)。
   const [, bump] = React.useReducer((n: number) => n + 1, 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 刻意每次 commit 都重新解析:目標格可能被虛擬捲動 / 重畫換成新的節點,而 id 沒變(依賴表列不出「節點換了」);同一組節點時 setTargets 回傳 prev、不觸發重畫,不會無限循環
   React.useLayoutEffect(() => {
     const root = containerRef.current
     if (!root && (hoverId ?? selectedId ?? editorId) != null) {
