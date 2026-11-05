@@ -136,7 +136,7 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 
 **Focus**:Radix primitive 以 roving tabindex 管理群組內焦點(整組只佔一個 Tab 停留點,方向鍵在選項間移動);**非** focus trap——Tab 仍會離開群組、跳到下一個表單欄位。聚焦時顯示焦點框:全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;radio-group.tsx 不寫任何焦點 class,也不寫 `outline-none`,per design-system focus-visible canonical)。
 
-**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。「整組只佔一個 Tab 停留點、停在已選 / 第一個可用的圓」由 `scripts/radio-group-tab-stop-invariant.mjs` 真按 Tab / Shift+Tab 量(2026-11-05 起;2026-06-05 409b91da 到 11-05 之間 `RadioGroupItem` 明寫的 `tabIndex={undefined}` 蓋掉 Radix roving,每個圓各一個停留點)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

@@ -364,7 +364,12 @@ const RadioGroupItem = React.forwardRef<
         // 該屬性(readonly 語意由 Root role=radiogroup 宣告,見上方 L167-170)。item 靠
         // data-readonly + tabIndex + click guard 鎖互動。
         data-readonly={effectiveReadonly || undefined}
-        tabIndex={effectiveReadonly ? -1 : undefined}
+        // tabIndex 只在唯讀時才傳(2026-11-05,MASTER-TODO 3f-n6-radio-tabstop):Radix 把這個 prop 放進 Radio(子元素),
+        // 外層 RovingFocusGroup.Item 以 asChild 合併時子元素的 prop 蓋掉 roving 給的 `tabIndex: isCurrentTabStop ? 0 : -1`
+        // (@radix-ui/react-roving-focus dist/index.mjs:153)—— 明寫 `tabIndex={undefined}` 也算「有給」,
+        // 每顆圓於是回到瀏覽器預設可 Tab,違反 radio-group.spec.md「Focus」整組只佔一個 Tab 停留點。
+        // 機械閘 scripts/radio-group-tab-stop-invariant.mjs(實按 Tab / Shift+Tab 數停留點)。
+        {...(effectiveReadonly ? { tabIndex: -1 } : {})}
         className={cn(radioItemVariants({ size }), className)}
         {...props}
         // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click
