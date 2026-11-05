@@ -251,7 +251,7 @@ select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` sch
 | 欄型 | 照什麼排 | 依據 |
 |---|---|---|
 | string / url / time | 文字;不分大小寫、數字段照數值(「第 2 版」在「第 10 版」前、9:30 在 10:00 前)| TanStack 內建 `alphanumeric` = 自動判斷看得到字串時本來會選的那支([sortingFns.ts#L5-L10](https://github.com/TanStack/table/blob/v8.21.3/packages/table-core/src/sortingFns.ts#L5-L10)),只是不再隨列數變 |
-| number / currency / boolean | 數值;false 在 true 前 | 同修前(自動判斷給的 `basic`) |
+| number / currency / boolean | 數值;false 在 true 前;空值(`null` / 空字串)最小 | 非空值同修前(自動判斷給的 `basic`);空值先挑出來當最小 —— `basic` 對 `null` 與數字互比恆回 -1,不先挑出來空值會夾在負數與正數之間、結果隨原始順序變 |
 | date | 時間先後(Date / ISO 字串 / 毫秒數都認;空值最小)| 同一欄可能混用字串與 Date,照時間比才不受格式影響 |
 | person | **名字**,比法同文字欄 | 人員值只有名字可當識別(`string \| { name, avatarUrl?, description? }`),格上顯示的也是名字;Airtable 官方:「Single user fields can be used as a sort field. In this case, the user's name will be used to sort.」([Sort list](https://support.airtable.com/docs/airtable-automation-action-sort-list));AG Grid v33 物件型欄照顯示文字比([dataTypeService.ts#L499-L512](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/columns/dataTypeService.ts#L499-L512)) |
 | multiPerson | 照格上由左到右的順序逐人比名字;前面都相同時人少的在前;沒有人最小 | **AI 推導**:單人規則的延伸 + AG Grid 物件型「照顯示內容比」;多人格只畫頭像,順序就是畫面上的順序 |

@@ -11,7 +11,8 @@
  * **各型照什麼排**(規範句住 data-table.spec.md「七、Column Type」排序表;判定表 `scripts/test-data-table-column-sorting.mjs`):
  *   - string / url / time:TanStack 內建 `alphanumeric`(不分大小寫、數字段照數值比:「第 2 版」< 「第 10 版」、9:30 < 10:00)——
  *     這就是自動判斷「看得到字串」時本來會選的那支,只是不再隨列數變。
- *   - number / currency / boolean:`basic`(= 修前自動判斷給的那支,行為不變)。
+ *   - number / currency / boolean:非空值照 `basic`(= 修前自動判斷給的那支);`null` / 空字串先當最小(`compareScalar`,
+ *     2026-11-05 審查 D3:修前直接用 `basic`,空值夾在負數與正數之間且隨原始順序變,與下方空值句不符)。
  *   - date:換成時間戳比(Date / ISO 字串 / 毫秒數都認);空值與解析不了的當最小(與文字欄空字串最小一致)。
  *   - person:照**名字**排,比法同文字欄。PersonValue 只有名字可當識別(`string | { name, avatarUrl?, description? }`),
  *     格上顯示的也是名字;一手依據:Airtable「Single user fields can be used as a sort field. In this case, the user's name will be used to sort.」
@@ -41,6 +42,18 @@ function compareAlphanumeric(a: unknown, b: unknown): number {
 /** TanStack 內建 basic:`a === b ? 0 : a > b ? 1 : -1` */
 function compareBasic(a: unknown, b: unknown): number {
   return sortingFns.basic(valueRow(a), valueRow(b), '')
+}
+
+/**
+ * 數字 / 金額 / 布林:`null` / 空字串先當最小,其餘照 `basic`。
+ * 不能直接用 `basic`:它對 `null` 與數字互比恆回 -1(`null > 0`、`0 > null` 都是 false),比較不對稱 ——
+ * 空值會夾在負數與正數之間,而且結果隨原始順序變(`[null,0,5]` → 0,null,5;`[0,null,5]` → null,0,5)。
+ */
+function compareScalar(a: unknown, b: unknown): number {
+  const aEmpty = a === null || a === undefined || a === ''
+  const bEmpty = b === null || b === undefined || b === ''
+  if (aEmpty || bEmpty) return aEmpty === bEmpty ? 0 : aEmpty ? -1 : 1
+  return compareBasic(a, b)
 }
 
 /** 人員值的排序鍵 = 名字(與 PeoplePicker `resolvePerson` 同一個規則:字串就是名字、物件取 `name`);空值 = '' */
@@ -102,7 +115,7 @@ export function compareColumnValues(type: ColumnType, a: unknown, b: unknown): n
     case 'number':
     case 'currency':
     case 'boolean':
-      return compareBasic(a, b)
+      return compareScalar(a, b)
     case 'date':
       return compareDates(a, b)
     case 'person':

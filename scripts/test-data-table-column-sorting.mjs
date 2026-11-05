@@ -5,7 +5,8 @@
  *        而且**不靠 TanStack 的自動判斷**:
  *        T 判定表:每一型給一組儲存格值,真的用 TanStack v8 的 getSortedRowModel 排(升冪 / 降冪),順序 = 表上寫的期望值
  *          (期望值手寫,不是抄輸出)—— person 照名字、multiPerson 逐人比名字、string / url / time 不分大小寫且數字段照數值、
- *          date 照時間、select / multiSelect 決定前同修前(照原始值);
+ *          date 照時間、select / multiSelect 決定前同修前(照原始值);null / 空字串在每一型都當最小(數字類也是);
+ *        O 順序無關:數字 / 金額 / 布林含空值時,同一組值的所有原始順序排出同一個結果(比較函式對稱);
  *        L 列數無關:同一組人員 / 字串值放成 ≤ 10 列與 > 10 列兩張表,排出來的順序相同(自動判斷 `flatRows.slice(10)` 會讓兩者不同);
  *        C 呼叫端:data-table.tsx 的欄位前處理真的對每個有 meta.type 的欄掛 `sortingFnForColumnType`,且 consumer 自己寫的 sortingFn 不被蓋掉
  *          (瀏覽器端由 `scripts/data-table-column-sorting-invariant.mjs` 驗頁面真的照這個排)。
@@ -54,6 +55,11 @@ const CASES = [
   ['number', '照數值(同修前)', [10, 2, -1, 0.5], [2, 3, 1, 0]],
   ['currency', '照數值(同修前)', [1200, 99.9, 15000], [1, 0, 2]],
   ['boolean', 'false 在前(同修前)', [true, false], [1, 0]],
+  // 空值句(data-table.spec.md「七、Column Type」排序表下方):null / 空字串在各型比法裡當最小 —— 數字類也一樣,
+  // 不得夾在負數與正數之間(修前 `basic` 對 null 與數字互比恆回 -1,排出來隨原始順序變)
+  ['number', '空值最小:null 不夾在負數與正數之間', [3, null, -5, 0, 7, null, -2], [1, 5, 2, 6, 3, 0, 4]],
+  ['currency', '空值最小:空字串與 null 在負數之前', [-120, null, 80, ''], [1, 3, 0, 2]],
+  ['boolean', '空值最小:null 在 false 之前', [true, null, false], [1, 2, 0]],
   ['select', '決定前同修前:照原始值', ['not-started', 'blocked', 'done', 'in-progress'], [1, 2, 3, 0]],
   ['multiSelect', '決定前同修前:原始值接成字串比', [['frontend', 'design'], ['backend'], [], ['backend', 'qa']], [2, 1, 3, 0]],
 ]
@@ -70,11 +76,18 @@ for (const [type, why, values, expectAsc] of CASES) {
   const asc = sortValues(type, values, { legacy: SELFTEST })
   record(same(asc, expectAsc), `T ${type} 升冪:${why}`, `得 ${JSON.stringify(asc)} 應 ${JSON.stringify(expectAsc)}`)
   // 降冪 = 升冪反過來(相等的那幾格維持原順序,TanStack 的平手規則);本表只放沒有平手的值時才驗降冪
-  const hasTie = type === 'person' && why.startsWith('同名')
+  const hasTie = (type === 'person' && why.startsWith('同名')) || why.startsWith('空值最小')
   if (!hasTie) {
     const desc = sortValues(type, values, { desc: true, legacy: SELFTEST })
     record(same(desc, [...expectAsc].reverse()), `T ${type} 降冪:${why}`, `得 ${JSON.stringify(desc)} 應 ${JSON.stringify([...expectAsc].reverse())}`)
   }
+}
+
+// O:順序無關 —— 同一組值不管原本怎麼排,排出來的值序列都一樣(比較函式不對稱時,結果會隨原始順序變:修前 [null,0,5] → 0,null,5、[0,null,5] → null,0,5)
+const permutations = (xs) => xs.length <= 1 ? [xs] : xs.flatMap((x, i) => permutations([...xs.slice(0, i), ...xs.slice(i + 1)]).map((rest) => [x, ...rest]))
+for (const [type, values] of [['number', [null, 0, 5, -3]], ['currency', [null, -0.5, 0, 12]], ['boolean', [null, false, true, null]]]) {
+  const seqs = new Set(permutations(values).map((perm) => JSON.stringify(sortValues(type, perm, { legacy: SELFTEST }).map((i) => perm[i]))))
+  record(seqs.size === 1, `O ${type} 含空值:原始順序不影響結果`, `${permutations(values).length} 種原始順序排出 ${seqs.size} 種結果:${[...seqs].slice(0, 3).join(' / ')}`)
 }
 
 // L:列數無關 —— 自動判斷看的是第 11 列以後,≤ 10 列與 > 10 列會選到不同比法
