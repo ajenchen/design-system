@@ -1247,6 +1247,8 @@ jobs:
     # Dialog 並存與捲動鎖、浮層快捷鍵作用域、虛擬捲動壓力、Devmode 幾何、Header Tabs 插槽、選單訊息列、Steps 兩支,與改到元件的視覺稽核;
     # 逐支計時合計 528–666 秒,估約 13 分。2026-10-27 加 row-suffix-first-line(主跑 + --selftest,本機實測約 50 秒;CI 未實測);
     # 2026-11-04 納入 Alert / Toast 4 則(含 Alert 固定位置那則)後本機約 73–77 秒(主跑 15–17 + selftest 58–60)。
+    # 2026-11-05 側欄鍵盤拆到 verify-browser-sidebar-keyboard:本 job 三次 CI 實測 24.6 / 24.1 / 25.3 分(上限 25,PR #169 4f692d17 那次
+    # 撞上限被取消 = 沒有裁決),其中 test:sidebar-menu-keyboard 一支就 491 / 517 / 464 秒(約三分之一)。
     name: Verify browser(field, dialog and steps gates + changed-component visual audit)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1282,9 +1284,7 @@ jobs:
           # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
           npm run test:tag-field-inset
-          # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
-          # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
-          npm run test:sidebar-menu-keyboard
+          # 側欄鍵盤(test:sidebar-menu-keyboard)2026-11-05 移到 verify-browser-sidebar-keyboard(見該 job 檔頭)。
           # 列上的小圖形中線 = 第一行文字中線(2026-10-27,user 抓側欄「所有專案」右邊的 + 偏上):SidebarGroupAction / 收合箭頭量 sm / md / lg,
           # 加 Switch 帶標籤、示範列的列尾動作與列首轉圈、Slider 原則頁的開關狀態矩陣、DropdownMenu 元件檢閱器的快捷鍵後綴、
           # SidebarMenuAction / 列尾 inlineActions / DateGrid 上下月箭頭,以及 Alert / Toast(共用底座 Notice)多行時的前置狀態圖示、
@@ -1335,6 +1335,46 @@ jobs:
           node scripts/visual-audit.mjs --static --scope=changed --no-diff --no-a11y --base="${VISUAL_AUDIT_BASE}"
         env:
           VISUAL_AUDIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+  verify-browser-sidebar-keyboard:
+    # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。
+    # 原 job 三次 CI 實測 24.6(108a736f)/ 24.1(ac05777d)/ 25.3(4f692d17,撞上限被取消)分;本 job 只跑側欄鍵盤一支,
+    # 那支在原 job 裡實測 491 / 517 / 464 秒。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
+    name: Verify browser(sidebar menu keyboard)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Sidebar menu keyboard (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
+          # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
+          npm run test:sidebar-menu-keyboard
 
   verify-browser-agent:
     # 2026-09-10 拆自 verify-browser-interaction(它加了 docs 競態閘、虛擬游標 F 段、示範閘 S12 / S13 之後 13.1 分鐘被 15 分鐘預算取消)。
@@ -1759,7 +1799,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -1785,12 +1825,13 @@ jobs:
           BROWSER_ESCAPE_FOCUS_CONTROL: ${{ needs.verify-browser-escape-focus-control.result }}
           BROWSER_FOOTER_GUTTER: ${{ needs.verify-browser-footer-gutter.result }}
           BROWSER_NESTED_DISMISS: ${{ needs.verify-browser-nested-dismiss.result }}
+          BROWSER_SIDEBAR_KEYBOARD: ${{ needs.verify-browser-sidebar-keyboard.result }}
           HOOKS_LINUX: ${{ needs.hooks-linux.result }}
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
