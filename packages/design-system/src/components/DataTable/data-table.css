@@ -393,7 +393,10 @@
    修前畫面上那幾層 —— 釘選表身 = canvas + surface(根節點那一層);表頭再加一層 muted(`.dtHeaderMuted`,畫在表頭面板的內層)。
    淺色主題 `--surface` 本來就不透明,任何底色上都同色。
    **「已知不透明的底」= 表格所在那一層的底,不寫死 `--canvas`**(2026-11-05 審查 D4,`data-table-known-defects.spec.md` 缺陷 W 已修):
-   讀 `--dt-sticky-base`,預設 `--canvas`(頁面最底層)。DS 的浮起表面(Dialog / Sheet / Popover / HoverCard / DropdownMenu …)
+   讀 `--dt-sticky-base`:**執行期**由 `lib/sticky-backdrop.ts` 把表格後面每一層畫了底色的祖先疊起來、寫進根節點(深色的
+   `bg-surface` / `bg-muted` 是半透明白,卡片 / 面板裡的表格若只認 canvas,表頭與釘選欄會比表身暗一層 —— 2026-11-06 全 DS 像素:
+   container-height 64 → 48、ScrollArea 示範 16 階)。算不出來(背景圖、混合模式)時用下面的 CSS 預設:`--canvas`(頁面最底層);
+   DS 的浮起表面(Dialog / Sheet / Popover / HoverCard / DropdownMenu …)
    全部以 `bg-surface-raised` 畫底,在它們裡面改成 `--surface-raised` —— WM 的 AddFieldsDialog / SyncStatusDialog 就是
    DialogContent 裡的 DataTable(勾選欄 = 左釘選);寫死 canvas 時深色對話框裡表頭 65→48、勾選欄 49→30(表身 49),修前同色。
    表格放在其他不透明底上的 consumer,在表格外層設 `--dt-sticky-base` 成那個底色即可。

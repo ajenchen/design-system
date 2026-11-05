@@ -57,6 +57,7 @@ import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/ele
 import { columnTypeDefaults, type ColumnType } from './column-types'
 import { sortingAfterHeaderActivate, sortingFromColumnMenu, columnMenuShowsCancelSort, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
 import { sortingFnForColumnType } from './lib/column-sorting'
+import { resolveStickyBackdrop } from './lib/sticky-backdrop'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -4954,6 +4955,23 @@ function DataTableInner<TData>(
     if (typeof ref === 'function') ref(el)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el
   }, [ref])
+  // 黏住區的不透明底 = 表格後面真正看得到的顏色(lib/sticky-backdrop.ts;data-table.css「黏住區的不透明底」)。
+  // 掛上時算一次;主題 / 祖先換底色時重算(主題切換改的是 html 或某個 [data-theme] 祖先的屬性)。
+  // 算不出來(背景圖、混合模式、一路透明到頂)就拿掉內聯值,沿用 CSS 預設(--canvas;浮起表面 .bg-surface-raised)。
+  React.useLayoutEffect(() => {
+    const el = tableRef.current
+    if (!el || typeof MutationObserver === 'undefined') return undefined
+    const apply = () => {
+      const c = resolveStickyBackdrop(el)
+      if (c) el.style.setProperty('--dt-sticky-base', c)
+      else el.style.removeProperty('--dt-sticky-base')
+    }
+    apply()
+    const mo = new MutationObserver(apply)
+    // 祖先鏈上每一層(到 html 為止,通常十幾個節點):換主題、換底色的 class / style 都在這些節點上;只看屬性,不看子樹
+    for (let t: Element | null = el.parentElement; t; t = t.parentElement) mo.observe(t, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] })
+    return () => mo.disconnect()
+  }, [])
   // Single mode 用 RadioGroup wrap 整 table(Radix RadioGroup 用 context 傳遞 value/onValueChange)
   // Multi mode 不需 wrap(Checkbox 各自 controlled,不靠 context)
   const tableContent = (

@@ -2051,12 +2051,14 @@ await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展�
 // 兩種底各量一次(2026-11-05 審查 D4):頁面底(--canvas)與 DS 浮起表面的底(bg-surface-raised = DialogContent / Sheet / Popover 的底)。
 // WM 的 AddFieldsDialog / SyncStatusDialog 就是 DialogContent 裡的 DataTable;黏住區寫死 --canvas 時,深色對話框裡勾選欄比同列暗 19 階。
 // 浮起表面那一輪 = 把表格的父層掛上同一個 class(與 dialog.tsx DialogContent 同一顆 utility),不新增 story。
-for (const backdrop of ['canvas', 'surface-raised']) {
+for (const backdrop of ['canvas', 'surface-raised', 'surface', 'muted']) {
   const tone = await page.evaluate((backdrop) => {
     const cb = document.querySelector('[data-datatable-hscroll]')
     if (!cb) return null
     const table = cb.closest('[role="table"], [role="grid"]')
-    if (backdrop === 'surface-raised') { table.parentElement.classList.add('bg-surface-raised'); table.parentElement.style.padding = '8px' }
+    // 每一輪先拿掉上一輪的底(同一頁連量)
+    table.parentElement.classList.remove('bg-surface-raised', 'bg-surface', 'bg-muted')
+    if (backdrop !== 'canvas') { table.parentElement.classList.add(`bg-${backdrop}`); table.parentElement.style.padding = '8px' }
     const pick = (sel) => {
       const el = table.querySelector(sel)
       if (!el) return null
@@ -2078,15 +2080,15 @@ for (const backdrop of ['canvas', 'surface-raised']) {
       },
     }
   }, backdrop)
-  const on = `${backdrop === 'canvas' ? '頁面底' : '浮起表面底 bg-surface-raised'}`
+  const on = { canvas: '頁面底', 'surface-raised': '浮起表面底 bg-surface-raised', surface: '卡片底 bg-surface(深色半透明)', muted: '面板底 bg-muted(深色半透明)' }[backdrop]
   if (!tone || !tone.pts.bodyLeft || !tone.pts.bodyCenter || !tone.pts.headLeft || !tone.pts.headCenter) {
     record('I28', `dark mode 表格結構取得(${on};否則以下斷言空轉)`, false, `INSTRUMENT-FAIL 取樣點 ${JSON.stringify(tone?.pts ?? null)}`)
     continue
   }
   record('I28', `真的處在 dark 主題(theme=${tone.theme},${on})`, tone.theme === 'dark', `data-theme=${tone.theme}`)
-  if (backdrop === 'surface-raised') {
+  if (backdrop !== 'canvas') {
     // 非空轉守衛:父層真的換成浮起表面的底(不是透明 —— 透明時量到的還是頁面底,等於沒換)
-    record('I28', `浮起表面那一輪,父層真的有不透明底(${tone.parentBg})`, !['rgba(0, 0, 0, 0)', 'transparent', ''].includes(tone.parentBg), `父層 background-color = ${tone.parentBg}`)
+    record('I28', `${on}那一輪,父層真的換了底(${tone.parentBg})`, !['rgba(0, 0, 0, 0)', 'transparent', ''].includes(tone.parentBg), `父層 background-color = ${tone.parentBg}`)
   }
   await page.mouse.move(0, 0)
   await settleAfterInteraction(page, { frames: 10 })
