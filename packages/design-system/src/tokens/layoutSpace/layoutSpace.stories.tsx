@@ -51,9 +51,10 @@ function SpaceRow({ utility, mdValue, lgValue, usage }: {
 export const Overview: Story = {
   name: '總覽',
   render: () => (
-    <TutorialPage className="max-w-5xl">
+    <TutorialPage>
+      {/* 表格寬 = 原本的整頁 max-w-5xl(頁根不再自訂寬,BA-tutorial-width);下方規則清單是段落文字,跟著頁寬 */}
       <TutorialSection title="Layout Space Tokens">
-        <div>
+        <div className="max-w-5xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
             Pattern 層級間距 token,跟 density 連動(md / lg 兩個值)。下表展示 md density 預覽。
           </p>

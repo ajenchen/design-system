@@ -256,7 +256,7 @@ export const Semantic: Story = {
   },
   render: () => (
     // 段落 = 共用教學頁元件的 TutorialSection(2026-10-20 T7 甲:Tokens / Patterns 文件頁與教學頁同一層段落;原本 space-y-loose 讓段落之間與段落內一樣 16px)
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
 
       {/* Action */}
       <TutorialSection title="Action — Primary">
@@ -269,7 +269,8 @@ export const Semantic: Story = {
       {/* Status */}
       <TutorialSection title="Status">
         {/* 並列色票格之間與上方 Primary / 下方各段的色票格同一個 loose(原本 inline style 寫死 8px,閘看不到、畫面上比其他段擠一半) */}
-        <div className="grid items-start gap-[var(--layout-space-loose)]" style={{ gridTemplateColumns: '44px 1fr 1fr 1fr 1fr' }}>
+        {/* 色票表寬 = 原本的整頁 max-w-2xl(頁根不再自訂寬,BA-tutorial-width);1fr 欄不跟著頁拉寬 */}
+        <div className="grid max-w-2xl items-start gap-[var(--layout-space-loose)]" style={{ gridTemplateColumns: '44px 1fr 1fr 1fr 1fr' }}>
           <div />
           {['Info', 'Error', 'Success', 'Warning'].map(n => (
             <span key={n} className="text-caption text-fg-muted text-center block">{n}</span>
@@ -348,8 +349,9 @@ export const Interactive: Story = {
   },
   render: () => (
     // 段落 = TutorialSection(2026-10-20 T7 甲);開頭五組語義色互動狀態沒有段名,是頁裡的第一塊,五組之間照舊 loose
-    <TutorialPage className="max-w-lg">
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+    // 各塊寬 = 原本的整頁 max-w-lg(頁根不再自訂寬,BA-tutorial-width):三欄色票 / 示範列不跟著頁拉寬
+    <TutorialPage>
+      <div className="flex max-w-lg flex-col gap-[var(--layout-space-loose)]">
         {[
           { name: 'Primary', prefix: 'primary', hover: '--primary-hover', base: '--primary', active: '--primary-active' },
           { name: 'Info',    prefix: 'info',    hover: '--info-hover',    base: '--info',    active: '--info-active' },
@@ -371,7 +373,7 @@ export const Interactive: Story = {
       {/* Ghost */}
       <TutorialSection title="Neutral Interaction — Default family（hover/active）+ Selected family（持續選中）">
         {/* @layout-space-magic-ok: Neutral Interaction 同質示範列列距 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值) */}
-        <div className="space-y-1">
+        <div className="max-w-lg space-y-1">
           {[
             { label: '正常狀態（無背景）', bg: 'transparent',                    token: '' },
             { label: 'Hover 回饋',         bg: 'var(--neutral-hover)',        token: 'bg-neutral-hover' },
@@ -398,7 +400,7 @@ export const Interactive: Story = {
       {/* 2026-09-25 待辦總帳 B8:依平常底色決定滑過 / 按住。靜態列直接把狀態 class 疊上去畫出來(M15:不必真人滑過也截得到);
           不放「只會亮、點了沒反應」的示範卡 —— B12「要點了會有反應的才加」 */}
       <TutorialSection title="「底」的滑過 / 按住 — 底色不換,疊一層(bg-interaction-hover / -active)">
-        <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
+        <div className="grid max-w-lg grid-cols-3 gap-[var(--layout-space-loose)]">
           {BASE_SURFACE_DEMOS.map(({ base, name }) => (
             // @layout-space-magic-ok: 同一底色的三個狀態示範條(平常 / 滑過 / 按住)同質列距 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 2eb5b433 同值)
             <div key={name} className="space-y-1">
@@ -422,7 +424,7 @@ export const Interactive: Story = {
       </TutorialSection>
 
       <TutorialSection title="元件自己的填色 — 換成自己的下一階(以 secondary 為例)">
-        <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
+        <div className="grid max-w-lg grid-cols-3 gap-[var(--layout-space-loose)]">
           <SwatchBg bg="var(--secondary)"        label="平常" desc="bg-secondary(neutral-3)" />
           <SwatchBg bg="var(--secondary-hover)"  label="滑過" desc="bg-secondary-hover(neutral-4)" />
           <SwatchBg bg="var(--secondary-active)" label="按住" desc="bg-secondary-active(neutral-5)" />
@@ -435,9 +437,10 @@ export const FunctionalHighlight: Story = {
   name: '反白與搜尋配對',
   render: () => (
     // 規則外框 = 共用教學頁元件(2026-10-20 T7 甲 / T8:原本手寫 section + h3 教學框)
-    <TutorialPage className="max-w-xl">
+    <TutorialPage>
       <TutorialRule paragraph={false} title="文字反白(::selection)">
-        <p data-selection-demo className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
+        {/* 示範框寬 = 原本的整頁 max-w-xl(頁根不再自訂寬,BA-tutorial-width) */}
+        <p data-selection-demo className="max-w-xl rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           第三季營收報告已於 10 月 14 日送交財務委員會審閱,附件包含分區銷售明細與年度預測修正。
         </p>
         <span className="block text-caption text-fg-muted">
@@ -445,7 +448,7 @@ export const FunctionalHighlight: Story = {
         </span>
       </TutorialRule>
       <TutorialRule paragraph={false} title="頁內搜尋配對(Ctrl+F)">
-        <p className="rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
+        <p className="max-w-xl rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
           搜尋「報表」:月度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
           已歸檔;季度<mark className="rounded-xs bg-search-match-current text-inherit">報表</mark>
           為目前所在配對,尚待審核;年度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>

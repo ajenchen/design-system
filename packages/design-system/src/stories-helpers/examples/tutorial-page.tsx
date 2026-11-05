@@ -28,6 +28,10 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  * - 範例 ↔ 範例 = loose、說明 ↔ 它說的範例 = tight:照舊由 `CaptionedExamples` / `ExampleGroup` 擁有(example-captions.tsx)。
  * - 間距一律由外層 gap 給,各塊不留自己的下方 margin —— 最後一塊下面不會多出空白(Carbon:元件不帶 margin,定位交給外層)。
  *
+ * 寬度(2026-11-05,BA-tutorial-width):整頁寬度跟間距、字級一樣由這裡擁有 —— 頁根不設寬、各頁不自訂(`TutorialPage` 不收 className)。
+ * 原本 31 則各自給整頁寬(10 種值);給頁根一個共用寬會讓範例溢出(720px 溢出 17 則、1024px 還有 4 則),所以限寬落在需要它的範例上:
+ * 規則的範例區 = `createTutorialRule({ examplesClassName })`,規則外的表格 / 示範塊 = 自己容器的 class;段落文字跟著頁寬走(與其餘教學頁相同)。
+ *
  * 標題:段落 `<h2>` = `text-h3`(24px)半粗體 + `border-divider` 淺分隔線(typography.spec.md 的 text-h3 = 「子區塊標題」,
  * 教學頁的段落就是頁裡的子區塊);規則 `<h3>` = `text-h6` 半粗體(category-templates.md「教學框的間距與標題」)。
  * 規則說明 = `text-caption` + `text-fg-muted`(字級同一段規範;字色 = color.spec.md「文字 / Icon 層級」caption 列 ——
@@ -51,7 +55,7 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  * 是一段文字 / 清單 → 不給,標題區 → 文字、文字之間都以 tight 排(= `ExampleSection paragraph`);
  * 沒走範例區、內容卻是示範區塊的規則 → 該則寫 `paragraph={false}`(標題區 → 內容 loose,內容之間仍 tight)。
  *
- * 機械:`scripts/tutorial-page-invariant.mjs`(教學頁沒用本支、自抄 Section / Rule、手寫段落 / 規則間距 → 紅)。
+ * 機械:`scripts/tutorial-page-invariant.mjs`(教學頁沒用本支、自抄 Section / Rule、手寫段落 / 規則間距、頁根自帶寬度 → 紅)。
  */
 
 /** 規則之間 = 段落之間 = loose × 2(user 2026-10-07 拍板 ②)。全 repo 只有這一處寫這個值。 */
@@ -61,15 +65,16 @@ const BLOCK_STACK = 'flex flex-col gap-[calc(var(--layout-space-loose)*2)]'
 const PAGE_TEXT = 'text-body'
 
 export interface TutorialPageProps {
-  /** 只放寬度這類整頁限制(例:`max-w-3xl`);間距與字級由本元件擁有,不得從這裡覆寫。 */
-  className?: string
   children: React.ReactNode
 }
 
-/** 一則 story 的教學頁根節點:裡面的段落 / 規則 / 段落外的說明塊之間一律 loose × 2;內文字級 text-body。 */
-export function TutorialPage({ className, children }: TutorialPageProps) {
+/**
+ * 一則 story 的教學頁根節點:裡面的段落 / 規則 / 段落外的說明塊之間一律 loose × 2;內文字級 text-body。
+ * 不收 className:間距、字級、整頁寬度都由本元件擁有(要限寬的是範例 —— `examplesClassName` 或該塊自己的容器)。
+ */
+export function TutorialPage({ children }: TutorialPageProps) {
   return (
-    <div data-tutorial-page="" className={cn(BLOCK_STACK, PAGE_TEXT, className)}>
+    <div data-tutorial-page="" className={cn(BLOCK_STACK, PAGE_TEXT)}>
       {children}
     </div>
   )
@@ -204,7 +209,7 @@ export interface TutorialRuleOptions {
   layout?: CaptionedExamplesProps['layout']
   /** 範例區的範例維持自然寬度(CaptionedExamples 的 naturalWidth)。 */
   naturalWidth?: boolean
-  /** 範例區的寬度限制 / 對齊(例:`max-w-md`、`items-center`);間距由 CaptionedExamples 擁有。 */
+  /** 範例區的寬度限制 / 對齊(例:`max-w-md`、`items-center`);間距由 CaptionedExamples 擁有。整頁不設寬,範例要限寬就寫在這裡。 */
   examplesClassName?: string
 }
 

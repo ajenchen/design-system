@@ -6,10 +6,11 @@
  *         段落標題 text-h3 半粗體 + 淺分隔線、所有教學頁收成一個共用元件);各頁不自抄 Rule / Section、不手寫段落 / 規則之間的間距;
  *         共用元件本身仍是 ② 的寫法(值由 loose 推出、不借 --layout-space-bottom)。2026-10-20 起另守:「使用指引」固定三段
  *         (T4 甲)、說明 / 清單 / 連結 / 對錯記號各只有一種寫法、頁根擁有 text-body、Tokens / Patterns 文件頁的段落也是 TutorialSection(T7 甲)。
+ *         2026-11-05 起另守:整頁寬度也由共用元件擁有,各頁不自訂(BA-tutorial-width;要限寬的是範例,不是頁)。
  *   紅: 教學頁自抄教學框(看結構不看名字:小元件回傳的區塊以手寫標題開頭,改名照樣紅)、手寫 <h2> / <section>、規則或段落被別的容器包著
  *       (間距不再由共用元件給)、TutorialPage / TutorialSection 直接子層是手寫標題、以標題開頭的區塊、或下一層藏著 ≥ 2 則手刻規則、
  *       直接子層自帶間距(margin / padding / 空白 spacer / style;sm: / [&>*+*]: 這類前綴照樣算;className / style 讀不到值也算)、
- *       TutorialPage 帶間距 / 字級、createTutorialRule 不在 module 層、設計原則頁的 story(物件 story 的 render 與 CSF2 函式 story)根節點
+ *       TutorialPage 帶間距 / 字級、TutorialPage 帶任何 className / style(整頁寬)、createTutorialRule 不在 module 層、設計原則頁的 story(物件 story 的 render 與 CSF2 函式 story)根節點
  *       不是 TutorialPage、設計原則頁完全沒用共用元件、loose × 2 寫在共用元件以外、共用元件改成別的值 / 別的標題;使用指引不是依序三段
  *       UsageSection / 名稱不是「使用指引」、自抄說明元件、caption / noteTone 選項、手寫 LinkTo / 說明清單 / 工具列高度、✓ ✗ ⚠ 記號、清單項或手寫標題帶
  *       對錯記號、範例區只放空元素、Tokens / Patterns 頁手寫 h2 / section 或疊 ≥ 2 塊以標題開頭的區塊 → 指名 file:line,exit 1;
@@ -45,6 +46,10 @@
  *        範例裡的產品標題(卡片標題等)在規則裡面,不受影響。
  *   (R5) TutorialPage 的 className / style 不得帶間距(gap / space / m* / p*,含前綴;margin / padding / gap 的 style 鍵)—— 間距由共用元件擁有;
  *        也不得帶字級 / 字色(text-*)—— 內文字級 text-body 由共用元件擁有(2026-10-20 T2)。
+ *   (R13) TutorialPage 不收 className / style / {...展開}(2026-11-05,BA-tutorial-width):整頁寬度跟間距、字級一樣由共用元件擁有。
+ *        原本 31 則各自給整頁寬(10 種值);給頁根一個共用寬會讓範例溢出(720px 溢出 17 則、1024px 還有 4 則),所以限寬落在
+ *        需要它的範例上 —— 規則的範例區 = createTutorialRule({ examplesClassName }),規則外的表格 / 示範塊 = 自己容器的 class;
+ *        段落文字跟著頁寬走(與其餘頁相同)。
  *   (R6) createTutorialRule(…) 只能在 module 層呼叫(寫在 render 裡會每次重建元件;story-rules.md「元件一律定義在 module 層」)。
  *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則 / 範例堆疊間距。
  *   (R8) tutorial-page.tsx 本身仍是 ②:塊距 = calc(var(--layout-space-loose)*2)、不出現 --layout-space-bottom、
@@ -64,7 +69,7 @@
  *        (h1–h6,或大寫小字 / text-h* / 半粗體的一行字)開頭的區塊 = 手刻的段落 → 改用 TutorialPage + TutorialSection(T7 甲);
  *        這些頁手寫 <h2> / <section> 也由 R2 收(chrome / 浮層標題槽 *Header 裡的 <h2> 是範例的產品標題,不算)。
  *
- * 教學頁的範圍:全部 *.principles.stories.tsx(R1–R11),加上 tokens/** 與 patterns/** 裡 import 共用元件的 *.stories.tsx(R2–R6、R10、R11);
+ * 教學頁的範圍:全部 *.principles.stories.tsx(R1–R11、R13),加上 tokens/** 與 patterns/** 裡 import 共用元件的 *.stories.tsx(R2–R6、R10、R11、R13);
  * 其餘 Tokens / Patterns 文件頁只收「自抄教學框小元件」、手寫 <h2> / <section>(R2)與手刻段落清單(R12)。
  *
  *   node scripts/tutorial-page-invariant.mjs              判定(exit 0 綠 / 1 紅 / 2 儀器失效)
@@ -625,10 +630,14 @@ export function checkTutorialFile(file, text) {
         usesPage = true
         // (R5) 頁根的 className / style 不得帶間距(variant 前綴也算:[&>*+*]:mt-8、*:mb-8)
         const own = ownSpacing(n, SPACING_UTILITY, STYLE_PAGE_SPACING)
-        if (own.length) hits.push(hit('R5', file, sf, n, `TutorialPage 帶間距 ${own.join(' ')} —— 頁裡的間距由共用元件擁有,這裡只放寬度`))
+        if (own.length) hits.push(hit('R5', file, sf, n, `TutorialPage 帶間距 ${own.join(' ')} —— 頁裡的間距由共用元件擁有`))
         // (R5) 字級 / 字色也由共用元件擁有(2026-10-20 T2:TutorialPage 自己就是 text-body)
         const typo = classInfo(n).tokens.filter((t) => /^text-/.test(utilityBase(t)))
-        if (typo.length) hits.push(hit('R5', file, sf, n, `TutorialPage 自帶字級 / 字色 ${typo.map((t) => `\`${t}\``).join(' ')} —— 內文字級由共用元件擁有(text-body,typography.spec.md:39),這裡只放寬度`))
+        if (typo.length) hits.push(hit('R5', file, sf, n, `TutorialPage 自帶字級 / 字色 ${typo.map((t) => `\`${t}\``).join(' ')} —— 內文字級由共用元件擁有(text-body,typography.spec.md:39)`))
+        // (R13) 頁根不收 className / style / 展開(2026-11-05 BA-tutorial-width):整頁寬度由共用元件擁有,各頁不自訂;
+        // 寬度寫成什麼形狀都一樣(字面值、cn(…)、style、{...props}),讀得到讀不到都不放行
+        const pageOwn = attrs(n).filter((p) => ts.isJsxSpreadAttribute(p) || (ts.isJsxAttribute(p) && ['className', 'style'].includes(p.name.getText())))
+        if (pageOwn.length) hits.push(hit('R13', file, sf, n, `TutorialPage 帶 ${pageOwn.map((p) => p.getText().replace(/\s+/g, ' ').slice(0, 60)).join(' ')} —— 整頁寬度由共用教學頁元件擁有、各頁不自訂;範例區要限寬用 createTutorialRule({ examplesClassName }),規則外的表格 / 示範塊寫在自己的容器上`))
       }
       // (R2) 手寫 h2 / section(chrome / 浮層標題槽裡的 <h2> 是範例的產品標題,不算)
       if ((teaching || docPage) && (tag === 'h2' || tag === 'section') && !inHeaderSlot(sf, n)) hits.push(hit('R2', file, sf, n, `手寫 <${tag}> —— ${teaching ? '教學頁' : 'Tokens / Patterns 文件頁'}的段落外框只能來自 TutorialSection`))
@@ -847,8 +856,8 @@ export const BASE_FIXTURES = [
     fixture: 'scripts/test-fixtures/tutorial-page/app-shell.principles.stories.be2f1324.tsx.txt',
     blob: '69c1485a11099d709f26b11628f53d2876803d9e',
     // T4:story 名「使用準則」(:17)、五段手寫段落(:19)、手寫段名「何時用 AppShell」(:20);T3 手寫 <ul>(:22);T6 手寫 LinkTo(:25);
-    // T5「❌ 禁:」清單項(:67);T12 清單裡的 Markdown 反引號「`&lt;main&gt;`」(:41)
-    expect: [['R9', 17], ['R9', 19], ['R9', 20], ['R10', 22], ['R10', 25], ['R10', 67], ['R10', 41]],
+    // T5「❌ 禁:」清單項(:67);T12 清單裡的 Markdown 反引號「`&lt;main&gt;`」(:41);BA-tutorial-width:整頁寬 max-w-2xl(:19 :84)
+    expect: [['R9', 17], ['R9', 19], ['R9', 20], ['R10', 22], ['R10', 25], ['R10', 67], ['R10', 41], ['R13', 19], ['R13', 84]],
   },
   {
     file: 'packages/design-system/src/components/Chart/chart.principles.stories.tsx',
@@ -861,22 +870,22 @@ export const BASE_FIXTURES = [
     file: 'packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx',
     fixture: 'scripts/test-fixtures/tutorial-page/field-control-group.principles.stories.be2f1324.tsx.txt',
     blob: 'ef05873445f9b454ac39c5438b7b2f0a1edc95dc',
-    // T4:story 名「使用準則」(:30)、骨架不是三段(:32)、手寫段名「何時用 ✓」(:33);T5:手寫的紅色對錯 <h3>(:53 :61)
-    expect: [['R9', 30], ['R9', 32], ['R9', 33], ['R10', 53], ['R10', 61]],
+    // T4:story 名「使用準則」(:30)、骨架不是三段(:32)、手寫段名「何時用 ✓」(:33);T5:手寫的紅色對錯 <h3>(:53 :61);BA-tutorial-width:整頁寬 w-[640px](:32)
+    expect: [['R9', 30], ['R9', 32], ['R9', 33], ['R10', 53], ['R10', 61], ['R13', 32]],
   },
   {
     file: 'packages/design-system/src/components/Command/command.principles.stories.tsx',
     fixture: 'scripts/test-fixtures/tutorial-page/command.principles.stories.be2f1324.tsx.txt',
     blob: 'a11c23c606ef4b2a9bc8b03368a3e0ffdc6fa283',
-    // T4:使用指引沒有任何段落標題(段名只寫在 JSX 註解裡)(:25)
-    expect: [['R9', 25]],
+    // T4:使用指引沒有任何段落標題(段名只寫在 JSX 註解裡)(:25);BA-tutorial-width:整頁寬 max-w-prose(:66)
+    expect: [['R9', 25], ['R13', 66]],
   },
   {
     file: 'packages/design-system/src/components/AccountMenu/account-menu.principles.stories.tsx',
     fixture: 'scripts/test-fixtures/tutorial-page/account-menu.principles.stories.be2f1324.tsx.txt',
     blob: '1011a11b697cabe7b2a7b0b06eccc07335e1c01a',
-    // T2:頁根自己寫 text-body(:58);T6:noteTone(:24)
-    expect: [['R5', 58], ['R10', 24]],
+    // T2:頁根自己寫 text-body(:58);T6:noteTone(:24);BA-tutorial-width:三則各自給整頁寬 max-w-3xl(:29 :58 :76)
+    expect: [['R5', 58], ['R10', 24], ['R13', 29], ['R13', 58], ['R13', 76]],
   },
   {
     file: 'packages/design-system/src/components/Badge/badge.principles.stories.tsx',
@@ -933,7 +942,7 @@ const ITEMS = ['複製連結', '重新命名']
 
 export const UsageGuidance: Story = {
   name: '使用指引', render: () => (
-    <TutorialPage className="max-w-3xl">
+    <TutorialPage>
       <UsageSection kind="when">
         <div className="max-w-prose"><p>適合的場景</p></div>
       </UsageSection>
@@ -969,9 +978,9 @@ export const ComponentOnly: Story = { args: { children: '只渲染元件本身' 
 
 export const SideBySide: Story = {
   render: () => (
-    <TutorialPage className="w-[640px]">
+    <TutorialPage>
       <TutorialSection title="並排比較">
-        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
+        <div className="grid max-w-2xl grid-cols-2 gap-[var(--layout-space-loose)]">
           <div><h3 className="text-h6 font-semibold">這樣</h3><p>說明</p></div>
           <div><h3 className="text-h6 font-semibold">那樣</h3><p>說明</p></div>
         </div>
@@ -998,11 +1007,11 @@ export const MUTATIONS = [
     ['          </TutorialRule>\n        </>\n', '          </TutorialRule>\n        </div>\n'],
   ], 'R3', 22],
   ['story 根節點是 <div>', [
-    ['    <TutorialPage className="max-w-3xl">\n', '    <div className="flex flex-col gap-[var(--layout-space-loose)]">\n'],
+    ['    <TutorialPage>\n      <UsageSection kind="when">\n', '    <div className="flex flex-col gap-[var(--layout-space-loose)]">\n      <UsageSection kind="when">\n'],
     ['</UsageSection>\n    </TutorialPage>\n', '</UsageSection>\n    </div>\n'],
   ], 'R1', 16],
   ['TutorialPage 直接放手刻的規則外框', [['      <UsageSection kind="when">\n', '      <div><h3 className="text-h6 font-semibold">手刻規則</h3><p>說明</p></div>\n      <UsageSection kind="when">\n']], 'R4', 17],
-  ['TutorialPage 的 className 帶間距', [['className="max-w-3xl"', 'className="max-w-3xl gap-[var(--layout-space-bottom)]"']], 'R5', 16],
+  ['TutorialPage 的 className 帶間距', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className=\"gap-[var(--layout-space-bottom)]\">\n      <UsageSection kind=\"when\">\n']], 'R5', 16],
   ['createTutorialRule 寫在 render 裡', [['    const Demo = () => (\n', '    const Inner = createTutorialRule({})\n    const Demo = () => (\n']], 'R6', 39],
   ['段落裡的塊自帶 margin(說明塊 mb-loose)', [['<div className="max-w-prose">', '<div className="max-w-prose mb-[var(--layout-space-loose)]">']], 'R4', 18],
   ['loose × 2 寫在共用元件以外', [['<div className="max-w-prose">', '<div className="max-w-prose mt-[calc(var(--layout-space-loose)*2)]">']], 'R7', 18],
@@ -1016,12 +1025,12 @@ export const MUTATIONS = [
   ['(c) inline style marginTop', [['<div className="max-w-prose">', "<div className=\"max-w-prose\" style={{ marginTop: 'var(--layout-space-loose)' }}>"]], 'R4', 18],
   ['(c) style 不是字面物件(讀不到 ≠ 沒有)', [['<div className="max-w-prose">', '<div className="max-w-prose" style={spacer}>']], 'R4', 18],
   ['(c) className 不是字面值(讀不到 ≠ 沒有)', [['<div className="max-w-prose">', '<div className={blockClass}>']], 'R4', 18],
-  ['(d) TutorialPage 的 arbitrary variant [&>*+*]:mt-8', [['className="max-w-3xl"', 'className="max-w-3xl [&>*+*]:mt-8"']], 'R5', 16],
-  ['(d) TutorialPage 的 *:mb-8', [['className="max-w-3xl"', 'className="max-w-3xl *:mb-8"']], 'R5', 16],
+  ['(d) TutorialPage 的 arbitrary variant [&>*+*]:mt-8', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className=\"[&>*+*]:mt-8\">\n      <UsageSection kind=\"when\">\n']], 'R5', 16],
+  ['(d) TutorialPage 的 *:mb-8', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className=\"*:mb-8\">\n      <UsageSection kind=\"when\">\n']], 'R5', 16],
   ['(e) 頁裡一個容器包兩則手刻規則', [['      <UsageSection kind="when">\n', '      <div className="flex flex-col gap-[var(--layout-space-loose)]">\n        <div><h3 className="text-h6 font-semibold">❌ 手刻規則一</h3><p>說明</p></div>\n        <div><h3 className="text-h6 font-semibold">❌ 手刻規則二</h3><p>說明</p></div>\n      </div>\n      <UsageSection kind="when">\n']], 'R4', 17],
   ['(e) 說明塊裡、前言之後再下一層疊兩則手刻規則', [['        <div className="max-w-prose"><p>適合的場景</p></div>\n', '        <div className="max-w-prose">\n          <p>適合的場景</p>\n          <div className="flex flex-col gap-8">\n            <div><h4 className="text-h6 font-semibold">❌ 手刻規則一</h4><p>說明</p></div>\n            <div><h4 className="text-h6 font-semibold">❌ 手刻規則二</h4><p>說明</p></div>\n          </div>\n        </div>\n']], 'R4', 18],
   ['(e) 說明塊裡平鋪兩個手寫小標', [['        <div className="max-w-prose"><p>適合的場景</p></div>\n', '        <div className="max-w-prose"><p>前言</p><h5>一</h5><p>說明</p><h5>二</h5><p>說明</p></div>\n']], 'R4', 18],
-  ['(e) 單欄 grid 疊兩則手刻規則(只有多欄才算並排)', [['<div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">', '<div className="grid gap-[var(--layout-space-loose)]">']], 'R4', 54],
+  ['(e) 單欄 grid 疊兩則手刻規則(只有多欄才算並排)', [['<div className="grid max-w-2xl grid-cols-2 gap-[var(--layout-space-loose)]">', '<div className="grid max-w-2xl gap-[var(--layout-space-loose)]">']], 'R4', 54],
   ['(f) 函式 story(CSF2)手刻規則、不經 TutorialPage', [["const ITEMS = ['複製連結', '重新命名']\n", "const ITEMS = ['複製連結', '重新命名']\nexport const ExtraRule = () => (<div className=\"flex flex-col gap-[var(--layout-space-loose)]\"><div><h3 className=\"text-h6 font-semibold\">❌ 手刻規則</h3><p>說明</p></div><div><h3 className=\"text-h6 font-semibold\">✅ 手刻規則二</h3><p>說明</p></div></div>)\n"]], 'R1', 13],
   ['(f) export function story 不經 TutorialPage', [["const ITEMS = ['複製連結', '重新命名']\n", "const ITEMS = ['複製連結', '重新命名']\nexport function ExtraPage() {\n  return <div><p>說明</p></div>\n}\n"]], 'R1', 14],
   ['(g) 改名的教學框小元件 RuleBlock', [["const ITEMS = ['複製連結', '重新命名']\n", "const ITEMS = ['複製連結', '重新命名']\nconst RuleBlock = ({ title, children }: { title: string; children: React.ReactNode }) => (<div className=\"mb-[var(--layout-space-loose)]\"><h3 className=\"text-h6 font-semibold\">{title}</h3>{children}</div>)\n"]], 'R2', 13],
@@ -1036,8 +1045,14 @@ export const MUTATIONS = [
   ['ExampleGroup 裡以手寫標題開頭', [['        <div className="max-w-prose"><p>適合的場景</p></div>\n', '        <ExampleGroup><h4 className="text-h6 font-semibold">手刻規則</h4><Button>送出</Button></ExampleGroup>\n']], 'R4', 18],
   ['render 裡定義的手刻規則小元件放進頁裡', [['    const Demo = () => (\n      <TutorialPage>\n', '    const R = ({ t }: { t: string }) => <div><h3>{t}</h3><p>說明</p></div>\n    const Demo = () => (\n      <TutorialPage>\n        <R t="手刻規則" />\n']], 'R4', 42],
   // ── 2026-10-20 教學頁稽核(預期行可以是字串:= 注入後的檔案裡第一個含該字串的行)──
-  ['(T2) TutorialPage 自帶字級', [['className="max-w-3xl"', 'className="max-w-3xl text-body"']], 'R5', 16],
-  ['(T2) TutorialPage 自帶字色', [['className="max-w-3xl"', 'className="max-w-3xl text-foreground"']], 'R5', 16],
+  ['(T2) TutorialPage 自帶字級', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className=\"text-body\">\n      <UsageSection kind=\"when\">\n']], 'R5', 16],
+  ['(T2) TutorialPage 自帶字色', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className=\"text-foreground\">\n      <UsageSection kind=\"when\">\n']], 'R5', 16],
+  // BA-tutorial-width(2026-11-05):頁根自訂整頁寬,各種寫法都紅;同一頁把寬度寫在範例區 / 示範塊上 = 乾淨頁本身(0 筆)
+  ['(BA-tutorial-width) TutorialPage 自訂整頁寬 max-w-3xl', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className=\"max-w-3xl\">\n      <UsageSection kind=\"when\">\n']], 'R13', 16],
+  ['(BA-tutorial-width) TutorialPage 固定寬 w-[640px]', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className=\"w-[640px]\">\n      <UsageSection kind=\"when\">\n']], 'R13', 16],
+  ['(BA-tutorial-width) TutorialPage 用 cn(…) 拼寬度', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage className={cn(\'max-w-prose\')}>\n      <UsageSection kind=\"when\">\n']], 'R13', 16],
+  ['(BA-tutorial-width) TutorialPage 用 style 給寬', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage style={{ maxWidth: 640 }}>\n      <UsageSection kind=\"when\">\n']], 'R13', 16],
+  ['(BA-tutorial-width) TutorialPage 展開 props', [['    <TutorialPage>\n      <UsageSection kind=\"when\">\n', '    <TutorialPage {...pageProps}>\n      <UsageSection kind=\"when\">\n']], 'R13', 16],
   ['(T4) 使用指引的 story 名稱不是「使用指引」', [["  name: '使用指引', render", "  name: '使用準則', render"]], 'R9', 15],
   ['(T4) 使用指引少了一段(沒有 siblings)', [['      <UsageSection kind="siblings">', '      <div>']], 'R9', 16],
   ['(T4) 使用指引三段順序錯', [['<UsageSection kind="when">', '<UsageSection kind="siblings">'], ['<UsageSection kind="siblings"><TutorialList>', '<UsageSection kind="when"><TutorialList>']], 'R9', 16],

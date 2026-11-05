@@ -21,7 +21,7 @@ const TutorialRule = createTutorialRule()
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <UsageSection kind="when">
         <p>一列放不下全部項目時,顯示前幾個、其餘折成 <code>+N</code>,滑過展開完整清單。它是內部元件,一般由 Combobox、PeoplePicker 這類元件內建使用。</p>
         <TutorialList>
@@ -59,7 +59,7 @@ export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
     // 規則之間 / 規則標題 → 內容的間距由共用教學頁元件擁有(stories-helpers/examples/tutorial-page.tsx;原本的 <h4> 沒有任何樣式 —— 靠沒有安裝的 prose 外掛)
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <p>OverflowIndicator 是顯示「還有 N 個沒列出來」的 <code>+N</code> 小標籤,由下列幾種元件在內部使用(顯示前幾項 + 把剩下的折成 <code>+N</code>),不直接放在頁面程式碼裡:</p>
 
       <TutorialRule title="Combobox 標籤溢出(單行模式)">

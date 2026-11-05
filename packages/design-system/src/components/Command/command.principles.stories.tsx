@@ -18,7 +18,7 @@ const TutorialRule = createTutorialRule()
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <UsageSection kind="when">
         <p>需要「搜尋過濾 + 鍵盤導覽」的選項清單:全域指令面板(⌘K)、行內搜尋清單;也是 Select / Combobox / PeoplePicker 搜尋模式的底層。</p>
         <TutorialList>
@@ -62,7 +62,7 @@ export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
     // 段落 / 規則之間與規則標題 → 內容的間距由共用教學頁元件擁有(stories-helpers/examples/tutorial-page.tsx;原本靠沒有安裝的 prose 外掛排版,h4 沒有任何樣式)
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <p>Command 是 internal primitive,由消費者組合使用,不直接放在 app code。以下兩種 world-class 慣例(對齊 Linear / Raycast / VS Code Cmd-K idiom):</p>
 
       <TutorialRule title="表單選值 — SelectMenu 內嵌 Command">

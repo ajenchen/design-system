@@ -66,9 +66,10 @@ function IconTierRow({ tier, iconPx, note }: { tier: string; iconPx: number; not
 export const Overview: Story = {
   name: '總覽',
   render: () => (
-    <TutorialPage className="max-w-3xl">
+    <TutorialPage>
+      {/* 兩張表寬 = 原本的整頁 max-w-3xl(頁根不再自訂寬,BA-tutorial-width) */}
       <TutorialSection title="Field Height">
-        <div>
+        <div className="max-w-3xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
             Button / Input / Checkbox SelectionItem 等互動元件的高度。一般 field family 消費者
             <strong>不傳 size 時預設 md</strong>——Form / Toolbar 並排多控件默認等高。
@@ -86,7 +87,7 @@ export const Overview: Story = {
       </TutorialSection>
 
       <TutorialSection title="Icon 尺寸兩 tier">
-        <div>
+        <div className="max-w-3xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
             Icon 尺寸由元件引用的 field-height token 決定——離散兩組配對,無中間值、不需公式。
             程式化 SSOT 是 <code>ICON_SIZE</code> 常數(本表直接消費真值渲染)。

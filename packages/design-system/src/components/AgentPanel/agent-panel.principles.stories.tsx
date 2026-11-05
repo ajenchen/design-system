@@ -11,7 +11,7 @@ export default meta
 export const UsageGuidance: StoryObj = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       <UsageSection kind="when">
         <TutorialList>
           <li>產品頁右側需要常駐、可開合的智慧代理對話(任務助理、資料問答、批次操作代理)。</li>
@@ -41,7 +41,7 @@ export const UsageGuidance: StoryObj = {
 export const ContentGuidelines: StoryObj = {
   name: '決策卡出題守則',
   render: () => (
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       <TutorialList>
         <li>1–3 題,每題必須真的改變代理下一步;能一題就不問兩題,禁「計畫可以嗎?」類空問。</li>
         <li>一題一步:一次只顯示一題,兩題以上才顯示「n / N」;footer 右側兩鈕:前=第一題跳過(用預設繼續)/ 第二題起上一題(答案保留、不可跳題),後=下一題 / 末題送出;選填單選題有選取時,左側出現「清除選取」。</li>
@@ -60,7 +60,7 @@ export const ContentGuidelines: StoryObj = {
 export const MotionRule: StoryObj = {
   name: '動態規則',
   render: () => (
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       <TutorialList>
         <li>標誌三態(靜止=待機 / 招喚 / 思考)只有一份定義(AgentLogo),不另立一套本體動態語言。</li>
         <li>呼吸包絡全家族共用:一息 3 秒,35% 吸頂、85% 回落、之後靜止空拍;呼出去的波 90% 才散盡。吸氣變亮、呼氣變暗,本體不變淡。</li>

@@ -15,7 +15,7 @@ const TutorialRule = createTutorialRule()
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       <UsageSection kind="when">
         <TutorialList>
           <li>
@@ -59,7 +59,7 @@ export const UsageGuidance: Story = {
 export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       {/* 2026-10-20 T5:原本是一串「❌ 禁: / ✅ 必:」開頭的清單 —— 對錯判斷只放在規則標題(全 DS 教學頁同一種寫法),每條各自一則規則;
           2026-10-15 r1b 複驗 F5 補齊 spec「Consumer 紀律」的 Menu 不用 collapsible="none"、各區最小寬、詳情面板標題列、版面模式固定四條 */}
       <TutorialRule
@@ -109,7 +109,7 @@ export const CompositionRules: Story = {
 export const LayoutModeRule: Story = {
   name: '佈局模式怎麼選',
   render: () => (
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       <TutorialRule title="唯一判準:頂部標頭服務的範圍">
         <p className="text-body">
           唯一的區分標準 = <strong>頂部標頭服務的是「目前這一頁」還是「整個產品」</strong>,

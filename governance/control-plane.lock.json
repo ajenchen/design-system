@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:42f6160c37f8dfc50acb0a6db058f17c4b369d21f790300c1905f466b8d082ef",
+      "hash": "sha256:b25ab95c9e35721393eae6482b679a511d5cb50ca1bf64b9413141e427611cd3",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c6d39059a16dbcde4573fb19767523fde72263a97fef512ee5c23fd0021b242c",
+      "hash": "sha256:4fd42d92d47fe43a7245b4f38c9d90ac836200a047572b3cb395da3235679259",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139534,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:4e43c18dabd36be05ef219f0e982dda03666d378e676a388d6445886829b874a",
+  "inputDigest": "sha256:0dfca383a3e6ded40c8d8c7f41c23e85130c8efdc9d60d9d8d82445aa60f95fd",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -216,10 +216,10 @@
           "targetDigest": "sha256:9dca84e613c03426fba58e3a629994bbb235d6d49085278078942ccdd1e342b9"
         },
         {
-          "expectedTargetDigest": "sha256:2a4ff1b882cd019579c65dc4c48bb3d84f48db441e5a6950cddbf0b5c42d5aae",
+          "expectedTargetDigest": "sha256:9a9409faf6e9c40f000e759ef540584b03c186296a35c5203476e58c5bdd01ed",
           "name": "story-writing",
-          "sourceDigest": "sha256:71c09e0f6853ac66515cb2306a8fd9c506633a64579ea1a601f43340c72861b6",
-          "targetDigest": "sha256:2a4ff1b882cd019579c65dc4c48bb3d84f48db441e5a6950cddbf0b5c42d5aae"
+          "sourceDigest": "sha256:3173ede6d09eebd85221b4a4c2aa69ab5746799dbbcc249d5c8451a0182667ce",
+          "targetDigest": "sha256:9a9409faf6e9c40f000e759ef540584b03c186296a35c5203476e58c5bdd01ed"
         },
         {
           "expectedTargetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf",
@@ -439,10 +439,10 @@
           "targetDigest": "sha256:28c85166fc5072e28d11cd59d336dacfa0fb9be8d11ed35ad720bc254b551c81"
         },
         {
-          "expectedTargetDigest": "sha256:a552abdb228b414b1e96c25571ce0fc647d1c94122e81938fee36055f83beafe",
+          "expectedTargetDigest": "sha256:914a666afd93e56e0b8190ba6dadd74ecee731ad8adeba4ad3c19735067bc782",
           "name": "story-writing",
-          "sourceDigest": "sha256:71c09e0f6853ac66515cb2306a8fd9c506633a64579ea1a601f43340c72861b6",
-          "targetDigest": "sha256:a552abdb228b414b1e96c25571ce0fc647d1c94122e81938fee36055f83beafe"
+          "sourceDigest": "sha256:3173ede6d09eebd85221b4a4c2aa69ab5746799dbbcc249d5c8451a0182667ce",
+          "targetDigest": "sha256:914a666afd93e56e0b8190ba6dadd74ecee731ad8adeba4ad3c19735067bc782"
         },
         {
           "expectedTargetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d",
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:285a1e362a4e7656ab6c55ebea92c93f8f1fd235bf7341595c897a8ceef1876f",
+  "snapshotDigest": "sha256:9dbf544023cb611cf6fb0f3d6171ea8d8dfa31cd6d81f71f7764ba5186a622c6",
   "sources": [
     {
       "hash": "sha256:cda38443418fae9bda0c0e7d9c0775344bc4cdcba05dded0e0b0b94200ade4ba",
@@ -689,7 +689,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:007af36e1093e676bcab816647ecd0f9bd5bb2b6f9c62934531b1ad30ac0c69b",
+      "hash": "sha256:f02685c6e7245257681b06ec158c4c818428996c523396b7eb158fa525f683ab",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3588,7 +3588,7 @@
         "scripts/generated/"
       ],
       "files": 694,
-      "hash": "sha256:4ff6f7d9a84be03bc14ec27cfc6d314171d6985bc15a3ac22fc06b52bd885dd1",
+      "hash": "sha256:8de85ca068ddf39e7c7f69e81a6d3318e0d50c347d72dccc1d6eae672446c57b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

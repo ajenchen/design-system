@@ -25,13 +25,15 @@ const OPS = OPERATOR_REGISTRY.string
   .map((o) => ({ value: o.op, label: o.label }))
 
 // 範例的說明一律 ExampleCaption(CaptionedExamples 自動併組);規則標題由共用元件畫(2026-10-20 T5:原本兩則「❌」是手寫的紅色 h3)
-const TutorialRule = createTutorialRule({ examples: true })
+// 範例區寬 640:原本整頁 w-[640px],頁根不再自訂寬之後寫在範例上(BA-tutorial-width;撐滿的組合控件不跟著頁拉長)
+const EXAMPLES_WIDTH = 'max-w-[640px]'
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: EXAMPLES_WIDTH })
 
 /* 使用指引固定三段;內容準則與尺寸規則各自一則(2026-10-20 T4:原本六段全擠在使用指引裡) */
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="w-[640px]">
+    <TutorialPage>
       <UsageSection kind="when">
         {/* 清單說的就是下面這個示範:說明 ↔ 範例 tight(ExampleGroup) */}
         <ExampleGroup>
@@ -41,7 +43,7 @@ export const UsageGuidance: Story = {
             <li>搜尋框 + 搜尋按鈕</li>
             <li>範圍輸入(起 + 迄 + 中間的符號)</li>
           </TutorialList>
-          <ProductSearchDemo placeholder="搜尋..." />
+          <div className={EXAMPLES_WIDTH}><ProductSearchDemo placeholder="搜尋..." /></div>
         </ExampleGroup>
       </UsageSection>
 
@@ -70,7 +72,7 @@ export const UsageGuidance: Story = {
 export const ContentGuidelines: Story = {
   name: '內容準則',
   render: () => (
-    <TutorialPage className="w-[640px]">
+    <TutorialPage>
       <TutorialList>
         <li>裡面的控件同一個尺寸 —— 不混用 sm / md / lg(高度要一致)</li>
         <li>控件各自管寬度 —— 固定寬的下拉 + 撐滿的輸入框是典型組合</li>
@@ -84,7 +86,7 @@ export const ContentGuidelines: Story = {
 export const SizeRule: Story = {
   name: '尺寸怎麼給',
   render: () => (
-    <TutorialPage className="w-[640px]">
+    <TutorialPage>
       <TutorialRule title="繼承 Field 尺寸 — 包進 Field 當控件">
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>

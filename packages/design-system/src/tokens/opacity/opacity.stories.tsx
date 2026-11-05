@@ -49,9 +49,10 @@ function OpacityRow({ utility, value, usage }: { utility: string; value: string;
 export const Overview: Story = {
   name: '總覽',
   render: () => (
-    <TutorialPage className="max-w-4xl">
+    <TutorialPage>
+      {/* 表格寬 = 原本的整頁 max-w-4xl(頁根不再自訂寬,BA-tutorial-width) */}
       <TutorialSection title="Opacity Tokens">
-        <div>
+        <div className="max-w-4xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
             本系統只定義 1 個 opacity token——<code>--opacity-disabled</code>(0.45,系統內唯一)。
             其他透明度需求走 alpha 色階(<code>--white-aN</code> / <code>--black-aN</code>),不另開 opacity token;

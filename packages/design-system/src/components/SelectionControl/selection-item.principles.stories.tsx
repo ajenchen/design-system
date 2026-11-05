@@ -21,7 +21,7 @@ const TutorialRule = createTutorialRule()
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <UsageSection kind="when">
         <p>Checkbox 與 RadioGroup 共用的選項列排版(控件 + 可選的圖示 / 頭像 + 標籤與說明)。它是內部元件:一律透過 <code>&lt;Checkbox label&gt;</code> / <code>&lt;RadioGroupItem label&gt;</code> 使用。</p>
         <TutorialList>
@@ -61,7 +61,7 @@ export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
     // 段落 / 規則之間與規則標題 → 內容的間距由共用教學頁元件擁有(stories-helpers/examples/tutorial-page.tsx;原本靠沒有安裝的 prose 外掛排版,h4 沒有任何樣式)
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <p>SelectionItem 是 Family 2 reading-mode row layout primitive,由 Checkbox / RadioGroup 兩個 consumer 在「list-as-page settings」場景消費,不直接放在 app code:</p>
       <TutorialRule title="Checkbox + SelectionItem:多選設定清單">
         <p>多選 + 每個 row 大塊 description / icon → <StoryLink kind="Design System/Components/Checkbox/展示" name="四模式">Checkbox</StoryLink> 內部消費 SelectionItem(control 放 Checkbox indicator / prefix 可選放 icon 或 avatar / content 放 label + description)。對齊 Notion 通知設定 / Slack notification preferences idiom。</p>

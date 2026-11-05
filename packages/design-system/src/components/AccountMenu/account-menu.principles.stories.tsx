@@ -25,7 +25,7 @@ const TutorialRule = createTutorialRule()
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="max-w-3xl">
+    <TutorialPage>
       <UsageSection kind="when">
         <p>目前登入者「自己」的帳號入口:個人資料、設定與登出。</p>
         <TutorialList>
@@ -63,7 +63,7 @@ export const UsageGuidance: Story = {
 export const PlacementRule: Story = {
   name: '放置規則:每個畫面只出現一次',
   render: () => (
-    <TutorialPage className="max-w-3xl">
+    <TutorialPage>
       <TutorialRule title="帳號入口放在哪裡,由版面模式決定">
         <TutorialList>
           <li><strong>primary-header：</strong>global header 右側使用 AccountMenu。</li>
@@ -80,7 +80,7 @@ export const CompositionRule: Story = {
   name: '組合規則:固定身分,開放內容',
   render: () => (
     // 說明 ↔ 它說的範例 = tight(ExampleGroup);整頁外框 = 共用教學頁元件
-    <TutorialPage className="max-w-3xl">
+    <TutorialPage>
       <ExampleGroup>
         <p className="text-body text-fg-secondary">
           Trigger 與 identity Label 由 AccountMenu 固定，預設 actions 可透過 callbacks 使用；

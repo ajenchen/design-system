@@ -34,7 +34,7 @@ export const Overview: Story = {
     // 段落 = 共用教學頁元件 TutorialSection(2026-10-20 T7 甲,與 Elevation / Color / UI Size 等 token 頁同一種段落):
     // 段落之間 loose × 2(md 32 / lg 48)、段落標題 h2 + 淺分隔線 —— 原本 space-y-loose 讓四個圓角段之間只剩 16px,
     // 與段內「名稱 → 樣本」幾乎一樣近;名稱列原本是 12px 的 code + 說明(手刻的段落標題)
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       <TutorialSection title="rounded-xs(2px)— 極小 indicator(≤ 10px)">
         <div className="flex flex-wrap gap-[var(--layout-space-tight)] items-center">
           <div className="flex gap-[var(--layout-space-loose)] items-center">

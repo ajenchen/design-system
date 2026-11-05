@@ -197,9 +197,10 @@ export const UISize: Story = {
   },
   render: () => (
     // 段落 = 共用教學頁元件的 TutorialSection(2026-10-20 T7 甲:原本兩組表格之間只有 loose,與組內「標題 → 表格」同一個量級)
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
+      {/* 表格寬 = 原本的整頁 max-w-2xl(頁根不再自訂寬,BA-tutorial-width) */}
       <TutorialSection title="Field Height（Button、Input、SelectionItem）">
-        <div>
+        <div className="max-w-2xl">
           <ColHeader />
           <TokenRow attr="data-ui-size" token="--field-height-xs" md="24px" lg="24px" />
           <TokenRow attr="data-ui-size" token="--field-height-sm" md="28px" lg="32px" />
@@ -208,7 +209,7 @@ export const UISize: Story = {
         </div>
       </TutorialSection>
       <TutorialSection title="Table Row（DataTable）">
-        <div>
+        <div className="max-w-2xl">
           <ColHeader />
           <TokenRow attr="data-ui-size" token="--table-row-sm" md="32px" lg="40px" />
           <TokenRow attr="data-ui-size" token="--table-row-md" md="40px" lg="48px" />

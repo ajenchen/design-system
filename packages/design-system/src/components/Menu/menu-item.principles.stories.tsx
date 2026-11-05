@@ -21,7 +21,7 @@ const TutorialRule = createTutorialRule()
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <UsageSection kind="when">
         <p>選單裡的一列選項(在選單裡挑一個或多個)。MenuItem 是內部排版元件,一般透過 DropdownMenu(動作選單)或 SelectMenu(選值下拉)使用,不直接寫進產品頁面。</p>
         <TutorialList>
@@ -65,7 +65,7 @@ export const CompositionRules: Story = {
   name: '組合規則',
   render: () => (
     // 段落 / 規則之間與規則標題 → 內容的間距由共用教學頁元件擁有(stories-helpers/examples/tutorial-page.tsx;原本靠沒有安裝的 prose 外掛排版,h4 沒有任何樣式)
-    <TutorialPage className="max-w-prose">
+    <TutorialPage>
       <p>MenuItem 是選單選項列的共用排版元件,由以下兩類選單元件包起來使用,不會直接寫在產品頁面裡:</p>
       <TutorialRule title="動作選單 — DropdownMenu 內含 MenuItem">
         <p>使用者點擊觸發某個 action(複製 / 刪除 / 重新命名)→ <StoryLink kind="Design System/Components/DropdownMenu/展示" name="基本">DropdownMenu</StoryLink>(Radix 控制 open / close + keyboard nav,MenuItem 提供 row layout)。</p>

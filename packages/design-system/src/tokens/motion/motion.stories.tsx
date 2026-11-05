@@ -62,9 +62,10 @@ function DelayRow({ token, value, usage, consumers }: {
 export const Overview: Story = {
   name: '總覽',
   render: () => (
-    <TutorialPage className="max-w-4xl">
+    <TutorialPage>
+      {/* 兩張表寬 = 原本的整頁 max-w-4xl(頁根不再自訂寬,BA-tutorial-width) */}
       <TutorialSection title="Hover Delay Tokens">
-        <div>
+        <div className="max-w-4xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
             三層 tier:<code>plain</code>(被動文字提示)/ <code>rich</code>(含 fetch 的內容預覽,門檻更高)/
             <code>close</code>(通用關閉緩衝)。命名對齊 Material 3「plain / rich tooltip」術語 +
@@ -97,7 +98,7 @@ export const Overview: Story = {
           世界級對照值 cite:tokens/motion/motion.spec.md「進出場動畫 token」表(m3.material.io/styles/motion/easing-and-duration
           + carbondesignsystem.com/guidelines/motion/overview,spec frontmatter benchmark 段)。 */}
       <TutorialSection title="進出場動畫 Tokens">
-        <div>
+        <div className="max-w-4xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
             Overlay fade/zoom/slide 與原地展開收合的 duration / easing / 幾何,由 tw-animate-css 的
             <code>--tw-duration</code> / <code>--tw-ease</code> 變數綁定;共用 SSOT =
@@ -168,7 +169,7 @@ export const DelayFeel: Story = {
   render: () => (
     <>
     {/* 規則外框 = 共用教學頁元件(2026-10-20 T7 甲 / T8:原本手寫 section + h3 + 說明段落的教學框) */}
-    <TutorialPage className="max-w-2xl">
+    <TutorialPage>
       <TutorialRule
         paragraph={false}
         title="plain(500ms)— 工具列 icon 按鈕的文字提示"
