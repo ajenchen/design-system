@@ -4979,6 +4979,10 @@ function DataTableInner<TData>(
       ref={setTableRef}
       data-table-size={size}
       data-data-table-outer  // anchor for RowDragHandle Portal getBoundingClientRect (M25 invariant: outer 一定存在)
+      // 填滿高度(`isFillHeight`,height = 100% / 100vh / fill)的直接標記,給量具認「這張表的高度跟著格子走」用。
+      // 2026-11-06:捲軸可見閘的 E(格子縮 1–3px 後不得裁切)原本用「捲動盒有 inline maxHeight」代認填滿高度 ——
+      // 固定 px 的上限也掛 inline maxHeight(修前在中央表身、f2ecd9e1 起在捲動盒),E 於是量到固定高度的表(契約外)。
+      data-dt-fill-height={isFillHeight ? '' : undefined}
       data-active-editor-controller={experimentalActiveEditorController ? 'enabled' : undefined}  // Slice D Step 3.2 scaffold marker
       // 2026-05-12 fix(user 抓:為什麼按 shift 那麼容易會在 table 外圈出現一層藍色邊框(轉述)):
       // table outer tabIndex=0(spreadsheet keyboard nav needs)→ click 取得 focus →

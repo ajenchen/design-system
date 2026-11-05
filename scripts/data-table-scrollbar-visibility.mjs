@@ -27,6 +27,11 @@
  *   D. 像素:捲軸**外側一半**的長條截圖,≥ 95% 像素是軌道色或拇指色(抓 `pointer-events:none` 的遮蓋物——
  *      hit-test 會放行、像素不會);
  *   E. 動態縮高(fill-height 的 story):slot 縮小 1 / 2 / 3px 後 350ms,B 仍成立(針對 compute() 舊 `<4px` 守衛)。
+ *      「是不是填滿高度」直接讀表格根節點的 `data-dt-fill-height`(isFillHeight 的標記)。2026-11-06 之前用「捲動盒有 inline
+ *      maxHeight」代認 —— 固定 px 的上限也掛 inline maxHeight,E 因此量到固定高度的表(契約外:格子比固定高度小時被裁是
+ *      consumer 給的格子不夠,不是 compute() 沒跟上)。修前(中央表身當捲動盒)剛好被 scrollIntoView 把 overflow:hidden 的
+ *      外框捲 2px、裁切移到沒量的表頭上而沒紅;f2ecd9e1 表頭進捲動盒後這 1–3px 就量到了(PR #169 dd7fd2cd 深掃 36 條紅)。
+ *      E 一則都沒量到(沒有任何表格帶這個標記)= 儀器失效(--only 除外),不准靜默變成空閘。
  *
  * 對照組(M32「儀器要先有對照組」,`--selftest`):(i) 捲動區加高 2px → B 必紅;(ii) 用 `pointer-events:none`
  * 的遮蓋物蓋住垂直捲軸外側一半 → C 仍綠、D 必紅。
@@ -162,7 +167,7 @@ const INSPECT = `(() => {
     const r = box(el)
     // Playwright 非全頁截圖的 clip 是**視窗**座標(它自己加 scroll 位移),跟 getBoundingClientRect 同座標系
     const item = { index: scrollers.indexOf(el), sbV, sbH, hasV, hasH, rect: [r.left, r.top, r.right, r.bottom].map((n) => +n.toFixed(1)), clips: [], cover: {}, strips: {}, scroll: [scrollX, scrollY],
-      fill: !!el.style.maxHeight, instrumentOff: (hasV && sbV === 0) || (hasH && sbH === 0) }
+      fill: !!el.closest('[data-data-table-outer]')?.hasAttribute('data-dt-fill-height'), instrumentOff: (hasV && sbV === 0) || (hasH && sbH === 0) }
     for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
       const c = getComputedStyle(a)
       if (c.overflowX === 'visible' && c.overflowY === 'visible' && !/paint|content|strict/.test(c.contain)) continue
@@ -241,6 +246,8 @@ const FORCED_CSS = (sb) => `*{scrollbar-width:auto!important;scrollbar-color:aut
 const failures = []
 const instrumentFailures = []
 let checked = 0, uncovered = 0
+/** E(動態縮高)實際量了哪幾則 × 幾何;一則都沒有 = 儀器失效(--only 除外) */
+const eMeasured = []
 /** 覆蓋清單那一格量到的:id → { now, skips } */
 const coverage = new Map()
 /** 開一則 story、注入(強制組的)捲軸 CSS、等版面靜止;開不起來丟 StoryRenderInstrumentError。 */
@@ -289,7 +296,9 @@ for (const geo of MATRIX) {
     }
     // E. 動態縮高:fill-height 的 story,slot 縮 1/2/3px 後區塊不得再溢出
     if (!geo.native) {
-      const fill = await page.evaluate(() => !!document.querySelector('[data-datatable-hscroll]')?.style.maxHeight)
+      // 填滿高度直接讀標記(見檔頭 E);E 縮的是第一張表的格子,所以也只認第一張表
+      const fill = await page.evaluate(() => !!document.querySelector('[data-data-table-outer]')?.hasAttribute('data-dt-fill-height'))
+      if (fill) eMeasured.push(`${id.split('--').pop()}@${tag}`)
       if (fill) for (const k of [1, 2, 3]) {
         const rep = await page.evaluate(async (k) => {
           const outer = document.querySelector('[data-data-table-outer]'); const slot = outer?.parentElement
@@ -374,6 +383,12 @@ if (checked === 0) {
   console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:${ids.length} 支 story × ${MATRIX.length} 組幾何,一個有溢出的捲動區都沒量到 —— 這是儀器失效(沒量到),不是產品裁決,也不算通過`)
   process.exit(1)
 }
+// E 一則都沒量到 ≠ E 全過(M37):標記改名 / 填滿高度的 story 被刪,E 就變成空閘。--only 只開指定的 story,不適用。
+if (!ONLY && MATRIX.some((g) => !g.native) && eMeasured.length === 0) {
+  console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:E(格子縮 1–3px)一則都沒量到 —— 沒有任何表格帶 data-dt-fill-height(標記改名?填滿高度的 story 不見了?),不是產品裁決,也不算通過`)
+  process.exit(1)
+}
+console.log(`E 動態縮高量了 ${eMeasured.length} 則 × 幾何:${eMeasured.join('、') || '(--only,無填滿高度的表)'}`)
 console.log(`DataTable 捲軸可見閘:${ids.length} 支 story × ${MATRIX.length} 組幾何(${MATRIX.map((g) => g.native ? '原生' : `${g.sb}px@${g.dpr}`).join(' / ')}),檢查 ${checked} 個捲動區×位置${uncovered ? `;原生組 ${uncovered} 個為覆蓋式捲軸(厚度 0)未覆蓋` : ''}`)
 for (const f of failures) console.log(`✗ ${f.id} [${f.tag} ${f.pos}] rect=${f.rect.join(',')} → ${f.bad.join(';')}`)
 
