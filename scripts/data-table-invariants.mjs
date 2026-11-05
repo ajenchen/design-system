@@ -2048,11 +2048,15 @@ await loadStory(`${BASE}/iframe.html?id=design-system-components-peoplepicker-�
  * 「同色」容許 1/255:同一個合成結果在不同合成路徑(合成器圖層 vs 光柵)差一個取整單位,肉眼不可分(2026-11-05 原型實測 29 / 30);
  * 2026-09-06 那種疊錯一層差 ~20 單位,遠超過這個容差。取樣點 = 格子內距裡的一點(避開文字、線、捲軸)。 */
 await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story&globals=theme:dark`, '[role="row"]')
-{
-  const tone = await page.evaluate(() => {
+// 兩種底各量一次(2026-11-05 審查 D4):頁面底(--canvas)與 DS 浮起表面的底(bg-surface-raised = DialogContent / Sheet / Popover 的底)。
+// WM 的 AddFieldsDialog / SyncStatusDialog 就是 DialogContent 裡的 DataTable;黏住區寫死 --canvas 時,深色對話框裡勾選欄比同列暗 19 階。
+// 浮起表面那一輪 = 把表格的父層掛上同一個 class(與 dialog.tsx DialogContent 同一顆 utility),不新增 story。
+for (const backdrop of ['canvas', 'surface-raised']) {
+  const tone = await page.evaluate((backdrop) => {
     const cb = document.querySelector('[data-datatable-hscroll]')
     if (!cb) return null
     const table = cb.closest('[role="table"], [role="grid"]')
+    if (backdrop === 'surface-raised') { table.parentElement.classList.add('bg-surface-raised'); table.parentElement.style.padding = '8px' }
     const pick = (sel) => {
       const el = table.querySelector(sel)
       if (!el) return null
@@ -2060,8 +2064,10 @@ await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展�
       return { x: Math.round(r.left + 3), y: Math.round(r.top + 3) }
     }
     const firstCell = (side) => `[data-datatable-panel="${side}"] [role="row"][data-row-index="1"] > :is([role="cell"], [role="gridcell"])`
+    const bgOf = (el) => getComputedStyle(el).backgroundColor
     return {
       theme: document.documentElement.getAttribute('data-theme') || (document.body.getAttribute('data-theme') || '(none)'),
+      parentBg: bgOf(table.parentElement),
       pts: {
         bodyLeft: pick(firstCell('left')),
         bodyCenter: pick(firstCell('center')),
@@ -2071,27 +2077,32 @@ await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展�
         headRight: pick('[data-datatable-header-panel="right"] [role="columnheader"]'),
       },
     }
-  })
+  }, backdrop)
+  const on = `${backdrop === 'canvas' ? '頁面底' : '浮起表面底 bg-surface-raised'}`
   if (!tone || !tone.pts.bodyLeft || !tone.pts.bodyCenter || !tone.pts.headLeft || !tone.pts.headCenter) {
-    record('I28', 'dark mode 表格結構取得(否則以下斷言空轉)', false, `INSTRUMENT-FAIL 取樣點 ${JSON.stringify(tone?.pts ?? null)}`)
-  } else {
-    record('I28', `真的處在 dark 主題(theme=${tone.theme})`, tone.theme === 'dark', `data-theme=${tone.theme}`)
-    await page.mouse.move(0, 0)
-    await settleAfterInteraction(page, { frames: 10 })
-    const img = decodePng(await page.screenshot())
-    const c = Object.fromEntries(Object.entries(tone.pts).map(([k, p]) => [k, p ? px(img, p.x, p.y) : null]))
-    const near = (a, b) => !!a && !!b && a.every((v, i) => Math.abs(v - b[i]) <= 1)
-    const luma = (a) => a[0] + a[1] + a[2]
-    record('I28', '釘選表身與中央表身同色(±1;疊錯一層差 ~20)',
-      near(c.bodyLeft, c.bodyCenter) && (!c.bodyRight || near(c.bodyRight, c.bodyCenter)),
-      `left ${c.bodyLeft} / center ${c.bodyCenter} / right ${c.bodyRight}`)
-    record('I28', '釘選表頭與中央表頭同色(±1)',
-      near(c.headLeft, c.headCenter) && (!c.headRight || near(c.headRight, c.headCenter)),
-      `left ${c.headLeft} / center ${c.headCenter} / right ${c.headRight}`)
-    record('I28', '表頭比表身多一層 muted(深色:表頭比表身亮,且差距遠大於取整)',
-      luma(c.headCenter) - luma(c.bodyCenter) >= 15,
-      `head ${c.headCenter} / body ${c.bodyCenter}`)
+    record('I28', `dark mode 表格結構取得(${on};否則以下斷言空轉)`, false, `INSTRUMENT-FAIL 取樣點 ${JSON.stringify(tone?.pts ?? null)}`)
+    continue
   }
+  record('I28', `真的處在 dark 主題(theme=${tone.theme},${on})`, tone.theme === 'dark', `data-theme=${tone.theme}`)
+  if (backdrop === 'surface-raised') {
+    // 非空轉守衛:父層真的換成浮起表面的底(不是透明 —— 透明時量到的還是頁面底,等於沒換)
+    record('I28', `浮起表面那一輪,父層真的有不透明底(${tone.parentBg})`, !['rgba(0, 0, 0, 0)', 'transparent', ''].includes(tone.parentBg), `父層 background-color = ${tone.parentBg}`)
+  }
+  await page.mouse.move(0, 0)
+  await settleAfterInteraction(page, { frames: 10 })
+  const img = decodePng(await page.screenshot())
+  const c = Object.fromEntries(Object.entries(tone.pts).map(([k, p]) => [k, p ? px(img, p.x, p.y) : null]))
+  const near = (a, b) => !!a && !!b && a.every((v, i) => Math.abs(v - b[i]) <= 1)
+  const luma = (a) => a[0] + a[1] + a[2]
+  record('I28', `釘選表身與中央表身同色(±1;疊錯一層差 ~20;${on})`,
+    near(c.bodyLeft, c.bodyCenter) && (!c.bodyRight || near(c.bodyRight, c.bodyCenter)),
+    `left ${c.bodyLeft} / center ${c.bodyCenter} / right ${c.bodyRight}`)
+  record('I28', `釘選表頭與中央表頭同色(±1;${on})`,
+    near(c.headLeft, c.headCenter) && (!c.headRight || near(c.headRight, c.headCenter)),
+    `left ${c.headLeft} / center ${c.headCenter} / right ${c.headRight}`)
+  record('I28', `表頭比表身多一層 muted(深色:表頭比表身亮,且差距遠大於取整;${on})`,
+    luma(c.headCenter) - luma(c.bodyCenter) >= 15,
+    `head ${c.headCenter} / body ${c.bodyCenter}`)
 }
 
 

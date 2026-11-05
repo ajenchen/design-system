@@ -391,15 +391,24 @@
    本 DS 的 `--surface` 在深色是半透明白(`semantic.css` 深色區塊 `--surface: var(--white-a08)`)、`--muted` 也是半透明,
    兩者都不能單獨當底。做法同 AG Grid:**已知不透明的底 `--canvas`**(頁面最底層,兩個主題都不透明)上面依序疊回
    修前畫面上那幾層 —— 釘選表身 = canvas + surface(根節點那一層);表頭再加一層 muted(`.dtHeaderMuted`,畫在表頭面板的內層)。
-   表格直接放在頁面底色上時(全部 DS story 與 WM 頁面)與修前同色;淺色主題 `--surface` 本來就不透明,任何底色上都同色。
-   **已知限制**(登記於 `data-table-known-defects.spec.md` 缺陷 W):深色主題下把表格放在不是 `--canvas` 的底上(例:深色的
-   `--surface-raised` 對話框裡),黏住區會比中央區暗一階。
+   淺色主題 `--surface` 本來就不透明,任何底色上都同色。
+   **「已知不透明的底」= 表格所在那一層的底,不寫死 `--canvas`**(2026-11-05 審查 D4,`data-table-known-defects.spec.md` 缺陷 W 已修):
+   讀 `--dt-sticky-base`,預設 `--canvas`(頁面最底層)。DS 的浮起表面(Dialog / Sheet / Popover / HoverCard / DropdownMenu …)
+   全部以 `bg-surface-raised` 畫底,在它們裡面改成 `--surface-raised` —— WM 的 AddFieldsDialog / SyncStatusDialog 就是
+   DialogContent 裡的 DataTable(勾選欄 = 左釘選);寫死 canvas 時深色對話框裡表頭 65→48、勾選欄 49→30(表身 49),修前同色。
+   表格放在其他不透明底上的 consumer,在表格外層設 `--dt-sticky-base` 成那個底色即可。
    **每一層都是實心底色的盒子**:`--surface` 那一層是 `::before`(z −1,疊在宿主的 canvas 底與內容之間 —— 宿主必須是定位盒且自成疊層,
    釘選面板是 `sticky` + z、表頭中央區另掛 `relative z-[1]`)。不用 `linear-gradient` 疊:漸層會被瀏覽器加抖色(Skia gradient dithering),
    同一個顏色的「漸層」逐像素看是 ±1 的棋盤點(第一版這樣寫,像素比對整條表頭都是點狀差);也不用 inset box-shadow 填色 ——
    非整數縮放下陰影與底色盒的柵格化取整不同,黏住區邊緣會冒出一條細縫,正是「全表禁用陰影」(I9)要防的那一類。 */
 .dtStickyBg {
-  background-color: var(--canvas);
+  background-color: var(--dt-sticky-base, var(--canvas));
+}
+
+/* 浮起表面裡,黏住區的已知不透明底 = 浮起表面自己的底(見上)。掛在 utility class 上:DS 每個浮起表面都用這一顆,
+   consumer 自己用 `bg-surface-raised` 做的容器也一併涵蓋;`--surface-raised` 在這個元素上代換(主題節點在祖先上)。 */
+.bg-surface-raised {
+  --dt-sticky-base: var(--surface-raised);
 }
 
 .dtStickyBg::before {
