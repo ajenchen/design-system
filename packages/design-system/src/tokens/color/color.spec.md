@@ -969,7 +969,6 @@ SSOT → `ds-canonical/references/structural-token-retention.md`(canonical owner
 - `button.spec.md`
 - `calendar.spec.md`
 - `chart.spec.md`
-- `data-table.spec.md`
 - `date-grid.spec.md`
 - `file-item.spec.md`
 - `file-upload.spec.md`

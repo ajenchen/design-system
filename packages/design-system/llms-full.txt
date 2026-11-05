@@ -52,7 +52,7 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Badge/
 
 ### Variants
-- **critical**: 最高優先級通知 — 錯誤計數 / 緊急徽章（Gmail 未讀 / iOS notification red dot）
+- **critical**: 最高優先級通知 — 錯誤計數 / 緊急徽章（例:未讀通知紅點）
 - **high**: 高優先級通知 — 主要計數（Slack 訊息計數 / GitHub PR review badge）
 - **medium**: 中優先級提示 — 次級計數（Linear issue count / Notion sidebar indicator）
 - **low**: 低強度指示 — 使用者切 tab 才看（Slack sidebar 靜默標記 / VS Code tab modified dot）
@@ -72,28 +72,10 @@ Source(AI 讀此看官方範例): src/components/Breadcrumb/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/BulkActionBar/
 
-## Button(family 3)
+## Button
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Button/
-
-### Variants
-- **primary**: 主要 action / CTA。**必 explicit `variant="primary"`,不靠預設**(2026-06-06 起預設改低 emphasis)
-- **secondary**: 陪襯 primary 的次要 action
-- **tertiary**: **labeled 按鈕預設** / 第三級 action(tool-like / icon-heavy)。中性外框、清楚可點性,再按重要程度升 primary
-- **text**: 文字樣式 — low emphasis / toolbar embedded。**iconOnly 按鈕預設**(對齊 action-bar「純動作工具→text」+ Material 3「icon-only = no fill」)
-- **link**: 內文連結 — inline reading context
-
-### Sizes
-- **xs**: row-embedded inline(FileItem rich action / DataTable row action)
-- **sm**: form field-height 28 / compact chrome
-- **md**: default general UI
-- **lg**: prominent CTA / stakeholder-facing surface
-
-### 禁止事項(when NOT / anti-pattern)
-- iconOnly 必傳 aria-label — a11y 硬性要求 — 無 label 盲人讀不到
-- 不自加 embedded=true / dense 類維度 — Embedded 情境走 L2 host slot(如 Input.endAction)不擴 Button
-- dismiss 走 dismiss prop 不用 destructive — Dismiss 是功能弱化 fg-muted,非破壞性
 
 ## Calendar(family composite)
 
@@ -280,16 +262,10 @@ Source(AI 讀此看官方範例): src/components/Rating/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/ScrollArea/
 
-## SegmentedControl(family 3)
+## SegmentedControl
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/SegmentedControl/
-
-### Sizes
-- **xs**: row-embedded inline action(DataTable row inline action / Toolbar 內塞 segmented filter);text-caption
-- **sm**: form field-height 28 / compact chrome bar(Filter bar / dense Toolbar)
-- **md**: 預設 — 跟 Button / Input / 所有 field-height 系列一致;通用 form 內 toggle
-- **lg**: touch / prominent 切換(landing 主視覺切 chart 維度、marketing form);text-body-lg
 
 ## Select(family 4)
 
@@ -370,30 +346,10 @@ Source(AI 讀此看官方範例): src/components/Tabs/
 - **md**: future tier — 目前無 recommended use case,新 consumer 須先諮詢 DS owner
 - **lg**: 獨立 tabs 直接取代 chrome header — page-level workspace 主導覽(tab 高度 = chrome-header-height)
 
-## Tag(family 3)
+## Tag
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Tag/
-
-### Variants
-- **neutral**: 通用分類、草稿、無特定語義（GitHub label default / Notion page tag untagged）
-- **blue**: categorical 色相（--color-blue-*）— 分類 / 標記，常用於資訊類
-- **green**: categorical 色相（--color-green-*）— 分類 / 標記，常用於完成 / 正向類
-- **deep-orange**: categorical 色相（--color-deep-orange-*，hue 38）— 暖橙紅分類
-- **yellow**: categorical 色相（--color-yellow-*，淺底深字）— 分類 / 標記，常用於注意類
-- **red**: categorical 色相（--color-red-*，品牌紅家族 hue 25；≠ 語意 --error，與 deep-orange 無關）
-- **orange**: categorical 色相（--color-orange-*）— 分類 / 標記
-- **amber**: categorical 色相（--color-amber-*，淺底深字）— 琥珀分類
-- **lime**: categorical 色相（--color-lime-*）— 黃綠分類
-- **turquoise**: categorical 色相（--color-turquoise-*）— 產品線 / 團隊區別標記
-- **indigo**: categorical 色相（--color-indigo-*）— 產品線 / 團隊區別標記
-- **purple**: categorical 色相（--color-purple-*）— 產品線 / 團隊區別標記
-- **magenta**: categorical 色相（--color-magenta-*）— 產品線 / 團隊區別標記
-
-### Sizes
-- **sm**: form field-height 28 / compact chrome / dialog / panel context
-- **md**: default general UI
-- **lg**: touch / prominent CTA / stakeholder-facing surface
 
 ## Textarea(family 4)
 

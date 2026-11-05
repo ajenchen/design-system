@@ -18,7 +18,7 @@
 - [Badge](https://ajenchen-design-system.netlify.app): variants:critical/high/medium/low — src:components/Badge
 - [Breadcrumb](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Breadcrumb
 - [BulkActionBar](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/BulkActionBar
-- [Button](https://ajenchen-design-system.netlify.app): variants:primary/secondary/tertiary/text/link;sizes:xs/sm/md/lg — src:components/Button
+- [Button](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Button
 - [Calendar](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Calendar
 - [Carousel](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Carousel
 - [Chart](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Chart
@@ -51,7 +51,7 @@
 - [RadioGroup](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/RadioGroup
 - [Rating](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Rating
 - [ScrollArea](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/ScrollArea
-- [SegmentedControl](https://ajenchen-design-system.netlify.app): sizes:xs/sm/md/lg — src:components/SegmentedControl
+- [SegmentedControl](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/SegmentedControl
 - [Select](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Select
 - [SelectMenu](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/SelectMenu
 - [Separator](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Separator
@@ -62,7 +62,7 @@
 - [Steps](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Steps
 - [Switch](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Switch
 - [Tabs](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Tabs
-- [Tag](https://ajenchen-design-system.netlify.app): variants:neutral/blue/green/deep-orange/yellow/red/orange/amber/lime/turquoise/indigo/purple/magenta;sizes:sm/md/lg — src:components/Tag
+- [Tag](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Tag
 - [Textarea](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Textarea
 - [TimePicker](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/TimePicker
 - [Toast](https://ajenchen-design-system.netlify.app): variants:neutral/info/success/warning/error — src:components/Toast
