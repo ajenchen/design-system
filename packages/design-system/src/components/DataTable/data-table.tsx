@@ -1876,7 +1876,7 @@ function DataTableInner<TData>(
   const tableRef = React.useRef<HTMLDivElement | null>(null)
   const bodyRef = React.useRef<HTMLDivElement>(null)
   /**
-   * **唯一的捲動盒**(2026-11-05,待辦總帳 Q2b;研究與一手來源 `tmp/wip-2026-10-13/archive/q2-b-scrollbar/`)。
+   * **唯一的捲動盒**(2026-11-05,待辦總帳 Q2b;依據與一手來源見 data-table.spec.md「三、三區域架構」單一捲動盒那一條)。
    * 表頭(黏頂)、三個表身面板(釘選兩側黏左 / 黏右)全部住在它裡面,兩軸捲動都由瀏覽器原生處理 ——
    * 表頭、釘選欄與中央欄在同一次合成裡一起動,沒有任何「下一個 scroll 事件再追上」的同步。
    * 修前是兩個捲動盒 + JS 同步 `scrollLeft` / `scrollTop`:推一下滾輪,表頭固定晚表身一格畫面(每台機器都有,停手才回來)。

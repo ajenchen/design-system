@@ -93,7 +93,7 @@ if ! command -v perl >/dev/null 2>&1; then
 fi
 # 2026-11-05 K8(待辦總帳 3h K8 落地):
 #   - 關鍵字:原 13 個名稱原樣保留在最前面,其後依 DS *.spec.md 實際出現的世界級設計系統 / 元件庫 / 產品 / 實務指引補上
-#     (盤點 tmp/wip-2026-10-13/…/k8/list.json 739 段)。刻意不收:DS 自己的執行期依賴(Radix 原件 / cmdk / react-day-picker /
+#     (2026-11-05 全樹盤點 739 段 / 182 檔,見 commit 209e656f)。刻意不收:DS 自己的執行期依賴(Radix 原件 / cmdk / react-day-picker /
 #     TanStack / dnd-kit …,行為宣稱由 M2 實測)、平台(瀏覽器 / 作業系統)、規範本身(WCAG / WAI-ARIA / HTML / MDN)、與一般字撞名的詞。
 #   - 來源網域:原 11 個前綴保留,補 DS 規格實際引用的官網 / 原始碼託管 / 標準組織網域(含不寫 https:// 的 `github.com/...` 寫法)。
 #     修掉原句的內插 bug:`@benchmark-unverified` 在 perl -ne(無 strict)裡會把 @benchmark 內插成空陣列,實際只比對 "-unverified"。
