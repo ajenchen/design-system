@@ -296,6 +296,13 @@ function ActiveEditorHost({ children }: { children: React.ReactNode }) {
         zIndex: 3,
         boxSizing: 'border-box',
         background: 'var(--canvas)',
+        // 編輯框住在唯一的捲動盒裡(2026-11-05 起 portal 進格);macOS 鍵位的 Home / End / PageUp / PageDown 在輸入框裡不移游標,
+        // 預設動作是「捲最近的捲動盒」→ 整張表捲走、編輯列被卸載、草稿丟失(2026-11-05 審查 D2)。在這一層把鍵盤捲動的
+        // 串連停住:`overflow: hidden`(格子本來就 overflow:hidden、本層鋪滿格子 → 不多裁任何東西)+ `overscroll-behavior: contain`。
+        // 輸入框自己的游標移動不受影響(Windows / Linux 的 Home / End 照常移游標)—— 只擋「冒到捲動盒的那一下」。
+        // 修前編輯框在表格外的固定層,這些鍵本來就捲不到表格;滑鼠滾輪在編輯框上同理不捲表格(修前同)。
+        overflow: 'hidden',
+        overscrollBehavior: 'contain',
       }}
       data-active-editor-host
     >

@@ -78,6 +78,7 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 - **有高度約束**(固定 `height="400px"` 等具體 px/rem,或 `height="100%"` 由父 flex 提供約束,Linear 做法——都走相同 cap 行為,無 dead surface):資料少→outer 內容高度;資料多→撐到上限後內部 scroll(虛擬捲動啟用,header 固定)。**填滿高度量的是 outer 真正拿到的格子**(2026-09-29,待辦總帳 OE3):父層**內容盒**(扣 padding / border)減掉同一個流向裡的剛性兄弟(工具列、分頁列;`flex-grow > 0` 的兄弟不扣)與 gap;表頭與每個兄弟都在觀察名單上(表頭變高、分頁列後出現都會重算)。同一個父層放兩張填滿高度的表格不支援(各給自己的格子)。閘 `scripts/data-table-invariants.mjs` I37。
 - **無高度約束**(auto):內容決定高度,table 框只包住內容;適合少量資料、預覽、嵌入式表格。犧牲:無虛擬捲動(全部渲染)、header 隨頁面捲走、水平捲軸在 table 最底部——這些不是 bug,是模式的取捨
 - **虛擬捲動什麼時候啟用**(2026-10-21 補明文,r1b DT-09):三個條件同時成立 —— 有高度約束、沒開分頁(兩者互斥,見「L5:分頁」)、目前的列數**超過 30**(`data-table.tsx` `VIRTUAL_THRESHOLD`)。30 筆以內一律直接渲染:小資料虛擬化沒有效益,還會在第一幀出現「0 列 → N 列」的跳動(同常數旁的註解)。**要不要傳 height**:資料會超過 30 筆、或筆數會隨使用者資料成長,而且表格要待在有限的高度裡 → 傳固定 `height` 或 `height="100%"`;只有幾筆、表格就該跟著頁面一起捲 → `height="auto"`。這個數字只住在這一句與 `VIRTUAL_THRESHOLD`;設計原則「虛擬捲動時機」與範例說明引同一個數字(閘 `scripts/data-table-tree-view-doc-invariant.mjs` P2)。2026-10-21 前規格沒有數字,教學頁的四個門檻數字彼此矛盾、也都不是程式的門檻
+- **編輯中不會被捲走**(2026-11-05 審查 D2):編輯中的那一列永遠留在虛擬範圍裡(`data-table.tsx` `editingRowIndex` → rangeExtractor),捲出視窗只是看不到,捲回來編輯框、焦點與草稿都還在 —— 修前列被卸載、打到一半的內容沒提交也沒提示就丟了(覆蓋層編輯器與一般 inlineEdit 同)。覆蓋層編輯框那一層停住鍵盤捲動的串連(`overflow: hidden` + `overscroll-behavior: contain`,格子本來就裁切、不多裁任何東西):macOS 鍵位的 Home / End / PageUp / PageDown 在輸入框裡不移游標、預設是捲最近的捲動盒,編輯中按下去不再把整張表捲走;輸入框自己的游標移動不受影響。閘 `scripts/data-table-invariants.mjs` I39。
 
 ### 三、三區域架構（AG Grid 模式）
 

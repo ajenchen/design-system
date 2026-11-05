@@ -2330,15 +2330,24 @@ function DataTableInner<TData>(
   // (多代理審查 P2:只有 aheadRows 變、範圍沒變的 render 會拿到上一輪的索引)。
   const aheadRowsNow = shellRef.current.aheadRows
   const aheadDirNow = shellRef.current.aheadDir
+  // **編輯中的那一列永遠在虛擬範圍裡**(2026-11-05 審查 D2):編輯框住在格子裡(覆蓋層 portal 進格、一般 inlineEdit 本來就在格裡),
+  // 列被捲出範圍 → 虛擬化把它卸載 → 編輯框跟著消失、打到一半的草稿沒提交也沒提示就丟了、焦點掉到 body。
+  // 編輯中只要不是使用者自己結束編輯,列就留著(畫在它原本的位置,捲出視窗就看不到,捲回來草稿還在)。
+  const editingRowIndex = React.useMemo(() => {
+    if (editingCellId == null || !useVirtual) return -1
+    return rows.findIndex((r) => editingCellId.startsWith(`${r.id}__`))
+  }, [editingCellId, rows, useVirtual])
   const shellRangeExtractor = React.useMemo(() => (range: { startIndex: number; endIndex: number; overscan: number; count: number }) => {
     const base = Math.max(0, range.startIndex - range.overscan)
     const end = Math.min(range.count - 1, range.endIndex + range.overscan)
     const from = aheadDirNow < 0 ? Math.max(0, base - aheadRowsNow) : base
     const to = aheadDirNow > 0 ? Math.min(range.count - 1, end + aheadRowsNow) : end
     const out: number[] = []
+    if (editingRowIndex >= 0 && editingRowIndex < from && editingRowIndex < range.count) out.push(editingRowIndex)
     for (let i = from; i <= to; i++) out.push(i)
+    if (editingRowIndex > to && editingRowIndex < range.count) out.push(editingRowIndex)
     return out
-  }, [aheadRowsNow, aheadDirNow])
+  }, [aheadRowsNow, aheadDirNow, editingRowIndex])
   React.useLayoutEffect(() => {
     const S = shellRef.current
     const cost = (typeof performance !== 'undefined' ? performance.now() : 0) - S.renderStart
