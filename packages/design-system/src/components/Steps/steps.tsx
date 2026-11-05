@@ -65,7 +65,7 @@ const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CO
 // 是白 8% 半透明,底下那層環色透上來 —— 實測深色間隙 #58A5FF(應為頁面底 #0A0A0A),整顆看起來是一個大藍圓,
 // 淺色卻是「圓 + 白色間隙 + 外環」,兩主題長得不一樣。
 // outline-offset 那一圈本來就是透明的,露出的是**真正的背景**(不論放在頁面、卡片還是對話框上),
-// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:48-50 `:focus-visible` 的
+// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:51-53 `:focus-visible` 的
 // outline 2px + offset 2px),粗細與間隙逐字相同。outline 與 box-shadow 一樣不佔排版,連接線幾何不動。
 const RING_GAP_PX = STACK_GAP_PX // 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(tokens/uiSize/stack-gap.ts)
 const RING_WIDTH_PX = 2

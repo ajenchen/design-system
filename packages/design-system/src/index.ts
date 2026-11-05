@@ -706,6 +706,7 @@ export type {
 //   - lib/overlay-description.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-escape.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-focus-return.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/pointer-focus-guard.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/pointer-press.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/press-settle.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/roving-list-keyboard.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)

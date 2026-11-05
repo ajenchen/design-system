@@ -44,10 +44,18 @@
   /* 焦點框 —— 全 DS 唯一的**外描邊**來源。
      SSOT:`ds-canonical/references/focus-canonical.md`「問題二」。
      元件端**不需要也不應該**再寫一次(抄一遍 = H1c 那類贅碼);
-     要改成往內畫的才加 `focus-ring-inset`(見下方 @utility)。 */
-  :focus-visible {
+     要改成往內畫的才加 `focus-ring-inset`(見下方 @utility)。
+     `:not([data-pointer-focus])`(2026-11-05,3f G-16):按著修飾鍵點下去也是滑鼠點,不畫框 —— Chromium 把單獨的 Shift
+     算成鍵盤操作,點過的按鈕再按 Shift 就出框;`lib/pointer-focus-guard.ts` 只在 DS 自己定義了「修飾鍵+點擊」的控件上掛這個屬性,
+     其餘元素永遠不帶它,行為與瀏覽器完全相同。用 focus-ring-inset 的元素寫 `focus-visible:not-data-pointer-focus:focus-ring-inset`。 */
+  :focus-visible:not([data-pointer-focus]) {
     outline: 2px solid var(--ring);
     outline-offset: var(--stack-gap); /* 2px;「疊在一起的兩樣東西」之間的縫,全 DS 同一個 token(tokens/uiSize/uiSize.css) */
+  }
+  /* 帶著 data-pointer-focus 時瀏覽器仍判 :focus-visible 成立,不寫這條就會露出 UA 預設框(Chromium `outline: auto 1px`,2026-11-05 實測)。
+     等於滑鼠聚焦時的樣子(outline-style: none);承擔者:無 —— 滑鼠點的按鈕本來就不畫框(focus-canonical.md「按鈕不屬於例外列」)。 */
+  :focus-visible[data-pointer-focus] {
+    outline-style: none;
   }
 
   /* 文字反白 — 底色 token 化(--text-selection;SSOT = color.spec.md「Highlight」段)。

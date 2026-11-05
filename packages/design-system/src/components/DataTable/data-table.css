@@ -251,8 +251,10 @@
    判準是 `:focus-visible` —— **瀏覽器真的替那個控件畫框的時候**:滑鼠點勾選框不畫控件框(`:focus-visible` 不成立),格游標框照留,
    仍然只有一個。格游標跟著鍵盤焦點走到控件所在的那一格(data-table.tsx 根節點 onFocus),所以藏起來的框與控件在同一格;
    焦點回到格導覽(F2 / Esc)時這條不再成立,格游標框立刻回來。用 CSS 的 :has() 讓它跟著瀏覽器的焦點狀態走,不另存一份狀態。
-   閘:scripts/data-table-link-cell-invariant.mjs L9。 */
-[data-data-table-outer]:has([role='gridcell'] :focus-visible) [data-selected-cell-id] {
+   閘:scripts/data-table-link-cell-invariant.mjs L9。
+   `:not([data-pointer-focus])`(2026-11-05,3f G-16):Shift+點擊勾選框之後瀏覽器會讓它 :focus-visible 成立,但 DS 不替它畫框
+   (`../../lib/pointer-focus-guard.ts`)—— 控件沒畫框,格游標框就要照留,判準跟著「控件真的畫了框」走。 */
+[data-data-table-outer]:has([role='gridcell'] :focus-visible:not([data-pointer-focus])) [data-selected-cell-id] {
   visibility: hidden;
 }
 

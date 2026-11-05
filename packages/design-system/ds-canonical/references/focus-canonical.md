@@ -185,7 +185,8 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 11 個會搶反白的目標 + SubTrigger / **E 常駐清單**:鍵盤框在時 hover 同列或別列,底色與框同時存在;`--selftest` 對照組把兩類都釘回舊行為,全部 'new' 斷言必紅)。
 
 **按鈕不屬於例外列。** 按鈕用滑鼠點下去不顯示焦點框(`:focus-visible` 啟發式:指標點按鈕不視覺化焦點,
-文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有插入點控件。
+文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有插入點控件。**按著修飾鍵點(Shift / ⌘ / Ctrl+點擊)也是滑鼠點**,
+單獨按下的修飾鍵不算鍵盤操作 —— 這句與下方「什麼時候畫(真焦點)」那列同時成立的方式寫在那一列(2026-11-05,待辦 3f G-16)。
 
 ### 一個項目只有一個指示器
 
@@ -219,7 +220,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
 | 位置(框的一段被元素**自己**貼邊的內容疊住) | 幾何不變 —— 仍是 `focus-ring-inset`,只是掛在與元素同形同大的 `::before`「框圖層」上,被疊住的那一段(兩端各多 2px 縫)用遮罩挖空、露出真正的底;**不是第四種幾何**(線寬、顏色、退距、圓角都沒變)。框畫在元素本身時,元素是那段內容的祖先,遮罩會連內容一起挖掉,所以要另一層。目前唯一案例:FileItem compact 列底的進度條(FileUpload 清單列共用) | `components/FileItem/file-item.spec.md`「焦點框 × 貼著列底的進度條」;機制 `file-item.tsx` `FILE_ITEM_RING_LAYER_CLASS` / `fileItemRingCutoutStyle`。方向 user 2026-09-26 選、挖空 + 縫 AI 推導(本檔「這條規則的來源總帳」) |
 | 只准三種幾何 | 全域外描邊 / `focus-ring-inset` / 填色元素專用的 `focus-ring-inset-emphasis`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組、禁手寫其他退距 | `scripts/focus-geometry-invariant.mjs` R1–R6 |
-| 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
+| 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible`,**只修正一個差異:單獨按下的修飾鍵不算鍵盤操作**。Chromium 只把帶 Ctrl / Alt / ⌘ 的按鍵排除在外,單獨的 Shift 照算(`keyboard_event_manager.cc`「If this keydown did not involve a meta-key press, update the keyboard event state and trigger :focus-visible matching」,https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/core/input/keyboard_event_manager.cc),而且點已經聚焦的元素不會把狀態清回滑鼠 —— 於是滑鼠點過的按鈕再按 Shift、或 Shift+點同一個按鈕,框就出來,與上一句「滑鼠點按鈕不畫框」衝突。React Aria 把單獨的修飾鍵排除在鍵盤模態之外(`@react-aria/interactions@3.25.0` `useFocusVisible.ts#L63-L66` `isValidKey`,https://github.com/adobe/react-spectrum/blob/%40react-aria/interactions%403.25.0/packages/%40react-aria/interactions/src/useFocusVisible.ts#L63-L66);規格把啟發式交給瀏覽器(Selectors 4「If the user interacts with the page via a pointing device … don’t indicate focus.」https://drafts.csswg.org/selectors-4/#the-focus-visible-pseudo)。做法:DS 自己定義了「修飾鍵+點擊」行為的控件(目前只有 DataTable 排序區、列勾選框、表格根節點)掛 `lib/pointer-focus-guard.ts`,聚焦那一刻照瀏覽器判斷、之後單獨的修飾鍵不讓框出來、真的按鍵框照回來;畫框的 CSS 一律寫 `:focus-visible:not([data-pointer-focus])` | 元件不判斷模態 —— 判斷仍是瀏覽器的,共用 helper 只補這一個差異;閘 `scripts/modifier-click-focus-invariant.mjs`(指標情境不畫、鍵盤對照必畫) |
 | 什麼時候畫(常駐清單) | 真焦點(規則一「兩類元件」第二表那幾個;TreeView 2026-09-25 起也是,待辦總帳 B9)= 瀏覽器 `:focus-visible`;容器 `aria-activedescendant` 型(TimePicker 欄)= 容器 `:focus-visible` 時畫在被指到的那一格(`time-columns.tsx` `group-focus-visible/listbox:`);常駐虛擬游標若再出現,才照 WICG 模態判準畫(上一節;`useInputModality()` 零消費者實作 2026-09-26 已刪,屆時重建) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
 | 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:方向鍵 / Home / End / PageUp / PageDown / Tab / Esc,或非文字輸入框上的任何鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算、在文字輸入框裡打字不算) | 上一節;同一支閘 D 段 |
 | **選中 × 游標** | 框疊在 `bg-neutral-selected` 上 | 規則二疊加表 |

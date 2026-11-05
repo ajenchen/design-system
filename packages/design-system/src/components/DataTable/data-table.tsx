@@ -65,6 +65,7 @@ import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
+import { pointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
 import { Button } from '@/design-system/components/Button/button'
 
 // ── 版面尺寸一律用不受 transform 影響的值(2026-10-13,待辦總帳 Q2c)────────────────────
@@ -1662,8 +1663,8 @@ function DataTableInner<TData>(
   //   此 pre-process 把 meta 值 copy 到 root size/minSize/maxSize,確保 TanStack column
   //   resize state 正常運作。**Back-compat**:consumer 寫 root `size` 仍 work(meta.width 沒設則
   //   不覆蓋 root)。新 code 一律用 meta.width。
-  const dsProcessedColumns = React.useMemo<ColumnDef<TData>[]>(() => {
   // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表)。
+  const dsProcessedColumns = React.useMemo<ColumnDef<TData>[]>(() => {
     return columns.map((c) => {
       const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number; type?: ColumnType } | undefined
       if (!meta) return c
@@ -1672,8 +1673,8 @@ function DataTableInner<TData>(
       if (meta.width !== undefined && cAny.size === undefined) updates.size = meta.width
       if (meta.minWidth !== undefined && cAny.minSize === undefined) updates.minSize = meta.minWidth
       if (meta.maxWidth !== undefined && cAny.maxSize === undefined) updates.maxSize = meta.maxWidth
-      return Object.keys(updates).length > 0 ? ({ ...c, ...updates } as ColumnDef<TData>) : c
       if (meta.type !== undefined && cAny.sortingFn === undefined) updates.sortingFn = sortingFnForColumnType<TData>(meta.type)
+      return Object.keys(updates).length > 0 ? ({ ...c, ...updates } as ColumnDef<TData>) : c
     })
   }, [columns])
 
@@ -3393,7 +3394,12 @@ function DataTableInner<TData>(
                 e.preventDefault()  // 攔截 Radix 內部 toggle,自己 toggle 帶 shiftKey
                 toggleRow(rowId, rowOriginal, { shiftKey: e.shiftKey })
               }}
+              // Shift+點擊之後不畫焦點框(3f G-16,同排序區)
+              onPointerDown={pointerFocusGuard.onPointerDown}
+              onFocus={pointerFocusGuard.onFocus}
+              onBlur={pointerFocusGuard.onBlur}
               onKeyDown={(e) => {
+                pointerFocusGuard.onKeyDown(e)
                 // Space:Radix 已處理 toggle,但要帶 shiftKey 區間選 → 攔截
                 if (e.key === ' ' && !isDisabled) {
                   e.preventDefault()
@@ -4063,9 +4069,13 @@ function DataTableInner<TData>(
           role={canSort ? 'button' : undefined}
           tabIndex={canSort ? 0 : undefined}
           onClick={canSort ? (e) => activateSort(e.shiftKey) : undefined}
+          // Shift+點擊之後不畫焦點框(3f G-16;理由在 `lib/pointer-focus-guard.ts` 檔頭)
+          onPointerDown={canSort ? pointerFocusGuard.onPointerDown : undefined}
+          onFocus={canSort ? pointerFocusGuard.onFocus : undefined}
+          onBlur={canSort ? pointerFocusGuard.onBlur : undefined}
           // 鍵盤等價(WCAG 2.1.1「Shift+點擊做得到的,鍵盤也要做得到」;data-table.spec.md 鍵盤段):Enter / Space = 點擊、Shift+Enter / Shift+Space = Shift+點擊。
           // AG Grid v33 表頭同一個鍵(headerCellCtrl.ts onEnterKeyDown:`progressSort(column, e.shiftKey)`)。
-          onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateSort(e.shiftKey) } } : undefined}
+          onKeyDown={canSort ? (e) => { pointerFocusGuard.onKeyDown(e); if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateSort(e.shiftKey) } } : undefined}
           // 多重排序時讀屏的順位(「排序順位 2」);畫面上的數字 aria-hidden —— 不然排序區的名字會變成「標題2」
           aria-describedby={priorityDescriptionId}
           className={cn(
@@ -4119,7 +4129,7 @@ function DataTableInner<TData>(
             **Layout canonical**(2026-05-06 v3 user explicit rule):不顯示時不佔位,label 取得整個 header width;
             顯示時佔位(寬同前;label 自然 truncate 讓位)。對齊 Notion(hover-row reveal action,inline action 不佔靜態 layout)/ Linear / Airtable。
             **收起 = 寬 0 + 透明 + 裁掉,不是 display:none**(2026-10-28,待辦總帳 R1b-DT1):
-            - 鍵盤那一條用 `:focus-visible`(`group-has-[:focus-visible]`),不用 focus-within —— 滑鼠點過排序區後 focus-within 會一直成立,
+            - 鍵盤那一條用 `:focus-visible`(`group-has-[:focus-visible]`;排除 `[data-pointer-focus]`,3f G-16),不用 focus-within —— 滑鼠點過排序區後 focus-within 會一直成立,
               ⌄ 留到焦點離開(r1b DT-06 同族;理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc)。
             - 2026-10-21 實測:display 揭示 + `:focus-visible`,Tab 從排序區移到 ⌄ 的那一下群組裡一時沒有 :focus-visible → ⌄ 變 display:none →
               焦點掉到 <body>。收起改成「寬 0」:節點一直在版面裡、一直可聚焦,Tab 到它的那一刻群組就有 :focus-visible、立刻展開。
@@ -4133,7 +4143,7 @@ function DataTableInner<TData>(
           // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'group-hover:w-auto group-hover:ml-2 group-hover:overflow-visible group-hover:opacity-100',
           // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
-          'group-has-[:focus-visible]:w-auto group-has-[:focus-visible]:ml-2 group-has-[:focus-visible]:overflow-visible group-has-[:focus-visible]:opacity-100',
+          'group-has-[:focus-visible:not([data-pointer-focus])]:w-auto group-has-[:focus-visible:not([data-pointer-focus])]:ml-2 group-has-[:focus-visible:not([data-pointer-focus])]:overflow-visible group-has-[:focus-visible:not([data-pointer-focus])]:opacity-100',
           // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
         )}>
@@ -4882,7 +4892,9 @@ function DataTableInner<TData>(
         hasCellCursor
           // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx:380
           ? 'focus-visible:outline-none'
-          : 'focus-visible:focus-ring-inset',
+          // `not-data-pointer-focus`(3f G-16):上方 2026-05-12 user 抓到的「按 shift…table 外圈…藍色邊框」2026-11-05 仍重現 ——
+          // 點選取格空白處焦點落在這裡,再 Shift+點就出框(「觸發條件已經不存在」只量了點勾選框)。
+          : 'focus-visible:not-data-pointer-focus:focus-ring-inset',
         className,
       )}
       // isFillHeight:`maxHeight: 100%`(不是 height:100%)— content 小 → outer = intrinsic
@@ -4904,7 +4916,9 @@ function DataTableInner<TData>(
       // 跟 spreadsheet 兩 path。React 在 dup props 只 keep last 是 silent regression risk。
       tabIndex={enabled || spreadsheetMode ? 0 : undefined}
       // 2026-05-10:`enabled || spreadsheetMode` — spreadsheet keyboard nav 跨 row-selection-disabled 場景也要 fire
-      onKeyDown={enabled || spreadsheetMode ? tableKeyboardHandler : undefined}
+      onKeyDown={enabled || spreadsheetMode ? (e) => { pointerFocusGuard.onKeyDown(e); tableKeyboardHandler(e) } : undefined}
+      // 3f G-16:onFocus / onBlur 在下方各自的處理裡先呼叫
+      onPointerDown={enabled || spreadsheetMode ? pointerFocusGuard.onPointerDown : undefined}
       // Esc 層宣告(2026-10-01;規則 keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」):此刻有格游標 / 列選取 → 根節點自己是一層
       //(格游標用 `hasCellCursor` = 游標格此刻畫得出來,與鍵盤 handler 能不能處理 Esc 同一條;2026-10-07 前用 `selectedCellId != null`,欄被隱藏時宣告了卻沒人處理)
       //(`self`:只有焦點就在根上才算;焦點進到格裡的控件時由那個控件自己宣告)。拖曳中改成拖曳那一層(整個子樹;Esc 只取消拖曳,
@@ -4931,6 +4945,7 @@ function DataTableInner<TData>(
       // (https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/grid/examples/css/dataGrids.css#L72-L78)。
       // 區間底色不受影響:它是選取,不是焦點。
       onFocus={spreadsheetMode ? (e) => {
+        pointerFocusGuard.onFocus(e)
         setGridHasFocus(isGridFocusTarget(e.currentTarget, e.target))
         if (e.target !== e.currentTarget) {
           // **格游標跟著鍵盤焦點走**(2026-10-21,r1b NEW-1):在格裡的控件上按 Tab,焦點會走到別一格的控件(連結 → 鉛筆 → 下一列的勾選框),
@@ -4954,11 +4969,12 @@ function DataTableInner<TData>(
         const first = e.currentTarget.querySelector<HTMLElement>('[data-cell-id]')
         const id = first?.dataset.cellId
         if (id) setSelectedCellId(id)
-      } : undefined}
+      } : enabled ? pointerFocusGuard.onFocus : undefined}
       // 焦點離開格線區(到表頭控件、表外、或瀏覽器視窗失焦)→ 格游標框收起;在格線區內換位置由下一個 onFocus 決定。
       onBlur={spreadsheetMode ? (e) => {
+        pointerFocusGuard.onBlur(e)
         if (!isGridFocusTarget(e.currentTarget, e.relatedTarget)) setGridHasFocus(false)
-      } : undefined}
+      } : enabled ? pointerFocusGuard.onBlur : undefined}
       onMouseOver={enterLeaveHandlers.onMouseOver}
       onMouseOut={enterLeaveHandlers.onMouseOut}
       {...props}
