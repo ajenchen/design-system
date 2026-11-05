@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-05T05:37:34.768Z",
+    "generatedAt": "2026-11-05T19:59:35.017Z",
     "stories": 1075,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
@@ -1081,7 +1081,7 @@
       "design-system-tokens-uisize--overview"
     ],
     "storyIdsSha256": "dfc5862e7417d032723d263cfc023a3c553ffd1fcd114ee1335a5457359d7691",
-    "fingerprints": 727
+    "fingerprints": 726
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1304,7 +1304,6 @@
     "design-system-components-datatable-展示--selection-disabled-rows|color-contrast": 1,
     "design-system-components-datatable-展示--selection-keyboard-and-shift|color-contrast": 6,
     "design-system-components-datatable-展示--selection-single-mode|color-contrast": 3,
-    "design-system-components-datatable-展示--spreadsheet-cursor-contract|scrollable-region-focusable": 1,
     "design-system-components-datatable-展示--with-pagination|color-contrast": 1,
     "design-system-components-datatable-設計原則--column-type-rule|color-contrast": 12,
     "design-system-components-datatable-設計原則--empty-state-rule|color-contrast": 8,
@@ -1579,7 +1578,7 @@
     "design-system-components-select-設計規格--size-matrix|color-contrast": 42,
     "design-system-components-separator-設計原則--decorative-semantic-rule|color-contrast": 6,
     "design-system-components-separator-設計原則--usage-guidance|color-contrast": 1,
-    "design-system-components-separator-設計規格--overview|color-contrast": 5,
+    "design-system-components-separator-設計規格--overview|color-contrast": 7,
     "design-system-components-separator-設計規格--token-matrix|color-contrast": 4,
     "design-system-components-sheet-展示--open-snapshot|color-contrast": 1,
     "design-system-components-sheet-設計原則--header-footer-structure-rule|color-contrast": 5,
