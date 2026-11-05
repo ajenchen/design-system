@@ -9,6 +9,9 @@
  *           R1 細列上每一顆列鈕的版面矩形都在細列看得到的範圍內(看得到的範圍 = 列鈕矩形與每一層 overflow 非 visible 祖先的 padding box 取交集);
  *           R2 / R3 滑鼠停在列鈕上、鍵盤聚焦列鈕時打開的 Tooltip:左緣 − 列鈕看得到的右緣 = `OVERLAY_SIDE_OFFSET`(值從 overlay-geometry.ts 讀,不寫死);
  *           R4 鍵盤聚焦框四邊完整:焦點框(往內畫的 outline)每一邊的中線取樣點,命中測試都打到列鈕本身(被裁掉 / 被蓋住就打不到);
+ *           R3k 真按 Tab(不是程式聚焦)走到細列列鈕:AppShell 主標頭佈局 820×700 一開始就是細列、全域標頭比視窗寬,Tab 途中外層捲動容器會先捲到右邊、
+ *               走到細列時瀏覽器再把它捲回來 —— Tooltip 打開後過 TAB_PERSIST_MS 仍開著、左緣 − 列鈕看得到的右緣 = `OVERLAY_SIDE_OFFSET`
+ *               (tooltip.spec.md「A11y 預設」「Tab — focus trigger 時顯示」;途中容器一次都沒捲 = 這格沒量到聚焦捲動 = 儀器失效);
  *           量的列鈕 = 捲動區裡第一顆 + 帳號列(有的話)。
  *           另在完整佈局的細列放三種「會讓列鈕比細列寬」的東西再量 R1–R4(標準 / 寬鬆密度;DS 沒有範例這樣放,由閘注入,並先證明它真的比細列寬):
  *           `SidebarMenuSkeleton showIcon` 與 `SidebarInput` 的同幾何元素(最小寬比細列寬 → 撐開捲動區內容層:SidebarContent 的 ScrollArea 開 `fillX` 管);
@@ -31,6 +34,7 @@
  *           拿掉 `fillX`(內容層放回 Radix 預設的 `display: table`)→ 放了骨架列 / 搜尋框的細列 R1–R4 都紅(標準 / 寬鬆);
  *           拿掉列鈕的 `!pr-0` → 預留列尾動作右內距的細列 R1–R4 都紅(標準 / 寬鬆);
  *           Tooltip 外殼右移 4px → R2、R3 紅;細列捲軸 visibility:hidden(= 不出捲軸)→ R5 紅;捲軸加寬到 28px → R6 紅;
+ *           Tab 到細列列鈕 300ms 後再派一次外層捲動容器的 scroll(= 修前症狀:捲動把剛打開的 Tooltip 關掉)→ R3k 紅;
            捲軸軌道接指標(= 2026-10-28 修前:軌道蓋住列鈕右側約 10px)→ 每一格細列捲軸 case R7 紅;滑塊也不接指標(拖不動)→ 每一格 R7 紅。
  *       story 開不起來 = 儀器失效,點名 story、exit 1。該有 Tooltip 的列鈕一格都沒量到、聚焦後不是 :focus-visible、焦點框往外畫(本量法只量往內畫的框)、
  *       細列內容沒有比視窗高(量不到捲軸)= 儀器失效(量不到不等於沒問題,M37 第八形);R7 沒有列鈕伸到軌道底下、找不到離開滑塊的列 = 該格紅(不放行)。
@@ -228,6 +232,15 @@ const SCROLL_CASES = [
   { id: 'design-system-components-appshell-展示--primary-sidebar', kind: 'shell', density: 'md', viewport: { width: 1440, height: 230 } },
   { id: 'design-system-components-appshell-展示--primary-sidebar', kind: 'shell', density: 'lg', viewport: { width: 1440, height: 230 } },
 ]
+// R3k:真按 Tab 走到細列列鈕(2026-10-27 t2-sidebar 獨立審查第 8 點:主標頭佈局窄視窗一開始就是細列,鍵盤 Tab 到細列「Inbox」不開 Tooltip;
+// 2026-11-05 實測根因:Tab 經過全域標頭右側「帳號與設定」時外層水平捲動容器捲到右邊,Tab 到細列時瀏覽器捲回來,那一下 scroll 讓 Radix 關掉
+// 剛打開的 Tooltip —— 修在 tooltip.tsx「聚焦帶來的捲動不關提示」)。R3 是程式聚焦,不會經過標頭、也不會捲,所以量不到這件事。
+const TAB_CASES = [
+  { id: 'design-system-components-appshell-展示--primary-header', kind: 'shell', viewport: { width: 820, height: 700 } },
+]
+/** 打開之後再等這麼久仍要開著(> tooltip.tsx 的 FOCUS_SCROLL_IDLE_MS 150:修前是聚焦後約 15ms 就被捲動關掉)。量的是「持續」,所以是固定等待,不是代理。 */
+const TAB_PERSIST_MS = 600
+const TAB_ROLE = 'Tab 到的細列列鈕'
 const scrollPrefix = (c) => `${short(c.id)} ${c.viewport.width}×${c.viewport.height} ${densityName(c.density)}密度 ${c.expanded ? '展開' : '收起'}`
 const DEFAULT_VIEWPORT = { width: 1440, height: 900 }
 const short = (id) => id.replace('design-system-components-sidebar-', '').replace('design-system-components-appshell-', 'AppShell ')
@@ -669,6 +682,57 @@ function judge(story, step, m) {
 }
 
 /** only:對照組只跑會讓指定斷言紅的那幾段(stories = 單獨使用的 story id;shell / density / stress / scroll = 跑不跑 AppShell 細列 / 寬鬆密度細列 / 放了東西的細列(STRESS_RAILS)/ 捲軸段) */
+/** R3k:從文件開頭真按 Tab,走到細列上的第一顆列鈕為止;途中記下外層捲動容器捲到的最大 scrollLeft。 */
+async function tabCells(page, c, prefix) {
+  const out = []
+  const btns = await page.evaluate(railProbe, { kind: c.kind, op: 'buttons' })
+  if (btns.err) throw new RailInstrumentError(`${prefix}:${btns.err}`)
+  if (btns.collapsible !== 'icon') throw new RailInstrumentError(`${prefix}:一開始不是細列(data-collapsible=${btns.collapsible}),量不到「一開始就是細列」這一格`)
+  await parkPointer(page)
+  await page.evaluate(() => {
+    document.activeElement?.blur?.()
+    const sc = document.querySelector('[data-app-shell-scroll]')
+    window.__r3kMaxScroll = sc ? sc.scrollLeft : -1
+    sc?.addEventListener('scroll', () => { window.__r3kMaxScroll = Math.max(window.__r3kMaxScroll, sc.scrollLeft) })
+  })
+  const path = []
+  let reached = null
+  for (let i = 0; i < 20 && !reached; i++) {
+    await page.keyboard.press('Tab')
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+    const a = await page.evaluate(({ kind, role }) => {
+      const frame = kind === 'shell' ? document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay])') : null
+      const el = document.activeElement
+      const name = (el?.getAttribute('aria-label') || el?.textContent || el?.tagName || '').trim().replace(/\s+/g, ' ').slice(0, 16)
+      const onRail = !!(frame && el && el.matches('[data-sidebar="menu-button"]') && frame.contains(el))
+      if (onRail) { document.querySelectorAll('[data-rail-probe]').forEach((x) => x.removeAttribute('data-rail-probe')); el.setAttribute('data-rail-probe', role) }
+      return { name, onRail, focusVisible: !!el?.matches(':focus-visible') }
+    }, { kind: c.kind, role: TAB_ROLE })
+    path.push(a.name)
+    if (a.onRail) reached = a
+  }
+  if (!reached) throw new RailInstrumentError(`${prefix}:按 20 下 Tab 都沒走到細列列鈕(${path.join(' → ')})`)
+  if (!reached.focusVisible) throw new RailInstrumentError(`${prefix}:Tab 到的細列列鈕不是 :focus-visible`)
+  const maxScroll = await page.evaluate(() => window.__r3kMaxScroll)
+  if (!(maxScroll > 0)) throw new RailInstrumentError(`${prefix}:Tab 途中外層捲動容器一次都沒捲(scrollLeft 最大 ${maxScroll}),這一格量不到聚焦帶來的捲動`)
+  const isOpen = (role) => { const t = document.querySelector(`[data-rail-probe="${role}"]`); const id = t?.getAttribute('aria-describedby'); return !!t && t.getAttribute('data-state') !== 'closed' && document.getElementById(id ?? '')?.getAttribute('role') === 'tooltip' }
+  const opened = await page.waitForFunction(isOpen, TAB_ROLE, { timeout: 5000 }).then(() => true, () => false)
+  await page.waitForTimeout(TAB_PERSIST_MS)
+  const still = await page.evaluate(isOpen, TAB_ROLE)
+  if (still) await settleAfterInteraction(page, { frames: SETTLE_FRAMES })
+  const tip = still ? await page.evaluate(railProbe, { kind: c.kind, op: 'tip', role: TAB_ROLE }) : { open: false }
+  out.push({
+    ok: opened && still && tip.open && Math.abs(tip.left - tip.visRight - OVERLAY_SIDE_OFFSET) <= 1,
+    label: `${prefix}:R3k 真按 Tab 走到細列「${reached.name}」(${path.length} 下;途中外層捲動容器捲到 ${maxScroll}px):Tooltip 打開、${TAB_PERSIST_MS}ms 後仍開著、左緣 − 列鈕看得到的右緣 = ${OVERLAY_SIDE_OFFSET}`,
+    detail: !opened ? '聚焦 5 秒內沒打開 Tooltip' : !still ? `打開過,但 ${TAB_PERSIST_MS}ms 後已關(焦點仍在列鈕上)` : `tooltip.left=${tip.left} 列鈕看得到的右緣=${tip.visRight} 列鈕版面右緣=${tip.right}`,
+  })
+  await page.evaluate(() => document.activeElement?.blur?.())
+  if (!(await page.waitForFunction(tipState, { role: TAB_ROLE, open: false }, { timeout: 5000 }).then(() => true, () => false))) {
+    throw new RailInstrumentError(`${prefix}:${TAB_ROLE}的 Tooltip 失焦 5 秒後仍開著`)
+  }
+  return out
+}
+
 async function runPages(page, sv, sabotage, only = null) {
   const results = []
   const open = async (id, query = '') => {
@@ -736,6 +800,12 @@ async function runPages(page, sv, sabotage, only = null) {
       await parkPointer(page)
       results.push(...await railCells(page, 'standalone', `${prefix}(${inj.what} ${inj.size} > 細列看得到的 ${inj.visible})`, true))
     }
+    for (const c of TAB_CASES) {
+      if (only && !only.tab) continue
+      await page.setViewportSize(c.viewport)
+      if (!(await open(c.id))) return { instrumentFail: true, results }
+      results.push(...await tabCells(page, c, `${short(c.id)} ${c.viewport.width}×${c.viewport.height} 一開始就是細列`))
+    }
     for (const c of SCROLL_CASES) {
       if (only && !only.scroll) continue
       await page.setViewportSize(c.viewport)
@@ -791,6 +861,11 @@ const PAGE_SABOTAGE = [
   ['Tooltip 外殼右移 4px', { css: '[data-radix-popper-content-wrapper]{margin-left:4px!important}' },
     { stories: [ICON_COLLAPSE] },
     (res) => redAt(res, /展示--icon-collapse 收起:R2 /) && redAt(res, /展示--icon-collapse 收起:R3 /)],
+  // 修前症狀的面:焦點還在細列列鈕上,一個捲動把剛打開的 Tooltip 關掉。延後 300ms(> FOCUS_SCROLL_IDLE_MS)才派,所以修好的放過窗也不會放過它
+  ['Tab 到細列列鈕 300ms 後再派一次外層捲動容器的 scroll(= 修前:捲動把剛打開的 Tooltip 關掉)',
+    { script: `document.addEventListener('focusin', (e) => { const b = e.target instanceof Element && e.target.closest('[data-sidebar="menu-button"]'); if (!b) return; setTimeout(() => { const sc = document.querySelector('[data-app-shell-scroll]'); if (sc) sc.dispatchEvent(new Event('scroll')) }, 300) }, true)` },
+    { tab: true },
+    (res) => TAB_CASES.every((c) => res.some((r) => !r.ok && r.label.startsWith(short(c.id)) && /:R3k /.test(r.label)))],
   ['細列捲軸 visibility:hidden(= 細列不出捲軸)', { css: '[data-collapsible="icon"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"]{visibility:hidden!important}' },
     { scroll: true },
     (res) => redAt(res, /:R5 /)],
@@ -866,5 +941,5 @@ await br.close(); await sv.stop()
 if (problems.length) { console.log(`\n✗ ${SELFTEST ? 'selftest' : '單獨使用的 Sidebar 收合'}:\n  ${problems.join('\n  ')}`); process.exit(1) }
 console.log(SELFTEST
   ? `\n✓ selftest:靜態對照組與 ${PAGE_SABOTAGE.length} 種頁面破壞各自讓閘紅 —— 量具會紅`
-  : `\n✅ 單獨使用的 Sidebar:${STORIES.length} 則 story 收起 / 展開的寬度與可操作性、細列(含 AppShell ${SHELL_RAILS.length} 則、寬鬆密度 ${DENSITY_RAILS.length} 則、放骨架列 / 搜尋框 / 預留動作內距 ${STRESS_RAILS.length} 格)的列鈕版面 / Tooltip 間距 / 焦點框四邊、捲軸(${SCROLL_CASES.length} 種組合,含 AppShell;細列捲軸蓋到的那段列鈕點得到,只量細列)都符合、靜態段 0 違規`)
+  : `\n✅ 單獨使用的 Sidebar:${STORIES.length} 則 story 收起 / 展開的寬度與可操作性、細列(含 AppShell ${SHELL_RAILS.length} 則、寬鬆密度 ${DENSITY_RAILS.length} 則、放骨架列 / 搜尋框 / 預留動作內距 ${STRESS_RAILS.length} 格)的列鈕版面 / Tooltip 間距 / 焦點框四邊、真按 Tab 到細列的 Tooltip(${TAB_CASES.length} 格)、捲軸(${SCROLL_CASES.length} 種組合,含 AppShell;細列捲軸蓋到的那段列鈕點得到,只量細列)都符合、靜態段 0 違規`)
 process.exit(0)

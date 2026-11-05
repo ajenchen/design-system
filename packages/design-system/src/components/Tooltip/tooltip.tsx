@@ -22,6 +22,59 @@ const TooltipProvider = ({ delayDuration = MOTION_DELAY_PLAIN_MS, ...props }: Re
 // controlled,模式切換消失。`defaultOpen` destructure 出來 seed internal state(語意保留;不可
 // 與 `open` 一起 spread 給 Root)。consumer 三 prop(open/defaultOpen/onOpenChange)行為不變;
 // open 與 defaultOpen 同傳時 open 勝(Radix idiom)。
+// ── 聚焦帶來的捲動不關提示(2026-11-05,MASTER-TODO 3f「AppShell 主標頭佈局窄視窗 Tab 到細列不開 Tooltip」)──
+// Radix 在提示打開時對 window 掛捕獲階段的 scroll 監聽:任何「包含觸發點」的祖先一捲就關(radix-ui/primitives
+// packages/react/tooltip/src/tooltip.tsx#L546-L552,本 repo 鎖的 1.2.8 dist/index.mjs:311-319)。用意是觸發點被捲走時提示不要懸空。
+// 但鍵盤 Tab 到一個在捲動容器裡、此刻不在可視範圍的觸發點時,**瀏覽器自己會把容器捲到看得見它** —— 那一下 scroll 事件
+// 在聚焦打開提示之後才派送(實測 AppShell 主標頭佈局 820 寬:focus 931ms → 提示打開 933 → 水平捲動容器 scroll 935 → 關 948),
+// 於是 Tab 到的那顆永遠看不到提示,違反 tooltip.spec.md「A11y 預設」「Tab — focus trigger 時顯示」與 WCAG 2.2 SC 1.4.13
+// 「Persistent:…remains visible until the hover or focus trigger is removed」(焦點還在觸發點上)。
+// 做法:只放過「聚焦後緊接著那一段捲動」造成的關閉 —— 判準是**這次關閉發生在一個 scroll 事件的派送當中**(下方全域監聽在
+// Radix 之前登記,把派送中的事件記下來,下一個 task 清掉)且焦點仍在本觸發點、離聚焦或上一次放過的捲動不到 FOCUS_SCROLL_IDLE_MS
+// (平滑捲動一幀一個事件,一路延長)、總長不超過 FOCUS_SCROLL_MAX_MS。其他關閉(Esc、點擊、失焦、指標離開、別的提示打開、
+// 之後使用者自己捲動)一律照 Radix。同一種「自己造成的捲動不算」的例外,React Aria 也有:useCloseOnScroll 對 input / textarea
+// 的捲動不關(游標位置會讓它自己捲;adobe/react-spectrum packages/react-aria/src/overlays/useCloseOnScroll.ts#L52-L57)。
+// 機械閘:scripts/sidebar-standalone-collapse-invariant.mjs R3k(主標頭佈局 820×700 真按 Tab 到細列列鈕)。
+const FOCUS_SCROLL_IDLE_MS = 150
+const FOCUS_SCROLL_MAX_MS = 1000
+
+/** 目前正在派送的 scroll 事件(全域一份;在任何提示內容掛上 Radix 的監聽之前登記,所以同一次派送裡一定先跑)。 */
+let scrollInDispatch: Event | null = null
+let scrollTrackerInstalled = false
+function installScrollTracker() {
+  if (scrollTrackerInstalled || typeof window === 'undefined') return
+  scrollTrackerInstalled = true
+  window.addEventListener(
+    'scroll',
+    (event) => {
+      scrollInDispatch = event
+      // 監聽器之間會跑 microtask,所以用下一個 task 清(同一次派送的其他監聽器都看得到)
+      window.setTimeout(() => {
+        if (scrollInDispatch === event) scrollInDispatch = null
+      }, 0)
+    },
+    { capture: true, passive: true },
+  )
+}
+
+type FocusScrollGuard = { el: HTMLElement; focusAt: number; lastAt: number } | null
+const FocusScrollGuardContext = React.createContext<React.MutableRefObject<FocusScrollGuard> | null>(null)
+
+/** 這次關閉是不是「聚焦後緊接著的捲動」造成的(是 → 放過,並把放過的時間延長到現在)。 */
+function shouldKeepOpenThroughFocusScroll(guardRef: React.MutableRefObject<FocusScrollGuard>): boolean {
+  const guard = guardRef.current
+  const scroll = scrollInDispatch
+  if (!guard || !scroll || typeof document === 'undefined') return false
+  if (document.activeElement !== guard.el) return false
+  const target = scroll.target
+  const contains = target === document || (target instanceof Node && target.contains(guard.el))
+  if (!contains) return false
+  const now = performance.now()
+  if (now - guard.lastAt > FOCUS_SCROLL_IDLE_MS || now - guard.focusAt > FOCUS_SCROLL_MAX_MS) return false
+  guard.lastAt = now
+  return true
+}
+
 const Tooltip = ({
   delayDuration = MOTION_DELAY_PLAIN_MS,
   open: openProp,
@@ -31,8 +84,11 @@ const Tooltip = ({
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) => {
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false)
   const open = openProp ?? internalOpen
+  const guardRef = React.useRef<FocusScrollGuard>(null)
+  React.useEffect(installScrollTracker, [])
   const handleOpenChange = React.useCallback(
     (nextOpen: boolean) => {
+      if (!nextOpen && shouldKeepOpenThroughFocusScroll(guardRef)) return
       if (openProp === undefined) setInternalOpen(nextOpen)
       onOpenChange?.(nextOpen)
     },
@@ -40,16 +96,43 @@ const Tooltip = ({
   )
 
   return (
-    <TooltipPrimitive.Root
-      delayDuration={delayDuration}
-      open={open}
-      onOpenChange={handleOpenChange}
-      {...props}
-    />
+    <FocusScrollGuardContext.Provider value={guardRef}>
+      <TooltipPrimitive.Root
+        delayDuration={delayDuration}
+        open={open}
+        onOpenChange={handleOpenChange}
+        {...props}
+      />
+    </FocusScrollGuardContext.Provider>
   )
 }
 
-const TooltipTrigger = TooltipPrimitive.Trigger
+/** Radix Trigger + 記下「誰、何時被聚焦」(給上方的聚焦捲動判準用;其餘行為與 props 原樣交給 Radix)。 */
+const TooltipTrigger = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
+>(({ onFocus, onBlur, ...props }, ref) => {
+  const guardRef = React.useContext(FocusScrollGuardContext)
+  return (
+    <TooltipPrimitive.Trigger
+      ref={ref}
+      {...props}
+      onFocus={(event) => {
+        onFocus?.(event)
+        installScrollTracker()
+        if (guardRef) {
+          const now = performance.now()
+          guardRef.current = { el: event.currentTarget, focusAt: now, lastAt: now }
+        }
+      }}
+      onBlur={(event) => {
+        onBlur?.(event)
+        if (guardRef) guardRef.current = null
+      }}
+    />
+  )
+})
+TooltipTrigger.displayName = TooltipPrimitive.Trigger.displayName
 
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
