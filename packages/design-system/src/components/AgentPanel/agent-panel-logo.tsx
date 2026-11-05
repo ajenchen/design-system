@@ -45,7 +45,7 @@ export const SWELL = '0.4 0.14 0.3 1'
 export const SETTLE = '0.2 0 0.38 0.9'
 /** = var(--motion-easing-exit) 的 SMIL 鏡像(加速起步)。 */
 const EXIT = '0.3 0 1 1'
-/** 減速 = exit 曲線的時間鏡像(起始斜率 1/0.7,速度連續);Material/Carbon 減速原則。 */
+/** 減速 = exit 曲線的時間鏡像(起始斜率 1/0.7,速度連續);Material/Carbon 減速原則。(來源:https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L174-L179 https://github.com/material-components/material-components-android/blob/66b0eeb53afeb6025ffbbd37734b08e5bce197ed/docs/theming/Motion.md#L126 https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/loading/_animation.scss#L13) */
 const DECEL = '0 0 0.7 1'
 /**
  * 思考態等速轉速。**數值住所只有這個「一息切幾圈」**,ω 由它推出 —— 舊版把 480 寫死、把「= 一息/4」
@@ -386,7 +386,7 @@ function LogoBody({ ids, morph }: BodyProps) {
 }
 
 /**
- * 吸氣微亮:白色疊層 0→14%→0(吸氣亮、呼氣暗;Apple Watch Breathe「脹=吸氣」同向)。
+ * 吸氣微亮:白色疊層 0→14%→0(吸氣亮、呼氣暗;Apple Watch Breathe「脹=吸氣」同向)。(來源:https://support.apple.com/guide/watch/start-a-reflect-or-breathe-session-apd371dfe3d7/watchos)
  * 招喚與思考同一套語言、同一條呼吸包絡(思考態的亮度自成 2 息一輪;圓化已改為耦合轉速)。亮度包絡取代透明度包絡:
  * 本體不透明度恆 1(白面上變淡=像停用;spec「禁止事項」)。
  */

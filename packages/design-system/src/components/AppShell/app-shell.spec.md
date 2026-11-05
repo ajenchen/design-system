@@ -10,8 +10,6 @@ benchmark:
   - Ant Design Layout: https://ant.design/components/layout — Layout/Header/Sider/Content/Footer compound API
   - Material 3 Navigation Drawer: https://m3.material.io/components/navigation-drawer/overview — standard (persistent inline) vs modal (overlay with mask)
   - Atlassian Navigation System (Beta): https://atlassian.design/components/navigation-system — TopNav + SideNav + Layout
-  - Linear / Notion / Figma — primary-sidebar mode reference(local toolbar header)
-  - GitHub / Slack / Gmail — primary-header mode reference(global top bar)
 ---
 
 
@@ -21,7 +19,7 @@ benchmark:
 
 **Web service 頁面層級的 layout primitive**——組合 `Sidebar`(Menu)+ `ChromeHeader` + main content + `Aside`(Right panel)+ `AgentPanel`(AI agent)成完整 page shell,定義跨元件 composition + 四區版面規則(「版面規則」)+ a11y landmark canonical。
 
-**實作基礎**:自建 grid/flex layout(無 Radix primitive 對應)+ 消費既有 DS canonical(`Sidebar` / `header-canonical` / `AgentPanel` / `ResizeHandle` / `layoutSpace`);四區版面的計算 = 自建純函式 `./layout-model.ts`(規則是 user 2026-10-14 自訂,無現成 primitive)。對齊 Mantine AppShell compound API + Ant Layout slot 模式。
+**實作基礎**:自建 grid/flex layout(無 Radix primitive 對應)+ 消費既有 DS canonical(`Sidebar` / `header-canonical` / `AgentPanel` / `ResizeHandle` / `layoutSpace`);四區版面的計算 = 自建純函式 `./layout-model.ts`(規則是 user 2026-10-14 自訂,無現成 primitive)。對齊 Mantine AppShell compound API + Ant Layout slot 模式([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L64-L70)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/layout/index.en-US.md#L50-L54))。
 
 **Layout Family**:跨 family 的**整頁框架**,不屬 4-family 任一,但**所有 family 元件可塞進 main slot**。
 
@@ -36,7 +34,7 @@ benchmark:
 
 ## 何時用
 
-- 多頁 web service 主結構(Linear / Notion / Slack / GitHub / Asana 類)
+- 多頁 web service 主結構(議題追蹤、文件協作、團隊訊息、程式碼託管這類工作型產品)
 - 需要 sidebar + main 持續共存,跨頁切換時 sidebar 不重渲染
 - 需要 right panel(info / inspector / detail pane)跟 main 並存
 
@@ -51,7 +49,7 @@ benchmark:
 
 ---
 
-## API skeleton(對齊 Mantine compound API)
+## API skeleton(對齊 Mantine compound API)([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L64-L70))
 
 ```tsx
 <AppShell
@@ -78,7 +76,7 @@ Sub-component:`<AppShellAside title={...} contentType={...} widthRange={{ min, i
 
 ### Hook export:`useAppShell()`(2026-05-21 D2 codify per Phase B codex catch)
 
-Public compound API hook,讓 consumer 自拼 custom aside / 自管 modal layout(對齊 Radix `useDialogContext` / MUI `useFormControl` / Mantine `useAppShellContext` 慣例)。
+Public compound API hook,讓 consumer 自拼 custom aside / 自管 modal layout(對齊 MUI `useFormControl` / Mantine `useAppShellContext` 慣例)([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components/AppShell/index.ts#L36)、[來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/text-fields/text-fields.md#L192-L200))。
 
 ```tsx
 import { useAppShell } from '@/design-system/components/AppShell/app-shell'
@@ -96,21 +94,18 @@ function CustomAside() {
 
 ---
 
-## Layout mode(對齊 Mantine `layout` prop)
+## Layout mode(對齊 Mantine `layout` prop)([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L115-L121))
 
-| Mode | Sidebar 位置 | Header 結構 | 適用 product 派 |
+| Mode | Sidebar 位置 | Header 結構 | 適用情境 |
 |---|---|---|---|
-| **`primary-sidebar`**(預設)| 頂天立地 full-height(viewport 左側) | 1 層 = `header`(local toolbar 在 main col 頂)| Linear / Notion / Figma |
-| **`primary-header`** | globalHeader 下方 full-height(扣 globalHeader 高)| **2 層** = `globalHeader`(頂橫跨 viewport)+ `header`(local 在 main col 頂)| GitHub / Slack / Gmail |
+| **`primary-sidebar`**(預設)| 頂天立地 full-height(viewport 左側) | 1 層 = `header`(local toolbar 在 main col 頂)| header 只放當前頁的工具列(沒有跨頁 chrome)|
+| **`primary-header`** | globalHeader 下方 full-height(扣 globalHeader 高)| **2 層** = `globalHeader`(頂橫跨 viewport)+ `header`(local 在 main col 頂)| 需要跨頁 chrome(品牌 / 搜尋 / 帳號)橫跨頂部 |
 
 **Header 永遠是 horizontal strip,不延伸 vertical**(per 2026-05-19 user clarification)。
 
 ### primary-header = primary-sidebar + 一條 global header
 
-`primary-header` mode = `primary-sidebar` mode 的所有東西 + **額外一條 global header 在頂**。`header` slot(local toolbar)**仍然存在**,只是上面多了 `globalHeader` slot(跨頁 chrome)。世界級對照(皆為 2 層 header):
-- **GitHub**:global top nav(logo / search / account)+ **repo header**(breadcrumb / branch selector,**local**)+ sidebar + content
-- **Slack**:global header(workspace switcher)+ **channel header**(channel name / settings,**local**)+ sidebar + main
-- **Gmail**:global logo bar + **email list toolbar**(sort / filter,**local**)+ sidebar + list
+`primary-header` mode = `primary-sidebar` mode 的所有東西 + **額外一條 global header 在頂**。`header` slot(local toolbar)**仍然存在**,只是上面多了 `globalHeader` slot(跨頁 chrome)—— 兩層 header:上層整個 app 共用(品牌 / 搜尋 / 帳號),下層屬於當前頁(標題 / breadcrumb / 頁面動作)。
 
 **常見誤解:「primary-header = header 取代 local toolbar」** — 錯;global header 是**加在 local toolbar 之上**,不是取代(上列三家全部同時保有兩層)。
 
@@ -121,25 +116,25 @@ function CustomAside() {
 
 ### WorkspaceBrand 放置 SSOT(2026-05-21 codify per user directive「globalHeader 存在時 sidebar 內 header 該拿掉」)
 
-| Mode | WorkspaceBrand 放置 | Sidebar 內 SidebarHeader | 對齊 World-class |
+| Mode | WorkspaceBrand 放置 | Sidebar 內 SidebarHeader | 為什麼 |
 |---|---|---|---|
-| `primary-sidebar` | **Sidebar 頂部**(`<SidebarHeader>` 內)| 有 — 放 WorkspaceBrand | Linear / Notion / Figma file panel(無 global header,workspace 自然在 sidebar 頂) |
-| `primary-header` | **globalHeader 左側**(`<GlobalHeader>` 左 slot,搭配 SidebarTrigger)| **無 / 空 SidebarHeader** | GitHub(repo page sidebar 無 header,org/repo 在 global breadcrumb)/ Gmail(無 workspace brand 在 sidebar)/ Figma file editor(file name 在 global top bar,Layers 面板無 header) |
+| `primary-sidebar` | **Sidebar 頂部**(`<SidebarHeader>` 內)| 有 — 放 WorkspaceBrand | 沒有 global header,workspace 自然在 sidebar 頂 |
+| `primary-header` | **globalHeader 左側**(`<GlobalHeader>` 左 slot,搭配 SidebarTrigger)| **無 / 空 SidebarHeader** | 品牌已在 globalHeader,sidebar 再放一次就重複(user 2026-05-21「globalHeader 存在時 sidebar 內 header 該拿掉」)|
 
 **Rule:WorkspaceBrand 只能出現一次**(視覺 SSOT)。`primary-header` mode 重複放(同時在 globalHeader + SidebarHeader)= 視覺冗餘 + 跨產品識別混淆 → **禁止**。
 
 **浮層精修(2026-06-18 立,2026-10-14 改條件)**:「只能出現一次」= **同一時間一次**。`primary-header` 的 Menu 浮層(Sheet,z-50)從視窗頂端起、**蓋住 globalHeader**(「版面規則」§9)→ 品牌看不到、浮層變孤兒 → 此時在浮層內補 `<SidebarHeader><WorkspaceBrand/>`(globalHeader 既被蓋住,仍「同一時間一次」,非重複),用**同一組 primitive**(style SSOT,與 primary-sidebar 外觀一致,非手刻對齊)。觸發條件 = **這一份 Menu 內容畫在浮層裡**(consumer 在 Sidebar 的 children 裡讀 `useSidebarSurface() === 'overlay'`,`../Sidebar/sidebar.spec.md`「同一份內容、畫兩份」):浮層開著時 children 畫兩份,被浮層蓋住的細列那一份**不補**(細列保留、版面不跳)。2026-10-14 前是「768 以下 Sidebar 收成 Sheet」(`useSidebar().isMobile`),隨 768 斷點退場、規則內容不變(D:30 清單 #23);2026-10-14 版讀整個 Menu 的 `useAppShell().display.menu`,兩份同時成立 → 細列那一份也長出標頭、圖示下跳 48px、品牌 3 份(2026-10-15 r1b 複驗 F4),改成每一份自己判斷。Reference:`_demo-helpers.tsx` `AcmeSidebarHeader`。**禁止**:primary-header 同時 globalHeader + SidebarHeader 放 brand(那才是真重複)。
 
-**Slack 為 mixed pattern 例外**(thin workspace rail + channels sidebar 有 workspace name)— 不採用此分類,DS 採 **GitHub / Gmail / Figma** 共識(globalHeader 存在 → sidebar 內無 header)。
+**規則**:globalHeader 存在 → sidebar 內無 header(依本節標題 user 2026-05-21 指示)。
 
 **Consumer 實作 pattern**:
 ```tsx
-// primary-sidebar 派(Linear/Notion):
+// primary-sidebar(header = 當前頁 local toolbar):
 <AppShell layout="primary-sidebar"
   sidebar={<Sidebar><SidebarHeader><WorkspaceBrand /></SidebarHeader>...</Sidebar>}
   header={<PageHeader title="..." />}>...
 
-// primary-header 派(GitHub/Gmail/Figma):
+// primary-header(多一條跨頁 globalHeader):
 <AppShell layout="primary-header"
   globalHeader={<GlobalHeader>... <WorkspaceBrand /> ...</GlobalHeader>}  {/* brand 在這 */}
   sidebar={<Sidebar> {/* 無 SidebarHeader(Menu 浮層那一份才補,見上方「浮層精修」)*/} ...</Sidebar>}
@@ -150,10 +145,10 @@ function CustomAside() {
 
 「帳號 / 個人設定入口」(目前使用者的 avatar,點開 = 帳號選單)放置同樣 **mode-dependent**,鏡像上方 WorkspaceBrand 規則:
 
-| Mode | 帳號入口放置 | Sidebar footer | 對齊 World-class |
+| Mode | 帳號入口放置 | Sidebar footer | 為什麼 |
 |---|---|---|---|
-| `primary-sidebar` | **Sidebar 底部**(`<SidebarFooter>` 內,當前使用者)| 有 — 放使用者 | Linear / Notion / Figma(無 global header,帳號自然在 sidebar 底)|
-| `primary-header` | **globalHeader 右側**(trailing slot,品牌在左、帳號在右)| **無 / 空** | GitHub / Gmail / Slack(帳號 avatar 一律在 global top bar 右上)|
+| `primary-sidebar` | **Sidebar 底部**(`<SidebarFooter>` 內,當前使用者)| 有 — 放使用者 | 沒有 global header,帳號自然在 sidebar 底 |
+| `primary-header` | **globalHeader 右側**(trailing slot,品牌在左、帳號在右)| **無 / 空** | 帳號是整個 app 共用的入口,屬於跨頁 chrome(見下段)|
 
 **Rule:帳號入口只能出現一次**(視覺 SSOT,同 WorkspaceBrand)。`primary-header` mode 同時放(globalHeader 右 + sidebar footer)= 視覺冗餘 + 入口混淆 → **禁止**;`primary-header` 的 sidebar **不放** user footer(與上方「globalHeader 存在 → sidebar 不重複 chrome 角色」同源邏輯)。
 
@@ -161,10 +156,10 @@ function CustomAside() {
 
 **浮層精修(帳號入口,同上條件)**:Menu 浮層若蓋住 globalHeader(桌面帳號入口也在 globalHeader 右)→ **帳號入口鏡像桌面位置搬進浮層頂排右**:`<SidebarHeader>` 內放 `<WorkspaceBrand/>`(左)+ `flex-1` + `<AccountMenu/>`(右)= 把整條 globalHeader 原封搬進浮層頂排(SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同 primitive → 帳號 avatar 24px + 右緣距 `--layout-space-loose` 由 construction 保證,**非手刻對齊**);**不在浮層底放 `<SidebarFooter>`**(primary-header 帳號家在 header 區,footer 是 primary-sidebar 慣例)。對齊 Material modal navigation drawer「account switcher 放 drawer header 區,footer 區放 settings/support 次要項」(<https://m3.material.io/components/navigation-drawer>)。觸發條件同上(這一份畫在浮層裡,`useSidebarSurface() === 'overlay'`);2026-10-14 前以 `useSidebar().isMobile`(768)判斷,隨斷點退場、規則內容不變(D:30 清單 #23)。Reference:`_demo-helpers.tsx` `AcmeSidebarHeader`。
 
-**為什麼 primary-header 帳號入口在「右上」**:GitHub / Gmail / Slack / Atlassian 的全域標頭一律把「自己的帳號」放右上(品牌在左、帳號在右,左右對稱)= global chrome 標準位置,不是 sidebar footer。
+**為什麼 primary-header 帳號入口在「右上」**:global header 是跨頁 chrome,品牌在左、帳號在右(左右對稱);「自己的帳號」跟任何一頁的 navigation 無關,所以放在 global chrome,不是 sidebar footer。
 
 **入口開什麼 = 帳號選單(`<DropdownMenu>`),不是 ProfileCard**:
-- 開「個人資料 / 設定 / 登出」navigation 選單(對齊 GitHub / Gmail / Slack / Atlassian「自己的帳號入口」慣例)。
+- 開「個人資料 / 設定 / 登出」navigation 選單。
 - **不用 `ProfileCard`**:ProfileCard 的預設動作(Chat / 通話)語義是「聯絡某人」,用在**自己**身上不對 — ProfileCard 是看**別人**的人員卡。自己的帳號入口 = 選單。
 - 消費既有 `components/DropdownMenu`(`DropdownMenuTrigger asChild` 包 avatar 作 focusable 觸發點)。
 
@@ -176,7 +171,7 @@ function CustomAside() {
 - **Local toolbar 派**(當前頁 anchor / breadcrumb / page-level actions / filter / 該頁 specific 操作)→ `primary-sidebar`
 - **Global bar 派**(account avatar / workspace switcher / notifications / 跨頁 search / 跨頁導覽)→ `primary-header`
 
-**常見誤解:「multi-workspace 就必須 primary-header 派」** — workspace 多寡跟 layout 派别無相關性(world-class 反證:Linear / Notion / Figma 皆 multi-workspace 卻用 primary-sidebar;Gmail 多 account 用 primary-header)。選 mode = 表態「Header 是 local 還是 global」,**不是**「workspace 是 single 還是 multi」。
+**常見誤解:「multi-workspace 就必須 primary-header 派」** — workspace 多寡跟 layout 派別無相關性:workspace 切換放 sidebar 頂或 globalHeader 左都有位置(見「WorkspaceBrand 放置 SSOT」)。選 mode = 表態「Header 是 local 還是 global」,**不是**「workspace 是 single 還是 multi」。
 
 **Sidebar toggle 按鈕位置**(消費既有 `sidebar.spec.md`「SidebarTrigger 位置(兩種 canonical pattern)」段,**不發明新 toggle**):
 
@@ -190,12 +185,12 @@ function CustomAside() {
 **層級語意差異**:`primary-sidebar` 的 Header scope = local(當前頁);`primary-header` 的 Header scope = global(整 app)。兩者是不同 product 角色,**不互通**。Consumer 選 mode = 表態 product 是哪派。
 
 **Workspace switcher 預設位置**:
-- `primary-sidebar`:sidebar 頂部(對齊 Linear / Notion / Slack)
-- `primary-header`:header 左側(對齊 GitHub / Gmail)
+- `primary-sidebar`:sidebar 頂部(與 WorkspaceBrand 同處)
+- `primary-header`:header 左側(與 WorkspaceBrand 同處,見「WorkspaceBrand 放置 SSOT」)
 
 **Breadcrumb 預設位置**:
-- `primary-sidebar`:Header 內(當前頁 anchor,對齊 Linear local header)
-- `primary-header`:Main 頂(對齊 GitHub `<repo>/<dir>/<file>` breadcrumb)
+- `primary-sidebar`:Header 內(當前頁 anchor;這裡的 header 本身就是 local)
+- `primary-header`:Main 頂(globalHeader 是跨頁 chrome,不放單頁路徑)
 
 兩者都消費既有 `breadcrumb.spec.md` 視覺 canonical,只是 placement 不同。
 
@@ -267,7 +262,7 @@ function CustomAside() {
 - 可拉上限與水平捲動判斷:Menu **並排**時展開的 Menu 取代細列的位置,細列不另扣(扣的是 Menu 最小寬)→ U:35-50 的數字一個都不變;Menu **關閉 / 暫藏 / 浮層**時,細列像 Main 最小寬一樣先扣。例:1600、Menu 關閉、細列 48 → Right 上限 426、AI agent 526(48 + 426 + 526 + 600 = 1600);細列 68 → 416 / 516。
 - 排 Right 與 AI agent、第 4 點的合計:**不論 Menu 此刻是否並排,細列一律先扣**(D:24「「要求 Right panel 時關閉 AI agent」的合計都要扣細列」;Menu 排在最後、之後可能被暫藏而只剩細列,所以排前兩者時 Menu 最少就佔細列 —— 這不是「另扣」,Menu 並排時是展開的 Menu 取代細列)。只在 Menu 沒並排時才扣的話,要求 Right 之後 AI agent 會變成蓋住 Right 的浮層(AI 推導,判定表 D17、P2)。
 - 細列寬來自 token 公式 `--sidebar-width-icon`(md 48 / lg 68,`../Sidebar/sidebar.spec.md`「尺寸規範」),不能拖、不是面板;程式量實際寬,不寫死 48。有細列時暫藏與關閉長得一樣(都只剩細列),差別只在放得下時暫藏的會自己回來(U:26)、關閉的不會(U:11)。
-- 世界級同一個算法(細列是收起來的 Menu、展開時不是「細列 + 展開寬」):Carbon UI Shell 收起讓出 48px、展開改讓 256px(<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/ui-shell/content/_content.scss>);Material `ModalWideNavigationRail` 展開成浮層時「Keep this rail even when expanded so that screen layout doesn't change」(<https://github.com/androidx/androidx/blob/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WideNavigationRail.kt>)。
+- 世界級同一個算法(細列是收起來的 Menu、展開時不是「細列 + 展開寬」):Carbon UI Shell 收起讓出 48px、展開改讓 256px(<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/ui-shell/content/_content.scss>);Material `ModalWideNavigationRail` 展開成浮層時「Keep this rail even when expanded so that screen layout doesn't change」(<https://github.com/androidx/androidx/blob/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WideNavigationRail.kt>)([來源](https://github.com/androidx/androidx/blob/7c22902f7b511e1f475ee4389824090fe417cd75/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WideNavigationRail.kt#L767)、[來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/ui-shell/content/_content.scss#L28-L32))。
 
 ### 7. 寬度紀錄與實際顯示
 
@@ -384,14 +379,14 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 | Shortcut | Action | Cite |
 |---|---|---|
 | **`⌘B`(macOS)/ `Ctrl+B`(Windows)** | Toggle sidebar | `sidebar.spec.md`「持久化與快捷鍵」SSOT(⌘B / Ctrl+B industry-standard,已內建,不該改);`sidebar.tsx` code key `"b"` |
-| **`⌘.`(macOS)/ `Ctrl+.`(Windows)** | Toggle aside | Linear convention(新加) |
-| **Skip-to-main link** | `Tab` 第一站 focus 「Skip to content」link → `main` | A11y WCAG 2.4.1 bypass blocks;對齊 Atlassian Layout skip-link |
+| **`⌘.`(macOS)/ `Ctrl+.`(Windows)** | Toggle aside | DS 自訂(新加)([來源](https://atlassian.design/components/page-layout/examples)) |
+| **Skip-to-main link** | `Tab` 第一站 focus 「Skip to content」link → `main` | A11y WCAG 2.4.1 bypass blocks;對齊 Atlassian Layout skip-link([來源](https://atlassian.design/components/page-layout/examples)) |
 
 **`⌘B`** 消費既有 Sidebar SSOT 機制(Sidebar 內建 `useEffect` + `window.addEventListener('keydown')`,AppShell **不重複 register**;住在 AppShell 裡的 `<Sidebar>` 把版面的開關處理登記回 `SidebarProvider`,所以 ⌘B 照「版面規則」§3 走)。**`⌘.`** 為 AppShell **自有** `window` keydown listener(`app-shell.tsx` AppShell 本體的 keydown effect,沿用相同 pattern 形態,但屬**新註冊**、非消費 Sidebar — 對齊上表「新加」標記)。此 AppShell 自有 listener 目前**未含** Sidebar handler 的 IME composition / input-textarea guard(打字時 `⌘.` 仍會觸發 — 已知 gap)。
 
 ---
 
-## A11y landmark(對齊 W3C ARIA in HTML + Mantine 慣例)
+## A11y landmark(依 W3C ARIA in HTML / HTML-AAM)([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L668-L683))
 
 | Slot | HTML landmark | Auto ARIA |
 |---|---|---|
@@ -414,11 +409,11 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 ## Future extension(目前不定義)
 
-**Multi-sidebar**(Notion / Linear 雙側欄派):**尚未實作**。目前 `sidebar` prop 僅 `React.ReactNode`(單一 slot,無 array signature、無取首位邏輯、無 dev warning)。未來若支援會擴充為 array,SSOT 放 `sidebar.spec.md`,不在本 composite(user 2026-05-19 指示 AppShell 不客製 Sidebar)。
+**Multi-sidebar**(雙側欄):**尚未實作**。目前 `sidebar` prop 僅 `React.ReactNode`(單一 slot,無 array signature、無取首位邏輯、無 dev warning)。未來若支援會擴充為 array,SSOT 放 `sidebar.spec.md`,不在本 composite(user 2026-05-19 指示 AppShell 不客製 Sidebar)。
 
 **Footer**:不 expose slot(user 2026-05-19 指示不用 footer)。Web service 通常不用 footer,consumer 若需要自貼 Main 底。
 
-**Banner / announcement bar**:不 expose slot,consumer 自貼 Main 頂(對齊 Notion / Linear banner consumer-managed convention)。
+**Banner / announcement bar**:不 expose slot,consumer 自貼 Main 頂。
 
 **Multi-tab / split view**:不 codify(per user 2026-05-19「不用」)。
 
@@ -460,7 +455,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 | DS | Slot 結構 | Layout mode | Aside 派 | 放不下時 |
 |---|---|---|---|---|
-| **Mantine AppShell** | Header / Navbar / Aside / Footer / Main | `default`(header 頂)/ `alt`(navbar 頂)| collapsable | breakpoint per slot |
+| **Mantine AppShell** | Header / Navbar / Aside / Footer / Main | `default`(header 頂)/ `alt`(navbar 頂)| collapsable | breakpoint per slot([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L64-L70)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L115-L121)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/layout/index.en-US.md#L50-L54)、[來源](https://atlassian.design/components/navigation-system/examples)) |
 | **Ant Layout** | Header / Sider / Content / Footer | 拼 building blocks 兩派並存 | 無 explicit Aside slot | Sider breakpoint |
 | **Material 3** | (無 AppShell primitive)| — | Standard inline / Modal overlay drawer | standard ↔ modal 依視窗(<https://github.com/material-components/material-components-android/blob/master/docs/components/NavigationDrawer.md>) |
 | **Atlassian Navigation System** | TopNav + SideNav + Layout(Beta) | TopNav-above-SideNav | — | — |

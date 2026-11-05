@@ -115,7 +115,7 @@ export const UsageGuidance: Story = {
           {/* 送出中 = 按鈕自己的 loading(button.spec.md「loading」:內建 CircularProgress + aria-busy);
               2026-10-27 前是手刻的有框小列塞一個轉圈(稽核 L049),規則文字自己寫的正是 Button loading / form submitting */}
           <Button variant="primary" loading>送出訂單</Button>
-          <ExampleCaption>Stripe 結帳送出中:沒有「佈局」可佔位,只是行為回饋</ExampleCaption>
+          <ExampleCaption>結帳送出中:沒有「佈局」可佔位,只是行為回饋</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule

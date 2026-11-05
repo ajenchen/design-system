@@ -60,13 +60,13 @@ DialogContent (fixed, centered)
 
 Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 page。效果:md page → body `px-loose`=16 / header `py-tight`=12(header 48);lg page → 24 / 16(header 56),隨 page。
 
-**為何不鎖(撤回本 session 一度加的 `data-layout-space="lg"`)**:本 `density.spec` 第 10 行親自定義 layout-space 管「dialog body padding」—— Dialog 若鎖死 layout-space,等於 override 我們自家 dial 對它點名要管的對象失效 = **自相矛盾**。有「同類 padding-density dial」的世界級 DS(SAP Fiori cozy/compact 做 `syncStyleClass` 專門把 page density 同步進 dialog;AWS Cloudscape compact「propagate to all components, in all view types」,例外只列 informational + tiny dropdown,modal 不在內)都讓 **modal 跟 page dial 走**,沒有一家把 modal 釘固定 tier。Material/Atlassian 的固定 24 是因為它們**沒有** density dial(其 24 = 我方 lg)。
+**為何不鎖(撤回本 session 一度加的 `data-layout-space="lg"`)**:本 `density.spec` 第 10 行親自定義 layout-space 管「dialog body padding」—— Dialog 若鎖死 layout-space,等於 override 我們自家 dial 對它點名要管的對象失效 = **自相矛盾**。有同類 padding-density dial 的 AWS Cloudscape,compact 模式明文「propagate the reduced spacing scale to all components, in all view types」,只對說明性元件(help panel / alert / flashbar / 表單驗證訊息)與小目標(select 下拉等)不完全套用,modal 不在例外內([content density](https://cloudscape.design/foundation/visual-foundation/content-density/),2026-11-05 讀回)—— 也就是讓 **modal 跟 page dial 走**,不把 modal 釘固定 tier。固定 24 只是我方 lg 那一檔。
 
-**「modal 要寬鬆呼吸」怎麼滿足**:lg 產品自動拿 24(Material 級);md 產品本就要緊湊(資訊密集),16 是合格 modal padding(Polaris Modal = 16,世界級下限)。**「button 不撐高 header」**由 ui-size 繼承 page 解決(button = page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
+**「modal 要寬鬆呼吸」怎麼滿足**:lg 產品自動拿 24;md 產品本就要緊湊(資訊密集),16 仍留得出內容與外框之間的呼吸空間,是本 DS modal 內距的下限。**「button 不撐高 header」**由 ui-size 繼承 page 解決(button = page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
 
 **Header 高度**:padding-based = title line-box 24 + `py-tight`×2 → md 48 / lg 56,**隨 page tier**(= `--chrome-header-height` 同 tier 對齊)。
 
-**世界級對照**:Material M3 / Atlassian 24(無 dial,= 我方 lg)/ Polaris 16(= 我方 md 下限)/ SAP Fiori + Cloudscape(有 dial → modal 跟 dial = 我方繼承)。
+**對照本 DS 兩檔**:modal 內距 24 = lg、16 = md 下限,都由 layout-space 繼承 page dial 決定,不另釘固定 tier。
 
 ## Layout
 
@@ -112,7 +112,7 @@ Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間�
 
 實作:`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。**DS 內部(元件、story、閘的夾具)已沒有用法**(2026-10-20 把 30 處用法遷完 —— 27 處在 DS 原始碼(CommandDialog、AgentPanel 改名 / 刪除對話框、各頁 story)、3 處在閘的夾具;獨立驗證 OV-09:設計原則頁還在教舊名);這個 prop 留著,既有 consumer 才不會壞。閘 `scripts/overlay-story-contract-invariant.mjs` S3(DS 原始碼與閘夾具裡任何 `<DialogContent autoHeight>` 都紅)。
 
-**世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`)、
+**世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`,[_dialog.scss#L39-L44](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/dialog/internal/_dialog.scss#L39-L44))、
 Atlassian(`if (!input) return 'auto'`)、Polaris(只宣告 `max-height`)、Carbon(size 綁 48/72/84/96% 上限)、
 Ant Design(不宣告高度)—— 五家第一方原始碼**預設都是「隨內容 + 視窗為上限」**。
 本 DS 預設選 `fill` 是刻意偏離:DS 的主場景是內容會變的產品 dialog,穩定外框優先;

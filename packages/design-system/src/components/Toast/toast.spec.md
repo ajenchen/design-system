@@ -6,19 +6,19 @@ traits:
 variants:
   neutral:
     when: "非狀態通知;一般 announcement / tip(『已複製到剪貼簿』『偏好已儲存』)"
-    world-class: ["Polaris Toast default", "Sonner default", "Linear toast neutral"]
+    world-class: ["Polaris Toast default", "Sonner default"]
   info:
     when: "資訊性提示(『新版本可用』『同步完成』);非錯誤、非成功"
     world-class: ["Material Snackbar info", "Ant notification info"]
   success:
     when: "成功確認(『訂單已寄送』『付款完成』『5 筆資料已匯入』)"
-    world-class: ["Polaris Toast success", "Linear toast success", "Stripe payment success"]
+    world-class: ["Polaris Toast success"]
   warning:
     when: "可恢復警告(『有未儲存變更』『連線不穩』『token 將過期』)"
     world-class: ["Ant notification warning", "Carbon Notification warning"]
   error:
     when: "錯誤(『匯入失敗』『權限不足』『網路斷線』);action prop 可加重試"
-    world-class: ["Polaris Toast error", "Material Snackbar error", "Linear toast error"]
+    world-class: ["Polaris Toast error", "Material Snackbar error"]
 sizes: {}
 benchmark:
   - Radix Toast primitive: github.com/radix-ui/primitives/tree/main/packages/react/toast
@@ -129,7 +129,7 @@ toast({
 - `title`（必填）：主要訊息
 - `description`（選填）：補充說明，自然換行
 - `action`（選填）：tertiary xs 按鈕
-- `duration`（選填）：自動關閉時間；預設依 `action` 而定——有 `action` → **10000ms**（鍵盤焦點不暫停 sonner 倒數，10 秒給鍵盤使用者足夠時間按到「復原 / 重試」，見「A11y 預設」段；2026-07-05 D4 user 拍板，對齊 Polaris toast with action ≥10s / Carbon actionable notification 預設 persistent），無 `action` → **4000ms**
+- `duration`（選填）：自動關閉時間；預設依 `action` 而定——有 `action` → **10000ms**（鍵盤焦點不暫停 sonner 倒數，10 秒給鍵盤使用者足夠時間按到「復原 / 重試」，見「A11y 預設」段；2026-07-05 D4 user 拍板，對齊 Polaris toast with action ≥10s(https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Frame/components/Toast/Toast.tsx#L17-L19、#L72-L76)/ Carbon actionable notification 預設 persistent(`ActionableNotification` 沒有 timeout,https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/Notification/Notification.tsx#L929)），無 `action` → **4000ms**
 
 ## 落點(以整個視窗為準,不避讓)
 
@@ -178,20 +178,20 @@ Toast 在所有 modal 與浮層(Dialog、Sheet、FileViewer、Popover、Dropdown
 
 Toast 使用單一元件級寬度，以維持穩定的訊息行長與頁面遮蔽上限；canonical 數值與 utility 由 `toast.tsx` 擁有，調整時連同對應 story baseline 驗證。
 
-對照世界級：Material Snackbar 固定 344px、Sonner default toast 固定寬度——**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec。
+對照世界級：Material Snackbar 最小 344px、最大 672px(https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-snackbar/_snackbar-theme.scss#L60-L61)、Sonner default toast 固定寬度——**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec。
 
 ## Inspector 形態特例 / 為何無 SizeMatrix
 
 - **Inspector(函式觸發形態)**:Toast 透過 `toast()` **函式觸發**,不是 JSX 元件——anatomy `Inspector` story 以 Controls 編 ToastOptions + 觸發按鈕即時跳出對應通知,取代典型 JSX prop 面板;ToastOptions schema 另完整列於 `Overview` 表格。
-- **無 SizeMatrix**:Toast 固定寬度 **360px**(見本 spec「寬度(元件級常數)」段),單一 canonical width 跨 variant 不變——參考 Material Snackbar 344px / Sonner default。無 sm/md/lg size prop,也不隨 density 變(浮層是獨立視覺語境)。
+- **無 SizeMatrix**:Toast 固定寬度 **360px**(見本 spec「寬度(元件級常數)」段),單一 canonical width 跨 variant 不變——參考 Sonner default(Material Snackbar 是 344–672px 的彈性寬,https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-snackbar/_snackbar-theme.scss#L60-L61,本 DS 不跟)。無 sm/md/lg size prop,也不隨 density 變(浮層是獨立視覺語境)。
 
 對應 anatomy story:`Overview` + `Inspector` + 元件特有 `ContainerArchitecture`(三層結構解 shadow 陰影 bug) + `ColorMatrix`(Variant × Theme 策略) + `StateBehavior`(dismiss / stacking / pause / swipe) + `Accessibility`。
 
 ---
 
-## shadcn passthrough 例外說明
+## 元件封裝慣例例外說明(稽核第 9 維)
 
-Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Provider(app-level,置於 main.tsx 一次)。**兩者皆非「forwardRef + ...props + asChild」canonical shadcn 元件 pattern**:
+Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Provider(app-level,置於 main.tsx 一次)。**兩者皆非 DS 元件結構慣例(「forwardRef + ...props + asChild」,`ds-canonical/rules/ui-development.md`「結構」/ 稽核第 9 維)的形狀**([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/%28root%29/tailwind-v4.mdx#L13)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sonner.tsx#L13)):
 
 - `toast(...)` 是 imperative API(sonner 負責 queue / stack / animation / auto-dismiss),consumer 不需持有 DOM ref
 - `<Toaster />` 是 Provider(sonner 內部管理 viewport container),consumer 在 app root 放一次,無 consumer-facing DOM operation

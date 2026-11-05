@@ -6,9 +6,7 @@ traits:
 benchmark:
   - AG Grid column resize handle: github.com/ag-grid/ag-grid/tree/latest/community-modules/core/src/headerRendering
   - Material X-DataGrid MuiDataGrid-iconSeparator: github.com/mui/mui-x/tree/master/packages/grid/x-data-grid
-  - Notion column / sidebar resize: notion.so app inspect
   - VS Code activity bar / sidebar resize: github.com/microsoft/vscode/tree/main/src/vs/workbench/browser/parts
-  - Figma left panel resize: figma.com app inspect
 ---
 
 # ResizeHandle 設計原則
@@ -41,7 +39,7 @@ benchmark:
   min={number}
   max={number}              // 省略 = 無上限:不輸出 aria-valuemax、End 停用
   step={16}                 // 鍵盤每步,預設 16
-  ariaLabel={`調整 ${欄名} 欄寬`}  // 必填(APG separator 必有 aria-label / aria-labelledby);同一頁有多顆時名稱必須分得出來 —— 帶入欄名 / 面板標題(WCAG 2.4.6)
+  ariaLabel={`調整 ${欄名} 欄寬`}  // 必填(APG separator 必有 aria-label / aria-labelledby);同一頁有多顆時名稱必須分得出來 —— 帶入欄名 / 面板標題(WCAG 2.4.6)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L92-L93))
   ariaControls?: string     // 指向被調整的 pane(欄寬把手 = 自己那一欄的 columnheader;面板把手 = 面板根節點)
   disabled?: boolean        // 只畫線;無 role / tabIndex / cursor / 拖拉
   showLine?: boolean        // default true,false = consumer 已自己畫 idle 線;hover / 拖拉的狀態色仍由本元件畫
@@ -121,7 +119,7 @@ Phase 3-4 原訂「需獨立 RFC + user 拍板」(2026-05-21 AI 提的施工順�
 | **VS Code** | 8px(activity bar)| bg highlight on drag | col-resize | aria-label "Resize" |
 | **Figma** | 8px | 1px line | col-resize | role separator |
 
-視覺共識是 7-8px hit zone / 1px line / cursor 對應 direction;各產品 a11y contract 不一致,本 primitive 採 APG Window Splitter 完整語意(`role="separator"` + `aria-value*` + 方向鍵 / Home / End,見「a11y」;2026-09-10 更正:v1 時期「只收斂視覺、不偽裝 separator」的句子已與實作不符)。
+本 primitive 視覺取 7-8px hit zone / 1px line / cursor 對應 direction(各家命中區並不一致,例:VS Code sash 預設 4px、使用者可調);a11y 採 APG Window Splitter 完整語意(`role="separator"` + `aria-value*` + 方向鍵 / Home / End,見「a11y」;2026-09-10 更正:v1 時期「只收斂視覺、不偽裝 separator」的句子已與實作不符)([來源](https://github.com/microsoft/vscode/blob/d1a91b3af8869c37d4757aa959f0859b59c33265/src/vs/workbench/contrib/sash/browser/sash.contribution.ts#L36-L41)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L54-L67)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L81-L95))。
 
 ## 禁止事項
 

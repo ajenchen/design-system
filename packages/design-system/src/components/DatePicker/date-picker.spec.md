@@ -65,12 +65,12 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 日期範圍（from → to） | **`<DatePicker.Range>`**(本檔下「DatePicker.Range」段,2026-04-21 新增) | 仿 Ant `DatePicker.RangePicker` 架構:雙 input + 箭頭 + 共用 calendar icon,Popover 展開兩月份並列 |
-| 日期 + 時間（含時分） | **本元件加 `showTime` prop**(canonical 2026-05-02,Ant idiom) | DatePicker `showTime` / DatePickerRange `showTime` 內建 TimeColumns + 此刻/確定 footer;value 變 ISO datetime |
+| 日期範圍（from → to） | **`<DatePicker.Range>`**(本檔下「DatePicker.Range」段,2026-04-21 新增) | 仿 Ant `DatePicker.RangePicker` 架構:雙 input + 箭頭 + 共用 calendar icon,Popover 展開兩月份並列(雙 input:https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/Selector/RangeSelector.tsx#L257-L266;箭頭:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/generatePicker/generateRangePicker.tsx#L177;兩月份:https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/RangePicker.tsx#L388-L392) |
+| 日期 + 時間（含時分） | **本元件加 `showTime` prop**(canonical 2026-05-02,Ant idiom:`showTime`「To provide an additional time selection」,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L188) | DatePicker `showTime` / DatePickerRange `showTime` 內建 TimeColumns + 此刻/確定 footer;value 變 ISO datetime |
 | 相對時間（「3 天前」「昨天」）| 自訂展示元件 | DatePicker 的 view 態是絕對日期；相對時間需要計算 + locale 格式化 |
 | 純文字 YYYY-MM-DD（不需要 picker）| `Input` | 如 API debug 介面、不需互動的純記錄 |
 | 生日等「只有月日、不需要年」的欄位 | 目前用 DatePicker 忍受年份 | 多數情境可接受；要極致可自訂 MonthDayPicker |
-| Notion / Google 式 event calendar 檢視 | **`<Calendar>`** 元件(見 `../Calendar/calendar.spec.md`,月/週/日 event view);**非本元件語義** | DatePicker 是「選日期」的 form control;Calendar 是「看事件」的頁面 canvas,兩者雖名字都有 calendar 但是不同 DS 元件 |
+| 月 / 週 / 日的行程(event)檢視 | **`<Calendar>`** 元件(見 `../Calendar/calendar.spec.md`,月/週/日 event view);**非本元件語義** | DatePicker 是「選日期」的 form control;Calendar 是「看事件」的頁面 canvas,兩者雖名字都有 calendar 但是不同 DS 元件([來源](https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/Selector/RangeSelector.tsx#L257-L266)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/generatePicker/generateRangePicker.tsx#L177)、[來源](https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/RangePicker.tsx#L388-L392)) |
 
 **常見誤解**:(1)「用 DatePicker 選日期範圍」— 單一 DatePicker 只選一天,範圍必用 `<DatePicker.Range>`;(2)「DatePicker = Calendar」— 前者選日期、後者看事件(見上表末列);(3)「date + time 要獨立 DateTimePicker 元件」— 走 `showTime` prop,非分離元件(見「showTime」段)。
 
@@ -80,7 +80,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 DatePicker 使用**本 DS 自建 DateGrid** + Popover 而非瀏覽器原生 `<input type="date">`。歷史變更(2026-04-19):原本遵守「不自建 calendar」禁令以保留 mobile 原生 wheel UX,但 `AGENTS.md`「每次任務前的 6 條 mindset」#1 擴充後明確要求「視覺上也必須跟世界級一樣整齊」——原生 picker 視覺不受控、跨瀏覽器不一致,無法達成與 Dialog / SelectMenu / Combobox 等浮層的視覺連續性。遂改為自建 DateGrid。
 
-**命名變更(2026-04-21)**:原 `<Calendar>` 元件改名為 `<DateGrid>`(DatePicker 內部 primitive),讓 `Calendar` 這個命名留給真正的事件檢視 canvas(對齊 Notion / Google / Apple / Ant 世界級慣例)。DatePicker 內部 primitive 以功能命名為 `DateGrid`。
+**命名變更(2026-04-21)**:原 `<Calendar>` 元件改名為 `<DateGrid>`(DatePicker 內部 primitive),讓 `Calendar` 這個命名留給真正的事件檢視 canvas(「Calendar」讓人想到看行程的整頁畫布;挑日期的格子用功能命名,兩個東西不共用一個名字)。DatePicker 內部 primitive 以功能命名為 `DateGrid`。
 
 ### 架構
 
@@ -134,14 +134,14 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 | 怎麼開的 | 日曆 | 焦點 | 為什麼 |
 |---|---|---|---|
-| **點欄位任何地方**(文字、空白、圖示) | 開 | **留在輸入框,可繼續打字** | Ant Design 官方文件逐字「By clicking the input box, you can select a date from a popup calendar」,且 `inputReadOnly` 預設 `false` |
+| **點欄位任何地方**(文字、空白、圖示) | 開 | **留在輸入框,可繼續打字** | Ant Design 官方文件逐字「By clicking the input box, you can select a date from a popup calendar」(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L14),且 `inputReadOnly` 預設 `false`(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L113) |
 | **鍵盤 ArrowDown / Alt+ArrowDown** | 開 | **進日曆** | [W3C APG date-picker combobox](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-datepicker/) 逐字「opened by activating the choose date button or by moving keyboard focus to the combobox and pressing Down Arrow or Alt + Down Arrow」;焦點不進去就走不了日期格 |
 
 **兩條路不是二選一。** 好用的是滑鼠那條(邊看日曆邊打字),但鍵盤那條不能為了它犧牲可操作性 ——
 所以依「怎麼被打開的」分流。
 
-**訂正一則舊宣稱**:先前程式碼註解寫「Calendar icon 點才開 popover(Material/**Ant** typed-date idiom)」——
-對 Ant 而言是反的。而且實測當時**日曆一開焦點就被搬進去,之後完全打不了字**,
+**訂正一則舊宣稱**:先前程式碼註解寫「Calendar icon 點才開 popover(Material/**Ant** typed-date idiom)」——([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L14))
+對 Ant 而言是反的(官方文件:「By clicking the input box, you can select a date from a popup calendar.」https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L14)。而且實測當時**日曆一開焦點就被搬進去,之後完全打不了字**,
 等於 `typeable` 這個 prop 的賣點在日曆開啟後就失效。
 
 機械閘:`scripts/datepicker-typeable-open.mjs`。
@@ -149,7 +149,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ---
 
-## DatePicker.Range(2026-04-21 新增,仿 Ant Design)
+## DatePicker.Range(2026-04-21 新增,仿 Ant Design RangePicker:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L248)
 
 ### API
 
@@ -172,13 +172,13 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### 結構
 
-外層是 `fieldWrapperStyles` 容器,內含**兩個獨立 button**(start / end input,點任一個都開 Popover **並設定 activeEnd**)、中間 `ArrowRight` icon(`mx-2`,`text-fg-muted`)、右側固定 `CalendarIcon`。Active 端點視覺以 `data-active-end="true"` underline 標示(對齊 Ant RangePicker active input 視覺)。
+外層是 `fieldWrapperStyles` 容器,內含**兩個獨立 button**(start / end input,點任一個都開 Popover **並設定 activeEnd**)、中間 `ArrowRight` icon(`mx-2`,`text-fg-muted`)、右側固定 `CalendarIcon`。Active 端點視覺以 `data-active-end="true"` underline 標示(對齊 Ant RangePicker active input 視覺:底部 active bar,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/index.ts#L276-L283)。
 
-**外框本身就是點擊目標(2026-09-27)**:外框的內距與 1px 邊框底下沒有按鈕,指到那裡外框會亮(`hover:border-border-hover`),此前點下去什麼都不發生 =「亮著卻點不到」(`ds-canonical/references/hit-area-canonical.md` 一-1;09-27 全面稽核實測抓到,是 N53 那一族漏掉的第 7 處)。規則:點在外框裡、不是任何控件上 → **開離指標最近的那一段**(以起訖兩顆鈕的中線為界:左半開起始日、右半開結束日),焦點落在該鈕;外框游標一般手形(它會開面板,不能打字 —— 此前的 `cursor-text` 是錯的)。同家族 Select / Combobox / TimePicker / PeoplePicker 的外框本身就是點擊目標(`field-wrapper.tsx`「點外框 = 點輸入處」註解),本條只是補齊漏網。世界級同向:Ant RangePicker 整個外框掛 `onClick`(rc-picker `src/PickerInput/Selector/RangeSelector.tsx` 根節點 `onClick={onClick}` → `RangePicker.tsx` `onSelectorClick` → `triggerOpen(true)`;mousedown 時 `preventDefault` 讓焦點留在輸入處)、Carbon DatePicker 走 flatpickr `clickOpens: !readOnly`(`packages/react/src/components/DatePicker/DatePicker.tsx`);React Aria 的 hook 原始碼路徑本次抓不到,未驗證。〔做法由 AI 提出;user 09-27 對甲案(點外框 = 開那一段)答「確保符合我們一致的設計語言且不違背世界級的設計就照你建議」,條件式同意,條件核對如上〕
+**外框本身就是點擊目標(2026-09-27)**:外框的內距與 1px 邊框底下沒有按鈕,指到那裡外框會亮(`hover:border-border-hover`),此前點下去什麼都不發生 =「亮著卻點不到」(`ds-canonical/references/hit-area-canonical.md` 一-1;09-27 全面稽核實測抓到,是 N53 那一族漏掉的第 7 處)。規則:點在外框裡、不是任何控件上 → **開離指標最近的那一段**(以起訖兩顆鈕的中線為界:左半開起始日、右半開結束日),焦點落在該鈕;外框游標一般手形(它會開面板,不能打字 —— 此前的 `cursor-text` 是錯的)。同家族 Select / Combobox / TimePicker / PeoplePicker 的外框本身就是點擊目標(`field-wrapper.tsx`「點外框 = 點輸入處」註解),本條只是補齊漏網。世界級同向:Ant RangePicker 整個外框掛 `onClick`(rc-picker https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/Selector/RangeSelector.tsx#L238-L249 根節點 `onClick={onClick}` → https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/RangePicker.tsx#L471-L487 `onSelectorClick` → `triggerOpen(true)`;mousedown 時 `preventDefault` 讓焦點留在輸入處)、Carbon DatePicker 走 flatpickr `clickOpens: !readOnly`(https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/DatePicker/DatePicker.tsx#L677)。〔做法由 AI 提出;user 09-27 對甲案(點外框 = 開那一段)答「確保符合我們一致的設計語言且不違背世界級的設計就照你建議」,條件式同意,條件核對如上〕
 
-### Active-end 機制(canonical 2026-05-02,對齊 Ant Design RangePicker)
+### Active-end 機制(canonical 2026-05-02,對齊 Ant Design RangePicker:聚焦哪一個 input 就切到哪一端,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/RangePicker.tsx#L690-L698)
 
-對齊 Ant Design 實證(WebFetch react-component/picker source code 2026-05-03):**input-click 切換 activeEnd**,而**非** footer toggle / radio 按鈕。
+對齊 Ant Design 實證(react-component/picker 原始碼,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/RangePicker.tsx#L690-L698):**input-click 切換 activeEnd**,而**非** footer toggle / radio 按鈕。
 
 **Source citations**:
 - Ant `activeIndex` tracking + `getActiveRange`:`https://github.com/react-component/picker/blob/master/src/PickerInput/RangePicker.tsx`(`function getActiveRange(activeIndex) { return activeIndex === 1 ? 'end' : 'start' }`)
@@ -188,7 +188,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 - 點 start input → `activeEnd='start'` + 開 popover;DateGrid range 選的端點落到 start
 - 點 end input → `activeEnd='end'` + 開 popover;同理只更新 end
-- **Auto-advance**:選完 start → 自動切 `activeEnd='end'` 等待 user 選 end(Ant idiom)
+- **Auto-advance**:選完 start → 自動切 `activeEnd='end'` 等待 user 選 end(一次連續選完一段區間,不必再去點結束欄)
 - **showTime=true 時 TimeColumns 套 active end 的 time**(只能編一端的時間,符合單一焦點原則)
 - 視覺指示:active input 加 `decoration-primary underline-offset-4 decoration-2`(對齊 Field focus 語意)
 
@@ -243,18 +243,18 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - ❌ 不自刻「兩個 `<Input>` + 中間箭頭」繞過 `DatePicker.Range`(canonical 本元件提供)
 - ❌ 不讓 Popover 在選第一個端點後就關閉(違反 range selection UX)
 - ❌ value 用單字串 `"2026-01-01/2026-01-07"`——必 `[string | null, string | null]`,語意清楚 + 避免 parse 錯誤
-- ❌ Range active-end **不**用 footer toggle / radio 切換(違反 Ant / Material / Atlassian 慣例);必走 input-click
+- ❌ Range active-end **不**用 footer toggle / radio 切換(欄位本身就是「現在在選哪一端」的指示,再加一組切換鈕等於兩個入口說同一件事);必走 input-click
 
 ---
 
-## showTime(2026-05-02 新增,Ant idiom 整合 datetime)
+## showTime(2026-05-02 新增,Ant idiom 整合 datetime:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L188)
 
 ### API
 
 ```tsx
 <DatePicker
   showTime                              // 啟用時間欄位 → value 變 ISO datetime
-  showSeconds={false}                   // 是否顯示秒(預設 false,對齊 Ant)
+  showSeconds={false}                   // 是否顯示秒(預設 false:表單多半只到分鐘,秒欄是雜訊;Ant 預設格式含秒 HH:mm:ss,這裡刻意不同)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/time-picker/index.en-US.md#L63)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L259))
   minuteStep={15}                       // 分鐘步進,會議常用 15
   secondStep={1}
   needConfirm                           // 預設 showTime=true 時為 true(Ant idiom)
@@ -268,7 +268,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 ### 行為
 
 - showTime=true:popover 右側出現 `<TimePickerSidePanel>`(內部消費 TimeColumns),通過 `<CalendarTimeContainer>` absolute positioning 讓 DateGrid 主導 row 高度(TimeColumns 不撐高)
-- TimePickerSidePanel **header dynamic 顯示當前 active time**(`HH:MM` / `HH:MM:SS`),對齊 Ant `<DatePicker showTime />` panel header(canonical 2026-05-03 v9)
+- TimePickerSidePanel **header dynamic 顯示當前 active time**(`HH:MM` / `HH:MM:SS`),對齊 Ant `<DatePicker showTime />` panel header(rc-picker TimePanel 標題列顯示目前值,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerPanel/TimePanel/index.tsx#L33-L35;canonical 2026-05-03 v9)
 - TimePickerSidePanel 結構:**pt-3 + h-field-xs flex center + mb-3**(top 對齊 DateGrid month_caption 同 Y baseline;**bottom = 0,讓 time list 連續延伸到 SurfaceFooter border-t**,對齊 Ant / Material time-picker 「continuous scroll」idiom — canonical 2026-05-03 v10)
 - TimePickerSidePanel header **下方無 divider**(對齊 DateGrid month_caption 也無 border-b),DS internal canonical M23 優先於 Ant time-picker header divider 慣例 — 兩 panel 同層級 caption 視覺對稱(canonical 2026-05-03 v10)
 - 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + py-tight,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)。
@@ -296,7 +296,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### 為什麼用 prop 而非分離 `<DateTimePicker>` 元件
 
-世界級對照:**Ant Design / Material X / Atlassian / Carbon 全採 prop 模式**(`showTime` / `withTime` / `granularity`),非分離元件。Source:
+世界級對照:**Ant Design 採 prop 模式**(`showTime`);**MUI X 與 Atlassian 反而是分離元件**(`<DateTimePicker>`)。本 DS 採 prop 模式的理由是 M21 prop-variant test(同一個欄位、同一種值,只多時間欄)。Source([來源](https://cdn.jsdelivr.net/npm/@mui/x-date-pickers@8.29.5/DateTimePicker/index.d.ts)、[來源](https://cdn.jsdelivr.net/npm/@atlaskit/datetime-picker@19.4.2/dist/types/index.d.ts)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L188)):
 - Ant `<DatePicker showTime />`:`https://ant.design/components/date-picker#datepicker-demo-time`(`showTime: true | object`)
 - Material X `views={['day','hours','minutes']}` / `format`:`https://mui.com/x/react-date-pickers/date-time-picker/`
 - Atlassian `<DateTimePicker>`:`https://atlassian.design/components/datetime-picker/`
@@ -318,7 +318,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 | `formatOptions` | `Intl.DateTimeFormatOptions` | `{ year: 'numeric', month: 'short', day: 'numeric' }` |
 | `locale` | BCP 47 locale | `'zh-TW'`、`'en-US'` |
 
-預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first;見 date-picker.tsx `formatDate` 註解);傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`。View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致。
+預設(未傳 `formatOptions` / `locale`)直接組 `YYYY/MM/DD`(locale-independent,對齊 Ant year-first:Ant 預設 `YYYY-MM-DD`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/index.en-US.md#L183;見 date-picker.tsx `formatDate` 註解);傳 `formatOptions` / `locale` 才走 `Intl.DateTimeFormat`。View / readonly / disabled 模式(含 DataTable cell)與 Edit 模式 trigger 文字同一條格式化路徑,兩者一致。
 
 ---
 
@@ -342,7 +342,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ---
 
-## shadcn passthrough 例外說明
+## 元件封裝慣例例外說明(稽核第 9 維)
 
 DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omit<React.HTMLAttributes<HTMLDivElement>, 'value' | 'onChange' | 'placeholder' | 'defaultValue'>`,剩餘 DOM attrs `...props` spread 到**當前 mode 的 root wrapper**(edit trigger `<div role="combobox">` / readonly · disabled wrapper div / Range wrapper div)。
 

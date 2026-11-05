@@ -41,7 +41,7 @@ export const UsageGuidance: Story = {
     return (
       <TutorialPage>
         <UsageSection kind="when">
-          <p>獨立的是 / 否勾選,或同一類選項可以複選;每個 Checkbox 的值互不影響(對比 RadioGroup 的互斥)。送出前都可以反悔,點了就切換,不需要再確認(WAI-ARIA <code>role=checkbox</code> / Polaris Choice 同樣定位)。</p>
+          <p>獨立的是 / 否勾選,或同一類選項可以複選;每個 Checkbox 的值互不影響(對比 RadioGroup 的互斥)。送出前都可以反悔,點了就切換,不需要再確認(WAI-ARIA <code>role=checkbox</code> 的定位:兩態切換、即時生效)。</p>
           <TutorialList>
             <li><StoryLink kind="Design System/Components/Checkbox/展示" name="直式群組">商品類別的複選清單(直式群組)</StoryLink></li>
             <li><StoryLink kind="Design System/Components/Checkbox/展示" name="水平排列">篩選列的少量選項複選(水平排列)</StoryLink></li>

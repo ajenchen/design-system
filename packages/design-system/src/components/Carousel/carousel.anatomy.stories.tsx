@@ -311,7 +311,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>Dots(photo overlay convention)</H3>
         <Desc>
-          Dots 採「白點於照片上」慣例(Instagram / Airbnb / Ant Carousel)——active 不靠變色而是加寬至 24px,對色弱使用者更友善。
+          Dots 採「白點於照片上」慣例(Ant Carousel:點用白色 colorBgContainer、未選 opacity 0.2、選中加寬到 dotActiveWidth = 24,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/carousel/style/index.ts#L307-L331 、#L454)——active 不靠變色而是加寬至 24px,對色弱使用者更友善。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

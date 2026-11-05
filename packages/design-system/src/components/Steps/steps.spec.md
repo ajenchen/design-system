@@ -10,7 +10,7 @@ sizes:
   md:
     px: 24
     when: "預設 — 主流程 wizard / checkout / 註冊;indicator 24px circle,內部 icon 16px(對齊 uiSize Icon Tier sm/md)"
-    world-class: ["Ant Design Steps default", "MUI Stepper default", "Linear setup wizard"]
+    world-class: ["Ant Design Steps default", "MUI Stepper default"]
   lg:
     px: 32
     when: "Marketing / 重要 onboarding;indicator 32px circle,內部 icon 20px(對齊 uiSize Icon Tier lg)"
@@ -283,7 +283,7 @@ hit-area-canonical 找例外理由,但根本沒有外擴這回事。
 
 - **線寬 1px,x = 指示欄中心**(垂直)/ y = label 第一行中線(水平)。
 - **圓到線的縫兩端各 8px**,兩端對稱。一手區間:MUI `StepLabel` vertical `padding: '8px 0'`(每側 8;[StepLabel.js#L65-L68](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/StepLabel/StepLabel.js#L65-L68))、Ant `marginXXS × 1.5` = 6([steps/style/vertical.ts#L25-L29](https://github.com/ant-design/ant-design/blob/5.27.4/components/steps/style/vertical.ts#L25-L29))、Chakra `--steps-gutter = spacing.3` = 12([recipes/steps.ts#L15](https://github.com/chakra-ui/chakra-ui/blob/main/packages/react/src/theme/recipes/steps.ts#L15));DS 取 8 = 區間正中,與列內 prefix / suffix 的 `gap-2` 同一個數。
-- **線最短 24px,長度不隨說明文字有無變動**。唯一一手明文地板:MUI `StepConnector` vertical `minHeight: 24`([StepConnector.js#L50](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/StepConnector/StepConnector.js#L50));Ant / Chakra 沒有地板(線是列高的餘數,無說明時 Ant 32px 圓只剩 ≈ 4px),Carbon 是另一種模型(1px 線貼左緣全高連續)。24 也等於本元件的步間距 `pb-6`,可讀成「線至少一個步間距」。
+- **線最短 24px,長度不隨說明文字有無變動**。唯一一手明文地板:MUI `StepConnector` vertical `minHeight: 24`([StepConnector.js#L90-L96](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/StepConnector/StepConnector.js#L90-L96));Ant / Chakra 沒有地板(線是列高的餘數,無說明時 Ant 32px 圓只剩 ≈ 4px),Carbon 是另一種模型(1px 線貼左緣全高連續)。24 也等於本元件的步間距 `pb-6`,可讀成「線至少一個步間距」。
 - **落地**:非末項垂直 `li` 的最小高度 = 圓 + 兩端縫 + 線地板(sm 48 / md 64 / lg 72;`steps.tsx` `verticalItemMinHeight`);有說明時列自然更高、不受影響。水平線的最短寬吃同一個 24(先前 `min-w-4` 16px 沒入規格;同元件同概念只准一個地板)。
 - **為什麼是根層修**:線長原本 = li 高 − 2r − 16(餘數),沒有說明時 md 只剩 2.2px、lg 是 0 —— 違反上方「對齊不變量」:指示欄節奏是元件本體,不得隨說明有無變動。
 - **閘**:`scripts/steps-connector-geometry-invariant.mjs`(量三尺寸無說明的垂直線高 ≥ 24、兩端縫 = 8;selftest 用修法前的實測 2.2 / 0 當對照組必紅)。
@@ -389,16 +389,16 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 **ARIA / Pattern**:[W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/) **無**正式 stepper pattern(2026-06-01 M26 source-verified:APG 31 patterns 無 stepper / wizard / progress)。本元件採 **Carbon ProgressIndicator 模型**([`ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348),釘在 2026-09-23 的 commit)— root `<ol>` + clickable step `role="button"` + focused step `aria-current="step"`(Cloudscape Wizard 同款:[`wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144))+ indicator `aria-hidden`(純視覺)。
 
-- **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「stepper 必須有 label」。
+- **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「The stepper and each step should be given a meaningful label via `aria-label` or `aria-labelledby`.」([stepper.md#L241](https://github.com/angular/components/blob/5856d87e9ebd802c6e608b9079f220ea9d5b84d1/src/material/stepper/stepper.md#L241))。
 - **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。字住 `step-status-text.ts`,TreeView 步驟結果的「已完成」「錯誤」讀同一份。
 - **沒有 `aria-expanded` / `aria-controls`**(2026-09-30 拿掉;2026-07-05 `7e69aad7` 加的):header 點了是「跳到那一步」,不是切換一塊內容的顯示,WAI-ARIA disclosure trigger 的語意套上去會讓讀屏把導覽念成開合。目前那一步只由 `li` 的 `aria-current="step"` 說出來。對照:Carbon [`ProgressIndicator.tsx#L313-L348`](https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348)—— 步是一顆 `<button>`,a11y 屬性只有 `disabled` / `aria-disabled` / `tabIndex`(其餘是 `type` / `className` / `onClick` / `onKeyDown` / `title` / `...rest`),全檔 0 個 `aria-expanded`;Cloudscape [`wizard-navigation.tsx#L137-L144`](https://github.com/cloudscape-design/components/blob/163e9b6f557905e06fdeced4dfeeedcb7564bbdb/src/wizard/wizard-navigation.tsx#L137-L144)—— 目前那一步是 `aria-current="step"` 的 `<span>`,全檔 0 個 `aria-expanded`。
 - **StepContent 內的 consumer-owned scroll region**:Steps 不替任意 children 猜測捲動語意。consumer 若在 StepContent 放 `overflow-x-auto` / `overflow-y-auto`,實際會 overflow 的 wrapper 必須是鍵盤可達的具名區域(`tabIndex={0}` + `role="region"` + `aria-label`)並使用 DS 內描邊焦點框(`focus-visible:focus-ring-inset`)。tab stop 必須落在真正控制 `scrollLeft` / `scrollTop` 的 wrapper,不可放在內層 `<pre>`。鍵盤到不到得了這類區域由 a11y 閘的 axe 規則 `scrollable-region-focusable`(wcag2a;`scripts/audit-a11y.mjs:142` 的 tag 集合)看守;2026-09-30 起 DS 內沒有任何 story 示範這條(原本示範它的「多重展開模式」已退役),規則文字保留為 consumer 指引。
 
-**Keyboard 行為**(Carbon 模型 — sequential Tab,非 tablist roving):
+**Keyboard 行為**(Carbon 模型 — sequential Tab,非 tablist roving;Carbon 每步是原生 `<button>`、無方向鍵處理:[ProgressIndicator.tsx#L312](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L312)):
 
 - Tab — focus 每個 clickable step(各自 tab stop);鎖住的步與目前那一步不是 clickable,不停(見「內容跟著目前那一步」的「目前那一步可不可以點」)
 - Enter / Space — navigate to step(`role=button` 元素必同時支援)
-- **不提供方向鍵 roving**:採 native button sequential Tab(對齊 Carbon ProgressIndicator);MUI / Angular Material 的「tablist + 方向鍵 roving」是另一派世界級做法,本 DS 不採(避免把 `role=button` 改寫成 `role=tab` 的語義改動)。
+- **不提供方向鍵 roving**:採 native button sequential Tab(對齊 Carbon ProgressIndicator);MUI / Angular Material 的「tablist + 方向鍵 roving」是另一派世界級做法(MUI [Stepper.js#L84-L101](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Stepper/Stepper.js#L84-L101) `role="tablist"` + `useRovingTabIndexRoot`;Angular Material [stepper.md#L215-L238](https://github.com/angular/components/blob/5856d87e9ebd802c6e608b9079f220ea9d5b84d1/src/material/stepper/stepper.md#L215-L238) 左右鍵切 step header、step header 是 `role="tab"`),本 DS 不採(避免把 `role=button` 改寫成 `role=tab` 的語義改動)。
 
 **Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);focus management 由元件 own。
 

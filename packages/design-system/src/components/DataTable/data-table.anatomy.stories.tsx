@@ -255,7 +255,7 @@ export const AlignmentRule: Story = {
       <div className="flex flex-col gap-8">
         <div>
           <H3>Column type 提供對齊預設(column-types.ts 定義),consumer 可用 meta.align 覆寫</H3>
-          <Desc>數字靠右方便縱向比較位數(Excel / 會計軟體 / 財務系統共識);文字靠左方便閱讀;boolean 靠左跟其他文字欄一致,維持掃視時的左緣節奏。Consumer 通常不需要設 <code>align</code>——column type 已給預設;需要時仍可用 <code>meta.align</code> 在 column 層級覆寫。</Desc>
+          <Desc>數字靠右方便縱向比較位數(個位、小數點上下對齊);文字靠左方便閱讀;boolean 靠左跟其他文字欄一致,維持掃視時的左緣節奏。Consumer 通常不需要設 <code>align</code>——column type 已給預設;需要時仍可用 <code>meta.align</code> 在 column 層級覆寫。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 

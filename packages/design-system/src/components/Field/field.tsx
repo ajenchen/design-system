@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
 
 /**
- * Field — 表單欄位佈局容器（shadcn Field 風格）
+ * Field — 表單欄位佈局容器（shadcn Field 風格:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/field.tsx#L81 ）
  *
  * ── 定位 ────────────────────────────────────────────────────────────────
  * Field 只負責 **佈局 + 狀態 context**，不擁有任何資料型別邏輯。
@@ -362,7 +362,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
     const disabled = ctx?.disabled ?? false
     const htmlFor = htmlForProp ?? ctx?.id
     // 純顯示(`<Field mode="view">`)底下沒有輸入框可對:`<label for>` 指向不存在的控件 = a11y 錯(axe label 類規則),
-    // 改渲 span(同 id,控件的 aria-labelledby 照樣接得到;Salesforce 檢視模式同做法:label → span)。
+    // 改渲 span(同 id,控件的 aria-labelledby 照樣接得到)。
     const isViewMode = ctx?.mode === 'view'
     const isHorizontal = ctx?.orientation === 'horizontal'
     const controlLayout = ctx?.controlLayout ?? 'inline'
@@ -526,7 +526,7 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
    * 支援任何 CSS length(`"140px"` / `"10rem"` / `"30%"` 等)。預設不指定——
    * 每個 Field 自動以 label 內容撐開(容易歪七扭八)。
    *
-   * 世界級 idiom:macOS System Settings / iOS Settings / GitHub Settings 的
+   * 用途:讓
    * setting list 一律 label 固定寬、control 右對齊,列與列整齊對齊。
    *
    * 單一 Field 可以用自己的 `labelWidth` prop 覆寫 cascade 值。
@@ -541,7 +541,7 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 // 表單間距是**系統級**設定,要調就整個 density 一起調(md 16px / lg 24px),不是每個表單各自挑。
 //
 // 原本的 `gap?: 'compact' | 'normal' | 'loose'`(硬寫 gap-3/4/6、凍結不隨 density)來自
-// 2026-04-10 的 `9917993e`,commit 訊息宣稱「rename to shadcn conventions」——
+// 2026-04-10 的 `9917993e`,commit 訊息宣稱「rename to shadcn conventions」(git show 9917993e 核對)——(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/field.tsx#L44)
 // 但 shadcn 的 `FieldGroup` **根本沒有 gap prop**(props 只有 className,間距由元件固定),
 // 那三檔是重構時自己長出來的,沒有任何 user 決定背書。實際使用也證實它不帶資訊:
 // 全 repo 33 個 `<FieldGroup>` 只有 2 個傳過 gap(1 個 compact 無理由、1 個傳的就是預設值),

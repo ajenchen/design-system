@@ -110,7 +110,7 @@ const TypeBadge = ({ hue, glyph: Glyph }: { hue: CategoricalHue; glyph: typeof F
 export const WithStartContent: Story = {
   name: '自訂前綴內容',
   render: () => (
-    // 工作項類型設定的左側導覽(Jira / Meegle type settings):類型徽章 = 彩底 + glyph,
+    // 工作項類型設定的左側導覽(專案管理工具的類型設定頁):類型徽章 = 彩底 + glyph,
     // LucideIcon 表達不了 → startContent;selected = 目前編輯中的類型
     <MenuContainer width={224}>
       <MenuGroup>
@@ -198,7 +198,7 @@ export const Groups: Story = {
 export const Messages: Story = {
   name: '訊息列(沒有選項 / 載入中)',
   render: () => (
-    // Jira 議題「指派人員」選單的兩種非選項狀態:名錄回來但沒有人 / 名錄還在載入。
+    // 工單「指派人員」選單的兩種非選項狀態:名錄回來但沒有人 / 名錄還在載入。
     // 前綴槽放列圖示尺寸(md = ICON_SIZE.md)的轉圈,文字仍可見。
     <div className="flex gap-[var(--layout-space-loose)]">
       <MenuContainer width={240} role="group"><MenuGroup>

@@ -19,7 +19,7 @@ benchmark:
 
 Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由 header（含 chevron）點擊切換展開 / 收合狀態。適合「多段內容,多數時間只想看其中一段」的情境。
 
-**實作基礎**：shadcn/ui 結構 + Radix Accordion primitive。本 DS 保留 shadcn 的 `Accordion / AccordionItem / AccordionTrigger / AccordionContent` API,視覺全改本 DS token(與 shadcn 預設的差異見「視覺規則」)。
+**實作基礎**：shadcn/ui 結構 + Radix Accordion primitive。本 DS 保留 shadcn 的 `Accordion / AccordionItem / AccordionTrigger / AccordionContent` API,視覺全改本 DS token(與 shadcn 預設的差異見「視覺規則」)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/accordion.tsx#L65))。
 
 **Layout Family**：非上述 family — composite / multi-section（多個 AccordionItem 垂直堆疊，自 own layout）。
 
@@ -75,7 +75,7 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 - **焦點框**:鍵盤 focus 畫內描邊(`focus-visible:focus-ring-inset`,往內 2px)—— trigger 撐滿標題列高,往外 +2px 會壓到下方內容區;幾何見 `ds-canonical/references/focus-canonical.md`「框怎麼畫」(2026-09-24 訂正,原「用 ring token(非自訂 outline)」方向相反且指已退役的機制)
 
 **為什麼 hover 不用底線**:
-- shadcn 預設 `hover:underline` 是 web 早期 link convention,現代 SaaS(Notion / Linear / Stripe / Vercel)皆不使用
+- shadcn 預設 trigger 帶 `hover:underline`(<https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/accordion.tsx#L37>),沿用 web 早期的文字連結慣例;trigger 是就地展開本頁區塊、不是跳轉,不借用連結的底線訊號
 - 改用文字色 tint 弱化,維持 DS 統一質感
 - 仍保留可點擊提示——完全不變色會讓使用者不確定能否點擊;「失去可點擊提示」的風險大於「被誤以為是 link」
 

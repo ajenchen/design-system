@@ -82,8 +82,7 @@ export const BetweenSections: Story = {
       {/*
        * heading → first-item gap 對齊 item → item gap(都是 layout-space-tight):
        * Gestalt proximity canonical —— 相同距離代表 heading 擁有下方 items;
-       * 若拉大 gap 反而讓 heading 看似「分離」,與 items 的歸屬關係變弱。世界級 idiom:
-       * iOS Settings / Notion properties / Ant Descriptions 皆採相等 gap。
+       * 若拉大 gap 反而讓 heading 看似「分離」,與 items 的歸屬關係變弱。
        */}
       <div>
         <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">基本資料</h3>

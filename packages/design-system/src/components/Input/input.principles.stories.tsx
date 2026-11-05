@@ -41,7 +41,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 不用 Input startIcon 表達狀態(有效 / 無效)"
-          note="startIcon 是「欄位用途」識別符(郵件、搜尋、網址)。狀態用邊框 + help text。Stripe 信卡欄的有效狀態由邊框顏色傳達"
+          note="startIcon 是「欄位用途」識別符(郵件、搜尋、網址)。狀態用邊框 + help text —— 例如信用卡號輸入有誤時,邊框轉紅、下方 help text 說明原因"
         >
           <ExampleCaption warn>startIcon = 欄位身份,狀態由邊框 + help text 傳達</ExampleCaption>
         </TutorialRule>

@@ -110,7 +110,7 @@ export const Inspector: Story = {
     docs: {
       description: {
         story:
-          '右側 Controls 切 Tabs / TabsList props 即時 render,取代 Figma inspect。切 `size` 看 tab 高度 tier(--tab-height-*);切 `overflow` 模擬溢出處理行為(scroll 需寬度不足才觸發,示例用 `max-w` 限縮容器);切 `value` 觀察 selected underline 位置。',
+          '右側 Controls 切 Tabs / TabsList props 即時 render,取代設計稿 inspect 面板。切 `size` 看 tab 高度 tier(--tab-height-*);切 `overflow` 模擬溢出處理行為(scroll 需寬度不足才觸發,示例用 `max-w` 限縮容器);切 `value` 觀察 selected underline 位置。',
       },
     },
   },

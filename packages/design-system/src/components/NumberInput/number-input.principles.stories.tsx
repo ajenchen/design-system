@@ -50,7 +50,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="siblings">
         <TutorialRule
           title="❌ 不用 NumberInput 做電話號碼或郵遞區號 → Input"
-          note="電話、郵遞區號、身分證字號、產品代碼都「長得像數字」但不是算術型 value——不做加減、不做千分位、不做 step。改用 Input + type='tel' / pattern(Stripe 的電話欄用 Input)。用 NumberInput 會錯誤套用千分位、吃掉前導零,且誤導 mobile 彈出數字鍵盤"
+          note="電話、郵遞區號、身分證字號、產品代碼都「長得像數字」但不是算術型 value——不做加減、不做千分位、不做 step。改用 Input + type='tel' / pattern。用 NumberInput 會錯誤套用千分位、吃掉前導零,且誤導 mobile 彈出數字鍵盤"
         >
           <NumberInput mode="readonly" value={912345678} aria-label="電話號碼（NumberInput 誤用）" />
           <ExampleCaption warn>↑ 電話 0912-345-678 被當數值,顯示時加上千分位 912,345,678 → 數字意義錯誤(前導零也被吃掉)</ExampleCaption>
@@ -60,7 +60,7 @@ export const UsageGuidance: Story = {
 
         <TutorialRule
           title="❌ 不用 NumberInput 做音量 / 亮度滑動調整 → Slider"
-          note="視覺調整用 Slider。NumberInput 是「輸入精確值」的 form field。Material 音量控制用 Slider"
+          note="視覺調整用 Slider。NumberInput 是「輸入精確值」的 form field。音量這類「拖到感覺對就好」的值也用 Slider"
         >
           <ExampleCaption warn>音量 / 亮度 → Slider,使用者目標是「感受」而非「輸入精確值」</ExampleCaption>
         </TutorialRule>
@@ -124,7 +124,7 @@ export const AlignmentRule: Story = {
 
         <TutorialRule
           title="❌ 不要手動改動對齊方向"
-          note="edit 左、table 右是跨產業的共識(Excel、會計軟體、財務系統都是)。手動反向會讓使用者的掃視習慣被打破"
+          note="edit 左:輸入時視線跟著游標從左往右;table 右:欄內數字個位對齊,上下比大小一眼看完。手動反向會讓這兩種掃視都被打斷"
         >
           <NumberInput
             value={value}

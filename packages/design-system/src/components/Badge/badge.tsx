@@ -16,14 +16,14 @@ import { cn } from '@/lib/utils'
 //   critical    — deep-orange 底白字（bg-notification = --color-deep-orange-6,hue 38;非 categorical red hue 25），立即處理
 //
 // dot 模式只接 critical / high（單一 attention 點,實心可見色）—— 不提供 medium/low dot:
-// dot = 「這裡有東西要看」,淡點不 earn existence(對齊 Material small-badge / Ant status dot /
-// Polaris:dot 是單一 attention/status,非 4 級 severity 刻度;2026-06-05 user 拍板 Option A)。
+// dot = 「這裡有東西要看」,淡點不 earn existence(一顆小點分不出四級輕重,淡色點在小尺寸下幾乎看不見 /
+// dot 只承載單一 attention,非 4 級 severity 刻度;2026-06-05 user 拍板 Option A)。
 // medium/low 仍完整存在於 count/text badge。
 //
 // 規則：count default low, escalate with reason。見 badge.spec.md「選 level 的流程」+「dot 變體」。
 
 const badgeVariants = cva(
-  // 2026-05-23 Path B revert:icon-as-text / numeric-in-circle 用 leading-none canonical(對齊 Material Avatar `line-height: 1` / Polaris Badge / Carbon Tag 共識)。
+  // 2026-05-23 Path B revert:icon-as-text / numeric-in-circle 用 leading-none canonical(行高 = 字級,圓裡的數字 / 圖示才會上下置中,不被行高多出的上下空白推偏)。
   // 視覺等效驗證:Badge container 顯式 `h-4 (16px)` + `flex items-center` 主導,text 被 items-center 置中,line-height 1.0 vs 1.3 視覺零差別。
   // user 2026-05-23 反問要不要乾脆不分、並同意 AI 建議的 path B(原話已不可考,此為轉述):統一 leading-none,不分。
   // 廢除 2026-05-21 F1 fix 的 leading-compact migration(那次 anchor「不影響高度的話就改」core constraint 是高度不變,Path B 同樣滿足且更簡單)。
@@ -55,7 +55,7 @@ export interface BadgeDotProps extends BadgeBaseProps {
   dot: true
   /** dot 只接高訊號 attention 色:critical(立即)/ high(有感)。預設 critical。
    * 不提供 medium/low —— dot = 「這裡有東西要看」,淡點不 earn existence
-   * (對齊 Material/Ant/Polaris:dot 是單一 attention/status,非 severity 刻度)。 */
+   * (dot 只承載單一 attention,非 severity 刻度:小點分不出四級輕重)。 */
   variant?: 'critical' | 'high'
   count?: never
   max?: never
@@ -78,7 +78,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     // dot 預設 attention 色 = critical(非 cva 的 count default 'low');count 沿用 cva default 'low'。
     const effectiveVariant = variant ?? (dot ? 'critical' : 'low')
     // 2026-07-05 D4 修(續 07-04 guard):count 模式 count == null → 整顆 return null 不渲染 —
-    // 原 guard 只擋文字,仍渲染 16px 空 pill + 空 role=status live region(Ant/Material 皆不渲染)。
+    // 原 guard 只擋文字,仍渲染 16px 空 pill + 空 role=status live region(Ant 不渲染:沒有 count 時 `isHidden` 為真、`CSSMotion visible={!isHidden}` 不掛節點,[Badge.tsx#L165-L168](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/badge/Badge.tsx#L165-L168);MUI 節點仍在、但 `badgeContent == null` 時標 invisible 縮成 `scale(0)`,[Badge.js#L185](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Badge/Badge.js#L185)、[#L130](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Badge/Badge.js#L130);兩家都沒有空的 live region)。
     if (!dot && count == null) return null
     const display = dot ? null : (
       max != null && count! > max ? `${max}+` : `${count}`

@@ -296,7 +296,7 @@ export const Accessibility = {
         <ul className="list-disc pl-5 space-y-1">
           <li>Tab — 進入整組(只有一個 tab 停留點,落在選中項;沒選就落在上次 focus 過的 item,初次進入才是第一項)</li>
           <li>←/→ — 在 item 之間移動 roving focus(只移焦點,不切換選取)。WAI-ARIA APG 對水平 segmented/radio group 的主要導覽鍵</li>
-          <li>↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix toggle-group 未鎖 orientation(沿用 default 雙軸 roving),APG 接受 group 同時支援兩軸方向鍵</li>
+          <li>↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix toggle-group 未鎖 orientation(沿用 default 雙軸 roving),APG toolbar pattern 允許上下鍵重複左右鍵的作用</li> {/* 來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L33-L34 */}
           <li>Enter / Space — 選取目前 focus 的 item</li>
         </ul>
         <p><b>Focus</b>:採 roving tabindex——整組共用一個 tab 停留點,方向鍵在 item 間移動焦點(選取仍需 Enter/Space/click);不是 Dialog 那種把焦點關在裡面的 focus trap。Focus ring 對齊 Button:全域 :focus-visible 外描邊(outline: 2px solid var(--ring),往外 2px;元件不寫任何焦點框 class,只加 focus-visible:z-20 讓往外長的框壓在相鄰 item 之上)。</p>

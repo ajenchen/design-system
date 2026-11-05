@@ -4,7 +4,7 @@ family: 1
 variants:
   default:
     when: "標準導覽 row — 參與 single-selection,fg-secondary → hover foreground / active neutral-selected"
-    world-class: ["Linear sidebar nav item", "Notion sidebar item", "VS Code Activity Bar primary item"]
+    world-class: ["VS Code Activity Bar primary item(https://github.com/microsoft/vscode-docs/blob/7b97a834f5fd6d0a616fa64e3f6dd379367dd68f/api/ux-guidelines/activity-bar.md#L12)"]
   meta:
     when: "Section 底部命令 row(「Show more」「載入更多」「+ 新增專案」);font-normal + fg-muted,不參與 selection"
     world-class: ["Linear 'Show N more'", "Notion 'Show N more'", "Slack 'Show more'", "Gmail Labels 'More'"]
@@ -41,7 +41,7 @@ benchmark:
 
 **應用程式的主導覽外殼**——頁面固定的側邊導覽容器，支援展開 / 收合、放得下並排 / 放不下暫藏或左側浮層(在 AppShell 裡照 `../AppShell/app-shell.spec.md`「版面規則」)、扁平選單與階層樹兩種內容。
 
-**實作基礎**：基於 Radix Collapsible + Radix Slot（shadcn Sidebar 模式改寫）+ 橋接 DS token。
+**實作基礎**：基於 Radix Collapsible + Radix Slot（shadcn Sidebar 模式改寫:Slot 見 [sidebar.tsx#L7](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L7)、可收合群組用 Collapsible 見 [sidebar.mdx#L342-L353](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/components/radix/sidebar.mdx#L342-L353)）+ 橋接 DS token。
 
 **Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
 
@@ -51,7 +51,7 @@ benchmark:
 
 ## 何時用
 
-- **多頁 app 的主導覽**：Slack、Linear、Notion、Figma 的左側 workspace + channel / project 清單
+- **多頁 app 的主導覽**：左側 workspace + channel / project 清單(目的地多、要常駐可見)
 - **需要在所有頁面持續存在的次導覽**：settings 頁的分類、文件的章節跳轉
 - **workspace 切換 + 功能分組並存**：頂部 workspace switcher + 下方常用功能 + 底部 settings
 - **需要展開 / 收合但不消失**：放不下時收成細列（icon bar），放得下展開完整 label
@@ -90,7 +90,7 @@ SidebarProvider              ← 全域 context（open 狀態、cookie、快捷�
   SidebarTrigger             ← 展開 / 收合按鈕（放 sidebar 外，詳「SidebarTrigger 位置」段）
 ```
 
-**不使用 shadcn 原版的 `SidebarMenuSub` / `SidebarMenuSubItem`**——見下方內容形態規則。
+**不使用 shadcn 原版的 `SidebarMenuSub` / `SidebarMenuSubItem`**([sidebar.tsx#L640-L669](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L640-L669))——見下方內容形態規則。
 
 ---
 
@@ -133,9 +133,9 @@ SidebarProvider              ← 全域 context（open 狀態、cookie、快捷�
 左右 gutter 由列自己帶;底部放**按鈕**則用 `SurfaceFooter`。同配方的另一個住所是 `components/Menu/menu-item.tsx` 的 `MenuFooter`。
 **本元件實作正確、不需更動**,此段只是把它掛進共同的判準 owner,避免兩處各自演化。
 
-**SidebarFooter user 區必單行(2026-06-12 明文,fork drift 防線;2026-07-30 帳號選單修正)**:名字單行(`text-body-lg` truncate)。footer user 行 = **帳號入口**,點開**帳號選單(`DropdownMenu`)**;職稱/email/工號等身份資訊歸帳號選單頂部 `DropdownMenuLabel` 第二行(`text-caption`)。**自己的 avatar 不掛 ProfileCard hoverCard**(ProfileCard 是看「別人」的人員卡;rule owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」的「入口開什麼」段,本處不重述)。(UserFooter canonical,sidebar.stories.tsx)。shadcn nav-user 的「name + email `text-xs` 兩行」是 demo 慣例非本 DS canonical(`text-xs` 同時違反下方 chrome typography 一律 `text-body-lg` 條);registry antiPattern `sidebar-footer-two-line` 機械攔。
+**SidebarFooter user 區必單行(2026-06-12 明文,fork drift 防線;2026-07-30 帳號選單修正)**:名字單行(`text-body-lg` truncate)。footer user 行 = **帳號入口**,點開**帳號選單(`DropdownMenu`)**;職稱/email/工號等身份資訊歸帳號選單頂部 `DropdownMenuLabel` 第二行(`text-caption`)。**自己的 avatar 不掛 ProfileCard hoverCard**(ProfileCard 是看「別人」的人員卡;rule owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」的「入口開什麼」段,本處不重述)。(UserFooter canonical,sidebar.stories.tsx)。shadcn nav-user 的「name + email `text-xs` 兩行」([nav-user.tsx#L58-L59](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/blocks/sidebar-07/components/nav-user.tsx#L58-L59))是 demo 慣例非本 DS canonical(`text-xs` 同時違反下方 chrome typography 一律 `text-body-lg` 條);registry antiPattern `sidebar-footer-two-line` 機械攔。
 
-**SidebarHeader brand 必單行(2026-06-12 明文,fork drift anchor)**:Avatar 24 + 名稱單行,**無副標 slot**——Fixed-h chrome 結構上不可成長;plan/org 等第二行資訊歸 workspace switcher dropdown row,對齊 Slack/Notion/Linear 現行版單行。shadcn TeamSwitcher demo 的「Acme Inc + Enterprise」兩行是 demo 慣例非本 DS canonical(fork repo AI 曾以訓練先驗在 spec 沉默處回填此副標)。Registry antiPattern `sidebar-header-subtitle-second-line` 機械攔(flex-col 直接子層簽名)。
+**SidebarHeader brand 必單行(2026-06-12 明文,fork drift anchor)**:Avatar 24 + 名稱單行,**無副標 slot**——Fixed-h chrome 結構上不可成長;plan/org 等第二行資訊歸 workspace switcher dropdown row(要看時點開才看,平常不佔 chrome 高度)。shadcn TeamSwitcher demo 的「Acme Inc + Enterprise」兩行([team-switcher.tsx#L51-L52](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/blocks/sidebar-07/components/team-switcher.tsx#L51-L52))是 demo 慣例非本 DS canonical(fork repo AI 曾以訓練先驗在 spec 沉默處回填此副標)。Registry antiPattern `sidebar-header-subtitle-second-line` 機械攔(flex-col 直接子層簽名)。
 
 ---
 
@@ -155,7 +155,7 @@ Sidebar 有兩種正交的內容形態，consumer 嚴格擇一或混用：
 
 ### 為什麼只有 1 層
 
-Linear、Slack、VS Code、Figma、Gmail——**沒有任何頂級產品在 sidebar 主選單用語意階層**。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。Notion 的 sidebar 有巢狀,但那是**頁面(user data)的樹**、不是選單階層:Notion 說明頁逐字 "you can nest pages inside other pages with no limit" / "You can open up each toggle in your sidebar to reveal pages nested inside other pages"(https://www.notion.com/help/navigate-with-the-sidebar)—— 正是「階層 = TreeView(user data)」那一邊的例子,不是反例(2026-09-29 更正:先前把 Notion 列在「沒有階層」那一組是憑印象)。shadcn 的 `SidebarMenuSub` 是 demo 便利 API，本 design system 完全不 export，避免誤用。
+**sidebar 主選單不用語意階層**(主選單是少數固定目的地,扁平才一眼掃得完、icon 模式也才收得起來)。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。Notion 的 sidebar 有巢狀,但那是**頁面(user data)的樹**、不是選單階層:Notion 說明頁逐字 "you can nest pages inside other pages with no limit" / "You can open up each toggle in your sidebar to reveal pages nested inside other pages"(https://www.notion.com/help/navigate-with-the-sidebar)—— 正是「階層 = TreeView(user data)」那一邊的例子,不是反例(2026-09-29 更正:先前把 Notion 列在「沒有階層」那一組是憑印象)。shadcn 的 `SidebarMenuSub` 是 demo 便利 API，本 design system 完全不 export，避免誤用。
 
 ### 「Projects > A / B」這類
 
@@ -169,7 +169,7 @@ User-generated data **一律 TreeView**，不論數量——即使現在只有 3
 
 Sidebar 只放一顆 `Settings`，點進去後在 **Settings 頁面內部**用左側 rail 或 Tabs 呈現子頁。子頁屬於 Settings 頁面的內部狀態，不佔 sidebar 位置。
 
-代表：Linear（modal + 左 rail）、GitHub（repo settings 頁內 rail）、Notion（modal + tabs）。
+適用:設定子頁很多,但都屬於「設定」這一個目的地(進去後用左 rail 或 Tabs 切子頁)。
 
 #### 路徑 B：SidebarGroup 扁平化
 
@@ -181,11 +181,11 @@ Sidebar 只放一顆 `Settings`，點進去後在 **Settings 頁面內部**用�
 
 Settings 不在 sidebar，從 footer 的 avatar / user menu 觸發 modal 或快捷鍵（`Cmd+,`）。適合低頻操作。
 
-代表：Linear、Slack、Discord。
+適用:主題、語言、快捷鍵這類個人偏好(見下方「A 和 C 並用」)。
 
 #### A 和 C 並用
 
-大型產品通常**同時有 A 和 C**，依設定性質分流（Linear 的實際做法）：
+大型產品通常**同時有 A 和 C**，依設定性質分流：
 
 - **路徑 A**：功能性設定（workspace settings、project settings、team members、integrations）—— sidebar 有入口，點進去是完整頁面 + 內部 secondary nav
 - **路徑 C**：個人偏好（theme、language、keyboard shortcuts、personal notifications）—— 從 user menu 叫出 modal，不佔 sidebar
@@ -194,7 +194,7 @@ Settings 不在 sidebar，從 footer 的 avatar / user menu 觸發 modal 或快�
 
 ### 混用
 
-Gmail / Linear 的標準版型：上方 SidebarGroup 放扁平主導覽（SidebarMenu），下方 SidebarGroup 放 user data（TreeView）。icon 模式下，扁平區顯示 icon（hover tooltip 需 per-button 傳 `tooltip` prop），TreeView 整段隱藏。
+常見版型：上方 SidebarGroup 放扁平主導覽（SidebarMenu），下方 SidebarGroup 放 user data（TreeView）。icon 模式下，扁平區顯示 icon（hover tooltip 需 per-button 傳 `tooltip` prop），TreeView 整段隱藏。
 
 ---
 
@@ -203,7 +203,7 @@ Gmail / Linear 的標準版型：上方 SidebarGroup 放扁平主導覽（Sideba
 目前只有一種：**`sidebar`**（貼齊 viewport 邊緣、與主內容共用邊界）。
 
 **已移除 / 未實作的 variant**：
-- **`floating`**（脫離邊緣的浮動面板）：**刻意不做**。沒有可靠的「收合後預覽」互動（hover flyout 是 NN/g 反模式），單純換個圓角陰影的 floating 跟 `sidebar` 在功能上無差，徒增維護成本。如果未來需要卡片感，改用 `inset`
+- **`floating`**（脫離邊緣的浮動面板）：**刻意不做**。沒有可靠的「收合後預覽」互動（hover flyout 要滑鼠沿窄路徑移過去、稍偏就收起,觸控與鍵盤也用不到），單純換個圓角陰影的 floating 跟 `sidebar` 在功能上無差，徒增維護成本。如果未來需要卡片感，改用 `inset`
 - **`inset`**（主內容浮起卡片）：規劃中，未實作
 
 ---
@@ -278,8 +278,8 @@ Modal header 用 **padding-based**（`py-3` + content），因為 modal 是 ephe
 
 | Mode | 說明 | 適合 |
 |------|------|------|
-| **`offcanvas`** | 整個 sidebar 滑出畫面 | 內容優先、低頻導覽（Notion、Figma） |
-| **`icon`** | 收合為 icon-only 細列，頂層 icon 仍可見可點 | 扁平導覽、高頻跨頁切換（Gmail、Slack）。**前提：所有 SidebarMenuItem 必須有 icon + 可導覽** |
+| **`offcanvas`** | 整個 sidebar 滑出畫面 | 內容優先、低頻導覽 |
+| **`icon`** | 收合為 icon-only 細列，頂層 icon 仍可見可點 | 扁平導覽、高頻跨頁切換。**前提：所有 SidebarMenuItem 必須有 icon + 可導覽** |
 | **`none`** | 不可收合 | 超簡單應用或 sidebar 是頁面核心（file explorer）。**不能用在 AppShell 的 Menu 位置**（`../AppShell/app-shell.spec.md`「版面規則」§12） |
 
 **收起後的寬(單獨使用與在 AppShell 裡同一條)**:`offcanvas` 收起 = 0、`icon` 收起 = `--sidebar-width-icon`、展開 = `--sidebar-width`(在 AppShell 裡 = AppShell 給的寬)。寬度只由 `sidebar.tsx` 一個判斷式算出,裡面內容的版面寬也從同一個判斷式導出:收成細列(含收合過渡)時 = 細列寬,捲動區的內容層也鎖在這個寬(`SidebarContent` 的 ScrollArea 開 `fillX`;Radix 預設的 `display: table` 內容層會被任何比細列寬的子元素撐開,例如 `SidebarMenuSkeleton`、`SidebarInput`)、列鈕右內距歸零(有列尾動作的列預留的右內距,細列時已沒有東西要讓)—— 細列裡放什麼,列鈕的版面都不比看得到的寬,所以 Tooltip 離列鈕 8px(`../../tokens/elevation/elevation.spec.md`「浮層間距」)、鍵盤焦點框四邊完整。內容比視窗高時,指標在細列上(含用滾輪捲動)照 ScrollArea 通則浮出直捲軸,只用鍵盤捲動時不出捲軸、聚焦項自己捲進視野(2026-10-21 user 回 E3:「ds規定本來就應該盡量讓使用者在各種情況下都能看完完整內容吧？如果不出現捲軸要如何看完完整內容？？？」);細列捲軸的軌道不接指標、只有滑塊接,列鈕被捲軸蓋到的那段照樣點得到、會變色、會開 Tooltip(2026-10-28 user 選「只在側欄細列讓軌道不接收滑鼠」;展開時與其他捲動區照 ScrollArea 通則);展開(含展開過渡)與 `offcanvas` 收掉時內容保持展開寬、由外框裁出,字不重排、不跑省略號。「寬 0 時裡面的選單項 `inert` + `aria-hidden`」也從同一個值導出(見下方「放不下時」)。**不得**用 `group-data-[collapsible=…]:w-…` 寫在帶 `group` 的那個元素自己身上 —— Tailwind 的 `group-data-*` 編譯成後代選擇器,比不到 group 本身,寬度靜默不變(2026-10-14 單獨使用的 Sidebar 因此收起後仍 240 寬,offcanvas 還把看得到的選單設成不可操作;2026-10-15 r1b 複驗 F1)。機械閘 `scripts/sidebar-standalone-collapse-invariant.mjs`(真按開關量收起後外框寬與選單可點、細列列鈕不比看得到的寬(含細列裡放骨架列 / 搜尋框、列鈕預留列尾動作的右內距)、Tooltip 間距、焦點框四邊、細列捲軸與軌道不接指標;靜態掃全 DS 沒有 `group` 自己用 `group-*` 變體)。
@@ -298,7 +298,7 @@ Modal header 用 **padding-based**（`py-3` + content），因為 modal 是 ephe
 
 ### 規則 3：TreeView 在 icon 模式整個隱藏
 
-不做 icon 化、不做 flyout、不做 popover。Tree 無法壓縮成單排 icon，Gmail / Linear / Notion 一致隱藏。
+不做 icon 化、不做 flyout、不做 popover。Tree 無法壓縮成單排 icon，所以 icon 模式下整段隱藏。
 
 ### 規則 4：重新看階層資料的唯一路徑 = 展開 sidebar
 
@@ -317,14 +317,14 @@ Modal header 用 **padding-based**（`py-3` + content），因為 modal 是 ephe
 - Sidebar 從畫面頂部一路延伸到底部
 - 主內容區自帶 header(page title bar)
 - **Trigger 位置**:主內容 header 的最左(在 page title 之前)
-- **代表**:Linear / Notion / Figma / Cursor / VS Code / Slack
+- **適用**:sidebar 就是主導覽、每頁自己有標題列的工具型產品
 
 ### Pattern B:Global top app bar + sidebar drawer
 
 - 頂部 bar 跨整個畫面寬度(包含 sidebar 跟 main content 的水平範圍)
 - Sidebar 在 top bar **下方**,只佔頁面剩餘高度
 - **Trigger 位置**:top bar 的最左(視覺位置在 sidebar 上方對齊,實際屬於 top bar 的一部分;top bar 永遠存在,所以 offcanvas 收掉 sidebar 後 trigger 仍然在)
-- **代表**:**Gmail / Google Calendar / Google Drive / Material Design apps** / 多數企業 dashboard
+- **適用**:全站共用頂部列(搜尋、帳號、產品切換)的產品 / 多數企業 dashboard
 
 ### 判斷:trigger 在哪 = top bar 在哪
 
@@ -373,9 +373,9 @@ Pattern B(有 global top bar):
 
 具體 use case:
 
-- **Linear / Raycast / Notion 風格的 integrations 清單**:主導覽是 lucide icon(Home / Inbox / Team,16px),底下接著一串 integrations(GitHub / Slack / Figma / Jira,24px brand logo)。兩種 prefix 都是「導覽目的地」,語意等價,只是 visual hint 不同——使用者期待 label 齊左掃視
+- **integrations 清單**:主導覽是 lucide icon(Home / Inbox / Team,16px),底下接著一串 integrations(各外部服務的 24px brand logo)。兩種 prefix 都是「導覽目的地」,語意等價,只是 visual hint 不同——使用者期待 label 齊左掃視
 - **App launcher / workspace switcher**:每個 workspace 有自己的 brand logo,夾雜系統性的 icon-based 項目
-- **CMS / connected apps**:每個來源(Notion / Google Docs / Confluence)有自己的 logo,跟 icon-based 的「我的草稿」「最近開啟」等並列
+- **CMS / connected apps**:每個來源(外部文件服務)有自己的 logo,跟 icon-based 的「我的草稿」「最近開啟」等並列
 
 **不是這個 use case 就不要開**:
 
@@ -421,7 +421,7 @@ Pattern B(有 global top bar):
 </SidebarProvider>
 ```
 
-`uniformPrefix` 開啟後:`Home` / `Inbox` 的 16px icon 在 24px 槽內 `justify-center`,`GitHub` / `Slack` 的 24px logo 填滿槽——四個 label x 完全對齊。
+`uniformPrefix` 開啟後:`Home` / `Inbox` 的 16px icon 在 24px 槽內 `justify-center`,兩個 integration 項目的 24px logo 填滿槽——四個 label x 完全對齊。
 
 ### 機制細節
 
@@ -634,7 +634,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 #### 修正二:它們本來就不該是手刻的
 
-查 git 才發現這兩顆是 **從 shadcn 改寫進來的手刻品**(2026-04-14 `4e53ff99`;`b7b34721` 只是搬進 npm workspace 的改名 —— 2026-10-27 更正原句「shadcn 原樣帶進來」),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx#SidebarGroupLabel` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
+查 git 才發現這兩顆是 **從 shadcn 改寫進來的手刻品**(shadcn 原版 `SidebarGroupAction` / `SidebarMenuAction` 就是 `aspect-square w-5` + `[&>svg]:size-4`:[sidebar.tsx#L429](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L429)、[#L564](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L564);2026-04-14 `4e53ff99`;`b7b34721` 只是搬進 npm workspace 的改名 —— 2026-10-27 更正原句「shadcn 原樣帶進來」),之後從未跟著本 DS 的行內動作 canonical 遷移。它們自己寫死 `aspect-square w-5` + `[&>svg]:size-4`,也就是 **16 圖示裝在 20 盒裡** —— 而 `inline-action.spec.md` 的尺寸表只有 16 圖示配 18 底色、20 圖示配 22 底色兩種組合,**20 兩種都不是**。更直接的證據是:**同一個檔案 `sidebar.tsx#SidebarGroupLabel` 的收合箭頭早就在消費 `ItemInlineActionButton`**,`SidebarMenuButton` 也早有 `inlineActions` / `inlineActionsSlot` 走 canonical —— 同一個元件裡兩套幾何並存。
 
 依 M23(DS 既有 canonical 優先於外部)與 M30(wrapper 必須繼承 primitive,不得平行宣告)改為委派。
 
@@ -673,7 +673,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 ## 持久化與快捷鍵
 
 - **Cookie**：`sidebar_state`, 7 天。SSR 環境下 `SidebarProvider` 必須接 `defaultOpen` 從 server cookie 傳入以避免 hydration flash
-- **快捷鍵**：`Cmd+B` / `Ctrl+B` 切換收合（VS Code、Linear、shadcn 一致，不要發明新鍵）
+- **快捷鍵**：`Cmd+B` / `Ctrl+B` 切換收合（VS Code、shadcn 一致，不要發明新鍵:VS Code [layoutActions.ts#L288-L309](https://github.com/microsoft/vscode/blob/ccf7045f40625e4ed0080da9c65dc342f7cfa132/src/vs/workbench/browser/actions/layoutActions.ts#L288-L309)、shadcn [sidebar.tsx#L33-L101](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L33-L101)）
 
 ---
 
@@ -702,7 +702,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 ## 禁止事項
 
 - ❌ **使用 SidebarMenuSub / 讓 SidebarMenu 超過 1 層**——用 TreeView 或 in-page secondary nav
-- ❌ **Hover flyout / popover 顯示 tree 或 sub-items**——2000 年代 cascading menu 反模式，NN/g 多年反對
+- ❌ **Hover flyout / popover 顯示 tree 或 sub-items**——cascading menu 要滑鼠沿窄路徑移過去、稍偏就收起,觸控與鍵盤都用不到;要看子項就用 TreeView 展開或進頁面
 - ❌ **純分組 header 用 SidebarMenuItem**——icon 模式變死 icon，用 SidebarGroup
 - ❌ **點 icon 順便展開 sidebar**（expandOnClick 副作用）——行為不可預測
 - ❌ **把 user data 塞 SidebarMenu**——即使只有 3 項，只要使用者可新增就是 tree
@@ -747,7 +747,7 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 ## A11y 預設
 
 - **Landmark**:`<Sidebar>` 目前渲染 `<div>`(三種 collapsible 分支皆然),**不自帶** `<nav>` 元素或 `role="navigation"`、`aria-label`。consumer 若要 page-level navigation landmark,需自行用 `<nav aria-label="Main">` 包住 `<Sidebar>`(或對導覽區塊 `<SidebarGroup>` 加 `role="navigation"`)。
-- **Active item**:`SidebarMenuButton` 帶 `id` + 命中 `activeId` 時自動加 `data-active="true"`,呈現選取底色（`bg-neutral-selected`)。**選中 × 互動疊加(2026-08-11,owner = `item-anatomy.spec.md` 同名格)**:滑鼠 hover 當前項**釘住不變**(先前無規則、靠編譯順序,現為顯式 class);鍵盤焦點停在任何項目都**畫框**(`focus-visible:focus-ring-inset`,2px 內描邊,選單鈕撐滿側欄寬 → 內描邊;當前項 = 框疊在選中底色上),焦點**不改底色**(底色只屬於 hover 與 `data-active`)—— owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板(逐字:「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」,`../../../ds-canonical/references/focus-canonical.md` 來源總帳同一則)。歷史:2026-09-07「A5畫框」只補了當前項,未選中項當時仍用 hover 同色底(AI 推導,已撤回);原本的深一階底色 token 已退役。**當前項同時設 `aria-current="page"`**(2026-09-24 補)—— 先前只有純樣式的 `data-active`,螢幕閱讀器讀不到「你現在人在這一頁」。三份一手來源一致這樣寫:W3C APG Disclosure Navigation 範例、GitHub repo 導覽、Primer TreeView。它與 `aria-selected` 是兩件事(WAI-ARIA 1.2 `aria-current` 的 Note 明文說可並存):current = 你現在人在這一頁;selected = 這個控件裡被挑中的那一項。側欄導覽要表達的是「你現在在這一頁」,而且 ARIA 角色維持 `ul` / `li` / `button`、沒有宣告 grid / tree 這類 composite 角色,所以用 current 不用 selected —— 2026-09-25 起一串只佔一個 Tab 停靠點、方向鍵在裡面走(見「鍵盤:一串 `SidebarMenu` = 一個 Tab 停靠點」),這條不變。**純 SR 語意,零視覺變化。**`variant="meta"` 永不參與 selection（`data-active` 永遠 false）。
+- **Active item**:`SidebarMenuButton` 帶 `id` + 命中 `activeId` 時自動加 `data-active="true"`,呈現選取底色（`bg-neutral-selected`)。**選中 × 互動疊加(2026-08-11,owner = `item-anatomy.spec.md` 同名格)**:滑鼠 hover 當前項**釘住不變**(先前無規則、靠編譯順序,現為顯式 class);鍵盤焦點停在任何項目都**畫框**(`focus-visible:focus-ring-inset`,2px 內描邊,選單鈕撐滿側欄寬 → 內描邊;當前項 = 框疊在選中底色上),焦點**不改底色**(底色只屬於 hover 與 `data-active`)—— owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板(逐字:「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」,`../../../ds-canonical/references/focus-canonical.md` 來源總帳同一則)。歷史:2026-09-07「A5畫框」只補了當前項,未選中項當時仍用 hover 同色底(AI 推導,已撤回);原本的深一階底色 token 已退役。**當前項同時設 `aria-current="page"`**(2026-09-24 補)—— 先前只有純樣式的 `data-active`,螢幕閱讀器讀不到「你現在人在這一頁」。三份一手來源都用 `aria-current` 標當前項:W3C APG Disclosure Navigation 範例(`'page'`,[disclosureMenu.js#L218-L222](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/disclosure/examples/js/disclosureMenu.js#L218-L222))、GitHub repo 導覽(`"page"`,github.com 實際 DOM 2026-11-05 讀回)、Primer TreeView(值是 `'true'` 不是 `'page'`,[TreeView.tsx#L393](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/TreeView/TreeView.tsx#L393))。它與 `aria-selected` 是兩件事(WAI-ARIA 1.2 `aria-current` 的 Note 明文說可並存):current = 你現在人在這一頁;selected = 這個控件裡被挑中的那一項。側欄導覽要表達的是「你現在在這一頁」,而且 ARIA 角色維持 `ul` / `li` / `button`、沒有宣告 grid / tree 這類 composite 角色,所以用 current 不用 selected —— 2026-09-25 起一串只佔一個 Tab 停靠點、方向鍵在裡面走(見「鍵盤:一串 `SidebarMenu` = 一個 Tab 停靠點」),這條不變。**純 SR 語意,零視覺變化。**`variant="meta"` 永不參與 selection（`data-active` 永遠 false）。
 - **快捷鍵不衝突**:`Cmd+B` / `Ctrl+B` 與 shadcn/ui Sidebar 同一組鍵(`SIDEBAR_KEYBOARD_SHORTCUT = "b"`,<https://github.com/shadcn-ui/ui/blob/a9c1da49ec4eab488dc99c69ae20a7ffaa4897d4/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L33>;判斷 `key === "b" && (metaKey || ctrlKey)` 後 `preventDefault` + toggle,<https://github.com/shadcn-ui/ui/blob/a9c1da49ec4eab488dc99c69ae20a7ffaa4897d4/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L95-L109>),VS Code「Toggle Primary Side Bar Visibility」也是 `CtrlCmd+B`(<https://github.com/microsoft/vscode/blob/4d72ba07ae257c404a23781b2ee2275ada05017c/src/vs/workbench/browser/actions/layoutActions.ts#L307-L310>)。DS 內建在 `SidebarProvider` 的 `window` keydown handler,同樣 `preventDefault` + toggle,避免穿透到瀏覽器(`Cmd+B` 在 Safari 是 favorites)。**三道 guard(2026-07-05 D4 修)**:(1) `defaultPrevented`——app 層 editor 已處理同快捷鍵時不 double-fire;(2) IME 組字中不攔(判準全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing`:`isComposing` 或 `keyCode === 229`,2026-09-30 補後者);(3) 可編輯 target——`<input>` / `<textarea>` / `contentEditable` 內按 `Cmd/Ctrl+B` 不 toggle。第 (3) 道是本 DS 自己的理由,不是抄來的:可編輯區裡這組鍵常是粗體等編輯指令,編輯語意優先(上面 shadcn 那段 handler 沒有這一道,任何地方都 toggle)。**目前無 opt-out prop**(無 `disableShortcut`)。
 - **Collapsed accessible name(2026-07-05 D4 修)**:icon 模式 label 以 `sr-only` 視覺隱藏(非 display:none),SidebarMenuButton 對 SR 保留 accessible name(WCAG 4.1.2);Tooltip 僅 hover 提示、不供名;badge / inline actions 仍 display:none(補充資訊,供名責任在 label)。
 - **Tooltip 只給細列**:`SidebarMenuButton` 的 `tooltip` 只在**版面上那一份收成細列**時會開;展開的 Menu(並排或浮層)看得到字,Tooltip `open={false}`(元素樹不換、只切 `open`,全 DS 同一條:`../../patterns/element-anatomy/truncated-text.spec.md`)。2026-10-14 前寫 `TooltipContent hidden`,藏起來的提示仍會開:Menu 浮層裡第一下 Esc 被它吃掉、要按兩下才收回,`aria-describedby` 還指向跟標籤同字的提示(念兩次;2026-10-15 r1b 複驗 N3)。

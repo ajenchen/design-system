@@ -58,7 +58,7 @@ export const Default: Story = {
 // SettingsSections / AdvancedOptions 真實場景隱含覆蓋,interactive-states trait 由
 // anatomy StateBehavior owns(見檔首 @story-trait-rationale)。
 
-// ── FAQ(single + collapsible)——Stripe / Notion 類說明頁 ─────────
+// ── FAQ(single + collapsible)—— SaaS 說明頁 / 定價頁類 ─────────
 
 export const FAQ: Story = {
   name: 'FAQ 常見問題',
@@ -94,7 +94,7 @@ export const FAQ: Story = {
   ),
 }
 
-// ── Settings sections(multiple)——Jira / Linear 類設定頁 ──────────
+// ── Settings sections(multiple)—— 專案 / 工作區設定頁類 ──────────
 
 export const SettingsSections: Story = {
   name: '設定分組',

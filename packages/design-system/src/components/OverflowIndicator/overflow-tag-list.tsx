@@ -21,7 +21,7 @@ export const TAG_ROW_GAP_PX = 4
  * - `relative`:「+N」量尺(`OVERFLOW_MEASURE_ATTR`,絕對定位在左上)的定位容器,量尺才待在被裁切的容器裡;
  * - `isolate`:每顆 Tag 的疊放值 `--tag-stack-z` = 項目數 − 索引、聚焦時 = 項目數 + 1,**沒有上限**(四十幾顆 Tag 的表格格就是四十幾)——
  *   只能在這一列裡比,不能漏到外層去跟黏住的表頭、浮層比。與 `../Avatar/avatar.tsx` `AVATAR_STACK_CLASS`(頭像堆疊列)同一件事,
- *   對齊 Primer `.AvatarStack { isolation: isolate }`。全 DS 層級表 `../../tokens/elevation/elevation.spec.md`「疊放順序」第 1 列;
+ *   對齊 Primer `.AvatarStack { isolation: isolate }`。全 DS 層級表 `../../tokens/elevation/elevation.spec.md`「疊放順序」第 1 列;(來源:https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/AvatarStack/AvatarStack.module.css#L2-L12)
  *   閘 `scripts/layer-order-invariant.mjs` D(真建置逐項量:每一顆用變數疊放的項目,所在那一列都自成疊放脈絡)。
  */
 export const TAG_ROW_CONTAINER_CLASS = 'relative isolate'
@@ -50,7 +50,7 @@ const FIT_EPSILON_PX = 0.01
  * - 量的是「全部攤開」那一刻的版面:先把 Tag 全部顯示、「+N」轉成量尺、Tag 寬上限變數拿掉,再量。所以量到的寬不受上一次決定影響 ——
  *   依內容寬(`width="hug"`)的欄位攤開時被父層(`max-w-full`)擋住的地方,就是它真的能用的寬(與 PeoplePicker 頭像堆疊 2026-09-07 拆的棘輪同一類:
  *   量一個不隨這次決定改變的寬)。填滿寬的欄位攤開與否寬度都一樣,結果與只量一次相同。
- * - 全部放得下就不替「+N」留位(rc-overflow「最後兩顆」那一條)。
+ * - 全部放得下就不替「+N」留位(rc-overflow「最後兩顆」那一條)。(來源:https://github.com/react-component/overflow/blob/f1c801c98d76af8763448d3c55f88a7fc40ab5bc/src/Overflow.tsx#L281-L289)
  *
  * **誰會叫它重算**:ResizeObserver 看容器、每顆 Tag、「+N」、搜尋框量尺,**再加欄位外框(`[data-field-mode]`)的父層**。
  * 依內容寬的欄位,容器的寬是自己的內容決定的:父層變寬時容器、Tag、「+N」一個都不會變,沒有任何通知 —— 「+N」就卡住,空間回來也放不回去
@@ -89,7 +89,7 @@ function useOverflowCount({
   visibleCountOverride?: number
   /**
    * 2026-09-30:Tag 後面要留給別的東西的寬 —— Combobox 欄位內搜尋框的量尺(`findInlineSearchMirror`,在容器裡找)。量它、也觀察它:打字變寬就重算,
-   * 放不下時把 Tag 收進 +N,讓打的字看得見(rc-overflow 把 suffix 的寬算進可見數,Ant 單行多選 responsive 就是這條,出處見 combobox.spec.md)
+   * 放不下時把 Tag 收進 +N,讓打的字看得見(rc-overflow 把 suffix 的寬算進可見數,Ant 單行多選 responsive 就是這條,出處見 combobox.spec.md)(來源:https://github.com/react-component/overflow/blob/f1c801c98d76af8763448d3c55f88a7fc40ab5bc/src/Overflow.tsx#L253)
    */
   getReserveEl?: (container: HTMLElement) => HTMLElement | null
 }): number {
@@ -302,7 +302,7 @@ export interface OverflowTagListProps {
   /**
    * Overflow indicator(+N)形狀(2026-05-12 Round 7 fix,user 抓 PeoplePicker stack +N 該圓形):
    * - `'tag'`(default,backward-compat)— 矩形 chip(對齊 Combobox 文字 tag)
-   * - `'circle'`(opt-in for avatar stack consumers)— 圓形 avatar-shape +N(對齊 GitHub picker idiom)
+   * - `'circle'`(opt-in for avatar stack consumers)— 圓形 avatar-shape +N:跟它旁邊的圓形頭像同形狀,讀起來是「還有 N 個人」而不是一顆標籤
    * PeoplePicker stack mode pass `'circle'`,Combobox 文字 tag 自走 `'tag'`。
    */
   overflowShape?: OverflowTagShape
@@ -345,7 +345,7 @@ export function OverflowTagList({ items, size, wrap, renderTag, renderHiddenTag,
       {items.map((item, i) => (
         // 2026-05-14 I5 fix(per codex M31 verdict + user 抓到 avatar stack 堆疊方向不一致):
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
-        // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
+        // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。(來源:https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/AvatarGroup/AvatarGroup.js#L108-L147)
         // 2026-09-26:疊放順序改走 CSS 變數,裡面有東西拿到鍵盤焦點時整項升到最上層 —— 焦點框往外畫,不升的話
         // 左半圈會被前一項蓋住(同 avatar.tsx AVATAR_STACK_ITEM_CLASS 的理由;頭像堆疊只在 PeoplePicker 會重疊,一般 Tag 不重疊、升層無副作用)。
         // 這兩個值沒有上限,只在容器那一列裡比 —— 容器必掛 TAG_ROW_CONTAINER_CLASS(`isolate`,見檔頭)。

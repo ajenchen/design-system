@@ -54,7 +54,7 @@ export interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement>
    *
    * Canonical pattern:consumer 把 BulkActionBar 跟「Alert info banner(提示擴選 dataset)」
    * 一起 mount,Alert 點「點此選取全部 N 個」→ setTotalSelected(N) → BulkActionBar count 同步。
-   * 對齊 Gmail / Linear / Notion 全選 dataset hint pattern。
+   * 先選本頁、再用提示一鍵擴到整個資料集,避免使用者以為「全選」已涵蓋看不到的列。
    * 詳 `bulk-action-bar.spec.md`「Extend dataset pattern」段。
    */
   totalSelected?: number | null
@@ -122,15 +122,15 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
           props.onBlur?.(e)
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) focusWithinRef.current = false
         }}
-        // 2026-07-06 user 拍板:role "toolbar" → "group" — 原宣告 toolbar 但未實作 APG toolbar
+        // 2026-07-06 user 拍板:role "toolbar" → "group" — 原宣告 toolbar 但未實作 APG toolbar(https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L59-L72)
         // 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);group 語意誠實,
-        // Tab 序照 DOM(spec 本有 canonical),Gmail / Linear bulk bar 實務同款。
+        // Tab 序照 DOM(spec 本有 canonical)。
         role="group"
         aria-label={labels.ariaLabel ?? labels.toolbarAriaLabel}
         className={cn(
           'flex items-center gap-2',
           'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
-          // 上分隔線:bottom toolbar canonical(Linear / Apple Mail / Notion 共識)— 視覺從上方內容收尾
+          // 上分隔線:bottom toolbar canonical — 視覺從上方內容收尾,跟上方清單分開
           'border-t border-divider',
           className
         )}
@@ -154,7 +154,7 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
         {/* count + filter hidden inline
             color canonical(2026-05-04):count = primary foreground + medium weight
             理由:count 是 state-bearing 主資訊(「你在 selection mode + N items」),非裝飾
-            World-class 共識:Linear/Notion/Carbon/Polaris 均用 primary foreground;muted 化弱化 state signal
+            count 是使用者正在「選取模式」的唯一數字,用 primary foreground;muted 化會弱化這個 state signal
             hiddenByFilter suffix 維持 muted(這是次資訊,視覺層次正確) */}
         {/* 2026-05-31 #3:aria-live 通知 SR 選取數變更;#20:補 font-medium 對齊 spec「Count text color canonical」表 + 上方 comment(state-bearing 主資訊) */}
         <span className="text-body text-foreground font-medium tabular-nums" aria-live="polite" aria-atomic="true">

@@ -87,13 +87,13 @@ Chip 是 **Material Design Chips** 的實作(M3 taxonomy:https://m3.material.io/
 
 ### 為什麼不支援 dismiss X
 
-Filter chip 的「移除這個 filter」動作已由「再點一次 deselect」承擔。加 dismiss X 等於同一動作有兩個 affordance，違反 Hicks's Law。Material 3 / Atlassian / Polaris filter chips 都不提供 dismiss。
+Filter chip 的「移除這個 filter」動作已由「再點一次 deselect」承擔。加 dismiss X 等於同一動作有兩個 affordance，違反 Hicks's Law。(Material 3 的 filter chip 有可選的 `removable` 尾端移除鈕 <https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/docs/components/chip.md#L252-L255>,本 DS 不採。)
 
 **需要 dismiss 的情境** = active filter token / 使用者輸入 token，那是 Input chip 的語意（走 `LinkInput` / `Tag` + `onRemove` 路線），不是 Filter chip。
 
 ### 為什麼不需要 checkmark-on-selected
 
-Material 3 filter chip 在 selected 時會把 startIcon 換成 `Check`。我們不做，因為視覺層已經用 **primary border + text（底色維持 surface 不變）**明確表達 selected 狀態，再加 icon 是冗餘信號。
+Material 3 filter chip 在 selected 時會把 startIcon 換成 `Check`。我們不做，因為視覺層已經用 **primary border + text（底色維持 surface 不變）**明確表達 selected 狀態，再加 icon 是冗餘信號([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/chips/internal/filter-chip.ts#L72-L79))。
 
 ---
 
@@ -116,11 +116,11 @@ Chip 使用單一高度，不暴露 size prop。既有使用場景（filter bar�
 | **Default** | `bg-surface border-border text-fg-secondary`（未選文字用 neutral-8，對齊 SegmentedControl / Tabs 未選狀態；hover 才轉 `text-foreground`）|
 | **Hover**（未選）| `hover:border-border-hover`（對齊 Input / SegmentedControl hover 的 border 加深一階）|
 | **Selected** | `border-primary text-primary`，底色維持 `bg-surface` 不變（primary base 同時染 border + text，不染底色，跟 SegmentedControl 一致）|
-| **Hover（選中之上）** | `border-primary-hover text-primary-hover`——選中元素的 hover = 同色相升 hover 階（2026-07-06 拍板；Button pressed hover 家族 + Ant active hover 同派），**不用** neutral 灰底 |
+| **Hover（選中之上）** | `border-primary-hover text-primary-hover`——選中元素的 hover = 同色相升 hover 階（2026-07-06 拍板；Button pressed hover 家族 + Ant active hover 同派），**不用** neutral 灰底([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/style/index.ts#L99-L104)) |
 | **Disabled** | `cursor-not-allowed text-fg-disabled`，border 維持 `border-border` 不變色 |
 | **Disabled × Selected** | disabled 全滅（primary 描邊/染字一併退場 → `border-border text-fg-disabled`）——M24 state > emphasis，Checkbox checked+disabled 全滅同族（2026-07-07 補明文，原 code 只滅字不滅框 = 半滅已修） |
 
-選中色對齊系統選中 canonical（semantic.css「選中狀態」段 SSOT），跟 SegmentedControl / Tabs underline 使用同一套 **primary base** token——2026-07-06 user 拍板自 primary-hover 改 base（Ant / Atlassian / Material 三家實錘「瞬時弱、持續強」：hover 階專屬瞬時態，持續選中站 base）。**❌ 選中態不得用 primary-hover**（那是瞬時 hover 專用階）。
+選中色對齊系統選中 canonical（semantic.css「選中狀態」段 SSOT），跟 SegmentedControl / Tabs underline 使用同一套 **primary base** token——2026-07-06 user 拍板自 primary-hover 改 base(hover 階專屬瞬時態,持續選中站 base)。**❌ 選中態不得用 primary-hover**（那是瞬時 hover 專用階）([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/style/index.ts#L99-L104))。
 
 ---
 
@@ -180,11 +180,11 @@ Chip 的 overflow 處理有三種模式：
 
 **為什麼用 mask 不用 gradient overlay**：mask 淡化的是 chips 本身的 alpha，會自動融合任何背景色（dark mode / card / surface 都自動正確）。Gradient overlay 需要寫死 `from-surface` 等具體色，遇到不同背景就漂移。
 
-**為什麼要 scroll arrow buttons**（與 Tabs scroll 同規則）：鍵盤用方向鍵、trackpad 用兩指滑、滑鼠滾輪使用者只能靠 arrows（`Shift+wheel` 太隱晦）。Material 3 / Ant Design / Carbon 都這麼做。
+**為什麼要 scroll arrow buttons**（與 Tabs scroll 同規則）：鍵盤用方向鍵、trackpad 用兩指滑、滑鼠滾輪使用者只能靠 arrows（`Shift+wheel` 太隱晦）。
 
 ### menu — 水平捲動 + show-all navigator dropdown
 
-採 **show-all navigator** pattern（對齊 Chrome tab dropdown / VS Code editor tabs）——menu 不做動態 overflow 計算，永遠把全部 chip 列在 dropdown 裡：
+採 **show-all navigator** pattern——menu 不做動態 overflow 計算,永遠把全部 chip 列在 dropdown 裡:
 
 - 所有 Chip 永遠渲染在水平 `overflow-x-auto` 容器（保留 Radix ToggleGroup 的 a11y），靠 scroll 顯示而非 hide/show；邊緣用 fade mask 軟化硬邊
 - 不偵測哪些 chip 溢出、不套 `invisible` / `visibility:hidden`——所有 chip 都正常可見可點

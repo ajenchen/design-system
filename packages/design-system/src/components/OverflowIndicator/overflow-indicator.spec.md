@@ -112,7 +112,7 @@ OverflowIndicator 是**承載 count + HoverCard 的 trigger primitive**,無獨�
 
 ---
 
-## shadcn passthrough 說明
+## ref / props 轉發說明
 
 OverflowIndicator 是 **composite**(HoverCard trigger + tag-styled `+N` span + HoverCard content + rendered children list),API 為 `count`(數字)+ `children`(已 render 好的隱藏內容)+ `shape` / `size`。**套 `forwardRef` / `...props` spread**——目標皆為 **`+N` trigger pill span**(circle 或 tag 分支皆 `ref={ref}` + `{...props}`,並標 `data-overflow-indicator`):
 

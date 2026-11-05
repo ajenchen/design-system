@@ -1035,7 +1035,7 @@ export const DragAndDrop: Story = {
       // 2026-10-27 前旁邊還有「重設」鈕與「移動紀錄」欄(稽核 H20):拖曳的結果就是樹的順序變了,不需要讀數;鍵盤重排的播報由元件的 live region 負責
       <ExampleGroup>
         <p className="text-caption text-fg-muted max-w-xs">
-          Figma 風格:整列拖曳,項目真的會移動。拖到其他項目上方 / 下方 / 中間(成為它的子項)。
+          Figma 風格:整列拖曳(沒有把手),項目真的會移動。拖到其他項目上方 / 下方 / 中間(成為它的子項)。
           鍵盤同樣可重排:Tab 聚焦樹、↑↓ 移到目標後,Cmd/Ctrl+Shift+↑↓ 同層移動、→ 移入資料夾、← 移出到上層(每按一下立即生效,結果會播報給螢幕閱讀器)。
         </p>
         {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}

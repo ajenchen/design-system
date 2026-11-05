@@ -21,8 +21,7 @@ AspectRatio 是**固定長寬比容器** primitive——確保內部 children(�
 
 **世界級對照**:
 - 實作維持 Radix primitive 的薄包裝，不加入額外 sizing policy
-- Ant Design 無獨立元件(用 CSS aspect-ratio 或自訂 padding-bottom)
-- Material 無獨立元件(image/Card 元件內建 props)
+- 固定比例需求多半可由 CSS `aspect-ratio` 或 padding-bottom 直接解,本元件只負責把比例收成一個 prop,不另加 sizing 規則
 
 ---
 
@@ -122,9 +121,9 @@ AspectRatio 是 pure layout primitive(container 鎖比例),本身:
 
 ---
 
-## shadcn 薄包裝說明
+## shadcn 薄包裝說明([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/aspect-ratio.tsx#L5-L9))
 
-AspectRatio 是 Radix `AspectRatioPrimitive.Root` 的薄包裝:用 `React.forwardRef` 顯式轉發 ref、把 `...props` spread 到 Radix Root、並設定 `displayName = 'AspectRatio'`(對齊 shadcn canonical)。`ratio` / `asChild` 等 props 透過 spread 原封不動傳給 Radix。
+AspectRatio 是 Radix `AspectRatioPrimitive.Root` 的薄包裝:用 `React.forwardRef` 顯式轉發 ref、把 `...props` spread 到 Radix Root、並設定 `displayName = 'AspectRatio'`(這是本 DS 每個對外 export 的統一慣例;shadcn 的 AspectRatio 是不轉發 ref、不設 displayName 的函式元件,只多掛 `data-slot`)。`ratio` / `asChild` 等 props 透過 spread 原封不動傳給 Radix([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/aspect-ratio.tsx#L5-L9))。
 
 **為什麼顯式 wrap 一層**:Radix primitive 本身雖已 forwardRef,但本 DS 慣例是每個對外 export 都顯式包一層,確保在 React DevTools / Storybook Inspector 顯示正確的 `displayName`,且 props passthrough 與 ref 行為在 code 層面明確可見。這層 wrapper 不加任何預設樣式,純粹保持命名與檢視一致。
 

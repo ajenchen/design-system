@@ -300,7 +300,7 @@ export const FieldKeysContract: Story = {
 }
 
 /* ── 載入中(開啟態快照:defaultOpen 讓瀏覽器閘不用點擊就看得到)── */
-// Notion 頁面「連結資料庫」:工作區的資料庫清單由 API 回傳
+// 文件頁「連結資料庫」:工作區的資料庫清單由 API 回傳
 const databaseOptions = [
   { value: 'crm', label: 'CRM 客戶名單' },
   { value: 'roadmap', label: '產品路線圖' },
@@ -329,7 +329,7 @@ export const ValueLoading: Story = {
   ),
 }
 
-/** 遠端搜尋(Notion「連結資料庫」):關鍵字空先給「建議」(最近用過的資料庫);每打一個字向後端要一次,抓資料中舊清單不留、只剩載入列;後端回什麼列什麼。 */
+/** 遠端搜尋(文件頁「連結資料庫」):關鍵字空先給「建議」(最近用過的資料庫);每打一個字向後端要一次,抓資料中舊清單不留、只剩載入列;後端回什麼列什麼。 */
 function RemoteSearchDemo() {
   const directory = [
     { value: 'crm', label: 'CRM 客戶名單', keywords: '客戶 customer' },

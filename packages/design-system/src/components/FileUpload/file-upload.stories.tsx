@@ -45,7 +45,7 @@ export const ResumeUpload = {
   },
 }
 
-// 批次上傳:相簿匯入 — Figma / Google Photos / Instagram 慣例
+// 批次上傳:相簿匯入 —— 一次拖進整批照片,逐檔顯示進度
 export const BulkImageUpload = {
   name: '批次上傳',
   render: () => {
@@ -200,7 +200,7 @@ export const RemoveHoverState = {
   },
 }
 
-// children 覆寫:Figma 匯入資產客製文案 / 品牌 logo
+// children 覆寫:設計資產匯入的客製文案 / 品牌 logo
 export const CustomChildren = {
   name: '自訂內容',
   render: () => {
@@ -215,7 +215,7 @@ export const CustomChildren = {
         <Empty
           icon={ImageIcon}
           title="匯入你的設計資產"
-          description="支援 SVG / PNG / Figma 檔案 · 一次最多 50 個"
+          description="支援 SVG / PNG / .fig 檔案 · 一次最多 50 個"
         />
       </FileUpload>
     </div>
@@ -223,7 +223,7 @@ export const CustomChildren = {
   },
 }
 
-// variant="button":表單內緊湊上傳(*Excel file 欄位場景)— 大 dropzone 太重時用按鈕觸發,
+// variant="button":表單內緊湊上傳(*試算表檔案欄位場景)— 大 dropzone 太重時用按鈕觸發,
 // 檔案清單在按鈕下方(form compact 靜態)。2026-06-03 加 — FileUpload 常出現在 form。
 export const ButtonVariant = {
   name: '按鈕觸發(表單內)',
@@ -236,7 +236,7 @@ export const ButtonVariant = {
       <div className="max-w-md">
         <FileUpload
           variant="button"
-          buttonLabel="Choose Excel file" // i18n-allow: story label
+          buttonLabel="Choose spreadsheet file" // i18n-allow: story label
           accept=".xls,.xlsx,.csv"
           files={items}
           fileListMode="compact"

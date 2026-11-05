@@ -99,18 +99,18 @@ const form = useFormValidation({
 
 ### 驗證 timing 哲學
 
-| DS | 本 DS | Material 3 | Polaris | Ant Design | Carbon | iOS HIG | Atlassian Forge | GitHub Primer |
-|----|-------|-----------|---------|-----------|--------|---------|-----------------|---------------|
-| 預設 timing | **blur + submit**(無 onChange) | onBlur + 已出錯後 onChange(MUI/RHF default) | onBlur(明寫「don't validate while typing」)| **onChange + onBlur 雙模式**(`validateTrigger=['onChange','onBlur']`) | onBlur + submit | submit / Done(form 內延遲)| onBlur + onSubmit | submit only(極簡)|
-| 已出錯後 | edit 立即清 error / blur 重驗 | re-validate onChange | re-validate onChange | re-validate onChange | edit 清 / blur 重驗 | submit 才驗 | edit 清 / blur 重驗 | submit 才驗 |
-| Submit 失敗 | scroll + focus first error | focus first error | focus first error | scroll + focus | focus first error | shake animation | scroll + focus | inline alert |
+| 情境 | 本 DS |
+|----|-------|
+| 預設 timing | **blur + submit**(無 onChange) |
+| 已出錯後 | edit 立即清 error / blur 重驗 |
+| Submit 失敗 | scroll + focus first error |
 
 ### Submit button 狀態哲學
 
-| DS | 本 DS | Material 3 | Polaris | Ant | Stripe Dashboard | Linear | Notion 設定頁 |
-|----|-------|-----------|---------|-----|------------------|--------|---------------|
-| 新建(Create)| **always enabled** | always enabled | always enabled | dirty 才 enable(差異)| always enabled | always enabled | always enabled |
-| 更新(Update)| **disabled-until-dirty** | dirty 才 enable | dirty 才 enable | dirty 才 enable | dirty 才 enable | auto-save(無 explicit save)| disabled-until-dirty |
+| 情境 | 本 DS |
+|----|-------|
+| 新建(Create)| **always enabled** |
+| 更新(Update)| **disabled-until-dirty** |
 
 ## 設計哲學
 
@@ -118,19 +118,19 @@ const form = useFormValidation({
 
 **(1) Blur-only validation(non-onChange)**
 
-Ant Design default `validateTrigger=['onChange', 'onBlur']` 對使用者 aggressive — 才打「user@」就跳「invalid email」碎念,reader 思路被打斷。Polaris / Carbon / iOS / Atlassian 共識 onBlur + submit,讓使用者「先表達完意圖再評斷」。
+Ant Design 預設 `validateTrigger` 是 `'onChange'`([form/index.en-US.md#L91](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/form/index.en-US.md#L91))對使用者 aggressive — 才打「user@」就跳「invalid email」碎念,reader 思路被打斷。Carbon 指引在離開欄位時才驗(「should happen as soon as the field loses focus」,[forms pattern](https://www.carbondesignsystem.com/building-blocks/core/patterns/forms)),讓使用者「先表達完意圖再評斷」。
 
 捨棄 onChange 即時驗證的代價是「打錯看不到反饋」(打到第 3 位才發現密碼太短)——本 spec 規範 default 行為(blur + submit);DS 目前無 onChange hint API。
 
 **(2) Edit 清 error + blur 重驗(已出錯後),非 onChange 重驗**
 
-Material/Polaris/Ant 已出錯後 onChange re-validate(改第 1 字 error 又跳回)— 給使用者壓力。Carbon / Atlassian「edit 清 + blur 重驗」哲學:給使用者完整修正空間,離開時才再判決。
+已出錯後若每打一字就重驗(改第 1 字 error 又跳回)會給使用者壓力;所以採「edit 清 + blur 重驗」:給使用者完整修正空間,離開時才再判決。
 
 對應使用者心智:「修改」是過程,「離開 field」是動作完成的 boundary,在 boundary 評斷比每字評斷尊重 user agency。
 
 **(3) Create always-enabled / Update disabled-until-dirty 不對稱**
 
-Ant 對「Create」也 disabled-until-dirty(填了所有 required 才亮)— 但這讓使用者第一次進 form 看到 disabled button 困惑「為什麼按不了」。Stripe / Notion / Material 共識:Create 永遠 enabled — 點擊後若 invalid,顯示 error 並 scroll,使用者明確知道為什麼。
+Create 若要填完所有 required 才亮,使用者第一次進 form 看到 disabled button 會困惑「為什麼按不了」;所以 Create 永遠 enabled — 點擊後若 invalid,顯示 error 並 scroll,使用者明確知道為什麼。
 
 Update 場景反向:沒改的 Update 沒提交意義(「intent 才 commit」),disabled 表達「等你做動作」比 enabled 後點擊才判斷「沒變化」更直接。
 

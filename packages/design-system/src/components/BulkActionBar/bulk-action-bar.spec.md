@@ -89,7 +89,7 @@ benchmark:
 | Placement variant | Buttons size | 理由 |
 |--|--|--|
 | **default**(footer 浮層 / page-bottom 區段)| **md** | 與 DS Dialog footer commit 系及 page primary-button bar 共用 action measure |
-| **top-toolbar 變體**(未來)| sm | 覆蓋 sm-density toolbar / GitHub-style;variant prop 驅動 override |
+| **top-toolbar 變體**(未來)| sm | 覆蓋頁面頂部的 sm-density 工具列(清單上方常駐,不浮在底部);variant prop 驅動 override |
 
 #### Count text color canonical(2026-05-04 升 SSOT)
 
@@ -188,7 +188,7 @@ interface BulkActionBarLabels {
 
 ## a11y 預設
 
-- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 記為 user 拍板,來源不明:登記簿查無原話)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。
+- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 記為 user 拍板,來源不明:登記簿查無原話)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(「Left Arrow: Moves focus to the previous control.」「Right Arrow: Moves focus to the next control.」https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L59-L72)(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。
 - count 文字用 `aria-live="polite"` + `aria-atomic="true"`(selection 變更時 SR 整句重讀「已選 3 項」)
 - Clear button:`aria-label="清除選取"`
 - Hint banner 用 `role="status"` + `aria-live="polite"`(state 切換時通知)

@@ -144,6 +144,8 @@ export const SurfaceHeader = React.forwardRef<
             對齊既有 `tabs.spec.md`「Underline 與 TabsList border 的視覺關係」段「selected 底線從
             TabsList 的 gray border 位置長出來」(token = border-divider,tabs.tsx TABS_LIST_BASE)
             + GitHub Primer UnderlineNav / Ant Design line type / Mantine default 共識
+            (出處同 header-canonical.spec.md「W2 spec 註」:Primer UnderlineTabbedInterface.module.css#L12-L14、
+            Ant tabs/style/index.ts#L420-L430、Mantine Tabs.module.css#L160-L172)
             (全派 TabsList 自畫 full-width underline)。*/}
         <div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>
           {tabsSlot}

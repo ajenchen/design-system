@@ -9,7 +9,7 @@
  *   鍵盤等價=WAI-ARIA separator 同 DataTable 欄寬慣例;開合 --motion-duration-surface。
  * - 標題列:ChromeHeader(header-canonical;chrome 內控件一律 sm);品牌區=gap-2+24 標誌;
  *   標題+chevron=單一複合觸發鈕:**原生 `<button>`,不包 Button 殼**(Button 會多出左 9 / 右 5 內距
- *   與 28 高的懸停底,見 agent-panel.spec.md「禁用 Button 殼」);語意仍同 Polaris disclosure /
+ *   與 28 高的懸停底,見 agent-panel.spec.md「禁用 Button 殼」);語意仍同 Polaris disclosure /(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L35-L36)
  *   Combobox 觸發器,chevron=裝飾性指示(inline-action.spec.md Q1);
  *   ButtonDivider 於 gap-2 cluster(action-bar 規則 3)。
  *   **固定構件恆渲染**:+ / × / 標題觸發鈕不隨 callback 有無消失(2026-09-02 根因修正)。
@@ -51,7 +51,7 @@ import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/over
 import { useCursorMover } from '@/design-system/hooks/use-input-modality'
 
 /**
- * 停止實心正方:12/24 grid(= Material Symbols `stop` 480/960)→ 8px @ Button icon 16。
+ * 停止實心正方:12/24 grid(= Material Symbols `stop` 480/960)→ 8px @ Button icon 16。(來源:https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/stop/materialsymbolsoutlined/stop_24px.svg https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/icons/src/svg/32/stop.svg)
  * lucide Square 填滿後 20/24 = 13.3px,比 ArrowUp/Plus(14/24 線稿)視覺偏重,故自繪
  * (2026-09-02 user 抓「太巨大」;rx 1.5 ≈ Carbon 2/20、lucide 2/18 圓角比例)。
  */
@@ -280,7 +280,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
   ) => {
     const dock = React.useContext(AgentPanelDockContext)
     const rootRef = React.useRef<HTMLDivElement | null>(null)
-    // 把手以 aria-controls 指向面板本身(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`);consumer 給了 id 就用它的
+    // 把手以 aria-controls 指向面板本身(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`);consumer 給了 id 就用它的(來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L95)
     const autoId = React.useId()
     const panelId = props.id ?? autoId
 
@@ -756,8 +756,8 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 />
               </button>
             </PopoverTrigger>
-            {/* 寬度 = Popover canonical w-72(288;popover.tsx 預設,不另訂):介於 ChatGPT 側欄 260 /
-                Claude 側欄 290(2026-09-02 實測),且在面板最窄 360 時仍容得下(標題左緣起 312)。
+            {/* 寬度 = Popover canonical w-72(288;popover.tsx 預設,不另訂):沿用 DS 既有 rich-popover 寬度,
+                且在面板最窄 360 時仍容得下(標題左緣起 312)。
                 與觸發點距 = OVERLAY_SIDE_OFFSET 8(elevation.spec.md)。 */}
             <PopoverContent
               align="start"
@@ -957,7 +957,7 @@ const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProp
       }
     })
     // 自動捲到最新:掛載時與訊息數增加時捲到底(使用者若已往上捲離底部 > 40px 則不打擾;
-    // ChatGPT / Claude 皆「貼底跟隨、離底不搶」);全家族一致,consumer 不自接。
+    // 往上捲 = 正在讀舊訊息,不把人拉走);全家族一致,consumer 不自接。
     const logRef = React.useRef<HTMLDivElement | null>(null)
     React.useImperativeHandle(ref, () => logRef.current as HTMLDivElement)
     const wasNearBottomRef = React.useRef(true)
@@ -991,7 +991,7 @@ const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProp
       }
       viewport.addEventListener('scroll', onScroll, { passive: true })
       // 量**內容高度**而不是訊息則數:代理回覆是串流寫進同一則訊息的,則數不變但高度一直長,
-      // 只看則數會讓整段回覆期間都不跟隨(ChatGPT / Claude 皆貼底跟隨)。
+      // 只看則數會讓整段回覆期間都不跟隨(貼底時要一路跟到串流結束)。
       const ro = new ResizeObserver(stick)
       ro.observe(log)
       return () => {
@@ -1425,7 +1425,7 @@ export interface AgentDecisionQuestion {
   /**
    * 選填:不答也能按「下一題 / 送出」(送出值 = 空字串)。預設必答(沒選就用錯誤訊息擋下,agent-decision-card.spec.md「步進」)。
    * 單選選填題有選取時(含預選的建議解),footer 左側出現「清除選取」,按了回到沒有選取 —— 單選圓選了就回不去「都沒選」
-   * (GOV.UK radios:「Users cannot go back to having no option selected once they have selected one」)。
+   * (GOV.UK radios:「Users cannot go back to having no option selected once they have selected one」)。(來源:https://github.com/alphagov/govuk-design-system/blob/d742a4083fcb963b63b6a5233084dcd30f92811e/src/components/radios/index.md#L35)
    * 必答題不出現:「沒有選取」不是有效答案,清掉只會卡在錯誤上(同 `../Select/select.spec.md`「何時開 clearable」)。
    * 複選題的方框本來就能逐一取消,選填只放寬「至少一項」、不加清除鈕。
    * 讀屏:必答單選題的 radiogroup 帶 aria-required="true"(選填 = "false");複選群組是 role="group",不帶。
@@ -1860,7 +1860,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
             <FieldError id={errorId}>{errorText}</FieldError>
           </div>
         </ScrollArea>
-        {/* footer:右側兩鈕 —— 第一題=跳過(用預設繼續)、第二題起=上一題(答案保留;Material Stepper Back / GOV.UK Back 同款),
+        {/* footer:右側兩鈕 —— 第一題=跳過(用預設繼續)、第二題起=上一題(答案保留,回上一題可改答),(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/ChoiceList/ChoiceList.module.css#L1-L4)
             右=下一題 / 送出(末題);左側 = 操作選取的「清除選取」(選填單選題有選取時才有;選取類浮層 footer 順序:左操作選取、右提交,
             overlay-surface.spec.md;排法照 Coachmark footer 的 justify-between + 右側一組,沒有清除鈕時左邊留空 span,右側兩鈕的位置不因它出現 / 消失而動)。
             鈕 sm 守 Popover all-sm 律;清除與跳過 / 上一題同為 tertiary(同 SelectMenu 多選 footer 的全選 / 取消全選);無上分隔線;× 恆為跳過。 */}

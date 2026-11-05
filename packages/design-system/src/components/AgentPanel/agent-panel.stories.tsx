@@ -1099,7 +1099,7 @@ function UrlRegistryScene({ initial }: { initial?: SceneInitial }) {
     if (agentModeRef.current !== 'overlay') return
     setAgentOpen(false)
     // 目標是頁面 → 焦點交給舞台 main;目標是 modal → Dialog 掛載時的自動聚焦會撞上尚未解除的抑制而落空,
-    // 等它可操作後把焦點放到對話框容器(Radix DialogContent 帶 tabIndex=-1;APG dialog 模式允許聚焦容器)
+    // 等它可操作後把焦點放到對話框容器(Radix DialogContent 帶 tabIndex=-1 可直接接焦點;焦點留在對話框內,下一個 Tab 就進第一個控制項)(來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/dialog-modal-pattern.html#L79-L89)
     requestAnimationFrame(() => focusWhenOperable(() =>
       target === 'page' ? mainRef.current : stageRef.current?.querySelector<HTMLElement>('[role="dialog"]') ?? null,
     ))

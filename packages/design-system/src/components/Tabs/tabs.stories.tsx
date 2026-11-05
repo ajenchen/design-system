@@ -53,7 +53,7 @@ export const WithSuffix: Story = {
   //   - 「全部」「通知」純文字 / badge 後綴(切 tab)
   //   - 「更多」tab 用 `inlineAction` 包 DropdownMenu — 點 tab body 切 tab,
   //     點 ChevronDown(inline action)開 dropdown 不切 tab。
-  // 對齊 GitHub「Code ▾」/ Linear "Triage..." menu split-tab 共識。endIcon 不再示範
+  // 「更多」是 split-tab:tab 本體切 tab、chevron 開選單,兩個動作分開。endIcon 不再示範
   // 「點下去展開更多」(misleading affordance),已撤回 spec L99。
   render: () => (
     <Tabs defaultValue="notifications" className="w-[700px]">

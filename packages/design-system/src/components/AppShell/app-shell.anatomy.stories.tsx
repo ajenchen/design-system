@@ -1,7 +1,7 @@
 // @anatomy-rationale: Inspector + ColorMatrix N/A — AppShell 是 page-level layout composite
 // (Menu + header + Main + Right panel + AI agent 組合),無 cva color variant → ColorMatrix N/A;
 // 無 interactive prop control(slots 全 ReactNode 組合)→ Inspector N/A(Dim 13 例外 marker)。
-// @benchmark-cited: anatomy 6-canonical 對齊 Polaris / Material anatomy spec
+// @benchmark-cited: anatomy 6-story 結構(SSOT = packages/design-system/ds-canonical/rules/story-rules.md)
 // @story-baseline: packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse
 // (透過 ./_demo-helpers AcmeSidebar / PageHeader / WorkspaceBrand / UserFooter 共用 baseline,
 //  避免 anatomy stories 跟 showcase + Sidebar 既有完整佈局 範例視覺偏移)
@@ -100,7 +100,7 @@ export const LayoutModeDiagram: Story = {
       <h2 className="text-h4">兩 mode 對照</h2>
         <ExampleStack>
         <section className="flex flex-col gap-[var(--layout-space-loose)]">
-          <h3 className="text-h5">primary-sidebar(Linear / Notion / Figma 派)</h3>
+          <h3 className="text-h5">primary-sidebar(header 是當前頁的 local toolbar)</h3>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <div className="flex gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
               <div className="w-32 bg-surface-strong px-2 py-8 text-center">Menu<br/>頂天立地</div>
@@ -115,7 +115,7 @@ export const LayoutModeDiagram: Story = {
           </div>
         </section>
         <section className="flex flex-col gap-[var(--layout-space-loose)]">
-          <h3 className="text-h5">primary-header(GitHub / Slack / Gmail 派)</h3>
+          <h3 className="text-h5">primary-header(多一條跨頁的 global header)</h3>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <div className="flex flex-col gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
               <div className="bg-surface-strong px-2 py-1 text-center">Header(global bar,橫跨整 viewport)</div>

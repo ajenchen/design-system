@@ -122,10 +122,10 @@ export const UserFooter = () => (
 )
 
 // ── AcmeSidebar(完整 production-grade,對齊 sidebar IconCollapse story)──
-// `includeWorkspaceBrand` default true(primary-sidebar 派 Linear/Notion 慣例:workspace brand 在 sidebar 頂)。
-// `false` 用於 primary-header mode:workspace brand 移到 globalHeader 左側(GitHub logo / Slack workspace bar 慣例)。
+// `includeWorkspaceBrand` default true(primary-sidebar 沒有 global header,workspace brand 放 sidebar 頂)。
+// `false` 用於 primary-header mode:workspace brand 移到 globalHeader 左側(app-shell.spec.md「WorkspaceBrand 放置 SSOT」)。
 // `includeUserFooter` default true(primary-sidebar:帳號在 sidebar 底)。`false` 用於 primary-header:
-// 帳號入口移到 globalHeader 右側 AccountMenu(GitHub/Gmail/Slack 慣例;見 app-shell.spec.md 帳號入口放置 SSOT)。
+// 帳號入口移到 globalHeader 右側 AccountMenu(見 app-shell.spec.md 帳號入口放置 SSOT)。
 
 /**
  * Acme 示範產品給 Menu 的寬度設定(app-shell.spec.md「版面規則」§1:Menu 的最大寬 DS 沒有既有值,產品必給)。
@@ -141,7 +141,7 @@ export const ACME_MENU_WIDTH: PanelWidthRange = { min: 240, initial: 240, max: 3
  * **每 mode 鏡像自己桌面的帳號家**(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」浮層精修):
  *   - primary-header:桌面帳號在 globalHeader 右(brand 左 / account 右)→ 浮層把整條 globalHeader 搬進 SidebarHeader
  *     (brand + flex-1 + AccountMenu;**SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同 primitive** = 結構 SSOT,非手刻對齊),
- *     **不放 SidebarFooter**(footer 是 primary-sidebar 慣例;對齊 Material modal navigation drawer「帳號 switcher 放 drawer header,非 footer」)。
+ *     **不放 SidebarFooter**(footer 是 primary-sidebar 的帳號位置;primary-header 的帳號本來就在頂排,浮層照搬整條頂排,帳號就跟著在 header)。(來源:https://github.com/material-components/material-components-android/blob/66b0eeb53afeb6025ffbbd37734b08e5bce197ed/docs/components/NavigationDrawer.md#L66-L70)
  *   - primary-sidebar:桌面帳號在 sidebar 底(SidebarFooter)→ 頂排 = brand(兩份都有,細列只露出品牌方塊)。
  * 被浮層蓋住的細列那一份**不補**(細列在浮層開著時保留、版面不跳,sidebar.spec.md「放不下時」)。判斷讀 `useSidebarSurface()`(這一份畫在哪),
  * 不讀 `useAppShell().display.menu`(整個 Menu 的顯示方式,兩份同時是 "overlay")—— 2026-10-14 版讀後者,primary-header 叫出浮層時細列那一份
@@ -278,7 +278,7 @@ export function AccountMenu() {
 
 // ── GlobalHeader(primary-header mode 用,跨頁 chrome:WorkspaceBrand 左 + 帳號入口右)──
 // 2026-05-21 加 per user clarification「primary-header = primary-sidebar + 一條 global header」。
-// 對齊 GitHub top nav(logo 左 / search 中 / account 右)+ Slack workspace bar 慣例。
+// 排法:WorkspaceBrand 左 / search 中 / account 右(app-shell.spec.md「為什麼 primary-header 帳號入口在「右上」」)。
 // 消費 ChromeHeader(per `header-canonical.spec.md` Element + Background ownership 段:
 // top-level chrome → 自畫 bg-surface)。
 

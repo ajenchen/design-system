@@ -202,7 +202,7 @@ WithTabs.parameters = {
 WithTabs.storyName = '含分頁列'
 
 /* withTabs × overflow(scroll / menu)— header 分頁列在窄容器的溢出模式。
-   對標 Jira 專案設定頁:細分頁多到單行放不下(概覽/待辦清單/衝刺/看板/報表/版本/元件/權限/通知)。
+   對標專案管理工具的專案設定頁:細分頁多到單行放不下(概覽/待辦清單/衝刺/看板/報表/版本/元件/權限/通知)。
    Panel 限寬 420px + 9 個分頁強制觸發溢出;W2 契約(triggers 內縮 px-loose 對齊 header
    content row)三種 overflow 模式同享,border 隨溢出內容延展(min-w-full,header-canonical.spec.md Rule W2)。
    兩則共用同組分頁資料(同 tabs.stories.tsx OverflowScroll/OverflowMenu 精神),各教一種溢出機制。 */

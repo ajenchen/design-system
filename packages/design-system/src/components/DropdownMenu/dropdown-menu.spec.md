@@ -17,7 +17,7 @@ benchmark:
 ## 定位
 
 DropdownMenu 是按鈕觸發的**動作選單**——使用者從中選擇一個動作並立即執行。
-基於 Radix DropdownMenu（shadcn 包裝），item 佈局消費 MenuItem primitive。
+基於 Radix DropdownMenu（shadcn 包裝,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx#L6），item 佈局消費 MenuItem primitive。
 
 **Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
 
@@ -232,7 +232,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - **Loading(async submenu / async items)**:DropdownMenu primitive 不獨立 own loading prop。async submenu 場景應由 consumer 在 `<DropdownMenuSub>` 內條件性渲 `<DropdownMenuItem disabled>` + spinner label(如「載入中...」);或 fetch options 前先 disable 整個 menu trigger。完整 loading body 替換 pattern 屬 SelectMenu scope,不在 DropdownMenu scope。
 - **Empty(no items / async fetch result empty)**:consumer 應條件性渲 `<DropdownMenuItem disabled>` 顯示「無可用動作」字樣;不渲空 menu。
 - **Dark mode / density**:走 MenuItem + Popover SSOT 自動 adapt;density 繼承 page(不鎖;DropdownMenu item 高度 = field-height-{size} 隨 page density 變,鎖 md 會釘死 md-scale 對不上 lg 觸發點),SSOT 見 `tokens/density/density.spec.md`。
-- **大量 item(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing(對齊 Ant Select / MUI Autocomplete 慣例);本元件無虛擬化——action menu 本不該長到這個量級,超過先重想資訊架構(選值場景改用 SelectMenu 系 + searchable)。
+- **大量 item(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing(清單一長,捲動與鍵盤逐項移動都變慢);本元件無虛擬化——action menu 本不該長到這個量級,超過先重想資訊架構(選值場景改用 SelectMenu 系 + searchable)。
 
 ---
 

@@ -268,7 +268,7 @@ export const Accessibility: Story = {
       </ExampleSection>
       <ExampleSection title="鍵盤導覽(WAI-ARIA listbox pattern)" paragraph>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
-          <li>Trigger:<kbd>Space</kbd> / <kbd>Enter</kbd> / <kbd>↓</kbd> 開 panel(對齊 APG combobox + Select)</li>
+          <li>Trigger:<kbd>Space</kbd> / <kbd>Enter</kbd> / <kbd>↓</kbd> 開 panel(對齊 APG combobox + Select)</li> {/* 來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/examples/combobox-select-only.html#L102-L131 */}
           <li>Panel 開啟:<kbd>Esc</kbd> 關閉 + focus return to trigger</li>
           <li>Column 內:<kbd>↑</kbd> <kbd>↓</kbd> 切 option</li>
           <li><kbd>Home</kbd> <kbd>End</kbd> 跳 column 首尾</li>

@@ -7,7 +7,7 @@ traits:
   - hasInteractiveStates
   - isStructural
 benchmark:
-  - Embla Carousel (shadcn underlying lib): github.com/davidjerleke/embla-carousel
+  - Embla Carousel (shadcn underlying lib,[shadcn carousel.tsx#L5-L7](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/carousel.tsx#L5-L7) 直接 import `embla-carousel-react`): github.com/davidjerleke/embla-carousel
   - Ant Design Carousel: github.com/ant-design/ant-design/tree/master/components/carousel
 ---
 
@@ -18,7 +18,7 @@ benchmark:
 
 Carousel 用於在**有限空間內輪播同類視覺內容**——單次只顯示一張 slide，使用者透過箭頭 / 指示點切換至同類的其他視覺（圖片、產品照、使用者評語卡）。
 
-基於 `embla-carousel-react` v8 engine + shadcn Carousel 的 API 結構（`CarouselContent` / `CarouselItem` / `CarouselPrevious` / `CarouselNext`），並依本 DS 的視覺慣例擴充 `CarouselDots`。
+基於 `embla-carousel-react` v8 engine + shadcn Carousel 的 API 結構（`CarouselContent` / `CarouselItem` / `CarouselPrevious` / `CarouselNext`,[shadcn carousel.tsx#L234-L241](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/carousel.tsx#L234-L241)），並依本 DS 的視覺慣例擴充 `CarouselDots`。
 
 **Layout Family**:非上述 family — composite / multi-section(輪播容器 + content + 箭頭浮層 + dots,自 own layout)。
 
@@ -27,7 +27,7 @@ Carousel 用於在**有限空間內輪播同類視覺內容**——單次只顯�
 ## 世界級對照
 
 - **Embla engine**:本元件只包裝已採用的 carousel engine，DS API 擁有結構、按鈕與內容規範
-- **Ant Design Carousel**:dots indicator 在底部中央的慣例來源
+- **Ant Design Carousel**:dots indicator 在底部中央的慣例來源(`dotPlacement` 預設 `bottom`,[index.en-US.md#L39](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/carousel/index.en-US.md#L39);點列 `justifyContent: 'center'`,[style/index.ts#L253](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/carousel/style/index.ts#L253))
 - **Material / Polaris**:無獨立 Carousel 元件——Material 建議用 image list / hero module;Polaris 明確不支援 auto-playing carousel(a11y 疑慮)
 - **Swiper**:獨立 library,功能遠超 DS 需求(3D effects / virtualization / zoom 等);本 DS 刻意**不選 Swiper**,因為 Embla 更輕量、tree-shakable,且本 DS 的 carousel 用途單純(hero banner / product image / testimonial),Swiper 的 feature 90% 不會用到,屬過度工程
 
@@ -36,8 +36,8 @@ Carousel 用於在**有限空間內輪播同類視覺內容**——單次只顯�
 ## 何時用
 
 - **Hero banner**:首頁 3–5 張大圖輪播(Airbnb city destinations、Netflix 精選)
-- **Product image gallery**:單一商品 3–6 張不同角度 / 情境照(Stripe product page、Shopify)
-- **Testimonial / review cards**:3–5 張 customer quote 卡片(Linear / Stripe 官網首頁)
+- **Product image gallery**:單一商品 3–6 張不同角度 / 情境照(例:電商商品頁的多角度商品照)
+- **Testimonial / review cards**:3–5 張 customer quote 卡片(例:SaaS 官網首頁的客戶推薦)
 - **Onboarding walkthrough**:3–5 步驟的 illustration 介紹(一次看一張,按順序推進)
 
 ## 何時不用
@@ -195,10 +195,10 @@ dots 條貼在 `bottom-3`(12px,`carousel.tsx#CarouselDots`),所以往下 9 仍�
 | 來源 | 視覺 | 命中 | 作法 |
 |---|---|---|---|
 | **Bootstrap 5** `_carousel.scss:162-177` + `_variables.scss:1657-1659`([carousel](https://github.com/twbs/bootstrap/blob/main/scss/_carousel.scss)、[variables](https://github.com/twbs/bootstrap/blob/main/scss/_variables.scss)) | `30×3`(`$carousel-indicator-width/height`) | 高 **23**(3 + 上下各 10) | 上下加 `10px` 透明 border;原始碼註解逐字:「Use transparent borders to increase the hit area by 10px on top and bottom.」**只加高、不加寬**,寬度靠 `$carousel-indicator-spacer: 3px` 的 margin 分隔 |
-| **slick**(Ant Design Carousel 所用 `react-slick` 的上游)`slick-theme.css:104-125`([slick-theme.css](https://github.com/kenwheeler/slick/blob/master/slick/slick-theme.css)) | `button:before` 的 `•` 字元 | `li` 與 `button` 都是 **20×20** | 直接把**容器與按鈕**做成 20×20,視覺點是裡面的內容 |
+| **slick**(Ant Design Carousel 所用 `react-slick` 的上游,[ant-design package.json#L120](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/package.json#L120)「`"@ant-design/react-slick": "~2.0.0"`」)`slick-theme.css:104-125`([slick-theme.css#L104-L125](https://github.com/kenwheeler/slick/blob/7b2b3a76def3309d235d9ad9683a8d82941896cd/slick/slick-theme.css#L104-L125)) | `button:before` 的 `•` 字元 | `li` 與 `button` 都是 **20×20** | 直接把**容器與按鈕**做成 20×20,視覺點是裡面的內容 |
 | **Swiper** `pagination.css:11-18, 73-76`([pagination.css](https://github.com/nolimits4web/swiper/blob/master/src/modules/pagination/pagination.css)) | `8×8`(`--swiper-pagination-bullet-size`) | 同樣 **8×8**,**零外擴** | 不外擴,改成把點本身做大(8 而非 6),並用 `--swiper-pagination-bullet-horizontal-gap: 4px` 的 margin 分隔 |
 
-三家都同意「6px 級的點不能只靠自己的形狀當目標」,但分兩派:Bootstrap 走**單軸外擴**(正是本元件的作法),
+三家都同意「6px 級的點不能只靠自己的形狀當目標」,但分兩派:Bootstrap 走**單軸外擴**(正是本元件的作法;[v5.3.8 _carousel.scss#L175-L177](https://github.com/twbs/bootstrap/blob/v5.3.8/scss/_carousel.scss#L175-L177)),
 slick 走**把盒做大**,Swiper 走**把點做大**。本元件選 Bootstrap 那派的理由是視覺:dots 疊在照片上,
 把點或盒做大會壓到畫面(本檔「視覺規格」段的 photo overlay 慣例);外擴則完全不動基準圖。
 
@@ -214,9 +214,9 @@ slick 走**把盒做大**,Swiper 走**把點做大**。本元件選 Bootstrap �
 
 ### 視覺規格(photo overlay convention)
 
-Carousel 常疊在圖片上,沿用 Instagram / Airbnb / Ant Carousel 的「白點於照片上」慣例——inactive 白點半透明、hover 不透明度提升、active **加寬**(非變色)。
+Carousel 常疊在圖片上,沿用 Ant Carousel 的「白點於照片上」慣例(未選 opacity 0.2、hover 0.75、選中加寬到 `dotActiveWidth`,[style/index.ts#L307-L331](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/carousel/style/index.ts#L307-L331))——inactive 白點半透明、hover 不透明度提升、active **加寬**(非變色)。
 
-**為什麼 active 加寬而非變色**:寬度變化比顏色變化更易辨識,對色弱使用者友善;Ant Design / Swiper 皆採此法。
+**為什麼 active 加寬而非變色**:寬度變化比顏色變化更易辨識,對色弱使用者友善;Ant Design 採此法(選中加寬到 `dotActiveWidth`,[style/index.ts#L327-L331](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/carousel/style/index.ts#L327-L331));Swiper 相反,選中只換色與不透明度、寬度不變([pagination.css#L95-L98](https://github.com/nolimits4web/swiper/blob/82cb393aaf3793c92bd31ae23006215c813ab984/src/modules/pagination/pagination.css#L95-L98))。
 
 **限制**:此 dots 視覺適用於「疊在深色 / 圖片內容上」,若 carousel 放在白底 section 內,consumer 可 override `className` 改用 `bg-foreground` 系列。
 
@@ -254,7 +254,7 @@ Hero carousel 建議 ≤ 5 張；超過此數量時，使用者難以預期循�
 - 根容器 `role="region" aria-roledescription="carousel"`
 - 每個 `CarouselItem` `role="group" aria-roledescription="slide"`
 - Arrow `aria-label="上一張"` / `"下一張"`
-- Dots 容器 `role="group"` + `aria-label="輪播指示器"`;每個 dot 為原生 `<button>`,`aria-label="跳至第 N 張"`,**目前這張的 dot `aria-current="true"`**(向 SR 告知「你在這張」)— 對齊 DS FileViewer filmstrip canonical(`file-viewer.spec.md`「Filmstrip 規則」)+ Bootstrap 5 carousel indicators idiom
+- Dots 容器 `role="group"` + `aria-label="輪播指示器"`;每個 dot 為原生 `<button>`,`aria-label="跳至第 N 張"`,**目前這張的 dot `aria-current="true"`**(向 SR 告知「你在這張」)— 對齊 DS FileViewer filmstrip canonical(`file-viewer.spec.md`「Filmstrip 規則」)+ Bootstrap 5 carousel indicators idiom([v5.3.8 carousel.js#L275-L284](https://github.com/twbs/bootstrap/blob/v5.3.8/js/src/carousel.js#L275-L284):換張時把 `aria-current` 從舊 indicator 移到新 indicator,值 `'true'`)
 - 鍵盤:按方向對應 orientation(`horizontal` 用 `ArrowLeft` / `ArrowRight`;`vertical` 用 `ArrowUp` / `ArrowDown`)切換(根容器 `onKeyDownCapture`);dots 可 `Tab` focus。**投影片裡的文字輸入(輸入框 / 多行框 / 下拉 / 可編輯區)保留自己的方向鍵**(2026-09-29,待辦總帳 N46):焦點在它們上面時根容器不接手,`←→` / `↑↓` 是移插入點、換選項;判斷式 = 全 DS 唯一那份 `src/lib/roving-list-keyboard.ts` `isTextEntryElement`(與「列上有小按鈕的一串」的「項目裡的輸入框保留自己的方向鍵」同一條,`ds-canonical/references/keyboard-model-canonical.md`)。2026-09-29 前根容器在捕獲階段一律搶走,表單投影片打不了方向鍵。閘:`scripts/test-roving-list-keyboard.mjs`「isTextEntryElement 的消費者」段
 
 ### 為何 dots 不用 tabs 模型(canonical,2026-06-12)
@@ -265,7 +265,7 @@ W3C APG carousel pattern 有兩條合法路:**tabbed**(dot `role="tab"` + slide 
 2. **鍵盤契約衝突**:tabs pattern 要求方向鍵在 tablist 內移 focus(roving tabindex);本元件方向鍵 = 切張(根容器),兩者互斥
 3. **compound API**:`CarouselItem` 不知自己 index,`aria-controls` 接線需額外 registration 機制,複雜度不對價
 
-現張標記採 `aria-current="true"`(非 APG 原文的 `aria-disabled`)— M23 DS 既有 canonical 優先:FileViewer filmstrip(`file-viewer.spec.md`「Filmstrip 規則」,2026-06-01 source-verified)同類控件已 codify `group` + `<button>` + `aria-current`;Bootstrap 5 carousel indicators 同 idiom。兩者皆 APG 合法變體,DS 內一致性勝
+現張標記採 `aria-current="true"`(非 APG 原文的 `aria-disabled`:[carousel-pattern.html#L182](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)「The picker button representing the currently displayed slide has the property aria-disabled set to true.」)— M23 DS 既有 canonical 優先:FileViewer filmstrip(`file-viewer.spec.md`「Filmstrip 規則」,2026-06-01 source-verified)同類控件已 codify `group` + `<button>` + `aria-current`;Bootstrap 5 carousel indicators 同 idiom。兩者皆 APG 合法變體,DS 內一致性勝
 
 ❌ **禁半套 tabs**(dot `role="tab"` + `aria-selected` 但無 `aria-controls`、slide 非 `tabpanel`)— 對 SR 宣告了不存在的 tabs 結構
 
@@ -275,7 +275,7 @@ W3C APG carousel pattern 有兩條合法路:**tabbed**(dot `role="tab"` + slide 
 
 - 違反 **WCAG 2.2.2 Pause, Stop, Hide**——超過 5 秒自動變動的內容必須可暫停
 - 使用者常常需要時間閱讀 testimonial 文字、看清產品細節,自動跳過打斷閱讀
-- Polaris / Material 皆建議「不使用 auto-playing carousel」
+- 不做自動輪播:畫面自己換張會打斷正在讀的人,讀屏與鍵盤使用者也追不上
 
 若專案真的需要 auto-play,consumer 可傳 `plugins={[Autoplay({ stopOnInteraction: true })]}` 自行引入 embla-carousel-autoplay,但必須同時提供暫停按鈕(spec 不預設處理)。
 

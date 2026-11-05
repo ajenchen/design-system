@@ -58,10 +58,10 @@ Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(ful
 
 | 場景 | 範例 |
 |------|------|
-| 多圖集快速瀏覽 | Jira 附件檢視(screenshot pack)、活動相片集、產品截圖 gallery |
-| 設計檔案 review | Figma design review 需 zoom 看細節、Notion 配圖預覽 |
+| 多圖集快速瀏覽 | 工單附件檢視(截圖包)、活動相片集、產品截圖 gallery |
+| 設計檔案 review | 設計稿審閱需 zoom 看細節、文件配圖預覽 |
 | 教學內容檢閱 | 文件上傳流程預覽、KYC 證件檢視 |
-| 附件交互閱讀 | Gmail / Slack 多附件 lightbox 預覽 |
+| 附件交互閱讀 | 郵件 / 聊天訊息多附件 lightbox 預覽 |
 
 ## 何時不用
 
@@ -69,7 +69,7 @@ Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(ful
 |------|------|------|
 | 單張 inline 展示 | `<img>` / AspectRatio | 不需 fullscreen + toolbar 的 chrome overhead |
 | 檔案上傳清單列 | `FileItem` | FileItem 是 list 呈現,FileViewer 是 fullscreen preview,不同階段 |
-| 需編輯檔案 | 專屬編輯器(Figma / Canva / 內建 editor) | FileViewer 是**檢視**殼,不支援 annotation / crop / 編輯 |
+| 需編輯檔案 | 專屬編輯器(設計工具 / 線上排版工具 / 內建 editor) | FileViewer 是**檢視**殼,不支援 annotation / crop / 編輯 |
 | 短說明浮層 | `Popover` / `HoverCard` | Popover 是輕量非阻斷,FileViewer 是阻斷 fullscreen |
 | 操作確認 | `Dialog` | Dialog 是 modal 確認流,FileViewer 是內容消費 |
 
@@ -149,11 +149,11 @@ Toolbar 右側 `X` + InfoPanel header `X` **都走 `<Button iconOnly dismiss siz
 - **視覺一致**:`dismiss` prop 強制 `variant="text"` + icon 色 `fg-muted → hover foreground`,跟 Inline Action dismiss 外觀一致(cross-implementation dimming canonical),無視覺差異
 - **語義區隔**:跟其他 `<Button iconOnly>`(info / download)屬同一元件家族(都是 chrome button),以 `dismiss` prop 明示「結束 session」語意,比 Button vs Inline Action 兩元件混用更清晰
 
-### Prev/Next 檔案切換(idle-fade,對齊 Google Photos / Dropbox lightbox / Carousel)
+### Prev/Next 檔案切換(idle-fade,同 Carousel)
 
-viewport 左右的 `<` `>` 切檔案箭頭**預設 opacity-0**,由 React state `armVisible` 控制浮現:viewport `onMouseMove` 顯示 → 持續 **2.5s 無 mouse move** 自動淡出 → `onMouseLeave` 立即隱藏(JS idle-timer 機制,對齊 Google Photos lightbox 風格);另加 `has-[:focus-visible]:opacity-100`(a11y CSS fallback,鍵盤聚焦強制顯示)。理由:
+viewport 左右的 `<` `>` 切檔案箭頭**預設 opacity-0**,由 React state `armVisible` 控制浮現:viewport `onMouseMove` 顯示 → 持續 **2.5s 無 mouse move** 自動淡出 → `onMouseLeave` 立即隱藏(JS idle-timer 機制:滑鼠停著不動時箭頭也會退場,畫面只剩內容);另加 `has-[:focus-visible]:opacity-100`(a11y CSS fallback,鍵盤聚焦強制顯示)。理由:
 
-- **世界級對照**:Google Photos / Dropbox preview / PhotoSwipe / Instagram lightbox 皆 hover/idle-fade — 常駐箭頭干擾 media(檔案)閱讀。**用 JS idle-timer 而非純 CSS `group-hover`**:CSS hover 在滑鼠停留時箭頭恆顯,idle-timer 才能做到「停留也淡出」的世界級沉浸體驗
+- **理由**:常駐箭頭干擾 media(檔案)閱讀。**用 JS idle-timer 而非純 CSS `group-hover`**:CSS hover 在滑鼠停留時箭頭恆顯,idle-timer 才能做到「停留也淡出」的世界級沉浸體驗
 - **a11y**:鍵盤聚焦時強制顯示(`has-[:focus-visible]:opacity-100` + `pointer-events-auto`,不 hover 也知道有箭頭可用)。不用 `focus-within`(2026-10-21,r1b DT-06 同族):滑鼠點過箭頭也會成立,箭頭就不再隨 2.5s idle 淡出(理由的住所 = `../../patterns/element-anatomy/item-anatomy.tsx` `SUFFIX_HOVER_REVEAL_BY_GROUP` 的 JSDoc)
 - **邊界**:第一/最後一張時直接不 render(非 disabled state,避免視覺噪音)
 - 對齊 `components/Carousel/carousel.spec.md`「Arrow 行為」canonical
@@ -199,7 +199,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 - 消費 `react-zoom-pan-pinch`(zoom + pan 行為 primitive,無 UI)；DS 自己擁有 toolbar、倍率顯示與 fit policy
 - **圖 render 走 natural size**(不 object-contain):transform scale 管實際顯示大小;避免 CSS pre-scale 跟 transform scale 雙重縮放導致 fit-to-* 算法混淆
 - **onLoad 自動 fit-to-page**——renderer 計算 `min(cw/iw, ch/ih)` 對應的 zoom %(`image-renderer.tsx` computeFitScale),透過 `onZoomChange` 回報 shell 更新 UI 顯示真實倍率(例:40%)。初始目標是先看見完整內容而非任意 100%。**邊界**:fit scale 受 `MIN_SCALE = 10%` 下限與 `Math.floor` 夾制 —— 所需倍率 < 10% 的超大圖仍溢出(clamp 到 10%),floor 亦刻意留 ~1% under-fill 保對稱置中,故「完整可見」在極端尺寸為近似而非絕對
-- **zoom = 100% 語義 = natural pixel size**(跟 Figma / Preview 一致),不是 CSS-contained 的 fit scale
+- **zoom = 100% 語義 = natural pixel size**(使用者說「放到 100%」預期看到的是原圖每一個像素),不是 CSS-contained 的 fit scale
 - Scroll wheel 縮放;`zoom > 100%` 時可拖曳 pan
 - **Wheel step canonical 為 `0.03`(每 tick ~3% scale delta)**——原 0.1(10%)在連續 wheel input 中跳幅過大。**react-zoom-pan-pinch@4 的 wheel zoom = `scale + delta × step` 加法線性**(`handleCalculateWheelZoom`,`dist/index.esm.js:1265`;**非** multiplicative/log —— 乘算 `scale × exp(delta×step)` 只用於 setup `smooth` 開啟時的按鈕 zoom path)。註:lib 型別**無** `smoothStep` / `smoothScroll` key(僅 setup-level `smooth?: boolean` 走按鈕 exp path、不影響 wheel);trackpad 平滑度目前無對應 wheel prop 可調
 - **Zoom anchor(中心點)canonical**:
@@ -209,7 +209,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
   - **100% 重設**(user 按 `0` 鍵;雙擊是 fit↔100% 條件式 toggle,見下「雙擊」bullet)— `centerZoomedOut: true` 讓 ≤100% 時自動 center,避免內容停在容器角落
   - 結果:**wheel / pinch** 以指標為 anchor,zoom 完視覺焦點不漂移(世界級 media viewer 共識);**按鈕 / preset / fit / 輸入打字**走 `centerView`,焦點**重置為內容幾何中心**(非保持指標焦點)—— 兩條 zoom 路徑 anchor 行為不同
 - Min scale 10%,max scale 400%
-- **雙擊 = toggle fit-page ↔ 100%**(對齊 Apple Photos / Preview.app / Imgur / PhotoSwipe canonical):當前 zoom 在 fit-page ±5pt 內 → 跳 100% natural;否則 → 回 fit-page。`0` 鍵才是固定重設 100%(`file-viewer.tsx#FileViewer` 的鍵盤處理),兩者不同(`image-renderer.tsx:144`)
+- **雙擊 = toggle fit-page ↔ 100%**(雙擊在「看全貌」與「看原尺寸」之間切換,兩個目的地都是使用者最常要的):當前 zoom 在 fit-page ±5pt 內 → 跳 100% natural;否則 → 回 fit-page。`0` 鍵才是固定重設 100%(`file-viewer.tsx#FileViewer` 的鍵盤處理),兩者不同(`image-renderer.tsx:144`)
 - 切換檔案時 shell **不重設 zoom**——把「下一張該怎麼初始化 zoom」的決定權交給 renderer:image-renderer 自己 watch `file.url` 變化 → reset loaded → onLoad → 重 fit-page(含 cache 命中時 `<img complete>` 主動觸發,避免 onLoad 不 fire 卡在上一張的 zoom)。原本 shell `setZoom(100)` 在 cache 命中時會卡 100% 不 fit,已移除
 
 ### 畫布自適應(container resize reflow,2026-07-08 codify — 原只活在 code 註解)
@@ -225,8 +225,8 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 | 檔案切換(prev/next)| 不走 observer — `file.url` watch → 重 fit-page(上一 bullet)|
 
 **Resize 時的行為分流**(rAF debounce 合併連續 fire):
-- **fit mode(fit-page / fit-width)** → 重算 fit scale 並套用(對齊 Apple Photos / Google Drive:留在 fit 意圖就跟著容器重排)
-- **manual zoom** → **scale 不變 + 視覺中心點保持**(對齊 Figma / Photoshop):以「舊容器中心對到的內容點」反推新 position(`setTransform` 同步無動畫),內容不因 InfoPanel 開合而偏移;禁 early-return 什麼都不做(2026-07-08 前的 gap:transform 座標是絕對值,容器變窄內容偏左)
+- **fit mode(fit-page / fit-width)** → 重算 fit scale 並套用(使用者選的是「放得下」這個意圖,容器變了就照新容器重新算)
+- **manual zoom** → **scale 不變 + 視覺中心點保持**(使用者手動放大是在看某個細節,容器變了也不該把它移走):以「舊容器中心對到的內容點」反推新 position(`setTransform` 同步無動畫),內容不因 InfoPanel 開合而偏移;禁 early-return 什麼都不做(2026-07-08 前的 gap:transform 座標是絕對值,容器變窄內容偏左)
 
 **Mode 追蹤**:`lastFitModeRef`(fit-page / fit-width / manual)— fit 請求與雙擊設定之,user wheel/pinch 打破為 manual;programmatic `centerView`/`setTransform` 期間以 flag 防誤標。
 
@@ -286,12 +286,12 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 - **僅在 `showFilmstrip === true && files.length > 1` 顯示**
 - **Thumb 固定 64×64**——小到能塞 10+ 檔在畫面上,大到能辨識內容
-- **thumb gap `gap-[var(--layout-space-tight)]`**(density-aware token,非寫死 gap-1)——世界級 lightbox(Google Photos / Dropbox)都用緊密 gap
+- **thumb gap `gap-[var(--layout-space-tight)]`**(density-aware token,非寫死 gap-1)——縮圖列是一整條導覽,緊密 gap 讓它讀成一組
 - **當前 thumb**:`ring-2 ring-primary`(明顯 outline);其他 `ring-1 ring-border` + `hover:ring-border-hover`
 - **ScrollIntoView**:切換當前 file 時 active thumb 自動 scroll 到視野中央
 - **消費 `horizontal-overflow` pattern**:隱藏 native scrollbar + fade-mask + scroll arrows(canScroll 時)
 - **Thumb 內容**:image 用 `<img object-cover>`;非 image 用 FileText icon + ext label
-- **A11y**:整個 strip `role="group"` + `aria-label`,每個 thumb `<button>` + `aria-current`(當前)。**非 `tablist`**——filmstrip 是「選圖導航」非「切換 N 個 tabpanel」,lightbox 單一 viewport 不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving)。對齊 APG grouped-carousel + PhotoSwipe / codeaccessible.com lightbox 共識(2026-06-01 M26 source-verified)
+- **A11y**:整個 strip `role="group"` + `aria-label`,每個 thumb `<button>` + `aria-current`(當前)。**非 `tablist`**——filmstrip 是「選圖導航」非「切換 N 個 tabpanel」,lightbox 單一 viewport 不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving)。對齊 APG grouped-carousel(https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)+ PhotoSwipe / codeaccessible.com lightbox 共識(2026-06-01 M26 source-verified)
 
 ---
 
@@ -317,7 +317,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 | 區塊 | Token | 說明 |
 |------|-------|------|
 | Overlay | `bg-overlay` | 與 Dialog 共用;覆蓋背景頁面 |
-| Viewport bg | 無自身 bg(`bg-overlay` 透出) | Q1 2026-04-30 canonical(`file-viewer.tsx`「Q1 mask 透明度」註解):outer 刻意不設 bg,半透明 Overlay 透出 image 周圍,對齊 Notion / Dropbox lightbox mask idiom |
+| Viewport bg | 無自身 bg(`bg-overlay` 透出) | Q1 2026-04-30 canonical(`file-viewer.tsx`「Q1 mask 透明度」註解):outer 刻意不設 bg,半透明 Overlay 透出 image 周圍,讓使用者知道背後的頁面還在、關掉就回去 |
 | Toolbar / Panel / Filmstrip bg | `bg-surface-raised` | chrome 為遮蓋型浮層必須不透明;**不用 bg-surface**(dark = white α8 半透明,outer 透明時失去 backdrop 會洗白)|
 | 分隔線 | `border-divider` | Toolbar 底 / InfoPanel 左 / Filmstrip 頂 |
 | 檔名文字 | `text-body-lg text-foreground` | Dialog title 同級 |

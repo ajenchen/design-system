@@ -185,7 +185,7 @@ export const SelectTagField: Story = {
   },
 }
 
-/* ── 真實業務:工作項目 Description 多行就地編輯(Jira description 類)──
+/* ── 真實業務:工作項目 Description 多行就地編輯(任務管理工具的描述欄)──
    multiline:view 態換行顯示、edit 態預設 Textarea(Enter=換行、Cmd/Ctrl+Enter 或 blur 提交)。 */
 export const MultilineDescription: Story = {
   name: '多行描述就地編輯(Jira 描述欄類)',

@@ -37,12 +37,12 @@ benchmark:
 ### 世界級流派選擇(為何 circular 兩態合一)
 
 查 6 家世界級 circular progress 命名策略:
-- **合一派**(一元件 determinate + indeterminate):Material `CircularProgress` / Chakra `CircularProgress`
-- **分離派**(2 元件):Ant(`Spin` + `Progress type=circle`) / Mantine(`Loader` + `RingProgress`)
-- **只有 indeterminate**:Polaris / Atlassian / Carbon
-- **混合**:Apple HIG(ActivityIndicator indeterminate / ProgressView determinate circular+linear 合)
+- **合一派**(一元件 determinate + indeterminate):Material `CircularProgress` / Chakra `CircularProgress`([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/progress/progress.md#L25-L41)、[來源](https://github.com/chakra-ui/chakra-ui/blob/a1005f7f129f225058e7616c52e580b6cf8dcfdc/packages/components/src/progress/circular-progress.tsx#L63)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/spin/index.en-US.md#L43)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/progress/index.en-US.md#L23)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/feedback-indicators)、[來源](https://developer.apple.com/design/human-interface-guidelines/progress-indicators))
+- **分離派**(2 元件):Ant(`Spin` + `Progress type=circle`) / Mantine(`Loader` + `RingProgress`)([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/progress/progress.md#L25-L41)、[來源](https://github.com/chakra-ui/chakra-ui/blob/a1005f7f129f225058e7616c52e580b6cf8dcfdc/packages/components/src/progress/circular-progress.tsx#L63)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/spin/index.en-US.md#L43)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/progress/index.en-US.md#L23)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/feedback-indicators)、[來源](https://developer.apple.com/design/human-interface-guidelines/progress-indicators))
+- **只有 indeterminate**:Polaris(Spinner;ProgressBar 只有線形)([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/progress/progress.md#L25-L41)、[來源](https://github.com/chakra-ui/chakra-ui/blob/a1005f7f129f225058e7616c52e580b6cf8dcfdc/packages/components/src/progress/circular-progress.tsx#L63)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/spin/index.en-US.md#L43)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/progress/index.en-US.md#L23)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/feedback-indicators)、[來源](https://developer.apple.com/design/human-interface-guidelines/progress-indicators))
+- **混合**:Apple HIG(ActivityIndicator indeterminate / ProgressView determinate circular+linear 合)([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/progress/progress.md#L25-L41)、[來源](https://github.com/chakra-ui/chakra-ui/blob/a1005f7f129f225058e7616c52e580b6cf8dcfdc/packages/components/src/progress/circular-progress.tsx#L63)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/spin/index.en-US.md#L43)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/progress/index.en-US.md#L23)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/feedback-indicators)、[來源](https://developer.apple.com/design/human-interface-guidelines/progress-indicators))
 
-**本 DS 採合一派**(Material / Chakra),理由:
+**本 DS 採合一派**(Material / Chakra),理由([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/progress/progress.md#L25-L41)、[來源](https://github.com/chakra-ui/chakra-ui/blob/a1005f7f129f225058e7616c52e580b6cf8dcfdc/packages/components/src/progress/circular-progress.tsx#L63)):
 1. **語義一致**:「CircularProgress」天然涵蓋兩態,不像「Spinner with value」語義拉扯
 2. **元件數少**:不拆 Spinner + CircularProgress 兩元件,consumer 只要記一個
 3. **視覺結構共用**:同一 SVG skeleton(`size` + strokeWidth + 雙 circle),`value` 有無只切換 dashoffset 計算 + animate-spin class,無 code 重複
@@ -54,7 +54,7 @@ benchmark:
 ## 何時用
 
 - **Button / Inline Action 的 loading 狀態**:Button `loading` prop 內部渲染(無 value = indeterminate)
-- **Field loading 狀態**(Input / NumberInput / Combobox / Select):consumer 傳 `loading={true}` → 元件內部**保持可編輯**(Ant Input.Search 派,UX「邊改邊讀」,非 Material readonly 派),自動在尾端渲染 `<CircularProgress>` + `aria-busy="true"` 標示處理中(與 `endAction` 互斥;見 `input.tsx` loading 分支與 `field-controls.spec.md`「Loading state」)
+- **Field loading 狀態**(Input / NumberInput / Combobox / Select):consumer 傳 `loading={true}` → 元件內部**保持可編輯**(UX「邊改邊讀」:讀取中仍可繼續修改輸入),自動在尾端渲染 `<CircularProgress>` + `aria-busy="true"` 標示處理中(與 `endAction` 互斥;見 `input.tsx` loading 分支與 `field-controls.spec.md`「Loading state」)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/index.en-US.md#L126))
 - **Cell / row 局部進度**(cell 上傳中、cell async fetch 中):size 16-20 inline
 - **inline 可量化小進度**(如 file uploader list row 的上傳 % / 倒數計時):有 value
 - **全頁 / 區塊載入,且有文字解釋**:`<Empty icon={<CircularProgress size={48}/>} description="正在載入訂單…" />` compose(Empty canonical 垂直堆疊,無需另造)。**spinner-only 不得用 Empty**(`empty.spec.md`「禁止事項」:Empty 是「確定沒有」語意,只有真的有空狀態解釋時才可在 Empty 內含進度視覺,且必傳 meaningful description);下拉選單的載入列另走 `CommandLoading`(見下方尺寸表)
@@ -186,7 +186,7 @@ Track 色鎖 `var(--secondary)`(= neutral-3,與 ProgressBar track 一致)。
 | Indeterminate + 有 aria-label / label | `status` | `aria-label={aria-label ?? label}`(顯式 aria-label 優先,label 為 fallback) |
 | Indeterminate + 無 label | `aria-hidden=true` | 由父層 `aria-busy` 管理(Button 模式) |
 
-**動畫 × `prefers-reduced-motion`**:indeterminate 旋轉對 reduce 使用者**不停止**(loading 回饋仍需可見,停轉會像卡住),改放慢至 3s/圈(預設 1s;`circular-progress.tsx` 的 `motion-reduce:[animation-duration:3s]`,Material 流派)——保留「進行中」訊號、降低前庭刺激。對照 Skeleton 的 `motion-reduce:animate-none`(完全停止):占位塊靜止後仍是有效的靜態內容,語意不失,故兩元件策略不同。
+**動畫 × `prefers-reduced-motion`**:indeterminate 旋轉對 reduce 使用者**不停止**(loading 回饋仍需可見,停轉會像卡住),改放慢至 3s/圈(預設 1s;`circular-progress.tsx` 的 `motion-reduce:[animation-duration:3s]`)——保留「進行中」訊號、降低前庭刺激。對照 Skeleton 的 `motion-reduce:animate-none`(完全停止):占位塊靜止後仍是有效的靜態內容,語意不失,故兩元件策略不同。
 
 ---
 
@@ -195,7 +195,7 @@ Track 色鎖 `var(--secondary)`(= neutral-3,與 ProgressBar track 一致)。
 - **正方形**:外層 span `style={{ width: size, height: size }}` + 內層 `<svg width height>` 雙重鎖尺寸——svg 顯式 width / height 兜底,即使 consumer 傳 `style` 覆寫外層 span,圓形圖形仍維持正方比例。本體絕不加 margin / padding
 - **SVG 雙 circle**:track(`var(--secondary)`) + arc(`currentColor`),stroke-linecap round,rotate -90deg 從 12 點起始
 - **strokeWidth 動態 scale**:`Math.max(2, Math.round(size / 10))` 維持跨尺寸視覺比例(逐值結果由公式推導,不另列舉)
-- **Indeterminate arc**:固定 25%(`INDETERMINATE_ARC_RATIO=0.25`),外層 `animate-spin` 旋轉整個 span(Material 流派)
+- **Indeterminate arc**:固定 25%(`INDETERMINATE_ARC_RATIO=0.25`),外層 `animate-spin` 旋轉整個 span —— 刻意只轉不變形(Material 的 indeterminate 弧長會在 10°–270° 之間伸縮,本 DS 不跟)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/progress/internal/_circular-progress.scss#L177-L182))
 - **旋轉規則單純**:indeterminate → 轉;determinate → 不轉;沒有 status 條件分支,因為沒有 status。完成時 consumer 把整個 CircularProgress swap 成其他內容(Check icon / 結果 / Empty),不靠元件本身做 spin-stop 動畫
 - **`align-middle` 鎖死**(SVG 對齊 adjacent text x-height 中線):外層 span 本體帶 `align-middle`,避免在 inline-flex 容器內出現基線錯位。consumer 若在文字旁放 CircularProgress,**不需**自己加 `align-middle` 或 `leading-none`
 - **Determinate transition**:`transition-[stroke-dashoffset] duration-300`(value 變化時 smooth animation)

@@ -37,8 +37,6 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
 「User 需要選日期」 → DatePicker。「User 需要看本月會議 / 行程 / 截止日」 → **Calendar**。
 
 **世界級對照**:
-- **Notion Calendar**:月 / 週 / 日 view + 左側 filter + 時間軸精確拖拉
-- **Google Calendar**:月 / 週 / 日 + 多曆疊加 + 週末 highlight
 - **Fantastical**:月 + event tile 顏色強調
 - **macOS Calendar**:簡潔 month grid + 左側 mini month
 
@@ -50,7 +48,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
 
 | 情境 | 範例 |
 |------|------|
-| 團隊會議 / 行程總覽 | Notion Calendar 替代品:這個月有哪些會議、專案截止日 |
+| 團隊會議 / 行程總覽 | 團隊行事曆:這個月有哪些會議、專案截止日 |
 | 個人 todo 時間軸 | 本週 / 本月待辦事件分布 |
 | 內容發佈排程 | 社群 / Blog 的發文行事曆、影片排程 |
 | 訂房 / 訂位可視化 | 以 calendar 視角看已訂和空房的 capacity |
@@ -157,12 +155,12 @@ interface CalendarEvent {
 ### Cell 規則
 
 - **Cell 尺寸**:MVP 月 view cell 最小高度 `min-h-28`(112px),容納日期 header + 3 個 event tile,並隨容器高度伸縮(root `h-full` + grid `flex-1`);寬度 7 欄等分
-- **日期 header**:右上角數字(對齊 Google Calendar 視覺慣例)
-- **Today cell**:日期數字以 info-filled pill 強調(對齊 Google Calendar today pill)
+- **日期 header**:右上角數字
+- **Today cell**:日期數字以 info-filled pill 強調
 - **Outside day cell**:上/下月溢出日期**只用淡字**區分(日期數字 `fg-muted`),**不加底色**(2026-09-25 user 選『可以，拿掉底色 (Recommended)』,選項由 AI 提供)。理由:非當月格跟當月格的可點性相同(日期格可點時一樣可點,`onDateClick` = 在這天新增;唯讀時一樣唯讀,見「API」段「日期格與事件方塊:可點或唯讀」與下方「為什麼跨月的界線是格陣邊界」段),所以 (1) 字色用「淡」不用「disabled」—— disabled 字色留給真的不可操作的東西;(2) 底色跟當月格一樣透明,滑過時是同一個滑過色。這跟 DateGrid 的「鄰月日子」是同一條規則(`../DateGrid/date-grid.spec.md` outside 列:淡字、只有文字、比 disabled 弱)。2026-04-21 起的舊寫法「背景略暗」用的是 `bg-muted`,那是「不可操作」的 token(`../../tokens/color/color.spec.md`「Static Subtle Background」段),放在可點的格上造成滑過反而往底色退(淺色變淺、深色變暗;實測淺色 `#F5F5F5` → `#FAFAFA`、深色 `#2F2F2F` → `#262626`),已撤除
 - **Hover cell**:日期格可點時整 cell 帶 neutral-hover 提示可點擊新增入口;`readOnlyDates` 時不亮(點了沒反應就不給滑過回饋)。**指標停在格內的事件方塊上時,整格的 neutral-hover 不熄**,方塊自己的滑過色疊在格的滑過色上 —— 這是 `../../tokens/color/color.spec.md`「Hover 換色配對總則」巢狀滑過段的規則(user 2026-09-25 在可點卡片裡的按鈕那一題選『卡片保留、按鈕再亮一層 (Recommended)』,選項由 AI 提供)。**把它套到月曆格 × 事件方塊是 AI 推導**(待辦總帳 A10;2026-09-25 R17 篩為維持現況、未逐題經 user 拍板):格是「在這天新增」的可點宿主、方塊是格裡另一個可點目標,與卡片裡的按鈕同構,所以照同一條、不另立例外(2026-09-27 補寫理由)
 - **命中區**:懸停回饋是**整格**(`hover:bg-neutral-hover`),而整格就是命中區(cell div 的 onClick = `onDateClick`)—— 懸停形狀 ≡ 命中區,合 `ds-canonical/references/hit-area-canonical.md`。右上角的日期數字鈕**不是第二個目標**,是同一個目標的鍵盤入口:它自己沒有任何 hover 樣式,平日底色恆為透明,動作與宿主格相同,也完全落在格內,所以不會生出隱形帶、搶不走別人的點擊。**點格內空白處也把鍵盤位置帶過來**(2026-09-29,待辦總帳 N46):格陣的停靠點(roving tabindex)搬到這一天、焦點落在這一天的日期鈕,之後 `Tab` 回來停在剛點的那天、consumer 開的對話框關掉後焦點也回到它 —— 與 DataTable 試算表「滑鼠點到哪一格,鍵盤位置就跟到哪一格」同一條(`../DataTable/data-table.spec.md`「試算表模式」);2026-09-29 前只有點到日期數字鈕(原生 button)才會。它的 24px 圓盒是**今天 pill 的高度**(平日跟齊 → 跨 cell 數字落在同一條光學基線)+ 焦點框幾何,**不是**某條最小點擊尺寸;原本 `calendar.tsx` 註解寫的「WCAG 2.5.8 ≥24」已於 2026-09-24 撤回(本 DS 以滑鼠指標的精度為前提,不拿觸控尺寸建議當依據)。實測(1280×900,md,`展示 — 團隊行事曆`):平日鈕 24.00×24.00 且背景 `rgba(0,0,0,0)`、數字字面 6.58×17;今天鈕 31.30×24.00(`px-2`)帶 `bg-info`;格 178×155.80,hover 前後格底色 `rgba(0,0,0,0)` → `oklch(0 0 0 / 0.02)`,鈕底色兩次皆透明;掃全部 stylesheet 命中該鈕的 `:hover` 規則 = 0 條。`readOnlyDates` 時沒有命中區可談:格子不接點擊、不亮,日期數字是一般文字
-- **Weekend cell**:弱化背景(對齊 Google);MVP 未實作,列後續增量。**約束(2026-09-25,AI 推導、未經 user 確認)**:週末格一樣可點,所以若要加底色**不可用 `bg-muted`**(不可操作的 token,見上方 Outside day cell),而且要同時定好它自己的滑過色,不能沿用透明格的 `neutral-hover`(否則滑過會往底色退:淺色變淺、深色變暗)
+- **Weekend cell**:弱化背景;MVP 未實作,列後續增量。**約束(2026-09-25,AI 推導、未經 user 確認)**:週末格一樣可點,所以若要加底色**不可用 `bg-muted`**(不可操作的 token,見上方 Outside day cell),而且要同時定好它自己的滑過色,不能沿用透明格的 `neutral-hover`(否則滑過會往底色退:淺色變淺、深色變暗)
 
 ### Event tile 規則
 
@@ -170,7 +168,7 @@ interface CalendarEvent {
 - **All-day event**(2026-06-01 補實作):淡底 tile + 左側實心 accent 條 + 字重略強,排在 cell 事件區頂端(`allDay` 事件排序在有時間事件之前);多日全天事件靠日期範圍 filter 在每個涵蓋日各顯示一條(非單一橫跨多欄的 grid-column span bar——month view per-cell 模型不做跨欄絕對定位)
 - **Hover tile**:事件方塊可點時滑過換成同色濃一格(淡底 step-1 → step-2;淺色變深、深色變亮 —— 色階號碼 = 離所在底色多遠,`../../tokens/color/color.spec.md`「Dark mode subtle」;2026-09-26 前深色 step-2 往純黑退,滑過變近黑);`readOnlyEvents` 時不亮(改用不帶滑過的同一組色 `CAT_SUBTLE`)、不是按鈕
   > 已知後果(實測 2026-09-26):第 7 階字在深色滑過中的格(第 2 階淡底疊 `#272727`)上,7 個色相對比 < 4.5(紅 3.07、靛 3.20、紫 3.22、洋紅 3.68、藍 3.75、深橘 3.77、青 4.36),全部 ≥ 3.0;user 2026-09-26 對此說「這個先忽略」→ 擱置,記在待辦總帳,不再提問。
-- **超出 tile 限制**:每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字(對齊 Google Calendar),目前不可點擊(點擊展開 popover 列表為後續增量)
+- **超出 tile 限制**:每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字,目前不可點擊(點擊展開 popover 列表為後續增量)
 
 完整 cell + event tile 的 class / token 對照見 anatomy `ColorMatrix` story。
 
@@ -272,7 +270,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 
 **ARIA / Pattern**:對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。
 
-**Keyboard 行為(實作現況,2026-09-24 補齊 APG Data Grid)**:
+**Keyboard 行為(實作現況,2026-09-24 補齊 APG Data Grid)**([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L205-L221)):
 
 模型來源逐字,[W3C APG Grid Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/):
 
@@ -298,7 +296,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 
 | 按鍵 | 行為 | 一手出處(逐字) |
 |---|---|---|
-| `Tab` / `Shift+Tab` | 進 / 出整個格陣,**只停一次**;停在今天(今天不在本月則停在該月 1 號) | APG Date Picker Dialog:"only one button in the calendar grid is in the Tab sequence" / "If no date has been selected, places focus on the current date." |
+| `Tab` / `Shift+Tab` | 進 / 出整個格陣,**只停一次**;停在今天(今天不在本月則停在該月 1 號) | APG Date Picker Dialog:"only one button in the calendar grid is in the Tab sequence" / "If no date has been selected, places focus on the current date."([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/datepicker-dialog.html#L249)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/datepicker-dialog.html#L221)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/datepicker-dialog.html#L315-L316)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L323-L330)) |
 | `←` / `→` | 前一天 / 後一天 | APG Date Picker Dialog:"Right Arrow — Moves focus to the next day." / "Left Arrow — Moves focus to the previous day." |
 | `↑` / `↓` | 上一週 / 下一週的同一天 | 同上:"Up Arrow — Moves focus to the same day of the previous week." / "Down Arrow — Moves focus to the same day of the next week." |
 | `Home` / `End` | 該週的第一天 / 最後一天(依 `weekStartsOn`) | 同上:"Home — Moves focus to the first day (e.g Sunday) of the current week." / "End — Moves focus to the last day (e.g. Saturday) of the current week." |
@@ -307,33 +305,33 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 | `Enter` / `Space` | 日期格可點:**在目前這一天新增** → `onDateClick`(native button activation;本元件沒有「選日期」語意,`onDateClick` = 在這天新增,見「API」段 —— 舊句「啟用目前這一天」/「選這一天」2026-09-27 更正)。`readOnlyDates`:格子沒有主要動作 → `Enter` 等於進格(同下列 `F2`),`Space` 無動作 | APG Date Picker Dialog 的 Date Grid 把 Space/Enter 指派給選取該日(APG 的例子是日期選擇器,動作是選日期;本元件鍵位相同、動作是在這天新增);唯讀時依 `keyboard-model-canonical.md`「`Enter` 恆為「啟動焦點上的東西」—— 焦點在格上時那就等於進格」 |
 | `F2` | **進格**:焦點移到本格第一個事件 tile(`readOnlyEvents` 時方塊不是 widget,沒有可停的,不動作) | APG Grid Pattern:"F2: ... If the cell contains one or more widgets, places focus on the first widget." |
 
-格內(焦點在事件 tile 時,grid navigation 依 APG 定義**已停用**):
+格內(焦點在事件 tile 時,grid navigation 依 APG 定義**已停用**)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L308-L312)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L341-L346)):
 
 | 按鍵 | 行為 | 一手出處(逐字) |
 |---|---|---|
-| `↓` / `→` | 下一個事件 tile(到底不繞回) | APG Grid Pattern:"Right Arrow or Down Arrow: If the cell contains multiple widgets, moves focus to the next widget inside the cell, optionally wrapping to the first widget if focus is on the last widget." |
+| `↓` / `→` | 下一個事件 tile(到底不繞回) | APG Grid Pattern:"Right Arrow or Down Arrow: If the cell contains multiple widgets, moves focus to the next widget inside the cell, optionally wrapping to the first widget if focus is on the last widget."([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L346)) |
 | `↑` / `←` | 上一個事件 tile(到頂不繞回) | 同上:"Left Arrow or Up Arrow: If the cell contains multiple widgets, moves focus to the previous widget inside the cell" |
 | `Escape` / `F2` | **出格**:焦點回到本格的日期停靠點(可點:日期數字鈕;`readOnlyDates`:格子本身),grid navigation 恢復。格內模式是焦點所在控件自己的一層(方塊帶 `data-escape-layer`):月曆放在 Dialog 裡第一下 `Escape` 只出格、不關對話框(`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」,2026-10-01) | 同上:"Escape: restores grid navigation." / "F2: ... A subsequent press of F2 restores grid navigation functions." |
 | `Enter` / `Space` | 觸發 `onEventClick` | 本元件既有行為(tile `role="button"`;`readOnlyEvents` 時沒有可進的方塊) |
 
 Toolbar 的 prev / 今天 / next / 新事件 CTA 是格陣外的標準控件,各自一個 Tab 停靠點(它們不是 `grid` 的後代,不套單一停靠點規則)。
 
-**為什麼進格用 `F2` 而不是 `Enter`**:APG 的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F2` **並列**為慣例(原文:"Following are common keyboard conventions for disabling and restoring grid navigation functions.",其下同時列 Enter 與 F2);但同一份 APG 的 Date Picker Dialog 範例把 `Space/Enter` 指派給「選這一天」。本元件的日期鈕有 `onDateClick` 這個真實動作,若把 `Enter` 改成進格就會蓋掉它。取 `F2` 是在 APG **明文列出的兩個慣例之間**擇一,不是自創第三種。
+**為什麼進格用 `F2` 而不是 `Enter`**:APG 的 "Editing and Navigating Inside a Cell" 把 `Enter` 與 `F2` **並列**為慣例(原文:"Following are common keyboard conventions for disabling and restoring grid navigation functions.",其下同時列 Enter 與 F2);但同一份 APG 的 Date Picker Dialog 範例把 `Space/Enter` 指派給「選這一天」。本元件的日期鈕有 `onDateClick` 這個真實動作,若把 `Enter` 改成進格就會蓋掉它。取 `F2` 是在 APG **明文列出的兩個慣例之間**擇一,不是自創第三種([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L308-L330)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/datepicker-dialog.html#L296-L299))。
 
 這已經收成**跨元件規則**,不再是本元件的逐案選擇:`ds-canonical/references/keyboard-model-canonical.md`「進格用什麼鍵」—— **`F2` 恆為進格;`Enter` 在該格的主要動作沒有佔走它時,也是進格**。本元件的 `Enter` 被 `onDateClick` 佔走,所以只給 `F2`;`DataTable` 的檢視態儲存格沒有主要動作,所以兩個都給。`readOnlyDates` 的月曆格也沒有主要動作,所以同樣兩個都給。同一條規則解釋三者,不需要例外清單。
 
-**為什麼跨月的界線是「格陣邊界」而不是「月份邊界」**:APG Date Picker Dialog 的月曆只畫當月(參考實作 `datepicker-dialog.js` 的 `updateDate()` 對非當月的格 `domNode.textContent = ''` 並加 `disabled`),所以那裡「離開當月」等於「離開畫面」。本元件的 outside day 是**有事件、可點的真格**(見「Cell 規則 > Outside day cell」),因此等價的不變式是「焦點日必須是一個畫得出來的格」:方向鍵走到 outside day 時月份不動(那一格本來就在眼前),只有走出整個格陣才換月,換月後焦點必定落在目標那一天。
+**為什麼跨月的界線是「格陣邊界」而不是「月份邊界」**:APG Date Picker Dialog 的月曆只畫當月(參考實作 `datepicker-dialog.js` 的 `updateDate()` 對非當月的格 `domNode.textContent = ''` 並加 `disabled`),所以那裡「離開當月」等於「離開畫面」。本元件的 outside day 是**有事件、可點的真格**(見「Cell 規則 > Outside day cell」),因此等價的不變式是「焦點日必須是一個畫得出來的格」:方向鍵走到 outside day 時月份不動(那一格本來就在眼前),只有走出整個格陣才換月,換月後焦點必定落在目標那一天([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/js/datepicker-dialog.js#L215-L235))。
 
-**刻意不實作的 APG 選配鍵**:
+**刻意不實作的 APG 選配鍵**([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L219-L220)):
 
-- `Control+Home` / `Control+End`(整個格陣的第一 / 最後一格):APG Data Grid 有列,但 Date Picker Dialog 參考實作的格陣 keydown handler 沒有這兩個 case;月曆的「第一 / 最後一格」是上/下月的溢出日,語意上不是使用者想去的地方,`PageUp/PageDown` 已覆蓋跨月需求。
+- `Control+Home` / `Control+End`(整個格陣的第一 / 最後一格):APG Data Grid 有列,但 Date Picker Dialog 參考實作的格陣 keydown handler 沒有這兩個 case;月曆的「第一 / 最後一格」是上/下月的溢出日,語意上不是使用者想去的地方,`PageUp/PageDown` 已覆蓋跨月需求([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L219-L220)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/js/datepicker-dialog.js#L718-L800))。
 - `Shift+←/→`(切月)、`Shift+↑/↓`(切年):`DateGrid`(react-day-picker v9)有,本元件不跟。APG Data Grid 把 `Shift+方向鍵` 定義為 "Extends selection one cell to the right/left/up/down",在 `grid` 語意下拿它當跨月鍵會與規範衝突;跨月跨年由 `PageUp/PageDown` 與 `Shift+PageUp/PageDown` 承接(與 `date-grid.spec.md:311` 的 `PageUp/Down 切月、Shift+PageUp/Down 切年` 對齊)。
 - `Control+Space` / `Shift+Space` / `Control+A` 等選取鍵:本元件沒有 cell / row 選取模型(見「禁止事項」——event 資料是 consumer 責任),無對應功能。
 
 **Keyboard 後續增量**:
 
 - 「+N more」目前不可聚焦也不進 DOM(見「邊界案例 > 單格事件 > 3」);展開 popover 後需一併定義其鍵盤進出。
-- 型別前導搜尋(鍵入數字跳到該日)不在 APG 月曆範例中,無一手依據,暫不做。
+- 型別前導搜尋(鍵入數字跳到該日)不在 APG 月曆範例中,無一手依據,暫不做([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/dialog-modal/examples/js/datepicker-dialog.js#L718-L800))。
 
 **`renderEventTile` 的鍵盤責任歸屬**:自訂 tile 的外層 wrapper 由本元件統一 own `role="button"`、`tabIndex={-1}`、`data-calendar-tile`、focus ring 與 Enter/Space activation —— 自訂視覺不會把 keyboard parity 推給 consumer。`readOnlyEvents` 時外層只是一層排版用的 `div`(不是按鈕、不進格內導覽、沒有焦點框),同一份可點 / 唯讀契約。Consumer 回傳內容必為 presentational(不可再巢狀 button / link,否則等於在 grid 裡多開 Tab 停靠點);互動由 `onEventClick` 單一 owner 承接。
 

@@ -63,7 +63,7 @@ export const Inspector: InspectorStory = {
   parameters: {
     docs: {
       description: {
-        story: '在右側 Controls 面板切換 size / checked / disabled / readOnly / label 組合,即時查看 Switch 狀態。世界級 DS 的 Inspector = Figma inspect 替代。',
+        story: '在右側 Controls 面板切換 size / checked / disabled / readOnly / label 組合,即時查看 Switch 狀態。',
       },
     },
   },

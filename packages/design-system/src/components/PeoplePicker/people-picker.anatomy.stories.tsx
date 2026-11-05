@@ -109,7 +109,7 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。切 `mode` 看 edit / view / readonly / disabled 視覺差異,切 `size` 對照 field-height tier,切 `variant` 看 default / naked chrome 差異。' } },
+    docs: { description: { story: '右側 Controls 切 props 即時 render,取代對著設計稿逐項 inspect。切 `mode` 看 edit / view / readonly / disabled 視覺差異,切 `size` 對照 field-height tier,切 `variant` 看 default / naked chrome 差異。' } },
   },
   args: {
     mode: 'edit',

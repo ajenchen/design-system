@@ -68,7 +68,7 @@ export interface AccountMenuProps {
   onSignOut?: () => void
   /**
    * 取代 default 選單內容(自組 `DropdownMenuGroup` / `DropdownMenuItem`;i18n / 產品自訂項走這)。
-   * Identity Label(user.name)恆由本元件渲染於選單頂(對齊 shadcn account 例 Label(user)慣例);
+   * Identity Label(user.name)恆由本元件渲染於選單頂(對齊 shadcn account 例 Label(user)慣例);(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/blocks/sidebar-07/components/nav-user.tsx#L70-L81)
    * 傳入 children 時三個 default callback 不再消費。
    */
   children?: React.ReactNode
@@ -154,7 +154,7 @@ export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>
           ) : (
             <>
               {/* Default 選單集合 = app-shell.spec.md「入口開什麼」canonical(個人資料 / 設定 / 登出,
-                  登出獨立 group — 破壞性動作分區,對齊 GitHub / Gmail / Slack 帳號選單慣例) */}
+                  登出獨立 group —— 登出會結束整個工作階段,屬破壞性動作,跟個人資料 / 設定這類一般導覽項分區,避免順手誤點 */}
               <DropdownMenuGroup>
                 <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
                 <DropdownMenuItem startIcon={User} onSelect={onViewProfile}>

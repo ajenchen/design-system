@@ -50,19 +50,19 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 **設計規則**:
 
 - **型別 = allowlist,不 extends 全開(2026-07-14 API 策展 D,user 拍板全部收窄)**:`SelectProps` 只 `Pick<>` 兩路徑皆有實作出口的原生屬性(`id`/`className`/`style`/`name`/`form`/`required`/`disabled`/`onFocus`/`onBlur`/`onKeyDown`/`aria-label`/`aria-describedby`/`aria-errormessage` + mobile-only `autoFocus`/`autoComplete` + `data-*` passthrough);「型別承諾 ≠ 實作出口」者(`multiple`/`aria-labelledby`/`tabIndex` 等)不進型別,需要時先接線(兩路徑等效)再入表 — 完整盤點依據見 `select.tsx` SelectProps docblock
-- **單向 projection,非第二 SSOT(M17)**:mirror 的 value 恆來自既有 canonical state(`useControllable`);唯一寫回通道是瀏覽器 autofill,且僅在 match 既有非 disabled option 時經 canonical setter 生效(MUI SelectInput 同款 guard)
+- **單向 projection,非第二 SSOT(M17)**:mirror 的 value 恆來自既有 canonical state(`useControllable`);唯一寫回通道是瀏覽器 autofill,且僅在 match 既有非 disabled option 時經 canonical setter 生效(MUI SelectInput 同款 guard,https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Select/SelectInput.js#L484-L495)
 - **空值 = `value=''`**:無選擇時送空字串,**不** default 第一項——採 MUI 式**單一 hidden input**而非 Radix BubbleSelect 完整 `<select>` option tree(後者無空 option 時 default 第一項,radix-ui/primitives issue #3521 documented footgun;2026-07-13 codex 辯論 verdict)
 - **原生 required 僅收顯式 `required` prop**(裸表單 opt-in):`<Field required>` 的 context required 續走 `aria-required` + `useFormValidation`(RHF)方法論(`form-validation.spec.md` 規則 1-9),不對既有 Field+RHF consumer 注入瀏覽器原生 bubble
 - **a11y 不變**:mirror `aria-hidden` + 不入 Tab 序,semantics 仍由 `role="combobox"` trigger own;顯式 `required` prop 同步進 trigger `aria-required`(對齊 mobile 原生 `<select required>` 播報)
 - **副作用(升級)**:`useFormValidation` 規則 8(focus-first-error 以 DOM name 定位)桌機 Select 現在可被定位——focus 落 mirror → trigger `focus-within` 顯示 focus 邊框,不再落入 v1 邊界 (b)「控件沒有帶 name 的元素就不移焦點」那一支
 
-**世界級對照**:MUI Select 非原生模式同步 opacity-0 hidden input 攜 `name`/`required`(官方測試涵蓋 required 阻止提交 + FormData 值,[github.com/mui/material-ui Select.test.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.test.js))/ React Spectrum [HiddenSelect](https://github.com/adobe/react-spectrum/blob/main/packages/%40react-aria/select/src/HiddenSelect.tsx) / Headless UI Listbox `name` → [hidden input kept in sync](https://headlessui.com/react/listbox#using-with-html-forms)。Ant 走純 Form.Item(React state)派;本 DS 因型別已承諾 `name`/`form`/`required`,「同一 public API 依裝置改變提交語義」比補 projection 更危險(codex verdict),故補鏡像。
+**世界級對照**:MUI Select 非原生模式同步 opacity-0 hidden input 攜 `name`/`required`(官方測試涵蓋 required 阻止提交 + FormData 值,[github.com/mui/material-ui Select.test.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.test.js))/ React Spectrum [HiddenSelect](https://github.com/adobe/react-spectrum/blob/main/packages/%40react-aria/select/src/HiddenSelect.tsx) / Headless UI Listbox `name` → [hidden input kept in sync](https://headlessui.com/react/listbox#using-with-html-forms)。也有做法是完全不送原生表單、只靠框架的表單狀態;本 DS 因型別已承諾 `name`/`form`/`required`,「同一 public API 依裝置改變提交語義」比補 projection 更危險(codex verdict),故補鏡像。
 
 ---
 
 ## Controlled / Uncontrolled dual-mode(Dim 26,2026-05-21 D3 audit ship)
 
-本元件支援 **dual-mode**:consumer 可選 controlled OR uncontrolled,對齊 React `<input>` / Radix Select / shadcn Select 共識。**互斥規則**:同時傳 `value` + `defaultValue` 走 controlled(value 勝),`defaultValue` 僅 first-mount 用。
+本元件支援 **dual-mode**:consumer 可選 controlled OR uncontrolled,對齊 React `<input>` / Radix Select / shadcn Select 共識(shadcn 把 value / defaultValue 原樣傳給 Radix Root,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/select.tsx#L8-L11)。**互斥規則**:同時傳 `value` + `defaultValue` 走 controlled(value 勝),`defaultValue` 僅 first-mount 用。
 
 ### Controlled 模式(consumer 自管 state)
 
@@ -74,7 +74,7 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 
 ### 為什麼支援 dual-mode(非 controlled-only)
 
-- **React canonical**:`<input>` / `<select>` 原生兩模式並存,Radix / shadcn / MUI / Ant 共識 form-like primitive 必支援 dual-mode
+- **React canonical**:`<input>` / `<select>` 原生兩模式並存,Radix / shadcn / MUI / Ant 共識 form-like primitive 必支援 dual-mode(shadcn https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/select.tsx#L8-L11;MUI https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Select/SelectInput.js#L187-L191;Ant `defaultValue` / `value` https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/select/index.en-US.md#L72、#L116)
 - **Consumer ergonomics**:簡單場景不該強制管 state(prototype / 一次性 form / a11y testing)
 - **互斥規則消除 ambiguity**:`value !== undefined` 為 controlled signal,decisive 不模糊
 
@@ -98,7 +98,7 @@ value 軸 dual-mode,open 軸**刻意只有** `defaultOpen`(初始開)+ `onOpenCh
 
 - **表單中節省垂直空間**：create user 的 role、profile settings 的 timezone、product form 的 category
 - **Toolbar / filter 的選擇**：table 上方的 category filter、sort by、狀態篩選
-- **Table cell 的 inline edit**：Jira-style task 的 status / priority / assignee（見下文「即時 vs on-submit」）
+- **Table cell 的 inline edit**：工單式 task 的 status / priority / assignee（見下文「即時 vs on-submit」）
 - **選項 label 自帶語意**：國家、類別、時區——使用者看 label 就知道要選什麼，不需要額外 description
 - **選項 10+ 且不需搜尋**：時區、國家這類使用者熟悉的清單，靠捲動瀏覽即可定位（type-to-jump 逐字定位只有手機原生 `<select>` 才有；桌機是自建 combobox，非搜尋模式無逐字定位，選項偏多時建議直接開 searchable）
 
@@ -164,7 +164,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 選值一變就直接觸發外部動作，不經 form submit：
 
-- **Jira-style view/edit**：task 的 status / priority / assignee 欄位，改了立刻寫回 DB
+- **工單式 view/edit**：task 的 status / priority / assignee 欄位，改了立刻寫回 DB
 - **篩選器**：table 上方的 category / status filter，改了立刻篩 table
 - **即時設定**：notification preference、theme dropdown
 - **URL param 綁定**：改 value 立刻 push URL（deep-linkable）
@@ -294,7 +294,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 ## 常見誤解
 
 **誤解**：「Select 只用於表單送出，即時套用應該用別的元件」。
-**事實**：Select 的表單送出與即時套用都是正當用法。Jira、Linear、Notion 的 inline status dropdown 都是 Select + 即時 onChange。關鍵是 onChange 的副作用清楚，不是 Select 本身。
+**事實**：Select 的表單送出與即時套用都是正當用法。inline status dropdown 用 Select + 即時 onChange 是正當用法(選了就生效,沒有確認步驟)。關鍵是 onChange 的副作用清楚，不是 Select 本身。
 
 **誤解**：「3-5 個選項一定要用 RadioGroup」。
 **事實**：看容器與決策性質，不看數量。Toolbar 的 3 個 filter 必須是 Select / SegmentedControl（RadioGroup 不符 toolbar 視覺）；form 中 3 個付款方式用 RadioGroup（決策節點）。見「與 RadioGroup 的分界」。
@@ -359,7 +359,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 - Tab — 聚焦到觸發點
 - Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)
-- ↓ — 選單關閉時亦可直接展開(APG combobox 展開鍵,與 Combobox 同 pattern;展開後不攔,讓方向鍵導覽選單)
+- ↓ — 選單關閉時亦可直接展開(APG combobox 展開鍵:「It is displayed when the Down Arrow key is pressed」,https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/combobox-pattern.html#L48;與 Combobox 同 pattern;展開後不攔,讓方向鍵導覽選單)
 - ↑ / ↓ — 選單展開後在選項間移動
 - Tab / Shift+Tab(選單展開時,searchable 與否皆同)— 選定反白那一項 → 收起 → 焦點落到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時從觸發點按 Tab / Shift+Tab 會到的那一格;在對話框 / 小面板裡則只在那一層裡走、到邊緣繞回)。2026-09-25 前(實測):不可打字時 Tab 卡在浮層裡或落到頁面外、Shift+Tab 跳到頁尾,都不選定;可打字時 Tab 收起但不選定、Shift+Tab 停在觸發點本身且選單不關。W3C 出處與逐字規則見 `../SelectMenu/select-menu.spec.md`「A11y 預設」(單選那一條);來源 = 待辦總帳 B11
 - Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc);按過欄位上的東西(清除 ×、再點一下搜尋框)之後按 Esc 收起,焦點同樣回觸發點、不掉到頁面上(2026-10-07,`../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段「指標按在觸發欄位上不算按在外面」)

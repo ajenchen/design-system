@@ -125,14 +125,14 @@ Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action
 - 加不加的**語意 SSOT 在 `patterns/action-bar/action-bar.spec.md` 第五節**(理由 3 誤觸保護):關閉鈕左邊緊鄰其他操作按鈕才加;只有 close X 時不加(沒有東西需要被隔開)。本檔不重複定義
 
 **世界級對照**:
-- **Material Banner**(`<Banner actions={[...]}/>` 右上 close + 可加 refresh)
+- **Material Banner**(關閉不是右上角的 X,而是一至兩顆文字動作鈕之一(primary / secondary action),放在訊息旁、手機版疊到訊息下方;banner 要使用者按動作才會消失,https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-banner/README.md#L25)
 - **Polaris Banner**(`onDismiss` 走 IconButton,右上 action group)
 - **VS Code editor tab** window corner(close + pin + split,全部同 size IconButton)
 - **Figma panel corner**(close + collapse 同 group,divider 分隔)
 
 ### Multi corner action 場景
 
-多顆角落動作走上一節:其他動作放 `endContent`,close X 由 `dismissible` + `onDismiss` 渲染(X 僅在傳 `onDismiss` 時渲染——controlled-only,無 handler 的 X 是死按鈕;對齊 Polaris Banner `onDismiss`-driven,2026-07-05 D4,詳 `../Notice/notice.spec.md`「邊界案例」),兩者之間的分隔線由 Notice 基座自動放。Alert 不另開內建 corner action API,要加時走 Checkpoint 3 決策(M8 benchmark + consumer survey),不預先投機擴 API。
+多顆角落動作走上一節:其他動作放 `endContent`,close X 由 `dismissible` + `onDismiss` 渲染(X 僅在傳 `onDismiss` 時渲染——controlled-only,無 handler 的 X 是死按鈕;對齊 Polaris Banner `onDismiss`-driven(`dismissButton: onDismiss ? (<Button … onClick={onDismiss} />) : null`,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L164),2026-07-05 D4,詳 `../Notice/notice.spec.md`「邊界案例」),兩者之間的分隔線由 Notice 基座自動放。Alert 不另開內建 corner action API,要加時走 Checkpoint 3 決策(M8 benchmark + consumer survey),不預先投機擴 API。
 
 ---
 
@@ -177,7 +177,7 @@ Subtle vs Solid 的完整 variant × theme class 對照見 anatomy `ColorMatrix`
 
 ## 邊界案例
 
-- **Disabled(dismiss button)**:Alert **不提供 dismiss 停用 API**——banner dismiss 恆可用(對齊 Polaris / Material Banner:通知關閉鈕應永遠可按)。「恆可用」指**已渲染的 X 永遠可按**;X 本身僅在傳 `onDismiss` 時渲染(否則是死按鈕假 affordance,2026-07-05 D4,見「Multi corner action 場景」段 + `../Notice/notice.spec.md`「邊界案例」)。Alert 本身亦無 `disabled` prop(持久通知不該被禁用)。若需防止 close action(API in-flight)被雙擊,consumer 在 `onDismiss` 內自行 debounce / 加上層鎖,不在 UI 層加 disable(Alert 不提供 dismiss 停用 API、也不把 disabled 轉傳給內部 dismiss Button;Button primitive 本身支援 disabled,但 Alert 刻意不開洞)。
+- **Disabled(dismiss button)**:Alert **不提供 dismiss 停用 API**——banner dismiss 恆可用(關閉是使用者對通知的最後控制權;停用的 X 是看得到卻按不動的假 affordance)。「恆可用」指**已渲染的 X 永遠可按**;X 本身僅在傳 `onDismiss` 時渲染(否則是死按鈕假 affordance,2026-07-05 D4,見「Multi corner action 場景」段 + `../Notice/notice.spec.md`「邊界案例」)。Alert 本身亦無 `disabled` prop(持久通知不該被禁用)。若需防止 close action(API in-flight)被雙擊,consumer 在 `onDismiss` 內自行 debounce / 加上層鎖,不在 UI 層加 disable(Alert 不提供 dismiss 停用 API、也不把 disabled 轉傳給內部 dismiss Button;Button primitive 本身支援 disabled,但 Alert 刻意不開洞)。
 - **Loading**:Alert 本身不需 loading state(非 async surface);若 `endContent` 內的 CTA 在 async 動作中,該 Button 自己處理 `loading` prop。
 - **Empty / icon-only**:Alert 必有 `title`(API contract),無 empty 場景;若無 description 則僅顯示 title + icon,layout 自動收斂。
 - **極長字串**:title 單行 truncate、description 自由換行不截斷(皆繼承 ItemContent 預設);description 超過 2–3 行屬誤用,改 Dialog(見禁止事項)。

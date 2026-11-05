@@ -10,7 +10,7 @@ import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulate
 import { Paperclip, Camera, Figma } from 'lucide-react'
 
 /**
- * FileViewer 展示——真實業務場景(Jira / Notion / Figma / Gmail / 活動相集)。
+ * FileViewer 展示——真實業務場景(工單附件 / 文件配圖 / 設計稿審閱 / 郵件附件 / 活動相集)。
  * 設計規則詳見 `file-viewer.spec.md`。
  *
  * 展示情境都用 picsum.photos 真實圖片 + 真實業務文案,避免 placeholder 與
@@ -32,7 +32,7 @@ type Story = StoryObj
 const img = (seed: string, w = 1200, h = 800) =>
   `https://picsum.photos/seed/${seed}/${w}/${h}`
 
-// ── Story 1:Jira 附件檢視(screenshot pack + 說明欄)─────────────────────────
+// ── Story 1:工單附件檢視(screenshot pack + 說明欄)─────────────────────────
 
 const jiraScreenshots: FileInfo[] = [
   {
@@ -121,7 +121,7 @@ export const JiraAttachments: Story = {
   },
 }
 
-// ── Story 2:Notion 頁面內多張配圖預覽 ──────────────────────────────────────
+// ── Story 2:文件頁面內多張配圖預覽 ──────────────────────────────────────
 
 const notionInlinePics: FileInfo[] = [
   {
@@ -201,7 +201,7 @@ export const NotionGallery: Story = {
   },
 }
 
-// ── Story 3:Figma file gallery(design review 單檔 zoom focus)───────────────
+// ── Story 3:設計稿 gallery(design review 單檔 zoom focus)───────────────
 
 const figmaDesignFile: FileInfo[] = [
   {
@@ -245,7 +245,7 @@ export const FigmaDesignReview: Story = {
   },
 }
 
-// ── Story 4:Gmail 多附件預覽(filmstrip + download 為主)────────────────────
+// ── Story 4:郵件多附件預覽(filmstrip + download 為主)────────────────────
 
 const gmailAttachments: FileInfo[] = [
   {

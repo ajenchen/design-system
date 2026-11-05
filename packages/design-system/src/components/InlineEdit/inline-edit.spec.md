@@ -66,7 +66,7 @@ InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 f
 - **對齊 root invariant**:固定 `-mx-[--field-px]` 要能把值/tag/avatar 左緣拉到 label x=0,**充要條件 = 委派控件 view 左 px 恆 = field-px**。故 InlineEdit **兩條 view 路徑都用同一個 `fieldViewGeometry`(field-px + min-h + py)**:純值/標題路徑直接套;**委派控件路徑(renderRead)也用 `fieldViewGeometry` 包住**(委派控件 bare view 皆 0px 左內距 → 包住後統一 field-px)。這樣 tag/avatar/date 全對齊 label(不碰任何控件的 tagPadding)。
 - **vertical(預設,含 standalone)** → `-mx-[var(--field-px)]` + `w-[calc(100%+2*var(--field-px))]`:整塊拉到欄左緣 → 值/tag 左緣落 label x=0。**-mx 只依 orientation、不依 fieldCtx**(spec Model A 原意;舊 `fieldCtx &&` gate 讓 standalone 不對齊 = bug,已移除)。-mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
 - **horizontal** → `w-full min-w-0`,**不用 -mx**:值內縮 px = 對齊 sibling 控件
-- **edit 態完全繼承原 field**(Jira 式,2026-07-17 記為 user 拍板,來源不明:登記簿查無原話):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(= Jira 式,可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
+- **edit 態完全繼承原 field**(2026-07-17 記為 user 拍板,來源不明:登記簿查無原話):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式 —— 進入編輯就是那個欄位本人,使用者看到的控件跟表單裡一模一樣。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
 
 **多行(multiline)**:view = `items-start py-2`,**= Textarea edit `py-2`**(textarea.tsx base)——`scripts/inline-edit-view-geometry-invariant.mjs` 機械鎖此契約(Textarea py 一改即紅)。
 
@@ -92,7 +92,7 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 |---|---|---|---|
 | `renderRead?(value)` | view 態格式化顯示 | `String(value)`（空 → placeholder） | 要顯 **Tag / 日期 / option label**,**渲染對應控件的 `mode="view"`**（如 `<Select mode="view" display="tag">`），**禁自刻**——格式化 SSOT 住在該控件的 view mode |
 | `renderEdit?(props)` | edit 態控件 | `multiline`→`<Textarea>` / 否則 `<Input>` | 非 string 值必傳（預設路徑僅 string） |
-| `multiline?` | 多行（Jira description 類） | false | view `items-start py-2` 換行（= Textarea edit py-2,見「幾何典範」）、edit Textarea（Enter=換行、Cmd/Ctrl+Enter 或 blur 提交） |
+| `multiline?` | 多行(工作項目描述這類長文欄位) | false | view `items-start py-2` 換行(= Textarea edit py-2,見「幾何典範」)、edit Textarea(Enter=換行、Cmd/Ctrl+Enter 或 blur 提交) |
 
 **Tag 顯示的 SSOT 對齊（user 2026-07-09 問）**:select 值轉成 Tag 的格式化住在 **Select 的 `mode="view" display="tag"`**（`select.tsx` ReadonlyDisplay Tag 分支）—— 這正是 **DataTable 格子消費的同一份**（`cell-registry.tsx` SelectCell view 分支）。InlineEdit view 態顯 Tag = `renderRead={(v) => <Select mode="view" display="tag" value={v} options={opts} />}`,**view 與 edit 用同一個 Select、只切 mode → 格式零分歧**。此即「乾淨對齊」:InlineEdit 從不重刻 Tag,格式化永遠委派給控件的 view mode。示範見 `inline-edit.stories.tsx` `SelectTagField`。
 
@@ -103,14 +103,13 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 | DS | view 態 | hover affordance | 進 edit | 鍵盤 |
 |----|---------|-----------------|---------|------|
 | **Atlassian inline-edit**（[read-view.tsx](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx)） | 純值 + 隱形 Pressable | **背景 tint**（`background.neutral.subtle.hovered`,**非邊框**） | click read view | 隱形 button focus + Enter;5px drag threshold 防選字誤觸 |
-| **PatternFly inline-edit** | value 文字 | 可編輯提示 | value/input 二態 toggle | Enter commit / Esc cancel |
-| **Notion title cell** | 純文字 | hover 浮 affordance | click 編輯 | — |
+| **PatternFly inline-edit** | value 文字 | 可編輯提示 | value/input 二態 toggle(`.pf-m-inline-editable` 切換) | —([來源](https://github.com/patternfly/patternfly/blob/5aef1951bc0be5221f692dfb9a08f1616954e2ef/src/patternfly/components/InlineEdit/examples/InlineEdit.md?plain=1#L402-L407)) |
 
 三家共識:view 態 = 純值、hover = 輕背景提示（非重邊框）、click 或鍵盤進 edit、edit = 真正的輸入控件。本 DS 對齊此模型;`bg-neutral-hover` = 本 DS 的「neutral subtle hover」等價 token。
 
 **view 態 focus canonical**（2026-07-09）:Atlassian read-view 的隱形 Pressable focus 時,外框顯 `color.border.focused` **實線 solid border**（非 ring）——[read-view.tsx](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) `&:focus + div { borderColor: token('color.border.focused') }`。本 DS 對齊此語言:view focus = `border-primary`(= Field edit focus 藍框),使 view→edit focus 視覺連續,不引入第三種（ring）focus 語言。
 
-**view 態 typography canonical**（2026-07-09）:Atlassian inline-edit / PatternFly 將 view 態字級**委派**給 consumer（readView 不強加字體,由外層 context 決定）。本 DS 更 opinionated——view 態預設消費 `fieldDisplayTextClass(size)`（sm/md→`text-body`,lg→`text-body-lg`,`../Field/field-wrapper.tsx` Field view 字體 SSOT),使 **plain 用法**（`<InlineEdit value onCommit />`）view 字級即 = edit `<Input>`（`text-body`）= `<Input mode="view">` 字級,三者一致零跳字;`readClassName`（如標題 `text-h4 font-bold`）僅作特例 override 疊其後。對齊 [Atlassian inline-edit read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) 委派模型,並補上「plain 用法即 canonical」的預設。
+**view 態 typography canonical**(2026-07-09):Atlassian inline-edit 將 view 態字級**委派**給 consumer(`readView: () => React.ReactNode`,不強加字體,由外層 context 決定)。本 DS 更 opinionated——view 態預設消費 `fieldDisplayTextClass(size)`（sm/md→`text-body`,lg→`text-body-lg`,`../Field/field-wrapper.tsx` Field view 字體 SSOT),使 **plain 用法**（`<InlineEdit value onCommit />`）view 字級即 = edit `<Input>`（`text-body`）= `<Input mode="view">` 字級,三者一致零跳字;`readClassName`（如標題 `text-h4 font-bold`）僅作特例 override 疊其後。對齊 [Atlassian inline-edit read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) 委派模型,並補上「plain 用法即 canonical」的預設。
 
 **狀態 data 屬性**（可測性）:外層容器 `data-editing`（read/edit 態）、read 元素 `data-empty`（空值）——供 audit / Playwright 斷言態切換與空值渲染（Dice UI data-attribute idiom,對齊 M32 pixel/DOM 可驗）。
 

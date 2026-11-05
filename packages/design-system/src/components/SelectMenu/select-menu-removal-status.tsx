@@ -5,7 +5,7 @@
  * 使用者聽不到少了一個值。所以刪的那一下念一句「已移除『X』」(句型 `removalAnnouncement`,select-menu-keyboard.ts)。
  * 「讀屏念『已移除「X」』」是 AI 依三家原始碼推導、user 沒有表示同意或反對的一項(待辦總帳 K1 / R2 行為變化清單)。
  * 世界級:react-select polite 區域念「option X, deselected.」(https://github.com/JedWatson/react-select/blob/052e864b4990a67c4ee416851c34d1eb7b58267b/packages/react-select/src/accessibility/index.ts#L134-L137);
- * rc-select 欄位有焦點時以 polite 區域念目前的值(https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/Polite.tsx#L9-L31);MUI 不念。
+ * rc-select 欄位有焦點時以 polite 區域念目前的值(https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/Polite.tsx#L9-L31);MUI 不念(SelectInput 整檔無 aria-live 區域,https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Select/SelectInput.js)。
  *
  * 形狀同 Command 根的 `CommandEmptyStatus`(sr-only + `role="status"` + `aria-live="polite"`):**一直掛著**,只換裡面的字 ——
  * 新掛上、已帶文字的 live region 讀屏器多半不念(command.tsx 同一段理由)。同一句話連念兩次(刪掉「Food」、又選回來再刪)時,

@@ -46,7 +46,7 @@ Notice 是純視覺 primitive，不是獨立使用的元件。消費者：
 
 相同 body 字級,層級靠 font-weight / color 區分（不靠 font-size,亦不靠 compact 行高）。
 
-> **為何 reading-md 而非 compact（2026-06-15 codify，根治 off-grid 偏移）**：Notice 同時服務 title-only（多數）與 title+desc、Alert（banner）與 Toast（snackbar）。原本 root 套 `leading-compact`(1.3) 形成「reading gap token + scanning 行高」混搭,落在 ItemContent 4 個合法 mode（reading-md/reading-lg/scanning-md/scanning-lg）**之外**的第五種組合（label 14 + desc 14 + 行高 1.3）且未文件化 → 違反 `item-anatomy.spec.md`「偏離 canonical 規則」。收斂為純 **reading-md**：title-only 14px 對齊 Ant/Material title-only norm（scanning-lg 的 16px 過大）；desc 維持 14px 可讀（scanning-md 的 12px caption 對通知訊息過小）；title↔desc 階層由 `font-medium` 承載已足夠。對照 FileItem（顯式 `mode="scanning"` + 文件化 = 正確消費範例,`file-item.tsx#FileItem` 與其檔頭 Typography 段）。
+> **為何 reading-md 而非 compact（2026-06-15 codify，根治 off-grid 偏移）**：Notice 同時服務 title-only（多數）與 title+desc、Alert（banner）與 Toast（snackbar）。原本 root 套 `leading-compact`(1.3) 形成「reading gap token + scanning 行高」混搭,落在 ItemContent 4 個合法 mode（reading-md/reading-lg/scanning-md/scanning-lg）**之外**的第五種組合（label 14 + desc 14 + 行高 1.3）且未文件化 → 違反 `item-anatomy.spec.md`「偏離 canonical 規則」。收斂為純 **reading-md**：title-only 14px 對齊 Ant/Material title-only norm（scanning-lg 的 16px 過大）；desc 維持 14px 可讀（scanning-md 的 12px caption 對通知訊息過小）；title↔desc 階層由 `font-medium` 承載已足夠。對照 FileItem（顯式 `mode="scanning"` + 文件化 = 正確消費範例,`file-item.tsx#FileItem` 與其檔頭 Typography 段）([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/style/index.ts#L71-L72)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/style/index.ts#L151-L155)、[來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Alert/Alert.js#L48))。
 
 ## Padding（固定）
 
@@ -128,11 +128,11 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 
 ## 邊界案例
 
-- **Disabled(dismiss button)**:Notice 本身不擁有 disabled state(internal primitive,無互動);內嵌的 `<Button iconOnly dismiss size="xs" />` 在 disabled context 內會自動繼承 Button disabled 視覺(`text-fg-disabled` + `cursor-not-allowed`)。Notice **不提供 disable dismiss 的 API**——`...props` 只 spread 到 root `<div>`,dismiss `<Button>` 不接收 / 不 forward 任何 consumer disabled prop,無 consumer-level prop pass-through 可停用 dismiss。對齊消費者 canonical(`../Alert/alert.spec.md`「Disabled(dismiss button)」:banner dismiss 恆可用,對齊 Polaris / Material Banner「通知關閉鈕應永遠可按」);若需防止 close action(API in-flight)被雙擊,consumer 在 `onDismiss` 內自行 debounce / 加上層鎖,不在 UI 層暴露 disabled 透傳。
+- **Disabled(dismiss button)**:Notice 本身不擁有 disabled state(internal primitive,無互動);內嵌的 `<Button iconOnly dismiss size="xs" />` 在 disabled context 內會自動繼承 Button disabled 視覺(`text-fg-disabled` + `cursor-not-allowed`)。Notice **不提供 disable dismiss 的 API**——`...props` 只 spread 到 root `<div>`,dismiss `<Button>` 不接收 / 不 forward 任何 consumer disabled prop,無 consumer-level prop pass-through 可停用 dismiss。對齊消費者 canonical(`../Alert/alert.spec.md`「Disabled(dismiss button)」:banner dismiss 恆可用);若需防止 close action(API in-flight)被雙擊,consumer 在 `onDismiss` 內自行 debounce / 加上層鎖,不在 UI 層暴露 disabled 透傳。
 - **Loading**:Notice 非 async surface,無 loading state。Body 內若 consumer 注入 CTA Button,該 Button 自行處理 loading。
 - **Empty**:Notice 的 `title` 為必填(TypeScript required prop,消費合約),`description` 選填;layout 至少 1 行 title 內容。誤傳空字串時照常 render(無 runtime warn / throw),空 title 的內容責任在 consumer(Alert / Toast)。`neutral` variant 不渲 status icon 時即為 title-only icon-less 形態(見 `NeutralTitleOnly` story),仍合法 render。
 - **Icon-only / variant=neutral**:`neutral` variant 不渲 status icon,layout 自動收斂為 `[title + description?]  [endContent?]  [dismiss X?]` 三 slot。
-- **`dismissible` 無 `onDismiss`**(2026-07-05 D4):X 渲染條件 = `dismissible`(預設 true)**且**有傳 `onDismiss`——Notice / Alert 為 controlled-only(不自我移除),無 handler 的 X 是可 focus、SR 播報「關閉通知」但按下零反應的死按鈕(假 affordance)。對齊 Polaris Banner(`onDismiss` 存在才顯示 X)/ Ant Alert(`closable` 預設 false)。顯式傳 `dismissible={true}` 卻缺 `onDismiss` 時 dev-only `console.warn` 提示(預設未傳不吵)。
+- **`dismissible` 無 `onDismiss`**(2026-07-05 D4):X 渲染條件 = `dismissible`(預設 true)**且**有傳 `onDismiss`——Notice / Alert 為 controlled-only(不自我移除),無 handler 的 X 是可 focus、SR 播報「關閉通知」但按下零反應的死按鈕(假 affordance)。對齊 Polaris Banner(`onDismiss` 存在才顯示 X,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L164)/ Ant Alert(`closable` 預設 false)。顯式傳 `dismissible={true}` 卻缺 `onDismiss` 時 dev-only `console.warn` 提示(預設未傳不吵)。
 
 ---
 

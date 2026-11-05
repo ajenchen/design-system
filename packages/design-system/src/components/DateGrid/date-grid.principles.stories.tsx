@@ -67,7 +67,7 @@ export const UsageGuidance: Story = {
         <UsageSection kind="whenNot">
           <TutorialRule
             title="DateGrid 是「日期 picker」,不是「事件日曆」"
-            note="本元件只處理日期選擇(選一天、多天、範圍)。若需求是「顯示一個月內的事件清單、拖曳事件、切換 week / month / agenda view」——那是事件行事曆,需要專用元件(Google Calendar / Outlook 類),不屬於本元件範疇。"
+            note="本元件只處理日期選擇(選一天、多天、範圍)。若需求是「顯示一個月內的事件清單、拖曳事件、切換 week / month / agenda view」——那是事件行事曆(排程類 app 的主畫面),需要專用元件,不屬於本元件範疇。"
           >
             <Demo title="✅ 正確用途:選日">
               <DateGrid mode="single" defaultMonth={STORY_TODAY} today={STORY_TODAY} locale={zhTW} />
@@ -197,7 +197,7 @@ export const ModeRule: Story = {
 
           <TutorialRule
             title="range — 連續範圍(from → to)"
-            note="資料語意是「一段時間」,start 與 end 有順序關係。參考 Stripe 分析時段、Vercel Analytics 期間、Airbnb 訂房 check-in/out。"
+            note="資料語意是「一段時間」,start 與 end 有順序關係。例如分析報表選時段、訂房選入住 / 退房日。"
           >
             <Demo title="Stripe Dashboard 查詢時段">
               <DateGrid
@@ -295,7 +295,7 @@ export const LocaleRule: Story = {
 
       <TutorialRule
         title="不自訂 i18n layer"
-        note="DateGrid 不包 i18n context、不讀 app-level locale 設定。原因:date-fns locale 已是事實標準(Vercel / Stripe / Linear 都用),重新發明會綁架消費端的國際化策略。想全站同步週首日 → app 層統一傳 locale prop。"
+        note="DateGrid 不包 i18n context、不讀 app-level locale 設定。原因:語系與週首日是整個 app 的國際化策略,元件自己去抓會綁架消費端的做法;想全站同步週首日 → app 層統一傳 locale prop。"
       >
         <ExampleCaption>
           ✅ 全站統一:app 層 createContext(locale) → 所有 DateGrid 消費端讀 context → 傳 locale prop<br />

@@ -26,7 +26,7 @@ benchmark:
 
 ## 何時用
 
-- **`primary-header` 派 globalHeader 右側**(desktop):品牌在左、自己的帳號在右(GitHub / Gmail / Slack / Atlassian global top bar 慣例)
+- **`primary-header` 派 globalHeader 右側**(desktop):品牌在左、自己的帳號在右(GitHub「In the upper-right corner of any page on GitHub, click your profile picture」、Gmail「In the top right, click Profile」;Slack 的頭像在側欄,不同派)([來源](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-personal-account-settings/managing-your-theme-settings)、[來源](https://support.google.com/mail/answer/8154?hl=en)、[來源](https://slack.com/help/articles/201864558-Set-your-Slack-status-and-availability))
 - **`primary-header` 派 Menu 浮層的 `<SidebarHeader>` 右側**:Menu 浮層(Sheet)蓋住 globalHeader 時鏡像桌面帳號家搬進浮層頂排(AppShell「版面規則」§9;2026-10-14 前的觸發條件是 768 以下的 Sheet)
 - 任何「目前登入使用者的個人設定入口」需求(開 navigation 選單,非展示他人資訊)
 
@@ -116,7 +116,7 @@ controlled `open` / `onOpenChange`，不靠查找 portal DOM。
 | Primer(GitHub) | 無專門元件;ActionMenu + Overlay + ActionList composition | <https://primer.style/components/action-menu> |
 | Material 3 | 無專門元件;navigation drawer 帳號 switcher 放 drawer header 區(placement guidance) | <https://m3.material.io/components/navigation-drawer>(placement cite 已在 app-shell.spec.md) |
 
-**收斂**:trigger 出貨為專門元件(Atlassian 路線,因 DS 內兩處 spec mandate 同構消費)+ 內容維持 DropdownMenu composition 開放(shadcn / Primer 路線,`children` 取代)。M21 3-test:(1) `DropdownMenu` 無單一 prop 可達成 identity trigger + canonical 集合;(2) Atlassian 出貨分離元件(cite 上表);(3) contract 不同 — 收 user identity 資料 + navigation callbacks,非 menu primitive surface。
+**收斂**:trigger 出貨為專門元件(Atlassian 路線,因 DS 內兩處 spec mandate 同構消費)+ 內容維持 DropdownMenu composition 開放(shadcn / Primer 路線,`children` 取代)。M21 3-test:(1) `DropdownMenu` 無單一 prop 可達成 identity trigger + canonical 集合;(2) Atlassian 出貨分離元件(cite 上表);(3) contract 不同 — 收 user identity 資料 + navigation callbacks,非 menu primitive surface([來源](https://unpkg.com/@atlaskit/atlassian-navigation@6.4.12/dist/types/components/AtlassianNavigation/types.d.ts)、[來源](https://unpkg.com/@atlaskit/atlassian-navigation@6.4.12/dist/types/components/Profile/types.d.ts)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/blocks/sidebar-07/components/nav-user.tsx#L70-L108))。
 
 ## 相關
 

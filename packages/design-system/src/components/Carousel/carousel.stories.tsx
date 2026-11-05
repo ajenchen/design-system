@@ -27,7 +27,7 @@ export default meta
 // ── Real-content data ────────────────────────────────────────────────────────
 
 // 2026-05-16 audit codex Round 6:用真實 photo URL 取代 gradient color block — story 要教 carousel
-// 真實裁切 / 內容裁切 / 視覺層次,gradient 抽象 block 教不到(對齊 Polaris / Carbon stories 用 stock photo)。
+// 真實裁切 / 內容裁切 / 視覺層次,gradient 抽象 block 教不到(所以範例一律用真實照片)。
 // Picsum.photos 提供 stable seeded photos(免登入 / 免 API key / 跨環境一致)。
 const heroBanners = [
   { city: '京都', tagline: '秋日楓紅限定行程', image: 'https://picsum.photos/seed/kyoto/960/360' },

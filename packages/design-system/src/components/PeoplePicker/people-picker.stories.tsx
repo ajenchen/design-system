@@ -132,7 +132,7 @@ export const Multi: Story = {
 }
 
 /* ── 多人 × 欄位內搜尋(searchIn='trigger')──
-   Outlook 排會議:出席者欄位直接打名字找人,選一位關鍵字就清空、游標留在欄位裡接著打下一位;
+   排會議的出席者欄位:直接打名字找人,選一位關鍵字就清空、游標留在欄位裡接著打下一位;
    頭像堆疊(預設)與每人一顆標籤(`multiDisplay='pill'`)兩種顯示,各放「已有人」與「還沒選」一格(選填那一格可一鍵清空)——
    欄位內搜尋框空值也在(people-picker.spec.md §D / §E:有頭像 → 純插入點,空 → 欄位 placeholder);
    它的寬度 = 打的字(combobox.spec.md「欄位內搜尋框的寬度」):接在最後一位後面,空的時候不自己佔一列 ——
@@ -341,7 +341,7 @@ export const ValueLoading: Story = {
   ),
 }
 
-/** 遠端搜尋名錄(Jira 指派人員):組織上萬人只能問伺服器;關鍵字空先列「建議」(最近指派過的兩位),每打一個字向後端要一次。 */
+/** 遠端搜尋名錄(議題追蹤工具的指派人員):組織上萬人只能問伺服器;關鍵字空先列「建議」(最近指派過的兩位),每打一個字向後端要一次。 */
 const RemoteDirectoryPicker = () => {
   const recent = [samplePeople[1], samplePeople[3]]
   const [people, setPeople] = React.useState<PersonValue[]>([])

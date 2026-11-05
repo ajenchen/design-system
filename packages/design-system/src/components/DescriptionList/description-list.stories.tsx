@@ -52,12 +52,12 @@ export const ProductSpec: Story = {
   ),
 }
 
-/* ── 訂單明細(Stripe checkout 風格)────────────────────────────────── */
+/* ── 訂單明細(結帳頁:品項、運費、稅、總計)────────────────────────────────── */
 export const OrderSummary: Story = {
   name: '訂單明細',
   render: () => (
     <div className="max-w-md">
-      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec;對齊 Horizontal story)*/}
+      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec;對齊 Horizontal story)(來源:https://www.nngroup.com/articles/gestalt-proximity/) */}
       <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">訂單摘要</h3>
       <DescriptionList cols={1}>
         <DescriptionItem label="訂單編號">#20260418-A241</DescriptionItem>
@@ -96,7 +96,7 @@ export const Horizontal: Story = {
   name: '水平佈局',
   render: () => (
     <div className="max-w-md">
-      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec) */}
+      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec)(來源:https://www.nngroup.com/articles/gestalt-proximity/) */}
       <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">檔案資訊</h3>
       <DescriptionList orientation="horizontal">
         <DescriptionItem label="檔名">Q1-roadmap.pdf</DescriptionItem>

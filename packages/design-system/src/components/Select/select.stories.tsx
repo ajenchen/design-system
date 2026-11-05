@@ -221,7 +221,7 @@ export const Creatable: Story = {
 }
 
 /* ── 載入中 / 沒有選項(開啟態快照:defaultOpen 讓瀏覽器閘不用點擊就看得到)── */
-// Stripe 付款設定「結算幣別」:幣別清單由後端依帳戶地區回傳
+// 金流平台付款設定「結算幣別」:幣別清單由後端依帳戶地區回傳
 const currencyOptions = [
   { value: 'twd', label: 'TWD 新台幣' },
   { value: 'usd', label: 'USD 美元' },
@@ -285,7 +285,7 @@ export const GroupedSearch: Story = {
   ),
 }
 
-/** 遠端搜尋(Notion「移動到」):頁面在後端、關鍵字空先給「建議」(最近瀏覽);每打一個字向後端要一次,抓資料中舊清單不留、只剩載入列。 */
+/** 遠端搜尋(文件工具的「移動到」):頁面在後端、關鍵字空先給「建議」(最近瀏覽);每打一個字向後端要一次,抓資料中舊清單不留、只剩載入列。 */
 function RemoteSearchDemo() {
   const pages = [
     { value: 'roadmap', label: '產品路線圖', keywords: 'roadmap' },

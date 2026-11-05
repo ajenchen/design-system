@@ -7,7 +7,7 @@ import { MOTION_DELAY_PLAIN_MS } from "@/design-system/tokens/motion/motion"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 // 2026-05-18 ship per user 拍板 #3A:Tooltip Provider 預設 delayDuration 對齊 motion token SSOT。
-// Radix 預設 700ms 過保守(被 Material 150-200 / MUI 100 / Atlassian 300 集體驗證),DS 統一用
+// Radix 預設 700ms 偏保守(MUI 預設 100ms、Atlassian 300ms、Material Components Web 500ms),DS 統一用(來源:https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Tooltip/Tooltip.js#L247 https://cdn.jsdelivr.net/npm/@atlaskit/tooltip@24.4.3/dist/es2019/tooltip.js https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-tooltip/constants.ts#L42-L43)
 // `--motion-delay-plain` (500ms,JS mirror `MOTION_DELAY_PLAIN_MS`)。Consumer 仍可 per-instance override。
 // 2026-05-21 D5 Phase B codex 抓 comment 200 vs token 500 drift → 註解 500ms 對齊 motion.css#--motion-delay-plain SSOT。
 const TooltipProvider = ({ delayDuration = MOTION_DELAY_PLAIN_MS, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => (
@@ -179,7 +179,7 @@ const TooltipContent = React.forwardRef<
         // - Fluent 只在 `hidden` 狀態設(useTooltipStyles.styles.ts:43-46
         //   https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-tooltip/library/src/components/Tooltip/useTooltipStyles.styles.ts),
         //   看得見時不穿透。
-        // - Bootstrap / Ant / Radix / Carbon / shadcn / Floating UI 完全不設。
+        // - Bootstrap / Ant / Radix / shadcn 完全不設(Bootstrap scss/_tooltip.scss@v5.3.8、Ant components/tooltip/style/index.ts、shadcn new-york-v4 tooltip.tsx 整檔都沒有 pointer-events)。(來源:https://github.com/twbs/bootstrap/blob/v5.3.8/scss/_tooltip.scss https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tooltip/style/index.ts https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tooltip.tsx)
         // 註:tooltip 與觸發點恆距 8px(`OVERLAY_SIDE_OFFSET`),兩者不重疊 ——
         // 「tooltip 擋住觸發點的點擊」本來就不會發生,穿透解決的不是這個問題。
         // `z-[70]`:蓋在 Toast(`z-[60]`)與所有 modal / 浮層(`z-50`)之上(其上只有頁面層的拖曳影像:拖曳元件放在 modal / 浮層裡時,拖曳影像被那一層封頂、在提示之下);

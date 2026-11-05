@@ -27,7 +27,7 @@ Textarea 是**多行文字**的輸入與顯示元件——Input 的多行版本�
 
 **Layout Family**：Family 4（Field control）— multi-line variant。**繼承** Family 4 的 token（字體 / padding / border / state 色彩），但**結構簡化為單一 native `<textarea>`**（edit 態裸 `<textarea>`、view 態裸 `<div>`）——無 fieldWrapper composite、無 startIcon / content / endAction 多 slot anatomy（見下方「與 Input 的差異」表與「禁止事項」）。高度可隨 rows / resize-y 擴展、不受 `--field-height-*` 約束。
 
-**實作基礎**：native `<textarea>` + 橋接 DS token，無 external primitive base。shadcn 同類做法。
+**實作基礎**：native `<textarea>` + 橋接 DS token，無 external primitive base。shadcn 同類做法(只 import React 與 cn,直接渲染 `<textarea>`,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/textarea.tsx#L1-L6)。
 
 共用規則見 `../Field/field-controls.spec.md`。本文件只記錄 Textarea 特有的原則。
 

@@ -71,7 +71,7 @@ export const Inspector: InspectorStory = {
   parameters: {
     docs: {
       description: {
-        story: '在右側 Controls 面板切換 variant / appearance / placement / dismissible,即時查看 render 結果。世界級 DS 的 Inspector = Figma inspect 替代,讓 designer 直接在 Storybook 試出各種組合。',
+        story: '在右側 Controls 面板切換 variant / appearance / placement / dismissible,即時查看 render 結果。Controls 面板讓 designer 直接在 Storybook 試出各種組合,不必另開設計檔對照。',
       },
     },
   },

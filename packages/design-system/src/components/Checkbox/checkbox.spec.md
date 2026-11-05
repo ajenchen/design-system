@@ -33,7 +33,7 @@ Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，
 
 **Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
 
-**實作基礎**：Checkbox 基於 Radix Checkbox、Radio 基於 Radix RadioGroup（皆 shadcn 包裝 + 橋接 DS token）。
+**實作基礎**：Checkbox 基於 Radix Checkbox、Radio 基於 Radix RadioGroup（皆 shadcn 包裝 + 橋接 DS token;shadcn [checkbox.tsx#L6](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/checkbox.tsx#L6)、[radio-group.tsx#L6](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/radio-group.tsx#L6) 各自 import Radix 原件）。
 
 | | Checkbox | Radio |
 |---|---|---|
@@ -251,7 +251,7 @@ Checkbox / Radio **無 Loading 狀態**——選擇控件是同步 toggle,值隨
 
 `mode?: 'edit' | 'view' | 'readonly' | 'disabled'`(默認 inherit Field context 或 `'edit'`),對齊 `field-types.ts` FieldMode(完整 4-mode canonical SSOT → `Field/field-controls.spec.md`;本段鏡像 switch.spec.md 同名段):
 - `edit`(預設)— 可勾選的 Checkbox。
-- `view` — **純展示**:渲染 **Check icon(true=勾)/ X icon(false=叉)**,中性 `text-foreground` 色,非互動、無 input chrome,供 DataTable boolean cell 非編輯態共用。boolean 值符號 SSOT = `../SelectionControl/boolean-value.tsx`(勾/叉 icon + 中性色;M22 世界級:MUI X DataGrid Check/Close icon 中性色 / React-admin TrueIcon-FalseIcon;false 中性非紅 = 「否」值非「錯誤」)。
+- `view` — **純展示**:渲染 **Check icon(true=勾)/ X icon(false=叉)**,中性 `text-foreground` 色,非互動、無 input chrome,供 DataTable boolean cell 非編輯態共用。boolean 值符號 SSOT = `../SelectionControl/boolean-value.tsx`(勾/叉 icon + 中性色;M22 世界級:MUI X DataGrid Check/Close icon 中性色([GridRootStyles.ts#L702-L707](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L702-L707):true = `foreground.muted`、false = `foreground.disabled`,皆非紅)/ React-admin TrueIcon-FalseIcon([BooleanField.tsx#L34-L35](https://github.com/marmelab/react-admin/blob/v5.10.0/packages/ra-ui-materialui/src/field/BooleanField.tsx#L34-L35));false 中性非紅 = 「否」值非「錯誤」)。
 - `readonly` — **Field 內(無 inline label)**= `fieldWrapperStyles` readonly 灰框 + 勾/叉 icon(與 Input readonly 同一視覺語言,2026-06-12 user 拍板〔UD-J05〕;世界級:Salesforce output ✓ glyph / SAP 靜態文字);**standalone / 有 inline label**(SelectionItem row)= 正常色鎖互動(同下方 Read-only)。
 - `disabled` — 落到真 disabled chrome(`effectiveDisabled`,2026-06-12 修:mode='disabled' 直傳〔如 `<Field mode="disabled">` cascade〕與 `disabled` prop 等效,降色 + 不可 focus)。DataTable cell 無 disabled 態(已廢除);cell 非編輯態 = `view` 純展示。
 
@@ -284,8 +284,7 @@ SelectionItem py 公式保證:
 
 ### 世界級對照
 
-- **Atlassian / Radix**:row 間距由 item 自身 py 擁有,group 無 gap
-- **Ant Design / Chakra**:依賴 Checkbox 自帶 line-height,group 無 spacing 或預設 0
+- **本 DS 依據**:row 間距由 item 自身 py 擁有,group 無 gap(理由見上方 1–3:命中區即整列、py 隨 field-height 縮放、外加 gap 會 double-padding)
 - **流派:row 高度定義 gap,不加外部 gap** — 本 DS 採此
 
 ### CheckboxGroupContext(隔離 fieldCtx)

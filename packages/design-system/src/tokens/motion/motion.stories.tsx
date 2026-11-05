@@ -68,7 +68,7 @@ export const Overview: Story = {
         <div className="max-w-4xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
             三層 tier:<code>plain</code>(被動文字提示)/ <code>rich</code>(含 fetch 的內容預覽,門檻更高)/
-            <code>close</code>(通用關閉緩衝)。命名對齊 Material 3「plain / rich tooltip」術語 +
+            <code>close</code>(通用關閉緩衝)。命名對齊 Material 3「plain / rich tooltip」術語 + {/* 來源:https://github.com/androidx/androidx/blob/7c22902f7b511e1f475ee4389824090fe417cd75/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Tooltip.kt#L343-L426 */}
             DS 既有 <code>compact / rich</code> mode 詞彙。
           </p>
 

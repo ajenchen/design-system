@@ -16,9 +16,9 @@ benchmark:
 
 ## 定位
 
-Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑入**（`side="right"`，detail panel / 編輯 / filter drawer，對齊 Jira / Linear / Notion 右側 detail drawer 慣例）。`top` / `bottom` / `left` 變體**保留 DS 內部基建用**（例：AppShell 的 Menu 放不下時從 left 滑入的左側浮層,`../AppShell/app-shell.spec.md`「版面規則」§9;2026-10-14 前是 Sidebar 小視口抽屜），消費者 code **禁止傳** `side="top" | "bottom" | "left"`，這些用途需 user 授權〔UD-B04〕（canonical 見 `sheet.tsx` 檔頭「其他 side」段 + showcase `AR35`）。
+Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑入**（`side="right"`，detail panel / 編輯 / filter drawer）。`top` / `bottom` / `left` 變體**保留 DS 內部基建用**（例：AppShell 的 Menu 放不下時從 left 滑入的左側浮層,`../AppShell/app-shell.spec.md`「版面規則」§9;2026-10-14 前是 Sidebar 小視口抽屜），消費者 code **禁止傳** `side="top" | "bottom" | "left"`，這些用途需 user 授權〔UD-B04〕（canonical 見 `sheet.tsx` 檔頭「其他 side」段 + showcase `AR35`）。
 
-**實作基礎**：shadcn passthrough——基於 Radix Dialog（`side` variant，非居中 modal）。本 DS 保留 shadcn 原結構 + 橋接 DS token。
+**實作基礎**：shadcn passthrough——基於 Radix Dialog（`side` variant，非居中 modal）。本 DS 保留 shadcn 原結構 + 橋接 DS token([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sheet.tsx#L53-L69))。
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 

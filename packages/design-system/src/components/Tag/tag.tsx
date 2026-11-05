@@ -203,7 +203,7 @@ function TagInner(
         else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       }}
       data-tag-root=""
-      // 截斷時條件性可 focus(2026-07-06 user 拍板:確認世界級有這樣做就做 ——APG Tooltip
+      // 截斷時條件性可 focus(2026-07-06 user 拍板:確認世界級有這樣做就做 ——APG Tooltip(來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27)
       // pattern 原文:tooltip 在元素「收到鍵盤焦點」或 hover 時顯示,trigger 可 focus 是
       // W3C 官方 pattern 前提;Radix Tooltip focus-open 自動生效 → 鍵盤 Tab 到即見全文。
       // 未截斷不入 tab 序(維持 tag.spec「靜態 Tag 不取得 focus」預設,不汙染 tab order)。

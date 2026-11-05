@@ -6,44 +6,44 @@ family: 3
 # 對齊 Ant Tag「preset 原始色相名」categorical 模型 + Atlassian「categorical 色 vs semantic 色分離」。
 variants:
   neutral:
-    when: "通用分類、草稿、無特定語義（GitHub label default / Notion page tag untagged）"
+    when: "通用分類、草稿、無特定語義"([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
     world-class: ["Polaris Tag default", "Atlassian Tag standard", "Ant Tag default"]
   blue:
     when: "categorical 色相（--color-blue-*）— 分類 / 標記，常用於資訊類"
-    world-class: ["Ant Tag color=blue", "Notion tag color=blue", "Linear label color=blue"]
+    world-class: ["Ant Tag color=blue"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   green:
     when: "categorical 色相（--color-green-*）— 分類 / 標記，常用於完成 / 正向類"
-    world-class: ["Ant Tag color=green", "Notion tag color=green", "GitHub label merged"]
+    world-class: ["Ant Tag color=green"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   deep-orange:
     when: "categorical 色相（--color-deep-orange-*，hue 38）— 暖橙紅分類"
-    world-class: ["Ant Tag color=volcano", "Notion tag color=orange", "Linear label color=orange"]
+    world-class: ["Ant Tag color=volcano"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   yellow:
     when: "categorical 色相（--color-yellow-*，淺底深字）— 分類 / 標記，常用於注意類"
-    world-class: ["Ant Tag color=gold", "Notion tag color=yellow", "Linear label color=yellow"]
+    world-class: ["Ant Tag color=gold"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   red:
     when: "categorical 色相（--color-red-*，品牌紅家族 hue 25；≠ 語意 --error，與 deep-orange 無關）"
-    world-class: ["Ant Tag color=red", "Notion tag color=red", "Linear label color=red"]
+    world-class: ["Ant Tag color=red"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   orange:
     when: "categorical 色相（--color-orange-*）— 分類 / 標記"
-    world-class: ["Ant Tag color=orange", "Notion tag color=orange", "Linear label color=orange"]
+    world-class: ["Ant Tag color=orange"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   amber:
     when: "categorical 色相（--color-amber-*，淺底深字）— 琥珀分類"
-    world-class: ["Ant Tag color=gold", "Notion tag color=yellow", "Linear label color=amber"]
+    world-class: ["Ant Tag color=gold"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   lime:
     when: "categorical 色相（--color-lime-*）— 黃綠分類"
-    world-class: ["Ant Tag color=lime", "Notion tag color=green", "Linear label color=lime"]
+    world-class: ["Ant Tag color=lime"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   turquoise:
     when: "categorical 色相（--color-turquoise-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=cyan", "Notion tag color=teal", "Linear label color=turquoise"]
+    world-class: ["Ant Tag color=cyan"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   indigo:
     when: "categorical 色相（--color-indigo-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=geekblue", "Notion tag color=blue", "Linear label color=indigo"]
+    world-class: ["Ant Tag color=geekblue"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   purple:
     when: "categorical 色相（--color-purple-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=purple", "Notion tag color=purple", "Linear label color=purple"]
+    world-class: ["Ant Tag color=purple"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   magenta:
     when: "categorical 色相（--color-magenta-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=magenta", "Notion tag color=pink", "Linear label color=pink"]
+    world-class: ["Ant Tag color=magenta"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
 sizes:
   sm:
     when: "form field-height 28 / compact chrome / dialog / panel context"
@@ -78,7 +78,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 |------|-------------------------|--------------------|-------|
 | 外距 | `xs=px-2`, `sm+=px-3` | 全部 `px-1` | indicator 緊湊 passive,不搶焦點 |
 | 字重 | `font-medium` | md/lg `font-normal`、sm `font-medium` | indicator 不強調（sm 例外見下方尺寸表）|
-| Cursor | `pointer` | `text` | indicator 非 action（dismiss button 內部仍 pointer）|
+| 游標(`cursor`) | `pointer` | `text` | indicator 非 action（dismiss button 內部仍 pointer）|
 | 字體 pairing | Button xs 是 standalone utility（text-caption 12px） | Tag md pair Field md（text-body 14px） | size 對應 Field, Tag 出現在 Field 內需視覺連續 |
 
 **不該把 Tag 改成 Button 樣式來「統一」**——兩者在本 DS 分屬 action trigger 與 data indicator，padding 與 typography 必須各自服務其資訊層級。
@@ -90,7 +90,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 - **分類標籤**：產品類別（Electronics / Food / Furniture）、文章 tag（React / Design / Tutorial）
 - **狀態標記**：訂單狀態（In stock / Shipped / Delivered）——用 variant 色彩加速掃視
 - **多選已選值**：Combobox / searchable 選擇後顯示的 tag 陣列
-- **user-generated label**：使用者自己建立的標籤（如 Notion labels）
+- **user-generated label**：使用者自己建立的標籤（例:專案裡自訂的分類標籤）
 
 ## 何時不用
 
@@ -175,7 +175,7 @@ Dismiss 是 Inline Action，icon 色**依宿主是否有色彩分兩支**(判斷
 | solid（有色） | 繼承 Tag 文字色 | `--{hue}-hover`（如 `--blue-hover`） | `--{hue}-active` |
 | solid neutral | `--inverse-fg` | `--inverse-neutral-hover` | `--inverse-neutral-active` |
 
-**Solid dismiss 採 solid color shade change**——跟 Button 等互動元件同視覺語言（hover 換較亮 step、active 換較暗 step），維持整個設計系統的互動一致性。這是我們選擇 Atlassian-style semantic state token 流派的具體體現（非 Material 3 的 state layer overlay）。
+**Solid dismiss 採 solid color shade change**——跟 Button 等互動元件同視覺語言（hover 換較亮 step、active 換較暗 step），維持整個設計系統的互動一致性。這是我們選擇 Atlassian-style semantic state token 流派的具體體現（非 Material 3 的 state layer overlay）([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/docs/components/ripple.md#L30-L36)、[來源](https://atlassian.design/foundations/tokens/design-tokens))。
 
 #### 為什麼 Tag 同時用 primitive（靜態色）和 semantic（互動色）
 
@@ -273,7 +273,7 @@ Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 AR
 
 - **靜態 Tag**(無 `onRemove`):render 為 `<div data-tag-root>`(無 role、`inline-flex`,SR 等價於無語意 generic container,視覺上為 inline-level 跟隨 inline flow)。若 Tag 表達狀態語意(「進行中」「已逾期」),consumer 應在父 region 用 `aria-label` 或視覺 prefix(icon)讓 SR 理解 context
 - **Removable Tag**(`onRemove` 存在):inline X close 走 `<ItemInlineActionButton icon={X} size="md" aria-label="移除 {name}" />`(item-anatomy SSOT 的原生 `<button>`,非 `Button` 元件)— 對齊 inline-action canonical(`patterns/element-anatomy/inline-action.spec.md`)。**名稱來源**:`removeAriaLabel` prop 優先(舊名 `dismissLabel` deprecated 仍支援),否則取字串 children;**若 children 是非字串 ReactNode(如 avatar + 排版節點)且未傳 `removeAriaLabel`,aria-label 會退化成泛稱「移除」**——多個 Tag 並排時 SR 無法區分移除哪一個,故非字串 children 必傳 `removeAriaLabel`
-- **Keyboard**:靜態 Tag 不取得 focus(無互動);**例外:截斷時條件性 `tabIndex=0`**(2026-07-06 拍板)——全文 tooltip 需鍵盤可達,APG Tooltip pattern 原文「popup 在元素收到鍵盤焦點或 hover 時顯示」= trigger 可 focus 是 W3C 官方前提;Radix Tooltip focus-open 自動生效,未截斷不入 tab 序。dismissible 的 X 走原生 button 鍵盤(Tab → focus → Enter/Space → dismiss)
+- **Keyboard**:靜態 Tag 不取得 focus(無互動);**例外:截斷時條件性 `tabIndex=0`**(2026-07-06 拍板)——全文 tooltip 需鍵盤可達,APG Tooltip pattern 原文「popup 在元素收到鍵盤焦點或 hover 時顯示」= trigger 可 focus 是 W3C 官方前提;Radix Tooltip focus-open 自動生效,未截斷不入 tab 序。dismissible 的 X 走原生 button 鍵盤(Tab → focus → Enter/Space → dismiss)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27))
 - **Color-only 語意警告**:Tag 用色相區分狀態時必有文字 label 或 prefix icon(色盲 user 友好);對齊 WCAG 1.4.1「不僅靠顏色傳達」
 - **驗證**:Storybook a11y addon panel 0 critical violation;WCAG AA contrast ≥ 4.5:1(text)/ 3:1(icon)
 

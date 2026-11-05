@@ -28,9 +28,9 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 **Layout Family**:非上述 family — self-contained primitive(獨立拖放區視覺,無 slot 結構)。
 
 **世界級對照**:
-- Ant Design `Upload.Dragger` — pattern source
+- Ant Design `Upload.Dragger` — pattern source(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/demo/drag.tsx#L6-L44)
 - Polaris `DropZone` — 3 態視覺慣例
-- Material / MUI community `react-dropzone` — drag API 慣例
+- drag API 走瀏覽器原生 DragEvent(dragenter / dragover / drop)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/demo/drag.tsx#L6-L44))
 - 本元件取各家最乾淨的 pattern(Dragger 結構 + DropZone 3 態 + 原生 input fallback)
 
 ---
@@ -58,7 +58,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 | data-state | 情境 | 視覺 |
 |------------|------|------|
 | `idle`(預設) | 使用者未互動 | dashed `border-border`（**元件邊框 `--border`,非 `--divider` 分隔線**）+ surface 底 |
-| `hover` = `drag-over`（**統一,純 border-driven,對齊 Ant Dragger `colorPrimaryHover`**)| 游標懸停 / 拖檔進入 | **`border-drop-target-border`**（DS「可放下的區域」配對,= `--primary-hover`,2026-09-03 起與 `AgentFabDock` 停靠帶共用同一組 token;只變邊框）+ 底維持 surface（不變 bg）。state 信號靠邊框,非底色;兩態同視覺 |
+| `hover` = `drag-over`（**統一,純 border-driven,對齊 Ant Dragger `colorPrimaryHover`**(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/style/dragger.ts#L43-L49))| 游標懸停 / 拖檔進入 | **`border-drop-target-border`**（DS「可放下的區域」配對,= `--primary-hover`,2026-09-03 起與 `AgentFabDock` 停靠帶共用同一組 token;只變邊框）+ 底維持 surface（不變 bg）。state 信號靠邊框,非底色;兩態同視覺 |
 | `loading`（**deferred**）| `loading` prop 為 true | **Deferred:其唯一用途(無清單單檔/頭像替換)場景未定義,showcase 僅呈現 3-state(idle/drag-over/disabled);prop 在 tsx 保留供未來。** 行為:CircularProgress 取代內容;`cursor-progress`(不加 `pointer-events-none`,互動由 isBlocked guard 擋);aria-busy=true。有清單的 flow 進度一律走 FileItem 自身的 progress bar（uploading status）—— FileUpload 內建 list 仍 `surface=form`(dropzone 非獨立浮層 upload manager,見 file-item.spec.md「upload-manager 浮層面板 composition」)|
 | `disabled` | `disabled` prop 為 true | **語意 token(非 opacity — dashed outline surface 走 DS outline-disabled 慣例,3/4 世界級 Ant/Polaris/Carbon 用 token)**:`bg-disabled` 底 + 邊框不變色 + 文字/icon → `fg-disabled`(由 `<Empty disabled>` 控,icon-circle 維持 muted)+ `cursor-not-allowed`(移除 `pointer-events-none` 後生效)|
 
@@ -84,11 +84,11 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 | `dropzone`(預設)| 大型 dashed 拖放區(上述 4 狀態)| 「拖放有價值」+ 主要上傳區 | ✓ drag + click |
 | `button` | 緊湊 `<Button variant="tertiary" startIcon={Upload}>` | form 內單欄、空間省、與其他 field 並列 | click-only |
 
-**兩 variant 共用** `onUpload` / `onReject` / `accept` / `maxSize` / `files` 清單渲染;**都可放進 `<Field>` control slot**。對齊 Ant `Upload`(button list)vs `Upload.Dragger`(dropzone)。M21 prop-variant test 過(同上傳行為、不同觸發外觀、value 結構同 `File[]`)。
+**兩 variant 共用** `onUpload` / `onReject` / `accept` / `maxSize` / `files` 清單渲染;**都可放進 `<Field>` control slot**。對齊 Ant `Upload`(button list)vs `Upload.Dragger`(dropzone)(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/index.en-US.md#L29、#L68)。M21 prop-variant test 過(同上傳行為、不同觸發外觀、value 結構同 `File[]`)。
 
 **vs 直接用 `<Button>`**:Button 只有觸發外觀、無上傳邏輯(hidden input / accept / maxSize / onReject);任何檔案上傳一律 FileUpload,空間緊湊才選 `variant="button"`。
 
-> **FileUpload 常出現在 form**(`*Excel file` 欄位等)—— `variant` 只決定「觸發外觀大小」,**非「form vs 非 form」**;兩者都常在 form 裡。
+> **FileUpload 常出現在 form**(`*試算表檔案` 欄位等)—— `variant` 只決定「觸發外觀大小」,**非「form vs 非 form」**;兩者都常在 form 裡。
 
 ## dropzone children 插槽 vs 預設結構
 
@@ -107,7 +107,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 
 - `onUpload(files)`: 使用者選取或拖放檔案,**過濾後**回傳 `File[]`
 - `onReject(files, reason)`: 被擋下的檔案;`reason` 值域 `'size'`(超過 maxSize)/ `'type'`(不符 accept)。同次選取兩類各觸發一次。rejected 檔案的 UI 展示由 consumer 決定(Toast / Alert / FileItem `status="error"`),FileUpload 本身不渲染拒絕訊息
-- `multiple`: 預設 `false`(單檔);若 `false` 且使用者拖多檔,**只取第一個**交給 `onUpload`(不拋錯,符合 Ant Design 慣例)
+- `multiple`: 預設 `false`(單檔);若 `false` 且使用者拖多檔,**只取第一個**交給 `onUpload`(不拋錯,符合 Ant Design 慣例:底層 rc-upload `if (multiple === false) acceptFiles = files.slice(0, 1)`,https://github.com/react-component/upload/blob/2de7bbe4a8cfe7d722670cebb7e71ca9a961dd80/src/AjaxUploader.tsx#L100-L112)
 - `accept`: MIME filter,同時支援副檔名(`.pdf`)、通配(`image/*`)、完整 MIME(`application/pdf`)
 - `maxSize`: 單檔最大 bytes;超過靜默忽略(consumer 若要錯誤訊息,監聽 `onReject`)
 - `disabled`: 完全停用(互動由 `isBlocked` guard 擋 + `cursor-not-allowed`;已移除 `pointer-events-none`,不再靠它擋)

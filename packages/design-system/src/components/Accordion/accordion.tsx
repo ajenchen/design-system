@@ -7,13 +7,13 @@ import { disclosureMotion, disclosureIndicatorMotion } from '@/design-system/tok
 /**
  * Accordion — Radix Accordion + 本 DS token
  *
- * 結構對齊 shadcn/ui accordion(Accordion / AccordionItem / AccordionTrigger /
+ * 結構對齊 shadcn/ui accordion(Accordion / AccordionItem / AccordionTrigger /(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/accordion.tsx#L65)
  * AccordionContent),但視覺全改本 DS token。
  *
  * ── 視覺差異 vs shadcn 預設 ──
  * Shadcn 預設 hover 加底線(web 早期 link style),本 DS 改為文字色 tint
- * (`hover:text-fg-secondary`)——維持現代 SaaS 質感(Notion / Linear / Stripe 皆不用
- * 底線),但保留 hover 顏色變化作為可點擊提示(user 決策 2026-04-20)。
+ * (`hover:text-fg-secondary`)——不借用文字連結的底線訊號(trigger 是就地展開、不是跳轉),
+ * 但保留 hover 顏色變化作為可點擊提示(user 決策 2026-04-20)。
  * Chevron 用 Lucide + 本 DS icon size(16px),rotate 動畫 200ms。
  *
  * ── 使用情境 ──

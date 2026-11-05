@@ -465,7 +465,7 @@ function StateBehaviorDemo() {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Selected vs Expanded 語意分離</H3>
-        <Desc>Chevron 負責展開/收合,label 負責選取——兩者獨立(除非 consumer 顯式 opt-in <code>expandOnSelect</code>)。世界級 tree 的共識(VS Code / Finder / Linear)。現在選取中的是「Resume.pdf」;Documents、Photos 點箭頭可以展開 / 收合。</Desc>
+        <Desc>Chevron 負責展開/收合,label 負責選取——兩者獨立(除非 consumer 顯式 opt-in <code>expandOnSelect</code>)。分開才能「只選不展開」——選一個資料夾看它的資訊,不必連帶把整串子項攤開。現在選取中的是「Resume.pdf」;Documents、Photos 點箭頭可以展開 / 收合。</Desc> {/* 來源:https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/platform/list/browser/listService.ts#L1478-L1482 */}
         <div className="border border-border rounded-lg p-4 max-w-md">
           <TreeView aria-label="選取與展開範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
             <TreeItem id="docs" label="Documents" icon={Folder}>

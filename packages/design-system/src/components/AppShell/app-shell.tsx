@@ -1,4 +1,4 @@
-// @benchmark-cited: 2026-05-19 — Mantine AppShell / Ant Layout / Material 3 Drawer / Atlassian Navigation System cite in app-shell.spec.md frontmatter.
+// @benchmark-cited: 2026-05-19 — Mantine AppShell / Ant Layout / Material 3 Drawer / Atlassian Navigation System cite in app-shell.spec.md frontmatter.(來源:https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L64-L70 https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/layout/index.en-US.md#L50-L54 https://github.com/material-components/material-components-android/blob/66b0eeb53afeb6025ffbbd37734b08e5bce197ed/docs/components/NavigationDrawer.md https://atlassian.design/components/navigation-system/examples)
 /**
  * AppShell — web service page-level layout primitive。
  *
@@ -59,7 +59,7 @@ export type { PanelDisplay, PanelWidthRange }
 type AppShellLayout = 'primary-sidebar' | 'primary-header'
 
 export interface AppShellProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** primary-sidebar (Linear/Notion 派) | primary-header (GitHub/Slack 派);預設 primary-sidebar */
+  /** primary-sidebar(header = 當前頁 local toolbar)| primary-header(多一條跨頁 globalHeader);預設 primary-sidebar */
   layout?: AppShellLayout
   /**
    * **必填**:Main 的最小寬(px)。Main 不能拖寬、始終保留這個寬,並填滿並排面板沒用到的空間(「版面規則」§1;user 2026-10-14 U:5)。
@@ -78,7 +78,6 @@ export interface AppShellProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * Global header(僅 `primary-header` mode render)。橫跨整 viewport 的頂部 bar:
    * account avatar / workspace switcher / global search / notifications。
-   * 對齊 GitHub top nav / Slack workspace bar / Gmail logo bar 慣例。
    * `primary-sidebar` mode 傳此 prop 會被忽略。
    */
   globalHeader?: React.ReactNode
@@ -783,7 +782,7 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
       max: ASIDE_WIDTH_MAX,
     }
     const panel = useAppShellPanel('right', { contentType, widthRange: range, defaultWidth }, { onWidthCommit })
-    // 把手以 aria-controls 指向自己調整的這一欄(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`;Menu 的把手早已如此)
+    // 把手以 aria-controls 指向自己調整的這一欄(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`;Menu 的把手早已如此)(來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L95)
     const asideId = React.useId()
     // × 的讀屏名稱:I18nProvider 的 `app-shell.closePanel` → DS 預設「關閉」(同 Dialog / Sheet / Popover 標題列 ×,lib/i18n/README.md「Fallback chain」)
     const { t } = useI18n()
@@ -865,6 +864,6 @@ export const appShellMeta = {
 } as const
 
 // code-quality-allow: dead-export useAppShell — public compound API hook(consumer 可自拼 custom aside layout、
-// 讀各區顯示方式 `display`、使用者要求 Right 顯示內容時呼叫 `requestAside`;對齊 Radix `useDialogContext` / MUI `useFormControl` 慣例)。
+// 讀各區顯示方式 `display`、使用者要求 Right 顯示內容時呼叫 `requestAside`;對齊 MUI `useFormControl` 慣例)。(來源:https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/text-fields/text-fields.md#L192-L200)
 // 內部 AppShellAside 已消費,audit script 抓「無 cross-file import」是 false positive(2026-05-21 D2 codify)。
 export { AppShell, AppShellAside, useAppShell }

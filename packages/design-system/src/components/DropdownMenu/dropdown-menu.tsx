@@ -51,7 +51,7 @@ import {
  * 曾經用過 `focus-visible:bg-neutral-hover` 的理由:避免 click 後殘影。但實測:mouse hover
  * 觸發 Radix 程式化 `.focus()`,Chromium / Safari / Firefox 對 programmatic focus 是否 fire
  * `:focus-visible` 行為不一致,導致 mouse hover 有時無 bg。改用 `data-[highlighted]:` 後行為
- * 一致 —— 世界級 canonical(shadcn / Radix docs / Ariakit 皆此)。
+ * 一致 —— Radix 用 `data-highlighted` 標記目前項目,滑鼠移過與鍵盤移動共用同一個狀態,比 `:focus` 可靠(shadcn 現行版反而是 `focus:bg-accent`,本 DS 刻意不同)。(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx#L76)
  */
 
 // ── Floating layer 共用樣式 ──
@@ -258,7 +258,7 @@ const DropdownMenuContent = React.forwardRef<
       // 決策 → 移除,item 隨 page density 與觸發點一致(tier 仍由 size prop 決定)。
       // Focus return on close:除了 Tab 離開(B11)之外不 override `onCloseAutoFocus` — 用 Radix 內建 default
       // (close 時 focus 還 trigger;outside-interaction 例外由 Radix `hasInteractedOutsideRef` 自管;
-      // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」)。
+      // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」,https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/menubar/menu-and-menubar-pattern.html#L153)。
       // 2026-06-11 移除 2026-04-08 的 `(e) => e.preventDefault()` hardcode:它跑在 Radix
       // composeEventHandlers 內建 handler 之前,defaultPrevented → trigger focus 被 skip →
       // Esc 關閉後 focus 掉到 body(APG violation)。Tab 離開那一條例外的理由住 dropdown-menu-keyboard.ts。
@@ -381,8 +381,8 @@ const DropdownMenuItem = React.forwardRef<
         radixItemClass,
         radixCursorClass(cursorByKeyboard),
         // 2026-07-04 Q2 拍板:selected bg 勝 hover/highlighted(bg 是唯一選中指示器,被 hover 洗掉
-        // = 選中資訊消失)。對齊 MenuItem(menu-item.tsx selected 時關 hover bg)+ Ant Menu
-        // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`。
+        // = 選中資訊消失)。對齊 MenuItem(menu-item.tsx selected 時關 hover bg)+ Ant Menu(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/menu/style/theme.ts#L100-L104)
+        // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`(https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/base/browser/ui/list/listWidget.ts#L988-L989)。
         // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 釘住不變;
         // 2026-09-07 user 在 A5 選了畫框:選中 × 鍵盤游標 = 畫框;2026-09-09:框由 radixCursorClass 統一畫在反白列上
         //(不分選中與否),這裡只剩「選中底色釘住」—— 框直接疊在選中底色上。

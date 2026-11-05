@@ -238,7 +238,7 @@ export const CompactMixed = {
   },
 }
 
-// surface="upload-manager":Google Drive / Dropbox 上傳管理面板(./_demo-files.tsx UploadManagerPanel;
+// surface="upload-manager":右下角背景上傳進度面板(./_demo-files.tsx UploadManagerPanel;
 // 組合與行為 = file-item.spec.md「upload-manager 浮層面板 composition」):
 //   - 列自帶左右 loose(16px,文字 x 對齊 header 標題)、面板 body 左右 0;上下 tight/2、列間 0(2026-09-25 B12)
 //   - 只有完成的列可以點開(onClick),上傳中 / 失敗的列點了沒反應 → 不上滑過底色(B12)

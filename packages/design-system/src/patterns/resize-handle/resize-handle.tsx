@@ -17,11 +17,9 @@ import { cn } from '@/lib/utils'
  * - a11y:WAI-ARIA window splitter(role=separator + aria-valuenow/min/max/valuetext + 方向鍵/Home/End)
  *
  * ── World-class 對照 ──
- * - AG Grid column resize handle(7-8px hit zone + 1px line)
- * - Material X-DataGrid MuiDataGrid-iconSeparator(同 visual idiom)
- * - VS Code sidebar sash(8px hit zone + drag 高亮;鍵盤走 view 命令)
+ * - VS Code sash(拖曳感應區預設 4px,`workbench.sash.size` 可調;鍵盤走 view 命令)(來源:https://github.com/microsoft/vscode/blob/d1a91b3af8869c37d4757aa959f0859b59c33265/src/vs/workbench/contrib/sash/browser/sash.contribution.ts#L36-L41 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L54-L67 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L92-L95)
  * - react-resizable-panels PanelResizeHandle(role=separator + 鍵盤 step)
- * - APG Window Splitter:Left/Right Arrow 移動垂直 splitter、Home/End 到極限
+ * - APG Window Splitter:Left/Right Arrow 移動垂直 splitter、Home/End 到極限(來源:https://github.com/microsoft/vscode/blob/d1a91b3af8869c37d4757aa959f0859b59c33265/src/vs/workbench/contrib/sash/browser/sash.contribution.ts#L36-L41 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L54-L67 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L92-L95)
  *
  * 方向語意:`position` 決定把手貼哪一緣,拖拉 delta 與方向鍵正負隨之——「箭頭往哪、邊緣就往哪」:
  * `end`(右緣/下緣)→ 往右/下 = 變大;`start`(左緣/上緣)→ 往左/上 = 變大。
@@ -44,7 +42,7 @@ export interface ResizeHandleProps
   max?: number
   /** 鍵盤每步 px;預設 16。 */
   step?: number
-  /** 無障礙名稱(APG:separator 必有 aria-label 或 aria-labelledby)。 */
+  /** 無障礙名稱(APG:separator 必有 aria-label 或 aria-labelledby)。(來源:https://github.com/microsoft/vscode/blob/d1a91b3af8869c37d4757aa959f0859b59c33265/src/vs/workbench/contrib/sash/browser/sash.contribution.ts#L36-L41 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L54-L67 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L92-L95) */
   ariaLabel: string
   /** 指向被調整的 pane id(APG 建議;欄寬場景可省)。 */
   ariaControls?: string

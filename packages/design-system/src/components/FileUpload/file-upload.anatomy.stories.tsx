@@ -234,7 +234,7 @@ export const ColorMatrix: Story = {
                 <Td>
                   <TokenCell token="--foreground" />
                 </Td>
-                <Td>hover 與 drag-over 統一:純 border-driven(只切 <code>--primary-hover</code> 邊框,底色維持 surface,對齊 Ant Dragger)</Td>
+                <Td>hover 與 drag-over 統一:純 border-driven(只切 <code>--primary-hover</code> 邊框,底色維持 surface,對齊 Ant Dragger:hover 與拖入同一條規則、只換 borderColor)</Td> {/* 來源:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/style/dragger.ts#L12-L49 */}
               </tr>
               <tr>
                 <Td mono>disabled</Td>

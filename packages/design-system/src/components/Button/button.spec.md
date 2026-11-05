@@ -10,21 +10,21 @@ traits:
 variants:
   primary:
     when: "主要 action / CTA。**必 explicit `variant=\"primary\"`,不靠預設**(2026-06-06 起預設改低 emphasis)"
-    world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]
+    world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L48)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/filled-button.ts#L26-L27)、[來源](https://unpkg.com/@atlaskit/button@25.7.0/dist/es2019/utils/button-appearances.js))
   secondary:
     when: "陪襯 primary 的次要 action"
     # 2026-09-18 更正:本 variant 是**透明底 + 主色框 + 主色字**,不是填色鈕。
-    # 舊寫的 Material Tonal(有底色、無框)與 Polaris default(中性框)都對不上,詳下方「世界級對照(per-variant)」。
-    world-class: ["Carbon Tertiary Button", "Ant ghost primary Button", "Bootstrap .btn-outline-primary"]
+    # 舊寫的兩個對照都對不上(一個是有底色無框的填色鈕、一個是中性框),詳下方「世界級對照(per-variant)」。
+    world-class: ["Carbon Tertiary Button", "Ant ghost primary Button", "Bootstrap .btn-outline-primary"]([來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/button/_button.scss#L159-L167)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/style/variant.ts#L313-L315)、[來源](https://github.com/twbs/bootstrap/blob/6e1f75f420f68e1d52733b8e407fc7c3766c9dba/scss/mixins/_buttons.scss#L39-L47))
   tertiary:    # ★ labeled cva default(2026-06-06 從 primary 改 — 對齊世界級「預設低 emphasis、按重要程度升」)
     when: "**labeled 按鈕預設** / 第三級 action(tool-like / icon-heavy)。中性外框、清楚可點性,再按重要程度升 primary"
-    world-class: ["Material Outlined Button", "Ant Button default", "Polaris tertiary"]
+    world-class: ["Material Outlined Button", "Ant Button default", "Polaris secondary"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L134-L141)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/outlined-button.ts#L25)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L125))
   text:    # ★ iconOnly cva default(2026-06-06 加)
     when: "文字樣式 — low emphasis / toolbar embedded。**iconOnly 按鈕預設**(對齊 action-bar「純動作工具→text」+ Material 3「icon-only = no fill」)"
     world-class: ["Ant Button type=text", "Material Text Button", "Material 3 icon-only no-fill"]
   link:
     when: "內文連結 — inline reading context"
-    world-class: ["Polaris Link", "Ant Button type=link"]
+    world-class: ["Polaris Link", "Ant Button type=link"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L35)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L129))
 sizes:
   xs: { when: "row-embedded inline(FileItem rich action / DataTable row action)" }
   sm: { when: "form field-height 28 / compact chrome" }
@@ -58,7 +58,7 @@ benchmark:
 ## 定位
 
 Button 是最基礎的互動元件，用於觸發操作或導覽。
-基於 shadcn/ui Button，橋接設計系統 token，支援 uiSize 自動縮放。
+基於 shadcn/ui Button，橋接設計系統 token，支援 uiSize 自動縮放([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/button.tsx#L7-L18))。
 
 **Layout Family**：依 `patterns/element-anatomy/element-anatomy.spec.md` 的 4-Family taxonomy,本元件是 **Family 3（Pill Layout）的 SSOT 擁有者 + action trigger sub-profile canonical**。SegmentedControlItem / Chip / Tag 繼承本元件的 Pill Layout 結構。
 
@@ -190,10 +190,10 @@ Variant 控制**視覺強調等級**（visual weight），不決定語意意圖�
 **tertiary 滑過轉藍(字與框 `--primary-hover`,`button.tsx` tertiary 分支)為什麼保留**(2026-09-27 補寫理由;待辦總帳 A4,2026-09-25 R17 篩為保留,**AI 推導、未逐題經 user 拍板**):同類控件 Chip / SegmentedControl / Field 滑過走中性 `--border-hover`,tertiary 卻走主色 —— 因為它是**動作鈕**,不是選項容器或輸入欄位。世界級對照:Ant Design 的預設按鈕(`type="default"`,對應本元件 tertiary)滑過就是字與框轉 `colorPrimaryHover`(一手:[`components/button/style/token.ts`](https://github.com/ant-design/ant-design/blob/master/components/button/style/token.ts) `defaultHoverColor: token.colorPrimaryHover` / `defaultHoverBorderColor: token.colorPrimaryHover`,2026-09-27 讀 master);本 DS 的 `secondary` 也是字與框轉 `primary-hover`(下方「狀態疊加」表),tertiary 與它同一條「輪廓鈕滑過轉主色」語言,改成中性反而讓兩個輪廓鈕分家。Chip / SegmentedControl 只有**選中態**滑過才轉藍(`chip.tsx` `data-[state=on]:hover:text-primary-hover`),那是「選中 × 滑過」規則,與未選中動作鈕的滑過不同題。
 
 **世界級對照(per-variant)**:
-- `primary` ≈ Material `Filled` / Polaris `Primary` / Ant `type="primary"` / Carbon `Primary`
-- `secondary` ≈ Carbon `Tertiary` / Ant `ghost`(`color="primary" variant="outlined"`)/ Bootstrap `.btn-outline-primary`
+- `primary` ≈ Material `Filled` / Polaris `Primary` / Ant `type="primary"` / Carbon `Primary`([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L124-L126)、[來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/Button/Button.tsx#L15-L16)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L48)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/filled-button.ts#L26-L27))
+- `secondary` ≈ Carbon `Tertiary` / Ant `ghost`(`color="primary" variant="outlined"`)/ Bootstrap `.btn-outline-primary`([來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/button/_button.scss#L159-L167)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/style/variant.ts#L313-L315)、[來源](https://github.com/twbs/bootstrap/blob/6e1f75f420f68e1d52733b8e407fc7c3766c9dba/scss/mixins/_buttons.scss#L39-L47))
   —— **透明底 + 主色框 + 主色字**(本元件實作:`bg-surface text-primary border-primary`,`button.tsx`)。
-  <details><summary>為什麼不是 Material Tonal / Polaris Default / Carbon Secondary(2026-09-18 更正)</summary>
+  <details><summary>為什麼不是 Material Tonal / Polaris Default / Carbon Secondary(2026-09-18 更正)</summary>([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/_md-comp-filled-tonal-button.scss)、[來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/button/_button.scss#L143-L151))
 
   這三個對照是錯的,**已更正的只有這行文字,視覺與程式一行未動**:
   - Material `Filled Tonal` 是**填色**鈕:它的 token 清單只有 `container-color`(底色)**沒有任何 outline token**
@@ -209,11 +209,11 @@ Variant 控制**視覺強調等級**（visual weight），不決定語意意圖�
   - Bootstrap `button-outline-variant` 把 `--bs-btn-color` 與 `--bs-btn-border-color` 都設成同一顆主題色、底維持透明
     (<https://github.com/twbs/bootstrap/blob/main/scss/mixins/_buttons.scss>),是最直白的同款。
 
-  **注意**:同一段的 `tertiary` 那行提到 Polaris,本次未動 —— 沒有實際抓到 Polaris 原始碼可引,依 M22「引不出來就不要寫成已驗證」不改也不擴寫。
+  **注意**:同一段 `tertiary` 那行原寫的「Polaris `tertiary`」對不上 —— Polaris 的 tertiary 沒有框也沒有底(`.variantTertiary` 不設 box-shadow,沿用 `.Button` 的 `--pc-button-box-shadow: transparent`、`--pc-button-bg: transparent`),本元件 tertiary 是中性框中性字;Polaris 有框的中性鈕是 `secondary`(`--p-shadow-button` + `--p-color-bg-fill`)。tertiary 那行應改成「Polaris `secondary`」或拿掉 Polaris([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152))。
   </details>
-- `tertiary` ≈ Material `Outlined` / Ant `type="default"` / Polaris `tertiary`
-- `text` ≈ Material `Text` / Polaris `Plain` / Ant `type="text"` / Atlassian `Subtle-Link`
-- `link` ≈ Polaris `Plain+removeUnderline=false` / Ant `type="link"` / Apple HIG Borderless
+- `tertiary` ≈ Material `Outlined` / Ant `type="default"` / Polaris `secondary`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L134-L141)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/outlined-button.ts#L25)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L125))
+- `text` ≈ Material `Text` / Polaris `tertiary` / Ant `type="text"` / Atlassian `subtle`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L154-L155)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L130)、[來源](https://unpkg.com/@atlaskit/button@25.7.0/dist/types/old-button/types.d.ts))
+- `link` ≈ Polaris `Plain+removeUnderline=false` / Ant `type="link"`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L160)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L129))
 
 ---
 
@@ -283,7 +283,7 @@ icon-only 不是獨立尺寸——加上 `iconOnly` prop 讓任何尺寸變正�
 
 `iconOnly` 嚴格定義為「只有一個 icon，正方形」，不可與 `endIcon` 或 `badge` 並用。
 
-**Idiom**(2026-04-25 重訂為 Polaris/Atlassian padding-free 派):
+**Idiom**(2026-04-25 重訂為「正方形、零內距」:寬由 `h-field-X` 推出、icon 置中,不靠內距撐出尺寸,跟同尺寸文字鈕同高)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L276-L279)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L310-L313)):
 
 ```tsx
 const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
@@ -344,7 +344,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 | 值 | 視覺 | 情境（world-class）|
 |---|---|---|
-| `'emphasis'` ★ | 淡藍底 / primary 字 | toolbar functional toggle、篩選、面板開關（Figma / Linear / Material ToggleButton）|
+| `'emphasis'` ★ | 淡藍底 / primary 字 | toolbar 的功能切換鈕、篩選、面板開關(按下去改變畫面狀態、需要一眼看出「開著」的鈕)|
 | `'neutral'` | 灰底 / foreground 字;已按下 `neutral-selected` → 滑過 `-selected-hover` → 按住 `-selected-active`(2→3→4 階,user 2026-09-25 選『甲：保留，維持 2→3→4 (Recommended)』,選項由 AI 提供) | **可取消**的切換鈕(再點一次就關掉),需要比預設藍底低一級的強調時。**不用於導覽 / 目前頁**:再點不會取消的是「選中列」,走列元件(`MenuItem` / `SidebarMenuButton`),選中列滑過釘住 —— owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」(本格是全家族唯一 owner;`tokens/color/color.spec.md` 同寫 `-selected-hover`「可取消切換鈕專屬、列元件禁用」)。2026-09-25 更正:本格原寫「側欄 / 導覽列用」,與上述 owner 打架(待辦總帳 B5)|
 
 ```tsx
@@ -361,7 +361,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 | 疊加 | 視覺 |
 |---|---|
-| 浮層觸發鈕開啟中(`data-state=open`) | 維持該按鈕自己的 hover:secondary / tertiary 字與框 `primary-hover`;text 底 `neutral-hover`;**primary 底 `primary-hover`;link 字 `primary-hover`**;danger 用自己的 `error-hover`(primary+danger 底、secondary+danger 字與框、text+danger 字)。2026-09-29(待辦總帳 C13)補 primary / link:七家一手(Radix、shadcn、MUI、Ant、Carbon 全不給;Atlassian `isSelected`、Fluent `MenuButton` 每個 appearance 含 primary 都給;Polaris `pressed` 亦含 primary)沒有任何一家「給部分 variant、獨獨豁免 primary」,DS 既已選「給」,這兩個 variant 只是同一條規則的落地 |
+| 浮層觸發鈕開啟中(`data-state=open`) | 維持該按鈕自己的 hover:secondary / tertiary 字與框 `primary-hover`;text 底 `neutral-hover`;**primary 底 `primary-hover`;link 字 `primary-hover`**;danger 用自己的 `error-hover`(primary+danger 底、secondary+danger 字與框、text+danger 字)。2026-09-29(待辦總帳 C13)補 primary / link:「開啟中」這件事對每個 variant 意思都一樣(浮層是它打開的),DS 既已選「給」,就不為單一 variant 開例外,這兩個 variant 只是同一條規則的落地([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L79-L84)) |
 | pressed × hover / active | emphasis:底色與框**釘住**,只有字換 `primary-hover` / `-active`;neutral:底換 `neutral-selected-hover` / `-active`,字與框釘住 |
 | pressed × 開啟中 | = pressed × hover(Radix 把 `data-state` 改寫成 `open`,由 `aria-pressed` 分支承擔,不套 variant 的開啟樣式) |
 | `aria-disabled` | 靜止樣式 + `opacity-disabled`;hover / active **釘在靜止**(pressed 則釘在按下的靜止)。與原生 `disabled` 同樣不給回饋,差別只在保留指標事件讓 Tooltip 能出現。**例外**:忙碌 / 握著焦點時被停用的可聚焦停用(`data-disabled-focusable`)走原生停用的長相,不走這一列(見「loading」段) |
@@ -447,7 +447,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 - ❌ 不得引用 `lucide-react` 以外的 icon
 - ❌ `startIcon` 不得放超過一個
 - ❌ `link` variant 不得嵌入段落文字——用 HTML `<a>` 代替
-- ❌ 不得直接使用 `variant="destructive"` 或 `variant="ghost"`——shadcn 內部 alias，僅供框架元件使用
+- ❌ 不得直接使用 `variant="destructive"` 或 `variant="ghost"`——shadcn 內部 alias，僅供框架元件使用([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/button.tsx#L12-L18))
 - ❌ `danger` 僅支援 `primary`、`secondary`、`text`——`tertiary` + danger 無對應 compoundVariant,會靜默渲染成一般 tertiary（灰、無紅色 danger 視覺,並非等同 secondary),`link` + danger 語義矛盾（連結暗示導覽，非破壞）
 - ❌ `pressed` 不得用於多選一——應使用 Segmented Control
 - ❌ `pressed` 不得套用於 `primary` / `link`——主要操作不應 toggle、link 語意為導覽

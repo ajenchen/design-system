@@ -8,7 +8,7 @@ traits:
 
 # AgentPanel 家族(智慧代理面板)
 
-> 來源:提案規格 v4(2026-09-01 核心互動全數定案 + 2026-09-02 各單項拍板;Figma「Task-Desktop」
+> 來源:提案規格 v4(2026-09-01 核心互動全數定案 + 2026-09-02 各單項拍板;設計稿「Task-Desktop」
 > 智慧代理頁 30:306094 六畫面 + 54:174061 附件,間距皆節點實測)。本檔為入庫後唯一 SSOT。
 
 ## 定位
@@ -22,14 +22,13 @@ traits:
   OverflowIndicator、CircularProgress、Dialog、Empty、Button 家族。無自建 primitive;
   唯一自建=AgentLogo/AgentFab 的品牌 SVG 資產(無既有 primitive 可對應)。
 - **Layout Family**:self-contained 容器家族(面板=容器;各子元件按其節聲明消費對應 anatomy)。
-- **世界級對照**:GitHub Copilot Chat panel(VS Code 右側欄)/ Notion AI side panel /
-  Intercom Fin 面板同型:右欄固定寬 + chrome header + 卷軸訊息區 + 底部複合輸入。
+- **版面**:右欄固定寬 + chrome header + 卷軸訊息區 + 底部複合輸入(定案出處:上方提案規格 v4 六畫面)。
 
 ## Token(本家族新增 3 個)
 
 | Token | 值 | 家 | 出處 |
 |---|---|---|---|
-| `--motion-easing-swell` | cubic-bezier(0.4,0.14,0.3,1) | motion.css (C) 循環動態 | 循環「起」;Carbon expressive 參考 |
+| `--motion-easing-swell` | cubic-bezier(0.4,0.14,0.3,1) | motion.css (C) 循環動態 | 循環「起」;Carbon expressive 參考([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L171-L172)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L83)) |
 | `--motion-easing-settle` | cubic-bezier(0.2,0,0.38,0.9) | motion.css (C) 循環動態 | 循環「收」;Carbon productive 參考 |
 | `--motion-duration-shimmer` | 2s | motion.css (C) 循環動態 | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
 
@@ -146,7 +145,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   **單獨使用時**:用 `onModeChange` 記住形態,「浮層且代理開著 → `onOpenChange(false)`」;目標是頁面時把焦點交給 Main(`<main tabIndex={-1}>`,AppShell skip-to-main 同款),
   目標是 modal 時由 Dialog 開啟時自己聚焦。瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」,不收合
   (2026-10-14 依據改寫、結論不變:HTML Standard 的 close request 例子是「桌機的 Esc」與「Android 等行動平台的返回鍵」,
-  <https://html.spec.whatwg.org/multipage/interaction.html#close-requests>;桌機上一頁不在其中、只做歷史導航;Radix / Headless UI 的浮層也不綁 history。
+  <https://html.spec.whatwg.org/multipage/interaction.html#close-requests>;桌機上一頁不在其中、只做歷史導航。
   浮層時的 Esc 關閉走 keydown(`useEscapeRegion`),不用 CloseWatcher —— 用了會讓 Android 返回鍵也一起收掉代理。原依據「Esc 永遠不關面板」已隨 2026-10-14 失效;
   2026-09-29 待辦總帳 OD3,完整對照在 `governance/planning/2026-09-06-agent-principles-v14.md` 來源總帳)。
   示範 `agent-panel.stories.tsx` UrlRegistryDemo;閘 `scripts/agent-url-registry-demo-invariant.mjs` S9。
@@ -188,7 +187,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     `onNewConversation`/`onClose` 為必填 prop;歷史相關 callback 可省略但列仍顯示
     (2026-09-02 根因:以 callback 有無決定渲染 → 各 story 面板長相不一)。
   - **新對話停用**:`conversationEmpty`(目前對話尚無已送出訊息)→ + 鈕 `disabled`,
-    避免堆疊空對話(Claude / ChatGPT 同行為)。
+    避免堆疊空對話(目前這則還是空的,再開一則不會多出任何可回看的內容)。
   - ButtonDivider 置於自動高度 actions cluster(gap-2)內(action-bar 規則 3 誤觸保護;
     直接放固定高 chrome header 會退化為容器高)。
 - A11y:每鈕 `aria-label`;標題觸發 `aria-haspopup="dialog"` + `aria-expanded`;
@@ -202,8 +201,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」)。
 - **常駐判定 = 本元件**:直接子 `AgentMessage` 中最後一則 `role="agent"` 的工具列常駐(在流內佔位),
   其餘懸停/鍵盤聚焦時瞬間出現(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
-- **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(ChatGPT / Claude
-  「貼底跟隨、離底不擾」同款);由本元件實作,consumer 不自接。
+- **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(往上捲 = 正在讀舊訊息,不把人拉走);
+  由本元件實作,consumer 不自接。
 - A11y:`role="log"` + `aria-live="polite"`。
 
 ### 4. AgentMessage(訊息)
@@ -221,7 +220,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - Chevron=accordion 慣例(Suffix 位、rotate-180、減少動態下不轉);旋轉跟下方思考內容同一份時長與曲線 —— `disclosureIndicatorMotion`,`--motion-duration-disclosure` 200ms、`ease-out`(本檔「動畫總表」;2026-10-13 起,原本 150ms 與內容 200ms 不同步;owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`);色=`text-fg-muted`
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。
-- 微光:**僅文字**(標題字+正在寫入的最新一行);shadcn shimmer 參數(帶寬 3ch+40px、斜 20°、
+- 微光:**僅文字**(標題字+正在寫入的最新一行);shadcn shimmer 參數(帶寬 3ch+40px、斜 20°([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L93)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L109)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L29))、
   `--motion-duration-shimmer` linear);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
   reduced-motion 自停。**完成步驟靜態、色 `text-fg-secondary`**(次要層級,非 muted)。
 - 開合=Radix Collapsible + `disclosureMotion`(`tokens/motion/disclosure-motion.ts`,與 TreeView / Accordion 同一份):`--motion-duration-disclosure` 200ms、ease-out;收起後保持高度 0 直到卸載;減少動態不播。
@@ -269,8 +268,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 附:歷史浮層(消費現成,不新增公開元件)
 
-- **寬度 = Popover canonical `w-72`(288)**,不另訂(2026-09-02 user 問「此外 session list 的寬度要訂多少比較合理？」:實測 ChatGPT 側欄 260、
-  Claude 側欄 290,DS 既有 rich-popover 288 落在其間;面板最窄 360 時自標題左緣起仍有 312 可容)。
+- **寬度 = Popover canonical `w-72`(288)**,不另訂(2026-09-02 user 問「此外 session list 的寬度要訂多少比較合理？」:沿用 DS 既有 rich-popover 寬度;
+  面板最窄 360 時自標題左緣起仍有 312 可容)。
 - **與觸發點距 = `OVERLAY_SIDE_OFFSET` 8**(`tokens/elevation/overlay-geometry.ts`;實測 popper wrapper
   translateY = 觸發鈕底 + 8;量測時分頁必在前景,背景分頁會凍在 slide-in 起點量到 0.5)。
 

@@ -17,7 +17,7 @@ benchmark:
 ## 定位
 
 Tooltip 是 hover 或 focus 時出現的短文字提示，用於補充畫面上未能清楚傳達的資訊。
-基於 Radix Tooltip（shadcn 包裝）+ 橋接 DS token。
+基於 Radix Tooltip（shadcn 包裝,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tooltip.tsx#L5）+ 橋接 DS token。
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 

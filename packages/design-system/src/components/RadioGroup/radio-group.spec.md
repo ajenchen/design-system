@@ -28,7 +28,7 @@ RadioGroup 是**互斥單選且全選項可見**的表單控件——從 2-5 個
 
 **Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
 
-**實作基礎**：基於 Radix RadioGroup（shadcn 包裝）+ 橋接 DS token。
+**實作基礎**：基於 Radix RadioGroup（shadcn 包裝,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/radio-group.tsx#L6）+ 橋接 DS token。
 
 共用規則見 `../Checkbox/checkbox.spec.md`（Checkbox & RadioGroup 設計原則，含 SelectionItem 佈局與 clamp 政策）。
 

@@ -21,7 +21,7 @@ benchmark:
 
 **多個 Field controls 視覺接合成一個 input frame**(border-collapse pattern)。命名對齊 ButtonGroup 的 `<X>Group` idiom(X = button → ButtonGroup;X = field control → FieldControlGroup),**但兩者機制不同**:ButtonGroup 是 gap 分離群組(`flex gap-2`,子按鈕之間留 8px),本元件才是 border-collapse 接合(負 margin 重疊 border,子無 gap)。
 
-**自建 + 理由**:無單一 Radix / shadcn 對應 primitive(shadcn 沒提供;Radix 沒對應)。對齊 [Ant `Space.Compact`](https://ant.design/components/space#spacecompact)(verified source)mechanism + [Bootstrap `.input-group`](https://getbootstrap.com/docs/5.3/forms/input-group/)(verified SCSS)idiom 自建。
+**自建 + 理由**:Radix 沒有對應 primitive;shadcn 現有 `ButtonGroup`(<https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/button-group.tsx#L8-L13>)也能把 input / select / button 接成一條,但做法是拿掉相鄰子元素的左框線(`border-l-0`),hover 不提升層級、disabled 不降層 —— 本 DS 的子 control 要各自保留完整 border(hover / error / disabled 都畫在自己的框上),所以自建。對齊 [Ant `Space.Compact`](https://ant.design/components/space#spacecompact)(verified source)mechanism + [Bootstrap `.input-group`](https://getbootstrap.com/docs/5.3/forms/input-group/)(verified SCSS)idiom 自建。
 
 ## 何時用
 
@@ -51,21 +51,21 @@ benchmark:
 
 ```ts
 interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
-  block?: boolean             // 對齊 Ant Space.Compact `block`,默 false=inline-flex
+  block?: boolean             // 對齊 Ant Space.Compact `block`,默 false=inline-flex([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L78))
 }
 ```
 
-**子元件支援 list**(對齊 Ant Space.Compact 限定 list 策略,verified):
+**子元件支援 list**(對齊 Ant Space.Compact 限定 list 策略,verified)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L64-L74)):
 - ✅ Input / NumberInput / Select / Combobox / DatePicker / DatePickerRange / Button
 - ❌ Field(包 Field 進 group 語意亂)/ FieldGroup(垂直 vs 橫向衝突)/ 純 Layout primitive
 
-## 行為機制(verified Ant compact-item.ts L21-92)
+## 行為機制(verified Ant compact-item.ts L21-92)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L58))
 
 1. **子保留 border + radius**(不 strip)
 2. **鄰接子負 margin 重疊 border**:`> * + * { margin-left: -1px }`(border 寬度疊在一起 = 視覺 1 條線)
 3. **Z-index 提升** for active control(避免被鄰接 border 蓋)
    - default `z-index: 2`
-   - hover / focus / focus-within `z-index: 3`(Ant z-3,Bootstrap z-5;我們對齊 Ant)
+   - hover / focus / focus-within `z-index: 3`(Ant z-3,Bootstrap z-5;我們對齊 Ant)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L46)、[來源](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53))
    - disabled `z-index: 0`
 4. **Border radius 規則**:
    - 第一個子:右側 radii = 0(`rounded-r-none`)
@@ -74,14 +74,14 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 5. **Container display**:default `inline-flex` / `block` prop → `flex w-full`
 6. **Items align**:`items-stretch`(同高)
 
-## Width 配置 canonical(W-A,對齊 Ant)
+## Width 配置 canonical(W-A,對齊 Ant)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/demo/compact.tsx#L23-L24))
 
 **子 controls 自管 width**:
 - Fixed:`<Select className="!w-[140px]">`
 - Flex:`<Input className="flex-1">`
 - 混合 OK(filter row 典型:fixed + fixed + flex)
 
-**禁止**:不開 `Cell` wrapper(指 indirection 不必要;Ant Space.Compact 同樣不開)。
+**禁止**:不開 `Cell` wrapper —— 子 control 直接用 className 控寬即可;多包一層會讓 wrapper 變成接合選擇器(`[&>*]`)命中的直接子元素,圓角與框線接合就破了(見「Loading / Empty / 驗證」的「子必 direct child」)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L84-L88))。
 
 ## Size
 
@@ -120,7 +120,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 - ❌ 包 Field 進 FieldControlGroup(雙層 wrapper 無意義 + label/error 處理混亂)
 - ❌ 不同 size 的 children 混用(視覺高度不一致)
 - ❌ 一個 child 設 disabled / 一個設 readonly 等不同 mode(語意一體應一致)
-- ❌ 開 Cell wrapper(違 Ant idiom;子 className 控 width 即可)
+- ❌ 開 Cell wrapper(多一層會讓 wrapper 變成接合選擇器的直接子元素而破圓角;子 className 控 width 即可)
 - ❌ Vertical 堆疊用 FieldControlGroup(用 FieldGroup;本元件僅 horizontal)
 - ❌ **包 `<div>` / `<span>` wrapper 在 FieldControlGroup direct children 外**(2026-05-04 #2 真實 bug):
   CSS `[&>*]` 直接子選擇器命中 wrapper(無 border/radius)→ inner Field control 保留 left/right radii → **圓角破圖**。
@@ -158,7 +158,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 
 **為什麼不 override bg**:user 明確要求 disabled cells 有底色(辨識 state)。bg 灰底是 disabled state 的主要視覺載體,FCG context 不應抹除。
 
-**整 row error**:目前 v1 不支援 row-level error(走 cell-level)。未來若需可走 outer border-error wrapper,但 v1 follow Ant 不做。
+**整 row error**:目前 v1 不支援 row-level error(走 cell-level)。未來若需可走 outer border-error wrapper,但 v1 follow Ant 不做([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L76-L82))。
 
 ## Loading / Empty / 驗證
 
@@ -182,9 +182,9 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 | **[Ant Space.Compact](https://ant.design/components/space#spacecompact)** | layout primitive | 負 margin 重疊 + z-index 3 | `size: small/middle/large` (group prop)| Button + 各 form control(限定 list)|
 | **[Bootstrap input-group](https://getbootstrap.com/docs/5.3/forms/input-group/)** | CSS class | flexbox + first/last border-radius | group-level sizing,個別 children 不能設 | input/select/btn/text addon |
 | **[Chakra Group](https://www.chakra-ui.com/docs/components/group)** | `attached` prop primitive | `attached`+`grow` props | per-child | Input + Addon/Element(InputGroup 已 deprecated v3)|
-| **Mantine** | 無此 idiom | — | — | — |
+| **[Mantine `Button.Group`](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152)** | `Button.Group` + `Button.GroupSection` | 子按鈕直接相鄰接合(不可再包一層)| — | 只限 Button(非按鈕內容用 GroupSection)|
 
-3/4 共識 → 我們的實作對齊 Ant + Bootstrap 主軸。
+4 家都有接合 idiom,但 Mantine 只限按鈕 → 我們的實作對齊同時涵蓋 form control 的 Ant + Bootstrap 主軸([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152))。
 
 ## 相關
 
@@ -195,4 +195,4 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 
 ## 變更紀錄
 
-- 2026-05-04 v1:Initial。基於 Ant compact-item.ts source verify 訂機制。Filter / Sort 對齊 Ant W-A 子自管 width。
+- 2026-05-04 v1:Initial。基於 Ant compact-item.ts source verify 訂機制。Filter / Sort 對齊 Ant W-A 子自管 width([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L58))。

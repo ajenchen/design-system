@@ -5,7 +5,7 @@
 //   選中「語意」由 aria-current="page" 承載(非 pressed —— pressed 是可取消 toggle,當前頁不可取消)
 // - Select(size="sm"):../Select/select.tsx —— 完整形態的「N 筆/頁」選單
 // - Ellipsis icon:MoreHorizontal(packages/design-system/ds-canonical/rules/ui-development.md「Icon canonical」)
-// - DOM 骨架:shadcn Pagination(nav > ul > li + aria-current="page");
+// - DOM 骨架:shadcn Pagination(nav > ul > li + aria-current="page";https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx#L11-L60 );
 //   controlled 事件驅動 + total/pageSize 資料模型對齊 Ant Pagination(2026-07-06 user 拍板:
 //   Pagination 本體 = 完整功能 SSOT —— showTotal / 每頁筆數皆本元件 own,Table 轉發 config 消費)
 // 設計規則:./pagination.spec.md
@@ -17,7 +17,7 @@ import { Select } from '@/design-system/components/Select/select'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 
-// MUI usePagination 預設同款(boundaryCount/siblingCount = 1/1)。內部常數不開 props(M21
+// MUI usePagination 預設同款(boundaryCount/siblingCount = 1/1;https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/usePagination/usePagination.js#L7-L18 )。內部常數不開 props(M21
 // 最小 API);未來若開放,命名必沿用 MUI siblingCount / boundaryCount。
 // 最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = 7,超過即摺疊。
 const BOUNDARY_COUNT = 1
@@ -49,7 +49,7 @@ type PaginationSlot = number | 'ellipsis-start' | 'ellipsis-end'
  *   3 pages-only   ── 收「第 x–y 筆」(是 opt-in **資訊**)
  *   (再窄)         ── 一列不換行不截斷,整條橫向可捲
  *
- * **量的是容器不是視窗**(ResizeObserver,對齊 Carbon 用 container query 的量測語意):
+ * **量的是容器不是視窗**(ResizeObserver,對齊 Carbon 用 container query 的量測語意:https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/pagination/_pagination.scss#L44-L62 ):
  * 視窗可能是 1440px 而表格被側欄擠成 300px,`sm:`/`lg:` 這類視窗斷點在那個情境一律判「寬螢幕」。
  * 用 ResizeObserver 而不是 CSS container query,是因為第 2 階(改格位數)本來就得在 JS 做,
  * 用兩套機制守同一條階梯只會讓它們有機會不同步。
@@ -92,7 +92,7 @@ function useNarrowTier(navRef: React.RefObject<HTMLElement>) {
   return tier
 }
 
-// 摺疊演算法照 MUI usePagination(1/1 配置);兩顆 ellipsis 用 distinct 穩定 key
+// 摺疊演算法照 MUI usePagination(1/1 配置;https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/usePagination/usePagination.js#L7-L96 );兩顆 ellipsis 用 distinct 穩定 key
 // (Breadcrumb Math.random key remount 前車之鑑,breadcrumb.tsx:212-214)。
 function getPaginationRange(
   page: number,
@@ -131,7 +131,7 @@ function getPaginationRange(
 }
 
 export interface PaginationProps extends React.ComponentPropsWithoutRef<'nav'> {
-  /** 資料總筆數(Ant `total` 同款資料模型;<= 0 不渲染)。總頁數 = ceil(total / pageSize) 內部推導。 */
+  /** 資料總筆數(Ant `total` 同款資料模型,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/index.en-US.md#L65 ;<= 0 不渲染)。總頁數 = ceil(total / pageSize) 內部推導。 */
   total: number
   /** 每頁筆數(controlled;搭配 onPageSizeChange)。不傳 = uncontrolled(defaultPageSize 起始)。 */
   pageSize?: number
@@ -160,7 +160,7 @@ export interface PaginationProps extends React.ComponentPropsWithoutRef<'nav'> {
  *
  * 本元件是分頁的**完整功能 SSOT**(2026-07-06 user 拍板):頁碼 + 總筆數資訊(showTotal)
  * + 每頁筆數選單(pageSizeOptions)全部 own 在此;完整形態 layout =「資訊左、操作右」
- * (Ant 源碼結構同款:total 文字最左、size changer 最右)。DataTable 等 consumer 轉發
+ * (Ant 源碼結構同款:total 文字最左、size changer 最右;https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/Pagination.tsx#L629-L652 )。DataTable 等 consumer 轉發
  * config 消費本元件,不自拼分頁列。與虛擬滾動互斥。詳 ./pagination.spec.md。
  */
 const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
@@ -266,7 +266,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
                   與 semantic.css「選中」canonical + 拍板 #8 完全同拼寫,且無 neutral 灰底 hover —
                   消費既有 variant 取代手寫平行拼寫(M17/M23 SSOT)。選中「語意」由 aria-current="page"
                   承載,Button 僅為視覺 host;未選 = text variant。className 只剩等寬幾何
-                  (蓋掉 size sm 的 min-w-14/px-3,方形 item 對齊 Ant;兩 variant 同 border 寬零位移)。 */}
+                  (蓋掉 size sm 的 min-w-14/px-3,方形 item 對齊 Ant(minWidth = height,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/style/index.ts#L484-L485);兩 variant 同 border 寬零位移)。 */}
               <Button
                 variant={slot === current ? 'secondary' : 'text'}
                 size="sm"
@@ -311,7 +311,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
           // **2026-09-10 拿掉 `overflow-x-auto`**(user:「我覺得可以砍頭砍尾」+ 16 家原始碼查證)。
           // 原本它是「砍無可砍時整條橫向可捲」的最後一道,由 2026-09-04 的 commit 0eff9ab6 依我們自己的
           // Tabs canonical 類推而來,**沒有任何 user 原話核准過**。查證結果:16 家世界級設計系統掃過約 20 個
-          // 分頁原始檔,`overflow: auto|scroll` 只中一條 —— MUI 的 `TablePagination.js:29`,而那是表格頁尾
+          // 分頁原始檔,`overflow: auto|scroll` 只中一條 —— MUI 的 `TablePagination.js`(https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/TablePagination/TablePagination.js#L26-L31 ),而那是表格頁尾
           // 工具列(`<td>`)不是頁碼導覽;Carbon 甚至在 `_pagination.scss:37` 明文寫 `overflow: initial` 擋掉捲動。
           // 沒有任何一家讓數字頁碼列橫向捲。改用主流解:多砍一階(見 BOUNDARY_COUNT_NARROW),
           // 最後一階只要 156px,低於 DS 最窄容器,所以支援得到的寬度都不需要捲。

@@ -26,7 +26,7 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  * - 段落標題 → 段落內第一則規則 = loose × 2(同規則 ↔ 規則;Q2 ②):段落標題上下等距,靠 24px 半粗體 + 底線分出它屬於下面。
  * - 一頁多則有標題的範例(`ExampleSection`)上下疊 = loose × 2(`ExampleStack`,Q2 ①):標題離上一則比離自己的內容遠。
  * - 範例 ↔ 範例 = loose、說明 ↔ 它說的範例 = tight:照舊由 `CaptionedExamples` / `ExampleGroup` 擁有(example-captions.tsx)。
- * - 間距一律由外層 gap 給,各塊不留自己的下方 margin —— 最後一塊下面不會多出空白(Carbon:元件不帶 margin,定位交給外層)。
+ * - 間距一律由外層 gap 給,各塊不留自己的下方 margin —— 最後一塊下面不會多出空白,同一塊放到別的版面也不必改它自己。
  *
  * 寬度(2026-11-05,BA-tutorial-width):整頁寬度跟間距、字級一樣由這裡擁有 —— 頁根不設寬、各頁不自訂(`TutorialPage` 不收 className)。
  * 原本 31 則各自給整頁寬(10 種值);給頁根一個共用寬會讓範例溢出(720px 溢出 17 則、1024px 還有 4 則),所以限寬落在需要它的範例上:
@@ -98,7 +98,7 @@ export function TutorialSection({ title, children }: TutorialSectionProps) {
 
 /**
  * 「使用指引」三段的段名(T4 甲,2026-10-20 核准)。順序即頁面順序;全 repo 只有這裡寫段名。
- * 世界級對照見 category-templates.md「Principles canonical」的 Universal core 表(Polaris Best practices / Material Usage / Ant When To Use)。
+ * 世界級對照見 category-templates.md「Principles canonical」的 Universal core 表。(來源:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/spin/index.en-US.md#L12)
  */
 export const USAGE_SECTION_TITLES = {
   when: '何時用',

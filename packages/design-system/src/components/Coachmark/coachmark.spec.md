@@ -57,7 +57,7 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 | 場景 | 範例 |
 |------|------|
 | 首次功能介紹 | 第一次使用 AI 助理功能時,anchor 到 AI 按鈕介紹「點這裡開始對話」 |
-| Onboarding 多步導覽 | Notion-style 3-step tour:建立 workspace → 邀請成員 → 建立第一個頁面 |
+| Onboarding 多步導覽 | 新工作區 3 步導覽:建立 workspace → 邀請成員 → 建立第一個頁面 |
 | 版本更新 / What's new | 新 dashboard view 上線時提示「試試新的圖表模式」 |
 | 新功能發現 | Intercom-style feature discovery,anchor 到功能 icon 並說明價值 |
 
@@ -121,9 +121,9 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 | Multi 中間步 | ✓ | `false` | `labels.next`(預設「下一步」) | 否(有上一步時不再略過) |
 | Multi 最後步 | ✓ | `true` | `labels.finish`(預設「完成」) | 否 |
 
-**為什麼單步驟 CTA 不叫「下一步」**:「下一步」語義隱含「還有下一步」,single step 用它使用者會困惑「後面還有嗎?」。Apple HIG / Intercom / Pendo 同樣慣例:single-step tip / onboarding toast 一律用「知道了 / Got it / Start」類完成詞。
+**為什麼單步驟 CTA 不叫「下一步」**:「下一步」語義隱含「還有下一步」,single step 用它使用者會困惑「後面還有嗎?」。單步驟一律用「知道了 / Got it / Start」類完成詞。
 
-**為什麼有上一步時不顯示略過**:使用者按「下一步」進到 step 2+ 代表已投入進度,此時同時出現「上一步(回上一步)」和「略過(放棄全部)」語義衝突。Linear / Shepherd.js / Pendo tour 都在第 2 步後隱藏 Skip;想退出的使用者按 Esc / 關閉圖示即可(Radix 預設 Esc = dismiss)。
+**為什麼有上一步時不顯示略過**:使用者按「下一步」進到 step 2+ 代表已投入進度,此時同時出現「上一步(回上一步)」和「略過(放棄全部)」語義衝突;想退出的使用者按 Esc / 關閉圖示即可(Radix 預設 Esc = dismiss)。
 
 ---
 

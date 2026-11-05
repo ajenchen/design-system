@@ -25,7 +25,7 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ## 何時用
 
-- **送出評分**（interactive）：Yelp / Google Reviews / Amazon 購物完後「幫這次服務評分」的送出前狀態，使用者點一顆整星
+- **送出評分**（interactive）：餐廳評論、地圖店家評論、電商購物完後「幫這次服務評分」的送出前狀態，使用者點一顆整星
 - **展示評分**（readOnly）：商品列表的 `★ 4.7 (12,843)`、評論列表每則評論的作者給分 `★ 5`、Airbnb 房源總分
 - **後台商品管理**：店家自己給商品的推薦星等（interactive）
 
@@ -76,7 +76,7 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 **星 ↔ 數值的縫三個尺寸都是 `gap-1` 4px —— Rating 內只有一種縫**:可以點的星與星之間是 4px(下方「Gap between stars」),唯讀精簡版的星與數值也是 4px;數值與括號內評論數之間是一個文字空格(3.4–4.2px),三者同一個節奏。2026-09-27 user 拍板:先問「唯獨星星與其後方的文字間距是怎麼來的有仔細研究過？我本來以為可能都是一個文字空格之類的間距」,重查後再問「我覺得星號與文字gap應該跟這個一樣都是4px吧？」,對「全部 4px」的建議回「照你建議」。之前的 sm / md / lg 8px 是直接套 Button(動作鈕)的 icon + label 表,理由不對(`rating.tsx` readOnly 分支註解同此)。
 
-**世界級對照(2026-09-27 讀原始碼 + 實機量)**:沒有一家把星↔星與星↔數字都設 4px,但 4px 這個值有同款 —— 唯一有「一顆星 + 數值」精簡版的設計系統 Fluent 2 `RatingDisplay compact`:16px 星 + 12px 字 4px(= 本 DS 全部尺寸的值)、20px 星 + 14px 字 6px、28px 星 + 16px 字 8px,星與星之間 0px([useRatingDisplayStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingDisplay/useRatingDisplayStyles.styles.ts) `marginLeft: spacingHorizontalXS / SNudge / S`,[spacings.ts](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/global/spacings.ts) 4 / 6 / 8px);Ant Design v4 是兩者同值的先例(星與星、星旁文字都 8px,[index.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/rate/style/index.less) `&-text { margin: 0 8px }`);「16px 圖示 + 數字」的資料列則寬一檔:GitHub 儲存庫頁「★ 20.3k」= 16px octicon + `mr-2` 8px + 14px 字、12px 字的 commit 數 4px(2026-09-27 headless 實量,腳本與截圖在 session scratch `im/W10`,未入 repo;Primer `$spacer-1` 4px / `$spacer-2` 8px,[layout.scss](https://github.com/primer/css/blob/main/src/support/variables/layout.scss))—— 那是圖示 + 計數的資料列,不是評分,本 DS 不跟。Google Play「4.3★」與 App Store「4.8★」是另一種構造:星比字小(12px 星配 14px 字、10px 星配 22px 字)、貼在數字**後面** 0–3px,像角標(2026-09-27 實量),本 DS 不採 —— 星維持 icon tier 16 / 20px。「一個空格」在本 DS 字級下是 3.4 / 3.8 / 4.2px,4px 約等於一個空格。
+**世界級對照(2026-09-27 讀原始碼 + 實機量)**:沒有一家把星↔星與星↔數字都設 4px,但 4px 這個值有同款 —— 唯一有「一顆星 + 數值」精簡版的設計系統 Fluent 2 `RatingDisplay compact`:16px 星 + 12px 字 4px(= 本 DS 全部尺寸的值)、20px 星 + 14px 字 6px、28px 星 + 16px 字 8px,星與星之間 0px([useRatingDisplayStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingDisplay/useRatingDisplayStyles.styles.ts) `marginLeft: spacingHorizontalXS / SNudge / S`,[spacings.ts](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/global/spacings.ts) 4 / 6 / 8px);Ant Design v4 是兩者同值的先例(星與星、星旁文字都 8px,[index.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/rate/style/index.less) `&-text { margin: 0 8px }`);「16px 圖示 + 數字」的資料列則寬一檔:GitHub 儲存庫頁「★ 20.3k」= 16px octicon + `mr-2` 8px + 14px 字、12px 字的 commit 數 4px(2026-09-27 headless 實量,腳本與截圖在 session scratch `im/W10`,未入 repo;Primer `$spacer-1` 4px / `$spacer-2` 8px,[layout.scss](https://github.com/primer/css/blob/main/src/support/variables/layout.scss))—— 那是圖示 + 計數的資料列,不是評分,本 DS 不跟。兩大應用商店的「4.3★」式評分角標是另一種構造:星比字小(12px 星配 14px 字、10px 星配 22px 字)、貼在數字**後面** 0–3px,像角標(2026-09-27 實量),本 DS 不採 —— 星維持 icon tier 16 / 20px。「一個空格」在本 DS 字級下是 3.4 / 3.8 / 4.2px,4px 約等於一個空格。
 
 | Size | 星 | 數值與評論數字級 | 元件高 | 星 ↔ 數值 | 使用時機 |
 |------|----|----------------|--------|----------|---------|
@@ -153,7 +153,7 @@ const form = useFormValidation({
 | **Apple HIG** rating indicators | — | — | "A rating indicator doesn't display partial symbols; it rounds the value to display complete symbols only."(範圍:只有 macOS,原文 "Not supported in iOS, iPadOS, tvOS, visionOS, or watchOS.") | [rating-indicators](https://developer.apple.com/design/human-interface-guidelines/rating-indicators) |
 
 **對照結論**:
-- 規則一:可以點的只有整顆 = SAP / UI5 / Spectrum CSS 的做法;MUI / Ant / Chakra / Fluent 預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`;Apple macOS 顯示也只畫整顆、四捨五入。
+- 規則一:可以點的只有整顆 = SAP / UI5 / Spectrum CSS 的做法;MUI / Ant / Chakra / Fluent 預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`(https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L387);Apple macOS 顯示也只畫整顆、四捨五入。
 - 規則二:唯讀精簡版 = Fluent `RatingDisplay` 的 `compact` + `count`(Fluent 另拆一個元件;本 DS 不拆,用 `readOnly` 分開「能不能點」)。**但 Fluent 的 `compact` 是選項(預設 false),MUI / Ant 的唯讀是同一個元件加 `readOnly` / `disabled`** —— 把精簡版定為唯讀的**唯一**呈現是 user 的決定,不是世界級共識,照實記錄。
 
 ---
@@ -200,7 +200,7 @@ const form = useFormValidation({
 | **Ant Design Rate**(`rc-rate`)`Star.tsx#L82-L85`([Star.tsx](https://github.com/react-component/rate/blob/87c72e7781fa0e3060d3575e7fd5910f26696e3a/src/Star.tsx))、`Rate.tsx#L159-L160`([Rate.tsx](https://github.com/react-component/rate/blob/87c72e7781fa0e3060d3575e7fd5910f26696e3a/src/Rate.tsx)) | 每顆星自己的 `<div onClick onMouseMove>` | 被點的那顆星依點擊位置算出的值(`getStarValue(index, pageX)`) |
 | **React Aria** `useRangeCalendar.ts#L23-L33`、`#L80-L86`([useRangeCalendar.ts](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts)) —— **日期區間,不是評分**,列為同屬「預覽類元件」的近親 | 每一天的按鈕 | 在月曆內、但不在任何日期按鈕上放開指標(`!target.closest('button, [role="button"]')`)→ 預設 `select`:"select the currently hovered range of dates."(整段範圍原文:"Controls the behavior when a pointer is released outside the calendar or a blur occurs mid selection") |
 
-「縫裡點下去確認預覽值」在評分元件上沒有一家一模一樣的做法:MUI 靠整排換算讓星與星之間不存在「不屬於任何一顆」的位置、點下去寫入預覽值;
+「縫裡點下去確認預覽值」在評分元件上沒有一家一模一樣的做法:MUI 靠整排換算(`roundValueToPrecision(max * percent + precision / 2, precision)`,https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L440)讓星與星之間不存在「不屬於任何一顆」的位置、點下去寫入預覽值;
 本 DS 保留每顆星自己的盒(契約),改由容器在縫裡確認預覽 —— 對使用者的結果與 MUI 相同:**預覽亮著的地方點下去都有反應**。
 
 **實測**(真 `page.mouse` + `elementFromPoint`):

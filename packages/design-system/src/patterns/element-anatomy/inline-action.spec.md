@@ -29,7 +29,7 @@
 
 **Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(行為見 `components/Button/button.spec.md`「loading」段),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
 
-**Overlay trigger canonical**(2026-04-29 訂 / 2026-05-02 改 / 2026-05-05 prop 化):trigger 透過 `asChild` 作 DropdownMenu / Popover / Tooltip / HoverCard trigger 時,Radix 自動 set `data-state="open"`,**trigger 維持 host hover 樣式**直到浮層關閉。對齊**狀態極簡派**(shadcn / Radix Themes / Material — 不另開 4th token);避免 state 增生 + 跨 host(neutral / colored)規則同步。
+**Overlay trigger canonical**(2026-04-29 訂 / 2026-05-02 改 / 2026-05-05 prop 化):trigger 透過 `asChild` 作 DropdownMenu / Popover / Tooltip / HoverCard trigger 時,Radix 自動 set `data-state="open"`,**trigger 維持 host hover 樣式**直到浮層關閉。採**狀態極簡**(不另開「開著」的第 4 個 token);避免 state 增生 + 跨 host(neutral / colored)規則同步。
 
 **2026-05-05 修正:overlay vs in-place 語意分離**。`Radix Collapsible.Trigger` 也 emit 同 `data-state="open"`,但語意完全不同(展開內容**接在下方非 floating**,user 不需追溯)。原 `ItemInlineActionButton` 將規則**無條件**套用於所有 `data-state=open`,造成 Sidebar collapsible group label 的 chevron 展開時殘留 hover bg(2026-05-05 user reported)。修正:`ItemInlineActionButton` 加 `overlayTrigger?: boolean` prop,**default `false`**。consumer 顯式宣告:
 
@@ -47,7 +47,7 @@ Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。�
 
 **預設（neutral host）**:預設 `fg-muted`,hover / active 時變 `fg-secondary`(**往前一階,不跳階**;2026-07-30 user 拍板〔UD-J08〕)
 - **階梯 root invariant**:`fg-muted`(neutral-7)→ `fg-secondary`(neutral-8)→ `foreground`(neutral-9)。弱化 icon 只走一階;rest 已是 `fg-secondary` 的整列 / 文字 hover(如 `chip.tsx` / TreeItem row)→ `foreground` 同樣是一階,合規
-- **世界級對照**:Fluent 2 `packages/tokens/src/alias/lightColor.ts`——`neutralForeground3Hover` 就等於 `neutralForeground2` 的值(grey[26]),`neutralForeground2Hover` = grey[14](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/alias/lightColor.ts);MUI `Chip.js` deleteIcon `alpha(text.primary, .26)` → hover `.4`(不到底,https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Chip/Chip.js)。Ant Design Tag close(`colorIcon` .45 → `colorTextHeading` .88)是唯一全跳,其 rest 值遠淡於本 DS `fg-muted`,travel 空間不對等,不採
+- **世界級對照**:Fluent 2 `packages/tokens/src/alias/lightColor.ts`——`neutralForeground3Hover` 就等於 `neutralForeground2` 的值(grey[26]),`neutralForeground2Hover` = grey[14](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/alias/lightColor.ts);MUI `Chip.js` deleteIcon `alpha(text.primary, .26)` → hover `.4`(不到底,https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Chip/Chip.js)。Ant Design Tag close(`colorIcon` .45 → `colorTextHeading` .88)是唯一全跳,其 rest 值遠淡於本 DS `fg-muted`,travel 空間不對等,不採([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/style/index.ts#L73-L81))
 - **token 層 rule owner**:`tokens/color/semantic.css:53`「弱化 icon hover 後變 `fg-secondary`(neutral-8)」——本段與該行為同一 invariant 的兩個 home,禁互相漂移(機械強制:`check_pattern_invariants.sh` C.5)
 - 適用:Field endAction（Input clear button）/ TreeItem inline action / Menu inline action / DropdownMenu trigger inline action 等 **neutral 容器內**的 inline action
 - 語意:utility icon 是輔助操作,預設退到背景,hover 時提示可操作
@@ -146,7 +146,7 @@ Q3. Row 多大?
 
 **Row dedicated action 永遠 ≤ 24px**,不隨 row tier 放大。超過 24 action 會搶 content 視覺焦點,違反「資料 > 行動」的視覺階層。
 
-**世界級對照**:Material DataGrid / Polaris ResourceList / Atlassian Table / Ant Design Table / Apple HIG — **全部固定小尺寸 icon button**,不依 row height 放大 action。
+Row dedicated action 固定小尺寸 icon button,不依 row height 放大 —— 理由同上段:超過 24 action 會搶 content 視覺焦點,違反「資料 > 行動」的視覺階層。
 
 #### 3 條關鍵補充
 
@@ -228,8 +228,8 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 - 以上三者**禁止套 dismiss 弱化**
 
 **世界級對照**:
-- Dismiss:Material `IconButton` close / Polaris `Banner.onDismiss` / Ant Design `Alert.closable` / Apple HIG window close → 一律 icon = `X`
-- Destructive:Material `IconButton` Delete(red)/ Polaris `Button destructive` / 我們的 row Trash → 一般 primitive(無 dismiss 弱化)
+- Dismiss:Polaris `Banner.onDismiss`(X 圖示)/ Ant Design `Alert.closable` → 一律 icon = `X`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
+- Destructive:Polaris `Button tone="critical"` / 我們的 row Trash → 一般 primitive(無 dismiss 弱化)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
 
 #### Dismiss X 的實作(按 position 決定)
 

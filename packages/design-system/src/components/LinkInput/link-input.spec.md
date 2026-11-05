@@ -53,7 +53,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 - value 以 `text-primary` 藍色顯示，hover 加底線，點擊開啟連結
 - **連結的可點範圍 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行。**所有模式都適用**(2026-10-13 起;編輯模式的連結狀態、readonly、view、DataTable 連結格(用 view 模式)):由連結自己保證(`link-input.tsx` `renderLinkAnchor` 的 `inline-block max-w-full align-top`),不靠外層排版;2026-10-13 前是 `block`,唯讀 / 檢視模式與表格連結格文字右邊看起來空白的那一段點下去會開網頁(待辦總帳 Q3a)
 - 右側 Pencil inline action 觸發編輯模式
-- **點外框裡其他地方 = 按 Pencil**(user 2026-09-26 原話「網址欄的部分你再好好研究Jira等世界級的設計是怎麼做的，確保沒有分歧才照你建議做。」;研究結論:查到的一手來源沒有一家從空白處開連結)：內距、1px 邊框、文字與 Pencil 之間、文字右側的空白，點下去都進入編輯並聚焦輸入框。外框滑過變色是 Field 家族共用外觀(`../Field/field-wrapper.tsx` `hover:border-border-hover`)，變色的地方點下去就要有反應(`../../../ds-canonical/references/hit-area-canonical.md`「看到亮起來卻點不到」)。外框用文字游標(`FIELD_TEXT_ENTRY_CURSOR`，同 `../Input/input.spec.md`「點外框 = 點輸入處」)；連結維持手形、Pencil 維持 `cursor-pointer`
+- **點外框裡其他地方 = 按 Pencil**(user 2026-09-26 原話「網址欄的部分你再好好研究Jira等世界級的設計是怎麼做的，確保沒有分歧才照你建議做。」;研究結論:查到的一手來源沒有一家從空白處開連結)：內距、1px 邊框、文字與 Pencil 之間、文字右側的空白，點下去都進入編輯並聚焦輸入框。外框滑過變色是 Field 家族共用外觀(`../Field/field-wrapper.tsx` `hover:border-border-hover`)，變色的地方點下去就要有反應(`../../../ds-canonical/references/hit-area-canonical.md`「看到亮起來卻點不到」)。外框用文字游標(`FIELD_TEXT_ENTRY_CURSOR`，同 `../Input/input.spec.md`「點外框 = 點輸入處」)；連結維持手形、Pencil 維持 `cursor-pointer`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js))
 - 按在空白處、拖過網址文字再放開(選字)不算點一下，不進入編輯
 - 點擊 value 是開啟連結，不是編輯——這是 LinkInput 與 Input 的核心互動差異。「value」指網址文字本身，不含外框裡的空白
 

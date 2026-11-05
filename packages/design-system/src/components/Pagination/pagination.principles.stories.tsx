@@ -42,7 +42,7 @@ function NotificationFeed() {
   )
 }
 
-// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(v3 canonical,Polaris/Material/Ant 共識)──
+// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(v3 canonical)──
 
 export const UsageGuidance: Story = {
   name: '使用指引',

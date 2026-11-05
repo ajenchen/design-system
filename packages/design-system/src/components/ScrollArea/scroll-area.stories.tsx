@@ -31,7 +31,7 @@ type Story = StoryObj
 // 稽核 L094 / M090:議題 / PR 改成一般產品的真實內容(原本全是這套 DS 自己的 bug);狀態欄改用 DataTable 的 select 欄 + Tag
 //(column-types.ts `display: 'tag'`),不再手刻圓點 + inline 色;商品表與設計規格 / 設計原則頁共用 stories-helpers 那一份。
 
-// Linear-style issue list
+// 議題追蹤工具式 issue list
 const LINEAR_ISSUES: Array<{ id: string; title: string; status: string }> = [
   { id: 'ENG-1204', title: '結帳頁信用卡欄位在 Safari 自動填入失效', status: 'In Progress' },
   { id: 'ENG-1203', title: '匯出 CSV 時中文欄名變成亂碼', status: 'In Review' },
@@ -64,7 +64,7 @@ const ISSUE_COLUMNS = [
   issueCol.accessor('status', { header: 'Status', meta: { type: 'select', options: ISSUE_STATUS_OPTIONS, display: 'tag', width: 130 } }),
 ]
 
-// Notion-style sidebar nav
+// 文件工具式 sidebar nav
 const NOTION_NAV = [
   { section: 'Private', items: ['Getting Started', 'Daily journal', 'Reading list', 'Recipes', 'Weekend projects', 'Japan 2026 trip'] },
   { section: 'Workspace', items: ['Engineering wiki', 'Design system spec', 'Meeting notes', 'Roadmap Q2', 'Incident retrospectives', 'Onboarding docs'] },

@@ -130,7 +130,7 @@ export const ModeMatrix: Story = {
       </div>
       <div>
         <H3>view — 純展示(渲 div 取代 textarea,whitespace-pre-wrap 保留多行)</H3>
-        <Desc>對齊 Carbon read-only / Cloudscape display mode。常見於檢視已提交的留言 / 評論。</Desc>
+        <Desc>唯讀:內容照常顯示、可選取複製,但不能改。常見於檢視已提交的留言 / 評論。</Desc>
         <Textarea
           mode="view"
           rows={3}

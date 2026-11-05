@@ -64,7 +64,7 @@ export const UsageGuidance: Story = {
   render: () => (
     <TutorialPage>
       <UsageSection kind="when">
-        <p>多個獨立主題、使用者依當下需要展開其中一段的內容:每段自成一體,不展開也不影響上下文(Material 3 Expansion panel / Polaris Disclosure 同樣定位)。</p>
+        <p>多個獨立主題、使用者依當下需要展開其中一段的內容:每段自成一體,不展開也不影響上下文。</p> {/* 來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/utilities/collapsible.mdx */}
         <TutorialList>
           <li><StoryLink kind="Design System/Components/Accordion/展示" name="FAQ 常見問題">FAQ 常見問題</StoryLink> —— 預設全部收合,讀者展開有興趣的那一題</li>
           <li><StoryLink kind="Design System/Components/Accordion/展示" name="設定分組">設定分組</StoryLink> —— 一般 / 通知 / 安全等多段設定,長表單拆段</li>
@@ -173,7 +173,7 @@ export const TypeRule: Story = {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        <ExampleCaption>參考:Stripe Pricing FAQ、Notion Help Center</ExampleCaption>
+        <ExampleCaption>情境:SaaS 定價頁的常見問題、產品說明中心</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule
@@ -190,7 +190,7 @@ export const TypeRule: Story = {
             <AccordionContent>兩步驟驗證:已啟用。</AccordionContent>
           </AccordionItem>
         </Accordion>
-        <ExampleCaption>參考:Jira Project Settings、Linear Workspace Settings</ExampleCaption>
+        <ExampleCaption>情境:專案管理工具的專案設定、團隊工作區設定</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule

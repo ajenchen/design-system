@@ -21,7 +21,7 @@ import { ExampleCaption } from '@/design-system/stories-helpers/examples/example
  * FileViewer 設計原則(do / don't)——使用判斷指南。
  *
  * Rule / ExampleCaption 共用模式對齊 Dialog / Sheet principles(範例說明 = stories-helpers/examples/example-captions.tsx)。每條 Rule 必搭配真實業務場景
- * (Jira / Notion / Figma / Gmail 等)與 live 互動,避免 Lorem ipsum / A/B/C。
+ * (工單附件、文件配圖、設計稿審閱、郵件附件等)與 live 互動,避免 Lorem ipsum / A/B/C。
  */
 
 const meta: Meta = {
@@ -104,7 +104,7 @@ export const UsageGuidance: Story = {
         </TutorialList>
         <TutorialRule
           title="FileViewer — 看檔案內容(佔滿畫面 + 深色底)"
-          note="Jira ticket 附件檢視、Notion 配圖預覽、Figma design review、Gmail 多附件預覽。主任務是「看 content」,需要 viewport 最大化 + dark 底襯托媒體。FileViewer 固定 fullscreen + toolbar chrome,避免 Dialog 的 maxWidth inset 把 media 擠小"
+          note="工單附件檢視、文件配圖預覽、設計稿審閱、郵件多附件預覽。主任務是「看 content」,需要 viewport 最大化 + dark 底襯托媒體。FileViewer 固定 fullscreen + toolbar chrome,避免 Dialog 的 maxWidth inset 把 media 擠小"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setFvOpen(true)}>
             開啟 Jira bug 附件(2 張截圖)
@@ -205,7 +205,7 @@ export const InfoPanelDefaultRule: Story = {
       <TutorialPage>
         <TutorialRule
           title="✅ 預設關 info panel,user 主動按 I / Info 才打開"
-          note="世界級一致:Figma file preview / Notion attachment viewer / Google Photos / Dropbox preview 皆預設關 info。Viewer 主任務是看 content,metadata 是輔助;若預設打開,viewport 被右側 320 px 佔走、90% 情境沒人讀 metadata,是逆優化"
+          note="Viewer 主任務是看 content,metadata 是輔助;若預設打開,viewport 被右側 320 px 佔走、90% 情境沒人讀 metadata,是逆優化"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setOpen(true)}>
             開啟 Notion 配圖(按 I 切換 info)
@@ -320,7 +320,7 @@ export const FilmstripRule: Story = {
       <TutorialPage>
         <TutorialRule
           title="✅ 單檔 / focus 檢視 — 不顯示 filmstrip"
-          note="Figma design review 單檔 zoom 看細節、Notion 文件單張配圖、Gmail 單附件。這類場景 viewport 是唯一主角,filmstrip 無內容可顯示只是佔 96 px 下方空間"
+          note="設計稿單檔 zoom 看細節、文件單張配圖、郵件單附件。這類場景 viewport 是唯一主角,filmstrip 無內容可顯示只是佔 96 px 下方空間"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setFocusOpen(true)}>
             開啟 hero banner(單檔 focus)
@@ -336,7 +336,7 @@ export const FilmstripRule: Story = {
 
         <TutorialRule
           title="✅ 多檔 browsing — 顯示 filmstrip(可視覽 + 快速跳轉)"
-          note="Jira 多附件、Notion gallery、Gmail 多附件、活動相集。filmstrip 提供「總覽 + 快速跳轉」— 使用者既能知道「還有幾張沒看」,也能直接點跳到想看那張。←→ 與 filmstrip 點擊是兩種互補互動"
+          note="工單多附件、文件圖庫、郵件多附件、活動相集。filmstrip 提供「總覽 + 快速跳轉」— 使用者既能知道「還有幾張沒看」,也能直接點跳到想看那張。←→ 與 filmstrip 點擊是兩種互補互動"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setBrowseOpen(true)}>
             開啟活動相集(5 張,filmstrip on)
@@ -396,7 +396,7 @@ export const ReadOnlyRule: Story = {
       <TutorialPage>
         <TutorialRule
           title="✅ 可編輯 — 檔案擁有者 / admin,editing 即時儲存"
-          note="onDescriptionChange 在 textarea onBlur 觸發,consumer 負責持久化(call API)。textarea 就是普通編輯介面,沒有「儲存」按鈕 — 避免使用者疑惑「要不要按儲存」。世界級 parallel:Google Photos / Notion 的 caption 編輯都是 inline blur-save"
+          note="onDescriptionChange 在 textarea onBlur 觸發,consumer 負責持久化(call API)。textarea 就是普通編輯介面,沒有「儲存」按鈕 — 避免使用者疑惑「要不要按儲存」。失焦即存,跟一般行內編輯欄位的心智模型一致"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setEditOpen(true)}>
             開啟自己上傳的照片(可編輯說明)
@@ -509,7 +509,7 @@ export const DarkModeLockedRule: Story = {
       <TutorialPage>
         <TutorialRule
           title={<>✅ Viewer chrome 永遠 dark(<code>data-theme="dark"</code> subtree)</>}
-          note={<>{'Viewer 是「內容展示 chrome」而非 content-of-app。類比 Tooltip 永久 dark、全螢幕影片播放器 UI 永遠暗色、專業修圖軟體(Photoshop / Figma)UI 暗色。Dark 底讓圖片 / media 顯色最自然 — 亮底會跟任何含白邊的圖片打架。本 DS 用 '}<code>data-theme="dark"</code>{' subtree 鎖定,背景頁面 theme 不影響 viewer'}</>}
+          note={<>{'Viewer 是「內容展示 chrome」而非 content-of-app。類比 Tooltip 永久 dark、全螢幕影片播放器 UI 永遠暗色、專業修圖軟體 UI 暗色。Dark 底讓圖片 / media 顯色最自然 — 亮底會跟任何含白邊的圖片打架。本 DS 用 '}<code>data-theme="dark"</code>{' subtree 鎖定,背景頁面 theme 不影響 viewer'}</>}
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setOpen(true)}>
             開啟 viewer(不管頁面 theme 為何,chrome 永遠 dark)
@@ -520,7 +520,7 @@ export const DarkModeLockedRule: Story = {
 
         <TutorialRule
           title="❌ 讓 viewer chrome 跟 app theme 走(light / dark 都出現)"
-          note="Light viewer chrome 的問題:(1) 大部分內容圖帶白邊,light 底跟圖片白邊融在一起看不見邊界;(2) light chrome 亮度跟 content 亮度接近,使用者視覺焦點被 chrome 搶走、無法專注 content;(3) 世界級 parallel 全是 dark chrome(Google Photos / Figma / Dropbox / macOS Preview)— 跟業界違反 convention"
+          note="Light viewer chrome 的問題:(1) 大部分內容圖帶白邊,light 底跟圖片白邊融在一起看不見邊界;(2) light chrome 亮度跟 content 亮度接近,使用者視覺焦點被 chrome 搶走、無法專注 content;(3) 媒體檢視器的 chrome 慣用暗色,亮色 chrome 會讓使用者覺得「這不是看圖模式」"
         >
           <ExampleCaption warn>↑ Light viewer chrome 破壞媒體顯色 + 視覺焦點,且違反世界級 convention</ExampleCaption>
         </TutorialRule>

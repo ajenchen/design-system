@@ -167,7 +167,7 @@ export const ColorMatrix: Story = {
               <tr><Th>Mode / State</Th><Th>Background</Th><Th>Rationale</Th></tr>
             </thead>
             <tbody>
-              <tr><Td mono>rich + surface=form(all status)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface</span> + border</span></Td><Td>card(border + rounded + bg-surface)——Slack / Notion attachment 慣例</Td></tr>
+              <tr><Td mono>rich + surface=form(all status)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface</span> + border</span></Td><Td>card(border + rounded + bg-surface)—— 附件在表單 / 訊息裡要自成一張卡,邊框讓每個檔案視覺獨立</Td></tr>
               <tr><Td mono>rich + surface=upload-manager(all status)</Td><Td><span className="font-mono">無邊框無 bg、直角(列鋪滿面板寬)</span></Td><Td>面板自身是容器,avatar 作 item 邊界。詳 spec「邊框 / 背景」表</Td></tr>
               <tr><Td mono>compact 無 status</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--secondary" size="sm" /><span className="font-mono">--secondary</span>(= neutral-3)</span></Td><Td>靜態 pill,對齊 Badge low / ProgressBar track SSOT</Td></tr>
               <tr><Td mono>compact 有 status</Td><Td><span className="font-mono">transparent</span></Td><Td>底部 progress bar 作 permanent affordance(分隔線型)</Td></tr>
@@ -233,7 +233,7 @@ export const SizeMatrix: Story = {
         <H3>Mode 決定 density,不走 size prop</H3>
         <Desc>
           FileItem 沒有 size prop——兩種 mode(compact / rich)已經覆蓋所有密度需求。對齊
-          Dropbox / Google Drive / Linear 的檔案清單慣例:compact 是系統列表預設,rich 是 media-heavy
+          Dropbox / Google Drive / Linear 的檔案清單的分工:compact 是一般系統列表的預設(一屏看多筆),rich 給以縮圖為主、需要看清楚是哪個檔案的場景
           場景(照片、需要縮圖的場景)。Size tier 的區別在 mode 上已足夠表達。
         </Desc>
         <div className="overflow-x-auto mb-4">

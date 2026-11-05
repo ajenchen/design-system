@@ -242,7 +242,7 @@ export const Overview = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   2. 元件檢閱器 — Interactive Inspector (replaces Figma inspect)
+   2. 元件檢閱器 — Interactive Inspector(在 Storybook 裡直接切換 props 看結果,不必另開設計稿量測)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const Z = {

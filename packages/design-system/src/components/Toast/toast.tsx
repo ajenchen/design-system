@@ -121,7 +121,7 @@ export function ToastSurface({
   const isInverse = variant === 'neutral' || variant === 'success'
 
   // action 執行後自動 dismiss:關閉「復原/重試」的重複觸發窗口(double-undo / double-retry),
-  // 對齊 Polaris Toast action / Material Snackbar action 按後即收慣例;
+  // 對齊 Material Snackbar action 按後即收(MDC 關閉原因含 'action');Polaris Toast 的 action 只呼叫 onAction、不自動收,本 DS 不跟;(來源:https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Frame/components/Toast/Toast.tsx#L85-L95 https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-snackbar/README.md#L185)
   // toast.anatomy.stories.tsx「點 action button 執行 callback + 關閉 toast」宣稱自此為真。
   const actionButton = action ? (
     <Button variant="tertiary" size="xs" onClick={() => { action.onClick(); onDismiss?.() }}>{action.label}</Button>
@@ -172,7 +172,7 @@ function ToastInner({ id, ...options }: ToastOptions & { id: string | number }) 
 
 export function toast(options: ToastOptions) {
   // 2026-07-05 D4:sonner 計時器不因鍵盤 Tab 焦點暫停(僅 hover / pointer 按住 / ⌥T hotkey)——
-  // 含 action(復原/重試)預設 10s,給鍵盤使用者足夠時間 Tab 到 action(user 拍板;對齊 Polaris toast with action ≥10s)
+  // 含 action(復原/重試)預設 10s,給鍵盤使用者足夠時間 Tab 到 action(user 拍板;對齊 Polaris toast with action ≥10s:`DEFAULT_TOAST_DURATION_WITH_ACTION = 10000`,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Frame/components/Toast/Toast.tsx#L17-L19)
   const { duration = options.action ? 10000 : 4000, ...rest } = options
   const id = sonnerToast.custom((toastId) => <ToastInner id={toastId} {...rest} />, { duration })
   publishToastAnnouncement(options)
@@ -189,7 +189,7 @@ export interface ToasterProps {
   containerAriaLabel?: string
 }
 
-// shadcn canonical:forwardRef + displayName 統一。SonnerToaster 不轉發 ref,
+// DS 結構慣例(ui-development.md「結構」):forwardRef + displayName 統一。SonnerToaster 不轉發 ref,(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/%28root%29/tailwind-v4.mdx#L13)
 // 故 ref 無實際 DOM 節點可接;viewport 為就地渲染的 <section>,以 CSS position:fixed
 // 覆蓋 viewport(非 portal — sonner 全庫 0 createPortal,2026-07-04 grep 驗證)。
 // 保留 forwardRef 簽名以符合 DS 統一 API(consumer 可 typecheck 傳 ref)。

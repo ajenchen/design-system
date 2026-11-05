@@ -109,10 +109,10 @@ export const OpenSnapshot: Story = {
 }
 
 // SettingsPanel story 於 2026-04-20 移除:
-//   原本是「顯示設定 mini panel (Notion 頁面設定)」— 用 Popover + 多個 horizontal
+//   原本是「顯示設定 mini panel(頁面設定)」— 用 Popover + 多個 horizontal
 //   Field + Switch 展示 settings list。
 //
-//   B13 決策(user 回饋):Notion 頁面設定的實際做法是 `<DropdownMenu>` +
+//   B13 決策(user 回饋):頁面設定這類純開關清單,實際產品的做法是 `<DropdownMenu>` +
 //   `<DropdownMenuCheckboxItem>` — menu 內 binary toggle 已由 CheckboxItem 覆蓋
 //   (見 `../DropdownMenu/dropdown-menu.stories.tsx` 的 `CheckboxItems` story)。
 //   Popover 的 canonical 是「自由組合 UI 面板」(filter / form / 圖表),純 toggle

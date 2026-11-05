@@ -78,7 +78,7 @@ export const UsageGuidance: Story = {
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <div className="border border-divider rounded-lg bg-surface">
               <MenuGroup aria-label="身份與功能圖示對照">
-                {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉,letter mark 是 Slack workspace idiom)*/}
+                {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉;首字標記讓團隊 / 組織一眼可辨,又不會被誤認成某個人)*/}
                 <MenuItem role="presentation" avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: ada.name, hoverCard: samplePersonCard(ada) }}>Ada Chen 的留言</MenuItem>
                 {/* @example-basis: 團隊是實體,不接人員名片(avatar.spec.md:78「不代表人員」) */}
                 <MenuItem role="presentation" avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
@@ -167,7 +167,7 @@ export const WithBadgeOverlayRule: Story = {
 
       <TutorialRule
         title="✅ status(右下 presence)+ badgeCount(右上 count)可並存"
-        note="兩者是不同角、不同語義的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),與 Badge 的「Avatar 可疊狀態點 + 計數」一致,也是 Slack / Teams / iMessage / LINE 標配。signal crowding 只禁「同一角疊兩個同類 indicator」(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
+        note="兩者是不同角、不同語義的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),與 Badge 的「Avatar 可疊狀態點 + 計數」一致——「這個人在不在線」與「這段對話有幾則未讀」是要分開掃視的兩個訊號。signal crowding 只禁「同一角疊兩個同類 indicator」(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
       >
         <div className="flex items-center gap-[var(--layout-space-loose)]">
           <Avatar src={ada.avatarSrc} alt={ada.name} size={40} status={ada.status} badgeCount={3} hoverCard={samplePersonCard(ada)} />

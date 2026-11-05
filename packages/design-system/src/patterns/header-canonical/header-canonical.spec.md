@@ -30,7 +30,7 @@ benchmark:
 **何時不用(when NOT to use)— 最常見誤判**:
 - ❌ **chrome 與 overlay 搞混**:看 surface 本身是常駐 chrome 還是浮層,不看視覺像不像。**邊界案例**:Sidebar 內彈出的 flyout / popover header = **overlay → SurfaceHeader**,不因為它長在 sidebar 裡就當 chrome。
 - ❌ 純內容區小標題(section heading)→ 用 typography(`text-h6` 等),不是 header primitive
-- ❌ **Dialog / 浮層內「不可關閉的 side pane」標題**(如 detail dialog 右欄 metadata 欄的「General info」)→ 走 typography,不消費 header primitive。**判準一句話:「這個 pane 能不能自己被關掉」**(2026-07-08 user 拍板 codify)—— **可獨立 dismiss**(自帶 close、自帶 ScrollArea、旁有等高 chrome 需對齊,如 FileViewer InfoPanel:I 鍵 + close X)→ `<ChromeHeader>`;**不可關閉** = pane 標題只是 content 的一部分 → 純 typography,間距跟著 layoutSpace 原則走(不 flush、無 border-b、隨內容捲動)。反例先例:DatePicker TimePickerSidePanel 同層級 caption 不消費 header primitive(date-picker.spec.md「TimePickerSidePanel header 下方無 divider」段)。外部對照:Carbon SidePanel(https://github.com/carbon-design-system/ibm-products/blob/main/packages/ibm-products-styles/src/components/SidePanel/_side-panel.scss)/ Material side sheet(https://github.com/material-components/material-components-android/blob/master/docs/components/SideSheet.md)皆「有 close affordance 才有正式 header + divider」;Jira issue view 右欄僅輕量 group heading。
+- ❌ **Dialog / 浮層內「不可關閉的 side pane」標題**(如 detail dialog 右欄 metadata 欄的「General info」)→ 走 typography,不消費 header primitive。**判準一句話:「這個 pane 能不能自己被關掉」**(2026-07-08 user 拍板 codify)—— **可獨立 dismiss**(自帶 close、自帶 ScrollArea、旁有等高 chrome 需對齊,如 FileViewer InfoPanel:I 鍵 + close X)→ `<ChromeHeader>`;**不可關閉** = pane 標題只是 content 的一部分 → 純 typography,間距跟著 layoutSpace 原則走(不 flush、無 border-b、隨內容捲動)。反例先例:DatePicker TimePickerSidePanel 同層級 caption 不消費 header primitive(date-picker.spec.md「TimePickerSidePanel header 下方無 divider」段)。外部對照:Carbon SidePanel(https://github.com/carbon-design-system/ibm-products/blob/main/packages/ibm-products-styles/src/components/SidePanel/_side-panel.scss)/ Material side sheet(https://github.com/material-components/material-components-android/blob/master/docs/components/SideSheet.md)皆「有 close affordance 才有正式 header + divider」。
 - ❌ 列表 row / menu item → 走 `item-anatomy`,不是 header
 - ❌ 卡片內標題列 → Card 自己的 header 區,不套本 pattern
 
@@ -124,7 +124,7 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 當 header 內含 Tabs(`<Tabs>` 子元件)時,**6 條 lockstep 規則**:
 
-### Rule W1:Border ownership = semantic vs paint 拆分(對齊 GitHub Primer)
+### Rule W1:Border ownership = semantic vs paint 拆分
 
 **規則**:**Header 是 semantic owner**(「這 surface 需要 bottom border 分區」是 header 的概念決定),**Paint owner 隨 state 變**:
 - `withTabs={false}` → header 自畫(`border-b border-divider`)
@@ -159,7 +159,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - v3(2026-05-18):wrapper 不 inset,TabsList 自己 padding inset triggers + 全 dialog 寬 border ✓ — 但選取機制 = `[&>[role=tablist]]` direct-child **結構**選擇器,綁死 tablist 深度
 - v4(本,2026-07-30 regression fix):beta.86 Tabs inlineAction axe 正規修(fc2a3a5c)給 TabsList 包 `<div class="relative">` overlay 層 → v3 direct-child 選擇器全滅、px-loose 靜默消失(W2 regression);且 scroll / menu 模式 tablist 深度本就 >1,v3 從未命中。改 `data-slot="tabs-list"` attribute contract + descendant selector — 顯式契約免疫 DOM 重構,三種 overflow 模式齊套;寬度改由 TabsList 各模式自帶(w-full / min-w-full),wrapper 不再注入 ✓
 
-**W2 spec 註**:原 W2「TabsList 不設左右 padding,繼承 parent header padding」描述假設 ChromeHeader single-row 模式;**column mode 下實作機制改為 CSS arbitrary variant 注入 TabsList 內 padding**(不是 by-inheritance 從 wrapper)。Selected primary overlay full-width gray 共識(GitHub Primer UnderlineNav / Ant Design line type / Mantine default)需要 TabsList 自畫 full-width border。
+**W2 spec 註**:原 W2「TabsList 不設左右 padding,繼承 parent header padding」描述假設 ChromeHeader single-row 模式;**column mode 下實作機制改為 CSS arbitrary variant 注入 TabsList 內 padding**(不是 by-inheritance 從 wrapper)。Selected primary overlay full-width gray 共識(GitHub Primer UnderlineNav [UnderlineTabbedInterface.module.css#L12-L14](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L12-L14) / Ant Design line type [tabs/style/index.ts#L420-L430](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L420-L430) / Mantine default [Tabs.module.css#L160-L172](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components/Tabs/Tabs.module.css#L160-L172))需要 TabsList 自畫 full-width border。
 
 **Consumer 用法**(Dialog 範例):
 ```tsx
@@ -189,7 +189,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 **Verify**:write-time 由 `chrome_header_dispatcher.sh` 經 lib helper(`_tab_lg_chrome_header_equal.sh` + `_header_with_tabs_border.sh`,2026-05-31 升 exit 2 BLOCK)把關;pixel-quantified visual probe 走 `/visual-audit --scope=changed`(無專屬 runtime-verify script)。
 
-**Rationale**:對齊 Carbon verbatim「first label should always align to other content in the space」(`carbondesignsystem.com/components/tabs/usage`)。「by inheritance 不重複設」是 GitHub Primer + Material UI 隱含 idiom — tabs container 不主動畫 padding,讓外層 container 統一管。
+**Rationale**:對齊 Carbon verbatim「first label should always align to other content in the space」(`carbondesignsystem.com/components/tabs/usage`)。「by inheritance 不重複設」:tabs container 不主動畫 padding,讓外層 container 統一管,左右內距才只有一個住所。
 
 ### Rule W3:Tabs size 與 header family 對應
 
@@ -209,7 +209,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 **Rationale**:negative margin chain 會破 M25「Layered chain invariant 必整鏈 forward」— 任何 ancestor 改動 padding/height 都會讓 negative margin 視覺漂移。改用 flush stack(`<div className="flex flex-col">`)— 兩 row 各自管自己 vertical rhythm,zero coupling。
 
-**世界級對照**:GitHub Primer PageHeader + UnderlineNav 採 flush stack(無 negative margin)— UnderlineNav 直接 append PageHeader 下方,border 由 UnderlineNav 接管。
+**理由**:flush stack(無 negative margin)—— tabs 列直接接在標題區下方,底線由 tabs 列自己畫,兩者之間不用負邊距硬湊。
 
 ### Rule W5:md tabs size 為 future tier,目前無 use case
 
@@ -228,7 +228,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 **邊界 — tabs 超寬溢出**:header 內 TabsList 溢出處理走 `components/Tabs/tabs.spec.md`「Overflow 模式」(`TabsList` `overflow` prop:none / scroll / menu),非本 SSOT scope。
 
-**Rationale**:overlay / chrome / dense toolbar 用 sm(tab 高 32/40)對齊 Ant「small size could be used in Modal」。production consumer 主要在 stories;cva default 改 sm 已過 visual baseline diff merge。
+**Rationale**:overlay / chrome / dense toolbar 用 sm(tab 高 32/40)對齊 Ant「small size could be used in Modal」([tabs/demo/size.md#L7](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/demo/size.md#L7))。production consumer 主要在 stories;cva default 改 sm 已過 visual baseline diff merge。
 
 ---
 
@@ -264,7 +264,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
   withTabs?: boolean              // false (default) | true → auto-suppress border + delegate to TabsList
   tabsSlot?: ReactNode            // Tabs row(column mode + W1-W6 lockstep,2026-05-18 ship)
   lockDensity?: 'inherit' | 'lg'  // 'inherit' (default)。'lg' = 在 header 上設 data-density=lg;⚠️ 2026-06-15:density lock 應設在 surface 根而非 header(header 鎖、body 沒鎖 → 左緣不對齊,FileViewer 圖二教訓)→ 現無 consumer 使用,保留僅為 API 相容。見 density.spec.md 消費者清單 + anti-pattern
-  leadingRail?: ReactNode         // 2026-05-21 ship per AppShell primary-header globalHeader:固定 width=sidebar-width-icon 的左 rail,內 justify-center 排列(toggle/logo 跟 sidebar 收合 icon center x 對齊)。對齊 GitHub global nav 左 logo 區 / Slack thin workspace rail 慣例。
+  leadingRail?: ReactNode         // 2026-05-21 ship per AppShell primary-header globalHeader:固定 width=sidebar-width-icon 的左 rail,內 justify-center 排列(toggle/logo 跟 sidebar 收合 icon center x 對齊)。
 >
   {children}
 </ChromeHeader>
@@ -307,7 +307,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 ## A11y 預設
 
-- Header 用 `<header>` semantic element;**僅 page-top top-level chrome header** 暴露 `role="banner"` landmark。nested 在 sectioning content(`<aside>` / `<section>` / overlay)內的 `<header>` 對 SR **不暴露 banner role**(per WAI-ARIA APG + MDN:`<header>` 只在最近 sectioning ancestor 為 `<body>` 時才是 banner)。ChromeHeader 是 layout primitive,**不硬塞 banner role**(與「7. Element contract」段一致)
+- Header 用 `<header>` semantic element;**僅 page-top top-level chrome header** 暴露 `role="banner"` landmark。nested 在 sectioning content(`<aside>` / `<section>` / overlay)內的 `<header>` 對 SR **不暴露 banner role**(per WAI-ARIA APG + MDN:`<header>` 只在最近 sectioning ancestor 為 `<body>` 時才是 banner —— [APG banner 範例 L66-L76](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/landmarks/examples/banner.html#L66-L76)、[MDN header#L71](https://github.com/mdn/content/blob/46bc51a679f027efc49508a449f7539ee1adca22/files/en-us/web/html/reference/elements/header/index.md#L71))。ChromeHeader 是 layout primitive,**不硬塞 banner role**(與「7. Element contract」段一致)
 - Tabs 走 Radix Tabs(原生 `role="tablist" / role="tab" / aria-selected`)
 - Dismiss button `aria-label="關閉"`(close X)
 - 鍵盤:Tabs 左右方向鍵切換(Radix);Esc 觸發 dismiss(overlay 家族)

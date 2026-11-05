@@ -1,5 +1,5 @@
 // @benchmark-cited: usage 分界與 placement 由 account-menu.spec.md 已列的
-// Atlassian / shadcn / Primer / Material primary sources 收斂；本檔只投影 canonical，
+// Atlassian / shadcn / Primer / Material primary sources 收斂；本檔只投影 canonical，(來源:https://unpkg.com/@atlaskit/atlassian-navigation@6.4.12/dist/types/components/Profile/types.d.ts)
 // 不新增 email、account switcher 或其他 aspirational contract。
 import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
@@ -29,7 +29,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="when">
         <p>目前登入者「自己」的帳號入口:個人資料、設定與登出。</p>
         <TutorialList>
-          <li>上方有全域標頭的版面(primary-header):放在全域標頭右側,品牌在左、自己的帳號在右(GitHub / Gmail / Slack 的慣例)—— <StoryLink kind="Design System/Components/AccountMenu/展示" name="全域標頭帳號入口">全域標頭帳號入口</StoryLink></li>
+          <li>上方有全域標頭的版面(primary-header):放在全域標頭右側,品牌在左、自己的帳號在右(GitHub、Gmail 的帳號入口都在右上角;Slack 的頭像在側欄,不算這一派)—— <StoryLink kind="Design System/Components/AccountMenu/展示" name="全域標頭帳號入口">全域標頭帳號入口</StoryLink></li> {/* 來源:https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-personal-account-settings/managing-your-theme-settings https://support.google.com/mail/answer/8154?hl=en https://slack.com/help/articles/201864558-Set-your-Slack-status-and-availability */}
           <li>Menu 放不下、叫出的左側浮層蓋住全域標頭時:入口鏡像到浮層頂排(SidebarHeader 右側)</li>
         </TutorialList>
       </UsageSection>

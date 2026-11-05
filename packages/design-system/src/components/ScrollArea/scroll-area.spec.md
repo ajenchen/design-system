@@ -14,7 +14,7 @@ ScrollArea 是**跨 OS 視覺一致的自訂捲動容器**——用 overlay 捲�
 
 **Layout Family**:非上述 family — self-contained primitive(純捲動容器,無 slot 結構)。
 
-**實作基礎**:基於 Radix ScrollArea primitive(shadcn passthrough 結構)——由 Radix 處理 viewport / scrollbar / thumb 的 pointer 拖曳與 overflow-detection,本 DS 橋接 token(scrollbar 寬度、thumb bg、hover 反饋)與 a11y 行為(Viewport `tabIndex={0}` 預設 + `viewportTabIndex={-1}` 雙 tab-stop opt-out + `viewportTabIndex={null}` ARIA composite wrapper opt-out + DS focus ring;Radix 不處理 keyboard,亦不自動標 Viewport focusable)。
+**實作基礎**:基於 Radix ScrollArea primitive(shadcn 包裝結構,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/scroll-area.tsx#L5-L13)——由 Radix 處理 viewport / scrollbar / thumb 的 pointer 拖曳與 overflow-detection,本 DS 橋接 token(scrollbar 寬度、thumb bg、hover 反饋)與 a11y 行為(Viewport `tabIndex={0}` 預設 + `viewportTabIndex={-1}` 雙 tab-stop opt-out + `viewportTabIndex={null}` ARIA composite wrapper opt-out + DS focus ring;Radix 不處理 keyboard,亦不自動標 Viewport focusable)。
 
 **實作取向**:本元件包裝既有 scroll-area primitive，目的是統一跨 OS 的捲軸視覺，並避免 DataTable / Sheet / Dialog 在 always-visible scrollbar 環境中被吃掉內容寬度。
 

@@ -131,7 +131,7 @@ function routeCommandRowKeys(event: React.KeyboardEvent<HTMLDivElement>) {
 
 // ── 指標按在清單上:DOM 焦點留在控制這份清單的 combobox(2026-09-30)──
 // user 同意的範圍(原話「其他部分我覺得”可以”」):**滑鼠點選項 = 按 Enter**,焦點不離開搜尋框。延伸到清單裡其他不是控件的位置
-// (群組標題、訊息列、放大鏡、捲軸)與清單型浮層裡的按鈕(全選)屬 AI 推導,依 rc-select / MUI 整份清單擋 mousedown 的做法。
+// (群組標題、訊息列、放大鏡、捲軸)與清單型浮層裡的按鈕(全選)屬 AI 推導,依 rc-select / MUI 整份清單擋 mousedown 的做法。(來源:https://github.com/react-component/select/blob/fcbd87ee9ef419eb677cc351744181d027a50110/src/OptionList.tsx#L79-L80 https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1546-L1560)
 // 規則與出處住 command.spec.md「A11y 預設」;選單的「選完之後」總表住 SelectMenu/select-menu.spec.md「A11y 預設」Focus 段。
 // 根因:cmdk 的選項只有 onPointerMove / onClick、沒有擋 mousedown
 // (https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L706-L718),
@@ -315,7 +315,7 @@ const Command = React.forwardRef<
   useCommandRootObserver(rootRef, onActiveOptionChange)
   const inherited = useRowSize('md')
   // 0 筆結果的讀屏播報住在根(2026-09-09 user 有條件核准這一項:要確保是 SSOT、且不違背世界級的設計):
-  // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift
+  // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift(來源:https://github.com/JedWatson/react-select/blob/4b6948078684bee394e09dd8e7cdc2d7f89e0fad/packages/react-select/src/components/LiveRegion.tsx#L213-L220 https://github.com/downshift-js/downshift/blob/1bb8b75e506fe807a5c5201a103d1bd128e5a5e2/src/utils/setA11yStatus.ts#L10-L32)
   // status message 都由根元件常駐渲),文字由 CommandEmpty 的字串 children 登記進來。之前只有 SelectMenu 自己另放一份
   // CommandEmptyStatus,CommandDialog / inline Command 沒有(command.spec.md 卻寫「都渲一份」);現在三種形態都由根
   // 自動渲一份,消費端不必、也不得再放(放了會播兩次)。
@@ -357,7 +357,7 @@ Command.displayName = CommandPrimitive.displayName
  * 同一個 MenuItem 項目、同一個 MenuItem header 分組),殼是 DS Dialog。
  * 2026-09-08 刪掉這裡對 cmdk 的 8 條 `[&_[cmdk-…]]` 尺寸覆寫(input h-12 / item py-3 / svg h-5 …)——
  * 它們就是 user 指出 Command 每一支 story 都跟 SelectMenu 不同一套的來源:同一個 primitive
- * 在面板裡被第二份樣式改寫。世界級的指令面板(Linear / Raycast / VS Code)也都是「同一份清單樣式 + 對話框殼」。
+ * 在面板裡被第二份樣式改寫。指令面板 = 「同一份清單樣式 + 對話框殼」:清單長相只有一個來源,面板只負責浮層外殼,兩處才不會各自漂移。
  * 指令面板依世界級慣例不畫可見標題;`title` 只給讀屏器(Radix 要求 DialogContent 有 Title)。
  */
 const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令', ...props }: DialogProps & { title?: string; label?: string }) => { // i18n-allow: DS 預設文案,可覆寫
@@ -387,14 +387,14 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
  * 這裡又一份 h-11 的,兩份漂移 —— user 2026-09-08:「儘管是不同元件也要是相同樣式的ssot吧?他應該要長得跟我們的input 一模一樣吧?」(登記簿 B18))。
  * 尺寸/字級/placeholder/disabled 全部吃 Field 輸入控件的 token(`--field-height-*` + 8px 內距、text-body(-lg)、
  * placeholder:text-fg-muted、disabled 依 M24 切 fg-disabled);**沒有外框**(它是浮層內的一列,底部用分隔線收邊),
- * 這是跟 `Input` 唯一的差別 —— 對齊 Linear / Raycast / Spotlight 的指令面板搜尋列。
+ * 這是跟 `Input` 唯一的差別 —— 搜尋列嵌在面板頂端,面板自己的外框已經圈出範圍,搜尋列只用底部分隔線跟清單分開。
  */
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & {
     size?: CommandSize
     // 2026-09-09 user 拍板:搜尋列**沒有** `loading` prop 了 —— 選項載入的指示只在清單內(CommandEmpty 槽的 CommandLoading),
-    // 搜尋列不為抓資料轉圈(2026-09-08 曾加、同日 user 抓到兩顆轉圈、09-09 退役;Polaris Autocomplete loading 時 TextField 也不轉)。
+    // 搜尋列不為抓資料轉圈(2026-09-08 曾加、同日 user 抓到兩顆轉圈、09-09 退役;Polaris Autocomplete loading 時 TextField 也不轉)。(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Autocomplete/Autocomplete.tsx#L144-L195)
   }
 >(({ className, size: sizeProp, ...props }, ref) => {
   const inherited = useRowSize('md')
@@ -468,7 +468,7 @@ CommandList.displayName = CommandPrimitive.List.displayName
  * 所以「沒有結果」與「1 筆結果」等高(md 48px = 8 + 32 + 8),不再有任何最小高度公式(舊的 3 列 minRows 已退役)。
  * owner:select-menu.spec.md「Empty state」;歷史:2026-04-08 一行小字 → 04-10 撐 3 列 → 04-16 Empty 元件 → 09-08 訊息列。
  * loading 時把 `<CommandLoading>` 當 children 放進來(同一種訊息列,前綴槽放列圖示尺寸的轉圈)。
- * **放在 CommandList 外面(listbox 的兄弟,MUI Autocomplete 同構)**:axe `aria-required-children` 不允許 listbox 裡有非 option 的子元素
+ * **放在 CommandList 外面(listbox 的兄弟,MUI Autocomplete 同構)**:axe `aria-required-children` 不允許 listbox 裡有非 option 的子元素(來源:https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Autocomplete/Autocomplete.js#L839-L860)
  * (2026-09-08 a11y 基線重建抓到);cmdk Empty 只讀 store,不需要住在 List 裡。空 listbox 載入時有 aria-busy,axe 全乾淨。
  */
 const CommandEmpty = React.forwardRef<
@@ -521,7 +521,7 @@ function CommandLoading({ label, size: sizeProp }: { label: string; size?: Comma
 // combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
 // 聽不到任何播報。補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字;
 // loading 由可見的 CommandLoading `role="status"` + `aria-label` 直接宣告,避免同一狀態重複播報。
-// 對齊 react-select A11yText / APG combobox no-results 播報 + empty.spec.md「動態變空」(consumer 容器加 aria-live="polite")。
+// 對齊 react-select LiveRegion(篩選後的結果數常駐播報)+ empty.spec.md「動態變空」(consumer 容器加 aria-live="polite")。(來源:https://github.com/JedWatson/react-select/blob/4b6948078684bee394e09dd8e7cdc2d7f89e0fad/packages/react-select/src/components/LiveRegion.tsx#L148-L155)
 export function CommandEmptyStatus({ loading = false, text }: { loading?: boolean; text: string }) {
   const filteredCount = useCommandState((state) => state.filtered.count)
   return (

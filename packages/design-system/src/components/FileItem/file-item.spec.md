@@ -62,7 +62,7 @@ compact 為預設——多數 upload 清單是「快速掃視多檔」場景，�
 | ItemContent `mode` | `"scanning"` | `"scanning"` |
 | Gap token | `--item-gap-label-desc-scanning` | `--item-gap-label-desc-scanning` |
 
-**為什麼兩 mode 都 scanning**:FileItem 是檔案列表 row — 使用者需快速掃視多檔(Gmail attachment / Google Drive 清單),掃描 typography 視覺緊湊符合語義。Rich mode 保留 Avatar 48 thumbnail 作視覺引導,但文字層採 scanning idiom。
+**為什麼兩 mode 都 scanning**:FileItem 是檔案列表 row — 使用者需快速掃視多檔(信件附件、雲端硬碟清單這類情境),掃描 typography 視覺緊湊符合語義。Rich mode 保留 Avatar 48 thumbnail 作視覺引導,但文字層採 scanning idiom。
 
 ## 結構(2026-04-23 修正對齊 item-anatomy canonical)
 
@@ -136,8 +136,8 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 
 | Mode × surface | 容器視覺 | Rationale |
 |------|---------|-----------|
-| **rich + `surface=form`**（預設，表單/訊息附件）| `border border-divider rounded-md bg-surface` | Rich = 「檔案 card」自立輪廓——Slack / Notion / Linear attachment 慣例；邊框讓每 row 視覺獨立 |
-| **rich + `surface=upload-manager`**（Google Drive / Dropbox 背景上傳 box）| **無邊框 + 無 bg + 直角**(2026-09-25 B12 起列鋪滿面板寬,圓角碰到面板直邊會缺角,AI 推導;縮圖切角是 Avatar `shape="square"` 自己的圓角,不靠列);avatar 作每筆 item 視覺邊界 | box 自身已是容器 → card border 多餘＝雙層容器；avatar thumbnail 提供「每筆檔案」邊界節奏。2026-06-03 codify（原僅 L116 旁註「consumer 自己移除 border」，現 `surface` prop 機械化）|
+| **rich + `surface=form`**(預設,表單/訊息附件)| `border border-divider rounded-md bg-surface` | Rich = 「檔案 card」自立輪廓 —— 附件夾在表單或訊息內容中間,邊框讓每 row 視覺獨立、不跟周圍文字混在一起 |
+| **rich + `surface=upload-manager`**（背景上傳進度面板）| **無邊框 + 無 bg + 直角**(2026-09-25 B12 起列鋪滿面板寬,圓角碰到面板直邊會缺角,AI 推導;縮圖切角是 Avatar `shape="square"` 自己的圓角,不靠列);avatar 作每筆 item 視覺邊界 | box 自身已是容器 → card border 多餘＝雙層容器；avatar thumbnail 提供「每筆檔案」邊界節奏。2026-06-03 codify（原僅 L116 旁註「consumer 自己移除 border」，現 `surface` prop 機械化）|
 | **compact + 有 status**（uploading / error / upload-manager completed，有 progress bar）| 無背景、無邊框,只靠 progress bar 提供 affordance | 「正在發生」/「剛發生」的動態 narrative,progress 本身就是視覺焦點 |
 | **compact + 無 progress**(form attachment 靜態態) | `bg-secondary rounded-md`(= neutral-3 色) | 靜態清單(form / 訊息附件)背景色區隔出「檔案 row」邊界,跟純文字內容區分。**為何 `bg-secondary` 不 `bg-neutral-3`**:`--secondary` 是 semantic token 經 `@theme inline` 橋接成合法 Tailwind utility,`--color-neutral-3` 是 primitive token(僅 `:root` CSS var)不生成 utility,寫 `bg-neutral-3` 會 silent 失效。對齊 Badge low / ProgressBar track SSOT(同色) |
 
@@ -167,7 +167,7 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 
 **核心區分**:同一個 FileItem,依**所在 surface** 分 2 種使用場景,各有 prop signature + 視覺節奏。唯一詞彙 = `surface` prop(`form` / `upload-manager`),以下兩節即其兩值。**一句話差別:`upload-manager` 面板還在時,完成列保留狀態(管理上傳是重點)/ `form` 完成後清除狀態變靜態附件。進度條兩者上傳中都會顯示(`progressBar` 只看 `status` 不看 `surface`,見 `file-item.tsx`)。**
 
-### `surface="upload-manager"` — 上傳管理面板(Google Drive / Dropbox 右下角類)
+### `surface="upload-manager"` — 上傳管理面板(畫面右下角、背景上傳進度那一類)
 
 **語意**:管理檔案上傳的 UI —— **上傳狀態是重點,面板還在時,完成列保留 progress + status narrative**(不清除),使用者回顧「這檔剛上傳完成」;全部成功 5 秒後面板自己收起,滑鼠在面板上或鍵盤焦點在面板裡時暫停、離開重新計時,有失敗的檔案就不收起,收合著時出現新的失敗會自己展開(AI 建議、user 2026-10-21 17:14 採納:「照你建議」〔UD-U1021-17〕)。裝在獨立浮層面板(非 dropzone)。
 
@@ -271,7 +271,7 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 
 **control→list gap(FileUpload 內建 list 消費)**:dropzone / button 控制項 ↔ 第一個 FileItem 的間距 = **同上 form gap 同值**(rich card 8px / compact bg-pill 4px),由 `file-upload.tsx` 依 `fileListMode` 套用。**FileUpload 內建 list 一律 `surface=form`**(dropzone 是表單上傳框,非獨立浮層 upload manager),故不套用下方 upload-manager 的 12px / 面板 padding。
 
-### upload-manager 浮層面板 composition(Google Drive 右下角類獨立面板,**非** FileUpload dropzone)
+### upload-manager 浮層面板 composition(畫面右下角獨立的背景上傳進度面板,**非** FileUpload dropzone)
 
 `surface=upload-manager` 的 FileItem list 裝在獨立浮層面板(header + 列表);左右 gutter 由列自己帶、面板 body 給 0,上下由列與 body 各給一半(2026-09-25 B12):
 
@@ -373,7 +373,7 @@ Consumer 自行組合。按 `patterns/element-anatomy/inline-action.spec.md`「P
 
 ## Status ↔ Action hover-swap（passive → active affordance）
 
-**世界級 UX pattern**（Gmail / Slack / Dropbox 附件 convention）:status 預設是 passive 狀態標記(綠 ✓ / 紅 ✗),使用者 hover 整個 row 時,**狀態 icon 自動換成「相應的操作」**,click 即觸發:
+**互動模式**:status 預設是 passive 狀態標記(綠 ✓ / 紅 ✗),使用者 hover 整個 row 時,**狀態 icon 自動換成「相應的操作」**,click 即觸發 —— 同一個位置先告訴你「現在怎樣」,要動手時再告訴你「可以做什麼」,不必另外多放一排按鈕:
 
 | status | Passive icon | Hover 換成 | Consumer handler |
 |--------|-------------|-----------|------------------|
@@ -473,7 +473,7 @@ FileItem 決策維度是 `mode`(compact / rich)× `status`(uploading / completed
 
 ColorMatrix 已建:展示 status × 元素(filename / description / progress bar / status icon)色彩矩陣,明示 status 只驅動 **progress bar + status icon + description** 升階,**不染容器背景**(避免整 row 轉紅蓋過其他 metadata)。容器本身沒有 selected / disabled state(interface 無 `disabled` prop);滑過底色只在有 `onClick` 時出現,由 `StateBehavior` 示範(詳「滑過」段)。
 
-## 與 shadcn Attachment 的分界(2026-07-07 codify,目錄新增元件謂詞 anchor)
+## 與 shadcn Attachment 的分界(2026-07-07 codify,目錄新增元件謂詞 anchor)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/bases/radix/ui/attachment.tsx#L8-L9))
 
 shadcn 2026-06 chat 套件的 Attachment(ui.shadcn.com/docs/components/attachment)與 FileItem 同情境(附件 + 上傳狀態 + 動作)。**不遷移架構、不改名**:Attachment 為純組合式(無 Radix primitive 核心,AttachmentAction 即其 Button),無 primitive 增益且缺我們的 item-anatomy 幾何深度與 ProgressBar 量化 a11y(其進度僅 title shimmer,SR 無量化值);shadcn 為 copy-in scaffold 無上游更新流入;改名破壞 File* 家族(FileUpload / FileViewer)+ npm breaking + `completed` lifecycle family(props-naming.md)。判準 SSOT → `ui-development.md`「shadcn 目錄後續新增元件 vs DS 既有」。
 

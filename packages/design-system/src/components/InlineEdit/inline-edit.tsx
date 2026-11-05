@@ -72,7 +72,7 @@ export interface InlineEditProps<T = string> {
    * 不可自刻 —— 格式化 + 內部間距 SSOT 住在該控件的 view mode(見檔頭 Model A)。
    */
   renderRead?: (value: T) => React.ReactNode
-  /** 多行欄位(Jira description 類):view 態換行 + 預設 edit 態用 `<Textarea>`,Enter=換行、Cmd/Ctrl+Enter 或 blur 提交 */
+  /** 多行欄位(工作項目描述這類長文):view 態換行 + 預設 edit 態用 `<Textarea>`,Enter=換行、Cmd/Ctrl+Enter 或 blur 提交 */
   multiline?: boolean
   /**
    * 多行 edit 態的高度上限(行數)。預設無上限 —— 高度隨內容,與 view 態同源(= DataTable cell 語意)。
@@ -81,7 +81,7 @@ export interface InlineEditProps<T = string> {
   editMaxRows?: number
   /**
    * 是否可編輯(預設 true)。false → view 態無 hover 入口、無藍框、不可點進 edit(對齊世界級就地編輯
-   * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;cite 見檔頭 MUI X / AG Grid URL)。
+   * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;cite 見檔頭 MUI X / AG Grid URL)。(來源:https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/data-grid/editing/editing.md?plain=1#L190)
    * 永久唯讀值何時用此 prop 見 inline-edit.spec.md「editable 閘」;不用 disabled。
    */
   editable?: boolean
@@ -342,7 +342,7 @@ function InlineEditImpl<T = string>(
     return (
       // exit SSOT 雙保險:onBlur(focusout,tab-out / 非 overlay 控件)+ document pointerdown-outside(overlay
       //   點外面 Radix 送焦回 trigger 時 focusout 不觸發之補位)。任何 edit 控件離開 → 回 view。
-      // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding — Jira 式,user 2026-07-17 拍板)。
+      // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding —— 進入編輯就是那個欄位本人;user 2026-07-17 拍板)。
       <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur} {...ownTree.capture}>
         {editNode}
       </div>
@@ -371,7 +371,7 @@ function InlineEditImpl<T = string>(
         // view 態 typography 預設消費 Field view SSOT(sm/md→text-body,lg→text-body-lg)——
         // plain 用法 view 字級 = edit <Input>(text-body)= <Input mode="view"> 字級,三者一致零跳字。
         fieldDisplayTextClass(size),
-        // 多行:保留換行(pre-wrap)+ 長字斷行 —— view 忠實呈現 Textarea 內容(Jira description 類)。
+        // 多行:保留換行(pre-wrap)+ 長字斷行 —— view 忠實呈現 Textarea 內容(長文描述欄)。
         multiline && 'whitespace-pre-wrap break-words',
         readClassName,
         isEmpty && 'text-fg-muted',

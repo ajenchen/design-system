@@ -2,7 +2,7 @@
 // 2026-05-17 retire per audit Dim 24:跟 anatomy.stories.tsx 4 個 matrix
 // (Overview/IconOnlyMatrix/FullWidthMatrix/StateBehavior)完全 trait-grid 重複,無 unique teaching。
 // 真實業務情境靠 principles.stories.tsx 的 UsageGuidance / IconOnlyRule / FullWidthRule;
-// trait matrix 靠 anatomy.stories.tsx;本檔保留 1 典型「Jira-style view switcher」入口情境。
+// trait matrix 靠 anatomy.stories.tsx;本檔保留 1 典型「任務管理工具的檢視切換(清單 / 看板 / 時間軸)」入口情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { List, LayoutGrid, Calendar } from 'lucide-react'
@@ -21,7 +21,7 @@ export default meta
 
 type Story = StoryObj<typeof SegmentedControl>
 
-// 典型 Jira / Notion / Linear view switcher 入口情境(對齊 mindset #4「真實業務場景」)
+// 典型「任務管理工具切換檢視(清單 / 看板 / 時間軸)」入口情境(對齊 mindset #4「真實業務場景」)
 export const ViewSwitcher: Story = {
   name: '視圖切換器',
   render: () => {

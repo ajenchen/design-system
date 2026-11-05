@@ -185,7 +185,7 @@ export const Accessibility: Story = {
       <section>
         <H3>ARIA roles</H3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
-          <li><code>role="group"</code> on root + <code>aria-label="批次操作"</code>(可 i18n override;2026-07-06 自 toolbar 降級——未實作 APG toolbar 方向鍵契約,group 語意誠實,Gmail / Linear 同款)</li>
+          <li><code>role="group"</code> on root + <code>aria-label="批次操作"</code>(可 i18n override;2026-07-06 自 toolbar 降級——未實作 toolbar 角色的方向鍵移動焦點,宣告 toolbar 等於讓輔助科技說「工具列」卻按方向鍵沒反應;group 語意誠實)</li>
           <li>Clear icon:<code>aria-label="清除選取"</code></li>
           <li>actions slot 內各 button 由 consumer 提供 aria-label / 文字</li>
           <li>Hint banner 用 Alert(自帶 <code>role="status"</code> + <code>aria-live="polite"</code>)</li>

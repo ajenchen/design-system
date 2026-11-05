@@ -18,7 +18,7 @@ Skeleton 是**載入中的內容佔位符**——在資料載入完成前，用�
 
 **Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
 
-**實作基礎**：shadcn passthrough——純 CSS opacity-pulse div（`animate-pulse`，不透明度脈動，非掃光/漸層動畫）。本 DS 保留 shadcn 原結構 + 橋接 DS token。
+**實作基礎**：shadcn passthrough——純 CSS opacity-pulse div（`animate-pulse`，不透明度脈動，非掃光/漸層動畫）。本 DS 保留 shadcn 原結構 + 橋接 DS token([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/skeleton.tsx#L3-L10))。
 
 ---
 

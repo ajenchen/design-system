@@ -22,9 +22,9 @@ benchmark:
 
 Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前頁、允許直接跳到任一頁。
 
-基於 shadcn/ui Pagination 的 DOM 骨架(`nav >(操作群 div)> ul > li` + 當前頁 `aria-current="page"`),但**按鈕消費 DS `Button`、事件驅動、資料模型 = `total`(總筆數)+ `pageSize`(Ant Pagination 同款,總頁數內部推導),非 shadcn 原生的 `<a href>` 連結型**——本 DS 服務 app 產品場景;需要 URL 同步時由 consumer 在 `onPageChange` 接 router,不是把按鈕換成連結。`page` / `pageSize` 皆 dual-mode(傳值 = controlled,不傳 = uncontrolled)。
+基於 shadcn/ui Pagination 的 DOM 骨架(`nav >(操作群 div)> ul > li` + 當前頁 `aria-current="page"`),但**按鈕消費 DS `Button`、事件驅動、資料模型 = `total`(總筆數)+ `pageSize`(Ant Pagination 同款,總頁數內部推導;Ant `total`「Total number of data items」,[index.en-US.md#L65](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/index.en-US.md#L65)),非 shadcn 原生的 `<a href>` 連結型**——本 DS 服務 app 產品場景;需要 URL 同步時由 consumer 在 `onPageChange` 接 router,不是把按鈕換成連結。`page` / `pageSize` 皆 dual-mode(傳值 = controlled,不傳 = uncontrolled)。
 
-**本元件是分頁的完整功能 SSOT**(2026-07-06 user 拍板〔UD-J18〕):頁碼、總筆數資訊(`showTotal`)、每頁筆數選單(`pageSizeOptions`)全部 own 在此——Ant(showTotal / showSizeChanger 內建於 Pagination)/ Carbon(page-size select 內建)/ MUI TablePagination(rows-per-page + range 內建)同派。DataTable 等 consumer **轉發 config 消費本元件**,不自拼分頁列。
+**本元件是分頁的完整功能 SSOT**(2026-07-06 user 拍板〔UD-J18〕):頁碼、總筆數資訊(`showTotal`)、每頁筆數選單(`pageSizeOptions`)全部 own 在此——Ant(showTotal / showSizeChanger 內建於 Pagination,[index.en-US.md#L59-L61](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/index.en-US.md#L59-L61))/ Carbon(page-size select 內建,`pageSizes` [Pagination.tsx#L150](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/Pagination/Pagination.tsx#L150))/ MUI TablePagination(rows-per-page + range 內建,[TablePagination.js#L140-L141](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/TablePagination/TablePagination.js#L140-L141))同派。DataTable 等 consumer **轉發 config 消費本元件**,不自拼分頁列。
 
 **Layout Family**:非 4-family — self-contained composite(nav 橫排 control row);個別按鈕消費 Family 3(Button Pill)。
 
@@ -51,7 +51,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ## 近親分界
 
 - **vs `SegmentedControl`**:兩者都是「多顆中亮一顆」,但語意不同——SegmentedControl 是**互斥選值**(選項固定 2-5 個、每個選項有語意),Pagination 是**位置導覽**(頁數動態、可摺疊、數字本身無語意)。SegmentedControl 恆有一值且不可空;Pagination 的當前頁是「你在哪」不是「你選了什麼」。
-- **vs `<DataTable pagination>`**:DataTable 把 TanStack 分頁模型(`getPaginationRowModel`)封裝在內部並消費本元件 render 分頁列(Ant Table 消費 Pagination / Atlassian DynamicTable `rowsPerPage` 同模式)。表格場景一律走內建;standalone Pagination 留給非 DataTable 的列表 / 搜尋結果頁。
+- **vs `<DataTable pagination>`**:DataTable 把 TanStack 分頁模型(`getPaginationRowModel`)封裝在內部並消費本元件 render 分頁列(Ant Table 消費 Pagination([table/index.en-US.md#L138](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/index.en-US.md#L138))/ Atlassian DynamicTable `rowsPerPage` 同模式([@atlaskit/dynamic-table@19.3.8 types.d.ts](https://unpkg.com/@atlaskit/dynamic-table@19.3.8/dist/types/types.d.ts),相依 `@atlaskit/pagination`))。表格場景一律走內建;standalone Pagination 留給非 DataTable 的列表 / 搜尋結果頁。
 - **vs 虛擬滾動**:兩者是互斥的大資料策略(TanStack 官方定位為 alternative strategies)——分頁 = 使用者主動換頁、每頁固定筆數;虛擬滾動 = 連續滾動、只渲染可視列。同一份資料不可同時用兩者。
 - **vs `Button secondary`(語意分界)**:當前頁「視覺上」= secondary 一比一(直接消費),但**語意兩條線**——secondary 是「次要動作」(action emphasis),當前頁是「持續選中」(selection state,由 `aria-current="page"` 承載)。在一般 UI 不得反過來拿 secondary 冒充「選中」表達(選中語意元件走 Chip / SegmentedControl / Pagination);此處是 selection 元件消費 action variant 當視覺 host,方向合法。
 
@@ -64,25 +64,25 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ```
 
 - **格位配置**:boundary 1 固定;sibling 隨「窄容器階梯」(下節)走 —— 階 0–1 為 1、階 2–3 為 0(兩者都是內部常數,v1 不開 props)。完整形態最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊;階 2 起 sibling 0 → **5 格**。(2026-09-05 更正:原句「sibling 1 固定、7 格」與下節階 2「sibling 1 → 0」同檔矛盾。)若未來有多個消費者需要不同視窗，再將 boundary / sibling 設定開為受控 API。
-- **Ellipsis 非互動**:純指示符號(`MoreHorizontal` icon + `aria-hidden`),不可點——對齊 MUI / shadcn(非互動 ellipsis)。**Ant 為可點 jump-5 派**(rc-pagination 預設把省略格渲染成 `jump-prev` / `jump-next`:hover 顯 «/»、click 跳 5 頁,`https://github.com/react-component/pagination`);本 DS 選非互動,快速跳頁留給未來 `showQuickJumper`。Breadcrumb 的可點 ellipsis 是 collapse dropdown 場景,語意不同。
+- **Ellipsis 非互動**:純指示符號(`MoreHorizontal` icon + `aria-hidden`),不可點——對齊 MUI / shadcn(非互動 ellipsis:MUI 省略格是 `div`,[PaginationItem.js#L64](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/PaginationItem/PaginationItem.js#L64)、[#L388-L395](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/PaginationItem/PaginationItem.js#L388-L395);shadcn 是 `aria-hidden` 的 `span`,[pagination.tsx#L104-L116](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx#L104-L116))。**Ant 為可點 jump-5 派**(rc-pagination 預設把省略格渲染成 `jump-prev` / `jump-next`:hover 顯 «/»、click 跳 5 頁,`https://github.com/react-component/pagination`);本 DS 選非互動,快速跳頁留給未來 `showQuickJumper`。Breadcrumb 的可點 ellipsis 是 collapse dropdown 場景,語意不同。
 - **上下頁按鈕**:iconOnly(`ChevronLeft` / `ChevronRight`),在第一頁 / 最後一頁時 `disabled`。
 - 頁碼格位由內部演算法產生;兩顆省略號各自身分穩定,翻頁時不互相 remount(演算法簽名與 React key 等實作細節由 `pagination.tsx` 檔內註解單一持有,spec 不重述——職責分離)。
 
 ## 視覺
 
-- **全部按鈕 = Button variant 純組裝,零視覺客製**(2026-07-06 user 抓出後精煉):上下頁 = `text` iconOnly、未選數字 = `text`、**當前頁 = `secondary`**——secondary 的 rest(primary 描邊+染字+不染底)/ hover(升 hover 階)/ active(深一階)與 `semantic.css`「選中狀態」canonical 完全同拼寫,直接消費不手寫平行副本(M17/M23)。唯一的 className = 等寬幾何(min-width 方形節奏對齊 Ant,屬 bundled family 合法)。
+- **全部按鈕 = Button variant 純組裝,零視覺客製**(2026-07-06 user 抓出後精煉):上下頁 = `text` iconOnly、未選數字 = `text`、**當前頁 = `secondary`**——secondary 的 rest(primary 描邊+染字+不染底)/ hover(升 hover 階)/ active(深一階)與 `semantic.css`「選中狀態」canonical 完全同拼寫,直接消費不手寫平行副本(M17/M23)。唯一的 className = 等寬幾何(min-width 方形節奏對齊 Ant:minWidth = height = item-size,[pagination/style/index.ts#L484-L485](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/style/index.ts#L484-L485);屬 bundled family 合法)。
 - **語意與視覺分工**:「選中」語意由 `aria-current="page"` 承載;Button secondary 僅為視覺 host(action 元件本身無選中語意,見近親分界)。與 Chip / SegmentedControl 選中同一套 token 語言(它們非 Button、自建 element 鏡射同拼寫);同時正是 Ant 當前頁做法(`colorPrimary` 描邊+字+不染底、hover `colorPrimaryHover`)。
 - **間距兩層**:頁碼列內部(數字鈕之間)屬 bundled family(`tokens/layoutSpace/layoutSpace.spec.md` 已明文「Pagination 內部」元件自管),元件固定;完整形態的「資訊 ↔ 操作群」與「頁碼 ↔ 每頁選單」群組間距消費 `--layout-space-tight`(density-aware,與 DataTable 表格→分頁列同 token)。
 
 ## 完整形態(showTotal / pageSizeOptions)
 
-**Layout =「資訊左、操作右」**(對齊 Ant 源碼結構:total 文字是最左元素、size changer 是最右元素——資訊「你在哪」與操作「換頁/換每頁筆數」分離):
+**Layout =「資訊左、操作右」**(對齊 Ant 源碼結構:total 文字是最左元素、size changer 是最右元素,[rc-pagination Pagination.tsx#L629-L652](https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/Pagination.tsx#L629-L652)——資訊「你在哪」與操作「換頁/換每頁筆數」分離):
 
 ```
 第 1–20 筆,共 85 筆                    ◀ [1] 2 3 4 5 ▶  [20 筆/頁 ▾]
 ```
 
-- `showTotal`(opt-in):左側 range 格式「第 x–y 筆,共 N 筆」——Ant「1-20 of 85 items」/ MUI「1–5 of 13」/ Carbon「1–10 of 128 items」三家共識,非單純總數。
+- `showTotal`(opt-in):左側 range 格式「第 x–y 筆,共 N 筆」——Ant「1-20 of 85 items」([demo/total.tsx#L15](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/demo/total.tsx#L15),Ant 本身無預設格式、這是官方範例)/ MUI「1–5 of 13」(預設 [TablePagination.js#L140-L141](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/TablePagination/TablePagination.js#L140-L141))/ Carbon「1–10 of 128 items」(預設 [Pagination.tsx#L223](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/Pagination/Pagination.tsx#L223))三家共識,非單純總數。
 - `pageSizeOptions`(opt-in):頁碼右側顯示「N 筆/頁」選單，並消費既有 `Select size="sm"`。變更每頁筆數時自動回第 1 頁，避免換大 pageSize 後停在超界頁而出現 clamp 歧義。
 - 兩者皆未開 = 純頁碼 inline 形態(consumer layout 決定對齊;表格情境靠右由 DataTable 處理)。
 
@@ -91,14 +91,14 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ## 窄容器階梯(RWD,2026-09-04)
 
 **量的是容器不是視窗。** 表格被側欄擠窄時,視窗可能還有 1440px —— Tailwind 的 `sm:`/`lg:` 與
-Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情境一律判「寬螢幕」不會動。
+Ant Pagination 的 `responsive`(`useBreakpoint`,[Pagination.tsx#L99-L120](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/Pagination.tsx#L99-L120);`useBreakpoint` 是 grid 的視窗斷點 hook,L22)量的都是視窗,在那個情境一律判「寬螢幕」不會動。
 [Carbon 是唯一用 container query 的一家](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/pagination/_pagination.scss#L43)
 (`container-type: inline-size` + `@container pagination (max-width: 42rem)`),量測語意對。
 我們用 `ResizeObserver` 而不是 CSS container query,因為第 2 階(改格位數)本來就得在 JS 做,
 用兩套機制守同一條階梯只會讓它們有機會不同步。
 
 **每一階砍掉的都不是導覽模型本身**,所以數字頁碼一路活到最窄 —— 這條線是 2026-09-04 user 定的
-(「rwd 確實要保持固定的瀏覽模式」);Carbon 窄式砍掉數字只留 ◀▶、Ant `simple` 把數字換成
+(「rwd 確實要保持固定的瀏覽模式」);Carbon 窄式(容器 < 42rem)藏掉頁碼與每頁筆數選單、只留筆數範圍文字與 ◀▶([_pagination.scss#L60-L72](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/pagination/_pagination.scss#L60-L72))、Ant `simple` 把數字換成(rc-pagination [#L423-L424](https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/Pagination.tsx#L423-L424))
 `n / N`,兩者都會在窄寬下切換成本規格「樣式派系」段明文排除的另一種導覽模式,故不採。
 
 | 階 | 砍掉什麼 | 性質 |
@@ -122,7 +122,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
   - **世界級掃描 16 家、約 20 個分頁原始檔**,`overflow: auto|scroll` 全批只中一條 —— MUI `TablePagination.js:29`,
     而那是**表格頁尾工具列**(root 是 `TableCell`,渲染的是每頁筆數選單 / 筆數文字 / 上下頁鈕,沒有數字頁碼),
     且 `auto` 是避免表格版面被撐破的防守寫法。**沒有任何一家讓數字頁碼列橫向捲動。**
-    Carbon 反過來在 `_pagination.scss:37` 明文寫 `overflow: initial`;Ant 全檔唯一 overflow 在 `:689` 的 clearfix;
+    Carbon 反過來在 `_pagination.scss` 明文寫 `overflow: initial`([#L39](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/pagination/_pagination.scss#L39));Ant 全檔唯一 overflow 是 clearfix 那條([pagination/style/index.ts#L686-L692](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/style/index.ts#L686-L692));
     Primer / shadcn / Polaris / Bootstrap / Atlassian / Angular Material / GOV.UK / Mantine / EUI / Base Web / Vuetify 皆 0。
     主流解是**收合頁碼**(Atlassian `max = 7` 插省略號、Carbon PaginationNav 在 `isSm` 砍到 4 顆、Ant `pageBufferSize`)。
   - **我們的數字**:砍完頭尾的最後一階 = 5 格 × 28px + 4 × gap 4px = **156px**;DS 定義的最窄容器是側欄面板下限
@@ -151,7 +151,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 | 情境 | 行為 |
 |------|------|
 | `total <= 0` | 不渲染(回傳 null)——沒有資料可導覽 |
-| 單頁(`total <= pageSize`) | **照常渲染**(單顆當前頁 + disabled 上下頁)——對齊 Ant `hideOnSinglePage` 預設 false + MUI;保留版面穩定,避免資料量在 1 頁邊界抖動時整條列出現消失 |
+| 單頁(`total <= pageSize`) | **照常渲染**(單顆當前頁 + disabled 上下頁)——對齊 Ant `hideOnSinglePage` 預設 false([index.en-US.md#L52](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/index.en-US.md#L52))+ MUI(usePagination 沒有單頁隱藏的選項,[usePagination.js#L7-L18](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/usePagination/usePagination.js#L7-L18));保留版面穩定,避免資料量在 1 頁邊界抖動時整條列出現消失 |
 | `page` 越界(< 1 或 > 總頁數) | 防禦性 clamp 後渲染(顯示層不炸);糾正責任在 consumer / DataTable(接資料變動時同步 clamp) |
 | `pageSize <= 0`(consumer contract violation) | 防禦 clamp 至 1(不渲染垃圾格位、totalPages 不會變 Infinity/NaN) |
 | 極大總頁數(500+) | 摺疊規則不變(恆 ≤ 7 格);數字鈕寬度容納 3-4 位數自然撐開 |
@@ -178,14 +178,14 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 
 ## A11y 預設
 
-**ARIA / Pattern**:WAI-ARIA 無專門 pagination pattern,公認做法(shadcn / MUI / Atlassian 一致)= landmark + current 標記:
+**ARIA / Pattern**:WAI-ARIA 無專門 pagination pattern,公認做法(shadcn / MUI / Atlassian 一致)= landmark + current 標記(shadcn [pagination.tsx#L13-L14](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx#L13-L14)、[#L53](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx#L53);MUI [Pagination.js#L157-L158](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Pagination/Pagination.js#L157-L158)、[usePagination.js#L127](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/usePagination/usePagination.js#L127);Atlassian [@atlaskit/pagination@17.3.4 pagination.js](https://unpkg.com/@atlaskit/pagination@17.3.4/dist/esm/pagination.js) L106、L121-L122):
 
 - root `<nav aria-label="分頁">`(landmark;預設中文 —— user 2026-10-21 17:24「預設語言是中文」〔UD-U1021-20〕;經 I18nProvider `pagination.label` 或 consumer 傳 `aria-label` 覆寫,同 `lib/i18n/README.md`「Fallback chain」)
 - 當前頁按鈕 `aria-current="page"`(**不用** `aria-pressed`——pressed 是可取消的 toggle 語意,當前頁不可「取消」)
 - ellipsis `aria-hidden`(純視覺指示)
 - 上下頁 iconOnly 按鈕帶 `aria-label`(預設「上一頁」/「下一頁」,`prevAriaLabel` / `nextAriaLabel` props 或 I18nProvider `pagination.previous` / `pagination.next` 可覆寫)
 
-**鍵盤**:Tab 逐鈕聚焦(原生 button 序)、Enter / Space 觸發——全部繼承 Button 原生語意,無自訂 key handler;不做 roving tabindex(頁碼是 nav landmark 內的獨立按鈕群,非 composite widget,對齊 shadcn / Ant / MUI)。
+**鍵盤**:Tab 逐鈕聚焦(原生 button 序)、Enter / Space 觸發——全部繼承 Button 原生語意,無自訂 key handler;不做 roving tabindex(頁碼是 nav landmark 內的獨立按鈕群,非 composite widget,對齊 shadcn / Ant / MUI:shadcn 與 MUI 分頁檔全無 key handler,Ant 只在各格自己處理 Enter / Space([rc-pagination #L260-L276](https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/Pagination.tsx#L260-L276)),三家都沒有 roving)。
 
 **驗證**:Storybook a11y 面板 0 critical violation;純鍵盤可完成翻頁與跳頁。
 

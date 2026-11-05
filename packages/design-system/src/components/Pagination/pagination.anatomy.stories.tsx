@@ -35,7 +35,7 @@ export const Overview: Story = {
           <H3>Anatomy</H3>
           <Desc>
             {'nav[aria-label="分頁"] > ul > li(shadcn 骨架);上下頁 = Button text sm iconOnly,'}
-            {'未選數字 = Button text sm、當前頁 = Button secondary(等寬 min-w = field-height-sm,方形節奏對齊 Ant);'}
+            {'未選數字 = Button text sm、當前頁 = Button secondary(等寬 min-w = field-height-sm,方形節奏對齊 Ant:minWidth = height = item-size,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/style/index.ts#L484-L485 );'}
             {'當前頁 aria-current="page" + 選中樣式(主色描邊+染字、不染底,與 Chip / SegmentedControl 選中同一套);'}
             {'… = MoreHorizontal 純指示(aria-hidden,不可點)。格位恆 ≤ 7(boundary 1;sibling 1,窄容器階 2 起降為 0 → 5 格)。'}
           </Desc>

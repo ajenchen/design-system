@@ -212,7 +212,7 @@ export const SizeSelection: Story = {
     <TutorialPage>
       <TutorialRule
         title="sm — ★ 預設,overlay / chrome / dense toolbar"
-        note="h-tab-sm(32/40)。所有 header 內 tabs 預設用 sm(對齊 Ant Design verbatim「small size could be used in Modal」)"
+        note="h-tab-sm(32/40)。所有 header 內 tabs 預設用 sm(對齊 Ant Design verbatim「small size could be used in Modal」)" /* 來源:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/demo/size.md#L7 */
       >
         <Tabs defaultValue="a">
           <TabsList size="sm">
@@ -231,7 +231,7 @@ export const SizeSelection: Story = {
 
       <TutorialRule
         title="lg — 獨立 tabs 取代 chrome header(罕見 page-level hero)"
-        note="h-tab-lg(48/56)= --chrome-header-height 像素相等。整個頁面的主結構切換,tabs 本身取代 chrome header 位置(對齊 Ant verbatim「Large size tabs are usually used in page header」)"
+        note="h-tab-lg(48/56)= --chrome-header-height 像素相等。整個頁面的主結構切換,tabs 本身取代 chrome header 位置(對齊 Ant verbatim「Large size tabs are usually used in page header」)" /* 來源:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/demo/size.md#L7 */
       />
     </TutorialPage>
   ),

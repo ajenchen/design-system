@@ -71,7 +71,7 @@ export const LinkPreview: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-xl">
       <p className="text-caption text-fg-muted">
-        Notion / Linear 風格的連結預覽 — hover 看目標頁面標題、摘要、元資料,不 hover 不干擾閱讀。
+        文件連結預覽 — hover 看目標頁面標題、摘要、元資料,不 hover 不干擾閱讀。
       </p>
       <p className="text-body">
         本次 sprint 的重點是

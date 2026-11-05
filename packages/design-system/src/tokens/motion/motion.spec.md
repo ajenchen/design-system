@@ -51,7 +51,7 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 | Tag / Chip → 顯示說明 | `--motion-delay-plain` | 純文字 |
 | 任何 overlay 關閉延遲 | `--motion-delay-close` | universal |
 | Click-triggered Popover / Dialog | — | N/A,click 不適用 hover delay |
-| Tooltip 鍵盤 focus 觸發 | — | N/A,直接顯示(對齊 WAI-ARIA APG) |
+| Tooltip 鍵盤 focus 觸發 | — | N/A,直接顯示(本 DS 決定:鍵盤使用者是逐一走過去才聚焦,不會像滑鼠那樣掃過誤觸,不需要延遲擋誤觸)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27-L28)) |
 
 ## 命名 rationale(per `# 命名與語言一致性` 3 test)
 
@@ -79,13 +79,10 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 
 | Framework | plain hint delay | rich preview delay |
 |---|---|---|
-| Material 3(plain vs rich tooltip 分流)| ~500ms | ~500ms+ |
-| Apple HIG / macOS native | ~500ms | — |
 | Radix Tooltip | 700ms(設保守避 mobile / touch 誤觸)| N/A(consumer 自定) |
-| shadcn(defer Radix) | 500ms(provider override)| N/A |
-| Polaris | 400ms | — |
-| Atlassian Tooltip | 300ms | — |
-| MUI / Ant Tooltip | 100ms(dense form input fast-tier) | — |
+| shadcn(包 Radix) | 0ms(`TooltipProvider` 預設 `delayDuration = 0`)| N/A([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tooltip.tsx#L8)) |
+| Atlassian Tooltip | 300ms(`delay`「Defaults to 300.」)| —([來源](https://unpkg.com/@atlaskit/tooltip@24.4.3/dist/types/types.d.ts)) |
+| MUI Tooltip | 100ms(`enterDelay = 100`)| —([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Tooltip/Tooltip.js#L247)) |
 | **DS canonical(本 spec)** | **500ms** | **700ms** |
 
 500ms 對齊 Material 3 / Apple HIG / shadcn 主流共識(三家集中在 500ms),避 MUI/Ant 100ms(form input fast-tier 不適通用 chrome)+ Radix 700(過保守)兩極端。Rich 700ms 比 plain 多 200ms 反映 fetch / multi-section content「真的想看」門檻。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
@@ -99,19 +96,19 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 - `../../components/Avatar/avatar.spec.md`(consumer)
 ## 進出場動畫 token(2026-07-11 加,user 拍板)
 
-Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/zoom/slide 進出場動畫,值統一 token 化(原各元件硬寫 zoom-95/slide-2/duration-300 = M17 假 SSOT)。由 tw-animate-css(Tailwind v4,= shadcn 官方機制)的 `--tw-duration`/`--tw-ease` 變數綁定;共用 SSOT = `overlay-motion.ts`(overlayMotion/surfaceMotion)。
+Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/zoom/slide 進出場動畫,值統一 token 化(原各元件硬寫 zoom-95/slide-2/duration-300 = M17 假 SSOT)。由 tw-animate-css(Tailwind v4,= shadcn 官方機制)的 `--tw-duration`/`--tw-ease` 變數綁定;共用 SSOT = `overlay-motion.ts`(overlayMotion/surfaceMotion)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/app/globals.css#L1-L2))。
 
 | Token | 值 | 用於 | 世界級對照 |
 |---|---|---|---|
-| `--motion-duration-overlay` | `150ms` | 輕量浮層(Tooltip/Popover/HoverCard/DropdownMenu) | Material short3 / Carbon moderate-01 / Polaris 150 / tw-animate-css 預設 **四家一致** |
-| `--motion-duration-surface` | `250ms` | 模態面板(Dialog/Sheet/FileViewer,面積大位移遠→慢一階) | Material medium1 / Polaris 250 / Carbon moderate-02(240) |
-| `--motion-easing-enter` | `cubic-bezier(0,0,0,1)` | 進場(減速,快起平滑落定) | Material standard-decelerate(企業級中性沉穩) |
-| `--motion-easing-exit` | `cubic-bezier(0.3,0,1,1)` | 出場(加速) | Material standard-accelerate |
-| `--motion-enter-distance` | `0.5rem`(8px) | slide 位移 | shadcn/Radix canonical(= 現行 slide-*-2) |
-| `--motion-enter-scale` | `0.95` | zoom scale | shadcn default(= 現行 zoom-95) |
+| `--motion-duration-overlay` | `150ms` | 輕量浮層(Tooltip/Popover/HoverCard/DropdownMenu) | Material short3 / Polaris 150 / tw-animate-css 預設 **三家一致**([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/motion.ts#L53-L54)、[來源](https://github.com/Wombosvideo/tw-animate-css/blob/1fc30d2b5ad6ab18baf7897828e44ab20a0a62ed/src/tw-animate.css#L163)) |
+| `--motion-duration-surface` | `250ms` | 模態面板(Dialog/Sheet/FileViewer,面積大位移遠→慢一階) | Material medium1 / Polaris 250([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/motion.ts#L59-L60)) |
+| `--motion-easing-enter` | `cubic-bezier(0,0,0,1)` | 進場(減速,快起平滑落定) | Material standard-decelerate(企業級中性沉穩)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-motion.scss#L51-L52)) |
+| `--motion-easing-exit` | `cubic-bezier(0.3,0,1,1)` | 出場(加速) | Material standard-accelerate([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-motion.scss#L49-L50)) |
+| `--motion-enter-distance` | `0.5rem`(8px) | slide 位移 | shadcn/Radix canonical(= 現行 slide-*-2)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L32)) |
+| `--motion-enter-scale` | `0.95` | zoom scale | shadcn default(= 現行 zoom-95)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L32)) |
 | `--motion-duration-disclosure` | `200ms` | 原地展開收合的高度動畫(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊;共用 SSOT `disclosure-motion.ts`) | 現況值,不是新選的:三個消費者 2026-07-14 起實際渲染的都是 tw-animate-css 1.4.0 collapsible / accordion 工具類的預設 `.2s`(`node_modules/tw-animate-css/dist/tw-animate.css`),也是 `components/AgentPanel/agent-panel.spec.md`「動畫總表」「思考塊開合」那一列(200ms)與舊 base.css accordion 的宣告。2026-10-07 收成 token(待辦總帳 T8,見「開合動畫」段) |
 
-**幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px,朝觸發點);模態置中 = **fade+zoom、不位移**(Dialog/FileViewer;2026-09-09 修正 —— 原「slide-center」是 shadcn v3 在 keyframe 內重寫置中位移的 hack,Tailwind v4 的 `translate` 屬性不再被 keyframe 蓋掉,留著會變成從左上角飛入;shadcn v4 已拿掉 <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>,詳 `components/Dialog/dialog.spec.md`「動畫」段);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**何時播 / 時長 / 曲線 / 收尾 / 減少動態**(全 7 浮層 + 各自的遮罩,見下方「開合動畫」段),非幾何原型(對齊 Material standard-vs-emphasized / Carbon productive-vs-expressive tier 分層)。
+**幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px,朝觸發點);模態置中 = **fade+zoom、不位移**(Dialog/FileViewer;2026-09-09 修正 —— 原「slide-center」是 shadcn v3 在 keyframe 內重寫置中位移的 hack,Tailwind v4 的 `translate` 屬性不再被 keyframe 蓋掉,留著會變成從左上角飛入;shadcn v4 已拿掉 <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>,詳 `components/Dialog/dialog.spec.md`「動畫」段);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**何時播 / 時長 / 曲線 / 收尾 / 減少動態**(全 7 浮層 + 各自的遮罩,見下方「開合動畫」段),非幾何原型(對齊 Material standard-vs-emphasized 的曲線分層)。
 
 **a11y**:`prefers-reduced-motion: reduce` 下全 7 浮層(含遮罩)與 3 個原地展開收合都**不播**開合動畫 —— 動畫本身只宣告在 `motion-safe:` 底下(見下方「開合動畫」段「何時播」)。
 
@@ -211,13 +208,11 @@ Radix 關閉時先把 `data-state` 改成 `closed`、等收起動畫的 `animati
 
 | 來源 | 證據 |
 |---|---|
-| MUI X DataGrid | `packages/x-data-grid/src/components/containers/GridRootStyles.ts` 列 hover 只設 `backgroundColor`,整檔 `transition` 只有 icon opacity 與欄位分隔線 |
-| AG Grid | `styles/ag-grid.css` `.ag-row-hover::before` 只有 `background-color: var(--ag-row-hover-color)`;唯二含 background 的 transition 屬於「值變閃爍」 |
-| VS Code | `src/vs/base/browser/ui/list/listWidget.ts` 產生的 `.monaco-list-row:hover` 等規則完全沒有 transition |
-| (反例,不採用)Ant Design Table | `components/table/style/index.ts` td `transition: background-color ${motionDurationMid}` = 200ms |
-| (反例,不採用)MUI ListItemButton | `ListItemButton.js` `getTransitionStyles(theme,'background-color',{duration: shortest})` = 150ms |
+| MUI X DataGrid | `packages/x-data-grid/src/components/containers/GridRootStyles.ts` 列 hover 只設 `backgroundColor`,整檔 `transition` 只有 icon opacity 與欄位分隔線([來源](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L363-L531)) |
+| (反例,不採用)Ant Design Table | `components/table/style/index.ts` td `transition: background-color ${motionDurationMid}` = 200ms([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/style/index.ts#L316)) |
+| (反例,不採用)MUI ListItemButton | `ListItemButton.js` `getTransitionStyles(theme,'background-color',{duration: shortest})` = 150ms([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/ListItemButton/ListItemButton.js#L71-L72)) |
 
-**唯一的例外(已登記)**:Checkbox、Radio(RadioGroupItem)與 Switch 保留 `transition-colors` —— 那條過渡的主人是 **checked ↔ unchecked 的狀態切換**(勾選框打勾、單選圓轉主色、開關滑動;Ant / Material 的核取框與切換鈕同樣會動),不是 hover;它們是控件大小的點目標,不是指標掃過去的列面。滑過的外框升階與它共用同一條過渡,這是例外的已知代價。例外必須在該行上方寫 `// @hover-transition-allow: <理由>`(`checkbox.tsx`、`radio-group.tsx`、`switch.tsx` 各一處)。Radio 2026-09-26 補登:它與 Checkbox 同一份狀態規格(`components/Checkbox/checkbox.spec.md`「狀態 › Radio」),先前漏列。
+**唯一的例外(已登記)**:Checkbox、Radio(RadioGroupItem)與 Switch 保留 `transition-colors` —— 那條過渡的主人是 **checked ↔ unchecked 的狀態切換**(勾選框打勾、單選圓轉主色、開關滑動 —— 值改變了,過渡讓使用者看見「剛剛變了」),不是 hover;它們是控件大小的點目標,不是指標掃過去的列面。滑過的外框升階與它共用同一條過渡,這是例外的已知代價。例外必須在該行上方寫 `// @hover-transition-allow: <理由>`(`checkbox.tsx`、`radio-group.tsx`、`switch.tsx` 各一處)。Radio 2026-09-26 補登:它與 Checkbox 同一份狀態規格(`components/Checkbox/checkbox.spec.md`「狀態 › Radio」),先前漏列。
 
 **不在本規則(不是 hover 觸發,保留過渡)**:選中切換類動畫 —— 分頁底線淡出 / 淡入(`after:transition-colors`;每個分頁自己的底線,不會滑過去)、原地展開收合(手風琴 / 樹 / 思考塊,`disclosureMotion`)、展開箭頭旋轉(手風琴 / 樹 / 表格 / 側欄群組 / 思考塊 / 選單觸發點,`disclosureIndicatorMotion` / `overlayIndicatorMotion`,見「展開箭頭跟它打開的東西同步」)、輪播指示點寬度(`transition-[width]`)、側欄收合寬度、進度條數值、浮層進出場(本檔「進出場動畫 token」段)。
 

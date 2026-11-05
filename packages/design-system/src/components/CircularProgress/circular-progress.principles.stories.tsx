@@ -85,7 +85,7 @@ export const UsageGuidance: Story = {
 
         <TutorialRule
           title="❌ 達 100% 不 swap,留在 value=100"
-          note="CircularProgress 語義是「進行中」,停在 100% 跟「完成」語義衝突,使用者看到「滿的 circle」會困惑「還在跑嗎?」。世界級慣例(Gmail / Dropbox / Google Drive):上傳完成即消失,swap 為 ✓ icon / 實際內容 / Empty。本 DS 不提供 success / error variant——consumer 端替換整個元件,不在 CircularProgress 內做狀態 morph"
+          note="CircularProgress 語義是「進行中」,停在 100% 跟「完成」語義衝突,使用者看到「滿的 circle」會困惑「還在跑嗎?」。完成即把它換掉:swap 為 ✓ icon / 實際內容 / Empty。本 DS 不提供 success / error variant——consumer 端替換整個元件,不在 CircularProgress 內做狀態 morph"
         >
           {/* 兩組「範例在上、說明在下」並排:靠下對齊,兩則說明才在同一條線(範例高度不同:圓環 24px、Check + 文字一行;
               2026-10-20 前 items-center → 兩則說明差 1.5px,同 HoverCard 原則「判斷法」那一列,獨立驗證 OV-13 同族) */}
@@ -149,7 +149,7 @@ export const IndeterminateVsDeterminateRule: Story = {
     <TutorialPage>
       <TutorialRule
         title="不知道時長 → 不傳 value(indeterminate);能量化進度 → 傳 value(determinate)"
-        note="CircularProgress 兩態合一(Material / Chakra 流派)。判斷法:consumer 能告訴使用者「完成了 X%」嗎?能 → determinate、不能 → indeterminate。選錯會讓使用者一直盯著 0% 以為壞掉,或看著旋轉以為是裝飾。"
+        note="CircularProgress 兩態合一(Material / Chakra 流派)。判斷法:consumer 能告訴使用者「完成了 X%」嗎?能 → determinate、不能 → indeterminate。選錯會讓使用者一直盯著 0% 以為壞掉,或看著旋轉以為是裝飾。" /* 來源:https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/progress/progress.md#L25-L41 https://github.com/chakra-ui/chakra-ui/blob/a1005f7f129f225058e7616c52e580b6cf8dcfdc/packages/components/src/progress/circular-progress.tsx#L63 */
       >
         <ExampleGroup align="center">
           <CircularProgress aria-label="等待第三方驗證" />

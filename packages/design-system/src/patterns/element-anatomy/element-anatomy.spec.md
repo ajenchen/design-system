@@ -11,7 +11,7 @@
 
 Taxonomy 跟 F1+F2 runtime primitive **co-locate 在同 folder** 是 `packages/design-system/src/README.md` L17 的 home governance 決策:**「即使跨 pattern 的 taxonomy(如 4-Family Model)也住在最相關的 pattern topic 資料夾內,folder = topic home,不需要頂層 flat 檔案」**。co-location 讓新 element 查 taxonomy 時,runtime primitive 就在隔壁,查閱效率最高。
 
-**與「layout」命名分家**:「anatomy」= element-level 結構分類;「layout」= page-level 版面(未來頁面設計原則的家)。世界級 DS 一致如此(Material Foundations > Layout = page grid / Polaris / Atlassian / Carbon 皆然)。
+**與「layout」命名分家**:「anatomy」= element-level 結構分類;「layout」= page-level 版面(未來頁面設計原則的家)—— 同一個字只指一個層級,element 規則與 page 規則才不會住進同一個家。
 
 ---
 
@@ -45,7 +45,7 @@ Taxonomy 跟 F1+F2 runtime primitive **co-locate 在同 folder** 是 `packages/d
 
 同結構、不同 role、不同 padding / typography:
 
-| Sub-profile | 成員 | Padding | Typography | Cursor | 為什麼 |
+| Sub-profile | 成員 | Padding | Typography | 游標(`cursor`) | 為什麼 |
 |-------------|------|---------|-----------|--------|------|
 | **Action trigger** | Button / SegmentedControl / Chip | 較鬆(xs=`px-2`, sm+=`px-3`) | 對應 size 的 font-medium | pointer | 需命中區 + 視覺重量搶點擊焦點 |
 | **Data indicator** | Tag | 較緊(`px-1` 所有 size) | font-normal(sm 例外 `font-medium`,詳 `tag.spec.md` 尺寸表) | text | Passive 讀取,不搶焦點 |

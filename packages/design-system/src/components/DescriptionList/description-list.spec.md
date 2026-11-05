@@ -49,7 +49,7 @@ benchmark:
 
 | orientation | Layout | 典型情境 | 世界級對照 |
 |-----------|--------|---------|-----------|
-| `vertical`(預設)| label 在上 / value 在下 | ProfileCard detail、sidebar 長 value(地址、bio) | Atlassian DescriptionList、Polaris DescriptionList |
+| `vertical`(預設)| label 在上 / value 在下 | ProfileCard detail、sidebar 長 value(地址、bio) | 窄欄放不下左右兩欄時,上下堆疊讓長 value 有整行寬度可換行(Polaris DescriptionList 在 sm 以下也是上下堆疊,sm 以上才改左右、term 佔 25%)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/DescriptionList/DescriptionList.module.css#L1-L22)、[來源](https://unpkg.com/@atlaskit/description-list/package.json)) |
 | `horizontal` | label 左 / value 右對齊 | **file info panel / 訂單詳情 / settings summary**(短 value 的 metadata 列) | label 欄形成可掃描軸，value 保留較寬內容區 |
 
 **判斷法**:
@@ -137,7 +137,7 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 </div>
 ```
 
-**為什麼相等**(Gestalt proximity canonical):heading 與下方 items 的關係是「擁有 / 歸屬」—— 相同距離讓視覺上 heading 與 items 形成一個群組。若拉大 gap(例 `mb-4`),heading 看似與 items「分離」,失去歸屬感;若縮小 gap(例 `mb-0`),heading 與 items 黏在一起無呼吸。
+**為什麼相等**(Gestalt proximity canonical):heading 與下方 items 的關係是「擁有 / 歸屬」—— 相同距離讓視覺上 heading 與 items 形成一個群組。若拉大 gap(例 `mb-4`),heading 看似與 items「分離」,失去歸屬感;若縮小 gap(例 `mb-0`),heading 與 items 黏在一起無呼吸([來源](https://www.nngroup.com/articles/gestalt-proximity/))。
 
 Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個只供 heading 的距離 tier；確切 token 由本元件 source 擁有。
 
@@ -183,7 +183,7 @@ Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個�
 
 DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant 驅動):
 
-- **有 Inspector**:DL 雖唯讀,但有 layout prop 可即時切換——`Inspector` story 暴露 `cols`(1 / 2 / 3)/ `orientation`(vertical / horizontal)/ `divided` 三個 prop 的 Controls,取代 Figma inspect。`orientation` 與 `divided` 是 `ColsMatrix`(只示範 cols)沒涵蓋的維度。
+- **有 Inspector**:DL 雖唯讀,但有 layout prop 可即時切換——`Inspector` story 暴露 `cols`(1 / 2 / 3)/ `orientation`(vertical / horizontal)/ `divided` 三個 prop 的 Controls,在 Storybook 裡直接切換看結果。`orientation` 與 `divided` 是 `ColsMatrix`(只示範 cols)沒涵蓋的維度。
 - **無 ColorMatrix**:DL 固定 semantic token(label `text-fg-secondary` / value `text-foreground`),無自己的色彩變體,dark mode 由 semantic token 自動切換。加 color variant 不符語意(DL 是資訊展示,非狀態載體)。
 - **無 SizeMatrix**:DL 無 size prop——垂直間距隨 `layout-space` token 感知 density(見「間距」段),但 label / value typography 走 reading mode 固定 tier,不提供 sm / md / lg 變體。不同 density 由 token 自動處理,非 prop 切換。
 
@@ -193,7 +193,7 @@ DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant
 
 ## 邊界案例
 
-- **Disabled(action cell)**:DescriptionList 主體為唯讀資料呈現,本身無 disabled state。**dd 內互動內容 canonical(2026-07-04 Q9 拍板,三處立場收斂)**:操作型互動(Button / Input)**禁止**(見「禁止事項」— 需要動作 → Field read-only / inline-edit / action row / 卡片 header action);展示 / 導覽型 ReactNode(Tag / Badge / **Link**)**允許**,Link 自行 own disabled,DL 不干預。對齊 Polaris(ReactNode 型別 + 純敘述範例)/ Ant(action 放 extra 不放 dd)/ Carbon(read-only default)三家共識。
+- **Disabled(action cell)**:DescriptionList 主體為唯讀資料呈現,本身無 disabled state。**dd 內互動內容 canonical(2026-07-04 Q9 拍板,三處立場收斂)**:操作型互動(Button / Input)**禁止**(見「禁止事項」— 需要動作 → Field read-only / inline-edit / action row / 卡片 header action);展示 / 導覽型 ReactNode(Tag / Badge / **Link**)**允許**,Link 自行 own disabled,DL 不干預。對齊 Polaris(`description: React.ReactNode` + 純敘述範例)/ Ant(動作放 `extra`「The action area of the description list」,不放 dd)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/DescriptionList/DescriptionList.tsx#L10-L12)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/descriptions/index.en-US.md?plain=1#L90))。
 - **Loading**:DL 非 async surface,無 loading prop。若 page-level data 載入中,consumer 應在 DL 外層用 `<Skeleton>`(每組 dt/dd 對應一條 skeleton line)取代;DL 本體不渲染 loading state。
 - **Empty(no items / empty value)**:no items → consumer 應 conditional 渲 `<Empty>` 取代 DL,不渲空 `<dl>`(SR 會讀「empty list」造成混淆);individual value 空 → consumer 應自行傳入半形 `-`(hyphen,對齊 Field `EMPTY_DISPLAY`,2026-07-08 user 拍板;包 `text-foreground`(色同 value,2026-07-09);元件不自動 normalize,已在「無障礙」段 codify)。
 - **長 label / 長值**:horizontal 模式 label(`dt`)`shrink-0` 不收縮、不截斷,value(`dd`)`break-all min-w-0` 斷行吸收擠壓;vertical 模式兩者佔滿欄寬自然換行。無空白長字串(URL / ID)詳「無障礙」段「長值換行」。

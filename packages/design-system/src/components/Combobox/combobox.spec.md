@@ -185,7 +185,7 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 - **Disabled**:Field SSOT own(`Field/field-controls.spec.md`)。trigger / tag dismiss / 搜尋 input 全部 disabled,token 走 M24 state precedence(`text-fg-disabled`);已選 Tag 的 dismiss X 自動隱藏(見「readonly / disabled 的 Tag」段)。
 - **Loading**:已 codify(見「Loading」段):`loading` = 值處理中(觸發點轉圈)/ `optionsLoading` = 選項在抓(只在選單內)。
-- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列(`select-menu.spec.md`「Suggestions」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx#showCreate` 顯隱 / render)。(2026-09-18 起不分裝置皆生效;原本只在桌機路徑生效的限制隨原生路徑一起移除。)對齊 Ant tags / react-select Creatable。
+- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列(`select-menu.spec.md`「Suggestions」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx#showCreate` 顯隱 / render)。(2026-09-18 起不分裝置皆生效;原本只在桌機路徑生效的限制隨原生路徑一起移除。)對齊 Ant tags / react-select Creatable([來源](https://github.com/JedWatson/react-select/blob/4b6948078684bee394e09dd8e7cdc2d7f89e0fad/packages/react-select/src/useCreatable.ts#L82-L95)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/select/index.en-US.md#L94))。
 - **Empty(no value selected)**:`value=[]` 時不渲 Tag 區,欄位內距退回標準 `--field-px`(同一個 `hasTags` 判斷式)。提示文字一律是 `placeholder`(未傳時「選擇…」;`emptyPlaceholder` 已 deprecated,見 `../Field/field-controls.spec.md`「共享 contract」(b))。**由誰顯示它,看搜尋框在哪**:
   - 不可搜尋 / `searchIn='menu'`:一顆 placeholder span(`text-fg-muted`、單行省略)。
   - `searchable` + `searchIn='trigger'`:**欄位內的搜尋框恆在**,不論有無已選、浮層開或關都渲染,永遠是 Tag 區的最後一格。空值時它佔滿 Tag 區,由自己的 `placeholder` 屬性顯示同一句字(字級、顏色、左緣與上一條的 span 逐像素相同,sm / md / lg 實測 0 差異);開啟後插入點就在這裡,打字即過濾,關著時打字也會把清單打開(焦點停在觸發區本身時打字同樣 —— 焦點交給這個搜尋框、字落進來,`../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard 段,2026-10-07)。有 Tag 時接在後面、不顯示提示字(`../PeoplePicker/people-picker.spec.md` §E「Avatar-presence → placeholder」)。**只選「不限」時**它佔滿 Tag 區,「不限」照單選欄位的讓位做法畫在同一格(關著黑字、打開還沒打字變灰色提示且讀屏略過、一打字就讓位、字刪光回來;`../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」欄位內搜尋框那一條,2026-10-07 待辦總帳 K4)—— 2026-10-01 起這裡寫「(Tag 或只選「不限」)接在後面」,畫出來是「不限 fo」(值與關鍵字同字級同色、只隔 4px),查不到 user 看過或同意的紀錄,依 DS 自己那條規則(欄位上用文字畫的值一打字就讓位)更正。狀態轉換時不換輸入框:第一次選(空 → 有值)、在清單裡取消最後一項或按最後一個 Tag 的 ×(有值 → 空)都不卸載;焦點與關鍵字照 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段與「搜尋關鍵字何時保留、何時清空」走。它不是另一個 Tab 停靠點(`tabIndex=-1`,見「禁止事項」單一鍵盤聚焦點):開啟時由 `onOpenAutoFocus` 把焦點交給它,滑鼠點它也會聚焦。
@@ -266,7 +266,7 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 | 技術前提不成立 | 原生 `<select multiple>` 在任何裝置上都**不是下拉** —— 加了 `multiple` 瀏覽器改渲染成常駐捲動清單、沒有展開收合。所以那條路徑只能用**單選** `<select>`「一次加一個」繞,先天做不到多選選單 |
 | 靜默失效 | `ComboboxProps` 46 個 prop,**20 個**在觸控路徑完全沒被讀取(沒有 rest-spread、TypeScript 不報錯、零 warning),而 36 個呼叫點正在傳。搜尋 / 全選 / 分組 / 遠端搜尋 / 可建立 /「不限」在觸控上全部無效 |
 | a11y 好處沒兌現 | 該 `<select>` 的 `value` 恆為空字串、也沒有 `multiple`,輔助科技從被命名的控件上讀不到已選了什麼;已選值只活在 `<select>` 之外的 Tag 區 |
-| 世界級無人這樣做 | [Base UI](https://base-ui.com/) 明文「同一元件 + `multiple`,觸控只調定位與 modal 行為」/ [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons) pop-up button「iOS 無額外考量」/ Polaris、Atlassian、Radix、react-select 文件對裝置零分支。[W3C APG](https://www.w3.org/WAI/ARIA/apg/) 另把「需按住 modifier 才能多選」列為不推薦,而原生 multiple 正是該模型、觸控又沒有 Ctrl/Shift |
+| 世界級無人這樣做 | [Base UI](https://base-ui.com/) 明文「同一元件 + `multiple`,觸控只調定位與 modal 行為」/ [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons) pop-up button「iOS 無額外考量」。[W3C APG](https://www.w3.org/WAI/ARIA/apg/) 另把「需按住 modifier 才能多選」列為不推薦,而原生 multiple 正是該模型、觸控又沒有 Ctrl/Shift |
 
 **刻意不為觸控加大尺寸**:390px 寬下浮層實測 356px、不溢出、高度放得下;列高 32px 高於 DS 自己的
 24px 地板(owner = `tokens/uiSize/uiSize.spec.md`「元件高度地板」:169;`patterns/overlay-surface/overlay-surface.spec.md` 只是在括號裡順帶提到這個數字,不是它的 owner —— 2026-09-24 改指真正的 owner)。為手機另訂一套
@@ -286,7 +286,7 @@ Tab 聚焦觸發區，方向鍵在選項間移動，Enter 選取，Esc 關閉。
 且其 workflow 自述非 required check)。
 
 
-**為什麼這些 click target 不加 `role="button" tabIndex`**: 若每個點擊區都加 `tabIndex={0}` 會搶走真正聚焦目標（combobox 容器;不分裝置只有這一個,見「單一路徑（不分裝置）」）的 tab focus，反而破壞鍵盤體驗。「單一鍵盤聚焦點 + 多個滑鼠點擊區」是混合型控制項的世界級 canonical pattern（Material / Atlassian / GitHub issue filter 共識）。
+**為什麼這些 click target 不加 `role="button" tabIndex`**: 若每個點擊區都加 `tabIndex={0}` 會搶走真正聚焦目標（combobox 容器;不分裝置只有這一個,見「單一路徑（不分裝置）」）的 tab focus，反而破壞鍵盤體驗。所以混合型控制項一律「單一鍵盤聚焦點 + 多個滑鼠點擊區」。
 
 **結論**: Combobox 多處 `onClick` 在非 button 元素上**是經過評估的 acceptable a11y 模式**,不是需要修復的 bug。
 

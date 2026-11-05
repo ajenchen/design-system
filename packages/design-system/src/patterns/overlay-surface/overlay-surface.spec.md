@@ -36,7 +36,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 全 DS grep 起來**一個都不存在**(當時整包只有 `tabs-list` 一個 `data-slot`),等於三個死選擇器
 靠最後的 `h2` 兜著才沒變成空綠。同一天補上這三個真 handle,並給該閘加了「一個面板都沒量到就算紅」的地板。
 
-對齊 shadcn/ui 的 `data-slot` 慣例(每個 sub-part 一個穩定 attribute)與 Radix 的 `data-*` part 契約。
+對齊 shadcn/ui 的 `data-slot` 慣例(每個 sub-part 一個穩定 attribute,例 [separator.tsx#L15](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L15)、[pagination.tsx#L104-L116](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx#L104-L116))與 Radix 的 `data-*` part 契約。
 
 ### SurfaceHeader
 - 根節點帶 `data-slot="surface-header"`(column mode 與單列 mode 兩個分支都帶)
@@ -140,7 +140,7 @@ chrome 邊 ─ hover bg 左邊 ─────── [ loose breathing ] ──�
 | VS Code Quick Pick | 0 | loose | ✓ |
 | Material M3 / Polaris Modal+List | px only | item inset | ✗(另一合法家族,鬆散版)| <!-- @benchmark-unverified -->
 
-本 DS 選 Linear-family。
+本 DS 選上表 ✓ 那一族(列表 0 inset、loose 間距)。
 
 ### When list 上方有 search / banner(multi-row)
 
@@ -272,7 +272,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 | 家 | 抓到的原始碼 | 說了什麼 |
 |---|---|---|
-| Material 3 | `@material/web@2.4.0` 編譯後的 `menu/internal/menu-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/menu/internal/menu-styles.css> | 選單外殼 `.menu{padding:0px}` —— **水平內距是 0**,只有上下用 `--md-menu-top-space` / `--md-menu-bottom-space`。殼一分水平內距都不給,所以放在底部的東西只能去拿列的 gutter |
+| Material 3 | `@material/web@2.4.0` 編譯後的 `menu/internal/menu-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/menu/internal/menu-styles.css> | 選單外殼 `.menu{padding:0px}` —— **水平內距是 0**,只有上下用 `--md-menu-top-space` / `--md-menu-bottom-space`。殼一分水平內距都不給,所以放在底部的東西只能去拿列的 gutter([來源](https://cdn.jsdelivr.net/npm/@material/web@2.4.0/menu/internal/menu-styles.css)) |
 | Material 3(對照組:有 chrome 的浮層)| `dialog/internal/dialog-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/dialog/internal/dialog-styles.css> | 內文 `padding:24px`、動作列 `padding:16px 24px 24px` —— **左右兩者相同(24),只有上下不同**。footer 從來不會拿到跟 body 不同的左右內距 |
 | GitHub Primer | `ActionList.module.css` <https://github.com/primer/react/blob/main/packages/react/src/ActionList/ActionList.module.css> | 容器只宣告 `padding:0` 與 `padding-block`,**沒有任何水平內距**;水平內距住在列的 `.ActionListContent { padding-inline: var(--control-medium-paddingInline-condensed) }` |
 | IBM Carbon | `_list-box.scss` <https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/list-box/_list-box.scss> | 選項自己帶水平內縮(`.cds--list-box__menu-item__option { margin: 0 $spacing-05 }`),殼不定義內容左緣 |
@@ -357,7 +357,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 ## 兩欄 dialog 組合 canonical(2026-07-10 user 拍板:組合,不做元件)
 
 「左內容 + 右 metadata」兩欄 dialog(工作項詳情類)**是產品層組合,不收進 DS 元件**——對齊
-Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範)與 MUI(Dialog 無 split
+Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範:[101-full-height-illustration.tsx#L85-L107](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L85-L107))與 MUI(Dialog 無 split,[Dialog.js propTypes](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Dialog/Dialog.js#L378)
 API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 consumer 防線
 `check_consumer_app_invariants.sh` r3 機械攔):
 
@@ -366,12 +366,12 @@ API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 co
 2. **divider = 右欄(`<aside>`)自持 `border-l border-divider`,貫穿 body 頂到底**——非獨立
    div、非只切半高。
 3. **欄底 footer(如 comment composer)釘在所屬欄內**(欄內 `SurfaceFooter` chrome),
-   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄。
+   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。
 4. **header 維持全寬**,分欄從 body 才開始。
 
 **Archetype**(照抄結構,禁憑記憶手刻):WM `WorkItemDetailDialog.tsx`(產品實證,2026-07-08
 拍板落地)/ DS 內部同構先例 `file-viewer.tsx` InfoPanel(`<aside class="w-80 shrink-0 flex-col
-border-l border-divider">`)/ Atlassian `modal-dialog/examples/101-full-height-illustration.tsx`
+border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-illustration.tsx`](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L34-L42)
 (per-column `flex:1 + minHeight:0 + overflow auto`)。完整研究引文 →
 `.claude/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
 

@@ -65,7 +65,7 @@ ProfileCard 是**三層 chrome 結構**(2026-04-23 canonical):
 
 **Status section v12 conditional rule(2026-05-14 user 拍板)**:`status` 在 production 一定會被設定(每個 user 都有 presence state)。如果 status undefined,**唯一可能性 = 資料還沒讀到(loading transient)**,**不**是「user 沒設定狀態」。所以 status undefined 期間 → **整 status block 隱藏**(等資料到才 render),**禁** render「Status not set」這種 placeholder 文字(語義錯,user presence 不會「沒設定」)。**此規則 ProfileCard-specific 不外推至 DS 其他元件**(FileItem / DescriptionList / DataTable cell 各自 placeholder 邏輯 unrelated)。
 
-**取消「精簡版」變體**:ProfileCard 只有**一種結構**,consumer 未傳的 section 不另開 minimal variant。世界級對照:Slack / GitHub / LinkedIn hover-profile 皆單一結構,不分「簡版/full 版」。
+**取消「精簡版」變體**:ProfileCard 只有**一種結構**,consumer 未傳的 section 不另開 minimal variant。理由:同一個人的卡片在不同畫面長得不一樣,使用者每次都得重新找資訊在哪;一種結構、缺的 section 不渲染就夠。
 
 **DS-wide PersonData 預設展示一致 canonical**:任何 PersonData 來源展示 ProfileCard 時,`description` / `fields` 預設都應提供;`status` / `statusMessage` opt-in(僅 loading transient 或 consumer mock data 才會缺,production data 必有)。
 

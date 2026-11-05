@@ -18,7 +18,7 @@ benchmark:
 
 Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點管理，內容由 consumer 決定。
 
-**實作基礎**：shadcn passthrough——基於 Radix Popover。本 DS 保留 shadcn 原結構 + 橋接 DS token（elevation / radius / border）。
+**實作基礎**：shadcn passthrough——基於 Radix Popover。本 DS 保留 shadcn 原結構 + 橋接 DS token（elevation / radius / border）([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L5))。
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
@@ -77,18 +77,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 | **Modal**(Dialog / Sheet)| `text-body-lg`(16px)| 重量級決策 surface,title 是決策 anchor,需視覺重量 |
 | **Non-modal**(Popover / Coachmark / Tooltip / HoverCard)| `text-body`(14px)| 輕量浮層,可忽略、非阻斷,title 是輔助標籤不搶視覺重心 |
 
-**世界級對照**(7 家 DS 同 split):
-| DS | Modal title | Non-modal popover title |
-|----|-------------|------------------------|
-| Material M3 | Headline(24px large / 16px body 分 variant)| Smaller(usually 14-16px) |
-| Polaris | Modal title 大號 | Popover 較小 |
-| Atlassian | Modal 大 | InlineDialog 小 |
-| Notion | Modal 16px+ | Popover 14px |
-| Linear | Modal 16px | Popover / HoverCard 14px |
-| Figma | Modal 16px | Inline panel / popover 13-14px |
-| GitHub Primer | Dialog 16px | Overlay 14px |
-
-**共通原則**:non-modal overlay 的 title 比 modal 小一級。我方採 16 → 14 分級,在 world-class 範圍內。
+**為什麼分兩級**:Modal 是阻斷式的層,使用者必須先處理它,title 要撐起整個對話框、一眼看出「現在在做什麼」;non-modal 浮層可忽略、緊貼觸發點,title 只是輔助標籤,小一級才不會搶走周圍內容的重心。我方採 16 → 14 分級。
 
 **Coachmark 的 PopoverTitle 消費**:Coachmark 的 header 小標籤(如 "新功能介紹" / "Tip 1 of 3")繼承 PopoverTitle 14px。Coachmark **body 內容的主 title**(長敘述型 "建立你的第一個 Workspace")另走 `text-body-lg`(見 `coachmark.tsx` CoachmarkBody 主 title `<h3>`)— 那是 body content 不是 chrome title,分離 concerns。
 

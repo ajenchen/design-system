@@ -20,7 +20,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 **Layout Family**:**Family 4(Field control layout)**,視覺對齊 Family 1(Menu item)。見 `patterns/element-anatomy/element-anatomy.spec.md`「Field Composition(不在 family 但相關)」段。
 
 **實作基礎**:
-- **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix PopoverTrigger 在 `asChild` 下只 compose onClick 與 aria / data attributes,**不** inject 任何 onKeyDown——Enter / Space / ↓ 鍵盤開啟由 trigger 顯式 `onKeyDown` 實作,對齊 select.tsx canonical + APG combobox required keys)
+- **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix PopoverTrigger 在 `asChild` 下只 compose onClick 與 aria / data attributes,**不** inject 任何 onKeyDown——Enter / Space / ↓ 鍵盤開啟由 trigger 顯式 `onKeyDown` 實作,對齊 select.tsx canonical + APG select-only combobox 範例的開啟鍵)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/examples/combobox-select-only.html#L102-L131)、[來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/combobox-pattern.html#L126))
 - **Popup**:`<Popover>`(消費 `patterns/overlay-surface/` 的 surface chrome)
 - **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
 - **交互契約**:column scroll selector、minuteStep、Now / OK footer 與 clearable 共同構成這個元件的最小完整流程
@@ -91,7 +91,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
     disabledMinutes: [...],
     disabledSeconds: [...],
   })}
-  endIcon={Clock}                // 預設 Clock,傳 null 關閉(2026-05-05 v9:點擊觸發浮層 indicator 一律 suffix,對齊 DatePicker / Material endAdornment)
+  endIcon={Clock}                // 預設 Clock,傳 null 關閉(2026-05-05 v9:點擊觸發浮層 indicator 一律 suffix,對齊 DatePicker / Material endAdornment)([來源](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/date-pickers/custom-opening-button/custom-opening-button.md?plain=1#L42-L44))
   locale="en-US"
   formatOptions={{ hour: '2-digit', minute: '2-digit', hour12: false }}
 />
@@ -182,7 +182,7 @@ Panel 展開後的 column picker 結構:
 | 按鍵 | 行為 |
 |------|------|
 | 點 trigger | 開 Panel |
-| Enter / Space / ↓(focus 在 trigger)| 開 Panel(APG combobox required keys,trigger 顯式 `onKeyDown`)|
+| Enter / Space / ↓(focus 在 trigger)| 開 Panel(APG select-only combobox 範例的開啟鍵,trigger 顯式 `onKeyDown`)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/combobox/examples/combobox-select-only.html#L102-L131)) |
 | Esc | 關 Panel(不確認) |
 | Tab | 焦點在 column 間移動;欄拿到鍵盤焦點時,框畫在目前選中的那一格(`aria-activedescendant` 指到的 option,selection-follows-focus;owner = focus-canonical「問題一之二」A 類「框畫在被指到的項目上」),不畫容器整圈 |
 | ↑ / ↓ | 欄內上下選(每次移動即 commit,無 highlight 中間態) |
@@ -231,7 +231,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 
 ## 為何無 Range(MVP)
 
-user 若需 from-to 時間範圍,用**兩個 `<TimePicker>` 並列 + 中間 `<ArrowRight>`**(對齊 Ant `TimePicker.RangePicker` 的 composition 思路)。內建 Range 暫不 MVP 實作,因為:
+user 若需 from-to 時間範圍,用**兩個 `<TimePicker>` 並列 + 中間 `<ArrowRight>`**(對齊 Ant `TimePicker.RangePicker` 的 composition 思路)。內建 Range 暫不 MVP 實作,因為([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/generatePicker/generateRangePicker.tsx#L172-L177)):
 
 1. 大部分「時間範圍」情境是**營業時間 / 會議時段**,consumer 端用兩個 TimePicker 組合語意更清晰
 2. 未來若出現大量 Range 需求(如 shift 排班表),再抽 `<TimePicker.Range>` sub-composition,對齊 DatePicker.Range 的 API pattern

@@ -28,7 +28,7 @@ Switch 是**即時套用的布林開關**——切換即生效，心智模型是
 
 **Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
 
-**實作基礎**：基於 Radix Switch（shadcn 包裝）+ 橋接 DS token。
+**實作基礎**：基於 Radix Switch（shadcn 包裝）+ 橋接 DS token([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/switch.tsx#L5))。
 
 ---
 
@@ -154,7 +154,7 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 `mode?: 'edit' | 'view' | 'readonly' | 'disabled'`(默認 inherit Field context 或 `'edit'`),對齊 `field-types.ts` FieldMode：
 - `edit`(預設)— 可切換的 Switch。
 - `view` — **純展示**:渲染 勾/叉 icon(非互動 Switch;true=Check / false=X,中性 foreground 色,SSOT = `../SelectionControl/boolean-value.tsx`),語意由 context(如 DataTable boolean cell 的行/列 header)提供,並與 Input·Select·Textarea view mode 一致。
-- `readonly` — **Field 內** = 灰框 + 勾/叉 icon(消費 `fieldWrapperStyles` readonly,與 Input readonly 同一視覺語言;世界級:Salesforce output ✓ glyph / SAP 靜態文字 — readonly 下 boolean 是資料 value 非控件);**standalone** = 正常色鎖互動(settings list 場景)。
+- `readonly` — **Field 內** = 灰框 + 勾/叉 icon(消費 `fieldWrapperStyles` readonly,與 Input readonly 同一視覺語言 —— readonly 下 boolean 是一筆資料值、不是可操作的控件,所以用勾/叉呈現「是 / 否」,不畫成一顆鎖住的開關);**standalone** = 正常色鎖互動(settings list 場景)。
 - `disabled` — 同上表「Readonly vs Disabled」(opacity 弱化);`mode='disabled'` 直傳與 `disabled` prop 等效(effectiveDisabled,2026-06-12)。
 
 ### Controlled / Uncontrolled dual-mode

@@ -126,7 +126,10 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
 
     // 2026-07-05 D4 draft state:controlled value 回寫會吃掉輸入中間態('-'、'1.'、'0.0' 等
     // parse 後 lossy 的 raw 字串)— 例:已有值 5 全選打「-」→ onChange(null) 回寫把 DOM 重設
-    // 為空,負號被吃、無法打出 -5。修法對齊 Ant InputNumber / Adobe Spectrum NumberField 的
+    // 為空,負號被吃、無法打出 -5。修法對齊 Ant InputNumber(底層 @rc-component/input-number InputNumber.tsx#L322-L332:
+    // https://github.com/react-component/input-number/blob/868bd31d72de99a2ef0ec5a30f36324b044f6084/src/InputNumber.tsx#L322-L332 )
+    // / Adobe Spectrum NumberField(useNumberFieldState.ts#L58-L66 inputValue vs numberValue:
+    // https://github.com/adobe/react-spectrum/blob/36f3adde26ccd12f3cc18c9d0293ece0f10e94c7/packages/react-stately/src/numberfield/useNumberFieldState.ts#L58-L66 )的
     // internal draft string canonical:輸入期間 DOM 顯示以 local draft 優先,parse 成功即時同步
     // onChange(parsed);blur / Enter commit 清 draft、顯示回 committed value;Escape 棄未提交
     // raw draft 字串、顯示回 committed value(NumberInput 為 live-commit:每次合法 parse 即

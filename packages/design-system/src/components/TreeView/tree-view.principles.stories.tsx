@@ -117,7 +117,7 @@ export const ExpandSelectSeparationRule: Story = {
       <TutorialPage>
         <TutorialRule
           title="Chevron = 展開 / 收合;Label = 選取 / 執行"
-          note="兩個獨立的互動區——點 chevron 只展開不選,點 label 只選不展開(除非 consumer 顯式 opt-in expandOnSelect)。世界級 tree 元件的共識(VS Code、macOS Finder、Linear)"
+          note="兩個獨立的互動區——點 chevron 只展開不選,點 label 只選不展開(除非 consumer 顯式 opt-in expandOnSelect)。分開才能只選不展開,選一個資料夾不必連帶攤開整串子項" /* 來源:https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/platform/list/browser/listService.ts#L1478-L1482 */
         >
           {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
           <div className="border border-border rounded-lg py-2 w-80">

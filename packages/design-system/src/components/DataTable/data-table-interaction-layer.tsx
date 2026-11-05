@@ -47,7 +47,7 @@ interface DataTableInteractionLayerProps {
   activeEditorEnabled?: boolean
   /**
    * Slice D Step 4(spreadsheet semantics,2026-05-10 user 圖1 ask + RFC Contract 5):
-   * Excel-like 選取 cell ID。Click 1 select / Click 2 enter edit。
+   * 試算表式選取的 cell ID。Click 1 select / Click 2 enter edit。
    * Layer renders solid border SelectionRect(per user:不要 dash 直接實的就好(轉述))。
    */
   selectedCellId?: CellId | null
@@ -74,7 +74,7 @@ interface DataTableInteractionLayerProps {
  * 現在:三種覆蓋層都 portal 進**那一格自己的 DOM**(格是 `position: relative; overflow: hidden`,見 data-table.tsx 的格 class),
  * `inset: 0` 鋪滿 —— 格子怎麼動、它就怎麼動(同一個盒子),捲動、欄寬、列高、縮放全都不需要任何量測或追趕;
  * 部分露出時由黏住的表頭 / 釘選面板自然蓋住(z 層見 data-table.css「表頭列群組」),不再需要 ClipMask。
- * 世界級同向:AG Grid 的格焦點框就是格自己的樣式(`.ag-cell-focus`,不是另一層);MUI X `& .cell:focus`。
+ * 世界級同向:AG Grid 的格焦點框就是格自己的樣式(`.ag-cell-focus`,不是另一層;https://github.com/ag-grid/ag-grid/blob/0fee5b7b1e839ae23fe860e404042448f3c1375d/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L281-L291);MUI X `& .cell:focus`(https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L266-L269)。
  *
  * 目標格的 DOM 在 **commit 之後**才解析(layout effect):虛擬捲動換列時舊格會被卸載、新格在這一次 commit 才出現,
  * 在 render 裡 query 會拿到舊的(或還不存在的)節點。這裡只做 `querySelector`,不讀任何版面值。

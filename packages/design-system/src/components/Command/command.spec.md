@@ -7,7 +7,7 @@ traits:
   - hasInteractiveStates
   - isInternal
 benchmark:
-  - cmdk (shadcn Command base): github.com/pacocoursey/cmdk
+  - cmdk (shadcn Command base): github.com/pacocoursey/cmdk([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/command.tsx#L4))
 ---
 
 
@@ -17,7 +17,7 @@ benchmark:
 
 Command 是**搜尋 + 鍵盤導覽的指令清單**——提供搜尋框、分組選項、鍵盤導覽、空狀態。多用於浮層選單內部（SelectMenu）或 Command Palette（Cmd+K）。
 
-**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。**視覺結構消費 DS primitive,不另寫一份**(2026-09-08 user 指出 Command 每一則 story 都跟 SelectMenu 不是同一套樣式之後改):搜尋列 = `CommandInput`(SelectMenu / CommandDialog / inline 三種形態共用同一個;高度 `--field-height-*` + 8px、字級 / placeholder / disabled token 與 Field 輸入控件相同,差別只有沒有外框、底部用分隔線收邊);項目 = `CommandItem` 內包 `MenuItem`(item-anatomy SSOT:icon 槽、label / description、尾端 tag / endContent / shortcut,跟 SelectMenu 包 option 的結構相同);分組標題 = `MenuItem header`。改 MenuItem 會連動 Command。
+**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。**視覺結構消費 DS primitive,不另寫一份**(2026-09-08 user 指出 Command 每一則 story 都跟 SelectMenu 不是同一套樣式之後改):搜尋列 = `CommandInput`(SelectMenu / CommandDialog / inline 三種形態共用同一個;高度 `--field-height-*` + 8px、字級 / placeholder / disabled token 與 Field 輸入控件相同,差別只有沒有外框、底部用分隔線收邊);項目 = `CommandItem` 內包 `MenuItem`(item-anatomy SSOT:icon 槽、label / description、尾端 tag / endContent / shortcut,跟 SelectMenu 包 option 的結構相同);分組標題 = `MenuItem header`。改 MenuItem 會連動 Command([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/command.tsx#L4-L46))。
 
 **分類**：Internal primitive——由 SelectMenu 消費（Select / Combobox / PeoplePicker 透過 SelectMenu 使用）。App **不從 root barrel front-door 直接 import** Command 家族;若要 Command Palette 類 UX,經 per-component subpath `@qijenchen/design-system/components/Command` 取用 `CommandDialog`(自行包裝確認後使用,對齊 `.claude/rules/ui-development.md`「Root barrel front-door 排除」— internal ≠ 禁用;cmdk + Radix Dialog 包裝,showcase「CommandPalette」story 消費)。
 
@@ -74,7 +74,7 @@ Command 通常由 `SelectMenu` 或自訂 Command Palette 元件消費——直�
 - ❌ **不在短選單（< 6 項）用 Command**：多此一舉增加認知負擔,改用 DropdownMenu 或 RadioGroup
 - ❌ **Command 不當 form input**：它是選值浮層而非輸入框——表單內選值請用 Select / Combobox,它們會自動決定是否啟用 Command 模式
 - ❌ **搜尋列不得另寫一份樣式**:CommandDialog、SelectMenu、inline 三種形態都用同一個 `CommandInput`;它的高度吃 Field 的 `--field-height-*` token(+8px 內距)、字級與 placeholder 同 Field 控件,不是獨立規格。(2026-09-08 撤回原「Command 搜尋框不是 Field Control,走自身尺寸規格」—— 那句就是兩份樣式漂移的許可證)
-- ⚠️ **Inline 嵌頁面 = 次要用法,必須自帶邊框容器**(2026-06-12 user 拍板放寬,原為全面禁止):主用法仍是浮層(SelectMenu 內部 / CommandDialog Cmd+K)——實際產品幾乎都走浮層形態。Inline 嵌頁面是原廠 documented 用法(cmdk README「Render this to show the command menu inline」;shadcn 預設範例即 inline 且包 `rounded-lg border`),允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),且不可拿來替代 SelectMenu / Select(表單選值仍走它們)
+- ⚠️ **Inline 嵌頁面 = 次要用法,必須自帶邊框容器**(2026-06-12 user 拍板放寬,原為全面禁止):主用法仍是浮層(SelectMenu 內部 / CommandDialog Cmd+K)——實際產品幾乎都走浮層形態。Inline 嵌頁面是原廠 documented 用法(cmdk README「Render this to show the command menu inline」;shadcn 預設範例即 inline 且包 `rounded-lg border`),允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),且不可拿來替代 SelectMenu / Select(表單選值仍走它們)([來源](https://github.com/pacocoursey/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/README.md#L88)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/examples/command-demo.tsx#L23))
 
 ---
 
@@ -123,7 +123,7 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 
 - 「選單一律用 Command」— < 6 項、選完即觸發動作的操作選單是 `DropdownMenu`(見「與 DropdownMenu 的分界」)。
 - 「Command 搜尋框可以自己定尺寸」— 已撤回(2026-09-08):高度 / 字級 / placeholder 都吃 Field token,只是沒有外框(浮層內的一列)。
-  **搜尋列不畫外框、只有底部分隔線 = 定案**(user 2026-09-09 回答:跟世界級的設計一樣就維持現狀;對照 Linear / Raycast / cmdk 的浮層搜尋列);先前「他應該要長得跟我們的input 一模一樣吧?」(登記簿 B18)指的是尺寸、字級、提示文字、停用態同一套 token,不含外框。
+  **搜尋列不畫外框、只有底部分隔線 = 定案**(user 2026-09-09 回答:跟世界級的設計一樣就維持現狀;對照 shadcn `CommandInput` 外層只有 `border-b`:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/command.tsx#L69-L70);先前「他應該要長得跟我們的input 一模一樣吧?」(登記簿 B18)指的是尺寸、字級、提示文字、停用態同一套 token,不含外框。
 - 「cmdk `data-selected` = 持續選中態」— 它是鍵盤 / 指標的臨時 roving highlight(游標),不是選中:滑鼠移過搬的反白用 `bg-neutral-hover`(它就是 hover)、鍵盤搬的反白畫框不上底色,永遠不用 `bg-neutral-selected`(見「為何無 StateBehavior」)。
 
 ---
@@ -147,22 +147,11 @@ Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,�
 
 ### Cmd-K palette 結構哲學
 
-| 維度 | 本 DS | Linear | Raycast | VS Code Quick Pick | macOS Spotlight | Notion Cmd+K | Slack Cmd+K |
-|------|-------|--------|---------|--------------------|-----------------|--------------|--------------|
-| Layout | **單欄 + grouped sections** | 單欄 + group | 單欄 + group + secondary action panel | 單欄 + multi-mode prefix(`> ` 命令 / `: ` 行)| 全螢幕 + multi-pane(blur background)| 單欄 + inline page preview | 單欄 + 切 tab(Search / Nav / Settings)|
-| Search input 位置 | **頂端** always visible | 頂端 always | 頂端 always | 頂端 always | 中央 hero | 頂端 always | 頂端 always |
-| 視覺 surface | Dialog overlay(`CommandDialog`)| Popover overlay | Standalone window | inline overlay(top-center)| Full-screen(blur)| Popover overlay | Popover overlay |
-| 觸發 shortcut | **Cmd+K**(Apple)/ Ctrl+K(Windows) | Cmd+K | Hotkey(default Option+Space)| Cmd+P / Cmd+Shift+P | Cmd+Space | Cmd+P / Cmd+/ | Cmd+K |
-| Empty state | `<CommandEmpty>` + 文案 | inline 「No results」 | inline 「No matching commands」 | inline 「No results」 | hides list | inline 「No results」 | inline 「No matches」 |
-| 多 mode | 無(單一搜尋語意)| 無(單一)| 無 | 有(prefix mode `>` `:` `@`)| 有(隱式 routing)| 無 | 有(tab)|
+本 DS 的 Cmd-K 面板:**單欄 + 分組**、**搜尋列固定在頂端**、Dialog 浮層(`CommandDialog`)、**Cmd+K(Mac)/ Ctrl+K(Windows)**觸發、0 筆結果時在清單位置顯示 `<CommandEmpty>` 文案、只有單一搜尋語意(不做前綴切換模式)——各項理由見下方「設計哲學」(1)–(3)。
 
 ### Primitive vs Consumer 分層
 
-| DS | 本 DS | cmdk lib | Radix UI | shadcn/ui | Material UI |
-|----|-------|----------|----------|-----------|--------------|
-| Internal primitive 命名 | **Command** | cmdk | (無此 primitive,用 `<Combobox>` + filter)| Command | `<Autocomplete>` 一體 |
-| Consumer wrapper 命名 | SelectMenu / CommandDialog(Cmd+K) | (consumer 自包)| Combobox | Combobox / Custom Cmd+K | Autocomplete |
-| 是否 app 直接用 | **禁(必透過 SelectMenu / CommandDialog wrapper)**| 開放 | 開放 | 開放 | 開放 |
+本 DS 內部 primitive 叫 **Command**,app 不直接用;consumer 一律透過 **SelectMenu**(表單選值)或 **CommandDialog**(全域 Cmd+K)兩個 wrapper。理由見「設計哲學」(4)。
 
 ## 設計哲學
 
@@ -170,21 +159,21 @@ Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,�
 
 **(1) 單欄 + grouped sections(non-multi-pane)**
 
-macOS Spotlight 的 multi-pane / blur background 適合 system-level launcher(全 OS 範圍 routing),但 disruptive — 不適合 inline 元件場景(SelectMenu 內嵌 Cmd-K 模式)。Linear / Raycast / VS Code 共識「單欄 + group」適合 productivity tool 內嵌使用,且 cmdk lib(shadcn/Vercel)default 結構符合此哲學。
+多欄 + 全螢幕模糊背景適合系統層級的啟動器,但會打斷手上的工作,不適合嵌在元件裡的場景(SelectMenu 內嵌 Cmd-K 模式)。單欄 + 分組讓結果維持一條可由上往下掃讀、可用方向鍵逐項走的清單,適合產品內嵌使用;cmdk 的 `Command.Group` 結構正好對應這種分組。
 
-捨棄 multi-pane 的代價是「無 inline preview 直觀度」(Spotlight 可預覽檔案內容),但 DS 場景是命令清單非檔案 browser,接受。
+捨棄多欄的代價是「沒有並排預覽」(無法在面板裡直接看到項目內容),但 DS 場景是命令清單、不是檔案瀏覽器,接受。
 
 **(2) Search input always visible at top**
 
 input always visible 提示使用者「這是 search-driven」,對齊 input-first mental model。捨「only on focus 才出現 input」(節省垂直空間)的代價是「無法 list 看完再搜尋」,但 Cmd-K 場景 default 預期 search,不是 list browse。
 
-**(3) Cmd+K(Apple)/ Ctrl+K(Windows)為觸發 shortcut**
+**(3) Cmd+K(Mac)/ Ctrl+K(Windows)為觸發 shortcut**
 
 Cmd-K / Ctrl-K 不與 OS 級 launcher 綁定，且能用同一語意跨平台觸發產品內命令面板。File-only navigation 或全域 launcher shortcut 不屬於本元件責任。
 
 **(4) Internal primitive 哲學 — app 不直接用 Command,必透過 SelectMenu / CommandDialog wrapper**
 
-cmdk / shadcn / Radix 默認開放 app 直接消費 primitive — 但本 DS 走 Material `<Autocomplete>` 一體 / Polaris 一體封裝哲學,把 search + popover + value-binding 包進 SelectMenu(form context)或 `CommandDialog`(cmdk + Radix Dialog 包裝,global Cmd+K)。
+cmdk 是 headless 函式庫,原本就讓 app 直接消費 primitive —— 但本 DS 把 search + popover + value-binding 一次封裝進 SelectMenu(form context)或 `CommandDialog`(cmdk + Radix Dialog 包裝,global Cmd+K),不讓每個 consumer 各自拼出不同版本的搜尋浮層。
 
 捨棄「app code 直接 import Command 客製」的代價是「自由度受限」(無法在 app 內客製 cmdk filter logic),但 DS 一致性更重要 — 若 SelectMenu / CommandDialog 不夠用,回 DS 開新 wrapper 而不是繞過抽象層(SSOT 消費 canonical M1)。
 

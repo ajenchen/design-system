@@ -364,7 +364,7 @@ export interface TreeViewProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   defaultSelectedIds?: string[]
   /**
    * 啟用拖曳排序。預設 false。
-   * 啟用後整列可拖(Figma 風格,無 grip handle;靠 distance:5 區分 click vs drag),
+   * 啟用後整列可拖(無 grip handle;靠 distance:5 區分 click vs drag),
    * 拖曳時顯示 drop indicator(before / after / inside 三種位置)。
    * Consumer 透過 `onDragEnd` callback 接收 reorder 事件,自行更新 data。
    */
@@ -469,7 +469,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // ── Focus state(2026-09-25 總帳 B9:虛擬焦點 → 列上的 roving tabindex)──
     // 真 DOM 焦點落在列(role="row")或列裡的按鈕上;focusedId 由容器 onFocus 同步。
     // 為何改:樹狀表格要讓 → 把焦點**真的**交給列裡的按鈕、← 再交回列 —— 這一步本來就是真焦點,
-    // 列若維持虛擬焦點,同一棵樹就有兩種焦點模型。W3C 樹狀表格範例與 Adobe 的樹都是列上真焦點
+    // 列若維持虛擬焦點,同一棵樹就有兩種焦點模型。W3C 樹狀表格範例與 Adobe 的樹都是列上真焦點(Adobe:「By default, TreeView uses arrow key navigation to move focus into rows.」https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/dev/s2-docs/pages/s2/TreeView.mdx#L391)
     // (來源見 tree-view.spec.md「A11y 預設」)。
     const [focusedId, setFocusedId] = React.useState<string | null>(null)
     const treeRef = React.useRef<HTMLDivElement>(null)
@@ -575,14 +575,14 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       setDraggingId(String(event.active.id))
     }, [])
 
-    // ── Figma-style drop detection(X + Y 雙軸）──
+    // ── Drop detection(X + Y 雙軸:Y 決定前 / 中 / 後,X 決定層級）──
     //
     // Y 軸:決定在哪個 item 附近
     //   - item 上 25% = before
     //   - item 中 50% = inside(只有 folder)
     //   - item 下 25% = after
     //
-    // X 軸:決定 nesting 深度(Figma 核心邏輯)
+    // X 軸:決定 nesting 深度(拖到越左放越淺,不必另開「移到上一層」)
     //   - 滑鼠越左 = 越淺層(放在 parent 層級)
     //   - 滑鼠越右 = 越深層(放進 folder)
     //   - 用 pointer X 相對於 tree 左邊界計算 indent level
@@ -666,7 +666,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         return prev && prev.id === id && prev.position === position && prev.depth === finalDepth ? prev : { id, position, depth: finalDepth }
       })
 
-      // Auto-expand collapsed folder after 500ms hover (Figma behavior)
+      // Auto-expand collapsed folder after 500ms hover (lets users drop into deep levels without releasing first)
       if (position === 'inside' && hasChildren && !expandedIds.has(String(over.id))) {
         if (autoExpandTimerRef.current) clearTimeout(autoExpandTimerRef.current)
         autoExpandTimerRef.current = setTimeout(() => {
@@ -1353,7 +1353,7 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    * 這一列能不能被選(預設 true)。步驟導覽樹裡 `selectable={false}` = **沒有自己頁面的大步驟**:它只是把子步驟分組,
    * 本身永遠不會是「目前那一步」;點它的文字(或按 Enter / 空白鍵)會到它底下第一個能前往的子步驟並展開,
    * 目前那一步已在裡面時只展開或開合(tree-view.spec.md「步驟導覽樹」)。
-   * 命名對齊 Ant Design TreeNode `selectable`、PrimeReact TreeNode `selectable`(出處見規格)。
+   * 命名對齊 Ant Design TreeNode `selectable`、PrimeReact TreeNode `selectable`(Ant https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tree/index.en-US.md#L104;PrimeReact https://github.com/primefaces/primereact/blob/5cd9b145ce7d8b498e745002624ba958f307897e/components/lib/treenode/treenode.d.ts#L59-L61)。
    * 只用在有子步驟的列;同一棵樹不要混用兩種大步驟(開發模式會警告)。
    */
   selectable?: boolean
@@ -1472,7 +1472,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
     const indentPx = depth * INDENT_STEP[size]
 
     // ── Drag hooks ──
-    // Figma 風格:整列可拖(不用 grip handle),靠 distance:5 區分 click vs drag
+    // 整列可拖(不用 grip handle,整列就是把手),靠 distance:5 區分 click vs drag
     const { attributes: dragAttrs, listeners: dragListeners, setNodeRef: setDragRef } = useDraggable({
       id, disabled: !draggable || disabled,
     })

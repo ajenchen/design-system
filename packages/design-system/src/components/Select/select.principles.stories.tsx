@@ -186,7 +186,7 @@ export const ImmediateVsSubmitRule: Story = {
       <TutorialPage>
         <TutorialRule
           title="即時套用 — onChange 直接觸發副作用"
-          note="Jira status、Linear priority、filter、theme 切換。改了立刻寫 DB / 送 API / 改 URL。onChange 通常呼叫 mutation 或 setState 更新父層。沒有「取消」的概念"
+          note="工單 status、議題 priority、filter、theme 切換。改了立刻寫 DB / 送 API / 改 URL。onChange 通常呼叫 mutation 或 setState 更新父層。沒有「取消」的概念"
         >
           <Field>
             <FieldLabel>庫存狀態</FieldLabel>

@@ -23,7 +23,7 @@ benchmark:
 
 SelectMenu 是 **Popover + Command 組成的完整下拉選單浮層**——提供搜尋 + 鍵盤導覽 + 分組 + 可建立新選項，作為**選值類**元件的 internal primitive（不直接使用）。
 
-**實作基礎**：基於 cmdk（搜尋 / 鍵盤導覽）+ shadcn Popover（浮動容器）+ 消費 MenuItem primitive（item 佈局）。
+**實作基礎**：基於 cmdk（搜尋 / 鍵盤導覽）+ shadcn Popover（浮動容器,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L5-L9）+ 消費 MenuItem primitive（item 佈局）。
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
@@ -202,7 +202,7 @@ Popover（浮動容器，handle 展開 / 定位）
 | Ant Select([select-users.tsx](https://github.com/ant-design/ant-design/blob/master/components/select/demo/select-users.tsx)) | 空 | `setOptions([])` + `notFoundContent` Spin | `notFoundContent` 'No results found' |
 | Slack 搜尋([help](https://slack.com/help/articles/202528808-Search-in-Slack)) | 「Click the search bar, then click the clock icon to show and hide your previous searches.」 | — | — |
 
-GitHub 指派人「Suggestions」標題 / Jira「Recently assigned」/ Linear 指派人 / Notion @ 提及 / Apple HIG Searching / Material 3 Search:2026-09-09 官方頁抓取 404、JS 渲染空頁或未描述此行為,**未列入證據**(只作命名靈感,不作 cite)。
+其他產品與設計系統的同類標題(指派人建議、最近指派、@ 提及、搜尋建議):2026-09-09 官方頁抓取 404、JS 渲染空頁或未描述此行為,**未列入證據**(只作命名靈感,不作 cite)。
 
 ## Empty state
 
@@ -237,7 +237,7 @@ user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的�
 | `optionsLoading`(SelectMenu;Select / Combobox / PeoplePicker 同名轉發) | **選項清單**在抓 | **只在選單內**:清單裡沒有任何可顯示的選項時,Empty 槽渲 `<CommandLoading label={loadingText} />`(`select-menu.tsx`;`command.tsx` `CommandLoading`)= 與「沒有結果」同一種 `MenuItem message` 訊息列,前綴槽放列圖示尺寸的轉圈(`ICON_SIZE[size]`:sm/md 16、lg 20)+ 可見文字(預設「載入選項中」,可覆寫),`role="status"` 直接播報;listbox `aria-busy`。**觸發點 / 搜尋列不轉圈** | 本 spec |
 | `loading`(Select / Combobox / PeoplePicker;SelectMenu 沒有) | **這個值**在讀取 / 驗證 / 儲存 | 觸發點右側、ChevronDown 左邊列圖示尺寸轉圈 + 觸發點 `aria-busy`,與 Input `loading` 的 endAction 槽同義;選單照常可開可選 | `../Field/field-controls.spec.md`「Loading state」 |
 
-**為什麼拆成兩個字**:2026-09-08 一個 `loading` 同時表達兩件事,結果是同一時刻兩顆轉圈(user 抓到),用條件式互斥只是遮症狀;DS 內 `loading` 早被 Field 家族佔走(M23:DS canonical 優先於 MUI / Ant / react-select 的 `loading`),選項載入改名 `optionsLoading`(3 重 test:對齊 `options` prop;世界級無直接對照 —— MUI / Ant / react-select 都叫 loading,但它們沒有 Field 家族那個值層級 `loading`;DS 內無他義)。user 2026-09-09 原話:「Props改名照你建議，確保符合我們一致的設計語言且不違背世界級的設計即可」。
+**為什麼拆成兩個字**:2026-09-08 一個 `loading` 同時表達兩件事,結果是同一時刻兩顆轉圈(user 抓到),用條件式互斥只是遮症狀;DS 內 `loading` 早被 Field 家族佔走(M23:DS canonical 優先於 MUI / Ant 的 `loading`、react-select 的 `isLoading`),選項載入改名 `optionsLoading`(3 重 test:對齊 `options` prop;世界級無直接對照 —— MUI Autocomplete / Ant Select 叫 `loading`、react-select 叫 `isLoading`(https://cdn.jsdelivr.net/npm/react-select@5.10.2/dist/declarations/src/Select.d.ts),但它們沒有 Field 家族那個值層級 `loading`;DS 內無他義)。user 2026-09-09 原話:「Props改名照你建議，確保符合我們一致的設計語言且不違背世界級的設計即可」。
 
 **選項載入的指示為什麼只在選單內**:MUI Autocomplete `loading`:「If `true`, the component is in a loading state. This shows the `loadingText` in place of suggestions (only if there are no suggestions to show, for example `options` are empty).」([API](https://mui.com/material-ui/api/autocomplete/));Polaris Autocomplete `loading` → 清單內 `Listbox.Loading`,TextField 不轉([Autocomplete.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx));Ant 官方示範把 Spin 放 `notFoundContent`、不用 `loading` prop([select-users.tsx](https://github.com/ant-design/ant-design/blob/master/components/select/demo/select-users.tsx))。2026-09-08 的 (a)「搜尋列右側每次抓都亮」與觸發點為選項轉圈 **退役**;`CommandInput` 的 `loading` prop 同日移除(唯一消費者是 SelectMenu)。
 
@@ -274,7 +274,7 @@ user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的�
 - **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx#showCreate`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。
 - **Density**:row height 由 `MenuItem` SSOT 控(sm/md/lg);SelectMenu 不獨立 own density。
-- **大量選項(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing(對齊 Ant Select / MUI Autocomplete 慣例);本元件無虛擬化。
+- **大量選項(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing;本元件無虛擬化(Ant Select 預設就虛擬捲動 `virtual: true`,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/select/index.en-US.md#L118;本元件沒有,所以要靠上游收斂)。
 
 ---
 
@@ -292,9 +292,9 @@ SelectMenu 是**多區塊 composite primitive**,色彩全數消費 DS semantic t
 
 ---
 
-## shadcn passthrough 例外說明
+## 元件封裝慣例例外說明(稽核第 9 維)
 
-SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem list + 浮動 surface),純 declarative API。**套 `forwardRef` 簽名但 ref 不附著、無 `...props` spread**(shadcn forwardRef + displayName 統一;`select-menu.tsx#SelectMenu` 上方的 rationale):
+SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem list + 浮動 surface),純 declarative API。**套 `forwardRef` 簽名但 ref 不附著、無 `...props` spread**(DS 元件結構統一 forwardRef + displayName,`ds-canonical/rules/ui-development.md`「結構」;`select-menu.tsx#SelectMenu` 上方的 rationale)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/%28root%29/tailwind-v4.mdx#L13)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/select.tsx#L8-L11)):
 
 - **沒有單一 DOM root 可 ref**:trigger / search input / list / content portal 各自 DOM tree 離散
 - **`...props` spread 目標不明**:composite 的 root wrapper 只是 control 容器,spread 到那裡 consumer 無從預期作用

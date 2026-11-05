@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
  * Header 家族 tabsSlot wrapper className(W2 SSOT,header-canonical.spec.md Rule W2)。
  * 兩家族(ChromeHeader chrome / SurfaceHeader overlay)的 column-mode tabsSlot row 共用此契約:
  * 對 `[data-slot=tabs-list]`(tabs.tsx 三種 overflow 模式的 role=tablist 元素皆自標,對齊
- * shadcn v4 data-slot idiom)注入內 `px-loose` inset triggers(對齊 header content = W2)。
+ * shadcn v4 data-slot idiom,例 https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L15 )注入內 `px-loose` inset triggers(對齊 header content = W2)。
  * 寬度不在此注入 — TabsList 各模式自帶(none `w-full` border-b 延展全寬 = W1 一條線;
  * scroll/menu `min-w-full` 讓 border 隨溢出內容成長,blanket `w-full` 會把 border 截在可視寬)。
  * v4(2026-07-30 regression fix):beta.86 inlineAction overlay(fc2a3a5c)包 `<div class="relative">`
@@ -88,7 +88,7 @@ export interface ChromeHeaderProps
    * (sidebar 收合 width = sidebar-width-icon,toggle container 同寬 = toggle center x = sidebar
    * collapsed icon center x = perfect alignment)。
    *
-   * 對齊 GitHub global nav 左側固定寬度 logo 區 / Slack thin workspace rail 慣例。
+   * 固定寬度讓 toggle / logo 跟 sidebar 收合後的 icon 欄落在同一條中線。
    * 提供時自動結構:
    *   row1: [leadingRail (width=sidebar-width-icon)] [children (px-loose flex-1)]
    * 不提供時 fallback 預設 single-row(全 px-loose)。

@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:f37d21129af8608ba1ba9925edcfbff10e6eeee078c4bf63fd85216cce18b1b1",
+      "hash": "sha256:275f33d3ca3c1eb840767277eb82f4cc20432e0405c634d0ac4e8a14cadd5387",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ff2a981df5d1f9d0f713457b5818eddb7d44702efe0ec386321a4d4d016841d9",
+      "hash": "sha256:a3cf390864ebea95ddbb06270a029d9d75adf078ab00f0b39f6fa0ad3dd11075",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139534,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:acc49a9489f048e4fec1790fd032f95ee80ae9050cb88fdd55d4eb7ef9d41279",
+  "inputDigest": "sha256:1926619f37861a157a5c927a8eef5774306a257c65dc62f4c9056ab60b019902",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:7f2be650e203bc7c35f5661fbdf90891bf498a51820539a88e2442fcf10f3c16",
+  "snapshotDigest": "sha256:56c07c0964078ecba343846f9d354ecc61bfc4e2efdbd8601a8b9931b2b95e63",
   "sources": [
     {
       "hash": "sha256:cda38443418fae9bda0c0e7d9c0775344bc4cdcba05dded0e0b0b94200ade4ba",
@@ -645,7 +645,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:fc57890ffd43d04a10e38cffdd40e1d81b7a97dfe022a8ee645c0ed950b1992a",
+      "hash": "sha256:b1f01b0d8e42b04fde30c3b58eee9f43efe2f84b8f9096516bfd22aebb53180d",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3588,7 +3588,7 @@
         "scripts/generated/"
       ],
       "files": 695,
-      "hash": "sha256:5be5a9c721724594c5f5ed0aaf34e98590661c2b52c4f5cef0645994eee51bf8",
+      "hash": "sha256:70483882c2e7e43f92c72484fdc4ced9749d6579bd05a8e4295afd99861838c1",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

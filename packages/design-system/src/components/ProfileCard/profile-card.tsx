@@ -21,7 +21,7 @@ import { useI18n } from '@/design-system/lib/i18n/i18n-context'
  *
  * ── 為什麼需要 export ──
  * ProfileCard 的 action 列在世界級 chat/contact app 是「關係型快速動作」的 canonical
- * (Slack / iMessage / LinkedIn / Figma 皆如此):**Chat / Message + Audio call**。
+ * (看到一個人最常做的下一步就是找他講話):**Chat / Message + Audio call**。
  * 跨 consumer(avatar.principles / profile-card.stories / future product code)應該用
  * 同一組預設,避免每個範例各自發明 action 組合,讓 reader 誤以為 action 會隨情境自動變。
  *
@@ -87,7 +87,8 @@ export const ProfileCardDefaultActions = ({
  *
  * ── Status 對齊 Avatar presence canonical(2026-04-20) ──
  * status type = `online | away | busy | offline`,跟 Avatar 的 presence prop 對齊
- * (世界級 Slack / Teams / Discord term);dot 色走 `--status-*` semantic token
+ * (本 DS 自己的取名;Teams 所用 Fluent 2 的 PresenceBadge 是 available / away / busy / do-not-disturb / offline…,
+ * 「在線」叫 available 不叫 online:https://github.com/microsoft/fluentui/blob/8830c10bfb2f4c1bdd540287b09713b9679cd1ad/packages/react-components/react-badge/library/src/components/PresenceBadge/PresenceBadge.types.ts#L4-L12 );dot 色走 `--status-*` semantic token
  * (獨立於 success/error/warning,避免語義衝突)。
  *
  * ── Avatar 對齊 ──
@@ -143,7 +144,7 @@ const DEFAULT_LABELS: ProfileCardLabels = {
  * 「視覺結構 SSOT 在此元件,不依賴 consumer」原則不變。
  *
  * ── 對齊 world-class ──
- * Slack profile card / Linear member card / Notion person card / GitHub user card / Figma user card
+ * 人員卡是固定欄位表
  * 都是 fixed schema(role / email / location / department / department / pronouns 等),
  * 不會因為某 user 沒填 phone 整個 phone field 不見 — 缺 = 顯 `Not set` 或留白。
  *
@@ -213,7 +214,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     // label 撞 default(eg. 「ID」「員工編號」),consumer 值 win — defaults 那一行
     // 跳過(否則 same label 連 render 兩次,如 default placeholder `-` + consumer 真值)。
     // 這是遷移期 forgiving 行為:DEV warn 提示應改用 `defaultFieldValues`,但 production
-    // 不破壞既有 consumer。對齊 React `key` 唯一性 + Linear / Slack profile card 一 label
+    // 不破壞既有 consumer。對齊 React `key` 唯一性 + 人員卡「一 label
     // 一 row idiom。
     // 文案:prop → I18nProvider 的 `profile-card` 那一組 → DS 預設中文(同 ProfileCardDefaultActions;lib/i18n/README.md「Fallback chain」)
     const { t } = useI18n()
@@ -271,7 +272,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     //     context 自動繼承 Radix viewport-aware 變數;standalone 落到 100vh fallback
     //   - 內部 `flex flex-col + overflow-hidden`:Header(shrink-0)+ Body(flex-1 min-h-0 ScrollArea)
     //     + Footer(shrink-0)三層 chrome
-    // 世界級對照:Slack / Linear / GitHub / Notion hover-profile popover 皆此 chrome pattern。
+    // 這是 overlay-surface 的 Header / Body / Footer 三層 chrome(內容多時只有 Body 捲動)。
     return (
       <div
         ref={ref}

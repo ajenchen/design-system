@@ -34,7 +34,7 @@ gutter = 0 的平台(overlay 捲軸)自動跳過軌道那半,滾輪那半照驗�
 
 header 與 body 是**兩個容器、各自跑一次 CSS flex 分配**(見不變條件 (6));下列缺陷全部源自這一點,
 補償只能讓「兩次計算的輸入相等」,不能讓它變成「一次計算」。已修的在上面,未修的列在這裡,
-避免下一個人以為都修完了。**AG Grid v33 對「欄寬分歧」這一類結構性免疫**(欄寬只算一次寫進 `AgColumn.actualWidth`,header 與 body 讀同一個整數,**三個區都是**);對「捲軸吃掉版面」這一類則是把捲軸**抬出資料區**(`.ag-root` 層的假水平捲軸 + `.ag-body` 的 in-flow 垂直捲軸 + 三區共用同一個 `.ag-body-viewport`),不是靠補償。我們已對第一類採用同一個模型;第二類仍用補償,代價列在 O/P/Q。
+避免下一個人以為都修完了。**AG Grid v33 對「欄寬分歧」這一類結構性免疫**(https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/agColumn.ts#L71、https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/headerRendering/cells/column/headerCellCtrl.ts#L428-L431、https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/rendering/cell/cellPositionFeature.ts#L129-L135;捲軸結構見 https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/gridBodyComp/gridBodyComp.ts#L35-L100)(欄寬只算一次寫進 `AgColumn.actualWidth`,header 與 body 讀同一個整數,**三個區都是**);對「捲軸吃掉版面」這一類則是把捲軸**抬出資料區**(`.ag-root` 層的假水平捲軸 + `.ag-body` 的 in-flow 垂直捲軸 + 三區共用同一個 `.ag-body-viewport`),不是靠補償。我們已對第一類採用同一個模型;第二類仍用補償,代價列在 O/P/Q。
 
 | # | 缺陷 | 觸發條件 | 嚴重度 | 狀態 |
 |---|---|---|---|---|

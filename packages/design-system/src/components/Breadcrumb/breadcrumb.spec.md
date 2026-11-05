@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm:
     when: "Dialog / panel / drawer 內;text-body(14)+ icon 16,建議配 text-h4(20)title。對齊 BREADCRUMB_TEXT_CLASS.sm + BREADCRUMB_ICON_SIZE.sm(breadcrumb.tsx:128-140)"
-    world-class: ["Atlassian Breadcrumb", "Ant Design Breadcrumb"]
+    world-class: ["Ant Design Breadcrumb"]
   md:
     when: "預設 — 一般頁面 header;text-body(14)+ icon 16,建議配 text-h3(24)title"
     world-class: ["Ant Design Breadcrumb default", "MUI Breadcrumbs", "Polaris Breadcrumbs"]
@@ -29,7 +29,7 @@ benchmark:
 ## 定位
 
 Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快速回到上層的路徑導覽。
-基於 shadcn/ui Breadcrumb 結構（原生 nav / ol / li 語意 + Tailwind；`asChild` 多型渲染用 Radix Slot，truncate Tooltip 與 collapse DropdownMenu 消費 DS 內部 Radix-based 元件），橋接設計系統 token。
+基於 shadcn/ui Breadcrumb 結構（https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/breadcrumb.tsx#L4-L40;原生 nav / ol / li 語意 + Tailwind；`asChild` 多型渲染用 Radix Slot，truncate Tooltip 與 collapse DropdownMenu 消費 DS 內部 Radix-based 元件），橋接設計系統 token。
 
 **Breadcrumb 是「你在哪裡」的指示器，不是「你可以去哪裡」的選單**——反映當前路徑，不是全部可能路徑。
 
@@ -107,7 +107,7 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 | **`BreadcrumbPage`（當前）** | `text-foreground`（不加粗）| neutral-9 深色區分於 fg-secondary 的 links，但**不加粗**——加粗會讓 breadcrumb 最右端視覺過重，破壞「你從哪來 → 你在這」的流動感 |
 | **`BreadcrumbSeparator`** | `text-fg-muted` + `ChevronRight`,尺寸消費 `BREADCRUMB_ICON_SIZE`(`breadcrumb.tsx` SSOT,對齊 `uiSize.spec.md` Icon Size Tier)| 視覺降噪,separator 不搶焦點 |
 | **`BreadcrumbEllipsis`** | `text-fg-muted` + `MoreHorizontal`,消費 `ItemInlineActionButton` 固定 `size="md"`(不隨 BreadcrumbList size 變化)| 尺寸 SSOT 在 `inline-action.spec.md` 尺寸表;固定 md 的理由詳 `breadcrumb.tsx` |
-| **`BreadcrumbLink` / `BreadcrumbPage` `startIcon`** | `<Icon size={BREADCRUMB_ICON_SIZE[size]} aria-hidden />` | 首項 Home icon 業界慣例(Material / Atlassian)。Consumer 只傳 `LucideIcon`,DS 統一管 size 消費 BREADCRUMB_ICON_SIZE SSOT — 對齊 `uiSize.spec.md` Icon Size Tier,**禁 consumer 傳 size prop**(避免寫死 drift)|
+| **`BreadcrumbLink` / `BreadcrumbPage` `startIcon`** | `<Icon size={BREADCRUMB_ICON_SIZE[size]} aria-hidden />` | 首項可放 Home icon,讓使用者一眼認出根層級。Consumer 只傳 `LucideIcon`,DS 統一管 size 消費 BREADCRUMB_ICON_SIZE SSOT — 對齊 `uiSize.spec.md` Icon Size Tier,**禁 consumer 傳 size prop**(避免寫死 drift)|
 
 ## 對齊既有設計語言
 
@@ -189,9 +189,9 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 - 只在實際 truncate 時才顯 Tooltip — 沒被截斷不顯
 
 世界級對照:
-- **Material UI**:`maxItems=8` declarative auto-collapse(source verified,no per-item width rule)
+- **Material UI**:`maxItems=8` declarative auto-collapse(`maxItems = 8`,https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Breadcrumbs/Breadcrumbs.js#L90;no per-item width rule)
 - **Polaris**:點 ⋯ DropdownMenu 展開
-- **Atlassian**:中段 ⋯ + dropdown
+- **Atlassian**:中段 ⋯ + dropdown(@atlaskit/breadcrumbs 17.8.6 新版在 `platform_dst_breadcrumbs-refresh` 旗標下,⋯ 用 `DropdownMenu`,https://cdn.jsdelivr.net/npm/@atlaskit/breadcrumbs@17.8.6/dist/es2019/components/internal/ellipsis-popup.js)
 - **GitHub / Notion / Linear / Apple Finder**:auto truncate 中段
 - Per-item width(flex-shrink hierarchy)無世界級 source 可考(**unverified**)— 本 DS 自有設計,依據詳上方「為何 flex-shrink hierarchy 不用 fixed max-width」
 
@@ -250,7 +250,7 @@ ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節
 
 **ARIA / Pattern**:結構為原生 HTML(nav + ol + li + a/span),a11y 來自原生 HTML 語意(`asChild` 用 Radix Slot 只合併 prop、不管理焦點 / ARIA / 鍵盤;truncate Tooltip 與 collapse DropdownMenu 各自帶自身 a11y)— 外層 `<nav aria-label="麵包屑">`(可經 `aria-label` 或 I18nProvider 換字)、當前頁 `<span role="link" aria-disabled="true" aria-current="page">`、分隔符 `aria-hidden`(不進無障礙樹)。對齊 [WAI-ARIA Breadcrumb pattern](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/)。
 
-**為何當前頁加 `role="link" aria-disabled="true"`**:BreadcrumbPage 是「被 disable 的連結」— 把它標記成連結家族(`role="link"`)讓螢幕閱讀器把整條 breadcrumb 念成同一個連結序列,再以 `aria-disabled="true"` 告知不可操作(對齊 shadcn/ui Breadcrumb canonical `BreadcrumbPage`)。WAI-ARIA APG 允許 current 用 link + `aria-current`,shadcn 加 `aria-disabled` 是合理增強。
+**為何當前頁加 `role="link" aria-disabled="true"`**:BreadcrumbPage 是「被 disable 的連結」— 把它標記成連結家族(`role="link"`)讓螢幕閱讀器把整條 breadcrumb 念成同一個連結序列,再以 `aria-disabled="true"` 告知不可操作(對齊 shadcn/ui Breadcrumb canonical `BreadcrumbPage`:`role="link" aria-disabled="true" aria-current="page"`,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/breadcrumb.tsx#L52-L58)。WAI-ARIA APG 允許 current 用 link + `aria-current`(「The link to the current page has aria-current set to page.」https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/breadcrumb/breadcrumb-pattern.html#L46-L47),shadcn 加 `aria-disabled` 是合理增強。
 
 **Keyboard 行為**:
 

@@ -1,4 +1,4 @@
-// @benchmark-cited: Sidebar full-layout baseline + DataTable toolbar pattern + Linear real-product 場景。
+// @benchmark-cited: Sidebar full-layout baseline + DataTable toolbar pattern + 議題追蹤產品的真實場景。
 // @story-baseline: packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse (Sidebar 完整佈局)
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions (Toolbar + DataTable)
 import type { Meta, StoryObj } from '@storybook/react'
@@ -46,7 +46,7 @@ type Story = StoryObj<typeof AppShell>
 // Helpers(AcmeSidebar / PageHeader / WorkspaceBrand / UserFooter / MAIN_NAV)從 ./_demo-helpers
 // import,跟 anatomy stories 共用 single baseline source(避免 anatomy 跟 showcase 自分歧)。
 
-// ── Mock data — Linear-style issue tracker ────────────────────────────────
+// ── Mock data — 議題追蹤(issue tracker)────────────────────────────────
 
 type Issue = {
   id: string
@@ -91,8 +91,8 @@ const ISSUE_COLUMNS = [
  * @usage-ref: data-table.stories.tsx#WithBulkActions
  * @usage-consumes: Popover + DataTableFilterPanel + DataTableSortManager + Button text iconOnly pressed + rowActions
  *
- * Per codex Layer B D3(2026-05-20):row-driven Aside trigger 才符合 Linear/Notion/Jira/Airtable
- * production 真實情境。row 右側 dedicated action button(`Button variant="text" size="xs" iconOnly`
+ * Per codex Layer B D3(2026-05-20):Aside 由 row 觸發(對某一筆開詳情)才是
+ * 真實情境。row 右側 dedicated action button(`Button variant="text" size="xs" iconOnly`
  * per data-table.spec L153 rowActions canonical)→ click 開 Aside + 被選 issue active visual(pressed prop)。
  * AppShell header toggle 降級為 secondary show/hide 不是主入口。
  */
@@ -276,7 +276,7 @@ function IssueDetail({ issue }: { issue: Issue | null }) {
 
 // ── Stories ──────────────────────────────────────────────────────────────────
 
-// primary-sidebar mode(Linear / Notion / Figma 派)— Linear-style issue tracker:
+// primary-sidebar mode(header = 當前頁 local toolbar)— 議題追蹤情境:
 // - Sidebar 完整佈局(WorkspaceBrand + SidebarFooter avatar HoverCard,對齊 sidebar.stories baseline)
 // - Header SidebarTrigger + 當前頁 title 緊鄰 + 右 toggle Aside button
 // - Main:Toolbar(search + filter + sort)+ DataTable(對齊 data-table.stories WithBulkActions)
@@ -324,7 +324,7 @@ export const PrimarySidebar: Story = {
 // primary-sidebar + header tabs(W1-W6 canonical 落地範例)。
 // @usage-ref: patterns/header-canonical/header-canonical.spec.md(W1-W6 + Background ownership)
 // @usage-consumes: ChromeHeader tabsSlot + Tabs + TabsList + TabsTrigger + TabsContent
-// 對齊 GitHub Issues / Linear / Notion 派「頁面內 status filter 走 header tabs」idiom:
+// 頁面內 status filter 走 header tabs(切的是本頁清單的篩選,屬於 local header):
 // - Tabs root wrap 整 AppShell(Radix TabsList ↔ TabsContent 必同 Tabs root)
 // - PageHeader 接 tabsSlot → ChromeHeader 自動 column mode:row 1 = title / row 2 = tabs
 // - W1 border auto-suppress(header 不畫 border,TabsList 接管)/ W2 tabs padding 對齊 header(px-loose)/ W3 tabs size = sm / W4 flush stack
@@ -390,19 +390,17 @@ export const PrimarySidebarWithTabs: Story = {
 }
 
 // 
-// primary-header mode(GitHub / Gmail / Slack 派)— global header 橫跨頂部 + local header 仍在 main col 頂。
+// primary-header mode — global header 橫跨頂部 + local header 仍在 main col 頂。
 //
 // @usage-ref: app-shell.spec.md「primary-header = primary-sidebar + 一條 global header」段(2-layer model)
 // @usage-consumes: ChromeHeader + Sidebar + GlobalHeader + PageHeader + IssuesView
 //
 // 2026-05-21 v2 per user clarification「primary-header = primary-sidebar + 一條 global header」:
 // - **Row 1 globalHeader**:跨頁 chrome(WorkspaceBrand 左 + account / search 右),對齊
-//   GitHub top nav / Slack workspace bar / Gmail logo bar
-// - **Row 2 [Menu][Main][Right panel]**:版面列在 globalHeader 下方,Menu 的高度由版面列給、不蓋 globalHeader
+// - **Row 1 globalHeader**:跨頁 chrome(WorkspaceBrand 左 + account / search 右)
 //   (2026-10-14 起;`viewportInsetTop` 只對不在 AppShell 裡的 Sidebar 有作用,這裡不傳)
 // - **Main col 仍有 local header(PageHeader)** — 當前頁 title / breadcrumb / page actions
-//   對齊 GitHub repo header / Slack channel header / Gmail email-list toolbar 2-layer 慣例
-// - Sidebar 內**不 render WorkspaceBrand**(`includeWorkspaceBrand={false}`),avoid 重複(已在 globalHeader)
+// - **Main col 仍有 local header(PageHeader)** — 當前頁 title / breadcrumb / page actions(上層整個 app 共用、下層屬於當前頁)
 // - **Menu 放不下時**(沒有固定斷點,用各區最小寬現算):按開關叫出的 Menu 左側浮層從視窗頂端起、蓋住 globalHeader →
 //   AcmeSidebar 讀 `useSidebarSurface()`(這一份畫在浮層裡)+ `useAppShell().layout`,只在**浮層那一份**把整條 globalHeader 搬進 SidebarHeader
 //   (brand 左 + 帳號 avatar 右,鏡像桌面 global bar;SidebarHeader = ChromeHeader 基底 → 結構 SSOT、非手刻);被浮層蓋住的細列那一份不補、不跳。
@@ -411,7 +409,7 @@ export const PrimarySidebarWithTabs: Story = {
 //   (把 Storybook 視窗縮到 Menu 放不下、再按 globalHeader 最左的開關,即可見浮層頂排一排品牌 + 帳號。)
 // (開發備忘用一般註解,不進 docs —— 稽核 L136;讀者看的說明在 docs.description)
 export const PrimaryHeader: Story = {
-  name: '主標頭佈局 — 全域+本地兩層(GitHub/Gmail/Slack 派)',
+  name: '主標頭佈局 — 全域+本地兩層',
   parameters: {
     docs: { description: { story: 'GitHub / Gmail / Slack 式:全域標頭橫跨頂部(品牌、帳號),Menu 與主內容在它下方,主內容欄仍有自己的頁首。視窗窄到 Menu 放不下時,按全域標頭最左的開關叫出 Menu 浮層,浮層頂排會補上品牌與帳號。' } },
   },
@@ -545,7 +543,7 @@ function FourRegionShell({ frameWidth, agent }: { frameWidth?: number; agent?: (
   const toolbarRef = React.useRef<HTMLDivElement | null>(null)
   const keep = React.useCallback(() => [toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
   // 換頁(示範產品的導航邏輯,不是 AppShell 規則):Insights 是自己的一頁,右側的議題詳情跟它無關 → 一起收起
-  // (Linear 換頁時議題 peek 一起收;2026-10-15 r1b 複驗 F11:原本 Main 換到 Insights,右側仍掛著 ENG-1042)。其餘選單項示範仍是議題清單,詳情保留。
+  // (換頁時議題詳情一起收 —— 詳情屬於原頁的那一筆;2026-10-15 r1b 複驗 F11:原本 Main 換到 Insights,右側仍掛著 ENG-1042)。其餘選單項示範仍是議題清單,詳情保留。
   const navigate = React.useCallback((id: string) => {
     setActiveId(id)
     if (id === 'insights') setAsideOpen(false)

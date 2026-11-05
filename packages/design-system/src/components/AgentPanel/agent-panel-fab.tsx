@@ -27,7 +27,7 @@
  *   ArrowLeftFromLine —— 線 = 右緣、箭頭方向 = 鍵盤 → / ← 等價路徑;lucide 官方 tags collapse / expand 鏡像對
  *   https://github.com/lucide-icons/lucide/blob/main/icons/arrow-right-to-line.json)。
  *   Tooltip 兩態不同:家「問我或推走我」(邀請拖曳)/ 貼邊「開啟智慧代理」(user 2026-09-03:小鈕只寫開啟)。
- *   動作:形態切換 --motion-duration-overlay(150ms,Carbon moderate-01「小型展開、短距離」)、飛回家 / 落點修正
+ *   動作:形態切換 --motion-duration-overlay(150ms,Carbon moderate-01「小型展開、短距離」)、飛回家 / 落點修正(來源:https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L302 https://atlassian.design/foundations/motion https://github.com/microsoft/fluentui/blob/8830c10bfb2f4c1bdd540287b09713b9679cd1ad/packages/react-components/react-motion/library/src/hooks/useAnimateAtoms.ts#L12)
  *   --motion-duration-surface(250ms,Atlassian transitions 150–400「較長時長幫助追蹤空間變化」)+ enter 曲線、
  *   帶底色淡入淡出 150ms;prefers-reduced-motion 全部直接落定(motion.spec.md a11y 段;Atlassian / Fluent 同)。
  *   位置由 consumer 受控/非受控(placement / defaultPlacement / onPlacementChange),DS 不寫 storage。
@@ -214,7 +214,7 @@ const HYSTERESIS = 16
 /**
  * 右緣帶(拖曳中才出現的暫態停靠區)= DS「可放下的區域」配對 `--drop-target` 底 + `--drop-target-border` 虛線框,
  * 貼邊那側不畫、不留圓角(2026-09-03 user 拍板;token 與兩種情境的分工 SSOT 在 color.spec.md「Drop target」段):
- * - 底色半透明(覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律),兩模式同一公式,不用 --primary-subtle
+ * - 底色半透明(覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律),兩模式同一公式,不用 --primary-subtle(來源:https://github.com/microsoft/vscode-docs/blob/7b97a834f5fd6d0a616fa64e3f6dd379367dd68f/api/references/theme-color.md#L409-L410)
  *   (那是元件自己的不透明淡底,底下沒有別人的內容)。
  * - 三邊 dashed:dashed = DS 的「可放下的暫時目標」語彙(file-upload.spec.md);貼右緣那側不畫線不留圓角,
  *   與 Sheet / Sidebar / AppShell 側欄 / 貼邊鈕(環只畫露出三邊)同一語言。

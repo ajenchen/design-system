@@ -399,7 +399,7 @@ Sidebar 是頁面級容器,padding 應該跟其他頁面區塊的間距一致(�
 
 當 TreeView 住在 `context="sidebar"` 且外層 Sidebar 處於 `collapsible="icon"` 的收合狀態時,**整個 TreeView 區塊必須隱藏**(而非嘗試 icon 化、flyout、popover)。
 
-**為什麼**:tree 是任意深度的遞迴結構,沒有任何方式可以壓縮成單排 icon。Gmail / Linear / Notion 一致採取「隱藏」——使用者要看 tree 必須先展開 sidebar。詳見 `sidebar.spec.md` 的 icon 模式規則。
+**為什麼**:tree 是任意深度的遞迴結構,沒有任何方式可以壓縮成單排 icon。所以 icon 模式一律隱藏 tree——使用者要看 tree 必須先展開 sidebar。詳見 `sidebar.spec.md` 的 icon 模式規則。
 
 Sidebar 不會自動辨識任意 tree 容器；consumer 必須在承載 TreeView／可收合 tree group 的 wrapper 傳 `className="group-data-[collapsible=icon]:hidden"`，讓 Sidebar group state 在 icon 模式隱藏整塊 tree。TreeView 本身不改變資料或互動模式。
 
@@ -411,7 +411,7 @@ Sidebar 不會自動辨識任意 tree 容器；consumer 必須在承載 TreeView
 
 ## Hover-only Inline Actions
 
-TreeItem 右側 inline actions（宣告式 `inlineActions: InlineActionConfig[]` 或 escape-hatch `inlineActionsSlot`，**非** `actions` prop）預設在 hover 該列**或鍵盤 focus-visible 該列**時出現(opacity 0→1)；`actionsReveal={false}` 則常駐不 hover-reveal。**為什麼**:(a) 視覺清潔(10+ node × 2-3 icon = 20-30 灰 icon 同屏噪音極大);(b) 業界一致(Notion / VS Code / Figma 都 hover-only);(c) 不影響操作(要操作自然會 hover)。
+TreeItem 右側 inline actions（宣告式 `inlineActions: InlineActionConfig[]` 或 escape-hatch `inlineActionsSlot`，**非** `actions` prop）預設在 hover 該列**或鍵盤 focus-visible 該列**時出現(opacity 0→1)；`actionsReveal={false}` 則常駐不 hover-reveal。**為什麼**:(a) 視覺清潔(10+ node × 2-3 icon = 20-30 灰 icon 同屏噪音極大);(b) 操作只在要用的那一列出現,視線不被其他列的 icon 拉走;(c) 不影響操作(要操作自然會 hover)。
 
 **出現是瞬間的、不淡入**(2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,user:「確定這樣才是一致設計語言就做」;2026-09-26 前是 0.15 秒淡入)。出現規則只住 `ItemSuffix` 的 `hoverReveal`(`../../patterns/element-anatomy/item-anatomy.tsx`),SSOT = `../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」。
 
@@ -431,13 +431,13 @@ Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `fg-secondary
 
 ## Drag and Drop
 
-`draggable` prop 啟用後 Figma 風格整列拖(無 grip handle),`PointerSensor distance: 5` 區分 click / drag。
+`draggable` prop 啟用後整列可拖(無 grip handle,整列就是把手),`PointerSensor distance: 5` 區分 click / drag。
 
 **互動模型**:
 - **X+Y 雙軸偵測**:Y 軸定位置(上 25% = before / 中 50% = inside / 下 25% = after);X 軸定 nesting 深度(滑鼠 X 相對 tree 左邊界 / `indentStep` = level)
 - **Drop position 三種**:`before` / `after`(同層上下)、`inside`(成為子 node)
 - **X 軸邏輯**:指標 ≤ folder 深度 → `after`;> folder 深度 → `inside`;leaf `after` 若指標較淺自動升到 parent 的 `after`
-- **Auto-expand**:拖曳停留收合 folder 500ms → 自動展開(Figma 行為);離開或結束取消計時
+- **Auto-expand**:拖曳停留收合 folder 500ms → 自動展開(拖到深層不必先放手去展開);離開或結束取消計時
 - **依賴**:`@dnd-kit/core`(`useDraggable` + `useDroppable` + `DragOverlay`);state 由 consumer `onDragEnd({sourceId, targetId, position})` callback 自行更新
 
 **視覺**(2026-05-06 v14.5 SSOT 抽 `lib/drag-visual.ts`):被拖 node 原位 `opacity-disabled`(45%)半透明殘影 / before-after drop indicator 為 2px primary 細線(`bg-primary` `h-0.5`,left 跟 indent 深度)/ inside drop target `bg-drop-target` 全行背景 / DragOverlay ghost 圓角 + icon + label + **不透明 `bg-surface`** + elevation shadow(跟 surface 拉開的視覺距離靠 shadow 不靠 opacity;半透明只用在上述原位殘影)。**TreeView 是 DS 內最早 codified 的 drag canonical**,DataTable row drag + column reorder 都 inherit 此 pattern via `drag-visual.ts` SSOT module。視覺校驗見 story `DragAndDrop`。

@@ -14,9 +14,9 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 
 **Carbon Design System**:spacing scale 獨立於 component size([carbondesignsystem.com/elements/spacing](https://carbondesignsystem.com/elements/spacing/overview/))
 **GitHub Primer**:8px base unit scale 獨立於 control size([styleguide.github.com/primer](https://styleguide.github.com/primer/support/spacing/))
-**Atlassian**:spacing tokens 可單獨消費(partial decouple)
+**Atlassian**:spacing tokens 可單獨消費(partial decouple)([來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-spacing.js))
 
-**反例**(耦合):Material M3 / Polaris density 模式綁 control size + spacing — 無法「寬版面 + 標準 control」的場景。
+**反例**(耦合):若 density 一個開關同時綁 control size + spacing,就無法做到「寬鬆版面 + 標準尺寸控件」這種常見組合,所以本 DS 把兩者拆成兩個 dial。
 
 **我們走 decouple 流派**:解決 Dialog / overlay chrome 的痛點 — header 想要版面間距寬鬆(layout-space=lg),但不要被 button chrome 撐高(ui-size 跟 page 走 md)。
 
@@ -43,7 +43,7 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 
 | 浮層 | 鎖 | 理由 |
 |------|----|------|
-| Dialog | **不鎖(繼承 page)** | layout-space 在本 spec 開頭維度表的「Layout Space」列就寫明管「dialog body padding」,鎖死 = override 自家 dial 自相矛盾;modal 寬鬆需求在 lg 階自然滿足(md 16 = Polaris 下限合格);button 不撐高由 ui-size 繼承解決。有同類 dial 的 SAP/Cloudscape modal 跟 dial、不鎖 |
+| Dialog | **不鎖(繼承 page)** | layout-space 在本 spec 開頭維度表的「Layout Space」列就寫明管「dialog body padding」,鎖死 = override 自家 dial 自相矛盾;modal 寬鬆需求在 lg 階自然滿足(md 已是 16);button 不撐高由 ui-size 繼承解決。 |
 | Popover / Coachmark | `data-layout-space="md"` | 輕量浮層 → header py-tight 保持精簡;ui-size 跟 page 讓內部 field 控件對齊觸發點。Coachmark 建在 Popover 上自動繼承 |
 | Tooltip / DropdownMenu | 不鎖(繼承 page) | 不消費任何 layout-space token(Tooltip padding 寫死 px-3 py-2;Dropdown 是 RowSize + py-2);鎖 ui-size 會把選單 item(field-height-{size})釘在 md-scale → 對不上 lg 觸發點 |
 | Sheet | 不鎖(繼承 page) | 側板,螢幕變小時常駐側板會 responsive 變 Sheet;若 Sheet 鎖 tier 而側板繼承 page → 切換瞬間跳 mode,不一致 |
@@ -51,7 +51,7 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 
 **Tier alignment**:每個 overlay 宣告自己的 layout-space tier → header 高度隨之(Dialog lg → title 24 + py-tight 16×2 = 56;Popover md → 45)。「對齊 `--chrome-header-height`」是**同 tier 內**成立(Popover 45 ≠ Dialog 56 ≠ chrome 48 本就允許,各宣告各 tier),非跨 page 強制。詳 `patterns/header-canonical/header-canonical.spec.md` A 家族。
 
-**為何不鎖 ui-size**:field-height token 隨 density 變(md 28/32/36 → lg 32/36/40);鎖 ui-size=md 會把浮層內控件 / 選單 item 釘死 md-scale,lg page 上對不上 lg 觸發點。decouple = 只鎖版面間距、控件跟 page。對標 Carbon spacing scale 獨立於 control size / GitHub Primer 8px scale 獨立。
+**為何不鎖 ui-size**:field-height token 隨 density 變(md 28/32/36 → lg 32/36/40);鎖 ui-size=md 會把浮層內控件 / 選單 item 釘死 md-scale,lg page 上對不上 lg 觸發點。decouple = 只鎖版面間距、控件跟 page —— 間距刻度與控件尺寸本來就是兩把尺。
 
 ### Canonical 情境 2 — 單獨切 ui-size
 
@@ -102,7 +102,7 @@ document.documentElement.setAttribute('data-layout-space', 'md')
 
 | 元件 | attribute 設置 | 用法理由 |
 |------|---------------|---------|
-| Dialog | **無(繼承 page,2026-06-16)** | layout-space 定義即管 dialog body padding → 鎖 = override 自家 dial 自相矛盾;header 隨 page md=48 / lg=56;有同類 dial 的 SAP/Cloudscape modal 跟 dial |
+| Dialog | **無(繼承 page,2026-06-16)** | layout-space 定義即管 dialog body padding → 鎖 = override 自家 dial 自相矛盾;header 隨 page md=48 / lg=56 |
 | Sheet | 無(繼承 page) | 側板;responsive 會跟常駐側板互換,不能跳 mode |
 | Popover / Coachmark | `data-layout-space="md"`(2026-06-15) | 輕量;header py-tight 精簡;ui-size 繼承 page → 內部控件對齊觸發點。Coachmark 建在 Popover 上自動繼承 |
 | DropdownMenu | 無(繼承 page,2026-06-15) | 不消費 layout-space token;鎖 ui-size 會讓 menu item(field-height-{size})對不上觸發點 |
@@ -118,7 +118,7 @@ document.documentElement.setAttribute('data-layout-space', 'md')
 - ❌ **用 `data-density` master switch 鎖浮層**(連 ui-size 一起鎖 → 內部控件 / 選單 item 對不上觸發點)。只鎖該元件真正消費的 dial(見情境 1 表)
 - ❌ **把 density/layout-space lock 設在 header primitive(ChromeHeader / SurfaceHeader)而非 surface 根**——header 鎖、body 沒鎖 → 左緣不對齊(FileViewer 圖二 bug)。lock 一律放 surface 根容器
 - ❌ 為了追求表面一致性硬把 Dialog button 綁 lg ui-size(犧牲 header 高度 / strapline 彈性)
-- ❌ **鎖 Dialog 的 layout-space**(2026-06-16 定論)—— 本 spec 開頭維度表「Layout Space」列寫明 layout-space 就管「dialog body padding」,鎖 Dialog = 令自家 dial 對它點名要管的對象失效 = 自相矛盾;有同類 dial 的 SAP/Cloudscape 都讓 modal 跟 page dial。modal 寬鬆需求在 lg 階自然滿足(md 16 = Polaris 下限),不靠鎖。Popover/Coachmark 鎖 md 是另一回事(空間效率、消費 layout-space token、且為非阻斷錨定浮層)
+- ❌ **鎖 Dialog 的 layout-space**(2026-06-16 定論)—— 本 spec 開頭維度表「Layout Space」列寫明 layout-space 就管「dialog body padding」,鎖 Dialog = 令自家 dial 對它點名要管的對象失效 = 自相矛盾。modal 寬鬆需求在 lg 階自然滿足(md 已是 16),不靠鎖。Popover/Coachmark 鎖 md 是另一回事(空間效率、消費 layout-space token、且為非阻斷錨定浮層)
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

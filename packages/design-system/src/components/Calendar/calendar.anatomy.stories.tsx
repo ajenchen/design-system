@@ -136,12 +136,12 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>日期 header</Td>
                   <Td mono>flex items-start justify-end · text-body · font-medium</Td>
-                  <Td>右上角數字,wrapper 無固定高度(由內容 + cell min-h-28 決定),對齊 Google Calendar</Td>
+                  <Td>右上角數字,wrapper 無固定高度(由內容 + cell min-h-28 決定)</Td>
                 </tr>
                 <tr>
                   <Td>Today cell(日期數字)</Td>
                   <Td mono>bg-info · text-on-emphasis · rounded-full · min-w-6 h-6 px-2 · text-body font-medium</Td>
-                  <Td>info-filled pill,固定 h-6 + min-w-6 做 pill badge(對齊 Google Calendar today pill)</Td>
+                  <Td>info-filled pill,固定 h-6 + min-w-6 做 pill badge</Td>
                 </tr>
                 <tr>
                   <Td>Outside day cell</Td>
@@ -250,7 +250,7 @@ export const Accessibility = {
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <p><b>Grid role</b>:月格容器 <code>role="grid"</code> + <code>aria-label</code>(月份),每列 <code>role="row"</code>(<code>display:contents</code> 保 CSS grid 佈局),每格 <code>role="gridcell"</code>(非互動容器),日期數字按鈕帶 <code>aria-label</code>(日期 + 事件數)。事件 tile <code>role="button"</code> + <code>aria-label</code>(事件標題)。</p>
-        <p><b>Keyboard 行為</b>(實作現況,2026-09-24 補齊 W3C APG Data Grid):</p>
+        <p><b>Keyboard 行為</b>(實作現況,2026-09-24 補齊 W3C APG Data Grid):</p> {/* 來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/grid/grid-pattern.html#L205-L221 */}
         <ul className="list-disc pl-5 space-y-1">
           <li>Tab — 整個月格陣只停一次(roving tabindex:只有目前焦點日的日期鈕進 Tab 序列,其餘日期鈕與全部事件方塊都不進);進來時停在今天,今天不在本月則停在該月 1 號</li>
           <li>←/→ — 前一天 / 後一天;↑/↓ — 上一週 / 下一週的同一天</li>

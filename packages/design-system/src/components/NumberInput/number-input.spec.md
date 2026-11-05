@@ -127,7 +127,7 @@ col.accessor('price', {
 
 ## A11y 預設
 
-**ARIA / Pattern**:ARIA / keyboard 機制**僅 edit mode 適用**——edit mode 渲染 native `<input>` element(預設 a11y),且把 `...props`(含 `aria-label` / `aria-describedby` 等)轉發到該 input;該 native input 自身消費 `fieldCtx` 設定 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`(非由 Field wrapper 注入,對齊 Select / Combobox trigger 自設機制)。`view` / `readonly` / `disabled` 三 mode 渲染的是無互動純展示文字(`<div>` + `<span>`,不轉發 `aria-*`),螢幕報讀僅得格式化後的靜態值(對齊 Carbon read-only / Stripe display 慣例)。
+**ARIA / Pattern**:ARIA / keyboard 機制**僅 edit mode 適用**——edit mode 渲染 native `<input>` element(預設 a11y),且把 `...props`(含 `aria-label` / `aria-describedby` 等)轉發到該 input;該 native input 自身消費 `fieldCtx` 設定 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`(非由 Field wrapper 注入,對齊 Select / Combobox trigger 自設機制)。`view` / `readonly` / `disabled` 三 mode 渲染的是無互動純展示文字(`<div>` + `<span>`,不轉發 `aria-*`),螢幕報讀僅得格式化後的靜態值(沒有可操作的東西,就不宣告可操作的語意)。
 
 **Keyboard 行為**:
 
