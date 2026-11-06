@@ -73,7 +73,14 @@ function formatHostname(url: string): string {
 // 2026-10-13 前是 `block`:block 盒子撐滿外層,文字右邊看起來空白的那一段點下去會開網頁 —— 09-26 只把編輯模式那一支的外層
 // 改成 flex 修掉,唯讀 / 檢視模式與表格連結格(用檢視模式)仍是整行連結。改這一處,全部模式一起好。
 // 不用 `w-fit`:block + w-fit 會讓靠右 / 置中的連結欄文字跑到左邊(實測靠右時文字左緣 1546 → 1480)。
-function renderLinkAnchor(value: string, label?: string) {
+// **不能編輯的地方整個框都開連結**(`stretch`;2026-11-06 user「照①乙②b」,link-input.spec.md「Link 狀態」②b):
+// 唯讀、沒有編輯入口的檢視、DataTable 不能編輯的網址格 —— 框裡沒有第二個動作,最常用的「開連結」拿整個框。
+// 做法 = 延伸連結(連結自己的 `::after` 鋪滿最近的定位祖先;Bootstrap `.stretched-link` 同一招:
+// https://github.com/twbs/bootstrap/blob/v5.3.3/scss/helpers/_stretched-link.scss#L1-L15),所以中鍵 / Ctrl+點 / 右鍵選單都是真的連結,
+// 而且滑過整框就是滑過連結:底線 + 手形跟點擊範圍同一塊(hit-area-canonical「懸停回饋 ≡ 命中區」)。
+// 盒子本身仍是文字寬(L1 量的那一個);文字那一層墊高一層(`[&>*]:relative z-[1]`),截斷提示仍抓得到滑過。
+// `data-link-stretch`:宿主要暫時收起延伸區時用(DataTable 試算表沒選中的格第一下只選格,見 data-table.css)。
+function renderLinkAnchor(value: string, label?: string, stretch = false) {
   const displayText = linkDisplayText(value, label)
   return (
     <a
@@ -81,7 +88,11 @@ function renderLinkAnchor(value: string, label?: string) {
       href={toWebUrl(value) ?? value}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline"
+      data-link-stretch={stretch ? '' : undefined}
+      className={cn(
+        'inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline',
+        stretch && "after:absolute after:inset-0 after:content-[''] [&>*]:relative [&>*]:z-[1]",
+      )}
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
           放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
@@ -110,8 +121,8 @@ function isSameSitePath(value: string): boolean {
  * 唯讀 / 檢視模式與表格連結格(`DataTable/cell-registry.tsx` UrlCell 用檢視模式)都經這裡 ——
  * `javascript:` / `data:` / `mailto:` 等別的協定、信箱、中間有空白的字,一律不會成為 `href`。編輯模式不收站內路徑(只收網頁網址)。
  */
-function renderLinkValue(value: string, label?: string) {
-  if (isLinkable(value)) return renderLinkAnchor(value, label)
+function renderLinkValue(value: string, label?: string, stretch = false) {
+  if (isLinkable(value)) return renderLinkAnchor(value, label, stretch)
   return <TruncatedText display="block">{linkDisplayText(value, label)}</TruncatedText>
 }
 
@@ -199,6 +210,12 @@ export interface LinkInputProps
    * view 一律走外殼(同 `showDisplayEndIcon=true`)。目前只有 DataTable 可編輯的連結格傳。見 `LinkInputViewEditAction`。
    */
   viewEditAction?: LinkInputViewEditAction
+  /**
+   * @internal — 不能編輯時「整個框點了開連結」的範圍交給宿主(2026-11-06,user「照①乙②b」):預設延伸範圍 = LinkInput
+   * 自己的框(外殼 / 檢視那一行);設 true 時改成最近的定位祖先,宿主自己負責 `position: relative`。
+   * 目前只有 DataTable 不能編輯的網址格傳(延伸到整格;格本來就是 `relative`)。
+   */
+  linkHitAreaFromHost?: boolean
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -217,6 +234,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       label,
       showDisplayEndIcon = false,
       viewEditAction,
+      linkHitAreaFromHost = false,
       readOnly,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
@@ -301,16 +319,18 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         // 字體 → 跟其他 Field view 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
         // 外層不裁:截斷由裡面的連結 / TruncatedText 自己做(見 LINK_HOST_CLASS)
-        return <span className={cn(fieldDisplayTextClass(size), 'block', LINK_HOST_CLASS)}>{renderLinkValue(value, label)}</span>
+        // 沒有編輯入口 → 整行開連結(②b,見 renderLinkAnchor);`relative` = 延伸範圍到這一行為止(宿主接手時拿掉,延伸到宿主)
+        return <span className={cn(fieldDisplayTextClass(size), 'block', LINK_HOST_CLASS, !linkHitAreaFromHost && 'relative')}>{renderLinkValue(value, label, true)}</span>
       }
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), className)}
+          // 沒有編輯入口(`viewEditAction`)時整個外殼開連結(②b);有編輯入口 = 能編輯的地方,維持只有網址文字(①,下一個 PR 改)
+          className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), !viewEditAction && !linkHitAreaFromHost && 'relative', className)}
           data-field-mode="view"
         >
           <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {value
-              ? renderLinkValue(value, label)
+              ? renderLinkValue(value, label, !viewEditAction)
               : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
             }
           </span>
@@ -429,7 +449,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       const displayText = value ? linkDisplayText(value, label) : null
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}
+          // readonly:整個外殼開連結(②b,見 renderLinkAnchor;`relative` = 延伸範圍到外殼為止)
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), resolvedMode === 'readonly' && !linkHitAreaFromHost && 'relative', className)}
           data-field-mode={resolvedMode}
           // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
           // 否則 axe 把灰化連結文字當一般文字誤報 color-contrast(modes / 色彩對照 / 尺寸對照三則 story)
@@ -441,7 +462,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
                   ? <span className="block truncate text-fg-disabled">{displayText}</span>
                   : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
               : (value
-                  ? renderLinkValue(value, label)
+                  ? renderLinkValue(value, label, true)
                   : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>)
             }
           </span>

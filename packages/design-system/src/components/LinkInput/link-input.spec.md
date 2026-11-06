@@ -51,11 +51,13 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 有合法 URL 且未在編輯中時：
 - value 以 `text-primary` 藍色顯示，hover 加底線，點擊開啟連結
-- **連結的可點範圍 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行。**所有模式都適用**(2026-10-13 起;編輯模式的連結狀態、readonly、view、DataTable 連結格(用 view 模式)):由連結自己保證(`link-input.tsx` `renderLinkAnchor` 的 `inline-block max-w-full align-top`),不靠外層排版;2026-10-13 前是 `block`,唯讀 / 檢視模式與表格連結格文字右邊看起來空白的那一段點下去會開網頁(待辦總帳 Q3a)
+- **連結盒子 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行(所有模式;由連結自己保證,`link-input.tsx` `renderLinkAnchor` 的 `inline-block max-w-full align-top`,不靠外層排版;2026-10-13 前是 `block`,待辦總帳 Q3a)。**點擊範圍分兩種地方**(2026-11-06 原地改寫,依據 user 2026-11-06 原話「照①乙②b」,回覆決策頁 n8;user 10-29 原則原話「…框內非按鈕或是連結的地方到底點擊後該觸發什麼 我認為應該是最常被用的功能 然後link input類的東西應該是開啟連結」):
+  - **② 不能編輯的地方 = 整個框點了都開連結**(b):readonly、沒有編輯入口的 view(沒傳 `viewEditAction`)、DataTable 不能編輯的網址格 —— 框裡沒有第二個動作,最常用的「開連結」拿整個框(外殼含內距與邊框;裸 view 是那一行;表格是整格)。滑過整框就出網址底線 + 手形:**滑過有變化的範圍 = 點擊範圍**(`../../../ds-canonical/references/hit-area-canonical.md`「懸停回饋 ≡ 命中區」)。做法 = 延伸連結:連結自己的 `::after` 鋪滿最近的定位祖先(`renderLinkAnchor` 的 `stretch` + `data-link-stretch`;框是 `relative`,表格由 `linkHitAreaFromHost` 交給格),所以中鍵 / Ctrl+點 / 右鍵選單都是真的連結(Bootstrap `.stretched-link` 同一招:https://github.com/twbs/bootstrap/blob/v5.3.3/scss/helpers/_stretched-link.scss#L1-L15)。表格試算表模式第一下仍只選格(`../DataTable/data-table.spec.md`「Navigate-valued cell 通用類別」第 1 條)
+  - **① 能編輯的地方**(編輯模式的連結狀態、DataTable 可編輯的網址格)**本 PR 維持**:點網址文字開連結、框裡其他地方 = 按 Pencil(下一條)。**① 已定案為乙(user 2026-11-06「照①乙②b」:框內 Pencil 以外都開連結),下一個 PR 落地**
 - 右側 Pencil inline action 觸發編輯模式
 - **點外框裡其他地方 = 按 Pencil**(user 2026-09-26 原話「網址欄的部分你再好好研究Jira等世界級的設計是怎麼做的，確保沒有分歧才照你建議做。」;研究結論:查到的一手來源沒有一家從空白處開連結)：內距、1px 邊框、文字與 Pencil 之間、文字右側的空白，點下去都進入編輯並聚焦輸入框。外框滑過變色是 Field 家族共用外觀(`../Field/field-wrapper.tsx` `hover:border-border-hover`)，變色的地方點下去就要有反應(`../../../ds-canonical/references/hit-area-canonical.md`「看到亮起來卻點不到」)。外框用文字游標(`FIELD_TEXT_ENTRY_CURSOR`，同 `../Input/input.spec.md`「點外框 = 點輸入處」)；連結維持手形、Pencil 維持 `cursor-pointer`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js))
 - 按在空白處、拖過網址文字再放開(選字)不算點一下，不進入編輯
-- 點擊 value 是開啟連結，不是編輯——這是 LinkInput 與 Input 的核心互動差異。「value」指網址文字本身，不含外框裡的空白
+- 點擊 value 是開啟連結，不是編輯——這是 LinkInput 與 Input 的核心互動差異。能編輯的地方(①)「value」指網址文字本身，不含外框裡的空白;不能編輯的地方(②b)整個框都是 value
 
 **世界級對照**：
 - Atlassian inline-edit 的讀取態：點到連結照連結原本的行為，點讀取區其他地方進入編輯 —— [`read-view.js#L27-L37`](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js)「If a link is clicked in the read view, default action should be taken」，非連結的點擊 `onEditRequested()`；點擊入口只到滑過範圍為止([`CHANGELOG.md` 4.5.5](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/CHANGELOG.md)「fix inline-edit component edit mode triggering when clicking outside hover width」)
@@ -116,7 +118,8 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 ## 禁止事項
 
 - ❌ 不在 link 狀態下讓點擊 value 進入編輯——點擊連結必須開啟連結
-- ❌ 不讓連結撐滿整行——文字右邊看起來空白的地方點下去卻開網頁
+- ❌ 不讓連結盒子撐滿整行(要整框可點用延伸連結,盒子仍是文字寬);能編輯的地方(①,本 PR)文字右邊的空白點下去不開網頁
+- ❌ 不在不能編輯的地方(②b)留下「滑過沒變化卻點得開」或「滑過有底線卻點不開」的區塊——底線 + 手形的範圍 = 點擊範圍
 - ❌ 不讓 link 狀態外框裡的空白處滑過變色、點下去卻沒有反應——空白處 = Pencil
 - ❌ 不在打字過程中即時驗證格式——等 blur
 - ❌ 不放行別的協定(`javascript:` / `data:` / `mailto:` …)——只有網頁網址(含補上 `https://` 的網址樣字)才是合法值

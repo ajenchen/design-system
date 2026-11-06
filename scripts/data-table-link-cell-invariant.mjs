@@ -3,7 +3,10 @@
  * @gate-contract
  *   保證: LinkInput 各模式與表格連結格的連結只有網址文字那麼寬;表格連結格點網址文字開連結、點其他地方照其他可編輯格的點格規則;試算表 Enter / F2 進到格裡的控件、F2 / Esc 回格導覽;一般模式編輯結束焦點回打開編輯的那個東西;每種格的編輯器名字 = 欄標題(而且欄標題不是型別註記);鉛筆是 16px 無框行內按鈕;不合法網址存進去顯示成一般文字;
  *        2026-10-21 起(r1b DT-01 / DT-02 / DT-03 / NEW-1 / DT-07):連結(表格兩種模式、LinkInput 唯讀 / 檢視)與可拖的欄頭,鍵盤焦點框四邊真的畫出來(截圖比對,L8);
- *        試算表格裡的控件被鍵盤聚焦時只有一個指示(控件的框,格游標框收起)、在格裡按 Tab 格游標跟著焦點走(L9);就地編輯範例的連結欄各列顯示不同的網址(L1)
+ *        試算表格裡的控件被鍵盤聚焦時只有一個指示(控件的框,格游標框收起)、在格裡按 Tab 格游標跟著焦點走(L9);就地編輯範例的連結欄各列顯示不同的網址(L1);
+ *        2026-11-06 起(user「照①乙②b」):不能編輯的網址(LinkInput 唯讀 / 檢視、DataTable 不能編輯的網址格)整個框點了開連結、滑過整框出底線 + 手形,
+ *        試算表沒選中的格第一下只選格、選中後再點才開(L10;L1 的「文字寬」從此只量連結盒子,點擊範圍看 L2 / L10)
+ *   紅(L10): --selftest 拿掉延伸區 → 唯讀 / 檢視 / 不能編輯的格那幾列必紅;讓試算表沒選中的格也延伸 → 「第一下只選格」必紅;52ec0b6a 建置的 LinkInput 那幾列必紅
  *   紅: --selftest 注入連結改回 block、攔下格的點擊、攔下根節點 Enter / F2、把焦點丟回 body、一般模式可編輯格拿掉 Tab 停靠 + 攔下格上的 Enter / F2(L4 鍵盤)、拿掉名字、鉛筆改 24px 有框、塞 javascript: 連結、
  *       連結外面包回會裁切的 wrapper + 欄頭框改回往外(L8)、格游標框強制畫出 + 擋下格內控件的 focusin(L9),各組必紅;7777b61c 的建置跑必紅(L1–L7);
  *       a6390356 的建置跑 L8 / L9 / L5 型別註記 / L1 網址各列不同必紅
@@ -120,6 +123,9 @@ async function injectBreaks(kind) {
   if (kind === 'L8') await page.addStyleTag({ content: 'span:has(> a[href]){overflow:hidden!important} [role="columnheader"][aria-roledescription]:focus-visible{outline-offset:var(--stack-gap,2px)!important}' })
   // L9:格游標框強制畫出(= 修前兩個指示)
   if (kind === 'L9') await page.addStyleTag({ content: '[data-selected-cell-id]{visibility:visible!important}' })
+  // L10:拿掉連結的延伸區(= 修前:不能編輯的框只有網址文字能點);L10s:試算表沒選中的格也延伸(= 第一下就開分頁)
+  if (kind === 'L10') await page.addStyleTag({ content: '[data-link-stretch]::after{display:none!important}' })
+  if (kind === 'L10s') await page.addStyleTag({ content: '[data-dt-link-select-first] [data-link-stretch]::after{display:block!important}' })
   await page.evaluate(([kind, linkCols]) => {
     if (kind === 'L2') {
       // 連結格上「不是連結、不是按鈕」的點擊攔下(= 修前的「url 排除點格」):內距那一區不進編輯、試算表第一下也不選格
@@ -825,6 +831,107 @@ async function ringCheck(group, label, { control = false } = {}) {
     check('L9', '滑鼠點勾選框 → 控件不畫框、格游標框照留(仍只有一個指示)', fd.cell === boolId && !fv && frd.visible && frd.id === boolId, `焦點 ${JSON.stringify(fd)} focus-visible=${fv} 格游標 ${JSON.stringify(frd)}`, { control: true })
   }
 }
+
+// ── L10:不能編輯的網址 = 整個框點了開連結(②b;2026-11-06 user「照①乙②b」)─────────────────────────────
+// link-input.spec.md「Link 狀態」② / data-table.spec.md「Navigate-valued cell 通用類別」第 1 條:
+//   LinkInput 唯讀 / 沒有編輯入口的檢視、DataTable 不能編輯的網址格 —— 框裡文字以外的點(右側空白、內距)命中的是連結、手形、
+//   滑過出底線(滑過有變化的範圍 = 點擊範圍),點了開分頁、不進編輯;試算表沒選中的格第一下只選格,選中後再點才開。
+//   對照列(①,本 PR 不變):編輯模式的連結狀態、可編輯的網址格,文字以外的點**不是**連結。
+// --selftest:'L10' 把延伸區拿掉(= 修前)→ 整框那幾列必紅;'L10s' 讓試算表沒選中的格也延伸 → 「第一下只選格」必紅。
+/** 框(連結最近的定位祖先)裡、連結盒子外面的點:右側空白、左上內距。每點回報命中的是不是這個連結、游標、框的種類 */
+const stretchProbe = (scopeSel) => page.evaluate((scopeSel) => {
+  const out = []
+  for (const a of document.querySelectorAll(`${scopeSel} a[href]`)) {
+    if (!/^https?:/i.test(a.getAttribute('href') || '')) continue
+    let frame = a.parentElement
+    while (frame && frame !== document.body && getComputedStyle(frame).position === 'static') frame = frame.parentElement
+    if (!frame || frame === document.body) continue
+    frame.scrollIntoView({ block: 'nearest', inline: 'center' })
+    const fb = frame.getBoundingClientRect(), ab = a.getBoundingClientRect()
+    const kind = a.closest('[data-cell-id]') ? `cell ${a.closest('[data-cell-id]').getAttribute('data-cell-id')}` : (a.closest('[data-field-mode]')?.getAttribute('data-field-mode') ?? 'bare-view')
+    // 不能編輯的框 = LinkInput 標了延伸(`data-link-stretch`);其餘(編輯模式的連結狀態、可編輯的格)是①的對照列。
+    // 延伸整個被拿掉時這一頁「不能編輯的點」= 0 → 儀器失效紅,不會靜默變空閘;延伸還在但沒鋪開(破法)→ 命中不到連結 → 紅
+    const editable = !a.hasAttribute('data-link-stretch')
+    const pts = [[fb.right - 3, fb.y + fb.height / 2], [fb.x + 2, fb.y + 2]].filter(([x, y]) => x > ab.right + 1 || x < ab.x - 1 || y < ab.y - 1 || y > ab.bottom + 1)
+    for (const [x, y] of pts) {
+      const hit = document.elementFromPoint(x, y)
+      out.push({ kind, editable, x: +x.toFixed(1), y: +y.toFixed(1), onLink: hit === a || !!(hit && a.contains(hit)), cursor: hit ? getComputedStyle(hit).cursor : null, stretch: a.hasAttribute('data-link-stretch') })
+    }
+  }
+  return out
+}, scopeSel)
+const underlineAt = async (x, y, scopeSel) => {
+  await page.mouse.move(x, y); await settle()
+  return page.evaluate((scopeSel) => [...document.querySelectorAll(`${scopeSel} a[href]`)].some((a) => a.matches(':hover') && getComputedStyle(a).textDecorationLine.includes('underline')), scopeSel)
+}
+currentBreak = 'L10'
+for (const [label, url] of [['LinkInput 四模式', LI('modes')], ['LinkInput 檢視樣式', LI('view')]]) {
+  if (!(await open(url, 'a[href]'))) continue
+  const pts = await stretchProbe('body')
+  const fixed = pts.filter((p) => !p.editable), editable = pts.filter((p) => p.editable)
+  if (fixed.length === 0) { instrument(`L10 ${label}`, '找不到唯讀 / 檢視連結框外的點'); continue }
+  const bad = fixed.filter((p) => !p.onLink || p.cursor !== 'pointer')
+  check('L10', `${label}:唯讀 / 檢視 ${fixed.length} 點(框裡文字以外)命中連結 + 手形`, bad.length === 0, bad.length ? JSON.stringify(bad.slice(0, 3)) : [...new Set(fixed.map((p) => p.kind))].join('、'))
+  if (editable.length) check('L10', `${label}:沒延伸的連結(編輯模式的連結狀態、頁面其他連結)框外 ${editable.length} 點不是連結(①,本 PR 不變)`, editable.every((p) => !p.onLink), JSON.stringify(editable.filter((p) => p.onLink).slice(0, 2)), { control: true })
+  const p0 = fixed[0]
+  check('L10', `${label}:滑過框裡文字以外(${p0.kind})→ 網址出底線`, await underlineAt(p0.x, p0.y, 'body'), `點 ${p0.x},${p0.y}`)
+  const r = await clickAt(p0.x, p0.y)
+  check('L10', `${label}:點框裡文字以外(${p0.kind})→ 開連結`, r.link === 1, `開分頁 ${r.link}`)
+}
+/** 表格裡第一個不能編輯的網址格(沒有鉛筆) */
+async function fixedLinkCell(key) {
+  const t = TABLES[key]
+  if (!(await open(t.url, `[data-column-id="${t.col}"] a[href]`))) return null
+  for (let r = 0; r < 8; r++) {
+    const id = await cellIdAt(r, t.col)
+    if (!id) continue
+    const hasPencil = await page.evaluate((id) => !!document.querySelector(`[data-cell-id="${CSS.escape(id)}"] [data-link-edit-entry]`), id)
+    if (hasPencil) continue
+    const g = await linkCellGeo(id)
+    if (!g?.text) continue
+    const blank = { x: Math.min(g.text.r + 12, g.cell.r - 4), y: g.cell.y + g.cell.h / 2 }, padding = { x: g.cell.x + 3, y: g.cell.y + g.cell.h / 2 }
+    if (blank.x <= g.text.r + 1) continue
+    return { id, g, blank, padding }
+  }
+  instrument(`L10 ${t.label}`, '前 8 列找不到不能編輯、文字右邊有空白的網址格(範例 PRD-004 不見了?)')
+  return null
+}
+for (const region of ['blank', 'padding']) {
+  const c = await fixedLinkCell('normal')
+  if (!c) break
+  const pt = c[region]
+  const probe = (await stretchProbe(`[data-cell-id="${c.id}"]`)).find(() => true)
+  if (region === 'blank') {
+    check('L10', `${TABLES.normal.label} 不能編輯的網址格(${c.id}):格裡文字以外命中連結 + 手形`, !!probe && probe.onLink && probe.cursor === 'pointer', JSON.stringify(probe))
+    check('L10', `${TABLES.normal.label} 不能編輯的網址格:滑過空白 → 網址出底線`, await underlineAt(pt.x, pt.y, `[data-cell-id="${c.id}"]`))
+  }
+  const r = await clickAt(pt.x, pt.y)
+  const editors = await editorCount()
+  check('L10', `${TABLES.normal.label} 不能編輯的網址格點「${region === 'blank' ? '文字右邊空白' : '內距'}」→ 開連結、不進編輯`, r.link === 1 && editors === 0, `開分頁 ${r.link}、編輯器 ${editors}`)
+}
+{
+  // 對照列(①):可編輯的網址格,文字右邊空白不是連結
+  const p = await prepTable('normal')
+  if (p) {
+    const hit = await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest('a[href]'), p.pts.blank)
+    check('L10', `${TABLES.normal.label} 可編輯的網址格空白不是連結(①,本 PR 不變)`, !hit, `命中連結 ${hit}`, { control: true })
+  }
+}
+for (const brk of ['L10', 'L10s']) {
+  currentBreak = brk
+  const c = await fixedLinkCell('sheet')
+  if (!c) break
+  const before = await underlineAt(c.blank.x, c.blank.y, `[data-cell-id="${c.id}"]`)
+  const r1 = await clickAt(c.blank.x, c.blank.y)
+  const cur = await cursorOf()
+  // 第一下:只選格、不開分頁、滑過也沒有底線(滑過有變化的範圍 = 點擊範圍)。'L10' 破法(拿掉延伸)不影響這一列 → 對照列
+  check('L10', `${TABLES.sheet.label} 不能編輯的網址格沒選中:滑過空白沒有底線、第一下只選格不開分頁`, !before && r1.link === 0 && cur === c.id, `底線 ${before}、開分頁 ${r1.link}、格游標 ${cur}`, { control: brk === 'L10' })
+  const after = await underlineAt(c.blank.x, c.blank.y, `[data-cell-id="${c.id}"]`)
+  const r2 = await clickAt(c.blank.x, c.blank.y)
+  const editors = await editorCount()
+  check('L10', `${TABLES.sheet.label} 選中後:滑過空白出底線、再點開連結、不進編輯`, after && r2.link === 1 && editors === 0, `底線 ${after}、開分頁 ${r2.link}、編輯器 ${editors}`, { control: brk === 'L10s' })
+}
+currentBreak = null
 
 await browser.close()
 if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))

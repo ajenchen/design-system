@@ -811,7 +811,8 @@ export const InlineEdit: Story = {
         editCol.accessor('owner', { header: 'Owner', meta: { type: 'person', people: SAMPLE_PEOPLE, editable: true, width: 160 } }),
         editCol.accessor('reviewers', { header: 'Reviewers', meta: { type: 'multiPerson', people: SAMPLE_PEOPLE, editable: true, width: 180 } }),
         editCol.accessor('inStock', { header: 'Available', meta: { type: 'boolean', editable: true, width: 90 } }),
-        editCol.accessor('url', { header: 'Supplier', meta: { type: 'url', editable: true, width: 180 } }),
+        // PRD-004 的供應商網址由採購部維護,這裡不能改(不能編輯的網址格:整格點了開連結,2026-11-06 user「照①乙②b」)
+        editCol.accessor('url', { header: 'Supplier', meta: { type: 'url', editable: (row: EditableProduct) => row.sku !== 'PRD-004', width: 180 } }),
         editCol.accessor('price', { header: 'Price', meta: { type: 'currency', prefix: '$', editable: true, width: 130 } }),
         editCol.accessor('releaseDate', { header: 'Release', meta: { type: 'date', editable: true, width: 140 } }),
         editCol.accessor('reminderTime', { header: 'Reminder', meta: { type: 'time', editable: true, width: 130 } }),
@@ -825,7 +826,8 @@ export const InlineEdit: Story = {
       <div>
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           所有資料型別都能就地編輯:文字、數字、金額、日期、時間、單/多選、人員、人員列表、開關、連結。
-          SKU 是唯讀的;開關欄位直接點即可切換;連結欄位點網址文字開連結,點格的其他地方跟其他欄位一樣進編輯;
+          SKU 是唯讀的;PRD-004 的供應商網址由採購部維護、不能在這裡改,整格點了開連結;
+          開關欄位直接點即可切換;連結欄位點網址文字開連結,點格的其他地方跟其他欄位一樣進編輯;
           其他點一下進編輯,Enter 或失焦存檔,Esc 取消。
         </p>
         <DataTable
@@ -878,7 +880,8 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
         editCol.accessor('qty', { header: 'Qty', meta: { type: 'number', editable: true, width: 110 } }),
         editCol.accessor('category', { header: 'Category', meta: { type: 'select', options: CATEGORY_OPTIONS, editable: true, width: 150 } }),
         editCol.accessor('inStock', { header: 'Available', meta: { type: 'boolean', editable: true, width: 90 } }),
-        editCol.accessor('url', { header: 'Supplier', meta: { type: 'url', editable: true, width: 180 } }),
+        // PRD-004 的供應商網址由採購部維護,這裡不能改(不能編輯的網址格:整格點了開連結,2026-11-06 user「照①乙②b」)
+        editCol.accessor('url', { header: 'Supplier', meta: { type: 'url', editable: (row: EditableProduct) => row.sku !== 'PRD-004', width: 180 } }),
       ],
       []
     )
@@ -890,7 +893,8 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
           方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關欄位沒有 hover 提示
-          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位點網址文字開連結,點格的其他地方跟其他格一樣。
+          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位點網址文字開連結,點格的其他地方跟其他格一樣;
+          PRD-004 的供應商網址由採購部維護、不能在這裡改:第一下選格,選中後點格裡任何地方開連結。
           格游標停在連結或開關格時按 Enter / F2,焦點進到格裡的連結或勾選框;再按 F2 或 Esc 回到格導覽。
         </p>
         <DataTable

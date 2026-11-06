@@ -385,3 +385,11 @@
   pointer-events: none;
   z-index: 1;
 }
+
+/* 不能編輯的網址格:整格開連結(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」)。
+   連結自己的 ::after 鋪滿整格(LinkInput `data-link-stretch`,格是 relative);試算表模式**沒選中的格第一下只選格**
+   —— 格帶 data-dt-link-select-first 時先收起延伸區(只剩網址文字是連結,同修前),選中後再點才整格開。
+   只動 display,不跟 Tailwind 的 after:absolute / inset / content 搶同一個屬性。閘:scripts/data-table-link-cell-invariant.mjs L10。 */
+[data-dt-link-select-first] [data-link-stretch]::after {
+  display: none;
+}

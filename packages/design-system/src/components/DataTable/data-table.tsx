@@ -3591,6 +3591,9 @@ function DataTableInner<TData>(
         // 試算表模式:焦點進到連結格 / 開關格裡的控件時,那是「格內模式」—— 焦點所在控件自己的一層:Esc 先回到格導覽,
         // 不關外面的 Dialog / Sheet(keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」;處理在 tableKeyboardHandler)
         {...escapeLayerProps(spreadsheetMode && !isEditingThisCell && (colType === 'url' || colType === 'boolean'), 'subtree')}
+        // 試算表模式:不能編輯的網址格整格開連結(②b,user 2026-11-06「照①乙②b」),但**沒選中時第一下只選格**
+        // (不然沒辦法只選這一格去複製 / 框選)—— 這個標記讓 data-table.css 先收起連結的延伸區,選中後才鋪滿
+        data-dt-link-select-first={spreadsheetMode && colType === 'url' && !isSelectedCell ? '' : undefined}
         className={cn(
           // Cell box(2026-05-05 v6 — A4 canonical: Field frame seamlessly replaces cell border):
           //   - `self-stretch`: cell 永遠填 row 高

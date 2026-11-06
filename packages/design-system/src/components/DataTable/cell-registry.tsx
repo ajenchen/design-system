@@ -482,6 +482,8 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
     // hoverReveal 同一份:滑過格 / 格裡有鍵盤焦點,`group-has-[:focus-visible]` 不用 focus-within —— r1b DT-06;瞬間出現不淡入;
     // guard scripts/test-hover-revealed-affordances.mjs)。鈕自己 stopPropagation:鉛筆已經進編輯,不讓格的點擊規則再處理一次。
     // 不可編 URL 不給(純 view 顯示連結,無編輯入口)。
+    // 不可編 URL 整格點了開連結(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」):
+    // `linkHitAreaFromHost` 讓連結的延伸範圍鋪到格(格本來就 `relative`);試算表沒選中的格第一下只選格(data-table.css)。
     return (
       <LinkInput
         variant="naked"
@@ -491,6 +493,7 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
         size={size}
         showDisplayEndIcon={isEditable === true}
         viewEditAction={isEditable ? { onClick: () => onRequestEdit?.(), revealGroup: 'cell' } : undefined}
+        linkHitAreaFromHost={!isEditable}
       />
     )
   }
