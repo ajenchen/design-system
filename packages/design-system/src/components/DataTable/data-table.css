@@ -85,47 +85,17 @@
    裝飾槽(分支新增,main 沒有)共用同一組規則。**Windows 上「各半」的繪製/裁切機制與變慢的原因仍待 exact-version
    實機驗證**(Codex R5 2026-09-08 以 Blink/cc 原始碼反證了我原本寫的「NativeThemeWin 內距 / 主執行緒重繪」推論,
    已撤回;AD27 有兩組最小實機實驗清單)。上面 2026-09-04 那段「現在的選擇:只留 W3C 標準屬性」自此為歷史,不再是有效 CSS 的說明。 */
-/* 代理捲軸 `.dtScrollbarProxy`(待辦總帳 Q2b,2026-11-05)跟主捲動盒、裝飾軌道吃**同一組**規則:
-   捲軸佔版面的平台上,代理捲軸正好蓋在主捲動盒的原生捲軸上,兩者必須同一個厚度與同一個畫法,
-   否則會露出底下那條原生捲軸的邊(厚度不同)或兩條顏色不同的軌道(畫法不同)。 */
 [data-datatable-hscroll],
-.dtScrollbarTrough,
-.dtScrollbarProxy {
+.dtScrollbarTrough {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 @supports selector(::-webkit-scrollbar) {
   [data-datatable-hscroll],
-  .dtScrollbarTrough,
-  .dtScrollbarProxy {
+  .dtScrollbarTrough {
     scrollbar-width: auto;
     scrollbar-color: auto;
   }
-}
-/* 捲軸不佔版面的平台(觸控板 Mac、行動裝置、Win11 / Linux 的 Firefox):主捲動盒自己的原生捲軸會疊在內容上、
-   而且垂直那條從表頭頂端開始畫 → 藏起來,改由代理捲軸從表頭下方開始(MUI X `GridVirtualScroller` 藏原生捲軸 +
-   `GridVirtualScrollbar` 代理;AG Grid v36 `.ag-grid-viewport { scrollbar-width: none }` + `ag-fake-*-scroll`)。
-   **只在量到捲軸厚度 = 0 時才藏**(`data-dt-overlay-scrollbars`,由 tsx 量測後寫上):捲軸佔版面的平台保留原生捲軸,
-   讓瀏覽器自己決定要不要出捲軸、內容盒少多少 —— 代理捲軸只是畫在它上面,不接手版面。
-   **必須寫在上面那段 `@supports` 之後**:那段把 `scrollbar-width` 重設回 `auto`,同 specificity、後面贏。 */
-[data-datatable-hscroll][data-dt-overlay-scrollbars] {
-  scrollbar-width: none;
-}
-/* 舊版 Safari(< 18.2)不認 `scrollbar-width`:同一件事用 webkit 偽元素再說一次。只在**已經量到捲軸厚度 = 0** 的平台掛,
-   所以不會發生缺陷 H 那種「裸 `::-webkit-scrollbar` 把 overlay 捲軸變成佔版面捲軸」的副作用(它本來就不佔版面);
-   同一個 `display:none` 寫法本檔表頭中央區(2026-11-05 前)與 Tabs / horizontal-overflow 一直在用。 */
-[data-datatable-hscroll][data-dt-overlay-scrollbars]::-webkit-scrollbar {
-  display: none;
-}
-/* 代理捲軸在「捲軸不佔版面」的平台:平常藏起來(不畫、不接指標),捲動時與指標停在上面時才出現
-   (AG Grid v36 `.ag-scrollbar-invisible.ag-apple-scrollbar` 平常 `visibility: hidden`,`.ag-scrollbar-scrolling` /
-   `.ag-scrollbar-active` 才 `visible`,400ms 後收)。平常就留著的話,它會吃掉最右邊 / 最下面一條內容的指標事件。 */
-.dtScrollbarProxy[data-dt-overlay] {
-  visibility: hidden;
-}
-.dtScrollbarProxy[data-dt-overlay][data-dt-scrolling],
-.dtScrollbarProxy[data-dt-overlay][data-dt-active] {
-  visibility: visible;
 }
 /* V/H 交會方塊:**刻意不宣告**(2026-09-14 移除)。
    這條規則當初(軌道也吃 `scrollbar-color: var(--scrollbar-track)` 的年代)是對的:兩邊同一個 token。
@@ -184,7 +154,7 @@
    同一欄位置的表頭欄間線是真元素(ResizeHandle 內的 `<span bg-divider>`)—— 非整數縮放 / Retina
    下瀏覽器對「陰影」與「背景色盒」的柵格化取整不同,同規格的線會出現 1 vs 2 實體像素、上下接不起來。
    這正是 spec「全表 1px 線一律元素/border 機制、禁用陰影」那條鐵律要防的情形(2026-08-20 立)。
-   機制與 `.dtPanelBoundaryRight::after` / `.dtHeaderRowGroup::after` 完全同型。 */
+   機制與 `.dtLeftBoundary::before` / `.dtHeaderRowGroup::after` 完全同型。 */
 .dtCellGrid {
   position: relative;
 }
@@ -328,14 +298,8 @@
       `left:0 right:0 top:0 bottom:0 width:1px height:1px`,在角落變成 1×1 的點、兩條線同時消失
       (2026-09-04 user 回報「為何pin住的欄位header最右邊的分隔線消失了？」的直接原因)。分屬不同元素就不會撞。
    一條線橫貫整表,也天生涵蓋讓給垂直捲軸的那條 strip,不會有分段接縫。 */
-/* 2026-11-05(待辦總帳 Q2b):表頭列群組住在**表身同一個捲動盒**裡、黏在頂端(MUI X `GridTopContainer` `position: sticky; top: 0`、
-   AG Grid v36 header 併進 `.ag-grid-viewport`)。表頭與表身因此由瀏覽器在同一次合成裡一起捲動,不再由程式在下一個 scroll 事件追上
-   (修前推一下滾輪表頭固定晚一格畫面,`scripts/data-table-header-scroll-sync.mjs` H4)。
-   z 層:表頭 4 > 釘選面板 2 > 中央區覆蓋層 1 > 中央列;都在捲動盒內容的 `isolation: isolate` 裡,不會跟頁面上的東西比。 */
 .dtHeaderRowGroup {
-  position: sticky;
-  top: 0;
-  z-index: 4;
+  position: relative;
 }
 
 .dtHeaderRowGroup::after {
@@ -347,16 +311,17 @@
   height: 1px;
   background: var(--divider);
   pointer-events: none;
-  /* 疊在凍結邊界線之上:兩條線在轉角交會時,水平線壓過去比較像一個完整的「田」字。
-     釘選表頭面板是 z 2 的黏住盒(見下),線要壓過它們才橫貫得了整表。 */
-  z-index: 3;
+  /* 疊在凍結邊界線之上:兩條線在轉角交會時,水平線壓過去比較像一個完整的「田」字。 */
+  z-index: 1;
 }
 
 /* ── 凍結邊界線 ──
    表頭段畫在 header panel 上(panel 高度就是 40,沒有捲軸帶要跨,`bottom:0` 即到底);
-   列區段畫在釘選表身面板上(同一組規則,見下方「列區段的凍結邊界線」);水平捲軸列那一段畫在裝飾軌道上。 */
-/* 宿主自己負責成為定位盒(釘選面板是 `sticky`、裝飾軌道是 `absolute`);這裡**不可**再宣告 `position`,
-   否則同 specificity 的規則會把 `sticky` 蓋成 `relative`,釘選欄就不再黏住。 */
+   列區段畫在**列區外層** `.dtLeftBoundary` / `.dtRightBoundary` 上(見下)。 */
+.dtPanelBoundaryRight {
+  position: relative;
+}
+
 .dtPanelBoundaryRight::after {
   content: '';
   position: absolute;
@@ -366,6 +331,10 @@
   width: 1px;
   background: var(--divider);
   pointer-events: none;
+}
+
+.dtPanelBoundaryLeft {
+  position: relative;
 }
 
 .dtPanelBoundaryLeft::after {
@@ -379,54 +348,40 @@
   pointer-events: none;
 }
 
-/* 列區段的凍結邊界線(2026-11-05 起畫在**釘選表身面板自己**上,`.dtPanelBoundaryRight` / `.dtPanelBoundaryLeft`,跟表頭段同一組規則)。
-   2026-09-04 → 2026-11-05 之間它掛在列區外層 `.dtLeftBoundary` / `.dtRightBoundary`,理由是釘選面板是 `overflow:hidden` 的捲動盒,
-   而讓位給水平捲軸的透明下邊框在 padding box 之外,線畫不進去。單一捲動盒之後兩個前提都不在了:釘選面板不再裁切、
-   也不再有讓位邊框(水平捲軸在捲動盒自己的捲軸列裡,釘選面板底緣就是最後一列的底緣);而列區外層現在會跟著內容橫向捲動,
-   掛在那裡的線反而會被帶走。捲軸列那一段由裝飾軌道 `.dtScrollbarTrough` 自己畫(同一組規則),線因此仍然頂天立地。 */
-
-/* ── 黏住區的不透明底(2026-11-05,待辦總帳 Q2b)──
-   單一捲動盒裡,中央的列會從黏住的表頭與釘選面板**底下**捲過去,所以這些黏住盒必須不透明(
-   AG Grid v36 header「`--ag-header-background-color` might be semi-transparent so apply it on top of the known-opaque background color」)。
-   本 DS 的 `--surface` 在深色是半透明白(`semantic.css` 深色區塊 `--surface: var(--white-a08)`)、`--muted` 也是半透明,
-   兩者都不能單獨當底。做法同 AG Grid:**已知不透明的底 `--canvas`**(頁面最底層,兩個主題都不透明)上面依序疊回
-   修前畫面上那幾層 —— 釘選表身 = canvas + surface(根節點那一層);表頭再加一層 muted(`.dtHeaderMuted`,畫在表頭面板的內層)。
-   淺色主題 `--surface` 本來就不透明,任何底色上都同色。
-   **「已知不透明的底」= 表格所在那一層的底,不寫死 `--canvas`**(2026-11-05 審查 D4,`data-table-known-defects.spec.md` 缺陷 W 已修):
-   讀 `--dt-sticky-base`:**執行期**由 `lib/sticky-backdrop.ts` 把表格後面每一層畫了底色的祖先疊起來、寫進根節點(深色的
-   `bg-surface` / `bg-muted` 是半透明白,卡片 / 面板裡的表格若只認 canvas,表頭與釘選欄會比表身暗一層 —— 2026-11-06 全 DS 像素:
-   container-height 64 → 48、ScrollArea 示範 16 階)。算不出來(背景圖、混合模式)時用下面的 CSS 預設:`--canvas`(頁面最底層);
-   DS 的浮起表面(Dialog / Sheet / Popover / HoverCard / DropdownMenu …)
-   全部以 `bg-surface-raised` 畫底,在它們裡面改成 `--surface-raised` —— WM 的 AddFieldsDialog / SyncStatusDialog 就是
-   DialogContent 裡的 DataTable(勾選欄 = 左釘選);寫死 canvas 時深色對話框裡表頭 65→48、勾選欄 49→30(表身 49),修前同色。
-   表格放在其他不透明底上的 consumer,在表格外層設 `--dt-sticky-base` 成那個底色即可。
-   **每一層都是實心底色的盒子**:`--surface` 那一層是 `::before`(z −1,疊在宿主的 canvas 底與內容之間 —— 宿主必須是定位盒且自成疊層,
-   釘選面板是 `sticky` + z、表頭中央區另掛 `relative z-[1]`)。不用 `linear-gradient` 疊:漸層會被瀏覽器加抖色(Skia gradient dithering),
-   同一個顏色的「漸層」逐像素看是 ±1 的棋盤點(第一版這樣寫,像素比對整條表頭都是點狀差);也不用 inset box-shadow 填色 ——
-   非整數縮放下陰影與底色盒的柵格化取整不同,黏住區邊緣會冒出一條細縫,正是「全表禁用陰影」(I9)要防的那一類。 */
-.dtStickyBg {
-  background-color: var(--dt-sticky-base, var(--canvas));
+/* 列區段的凍結邊界線:掛在**列區外層**,不掛在釘選面板上。
+   釘選面板自己是 `overflow-hidden`,而 `overflow` 的裁切邊是 **padding box** —— 面板底部那條
+   等同水平捲軸高的透明 border 在 padding box 之外,線無論怎麼負向延伸都畫不出來
+   (前一版 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 是假宣稱:版面盒延伸了、像素沒有,
+   而當時的 I13b 比的是 `getComputedStyle(::after).height`,量到的是版面不是畫面,所以假綠)。
+   外層不裁切也不捲動,高度就是三個面板的 border-box 高,線因此真的從頂到底。
+   `--dt-left-w` / `--dt-right-w` 由 tsx 寫上,與釘選面板寬同一個 state,線與面板邊緣必然同一像素。 */
+.dtLeftBoundary,
+.dtRightBoundary {
+  position: relative;
 }
 
-/* 浮起表面裡,黏住區的已知不透明底 = 浮起表面自己的底(見上)。掛在 utility class 上:DS 每個浮起表面都用這一顆,
-   consumer 自己用 `bg-surface-raised` 做的容器也一併涵蓋;`--surface-raised` 在這個元素上代換(主題節點在祖先上)。 */
-.bg-surface-raised {
-  --dt-sticky-base: var(--surface-raised);
-}
-
-.dtStickyBg::before {
+.dtLeftBoundary::before {
   content: '';
   position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-color: var(--surface);
+  top: 0;
+  bottom: 0;
+  /* 佔左側面板的最後一個像素(等同原本掛在面板上的 `right: 0`)。 */
+  left: calc(var(--dt-left-w, 0px) - 1px);
+  width: 1px;
+  background: var(--divider);
   pointer-events: none;
+  z-index: 1;
 }
 
-/* 表頭那一層 `--muted`(只疊一層:表頭面板的內層,`data-table.tsx` `HEADER_MUTED`)。
-   寫成同一條規則裡的自訂屬性再取用:`--muted` 由主題節點(`[data-theme]`)定義,自訂屬性在**宣告它的元素上**代換 ——
-   寫在 `:root` 會鎖住淺色值。color.spec.md「Static Subtle Background」bg-muted 那一格以 `data-table.css#--dt-header-muted` 登記。 */
-.dtHeaderMuted {
-  --dt-header-muted: var(--muted);
-  background-color: var(--dt-header-muted);
+.dtRightBoundary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 佔右側面板的第一個像素(等同原本掛在面板上的 `left: 0`)。 */
+  right: calc(var(--dt-right-w, 0px) - 1px);
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+  z-index: 1;
 }

@@ -58,11 +58,9 @@
  * 捲動情境(--mode,逗號分隔):
  *   wheel  :對 center 容器 dispatch `wheel`(deltaY 300/400/500/600 輪替,每 16ms 一次,連續 40 次)。
  *            合成的 WheelEvent 沒有預設動作(untrusted),所以自己補 `scrollTop += deltaY`。
- *   pinned :「滑鼠停在 ID / 選取欄上捲」的唯一覆蓋(2026-09-29,總帳 OE7;mouse / gesture 都對準中央區)。
- *            2026-11-05(待辦總帳 Q2b)起釘選面板就在共用捲動盒裡,釘選欄上的滾輪是**瀏覽器原生**捲動(修前靠 makeBindPinnedPanel 轉發,
- *            合成的 untrusted wheel 事件才驗得到那個轉發器);原生捲動只有真輸入才會發生,所以改成跟 mouse 同一條路徑
- *            (CDP `Input.dispatchMouseEvent mouseWheel`,trusted),只是指標停在左釘選面板看得見的那一塊上。
- *            scrollTop 沒動 → 直接紅(產品缺陷:釘選欄吃不到滾輪)。
+ *   pinned :同上但 dispatch 在左釘選面板,走元件自己的滾輪轉發(data-table.tsx makeBindPinnedPanel,非 passive 監聽)。
+ *            這條路 mouse / gesture 都走不到(它們對準中央區),是「滑鼠停在 ID / 選取欄上捲」的唯一覆蓋(2026-09-29,總帳 OE7)。
+ *            轉發斷掉 = scrollTop 沒動 → 直接紅(產品缺陷,不是儀器);空白類斷言與 wheel 同理不適用(JS 在主執行緒寫 scrollTop)。
  *   mouse  :CDP `Input.dispatchMouseEvent mouseWheel`(trusted,走真的輸入管線與合成執行緒;不等回應,照 16ms 節奏丟)。
  *   gesture:**真實呈現幀(2026-09-09,Codex R8 駁回「預估 paint 空白」後改用)**:CDP `Input.synthesizeScrollGesture`(走原生輸入管線與
  *            合成執行緒,--gesture-px / --gesture-speed)+ `Page.startScreencast`(合成器實際送出的每一幀)。每一幀把中央捲動區切成
@@ -99,7 +97,6 @@ import { join, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { dtVisibleBand } from './lib/data-table-visible-band.mjs'
 import { spawnSync } from 'node:child_process'
 
 /**
@@ -272,13 +269,10 @@ const INIT = ({ loaf }) => {
 }
 
 // ── 頁內:每幀取樣器(回傳 setup 資訊)──
-const START_SAMPLER = ({ sabotage, startPx, band }) => {
+const START_SAMPLER = ({ sabotage, startPx }) => {
   const S = window.__fs
   const cb = document.querySelector('[data-datatable-hscroll]')
   const left = document.querySelector('[data-datatable-panel="left"]')
-  // 2026-11-05(Q2b):捲動盒同時裝著黏頂表頭與兩側釘選面板;「中央量測區」= 看得見的列帶 ∩ 中央區(band,由 lib/data-table-visible-band.mjs 算好傳進來),
-  // 列只取中央面板裡的(修前捲動盒就是中央面板,兩代結構同一個答案)。
-  const centerRows = cb.matches('[data-datatable-panel="center"]') ? cb : (cb.querySelector('[data-datatable-panel="center"]') ?? cb)
   if (!cb) return { crashed: true }
   if (cb.scrollHeight <= cb.clientHeight + 1) return { noOverflow: true }
   cb.scrollTop = startPx
@@ -300,17 +294,16 @@ const START_SAMPLER = ({ sabotage, startPx, band }) => {
   const sample = () => {
     const t = performance.now()
     const cbRect = cb.getBoundingClientRect()
-    const bandTop = band ? band.top : cbRect.top, bandBottom = band ? band.bottom : cbRect.bottom
-    const H = bandBottom - bandTop
+    const H = cb.clientHeight
     const map = new Map()
-    for (const r of centerRows.querySelectorAll('[data-row-index]')) map.set(r.getAttribute('data-row-index'), r)
-    const real = centerRows.querySelectorAll('[data-row-index]:not([data-fs-fake])')
+    for (const r of cb.querySelectorAll('[data-row-index]')) map.set(r.getAttribute('data-row-index'), r)
+    const real = cb.querySelectorAll('[data-row-index]:not([data-fs-fake])')
     let rTop = 0, rBot = 0
-    if (real.length) { const a = real[0].getBoundingClientRect(), b = real[real.length - 1].getBoundingClientRect(); rTop = Math.min(a.top, b.top) - bandTop; rBot = Math.max(a.bottom, b.bottom) - bandTop }
+    if (real.length) { const a = real[0].getBoundingClientRect(), b = real[real.length - 1].getBoundingClientRect(); rTop = Math.min(a.top, b.top) - cbRect.top; rBot = Math.max(a.bottom, b.bottom) - cbRect.top }
     let visible = 0, missing = 0, empty = 0
     for (const r of (left ?? cb).querySelectorAll('[data-row-index]')) {
       const rr = r.getBoundingClientRect()
-      if (rr.bottom <= bandTop || rr.top >= bandBottom) continue
+      if (rr.bottom <= cbRect.top || rr.top >= cbRect.bottom) continue
       visible++
       const c = map.get(r.getAttribute('data-row-index'))
       if (!c) { missing++; continue }
@@ -318,16 +311,12 @@ const START_SAMPLER = ({ sabotage, startPx, band }) => {
       for (const cell of c.querySelectorAll('[role="cell"],[role="gridcell"]')) { if (cell.firstElementChild || cell.textContent.trim() !== '') { has = true; break } }
       if (!has) empty++
     }
-    // 左面板落後量:修前它是自己的捲動盒(JS 同步 scrollTop);修後它在捲動盒裡,結構上不可能落後(記成同一個值)
-    S.frames.push({ t, dt: t - lastT, shells: centerRows.querySelectorAll('[data-row-shell]').length, st: cb.scrollTop, lst: left ? (cb.contains(left) ? cb.scrollTop : left.scrollTop) : null, H, visible, missing, empty, rTop, rBot, rows: real.length, commits: S.commits - lastCommits, scrolls: S.scrollEvents - lastScroll })
+    S.frames.push({ t, dt: t - lastT, shells: cb.querySelectorAll('[data-row-shell]').length, st: cb.scrollTop, lst: left ? left.scrollTop : null, H, visible, missing, empty, rTop, rBot, rows: real.length, commits: S.commits - lastCommits, scrolls: S.scrollEvents - lastScroll })
     lastT = t; lastCommits = S.commits; lastScroll = S.scrollEvents
   }
   const loop = () => { if (!S.on) return; sample(); requestAnimationFrame(loop) }
   requestAnimationFrame(loop)
-  const leftR = left ? left.getBoundingClientRect() : null
-  const leftPt = leftR && band ? { x: Math.max(leftR.left, band.left) + Math.min(40, (Math.min(leftR.right, band.right) - Math.max(leftR.left, band.left)) / 2), y: band.cy } : null
-  // 釘選面板在不在共用捲動盒裡 = 釘選欄上的滾輪是原生捲動(2026-11-05 Q2b 起)還是元件轉發(修前)
-  return { ok: true, hasLeft: !!left, pinnedInScroller: !!left && cb.contains(left), px: leftPt?.x ?? null, py: leftPt?.y ?? null, rows: centerRows.querySelectorAll('[data-row-index]:not([data-fs-fake])').length, H: band ? band.bottom - band.top : cb.clientHeight, scrollHeight: cb.scrollHeight, cx: band ? band.cx : cbRect0.left + cbRect0.width / 2, cy: band ? band.cy : cbRect0.top + cbRect0.height / 2, hookOk: window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.size > 0, longtaskErr: S.longtaskErr || null }
+  return { ok: true, hasLeft: !!left, rows: cb.querySelectorAll('[data-row-index]:not([data-fs-fake])').length, H: cb.clientHeight, scrollHeight: cb.scrollHeight, cx: cbRect0.left + cbRect0.width / 2, cy: cbRect0.top + cbRect0.height / 2, hookOk: window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.size > 0, longtaskErr: S.longtaskErr || null }
 }
 
 // ── 頁內:合成滾輪事件(wheel / pinned 模式)。逾時的刻度一次補齊,模擬主執行緒卡住時輸入事件排隊再一起送到。──
@@ -362,7 +351,7 @@ const RUN_TICKS = async ({ ticks, tickMs, deltas, target, busyAt, busyMs }) => {
 const STOP_SAMPLER = () => { const S = window.__fs; S.on = false; return { frames: S.frames, longs: S.longs.filter((l) => l.start + l.dur >= S.t0) /* 只算取樣視窗內;buffered 會含頁面載入 */, loafs: S.loafs.filter((l) => l.s + l.d >= S.t0), loafErr: S.loafErr || null, wheelTs: S.wheelTs, commits: S.commits, scrollEvents: S.scrollEvents, finalScroll: document.querySelector('[data-datatable-hscroll]')?.scrollTop ?? null } }
 
 // ── 頁內:截圖近白像素比例(中間區 vs 左面板;PNG base64 → canvas)──
-const ANALYZE_SHOT = async ({ b64, band }) => {
+const ANALYZE_SHOT = async ({ b64 }) => {
   const cb = document.querySelector('[data-datatable-hscroll]'); const left = document.querySelector('[data-datatable-panel="left"]')
   const img = new Image(); img.src = 'data:image/png;base64,' + b64
   await new Promise((r, j) => { img.onload = r; img.onerror = j })
@@ -370,11 +359,9 @@ const ANALYZE_SHOT = async ({ b64, band }) => {
   const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0)
   // 截圖像素 / CSS 像素的比例由圖片實際尺寸算,不信 devicePixelRatio(dpr 2 時 CDP 截圖仍可能是 CSS 尺寸;2026-09-09 實測誤用 dpr 會量到圖外的透明像素)
   const k = img.width / window.innerWidth
-  // 中央量測區 = 看得見的列帶 ∩ 中央區;左面板 = 它 ∩ 列帶(2026-11-05 Q2b:面板盒子是整份內容,不能直接拿)
-  const clipRect = (r, isCenter) => (band ? { left: isCenter ? band.centerLeft : Math.max(r.left, band.left), top: band.top, width: (isCenter ? band.centerRight - band.centerLeft : Math.min(r.right, band.right) - Math.max(r.left, band.left)), height: band.bottom - band.top } : r)
   const white = (el) => {
     if (!el) return null
-    const r = clipRect(el.getBoundingClientRect(), el === cb)
+    const r = el.getBoundingClientRect()
     const x = Math.round(r.left * k), y = Math.round(r.top * k), w = Math.round(r.width * k), h = Math.round(r.height * k)
     const d = ctx.getImageData(x, y, w, h).data; let n = 0, tot = 0
     for (let i = 0; i < d.length; i += 16) { tot++; if (d[i] > 245 && d[i + 1] > 245 && d[i + 2] > 245) n++ }
@@ -384,12 +371,9 @@ const ANALYZE_SHOT = async ({ b64, band }) => {
 }
 
 // ── 頁內:呈現幀分析(screencast jpeg → canvas;中央捲動區每 40px 一帶,避開上下 4px 的分隔線帶)──
-const ANALYZE_FRAMES = async ({ list, band }) => {
+const ANALYZE_FRAMES = async ({ list }) => {
   const cb = document.querySelector('[data-datatable-hscroll]'); const left = document.querySelector('[data-datatable-panel="left"]')
-  // 中央量測區 = 看得見的列帶 ∩ 中央區;左面板 = 它 ∩ 列帶(2026-11-05 Q2b:捲動盒裡還有黏頂表頭與釘選面板,面板盒子是整份內容)
-  const cb0 = cb.getBoundingClientRect(), lr0 = left ? left.getBoundingClientRect() : null
-  const r = band ? { left: band.centerLeft, top: band.top, width: band.centerRight - band.centerLeft, height: band.bottom - band.top, bottom: band.bottom } : cb0
-  const lr = lr0 && band ? { left: Math.max(lr0.left, band.left), top: band.top, width: Math.min(lr0.right, band.right) - Math.max(lr0.left, band.left), height: band.bottom - band.top } : lr0
+  const r = cb.getBoundingClientRect(); const lr = left ? left.getBoundingClientRect() : null
   const out = []
   for (const f of list) {
     const img = new Image(); img.src = 'data:image/png;base64,' + f.data
@@ -584,8 +568,7 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     await cdp.send('Performance.enable')
     if (profile) { await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 100 }) }
     const metrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]))
-    const band = await page.evaluate(dtVisibleBand, 0)
-    const setup = await page.evaluate(START_SAMPLER, { sabotage, startPx: START_PX, band })
+    const setup = await page.evaluate(START_SAMPLER, { sabotage, startPx: START_PX })
     if (setup.crashed) return { crashed: true, errors }
     if (setup.noOverflow) return { noOverflow: true }
     await page.waitForTimeout(200) // 起點就位、第一批列掛好
@@ -616,7 +599,7 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     // 不是「這台機器重現得出真實空白」。兩者要分開報,不可混為一談(見下方 tier 說明)。
     // 只藏**中央量測區**的列:整頁都藏起來畫面就不再變化,合成器不送新幀(實測整趟只出 4 幀,
     // 反而變成另一種餓死)。左右釘選欄照常渲染並跟著捲,幀就持續產生,而中央區是必然的空白。
-    if (hideContent) await page.addStyleTag({ content: '[data-datatable-panel="center"] [data-row-index]{visibility:hidden !important}' })
+    if (hideContent) await page.addStyleTag({ content: '[data-datatable-hscroll] [data-row-index]{visibility:hidden !important}' })
     if (mode === 'gesture') {
       // 真實呈現幀:合成手勢走原生輸入管線捲中央區;正對照 = 每個 scroll 事件忙等
       // 正對照 = 「儀器在該紅的時候會紅」。原本只忙等主執行緒,前提是「主執行緒卡住 ⇒ 一定空白」。
@@ -637,18 +620,15 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
       await page.waitForTimeout(SETTLE_EFFECTIVE) // 停手後的觀測窗(長過補齊期限):量「多久補齊」本身就要一段固定長度的窗
       ticks = { applied: 1, wallMs }
       gesture = { gestureEnd }
-    } else if (mode === 'mouse' || mode === 'pinned') {
+    } else if (mode === 'mouse') {
       // 真輸入:CDP Input.dispatchMouseEvent mouseWheel(page.mouse.wheel 底層同一個呼叫),但**不等回應**——
       // 等回應會被主執行緒的忙碌拖成 60ms+ 一個事件(實測 63.7ms),OS 送滾輪事件不會等 render,所以照 16ms 節奏丟進輸入管線,最後再一起收。
-      // pinned:同一條路,指標停在左釘選面板上(2026-11-05 Q2b 起釘選欄上是原生捲動)。
-      if (mode === 'pinned' && setup.px == null) return { noTarget: true }
-      const wx = mode === 'pinned' ? setup.px : setup.cx, wy = mode === 'pinned' ? setup.py : setup.cy
-      await page.mouse.move(wx, wy)
+      await page.mouse.move(setup.cx, setup.cy)
       const t0 = Date.now(); let applied = 0; const pending = []
       for (let i = 0; i < TICKS; i++) {
         // 對照組 (b):忙等要排成頁面自己的 task(setTimeout),直接在 Runtime.evaluate 裡忙等不會被 longtask 觀測器記到(2026-09-09 實測只記到 99ms)
         if (sabotage && i === BUSY_AT) await page.evaluate((ms) => { setTimeout(() => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, 0) }, BUSY_MS)
-        pending.push(cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: wx, y: wy, deltaX: 0, deltaY: DELTAS[i % DELTAS.length], modifiers: 0 })); applied++
+        pending.push(cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: setup.cx, y: setup.cy, deltaX: 0, deltaY: DELTAS[i % DELTAS.length], modifiers: 0 })); applied++
         if (SHOTS && (i === 14 || i === 29)) pending.push(cdp.send('Page.captureScreenshot', { format: 'png' }).then(({ data }) => shots.push({ afterTick: i + 1, b64: data })))
         const wait = t0 + (i + 1) * TICK_MS - Date.now(); if (wait > 0) await sleep(wait)
       }
@@ -673,11 +653,11 @@ const runOnce = async ({ build, mode, base, server = null, sabotage, profile, bu
     const m1 = await metrics()
     const raw = await page.evaluate(STOP_SAMPLER)
     const shotStats = []
-    for (const s of shots) shotStats.push({ afterTick: s.afterTick, ...(await page.evaluate(ANALYZE_SHOT, { b64: s.b64, band })) })
+    for (const s of shots) shotStats.push({ afterTick: s.afterTick, ...(await page.evaluate(ANALYZE_SHOT, { b64: s.b64 })) })
     const a = analyze(raw.frames)
     let g = null
     if (gesture) {
-      const shotsG = await page.evaluate(ANALYZE_FRAMES, { list: gesture.cast, band })
+      const shotsG = await page.evaluate(ANALYZE_FRAMES, { list: gesture.cast })
       // 非 gesture 模式沒有自量的結束點:用最後一次 wheel 事件當 fallback(`analyzeGesture` 內部仍會以
       // DOM 取樣裡最後一次 scrollTop 變動覆寫;這裡只是避免 null 傳進去讓補齊時間變 NaN)。
       const endFallback = gesture.gestureEnd ?? (raw.wheelTs.length ? raw.wheelTs[raw.wheelTs.length - 1].t : 0)
@@ -799,14 +779,6 @@ const valsOf = (rs, pick) => rs.map((r) => { try { return pick(r) } catch { retu
  * **分母要取「同一個模式」的參考值**(2026-09-12 修):原本寫死 `${REF_LABEL}/gesture`,`--mode=wheel` 找不到分母就整項退回絕對門檻。
  */
 const ratioDecision = (check, label, mode, usable, canAddMore) => {
-  // pinned 模式的空白:參考與受測若一邊是「元件轉發、主執行緒寫 scrollTop」(修前)、一邊是「共用捲動盒的原生捲動」(2026-11-05 Q2b 起),
-  // 兩者量的不是同一件事 —— 前者沒有合成器超前、結構上幾乎不會白,後者跟中央欄上的滾輪是同一條路(那條路由 mouse 模式對參考比)。
-  // 機制不同就不拿來比(過渡期:參考還是修前的 main 時),印出理由,不當成通過也不當成失敗。
-  if (mode === 'pinned' && check === RATIO_CHECKS.blank) {
-    const mech = (b) => [...new Set(usable.filter((r) => r.build === b && r.mode === mode).map((r) => r.setup?.pinnedInScroller))]
-    const a = mech(REF_LABEL), m = mech(label)
-    if (a.length === 1 && m.length === 1 && a[0] !== m[0]) return { verdict: 'mechanism-differs', ref: a[0], mine: m[0] }
-  }
   const refVals = valsOf(usable.filter((r) => r.build === REF_LABEL && r.mode === mode), check.pick).filter(Number.isFinite)
   const refMedian = refVals.length ? median(refVals) : NaN
   if (!(refMedian > 0)) return { verdict: 'no-ref', refMedian }
@@ -876,11 +848,11 @@ const measureTrip = async ({ build, base, server, mode, i }) => {
   if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; return }
   if (r.noTarget) { console.log(`✗ ${build.label}/${mode}:找不到 dispatch 目標(pinned 模式需要左釘選面板)`); failed++; return }
   if (i === 1 && mode === MODES[0]) console.log(`   ${build.label}:${build.dir}\n   story 起點:中間區掛 ${r.setup.rows} 列、視窗高 ${r.setup.H}px、可捲 ${r.setup.scrollHeight}px、左釘選面板 ${r.setup.hasLeft ? '有' : '無(改用中間區自己的列當視窗內集合,列缺恆 0)'}、React hook ${r.setup.hookOk ? '接上' : '沒接上(commits 無效)'}${r.setup.longtaskErr ? '、longtask 觀測失敗 ' + r.setup.longtaskErr : ''}`)
-  // pinned 模式的 scrollTop 由**指標停在釘選欄上的真滾輪**推動(2026-11-05 Q2b 起是共用捲動盒的原生捲動):沒動就是釘選欄
-  // 吃不到滾輪 —— 那是產品缺陷,不是儀器對照失敗,訊息要指對地方。
+  // pinned 模式的 scrollTop 由**元件的轉發**推動(腳本刻意不補 `cb.scrollTop += dy`,見 RUN_TICKS):沒動就是釘選面板的
+  // 滾輪沒轉發到中央捲動區 —— 那是產品缺陷(data-table.tsx makeBindPinnedPanel),不是儀器對照失敗,訊息要指對地方。
   if (r.scrolled <= 0) {
     console.log(`✗ ${line(r, i)}\n   → ${mode === 'pinned'
-      ? 'scrollTop 沒動:指標停在釘選欄上的滾輪沒有捲動表格(產品缺陷:釘選面板不在共用捲動盒裡,或被別的東西攔下)'
+      ? 'scrollTop 沒動:釘選面板收到的滾輪**沒有轉發**到中央捲動區(產品缺陷:data-table.tsx makeBindPinnedPanel)'
       : 'scrollTop 沒動,這個模式的事件沒有造成捲動(儀器對照失敗)'}`)
     failed++; return
   }
@@ -1217,7 +1189,6 @@ if (ASSERTING) {
       const d = ratioDecision(check, label, mode, usableResults, false)
       if (d.verdict === 'no-ref') { console.log(`   (參考「${REF_LABEL}/${mode}」的${name}是 ${Number.isFinite(d.refMedian) ? d.refMedian.toFixed(0) : '無資料'},無法當分母 → 這項退回絕對門檻 ${check.rawLimit || '(未設)'}ms)`); continue }
       if (d.verdict === 'na') { console.log(`↷ ${k}:${name}——這個模式沒有這項量測,不適用`); continue }
-      if (d.verdict === 'mechanism-differs') { console.log(`↷ ${k}:${name}——參考「${REF_LABEL}」的釘選欄滾輪${d.ref ? '是原生捲動' : '是元件轉發(主執行緒寫 scrollTop)'}、受測${d.mine ? '是原生捲動' : '是元件轉發'},機制不同不比(原生捲動那條路由 --mode=mouse 對參考比)`); continue }
       const head = `${k}:${name}中位數 ${d.mineMedian.toFixed(0)}ms`
       const ref = `參考「${REF_LABEL}/${mode}」的 ${d.refMedian.toFixed(0)}ms`
       const within = `${ref} × ${BLANK_RATIO_LIMIT}(= ${(d.refMedian * BLANK_RATIO_LIMIT).toFixed(0)}ms)`
@@ -1248,9 +1219,8 @@ if (ASSERTING) {
     // 空閘守衛(2026-09-12):`wheel` 用 JS 改 scrollTop,結構上不會有合成器超前的空白 ——
     // 把零空白斷言掛上去會是一道永遠不會紅的閘(對照組實測:兩層機制關掉 + 卡死主執行緒仍 0 幀)。
     // 寧可明確失敗也不要假綠。真輸入路徑用 `--mode=mouse`。
-    // pinned 曾同族(2026-09-29):那時它的 scrollTop 是元件轉發時在主執行緒寫的;2026-11-05(Q2b)起釘選欄上是原生捲動、
-    // 腳本改用真輸入(與 mouse 同一條路),合成器會超前,空白偵測對它有效,不再列為結構上不會紅的模式。
-    for (const structural of ['wheel']) if (MODES.includes(structural)) {
+    // pinned 同族(2026-09-29,M10 同族當場修):它的 scrollTop 是元件轉發時在主執行緒寫的,跟 wheel 一樣沒有合成器超前。
+    for (const structural of ['wheel', 'pinned']) if (MODES.includes(structural)) {
       console.log(`✗ --assert-max-blank-frames 不可用於 --mode=${structural}:該模式由 JS 改 scrollTop(主執行緒),空白偵測結構上不會紅 = 空閘。真輸入路徑請用 --mode=mouse`)
       failed++
     }

@@ -8,7 +8,6 @@
 // (以 run nonce + attempt 認身分,不以「路徑上剛好有一份」認):子程序沒寫出 summary 就是沒量到,不得拿上一次執行
 // 留在同一個 --out 的舊 summary 去判「停頓 → 重跑」或「慢機器判準 → 綠」。
 import { launchBrowser, openStory, StoryRenderInstrumentError } from "./lib/launch-browser.mjs";
-import { dtVisibleBand } from './lib/data-table-visible-band.mjs'
 import { MAX_ATTEMPTS as SHARED_MAX_ATTEMPTS, retryBackoffMs } from "./lib/scroll-perception-budget.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -175,18 +174,12 @@ try {
     }
   );
   const setup = await page.evaluate(
-    ({ markers, sabotage, band }) => {
+    ({ markers, sabotage }) => {
       const S = window.__r17,
         cb = document.querySelector("[data-datatable-hscroll]");
       cb.scrollTop = 0;
-      // 2026-11-05(待辦總帳 Q2b):捲動盒同時裝著黏頂表頭與兩側釘選面板 —— 列只取中央面板裡的(修前捲動盒就是中央面板),
-      // 量測框 = 看得見的列帶 ∩ 中央區(band,lib/data-table-visible-band.mjs;兩代結構同一個答案)。
-      const rowsHost = cb.matches('[data-datatable-panel="center"]') ? cb : (cb.querySelector('[data-datatable-panel="center"]') ?? cb);
-      const cbRect = cb.getBoundingClientRect();
-      const rect = band
-        ? { x: band.centerLeft, y: band.top, width: band.centerRight - band.centerLeft, height: band.bottom - band.top }
-        : { x: cbRect.x, y: cbRect.y, width: cb.clientWidth, height: cb.clientHeight },
-        rw = rowsHost.querySelector("[data-row-index]").getBoundingClientRect();
+      const rect = cb.getBoundingClientRect(),
+        rw = cb.querySelector("[data-row-index]").getBoundingClientRect();
       S.cb = cb;
       S.on = true;
       S.started = performance.now();
@@ -197,11 +190,10 @@ try {
         if (!ids.has(e)) ids.set(e, ++seq);
         return ids.get(e);
       };
-      // 標記放在中央區看得見那一塊的右緣內 48px;寫進列的是**相對於列左緣**的位置(中央列的左緣 = 中央面板左緣,scrollLeft = 0)
-      const markerX = rect.x + rect.width - 48 - rw.left;
+      const markerX = cb.clientWidth - 48;
       const mark = () => {
         if (!markers) return;
-        for (const row of rowsHost.querySelectorAll("[data-row-index]")) {
+        for (const row of cb.querySelectorAll("[data-row-index]")) {
           const code =
             (+row.dataset.rowIndex + 1) * 2 +
             (row.hasAttribute("data-row-shell") ? 1 : 0);
@@ -250,7 +242,7 @@ try {
       mark();
       if (sabotage !== "off") {
         new MutationObserver(() => {
-          for (const row of rowsHost.querySelectorAll("[data-row-index]"))
+          for (const row of cb.querySelectorAll("[data-row-index]"))
             if (!row.hasAttribute("data-r17-sab")) {
               row.dataset.r17Sab = "";
               if (sabotage === "on") row.dataset.rowShell = "";
@@ -279,12 +271,13 @@ try {
       );
       const sample = (t) => {
         if (!S.on) return;
+        const r = cb.getBoundingClientRect();
         S.frames.push({
           t,
           epoch: performance.timeOrigin + t,
           y: cb.scrollTop,
           commits: S.commits,
-          rows: [...rowsHost.querySelectorAll("[data-row-index]")].map((e) => {
+          rows: [...cb.querySelectorAll("[data-row-index]")].map((e) => {
             const b = e.getBoundingClientRect();
             return {
               index: +e.dataset.rowIndex,
@@ -292,7 +285,7 @@ try {
               shell: e.hasAttribute("data-row-shell"),
               top: b.top,
               bottom: b.bottom,
-              visible: b.bottom > rect.y && b.top < rect.y + rect.height,
+              visible: b.bottom > r.top && b.top < r.top + cb.clientHeight,
             };
           }),
         });
@@ -305,18 +298,18 @@ try {
         rect: {
           x: rect.x,
           y: rect.y,
-          width: rect.width,
-          height: rect.height,
+          width: cb.clientWidth,
+          height: cb.clientHeight,
         },
         rowHeight: rw.height,
-        markerX: rw.left + markerX,
+        markerX: rect.x + markerX,
         viewport: innerWidth,
         dpr: devicePixelRatio,
         timeOrigin: performance.timeOrigin,
         scrollHeight: cb.scrollHeight,
       };
     },
-    { markers, sabotage: arg("sabotage", "off"), band: await page.evaluate(dtVisibleBand, 0) }
+    { markers, sabotage: arg("sabotage", "off") }
   );
   await page.mouse.move(setup.x, setup.y);
   // 游標移進表格後等 300ms:讓 hover 高亮與它引發的重畫在開始錄影之前走完(不算進捲動量測)

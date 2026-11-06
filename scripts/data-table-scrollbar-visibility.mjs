@@ -29,8 +29,9 @@
  *   E. 動態縮高(fill-height 的 story):slot 縮小 1 / 2 / 3px 後 350ms,B 仍成立(針對 compute() 舊 `<4px` 守衛)。
  *      「是不是填滿高度」直接讀表格根節點的 `data-dt-fill-height`(isFillHeight 的標記)。2026-11-06 之前用「捲動盒有 inline
  *      maxHeight」代認 —— 固定 px 的上限也掛 inline maxHeight,E 因此量到固定高度的表(契約外:格子比固定高度小時被裁是
- *      consumer 給的格子不夠,不是 compute() 沒跟上)。修前(中央表身當捲動盒)剛好被 scrollIntoView 把 overflow:hidden 的
- *      外框捲 2px、裁切移到沒量的表頭上而沒紅;f2ecd9e1 表頭進捲動盒後這 1–3px 就量到了(PR #169 dd7fd2cd 深掃 36 條紅)。
+ *      consumer 給的格子不夠,不是 compute() 沒跟上)。現行結構(中央表身當捲動盒)剛好被 scrollIntoView 把 overflow:hidden 的
+ *      外框捲 2px、裁切移到沒量的表頭上而沒紅;Q2b(表頭進同一個捲動盒,PR #169 dd7fd2cd 曾落地、移到下一個 PR)時這 1–3px
+ *      就量到了(深掃 36 條紅)。
  *      E 一則都沒量到(沒有任何表格帶這個標記)= 儀器失效(--only 除外),不准靜默變成空閘。
  *
  * 對照組(M32「儀器要先有對照組」,`--selftest`):(i) 捲動區加高 2px → B 必紅;(ii) 用 `pointer-events:none`
@@ -176,20 +177,13 @@ const INSPECT = `(() => {
       const over = { right: +(r.right - pad.right).toFixed(2), bottom: +(r.bottom - pad.bottom).toFixed(2), left: +(pad.left - r.left).toFixed(2), top: +(pad.top - r.top).toFixed(2) }
       if (Object.values(over).some((v) => v > 0.5)) item.clips.push({ ancestor: a.tagName.toLowerCase() + '.' + [...a.classList].slice(0, 3).join('.'), over })
     }
-    // 2026-11-05(待辦總帳 Q2b):捲軸佔版面的平台上,看得見的那條捲軸是**同一張表自己的**代理捲軸 / 裝飾軌道 / 表頭墊片
-    // (data-dt-scrollbar-* 那幾個,正好蓋在原生捲軸上);它們命中也算「沒被別的東西蓋住」。要擋的仍是外來的遮蓋物。
-    const root = el.closest('[role="table"], [role="grid"]') ?? el.parentElement
-    const own = (e) => e === el || el.contains(e) || (!!root && root.contains(e) && !!e.closest('[data-dt-scrollbar-proxy], [data-dt-scrollbar-trough], [data-dt-scrollbar-header-filler]'))
-    const who = (x, y) => { const e = document.elementFromPoint(x, y); return e && own(e) ? 'self' : (e ? e.tagName.toLowerCase() + '.' + [...e.classList].slice(0, 2).join('.') : 'NONE') }
-    // 垂直捲軸從表頭下方開始(表頭在捲動盒裡時;上方那一段是表頭色的墊片,不是捲軸)
-    const head = el.querySelector('.dtHeaderRowGroup')
-    const vTop = head ? Math.max(r.top, head.getBoundingClientRect().bottom) : r.top
-    const midY = vTop + Math.min(120, (r.bottom - vTop) / 2), midX = r.left + Math.min(120, r.width / 2)
+    const who = (x, y) => { const e = document.elementFromPoint(x, y); return e && (e === el || el.contains(e)) ? 'self' : (e ? e.tagName.toLowerCase() + '.' + [...e.classList].slice(0, 2).join('.') : 'NONE') }
+    const midY = r.top + Math.min(120, r.height / 2), midX = r.left + Math.min(120, r.width / 2)
     const vw = innerWidth, vh = innerHeight
     if (hasV && sbV > 0) {
       item.cover.vOuter = who(r.right - 2, midY); item.cover.vInner = who(r.right - sbV + 2, midY)
       // 外側一半的長條,避開兩端圓角(8px)與 V/H 交會方塊,且裁到視窗內
-      const x = r.right - sbV / 2, y0 = Math.max(0, vTop + 8), y1 = Math.min(vh, r.bottom - (hasH ? sbH : 0) - 8)
+      const x = r.right - sbV / 2, y0 = Math.max(0, r.top + 8), y1 = Math.min(vh, r.bottom - (hasH ? sbH : 0) - 8)
       if (y1 - y0 >= 20) item.strips.v = { x, y: y0, width: sbV / 2 - 1, height: y1 - y0 }
     }
     if (hasH && sbH > 0) {
@@ -222,8 +216,7 @@ const STRIPS_NOW = `((i) => {
   const r = el.getBoundingClientRect(), sbV = el.offsetWidth - el.clientWidth, sbH = el.offsetHeight - el.clientHeight
   const hasV = el.scrollHeight > el.clientHeight + 1, hasH = el.scrollWidth > el.clientWidth + 1
   const strips = {}
-  const head = el.querySelector('.dtHeaderRowGroup'), vTop = head ? Math.max(r.top, head.getBoundingClientRect().bottom) : r.top
-  if (hasV && sbV > 0) { const x = r.right - sbV / 2, y0 = Math.max(0, vTop + 8), y1 = Math.min(innerHeight, r.bottom - (hasH ? sbH : 0) - 8); if (y1 - y0 >= 20) strips.v = { x, y: y0, width: sbV / 2 - 1, height: y1 - y0 } }
+  if (hasV && sbV > 0) { const x = r.right - sbV / 2, y0 = Math.max(0, r.top + 8), y1 = Math.min(innerHeight, r.bottom - (hasH ? sbH : 0) - 8); if (y1 - y0 >= 20) strips.v = { x, y: y0, width: sbV / 2 - 1, height: y1 - y0 } }
   if (hasH && sbH > 0) { const y = r.bottom - sbH / 2, x0 = Math.max(0, r.left + 8), x1 = Math.min(innerWidth, r.right - (hasV ? sbV : 0) - 8); if (x1 - x0 >= 20 && y < innerHeight) strips.h = { x: x0, y, width: x1 - x0, height: sbH / 2 - 1 } }
   return strips
 })`

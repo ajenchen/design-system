@@ -1081,7 +1081,7 @@
       "design-system-tokens-uisize--overview"
     ],
     "storyIdsSha256": "dfc5862e7417d032723d263cfc023a3c553ffd1fcd114ee1335a5457359d7691",
-    "fingerprints": 726
+    "fingerprints": 727
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1304,6 +1304,7 @@
     "design-system-components-datatable-展示--selection-disabled-rows|color-contrast": 1,
     "design-system-components-datatable-展示--selection-keyboard-and-shift|color-contrast": 6,
     "design-system-components-datatable-展示--selection-single-mode|color-contrast": 3,
+    "design-system-components-datatable-展示--spreadsheet-cursor-contract|scrollable-region-focusable": 1,
     "design-system-components-datatable-展示--with-pagination|color-contrast": 1,
     "design-system-components-datatable-設計原則--column-type-rule|color-contrast": 12,
     "design-system-components-datatable-設計原則--empty-state-rule|color-contrast": 8,
