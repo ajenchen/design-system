@@ -1,11 +1,14 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import React from 'react'
-import LinkTo from '@storybook/addon-links/react'
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { X, Download, RotateCw } from 'lucide-react'
 import { FileItem } from './file-item'
+import { useFileDemo, type DemoFile } from './_demo-files'
 import { Button } from '@/design-system/components/Button/button'
+import { Toaster } from '@/design-system/components/Toast/toast'
 import { SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta = {
   title: 'Design System/Components/FileItem/設計原則',
@@ -14,20 +17,42 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const Rule = ({
-  title, note, children,
-}: {
-  title: string; note?: string; children: React.ReactNode
-}) => (
-  <div className="mb-14">
-    <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>}
-    <div className="flex flex-col gap-3 max-w-lg">{children}</div>
-  </div>
-)
 
-const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
+const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-lg' })
+
+type FileDemo = ReturnType<typeof useFileDemo>
+/**
+ * 規則裡的一列範例檔案,鈕都接上真的反應(./_demo-files.tsx):取消 / 移除 = 那一列拿掉、重試 = 回到上傳中、下載 = 跳通知、
+ * `openOnClick` = 點列用 FileViewer 開。各則規則自己決定這一列放哪幾顆鈕(`actions` 依目前狀態給)。
+ * 之前這些鈕都沒有 onClick(user 2026-09-08「一堆按鈕都無法正常反應」:畫面上看得到的按鈕都要能動)。
+ */
+function FileSample({ file, actions, openOnClick = false }: {
+  file: DemoFile
+  actions?: (f: DemoFile, demo: FileDemo) => React.ReactNode
+  openOnClick?: boolean
+}) {
+  const demo = useFileDemo([file], { clickable: false })
+  return (
+    <>
+      {demo.files.map((f) => (
+        <FileItem key={f.uid} mode="rich" {...demo.itemProps(f)} onDownload={undefined} onRetry={undefined}
+          onClick={openOnClick ? () => demo.open(f.uid) : undefined} actions={actions?.(f, demo)} />
+      ))}
+      {demo.viewer}
+    </>
+  )
+}
+const cancelButton = (f: DemoFile, demo: FileDemo) => (
+  <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`取消上傳 ${f.name}`} onClick={() => demo.remove(f.uid)} />
+)
+const retryButton = (f: DemoFile, demo: FileDemo) => (
+  <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label={`重試 ${f.name}`} onClick={() => demo.retry(f.uid)} />
+)
+const removeButton = (f: DemoFile, demo: FileDemo) => (
+  <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`移除 ${f.name}`} onClick={() => demo.remove(f.uid)} />
+)
+const downloadButton = (f: DemoFile, demo: FileDemo) => (
+  <Button variant="text" size="xs" iconOnly startIcon={Download} aria-label={`下載 ${f.name}`} onClick={() => demo.download(f)} />
 )
 
 // ── WhenToUse — 何時使用 FileItem ──────────────────────
@@ -38,100 +63,94 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 FileItem 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="豐富樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">圖片 / 設計稿上傳 — 需要縮圖預覽(豐富樣式)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">CSV / JSON 批次匯入的密集清單(緊湊樣式)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="懸停替換"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">上傳完成後滑入整列、狀態 icon 換成下載鈕(懸停替換)</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="已上傳"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">工單 / 訊息附件的已上傳靜態檔案</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊 混合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">同一批次混合上傳中 / 完成 / 失敗狀態的清單</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+    <TutorialPage>
+      <UsageSection kind="when">
+        <p>上傳流程裡的一個檔案:上傳清單、附件列表、批次匯入的逐檔進度、哪些檔案失敗 + 重試。</p>
+        <TutorialList>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="豐富樣式">圖片 / 設計稿上傳 — 需要縮圖預覽(豐富樣式)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="緊湊樣式">CSV / JSON 批次匯入的密集清單(緊湊樣式)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="懸停替換">上傳完成後滑入整列、狀態 icon 換成下載鈕(懸停替換)</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="已上傳">工單 / 訊息附件的已上傳靜態檔案</StoryLink>
+          </li>
+          <li>
+            <StoryLink kind="Design System/Components/FileItem/展示" name="緊湊混合清單">同一批次混合上傳中 / 完成 / 失敗狀態的清單</StoryLink>
+          </li>
+        </TutorialList>
+      </UsageSection>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
-        title="❌ 不用 FileItem 做純連結展示（已上傳檔案）"
-        note="FileItem 承載上傳狀態、進度、錯誤。靜態檔名列表改用 LinkInput 或純 <a> 連結。Google Drive 的「最近開啟」是檔案卡片，不用 FileItem"
-      >
-        <Label warn>靜態檔名 → LinkInput / &lt;a&gt;，FileItem 只用上傳流程</Label>
-      </Rule>
+      <UsageSection kind="whenNot">
+        <TutorialRule
+          title="❌ 不用 FileItem 做相片 / 影片 gallery"
+          note="Gallery 需要 grid 佈局、大圖縮圖。FileItem 是清單單行。改用 grid / Carousel。Instagram 的相簿是 grid，不是 FileItem"
+        >
+          <ExampleCaption warn>Gallery → grid / Carousel，FileItem 是上傳清單</ExampleCaption>
+        </TutorialRule>
 
-      <Rule
-        title="❌ 不用 FileItem 做下載進度"
-        note="FileItem 專為上傳設計。下載進度改用自訂 progress component 或瀏覽器原生下載 UI。Figma 的資源下載不用 FileItem"
-      >
-        <Label warn>下載進度 → 自訂或瀏覽器原生，FileItem 只管上傳</Label>
-      </Rule>
+        <TutorialRule
+          title="❌ 不用 FileItem 表達資料夾階層"
+          note="FileItem 是平面列表。資料夾樹改用 TreeView。OneDrive 的資料夾結構用 TreeView，檔案列表用 FileItem"
+        >
+          <ExampleCaption warn>資料夾樹 → TreeView，FileItem 是平面清單</ExampleCaption>
+        </TutorialRule>
+      </UsageSection>
 
-      <Rule
-        title="❌ 不用 FileItem 做相片 / 影片 gallery"
-        note="Gallery 需要 grid 佈局、大圖縮圖。FileItem 是清單單行。改用 grid / Carousel。Instagram 的相簿是 grid，不是 FileItem"
-      >
-        <Label warn>Gallery → grid / Carousel，FileItem 是上傳清單</Label>
-      </Rule>
-
-      <Rule
-        title="❌ 不用 FileItem 表達資料夾階層"
-        note="FileItem 是平面列表。資料夾樹改用 TreeView。OneDrive 的資料夾結構用 TreeView，檔案列表用 FileItem"
-      >
-        <Label warn>資料夾樹 → TreeView，FileItem 是平面清單</Label>
-      </Rule>
-    </div>
-    </div>
+      <UsageSection kind="siblings">
+        <TutorialList>
+          <li><strong>FileUpload</strong> —— 整個上傳入口:拖放區 + 多個 FileItem 的排列 + 上傳狀態管理;FileItem 只是其中一列檔案。簡單記:有拖放區用 FileUpload,沒有拖放區用 FileItem</li>
+          <li><strong>FileViewer</strong> —— 打開檔案看內容(預覽、縮放、翻頁);點 FileItem 的列通常就是打開 FileViewer</li>
+        </TutorialList>
+      </UsageSection>
+    </TutorialPage>
   ),
 }
 
 export const ModeRule: Story = {
-  name: '模式 選擇（緊湊 vs 豐富）',
+  name: '模式選擇（緊湊 vs 豐富）',
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="先問：使用者靠縮圖辨識，還是靠檔名快速掃視？"
         note="mode 是資訊策略，不是大小 variant。只在縮圖會改變判斷時選 rich；其餘批次上傳與附件清單預設 compact，讀者才能用一致節奏掃視。"
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-md border border-divider bg-surface p-4">
+        <div className="grid gap-[var(--layout-space-loose)] sm:grid-cols-2">
+          <div className="rounded-md border border-divider bg-surface p-[var(--layout-space-loose)]">
             <p className="text-body font-medium text-foreground">rich：縮圖會幫助辨識</p>
-            <p className="mt-1 text-caption text-fg-muted">設計稿、照片或文件預覽；圖像內容比副檔名更能區分檔案。</p>
+            <p className="mt-[var(--item-gap-label-desc-reading)] text-caption text-fg-muted">設計稿、照片或文件預覽；圖像內容比副檔名更能區分檔案。</p>
           </div>
-          <div className="rounded-md border border-divider bg-surface p-4">
+          <div className="rounded-md border border-divider bg-surface p-[var(--layout-space-loose)]">
             <p className="text-body font-medium text-foreground">compact：檔名與狀態是主要訊息</p>
-            <p className="mt-1 text-caption text-fg-muted">批次匯入、日誌或工單附件；使用者要快速掃描多筆進度與錯誤。</p>
+            <p className="mt-[var(--item-gap-label-desc-reading)] text-caption text-fg-muted">批次匯入、日誌或工單附件；使用者要快速掃描多筆進度與錯誤。</p>
           </div>
         </div>
-        <Label>完整的視覺與 token 對照請看「設計規格 / 模式對照」；這裡只負責選擇判斷。</Label>
-      </Rule>
+        <ExampleCaption>
+          完整的視覺與 token 對照請看<StoryLink kind="Design System/Components/FileItem/設計規格" name="模式對照（緊湊 vs 豐富）">設計規格的模式對照</StoryLink>；這裡只負責選擇判斷。
+        </ExampleCaption>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="同一清單不混用 rich 與 compact"
         note="兩種 mode 有不同列高與視覺錨點；混用會打斷掃視節奏，也讓使用者誤以為資料狀態不同。上傳中與已儲存附件可以共存，但應在同一 mode 內用 status 區分。"
       >
-        <Label>先以整個工作流的閱讀任務選 mode，再用 status 表達每筆檔案的進度。</Label>
-      </Rule>
-    </div>
+        <ExampleCaption>先以整個工作流的閱讀任務選 mode，再用 status 表達每筆檔案的進度。</ExampleCaption>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const StatusProgressRule: Story = {
   name: '上傳狀態與進度視覺',
+  // Toaster 是 app 層 Provider,放 story 外層,不當成教學頁裡的一塊(同 Toast 設計原則頁的 decorators)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="uploading — progress bar info 色 + 百分比 description"
         note="上傳中清楚展示進度,讓使用者知道「多久能好」而不是只看到一個等待狀態"
       >
@@ -142,9 +161,9 @@ export const StatusProgressRule: Story = {
           progress={42}
           mode="rich"
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="completed — 成功 icon + 100% 完成條"
         note="完成後保留 100% 綠色完成條(surface=upload-manager narrative —— 上傳狀態是重點,Dropbox / Google Drive 慣例),成功 icon 再加一層明確表達「完成」。檔案變可點擊(下載)"
       >
@@ -161,92 +180,79 @@ export const StatusProgressRule: Story = {
             />
           </SurfaceBody>
         </div>
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="error — 錯誤 icon + error 訊息 description + 可重試"
         note="失敗必須清楚告知原因——不只顯示「失敗」,要有具體錯誤訊息讓使用者知道怎麼修。compact 模式下 error 會強制顯示 description"
       >
-        <FileItem
-          name="broken-file.pdf"
-          description="檔案損毀,請重新上傳"
-          status="error"
-          mode="rich"
-          actions={<Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label="重試" />}
+        <FileSample
+          file={{ uid: 'rule-broken', name: 'broken-file.pdf', mimeType: 'application/pdf', status: 'error', size: '2.0 MB', errorText: '檔案損毀,請重新上傳', errorLog: false }}
+          actions={(f, demo) => (f.status === 'error' ? retryButton(f, demo) : undefined)}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="無 status — 已上傳的靜態檔案"
         note="上傳已完成且已保存,不需要進度 / 狀態標示。可傳 onClick 讓整個 item 變可點擊下載"
       >
-        <FileItem
-          name="final-contract.pdf"
-          description="已簽署 · 2.1 MB"
-          mode="rich"
-          onClick={() => {}}
-          actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />}
+        <FileSample
+          file={{ uid: 'rule-contract', name: 'final-contract.pdf', mimeType: 'application/pdf', size: '2.1 MB', description: '已簽署 · 2.1 MB' }}
+          openOnClick
+          actions={downloadButton}
         />
-      </Rule>
-    </div>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }
 
 export const ActionsRule: Story = {
-  name: '動作 使用',
+  name: '列內動作',
+  // Toaster 是 app 層 Provider,放 story 外層,不當成教學頁裡的一塊(同 Toast 設計原則頁的 decorators)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
   render: () => (
-    <div>
-      <Rule
+    <TutorialPage>
+      <TutorialRule
         title="Uploading 時：Cancel action"
         note="上傳進行中使用者應該可以取消。用 X icon 表達「取消上傳」"
       >
-        <FileItem
-          name="massive-video.mov"
-          description="450 MB · 上傳中 12%"
-          status="uploading"
-          progress={12}
-          mode="rich"
-          actions={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />}
+        <FileSample
+          file={{ uid: 'rule-video', name: 'massive-video.mov', mimeType: 'video/quicktime', status: 'uploading', progress: 12, uploadingText: '450 MB · 上傳中 12%', size: '450 MB' }}
+          actions={cancelButton}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Error 時：Retry + Remove"
         note="失敗時使用者需要兩個選項——重試(可能只是暫時網路問題)或移除(放棄這個檔案)"
       >
-        <FileItem
-          name="failed-upload.pdf"
-          description="網路中斷,請重試"
-          status="error"
-          mode="rich"
-          actions={
-            <div className="flex gap-1">
-              <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label="重試" />
-              <Button variant="text" size="xs" iconOnly startIcon={X} aria-label="移除" />
-            </div>
-          }
+        <FileSample
+          file={{ uid: 'rule-failed', name: 'failed-upload.pdf', mimeType: 'application/pdf', status: 'error', size: '1.6 MB', errorText: '網路中斷,請重試', errorLog: false }}
+          actions={(f, demo) => (
+            f.status === 'uploading' ? cancelButton(f, demo)
+              : f.status === 'completed' ? downloadButton(f, demo)
+                // 兩顆動作鈕直接交給 FileItem 的 actions 槽:槽距由元件的 ItemSuffix 擁有,不自己包一層 flex
+                : <>{retryButton(f, demo)}{removeButton(f, demo)}</>
+          )}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="Completed 時：Download / View"
         note="完成後使用者可以下載或查看。action 不必是 dismiss,重點在後續可能的動作"
       >
-        <FileItem
-          name="report-final.pdf"
-          description="上傳完成 · 3.2 MB"
-          status="completed"
-          mode="rich"
-          actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />}
+        <FileSample
+          file={{ uid: 'rule-report', name: 'report-final.pdf', mimeType: 'application/pdf', status: 'completed', size: '3.2 MB', description: '上傳完成 · 3.2 MB' }}
+          actions={downloadButton}
         />
-      </Rule>
+      </TutorialRule>
 
-      <Rule
+      <TutorialRule
         title="❌ 重要 action 只靠 hover 才出現"
-        note="「移除」「取消」這類影響資料的 action 必須 persistent visible,不能 hover 才顯示。觸控裝置無法 hover,會錯過關鍵動作"
+        note="「移除」「取消」這類影響資料的 action 必須 persistent visible,不能 hover 才顯示 —— 會影響資料的動作要一眼看得到。下載 / 重試的懸停替換是狀態圖示的就地替換,不算在這條"
       >
-        <Label warn>hover-only actions 只適合純便利功能(如「複製連結」),關鍵動作永遠 visible</Label>
-      </Rule>
-    </div>
+        <ExampleCaption warn>hover-only actions 只適合純便利功能(如「複製連結」),關鍵動作永遠 visible</ExampleCaption>
+      </TutorialRule>
+    </TutorialPage>
   ),
 }

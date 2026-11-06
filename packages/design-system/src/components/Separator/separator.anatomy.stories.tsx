@@ -9,7 +9,7 @@ import { Separator } from './separator'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 /**
- * Separator 是最薄的語意 primitive——Radix Separator 的 shadcn passthrough。
+ * Separator 是最薄的語意 primitive——Radix Separator 的 shadcn passthrough(https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L5-L16 )。
  * 只有 `orientation` 與 `decorative` 兩個 prop,**沒有 size / color / variant**。
  * 色彩固定用 `--divider` token(content 分隔 canonical)。因此本 spec 只有
  * Overview + Token Matrix 兩個 story——沒有 SizeMatrix(單一 1px)、沒有獨立
@@ -30,7 +30,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Separator 是語意分隔元件——consumer 手動放置的分隔線。基於 Radix Separator(shadcn passthrough),提供正確的 ARIA 語意:預設 `decorative=true` 時 render `role="none"`(SR 跳過),`decorative=&#123;false&#125;` 時 render `role="separator"` + orientation 語意。元件固定結構(header/footer 邊框)和裝飾性邊框不使用 Separator。</Desc>
+        <Desc>Separator 是語意分隔元件——consumer 手動放置的分隔線。基於 Radix Separator(shadcn passthrough;shadcn 預設 <code>decorative=true</code>,Radix 依此切 <code>role</code>,見 separator.spec.md「實作基礎」出處),提供正確的 ARIA 語意:預設 <code>decorative=true</code> 時 render <code>role=&quot;none&quot;</code>(SR 跳過),<code>decorative=&#123;false&#125;</code> 時 render <code>role=&quot;separator&quot;</code> + orientation 語意。元件固定結構(header/footer 邊框)和裝飾性邊框不使用 Separator。</Desc> {/* 來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L5-L16 https://github.com/radix-ui/primitives/blob/eb3a2b7091293e27df8f9ba906632d8daa3d81a3/packages/react/separator/src/separator.tsx#L37-L39 */}
         <div className="border border-border rounded-lg p-4 max-w-md">
           <div className="flex flex-col gap-2 py-2">
             <div className="text-body">個人資訊</div>
@@ -77,12 +77,12 @@ export const Overview: Story = {
 }
 
 export const TokenMatrix: Story = {
-  name: '設計變數 規則（--divider vs --border）',
+  name: '設計變數規則（--divider vs --border）',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
         <H3>兩個不同 token 的語意分工</H3>
-        <Desc>`--divider`(neutral-4,較淡)用於內容分隔;`--border`(neutral-5,較深)用於控件 / 容器邊框。視覺接近但語意不同,分隔線一律用 `--divider`。</Desc>
+        <Desc><code>--divider</code>(neutral-4,較淡)用於內容分隔;<code>--border</code>(neutral-5,較深)用於控件 / 容器邊框。視覺接近但語意不同,分隔線一律用 <code>--divider</code>。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>用途</Th><Th>Token</Th><Th>值</Th><Th>範例</Th></tr></thead>
@@ -118,8 +118,9 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"Separator 非互動元件——不取得 focus、無鍵盤行為。ARIA role 視 decorative 而定(對齊 Radix Separator primitive):\n\n- 預設 decorative=true:render role=\"none\",screen reader 跳過(避免「separator」雜訊干擾 list 朗讀)\n- 語意分隔場景 decorative={false}:render role=\"separator\"(aria-orientation 僅 orientation=\"vertical\" 時輸出;horizontal 為預設方向,Radix 省略冗餘屬性),screen reader 讀出群組邊界\n\n判斷:同 list 內 item 之間的視覺隔線 = decorative(預設);跨 region 的結構分隔(sidebar group / menu group)= semantic。詳 separator.spec.md「A11y 預設」段。"}</p>
+      {/* 標題 → 一段文字 = tight(純文字的內容之間是 tight,A4;原本寫死 mb-2 = 8、不跟密度) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"Separator 非互動元件——不取得 focus、無鍵盤行為。ARIA role 視 decorative 而定(對齊 Radix Separator primitive):\n\n- 預設 decorative=true:render role=\"none\",screen reader 跳過(避免「separator」雜訊干擾 list 朗讀)\n- 語意分隔場景 decorative={false}:render role=\"separator\"(aria-orientation 僅 orientation=\"vertical\" 時輸出;horizontal 為預設方向,Radix 省略冗餘屬性),screen reader 讀出群組邊界\n\n判斷:同 list 內 item 之間的視覺隔線 = decorative(預設);跨 region 的結構分隔(sidebar group / menu group)= semantic。"}</p>
     </div>
   ),
 }

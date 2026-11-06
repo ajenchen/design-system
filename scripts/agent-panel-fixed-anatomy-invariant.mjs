@@ -20,7 +20,7 @@ const TARGET = 'packages/design-system/src/components/AgentPanel/agent-panel.tsx
 const REQUIRED_PROPS = {
   AgentPanelHeaderProps: ['onNewConversation', 'onClose'],
   AgentPromptInputProps: ['onSubmit', 'onRemoveAttachment', 'onAddAttachment'],
-  // 2026-09-18 加:蓋板態的遮罩點擊關閉(2026-09-17 裁示)也是「沒有內建行為」的固定行為 ——
+  // 2026-09-18 加:浮層態的遮罩點擊關閉(2026-09-17 裁示)也是「沒有內建行為」的固定行為 ——
   // 面板自己關不了(`open` 住在 AgentPanelDock),寫成可選就等於「沒傳的那些照舊點了不關」。
   // 實際後果:URL 註冊表示意那則沒傳,user 在預覽站點遮罩「根本沒有任何反應」(2026-09-18 回報)。
   // 同一條律的第三個住所(前兩個是標題列與輸入盒),不是新規則。

@@ -28,7 +28,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Chip 是 Material Design Filter Chip 實作——多選或單選的 pill 控件(`type` 必填)。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 `rounded-full` pill,各自有 `gap-2` 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
+        <Desc>Chip 是 Material Design Filter Chip 實作——多選或單選的 pill 控件(<code>type</code> 必填)。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 <code>rounded-full</code> pill,各自有 <code>gap-2</code> 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
         <ChipGroup type="multiple" defaultValue={['electronics', 'food']}>
           <Chip value="electronics">電子產品</Chip>
           <Chip value="furniture">家具</Chip>
@@ -110,7 +110,7 @@ export const Inspector: InspectorStory = {
     },
   },
   // 2026-07-14 dim-26 修:原 mount-only defaultValue — Controls 切 selected 不生效,且
-  // layout=menu 違反 chip.spec.md:190「menu 模式需要 controlled ChipGroup(value + onValueChange)」
+  // layout=menu 違反 chip.spec.md「menu 模式需要 controlled ChipGroup」
   // (chip.tsx:298 runtime warn)。改 controlled inner(repo anatomy 慣例 useState Inner)+
   // key remount 讓 Controls 切換 type / selected 即時反映。
   render: (args) => <InspectorControlled key={`${args.type}-${args.selected}`} {...args} />,
@@ -143,8 +143,8 @@ export const ColorMatrix: Story = {
       <div>
         <H3>狀態 × 色彩 Token 矩陣</H3>
         <Desc>
-          Chip 採 pill-設計準則 選中規則(跟 SegmentedControl 共用;semantic.css SSOT,2026-07-06 拍板改 base):selected 時 `--primary` 同時染 border 和 text,
-          底色維持 `--surface` 不變——不用 primary-subtle 底色(那是 Button subtle 的視覺語言,跟 filter chip 不同)。
+          Chip 採 pill-設計準則 選中規則(跟 SegmentedControl 共用;semantic.css SSOT,2026-07-06 拍板改 base):selected 時 <code>--primary</code> 同時染 border 和 text,
+          底色維持 <code>--surface</code> 不變——不用 primary-subtle 底色(那是 Button subtle 的視覺語言,跟 filter chip 不同)。
           視覺輕量是 filter 語意必要條件,避免 chip 群組喧賓奪主壓過資料表格。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -197,25 +197,25 @@ export const ColorMatrix: Story = {
         <Desc>左 default / 中 selected / 右 disabled,觀察 border 同時染 primary(base)的視覺變化(非 bg 變化)。</Desc>
         <div className="flex items-center gap-8 px-6 py-5 rounded-lg bg-canvas border border-divider">
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-mono">default</span>
+            <span className="text-footnote text-fg-muted font-mono">default</span>
             <ChipGroup type="multiple" defaultValue={[]}>
               <Chip value="electronics">電子產品</Chip>
             </ChipGroup>
           </div>
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-mono">selected</span>
+            <span className="text-footnote text-fg-muted font-mono">selected</span>
             <ChipGroup type="multiple" defaultValue={['electronics']}>
               <Chip value="electronics">電子產品</Chip>
             </ChipGroup>
           </div>
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-mono">disabled</span>
+            <span className="text-footnote text-fg-muted font-mono">disabled</span>
             <ChipGroup type="multiple" defaultValue={[]}>
               <Chip value="electronics" disabled>電子產品</Chip>
             </ChipGroup>
           </div>
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-mono">selected + disabled</span>
+            <span className="text-footnote text-fg-muted font-mono">selected + disabled</span>
             <ChipGroup type="multiple" defaultValue={['electronics']}>
               <Chip value="electronics" disabled>電子產品</Chip>
             </ChipGroup>
@@ -229,7 +229,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>為什麼不用 primary-subtle 底色</H3>
         <Desc>
-          `--primary-subtle` 的 bg 染色是 Button subtle variant 的視覺語言,適用於「行為選項」(如 pagination hover);
+          <code>--primary-subtle</code> 的 bg 染色是 Button subtle variant 的視覺語言,適用於「行為選項」(如 pagination hover);
           Chip 是「篩選條件」,多選時可能同時亮 5-10 個——若每個都填底色,filter row 會蓋過主內容表格,破壞資訊層次。
           只染 border + text 保持背景通透,對齊 SegmentedControl / Tabs 未選 hover 的 pill-設計準則。
         </Desc>
@@ -239,7 +239,7 @@ export const ColorMatrix: Story = {
 }
 
 export const SelectionMatrix: Story = {
-  name: '多 vs 單 選擇',
+  name: '多選與單選',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -407,7 +407,7 @@ export const LayoutMatrix: Story = {
 
       <div>
         <H3>scroll</H3>
-        <Desc>水平捲動 + fade mask(共用 `horizontal-overflow` pattern,跟 Tabs 一致)。適合空間受限但希望保留 chip 視覺的場景。</Desc>
+        <Desc>水平捲動 + fade mask(共用 <code>horizontal-overflow</code> pattern,跟 Tabs 一致)。適合空間受限但希望保留 chip 視覺的場景。</Desc>
         <div className="max-w-md border border-border rounded-md p-3">
           {/* defaultValue 必對應真實 chip value(chip value=中文 label);原 'a' 無對應 → 初始 0 選取的死示範 */}
           <ChipGroup type="multiple" layout="scroll" defaultValue={['電子產品']}>
@@ -435,8 +435,19 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 「無障礙設計」段。摘要:\n\n  ARIA / Pattern  :繼承 Radix toggle-group 鍵盤模式(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/toggle-group#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — 進入整組 chip(只有一個 Tab 停留點)\n- ←/→ — 在組內 chip 之間移動焦點\n- Tab — 再按一次離開整組\n- Enter / Space — 切換選取\n\n  Focus  :鍵盤焦點畫全域 :focus-visible 外描邊(outline: 2px solid var(--ring),往外 2px;元件不寫任何 class)。整組 chip 用方向鍵移動焦點、Tab 進出整組——這不是 Dialog 那種把焦點鎖在裡面的行為。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA 對比 ≥ 4.5:1(文字)"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p><b>ARIA / Pattern</b>:繼承 Radix toggle-group 鍵盤模式(role / aria-* / 鍵盤導覽)。詳 <a href="https://www.radix-ui.com/primitives/docs/components/toggle-group#accessibility" target="_blank" rel="noopener noreferrer">Radix Accessibility docs</a>。</p>
+        <p><b>Keyboard 行為</b>:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tab — 進入整組 chip(只有一個 Tab 停留點)</li>
+          <li>←/→ — 在組內 chip 之間移動焦點</li>
+          <li>Tab — 再按一次離開整組</li>
+          <li>Enter / Space — 切換選取</li>
+        </ul>
+        <p><b>Focus</b>:鍵盤焦點畫全域 :focus-visible 外描邊(outline: 2px solid var(--ring),往外 2px;元件不寫任何 class)。整組 chip 用方向鍵移動焦點、Tab 進出整組——這不是 Dialog 那種把焦點鎖在裡面的行為。</p>
+        <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA 對比 ≥ 4.5:1(文字)</p>
+      </div>
     </div>
   ),
 }

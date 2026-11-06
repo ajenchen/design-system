@@ -19,6 +19,7 @@ import test from 'node:test'
 import { gzipSync } from 'node:zlib'
 import {
   downloadCanonicalNpmTarball,
+  downloadCanonicalNpmSecurityOverlayTarball,
   downloadWithTransientRetry,
   isTransientRegistryDownloadFailure,
   NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT,
@@ -140,7 +141,7 @@ function securityOverlayArchive() {
       path: 'package/package.json',
       body: `${JSON.stringify({
         name: 'brace-expansion',
-        version: '5.0.9',
+        version: '5.0.12',
         main: './dist/commonjs/index.js',
         exports: { '.': { require: './dist/commonjs/index.js' } },
       })}\n`,
@@ -169,14 +170,14 @@ function artifact(bytes, artifactVersion = version) {
   })
 }
 
-function repositoryFixture(bytes, { overlayBytes, secondaryOverlayBytes } = {}) {
+function repositoryFixture(bytes, { overlayBytes, secondaryOverlayBytes, overlayVersion = '5.0.12' } = {}) {
   const root = join(temporaryDirectory(), 'consumer')
   const npmArtifact = artifact(bytes)
   const overlayArtifact = overlayBytes
     ? {
         name: 'brace-expansion',
-        version: '5.0.9',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
+        version: overlayVersion,
+        resolved: `https://registry.npmjs.org/brace-expansion/-/brace-expansion-${overlayVersion}.tgz`,
         integrity: `sha512-${createHash('sha512').update(overlayBytes).digest('base64')}`,
       }
     : null
@@ -190,7 +191,7 @@ function repositoryFixture(bytes, { overlayBytes, secondaryOverlayBytes } = {}) 
     : null
   const devDependencies = {
     npm: version,
-    ...(overlayArtifact ? { 'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.9' } : {}),
+    ...(overlayArtifact ? { 'npm-runtime-brace-expansion-patch': `npm:brace-expansion@${overlayVersion}` } : {}),
     ...(secondaryOverlayArtifact ? { 'npm-runtime-tar-patch': 'npm:tar@7.5.22' } : {}),
   }
   write(join(root, 'package.json'), `${JSON.stringify({ name: 'consumer', version: '0.0.0', devDependencies }, null, 2)}\n`)
@@ -274,10 +275,10 @@ test('prepare downloads only the canonical lock URL and ignores perfect-looking 
       repository.secondaryOverlayArtifact.resolved,
     ])
     assert.equal(runtime.securityOverlay.status, 'applied')
-    assert.equal(runtime.securityOverlay.version, '5.0.9')
+    assert.equal(runtime.securityOverlay.version, '5.0.12')
     assert.equal(
       JSON.parse(readFileSync(join(runtime.packageRoot, 'node_modules/brace-expansion/package.json'), 'utf8')).version,
-      '5.0.9',
+      '5.0.12',
     )
     assert.equal(
       JSON.parse(readFileSync(join(runtime.packageRoot, 'node_modules/tar/package.json'), 'utf8')).version,
@@ -424,5 +425,23 @@ test('download retry: timed-out attempts are retried with backoff, contract fail
     throw new Error('read ECONNRESET')
   }, { sleep, report }), new RegExp(`ECONNRESET\\(after ${NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT} attempts\\)`))
   assert.equal(exhausted, NPM_RUNTIME_DOWNLOAD_RETRY_LIMIT)
+})
+
+// 2026-09-30:渲染用參考樹(舊 commit)可用歷史認證修補層 5.0.9;預設合約(一般安裝 / 發版 / consumer 同步)不行。兩面對照。
+test('historically certified overlay is accepted only when the caller opts in for a render-only reference tree', () => {
+  const bytes = tarball(npmEntriesWithSecurityOverlayPreimage())
+  const historical = repositoryFixture(bytes, { overlayBytes: Buffer.from('overlay-5.0.9'), secondaryOverlayBytes: Buffer.from('tar-7.5.22'), overlayVersion: '5.0.9' })
+  assert.throws(() => resolveExactNpmRuntimeContract(historical.root), /must pin the exact dev-only npm security overlay aliases/, 'default contract must reject the superseded overlay')
+  const contract = resolveExactNpmRuntimeContract(historical.root, { historicalOverlay: true })
+  assert.equal(contract.securityOverlay.version, '5.0.9')
+  assert.equal(contract.securityOverlay.resolved, 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz')
+  const uncertified = repositoryFixture(bytes, { overlayBytes: Buffer.from('overlay-5.0.7'), secondaryOverlayBytes: Buffer.from('tar-7.5.22'), overlayVersion: '5.0.7' })
+  assert.throws(() => resolveExactNpmRuntimeContract(uncertified.root, { historicalOverlay: true }), /must pin the exact dev-only npm security overlay aliases/, 'an overlay version that was never certified stays rejected')
+  const current = repositoryFixture(bytes, { overlayBytes: Buffer.from('overlay-5.0.12'), secondaryOverlayBytes: Buffer.from('tar-7.5.22') })
+  assert.equal(resolveExactNpmRuntimeContract(current.root, { historicalOverlay: true }).securityOverlay.version, '5.0.12', 'opting in never replaces the current overlay')
+})
+
+test('overlay downloader accepts only certified overlay tarballs before any I/O', async () => {
+  await assert.rejects(() => downloadCanonicalNpmSecurityOverlayTarball('https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.7.tgz', { retryLimit: 1 }), /outside the canonical registry contract/)
 })
 

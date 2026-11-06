@@ -1,17 +1,146 @@
 {
   "_meta": {
-    "generatedAt": "2026-09-26",
-    "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明。2026-09-26 重設:Sidebar 超出(43.0KB > 40.2KB)—— 來源是本分支已核准的鍵盤走法乙(↑↓ 項目、→ 進項目內按鈕、← 回來、Tab 一次離開)寫進 sidebar.tsx;共用判定已抽到 lib/roving-list-keyboard.js(6.1KB,不重複計)。其餘 7 項原本就在舊 budget 內,只是跟著重設。已檢查沒有 lucide 全庫或重複依賴。"
+    "generatedAt": "2026-11-05",
+    "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明。2026-09-26 重設:Sidebar 超出(43.0KB > 40.2KB)—— 來源是本分支已核准的鍵盤走法乙(↑↓ 項目、→ 進項目內按鈕、← 回來、Tab 一次離開)寫進 sidebar.tsx;共用判定已抽到 lib/roving-list-keyboard.js(6.1KB,不重複計)。其餘 7 項原本就在舊 budget 內,只是跟著重設。已檢查沒有 lucide 全庫或重複依賴。2026-10-07 只調 TreeView 一項(45.8 → 59.5 = 現值 54.1KB × 1.10;其餘 7 項與 total 維持 09-26 的值,沒有跟著放寬):TreeView 步驟導覽樹(待辦總帳 T1–T5,user 10-06 / 10-07 已決)的點擊判斷、連點保護、灰底代顯、列尾結果、讀屏說明與開發模式誤用警告寫進 tree-view.tsx(+9.9KB;其中開發模式警告字串約 2KB,consumer 打包 production 時隨 process.env.NODE_ENV 判斷一起拿掉);純判定另抽到 components/TreeView/tree-step-navigation.js(4.4KB,不在 top-8)。新增 import 只有同 repo 的 file-item-status(lucide 單一圖示),沒有 lucide 全庫或重複依賴。同日複審修正(連點後焦點還給第一下帶到的子步驟、捲動框裡等展開動畫結束再捲一次)後現值 55.2KB,仍在 59.5 內,上限沒有再調。 2026-10-14 調 total 與 Sidebar 兩項(total 1394.7 → 1556.9 = 現值 1415.4KB × 1.10;Sidebar 47.3 → 54.1 = 現值 49.2KB × 1.10;其餘 7 項維持,沒有跟著放寬):AppShell 四區版面(user 2026-10-14 規格,待辦總帳 Q5)—— 版面模型 components/AppShell/layout-model.js(10.0KB,新檔)、AppShell 的量寬 / 登記 / 水平捲動引擎(app-shell.js 9.0 → 22.1KB,不在 top-8)、面板登記契約 app-shell-context.js(1.7KB)、Sidebar 的 Menu 拖寬 / 細列 / 左側浮層與版面登記(sidebar.js 43.8 → 49.2KB);同時刪掉 hooks/use-is-narrow-viewport.js 與 AgentPanel 的 960 / 3/8 推導。新增 import 只有同 repo 的 resize-handle、Sheet、layout-model,沒有 lucide 全庫或重複依賴。 2026-11-04 只調 AgentPanel 一項(53.6 → 62.6 = 現值 56.9KB × 1.10;其餘 7 項與 total 維持,沒有跟著放寬):決策卡兩項修正寫進 agent-panel.tsx —— 選項卡一下點擊只有一個主人(MASTER-TODO 第 13 項,pressOptionCard;53.3 → 54.1KB,單獨就已超 53.6)、「下一題 / 送出」不停用改成按了才驗(第 14 項:這一題的驗證、錯誤訊息與 aria 接線;54.1 → 56.9KB)。按著指標時延後清除用的整頁按壓追蹤與 useFormValidation 共用,自 use-form-validation 抽到 lib/press-settle.js(2.3KB,不在 top-8;第一版另寫一份時 agent-panel.js 是 57.2KB)。兩項都沒有新增套件 import(只 import 同 repo 的 lib/pointer-press.js、lib/press-settle.js,FieldError 原本就有 import),沒有 lucide 全庫或重複依賴。2026-11-05 重設:DataTable 超出(166.8KB > 166KB)—— 來源是待辦 3f 的兩項修正:各欄型排序比法(lib/column-sorting.ts 接到欄位前處理)與 Shift+點擊之後不畫焦點框(lib/pointer-focus-guard.ts 接到排序區 / 列勾選框 / 表格根節點);2026-10-14 之後本 PR 其餘改動已把 DataTable 推到 budget 邊上。"
   },
-  "totalKB": 1394.7,
+  "totalKB": 1624.3,
   "entriesKB": {
-    "components/DataTable/data-table.js": 166,
-    "components/AgentPanel/agent-panel.js": 53.6,
-    "components/DatePicker/date-picker.js": 51.7,
-    "components/Sidebar/sidebar.js": 47.3,
-    "components/TreeView/tree-view.js": 45.8,
-    "components/FileViewer/file-viewer.js": 35.7,
-    "components/Select/select.js": 33.2,
-    "components/AgentPanel/agent-panel-fab.js": 29.1
+    "components/DataTable/data-table.js": 183.5,
+    "components/AgentPanel/agent-panel.js": 64.8,
+    "components/TreeView/tree-view.js": 62,
+    "components/Sidebar/sidebar.js": 59.3,
+    "components/DatePicker/date-picker.js": 54.8,
+    "components/FileViewer/file-viewer.js": 39,
+    "components/Select/select.js": 36.4,
+    "components/Button/button.js": 34.8
+  },
+  "sizeLimit": {
+    "_meta": {
+      "generatedAt": "2026-11-04",
+      "unit": "kB = 1000 bytes(size-limit 的單位;上面 totalKB / entriesKB 是 1024 進位)",
+      "rule": "每項設現值 +10%(含相依套件、壓縮後;react / react-dom 列在 ignore 的不算);與上面的原始 byte budget 同一支 --init 重設、同一個 headroom"
+    },
+    "checks": [
+      {
+        "name": "DS bundle(production app build,all chunks)",
+        "path": "dist/assets/*.js",
+        "limit": "78.4 kB",
+        "gzip": true
+      },
+      {
+        "name": "DS CSS(globals + tokens)",
+        "path": "dist/assets/index-*.css",
+        "limit": "30.4 kB",
+        "gzip": true
+      },
+      {
+        "name": "Button(foundation primitive)",
+        "path": "packages/design-system/dist/components/Button/button.js",
+        "limit": "33.7 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "DataTable(heaviest — filter+sort+drag+virtual)",
+        "path": "packages/design-system/dist/components/DataTable/data-table.js",
+        "limit": "213.6 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "FileViewer(complex composition)",
+        "path": "packages/design-system/dist/components/FileViewer/file-viewer.js",
+        "limit": "98.9 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Calendar(date grid + a11y)",
+        "path": "packages/design-system/dist/components/Calendar/calendar.js",
+        "limit": "44.6 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Chart(recharts wrapper)",
+        "path": "packages/design-system/dist/components/Chart/chart.js",
+        "limit": "94.2 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Sidebar(compound + collapse + tooltip)",
+        "path": "packages/design-system/dist/components/Sidebar/sidebar.js",
+        "limit": "69.1 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Combobox(input + listbox + filter)",
+        "path": "packages/design-system/dist/components/Combobox/combobox.js",
+        "limit": "85.7 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "AppShell(layout primitive)",
+        "path": "packages/design-system/dist/components/AppShell/app-shell.js",
+        "limit": "46.1 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "Dialog(modal overlay)",
+        "path": "packages/design-system/dist/components/Dialog/dialog.js",
+        "limit": "52.9 kB",
+        "gzip": true,
+        "ignore": [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "scheduler"
+        ]
+      }
+    ]
   }
 }

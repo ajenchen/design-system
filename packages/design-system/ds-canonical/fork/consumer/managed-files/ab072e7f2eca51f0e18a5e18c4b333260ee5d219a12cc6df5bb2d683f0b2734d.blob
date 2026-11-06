@@ -1682,6 +1682,9 @@ const transactionFailureRule = (error) => {
   ) return 'GOV-UPGRADE-BOOTSTRAP-001'
   if (message.includes('GOV-UPGRADE-BOOTSTRAP-001')) return 'GOV-UPGRADE-BOOTSTRAP-001'
   if (message.includes('GOV-UPGRADE-BOOTSTRAP-002')) return 'GOV-UPGRADE-BOOTSTRAP-002'
+  // 2026-09-30:升級交易的弱點裁決(差集)以錯誤代號歸類,不靠訊息文字猜(M37):GOV-UPGRADE-DEPENDENCY-001 的
+  // 「introduces N vulnerability finding(s)」與稽核本身壞掉(非 JSON / 端點錯誤)都屬供應鏈弱點閘。
+  if (message.includes('GOV-UPGRADE-DEPENDENCY-001:') && /vulnerab|npm audit/i.test(message)) return 'GOV-SUPPLY-005'
   if (/audit(?:\s|[^a-z]).*(?:high|vulnerab)|(?:high|vulnerab).*audit/i.test(message)) return 'GOV-SUPPLY-005'
   if (/signature|attestation bundle|certificate verification/i.test(message)) return 'GOV-SUPPLY-002'
   if (/provenance|slsa|immutable release|release bom|release asset|source workflow|workflow mismatch|git commit|git tag/i.test(message)) return 'GOV-SUPPLY-003'

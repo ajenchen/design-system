@@ -1,0 +1,21 @@
+{
+  "note": "data-table-scrollbar-visibility 的覆蓋清單:每則 DataTable story 在 Windows 預設幾何(17px、DPR 1)、中段捲動位置量到幾個有溢出的捲動區。由 `node scripts/data-table-scrollbar-visibility.mjs --write-inventory` 從建置好的 Storybook 全掃量出來寫入,不要手改。任一則量到的比這裡少 = 紅(有捲動區被略過了,點名原因);變多不紅,重寫收進來。",
+  "generatedBy": "scripts/data-table-scrollbar-visibility.mjs --write-inventory",
+  "stories": {
+    "design-system-components-datatable-展示--container-height": 2,
+    "design-system-components-datatable-展示--inline-edit": 1,
+    "design-system-components-datatable-展示--pinned-columns": 2,
+    "design-system-components-datatable-展示--roadmap-all-in-one": 1,
+    "design-system-components-datatable-展示--roadmap-perf-budget": 1,
+    "design-system-components-datatable-展示--row-auto-height": 1,
+    "design-system-components-datatable-展示--row-drag-interactive": 1,
+    "design-system-components-datatable-展示--row-drag-with-virtualization": 1,
+    "design-system-components-datatable-展示--selection-disabled-rows": 1,
+    "design-system-components-datatable-展示--selection-keyboard-and-shift": 1,
+    "design-system-components-datatable-展示--selection-single-mode": 1,
+    "design-system-components-datatable-展示--spreadsheet-cursor-contract": 1,
+    "design-system-components-datatable-展示--virtual-scroll": 1,
+    "design-system-components-datatable-設計原則--virtual-scroll-rule": 1,
+    "design-system-components-datatable-設計規格--features": 1
+  }
+}

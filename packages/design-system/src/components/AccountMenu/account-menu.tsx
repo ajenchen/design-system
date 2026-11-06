@@ -2,12 +2,13 @@
  * AccountMenu — 全域 chrome「自己的帳號入口」(24px avatar 觸發 + 帳號選單)
  *
  * ── 定位 ──
- * Primary-header 派 globalHeader 右側(desktop)/ mobile Sheet SidebarHeader 右側的
+ * Primary-header 派 globalHeader 右側 / Menu 浮層(蓋住 globalHeader 時)SidebarHeader 右側的
  * 帳號入口成品元件:點 avatar 開「個人資料 / 設定 / 登出」navigation 選單。
  * 是「自己」的入口,不是看「別人」的 ProfileCard(後者預設動作 Chat/通話,語義是聯絡某人)。
  * **Placement-agnostic**:哪個 mode 放哪裡是 consumer 職責,放置 canonical owner =
  * `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」(本元件不收 mode prop,
- * 不複製該 SSOT;consumer 讀 `useAppShell().layout` + `useSidebar().isMobile` 決定放置)。
+ * 不複製該 SSOT;consumer 讀 `useAppShell().layout` + `useSidebarSurface()`(這一份 Menu 是不是畫在浮層裡)決定放置;
+ * 2026-10-14 前是 `useSidebar().isMobile`,2026-10-14 版的 `useAppShell().display.menu` 兩份同時成立、會連細列一起補,2026-10-15 改)。
  *
  * ── 實作基礎 ──
  * 消費:Avatar(raw size=24 trigger)+ DropdownMenu(Trigger asChild / Content / Group / Label / Item)
@@ -67,7 +68,7 @@ export interface AccountMenuProps {
   onSignOut?: () => void
   /**
    * 取代 default 選單內容(自組 `DropdownMenuGroup` / `DropdownMenuItem`;i18n / 產品自訂項走這)。
-   * Identity Label(user.name)恆由本元件渲染於選單頂(對齊 shadcn account 例 Label(user)慣例);
+   * Identity Label(user.name)恆由本元件渲染於選單頂(對齊 shadcn account 例 Label(user)慣例);(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/blocks/sidebar-07/components/nav-user.tsx#L70-L81)
    * 傳入 children 時三個 default callback 不再消費。
    */
   children?: React.ReactNode
@@ -153,7 +154,7 @@ export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>
           ) : (
             <>
               {/* Default 選單集合 = app-shell.spec.md「入口開什麼」canonical(個人資料 / 設定 / 登出,
-                  登出獨立 group — 破壞性動作分區,對齊 GitHub / Gmail / Slack 帳號選單慣例) */}
+                  登出獨立 group —— 登出會結束整個工作階段,屬破壞性動作,跟個人資料 / 設定這類一般導覽項分區,避免順手誤點 */}
               <DropdownMenuGroup>
                 <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
                 <DropdownMenuItem startIcon={User} onSelect={onViewProfile}>

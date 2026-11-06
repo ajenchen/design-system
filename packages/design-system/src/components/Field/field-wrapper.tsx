@@ -1,21 +1,23 @@
 // @internal — DS-internal 單元(Field 家族 chrome 基底,consumer 用 Field/Input 等 wrapper 不直用);不隨 index.ts re-export 進 npm public surface。
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 
 // ── Field Wrapper Styles ────────────────────────────────────────────────────
 // 所有 Field 元件共用的 input wrapper 樣式。
 //
 // 4 種模式(2026-05-05 expand;2026-07-16 round16 `display`→`view` 更名 + Model A):
 //   edit     — bg-surface, border, hover/focus 回饋(可編輯 input)
-//   view     — 純展示值(非表單);**Model A = edit 幾何減 chrome**(透明 bg/border,**保留 px 內距 + 高度**),
-//              故 read↔edit 零跳。對齊 Atlassian inline-edit(read=edit 幾何)+ Bootstrap plaintext(留 padding)。
+//   view     — 純展示值(非表單);edit 幾何減 chrome 與左內距(透明 bg/border,保留高度、上下內距與右側,
+//              **左內距與左邊框歸 0 → 值齊標籤**,C1 甲 2026-10-21)。InlineEdit 的 read↔edit 零跳由它外包的
+//              fieldViewGeometry 補位。對齊 Bootstrap plaintext / Salesforce static(上下保留、左右 0)。
 //   readonly — bg-readonly(neutral-2), 無邊框, 文字正常色(input chrome 但鎖定;token 獨立於 disabled)
 //   disabled — bg-disabled(neutral-2), 無邊框, 文字灰化
 //
 // 2 種視覺外殼(variant;2026-07-09 `bare` 退役後):
-//   default — 完整 chrome(form input 場景);view×default = edit 幾何減 chrome(留 px/py)
+//   default — 完整 chrome(form input 場景);view×default = edit 幾何減 chrome 與左內距(留 py 與右側)
 //   naked   — cell-as-input substrate(DataTable);**edit×naked 自畫 border-based state machine**
 //              (border-border → hover:border-border-hover → focus-within:border-primary → error 紅框);
 //              view×naked = bare(host TD 給 padding)。**view×default ≠ view×naked**(不 collapse)。
@@ -34,8 +36,8 @@ import { cn } from '@/lib/utils'
  * 世界級對照同向:MUI OutlinedInput / Ant Input / Fluent Input 的 readOnly **完全不改焦點樣式**(它們的唯讀
  * 靜止態與可編輯態本來就長一樣),Carbon 與 Polaris 雖然唯讀另有靜止樣式,但焦點指示同樣**與可編輯態相同**。
  * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**
- *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出「為何不是模擬 field control focus 的樣式?
- * field control focus 應該是 1px 的 border?」,改為現在這版並撤回那個具名外描邊 utility。
+ *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出(18:46,逐字):
+ *「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？」,改為現在這版並撤回那個具名外描邊 utility。
  */
 export type FieldChromeHost =
   /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
@@ -58,12 +60,14 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     },
     // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
     // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
-    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
+    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
     // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
-    // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「overlay 開啟 → 同 host hover」;field.spec.md「Field state machine」表)。
+    // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「互動狀態」表 overlay 開啟那一列:同 host hover;field.spec.md「Field state machine」表)。
     // 放在 error:false 這條、不放上面的共用條:error 欄位的 hover 是 error-hover,共用條的 border-hover 會把紅框換成灰框(2026-09-25 實測 TimePicker)。
     { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
-    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
+    // 純顯示只拿掉左邊:左內距與左邊框歸 0 → 值的第一個可見元素齊控件左緣 = 標籤左緣(C1 甲,user 2026-10-21);
+    // 高度、上下內距與上下 1px 透明邊、右側(帶箭頭的純顯示的右邊距、截斷省略號、依內容寬)都不動。
+    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border-y border-r border-transparent !pl-0' },
     {
       mode: 'readonly' as const,
       variant: 'default' as const,
@@ -107,15 +111,15 @@ export const fieldWrapperStyles = cva(
     //   各 Field 元件 wrapper 同時加 `data-field-mode={resolvedMode}` 屬性,bareInputStyles 即可
     //   依 mode 切 placeholder color。User canonical:disabled 顯著性優於 muted。
     'group/field',
-    // 2026-05-15 H1 root cause fix(user #1 verbatim 拍板「照你跟codex有共識的最佳建議做」+ codex round 1 verify cite 5/5):
+    // 2026-05-15 H1 root cause fix(user #1 拍板照 AI 與 codex 有共識的最佳建議做 + codex round 1 verify cite 5/5):
     // 加 `min-w-0` 於 base — Field wrapper 為 cell-as-input substrate(DataTable / Form 上下文),
     // parent grid/flex cell 限寬時 wrapper 子 flex children 需 min-w-0 才能縮 + truncate。
     // 之前 SSOT 缺 → `selectedItemRenderer` / value text / Multi tag area 在 narrow cell 無法
     // truncate-with-ellipsis(`Alexander Hamilton Zhang` 直接被 cell overflow-hidden 硬裁無 `...`
     // 甚至蓋住相鄰 cell `—` indicator,圖二 user round 2 直接抓 trigger 越界證據)。
     // 修一處全 Field family 跟動(Input/Select/Combobox/DatePicker/TimePicker/LinkInput/
-    // Textarea/NumberInput/PeoplePicker)— 對齊 M17/M19/M23 一處 SSOT + data-table.spec.md:233
-    // 「禁硬裁無 ellipsis」DS canonical + MUI X DataGrid / Ant Table column.ellipsis 共識。
+    // Textarea/NumberInput/PeoplePicker)— 對齊 M17/M19/M23 一處 SSOT + data-table.spec.md「十一、Cell 單行截斷原則」
+    // (空間不足一律 ellipsis,不硬裁)DS canonical + MUI X DataGrid / Ant Table column.ellipsis 共識。
     // 2026-07-08 width 軸:`w-full` 從 base 移入 `width` variant(fill = 原行為 default,
     // 零回歸;hug = w-fit 依內容收縮)。詳 field-controls.spec.md「寬度軸(width: fill / hug)」。
     'inline-flex items-center min-w-0 rounded-md',
@@ -185,7 +189,7 @@ export const fieldWrapperStyles = cva(
       //
       // ── 2026-05-06 v14:revert v12 → v9 baseline + keep v13.3 ──
       // v12 `!absolute -inset-px` autoRowHeight 不相容(Field 抽 layout flow → cell 塌 42px;
-      // user production 報「Field 沒撐滿 cell, 比沒改之前還糟糕一百萬倍」)→ revert。
+      // user production 回報 Field 沒撐滿 cell、比改之前還糟)→ revert。
       //
       // v14 = v9 baseline border-based state machine + v13.3 focus !important。
       // 暫接受視覺:Field.border-l 跟 prev cell.border-r 視覺 2px 雙線(待另案研究 seamless
@@ -196,7 +200,7 @@ export const fieldWrapperStyles = cva(
       //   Codex verdict:「naked 把 chrome stripping 跟 slot anatomy stripping 混在一起。
       //   chrome stripping 合理(去 padding / border / rounded);slot anatomy stripping 不合理
       //   (prefix / content / suffix gap 仍是 item anatomy slot canonical `gap-2`)」
-      //   Fix:移除 `!gap-0`,讓 Field family base `gap-2`(field-wrapper.tsx:50)透出來。
+      //   Fix:移除 `!gap-0`,讓 Field family base `gap-2`(field-wrapper.tsx#fieldWrapperStyles)透出來。
       //   Cite:item-anatomy.spec.md L46-50 / L113-122 partial consumer canonical;
       //   field-controls.spec.md L22 Field Controls 視覺對齊 Family 1 Menu item layout。
       //   特殊 stack / multi-pill 場景若需 zero-gap,該 component spec 明文例外,不全域 strip。
@@ -234,7 +238,7 @@ export const fieldWrapperStyles = cva(
         //                  真實 anchor text at cell.top + padding。
         // Edit mode 不動(`!h-full` 保留 — border 必滿格對齊 cell border)。
         // 2026-07-16 round16:view×naked 保持 bare(cell substrate,host TD 給 padding)— 與 view×default
-        // (edit 幾何減 chrome、留 px/py)本質不同用途,**不 collapse**(round14 合併是錯的)。
+        // (edit 幾何減 chrome 與左內距、留 py 與右側)本質不同用途,**不 collapse**(round14 合併是錯的)。
         mode: 'view',
         variant: 'naked',
         className: [
@@ -261,10 +265,10 @@ export const fieldWrapperStyles = cva(
 export const bareInputStyles = [
   // 2026-05-15 Q1 真 root cause fix(per codex Round 4 cite-based verdict):
   // 加 `truncate` — 原 bareInputStyles 含 `flex-1 min-w-0` 但無 `truncate / text-overflow` policy。
-  // 當 Select `searchable && open` 切 raw `<input placeholder=...>` branch(select.tsx:178),
+  // 當 Select `searchable && open` 切 raw `<input placeholder=...>` branch(select.tsx#CustomSelectTriggerContent),
   // bareInputStyles 套上,placeholder 無 ellipsis → narrow cell(<160px)硬裁無 `...`(user round 3
-  // 圖一證據)。加 truncate 後 `<input>` `text-overflow: ellipsis` 啟動,符合 user 「placeholder 直接被截掉沒有變...」
-  // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md:233「禁硬裁無 ellipsis」+ field-controls.spec.md:286
+  // 圖一證據)。加 truncate 後 `<input>` `text-overflow: ellipsis` 啟動,符合 user 指出的 placeholder 直接被截掉、
+  // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md「十一、Cell 單行截斷原則」(空間不足一律 ellipsis)+ field-controls.spec.md「共享 contract」
   // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
   // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的 focus-within:!border-primary
@@ -300,14 +304,6 @@ export const bareInputStyles = [
 // 世界級同向(出處逐行列在 `Input/input.spec.md`「點外框 = 點輸入處」):MUI InputBase、Primer TextInput、rc-input(Ant)
 // 都是點外框就聚焦輸入處,MUI 與本 DS 一樣外框用文字游標。
 
-/**
- * 外框裡本身可操作、照它自己行為走的東西:點它不把焦點搶給 input。
- * 另一個消費者:LinkInput 連結狀態的外框(點「不是這些東西」的地方 = 按鉛筆進入編輯,link-input.spec.md「Link 狀態」)。
- * 兩處共用這一份清單,不各寫一份。
- */
-export const FIELD_CHROME_OWN_TARGET =
-  'button, a[href], input, textarea, select, [role="button"], [role="link"], [contenteditable="true"]'
-
 /** 可打字欄位的外框游標(field-controls.spec.md「游標指引」:input → cursor-text)。停用時不掛(停用自有 cursor-not-allowed)。 */
 export const FIELD_TEXT_ENTRY_CURSOR = 'cursor-text'
 
@@ -322,8 +318,9 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
   if (!input || input.disabled) return
   const target = event.target
   if (!(target instanceof Element) || target === input) return
-  const own = target.closest(FIELD_CHROME_OWN_TARGET)
-  if (own && own !== chrome && chrome.contains(own)) return
+  // 外框裡本身可操作的東西(行內動作鈕 / 連結 / 另一個輸入)照它自己的行為走,不把焦點搶給 input。
+  // 「哪些東西自有行為」與 LinkInput 連結態外框、cmdk 選單共用一份判準(lib/pointer-press.ts,2026-09-30 自本檔搬出)
+  if (isOwnPointerTarget(chrome, target)) return
   event.preventDefault()
   input.focus()
   // 插入點落在點的那一側:點在輸入處右邊(右內距 / 右邊框)→ 放最後,左邊 → 放最前,與直接點在文字右側空白的原生行為一致。
@@ -334,6 +331,19 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
     if (event.clientX >= box.right) input.setSelectionRange(end, end)
     else if (event.clientX <= box.left) input.setSelectionRange(0, 0)
   }
+}
+
+/**
+ * 欄位裡會隨這一下動作卸載的按鈕(一鍵清空 ×;Combobox Tag × 落到最後一顆時同一個 owner):焦點若在它身上,先交給 owner
+ * (觸發欄位內的搜尋框,沒有就是觸發欄位本身),焦點不隨 DOM 卸載掉到 body(combobox.spec.md「Tag 操作」同一條:
+ * 「焦點不可因 DOM unmount 掉到 body」)。焦點不在它身上(搜尋框握著焦點、Safari 點按鈕不給焦點)→ 不動。
+ * 世界級:rc-select 清空後聚焦容器(https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/BaseSelect/index.tsx#L711-L721)。
+ * 2026-09-30 前:Select「清除選取」、Combobox / PeoplePicker「清除全部」用鍵盤按下後焦點落在 body(實測)。
+ */
+export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined, owner: HTMLElement | null | undefined): void {
+  const active = leaving?.ownerDocument.activeElement
+  if (!leaving || !owner || !active || !leaving.contains(active)) return
+  owner.focus({ preventScroll: true })
 }
 
 // ── Naked Variant Cell Row-Mode Alignment Propagation ──────────────────────
@@ -354,7 +364,7 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
 // Hook:`check_field_family_invariants.sh` A.1(原 check_naked_row_mode_propagation.sh 已 folded,write-time BLOCKER)
 // Audit:design-system-audit Group N(periodic batch verify)
 /**
- * Field 內含 Tag 時的四邊內距(tag.spec.md「與 Field 的關係」:「Field 的 padding 改為 (field-height − 2px 邊框 − tag-height) / 2(sm 3 / md 3 / lg 5)」,確保 tag 四邊等距)。
+ * Field 內含 Tag 時的四邊內距(tag.spec.md「圓角與間距」:「Field 的 padding 改為 (field-height − 2px 邊框 − tag-height) / 2(sm 3 / md 3 / lg 5)」,確保 tag 四邊等距)。
  *
  * **公式必須扣掉 2px 邊框**(2026-09-15 像素實測修正):padding 在邊框內側量,而 Tag 垂直置中是在內高
  *(欄高 − 2px)裡置中 —— 舊寫法沒扣邊框,水平 4/4/6、垂直 3/3/5,四邊差 1px。
@@ -363,7 +373,7 @@ export function focusFieldInputFromChrome(event: ReactMouseEvent<HTMLElement>): 
  *   - Y:只有 wrap 模式套(單行由 wrapper `items-center` 置中,結果與 Y 相同);第一行 tag 的 y 因此
  *     恆等於單行時的 y,切換 wrap 不位移(舊 `py-1` 寫死 4px 會差 1px)。
  * Tag 高度消費同一個 token `--tag-height-*`(tokens/uiSize/uiSize.css),沒有第二份字面值。
- * 消費者:Combobox(四條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
+ * 消費者:Combobox(三條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
  */
 export const fieldTagInsetX: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',
@@ -374,6 +384,18 @@ export const fieldTagInsetY: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'py-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',
   md: 'py-[calc((var(--field-height-md)_-_2px_-_var(--tag-height-md))_/_2)]',
   lg: 'py-[calc((var(--field-height-lg)_-_2px_-_var(--tag-height-lg))_/_2)]',
+}
+/**
+ * 表單控件列(控件 + 標題 + 說明)的上下內距:py = (field-height − 1lh) / 2 → 單行列高 = 同 size 的欄位高
+ *(`selection-item.spec.md`「padding 公式」;`item-anatomy.spec.md` SelectionItem「單行高度 = field-height」)。
+ * 1lh 取列自己的字級,所以套用處要同時設 text-body / text-body-lg。
+ * 消費者:SelectionItem(Checkbox / Radio 選項列)、Switch 自帶標題的設定列 —— 同一個公式只住這裡,
+ * Switch 不必為了這一行去 import 整支 selection-item(那支會連帶 Avatar)。
+ */
+export const fieldRowPaddingY: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'py-[calc((var(--field-height-sm)_-_1lh)_/_2)]',
+  md: 'py-[calc((var(--field-height-md)_-_1lh)_/_2)]',
+  lg: 'py-[calc((var(--field-height-lg)_-_1lh)_/_2)]',
 }
 
 export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-start'
@@ -388,12 +410,12 @@ export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-star
 //
 // **2026-05-09 v15.17 revert v15.16(user 未同意 ship)— 維持 v15.13 outline+offset:-1**
 //
-// User 2026-05-09 後續 message:「設計決策的東西你應該要先問過我讓我決策吧?為什麼就直接開跑」
+// User 2026-05-09 後續訊息:設計決策要先問過 user、讓 user 決策,不該直接開跑
 // 我 commit 698ff58 ship v15.16(box-shadow inset Spec 2 不蓋 grid)= 設計決策結論未 user 同意
 // 直接 ship = workflow 違反。Revert 回 v15.13 outline+offset:-1(原 user-accepted 路徑),
 // 等 user 拍板 4-邊覆蓋路徑才 ship。
 //
-// User 並指出我視覺分析又錯:「我就是只有看到只有右邊被蓋掉,上面下面左邊都會露出 cell 的邊框」
+// User 並指出我視覺分析又錯:只有右邊被蓋掉,上面、下面、左邊都會露出 cell 的邊框
 // 我之前錯說「right + bottom 都覆蓋」,bottom 真實 row border-b 在 cell.outer 外 1px,outline 蓋不到。
 //
 // 真實 4-邊狀態(re-verified):
@@ -426,13 +448,40 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
 //   <ItemPrefix><StartIcon /></ItemPrefix>     // 對 Input.startIcon / Select.startIcon
 //   <ItemSuffix>{chevron}</ItemSuffix>          // 對 Combobox / DatePicker / PeoplePicker chevron
 //
-// **`h-[1lh]` 普世正確**(item-anatomy.spec.md:190-191 verbatim):
+// **`h-[1lh]` 普世正確**(依據 item-anatomy.spec.md:281-283「Prefix 垂直對齊」):
 //   - 單行 wrapper items-center → slot 1lh 在 cell 高度中心 = 第一行中線(視覺 = items-center)
 //   - 多行 wrapper items-start  → slot 1lh 鎖頂 = 第一行中線
 //   不需 conditional `group-data-[row-mode=auto]/cell:` — 我前 v4 自加的 conditional 是過度設計。
 //
 // State ring 唯一 const `nakedCellEditableDisplayHover` 仍留(下方 L332,見其自述「sole remaining ring const」)— 是 Field naked 專屬,MenuItem / TreeView 用 bg hover 不用 outline。
 // `nakedCellRowModeAlign`(wrapper 級)仍留 — 是 cell-context row-mode → wrapper alignment 適配,正交 slot 級。
+
+// ── Readonly tab stop ───────────────────────────────────────────────────────
+
+/**
+ * 唯讀觸發器 / 唯讀值框的 tab stop。規則住 field-controls.spec.md「Focus 行為」readonly 那段
+ *(「可聚焦但不可編輯的 input / textarea / 唯讀三兄弟 / 唯讀觸發器」);修前 Select / Combobox / DatePicker /
+ * TimePicker / NumberInput 的唯讀外框是沒有 tabIndex 的 div,按 Tab 停不到(PR 與 beta.147 實測相同)。
+ * 只在 mode === 'readonly' 回傳屬性:view 是純展示(不是表單欄位)、disabled 不可聚焦,兩者回空物件。
+ * 角色沿用該控件編輯態的角色 + aria-readonly(同 checkbox.tsx「mode='readonly' in Field」分支的先例);
+ * 焦點長相由 fieldWrapperStyles 的 readonly compound(focus-within:!border-primary)承擔,與編輯態同一種。
+ */
+export function readonlyTabStopProps(
+  mode: string | undefined,
+  role: 'combobox' | 'textbox',
+  name: { ariaLabel?: string; labelledBy?: string },
+): HTMLAttributes<HTMLElement> {
+  if (mode !== 'readonly') return {}
+  return {
+    tabIndex: 0,
+    role,
+    'aria-readonly': true,
+    ...(role === 'combobox' ? { 'aria-expanded': false } : {}),
+    'aria-label': name.ariaLabel,
+    // accname 優先序:consumer aria-label > Field 標籤(同 select.tsx CustomSelect trigger 的寫法)
+    'aria-labelledby': name.ariaLabel ? undefined : name.labelledBy,
+  }
+}
 
 // ── Empty Value Display ─────────────────────────────────────────────────────
 
@@ -454,19 +503,19 @@ export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
   size === 'lg' ? 'text-body-lg' : 'text-body'
 
 /**
- * 2026-07-16 round16 Model A(user GO):Field view mode 幾何 SSOT(= view×default compound 的
- * 幾何部分,抽成 class helper 供 **InlineEdit 純值/標題路徑** 消費,避免 InlineEdit 自帶重複的
- * geometry cva〔M17 消重〕)。
+ * 2026-07-16 round16 Model A:InlineEdit view 態的幾何 SSOT(抽成 class helper 供 **InlineEdit 純值/標題路徑
+ * 與值-格式化路徑** 消費,避免 InlineEdit 自帶重複的 geometry cva〔M17 消重〕)。2026-10-21 C1 甲之後
+ * `<Control mode="view">` 自己的 view×default 左側是 0(值齊標籤),本 helper 只給 InlineEdit 用。
  *
  * 回傳「edit 幾何減 chrome」的排版盒:
- *   - 水平:`px-[var(--field-px)]`(= edit 內距,靠 InlineEdit `-mx` 拉回欄左緣後,值落 edit 值位置)
+ *   - 水平:`px-[var(--field-px)]`(= edit 內距,靠 InlineEdit `-mx` 拉回欄左緣後,值落標籤左緣)
  *   - 單行:`min-h-[var(--field-height-N)]` N∈{sm,md,lg} + `items-center`(垂直置中於 field 高度,= edit 單行)
  *   - 多行:`items-start` + `py-2`(頂對齊 + 上下內距,**= Textarea edit `py-2`**,textarea.tsx base;
  *     read↔edit 零跳)。⚠️ py-2 與 Textarea 同值 = SSOT 契約,`scripts/inline-edit-view-geometry-invariant.mjs`
  *     機械鎖(Textarea py 一改即紅)。
  *
- * 值-格式化路徑(Select→Tag / Date / avatar)**不用**此 helper —— 直接委派 `<Control mode="view">`,
- * 幾何 + 內部間距皆由控件 view×default 提供(read=edit 同一顆 → 天生一致)。
+ * 值-格式化路徑(Select→Tag / Date / avatar)同樣用此 helper **包住** `<Control mode="view">`(inline-edit.tsx
+ * 委派分支;委派控件 view 左側皆 0 → 包住後統一 field-px),內部間距仍由控件 view mode 提供。
  */
 export const fieldViewGeometry = (size: 'sm' | 'md' | 'lg', multiline?: boolean): string =>
   cn(

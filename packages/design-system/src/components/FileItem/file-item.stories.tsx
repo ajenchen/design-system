@@ -1,25 +1,12 @@
+
 // @story-history: hasInteractiveStates 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);Default scenario 由 Rich / Compact / HoverSwap 等真實上傳情境 story 覆蓋,Disabled state 由 status="error" / "uploading" 真實 state 體現。
-import * as React from 'react'
 import type { Meta } from '@storybook/react'
 import { expect, fn, userEvent, within } from '@storybook/test'
-import { Trash2, ChevronDown } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { FileItem } from './file-item'
+import { useFileDemo, UploadManagerPanel, type DemoFile } from './_demo-files'
 import { Button } from '@/design-system/components/Button/button'
-import { FileViewer, type FileInfo } from '@/design-system/components/FileViewer/file-viewer'
-// upload-manager 面板消費 overlay-surface header + body SSOT(非手刻)—— 跟 Popover/Dialog 同一組 primitive
-import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
-import { PopoverTitle } from '@/design-system/components/Popover/popover'
-
-// 錯誤 description 範例(含 clickable "View log"):consumer 自由 ReactNode。
-// 連結沿用錯誤訊息的紅 + 底線、滑過不換色(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;file-item.spec.md「Description ReactNode 可含 clickable 元素」)
-const errorDescWithLog = (
-  <>
-    There&rsquo;s something wrong.{' '}
-    <a href="#" className="underline" onClick={(e) => e.preventDefault()}>
-      View log
-    </a>
-  </>
-)
+import { Toaster } from '@/design-system/components/Toast/toast'
 
 const meta: Meta<typeof FileItem> = {
   title: 'Design System/Components/FileItem/展示',
@@ -32,42 +19,71 @@ const meta: Meta<typeof FileItem> = {
 }
 export default meta
 
-const noop = () => {}
-const keyboardOpen = fn()
+// 每一則的刪除 / 下載 / 重試 / 點列 / View log 都接上真的反應(./_demo-files.tsx;之前全是空函式,點了沒反應)。
+// 列內操作一律 Button xs iconOnly variant="text"(24 固定):compact 列靠 FileItem suffix wrapper 的負 margin 把 layout
+// footprint 收到 1lh、不撐高列,命中區仍 24(命中 ≡ 可視,ds-canonical/references/hit-area-canonical.md);
+// 判準住 item-anatomy.spec.md「結構:四個獨立 slot」的 suffix 表(Inline Action 列:點擊靶子 ≤ 24px)。
 
-// FileItem row dedicated action(2026-04-23 統一 canonical):
-// **Row action 絕對值 cap = ≤ 24px,不隨 row tier 放大**。rich + compact 統一用
-// Button size="xs" iconOnly variant="text"(24 固定,≤ cap):
-// compact row 透過 FileItem 內部 suffix wrapper `[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]`
-// trick 讓 Button(24)layout footprint 收斂到 1lh(~18px)不撐高 row,視覺與命中區仍 24
-// (命中 ≡ 可視,見 ds-canonical/references/hit-area-canonical.md;2026-09-24 把原文的「觸控範圍」正名為命中區)。
-// Trash/Delete 非 dismiss 語意(dismiss 嚴格 = X close overlay),不套 `dismiss` prop——
-// Button variant="text" 本來就 fg-muted,視覺已弱化(兩 mode 同)。
-// 詳 item-anatomy.spec.md「Predicate」+「Row action 絕對值 cap」
-const deleteBtn = <Button size="xs" iconOnly variant="text" startIcon={Trash2} aria-label="刪除" onClick={noop} />
-const deleteBtnXs = deleteBtn
+// 同一張人像照(圖片檔,縮圖就是照片本身)的三種狀態;上傳中 40% = 3.0 / 7.5 MB,完成後 7.5 MB,前後對得上(之前上傳中寫 5.7 MB of 7.5MB、完成後寫 5.7 MB)
+const RICH_FILES: DemoFile[] = [
+  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan', url: 'https://i.pravatar.cc/800?u=alan' },
+  { uid: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+]
 
 export const Rich = {
   name: '豐富樣式',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // 示範焦點是本則的主題(起點 a103c40b 就是這個示範畫面):鍵盤 Tab 進「已完成」那列,狀態圖示換成下載鈕、焦點框落在同一列的刪除鈕。
+  // 2026-11-04 審查:驗證用的 Enter / 點刪除斷言留在 test-only「整列鍵盤契約」—— 本則的鈕接上真的行為之後,那兩下會真的開檔 / 刪列;本則只用 Tab 造出同一個焦點狀態。
+  // @example-basis: packages/design-system/src/components/FileItem/file-item.spec.md:425「Primary button 與下載／重試／移除皆為 sibling」
+  parameters: { demoFocus: 'keep' },
+  render: function RichStory() {
+    // rich(預設 form surface)各 status 展示:uploading / completed(保留 100% 完成條)/ error;完成的那列點了用 FileViewer 開
+    const demo = useFileDemo(RICH_FILES)
+    return (
+      <>
+        <Toaster />
+        {/* Rich 永遠 border card → list wrapper gap 8px 防邊框相黏 */}
+        {/* @layout-space-magic-ok: rich FileItem 清單列距 8px(file-item.spec.md:268 多 item 間距表 Rich + surface=form 那一列 gap-2) */}
+        <div className="flex flex-col gap-2 max-w-md">
+          {demo.files.map((f) => <FileItem key={f.uid} mode="rich" {...demo.itemProps(f)} />)}
+        </div>
+        {demo.viewer}
+      </>
+    )
+  },
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    // 只有「已完成」那列可以點開,所以「開啟 Alan Profile.png」只有一顆;從它 Tab 兩下:下載(滑過 / 聚焦時換上的那顆)→ 刪除
+    const open = await within(canvasElement).findByRole('button', { name: '開啟 Alan Profile.png' })
+    const row = open.parentElement as HTMLElement
+    open.focus()
+    await userEvent.tab()
+    await userEvent.tab()
+    // 鍵盤聚焦到 icon-only 鈕會自動出它的 Tooltip(button.tsx icon-only 自動 tooltip);起點那張示範圖是點擊聚焦、沒有 Tooltip ——
+    // 按一下 Esc 收掉 Tooltip(焦點留在刪除鈕),畫面回到起點那張(2026-11-04 全 DS 像素比對抓到)
+    await userEvent.keyboard('{Escape}')
+    await expect(within(row).getByRole('button', { name: '刪除 Alan Profile.png' })).toHaveFocus()
+  },
+}
+
+// 整列鍵盤契約(test-only 夾具):2026-10-28 自「豐富樣式」搬出驗證用的斷言(示範焦點 2026-11-04 放回「豐富樣式」,見上)。斷言照搬:
+// Tab 到整列那顆隱形鈕按 Enter 只開一次;點同一列的刪除鈕只刪除、不連帶開檔。
+const keyboardOpen = fn()
+const keyboardDelete = fn()
+export const RichRowKeyboardContract = {
+  name: '豐富樣式 — 整列鍵盤契約',
+  tags: ['test-only'],
   parameters: { demoFocus: 'keep' },
   render: () => (
-    // rich(預設 form surface)各 status 展示:uploading / completed(保留 100% 完成條)/ error
-    // 也可傳 onClick/onDownload 讓整 row 點開(預設 FileViewer,consumer 決定)
-    // Rich 永遠 border card → list wrapper `gap-2` 防邊框相黏
-    <div className="flex flex-col gap-2 max-w-md">
-      <FileItem mode="rich" name="Alan Profile.png" status="uploading" progress={40}
-        description="5.7 MB of 7.5MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan" actions={deleteBtn} />
-      <FileItem mode="rich" name="Alan Profile.png" status="completed"
-        description="5.7 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan"
-        onClick={keyboardOpen} onDownload={noop} actions={deleteBtn} />
-      <FileItem mode="rich" name="Alan Profile.png" status="error" progress={65}
-        description={errorDescWithLog} thumbnailSrc="https://i.pravatar.cc/80?u=alan"
-        onRetry={noop} actions={deleteBtn} />
+    <div className="max-w-md">
+      <FileItem mode="rich" name="Alan Profile.png" status="completed" description="7.5 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan"
+        onClick={keyboardOpen} onDownload={() => {}}
+        actions={<Button size="xs" iconOnly variant="text" startIcon={Trash2} aria-label="刪除 Alan Profile.png" onClick={keyboardDelete} />} />
     </div>
   ),
   play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
     keyboardOpen.mockClear()
+    keyboardDelete.mockClear()
     const action = await within(canvasElement).findByRole('button', { name: '開啟 Alan Profile.png' })
     action.focus()
     await userEvent.keyboard('{Enter}')
@@ -76,242 +92,188 @@ export const Rich = {
     // 點同一列 trailing action 的刪除鈕:只該觸發刪除,**不得**連帶觸發整列 onClick。
     // 2026-09-24 補。先前這支 play 只驗了鍵盤 Enter 那一條,於是「點刪除連帶把檔案開起來」
     // 在我們自己的示範裡一路沒人看見 —— 那個洞不是沒人踩到,是**沒有人在量**。
-    // `action` 是覆蓋整列的隱形鈕,它的 parentElement 就是列本身;用它把搜尋範圍縮到同一列,
-    // 才不會抓到別列的刪除鈕(三列都有一顆)。
+    // `action` 是覆蓋整列的隱形鈕,它的 parentElement 就是列本身;用它把搜尋範圍縮到同一列。
     const row = action.parentElement as HTMLElement
-    await userEvent.click(within(row).getByRole('button', { name: '刪除' }))
+    await userEvent.click(within(row).getByRole('button', { name: '刪除 Alan Profile.png' }))
+    await expect(keyboardDelete).toHaveBeenCalledTimes(1)
     await expect(keyboardOpen).toHaveBeenCalledTimes(1)
   },
 }
 
-export const Compact = {
-  name: '緊湊樣式',
-  render: () => (
-    // compact + status 各狀態展示(uploading / completed / error,永遠有 progress bar)
-    // list wrapper `gap-1`(4px)簡化 canonical — compact list 統一 gap-1,不論純/混合(2026-04-23)
-    <div className="flex flex-col gap-1 max-w-md">
-      <FileItem mode="compact" name="UXP T-Phone.csv" status="uploading" progress={60} actions={deleteBtnXs} />
-      <FileItem mode="compact" name="UXP T-Phone.csv" status="error" description={errorDescWithLog} actions={deleteBtnXs} />
-      <FileItem mode="compact" name="UXP T-Phone.csv" status="completed"
-        onClick={noop} onDownload={noop} actions={deleteBtnXs} />
-    </div>
-  ),
-}
-
-export const HoverSwap = {
-  name: '懸停替換',
-  render: () => (
-    <div className="flex flex-col max-w-md gap-4">
-      <div>
-        <div className="text-caption text-fg-muted mb-2">
-          ↓ 游標移入任一 row:completed 綠 ✓ 變 Download ↓,error 紅 ✗ 變 Retry ⟲。
-          這幾列沒有傳 onClick(點列本身沒反應),所以整列不上滑過底色,只有換上的那顆鈕有自己的滑過色(待辦總帳 B12)
-        </div>
-        {/* Rich border card list:無外框 + `gap-2`(item-anatomy「連續 item 貼邊合法性」) */}
-        <div className="flex flex-col gap-2">
-          <FileItem mode="rich" name="Q1 營收報表.xlsx" status="completed" data-visual-hover-target
-            description="Uploaded to URL" thumbnailSrc="https://i.pravatar.cc/80?u=xls"
-            onDownload={noop} actions={deleteBtn} />
-          <FileItem mode="rich" name="合約草案 v3.pdf" status="error"
-            description={errorDescWithLog}
-            thumbnailSrc="https://i.pravatar.cc/80?u=pdf"
-            onRetry={noop} actions={deleteBtn} />
-        </div>
-      </div>
-      <div>
-        <div className="text-caption text-fg-muted mb-2">
-          緊湊樣式也是同一套規則:狀態圖示與刪除鈕的大小、位置一致,垂直置中對齊
-        </div>
-        {/* Compact list 統一 gap-1(canonical 簡化) */}
-        <div className="flex flex-col gap-1">
-          <FileItem mode="compact" name="data-2024-q1.csv" status="completed"
-            onDownload={noop} actions={deleteBtnXs} />
-          <FileItem mode="compact" name="backup-failed.json" status="error"
-            description={<>Network timeout. <a href="#" className="underline" onClick={(e) => e.preventDefault()}>View log</a></>}
-            onRetry={noop} actions={deleteBtnXs} />
-        </div>
-      </div>
-    </div>
-  ),
-}
-
-// ── FileViewer 真實整合 —— Clickable story 用 ──
-// onClick 打開 FileViewer,預設用 picsum 圖片模擬 preview(real-world consumer
-// 會用實際檔案 blob url / CDN url)。
-const attachmentFiles: FileInfo[] = [
-  {
-    id: 'attach-1',
-    url: 'https://picsum.photos/seed/report-pdf/1200/800',
-    name: '報告.pdf',
-    mimeType: 'application/pdf',
-    size: 2_400_000,
-    description: '2.3 MB',
-  },
-  {
-    id: 'attach-2',
-    url: 'https://picsum.photos/seed/contract-docx/1200/800',
-    name: '合約附件.docx',
-    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    size: 1_100_000,
-    description: '1.1 MB',
-  },
-  {
-    id: 'attach-3',
-    url: 'https://picsum.photos/seed/data-csv/1200/800',
-    name: 'data.csv',
-    mimeType: 'text/csv',
-    size: 48_000,
-  },
-  {
-    id: 'attach-4',
-    url: 'https://picsum.photos/seed/backup-json/1200/800',
-    name: 'backup.json',
-    mimeType: 'application/json',
-    size: 320_000,
-  },
+const COMPACT_FILES: DemoFile[] = [
+  { uid: 'compact-uploading', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'uploading', progress: 60, size: '48 KB' },
+  { uid: 'compact-error', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'error', size: '48 KB' },
+  { uid: 'compact-completed', name: 'UXP T-Phone.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
 ]
 
-export const Clickable = {
-  name: '已上傳',
-  render: () => {
-    // Real FileViewer wiring:click → 打開 FileViewer at 對應 index
-    const [open, setOpen] = React.useState(false)
-    const [index, setIndex] = React.useState(0)
-    const openAt = (idx: number) => {
-      setIndex(idx)
-      setOpen(true)
-    }
+export const Compact = {
+  name: '緊湊樣式',
+  render: function CompactStory() {
+    // compact + status 各狀態展示(uploading / completed / error,永遠有 progress bar)
+    const demo = useFileDemo(COMPACT_FILES)
     return (
       <>
-        {/* 2026-07-14 Dim 68 修:原本同一 list 依檔案類型混 rich(圖片)+ compact(文件),
-            違反 file-item.spec.md「❌ 不混用 rich + compact 在同一 list」(Invariant 1 —
-            高度差破壞 row rhythm)。改拆兩個區段:圖片整組 rich、文件整組 compact,
-            同區段 mode 統一(spec 建議的分區段做法);FileViewer index 跨兩區段連續。 */}
-        <div className="flex flex-col gap-4 max-w-md">
-          <div className="flex flex-col gap-1.5">
-            <h3 className="text-caption font-medium text-fg-muted">圖片</h3>
-            <div className="flex flex-col gap-2">
-              {attachmentFiles.slice(0, 2).map((f, i) => (
-                <FileItem
-                  key={f.id}
-                  mode="rich"
-                  name={f.name}
-                  description={f.description ?? (f.size != null ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : '—')}
-                  thumbnailSrc={f.url}
-                  onClick={() => openAt(i)}
-                  actions={deleteBtn}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <h3 className="text-caption font-medium text-fg-muted">文件</h3>
-            <div className="flex flex-col gap-1">
-              {attachmentFiles.slice(2).map((f, i) => (
-                <FileItem
-                  key={f.id}
-                  mode="compact"
-                  name={f.name}
-                  onClick={() => openAt(i + 2)}
-                  actions={deleteBtn}
-                />
-              ))}
-            </div>
-          </div>
+        <Toaster />
+        {/* list wrapper gap 4px 簡化 canonical — compact list 統一 4px,不論純/混合(2026-04-23) */}
+        {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
+        <div className="flex flex-col gap-1 max-w-md">
+          {demo.files.map((f) => <FileItem key={f.uid} mode="compact" {...demo.itemProps(f)} />)}
         </div>
-        <FileViewer files={attachmentFiles} open={open} onOpenChange={setOpen} index={index} onIndexChange={setIndex} />
+        {demo.viewer}
       </>
     )
   },
 }
 
-export const CompactMixed = {
-  name: '緊湊 混合',
-  render: () => (
-    // Real-world:email 草稿 — 新上傳中(status=uploading/error)+ 舊已存附件(無 status 靜態)混在同 list
-    // 重要 invariant:upload-manager 的 completed(bar 100% + ✓)跟靜態(無 bar)不共存
-    // —— completed-保留 是「剛完成的 upload session」,無 status 是「已存 attachment」,
-    //    業務語義互斥(表單情境完成後 consumer 會清掉 status 轉靜態)。
-    // 這 mixed 情境只含:上傳中(uploading/error)+ 已存附件(saved attachments,無 status)
-    <div className="flex flex-col gap-1 max-w-md">
-      <FileItem mode="compact" name="圖片草稿.png" status="uploading" progress={40} actions={deleteBtnXs} />
-      <FileItem mode="compact" name="回覆範本.docx" onClick={noop} actions={deleteBtnXs} />
-      <FileItem mode="compact" name="backup-failed.json" status="error"
-        description={<>Network timeout. <a href="#" className="underline" onClick={(e) => e.preventDefault()}>View log</a></>}
-        onRetry={noop} actions={deleteBtnXs} />
-      <FileItem mode="compact" name="附件封面.pdf" onClick={noop} actions={deleteBtnXs} />
-    </div>
-  ),
+// 懸停替換:試算表與 PDF 沒有圖片縮圖,不放人臉照片 —— 走 FileItem 自己的檔案類型退回呈現
+const HOVER_RICH: DemoFile[] = [
+  { uid: 'hover-xlsx', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
+  { uid: 'hover-pdf', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
+]
+const HOVER_COMPACT: DemoFile[] = [
+  { uid: 'hover-csv', name: 'data-2024-q1.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
+  { uid: 'hover-json', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+]
+
+export const HoverSwap = {
+  name: '懸停替換',
+  parameters: {
+    // 說明放 docs、用人話寫(之前畫布上印著符號串與內部待辦代號)
+    docs: { description: { story: '滑鼠移到列上:已完成的綠色勾換成下載鈕,失敗的紅色叉換成重試鈕。這幾列本身點了不會開檔,所以整列不上滑過底色,只有換上的那顆鈕有自己的滑過色。緊湊樣式也是同一套規則:狀態圖示與刪除鈕的大小、位置一致,垂直置中對齊。' } },
+  },
+  render: function HoverSwapStory() {
+    const rich = useFileDemo(HOVER_RICH, { clickable: false })
+    const compact = useFileDemo(HOVER_COMPACT, { clickable: false })
+    return (
+      <>
+        <Toaster />
+        <div className="flex flex-col max-w-md gap-[var(--layout-space-loose)]">
+          {/* Rich border card list:無外框 + 列距 8px(item-anatomy「連續 item 貼邊合法性」) */}
+          {/* @layout-space-magic-ok: rich FileItem 清單列距 8px(file-item.spec.md:268 多 item 間距表 Rich + surface=form 那一列 gap-2) */}
+          <div className="flex flex-col gap-2">
+            {rich.files.map((f, i) => (
+              <FileItem key={f.uid} mode="rich" {...rich.itemProps(f)} {...(i === 0 ? { 'data-visual-hover-target': true } : {})} />
+            ))}
+          </div>
+          {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
+          <div className="flex flex-col gap-1">
+            {compact.files.map((f) => <FileItem key={f.uid} mode="compact" {...compact.itemProps(f)} />)}
+          </div>
+        </div>
+      </>
+    )
+  },
 }
 
-/**
- * 上傳管理器這個 archetype 的**狀態 → 行動**配對,兩個密度樣張共用同一份。
- *
- * 為什麼抽出來(2026-09-18 user 回報):先前只有「豐富」那則的 completed 列傳了 `onDownload`,
- * 「緊湊」那則沒傳 —— 於是同一個面板在兩個密度下,滑過已完成的檔案一個會把綠 ✓ 換成下載鈕、另一個不會,
- * 看起來像「能力由密度決定」。實際上 `file-item.spec.md`「可下載狀態 canonical」的狀態表寫得很清楚:
- * `completed` 配 `Download ↓` 配 `onDownload`、`error` 配 `⟲` 配 `onRetry`;
- * 沒傳就退回 passive 是給既有 consumer 的相容行為,不是這裡要示範的東西。
- * 寫成共用常數而不是「兩邊都記得傳」:**能力集合從此不可能只在其中一則出現**。
- */
-// 完成的檔案可以點開(onClick),上傳中 / 失敗的不行 —— 同一個面板裡兩種列並存,示範「點了會有反應的列才有滑過底色」
-// (2026-09-25 待辦總帳 B12:user「要點了會有反應的才加…」)。上傳中還不能開是真實情境,不是示範取巧。
-const UPLOAD_MANAGER_COMPLETED = { status: 'completed', onDownload: noop, onClick: noop } as const
-const UPLOAD_MANAGER_ERROR = { status: 'error', onRetry: noop } as const
+// 已上傳的附件:點列用 FileViewer 開;「圖片」區段只放圖片檔(之前把 報告.pdf / 合約附件.docx 放在圖片區)
+const ATTACHMENT_IMAGES: DemoFile[] = [
+  { uid: 'attach-1', name: '活動主視覺.jpg', mimeType: 'image/jpeg', size: '2.3 MB', thumbnailSrc: 'https://picsum.photos/seed/event-key-visual/1200/800' },
+  { uid: 'attach-2', name: '會場平面圖.png', mimeType: 'image/png', size: '1.1 MB', thumbnailSrc: 'https://picsum.photos/seed/venue-floor-plan/1200/800' },
+]
+const ATTACHMENT_DOCUMENTS: DemoFile[] = [
+  { uid: 'attach-3', name: 'data.csv', mimeType: 'text/csv', size: '47 KB' },
+  { uid: 'attach-4', name: 'backup.json', mimeType: 'application/json', size: '313 KB' },
+]
 
-// surface="upload-manager":Google Drive / Dropbox 上傳管理面板。面板組合 canonical(file-item.spec.md「upload-manager 浮層面板 composition」):
-//   - 2026-09-25 待辦總帳 B12 推翻 06-03 的「左右交給面板」:可點的列滑過底色要鋪到面板左右邊 → 列自帶左右 loose(16px,
-//     文字 x 與 06-03 相同、仍對齊 header 標題),面板 body 左右 0(判準 = overlay-surface.spec.md「誰負責左右 gutter」)
-//   - 上下目標不變:「邊緣→item ink」「ink→ink」= tight(12px)。兩 mode 的列上下各自帶 tight/2 → body 上下也給 tight/2、列間 gap 0
-//     (06-03 compact 的 !pt-1 上下不對稱隨之取消);滑過底色上下各留 tight/2,不貼縮圖、不貼進度條
-//   - 只有完成的列有 onClick(UPLOAD_MANAGER_COMPLETED),上傳中 / 失敗的列點了沒反應 → 不上滑過底色
+export const Clickable = {
+  name: '已上傳',
+  render: function ClickableStory() {
+    const images = useFileDemo(ATTACHMENT_IMAGES)
+    const documents = useFileDemo(ATTACHMENT_DOCUMENTS)
+    return (
+      <>
+        {/* 2026-07-14 Dim 68 修:原本同一 list 依檔案類型混 rich(圖片)+ compact(文件),
+            違反 file-item.spec.md「❌ 不混用 rich + compact 在同一 list」(Invariant 1 —
+            高度差破壞 row rhythm)。改拆兩個區段:圖片整組 rich、文件整組 compact,
+            同區段 mode 統一(spec 建議的分區段做法)。 */}
+        <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-md">
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <h3 className="text-caption font-medium text-fg-muted">圖片</h3>
+            {/* @layout-space-magic-ok: rich FileItem 清單列距 8px(file-item.spec.md:268 多 item 間距表 Rich + surface=form 那一列 gap-2) */}
+            <div className="flex flex-col gap-2">
+              {images.files.map((f) => <FileItem key={f.uid} mode="rich" {...images.itemProps(f)} />)}
+            </div>
+          </div>
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">
+            <h3 className="text-caption font-medium text-fg-muted">文件</h3>
+            {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
+            <div className="flex flex-col gap-1">
+              {documents.files.map((f) => <FileItem key={f.uid} mode="compact" {...documents.itemProps(f)} />)}
+            </div>
+          </div>
+        </div>
+        {images.viewer}
+        {documents.viewer}
+      </>
+    )
+  },
+}
+
+// Real-world:email 草稿 — 新上傳中(status=uploading/error)+ 舊已存附件(無 status 靜態)混在同 list
+// 重要 invariant:upload-manager 的 completed(bar 100% + ✓)跟靜態(無 bar)不共存
+// —— completed-保留 是「剛完成的 upload session」,無 status 是「已存 attachment」,
+//    業務語義互斥(表單情境完成後 consumer 會清掉 status 轉靜態)。
+// 這 mixed 情境只含:上傳中(uploading/error)+ 已存附件(saved attachments,無 status)
+const COMPACT_MIXED: DemoFile[] = [
+  { uid: 'mixed-uploading', name: '圖片草稿.png', mimeType: 'image/png', status: 'uploading', progress: 40, size: '1.8 MB' },
+  { uid: 'mixed-reply', name: '回覆範本.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: '64 KB' },
+  { uid: 'mixed-error', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+  { uid: 'mixed-cover', name: '附件封面.pdf', mimeType: 'application/pdf', size: '220 KB' },
+]
+
+export const CompactMixed = {
+  name: '緊湊混合清單',
+  render: function CompactMixedStory() {
+    const demo = useFileDemo(COMPACT_MIXED)
+    return (
+      <>
+        <Toaster />
+        {/* @layout-space-magic-ok: compact FileItem 清單列距 4px(file-item.spec.md:270 多 item 間距表 Compact + surface=form 那一列 gap-1) */}
+        <div className="flex flex-col gap-1 max-w-md">
+          {demo.files.map((f) => <FileItem key={f.uid} mode="compact" {...demo.itemProps(f)} />)}
+        </div>
+        {demo.viewer}
+      </>
+    )
+  },
+}
+
+// surface="upload-manager":右下角背景上傳進度面板(./_demo-files.tsx UploadManagerPanel;
+// 組合與行為 = file-item.spec.md「upload-manager 浮層面板 composition」):
+//   - 列自帶左右 loose(16px,文字 x 對齊 header 標題)、面板 body 左右 0;上下 tight/2、列間 0(2026-09-25 B12)
+//   - 只有完成的列可以點開(onClick),上傳中 / 失敗的列點了沒反應 → 不上滑過底色(B12)
+//   - 標頭只有收合鈕(傳輸中只能收合);全部成功 5 秒後整個面板收起,滑過 / 聚焦時暫停;有失敗就不收起
+// 試算表與 PDF 沒有圖片縮圖,不放人臉照片。
+const UPLOAD_MANAGER_RICH: DemoFile[] = [
+  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'um-rich-completed', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
+  { uid: 'um-rich-error', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
+]
+
 export const UploadManagerSurface = {
   name: '上傳管理器 · 豐富(無邊框)',
   render: () => (
-    <div className="max-w-md flex flex-col rounded-lg border border-border bg-surface-raised shadow-[var(--elevation-200)]">
-      {/* header 消費 overlay-surface SurfaceHeader + PopoverTitle(輕量浮層 chrome SSOT,非手刻):
-          px-loose py-tight + border-b + chevron(variant=text → 自動 data-unbounded → 套 slot 負 my trick)*/}
-      <SurfaceHeader className={`justify-between ${COMPACT_HEADER_SLOT}`}>
-        <div className="flex-1 min-w-0"><PopoverTitle>正在上傳 3 個項目</PopoverTitle></div>
-        <Button iconOnly variant="text" size="sm" startIcon={ChevronDown} aria-label="收合" onClick={noop} />
-      </SurfaceHeader>
-      {/* body 消費 overlay-surface SurfaceBody(非手刻;flex-1 scroll 鏈照用)。左右 0、上下 tight/2、列間 0:
-          gutter 與另一半上下由列自己帶(B12,見上方註解);縮圖↔縮圖、邊緣↔縮圖仍是 12px */}
-      <SurfaceBody className="flex flex-col gap-0 !px-0 !py-[calc(var(--layout-space-tight)/2)]">
-        <FileItem mode="rich" surface="upload-manager" name="Alan Profile.png" status="uploading" progress={40}
-          description="5.7 MB of 7.5 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan" actions={deleteBtn} />
-        <FileItem mode="rich" surface="upload-manager" name="Q1 營收報表.xlsx" {...UPLOAD_MANAGER_COMPLETED} data-visual-hover-target
-          description="2.4 MB" thumbnailSrc="https://i.pravatar.cc/80?u=xls" actions={deleteBtn} />
-        <FileItem mode="rich" surface="upload-manager" name="合約草案 v3.pdf" {...UPLOAD_MANAGER_ERROR}
-          description={errorDescWithLog} thumbnailSrc="https://i.pravatar.cc/80?u=pdf" actions={deleteBtn} />
-      </SurfaceBody>
-    </div>
+    <>
+      <Toaster />
+      <UploadManagerPanel mode="rich" title="正在上傳 3 個項目" files={UPLOAD_MANAGER_RICH} hoverTargetId="um-rich-completed" />
+    </>
   ),
 }
 
-// surface="upload-manager" 的 compact list:body 寫法與 rich 相同(左右 0、上下 tight/2、列間 0),差別只在列本身 ——
-// compact 列上 tight/2、下 tight/2 + 8(文字↔bar 6 + bar 2),bar 離列底 tight/2(file-item.tsx「compact 內距」段)。
-// 對比 rich panel(列高 = 縮圖 48 + tight),demo 兩 mode 密度差異。
+// compact 的面板:body 寫法與 rich 相同(左右 0、上下 tight/2、列間 0),差別只在列本身 ——
+// compact 列上 tight/2、下 tight/2 + 8(文字↔bar 6 + bar 2),bar 離列底 tight/2(file-item.tsx 的 compactPadBlock)。
+const UPLOAD_MANAGER_COMPACT: DemoFile[] = [
+  { uid: 'um-compact-uploading', name: '季度報告.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', status: 'uploading', progress: 60, size: '1.4 MB' },
+  { uid: 'um-compact-completed', name: '客戶名單.csv', mimeType: 'text/csv', status: 'completed', size: '86 KB' },
+  { uid: 'um-compact-error', name: '封面.png', mimeType: 'image/png', status: 'error', size: '2.2 MB' },
+]
+
 export const UploadManagerCompactSurface = {
   name: '上傳管理器 · 緊湊(無邊框)',
   render: () => (
-    <div className="max-w-md flex flex-col rounded-lg border border-border bg-surface-raised shadow-[var(--elevation-200)]">
-      {/* header 消費同一個 overlay-surface SurfaceHeader + PopoverTitle SSOT(同 rich panel)*/}
-      <SurfaceHeader className={`justify-between ${COMPACT_HEADER_SLOT}`}>
-        <div className="flex-1 min-w-0"><PopoverTitle>同步 3 個檔案</PopoverTitle></div>
-        <Button iconOnly variant="text" size="sm" startIcon={ChevronDown} aria-label="收合" onClick={noop} />
-      </SurfaceHeader>
-      {/* body 同 rich 面板:左右 0、上下 tight/2、列間 0(B12)。用 `!` 沿用 List-as-region `!px-0` 慣例,
-          覆寫勝負不依賴 twMerge 分組與 stylesheet 生成順序。 */}
-      <SurfaceBody className="flex flex-col gap-0 !px-0 !py-[calc(var(--layout-space-tight)/2)]">
-        {/* 上傳中的列不能開(沒有 onClick)→ 不上滑過底色;與 rich 面板同一組能力(B12) */}
-        <FileItem mode="compact" surface="upload-manager" name="季度報告.docx" status="uploading" progress={60}
-          actions={deleteBtn} />
-        <FileItem mode="compact" surface="upload-manager" name="客戶名單.csv" {...UPLOAD_MANAGER_COMPLETED}
-          actions={deleteBtn} />
-        <FileItem mode="compact" surface="upload-manager" name="封面.png" {...UPLOAD_MANAGER_ERROR}
-          description={errorDescWithLog} actions={deleteBtn} />
-      </SurfaceBody>
-    </div>
+    <>
+      <Toaster />
+      <UploadManagerPanel mode="compact" title="同步 3 個檔案" files={UPLOAD_MANAGER_COMPACT} />
+    </>
   ),
 }

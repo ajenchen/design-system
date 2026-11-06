@@ -1,5 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
+import { escapeLayerProps, isEscapeForControl } from '@/design-system/lib/overlay-escape'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import {
   startOfMonth,
@@ -111,7 +112,7 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
 
   /**
    * 右上角「新事件」CTA 的回調 —— 全域新增入口,恆渲染;日期能不能新增由新增流程自己擋,不由這顆鈕的有無表達
-   *(user 2026-09-29:「右上角那是全域新增,表示點了之後要先選了日期才能新增啊,那肯定會擋住不能新增的日期啊」)。
+   *(user 2026-09-29:「右上角那是全域新增，表示點了之後要先選了日期才能新增啊，那肯定會擋住不能新增的日期啊」)。
    * 元件沒有內建的「新增」行為,所以必填:meta-patterns M23(f)—— 固定元素不以 callback 有無當渲染閘、
    * 無內建 fallback 的 callback 必填。唯讀月曆(`readOnlyDates` / `readOnlyEvents`)一樣要傳。
    */
@@ -184,7 +185,7 @@ function dayKey(date: Date): string {
 // 預設事件 tile 抽出 component:截斷 tooltip 需 useTruncated(hook 不能在 map callback 內)。
 // 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);tile 是 interactive host
 // (role=button,hover 直達)→ trigger = tile 本體、量測內層文字 span — useTruncated 自組
-// pattern(truncated-text.spec.md「trigger 需自控」指定解;範本 inline-edit.tsx:251 + tag.tsx)。
+// pattern(truncated-text.spec.md「兩層架構(對齊世界級聯集)」:trigger ≠ 量測元素時只用 hook 自組;範本 inline-edit.tsx:257 + tag.tsx)。
 function MonthEventTile({
   event,
   colorClass,
@@ -200,7 +201,7 @@ function MonthEventTile({
   const tileBase = 'rounded-md px-1.5 py-0.5 text-caption truncate'
   return (
     // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)。
-    // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → tooltip」不分可不可點)。
+    // 唯讀方塊照樣掛:截斷提示是「資訊揭露」,不是點擊回饋(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」不分可不可點)。
     <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>
         {!readOnlyEvents ? (
@@ -212,6 +213,7 @@ function MonthEventTile({
             // tile 改由格內導覽抵達(F2 進格、Escape 出格),詳 calendar.spec.md「A11y 預設」。
             tabIndex={-1}
             data-calendar-tile=""
+            {...escapeLayerProps(true)}
             onClick={(e) => {
               e.stopPropagation()
               onEventClick(event)
@@ -432,6 +434,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       let nextNode: HTMLElement | null | undefined
       switch (event.key) {
         case 'Escape':
+          // 格內模式是焦點所在控件自己的一層(方塊帶 data-escape-layer):放在 Dialog 裡第一下 Esc 只出格、不關對話框;
+          // 這一下若已被 Radix 用來關掉別的浮層就不動(lib/overlay-escape.ts)
+          if (!isEscapeForControl(event)) return
+          nextNode = dayStopOf(cell)
+          break
         case 'F2':
           nextNode = dayStopOf(cell)
           break
@@ -552,7 +559,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         </nav>
 
         <h2 className="text-body-lg font-medium text-foreground flex-1 min-w-0 truncate ml-2">
-          {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷 → tooltip,僅實際截斷時顯示」)——
+          {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」,僅實際截斷時顯示)——
               窄 toolbar 下標題被裁掉沒有補救路徑。display="block":h2 是 block container。 */}
           <TruncatedText display="block">{monthTitle}</TruncatedText>
         </h2>
@@ -569,9 +576,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         {weekdayNames.map((name, i) => (
           <div
             key={i}
-            // 2026-09-07 修(user 抓「為何星期標題要用那麼淺的顏色?」):
+            // 2026-09-07 修(user 問星期標題為何用那麼淺的顏色):
             // 原本是 `text-caption text-fg-muted font-normal`(12px / 45% 灰 / 細體)。
-            // **DS 早就有 canonical 而且方向相反** —— `date-grid.spec.md:151`「Weekday header canonical」
+            // **DS 早就有 canonical 而且方向相反** —— `date-grid.spec.md`「Weekday header canonical」
             //(2026-05-03 user audit):`text-foreground text-body font-medium`,理由是
             // 「weekday 列標跟 caption 同視覺權重,都屬 calendar header 區,**不弱化**」,
             // 而且明文「**撤銷 v3 用 `fg-secondary font-normal` 的 mistake(M23)**」。
@@ -663,7 +670,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 'border-r border-b border-divider last:border-r-0',
                 '[&:nth-child(7n)]:border-r-0',
                 // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
-                // 非當月格**不加底色**(2026-09-25 user 選「可以，拿掉底色 (Recommended)」,選項由 AI 提供):它跟當月格一樣可點(onDateClick = 在這天新增),
+                // 非當月格**不加底色**(2026-09-25 user 選『可以，拿掉底色 (Recommended)』,選項由 AI 提供):它跟當月格一樣可點(onDateClick = 在這天新增),
                 // 底色一律透明,所以滑過與當月格同一個滑過色。先前的 `bg-muted` 是「不可操作」的 token,放在可點的格上
                 // 讓滑過反而變淺(淺 #F5F5F5 → #FAFAFA)。非當月只靠日期數字的淡字區分,見下方日期鈕與 spec「Outside day cell」。
                 // 唯讀的格不亮:點了沒反應就不給滑過回饋(color.spec.md「Hover 換色配對總則」;待辦總帳 L8)。
@@ -728,6 +735,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                         // 與內建 tile 同一條:grid 單一 Tab 停靠點,自訂 tile 也不得自己是停靠點
                         tabIndex={-1}
                         data-calendar-tile=""
+                        {...escapeLayerProps(true)}
                         aria-label={`事件:${event.title}`}
                         onClick={(e) => {
                           e.stopPropagation()

@@ -1,6 +1,6 @@
 # DS i18n(Route B infrastructure)
 
-**Status**: shipped 2026-04-24(additive,backward compatible)
+**Status**: shipped 2026-04-24(additive,backward compatible);2026-10-27 起由套件 root 出口(`I18nProvider` / `useI18n` / `I18nLabels` / `I18nProviderProps` / `I18nHookResult`)—— 之前 root barrel 產生器只讀 lib/ 底下一層的 `.ts`,consumer import 不到
 
 ## 什麼
 
@@ -15,8 +15,8 @@ Route B provider 一次注入 label catalog,per-call-site override 仍可(prop >
 ## Usage
 
 ```tsx
-// Consumer app root
-import { I18nProvider } from '@/design-system/lib/i18n/i18n-context'
+// Consumer app root(npm 套件 root;lib 沒有 subpath)
+import { I18nProvider } from '@qijenchen/design-system'
 
 const enLabels = {
   notice: { dismiss: 'Dismiss' },
@@ -47,7 +47,7 @@ const { t } = useI18n()
 
 ## Migration status
 
-- **infrastructure**:✅ shipped(`i18n-context.tsx`)
+- **infrastructure**:✅ shipped(`i18n-context.tsx`);root 出口 ✅ 2026-10-27
 - **元件逐步 adopt**:Notice / FileViewer labels object / etc 已 Route A prop-based;Route B 可並存,未來有需要再逐元件 opt-in 換成 context reader
 
 ## 世界級對照

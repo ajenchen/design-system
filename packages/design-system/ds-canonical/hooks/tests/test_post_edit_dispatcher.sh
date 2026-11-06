@@ -14,7 +14,6 @@ HELPERS=(
   _token_hygiene.sh
   _hardcoded_strings.sh
   _code_quality.sh
-  _layout_space_canonical.sh
   _person_data_richness.sh
   _overlay_handcraft.sh
   _cva_default_sync.sh
@@ -186,12 +185,12 @@ run_hook "$VALID_PAYLOAD"
 expect_integrity_failure 'advisory helper exit 2 is integrity failure' 'exit code 2'
 
 reset_helpers
-write_helper "_layout_space_canonical.sh" malformed
+write_helper "_cva_default_sync.sh" malformed
 run_hook "$VALID_PAYLOAD"
 expect_integrity_failure 'malformed helper stdout fails closed' 'malformed or wrong-event envelope'
 
 reset_helpers
-write_helper "_layout_space_canonical.sh" wrong-event
+write_helper "_cva_default_sync.sh" wrong-event
 run_hook "$VALID_PAYLOAD"
 expect_integrity_failure 'wrong-event helper context fails closed' 'malformed or wrong-event envelope'
 

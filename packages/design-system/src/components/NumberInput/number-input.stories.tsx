@@ -4,9 +4,9 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { NumberInput } from './number-input'
-import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import '@/design-system/components/DataTable/column-types'
 
 const meta: Meta<typeof NumberInput> = {
@@ -14,7 +14,7 @@ const meta: Meta<typeof NumberInput> = {
   component: NumberInput,
   tags: ['autodocs'],
   parameters: {
-    docs: { description: { component: '輸入並以步進按鈕調整數值，處理上下限、步距與鍵盤操作。使用者需要精確數字或小幅增減時使用；只需大致調整且即時預覽時可用 Slider。' } },
+    docs: { description: { component: '輸入精確數值並依 prefix / suffix / precision 格式化顯示;純值輸入、不提供步進按鈕。只需大致調整且即時預覽時改用 Slider。' } },
   },
 }
 
@@ -27,92 +27,63 @@ export const Modes: Story = {
   render: () => {
     const [value, setValue] = React.useState<number | null>(2490)
     return (
-      <div className="flex flex-col gap-6 max-w-xs">
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+      <ExampleStack className="max-w-xs">
+        <ExampleSection title="edit">
           <NumberInput value={value} onChange={setValue} prefix="$" aria-label="價格(edit mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+        </ExampleSection>
+        <ExampleSection title="view">
           <NumberInput mode="view" value={value} prefix="$" aria-label="價格(view 模式示範)" />
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        </ExampleSection>
+        <ExampleSection title="readonly">
           <NumberInput mode="readonly" value={value} prefix="$" aria-label="價格(readonly mode demo)" />
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        </ExampleSection>
+        <ExampleSection title="disabled">
           <NumberInput mode="disabled" value={value} prefix="$" aria-label="價格(disabled mode demo)" />
-        </div>
-      </div>
+        </ExampleSection>
+      </ExampleStack>
     )
   },
 }
 
+// 只示範錯誤長相:固定 invalid + 固定錯誤字,不隨值變(稽核 L008:隨值即時切換 = 邊打邊驗,違反 form-validation.spec.md「Blur 時驗證」)
 function NumberInputErrorExample() {
   const [value, setValue] = React.useState<number | null>(null)
   return (
-    <Field required invalid={value == null} className="max-w-xs">
+    <Field required invalid className="max-w-xs">
       <FieldLabel>採購數量</FieldLabel>
-      <NumberInput value={value} onChange={setValue} min={1} aria-label="採購數量" />
-      {value == null && <FieldError>請輸入至少 1 件商品</FieldError>}
+      <NumberInput value={value} onChange={setValue} aria-label="採購數量" />
+      <FieldError>請輸入至少 1 件商品</FieldError>
     </Field>
   )
 }
 
 export const WithError: Story = {
   name: '驗證錯誤',
+  parameters: { docs: { description: { story: '只示範錯誤的長相(紅框 + 錯誤訊息,固定顯示)。實際表單在使用者離開欄位或按送出時才驗證。' } } },
   render: () => <NumberInputErrorExample />,
 }
 
-/* ── 尺寸與 Button 對齊 ── */
-export const SizeAlignment: Story = {
-  name: '三種尺寸',
-  render: () => {
-    const [sm, setSm] = React.useState<number | null>(2490)
-    const [md, setMd] = React.useState<number | null>(2490)
-    const [lg, setLg] = React.useState<number | null>(2490)
-    const states: Record<string, [number | null, (v: number | null) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
-    return (
-      <div className="flex flex-col gap-4">
-        {(['sm', 'md', 'lg'] as const).map(size => (
-          <div key={size} className="flex items-center gap-3">
-            <NumberInput
-              size={size}
-              value={states[size][0]}
-              onChange={states[size][1]}
-              prefix="$"
-              aria-label={`價格（${size} 尺寸）`}
-              className="max-w-xs"
-            />
-            <Button variant="primary" size={size}>送出</Button>
-            <span className="text-caption text-fg-muted">size="{size}"</span>
-          </div>
-        ))}
-      </div>
-    )
-  },
-}
+// @story-history: 三種尺寸(SizeAlignment)退役 2026-10-28 —— 高度對照由設計規格「尺寸對照表」負責(稽核 L079 / L101)。
 
 /* ── 格式化選項 ── */
 export const FormatOptions: Story = {
   name: '格式化選項',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-xs">
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
       <div>
-        <p className="text-caption text-fg-muted mb-1">prefix="$"</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">prefix="$"</p>
         <NumberInput mode="readonly" value={2490} prefix="$" aria-label="美元價格" />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-1">suffix="%" precision={1}</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">suffix="%" precision={1}</p>
         <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} aria-label="百分比" />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-1">prefix="NT$" precision={0}</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">prefix="NT$" precision={0}</p>
         <NumberInput mode="readonly" value={12500} prefix="NT$" precision={0} aria-label="新台幣價格" />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-1">null value</p>
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">null value</p>
         <NumberInput mode="readonly" value={null} prefix="$" aria-label="空白美元價格" />
       </div>
     </div>
@@ -157,7 +128,7 @@ export const InDataTable: Story = {
 
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">
+        <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           不需要手寫 cell renderer——meta.type + 格式化參數自動套用 Display 元件
         </p>
         <DataTable columns={columns} data={data} height="auto" />

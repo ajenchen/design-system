@@ -16,7 +16,9 @@ import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
 import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
-import { markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
+import { dispatchRelayedKey, markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
+import { isOwnPointerTarget, keepFocusOnPointerPress } from "@/design-system/lib/pointer-press"
+import { isImeComposing } from "@/design-system/lib/ime-composition"
 // 「列上有小按鈕的一串」鍵盤路線的唯一判定(與 Sidebar / TreeView / FileUpload 共用;見下方 routeCommandRowKeys)
 import {
   isTextEntryElement,
@@ -63,7 +65,7 @@ function syncCommandRowTabStops(root: HTMLElement) {
 }
 
 function routeCommandRowKeys(event: React.KeyboardEvent<HTMLDivElement>) {
-  if (event.nativeEvent.isComposing) return
+  if (isImeComposing(event)) return // 判準唯一住所 lib/ime-composition.ts(2026-09-30 前只看 isComposing)
   const root = event.currentTarget
   const target = event.target as HTMLElement
   const input = root.querySelector<HTMLInputElement>('[cmdk-input]')
@@ -72,7 +74,7 @@ function routeCommandRowKeys(event: React.KeyboardEvent<HTMLDivElement>) {
   const atHome = !itemEl && (target === input || target.hasAttribute('cmdk-list') || target.hasAttribute('cmdk-root'))
   if (!itemEl && !atHome) return
   // 「這一項」:焦點在列裡時就是那一列;在 home 時是反白列
-  const current = itemEl ?? root.querySelector('[cmdk-item][data-selected="true"]')
+  const current = itemEl ?? getActiveOption(root)
   const controls = current ? listRovingControls(current) : []
   if (itemEl && !controls.includes(target)) return
   const onInput = !itemEl && target === input
@@ -127,10 +129,178 @@ function routeCommandRowKeys(event: React.KeyboardEvent<HTMLDivElement>) {
   }
 }
 
+// ── 指標按在清單上:DOM 焦點留在控制這份清單的 combobox(2026-09-30)──
+// user 同意的範圍(原話「其他部分我覺得”可以”」):**滑鼠點選項 = 按 Enter**,焦點不離開搜尋框。延伸到清單裡其他不是控件的位置
+// (群組標題、訊息列、放大鏡、捲軸)與清單型浮層裡的按鈕(全選)屬 AI 推導,依 rc-select / MUI 整份清單擋 mousedown 的做法。(來源:https://github.com/react-component/select/blob/fcbd87ee9ef419eb677cc351744181d027a50110/src/OptionList.tsx#L79-L80 https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1546-L1560)
+// 規則與出處住 command.spec.md「A11y 預設」;選單的「選完之後」總表住 SelectMenu/select-menu.spec.md「A11y 預設」Focus 段。
+// 根因:cmdk 的選項只有 onPointerMove / onClick、沒有擋 mousedown
+// (https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L706-L718),
+// 按下去瀏覽器就把焦點交給最近的可聚焦祖先([cmdk-list] / [cmdk-root] 都是 tabIndex -1;人員選項的名片頭像也是),之後打的字全部丟掉。
+// 掛在 Command 根 = 選項、群組標題、訊息列(沒有選項 / 載入中)、搜尋列的放大鏡、清單捲軸一處涵蓋。
+// **只在「此刻握著 DOM 焦點的是控制這份清單的 combobox」時擋**:焦點在 role=combobox 上(或它裡面的輸入框),它的 aria-controls
+// 指到本 Command 或包住本 Command 的浮層。焦點本來就在清單裡(不可打字的下拉)、或這份清單不屬於任何 combobox
+// (Popover / Dialog 裡的純清單)→ 不插手,原生行為照舊。
+// 握著焦點的東西住在哪,決定容器裡的按鈕怎麼算(W3C 依「彈出的是什麼」分流,select-menu-keyboard.ts B11 段同一條):
+//   住在本 Command 裡(浮層內搜尋框 [cmdk-input] / CommandDialog / inline = 對話框型,面板裡的按鈕在同一個 Tab 序上)
+//     → 容器裡自有行為的東西照原生(列上的改名 / 刪除鈕、全選鈕照常拿焦點;判準與 Field 外框同一份 lib/pointer-press.ts);
+//   住在外面(觸發欄位內的搜尋框 = 清單型:DOM 焦點的主人是欄位內的搜尋框,清單靠它的 aria-activedescendant;浮層裡的全選鈕雖可 Tab,
+//     但只有觸發欄位是頁面最後一格時 Tab 才會照 DOM 順序走進來)→ 連按鈕(全選)也不搬焦點,click 照常動作。
+function comboboxFocusHolder(root: HTMLElement): Element | null {
+  const doc = root.ownerDocument
+  const active = doc.activeElement
+  const combobox = active?.closest('[role="combobox"][aria-controls]')
+  if (!active || !combobox) return null
+  const controlsRoot = (combobox.getAttribute('aria-controls') ?? '').split(/\s+/).some((id) => {
+    const controlled = id ? doc.getElementById(id) : null
+    return !!controlled && (controlled.contains(root) || root.contains(controlled))
+  })
+  return controlsRoot ? active : null
+}
+
+function keepComboboxFocusOnPointerPress(event: React.MouseEvent<HTMLDivElement>) {
+  const root = event.currentTarget
+  const holder = comboboxFocusHolder(root)
+  if (!holder) return
+  if (root.contains(holder) && event.target instanceof Element && isOwnPointerTarget(root, event.target)) return
+  // 其餘條件(左鍵、沒被擋過、按在本 Command 的 DOM 裡 —— React 事件會穿過 portal 冒泡、不是文字輸入)住在共用判準
+  keepFocusOnPointerPress(event, root, holder)
+}
+
+// ── 浮層收起後焦點還給開啟者(2026-09-30)── 規則與唯一實作住 lib/overlay-focus-return.ts(`returnFocusToOpener`):
+// 包著 Command 的浮層(SelectMenu、AgentPanel 歷史、下方 CommandDialog)在 onCloseAutoFocus 呼叫它;指標挑選收起時明說 focusVisible: false,
+// 因為上一條讓焦點留在搜尋框(文字輸入永遠帶 :focus-visible),程式移走焦點時瀏覽器會讓新的那一個也畫框。
+
+// ── 反白(cmdk 游標)的唯一讀法與寫法,以及「游標不准弄丟」(2026-09-30)──
+// cmdk 的游標 = state.value,畫在那一列的 `data-selected="true"`
+// (https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L681 與 #L716)。
+// 這是反白列 id 的**唯一來源**:搜尋框(浮層內 [cmdk-input] / 觸發欄位內的輸入框)與清單的 aria-activedescendant、
+// 列上按鈕的鍵盤路(routeCommandRowKeys)、SelectMenu 的 Tab / 空白鍵選定(select-menu-keyboard.ts)都從這裡讀(getActiveOption)。
+// 不用 cmdk 自己的 selectedItemId(#L251-L254 在排程裡算、#L814 / #L866 綁上 [cmdk-input] / [cmdk-list]):
+// 開啟時它是空的,要等第一次方向鍵才有值 —— 2026-09-30 實測 Select / Combobox / SelectMenu 開啟即讀為 null,同時已有一列 data-selected。
+const ACTIVE_OPTION_SELECTOR = '[cmdk-item][data-selected="true"]'
+const SELECTABLE_OPTION_SELECTOR = '[cmdk-item]:not([aria-disabled="true"])'
+
+/** 反白列(cmdk 游標所在的那一列);沒有反白 → null。全 DS 讀反白只走這一支。 */
+export function getActiveOption(root: ParentNode | null | undefined): HTMLElement | null {
+  return root?.querySelector<HTMLElement>(ACTIVE_OPTION_SELECTOR) ?? null
+}
+
+/** Command 回報給「清單外面」握著焦點的輸入框的東西:反白列 id + 清單([cmdk-list],role=listbox)的 id。 */
+export interface CommandActiveOption {
+  /** 反白列的 DOM id;清單 0 筆 / 沒有反白 → undefined */
+  id: string | undefined
+  /** 清單([cmdk-list])的 DOM id —— aria-activedescendant 指到的選項住在它裡面 */
+  listboxId: string | undefined
+}
+
+/**
+ * aria-activedescendant 的唯一寫法(Command 自己的搜尋框 / 清單;觸發欄位內輸入框經 `applyListboxRelation` 也走這支)。直接寫 DOM、不經 React state:
+ * 反白每移一格不重繪整份清單(MUI useAutocomplete 同做法,`syncHighlightedIndexToDOM` 直接 setAttribute,
+ * https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L375-L388)。
+ * 值相同不寫(同值 setAttribute 也會產生 mutation,會讓下方 observer 自我觸發)。
+ */
+function applyActiveDescendant(host: Element | null | undefined, id: string | undefined) {
+  applyIdRef(host, 'aria-activedescendant', id)
+}
+
+function applyIdRef(host: Element | null | undefined, name: 'aria-activedescendant' | 'aria-controls', id: string | undefined) {
+  if (!host || (host.getAttribute(name) ?? undefined) === id) return
+  if (id) host.setAttribute(name, id)
+  else host.removeAttribute(name)
+}
+
+/**
+ * 清單**外面**握著焦點的輸入框(Select `searchable` / Combobox `searchIn='trigger'` 觸發欄位內的搜尋框)的唯一寫法:
+ * aria-activedescendant = 反白列、aria-controls = 包住它的 listbox。ARIA 1.2 對 aria-activedescendant 的 MUST:
+ * 指到的元素必須是自己的後代,或自己是 combobox / textbox / searchbox 而且 aria-controls 指到支援 aria-activedescendant 的元素
+ * (https://www.w3.org/TR/wai-aria-1.2/#aria-activedescendant)—— 那顆輸入框是 textbox,只寫前者等於指向一個跟它沒有關係的節點。
+ * 外層 div[role=combobox] 的 aria-controls 指的是浮層殼(role=dialog,不支援 aria-activedescendant),補不上這一層。
+ * 清單卸載(`active` = undefined)時兩個一起移除(id 必須指向畫面上存在的節點)。
+ */
+export function applyListboxRelation(host: Element | null | undefined, active: CommandActiveOption | undefined) {
+  applyIdRef(host, 'aria-activedescendant', active?.id)
+  applyIdRef(host, 'aria-controls', active?.listboxId)
+}
+
+/**
+ * 把游標放到第一個可選項 —— 走 cmdk 自己的 Home 鍵(#L617-L621 `updateSelectedToIndex(0)`:選第一項 + 捲進可視範圍);
+ * 代發用 hooks/use-input-modality.ts `dispatchRelayedKey`(與 forwardKeyToListbox 同一座橋),不被記成「鍵盤搬了游標」。
+ * cmdk 沒有公開的「選第一項」API;改用受控 `value` 會讓捲動與 selectedItemId 的時序錯開,不採。
+ */
+export function moveCursorToFirstOption(root: HTMLElement) {
+  dispatchRelayedKey(root, 'Home')
+}
+
+/**
+ * 游標弄丟了就放回第一項。cmdk 自己有這條修補(被反白的那一列卸載 → 選第一項,#L321-L333),但它的排程以槽號當 Map 的 key
+ * (#L1046-L1058 `fns.current.set(id, cb)`),同一次 commit 卸載好幾列時只剩**最後一列**的檢查會跑 —— 反白列不是最後卸載的那一列就沒人補。
+ * 會一次卸載很多列的正是搜尋字在觸發欄位(清單在 cmdk 外面過濾)與遠端搜尋換一批結果:實測 Select 打「日」後 0 列反白、Enter 沒反應(2026-09-30)。
+ */
+function restoreLostCursor(root: HTMLElement): boolean {
+  if (getActiveOption(root) || !root.querySelector(SELECTABLE_OPTION_SELECTOR)) return false
+  moveCursorToFirstOption(root)
+  return true
+}
+
+/**
+ * Command 根的 observer —— 列會隨搜尋過濾重掛、列裡的東西(如頭像名片)也可能自己重繪、反白會被滑鼠 / 鍵盤搬動、
+ * cmdk 每次重繪都會把自己那份(可能是空的)aria-activedescendant 寫回去,所以用 MutationObserver 收,不靠某一次 render。
+ * 同一個 observer 管三件事:
+ *   (1) 列上可聚焦東西不在 Tab 路上(B9,syncCommandRowTabStops)
+ *   (2) 游標弄丟時放回第一項(restoreLostCursor)
+ *   (3) 反白列 id → 寫上本 Command 的搜尋框與清單,並連同清單 id 回報給觸發欄位內握著焦點的輸入框
+ *       (onActiveOptionChange;卸載時回報 undefined)
+ */
+function useCommandRootObserver(
+  rootRef: React.RefObject<HTMLDivElement | null>,
+  onActiveOptionChange: ((active: CommandActiveOption | undefined) => void) | undefined,
+) {
+  const onActiveOptionChangeRef = React.useRef(onActiveOptionChange)
+  onActiveOptionChangeRef.current = onActiveOptionChange
+  React.useLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    let reported: CommandActiveOption | undefined
+    const syncActiveOption = (repair: boolean) => {
+      if (repair && restoreLostCursor(root)) return // cmdk 搬好游標後 data-selected 會變,observer 會再進來一次
+      const id = getActiveOption(root)?.id || undefined
+      root.querySelectorAll('[cmdk-input], [cmdk-list]').forEach((host) => applyActiveDescendant(host, id))
+      const listboxId = root.querySelector('[cmdk-list]')?.id || undefined
+      if (reported && reported.id === id && reported.listboxId === listboxId) return
+      reported = { id, listboxId }
+      onActiveOptionChangeRef.current?.(reported)
+    }
+    syncCommandRowTabStops(root)
+    // 掛上的這一刻 cmdk 的第一個反白還在它自己的排程裡(列註冊後才選第一項 / 已選項)→ 只讀不補;下一格畫面 cmdk 已定,再讀一次並補
+    syncActiveOption(false)
+    const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(() => syncActiveOption(true)) : 0
+    if (typeof MutationObserver === 'undefined') return () => cancelAnimationFrame(raf)
+    const observer = new MutationObserver((records) => {
+      if (records.some((r) => r.type === 'childList' || r.attributeName === 'tabindex')) syncCommandRowTabStops(root)
+      syncActiveOption(true)
+    })
+    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['tabindex', 'data-selected', 'aria-activedescendant'] })
+    return () => {
+      cancelAnimationFrame(raf)
+      observer.disconnect()
+      if (reported !== undefined) onActiveOptionChangeRef.current?.(undefined)
+    }
+  }, [rootRef])
+}
+
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive> & { size?: CommandSize }
->(({ className, size, children, onKeyDown, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive> & {
+    size?: CommandSize
+    /**
+     * 反白列(cmdk 游標)的 DOM id 或清單 id 變了就回報(`CommandActiveOption`);卸載時回報 undefined。給**觸發欄位內**握著焦點的輸入框
+     * (Select `searchable` / Combobox `searchIn='trigger'`)寫 aria-activedescendant + aria-controls(`applyListboxRelation`)——
+     * 它與清單分屬兩棵 DOM 子樹(清單在浮層 portal 裡),只能由這裡讀了交出去(SelectMenu 轉發,接收端
+     * SelectMenu/select-menu-keyboard.ts `useActiveDescendant`)。本 Command 自己的搜尋框與清單不必接,已自動寫好。
+     */
+    onActiveOptionChange?: (active: CommandActiveOption | undefined) => void
+  }
+>(({ className, size, children, onKeyDown, onMouseDown, onActiveOptionChange, ...props }, ref) => {
   // 列上可聚焦東西的鍵盤路(B9,見上方 routeCommandRowKeys 段):根節點要拿來掛 observer
   const rootRef = React.useRef<HTMLDivElement | null>(null)
   const setRootRef = React.useCallback(
@@ -141,19 +311,11 @@ const Command = React.forwardRef<
     },
     [ref],
   )
-  // 列會隨搜尋過濾重掛、列裡的東西(如頭像名片)也可能自己重繪 → 用 observer 收,不靠某一次 render
-  React.useLayoutEffect(() => {
-    const root = rootRef.current
-    if (!root) return
-    syncCommandRowTabStops(root)
-    if (typeof MutationObserver === 'undefined') return
-    const observer = new MutationObserver(() => syncCommandRowTabStops(root))
-    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['tabindex'] })
-    return () => observer.disconnect()
-  }, [])
+  // 列上可聚焦東西的 Tab 停靠(B9)+ 游標弄丟時放回第一項 + 反白列 id(見 useCommandRootObserver)
+  useCommandRootObserver(rootRef, onActiveOptionChange)
   const inherited = useRowSize('md')
-  // 0 筆結果的讀屏播報住在根(2026-09-09 user 核准「第二項如果確保是SSOT且不違背世界級的設計就照你建議做」):
-  // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift
+  // 0 筆結果的讀屏播報住在根(2026-09-09 user 有條件核准這一項:要確保是 SSOT、且不違背世界級的設計):
+  // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift(來源:https://github.com/JedWatson/react-select/blob/4b6948078684bee394e09dd8e7cdc2d7f89e0fad/packages/react-select/src/components/LiveRegion.tsx#L213-L220 https://github.com/downshift-js/downshift/blob/1bb8b75e506fe807a5c5201a103d1bd128e5a5e2/src/utils/setA11yStatus.ts#L10-L32)
   // status message 都由根元件常駐渲),文字由 CommandEmpty 的字串 children 登記進來。之前只有 SelectMenu 自己另放一份
   // CommandEmptyStatus,CommandDialog / inline Command 沒有(command.spec.md 卻寫「都渲一份」);現在三種形態都由根
   // 自動渲一份,消費端不必、也不得再放(放了會播兩次)。
@@ -163,6 +325,11 @@ const Command = React.forwardRef<
       <EmptyTextContext.Provider value={setEmptyText}>
         <CommandPrimitive
           ref={setRootRef}
+          // 指標按在清單上不搬走 combobox 的焦點(見上方 keepComboboxFocusOnPointerPress);consumer 的 onMouseDown 先跑,擋了預設就不接
+          onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => {
+            onMouseDown?.(event)
+            keepComboboxFocusOnPointerPress(event)
+          }}
           // consumer 的 onKeyDown 先跑(它擋了預設就不接);再跑列上可聚焦東西的鍵盤路(B9);cmdk 自己的方向鍵處理最後跑
           onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
             onKeyDown?.(event)
@@ -189,14 +356,19 @@ Command.displayName = CommandPrimitive.displayName
  * CommandDialog —— Cmd+K 指令面板。內容**就是** SelectMenu 那一套(同一個 CommandInput 搜尋列、
  * 同一個 MenuItem 項目、同一個 MenuItem header 分組),殼是 DS Dialog。
  * 2026-09-08 刪掉這裡對 cmdk 的 8 條 `[&_[cmdk-…]]` 尺寸覆寫(input h-12 / item py-3 / svg h-5 …)——
- * 它們就是 user 抓到的「Command 每一支 story 都跟 SelectMenu 不同一套」的來源:同一個 primitive
- * 在面板裡被第二份樣式改寫。世界級的指令面板(Linear / Raycast / VS Code)也都是「同一份清單樣式 + 對話框殼」。
+ * 它們就是 user 指出 Command 每一支 story 都跟 SelectMenu 不同一套的來源:同一個 primitive
+ * 在面板裡被第二份樣式改寫。指令面板 = 「同一份清單樣式 + 對話框殼」:清單長相只有一個來源,面板只負責浮層外殼,兩處才不會各自漂移。
  * 指令面板依世界級慣例不畫可見標題;`title` 只給讀屏器(Radix 要求 DialogContent 有 Title)。
  */
 const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令', ...props }: DialogProps & { title?: string; label?: string }) => { // i18n-allow: DS 預設文案,可覆寫
+  // 關閉後焦點還給**開啟當下握著焦點的元素**(2026-09-30;dialog.spec.md「Focus return」)。
+  // 指令面板多半由快捷鍵或普通按鈕的 onClick 開啟,沒有 DialogTrigger;Radix Dialog 只還給 DialogTrigger,沒有就不還 → 焦點掉到 body
+  // (2026-09-30 實測本檔「全域指令面板」:點項目收起後 activeElement = BODY)。
+  // 2026-10-01 起這是 DialogContent 的**預設**(待辦總帳 OE29;dialog.tsx useTriggerlessFocusReturn:掛上時記開啟者、沒有 Radix 觸發點就經
+  // lib/overlay-focus-return.ts 還,指標挑選不畫鍵盤框),本檔那份 RememberFocusOrigin 收掉,不留第二份。
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight>
+      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" height="hug">
         <DialogTitle className="sr-only">{title}</DialogTitle>
         {/* data-dialog-body:讓 DialogContent 的 onOpenAutoFocus 把焦點放進搜尋列(它只認 [data-dialog-body] 內的
             第一個 input)。2026-09-09 實測:沒有這個標記時焦點停在 dialog 殼上 —— 方向鍵到不了 cmdk(開了就是鍵盤死路,
@@ -212,17 +384,17 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
 /**
  * CommandInput —— 浮層/面板內的搜尋列。**唯一實作**:SelectMenu(Select / Combobox / PeoplePicker 的 searchable
  * 模式)、CommandDialog、inline Command 三種形態都用它(2026-09-08 之前 SelectMenu 自己另寫一份 raw cmdk input,
- * 這裡又一份 h-11 的,兩份漂移 —— user:「搜尋框為何不是我們的 input 的樣式?儘管是不同元件也要是相同樣式的 SSOT」)。
+ * 這裡又一份 h-11 的,兩份漂移 —— user 2026-09-08:「儘管是不同元件也要是相同樣式的ssot吧?他應該要長得跟我們的input 一模一樣吧?」(登記簿 B18))。
  * 尺寸/字級/placeholder/disabled 全部吃 Field 輸入控件的 token(`--field-height-*` + 8px 內距、text-body(-lg)、
  * placeholder:text-fg-muted、disabled 依 M24 切 fg-disabled);**沒有外框**(它是浮層內的一列,底部用分隔線收邊),
- * 這是跟 `Input` 唯一的差別 —— 對齊 Linear / Raycast / Spotlight 的指令面板搜尋列。
+ * 這是跟 `Input` 唯一的差別 —— 搜尋列嵌在面板頂端,面板自己的外框已經圈出範圍,搜尋列只用底部分隔線跟清單分開。
  */
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & {
     size?: CommandSize
     // 2026-09-09 user 拍板:搜尋列**沒有** `loading` prop 了 —— 選項載入的指示只在清單內(CommandEmpty 槽的 CommandLoading),
-    // 搜尋列不為抓資料轉圈(2026-09-08 曾加、同日 user 抓到兩顆轉圈、09-09 退役;Polaris Autocomplete loading 時 TextField 也不轉)。
+    // 搜尋列不為抓資料轉圈(2026-09-08 曾加、同日 user 抓到兩顆轉圈、09-09 退役;Polaris Autocomplete loading 時 TextField 也不轉)。(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Autocomplete/Autocomplete.tsx#L144-L195)
   }
 >(({ className, size: sizeProp, ...props }, ref) => {
   const inherited = useRowSize('md')
@@ -279,7 +451,7 @@ const CommandList = React.forwardRef<
       conflicting code(修前): 本 ScrollArea 固定 max-h-300 無 flex-1 → 在夾住的 SelectMenu PopoverContent
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
-        `flex h-full flex-col`(command.tsx:23)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
+        `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
   <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height)]">
     {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
         (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
@@ -291,12 +463,12 @@ const CommandList = React.forwardRef<
 CommandList.displayName = CommandPrimitive.List.displayName
 
 /**
- * CommandEmpty —— **own 空狀態**(2026-09-08 user 拍板定稿:選單裡「不是選項的列」一律走 MenuItem 的列幾何)。
+ * CommandEmpty —— **own 空狀態**(2026-09-08 user 拍板定稿:選單裡不是選項的列一律走 MenuItem 的列幾何)。
  * 字串 children 自動包 `<MenuItem message>`(非互動、次要色、字級同選項、置中),外層是 `MenuGroup`(一個 group 的 py-2 上下留白),
  * 所以「沒有結果」與「1 筆結果」等高(md 48px = 8 + 32 + 8),不再有任何最小高度公式(舊的 3 列 minRows 已退役)。
  * owner:select-menu.spec.md「Empty state」;歷史:2026-04-08 一行小字 → 04-10 撐 3 列 → 04-16 Empty 元件 → 09-08 訊息列。
  * loading 時把 `<CommandLoading>` 當 children 放進來(同一種訊息列,前綴槽放列圖示尺寸的轉圈)。
- * **放在 CommandList 外面(listbox 的兄弟,MUI Autocomplete 同構)**:axe `aria-required-children` 不允許 listbox 裡有非 option 的子元素
+ * **放在 CommandList 外面(listbox 的兄弟,MUI Autocomplete 同構)**:axe `aria-required-children` 不允許 listbox 裡有非 option 的子元素(來源:https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Autocomplete/Autocomplete.js#L839-L860)
  * (2026-09-08 a11y 基線重建抓到);cmdk Empty 只讀 store,不需要住在 List 裡。空 listbox 載入時有 aria-busy,axe 全乾淨。
  */
 const CommandEmpty = React.forwardRef<
@@ -349,7 +521,7 @@ function CommandLoading({ label, size: sizeProp }: { label: string; size?: Comma
 // combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
 // 聽不到任何播報。補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字;
 // loading 由可見的 CommandLoading `role="status"` + `aria-label` 直接宣告,避免同一狀態重複播報。
-// 對齊 react-select A11yText / APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
+// 對齊 react-select LiveRegion(篩選後的結果數常駐播報)+ empty.spec.md「動態變空」(consumer 容器加 aria-live="polite")。(來源:https://github.com/JedWatson/react-select/blob/4b6948078684bee394e09dd8e7cdc2d7f89e0fad/packages/react-select/src/components/LiveRegion.tsx#L148-L155)
 export function CommandEmptyStatus({ loading = false, text }: { loading?: boolean; text: string }) {
   const filteredCount = useCommandState((state) => state.filtered.count)
   return (
@@ -363,14 +535,14 @@ export function CommandEmptyStatus({ loading = false, text }: { loading?: boolea
 /**
  * 分組標題**消費 `MenuItem header`,不自己寫樣式**。
  *
- * 2026-09-07 修(user 抓「Command 群組標題漂移了,照理說應該跟 SelectMenu 同一種設計語言」):
+ * 2026-09-07 修(user 指出 Command 群組標題跟 SelectMenu 不是同一種設計語言):
  * 這裡原本手寫 `px-3 py-1.5 text-caption font-medium text-fg-muted` ——
- * 而 SSOT(`patterns/element-anatomy/item-anatomy.spec.md:188`「Row header(分組標題)」)寫的是
+ * 而 SSOT(`patterns/element-anatomy/item-anatomy.spec.md:186`「Row header(分組標題)」)寫的是
  * 「用 `MenuItem header={true}` 模式,`font-medium text-fg-muted` + 與 items **完全相同**的
  * row geometry(同 px / 同 py / **同 text size**)」。
  * 差在字級:手寫的是 `text-caption`(12px),canonical 要求與項目同級(14px)。
  *
- * SelectMenu(`select-menu.tsx:465`)一直是照 SSOT 做的 —— 它傳
+ * SelectMenu(`select-menu.tsx#SelectMenu`)一直是照 SSOT 做的 —— 它傳
  * `heading={<MenuItem size={size} header>…}` 並用 `[&_[cmdk-group-heading]]:p-0` 中和 cmdk 的內距。
  * 所以這不是「兩種設計語言」,是 Command **沒有消費 SSOT**、自己抄了一份走樣的值。
  *
@@ -429,7 +601,7 @@ export type CommandItemProps = React.ComponentPropsWithoutRef<typeof CommandPrim
 /**
  * CommandItem —— 外層 cmdk Item 只負責 cmdk 的反白/停用訊號,**視覺 anatomy 一律由內層 `MenuItem` 承擔**
  * (icon 槽 / label / description / 尾端 tag、endContent、shortcut;owner = item-anatomy.spec.md + menu-item.spec.md)。
- * 這跟 SelectMenu 包 option 的結構完全相同(select-menu.tsx「CommandItem > MenuItem role=presentation」),
+ * 這跟 SelectMenu 包 option 的結構完全相同(select-menu.tsx 的選項同樣是 CommandItem 包一層 role="presentation" 的 MenuItem),
  * 所以指令面板、inline 清單、下拉選單三種形態的每一列都長一樣。
  * 相容:SelectMenu 自己傳 `<MenuItem>` 當 children(它要管 checkbox/selected/renderLabel),這時不再包第二層。
  */
@@ -454,11 +626,11 @@ const CommandItem = React.forwardRef<
         "p-0 rounded-none",
         // cmdk 的反白(data-selected)是這裡**唯一的游標**:滑鼠移過就搶走(cmdk Item 的 onPointerMove → select(),
         // https://github.com/pacocoursey/cmdk/blob/main/cmdk/src/index.tsx),鍵盤方向鍵再搶回;
-        // 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+        // 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」(登記簿 D11)):
         //   滑鼠搬的:反白 = hover → 底色、無框。
         //   鍵盤搬的:反白 = 游標 → 框(列撐滿 → 內描邊)、不上底色。
         // **本節點沒有任何 `hover:` 樣式**:滑鼠停著不算搶,鍵盤把反白搬走後,滑鼠停留列的底色要跟著消失
-        //(user 2026-09-09:「搶回去之後原本滑鼠的 hover 樣式即會消失直到滑鼠又搶回來才會再出現」;
+        //(user 2026-09-09 下午提出:鍵盤搶回反白之後,滑鼠停留那一列的底色要消失,直到滑鼠再搶回來才出現;
         // shadcn CommandItem 同樣只畫 data-[selected=true],沒有 hover: —— https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/command.tsx)。
         // 2026-09-08 之前「已選 + 游標」的框沒有模態條件,滑鼠一點開就畫(user 抓到);
         // 2026-09-09 之前未選中的游標列用 hover 同色底(AI 推導自 cmdk 慣例,user 撤回);

@@ -13,7 +13,7 @@
  * 只驗 (B) 的話,「把預設路徑一起弄壞」不會被發現 —— 那正是 user 說的「不要改壞既有東西」。
  *
  * 判準用「真的能不能聚焦」而不是「有沒有 aria-hidden 屬性」:
- * `suppressOthers` 在支援 inert 的瀏覽器用原生 inert、不支援才用 aria-hidden,
+ * `inertOutside`(lib/overlay-coexistence.ts)在支援 inert 的瀏覽器用原生 inert、不支援才退回 aria-hidden 套件的 hideOthers,
  * 驗屬性會綁死實作;驗行為才是驗契約(M32)。
  *
  * ── M 進場第一幀(2026-09-09,user 抓到「dialog 從左上角飛到中間」)──
@@ -30,6 +30,11 @@
  *       非 test-only 就必須帶 `openOverlayDocsStory(` 或 `inline: false`(story-rules.md「預設開啟的模態浮層 story」)。
  *   (D-browser) Dialog docs 頁頂層文件 `[role=dialog]` 可見數 = 0,且至少有一個 story iframe(隔離真的生效);
  *       canvas 的 OpenSnapshot 仍開著(隔離沒把快照弄關)。修前實測:4 個可見 dialog、7 個 fixed 開啟節點、0 iframe。
+ *   (D-static 追加,2026-10-15 r1b 複驗 F3)story 的 body 常只有一個 module 層元件(`<FourRegionShell />`,story-rules「元件一律定義在
+ *       module 層」)—— 開不開由那個元件決定,所以追進同檔的 module 層元件再判;AppShell 裡 `AgentPanelDock defaultOpen` 也算「預設開啟、
+ *       可能是模態浮層」:AI agent 放不下就是浮層(遮罩 + 宿主 inert + 焦點進面板),docs 畫布約 1000px 寬,四區版面一定放不下。
+ *   (D-browser 追加)AppShell / AgentPanel 展示的 docs 頁在 1440 與 1180 視窗:頂層文件 `[inert]` = 0、焦點不在任何 story 裡、
+ *       標題「展示」不在 inert 範圍裡。修前(be2f1324)AppShell 展示 docs 33 個 inert、兩個 AI agent 浮層互相 inert、× 與遮罩都按不到。
  *
  * 用法:node scripts/dialog-coexistence-invariant.mjs [--static <storybook-static dir>] [--selftest]
  *   --selftest 只跑對照組(靜態 fixture 必紅 + 瀏覽器注入 slide 必紅),不跑正式斷言。
@@ -50,6 +55,7 @@ import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser, openStory, StoryRenderInstrumentError, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { startDialogCoexistenceFixture, FixtureInstrumentError, COEXIST_FIXTURE_SOURCE } from './lib/dialog-coexistence-fixture.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const argValue = (flag) => { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : undefined }
@@ -96,26 +102,63 @@ function staticMotionScan() {
 // AgentPanelHeader 的 `defaultHistoryOpen`(歷史浮層快照)也算:非模態、但 portal 到 body,2026-09-10 實測 docs 殭屍會把它帶到別的 story 左上角
 const MODAL_TAG = /<(Dialog|Sheet|FileViewer|CommandDialog|AlertDialog|AgentPanelHeader)\b/
 const MODAL_OPEN_PROP = /<(?:Dialog|Sheet|FileViewer|CommandDialog|AlertDialog)\b[^>]*?\b(?:defaultOpen(?![=\w])|defaultOpen=\{true\}|open=\{true\})|<AgentPanelHeader\b[^>]*?\b(?:defaultHistoryOpen(?![=\w])|defaultHistoryOpen=\{true\})/s
-export function storyBlocks(src) {
-  // 以 `export const X` 切塊;每塊到下一個 export const 或檔尾
-  const idx = [...src.matchAll(/^export const (\w+)/gm)].map((m) => ({ name: m[1], at: m.index }))
-  return idx.map((e, i) => ({ name: e.name, body: src.slice(e.at, idx[i + 1]?.at ?? src.length) }))
+// module 層元件(`function X(` / `const X = (` / `const X: … = (`,X 大寫開頭)→ 原始碼片段(到下一個 module 層宣告為止)
+export function moduleComponents(src) {
+  const decl = /^(?:export\s+)?(?:function\s+([A-Z]\w*)\s*\(|const\s+([A-Z]\w*)\s*(?::[^=\n]+)?=\s*(?:React\.forwardRef|\())/gm
+  const starts = [...src.matchAll(/^(?:export\s+)?(?:function|const|let|type|interface|class)\s/gm)].map((m) => m.index)
+  const out = new Map()
+  for (const m of src.matchAll(decl)) {
+    const end = starts.find((at) => at > m.index) ?? src.length
+    out.set(m[1] ?? m[2], src.slice(m.index, end))
+  }
+  return out
 }
-export function docsIsolationViolations(src) {
-  const bad = []
-  for (const b of storyBlocks(src)) {
-    if (!MODAL_TAG.test(b.body)) continue
+/** story body + 它(遞迴)用到的同檔 module 層元件的原始碼 */
+export function expandedBody(body, components, seen = new Set()) {
+  let text = body
+  for (const [, name] of body.matchAll(/<([A-Z]\w*)\b/g)) {
+    if (seen.has(name) || !components.has(name)) continue
+    seen.add(name)
+    text += '\n' + expandedBody(components.get(name), components, seen)
+  }
+  return text
+}
+// AppShell 裡預設開著的 AI agent:放不下時是浮層(app-shell.spec.md「版面規則」§3、§9),docs 畫布寬下就是
+const AGENT_OPEN_IN_SHELL = (text) => /<AppShell\b/.test(text) && /<AgentPanelDock\b[^>]*?\b(?:defaultOpen(?![=\w])|defaultOpen=\{true\})/s.test(text)
+export function storyBlocks(src) {
+  // 以 `export const X` 切塊;每塊到下一個 module 層宣告(export const / function / const / type …)或檔尾。
+  // 2026-10-15 前切到「下一個 export const」:story 後面緊接著定義的 module 層元件會被算進前一則 story(追 module 層元件時誤報)
+  const idx = [...src.matchAll(/^export const (\w+)/gm)].map((m) => ({ name: m[1], at: m.index }))
+  const starts = [...src.matchAll(/^(?:export\s+)?(?:function|const|let|type|interface|class)\s/gm)].map((m) => m.index)
+  return idx.map((e) => ({ name: e.name, body: src.slice(e.at, starts.find((at) => at > e.at) ?? src.length) }))
+}
+/** 每一則 story 的 docs 隔離狀態:預設開著(模態浮層 / AppShell 裡的 AI agent)才列;testOnly / isolated 照原始碼判 */
+export function docsOpenStories(src) {
+  const out = []
+  const components = moduleComponents(src)
+  for (const block of storyBlocks(src)) {
+    // 判開不開:story 自己 + 它用到的同檔 module 層元件;判有沒有帶隔離參數:只看 story 自己(參數只能寫在 story 上)
+    const b = { name: block.name, body: expandedBody(block.body, components) }
+    const agentOverlay = AGENT_OPEN_IN_SHELL(b.body)
+    if (!MODAL_TAG.test(b.body) && !agentOverlay) continue
     // useState(true) 只認「餵給 open 的那個 state」:`const [open, setOpen] = useState(true)` + `<Modal open={open}`;
     // 同一 story 裡別的 useState(true)(如 showFilmstrip)不算(FileViewer anatomy Inspector 曾誤報)。
     const openStateTrue = /\[\s*open\s*,[^\]]*\]\s*=\s*(?:React\.)?useState(?:<[^>]*>)?\(\s*true\s*\)/.test(b.body)
-    const opensByDefault = MODAL_OPEN_PROP.test(b.body)
+    const opensByDefault = agentOverlay || MODAL_OPEN_PROP.test(b.body)
       || (openStateTrue && /<(?:Dialog|Sheet|FileViewer|CommandDialog|AlertDialog)\b[^>]*?\bopen=\{open\}/s.test(b.body))
     if (!opensByDefault) continue
-    const testOnly = /tags:\s*\[[^\]]*'test-only'/.test(b.body)
-    const isolated = /openOverlay(?:DocsStory|Parameters)\(/.test(b.body) || /inline:\s*false/.test(b.body)
-    if (!testOnly && !isolated) bad.push(b.name)
+    const testOnly = /tags:\s*\[[^\]]*'test-only'/.test(block.body)
+    const isolated = /openOverlay(?:DocsStory|Parameters)\(/.test(block.body) || /inline:\s*false/.test(block.body)
+    out.push({ name: b.name, testOnly, isolated })
   }
-  return bad
+  return out
+}
+export function docsIsolationViolations(src) {
+  return docsOpenStories(src).filter((s) => !s.testOnly && !s.isolated).map((s) => s.name)
+}
+/** docs 頁上會進 iframe 的 story 數 = 預設開著、不是 test-only、帶隔離參數的那幾則(test-only 不進 docs 頁) */
+export function docsIsolatedCount(src) {
+  return docsOpenStories(src).filter((s) => !s.testOnly && s.isolated).length
 }
 function staticDocsScan() {
   const files = walk(join(REPO, 'packages/design-system/src'), (n) => n.endsWith('.stories.tsx'))
@@ -142,8 +185,18 @@ function staticSelftest() {
   ck('selftest D:帶 openOverlayDocsStory 不得誤報', docsIsolationViolations(mk("  parameters: { docs: { story: openOverlayDocsStory('560px') } },")).length === 0)
   ck('selftest D:帶 openOverlayParameters 不得誤報', docsIsolationViolations(mk("  parameters: openOverlayParameters('560px'),")).length === 0)
   ck('selftest D:test-only probe 不得誤報', docsIsolationViolations(mk("  tags: ['test-only'],")).length === 0)
+  ck('selftest D:docs 期望 iframe 數 —— 帶隔離參數的預設開啟 story 算 1', docsIsolatedCount(mk("  parameters: openOverlayParameters('560px'),")) === 1)
+  ck('selftest D:docs 期望 iframe 數 —— test-only / 關著的 / 缺參數的都不算', docsIsolatedCount(mk("  tags: ['test-only'],\n  parameters: openOverlayParameters('560px'),")) === 0 && docsIsolatedCount(mk('', 'Dialog')) === 0 && docsIsolatedCount(mk('')) === 0)
   ck('selftest D:關著的 Dialog 不得誤報', docsIsolationViolations(mk('', 'Dialog')).length === 0)
   ck('selftest D:useState(true) 餵 open 也算預設開啟', docsIsolationViolations(`export const Y = {\n  render: () => { const [open, setOpen] = useState(true); return <Dialog open={open} onOpenChange={setOpen}><DialogContent /></Dialog> },\n}\n`).length === 1)
+  // 2026-10-15(r1b 複驗 F3):body 只有一個 module 層元件 → 追進去;AppShell 裡預設開著的 AI agent 算
+  const shellSrc = (params) => `function Dock() {\n  return <AgentPanelDock defaultOpen>{() => <AgentPanel />}</AgentPanelDock>\n}\nfunction Shell() {\n  return <AppShell agent={<Dock />}><main /></AppShell>\n}\nexport const FourRegions = {\n${params}\n  render: () => <Shell />,\n}\n`
+  ck('selftest D:story body 只有 module 層元件、裡面是 AppShell + AgentPanelDock defaultOpen 缺隔離必紅', docsIsolationViolations(shellSrc('')).length === 1)
+  ck('selftest D:同上帶 openOverlayDocsStory 不得誤報', docsIsolationViolations(shellSrc("  parameters: { docs: { story: openOverlayDocsStory('720px') } },")).length === 0)
+  ck('selftest D:module 層元件裡 defaultOpen 的 Dialog 也追得到', docsIsolationViolations(`function Scene() {\n  return <Dialog defaultOpen><DialogContent /></Dialog>\n}\nexport const S = {\n  render: () => <Scene />,\n}\n`).length === 1)
+  ck('selftest D:不在 AppShell 裡的 AgentPanelDock defaultOpen 不算(單獨使用多半並排,交給瀏覽器段量)', docsIsolationViolations(`export const T = {\n  render: () => <AgentPanelDock defaultOpen>{() => <AgentPanel />}</AgentPanelDock>,\n}\n`).length === 0)
+  ck('selftest D:AppShell 裡 AgentPanelDock 預設關著不得誤報', docsIsolationViolations(`export const U = {\n  render: () => <AppShell agent={<AgentPanelDock defaultOpen={false}>{() => null}</AgentPanelDock>}><main /></AppShell>,\n}\n`).length === 0)
+  ck('selftest D:story 後面緊接的 module 層元件不算進前一則 story', docsIsolationViolations(`export const A = {\n  render: () => <main />,\n}\n\nfunction Later() {\n  return <Dialog defaultOpen><DialogContent /></Dialog>\n}\nexport const B = {\n  parameters: { docs: { story: openOverlayDocsStory('560px') } },\n  render: () => <Later />,\n}\n`).length === 0)
   ck('selftest D:別的 useState(true) + open 初始 false 不得誤報', docsIsolationViolations(`export const Z = {\n  render: () => { const [showFilmstrip, setShow] = React.useState(true); const [open, setOpen] = React.useState(false); return <FileViewer open={open} onOpenChange={setOpen} /> },\n}\n`).length === 0)
 }
 
@@ -163,6 +216,17 @@ requireStorybookBuild(join(STATIC, 'iframe.html'), '先 npm run build-storybook,
 const sv = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
 const story = (id, mode = 'story') => `${sv.origin}/iframe.html?id=` + encodeURIComponent(id) + `&viewMode=${mode}`
+// 並存夾具(B 並存路徑 / G 幾何):2026-11 起不是 story(user 2026-09-11「Dialog的並存範例給我刪掉」,登記簿 A33),
+// 由 lib/dialog-coexistence-fixture.mjs 從原始碼打包、配同一份建置的 CSS 開(夾具 = scripts/test-fixtures/dialog-coexistence/fixture.tsx)
+let fx = null
+if (!SELFTEST) try {
+  fx = await startDialogCoexistenceFixture(sv.servedRoot)
+} catch (error) {
+  if (!(error instanceof FixtureInstrumentError)) throw error
+  if (out.length) console.log(out.join('\n'))
+  console.error(`\n✗ INSTRUMENT-FAIL ${error.message}(${COEXIST_FIXTURE_SOURCE})`)
+  await sv.stop(); process.exit(1)
+}
 
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
@@ -177,7 +241,7 @@ async function open(url, options = {}) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error
     if (out.length) console.log(out.join('\n'))
     console.error(`\n✗ ${error.message}`)
-    await browser.close(); await sv.stop(); process.exit(1)
+    await browser.close(); await sv.stop(); await fx?.stop(); process.exit(1)
   }
 }
 
@@ -200,8 +264,8 @@ const probe = (sel) => page.evaluate((s) => {
 if (!SELFTEST) {
   // ── (B) 並存路徑 ────────────────────────────────────────────────────────
   // 等 story 真的渲染(共享 runner 上固定 900ms 不夠:a646b6c2 讀回「找不到 #coexist-aside-input」;本機與前幾次 CI 都過)——
-  // 等被量的元素本身;對話框開啟後 suppressOthers 套上 inert 的那次重畫由靜止判定涵蓋(原本另睡 600ms)
-  await open(story('design-system-components-dialog-展示--coexistence-poc'), { waitFor: '#coexist-aside-input' })
+  // 等被量的元素本身;對話框開啟後 inertOutside 套上 inert 的那次重畫由靜止判定涵蓋(原本另睡 600ms)
+  await open(fx.url, { waitFor: '#coexist-aside-input', notFound: fx.notFound })
   const asideInput = await probe('#coexist-aside-input')
   const bgBtn = await probe('#coexist-background-btn')
 
@@ -276,7 +340,7 @@ if (!SELFTEST) {
   // 不以遮罩當 waitFor:遮罩是被驗的產品行為,沒出現要照實紅成「G … missing」,不能被讀成「沒量到」。
   // 渲染完成 + 靜止之後在同一個 task 裡量(原本 goto / 等遮罩兩處 .catch(() => {}) 吞掉,再固定睡 500ms)。
   {
-    const { probe: g } = await open(story('design-system-components-dialog-展示--coexistence-poc'), { probe: GEO })
+    const { probe: g } = await open(fx.url, { probe: GEO, notFound: fx.notFound })
     ck('G 對話框不與常駐側欄相交(v14 條 B 並列可操作)', !g.missing && !g.intersects, JSON.stringify(g.missing ?? { D: g.D, P: g.P }))
     ck('G 遮罩 = 舞台矩形(只佔宿主面積)', !g.missing && g.maskEqStage, JSON.stringify(g.missing ?? { M: g.M, S: g.S }))
     ck('G 側欄中心點點得到自己(沒被遮罩蓋)', !g.missing && g.panelHit)
@@ -306,15 +370,55 @@ if (!SELFTEST) {
       },
     })
     ck('D docs 頁頂層文件沒有可見的 dialog(修前 4 個)', d.rendered && d.dialogs === 0, `dialogs=${d.dialogs} fixedOpen=${d.fixedOpen} rendered=${d.rendered}`)
-    ck('D docs 頁真的用 iframe 隔離了預設開啟的 story(不是沒渲染)', d.iframes >= 1, `iframes=${d.iframes}`)
+    // 期望的 iframe 數照 Dialog 展示原始碼算(預設開著、非 test-only、帶隔離參數的 story 數):2026-10-28 D2 甲(user「不要給我一進頁就開著」)
+    // 之後展示全部改成按了才開 → 0 則、0 個 iframe 才對;原本寫死「≥ 1」等於把「Dialog docs 一定有預設開著的 story」當成要保證的性質(M37)。
+    // 隔離機制本身仍由下方 AppShell / AgentPanel 展示 docs(預設開著 AI agent,≥ 2 / ≥ 1 個 iframe)與上一條「頂層 0 個 dialog」把關。
+    const expectIframes = docsIsolatedCount(readFileSync(join(REPO, 'packages/design-system/src/components/Dialog/dialog.stories.tsx'), 'utf8'))
+    ck(`D docs 頁預設開啟的 story 都用 iframe 隔離(原始碼算出 ${expectIframes} 則;不是沒渲染)`, d.iframes === expectIframes, `iframes=${d.iframes} expected=${expectIframes}`)
     // meta layout:'centered' 會把隔離的 iframe 縮成內建 300px(對話框被擠到 204px);openOverlayParameters 用 padded 撐滿
-    ck('D 隔離的 iframe 有撐滿 docs 畫布(每個 ≥ 600px,centered 縮成 300px 就是回歸)', d.widths.length > 0 && d.widths.every((w) => w >= 600), `widths=${d.widths.join(',')}`)
+    if (expectIframes > 0) ck('D 隔離的 iframe 有撐滿 docs 畫布(每個 ≥ 600px,centered 縮成 300px 就是回歸)', d.widths.length === expectIframes && d.widths.every((w) => w >= 600), `widths=${d.widths.join(',')}`)
     // 不以對話框當 waitFor:「OpenSnapshot 開著」正是這條要驗的產品行為;渲染完成 + 靜止後量(原本 .catch 吞掉 + 固定睡 600ms)
     const { probe: snapshotOpen } = await open(story('design-system-components-dialog-展示--open-snapshot'), {
       probe: () => !!document.querySelector('[role="dialog"][data-state="open"]'),
     })
     ck('D canvas 的 OpenSnapshot 仍然開著(隔離只動 docs)', snapshotOpen)
   }
+
+  // ── (D-browser 追加,2026-10-15 r1b 複驗 F3)AppShell / AgentPanel 展示 docs 頁:頂層文件不得被 story 設成不可操作 ──
+  // 修前 AppShell 展示 docs(1440 / 1180):33 個 inert、標題「展示」在 inert 裡、兩個 AI agent 浮層互相 inert、焦點被拉進 inline story 的輸入盒。
+  // 兩個寬度:1440 = 常見桌機;1180 = 1440 螢幕扣掉 Storybook 側欄(docs 欄更窄)。
+  for (const width of [1440, 1180]) {
+    await page.setViewportSize({ width, height: 800 })
+    for (const [label, id, minIframes] of [['AppShell 展示', 'design-system-components-appshell-展示--docs', 2], ['AgentPanel 展示', 'design-system-components-agentpanel-展示--docs', 1]]) {
+      const { probe: d } = await open(story(id, 'docs'), {
+        storybook: false,
+        waitFor: () => {
+          if (!document.querySelector('#storybook-docs .sbdocs-content')) return false
+          const inner = [...document.querySelectorAll('[id^="story--"][id$="-inner"]')]
+          return document.querySelectorAll('[id^="story--"]').length > 0 && inner.every((el) => el.childElementCount > 0)
+        },
+        settleFrames: 20,
+        probe: () => {
+          const title = document.querySelector('#storybook-docs h1')
+          const a = document.activeElement
+          const inlineStory = a && a !== document.body && a.tagName !== 'IFRAME' ? a.closest('.docs-story') : null
+          return {
+            rendered: !!document.querySelector('#storybook-docs .sbdocs-content'),
+            inert: document.querySelectorAll('[inert]').length,
+            titleInert: !!title?.closest('[inert]'),
+            focusInInlineStory: !!inlineStory,
+            active: a ? `${a.tagName.toLowerCase()}${a.getAttribute('aria-label') ? `[${a.getAttribute('aria-label')}]` : ''}` : null,
+            iframes: [...document.querySelectorAll('iframe')].filter((f) => (f.getAttribute('src') || '').includes('viewMode=story')).length,
+          }
+        },
+      })
+      ck(`D ${label} docs(${width}):頂層文件沒有被 story 設成 inert、標題可操作、焦點沒被拉進 inline story`,
+        d.rendered && d.inert === 0 && !d.titleInert && !d.focusInInlineStory,
+        `inert=${d.inert} titleInert=${d.titleInert} focusInInlineStory=${d.focusInInlineStory} active=${d.active} iframes=${d.iframes}`)
+      ck(`D ${label} docs(${width}):預設開著 AI agent 的 story 各自進 iframe(≥ ${minIframes})`, d.iframes >= minIframes, `iframes=${d.iframes}`)
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 800 })
 }
 
 // ── (M) 進場第一幀:載入即凍住進場動畫,WAAPI seek 到 t=0 量中心偏移 ──
@@ -364,7 +468,7 @@ if (!SELFTEST) {
   ck('對照組 M:偏移方向 = 左上(dx<0 且 dy<0,即「從左上角飛入」)', !c.missing && c.first.dx < -1 && c.first.dy < -1)
 }
 
-await browser.close(); await sv.stop()
+await browser.close(); await sv.stop(); await fx?.stop()
 console.log(out.join('\n'))
 console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組全紅(儀器有效)' : '並存 / 進場第一幀 / docs 隔離 全通過'}`)
 process.exit(fail ? 1 : 0)

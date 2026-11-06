@@ -34,6 +34,26 @@ if [ "${CURRENT_BRANCH:-}" != "main" ] && [ "${CURRENT_BRANCH:-}" != "master" ];
   exit 0
 fi
 
+# .gitignore 命中、而且沒有被追蹤的路徑放行(2026-11-04,待辦 3i):main 保護的是「會進版本紀錄的檔」;
+# tmp/ 這類 gitignore 的工作區本來就不會進任何 commit,擋它只會逼人改用別的方式寫檔(等於繞過)。
+# 判法:先算路徑的實體位置(連結、.. 都解開)—— 實體位置要仍在 checkout 裡,再問 git check-ignore;
+# check-ignore 對已追蹤的檔一律答「不是 ignored」,所以被強制加進版本紀錄的檔照樣擋。
+# 算不出實體位置(沒有 python3、路徑跑出 checkout)或 git 失敗 = 照舊擋(fail closed)。
+IGNORED_TARGET=$(python3 - "$PROJECT_DIR" "$FILE_PATH" <<'PY' 2>/dev/null
+import os, sys
+root = os.path.realpath(sys.argv[1])
+target = sys.argv[2] if os.path.isabs(sys.argv[2]) else os.path.join(sys.argv[1], sys.argv[2])
+real = os.path.realpath(target)
+if real != root and not real.startswith(root + os.sep):
+    sys.exit(1)
+print(os.path.relpath(real, root))
+PY
+) || IGNORED_TARGET=""
+if [ -n "$IGNORED_TARGET" ] && [ "$IGNORED_TARGET" != "." ] \
+  && git -C "$PROJECT_DIR" check-ignore -q -- "$IGNORED_TARGET" 2>/dev/null; then
+  exit 0
+fi
+
 cat >&2 <<EOF
 🚨 PROTECTED-MAIN WORKBENCH BLOCKER(M28)
   target: ${FILE_PATH}

@@ -20,7 +20,7 @@
 | eslint-plugin | 自帶 node --test(50 case)| 手跑/CI 無(**未發佈 = 對 consumer 零效**,plan doc 批次 B) | ⚠️ 已知缺口(tracked) |
 | commands / agents(稀住戶) | knowledge-prune D2(2026-07-10 補 bullet:commands 對照 skill-invokes log / agents 用 git recency + transcript grep — 原 D2 零掃描此二 home) | 季度 | ⚠️ 低(住戶少、變動少) |
 | failure-class(病根→防線) | **dim 91 `audit-failure-class-coverage --check`(2026-07-10 新)** | 每 deep-audit + 每發版 | ✅ 強 |
-| provider/runtime/model 與獨立第二意見綁定 | Provider-neutral authority = `packages/governance/canonical/providers.json` + `infra/governance/providers/model-release-registry.json` + `provider-review-binding.mjs` + managed-CI model-release authority/readback。`check-codex-freshness.mjs` 僅是 **Codex local adapter diagnostic**(config/CODEX_HOME/CLI/evidence TTL/model identity fail closed)，不是 Claude/未來 provider 共通 workflow，也不再宣稱已接入 legacy deep-audit B.0 或 codex-collab Step 0.4。 | 每次 independent-review/deep-audit provider binding；Codex diagnostic 只在對應 adapter 明確執行 | ✅ contract 強 / ⚠️ live model/provider certification 仍以外部 readback 為準 |
+| provider/runtime/model 與獨立第二意見綁定 | Provider-neutral authority = `packages/governance/canonical/providers.json` + `infra/governance/providers/model-release-registry.json` + `packages/governance/src/provider-review-binding.mjs` + managed-CI model-release authority/readback。`check-codex-freshness.mjs` 僅是 **Codex local adapter diagnostic**(config/CODEX_HOME/CLI/evidence TTL/model identity fail closed)，不是 Claude/未來 provider 共通 workflow，也不再宣稱已接入 legacy deep-audit B.0 或 codex-collab Step 0.4。 | 每次 independent-review/deep-audit provider binding；Codex diagnostic 只在對應 adapter 明確執行 | ✅ contract 強 / ⚠️ live model/provider certification 仍以外部 readback 為準 |
 
 ## 誠實結論(回答「所有?」)
 

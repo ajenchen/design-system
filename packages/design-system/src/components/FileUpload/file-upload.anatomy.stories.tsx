@@ -1,7 +1,8 @@
 // @anatomy-exempt: 設計規格 anatomy 文件用 token-matrix / props doc 表格(教學對照,非 list-item raw-table 反 pattern)
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { FileUpload } from './file-upload'
+import { LiveFileUpload } from './_file-upload-demo'
+import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
@@ -23,11 +24,11 @@ const STATE_DESC: Record<StateKey, string> = {
 }
 
 // ── Inspector 的「假」state 版本 ── 直接用 data-state 覆寫,避免真的要拖檔才能看
+// 選了檔案照樣列出來(LiveFileUpload),不接空函式
 const MockDropzone = ({ state }: { state: StateKey }) => (
-  <FileUpload
+  <LiveFileUpload
     data-state={state}
     disabled={state === 'disabled'}
-    onUpload={() => {}}
   />
 )
 
@@ -38,22 +39,21 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>
-          自建 dropzone — 外層拖放 wrapper + 隱藏 `&lt;input type="file"&gt;` + 預設 icon / title /
+          自建 dropzone — 外層拖放 wrapper + 隱藏 <code>&lt;input type="file"&gt;</code> + 預設 icon / title /
           description 三段結構。consumer 可傳 children 整個覆寫內部結構。
         </Desc>
         <div className="max-w-lg">
-          <FileUpload onUpload={() => {}} />
+          <LiveFileUpload />
         </div>
         <ul className="text-caption text-fg-muted mt-3 list-disc pl-5 space-y-1">
           <li>
             <span className="font-mono">wrapper</span> — dashed border + rounded-md + 對稱
-            `p-[var(--layout-space-loose)]`(density-aware:md=16px / lg=24px),
-            `role="button"` + `tabIndex=0`,承載 drag events
+            <code>p-[var(--layout-space-loose)]</code>(density-aware:md=16px / lg=24px),
+            <code>role="button"</code> + <code>tabIndex=0</code>,承載 drag events
           </li>
           <li>
-            <span className="font-mono">default children</span> — 消費 <code>&lt;Empty&gt;</code> 元件
-            (`../Empty/empty.spec.md` 主檔),icon 走 Empty 的 `Avatar 48px neutral`,
-            title `text-body-lg font-medium`,description `text-body`,gap `mb-4` / `--item-gap-label-desc-reading-lg`(2px)。
+            <span className="font-mono">default children</span> — 消費 <code>&lt;Empty&gt;</code> 元件,icon 走 Empty 的 <code>Avatar 48px neutral</code>,
+            title <code>text-body-lg font-medium</code>,description <code>text-body</code>,gap <code>mb-4</code> / <code>--item-gap-label-desc-reading-lg</code>(2px)。
             改視覺去 Empty 改,FileUpload 自動跟進。
           </li>
           <li>
@@ -61,7 +61,7 @@ export const Overview: Story = {
             自行掌控內部結構(品牌 logo / 自訂排版)
           </li>
           <li>
-            <span className="font-mono">&lt;input type="file"&gt;</span> — `hidden`,經由 click /
+            <span className="font-mono">&lt;input type="file"&gt;</span> — <code>hidden</code>,經由 click /
             Enter / Space 觸發
           </li>
         </ul>
@@ -88,8 +88,8 @@ export const Overview: Story = {
                 ['maxSize', 'number', '—', '單檔最大 bytes;超過進 onReject'],
                 ['disabled', 'boolean', 'false', '完全停用(語意 token bg-disabled + cursor-not-allowed;互動由 handler isBlocked guard 擋,非 pointer-events-none)'],
                 ['variant', "'dropzone' | 'button'", "'dropzone'", '觸發外觀:dropzone 大拖放區(drag + click)/ button 緊湊按鈕(click-only,form-friendly)'],
-                ['buttonLabel', 'string', "'Choose file'", "variant='button' 的按鈕文字"],
-                ['title', 'string', "'Click or drag file here to upload'", 'dropzone 預設結構(Empty)的主標題；button 忽略'],
+                ['buttonLabel', 'string', "'選擇檔案'", "variant='button' 的按鈕文字(也可經 I18nProvider 換字)"],
+                ['title', 'string', "'拖曳檔案到這裡,或點擊選取'", 'dropzone 預設結構(Empty)的主標題；button 忽略(也可經 I18nProvider 換字)'],
                 ['description', 'string', '單/多檔字串自動切換', 'dropzone 預設結構(Empty)的副標題；button 忽略'],
                 ['children', 'ReactNode', '—', 'dropzone 傳入則整個覆寫預設 Empty；button 忽略'],
                 ['loading', 'boolean', 'false', '(deferred — 頭像/無清單單檔場景待定義,已從 showcase 移除)async 處理中:CircularProgress 取代內容、isBlocked guard 擋互動、aria-busy=true'],
@@ -161,7 +161,7 @@ export const Inspector: Story = {
               <div className="flex items-center gap-1.5">
                 border:{' '}
                 <TokenCell token={state === 'drag-over' ? '--primary-hover' : '--border'} />
-                <span className="text-fg-muted">(idle `--border` 元件邊框;hover=drag-over 統一 `--primary-hover`(blue-5),純 border-driven)</span>
+                <span className="text-fg-muted">(idle <code>--border</code> 元件邊框;hover=drag-over 統一 <code>--primary-hover</code>(blue-5),純 border-driven)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 icon glyph: <TokenCell token={state === 'disabled' ? '--fg-disabled' : '--foreground'} />
@@ -221,7 +221,7 @@ export const ColorMatrix: Story = {
                 <Td>
                   <TokenCell token="--foreground" />
                 </Td>
-                <Td>`--border` 元件邊框(非 `--divider`);hover → border 切 `--primary-hover`(同 drag-over)</Td>
+                <Td><code>--border</code> 元件邊框(非 <code>--divider</code>);hover → border 切 <code>--primary-hover</code>(同 drag-over)</Td>
               </tr>
               <tr>
                 <Td mono>drag-over = hover</Td>
@@ -234,7 +234,7 @@ export const ColorMatrix: Story = {
                 <Td>
                   <TokenCell token="--foreground" />
                 </Td>
-                <Td>hover 與 drag-over 統一:純 border-driven(只切 `--primary-hover` 邊框,底色維持 surface,對齊 Ant Dragger)</Td>
+                <Td>hover 與 drag-over 統一:純 border-driven(只切 <code>--primary-hover</code> 邊框,底色維持 surface,對齊 Ant Dragger:hover 與拖入同一條規則、只換 borderColor)</Td> {/* 來源:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/style/dragger.ts#L12-L49 */}
               </tr>
               <tr>
                 <Td mono>disabled</Td>
@@ -247,7 +247,7 @@ export const ColorMatrix: Story = {
                 <Td>
                   <TokenCell token="--fg-disabled" />
                 </Td>
-                <Td>語意 token(非 opacity):bg→`--disabled`、邊框不變色、文字 + icon glyph → `--fg-disabled`(icon-circle 維持 muted)+ `cursor-not-allowed`</Td>
+                <Td>語意 token(非 opacity):bg→<code>--disabled</code>、邊框不變色、文字 + icon glyph → <code>--fg-disabled</code>(icon-circle 維持 muted)+ <code>cursor-not-allowed</code></Td>
               </tr>
             </tbody>
           </table>
@@ -280,16 +280,16 @@ export const SizeMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-6">
       <div>
-        <H3>本元件不提供 `size` 變體</H3>
+        <H3>本元件不提供 <code>size</code> 變體</H3>
         <Desc>
           FileUpload 是 self-contained primitive(獨立拖放區),不參與 field-height family。
-          內部 padding 為對稱 `p-[var(--layout-space-loose)]`(density-aware:md=16px / lg=24px),
+          內部 padding 為對稱 <code>p-[var(--layout-space-loose)]</code>(density-aware:md=16px / lg=24px),
           預設 children 的 icon / title / description 尺寸
-          由 Empty 元件 擁有(主檔)(`../Empty/empty.spec.md`)。
+          由 Empty 元件擁有。
           <br />
           <strong>空間大小由 consumer 以 wrapper width / min-height 控制</strong>
-          ——如需窄版擺在表單欄位旁,改用 `variant="button"`
-          (見「設計原則」UsageGuidance「表單內 inline field」)。
+          ——如需窄版擺在表單欄位旁,改用 <code>variant="button"</code>
+          (<StoryLink kind="Design System/Components/FileUpload/設計原則" name="使用指引">設計原則「使用指引」的表單內 inline field</StoryLink>)。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
@@ -335,7 +335,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>上傳流程事件</H3>
-        <Desc>拖放 / 點擊 / 鍵盤三種觸發路徑,全部匯聚到同一個 `filterAndDispatch`。</Desc>
+        <Desc>拖放 / 點擊 / 鍵盤三種觸發路徑,全部匯聚到同一個 <code>filterAndDispatch</code>。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead>
@@ -349,17 +349,17 @@ export const StateBehavior: Story = {
               <tr>
                 <Td mono>dragenter</Td>
                 <Td>檔案拖入區塊</Td>
-                <Td>`data-state="drag-over"`(border-primary-hover;底色維持 surface,純 border-driven = hover)</Td>
+                <Td><code>data-state="drag-over"</code>(border-primary-hover;底色維持 surface,純 border-driven = hover)</Td>
               </tr>
               <tr>
                 <Td mono>dragleave</Td>
                 <Td>檔案拖出區塊</Td>
-                <Td>回 `data-state="idle"`</Td>
+                <Td>回 <code>data-state="idle"</code></Td>
               </tr>
               <tr>
                 <Td mono>drop</Td>
                 <Td>放開檔案</Td>
-                <Td>filter(accept / maxSize)→ `onUpload(accepted)` + `onReject(rejected, reason)`</Td>
+                <Td>filter(accept / maxSize)→ <code>onUpload(accepted)</code> + <code>onReject(rejected, reason)</code></Td>
               </tr>
               <tr>
                 <Td mono>click / Enter / Space</Td>
@@ -379,7 +379,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>過濾規則</H3>
         <Desc>
-          單一檔案同時通過 `accept` 和 `maxSize` 才進 accepted。拒絕原因分 `'size'` / `'type'`
+          單一檔案同時通過 <code>accept</code> 和 <code>maxSize</code> 才進 accepted。拒絕原因分 <code>'size'</code> / <code>'type'</code>
           兩類,consumer 可據此顯示不同錯誤訊息(e.g., Toast「檔案超過 5 MB」vs「不支援此格式」)。
         </Desc>
         <div className="overflow-x-auto">
@@ -420,9 +420,9 @@ export const StateBehavior: Story = {
       <div>
         <H3>Disabled 時的行為</H3>
         <Desc>
-          disabled 時 drag / click / Enter / Space 全部無反應 —— 由各 handler 的 `isBlocked` guard 擋
-          (2026-06-03 改:不用 `pointer-events-none`,否則 `cursor-not-allowed` 會失效);hidden input 也帶
-          `disabled`,避免 screen reader 聚焦。視覺走語意 token(`bg-disabled` + 文字/icon `fg-disabled`,非 opacity)。
+          disabled 時 drag / click / Enter / Space 全部無反應 —— 由各 handler 的 <code>isBlocked</code> guard 擋
+          (2026-06-03 改:不用 <code>pointer-events-none</code>,否則 <code>cursor-not-allowed</code> 會失效);hidden input 也帶
+          <code>disabled</code>,避免 screen reader 聚焦。視覺走語意 token(<code>bg-disabled</code> + 文字/icon <code>fg-disabled</code>,非 opacity)。
         </Desc>
       </div>
     </div>
@@ -435,8 +435,15 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n- dropzone 使用 role=\"button\" + tabIndex=0(disabled/loading 時 -1)，Enter / Space 開啟選檔；accessible name 來自預設 Empty 文字或自訂 children / aria-label\n- button variant 使用原生 DS Button，accessible name 來自 buttonLabel\n- <input type=\"file\"> 以 hidden(display:none) 隱藏，移出無障礙樹；互動由當前 variant 的可見觸發元件承載\n- 檔案清單(有 onRemove)= 一個 Tab 停靠點:↑↓ 換列、→ 進該列的移除鈕、← 回列、Tab 一下離開(待辦總帳 B9;按鍵表住 file-upload.spec.md「A11y 預設 › 檔案清單鍵盤」)"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <ul className="list-disc pl-5 space-y-1">
+          <li>dropzone 使用 role="button" + tabIndex=0(disabled/loading 時 -1)，Enter / Space 開啟選檔；accessible name 來自預設 Empty 文字或自訂 children / aria-label</li>
+          <li>button variant 使用原生 DS Button，accessible name 來自 buttonLabel</li>
+          <li>&lt;input type="file"&gt; 以 hidden(display:none) 隱藏，移出無障礙樹；互動由當前 variant 的可見觸發元件承載</li>
+          <li>檔案清單(有 onRemove)= 一個 Tab 停靠點:↑↓ 換列、→ 進該列的移除鈕、← 回列、Tab 一下離開</li>
+        </ul>
+      </div>
     </div>
   ),
 }

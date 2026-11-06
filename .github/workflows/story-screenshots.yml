@@ -17,7 +17,7 @@ on:
         default: '800x900'
         type: string
       touch:
-        description: 'Touch emulation(pointer: coarse — 驗 Select/Combobox native 分支)'
+        description: 'Touch emulation(pointer: coarse — 驗 Select native 分支;Combobox 不分裝置)'
         required: false
         default: false
         type: boolean

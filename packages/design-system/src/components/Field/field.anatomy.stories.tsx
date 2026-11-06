@@ -73,7 +73,7 @@ export const Overview: Story = {
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'context.size 傳給 input-class control(Input / NumberInput / Select);primitive 不讀'],
                 ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'context.mode 傳給 Field Controls'],
-                ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),view×naked 用 transparent border;2026-07-09 `bare` 退役"],
+                ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),view×naked 用 transparent border;2026-07-09 bare 退役"],
                 ['controlLayout', "'inline' | 'block'", '(自動偵測)', '逃生艙:覆寫 control area 佈局(consumer 手寫 JSX 當 control 無法偵測時用)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -187,7 +187,7 @@ export const Inspector: Story = {
 }
 
 export const OrientationMatrix: Story = {
-  name: '方向 × 控制元件 矩陣',
+  name: '方向與控制元件對照',
   render: () => (
     <div className="flex flex-col gap-10">
       <div>
@@ -237,15 +237,14 @@ export const OrientationMatrix: Story = {
                   { value: 'tw', label: '台北 (UTC+8)' },
                   { value: 'jp', label: '東京 (UTC+9)' },
                 ]}
-                value="tw"
-                onChange={() => {}}
+                defaultValue="tw"
               />
             </Field>
             <Field orientation="horizontal">
               <FieldLabel>訂閱電子報</FieldLabel>
-              {/* 混合表單(Input/Select 同列)= Form-edit 情境 → Switch 靠左對齊其他控件
-                  (switch.spec.md「兩種對齊慣例」判準;ml-0 覆寫 horizontal Field 預設 ml-auto) */}
-              <Switch defaultChecked className="ml-0" />
+              {/* 混合表單(Input/Select 同列)= Form-edit 情境 → Switch 跟其他控件同起點
+                  (switch.spec.md「設定列 vs 水平 Field」;2026-10-21 起是預設,不再需要 ml-0 覆寫) */}
+              <Switch defaultChecked />
             </Field>
             <Field orientation="horizontal">
               <FieldLabel>允許搜尋引擎索引</FieldLabel>
@@ -267,7 +266,7 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>三種 Size — 對齊 field-height 系統</H3>
-        <Desc>Field 的 size 透過 context 傳遞給 input-class control(Input / NumberInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker 等,皆經 useResolvedFieldSize 解析),控制其內部高度對齊 `--field-height-*` tier(見 uiSize.spec.md)。Slider / Switch / Checkbox / Rating 等 primitive 的 edit 態維持原生尺寸、不隨 Field size 變高(Switch / Checkbox 仍經 useResolvedFieldSize 解析 size,僅用於 readonly 灰框 chrome;Rating 的星 px 跟解析出的 size 走(20/24/24),但不套容器高;Slider 完全不讀 context size。見 field.spec.md「為什麼 primitive 不自己變高」),其行高節奏改由 Field control-area 的 min-h-field-{'{size}'} 提供——同一 Field 內所有 control 因此自動對齊高度。</Desc>
+        <Desc>Field 的 size 會傳給裡面的輸入類控件(Input / NumberInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker 等),控件高度對齊 <code>--field-height-*</code> 三階。Slider / Switch / Checkbox / Rating 編輯時維持自己的尺寸、不隨 Field size 變高(Switch / Checkbox 的 size 只用在唯讀灰框;Rating 的星跟著 size 變大(20/24/24),但不套容器高;Slider 不讀 size),它們的行高節奏改由 Field 控件區的最小高度 <code>min-h-field-{'{size}'}</code> 提供 —— 同一個 Field 裡的控件因此自動對齊高度。</Desc>
         <div className="grid grid-cols-3 gap-6">
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="border border-dashed border-divider rounded-md p-4">
@@ -285,8 +284,7 @@ export const SizeMatrix: Story = {
                   <FieldLabel>時區</FieldLabel>
                   <Select
                     options={[{ value: 'tw', label: '台北' }]}
-                    value="tw"
-                    onChange={() => {}}
+                    defaultValue="tw"
                   />
                 </Field>
               </FieldGroup>
@@ -434,9 +432,8 @@ export const ColorMatrix: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Field 本身不畫這些色——只透過 `context`(mode / invalid / disabled / required / size)把
-          state 傳給子元件,由 FieldLabel / FieldDescription / FieldError 和 Field Controls(Input /
-          NumberInput / etc.)各自渲染對應視覺。詳見 `field-controls.spec.md`。
+          Field 本身不畫這些色——只把狀態(mode / invalid / disabled / required / size)傳給子元件,
+          由 FieldLabel / FieldDescription / FieldError 和裡面的控件(Input / NumberInput 等)各自畫出對應的樣子。
         </p>
       </div>
 
@@ -487,7 +484,7 @@ export const FieldGroupBehavior: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>FieldGroup — 管理多 Field 垂直間距</H3>
-        <Desc>FieldGroup 統一管理欄位垂直間距 —— 單一值 `--layout-space-loose`(md 16px / lg 24px),隨 density 一起縮放。沒有 per-instance 選檔:表單間距是系統級設定,不需 consumer 手算,也不該每個表單各自挑。</Desc>
+        <Desc>FieldGroup 統一管理欄位垂直間距 —— 單一值 <code>--layout-space-loose</code>(md 16px / lg 24px),隨 density 一起縮放。沒有 per-instance 選檔:表單間距是系統級設定,不需 consumer 手算,也不該每個表單各自挑。</Desc>
         <div className="grid grid-cols-2 gap-6 max-w-4xl">
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">vertical orientation</div>
@@ -522,8 +519,7 @@ export const FieldGroupBehavior: Story = {
                 <FieldLabel>時區</FieldLabel>
                 <Select
                   options={[{ value: 'tw', label: '台北 (UTC+8)' }]}
-                  value="tw"
-                  onChange={() => {}}
+                  defaultValue="tw"
                 />
               </Field>
             </FieldGroup>
@@ -540,7 +536,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"Field 本身只是排版容器,不接管任何鍵盤事件——它把焦點、鍵盤與互動全都交給裡面的輸入控件(Input / Select / 日期選擇器等)。\n\n  鍵盤操作  :\n\n- Tab 鍵會把焦點移進裡面的輸入控件,使用者直接操作該控件,不需要滑鼠。\n- 取消編輯、按 Esc 收起等行為,由控件本身或放置它的容器(例如表格儲存格)決定,Field 不負責。\n\n  焦點指示  :欄位家族的焦點指示是「欄位邊框轉成主色」(1px),不另外畫一圈外框 —— 不論在裡面打字、還是選單關著時焦點停在欄位本身,都長同一個樣子。唯讀欄位的邊框是透明的、沒有顏色可轉,才改用整套設計系統共用的外框(往外 2px)。Field 不另外搶焦點。\n\n  驗證標準  :Storybook 的無障礙檢查面板應該沒有任何嚴重問題;只用鍵盤就能完整操作;文字對比至少 4.5:1、介面元素至少 3:1(WCAG AA)。"}</p>
     </div>
   ),

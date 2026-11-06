@@ -25,6 +25,7 @@ import {
   runClosedGit,
 } from './closed-tool-execution.mjs'
 import { resolveProvisionedPlaywrightRuntime } from '../../infra/governance/lib/playwright-runtime.mjs'
+import { removeTreeRepairingOwnerPermissions } from '../../infra/governance/lib/common.mjs'
 import { compareUtf8Bytes } from './provider-lifecycle.mjs'
 
 function fail(message) {
@@ -701,5 +702,7 @@ function lstatExists(path) {
 
 export function removeDisposableRepositorySnapshot(snapshot) {
   if (!snapshot?.parent) return
-  rmSync(snapshot.parent, { recursive: true, force: true })
+  // 被砍的子行程可能在快照裡留下唯讀目錄;先補擁有者權限再刪(只對真目錄、不跟隨 symlink),
+  // 不讓一次中斷把整個快照永遠留在磁碟上(2026-10-14,SM2)。
+  removeTreeRepairingOwnerPermissions(snapshot.parent)
 }

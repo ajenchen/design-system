@@ -19,7 +19,7 @@
 - **Family 3: Pill anatomy** → `components/Button/button.spec.md`「Pill Layout」章節
 - **Family 4: Field control anatomy** → `components/Field/field-controls.spec.md`
 
-**命名**: folder `item-anatomy/` = spec `item-anatomy.spec.md` = tsx `item-anatomy.tsx`,scope = F1/F2 row anatomy。「item」對齊世界級 idiom(Material `ListItem` / Polaris `ResourceItem` / Ant `List.Item`);slot components 用 `Item{Slot}` 命名(`ItemIcon` / `ItemAvatar` / `ItemLabel` / `ItemSuffix` / `ItemInlineAction`)—— 對齊 Radix compound-component 風格。無 `ItemLayout` 這種帶「Layout」後綴的 export(違反「element-level 不用 layout 字」鐵律)。
+**命名**: folder `item-anatomy/` = spec `item-anatomy.spec.md` = tsx `item-anatomy.tsx`,scope = F1/F2 row anatomy。「item」對齊世界級 idiom(Material `ListItem` / Polaris `ResourceItem` / Ant `List.Item`);slot components 用 `Item{Slot}` 命名(`ItemIcon` / `ItemAvatar` / `ItemLabel` / `ItemSuffix` / `ItemInlineAction`)—— 對齊 Radix compound-component 風格。無 `ItemLayout` 這種帶「Layout」後綴的 export(違反「element-level 不用 layout 字」鐵律)([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/ListItem/ListItem.js)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/lists/resource-item.mdx)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/list/index.en-US.md#L92))。
 
 ---
 
@@ -82,12 +82,10 @@
 
 | DS | Primitive 名稱 | 對應 slot API |
 |----|--------------|---------------|
-| **Material M3** | `ListItem` + `ListItemText` + `ListItemAvatar` + `ListItemIcon` + `ListItemSecondaryAction` | avatar / icon / primary text / secondary text / trailing action |
+| **Material UI(MUI)** | `ListItem` + `ListItemText` + `ListItemAvatar` + `ListItemIcon` + `ListItemSecondaryAction`(或 `secondaryAction` prop) | avatar / icon / primary text / secondary text / trailing action([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/ListItem/ListItem.js#L13-L41)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/lists/resource-item.mdx)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/list/index.en-US.md#L92)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/ActionList/index.ts#L7-L49)) |
 | **Shopify Polaris** | `ResourceItem` + `ResourceList` | media(avatar / thumbnail)/ name / accessibilityLabel / shortcutActions |
-| **Atlassian(ADG)** | `Item` / `ItemGroup`(primitive + composition) | elemBefore / elemAfter / description |
 | **Ant Design** | `List.Item` + `List.Item.Meta` | avatar / title / description / actions |
 | **GitHub Primer** | `ActionList.Item`(+ `LeadingVisual` / `TrailingVisual` / `Description`) | leadingVisual / trailingVisual / description |
-| **Apple HIG(UIKit)** | `UIListContentConfiguration`(system-provided cell layout) | image / text / secondaryText |
 
 **共識**:每家 DS 都 ship list item primitive + slot API,禁止 consumer 自刻 — 自刻 = 跨產品視覺語言斷裂。
 
@@ -164,16 +162,16 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 - **水平 padding**: `px-[var(--layout-space-loose)]`(sidebar context) / `px-3`(menu context),由 consumer 脈絡決定
 - **垂直 padding**: `py-[calc((var(--field-height-N) N∈{sm,md,lg}-1lh)/2)]` 的 item-layout 公式
-- **字重**: `font-medium`(500),**不隨 selected 變**
-- **預設文字色**: `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
-- **Hover**: `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
+- **字重**(SidebarMenuButton、TreeItem): `font-medium`(500),**不隨 selected 變**
+- **預設文字色**(SidebarMenuButton、TreeItem): `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
+- **Hover**(有列底色的列;沒有列底色的設定列 / 勾選框列不適用): `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
 - **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
-- **選中 × 互動疊加（2026-08-11 user 拍板；本格是全家族唯一 owner，消費者禁自行發明）**：
+- **選中 × 互動疊加（2026-08-11 user 拍板:對 AI 列的檔案清單(第一列 AI 寫的改法『滑鼠 hover 選中項釘住不變』)回「可以，做到完整完美並自行驗證到完美無誤沒有任何偏移」;鍵盤兩列以下表各列日期為準；本格是全家族唯一 owner，消費者禁自行發明）**：
 
   | 疊加 | 指示 | 理由 |
   |---|---|---|
-  | 選中列 × 滑鼠 hover | `bg-neutral-selected`（**釘住不變**） | hover 回饋 = 誠實回答「再點會發生什麼」；選中列再點無效果，且滑鼠使用者自有游標不需底色指位。對齊 Polaris Navigation / Carbon side-nav（兩家皆明文釘住） |
-  | **未選中列 × 鍵盤焦點／反白** | **畫框**（`focus-ring-inset`，2px 內描邊），底色**不變**（透明） | **user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」（owner = `ds-canonical/references/focus-canonical.md` 規則二）。2026-09-07〜09-08 這格寫「`bg-neutral-hover`，與滑鼠 hover 同色、不畫框」——那是 AI 從 `menu-item.spec.md` 舊句與 Material／Radix／cmdk 慣例推導的，不是 user 決定，已撤回。**常駐清單**（TreeView／Sidebar／Tabs／DataTable／TimePicker 欄，不搶反白）：滑鼠若剛好停在游標列，hover 底色照第一列另外出現（底色 + 框都在）。**會搶反白的浮層選單**（cmdk／Radix 反白）：反白只有一個主人，依**反白來歷**分流（`hooks/use-input-modality.ts` `useCursorMover`）—— 滑鼠移過搬走反白 → 底色、無框；鍵盤搬走反白 → 框、無底色，而且滑鼠停留列的 hover 底色**一起消失**（項目上沒有 `hover:` 樣式，滑鼠停著不算搶；2026-09-09 下午 user 三問，一手來源證實，owner = focus-canonical 規則一「兩類元件」）|
+  | 選中列 × 滑鼠 hover | `bg-neutral-selected`（**釘住不變**） | hover 回饋 = 誠實回答「再點會發生什麼」；選中列再點無效果，且滑鼠使用者自有游標不需底色指位。對齊 Polaris Navigation / Carbon side-nav（兩家皆明文釘住）([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Navigation/Navigation.module.css#L300-L308)、[來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/ui-shell/side-nav/_side-nav.scss#L268-L270)) |
+  | **未選中列 × 鍵盤焦點／反白** | **畫框**（`focus-ring-inset`，2px 內描邊），底色**不變**（透明） | **user 2026-09-09 拍板**〔UD-D11〕「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」「唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」（owner = `ds-canonical/references/focus-canonical.md` 規則二）。2026-09-07〜09-08 這格寫「`bg-neutral-hover`，與滑鼠 hover 同色、不畫框」——那是 AI 從 `menu-item.spec.md` 舊句與 Material／Radix／cmdk 慣例推導的，不是 user 決定，已撤回。**常駐清單**（TreeView／Sidebar／Tabs／DataTable／TimePicker 欄，不搶反白）：滑鼠若剛好停在游標列，hover 底色照第一列另外出現（底色 + 框都在）。**會搶反白的浮層選單**（cmdk／Radix 反白）：反白只有一個主人，依**反白來歷**分流（`hooks/use-input-modality.ts` `useCursorMover`）—— 滑鼠移過搬走反白 → 底色、無框；鍵盤搬走反白 → 框、無底色，而且滑鼠停留列的 hover 底色**一起消失**（項目上沒有 `hover:` 樣式，滑鼠停著不算搶；2026-09-09 下午 user 三問，一手來源證實，owner = focus-canonical 規則一「兩類元件」）|
   | 選中列 × 鍵盤焦點／反白 | **畫框**（`focus-ring-inset`，2px 內描邊） | **2026-09-07 user 拍板**，原話「A5畫框」。底色已經被「選中」佔走，不能再把「游標在這裡」這第二個意義擠進同一個通道——**同一個元素上不得有兩種焦點指示**。原本的 `bg-neutral-selected-focus`（深一階）已隨此格退役。**框疊在選中底色上**。虛擬焦點選單（cmdk／Radix 反白）**另加鍵盤模態條件**（`hooks/use-input-modality.ts`；滑鼠點開時已選項不畫框,2026-09-08）；滑鼠停在游標列上時底色釘住、框照畫（2026-09-09 起不再用 `not-hover:` 分流）；真焦點元件用 `focus-visible:` |
   | 選中列 × 按壓 | 列元件不設按壓底色；`--neutral-selected-active` 為**按壓專屬**（唯一消費者 Button toggle） | active = 瞬時按壓（2026-04-10 誕生教義）。2026-07-05 D4 借 `-active` 裝反白 + 訊號漏到滑鼠，2026-08-11 糾正歸位 |
 
@@ -186,8 +184,8 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **Size variants**: sm / md / lg 跟 `--field-height-*` family 一致
 - **Icon 尺寸控制**: 用 `ICON_SIZE` 常數 `{ sm: 16, md: 16, lg: 20 }` 對齊 `--field-height-*`,並**透過 `size` prop 直接傳給 Lucide icon**(不要用 CSS selector 如 `[&>svg]:size-4`——當 icon 被包在 `h-[1lh]` wrapper 裡時,`>` 直接子選擇器失效,Lucide 會 fallback 到 24px 預設)。MenuItem / TreeView / SidebarMenuButton 都這樣做,新元件照抄
 - **Row header(分組標題)**: 用 `MenuItem header={true}` 模式,`font-medium text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry(同 px / 同 py / 同 text size)
-- **Row header 計數 suffix**(2026-07-08 WM 戰役 codify,user 拍板):分組標題帶總數時 = **標題靠左、純數字靠右**(space-between,即 suffix slot 位置 `ml-auto`)。數字規格走既有 suffix value canonical(下方 metadata 表「fg-muted、字體大小與 label 相同」)+ `font-normal` + `tabular-nums`;count = 0 不渲染。**禁**把 count 串進 label 字串相鄰放(「Unstarted (2)」— 6 家世界級無一家括號串接:Primer CounterLabel / Ant Badge / Atlassian Badge 皆結構化 slot);字串層(aria-label / 純文字匯出)可用括號形。互動導覽元素(tab / segmented / sidebar item)的計數仍走 `badge` slot(tabs.spec.md「badge 傳達計數」),不適用本條。
-- **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row(訊息列)」
+- **Row header 計數 suffix**(2026-07-08 WM 戰役 codify,user 拍板):分組標題帶總數時 = **標題靠左、純數字靠右**(space-between,即 suffix slot 位置 `ml-auto`)。數字規格走既有 suffix value canonical(下方 metadata 表「fg-muted、字體大小與 label 相同」)+ `font-normal` + `tabular-nums`;count = 0 不渲染。**禁**把 count 串進 label 字串相鄰放(「Unstarted (2)」—— 數字要能單獨套 suffix value 樣式(fg-muted、`tabular-nums`)、count = 0 時整個不渲染,串進字串就做不到);字串層(aria-label / 純文字匯出)可用括號形。互動導覽元素(tab / segmented / sidebar item)的計數仍走 `badge` slot(tabs.spec.md「`badge` 傳達該 tab 底下的待處理計數」),不適用本條。
+- **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row」
 - **可收合 section header 組合 canonical**(2026-07-08 R3-7 拍板 + 2026-07-10 codify 進 DS;**組合非元件** — SectionHeader 留產品客製,但 layout 全消費本 canonical):(1) chevron = **title 後的 suffix inline action**(非 prefix、非獨立按鈕群);(2) 可選 description 與 title 間距用 `--item-gap-label-desc-*` token;(3) endSlot(操作鈕)只有 title 一行時垂直置中;(4) 同構標題列 ≥ 2 份必抽共用元件(WM `SectionHeader.tsx` 錨例 — Description / Attachments / Child work items 三份同構收斂)。手刻簽名(Chevron + justify-between + 可點且無共用元件)由 consumer 防線攔(escape `@section-header-ok:`)。
 
 ### 整列可點時,誰當那顆控件(2026-09-24 立;本節是全家族唯一 owner,消費者禁自行發明)
@@ -200,7 +198,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### ⛔ 2026-09-24 重寫:先前這一節是從實作切入的
 
-原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些,而不是導果為因,我他媽今天講了一百次了」(commit `c8821266` 訊息第 3 行;2026-09-27 補回先前被截掉的後半句)。把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
+原本的四題,第二題是「動作鈕排到外面後,剩下的內容裝不裝得進一顆 `<button>`?」——**那不是設計問題,那是 HTML 的限制。** user 逐字:「我要的是從設計面去定義這些，而不是導果為因，我他媽今天講了一百次了」(commit `c8821266` 訊息第 3 行;2026-09-27 補回先前被截掉的後半句)。把 markup 的限制寫成判準,等於用「能怎麼蓋」回答「這是什麼」。下面改成先問設計,實作是後果。
 
 ---
 
@@ -212,7 +210,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 |---|---|
 | **Ant Design** 原始碼 frontmatter(釘 6.6.5) | [`components/menu/index.en-US.md#L3-L5`](https://github.com/ant-design/ant-design/blob/6.6.5/components/menu/index.en-US.md#L3-L5):`group: Navigation`,描述 "A versatile menu for **navigation**"<br>[`components/tree/index.en-US.md#L3-L5`](https://github.com/ant-design/ant-design/blob/6.6.5/components/tree/index.en-US.md#L3-L5):`group: **Data Display**",描述 "Multiple-level structure list" |
 | **Primer** `content/ui-patterns/navigation.mdx`(釘 2026-09-27 抓到的 main HEAD) | "A tree view **isn't semantically a form of navigation**: it's for **activating an option from a hierarchical list**."([`navigation.mdx#L150`](https://github.com/primer/design/blob/87f799f202ec95df15c99f473c9c0c803da8e6b3/content/ui-patterns/navigation.mdx#L150)) |
-| **Carbon** tree-view usage「When not to use」(釘 carbon-website `d8783ad2`) | "**As the primary navigation in a product's UI.** Instead, use the UI Shell left panel for product navigation."([`tree-view/usage.mdx#L92`](https://github.com/carbon-design-system/carbon-website/blob/d8783ad2ae3b5e59c58f58311491f8a2c4e62631/src/pages/components/tree-view/usage.mdx#L92))<br>⚠️ **這句的範圍是「主導覽」,不是「側邊欄」** —— 跟 Primer 那句 "global sidebar navigation" 同一層級。它支持的是「樹不是導覽」這個分類,**不是「側邊欄不能有樹」**。Notion 的側邊欄下半就是樹。2026-09-24 我先前就是把 Primer 同類的句子裸引而讀成禁令,user 逐字戳破;這裡同樣不得裸引 —— 判準住在 `ds-canonical/rules/meta-patterns.md` M22 的子規則「引用『不要拿 X 當 Y』必須帶 Y 的範圍」,本檔不重述。 |
+| **Carbon** tree-view usage「When not to use」(釘 carbon-website `d8783ad2`) | "**As the primary navigation in a product's UI.** Instead, use the UI Shell left panel for product navigation."([`tree-view/usage.mdx#L92`](https://github.com/carbon-design-system/carbon-website/blob/d8783ad2ae3b5e59c58f58311491f8a2c4e62631/src/pages/components/tree-view/usage.mdx#L92))<br>⚠️ **這句的範圍是「主導覽」,不是「側邊欄」** —— 跟 Primer 那句 "global sidebar navigation" 同一層級。它支持的是「樹不是導覽」這個分類,**不是「側邊欄不能有樹」**。2026-09-24 我先前就是把 Primer 同類的句子裸引而讀成禁令,user 逐字戳破;這裡同樣不得裸引 —— 判準住在 `ds-canonical/rules/meta-patterns.md` M22 的子規則「引用『不要拿 X 當 Y』必須帶 Y 的範圍」,本檔不重述。 |
 
 **兩類東西,不是同一類的兩種做法:**
 
@@ -252,9 +250,9 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ### 走一遍:當初引發這一連串問題的兩個元件
 
-user 2026-09-24 原始提問:「所有可以被點擊且其中提供按鈕的 list item 都會有一樣問題?」
-「就結果是一樣的,但為何設計方式是不一樣的?是否是合理的?未來遇到這種有多 action 且自身可以點擊的
-list item 元件都是要用類似的處理方式?」
+user 2026-09-24 原始提問:「所以所有可以被點擊且其中提供按鈕的 list item 都會有一樣問題？」
+「就結果是一樣的，但為何設計方式是不一樣的？是否是合理的？
+未來遇到這種有多action且自身可以點擊的list item元件都是要用類似的處理方式？」
 
 | | `SidebarMenuButton` | `FileItem` | `TreeItem` |
 |---|---|---|---|
@@ -308,7 +306,7 @@ list item 元件都是要用類似的處理方式?」
 
 Row label / description 的**單行截斷**(`truncate`,或 `line-clamp-1` 單行 clamp)必配「僅實際截斷時顯示」的 tooltip 補全——owner = `components/Tooltip/tooltip.spec.md:32`,引擎 SSOT = `patterns/element-anatomy/truncated-text.spec.md`(`useTruncated` + 永遠 wrap、`open` 控制)。`<ItemLabel>` 與 `<ItemContent>` 已內建(量測含 MenuItem 的 `line-clamp-1` className escape),Sidebar / DropdownMenu / SelectMenu / FileItem / DataTable 欄位面板等 row consumer 免自接;手刻 label span 的 consumer 要自己消費 `useTruncated`。
 
-- **Hover-only**:trigger = label/description span 本身,不可聚焦、**不加 `tabIndex`**——Family 1 menu row 的 roving focus 在宿主 row 上,label 加 tab stop 會破壞 APG menu 鍵盤導航。先例:Tag 帶內建截斷 tooltip 渲染於 SelectMenu option 內(`select.tsx` renderLabel → `tag.tsx` open-controlled),menu 內無任何抑制(Tag 的 tooltip 抑制只存在於 closed-trigger 顯示 `pointer-events-none`,非 menu context)。鍵盤/SR 無損失:row 的 accessible name 本就含完整文字。
+- **Hover-only**:trigger = label/description span 本身,不可聚焦、**不加 `tabIndex`**——Family 1 menu row 的 roving focus 在宿主 row 上,label 加 tab stop 會破壞 APG menu 鍵盤導航。先例:Tag 帶內建截斷 tooltip 渲染於 SelectMenu option 內(`select.tsx` renderLabel → `tag.tsx` open-controlled),menu 內無任何抑制(Tag 的 tooltip 抑制只存在於 closed-trigger 顯示 `pointer-events-none`,非 menu context)。鍵盤/SR 無損失:row 的 accessible name 本就含完整文字([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/menubar/menu-and-menubar-pattern.html#L60-L65))。
 - **多行 clamp(≥2 行)排除**:`truncated-text.spec.md`「何時不用」(a) 明文排除多行;`descriptionClamp >= 2` / `descMaxLines >= 2` 不顯 tooltip(DS 尚無多行截斷↔補全 canonical,owner 決策前維持排除)——由「可視高度 ≈ 1 行」量測 gate 機械保證,非 prop 判斷(MenuItem clamp 走 className escape,量 DOM 才能全蓋)。
 
 ### Card header 大 prefix 對齊（avatar > text block）
@@ -379,7 +377,7 @@ Row 集合是**內容(content)**,不是區段(region)。加 py 到 row 集合會
 - **相鄰 group 之間用 `border-divider` 分隔**
 - **兩個 group 之間視覺 gap = 8(上 bottom)+ 8(下 top)= 16px + border**
 
-Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。**訊息列也住在 group 裡**(沒有結果 / 載入中的 `MenuItem message` 由 `CommandEmpty` 用 `MenuGroup` 包起來,`components/Command/command.tsx:165-169`),所以 0 筆時的浮層邊界留白仍是同一份 8px,不另造。
+Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。**訊息列也住在 group 裡**(沒有結果 / 載入中的 `MenuItem message` 由 `CommandEmpty` 用 `MenuGroup` 包起來,`components/Command/command.tsx#CommandEmpty`),所以 0 筆時的浮層邊界留白仍是同一份 8px,不另造。
 
 ### 兩種 CSS 實作(視覺等價,差別在 padding 住哪層)
 
@@ -441,10 +439,11 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 - **flush full-width**:item 貼父容器邊、無 per-item radius、bg 透明或繼承父層。分隔靠 border-b / progress bar / separator(分隔線型 affordance)
 - **permanent transparent**:item 靜態完全透明;有 radius 但只在 hover / selected / focus state 可見(M3 Nav drawer idiom)
 
-**為什麼 state 不獨立列規則**:state 視覺(hover / focus / active / selected)跟隨 permanent layer 分類,不獨立觸發。瞬時 state(hover/focus/active)單一 item 啟用不會創造相鄰衝突;selected 的連續 bg 在 permanent flush / transparent item 上是 **multi-select feature**(Finder / Gmail / Notion idiom),在 permanent standalone card 上依然必 gap(card identity 保留)。
+**為什麼 state 不獨立列規則**:state 視覺(hover / focus / active / selected)跟隨 permanent layer 分類,不獨立觸發。瞬時 state(hover/focus/active)單一 item 啟用不會創造相鄰衝突;selected 的連續 bg 在 permanent flush / transparent item 上是 **multi-select feature**(連續選取的列連成一塊,一眼看出選了哪一段),在 permanent standalone card 上依然必 gap(card identity 保留)。
 
 ### 世界級 benchmark(2026-04-22 掃 6 家) <!-- @benchmark-unverified -->
 
+<!-- @benchmark-unverified -->
 | DS | menu item | file/card list | table row | settings row |
 |----|-----------|---------------|-----------|-------------|
 | Polaris | flush + border-b,0 gap | ResourceList flush rows border-b;MediaCard standalone 才 card | IndexTable flush border-b 0 gap | Card.Section Divider 0 gap |
@@ -454,7 +453,7 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 | Carbon | flush + 1px border-b 0 gap | FileUploaderItem flush 0 gap border-b | DataTable flush border-b 0 gap | Side-nav flush 0 gap |
 | Apple HIG | N/A | Inset Grouped:**group radius / row permanent 透明 → 0 gap**;group 之間 gap | N/A | Settings Inset Grouped 同左 |
 
-**6 家共識**:default list row = flush 0 gap + separator;升級 standalone card stack 才需 gap(Material Card / Ant picture-card / Atlassian Stack)。**關鍵反例**(M12 counter-example avoidance):M3 Nav drawer / Apple Inset Grouped 兩者都**有 radius**但 permanent 透明 → 仍 0 gap。證明「radius ≠ 必 gap」,真 trigger 是 **permanent standalone container**。
+**規則**:default list row = flush 0 gap + separator;升級成 permanent standalone card stack 才需 gap。**關鍵反例**(M12 counter-example avoidance):有 radius 但 permanent 透明(radius 只在 hover / selected / focus 才看得到)的 item 仍 0 gap。證明「radius ≠ 必 gap」,真 trigger 是 **permanent standalone container**。
 
 ### 對照表
 
@@ -565,7 +564,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 | 情境 | 用 | 原因 |
 |------|---|------|
 | **Menu / Dropdown 內的 toggle 清單**(View menu / Display options / Page toolbar filter menu) | `MenuItem` + suffix Switch | 已在 overlay 容器,menu 整列 row 就是 click target,Switch 是狀態視覺 |
-| **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「settings list canonical」 |
+| **Settings page 的獨立 toggle row**(不在 overlay,是 page layout) | `<Field orientation="horizontal">` + Switch 齊右 | 見 `components/Switch/switch.spec.md`「對齊情境:Settings list vs Form edit」 |
 
 兩者**結構一致**(label 左 / toggle 右齊),差別只在**容器層級**(menu item = overlay row / Field horizontal = page row)。
 
@@ -614,6 +613,7 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris ResourceItem——**全部**是「prefix 跟 suffix 各自獨立對齊」。沒有任何一個把小 suffix 強迫對齊到大 avatar 中心。 <!-- @benchmark-unverified -->
 
+<!-- @benchmark-unverified -->
 | 系統 | Prefix(大 avatar) | Suffix(小元素) |
 |---|---|---|
 | Apple Mail | Avatar 40px → 文字塊中心 | Date → Subject 第一行 |
@@ -627,7 +627,7 @@ Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris Resourc
 
 ### 大塊 suffix(> 24px)不支援 block 對齊(2026-06-11 收斂對齊實作)
 
-`suffix > 24px`(thumbnail / stacked badge)在 DS 內**零實作、不支援 block 對齊**:`ItemSuffix` primitive 與 MenuItem suffix slot 皆固定 `h-[1lh]` inline(SSOT:`item-anatomy.tsx` ItemSuffix、`menu-item.spec.md`「Suffix 對齊(實作限制)」),本 folder anatomy story 對齊表亦明文「Suffix 所有情況 = 一行文字高度」。世界級同向:上表 Material 3 List trailing icon top-aligned(對齊第一行,非文字塊中心)。
+`suffix > 24px`(thumbnail / stacked badge)在 DS 內**零實作、不支援 block 對齊**:`ItemSuffix` primitive 與 MenuItem suffix slot 皆固定 `h-[1lh]` inline(SSOT:`item-anatomy.tsx` ItemSuffix、`menu-item.spec.md`「Suffix 對齊(實作限制)」),本 folder anatomy story 對齊表亦明文「Suffix 所有情況 = 一行文字高度」。世界級對照:Material 3 List 的 trailing 只在三行列表項時頂對齊(一、二行列置中);本 DS 的 suffix 則一律對齊第一行([來源](https://github.com/androidx/androidx/blob/7c22902f7b511e1f475ee4389824090fe417cd75/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ListItem.kt#L1193)、[來源](https://github.com/androidx/androidx/blob/7c22902f7b511e1f475ee4389824090fe417cd75/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ListItem.kt#L1221))。
 
 | 場景 | Prefix | Suffix | 結果 |
 |---|---|---|---|
@@ -708,7 +708,7 @@ Canonical 對齊模式判斷:`MenuItem` 的 `isBlockAlign = avatarPx > 24 && !!d
 完全相同(同一個 commit 建的先例,註解原文「form / cell 同 12px content gutter SSOT」)。
 
 **為什麼不讓 row 直接吃 `--field-px`**:同一個浮層可能同時有欄位控件與列 ——
-`components/DataTable/data-table-column-visibility-panel.tsx:186` 的搜尋框(12px)與 `:266` 的列(16px)
+`components/DataTable/data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel` 的搜尋框(12px)與 `components/DataTable/data-table-column-visibility-panel.tsx#VisibilityRow` 的列(16px)
 就是並存的。直接吃會變成「調列就把欄位一起拉走」。獨立 named token 才表達得出來。
 
 **客製方式**:在**清單容器**設一次(inline style),整棵子樹的 row 一起換 ——
@@ -809,7 +809,7 @@ Label x 位置受 prefix 尺寸影響(icon 16 vs avatar 24,差 8px)。**對齊�
 
 1. **Explicit > implicit**:auto-detect 是 CSS `:has()` 魔法,consumer 沒主動要求就在背後動排版,違反「程式行為應該從 source code 一眼看出」原則
 2. **保留分組視覺語意**:不同 group / menu 在概念上代表不同層級,獨立的視覺節奏是 sectioning 的訊號
-3. **Opt-in 成本極低**:想要 Notion 風格的 consumer,加 `uniformPrefix` 一個字就好
+3. **Opt-in 成本極低**:想要跨 group 全域對齊 prefix 的 consumer,加 `uniformPrefix` 一個字就好
 
 **Auto-detect 開啟後零成本**:CSS `:has()` 在不混用時完全 no-op,單一 prefix 類型的 sidebar 行為跟以前完全一樣。所以 opt-in 的代價只是「打那個 prop」,沒有 runtime perf 成本。
 
@@ -893,17 +893,8 @@ Block 模式時 checkbox 不在 label 第一行——它跟 avatar 在同一高�
 
 業界零個成功案例。只要左側有兩個元素(control + prefix),它們必須在同一條 baseline 上。
 
-### 業界 form picker 對照
 
-| 系統 | Avatar | 對齊 | 備註 |
-|---|---|---|---|
-| **GitHub** | 20px | inline | 小 avatar,不需要 block |
-| **Linear** | 20px | inline | 同上 |
-| **Microsoft Teams** | 24-28px | inline | 簡單列表 |
-| **Notion sharing** | 28px | block(avatar center) | 無左 checkbox(click row 選取) |
-| **Slack invite** | 36px | block(avatar center) | checkbox 在右側 suffix |
-
-有 left checkbox 的(GitHub/Linear/Teams)都用 inline。想 block 的(Notion/Slack)則不用 left checkbox——要嘛 click row 選取,要嘛 checkbox 在右。
+所以:有 left checkbox 的列一律 inline(左側 control + prefix 同一條 baseline);要 block(avatar 置中)就不放 left checkbox —— 改成 click row 選取,或 checkbox 放右側 suffix。
 
 **我們的 SelectionItem 兩個都支援**:左 checkbox + block 時,checkbox 跟 avatar 同步下移到 text block center,不歪斜。
 
@@ -914,7 +905,7 @@ Block 模式時 checkbox 不在 label 第一行——它跟 avatar 在同一高�
 | | 掃描模式 | 閱讀模式 |
 |---|---|---|
 | **判斷標準** | 使用者快速掃描選擇 | 使用者停留閱讀 |
-| **場景** | 浮層 / overlay（一掃而過） | 頁面 / 表單（仔細閱讀） |
+| **場景** | 選單類浮層(下拉、指令面板,一掃而過) | 頁面 / 表單 / 對話框裡的展示列(仔細閱讀) |
 | **Label 行高** | `leading-compact` (1.3) | 預設 (1.5) |
 | **Description 字體** | 降一級（14→12px, 16→14px） | 最小 14px（14→14px, 16→14px） |
 | **Description 顏色** | `fg-secondary` | `fg-secondary` |
@@ -959,13 +950,6 @@ Primitive 直接封裝 scanning / reading 兩種 typography:
 <ItemContent label="..." description="..." mode="scanning" />  {/* desc 縮為 text-caption + leading-compact */}
 ```
 
-World-class benchmark(6 家 DS):
-- Material M3:`<List dense>` boolean
-- Carbon:`size="sm\|md\|lg\|xl"` enum
-- Ant:`size="small\|default\|large"` enum
-- Polaris / Atlassian / Apple HIG:typography token 手選(無 density prop)
-- 6 家共識:14/20 vs 16/24 兩擋 body 表達 scanning vs reading
-
 本 DS 採 density-prop 派(A 派),跟 Material / Carbon / Ant 對齊。`mode` 比 `dense` 更 self-documenting。 <!-- @benchmark-unverified -->
 
 **未來改 scanning typography(e.g. 從 caption 12 改到 caption 13)**:只改 `--font-caption-size` token 一處 → 所有 `mode="scanning"` 的 consumer 同步動。
@@ -980,7 +964,7 @@ World-class benchmark(6 家 DS):
 - Hook `check_item_content_primitive.sh`(2026-04-23 加)已 retired(→ `.claude/hooks/retired/`,無現役 write-time 機械閘);硬寫 `mt-0.5` / `gap-0.5` 現靠 audit-time 掃描 + mindset #2(優先消費既有 token / primitive)把關
 - Consumer 刻意 hard-code 加 `// @item-gap-exempt: <reason>` 豁免 + rationale 在 spec(marker 現無 hook 消費者,保留作 review 註記)
 
-**兩種模式的唯一差異是行高。** Description 在所有模式都降一級字體——label 是要辨識的目標，description 是補充，尺寸差有助快速區分。
+**兩種模式差在行高與說明字級(見上表)。** 掃描模式的 Description 降一級字體——label 是要辨識的目標，description 是補充，尺寸差有助快速區分。
 
 ---
 
@@ -1044,8 +1028,8 @@ World-class benchmark(6 家 DS):
 
 **Canonical 引用**:
 
-- **Prefix = rotate-90**:Finder、VS Code、Notion、Xcode、iOS Files、本系統 TreeView
-- **Suffix = rotate-180**:Radix Accordion、shadcn Collapsible、Material Expansion Panel、Linear section header、Slack section header、本系統 SidebarGroup collapsible
+- **Prefix = rotate-90**:本系統 TreeView(chevron 在名稱前,展開轉 90°)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/accordion.tsx#L37))
+- **Suffix = rotate-180**:shadcn Accordion trigger(`[&[data-state=open]>svg]:rotate-180`,<https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/accordion.tsx#L37>)、本系統 Accordion、SidebarGroup collapsible
 
 **為什麼兩種慣例可以共存**:位置本身就是區分訊號。prefix chevron 緊貼 item icon,使用者讀作「這個 item 有子項」;suffix chevron 靠右 ml-auto,使用者讀作「點這裡展開/收合整個 section」。混用不會造成混淆——混用的是位置/角色,不是同一個角色兩種行為。
 
@@ -1059,11 +1043,16 @@ World-class benchmark(6 家 DS):
 
 ```tsx
 // Prefix(TreeItem)
-<ChevronRight className="transition-transform [data-expanded=true]_&:rotate-90" />
+<ChevronRight className={cn(disclosureIndicatorMotion, isExpanded && 'rotate-90')} />
 
 // Suffix(SidebarGroup collapsible trigger)
-<ChevronDown className="transition-transform [[data-state=open]_&]:rotate-180" />
+<ChevronDown className={cn(disclosureIndicatorMotion, '[[data-state=open]>&]:rotate-180')} />
+
+// 打開浮層的觸發點(Select / Combobox)
+<ChevronDown className={cn(overlayIndicatorMotion(open), open && 'rotate-180')} />
 ```
+
+本節只管**轉多少度**(位置決定)。**轉多快、什麼曲線**不在這裡寫:箭頭跟它打開的東西同一個時長與曲線,原地展開吃 `disclosureIndicatorMotion`(200ms、ease-out)、打開浮層吃 `overlayIndicatorMotion(open)`(150ms、打開進場曲線 / 收起出場曲線)—— owner = `tokens/motion/motion.spec.md「展開箭頭跟它打開的東西同步」`(2026-10-13;原本範例寫裸的 `transition-transform`,實際各元件 150 / 200ms 各寫各的)。旋轉寫在會轉的圖示本身,不從父層用 `[&…>svg]:rotate-*` 去轉子元素;角度看**自己那顆觸發鈕**的狀態(直接父層 `[[data-state=open]>&]` 或命名 group),不寫 `[[data-state=open]_&]` —— 那是「任一層祖先打開」,側欄放進 Sheet(本身 `data-state="open"`)時收合的箭頭也會轉。
 
 ---
 
@@ -1120,7 +1109,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 
 #### 為什麼 dropdown 單選不用 radio 圓圈
 
-本系統(跟 macOS / Chrome / VS Code 一致)在「隱藏在 dropdown 內的單選」統一用**持續高亮背景**(`bg-neutral-selected`),不用 radio 圓圈指示器。radio 圓圈只用在**永遠可見的 form RadioGroup**。
+本系統在「隱藏在 dropdown 內的單選」統一用**持續高亮背景**(`bg-neutral-selected`),不用 radio 圓圈指示器。radio 圓圈只用在**永遠可見的 form RadioGroup**。
 兩者視覺完全不同但都是單選,差異來自「使用場景」:
 - **Dropdown 單選(隱藏)**: 打開時視覺極簡,只高亮 current,點了就關、切換 context → SelectMenu / DropdownMenu 單選
 - **Form RadioGroup(常駐)**: 永遠展開,使用者在填表時掃視所有選項 → radio 圓圈讓「這是一組互斥選項」一眼可辨
@@ -1180,6 +1169,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `inline-action.spec.md`
 - `layoutSpace.spec.md`
 - `menu-item.spec.md`
+- `motion.spec.md`
 - `notice.spec.md`
 - `overlay-surface.spec.md`
 - `select-menu.spec.md`

@@ -1,0 +1,255 @@
+import * as React from 'react'
+import LinkTo from '@storybook/addon-links/react'
+import { cn } from '@/lib/utils'
+import { CaptionedExamples, type CaptionedExamplesProps } from './example-captions'
+
+/**
+ * 教學頁的共用版面(2026-10-14):頁 → 段落 → 規則 → 範例。全 DS 的教學頁(設計原則頁 `*.principles.stories.tsx`,
+ * 以及 Patterns 文件頁裡的教學框)一律由這支組成,各頁不再自抄 Section / Rule。
+ *
+ * 決定出處:user 2026-10-07「第一題照你建議」,採 AI 同日建議 ② —— 規則之間 = 段落之間 = loose × 2(md 32 / lg 48)、
+ * 範例之間維持 loose、段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁、所有教學頁收成一個共用元件
+ * (governance/planning/2026-09-25-interaction-and-hover-remediation.md P7 列)。user 2026-10-27 21:31 回「Q2照你建議」
+ * (t3-dispatch triage Q2 甲):① 展示頁 / 設計規格頁一頁多則有標題的範例上下疊,範例之間也是 loose × 2(`ExampleStack`);
+ * ② 段落標題 → 段落內第一則規則 = loose × 2(跟規則 ↔ 規則一樣)。
+ *
+ * 間距(只在這裡寫一次):
+ * - **規則 ↔ 規則 = 段落 ↔ 段落 = `calc(var(--layout-space-loose) * 2)`**:從 loose 推出,所以永遠是「範例之間」的兩倍、跟著密度走;
+ *   不借 `--layout-space-bottom` —— 那個 token 的語意是「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」(layoutSpace.spec.md:13),
+ *   段落之間只是值可能剛好一樣。也不是公開 token:這一級只用在 Storybook 文件頁(教學頁、Tokens / Patterns 文件頁、
+ *   展示 / 設計規格頁的範例堆疊),不用在產品頁(layoutSpace.spec.md 規則 3 的指標)。
+ * - 規則標題 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`:text-h6 14 / 1.3 + text-caption 12 / 1.3 正是 item-anatomy
+ *   「Label ↔ Desc 間距」scanning 那一型);規則標題區(標題 + 說明)→ 範例區 = `--layout-space-loose`(user 2026-10-21 A4 甲:
+ *   標題 + 說明是整組內容的標題、不是第一則內容的小標,內容之間是 loose,它到內容也是 loose;layoutSpace.spec.md 規則 3
+ *   「標題(+ 說明)→ 它底下的並列內容」)。規則內容是一段文字 / 清單(段落)時,標題區 → 文字與文字之間都是 tight(內容之間本來就是 tight)。
+ *   兩種用法與值只寫在 `ExampleSection`(下方),規則、展示頁的範例區段、設計規格頁的 `H3` / `Desc` 都從它來。
+ * - 段落標題 → 段落內第一則規則 = loose × 2(同規則 ↔ 規則;Q2 ②):段落標題上下等距,靠 24px 半粗體 + 底線分出它屬於下面。
+ * - 一頁多則有標題的範例(`ExampleSection`)上下疊 = loose × 2(`ExampleStack`,Q2 ①):標題離上一則比離自己的內容遠。
+ * - 範例 ↔ 範例 = loose、說明 ↔ 它說的範例 = tight:照舊由 `CaptionedExamples` / `ExampleGroup` 擁有(example-captions.tsx)。
+ * - 間距一律由外層 gap 給,各塊不留自己的下方 margin —— 最後一塊下面不會多出空白,同一塊放到別的版面也不必改它自己。
+ *
+ * 寬度(2026-11-05,BA-tutorial-width):整頁寬度跟間距、字級一樣由這裡擁有 —— 頁根不設寬、各頁不自訂(`TutorialPage` 不收 className)。
+ * 原本 31 則各自給整頁寬(10 種值);給頁根一個共用寬會讓範例溢出(720px 溢出 17 則、1024px 還有 4 則),所以限寬落在需要它的範例上:
+ * 規則的範例區 = `createTutorialRule({ examplesClassName })`,規則外的表格 / 示範塊 = 自己容器的 class;段落文字跟著頁寬走(與其餘教學頁相同)。
+ *
+ * 標題:段落 `<h2>` = `text-h3`(24px)半粗體 + `border-divider` 淺分隔線(typography.spec.md 的 text-h3 = 「子區塊標題」,
+ * 教學頁的段落就是頁裡的子區塊);規則 `<h3>` = `text-h6` 半粗體(category-templates.md「教學框的間距與標題」)。
+ * 規則說明 = `text-caption` + `text-fg-muted`(字級同一段規範;字色 = color.spec.md「文字 / Icon 層級」caption 列 ——
+ * 2026-10-20 前各頁可選 `noteTone`,7 頁選了 fg-secondary,同一層說明兩種字色,已收成一種)。
+ *
+ * 內文(2026-10-20):頁根擁有字級 `text-body`(typography.spec.md:13 font-size 那一列「token 決定，不可繞過」、
+ * typography.spec.md:39 text-body「主要內文基準」)—— 之前頁裡沒寫字級的段落 / 清單一律落到瀏覽器預設 16px,比 14px 的規則標題還大。
+ * 頁裡的說明元件、清單、連結也只住在這裡 / example-captions.tsx(`ExampleCaption` / `TutorialList` / `StoryLink`),各頁不再自抄。
+ *
+ * 「使用指引」(UsageGuidance)固定三段(2026-10-20 user「你提的問題可以都照你建議」核准 T4 甲):
+ * 何時用 / 何時不用 / 和相近元件怎麼選,依序、各一段,段名只寫在這裡(`UsageSection kind`)。
+ *
+ * 用法:
+ *   const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })   // 每頁一行
+ *   <TutorialPage>
+ *     <UsageSection kind="whenNot">
+ *       <TutorialRule title="❌ …" note="…">{範例}<ExampleCaption warn>↑ …</ExampleCaption></TutorialRule>
+ *     </UsageSection>
+ *   </TutorialPage>
+ * 規則的內容是範例 → `examples: true`(範例區走 CaptionedExamples,說明 = ExampleCaption 自動併組;標題區 → 範例區 loose);
+ * 是一段文字 / 清單 → 不給,標題區 → 文字、文字之間都以 tight 排(= `ExampleSection paragraph`);
+ * 沒走範例區、內容卻是示範區塊的規則 → 該則寫 `paragraph={false}`(標題區 → 內容 loose,內容之間仍 tight)。
+ *
+ * 機械:`scripts/tutorial-page-invariant.mjs`(教學頁沒用本支、自抄 Section / Rule、手寫段落 / 規則間距、頁根自帶寬度 → 紅)。
+ */
+
+/** 規則之間 = 段落之間 = loose × 2(user 2026-10-07 拍板 ②)。全 repo 只有這一處寫這個值。 */
+const BLOCK_STACK = 'flex flex-col gap-[calc(var(--layout-space-loose)*2)]'
+
+/** 頁根的內文字級:typography.spec.md:39 text-body =「主要內文基準」。只寫在這裡。 */
+const PAGE_TEXT = 'text-body'
+
+export interface TutorialPageProps {
+  children: React.ReactNode
+}
+
+/**
+ * 一則 story 的教學頁根節點:裡面的段落 / 規則 / 段落外的說明塊之間一律 loose × 2;內文字級 text-body。
+ * 不收 className:間距、字級、整頁寬度都由本元件擁有(要限寬的是範例 —— `examplesClassName` 或該塊自己的容器)。
+ */
+export function TutorialPage({ children }: TutorialPageProps) {
+  return (
+    <div data-tutorial-page="" className={cn(BLOCK_STACK, PAGE_TEXT)}>
+      {children}
+    </div>
+  )
+}
+
+export interface TutorialSectionProps {
+  title: React.ReactNode
+  children: React.ReactNode
+}
+
+/** 段落:`<h2>` text-h3 半粗體 + 淺分隔線;段落標題 → 第一則規則、規則之間都是 loose × 2。 */
+export function TutorialSection({ title, children }: TutorialSectionProps) {
+  return (
+    <section data-tutorial-section="" className={BLOCK_STACK}>
+      {/* @layout-space-magic-ok: 段落標題字 ↔ 自己的底線 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7);沿用已發布值(main 各頁 23 個段落標題是 pb-1 / pb-2 兩種,收成一份時取 pb-2) */}
+      <h2 className="text-h3 font-semibold text-foreground pb-2 border-b border-divider">{title}</h2>
+      <div className={BLOCK_STACK}>{children}</div>
+    </section>
+  )
+}
+
+/**
+ * 「使用指引」三段的段名(T4 甲,2026-10-20 核准)。順序即頁面順序;全 repo 只有這裡寫段名。
+ * 世界級對照見 category-templates.md「Principles canonical」的 Universal core 表。(來源:https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/spin/index.en-US.md#L12)
+ */
+export const USAGE_SECTION_TITLES = {
+  when: '何時用',
+  whenNot: '何時不用',
+  siblings: '和相近元件怎麼選',
+} as const
+
+export interface UsageSectionProps {
+  kind: keyof typeof USAGE_SECTION_TITLES
+  children: React.ReactNode
+}
+
+/** 「使用指引」的一段:就是 TutorialSection,段名由 `kind` 決定(各頁不手寫段名)。 */
+export function UsageSection({ kind, children }: UsageSectionProps) {
+  return <TutorialSection title={USAGE_SECTION_TITLES[kind]}>{children}</TutorialSection>
+}
+
+export interface TutorialListProps {
+  children: React.ReactNode
+}
+
+/**
+ * 教學頁的清單(2026-10-20 收成一種):實心圓點 + 左縮排 + 列距 4px。之前 104 份清單三種長相(93 份沒有圓點也沒有縮排、
+ * 8 份圓點在外、3 份圓點在內),沒有圓點的清單讀起來像一串連著的句子。
+ */
+export function TutorialList({ children }: TutorialListProps) {
+  // @layout-space-magic-ok: 清單左縮排 20px、列距 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7);沿用已發布值(main 各頁清單 `list-disc pl-5 space-y-1`)
+  return <ul className="list-disc pl-5 space-y-1">{children}</ul>
+}
+
+export interface StoryLinkProps {
+  /** Storybook 的 story 標題(例:`Design System/Components/Tabs/展示`) */
+  kind: string
+  /** 該頁的 story 名稱 */
+  name: string
+  children: React.ReactNode
+}
+
+/** 教學頁裡跳到別則 story 的連結(2026-10-20 收成一份;之前 215 處各自抄同一串 class)。 */
+export function StoryLink({ kind, name, children }: StoryLinkProps) {
+  return (
+    <LinkTo kind={kind} name={name}>
+      <span className="text-primary hover:text-primary-hover font-medium cursor-pointer">{children}</span>
+    </LinkTo>
+  )
+}
+
+/**
+ * 範例區段的標題(2026-10-27 A4):`text-h6` 半粗體。規則標題、展示頁的範例區段標題、設計規格頁的 `H3` 都是這一個
+ * (category-templates.md「教學框的間距與標題」;字重 600:user 2026-10-27 21:31 回「Q2照你建議」③ 維持 600,定案句在 typography.spec.md 字重刻度那句)。
+ */
+export function SectionTitle({ className, ...rest }: React.HTMLAttributes<HTMLHeadingElement>) {
+  return <h3 className={cn('text-h6 font-semibold text-foreground', className)} {...rest} />
+}
+
+/** 範例區段的說明:`text-caption` + `text-fg-muted`(color.spec.md「文字 / Icon 層級」caption 列),最寬 720px。 */
+export function SectionDescription({ className, ...rest }: React.HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={cn('text-caption max-w-[720px] text-fg-muted', className)} {...rest} />
+}
+
+/**
+ * 一頁多則有標題的範例上下疊(展示頁 / 設計規格頁;user 2026-10-27 21:31 回「Q2照你建議」①):範例之間 = loose × 2,
+ * 跟教學頁規則之間同一級(值 = 本檔 `BLOCK_STACK`,全 repo 只寫在這裡)。子節點是 `ExampleSection` 或「小標 + 內容」的區塊;
+ * `className` 只放寬度 / 對齊。
+ */
+export function ExampleStack({ className, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div data-example-stack="" className={cn(BLOCK_STACK, className)} {...rest} />
+}
+
+export interface ExampleSectionProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+  title: React.ReactNode
+  description?: React.ReactNode
+  /**
+   * 底下是一段純文字 / 清單(段落)→ `true`:標題區 → 內容、內容之間都是 tight(內容之間本來就是 tight,標題跟著內容走)。
+   * 不給 = 區塊:底下是並列的範例 / 表格 / 圖 / 欄位 → 標題區 → 內容、內容之間都是 loose。
+   */
+  paragraph?: boolean
+}
+
+/**
+ * 範例區段(2026-10-27,user 2026-10-21 A4):標題 ↔ 說明 2px、(標題 + 說明)→ 內容 = 內容之間的距離(區塊 loose / 段落 tight),跟著密度走。
+ * 展示頁 / 原則頁 / 設計規格頁裡「一個小標 + 說明 + 一塊範例」一律用這支,不再手寫 `<h3 className="text-h6 font-semibold …">`;
+ * `TutorialRule` 就是它加上範例區。間距由外層 gap 給,各塊不留自己的下方 margin。
+ */
+export function ExampleSection({ title, description, paragraph, className, children, ...rest }: ExampleSectionProps) {
+  return (
+    <div
+      data-example-section=""
+      className={cn('flex flex-col', paragraph ? 'gap-[var(--layout-space-tight)]' : 'gap-[var(--layout-space-loose)]', className)}
+      {...rest}
+    >
+      <div className="flex flex-col gap-[var(--item-gap-label-desc-scanning)]">
+        <SectionTitle>{title}</SectionTitle>
+        {description && <SectionDescription>{description}</SectionDescription>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+export interface TutorialRuleOptions {
+  /**
+   * 規則的內容是範例區 → `true`:走 `CaptionedExamples`,範例的說明一律是 `ExampleCaption`(自動與它說的範例併組);
+   * 不給 → 規則內容是一段文字 / 清單,子節點照順序以 tight 排。
+   */
+  examples?: boolean
+  /** 範例區版面(CaptionedExamples 的 layout)。 */
+  layout?: CaptionedExamplesProps['layout']
+  /** 範例區的範例維持自然寬度(CaptionedExamples 的 naturalWidth)。 */
+  naturalWidth?: boolean
+  /** 範例區的寬度限制 / 對齊(例:`max-w-md`、`items-center`);間距由 CaptionedExamples 擁有。整頁不設寬,範例要限寬就寫在這裡。 */
+  examplesClassName?: string
+}
+
+export interface TutorialRuleProps {
+  title: React.ReactNode
+  note?: React.ReactNode
+  /**
+   * 規則內容是一段文字 / 清單(段落)→ 標題區 → 內容 tight;是並列的範例 / 示範區塊 → loose(同 `ExampleSection`)。
+   * 預設跟著 `examples`:有範例區 = 區塊、沒有 = 段落。沒走範例區、內容卻是示範區塊的規則寫 `paragraph={false}`
+   * (內容之間仍照順序以 tight 排,只有標題區 → 內容改 loose)。
+   */
+  paragraph?: boolean
+  children?: React.ReactNode
+}
+
+/** 每頁一次:依該頁的說明元件與範例區版面,產出這一頁的 `TutorialRule`。在 module 層呼叫(不要寫在 render 裡)。 */
+export function createTutorialRule({
+  examples = false,
+  layout,
+  naturalWidth,
+  examplesClassName,
+}: TutorialRuleOptions = {}) {
+  function TutorialRule({ title, note, paragraph = !examples, children }: TutorialRuleProps) {
+    // 真的會畫出來的子節點(null / false / undefined 不算):React.Children.count 把空節點也算進去
+    // (react.dev Children.count「Empty nodes (null, undefined, and Booleans) … count as individual nodes」),
+    // 只靠它判斷「有沒有範例」會在沒有範例時多畫一段空的範例區、規則之間多出一段空白(2026-10-20 T13)
+    const items = React.Children.toArray(children)
+    return (
+      <ExampleSection data-tutorial-rule="" title={title} description={note} paragraph={paragraph}>
+        {/* 只有標題 + 說明的規則不畫空的範例區(否則多一段空白,規則之間就不再是 loose × 2) */}
+        {items.length === 0 ? null : examples ? (
+          <CaptionedExamples layout={layout} naturalWidth={naturalWidth} className={examplesClassName}>
+            {items}
+          </CaptionedExamples>
+        ) : (
+          // 文字 / 清單(或沒走範例區的示範塊):彼此照順序以 tight 排;標題區 → 這一疊的距離由 paragraph 決定
+          <div className="flex flex-col gap-[var(--layout-space-tight)]">{items}</div>
+        )}
+      </ExampleSection>
+    )
+  }
+  return TutorialRule
+}

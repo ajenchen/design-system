@@ -7,7 +7,7 @@ traits:
   - hasInteractiveStates
   - isInternal
 benchmark:
-  - cmdk (shadcn Command base): github.com/pacocoursey/cmdk
+  - cmdk (shadcn Command base): github.com/pacocoursey/cmdk([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/command.tsx#L4))
 ---
 
 
@@ -17,7 +17,7 @@ benchmark:
 
 Command 是**搜尋 + 鍵盤導覽的指令清單**——提供搜尋框、分組選項、鍵盤導覽、空狀態。多用於浮層選單內部（SelectMenu）或 Command Palette（Cmd+K）。
 
-**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。**視覺結構消費 DS primitive,不另寫一份**(2026-09-08 user 抓「Command 所有 story 都偏移、跟 SelectMenu 不同一套」後改):搜尋列 = `CommandInput`(SelectMenu / CommandDialog / inline 三種形態共用同一個;高度 `--field-height-*` + 8px、字級 / placeholder / disabled token 與 Field 輸入控件相同,差別只有沒有外框、底部用分隔線收邊);項目 = `CommandItem` 內包 `MenuItem`(item-anatomy SSOT:icon 槽、label / description、尾端 tag / endContent / shortcut,跟 SelectMenu 包 option 的結構相同);分組標題 = `MenuItem header`。改 MenuItem 會連動 Command。
+**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。**視覺結構消費 DS primitive,不另寫一份**(2026-09-08 user 指出 Command 每一則 story 都跟 SelectMenu 不是同一套樣式之後改):搜尋列 = `CommandInput`(SelectMenu / CommandDialog / inline 三種形態共用同一個;高度 `--field-height-*` + 8px、字級 / placeholder / disabled token 與 Field 輸入控件相同,差別只有沒有外框、底部用分隔線收邊);項目 = `CommandItem` 內包 `MenuItem`(item-anatomy SSOT:icon 槽、label / description、尾端 tag / endContent / shortcut,跟 SelectMenu 包 option 的結構相同);分組標題 = `MenuItem header`。改 MenuItem 會連動 Command([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/command.tsx#L4-L46))。
 
 **分類**：Internal primitive——由 SelectMenu 消費（Select / Combobox / PeoplePicker 透過 SelectMenu 使用）。App **不從 root barrel front-door 直接 import** Command 家族;若要 Command Palette 類 UX,經 per-component subpath `@qijenchen/design-system/components/Command` 取用 `CommandDialog`(自行包裝確認後使用,對齊 `.claude/rules/ui-development.md`「Root barrel front-door 排除」— internal ≠ 禁用;cmdk + Radix Dialog 包裝,showcase「CommandPalette」story 消費)。
 
@@ -74,17 +74,21 @@ Command 通常由 `SelectMenu` 或自訂 Command Palette 元件消費——直�
 - ❌ **不在短選單（< 6 項）用 Command**：多此一舉增加認知負擔,改用 DropdownMenu 或 RadioGroup
 - ❌ **Command 不當 form input**：它是選值浮層而非輸入框——表單內選值請用 Select / Combobox,它們會自動決定是否啟用 Command 模式
 - ❌ **搜尋列不得另寫一份樣式**:CommandDialog、SelectMenu、inline 三種形態都用同一個 `CommandInput`;它的高度吃 Field 的 `--field-height-*` token(+8px 內距)、字級與 placeholder 同 Field 控件,不是獨立規格。(2026-09-08 撤回原「Command 搜尋框不是 Field Control,走自身尺寸規格」—— 那句就是兩份樣式漂移的許可證)
-- ⚠️ **Inline 嵌頁面 = 次要用法,必須自帶邊框容器**(2026-06-12 user 拍板放寬,原為全面禁止):主用法仍是浮層(SelectMenu 內部 / CommandDialog Cmd+K)——實際產品幾乎都走浮層形態。Inline 嵌頁面是原廠 documented 用法(cmdk README「Render this to show the command menu inline」;shadcn 預設範例即 inline 且包 `rounded-lg border`),允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),且不可拿來替代 SelectMenu / Select(表單選值仍走它們)
+- ⚠️ **Inline 嵌頁面 = 次要用法,必須自帶邊框容器**(2026-06-12 user 拍板放寬,原為全面禁止):主用法仍是浮層(SelectMenu 內部 / CommandDialog Cmd+K)——實際產品幾乎都走浮層形態。Inline 嵌頁面是原廠 documented 用法(cmdk README「Render this to show the command menu inline」;shadcn 預設範例即 inline 且包 `rounded-lg border`),允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),且不可拿來替代 SelectMenu / Select(表單選值仍走它們)([來源](https://github.com/pacocoursey/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/README.md#L88)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/examples/command-demo.tsx#L23))
 
 ---
 
 ## A11y 預設
 
-cmdk 自動處理：
+cmdk 自動處理(`aria-activedescendant`、指標、收起還焦點三條由本元件補上,見下方 2026-09-30 項目)：
 
-- **List 語意**：`role="listbox"` + `aria-activedescendant` 指向目前 highlight 項
-- **搜尋框**：`role="combobox"` + `aria-expanded` / `aria-controls` 指向 list(listbox 的 accessible name 預設「選項」,cmdk 預設是英文 Suggestions;傳 `label` 覆寫,**不要**在 CommandList 上寫 `aria-label`,cmdk 會靜默蓋掉)
-- **鍵盤導覽**：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 `CommandDialog`(Cmd+K)模式由 Radix Dialog 的 DismissableLayer 提供;inline `<Command>` 模式按 Esc 無反應
+- **List 語意**：`role="listbox"`;`aria-activedescendant` 見下一條
+- **實作 —— `aria-activedescendant` = 反白列的 id,由 Command 根寫**(2026-09-30):cmdk 自己綁在搜尋框與清單上的值(`selectedItemId`,<https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L251-L254>)開啟時是空的、要等第一次方向鍵才有值(實測:開啟即讀為 null,同時已有一列 `data-selected`)。Command 根的 observer(`command.tsx` `useCommandRootObserver`)讀 `[cmdk-item][data-selected="true"]` 的 id,用唯一寫法 `applyActiveDescendant` 寫上本 Command 的 `[cmdk-input]` 與 `[cmdk-list]`(cmdk 重繪蓋回自己的值時再改回);清單 0 筆、沒有反白時移除。**觸發欄位內握著焦點的輸入框**(清單在浮層 portal 裡、兩棵 DOM 子樹)經 `onActiveOptionChange?: (active?: { id, listboxId }) => void` 取得同一個 id 與清單(`[cmdk-list]`)的 id(卸載時回報 undefined),SelectMenu 轉發給 Select / Combobox 的 `useActiveDescendant(inputRef)`,由唯一寫法 `applyListboxRelation` 同時寫 `aria-activedescendant` 與 `aria-controls`(ARIA 1.2 的 `aria-activedescendant` 條目把 textbox 的 `aria-controls` 綁到包住那個選項的元素,<https://www.w3.org/TR/wai-aria-1.2/#aria-activedescendant>;2026-09-30 初版只寫前者)。讀反白也只有一支 `getActiveOption(root)`(列上按鈕的鍵盤路、SelectMenu 的 Tab / 空白鍵選定同讀這支)。直接寫 DOM、不經 React state:反白每移一格不重繪整份清單(MUI 同做法,<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L375-L388>)。規則與 W3C 出處住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段。
+- **指標按在清單上,不搬走 combobox 的 DOM 焦點**(2026-09-30 user 同意的範圍是「滑鼠點選項 = 按 `Enter`,焦點不離開搜尋框」,原話「其他部分我覺得”可以”」;延伸到清單裡其他不是控件的位置與清單型浮層裡的按鈕屬 AI 推導,依 rc-select 整份清單擋 mousedown(<https://github.com/react-component/select/blob/59dd34ad6e216a3935fa2b5c50521cd3f0448567/src/OptionList.tsx#L79-L81>)、MUI 清單「Prevent blur」(<https://github.com/mui/material-ui/blob/809a7717b4c050ba3f69b75300689f07c050a16e/packages/mui-material/src/useAutocomplete/useAutocomplete.js#L1472-L1479>)的做法,「選完之後」「按清單以外的地方」兩張表住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段,本條只寫本元件怎麼做):cmdk 的選項只有 `onPointerMove` / `onClick`、沒有擋 mousedown(<https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L706-L718>),按下去瀏覽器把焦點交給最近的可聚焦祖先(`[cmdk-list]` / `[cmdk-root]` 都是 `tabIndex=-1`,人員選項的名片頭像也是),之後打的字全部丟掉。Command 根的 `onMouseDown`(`command.tsx` `keepComboboxFocusOnPointerPress`;consumer 的 `onMouseDown` 先跑、擋了預設就不接)只在**此刻握著 DOM 焦點的是控制這份清單的 combobox**(焦點在 `role="combobox"` 上或它裡面的輸入框,它的 `aria-controls` 指到本 Command 或包住本 Command 的浮層)時插手,其餘條件(左鍵、按在本 Command 的 DOM 裡 —— React 事件會穿過 portal 冒泡,名片浮層不算、不是文字輸入)住在共用判準 `../../lib/pointer-press.ts` `keepFocusOnPointerPress`。**握著焦點的東西住在哪,決定容器裡的按鈕怎麼算**:住在本 Command 裡(浮層內搜尋框、`CommandDialog`、inline 的 `[cmdk-input]` = 對話框型,按鈕與搜尋框在同一個 Tab 序上)→ 容器裡自有行為的東西(列上的改名 / 刪除鈕、全選鈕、連結)照原生拿焦點,判準與 Field 外框同一份 `isOwnPointerTarget`;住在外面(觸發欄位內的搜尋框 = 清單型:DOM 焦點的主人是欄位內的搜尋框、清單靠它的 `aria-activedescendant`;浮層裡的全選鈕雖是可 Tab 的按鈕,但只有觸發欄位是頁面最後一格時 Tab 才會照 DOM 順序走進來,2026-09-30 實測)→ 連按鈕(全選)也不搬焦點,click 照常動作。一處涵蓋選項、群組標題、訊息列、搜尋列的放大鏡與捲軸,SelectMenu / `CommandDialog` / inline 三種形態同一條。焦點本來就在清單裡(不可打字的下拉)、或清單不屬於任何 combobox(Popover / Dialog 裡的純清單)→ 條件不成立,原生行為照舊(焦點落到 `[cmdk-list]`,方向鍵照常)。只動 mousedown:鍵盤路徑、Tab 停靠點、捲軸拖曳(Radix ScrollArea 用 pointerdown + pointer capture)都不受影響;觸控點一下產生的相容 mousedown 同樣被擋,焦點留在搜尋框、手機鍵盤不收起(觸控模擬實測)。
+- **收起後焦點回觸發點,指標挑選不畫鍵盤框**(2026-09-30,AI 推導:上一條的直接後果):焦點留在搜尋框(文字輸入永遠帶 `:focus-visible`),收起時程式把焦點移回觸發點,瀏覽器依 CSS Selectors 4 啟發式讓觸發點也帶框(<https://github.com/w3c/csswg-drafts/blob/main/selectors-4/Overview.bs> `:focus-visible` 啟發式清單:「If the previously-focused element indicated focus, and a script causes focus to move elsewhere, indicate focus on the newly focused element」;實測 Chromium 147:SelectMenu 的 Button 觸發、AgentPanel 歷史標題在打字後滑鼠挑選收起時冒出 2px 框)。實作住 `../../lib/overlay-focus-return.ts` `returnFocusToOpener(event, opener, options)`(全 DS「浮層關閉後焦點還給開啟者」唯一一支,2026-09-30 自本檔搬出):包著 Command 的浮層當 `onCloseAutoFocus`;Radix 有觸發點時(SelectMenu、AgentPanel 歷史浮層)只接手「最近一次使用者輸入是按在浮層裡或觸發點上的指標」(`../../hooks/use-input-modality.ts` `getLastUserInput`)→ 擋 Radix 預設、`opener.focus({ preventScroll: true, focusVisible: false })`(HTML `FocusOptions`,<https://html.spec.whatwg.org/multipage/interaction.html#dom-focus>);鍵盤收起(`Enter` / `Esc`)與按在外面收起照 Radix 原樣;此刻焦點已被別的東西接走(列上的改名鈕開了對話框)→ 不搶。已知限制:`focusVisible` 選項 Chrome / Edge 145、Firefox 104、Safari 18.4 起支援(MDN browser-compat-data `focus.options_focusVisible_parameter`,<https://github.com/mdn/browser-compat-data/blob/main/api/HTMLElement.json>),更舊的引擎忽略它 → 觸發點畫上鍵盤框(與鍵盤收起同長相,操作不受影響)。
+- **`CommandDialog` 關閉後焦點還給開啟它的元素**(2026-09-30;`../Dialog/dialog.spec.md`「Focus return」):指令面板多半由快捷鍵或普通按鈕的 `onClick` 開啟,沒有 `DialogTrigger`;Radix Dialog 只還給 `DialogTrigger`,沒有就不還 → 焦點掉到 body(2026-09-30 實測本元件「全域指令面板」:滑鼠點項目 / `Enter` / `Esc` 收起後 `activeElement` 都是 body)。2026-10-01 起這是 `DialogContent` 的**預設**(`../Dialog/dialog.spec.md`「Focus return」;`../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn`:內容掛上時記下當下握著焦點的元素、關閉時沒有 Radix 觸發點就用同一支 `returnFocusToOpener` 還回去 —— 沒有觸發點 + modal:鍵盤收起、按遮罩收起也還;指標挑選不畫框、鍵盤照瀏覽器規則),本元件 2026-09-30 自己那份 RememberFocusOrigin 收掉。開面板的按鈕宣告 `aria-haspopup="dialog"` + `aria-expanded`(`DialogTrigger` 會自動帶;沒有 `DialogTrigger` 時由按鈕自己寫,見本元件「全域指令面板」story)。
+- **實作 —— 搜尋框**：`role="combobox"` + `aria-expanded` / `aria-controls` 指向 list(listbox 的 accessible name 預設「選項」,cmdk 原本給的是英文 Suggestions;傳 `label` 覆寫;CommandList 上的 `aria-label` 會被 cmdk 靜默蓋掉)。**搜尋框的讀屏名稱 = Command 根的 `label`**(cmdk 以它的內容渲染一個看不見的 `<label for>`):`CommandDialog` 預設「搜尋指令」、SelectMenu 傳 `searchAriaLabel`、AgentPanel 歷史傳「歷史對話」;**inline `<Command>` 沒有預設**,沒傳 = 名稱空白(2026-10-21 r1b fields N3 DS-wide 掃描:本元件 5 則 story 都沒傳,axe 量不到,CDP 讀屏名稱是空字串)
+- **實作 —— 鍵盤導覽**：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。輸入法組字中的按鍵(`isComposing` 或 `keyCode === 229`)不選、不走列上按鈕的鍵盤路 —— cmdk 自己的搜尋框有這條判斷,Command 根的 `routeCommandRowKeys` 用全 DS 一支 `../../lib/ime-composition.ts` `isImeComposing`(2026-09-30 前只看 `isComposing`,Safari 注音按 Enter 選字的那一顆漏掉)。cmdk 本身無 Esc handler — Esc 關閉僅在 `CommandDialog`(Cmd+K)模式由 Radix Dialog 的 DismissableLayer 提供;inline `<Command>` 模式按 Esc 無反應
 - **空狀態**：`<CommandEmpty>` 自動帶 `role="presentation"`,不干擾 screen reader 的 list 朗讀;**放在 `<CommandList>` 外面(listbox 的兄弟)**:axe `aria-required-children` 不允許 listbox 內有非 option 子元素(2026-09-08 a11y 基線重建抓到),cmdk Empty 只讀 store、不需住在 List 裡;MUI Autocomplete 的 noOptions / loading 同樣在 listbox 外
 - **列裡可聚焦的東西 = 不在 Tab 路上,`→` 才進得去**(2026-09-25 待辦總帳 B9「路線乙」,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;規則住 `../../../ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」)。今天的消費者:AgentPanel 歷史列的改名 / 刪除、SelectMenu 人員選項的名片頭像(PeoplePicker)。09-25 前每一個都各佔一站。本元件的按鍵表(焦點停在搜尋框、沒有搜尋框時停在清單 = home;反白列 = 這一項):
 
@@ -108,8 +112,9 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 - **Disabled item**:`<CommandItem disabled>` 透過 cmdk 內建支援,視覺繼承 MenuItem SSOT(`text-fg-disabled` + `aria-disabled=true` + 鍵盤導覽自動 skip + Enter 不觸發 onSelect)。skip 是「不進導覽清單」(cmdk `:not([aria-disabled="true"])` selector)— ↑/↓ 直接跳到下一個可選項,無中途 highlight。
 - **Group heading 不可選中**:heading 是 `aria-hidden` 裝飾 div(group container `role="presentation"`),不參與導覽與選取;SR 經 items wrapper `role="group"` + `aria-labelledby` 取得群組語意。
 - **Empty 後持續打字**:cmdk 每個 keystroke 重新過濾(`filtered.count` 驅動),`<CommandEmpty>` 持續顯示直到有 match;input 不鎖、不清空。
+- **實作 —— 有可選項時保持一列反白**(2026-09-30):沒有反白時 `Enter` 沒有東西可選。cmdk 自己有「反白列卸載 → 選第一項」的修補(<https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L321-L333>),但它的排程以槽號當 Map 的 key(<https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L1046-L1058>),同一次 commit 卸載好幾列時只剩最後一列的檢查會跑 —— 清單在 cmdk 外面過濾(搜尋字在觸發欄位)或遠端換一批結果時,反白列不是最後卸載的那一列就沒人補(實測:Select 打「日」後 0 列反白、`Enter` 沒反應)。Command 根的 observer 補:沒有反白而有可選項 → 放回第一項(`moveCursorToFirstOption`,代發 cmdk 自己的 `Home` 鍵,選第一項並捲進可視範圍;代發的鍵不記成「鍵盤搬了游標」,`../../hooks/use-input-modality.ts` `dispatchRelayedKey`)。
 - **Loading**:Command 本身非 async surface。async option fetch 由 consumer(SelectMenu / Cmd+K palette)在外層處理,指示**只有一處**(2026-09-09 user 拍板;2026-09-08 的 `<CommandInput loading>` 搜尋列轉圈已退役、prop 已移除):在 `<CommandEmpty>` slot 內放 `<CommandLoading label="載入選項中" />`(`command.tsx` `CommandLoading`)= 與「沒有結果」同一種 `MenuItem message` 訊息列,前綴槽放列圖示尺寸轉圈(`ICON_SIZE[size]`:sm/md 16、lg 20)+ 可見文字,`role="status"` 直接播報,**不經 Empty**;只在清單裡沒有任何可顯示的選項時才看得到。搜尋列仍可打字、不轉圈(SSOT select-menu.spec.md「Loading」)。
-- **Empty(no results)**:`<CommandEmpty>` 在 filter result = 0 時渲;**它 own 空狀態的長相**(`command.tsx:155-172`):`MenuGroup`(`py-2`)包一列 `<MenuItem message>`——字串 children 自動包成訊息列(非互動、`text-fg-muted`、一般字重、字級同選項、置中),md 48px = 8 + 32 + 8 與 1 筆結果等高,**沒有最小高度**(舊 `minRows` / `getMenuListMinHeight` 已退役;SSOT select-menu.spec.md「Empty state」);consumer 只傳文案,不放圖示、不用 `Empty`。0 筆的讀屏播報由 `CommandEmptyStatus`(sr-only `role="status"` live region)負責,CommandDialog / SelectMenu 都渲一份。
+- **Empty(no results)**:依 `../SelectMenu/select-menu.spec.md:209`「一律走 MenuItem 的列幾何」(「Empty state」段:訊息列的長相、高度、圖示與 `Empty` 元件的取捨都住那一段)。實作:`<CommandEmpty>` 在過濾後 0 筆時渲(`command.tsx#CommandEmpty`),`MenuGroup`(`py-2`)包一列 `<MenuItem message>`,字串 children 自動包成訊息列;舊 `minRows` / `getMenuListMinHeight` 已退役。0 筆的讀屏播報由 `CommandEmptyStatus`(sr-only `role="status"` live region)負責,CommandDialog / SelectMenu 都渲一份。
 - **Dark mode / density**:全數經 MenuItem / CommandInput 的 token 連動(空狀態、載入列也是 MenuItem);Command 自身只剩 cmdk 反白的長相:滑鼠搬的反白 `data-[selected=true]:bg-neutral-hover`、鍵盤搬的反白 `data-[selected=true]:focus-ring-inset`(反白來歷 `useCursorMover`;focus-canonical 規則一「兩類元件」+ 規則二;項目上沒有 `hover:` 樣式,鍵盤搬走反白後滑鼠停留列的底色一起消失),以及選中底色釘住(item-anatomy「選中 × 互動疊加」)。尺寸(sm / md / lg)由 Command root 的 `size` 進 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態同一個值。
 
 ---
@@ -118,7 +123,7 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 
 - 「選單一律用 Command」— < 6 項、選完即觸發動作的操作選單是 `DropdownMenu`(見「與 DropdownMenu 的分界」)。
 - 「Command 搜尋框可以自己定尺寸」— 已撤回(2026-09-08):高度 / 字級 / placeholder 都吃 Field token,只是沒有外框(浮層內的一列)。
-  **搜尋列不畫外框、只有底部分隔線 = 定案**(user 2026-09-09 逐字:「跟世界級的設計一樣就維持現狀」;對照 Linear / Raycast / cmdk 的浮層搜尋列);先前「跟 Input 一模一樣」指的是尺寸、字級、提示文字、停用態同一套 token,不含外框。
+  **搜尋列不畫外框、只有底部分隔線 = 定案**(user 2026-09-09 回答:跟世界級的設計一樣就維持現狀;對照 shadcn `CommandInput` 外層只有 `border-b`:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/command.tsx#L69-L70);先前「他應該要長得跟我們的input 一模一樣吧?」(登記簿 B18)指的是尺寸、字級、提示文字、停用態同一套 token,不含外框。
 - 「cmdk `data-selected` = 持續選中態」— 它是鍵盤 / 指標的臨時 roving highlight(游標),不是選中:滑鼠移過搬的反白用 `bg-neutral-hover`(它就是 hover)、鍵盤搬的反白畫框不上底色,永遠不用 `bg-neutral-selected`(見「為何無 StateBehavior」)。
 
 ---
@@ -130,7 +135,7 @@ Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,�
 - **無 Inspector**:Command 無自己的決策性 prop(variant / severity),behavior 全部由 cmdk library 處理。該讓消費者 inspect 的是 **SelectMenu**(公開消費入口),不是 Command 本身。
 - **無 ColorMatrix**:項目的色彩來自 MenuItem(hover / selected / disabled),搜尋列的來自 Field 輸入控件 token;Command 只在外層 cmdk item 上畫反白(滑鼠搬的 `data-[selected=true]:bg-neutral-hover` / 鍵盤搬的 `data-[selected=true]:focus-ring-inset`;無 `hover:`)。
 - **無 SizeMatrix**:`size`(sm / md / lg)由消費者決定並同時傳給 `CommandInput` 與 `CommandItem`(= Field 與 Menu 的同一組 tier);Command 不另定尺寸。
-- **無 StateBehavior**:cmdk `data-selected` 是「鍵盤 / 指標當前 active-highlight」(roving 臨時反白)而非持續選中態;它的長相由 CommandItem 依反白來歷(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`)分流 —— 滑鼠移過搬的反白 `bg-neutral-hover`、鍵盤搬的反白畫框不上底色,兩者不同時出現、滑鼠停著不算搶(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」+ 下午三問),消費者(SelectMenu / AgentPanel)不再各自手刻。
+- **無 StateBehavior**:cmdk `data-selected` 是「鍵盤 / 指標當前 active-highlight」(roving 臨時反白)而非持續選中態;它的長相由 CommandItem 依反白來歷(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`)分流 —— 滑鼠移過搬的反白 `bg-neutral-hover`、鍵盤搬的反白畫框不上底色,兩者不同時出現、滑鼠停著不算搶(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」(登記簿 D11) + 下午三問),消費者(SelectMenu / AgentPanel)不再各自手刻。
 
 對應 anatomy story:保留 `Overview`(展示 internal primitive 的 API surface——CommandInput / CommandList / CommandGroup / CommandItem / CommandEmpty)。深度視覺 / 尺寸對照請查 SelectMenu(consumer)與 MenuItem(item primitive)的 anatomy。
 
@@ -142,22 +147,11 @@ Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,�
 
 ### Cmd-K palette 結構哲學
 
-| 維度 | 本 DS | Linear | Raycast | VS Code Quick Pick | macOS Spotlight | Notion Cmd+K | Slack Cmd+K |
-|------|-------|--------|---------|--------------------|-----------------|--------------|--------------|
-| Layout | **單欄 + grouped sections** | 單欄 + group | 單欄 + group + secondary action panel | 單欄 + multi-mode prefix(`> ` 命令 / `: ` 行)| 全螢幕 + multi-pane(blur background)| 單欄 + inline page preview | 單欄 + 切 tab(Search / Nav / Settings)|
-| Search input 位置 | **頂端** always visible | 頂端 always | 頂端 always | 頂端 always | 中央 hero | 頂端 always | 頂端 always |
-| 視覺 surface | Dialog overlay(`CommandDialog`)| Popover overlay | Standalone window | inline overlay(top-center)| Full-screen(blur)| Popover overlay | Popover overlay |
-| 觸發 shortcut | **Cmd+K**(Apple)/ Ctrl+K(Windows) | Cmd+K | Hotkey(default Option+Space)| Cmd+P / Cmd+Shift+P | Cmd+Space | Cmd+P / Cmd+/ | Cmd+K |
-| Empty state | `<CommandEmpty>` + 文案 | inline 「No results」 | inline 「No matching commands」 | inline 「No results」 | hides list | inline 「No results」 | inline 「No matches」 |
-| 多 mode | 無(單一搜尋語意)| 無(單一)| 無 | 有(prefix mode `>` `:` `@`)| 有(隱式 routing)| 無 | 有(tab)|
+本 DS 的 Cmd-K 面板:**單欄 + 分組**、**搜尋列固定在頂端**、Dialog 浮層(`CommandDialog`)、**Cmd+K(Mac)/ Ctrl+K(Windows)**觸發、0 筆結果時在清單位置顯示 `<CommandEmpty>` 文案、只有單一搜尋語意(不做前綴切換模式)——各項理由見下方「設計哲學」(1)–(3)。
 
 ### Primitive vs Consumer 分層
 
-| DS | 本 DS | cmdk lib | Radix UI | shadcn/ui | Material UI |
-|----|-------|----------|----------|-----------|--------------|
-| Internal primitive 命名 | **Command** | cmdk | (無此 primitive,用 `<Combobox>` + filter)| Command | `<Autocomplete>` 一體 |
-| Consumer wrapper 命名 | SelectMenu / CommandDialog(Cmd+K) | (consumer 自包)| Combobox | Combobox / Custom Cmd+K | Autocomplete |
-| 是否 app 直接用 | **禁(必透過 SelectMenu / CommandDialog wrapper)**| 開放 | 開放 | 開放 | 開放 |
+本 DS 內部 primitive 叫 **Command**,app 不直接用;consumer 一律透過 **SelectMenu**(表單選值)或 **CommandDialog**(全域 Cmd+K)兩個 wrapper。理由見「設計哲學」(4)。
 
 ## 設計哲學
 
@@ -165,21 +159,21 @@ Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,�
 
 **(1) 單欄 + grouped sections(non-multi-pane)**
 
-macOS Spotlight 的 multi-pane / blur background 適合 system-level launcher(全 OS 範圍 routing),但 disruptive — 不適合 inline 元件場景(SelectMenu 內嵌 Cmd-K 模式)。Linear / Raycast / VS Code 共識「單欄 + group」適合 productivity tool 內嵌使用,且 cmdk lib(shadcn/Vercel)default 結構符合此哲學。
+多欄 + 全螢幕模糊背景適合系統層級的啟動器,但會打斷手上的工作,不適合嵌在元件裡的場景(SelectMenu 內嵌 Cmd-K 模式)。單欄 + 分組讓結果維持一條可由上往下掃讀、可用方向鍵逐項走的清單,適合產品內嵌使用;cmdk 的 `Command.Group` 結構正好對應這種分組。
 
-捨棄 multi-pane 的代價是「無 inline preview 直觀度」(Spotlight 可預覽檔案內容),但 DS 場景是命令清單非檔案 browser,接受。
+捨棄多欄的代價是「沒有並排預覽」(無法在面板裡直接看到項目內容),但 DS 場景是命令清單、不是檔案瀏覽器,接受。
 
 **(2) Search input always visible at top**
 
 input always visible 提示使用者「這是 search-driven」,對齊 input-first mental model。捨「only on focus 才出現 input」(節省垂直空間)的代價是「無法 list 看完再搜尋」,但 Cmd-K 場景 default 預期 search,不是 list browse。
 
-**(3) Cmd+K(Apple)/ Ctrl+K(Windows)為觸發 shortcut**
+**(3) Cmd+K(Mac)/ Ctrl+K(Windows)為觸發 shortcut**
 
 Cmd-K / Ctrl-K 不與 OS 級 launcher 綁定，且能用同一語意跨平台觸發產品內命令面板。File-only navigation 或全域 launcher shortcut 不屬於本元件責任。
 
 **(4) Internal primitive 哲學 — app 不直接用 Command,必透過 SelectMenu / CommandDialog wrapper**
 
-cmdk / shadcn / Radix 默認開放 app 直接消費 primitive — 但本 DS 走 Material `<Autocomplete>` 一體 / Polaris 一體封裝哲學,把 search + popover + value-binding 包進 SelectMenu(form context)或 `CommandDialog`(cmdk + Radix Dialog 包裝,global Cmd+K)。
+cmdk 是 headless 函式庫,原本就讓 app 直接消費 primitive —— 但本 DS 把 search + popover + value-binding 一次封裝進 SelectMenu(form context)或 `CommandDialog`(cmdk + Radix Dialog 包裝,global Cmd+K),不讓每個 consumer 各自拼出不同版本的搜尋浮層。
 
 捨棄「app code 直接 import Command 客製」的代價是「自由度受限」(無法在 app 內客製 cmdk filter logic),但 DS 一致性更重要 — 若 SelectMenu / CommandDialog 不夠用,回 DS 開新 wrapper 而不是繞過抽象層(SSOT 消費 canonical M1)。
 

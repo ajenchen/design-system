@@ -10,18 +10,18 @@ Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放
 |-------|----|----|------|
 | `--layout-space-loose` | 16px | 24px | 主間距:容器水平 padding、parallel 元素 gap、bounded region 呼吸空間 |
 | `--layout-space-tight` | 12px | 16px | 緊湊間距:Header → element、functional 交互的元素之間 |
-| `--layout-space-bottom` | 48px | 48px | 結論留白:內容到 action buttons(commitment 前視覺暫停)|
-| `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它;AgentPanel 蓋板態的左內距也吃它,2026-09-16)|
+| `--layout-space-bottom` | 48px | 48px | 結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底(容器會擋住頁面或高度撐滿時;規則 4 第 1 列)|
+| `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它;AppShell 的 AI agent 浮層左側、Menu 浮層右側「至少留」也吃它 —— user 2026-10-14 規格「另一側至少保留 48px」,`../../components/AppShell/app-shell.spec.md`「版面規則」§9)|
 
 **Co-located:item-gap tokens** — `layoutSpace.css` 另定義 `--item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg}`(皆 2px):**非**巨觀 layout token,是 item 內 label ↔ description 的 typography-mode-aware micro gap;設計 SSOT 在 `item-anatomy.spec.md`「Label ↔ Desc 間距」段,本檔只是 CSS 住所。修改值 / 加 mode → 走 item-anatomy spec。
 
 **為什麼 viewport-inset 要跟 bottom 分開**(2026-09-11):兩者值都是 48px,但語意不同 ——
-`bottom` 是「內容 → action buttons 的結論留白」,`viewport-inset` 是「浮層外殼 → 視窗邊」。
+`bottom` 是「body 收尾的結論留白」,`viewport-inset` 是「浮層外殼 → 視窗邊」。
 Dialog 原本借用 `bottom` 當 inset,後果可驗證:任何人依本表語意去調結論留白,會同時改掉全站 Dialog 的
 **高度上限與最大寬度**(M17「同值不同義」)。它同樣不隨 density 變(理由同下)。
 owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 
-**為什麼 bottom 不隨 density 變**:48px 是「結論前的留白」— content 到 action buttons 的視覺暫停。跟 density 無關(不論 compact 或 comfortable,使用者都需要「commitment 前」的節奏)。
+**為什麼 bottom 不隨 density 變**:48px 是「結論留白」— body 收尾的視覺暫停。跟 density 無關(不論 compact 或 comfortable,使用者都需要這一拍)。
 
 ---
 
@@ -73,12 +73,12 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 | 級別 | 條件 | layout rule? |
 |------|------|------------|
 | **同範疇 / bundled component family** | 元件 spec 寫成 bundle 並定 inter-component spacing(FileUpload+FileList、Pagination 內部、Toolbar+ButtonGroup) | 元件 spec own,layout rule **跳過** |
-| **跨範疇 + 直接 functional 交互 / 依賴** | search → filter list / heading → labeled content / toolbar → table / form section heading → fields | 規則 3 = **tight** |
-| **跨範疇 + parallel / independent** | form fields stack(parallel inputs)/ unrelated sections / 兩個獨立 functional groups | 規則 3 = **loose** |
+| **跨範疇 + 直接 functional 交互 / 依賴** | search → filter list / toolbar → table | 規則 3 = **tight** |
+| **跨範疇 + parallel / independent** | form fields stack(parallel inputs)/ unrelated sections / 兩個獨立 functional groups / 標題(+ 說明)→ 它底下的並列內容 | 規則 3 = **loose** |
 
 「**Bundled component family**」客觀判斷:**有沒有 spec 文件把這些 components 寫成 bundle 並定義它們之間 spacing**(不是「同種類 component instance 多個」)。
 
-「**Functional 交互 / 依賴**」具體:操作後在畫面上有交互(value 驅動 display)/ labeling(命名 / 描述 group identity)/ context dependency。
+「**Functional 交互 / 依賴**」具體:操作後在畫面上有交互(value 驅動 display)/ labeling(說明級的字替緊鄰的那一個東西命名:範例 ↔ 它的 ExampleCaption、圖例 ↔ 它的圖)/ context dependency。
 
 ---
 
@@ -94,11 +94,11 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 
 任何內容左右 padding 最終 = `loose`(對齊 inline 元件邊緣);**寫哪看元件本質**,不是 either-or。
 
-Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome」(hover bg 0 gutter 貼邊 + content 由 item-px 推進)。
+Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overlay body」的「3 條 invariant」(hover bg 0 gutter 貼邊 + content 由 item-px 推進)。
 
 ### 規則 2:頂部(Header → 第一個元素)
 
-**這裡的 Header 指 chrome header**(ChromeHeader / SurfaceHeader / page header / app top bar,`header-canonical.spec.md`);內容區裡用 typography 打的小標題(`text-heading` 之類)不是 chrome header,它與下方被它標示的內容走規則 3 的「跨範疇 + 直接 functional 交互 = tight」(2026-09-09 代理示範把 h1 + 表格當 parallel 兄弟用了 loose,是錯的;規則沒變,補這句是為了下次不要再誤讀)。
+**這裡的 Header 指 chrome header**(ChromeHeader / SurfaceHeader / page header / app top bar,`header-canonical.spec.md`);內容區裡用 typography 打的小標題(`text-heading` 之類)不是 chrome header,它與下方被它標示的內容走規則 3。
 
 | 第一個元素 | Header → 該元素 |
 |-----------|--------------|
@@ -114,22 +114,22 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | **跨範疇 + functional 交互** | `tight` |
 | **跨範疇 + parallel** | `loose` |
 
-**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。
+**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **教學頁的「組 ↔ 組」另有一級(只用在 Storybook 文件頁;2026-10-14 先定在教學頁,後來加的範圍見本段後文)**:設計原則頁 / Patterns 教學框裡,每則規則、每個段落本身已經是「一組用 loose 排好的範例」,組與組之間要比組內更開才分得出範例屬於哪一則 —— 規則 ↔ 規則 = 段落 ↔ 段落 = **loose × 2**(user 2026-10-07「第一題照你建議」= 建議 ②)。這一級**不是公開 token、不用在產品頁**(產品頁仍只有本表 tight / loose 兩級),也**不借 `bottom`**(本表 `bottom` 列的結論留白)。值與元件的唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。**展示頁 / 設計規格頁「一則一個標題」的範例堆疊,範例 ↔ 範例也屬這一級**(2026-10-27 user 回「Q2照你建議」—— 採 AI 建議 ①:原本範例之間只有 loose,與標題 → 自己的內容同一個量級,看不出標題屬於哪一則)([來源](https://www.nngroup.com/articles/gestalt-proximity/))。
 
 世界級對齊:Material 3 / Polaris / Apple HIG / Atlassian 都按「relationship not type」決定 spacing。 <!-- @benchmark-unverified -->
 
 ### 規則 4:底部 — 拆兩個 distinct 概念
 
-**核心**:**「內容 → action button 前留白」跟「元件 → 容器底邊」是兩個不同 spacing 概念**,不可混為一談。
+**核心**:**「內容 → 按鈕」(規則 3)跟「最後一個東西 → 容器底邊」(本表)是兩個不同 spacing 概念**,不可混為一談;容器底邊這一段跟規則 2 的頂部一樣,同一段距離只由一層給:容器給內距,元件不再加外距去推容器。
 
-| 情境 | gap | 概念 |
+| 情境(後面有沒有 footer 都一樣)| gap | 概念 |
 |------|-----|------|
-| **任何最後內容 → action button**(inline / in SurfaceFooter / in chrome footer 內)| `bottom`(48)| **A. Commitment 前留白** — user 跨到決策 moment |
-| **bounded region → 容器底**(後無 action buttons) | `loose` | **B. Spatial 邊界** |
-| **unbounded region → 容器底**(後無 action buttons) | **0**(list 自帶 py 撐)| **B. Spatial 邊界** |
-| **element → 容器底**(後無 action buttons) | `tight` | **B. Spatial 邊界** |
+| **element(欄位 / 文字 / 按鈕)→ 容器底,容器會擋住頁面或高度撐滿可用空間** | `bottom`(48)| **結論留白** |
+| **bounded region → 容器底** | `loose` | **Spatial 邊界** |
+| **unbounded region → 容器底** | **0**(list 自帶 py 撐)| **Spatial 邊界** |
+| **element → 容器底,容器不擋頁面、高度貼著內容** | 與頂部同值(值由元件自己的內距給)| **Spatial 邊界(上下對稱)** |
 
-**Note**:Dialog body `pb-bottom 48` 是 line 1 的實作(預期後接 SurfaceFooter buttons,universal 套 48,**不是元件特例**)。「**底部 chrome band**」(Alert / BulkActionBar / Status bar / Footer)內含 action → 套 48;不含 → 套 loose(line 2)。
+**Note**:Dialog / Sheet body `pb-bottom 48` 是第 1 列的實作,**不是元件特例**。表格 → 「**底部 chrome band**」(Alert / BulkActionBar / Status bar)= 第 2 列的 `loose`,band 裡有沒有 action 都一樣。**第 1 / 4 列怎麼分**:看容器自己,不列名單 —— 會不會擋住頁面(modal)、高度由視窗 / 版面欄決定(撐滿)還是由內容決定。這兩個條件是 DS 給 / 不給 48 時原本就寫下的理由:`../../patterns/overlay-surface/overlay-surface.spec.md`『`pb-bottom` 保留 Dialog / Sheet「大容器底部多一拍」的 canonical』,Popover 不給是因為『Popover 無 viewport-fill、內容預期短』。出處:user 2026-10-28 看過 AppShell 右欄 IssueDetail、右欄訂單詳情、整頁 Main、Insights 頁、FileViewer 資訊面板依此改成 48 的前後圖,回「這個沒問題」;同日對頁面卡片(不擋頁面、貼內容 → 四邊 16)回「頁面上的卡片照你建議」。
 
 ### 規則 5:橫排 Input Gap(固定不隨 density)
 
@@ -162,15 +162,15 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 
 | 該用 layout-space token(density-scaling) | 刻意固定值 OK(magic number 合法) |
 |---|---|
-| 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,規則 3「同範疇 spec-own」)|
+| 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,**且有規格定了列距**,規則 3「同範疇 spec-own」;判準見上方「親疏 3 級」的 Bundled component family 客觀判斷)|
 | **Header → 內容**(規則 2 = tight)| **micro / icon / 控件內部** 間距(gap-1/2、icon padding)|
 | **Chrome 水平內距**(規則 6 = loose)| **為視覺平衡 / 對稱 刻意調的值**(設計裁量)|
-| **內容 → action button**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
+| **body 收尾**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
 
 > **2026-09-12 更正**:右欄原本舉的例子是「FieldGroup 三級固定 gap,不隨 density」——**那個例子跟左欄第一列自相矛盾**:
 > 左欄逐字說「並列獨立 區塊 / 卡片 / **表單欄位** 之間 → 規則 3 parallel = loose」,而 FieldGroup 管的正是表單欄位之間的間距。
 > 同一個概念同時出現在兩欄,是真矛盾不是細節。該例子來自 `31383ac4`(2026-07-02)的防漂移補強,
-> 當時的 user 原話是「怎麼確保以後都遵循 layout-space 沒偏移且有 SSOT」(問防漂移機制,不是定表單間距)。
+> 當時 user 問的是怎麼確保以後都遵循 layout-space、不偏移、有 SSOT(問防漂移機制,不是定表單間距;轉述 —— 那段對話紀錄已不存在、登記簿查無原話)。
 > 2026-09-12 user 拍板移除 FieldGroup 的三檔 gap、改消費 `--layout-space-loose`,此豁免例子同步撤除。
 
 **判準一句話**:是「並列/區塊/chrome/header→content/content→action 的 macro 結構間距、規則說該縮放」→ 用 token;是「list 列間距 / micro / 刻意固定 / 元件內部決定」→ magic number 合法,**不要 token 化**。
@@ -196,7 +196,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
    - **是 → 同範疇 / bundled** → 跳 layout rule,套元件 spec own
    - 否 → 跨範疇,進下一題
 2. 兩元素有直接 functional 交互 / 依賴(操作驅動 / labeling / context dependency)嗎?
-   - **是 → 相關**(search→list / heading→content / toolbar→table)→ tight
+   - **是 → 相關**(search→list / toolbar→table)→ tight
    - **否 → 不相關**(parallel / independent)→ loose
 
 ### Step 3 — 套規則(下節決策表 + walkthrough 範例)
@@ -212,7 +212,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | 容器水平左右 padding | **規則 1** | 元件有無視覺邊界? | 有 → A 元件自帶 `px-loose` / 無 → B 父層管 / list-with-hover-row → C item 自帶 |
 | Header → 第一個元素 gap | **規則 2** | 第一個元素 role | bounded region → `loose` / unbounded region → **0**(list 自帶 py 撐)/ element → `tight` |
 | 兩元素之間 gap | **規則 3** | 親疏 | 同範疇 → 元件 spec own(跳)/ 跨範疇相關 → `tight` / 跨範疇 parallel → `loose` |
-| 最後內容 → 容器底 | **規則 4** | (a) 後接 action button?(b) 元件 role | 後接 action → `bottom`(48,概念 A commitment 前留白)/ 否則看 role:bounded → `loose` / unbounded → **0** / element → `tight`(概念 B spatial 邊界)|
+| 最後內容 → 容器底 | **規則 4** | 元件 role(element 再看哪種容器)| element → 容器擋頁面或撐滿 = `bottom`(48)、不擋頁面又貼內容 = 與頂部同值(元件自己的內距)/ bounded → `loose` / unbounded → **0** |
 | 橫排並列 input 之間 gap | **規則 5** | 內容語意緊密度 | 同組值起迄 → `gap-2`(8) / 不同組並列 → `gap-4`(16) |
 | Chrome 表面水平 padding | **規則 6** | (永遠) | `loose` |
 
@@ -245,14 +245,14 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 ### 範例 4:Cmd+K menu list 最後 row → menu 容器底
 
 - **走規則**:規則 4
-- **判**:後接 action button?**否** → 看 role:menu list = unbounded region(主導 + 自帶 py 撐)
-- **答**:**0**(概念 B spatial 邊界,list 自帶 py 撐)
+- **判**:看 role:menu list = unbounded region(主導 + 自帶 py 撐)
+- **答**:**0**(spatial 邊界,list 自帶 py 撐)
 
 ### 範例 5:Dialog body 最後 field → body 底
 
 - **走規則**:規則 4
-- **判**:後接 action button(在 SurfaceFooter 內)?**是** → 套 `bottom 48`
-- **答**:48(概念 A commitment 前留白)。`dialog.tsx` DialogBody 預設 `pb-bottom` 是此規則的實作(預期 body 後接 SurfaceFooter buttons),非 Dialog 例外
+- **判**:最後一個是 element(欄位)→ 套 `bottom 48`
+- **答**:48(結論留白)。`dialog.tsx` DialogBody 預設 `pb-bottom` 是此規則的實作,非 Dialog 例外
 
 ### 範例 6:SurfaceFooter 內 [Cancel] ↔ [Save] gap
 
@@ -279,7 +279,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 │  ← loose → [Description]  ← loose →│
 │← loose ─────────────────────────→ │
 │  ← loose → [Other field]  ← loose →│
-│← bottom 48 ────────────────────→  │  ← 最後內容 → action buttons (規則 4 line 1, 概念 A)
+│← bottom 48 ────────────────────→  │  ← 最後 element → body 底 (規則 4 第 1 列)
 ├────────────────────────────────────┤  ← SurfaceFooter border-t
 │  ← loose → [Cancel] [Save] ← loose →│  ← Footer (chrome, py-tight)
 └────────────────────────────────────┘
@@ -322,9 +322,9 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 
 ## Notes
 
-- **不抽 universal LayoutBody / FormLayout primitive**:world-class(Material / Polaris / Atlassian / Carbon / Mantine)都「每元件 own variant + 共享 token」;規則 1-6 universal,角色 scope-relative 易誤封裝。獨特 chrome 已在 `overlay-surface.spec.md` + `action-bar.spec.md`
-- **List-as-region in overlay body**(2026-05-01 canonical):當 Dialog / Sheet / Popover body 內容 = unbounded list-as-region(menu / Cmd+K / nav)時,consumer 用 className override 撤掉 chrome padding(`<DialogBody className="!px-0 !pt-0 !pb-0">`)+ 自管 list outer wrapper(`<div className="py-2">`)+ item 自帶 `px-loose rounded-md`。**item 有沒有 hover 底色不是判定條件**(判定條件 owner 見 `overlay-surface.spec.md`「List-as-region in overlay body」)。**不做成 body variant**(`flush?: boolean`)— Material/Atlassian/Mantine/shadcn 都 consumer 自管,Polaris flush API scope 極窄;variant 不解決底層脆弱(加 1 row search/banner 就破功),反把 1 surface decision 拆兩 API。詳 `overlay-surface.spec.md`「List-as-region in overlay body」+ `dialog.tsx:165` JSDoc
-- **Tabs-in-chrome-body 單一 gap owner**(2026-07-01 canonical):`tabsSlot` 模式下 `TabsContent` 放進 `DialogBody`/`SheetBody`/`SurfaceBody`(自帶 `pt-/py-tight`)時**必 `className="mt-0"`** — chrome body 已擁有 header→content gap(規則 2「element → tight」),TabsContent 內建 `mt-tight` 會雙重疊加(md 24 / lg 32)。同「一軸單一 spacing owner」原則(`item-anatomy.spec.md`「垂直 padding 歸屬 / 禁雙重 padding」)。詳 `components/Tabs/tabs.spec.md`「出現在 Dialog」段 + hook `check_tabs_content_chrome_body_double_gap.sh`
+- **不抽 universal LayoutBody / FormLayout primitive**:每元件 own variant + 共享 token 就夠 —— 規則 1-6 universal,但「誰是 body、誰是 header」是 scope-relative 的角色,抽成一個 primitive 容易封錯。獨特 chrome 已在 `overlay-surface.spec.md` + `action-bar.spec.md`
+- **List-as-region in overlay body**(2026-05-01 canonical):當 Dialog / Sheet / Popover body 內容 = unbounded list-as-region(menu / Cmd+K / nav)時,consumer 用 className override 撤掉 chrome padding(`<DialogBody className="!px-0 !pt-0 !pb-0">`)+ 自管 list outer wrapper(`<div className="py-2">`)+ item 自帶 `px-loose rounded-md`。**item 有沒有 hover 底色不是判定條件**(判定條件 owner 見 `overlay-surface.spec.md`「List-as-region in overlay body」)。**不做成 body variant**(`flush?: boolean`)—— variant 不解決底層脆弱(加 1 row search/banner 就破功),反把 1 surface decision 拆兩 API。詳 `overlay-surface.spec.md`「List-as-region in overlay body」+ `dialog.tsx#DialogBody` JSDoc
+- **Tabs-in-chrome-body 單一 gap owner**(2026-07-01 canonical):`tabsSlot` 模式下 `TabsContent` 放進 `DialogBody`/`SheetBody`/`SurfaceBody`(自帶 `pt-/py-tight`)時**必 `className="mt-0"`** — chrome body 已擁有 header→content gap(規則 2「element → tight」),TabsContent 內建 `mt-tight` 會雙重疊加(md 24 / lg 32)。同「一軸單一 spacing owner」原則(`item-anatomy.spec.md`「垂直 padding 歸屬:row 集合不加 py,由外層容器負責」)。詳 `components/Tabs/tabs.spec.md`「出現在 Dialog」段 + hook `check_tabs_content_chrome_body_double_gap.sh`
 - **v1 → v6**(2026-04-30):block-adjacent 機械 → 親疏判 + bundled-family 分權 + region 二分(bounded/unbounded)+ 多 region 限制。詳 git 歷史(原 memory `feedback_layout_v6_canonical.md` 已 prune)
 
 ---
@@ -334,6 +334,7 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `app-shell.spec.md`
+- `data-table.spec.md`
 - `description-list.spec.md`
 - `empty.spec.md`
 - `field.spec.md`

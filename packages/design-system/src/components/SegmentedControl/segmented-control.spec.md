@@ -6,7 +6,7 @@ sizes:
   xs:
     px: 24
     when: "row-embedded inline action(DataTable row inline action / Toolbar 內塞 segmented filter);text-caption"
-    world-class: ["Ant Segmented size=small(28)", "Atlassian Toggle compact"]
+    world-class: ["Ant Segmented size=small(24)"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/segmented/style/index.ts#L91-L94)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/shared/genControlHeight.ts#L7)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/seed.ts#L69)、[來源](https://unpkg.com/@atlaskit/toggle@17.3.5/dist/types/types.d.ts))
   sm:
     px: 28
     when: "form field-height 28 / compact chrome bar(Filter bar / dense Toolbar)"
@@ -128,7 +128,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 
 **在 Field 內自動讀 size**：透過 `useFieldContext()`，SegmentedControl 在 Field 內時 size 跟著 Field 的 size 走，不需 consumer 重複指定——機制與 Button 完全相同。Field 內明確傳 `size` prop 時以 prop 為準（解析順序 prop > Field context > `md`，經 `useResolvedFieldSize` SSOT hook）。
 
-**Icon size**：xs/sm/md = 16、lg = 20（對齊 `uiSize.spec.md` Icon Size Tier L132-143 統一規則,2026-05-18 retire 過去 xs=14 例外。Cite:Carbon icon-only line tabs 40/16,Ant small input 24/16）。
+**Icon size**:xs/sm/md = 16、lg = 20(對齊 `uiSize.spec.md` Icon Size Tier L132-143 統一規則,2026-05-18 retire 過去 xs=14 例外:16 是全 DS icon 的基準尺寸,小號控件只縮外框與內距、不縮 icon,icon 才看得清)。
 
 ### xs 的專屬用途：icon-only toolbar utility
 
@@ -138,7 +138,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 - **不配對 Field**（Field 家族用 sm/md/lg）
 - 有 label 的 compact SegmentedControl 建議直接用 `sm`（28px）
 
-詳見 `button.spec.md`「Pill Layout → xs 的專屬用途」（兩者共用 Family 3 action trigger 規格）。
+詳見 `button.spec.md`「xs 的專屬用途：icon-only toolbar utility」（兩者共用 Family 3 action trigger 規格）。
 
 ---
 
@@ -201,7 +201,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 ### 選中 / 未選
 
 - **選中**：文字與邊框都用 `--primary`（底色維持 surface 不變）——pill 風格元件（Chip / SegmentedControl）共用的選中規則（semantic.css「選中狀態」段 SSOT；2026-07-06 拍板自 primary-hover 改 base，hover 階專屬瞬時態）；selected item 提升 z-index 讓邊框浮在相鄰 item 之上，避免被重疊的 border 切掉（class 實作見 `segmented-control.tsx` `data-[state=on]` cva）。**❌ 選中態不得用 primary-hover**
-- **選中之上的 hover**：`--primary-hover` 同時染文字與邊框——選中元素的 hover = 同色相升 hover 階（2026-07-06 拍板；Button pressed hover 家族 + Ant active hover 同派，跟 Chip 一致），不用 neutral 灰底
+- **選中之上的 hover**:`--primary-hover` 同時染文字與邊框——選中元素的 hover = 同色相升 hover 階(2026-07-06 拍板;跟 Button pressed hover、Chip 同一條規則:已經是主色的東西,滑過就往同色相深一階,不跳回灰色),不用 neutral 灰底
 - **disabled × 選中疊加**：disabled 全滅（primary 描邊/染字退場 → `border-border` + `fg-disabled`）——M24 state > emphasis，跟 Chip 一致（2026-07-07 補明文）
 - **未選**：surface 底 + `--fg-secondary` 文字 + `--border` 邊框
   - hover：文字轉 `--foreground` + 邊框加深一階（`--border-hover`）+ 微提升 z-index；不改 bg，避免 hover 狀態與 selected 搶戲
@@ -254,7 +254,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 - **無 ColorMatrix**:SegmentedControl 沒有 Button 那種強調層級 variant(primary / secondary / tertiary / text)——只有「選中 / 未選」兩種 **state**,色彩變化純由 state 驅動(底色恆為 `bg-surface` 不變;選中 = `text-primary` + `border-primary`;未選 hover = `text-foreground`,詳「狀態」段)。這是 pill 風格元件(Chip / SegmentedControl)共用的選中規則,非 Button variant。因此 ColorMatrix(逐 variant 列色)不適用,狀態色已在 `StateBehavior` 完整覆蓋。
 
-對應 anatomy story:`Overview` + `Inspector` + `SizeMatrix` + `StateBehavior` + 元件特有 `FullWidthMatrix` + `IconOnlyMatrix` + `Accessibility`。Inspector 用 Storybook Controls 即時切 `size` × `fullWidth` × `iconOnly`(取代 Figma inspect);三張矩陣 story(`SizeMatrix` / `FullWidthMatrix` / `IconOnlyMatrix`)則提供結構性並排對照,兩者互補。
+對應 anatomy story:`Overview` + `Inspector` + `SizeMatrix` + `StateBehavior` + 元件特有 `FullWidthMatrix` + `IconOnlyMatrix` + `Accessibility`。Inspector 用 Storybook Controls 即時切 `size` × `fullWidth` × `iconOnly`(在 Storybook 裡直接看各組合);三張矩陣 story(`SizeMatrix` / `FullWidthMatrix` / `IconOnlyMatrix`)則提供結構性並排對照,兩者互補。
 
 ---
 
@@ -272,8 +272,8 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 **Keyboard 行為**:
 
 - Tab — 進入 group(focus 落在選中項;無選中時落在上次 focus 過的 item——Radix roving focus 記住停留點,初次進入才是第一項)
-- ←/→ — 在 item 間移動 roving focus(只移焦點,不切換選取)。WAI-ARIA APG 對水平 segmented/radio group 的主要導覽鍵
-- ↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix `toggle-group` 未鎖 `orientation`(沿用 default 雙軸 roving),APG 接受 group 同時支援兩軸方向鍵
+- ←/→ — 在 item 間移動 roving focus(只移焦點,不切換選取)。對應 WAI-ARIA APG toolbar pattern 的水平導覽鍵(radio group pattern 的方向鍵會連同選取,本元件不採)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L33-L34))
+- ↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix `toggle-group` 未鎖 `orientation`(沿用 default 雙軸 roving),APG toolbar pattern 允許上下鍵重複左右鍵的作用([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L33-L34))
 - Enter / Space — 選取目前 focus 的 item
 
 **Focus**:Radix primitive 採 roving tabindex（整組共用單一 tab 停留點，方向鍵在 item 間移動焦點，不切換選取），非 Dialog 式 focus trap / restoration。焦點框對齊 Button focus-visible canonical（全域 `:focus-visible` 外描邊 `outline: 2px solid var(--ring)`，往外 2px——CSS outline，非 box-shadow ring；item 不寫任何 ring class）。

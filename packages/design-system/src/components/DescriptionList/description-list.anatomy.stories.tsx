@@ -9,6 +9,7 @@
 //     涵蓋 layout 變化。
 import type { Meta, StoryObj } from '@storybook/react'
 import { DescriptionList, DescriptionItem } from './description-list'
+import { Tag } from '@/design-system/components/Tag/tag'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -24,7 +25,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>DescriptionList 是 `dl / dt / dd` HTML 語義元件——每個 DescriptionItem 是一組 label(dt)+ value(dd)配對。對齊 Atlassian / Polaris 慣例。CSS grid 容器,`cols` prop 控制欄數。</Desc>
+        <Desc>DescriptionList 是 <code>dl / dt / dd</code> HTML 語義元件——每個 DescriptionItem 是一組 label(dt)+ value(dd)配對。對齊 Atlassian / Polaris 慣例。CSS grid 容器,<code>cols</code> prop 控制欄數。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <DescriptionList>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
@@ -51,7 +52,7 @@ export const Overview: Story = {
 
       <div>
         <H3>間距</H3>
-        <Desc>items 之間垂直間距走 `--layout-space-tight` token(density-aware)——切 density 自動適配,避免硬寫 px / py-N 脫鉤 token;label → value(同 item 內)走 `--item-gap-label-desc-reading`(2px,見下表 row 1)。</Desc>
+        <Desc>items 之間垂直間距走 <code>--layout-space-tight</code> token(density-aware)——切 density 自動適配,避免硬寫 px / py-N 脫鉤 token;label → value(同 item 內)走 <code>--item-gap-label-desc-reading</code>(2px,見下表 row 1)。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Orientation</Th><Th>位置</Th><Th>Value</Th><Th>Rationale</Th></tr></thead>
@@ -61,7 +62,7 @@ export const Overview: Story = {
               <tr><Td mono>vertical</Td><Td>columns 之間水平 gap</Td><Td mono>gap-x-4(16px)</Td><Td>cols &gt; 1 時欄間距</Td></tr>
               <tr><Td mono>horizontal(divided=false)</Td><Td>items 之間垂直 gap</Td><Td mono>mb-[var(--layout-space-tight)] last:mb-0</Td><Td>等同 vertical 的 items gap,density-aware</Td></tr>
               <tr><Td mono>horizontal(divided=false)</Td><Td>label ↔ value</Td><Td mono>justify-between + gap-4</Td><Td>最小 16px,content 之間自然拉開</Td></tr>
-              <tr><Td mono>horizontal(divided=true)</Td><Td>每 item 上下 padding</Td><Td mono>py-[var(--layout-space-tight)]</Td><Td>density-aware,形成 cell-like row 高度;row 間有 border-b border-divider 對齊格線</Td></tr>
+              <tr><Td mono>horizontal(divided=true)</Td><Td>每 item 上下 padding</Td><Td mono>py-[var(--layout-space-tight)] last:pb-0</Td><Td>density-aware,形成 cell-like row 高度;row 間有 border-b border-divider 對齊格線;最後一個 item 不帶下內距,底部由容器給(同不分隔模式的 last:mb-0)</Td></tr>
             </tbody>
           </table>
         </div>
@@ -156,10 +157,10 @@ export const StateBehavior: Story = {
   render: () => (
     <div className="flex flex-col gap-10">
       <div>
-        <H3>空值呈現 — 一律用半形 `-` 字元(hyphen)</H3>
+        <H3>空值呈現 — 一律用半形 <code>-</code> 字元(hyphen)</H3>
         <Desc>
           DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。一律用半形連字號
-          (`-`,對齊 Field `EMPTY_DISPLAY`)明確表達「有查過,但這個欄位目前沒值」;色同 value `text-foreground`。對齊 Atlassian / Polaris / GitHub 的資訊卡慣例。
+          (<code>-</code>,對齊 Field <code>EMPTY_DISPLAY</code>)明確表達「有查過,但這個欄位目前沒值」;色同 value <code>text-foreground</code>。對齊 Atlassian / Polaris / GitHub 的資訊卡慣例。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <DescriptionList cols={2}>
@@ -172,16 +173,16 @@ export const StateBehavior: Story = {
           </DescriptionList>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          空值不應該用「N/A」/「暫無」等字串——不同 consumer 會選不同字,破壞視覺一致。一律半形連字號 `-`。
+          空值不應該用「N/A」/「暫無」等字串——不同 consumer 會選不同字,破壞視覺一致。一律半形連字號 <code>-</code>。
         </p>
       </div>
 
       <div>
         <H3>長 value — 自然換行,撐高該 grid cell</H3>
         <Desc>
-          `value` 是自然流文字,超過欄寬自然換行(CSS grid 會讓該 row 的 cell 變高,其他 cell 保持 label
+          <code>value</code> 是自然流文字,超過欄寬自然換行(CSS grid 會讓該 row 的 cell 變高,其他 cell 保持 label
           top-aligned)。不使用 truncate——value 是被讀的內容,截斷會讓使用者漏資訊。帶空白的文字(如職稱)
-          自然斷行;無空白長字串(email / URL / token)需在該 item 加 `break-all` 才會斷(此範例 Email 欄已加;
+          自然斷行;無空白長字串(email / URL / token)需在該 item 加 <code>break-all</code> 才會斷(此範例 Email 欄已加;
           vertical dd 預設不強制斷字,長字串由 consumer 自加 break-all)。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
@@ -197,7 +198,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>多行 value(地址 / 介紹 / 摘要)</H3>
         <Desc>
-          Value 接受任何 ReactNode,包括多行文字。`dd` 保持 top-aligned,label 垂直靠上。
+          Value 接受任何 ReactNode,包括多行文字。<code>dd</code> 保持 top-aligned,label 垂直靠上。
           適合展示地址、人物介紹、商品描述等需多行的資訊。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
@@ -218,19 +219,16 @@ export const StateBehavior: Story = {
       <div>
         <H3>結合 ReactNode value(Tag / Badge / Link)</H3>
         <Desc>
-          `value` 可放任何 ReactNode——Tag(狀態)、Badge(計數)、Link(相關文件)。型別是寬鬆的
-          `ReactNode`,支援組合。
+          <code>value</code> 可放任何 ReactNode——Tag(狀態)、Badge(計數)、Link(相關文件)。型別是寬鬆的
+          <code>ReactNode</code>,支援組合。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <DescriptionList cols={1}>
             <DescriptionItem label="訂單狀態">
-              <span className="inline-flex items-center gap-1 text-success">
-                <span className="w-2 h-2 rounded-full bg-success" />
-                已出貨
-              </span>
+              <Tag>已出貨</Tag>
             </DescriptionItem>
             <DescriptionItem label="物流追蹤">
-              <a href="#" className="text-primary hover:text-primary-hover underline">
+              <a href="https://www.fedex.com/fedextrack/?trknbr=1234567890" target="_blank" rel="noreferrer" className="text-primary hover:text-primary-hover underline">
                 FedEx #1234567890
               </a>
             </DescriptionItem>
@@ -247,8 +245,9 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `description-list.spec.md`「無障礙」段。摘要:\n\n- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:consumer 傳半形 - 占位(裸 - SR 敘事弱,宜補 sr-only「無資料」,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
+      {/* 標題 → 一段文字 = tight(A4 甲,寫死 mb-2 改 token、跟著密度)。完整條文在 description-list.spec.md「無障礙」段(不給讀者看檔名) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:consumer 傳半形 - 占位(裸 - SR 敘事弱,宜補 sr-only「無資料」,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
     </div>
   ),
 }

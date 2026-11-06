@@ -42,7 +42,7 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 | 純文字提示（icon 用途、shortcut）| `Tooltip` | 見下「與 Tooltip 的分界」 |
 | 點擊觸發（非 hover） | `Popover` | HoverCard 觸發是 hover，點擊用 Popover |
 | 需要阻斷背景的流程 | `Dialog` | HoverCard 非阻斷、hover 離開自動消失 |
-| 關鍵資訊（必須被看到）| 直接顯示在畫面上 | 觸控裝置無法 hover，關鍵資訊不可只靠 HoverCard |
+| 關鍵資訊（必須被看到）| 直接顯示在畫面上 | 要滑過停 0.7 秒才開、滑開就收,使用者不知道那裡藏著東西,關鍵資訊不可只靠 HoverCard〔UD-U1021-27〕 |
 
 ---
 
@@ -65,16 +65,18 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 ## 純行為 primitive
 
 HoverCardContent 只提供：
-- `z-50`（浮層層級）
+- `z-50`（浮層層級;與 Popover 同一列、在 Toast 之下 —— HoverCard 不是 Tooltip,不跟 Tooltip 升到 Toast 之上。全 DS 層級表 → `../../tokens/elevation/elevation.spec.md`「疊放順序」）
 - 進出場動畫（fade + zoom + slide，方向感知）
 - `sideOffset`（與 trigger 的間距）
 
-**不提供** `bg`、`border`、`shadow`、`padding`、`rounded`——consumer 根據場景自行決定：
+**不提供** `bg`、`border`、`shadow`、`padding`、`rounded`——consumer 根據場景自行決定。兩種常見外殼各有**一份常數**(`hover-card.tsx`),所有使用方消費它、不另抄(2026-10-20 前手抄 14 處,6 處漏了陰影、1 處連底色都沒有;深色殼漏了字色 —— 獨立驗證 OV-V03 / OV-06 / OV-02):
 
-| Consumer | 視覺風格 |
-|---|---|
-| ProfileCard | 亮色 card（`bg-surface-raised` + `elevation-200` + `rounded-lg` + `border`） |
-| OverflowIndicator | 深色 tooltip 風格（`bg-tooltip` + `data-theme="dark"`） |
+| Consumer | 視覺風格 | 外殼常數(唯一住所) |
+|---|---|---|
+| ProfileCard(Avatar `hoverCard` 內建)/ 連結、儲存庫等內容預覽 | 亮色 card(`bg-surface-raised` + `text-foreground` + `border` + `rounded-lg` + `elevation-200`;跟隨頁面主題,不含內距) | `HOVER_CARD_SURFACE_CLASS` |
+| OverflowIndicator 溢出清單 | 深色 tooltip 風格(`bg-tooltip` + `text-foreground` + `rounded-lg`,**與 `data-theme="dark"` 寫在同一個元素**) | `HOVER_CARD_TOOLTIP_SURFACE_CLASS` |
+
+**實作 —— 深色殼帶字色**:CSS 的 `color` 繼承的是外層**已解析**的值,`data-theme="dark"` 只換變數、不換 color —— 只寫 data-theme 的深色殼在淺色頁上是黑字配深底(2026-10-20 前量到 1.92:1,低於下方 A11y「WCAG AA ≥ 4.5:1」)。同 `../Alert/alert.tsx` 檔頭「data-theme 必須搭配 text-foreground」與 M3;閘 `scripts/overlay-story-contract-invariant.mjs`(S1 換主題的元素都宣告字色、R1 深色清單在淺 / 深兩種頁面的實測對比)。
 
 ## sideOffset
 
@@ -111,7 +113,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 
 ## 禁止事項
 
-- ❌ 把關鍵資訊放在 HoverCard — 觸控裝置無 hover 能力,user 永遠看不到;關鍵 info 直接顯示或 Popover(click 觸發)
+- ❌ 把關鍵資訊放在 HoverCard — 要滑過停 0.7 秒才開、滑鼠路過就收,卡內按鈕鍵盤也進不去(見 A11y 預設),關鍵資訊會被錯過〔UD-U1021-27〕;關鍵 info 直接顯示或 Popover(click 觸發)
 - ❌ HoverCard 內塞表單 / 多步流程 — hover 離開可能誤關閉,複雜互動用 Dialog / Sheet
 - ❌ HoverCard 自帶 bg / border / shadow / padding 套在 HoverCardContent 上 — HoverCard 是純行為 primitive,視覺由 consumer ProfileCard / OverflowIndicator 各自決定(見「純行為 primitive」段)
 - ❌ HoverCard delay 設 0(立即彈出)— 滑鼠掃過所有 trigger 都彈,視覺雜訊;delay tier SSOT 見 `tokens/motion/motion.spec.md`(rich 700ms open / close 200ms;2026-06-11 起 HoverCard Root 內建預設,裸用即得 canonical,consumer 可 per-instance override — 如 OverflowIndicator 傳 plain)
@@ -121,7 +123,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 
 - 「HoverCard 內的按鈕鍵盤可達」——錯。Radix 把 content 內 tabbable node 設 `tabindex="-1"`,鍵盤使用者進不了卡片(見 A11y 預設);需鍵盤可達的互動浮層用 Popover
 - 「HoverCard = 大一點的 Tooltip」——錯。Tooltip 純文字不可互動;HoverCard 是 interactive surface(分界 SSOT 見上方)
-- 「觸控裝置也會開卡」——觸控無 hover;關鍵資訊不可只放 HoverCard(見禁止事項)
+- 「滑過一定看得到卡」——要滑過停 0.7 秒(`tokens/motion/motion.spec.md` rich)才開、滑開就收;關鍵資訊不可只放 HoverCard〔UD-U1021-27〕(見禁止事項)
 
 ## 邊界案例 / 空值
 
@@ -160,6 +162,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 - `avatar.spec.md`
 - `carousel.spec.md`
 - `coachmark.spec.md`
+- `elevation.spec.md`
 - `motion.spec.md`
 - `overflow-indicator.spec.md`
 - `popover.spec.md`

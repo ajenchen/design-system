@@ -49,7 +49,7 @@
 - [ ] Icon size 三層分層(row 走 RowSizeContext / Button 走 Button mapping / 一次性 inline size={n} 對齊 uiSize)
 - [ ] 無 shadcn compat alias(bg-popover 等)
 - [ ] 無硬色 / shadow-sm / 預設 typography class
-- [ ] `tsc --noEmit` 過
+- [ ] `npm run build:lib` 過(型別證明;根目錄 `tsc --noEmit` 一個檔都不檢查、`tsc -b` 不檢查 DS 原始碼,都不算)
 - [ ] cva defaultVariants 正確(Field 家族 default md;其他按 spec 明示)
 - [ ] cva defaultVariants 改動 → 三方同步(spec / docblock / anatomy story)
 
@@ -57,7 +57,7 @@
 
 - [ ] `{name}.stories.tsx` 展示 3-5 真實業務情境(禁 Option A/B/C / 抽象代號 / 極端不現實)
 - [ ] `{name}.anatomy.stories.tsx` 含 Overview + SizeMatrix + ColorMatrix(若有) + StateBehavior + Inspector(或 subset + rationale)
-- [ ] `{name}.principles.stories.tsx` 含 do/don't Rule stories,每則 title + note + 範例
+- [ ] `{name}.principles.stories.tsx` 含 do/don't Rule stories,每則 title + note + 範例(版面一律用 `src/stories-helpers/examples/tutorial-page.tsx`:`TutorialPage` / `TutorialSection` / `createTutorialRule`,不自抄 Rule / Section —— category-templates.md「教學框的間距與標題」;閘 `scripts/tutorial-page-invariant.mjs`)
 - [ ] 「人」test 過:遮標題 5 秒能懂情境
 - [ ] 「舉一反三」test 過:讀者推得出自己產品怎用
 - [ ] hook `check_story_invariants.sh` R1 anatomy(原 check_story_anatomy.sh folded 折入)未觸發 block(無手刻 list item / label Button dismiss / 自刻 overlay)

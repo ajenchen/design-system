@@ -112,7 +112,7 @@ Authority:ENGINEERING-AUTO；直接進 Phase 2。只有填值會創造新的產�
 node scripts/compile-stories.mjs --all --check
 ```
 
-必 0 drift。跑 tsc -b 確認 tsx export 無 break。
+必 0 drift。跑 `npm run build:lib` 確認 tsx export 無 break(設計系統本庫的 `tsc -b` 不檢查 DS 原始碼)。
 
 Commit 每批 5-10 元件一個(不一次全推,好 review)。
 

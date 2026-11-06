@@ -6,11 +6,11 @@
 //     真正的行為差異是 orientation(vertical / horizontal / both)與 type(hover /
 //     scroll / always / auto)顯示時機,由 OrientationBehavior(5.)涵蓋。
 import type { Meta, StoryObj } from '@storybook/react'
-import { createColumnHelper } from '@tanstack/react-table'
 import { ScrollArea, ScrollBar } from './scroll-area'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
-import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { STRIPE_PRODUCTS, PRODUCT_COLUMNS } from '@/design-system/stories-helpers/data/stripe-products'
 
 const meta: Meta = {
   title: 'Design System/Components/ScrollArea/設計規格',
@@ -38,35 +38,9 @@ const PreviewList = ({ count = 20 }: { count?: number }) => (
   </div>
 )
 
-// 寬欄位商品表 — 水平捲動 demo 內容,消費真 DataTable(per data-table.spec.md「簡單展示場景
-// 也用 DataTable」;對齊展示頁 HorizontalProductTable 同模式)。height="auto" + min-w-max:
-// DataTable 無高度約束、不啟內部捲軸,捲動完全由外層 ScrollArea own。
-type StripeProduct = {
-  sku: string; name: string; category: string; stock: number
-  price: string; margin: string; channel: string; status: string
-}
-
-const STRIPE_PRODUCTS: StripeProduct[] = [
-  { sku: 'PRO-001', name: 'Stripe Atlas 新創設立方案', category: 'Incorporation', stock: 128, price: '$500.00', margin: '42%', channel: 'Direct', status: 'Active' },
-  { sku: 'PRO-002', name: 'Stripe Radar 詐欺偵測加購', category: 'Add-on', stock: 256, price: '$0.05/tx', margin: '78%', channel: 'Direct', status: 'Active' },
-  { sku: 'PRO-003', name: 'Stripe Tax 自動稅額計算', category: 'Compliance', stock: 64, price: '$0.50/tx', margin: '65%', channel: 'Partner', status: 'Active' },
-  { sku: 'PRO-004', name: 'Stripe Connect 分潤平台帳號', category: 'Platform', stock: 32, price: '$2/acct', margin: '55%', channel: 'Direct', status: 'Beta' },
-  { sku: 'PRO-005', name: 'Stripe Issuing 實體卡發行', category: 'Cards', stock: 16, price: '$3/card', margin: '38%', channel: 'Partner', status: 'Active' },
-  { sku: 'PRO-006', name: 'Stripe Climate 碳移除貢獻', category: 'Sustainability', stock: 8, price: '1% gross', margin: '—', channel: 'Direct', status: 'Active' },
-]
-
-const productCol = createColumnHelper<StripeProduct>()
-
-const PRODUCT_COLUMNS = [
-  productCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),
-  productCol.accessor('name', { header: 'Product', meta: { type: 'string', width: 240 } }),
-  productCol.accessor('category', { header: 'Category', meta: { type: 'string', width: 130 } }),
-  productCol.accessor('stock', { header: 'Stock', meta: { type: 'number', width: 90 } }),
-  productCol.accessor('price', { header: 'Price', meta: { type: 'string', align: 'right', width: 110 } }),
-  productCol.accessor('margin', { header: 'Margin', meta: { type: 'string', align: 'right', width: 90 } }),
-  productCol.accessor('channel', { header: 'Channel', meta: { type: 'string', width: 100 } }),
-  productCol.accessor('status', { header: 'Status', meta: { type: 'string', width: 110 } }),
-]
+// 寬欄位商品表 — 水平捲動 demo 內容,消費真 DataTable(per data-table.spec.md「簡單展示也用 DataTable」;
+// 對齊展示頁 HorizontalProductTable 同模式)。height="auto" + min-w-max:DataTable 無高度約束、不啟內部捲軸,
+// 捲動完全由外層 ScrollArea own。資料與欄位 = stories-helpers 共用的那一份。
 
 const WideTable = () => (
   <div className="min-w-max">
@@ -89,16 +63,16 @@ export const Overview: Story = {
           → Scrollbar(overlay 捲軸,10px 固定寬)→ Thumb(可抓握的圓角把手)。Root 額外包 Corner 處理雙向 scrollbar 交會。
         </Desc>
         <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 max-w-xl">
-          <div className="text-[11px] font-mono text-fg-muted mb-2">Root (relative + overflow-hidden)</div>
+          <div className="text-caption font-mono text-fg-muted mb-2">Root (relative + overflow-hidden)</div>
           <div className="border border-dashed border-info/50 rounded-md p-3 bg-info/5">
-            <div className="text-[11px] font-mono text-info mb-2">Viewport (flex-1 min-h-0 w-full · rounded-[inherit])</div>
-            <div className="border border-dashed border-success/50 rounded-md p-2 bg-success/5 text-[11px] font-mono text-success-hover">
+            <div className="text-caption font-mono text-info mb-2">Viewport (flex-1 min-h-0 w-full · rounded-[inherit])</div>
+            <div className="border border-dashed border-success/50 rounded-md p-2 bg-success/5 text-caption font-mono text-success-hover">
               children (consumer 內容)
             </div>
           </div>
           <div className="flex items-center gap-2 mt-2">
             <div className="flex-1 h-1.5 rounded-full bg-border" />
-            <span className="text-[10px] font-mono text-fg-muted">Scrollbar + Thumb(overlay,不佔寬)</span>
+            <span className="text-footnote font-mono text-fg-muted">Scrollbar + Thumb(overlay,不佔寬)</span>
           </div>
         </div>
       </div>
@@ -178,11 +152,9 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-6">
-      <div>
-        <H3>元件檢閱器</H3>
-        <Desc>即時預覽 ScrollArea 的 scrollbar 寬度、thumb token、hover 反饋。開發只需確認 token,theme / density 切換由系統處理。</Desc>
-      </div>
+    <div>
+      <H3>元件檢閱器</H3>
+      <Desc>即時預覽 ScrollArea 的 scrollbar 寬度、thumb token、hover 反饋。開發只需確認 token,theme / density 切換由系統處理。</Desc>
 
       <div className="flex gap-6 items-start">
         {/* Left: preview */}
@@ -195,7 +167,7 @@ export const Inspector: Story = {
 
           {/* Blueprint */}
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-4 text-[10px]">
+            <div className="flex items-center gap-4 text-footnote">
               <span className="inline-flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-md" style={{ background: 'rgba(166,208,245,0.6)', border: '1px dashed rgba(80,145,210,0.9)' }} />
                 <span className="font-medium" style={{ color: 'var(--color-blue-7)' }}>Scrollbar(10px 固定)</span>
@@ -214,11 +186,11 @@ export const Inspector: Story = {
                   border: '1.5px dashed rgba(80,145,210,0.9)',
                 }}
               >
-                <span className="text-[11px] font-mono font-bold" style={{ color: 'var(--color-blue-7)' }}>10px</span>
+                <span className="text-caption font-mono font-bold" style={{ color: 'var(--color-blue-7)' }}>10px</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="font-mono text-[12px] text-fg-secondary">w-2.5 / h-2.5</span>
-                <span className="font-mono text-[10px] text-fg-muted">固定 10px,跨 size 不變</span>
+                <span className="font-mono text-caption text-fg-secondary">w-2.5 / h-2.5</span>
+                <span className="font-mono text-footnote text-fg-muted">固定 10px,跨 size 不變</span>
               </div>
             </div>
           </div>
@@ -227,12 +199,12 @@ export const Inspector: Story = {
         {/* Right: inspect panel */}
         <div className="w-[320px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
-            <span className="text-[12px] font-semibold text-foreground">Inspect</span>
+            <span className="text-caption font-semibold text-foreground">Inspect</span>
           </div>
 
           {/* LAYOUT */}
           <div className="px-4 py-1">
-            <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
+            <div className="py-2 border-b border-divider"><span className="text-footnote font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
             <InspectRow label="Scrollbar 寬"><span className="font-mono">w-2.5 / h-2.5 (10px)</span></InspectRow>
             <InspectRow label="Track inset"><span className="font-mono">p-[1px]</span></InspectRow>
             <InspectRow label="邊界"><span className="font-mono">border-l / border-t transparent</span></InspectRow>
@@ -241,7 +213,7 @@ export const Inspector: Story = {
 
           {/* COLOR */}
           <div className="px-4 py-1">
-            <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Color</span></div>
+            <div className="py-2 border-b border-divider"><span className="text-footnote font-semibold text-fg-muted uppercase tracking-wider">Color</span></div>
             <InspectRow label="Track"><TokenCell token="transparent" display="transparent" /></InspectRow>
             <InspectRow label="Thumb"><TokenCell token="--scrollbar-thumb" /></InspectRow>
             <InspectRow label="Thumb hover"><TokenCell token="--scrollbar-thumb-hover" /></InspectRow>
@@ -249,7 +221,7 @@ export const Inspector: Story = {
 
           {/* STYLE */}
           <div className="px-4 py-1 pb-3">
-            <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
+            <div className="py-2 border-b border-divider"><span className="text-footnote font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
             <InspectRow label="Thumb radius"><span className="font-mono">rounded-full</span></InspectRow>
             <InspectRow label="過渡"><span className="font-mono">transition-colors</span></InspectRow>
             <InspectRow label="顯示時機"><span className="font-mono">type=&quot;hover&quot; (default)</span></InspectRow>
@@ -262,8 +234,8 @@ export const Inspector: Story = {
 
 const InspectRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[88px] shrink-0 pt-0.5">{label}</span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
+    <span className="text-caption text-fg-muted font-medium w-[88px] shrink-0 pt-0.5">{label}</span>
+    <div className="flex-1 text-caption font-mono text-fg-secondary">{children}</div>
   </div>
 )
 
@@ -274,29 +246,30 @@ const InspectRow = ({ label, children }: { label: string; children: React.ReactN
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => (
-    <div className="flex flex-col gap-6">
+    // 一頁兩則有標題的段落上下疊 → 段落之間 loose × 2(ExampleStack);每段的表格 / 範例收進自己那一段(標題區 → 內容 = loose)。
+    // 原本表格是外層 gap 容器的兄弟節點,標題區 → 表格 = 說明的下方距離 + 外層 gap,疊成 40 / 48
+    <ExampleStack>
       <div>
         <H3>Thumb × 狀態</H3>
         <Desc>Track 固定透明(overlay 不搶視覺);Thumb 靜態低存在感,hover 加深反饋可抓握。Dark mode 由 semantic token 自動切換。</Desc>
-      </div>
-
-      <div className="overflow-x-auto">
-        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
-        <table className="border-collapse">
-          <thead><tr><Th>元素</Th><Th>Default</Th><Th>Hover</Th></tr></thead>
-          <tbody>
-            <tr>
-              <Td mono>Track</Td>
-              <Td><TokenCell token="transparent" display="transparent" /></Td>
-              <Td><TokenCell token="transparent" display="transparent" /></Td>
-            </tr>
-            <tr>
-              <Td mono>Thumb</Td>
-              <Td><TokenCell token="--scrollbar-thumb" /></Td>
-              <Td><TokenCell token="--scrollbar-thumb-hover" /></Td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
+          <table className="border-collapse">
+            <thead><tr><Th>元素</Th><Th>Default</Th><Th>Hover</Th></tr></thead>
+            <tbody>
+              <tr>
+                <Td mono>Track</Td>
+                <Td><TokenCell token="transparent" display="transparent" /></Td>
+                <Td><TokenCell token="transparent" display="transparent" /></Td>
+              </tr>
+              <tr>
+                <Td mono>Thumb</Td>
+                <Td><TokenCell token="--scrollbar-thumb" /></Td>
+                <Td><TokenCell token="--scrollbar-thumb-hover" /></Td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div>
@@ -306,7 +279,7 @@ export const ColorMatrix: Story = {
           <PreviewList count={18} />
         </ScrollArea>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -317,27 +290,27 @@ export const ColorMatrix: Story = {
 export const SizeMatrix: Story = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-6">
+    // 兩則有標題的段落上下疊 → 段落之間 loose × 2(ExampleStack);表格收進第一段(原本與外層 gap 疊成 40 / 48)
+    <ExampleStack>
       <div>
         <H3>Scrollbar 寬度 — 跨 size / density / content 固定 10px</H3>
         <Desc>
           ScrollArea 的 scrollbar 是「功能性 primitive」,不是「內容呈現」,因此寬度不隨 content size(sm/md/lg)、不隨 density(md/lg)變化。
           Polaris / Material / Radix / shadcn 同樣做法:scrollbar 是 OS chrome 類別,與內容字級脫鉤。
         </Desc>
-      </div>
-
-      <div className="overflow-x-auto">
-        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
-        <table className="text-caption border-collapse">
-          <thead><tr><Th>屬性</Th><Th>值</Th><Th>備註</Th></tr></thead>
-          <tbody>
-            <tr><Td>Vertical scrollbar 寬</Td><Td mono>w-2.5 (10px)</Td><Td>本 DS ScrollBar 套 h-full;Radix 再以 absolute(top:0/bottom:corner)撐滿高度</Td></tr>
-            <tr><Td>Horizontal scrollbar 高</Td><Td mono>h-2.5 (10px)</Td><Td>本 DS ScrollBar 套 flex-col;Radix 再以 absolute(left/right:0)撐滿寬度</Td></tr>
-            <tr><Td>Thumb inset</Td><Td mono>p-[1px]</Td><Td>thumb 與 track 邊緣保持 1px 透氣</Td></tr>
-            <tr><Td>Thumb radius</Td><Td mono>rounded-full</Td><Td>對齊 macOS / modern DS 慣例</Td></tr>
-            <tr><Td>Density 反應</Td><Td mono>無</Td><Td>不隨 --field-height-* / --layout-space-* 放大</Td></tr>
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
+          <table className="text-caption border-collapse">
+            <thead><tr><Th>屬性</Th><Th>值</Th><Th>備註</Th></tr></thead>
+            <tbody>
+              <tr><Td>Vertical scrollbar 寬</Td><Td mono>w-2.5 (10px)</Td><Td>本 DS ScrollBar 套 h-full;Radix 再以 absolute(top:0/bottom:corner)撐滿高度</Td></tr>
+              <tr><Td>Horizontal scrollbar 高</Td><Td mono>h-2.5 (10px)</Td><Td>本 DS ScrollBar 套 flex-col;Radix 再以 absolute(left/right:0)撐滿寬度</Td></tr>
+              <tr><Td>Thumb inset</Td><Td mono>p-[1px]</Td><Td>thumb 與 track 邊緣保持 1px 透氣</Td></tr>
+              <tr><Td>Thumb radius</Td><Td mono>rounded-full</Td><Td>對齊 macOS / modern DS 慣例</Td></tr>
+              <tr><Td>Density 反應</Td><Td mono>無</Td><Td>不隨 --field-height-* / --layout-space-* 放大</Td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div>
@@ -365,7 +338,7 @@ export const SizeMatrix: Story = {
           </div>
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -374,40 +347,40 @@ export const SizeMatrix: Story = {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export const OrientationBehavior: Story = {
-  name: '方向 行為',
+  name: '方向行為',
   render: () => (
     <div className="flex flex-col gap-8">
+      {/* 表格收進同一段(原本是外層 gap 容器的兄弟節點,標題區 → 表格 = 說明的下方距離 + 外層 gap 疊在一起) */}
       <div>
         <H3>三種模式 — 何時用哪個</H3>
         <Desc>垂直用於清單 / body 捲動;水平用於寬表格 / 溢出 pill 列;雙向用於大型資料網格。</Desc>
-      </div>
-
-      <div className="overflow-x-auto">
-        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
-        <table className="text-caption border-collapse">
-          <thead><tr><Th>Orientation</Th><Th>場景</Th><Th>使用範例</Th></tr></thead>
-          <tbody>
-            <tr>
-              <Td mono>vertical(預設)</Td>
-              <Td>長清單、Sheet / Dialog body、Sidebar nav</Td>
-              <Td mono>&lt;ScrollArea className=&quot;h-[320px]&quot;&gt;...&lt;/ScrollArea&gt;</Td>
-            </tr>
-            <tr>
-              <Td mono>horizontal</Td>
-              <Td>寬 DataTable、Tag 溢出列、水平時間軸</Td>
-              <Td mono>
-                &lt;ScrollArea&gt;...&lt;ScrollBar orientation=&quot;horizontal&quot;/&gt;&lt;/ScrollArea&gt;
-              </Td>
-            </tr>
-            <tr>
-              <Td mono>vertical + horizontal</Td>
-              <Td>大型 DataTable(雙向都溢出)</Td>
-              <Td mono>
-                同時渲染 vertical(自動)+ horizontal ScrollBar
-              </Td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
+          <table className="text-caption border-collapse">
+            <thead><tr><Th>Orientation</Th><Th>場景</Th><Th>使用範例</Th></tr></thead>
+            <tbody>
+              <tr>
+                <Td mono>vertical(預設)</Td>
+                <Td>長清單、Sheet / Dialog body、Sidebar nav</Td>
+                <Td mono>&lt;ScrollArea className=&quot;h-[320px]&quot;&gt;...&lt;/ScrollArea&gt;</Td>
+              </tr>
+              <tr>
+                <Td mono>horizontal</Td>
+                <Td>寬 DataTable、Tag 溢出列、水平時間軸</Td>
+                <Td mono>
+                  &lt;ScrollArea&gt;...&lt;ScrollBar orientation=&quot;horizontal&quot;/&gt;&lt;/ScrollArea&gt;
+                </Td>
+              </tr>
+              <tr>
+                <Td mono>vertical + horizontal</Td>
+                <Td>大型 DataTable(雙向都溢出)</Td>
+                <Td mono>
+                  同時渲染 vertical(自動)+ horizontal ScrollBar
+                </Td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div>
@@ -444,8 +417,9 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `scroll-area.spec.md` 「A11y 預設」段。摘要(Radix primitive + 本 DS 橋接):\n\n-   鍵盤捲動  :本 DS 在 Viewport 加  tabIndex={0}  使其可被鍵盤聚焦(Radix 不自動標 focusable,Safari 尤其需要),聚焦後支援  ArrowUp/Down/Left/Right  /  PageUp/Down  /  Home/End \n-   Focus 可見  :聚焦的 Viewport 顯示 DS 焦點框(focus-visible:focus-ring-inset,往內 2px)\n-   Scrollbar 非 tab stop  :scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)\n-   Pointer 支援  :thumb 可拖曳,track 可 click-to-jump(Radix 內建)\n\n本元件已內建 tabIndex 與 focus ring(滿足 axe scrollable-region-focusable);但 Viewport 預設無 role / accessible name——scroll 區域有具體語意(如「留言列表」「程式碼區塊」)時,consumer 應提供 aria-label,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。"}</p>
+      {/* 標題 → 一段文字 = tight(純文字的內容之間是 tight,A4;原本寫死 mb-2 = 8、不跟密度) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"Radix primitive 與本 DS 的橋接:\n\n-   鍵盤捲動  :本 DS 在 Viewport 加  tabIndex={0}  使其可被鍵盤聚焦(Radix 不自動標 focusable,Safari 尤其需要),聚焦後支援  ArrowUp/Down/Left/Right  /  PageUp/Down  /  Home/End \n-   Focus 可見  :聚焦的 Viewport 顯示 DS 焦點框(focus-visible:focus-ring-inset,往內 2px)\n-   Scrollbar 非 tab stop  :scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)\n-   Pointer 支援  :thumb 可拖曳,track 可 click-to-jump(Radix 內建)\n\n本元件已內建 tabIndex 與 focus ring(滿足 axe scrollable-region-focusable);但 Viewport 預設無 role / accessible name——scroll 區域有具體語意(如「留言列表」「程式碼區塊」)時,consumer 應提供 aria-label,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。"}</p>
     </div>
   ),
 }

@@ -6,11 +6,13 @@
 // 本頁給 DS contributor 看「overlay 三段式結構 + padding / 分隔線契約」長什麼樣。
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, within } from '@storybook/test'
+import * as React from 'react'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SurfaceHeader, SurfaceBody, SurfaceFooter } from './overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 
 const meta: Meta = {
   title: 'Design System/Internal Patterns/Overlay Surface',
@@ -23,7 +25,7 @@ const meta: Meta = {
 
 end-user 不直接 import——用 DialogHeader / SheetHeader / PopoverHeader 等 consumer wrapper;本頁是 DS contributor 的結構參照。
 
-完整規則:\`packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md\`(padding-based header canonical / unbounded slot trick / ScrollArea canonical / dismiss size canonical)
+完整規則見 Overlay Surface 規格(標題列的內距、關閉鈕的佔位、內文捲動、關閉鈕尺寸)。
         `,
       },
     },
@@ -33,11 +35,15 @@ end-user 不直接 import——用 DialogHeader / SheetHeader / PopoverHeader �
 export default meta
 type Story = StoryObj
 
+// 原生 inert(不可互動的示意):React 18 要傳空字串、19 起是 boolean —— 同 menu-item.tsx / sidebar.tsx 的 INERT_SPREAD 寫法
+const INERT_SPREAD = (Number.parseInt(React.version, 10) >= 19 ? { inert: true } : { inert: '' }) as object
+
 /** 模擬 consumer Content 外殼——radius / border / shadow / bg 是浮層外殼職責,
  *  由 Dialog / Popover 的 Content 自己套(spec「不屬本 primitive 的職責」段 token 組)。 */
-function Shell({ children, className }: { children: ReactNode; className?: string }) {
+function Shell({ children, className, inert }: { children: ReactNode; className?: string; inert?: boolean }) {
   return (
     <div
+      {...(inert ? INERT_SPREAD : {})}
       className={cn(
         'overflow-hidden rounded-lg border border-border bg-surface-raised shadow-[var(--elevation-200)]',
         className,
@@ -48,21 +54,24 @@ function Shell({ children, className }: { children: ReactNode; className?: strin
   )
 }
 
-/** 1. 三段式結構 — Header(border-b)/ Body / Footer(border-t)各自的 padding 契約。
- *  對標 Dialog「邀請成員」場景;header title = modal-tier typography(text-body-lg font-medium)。 */
+// 三段式結構:Header(border-b)/ Body / Footer(border-t)各自的 padding 契約。
+// 對標 Dialog「邀請成員」場景;header title = modal-tier typography(text-body-lg font-medium)。
+// 這一則只示範版面:整個外殼 inert(不可互動的示意,按鈕不會假裝能按);可操作的版本見 Dialog 展示。
 export const ThreePartStructure: Story = {
   name: '三段式結構',
   render: () => (
-    <div className="flex flex-col gap-3">
-      <Shell className="w-[420px]">
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
+      <Shell className="w-[420px]" inert>
         <SurfaceHeader>
-          <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">邀請成員加入專案</h2>
+          {/* 標題單行截斷 → 截斷時掛全文 tooltip(同 DialogTitle:TruncatedText display="block") */}
+          <h2 className="flex-1 min-w-0 text-body-lg font-medium text-foreground"><TruncatedText display="block">邀請成員加入專案</TruncatedText></h2>
           <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
         </SurfaceHeader>
         <SurfaceBody>
           <p className="text-body text-foreground">
             輸入 Email 即可邀請成員加入「Acme 品牌改版」專案。
           </p>
+          {/* @layout-space-magic-ok: SurfaceBody 內第二段落的段距 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
           <p className="mt-2 text-caption text-fg-secondary">
             被邀請者會收到通知信,接受後自動取得專案的檢視與留言權限。
           </p>
@@ -81,17 +90,16 @@ export const ThreePartStructure: Story = {
   ),
 }
 
-/** 2. 內文捲動 — 定高浮層下 header / footer 固定、body 內捲。
- *  Shell 需 flex flex-col(viewport-aware scroll chain:中間 wrapper 斷鏈 = body 不捲,spec K11 invariant)。 */
-export const BodyScroll: Story = {
-  name: '內文捲動',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  parameters: { demoFocus: 'keep' },
-  render: () => (
-    <div className="flex flex-col gap-3">
+// 內文捲動:定高浮層下 header / footer 固定、body 內捲。
+// Shell 需 flex flex-col(viewport-aware scroll chain:中間 wrapper 斷鏈 = body 不捲)。
+// 只示範版面:標題列與頁尾 inert(不可互動的示意);內文區照實可捲、可用 Tab 聚焦(可捲區域要鍵盤到得了)。
+// 鍵盤焦點的驗證搬到下面 test-only 的「內文捲動(鍵盤)」,展示這則不再留著程式造出的焦點。
+function BodyScrollDemo() {
+  return (
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <Shell className="flex h-[280px] w-[420px] flex-col">
-        <SurfaceHeader>
-          <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">服務條款更新</h2>
+        <SurfaceHeader {...INERT_SPREAD}>
+          <h2 className="flex-1 min-w-0 text-body-lg font-medium text-foreground"><TruncatedText display="block">服務條款更新</TruncatedText></h2>
           <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
         </SurfaceHeader>
         <SurfaceBody
@@ -99,6 +107,7 @@ export const BodyScroll: Story = {
           role="region"
           aria-label="服務條款更新內容"
         >
+          {/* @layout-space-magic-ok: 條款逐條之間 12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
           <div className="flex flex-col gap-3 text-body text-foreground">
             <p>1. 資料保存期限由 30 天調整為 90 天,到期後自動匿名化。</p>
             <p>2. 新增歐盟區域資料中心選項,既有工作區可在設定頁遷移。</p>
@@ -108,7 +117,7 @@ export const BodyScroll: Story = {
             <p>6. 本次更新於 2026 年 8 月 1 日生效,繼續使用即視為同意。</p>
           </div>
         </SurfaceBody>
-        <SurfaceFooter>
+        <SurfaceFooter {...INERT_SPREAD}>
           <Button variant="tertiary">稍後再讀</Button>
           <Button variant="primary">我已閱讀並同意</Button>
         </SurfaceFooter>
@@ -119,7 +128,21 @@ export const BodyScroll: Story = {
         (跨 OS 捲軸一致),此處為 primitive 裸展示。
       </p>
     </div>
-  ),
+  )
+}
+
+export const BodyScroll: Story = {
+  name: '內文捲動',
+  render: () => <BodyScrollDemo />,
+}
+
+// test-only:內文區可捲、可用鍵盤聚焦(原本寫在展示那則的 play 裡,並用 demoFocus keep 留住焦點)
+export const BodyScrollKeyboard: Story = {
+  name: '內文捲動(鍵盤)',
+  tags: ['test-only'],
+  // @example-basis: overlay-surface.spec.md:51「機械驗證該具名節點確實 overflow 且可聚焦」
+  parameters: { demoFocus: 'keep' },
+  render: () => <BodyScrollDemo />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const scrollRegion = canvas.getByRole('region', {

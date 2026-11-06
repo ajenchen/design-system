@@ -32,8 +32,10 @@ type Story = StoryObj
 export const UserProfileCard: Story = {
   name: '個人資料卡載入',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-sm flex items-center gap-3">
+    // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值)
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
       <Skeleton className="h-12 w-12 rounded-full" />
+      {/* @layout-space-magic-ok: 骨架文字區兩行(名稱 / 副標)之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
       <div className="flex flex-col gap-2 flex-1">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-48" />
@@ -42,19 +44,28 @@ export const UserProfileCard: Story = {
   ),
 }
 
+/* ── 任務列表載入 ──
+   任務列表本身就是一張 DataTable(編號 / 標題 / 狀態 / 負責人),載入時照下面「表格列載入」同一種做法:表頭可見、
+   每一格放形狀相同的 Skeleton(data-table.spec.md「狀態處理職責邊界」:無資料載入由 consumer 渲 Skeleton placeholder rows)。
+   2026-10-27 前這裡是手畫的外框 + 分隔線 + 自訂列內距(稽核 L049:不是 DS 清單或 DataTable 的形狀)。 */
+interface TaskLoadingRow {
+  id: string
+}
+
+const TASK_LOADING_ROWS: TaskLoadingRow[] = Array.from({ length: 5 }, (_, i) => ({ id: `task-loading-${i + 1}` }))
+
+const taskLoadingColumns: ColumnDef<TaskLoadingRow>[] = [
+  { id: 'key', header: '編號', meta: { width: 110 }, cell: () => <Skeleton className="h-4 w-16" /> },
+  { id: 'title', header: '標題', meta: { width: 280 }, cell: () => <Skeleton className="h-4 w-56" /> },
+  { id: 'status', header: '狀態', meta: { width: 120 }, cell: () => <Skeleton className="h-6 w-16 rounded-full" /> },
+  { id: 'assignee', header: '負責人', meta: { width: 100 }, cell: () => <Skeleton className="h-6 w-6 rounded-full" /> },
+]
+
 export const TaskListLoading: Story = {
   name: '任務列表載入',
   render: () => (
-    <div className="flex flex-col gap-1 max-w-2xl border border-border rounded-lg divide-y divide-border">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-3">
-          <Skeleton className="h-4 w-4 rounded-full" />
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 flex-1" />
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-6 w-6 rounded-full" />
-        </div>
-      ))}
+    <div aria-busy="true" className="max-w-2xl">
+      <DataTable columns={taskLoadingColumns} data={TASK_LOADING_ROWS} getRowId={(r) => r.id} height="auto" />
     </div>
   ),
 }
@@ -78,6 +89,7 @@ const loadingColumns: ColumnDef<LoadingRow>[] = [
     header: '客戶',
     meta: { width: 200 },
     cell: () => (
+      // @layout-space-magic-ok: 表格儲存格骨架 頭像 ↔ 名稱 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值)
       <div className="flex items-center gap-2">
         <Skeleton className="h-6 w-6 rounded-full" />
         <Skeleton className="h-4 w-24" />
@@ -99,18 +111,26 @@ export const TableRowLoading: Story = {
 export const DocumentLoading: Story = {
   name: '文件載入',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-2xl">
-      <Skeleton className="h-8 w-1/2" />
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-5 w-5 rounded-full" />
-        <Skeleton className="h-3 w-32" />
+    // 標題區(標題 + 作者列)→ 內文 = loose:標題是整份文件的標題,不是第一段的小標(user 2026-10-21 A4 甲;
+    // layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose);段與段並列 = loose。
+    // 標題 → 作者列 = tight(同一個標題區,沿用)。2026-10-27 前整個標題區 → 內文也是 tight(註解寫「functional 鏈」)。
+    <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <Skeleton className="h-8 w-1/2" />
+        {/* @layout-space-magic-ok: 作者列 頭像 ↔ 名字 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5 rounded-full" />
+          <Skeleton className="h-3 w-32" />
+        </div>
       </div>
-      <div className="flex flex-col gap-2 mt-2">
+      {/* @layout-space-magic-ok: 同一段的骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
+      <div className="flex flex-col gap-2">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-4/5" />
       </div>
-      <div className="flex flex-col gap-2 mt-2">
+      {/* @layout-space-magic-ok: 同一段的骨架文字行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
+      <div className="flex flex-col gap-2">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />
       </div>
@@ -121,9 +141,9 @@ export const DocumentLoading: Story = {
 export const CardGridLoading: Story = {
   name: '卡片網格載入',
   render: () => (
-    <div className="grid grid-cols-3 gap-4 max-w-4xl">
+    <div className="grid grid-cols-3 gap-[var(--layout-space-loose)] max-w-4xl">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="border border-border rounded-lg p-3 flex flex-col gap-3">
+        <div key={i} className="border border-border rounded-lg p-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-tight)]">
           <Skeleton className="h-32 w-full rounded-md" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />

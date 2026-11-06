@@ -35,7 +35,7 @@
  *      [--new-dir <dir>] [--selftest]
  *   沒給 --old-dir 時退回 git <old-ref>(預設 HEAD)的 curated 圖 —— 只適合「同渲染器」的情況(例如重拍後驗證穩定性)。
  */
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -54,8 +54,13 @@ const OUT = arg('--out', join(ROOT, '.git/governance-runtime/evidence/visual/bas
 const NEW_DIR = arg('--new-dir', null)
 const OLD_DIR = arg('--old-dir', null)
 const SINCE_REF = arg('--since-ref', null)
-const PIXEL_DIFF_PCT_BUDGET = 0.5 // 與 scripts/visual-audit.mjs 同一個門檻,不另訂
+export const PIXEL_DIFF_PCT_BUDGET = 0.5 // 與 scripts/visual-audit.mjs 同一個門檻,不另訂(審核包 visual-baseline-review-package.mjs 也從這裡讀)
 const PIXELMATCH_THRESHOLD = 0.1
+/**
+ * 不得直接接受的分類(SSOT):正式跑出現任一種即 exit 1;審核包與 apply-approved-baselines.mjs 也從這裡讀,不另抄一份。
+ * suspicious / unmapped 是「原因還沒查出來」—— 查出原因並記下來之前不接受;dimension-mismatch / missing-new 是量不到。
+ */
+export const BLOCKING_VERDICTS = Object.freeze(['suspicious', 'unmapped', 'dimension-mismatch', 'missing-new'])
 
 // 2026-09-23 run #294:裸 git 在 Playwright 容器裡撞「dubious ownership」—— actions/checkout 把 safe.directory 寫進
 // **暫時的** HOME,後面的步驟看不到;closed git 已把「呼叫端指名的 cwd」列成 safe.directory(closed-tool-execution.mjs),
@@ -183,11 +188,14 @@ function main() {
   console.log(`✓ 歸因報告:${JSON.stringify(counts)} → ${OUT}/summary.md`)
   // 檔頭寫「正式跑時 suspicious / unmapped / missing-new 出現即 exit 1」,但 2026-09-23 之前這裡只印警告、結束碼永遠 0 ——
   // 註解裡的斷言程式沒執行(M37)。現在真的紅;new-scenario(參考樹沒有這則 story = HEAD 新增的場景)是正常演進,只提示。
-  if (counts.suspicious || counts.unmapped || counts['dimension-mismatch'] || counts['missing-new']) {
+  if (BLOCKING_VERDICTS.some((verdict) => counts[verdict])) {
     console.log('✗ 有 suspicious / unmapped / dimension-mismatch / missing-new —— 這些不得直接接受,先查出原因(exit 1)')
     process.exitCode = 1
   }
   if (counts['new-scenario']) console.log(`ⓘ ${counts['new-scenario']} 張是 HEAD 新增、參考樹沒有的場景(new-scenario):沒有同渲染器對照,接受前用 story 本身判斷`)
 }
 
-main()
+// 2026-10-14:審核包(visual-baseline-review-package.mjs)要 import classifyDiff 用同一個門檻與分類 —— 被 import 時不得自己跑起來
+// 比 realpath 不比字面路徑:經 symlink(macOS /tmp → /private/tmp)呼叫時字面不等,main 會靜默不跑、結束碼 0 —— 那是假綠
+const invokedDirectly = (() => { try { return Boolean(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)) } catch { return false } })()
+if (invokedDirectly) main()

@@ -6,7 +6,9 @@
 //   → fromTitle=pattern 但 resolveCategory=component(folder=components + 無 isInternal)
 //   → Invariant 1「title 反映 category 必 === resolveCategory」被打破 → gate exit 1。
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import assert from 'node:assert/strict'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { resolveUnitOwnSpec } from './lib/unit-own-spec.mjs'
 
 const run = () => spawnSync(process.execPath, ['--', 'scripts/category-classification-invariant.mjs'], { stdio: 'pipe' }).status ?? 1
 let ok = true
@@ -56,7 +58,47 @@ try {
   writeFileSync(previewTarget, previewOrig)
 }
 
-// 5) 還原後必 PASS
+// 5) 讀的是「這個單元自己的 spec」,不是資料夾裡第一個(2026-10-14,SM2b ①;判準 lib/unit-own-spec.mjs)
+//    SelectMenu 資料夾裡按字母序第一個是 select-menu-unrestricted.spec.md(沒有 frontmatter),主 spec 是 select-menu.spec.md(有 isInternal)。
+//    5a 判定表:同名優先、順序無關、單一 spec 退回、兩份以上又沒有同名 = 判不了(不猜)
+assert.deepEqual(resolveUnitOwnSpec('SelectMenu', ['select-menu-unrestricted.spec.md', 'select-menu.spec.md']).spec, 'select-menu.spec.md')
+assert.deepEqual(resolveUnitOwnSpec('SelectMenu', ['select-menu.spec.md', 'select-menu-unrestricted.spec.md']).spec, 'select-menu.spec.md')
+assert.deepEqual(resolveUnitOwnSpec('Steps', ['steps-state-visuals.spec.md', 'steps.spec.md']).spec, 'steps.spec.md')
+assert.deepEqual(resolveUnitOwnSpec('layoutSpace', ['layoutSpace.css', 'layoutSpace.spec.md', 'layoutSpace.stories.tsx']).spec, 'layoutSpace.spec.md')
+assert.deepEqual(resolveUnitOwnSpec('Menu', ['menu-item.spec.md', 'menu-item.tsx']), { spec: 'menu-item.spec.md', reason: 'only-spec', candidates: ['menu-item.spec.md'] })
+assert.deepEqual(resolveUnitOwnSpec('Zz', ['b.spec.md', 'a.spec.md']), { spec: null, reason: 'ambiguous', candidates: ['a.spec.md', 'b.spec.md'] })
+assert.deepEqual(resolveUnitOwnSpec('Zz', ['zz.tsx']), { spec: null, reason: 'no-spec', candidates: [] })
+console.log('✓ 主 spec 判定表:同名優先(與檔案順序無關)、單一 spec 退回、兩份以上沒有同名 → 判不了')
+
+//    5b 真檔突變:主 spec 拿掉 isInternal → 必紅(證明讀的是主 spec;若讀第一個,這個突變不會改變任何結果)
+const ownSpec = 'packages/design-system/src/components/SelectMenu/select-menu.spec.md'
+const ownOrig = readFileSync(ownSpec, 'utf8')
+const INTERNAL_TRAIT = '\n  - isInternal\n'
+if (!ownOrig.includes(INTERNAL_TRAIT)) { console.error('✗ select-menu.spec.md frontmatter 找不到 isInternal trait — 注入基礎失效'); process.exit(1) }
+try {
+  writeFileSync(ownSpec, ownOrig.replace(INTERNAL_TRAIT, '\n'))
+  const code = run()
+  if (code === 0) { console.error('✗ 主 spec 拿掉 isInternal 後 gate 未 FAIL —— 它讀的不是這個單元自己的 spec'); ok = false }
+  else console.log('✓ 主 spec(select-menu.spec.md)拿掉 isInternal 被抓(exit ' + code + ');旁邊沒有 frontmatter 的 select-menu-unrestricted.spec.md 排在前面也不影響判定')
+} finally {
+  writeFileSync(ownSpec, ownOrig)
+}
+
+//    5c 判不了就紅:臨時單元資料夾有兩份 spec、沒有一份同名 → 必紅(不准挑一份猜)→ 刪除
+const fixtureDir = 'packages/design-system/src/components/ZzOwnSpecProbe'
+try {
+  mkdirSync(fixtureDir, { recursive: true })
+  writeFileSync(`${fixtureDir}/alpha.spec.md`, '# probe\n')
+  writeFileSync(`${fixtureDir}/beta.spec.md`, '---\ntraits:\n  - isInternal\n---\n# probe\n')
+  writeFileSync(`${fixtureDir}/zz-own-spec-probe.stories.tsx`, "export default { title: 'Design System/Components/ZzOwnSpecProbe/展示', tags: ['autodocs'] }\n")
+  const r = spawnSync(process.execPath, ['--', 'scripts/category-classification-invariant.mjs'], { stdio: 'pipe', encoding: 'utf8' })
+  if (r.status === 0 || !/ZzOwnSpecProbe: 有 2 份 spec/.test(r.stdout ?? '')) { console.error(`✗ 兩份 spec 都不同名時 gate 沒有以「判不了」紅(exit ${r.status})`); ok = false }
+  else console.log('✓ 兩份 spec 都不同名 → 判不了、紅(exit ' + r.status + ')')
+} finally {
+  rmSync(fixtureDir, { recursive: true, force: true })
+}
+
+// 6) 還原後必 PASS
 if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log('✓ 還原後 PASS(gate exit 0)')
 

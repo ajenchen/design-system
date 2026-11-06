@@ -53,7 +53,7 @@ export const WithSuffix: Story = {
   //   - 「全部」「通知」純文字 / badge 後綴(切 tab)
   //   - 「更多」tab 用 `inlineAction` 包 DropdownMenu — 點 tab body 切 tab,
   //     點 ChevronDown(inline action)開 dropdown 不切 tab。
-  // 對齊 GitHub「Code ▾」/ Linear "Triage..." menu split-tab 共識。endIcon 不再示範
+  // 「更多」是 split-tab:tab 本體切 tab、chevron 開選單,兩個動作分開。endIcon 不再示範
   // 「點下去展開更多」(misleading affordance),已撤回 spec L99。
   render: () => (
     <Tabs defaultValue="notifications" className="w-[700px]">
@@ -110,7 +110,7 @@ export const OverflowScroll: Story = {
   // 2026-05-18 加(user 抓 overflow story 沒秀真實溢出):narrow 320px container + 8 tabs
   // 強制觸發 overflow → fade mask + scroll arrow 視覺實際可見。
   render: () => (
-    <div className="w-[320px] border border-divider rounded-md p-2">
+    <div className="w-[320px] border border-divider rounded-md p-[var(--layout-space-loose)]">
       <Tabs defaultValue="overview">
         <TabsList overflow="scroll">
           {workspaceSettingsTabs.map((t) => (
@@ -118,7 +118,7 @@ export const OverflowScroll: Story = {
           ))}
         </TabsList>
         {workspaceSettingsTabs.map((t) => (
-          <TabsContent key={t.value} value={t.value} className="text-body text-fg-secondary mt-2">{t.content}</TabsContent>
+          <TabsContent key={t.value} value={t.value} className="text-body text-fg-secondary">{t.content}</TabsContent>
         ))}
       </Tabs>
     </div>
@@ -129,7 +129,7 @@ export const OverflowMenu: Story = {
   name: '溢出處理 — ⌄ 導覽選單',
   // 2026-05-18 加:narrow 320px container + 8 tabs 強制觸發 → 右側出現 ⌄ navigator(OverflowMenuTriggerButton),DropdownMenu 列全部 tab 快速跳轉;全 trigger 仍在捲動容器內可見。
   render: () => (
-    <div className="w-[320px] border border-divider rounded-md p-2">
+    <div className="w-[320px] border border-divider rounded-md p-[var(--layout-space-loose)]">
       <Tabs defaultValue="overview">
         <TabsList overflow="menu">
           {workspaceSettingsTabs.map((t) => (
@@ -137,7 +137,7 @@ export const OverflowMenu: Story = {
           ))}
         </TabsList>
         {workspaceSettingsTabs.map((t) => (
-          <TabsContent key={t.value} value={t.value} className="text-body text-fg-secondary mt-2">{t.content}</TabsContent>
+          <TabsContent key={t.value} value={t.value} className="text-body text-fg-secondary">{t.content}</TabsContent>
         ))}
       </Tabs>
     </div>

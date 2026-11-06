@@ -18,14 +18,20 @@ import {
   XCircle,
   type LucideIcon,
 } from 'lucide-react'
-import { Notice, SUBTLE_ICON_COLOR, type NoticeVariant } from './notice'
+import { SUBTLE_ICON_COLOR, type NoticeVariant } from './notice'
+import { Alert } from '@/design-system/components/Alert/alert'
 import { Button } from '@/design-system/components/Button/button'
+import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Chip, ChipGroup } from '@/design-system/components/Chip/chip'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/Notice/設計規格',
   parameters: { layout: 'padded' },
+  // 範例裡的動作鈕做完跳 Toast;Toaster 是 app 層 Provider,放在 story 外層
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -52,19 +58,31 @@ const VARIANT_ICON: Record<NoticeVariant, LucideIcon | null> = {
   error: XCircle,
 }
 
-const SUBTLE_CONTAINER: Record<NoticeVariant, string> = {
-  neutral: 'bg-muted border border-border',
-  info: 'bg-info-subtle border border-[var(--info-text)]',
-  success: 'bg-success-subtle border border-[var(--success-text)]',
-  warning: 'bg-warning-subtle border border-[var(--warning-text)]',
-  error: 'bg-error-subtle border border-[var(--error-text)]',
-}
+// Notice 本身不帶底色與邊框 —— 示範一律放進真的消費者 <Alert>(低調外觀 = 淡底 + 同色邊框 + 圖示色),
+// 不再手抄一份 Alert 的外殼對照表(2026-10-28 前本檔與展示頁各抄一份 SUBTLE_CONTAINER;稽核 L042,登記簿 B07 / B18)。
 
-function SubtleShell({ variant, children }: { variant: NoticeVariant; children: React.ReactNode }) {
+/**
+ * 元件總覽與元件檢閱器共用的示範通知(四個槽位都在:圖示 · 標題 + 說明 · 右側動作 · 右上 ×)。
+ * 動作鈕與 × 都有作用:封存 = 移除這條並跳 Toast、× = 移除(2026-10-28 前接空函式;登記簿 A16「一堆按鈕都無法正常反應」)。
+ */
+function DraftArchiveNotice({
+  variant = 'info', withDescription = true, withAction = true, dismissible = true,
+}: { variant?: NoticeVariant; withDescription?: boolean; withAction?: boolean; dismissible?: boolean }) {
+  const [shown, setShown] = useState(true)
+  if (!shown) return null
   return (
-    <div className={`rounded-md overflow-hidden text-foreground ${SUBTLE_CONTAINER[variant]}`}>
-      {children}
-    </div>
+    <Alert
+      variant={variant}
+      title="3 份草稿超過 30 天沒有更新"
+      description={withDescription ? '封存後仍可在「已封存」找回,不會刪除內容。' : undefined}
+      endContent={withAction ? (
+        <Button variant="tertiary" size="xs" onClick={() => { setShown(false); toast({ variant: 'success', title: '已封存 3 份草稿' }) }}>
+          封存草稿
+        </Button>
+      ) : undefined}
+      dismissible={dismissible}
+      onDismiss={() => setShown(false)}
+    />
   )
 }
 
@@ -86,20 +104,7 @@ export const Overview: Story = {
           <code className="font-mono text-footnote mx-1">px-4 py-3</code>
           (不隨 density 變)。
         </Desc>
-        <SubtleShell variant="info">
-          <Notice
-            variant="info"
-            iconClassName={SUBTLE_ICON_COLOR.info}
-            title="Audit log 僅限 Business 方案"
-            description="升級後可回溯 90 天內所有成員的操作紀錄。"
-            endContent={
-              <Button variant="tertiary" size="xs">
-                升級方案
-              </Button>
-            }
-            onDismiss={() => {}} // anatomy 4-slot 展示含 dismiss X(2026-07-05 D4:X 僅在傳 onDismiss 時渲染)
-          />
-        </SubtleShell>
+        <DraftArchiveNotice />
       </div>
 
       <div>
@@ -233,26 +238,17 @@ function NoticeInspector() {
   return (
     <div className="grid grid-cols-[1fr_320px] gap-8 max-w-5xl">
       {/* Left: live preview */}
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>即時預覽</H3>
-          <SubtleShell variant={variant}>
-            <Notice
-              variant={variant}
-              iconClassName={SUBTLE_ICON_COLOR[variant]}
-              title="上傳的檔案格式不受支援"
-              description={hasDescription ? '僅接受 PNG / JPG / SVG 格式,檔案大小上限 10 MB。' : undefined}
-              endContent={
-                hasEndContent ? (
-                  <Button variant="tertiary" size="xs">
-                    重新上傳
-                  </Button>
-                ) : undefined
-              }
-              dismissible={dismissible}
-              onDismiss={() => {}} // 2026-07-05 D4:X 僅在傳 onDismiss 時渲染,Inspector 切 dismissible 才看得到 X
-            />
-          </SubtleShell>
+          {/* 切任何設定就重新掛上(key),按過「封存草稿」或 × 移除後切一下就回來 */}
+          <DraftArchiveNotice
+            key={[variant, hasDescription, hasEndContent, dismissible].join('|')}
+            variant={variant}
+            withDescription={hasDescription}
+            withAction={hasEndContent}
+            dismissible={dismissible}
+          />
         </div>
 
         <div>
@@ -272,10 +268,10 @@ function NoticeInspector() {
             </dl>
           </div>
         </div>
-      </div>
+      </ExampleStack>
 
       {/* Right: inspect panel */}
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>Variant</H3>
           {/* 5 個互斥選項放在 320px 右欄:SegmentedControl 連體不換行、放不下(segmented-control.spec.md「不支援 overflow…
@@ -289,31 +285,11 @@ function NoticeInspector() {
 
         <div>
           <H3>Props</H3>
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-caption">
-              <input
-                type="checkbox"
-                checked={hasDescription}
-                onChange={(e) => setHasDescription(e.target.checked)}
-              />
-              <span className="font-mono">description</span>
-            </label>
-            <label className="flex items-center gap-2 text-caption">
-              <input
-                type="checkbox"
-                checked={hasEndContent}
-                onChange={(e) => setHasEndContent(e.target.checked)}
-              />
-              <span className="font-mono">endContent</span>
-            </label>
-            <label className="flex items-center gap-2 text-caption">
-              <input
-                type="checkbox"
-                checked={dismissible}
-                onChange={(e) => setDismissible(e.target.checked)}
-              />
-              <span className="font-mono">dismissible</span>
-            </label>
+          {/* 檢閱器的開關用 DS Checkbox(原生 <input type="checkbox"> 換掉 —— 範例只用 DS 元件,登記簿 B01 / B13) */}
+          <div className="flex flex-col">
+            <Checkbox size="sm" label={<span className="font-mono">description</span>} checked={hasDescription} onCheckedChange={(v) => setHasDescription(v === true)} />
+            <Checkbox size="sm" label={<span className="font-mono">endContent</span>} checked={hasEndContent} onCheckedChange={(v) => setHasEndContent(v === true)} />
+            <Checkbox size="sm" label={<span className="font-mono">dismissible</span>} checked={dismissible} onCheckedChange={(v) => setDismissible(v === true)} />
           </div>
         </div>
 
@@ -352,7 +328,7 @@ function NoticeInspector() {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleStack>
     </div>
   )
 }
@@ -362,9 +338,9 @@ function NoticeInspector() {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export const VariantIconMap: Story = {
-  name: '變體 × 圖示 對照',
+  name: '變體 × 圖示對照',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>變體 × icon × 語意</H3>
         <Desc>
@@ -440,26 +416,19 @@ export const VariantIconMap: Story = {
       <div>
         <H3>Subtle 樣式視覺</H3>
         <Desc>
-          Notice 本身不設 bg / border。此處 shell 為 Alert consumer 提供的 subtle container(
+          Notice 本身不設 bg / border。這裡直接用消費者 Alert 的低調外觀(
           <code className="font-mono text-footnote mx-1">bg-*-subtle + border {`{hue}-text`}</code>
-          ),展示 icon 色彩在 subtle surface 上的對比。Solid(dark bg + 白字 icon)對照請查
-          <code className="font-mono text-footnote mx-1">alert.anatomy.stories.tsx</code>
+          ),展示 icon 色彩在 subtle surface 上的對比。實心外觀(深底 + 白字 icon)見
+          <StoryLink kind="Design System/Components/Alert/設計規格" name="色彩對照表">Alert 的色彩對照表</StoryLink>
           。
         </Desc>
         <div className="flex flex-col gap-3 max-w-2xl">
           {VARIANTS.map((v) => (
-            <SubtleShell key={v} variant={v}>
-              <Notice
-                variant={v}
-                iconClassName={SUBTLE_ICON_COLOR[v]}
-                title={`${VARIANT_LABEL[v]} — 標題文字`}
-                description="本例展示 subtle surface 上的 icon / text 對比。"
-              />
-            </SubtleShell>
+            <Alert key={v} variant={v} title={`${VARIANT_LABEL[v]} — 標題文字`} description="本例展示 subtle surface 上的 icon / text 對比。" />
           ))}
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -474,35 +443,21 @@ export const StateBehavior: Story = {
       <div>
         <H3>Dismissible 行為</H3>
         <Desc>
-          Alert 預設可 dismiss(持久通知,使用者需主動關);Toast 通常不 dismiss(計時器自動關)。兩者共用 Notice,透過
+          Alert 預設可 dismiss(持久通知,使用者需主動關);Toast 一律帶 ×(會自己消失,使用者也隨時能按 × 移開)。兩者共用 Notice,透過
           <code className="font-mono text-footnote mx-1">dismissible</code>
           +
           <code className="font-mono text-footnote mx-1">onDismiss</code>
-          控制(X 僅在兩者同時成立時渲染——未接 handler 的 X 是死按鈕,2026-07-05 D4)。
+          控制(X 僅在兩者同時成立時渲染——未接 handler 的 X 是死按鈕)。
         </Desc>
         <div className="grid grid-cols-2 gap-3 max-w-3xl">
           <div>
             <p className="text-caption text-fg-muted mb-2">dismissible + onDismiss</p>
-            <SubtleShell variant="info">
-              <Notice
-                variant="info"
-                iconClassName={SUBTLE_ICON_COLOR.info}
-                title="Audit log 僅限 Business 方案"
-                dismissible
-                onDismiss={() => {}}
-              />
-            </SubtleShell>
+            <DraftArchiveNotice withDescription={false} withAction={false} />
           </div>
           <div>
             <p className="text-caption text-fg-muted mb-2">dismissible=false</p>
-            <SubtleShell variant="info">
-              <Notice
-                variant="info"
-                iconClassName={SUBTLE_ICON_COLOR.info}
-                title="變更已儲存"
-                dismissible={false}
-              />
-            </SubtleShell>
+            {/* 不該被關掉的情境 = 維護公告(稽核 M011:原本拿「變更已儲存」—— 儲存成功該跳 Toast,登記簿 B26) */}
+            <Alert variant="warning" title="今晚 23:00–24:00 系統維護,期間無法儲存" dismissible={false} />
           </div>
         </div>
       </div>
@@ -579,14 +534,11 @@ export const StateBehavior: Story = {
           (不換行,尾端省略)。description 不 truncate——重要脈絡不可截斷。
         </Desc>
         <div className="max-w-md">
-          <SubtleShell variant="warning">
-            <Notice
-              variant="warning"
-              iconClassName={SUBTLE_ICON_COLOR.warning}
-              title="本月已使用 95% 儲存配額,預估 3 天後將耗盡並停止所有上傳動作"
-              description="建議立即清理 Trash 資料夾或升級到 Team 方案,避免 CI pipeline 因上傳失敗而中斷。"
-            />
-          </SubtleShell>
+          <Alert
+            variant="warning"
+            title="本月已使用 95% 儲存配額,預估 3 天後將耗盡並停止所有上傳動作"
+            description="建議立即清理 Trash 資料夾或升級到 Team 方案,避免 CI pipeline 因上傳失敗而中斷。"
+          />
         </div>
       </div>
     </div>
@@ -599,7 +551,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  語意角色  :Notice 本身不帶 ARIA role(由外層的 Alert / Toast 決定要不要朗讀、用什麼急迫度),避免巢狀的即時通知區域被螢幕報讀器重複念出。\n\n  鍵盤操作  :\n\n- 用 Tab 可以把焦點移到關閉按鈕(當通知可關閉時)。\n- 焦點停在關閉按鈕上,按 Enter 或空白鍵即可關閉(就是一般按鈕的行為)。\n- 沒有「按 Esc 關閉」這種快捷鍵;關閉只能透過點擊或用鍵盤觸發關閉按鈕。\n\n  焦點外框  :關閉按鈕的 focus-visible 外框沿用整套系統一致的樣式(2px 實線、用主題的 ring 顏色)。\n\n  驗收  :Storybook 的無障礙檢查面板不應出現任何嚴重違規;不用滑鼠也能完整操作;文字對比至少 4.5:1、介面元素對比至少 3:1。"}</p>
     </div>
   ),

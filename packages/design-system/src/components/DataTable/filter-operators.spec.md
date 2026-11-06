@@ -1,17 +1,17 @@
 # Advanced Filter 設計原則(Operator × ColumnType × ValueShape SSOT,v3)
 
 > **狀態**:已落地 — registry 寫成 `filter-operators.ts`,`filter-tree.ts` + filter panel 家族消費(`data-table-filter-panel.tsx`;row/picker 直接消費點在 2026-07-14 拆檔子模組 `data-table-filter-group.tsx` / `data-table-filter-value-picker.tsx`)(原 draft 兩個升級條件皆已達成,2026-06-11 對齊)。
-> **M8 benchmark**:對照 ClickUp(CU)/ Airtable(AT)/ Notion(NT)三家。**v3 加 datetime / includeTime + 砍 number.between(2/3 業界共識)**。
-> **設計路線**:**ClickUp 為 baseline**,合理 + 不衝突 + 真實用的擴充採納。
+> **M8 benchmark**:對照 ClickUp(CU)/ Airtable(AT,[篩選條件說明](https://support.airtable.com/docs/filtering-records-using-conditions))/ Notion(NT,[資料庫查詢篩選 API](https://developers.notion.com/reference/post-database-query-filter))三家(ClickUp 當時未留一手網址)。**v3 加 datetime / includeTime + 砍 number.between(同 field 兩筆 condition 即可組出區間)**。
+> **設計路線**:**同欄多條件 + `is` 多值** 為 baseline,合理 + 不衝突 + 真實用的擴充採納。
 > **檔位**:暫放 DataTable/,若決定抽 `patterns/advanced-filter/` 再搬。
 
 ## v3 變動 changelog
 
-- **砍 `number.between`**(9→8 ops)— Notion + Airtable 共識,同 field 重複 condition 可組合 `gte X AND lte Y`,無自然視覺也無業界 NumberRangeInput 元件
-- **加 `column.meta.includeTime: boolean` 旗標** — 對齊 Notion idiom,不另設 datetime column type
+- **砍 `number.between`**(9→8 ops)— 同 field 重複 condition 可組合 `gte X AND lte Y`,區間沒有自然的單一控件視覺,本 DS 也沒有 NumberRangeInput 元件
+- **加 `column.meta.includeTime: boolean` 旗標** — 同一欄型用旗標切換是否含時間,不另設 datetime column type
 - **加 ValueShape `datetime_single` / `datetime_range`** — `includeTime=true` 時切到這兩個 shape
 - **datetime 不另設 relative shape** — `is_relative` 維持 `date_relative`(relative 邏輯不變;12-shape 表與 code `ValueShape` union 皆無 `datetime_relative`)
-- **filter 比對精度**:`includeTime=true` 走 ms 精度;default day 級(`startOfDay` 截斷,含 `is` 日期比對 — 2026-07-04 Q6 實作於 `filter-tree.ts` `datePrecision`)(避開 Airtable 著名地雷:filter 忽略 time)
+- **filter 比對精度**:`includeTime=true` 走 ms 精度;default day 級(`startOfDay` 截斷,含 `is` 日期比對 — 2026-07-04 Q6 實作於 `filter-tree.ts` `datePrecision`)(含時間的欄若照日截斷,同一天不同時刻的值會被當成相等)
 - **不新增 `time-only` column type**(業界沒人做,罕見場景)—— 後續 Phase C(2026-05-05)已補 `'time'` columnType 供 cell render(`<TimePicker>`);advanced filter 暫 reuse `DATE_OPS`,`time_*` ValueShape 整合留 Phase D+(見 `filter-operators.ts` registry 註解)
 
 ## 1. ValueShape canonical(12 種)
@@ -24,7 +24,7 @@
 | `text` | `<Input>` | 單行文字 |
 | `number` | `<NumberInput>` | 單一數字 |
 | `date_single` | `<DatePicker>` 單選 | 特定日期(`includeTime=false`) |
-| `date_range` | `<DatePickerRange>`(已是 Ant-style split-input) | 日期介於(`includeTime=false`) |
+| `date_range` | `<DatePickerRange>`(已是 Ant-style split-input:起訖兩個 input,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/Selector/RangeSelector.tsx#L257-L274) | 日期介於(`includeTime=false`) |
 | `date_relative` | `<Select>` 預設選項 | 相對日期 |
 | `datetime_single` | `<DatePicker showTime>` | 特定 datetime(`includeTime=true`) |
 | `datetime_range` | `<DatePickerRange showTime>` | datetime 介於(`includeTime=true`) |
@@ -81,7 +81,7 @@
 | `is_not_set` | 未設定 | is not set | `none` | ✓ | ✓ | ✓ |
 
 **default op**:`equals`。`currency` 共用同 set,渲染依 `column.meta.precision/prefix` 格式化。
-**`between` 已砍**:2/3 業界共識(Notion + Airtable 沒做)+ 同 field 重複 condition 可組 `gte X AND lte Y` + 沒有任何主流 DS 做 NumberRangeInput 元件。
+**`between` 已砍**:同 field 重複 condition 可組 `gte X AND lte Y`,區間沒有自然的單一控件,本 DS 也沒有 NumberRangeInput 元件。
 
 ### `date` / `datetime`(9 ops — `includeTime` 旗標切 ValueShape)
 | op key | 中 | en | valueShape(includeTime=false → true) | CU | AT | NT |
@@ -113,7 +113,7 @@
 - `is [Open]` = Open
 - `is [Open, Review]` = Open OR Review
 
-對齊 CU UX:`is` 直接接受多值,**不另設 `is_any_of` / `is_none_of`**(Airtable 派,過度切)。
+對齊 CU UX:`is` 直接接受多值,**不另設 `is_any_of` / `is_none_of`**(Airtable 單選欄另有 "is any of",https://support.airtable.com/docs/filtering-records-using-conditions;本 DS 認為過度切)。
 
 ### `multiSelect`(5 ops — CU 派)
 | op key | 中 | en | valueShape | CU | AT | NT |
@@ -190,10 +190,10 @@
 | select / person 用 `is` 配多值 picker(不另設 `is_any_of`) | ✓ 對齊 CU UX |
 | multiSelect / multiPerson 用 `has_*` 動詞(對應 CU labels Any/All/None) | ✓ |
 | number 不設 `between`(v3 砍 — 同 field `gte AND lte` 組合替代,見拍板 #10) | ✓ |
-| date 用 `before/after/between/relative` + `is_set` 不混 Airtable `is_empty` 風 | ✓ |
+| date 用 `before/after/between/relative` + `is_set` 不混 Airtable `is_empty` 風(https://support.airtable.com/docs/filtering-records-using-conditions) | ✓ |
 | 6 ops 擴充項皆有 ≥ 2 家 world-class DS 採用,且不衝突 CU 設計語言 | ✓ |
 
-**未跑 audit / test 驗證**,僅與 web-researched ClickUp / Airtable / Notion docs 自我比對。
+**未跑 audit / test 驗證**,僅與當時網路查到的三家 SaaS 產品說明文件自我比對(當時未留網址)。
 
 ## 5. TypeScript 結構(已落地)
 
@@ -204,7 +204,7 @@
 ### 2026-05-02 v2 拍板
 | # | 議題 | 決議 |
 |---|---|---|
-| 1 | 設計路線 | **走 ClickUp 派**,合理擴充採納 |
+| 1 | 設計路線 | **同一欄位可疊多筆 condition、`is` 直接收多值**為 baseline,合理擴充採納 |
 | 2 | `string` 擴 `is` / `is_not` | ✅ 採用(CU minimal 不夠) |
 | 3 | `url` 獨立 type 擴 `starts_with` / `ends_with` | ✅ 採用(URL prefix 強剛需) |
 | 4 | `date` 擴 `is_on_or_before` / `is_on_or_after` | ✅ 採用(CU gap) |
@@ -218,17 +218,17 @@
 | # | 議題 | 決議 |
 |---|---|---|
 | 10 | `number.between` | ❌ 砍(2/3 業界共識 + composability) |
-| 11 | `date` 加 `includeTime` 旗標,不另設 datetime column type | ✅ 對齊 Notion |
-| 12 | `includeTime=true` 時 filter 走 ms 精度 | ✅ 避開 Airtable 地雷 |
+| 11 | `date` 加 `includeTime` 旗標,不另設 datetime column type | ✅ 一個欄型 + 旗標,欄型清單不為時間多一種 |
+| 12 | `includeTime=true` 時 filter 走 ms 精度 | ✅ 含時間的值不被截到當天 |
 | 13 | `time-only` 場景 v1 不做 | ✅ 業界沒人做 |
-| 14 | DateTimePicker 走 Ant idiom + 借 React Aria a11y | ✅ |
-| 15 | DateTimeRangePicker layout = single calendar + time panel(showTime 模式)| ✅ 對齊 Ant 實際行為 |
+| 14 | DateTimePicker 走 Ant idiom(`showTime`)| ✅ |
+| 15 | DateTimeRangePicker layout = single calendar + time panel(showTime 模式)| ✅ 對齊 Ant 實際行為(rc-picker:showTime 時 `internalMode` 變成 `'datetime'`,`multiplePanel = internalMode === picker && internalMode !== 'time'` 為 false → 只開一個月曆,https://github.com/react-component/picker/blob/9ecb0508645e1c0d9f3181263eecafdd1e262f6b/src/PickerInput/RangePicker.tsx#L388-L392)|
 | 16 | 先做 advanced filter 主架構,DateTimePicker 排 phase D 平行 track | ✅ |
 | 17 | filter 範圍 Input 不需新變體 | ✅ |
 
 ## 7. 同 field 可重複加 condition(設計約束)
 
-對齊 ClickUp idiom — 同一 field 可加多筆 condition,例:
+同一 field 可加多筆 condition(用 AND 組出區間或排除),例:
 
 ```
 (Status is Open OR Status is Review) AND Priority is High

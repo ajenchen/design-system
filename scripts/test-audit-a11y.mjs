@@ -17,7 +17,9 @@ import {
   evaluateA11yRegressionGate,
   evaluateA11yScanIntegrity,
   evaluateA11ySeverityGate,
+  findUnnamedFormControls,
   parseA11yAuditArgs,
+  UNNAMED_CONTROL_RULE,
 } from './lib/a11y-gate.mjs'
 import { resolveA11yStaticFile } from './lib/a11y-static-server.mjs'
 
@@ -264,5 +266,28 @@ assert.doesNotMatch(smokeSource, /unprobed[^\n]*(?:非致命|nonfatal)|(?:非致
 const staticServerSource = readFileSync(fileURLToPath(new URL('./lib/a11y-static-server.mjs', import.meta.url)), 'utf8')
 assert.match(staticServerSource, /LOOPBACK_HOST = '127\.0\.0\.1'/, 'a11y server must bind explicit IPv4 loopback')
 assert.match(staticServerSource, /server\.listen\(0, LOOPBACK_HOST/, 'a11y server must own an ephemeral port')
+
+// ── 表單控件的讀屏名稱(2026-10-21 r1b fields N3;axe 不報自建 combobox)──
+// 對照組:名稱空白的 combobox / textbox 必算、有名稱 / 被 AX 樹忽略 / 不是表單控件的角色必不算
+const axFixture = [
+  { role: { value: 'combobox' }, name: { value: '' } }, // 修前 Select 範例:div[role=combobox] 沒有 aria-label、沒有 FieldLabel
+  { role: { value: 'textbox' }, name: { value: '  ' } },
+  { role: { value: 'combobox' }, name: { value: '商品分類' } },
+  { role: { value: 'combobox' }, name: { value: '' }, ignored: true },
+  { role: { value: 'button' }, name: { value: '' } },
+]
+const unnamed = findUnnamedFormControls(axFixture)
+assert.equal(unnamed.length, 2, 'blank-named combobox / textbox must be counted; named, ignored and non-form roles must not')
+assert.deepEqual(unnamed.map((n) => n.role.value), ['combobox', 'textbox'])
+assert.throws(() => findUnnamedFormControls(null), /AX nodes must be an array/, 'a missing AX tree must fail closed, never count as zero unnamed controls')
+// 新規則上線後新增的那一格是回歸(基線沒有這個指紋 → 紅)
+const unnamedGate = evaluateA11yRegressionGate({
+  violationsByStory: { [storyId]: [...structuredClone(original.violationsByStory[storyId]), { id: UNNAMED_CONTROL_RULE, impact: 'serious', help: 'fixture', nodes: 1 }] },
+  baselineDocument,
+  scannedStoryIds: fixtureCorpus.storyIds,
+})
+assert.equal(unnamedGate.ok, false, 'a newly unnamed form control must be a regression against the governed baseline')
+assert.match(productionSource, /findUnnamedFormControls\(axNodes\)/, 'production CLI must run the tested unnamed-control check on every story')
+assert.match(productionSource, /cdp\.send\('Accessibility\.getFullAXTree'\)/, 'production CLI must read the browser-computed AX tree (what a screen reader gets), not a DOM attribute proxy')
 
 console.log('✅ a11y paired mutation: regression + scan-integrity + argv + static containment fail closed(no browser/external network)')

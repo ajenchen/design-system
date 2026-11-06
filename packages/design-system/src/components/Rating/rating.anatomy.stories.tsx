@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Rating } from './rating'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Rating/設計規格',
@@ -30,7 +31,7 @@ const COMPACT: Record<SizeKey, { star: number; text: string; gap: string }> = {
 const SIZE_USE: Record<SizeKey, string> = {
   sm: 'Field sm、sm 列（緊湊清單、表格 sm）',
   md: '預設 — 一般表單、md 列、獨立擺放',
-  lg: 'Field lg、送出評分的主 CTA 區塊',
+  lg: 'Field lg、lg 列',
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -44,8 +45,8 @@ export const Overview = {
       <div>
         <H3>結構（Anatomy）</H3>
         <Desc>
-          可以點的 Rating 由 `max`（預設 5）顆 Star icon 並排組成，每顆只有 filled / empty 兩態（只有整顆，沒有半顆）；
-          容器 `inline-flex gap-1`。唯讀一律是精簡版：一顆實心星 + 數值 + 選填評論數（`count`）。
+          可以點的 Rating 由 <code>max</code>（預設 5）顆 Star icon 並排組成，每顆只有 filled / empty 兩態（只有整顆，沒有半顆）；
+          容器 <code>inline-flex gap-1</code>。唯讀一律是精簡版：一顆實心星 + 數值 + 選填評論數（<code>count</code>）。
         </Desc>
         <div className="flex flex-col gap-4">
           {/* Single star anatomy — 可以點的評分才有 filled / empty 兩態 */}
@@ -262,14 +263,10 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <H3>元件檢閱器</H3>
-      <Desc>
-        選擇 size / mode，即時查看所有 token 與行為。readOnly 切到唯讀精簡版（一顆星 + 數值 + 評論數）。
-        Rating 無 theme-dependent 色值以外的 resolved 數字（純 icon px + 黃灰兩色 + 兩個文字色）。
-      </Desc>
+    <ExampleSection title="元件檢閱器" description={<>選擇 size / mode，即時查看所有 token 與行為。readOnly 切到唯讀精簡版（一顆星 + 數值 + 評論數）。
+Rating 無 theme-dependent 色值以外的 resolved 數字（純 icon px + 黃灰兩色 + 兩個文字色）。</>}>
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -361,7 +358,7 @@ export const SizeMatrix = {
           可以點的評分:每顆 star icon sm=20 / md=24 / lg=24,對齊 item-anatomy inline Avatar——
           一顆星是 filled identity 視覺(主要資料點),跟 Avatar 同重量才能在 row 內 visual weight 對齊。
           唯讀精簡版:星是數值旁的圖示,走 icon tier(16/16/20 px);星與數值的縫三個尺寸都是 4px——Rating 內只有一種縫,跟可以點的星與星之間相同。
-          兩者都只有內容高(可以點的 = 星高 20/24/24;唯讀 = 行高 21/21/24),不吃 `--field-height-*`;列高由所在的列(Field 槽 / 表格 / 列)供給。詳見 rating.spec.md「Size」。
+          兩者都只有內容高(可以點的 = 星高 20/24/24;唯讀 = 行高 21/21/24),不吃 <code>--field-height-*</code>;列高由所在的列(Field 槽 / 表格 / 列)供給。
         </Desc>
       </div>
 
@@ -396,8 +393,8 @@ export const SizeMatrix = {
 
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">元件只有內容高,列高交給所在的列;星的尺寸依呈現分兩套</span>
-        <p className="text-caption text-fg-muted max-w-[720px] leading-relaxed">
-          Rating 跟裸 Switch / 裸 Checkbox 同一個模型:本身不吃 `--field-height-*`，放進 Field 時由 Field 控件槽
+        <p className="text-caption text-fg-muted max-w-[720px]">
+          Rating 跟裸 Switch / 裸 Checkbox 同一個模型:本身不吃 <code>--field-height-*</code>，放進 Field 時由 Field 控件槽
           （min-h-field-* + items-center）撐出跟 Input / Select 一樣的列高並置中；Field 外的列由列自己決定，評分不再撐高列。
           可以點的星走 item-anatomy inline Avatar 尺寸（sm=20 / md=24 / lg=24），
           而非 icon tier（16/16/20）——因為每一顆星是 filled identity 視覺（主要資料點），視覺份量要跟 Avatar 齊；
@@ -466,7 +463,7 @@ export const StateBehavior = {
             </span>
             <p className="text-caption text-fg-muted max-w-[720px]">
               展示平均分或他人評分時使用：一顆實心星 + 數值（取一位小數）+ 選填評論數。
-              `role="img"`；畫面上的數值對螢幕閱讀器隱藏，standalone 時 `aria-label`（必填）要說出分數。
+              <code>role="img"</code>；畫面上的數值對螢幕閱讀器隱藏，standalone 時 <code>aria-label</code>（必填）要說出分數。
             </p>
             <div className="flex items-center gap-4">
               <Rating value={4.5} count={8921} readOnly size="lg" aria-label="平均評分 4.5 星，共 5 星，8,921 則評論" />
@@ -479,7 +476,7 @@ export const StateBehavior = {
               Disabled — 整體降透明度，阻擋所有事件
             </span>
             <p className="text-caption text-fg-muted max-w-[720px]">
-              `opacity-disabled` + `pointer-events-none`。`aria-disabled="true"`。仍畫整排星星（只有唯讀才是精簡版）。
+              <code>opacity-disabled</code> + <code>pointer-events-none</code>。<code>aria-disabled="true"</code>。仍畫整排星星（只有唯讀才是精簡版）。
             </p>
             <div className="flex items-center gap-4">
               <Rating value={4} disabled size="lg" aria-label="disabled 範例" />
@@ -498,8 +495,15 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `rating.spec.md` 「A11y 預設」段。摘要:\n\n-   interactive  ： role=\"slider\"  +  aria-valuenow={value}  +  aria-valuemin={0}  +  aria-valuemax={max}  +  aria-valuetext={`{value} of {max} stars`}  +  tabIndex={0} ，鍵盤 Arrow Left/Right/Up/Down ± 1（只有整顆），Home=0 / End=max（完整 WAI-ARIA slider 鍵盤 pattern）\n-   readOnly  ： role=\"img\"  +  aria-label （  standalone 必填  ），畫面上的數值與評論數是 aria-hidden，名稱要自己說出分數，例： aria-label=\"平均評分 4.7 星，共 5 星，12,843 則評論\" 。Field 內由 aria-labelledby 指向 FieldLabel。無 tabIndex\n-   disabled  ： aria-disabled=\"true\"  +  pointer-events-none \n-   單顆星    aria-hidden ：內部點擊目標是  <span role=\"presentation\" aria-hidden> （非 interactive element，避免與外層 role=\"slider\" 形成 axe nested-interactive）"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <ul className="list-disc pl-5 space-y-1">
+          <li><b>interactive</b>：<code>role="slider"</code> + <code>{'aria-valuenow={value}'}</code> + <code>{'aria-valuemin={0}'}</code> + <code>{'aria-valuemax={max}'}</code> + <code>{'aria-valuetext={`{value} of {max} stars`}'}</code> + <code>{'tabIndex={0}'}</code>，鍵盤 Arrow Left/Right/Up/Down ± 1（只有整顆），Home=0 / End=max（完整 WAI-ARIA slider 鍵盤 pattern）</li>
+          <li><b>readOnly</b>：<code>role="img"</code> + <code>aria-label</code>（standalone 必填），畫面上的數值與評論數是 aria-hidden，名稱要自己說出分數，例：<code>aria-label="平均評分 4.7 星，共 5 星，12,843 則評論"</code>。Field 內由 <code>aria-labelledby</code> 指向 FieldLabel。無 tabIndex</li>
+          <li><b>disabled</b>：<code>aria-disabled="true"</code> + <code>pointer-events-none</code></li>
+          <li><b>單顆星</b>：<code>aria-hidden</code>；內部點擊目標是 <code>{'<span role="presentation" aria-hidden>'}</code>（非 interactive element，避免與外層 <code>role="slider"</code> 形成 axe nested-interactive）</li>
+        </ul>
+      </div>
     </div>
   ),
 }

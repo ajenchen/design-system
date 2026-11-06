@@ -70,7 +70,7 @@ export const WithExtendDatasetHint: Story = {
             allSelected ? (
               <>
                 已選取全部 {TOTAL} 個項目。{' '}
-                {/* @anatomy-exempt-next: Gmail 式句中文字連結(2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 同 data-table.stories.tsx 2026-09-16 標記,另案評估 */}
+                {/* @anatomy-exempt-next: 句中文字連結(「已選取本頁 N 筆,選取全部 M 筆」那種;2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 同 data-table.stories.tsx 2026-09-16 標記,另案評估 */}
                 <button
                   type="button"
                   onClick={() => { setSelection([]); setAllSelected(false) }}
@@ -82,7 +82,7 @@ export const WithExtendDatasetHint: Story = {
             ) : (
               <>
                 已選取本頁全部 {selection.length} 個。{' '}
-                {/* @anatomy-exempt-next: Gmail 式句中文字連結(2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 同 data-table.stories.tsx 2026-09-16 標記,另案評估 */}
+                {/* @anatomy-exempt-next: 句中文字連結(「已選取本頁 N 筆,選取全部 M 筆」那種;2026-05 既有設計);DS 尚無 inline text link primitive、Alert 無 action slot —— 同 data-table.stories.tsx 2026-09-16 標記,另案評估 */}
                 <button
                   type="button"
                   onClick={() => setAllSelected(true)}
@@ -119,7 +119,7 @@ export const EmptySelectionHidden: Story = {
   render: () => (
     <div className="text-caption text-fg-muted">
       selection=[] → BulkActionBar 回傳 null,<strong>不佔 layout</strong>(對齊禁止事項 #3)
-      <div className="mt-3 border border-dashed border-border-muted p-3">
+      <div className="mt-[var(--layout-space-tight)] border border-dashed border-border p-[var(--layout-space-loose)]">
         <BulkActionBar selection={[]} actions={<Button variant="tertiary" size="md">封存</Button>} />
         ↑ 這裡 BulkActionBar 完全不渲染
       </div>

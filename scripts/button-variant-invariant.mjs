@@ -5,9 +5,9 @@
  * 規則來源(逐字):
  *   button.spec.md:12  「主要 action / CTA。**必 explicit `variant="primary"`,不靠預設**」
  *   button.spec.md:204 「`primary` + `danger` | 立即且不可逆」;:205「`secondary` + `danger` | 還有一層確認」
- *   button.spec.md:415 「`danger` 僅支援 primary / secondary / text —— tertiary + danger 靜默渲染成一般 tertiary」
+ *   button.spec.md「禁止事項」「`danger` 僅支援 primary / secondary / text —— tertiary + danger 靜默渲染成一般 tertiary」
  *   button.tsx defaultVariants:沒給 variant 的 labeled Button = tertiary(2026-06-06 起)
- *   dialog.principles.stories.tsx:209「確認類動作用 primary…primary 在最右」;:229「刪除 / 永久移除等動作用 primary + danger」
+ *   dialog.principles.stories.tsx#FooterActionRule「確認類動作用 primary…primary 在最右」與同一則的「刪除 / 永久移除等動作用 primary + danger」
  *
  * 2026-09-08 user 抓到:確認框的「刪除」`<Button danger>` 沒給 variant → 渲成灰色 tertiary;Dialog footer 的「儲存」吃預設 → tertiary。
  * 全 DS 之前沒有任何機械防線守這條(hook 60/60 零 headroom,所以做成 CI 靜態閘 + registry 早警)。
@@ -20,7 +20,7 @@
  *      沒有 primary 也合法;世界級(Polaris `primaryAction?` 可省略、Carbon passive modal 無動作鈕、Apple 單鈕 Done)皆「最多一顆、可無」。
  *      user 9/9 原話:「footer必須給 一顆primary 是否太硬？預設應該給一個？」
  *   R3 footer 已有非 danger 的 primary(= confirm / cancel 型 footer)時,不得再放 danger 鈕:記錄級的破壞動作走 header actions 槽
- *      (dialog.spec.md:107-113)。首版「非 primary 的 danger 一律紅」同樣比規範嚴(會誤判上述配對),9/9 一併收窄。
+ *      (dialog.spec.md「Header actions slot」)。首版「非 primary 的 danger 一律紅」同樣比規範嚴(會誤判上述配對),9/9 一併收窄。
  * 對照組:`--selftest` 用內建的錯誤片段跑同一套解析,必須紅;另附合法片段必須綠(0 primary 的正負配對、只有「關閉」的 footer)。
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -73,7 +73,7 @@ function check(src, file) {
   const findings = []
   const all = buttons(src)
   for (const b of all) {
-    if (b.danger && !b.variant) findings.push(`${file}:${b.line} R1 \`danger\` 沒給 variant → 渲成灰色 tertiary(button.spec.md:415);確認框的立即刪除用 variant="primary" danger,會再確認的用 secondary danger`)
+    if (b.danger && !b.variant) findings.push(`${file}:${b.line} R1 \`danger\` 沒給 variant → 渲成灰色 tertiary(button.spec.md「禁止事項」);確認框的立即刪除用 variant="primary" danger,會再確認的用 secondary danger`)
   }
   // R2:footer 區段
   const fre = /<(Dialog|Sheet|Popover|Surface)Footer\b[^>]*>([\s\S]*?)<\/\1Footer>/g
@@ -87,14 +87,14 @@ function check(src, file) {
     const line = src.slice(0, f.index).split('\n').length
     // R2(a) 動作鈕必明寫 variant:吃預設 = 靜默變成 tertiary 灰鈕(button.spec.md:12「必 explicit,不靠預設」);取消 / 關閉可吃預設(預設就是 tertiary)。
     for (const b of actionable) if (!b.variant) findings.push(`${file}:${b.line} R2 ${f[1]}Footer 的動作鈕「${b.text}」沒寫 variant → 吃預設變成灰色 tertiary(button.spec.md:12 主要動作必 explicit primary;次要動作明寫 secondary)`)
-    // R2(b) primary 最多一顆(button.spec.md:180 / :407);有的話在最右(dialog.spec.md:215 / dialog.principles:209)。0 顆合法(正負配對 spec:218-219、純資訊框)。
+    // R2(b) primary 最多一顆(button.spec.md:180 / :407);有的話在最右(dialog.spec.md「Footer 按鈕」/ dialog.principles.stories.tsx#FooterActionRule)。0 顆合法(正負配對 spec:218-219、純資訊框)。
     if (primaries.length > 1) findings.push(`${file}:${line} R2 ${f[1]}Footer 有 ${primaries.length} 顆 primary(button.spec.md:180「每個操作區最多一個」、:407)`)
-    else if (primaries.length === 1 && bs[bs.length - 1].variant !== 'primary') findings.push(`${file}:${line} R2 ${f[1]}Footer 的 primary 不在最右(dialog.spec.md:215 / dialog.principles:209)`)
+    else if (primaries.length === 1 && bs[bs.length - 1].variant !== 'primary') findings.push(`${file}:${line} R2 ${f[1]}Footer 的 primary 不在最右(dialog.spec.md「Footer 按鈕」/ dialog.principles.stories.tsx#FooterActionRule)`)
     // R3(2026-09-09 user 抓到:任務 modal 的「刪除任務」放在 footer 當 secondary danger):confirm / cancel 型的 footer(已有非 danger 的 primary)
-    // 不得再放 danger 鈕 —— 記錄級的破壞性動作(刪除這筆記錄)走 header actions slot 的 icon-only 鈕(dialog.spec.md:107-113「操作對象是 dialog 承載的記錄本身」)。
+    // 不得再放 danger 鈕 —— 記錄級的破壞性動作(刪除這筆記錄)走 header actions slot 的 icon-only 鈕(dialog.spec.md「Header actions slot」:「操作對象是 dialog 承載的記錄本身」)。
     // 沒有 primary 的正負配對(儲存草稿 / 放棄變更 secondary danger)與確認框的 primary danger 都合法。
     const hasPlainPrimary = primaries.some((b) => !b.danger)
-    if (hasPlainPrimary) for (const b of bs) if (b.danger) findings.push(`${file}:${b.line} R3 ${f[1]}Footer 已有 primary「${primaries.find((x) => !x.danger).text}」卻又放 danger 鈕「${b.text}」:記錄級的破壞動作走 header actions 的 icon-only 鈕(dialog.spec.md:107-113),footer 只放 confirm / cancel`)
+    if (hasPlainPrimary) for (const b of bs) if (b.danger) findings.push(`${file}:${b.line} R3 ${f[1]}Footer 已有 primary「${primaries.find((x) => !x.danger).text}」卻又放 danger 鈕「${b.text}」:記錄級的破壞動作走 header actions 的 icon-only 鈕(dialog.spec.md「Header actions slot」),footer 只放 confirm / cancel`)
   }
   return findings
 }

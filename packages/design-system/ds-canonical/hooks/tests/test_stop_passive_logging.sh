@@ -1,5 +1,5 @@
 #!/bin/bash
-# Tests for stop_passive_logging.sh — Stop hook orchestrator(5 internal rules:tsc_sanity / harvest_corrections / capture_metrics / governance_drift / infra_best_practice_score)
+# Tests for stop_passive_logging.sh — Stop hook orchestrator(4 internal rules:harvest_corrections / capture_metrics / governance_drift / infra_best_practice_score;tsc_sanity 2026-10-07 退役)
 #
 # Orchestrator smoke test only — all 5 internal rules are passive(silent log to Git-owned governance runtime state,no stderr / no exit non-zero)。
 # Detailed rule tests are within their original lib hooks(now folded into this dispatcher,unit tests at lib level historically)。

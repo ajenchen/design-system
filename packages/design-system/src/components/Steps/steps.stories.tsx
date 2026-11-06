@@ -3,8 +3,6 @@
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { expect, within } from '@storybook/test'
-import { Check } from 'lucide-react'
 import {
   Steps,
   StepItem,
@@ -13,6 +11,14 @@ import {
   StepContent,
 } from './steps'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { Field, FieldError, FieldGroup, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { NumberInput } from '@/design-system/components/NumberInput/number-input'
+import { Select } from '@/design-system/components/Select/select'
+import { Textarea } from '@/design-system/components/Textarea/textarea'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/展示',
@@ -29,65 +35,119 @@ type Story = StoryObj<typeof Steps>
 
 // ── 典型 wizard ──────────────────────────────────────────────────────────
 
+// 註冊精靈:每一步是一張真的表單(結構同 field.stories.tsx「表單驗證」的 CreateProjectForm:FieldGroup + useFormValidation);
+// 按「下一步」先驗證這一頁 —— 過了把這一步記成已完成、前往下一步,沒過停在這一頁、焦點到第一個錯的欄位(form-validation.spec.md 規則 8)。
+// 2026-10-21 前這三步只有一句「請輸入你的姓名、電子郵件與電話」、沒有任何欄位(r1b OTH-04)。
+// 按鈕只放「下一步」,最後一步是「送出」;回頭 = 點正上方已完成的步驟(user 2026-10-20「照你建議」= A1 甲;steps.spec.md「目前那一步底下的按鈕」)。
+interface SignUpDraft { name: string; email: string; phone: string; username: string; password: string }
+const EMPTY_SIGN_UP: SignUpDraft = { name: '', email: '', phone: '', username: '', password: '' }
+const requiredText = (label: string) => (v: unknown) => (String(v ?? '').trim() ? undefined : `${label}必填`)
+
+/** 一步的表單:欄位 + 這一步的那一顆鈕(預設精靈的「下一步 / 送出」、非線性範例的「儲存 / 發布活動」)。間距:欄位之間由 FieldGroup 擁有(loose);按鈕上方 = loose(layoutSpace.spec.md 規則 3:按鈕跟它上方的欄位
+ *  是並列的兩塊;user 2026-10-20「Q2 我認為可以基於你的建議」)。按鈕下方不在這裡給:展開這一步的 li 給到下一步 bottom 48、最後一步交給外層容器(steps.tsx StepItem)。 */
+function StepForm({ label, submitLabel, onSubmit, children }: { label: string; submitLabel: string; onSubmit: (e?: React.FormEvent) => void; children: React.ReactNode }) {
+  return (
+    <form onSubmit={onSubmit} aria-label={label}>
+      {children}
+      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+        <Button type="submit" variant="primary">{submitLabel}</Button>
+      </ButtonGroup>
+    </form>
+  )
+}
+
+function ContactStep({ draft, onPass }: { draft: SignUpDraft; onPass: (patch: Partial<SignUpDraft>) => void }) {
+  const form = useFormValidation({
+    initialValues: { name: draft.name, email: draft.email, phone: draft.phone },
+    validate: {
+      name: requiredText('姓名'),
+      email: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : '電子郵件格式不正確'),
+      phone: (v) => (/^0\d{8,9}$/.test(String(v).replace(/[\s-]/g, '')) ? undefined : '電話是 0 開頭的 9 到 10 位數字'),
+    },
+    onSubmit: onPass,
+  })
+  return (
+    <StepForm label="基本資料" submitLabel="下一步" onSubmit={form.handleSubmit}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.name}><FieldLabel>姓名</FieldLabel><Input autoComplete="name" {...form.getInputProps('name')} /><FieldError>{form.errors.name}</FieldError></Field>
+        <Field required invalid={!!form.errors.email}><FieldLabel>電子郵件</FieldLabel><Input inputMode="email" autoComplete="email" {...form.getInputProps('email')} /><FieldError>{form.errors.email}</FieldError></Field>
+        <Field required invalid={!!form.errors.phone}><FieldLabel>電話</FieldLabel><Input inputMode="tel" autoComplete="tel" {...form.getInputProps('phone')} /><FieldError>{form.errors.phone}</FieldError></Field>
+      </FieldGroup>
+    </StepForm>
+  )
+}
+
+function AccountStep({ draft, onPass }: { draft: SignUpDraft; onPass: (patch: Partial<SignUpDraft>) => void }) {
+  const form = useFormValidation({
+    initialValues: { username: draft.username, password: draft.password },
+    validate: {
+      username: (v) => (String(v ?? '').trim().length >= 3 ? undefined : '使用者名稱至少 3 個字元'),
+      password: (v) => (String(v ?? '').length >= 8 ? undefined : '密碼至少 8 個字元'),
+    },
+    onSubmit: onPass,
+  })
+  return (
+    <StepForm label="帳號設定" submitLabel="下一步" onSubmit={form.handleSubmit}>
+      <FieldGroup>
+        <Field required invalid={!!form.errors.username}><FieldLabel>使用者名稱</FieldLabel><Input autoComplete="username" {...form.getInputProps('username')} /><FieldError>{form.errors.username}</FieldError></Field>
+        <Field required invalid={!!form.errors.password}><FieldLabel>密碼</FieldLabel><Input type="password" autoComplete="new-password" {...form.getInputProps('password')} /><FieldError>{form.errors.password}</FieldError></Field>
+      </FieldGroup>
+    </StepForm>
+  )
+}
+
+/** 最後一步:核對剛填的資料(唯讀資訊展示 → DescriptionList,field.spec.md「何時不用」的「唯讀資訊展示」列),送出。 */
+function ReviewStep({ draft, onSubmit }: { draft: SignUpDraft; onSubmit: () => void }) {
+  return (
+    <StepForm label="確認並送出" submitLabel="送出" onSubmit={(e) => { e?.preventDefault(); onSubmit() }}>
+      <DescriptionList cols={1}>
+        <DescriptionItem label="姓名">{draft.name}</DescriptionItem>
+        <DescriptionItem label="電子郵件">{draft.email}</DescriptionItem>
+        <DescriptionItem label="電話">{draft.phone}</DescriptionItem>
+        <DescriptionItem label="使用者名稱">{draft.username}</DescriptionItem>
+      </DescriptionList>
+    </StepForm>
+  )
+}
+
 export const Default: Story = {
   name: '預設',
   render: () => {
     const [value, setValue] = React.useState('info')
     const [completed, setCompleted] = React.useState<string[]>([])
-    const [submitted, setSubmitted] = React.useState(false)
+    const [draft, setDraft] = React.useState<SignUpDraft>(EMPTY_SIGN_UP)
+    // 按「下一步」換到下一步之後,焦點交給步驟條上新的目前那一步:按下去的那顆鈕跟著原本那一步的內容一起卸載,
+    // 焦點不能掉到 <body>(keyboard-model-canonical.md:焦點不可因 DOM 卸載掉到 body;同 TreeView「步驟引導」範例的做法)。
+    // 目前那一步的 header 是 tabIndex=-1(steps.spec.md「目前那一步可不可以點」),讀屏念得出現在到第幾步,下一個 Tab 進到這一步的第一欄。
+    const stepsRef = React.useRef<HTMLOListElement>(null)
+    const focusStepAfterNav = React.useRef(false)
+    React.useEffect(() => {
+      if (!focusStepAfterNav.current) return
+      focusStepAfterNav.current = false
+      stepsRef.current?.querySelector<HTMLElement>(':scope > li[aria-current="step"] > [tabindex]')?.focus()
+    }, [value])
 
-    const advance = () => {
+    const advance = (patch: Partial<SignUpDraft>) => {
       const nextMap: Record<string, string> = { info: 'account', account: 'review' }
+      setDraft((d) => ({ ...d, ...patch }))
       setCompleted(prev => Array.from(new Set([...prev, value])))
       const next = nextMap[value]
-      if (next) setValue(next)
+      if (next) { focusStepAfterNav.current = true; setValue(next) }
     }
-    const back = () => {
-      const prevMap: Record<string, string> = { account: 'info', review: 'account' }
-      const prev = prevMap[value]
-      if (prev) setValue(prev)
-    }
+    // 送出:三步全部打勾、跳 Toast,畫面停在第三步,焦點留在「送出」(按鈕沒有卸載,焦點本來就在它身上)——
+    // 不把整個精靈換成成功卡(user 2026-10-21「D1照你建議」…「不要看到任何成功卡，根本沒有人會那樣做」;keyboard-model-canonical.md「送出成功一律用 Toast」;field.stories.tsx「表單驗證」同款)
     const submit = () => {
-      setCompleted(prev => Array.from(new Set([...prev, 'review'])))
-      setSubmitted(true)
-    }
-    const reset = () => {
-      setValue('info')
-      setCompleted([])
-      setSubmitted(false)
-    }
-
-    // ── Pattern A:submit 在最後一步,送出後整個 wizard 替換成 success banner ──
-    // Pattern A:最後一步 submit 按下後 stepper 不再顯示,整個 wizard 替換成
-    // success card;「再填一份申請」是成功頁的真實產品 action(Google Forms
-    // 「Submit another response」同款,https://support.google.com/docs/answer/2839588),
-    // 非 demo 治具。
-    if (submitted) {
-      return (
-        <div className="w-[480px] flex flex-col gap-4 p-6 bg-muted rounded-md border border-border">
-          <div className="flex items-center gap-3">
-            <span className="h-8 w-8 rounded-full bg-info flex items-center justify-center shrink-0">
-              <Check className="text-white" size={20} strokeWidth={2.5} aria-hidden />
-            </span>
-            <span className="text-body-lg font-medium text-foreground">
-              已成功送出申請
-            </span>
-          </div>
-          <p className="text-body text-fg-secondary">
-            我們會盡快處理,結果將寄送至您的電子信箱。
-          </p>
-          <div>
-            <Button variant="tertiary" onClick={reset}>
-              再填一份申請
-            </Button>
-          </div>
-        </div>
-      )
+      setCompleted(['info', 'account', 'review'])
+      toast({ variant: 'success', title: '帳號已建立' })
     }
 
     return (
       <div className="w-[480px]">
+        {/* Toaster:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個) */}
+        <Toaster />
         <Steps
+          ref={stepsRef}
+          aria-label="註冊流程進度"
           value={value}
           onValueChange={setValue}
           completedValues={completed}
@@ -96,14 +156,7 @@ export const Default: Story = {
             <StepLabel>基本資料</StepLabel>
             <StepDescription>填寫姓名與聯絡方式</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請輸入你的姓名、電子郵件與電話。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                </div>
-              </div>
+              <ContactStep draft={draft} onPass={advance} />
             </StepContent>
           </StepItem>
 
@@ -111,17 +164,7 @@ export const Default: Story = {
             <StepLabel>帳號設定</StepLabel>
             <StepDescription>選擇使用者名稱與密碼</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  設定登入帳號。使用者名稱至少 3 個字元。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={advance}>下一步</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <AccountStep draft={draft} onPass={advance} />
             </StepContent>
           </StepItem>
 
@@ -129,17 +172,7 @@ export const Default: Story = {
             <StepLabel>確認並送出</StepLabel>
             <StepDescription>送出前最後檢查</StepDescription>
             <StepContent>
-              <div className="flex flex-col gap-3">
-                <p className="text-body text-fg-secondary">
-                  請確認所有欄位正確,按下送出後系統會建立您的帳號。
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={submit}>送出</Button>
-                  <Button variant="tertiary" onClick={back}>
-                    上一步
-                  </Button>
-                </div>
-              </div>
+              <ReviewStep draft={draft} onSubmit={submit} />
             </StepContent>
           </StepItem>
         </Steps>
@@ -158,38 +191,160 @@ export const Default: Story = {
 
 // ── Non-linear ──────────────────────────────────────────────────────────
 
+// 建立廣告活動:四步有先後順序、有目前那一步,但每一步可以各自儲存、跳著填(steps.spec.md「Linear vs Non-linear」linear=false 那一列;
+// user 2026-10-21 D4「非線性步驟就是有存在的必要,mui也有提供」,範例內容 = F10 ① AI 擬、user「照你建議」)。
+// 每一步一張表單,按「儲存」驗過才打勾;最後一步是「發布活動」—— 還有沒存的步就標錯、帶到第一個沒存的步,全部存好才發布並跳 Toast。
+// 四張表單的值都放在這一層(不跟著內容區卸載):跳到別步再回來,打到一半的字還在。
+type AdStepId = 'setup' | 'audience' | 'creative' | 'budget'
+const AD_STEPS: { id: AdStepId; label: string; description: string }[] = [
+  { id: 'setup', label: '活動設定', description: '名稱與行銷目標' },
+  { id: 'audience', label: '目標受眾', description: '地區與年齡層' },
+  { id: 'creative', label: '廣告素材', description: '標題與內文' },
+  { id: 'budget', label: '預算與出價', description: '每日預算與出價策略' },
+]
+const AD_GOAL_OPTIONS = [
+  { value: 'awareness', label: '品牌知名度' },
+  { value: 'traffic', label: '網站流量' },
+  { value: 'conversions', label: '轉換次數' },
+]
+const AD_REGION_OPTIONS = [
+  { value: 'tw', label: '全台灣' },
+  { value: 'north', label: '北部' },
+  { value: 'central', label: '中部' },
+  { value: 'south', label: '南部' },
+]
+const AD_AGE_OPTIONS = [
+  { value: '18-24', label: '18–24 歲' },
+  { value: '25-34', label: '25–34 歲' },
+  { value: '35-44', label: '35–44 歲' },
+  { value: '45+', label: '45 歲以上' },
+]
+const AD_BIDDING_OPTIONS = [
+  { value: 'max-clicks', label: '盡量爭取點擊' },
+  { value: 'target-cpa', label: '目標單次轉換出價' },
+]
+
+function AdCampaignWizard() {
+  const [value, setValue] = React.useState<AdStepId>('creative')
+  const [completed, setCompleted] = React.useState<AdStepId[]>(['setup'])
+  const [errors, setErrors] = React.useState<AdStepId[]>([])
+  // 「發布活動」把人帶到第一個沒存的步時,焦點交給那一步的 header(按下去的那顆鈕跟著原本那一步的內容卸載,不能掉到 <body>)
+  const stepsRef = React.useRef<HTMLOListElement>(null)
+  const focusStepAfterNav = React.useRef(false)
+  React.useEffect(() => {
+    if (!focusStepAfterNav.current) return
+    focusStepAfterNav.current = false
+    stepsRef.current?.querySelector<HTMLElement>(':scope > li[aria-current="step"] > [tabindex]')?.focus()
+  }, [value])
+
+  const save = (id: AdStepId) => {
+    setCompleted((prev) => Array.from(new Set([...prev, id])))
+    setErrors((prev) => prev.filter((e) => e !== id))
+    toast({ variant: 'success', title: `${AD_STEPS.find((st) => st.id === id)!.label}已儲存` })
+  }
+  const publish = () => {
+    const unsaved = AD_STEPS.map((st) => st.id).filter((id) => id !== 'budget' && !completed.includes(id))
+    setCompleted((prev) => Array.from(new Set([...prev, 'budget' as const])))
+    if (unsaved.length > 0) {
+      setErrors(unsaved)
+      focusStepAfterNav.current = true
+      setValue(unsaved[0])
+      return
+    }
+    setErrors([])
+    toast({ variant: 'success', title: '廣告活動已發布' })
+  }
+
+  const setup = useFormValidation({
+    initialValues: { campaignName: '2026 春季新品上市', goal: 'traffic' },
+    validate: { campaignName: requiredText('活動名稱'), goal: requiredText('行銷目標') },
+    onSubmit: () => save('setup'),
+  })
+  const audience = useFormValidation({
+    initialValues: { region: '', ageRange: '' },
+    validate: { region: requiredText('地區'), ageRange: requiredText('年齡層') },
+    onSubmit: () => save('audience'),
+  })
+  const creative = useFormValidation({
+    initialValues: { headline: '', body: '' },
+    validate: {
+      headline: (v) => (!String(v ?? '').trim() ? '廣告標題必填' : String(v).length > 30 ? '廣告標題最多 30 個字' : undefined),
+      body: requiredText('廣告內文'),
+    },
+    onSubmit: () => save('creative'),
+  })
+  const budget = useFormValidation<{ dailyBudget: number | null; bidding: string }>({
+    initialValues: { dailyBudget: null, bidding: '' },
+    validate: {
+      dailyBudget: (v) => (typeof v === 'number' && v >= 100 ? undefined : '每日預算至少 NT$100'),
+      bidding: requiredText('出價策略'),
+    },
+    onSubmit: publish,
+  })
+
+  const content: Record<AdStepId, React.ReactNode> = {
+    setup: (
+      <StepForm label="活動設定" submitLabel="儲存" onSubmit={setup.handleSubmit}>
+        <FieldGroup>
+          <Field required invalid={!!setup.errors.campaignName}><FieldLabel>活動名稱</FieldLabel><Input {...setup.getInputProps('campaignName')} /><FieldError>{setup.errors.campaignName}</FieldError></Field>
+          <Field required invalid={!!setup.errors.goal}><FieldLabel>行銷目標</FieldLabel><Select aria-label="行銷目標" placeholder="選擇目標" options={AD_GOAL_OPTIONS} {...setup.getInputProps('goal')} /><FieldError>{setup.errors.goal}</FieldError></Field>
+        </FieldGroup>
+      </StepForm>
+    ),
+    audience: (
+      <StepForm label="目標受眾" submitLabel="儲存" onSubmit={audience.handleSubmit}>
+        <FieldGroup>
+          <Field required invalid={!!audience.errors.region}><FieldLabel>地區</FieldLabel><Select aria-label="地區" placeholder="選擇地區" options={AD_REGION_OPTIONS} {...audience.getInputProps('region')} /><FieldError>{audience.errors.region}</FieldError></Field>
+          <Field required invalid={!!audience.errors.ageRange}><FieldLabel>年齡層</FieldLabel><Select aria-label="年齡層" placeholder="選擇年齡層" options={AD_AGE_OPTIONS} {...audience.getInputProps('ageRange')} /><FieldError>{audience.errors.ageRange}</FieldError></Field>
+        </FieldGroup>
+      </StepForm>
+    ),
+    creative: (
+      <StepForm label="廣告素材" submitLabel="儲存" onSubmit={creative.handleSubmit}>
+        <FieldGroup>
+          <Field required invalid={!!creative.errors.headline}><FieldLabel>廣告標題</FieldLabel><Input {...creative.getInputProps('headline')} /><FieldError>{creative.errors.headline}</FieldError></Field>
+          <Field required invalid={!!creative.errors.body}><FieldLabel>廣告內文</FieldLabel><Textarea {...creative.getInputProps('body')} /><FieldError>{creative.errors.body}</FieldError></Field>
+        </FieldGroup>
+      </StepForm>
+    ),
+    budget: (
+      <StepForm label="預算與出價" submitLabel="發布活動" onSubmit={budget.handleSubmit}>
+        <FieldGroup>
+          <Field required invalid={!!budget.errors.dailyBudget}><FieldLabel>每日預算</FieldLabel><NumberInput prefix="NT$" {...budget.getInputProps('dailyBudget')} /><FieldError>{budget.errors.dailyBudget}</FieldError></Field>
+          <Field required invalid={!!budget.errors.bidding}><FieldLabel>出價策略</FieldLabel><Select aria-label="出價策略" placeholder="選擇出價策略" options={AD_BIDDING_OPTIONS} {...budget.getInputProps('bidding')} /><FieldError>{budget.errors.bidding}</FieldError></Field>
+        </FieldGroup>
+      </StepForm>
+    ),
+  }
+
+  return (
+    <div className="w-[480px]">
+      {/* Toaster:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個) */}
+      <Toaster />
+      <Steps
+        ref={stepsRef}
+        aria-label="建立廣告活動進度"
+        value={value}
+        onValueChange={(v) => setValue(v as AdStepId)}
+        completedValues={completed}
+        errorValues={errors}
+        linear={false}
+      >
+        {AD_STEPS.map((st) => (
+          <StepItem key={st.id} value={st.id}>
+            <StepLabel>{st.label}</StepLabel>
+            <StepDescription>{st.description}</StepDescription>
+            <StepContent>{content[st.id]}</StepContent>
+          </StepItem>
+        ))}
+      </Steps>
+    </div>
+  )
+}
+
 export const NonLinear: Story = {
   name: '非線性',
-  render: () => {
-    const [value, setValue] = React.useState('overview')
-    return (
-      <div className="w-[360px]">
-        <Steps
-          value={value}
-          onValueChange={setValue}
-          completedValues={['overview']}
-          linear={false}
-        >
-          <StepItem value="overview">
-            <StepLabel>總覽</StepLabel>
-            <StepDescription>可隨時回看</StepDescription>
-          </StepItem>
-          <StepItem value="members">
-            <StepLabel>成員管理</StepLabel>
-            <StepDescription>新增 / 移除團隊成員</StepDescription>
-          </StepItem>
-          <StepItem value="billing">
-            <StepLabel>計費設定</StepLabel>
-            <StepDescription>付款方式</StepDescription>
-          </StepItem>
-          <StepItem value="integrations">
-            <StepLabel>整合</StepLabel>
-            <StepDescription>連接第三方服務</StepDescription>
-          </StepItem>
-        </Steps>
-      </div>
-    )
-  },
+  render: () => <AdCampaignWizard />,
 }
 
 // ── Horizontal ──────────────────────────────────────────────────────────
@@ -201,6 +356,7 @@ export const Horizontal: Story = {
     return (
       <div className="w-full max-w-3xl">
         <Steps
+          aria-label="結帳進度"
           value={value}
           onValueChange={setValue}
           completedValues={['cart', 'address']}
@@ -231,77 +387,13 @@ export const Horizontal: Story = {
   },
 }
 
-// ── Multiple expansion ─────────────────────────────────────────────────
-
-export const MultipleExpansion: Story = {
-  name: '多重展開模式',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  parameters: { demoFocus: 'keep' },
-  render: () => (
-    <div className="w-[480px]">
-      <p className="text-caption text-fg-secondary mb-4">
-        點 step header 切換展開(並更新 value)。本例顯式傳 `defaultExpanded="all"` 全部展開起手(預設 `"none"`)。
-      </p>
-      <Steps
-        defaultValue="b"
-        completedValues={['a']}
-        expansion="multiple"
-        defaultExpanded="all"
-        linear={false}
-      >
-        <StepItem value="a">
-          <StepLabel>安裝套件</StepLabel>
-          <StepDescription>執行 npm install</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              npm install @qijenchen/design-system
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="b">
-          <StepLabel>匯入元件</StepLabel>
-          <StepDescription>從 design-system 引入</StepDescription>
-          <StepContent>
-            <div
-              tabIndex={0}
-              role="region"
-              aria-label="Steps 元件匯入範例程式碼"
-              className="max-w-full overflow-x-auto rounded-md bg-muted focus-visible:focus-ring-inset"
-            >
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"import { Steps } from '@/design-system/components/Steps/steps'"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-        <StepItem value="c">
-          <StepLabel>設定 provider</StepLabel>
-          <StepDescription>包在 App 最外層</StepDescription>
-          <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
-              <pre className="text-caption p-3 whitespace-pre w-max">
-              {"<TooltipProvider>{children}</TooltipProvider>"}
-            </pre>
-            </div>
-          </StepContent>
-        </StepItem>
-      </Steps>
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const scrollRegion = canvas.getByRole('region', {
-      name: 'Steps 元件匯入範例程式碼',
-    })
-
-    await expect(scrollRegion.scrollWidth).toBeGreaterThan(scrollRegion.clientWidth)
-    await expect(scrollRegion).toHaveAttribute('tabindex', '0')
-    scrollRegion.focus()
-    await expect(scrollRegion).toHaveFocus()
-  },
-}
+// @story-history: MultipleExpansion(多重展開模式,安裝指南三步可同時展開)retired 2026-09-30 —
+//   整個「可同時打開多步」模式(`expansion="multiple"` / `defaultExpanded` / controlled `expanded`)隨之退役:
+//   Steps 的內容區只跟著目前那一步(steps.spec.md「內容跟著目前那一步」);安裝指南這種「讀者自己開合、沒有目前位置」
+//   的編號說明改用 Accordion(steps.spec.md「何時不用」第二張表)。
+//   user 2026-09-30 原話:「若你覺得Gov.uk學開車七步那種範例不用納入我們的範例就照你建議做」(AI 建議、user 採納,條件見原話)。
+//   本則的 play 原本順帶驗證 StepContent 內 consumer 自己的捲動區可聚焦;退役後 DS 內沒有任何 story 示範這條
+//   (steps.spec.md「A11y 預設」如實寫明),規則文字保留為指引。
 
 // @story-history: MixedDescription(欄節奏驗證 grid)retired 2026-06-11 per audit
 //   EXAMPLE_REDUNDANT — indicator 對齊 label 第一行的 column rhythm 已由 anatomy「欄位節奏」+

@@ -30,7 +30,7 @@ benchmark:
 - **Table / list / grid 空狀態**：DataTable 查無資料、搜尋無結果
 - **Page section 無內容**：dashboard widget 暫無資料、設定頁未建立任何項目
 - **初次引導**：讓使用者首次使用時知道「這裡會放什麼」+ 有 CTA 建立
-- **容器級無權限提示**（2026-07-04 Q7 拍板）：卡片 / 區塊 / 面板內容因權限不可見 — **必附 request-access 類 action**（對齊 Atlassian「Request access」empty state 官方範例 + Carbon error-management scenario）；整頁級 403 / 404 仍禁用（→ 專屬錯誤頁面，見「何時不用」）
+- **容器級無權限提示**（2026-07-04 Q7 拍板）：卡片 / 區塊 / 面板內容因權限不可見 — **必附 request-access 類 action**（對齊 Atlassian「Request access」empty state 官方範例([empty-state examples](https://atlassian.design/components/empty-state/examples)「You don't have access to this work item … Request access」)+ Carbon error-management scenario([empty states pattern](https://www.carbondesignsystem.com/building-blocks/core/patterns/empty-states)「Permissions issue … Suggest steps or process to request access.」);皆 2026-11-05 讀回）；整頁級 403 / 404 仍禁用（→ 專屬錯誤頁面，見「何時不用」）
 
 ## 何時不用
 
@@ -120,7 +120,7 @@ Empty 是 **non-interactive layout primitive**——本身無 ARIA role(讓 cons
 **Description 不需 live announcement**:Empty 本身是「靜態空狀態提示」(進入時就空),不是「動態變化結果」。動態變化(filter / search 結果切換)由 consumer 在容器層加 `aria-live`,不在 Empty 內。
 
 世界級對照:
-- **Polaris** `<EmptyState>`:容器層 `aria-labelledby` + heading 由 prop 控制 level(consumer 決定 `<h2>` / `<h3>`)
+- **Polaris** `<EmptyState>`:heading 固定渲染成 `<Text variant="headingMd" as="p">`(段落,不是可選 level 的標題),元件本身沒有 `aria-labelledby`([EmptyState.tsx#L120-L125](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/EmptyState/EmptyState.tsx#L120-L125))
 - **Material** `<NoOptions>`(Autocomplete 內):容器自帶 `role="listbox"` + `aria-live="polite"` 通知無結果
 - **Carbon** `<EmptyState>`:無自帶 ARIA,文檔指引 consumer 在父容器設 `aria-describedby`
 
@@ -143,13 +143,6 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
   title="還沒有專案"
   description="建立第一個專案來開始使用"
   action={<Button>建立專案</Button>}
-/>
-
-// 自訂色彩(success result)
-<Empty
-  icon={<Avatar icon={CheckCircle} size={48} color="green" />}
-  title="已成功送出"
-  description="我們會盡快處理"
 />
 
 // 自訂圖片

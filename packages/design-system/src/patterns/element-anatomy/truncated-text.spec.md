@@ -18,8 +18,8 @@ benchmark:
 
 | 層 | 物件 | 職責 | 對標 |
 |----|------|------|------|
-| 底層量測引擎 | **`useTruncated(options?)` hook**(public,`hooks/use-truncated`)| 全 DS 共用單一 `ResizeObserver`(dispatch 到 per-element callback,`WeakMap`)+ `isTruncated` 狀態機 + 二次量測時序。回 `{ ref, isTruncated }` | MUI/MUI-X 社群「hook 量測 + 條件 Tooltip」 |
-| 上層組合 | **`<TruncatedText>` component**(@internal,本檔)| 消費 hook + 封裝「永遠 wrap Tooltip、`open` 控制可見」的截斷 span 呈現 | Ant `Typography.Text ellipsis` 高階元件 |
+| 底層量測引擎 | **`useTruncated(options?)` hook**(public,`hooks/use-truncated`)| 全 DS 共用單一 `ResizeObserver`(dispatch 到 per-element callback,`WeakMap`)+ `isTruncated` 狀態機 + 二次量測時序。回 `{ ref, isTruncated }` | DS 自建(跨元件共用一個 observer)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/typography/index.en-US.md#L195)) |
+| 上層組合 | **`<TruncatedText>` component**(@internal,本檔)| 消費 hook + 封裝「永遠 wrap Tooltip、`open` 控制可見」的截斷 span 呈現 | Ant `Typography.Text ellipsis` 高階元件([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/typography/index.en-US.md#L195)) |
 
 **為何兩層**:Breadcrumb / DataTable 結構同構(截斷 span 即 tooltip trigger)→ 用 component;Tag 因 **trigger(整個 tag root)≠ 量測元素(內層 `[data-tag-text]` span)** + Canvas `measureText`(flex 內 `scrollWidth` 不可靠)+ 截斷才 `tabIndex=0`/focus-ring 的自訂 a11y → **只用 hook 自組**。缺任一層 = 假 SSOT(只抽 component 則 Tag 被迫留自己的 RO copy;只抽 hook 則兩個 component consumer 各自重寫 wrap JSX)。
 
@@ -46,7 +46,7 @@ benchmark:
 ## A11y 預設
 
 - 截斷才顯示 tooltip(補全被裁文字);未截斷不顯示(避免噪音)。
-- Tooltip 經 Radix `TooltipTrigger`/`TooltipContent`:hover + keyboard focus 皆可觸發(對齊 W3C APG Tooltip pattern)。
+- Tooltip 經 Radix `TooltipTrigger`/`TooltipContent`:hover + keyboard focus 皆可觸發(對齊 W3C APG Tooltip pattern)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27))。
 - Tag 變異:截斷時 root `tabIndex=0` + focus-visible ring(讓 Tab 到即見全文,APG 前提 trigger 可 focus);未截斷不入 tab 序。此 a11y 由 Tag 讀 `isTruncated` 自渲染,不進 hook(consumer 自控)。
 
 ## 禁止事項

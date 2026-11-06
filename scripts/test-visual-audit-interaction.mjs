@@ -49,10 +49,12 @@ test('visual hover uses a real unique Playwright pointer target and fails closed
     </style>
     <button data-visual-hover-target>Expand</button>
   `)
+  // settle 在滑過之後、指標證明之前跑(這時 :hover 已生效),回傳值原樣放進 settled
+  const settle = (p) => p.locator('[data-visual-hover-target]').evaluate((element) => ({ colorAtSettle: getComputedStyle(element).color }))
   const result = await executeVisualInteraction(
     page,
     { action: 'hover', selector: '[data-visual-hover-target]' },
-    { settleMs: 0 },
+    { settle },
   )
   assert.deepEqual(result, {
     action: 'hover',
@@ -61,7 +63,7 @@ test('visual hover uses a real unique Playwright pointer target and fails closed
     hoverVerified: true,
     verification: 'trusted-pointer-hit',
     hitTarget: 'target',
-    settleMs: 0,
+    settled: { colorAtSettle: 'rgb(255, 0, 0)' },
   })
   assert.equal(
     await page.locator('[data-visual-hover-target]').evaluate((element) => getComputedStyle(element).color),
@@ -70,19 +72,46 @@ test('visual hover uses a real unique Playwright pointer target and fails closed
 
   await page.setContent('<button>Missing marker</button>')
   await assert.rejects(
-    executeVisualInteraction(page, { action: 'hover', selector: '[data-visual-hover-target]' }),
+    executeVisualInteraction(page, { action: 'hover', selector: '[data-visual-hover-target]' }, { settle }),
     /must match exactly 1 target; matched 0/,
   )
 
   await page.setContent('<button data-visual-hover-target>One</button><button data-visual-hover-target>Two</button>')
   await assert.rejects(
-    executeVisualInteraction(page, { action: 'hover', selector: '[data-visual-hover-target]' }),
+    executeVisualInteraction(page, { action: 'hover', selector: '[data-visual-hover-target]' }, { settle }),
     /must match exactly 1 target; matched 2/,
   )
 
   await assert.rejects(
-    executeVisualInteraction(page, { action: 'hover', selector: 'button[' }),
+    executeVisualInteraction(page, { action: 'hover', selector: 'button[' }, { settle }),
     /invalid selector/,
+  )
+})
+
+test('visual hover has no fixed sleep: settle is required, runs before the pointer proof, and its failure is not rewrapped', async (t) => {
+  const browser = await launchBrowser()
+  t.after(() => browser.close())
+  const page = await browser.newPage()
+  const hover = { action: 'hover', selector: '[data-visual-hover-target]' }
+  await page.setContent('<button data-visual-hover-target style="margin:40px">Expand</button>')
+
+  // 2026-10-14 前是固定睡 settleMs(預設 250ms);現在沒有 settle 就是契約錯誤(不默默退回固定睡眠)
+  await assert.rejects(executeVisualInteraction(page, hover), /settle must be a function/)
+  await assert.rejects(executeVisualInteraction(page, hover, { settleMs: 250 }), /settle must be a function/)
+
+  // settle 的例外(儀器失效)原樣往上:同一個物件,不被包成「hover failed」契約錯誤
+  class InstrumentFailure extends Error {}
+  const thrown = new InstrumentFailure('INSTRUMENT-FAIL story「button--dismiss-hover-state」沒有量到 —— 計時器一直在排隊')
+  await assert.rejects(executeVisualInteraction(page, hover, { settle: async () => { throw thrown } }), (error) => error === thrown)
+
+  // 指標證明在 settle **之後**才讀:settle 期間目標被移開(拍照那一刻已不在指標下)→ 必須紅;
+  // 若證明仍在 settle 之前讀(舊順序),這一題會被當成通過
+  await page.setContent('<button data-visual-hover-target style="margin:40px">Expand</button>')
+  await assert.rejects(
+    executeVisualInteraction(page, hover, {
+      settle: (p) => p.locator('[data-visual-hover-target]').evaluate((element) => { element.style.marginLeft = '600px' }),
+    }),
+    /did not leave a trusted mouse pointer/,
   )
 })
 

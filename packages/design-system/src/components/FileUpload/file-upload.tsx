@@ -1,7 +1,9 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
+import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { Upload as UploadIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { FileItem, FILE_ITEM_RING_LAYER_CLASS, fileItemRingCutoutStyle } from '@/design-system/components/FileItem/file-item'
@@ -79,7 +81,7 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
    * 兩者共用 onUpload / onReject / files 清單渲染;都可放進 Field control slot。
    */
   variant?: 'dropzone' | 'button'
-  /** `variant="button"` 的按鈕文字(預設「Choose file」)。 */
+  /** `variant="button"` 的按鈕文字(預設「選擇檔案」;也可經 I18nProvider `file-upload.buttonLabel` 換字)。 */
   buttonLabel?: string
   /**
    * Loading 狀態(async 上傳 / 伺服器處理中)。
@@ -89,11 +91,11 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
    * - 宣告 `aria-busy="true"` 讓 screen reader 感知處理中
    */
   loading?: boolean
-  /** Loading 狀態的文字標題(預設「上傳中…」) */
+  /** Loading 狀態的文字標題(預設「上傳中…」;也可經 I18nProvider `file-upload.loadingTitle` 換字) */
   loadingTitle?: string
-  /** dropzone 標題文字(預設「Click or drag file here to upload」；button variant 忽略) */
+  /** dropzone 標題文字(預設「拖曳檔案到這裡,或點擊選取」;也可經 I18nProvider `file-upload.title` 換字;button variant 忽略) */
   title?: string
-  /** dropzone 說明文字(預設依 multiple 切換；button variant 忽略) */
+  /** dropzone 說明文字(預設依 multiple 切換「可一次上傳多個檔案」/「一次上傳一個檔案」;也可經 I18nProvider `file-upload.descriptionMultiple` / `descriptionSingle` 換字;button variant 忽略) */
   description?: string
   /** dropzone:若傳入 children,覆寫預設 Empty 結構；button variant 忽略 */
   children?: React.ReactNode
@@ -114,14 +116,13 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   removeAriaLabel?: (name: string) => string
 }
 
+// 移除後的焦點接力:全 DS 一支 lib/collection-removal-focus.ts(2026-10-01 由本檔、Combobox、AgentPanel 輸入盒三份收成;
+// 基準是被點到的那顆 ×,焦點在列上(路線乙:列是停靠點、× 不在 Tab 路上)時照樣接到下一顆 ×、沒有則前一顆、再沒有回上傳鈕 / 拖放區)
 function focusAfterFileRemoval(current: HTMLButtonElement) {
   // 清單容器兩種元素都可能(唯讀 ul / 可操作 grid div,見下方 fileListNode),用資料屬性找
   const list = current.closest<HTMLElement>('[data-file-upload-list]')
-  const buttons = list ? Array.from(list.querySelectorAll<HTMLButtonElement>('[data-collection-remove]')) : []
-  const index = buttons.indexOf(current)
-  const next = buttons[index + 1] ?? buttons[index - 1]
   const owner = list?.parentElement?.querySelector<HTMLElement>('[data-file-upload-owner]')
-  ;(next ?? owner)?.focus()
+  focusAfterCollectionRemoval(list, { removed: current, owner })
 }
 
 // ── 鍵盤:內建檔案清單 = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9「路線乙」)──
@@ -151,11 +152,11 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
       maxSize,
       disabled = false,
       variant = 'dropzone',
-      buttonLabel = 'Choose file', // i18n-allow: DS default; consumer override via buttonLabel prop
+      buttonLabel: buttonLabelProp,
       loading = false,
-      loadingTitle = '上傳中…', // i18n-allow: DS default; consumer override via loadingTitle prop
-      title = 'Click or drag file here to upload', // i18n-allow: DS default; consumer override via title prop
-      description = multiple ? 'Support for a single or bulk upload' : 'Support for a single file upload', // i18n-allow: DS default; consumer override via description prop
+      loadingTitle: loadingTitleProp,
+      title: titleProp,
+      description: descriptionProp,
       children,
       files,
       fileListMode = 'compact',
@@ -167,6 +168,14 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
     },
     ref,
   ) => {
+    // 文案:consumer prop → I18nProvider `file-upload.*` → DS 預設中文(F1 甲「預設語言是中文」;lib/i18n/README.md「Fallback chain」)
+    const { t } = useI18n()
+    const buttonLabel = buttonLabelProp ?? t('file-upload', 'buttonLabel', '選擇檔案') // i18n-allow: DS 預設文案(中文)
+    const loadingTitle = loadingTitleProp ?? t('file-upload', 'loadingTitle', '上傳中…') // i18n-allow: DS 預設文案(中文)
+    const title = titleProp ?? t('file-upload', 'title', '拖曳檔案到這裡,或點擊選取') // i18n-allow: DS 預設文案(中文)
+    const description = descriptionProp ?? (multiple
+      ? t('file-upload', 'descriptionMultiple', '可一次上傳多個檔案') // i18n-allow: DS 預設文案(中文)
+      : t('file-upload', 'descriptionSingle', '一次上傳一個檔案')) // i18n-allow: DS 預設文案(中文)
     const inputRef = React.useRef<HTMLInputElement>(null)
     const [isDragOver, setDragOver] = React.useState(false)
     // drag enter/leave 深度計數(react-dropzone / Mantine Dropzone 同款):跨進內部子元素時
@@ -338,7 +347,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                 ringCutout
                   ? ['relative', FILE_ITEM_RING_LAYER_CLASS, 'focus-visible:before:focus-ring-inset']
                   : 'focus-visible:focus-ring-inset',
-                // @focus-suppress C — 列自己這圈改畫在自己的 ::before 框圖層(上兩行),元素本身不再另畫全域外描邊;承擔者:file-upload.tsx:339
+                // @focus-suppress C — 列自己這圈改畫在自己的 ::before 框圖層(上兩行),元素本身不再另畫全域外描邊;承擔者:file-upload.tsx:348
                 ringCutout && 'focus-visible:outline-none',
               )}
               style={ringCutout}

@@ -12,7 +12,7 @@ benchmark:
 
 # Orphan Token 分類設計原則(retire vs structural-keep SSOT)
 
-> **Foundational context**(2026-05-21 codify per user verbatim「決策四你他媽仔細給我確認到底該retire的是否真的該retire還是應該結構性保留,請全盤檢查,然後確認之後請下次不要再煩我,尤其是Palette tier」+「都給我做到好」):**永久解決**「audit 每次抓 X 個 orphan tokens」噪音。本 spec 明文哪些 token 結構性保留 + 自動 audit script 識別,user 不需重複確認同一題。
+> **Foundational context**(2026-05-21 codify:user 要求把該退役的是否真的該退役、還是應該結構性保留全盤確認一次、做到好,之後不要再拿同一題回來問,尤其是 Palette tier —— 轉述;那段對話紀錄已不存在、登記簿查無原話):**永久解決**「audit 每次抓 X 個 orphan tokens」噪音。本 spec 明文哪些 token 結構性保留 + 自動 audit script 識別,user 不需重複確認同一題。
 
 ## Scope(何時用 / 何時不用)
 
@@ -36,19 +36,19 @@ benchmark:
 
 ## 結構性保留分類(永久保留,**不視為 retire 候選**)
 
-對齊 Material 3 / Atlassian / Carbon / Polaris token system 共識。每類附 rationale + 識別 regex(`audit-orphan-tokens.mjs` 消費此分類)。
+每類附 rationale + 識別 regex(`audit-orphan-tokens.mjs` 消費此分類)。分類依據是 DS 自己的 token 用途,不是「目前有沒有人用」。
 
 ### 1. Palette tier 完整 1-10 色階(77 token,structural)
 
 **Rule**:`--color-{hue}-N`(N ∈ 1..10)即使當前無消費者也**完整保留**。
 
-**Why**:Material 3「Key Colors & Tones」+ Atlassian「Full color spectrum」共識 — palette 是設計師調色盤 SSOT,缺中間階就斷層,新元件需消費中間色時不該 hot-add。**全色階是 capability,不是 cost**。
+**Why**:palette 是設計師調色盤 SSOT,缺中間階就斷層,新元件需消費中間色時不該 hot-add。**全色階是 capability,不是 cost**。
 
 **Regex**:`^--color-(amber|blue|red|green|deep-orange|indigo|lime|orange|purple|yellow)-\d+$`
 
 ### 2. Magenta / Turquoise 專用 palette(14 token,structural)
 
-**Why**:Tag / Avatar variant 預留色,Polaris / Atlassian 同樣保留 specialty hue 完整色階(不只「目前用到的階」)。
+**Why**:Tag / Avatar variant 預留色 —— specialty hue 保留完整色階(不只「目前用到的階」),新 variant 才有現成的階可用。
 
 **Regex**:`^--color-(magenta|turquoise)-\d+$`
 
@@ -56,7 +56,7 @@ benchmark:
 
 **Rule**:`--black-aN`(a02-a85,9 階)/ `--white-aN`(a04-a85,8 階)完整保留。
 
-**Why**:Overlay / scrim / shadow / disabled state alpha composition 預留;Material 3「Surface Tint」+ Apple HIG「Vibrancy」需要完整 alpha ladder。
+**Why**:Overlay / scrim / shadow / disabled state alpha composition 預留 —— 半透明疊色需要一條完整的 alpha 階梯,才不用為每個疊層臨時造值。
 
 **Regex**:`^--(black|white)-a\d+$`
 
@@ -72,7 +72,7 @@ benchmark:
 
 **Rule**:`--{hue}-(hover|active|focus|subtle|emphasis|disabled|text)` 即使當前無消費者也保留完整 8-tier emphasis set。
 
-**Why**:Material 3 / Atlassian state token canonical — hover/active/focus 是 elevation 8-tier 一部分,缺一階斷 emphasis ladder。**8-tier 是 capability invariant**。
+**Why**:hover / active / focus 是互動強調階梯的一部分,缺一階就斷 emphasis ladder。**8-tier 是 capability invariant**。
 
 **Regex**:`^--{HUES}-(hover|active|focus|subtle|emphasis|disabled|text)$`
 
@@ -86,7 +86,7 @@ benchmark:
 
 **Rule**:每個 semantic role(primary / error / success / warning / info)必有 5 件套:`base / hover / active / subtle / text`;機械保護集另含 `emphasis / foreground / focus`(下方 Regex 共 7 後綴,與 `audit-orphan-tokens.mjs` 一致;無後綴 base 由消費者直接引用不在 regex 內)。即使當前 variant 無消費者也保留。
 
-**Why**:Consistency invariant — 缺 `-text` variant 設計時找不到「on-emphasis 文字色」會 hot-create,違反 SSOT。Polaris「Status colors complete set」canonical。
+**Why**:Consistency invariant — 缺 `-text` variant 設計時找不到「on-emphasis 文字色」會 hot-create,違反 SSOT;每個狀態色都要成套(底 / 文字 / 邊框)。
 
 **Regex**:`^--(primary|error|success|warning|info)-(active|hover|text|subtle|emphasis|foreground|focus)$`
 

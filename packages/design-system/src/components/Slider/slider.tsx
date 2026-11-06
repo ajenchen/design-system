@@ -193,7 +193,9 @@ const Slider = React.forwardRef<
             'data-[disabled]:cursor-not-allowed data-[disabled]:border-border data-[disabled]:bg-canvas',
             'data-[disabled]:hover:[box-shadow:none]',
           )}
-          // aria-label 策略(對齊 WAI-ARIA APG multi-thumb slider + Radix 原生語意標籤):
+          // aria-label 策略(對齊 WAI-ARIA APG multi-thumb slider:每顆 thumb 各有自己的名稱,
+          //   https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/slider-multithumb/examples/slider-multithumb.html#L70-L75
+          //   + Radix 原生語意標籤):
           //   - consumer 傳 ariaLabel:單 thumb → 原樣;多 thumb → `{label} (N)` 區分
           //   - 沒傳 ariaLabel:回傳 undefined,讓 Radix getLabel 提供語意標籤
           //     (2 thumb → Minimum/Maximum;>2 thumb → Value N of M;單 thumb → 無)

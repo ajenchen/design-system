@@ -27,7 +27,7 @@ Textarea 是**多行文字**的輸入與顯示元件——Input 的多行版本�
 
 **Layout Family**：Family 4（Field control）— multi-line variant。**繼承** Family 4 的 token（字體 / padding / border / state 色彩），但**結構簡化為單一 native `<textarea>`**（edit 態裸 `<textarea>`、view 態裸 `<div>`）——無 fieldWrapper composite、無 startIcon / content / endAction 多 slot anatomy（見下方「與 Input 的差異」表與「禁止事項」）。高度可隨 rows / resize-y 擴展、不受 `--field-height-*` 約束。
 
-**實作基礎**：native `<textarea>` + 橋接 DS token，無 external primitive base。shadcn 同類做法。
+**實作基礎**：native `<textarea>` + 橋接 DS token，無 external primitive base。shadcn 同類做法(只 import React 與 cn,直接渲染 `<textarea>`,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/textarea.tsx#L1-L6)。
 
 共用規則見 `../Field/field-controls.spec.md`。本文件只記錄 Textarea 特有的原則。
 
@@ -135,7 +135,7 @@ native `<textarea>` 自帶 `value` / `defaultValue` / `onChange` triplet — Tex
 
 Textarea 是 **Field Controls family 的多行變體**,共用規則由 `../Field/field-controls.spec.md` own:
 
-- **無 StateBehavior**:Textarea 的互動狀態(focus ring / invalid / disabled / readonly)完全繼承 Field Controls SSOT(`field-controls.spec.md`「Mode 狀態」),無 Textarea 特有的 state 行為。重寫 StateBehavior = 與 Field family 漂移風險——改由 `ColorMatrix`(各 mode × state 色彩 token)+ `ModeMatrix`(edit / readonly / disabled / error 視覺對照)涵蓋。
+- **無 StateBehavior**:Textarea 的互動狀態(focus ring / invalid / disabled / readonly)完全繼承 Field Controls SSOT(`field-controls.spec.md`「Mode — 表單三態 (view 見下方 View 段)」),無 Textarea 特有的 state 行為。重寫 StateBehavior = 與 Field family 漂移風險——改由 `ColorMatrix`(各 mode × state 色彩 token)+ `ModeMatrix`(edit / readonly / disabled / error 視覺對照)涵蓋。
 
 對應 anatomy story:`Overview` + `Inspector` + `SizeMatrix` + `ModeMatrix`(edit/readonly/disabled continuation of Field) + `ColorMatrix` + 元件特有 `RowsResizeMatrix` + `Accessibility`。
 

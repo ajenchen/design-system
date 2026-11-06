@@ -17,7 +17,7 @@ benchmark:
 ## 定位
 
 DropdownMenu 是按鈕觸發的**動作選單**——使用者從中選擇一個動作並立即執行。
-基於 Radix DropdownMenu（shadcn 包裝），item 佈局消費 MenuItem primitive。
+基於 Radix DropdownMenu（shadcn 包裝,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx#L6），item 佈局消費 MenuItem primitive。
 
 **Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
 
@@ -221,7 +221,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 
 ## StateBehavior(DropdownMenu 層級特有)
 
-Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤模態的反白(highlighted)畫框 `focus-ring-inset`,框疊在選中底色上**(2026-09-07 user 拍板「A5畫框」;原深一階底色已退役;2026-09-09 起框由 `radixCursorClass` 統一畫在所有反白列上、不分選中與否,`not-hover:` 分流一併移除);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件表達,反白時同一般列(指標模態底色、鍵盤模態框)。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
+Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤模態的反白(highlighted)畫框 `focus-ring-inset`,框疊在選中底色上**(2026-09-07 user 在 A5 選了畫框;原深一階底色已退役;2026-09-09 起框由 `radixCursorClass` 統一畫在所有反白列上、不分選中與否,`not-hover:` 分流一併移除);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件表達,反白時同一般列(指標模態底色、鍵盤模態框)。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
 
 ---
 
@@ -232,7 +232,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - **Loading(async submenu / async items)**:DropdownMenu primitive 不獨立 own loading prop。async submenu 場景應由 consumer 在 `<DropdownMenuSub>` 內條件性渲 `<DropdownMenuItem disabled>` + spinner label(如「載入中...」);或 fetch options 前先 disable 整個 menu trigger。完整 loading body 替換 pattern 屬 SelectMenu scope,不在 DropdownMenu scope。
 - **Empty(no items / async fetch result empty)**:consumer 應條件性渲 `<DropdownMenuItem disabled>` 顯示「無可用動作」字樣;不渲空 menu。
 - **Dark mode / density**:走 MenuItem + Popover SSOT 自動 adapt;density 繼承 page(不鎖;DropdownMenu item 高度 = field-height-{size} 隨 page density 變,鎖 md 會釘死 md-scale 對不上 lg 觸發點),SSOT 見 `tokens/density/density.spec.md`。
-- **大量 item(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing(對齊 Ant Select / MUI Autocomplete 慣例);本元件無虛擬化——action menu 本不該長到這個量級,超過先重想資訊架構(選值場景改用 SelectMenu 系 + searchable)。
+- **大量 item(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing(清單一長,捲動與鍵盤逐項移動都變慢);本元件無虛擬化——action menu 本不該長到這個量級,超過先重想資訊架構(選值場景改用 SelectMenu 系 + searchable)。
 
 ---
 
@@ -257,7 +257,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - Tab / Shift+Tab — 選單開著:收起全部層,焦點從觸發鈕往下 / 往上走一站(2026-09-25 起,見「鍵盤操作」)
 - Esc — 只關焦點所在的那一層(子選單 → 回上一層那一項;主選單 → 回觸發鈕)
 
-**Focus**:預設非 modal —— 焦點不鎖在選單裡(`Tab` 會離開,見上)。開啟時焦點進選單;關閉時 `Esc` / 選了項目 → 回觸發鈕,點外面 → 留在點的地方,`Tab` → 下一站(本元件 `onCloseAutoFocus` 在 Tab 離開時擋掉還觸發鈕)。反白(Radix `data-highlighted`)是**唯一的游標**,依**反白來歷**分流(owner = `ds-canonical/references/focus-canonical.md` 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):**滑鼠移過搬走反白** = hover → `bg-neutral-hover`、無框;**鍵盤搬走反白** = 游標 → 畫框 `focus-ring-inset`(內描邊,列撐滿選單寬)、不上底色,而且滑鼠停留列的 hover 底色一起消失(四種項目上都沒有 `hover:` 樣式;滑鼠停著不算搶,2026-09-09 下午 user 三問、Radix Menu 原始碼證實 `onPointerMove → item.focus()` 就是搶 —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx)。來歷由 `hooks/use-input-modality.ts` 的 `useCursorMover` + 各項目 `onPointerMoveCapture → markPointerGrab` 判(本元件刻意用 `data-highlighted` + 模態而非瀏覽器 `:focus-visible`,因 Radix 對 hover 做程式化 focus、各瀏覽器 `:focus-visible` 行為不一 — 見 dropdown-menu.tsx docblock「Hover / highlight canonical」)。2026-09-09 之前鍵盤導覽到的未選中項只有底色不畫框 —— AI 推導自 Radix 慣例,已撤回。**Trigger focus 指示**:Trigger 走全域 `:focus-visible` 外描邊(`styles/base.css`,幾何 SSOT = focus-canonical「框怎麼畫」);asChild 場景由子元件(通常 Button)同樣走全域外描邊。
+**Focus**:預設非 modal —— 焦點不鎖在選單裡(`Tab` 會離開,見上)。開啟時焦點進選單;關閉時 `Esc` / 選了項目 → 回觸發鈕,點外面 → 留在點的地方,`Tab` → 下一站(本元件 `onCloseAutoFocus` 在 Tab 離開時擋掉還觸發鈕)。反白(Radix `data-highlighted`)是**唯一的游標**,依**反白來歷**分流(owner = `ds-canonical/references/focus-canonical.md` 規則一「兩類元件」+ 規則二,user 2026-09-09「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」(登記簿 D11)):**滑鼠移過搬走反白** = hover → `bg-neutral-hover`、無框;**鍵盤搬走反白** = 游標 → 畫框 `focus-ring-inset`(內描邊,列撐滿選單寬)、不上底色,而且滑鼠停留列的 hover 底色一起消失(四種項目上都沒有 `hover:` 樣式;滑鼠停著不算搶,2026-09-09 下午 user 三問、Radix Menu 原始碼證實 `onPointerMove → item.focus()` 就是搶 —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx)。來歷由 `hooks/use-input-modality.ts` 的 `useCursorMover` + 各項目 `onPointerMoveCapture → markPointerGrab` 判(本元件刻意用 `data-highlighted` + 模態而非瀏覽器 `:focus-visible`,因 Radix 對 hover 做程式化 focus、各瀏覽器 `:focus-visible` 行為不一 — 見 dropdown-menu.tsx docblock「Hover / highlight canonical」)。2026-09-09 之前鍵盤導覽到的未選中項只有底色不畫框 —— AI 推導自 Radix 慣例,已撤回。**Trigger focus 指示**:Trigger 走全域 `:focus-visible` 外描邊(`styles/base.css`,幾何 SSOT = focus-canonical「框怎麼畫」);asChild 場景由子元件(通常 Button)同樣走全域外描邊。
 
 **ARIA composite scroll wrapper**:`DropdownMenuContent` 的 viewport-aware body 仍消費 `ScrollArea`,但 viewport 傳 `viewportTabIndex={null}` 完全省略 generic wrapper 的 `tabindex`。`role="menu"` 內的 focus owner 是 Radix roving-focus `menuitem*` family；額外 `div[tabindex]` 會破壞 required-children 結構。群組 Label 是正常可讀文字,使用 `fg-secondary`(非低對比的 `fg-muted`)。
 

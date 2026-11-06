@@ -16,7 +16,7 @@ traits:
 > **注意**：此文件是 Field Controls（Input / NumberInput / DatePicker / Select / Combobox / LinkInput / PeoplePicker 等)**共用**的設計原則，與 `Field/field.spec.md`（表單 Layout 容器）**不是同一個東西**。
 >
 > - **Field Controls**（本文件）：具體的資料型別輸入元件，內部含 edit/readonly/disabled 三態 + 格式化 + DataTable Display 共用
-> - **Field**（`Field/field.spec.md`）：shadcn 風格的表單 Layout 容器（label + description + error），wrap 上述 Field Controls 元件
+> - **Field**（`Field/field.spec.md`）：shadcn 風格的表單 Layout 容器（label + description + error;shadcn [field.tsx#L237-L247](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/field.tsx#L237-L247) 同樣拆 `FieldLabel` / `FieldDescription` / `FieldError`），wrap 上述 Field Controls 元件
 
 **Layout Family**：依 `patterns/element-anatomy/element-anatomy.spec.md` 的 4-Family taxonomy,本 spec 是 **Family 4（Field Control Layout）的 SSOT**。結構 `fieldWrapperStyles + [startIcon?] [<editable content>] [endAction?]`，**視覺對齊 Family 1（Menu item layout）**——Select trigger 的高度 / 字體 / icon size / **水平內距** 必須跟其 SelectMenu options 連續一致。水平內距那一軸 2026-09-17 補進本清單:畫面上它一直成立(兩邊都是 12px content gutter),但在此之前沒有被寫進規則、也沒有共同的 token 主人 —— 現在 field 走 `--field-px`、row 走 `--item-px: var(--field-px)`(owner `patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」)。Consumers: Input（canonical）, NumberInput, DatePicker, Select, Combobox, LinkInput, PeoplePicker。
 
@@ -63,15 +63,15 @@ Field 家族 = **一個 `fieldWrapperStyles` cva + 兩條正交軸**;`InlineEdit
 
 **軸一 `mode`(4)× 軸二 `variant`(2)**(2026-07-16 round16 `display`→`view` 更名 + Model A):`variant` 只有 `default`(公開,完整 chrome)與 `naked`(`@internal`,cell-as-input:edit×naked 自畫 border-based state machine,view×naked 用 transparent border 由 host cell 供視覺邊框;只 DataTable `cell-registry.tsx` 消費)。`bare`(透明外殼)**2026-07-09 退役**;SSOT `field-types.ts` `FieldVariant`。有效組合:default × {edit/view/readonly/disabled};naked × {edit/view}。**`readonly×naked` / `disabled×naked` 死格 2026-07-16 移除**——DataTable cell「disabled」態廢除 + readonly 從不入 naked,全庫 0 消費;軸對稱靠 cva 省略天然覆蓋。readonly 2026-07-09 補鍵盤 focus ring(WCAG 2.4.7)。**型別層 public/internal union(2026-07-14 API 策展 E)**:公開 `FieldVariant = 'default'`;`naked` 收 `FieldVariantInternal`(`@internal`),cell-registry 經 `WithFieldVariantInternal` 消費。
 
-**軸一 `view` mode = Model A(2026-07-16,user GO)**:`view`(原 `display`)= 非表單的值呈現(cell / InlineEdit / 詳情)。**`view×default` = edit 幾何減 chrome**——保留 `px-[--field-px]` + `py` + `h-field`,只拔 border/bg(透明);推翻 2026-05-13 Path Ⅰ 的 `!px-0 !py-0`。理由:view 對齊「edit 值位置」(非 label 左緣)→ 水平垂直都留 → view 與 edit **同一顆控件、只差 chrome** → read↔edit 零跳。**`view×naked` = bare**(host TD 給 padding),與 view×default **不同用途、不 collapse**。世界級對照 [Atlassian inline-edit](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx)(read=edit 幾何)+ Bootstrap [`.form-control-plaintext`](https://github.com/twbs/bootstrap/blob/main/scss/forms/_form-control.scss)(留 padding)。geometry 抽 `fieldViewGeometry(size, multiline)` helper(view×default 幾何 SSOT)。
+**軸一 `view` mode(2026-07-16 Model A;左側 2026-10-21 照 user C1 甲改)**:`view`(原 `display`)= 非表單的值呈現(cell / InlineEdit / 詳情)。**`view×default` = edit 幾何減 chrome 與左內距**——保留 `py` + `h-field`、上下 1px 透明邊與右側(右內距、帶箭頭時的箭頭位置),拔 border/bg(透明),**左內距與左邊框歸 0** → 值的第一個可見元素齊控件左緣 = 標籤左緣(user 2026-10-21 在確認頁 C1 留言:視覺上全部對齊標籤是肯定且必須的〔UD-U1021-13〕;左側回到 2026-05-13 Path Ⅰ 的齊標籤,上下與右側維持 Model A)。InlineEdit 的 read↔edit 零跳由它自己外包的 `fieldViewGeometry` 補位(下方「InlineEdit ≠ mode ≠ variant」),不靠 view×default 的左內距。**`view×naked` = bare**(host TD 給 padding),與 view×default **不同用途、不 collapse**。世界級對照 Bootstrap [`.form-control-plaintext`](https://github.com/twbs/bootstrap/blob/main/scss/forms/_form-control.scss)(上下保留、左右 0)+ Salesforce [`.slds-form-element__static`](https://github.com/salesforce-ux/design-system/blob/master/ui/components/form-element/base/_index.scss)(無左右內距)。geometry 抽 `fieldViewGeometry(size, multiline)` helper(InlineEdit view 態幾何 SSOT)。
 
-**軸二 就地編輯 host(InlineEdit ＝ DataTable cell,同一份語義,2026-07-16)**:只有 **`view ↔ edit` 二態 + `editable` 判準閘**(布林/callback,預設 true),**無 disabled 態**——世界級就地編輯 detail-pane / grid 皆無 disabled cell:[MUI X isCellEditable](https://mui.com/x/react-data-grid/editing/) / [AG Grid editable](https://www.ag-grid.com/react-data-grid/cell-editing/)。`editable=false` → view 無 hover 入口、無藍框、**不灰化**。永久唯讀資料 → 用 `<Control mode="view">`,不用 disabled。
+**軸二 就地編輯 host(InlineEdit ＝ DataTable cell,同一份語義,2026-07-16)**:只有 **`view ↔ edit` 二態 + `editable` 判準閘**(布林/callback,預設 true),**無 disabled 態**——世界級就地編輯 detail-pane / grid 皆無 disabled cell:[MUI X isCellEditable](https://mui.com/x/react-data-grid/editing/) / [AG Grid editable](https://www.ag-grid.com/react-data-grid/cell-editing/)。`editable=false` → view 無 hover 入口、無藍框、**不灰化**。永久唯讀值見 InlineEdit「editable 閘」,不用 disabled。
 
-**InlineEdit ≠ mode ≠ variant**:它是 **view↔edit 二態切換**——靜止 = 純值/格式化(內容 + 隱形 Pressable),點擊/Enter 才生一個 **edit-mode Field 控件**(預設 `<Input mode="edit">`,可 `renderEdit` 換 Textarea/Select)。站在 mode 軸**之上**。**Model A:InlineEdit 不自帶 geometry cva**——**兩條 view 路徑都用 `fieldViewGeometry`(field-px)**(2026-07-17 對齊 root cause 修):(a) 值-格式化路徑用 `fieldViewGeometry` **包住** `<Control mode="view">`(委派控件 bare view 皆 0px → 包住統一 field-px + 內部格式化間距仍由控件提供);(b) 純值/標題 `<Tag>` 直接套 `fieldViewGeometry`。本體只給:**orientation-aware `-mx`(vertical 含 standalone 貼 label / horizontal 對齊 sibling;不依 fieldCtx)**+ exit 保證(pointerdown-outside)+ hover bg + focus 藍框 + 隱形 Pressable。edit 態完全繼承原 field(Jira 式)。
+**InlineEdit ≠ mode ≠ variant**:它是 **view↔edit 二態切換**——靜止 = 純值/格式化(內容 + 隱形 Pressable),點擊/Enter 才生一個 **edit-mode Field 控件**(預設 `<Input mode="edit">`,可 `renderEdit` 換 Textarea/Select)。站在 mode 軸**之上**。**Model A:InlineEdit 不自帶 geometry cva**——**兩條 view 路徑都用 `fieldViewGeometry`(field-px)**(2026-07-17 對齊 root cause 修):(a) 值-格式化路徑用 `fieldViewGeometry` **包住** `<Control mode="view">`(委派控件 bare view 皆 0px → 包住統一 field-px + 內部格式化間距仍由控件提供);(b) 純值/標題 `<Tag>` 直接套 `fieldViewGeometry`。本體只給:**orientation-aware `-mx`(vertical 含 standalone 貼 label / horizontal 對齊 sibling;不依 fieldCtx)**+ exit 保證(pointerdown-outside)+ hover bg + focus 藍框 + 隱形 Pressable。edit 態完全繼承原 field(進入編輯就是那顆原本的欄位控件,不另做一套編輯外觀)。
 
 **`naked` vs `InlineEdit`(不同層級,非冗餘)**:`naked` = 視覺外殼變體(chrome 層),靜止態**仍是控件**(裸 input),對應 in-cell 即時編輯;`InlineEdit` = 互動組合(behavior 層),靜止態**不是控件**(純值),對應 click-to-edit。各自獨立。
 
-**InlineEdit 多行 / padding / 零位移契約(Model A)**:read↔edit 零跳 = view 與 edit **同一顆控件、只差 chrome**。**多行(`multiline`)**:edit 自動用 `<Textarea mode="edit">`,view 用 `fieldViewGeometry(size, true)` = `items-start py-2`(**= Textarea edit `py-2`**)。**多 tag / avatar / prefix 換行的 wrap py 由委派控件 view mode 提供**(= 它 edit 的 py)—— 故 view×default **不可** collapse 成 `!py-0`。水平:InlineEdit `-mx-[--field-px]` 拉整塊到欄左緣、view(`fieldViewGeometry` 統一 `px-[--field-px]`,含委派控件 bare view 被包住)被 -mx 抵消 → 值/tag 落 label x=0。edit 態繼承原 field(不統一 px)→ 純文字零跳、tag ~6px 微移(Jira 式)。pixel 鎖 `scripts/probe-inline-edit-align.mjs`。
+**InlineEdit 多行 / padding / 零位移契約(Model A)**:read↔edit 零跳 = view 與 edit **同一顆控件、只差 chrome**。**多行(`multiline`)**:edit 自動用 `<Textarea mode="edit">`,view 用 `fieldViewGeometry(size, true)` = `items-start py-2`(**= Textarea edit `py-2`**)。**多 tag / avatar / prefix 換行的 wrap py 由委派控件 view mode 提供**(= 它 edit 的 py)—— 故 view×default **不可** collapse 成 `!py-0`。水平:InlineEdit `-mx-[--field-px]` 拉整塊到欄左緣、view(`fieldViewGeometry` 統一 `px-[--field-px]`,含委派控件 bare view 被包住)被 -mx 抵消 → 值/tag 落 label x=0。edit 態繼承原 field(不統一 px)→ 純文字零跳、tag ~6px 微移(只來自 edit chrome 出現,接受)。pixel 鎖 `scripts/probe-inline-edit-align.mjs`。
 
 ---
 
@@ -87,7 +87,7 @@ Field 家族 = **一個 `fieldWrapperStyles` cva + 兩條正交軸**;`InlineEdit
 
 三種模式共用同一個 wrapper 結構（`fieldWrapperStyles`），只有底色、邊框、文字色不同。
 
-**Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」(世界級 0/4 採原樣鎖互動:Salesforce = ✓ 無框靜態 glyph / SAP = 靜態文字 / Atlassian = readView / Ant Pro = 文字)。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 精簡版「★ 4.7 (12,843)」(一顆實心星 + 數值 + 選填評論數,`role="img"`;不畫 max 顆星、不包灰框 —— 2026-09-26 user 拍板「唯讀直接一律給精簡版」,規則與世界級對照見 `../Rating/rating.spec.md`「整顆與精簡版」規則 2;2026-09-27 更正,本句先前寫「星星本身」與該 spec 相反);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
+**Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 精簡版「★ 4.7 (12,843)」(一顆實心星 + 數值 + 選填評論數,`role="img"`;不畫 max 顆星、不包灰框 —— 2026-09-26 user 拍板「唯讀直接一律給精簡版」,規則與世界級對照見 `../Rating/rating.spec.md`「整顆與精簡版」規則 2;2026-09-27 更正,本句先前寫「星星本身」與該 spec 相反);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
 
 ### Loading state(這個值在讀取 / 驗證 / 儲存)
 
@@ -99,14 +99,14 @@ Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editabl
 
 | DS | Loading input 做法 | 流派 |
 |----|-------------------|------|
-| Ant Input.Search | **input 仍 editable**,suffix spinner;submit 另鎖 | editable |
+| Ant Input.Search | **input 仍 editable**,搜尋鈕轉圈;Enter 送出另鎖([Search.tsx#L167-L172](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L167-L172)、[#L229](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L229)) | editable |
 | Material TextField | readonly + suffix adornment loader | readonly |
 | Polaris TextField | readonly + helpText 提示 | readonly |
 | Carbon TextInput | readonly + inline Loading | readonly |
 | Atlassian TextField | disabled | disabled(少數派) |
 | Apple HIG UITextField | visual overlay only,不阻礙輸入 | editable |
 
-**本 DS 採 editable 派**(Ant / Apple HIG):
+**本 DS 採 editable 派**(同 Ant Input.Search,出處見上表)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L167-L172)):
 - **UX 理由**:debounce 搜尋場景,user 邊打邊看建議,凍結一格會卡節奏;async validation 若第一次失敗,user 該能立即改,不是等 spinner 完才能動
 - **對照 readonly 派**:readonly 派適合「提交後驗證」的場景(e.g. 表單 submit → 驗證),本 DS 的 `loading` prop 用在 inline validation / 值寫回中,editable 更 fit
 
@@ -175,15 +175,15 @@ Field wrapper 透過 context 注入的 key 是 `invalid`(**非 `error`**;field.t
 | variant | `useResolvedFieldVariant(prop)` | prop > fieldCtx.variant > `'default'` |
 | error/invalid | `useResolvedFieldInvalid(prop)` | prop OR fieldCtx.invalid |
 
-**precedence 關鍵**：顯式 prop 永遠最優先（故 DataTable cell 顯式傳 mode/size → 完全不受 context 影響）；其次「有效 disabled」（prop 或 `<Field disabled>`）強制 `'disabled'` 完整 chrome（對齊 MUI FormControl「disabled → label/input displayed in a disabled state」）。`<Field disabled>` 只設 `ctx.disabled=true`、`ctx.mode` 仍是 `'edit'`，故控件**必須讀 disabled 而非只讀 mode**，否則 `<Field disabled>` 失效（2026-06-08 PeoplePicker/Switch/Rating/Slider/Avatar 之 cascade bug 根因）。
+**precedence 關鍵**：顯式 prop 永遠最優先（故 DataTable cell 顯式傳 mode/size → 完全不受 context 影響）；其次「有效 disabled」（prop 或 `<Field disabled>`）強制 `'disabled'` 完整 chrome（對齊 MUI FormControl:[FormControl.js#L293](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/FormControl/FormControl.js#L293)「If `true`, the label, input and helper text should be displayed in a disabled state.」）。`<Field disabled>` 只設 `ctx.disabled=true`、`ctx.mode` 仍是 `'edit'`，故控件**必須讀 disabled 而非只讀 mode**，否則 `<Field disabled>` 失效（2026-06-08 PeoplePicker/Switch/Rating/Slider/Avatar 之 cascade bug 根因）。
 
 ### 哪些元件吃 `<Field disabled>` cascade（一致判斷標準）
 
-判準 = **「這個元件是不是承載／編輯一個欄位值的互動控件？」**（對齊 MUI FormControl 對 form control 的 cascade、Ant `Form disabled` 排除非表單控件如 Segmented/Tabs）：
+判準 = **「這個元件是不是承載／編輯一個欄位值的互動控件？」**（對齊 MUI FormControl 對 form control 的 cascade([FormControl.js#L293](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/FormControl/FormControl.js#L293))、Ant `Form disabled` 排除非表單控件如 Segmented/Tabs([form/index.en-US.md#L73](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/form/index.en-US.md#L73);segmented / tabs 的 index.tsx 不讀 `DisabledContext`)）：
 
 - **承載欄位值的互動控件** → 完整 cascade（disabled + 有 view 態者含 mode）：Input / NumberInput / Textarea / LinkInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker / Switch / Checkbox / RadioGroup / Slider / SegmentedControl / Rating。
 - **欄位內的展示元素**（Avatar）→ 跟隨 `<Field disabled>` / `<Field mode="disabled">` **變淡**（視覺一致），用 fieldCtx 存在性 scope（DataTable cell 無 fieldCtx → 不影響）。
-- **獨立 action 元件**（Button）→ **不**自動 cascade；由 consumer 自控 `disabled`（對齊 MUI Button 無 FormControl 整合 + Ant 排除 custom／非表單控件）。
+- **獨立 action 元件**（Button）→ **不**自動 cascade；由 consumer 自控 `disabled`（對齊 MUI Button 無 FormControl 整合([Button.js](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Button/Button.js) 全檔不讀 FormControl)+ Ant 排除 custom／非表單控件([form/index.en-US.md#L73](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/form/index.en-US.md#L73)「only available for antd components」)）。
 
 注：有 view 渲染分支者（Input 家族 / Select / Combobox / DatePicker / TimePicker / PeoplePicker / **Checkbox** / **Switch**，後二者 view = ✓/—）完整響應 `<Field mode="view"/"readonly">` + `<Field disabled>`；**Slider / Rating 無 view 態但有 readonly cascade**（2026-06-12 補:Slider readonly = 鎖互動保留視覺;Rating readonly = 唯讀精簡版「★ 數值」role=img(2026-09-26 起)）+ 響應 `<Field disabled>`;**SegmentedControl 無 view/readonly 態**（僅 enabled/disabled）→ 只響應 `<Field disabled>`。**group 控件（Checkbox/RadioGroup/Switch/SegmentedControl）雖非 fieldWrapperStyles 消費者，仍一律經 resolver hook 解析**（gate Check 1b/2 強制）。
 
@@ -216,6 +216,19 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 
 - 鋪線範圍:`fieldWrapperStyles` cva 軸(SSOT)+ Select / Combobox / DatePicker / PeoplePicker 轉發 `width?: FieldWidth`(型別 `Field/field-types.ts`)
 - **何時不用**:form 直欄(fill 對齊)、DataTable cell(naked 已 `!h-full` 滿格,cell 寬由 column 管)
+- **欄位內搜尋讓位不改欄寬**(2026-10-07,待辦總帳 K4):可搜尋欄位打開時,值裡用文字畫的部分(只選「不限」、PeoplePicker 多人只選 1 位的名字)讓位給欄位內搜尋框,
+  它原本的寬留在搜尋框那一格 —— hug 欄位打開前後、打的字沒超過那段值之前欄寬不變(規則 `../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」、
+  `../PeoplePicker/people-picker.spec.md` §C;probe `field.stories.tsx`「欄位內搜尋讓位 × 欄寬驗證」(probe 元件在 `_field-contract-probes.tsx`),閘 `scripts/searchable-field-keys-invariant.mjs`)。
+  **單選同一條**(2026-10-13,待辦 K7):Select(含 PeoplePicker 單人)依內容寬時,打開後搜尋框那一格 = 兩把看不見的量尺取大 ——
+  關著時那一段值的樣子(值的圖示 / consumer renderer,例如頭像 + 名字 / Tag / 提示字)與打的字 + 插入點;輸入框填滿那一格、自己不帶寬。
+  打開前後欄寬不變,打的字比值寬才跟著長(修前打開就撐成原生輸入框的固有寬,PeoplePicker 單人 151 → 204px;`../Select/select.tsx` `CustomSelectTriggerContent`)。
+  **多選文字標籤不再縮成只剩「+N」**(2026-10-13,待辦 K6):標籤可見數改量「全部攤開」那一刻的寬(Tag 全顯示、「+N」轉成看不見的量尺),
+  不受上一次決定影響,也與 Tag 寬同一種小數單位 —— 三顆放得下就三顆都在,容器(`max-w-full`)真的放不下才收進「+N」;
+  **父層再變寬就放回去**:欄位外框的父層也被觀察(依內容寬時只有它會在空間回來時變),與 PeoplePicker 頭像串看的是同一層
+  (修前用欄位自己的 hug 寬量、整數 `clientWidth`,互為因果:「Electronics × Furniture × +1」279.8px,三顆都放應為 313.4px;
+  2026-10-13 第一版只拆了「量自己」那一半、沒看父層:窄容器 192 → 400px 停在「Electronics +2」、120 → 400px 停在「+3」,獨立驗證抓到。
+  規則 `../Combobox/combobox.spec.md`「單行溢出」,與 PeoplePicker 頭像串 2026-09-07 拆的棘輪同一類,`../PeoplePicker/people-picker.stories.tsx`「寬度貼合內容 × 多人」;
+  閘 `scripts/tag-overflow-room-invariant.mjs`(含父層 192 → 400 → 120 → 400px 那一段),probe 同上)
 - Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`(https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/select.tsx)/ Radix Select Trigger intrinsic sizing(https://www.radix-ui.com/primitives/docs/components/select)
 
 ---
@@ -228,7 +241,7 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 
 **readonly(可聚焦但不可編輯的 input / textarea / 唯讀三兄弟 / 唯讀觸發器)**:**與可編輯態同一種指示器 —— 欄位邊框轉主色 1px**(`focus-within:!border-primary`;宿主是控件自己時寫 `focus-visible:!border-primary`)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉成主色不會有位移,長相與可編輯欄位完全一致 —— Field 家族「一個家族一種焦點長相」(owner = `ds-canonical/references/focus-canonical.md` 規則二)。全域 2px 外描邊由同一個 compound 的 `focus-visible:outline-none` 抑制(@focus-suppress C)。native text input 的 `:focus-visible` 在滑鼠點擊時**亦 match**(見本段開頭),所以滑鼠鍵盤都會亮,勿宣稱僅鍵盤。滿足 WCAG 2.4.7。
 
-> **2026-09-10 兩次訂正**:(1) 原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。(2) 同日上午先補成全域外描邊,user 指出「為何不是模擬 field control focus 的樣式?field control focus 應該是 1px 的 border?」—— 改為現在這版。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` **完全不改焦點樣式**(它們的唯讀靜止態與可編輯態本來就一樣),Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣**與可編輯態相同**。
+> **2026-09-10 兩次訂正**:(1) 原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。(2) 同日上午先補成全域外描邊,user 指出「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？對吧？」—— 改為現在這版。理由:唯讀欄位一樣要能 Tab 聚焦(選取、複製值),它的焦點指示若跟可編輯態長得不同,使用者會以為那是另一種狀態;所以唯讀只改靜止樣式,焦點指示**與可編輯態相同**。
 
 ---
 
@@ -269,16 +282,16 @@ Field 內的具體套用：
 
 ## 下拉箭頭（Select / Combobox）與類型身份 indicator
 
-Select / Combobox 的 ChevronDown、DatePicker 的 Calendar、TimePicker 的 Clock = **類型身份 indicator**(「這是什麼欄位」)。**edit 顯示(可互動)/ readonly 不顯示 / disabled 顯示(灰示)**(2026-06-26 user 拍板;readonly = 純值顯示、不可開下拉 → 箭頭會誤導故不顯;disabled 保留對齊原生 `<select disabled>` 灰示箭頭 + MUI #19833 / Carbon read-only「keep icon signifiers de-emphasized」/ Accordion M24 precedent):
+Select / Combobox 的 ChevronDown、DatePicker 的 Calendar、TimePicker 的 Clock = **類型身份 indicator**(「這是什麼欄位」)。**edit 顯示(可互動)/ readonly 不顯示 / disabled 顯示(灰示)**(2026-06-26 user 拍板;readonly = 純值顯示、不可開下拉 → 箭頭會誤導故不顯;disabled 保留對齊原生 `<select disabled>` 灰示箭頭 + MUI [#19833](https://github.com/mui/material-ui/issues/19833)「When the Select is disabled the dropdown arrow is not greyed out」(回報後修成灰示)/ Carbon read-only 指引逐字「de-emphasize or remove icon signifiers」([read-only states](https://www.carbondesignsystem.com/building-blocks/core/patterns/read-only-states);講的是唯讀:本 DS 唯讀取 remove、disabled 取 de-emphasize,AI 推導)/ Accordion M24 precedent):
 
 - edit:`fg-muted`;**readonly:不顯示 indicator**;**disabled:`fg-disabled`**(對齊上方 Icon 色彩原則)
 - 不可互動(`pointer-events-none`)——下拉由 select 元素本身觸發
-- **Cell(naked variant)**:**view 態零恆顯 indicator(2026-07-08 user 拍板 A 案,推翻 2026-05-10「indicator = editable affordance」)** —— editable affordance 統一 = hover outline(field.spec.md L4)。Benchmark 6/6 product-table 域(Ant editable-cells / MUI X singleSelect / AG Grid / Atlaskit inline-edit(v2.0.0 移除 hover-pencil 後 9 版未回歸)/ Notion / Airtable)view 態皆純值零 icon;恆顯派僅 Google Sheets Chip/Arrow(spreadsheet 域可選檔位)。`showDisplayEndIcon` prop 保留為 opt-in 逃生門(spreadsheet-flavored 消費端);cell-registry 6 個 picker 站不再傳、url 站傳 `isEditable === true`(LinkInput 例外 = wrapper-only 無 icon,取 display↔edit 像素對齊)。edit 態 indicator 照舊(本節上方 form 規則);opt-in 時 (opt-in 時保留)(同表單邏輯)
+- **Cell(naked variant)**:**view 態零恆顯 indicator(2026-07-08 user 拍板〔UD-J24〕A 案,推翻 2026-05-10 的 indicator = editable affordance)** —— editable affordance 統一 = hover outline(field.spec.md L4)。Benchmark product-table 域(Ant editable-cells:平時透明框、滑過才出框,[table/demo/edit-cell.tsx#L11-L23](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/demo/edit-cell.tsx#L11-L23);MUI X singleSelect / AG Grid / Atlaskit inline-edit(v2.0.0 移除 hover-pencil 後 9 版未回歸)出處見 field.spec.md L6 列)view 態皆純值零 icon;恆顯派僅 Google Sheets Chip/Arrow(spreadsheet 域可選檔位:「Display Style」可選 Chip / Arrow / Plain text,[Google 說明](https://support.google.com/docs/answer/186103?hl=en))。`showDisplayEndIcon` prop 保留為 opt-in 逃生門(spreadsheet-flavored 消費端);cell-registry 6 個 picker 站不再傳、url 站傳 `isEditable === true`(LinkInput 例外 = wrapper 無型別 icon,取 display↔edit 像素對齊;可編輯時另由 `viewEditAction` 畫滑過才出現的「編輯連結」Button text xs —— 那是 action 不是 indicator,見 field.spec.md「naked」核心句的唯一例外)。edit 態 indicator 照舊(本節上方 form 規則);opt-in 時 (opt-in 時保留)(同表單邏輯)
 - locked(readonly/disabled)wrapper 並設 `aria-disabled`(disabled 時)——styled-disabled 非原生元素需明告 AT inactive,亦使 axe 正確套用 WCAG 1.4.3 inactive-UI 豁免
 - clearable 有值時：clear X 在左，ChevronDown 在右
 - **右側元素(clear / chevron / calendar / clock)右緣水平內距 = `--field-px`(12px,SSOT `tokens/uiSize/uiSize.css`),edit / readonly / disabled / view 全 mode 一致**(跟 Input 一致)。**tag 模式特例**:左側內距用四邊等距公式 `(field-height − 2px − tag-height)/2`(sm 3 / md 3 / lg 5;SSOT `field-wrapper.tsx` `fieldTagInsetX`,2026-09-15 修正:舊註記「≈8px」與舊 calc 都沒扣邊框)貼齊 tags、會吃掉右緣,故 tag 容器(含 readonly/disabled)**必 re-assert `paddingRight: var(--field-px)`** 對齊 edit;漏接 = chevron 右緣偏移 bug(2026-06-27 修 Select:354 / Combobox ReadonlyMultiSelect)
 - **多行(Combobox tag wrap)垂直對齊**:tags 換行、容器動態變高時,右側 chevron **鎖第一行 tag 中線**(非整體置中)——容器 `items-start` + `ItemSuffix self-start` + `style={{ height: tagHeight }}`(sm 20 / md+lg 24)。對齊 item-anatomy「suffix 永遠 `h-[1lh]` 對齊第一行」canonical;edit / readonly / disabled 全 mode 一致(2026-06-27 補 readonly/disabled wrap 漏接)
-- **Tag 自己的 y(2026-09-15 補,像素實測)**:(a) 單行:wrapper `items-center` 把 Tag 置中在內高裡,上隙 = 下隙 = sm 3 / md 3 / lg 5;**Combobox 每個 tag 外的量測 wrapper 必須是 flex 容器**——區塊盒的高度由欄位字型行高(21px)決定,sm 的 Tag(20px)沿基線沉底(上 3.9 / 下 2.1),md/lg 因 Tag 24px ≥ 21 才看不出來(Select 無此 wrapper,一直是正的)。(b) wrap:上下內距 = 同一個公式 `fieldTagInsetY`(3/3/5),**不是**寫死的 `py-1`;第一行 Tag 的 y 恆等於單行的 y,切換 wrap 不位移(舊 `py-1` 差 1px);第二行起以 gap 往下排。這也是 `field.spec.md:147`「control 第一行內容的中線都錨在 field-height/2」在 tag wrap 上的落地;wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px,1 列時 = 尺寸 token(舊 `py-1` 讓 sm/md 多 2px、lg 少 2px)。view(cell 內 showDisplayEndIcon)與 edit/readonly/disabled 同一套。閘:`scripts/tag-field-vertical-inset.mjs` I1(單行對稱)/ I2(wrap 第一行 = 單行)/ I3(Tag 內文字對稱)/ I4(四邊等距),含對照組。
+- **Tag 自己的 y(2026-09-15 補,像素實測)**:(a) 單行:wrapper `items-center` 把 Tag 置中在內高裡,上隙 = 下隙 = sm 3 / md 3 / lg 5;**Combobox 每個 tag 外的量測 wrapper 必須是 flex 容器**——區塊盒的高度由欄位字型行高(21px)決定,sm 的 Tag(20px)沿基線沉底(上 3.9 / 下 2.1),md/lg 因 Tag 24px ≥ 21 才看不出來(Select 無此 wrapper,一直是正的)。(b) wrap:上下內距 = 同一個公式 `fieldTagInsetY`(3/3/5),**不是**寫死的 `py-1`;第一行 Tag 的 y 恆等於單行的 y,切換 wrap 不位移(舊 `py-1` 差 1px);第二行起以 gap 往下排。這也是 `field.spec.md`「Control area:Inline vs Block」核心原則(「control 第一行內容的中線」都錨在 `field-height/2`)在 tag wrap 上的落地;wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px,1 列時 = 尺寸 token(舊 `py-1` 讓 sm/md 多 2px、lg 少 2px)。view(cell 內 showDisplayEndIcon)與 edit/readonly/disabled 同一套。閘:`scripts/tag-field-vertical-inset.mjs` I1(單行對稱)/ I2(wrap 第一行 = 單行)/ I3(Tag 內文字對稱)/ I4(四邊等距),含對照組。
 
 ## Select 顯示模式
 
@@ -293,7 +306,7 @@ Select 支援兩種顯示模式（`display` prop）：
 
 `selectedItemRenderer` 設定時優先於 plain / tag 預設呈現,且 **4 mode(edit/view/readonly/disabled)共享**(共享 contract (a),見下方)— view 態渲染 renderer 輸出(值內容),無 chrome 無 chevron。
 
-`tag` 模式的 edit 用 hidden select overlay(跟 Combobox 同模式),Tag 用 `pointer-events-none`,點擊穿透到 select。右側元素右緣 = `--field-px`(見上方「右側元素」canonical;tag 模式 readonly/disabled 必 re-assert)。
+`tag` 模式在觸控裝置(`NativeSelect`)的 edit 用 hidden select overlay,Tag 用 `pointer-events-none`,點擊穿透到 select(`../Select/select.spec.md`「tag 模式」;桌機由自建觸發欄位開 SelectMenu。Combobox 不分裝置只有自建浮層、沒有這層 overlay,`../Combobox/combobox.spec.md`「單一路徑（不分裝置）」)。右側元素右緣 = `--field-px`(見上方「右側元素」canonical;tag 模式 readonly/disabled 必 re-assert)。
 
 tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding，確保文字與邊框有足夠間距。
 
@@ -329,14 +342,14 @@ Icon 色彩遵循 Inline Action 統一規則:預設 `fg-muted`,hover 時 `foregr
 
 ## View — 值呈現(mode="view",Model A;2026-07-16 原 `display` 更名)
 
-每個 Field 元件以 `mode="view"` 渲染分支把 raw value 格式化為純展示輸出(取代過往 `XxxDisplay` 子元件;唯一現存 cross-component view primitive 是 PeoplePicker 的 `PersonDisplay`)。**Model A 幾何**:`view×default` = edit 幾何減 chrome(留 `px`/`py`/`h-field`,只拔 border/bg)——見上方「軸一 view mode」。
+每個 Field 元件以 `mode="view"` 渲染分支把 raw value 格式化為純展示輸出(取代過往 `XxxDisplay` 子元件;唯一現存 cross-component view primitive 是 PeoplePicker 的 `PersonDisplay`)。**幾何**:`view×default` = edit 幾何減 chrome 與左內距(留 `py`/`h-field` 與右側,左側歸 0、值齊標籤)——見上方「軸一 view mode」。
 
 View 的消費者:
 - **DataTable cell**:cell-registry 根據 `meta.type` 選對應 Field 元件並傳 `mode="view"`(variant="naked";2026-07-16 cell「disabled」態廢除,鎖定用 `editable:(row)=>false`)
-- **InlineEdit view 態**:委派 `<Control mode="view">` 取格式化 + 幾何(read=edit 同一顆控件)
+- **InlineEdit view 態**:委派 `<Control mode="view">` 取格式化,幾何由 InlineEdit 外包的 `fieldViewGeometry` 給(見上方「InlineEdit ≠ mode ≠ variant」(a))
 - **Field readonly 模式**:內部使用相同的格式化邏輯
 
-**例外 — LinkInput / PeoplePicker 預設 view 路徑不包 wrapper**(code 為準,2026-07-16 明文):LinkInput `mode="view"` 預設(`showDisplayEndIcon=false`)= 裸 span/anchor(`fieldDisplayTextClass` + truncate),**不消費** `fieldWrapperStyles` / `fieldViewGeometry` —— view 值是可點擊連結,inline 嵌入取 flush 呈現(backward compat);`showDisplayEndIcon=true` opt-in 才包 `fieldWrapperStyles(view × resolvedVariant)` 取 cell view↔edit 像素對齊。PeoplePicker 預設 view 同模式(裸 `PersonDisplay`/`MultiPersonDisplay`)。詳 `link-input.tsx` / `people-picker.tsx` docblock。
+**LinkInput / PeoplePicker 預設 view 路徑不包 wrapper**(code 為準,2026-07-16 明文;左緣跟包 wrapper 的純顯示一樣齊標籤,2026-10-21 起不再是例外):LinkInput `mode="view"` 預設(`showDisplayEndIcon=false`)= 裸 span/anchor(`fieldDisplayTextClass` + truncate),**不消費** `fieldWrapperStyles` / `fieldViewGeometry` —— view 值是可點擊連結,inline 嵌入取 flush 呈現(backward compat);`showDisplayEndIcon=true` opt-in 才包 `fieldWrapperStyles(view × resolvedVariant)` 取 cell view↔edit 像素對齊。PeoplePicker 預設 view 同模式(裸 `PersonDisplay`/`MultiPersonDisplay`)。詳 `link-input.tsx` / `people-picker.tsx` docblock。
 
 ### null / undefined 值(2026-07-08 user 拍板 — 半形 hyphen + editable × surface 分流)
 
@@ -348,15 +361,15 @@ View 的消費者:
 |---|---|---|---|
 | 不可編輯 — standalone view / readonly | mode ∈ {view, readonly} 且非可編輯 table cell | **半形 `-` + `text-foreground`** | 唯讀資料「此欄無值」明示;Ant ProTable `columnEmptyText` 預設 `'-'`(https://github.com/ant-design/pro-components/blob/master/src/table/Table.tsx)|
 | 不可編輯 — table cell(readonly cell)| `surface==='table-cell'` 且 `isEditable===false` | **半形 `-`** | 同上;非可編欄位視同唯讀資料 |
-| **可編輯** — table cell view 靜止態 | `surface==='table-cell'` 且 `isEditable===true` 且 mode='view' | **全空白 `''`** | grid 域壓倒性共識(MUI X `valueToRender?.toString()` null 短路 / AG Grid `_toString(null)`→不設 textContent / Ant core rc-table 裸值 / Notion / Airtable);表格密集時「-」海 = 視覺噪音。空 editable cell 的 affordance = hover outline(field.spec.md L4),非佔位符 |
+| **可編輯** — table cell view 靜止態 | `surface==='table-cell'` 且 `isEditable===true` 且 mode='view' | **全空白 `''`** | 可編輯格空著就是空著(MUI X 同:值為 null 時 `valueToRender?.toString()` 得 undefined、格子不放字,[GridCell.tsx#L322](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-data-grid/src/components/cell/GridCell.tsx#L322)、[#L644-L647](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-data-grid/src/components/cell/GridCell.tsx#L644-L647));表格密集時「-」海 = 視覺噪音。空 editable cell 的 affordance = hover outline(field.spec.md L4),非佔位符 |
 | **可編輯** — form / panel edit 輸入框 | mode='edit' 且非 table cell | **native placeholder** | 標準表單輸入提示;「hover 才顯 placeholder」十路查證零家採用,**禁** |
 | **可編輯** — table cell edit / focus | `surface==='table-cell'` 且 mode='edit' | **全空白**(DataTable cell 不接 placeholder)| 對齊 Notion / Airtable cell 編輯裸輸入 |
 
 收斂式:`surface==='table-cell' && isEditable ? '' : '-'`(可編輯 form edit 走 native placeholder,不經此 hook)。`isEditable` 由 DataTable cell registry 經 `FieldSurfaceEditableProvider` boolean context 注入(standalone / form 無此 context → 預設 false → `-`)。
 
-**readonly native input 兩派統一**(2026-07-08):Input / Textarea 的 readonly **空值** 改走 view-span 顯 `-`(原走 native `<input readOnly>` 吐 native placeholder / 空白);readonly **有值** 仍走 native input 保留選取/複製語意。NumberInput 早已 `resolvedMode !== 'edit'` 統一走 span,無需改。「有值」判定(2026-07-14 補註,dual-model consensus;不改空值顯 `-` 規則本身):uncontrolled(只傳 `defaultValue`)同樣算有值 —— 機械層 = `useControllable` 內部 resolved value(defaultValue 初始 + 打字寫回,native element 由 `value={resolved}` 內部驅動)+ form.reset() bridge(HTML reset 不發 input event → uncontrolled 掛 form `reset` listener 把 resolved 歸位 defaultValue),切 view / readonly(native element unmount/remount)後判定與 DOM 真值一致、不顯 stale 值;controlled 純 passthrough 行為不變。
+**readonly native input 兩派統一**(2026-07-08):Input / Textarea 的 readonly **空值** 改走 view-span 顯 `-`(原走 native `<input readOnly>` 吐 native placeholder / 空白);readonly **有值** 仍走 native input 保留選取/複製語意。NumberInput 早已 `resolvedMode !== 'edit'` 統一走 span,無需改(readonly 的 span 外框照「Focus 行為」仍是 tab stop:`field-wrapper.tsx#readonlyTabStopProps`,與 Select 類唯讀觸發器同一支)。「有值」判定(2026-07-14 補註,dual-model consensus;不改空值顯 `-` 規則本身):uncontrolled(只傳 `defaultValue`)同樣算有值 —— 機械層 = `useControllable` 內部 resolved value(defaultValue 初始 + 打字寫回,native element 由 `value={resolved}` 內部驅動)+ form.reset() bridge(HTML reset 不發 input event → uncontrolled 掛 form `reset` listener 把 resolved 歸位 defaultValue),切 view / readonly(native element unmount/remount)後判定與 DOM 真值一致、不顯 stale 值;controlled 純 passthrough 行為不變。
 
-**空值符號顏色**(2026-07-09 user 拍板 verbatim「「-」代表的是不可編輯只拿來供檢視的值所以應該跟readonly 的value同樣顏色吧」):不可編輯「-」= `text-foreground`(同 readonly value 色,非 placeholder 提示的裝飾語意);disabled → `text-fg-disabled`(M24)。SSOT helper = `field-context.ts` `fieldEmptyColorClass(resolvedMode)`,全 Field family view/readonly/disabled 空值 span 消費(禁散寫 `text-fg-muted`)。
+**空值符號顏色**(2026-07-09 user 拍板〔UD-J02〕verbatim「「-」代表的是不可編輯只拿來供檢視的值所以應該跟readonly 的value同樣顏色吧」):不可編輯「-」= `text-foreground`(同 readonly value 色,非 placeholder 提示的裝飾語意);disabled → `text-fg-disabled`(M24)。SSOT helper = `field-context.ts` `fieldEmptyColorClass(resolvedMode)`,全 Field family view/readonly/disabled 空值 span 消費(禁散寫 `text-fg-muted`)。
 
 **例外表**(唯一去處,禁散落各元件 spec):
 - **boolean** → 顯示 unchecked 狀態(非空白非 dash)
@@ -390,15 +403,15 @@ col.accessor('status', {
 **(a) Selected value renderer**:rich display(avatar+name/icon+label)元件**必**提供 consumer renderer slot,**view/readonly/disabled/edit** 4 mode 共享同一 renderer(禁 edit-only)。`Select.selectedItemRenderer`(4 mode 已全接 — 2026-07-08 A 案回歸修正,view/readonly/disabled 的 ReadonlyDisplay 消費 renderer 輸出;renderer 輸出屬「值內容」,view 態照常渲染,與 affordance 分層見 `field.spec.md` L6)/ `Combobox.tagRenderer`(edit 已接;view path 走 ComboboxTagStack 預設 Tag,consumer tagRenderer unify 仍 deferred,見 `combobox.tsx` 檔頭 `@renderer-symmetry-allow`;現行唯一 tagRenderer consumer = PeoplePicker,其 view 走 MultiPersonDisplay 不經此 path,無實際丟失)/ PeoplePicker 走 `PersonDisplay`+`MultiPersonDisplay`+`Combobox.tagRenderer`。同一 value identity 不可因 mode 改變而丟失 renderer 資訊。
 
 **(b) Placeholder vocabulary**(3 props 對 3 UI state,**不可混用**):
-- `placeholder` — trigger empty(沒選值,例「請選擇人員」)— Ant/Polaris/Carbon canonical
-- `searchPlaceholder` — search input hint(例「搜尋人員…」)— Ant `searchPlaceholder`
-- `emptyText`/`noResultsText` — filtered menu 無結果(例「沒有人員」)— Ant `notFoundContent` / Material X `localeText.noResultsOverlayLabel`
+- `placeholder` — trigger empty(沒選值,例「請選擇人員」)— 空值時告訴使用者「這格要選什麼」,選了就消失
+- `searchPlaceholder` — search input hint(例「搜尋人員…」)— 下拉裡的搜尋框還沒打字時的提示
+- `emptyText`/`noResultsText` — filtered menu 無結果(例「沒有人員」)— 篩完一筆都不剩時清單位置顯示的文案
 
 **禁**:wrapper 把 `emptyText`(search-empty)silent forward 成 `emptyPlaceholder`(trigger-empty);**Combobox `emptyPlaceholder` deprecated**,保留 1 cycle fallback,future `placeholder` 唯一 trigger source。Hook `check_field_controls_contracts.sh` (contract b) 機械強制。
 
 **(c) Cell surface metrics**:Field family 在 cell 內**禁** hardcode padding(`tagAreaPaddingLeftPx={isEmpty ? undefined : 8}` 反 pattern)。改 **`FieldSurface` context**(`'form' | 'toolbar' | 'table-cell'`):`useFieldSurface()` 取值,`<FieldSurfaceProvider surface="table-cell">` 自動套於 `cell-registry.resolveCellComponent`。Consumer 用 `surface === 'table-cell'` 顯式 query(取代 `variant === 'naked'` heuristic)。**risk mitigation**:`avatar.left = cell.left + computed(--table-cell-px)`,禁再加 magic 8px(double-count)。**Token scope**:`--table-cell-px/py` 是 DataTable-scoped metric(CSS 定義在 `data-table.css`,Field naked variant 是 DataTable cell substrate sub-component 故 cross-path reference 不算真 cross-component)，因此**不**升 `tokens/layoutSpace/` canonical。Hook `check_field_controls_contracts.sh` (contract c) 機械強制。
 
-**(d) View×default = edit 幾何減 chrome(Model A)SSOT**(2026-07-16 round16 user GO;推翻 2026-05-13 Path Ⅰ「zero chrome + `!px-0 !py-0`」拍板):default `mode='view'` = **edit 幾何減 chrome** —— 保留 size 軸 `px-[var(--field-px)]` + `h-field-*`(多行留 py),只拔 border/bg(透明)→ view 與 edit 同一顆控件、只差 chrome → read↔edit 零跳(與上方「軸一 view mode」段同一 canonical)。真要包 chrome 走 `readonly` 或 `showDisplayEndIcon=true` opt-in。**Impl**:`field-wrapper.tsx` view×default compound(`bg-transparent border-transparent`,幾何由 base + size 軸天然保留)+ `fieldViewGeometry(size, multiline)` helper(view×default 幾何 SSOT,供 InlineEdit 純值/標題路徑消費)。世界級對照:[Atlassian inline-edit read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx)(read=edit 幾何)+ Bootstrap [`.form-control-plaintext`](https://github.com/twbs/bootstrap/blob/main/scss/forms/_form-control.scss)(留 padding)。機械鎖:`scripts/inline-edit-view-geometry-invariant.mjs`(multiline py-2 = Textarea edit py-2 契約;注:hook `check_field_controls_contracts.sh` 的 contract (d) 為 field-px token 檢查,非本條)。
+**(d) View×default = edit 幾何減 chrome 與左內距 SSOT**(2026-07-16 Model A;左側 2026-10-21 照 user C1 甲回到 2026-05-13 Path Ⅰ 的齊標籤):default `mode='view'` = 保留 size 軸 `h-field-*`、上下內距(多行留 py)、上下 1px 透明邊與右側,拔 border/bg(透明),**左內距與左邊框歸 0** → 值齊標籤(與上方「軸一 view mode」段同一 canonical);InlineEdit read↔edit 零跳由 `fieldViewGeometry` 外包補位。真要包 chrome 走 `readonly` 或 `showDisplayEndIcon=true` opt-in。**Impl**:`field-wrapper.tsx` view×default compound(`bg-transparent border-y border-r border-transparent !pl-0`,高度與右側由 base + size 軸保留)+ `fieldViewGeometry(size, multiline)` helper(InlineEdit view 態幾何 SSOT)。世界級對照:Bootstrap [`.form-control-plaintext`](https://github.com/twbs/bootstrap/blob/main/scss/forms/_form-control.scss)(上下保留、左右 0)+ Salesforce [`.slds-form-element__static`](https://github.com/salesforce-ux/design-system/blob/master/ui/components/form-element/base/_index.scss)(無左右內距)。機械鎖:`scripts/inline-edit-view-geometry-invariant.mjs`(multiline py-2 = Textarea edit py-2 契約;注:hook `check_field_controls_contracts.sh` 的 contract (d) 為 field-px token 檢查,非本條)+ `scripts/probe-inline-edit-align.mjs`(純顯示 × 兩種標籤位置:值左緣 = 標籤左緣)。
 
 **(e) View typography canonical**(2026-05-14 user I2 + codex M31 verdict):Field family view path **必** consume `fieldWrapperStyles` size variants typography token — `sm/md → text-body`(14px line-height 1.5)/ `lg → text-body-lg`(16px)。**禁**:LinkInput / Select / Combobox 非 D-path 的 bare-span 直接 render 無 font-size class(瀏覽器 default 字體);**必**包 `text-body` (sm/md) / `text-body-lg` (lg) class。這維持跨 Field family view 視覺尺寸統一(歷史 anchor:user 抓 LinkInput view 字體跟其他 Field 不一致 = SSOT 違反 漏接 typography token)。**Impl**:LinkInput / Select / Combobox / DatePicker / TimePicker non-D-path bare-span 加 size-aware text class(helper = `fieldDisplayTextClass`)。
 
@@ -448,6 +461,7 @@ col.accessor('status', {
 - `select-menu.spec.md`
 - `select.spec.md`
 - `slider.spec.md`
+- `steps.spec.md`
 - `switch.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`

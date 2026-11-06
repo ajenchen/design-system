@@ -1,9 +1,20 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import { useState } from 'react'
+import { useEffect, useState, type ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Steps, StepItem, StepLabel, StepDescription } from './steps'
+import { Steps, StepItem, StepLabel, StepDescription, StepContent } from './steps'
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
+import { StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonGroup } from '@/design-system/components/Button/button-group'
+import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { Textarea } from '@/design-system/components/Textarea/textarea'
+
+// DKIM 公開金鑰的 TXT 記錄值(Google Workspace / Postmark 這類「自訂網域寄件」設定精靈會原樣給使用者複製;2048-bit RSA 的 p= 約 400 字元)。
+// p= 是真的 2048-bit RSA 公鑰(openssl 產生、私鑰當場丟棄),2026-10-21 前是手打的字母序列(…fGhJ5kMnO7PqRsTuVwXyZ0a1B2c3D4…),一眼看得出是假的(r1b OTH-12)
+const DKIM_TXT_RECORD =
+  'v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzLo2z5wSGqHlkrDJeSZsz5HIx2FAGc3840Pg16k1Mkv2fgeX5kY9m9FuR1QKvhnuFUgJTbqL4f3VLPStnLgZSIWdtiPViSq4/f4Rb0PS+ZDClgoGLsiKhUHomcz6ucUA0LZ2QG0Q0q1ny09247NutuBaJFf+sqxH4YGNtvo0XQfJF9FqZ3ZPNXWQ9ZZyZWZHo7y+d8dVoCpza0mnRjhEg5A0t4USn5gEvyj4X8DQOotPHNrxY8EabDme+t4K9rymLLm74v8U5YAm06QKRVRmhLkGLKJtHnbg4DKM0Z7bmWR/rhERHVrYJS2ZvgjtUVrvT0abJGZlA+SWTBczDGS5uQIDAQAB'
 
 const meta: Meta = {
   title: 'Design System/Components/Steps/設計規格',
@@ -20,7 +31,7 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>Steps 是有序步驟序列——Indicator(圓形)+ Label + 可選 Description + Connector(連接線)。每個 StepItem 有四種狀態:completed / current / upcoming / error(reachable 為 linear 模式內部推導的解鎖態,不在介紹層暴露)。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
-          <Steps value="shipping" completedValues={['cart', 'payment']}>
+          <Steps aria-label="結帳進度" readOnly value="shipping" completedValues={['cart', 'payment']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款資訊</StepLabel></StepItem>
             <StepItem value="shipping"><StepLabel>配送方式</StepLabel><StepDescription>當前步驟</StepDescription></StepItem>
@@ -59,6 +70,7 @@ export const Overview: Story = {
                 ['  size', "'sm' | 'md' | 'lg'", "'md'", 'indicator / 字體 tier'],
                 ['  orientation', "'horizontal' | 'vertical'", "'vertical'", '步驟排列方向'],
                 ['  linear', 'boolean', 'true', 'true=僅能順序前進 / false=任意可達步驟可點'],
+                ['  readOnly', 'boolean', 'false', '純追蹤:每一步都不可點(只顯示進度)'],
                 ['  onValueChange', '(value: string) => void', '—', '點擊可達步驟時觸發,回傳該步驟 value'],
                 ['StepItem', '', '', ''],
                 ['  value', 'string', '必填', '唯一識別碼'],
@@ -89,7 +101,7 @@ export const Inspector: Story = {
     size: 'md',
     orientation: 'vertical',
     linear: true,
-    expansion: 'follow-active',
+    readOnly: false,
   },
   argTypes: {
     value: {
@@ -111,11 +123,21 @@ export const Inspector: Story = {
       control: 'boolean',
       description: 'true=僅能順序前進 / false=任意跳步',
     },
-    expansion: { control: 'radio', options: ['follow-active', 'multiple'] },
+    readOnly: {
+      control: 'boolean',
+      description: 'true=純追蹤,每一步都不可點',
+    },
   },
-  render: (args) => (
+  render: (args) => <InspectorSteps {...args} />,
+}
+
+/** 元件檢閱器的步驟條:value 的初值來自右側 Controls;點可點的步驟照常換到那一步(不是只給 value、點了不動的按鈕;F7)。 */
+function InspectorSteps({ value: valueArg, ...args }: ComponentProps<typeof Steps>) {
+  const [value, setValue] = useState(valueArg)
+  useEffect(() => setValue(valueArg), [valueArg])
+  return (
     <div className="border border-border rounded-lg p-4 max-w-2xl">
-      <Steps {...args}>
+      <Steps aria-label="結帳進度" {...args} value={value} onValueChange={setValue}>
         <StepItem value="cart"><StepLabel>購物車</StepLabel><StepDescription>3 件商品,合計 NT$ 2,490</StepDescription></StepItem>
         <StepItem value="payment"><StepLabel>付款資訊</StepLabel><StepDescription>信用卡 / ATM / LINE Pay</StepDescription></StepItem>
         <StepItem value="shipping"><StepLabel>配送方式</StepLabel><StepDescription>宅配 2-3 個工作天</StepDescription></StepItem>
@@ -123,7 +145,7 @@ export const Inspector: Story = {
         <StepItem value="done"><StepLabel>完成</StepLabel></StepItem>
       </Steps>
     </div>
-  ),
+  )
 }
 
 export const OrientationMatrix: Story = {
@@ -134,7 +156,7 @@ export const OrientationMatrix: Story = {
         <H3>Horizontal</H3>
         <Desc>步驟水平排列,常見於結帳流程 / wizard 頂部。Indicator 之間有橫向 connector。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
-          <Steps orientation="horizontal" value="payment" completedValues={['cart']}>
+          <Steps aria-label="結帳進度" readOnly orientation="horizontal" value="payment" completedValues={['cart']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款</StepLabel></StepItem>
             <StepItem value="shipping"><StepLabel>配送</StepLabel></StepItem>
@@ -145,12 +167,28 @@ export const OrientationMatrix: Story = {
 
       <div>
         <H3>Vertical(預設)</H3>
-        <Desc>步驟垂直排列,支援 description(多行描述)。常見於 onboarding / 安裝引導 / 複雜流程。</Desc>
+        <Desc>步驟垂直排列,支援 description 與 content 區 —— 只有目前那一步底下放這一步要做的事(這裡是自訂網域寄件的 DKIM 設定精靈:要貼進 DNS 的兩個值用唯讀欄位給使用者複製)。常見於 onboarding / 設定精靈 / 複雜流程。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <Steps orientation="vertical" value="config" completedValues={['install']}>
-            <StepItem value="install"><StepLabel>安裝套件</StepLabel><StepDescription>npm install @acme/cli</StepDescription></StepItem>
-            <StepItem value="config"><StepLabel>設定環境</StepLabel><StepDescription>修改 .env.local 加入 API key</StepDescription></StepItem>
-            <StepItem value="deploy"><StepLabel>部署上線</StepLabel><StepDescription>執行 acme deploy</StepDescription></StepItem>
+          <Steps orientation="vertical" readOnly value="dns" completedValues={['keys']} aria-label="DKIM 設定進度">
+            <StepItem value="keys"><StepLabel>產生 DKIM 金鑰</StepLabel><StepDescription>為 mail.acme.example 產生 2048-bit 金鑰對</StepDescription></StepItem>
+            <StepItem value="dns">
+              <StepLabel>在 DNS 新增 TXT 記錄</StepLabel>
+              <StepDescription>到網域代管商貼上主機名稱與記錄值</StepDescription>
+              <StepContent>
+                <FieldGroup>
+                  <Field mode="readonly">
+                    <FieldLabel>主機名稱</FieldLabel>
+                    <Input value="acme._domainkey" />
+                  </Field>
+                  <Field mode="readonly">
+                    <FieldLabel>TXT 記錄值</FieldLabel>
+                    {/* autoSize:記錄值全文看得到,不在 3 行高的框裡捲(user 2026-10-21「Q4 照你建議」= 乙:唯讀欄位 + autoSize) */}
+                    <Textarea autoSize value={DKIM_TXT_RECORD} />
+                  </Field>
+                </FieldGroup>
+              </StepContent>
+            </StepItem>
+            <StepItem value="verify"><StepLabel>開始驗證</StepLabel><StepDescription>DNS 生效(最長 48 小時)後回來按驗證</StepDescription></StepItem>
           </Steps>
         </div>
       </div>
@@ -227,7 +265,7 @@ export const ColorMatrix: Story = {
         <H3>完整四態實際渲染</H3>
         <Desc>包含 error state 的結帳流程(例如付款失敗)。error 取代原本的 completed 指示。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
-          <Steps value="shipping" completedValues={['cart']} errorValues={['payment']}>
+          <Steps aria-label="結帳進度" readOnly value="shipping" completedValues={['cart']} errorValues={['payment']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款失敗</StepLabel><StepDescription>信用卡驗證未通過</StepDescription></StepItem>
             <StepItem value="shipping"><StepLabel>配送方式</StepLabel><StepDescription>當前步驟</StepDescription></StepItem>
@@ -250,7 +288,7 @@ export const SizeMatrix: Story = {
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="border border-dashed border-divider rounded-md p-4">
               <div className="text-caption text-fg-muted mb-2 font-mono">size="{size}"</div>
-              <Steps size={size} value="b" completedValues={['a']}>
+              <Steps aria-label="訂單流程進度" readOnly size={size} value="b" completedValues={['a']}>
                 <StepItem value="a"><StepLabel>填寫資料</StepLabel></StepItem>
                 <StepItem value="b"><StepLabel>確認訂單</StepLabel></StepItem>
                 <StepItem value="c"><StepLabel>完成付款</StepLabel></StepItem>
@@ -264,7 +302,7 @@ export const SizeMatrix: Story = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   5. 狀態行為 — Progress flow / Linear / Error interrupt
+   狀態行為 — 進度流轉 / linear / 出錯中斷
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const CHECKOUT_STEPS = [
@@ -282,7 +320,7 @@ const ProgressFlow = () => {
   return (
     <div className="flex flex-col gap-3 min-w-[340px]">
       <div className="border border-border rounded-lg p-4">
-        <Steps value={current} completedValues={completed} orientation="horizontal">
+        <Steps aria-label="結帳進度" readOnly value={current} completedValues={completed} orientation="horizontal">
           {CHECKOUT_STEPS.map((s) => (
             <StepItem key={s.value} value={s.value}>
               <StepLabel>{s.label}</StepLabel>
@@ -290,15 +328,16 @@ const ProgressFlow = () => {
           ))}
         </Steps>
       </div>
-      <div className="flex gap-2">
-        <Button variant="tertiary" size="sm" disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
-          上一步
-        </Button>
+      {/* 2026-10-20 XF-01:同一組動作 = ButtonGroup(鈕距由群組擁有,原本手寫 flex gap-2);這一列沒有標題 → 靠左、primary 最左
+          (action-bar.spec.md「對齊方向的決定」/「全局排序」,與 Steps 展示同一個排法;原本上一步在左) */}
+      <ButtonGroup>
         <Button variant="primary" size="sm" disabled={idx >= CHECKOUT_STEPS.length - 1} onClick={() => setIdx((i) => Math.min(CHECKOUT_STEPS.length - 1, i + 1))}>
           下一步
         </Button>
-      </div>
-      <div className="text-[11px] text-fg-muted">observed:current = <span className="font-mono">{current}</span> · completed = <span className="font-mono">[{completed.join(', ')}]</span></div>
+        <Button variant="tertiary" size="sm" disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
+          上一步
+        </Button>
+      </ButtonGroup>
     </div>
   )
 }
@@ -306,10 +345,10 @@ const ProgressFlow = () => {
 const LinearVsNonlinear = () => {
   return (
     <div className="flex gap-6">
-      <div className="flex flex-col gap-2 min-w-[240px]">
-        <span className="text-[11px] text-fg-muted font-mono">linear(預設)</span>
+      <ExampleGroup className="min-w-[240px]">
+        <ExampleCaption><code>linear</code>(預設)</ExampleCaption>
         <div className="border border-border rounded-lg p-4">
-          <Steps value="shipping" completedValues={['cart']} orientation="vertical">
+          <Steps aria-label="結帳進度" defaultValue="shipping" completedValues={['cart']} orientation="vertical">
             {CHECKOUT_STEPS.slice(0, 4).map((s) => (
               <StepItem key={s.value} value={s.value}>
                 <StepLabel>{s.label}</StepLabel>
@@ -317,12 +356,12 @@ const LinearVsNonlinear = () => {
             ))}
           </Steps>
         </div>
-        <div className="text-[11px] text-fg-muted">僅 completed 可點回查,upcoming 不可達(cursor:not-allowed)。</div>
-      </div>
-      <div className="flex flex-col gap-2 min-w-[240px]">
-        <span className="text-[11px] text-fg-muted font-mono">linear={'{false}'}(自由跳轉)</span>
+        <ExampleCaption>只有「購物車」(已完成)點得回去;「付款」以後還沒解鎖,游標是禁止符號。</ExampleCaption>
+      </ExampleGroup>
+      <ExampleGroup className="min-w-[240px]">
+        <ExampleCaption><code>linear={'{false}'}</code>(可以跳著填)</ExampleCaption>
         <div className="border border-border rounded-lg p-4">
-          <Steps value="shipping" completedValues={['cart']} linear={false} orientation="vertical">
+          <Steps aria-label="結帳進度" defaultValue="shipping" completedValues={['cart']} linear={false} orientation="vertical">
             {CHECKOUT_STEPS.slice(0, 4).map((s) => (
               <StepItem key={s.value} value={s.value}>
                 <StepLabel>{s.label}</StepLabel>
@@ -330,25 +369,22 @@ const LinearVsNonlinear = () => {
             ))}
           </Steps>
         </div>
-        <div className="text-[11px] text-fg-muted">任一 reachable step 可點,適用「表單編輯器」「側邊導覽型 wizard」。</div>
-      </div>
+        <ExampleCaption>每一步都點得到,適合每一步各自儲存、可以跳著填的流程(例:建立廣告活動)。</ExampleCaption>
+      </ExampleGroup>
     </div>
   )
 }
 
 const ErrorInterrupt = () => {
   return (
-    <div className="flex flex-col gap-2 min-w-[300px]">
-      <div className="border border-border rounded-lg p-4">
-        <Steps value="payment" completedValues={['cart', 'shipping']} errorValues={['payment']} orientation="horizontal">
-          {CHECKOUT_STEPS.slice(0, 4).map((s) => (
-            <StepItem key={s.value} value={s.value}>
-              <StepLabel>{s.label}</StepLabel>
-            </StepItem>
-          ))}
-        </Steps>
-      </div>
-      <div className="text-[11px] text-fg-muted">payment step 發生錯誤:indicator 切 `bg-error` + X icon,label 轉 `--error-text`。focus ring 也從 info-hover 切到 error-hover。</div>
+    <div className="border border-border rounded-lg p-4 min-w-[300px]">
+      <Steps aria-label="結帳進度" readOnly value="payment" completedValues={['cart', 'shipping']} errorValues={['payment']} orientation="horizontal">
+        {CHECKOUT_STEPS.slice(0, 4).map((s) => (
+          <StepItem key={s.value} value={s.value}>
+            <StepLabel>{s.label}</StepLabel>
+          </StepItem>
+        ))}
+      </Steps>
     </div>
   )
 }
@@ -357,56 +393,44 @@ export const StateBehavior: Story = {
   name: '狀態行為',
   render: () => (
     <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-1">
-        <H3>狀態行為</H3>
+      <div>
+        <H3>進度流轉</H3>
         <Desc>
-          Steps 的「狀態」分兩類:(a)<strong>內容狀態</strong>(completed / current / upcoming / error)已在 `ColorMatrix` 呈現,
-          (b)本 story 展示<strong>進度流轉行為</strong>——完成進程、linear vs nonlinear 導覽、error interrupt。
-          這些是 Steps 元件層級特有的行為,不存在於任何 item primitive。
-        </Desc>
-      </div>
-
-      {/* Progress advancement */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 1:進度流轉(current → completed 連鎖變化)</span>
-        <Desc>
-          當 consumer 把 cart 推入 completedValues 並把 shipping 設為 current,observe 三件事同時發生:
-          cart indicator 切 filled check、connector(cart→shipping)切 info、shipping(md current)切 filled bg-info + 白數字並疊 focus 外環。
-          對照 Linear 的 onboarding / Stripe Checkout。
+          每一步的內容狀態(已完成 / 目前 / 還沒到 / 出錯)用什麼顏色見 <StoryLink kind="Design System/Components/Steps/設計規格" name="色彩對照表">色彩對照表</StoryLink>;
+          這裡看進度怎麼流轉。現在「購物車」已完成、目前在「配送資訊」;按「下一步」時三件事一起發生:
+          「配送資訊」變成實心勾、它到「付款」的連接線變藍、「付款」變成實心藍底白數字並疊上焦點外環。
         </Desc>
         <ProgressFlow />
       </div>
 
-      {/* Linear vs nonlinear */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 2:linear 控制 upcoming step 可否點擊</span>
+      <div>
+        <H3>linear 決定還沒到的步能不能點</H3>
         <Desc>
-          `linear=true`(預設)= 只能依序前進,回查僅限 completed(對應 checkout 這種「不可跳過」流程)。
-          `linear=false` = 自由跳轉,任何非 disabled step 都可點(對應「多 tab 表單編輯器」;reachable 是 linear 模式的內部推導態,非 prop)。
+          <code>linear=true</code>(預設)只能依序往前,回頭只限已完成的步(結帳這種不能跳過的流程)。
+          <code>linear=false</code> 每一個沒停用的步都點得到(每一步各自儲存、可以跳著填的流程)。
         </Desc>
         <LinearVsNonlinear />
       </div>
 
-      {/* Error interrupt */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 3:Error interrupt(中斷流程)</span>
+      <div>
+        <H3>出錯中斷流程</H3>
         <Desc>
-          任何 step 加入 `errorValues` 時,該 step 轉 error state(紅底 + X icon),label 色轉 `--error-text`。
-          consumer 若要繼續流程,必須先解除 errorValues 再推進 current——避免靜默跳過錯誤。
+          某一步放進 <code>errorValues</code> 時,那一步變成錯誤狀態(紅底 + ✕),標題轉 <code>--error-text</code>,焦點外環也從 <code>--info-hover</code> 換成 <code>--error-hover</code>。
+          要繼續流程,先把它移出 <code>errorValues</code> 再往前推 —— 不會靜靜跳過錯誤。
         </Desc>
         <ErrorInterrupt />
       </div>
 
-      {/* Rule notes */}
-      <div className="flex flex-col gap-2 pt-4 border-t border-divider">
-        <span className="text-caption font-medium text-fg-secondary">行為規則</span>
+      <div className="pt-4 border-t border-divider">
+        <H3 paragraph>行為規則</H3>
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
-          <li>`current` 只能有一個——value 是單值,不像 completedValues 是集合。</li>
-          <li>`error` 優先於 `completed`——同一 step 若同時在 completedValues + errorValues,一律渲染 error(紅底 X)。</li>
-          <li>Focus ring 顏色自動切換:current 走 `--info-hover`(linear=false 時走 `--border-hover`)、error 走 `--error-hover`。</li>
-          <li>upcoming step 不可點(linear)或 reachable 判定為 false 時 cursor:not-allowed,鍵盤 Tab 跳過。</li>
-          <li>預設展開模式(follow-active)下,current 那一步點了不會發生任何事 → 不是按鈕、鍵盤 Tab 跳過、游標是一般箭頭(它不是被禁止,只是「你就在這裡」);multiple 模式下點它會收合 / 展開內容,照舊可點(steps.spec.md「目前那一步可不可以點」)。</li>
-          <li>sm size(8px dot)無 indicator icon——太小畫不出 check / X;大 tier(md/lg)才有 icon 反饋。</li>
+          <li>目前那一步只有一個 —— <code>value</code> 是單一值,不像 <code>completedValues</code> 是一組。</li>
+          <li>錯誤優先於已完成 —— 同一步同時在 <code>completedValues</code> 與 <code>errorValues</code>,一律畫成錯誤(紅底 ✕)。</li>
+          <li>焦點外環顏色自動切換:目前那一步用 <code>--info-hover</code>(<code>linear=false</code> 時用 <code>--border-hover</code>),錯誤用 <code>--error-hover</code>。</li>
+          <li>還沒解鎖的步(<code>linear</code> 下)不可點、游標是禁止符號,Tab 跳過。</li>
+          <li>目前那一步點了不會發生任何事 → 不是按鈕、Tab 跳過、游標是一般箭頭(它沒有被禁止,只是「你就在這裡」);它的內容區跟著 <code>value</code> 走,沒有東西可收。</li>
+          <li>只顯示進度、不能點的步驟條(物流追蹤、文件裡的示意)用 <code>readOnly</code>:每一步都不是按鈕,狀態色照常。</li>
+          <li>sm(8px 圓點)沒有圖示 —— 太小畫不出勾和 ✕;md / lg 才有圖示。</li>
         </ul>
       </div>
     </div>
@@ -421,7 +445,7 @@ export const IndentAlignment: Story = {
         <H3>Indicator 永遠 inline 對齊 label 第一行</H3>
         <Desc>刻意打破 item-layout 的 24px 閾值規則——不管 indicator 尺寸、不管有無 description,一律 inline 對齊。Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」。這是 Steps 跟其他 row primitive 的本質差異——Steps 是「一條有連接關係的進度路徑」,column rhythm 是元件本身。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <Steps orientation="vertical" value="b" completedValues={['a']}>
+          <Steps aria-label="商家開通進度" readOnly orientation="vertical" value="b" completedValues={['a']}>
             <StepItem value="a"><StepLabel>驗證電子信箱</StepLabel></StepItem>
             <StepItem value="b">
               <StepLabel>完善公司資料</StepLabel>
@@ -442,8 +466,19 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `steps.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :W3C APG 無正式 stepper pattern(M26 source-verified);採 Carbon ProgressIndicator 模型(root ol + clickable step role=button + aria-current=step + indicator aria-hidden + sr-only「第 N 步/共 M 步/狀態」)。\n\n  Keyboard 行為  :\n\n- Tab — focus step(若 clickable;sequential Tab,非 tablist roving)\n- Enter / Space — navigate to step\n\n  Focus  :focus-visible ring 對齊 DS 設計準則( outline: 2px solid var(--ring) );focus management 由元件 own。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <ul className="ml-5 list-disc space-y-1">
+        <li>
+          W3C APG 沒有正式的步驟條 pattern,本元件照{' '}
+          <a href="https://github.com/carbon-design-system/carbon/blob/7e1d5e5492fd70ab8ec901114898c12a374cea98/packages/react/src/components/ProgressIndicator/ProgressIndicator.tsx#L313-L348" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">Carbon ProgressIndicator</a>{' '}
+          的做法:整條是 <code>{'<ol>'}</code>;可點的步驟是 <code>role="button"</code>;目前那一步帶 <code>aria-current="step"</code>;
+          圓形指示點是 <code>aria-hidden</code>,狀態由看不見的文字念出「第 N 步,共 M 步,狀態」。
+        </li>
+        <li>步驟條要有名字:<code>{'<Steps aria-label="註冊流程進度">'}</code>。</li>
+        <li><kbd>Tab</kbd> 一個一個停在可點的步驟上(不用方向鍵切換);目前那一步、還沒解鎖的步、<code>readOnly</code> 的步驟條都不停。</li>
+        <li><kbd>Enter</kbd> / <kbd>Space</kbd> 跳到那一步。</li>
+        <li>焦點框跟全 DS 一樣:2px 外框、與元件之間留 2px。</li>
+      </ul>
     </div>
   ),
 }

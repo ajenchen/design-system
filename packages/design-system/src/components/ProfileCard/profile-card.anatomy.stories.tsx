@@ -6,15 +6,17 @@
 // @anatomy-rationale:
 //   SizeMatrix N/A — ProfileCard 是固定寬度(320px)hover content template,
 //     不提供 size prop;所有尺寸 token 已於 Overview「Layout Token」段列出
-//     (avatar 64px / padding / gap)。SectionMatrix 已涵蓋 minimal → full 五
-//     種組合的視覺差異。
+//     (avatar 64px / padding / gap)。ProfileCard 只有一種結構(spec「取消「精簡版」變體」),
+//     SectionMatrix 只畫那一種完整結構。
 import type { Meta, StoryObj } from '@storybook/react'
-import { MessageCircle, UserPlus } from 'lucide-react'
 import { ProfileCard, ProfileCardDefaultActions } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import { Button } from '@/design-system/components/Button/button'
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { SAMPLE_PEOPLE, demoPersonActions, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+
+// 範例人員一律讀共用名錄(stories-helpers/scene/person-card.tsx):同一個人在全 DS 範例同一組部門 / ID / 員工編號
+// (2026-10-28 前本頁的 Ada Chen 是 EMP-2101,HoverCard 頁是 ADACHEN / 1048217)
+const ada = SAMPLE_PEOPLE.ada
 
 type InspectorArgs = {
   name: string
@@ -49,20 +51,7 @@ export const Overview: Story = {
           (那是 HoverCard 的職責),只是 HoverCard content 的標準人員模板。固定寬度 320px。
         </Desc>
         <div className="border border-border rounded-lg p-4">
-          <ProfileCard
-            name="Ada Chen"
-            subtitle="Design Engineer · Engineering"
-            status="online"
-            statusMessage="目前 Sprint 23 衝刺中,訊息可能稍慢回覆"
-            actions={<ProfileCardDefaultActions />}
-            fields={[
-              { label: 'Email', value: 'ada.chen@example.com' },
-              { label: '團隊', value: 'Engineering' },
-              { label: '時區', value: 'UTC+8' },
-              { label: '員工編號', value: '#E-2048' },
-            ]}
-            onViewMore={() => {}}
-          />
+          {samplePersonCard(ada)}
         </div>
       </div>
 
@@ -73,16 +62,15 @@ export const Overview: Story = {
             <thead><tr><Th>Section</Th><Th>內容</Th><Th>觸發條件</Th><Th>分隔</Th></tr></thead>
             <tbody>
               <tr><Td>Profile header</Td><Td>Avatar 64px + Name + Subtitle</Td><Td>永遠顯示</Td><Td>—</Td></tr>
-              <tr><Td>Action buttons</Td><Td>CTA(Message / Follow / Invite)</Td><Td mono>actions 有值</Td><Td>無(貼在 profile 下)</Td></tr>
+              <tr><Td>Action buttons</Td><Td>預設動作:傳訊息 + 語音通話</Td><Td mono>actions 有值</Td><Td>無(貼在 profile 下)</Td></tr>
               <tr><Td>Status 區</Td><Td>狀態標籤 + 可選 statusMessage</Td><Td mono>status 有值</Td><Td mono>border-t border-divider</Td></tr>
-              <tr><Td>Info fields</Td><Td>DescriptionList cols=2</Td><Td>永遠顯示(always-render,缺值顯 — 佔位)</Td><Td mono>border-t border-divider</Td></tr>
+              <tr><Td>Info fields</Td><Td>DescriptionList cols=2</Td><Td>永遠顯示(always-render,缺值顯「-」佔位)</Td><Td mono>border-t border-divider</Td></tr>
               <tr><Td>View more</Td><Td>Button variant=link, 填滿寬度</Td><Td mono>onViewMore 有值</Td><Td mono>border-t border-divider</Td></tr>
             </tbody>
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Section 之間用 `border-t border-divider` 分隔(元件固定結構,consumer 不決定是否分隔,見
-          `separator.spec.md`「元件固定結構 → CSS border-t/b」)。
+          Section 之間用 <code>border-t border-divider</code> 分隔(元件固定結構,consumer 不決定是否分隔)。
         </p>
       </div>
 
@@ -100,9 +88,10 @@ export const Overview: Story = {
                 ['statusMessage', 'ReactNode', '—', '狀態說明文字(完整顯示,內容多時 Body 區捲動)'],
                 ['actions', 'ReactNode', '—', 'CTA buttons(通常 2 個 sm Button)'],
                 ['fields', '{ label: string; value: ReactNode }[]', '—', 'Consumer 自訂 info fields(email / phone / 團隊 等),append 在 default 之後,走 DescriptionList cols=2'],
-                ['defaultFieldValues', "Partial<Record<'id' | 'employeeNumber', ReactNode>>", '—', '填 default field(id / Employee number)真實值的正規入口,缺值顯 — 佔位;優於用 fields 傳同名 label(後者 dev mode 會 console.warn)'],
+                ['defaultFieldValues', "Partial<Record<'id' | 'employeeNumber', ReactNode>>", '—', '填 default field(id / 員工編號)真實值的正規入口,缺值顯「-」佔位;優於用 fields 傳同名 label(後者 dev mode 會 console.warn)'],
                 ['onViewMore', '() => void', '—', 'View more callback(有值才顯示該 section)'],
-                ['viewMoreLabel', 'string', "'View more'", 'View more button 文字'],
+                ['viewMoreLabel', 'string', "'查看更多'", '查看更多按鈕文字'],
+                ['labels', "Partial<ProfileCardLabels>(status 可只給部分)", '線上 / 離開 / 忙碌 / 離線、狀態訊息、ID / 員工編號', '卡片文案覆寫(狀態四種、狀態訊息欄名、兩個預設欄名),與 DS 預設合併;預設動作的文案在 ProfileCardDefaultActions 的 labels'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -142,14 +131,14 @@ export const Inspector: InspectorStory = {
   parameters: {
     docs: {
       description: {
-        story: '在右側 Controls 面板切換 status / 各 section 的開關,即時查看 ProfileCard 在不同組合下的呈現。世界級 DS 的 Inspector = Figma inspect 替代。',
+        story: '在右側 Controls 面板切換 status / 各 section 的開關,即時查看 ProfileCard 在不同組合下的呈現。',
       },
     },
   },
   args: {
-    name: 'Ada Chen',
-    subtitle: 'Design Engineer · Engineering',
-    status: 'online',
+    name: ada.name,
+    subtitle: ada.subtitle,
+    status: ada.status,
     withStatusMessage: true,
     withActions: true,
     withFields: true,
@@ -164,31 +153,32 @@ export const Inspector: InspectorStory = {
       description: 'Avatar presence + Status section(none = 不渲染 status 區)',
     },
     withStatusMessage: { control: 'boolean', description: '是否顯示 status message(需搭配 status)' },
-    withActions: { control: 'boolean', description: '是否顯示 Chat + Audio call 預設動作列' },
-    withFields: { control: 'boolean', description: '是否顯示 Info fields(DescriptionList)' },
+    withActions: { control: 'boolean', description: '是否顯示「傳訊息 + 語音通話」預設動作列' },
+    withFields: { control: 'boolean', description: '是否加上自訂欄位 fields(Email / 時區);ID 與員工編號兩個預設欄位永遠顯示' },
     withViewMore: { control: 'boolean', description: '是否顯示 View more 連結' },
   },
   render: (args) => {
     const status = args.status === 'none' ? undefined : args.status
+    const { onChat, onCall, onViewProfile } = demoPersonActions(args.name)
     return (
       <div className="border border-dashed border-divider rounded-md p-4 inline-block">
         <ProfileCard
           name={args.name}
           subtitle={args.subtitle}
           status={status}
-          statusMessage={args.withStatusMessage && status ? '目前 Sprint 23 衝刺中,訊息可能稍慢回覆' : undefined}
-          actions={args.withActions ? <ProfileCardDefaultActions /> : undefined}
+          avatar={{ src: ada.avatarSrc, alt: args.name }}
+          statusMessage={args.withStatusMessage && status ? ada.statusMessage : undefined}
+          actions={args.withActions ? <ProfileCardDefaultActions onChat={onChat} onCall={onCall} /> : undefined}
           fields={
             args.withFields
               ? [
-                  { label: 'Email', value: 'ada@example.com' },
-                  { label: '團隊', value: 'Engineering' },
+                  { label: 'Email', value: 'ada.chen@example.com' },
                   { label: '時區', value: 'UTC+8' },
-                  { label: '員工編號', value: '#E-2048' },
                 ]
               : undefined
           }
-          onViewMore={args.withViewMore ? () => {} : undefined}
+          defaultFieldValues={{ id: ada.id, employeeNumber: ada.employeeNumber }}
+          onViewMore={args.withViewMore ? onViewProfile : undefined}
         />
       </div>
     )
@@ -196,84 +186,24 @@ export const Inspector: InspectorStory = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   3. SectionMatrix — show 5 sections in combinations (minimal → full)
+   3. SectionMatrix — ProfileCard 只有一種結構:五個區段每張卡都有
    ═══════════════════════════════════════════════════════════════════════════ */
 
+// 2026-10-28 前這裡是「最小 → 完整」五張逐步加區段的卡(稽核 H06):規格已取消「精簡版」變體、
+// 人員資料預設展示一致(spec「取消「精簡版」變體」「DS-wide PersonData 預設展示一致 canonical」;登記簿 B22
+// 「所有地方的namecard預設都是秀一樣的資訊的」),所以只畫那一種完整結構。唯一會暫時少一塊的情況
+// (狀態還沒讀到)放在「狀態行為」。
 export const SectionMatrix: Story = {
-  name: '區段 組合（最小 → 完整）',
+  name: '完整結構',
   render: () => (
-    <div className="flex flex-col gap-10">
-      <div>
-        <H3>Minimal — profile header + View more</H3>
-        <Desc>最小形式:avatar + name + subtitle + View more(hover context 必含 — canonical owner 見 avatar.spec.md「onViewMore 為 hover context 必含」段;顯示條件見本元件 spec「View More」節)。@mention hover 場景 user 點 View more 跳完整 profile。</Desc>
-        <div className="border border-dashed border-divider rounded-md p-4 inline-block">
-          <ProfileCard name="Alice Wang" subtitle="Frontend Engineer" onViewMore={() => {}} />
-        </div>
-      </div>
-
-      <div>
-        <H3>+ Status 區</H3>
-        <Desc>加上即時狀態——Slack / Teams 類即時溝通場景必要,讓使用者知道現在是否方便聯絡。</Desc>
-        <div className="border border-dashed border-divider rounded-md p-4 inline-block">
-          <ProfileCard
-            name="Bob Chen"
-            subtitle="PM, Growth"
-            status="busy"
-            statusMessage="開會中,下午 3 點後回覆"
-          />
-        </div>
-      </div>
-
-      <div>
-        <H3>+ Actions</H3>
-        <Desc>加上快速動作——留言區 hover 顯示「Chat」/「Audio call」(canonical `ProfileCardDefaultActions`),減少跳轉 profile 頁的摩擦。</Desc>
-        <div className="border border-dashed border-divider rounded-md p-4 inline-block">
-          <ProfileCard
-            name="Diana Lin"
-            subtitle="Engineering Manager"
-            status="online"
-            actions={<ProfileCardDefaultActions />}
-          />
-        </div>
-      </div>
-
-      <div>
-        <H3>+ Info fields</H3>
-        <Desc>加上結構化資訊——組織頁成員列表 hover 看到聯絡方式,不用跳去 profile。</Desc>
-        <div className="border border-dashed border-divider rounded-md p-4 inline-block">
-          <ProfileCard
-            name="Ada Chen"
-            subtitle="Design Engineer"
-            status="online"
-            fields={[
-              { label: 'Email', value: 'ada.chen@example.com' },
-              { label: '團隊', value: 'Engineering' },
-              { label: '時區', value: 'UTC+8' },
-              { label: '員工編號', value: '#E-2048' },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div>
-        <H3>Full — 所有 section 都有</H3>
-        <Desc>完整資訊卡(profile + actions + status + fields + view more)。適合公司內部組織工具的成員 hover,一次看到所有重要資訊。</Desc>
-        <div className="border border-dashed border-divider rounded-md p-4 inline-block">
-          <ProfileCard
-            name="Ada Chen"
-            subtitle="Design Engineer · Engineering"
-            status="online"
-            statusMessage="目前專案 Sprint 23 衝刺中"
-            actions={<ProfileCardDefaultActions />}
-            fields={[
-              { label: 'Email', value: 'ada.chen@example.com' },
-              { label: '團隊', value: 'Engineering' },
-              { label: '時區', value: 'UTC+8' },
-              { label: '員工編號', value: '#E-2048' },
-            ]}
-            onViewMore={() => {}}
-          />
-        </div>
+    <div>
+      <H3>五個區段每張卡都有</H3>
+      <Desc>
+        頭像與姓名、預設動作(傳訊息 + 語音通話)、狀態、資訊欄位(ID / 員工編號)、查看更多。副標固定寫「部門｜ID｜員工編號」,
+        ID 與員工編號和下方欄位同值。唯一會暫時少一塊的情況是狀態還沒讀到,見「狀態行為」。
+      </Desc>
+      <div className="border border-dashed border-divider rounded-md p-4 inline-block">
+        {samplePersonCard(ada)}
       </div>
     </div>
   ),
@@ -290,17 +220,17 @@ export const ColorMatrix: Story = {
       <div>
         <H3>四種狀態對應色彩(Avatar 狀態點 + Status 區)</H3>
         <Desc>
-          狀態點顏色語意對齊 Slack / Teams / Linear 業界共識。Status 區的標籤底色一律 `bg-muted` 保持中性
+          狀態點顏色語意對齊 Slack / Teams / Linear 業界共識。Status 區的標籤底色一律 <code>bg-muted</code> 保持中性
           (狀態是展示資訊,不可點擊,避免暗示互動性)。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>status</Th><Th>顯示文字</Th><Th>Avatar dot 色</Th><Th>Status 區 bg</Th><Th>語意</Th></tr></thead>
             <tbody>
-              <tr><Td mono>online</Td><Td mono>Online</Td><Td><TokenCell token="--status-online" /></Td><Td><TokenCell token="--muted" /></Td><Td>正常可聯絡</Td></tr>
-              <tr><Td mono>away</Td><Td mono>Away</Td><Td><TokenCell token="--status-away" /></Td><Td><TokenCell token="--muted" /></Td><Td>暫時離開</Td></tr>
-              <tr><Td mono>busy</Td><Td mono>Busy</Td><Td><TokenCell token="--status-busy" /></Td><Td><TokenCell token="--muted" /></Td><Td>勿打擾</Td></tr>
-              <tr><Td mono>offline</Td><Td mono>Offline</Td><Td><TokenCell token="--status-offline" /></Td><Td><TokenCell token="--muted" /></Td><Td>離線</Td></tr>
+              <tr><Td mono>online</Td><Td>線上</Td><Td><TokenCell token="--status-online" /></Td><Td><TokenCell token="--muted" /></Td><Td>正常可聯絡</Td></tr>
+              <tr><Td mono>away</Td><Td>離開</Td><Td><TokenCell token="--status-away" /></Td><Td><TokenCell token="--muted" /></Td><Td>暫時離開</Td></tr>
+              <tr><Td mono>busy</Td><Td>忙碌</Td><Td><TokenCell token="--status-busy" /></Td><Td><TokenCell token="--muted" /></Td><Td>勿打擾</Td></tr>
+              <tr><Td mono>offline</Td><Td>離線</Td><Td><TokenCell token="--status-offline" /></Td><Td><TokenCell token="--muted" /></Td><Td>離線</Td></tr>
             </tbody>
           </table>
         </div>
@@ -312,7 +242,7 @@ export const ColorMatrix: Story = {
           {(['online', 'away', 'busy', 'offline'] as const).map(s => (
             <div key={s} className="border border-dashed border-divider rounded-md p-3">
               <div className="text-caption text-fg-muted mb-2 font-mono">status="{s}"</div>
-              <ProfileCard name="Ada Chen" subtitle="Design Engineer" status={s} />
+              <ProfileCard name={ada.name} subtitle={ada.subtitle} avatar={{ src: ada.avatarSrc, alt: ada.name }} status={s} defaultFieldValues={{ id: ada.id, employeeNumber: ada.employeeNumber }} />
             </div>
           ))}
         </div>
@@ -349,39 +279,18 @@ export const HoverCardIntegration: Story = {
       <div>
         <H3>Avatar hover → ProfileCard 展開</H3>
         <Desc>
-          ProfileCard 的設計準則 消費方式:放進 HoverCardContent 內。HoverCard 負責觸發 / 定位 / 進退場,
-          ProfileCard 只專注內容。align="start" 讓 card 左邊對齊 avatar 左邊(視覺動線穩定)。
+          人員頭像的標準寫法:名片交給 Avatar 的 hoverCard(Avatar 規格「Avatar HoverCard 原則」的消費者寫法)。
+          觸發、定位、進退場與鍵盤可達都由 Avatar 內建的 HoverCard 處理,ProfileCard 只管內容。
         </Desc>
         <div className="border border-border rounded-lg p-6 flex items-center gap-8">
-          {[
-            { name: 'Ada Chen', subtitle: 'Design Engineer', status: 'online' as const, avatarUrl: 'https://i.pravatar.cc/80?u=ada-chen' },
-            { name: 'Alice Wang', subtitle: 'Frontend Engineer', status: 'busy' as const, avatarUrl: 'https://i.pravatar.cc/80?u=alice-wang' },
-            { name: 'Bob Chen', subtitle: 'PM, Growth', status: 'away' as const, avatarUrl: 'https://i.pravatar.cc/80?u=bob-chen' },
-          ].map(p => (
-            <HoverCard key={p.name}>
-              <HoverCardTrigger asChild>
-                <span className="inline-block cursor-default">{/* 滑過只浮出名片、點了不做事 → 一般箭頭(hit-area-canonical.md 三-1;同 hover-card.stories 頭像觸發) */}
-                  <Avatar src={p.avatarUrl} alt={p.name} size={40} status={p.status} />
-                </span>
-              </HoverCardTrigger>
-              <HoverCardContent align="start" className="p-0">{/* sideOffset 不 override — spec 禁止事項(default 即 OVERLAY_SIDE_OFFSET) */}
-                <ProfileCard
-                  name={p.name}
-                  subtitle={p.subtitle}
-                  status={p.status}
-                  avatar={{ src: p.avatarUrl, alt: p.name }}
-                  fields={[
-                    { label: 'Email', value: `${p.name.split(' ')[0].toLowerCase()}@example.com` },
-                    { label: '團隊', value: 'Engineering' },
-                  ]}
-                  onViewMore={() => {}}
-                />
-              </HoverCardContent>
-            </HoverCard>
+          {/* 2026-10-28 前這裡手組 HoverCard + 可聚焦 span + ProfileCard(稽核 M078):Avatar hoverCard 已內建同一組
+              (可聚焦、外殼、延遲),手組一份就多一個會漂的地方;名片內容走全 DS 同一支建構器 */}
+          {[SAMPLE_PEOPLE.ada, SAMPLE_PEOPLE.alice, SAMPLE_PEOPLE.bob].map((p) => (
+            <Avatar key={p.id} src={p.avatarSrc} alt={p.name} size={40} status={p.status} hoverCard={samplePersonCard(p)} />
           ))}
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Hover 任一 avatar → ProfileCard 從左上展開,含狀態點 + 資訊 + View more。
+          滑過或 Tab 到任一頭像 → 名片在頭像旁展開,含狀態、資訊欄位與查看更多。
         </p>
       </div>
 
@@ -411,6 +320,8 @@ export const HoverCardIntegration: Story = {
    6. StateBehavior — edge cases (empty, overflow, multiline)
    ═══════════════════════════════════════════════════════════════════════════ */
 
+const loadingActions = demoPersonActions(ada.name)
+
 export const StateBehavior: Story = {
   name: '狀態行為',
   render: () => (
@@ -418,8 +329,8 @@ export const StateBehavior: Story = {
       <div>
         <H3>長 name 自動換行,avatar 不變形</H3>
         <Desc>
-          Profile header 的 text column `minHeight = avatar size`:短文字垂直置中於 avatar,
-          多行 name 自然撐高(不截斷,name 是識別主體)。Avatar `shrink-0` 永遠 64px square。
+          頭像右側文字欄的最小高度等於頭像大小:短文字垂直置中於頭像,
+          多行姓名自然撐高(不截斷,姓名是識別主體)。頭像不縮,永遠 64px。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
           <ProfileCard
@@ -446,21 +357,21 @@ export const StateBehavior: Story = {
       </div>
 
       <div>
-        <H3>無 status、只有 actions(profile header + actions)</H3>
+        <H3>狀態還沒讀到 → 整個狀態區先不出現</H3>
         <Desc>
-          actions 可獨立存在不需 status——例如目錄類場景只想讓使用者「快速傳訊」/「加入團隊」,
-          不關心即時狀態。
+          每個人都有在線狀態,所以 status 沒有值只代表資料還在載入:這段時間整個狀態區不畫,也不寫「未設定」之類的字,
+          資料到了才補上。其餘區段照常。
         </Desc>
+        {/* 2026-10-28 前這則是「無 status、只有 actions」+ 自訂「傳訊 / 加入團隊」(稽核 H06):規格說 status 沒值只會是載入空檔,
+            動作一律用預設的傳訊息 + 語音通話(spec「Status section v12 conditional rule」「Action 行」) */}
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
           <ProfileCard
-            name="Diana Lin"
-            subtitle="External Partner"
-            actions={
-              <>
-                <Button variant="primary" size="sm" startIcon={MessageCircle}>傳訊</Button>
-                <Button variant="tertiary" size="sm" startIcon={UserPlus}>加入團隊</Button>
-              </>
-            }
+            name={ada.name}
+            subtitle={ada.subtitle}
+            avatar={{ src: ada.avatarSrc, alt: ada.name }}
+            actions={<ProfileCardDefaultActions onChat={loadingActions.onChat} onCall={loadingActions.onCall} />}
+            defaultFieldValues={{ id: ada.id, employeeNumber: ada.employeeNumber }}
+            onViewMore={loadingActions.onViewProfile}
           />
         </div>
       </div>
@@ -468,8 +379,8 @@ export const StateBehavior: Story = {
       <div>
         <H3>未傳資訊欄位 → 仍顯示預設欄位佔位</H3>
         <Desc>
-          資訊欄位區永遠渲染。`fields` 未傳或為空時,仍會顯示 ID 與 Employee number 兩個
-          預設欄位,缺資料的欄位顯示佔位符 `—`。固定結構確保同一個人在不同畫面看起來一致,
+          資訊欄位區永遠渲染。<code>fields</code> 未傳或為空時,仍會顯示 ID 與 員工編號 兩個
+          預設欄位,缺資料的欄位顯示佔位符「-」(半形連字號,與 Field 空值同一個符號)。固定結構確保同一個人在不同畫面看起來一致,
           不會因為少傳資料就整個區段消失造成視覺漂移。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
@@ -486,8 +397,16 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `profile-card.spec.md` 「A11y 預設」段。摘要:\n\n> 命名對齊 DS 設計準則(2026-05-18,per  # 命名與語言一致性 )。本節原標題「無障礙」,改「A11y 預設」與其他 spec 一致。\n\n-   Trigger 整合  :Avatar 作為 HoverCard trigger 時, onFocus  /  onBlur  與 mouseenter/leave 同時觸發由 Radix HoverCard 管理——鍵盤使用者 Tab 到 avatar 可自動顯示 card,Escape 關閉\n-   Focus 順序  :Radix  HoverCard  預設不抓取 focus 進入浮層——HoverCardContent 每次 render 把浮層內所有 tabIndex>=0 節點 set tabindex=-1(@radix-ui/react-hover-card 的 getTabbableNodes + setAttribute('tabindex','-1');dist 行號隨安裝版本浮動,不 pin),刻意把 action / view more 移出 tab order。hover-integrated 路徑下鍵盤使用者 Tab 只停在 trigger(Avatar),無法 Tab 聚焦浮層內 action / view more(與 Popover 的 focus trap 截然不同)。需要鍵盤可達 action 改用 Popover / Dialog\n-   Live region 語意  :ProfileCard 是展示內容,非 announcement,不套  aria-live \n-   DL 語意  :Info Fields 使用 DescriptionList(<dl>/<dt>/<dd>),screen reader 讀「term X, description Y」(詳 description-list.spec.md「無障礙」段)\n-   CTA button aria-label  :icon-only action button 必帶  aria-label (「傳訊息給 {name}」),不只 icon 視覺\n-   色彩對比  :Status badge / Avatar status 圓點均過 WCAG AA,不依賴單一色彩載體(搭配文字標籤)"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 原本一整段 whitespace-pre-line 字串(開頭「詳 profile-card.spec.md」是內部檔名、清單是 markdown 字、還夾一段改名紀錄)→ 改成真的清單 */}
+      <ul className="list-disc pl-5">
+        <li>頭像是名片的觸發點:滑鼠移入 / 移出與鍵盤聚焦 / 離開都會開關名片;Tab 到頭像就會顯示,Esc 關閉</li>
+        <li>名片是滑過預覽,不把焦點搬進浮層:名片裡的動作鈕與「查看更多」不在 Tab 順序裡(Radix HoverCard 刻意把浮層內可聚焦的節點設成 <code>tabindex="-1"</code>)。鍵盤要能按到動作的情境改用 Popover / Dialog</li>
+        <li>名片是展示內容,不是通知,不設 <code>aria-live</code></li>
+        <li>資訊欄位用 DescriptionList(<code>{'<dl> / <dt> / <dd>'}</code>),讀屏器讀成「欄名、值」</li>
+        <li>只有圖示的動作鈕必帶讀屏名稱(例:「傳訊息給 Ada Chen」)</li>
+        <li>狀態標籤與頭像狀態點都過 WCAG AA,並配文字標籤,不只靠顏色</li>
+      </ul>
     </div>
   ),
 }

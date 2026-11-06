@@ -11,13 +11,14 @@
   改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
 - Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`,items-start。
 - 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
-  **整卡可點**(滑過見下一條);卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
+  **整卡可點**:卡內任一點點一下 = 點控件一次(`ds-canonical/references/hit-area-canonical.md` 一-4「點下去等於點控件」;控件與 SelectionItem 的 `<label for>` 照它們自己的轉發、「其他」輸入格的外框歸輸入格,其餘由卡轉給控件 —— 同一下點擊只有一個主人,`agent-panel.tsx` `pressOptionCard`;機械閘 `scripts/agent-decision-card-option-press-invariant.mjs` 逐點量切換次數;滑過見下一條);卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
   (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)
   + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8。
   「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
   [Polaris ChoiceChildren 同款](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Choice/Choice.module.css);
   距卡右/下各 12);聚焦即選中「其他」;**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
-  鍵盤方向鍵選中不搶焦點(APG radio roving,Tab 一步即到);radio `aria-controls` 指向 Input。
+  鍵盤選中不搶焦點 —— 方向鍵(APG radio roving)、焦點在圓 / 方框上按 Space(APG radio「Space: checks the focused radio button」,
+  <https://www.w3.org/WAI/ARIA/apg/patterns/radio/>)都只改選取狀態、焦點留在原處,Tab 一步即到 Input;radio `aria-controls` 指向 Input。
   幾何:一般卡 8+21+2+21+8 = 60;「其他」卡 8+21+8+32+12 = 81。
 - 選項卡滑過(2026-09-26 AI 建議,列在「其餘建議」、user 未另提 → AI 判讀照建議做;user 的問句見上;待辦總帳 B12):指標在整張卡的**任何位置**(內距、圓與字的空隙、說明文字、「其他」卡的輸入格),
   卡內的圓(複選是方框)照它被自己的 label 滑過時的樣子變色 —— 顏色即 `../Checkbox/checkbox.spec.md`「狀態」Radio / Checkbox 表的 hover 列,
@@ -34,15 +35,23 @@
   同形(整卡可點、滑過只變圓;Joy UI 已於 2026-03-11 自 MUI 主 repo 移除,只作曾經的做法);Carbon RadioTile 改換卡片底色
   ([_tile.scss#L62-L73](https://github.com/carbon-design-system/carbon/blob/7e8c8f7db6dd2ed98c4947b78b37614f43eda920/packages/styles/scss/components/tile/_tile.scss#L62-L73)),
   本 DS 不採 —— 單選狀態表的底色欄一律不變(`../Checkbox/checkbox.spec.md`「狀態 › Radio」)。
-- 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起左鈕換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
-- 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
+- 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
+- 步進:**一題一步**,footer 右側兩鈕:前=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
-  2026-09-02 user 拍板);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
-  「其他」選中而文字為空 → 下一題/送出 disabled。
+  2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);後=「下一題」、末步「送出」;header × 恆為跳過。
+  「下一題」/「送出」恆可按(新建表單,`../Field/form-validation.spec.md`「Submit Button 狀態」),只在按下時驗這一題(「其他」要不要填看「其他」選了沒 = 跨欄位,規則 9):
+  沒選(選填題 `optional` 除外:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後(距離【待確認】:現行 = 卡間距 8,user 2026-10-29 問句中的提案;另一案 = Field 內部 gap-1 4);
+  焦點移到第一個出錯的控件(沒選 → 第一個圓 / 方框,「其他」→ 輸入格並帶錯誤框;只聚焦不置中捲動,產題守則 13)。清除與 aria 接線照規則 5 與 `../Field/field.spec.md`「驗證與 aria 屬性」;
+  本卡沒有 Field context:`aria-errormessage` 掛在 radiogroup / 每個方框 / 輸入格(WAI-ARIA 1.2 不適用於 radio 與 group),複選群組另帶 `aria-invalid`(同 `../Checkbox/checkbox-group.tsx`)。
+  選填單選題有選取時,footer 左側出現「清除選取」(user 2026-10-30 提案:「在使用者選了選項之後出現」;預選的建議解也算有選取、一打開就有 = AI 依 `../Select/select.spec.md`「Clearable」有值就顯示推導;
+  tertiary sm,左 = 操作選取、右 = 提交,`../../patterns/overlay-surface/overlay-surface.spec.md`「選取類浮層的 footer 內容順序」):
+  按了清掉答案與「其他」的字、鈕消失、焦點交給第一個圓(同 `../Select/select.spec.md`「Clearable」清除後焦點),右側兩鈕不動;
+  必答題沒有(「何時開 clearable」:必須有選擇不開),複選題沒有(方框本來就能取消)。
+  【待確認】只用 Tab 的人經過「其他」輸入格就會選中「其他」(上方選項卡條「聚焦即選中」),選填題因此只用鍵盤無法不答就前進;改法交 user。
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
 - 進出=淡入+下滑 8、`--motion-duration-overlay`。
-- A11y:`role="group"` + `aria-labelledby`;radiogroup / checkbox 原生鍵盤。
+- A11y:`role="group"` + `aria-labelledby`;radiogroup / checkbox 原生鍵盤;必答單選題的 radiogroup 帶 `aria-required`(`../Field/field.spec.md`「SR 識別路徑」),複選群組是 `role="group"`、WAI-ARIA 1.2 的 `aria-required` 不適用,不帶。
 
 #### 產題守則(約束代理出題品質;標 ⚙ 者由元件 DEV 警告或渲染邏輯機械強制)
 
@@ -56,7 +65,7 @@
    ([Material 對話框標題=問句或陳述、禁 Are you sure?](https://m1.material.io/components/dialogs.html))
 4. ⚙ **具名選項 2–4 個**(不含「其他」);>4 → 拆題。
    ([SDK 2–4 options](https://code.claude.com/docs/en/agent-sdk/user-input);
-   [NN/g ≤5 用 radio](https://www.nngroup.com/articles/listbox-dropdown/);`../RadioGroup/radio-group.spec.md`「2-5 且全部可見」)
+   [NN/g ≤5 用 radio](https://www.nngroup.com/articles/listbox-dropdown/);`../RadioGroup/radio-group.spec.md`「2-5 個選項且全部可見」)
 5. ⚙ **選項標籤單行、≤10 字、無句尾標點、同題平行結構**;標籤說「選了會怎樣」,禁 A/B/C、「方案一」。
    ([Polaris ChoiceList:label based on what the option will do、無句尾標點](https://github.com/Shopify/polaris/blob/main/polaris.shopify.com/content/components/selection-and-input/choice-list.mdx))
 6. ⚙ **每個具名選項附一行差異描述**:單句、無句號、不重複標籤、同題各選項比同一個維度(後果/取捨)。
@@ -73,8 +82,9 @@
 10. ⚙ **單選為預設;答案本質可複選才 `multiSelect`**(「要包含哪些章節?」):複選改 CheckboxGroup、選項不得互斥、
     **不預選**、仍附「其他」。([SDK multiSelect](https://code.claude.com/docs/en/agent-sdk/user-input);
     [GOV.UK checkboxes 不預選](https://design-system.service.gov.uk/components/checkboxes/))
-11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip;footer 只有兩鈕(第一題 跳過/下一題,之後 上一題/下一題|送出)。
-    ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html);[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
+11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip;footer 右側只有兩鈕(第一題 跳過/下一題,之後 上一題/下一題|送出),左側只有選填單選題的「清除選取」。
+    ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html):「Dialogs should not include more than two actions. A third action, such as “Learn more,” navigates away from the dialog, potentially leaving the task unfinished.」—— 上限是一般規則,「Learn more」只是舉例;
+    本卡偏離它的只有左側「清除選取」:user 2026-10-30 提案加的第三顆,排法依 overlay-surface footer 順序,不是 Material 放行的;[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
 12. **題與題互不依賴**:後題不因前題答案改變;需要分支 → 下一回合另開一張卡。
     ([NN/g wizards self-sufficient steps](https://www.nngroup.com/articles/wizards/))
 13. **每步不需捲動即可讀完**(面板寬內 4 選項+描述皆單行);描述過長=精簡,不截斷

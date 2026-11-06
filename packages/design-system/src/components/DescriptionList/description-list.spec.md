@@ -49,7 +49,7 @@ benchmark:
 
 | orientation | Layout | 典型情境 | 世界級對照 |
 |-----------|--------|---------|-----------|
-| `vertical`(預設)| label 在上 / value 在下 | ProfileCard detail、sidebar 長 value(地址、bio) | Atlassian DescriptionList、Polaris DescriptionList |
+| `vertical`(預設)| label 在上 / value 在下 | ProfileCard detail、sidebar 長 value(地址、bio) | 窄欄放不下左右兩欄時,上下堆疊讓長 value 有整行寬度可換行(Polaris DescriptionList 在 sm 以下也是上下堆疊,sm 以上才改左右、term 佔 25%)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/DescriptionList/DescriptionList.module.css#L1-L22)、[來源](https://unpkg.com/@atlaskit/description-list/package.json)) |
 | `horizontal` | label 左 / value 右對齊 | **file info panel / 訂單詳情 / settings summary**(短 value 的 metadata 列) | label 欄形成可掃描軸，value 保留較寬內容區 |
 
 **判斷法**:
@@ -98,7 +98,7 @@ benchmark:
 
 ### Horizontal orientation(divided=true)
 
-- 每個 item `py-[var(--layout-space-tight)]`(density-aware,形成 cell-like row 高度)
+- 每個 item `py-[var(--layout-space-tight)]`(density-aware,形成 cell-like row 高度);**最後一個 item 不帶下內距**(`last:pb-0`,同不分隔模式的 `last:mb-0`),底部由容器給 —— 最後一列沒有底線,下方就是容器底,同一段距離只由一層給(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4 核心句)。第一個 item 的上內距不動(FileViewer「檔案資訊」標題 → 第一列 = 列 → 列靠它)
 - 每個 item 底部 `border-b border-divider`,`last:border-b-0`——row 之間視覺格線,key 長度不一時易於對齊掃描
 - **何時開 divided**:長列表(≥ 4 rows)/ key 長度差異大(短 vs 長 label 並排易顯亂) → divided 可對齊格線;短列表(< 4 rows)且 key 長度相近 → 不需 divided(border 反而噪音)
 - **使用判準**:divided 適用需要逐列掃描與明確 row boundary 的 file info / settings 表面；單一短清單不為裝飾而強加 divider
@@ -129,7 +129,7 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 
 ```tsx
 <div>
-  <div className="text-body font-medium mb-[var(--layout-space-tight)]">基本資料</div>
+  <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">基本資料</h3>
   <DescriptionList>
     <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
     <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
@@ -137,11 +137,11 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 </div>
 ```
 
-**為什麼相等**(Gestalt proximity canonical):heading 與下方 items 的關係是「擁有 / 歸屬」—— 相同距離讓視覺上 heading 與 items 形成一個群組。若拉大 gap(例 `mb-4`),heading 看似與 items「分離」,失去歸屬感;若縮小 gap(例 `mb-0`),heading 與 items 黏在一起無呼吸。
+**為什麼相等**(Gestalt proximity canonical):heading 與下方 items 的關係是「擁有 / 歸屬」—— 相同距離讓視覺上 heading 與 items 形成一個群組。若拉大 gap(例 `mb-4`),heading 看似與 items「分離」,失去歸屬感;若縮小 gap(例 `mb-0`),heading 與 items 黏在一起無呼吸([來源](https://www.nngroup.com/articles/gestalt-proximity/))。
 
 Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個只供 heading 的距離 tier；確切 token 由本元件 source 擁有。
 
-**Heading typography 建議**:`text-body font-medium text-foreground`(同 item label size,靠 weight 區分層級),不用加粗 / 放大 / 換色——讓 heading 是「標籤」不是「標題」。
+**Heading typography 建議**:`text-h6 font-medium text-foreground`(語義標題用 h3 + text-h6 —— 14px,與 item label 同大,字重是唯一的強調;`../../tokens/typography/typography.spec.md`「同尺寸但不同角色的選法」14px 列),不放大 / 換色。
 
 **常見誤解**:(1)「DL label 視覺像 FieldLabel 就拿來排表單」— `dl` 無 `<label for>` 對 input 的綁定,編輯場景一律 Field(見禁止事項第 1 條);(2)「section heading 是 DL 內建 prop」— heading 是 consumer pattern(DL 無 heading prop),需要分組時 consumer 自包並遵守上方 gap 規則。
 
@@ -172,7 +172,7 @@ Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個�
 
 - **語意 HTML**:外層 `<dl>`,每組內 `<dt>` 為 term、`<dd>` 為 description——screen reader 會讀成「term X, description Y」對話,明確表達屬性-值關係
 - **DT / DD 配對**:每個 `<dt>` 必須有對應的 `<dd>`(不可孤立),否則 SR 敘事會中斷;元件內建一組 `DescriptionItem` 強制配對,不分開暴露 `<dt>` / `<dd>` primitive
-- **空值呈現**:value 空時由 **consumer 自行傳入** `<span className="text-foreground">-</span>` 占位(半形 hyphen `-`,對齊 Field `EMPTY_DISPLAY` DS-wide 空值符號,2026-07-08 user 拍板「空值都用"-"⋯我從頭到尾哪裡有說要用全形的」;元件不自動 normalize——`<dd>` 直接 render `children`),`text-foreground`(同 value 色——「-」是不可編輯供檢視的值,非 placeholder 提示,2026-07-09 user 拍板)。**a11y known follow-up**:裸 `-` SR 敘事弱(半形連字號多被 SR 略過),宜補 `<span className="sr-only">無資料</span>` 或 `aria-label`,比空 `<dd>` 更明確
+- **空值呈現**:value 空時由 **consumer 自行傳入** `<span className="text-foreground">-</span>` 占位(半形 hyphen `-`,對齊 Field `EMPTY_DISPLAY` DS-wide 空值符號,2026-07-08 user 拍板(轉述:空值都用半形 -,從沒說過要用全形)〔UD-J35〕;元件不自動 normalize——`<dd>` 直接 render `children`),`text-foreground`(同 value 色——「-」是不可編輯供檢視的值,非 placeholder 提示,2026-07-09 user 拍板)。**a11y known follow-up**:裸 `-` SR 敘事弱(半形連字號多被 SR 略過),宜補 `<span className="sr-only">無資料</span>` 或 `aria-label`,比空 `<dd>` 更明確
 - **多欄 `cols > 1`**:視覺為 grid 欄位,但 DOM 順序為 item 順序——SR 仍依 DOM 敘事(term1 → desc1 → term2 → desc2),不依視覺欄位;設計時確保 DOM 順序符合語意分組
 - **長值換行**:horizontal 模式的 value(`<dd>`)以 `break-all min-w-0` 處理,讓 URL / ID 等無空白長字串能斷行,避免撐破單列;vertical 模式 value 佔滿整欄寬,自然流文字依字詞換行(不強制單行 truncate,長內容保留可讀完整性)。若 vertical 模式需展示無空白長字串(連續英數 token),由 consumer 自行於該 value 加 `break-all`
 - **列表識別**:預設 `<dl>` 有部分瀏覽器 SR 不視為 list,若需明確 list 語意,DL 根容器可搭配 `role="list"` + `<div role="listitem">`(目前預設不加,保留標準 `<dl>` 語意,consumer 可自行加 role 覆蓋)
@@ -183,7 +183,7 @@ Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個�
 
 DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant 驅動):
 
-- **有 Inspector**:DL 雖唯讀,但有 layout prop 可即時切換——`Inspector` story 暴露 `cols`(1 / 2 / 3)/ `orientation`(vertical / horizontal)/ `divided` 三個 prop 的 Controls,取代 Figma inspect。`orientation` 與 `divided` 是 `ColsMatrix`(只示範 cols)沒涵蓋的維度。
+- **有 Inspector**:DL 雖唯讀,但有 layout prop 可即時切換——`Inspector` story 暴露 `cols`(1 / 2 / 3)/ `orientation`(vertical / horizontal)/ `divided` 三個 prop 的 Controls,在 Storybook 裡直接切換看結果。`orientation` 與 `divided` 是 `ColsMatrix`(只示範 cols)沒涵蓋的維度。
 - **無 ColorMatrix**:DL 固定 semantic token(label `text-fg-secondary` / value `text-foreground`),無自己的色彩變體,dark mode 由 semantic token 自動切換。加 color variant 不符語意(DL 是資訊展示,非狀態載體)。
 - **無 SizeMatrix**:DL 無 size prop——垂直間距隨 `layout-space` token 感知 density(見「間距」段),但 label / value typography 走 reading mode 固定 tier,不提供 sm / md / lg 變體。不同 density 由 token 自動處理,非 prop 切換。
 
@@ -193,7 +193,7 @@ DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant
 
 ## 邊界案例
 
-- **Disabled(action cell)**:DescriptionList 主體為唯讀資料呈現,本身無 disabled state。**dd 內互動內容 canonical(2026-07-04 Q9 拍板,三處立場收斂)**:操作型互動(Button / Input)**禁止**(見「禁止事項」— 需要動作 → Field read-only / inline-edit / action row / 卡片 header action);展示 / 導覽型 ReactNode(Tag / Badge / **Link**)**允許**,Link 自行 own disabled,DL 不干預。對齊 Polaris(ReactNode 型別 + 純敘述範例)/ Ant(action 放 extra 不放 dd)/ Carbon(read-only default)三家共識。
+- **Disabled(action cell)**:DescriptionList 主體為唯讀資料呈現,本身無 disabled state。**dd 內互動內容 canonical(2026-07-04 Q9 拍板,三處立場收斂)**:操作型互動(Button / Input)**禁止**(見「禁止事項」— 需要動作 → Field read-only / inline-edit / action row / 卡片 header action);展示 / 導覽型 ReactNode(Tag / Badge / **Link**)**允許**,Link 自行 own disabled,DL 不干預。對齊 Polaris(`description: React.ReactNode` + 純敘述範例)/ Ant(動作放 `extra`「The action area of the description list」,不放 dd)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/DescriptionList/DescriptionList.tsx#L10-L12)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/descriptions/index.en-US.md?plain=1#L90))。
 - **Loading**:DL 非 async surface,無 loading prop。若 page-level data 載入中,consumer 應在 DL 外層用 `<Skeleton>`(每組 dt/dd 對應一條 skeleton line)取代;DL 本體不渲染 loading state。
 - **Empty(no items / empty value)**:no items → consumer 應 conditional 渲 `<Empty>` 取代 DL,不渲空 `<dl>`(SR 會讀「empty list」造成混淆);individual value 空 → consumer 應自行傳入半形 `-`(hyphen,對齊 Field `EMPTY_DISPLAY`,2026-07-08 user 拍板;包 `text-foreground`(色同 value,2026-07-09);元件不自動 normalize,已在「無障礙」段 codify)。
 - **長 label / 長值**:horizontal 模式 label(`dt`)`shrink-0` 不收縮、不截斷,value(`dd`)`break-all min-w-0` 斷行吸收擠壓;vertical 模式兩者佔滿欄寬自然換行。無空白長字串(URL / ID)詳「無障礙」段「長值換行」。

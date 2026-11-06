@@ -98,16 +98,15 @@
     },
     "pairedMeta": {
       "type": "object",
-      "description": "Canonical isolated meta-test owner. A member may also appear in direct when the registry intentionally owns an additional exact leaf command.",
+      "description": "Canonical isolated meta-test owner, partitioned into lanes. Every runnable gate meta-test belongs to exactly one lane; each lane runs as `node scripts/run-gate-meta-tests.mjs --lane <id>` in its own disposable snapshot with explicit per-test and per-lane budgets (registry outer deadline = totalTimeoutMs + 60 seconds). Exactly one lane has membership \"remainder\" (generated: runnable minus the declared lanes) and it must be storybook \"absent\"; \"lane-build\" lanes build Storybook once in the snapshot and require a browser. A member may also appear in direct when the registry intentionally owns an additional exact leaf command. The partition and budget rules are enforced by scripts/lib/gate-meta-test-inventory.mjs validateGateMetaLanes.",
       "additionalProperties": false,
-      "required": ["command", "members"],
+      "required": ["runner", "lanes"],
       "properties": {
-        "command": {"const": ["node", "scripts/run-gate-meta-tests.mjs"]},
-        "members": {
+        "runner": {"const": "scripts/run-gate-meta-tests.mjs"},
+        "lanes": {
           "type": "array",
           "minItems": 1,
-          "uniqueItems": true,
-          "items": {"$ref": "#/$defs/repoPath"}
+          "items": {"$ref": "#/$defs/gateMetaLane"}
         }
       }
     },
@@ -125,6 +124,63 @@
     "nonGovernance": {"$ref": "#/$defs/nonGovernanceDigestBinding"}
   },
   "$defs": {
+    "gateMetaLaneBudgetMs": {"type": "integer", "minimum": 1000, "maximum": 21540000},
+    "gateMetaLaneMemberPath": {"type": "string", "pattern": "^scripts/test-[A-Za-z0-9._-]+\\.mjs$"},
+    "gateMetaLaneId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "gateMetaLaneMembership": {"enum": ["declared", "remainder"]},
+    "gateMetaLaneOverrides": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "timeoutMs"],
+        "properties": {
+          "path": {"$ref": "#/$defs/gateMetaLaneMemberPath"},
+          "timeoutMs": {"$ref": "#/$defs/gateMetaLaneBudgetMs"}
+        }
+      }
+    },
+    "gateMetaLaneMembers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/gateMetaLaneMemberPath"}
+    },
+    "gateMetaLane": {
+      "oneOf": [
+        {
+          "type": "object",
+          "description": "Storybook-absent lane: the disposable snapshot never contains storybook-static; a member that reports it missing is misassigned and fails.",
+          "additionalProperties": false,
+          "required": ["id", "storybook", "membership", "memberTimeoutMs", "memberTimeoutOverrides", "totalTimeoutMs", "members"],
+          "properties": {
+            "id": {"$ref": "#/$defs/gateMetaLaneId"},
+            "storybook": {"const": "absent"},
+            "membership": {"$ref": "#/$defs/gateMetaLaneMembership"},
+            "memberTimeoutMs": {"$ref": "#/$defs/gateMetaLaneBudgetMs"},
+            "memberTimeoutOverrides": {"$ref": "#/$defs/gateMetaLaneOverrides"},
+            "totalTimeoutMs": {"$ref": "#/$defs/gateMetaLaneBudgetMs"},
+            "members": {"$ref": "#/$defs/gateMetaLaneMembers"}
+          }
+        },
+        {
+          "type": "object",
+          "description": "Lane-build lane: the runner builds Storybook once in the snapshot within storybookBuildTimeoutMs and declares GOVERNANCE_BROWSER_REQUIRED=1; a missing build or a skip fails.",
+          "additionalProperties": false,
+          "required": ["id", "storybook", "storybookBuildTimeoutMs", "membership", "memberTimeoutMs", "memberTimeoutOverrides", "totalTimeoutMs", "members"],
+          "properties": {
+            "id": {"$ref": "#/$defs/gateMetaLaneId"},
+            "storybook": {"const": "lane-build"},
+            "storybookBuildTimeoutMs": {"$ref": "#/$defs/gateMetaLaneBudgetMs"},
+            "membership": {"const": "declared"},
+            "memberTimeoutMs": {"$ref": "#/$defs/gateMetaLaneBudgetMs"},
+            "memberTimeoutOverrides": {"$ref": "#/$defs/gateMetaLaneOverrides"},
+            "totalTimeoutMs": {"$ref": "#/$defs/gateMetaLaneBudgetMs"},
+            "members": {"$ref": "#/$defs/gateMetaLaneMembers"}
+          }
+        }
+      ]
+    },
     "repoPath": {
       "type": "string",
       "minLength": 1,

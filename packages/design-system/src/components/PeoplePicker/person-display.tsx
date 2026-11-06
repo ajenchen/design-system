@@ -11,6 +11,8 @@ import { useTableIsScrolling } from '@/design-system/components/Field/field-cont
 import { ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import {
   getAvatarStackVisibleCount,
+  measureStackAvailablePx,
+  type StackChromeCache,
   AVATAR_STACK_AVATAR_PX,
   AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
@@ -21,7 +23,7 @@ import {
 // 同一組 sections(name + subtitle + status + 2 default fields(id + employeeNumber,見下方
 // NAMECARD_DEFAULT_FIELD_KEYS 對齊註解)+ 自訂 fields + actions + View more)— 缺資料顯 placeholder;
 // **例外:status undefined 時整 status block 省略(collapse,= loading transient,見 status jsDoc)**。
-// 對齊 avatar.spec.md「person avatar hover → ProfileCard」DS-wide canonical。
+// 對齊 avatar.spec.md「Avatar HoverCard 原則(DS-wide canonical,必遵守)」。
 export interface PersonData {
   name: string
   avatarUrl?: string
@@ -32,7 +34,7 @@ export interface PersonData {
    *  不是「user 沒設定」。ProfileCard 在 undefined 期間隱藏整 status block,**禁** render「Status not set」
    *  placeholder 文字。 */
   status?: 'online' | 'away' | 'busy' | 'offline'
-  /** Status 訊息(ProfileCard status section)。只在 status defined 時 render,缺則顯 `—` placeholder。
+  /** Status 訊息(ProfileCard status section)。只在 status defined 時 render,缺則顯半形 `-` placeholder(同 profile-card.tsx `FIELD_PLACEHOLDER`)。
    *  Status undefined 整 block skip(無 statusMessage 也跟著 skip)。 */
   statusMessage?: React.ReactNode
   /** **2026-05-07 v15.7 user directive**:ProfileCard default 只 render `id` + `employeeNumber`,
@@ -120,8 +122,8 @@ function PersonAvatar({
   className?: string
   style?: React.CSSProperties
   /** disabled field context(2026-07-14 deep-audit 修):抑制 ProfileCard hoverCard(Avatar 收
-   *  undefined → 無 HoverCard wrapper / 無 tabIndex,真不可互動)+ avatar 自身 dim(host-controlled
-   *  opacity — avatar.spec.md「Avatar 在 disabled 元件內 host-controlled opacity」canonical;
+   *  undefined → 無 HoverCard wrapper / 無 tabIndex,真不可互動)+ avatar 自身 dim(由 host 補 opacity:
+   *  avatar.spec.md「Disabled」—— Avatar 只在 Field disabled context 內 self-dim;
    *  PeoplePicker disabled 分支無 fieldCtx,Avatar self-dim 搆不到,host 補)。
    *  對齊 people-picker.spec.md「disabled:灰化整個 field,不可互動」。 */
   disabled?: boolean
@@ -155,7 +157,15 @@ function PersonAvatar({
 // outer 改 items-start + Avatar 外包 ItemPrefix primitive consumption。單行視覺 = items-center 等效;
 // 多行(autoRowHeight cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
 // 對齊 TreeView / MenuItem / SelectionItem 共用 ItemPrefix wrap chevron/icon/avatar canonical。
-function PersonDisplay({ value, size = 'md', disabled = false, onRemove }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void }) {
+function PersonDisplay({ value, size = 'md', disabled = false, onRemove, nameYielded = false }: {
+  value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void
+  /**
+   * @internal PeoplePicker 多人只選 1 位 × 欄位內搜尋框開著時用(people-picker.spec.md §C open + inline-search 列,2026-10-07 待辦總帳 K4):
+   * 名字讓位給搜尋框 —— 頭像留在原位,名字的位置空出來給插入點。名字那一格換成零寬的佔位,頭像到它之間仍是同一個 `gap-2`,
+   * 所以接在後面的搜尋框剛好從原本名字的那條線開始(打開前後字不跳位);整顆不撐滿(不帶 `w-full`),搜尋框才排得進同一列。
+   */
+  nameYielded?: boolean
+}) {
 const emptyDisplay = useFieldEmptyDisplay()
   if (!value) return <span className="text-foreground">{emptyDisplay}</span>
 
@@ -167,14 +177,14 @@ const emptyDisplay = useFieldEmptyDisplay()
   // + inner name span `flex-1 min-w-0 truncate` 真實 truncate-with-ellipsis 顯示。
   // 對齊 GitHub Primer ActionList / Slack users_select / Atlassian UserPicker truncation canonical。
   return (
-    <span className="flex items-start gap-2 min-w-0 w-full">
+    <span className={cn('flex items-start gap-2 min-w-0', !nameYielded && 'w-full')}>
       <ItemPrefix>
         <span className="relative inline-flex group/avatar">
           <PersonAvatar person={person} size={size} disabled={disabled} />
           {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
         </span>
       </ItemPrefix>
-      <span className="truncate flex-1 min-w-0">{person.name}</span>
+      {nameYielded ? <span aria-hidden className="w-0" /> : <span className="truncate flex-1 min-w-0">{person.name}</span>}
     </span>
   )
 }
@@ -203,7 +213,7 @@ function MultiPersonDisplay({
   /**
    * 2026-05-15 codex Round 5 C+ SSOT fix:`measured=true` 啟動 container-width 量測(取代 hardcode `max ?? 3`)
    * → view + edit stack 同 algorithm(同 cell width → 同 overflow 判斷),不再 view 用固定 3 vs edit
-   * 用 useOverflowCount。對齊 field-controls.spec.md:286 「4-mode 共享 renderer」contract + user round 3
+   * 用 useOverflowCount。對齊 field-controls.spec.md「共享 contract」(a) 4-mode 共享 renderer contract + user round 3
    * verbatim「同空間兩判斷點」SSOT directive。Default false 保 backward compat(non-cell context 仍 max ?? 3)。
    */
   measured?: boolean
@@ -218,7 +228,7 @@ function MultiPersonDisplay({
   // 2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus):消費 shared `avatar-stack-overflow`
   // primitive。原 inline canvas-based formula 是 dual-implementation 違反 user SSOT「同 cell width 同
   // overflow 判斷」(edit path 用 Combobox useOverflowCount DOM offsetWidth / view path 用 inline
-  // canvas)。**抽 primitive 統一**:view + edit 共用 `getAvatarStackVisibleCount` formula。
+  // canvas;以上是 2026-05-15 當時 —— useOverflowCount 2026-10-13 起住 ../OverflowIndicator/overflow-tag-list.tsx、量 getBoundingClientRect)。**抽 primitive 統一**:view + edit 共用 `getAvatarStackVisibleCount` formula。
   // SSOT in `./avatar-stack-overflow.ts`,M14 mechanical guard 防 future drift。
   const containerRef = React.useRef<HTMLSpanElement>(null)
   const [measuredCount, setMeasuredCount] = React.useState<number | null>(null)
@@ -235,13 +245,13 @@ function MultiPersonDisplay({
     // 空間還回來也**永遠回不去**。線上實測 grpW=46 / cellW=180 即此循環的證據 ——
     // 這就是「明明還有空間卻顯示成溢出、重整才會好」的真因(GitHub main 同樣有,非本次改壞)。
     //
-    // 三個 `measured` 消費點(people-picker.tsx:260 / 281 / 308)的父層分別是
+    // 三個 `measured` 消費點(people-picker.tsx:262 / 281 / 308)的父層分別是
     // `flex w-full min-w-0` 與 `flex-1 min-w-0`,寬度由外層決定、**不受本元件內容影響**,
     // 量它才是 `getAvatarStackVisibleCount` jsdoc 講的 availablePx。
     const box = el.parentElement ?? el
     // **2026-09-07(B1)修:`width='hug'` 下量父層還是會自我回饋。**
     //
-    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx:134)—— 它的寬度
+    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx#fieldWrapperStyles)—— 它的寬度
     // **就是內容決定的**,所以裡面那層 `flex-1 min-w-0` 也跟著內容縮:少畫一顆 →
     // 父層變窄 → 再少畫一顆,棘輪只是往上搬了一層,沒有被拆掉。
     //
@@ -253,8 +263,10 @@ function MultiPersonDisplay({
     //
     // fill 模式下這條公式與原本的「量父層」逐像素相同(wrapper 寬由容器決定,
     // slot = wrapper − 開銷,相減回來就是容器寬 − 開銷),所以**不需要分兩條路**;
-    // 沒有 field wrapper 的用法(people-picker.tsx:256 那個 `flex w-full min-w-0`)
+    // 沒有 field wrapper 的用法(people-picker.tsx:258 那個 `flex w-full min-w-0`)
     // 找不到 `[data-field-mode]`,自然落回原本的量父層。
+    // 2026-10-28:這段量法搬進 `avatar-stack-overflow.ts` `measureStackAvailablePx`,編輯態(people-picker.tsx)同一支
+    //(編輯態原本量自己那一格,依內容寬時同一個棘輪,r-F3 缺陷 K)。
     const wrapper = el.closest<HTMLElement>('[data-field-mode]')
     const containingBlock = wrapper?.parentElement ?? null
     // 觀察對象是**儲存格的父層**,所以欄寬重分配、捲軸出現消失、列重掛,都會讓畫面上
@@ -265,19 +277,13 @@ function MultiPersonDisplay({
     // 外框開銷(field 的 padding / border / 其他 slot)**不隨欄寬改變**,量一次就夠;
     // 真的變了(換密度、清除鈕出現)會重掛節點或讓下面的寬度判斷落到 <= 0,屆時自然重量。
     // 寬度沒變就直接返回,連 getAvatarStackVisibleCount 與 setState 都不必跑。
-    let chromePx: number | null = null
+    const chrome: StackChromeCache = { chromePx: null }
     let lastAvailable = -1
     const calc = () => {
-      // 先用一次便宜的讀取確認版面好了沒 —— 沒好就連外框開銷都不量,否則會把還沒排版的
-      // 垃圾值快取起來、之後再也不重算(story 切換過渡、display:none、圖未載入都會走到)。
-      const rawAvail = wrapper && containingBlock ? containingBlock.clientWidth : box.clientWidth
-      if (rawAvail <= 0) { chromePx = null; lastAvailable = -1; return }
-      if (wrapper && containingBlock && chromePx === null) {
-        chromePx = wrapper.getBoundingClientRect().width - box.getBoundingClientRect().width
-      }
-      const availablePx = rawAvail - (chromePx ?? 0)
-      // (story 切換過渡、display:none、圖未載入時會走到這裡;用 0 去算會鎖進收縮態且不再復原。)
-      if (availablePx <= 0) return
+      // 版面還沒好(story 切換過渡、display:none、圖未載入)→ 0:不量外框開銷、不快取垃圾值,下次回呼再量
+      const availablePx = measureStackAvailablePx(box, chrome)
+      // (用 0 去算會鎖進收縮態且不再復原。)
+      if (availablePx <= 0) { lastAvailable = -1; return }
       // 寬度沒變就不必再跑分配計算與 setState(觀察對象是儲存格父層,一次欄寬變動會同時
       // 喚醒畫面上每一格)。
       if (availablePx === lastAvailable) return
@@ -320,7 +326,7 @@ function MultiPersonDisplay({
       <ItemPrefix className="!justify-start"><span className={cn('inline-flex items-center min-w-0', AVATAR_STACK_CLASS)}>
       {visible.map((person, i) => {
         // **2026-05-07 v15.11 Bug D 升級 SSOT**:visible avatar 也支援 inline dismiss
-        // (對齊 user directive「avatar = tag」)。Dismiss overlay 走 `AvatarDismissOverlay`
+        // (對齊 user directive:avatar = tag)。Dismiss overlay 走 `AvatarDismissOverlay`
         // 共用 SSOT(下方 export),Combobox tagRenderer / 此處 / 任何 future avatar consumer
         // 都用同一視覺 — 紅圈 X 對齊 avatar 右上,hover/focus-visible 才顯。
         const handleDismiss = onRemove ? () => onRemove(value![i]) : undefined
@@ -391,8 +397,7 @@ MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 //     v15.15 user-confirmed asymmetric canonical,rationale 見下方 className 內註解)
 //
 // **a11y**(codex P1 fix):`opacity-0` 而非 `display:none` — element 在 DOM/tab-order,
-// keyboard tab 可達,觸控 focus-within 也顯。Hover / focus-within / focus-visible
-// 三條件之一觸發 `opacity-100`。
+// keyboard tab 可達。滑過頭像,或鍵盤焦點在頭像群組裡(`:focus-visible`)時 `opacity-100`(條件只寫在下方 className 一處)。
 //
 // **Why centralize**:Combobox tagRenderer (PeoplePicker stack mode) + MultiPersonDisplay
 // dismiss 共用 SSOT,改 1 處全 sync(M17 propagation)。
@@ -420,15 +425,15 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // step-7 dark 公式自動 lighter → engaged 跨 mode 對稱)
         'bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover',
         // a11y(codex P1 fix):opacity 而非 display:none — element 在 DOM/tab-order,
-        // keyboard 可達。Hover / focus-within / focus-visible 三條件之一觸發。
+        // keyboard 可達。滑過頭像,或鍵盤焦點在頭像群組裡(`:focus-visible`)時出現 ——
+        // 用 has-[:focus-visible] 不用 focus-within:滑鼠點過頭像(打開名片)也會讓 focus-within 成立,
+        // × 會一直亮到焦點離開(規則同 item-anatomy.tsx `SUFFIX_HOVER_REVEAL_BY_GROUP`;與 avatar.tsx `AVATAR_OWN_CUTOUT_CLASS` 的挖洞成對)。
         // **此行是移除鈕可見性的唯一 gating,刪掉 = 全部恆顯**(2026-08-05 anchor:撤 A 案時
         // 連同本行一起刪除,造成桌機 stack 所有 avatar 的 X 無條件顯示;mechanical guard
         // 見 scripts/test-hover-revealed-affordances.mjs)。
-        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100',
-        // **不加 touch 恆顯**(2026-08-05 user 否決前一版 A 案:「一般狀態直接把所有成員 avatar
-        // 的 X 都秀出來,這樣看起來超亂」)。觸控的多人移除改由 PeoplePicker 自動降階為既有
-        // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
-        // 「觸控裝置(native 分支)」。本 overlay 維持 hover / focus 才顯的桌機語意。
+        'opacity-0 group-hover/avatar:opacity-100 group-has-[:focus-visible]/avatar:opacity-100',
+        // **不恆顯**(2026-08-05 user 否決前一版 A 案:「一般狀態直接把所有成員 avatar
+        // 的 X 都秀出來,這樣看起來超亂」)。
         // 瞬間出現,不寫 transition-opacity(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 延伸到滑過才出現的按鈕,待辦總帳 L9 / N4(3))。
       ].join(' ')}
     >
@@ -440,7 +445,7 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
 // ── PersonAvatarTag(Combobox tagRenderer SSOT for stack mode)─────────────
 // PeoplePicker `multiDisplay='stack'` 模式 wraps Combobox,tagRenderer 不能用 Tag pill
 // (那是 pill mode),改 render 此元件 — Avatar overlap 視覺 + AvatarDismissOverlay。
-// 對齊 user directive「avatar = tag 概念,差別只在視覺,SSOT 一致」(2026-05-07 v15.13)。
+// 對齊 user directive:avatar 與 tag 是同一個概念,差別只在視覺,SSOT 一致(2026-05-07 v15.13)。
 //
 // **架構**(v15.13 重構):本元件**不自包** `group/avatar` / `-ml-[var(--avatar-stack-overlap)]` overlap wrapper,
 // 因 Combobox `tagRenderer` 結果會被內部 `<div shrink-0>` 包成 measurement wrapper

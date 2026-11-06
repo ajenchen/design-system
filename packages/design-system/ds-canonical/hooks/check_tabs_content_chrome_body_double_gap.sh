@@ -165,7 +165,7 @@ ESCAPE_MARKER='@tabs-content-gap-ok:'
 CANDIDATES=$(printf '%s\n' "$CONTENT" | awk '
   function check_tag(tag, ln) {
     # 只認 canonical `mt-0`(class-boundary anchored):排除 `mt-0.5` / `mt-04` 等 substring 假通過
-    # (mt-0.5 是本 DS 真實 class,item-anatomy.stories.tsx:766;2px 不抵銷 pt-tight → 仍雙重)。
+    # (mt-0.5 是本 DS 真實 class,`9cc29038:packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx:766`;2px 不抵銷 pt-tight → 仍雙重)。
     # arbitrary `mt-[...]` / 非-0 值 = 非 canonical → 需 escape marker 明示 documented(非靜默通過)。
     if (tag ~ /(^|[^a-zA-Z0-9])mt-0([^a-zA-Z0-9.]|$)/) return
     print ln

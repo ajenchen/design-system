@@ -24,7 +24,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Range mode(雙 thumb)</H3>
-        <Desc>Radix Slider 原生支援多 thumb——只要 `value` / `defaultValue` 傳 array 長度 &gt; 1,自動渲染對應 thumb,range 落在最小和最大 thumb 之間。</Desc>
+        <Desc>Radix Slider 原生支援多 thumb——只要 <code>value</code> / <code>defaultValue</code> 傳 array 長度 &gt; 1,自動渲染對應 thumb,range 落在最小和最大 thumb 之間。</Desc>
         <div className="max-w-md border border-border rounded-lg p-6">
           <Slider defaultValue={[20, 80]} aria-label="Price range" />
         </div>
@@ -94,7 +94,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>一種視覺,多種容器尺寸</H3>
-        <Desc>Slider 的視覺(track 厚度、thumb 直徑、thumb 邊框寬度)是固定單一值——不隨 `size` 變動。業界(Material / Ant / Radix Themes / shadcn)共識:thumb 必須足夠大以便手指/鼠標捕捉,track 太細會看不清 range。</Desc>
+        <Desc>Slider 的視覺(track 厚度、thumb 直徑、thumb 邊框寬度)是固定單一值——不隨 <code>size</code> 變動。業界(Material / Ant / Radix Themes / shadcn)共識:thumb 必須足夠大以便手指/鼠標捕捉,track 太細會看不清 range。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>元素</Th><Th>值</Th><Th>Token</Th></tr></thead>
@@ -111,7 +111,7 @@ export const ColorMatrix: Story = {
               <tr><Td>Thumb 邊框 disabled</Td><Td><TokenCell token="--border" display="border-border" /></Td><Td><TokenCell token="--border" display="--border(與 Range disabled 同色)" /></Td></tr>
               <tr><Td>Thumb hover</Td><Td mono>border primary-hover(升 hover 階)+ --elevation-100</Td><Td>—</Td></tr>
               <tr><Td>Thumb active(按壓拖曳)</Td><Td mono>border primary-active(深一階)+ --elevation-200</Td><Td><TokenCell token="--primary-active" /></Td></tr>
-              <tr><Td>Thumb focus</Td><Td mono>border-primary-hover(同 hover 視覺,不加 ring/halo)</Td><Td><TokenCell token="--primary-hover" /></Td></tr>
+              <tr><Td>Thumb focus</Td><Td mono>全域外描邊(往外 2px,--ring);hover 的邊框階變是另一個獨立通道</Td><Td><TokenCell token="--ring" /></Td></tr>
             </tbody>
           </table>
         </div>
@@ -125,8 +125,8 @@ export const SizeMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-6">
       <div>
-        <H3>Size 只決定 root 容器的 `h-field-*` class</H3>
-        <Desc>Track / thumb / 邊框尺寸不變——內部元素用 flex `items-center` 在容器垂直置中。這樣同一組 Field 並排(Input + Slider + NumberInput)高度完美對齊,但 Slider 本身視覺體驗一致。</Desc>
+        <H3>Size 只決定 root 容器的 <code>h-field-*</code> class</H3>
+        <Desc>Track / thumb / 邊框尺寸不變——內部元素用 flex <code>items-center</code> 在容器垂直置中。這樣同一組 Field 並排(Input + Slider + NumberInput)高度完美對齊,但 Slider 本身視覺體驗一致。</Desc>
         <div className="flex flex-col gap-3 max-w-md">
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="flex items-center gap-3 border border-dashed border-divider rounded-md p-3">
@@ -172,7 +172,7 @@ export const StateBehavior: Story = {
 }
 
 export const ColorBindingRule: Story = {
-  name: '範圍 ↔ Thumb 邊框 綁定規則',
+  name: '範圍與 Thumb 邊框同色',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -230,8 +230,8 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"ARIA / 角色:繼承 Radix slider 的無障礙預設(role、aria-* 屬性、鍵盤導覽都由 primitive 提供)。\n\n鍵盤操作:\n\n- Tab — 聚焦到 thumb\n- ←/→ — 微調數值\n- Home/End — 跳到最小/最大值\n- PageUp/PageDown — 大步階調整\n\n聚焦樣式:thumb 鍵盤聚焦時,邊框升 hover 階(跟滑鼠 hover 同一個視覺),不另外加外框光暈(ring/halo)。\n\n驗證:Storybook a11y 面板應為 0 個 critical violation;不用滑鼠、純鍵盤也能完整操作。文字對比 ≥ 4.5:1、UI 元件對比 ≥ 3:1(WCAG AA)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"ARIA / 角色:繼承 Radix slider 的無障礙預設(role、aria-* 屬性、鍵盤導覽都由 primitive 提供)。\n\n鍵盤操作:\n\n- Tab — 聚焦到 thumb\n- ←/→ — 微調數值\n- Home/End — 跳到最小/最大值\n- PageUp/PageDown — 大步階調整\n\n聚焦樣式:thumb 鍵盤聚焦時畫全域外描邊(往外 2px,--ring 色);滑鼠滑過時的邊框升階是另一個獨立通道。\n\n驗證:Storybook a11y 面板應為 0 個 critical violation;不用滑鼠、純鍵盤也能完整操作。文字對比 ≥ 4.5:1、UI 元件對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

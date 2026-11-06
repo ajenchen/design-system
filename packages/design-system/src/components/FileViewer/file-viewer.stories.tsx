@@ -5,11 +5,12 @@ import { FileViewer, type FileInfo } from './file-viewer'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
-import { Image as ImageIcon, Paperclip, Camera, Figma } from 'lucide-react'
+import { Paperclip, Camera, Figma } from 'lucide-react'
 
 /**
- * FileViewer 展示——真實業務場景(Jira / Notion / Figma / Gmail / 活動相集)。
+ * FileViewer 展示——真實業務場景(工單附件 / 文件配圖 / 設計稿審閱 / 郵件附件 / 活動相集)。
  * 設計規則詳見 `file-viewer.spec.md`。
  *
  * 展示情境都用 picsum.photos 真實圖片 + 真實業務文案,避免 placeholder 與
@@ -31,7 +32,7 @@ type Story = StoryObj
 const img = (seed: string, w = 1200, h = 800) =>
   `https://picsum.photos/seed/${seed}/${w}/${h}`
 
-// ── Story 1:Jira 附件檢視(screenshot pack + 說明欄)─────────────────────────
+// ── Story 1:工單附件檢視(screenshot pack + 說明欄)─────────────────────────
 
 const jiraScreenshots: FileInfo[] = [
   {
@@ -77,8 +78,12 @@ const jiraScreenshots: FileInfo[] = [
   },
 ]
 
+// 每則的情境說明放 docs、用人話寫;畫布上只留產品裡真的會出現的入口(之前每則都是示範鈕 + 灰色「情境:…」便條)
 export const JiraAttachments: Story = {
   name: 'Jira — 附件多圖檢視',
+  parameters: {
+    docs: { description: { story: 'PM 在 Jira 的 bug 單裡點開 QA 上傳的附件,逐張看截圖、讀回報人寫的說明。左右鍵切換檔案,按 I 開關說明欄;說明欄可以直接改,離開輸入框就存起來。' } },
+  },
   render: () => {
     const [open, setOpen] = React.useState(false)
     const [index, setIndex] = React.useState(0)
@@ -91,7 +96,7 @@ export const JiraAttachments: Story = {
     }
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <>
         <Button
           variant="tertiary"
           startIcon={Paperclip}
@@ -100,12 +105,8 @@ export const JiraAttachments: Story = {
             setOpen(true)
           }}
         >
-          開啟 3 張附件檢視器
+          login-error-step-3.png 等 3 個附件
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
-          情境:PM 在 Jira bug ticket 中點開附件,逐張檢視 QA 上傳的截圖 + 閱讀回報人說明。
-          支援 ← → 切換 / I 切換說明欄 / 編輯說明後 onBlur 持久化。
-        </p>
         <FileViewer
           files={files}
           open={open}
@@ -115,12 +116,12 @@ export const JiraAttachments: Story = {
           onDescriptionChange={handleDescriptionChange}
           showFilmstrip
         />
-      </div>
+      </>
     )
   },
 }
 
-// ── Story 2:Notion 頁面內多張配圖預覽 ──────────────────────────────────────
+// ── Story 2:文件頁面內多張配圖預覽 ──────────────────────────────────────
 
 const notionInlinePics: FileInfo[] = [
   {
@@ -158,50 +159,49 @@ const notionInlinePics: FileInfo[] = [
 ]
 
 export const NotionGallery: Story = {
-  name: 'Notion — 頁內配圖相簿',
+  name: 'Notion — 頁內配圖',
+  parameters: {
+    docs: { description: { story: 'Notion 頁面裡插了幾張配圖,點任一張就用檢視器打開,可以用底下的縮圖列或左右鍵切換。說明由文件作者寫,這裡只能看、不能改。' } },
+  },
   render: () => {
     const [open, setOpen] = React.useState(false)
-    const [startIdx, setStartIdx] = React.useState(0)
+    const [index, setIndex] = React.useState(0)
 
+    // 入口用 FileItem 清單(縮圖 + 檔名 + 大小,點列用 FileViewer 開,file-item.spec.md「Row-click」),
+    // 不再手拼縮圖格(user 2026-10-21 09:25 對這一題回覆照建議 = 不定新長相,用既有元件當入口;之前是原生 <button> 包 <img> + 自訂 4:3 比例 / 圓角 / 框)
     return (
-      <div className="flex flex-col gap-4 items-center">
-        <div className="grid grid-cols-4 gap-2 max-w-[640px]">
+      <>
+        {/* @layout-space-magic-ok: rich FileItem 清單列距 8px(file-item.spec.md:268 多 item 間距表 Rich + surface=form 那一列 gap-2) */}
+        <div className="flex flex-col gap-2 w-full max-w-md">
           {notionInlinePics.map((f, i) => (
-            <button
+            <FileItem
               key={f.id}
-              type="button"
+              mode="rich"
+              name={f.name}
+              description={`${Math.round((f.size ?? 0) / 1000)} KB`}
+              thumbnailSrc={f.url}
               onClick={() => {
-                setStartIdx(i)
+                setIndex(i)
                 setOpen(true)
               }}
-              className="aspect-[4/3] rounded-md overflow-hidden ring-1 ring-border hover:ring-border-hover transition-all"
-            >
-              <img
-                src={f.url}
-                alt={f.name}
-                className="w-full h-full object-cover"
-              />
-            </button>
+            />
           ))}
         </div>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
-          情境:Notion 文件內點擊任一配圖 → lightbox 開啟,可用 filmstrip 或 ← → 切換。
-          預設 readOnly(文件作者控制說明),viewer 只呈現不能改。
-        </p>
         <FileViewer
           files={notionInlinePics}
-          initialIndex={startIdx}
           open={open}
           onOpenChange={setOpen}
+          index={index}
+          onIndexChange={setIndex}
           readOnly
           showFilmstrip
         />
-      </div>
+      </>
     )
   },
 }
 
-// ── Story 3:Figma file gallery(design review 單檔 zoom focus)───────────────
+// ── Story 3:設計稿 gallery(design review 單檔 zoom focus)───────────────
 
 const figmaDesignFile: FileInfo[] = [
   {
@@ -223,30 +223,29 @@ const figmaDesignFile: FileInfo[] = [
 
 export const FigmaDesignReview: Story = {
   name: 'Figma — 單檔縮放聚焦',
+  parameters: {
+    docs: { description: { story: '設計審查時,工程師要放大看設計稿的間距、顏色與字。用滾輪或 + / − 縮放、拖曳移動畫面;按 `0` 回到 100%,按 `F` 符合頁面。' } },
+  },
   render: () => {
     const [open, setOpen] = React.useState(false)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <>
         <Button variant="tertiary" startIcon={Figma} onClick={() => setOpen(true)}>
           開啟 Dashboard v2 設計稿
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
-          情境:設計 review 中,engineer 需要 zoom 看 spacing / color / font 細節。
-          用滾輪或 +/- 縮放,拖曳 pan。`0` 重設為 100%,`F` Fit to page。
-        </p>
         <FileViewer
           files={figmaDesignFile}
           open={open}
           onOpenChange={setOpen}
           readOnly
         />
-      </div>
+      </>
     )
   },
 }
 
-// ── Story 4:Gmail 多附件預覽(filmstrip + download 為主)────────────────────
+// ── Story 4:郵件多附件預覽(filmstrip + download 為主)────────────────────
 
 const gmailAttachments: FileInfo[] = [
   {
@@ -277,18 +276,18 @@ const gmailAttachments: FileInfo[] = [
 
 export const GmailAttachmentPreview: Story = {
   name: 'Gmail — 多附件預覽',
+  parameters: {
+    docs: { description: { story: '收到一封帶多個附件的信,先快速預覽哪些需要下載存檔。寄件人寫的說明不能改,底下縮圖列列出全部附件方便切換。' } },
+  },
   render: () => {
     const [open, setOpen] = React.useState(false)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
-        <Button variant="primary" startIcon={Paperclip} onClick={() => setOpen(true)}>
+      <>
+        {/* 單獨的觸發鈕一律 tertiary(story-rules.md「單獨的觸發鈕 / 取消 / 一般輔助動作一律 tertiary」;之前是 primary,同頁其他觸發鈕都是 tertiary) */}
+        <Button variant="tertiary" startIcon={Paperclip} onClick={() => setOpen(true)}>
           預覽 3 個附件
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
-          情境:收到寄來帶多個附件的 email,快速預覽哪個需要下載存檔。
-          readOnly(使用者不能改寄件人寫的說明),filmstrip 顯示全部附件方便切換。
-        </p>
         <FileViewer
           files={gmailAttachments}
           open={open}
@@ -296,7 +295,7 @@ export const GmailAttachmentPreview: Story = {
           readOnly
           showFilmstrip
         />
-      </div>
+      </>
     )
   },
 }
@@ -321,13 +320,16 @@ const eventPhotos: FileInfo[] = Array.from({ length: 6 }, (_, i) => ({
 
 export const EventPhotosCollection: Story = {
   name: '活動相集 — 縮圖膠卷展開',
+  parameters: {
+    docs: { description: { story: '行銷團隊上傳了活動當天的 6 張照片,PM 逐張檢視並補上說明(說明可以編輯)。底下的縮圖列放不下時可以左右捲動。' } },
+  },
   render: () => {
     const [open, setOpen] = React.useState(false)
     const [index, setIndex] = React.useState(0)
     const [files, setFiles] = React.useState(eventPhotos)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
+      <>
         <Button
           variant="tertiary"
           startIcon={Camera}
@@ -338,10 +340,6 @@ export const EventPhotosCollection: Story = {
         >
           檢視活動相集
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
-          情境:行銷團隊上傳活動當天 6 張照片,PM 逐張檢視並補充說明(可編輯)。
-          filmstrip 顯示 6 張 thumbnail,scroll 時顯示 fade mask + arrows。
-        </p>
         <FileViewer
           files={files}
           open={open}
@@ -353,7 +351,7 @@ export const EventPhotosCollection: Story = {
           }
           showFilmstrip
         />
-      </div>
+      </>
     )
   },
 }
@@ -373,28 +371,26 @@ const unknownFile: FileInfo[] = [
 
 export const FallbackUnknownType: Story = {
   name: '後備顯示 — 不支援的檔案類型',
+  parameters: {
+    docs: { description: { story: 'zip 這類無法在瀏覽器預覽的檔案,檢視器改顯示檔名與「請下載後檢視」的提示,工具列也不出現縮放按鈕。' } },
+  },
   render: () => {
     const [open, setOpen] = React.useState(false)
 
     return (
-      <div className="flex flex-col gap-3 items-center">
-        <Button variant="tertiary" startIcon={ImageIcon} onClick={() => setOpen(true)}>
-          開啟無 renderer 支援的檔案
+      <>
+        <Button variant="tertiary" startIcon={Paperclip} onClick={() => setOpen(true)}>
+          project-backup-2026-04.zip
         </Button>
-        <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
-          情境:zip 等無法預覽的檔案,改顯示檔名和「請下載檢視」提示,工具列會自動隱藏縮放按鈕。
-        </p>
         <FileViewer files={unknownFile} open={open} onOpenChange={setOpen} />
-      </div>
+      </>
     )
   },
 }
 
-/**
- * OpenSnapshot — visual-audit 專用 story。
- * 初始 `open={true}` 讓 FileViewer render 時已打開,Playwright 截圖抓完整
- * toolbar + image renderer + action-bar。對齊 Dialog / Sheet / Popover OpenSnapshot canonical。
- */
+// OpenSnapshot — visual-audit 專用 story(test-only;用 // 註解,不進 docs 說明)。
+// 初始 `open={true}` 讓 FileViewer render 時已打開,Playwright 截圖抓完整
+// toolbar + image renderer + action-bar。對齊 Dialog / Sheet / Popover OpenSnapshot canonical。
 export const OpenSnapshot: Story = {
   name: '開啟狀態',
   tags: ['test-only'],
@@ -419,17 +415,21 @@ export const OpenSnapshot: Story = {
   },
 }
 
-/**
- * 並存區域(`persistentElements`)—— 與 Dialog 同一份契約、同一支 primitive。
- *
- * FileViewer **直接建 Radix Root/Portal**、不經 DS Dialog,所以只改 Dialog 會漏掉它
- * (2026-09-08 跨模型審查指出)。這個 story 也是「快捷鍵作用域」的驗證場:
- * 檢視器開著時,在右邊常駐區的按鈕上按方向鍵**不得**切換檔案。
- * 閘:`scripts/overlay-shortcut-scope-invariant.mjs`。
- */
+// 並存區域(`persistentElements`)—— 與 Dialog 同一份契約、同一支 primitive。
+// FileViewer **直接建 Radix Root/Portal**、不經 DS Dialog,所以只改 Dialog 會漏掉它
+// (2026-09-08 跨模型審查指出)。這個 story 也是「快捷鍵作用域」的驗證場:
+// 檢視器開著時,在右邊常駐區的按鈕上按方向鍵**不得**切換檔案。
+// 閘:`scripts/overlay-shortcut-scope-invariant.mjs`。
 export const CoexistenceContract: Story = {
   name: '並存 — 常駐區域仍可用',
   tags: ['test-only'],
+  // 說明放 docs(整頁示範畫布下方不放備註;之前經 SimulatedBrowser 的 caption 印在畫布下方)
+  parameters: {
+    // 整頁示範:撐滿 story、與邊界四周留 loose(SimulatedBrowser 的 height="fill" 用法);
+    // 之前固定 640 高 + padded 版面,舞台窄到檢視器工具列的縮放輸入框右側被裁
+    layout: 'fullscreen',
+    docs: { description: { story: '模擬:檔案檢視器(有自己的網址)開著時只佔舞台,右側評論側欄照常可用。' } },
+  },
   render: () => {
     const [open, setOpen] = React.useState(true)
     const [index, setIndex] = React.useState(0)
@@ -440,8 +440,8 @@ export const CoexistenceContract: Story = {
     const [aside, setAside] = React.useState('')
     const [comments, setComments] = React.useState<string[]>(['Betty:截圖二的按鈕文案要跟規格對一下。'])
     return (
-      <div className="p-[var(--layout-space-loose)]">
-        <SimulatedBrowser url="/projects/8821/tasks/4821/attachments" canBack toolbarRef={toolbarRef} caption="模擬:檔案檢視器(有自己的網址)開著時只佔舞台,右側評論側欄照常可用。">
+      <div className="flex h-dvh flex-col p-[var(--layout-space-loose)]">
+        <SimulatedBrowser url="/projects/8821/tasks/4821/attachments" canBack height="fill" toolbarRef={toolbarRef}>
           <div ref={setStage} className="relative flex min-w-0 flex-1 flex-col overflow-hidden" style={{ transform: 'translateZ(0)' }}>
             <FileViewer
               files={jiraScreenshots}

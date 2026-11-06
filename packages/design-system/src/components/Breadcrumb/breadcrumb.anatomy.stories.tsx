@@ -11,7 +11,14 @@ import {
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
 } from './breadcrumb'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { StoryLink, TutorialList } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 type InspectorArgs = {
   size: 'sm' | 'md' | 'lg'
@@ -36,7 +43,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Breadcrumb 基於 shadcn/ui Breadcrumb 結構橋接 DS token,基礎結構為原生 HTML + Tailwind(asChild 用 Radix Slot;truncate Tooltip 與收合 DropdownMenu 消費 DS 內部元件)。使用 `&lt;nav aria-label="Breadcrumb"&gt;` 確保正確 a11y。</Desc>
+        <Desc>Breadcrumb 基於 shadcn/ui Breadcrumb 結構橋接 DS token,基礎結構為原生 HTML + Tailwind(asChild 用 Radix Slot;truncate Tooltip 與收合 DropdownMenu 消費 DS 內部元件)。使用 <code>&lt;nav aria-label="麵包屑"&gt;</code> 確保正確 a11y。</Desc>
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -60,7 +67,7 @@ export const Overview: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>元件</Th><Th>作用</Th><Th>HTML</Th></tr></thead>
             <tbody>
-              <tr><Td mono>Breadcrumb</Td><Td>外層 nav,aria-label="Breadcrumb"</Td><Td mono>&lt;nav&gt;</Td></tr>
+              <tr><Td mono>Breadcrumb</Td><Td>外層 nav,aria-label="麵包屑"</Td><Td mono>&lt;nav&gt;</Td></tr>
               <tr><Td mono>BreadcrumbList</Td><Td>flex 容器</Td><Td mono>&lt;ol&gt;</Td></tr>
               <tr><Td mono>BreadcrumbItem</Td><Td>單一層級</Td><Td mono>&lt;li&gt;</Td></tr>
               <tr><Td mono>BreadcrumbLink</Td><Td>可點擊的上層 / 中層</Td><Td mono>&lt;a&gt;</Td></tr>
@@ -154,8 +161,8 @@ export const ColorMatrix: Story = {
         <H3>節點類型 × 狀態色彩對照</H3>
         <Desc>
           Breadcrumb 的色彩決定「你從哪來 / 你在這」的視覺階層——ancestor link 降低飽和度(fg-secondary)讓 current page(foreground)成為焦點。
-          BreadcrumbLink 的互動高亮走 `--primary-hover`(設計準則,與 Tabs / Chip 未選 hover 同 token)；
-          BreadcrumbEllipsis 是 icon button(消費 `ItemInlineActionButton`),hover 走 neutral `--foreground` + neutral hover bg,不走 `--primary-hover`(對齊 inline-action primitive canonical)。
+          BreadcrumbLink 的互動高亮走 <code>--primary-hover</code>(設計準則,與 Tabs / Chip 未選 hover 同 token)；
+          BreadcrumbEllipsis 是 icon button(消費 <code>ItemInlineActionButton</code>),hover 走 neutral <code>--foreground</code> + neutral hover bg,不走 <code>--primary-hover</code>(對齊 inline-action primitive canonical)。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse min-w-[640px]">
@@ -217,7 +224,21 @@ export const ColorMatrix: Story = {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbEllipsis />
+                {/* ⋯ 點得開:列出被收起的中間層級(同展示「可互動省略」;稽核 L029)。選單項照元件自己收合時的做法渲染成連結
+                    (breadcrumb.tsx 自動收合的選單項 = `<a href>`、不攔點擊),目的地跟這一則其他節點一樣是 href="#" */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <BreadcrumbEllipsis />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem asChild>
+                      <a href="#">成長行銷</a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href="#">電子郵件</a>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -239,7 +260,7 @@ export const ColorMatrix: Story = {
         <H3>為什麼 current 不加粗</H3>
         <Desc>
           加粗會讓 breadcrumb 最右端視覺過重,破壞「你從哪來 → 你在這」的流動感。
-          改以 `--foreground` vs `--fg-secondary` 的色階區分——對齊 Notion / Figma 的輕量 current 呈現;
+          改以 <code>--foreground</code> vs <code>--fg-secondary</code> 的色階區分——對齊 Notion / Figma 的輕量 current 呈現;
           重要性反差由 font-color 處理,非 font-weight。
         </Desc>
       </div>
@@ -331,7 +352,7 @@ export const StateBehavior: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Hover 色採 `primary-hover`(標準互動高亮),跟 Tabs / Chip 未選 hover 用同一組 token
+          Hover 色採 <code>primary-hover</code>(標準互動高亮),跟 Tabs / Chip 未選 hover 用同一組 token
           ——全系統互動 affordance 保持一致。
         </p>
       </div>
@@ -364,86 +385,29 @@ export const StateBehavior: Story = {
   ),
 }
 
-export const UsageExamples: Story = {
-  name: '真實場景',
-  render: () => (
-    <div className="flex flex-col gap-6">
-      <div>
-        <H3>檔案管理器路徑</H3>
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem><BreadcrumbLink href="#">Documents</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink href="#">Projects</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink href="#">2026-Q1</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>spec.md</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      <div>
-        <H3>電商多層分類</H3>
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem><BreadcrumbLink href="#">首頁</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink href="#">Electronics</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink href="#">Phones</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>iPhone 15 Pro</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      <div>
-        <H3>App 內部階層(專案 / 子專案 / 任務)</H3>
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem><BreadcrumbLink href="#">Engineering</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink href="#">Design System</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink href="#">Sprint 23</BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>Button 重構</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-    </div>
-  ),
-}
-
 export const CollapseMatrix: Story = {
-  // renumbered to 7 (was 6) to accommodate ColorMatrix(3) + UsageExamples(6)
   name: '長路徑收合（Ellipsis）',
   render: () => (
     <div className="flex flex-col gap-6">
       <div>
         <H3>路徑過長時用 Ellipsis 收合中間</H3>
-        <Desc>保留第一層(根)+ 最後兩層(當前 + 上一層),中間以 `...` 取代。使用者需要看到「我在哪裡」+「根位置」,中間層通常不需要完整可見。</Desc>
+        <Desc>超過 4 層時,保留首 1 + 末 1(預設),中間以 ⋯ 取代;點 ⋯ 會開選單列出被收起的層級。使用者需要看到「我在哪裡」+「根位置」,中間層通常不需要完整可見。</Desc>
+        {/* 用 items 傳路徑,收合與 ⋯ 的選單由元件自己接(稽核 L029:原本手寫 ⋯ 沒接選單、點了沒反應;說明寫「最後兩層」與預設不符) */}
         <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="#">Home</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbEllipsis />
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="#">專案</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>設定</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
+          <BreadcrumbList
+            items={[
+              { label: '首頁', href: '#' },
+              { label: '專案', href: '#' },
+              { label: 'Q1 行銷活動', href: '#' },
+              { label: '電子報', href: '#' },
+              { label: '設定' },
+            ]}
+          />
         </Breadcrumb>
-        <p className="text-footnote text-fg-muted mt-3">本 story 為靜態結構展示:手動 `&lt;BreadcrumbItem&gt;&lt;BreadcrumbEllipsis /&gt;` 只渲染 ⋯ 按鈕本身(消費 ItemInlineActionButton,帶 aria-label / focus / hover bg),未接 DropdownMenu — 此處點擊無展開行為。完整互動接線(Ellipsis 包在 DropdownMenuTrigger 內展開中間層)見展示層「可互動省略」story;declarative `items` 與 compositional 超過 `maxItems` 的自動收合路徑則由元件自動接上 DropdownMenu。</p>
+        <p className="text-footnote text-fg-muted mt-3">
+          收合門檻與首尾保留的層數可以改(<code>maxItems</code> / <code>itemsBeforeCollapse</code> / <code>itemsAfterCollapse</code>),見<StoryLink kind="Design System/Components/Breadcrumb/設計規格" name="元件檢閱器">元件檢閱器</StoryLink>;
+          自己組 <code>BreadcrumbEllipsis</code> 時,把它包在 DropdownMenu 的觸發鈕裡,見<StoryLink kind="Design System/Components/Breadcrumb/展示" name="可互動省略">展示「可互動省略」</StoryLink>。
+        </p>
       </div>
     </div>
   ),
@@ -455,8 +419,30 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"Breadcrumb 結構是原生 HTML(nav + ol + li + a/span);asChild 多型渲染用 Radix Slot,但 Slot 只合併 prop、不管理焦點 / ARIA / 鍵盤(非行為型 primitive)。摘要:\n\n  ARIA  :外層 nav 帶 aria-label=\"Breadcrumb\";當前頁 BreadcrumbPage 帶 aria-current=\"page\";分隔符 aria-hidden 不進無障礙樹。a11y 行為來自原生 HTML 語意,非 Slot 提供。\n\n  Keyboard 行為  :\n\n- Tab — 逐個 link 依序聚焦(每個連結都是獨立 tab stop,無 focus trap)\n- Enter — 觸發連結導覽\n\n  Focus  :聚焦時顯示焦點框 — BreadcrumbLink 與 BreadcrumbEllipsis 按鈕都走全域 :focus-visible 外描邊(outline: 2px solid var(--ring),往外 2px;元件不寫任何 class);連結逐個依序聚焦,不攔截焦點。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      {/* 標題 → 一段文字 = tight(純文字的內容之間是 tight,A4;原本寫死 mb-2 = 8、不跟密度) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      {/* 段落之間 = tight(純文字 / 清單的內容之間);原本是一整段帶 Markdown 記號的純文字,改成真的段落與清單(同 Tabs 設計規格「無障礙與鍵盤」) */}
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>
+          Breadcrumb 結構是原生 HTML(nav + ol + li + a/span);asChild 多型渲染用 Radix Slot,但 Slot 只合併 prop、不管理焦點 / ARIA / 鍵盤(非行為型 primitive)。
+        </p>
+        <p>
+          <strong>ARIA</strong>:外層 nav 帶讀屏名稱(預設「麵包屑」,可經 aria-label 或 I18nProvider 換字);當前頁 BreadcrumbPage 帶 aria-current="page";分隔符 aria-hidden 不進無障礙樹。a11y 行為來自原生 HTML 語意,非 Slot 提供。
+        </p>
+        <div>
+          <p><strong>鍵盤</strong>:</p>
+          <TutorialList>
+            <li>Tab — 逐個 link 依序聚焦(每個連結都是獨立 tab stop,無 focus trap)</li>
+            <li>Enter — 觸發連結導覽</li>
+          </TutorialList>
+        </div>
+        <p>
+          <strong>焦點</strong>:聚焦時顯示焦點框 — BreadcrumbLink 與 BreadcrumbEllipsis 按鈕都走全域 :focus-visible 外描邊(往外 2px;元件不寫任何 class);連結逐個依序聚焦,不攔截焦點。
+        </p>
+        <p>
+          <strong>驗證</strong>:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+        </p>
+      </div>
     </div>
   ),
 }

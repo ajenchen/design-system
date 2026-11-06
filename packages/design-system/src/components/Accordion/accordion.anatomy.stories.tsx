@@ -9,6 +9,7 @@ import {
   AccordionContent,
 } from './accordion'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Accordion/設計規格',
@@ -51,7 +52,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Variant 一覽</H3>
-        <Desc>Accordion 的 variant 是 type 行為(非視覺 variant)——`single` / `multiple` 決定「同時可展開幾個 item」。視覺無差異,差在互動邏輯。</Desc>
+        <Desc>Accordion 的 variant 是 type 行為(非視覺 variant)——<code>single</code> / <code>multiple</code> 決定「同時可展開幾個 item」。視覺無差異,差在互動邏輯。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead>
@@ -141,7 +142,7 @@ const InspectorView = () => {
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-[1fr_320px] gap-6">
         {/* 左:即時預覽 + 藍圖 */}
-        <div className="flex flex-col gap-6">
+        <ExampleStack>
           <div>
             <H3>即時預覽</H3>
             <div className="border border-border rounded-lg p-4">
@@ -170,7 +171,7 @@ const InspectorView = () => {
 
           <div>
             <H3>藍圖(Blueprint)</H3>
-            <Desc>Trigger 為 `py-4`(vertical padding),水平寬度由父容器決定。Chevron 16px + transition 200ms。Content 有 `pb-4` 與 `data-[state=closed]:animate-accordion-up` / `data-[state=open]:animate-accordion-down`。</Desc>
+            <Desc>Trigger 為 <code>py-4</code>(vertical padding),水平寬度由父容器決定。Chevron 16px,旋轉跟內容同一份時長與曲線(<code>disclosureIndicatorMotion</code>:200ms、ease-out)。Content 有 <code>pb-4</code>,高度動畫消費共用的 <code>disclosureMotion</code>(200ms、關閉後保持高度 0、減少動態不播;與 TreeView / AgentPanel 思考塊同一份)。動畫跑的時候裁切內容,打開而且停下來之後就不裁,內容裡的焦點框才不會被切掉。</Desc>
             <div className="border border-border rounded-lg p-4 max-w-[520px] bg-muted/40">
               <div className="border border-dashed border-primary-hover py-1 px-2 rounded mb-2">
                 <div className="flex items-center justify-between gap-2">
@@ -184,7 +185,7 @@ const InspectorView = () => {
               <div className="border border-dashed border-fg-muted py-2 px-2 rounded">
                 <p className="text-body text-fg-secondary">Content 區</p>
                 <p className="text-footnote text-fg-muted mt-1 font-mono">
-                  pb-4 · text-body · text-fg-secondary · overflow-hidden
+                  pb-4 · text-body · text-fg-secondary · overflow-hidden(打開且動畫停下後 overflow-visible)
                 </p>
               </div>
               <p className="text-footnote text-fg-muted mt-3 font-mono">
@@ -192,7 +193,7 @@ const InspectorView = () => {
               </p>
             </div>
           </div>
-        </div>
+        </ExampleStack>
 
         {/* 右:Inspect 面板 */}
         <div>
@@ -229,9 +230,9 @@ const InspectorView = () => {
             <section>
               <p className="font-mono text-fg-muted mb-2">MOTION</p>
               <ul className="flex flex-col gap-1">
-                <li><span className="font-mono">chevron rotate</span> · <span className="font-mono">200ms</span></li>
-                <li><span className="font-mono">content open</span> · <span className="font-mono">animate-accordion-down</span></li>
-                <li><span className="font-mono">content close</span> · <span className="font-mono">animate-accordion-up</span></li>
+                <li><span className="font-mono">chevron rotate</span> · <span className="font-mono">200ms ease-out</span>(同內容)</li>
+                <li><span className="font-mono">content open / close</span> · <span className="font-mono">disclosureMotion 200ms</span></li>
+                <li><span className="font-mono">reduced motion</span> · <span className="font-mono">不播</span></li>
               </ul>
             </section>
           </div>
@@ -388,7 +389,7 @@ export const SizeMatrix: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Dark mode 由 semantic token 自動切換(見 `tokens/color/color.spec.md`);density 不影響 accordion(固定 padding)。
+          Dark mode 由 semantic token 自動切換;density 不影響 accordion(固定 padding)。
         </p>
       </div>
     </div>
@@ -405,7 +406,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>collapsed ↔ expanded</H3>
-        <Desc>點擊 trigger 切換狀態。Chevron 旋轉 180°(transition 200ms),content 套用 `animate-accordion-down` / `animate-accordion-up`(高度動畫由 Radix 提供的 CSS var 驅動)。</Desc>
+        <Desc>點擊 trigger 切換狀態。Chevron 旋轉 180°(與內容同一份 200ms、ease-out,一起開始、一起停),content 的高度動畫消費 <code>disclosureMotion</code>(高度由 Radix 提供的 CSS var 驅動;關閉後保持高度 0 直到卸載,系統設定「減少動態」時不播)。</Desc>
         <div className="grid grid-cols-2 gap-4 max-w-[800px]">
           <div>
             <p className="text-footnote text-fg-muted mb-2 font-mono">data-state="closed"</p>
@@ -436,7 +437,7 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>disabled item</H3>
-        <Desc>AccordionItem 設 disabled 後,對應 trigger 切語義 disabled 文字色(`text-fg-disabled`,非 opacity)且 pointer-events-none;Radix 將 disabled 設在原生 `&lt;button&gt;` 上,故鍵盤 Tab 會跳過該 trigger(原生 disabled 不可聚焦),ArrowUp/Down 也會略過它。</Desc>
+        <Desc>AccordionItem 設 disabled 後,對應 trigger 切語義 disabled 文字色(<code>text-fg-disabled</code>,非 opacity),滑過游標是禁止符號;Radix 將 disabled 設在原生 <code>&lt;button&gt;</code> 上,故鍵盤 Tab 會跳過該 trigger(原生 disabled 不可聚焦),ArrowUp/Down 也會略過它。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-[640px]">
           <Accordion type="single" collapsible>
             <AccordionItem value="a">
@@ -476,7 +477,7 @@ export const StateBehavior: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          ARIA 由 Radix 自動處理:trigger 帶 `aria-expanded` / `aria-controls`,content 是 `role="region"` + `aria-labelledby`。
+          ARIA 由 Radix 自動處理:trigger 帶 <code>aria-expanded</code> / <code>aria-controls</code>,content 是 <code>role="region"</code> + <code>aria-labelledby</code>。
         </p>
       </div>
     </div>
@@ -489,8 +490,12 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `accordion.spec.md` 「A11y 預設」段。摘要:\n\nRadix Accordion 自動處理:\n-   鍵盤  ：Tab 到 trigger → Enter/Space 切換;ArrowUp/Down 在 trigger 間移動\n-   ARIA  ：trigger  aria-expanded  /  aria-controls  自動設置,content  role=\"region\"  +  aria-labelledby \n-   焦點  ：收合時焦點停在 trigger,不會跳到隱藏 content 內\n\nConsumer 無需額外處理,保留 Radix  data-state  屬性即可。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <ul className="ml-5 list-disc space-y-1">
+        <li>鍵盤:<kbd>Tab</kbd> 到標題列,<kbd>Enter</kbd> / <kbd>Space</kbd> 展開或收合;<kbd>↑</kbd> <kbd>↓</kbd> 在標題列之間移動,<kbd>Home</kbd> / <kbd>End</kbd> 到第一個 / 最後一個。</li>
+        <li>ARIA:標題列帶 <code>aria-expanded</code> / <code>aria-controls</code>,內容區是 <code>role="region"</code> + <code>aria-labelledby</code>(由 Radix Accordion 處理,用的時候不用另外加)。</li>
+        <li>焦點:收合時焦點留在標題列,不會跳進看不到的內容裡。</li>
+      </ul>
     </div>
   ),
 }

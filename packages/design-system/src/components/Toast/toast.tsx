@@ -15,6 +15,10 @@ import { Button } from '@/design-system/components/Button/button'
  * neutral/success(inverse): bg + theme 同層（bg-surface-raised 需要跟 data-theme 一起翻轉）
  * info/error(dark): bg 在 outer,theme 在 inner
  * warning(light always): bg 在 outer,theme="light" 在 inner
+ *
+ * ── 落點(toast.spec.md「落點」)──
+ * 一律以整個視窗為準:sonner 預設角落與邊距,不為側欄、代理面板、入口鈕或輸入框讓位 —— 不傳 offset / mobileOffset / style,
+ * 也不量任何元件的位置。閘:`scripts/toast-viewport-placement-invariant.mjs`。
  */
 
 // code-quality-allow: dead-export — public API surface — consumer-exposed for future use
@@ -93,21 +97,34 @@ function ToastLiveRegions() {
   )
 }
 
-function ToastInner({
-  id,
+/** @internal ToastSurface 的 props(同 ToastSurface,不進 root front door) */
+export interface ToastSurfaceProps extends Omit<ToastOptions, 'duration'> {
+  /** 關閉(右上 ×,與按下 action 之後)—— toast() 接 sonner 的 dismiss;靜態對照接自己的狀態 */
+  onDismiss?: () => void
+  /** 反轉主題(neutral / success 用);省略 = 依頁面主題自動反轉。Toast 展示頁「淺 / 深色頁」兩欄靜態對照用它固定欄位主題 */
+  inverseTheme?: 'dark' | 'light'
+}
+
+/**
+ * @internal Toast 的視覺殼(陰影層 + 底色層 + 主題層 + Notice,含右上 × 與 action 鈕)—— `toast()` 與 Toast 展示頁的靜態對照共用同一份,
+ * 不進 root front door。2026-10-28 前展示頁手抄一份,少畫了 ×(toast.spec.md「畫面上可見的 X 關閉鈕由 Notice 渲染」;稽核 M081)。
+ */
+export function ToastSurface({
   variant = 'neutral',
   action,
+  onDismiss,
+  inverseTheme: inverseOverride,
   ...rest
-}: ToastOptions & { id: string | number }) {
-  const inverseTheme = useInverseTheme()
+}: ToastSurfaceProps) {
+  const pageInverse = useInverseTheme()
+  const inverseTheme = inverseOverride ?? pageInverse
   const isInverse = variant === 'neutral' || variant === 'success'
-  const dismiss = () => sonnerToast.dismiss(id)
 
   // action 執行後自動 dismiss:關閉「復原/重試」的重複觸發窗口(double-undo / double-retry),
-  // 對齊 Polaris Toast action / Material Snackbar action 按後即收慣例;
+  // 對齊 Material Snackbar action 按後即收(MDC 關閉原因含 'action');Polaris Toast 的 action 只呼叫 onAction、不自動收,本 DS 不跟;(來源:https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Frame/components/Toast/Toast.tsx#L85-L95 https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-snackbar/README.md#L185)
   // toast.anatomy.stories.tsx「點 action button 執行 callback + 關閉 toast」宣稱自此為真。
   const actionButton = action ? (
-    <Button variant="tertiary" size="xs" onClick={() => { action.onClick(); dismiss() }}>{action.label}</Button>
+    <Button variant="tertiary" size="xs" onClick={() => { action.onClick(); onDismiss?.() }}>{action.label}</Button>
   ) : undefined
 
   // Sonner 2.0.7 owns a fixed aria-live="polite" section around every visual toast and does not
@@ -129,7 +146,7 @@ function ToastInner({
       <div {...visualA11yProps} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
         <div data-theme={inverseTheme} className="bg-surface-raised text-foreground">
           <Notice variant={variant} iconClassName={variant === 'success' ? 'text-success' : undefined}
-            endContent={actionButton} onDismiss={dismiss} {...rest} />
+            endContent={actionButton} onDismiss={onDismiss} {...rest} />
         </div>
       </div>
     )
@@ -142,16 +159,20 @@ function ToastInner({
     <div {...visualA11yProps} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
       <div className={bg}>
         <div data-theme={theme} className="text-foreground">
-          <Notice variant={variant} endContent={actionButton} onDismiss={dismiss} {...rest} />
+          <Notice variant={variant} endContent={actionButton} onDismiss={onDismiss} {...rest} />
         </div>
       </div>
     </div>
   )
 }
 
+function ToastInner({ id, ...options }: ToastOptions & { id: string | number }) {
+  return <ToastSurface {...options} onDismiss={() => sonnerToast.dismiss(id)} />
+}
+
 export function toast(options: ToastOptions) {
   // 2026-07-05 D4:sonner 計時器不因鍵盤 Tab 焦點暫停(僅 hover / pointer 按住 / ⌥T hotkey)——
-  // 含 action(復原/重試)預設 10s,給鍵盤使用者足夠時間 Tab 到 action(user 拍板;對齊 Polaris toast with action ≥10s)
+  // 含 action(復原/重試)預設 10s,給鍵盤使用者足夠時間 Tab 到 action(user 拍板;對齊 Polaris toast with action ≥10s:`DEFAULT_TOAST_DURATION_WITH_ACTION = 10000`,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Frame/components/Toast/Toast.tsx#L17-L19)
   const { duration = options.action ? 10000 : 4000, ...rest } = options
   const id = sonnerToast.custom((toastId) => <ToastInner id={toastId} {...rest} />, { duration })
   publishToastAnnouncement(options)
@@ -160,18 +181,32 @@ export function toast(options: ToastOptions) {
 
 export interface ToasterProps {
   position?: 'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right' | 'bottom-center'
+  /**
+   * 通知清單(sonner 的 `<section>` 地標)的無障礙名稱,預設「通知」。sonner 會在後面接上跳進清單的快捷鍵(「通知 alt+T」)。
+   * DS 預設文案 = 中文(lib/i18n/README.md「Fallback chain」3);2026-10-20 前沒傳,地標名稱是 sonner 預設英文「Notifications alt+T」,
+   * 同一則 Toast 的關閉鈕卻是「關閉通知」(獨立驗證 OV-V05)。
+   */
+  containerAriaLabel?: string
 }
 
-// shadcn canonical:forwardRef + displayName 統一。SonnerToaster 不轉發 ref,
+// DS 結構慣例(ui-development.md「結構」):forwardRef + displayName 統一。SonnerToaster 不轉發 ref,(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/%28root%29/tailwind-v4.mdx#L13)
 // 故 ref 無實際 DOM 節點可接;viewport 為就地渲染的 <section>,以 CSS position:fixed
 // 覆蓋 viewport(非 portal — sonner 全庫 0 createPortal,2026-07-04 grep 驗證)。
 // 保留 forwardRef 簽名以符合 DS 統一 API(consumer 可 typecheck 傳 ref)。
 const Toaster = React.forwardRef<HTMLDivElement, ToasterProps>(
-  ({ position = 'bottom-right', ...props }, _ref) => {
+  ({ position = 'bottom-right', containerAriaLabel = '通知', ...props }, _ref) => { // i18n-allow: DS default; consumer override via containerAriaLabel prop
     return (
       <>
         <SonnerToaster
           position={position}
+          // 疊放順序:Toast 在所有 modal / 浮層(`z-50`)之上、Tooltip(`z-[70]`)之下;頁面層的拖曳影像(拖曳元件不在任何疊放脈絡裡時)也在它上面 ——
+          // 層級表 tokens/elevation/elevation.spec.md「疊放順序」。sonner 不經 portal,清單就地渲染在 `<Toaster>` 掛的地方 → 依「app root 掛一次」的合約在頁面層。
+          // sonner 自己注入的樣式寫死 `[data-sonner-toaster]{z-index:999999999}`,而且**不在任何 cascade layer 裡**;
+          // Tailwind 的 utility 住在 `@layer utilities`,一般權重一律輸給沒有 layer 的樣式 → 必須用 important(`!`)才蓋得過。
+          // className 落在清單 `<ol data-sonner-toaster>` 本身(sonner 2.0.7 dist/index.mjs 的 `className: className`)。
+          // 這裡只放層級、不放任何落點:不傳 offset / mobileOffset / style,落點一律 sonner 預設(toast.spec.md「落點」)。
+          className="!z-[60]"
+          containerAriaLabel={containerAriaLabel}
           toastOptions={{ unstyled: true, className: 'w-[360px]' }}
           {...props}
         />

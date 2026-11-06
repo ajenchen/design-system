@@ -2,7 +2,7 @@
 pattern: overlay-surface
 internal: true
 family: composite  # composes SurfaceHeader/Body/Footer,非 Family 1-4 row element
-scope: overlay shell sub-components (SurfaceHeader / SurfaceBody / SurfaceFooter + padding SSOT) — DS-internal consumer only(Dialog / Sheet / Popover / Coachmark wrap;HoverCard 未納入,見「何時不用」)
+scope: overlay / 常駐面板 / 頁面置底按鈕列的 shell sub-components (SurfaceHeader / SurfaceBody / SurfaceFooter + padding SSOT) — DS 元件內部消費(誰在用以 import 為準,不在這裡列舉:列舉一定會漏、會過期);非 DS 元件經 subpath 包裝後使用(ui-development.md「Internal primitive」:internal ≠ 禁用);HoverCard 未納入,見「何時不用」
 ---
 
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
@@ -36,7 +36,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 全 DS grep 起來**一個都不存在**(當時整包只有 `tabs-list` 一個 `data-slot`),等於三個死選擇器
 靠最後的 `h2` 兜著才沒變成空綠。同一天補上這三個真 handle,並給該閘加了「一個面板都沒量到就算紅」的地板。
 
-對齊 shadcn/ui 的 `data-slot` 慣例(每個 sub-part 一個穩定 attribute)與 Radix 的 `data-*` part 契約。
+對齊 shadcn/ui 的 `data-slot` 慣例(每個 sub-part 一個穩定 attribute,例 [separator.tsx#L15](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L15)、[pagination.tsx#L104-L116](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx#L104-L116))與 Radix 的 `data-*` part 契約。
 
 ### SurfaceHeader
 - 根節點帶 `data-slot="surface-header"`(column mode 與單列 mode 兩個分支都帶)
@@ -47,8 +47,8 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
-- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:183 恆套)矛盾。consumer 依浮層類型:
-- **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScroll` story 的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
+- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:185 恆套)矛盾。consumer 依浮層類型:
+- **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScrollKeyboard` story(test-only)的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
   - **Dialog / Sheet**:consumer **不直接 wrap SurfaceBody**——走 ScrollArea canonical(下節),padding 搬到 ScrollArea viewport 內層 div
 - **邊界**:空 children → 不渲染 placeholder、無最小高度(定高浮層內仍被 `flex-1` 撐滿剩餘空間);viewport 極小 → 見「Viewport-aware scroll chain invariant」節(body 內捲動);loading / error / empty 屬 consumer 內容層職責,非本 structural pattern(見 `dialog.spec.md`「狀態處理的職責邊界」)
@@ -61,7 +61,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 **Rationale**:
 - Native scrollbar 跨 OS 不一致(macOS overlay / Windows 永遠吃 ~17px 寬度)——Dialog / Sheet 內容會因 OS 不同跑版
-- ScrollArea(Radix primitive)用自建 overlay 捲軸 → **跨 OS 一致不吃寬度**,捲動時浮現
+- ScrollArea(Radix primitive)用自建 overlay 捲軸 → **跨 OS 一致不吃寬度**,指標在捲動區上時浮現(只用鍵盤捲動時不浮現)
 - SSOT 見 `components/ScrollArea/scroll-area.spec.md`「何時用」已列明「Sheet / Dialog body 太長」
 
 **實作模板**:
@@ -115,7 +115,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 1. **Item 自帶 `px-loose`**:item 水平 padding 由 item 自己承擔,body 的 chrome padding 撤為 0
 2. **列的最前緣對齊 header title**:item 的 padding-box 左緣 = chrome `px-loose` 起點 = header title 左緣 X 軸對齊。
    **對齊的是列的前緣,不是文字** —— 列有前綴(勾選框 / icon / 頭像)時,文字自然被前綴推開,那是對的。
-   依據:`../element-anatomy/item-anatomy.spec.md:423`(content 槽佔剩餘空間,沒有自己的 x 錨點)、
+   依據:`../element-anatomy/item-anatomy.spec.md:421`(content 槽佔剩餘空間,沒有自己的 x 錨點)、
    `:665`(label x 受前綴尺寸影響,對齊只在同 group 內成立)、`:671`(跨 group 永不強求)、
    `:677`(為了讓文字齊左而改前綴尺寸 = 錯誤示範)。同一條線的 footer 版本見下方「Footer px」段,
    對齊的同樣是按鈕左緣而非按鈕文字。
@@ -140,18 +140,18 @@ chrome 邊 ─ hover bg 左邊 ─────── [ loose breathing ] ──�
 | VS Code Quick Pick | 0 | loose | ✓ |
 | Material M3 / Polaris Modal+List | px only | item inset | ✗(另一合法家族,鬆散版)| <!-- @benchmark-unverified -->
 
-本 DS 選 Linear-family。
+本 DS 選上表 ✓ 那一族(列表 0 inset、loose 間距)。
 
 ### When list 上方有 search / banner(multi-row)
 
-list 不再是 body 唯一 region → **不該撤 body chrome padding**(撤了反而 search row 沒呼吸)。直接用預設 `<DialogBody>`(chrome padded),list 自管 outer wrapper。
+search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不加;body 撤 chrome padding,list 照舊 `py-2`:它的 8 + 列內距就是 search → list 的間距,也是 list 底。
 
 ```tsx
-<DialogBody>  {/* 預設 chrome padding */}
-  <Input search />                              {/* search row */}
-  <div className="mt-[var(--layout-space-tight)] py-2 -mx-[var(--layout-space-loose)]">  {/* list outer:撤 body 水平 padding 讓 item flush chrome */}
-    {items.map(...)}
-  </div>
+<div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">  {/* search 列:body 外、不捲 */}
+  <Input search />
+</div>
+<DialogBody className="!px-0 !pt-0 !pb-0">  {/* body 撤 chrome padding */}
+  <div className="py-2">{items.map(...)}</div>  {/* list outer:自帶 8 */}
 </DialogBody>
 ```
 
@@ -192,7 +192,7 @@ list 不再是 body 唯一 region → **不該撤 body chrome padding**(撤了�
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
   `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:370`),DataTable 的欄位顯示面板也已經是
-  (`data-table-column-visibility-panel.tsx:196`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
+  (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。
 - **容器必須提供鍵盤與 listbox 結構**:裸用 `MenuItem` 是 `components/Menu/menu-item.spec.md`
@@ -201,7 +201,7 @@ list 不再是 body 唯一 region → **不該撤 body chrome padding**(撤了�
   `CommandGroup` 自帶的 `py-2` 正好就是本 pattern 要的上下呼吸。
   canonical 實作見 `components/Popover/popover.stories.tsx` 的 `StatusFilterPanel`。
 - **不適用**:那些列**根本不能被選**時(例如成員名單、通知設定這種展示列)—— 那不是選單,
-  走上面「何時該用 MenuItem vs hand-craft」表。**能被選的列不存在「reading mode」的情況**。
+  走上面「何時該用 MenuItem vs hand-craft」表(一列一個開關的設定列走 `../../components/Switch/switch.spec.md`「設定列 vs 水平 Field」)。**能被選的列不存在「reading mode」的情況**。
 
 ### M11 state walk hover 檢查(**僅當 item 有 hover / selected 底色時適用**;三題必同時 ✓)
 
@@ -237,7 +237,7 @@ item 沒有底色時只驗第 2 題(content 對齊 header title);沒有底色**�
 | 排版 | `flex items-center justify-end gap-2`(單側時用 `justify-between`,先例 `components/Coachmark/coachmark.tsx`)| 直排全寬 |
 | 實作 | 本檔 `SurfaceFooter`(Dialog / Sheet / Popover footer 全是純轉發)| `components/Sidebar/sidebar.tsx` 的 `SidebarFooter`、`components/Menu/menu-item.tsx` 的 `MenuFooter` |
 
-**選取類浮層的 footer 內容順序**(2026-09-17 user 拍板):左側依序放**操作選取**的按鈕(全選 / 取消全選、重設),
+**選取類浮層的 footer 內容順序**(2026-09-17 AI 提的方案 A、user 選定〔UD-H15〕):左側依序放**操作選取**的按鈕(全選 / 取消全選、重設),
 右側放**提交**類(套用);有哪個功能才渲哪顆,沒有就不渲。canonical 實作見
 `components/SelectMenu/select-menu.tsx` 的多選 footer。
 
@@ -272,7 +272,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 | 家 | 抓到的原始碼 | 說了什麼 |
 |---|---|---|
-| Material 3 | `@material/web@2.4.0` 編譯後的 `menu/internal/menu-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/menu/internal/menu-styles.css> | 選單外殼 `.menu{padding:0px}` —— **水平內距是 0**,只有上下用 `--md-menu-top-space` / `--md-menu-bottom-space`。殼一分水平內距都不給,所以放在底部的東西只能去拿列的 gutter |
+| Material 3 | `@material/web@2.4.0` 編譯後的 `menu/internal/menu-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/menu/internal/menu-styles.css> | 選單外殼 `.menu{padding:0px}` —— **水平內距是 0**,只有上下用 `--md-menu-top-space` / `--md-menu-bottom-space`。殼一分水平內距都不給,所以放在底部的東西只能去拿列的 gutter([來源](https://cdn.jsdelivr.net/npm/@material/web@2.4.0/menu/internal/menu-styles.css)) |
 | Material 3(對照組:有 chrome 的浮層)| `dialog/internal/dialog-styles.css` <https://cdn.jsdelivr.net/npm/@material/web@2.4.0/dialog/internal/dialog-styles.css> | 內文 `padding:24px`、動作列 `padding:16px 24px 24px` —— **左右兩者相同(24),只有上下不同**。footer 從來不會拿到跟 body 不同的左右內距 |
 | GitHub Primer | `ActionList.module.css` <https://github.com/primer/react/blob/main/packages/react/src/ActionList/ActionList.module.css> | 容器只宣告 `padding:0` 與 `padding-block`,**沒有任何水平內距**;水平內距住在列的 `.ActionListContent { padding-inline: var(--control-medium-paddingInline-condensed) }` |
 | IBM Carbon | `_list-box.scss` <https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/list-box/_list-box.scss> | 選項自己帶水平內縮(`.cds--list-box__menu-item__option { margin: 0 $spacing-05 }`),殼不定義內容左緣 |
@@ -306,7 +306,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 - `flex items-center justify-end gap-2 shrink-0`(右對齊按鈕列,不被壓縮)
 - **Footer px = 浮層內容左邊界**(判準與完整對照表在上方「要對齊誰」,本處不重述):預設 `layout-space-loose` 對齊 SurfaceHeader title / SurfaceBody 內容左緣;內容左邊界由**列**定義時(選單 / list-as-region)覆寫成列在用的同一行 `px-[var(--item-px,var(--field-px))]`;兩者皆無時(欄位置中的挑選面板)才由面板自訂,必須用既有 layout token。
   **注**:**不要直接寫 `--field-px`** —— 那是 form-field 的 gutter(uiSize 家族),overlay chrome 不該伸手進去拿。要寫就寫 `--item-px`(owner:`../element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」),它**是列的 gutter token**,只是預設值回退到 `var(--field-px)`;照抄 `components/Menu/menu-item.tsx` 那一行,footer 與列從此吃同一個來源。
-  *(2026-09-18 更正:本條原本寫成「`--field-px` **不**用於 overlay footer」,與上方 2026-09-17 立的「選單裡覆寫成 `px-[var(--item-px,var(--field-px))]`」在同一份檔案裡互相矛盾 —— user 問「這是其 SSOT 嗎」時抓到的正是這一點。真正的界線不是「哪個 token 家族」,是「footer 要不要跟列吃同一個來源」。)*
+  *(2026-09-18 更正:本條原本寫成「`--field-px` **不**用於 overlay footer」,與上方 2026-09-17 立的「選單裡覆寫成 `px-[var(--item-px,var(--field-px))]`」在同一份檔案裡互相矛盾 —— user 問這是不是它的 SSOT 時抓到的正是這一點。真正的界線不是「哪個 token 家族」,是「footer 要不要跟列吃同一個來源」。)*
 
 ---
 
@@ -338,9 +338,9 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 ---
 
-## Control + List 視覺對稱原則 → SSOT 規則 3 補充
+## Control + List 視覺對稱 → 見本檔「When list 上方有 search / banner」
 
-→ `tokens/layoutSpace/layoutSpace.spec.md`「規則 3:元素間 gap」+ `## Notes` 節「List-as-region in overlay body」(本原則本質是 inline → block 對稱在 list 場景的特殊化,SSOT 移上游避免重複 — Rule-of-3)。
+→ 由 `tokens/layoutSpace/layoutSpace.spec.md` 規則 2 / 規則 4 表裡 unbounded region 那一列(無框清單靠自帶 py 撐、外面給 0)舉一反三到 search → list,不另立條文。
 
 ---
 
@@ -348,7 +348,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 寫 Popover / Dialog / Sheet 內容必消費 `SurfaceHeader/Body/Footer`(或上層 `PopoverHeader/...`),**禁自刻 `<div className="px-loose ... border-(b|t)">` 取代**。
 
-**Why**:primitive 自帶 padding token + PopoverHeader auto close X(popover.tsx:104-109,`!hideClose` 條件渲染)+ PopoverTitle typography + `data-popover-body` autofocus 標記;自刻 = padding/border/close X/title 大小 4 向 drift 起點(對齊 mindset #2)。
+**Why**:primitive 自帶 padding token + PopoverHeader auto close X(popover.tsx#PopoverHeader,`!hideClose` 條件渲染)+ PopoverTitle typography + `data-popover-body` autofocus 標記;自刻 = padding/border/close X/title 大小 4 向 drift 起點(對齊 mindset #2)。
 
 **Hook**:`.claude/hooks/post_edit_dispatcher.sh`(原 `check_overlay_handcraft.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)攔此 pattern;escape hatch `// overlay-handcraft-allow: <reason>` 同/前行。
 
@@ -357,7 +357,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 ## 兩欄 dialog 組合 canonical(2026-07-10 user 拍板:組合,不做元件)
 
 「左內容 + 右 metadata」兩欄 dialog(工作項詳情類)**是產品層組合,不收進 DS 元件**——對齊
-Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範)與 MUI(Dialog 無 split
+Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範:[101-full-height-illustration.tsx#L85-L107](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L85-L107))與 MUI(Dialog 無 split,[Dialog.js propTypes](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/Dialog/Dialog.js#L378)
 API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 consumer 防線
 `check_consumer_app_invariants.sh` r3 機械攔):
 
@@ -366,12 +366,12 @@ API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 co
 2. **divider = 右欄(`<aside>`)自持 `border-l border-divider`,貫穿 body 頂到底**——非獨立
    div、非只切半高。
 3. **欄底 footer(如 comment composer)釘在所屬欄內**(欄內 `SurfaceFooter` chrome),
-   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄。
+   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄([101-full-height-illustration.tsx#L88-L106](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L88-L106))。
 4. **header 維持全寬**,分欄從 body 才開始。
 
 **Archetype**(照抄結構,禁憑記憶手刻):WM `WorkItemDetailDialog.tsx`(產品實證,2026-07-08
 拍板落地)/ DS 內部同構先例 `file-viewer.tsx` InfoPanel(`<aside class="w-80 shrink-0 flex-col
-border-l border-divider">`)/ Atlassian `modal-dialog/examples/101-full-height-illustration.tsx`
+border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-illustration.tsx`](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L34-L42)
 (per-column `flex:1 + minHeight:0 + overflow auto`)。完整研究引文 →
 `.claude/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
 
@@ -389,7 +389,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 
 - **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——Tab 在面板裡繞圈但滑鼠點外面可離開(見下一條)、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
 - **Focus trap / Tab 走向**(2026-09-25 更正,原句「Popover / HoverCard 不 trap」被讀成 Tab 可以走出 Popover,與實測不符;待辦總帳 B11):**對話框型浮層 Tab 留在裡面** —— Dialog / Sheet 是 modal trap(Tab 繞圈,滑鼠點外面也出不去);Popover 是 non-modal:Tab / Shift+Tab 同樣在面板裡繞圈(Radix FocusScope `loop: true`,`@radix-ui/react-popover` 1.1.15 `dist/index.mjs:225-226`),只是滑鼠點外面 / 程式移焦可離開並關閉。依據 W3C「Like non-modal dialogs, modal dialogs contain their tab sequence.」(<https://github.com/w3c/aria-practices/blob/3f094fde1c81b25dfa69162563bf28d093f854d4/content/patterns/dialog-modal/dialog-modal-pattern.html#L29-L30>)。**選單類浮層 Tab = 收起並往下走**(DropdownMenu、單選下拉;規則在 `components/SelectMenu/select-menu.spec.md`「A11y 預設」與 `components/DropdownMenu/dropdown-menu.spec.md`)。HoverCard 焦點不進卡片(Radix 把卡片內可 Tab 節點設 `tabindex="-1"`),Tab 從觸發元素照頁面順序走
-- **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)
+- **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)。浮層疊浮層時點外面與 Esc 一樣一層一層關:點在外層上(裝著它的面板)、點在同一個外層裡的另一個欄位(連同那個欄位掛在另一層的零件)= 內層的外面;攔截只准認「這個元件自己的零件」—— 以**元件樹**認(這一下事件有沒有經過這個元件,含它 portal 出去的零件;Radix 判斷「按在這一層裡」也是這樣認),不得以「按在任何一層浮層裡」或「按在不裝著它的那一層」代替(判準 `../../lib/composite-field-focus.ts` `useOwnTreeEvents`;2026-11-03 SelectMenu / InlineEdit 修前就是前一種代理,讓面板裡的選單點外不關)
 - **AutoFocus on open**:consumer 自管 `onOpenAutoFocus`(Popover 範例:`handlePopoverOpenAutoFocus` 找 body 第一個 interactive 元素,跳過 close X 避免 tooltip leak)
 
 **SurfaceHeader Title 可被 ARIA 關聯**:consumer 把 `id` 傳到 SurfaceHeader 的 Title 元素,Radix Content 用 `aria-labelledby={id}`。本 pattern 不強制 id naming(consumer 自決)。

@@ -6,7 +6,7 @@ sizes:
   sm:
     px: 28
     when: "Toolbar / inline 編輯;對齊 field-height-sm(md density)"
-    world-class: ["VS Code zoom slider", "Figma toolbar inline"]
+    world-class: []
   md:
     px: 32
     when: "預設 — Form + 設定面板 + DataTable cell inline edit;對齊 field-height-md(md density)"
@@ -29,7 +29,7 @@ benchmark:
 
 **數值範圍選取器**——基於 Radix Slider primitive,橋接設計系統 token。
 
-> 命名:`Slider`(沿用 Radix / shadcn / Material 慣例)。
+> 命名:`Slider`(沿用 Radix / shadcn / Material 慣例:shadcn [slider.tsx#L5](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/slider.tsx#L5)、[#L62](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/slider.tsx#L62);Material Web [slider.ts#L37-L38](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/slider/slider.ts#L37-L38))。
 
 ---
 

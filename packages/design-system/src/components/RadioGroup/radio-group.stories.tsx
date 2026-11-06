@@ -3,6 +3,7 @@ import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
 import { Button } from '@/design-system/components/Button/button'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof RadioGroupItem> = {
   title: 'Design System/Components/RadioGroup/展示',
@@ -24,33 +25,29 @@ type Story = StoryObj<typeof RadioGroupItem>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-md">
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
+    <ExampleStack className="max-w-md">
+      <ExampleSection title="edit">
         <RadioGroup defaultValue="yearly" aria-label="付款方案(edit mode demo)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
           <RadioGroupItem value="lifetime" label="終身方案" />
         </RadioGroup>
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
+      </ExampleSection>
+      <ExampleSection title="view">
         <RadioGroup mode="view" value="yearly" aria-label="付款方案(view 模式示範)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
           <RadioGroupItem value="lifetime" label="終身方案" />
         </RadioGroup>
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+      </ExampleSection>
+      <ExampleSection title="readonly">
         <RadioGroup mode="readonly" value="yearly" aria-label="付款方案(readonly mode demo)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" />
           <RadioGroupItem value="lifetime" label="終身方案" />
         </RadioGroup>
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+      </ExampleSection>
+      <ExampleSection title="disabled">
         {/* mode="disabled" → Radix Root disabled 原生 propagate 全 item(radio 控件真停用);
             RadioGroupDisabledContext 同步讓每個 item 的 label/description 降 text-fg-disabled */}
         <RadioGroup mode="disabled" value="yearly" aria-label="付款方案(disabled mode demo)">
@@ -58,8 +55,8 @@ export const Modes: Story = {
           <RadioGroupItem value="yearly" label="年付方案" />
           <RadioGroupItem value="lifetime" label="終身方案" />
         </RadioGroup>
-      </div>
-    </div>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -70,18 +67,14 @@ export const Modes: Story = {
 /* ── 垂直 Group ── */
 export const VerticalGroup: Story = {
   name: '直式群組',
+  // 只留一組預設尺寸(D17 甲「d17照你建議」:尺寸只放設計規格「尺寸對照表」,展示頁不重複 sm / md / lg)
   render: () => (
-    <div className="flex flex-col gap-4 max-w-md">
-      {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size}>
-          <p className="text-caption text-fg-muted mb-1">size="{size}"</p>
-          <RadioGroup defaultValue="monthly">
-            <RadioGroupItem size={size} value="monthly" label="月付方案" />
-            <RadioGroupItem size={size} value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
-            <RadioGroupItem size={size} value="lifetime" label="終身方案" />
-          </RadioGroup>
-        </div>
-      ))}
+    <div className="max-w-md">
+      <RadioGroup defaultValue="monthly" aria-label="付款方案">
+        <RadioGroupItem value="monthly" label="月付方案" />
+        <RadioGroupItem value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
+        <RadioGroupItem value="lifetime" label="終身方案" />
+      </RadioGroup>
     </div>
   ),
 }
@@ -90,7 +83,8 @@ export const VerticalGroup: Story = {
 export const Horizontal: Story = {
   name: '水平排列',
   render: () => (
-    <RadioGroup defaultValue="light" className="flex gap-6 max-w-md">
+    // @layout-space-magic-ok: 水平選項群組:選擇控件家族水平 16px(checkbox.spec.md:303 / :306,SelectionItem 共用)(layoutSpace.spec.md:113 同範疇 spec-own)
+    <RadioGroup defaultValue="light" orientation="horizontal" className="flex flex-wrap gap-4 max-w-md">
       <RadioGroupItem value="light" label="淺色" />
       <RadioGroupItem value="dark" label="深色" />
       <RadioGroupItem value="system" label="系統" />

@@ -30,7 +30,7 @@ Avatar 是視覺身份標識——代表一個人、一個實體（專案、組�
 - **人員識別**：留言者頭像、指派者、作者、團隊成員列表
 - **組織 / 專案識別**：workspace logo、專案 icon、app 身份
 - **列表項目的主視覺 prefix**：通訊錄、成員管理、chat room 列表
-- **hover 顯示完整人員卡**：與 HoverCard 搭配呈現 ProfileCard content
+- **滑過顯示人員名片**：人員頭像一律觸發(見下方「Avatar HoverCard 原則」);帶連結的文字人名也可觸發,一般文章內的純文字人名不加(user 2026-10-21 D11)
 
 ## 何時不用
 
@@ -51,18 +51,18 @@ Avatar 是視覺身份標識——代表一個人、一個實體（專案、組�
 ```tsx
 <Avatar
   size={40}
-  src={person.photoUrl}
+  src={person.avatarUrl}
   alt={person.name}
-  hoverCard={
-    <ProfileCard
-      name={person.name}
-      avatar={{ src: person.photoUrl, alt: person.name }}
-      subtitle={`${person.role}｜${person.employeeId}`}
-      actions={<ProfileCardDefaultActions />}
-      // ↓ hover context 必含 View more:hover 只顯示精簡資料,user 需要 escape hatch 到完整 profile 頁
-      onViewMore={() => navigate(`/people/${person.id}`)}
-    />
-  }
+  // buildPersonProfileCard(PeoplePicker/person-display.tsx)= 全 DS 人員名片的唯一建構器,
+  // PeoplePicker / DataTable 人員格同一支;名片內含 ProfileCardDefaultActions(onChat / onCall)
+  // 與預設欄位(id / employeeNumber)
+  hoverCard={buildPersonProfileCard({
+    ...person, // name / avatarUrl / description(部門｜ID｜員工編號)/ status / id / employeeNumber
+    onChat: () => openChat(person.id),
+    onCall: () => startCall(person.id),
+    // ↓ hover context 必含 View more:hover 只顯示精簡資料,user 需要 escape hatch 到完整 profile 頁
+    onViewProfile: () => navigate(`/people/${person.id}`),
+  })}
 />
 ```
 
@@ -72,10 +72,10 @@ hover ProfileCard 是 preview,所有 preview 必提供「看完整資料」的�
 
 **適用範圍(ALL person avatars,無例外)**:PeoplePicker tag / table cell 頭像 / sidebar user / comment author / avatar 堆疊 / Dialog·Sheet member list / FileItem rich author / Menu·Dropdown assignee·owner / chat·thread·notification 頭像。
 
-**世界級對照**(hover → profile 是 default,不是 opt-in):Slack / Figma / Linear / Notion / GitHub —— hover person avatar(或 username)→ profile popover / user card,全部 default 行為。
+**為何 hover → profile 是 default,不是 opt-in**:人員頭像(或 username)是確認「這是誰」最常見的入口,滑過就看得到人員卡、不必離開當前畫面;改成 consumer 逐處開啟,同一個人會在有的畫面看得到、有的看不到。
 
 **例外(ProfileCard 不適用,但 hoverCard 通用行為仍可用)**:
-- Entity avatar(專案 / 組織 logo / app icon)— 不代表人員,**不自動套 ProfileCard**(ProfileCard 是人專用內容模板:64px 圓形 + presence 狀態 + Chat/通話 動作,實體沒有)。但 `hoverCard` prop 本身是**通用行為**(型別 `React.ReactNode`,avatar.tsx `AvatarProps.hoverCard`),entity / square avatar **仍可配 hoverCard 顯示其他內容**(如實體資訊卡);此時 focus ring 自動跟隨 square 形狀(rounded-md)。未來若需實體資訊卡,做成**平行的內容元件**(對齊 Atlassian `ProfileCard` / `TeamProfileCard` 分離 + GitHub `data-hovercard-type` 各 type 獨立內容),**不泛化 ProfileCard**。
+- Entity avatar(專案 / 組織 logo / app icon)— 不代表人員,**不自動套 ProfileCard**(ProfileCard 是人專用內容模板:64px 圓形 + presence 狀態 + Chat/通話 動作,實體沒有)。但 `hoverCard` prop 本身是**通用行為**(型別 `React.ReactNode`,avatar.tsx `AvatarProps.hoverCard`),entity / square avatar **仍可配 hoverCard 顯示其他內容**(如實體資訊卡);此時 focus ring 自動跟隨 square 形狀(rounded-md)。未來若需實體資訊卡,做成**平行的內容元件**(對齊 Atlassian `ProfileCard` / `TeamProfileCard` 分離([@atlaskit/profilecard@27.6.0 index.d.ts](https://unpkg.com/@atlaskit/profilecard@27.6.0/dist/types/index.d.ts) 兩者各自 export)+ GitHub `data-hovercard-type` 各 type 獨立內容(github.com 實際 DOM 2026-11-05 讀回:`data-hovercard-type="user"` 指向 `/users/<id>/hovercard`、`"issue"` 指向 `/<repo>/issues/<n>/hovercard`,例 https://github.com/shadcn-ui/ui/pull/1)),**不泛化 ProfileCard**。
 - Bot / automated account avatar(Atlas / Octocat 等)— 本 DS 後續視需求決
 
 **為什麼必 default**:Person avatar 單獨無 context(只有照片 + 首字),user 不知是誰;opt-in 模式會讓一半 consumer 忘記加,DS 品質不可控。**違規檢測(M10 proactive scan)**:`grep '<Avatar.*alt=\{'` 全 src,檢查 person name(非 entity)alt 且沒 `hoverCard` prop 者;目前無專用 hook,靠 grep 掃描。
@@ -85,12 +85,12 @@ hover ProfileCard 是 preview,所有 preview 必提供「看完整資料」的�
 - `tabIndex=0`(可 Tab 到;focus 時 Radix hover-card 自動開卡)
 - `role="img"` + `aria-label`(取 `alt`)——2026-07-07 CI axe 補修:aria-label 掛在無 role 的 generic `<div>` 是 ARIA 禁用組合(axe `aria-prohibited-attr`,serious);Avatar 語義本質 = 身份圖像,`role="img"` 讓命名合法、子孫自動 presentational、不對 AT 承諾任何互動行為
 - 全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 focus class,wrapper 只依 `shape` 帶 `rounded-full` / `rounded-md` 讓外描邊圓角跟隨形狀)(keyboard focus 視覺 indicator)
-- **不掛 `role="button"` / `aria-haspopup`**(2026-07-06 user 拍板拆除):原本宣告了卻無 Enter/Space 行為、無 `aria-expanded` = 對 AT 的空承諾(D4 finding);對齊 Radix hover-card 官方(刻意零 popup ARIA,定位 sighted-user 輔助)+ GitHub hovercard(trigger 無 popup ARIA)
+- **不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;登記簿查無這一條 user 原話,來源不明):原本宣告了卻無 Enter/Space 行為、無 `aria-expanded` = 對 AT 的空承諾(D4 finding);對齊 Radix hover-card 官方(刻意零 popup ARIA,定位 sighted-user 輔助)+ GitHub hovercard(trigger 無 popup ARIA:github.com 實際 DOM 2026-11-05 讀回,觸發連結只有 `role="link"` + `data-hovercard-type` / `data-hovercard-url`,無 `aria-haspopup` / `aria-expanded`,例 https://github.com/shadcn-ui/ui/pull/1)
 - 若無 `hoverCard` → 純展示 `<div>` 不 focusable(避免 tabTrap 噪音)
 
 Rationale:Radix `HoverCardTrigger asChild` 不自動加 tabIndex 給 non-focusable child。若 Avatar wrapper 是 `<div>` 沒 tabIndex,keyboard user 無法 reach ProfileCard content,違反 WCAG 2.1.1(Keyboard)。此 canonical 確保 DS-wide「person avatar → ProfileCard」keyboard 可達,且 ARIA 只宣告真的有的行為。
 
-**Status dot a11y(2026-04-22 D4 UX audit 調整)**:Avatar status dot 內部 span 從原 `role="status"` + `aria-label="presence: online"` 改為 `aria-hidden`。Rationale:`role="status"` 是 live region,多 Avatars(member list / mention picker)會造成 SR 洪水噪音;presence 資訊應整合進 parent avatar 的 `aria-label`(world-class Slack / Teams / Discord 共通)— consumer 傳 `alt` 時自帶語意(e.g. `alt="Alan Chen (online)"`)。
+**Status dot a11y(2026-04-22 D4 UX audit 調整)**:Avatar status dot 內部 span 從原 `role="status"` + `aria-label="presence: online"` 改為 `aria-hidden`。Rationale:`role="status"` 是 live region,多 Avatars(member list / mention picker)會造成 SR 洪水噪音;presence 資訊應整合進 parent avatar 的 `aria-label`(Fluent 2 Avatar 同做法:presence badge 併進頭像自己的名稱 —— [useAvatar.tsx#L142-L150](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/Avatar/useAvatar.tsx#L142-L150)「Resolve aria-label and/or aria-labelledby, including the badge」)— consumer 傳 `alt` 時自帶語意(e.g. `alt="Alan Chen (online)"`)。
 
 ### 溢出人員列表（+N）
 
@@ -141,7 +141,7 @@ Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列�
 | Icon | `round_even(size × 0.6)`（fill 模式用 `width:60% height:60%`） | 20px |
 | Text fallback 字體 | `round(size × 0.5)`（fill 模式用 `font-size:50cqi`） | 16px |
 
-- Icon 60%：業界標準（Material Design、Apple HIG）
+- Icon 60%:圖示四周各留 20% 內距,和 Text 50% 一樣讓內容與圓形保持一致留白;`round_even` 取偶數讓圖示在圓心置中、不出半像素
 - Text 50%：讓 initials 與圓形留出一致內距，且自動對齊本 DS 字體 scale（10→12→16→20px）
 
 ### 常用尺寸參考
@@ -198,22 +198,22 @@ Avatar 包在 disabled Field wrapper context 內時，會經 `useResolvedFieldDi
 
 ## Overlay:Status dot + Count badge(可並存,不同角)
 
-Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 count),**可同時並存** — 兩者是不同角、不同語義的 slot,對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。
+Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 count),**可同時並存** — 兩者是不同角、不同語義的 slot,對齊 `badge.spec.md`「**Avatar 可以疊兩個 badge**(status + count)」canonical;presence 跟著臉看、count 落在掃未讀的位置,兩個訊號各有自己的角。
 
-> **2026-06-01 修正**:原「擇一不並存」(AR22)決策與 `badge.spec.md`(明文「Avatar 可疊兩個 badge」)+ `avatar.tsx`(兩個 prop 各自獨立 render,從未 type-level 互斥)三方衝突。經 M26 source-verified benchmark(Slack / MS Teams / iMessage 標配 presence dot + count badge 並存)+ user 拍板,統一為「**可並存(視覺照舊,code 不變)**」。
+> **2026-06-01 修正**:原「擇一不並存」(AR22)決策與 `badge.spec.md`(明文「Avatar 可疊兩個 badge」)+ `avatar.tsx`(兩個 prop 各自獨立 render,從未 type-level 互斥)三方衝突。依兩者語義不同(presence = 此人狀態、count = 此對話未讀量,分屬不同角)+ user 拍板,統一為「**可並存(視覺照舊,code 不變)**」。
 
-**為什麼可並存(且不同角)**:presence(右下,跟著臉看)是「這個人的線上狀態」,count(右上,視覺掃描 inbox 的自然落點)是「此對話的未讀量」——語義不同、不同角。**signal crowding** 原則真正禁止的是「**同一角疊兩個同類 indicator**」(如右上同時塞 count + dot),不是「不同角、不同語義」的兩個訊號。世界級 chat app(Slack / Teams / Discord / iMessage)標配兩者並存、把兩者分開不疊在同一角。
+**為什麼可並存(且不同角)**:presence(右下,跟著臉看)是「這個人的線上狀態」,count(右上,視覺掃描 inbox 的自然落點)是「此對話的未讀量」——語義不同、不同角。**signal crowding** 原則真正禁止的是「**同一角疊兩個同類 indicator**」(如右上同時塞 count + dot),不是「不同角、不同語義」的兩個訊號。所以本 DS 讓兩者並存、但永遠分在兩個角,不疊在同一角。
 
 | Overlay | Prop | 元件本體 | 位置 | 語義 | 世界級對照 |
 |---------|------|---------|------|------|-----------|
-| Status dot(presence)| `status="online"/"away"/"busy"/"offline"` | **Avatar 內部 `span`**(非 Badge) | **右下角**(circle avatar 圓周 45°) | 此人現在線上狀態 | Slack / Teams / Discord |
+| Status dot(presence)| `status="online"/"away"/"busy"/"offline"` | **Avatar 內部 `span`**(非 Badge) | **右下角**(circle avatar 圓周 45°) | 此人現在線上狀態 | Fluent 2 Avatar `badge` slot 右下([useAvatarStyles.styles.ts#L181-L186](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/Avatar/useAvatarStyles.styles.ts#L181-L186)) |
 | Count badge(通知)| `badgeCount={N}` | **`<Badge variant="critical">`**(此 anchor 唯一 Badge) | **右上角** | 此對話 / 此使用者有 N 條新事件 | iMessage / Slack thread / LINE / WhatsApp |
 
-**為什麼 status 做 Avatar 內部 span 而不是 `<Badge dot>`**:兩者語義完全不同——presence 是「這個人的狀態」,Badge 是「計數 / 通知緊急度」。若用 Badge 承載 presence,color token 會混用(Badge 有 low/medium/high/critical 對應緊急度,presence 有 online/busy/away/offline 對應狀態;強行映射會失真);brand 也無法獨立調 presence 色而不動 Badge 色。世界級 Slack / Teams / Discord 同樣把 presence dot 做成 avatar 自有 primitive,不走 badge 系統。
+**為什麼 status 做 Avatar 內部 span 而不是 `<Badge dot>`**:兩者語義完全不同——presence 是「這個人的狀態」,Badge 是「計數 / 通知緊急度」。若用 Badge 承載 presence,color token 會混用(Badge 有 low/medium/high/critical 對應緊急度,presence 有 online/busy/away/offline 對應狀態;強行映射會失真);brand 也無法獨立調 presence 色而不動 Badge 色。(Fluent 2 是另一種切法:presence 用 badge 套件裡專用的 `PresenceBadge`,掛在 Avatar 的 `badge` slot —— [Avatar.types.ts#L1](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/Avatar/Avatar.types.ts#L1)、[#L49](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/Avatar/Avatar.types.ts#L49);它同樣不拿計數用的 Badge 承載 presence,但元件住在 badge 套件,不是 avatar 自有 primitive。)
 
 ### Status dot 尺寸與比例
 
-- `dotSize = clamp(8, round(avatarSize × 0.28), 16)` — 28% 是 Slack / Teams 世界級平均
+- `dotSize = clamp(8, round(avatarSize × 0.28), 16)` — 28% 讓 32px 頭像得到約 9px 的點:看得出來、又不搶臉(上下限理由見下兩行)
 - Floor 8:小 avatar(24-28px)下可辨識但不喧賓奪主(若 floor 10 → 24px avatar 的 dot 占 42% 太大)
 - Ceiling 16:64px+ 的大 avatar 不讓 dot 過度放大,保持「輔助指示器」視覺權重
 - 與頭像之間的縫:**從圓上挖出來**(2026-09-26 起;此前是圓點外畫一圈 `box-shadow`、顏色寫死 `--surface-raised`),寬 = DS 通用縫 `--stack-gap`(2px),dotSize ≥ 12 時多 1px 保持視覺比例。露出的是真正在後面的東西,所以頭像放在深色頁面(#0A0A0A)、半透明卡片、滑過的列上都不會出現一圈錯色的灰邊 —— 舊做法在深色頁面上實測就是一圈 #1F1F1F(待辦總帳 N49;步驟條外圈同一種病、同日改)。挖法與「頭像堆疊」段相同(遮罩挖空,不是外圈);圓點本身不再畫任何圈
@@ -251,7 +251,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - 圈色寫死 `--surface` 只在白底正確:深色主題 `--surface` 本身是白 8% 半透明,圈變成一道比頭像還亮的月牙;唯讀欄位(`--bg-readonly`)或滑過的表格列上,每顆外面多一圈白邊。
 - 挖空與背景色無關,不需要為每種背景另建不透明 token(`tokens/README.md` 建 token 前先質疑是否真需要)。換成不透明底色的做法,2026-09-26 AI 模擬實測在唯讀欄位上灰頭像與欄位同色、在深色比欄位暗。
 
-**縫寬 2px 是 AI 推導**:與舊外圈同寬(白底上看起來與舊版相同),也與 DS 其他「把疊上去的東西分開」的縫同寬(本檔「Status dot 尺寸與比例」、「Count badge 實作」、上傳列的進度條與焦點框、步驟條外圈、全域焦點框往外畫的間隙)—— 這個值 2026-09-26 抽成 token `--stack-gap`(`tokens/uiSize/uiSize.css`;JS 雙生 `tokens/uiSize/stack-gap.ts`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等),本段是它設計理由的住所。Primer 的縫是 1px。
+**縫寬 2px 是 AI 推導**:與舊外圈同寬(白底上看起來與舊版相同),也與 DS 其他「把疊上去的東西分開」的縫同寬(本檔「Status dot 尺寸與比例」、「Count badge 實作」、上傳列的進度條與焦點框、步驟條外圈、全域焦點框往外畫的間隙)—— 這個值 2026-09-26 抽成 token `--stack-gap`(`tokens/uiSize/uiSize.css`;JS 雙生 `tokens/uiSize/stack-gap.ts`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等),本段是它設計理由的住所。Primer 的縫是 1px([AvatarStack.module.css#L3](https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/AvatarStack/AvatarStack.module.css#L3)「`--avatar-border-width: 1px`」)。
 
 **世界級對照**:
 
@@ -262,7 +262,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 | Fluent 2(@fluentui/react-avatar 9.11.8) | 疊放時每顆加 `box-shadow` 外圈,圈色寫死 `colorNeutralBackground2` | [useAvatarGroupItemStyles.styles.ts#L59-L61](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/AvatarGroupItem/useAvatarGroupItemStyles.styles.ts#L59-L61) |
 | Ant Design(6.6.5) | 群組內每顆的框色寫死 `groupBorderColor`,第 2 顆起往左疊 | [avatar/style/index.ts#L176-L185](https://github.com/ant-design/ant-design/blob/6.6.5/components/avatar/style/index.ts#L176-L185) |
 
-外圈派(MUI / Fluent / Ant)的圈色都是一個固定的底色 token(出處同列)。**AI 推導**:這與 DS 舊做法同一類,只在那個底色上看起來是縫;本 DS 的欄位有唯讀底、表格有滑過底、深色 `--surface` 半透明,所以選挖空(Primer)。此取捨由 AI 依上述實測整理後提出,採用紀錄同上。
+外圈派(MUI / Fluent / Ant)的圈色都是一個固定的底色 token(MUI [AvatarGroup.js#L42](https://github.com/mui/material-ui/blob/v9.4.0/packages/mui-material/src/AvatarGroup/AvatarGroup.js#L42)、Fluent [useAvatarGroupItemStyles.styles.ts#L59-L61](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/AvatarGroupItem/useAvatarGroupItemStyles.styles.ts#L59-L61)、Ant [avatar/style/index.ts#L176-L185](https://github.com/ant-design/ant-design/blob/6.6.5/components/avatar/style/index.ts#L176-L185))。**AI 推導**:這與 DS 舊做法同一類,只在那個底色上看起來是縫;本 DS 的欄位有唯讀底、表格有滑過底、深色 `--surface` 半透明,所以選挖空(Primer)。此取捨由 AI 依上述實測整理後提出,採用紀錄同上。
 
 ---
 
@@ -283,8 +283,8 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 - **`alt` 必傳**:即使有 `src`,`alt` 是 image fallback / SR 訊號雙重來源。Person avatar `alt` 應含 name + presence(例 `"Alan Chen (online)"`),entity avatar 用品牌 / 專案名,純裝飾(極罕見)用空字串 `alt=""`(`aria-hidden`)。
 - **無 `alt` 時 fallback**:image 模式自動降級 initials / icon;一律不靜默渲染無 SR 標的元素。
 - **Status dot SR 處理**:status dot 內部 span `aria-hidden`(presence 訊號整合進 parent `alt`),避免 `role="status"` live region 在 member list 造成 SR 洪水(詳「Status dot a11y」段)。
-- **`badgeCount` 語意**:內部消費 `<Badge variant="critical">`,由 Avatar 傳入 `aria-label="N unread"` 提供計數語義(Badge 本身只有 `role="status"`,不自產 aria-label);`badgeCount <= 0` 不渲染避免空 announce。
-- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N unread'}`,對齊 Slack 單一 accessible name 做法,2026-07-14 補修)+ 全域 `:focus-visible` 外描邊(元件不寫任何 focus class),確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
+- **`badgeCount` 語意**:內部消費 `<Badge variant="critical">`,由 Avatar 傳入 `aria-label="N 則未讀"` 提供計數語義(DS 預設文案 = 中文〔UD-U1021-20〕,consumer 經 `badgeAriaLabel` 換語言;2026-10-20 前是英文 `N unread`)(Badge 本身只有 `role="status"`,不自產 aria-label);`badgeCount <= 0` 不渲染避免空 announce。
+- **HoverCard 整合**:Avatar 帶 `hoverCard` prop 時自動 `tabIndex=0` + `role="img"` + `aria-label`(取 `alt`;**與 `badgeCount` 並用時 count 併入同一 aria-label** — `role="img"` 使子孫 presentational、內層 Badge 計數語義被壓平,故外層 label = `${alt}, ${badgeAriaLabel ?? 'N 則未讀'}`(沒給 `alt` 時名字是「查看個人資訊」),讓讀屏一次念完「誰 + 幾則未讀」、不必再往子孫找第二個名稱,2026-07-14 補修)+ 全域 `:focus-visible` 外描邊(元件不寫任何 focus class),確保 keyboard user 能 Tab 進入觸發 ProfileCard popover;**不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除;role="img" 為 2026-07-07 axe 補修,詳「Keyboard 可達 canonical」段)。
 - **Image alt 語意**:meaningful image(person photo / brand logo)用實質 `alt`;decorative-only(極少)走 `alt=""`,但 Avatar 本質是身份識別,decorative 用法應改用 Icon 元件。
 
 ---

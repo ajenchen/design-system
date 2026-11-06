@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { Buffer } from 'node:buffer'
-import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs'
+import { chmodSync, existsSync, lstatSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -310,6 +310,37 @@ export function listFiles(root) {
   }
   visit(root)
   return output.sort(compareUtf8Bytes)
+}
+
+// 拋棄式樹(isolated HOME、快照)的移除:先照常刪;遇到權限錯誤才**只對真目錄**補上擁有者的 rwx 再刪一次。
+// 為什麼需要(2026-10-14,待辦總帳 SM2):closed hook tool profile 的根目錄是 0o500,平常由行程 'exit' 收尾
+// 先放權限再刪;行程被 SIGTERM / SIGKILL 時 'exit' 不會跑,0o500 目錄留在 isolated HOME 裡 ——
+// 09-22 → 09-28 夜間 run-gate-meta-tests 超時被砍後,harness 清 HOME 一律 `EACCES`(isolatedHomeRemoved: false)。
+// 用 lstat 判斷、不跟隨 symlink(tool profile 裡是指向 /usr/bin/git 等系統執行檔的 symlink,chmod 會改到目標);
+// 只放寬「擁有者」位元,不碰 group / other。不是權限問題的錯誤照原樣丟出。
+const OWNER_PERMISSION_ERRORS = new Set(['EACCES', 'EPERM', 'ENOTEMPTY'])
+
+function repairOwnerDirectoryPermissions(path) {
+  let info
+  try { info = lstatSync(path) } catch (error) {
+    if (error?.code === 'ENOENT') return
+    throw error
+  }
+  if (!info.isDirectory() || info.isSymbolicLink()) return
+  if ((info.mode & 0o700) !== 0o700) chmodSync(path, (info.mode & 0o7777) | 0o700)
+  for (const name of readdirSync(path)) repairOwnerDirectoryPermissions(join(path, name))
+}
+
+export function removeTreeRepairingOwnerPermissions(path) {
+  try {
+    rmSync(path, { recursive: true, force: true })
+    return { removed: !existsSync(path), repairedPermissions: false }
+  } catch (error) {
+    if (!OWNER_PERMISSION_ERRORS.has(error?.code)) throw error
+  }
+  repairOwnerDirectoryPermissions(path)
+  rmSync(path, { recursive: true, force: true })
+  return { removed: !existsSync(path), repairedPermissions: true }
 }
 
 export function readPathState(root, repoPath) {

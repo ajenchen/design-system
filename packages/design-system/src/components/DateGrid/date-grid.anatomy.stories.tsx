@@ -4,6 +4,7 @@ import { zhTW } from 'date-fns/locale/zh-TW'
 import type { DateRange } from 'react-day-picker'
 import { DateGrid } from './date-grid'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/DateGrid/設計規格',
@@ -288,11 +289,9 @@ export const Inspector = {
       )
     }
     return (
-      <div className="flex flex-col gap-4">
-        <H3>元件檢閱器</H3>
-        <Desc>DateGrid 的所有 layout token 一覽。theme / density 切換時色彩自動反轉,日格走 h-field-sm 隨 density 縮放(28×28 md / 32×32 lg),與 field 家族保持比例。</Desc>
+      <ExampleSection title="元件檢閱器" description="DateGrid 的所有 layout token 一覽。theme / density 切換時色彩自動反轉,日格走 h-field-sm 隨 density 縮放(28×28 md / 32×32 lg),與 field 家族保持比例。">
         <InspectorInner />
-      </div>
+      </ExampleSection>
     )
   },
 }
@@ -494,7 +493,7 @@ export const StateBehavior = {
                 locale={zhTW}
               />
             </div>
-            <p className="text-[11px] text-fg-muted max-w-[260px] leading-relaxed">
+            <p className="text-caption text-fg-muted max-w-[260px]">
               點擊設定唯一選擇。再次點已選日 = 清除選取(react-day-picker v9 single mode 預設 toggle-off,未傳 required);點新日取代舊選。DatePicker 使用此 mode。
             </p>
           </div>
@@ -511,7 +510,7 @@ export const StateBehavior = {
                 locale={zhTW}
               />
             </div>
-            <p className="text-[11px] text-fg-muted max-w-[260px] leading-relaxed">
+            <p className="text-caption text-fg-muted max-w-[260px]">
               可勾選多個不連續日期。點已選日 = 取消。值型別為 Date[]。
             </p>
           </div>
@@ -528,7 +527,7 @@ export const StateBehavior = {
                 locale={zhTW}
               />
             </div>
-            <p className="text-[11px] text-fg-muted max-w-[260px] leading-relaxed">
+            <p className="text-caption text-fg-muted max-w-[260px]">
               第一次點設 from、第二次點設 to,中間自動填滿。值型別 {'{ from; to? }'}。
             </p>
           </div>
@@ -558,9 +557,9 @@ export const StateBehavior = {
 export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-3xl text-body">
+    <ExampleStack className="max-w-3xl text-body">
       <section>
-        <H3>ARIA roles(react-day-picker v9 內建,本 DS 不重寫)</H3>
+        <H3 paragraph>ARIA roles(react-day-picker v9 內建,本 DS 不重寫)</H3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li><code>role="grid"</code> on day grid root</li>
           <li><code>role="gridcell"</code> + <code>aria-selected</code> on each day cell（<code>&lt;td&gt;</code>，非內層 button）</li>
@@ -570,7 +569,7 @@ export const Accessibility = {
         </ul>
       </section>
       <section>
-        <H3>鍵盤導覽</H3>
+        <H3 paragraph>鍵盤導覽</H3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li><kbd>←</kbd> <kbd>→</kbd> 切日(focus-only,不觸發 select)</li>
           <li><kbd>↑</kbd> <kbd>↓</kbd> 切週</li>
@@ -582,6 +581,6 @@ export const Accessibility = {
           <li><kbd>Space</kbd> / <kbd>Enter</kbd> select(觸發 onSelect)</li>
         </ul>
       </section>
-    </div>
+    </ExampleStack>
   ),
 }

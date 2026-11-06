@@ -1,4 +1,4 @@
-<!-- @benchmark-cited: world-class layered token architecture — Polaris/Material/Atlassian/Carbon/Apple HIG (URLs in body table) -->
+<!-- @benchmark-cited: layered token architecture — Material 3 md-ref → md-sys → md-comp(版本固定網址見正文表) -->([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-color.scss#L17-L20))
 
 # Token System 設計原則(SSOT,跨所有 token family)
 
@@ -11,18 +11,14 @@
 
 | 流派 | 代表系統 | 層命名 | 對應我們 |
 |---|---|---|---|
-| **3-layer reference / system / component** | Material 3 | `md-ref-*` → `md-sys-*` → `md-comp-*` | Primitive / Semantic / Internal |
-| **2-layer base / semantic + token-per-component** | Polaris | `--p-color-blue-500` → `--p-color-bg-primary` | Primitive / Semantic |
-| **3-layer foundation / semantic / specific** | Atlassian DS | `color.text.brand` → 直接 raw oklch in foundation | Primitive / Semantic |
-| **2-layer global / alias + size scale** | Carbon | `$blue-60` → `$button-primary` | Primitive / Semantic |
-| **2-layer semantic + dynamic** | Apple HIG | `systemBlue` → `UIColor.label`(adaptive) | Primitive / Semantic |
+| **3-layer reference / system / component** | Material 3 | `md-ref-*` → `md-sys-*` → `md-comp-*`(https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-color.scss#L17-L20 sys 層吃 md-ref-palette;`_md-comp-filled-button.scss` 為 comp 層)| Primitive / Semantic / Internal |
 
-**我們選 5-layer**(Primitive / Semantic / Family / Layout / Internal),擴充 Material 3 流派加兩層處理結構化常數:
-- **Family**(Material 3 `md-sys-*` 子分支):cross-component 共用的具體尺寸 family(`--field-height-*` / `--table-row-*` / `--tab-height-*`)
-- **Layout**(Material `md-comp-layout` 對應):跨層佈局常數(`--layout-space-loose` / `--sidebar-width` / `--chrome-header-height`)
-- **Internal**(Material `md-comp-*` 對應):單元件內部不對 consumer 公開(目前 0 個——所有跨元件都 promote 到 Family,單元件 hardcode in tsx)
+**我們選 5-layer**(Primitive / Semantic / Family / Layout / Internal),在三層(primitive / semantic / internal)之上加兩層處理結構化常數:
+- **Family**:cross-component 共用的具體尺寸 family(`--field-height-*` / `--table-row-*` / `--tab-height-*`)
+- **Layout**:跨層佈局常數(`--layout-space-loose` / `--sidebar-width` / `--chrome-header-height`)
+- **Internal**:單元件內部不對 consumer 公開(目前 0 個——所有跨元件都 promote 到 Family,單元件 hardcode in tsx)
 
-`tokens/README.md`「Public vs Internal token」表 cross-reference 本 spec 此段。
+`tokens/README.md`「Consumer scope:public vs internal token」表 cross-reference 本 spec 此段。
 
 ---
 
@@ -33,7 +29,7 @@
 | **L1 Primitive** | 原始 raw value(無 mode 知識 / 無 component 知識) | `--color-blue-6` / `--color-neutral-9-opaque` / `--black-a45` / `--elevation-100` | `color/primitives.css` | **Internal**——只供 semantic 層 alias,或 Tag/Avatar 等「按色分類」元件直接消費(per `color.spec.md` 流派定位) |
 | **L2 Semantic** | 表達**意圖** / 封裝 mode swap | `--primary` / `--error` / `--canvas` / `--surface` / `--foreground` / `--fg-disabled` / `--bg-disabled` | `color/semantic.css` | **Public**——consumer 直接 `bg-primary` / `text-foreground` |
 | **L3 Family**(cross-component 共用尺寸) | family-scoped semantic value | `--field-height-md` / `--table-row-md` / `--tab-height-md` / `--tree-indent-md` | `uiSize/uiSize.css` | **Internal**——DS 內部 primitive 消費,consumer 用 `<Button size="sm">` 不直接寫 token |
-| **L4 Layout**(全 app 結構常數) | 全域 layout primitive 尺寸 | `--sidebar-width` / `--sidebar-width-mobile` / `--chrome-header-height` / `--layout-space-loose` | `uiSize/uiSize.css` + `layoutSpace/layoutSpace.css` | **Public**——AppShell / Sidebar / ChromeHeader 等 layout primitive 元件直接消費 |
+| **L4 Layout**(全 app 結構常數) | 全域 layout primitive 尺寸 | `--sidebar-width` / `--sidebar-width-icon` / `--chrome-header-height` / `--layout-space-loose` | `uiSize/uiSize.css` + `layoutSpace/layoutSpace.css` | **Public**——AppShell / Sidebar / ChromeHeader 等 layout primitive 元件直接消費 |
 | **L5 Internal**(單元件內部) | 單元件 only | (目前 0 個) | — | 不開——若只 1 個 consumer hardcode in tsx 即可,2+ consumer 才升 L3/L4 |
 
 **Layer 判斷流程**:
@@ -58,8 +54,8 @@
 | Family prefix | Layer | 範例 |
 |---|---|---|
 | `--color-*` | L1 Primitive | `--color-blue-6` / `--color-neutral-9-opaque` |
-| `--brand` / `--primary` / `--error` / `--info` / `--success` / `--warning` | L2 Semantic(色 family,history 沒寫 `--color-` 前綴是 Atlassian 流派 idiom) | `--primary-hover` / `--error-subtle` |
-| `--canvas` / `--surface*` / `--foreground` / `--fg-*` | L2 Semantic(shadcn idiom 沿用——surface tone family + fg state family 各自獨立) | `--canvas` / `--surface-raised` / `--fg-disabled` |
+| `--brand` / `--primary` / `--error` / `--info` / `--success` / `--warning` | L2 Semantic(色 family,history 沒寫 `--color-` 前綴是 Atlassian 流派 idiom) | `--primary-hover` / `--error-subtle`([來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-light.js)) |
+| `--canvas` / `--surface*` / `--foreground` / `--fg-*` | L2 Semantic(DS 自有命名 —— surface tone family + fg state family 各自獨立;shadcn 的 `--background` / `--card` / `--popover` 已於 2026-04-18 清除 compat alias)| `--canvas` / `--surface-raised` / `--fg-disabled`([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/app/globals.css#L101-L105)) |
 | `--bg-*` | L2 Semantic(state pair family,跟 `--fg-*` 配對) | `--bg-disabled`(配 `--fg-disabled`) |
 | `--neutral-hover` / `--neutral-selected*` | L2 Semantic(neutral interaction family) | `--neutral-selected-hover` |
 | `--<hue>-hover` / `--<hue>-active` | L2 Semantic(色相互動 family) | `--blue-hover` / `--red-active` |
@@ -74,7 +70,7 @@
 
 ### 規則 2:`--<size>` suffix 跟 family 共用 size vocabulary
 
-所有 size suffix 統一 `xs / sm / md / lg`(elevation 例外用 `100 / 200` Material idiom,因 elevation 不跟 density 走)。**禁** 自創 `tiny` / `small` / `regular` / `large` 等同義詞。
+所有 size suffix 統一 `xs / sm / md / lg`(elevation 例外用 `100 / 200`,同 Polaris `shadow-100` / `shadow-200` 的數字階,因 elevation 不跟 density 走)。**禁** 自創 `tiny` / `small` / `regular` / `large` 等同義詞([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/shadow.ts#L41-L45))。
 
 ### 規則 3:Tailwind utility bridge 命名同步
 
@@ -119,7 +115,7 @@
 
 **Why**:elevation 跟 color 共用 light/dark mode 切換 trigger(`[data-theme="dark"]`)。把 elevation 跟 color primitives 放同一個 `[data-theme="dark"]` block,**改 mode 設定一處全聯動**;若拆出去 `elevation/elevation.css` 各有 dark override block → 兩處 mode trigger,容易「改 a 壞 b」。
 
-**對齊**:Material 3 `md-sys-elevation` 直接定義在 `theme` 範圍內(跟 color theme 同 root);Atlassian DS 「shadow + color in same theme primitive layer」;Polaris `--p-shadow-*` 與 `--p-color-*` 同住 theme css。
+**對齊**:Atlassian 的 shadow 與 color 同在一份主題檔(atlassian-light.js 第 472 行 `--ds-shadow-raised` 與第 305 行 `--ds-text-subtlest` 同檔);Polaris `shadow` 與 `color` 同住 `themes/base/`([來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-light.js)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/shadow.ts#L41)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/color.ts#L258))。
 
 **拆分例外條件**:若未來 elevation 需要獨立 dark mode trigger(eg. high-contrast mode 不變色但加重 shadow)→ 才拆。目前無此需求。
 
@@ -127,12 +123,12 @@
 
 | Family | 命名前綴 | 用途 | Sourced from |
 |---|---|---|---|
-| **Surface tone family** | `--canvas` / `--surface` / `--surface-raised` / `--surface-strong` / `--overlay` / `--tooltip` | 容器層級的**底色 tone**——不同 layer 不同視覺深度 | shadcn idiom(`--background` family),DS 沿用避免破壞 shadcn compat 命名 |
+| **Surface tone family** | `--canvas` / `--surface` / `--surface-raised` / `--surface-strong` / `--overlay` / `--tooltip` | 容器層級的**底色 tone**——不同 layer 不同視覺深度 | DS 自有命名(shadcn 對應的是 `--background` / `--card` / `--popover`,compat alias 已於 2026-04-18 清除,見 `color/color.spec.md`「shadcn Compat Aliases」)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/app/globals.css#L101-L105)) |
 | **State pair family** | `--bg-<state>` 配 `--fg-<state>` | 互動元件 disabled / hover / active **state 底色**——跟前景文字 state 成對 | DS 自家 idiom,確保 bg + fg 一定一對一 sync(`--bg-disabled` 配 `--fg-disabled`) |
 
 **Why 2 個 family**:Surface tone 是「容器深度」概念,跟 state 無關;State pair 是「元件當下互動 state」概念,跟容器深度無關。**強行統一**(eg. 命名全部 `--bg-canvas` / `--bg-disabled`)→ 失去語義邊界,consumer 寫 code 時不知該選哪個。
 
-**對齊**:Polaris `--p-color-bg`(tone family)vs `--p-color-bg-disabled`(state pair);Material 3 `md-sys-color-surface*`(tone)vs `md-sys-color-on-disabled`(state);Atlassian `color.background.neutral`(tone)vs `color.background.disabled`(state)— 三家世界級全部 2 family 拆,我們對齊。
+**對齊**:Polaris `color-bg`(tone family)vs `color-bg-surface-disabled`(state);Atlassian `color.background.neutral`(tone)vs `color.background.disabled`(state)—— 兩家都把 tone 與 state 拆成兩個 family,即使值相同(Atlassian 兩者都是 #0515240F)也不合併([來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-light.js)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/color.ts#L258-L286))。
 
 ### Co-location 3:`--layout-space-*`(layoutSpace/)vs `--sidebar-*` / `--chrome-header-*` / `--*-panel-width`(uiSize/)
 
@@ -150,7 +146,7 @@
 
 雖然名含「disabled」看似 semantic,但實際是**單一 structural value**(0.45)沒 mode swap、沒 hover/active variant——當 L1 Primitive 處理。`@utility opacity-disabled` 直接 expose 給 consumer。
 
-**對齊**:Atlassian Pragmatic guideline opacity scale 也住 primitive layer。
+**理由**:opacity 刻度是原料、不帶語意,所以跟色階一樣住 primitive layer;語意角色(如 `opacity-disabled`)再從刻度取值。
 
 ---
 
@@ -168,7 +164,7 @@
 - Public token → **必補 Storybook stories**(色票 / 字級 / 間距對照展示)
 - Internal token → spec.md codify family 即可,**免 stories**(consumer 不直接看)
 
-`tokens/README.md`「Public vs Internal token」表 cross-reference 本段。
+`tokens/README.md`「Consumer scope:public vs internal token」表 cross-reference 本段。
 
 ---
 
@@ -220,7 +216,7 @@ Tailwind v4 `@theme inline` 把 CSS variable 升級成 utility class。每 famil
 | 禁 | 原因 |
 |---|---|
 | 自創新命名 family 不過 family-scoped 規則 | 1 個 token 屬 N 個 family = consumer 認知衝突 |
-| 1 處 hardcode 立即開 token | <2 處同步 = token 過度抽象,Linear/Polaris 都警告 token bloat |
+| 1 處 hardcode 立即開 token | <2 處同步 = token 過度抽象 —— 每多一個 token 就多一個要維護、要命名、會漂移的東西 |
 | 為 1 consumer 開 L3 Family token | Family 抽象服務 cross-component,1 consumer 該 hardcode in tsx |
 | 拆 elevation 出 primitives.css 另做 dark override | 兩處 mode trigger,「改 a 壞 b」(M10 違反) |
 | L2 Semantic 直接 raw oklch 不 alias L1 | 跳層 = 失去 primitive scale benefit + 改值要動兩處 |

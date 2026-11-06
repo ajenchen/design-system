@@ -47,7 +47,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `Checkbox` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `RadioGroup` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `Rating` | sm / md / lg | **`md`** | `--field-height-md`(Field 槽;控件 20/24px 對應,元件本身不消費容器:可以點的星 20/24/24 = 元件高、唯讀精簡版 21/21/24;列高由 Field 控件槽 `min-h-field-*` 供給,同 Checkbox / Switch。星走 identity scale 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不完全對齊 `--field-height-*`」+「為什麼不完全對齊 icon tier」+ 本檔「跨 regime pointer index」carve-out row;xs 於 2026-09-27 退役) |
-| `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(Ant-style 時間選擇,對齊 DatePicker 家族) |
+| `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(時間選擇,對齊 DatePicker 家族) |
 | `Tag` | sm / md / lg | **`md`** | 自帶尺寸，透過 Field size 配對 |
 
 #### 單一尺寸消費者（不在 default-md 規則內）
@@ -65,7 +65,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 
 - **現況**:{sm/md/lg 實際數值或 token,e.g. sm=16px / md=16px / lg=20px(Checkbox)}
 - **Rationale**:{一句話說明偏離理由,指向世界級或 token spec 或 UX 約束}
-- **世界級對照**:{Polaris / Material / Ant / Atlassian 等中至少一個同樣這樣做的 DS}
+- **世界級對照**:{至少一個同樣這樣做的世界級 DS,附版本固定的一手來源網址;找不到就改寫成 DS 自己的理由}
 ```
 
 **必須同時滿足**:
@@ -73,7 +73,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 2. 三個欄位(現況 / Rationale / 世界級對照)**都要填**,缺一不可——特別是「世界級對照」不能省,mindset #1 要求對標
 3. 位置:必須在 spec 的「尺寸」主章節之下(不是埋在「何時不用」或「禁止事項」等其他章節)
 
-**現有已遵循此格式的元件**:Chip(本檔上表已寫,Material 3 / Atlassian / Polaris 共識)/ Checkbox / RadioGroup / Switch / Textarea / Rating(2026-04-21 批次補齊,三欄格式;Rating 2026-09-27 改寫為「為什麼不完全對齊 `--field-height-*`」)。Slider 的理由是 `slider.spec.md`「size 只控 root 容器外高」段的散文,沒有用這個子標題(2026-09-27 核對)。
+**現有已遵循此格式的元件**:Chip(本檔上表已寫)/ Checkbox / RadioGroup / Switch / Textarea / Rating(2026-04-21 批次補齊,三欄格式;Rating 2026-09-27 改寫為「為什麼不完全對齊 `--field-height-*`」)。Slider 的理由是 `slider.spec.md`「一種視覺,多種容器尺寸」段的散文,沒有用這個子標題(2026-09-27 核對)。
 **需補齊 rationale 段的元件**:(無 — Phase 2 已全部補齊)。未來新增偏離 field-height 的元件 → 必須按本格式寫(三欄格式為本 spec 約定,非機械 enforce;`/design-system-audit` 僅經 audit-prompts 通用 rationale-grep + Rule B density flag 間接把關)。
 
 **audit hook 未來擴展**:若 cva `defaultVariants.size` 不是 `md`,或 `size` variants 的數值不命中 `--field-height-*`,hook 可要求 spec.md 必有符合格式的 rationale 段,否則 block merge(列為 post-Phase-2 可考慮加上的 mechanical gate)。
@@ -115,7 +115,7 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 
 **與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。
 
-**Why 固定不隨 density**:density 本質是縱向密度(一屏幾列);橫向管可讀性(字離格線距離),目的不同不綁。對齊 Ant Table(橫向 padding 不隨 density 變、縱橫分離)+ 全 DS field 控件 12px 常數。M17「SSOT 必可傳播」:**form-context field 控件**散落的 `px-3` / inline `0.75rem` 收斂進此 token。
+**Why 固定不隨 density**:density 本質是縱向密度(一屏幾列);橫向管可讀性(字離格線距離),目的不同不綁 —— 本 DS 刻意縱橫分離(Ant Table 換尺寸時縱橫內距一起縮,本 DS 不跟)+ 全 DS field 控件 12px 常數。M17「SSOT 必可傳播」:**form-context field 控件**散落的 `px-3` / inline `0.75rem` 收斂進此 token([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/style/index.ts#L457-L462))。
 
 **收斂範圍(2026-09-17 修正,原句寫「全收斂」是過度宣稱)**:此 token 是 **content gutter** 概念的源頭,
 由三個脈絡各自以 named token 取用,彼此可獨立 override:
@@ -203,9 +203,9 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 | Rating star(可以點的評分;唯讀精簡版走 icon tier) | `components/Rating/rating.spec.md`「為什麼不完全對齊 icon tier」 | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20(`starSize = controlHeight × 0.625`)/ MUI 24(medium),出處在 owner 段 |
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:160` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:57` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
-| FileViewer thumb | `components/FileViewer/file-viewer.tsx:552,637` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
+| FileViewer thumb | `components/FileViewer/file-viewer.tsx#Filmstrip`(`THUMB_SIZE` 與 `FileText size={20}`) | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
 | CircularProgress | `components/CircularProgress/circular-progress.tsx:86` | `strokeWidth = max(2, round(size/10))` stroke ring 厚度非 icon | Geometric scaling |
-| Steps indicator icon | `components/Steps/steps.tsx:25` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
+| Steps indicator icon | `components/Steps/steps.tsx#INDICATOR_ICON_SIZE` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
 | Slider thumb/track | `components/Slider/slider.spec.md:86` | thumb 16 / track 4px 固定不隨 size 變(視覺 single tier)| Material 3 / iOS / Ant / Radix 固定 thumb | <!-- @benchmark-unverified -->
 | Checkbox/Switch check | `components/Checkbox/checkbox.tsx:52` + `components/Switch/switch.tsx:83` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
 
@@ -223,7 +223,7 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 | md | md | 24px(`--tag-height-md`) | (field-height-md − 2px − tag-height-md) / 2 = 3px |
 | lg | lg | 24px(`--tag-height-lg`) | (field-height-lg − 2px − tag-height-lg) / 2 = 5px |
 
-公式扣 2px 邊框(2026-09-15 像素實測修正,詳 `components/Tag/tag.spec.md`「與 Field 的關係」):padding 量在邊框內側,不扣會四邊差 1px。
+公式扣 2px 邊框(2026-09-15 像素實測修正,詳 `components/Tag/tag.spec.md`「圓角與間距」):padding 量在邊框內側,不扣會四邊差 1px。
 
 ---
 
@@ -358,7 +358,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 
 - **Fixed-height 套到能 grow 的 chrome**(e.g. 把 Dialog 改 fixed-h 48):DialogDescription 被剪切 → 違反 modal 作為完整決策 context 的職責
 - **Padding-based 套到剛性 chrome**(e.g. 把 Sidebar header 改 padding-based):高度會變成內容驅動，違反 sidebar 的固定 chrome contract
-- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:按鈕本身被縮到 24,**與 overlay chrome 的比例不協調**(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於本檔「元件高度地板」段(:169)訂的最小值,沒有低於任何我們採用的門檻。先前這裡寫的「touch target 變 24 違反 a11y」既與 :169 自相矛盾、也查無出處,2026-09-24 更正;我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 裁示),不以觸控尺寸建議作依據。v5 trick 同時保視覺 + 幾何:layout 只佔 24,視覺與命中仍是 `sm` 的 28
+- **overlay 用 xs dismiss(size 而非 layout-slot trick)**:按鈕本身被縮到 24,**與 overlay chrome 的比例不協調**(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於本檔「元件高度地板」段訂的最小值,沒有低於任何我們採用的門檻。先前這裡寫的「touch target 變 24 違反 a11y」既與「元件高度地板」段自相矛盾、也查無出處,2026-09-24 更正;我們做的是 web component,尺寸以滑鼠指標的精度為前提(user 2026-09-24 裁示),不以觸控尺寸建議作依據。v5 trick 同時保視覺 + 幾何:layout 只佔 24,視覺與命中仍是 `sm` 的 28
 
 ---
 
@@ -391,7 +391,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 
 ## Icon-only 元件的 padding canonical(2026-04-25 重訂)
 
-**Idiom**:`aspect-square + p-0 + flex justify-center items-center`(Polaris / Atlassian 派)。
+**Idiom**:`aspect-square + p-0 + flex justify-center items-center`(正方形、零內距,寬由高推出、icon 置中)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L276-L279))。
 **禁用**:padding-formula `(field-height - icon)/2` 派(magic numbers + 易漏扣 border)。
 
 ### Canonical 配方

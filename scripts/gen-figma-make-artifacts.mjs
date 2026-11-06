@@ -169,8 +169,10 @@ function generate() {
   // Overlay 進出場動畫 utilities(tw-animate-css;7 浮層消費 animate-in/fade/zoom/slide + --tw-enter-* 變數)。
   // 2026-07-11 加:原 class 寫了但外掛沒裝 = 動畫全 no-op。必在 tokens 前、`@import "tailwindcss"` 後
   // (entry globals.css 已先 import tailwindcss)。tw-animate-css 為 DS package dependency,consumer
-  // `@import tokens` 一次拿到。SSOT = motion.css 動畫 token → overlay-motion 共用類綁 --tw-* 變數。
-  const twAnimateBlock = '/* Overlay 進出場動畫 utilities(tw-animate-css;7 浮層消費)*/\n@import "tw-animate-css";\n\n'
+  // `@import tokens` 一次拿到。SSOT = motion.css 動畫 token → overlay-motion / disclosure-motion 共用類綁 --tw-* 變數。
+  // 2026-10-07:原地展開收合(TreeView / Accordion / AgentPanel 思考塊)的 collapsible keyframe 也只來自這裡 ——
+  // DS 的 base.css 不再重宣告同名 keyframe / 工具類(待辦總帳 T8;scripts/motion-ssot-invariant.mjs M3)。
+  const twAnimateBlock = '/* 開合動畫 utilities(tw-animate-css;7 浮層進出場 + 3 個原地展開收合消費,SSOT = tokens/motion/overlay-motion.ts、disclosure-motion.ts)*/\n@import "tw-animate-css";\n\n'
   const imports = twAnimateBlock + ordered
     .map((f) => `@import './../tokens/${relative(TOKENS_DIR, f)}';`)
     .join('\n')

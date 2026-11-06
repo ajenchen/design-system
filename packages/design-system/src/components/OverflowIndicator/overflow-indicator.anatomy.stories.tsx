@@ -12,29 +12,18 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { OverflowIndicator } from './overflow-indicator'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { Slider } from '@/design-system/components/Slider/slider'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
-const personHover = (name: string, src?: string) => (
-  <ProfileCard
-    name={name}
-    subtitle="Design｜D-0042｜EMP-1001"
-    avatar={{ src, alt: name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday."
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+// 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
+const personHover = (name: string, src?: string) => samplePersonCard({ name, avatarSrc: src })
 const P = { A: 'Alan Chen', B: 'Betty Wu', C: 'Charlie Lee' } as const
 // 真實人像(2026-07-08 sweep):u=EMP-100x 對齊 dialog.stories.tsx MEMBERS 同名人物(跨 story 同人同照)
 const P_SRC = { A: 'https://i.pravatar.cc/48?u=EMP-1001', B: 'https://i.pravatar.cc/48?u=EMP-1002', C: 'https://i.pravatar.cc/48?u=EMP-1003' } as const
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/OverflowIndicator/設計規格',
@@ -51,6 +40,31 @@ const SHAPES: ShapeKey[] = ['circle', 'tag']
 
 // 真實隱藏項目池(reviewer / assignee 溢出情境;count 可調,超出池長度時循環)— 取代編號 placeholder
 const HIDDEN_REVIEWERS = ['林思妤', '陳柏宇', 'Aisha Khan', '黃冠霖', 'Diego Santos', '王品澄', 'Nadia Petrova', '張哲瑋']
+
+// 規格頁的 +N 浮層裡放真的內容(稽核 L085「換成真實內容(隱藏的人名 / 標籤…)」),不寫「預覽」「N 人隱藏」這種佔位字。
+// 圓形 = 隱藏的人:每人一列的名字,與已發布版(main ec7466f5)元件檢閱器同一份寫法 —— 人員清單長相(每人一列 / 人員 Tag 橫排)
+// 待 user 決定(稽核 M083),決定前不在規格頁先改成其中一種。標籤形 = 隱藏的標籤:同產品 OverflowTagList 的預設(`<Tag size="sm">`)。
+const HIDDEN_LABELS = ['付款流程', '前端', 'QA', '無障礙', '效能', '設計審查', '文件', '後端']
+function HiddenPeople({ count }: { count: number }) {
+  return (
+    <div className="flex flex-col gap-1 text-caption min-w-[140px]">
+      {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
+        <span key={i}>{HIDDEN_REVIEWERS[i % HIDDEN_REVIEWERS.length]}</span>
+      ))}
+      {count > 8 && <span className="text-fg-muted">…及其他 {count - 8} 位</span>}
+    </div>
+  )
+}
+function HiddenItems({ shape, count }: { shape: ShapeKey; count: number }) {
+  if (shape === 'circle') return <HiddenPeople count={count} />
+  return (
+    <>
+      {HIDDEN_LABELS.slice(0, Math.min(count, HIDDEN_LABELS.length)).map((label) => (
+        <Tag key={label} size="sm">{label}</Tag>
+      ))}
+    </>
+  )
+}
 
 // font-size 依 shape 分流(re-verified 2026-07-04):circle shape 走元件內建 triggerText
 // map(overflow-indicator.tsx:28-32),tag shape 走 tagVariants({ size })(tag.tsx:40-44)。
@@ -83,13 +97,13 @@ export const Overview: Story = {
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-center gap-2">
             <OverflowIndicator count={5} shape="circle" size="md">
-              <div className="text-caption p-1">5 人隱藏</div>
+              <HiddenItems shape="circle" count={5} />
             </OverflowIndicator>
             <span className="text-footnote text-fg-muted font-mono">shape="circle"</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <OverflowIndicator count={3} shape="tag" size="md">
-              <div className="text-caption p-1">3 個 tag 隱藏</div>
+              <HiddenItems shape="tag" count={3} />
             </OverflowIndicator>
             <span className="text-footnote text-fg-muted font-mono">shape="tag"</span>
           </div>
@@ -121,7 +135,7 @@ export const Overview: Story = {
               <tr>
                 <Td mono>HoverCardContent</Td>
                 <Td>展開容器(深色 tooltip 風格)</Td>
-                <Td mono>bg-tooltip · data-theme="dark" · rounded-lg</Td>
+                <Td mono>HOVER_CARD_TOOLTIP_SURFACE_CLASS(bg-tooltip · text-foreground · rounded-lg)· data-theme="dark"</Td>
               </tr>
               <tr>
                 <Td mono>ShrinkWrapList</Td>
@@ -176,6 +190,19 @@ export const Overview: Story = {
                 <Td mono>undefined</Td>
                 <Td>額外套到 trigger pill 上(頭像堆疊不需要:疊合幾何由 Avatar 的堆疊 SSOT 負責)</Td>
               </tr>
+              {/* 2026-10-21 r1b fields F7:以下兩個 prop 2026-09-30 / 10-07 加進 overflow-indicator.tsx,速查表沒跟上 */}
+              <tr>
+                <Td mono>onContentMouseDown</Td>
+                <Td mono>MouseEventHandler</Td>
+                <Td mono>undefined</Td>
+                <Td>按在浮出清單上的 mousedown:讓使用端把「按在自己的零件上焦點不動」延伸到這張卡(Combobox 搜尋框、AgentPanel 輸入盒握著焦點時按卡裡的 ×)</Td>
+              </tr>
+              <tr>
+                <Td mono>contentId</Td>
+                <Td mono>string</Td>
+                <Td mono>undefined</Td>
+                <Td>浮出清單的 id:讓使用端把這張卡算成同一個欄位的零件(Combobox 按卡裡的 × 不算離開欄位)</Td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -205,18 +232,13 @@ function OverflowInspector() {
 
   return (
     <div className="grid grid-cols-[1fr_320px] gap-8 max-w-5xl">
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>即時預覽</H3>
           <div className="p-6 rounded-md border border-divider bg-muted flex items-center gap-4">
             <span className="text-caption text-fg-muted">hover 看展開:</span>
             <OverflowIndicator count={count} shape={shape} size={size}>
-              <div className="flex flex-col gap-1 text-caption min-w-[140px]">
-                {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
-                  <span key={i}>{HIDDEN_REVIEWERS[i % HIDDEN_REVIEWERS.length]}</span>
-                ))}
-                {count > 8 && <span className="text-fg-muted">…及其他 {count - 8} 位</span>}
-              </div>
+              <HiddenPeople count={count} />
             </OverflowIndicator>
           </div>
         </div>
@@ -238,9 +260,9 @@ function OverflowInspector() {
             </dl>
           </div>
         </div>
-      </div>
+      </ExampleStack>
 
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>Shape</H3>
           {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項);取代手刻 pill:它靜止借 neutral-hover、hover 借 neutral-active(color.spec.md 成對 token 錯配) */}
@@ -258,16 +280,9 @@ function OverflowInspector() {
 
         <div>
           <H3>Count</H3>
-          <input
-            type="range"
-            min={1}
-            max={30}
-            value={count}
-            onChange={(e) => setCount(parseInt(e.target.value, 10))}
-            className="w-full"
-            aria-label="調整隱藏項目數量"
-          />
-          <div className="text-caption font-mono text-fg-secondary">count = {count}</div>
+          {/* DS Slider 取代原生 range(稽核 L054「有元件就用元件」) */}
+          <Slider min={1} max={30} value={[count]} onValueChange={(v) => setCount(v[0] ?? 1)} aria-label="調整隱藏項目數量" />
+          <div className="text-caption text-fg-secondary">隱藏 {count} 項</div>
         </div>
 
         <div>
@@ -308,7 +323,7 @@ function OverflowInspector() {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleStack>
     </div>
   )
 }
@@ -342,7 +357,7 @@ export const ShapeMatrix: Story = {
                 <Td mono>circle</Td>
                 <Td>
                   <OverflowIndicator count={5} shape="circle" size="md">
-                    <div className="p-1 text-caption">預覽</div>
+                    <HiddenItems shape="circle" count={5} />
                   </OverflowIndicator>
                 </Td>
                 <Td mono>rounded-full · 內層圓 bg-secondary · text-foreground · font-medium</Td>
@@ -352,7 +367,7 @@ export const ShapeMatrix: Story = {
                 <Td mono>tag</Td>
                 <Td>
                   <OverflowIndicator count={5} shape="tag" size="md">
-                    <div className="p-1 text-caption">預覽</div>
+                    <HiddenItems shape="tag" count={5} />
                   </OverflowIndicator>
                 </Td>
                 <Td mono>tagVariants neutral · rounded-md · 同 Tag 視覺</Td>
@@ -385,7 +400,7 @@ export const ShapeMatrix: Story = {
                   {SIZES.map((size) => (
                     <Td key={size}>
                       <OverflowIndicator count={7} shape={shape} size={size}>
-                        <div className="p-1 text-caption">預覽</div>
+                        <HiddenItems shape={shape} count={7} />
                       </OverflowIndicator>
                     </Td>
                   ))}
@@ -474,7 +489,7 @@ export const SizeMatrix: Story = {
                     </span>
                     <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(2, 3)}>
                       <OverflowIndicator count={3} shape="circle" size="sm">
-                        <div className="p-1 text-caption">…</div>
+                        <HiddenItems shape="circle" count={3} />
                       </OverflowIndicator>
                     </span>
                   </div>
@@ -488,7 +503,7 @@ export const SizeMatrix: Story = {
                     <Tag size="sm">bug</Tag>
                     <Tag size="sm">P0</Tag>
                     <OverflowIndicator count={3} shape="tag" size="sm">
-                      <div className="p-1 text-caption">…</div>
+                      <HiddenItems shape="tag" count={3} />
                     </OverflowIndicator>
                   </div>
                 </Td>
@@ -503,7 +518,7 @@ export const SizeMatrix: Story = {
                     </span>
                     <span className={AVATAR_STACK_ITEM_CLASS} style={avatarStackItemStyle(1, 2)}>
                       <OverflowIndicator count={4} shape="circle" size="md">
-                        <div className="p-1 text-caption">…</div>
+                        <HiddenItems shape="circle" count={4} />
                       </OverflowIndicator>
                     </span>
                   </div>
@@ -523,8 +538,14 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"摘要:\n\n  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  互動行為  :\n\n  +N trigger 是 keyboard-focusable 計數 span（tabIndex=0；不掛 role/aria-haspopup——無 activation 行為的宣告是對 AT 空承諾，2026-07-14 對齊 Avatar hoverCard canonical 拆除；2026-06-01 #13 由純 passive 改 focusable，修 WCAG 2.1.1 違反）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。\n\n  Focus  :trigger 是 tab stop（focus-visible ring，鍵盤使用者可 focus 開啟 HoverCard 看溢出內容）；HoverCard 內展開的內容不接受鍵盤 focus——Radix 強制 content 內 tabbable node 為 tabindex=-1，鍵盤等效操作由主列可見項承擔，需鍵盤可操作的互動浮層改用 Popover（click 觸發）。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p><b>ARIA / Pattern</b>:對齊 <a href="https://www.w3.org/WAI/ARIA/apg/patterns/" target="_blank" rel="noopener noreferrer">W3C ARIA Authoring Practices Guide</a> 對應 pattern。</p>
+        <p><b>互動行為</b>:</p>
+        <p>+N trigger 是 keyboard-focusable 計數 span（tabIndex=0；不掛 role / aria-haspopup——沒有啟動行為卻宣告了,對輔助技術是空承諾）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。</p>
+        <p><b>Focus</b>:trigger 是 tab stop（focus-visible ring，鍵盤使用者可 focus 開啟 HoverCard 看溢出內容）；HoverCard 內展開的內容不接受鍵盤 focus——Radix 強制 content 內 tabbable node 為 tabindex=-1，鍵盤等效操作由主列可見項承擔，需鍵盤可操作的互動浮層改用 Popover（click 觸發）。</p>
+        <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。</p>
+      </div>
     </div>
   ),
 }

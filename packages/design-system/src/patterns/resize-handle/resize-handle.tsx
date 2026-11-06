@@ -3,12 +3,13 @@ import { cn } from '@/lib/utils'
 
 /**
  * ResizeHandle — drag-to-resize **完整 window-splitter widget**(2026-05-21 v1 視覺 primitive;
- * 2026-09-02 v2 升級為 value-driven:user directive「若雙方使用全然一致,務必變成同一個元件確保 SSOT」)。
+ * 2026-09-02 v2 升級為 value-driven:user 2026-09-02 19:44「我認為你仔細研究看雙方的使用是否是全然一致，若是的話務必變成同一個元件才能確保SSOT避免未來偏移才對」)。
  *
  * ── 定位 ──
- * 統一 DataTable 欄寬 / AgentPanel 面板寬(未來 Sidebar / Aside)的命中區、cursor、視覺 line、
+ * 統一 DataTable 欄寬 / AppShell 四區(Menu、Right panel、AI agent,含兩種浮層)的命中區、cursor、視覺 line、
  * pointer 拖拉、鍵盤(←/→ 或 ↑/↓、Home/End)與 ARIA `separator` 契約。consumer 只持有尺寸 state,
- * 把 `value / min / max` 交進來,接 `onValueChange`(拖拉中 live + 鍵盤每步)/ `onValueCommit`(放開)。
+ * 把 `value / min / max` 交進來,接 `onValueChange`(拖拉中 live + 鍵盤每步)/ `onValueCommit`(一次調整結束:
+ * 放開且按下到放開有位移、鍵盤每步;**只點一下不 commit** —— AppShell「版面規則」§7)。
  *
  * ── 消費的 SSOT ──
  * - tokens: [--border-hover, --divider, --primary, --ring, --table-cell-py(只 DataTable consumer 用)]
@@ -16,11 +17,9 @@ import { cn } from '@/lib/utils'
  * - a11y:WAI-ARIA window splitter(role=separator + aria-valuenow/min/max/valuetext + 方向鍵/Home/End)
  *
  * ── World-class 對照 ──
- * - AG Grid column resize handle(7-8px hit zone + 1px line)
- * - Material X-DataGrid MuiDataGrid-iconSeparator(同 visual idiom)
- * - VS Code sidebar sash(8px hit zone + drag 高亮;鍵盤走 view 命令)
+ * - VS Code sash(拖曳感應區預設 4px,`workbench.sash.size` 可調;鍵盤走 view 命令)(來源:https://github.com/microsoft/vscode/blob/d1a91b3af8869c37d4757aa959f0859b59c33265/src/vs/workbench/contrib/sash/browser/sash.contribution.ts#L36-L41 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L54-L67 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L92-L95)
  * - react-resizable-panels PanelResizeHandle(role=separator + 鍵盤 step)
- * - APG Window Splitter:Left/Right Arrow 移動垂直 splitter、Home/End 到極限
+ * - APG Window Splitter:Left/Right Arrow 移動垂直 splitter、Home/End 到極限(來源:https://github.com/microsoft/vscode/blob/d1a91b3af8869c37d4757aa959f0859b59c33265/src/vs/workbench/contrib/sash/browser/sash.contribution.ts#L36-L41 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L54-L67 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L92-L95)
  *
  * 方向語意:`position` 決定把手貼哪一緣,拖拉 delta 與方向鍵正負隨之——「箭頭往哪、邊緣就往哪」:
  * `end`(右緣/下緣)→ 往右/下 = 變大;`start`(左緣/上緣)→ 往左/上 = 變大。
@@ -43,7 +42,7 @@ export interface ResizeHandleProps
   max?: number
   /** 鍵盤每步 px;預設 16。 */
   step?: number
-  /** 無障礙名稱(APG:separator 必有 aria-label 或 aria-labelledby)。 */
+  /** 無障礙名稱(APG:separator 必有 aria-label 或 aria-labelledby)。(來源:https://github.com/microsoft/vscode/blob/d1a91b3af8869c37d4757aa959f0859b59c33265/src/vs/workbench/contrib/sash/browser/sash.contribution.ts#L36-L41 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L54-L67 https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L92-L95) */
   ariaLabel: string
   /** 指向被調整的 pane id(APG 建議;欄寬場景可省)。 */
   ariaControls?: string
@@ -52,7 +51,7 @@ export interface ResizeHandleProps
   /**
    * 是否由本元件畫 **idle** 的 1px line;`false` = consumer 已自己畫 idle 線(eg. DataTable 面板邊界欄的凍結邊界線)。
    * 只影響 idle:hover(`border-hover`)與拖拉中(`primary`)的狀態色**永遠**由本元件畫在同一個像素上
-   * —— 拖拉中 = primary 是規格,不因誰畫 idle 線而消失(2026-09-10 user 抓「釘選欄位 resize 時分隔線沒有變藍」:
+   * —— 拖拉中 = primary 是規格,不因誰畫 idle 線而消失(2026-09-10 user 抓到釘選欄位 resize 時分隔線沒有變藍:
    * 面板邊界欄 `showLine=false` 連狀態線一起不畫)。預設 true。
    */
   showLine?: boolean
@@ -62,8 +61,24 @@ export interface ResizeHandleProps
   lineInsetEnd?: string
   /** 拖拉中每次移動 + 鍵盤每步(live)。 */
   onValueChange: (next: number) => void
-  /** 放開(pointerup / pointercancel)一次;鍵盤每步亦視為 commit。 */
+  /**
+   * 一次調整結束時一次:放開(pointerup / pointercancel)**且放開點與按下點的距離不是 0**;鍵盤每步亦視為 commit。
+   * 只點一下沒有拖(或拖出去又回到原點放開)不算調整,不發(2026-10-14 AppShell「版面規則」§7:寬度紀錄只記使用者真的調整過的寬;
+   * 判準看放開點與按下點的距離,不數 pointermove —— `AGENTS.md`「失敗記憶索引」拖曳 vs 點擊)。
+   */
   onValueCommit?: (final: number) => void
+  /**
+   * 拖拉開始 / 結束(`true` / `false`)。結束一定會發,不管這次有沒有 commit —— consumer 用它收掉「拖拉中」的暫時狀態
+   * (只點一下、或拖出去又回到原點放開時不會有 commit,沒有這個訊號 consumer 會一直以為還在拖)。鍵盤調整不經過這裡。
+   */
+  onDraggingChange?: (dragging: boolean) => void
+  /**
+   * 按下把手時把 pointerdown **擋在把手這裡**,不讓祖先收到(預設 false)。只給「祖先另有 pointerdown 使用者、會把這一下當成自己的手勢」的
+   * consumer 打開 —— DataTable 欄寬:表頭格掛著 dnd-kit 欄位拖曳,不擋的話拉欄寬會變成拖欄位。
+   * 預設不擋(2026-10-14 審查抓到):擋下的 pointerdown 也到不了 document,Radix DismissableLayer 靠 document 上那一下把「按在層裡」的旗標歸零;
+   * 旗標沒歸零,下一次點浮層外會被當成點在裡面 —— Menu 浮層拖過把手之後點外面收不起來(AppShell「版面規則」§3、D:26)。
+   */
+  isolatePointerDown?: boolean
 }
 
 const DEFAULT_STEP = 16
@@ -87,6 +102,8 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
       lineInsetEnd,
       onValueChange,
       onValueCommit,
+      onDraggingChange,
+      isolatePointerDown = false,
       className,
       style: extraStyle,
       onPointerDownCapture,
@@ -97,9 +114,9 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
     const isHorizontal = direction === 'horizontal'
     const sign = position === 'end' ? 1 : -1
     const [dragging, setDragging] = React.useState(false)
-    const dragRef = React.useRef<{ start: number; startValue: number; pointerId: number } | null>(null)
-    const latest = React.useRef({ value, min, max, onValueChange, onValueCommit })
-    latest.current = { value, min, max, onValueChange, onValueCommit }
+    const dragRef = React.useRef<{ start: number; startValue: number; pointerId: number; emitted: boolean } | null>(null)
+    const latest = React.useRef({ value, min, max, onValueChange, onValueCommit, onDraggingChange })
+    latest.current = { value, min, max, onValueChange, onValueCommit, onDraggingChange }
 
     const clamp = React.useCallback((next: number) => {
       const upper = latest.current.max
@@ -109,21 +126,24 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
     const handlePointerDownCapture = (e: React.PointerEvent<HTMLSpanElement>) => {
       onPointerDownCapture?.(e)
       if (disabled || e.button !== 0) return
-      // capture + stopPropagation:不讓 dnd-kit 欄位拖曳搶到 pointerdown(DataTable);preventDefault:防選字/捲動。
-      e.stopPropagation()
+      // stopPropagation 只在 consumer 要求時(`isolatePointerDown`:DataTable 欄寬,不讓 dnd-kit 欄位拖曳搶到 pointerdown);
+      // 一律擋會連 document 都收不到這一下,Radix 浮層的「按在層裡」旗標就不歸零(見 prop 說明)。preventDefault:防選字 / 捲動。
+      if (isolatePointerDown) e.stopPropagation()
       e.preventDefault()
       const target = e.currentTarget
-      dragRef.current = { start: isHorizontal ? e.clientX : e.clientY, startValue: latest.current.value, pointerId: e.pointerId }
+      dragRef.current = { start: isHorizontal ? e.clientX : e.clientY, startValue: latest.current.value, pointerId: e.pointerId, emitted: false }
       try {
         target.setPointerCapture(e.pointerId)
       } catch {
         /* 舊瀏覽器無 pointer capture:仍靠 window 事件 */
       }
       setDragging(true)
+      latest.current.onDraggingChange?.(true)
       const onMove = (ev: PointerEvent) => {
         const drag = dragRef.current
         if (!drag || ev.pointerId !== drag.pointerId) return
         const current = isHorizontal ? ev.clientX : ev.clientY
+        drag.emitted = true
         latest.current.onValueChange(clamp(drag.startValue + (current - drag.start) * sign))
       }
       const finish = (ev: PointerEvent) => {
@@ -140,9 +160,16 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
         }
         setDragging(false)
         const current = isHorizontal ? ev.clientX : ev.clientY
-        const final = clamp(drag.startValue + (current - drag.start) * sign)
-        latest.current.onValueChange(final)
-        latest.current.onValueCommit?.(final)
+        if (current !== drag.start) {
+          // 有位移 = 一次調整:最後一格 live + commit
+          const final = clamp(drag.startValue + (current - drag.start) * sign)
+          latest.current.onValueChange(final)
+          latest.current.onValueCommit?.(final)
+        } else if (drag.emitted) {
+          // 拖出去又回到原點放開:畫面回到起點,但不算調整、不 commit(「版面規則」§7)
+          latest.current.onValueChange(drag.startValue)
+        }
+        latest.current.onDraggingChange?.(false)
       }
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', finish)

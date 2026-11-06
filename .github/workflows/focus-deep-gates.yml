@@ -1,7 +1,7 @@
 name: Focus and drag deep gates
 
 # 全 DS 掃描等級的焦點／溢出稽核。它們**不在 PR 閘裡**:
-# `ci-workflow-scope.test.mjs` 把 verify job 的 timeout 釘在 15 分鐘,
+# `infra/governance/test/ci-workflow-scope.test.mjs` 把 verify job 的 timeout 釘在 15 分鐘,
 # 明文要求 PR 閘留在「fast deterministic scope」。這兩支合計約 7.5 分鐘
 # (焦點幾何 58 元件 × 2 主題全掃 + 對照組;「+N」溢出 107 story 探測 + 候選跑滿寬度),
 # 塞進去會把 job 撐爆 —— 2026-09-08 實際撞過兩次逾時。
@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 0
 
       # ── 決定範圍(SSOT:後面每一步只讀這裡寫進 GITHUB_ENV 的旗標)────────────────────────────────
-      # 規則(與 ci-workflow-scope.test.mjs 對 required 閘「不得用 paths 過濾」的精神一致:判斷在 job 內、結果印出來):
+      # 規則(與 infra/governance/test/ci-workflow-scope.test.mjs 對 required 閘「不得用 paths 過濾」的精神一致:判斷在 job 內、結果印出來):
       #   · 排程 / 手動 → SCOPE=all,全部閘照舊全掃。
       #   · pull_request → 改到的檔案 = git diff --name-only origin/<base>...HEAD:
       #       - 改到 packages/design-system/src/ 底下**元件目錄以外**的東西(lib / patterns / tokens / styles)→ 影響面不可分割,

@@ -101,7 +101,7 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 ## Loading
 
-`loading?: boolean`(Field SSOT,詳 `Field/field-controls.spec.md`「Loading state」段):語意 = **這個值**在讀取 / 驗證 / 儲存(2026-09-09 user 拍板收窄;不是「建議清單在抓」—— 那是 Select / Combobox 的 `optionsLoading`,Input 沒有選項清單所以沒有)。右側 endAction 自動顯 `<CircularProgress/>` + `aria-busy="true"`;input 維持可編輯(Ant Input.Search editable 派,反 Material readonly 派)。
+`loading?: boolean`(Field SSOT,詳 `Field/field-controls.spec.md`「Loading state」段):語意 = **這個值**在讀取 / 驗證 / 儲存(2026-09-09 user 拍板收窄;不是「建議清單在抓」—— 那是 Select / Combobox 的 `optionsLoading`,Input 沒有選項清單所以沒有)。右側 endAction 自動顯 `<CircularProgress/>` + `aria-busy="true"`;input 維持可編輯(Ant Input.Search 同款:loading 只交給搜尋鈕,輸入框的 disabled 不受 loading 影響,https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L208-L212)。
 
 ## 禁止事項
 
@@ -113,7 +113,7 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 ## 邊界案例
 
 - **Disabled**:`disabled` prop 由 Field SSOT own(`Field/field.spec.md`「Field state machine SSOT」段)。視覺 token:wrapper bg → `bg-disabled`(neutral-2)、text → `text-fg-disabled`(neutral-6,M24 state>emphasis canonical)、startIcon → `text-fg-disabled`、endAction 不渲染(僅 edit mode 渲染)、cursor → `cursor-not-allowed`、border 弱化、無 hover/focus ring。`readOnly` 與 `disabled` 視覺分離:readOnly 維持 default text color(可選取複製)、disabled 全面弱化(不可選)。
-- **Loading**:已 codify(見「Loading」段)。`loading=true`(這個值在處理)時 endAction slot 自動切 `<CircularProgress/>`,input 仍可編輯(Ant Search 派 idiom)。
+- **Loading**:已 codify(見「Loading」段)。`loading=true`(這個值在處理)時 endAction slot 自動切 `<CircularProgress/>`,input 仍可編輯(Ant Search 派 idiom)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L208-L212)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L286-L292))。
 - **Empty(no value)**:placeholder 走 `text-fg-muted`(neutral-7);`disabled + empty` 時 placeholder 切 `text-fg-disabled`(M24 state precedence)。
 - **Dark mode**:走 semantic token 自動 adapt,無 per-component override。
 - **Density**:`size` 由 Field SSOT(sm/md/lg)決定 height + padding;Input 不獨立 own density。
@@ -163,7 +163,7 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 | `autoWidth={true}` | wrapper 改 `inline-flex w-auto`;input 改 `field-sizing:content w-auto min-w-0`,寬度隨 value 文字變化 |
 
 **使用情境**:
-- **Inline edit**:FileViewer `ZoomInput`(輸入「100%」縮到三位數寬)、Figma toolbar number input、VS Code setting row
+- **Inline edit**:FileViewer `ZoomInput`(輸入「100%」縮到三位數寬)、工具列上的數值輸入、設定清單裡每列右側的小輸入框
 - **Tag / Chip rename**:選中 chip 進入 inline edit,寬度跟 chip 內容保持視覺一致
 - **Spreadsheet-like cells**:內容寬度自動跟字數走
 
@@ -208,5 +208,6 @@ Auto-size 只服務 inline editing：view 與 edit 共用內容寬度，避免�
 - `form-validation.spec.md`
 - `link-input.spec.md`
 - `number-input.spec.md`
+- `select-menu.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`

@@ -20,7 +20,7 @@ Field 是**表單欄位的佈局容器**。只負責排版（label / control / d
 
 與資料相關的一切（格式化、驗證、readonly 呈現、DataTable cell 顯示）住在各個資料型別的 Control 元件本身（Input、NumberInput、Checkbox、Switch 等）。Field 不 wrap、不代理、不轉換它們的行為。
 
-**實作基礎**：自建——本 DS 的 form layout 設計。**拒絕的是 Field 層引擎耦合**（2026-07-03 精確化）：shadcn 的 `FormField` = react-hook-form `Controller` wrapper、脫離 RHF 不能用——本 DS 不採用，因 Field 同時是 DataTable cell 基底（naked variant）+ display/readonly 純展示載體，耦引擎會毒害非表單場景；Field 只做 layout + context（engine-agnostic，對齊 MUI FormControl / Carbon / Polaris 派）。**form 層另有可執行層** `useFormValidation`（基於 react-hook-form，wrapped 不外露，對齊 DS「基於 X」引擎慣例；見 `form-validation.spec.md`「可執行層」段）——引擎藏在 form 層 hook 內 ≠ Field 耦合，Field 經 `invalid` context 一行接入。
+**實作基礎**：自建——本 DS 的 form layout 設計。**拒絕的是 Field 層引擎耦合**（2026-07-03 精確化）：shadcn 的 `FormField` = react-hook-form `Controller` wrapper、脫離 RHF 不能用——本 DS 不採用，因 Field 同時是 DataTable cell 基底（naked variant）+ display/readonly 純展示載體，耦引擎會毒害非表單場景；Field 只做 layout + context（engine-agnostic，對齊 MUI FormControl 派:[FormControl.js](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/FormControl/FormControl.js) 只提供 context、不依賴任何表單引擎;對照 shadcn [form.tsx#L32-L42](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/form.tsx#L32-L42) 的 `FormField` 直接包 `<Controller>`）。**form 層另有可執行層** `useFormValidation`（基於 react-hook-form，wrapped 不外露，對齊 DS「基於 X」引擎慣例；見 `form-validation.spec.md`「可執行層」段）——引擎藏在 form 層 hook 內 ≠ Field 耦合，Field 經 `invalid` context 一行接入。
 
 **Layout Family**：Field **不屬於** 4-Family Model 的 element layout families——它是 form composition pattern（包 Family 4 control + label + description）。見 taxonomy owner `patterns/element-anatomy/element-anatomy.spec.md`「Field Composition(不在 family 但相關)」段。
 
@@ -117,7 +117,7 @@ Label 在左、control + description + error 在右欄垂直堆疊。Label 與 c
           [Error]
 ```
 
-適用：settings 面板、寬螢幕 form、iOS-style 欄位。
+適用：寬螢幕 form、設定頁裡跟其他欄位並列的控件(一列一個開關的設定列不用 Field,用自帶標題的 Switch,見 `../Switch/switch.spec.md`「設定列 vs 水平 Field」)。
 
 Horizontal 模式下 label 的欄寬由 `labelWidth` prop 控制（任何 CSS length 值），預設 `auto` 由 label 內容撐開。內部用 CSS variable `--field-label-width` 傳給 grid template column。
 
@@ -268,9 +268,9 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:434-450`)
-- **游標一般箭頭**(`cursor-default`,`field.tsx:443`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
-- **disabled 時整顆不渲染**(`field.tsx:434`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:438-454`)
+- **游標一般箭頭**(`cursor-default`,`field.tsx:447`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:438`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
 - 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
@@ -303,7 +303,7 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 </FieldGroup>
 ```
 
-**欄位垂直間距 = `--layout-space-loose`,不開放 per-instance 選檔(2026-09-12 user 拍板)。**
+**欄位垂直間距 = `--layout-space-loose`,不開放 per-instance 選檔(2026-09-12 user 拍板〔UD-F19〕)。**
 
 `FieldGroup` 直接消費 `gap-[var(--layout-space-loose)]`(md 16px / lg 24px),**沒有 `gap` prop**。
 表單間距是**系統級**設定:要調就整個 density 一起調,不是每個表單各自挑一檔。
@@ -311,9 +311,9 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 「跨範疇 + parallel / independent」的例子列為「**form fields stack(parallel inputs)**」→ 規則 3 = **loose**。
 
 **退役紀錄**:原本有 `gap?: 'compact' | 'normal' | 'loose'`(硬寫 `gap-3/4/6`、凍結不隨 density)。
-它來自 2026-04-10 的 `9917993e`,commit 訊息宣稱「rename to shadcn conventions」,
+它來自 2026-04-10 的 `9917993e`,commit 訊息宣稱「rename to shadcn conventions」(`git show 9917993e`:「refactor(fields): restructure field architecture + rename to shadcn conventions」)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/field.tsx#L44)),
 但 shadcn 的 `FieldGroup` **根本沒有 gap prop**(props 只有 `className`,間距由元件固定)——
-那三檔是重構時自己長出來的,沒有任何 user 決定背書(本檔其餘 user 決定都有「user 拍板 / user 確認」標記,
+那三檔是重構時自己長出來的,沒有任何 user 決定背書(本檔其餘 user 決定都有 user 拍板 / user 確認標記,
 唯獨那張表沒有)。實際使用也證實它不帶資訊:全 repo 33 個 `<FieldGroup>` 只有 2 個傳過 `gap`
 (1 個 `compact` 沒寫理由、1 個傳的就是預設值),`loose` 一次都沒用過。
 世界級同樣沒有一家開放 per-instance 檔位:shadcn 元件固定 / MUI 泛用數值 × theme spacing /
@@ -324,11 +324,9 @@ Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
 
 同一畫面 / 同一 FieldGroup 內多個 horizontal Field **必須共用 label 欄寬度**。若每個 Field 各自傳 `labelWidth`(或省略 → 內容撐開),label 寬度會參差不齊,Switch / Input 的左邊緣不對齊,視覺上每一行「歪七扭八」。
 
-Setting list 的 label 欄固定寬、control 欄右對齊，使列與列形成可掃描的欄位格網；label 長度不得逐列改變 control 起點。
+表單的 label 欄固定寬，讓每列 control 從同一條線開始，使列與列形成可掃描的欄位格網；label 長度不得逐列改變 control 起點。
 
 `FieldGroup horizontalLabelWidth` 透過 React Context cascade 到所有子 Field(含 `vertical` 模式的 Field 不受影響——vertical 無 label 欄概念)。單一 Field 仍可用自己的 `labelWidth` prop 覆寫 group 預設(罕見 — 通常 group 預設就是 canonical)。
-
-**搭配 Switch 自動齊右**:horizontal Field 內的 Switch 自動 `ml-auto` 推到右邊緣。配合 FieldGroup `horizontalLabelWidth` → 整排 toggles 的 switch 視覺完全對齊。
 
 ---
 
@@ -350,7 +348,7 @@ Button 的 height 與 `field-height` 共用同一組 token,放進 inline control
 
 | 是 | 否 |
 |---|---|
-| ✅ Upload(產生 file value) | ❌ 表單 submit / cancel(form action,放到 form footer) |
+| ✅ Upload(產生 file value) | ❌ 表單 submit / cancel(form action:跟在欄位後面,或放進浮層 / 面板的 footer) |
 | ✅ Picker opener(開對話框選 value) | ❌ 「重設此欄位」(可放到 endAction 或 description 旁,不是 control) |
 | ✅ Connect OAuth(產生 token value) | ❌ 頁面導覽、刪除整筆資料(page action) |
 
@@ -399,7 +397,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | 單一 Checkbox（勾選同意）without label 結構 | 直接 Checkbox + label prop | 單個 Checkbox 是 inline primitive，不需要 Field 佈局 |
 | DataTable cell 編輯（inline editable）| 直接放 Field Control | Field 是頁面表單佈局，table cell 空間受限 |
 | 把 Field 當輸入元件本身（常見誤解：「Field = form 輸入框」）| `Input` 等 Field Control | Field 只管佈局 + context，輸入行為住在 control（見「與 Field Controls 的職責切分」）|
-| 純 action 按鈕（submit / cancel / 頁面導覽）| 頁面 footer / toolbar | Field 是資料輸入容器，不放頁面級 action |
+| 純 action 按鈕（submit / cancel / 頁面導覽）| 跟在欄位後面的按鈕 / 浮層·面板的 footer / toolbar | Field 是資料輸入容器，不放頁面級 action |
 | 巢狀 Field | ❌ 不支援 | Field 不支援巢狀，多欄位用 FieldGroup |
 
 ---
@@ -412,7 +410,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 ## Field state machine SSOT(v13.3)
 
-**Canonical**(2026-07-04 Q1 拍板修訂):**focus dominates everything — 除 error**。無 error 時 cursor in input = 藍;**有 error 時聚焦維持紅**(error 勝 focus 的「顏色」通道;修錯中不可失去 error 訊號)。開始編輯 → edit-clears-error(`useFormValidation`)→ 自然回 focus 藍。Benchmark 實查:MUI(error+focused 紅框加粗,OutlinedInput.js error rule 排 focused 後)/ Ant 5(`activeBorderColor: colorError` 紅框紅 glow,input/style/variants.ts)/ Polaris(紅 border 聚焦持續 + 獨立藍 outline,TextField.module.css)三家聚焦時 error 紅皆保留;唯一切藍的 Carbon 靠 in-field 紅 icon 補償(DS 無此通道故不採)。SSOT 全在 `field-wrapper.tsx` compoundVariants(**含 error** — 2026-07-04 起 `error` 為 cva 變體,原逐 control `border-error` 系列已 retire,控件只傳 `error` flag)。
+**Canonical**(2026-07-04 Q1 拍板修訂):**focus dominates everything — 除 error**。無 error 時 cursor in input = 藍;**有 error 時聚焦維持紅**(error 勝 focus 的「顏色」通道;修錯中不可失去 error 訊號)。開始編輯 → edit-clears-error(`useFormValidation`)→ 自然回 focus 藍。Benchmark 實查:MUI(error+focused 紅框加粗,OutlinedInput.js error rule 排 focused 後,[#L63-L83](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/OutlinedInput/OutlinedInput.js#L63-L83))/ Ant(`activeBorderColor: colorError` 紅框紅 glow,[input/style/variants.ts#L99-L105](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/style/variants.ts#L99-L105))/ Polaris(紅 border 聚焦持續 + 獨立藍 outline,[TextField.module.css#L67-L92](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/TextField/TextField.module.css#L67-L92))三家聚焦時 error 紅皆保留;唯一切藍的 Carbon 靠 in-field 紅 icon 補償(`:focus` 換藍框 [_text-input.scss#L72-L75](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/text-input/_text-input.scss#L72-L75)、紅 icon [#L122-L124](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/text-input/_text-input.scss#L122-L124);DS 無此通道故不採)。SSOT 全在 `field-wrapper.tsx` compoundVariants(**含 error** — 2026-07-04 起 `error` 為 cva 變體,原逐 control `border-error` 系列已 retire,控件只傳 `error` flag)。
 
 | State | Token | CSS |
 |---|---|---|
@@ -424,11 +422,11 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | **error(edit 全程,含聚焦)** | `--error` | `border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error`(error:true compound)|
 | error × open(無 focus)| `--error-hover` | `data-[state=open]:border-error-hover`(error:true compound)|
 
-**open = 維持自己的 hover 框**(`patterns/element-anatomy/inline-action.spec.md`「overlay 開啟 → 同 host hover」),所以依 error 分流;2026-09-25 前寫在共用 compound,error 欄位開面板時紅框被換成灰框。
+**open = 維持自己的 hover 框**(`patterns/element-anatomy/inline-action.spec.md`「互動狀態」表 overlay 開啟那一列:同 host hover),所以依 error 分流;2026-09-25 前寫在共用 compound,error 欄位開面板時紅框被換成灰框。
 
-**Error × focus 疊加 canonical(2026-07-05 user 拍板「照 Mantine」)**:錯誤欄位聚焦時**視覺完全不變**(紅框同色同寬,無加深/加粗/ring/暈)。依據:DS 聚焦主機制 =「邊框換 primary 基準色、無第二訊號」,12 家實查中唯一同款機制的 Mantine(Input.module.css:focus 僅 border 換 primary-filled、outline none)在此題同樣選擇不變;保紅又加訊號的三家(MUI 粗 / Ant 暈 / Bootstrap 暈)前提是其一般聚焦本來就有該第二訊號可染紅,DS 無此前提。**已知代價(documented tradeoff,非 bug)**:無游標的觸發器(Select / DatePicker / TimePicker)error 聚焦時無視覺聚焦指示(文字框靠游標);Mantine 同款弱點。未來若升級全 DS 聚焦語言(一般態加第二訊號),本題應同步重議(錯誤態染紅該訊號,對齊 MUI/Ant/Bootstrap 結構)。D4 finding「error+focus 零 focus delta」據此結案為 user-拍板 intentional。
+**Error × focus 疊加 canonical(2026-07-05 記為 user 拍板照 Mantine,來源不明:登記簿查無原話)**:錯誤欄位聚焦時**視覺完全不變**(紅框同色同寬,無加深/加粗/ring/暈)。依據:DS 聚焦主機制 =「邊框換 primary 基準色、無第二訊號」,同款機制的 Mantine(focus 僅 border 換 primary-filled、outline none,錯誤時 border 維持 error,[Input.module.css#L208-L215](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components/Input/Input.module.css#L208-L215))在此題同樣選擇不變;保紅又加訊號的三家(MUI 粗 [OutlinedInput.js#L63-L65](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/OutlinedInput/OutlinedInput.js#L63-L65) / Ant 暈 [variants.ts#L99-L105](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/style/variants.ts#L99-L105) / Bootstrap 暈 [v5.3.8 mixins/_forms.scss#L24-L76](https://github.com/twbs/bootstrap/blob/v5.3.8/scss/mixins/_forms.scss#L24-L76))前提是其一般聚焦本來就有該第二訊號可染紅,DS 無此前提。**已知代價(documented tradeoff,非 bug)**:無游標的觸發器(Select / DatePicker / TimePicker)error 聚焦時無視覺聚焦指示(文字框靠游標);Mantine 同款弱點。未來若升級全 DS 聚焦語言(一般態加第二訊號),本題應同步重議(錯誤態染紅該訊號,對齊 MUI/Ant/Bootstrap 結構)。D4 finding「error+focus 零 focus delta」據此結案為 user-拍板 intentional。
 
-副作用(自動達成 Ant「選後藍 / 取消灰」):選 option → Radix `onCloseAutoFocus` return focus → focus-within fires → 藍 / 點外取消 → focus 移外 → 灰。純 focus 機制無需 transient class。
+副作用(自動達成「選後藍 / 取消灰」:選完焦點還在欄位上就是藍、點外面離開就回灰):選 option → Radix `onCloseAutoFocus` return focus → focus-within fires → 藍 / 點外取消 → focus 移外 → 灰。純 focus 機制無需 transient class。
 
 **反模式 ❌**:per-control `open && 'border-primary'`(Combobox/Select/PeoplePicker)/ `data-[state=open]:border-primary` — 已 v13.3 全 retire。hook `check_field_family_invariants.sh` A.3(原 check_field_state_token_consume)write-time 攔。
 
@@ -436,7 +434,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 ## Naked variant — Cell-as-input(M19 SSOT,v15)
 
-`naked` = cell-as-input(Notion / Airtable / Excel / AG Grid:host cell 提供 box,Field 融入)。**核心**:完全繼承 Field default state machine,只改**物理尺寸 + 位置**。Combobox/Select 加新 stacking 子元件必檢查 cell context;cell 內元件不要自寫 `position:absolute/fixed` 對抗(必要時加 `// @field-state-ring-allow:` 通過 hook)。
+`naked` = cell-as-input(表格格子本身就是外框:host cell 提供 box,Field 融入)。**核心**:完全繼承 Field default state machine,只改**物理尺寸 + 位置**;唯一例外:檢視態滑過才出現的動作(網址格的「編輯連結」)改畫成 Button text xs(24、無框),見 `../../patterns/element-anatomy/inline-action.spec.md` 實例表「DataTable body cell internal — 檢視態滑過才出現的動作」(user 2026-10-28「Q4用乙'」)。Combobox/Select 加新 stacking 子元件必檢查 cell context;cell 內元件不要自寫 `position:absolute/fixed` 對抗(必要時加 `// @field-state-ring-allow:` 通過 hook)。
 
 ### Layer 分配
 
@@ -447,7 +445,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | **L3 State machine** | **繼承 Field default v13.3**(↑ 上方 SSOT)| 不重定義 |
 | **L4 Display hover** | `field-wrapper.tsx` `nakedCellEditableDisplayHover` | editable cell view mode `outline-1 outline-offset:-1 outline-[var(--cell-hover-outline-color,var(--border-hover))]`(cell wrapper outline;2026-05-10 Slice D:spreadsheet overlay 啟用時 DataTable cell host 可 set `--cell-hover-outline-color: transparent` 抑制 outline、讓 overlay layer 接管 hover ring paint,fallback 即 `--border-hover` 既有行為不變)。**v15.13 design intent(user-accepted 2026-05-07)**:hover ring 蓋 cell.borderRight。**known asymmetry**(2026-05-09 user 重抓):只 **right** 邊 outline 跟 cell own border-r 同位置覆蓋成 1 條;top/left/bottom 邊 outline 在 cell.outer 內 1px,grid lines(前 row border-b / 前 cell border-r / row 自己 border-b 在 cell.outer 外 1px)露出 → 視覺 4 邊不對稱。**Pending design decision**(等 user 拍板才 ship):4 邊都蓋(spec 1 selection-style)vs 4 邊都不蓋(spec 2 inset 1px)vs 維持現狀。三層 SSOT:state source = cell wrapper / paint owner = 混合(hover=cell / edit=Field)/ grid divider = DataTable own |
 | **L5 Position(v14,2026-05-06 revert v12)** | naked compoundVariant flow | Field 留 layout flow,**不**用 `!absolute`(v12 absolute 跟 autoRowHeight 不相容)。視覺接受 cell `border-r grid` + Field border 2px 雙線;cell border-r divider 永遠保留(對齊 L4 Invariant divider-owner / editor-owner 分離)|
-| **L6 Cell trigger indicator(v16,2026-07-08 user 拍板 A 案)** | naked-view branch + `showDisplayEndIcon?: boolean` opt-in(**default off,production 不再傳**)| **view 態零恆顯型別 icon** — editable affordance 統一 = L4 hover outline。Benchmark 6/6(Ant editable-cells 純文字+hover border / MUI X singleSelect view 純文字 https://mui.com/x/react-data-grid/editing/ / AG Grid 無內建 indicator https://www.ag-grid.com/react-data-grid/cell-editing/ / Atlaskit v2.0.0 移除 hover-pencil 後 9 版未回歸 https://github.com/pioug/atlassian-frontend-mirror/tree/main/design-system/inline-edit / Notion / Airtable click-to-edit)view 態皆無恆顯 icon;唯一反例 Google Sheets Chip/Arrow 為 spreadsheet 域可選檔位。prop 保留為 spreadsheet-flavored 消費端 opt-in 逃生門:傳 true → `<ItemSuffix>` 渲型別 icon(Select/Combobox/PeoplePicker → ChevronDown / DatePicker → Calendar / TimePicker → Clock / **LinkInput 例外 = wrapper-only 無 icon**)。cell-registry 現況:6 picker 站不傳;url 站傳 `isEditable === true`(取 wrapper chrome 對齊 edit Input,非 icon)。edit 態 chevron 照舊(edit-trigger 通道,不受此 prop 管)。**值內容 vs affordance 分層(2026-07-08 user Q2 拍板)**:值內容(`selectedItemRenderer` 輸出 / avatar / type icon 等語意呈現)歸 value renderer,view 態照常渲染,恆顯**不**違反本條;本條管的是 affordance(chevron / pencil / outline)。前身 v15 恆顯制(2026-05-10/06-26 拍板)由本輪 benchmark 重判推翻。詳 `.claude/planning/cell-indicator-ssot-rfc.md`(六家實查 SSOT)。|
+| **L6 Cell trigger indicator(v16,2026-07-08 user 拍板 A 案〔UD-J24〕)** | naked-view branch + `showDisplayEndIcon?: boolean` opt-in(**default off,production 不再傳**)| **view 態零恆顯型別 icon** — editable affordance 統一 = L4 hover outline。Benchmark(Ant editable-cells 純文字+hover border [table/demo/edit-cell.tsx#L11-L23](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/demo/edit-cell.tsx#L11-L23) / MUI X singleSelect view 純文字 https://mui.com/x/react-data-grid/editing/ / AG Grid 無內建 indicator https://www.ag-grid.com/react-data-grid/cell-editing/ / Atlaskit v2.0.0 移除 hover-pencil 後 9 版未回歸 https://github.com/pioug/atlassian-frontend-mirror/tree/main/design-system/inline-edit / Notion / Airtable click-to-edit)view 態皆無恆顯 icon;唯一反例 Google Sheets Chip/Arrow 為 spreadsheet 域可選檔位。prop 保留為 spreadsheet-flavored 消費端 opt-in 逃生門:傳 true → `<ItemSuffix>` 渲型別 icon(Select/Combobox/PeoplePicker → ChevronDown / DatePicker → Calendar / TimePicker → Clock / **LinkInput 例外 = wrapper 無型別 icon;可編輯時另有 `viewEditAction` 畫的編輯入口**(Button text xs 鉛筆,滑過 / 鍵盤焦點才出現,是 action 不是型別 icon;inline-action 實例表「檢視態滑過才出現的動作」)。cell-registry 現況:6 picker 站不傳;url 站傳 `isEditable === true`(取 wrapper chrome 對齊 edit Input),可編輯時再傳 `viewEditAction`(鉛筆由 LinkInput 自己畫,表格只給出現時機)。edit 態 chevron 照舊(edit-trigger 通道,不受此 prop 管)。**值內容 vs affordance 分層(2026-07-08 user Q2 拍板)**:值內容(`selectedItemRenderer` 輸出 / avatar / type icon 等語意呈現)歸 value renderer,view 態照常渲染,恆顯**不**違反本條;本條管的是 affordance(chevron / pencil / outline)。前身 v15 恆顯制(2026-05-10/06-26 拍板)由本輪 benchmark 重判推翻。詳 `.claude/planning/cell-indicator-ssot-rfc.md`(六家實查 SSOT)。|
 
 **前身 retire**:v4-v8 `outline-2` 平行 state(已下沉 L3)/ v9 border-only(focus 跟 open specificity tie)/ per-control `open && 'border-primary'`(v13.3 retire)/ `nakedCell{Hover,Focus,Open}Ring` 三 const / `nakedCell{Prefix,Suffix}Slot`(下沉 L1)/ **v12 `!absolute -inset-px` seamless grid**(2026-05-06 revert — autoRowHeight 不相容)/ **DataTable parallel `getEditIndicator`**(2026-05-09 D-path retire — 由 Field naked-display 透過 `showDisplayEndIcon` opt-in 自渲 ItemSuffix,跨元件 SSOT 統一)。
 

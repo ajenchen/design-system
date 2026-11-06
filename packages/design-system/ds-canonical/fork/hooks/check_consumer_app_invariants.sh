@@ -524,10 +524,10 @@ if grep -q 'text-white' <<<"$CONTENT" && \
   VIOLATIONS="${VIOLATIONS}  - 亮色底(yellow/amber/orange/lime step-6)配 text-white = 對比違規 → 消費 CAT_SOLID / CAT_SOLID_TOKENS pair(深字桶自帶 text-on-emphasis-dark;tokens/categorical-color.ts)。特例 → @cat-solid-ok: <rationale>\n"
 fi
 # C18 計數串接:element children 出現 {label} ({count/length/total})。attr(aria-label)字串層合法
-# — regex 錨 children 的 > 前綴,attribute 不中(item-anatomy.spec.md:176 禁括號串接)。
+# — regex 錨 children 的 > 前綴,attribute 不中(item-anatomy.spec.md:187 禁括號串接)。
 if grep -qE '>[^<]*\{[a-zA-Z0-9_.]+\} *\(\{[a-zA-Z0-9_.]*(count|Count|length|total)[a-zA-Z0-9_.]*\}\)' <<<"$CONTENT" && \
    ! grep -q '@count-in-label-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - 計數括號串接 {label} ({count}) → row header 用「標題左、純數字右 space-between + tabular-nums」(item-anatomy.spec.md:176);互動元素(tab/chip/button)用 badge slot。aria/純文字匯出層 → @count-in-label-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - 計數括號串接 {label} ({count}) → row header 用「標題左、純數字右 space-between + tabular-nums」(item-anatomy.spec.md:187);互動元素(tab/chip/button)用 badge slot。aria/純文字匯出層 → @count-in-label-ok: <rationale>\n"
 fi
 # C17 分隔線幾何:vertical Separator 無 mx- = 黏按鈕。2026-08-07 起 action region 群組線的
 # 唯一實作是 <ButtonDivider/>(長度由「該列最高元件 − inset」自動算,mx 內建);Separator 只剩
@@ -549,11 +549,11 @@ if grep -qE '(flex-1[^>]*/>|ml-auto)[^<]{0,80}<(DS\.)?Input[^>]{0,200}placeholde
   VIOLATIONS="${VIOLATIONS}  - 業務 search(過濾當前檢視)被 spacer 推到最右 → 歸業務層與其他操作同區(action-bar.spec.md:69/76;無標題 toolbar 業務層靠左 :109)。工具型跨頁 search 置最右合法 → @search-right-ok: <rationale>\n"
 fi
 # C11 dialog chrome 雙 X:DialogHeader 之後 250 字窗內手放 startIcon={X} 且窗內無 actions=
-# (DialogHeader 自帶 Close;header 操作走 actions slot — action-bar.spec.md:281)。
+# (DialogHeader 自帶 Close;header 操作走 actions slot — action-bar.spec.md「五、分隔線規則」誤觸保護)。
 DH_WIN=$(echo "$CONTENT" | grep -oE '<(DS\.)?DialogHeader.{0,250}' || true)  # BSD grep bound 上限 255
 if [ -n "$DH_WIN" ] && grep -qE 'startIcon=\{X\}' <<<"$DH_WIN" && ! grep -q 'actions=' <<<"$DH_WIN" && \
    ! grep -q '@dialog-chrome-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - DialogHeader 內手放 X 關閉鈕(DialogHeader 已自帶 Close = 雙 X)→ header 操作走 actions slot(自動 ButtonDivider 分隔,action-bar.spec.md:281)。特例 → @dialog-chrome-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - DialogHeader 內手放 X 關閉鈕(DialogHeader 已自帶 Close = 雙 X)→ header 操作走 actions slot(自動 ButtonDivider 分隔,action-bar.spec.md「五、分隔線規則」誤觸保護)。特例 → @dialog-chrome-ok: <rationale>\n"
 fi
 # C7 SelectMenu internal 直用(select-menu.spec.md:53 明文禁 consumer 直用 — 它是 Select/
 # Combobox 的內部選單面,consumer 用 <Select>/<Combobox>;此為「internal 且 spec 明文禁直用」

@@ -12,6 +12,9 @@ import {
 import {
   createGateMetaTestInventory,
   discoverCheckerGates,
+  GATE_META_LANE_OUTER_RESERVE_MS,
+  gateMetaLaneCommand,
+  isGateMetaLaneCommand,
 } from '../../../scripts/lib/gate-meta-test-inventory.mjs'
 
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -126,6 +129,8 @@ const SOURCE_INVENTORY_PATH = 'infra/governance/providers/harness-source-invento
 const ALL_HARNESS_RUNNER = ['node', 'infra/governance/bin/run-harnesses.mjs']
 const SUITE_RUNNER_PATH = 'infra/governance/bin/run-harness-suite.mjs'
 const CANONICAL_HOOK_SUITE = ['node', SUITE_RUNNER_PATH, '--suite', 'canonical-hook-behavioral']
+// 全部 lane 依序跑的完整 runner(本機用;metaTestCoverage.isolatedRunnerCommand)。harness 註冊的是各 lane:
+// `node scripts/run-gate-meta-tests.mjs --lane <id>`(gateMetaLaneCommand),見 pairedMeta.lanes。
 const META_RUNNER = ['node', 'scripts/run-gate-meta-tests.mjs']
 const COVERAGE_CHECK = ['node', 'scripts/audit-gate-meta-test-coverage.mjs', '--check']
 export const HARNESS_SETUP_OUTER_RESERVE_MS = 60_000
@@ -846,8 +851,12 @@ function validateCommandShape(command, label, repoRoot) {
     invariant(!/[\n\r\0]/.test(token) && !/(?:&&|\|\||[;<>`]|\$\()/.test(token), `${label} contains shell control syntax`)
   }
   const key = commandKey(command)
-  if ([ALL_HARNESS_RUNNER, META_RUNNER, COVERAGE_CHECK].some(allowed => commandKey(allowed) === key)) {
+  if ([ALL_HARNESS_RUNNER, COVERAGE_CHECK].some(allowed => commandKey(allowed) === key)) {
     resolveRepoPath(repoRoot, command[1], `${label} entrypoint`, { fileOnly: true })
+    return
+  }
+  if (isGateMetaLaneCommand(command)) {
+    resolveRepoPath(repoRoot, command[1], `${label} gate meta-test lane entrypoint`, { fileOnly: true })
     return
   }
   if (
@@ -890,8 +899,11 @@ function executionTopology(inventory) {
     allowedCommands.add(commandKey(command))
     for (const path of suite.members) ownerCommandByPath.set(path, command)
   }
-  allowedCommands.add(commandKey(inventory.pairedMeta.command))
-  for (const path of inventory.pairedMeta.members) ownerCommandByPath.set(path, inventory.pairedMeta.command)
+  for (const lane of inventory.pairedMeta.lanes) {
+    const command = gateMetaLaneCommand(lane.id)
+    allowedCommands.add(commandKey(command))
+    for (const path of lane.members) ownerCommandByPath.set(path, command)
+  }
   for (const path of inventory.direct) {
     const command = harnessMemberCommand(path)
     allowedCommands.add(commandKey(command))
@@ -971,7 +983,7 @@ export function deriveHarnessCheckerMutationCoverage({
   const runnable = new Set(gateMeta.runnable.map(item => item.stem))
   const deterministic = new Map(gateMeta.excludedByClass['deterministic-isolated'].map(item => [item.stem, item]))
   const environmental = new Set(gateMeta.excludedByClass['environmental-observation'].map(item => item.stem))
-  const pairedMembers = new Set(inventory.pairedMeta.members)
+  const pairedMembers = new Set(inventory.pairedMeta.lanes.flatMap(lane => lane.members))
   const directMembers = new Set(inventory.direct)
   const discoveredPairs = new Map(gateMeta.discoverable.map(item => [item.stem, item]))
   const checkerGates = discoverCheckerGates(root)
@@ -1142,7 +1154,15 @@ export function validateHarnessRegistry(registry, { repoRoot = DEFAULT_REPO_ROOT
     const timeout = timeoutByCommand.get(commandKey(harnessSuiteCommand(suite.id)))
     invariant(Number.isInteger(timeout) && timeout === suite.totalTimeoutMs + 60_000, `Harness suite outer process-group deadline must equal its source-inventory deadline plus 60 seconds:${suite.id}`)
   }
-  invariant((timeoutByCommand.get(commandKey(META_RUNNER)) ?? 0) >= 1_800_000, 'Harness paired-meta runner lacks a bounded long-run timeout override')
+  // 每個 gate meta-test lane 的外層上限 = lane 自己的 totalTimeoutMs + 60 秒(與 suite 同一條規則):
+  // runner 在 lane 預算內自己收尾並點名,外層砍殺永遠不會先到(2026-10-14,SM2)。
+  for (const lane of inventory.pairedMeta.lanes) {
+    const timeout = timeoutByCommand.get(commandKey(gateMetaLaneCommand(lane.id)))
+    invariant(
+      Number.isInteger(timeout) && timeout === lane.totalTimeoutMs + GATE_META_LANE_OUTER_RESERVE_MS,
+      `Harness gate meta-test lane outer process-group deadline must equal its source-inventory lane budget plus ${GATE_META_LANE_OUTER_RESERVE_MS / 1000} seconds:${lane.id}`,
+    )
+  }
   const byDomain = new Map(registry.entries.map(entry => [entry.domain, entry]))
   const cloud = byDomain.get('cloud')
   invariant(cloud.executionClass === 'external-readback-required' && cloud.certificationClaim === 'not-certified', 'Cloud Harness must remain not-certified pending external target readback')

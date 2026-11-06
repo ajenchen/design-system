@@ -1,6 +1,6 @@
 # AgentFab / AgentFabDock 設計原則(AgentPanel 家族附屬資產;獨立 SSOT)
 
-> **本 spec 是 AgentPanel 家族入口鈕的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentFab(浮動開關鈕;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);內容零改動,只加本檔頭、檔尾指標,與 N23 / N36 兩處改寫(見該處標註))。家族定位 / Token / 何時用 / 動畫總表 / 關閉語意 / 禁止事項仍住 `./agent-panel.spec.md`;程式碼對應 `agent-panel-fab.tsx`(`AgentFab` / `AgentFabDock`)與 `agent-panel.tsx`(`AgentPanelDock`)。
+> **本 spec 是 AgentPanel 家族入口鈕的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentFab(浮動開關鈕;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);抽出當下內容零改動,只加本檔頭、檔尾指標,與 N23 / N36 兩處改寫(見該處標註);之後的增修見各段日期 —— 2026-10-13 / 10-14 入口鈕與 Toast 的「Toast 不為入口鈕讓位」「層級」兩段)。家族定位 / Token / 何時用 / 動畫總表 / 關閉語意 / 禁止事項仍住 `./agent-panel.spec.md`;程式碼對應 `agent-panel-fab.tsx`(`AgentFab` / `AgentFabDock`)與 `agent-panel.tsx`(`AgentPanelDock`)。
 >
 > **Layout Family**:同 `agent-panel.spec.md`(self-contained 容器家族);入口鈕是圓形 iconOnly 按鈕,本檔不另立 family。
 
@@ -17,7 +17,7 @@
   commit 掛載故同相;光圈漸層=環同兩極同方位);懸停=陰影升一級+微放大;點擊=開面板。
 - 減動作:光圈屬位移 loop → 全停(標誌內部自回靜止)。
 - **標誌狀態跟著面板裡的代理走**(prop `logoState`,與 `AgentPanelHeader.logoState` 同名 —— 產品端同一個變數餵兩邊;
-  2026-09-03 user 拍板「若開啟的 session 是思考中,FAB 的 logo 也應該是思考中」):入口鈕 = 那個對話**收起來的樣子**,
+  2026-09-03 落地;依據是 user 在 artifact 的留言,原話未留存 —— 開啟的對話在思考中時,入口鈕的標誌也在思考中):入口鈕 = 那個對話**收起來的樣子**,
   不是另一個獨立的東西 —— 代理在回覆時即使面板關著,入口鈕標誌照樣轉(`think`);有新訊 = 招喚(`attract`,標誌蓄勢
   + 邊框光圈);閒置 = 靜止(`still`)。兩種形態(40 圓 / 28 貼邊)都跟,尺寸變、狀態不變。光圈只給招喚態:思考態的
   訊號是標誌自己在轉,再加光圈會變成兩個 loop 互相打架。對照:[Android Bubbles 收合後仍以圖示承載該對話的動態](https://developer.android.com/develop/ui/views/notifications/bubbles)。
@@ -29,12 +29,15 @@
   都用它,不各自寫一份 `open ? panel : fab`(「入口鈕三態」那個 story 例外:它展示的是獨立 `AgentFab` 的三種標誌狀態,沒有面板可互斥)。
   **一個舞台一個 Dock**:家的座標只有一組(右下角離邊 loose),同一個 relative 容器內放兩個 `AgentPanelDock` 會像素級重疊;
   要在同一頁擺兩個代理入口,請各自給不同的 relative 舞台(2026-09-03 稽核補上的不變式)。
+  **Toast 不為入口鈕讓位**:入口鈕在家時 Toast 仍落在套件預設角落,可能蓋住入口鈕 —— 刻意如此,不是 bug
+  (user 2026-10-13 決定;規則、原話與理由只住 `../Toast/toast.spec.md`「落點」)。入口鈕不向 Toast 登記或提供任何幾何。
+  **層級**:入口鈕的提示(「問我或推走我」/「開啟智慧代理」,DS Tooltip)與 Toast 重疊時提示在上 —— 全 DS 層級表 `../../tokens/elevation/elevation.spec.md`「疊放順序」(Tooltip `z-[70]` > Toast `z-[60]`;入口鈕本身在常駐框架列 `z-20`,在所有浮層之下)。閘:`scripts/layer-order-invariant.mjs` 情境 A。
 - **遮擋與貼邊**(`AgentFabDock`;演進:2026-09-02 拖到邊 → hover 小鈕 → 拖曳自由座標 → 2026-09-03 user 拍板
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
   位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
   與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
-  - **命中區 = 可視形狀本身**(2026-09-04 user 拍板原話:「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」;
-    「當我點擊按鈕的任何地方包括左側靠近邊邊的地方,只要還在按鈕範圍內就應該觸發事件」)。
+  - **命中區 = 可視形狀本身**(2026-09-04 user 拍板原話:「按鈕的視覺=觸發事件的範圍=會觸發tooltip的範圍」;
+    「所以當我點擊按鈕的任何地方包括左側靠近邊邊的地方，只要還在按鈕範圍內就應該觸發事件」)。
     三者**恆等**,沒有例外可以解釋:看得到的每一點都點得到、點得到的每一點都看得到、會出 tooltip 的範圍就是這一塊。
     作法:語意 `<button>` 的尺寸與圓角**都等於可視形狀**(貼邊 28 + `rounded-l-full`、在家 40 + `rounded-full`);
     漸層環是這一層自己的 2px padding,內層 span 只負責面色,所以按鈕的 border box 邊緣就是使用者看到的邊緣。
@@ -88,7 +91,7 @@
       owner `ds-canonical/references/hit-area-canonical.md`「本 DS 不採納觸控尺寸建議」):本 DS 以滑鼠指標的精度為前提。這裡先前列的
       [Apple HIG 44pt](https://developer.apple.com/design/human-interface-guidelines/buttons) /
       [WCAG 2.5.5 Target Size (Enhanced) 44 CSS px](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
-      是**觸控尺寸建議、AI 自己找來的對照**,不是 user 要求,也從來不是「命中要大於視覺」的依據 —— 要把可點範圍做大,做大的是**可視形狀**,不是加隱形邊。
+      是**觸控尺寸建議、AI 自己找來的對照**,不是 user 要求,也從來不是『命中要大於視覺』的依據 —— 要把可點範圍做大,做大的是**可視形狀**,不是加隱形邊。
   - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
     `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
     lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;
@@ -149,3 +152,4 @@
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `agent-panel.spec.md`
+- `toast.spec.md`

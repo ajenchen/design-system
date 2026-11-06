@@ -31,7 +31,8 @@ Release 的 machine SSOT 是 `infra/governance/release-workflow.json`:`pr-checks
 
 | Check | Script |
 |---|---|
-| TypeScript strict | `npx tsc -b` |
+| TypeScript strict(DS 原始碼與宣告檔) | `npm run build:lib`(CI `ci.yml`「Build publishable libraries and declarations」;另跑的 `npx tsc -b` 只看根目錄 `src/`、不檢查 DS 原始碼,只算冒煙,不當型別證明) |
+| Story 型別 | `npm run typecheck:stories` |
 | Orphan token | `node scripts/audit-orphan-tokens.mjs --check` |
 | Code quality | `node scripts/code-quality-audit.mjs --scope=packages/design-system/src/components` |
 | Content quality | `node scripts/audit-content-quality.mjs --check` |

@@ -232,7 +232,7 @@ EOF
           #   Hook regex(舊):substring 無 boundary + 不分註解行。
           #   Gap:誤命中 (a) `data-[state=open]:border-primary-hover` canonical(button.tsx:99,109
           #     overlay trigger 維持 hover 樣式,-hover/-active 是合法 token 後綴);(b) v13.3 retire
-          #     註解內引用舊 pattern 文字(combobox.tsx:725 / select.tsx:594)。
+          #     註解內引用舊 pattern 文字(`9935caf9:packages/design-system/src/components/Combobox/combobox.tsx:725` / `9935caf9:packages/design-system/src/components/Select/select.tsx:594`,當時位置)。
           #   修:純註解行剝離 + border-primary 加字尾 boundary([^-a-zA-Z]|$)。
           #   DS-wide counter-example scan 2026-06-11:新 regex 全 components/ 0 hit(真違規 shape
           #   `open && 'border-primary'` / `data-[state=open]:border-primary` 結尾 仍 BLOCK,fixture 驗證)。

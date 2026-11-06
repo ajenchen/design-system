@@ -7,7 +7,7 @@ import {
   deriveHarnessGeneratedMirrorBinding,
   readHarnessSourceInventory,
 } from '../infra/governance/lib/harness-source-inventory.mjs'
-import { createGateMetaTestInventory } from './lib/gate-meta-test-inventory.mjs'
+import { createGateMetaTestInventory, synchronizeGateMetaLaneMembers } from './lib/gate-meta-test-inventory.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const check = process.argv.includes('--check')
@@ -46,9 +46,11 @@ function synchronizeHarnessAuthorityBindings() {
   // Mirror retired 2026-08-04; the field stays empty so a reintroduction needs a schema change.
   nextInventory.generatedMirrors = []
   nextInventory.gateMetaExclusions.sha256 = sha256(readFileSync(resolve(ROOT, nextInventory.gateMetaExclusions.path)))
-  nextInventory.pairedMeta.members = gateMeta.runnable
-    .map(({ file }) => `scripts/${file}`)
-    .sort(compareUtf8Bytes)
+  // lane 宣告(id / storybook / 預算 / 非 remainder lane 的成員)是人寫的;remainder lane 的成員由這裡產生
+  // = 現行 runnable − 其他 lane 的宣告。宣告裡有不再 runnable 的成員時丟例外點名,不默默丟掉。
+  nextInventory.pairedMeta = synchronizeGateMetaLaneMembers(nextInventory.pairedMeta, {
+    runnablePaths: gateMeta.runnable.map(({ file }) => `scripts/${file}`).sort(compareUtf8Bytes),
+  })
   const canonicalHookRoot = `${nextInventory.canonicalHookStaticHelpers.root}/`
   nextInventory.canonicalHookStaticHelpers.entries = nextInventory.canonicalHookStaticHelpers.entries.map((entry) => {
     invariant(

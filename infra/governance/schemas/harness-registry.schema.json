@@ -112,7 +112,7 @@
       "properties": {
         "coverageKind": {"const": "discovered-paired-mutation-zero-debt-ratchet"},
         "inventoryCommand": {"const": ["node", "scripts/audit-gate-meta-test-coverage.mjs", "--check"]},
-        "isolatedRunnerCommand": {"const": ["node", "scripts/run-gate-meta-tests.mjs"]},
+        "isolatedRunnerCommand": {"const": ["node", "scripts/run-gate-meta-tests.mjs"], "description": "The complete isolated runner (every lane sequentially). The Harness registers each lane separately as this argv plus --lane <id>."},
         "isolationTestPath": {"const": "scripts/test-run-gate-meta-tests-isolation.mjs"},
         "baselinePath": {"const": "scripts/audit-gate-meta-test-coverage.baseline.json"},
         "requiredOutcome": {"const": "all-discovered-checker-gates-covered-zero-debt"},
@@ -138,7 +138,19 @@
     "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "harnessCommand": {
       "oneOf": [
-        {"const": ["node", "scripts/run-gate-meta-tests.mjs"]},
+        {
+          "description": "One gate meta-test lane (infra/governance/providers/harness-source-inventory.json pairedMeta.lanes); the bare runner without --lane runs every lane sequentially and is a local entrypoint only.",
+          "type": "array",
+          "prefixItems": [
+            {"const": "node"},
+            {"const": "scripts/run-gate-meta-tests.mjs"},
+            {"const": "--lane"},
+            {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
         {"const": ["node", "scripts/audit-gate-meta-test-coverage.mjs", "--check"]},
         {
           "type": "array",

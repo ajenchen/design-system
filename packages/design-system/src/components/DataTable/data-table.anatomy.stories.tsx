@@ -1,6 +1,6 @@
 // @anatomy-rationale:
 //   SizeMatrix 以 RowHeightMatrix 呈現 —— DataTable 的 size(sm / md / lg)主要
-//     體現在 row height 這個結構決策上(spec.md「Size 不等於 density」:size 是
+//     體現在 row height 這個結構決策上(data-table.spec.md「Size 不等於 density」:size 是
 //     這張表格「需要多緊湊」的結構決策,density 是全域使用者偏好,兩者不同軸,
 //     不套用 compact / cozy / comfortable 等外部密度命名)。lg 同時連動字級放大
 //     (sm/md → text-body / lg → text-body-lg,對齊 Field,SSOT fieldDisplayTextClass)。
@@ -13,6 +13,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
 import './column-types'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { productCatalog, type ProductRow as Product } from '@/design-system/stories-helpers/data/product-catalog'
 
 const meta: Meta = {
   title: 'Design System/Components/DataTable/設計規格',
@@ -20,17 +21,6 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
-
-// ── Sample data ────────────────────────────────────────────────────────────
-
-interface Product {
-  name: string
-  category: string
-  stock: string
-  price: number
-  available: boolean
-  launchDate: string
-}
 
 const SAMPLE_DATA: Product[] = [
   { name: 'Wireless Headphones', category: 'electronics', stock: 'in_stock', price: 2490, available: true, launchDate: '2026-01-15' },
@@ -72,7 +62,7 @@ export const Overview: Story = {
       <div className="flex flex-col gap-10">
         <div>
           <H3>Anatomy</H3>
-          <Desc>DataTable 基於 TanStack Table,透過 `meta.type` column type 系統自動套用對應 Field Control 的 view 態渲染 cell。底層用 `&lt;div&gt;` + ARIA role(不用語義 `&lt;table&gt;`)——虛擬捲動需要絕對定位 row,frozen column 需要獨立 scroll 區域,table 的佈局模型兩者都不支援。</Desc>
+          <Desc>DataTable 基於 TanStack Table,透過 <code>meta.type</code> column type 系統自動套用對應 Field Control 的 view 態渲染 cell。底層用 <code>&lt;div&gt;</code> + ARIA role(不用語義 <code>&lt;table&gt;</code>)——虛擬捲動需要絕對定位 row,frozen column 需要獨立 scroll 區域,table 的佈局模型兩者都不支援。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 
@@ -128,7 +118,8 @@ export const Inspector: Story = {
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
-      description: 'sm=compact(掃視)/ md=cozy★default / lg=comfortable(閱讀)',
+      // tier 直接寫 sm / md / lg(元件只有這三個值;compact / cozy / comfortable 是外部密度命名,本檔檔頭與 data-table.spec.md 都說不套用)
+      description: 'sm = 大量資料掃視 / md = 一般業務資料(預設)/ lg = 詳情檢視',
     },
     bordered: { control: 'boolean', description: '外框(嵌入已帶框容器時可設 false 避免雙重邊框)' },
     pinnedLeft: { control: 'boolean', description: 'Pin 產品名稱欄到左側,橫向捲動時保持可見' },
@@ -183,7 +174,7 @@ export const ColumnTypes: Story = {
       <div className="flex flex-col gap-8">
         <div>
           <H3>meta.type 系統</H3>
-          <Desc>每個 column 透過 `meta.type` 宣告資料類型,DataTable 自動選擇對應 Field Control 的 `mode="view"` 渲染——消費者不需要手寫 cell。</Desc>
+          <Desc>每個 column 透過 <code>meta.type</code> 宣告資料類型,DataTable 自動選擇對應 Field Control 的 <code>mode="view"</code> 渲染——消費者不需要手寫 cell。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 
@@ -205,7 +196,7 @@ export const ColumnTypes: Story = {
               </tbody>
             </table>
           </div>
-          <p className="text-footnote text-fg-muted mt-3">擴充新 type:在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(view/edit 渲染 SSOT);`column-types.ts` 只設 `align` / default metadata。兩處對齊後自動跟所有 DataTable 整合</p>
+          <p className="text-footnote text-fg-muted mt-3">擴充新 type:在 <code>cell-registry.tsx</code> 的 <code>cellRegistry</code> map 註冊對應 Cell component(view/edit 渲染 SSOT);<code>column-types.ts</code> 只設 <code>align</code> / default metadata。兩處對齊後自動跟所有 DataTable 整合</p>
         </div>
       </div>
     )
@@ -225,14 +216,14 @@ export const RowHeightMatrix: Story = {
       <div className="flex flex-col gap-8">
         <div>
           <H3>Row Height 三種 tier</H3>
-          <Desc>依資料密度與閱讀需求選擇。Token 來自 `--table-row-*`(見 uiSize.spec.md)。</Desc>
+          <Desc>依資料密度與閱讀需求選擇。高度來自 <code>--table-row-*</code> token。</Desc>
           <div className="overflow-x-auto mb-4">
             <table className="text-caption border-collapse">
               <thead><tr><Th>Tier</Th><Th>高度</Th><Th>字體</Th><Th>適用</Th></tr></thead>
               <tbody>
-                <tr><Td mono>compact(sm)</Td><Td mono>--table-row-sm</Td><Td>text-body</Td><Td>大量資料掃視(log、交易紀錄)</Td></tr>
-                <tr><Td mono>cozy(md)★default</Td><Td mono>--table-row-md</Td><Td>text-body</Td><Td>一般業務資料</Td></tr>
-                <tr><Td mono>comfortable(lg)</Td><Td mono>--table-row-lg</Td><Td>text-body-lg</Td><Td>詳情檢視、avatar 多的場景</Td></tr>
+                <tr><Td mono>sm</Td><Td mono>--table-row-sm</Td><Td>text-body</Td><Td>大量資料掃視(log、交易紀錄)</Td></tr>
+                <tr><Td mono>md(預設)</Td><Td mono>--table-row-md</Td><Td>text-body</Td><Td>一般業務資料</Td></tr>
+                <tr><Td mono>lg</Td><Td mono>--table-row-lg</Td><Td>text-body-lg</Td><Td>詳情檢視、avatar 多的場景</Td></tr>
               </tbody>
             </table>
           </div>
@@ -264,7 +255,7 @@ export const AlignmentRule: Story = {
       <div className="flex flex-col gap-8">
         <div>
           <H3>Column type 提供對齊預設(column-types.ts 定義),consumer 可用 meta.align 覆寫</H3>
-          <Desc>數字靠右方便縱向比較位數(Excel / 會計軟體 / 財務系統共識);文字靠左方便閱讀;boolean 靠左跟其他文字欄一致,維持掃視時的左緣節奏。Consumer 通常不需要設 `align`——column type 已給預設;需要時仍可用 `meta.align` 在 column 層級覆寫。</Desc>
+          <Desc>數字靠右方便縱向比較位數(個位、小數點上下對齊);文字靠左方便閱讀;boolean 靠左跟其他文字欄一致,維持掃視時的左緣節奏。Consumer 通常不需要設 <code>align</code>——column type 已給預設;需要時仍可用 <code>meta.align</code> 在 column 層級覆寫。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 
@@ -297,25 +288,27 @@ export const Features: Story = {
       col.accessor('category', { header: 'Category', meta: { type: 'select', options: CATEGORY_OPTIONS, width: 140 } }),
       col.accessor('price', { header: 'Price', meta: { type: 'currency', prefix: '$', width: 120 }, enableSorting: true }),
     ]
-    const virtualData = Array.from({ length: 500 }, (_, i) => ({
-      name: `Product ${String(i + 1).padStart(4, '0')}`,
-      category: CATEGORY_OPTIONS[i % CATEGORY_OPTIONS.length].value,
+    // 500 筆商品:商品目錄的單一住所 = stories-helpers/data/product-catalog.ts(確定性 —— 每次載入、每次截圖都是同一份資料)。
+    // 2026-10-20 N3:原本 `Product 0001…0500` 佔位名稱 + Math.random 價格。類別只取本頁 select 選項有的三類,值對應選項的 value。
+    const virtualData: Product[] = productCatalog(500, { categories: ['Electronics', 'Furniture', 'Food'] }).map((c) => ({
+      name: c.name,
+      category: c.category.toLowerCase(),
       stock: 'in_stock',
-      price: Math.round(Math.random() * 10000),
-      available: i % 3 !== 0,
+      price: c.price,
+      available: c.index % 3 !== 0,
       launchDate: '2026-04-18',
     }))
     return (
       <div className="flex flex-col gap-8">
         <div>
           <H3>排序(enableSorting)</H3>
-          <Desc>Column 的 `enableSorting: true` 啟用排序。點擊 header 切換 asc / desc / none 三態,header 右側顯示向上 / 向下箭頭(ArrowUp / ArrowDown)指示目前排序方向。</Desc>
+          <Desc>Column 的 <code>enableSorting: true</code> 啟用排序。點擊 header 依序切換升冪 / 降冪 / 清除三態(並清掉其他欄的排序),標題後顯示向上 / 向下箭頭(ArrowUp / ArrowDown)指示目前排序方向;Shift+點擊把這一欄加進多重排序,被排序的欄在箭頭右側多一個順位數字(第 10 個以後「9+」)。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 
         <div>
           <H3>虛擬捲動(height 啟用)</H3>
-          <Desc>傳 `height` 固定高度時自動啟用 TanStack Virtual——只渲染可見 rows。500 筆資料僅渲染 ~20 rows,效能不受資料量影響。</Desc>
+          <Desc>傳 <code>height</code> 固定高度時自動啟用 TanStack Virtual——只渲染可見 rows。500 筆資料僅渲染 ~20 rows,效能不受資料量影響。</Desc>
           <div className="border border-border rounded-md">
             <DataTable columns={columns} data={virtualData} height="400px" />
           </div>
@@ -364,7 +357,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td>Sort icon(排序中)</Td>
                 <Td><TokenCell token="--fg-secondary" display="fg-secondary" /></Td>
-                <Td>已套排序(0/1 欄)的欄位顯示升/降冪箭頭;multi-sort(≥2 欄)隱藏箭頭走 SortManager</Td>
+                <Td>已套排序的欄位顯示升/降冪箭頭;多重排序(≥2 欄)時箭頭右側多一個順位數字,與箭頭同色</Td>
               </tr>
               <tr>
                 <Td>欄位選單 ⌄(hover)</Td>
@@ -382,7 +375,7 @@ export const ColorMatrix: Story = {
           Row bg 由 default / hover 決定。Hover 用 neutral-hover
           (全系統互動高亮一致,跟 TreeView / MenuItem 同套 token)。
           選取狀態不由 row bg 呈現,而是 __select__ 欄的 selection control(checkbox / radio)
-          ——2026-05-31 user 決策:有勾選框就只用勾選框呈現,避免「勾選框 + 底色」雙重指示。
+          ——2026-05-31 user 決策:有勾選框就只用勾選框呈現,避免勾選框加底色的雙重指示。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
@@ -440,7 +433,7 @@ export const ColorMatrix: Story = {
             </thead>
             <tbody>
               <tr><Td mono>text / date / number / currency</Td><Td><TokenCell token="--foreground" /></Td></tr>
-              <tr><Td mono>select</Td><Td>預設 plain 純文字 foreground;`meta.display='tag'` opt-in 才走 Tag 的 variant 色(green / yellow / red / blue…)</Td></tr>
+              <tr><Td mono>select</Td><Td>預設 plain 純文字 foreground;<code>meta.display='tag'</code> opt-in 才走 Tag 的 variant 色(green / yellow / red / blue…)</Td></tr>
               <tr><Td mono>person</Td><Td>Avatar + foreground 文字</Td></tr>
               <tr><Td mono>link</Td><Td><TokenCell token="--primary" /></Td></tr>
               <tr><Td mono>boolean</Td><Td>naked Checkbox(true = <TokenCell token="--primary" display="primary 底白勾" /> / false = 空框 <TokenCell token="--border" />),非 X / Check icon</Td></tr>
@@ -464,7 +457,7 @@ export const EmptyState: Story = {
     return (
       <div>
         <H3>無資料時消費 Empty primitive</H3>
-        <Desc>DataTable 的 empty state 走共用 `Empty` 元件——保持跟其他空狀態(SelectMenu、Combobox、Page section)視覺一致。未傳 `emptyState` 時顯示下方的標準 fallback;正式產品應傳 `emptyState` 以業務語言說明「缺什麼資料 + 下一步」,避免抽象的「沒有資料」(對齊 Empty 文案準則)。</Desc>
+        <Desc>DataTable 的 empty state 走共用 <code>Empty</code> 元件——保持跟其他空狀態(SelectMenu、Combobox、Page section)視覺一致。未傳 <code>emptyState</code> 時顯示下方的標準 fallback;正式產品應傳 <code>emptyState</code> 以業務語言說明「缺什麼資料 + 下一步」,避免抽象的「沒有資料」(對齊 Empty 文案準則)。</Desc>
         <DataTable columns={columns} data={[]} height="auto" />
       </div>
     )
@@ -484,12 +477,12 @@ export const BorderedProp: Story = {
       <div className="flex flex-col gap-8">
         <div>
           <H3>bordered(boolean,預設 true)</H3>
-          <Desc>多數場景(虛擬捲動 / frozen column / inline edit)保留預設外框;嵌在已有外框的 Card / Section 內且資料量極少無溢出時,才傳 `bordered={false}` 讓最外層視覺收尾,避免雙重外框。</Desc>
+          <Desc>多數場景(虛擬捲動 / frozen column / inline edit)保留預設外框;嵌在已有外框的 Card / Section 內且資料量極少無溢出時,才傳 <code>{'bordered={false}'}</code> 讓最外層視覺收尾,避免雙重外框。</Desc>
           <div className="overflow-x-auto mb-4">
             <table className="text-caption border-collapse">
               <thead><tr><Th>Prop</Th><Th>型別</Th><Th>預設</Th><Th>用途</Th></tr></thead>
               <tbody>
-                <tr><Td mono>bordered</Td><Td mono>boolean</Td><Td mono>true</Td><Td>外框開關。預設有框(標記內容可能溢出);`false` 用於嵌套在已帶框容器內的展示場景</Td></tr>
+                <tr><Td mono>bordered</Td><Td mono>boolean</Td><Td mono>true</Td><Td>外框開關。預設有框(標記內容可能溢出);<code>false</code> 用於嵌套在已帶框容器內的展示場景</Td></tr>
               </tbody>
             </table>
           </div>
@@ -515,8 +508,10 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"DataTable 用一般 div 搭配表格語意標記,而非原生 table 元素——因為虛擬捲動需要絕對定位每一列,而 table 的佈局模型做不到。輔助技術(螢幕報讀器)會把它當成表格朗讀。\n\n  表格語意  :最外層標記為表格、每一列標記為列、每一格標記為儲存格,表頭那一格標記為欄位標題。\n\n  排序  :可排序的表頭會標示目前的排序方向(升冪 / 降冪 / 未排序),報讀器讀得出來。\n\n  選取  :每一列的勾選框都有說明文字(由使用方傳入,沒傳就用「選取此列」),全選框的說明文字是「全選可見列」。\n\n  鍵盤  :一般表格模式下,用 Tab 進入表格後可操作排序與勾選;方向鍵在儲存格之間移動是試算表模式(spreadsheetMode)才開啟的功能,不是預設。列上的更多操作(`rowActions` 為使用方提供的 callback,DataTable 不代管收納)建議在 3 個以上時由使用方自行收進右側的「更多」選單,以確保不用滑鼠也能操作全部動作。\n\n  焦點  :一般元件(排序鈕 / 勾選框)鍵盤聚焦時顯示清楚外框,與設計系統聚焦樣式一致;啟用選取 / 試算表模式時,表格本身可被 Tab 聚焦。表格外層與儲存格的框不會同時出現:試算表模式 Tab 進來會先指到第一格,焦點框畫在被指到的那一格上(表格外層不另畫);點任何一格,框就移到那一格;按 Esc 清掉之後、以及沒有儲存格游標的勾選列模式,改由表格外層內側畫框。\n\n  驗證  :Storybook 無障礙檢查面板應該沒有嚴重問題;全程鍵盤可操作,不必用到滑鼠;文字對比度達到無障礙標準。"}</p>
+      {/* 標題 → 一段文字 = tight(內容之間本來就是 tight;A4 甲,寫死 mb-2 改 token、跟著密度)。
+          按鍵細節的完整規則在 data-table.spec.md「Keyboard 行為」與「試算表模式」兩段(不給讀者看檔名) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"DataTable 用一般 div 搭配表格語意標記,而非原生 table 元素——因為虛擬捲動需要絕對定位每一列,而 table 的佈局模型做不到。輔助技術(螢幕報讀器)會把它當成表格朗讀。\n\n  表格語意  :最外層標記為表格、每一列標記為列、每一格標記為儲存格,表頭那一格標記為欄位標題。\n\n  排序  :可排序的表頭會標示目前的排序方向(升冪 / 降冪 / 未排序),報讀器讀得出來。\n\n  選取  :每一列的勾選框都有說明文字(由使用方傳入,沒傳就用「選取此列」),全選框的說明文字是「全選可見列」。\n\n  鍵盤(一般模式)  :用 Tab 進入表格後可操作排序與勾選;可就地編輯的格本身就是 Tab 停靠點,Enter / F2 進編輯、Enter 存檔、Esc 取消,結束後焦點回到那一格。連結格的格本身不是停靠點:Tab 走格裡的連結(Enter 開連結)與鉛筆(Enter 進編輯),編輯結束焦點回到鉛筆;開關格停在格裡的勾選框(空白鍵切換)。列上的更多操作("}<code>{"rowActions"}</code>{" 為使用方提供的 callback,DataTable 不代管收納)建議在 3 個以上時由使用方自行收進右側的「更多」選單,以確保不用滑鼠也能操作全部動作。\n\n  鍵盤(試算表模式 spreadsheetMode)  :方向鍵在儲存格之間移動、Shift+方向鍵擴大範圍;可編輯的格 Enter / F2 進編輯。連結格與開關格按 Enter / F2,焦點進到格裡的控件(連結格先到連結、Tab 到鉛筆;開關格到勾選框、空白鍵切換),再按 F2 或 Esc 回到格導覽;在格裡的控件上按 Tab 會走到下一個控件(可能在下一格),儲存格游標跟著移過去。放在對話框或側邊面板裡時,Esc 一次只退一層:格裡的控件 → 格導覽 → 清掉游標 → 才關閉面板。\n\n  編輯器名稱  :每一格的編輯器都以欄標題當名字,所以欄標題要寫業務名稱(例如「Qty」),不要寫成型別註記(「Qty (number)」會被念出來)。\n\n  焦點  :一般元件(排序鈕 / 勾選框 / 連結 / 鉛筆)鍵盤聚焦時顯示清楚外框,與設計系統聚焦樣式一致;可拖曳重排的欄頭本身也是 Tab 停靠點(空白鍵提起),它撐滿表頭,框畫在內側。啟用選取 / 試算表模式時,表格本身可被 Tab 聚焦。同一時間只有一個框:試算表模式 Tab 進來會先指到第一格,焦點框畫在被指到的那一格上(表格外層不另畫);點任何一格,框就移到那一格;焦點進到格裡的控件時由控件自己畫框、儲存格的框收起;按 Esc 清掉之後、以及沒有儲存格游標的勾選列模式,改由表格外層內側畫框。\n\n  播報  :拖曳重排列或欄位時,移到哪裡、有沒有真的移動,會透過隱藏的即時播報區域用繁體中文唸出。\n\n  驗證  :Storybook 無障礙檢查面板應該沒有嚴重問題;全程鍵盤可操作,不必用到滑鼠;文字對比度達到無障礙標準。"}</p>
     </div>
   ),
 }

@@ -6,7 +6,7 @@
  *
  * 受保護 control-plane 路徑的前綴含整個 `scripts/`(scripts/lib/consumer-control-plane-policy.mjs),
  * 而那正是所有 consumer 腳本的所在。於是**任何一次改到 consumer 腳本的發版,都會讓每個 consumer 的
- * ordinary sync 撞上 GOV-UPGRADE-BOOTSTRAP-001**(verify-upgrade-evidence.mjs:279)。WM 從
+ * ordinary sync 撞上 GOV-UPGRADE-BOOTSTRAP-001**(verify-upgrade-evidence.mjs#validateUpgradeOperations)。WM 從
  * beta.113 一路卡到 beta.116 就是這個結構性原因,不是 WM 特有。
  *
  * 那條錯誤訊息指向「reviewed control-plane update」,但那條 lane 要求 profile 在

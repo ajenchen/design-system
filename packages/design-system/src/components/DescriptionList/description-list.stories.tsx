@@ -17,11 +17,13 @@ const meta: Meta<typeof DescriptionList> = {
 export default meta
 type Story = StoryObj<typeof DescriptionList>
 
+// 五則都直接放 DescriptionList(外層只給寬度),不再包手刻的卡片外框 —— DS 沒有 Card 元件,
+// description-list.spec.md 的使用範例也只有一層 <div>。
 /* ── User profile(Email / Role / Team)─────────────────────────────── */
 export const UserProfile: Story = {
   name: '使用者個資',
   render: () => (
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md">
+    <div className="max-w-md">
       <DescriptionList cols={1}>
         <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
         <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
@@ -37,7 +39,7 @@ export const UserProfile: Story = {
 export const ProductSpec: Story = {
   name: '產品規格',
   render: () => (
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-2xl">
+    <div className="max-w-2xl">
       <DescriptionList cols={2}>
         <DescriptionItem label="螢幕尺寸">6.7 吋 Super Retina XDR</DescriptionItem>
         <DescriptionItem label="處理器">A18 Pro</DescriptionItem>
@@ -50,13 +52,13 @@ export const ProductSpec: Story = {
   ),
 }
 
-/* ── 訂單明細(Stripe checkout 風格)────────────────────────────────── */
+/* ── 訂單明細(結帳頁:品項、運費、稅、總計)────────────────────────────────── */
 export const OrderSummary: Story = {
   name: '訂單明細',
   render: () => (
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md">
-      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec;對齊 Horizontal story)*/}
-      <div className="text-body font-medium mb-[var(--layout-space-tight)]">訂單摘要</div>
+    <div className="max-w-md">
+      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec;對齊 Horizontal story)(來源:https://www.nngroup.com/articles/gestalt-proximity/) */}
+      <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">訂單摘要</h3>
       <DescriptionList cols={1}>
         <DescriptionItem label="訂單編號">#20260418-A241</DescriptionItem>
         <DescriptionItem label="商品">Pro 年費方案 × 5 人</DescriptionItem>
@@ -76,7 +78,7 @@ export const OrderSummary: Story = {
 export const DetailPanel: Story = {
   name: '詳情面板',
   render: () => (
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-3xl">
+    <div className="max-w-3xl">
       <DescriptionList cols={3}>
         <DescriptionItem label="訂單狀態">已出貨</DescriptionItem>
         <DescriptionItem label="建立時間">2026-04-18 10:35</DescriptionItem>
@@ -93,9 +95,9 @@ export const DetailPanel: Story = {
 export const Horizontal: Story = {
   name: '水平佈局',
   render: () => (
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md">
-      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec) */}
-      <div className="text-body font-medium mb-[var(--layout-space-tight)]">檔案資訊</div>
+    <div className="max-w-md">
+      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec)(來源:https://www.nngroup.com/articles/gestalt-proximity/) */}
+      <h3 className="text-h6 font-medium mb-[var(--layout-space-tight)]">檔案資訊</h3>
       <DescriptionList orientation="horizontal">
         <DescriptionItem label="檔名">Q1-roadmap.pdf</DescriptionItem>
         <DescriptionItem label="類型">application/pdf</DescriptionItem>

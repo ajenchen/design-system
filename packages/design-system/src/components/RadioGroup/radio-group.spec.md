@@ -28,7 +28,7 @@ RadioGroup 是**互斥單選且全選項可見**的表單控件——從 2-5 個
 
 **Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
 
-**實作基礎**：基於 Radix RadioGroup（shadcn 包裝）+ 橋接 DS token。
+**實作基礎**：基於 Radix RadioGroup（shadcn 包裝,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/radio-group.tsx#L6）+ 橋接 DS token。
 
 共用規則見 `../Checkbox/checkbox.spec.md`（Checkbox & RadioGroup 設計原則，含 SelectionItem 佈局與 clamp 政策）。
 
@@ -90,7 +90,7 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 
 **view**:不渲染 radio 圈,只渲染選中項的 label 純文字(無值時顯示 Field 的空值符號);字級走家族「(e) View typography canonical」—— 同 size 的 `text-body`(sm/md)/ `text-body-lg`(lg),與 edit 選項 label 同字級,**禁**裸 span 吃瀏覽器預設 16px(2026-09-15 user 抓 view 字比選項大;閘 `scripts/field-view-typography-invariant.mjs` 量 view 與 edit 字級相等)。
 
-**Field 內 readonly(2026-06-12 user 拍板)**:不渲染 radio 群組,改渲染 `fieldWrapperStyles` readonly 灰框 + 選中項 label(= Select readonly 同款,同為單選資料的鎖定呈現);standalone readonly 維持原樣鎖互動(ReadonlyContext + item onClick preventDefault guard — 2026-07-05 D4 補:`<label htmlFor>` synthetic click 非 pointer event,`pointer-events-none` 攔不到,需 guard 才真鎖)。
+**Field 內 readonly(2026-06-12 user 拍板〔UD-J05〕)**:不渲染 radio 群組,改渲染 `fieldWrapperStyles` readonly 灰框 + 選中項 label(= Select readonly 同款,同為單選資料的鎖定呈現);standalone readonly 維持原樣鎖互動(ReadonlyContext + item onClick preventDefault guard — 2026-07-05 D4 補:`<label htmlFor>` synthetic click 非 pointer event,`pointer-events-none` 攔不到,需 guard 才真鎖)。
 
 ---
 
@@ -136,7 +136,7 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 
 **Focus**:Radix primitive 以 roving tabindex 管理群組內焦點(整組只佔一個 Tab 停留點,方向鍵在選項間移動);**非** focus trap——Tab 仍會離開群組、跳到下一個表單欄位。聚焦時顯示焦點框:全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px;radio-group.tsx 不寫任何焦點 class,也不寫 `outline-none`,per design-system focus-visible canonical)。
 
-**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。「整組只佔一個 Tab 停留點、停在已選 / 第一個可用的圓」由 `scripts/radio-group-tab-stop-invariant.mjs` 真按 Tab / Shift+Tab 量(2026-11-05 起;2026-06-05 409b91da 到 11-05 之間 `RadioGroupItem` 明寫的 `tabIndex={undefined}` 蓋掉 Radix roving,每個圓各一個停留點)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

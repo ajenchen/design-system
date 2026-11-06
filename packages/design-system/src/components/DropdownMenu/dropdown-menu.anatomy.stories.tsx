@@ -1,7 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
-import { Copy, Pencil, Trash2, Monitor, ChevronDown, ChevronRight, Check, type LucideIcon } from 'lucide-react'
+import { Copy, Pencil, Trash2, Download, Monitor, ChevronDown, ChevronRight, Check, type LucideIcon } from 'lucide-react'
+import { fn } from '@storybook/test'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuCheckboxItem,
@@ -9,6 +10,8 @@ import {
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { BpZone, PropRow, Swatch, TkVal, TokenAnnotation } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection, SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/DropdownMenu/設計規格',
@@ -75,19 +78,10 @@ const ITEM_TYPE_DESC: Record<ItemTypeKey, string> = {
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared UI Components
 
-   NOTE: Kept local (not imported from `_anatomy/anatomy-utils`) because the
-   Button-family inspector layout diverges visually from the 通用 helpers:
-   H3 `text-h6 font-semibold` (not `text-body font-bold mb-2`), Desc has no
-   bottom margin, Th/Td use `p-2 border-b border-divider` row style, and
-   Swatch defaults to `size="md"` for inline token chips.
+   區段標題 / 說明走共用 ExampleSection(標題 ↔ 說明 2px、標題區 → 內容 loose 跟密度;2026-10-28 A4,
+   之前本檔自帶 H3 / Desc,標題 ↔ 說明 4px、標題區 → 內容寫死 12 / 16)。Th / Td 是本檔表格的列樣式,留在本檔。
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
@@ -95,47 +89,8 @@ const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) =
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
 
-/** Token name (primary) + resolved value (secondary) */
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: value === 'white' ? '#fff' : `var(${value})` }} />
-}
-
-const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
-  <div className="flex flex-col gap-0.5 mt-2">
-    {([['bg', 'bg'], ['text', 'text'], ['border', 'bdr']] as const).map(([key, label]) => (
-      <span key={key} className="inline-flex items-center gap-1 text-[10px]">
-        <Swatch value={colors[key]} size="sm" />
-        <span className="text-fg-muted w-5 shrink-0">{label}</span>
-        <span className="font-mono text-fg-secondary">{colors[key]}</span>
-      </span>
-    ))}
-  </div>
-)
-
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -147,11 +102,7 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* Anatomy — Trigger -> Content -> Items */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>Trigger 觸發浮層 Content，Content 內含各類 Item。浮層由 SizeContext 統一控制所有子項目尺寸。所有 Item 類型內部使用 MenuItem 進行視覺渲染，Radix primitive 只處理行為。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）" description="Trigger 觸發浮層 Content，Content 內含各類 Item。浮層由 SizeContext 統一控制所有子項目尺寸。所有 Item 類型內部使用 MenuItem 進行視覺渲染，Radix primitive 只處理行為。">
         <div className="flex gap-8 items-start">
           {/* Trigger -> Content flow */}
           <div className="flex flex-col gap-3">
@@ -201,11 +152,10 @@ export const Overview = {
             </div>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Item types */}
-      <div className="flex flex-col gap-3">
-        <H3>Item 類型一覽</H3>
+      <ExampleSection title="Item 類型一覽">
         <div className="flex flex-col gap-2">
           {(Object.keys(ITEM_TYPE_DESC) as ItemTypeKey[]).map((t) => (
             <div key={t} className="flex items-center gap-4">
@@ -214,11 +164,10 @@ export const Overview = {
             </div>
           ))}
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>元件</Th><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -249,7 +198,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -266,14 +215,6 @@ const Z = {
   suffix: { bg: 'rgba(230,178,199,0.6)', border: 'rgba(190,103,138,0.9)', text: '#a83560' },
   dim:    { text: '#d04040' },
 }
-
-const BpZone = ({ w, color, label, sub }: { w: number; color: typeof Z.pad; label: string; sub?: string }) => (
-  <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
-    style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
-    <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
-  </div>
-)
 
 type ItemMode = 'item' | 'checkbox' | 'subTrigger'
 
@@ -483,7 +424,9 @@ const ItemPreview = ({ size, danger, state, icon: Icon, label, shortcut }: {
       style={{ paddingTop: `calc((var(--field-height-${size}) - 1lh) / 2)`, paddingBottom: `calc((var(--field-height-${size}) - 1lh) / 2)` }}>
       <div className="h-[1lh] flex items-center shrink-0"><Icon size={iconPx} /></div>
       <span>{label}</span>
-      {shortcut && <span className="h-[1lh] flex items-center ml-auto text-caption text-fg-muted shrink-0 gap-2">{shortcut}</span>}
+      {/* 後綴槽的 1lh 要用**列的字級**算(同 menu-item.tsx 的後綴槽:槽在列字級裡、caption 字放在槽內)。2026-10-27 前 text-caption 寫在槽上,
+          1lh 變成 caption 的行高,⌘C / ⌘E 比標籤第一行中線高 1.3px(側欄群組動作「+」偏上的同族掃描,scripts/row-suffix-first-line-invariant.mjs) */}
+      {shortcut && <span className="h-[1lh] flex items-center ml-auto shrink-0 gap-2"><span className="text-caption text-fg-muted">{shortcut}</span></span>}
     </div>
   )
 }
@@ -537,13 +480,9 @@ const CheckboxPreview = ({ size, label, checked, state }: {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇 size 與 item 類型，即時查看所有 token。Item 的 py 由公式 (field-height − 一行文字高度) / 2 計算，density 切換時自動調整。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇 size 與 item 類型，即時查看所有 token。Item 的 py 由公式 (field-height − 一行文字高度) / 2 計算，density 切換時自動調整。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -555,11 +494,8 @@ export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Item State 色彩對照</H3>
-        <Desc>不同 item 類型在各狀態下的背景與文字色 token。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
-
+      <ExampleSection title="Item State 色彩對照" description="不同 item 類型在各狀態下的背景與文字色 token。色塊即時渲染，切 dark mode 自動更新。">
+      <div className="flex flex-col gap-8">
       {/* Item / Checkbox */}
       <div className="overflow-x-auto">
         <table className="border-collapse">
@@ -632,10 +568,11 @@ export const ColorMatrix = {
           </table>
         </div>
       </div>
+      </div>
+      </ExampleSection>
 
       {/* Icon color rules */}
-      <div className="flex flex-col gap-3">
-        <H3>Icon 色彩原則</H3>
+      <ExampleSection title="Icon 色彩原則">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Icon 角色</Th><Th>顏色 Token</Th><Th>範例</Th></tr></thead>
@@ -647,7 +584,7 @@ export const ColorMatrix = {
                 ['suffix value text', '--fg-muted', '"深色", "已啟用"'],
                 ['shortcut text', '--fg-muted', '⌘C, ⌘E — via shortcut prop'],
                 ['prefix icon / label (disabled)', '--fg-disabled', 'startIcon 與 label 同步切 disabled'],
-                ['suffix icon / shortcut (disabled)', '--fg-muted', '容器套 opacity-disabled 減淡,非 fg-disabled(menu-item.spec.md「狀態」)'],
+                ['suffix icon / shortcut (disabled)', '--fg-muted', '整列套 opacity-disabled 減淡,不換成 fg-disabled'],
               ].map(([role, token, ex], i) => (
                 <tr key={i}>
                   <Td>{role}</Td>
@@ -658,7 +595,7 @@ export const ColorMatrix = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -672,12 +609,8 @@ const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>Content 的 size prop 統一控制所有子項目。開發只需設 token，density 切換由系統自動處理。</Desc>
-      </div>
-
+    <ExampleSection title="Size Token 對照" description="Content 的 size prop 統一控制所有子項目。開發只需設 token，density 切換由系統自動處理。">
+      <div className="flex flex-col gap-8">
       {/* Token comparison table */}
       <div className="overflow-x-auto">
         <table className="border-collapse text-caption">
@@ -765,7 +698,8 @@ export const SizeMatrix = {
           ))}
         </div>
       </div>
-    </div>
+      </div>
+    </ExampleSection>
   ),
 }
 
@@ -790,9 +724,9 @@ const AnimationFrame = ({
     <div className="flex flex-col gap-1.5 items-start">
       <span className="text-[10px] text-fg-muted font-mono">{label}</span>
       <div className="w-[180px] h-[140px] relative bg-canvas rounded-md border border-divider">
-        <Button variant="tertiary" size="sm" className="absolute top-3 left-3 pointer-events-none">
-          開啟
-        </Button>
+        {/* 觸發鈕用元件總覽「觸發流程」同一種虛線標籤畫(這是示意圖,不是可以按的按鈕) */}
+        <span className="absolute top-3 left-3 rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+          style={{ borderColor: 'var(--info)', backgroundColor: 'var(--info-subtle)', color: 'var(--info)' }}>Trigger</span>
         <div
           className="absolute bg-surface-raised border border-border rounded-lg shadow-[var(--elevation-200)] text-caption"
           style={{
@@ -805,8 +739,9 @@ const AnimationFrame = ({
             transition: 'none',
           }}
         >
-          <div className="px-3 py-1.5 border-b border-divider text-fg-muted">複製</div>
-          <div className="px-3 py-1.5 border-b border-divider text-fg-muted">編輯</div>
+          {/* 跟真的選單一樣:項目之間不畫線、字是 foreground(dropdown-menu.spec.md「DropdownMenuGroup 的自動分隔」:線只在群組之間) */}
+          <div className="px-3 py-1.5 text-foreground">複製</div>
+          <div className="px-3 py-1.5 text-foreground">編輯</div>
           <div className="px-3 py-1.5 text-error">刪除</div>
         </div>
       </div>
@@ -816,28 +751,25 @@ const AnimationFrame = ({
 }
 
 const StateBehaviorInner = () => {
-  const [showMarketing, setShowMarketing] = useState(true)
-  const [showAnalytics, setShowAnalytics] = useState(false)
-  const [showBilling, setShowBilling] = useState(true)
+  const [showBudget, setShowBudget] = useState(true)
+  const [showSpent, setShowSpent] = useState(false)
+  const [showOwner, setShowOwner] = useState(true)
 
   return (
+    <ExampleSection
+      title="狀態行為"
+      description={<>DropdownMenu 層級特有的狀態:浮層開關動畫、子選單展開 / 收起、勾選項多選。單一項目的 default / hover / focused / selected / disabled 色彩見 <StoryLink kind="Design System/Components/DropdownMenu/設計規格" name="色彩對照表">色彩對照表</StoryLink>,由 MenuItem 擁有。</>}
+    >
     <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-1">
-        <H3>狀態行為</H3>
-        <Desc>
-          DropdownMenu 層級特有的狀態:overlay open/close 動畫、submenu 展開 / 收起、CheckboxItem 多選 toggle。
-          Item 級別的 default / hover / focused / selected / disabled 色彩對照見「3. 色彩對照表」,由 MenuItem primitive 擁有(主檔)。
-        </Desc>
-      </div>
 
       {/* Overlay open/close animation */}
       <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 1:浮層 open / close 動畫(Radix data-state 驅動)</span>
-        <Desc>
-          Trigger 點擊 → `data-state="open"` → `animate-in fade-in-0 zoom-in-95 slide-in-from-top-2`。
-          外部點擊 / Esc / 選 item → `data-state="closed"` → `animate-out fade-out-0 zoom-out-95`。
-          Origin 由 `--radix-dropdown-menu-content-transform-origin` 自動跟著 trigger side/align 旋轉。
-        </Desc>
+        <span className="text-caption font-medium text-fg-secondary">浮層開關動畫(Radix data-state 驅動)</span>
+        <SectionDescription>
+          點觸發鈕打開 → 不是 <code>closed</code> 的狀態套 <code>fade-in-0 zoom-in-95</code>,再依方向套 <code>slide-in-from-*-2</code>。
+          點外面 / Esc / 選了項目 → <code>data-state="closed"</code> → <code>fade-out-0 zoom-out-95</code>。
+          縮放原點 <code>--radix-dropdown-menu-content-transform-origin</code> 跟著觸發鈕的方向與對齊。
+        </SectionDescription>
         <div className="flex gap-6 pt-2">
           <AnimationFrame label='data-state="closed"' state="closed" desc="menu 未渲染(opacity 0 / scale 95% / -8px)" />
           <AnimationFrame label="opening" state="opening" desc="animate-in,~150ms duration" />
@@ -845,40 +777,41 @@ const StateBehaviorInner = () => {
           <AnimationFrame label="closing" state="closing" desc="animate-out,~150ms duration" />
         </div>
         <div className="text-caption text-fg-muted pt-2 border-t border-divider">
-          觸發 `close` 的路徑:(a) 點擊 item(auto close)/ (b) Esc / (c) 外部點擊(onPointerDownOutside)/ (d) blur / (e) Tab / Shift+Tab。
-          (a)(b) 焦點回到 Trigger,保留鍵盤流程;(c) 焦點留在點的地方;(e) 焦點從 Trigger 往下 / 往上走一站(2026-09-25,spec「鍵盤操作」)。
+          觸發 <code>close</code> 的路徑:(a) 點擊 item(auto close)/ (b) Esc / (c) 外部點擊(onPointerDownOutside)/ (d) blur / (e) Tab / Shift+Tab。
+          (a)(b) 焦點回到 Trigger,保留鍵盤流程;(c) 焦點留在點的地方;(e) 焦點從 Trigger 往下 / 往上走一站。
         </div>
       </div>
 
       {/* Submenu expansion */}
       <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 2:Submenu 展開(hover/focus 延遲 + sideways slide)</span>
-        <Desc>
-          SubTrigger hover 約 100ms 自動展開 submenu 向右側滑入。Submenu 是獨立 floating layer——與 parent 共存,parent 不 close。鍵盤用 ArrowRight 展開 / ArrowLeft 或 Esc 收起這一層(2026-09-25 起 Esc 只關一層);本 DS 為 LTR-only。
-        </Desc>
+        <span className="text-caption font-medium text-fg-secondary">子選單展開(hover/focus 延遲 + sideways slide)</span>
+        <SectionDescription>
+          SubTrigger hover 約 100ms 自動展開 submenu 向右側滑入。Submenu 是獨立 floating layer——與 parent 共存,parent 不 close。鍵盤用 ArrowRight 展開 / ArrowLeft 或 Esc 收起這一層(Esc 一次只關一層);本 DS 為 LTR-only。
+        </SectionDescription>
         <div className="flex gap-6 items-start">
           <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="tertiary" size="sm" endIcon={ChevronDown}>分享檔案</Button>
+                <Button variant="tertiary" size="sm" endIcon={ChevronDown}>檔案操作</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem startIcon={Copy}>複製連結</DropdownMenuItem>
+                {/* 選了就做:範例在 Storybook「Actions」面板記一筆 */}
+                <DropdownMenuItem startIcon={Copy} onSelect={fn().mockName('複製連結')}>複製連結</DropdownMenuItem>
                 <DropdownMenuSub>
-                  <DropdownMenuSubTrigger startIcon={Monitor}>匯出為</DropdownMenuSubTrigger>
+                  <DropdownMenuSubTrigger startIcon={Download}>匯出為</DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem>PDF</DropdownMenuItem>
-                    <DropdownMenuItem>Excel (.xlsx)</DropdownMenuItem>
-                    <DropdownMenuItem>CSV</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={fn().mockName('匯出 PDF')}>PDF</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={fn().mockName('匯出 Excel')}>Excel (.xlsx)</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={fn().mockName('匯出 CSV')}>CSV</DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem startIcon={Trash2} className="text-error">刪除</DropdownMenuItem>
+                <DropdownMenuItem startIcon={Trash2} className="text-error" onSelect={fn().mockName('刪除檔案')}>刪除</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
-            <div>點「分享檔案」打開主選單,hover「匯出為」看 submenu 向右滑入。</div>
+            <div>點「檔案操作」打開主選單,hover「匯出為」看 submenu 向右滑入。</div>
             <div className="pt-1 border-t border-divider">
               ChevronRight suffix 是 SubTrigger 的視覺 affordance(消費 item-anatomy row 主檔,不自刻)。
             </div>
@@ -891,36 +824,36 @@ const StateBehaviorInner = () => {
 
       {/* CheckboxItem toggle */}
       <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">行為 3:CheckboxItem toggle(多選維持 open)</span>
-        <Desc>
+        <span className="text-caption font-medium text-fg-secondary">勾選項多選(選了選單不關)</span>
+        <SectionDescription>
           CheckboxItem 與一般 Item 的關鍵差異:點擊後 menu 保持開啟(保留當前 filter 狀態讓使用者繼續勾 / 取消勾),直到 Esc / 外部點擊才關閉。對比 {'<DropdownMenuItem>'} 點擊即 close。
-        </Desc>
+        </SectionDescription>
         <div className="flex gap-6 items-start">
           <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="tertiary" size="sm" endIcon={ChevronDown}>
-                  欄位({[showMarketing, showAnalytics, showBilling].filter(Boolean).length})
+                  欄位({[showBudget, showSpent, showOwner].filter(Boolean).length})
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuCheckboxItem
-                  checked={showMarketing}
-                  onCheckedChange={setShowMarketing}
+                  checked={showBudget}
+                  onCheckedChange={setShowBudget}
                 >
-                  Marketing spend
+                  預算
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
-                  checked={showAnalytics}
-                  onCheckedChange={setShowAnalytics}
+                  checked={showSpent}
+                  onCheckedChange={setShowSpent}
                 >
-                  Analytics
+                  實際支出
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
-                  checked={showBilling}
-                  onCheckedChange={setShowBilling}
+                  checked={showOwner}
+                  onCheckedChange={setShowOwner}
                 >
-                  Billing
+                  負責人
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -928,7 +861,7 @@ const StateBehaviorInner = () => {
           <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
             <div>打開後逐項勾選——menu 不會 close,使用者看得到即時的選擇組合。</div>
             <div className="pt-1 border-t border-divider">
-              世界級對照:Linear / Jira column toggle / Notion filter selector 全採此模式。對照 Select 單選下拉選一項即 close(那是 commit 語意)。
+              Linear、Jira 的欄位切換、Notion 的篩選選擇器也都這樣;Select 的單選下拉則是選一項就關(那是確定選值)。
             </div>
           </div>
         </div>
@@ -938,16 +871,17 @@ const StateBehaviorInner = () => {
       <div className="flex flex-col gap-2 pt-4 border-t border-divider">
         <span className="text-caption font-medium text-fg-secondary">行為規則</span>
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
-          <li>`DropdownMenuItem` 點擊即 close——這是「action 觸發即完成」語意。</li>
-          <li>`DropdownMenuCheckboxItem` 點擊不 close——每次勾選即時生效(onCheckedChange 即時 fire),menu 保持開啟只為讓使用者連續多選。</li>
-          <li>`DropdownMenuSub` 永遠右側滑入,parent menu 保持展開——提供 breadcrumb 式認知流,使用者知道自己在哪層。</li>
-          <li>Escape 一次只關焦點所在的那一層:子選單 → 焦點回上一層那一項(與 ArrowLeft 同);主選單 → 焦點回 trigger。每按一次少一層(2026-09-25 起;原本 Radix 預設一次全關,待辦總帳 B10)。</li>
-          <li>選單開著按 Tab / Shift+Tab:一次收起全部層,焦點從 trigger 往下 / 往上走一站(2026-09-25 起;原本 Radix 預設擋掉 Tab,待辦總帳 B11)。</li>
-          <li>Portal render 到 body,`z-50` 確保不被 parent overflow 截斷。</li>
+          <li><code>DropdownMenuItem</code> 點擊即 close——這是「action 觸發即完成」語意。</li>
+          <li><code>DropdownMenuCheckboxItem</code> 點擊不 close——每次勾選即時生效(onCheckedChange 即時 fire),menu 保持開啟只為讓使用者連續多選。</li>
+          <li><code>DropdownMenuSub</code> 永遠右側滑入,parent menu 保持展開——提供 breadcrumb 式認知流,使用者知道自己在哪層。</li>
+          <li>Escape 一次只關焦點所在的那一層:子選單 → 焦點回上一層那一項(與 ArrowLeft 同);主選單 → 焦點回 trigger。每按一次少一層(Radix 預設是一次全關,本元件改成一層一層關)。</li>
+          <li>選單開著按 Tab / Shift+Tab:一次收起全部層,焦點從 trigger 往下 / 往上走一站(Radix 預設會擋掉 Tab)。</li>
+          <li>Portal render 到 body,<code>z-50</code> 確保不被 parent overflow 截斷。</li>
           <li>焦點不鎖在選單裡(預設非 modal):open 時鍵盤焦點進入 menu;Esc / 選了項目 → 回 trigger,點外面 → 留在點的地方,Tab → 下一站。</li>
         </ul>
       </div>
     </div>
+    </ExampleSection>
   )
 }
 
@@ -962,9 +896,9 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"無障礙能力沿用 Radix 選單元件的內建支援,涵蓋語意角色、選單導覽與焦點管理(Tab 與子選單的 Esc 兩鍵由本元件改寫,見下),設計師與工程師不需額外設定。\n\n鍵盤操作:\n\n- Tab — 將焦點移到觸發按鈕\n- Enter / Space / 向下鍵 — 開啟選單\n- 向上鍵 / 向下鍵 — 在選項之間移動\n- Home / End — 跳到第一項 / 最後一項(PageUp / PageDown 同)\n- 輸入首字 — 跳到標籤符合的選項\n- Enter / Space — 選擇目前的選項\n- Esc — 只關目前所在的那一層:在子選單裡回到上一層打開它的那一項(同左方向鍵),在主選單裡回到觸發按鈕\n- Tab / Shift+Tab(選單開著時)— 一次收起全部層,焦點從觸發按鈕往下 / 往上走一站\n\n焦點管理:選單開啟時焦點會進入選單;按 Esc 或選了項目,焦點回到觸發按鈕;點外面,焦點留在點的地方;按 Tab,焦點到下一站。鍵盤導覽到的選項畫焦點框(滑鼠移過的選項才上底色),鍵盤使用者隨時看得到自己在哪一項。\n\n驗證:鍵盤可完整操作(不需滑鼠),文字對比達 WCAG AA;在 Storybook 無障礙檢查面板上應為零項嚴重問題。"}</p>
-      <p className="mt-4 text-fg-muted">完整 ARIA 細節參考 <a className="text-primary hover:text-primary-hover" href="https://www.radix-ui.com/primitives/docs/components/dropdown-menu#accessibility" target="_blank" rel="noreferrer">Radix Accessibility 文件</a>。</p>
+      <p className="mt-4 text-fg-muted">完整 ARIA 細節參考 <a className="text-primary underline hover:text-primary-hover" href="https://www.radix-ui.com/primitives/docs/components/dropdown-menu#accessibility" target="_blank" rel="noreferrer">Radix Accessibility 文件</a>。</p>
     </div>
   ),
 }

@@ -10,6 +10,7 @@ import { AlignLeft, AlignCenter, AlignRight, List, LayoutGrid, Calendar } from '
 import { SegmentedControl, SegmentedControlItem } from './segmented-control'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
 const meta: Meta<React.ComponentProps<typeof SegmentedControl> & { iconOnly?: boolean }> = {
   title: 'Design System/Components/SegmentedControl/設計規格',
@@ -32,12 +33,12 @@ export const Overview: Story = {
             <SegmentedControlItem value="month">月</SegmentedControlItem>
           </SegmentedControl>
         </div>
-        <p className="text-footnote text-fg-muted mt-3">Items 之間 `-ml-px`(除第一個)讓相鄰 border 重疊成單一視覺線;第一個 `rounded-l-md`,最後一個 `rounded-r-md`,中間 `rounded-none`</p>
+        <p className="text-footnote text-fg-muted mt-3">Items 之間 <code>-ml-px</code>(除第一個)讓相鄰 border 重疊成單一視覺線;第一個 <code>rounded-l-md</code>,最後一個 <code>rounded-r-md</code>,中間 <code>rounded-none</code></p>
       </div>
 
       <div>
         <H3>Item 內部結構</H3>
-        <Desc>依序排列可選 startIcon、具 px-1 的 label span、以及可含 badge 的 gap-1 suffix；跟 Button size sm/md/lg 的 `gap-1` 和 `px-1` label 完全對齊,視覺肌肉記憶直接複用。</Desc>
+        <Desc>依序排列可選 startIcon、具 px-1 的 label span、以及可含 badge 的 gap-1 suffix；跟 Button size sm/md/lg 的 <code>gap-1</code> 和 <code>px-1</code> label 完全對齊,視覺肌肉記憶直接複用。</Desc>
         <div className="flex flex-col gap-3 border border-border rounded-lg p-4 max-w-md">
           <SegmentedControl defaultValue="all">
             <SegmentedControlItem value="all" badge={<Badge count={12} variant="low" />}>全部</SegmentedControlItem>
@@ -85,7 +86,7 @@ export const Inspector: Story = {
   },
   args: {
     size: 'md',
-    value: 'week',
+    value: 'board',
     fullWidth: false,
     iconOnly: false,
     disabled: false,
@@ -94,7 +95,7 @@ export const Inspector: Story = {
     size: { control: 'radio', options: ['xs', 'sm', 'md', 'lg'] },
     value: {
       control: 'radio',
-      options: ['day', 'week', 'month'],
+      options: ['list', 'board', 'calendar'],
       description: '當前選中的 item value',
     },
     fullWidth: { control: 'boolean', description: 'false=hug content / true=撐滿父容器等分' },
@@ -106,15 +107,15 @@ export const Inspector: Story = {
       <SegmentedControl {...args}>
         {args.iconOnly ? (
           <>
-            <SegmentedControlItem value="day" startIcon={AlignLeft} aria-label="日" />
-            <SegmentedControlItem value="week" startIcon={AlignCenter} aria-label="週" />
-            <SegmentedControlItem value="month" startIcon={AlignRight} aria-label="月" />
+            <SegmentedControlItem value="list" startIcon={List} aria-label="清單" />
+            <SegmentedControlItem value="board" startIcon={LayoutGrid} aria-label="看板" />
+            <SegmentedControlItem value="calendar" startIcon={Calendar} aria-label="行事曆" />
           </>
         ) : (
           <>
-            <SegmentedControlItem value="day">日</SegmentedControlItem>
-            <SegmentedControlItem value="week">週</SegmentedControlItem>
-            <SegmentedControlItem value="month">月</SegmentedControlItem>
+            <SegmentedControlItem value="list">清單</SegmentedControlItem>
+            <SegmentedControlItem value="board">看板</SegmentedControlItem>
+            <SegmentedControlItem value="calendar">行事曆</SegmentedControlItem>
           </>
         )}
       </SegmentedControl>
@@ -203,7 +204,7 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>Item 連體手法</H3>
-        <Desc>Items 之間 `-ml-px`(除第一個)讓相鄰 border 重疊、視覺上只有一條線。Selected item 的 `z-10` 讓它的 border 浮在相鄰 item 之上,避免被重疊 border 切掉。第一個 item `rounded-l-md`,最後一個 `rounded-r-md`,中間 `rounded-none`。</Desc>
+        <Desc>Items 之間 <code>-ml-px</code>(除第一個)讓相鄰 border 重疊、視覺上只有一條線。Selected item 的 <code>z-10</code> 讓它的 border 浮在相鄰 item 之上,避免被重疊 border 切掉。第一個 item <code>rounded-l-md</code>,最後一個 <code>rounded-r-md</code>,中間 <code>rounded-none</code>。</Desc>
       </div>
     </div>
   ),
@@ -217,7 +218,7 @@ export const FullWidthMatrix: Story = {
         <H3>fullWidth = false(預設,hug content)</H3>
         <Desc>寬度由 item 總寬決定,items 各自照內容寬度排列。Toolbar 場景 / 跟 Button 並排時使用。</Desc>
         <div className="flex items-center gap-4 border border-dashed border-divider rounded-md p-4">
-          <SegmentedControl defaultValue="list">
+          <SegmentedControl iconOnly defaultValue="list">
             <SegmentedControlItem value="list" startIcon={List} aria-label="清單" />
             <SegmentedControlItem value="grid" startIcon={LayoutGrid} aria-label="格狀" />
             <SegmentedControlItem value="calendar" startIcon={Calendar} aria-label="行事曆" />
@@ -228,7 +229,7 @@ export const FullWidthMatrix: Story = {
 
       <div>
         <H3>fullWidth = true(撐滿父容器 + 等分)</H3>
-        <Desc>所有 item 等分父容器寬度。小容器 / 狹窄上下文(mobile、Dialog、Sheet、Field row)使用。</Desc>
+        <Desc>所有 item 等分父容器寬度。小容器 / 狹窄上下文(Dialog、Sheet、Field row)使用。</Desc>
         <div className="flex flex-col gap-3 max-w-md">
           <div className="border border-dashed border-divider rounded-md p-4">
             <SegmentedControl defaultValue="day" fullWidth>
@@ -257,7 +258,7 @@ export const IconOnlyMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>iconOnly 是 group-level,不是 item-level</H3>
-        <Desc>必須整組一致:要嘛全部 icon-only,要嘛全部帶 label。混搭會讓使用者無法預測哪個 item 有 tooltip、哪個沒有,也破壞 segmented 的對稱感。iconOnly 時每個 item 變正方形(`aspect-square p-0`),必須設 aria-label(dev-mode runtime warn,非 TS 強制),自動渲染 tooltip。</Desc>
+        <Desc>必須整組一致:要嘛全部 icon-only,要嘛全部帶 label。混搭會讓使用者無法預測哪個 item 有 tooltip、哪個沒有,也破壞 segmented 的對稱感。iconOnly 時每個 item 變正方形(<code>aspect-square p-0</code>),必須設 aria-label(dev-mode runtime warn,非 TS 強制),自動渲染 tooltip。</Desc>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
             <span className="text-caption text-fg-muted w-24">對齊選擇</span>
@@ -276,7 +277,7 @@ export const IconOnlyMatrix: Story = {
             </SegmentedControl>
           </div>
         </div>
-        <p className="text-footnote text-error font-medium mt-3">❌ 禁止:iconOnly 和帶 label 的 item 混搭——必須全組一致</p>
+        <div className="mt-3"><ExampleCaption warn>❌ 禁止:iconOnly 和帶 label 的 item 混搭——必須全組一致</ExampleCaption></div>
       </div>
     </div>
   ),
@@ -288,8 +289,19 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"  ARIA / Pattern  :繼承 Radix toggle-group primitive 的無障礙預設——整組 role=\"group\",每個 item role=\"radio\"(type=\"single\" 互斥選一),鍵盤導覽由 primitive 處理。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/toggle-group#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — 進入整組(只有一個 tab 停留點,落在選中項;沒選就落在上次 focus 過的 item,初次進入才是第一項)\n- ←/→ — 在 item 之間移動 roving focus(只移焦點,不切換選取)。WAI-ARIA APG 對水平 segmented/radio group 的主要導覽鍵\n- ↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix toggle-group 未鎖 orientation(沿用 default 雙軸 roving),APG 接受 group 同時支援兩軸方向鍵\n- Enter / Space — 選取目前 focus 的 item\n\n  Focus  :採 roving tabindex——整組共用一個 tab 停留點,方向鍵在 item 間移動焦點(選取仍需 Enter/Space/click);不是 Dialog 那種把焦點關在裡面的 focus trap。Focus ring 對齊 Button:全域 :focus-visible 外描邊(outline: 2px solid var(--ring),往外 2px;元件不寫任何焦點框 class,只加 focus-visible:z-20 讓往外長的框壓在相鄰 item 之上)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p><b>ARIA / Pattern</b>:繼承 Radix toggle-group primitive 的無障礙預設——整組 role="group",每個 item role="radio"(type="single" 互斥選一),鍵盤導覽由 primitive 處理。詳 <a href="https://www.radix-ui.com/primitives/docs/components/toggle-group#accessibility" target="_blank" rel="noopener noreferrer">Radix Accessibility docs</a>。</p>
+        <p><b>Keyboard 行為</b>:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tab — 進入整組(只有一個 tab 停留點,落在選中項;沒選就落在上次 focus 過的 item,初次進入才是第一項)</li>
+          <li>←/→ — 在 item 之間移動 roving focus(只移焦點,不切換選取)。WAI-ARIA APG 對水平 segmented/radio group 的主要導覽鍵</li>
+          <li>↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix toggle-group 未鎖 orientation(沿用 default 雙軸 roving),APG toolbar pattern 允許上下鍵重複左右鍵的作用</li> {/* 來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L33-L34 */}
+          <li>Enter / Space — 選取目前 focus 的 item</li>
+        </ul>
+        <p><b>Focus</b>:採 roving tabindex——整組共用一個 tab 停留點,方向鍵在 item 間移動焦點(選取仍需 Enter/Space/click);不是 Dialog 那種把焦點關在裡面的 focus trap。Focus ring 對齊 Button:全域 :focus-visible 外描邊(outline: 2px solid var(--ring),往外 2px;元件不寫任何焦點框 class,只加 focus-visible:z-20 讓往外長的框壓在相鄰 item 之上)。</p>
+        <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。</p>
+      </div>
     </div>
   ),
 }

@@ -7,15 +7,15 @@
 // → 全 lg 文字字級崩 → I6 FAIL,gate exit 1。
 //
 // 兩個 runtime-gate 專屬處理(vs 純 source-reading gate 的 meta-test):
-//   1) 前置:此 gate 需 built storybook-static。canonical gate-meta runner 的 snapshot 刻意不複製
-//      ignored build output，所以此 meta-test 只在 disposable snapshot 內自行 build；不會回寫 caller。
+//   1) 前置:此 gate 需 built storybook-static。gate-meta lane 裡由宣告 storybook: "lane-build" 的 lane 先建好
+//      (scripts/run-gate-meta-tests.mjs);這支自己不再建(2026-10-14 起,SM2)。
 //   2) 注入目標 CSS 檔名帶 build hash(preview-<hash>.css)→ 動態掃 assets/*.css 找含該 token 的檔,不寫死。
 //   3) **注入只寫在建置的私有複本上**(2026-09-25):閘有 `--build=<dir>` 之後,不再原地改工作樹的 storybook-static。
 //      原本是改完 → 跑 → 寫回:注入期間任何人(別的閘、別的 agent)對 storybook-static 建快照,拿到的會是**重簽過清單的
 //      注入版**,完整性核對擋不下來(清單是對的),量到 11px 字級卻以為是產品(M37:把「路徑」當成「建置身分」)。
 //      中途被中止還會把注入版留在工作樹。複本在 os.tmpdir(),結束一律刪;工作樹的建置全程唯讀。
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -32,37 +32,14 @@ const runGate = (args = []) => {
   return { status: result.status ?? 1, text: `${result.stdout ?? ''}${result.stderr ?? ''}` }
 }
 
-// 前置:canonical runner 不會把 ignored storybook-static 帶入 snapshot。只允許在已標記的
-// disposable snapshot 自行建立，避免單獨執行 meta-test 時意外寫入 caller 工作區。
+// 前置:需要已 build 的 storybook-static。gate-meta lane 裡**唯一**的建置者是 lane 本身
+// (pairedMeta.lanes 裡 storybook: "lane-build" 的 lane 先 build 一次再跑成員,scripts/run-gate-meta-tests.mjs)。
+// 2026-10-14 以前這裡會在拋棄式快照裡自己 build —— 於是排在它後面、本來「缺建置 → 略過」的瀏覽器 meta-test
+// 全部變成真跑,夜間 45 分鐘上限連 7 晚被撐爆(待辦總帳 SM2)。缺建置就照實紅,不再順手建。
 const STATIC = join(ROOT, 'storybook-static')
 if (!existsSync(STATIC)) {
-  const disposableRoot = process.env.GOVERNANCE_DISPOSABLE_SNAPSHOT_ROOT
-  if (!disposableRoot || realpathSync(disposableRoot) !== realpathSync(ROOT)) {
-    console.error('✗ storybook-static 缺 — 先 `npm run build-storybook`(data-table-invariants 需 built artifact 才能跑)')
-    process.exit(1)
-  }
-  // A clean snapshot has no ignored workspace dist either.  Build the library
-  // surface first so storybook-config can resolve @qijenchen/design-system.
-  for (const [label, args] of [
-    ['library prerequisite', ['run', '--silent', 'build:lib']],
-    ['Storybook', ['run', '--silent', 'build-storybook']],
-  ]) {
-    const build = spawnSync('npm', args, {
-      cwd: ROOT,
-      env: process.env,
-      encoding: 'utf8',
-      maxBuffer: 32 * 1024 * 1024,
-    })
-    if (build.status !== 0) {
-      const detail = `${build.stderr || build.stdout || build.error?.message || build.signal || 'unknown failure'}`.trim()
-      console.error(`✗ disposable snapshot ${label} build 失敗:${detail.slice(-2000)}`)
-      process.exit(1)
-    }
-  }
-  if (!existsSync(STATIC)) {
-    console.error('✗ disposable snapshot Storybook build exit 0 但未產生 storybook-static')
-    process.exit(1)
-  }
+  console.error('✗ storybook-static 缺 — 先 `npm run build-storybook`(data-table-invariants 需 built artifact 才能跑;gate-meta lane 由宣告 storybook: "lane-build" 的 lane 先建好)')
+  process.exit(1)
 }
 
 // 找注入目標:含 `--font-body-lg-size:` 的 built CSS(檔名帶 build hash → 動態掃,禁寫死)

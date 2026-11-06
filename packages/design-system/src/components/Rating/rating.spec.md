@@ -25,7 +25,7 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ## 何時用
 
-- **送出評分**（interactive）：Yelp / Google Reviews / Amazon 購物完後「幫這次服務評分」的送出前狀態，使用者點一顆整星
+- **送出評分**（interactive）：餐廳評論、地圖店家評論、電商購物完後「幫這次服務評分」的送出前狀態，使用者點一顆整星
 - **展示評分**（readOnly）：商品列表的 `★ 4.7 (12,843)`、評論列表每則評論的作者給分 `★ 5`、Airbnb 房源總分
 - **後台商品管理**：店家自己給商品的推薦星等（interactive）
 
@@ -70,13 +70,13 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 |------|------------|---------|-----------|
 | `sm` | 20px | Field sm、sm 列(緊湊清單、表格 sm) | field sm |
 | `md` | 24px | **預設**。一般表單、md 列、獨立擺放 | field md |
-| `lg` | 24px | Field lg、送出評分的主 CTA 區塊 | field lg |
+| `lg` | 24px | Field lg、lg 列 | field lg |
 
 ### 唯讀精簡版（一顆星 + 數值 + 評論數）
 
 **星 ↔ 數值的縫三個尺寸都是 `gap-1` 4px —— Rating 內只有一種縫**:可以點的星與星之間是 4px(下方「Gap between stars」),唯讀精簡版的星與數值也是 4px;數值與括號內評論數之間是一個文字空格(3.4–4.2px),三者同一個節奏。2026-09-27 user 拍板:先問「唯獨星星與其後方的文字間距是怎麼來的有仔細研究過？我本來以為可能都是一個文字空格之類的間距」,重查後再問「我覺得星號與文字gap應該跟這個一樣都是4px吧？」,對「全部 4px」的建議回「照你建議」。之前的 sm / md / lg 8px 是直接套 Button(動作鈕)的 icon + label 表,理由不對(`rating.tsx` readOnly 分支註解同此)。
 
-**世界級對照(2026-09-27 讀原始碼 + 實機量)**:沒有一家把星↔星與星↔數字都設 4px,但 4px 這個值有同款 —— 唯一有「一顆星 + 數值」精簡版的設計系統 Fluent 2 `RatingDisplay compact`:16px 星 + 12px 字 4px(= 本 DS 全部尺寸的值)、20px 星 + 14px 字 6px、28px 星 + 16px 字 8px,星與星之間 0px([useRatingDisplayStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingDisplay/useRatingDisplayStyles.styles.ts) `marginLeft: spacingHorizontalXS / SNudge / S`,[spacings.ts](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/global/spacings.ts) 4 / 6 / 8px);Ant Design v4 是兩者同值的先例(星與星、星旁文字都 8px,[index.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/rate/style/index.less) `&-text { margin: 0 8px }`);「16px 圖示 + 數字」的資料列則寬一檔:GitHub 儲存庫頁「★ 20.3k」= 16px octicon + `mr-2` 8px + 14px 字、12px 字的 commit 數 4px(2026-09-27 headless 實量,腳本與截圖在 session scratch `im/W10`,未入 repo;Primer `$spacer-1` 4px / `$spacer-2` 8px,[layout.scss](https://github.com/primer/css/blob/main/src/support/variables/layout.scss))—— 那是圖示 + 計數的資料列,不是評分,本 DS 不跟。Google Play「4.3★」與 App Store「4.8★」是另一種構造:星比字小(12px 星配 14px 字、10px 星配 22px 字)、貼在數字**後面** 0–3px,像角標(2026-09-27 實量),本 DS 不採 —— 星維持 icon tier 16 / 20px。「一個空格」在本 DS 字級下是 3.4 / 3.8 / 4.2px,4px 約等於一個空格。
+**世界級對照(2026-09-27 讀原始碼 + 實機量)**:沒有一家把星↔星與星↔數字都設 4px,但 4px 這個值有同款 —— 唯一有「一顆星 + 數值」精簡版的設計系統 Fluent 2 `RatingDisplay compact`:16px 星 + 12px 字 4px(= 本 DS 全部尺寸的值)、20px 星 + 14px 字 6px、28px 星 + 16px 字 8px,星與星之間 0px([useRatingDisplayStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingDisplay/useRatingDisplayStyles.styles.ts) `marginLeft: spacingHorizontalXS / SNudge / S`,[spacings.ts](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/global/spacings.ts) 4 / 6 / 8px);Ant Design v4 是兩者同值的先例(星與星、星旁文字都 8px,[index.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/rate/style/index.less) `&-text { margin: 0 8px }`);「16px 圖示 + 數字」的資料列則寬一檔:GitHub 儲存庫頁「★ 20.3k」= 16px octicon + `mr-2` 8px + 14px 字、12px 字的 commit 數 4px(2026-09-27 headless 實量,腳本與截圖在 session scratch `im/W10`,未入 repo;Primer `$spacer-1` 4px / `$spacer-2` 8px,[layout.scss](https://github.com/primer/css/blob/main/src/support/variables/layout.scss))—— 那是圖示 + 計數的資料列,不是評分,本 DS 不跟。兩大應用商店的「4.3★」式評分角標是另一種構造:星比字小(12px 星配 14px 字、10px 星配 22px 字)、貼在數字**後面** 0–3px,像角標(2026-09-27 實量),本 DS 不採 —— 星維持 icon tier 16 / 20px。「一個空格」在本 DS 字級下是 3.4 / 3.8 / 4.2px,4px 約等於一個空格。
 
 | Size | 星 | 數值與評論數字級 | 元件高 | 星 ↔ 數值 | 使用時機 |
 |------|----|----------------|--------|----------|---------|
@@ -89,7 +89,7 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 ### 為什麼不完全對齊 `--field-height-*`
 
 - **現況**:可以點的評分根高 = 星 sm 20 / md 24 / lg 24;唯讀精簡版 21 / 21 / 24(星與行高較大者);都不等於 `--field-height-sm/md/lg` 28 / 32 / 36。
-- **Rationale**:評分是「嵌在一列中的小控件」,跟裸 Switch(track 20 / 24)、裸 Checkbox(16 / 20)同一個模型 —— 元件本身只有內容高,列高由宿主供給(Field 控件槽 `min-h-field-* + items-center`、表格格子、列)。吃固定容器會把 Field 外的列撐高(2026-09-27 實量:商品卡裡 24 容器實佔 26px、caption 列 16 → 24),而容器對命中零幫助(命中盒 = 星)。Slider 不同:它的根就是拖曳的命中面,高度即命中區,故仍吃 `h-field-*`(`../Slider/slider.spec.md`「size 只控 root 容器外高」段)。
+- **Rationale**:評分是「嵌在一列中的小控件」,跟裸 Switch(track 20 / 24)、裸 Checkbox(16 / 20)同一個模型 —— 元件本身只有內容高,列高由宿主供給(Field 控件槽 `min-h-field-* + items-center`、表格格子、列)。吃固定容器會把 Field 外的列撐高(2026-09-27 實量:商品卡裡 24 容器實佔 26px、caption 列 16 → 24),而容器對命中零幫助(命中盒 = 星)。Slider 不同:它的根就是拖曳的命中面,高度即命中區,故仍吃 `h-field-*`(`../Slider/slider.spec.md`「一種視覺,多種容器尺寸」:size「只控 root 容器外高」)。
 - **世界級對照**(2026-09-27 讀原始碼):多數 hug 星、表單對齊交給表單列 —— MUI Rating 根 `inline-flex` 無高度、字級 24 / 18 / 30([Rating.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Rating/Rating.js));Ant Design Rate 根 `display: inline-block; fontSize: starSize; lineHeight: 1`,對齊由 Form.Item 的 `minHeight: controlHeight` + `alignItems: center` 負責([rate/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/rate/style/index.ts)、[form/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/form/style/index.ts));Fluent 2 Rating 根只有 `display: 'flex', flexWrap: 'wrap'`([useRatingStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/Rating/useRatingStyles.styles.ts)),星 12 / 16 / 20 / 28([useRatingItemStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingItem/useRatingItemStyles.styles.ts));Mantine Rating 根 `display: flex; width: max-content`([Rating.module.css](https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Rating/Rating.module.css));Chakra v3 根 `display: "inline-flex"`([rating-group.ts](https://github.com/chakra-ui/chakra-ui/blob/main/packages/react/src/theme/recipes/rating-group.ts));PrimeReact `.p-rating { display: flex; align-items: center; }`([RatingBase.js](https://github.com/primefaces/primereact/blob/master/components/lib/rating/RatingBase.js))—— 都沒有高度。少數把容器綁到控件高:Element Plus `el-rate` 根 `height: 32px`(large 40 / small 24,[rate.scss](https://github.com/element-plus/element-plus/blob/dev/packages/theme-chalk/src/rate.scss))、Arco `.arco-rate-inner { min-height: @rate-min-height }` 且 `@rate-min-height: @size-default`(它的預設控件高;[index.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/index.less)、[token.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/token.less))—— 本 DS 不跟,列高由 Field 槽供給已是 Switch / Checkbox 的既有模型。
 
 **xs 退役(2026-09-27)**:可以點的 xs(2026-04-21 `6d9d48f2` AI 加、無 user 原話、無出處;容器 24 / 星 20)與 sm 只差容器,容器拿掉後兩者相同;唯讀 xs(16 星 + 12px 字)是 2026-09-26 `1e0d4545` 做精簡版時 AI 自訂的配對,從沒給 user 看過,產品 0 處、只有 3 個 story 用。user 原話:「這個xs是你這一兩天生的吧？而且這個設計也沒經過我同意吧？如果上述兩個問題都為真，那就應該直接整個移掉吧？然後應該是整個rating xs都移掉吧？」—— 兩題皆真,整個移掉。閘 `scripts/rating-field-size-invariant.mjs`(尺寸解析序、無容器 class、執行期 'xs' 映 sm 並 dev-warn;meta test `scripts/test-rating-field-size-invariant.mjs`)。
@@ -110,25 +110,25 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ### 放入 Field 的可組合性
 
-Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制):
+Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制)。驗證走 `useFormValidation`(`../Field/form-validation.spec.md`:blur + submit,不在初始 / 操作中即時報錯 —— error 由 `form.errors` 驅動,不是 `rating === 0` 立即判,那會讓初始未觸碰的欄位直接紅框);送出評分是新建,`intent: 'create'` → 送出鈕不看填了沒、填對沒,一律可按(同該 spec「Submit Button 狀態」)。送出成功 → Toast「評分已送出」(該 spec「A11y 預設 › Submit 成功宣告」,user 2026-10-01 拍板 Toast),送出後同一欄切唯讀。完整可執行版(含送出鈕與 Toast)= 本元件展示「包在 Field 內」,結構同 `../Field/field.stories.tsx` CreateProjectForm:
 
 ```tsx
-// 驗證時機走 form-validation.spec.md canonical(blur + submit,不在初始 / 操作中即時報錯)
-// —— error 由 form.errors 驅動,非 `rating === 0` 立即判(那會讓初始未觸碰欄位直接紅框)。
+const [submitted, setSubmitted] = useState(false) // 送出成功 → 切唯讀;<form>、送出鈕與 <Toaster /> 見展示「包在 Field 內」
 const form = useFormValidation({
   initialValues: { rating: 0 },
+  intent: 'create',
   validate: { rating: (v) => (v === 0 ? '請至少給 1 星' : undefined) },
-  onSubmit: async (values) => { /* ... */ },
+  onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
 })
 
-<Field invalid={!!form.errors.rating}>
-  <FieldLabel required>整體滿意度</FieldLabel>
-  <Rating {...form.getInputProps('rating')} size="md" />
+<Field required invalid={!!form.errors.rating} mode={submitted ? 'readonly' : 'edit'}>
+  <FieldLabel>整體滿意度</FieldLabel>
+  <Rating {...form.getInputProps('rating')} />
   <FieldError>{form.errors.rating}</FieldError>
 </Field>
 ```
 
-列高由 Field 控件槽(`min-h-field-md` + `items-center`)供給,Rating 本身只有內容高,不需 consumer 額外調整 min-h。`aria-invalid` 透過 FieldContext 自動傳入,視覺錯誤提示由 FieldError 承擔。`<Field mode="readonly">` 內的 Rating 自動變成唯讀精簡版。
+列高由 Field 控件槽(`min-h-field-md` + `items-center`)供給,Rating 本身只有內容高,不需 consumer 額外調整 min-h。`aria-invalid` 與 `aria-errormessage`(有錯時指向 FieldError)透過 FieldContext 自動接在 `role="slider"` 上(`rating.tsx`;同 `../Field/form-validation.spec.md`「A11y 預設」),視覺錯誤提示由 FieldError 承擔。`getInputProps` 的 `name` 落在評分根節點上,而根節點可聚焦(`tabIndex=0`),所以送出驗證失敗時 useFormValidation 以 DOM `name` 找得到它並把焦點移過去(規則 8;2026-09-30 實測:滑鼠送出後焦點在評分、不畫鍵盤框,鍵盤送出後焦點在評分、畫框)—— Rating 屬於 `../Field/form-validation.spec.md`「可執行層」v1 邊界 (b)「找到帶該 name 的元素就 focus」那一類,不是例外。`getInputProps` 帶的 `onKeyDown`(規則 4 Escape)與元件自己的方向鍵並存 —— 元件的 handler 列在 `{...props}` 之後、先跑 consumer 的再跑自己的,不會被蓋掉(方向鍵 / Home / End 在 Field 內照常);Escape 在評分上同樣照規則 4 生效,也不是例外(2026-10-01 實測,淺深兩色相同:點第 3 顆後按 Escape → 回到 0 顆、不報錯、焦點留在評分,再按 Tab 離開 → 照規則 2 驗證、出現「請至少給 1 星」;先空送出出錯再點第 4 顆 → 錯誤當下消失、`aria-invalid` 拿掉,送出後唯讀「★ 4」底下不留錯誤)。`<Field mode="readonly">` 內的 Rating 自動變成唯讀精簡版;送出後就是這樣切換(展示「包在 Field 內」)。
 
 ---
 
@@ -153,7 +153,7 @@ const form = useFormValidation({
 | **Apple HIG** rating indicators | — | — | "A rating indicator doesn't display partial symbols; it rounds the value to display complete symbols only."(範圍:只有 macOS,原文 "Not supported in iOS, iPadOS, tvOS, visionOS, or watchOS.") | [rating-indicators](https://developer.apple.com/design/human-interface-guidelines/rating-indicators) |
 
 **對照結論**:
-- 規則一:可以點的只有整顆 = SAP / UI5 / Spectrum CSS 的做法;MUI / Ant / Chakra / Fluent 預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`;Apple macOS 顯示也只畫整顆、四捨五入。
+- 規則一:可以點的只有整顆 = SAP / UI5 / Spectrum CSS 的做法;MUI / Ant / Chakra / Fluent 預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`(https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L387);Apple macOS 顯示也只畫整顆、四捨五入。
 - 規則二:唯讀精簡版 = Fluent `RatingDisplay` 的 `compact` + `count`(Fluent 另拆一個元件;本 DS 不拆,用 `readOnly` 分開「能不能點」)。**但 Fluent 的 `compact` 是選項(預設 false),MUI / Ant 的唯讀是同一個元件加 `readOnly` / `disabled`** —— 把精簡版定為唯讀的**唯一**呈現是 user 的決定,不是世界級共識,照實記錄。
 
 ---
@@ -200,7 +200,7 @@ const form = useFormValidation({
 | **Ant Design Rate**(`rc-rate`)`Star.tsx#L82-L85`([Star.tsx](https://github.com/react-component/rate/blob/87c72e7781fa0e3060d3575e7fd5910f26696e3a/src/Star.tsx))、`Rate.tsx#L159-L160`([Rate.tsx](https://github.com/react-component/rate/blob/87c72e7781fa0e3060d3575e7fd5910f26696e3a/src/Rate.tsx)) | 每顆星自己的 `<div onClick onMouseMove>` | 被點的那顆星依點擊位置算出的值(`getStarValue(index, pageX)`) |
 | **React Aria** `useRangeCalendar.ts#L23-L33`、`#L80-L86`([useRangeCalendar.ts](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts)) —— **日期區間,不是評分**,列為同屬「預覽類元件」的近親 | 每一天的按鈕 | 在月曆內、但不在任何日期按鈕上放開指標(`!target.closest('button, [role="button"]')`)→ 預設 `select`:"select the currently hovered range of dates."(整段範圍原文:"Controls the behavior when a pointer is released outside the calendar or a blur occurs mid selection") |
 
-「縫裡點下去確認預覽值」在評分元件上沒有一家一模一樣的做法:MUI 靠整排換算讓星與星之間不存在「不屬於任何一顆」的位置、點下去寫入預覽值;
+「縫裡點下去確認預覽值」在評分元件上沒有一家一模一樣的做法:MUI 靠整排換算(`roundValueToPrecision(max * percent + precision / 2, precision)`,https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L440)讓星與星之間不存在「不屬於任何一顆」的位置、點下去寫入預覽值;
 本 DS 保留每顆星自己的盒(契約),改由容器在縫裡確認預覽 —— 對使用者的結果與 MUI 相同:**預覽亮著的地方點下去都有反應**。
 
 **實測**(真 `page.mouse` + `elementFromPoint`):
@@ -208,9 +208,9 @@ const form = useFormValidation({
 | 量的東西 | 結果 |
 |---|---|
 | 整星命中盒 vs icon 盒(2026-09-24,設計規格--元件檢閱器 md) | `24×24` vs `24×24` —— **完全重合,零外擴**(同次量的半顆區已隨半顆設定移除而作廢) |
-| 從第 3 顆星中心移進 3 與 4 之間的縫,點下去(2026-09-26,展示--送出評分流程 lg:星 24、縫 4;淺深兩色結果相同;2026-09-27 容器改內容高後重量,結果同) | 縫的擁有者 = 容器(`role="slider"`),游標 `pointer`,值 0 → **3** |
-| 對照:從元件外直接落進 3 與 4 之間的縫(沒碰到任何星),點下去 | 游標 `auto`,值維持 **0** —— 證明沒有預覽時縫不收點擊 |
-| 對照:直接點第 4 顆星 | 值 → **4** —— 證明這支量具量得到點擊改值 |
+| 從第 3 顆星中心移進 3 與 4 之間的縫,點下去(2026-09-30 重量於展示--包在 Field 內 md:星 24、縫 4,與原量的 lg 同幾何;淺深兩色結果相同。原量 2026-09-26 於已移除的「送出評分流程」,2026-09-27 容器改內容高後重量,結果同) | 縫的擁有者 = 容器(`role="slider"`),游標 `pointer`,值 0 → **3** |
+| 對照:從元件外直接落進 3 與 4 之間的縫(沒碰到任何星),點下去(同上重量) | 游標 `auto`,值維持 **0** —— 證明沒有預覽時縫不收點擊 |
+| 對照:直接點第 4 顆星(同上重量) | 值 → **4** —— 證明這支量具量得到點擊改值 |
 
 ⚠️ 量測教訓:第一版測試沒有先把指標移出元件,殘留的 `hoverValue` 改變了畫面與點擊結果,量到的是上一次互動的殘影。
 **量 hover 驅動的元件前必須先讓它回到靜止態**(移出元件觸發 root 的 `onMouseLeave`)—— 縫裡點下去的結果取決於有沒有預覽亮著,這條更要守。
@@ -231,10 +231,9 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 | Role | Token | 色值（light） | 說明 |
 |------|-------|--------------|------|
 | Filled star | `var(--warning)` | yellow-6 | 本 DS 評分語意的固定黃色，不隨品牌 primary 色變動；可以點的填色星與唯讀精簡版那一顆星同色 |
-| Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的星;借 `--divider` semantic alias(neutral-4,user 2026-05-09 拍板),與分隔線同級的 muted-fill。只出現在可以點的評分(唯讀精簡版沒有空星) |
+| Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的星;借 `--divider` semantic alias(neutral-4,2026-05-09 記為 user 拍板,來源不明:登記簿查無原話),與分隔線同級的 muted-fill。只出現在可以點的評分(唯讀精簡版沒有空星) |
 | 唯讀數值 | `text-foreground` | `--color-neutral-9` | 精簡版的數值(取一位小數),`tabular-nums` |
 | 唯讀評論數 | `text-fg-secondary` | `--color-neutral-8` | 精簡版括號內的評論數,千分位 |
-| 唯讀星與字的尺寸 | 見「Size — 唯讀精簡版」 | — | 星走 icon tier;星與數值的縫 `gap-1` 4px,與星和星之間同值(Rating 內只有一種縫) |
 | Hover 預覽 | 改 `fill`（不改尺寸） | — | interactive 時 hover 把游標所在星之前（含）的星填色預覽（只有整顆）；星星尺寸不變 |
 | Focus ring | `:focus-visible`(全域規則,無 class)+ `rounded-md` | — | 鍵盤 focus 時整個 Rating 容器(= 貼著星列的內容盒,2026-09-27 起不再是 field-height 盒)顯示全域 `:focus-visible` 外描邊（`outline: 2px solid var(--ring)`,往外 2px;元件不寫任何 class,圓角跟著 `rounded-md`;**per-star 無 ring / border / outline**——focus 視覺由 parent container 統一承擔）|
 | Gap between stars | `gap-1` | 4px | 可以點的星與星之間的間距，不隨 size 變化 |
@@ -280,17 +279,15 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 - **超界 value**:可以點的評分 `> max` 全滿、`< 0` 全空,鍵盤增減恆 clamp 0–max;唯讀先 clamp 到 0–max 再顯示(`max=5` 時 7 → 「★ 5」)。
 - **count**:只在唯讀顯示,以執行環境語系加千分位(`toLocaleString()`,`12843` → `12,843`);`count={0}` 顯示「(0)」;不傳就不顯示括號。可以點的評分忽略 `count`。
 - **readOnly + disabled / loading 同時成立**:仍是精簡版,整塊淡化(`opacity-disabled`)+ 對應的 `aria-disabled` / `aria-busy`。
-- **max 上限**:預設 5(世界級慣例,見 Props 表);**不設超過 7**,原因見「禁止事項」。唯讀精簡版不畫 `max` 顆星,`max` 只用來 clamp。
-- **Disabled / Loading**:整塊 dim(`opacity-disabled`),兩者視覺同、語義與 ARIA 不同 — 見「Interactive vs ReadOnly」表 +「Loading canonical」段。
 - **Dark mode**:`--warning` / `--divider` / `--foreground` / `--fg-secondary` semantic token 自動 adapt,Rating 不 own dark token。
 
 ## 相關
 
-- **`Slider`** — 連續數值選擇（0–100、音量、亮度、價格區間）。Rating vs Slider 分界：離散 tier = Rating，連續值 = Slider;高度模型不同:Slider 根是拖曳命中面故吃 `h-field-*`(`slider.spec.md`「size 只控 root 容器外高」),Rating 只有內容高(見「為什麼不完全對齊 `--field-height-*`」)
+- **`Slider`** — 連續數值選擇（0–100、音量、亮度、價格區間）。Rating vs Slider 分界：離散 tier = Rating，連續值 = Slider;高度模型不同:Slider 根是拖曳命中面故吃 `h-field-*`(`slider.spec.md`「一種視覺,多種容器尺寸」:size「只控 root 容器外高」),Rating 只有內容高(見「為什麼不完全對齊 `--field-height-*`」)
 - **`Tag`** — 靜態文字分類標記（「熱門」「Beta」「NEW」）。Rating 是量化,Tag 是文字分類(Badge 僅 count/dot,不承載文字)
 - **`Switch`** — 二元 on/off。Rating 是 graded，Switch 是 binary
 - **`Button iconOnly + pressed={liked}`** — 愛心 / like 的正確實作
-- **Color token 例外** — `color.spec.md`「共用 `--warning` 色相但語境不同」段落
+- **Color token 例外** — 星色與 warning 狀態共用 `--warning` 色相、語境不同(理由見上方「為什麼用 `--warning`（黃色）而不用 `--primary`」)
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

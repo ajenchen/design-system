@@ -6,8 +6,10 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from './accordion'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldGroup, FieldLabel } from '@/design-system/components/Field/field'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Input } from '@/design-system/components/Input/input'
+import { Select } from '@/design-system/components/Select/select'
 
 const meta: Meta<typeof Accordion> = {
   title: 'Design System/Components/Accordion/展示',
@@ -56,7 +58,7 @@ export const Default: Story = {
 // SettingsSections / AdvancedOptions 真實場景隱含覆蓋,interactive-states trait 由
 // anatomy StateBehavior owns(見檔首 @story-trait-rationale)。
 
-// ── FAQ(single + collapsible)——Stripe / Notion 類說明頁 ─────────
+// ── FAQ(single + collapsible)—— SaaS 說明頁 / 定價頁類 ─────────
 
 export const FAQ: Story = {
   name: 'FAQ 常見問題',
@@ -92,51 +94,53 @@ export const FAQ: Story = {
   ),
 }
 
-// ── Settings sections(multiple)——Jira / Linear 類設定頁 ──────────
+// ── Settings sections(multiple)—— 專案 / 工作區設定頁類 ──────────
 
 export const SettingsSections: Story = {
   name: '設定分組',
+  // 每段展開後是「設定名稱 → 目前值」的唯讀摘要 = DescriptionList(story-rules.md:84「key/value 用 DescriptionList」),列距由它擁有
   render: () => (
     <div className="max-w-[640px]">
       <Accordion type="multiple" defaultValue={['notifications']}>
         <AccordionItem value="general">
           <AccordionTrigger>一般設定</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>工作區名稱:Acme Design Team</p>
-              <p>時區:台北(UTC+8)</p>
-              <p>預設語言:繁體中文</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="工作區名稱">Acme Design Team</DescriptionItem>
+              <DescriptionItem label="時區">台北(UTC+8)</DescriptionItem>
+              <DescriptionItem label="預設語言">繁體中文</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="notifications">
           <AccordionTrigger>通知偏好</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>Email 每日摘要:開啟</p>
-              <p>桌面即時通知:關閉</p>
-              <p>@提及我時:立即通知</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="Email 每日摘要">開啟</DescriptionItem>
+              <DescriptionItem label="桌面即時通知">關閉</DescriptionItem>
+              <DescriptionItem label="@提及我時">立即通知</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="security">
           <AccordionTrigger>安全與登入</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>兩步驟驗證:已啟用(Authenticator)</p>
-              <p>登入工作階段:3 個裝置</p>
-              <p>最近登入:2 小時前(Chrome on macOS)</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="兩步驟驗證">已啟用(Authenticator)</DescriptionItem>
+              <DescriptionItem label="登入工作階段">3 個裝置</DescriptionItem>
+              <DescriptionItem label="最近登入">2 小時前(Chrome on macOS)</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="billing">
           <AccordionTrigger>帳單與付款</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-2 text-body text-fg-secondary">
-              <p>目前方案:Team(月付 NT$480 / 每位使用者)</p>
-              <p>下次扣款:2026/05/19</p>
-              <p>付款方式:Visa **** 4242</p>
-            </div>
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="目前方案">Team(月付 NT$480 / 每位使用者)</DescriptionItem>
+              {/* 週期寫法不會過期(同一則的「最近登入」也是相對時間);寫死下一次的日期,日曆一翻過去就成了過期資料(r1b NEW-05) */}
+              <DescriptionItem label="扣款日">每月 19 日</DescriptionItem>
+              <DescriptionItem label="付款方式">Visa **** 4242</DescriptionItem>
+            </DescriptionList>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -146,10 +150,21 @@ export const SettingsSections: Story = {
 
 // ── 進階選項可隱藏 ───────────────────────────────────────────────
 
+const VIEW_MODE_OPTIONS = [
+  { value: 'list', label: '清單' },
+  { value: 'board', label: '看板' },
+  { value: 'calendar', label: '行事曆' },
+]
+const NOTIFY_OPTIONS = [
+  { value: 'assignee', label: '只通知負責人' },
+  { value: 'members', label: '專案成員' },
+  { value: 'members-watchers', label: '專案成員 + 關注者' },
+]
+
 export const AdvancedOptions: Story = {
   name: '進階選項可隱藏',
   render: () => (
-    <div className="max-w-[640px] flex flex-col gap-4">
+    <div className="max-w-[640px] flex flex-col gap-[var(--layout-space-loose)]">
       <Field>
         <FieldLabel>專案名稱</FieldLabel>
         <Input defaultValue="Q2 發布計畫" />
@@ -165,16 +180,17 @@ export const AdvancedOptions: Story = {
         <AccordionItem value="advanced">
           <AccordionTrigger>進階選項</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-3">
+            <FieldGroup>
               <Field>
                 <FieldLabel>專案識別碼(選填)</FieldLabel>
                 <Input className="font-mono" placeholder="例:Q2-RELEASE" />
               </Field>
               <Field>
                 <FieldLabel>預設檢視模式</FieldLabel>
-                <Input defaultValue="看板" />
+                {/* 固定三選一 → Select(稽核 M101:原本用文字欄位讓人自己打「看板」) */}
+                <Select aria-label="預設檢視模式" options={VIEW_MODE_OPTIONS} defaultValue="board" />
               </Field>
-            </div>
+            </FieldGroup>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="notifications">
@@ -182,7 +198,7 @@ export const AdvancedOptions: Story = {
           <AccordionContent>
             <Field>
               <FieldLabel>狀態變更通知對象</FieldLabel>
-              <Input placeholder="例:專案成員 + 關注者" />
+              <Select aria-label="狀態變更通知對象" options={NOTIFY_OPTIONS} defaultValue="members-watchers" />
             </Field>
           </AccordionContent>
         </AccordionItem>

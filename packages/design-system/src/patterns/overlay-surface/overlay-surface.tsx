@@ -126,7 +126,7 @@ export const SurfaceHeader = React.forwardRef<
           className={cn(
             'flex items-center gap-2',
             'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
-            CHROME_UNBOUNDED_SLOT,
+            CHROME_UNBOUNDED_SLOT, DISMISS_FIRST_LINE,
           )}
         >
           {children}
@@ -136,7 +136,7 @@ export const SurfaceHeader = React.forwardRef<
             語言和 SSOT...就這樣做」):
             - v1: wrapper border + TabsList border = 雙線(W1 違反)
             - v2: wrapper px-loose + TabsList w-full inside = border 只跨 dialog - 2×px-loose
-                 (不到 dialog 邊 user 抓「分隔線寬度應該要填滿整個 dialog」)
+                 (不到 dialog 邊;user 指出分隔線寬度應該要填滿整個 dialog)
             - v3:wrapper 不 inset,TabsList 自己 px-loose 內 padding inset triggers
                   → TabsList border-b 延展全 dialog 寬,triggers 對齊 header content
             - v4(2026-07-30):選取機制改 `data-slot="tabs-list"` attribute contract
@@ -144,6 +144,8 @@ export const SurfaceHeader = React.forwardRef<
             對齊既有 `tabs.spec.md`「Underline 與 TabsList border 的視覺關係」段「selected 底線從
             TabsList 的 gray border 位置長出來」(token = border-divider,tabs.tsx TABS_LIST_BASE)
             + GitHub Primer UnderlineNav / Ant Design line type / Mantine default 共識
+            (出處同 header-canonical.spec.md「W2 spec 註」:Primer UnderlineTabbedInterface.module.css#L12-L14、
+            Ant tabs/style/index.ts#L420-L430、Mantine Tabs.module.css#L160-L172)
             (全派 TabsList 自畫 full-width underline)。*/}
         <div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>
           {tabsSlot}
@@ -165,7 +167,7 @@ export const SurfaceHeader = React.forwardRef<
         'flex items-center gap-2 shrink-0',
         !hasTabs && 'border-b border-divider',
         'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
-        CHROME_UNBOUNDED_SLOT,
+        CHROME_UNBOUNDED_SLOT, DISMISS_FIRST_LINE,
         className,
       )}
       {...props}
@@ -214,3 +216,14 @@ export const SurfaceFooter = React.forwardRef<
   />
 ))
 SurfaceFooter.displayName = 'SurfaceFooter'
+
+// (本檔尾:別處以行號引用本檔前段,新增的常數放這裡不讓行號位移;module 層 const 在 render 時已初始化)
+// 關閉 × 對齊標題第一行(2026-10-27,OV-ga02):標題區有說明(DialogDescription,dialog.spec.md「Header 可成長」)時,`items-center` 把 ×
+// 放在「標題 + 說明」兩行塊的正中(實測比標題第一行低 11.5px)。× 經 CHROME_UNBOUNDED_SLOT 的縮位佔位 = 標題行高(slot),所以只要它靠上,
+// 就落在第一行;單行標題時兩者等高,位置不變。規則照列尾的同一條:item-anatomy.spec.md「24px 閾值對齊規則(Prefix)與 Suffix inline 對齊」
+//(Suffix 一律對齊第一行 label)。世界級(2026-10-28 讀原始碼):shadcn(Radix)Dialog 關閉鈕 `absolute top-4 right-4`
+//(https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx)、Carbon modal `.cds--modal-close-button`
+// `inset-block-start: 0`(https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/modal/_modal.scss)、
+// Primer Dialog `.HeaderInner { display: flex }` 不置中、關閉鈕是固定高度 → 靠上(https://github.com/primer/react/blob/main/packages/react/src/Dialog/Dialog.module.css)。
+// 只管直接放在標題區的 ×;DialogHeader 的 actions 群組在 dialog.tsx 同樣靠上。
+const DISMISS_FIRST_LINE = '[&>[data-dismiss]]:self-start'

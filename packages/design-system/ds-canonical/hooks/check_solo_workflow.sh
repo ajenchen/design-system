@@ -87,6 +87,9 @@ sys.exit(1)
 
 if [ "$TOOL_NAME" = "Bash" ]; then
   COMMAND=$(jq -r '.tool_input.command // empty' <<<"$INPUT" 2>/dev/null)
+  # R1 / R2 都只看 git 指令。不含 git 的指令(絕大多數 Bash 呼叫)直接放行,不再每次叫兩次 python3 ——
+  # 缺 python3 時也不會因此把 `ls`、`brew install python3` 一起卡住(G4 複核二,2026-10-07)。
+  case "$COMMAND" in *git*) ;; *) exit 0 ;; esac
 
   # === Rule 1: 1 session = 1 working branch ===
   # Use shlex tokenizer(quoted-string-safe)— quoted examples are not treated as commands.

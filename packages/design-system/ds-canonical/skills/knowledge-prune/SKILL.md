@@ -79,7 +79,7 @@ Example violations(historic — 2026-05-22 prune verify 後均已收斂為 point
 #### D2 — Dead & stale(fire / edit recency)
 
 - **Dead hooks**:跑 `npm run audit:hook-quality`(= `scripts/audit-hook-quality.mjs`,讀 Git-owned provider telemetry `${GOVERNANCE_STATE_DIR}/hook-fires-per-hook.jsonl`,產 report → `<absolute-git-dir>/governance-runtime/evidence/audit/hook-quality-report.json`:fire_count_6mo / fire_per_day / hot-warm-cool-dead / orphan / retire_candidate)。6 月 0 fire 的 hook 名 → retire 提名(report 已標 `dead`)
-  - **⚠️ 先決條件:遙測預設是關的,關著的時候這一維產不出任何東西。** `packages/design-system/ds-canonical/hooks/_log-fire.sh` 開頭是 `[ "${GOVERNANCE_TELEMETRY_OPT_IN:-0}" = "1" ] || return 1`,而 `scripts/managed-host-assurance.mjs:1620` 與 `scripts/governance-check.mjs:2980` 明寫 `'0'` —— 也就是說**一般情況下沒有任何 hook 在寫這份 log**,零筆是預設狀態不是觀察結果。
+  - **⚠️ 先決條件:遙測預設是關的,關著的時候這一維產不出任何東西。** `packages/design-system/ds-canonical/hooks/_log-fire.sh` 開頭是 `[ "${GOVERNANCE_TELEMETRY_OPT_IN:-0}" = "1" ] || return 1`,而 `infra/governance/lib/managed-host-assurance.mjs:1620` 與 `scripts/governance-check.mjs:2980` 明寫 `'0'` —— 也就是說**一般情況下沒有任何 hook 在寫這份 log**,零筆是預設狀態不是觀察結果。
   - 先看 report 的 `summary.observation`:`blind: true` 代表觀測窗沒有涵蓋分類窗(log 的最早一筆晚於窗頭,或最後一筆離現在太久),此時所有零筆 hook 一律標 `unknown` 而非 `dead`,`retireCandidates` 恆為 0。**這種報告不得用來 retire 任何 hook**,本維度當次直接記「儀器全盲、無候選」。
   - 要讓這一維真的能用:`GOVERNANCE_TELEMETRY_OPT_IN=1` 讓 hook 開始記錄,累積滿一個分類窗(6 個月)之後再跑。判準與兩面對照組:`scripts/lib/hook-fire-observability.mjs` + `scripts/test-audit-hook-quality.mjs`(紅面:空 log → 0 提名;綠面:健康 log → 仍然標得出 dead)。錨:2026-09-24 這一維把全部 60 支 hook 標成 `dead`,而同一天 Stop hook 才剛擋過我好幾次 —— 典型 M37「沒觀察到」被當成「沒發生」。
 - **Stale memories**:只枚舉 repository SSOT `governance/memory/*.md`；以 `git log -- governance/memory/<file>`、`governance/memory/MEMORY.md` index 與 `governance/memory/contract.json` 判斷。不得讀取或回寫任何 provider home/cache 來決定 authority。
@@ -138,7 +138,7 @@ Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P
 ### Phase 3 — Apply P0 + P1 fixes(分組 commit)
 
 - 每個 cluster 一個 commit(`prune: duplicate X → SSOT owner Y / pointers elsewhere`)
-- 每次 commit 後 `npx tsc -b` 驗證(prune 不動 code,但防 spec path 斷)
+- 每次 commit 後跑 `npm run governance:check` + `node scripts/validate-memory-contract.mjs` + `npm run test:reciprocal-pointers`(prune 不動 code;要防的是治理檔與指標斷鏈,`tsc -b` 根本不看這些)
 - 每 commit 後重跑 Phase 0 baseline,確認 size 有下降
 
 ### Phase 4 — P2 resolution + apply

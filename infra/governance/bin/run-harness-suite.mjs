@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { lstatSync, readFileSync, realpathSync } from 'node:fs'
+import { lstatSync, readFileSync, realpathSync, writeSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -134,6 +134,10 @@ export function runHarnessSuite({
   registry = readHarnessRegistry(),
   execute = defaultExecute,
   environment = process.env,
+  // 逐成員進度(2026-10-14,SM2 同族):成員輸出照舊在結束時整批印,但「開始 / 結束 / 用時」當下就送出,
+  // 讓外層若在套件中途被砍,log 裡仍看得出卡在哪一支。預設不印(API 呼叫端 / 測試不受影響),CLI 傳入寫 stderr 的版本。
+  onMemberStart = () => {},
+  onMemberEnd = () => {},
 } = {}) {
   invariant(environment.GOVERNANCE_HARNESS_ACTIVE === '1', 'Harness suite may only run inside the canonical all-Harness runner')
   invariant(environment.GOVERNANCE_HARNESS_SUITE_ACTIVE !== '1', 'Nested Harness suite execution is forbidden')
@@ -197,6 +201,8 @@ export function runHarnessSuite({
       ...sourceIdentity(repoRoot, boundPath),
     }))
     const before = beforeAll[0]
+    const memberStarted = Date.now()
+    onMemberStart({ suiteId, index, total: units.length, path, timeoutMs: Math.min(unit.timeoutCapMs, remainingMs) })
     const result = execute(argv, {
       repoRoot,
       timeoutMs: Math.min(unit.timeoutCapMs, remainingMs),
@@ -212,6 +218,7 @@ export function runHarnessSuite({
     }))
     const sourceStable = JSON.stringify(afterAll) === JSON.stringify(beforeAll)
     const deadlineExceeded = Date.now() > deadlineAt
+    onMemberEnd({ suiteId, index, total: units.length, path, status: result.status, durationMs: Date.now() - memberStarted })
     results.push({
       path,
       argv,
@@ -261,7 +268,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exitCode = 2
   } else {
     try {
-      const summary = runHarnessSuite({ suiteId })
+      const progress = line => { try { writeSync(2, `${line}\n`) } catch {} }
+      const summary = runHarnessSuite({
+        suiteId,
+        onMemberStart: ({ index, total, path, timeoutMs }) => progress(`[harness-suite ${suiteId} ${index + 1}/${total}] ▶ ${path}(上限 ${Math.round(timeoutMs / 1000)}s)`),
+        onMemberEnd: ({ index, total, path, status, durationMs }) => progress(`[harness-suite ${suiteId} ${index + 1}/${total}] ${status === 'passed' ? '✓' : '✗'} ${path} ${status} ${(durationMs / 1000).toFixed(1)}s`),
+      })
       for (const result of summary.results) {
         if (result.stdout) process.stdout.write(result.stdout)
         if (result.stderr) process.stderr.write(result.stderr)

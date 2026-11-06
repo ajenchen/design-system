@@ -8,8 +8,8 @@
 # 永久 codify — SSOT canonical 必 P0 BLOCKER,不分級。
 #
 # Anchor:user 質疑「content 自動繼承 layoutSpace SSOT 嗎?」
-# - app-shell.spec.md:205 明文 `<main>` landmark padding=0 (intentional)
-# - app-shell.spec.md:207-212 consumer 必遵循 layoutSpace.spec.md 6 條規則 + 親疏 3 級
+# - app-shell.spec.md「Main slot」明文 `<main>` landmark padding=0 (intentional)
+# - app-shell.spec.md「Main slot」consumer 必遵循 layoutSpace.spec.md 6 條規則 + 親疏 3 級
 #
 # PostToolUse Edit/Write detect magic Tailwind spacing → P0 BLOCKER exit 2
 # 強制改 token OR 加 `// @layout-space-magic-ok: <rationale>` escape comment(per-line)。
@@ -67,20 +67,39 @@ ESCAPE_MARKER='@layout-space-magic-ok:'
 governance_hook_grep_capture MAGIC_LINES 'layout-space matcher failed' "$NEW_CONTENT" -nE \
   '\b(p|px|py|pt|pb|pl|pr|ps|pe|gap|space-x|space-y|m|mx|my|mt|mb|ml|mr|ms|me)-(0\.5|[1-9][0-9]?(\.[0-9])?)\b|\b(p|px|py|pt|pb|pl|pr|ps|pe|gap|m|mx|my|mt|mb|ml|mr|ms|me)-\[[0-9]+(\.[0-9]+)?px\]|\bw-\[[0-9]+(\.[0-9]+)?px\]|\bgrid-(cols|rows)-\[[^]]*[0-9]+px[^]]*\]'
 
-# ── 幻覺 token 攔截(2026-07-08 WM 戰役:app 自創 var(--layout-space-distant) → CSS 未定義
-# silent 解析 0 → 區塊全黏死,PDF「全部擠在一起」根因之一。白名單 = loose|tight|bottom
-# (layoutSpace.css SSOT 僅此三顆;新增 tier 走 DS token 流程,不在 consumer 端發明)──
+# ── 幻覺 token 攔截(錨例 2026-07-08 WM 戰役:app 自創 var(--layout-space-distant) → CSS 未定義
+# silent 解析 0 → 區塊全黏死,PDF「全部擠在一起」根因之一)。白名單 = layoutSpace.css 宣告的
+# --layout-space-* 全部(SSOT 現讀,不寫死;新增 tier 走 DS token 流程,不在 consumer 端發明)。
+# 逐個 var() 判(-o),不逐行判:同一行有一顆合法 token 時,逐行的 -v 會把同行的幻覺 token 一起放掉 ──
 governance_hook_grep_capture PHANTOM_CANDIDATES 'layout-space phantom-token candidate matcher failed' \
-  "$NEW_CONTENT" -nE 'var\(--layout-space-[a-z-]+\)'
-governance_hook_grep_capture PHANTOM 'layout-space phantom-token exclusion matcher failed' \
-  "$PHANTOM_CANDIDATES" -vE 'var\(--layout-space-(loose|tight|bottom)\)'
+  "$NEW_CONTENT" -noE 'var\(--layout-space-[a-z0-9-]+\)'
+PHANTOM=""
+if [ -n "$PHANTOM_CANDIDATES" ]; then
+  # DS repo 讀 src;consumer 讀已安裝套件裡發布的同一份 src(package.json files 含 src/**/*.css)
+  LAYOUT_SPACE_CSS=""
+  for _ls_css in "$(governance_corpus_root 2>/dev/null)/packages/design-system/src/tokens/layoutSpace/layoutSpace.css" \
+                 "$(governance_project_root 2>/dev/null)/node_modules/@qijenchen/design-system/src/tokens/layoutSpace/layoutSpace.css"; do
+    if [ -f "$_ls_css" ] && [ -r "$_ls_css" ] && [ ! -L "$_ls_css" ]; then LAYOUT_SPACE_CSS="$_ls_css"; break; fi
+  done
+  [ -n "$LAYOUT_SPACE_CSS" ] \
+    || governance_hook_integrity_fail 'layout-space token SSOT unavailable(DS repo 與 node_modules/@qijenchen/design-system 都找不到 layoutSpace.css)'
+  LAYOUT_SPACE_NAMES=$(python3 - "$LAYOUT_SPACE_CSS" <<'PY'
+import re, sys
+names = sorted(set(re.findall(r'--layout-space-([a-z0-9-]+)\s*:', open(sys.argv[1], encoding='utf-8').read())))
+print('|'.join(names))
+PY
+) || governance_hook_integrity_fail 'layout-space token declaration reader failed'
+  [ -n "$LAYOUT_SPACE_NAMES" ] || governance_hook_integrity_fail 'layoutSpace.css 沒有宣告任何 --layout-space-* token'
+  governance_hook_grep_capture PHANTOM 'layout-space phantom-token exclusion matcher failed' \
+    "$PHANTOM_CANDIDATES" -vE "var\\(--layout-space-($LAYOUT_SPACE_NAMES)\\)"
+fi
 if [ -n "$PHANTOM" ]; then
   cat >&2 <<EOF_PH
 🚨 [P0 BLOCKER] 幻覺 layout-space token(CSS 未定義 = silent 0 = 佈局黏死):
 $PHANTOM
-→ 白名單只有 --layout-space-{loose,tight,bottom}(layoutSpace.css SSOT)。
+→ 白名單 = layoutSpace.css 宣告的 --layout-space-{${LAYOUT_SPACE_NAMES//|/,}}(SSOT 現讀)。
   要更大一級間距 → 用 loose;真需新 tier → 走 DS token 新增流程(layoutSpace.spec),禁 consumer 端自創。
-  Anchor:2026-07-08 WM --layout-space-distant ×4 處,整個 detail modal 區塊黏死。
+  錨例:2026-07-08 WM --layout-space-distant ×4 處,整個 detail modal 區塊黏死。
 EOF_PH
   exit 2
 fi
@@ -144,7 +163,7 @@ $(printf '%b' "$UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
     p-[var(--layout-space-loose)]      /* 16px 規則 1A/1B chrome / wrap */
     gap-[var(--layout-space-tight)]    /* 12px 規則 3 親 gap(跨範疇相關) */
     gap-[var(--layout-space-loose)]    /* 16px 規則 3 疏 gap(跨範疇 parallel;lg 密度自動 24px) */
-    (token 全集 = loose/tight/bottom,無其他級 — 自創 --layout-space-distant 類 = 幻覺 token,本 hook 會攔)
+    (token 全集以 layoutSpace.css 宣告為準 — 錨例:自創 --layout-space-distant 類 = 幻覺 token,本 hook 會攔)
 
   修法 2 選 1:
     (a) 改 token:換成 var(--layout-space-N) N∈{loose,tight} family per 6 規則 + 親疏 3 級

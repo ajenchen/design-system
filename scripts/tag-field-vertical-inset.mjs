@@ -8,7 +8,7 @@
  *   I3 Tag 內文字在 Tag 裡上下對稱(≤ 0.5px)。
  *   I4 四邊等距:左隙 = 上隙(tag.spec.md:231;SSOT field-wrapper.tsx fieldTagInsetX/Y)。
  *   I5 wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4(1 列 = 尺寸 token)。
- *   I6 右側 chevron 右隙 = --field-px 12px(field-controls.spec.md:279 re-assert)。
+ *   I6 右側 chevron 右隙 = --field-px 12px(field-controls.spec.md「下拉箭頭（Select / Combobox）與類型身份 indicator」re-assert)。
  *   I7 Tag 盒高 = TAG_HEIGHT_PX = --tag-height-*(兩住所不可漂移)。
  * 對照組(--selftest):把 tag 量測 wrapper 從 flex 改回區塊盒、wrap 內距改回 py-1,I1 / I2 / I4 / I5 必須紅。
  *
@@ -108,7 +108,7 @@ for (const r of all.filter((x) => x.wrap)) {
   const expect = 2 + 2 * inset + r.rows * tagH + (r.rows - 1) * 4
   rec(Math.abs(r.wrapperH - expect) <= 0.5, `I5 ${r.story} ${r.size} ${r.mode}(wrap ${r.rows} 列):總高 ${r.wrapperH} = 2 + 2×${inset} + ${r.rows}×${tagH} + ${r.rows - 1}×4 = ${expect}(±0.5)`)
 }
-// I6 右側 chevron 右緣 = --field-px 12px(field-controls.spec.md:279「tag 容器必 re-assert paddingRight」)。
+// I6 右側 chevron 右緣 = --field-px 12px(field-controls.spec.md「下拉箭頭（Select / Combobox）與類型身份 indicator」:tag 容器必 re-assert paddingRight)。
 for (const r of all.filter((x) => x.chevRight != null)) rec(Math.abs(r.chevRight - 12) <= 0.5, `I6 ${r.story} ${r.size} ${r.mode}:chevron 右隙 ${r.chevRight}(需 12 ±0.5)`)
 // I4 四邊等距(tag.spec.md:231):左隙 = 上隙(±0.5)。PeoplePicker stack 模式刻意用 --field-px 12px 蓋掉左隙,不在本閘取樣(它沒有 [data-tag-root])。
 for (const r of all) rec(Math.abs(r.gapLeft - r.gapTop) <= 0.5, `I4 ${r.story} ${r.size} ${r.mode}${r.wrap ? '(wrap)' : ''}:Tag 左隙 ${r.gapLeft} vs 上隙 ${r.gapTop}(四邊等距 ±0.5)`)

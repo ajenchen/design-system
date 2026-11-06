@@ -71,6 +71,11 @@ MANIFEST="$DS_FORK/manifest.json"
 # 治理 payload 未就位 → native hook 不 brick；governance check/CI 負責 fail-closed
 [ -f "$MANIFEST" ] || exit 0
 
+# jq 是本派發器與 fork hook 讀輸入的宣告工具(authority 端同一保證:scripts/run-provider-hook.mjs 的
+# CLOSED_HOOK_TOOL_LABELS)。缺了要明說「工具不在、這一批治理沒有執行」,不得被下一段讀成
+# 「provider 不認得」(G4,2026-10-07)。
+[ -x /usr/bin/jq ] || integrity_failure "HOOK_TOOL_MISSING:jq:/usr/bin/jq is not executable;fork governance hooks did not run"
+
 if ! /usr/bin/jq -e --arg provider "$PROVIDER" '.providerAdapters[$provider] | type == "object"' "$MANIFEST" >/dev/null 2>&1; then
   integrity_failure "ADAPTER_UNKNOWN:${PROVIDER}"
 fi

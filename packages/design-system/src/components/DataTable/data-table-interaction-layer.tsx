@@ -54,12 +54,12 @@ interface DataTableInteractionLayerProps {
   activeEditorEnabled?: boolean
   /**
    * Slice D Step 4(spreadsheet semantics,2026-05-10 user 圖1 ask + RFC Contract 5):
-   * Excel-like 選取 cell ID。Click 1 select / Click 2 enter edit。
-   * Layer renders solid border SelectionRect(per user「不要 dash 直接實的就好」)。
+   * 試算表式選取的 cell ID。Click 1 select / Click 2 enter edit。
+   * Layer renders solid border SelectionRect(per user:不要 dash 直接實的就好(轉述))。
    */
   selectedCellId?: CellId | null
   /**
-   * Slice D Step 5(D.3 portal Field,2026-05-10 user 拍板「在乎完美乾淨」+ codex Q6.1
+   * Slice D Step 5(D.3 portal Field,2026-05-10 user 拍板:在乎完美乾淨(轉述)+ codex Q6.1
    * 撤回 defer):active editor render callback。當 activeEditorEnabled + activeEditorCellId
    * truthy → layer call this 拿 React node(已 bind value/onCommit/onCancel from controller),
    * 在 ActiveEditorHost portal(z 3,float rect)render 之。
@@ -109,8 +109,7 @@ function getCellRect(containerEl: HTMLElement | null, cellId: CellId): CellRect 
  * Per codex 13-issues verdict:「getCellRect 找最近 scroll viewport;intersect(cellRect, viewportRect),
  * 空 → 不 render,部分 → clipped rect render。」
  *
- * 對齊 AG Grid `cellsForRangeSet` viewport-aware paint / Glide DataGrid clip helpers /
- * Notion sticky-cell virtualizer mask。
+ * (2026-11-06 K8 同族:原本此處列的三家對照沒有一手來源,依 M22 移除;理由以上方 DS 內部判準為準。)
  */
 interface CellGeometry {
   /** Cell exact viewport rect(no rounding,float pass-through per Bug 5 SSOT) */
@@ -151,7 +150,7 @@ function getCellGeometry(containerEl: HTMLElement | null, cellId: CellId): CellG
 
 /**
  * Reactive rect sync hook — 確保 overlay rect 跨 RWD / scroll / resize 永遠對齊 cell(2026-05-10
- * user 拍板「所有 overlay 在各種 RWD 和捲動時都能處在正確位置上」)。
+ * user 拍板:所有 overlay 在各種 RWD 和捲動時都能處在正確位置上(轉述))。
  *
  * 監聽 3 source(rAF coalesce 避 frame storm):
  *   1. window scroll(capture mode 抓 nested table body scroll + page scroll)
@@ -162,7 +161,7 @@ function getCellGeometry(containerEl: HTMLElement | null, cellId: CellId): CellG
  * 重算。getBoundingClientRect 本身永遠 return 當下 viewport-relative coords,沒 stale cache。
  *
  * Per codex(brief: codex-brief-rwd-future-2026-05-10):rAF coalesce 不需要 debounce,scroll
- * 跟到不延遲才對(Glide / AG Grid 同 idiom)。
+ * 跟到不延遲才對。
  */
 function useReactiveRect(containerRef: React.RefObject<HTMLElement | null>, enabled: boolean) {
   const [, setVersion] = React.useState(0)
@@ -246,7 +245,7 @@ export function DataTableInteractionLayer({
   selectedCellId = null,
 }: DataTableInteractionLayerProps) {
   const hoveredCellId = useHoveredCell(containerRef, enabled)
-  // 2026-05-10 RWD/scroll sync(per user mandate「所有 overlay 在各種 RWD 和捲動時都處在正確位置」):
+  // 2026-05-10 RWD/scroll sync(per user mandate:所有 overlay 在各種 RWD 和捲動時都處在正確位置(轉述)):
   // window scroll(capture)+ resize + ResizeObserver(container)→ rAF coalesced re-render → rect 重算
   useReactiveRect(containerRef, enabled)
 
@@ -299,7 +298,8 @@ export function DataTableInteractionLayer({
           <CellRingOverlay rect={toRelRect(hoverGeo.rect, hoverGeo.clipRect)} kind="hover" />
         </ClipMask>
       )}
-      {/* SelectionRing — kind=selected(DS 焦點框 `focus-ring-inset`)z 2;幾何與 hover 同一個 rect / ClipMask */}
+      {/* SelectionRing — kind=selected(DS 焦點框 `focus-ring-inset`)z 2;幾何與 hover 同一個 rect / ClipMask。
+          格裡的控件被鍵盤聚焦、自己畫框時這一圈收起(data-table.css 的 `:has([role='gridcell'] :focus-visible)`,一次只一個指示器) */}
       {selectedGeo && (
         <ClipMask clipRect={selectedGeo.clipRect}>
           <CellRingOverlay
@@ -438,8 +438,7 @@ function CellRingOverlay({ rect, kind, cellId }: {
  * ClipMask 用 panel rect 當 absolute container + `overflow: hidden` mask;child overlay 用
  * `toRelRect(cellRect, clipRect)` 算出 mask-relative 座標,在 mask 內精準定位但被 mask 邊緣裁切。
  *
- * 對齊 AG Grid `cellsForRangeSet` viewport-aware paint / Glide DataGrid clip helpers /
- * Notion sticky-cell virtualizer mask。
+ * (2026-11-06 K8 同族:原本此處列的三家對照沒有一手來源,依 M22 移除;理由以上方 DS 內部判準為準。)
  */
 function ClipMask({ clipRect, children }: { clipRect: CellRect; children: React.ReactNode }) {
   return (

@@ -27,7 +27,9 @@ import { cn } from '@/lib/utils'
  * vertical: label → value（同 item 內）: `var(--item-gap-label-desc-reading)` token（2px,item-anatomy reading tier SSOT;code L115 dd 消費）
  * horizontal: label ↔ value: gap-x-4（16px）最小間距
  * items 之間垂直 gap: layout-space-tight（density-aware）
- * divided horizontal 模式：每 item py-[var(--layout-space-tight)]（cell-like row 高度）
+ * divided horizontal 模式：每 item py-[var(--layout-space-tight)]（cell-like row 高度）;最後一個 item 不帶下內距
+ *   (`last:pb-0`,同不分隔模式的 `last:mb-0`)—— 最後一列沒有底線,下方是容器底,那段距離只由容器給(layoutSpace 規則 4
+ *   「同一段距離只由一層給」;2026-10-28 user 對 5 處改 48 回「這個沒問題」時一併採用)
  */
 
 export type DescriptionListOrientation = 'vertical' | 'horizontal'
@@ -98,7 +100,7 @@ const DescriptionItem = React.forwardRef<HTMLDivElement, DescriptionItemProps>(
           className={cn(
             'flex items-baseline justify-between gap-4',
             divided
-              ? 'py-[var(--layout-space-tight)] border-b border-divider last:border-b-0'
+              ? 'py-[var(--layout-space-tight)] border-b border-divider last:border-b-0 last:pb-0'
               : 'mb-[var(--layout-space-tight)] last:mb-0',
             className,
           )}

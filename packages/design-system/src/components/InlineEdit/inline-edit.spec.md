@@ -15,7 +15,7 @@ benchmark:
 
 # InlineEdit 設計原則
 
-**Layout Family**:composite。**edit 態委派 Family 4（Field Control Layout）**——直接渲染 Field 控件（預設 `<Input>`），其 layout / focus contract 由 Field 擁有，不新增 primitive。**view 態同樣委派 Family 4（Model A）**——值-格式化路徑委派 `<Control mode="view">`、純值/標題路徑委派 `fieldViewGeometry`（見「幾何典範」）；InlineEdit 本體只擁有可編輯提示、啟動與 focus 生命週期。
+**Layout Family**:composite。**edit 態委派 Family 4（Field Control Layout）**——直接渲染 Field 控件（預設 `<Input>`），其 layout / focus contract 由 Field 擁有，不新增 primitive。**view 態同樣委派 Family 4（Model A）**——值-格式化路徑委派 `<Control mode="view">` 取格式化,兩條路徑的幾何都由 `fieldViewGeometry` 給（見「幾何典範」）；InlineEdit 本體只擁有可編輯提示、啟動與 focus 生命週期。
 
 ## 定位
 
@@ -43,13 +43,13 @@ benchmark:
 **退出 edit 態(focus 分流)**:
 - **滑鼠 blur**(點外面)→ `commit`(草稿有變更才觸發 `onCommit`),**焦點刻意不送回**——回到純 view,不搶焦
 - **Enter**(鍵盤)→ `commit`,**焦點送回 view 按鈕** + focus-visible 顯藍框(鍵盤焦點不遺失)
-- **Esc**(鍵盤)→ `cancel`(放棄草稿還原 view 態,不 commit),焦點同送回 view 按鈕
+- **Esc**(鍵盤)→ `cancel`(放棄草稿還原 view 態,不 commit),焦點同送回 view 按鈕。**編輯中是焦點所在控件自己的一層**(2026-10-01):放在 Dialog / Sheet / Popover 裡第一下 Esc 只取消編輯、浮層不關,第二下才關(`../Field/field-edit-keys.ts` `editSettleKeyProps` 掛 `data-escape-layer`;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)。LinkInput 2026-10-01 起同一支結算 helper(Enter / Esc 後焦點給鉛筆,同本條分流)
 - 分流理由:鍵盤路徑需焦點連續(a11y);滑鼠 blur = 使用者意圖已在別處,強拉焦點回來是搶焦。`focus-visible` 保證只有鍵盤路徑顯藍框。
-- **exit 由 InlineEdit 保證、不靠 consumer 自接(2026-07-17 root cause 修:blur 後 chrome 殘留)**:自訂 `renderEdit`(Select/DatePicker 等 overlay 控件)若只接 `onChange→commit`、不接 dismiss,**不選直接點外面**時舊設計卡 `editing=true`(edit chrome 殘留)。修:InlineEdit 用 **document-level pointerdown-outside**(對齊 [Radix DismissableLayer](https://www.radix-ui.com/primitives/docs/utilities/dismissable-layer) + [Atlassian inline-edit](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx) click-outside)—— editing 時點在 edit 子樹外且不在本 edit popover 內 → `commit` 回 view;+ `onBlur` focusout 補 tab-out 路徑。**任何控件(含 overlay)blur/點外面都保證回 display**,pixel 驗證 `probe-inline-edit-align.mjs`(點 Status 進 edit→blur→`editing=0`)。
+- **exit 由 InlineEdit 保證、不靠 consumer 自接(2026-07-17 root cause 修:blur 後 chrome 殘留)**:自訂 `renderEdit`(Select/DatePicker 等 overlay 控件)若只接 `onChange→commit`、不接 dismiss,**不選直接點外面**時舊設計卡 `editing=true`(edit chrome 殘留)。修:InlineEdit 用 **document-level pointerdown-outside**(對齊 [Radix DismissableLayer](https://www.radix-ui.com/primitives/docs/utilities/dismissable-layer) + [Atlassian inline-edit](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx) click-outside)—— editing 時點在 edit 子樹外且不在本 edit popover 內 → `commit` 回 view(「本 edit 的 popover」= 編輯容器元件樹上的子孫 —— edit 控件 portal 出去的選單 / 日曆,`../../lib/composite-field-focus.ts` `useOwnTreeEvents`;InlineEdit 放在 Dialog / Sheet / Popover 裡時,宿主本身是外面 —— 2026-11-03 前認的是「任何一層 popper / listbox / dialog」,連宿主也算,點宿主空白、Tab 到宿主裡的下一格都卡在 edit;閘 `scripts/overlay-nested-dismiss-invariant.mjs` I 列);+ `onBlur` focusout 補 tab-out 路徑。**任何控件(含 overlay)blur/點外面都保證回 display**,pixel 驗證 `probe-inline-edit-align.mjs`(點 Status 進 edit→blur→`editing=0`)。
 
 ## editable 閘（無 disabled 態）
 
-`editable?: boolean`(預設 true)。`editable=false` → view 態**無 hover 入口、不渲染隱形 Pressable、無藍框、不可進 edit,且不灰化**——就地編輯 host **無 disabled 態**,鎖定 = 純 view 無入口(detail-pane 權限鎖定語意)。與 DataTable cell 的 `editable:(row)=>boolean` 判準閘是**同一份語義**(`../Field/field-controls.spec.md`「軸二」);世界級就地編輯 grid 同模型:MUI X isCellEditable(https://mui.com/x/react-data-grid/editing/)/ AG Grid editable(https://www.ag-grid.com/react-data-grid/cell-editing/)。永久唯讀資料 → 用 `<Control mode="view">`;隨權限切換可編/不可編 → `editable`;**不用 disabled**(灰化是表單 disabled 語言,不是就地編輯語言)。
+`editable?: boolean`(預設 true)。`editable=false` → view 態**無 hover 入口、不渲染隱形 Pressable、無藍框、不可進 edit,且不灰化**——就地編輯 host **無 disabled 態**,鎖定 = 純 view 無入口(detail-pane 權限鎖定語意)。與 DataTable cell 的 `editable:(row)=>boolean` 判準閘是**同一份語義**(`../Field/field-controls.spec.md`「軸二」);世界級就地編輯 grid 同模型:MUI X isCellEditable(https://mui.com/x/react-data-grid/editing/)/ AG Grid editable(https://www.ag-grid.com/react-data-grid/cell-editing/)。永久唯讀、不同場可編欄位 → `<Control mode="view">`;同場或權限切換 → `editable`;**不用 disabled**(灰化是表單 disabled 語言,不是就地編輯語言)。
 
 ## 幾何典範（Model A 委派模型,2026-07-16 round16 user GO;推翻 2026-07-09「自帶外框幾何」版）
 
@@ -57,30 +57,30 @@ InlineEdit **不自帶 geometry cva**(M17 消重)——view 態幾何兩路來�
 
 | 路徑 | 幾何來源 | 說明 |
 |------|---------|------|
-| **值-格式化**(Select→Tag / 日期 / avatar) | 委派 `<Control mode="view">`(view×default = edit 幾何減 chrome) | 幾何 + 內部間距(多 tag gap / avatar↔label)皆由控件 view mode 提供——view 與 edit **同一顆控件、只差 chrome** → 天生一致、零偏移 |
-| **純值 / 標題**(`String(value)` / `as="h1"`) | `fieldViewGeometry(size, multiline)` helper(`../Field/field-wrapper.tsx`,view×default 幾何 SSOT) | = `px-[var(--field-px)]` + `min-h-[var(--field-height-{size})]`;單行 `items-center`、多行 `items-start py-2` |
+| **值-格式化**(Select→Tag / 日期 / avatar) | `fieldViewGeometry` 包住委派的 `<Control mode="view">`(委派控件 view 左側皆 0) | 格式化與內部間距(多 tag gap / avatar↔label)由控件 view mode 提供,左內距與高度由外包的 `fieldViewGeometry` 統一 → 天生一致、零偏移 |
+| **純值 / 標題**(`String(value)` / `as="h1"`) | `fieldViewGeometry(size, multiline)` helper(`../Field/field-wrapper.tsx`,InlineEdit view 態幾何 SSOT) | = `px-[var(--field-px)]` + `min-h-[var(--field-height-{size})]`;單行 `items-center`、多行 `items-start py-2` |
 
 InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 field-px + exit 保證 + hover bg + focus 藍框 + 隱形 Pressable**。
 
 **對齊盒(-mx orientation-aware,2026-07-17 移除 fieldCtx gate — root cause 修)**:
 - **對齊 root invariant**:固定 `-mx-[--field-px]` 要能把值/tag/avatar 左緣拉到 label x=0,**充要條件 = 委派控件 view 左 px 恆 = field-px**。故 InlineEdit **兩條 view 路徑都用同一個 `fieldViewGeometry`(field-px + min-h + py)**:純值/標題路徑直接套;**委派控件路徑(renderRead)也用 `fieldViewGeometry` 包住**(委派控件 bare view 皆 0px 左內距 → 包住後統一 field-px)。這樣 tag/avatar/date 全對齊 label(不碰任何控件的 tagPadding)。
-- **vertical(預設,含 standalone)** → `-mx-[var(--field-px)]` + `w-[calc(100%+2*var(--field-px))]`:整塊拉到欄左緣 → 值/tag 左緣落 label x=0(= [Atlassian read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) 固定負邊距對照)。**-mx 只依 orientation、不依 fieldCtx**(spec Model A 原意;舊 `fieldCtx &&` gate 讓 standalone 不對齊 = bug,已移除)。-mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
+- **vertical(預設,含 standalone)** → `-mx-[var(--field-px)]` + `w-[calc(100%+2*var(--field-px))]`:整塊拉到欄左緣 → 值/tag 左緣落 label x=0。**-mx 只依 orientation、不依 fieldCtx**(spec Model A 原意;舊 `fieldCtx &&` gate 讓 standalone 不對齊 = bug,已移除)。-mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
 - **horizontal** → `w-full min-w-0`,**不用 -mx**:值內縮 px = 對齊 sibling 控件
-- **edit 態完全繼承原 field**(Jira 式,user 2026-07-17 拍板):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(= Jira 式,可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
+- **edit 態完全繼承原 field**(2026-07-17 記為 user 拍板,來源不明:登記簿查無原話):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式 —— 進入編輯就是那個欄位本人,使用者看到的控件跟表單裡一模一樣。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
 
 **多行(multiline)**:view = `items-start py-2`,**= Textarea edit `py-2`**(textarea.tsx base)——`scripts/inline-edit-view-geometry-invariant.mjs` 機械鎖此契約(Textarea py 一改即紅)。
 
-**「底色範圍 = 輸入框範圍」不變量**:view 與 edit 兩態共用同一對齊盒(同寬、同 1px 邊框盒),幾何同源(view×default = edit 幾何減 chrome),故 hover 底色與 edit 輸入框逐 pixel 對齊、態切換零位移。(舊版 read 外框 `w-full`+`-mx` 疊加 → 右側短一截、整塊左偏,已修;2026-07-16 -mx 由恆定改條件化;2026-07-17 進一步移除 fieldCtx gate → 純 orientation-aware,委派 view 統一 fieldViewGeometry field-px,standalone 也對齊。)
+**「底色範圍 = 輸入框範圍」不變量**:view 與 edit 兩態共用同一對齊盒(同寬、同 1px 邊框盒),幾何同源(`fieldViewGeometry` = edit 幾何減 chrome),故 hover 底色與 edit 輸入框逐 pixel 對齊、態切換零位移。(舊版 read 外框 `w-full`+`-mx` 疊加 → 右側短一截、整塊左偏,已修;2026-07-16 -mx 由恆定改條件化;2026-07-17 進一步移除 fieldCtx gate → 純 orientation-aware,委派 view 統一 fieldViewGeometry field-px,standalone 也對齊。)
 
 **點得到的範圍 = 底色範圍**(2026-09-26,待辦總帳 N53⑤):隱形 Pressable 用 `-inset-px` 蓋滿外框的 border box(含那圈 1px 透明邊框),滑過底色亮到哪、點下去就進 edit 到哪。先前是 `inset-0`,只蓋到 padding box —— 外圈 1px 亮著卻點不進 edit(實測一般螢幕左 / 右 / 下三邊、Retina 8 點中 5 點),正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。修的是命中區、不是底色:底色與 edit 輸入框逐 pixel 對齊是本條不變量,不能縮。畫面不變,只有那 1px 的游標與點擊結果改變。世界級對照:Atlassian inline-edit 的讀取態把點擊與滑過底色掛在**同一個元素**上,兩者天生同一個盒([`read-view.js#L56`](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js) `onClick: onReadViewClick`、同一個 div 的 `className`(#L62)帶滑過樣式)。
 
-**尺寸預設 = `sm`**（2026-07-09 user 拍板）:view 態無邊框、視覺即純文字,尺寸過大會使版面鬆散;consumer 可傳 `size` 覆寫,標題場景另用 `readClassName` 疊大字級。
+**尺寸預設 = `sm`**（2026-07-09 user 拍板〔UD-J12〕）:view 態無邊框、視覺即純文字,尺寸過大會使版面鬆散;consumer 可傳 `size` 覆寫,標題場景另用 `readClassName` 疊大字級。
 
-**在 `<Field>` 內也是 `sm`**(2026-07-28 user 拍板):Field 的預設 `md` 是「沒人決定過」的預設值,不得壓過本元件宣告的 `sm`。實作雙通道 —— 靜態 `InlineEdit.fieldPreferredSize = 'sm'` 供 Field 直接子元件同步偵測,加上掛載時的 `useRegisterFieldPreferredSize('sm')` 補位(包 wrapper / `React.memo` / HOC 會遮蔽靜態);控件自身尺寸則由 `useResolvedFieldSize` 依 `sizeExplicit` 同步解析,不等註冊。**唯有 consumer 顯式 `size`(在 Field 或 InlineEdit 上)才覆寫**。機制與失效語意 owner → `Field/field.spec.md`「Control 偏好尺寸 SSOT」。
+**在 `<Field>` 內也是 `sm`**(2026-07-28 user 拍板):Field 的預設 `md` 是「沒人決定過」的預設值,不得壓過本元件宣告的 `sm`。實作雙通道 —— 靜態 `InlineEdit.fieldPreferredSize = 'sm'` 供 Field 直接子元件同步偵測,加上掛載時的 `useRegisterFieldPreferredSize('sm')` 補位(包 wrapper / `React.memo` / HOC 會遮蔽靜態);控件自身尺寸則由 `useResolvedFieldSize` 依 `sizeExplicit` 同步解析,不等註冊。**唯有 consumer 顯式 `size`(在 Field 或 InlineEdit 上)才覆寫**。機制與失效語意 owner → `Field/field.spec.md`「Control 偏好尺寸（`fieldPreferredSize`）SSOT」。
 
-**單行 view 恆一行**(2026-07-28 user 拍板):`multiline=false` 的 view 態溢出**不換行**,一律 ellipsis,且**截斷才顯 tooltip**顯示完整值(規則 owner:`Tooltip/tooltip.spec.md`「截斷文字 → tooltip」+ `truncated-text.spec.md`)。**實作 = `useTruncated` 自組而非 `<TruncatedText>`**:view 上疊著透明 Pressable(click-to-edit 入口)會吞掉內層所有 hover,tooltip trigger 必須掛在**整個 view 容器**、量測留在內層值 span —— 這正是 truncated-text.spec 對「trigger 需自控」場景指定的 escape(2026-07-28 user 實測抓到 primitive 直用時 tooltip 永不開)。委派 view(`renderRead`)同一條規則、同一個外層 Tooltip:委派控件自帶的截斷 tooltip(Input `<TruncatedText>` / Tag)trigger 在內層,editable 時同樣被 Pressable 攔截 —— 故外層容器 Tooltip 一併服務委派路徑:`useTruncated` 傳自訂 `measure`(`hooks/use-truncated.ts` options.measure 即為此類自訂策略開的口)走訪 wrapper 子樹,任一 `.truncate` 後代溢出即視為截斷;tooltip 內容 = wrapper 當下 DOM 的 `textContent`(完整格式化文字;非 string `T` 不可 `String(value)`)。`editable=false` 不渲染 Pressable → 委派控件自身 tooltip 可達,外層讓位不重複顯示。多行(`multiline`)維持 `pre-wrap` 忠實呈現。
+**單行 view 恆一行**(2026-07-28 user 拍板):`multiline=false` 的 view 態溢出**不換行**,一律 ellipsis,且**截斷才顯 tooltip**顯示完整值(規則 owner:`Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容。」+ `truncated-text.spec.md`)。**實作 = `useTruncated` 自組而非 `<TruncatedText>`**:view 上疊著透明 Pressable(click-to-edit 入口)會吞掉內層所有 hover,tooltip trigger 必須掛在**整個 view 容器**、量測留在內層值 span —— 這正是 truncated-text.spec 對「trigger 需自控」場景指定的 escape(2026-07-28 user 實測抓到 primitive 直用時 tooltip 永不開)。委派 view(`renderRead`)同一條規則、同一個外層 Tooltip:委派控件自帶的截斷 tooltip(Input `<TruncatedText>` / Tag)trigger 在內層,editable 時同樣被 Pressable 攔截 —— 故外層容器 Tooltip 一併服務委派路徑:`useTruncated` 傳自訂 `measure`(`hooks/use-truncated.ts` options.measure 即為此類自訂策略開的口)走訪 wrapper 子樹,任一 `.truncate` 後代溢出即視為截斷;tooltip 內容 = wrapper 當下 DOM 的 `textContent`(完整格式化文字;非 string `T` 不可 `String(value)`)。`editable=false` 不渲染 Pressable → 委派控件自身 tooltip 可達,外層讓位不重複顯示。多行(`multiline`)維持 `pre-wrap` 忠實呈現。
 
-**多行 edit 高度隨內容**(2026-07-28 user 拍板):view 態高度由內容決定,edit 態必須同源,否則 read↔edit 跳高。預設 `Textarea autoSize`(`field-sizing: content`),consumer 以 `editMaxRows` 設上限、超過改捲動。與 DataTable cell 共用同一份 `autoSize` 實作(原本只有 cell 有呼叫端膠水 → 兩者漂移)。
+**多行 edit 高度隨內容**(2026-07-28 記為 user 拍板,來源不明:登記簿查無原話):view 態高度由內容決定,edit 態必須同源,否則 read↔edit 跳高。預設 `Textarea autoSize`(`field-sizing: content`),consumer 以 `editMaxRows` 設上限、超過改捲動。與 DataTable cell 共用同一份 `autoSize` 實作(原本只有 cell 有呼叫端膠水 → 兩者漂移)。
 
 **核心不變量:view 態 hover = 背景 tint;view 態 focus = Field 藍框（`border-primary`）,與 edit 態同源。** hover（滑鼠懸停）用底色、focus（鍵盤選中）用藍框——藍框是 edit focus 的預覽,view→edit 一路都是藍框、不會 ring→框跳一下;靜止（無 hover/focus）則透明邊框不可見 = 純值。
 
@@ -92,9 +92,9 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 |---|---|---|---|
 | `renderRead?(value)` | view 態格式化顯示 | `String(value)`（空 → placeholder） | 要顯 **Tag / 日期 / option label**,**渲染對應控件的 `mode="view"`**（如 `<Select mode="view" display="tag">`），**禁自刻**——格式化 SSOT 住在該控件的 view mode |
 | `renderEdit?(props)` | edit 態控件 | `multiline`→`<Textarea>` / 否則 `<Input>` | 非 string 值必傳（預設路徑僅 string） |
-| `multiline?` | 多行（Jira description 類） | false | view `items-start py-2` 換行（= Textarea edit py-2,見「幾何典範」）、edit Textarea（Enter=換行、Cmd/Ctrl+Enter 或 blur 提交） |
+| `multiline?` | 多行(工作項目描述這類長文欄位) | false | view `items-start py-2` 換行(= Textarea edit py-2,見「幾何典範」)、edit Textarea(Enter=換行、Cmd/Ctrl+Enter 或 blur 提交) |
 
-**Tag 顯示的 SSOT 對齊（user 2026-07-09 問）**:「select 值 → Tag」的格式化住在 **Select 的 `mode="view" display="tag"`**（`select.tsx` ReadonlyDisplay Tag 分支）—— 這正是 **DataTable 格子消費的同一份**（`cell-registry.tsx` SelectCell view 分支）。InlineEdit view 態顯 Tag = `renderRead={(v) => <Select mode="view" display="tag" value={v} options={opts} />}`,**view 與 edit 用同一個 Select、只切 mode → 格式零分歧**。此即「乾淨對齊」:InlineEdit 從不重刻 Tag,格式化永遠委派給控件的 view mode。示範見 `inline-edit.stories.tsx` `SelectTagField`。
+**Tag 顯示的 SSOT 對齊（user 2026-07-09 問）**:select 值轉成 Tag 的格式化住在 **Select 的 `mode="view" display="tag"`**（`select.tsx` ReadonlyDisplay Tag 分支）—— 這正是 **DataTable 格子消費的同一份**（`cell-registry.tsx` SelectCell view 分支）。InlineEdit view 態顯 Tag = `renderRead={(v) => <Select mode="view" display="tag" value={v} options={opts} />}`,**view 與 edit 用同一個 Select、只切 mode → 格式零分歧**。此即「乾淨對齊」:InlineEdit 從不重刻 Tag,格式化永遠委派給控件的 view mode。示範見 `inline-edit.stories.tsx` `SelectTagField`。
 
 **鍵盤結算 SSOT**:Enter=commit / Esc=cancel + **中文 IME 組字 guard** 抽為 `../Field/field-edit-keys.ts` `makeEditSettleKeyHandler`,**InlineEdit 與 DataTable cell（`cell-registry.tsx`）同源消費**（2026-07-09 抽出;原本 InlineEdit 漏 IME guard = 中文選字 Enter 誤提交半截組字 bug,現已修）。edit-in-place SSOT 研究（2026-07-09,6-agent + 世界級）結論:兩 host 的 draft 擁有權 / state locus（單實例 vs 表格級 keyed）/ focus model 根本不同,故**不抽大共用狀態機**（違 M21 + 破壞表格虛擬捲動效能）,只抽此純鍵盤結算片段。世界級共識 = **field 控件 + 型別 registry 可共用,edit-in-place orchestration 各自實作**（見 `../Field/field-controls.spec.md`「Field 框架地圖」段 cite）。
 
@@ -103,14 +103,13 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 | DS | view 態 | hover affordance | 進 edit | 鍵盤 |
 |----|---------|-----------------|---------|------|
 | **Atlassian inline-edit**（[read-view.tsx](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx)） | 純值 + 隱形 Pressable | **背景 tint**（`background.neutral.subtle.hovered`,**非邊框**） | click read view | 隱形 button focus + Enter;5px drag threshold 防選字誤觸 |
-| **PatternFly inline-edit** | value 文字 | 可編輯提示 | value/input 二態 toggle | Enter commit / Esc cancel |
-| **Notion title cell** | 純文字 | hover 浮 affordance | click 編輯 | — |
+| **PatternFly inline-edit** | value 文字 | 可編輯提示 | value/input 二態 toggle(`.pf-m-inline-editable` 切換) | —([來源](https://github.com/patternfly/patternfly/blob/5aef1951bc0be5221f692dfb9a08f1616954e2ef/src/patternfly/components/InlineEdit/examples/InlineEdit.md?plain=1#L402-L407)) |
 
 三家共識:view 態 = 純值、hover = 輕背景提示（非重邊框）、click 或鍵盤進 edit、edit = 真正的輸入控件。本 DS 對齊此模型;`bg-neutral-hover` = 本 DS 的「neutral subtle hover」等價 token。
 
 **view 態 focus canonical**（2026-07-09）:Atlassian read-view 的隱形 Pressable focus 時,外框顯 `color.border.focused` **實線 solid border**（非 ring）——[read-view.tsx](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) `&:focus + div { borderColor: token('color.border.focused') }`。本 DS 對齊此語言:view focus = `border-primary`(= Field edit focus 藍框),使 view→edit focus 視覺連續,不引入第三種（ring）focus 語言。
 
-**view 態 typography canonical**（2026-07-09）:Atlassian inline-edit / PatternFly 將 view 態字級**委派**給 consumer（readView 不強加字體,由外層 context 決定）。本 DS 更 opinionated——view 態預設消費 `fieldDisplayTextClass(size)`（sm/md→`text-body`,lg→`text-body-lg`,`../Field/field-wrapper.tsx` Field view 字體 SSOT),使 **plain 用法**（`<InlineEdit value onCommit />`）view 字級即 = edit `<Input>`（`text-body`）= `<Input mode="view">` 字級,三者一致零跳字;`readClassName`（如標題 `text-h4 font-bold`）僅作特例 override 疊其後。對齊 [Atlassian inline-edit read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) 委派模型,並補上「plain 用法即 canonical」的預設。
+**view 態 typography canonical**(2026-07-09):Atlassian inline-edit 將 view 態字級**委派**給 consumer(`readView: () => React.ReactNode`,不強加字體,由外層 context 決定)。本 DS 更 opinionated——view 態預設消費 `fieldDisplayTextClass(size)`（sm/md→`text-body`,lg→`text-body-lg`,`../Field/field-wrapper.tsx` Field view 字體 SSOT),使 **plain 用法**（`<InlineEdit value onCommit />`）view 字級即 = edit `<Input>`（`text-body`）= `<Input mode="view">` 字級,三者一致零跳字;`readClassName`（如標題 `text-h4 font-bold`）僅作特例 override 疊其後。對齊 [Atlassian inline-edit read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx) 委派模型,並補上「plain 用法即 canonical」的預設。
 
 **狀態 data 屬性**（可測性）:外層容器 `data-editing`（read/edit 態）、read 元素 `data-empty`（空值）——供 audit / Playwright 斷言態切換與空值渲染（Dice UI data-attribute idiom,對齊 M32 pixel/DOM 可驗）。
 
@@ -124,7 +123,7 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 
 - **表單欄位** → 直接用 `<Field>` + Field 控件(表單本來就是編輯情境,不需要 view 態偽裝成純文字)。
 - **DataTable 密集可編輯格** → 用 naked cell(host cell 自管 border + focus、hover outline affordance;見 `field-controls.spec.md`「Cell(naked variant)」),不是每格包一個 InlineEdit 狀態機。
-- **一律唯讀展示**(不可編) → 用 `<Input mode="view">` / 純文字,不需要 Pressable;**隨權限暫時鎖定** → 留 InlineEdit 傳 `editable=false`(不灰化,見「editable 閘」)。
+- **一律唯讀展示**(整區不可編) → `<Input mode="view">` / 純文字,不需要 Pressable;**同場或權限鎖定** → 留 InlineEdit 傳 `editable=false`(不灰化,見「editable 閘」)。
 - **多欄位一次編輯** → 用表單(進入一次編輯全部欄位),不是逐欄 inline edit。
 
 ## 近親分界
@@ -186,3 +185,4 @@ InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動�
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `field.spec.md`
+- `link-input.spec.md`

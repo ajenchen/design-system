@@ -120,7 +120,7 @@ async function measureRun(origin, storyId, { firstRowTimeoutMs = FIRST_ROW_TIMEO
       })
     } catch (error) {
       if (!(error instanceof StoryRenderInstrumentError)) throw error
-      if (error.kind === 'wait-for-timeout') return { ok: false, reason: 'no-first-row', detail: `story 已渲染完成,但 ${firstRowTimeoutMs}ms 內沒出現 ${FIRST_ROW}${error.failedRequests.length ? `;同源 404 / 載入失敗:${error.failedRequests.join(', ')}` : ''}` }
+      if (error.kind === 'wait-for-timeout') return { ok: false, reason: 'no-first-row', detail: `story 已渲染完成,但 ${firstRowTimeoutMs}ms 內沒出現 ${FIRST_ROW}${error.failedRequests.length ? `;404 / 載入失敗的請求:${error.failedRequests.join(', ')}` : ''}` }
       return { ok: false, reason: `story-not-rendered:${error.kind}`, detail: error.message }
     }
     const firstRowAt = await page.evaluate(() => window.__firstRowAt ?? null)

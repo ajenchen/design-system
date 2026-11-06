@@ -37,7 +37,7 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "47c90bb8f59d11796fffd391b7981c3ac846fdf2cfa62723d82c06942b5785dc",
+    "sha256": "ec888fcd629b1f4316829e82efdd0a2c5415665f0261c65b1e1ca819f8bf775d",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
@@ -111,9 +111,65 @@
       {
         "command": [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-1"
         ],
-        "timeoutMs": 2700000
+        "timeoutMs": 2760000
+      },
+      {
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-2"
+        ],
+        "timeoutMs": 2760000
+      },
+      {
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-3"
+        ],
+        "timeoutMs": 2760000
+      },
+      {
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-4"
+        ],
+        "timeoutMs": 2760000
+      },
+      {
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-5"
+        ],
+        "timeoutMs": 2760000
+      },
+      {
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-6"
+        ],
+        "timeoutMs": 2760000
+      },
+      {
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
+        ],
+        "timeoutMs": 1860000
       }
     ],
     "requiredConsumers": [
@@ -140,7 +196,9 @@
         ],
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
         ]
       ],
       "testPaths": [
@@ -198,7 +256,9 @@
         ],
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
         ]
       ],
       "testPaths": [
@@ -372,7 +432,9 @@
       "commands": [
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
         ],
         [
           "node",
@@ -451,7 +513,9 @@
         ],
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
         ]
       ],
       "testPaths": [
@@ -559,7 +623,9 @@
       "commands": [
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
         ]
       ],
       "testPaths": [
@@ -614,7 +680,9 @@
         ],
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
         ]
       ],
       "testPaths": [
@@ -723,7 +791,9 @@
         ],
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
         ]
       ],
       "testPaths": [
@@ -817,7 +887,45 @@
         ],
         [
           "node",
-          "scripts/run-gate-meta-tests.mjs"
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "core"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-1"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-2"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-3"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-4"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-5"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs",
+          "--lane",
+          "browser-6"
         ]
       ],
       "testPaths": [

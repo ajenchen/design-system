@@ -30,13 +30,16 @@ printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:!bg-[var
 printf '<div className="flex gap-2 px-[var(--layout-space-loose)] hover:opacity-80 rounded-md" />\n' > "$FILE"; expect 0 raw-row-no-hover-pair-token
 printf '<div className="px-[var(--layout-space-loose)] border-b border-divider" />\n' > "$FILE"; expect 2 overlay
 printf '<AppShell layout="primary-header"><SidebarFooter /></AppShell>\n' > "$FILE"; expect 2 primary-header
+# Menu 浮層補品牌的豁免(2026-10-15):只認「這一份畫在浮層裡」useSidebarSurface();整個 Menu 的 display.menu 兩份同時成立、細列也長出標頭 → 不豁免
+printf 'const { display } = useAppShell()\n<AppShell layout="primary-header" globalHeader={<GH />}>{display.menu === "overlay" && <SidebarHeader>brand</SidebarHeader>}</AppShell>\n' > "$FILE"; expect 2 primary-header-display-menu-not-exempt
+printf 'const onOverlay = useSidebarSurface() === "overlay"\n<AppShell layout="primary-header" globalHeader={<GH />}>{onOverlay && <SidebarHeader>brand</SidebarHeader>}</AppShell>\n' > "$FILE"; expect 0 primary-header-surface-exempt
 
 # 帳號入口 duplicate(2026-07-30 WM F9 layer 3;dual-entry conjunction,mode 字面不在檔內)
 ACCT_HEADER_MENU='<SidebarHeader><DropdownMenu><DropdownMenuTrigger asChild><button aria-label="Open account menu"><Avatar alt="Me" size={24} /></button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem>Logout</DropdownMenuItem></DropdownMenuContent></DropdownMenu></SidebarHeader>'
 ACCT_FOOTER_USER='<SidebarFooter><SidebarMenu><SidebarMenuItem><ItemAvatar alt="Me" /></SidebarMenuItem></SidebarMenu></SidebarFooter>'
 printf '<Sidebar>%s%s</Sidebar>\n' "$ACCT_HEADER_MENU" "$ACCT_FOOTER_USER" > "$FILE"; expect 2 account-entry-dup
 printf '<Sidebar><SidebarHeader><WorkspaceBrand /></SidebarHeader>%s</Sidebar>\n' "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-footer-only
-printf '<Sidebar><SidebarHeader><WorkspaceBrand /><div className="flex-1" /><AccountMenu /></SidebarHeader><SidebarContent /></Sidebar>\n' > "$FILE"; expect 0 account-entry-mobile-mirror
+printf '<Sidebar><SidebarHeader><WorkspaceBrand /><div className="flex-1" /><AccountMenu /></SidebarHeader><SidebarContent /></Sidebar>\n' > "$FILE"; expect 0 account-entry-overlay-mirror
 printf '<Sidebar><SidebarHeader><DropdownMenu><DropdownMenuTrigger asChild><button aria-label="Switch workspace"><Avatar alt="Acme" /></button></DropdownMenuTrigger></DropdownMenu></SidebarHeader>%s</Sidebar>\n' "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-workspace-switcher
 printf 'const layouts = ["primary-header", "primary-sidebar"]\n<Sidebar>%s%s</Sidebar>\n' "$ACCT_HEADER_MENU" "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-multi-mode-demo-skip
 printf '// @account-entry-allow: migration 過渡期刻意雙入口\n<Sidebar>%s%s</Sidebar>\n' "$ACCT_HEADER_MENU" "$ACCT_FOOTER_USER" > "$FILE"; expect 0 account-entry-escape

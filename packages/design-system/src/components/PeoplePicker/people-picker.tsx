@@ -13,10 +13,12 @@ import { useFieldSurface, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Select as SelectPublic } from '@/design-system/components/Select/select'
-import { Combobox as ComboboxPublic } from '@/design-system/components/Combobox/combobox'
+import { Combobox as ComboboxPublic, findInlineSearchMirror } from '@/design-system/components/Combobox/combobox'
 import { PersonDisplay, MultiPersonDisplay, PersonAvatarTag, buildPersonProfileCard, resolvePerson, type PersonValue } from './person-display'
 import {
   getAvatarStackVisibleCount,
+  measureStackAvailablePx,
+  type StackChromeCache,
   AVATAR_STACK_AVATAR_PX,
   AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
@@ -64,7 +66,7 @@ export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 // 2026-07-17 Dim 26 修:`defaultValue` 一併 Omit — 本元件 controlled-only(spec「Controlled-only
 // rationale」),React.HTMLAttributes 內建的 `defaultValue` 若不 Omit 會讓 consumer 傳入假
 // uncontrolled API,runtime 經 `...rest` 靜默轉送 trigger div 後無效。Omit 本身即 type-level
-// regression(consumer 傳 defaultValue 直接 TS 編譯錯)。DS 先例 steps.tsx:166 同款 Omit。
+// regression(consumer 傳 defaultValue 直接 TS 編譯錯)。DS 先例 steps.tsx#StepsProps 同款 Omit。
 export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
   /** Field mode(edit / view / readonly / disabled),默認 inherit Field context 或 'edit' */
   mode?: FieldMode
@@ -88,7 +90,7 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
    *  (Select 無 searchPlaceholder prop);multi `searchIn='trigger'` inline 搜尋同理走
    *  placeholder 規則(spec「Trigger display SSOT canonical table」)。 */
   searchPlaceholder?: string
-  /** Multi 模式搜尋框 accessible name。僅轉送 wrapped Combobox。 */
+  /** Multi 模式搜尋框 accessible name 的退路。僅轉送 wrapped Combobox(浮層內搜尋框用它;欄位內搜尋框有欄位名稱時用欄位名稱,見 Combobox `searchAriaLabel`)。 */
   searchAriaLabel?: string
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
@@ -249,7 +251,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     }
     const root = stackContainerRef.current
     if (!root) return
-    // 2026-05-15 ROOT CAUSE FIX(user 抓「之前說的問題都還是存在」):
+    // 2026-05-15 ROOT CAUSE FIX(user 指出之前說的問題都還是存在):
     // stackContainerRef 透過 mergedStackRef 接 Combobox forwarded ref → root **就是** [role=combobox]
     // div 自己。原 `root.querySelector('[role=combobox]')` 不找 self 永遠 null → trigger=null →
     // tagArea=null → available=0 → setStackVisibleCount(0) → 整 stack 全 overflow → fallback 到
@@ -261,18 +263,28 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     // 掛載可能還沒渲染出來),下次回呼再查。
     let cachedTrigger: HTMLElement | null = null
     let cachedTagArea: HTMLElement | null = null
+    const chrome: StackChromeCache = { chromePx: null }
     const calc = () => {
       // 2026-08-05 native-parity fix(touch 實圖抓「多人只剩 +N」):NativeCombobox root 無
       // role="combobox"(a11y 在隱藏 <select> 上)→ 原查法 trigger=null → available=0 → 全
       // overflow。雙分支通用:查無 combobox role 時 root 自身就是 trigger(native __triggerRef
       // 即 field wrapper root),tagArea(flex-1 min-w-0)兩分支同構。
+      // (NativeCombobox 2026-09-18 已移除,Combobox 只剩一條路、root 恆是 role=combobox;這條退路是當時的歷史,留著不影響結果)
       const trigger = cachedTrigger?.isConnected
         ? cachedTrigger
         : (cachedTrigger = root.matches('[role="combobox"]') ? root : (root.querySelector<HTMLElement>('[role="combobox"]') ?? root))
       const tagArea = cachedTagArea?.isConnected
         ? cachedTagArea
         : (cachedTagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]') ?? null)
-      const available = tagArea?.clientWidth ?? trigger?.clientWidth ?? 0
+      // 可用寬 = 頭像堆疊被分配到的寬,不隨畫了幾顆變(與檢視態 person-display.tsx 同一支 `measureStackAvailablePx`)——
+      // 修前量這一格自己的 clientWidth:依內容寬(`width="hug"`)時這一格跟著內容縮,少畫一顆 → 變窄 → 再少一顆,
+      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:215 依內容寬 = 值的寬 + 各元素寬)。
+      // 這一格的內容寬扣掉它自己的 padding(單行 Tag 列帶焦點框留位內距,combobox.tsx `tagRowFocusRoomClass`)。
+      // 欄位內搜尋框(`searchIn='trigger'`)的位先扣掉:頭像不擠到搜尋框身上,打的字看得見(與 Combobox 的 DOM 量測同一支量尺,
+      // combobox.tsx `findInlineSearchMirror`;規則 combobox.spec.md「欄位內搜尋框的寬度」)。沒有欄位內搜尋框 → 0,公式不變
+      const slotW = tagArea ? measureStackAvailablePx(tagArea, chrome) : (trigger?.clientWidth ?? 0)
+      if (slotW <= 0) return
+      const available = slotW - (findInlineSearchMirror(tagArea)?.getBoundingClientRect().width ?? 0)
       const visible = getAvatarStackVisibleCount({
         availablePx: available,
         total: selectedNames.length,
@@ -284,8 +296,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     calc()
     const ro = new ResizeObserver(calc)
     ro.observe(root)
+    // 欄位內搜尋框的量尺:打字變寬就重算(外框尺寸不變,只觀察外框收不到)
+    const mirror = findInlineSearchMirror(root)
+    if (mirror) ro.observe(mirror)
     return () => ro.disconnect()
-  }, [resolvedMode, isMulti, effectiveMultiDisplay, selectedNames.length, size])
+  }, [resolvedMode, isMulti, effectiveMultiDisplay, selectedNames.length, size, searchIn])
   // Merge ref:forward to parent + capture for ResizeObserver
   const mergedStackRef = React.useCallback((el: HTMLDivElement | null) => {
     stackContainerRef.current = el
@@ -303,7 +318,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 遺失 ref / className / DOM-safe rest props(違 spec「forwardRef + 單一 root」root props 契約,
       // 與 readonly/disabled 分支不對稱)。補穩定 forwarding root:`w-full min-w-0` 保留
       // PersonDisplay 既有 w-full truncate 寬度約束鏈(單人 fill + 多人 stack 左靠不變),
-      // 對齊 switch.tsx:209 view 分支轉發先例。
+      // 對齊 switch.tsx view 分支(`resolvedMode === 'view'`)轉發先例。
       // 2026-08-20 修 beta.100 迴歸(user 拍板):root 必須是 `flex` 彈性容器,不可為純 block ——
       // block 會把 MultiPersonDisplay 的 inline-flex root 放進文字基線行盒,字型下伸空間(~6.5px)
       // 把頭像串推向行盒頂 → DataTable cell 內視覺偏上 6.4px。flex 容器無行盒語意;
@@ -496,14 +511,17 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   //
   // **2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus)**:visible count 走 shared
   // `avatar-stack-overflow` primitive deterministic formula(取代 Combobox DOM offsetWidth-based
-  // useOverflowCount + 60px fallback 不 deterministic),pass override 給 Combobox bypass internal
+  // useOverflowCount + 60px fallback 不 deterministic;60px 頂替 2026-10-13 已拆,useOverflowCount 改住 ../OverflowIndicator/overflow-tag-list.tsx),pass override 給 Combobox bypass internal
   // measurement。`MultiPersonDisplay`(view path)同 primitive,view + edit 結果一致。
-  // 對齊 user verbatim SSOT「同 cell width 同 overflow 判斷」+ codex Q3 consensus shared primitive。
+  // 對齊 user 要求的 SSOT:同 cell width 同 overflow 判斷 + codex Q3 consensus shared primitive。
   const handleMultiChange = (next: string[]) => {
     onChange?.(next.map(name => findPerson(directory, name)))
   }
   // ── edit mode ─────────────────────────────────────────────────────────────
   // (selectedNames 派生已 hoist 至檔上方 hooks 區,見 D3 P0 修註解)
+  // 多人只選 1 位 = 頭像 + 名字(spec.md §C);欄位內搜尋框開著時名字讓位。「這一格是頭像 + 名字」只判一次,
+  // 下方 tagRenderer(畫不畫名字)與 Combobox `yieldedTagText`(讓位後留下名字的寬)用同一個判斷式 —— 兩件事不會各說各話
+  const soleName = selectedNames.length === 1 ? resolvePerson(findPerson(directory, selectedNames[0])).name : undefined
 
   return (
     <Combobox
@@ -551,15 +569,18 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // wrapper 變 intrinsic content-width → PersonDisplay `w-full` resolves to intrinsic → truncate 無效。
       // 修法:length=1 wrapper 改 `flex-1 min-w-0 overflow-hidden` 提供 width constraint 給 PersonDisplay。
       // SSOT helper `getPeoplePickerTagWrapperClass(count)` 集中,future 改 wrapper 行為改一處。
-      tagWrapperClassName={getPeoplePickerTagWrapperClass(selectedNames.length)}
+      // 搜尋框在欄位內時,多人 1 位那一格只拿自己要的寬(不跟搜尋框那一格平分空間;helper 註解)
+      tagWrapperClassName={getPeoplePickerTagWrapperClass(selectedNames.length, searchIn === 'trigger')}
+      // 名字讓位之後留下它的寬(搜尋框那一格的量尺;依內容寬的欄位打開前後欄寬不變 —— spec.md §C open + inline-search 列,2026-10-07 待辦總帳 K4)
+      yieldedTagText={soleName}
       // 2026-05-16 真 root cause fix:overflow chip wrapper 套同 `-ml-0.5` 讓 chip 物理上
       // 跟 avatar 同 slot(等寬同 step,non-overlapping 多 24px 區塊不再 saw)。對齊 user
-      // 「avatars 和 +N 都是同尺寸圓形,空間最多容固定數量圓形」物理模型 directive +
+      // 物理模型 directive(avatars 和 +N 都是同尺寸圓形,空間最多容固定數量圓形)+
       // MUI AvatarGroup / Primer AvatarStack 共識(`AvatarGroup.js` L54-59 same negative margin)。
       overflowWrapperClassName="-ml-[var(--avatar-stack-overlap)] first:ml-0 relative inline-flex"
       tagAreaGapPx={0}
       tagAreaPaddingLeftPx={undefined}
-      // 2026-05-12 Round 7 fix(user 抓 image 2「+N tag 應該圓形不是矩形」+ 對齊 GitHub picker idiom):
+      // 2026-05-12 Round 7 fix(user 抓 image 2:+N tag 應該圓形不是矩形 + 對齊 GitHub picker idiom):
       // Combobox default `overflowShape='tag'`(矩形 chip,文字 Combobox 慣例);PeoplePicker stack
       // mode pass `'circle'`(圓形 avatar-shape,跟 avatar 一樣大)。對齊 MultiPersonDisplay readonly path
       // 既有 OverflowIndicator default 'circle' SSOT。
@@ -570,7 +591,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 2026-05-14 I4 fix(per codex+Layer A 共識):hidden items 在 `+N` overflow popover 顯
       // Tag with avatar(對齊 view path MultiPersonDisplay popover SSOT,user 抓 display vs edit
       // overflow 視覺不一致)。
-      renderHiddenTag={(item) => {
+      // 移除走 Combobox 給的 onRemove(與欄位上的頭像同一條:焦點接力 → onChange;2026-09-30 前這裡自己呼叫 onChange,
+      // 跳過焦點接力,焦點在被移除的 × 上時掉到 body —— 實測)
+      renderHiddenTag={(item, onRemove) => {
         const p = resolvePerson(findPerson(directory, item.value))
         return (
           <Tag
@@ -585,9 +608,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
                 hoverCard={buildPersonProfileCard(p)}
               />
             }
-            onRemove={() => {
-              onChange?.(selectedNames.filter(n => n !== item.value).map(n => findPerson(directory, n)))
-            }}
+            onRemove={onRemove}
           >
             {p.name}
           </Tag>
@@ -595,15 +616,16 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       }}
       // any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spread 安全(per codex P2 forward)
       {...(rest as any)}
-      tagRenderer={(item, onRemove) => {
+      tagRenderer={(item, onRemove, state) => {
         const p = resolvePerson(findPerson(directory, item.value))
-        // 2026-05-12 Q2 fix(user 拍板「multi 只選 1 人時 trigger = avatar + name,跟 single mode 同」):
+        // 2026-05-12 Q2 fix(user 拍板:multi 只選 1 人時 trigger = avatar + name,跟 single mode 同):
         // selectedNames.length === 1 → PersonDisplay(avatar + name)代替 PersonAvatarTag(avatar only)。
         // SSOT 對齊 PeoplePicker single mode line 201 selectedItemRenderer。多選 1 人時視覺等同單選,
-        // 只在 length > 1 才走 stack(各 avatar 純 chip)。多選 + inline 搜尋場景拿掉 name 改 cursor
-        // 走 `searchIn='trigger'` opt-in(2026-05-12 規則 3 ship,已轉傳 Combobox;default 'menu' 走 panel-top search)。
-        if (selectedNames.length === 1) {
-          return <PersonDisplay key={item.value} value={p} size={size} onRemove={onRemove} />
+        // 只在 length > 1 才走 stack(各 avatar 純 chip)。
+        // 欄位內搜尋框開著(state.searchActive)時名字讓位給插入點、頭像留著(spec.md §C open + inline-search 列)——
+        // 2026-05-12 這一列就寫了,程式一直沒做,打字時畫成「Alice Chen bo」(2026-10-07 待辦總帳 K4 補上;與「不限」同一條:值裡用文字畫的部分不和關鍵字並排)
+        if (soleName !== undefined) {
+          return <PersonDisplay key={item.value} value={p} size={size} onRemove={onRemove} nameYielded={state.searchActive} />
         }
         return (
           <PersonAvatarTag

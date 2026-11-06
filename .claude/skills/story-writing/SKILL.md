@@ -50,7 +50,7 @@ Purpose: Storybook 是公開文件,範例 = 設計系統品質。本 skill 把�
 3. **產 mapping table** rule → story(對齊 Polaris / Carbon / Storybook 官方,2026-04-26 verified):
    - 同 affordance 同 rule 的 prop variations → **1 story + Controls 切**(❌ `WithStartIcon`+`WithEndIcon` → ✓ `WithIcon` 對照 grid)
    - 不同 affordance → 必分(`IconOnly` / `FullWidth` / `Disclosure`)
-   - AllVariants / AllSizes 對照各 1
+   - AllVariants / AllSizes 對照各 1,放在設計規格層(`ColorMatrix` / `SizeMatrix`;狀態放 `StateBehavior`),展示層不放
    - Compound 有 new constraint(prop 名變 + 必某 affordance)→ 必分(`OverlayBadgeOnIconOnly`)
    - 真實業務情境 → 1 場景 1 故事
 4. **authority classify + apply**:mapping 若只是把既有 spec/code mechanically 投影成 story，依 Standing Authorization AUTO 寫入；只有 mapping 會新增或改變產品／UI／UX SSOT，且證據收斂後仍有真實選擇／取捨，才將 exact target-bound decision batch 給 user。反 pattern 在 step 3 即可避免。

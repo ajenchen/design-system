@@ -90,12 +90,9 @@ CSS 定義了 `--radius-sm`(目前 = 4px,與 md 同值),但**不在元件中使�
 
 對齊 M8(binary strict rule 必 ≥3 家世界級對照),「禁 `rounded-xl` / `rounded-2xl` raw utility」+「禁硬寫 `rounded-[6px]`」是本 spec 的 binary strict rule,以下為支撐 rationale。 <!-- @benchmark-unverified -->
 
-| 維度 | 本 DS | Material 3 | Carbon | Tailwind v4 | Ant Design | Polaris | shadcn/Apple |
-|------|-------|-----------|--------|-------------|------------|---------|--------------|
-| Tier 數 | **4 tier**(xs/md/lg/full)+ 1 reserved sm | 6 tier(extra-small ~ extra-large + full) | 3 tier(0/1/2) | 8 tier(xs/sm/md/lg/xl/2xl/3xl/4xl)+ none/full | **4 tier**(XS/SM/Default/LG)| 6 tier(050/100/200/300/400/500/full)| 1 base + calc(shadcn)/ Squircle 連續曲率(Apple)|
-| 數值序列 | **2 / 4 / 8 / 9999** geometric × 2 | 4 / 8 / 12 / 16 / 28 額外 | 0 / 2px / 4px(token rem)| 2 / 4 / 6 / 8 / 12 / 16 / 24 / 32 | 2 / 4 / 6 / 8 | 2 / 4 / 6 / 8 / 12 / 16 | `--radius` × calc 變化 |
-| Pill 方案 | `rounded-full` 9999px | `shape-corner-full` | 不顯式提供 | `rounded-full` 9999px | `borderRadiusOuter` ad-hoc | `border-radius-full` | 視 component shape |
-| 動態 shape | 無(靜態 4 tier)| Dynamic shape morphing(可動畫) | 無 | 無 | 無 | 無 | Apple 連續曲率動態 |
+| 維度 | 本 DS | Material 3([_md-sys-shape.scss#L17-L31](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31)) | Polaris([border.ts#L32-L60](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/border.ts#L32-L60)) |
+|------|-------|-----------|---------|
+| Tier 數 | **4 tier**(xs/md/lg/full)+ 1 reserved sm | 7 階(none / extra-small 4 / small 8 / medium 12 / large 16 / extra-large 28 / full) | 10 階(0 / 050 2 / 100 4 / 150 6 / 200 8 / 300 12 / 400 16 / 500 20 / 750 30 / full) |
 
 ## 設計哲學
 
@@ -103,24 +100,24 @@ CSS 定義了 `--radius-sm`(目前 = 4px,與 md 同值),但**不在元件中使�
 
 **(1) 4 tier(xs/md/lg/full)— 對齊 Ant Design 4-tier minimal,捨多家 6+ tier** <!-- @benchmark-unverified -->
 
-Material 3 / Polaris / Tailwind 6-7 tier 過細 — 每 tier 只差 2-4px,reader 視覺難分(「rounded-md 6px」vs「rounded-lg 8px」差 25% 但目視幾乎相同)。Carbon 3 tier(0/1/2)太極簡無法表達 elevation 層級(浮層 vs inline 同 radius 失去視覺 hierarchy)。
+階數多的刻度(Polaris 10 階、Material 7 階)每階差距小,中段尤其難分(例:Polaris 150 = 6px 與 200 = 8px、本 DS 若同時有 rounded-md 6px / rounded-lg 8px,差 25% 但目視幾乎相同);階數太少(只有 0/1/2 三階)又無法表達 elevation 層級(浮層 vs inline 同 radius 失去視覺 hierarchy)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/size.ts#L5-L10))。
 
 本 DS 4 tier 是「視覺可區分 + 維護友善」最佳交集 — `xs(2)→ md(4)→ lg(8)→ full` 每跳一級數值翻倍,目視差異 ≥ 50%(Weber-Fechner law 知覺閾值),不會出現「rounded-md vs rounded-mdlg 哪個對」糾結。
 
 **(2) Geometric scale(2 / 4 / 8 doubling)— 對齊 Tailwind / Polaris 慣例** <!-- @benchmark-unverified -->
 
-數值 doubling 確保 reader 一眼感知「不同層級」(2→4→8 比 4→6→8 對比明顯)。對齊 Tailwind v4 xs(2)/ sm(4)/ lg(8)(見上表數值序列)+ Polaris 100(4)/ 200(6 — 偏離)/ 300(8) 的 powers-of-2 idiom。
+數值 doubling 確保 reader 一眼感知「不同層級」(2→4→8 比 4→6→8 對比明顯)。對齊 Tailwind v4 xs(2)/ sm(4)/ lg(8)(見上表數值序列)+ Polaris 050(2)/ 100(4)/ 200(8) 的倍增序列([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/size.ts#L5-L8))。
 
-捨棄連續 ratio(Material 4/8/12/16/28 等差 + 跳級)的代價是「中段 size 表現空間」(無 6px tier),DS 場景無此需求(中段需求都歸入 md=4)。
+捨棄連續 ratio(Material 4/8/12/16/28 等差 + 跳級)的代價是「中段 size 表現空間」(無 6px tier),DS 場景無此需求(中段需求都歸入 md=4)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-shape.scss#L17-L31))。
 
 **(3) `rounded-full` 9999px 而非 50%(對齊 Tailwind / Polaris)** <!-- @benchmark-unverified -->
 
-50% percentage 在「短矩形」(高 < 寬,如 horizontal Switch)變橢圓而非 pill — 9999px 確保任意 aspect ratio 都圓形(實際 capped 在 height/2)。對齊 Tailwind / Polaris 全 pill 慣例,避免短矩形 edge case。
+50% percentage 在「短矩形」(高 < 寬,如 horizontal Switch)變橢圓而非 pill — 9999px 確保任意 aspect ratio 都圓形(實際 capped 在 height/2)。對齊 Tailwind / Polaris 全 pill 慣例,避免短矩形 edge case([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/border.ts#L59-L60))。
 
 **(4) 保留 `--radius-sm` token 但不用 — 對齊 Material「reserve for future dense pattern」** <!-- @benchmark-unverified -->
 
-CSS 定義 `--radius-sm = 4px`(目前同 md),component 強制 `rounded-md` 不引用 sm。為什麼留:未來若引入 dense mode(`density="compact"` 介於 md / xs 之間),可開新 sm tier 不破壞既有 xs/md/lg/full 命名階梯(避免 rename 引發全 DS grep refactor)。對齊 Material 3 的「extra-small reserved tier」哲學。
+CSS 定義 `--radius-sm = 4px`(目前同 md),component 強制 `rounded-md` 不引用 sm。為什麼留:未來若引入 dense mode(`density="compact"` 介於 md / xs 之間),可開新 sm tier 不破壞既有 xs/md/lg/full 命名階梯(避免 rename 引發全 DS grep refactor)—— 先把名字佔著,比日後插隊改名便宜。
 
 捨棄「立即啟用 sm」的代價是命名空間預占,接受 — 命名穩定 > 短期 utility。
 
-捨棄「Apple Continuous Corner / Squircle」的代價是「平台一致性」(Apple HIG 用連續曲率非單一 radius,iOS 元件視覺更柔)— DS 是 cross-platform web,採 Material/Tailwind 標準 border-radius 對齊大多數 OS native 元件,避免引入 SVG path 額外 runtime 成本。
+捨棄「連續曲率圓角(squircle)」的代價是「平台一致性」(部分原生平台的圓角是連續曲率,看起來更柔)—— DS 是 cross-platform web,CSS `border-radius` 只能畫單一半徑,連續曲率得靠 SVG path,多出 runtime 成本,不值得。

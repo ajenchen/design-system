@@ -7,8 +7,9 @@
 //
 // 為什麼值得一支閘:這是本家族唯一的**單向門**,而且是**靜默**失效。
 // 一旦面板殼被包進 Radix 的 DismissableLayer(或任何自帶 dismiss 的 Radix primitive),
-//   - `dismissable-layer.tsx:59-61` 只把 Esc 送給疊最上層 → 面板會在剛好是最上層時被 Esc 關掉,
-//     與 spec「Esc 永遠不關面板」直接相反;
+//   - `dismissable-layer.tsx:59-61` 只把 Esc 送給疊最上層 → **並排**的面板會在剛好是最上層時被 Esc 關掉,
+//     與 spec「並排時 Esc 不關面板」直接相反;浮層時的「焦點所在區、先關內層」也被「只看最上層」取代
+//     (2026-10-14 起浮層時 Esc 會關面板,但判定仍只住 lib/overlay-escape.ts `useEscapeRegion`,不進 Radix 的疊);
 //   - 同時吃到 `disableOutsidePointerEvents`(外點關閉)與焦點 trap,
 //     面板從常駐 app UI 變成暫時性浮層。
 // 兩者都不會有任何錯誤訊息,只會「有一天它自己關掉了」。

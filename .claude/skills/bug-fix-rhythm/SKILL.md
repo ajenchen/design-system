@@ -117,7 +117,7 @@ Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:
 全 fix 完成後**一次性**驗證:
 
 ```bash
-npx tsc -b                                    # type
+npm run build:lib                             # type(tsc -b 在本 repo 不檢查 DS 原始碼)
 npm run hooks:test                            # invariant
 node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32(a)(或 --scope=component:<X>)
 ```

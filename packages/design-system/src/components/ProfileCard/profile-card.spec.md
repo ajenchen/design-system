@@ -30,8 +30,8 @@ benchmark:
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 點擊進入人員 profile 頁 | `<a>` 或 Link | Navigation 不需 hover card 的浮層 |
-| 人員清單 row（不需要 hover 展開詳情）| `Avatar` + inline text | ProfileCard 是 hover content，list row 不需要 |
+| 點擊進入人員 profile 頁 | `<a>` 或 Link | 點擊是導覽;帶連結的文字人名滑過仍可觸發名片(誰可以觸發見 `../Avatar/avatar.spec.md`「何時用」) |
+| 人員清單 row | `Avatar`(照樣帶名片,見 `../Avatar/avatar.spec.md`「Avatar HoverCard 原則」)+ inline text | ProfileCard 是滑過才展開的內容，不是 list row 樣式 |
 | 單純顯示一個名字 | `Avatar` + `Text` | ProfileCard 是完整資訊卡，單名字用更輕量元件 |
 | 複雜人員表單（編輯角色 / 權限）| `Dialog` 或專用頁面 | ProfileCard 是快速預覽，不承載複雜互動 |
 
@@ -65,7 +65,7 @@ ProfileCard 是**三層 chrome 結構**(2026-04-23 canonical):
 
 **Status section v12 conditional rule(2026-05-14 user 拍板)**:`status` 在 production 一定會被設定(每個 user 都有 presence state)。如果 status undefined,**唯一可能性 = 資料還沒讀到(loading transient)**,**不**是「user 沒設定狀態」。所以 status undefined 期間 → **整 status block 隱藏**(等資料到才 render),**禁** render「Status not set」這種 placeholder 文字(語義錯,user presence 不會「沒設定」)。**此規則 ProfileCard-specific 不外推至 DS 其他元件**(FileItem / DescriptionList / DataTable cell 各自 placeholder 邏輯 unrelated)。
 
-**取消「精簡版」變體**:ProfileCard 只有**一種結構**,consumer 未傳的 section 不另開 minimal variant。世界級對照:Slack / GitHub / LinkedIn hover-profile 皆單一結構,不分「簡版/full 版」。
+**取消「精簡版」變體**:ProfileCard 只有**一種結構**,consumer 未傳的 section 不另開 minimal variant。理由:同一個人的卡片在不同畫面長得不一樣,使用者每次都得重新找資訊在哪;一種結構、缺的 section 不渲染就夠。
 
 **DS-wide PersonData 預設展示一致 canonical**:任何 PersonData 來源展示 ProfileCard 時,`description` / `fields` 預設都應提供;`status` / `statusMessage` opt-in(僅 loading transient 或 consumer mock data 才會缺,production data 必有)。
 
@@ -86,19 +86,19 @@ ProfileCard 使用單一元件級寬度，HoverCard 浮層量測由它決定且�
 Action 區的 layout **永遠等寬均分容器寬度**——multiple actions 每個 Button 取相同 `1fr` 寬、single action 撐滿整個 ProfileCard width。實作(grid 等寬均分 class)見 `profile-card.tsx` Action 區註解。
 
 ```
-[ Chat      ][ Audio call ▾ ]   ← 2 個 action:各 50%
-[     Message           ]       ← 1 個 action:100%
-[ Follow  ][ Message ][ ...]    ← 3 個 action:各 33%
+[ 傳訊息    ][ 語音通話 ▾ ]     ← 2 個 action:各 50%
+[       傳訊息          ]       ← 1 個 action:100%
+[ 追蹤  ][ 傳訊息 ][ ...]       ← 3 個 action:各 33%
 ```
 
 **為什麼等寬均分**:
-- ProfileCard 是**人員關係卡**,action 是 relationship actions(Chat / Audio / Message / Follow)——這類動作視覺權重對等,無主次之分,等寬最直覺
+- ProfileCard 是**人員關係卡**,action 是 relationship actions(傳訊息 / 語音通話 / 追蹤)——這類動作視覺權重對等,無主次之分,等寬最直覺
 - Single action 撐滿讓「行動列」永遠占滿 card 底部,視覺節奏一致(不會「單一 button 孤零零縮在左邊」)
 - action row 全部等寬，讓各動作擁有相同的命中區與視覺優先序
 
 **Consumer 跨 story / 跨 consumer 必須用同一組 canonical actions**:
 
-ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,canonical 由 profile-card.tsx export 的 `ProfileCardDefaultActions` 元件承載)。story / principles / consumer code 不要每個範例改成不同 action——同一個元件在不同 demo 下出現 3 種不同 action 組合,讓 consumer 誤以為 action 會隨情境自動變。**例外**:要展示 single-action / 3-action 數量差異時才改,並明示「這是展示 action 數量變化」。
+ProfileCard 的 default actions **是「傳訊息 + 語音通話」**(chat app 標配,canonical 由 profile-card.tsx export 的 `ProfileCardDefaultActions` 元件承載;文案可經它的 `labels` 覆寫)。story / principles / consumer code 不要每個範例改成不同 action——同一個元件在不同 demo 下出現 3 種不同 action 組合,讓 consumer 誤以為 action 會隨情境自動變。**例外**:要展示 single-action / 3-action 數量差異時才改,並明示「這是展示 action 數量變化」。
 
 ## Profile Header
 
@@ -120,6 +120,20 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 
 只在傳入 `onViewMore` callback 時顯示。
 
+## 文案(DS 預設 = 中文,全部可覆寫)
+
+DS 預設文案的語言照 `../../lib/i18n/README.md`「Fallback chain」:1 consumer prop → 2 `I18nProvider` 的 `profile-card` 那一組 → 3 DS 預設中文(第 2 層 2026-10-27 接上:經 PersonDisplay / PeoplePicker / DataTable 人員格浮出的名片沒有 prop 可傳,`../PeoplePicker/person-display.tsx` `buildPersonProfileCard`,靠這一層換字;user F1「預設語言是中文」、WM 要能傳英文):
+
+| 位置 | DS 預設 | 覆寫 |
+|---|---|---|
+| 預設動作(`ProfileCardDefaultActions`) | 傳訊息 / 語音通話 | `ProfileCardDefaultActions` 的 `labels={{ chat, audioCall }}`;`I18nProvider` 的 `profile-card.chat` / `.audioCall` |
+| 狀態標籤 | 線上 / 離開 / 忙碌 / 離線(與 `../Avatar/avatar.anatomy.stories.tsx`「Status presence dot」同一組字) | `labels={{ status: { online, away, busy, offline } }}`(可只給部分);`profile-card.statusOnline` / `.statusAway` / `.statusBusy` / `.statusOffline` |
+| 狀態訊息欄名 | 狀態訊息 | `labels={{ statusMessage }}`;`profile-card.statusMessage` |
+| 兩個預設欄位 | ID / 員工編號(「ID」是通用縮寫,不翻;同上方「Info Fields」) | `labels={{ id, employeeNumber }}`;`profile-card.id` / `.employeeNumber` |
+| 查看更多 | 查看更多 | `viewMoreLabel`(既有 prop);`profile-card.viewMore` |
+
+實作沿革:2026-10-20 前以上全是寫死的英文(Chat / Audio call / Online / Status message / Employee number / View more),而且除了 `viewMoreLabel` 都沒有覆寫的管道 —— 中文頁面裡的人員卡兩種語言並排(獨立驗證 OV-10)。預設欄位的去重以「目前生效的欄名」比對 consumer `fields` 的 label;舊寫法用 `fields` 傳同名欄位的 story 已全部改走 `defaultFieldValues`(dev 模式會警告舊寫法)。
+
 ## 設計決策
 
 - **固定寬度而非 min/max**：HoverCard 內容量可預期，固定寬度讓不同人員共用穩定的 panel measure
@@ -131,6 +145,7 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 ## 邊界案例
 
 - **Name / Subtitle 超長**:自然換行撐高 header,不截斷(text column 最小高度對齊 avatar,見「Profile Header」)
+- **欄位值超長**:值在自己那一欄內斷行,不畫進旁邊那一欄;有空白的值(「Engineering / Platform」「Senior Product Designer」)只在空白處斷,沒有空白的長字串(email / URL)放不下時才在字中斷 —— 值外包 `break-words`(`overflow-wrap: break-word`)。依據 `../DescriptionList/description-list.spec.md`「無障礙」長值換行的直式兩條:自然流文字依字詞換行;無空白長字串由 consumer 讓它能斷。那一句寫的 `break-all` 是給「整個值就是一串無空白 token」的 consumer;ProfileCard 的欄位是 consumer 任意傳的值、兩種都有,`break-all` 會讓多字值從字中間斷,所以用 `break-words` 同時守兩條。(例:DataTable 就地編輯滑過 Bob Lin 的名片,`break-all` 會畫成「Engineering / Platfor」+「m」)。2026-10-20 前沒加 → 設計規格頁的 `ada.chen@example.com` 疊在「團隊」那欄上(閘 `scripts/overlay-story-contract-invariant.mjs` R13 不畫進旁欄 + R14 多字值只在空白處斷)
 - **Status / statusMessage 缺值**:status undefined = loading transient → 整 status block 隱藏(v12 rule,見「結構」);ProfileCard **無整卡 loading prop**,資料未到的整卡呈現由 consumer 決定
 - **Info fields 缺值**:default fields 永遠 render,缺資料顯半形 `-` placeholder(`text-foreground`——對齊 DS 空值顯示 canonical:不可編輯供檢視的空值同 readonly 值色;section 結構不收合);consumer `fields` label 撞 default 時 consumer 值 win(dedup canonical,詳 `profile-card.tsx`)
 - **內容過長**:Body 在固定高度內以 ScrollArea 捲動,不 clamp 行數(見「Status 區」)
@@ -165,7 +180,7 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 
 - **無 SizeMatrix**:ProfileCard 固定 **320px 寬**(元件級常數,見本 spec「寬度」段),跨 consumer / variant 不變——人員資訊卡的 canonical width 屬於元件自身,不抽為 token。Section 高度由內容撐開,無 size tier。
 
-對應 anatomy story:保留 `Overview` + `Inspector`(section 開關 Controls,單組合互動檢閱)+ `SectionMatrix`(side-by-side 組合矩陣)+ `ColorMatrix`(Status 色)+ 元件特有 `HoverCardIntegration`(canonical usage pattern)+ `StateBehavior`(空值 / 過長文字邊界)+ `Accessibility`。
+對應 anatomy story:保留 `Overview` + `Inspector`(section 開關 Controls,單組合互動檢閱)+ `SectionMatrix`(唯一那一種完整結構)+ `ColorMatrix`(Status 色)+ 元件特有 `HoverCardIntegration`(canonical usage pattern)+ `StateBehavior`(空值 / 過長文字邊界)+ `Accessibility`。
 
 ---
 

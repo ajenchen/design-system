@@ -20,13 +20,11 @@
 - [feedback_ai_ground_truth_unreliable_mechanical_primary.md](feedback_ai_ground_truth_unreliable_mechanical_primary.md) — AI self-audit unreliable;mechanical(pixel/DOM/tsc/playwright)= primary defense / AI judgement = supplementary only / new audit layer ALWAYS expand never replace(2026-05-27 + composition fidelity application,合 2 file)
 - [feedback_consume_existing_classification_ssot.md](feedback_consume_existing_classification_ssot.md) — 消費既有不憑直覺:(a)分類用既有 category-matrix.json 5-category SSOT 禁發明新框架(朝三暮四根因;對抗 workflow 抓出重造)+ anatomy pattern(item/header)對稱公開;(b)用元件前先讀其 spec variant/size/emphasis 按原則選不吃 cva 預設(Button CTA 必 explicit primary;chrome header icon=text);(c)**先找既有機制再發明、先實測再把動作丟回 user**(2026-07-31 錨例:解 push 死結的腳本上個 session 已寫好卻從零重推;sandbox 讀取是 deny-only 卻誤判成 allow-only)
 
-- [feedback_anti_self_lock_release_transport.md](feedback_anti_self_lock_release_transport.md) — 被擋先查對照表(gh/npm/TLS/journal/分類器 → 已建成的解),禁重發明禁問 user;immutable 版號不可重用;供應鏈閘是真警報(2026-08-11)
-
 ## Reference
-- [reference_deploy_targets.md](reference_deploy_targets.md) — Deploy targets + URL 3-strategy 自動推導 + per-user override + transport self-awareness + Netlify 免費密碼 = Edge Function Basic Auth(STORYBOOK_BASIC_AUTH)+ Claude Code 直連 sandbox 雲端主路徑 + clone-on-demand(2026-06-11 合併 deploy_url_auto_detect;2026-07-07 合併 netlify_basic_password)
+- [reference_deploy_targets.md](reference_deploy_targets.md) — Deploy targets + URL 3-strategy 自動推導 + per-user override + transport self-awareness + Netlify 免費密碼 = Edge Function Basic Auth(STORYBOOK_BASIC_AUTH)+ Claude Code 直連 sandbox 雲端主路徑 + clone-on-demand(2026-06-11 合併 deploy_url_auto_detect;2026-07-07 合併 netlify_basic_password)+ **/tmp scratch 3 天沒存取即被清:驗證過的批次當天就要 push**(2026-10-06 五天停工全失)
 - [reference_cloud_governance_loading.md](reference_cloud_governance_loading.md) — 雲端 sandbox 治理載入實證:committed .claude 全 4 hook event 會 fire / plugin 不可靠(#63028/#62174)/ --cloud 需 TTY / skills 不認 node_modules(2026-06-16)+ C-prime fork 治理 shipped beta.70；歷史單一 Claude cloud target/snapshot 曾親證 proactive 指引與機械強制生效，不構成目前或所有 cloud certification(2026-07-14 合併 project_cprime)
 - [reference_perf_validation_same_host.md](reference_perf_validation_same_host.md) — 效能驗收必同網域:user 慢機器把 *.netlify.app 送進遠端隔離 thin client(LoAF 歸因 `thin-client-min.js`),github.io 本地渲染;程式碼無退步;先歸因再消融(2026-09-15)
-- [reference_auto_mode_sandbox_boundaries.md](reference_auto_mode_sandbox_boundaries.md) — Claude Code auto mode 沙箱與分類器實測邊界(主目錄 .claude 鎖 → clone 到 $TMPDIR;封閉 npm 不透傳代理 → 端到端只靠 CI;分類器擋 merge API / hook 自改 / consumer 認列 → 停下回報)(2026-09-29)
+- [reference_auto_mode_sandbox_boundaries.md](reference_auto_mode_sandbox_boundaries.md) — **被擋時先查這裡**:沙箱 / 封閉環境 / 分類器實測邊界(主目錄 .claude 鎖 → clone;封閉 npm 不透傳代理 → 端到端只靠 CI;分類器擋下 = 停下記入完成報告,不換指令繞過、不交給 user)+ 發版與工具傳輸「症狀 → 已建成的解」對照表(gh/npm/TLS/journal/Chrome MCP/mktemp);immutable 版號不可重用;供應鏈閘是真警報(2026-08-11 → 2026-10-07)
 
 ---
 **Prune history**(細節在 governance/archive/memory-retired/ + git log):
@@ -37,3 +35,4 @@
 - 2026-07-31 續作保障:新增 planning baton；2026-08-01 deep-audit 收為 `reference / non-executable`，live state 回歸 machine evidence；**未新增 index 條目**
 - 2026-08-12 superset 收斂:home-only dual_track+exec_transport → full_access 三檔合併(codex 域 D1,invariant 零損;home-only 來源,無 repo 原文可歸檔);promote agent_ui backlog 指標入 repo;index 20 = hard cap
 - 2026-08-18 D8 prune:nearest_same_purpose 完全吸收退役(M23(d) + story-rules + story-writing SKILL + story-baseline-registry 全覆蓋)/ governance_evolution_roadmap 純 pointer 退役(planning registry 已是 status SSOT)/ wm_ds_alignment_campaign 收官歸檔(live 操作檔案併入 project_provider_neutral_governance);20→17
+- 2026-10-07 D1+D4 consolidation:feedback_anti_self_lock_release_transport → reference_auto_mode_sandbox_boundaries 第六節(兩份都自稱「被擋先查這裡」且互相矛盾:分類器擋下要不要換指令、AI 能不能直接合併 consumer PR)。原表 35 列:1 列依第三節刪除(擋下就換工具)、1 列移到第一節(sync-memory)、33 列保留:26 列逐字原文,6 列加註「2026-10-07 更正」(依第三節:git branch -D 改成停下回報、兩列 consumer PR 合併改走 release:auto 並待 G1 (2) 讀回;過時說法:.claude/hooks 鏡像已退役、發版同意綁內容不綁 commit、Bash 套 patch 已被核准閘擋),1 列加註「2026-10-07 補」(純註解判定讀 adapter 的 content 欄位);原文 `governance/archive/memory-retired/2026-10-07-blocked-route-merge/`;19→18

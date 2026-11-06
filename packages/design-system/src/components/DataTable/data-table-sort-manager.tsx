@@ -129,6 +129,9 @@ function DataTableSortManagerInner<TData>({
       ref={ref}
       className={cn('flex flex-col h-full min-h-0 w-[var(--data-table-sort-panel-width)]', className)}
       {...props}
+      // 鍵盤搬排序條件(Space 提起、方向鍵移、Esc 取消)時按 Esc 只取消拖曳、面板不關(2026-10-01;修前一下少兩層,實測):
+      // 拖曳中宣告 Esc 層 + 把這一下標成拖曳獨占(lib/drag-announcements.ts useDragAccessibility.escapeLayer;drag-canonical.md invariant 8)
+      {...drag.escapeLayer}
     >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
       <SurfaceHeader className={COMPACT_HEADER_SLOT}>

@@ -16,9 +16,9 @@ benchmark:
 
 ## 定位
 
-Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑入**（`side="right"`，detail panel / 編輯 / filter drawer，對齊 Jira / Linear / Notion 右側 detail drawer 慣例）。`top` / `bottom` / `left` 變體**保留 DS 內部基建用**（例：Sidebar 在小視口從 left 滑入），消費者 code **禁止傳** `side="top" | "bottom" | "left"`，這些用途需 user 授權（canonical 見 `sheet.tsx` L23-27 + showcase `AR35`）。
+Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑入**（`side="right"`，detail panel / 編輯 / filter drawer）。`top` / `bottom` / `left` 變體**保留 DS 內部基建用**（例：AppShell 的 Menu 放不下時從 left 滑入的左側浮層,`../AppShell/app-shell.spec.md`「版面規則」§9;2026-10-14 前是 Sidebar 小視口抽屜），消費者 code **禁止傳** `side="top" | "bottom" | "left"`，這些用途需 user 授權〔UD-B04〕（canonical 見 `sheet.tsx` 檔頭「其他 side」段 + showcase `AR35`）。
 
-**實作基礎**：shadcn passthrough——基於 Radix Dialog（`side` variant，非居中 modal）。本 DS 保留 shadcn 原結構 + 橋接 DS token。
+**實作基礎**：shadcn passthrough——基於 Radix Dialog（`side` variant，非居中 modal）。本 DS 保留 shadcn 原結構 + 橋接 DS token([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sheet.tsx#L53-L69))。
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
@@ -28,7 +28,6 @@ Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑�
 
 - **側邊操作面板**：filter panel、detail pane、task 編輯 side sheet
 - **暫時性內容展示**：notification drawer、cart summary、activity history
-- **Mobile 側邊編輯**：桌機 detail / 編輯 flow 在手機沿用同一個右側 Sheet（mobile 預設占 75% 寬）。內容過於複雜需全螢幕時改用 fullscreen Dialog 或導航到獨立頁面，不借 `side="bottom"`（bottom 為 DS 內部基建變體、非消費者 API；需 mobile bottom sheet 另用專屬元件）
 - **跟主頁面平行的工作流程**：使用者在主頁看清單，sheet 編輯某一項，不離開清單 context
 
 ## 何時不用
@@ -52,19 +51,18 @@ Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑�
 | 視覺重量 | 較輕（單邊） | 較重（四周 overlay） |
 | 典型用途 | 側邊工作流程、detail panel | 確認流程、複雜表單 |
 | 阻斷感 | 較弱（使用者視線可繼續掃主頁） | 強（完全聚焦 modal） |
-| 手機體驗 | 沿用同一右側 Sheet（mobile 預設占 75% 寬;不借 `side="bottom"`，見「何時用」） | 桌機導向（中央 modal 不符 mobile sheet pattern，浮層遮住主流向） |
 
 **判準**：
 - **需要聚焦決策（刪除、確認、複雜表單）→ Dialog**
-- **主頁面平行的側邊工作 / mobile 編輯 → Sheet**
+- **主頁面平行的側邊工作 → Sheet**
 
 ---
 
 ## Inspector
 
-`Inspector` 提供互動 Controls 即時切換 SheetContent 三個關鍵維度:`side`(top / right / bottom / left,看四方向滑入動畫 + 位置)、`width`(default / sm / lg 寬度覆寫)、`showFooter`(是否顯示底部 CTA 列)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop。
+`Inspector` 提供互動 Controls 即時切換 SheetContent 兩個關鍵維度:`width`(default / sm / lg 寬度覆寫)、`showFooter`(是否顯示底部 CTA 列);`side` 固定 `right`(消費者 API 只有右側,見「定位」)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop。
 
-對應 anatomy story:`Overview` + `Inspector` + 元件特有 `SideMatrix`(4 方向 × 用途) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`。
+對應 anatomy story:`Overview` + `Inspector` + 元件特有 `SideMatrix`(消費者只用 `right`) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`。
 
 ---
 
@@ -78,7 +76,9 @@ Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter`
 
 > **跨家族 SSOT pointer**:SheetHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs 的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sheet 特有 close X canonical。
 
-永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`,不可移除——使用者永遠需要明確的關閉手段。
+永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `sheet.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。
+
+**唯一例外 = DS 內部基建的 AppShell Menu 左側浮層**(`side="left"`,不是消費者 Sheet):它是導覽清單,浮層照並排的樣子、不加 ×(並排時本來就沒有 ×;user 2026-10-21 以問句提出這個推論,AI 實測 DS 4 個元件 7 組對照浮層與並排的 × 有無一致,user 2026-10-27 選甲確認),**不放 `SheetHeader`**,明確的關閉手段是點浮層外(遮罩)、Esc、⌘B / Ctrl+B(`../AppShell/app-shell.spec.md`「版面規則」§9;開關鈕被浮層蓋住)。無障礙名稱只給讀屏器的 `SheetTitle`。**禁止**用 `<SheetHeader className="sr-only">` 湊數:× 被裁成看不見卻仍在 Tab 順序,第一個 Tab 停在看不見的鈕上(2026-10-15 r1b 複驗 N2,`../Sidebar/sidebar.tsx` SidebarOverlay)。
 
 **Canonical 來源**:Sheet 是 overlay chrome,corner close X 屬 action group region,必用 Button(非 Inline Action / 非自刻 button)。詳見 `patterns/element-anatomy/inline-action.spec.md`「Dismiss canonical — X close only」+ `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。
 
@@ -122,17 +122,21 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 - `../DropdownMenu/dropdown-menu.spec.md` — 選單類浮層
 - Radix Dialog primitive — `@radix-ui/react-dialog`（Sheet 是 side variant）
 
+## API 補充
+
+- **`portalContainer`**(`SheetContent`;2026-10-15):Portal 目的地,預設 document.body。與 `DialogContent` 同名同義(`../Dialog/dialog.spec.md`「`portalContainer`」):放在比視窗小、帶 transform 的容器(模擬瀏覽器畫布、嵌入式預覽)時傳那個容器,`fixed` 定位以它為準,側板與遮罩不跑出容器。DS 內的消費者 = AppShell 的 Menu 左側浮層(`<AppShell portalContainer>` 一路帶到這裡)。
+
 ## A11y 預設
 
-**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
+**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(畫面上的副標還沒定義,先不要用;`SheetDescription` 只留給讀屏器的說明)(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
 
 **Keyboard 行為**:
 
 - Tab — focus trap 在 sheet 內
-- Esc — 關閉
+- Esc — 關閉;**一次只少一層,焦點所在的控件自己那一層也算一層**(2026-10-01;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):側板裡改過的欄位(接 `useFormValidation`)/ 就地編輯中 / 格游標 / 拖曳中 → 第一下 Esc 由控件撤銷、側板不關,第二下才關;**輸入法組字中的 Esc 不關**(那一下是在取消選字)。機制:`SheetContent` 的 `onEscapeKeyDown` 經 `../../lib/overlay-escape.ts` `withOverlayEscape`(取代 ime-composition.ts 的 `withImeSafeEscape`),規則同 `../Dialog/dialog.spec.md`「A11y 預設」Esc 條
 - Shift+Tab — 反向 focus 循環
 
-**Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration 例外(2026-07-14)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(如 AppShellAside 手機模式)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>` — 必自建 `onCloseAutoFocus` snapshot 還原(先例:AppShellAside app-shell.tsx / DatePicker Range date-picker.tsx:1061;WCAG 2.4.3)。
+**Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration(2026-10-01 起 DS 預設;還的時機 = 關閉的那一刻、不等收起動畫,同 `../Dialog/dialog.spec.md`「Focus return」)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(受控 `open`、沒有 `SheetTrigger` 開的側板,如 AppShell 的 Menu 左側浮層:由 SidebarTrigger / ⌘B 打開)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>`(WCAG 2.4.3)—— `SheetContent` 現在**預設**在內容掛上時記下開啟者、關閉時沒有 Radix 觸發點就經 `../../lib/overlay-focus-return.ts` `useTriggerlessFocusReturn` 還回去(待辦總帳 OE29;規則同 `../Dialog/dialog.spec.md`「Focus return」條);consumer 自己接了 `onOpenAutoFocus` / `onCloseAutoFocus` 的(Sidebar 的 Menu 左側浮層 `../Sidebar/sidebar.tsx`:開啟者 = SidebarTrigger 或快捷鍵當下的焦點,沒有 fallback)照舊先跑、擋了預設就勝出。2026-10-14 前這裡列的「AppShellAside 手機模式」「Sidebar 窄版抽屜:帶 fallback」已隨 768 斷點退場(AppShellAside 只剩並排一種形態,`../AppShell/app-shell.tsx` AppShellAside 檔頭)。`Sheet`(Root)的 `modal` 經 context 交給 Content(非 modal 點外面收起不搶焦點)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

@@ -3,8 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Search, Eye, EyeOff, X } from 'lucide-react'
 import { Input } from './input'
 import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
-import { Button } from '@/design-system/components/Button/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Input> = {
   title: 'Design System/Components/Input/展示',
@@ -22,25 +22,17 @@ type Story = StoryObj<typeof Input>
 export const Modes: Story = {
   name: '四模式',
   render: () => (
-    <div className="flex flex-col gap-6 max-w-sm">
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
-        <p className="text-caption text-fg-muted mb-3">Focus 時邊框變 primary</p>
+    <ExampleStack className="max-w-sm">
+      <ExampleSection title="edit" description="Focus 時邊框變 primary">
         <Input defaultValue="Wireless Bluetooth Headphones" placeholder="輸入商品名稱" aria-label="商品名稱(edit mode demo)" />
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
-        <p className="text-caption text-fg-muted mb-3">純展示（read-only 內容）— 無 input chrome / 無互動 affordance</p>
+      </ExampleSection>
+      <ExampleSection title="view" description="純展示（read-only 內容）— 無 input chrome / 無互動 affordance">
         <Input mode="view" value="Wireless Bluetooth Headphones" aria-label="商品名稱(view 模式示範)" />
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
-        <p className="text-caption text-fg-muted mb-3">neutral-2 底色、無邊框、文字正常色</p>
+      </ExampleSection>
+      <ExampleSection title="readonly" description="neutral-2 底色、無邊框、文字正常色">
         <Input mode="readonly" defaultValue="Wireless Bluetooth Headphones" aria-label="商品名稱(readonly mode demo)" />
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
-        <p className="text-caption text-fg-muted mb-3">停用原因用 Tooltip 或 Form help text 說明</p>
+      </ExampleSection>
+      <ExampleSection title="disabled" description="停用原因用 Tooltip 或 Form help text 說明">
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
@@ -49,27 +41,27 @@ export const Modes: Story = {
           </TooltipTrigger>
           <TooltipContent>此欄位在免費方案中不可用</TooltipContent>
         </Tooltip>
-      </div>
-    </div>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
 /* ── 尺寸與 Button 對齊 ── */
+const SIZE_NAME = { sm: '小', md: '標準', lg: '大' } as const
 export const SizeAlignment: Story = {
   name: '三種尺寸',
+  // 只留欄位本身(稽核 L101:拿掉三顆 primary 送出與程式碼標籤);尺寸說明放 docs
+  parameters: { docs: { description: { story: '由上到下是小、標準、大三種尺寸;同一個尺寸與按鈕、其他欄位等高。' } } },
   render: () => (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
       {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size} className="flex items-center gap-3">
-          <Input
-            size={size}
-            defaultValue="Wireless Bluetooth Headphones"
-            aria-label={`商品名稱（${size} 尺寸）`}
-            className="max-w-xs"
-          />
-          <Button variant="primary" size={size}>送出</Button>
-          <span className="text-caption text-fg-muted">size="{size}"</span>
-        </div>
+        <Input
+          key={size}
+          size={size}
+          defaultValue="Wireless Bluetooth Headphones"
+          aria-label={`商品名稱(${SIZE_NAME[size]}尺寸)`}
+          className="max-w-xs"
+        />
       ))}
     </div>
   ),
@@ -85,9 +77,9 @@ export const EndAction: Story = {
     const [queryLg, setQueryLg] = React.useState('Bluetooth')
 
     return (
-      <div className="flex flex-col gap-6 max-w-sm">
+      <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
         <div>
-          <p className="text-caption text-fg-muted mb-1">顯示/隱藏密碼 — 宣告式 API，Field 自動決定 icon 尺寸和 hover 背景</p>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">顯示/隱藏密碼 — 宣告式 API，Field 自動決定 icon 尺寸和 hover 背景</p>
           <Input
             type={showPwd ? 'text' : 'password'}
             defaultValue="my-secret-123"
@@ -100,7 +92,7 @@ export const EndAction: Story = {
           />
         </div>
         <div>
-          <p className="text-caption text-fg-muted mb-1">清除 — 有值時出現，清空後消失，不佔位</p>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">清除 — 有值時出現，清空後消失，不佔位</p>
           <Input
             startIcon={Search}
             value={query}
@@ -110,7 +102,7 @@ export const EndAction: Story = {
           />
         </div>
         <div>
-          <p className="text-caption text-fg-muted mb-1">Size lg — endAction icon 自動放大到 20px，與 startIcon 對稱</p>
+          <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">Size lg — endAction icon 自動放大到 20px，與 startIcon 對稱</p>
           <Input
             size="lg"
             startIcon={Search}
@@ -131,7 +123,7 @@ export const EndAction: Story = {
 export const ErrorState: Story = {
   name: '錯誤狀態',
   render: () => (
-    <div className="flex flex-col gap-4 max-w-sm">
+    <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
       <p className="text-caption text-fg-muted">Error 以紅色邊框表示。錯誤訊息由 FieldError 提供，不在 input 內放狀態 icon</p>
       {/* Field invalid 自動 cascade 到 Input(useResolvedFieldInvalid),不需重複傳 error;
           standalone <Input error> 用法由 anatomy「+ error prop」section 展示 */}

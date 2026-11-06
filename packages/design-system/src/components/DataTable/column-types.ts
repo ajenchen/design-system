@@ -28,7 +28,7 @@ export type ColumnType = (typeof columnTypes)[number]
 export interface ColumnTypeConfig {
   /** Default horizontal alignment */
   align: 'left' | 'right' | 'center'
-  // L3: sortingFn
+  // L3: sortingFn → 不放在這張表:各型比法住 `./lib/column-sorting.ts`(data-table.tsx 前處理掛上;data-table.spec.md「七、Column Type」排序表)
   // L4: filterVariant, filterFn
   // L5: cellRenderer, cellEditor
 }
@@ -82,7 +82,7 @@ declare module '@tanstack/react-table' {
      * resize feature(`enableColumnResize=true` 拖拉 + columnSizing state)正常運作。
      *
      * - **No resize mode**(default): `width` = column 寬度 reserve(cell ≥ width,
-     *   flex 可 grow,**不可 shrink** 低於 width)。對齊 user 預期「我設多寬就多寬」。
+     *   flex 可 grow,**不可 shrink** 低於 width)。對齊 user 預期(轉述:設多寬就多寬)。
      * - **Resize mode**(`enableColumnResize=true`):`width` = 初始寬度,user 可拖拉
      *   到 `minWidth` 為止。
      */
@@ -100,7 +100,7 @@ declare module '@tanstack/react-table' {
      * Column 是否可被 user 拖拉 resize(opt-out per col)。Default `true`(when `enableColumnResize` 也 true)。
      *
      * Set `false` 表「此 col 寬度由內容決定不允許 resize」(2026-05-10 加,per user
-     * 「操作列這種內容決定寬度的欄位應該不允許 resize」)。對齊 AG Grid `colDef.resizable` /
+     * 轉述:操作列這種內容決定寬度的欄位不允許 resize)。對齊 AG Grid `colDef.resizable` /
      * Material X-DataGrid 同 API。
      *
      * System cols(__select__ / __drag__ / __actions__)自動 false(內部 hard-code,
@@ -157,7 +157,7 @@ declare module '@tanstack/react-table' {
      * - string / number / currency:click cell → inline `<Input>` autoFocus + selected
      * - date / select / multiSelect / person / multiPerson:click cell → 進 edit mode 的 Field control(用戶按 trigger 開 picker)
      * - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
-     * - url:read = 連結;**hover cell** 右側出 Pencil 按鈕,click 才進 `<Input>` edit mode(保留 click 連結語意)
+     * - url:read = 連結(只有網址文字寬)+ 滑過格 / 鍵盤聚焦時出現的 Pencil;點網址文字開連結,點格的其他地方或 Pencil 進 `<Input>` edit mode
      *
      * Esc cancel / blur or Enter commit。Commit 觸發 `onCellCommit`。
      */

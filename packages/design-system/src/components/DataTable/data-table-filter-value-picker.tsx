@@ -6,7 +6,7 @@
 //   DatePicker + DatePickerRange(showTime)/ PeoplePicker — 按 ValueShape dispatch
 //   (ValueShape ↔ picker 對照 canonical:./data-table.spec.md「三、Operator × ValueShape SSOT」)
 // - className 直接 forward 給 inner Field control(不另開 wrapper div)—
-//   field-control-group.spec.md「forward className」canonical(2026-05-04 #2 fix)
+//   field-control-group.spec.md「Width 配置 canonical(W-A,對齊 Ant)」的 className 寫法(2026-05-04 #2 fix)
 // - Operator / ValueShape SSOT:./filter-operators.ts(DATE_RELATIVE_OPTIONS / DATE_RELATIVE_GROUPS)
 // - Person pool:PeoplePicker PersonValue(對齊 cell-registry meta.people SSOT)
 // 設計規則:./filter-operators.spec.md「ValueShape canonical」+ ./data-table.spec.md「進階篩選」段

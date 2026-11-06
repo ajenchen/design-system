@@ -10,11 +10,24 @@
 //     例外:disabled context state(disabled prop,2026-06-03 加)非互動但元件支援——
 //     title / description / icon glyph 轉 text-fg-disabled(供 FileUpload disabled 消費)。
 import type { Meta, StoryObj } from '@storybook/react'
-import { Inbox, Search, FileText, FolderOpen, Bell, Users } from 'lucide-react'
+import { Inbox, Search, SearchX, FileText, FolderOpen, Bell, Users, ClipboardList } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
+
+// 範例裡的按鈕做它說的那件事(稽核 L020;user 2026-09-08 F-S2 看得到的按鈕都要能動)
+const done = (title: string) => () => toast({ variant: 'success', title })
+const copyInviteLink = async () => {
+  try {
+    await navigator.clipboard.writeText('https://app.example.com/invite/acme-design')
+    toast({ variant: 'success', title: '邀請連結已複製' })
+  } catch {
+    toast({ variant: 'error', title: '無法存取剪貼簿,請改從瀏覽器網址列複製' })
+  }
+}
 
 type InspectorArgs = {
   iconKey: 'none' | 'Inbox' | 'Search' | 'FileText' | 'FolderOpen' | 'Bell' | 'Users'
@@ -37,6 +50,8 @@ const ICON_OPTIONS: Record<string, LucideIcon | undefined> = {
 const meta: Meta = {
   title: 'Design System/Components/Empty/設計規格',
   parameters: { layout: 'padded' },
+  // 範例裡的按鈕跳 Toast:Toaster 是 app 層 Provider(toast.spec.md),放在 story 外層、不佔版面(同 Toast 設計原則頁)
+  decorators: [(Story) => (<><Story /><Toaster /></>)],
 }
 export default meta
 type Story = StoryObj
@@ -51,10 +66,10 @@ export const Overview: Story = {
         <Desc>Empty 是 layout pattern——排列 Icon + Title + Description + Action 成居中垂直堆疊。預設只有 description,icon / title / action 全部可選。</Desc>
         <div className="border border-border rounded-lg p-8">
           <Empty
-            icon={Inbox}
-            title="沒有訊息"
-            description="當您收到新訊息時,會在這裡顯示"
-            action={<Button variant="primary" size="sm">發送第一則訊息</Button>}
+            icon={Users}
+            title="還沒有團隊成員"
+            description="把邀請連結傳給同事,他們加入後會出現在這裡"
+            action={<Button variant="primary" onClick={copyInviteLink}>複製邀請連結</Button>}
           />
         </div>
       </div>
@@ -132,7 +147,7 @@ export const Inspector: InspectorStory = {
           icon={icon}
           title={args.title || undefined}
           description={args.description}
-          action={args.withAction ? <Button variant="primary">{args.actionLabel}</Button> : undefined}
+          action={args.withAction ? <Button variant="primary" onClick={done(`${args.actionLabel}:完成`)}>{args.actionLabel}</Button> : undefined}
         />
       </div>
     )
@@ -142,18 +157,11 @@ export const Inspector: InspectorStory = {
 export const ScenarioMatrix: Story = {
   name: '常見場景',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>Table 空資料</H3>
         <div className="border border-border rounded-lg p-8">
           <Empty description="還沒有訂單" className="py-12" />
-        </div>
-      </div>
-
-      <div>
-        <H3>SelectMenu 搜尋無結果</H3>
-        <div className="border border-border rounded-lg p-4 max-w-xs">
-          <Empty icon={Search} description="找不到符合的項目" className="py-6" />
         </div>
       </div>
 
@@ -164,11 +172,11 @@ export const ScenarioMatrix: Story = {
             icon={FileText}
             title="還沒有專案"
             description="建立第一個專案開始追蹤您的任務"
-            action={<Button variant="primary">建立專案</Button>}
+            action={<Button variant="primary" onClick={done('專案已建立')}>建立專案</Button>}
           />
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -179,7 +187,7 @@ export const SlotCombinations: Story = {
       <div>
         <H3>四種 slot 組合 — 從最小到最完整</H3>
         <Desc>
-          Empty 是純 layout 元件——consumer 依 context 決定要顯示多少 slot。最少只要 `description`
+          Empty 是純 layout 元件——consumer 依 context 決定要顯示多少 slot。最少只要 <code>description</code>
           (預設唯一必填 slot),icon / title / action 全部是 opt-in。選擇時問自己:「使用者需要多強的
           引導?」——越初次 / 越重要的空狀態,slot 越多。
         </Desc>
@@ -194,7 +202,7 @@ export const SlotCombinations: Story = {
             </thead>
             <tbody>
               <tr><Td>最低(僅提示)</Td><Td mono>description</Td><Td>DataTable 無資料、篩選無結果</Td></tr>
-              <tr><Td>輕引導</Td><Td mono>icon + description</Td><Td>Dropdown 搜尋無結果</Td></tr>
+              <tr><Td>輕引導</Td><Td mono>icon + description</Td><Td>搜尋頁 / 篩選後的列表無結果</Td></tr>
               <tr><Td>中引導</Td><Td mono>icon + title + description</Td><Td>收件匣空、無留言</Td></tr>
               <tr><Td>初次引導(full)</Td><Td mono>icon + title + description + action</Td><Td>第一次使用功能、onboarding empty</Td></tr>
             </tbody>
@@ -203,21 +211,22 @@ export const SlotCombinations: Story = {
       </div>
 
       <div>
-        <H3>組合 1:僅 description(DataTable 空)</H3>
+        <H3>只有說明(DataTable 空)</H3>
         <div className="border border-border rounded-lg p-8 max-w-md">
           <Empty description="無符合條件的訂單" className="py-6" />
         </div>
       </div>
 
+      {/* 情境與文案照 empty.spec.md「消費範例」的「搜尋頁 / 篩選後的列表無結果」那一則;下拉選單的 0 筆不是 Empty 的場景(同檔「何時不用」,稽核 M022) */}
       <div>
-        <H3>組合 2:icon + description(Dropdown 搜尋無結果)</H3>
-        <div className="border border-border rounded-lg p-4 max-w-xs">
-          <Empty icon={Search} description="找不到符合的項目" className="py-6" />
+        <H3>圖示 + 說明(搜尋頁無結果)</H3>
+        <div className="border border-border rounded-lg p-8 max-w-md">
+          <Empty icon={SearchX} description="找不到符合的結果" className="py-6" />
         </div>
       </div>
 
       <div>
-        <H3>組合 3:icon + title + description(收件匣空)</H3>
+        <H3>圖示 + 標題 + 說明(收件匣空)</H3>
         <div className="border border-border rounded-lg p-8 max-w-md">
           <Empty
             icon={Inbox}
@@ -228,13 +237,13 @@ export const SlotCombinations: Story = {
       </div>
 
       <div>
-        <H3>組合 4:Full slots(onboarding empty)</H3>
+        <H3>全部插槽(初次引導)</H3>
         <div className="border border-border rounded-lg p-8 max-w-md">
           <Empty
-            icon={FileText}
-            title="還沒有專案"
-            description="建立第一個專案,邀請團隊成員協作追蹤進度"
-            action={<Button variant="primary">建立專案</Button>}
+            icon={ClipboardList}
+            title="還沒有任何問卷"
+            description="建立問卷,收集客戶對新功能的回饋"
+            action={<Button variant="primary" onClick={done('問卷已建立')}>建立問卷</Button>}
           />
         </div>
       </div>
@@ -268,8 +277,8 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"本元件為純視覺呈現,無 keyboard / ARIA role / focus state 需求。Consumer 包 Empty 進互動容器(Button / Card / Link)時 a11y 由容器決定。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p>本元件為純視覺呈現,無 keyboard / ARIA role / focus state 需求。Consumer 包 Empty 進互動容器(Button / Card / Link)時 a11y 由容器決定。</p>
     </div>
   ),
 }

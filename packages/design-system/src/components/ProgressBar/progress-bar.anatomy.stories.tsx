@@ -13,6 +13,7 @@ import { CircleCheck, XCircle, X } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
 import { Button } from '@/design-system/components/Button/button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { Slider } from '@/design-system/components/Slider/slider'
 import { H3, Desc, Th, Td, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -57,10 +58,8 @@ export const Overview = {
             <span className="text-[11px] text-fg-muted font-medium">無 affix(純 bar)</span>
             <div className="inline-flex flex-col gap-1 border-2 border-dashed border-primary/30 rounded-md px-3 py-3 w-[360px]">
               <div className="relative">
-                {/* fake track with labels */}
-                <div className="rounded-full bg-secondary overflow-hidden" style={{ height: 6 }}>
-                  <div className="h-full rounded-full bg-info" style={{ width: '45%' }} />
-                </div>
+                {/* 真的 ProgressBar(4px track)再疊標註;2026-10-27 前是手畫的 6px 假 track,跟規格的 4px 不符(稽核 L111) */}
+                <ProgressBar value={45} status="inProgress" aria-label="結構示意:fill 45%" />
                 <span className="absolute -left-1 -top-5 text-[10px] font-mono" style={{ color: 'var(--info)' }}>fill 45%</span>
                 <span className="absolute right-0 -bottom-5 text-[10px] font-mono text-fg-muted">track</span>
               </div>
@@ -69,16 +68,17 @@ export const Overview = {
           {/* 含 affix */}
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">含 affix</span>
-            <div className="inline-flex items-center gap-2 border-2 border-dashed border-primary/30 rounded-md px-3 py-3 w-[360px]">
-              <div className="flex-1 min-w-0">
-                <div className="rounded-full bg-secondary overflow-hidden" style={{ height: 6 }}>
-                  <div className="h-full rounded-full bg-info" style={{ width: '45%' }} />
-                </div>
-              </div>
+            <div className="border-2 border-dashed border-primary/30 rounded-md px-3 py-3 w-[360px]">
+              {/* 真的 ProgressBar + affix(wrapper / bar 的排法就是元件自己的);affix 位置放一個標註 */}
               {/* 2026-07-14 dim-55 修:`--magenta`/`--magenta-subtle` 不存在(semantic magenta namespace
                   只有 hover/active)→ anatomy 圖解標記屬 categorical 靜態色,消費 primitive step token */}
-              <span className="rounded px-2 py-0.5 text-[11px] font-mono border border-dashed"
-                style={{ borderColor: 'var(--color-magenta-6)', backgroundColor: 'var(--color-magenta-1)', color: 'var(--color-magenta-7)' }}>affix</span>
+              <ProgressBar
+                value={45}
+                status="inProgress"
+                aria-label="結構示意:含 affix"
+                affix={<span className="rounded px-2 py-0.5 text-[11px] font-mono border border-dashed shrink-0"
+                  style={{ borderColor: 'var(--color-magenta-6)', backgroundColor: 'var(--color-magenta-1)', color: 'var(--color-magenta-7)' }}>affix</span>}
+              />
             </div>
             <span className="text-[10px] text-fg-muted font-mono">wrapper: flex items-center gap-2 · bar: flex-1 min-w-0</span>
           </div>
@@ -179,12 +179,8 @@ const InspectorInner = () => {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-fg-muted w-16 shrink-0">Value</span>
-          <input
-            type="range" min={0} max={100} value={value}
-            onChange={(e) => setValue(Number(e.target.value))}
-            className="w-[240px]"
-            aria-label="調整進度值"
-          />
+          {/* 原生 range 換 DS Slider(稽核 E1 native-control:story 不用原生控件) */}
+          <Slider min={0} max={100} value={[value]} onValueChange={([v]) => setValue(v ?? 0)} className="w-[240px]" aria-label="調整進度值" />
           <span className="text-[11px] font-mono text-fg-secondary tabular-nums w-10">{value}%</span>
         </div>
       </div>
@@ -268,7 +264,8 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
+    // H3 / Desc 自己帶下方距離(anatomy-utils:標題 ↔ 說明 2px、標題區 → 內容 loose),外層不再加 gap(A-S1 同一段距離只由一層給)
+    <div>
       <H3>元件檢閱器</H3>
       <Desc>
         選擇任意組合,即時查看 fill / track token 與 layout。藍圖標示固定的 track 高度(4px)與 fill 寬度。
@@ -286,6 +283,8 @@ export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
     <div className="flex flex-col gap-8">
+      {/* H3 / Desc 自己帶下方距離,放在沒有 gap 的那一層(A-S1 同一段距離只由一層給) */}
+      <div>
       <H3>Status × Token 對照</H3>
       <Desc>
         橫向看同 status 的 track / fill / affix 色塊;縱向比較三種 status 的 token 差異。
@@ -323,6 +322,7 @@ export const ColorMatrix = {
           </tbody>
         </table>
       </div>
+      </div>
 
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">含 affix 預覽</span>
@@ -340,10 +340,25 @@ export const ColorMatrix = {
    4. Affix 行為
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/** Affix 行為的取消鈕:真的取消(稽核 E1:互動示範本來就要能動;user 2026-09-08 F-S2) */
+function CancellableUpload() {
+  const [cancelled, setCancelled] = useState(false)
+  if (cancelled) return <span className="text-caption text-fg-secondary">已取消上傳</span>
+  return (
+    <ProgressBar
+      value={42}
+      status="inProgress"
+      aria-label="可取消的進度範例"
+      affix={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" onClick={() => setCancelled(true)} />}
+    />
+  )
+}
+
 export const AffixBehavior = {
   name: 'Affix 行為',
   render: () => (
-    <div className="flex flex-col gap-8">
+    // H3 / Desc 自己帶下方距離,外層不再加 gap(A-S1 同一段距離只由一層給)
+    <div>
       <H3>Affix 三種模式</H3>
       <Desc>
         右側附加可傳 string enum(<span className="font-mono">'value'</span> / <span className="font-mono">'status-icon'</span>)
@@ -386,14 +401,7 @@ export const AffixBehavior = {
             上傳中提供取消按鈕;或顯示 <span className="font-mono">2.3 / 5.0 MB</span> 等具體 bytes。
           </p>
           <div className="flex flex-col gap-3 w-[360px]">
-            <ProgressBar
-              value={42}
-              status="inProgress"
-              aria-label="可取消的進度範例"
-              affix={
-                <Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />
-              }
-            />
+            <CancellableUpload />
             <ProgressBar
               value={66}
               status="inProgress"
@@ -424,8 +432,12 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `progress-bar.spec.md`「A11y 預設」段。摘要:\n\nRadix Progress.Root 自動提供:\n- role=\"progressbar\"\n- aria-valuenow={value} / aria-valuemin={0} / aria-valuemax={100}\n- 客製 announce(如「上傳中 45%」)→ parent 傳 aria-valuetext override\n\nConsumer 需補:代表特定語境任務時在 parent 加 aria-label(如「檔案上傳進度」)讓螢幕閱讀器辨認。\n\n無 keyboard / focus state(非互動元件,進度語意由 progressbar role 承載)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <ul className="ml-5 list-disc space-y-1">
+        <li>Radix Progress 自動提供 <code>role="progressbar"</code>、<code>aria-valuenow</code> / <code>aria-valuemin</code> / <code>aria-valuemax</code>;要念成「上傳中 45%」這種句子時,由使用的地方傳 <code>aria-valuetext</code>。</li>
+        <li>每一條進度都要有名字(<code>aria-label</code>,例:「檔案上傳進度」),螢幕閱讀器才分得出是哪一件事的進度。</li>
+        <li>不可互動、沒有焦點狀態;進度語意由 <code>progressbar</code> 角色承載。</li>
+      </ul>
     </div>
   ),
 }

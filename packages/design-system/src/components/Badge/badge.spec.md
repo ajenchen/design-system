@@ -3,7 +3,7 @@ component: Badge
 family: self-contained
 variants:
   critical:
-    when: "最高優先級通知 — 錯誤計數 / 緊急徽章（Gmail 未讀 / iOS notification red dot）"
+    when: "最高優先級通知 — 錯誤計數 / 緊急徽章（例:未讀通知紅點）"
     world-class: ["Polaris Badge tone=critical", "Material Badge error", "Ant Badge status=error / count"]
   high:
     when: "高優先級通知 — 主要計數（Slack 訊息計數 / GitHub PR review badge）"
@@ -74,7 +74,7 @@ Badge 的 level **反映內容的緊急程度，不是 container 的視覺權重
 
 **dot 模式只接 `critical` / `high` 兩個高訊號 attention 色,不提供 `medium` / `low` dot。** dot = 「這裡有東西要看」的單一 attention 點(預設 `critical`);6px 純色圓點無文字、只能靠顏色傳達——淡灰(low)/ 淺藍(medium)的 6px 點幾乎看不見,也傳達不了「值得注意」,**不 earn existence**。
 
-- **世界級對照**:Material small-badge = 單色 attention dot;Ant Badge `status` dot = success/error/warning/**default(灰)**,語意 status 非 severity;Polaris = 語意 status tone,無 low/medium/high dot;Atlassian presence/status dot 另開元件。**無一家把 dot 做成 4 級 severity 刻度**。
+- **為何 dot 不做 4 級 severity 刻度**:dot 只回答「這裡有沒有東西要看」;一顆幾像素的點分不出四級輕重,淡色的 medium / low 點在小尺寸下幾乎看不見,不值得存在 —— 輕重分級留給 count / text badge。
 - **medium / low 仍完整保留於 count badge**(有文字承載對比,淡底合理)。
 - **型別機械強制**:`BadgeProps` 為 discriminated union,`dot: true` 時 `variant` 限 `'critical' | 'high'`(傳 medium/low → compile error)。
 - 需「中性/inactive」的實心灰點 → 走 `--status-offline`(neutral-6 實心)presence 系統,非 Badge dot。
@@ -102,7 +102,7 @@ Badge 的 level **反映內容的緊急程度，不是 container 的視覺權重
 | 待辦事項計數 | `high` | 工作會堆積，有感影響 |
 | Active toggle 顯示計數（如 Filter [3]、Bold pressed 的套用數）| `high`（或 `medium`）| Active 狀態補充資訊，不是急迫訊號 |
 | 通知中心 bell icon 的數字 | `high` 或 `critical` | 視內部通知性質，全是急迫才 critical |
-| Email / Slack 未讀訊息 | `critical` | 錯過會錯過溝通，notification 色觸發 action |
+| Email / 聊天未讀訊息 | `critical` | 錯過會錯過溝通，notification 色觸發 action |
 | 錯誤計數（表單 / CI） | `critical` | 必須立即處理才能繼續 |
 | 帳戶警告（付款失敗、到期） | `critical` | 有金錢 / 服務中斷風險 |
 
@@ -359,7 +359,7 @@ Badge 的 level 靠顏色區分(deep-orange / 藍 / 灰)——color-blind 使用
   - 元件只暴露 **1 個 overlay slot**(例:`<Button overlayBadge={...}>`)→ **只能有 1 個 badge**,consumer 無法合法疊多個(DS 擋下手刻 `absolute` 疊加)
   - 元件暴露 **多個具名 slot**(例:`<Avatar status={...} badgeCount={...}>` — status 在右下、count 在右上,兩個獨立 prop)→ **可合法疊加,最多到 slot 數量**
   
-  **Avatar 可以疊兩個 badge**(status + count),因為 DS canonical 設計了兩個不同角、不同語義的 slot(presence 狀態 / 未讀數量)——這是 iMessage / Slack / LINE 標配。
+  **Avatar 可以疊兩個 badge**(status + count),因為 DS canonical 設計了兩個不同角、不同語義的 slot(presence 狀態 / 未讀數量)——兩個訊號各佔一角,互不遮擋、也不會被誤讀成同一件事。
   
   **Button iconOnly 只能疊一個 badge**(透過 `overlayBadge` prop),DS 不提供第二個 slot——任何「右上 count + 右下 dot」之類的手刻疊加都是 signal crowding 反例,使用者無法判斷哪個訊號重要。想同時表達兩種訊號 → 合併成一個 badge(count + 色彩分級)或重新思考資訊架構
 - ❌ Overlay badge 的 `absolute` 定位相對於 interactive chrome(button / card padding)——badge 必須相對於**視覺重心**(icon / avatar)定位,否則 dot 會飄在 chrome padding 空間裡,離 icon 太遠失去語義連結。canonical:`<Button iconOnly overlayBadge={...}>`(Button 內部貼 icon 角)、或 consumer 自包時把 `relative` 放 icon wrapper 而非 button

@@ -7,7 +7,7 @@
 #
 # Canonical:含 Avatar/ItemAvatar/icon prefix 的 SidebarMenuButton 必用 asChild + 單一 wrapper
 #   (互動觸發行 <button type="button">,如 UserFooter 帳號選單;純展示 row <div role="group">),
-#   per sidebar.tsx:1025-1027 docblock:「asChild 的 consumer 自行放 icon + label」+ DS canonical
+#   per sidebar.tsx#SidebarMenuButton docblock:「asChild 的 consumer 自行放 icon + label」+ DS canonical
 #   sidebar.stories.tsx#UserFooter 範例。
 #
 # Detection:
@@ -74,7 +74,7 @@ cat >&2 <<'EOF'
 
 🔍 偵測:SidebarMenuButton 內含 ItemAvatar 或 Avatar 但 **無 asChild**
 
-⚠️ 後果(per sidebar.tsx:1036-1043 source code):
+⚠️ 後果(per sidebar.tsx#SidebarMenuButton source code):
   SidebarMenuButton 沒 asChild → children 全塞進 ItemLabel(單 span)
   → Avatar + text 在同 span 內 → 強迫垂直堆疊(user 抓的 bug)
 
@@ -91,7 +91,7 @@ Or use startIcon prop(自動 layout,不 wrap):
 Bypass(極罕見):GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 env var(audit-logged)。
 
 Citation:
-  - packages/design-system/src/components/Sidebar/sidebar.tsx:1025-1043(asChild docblock)
+  - packages/design-system/src/components/Sidebar/sidebar.tsx#SidebarMenuButton(asChild docblock)
   - packages/design-system/src/components/Sidebar/sidebar.stories.tsx UserFooter(canonical;帳號選單觸發行)
 EOF
 # 2026-05-31:exit 0 → exit 2(folded-hook-audit:原宣稱 BLOCKER 但 exit 0 = 假 enforcement;

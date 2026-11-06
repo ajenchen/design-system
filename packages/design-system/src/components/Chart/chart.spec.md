@@ -17,11 +17,11 @@ benchmark:
 
 Chart 是**資料視覺化**元件——把數列(時間、類別、比例)畫成折線 / 柱狀 / 圓餅 / 雷達等圖形。不是裝飾視覺效果。
 
-**實作基礎**：shadcn chart 結構 + Recharts v3 engine。本 DS 保留 shadcn 的 API 形狀(`ChartContainer` / `ChartTooltipContent` / `ChartLegendContent` / `ChartConfig`),但把 tooltip、legend、grid、axis 的視覺全改用本 DS token。
+**實作基礎**：shadcn chart 結構 + Recharts v3 engine。本 DS 保留 shadcn 的 API 形狀(`ChartContainer` / `ChartTooltipContent` / `ChartLegendContent` / `ChartConfig`),但把 tooltip、legend、grid、axis 的視覺全改用本 DS token([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/chart.tsx#L366-L373))。
 
 **Layout Family**：非上述 family — composite / multi-section（canvas + tooltip + legend 多區塊組合，自 own layout）。
 
-**高度決定**:`ChartContainer` **預設 `aspect-video`(16:9)**——dashboard card / analytics 面板世界級慣例(Stripe / Vercel Analytics / Datadog)。Recharts ResponsiveContainer 需 parent 有高度,不給 fallback 會坍塌。
+**高度決定**:`ChartContainer` **預設 `aspect-video`(16:9)**——卡片寬度跟著容器走、高度由比例算出,consumer 不必每張圖手給高度;Recharts ResponsiveContainer 需 parent 有高度,不給 fallback 會坍塌([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/chart.tsx#L67))。
 
 **覆寫為其他 ratio**:consumer 包 `AspectRatio` primitive,其 `padding-bottom` 高度會蓋過 ChartContainer 的 aspect-video:
 
@@ -67,7 +67,7 @@ Chart 是**資料視覺化**元件——把數列(時間、類別、比例)畫�
 | **DescriptionList** | DL 是離散 label-value;Chart 是 visual encoding(position / length / angle) | 數據量 ≥ 5 點且需 pattern |
 | **Badge / Tag** | Badge 是單值 indicator;Chart 是 data viz | 多點數據 |
 
-對齊 Polaris Charts / Material X-Charts / Ant Statistic / Recharts 共識:chart 為 multi-point visual encoding,單值用 Badge / KPI block。
+判準:chart 為 multi-point visual encoding,單值用 Badge / KPI block(見上表「Badge / Tag」列)。
 
 ## 常見誤解
 
@@ -124,6 +124,7 @@ const config = {
 | Cartesian grid line | `stroke-divider` |
 | Axis tick | `text-fg-muted`（填 `fill-fg-muted`） |
 | Dot fill | 依 series color |
+| 面積圖填色 / 外框線 | `fillOpacity` 0.3 / `strokeWidth` 2(user 2026-10-21 09:25 回覆:甲案符合設計規格就用甲;展示與設計規格兩層共用 `_chart-style.ts`) |
 | 滑過指示帶(長條圖) | `fill-neutral-hover`(見下節) |
 | 滑過指示線(折線 / 面積 / 散佈 / 雷達) | `stroke-border`(見下節) |
 
@@ -163,7 +164,7 @@ const config = {
 ## 禁止事項
 
 - ❌ **不硬寫色值**：`<Bar fill="#3b82f6" />` 違規,改用 `fill="var(--color-{key})"` 搭配 ChartConfig
-- ❌ **不用 shadcn chart color token**（`--chart-1`..`--chart-5` 我們有自己的定義,shadcn 預設走 HSL 會與我們 oklch palette 漂移）
+- ❌ **不用 shadcn chart color token**(`--chart-1`..`--chart-5` 我們有自己的定義;shadcn 預設是另一套色票(現行指向 Tailwind 色階,如 `--chart-1: var(--color-blue-300)`),沿用會與我們的 oklch palette 漂移)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/app/globals.css#L120))
 - ❌ **不自訂 Tooltip / Legend 視覺**（一律用 `ChartTooltipContent` / `ChartLegendContent`,確保跨圖表視覺一致）
 - ❌ **不自訂滑過指示的顏色**(`<ChartTooltip cursor={{ fill: … }} />` 這類):`chart.tsx` 只換 Recharts 的預設色,自己傳的顏色會原樣畫出來、繞過 DS token;同上一條的理由
 - ❌ **不超過 5 類別**（見上節;改用 grouping 或切視覺化類型）
@@ -197,3 +198,9 @@ Chart 是 **composite data-visualization** 元件,不是單一互動 primitive:
 - `../../../ds-canonical/references/hit-area-canonical.md` — 滑過原則(為什麼圖表可以有滑過指示帶)
 - Recharts v3 官方文件 — `https://recharts.org`
 - shadcn chart 原始參考 — `https://ui.shadcn.com/docs/components/chart`
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `elevation.spec.md`

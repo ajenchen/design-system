@@ -254,6 +254,56 @@ run_hook "Write" "$APP_TSX" "content" \
 );'
 expect_silent "N15. grouped horizontal field pair gap-2 (rule 5) → silent"
 
+# ─────────────────────────────────────────────────────────────
+# 幻覺 token:白名單從 layoutSpace.css 現讀(寫死 loose|tight|bottom 會漏掉之後新增的 tier)
+# ─────────────────────────────────────────────────────────────
+
+# P13. 錨例 2026-07-08 WM:自創 --layout-space-distant(css 沒宣告)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" \
+  'const Detail = () => <div className="flex flex-col gap-[var(--layout-space-distant)]">內容</div>;'
+expect_block "P13. 幻覺 token --layout-space-distant → BLOCK" "幻覺 layout-space token"
+
+# P14. 同一行有一顆合法 token,不得把同行的幻覺 token 一起放掉(逐個 var() 判,不逐行判)→ BLOCK
+run_hook "Write" "$APP_TSX" "content" \
+  'const Detail = () => <div className="p-[var(--layout-space-loose)] gap-[var(--layout-space-distant)]">內容</div>;'
+expect_block "P14. 合法 loose 與幻覺 distant 同一行 → BLOCK" "幻覺 layout-space token"
+
+# N16. --layout-space-viewport-inset 是 layoutSpace.css 宣告的 token(寫死三顆的舊白名單會誤擋)→ silent
+run_hook "Write" "$APP_TSX" "content" \
+  'const Shell = () => <div className="p-[var(--layout-space-viewport-inset)]">內容</div>;'
+expect_silent "N16. layoutSpace.css 宣告的 viewport-inset → silent"
+
+# consumer 端:corpus 是 fork 分發的那一份(只有 references/,沒有 DS 原始碼),
+# 改讀已安裝套件裡發布的同一份 layoutSpace.css(package.json files 含 src/**/*.css)
+CONSUMER_CORPUS="$TMP_DIR/consumer-corpus"
+CONSUMER_PROJECT="$TMP_DIR/consumer-project"
+mkdir -p "$CONSUMER_CORPUS/references" "$CONSUMER_PROJECT/node_modules/@qijenchen/design-system/src/tokens/layoutSpace" "$CONSUMER_PROJECT/.claude/logs"
+cp "$SCRIPT_DIR/../../../src/tokens/utility-registry.json" "$CONSUMER_CORPUS/references/utility-registry.json"
+cp "$SCRIPT_DIR/../../../src/tokens/layoutSpace/layoutSpace.css" \
+  "$CONSUMER_PROJECT/node_modules/@qijenchen/design-system/src/tokens/layoutSpace/layoutSpace.css"
+
+# N17. consumer:node_modules 裡的 layoutSpace.css 宣告了 viewport-inset → silent
+GOVERNANCE_CORPUS_ROOT="$CONSUMER_CORPUS" GOVERNANCE_PROJECT_DIR="$CONSUMER_PROJECT" run_hook "Write" "$APP_TSX" "content" \
+  'const Shell = () => <div className="p-[var(--layout-space-viewport-inset)]">內容</div>;'
+expect_silent "N17. consumer 讀 node_modules 的 layoutSpace.css,viewport-inset → silent"
+
+# P15. consumer:同一份 css 下,自創 distant 仍 → BLOCK(讀到白名單不等於全放行)
+GOVERNANCE_CORPUS_ROOT="$CONSUMER_CORPUS" GOVERNANCE_PROJECT_DIR="$CONSUMER_PROJECT" run_hook "Write" "$APP_TSX" "content" \
+  'const Detail = () => <div className="gap-[var(--layout-space-distant)]">內容</div>;'
+expect_block "P15. consumer 讀 node_modules 的 css,distant → BLOCK" "幻覺 layout-space token"
+
+# P16. 兩處都讀不到 layoutSpace.css → 儀器失效(exit 70),不准默默放行
+rm -rf "$CONSUMER_PROJECT/node_modules"
+GOVERNANCE_CORPUS_ROOT="$CONSUMER_CORPUS" GOVERNANCE_PROJECT_DIR="$CONSUMER_PROJECT" run_hook "Write" "$APP_TSX" "content" \
+  'const Shell = () => <div className="p-[var(--layout-space-viewport-inset)]">內容</div>;'
+if [ "$EXIT" = "70" ] && echo "$STDERR_TEXT" | grep -qF "layout-space token SSOT unavailable"; then
+  echo "  PASS  P16. 讀不到 layoutSpace.css → GOVERNANCE_INTEGRITY exit 70"; PASS=$((PASS+1))
+else
+  echo "  FAIL  P16. 讀不到 layoutSpace.css(expected exit=70 + integrity message, got exit=$EXIT)"
+  echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - P16. 讀不到 layoutSpace.css"
+fi
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

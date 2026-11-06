@@ -1,0 +1,12 @@
+{
+  "note": "switch-thumb-ring-invariant 的覆蓋清單:每則 story 在 light 主題量得到幾何的 Switch 個數。只准由本閘 --write-inventory 全掃重寫;少量就紅。",
+  "generatedBy": "node scripts/switch-thumb-ring-invariant.mjs --write-inventory",
+  "storyCount": 4,
+  "switchCount": 12,
+  "stories": {
+    "design-system-components-switch-設計規格--overview": 2,
+    "design-system-components-switch-設計規格--size-matrix": 3,
+    "design-system-components-switch-設計規格--state-behavior": 6,
+    "design-system-tokens-radius--overview": 1
+  }
+}

@@ -1,11 +1,12 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
-import { Paperclip, CircleCheck, XCircle, Download, RotateCw } from 'lucide-react'
+import { Paperclip, Download, RotateCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
 import { ProgressBar } from '@/design-system/components/ProgressBar/progress-bar'
 import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { RESULT_STATUS_ICON } from './file-item-status'
 import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
 
 /**
@@ -30,10 +31,8 @@ import { STACK_GAP_PX } from '@/design-system/tokens/uiSize/stack-gap'
  * onClick → cursor-pointer + 滑過底色(只有點了會有反應的才加,依平常底色配對;詳 spec「滑過」段,待辦總帳 B12)。
  */
 
-const STATUS_ICON = {
-  completed: { icon: CircleCheck, color: 'text-success' },
-  error: { icon: XCircle, color: 'text-error' },
-} as const
+// 結果圖示與顏色:與 TreeView 步驟結果共用同一份(./file-item-status.ts;owner = 本元件)
+const STATUS_ICON = RESULT_STATUS_ICON
 
 // ProgressBar status 映射:uploading=inProgress(藍) / completed=success(綠) / error=error(紅)
 // 與 ProgressBar 元件的 status prop 對齊,不需再維護 PROGRESS_COLOR 本地 map。

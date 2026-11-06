@@ -79,6 +79,314 @@ export const refRatioVerdict = (buildMedian, refMedian, limit = BLANK_RATIO_LIMI
 }
 
 /**
+ * **比值超過 1.25 ≠ 已證明變慢**(2026-10-14,PR #169 `R1a`)。
+ *
+ * 舊判準只看「兩邊各 3 趟中位數相除 > 1.25」。共享 runner 上同一份建置每趟就差 20–30%,
+ * 3 對 3 的中位數比值本身就會晃過 1.25 —— 1ef86547 相對前一跑 f0dbaf5a **零個執行期檔案改動**,
+ * 釘選區幀距 0.94 → 1.38 判紅。但也不能為了穩定把真回歸放掉(調查版補丁的「分布重疊就綠」沒有倍數上限,
+ * 3 倍回歸只要有一趟偏快就會放行 —— 覆核當場用判定式算出 3.10× p = 0.067 判綠)。所以分三段:
+ *
+ *   1. 中位數比值 ≤ `BLANK_RATIO_LIMIT`(1.25)→ 'pass'。與舊判準**逐位元相同**(同一個 `refRatioVerdict`),一趟都不多跑。
+ *   2. 中位數比值 > `RATIO_HARD_CAP`(1.5)→ 'fail-cap'。**要不要「雜訊撐得住」才紅,依指標而定**(呼叫端必須明講 `capNeedsNoiseSupport`,
+ *      lib 不給預設值 —— 放寬要逐項拿證據,不能因為漏寫就套上去或就沒套到):
+ *      · `capNeedsNoiseSupport: true`(長工合計、幀距;2026-10-14 R1d 改,原本「不看 p」):秩檢定分得開(單側 Mann–Whitney p ≤ α;
+ *        3 對 3 時等於完全分開,5 對 5 時不必完全分開)、或對數 Welch t 檢定 p ≤ α(差距大於兩邊各自的跑間差異;一趟偏快的 3 倍回歸
+ *        靠這條紅)、或兩邊都只有 1 趟沒有雜訊可估,三者任一成立才紅。都不成立 = 分布重疊而且同一份程式碼在同一個 job 裡自己就差到
+ *        這個倍數 → 走第 3 段同一條路(能加量就加、不能就不指控)。
+ *      · `capNeedsNoiseSupport: false`(中央區最長連續空白):照舊**不看 p**,超過上限直接紅。空白是使用者看得到的東西,而放寬的
+ *        證據一條都不適用於它:「門檻統計量」只是長工合計的性質;置換重抽只做了長工合計與幀距;CI 上空白比值 2026-09-29 → 10-14
+ *        共 110 次全是「參考為 0、退回絕對門檻」(42 份 job log),沒有任何一次真的比過,拿不出它的跑間雜訊有多大。
+ *      為什麼長工合計 / 幀距要改:「差到 1.5 倍以上不會是雜訊」這個前提在**快 runner 上的長工合計**不成立 —— 每個任務落在 50ms 上下,
+ *      CPU 多 10% 就有一半任務跨過長工門檻,合計可以差 5 倍以上(同一份 main 在 00b767bc 三趟是 375 / 829 / 0ms)。CI 證據(DataTable
+ *      像素 job 2026-09-29 → 10-14 共 72 個 job、44 個有逐趟數字、共 677 趟):38346602 gesture 長工合計 5.96×、幀距 1.53×,289bce76
+ *      mouse 長工合計 1.70× 被舊規則判紅,同一份執行期程式碼在 21e25346 是 1.01× / 0.99× / 1.05×;676a298e 之前 b5757ee6 長工合計 4.01×、
+ *      幀距 1.71×,0464ba54 長工合計 1.72× 也是,後者與零改動的 a3045925 是 1.14×。
+ *      用真實逐趟數字置換重抽(676a298e 之前 31 / 28 / 26 個 job,每個 job 6 趟的 20 種 3 對 3 分法;只做了長工合計與幀距):虛無下判紅率
+ *      gesture 長工合計 3.7% → 1.9%(快 runner 14.3% → 6.4%)、幀距 1.8% → 1.3%,mouse / pinned 不變或更低;慢 runner 上合成 2 / 3 倍回歸的偵測率
+ *      不變(100%)、1.5 倍最多少 1.4 個百分點(mouse 長工合計 88.0% → 86.6%),快 runner 上長工合計的 2 倍回歸由 86% 降到 59% —— 那是這個量在那種機器上 3 趟本來就分不出來的部分,照實列為代價。
+ *   3. 中間的灰區 → 單側精確 Mann–Whitney(分支比參考慢)p ≤ `RATIO_ALPHA` → 'fail-separated';
+ *      否則還能加量(`canAddMore`)→ 'needs-more'(呼叫端延續 ABBA 交錯再量一輪,有上限);
+ *      不能再加 → 'within-noise':差距落在跑間雜訊內,照實印出比值、p 與每趟數字,不指控。
+ *
+ * 校準(**這是 R1a 時期的數字**,當時超過上限一律紅;只用修改前、與本案無關的 CI 跑;**排除 676a298e 本身與 297b22be 儀器作廢那跑**):
+ * 2026-09-27 → 10-13 共 42 跑、208 項比值判定(舊指標:全部呈現幀),舊判準紅 9 項;R1a 判準 cap 紅 4 項(b5757ee6 兩項、
+ * 0464ba54 長工一項 —— 前一輪調查報告記為該期樣式重算確實出過問題;a6d2ee1d 一項,真假未查)、灰區分得開紅 2 項
+ * (8e9a370f、0080776a 的 mouse 長工,3 對 3 完全分開)、灰區要加量 3 項(含零改動的 1ef86547 兩項)。
+ * **R1d 起**這 4 項 cap 紅都是兩邊重疊、對數 t 也分不開,改判不指控:b5757ee6 兩項、0464ba54 一項見判定表那三列(0464ba54 與零改動的
+ * a3045925 是 1.14×);a6d2ee1d 那項是 gesture 長工合計 233 / 110 / 331 對 212 / 153 / 109(job 108516432763,1.52×,秩檢定 p = 0.20、
+ * 對數 t p = 0.25),不在 R1d 重判的 72 個 job 裡(早於 09-29),這裡另外算過。
+ * 判定表在 `scripts/test-fast-scroll-gate-policy.mjs`(CI 真實數字,逐列註明 commit)。
+ */
+export const RATIO_HARD_CAP = 1.5
+export const RATIO_ALPHA = 0.05
+/**
+ * 灰區加量的上限(2026-10-14 覆核後改):每種跑法最多再交錯量 `MAX_EXTRA_ROUNDS` 輪(每輪每個 build 一趟);
+ * 而且**整個 job** 的加量合計不超過 `EXTRA_ROUNDS_JOB_BUDGET_MS` —— 三種跑法是同一個 job 裡的三次呼叫,
+ * 預算由它們共用(帳本在 `$RUNNER_TEMP`,見閘的 EXTRA_LEDGER),不是每次呼叫各算一份。
+ * 每一輪(含第一輪)開跑前都先估、先檢查(`nextExtraRound`),這種跑法已經有任何一項判紅就不再加量。
+ *
+ * 為什麼是 60 秒、為什麼一輪用「最慢那趟」估(CI 實測,DataTable 像素 job 74 份 log 的時間戳):
+ *   · 這個 job 成功時 33 次:中位數 15.3 分、p90 18.6 分、最長 23.6 分(e6c88132),上限 25 分。
+ *     最慢那次只剩 84 秒 —— 加量預算必須放得進這 84 秒,不能只用 p90 論證(被砍 = cancelled,沒失敗 ≠ 過了,M37)。
+ *   · 一趟的牆鐘是**雙峰、隨機混在同一種跑法裡**:三種跑法都跑到的 29 個 job 共 431 趟,202 趟 5–11 秒、229 趟 35–41 秒
+ *     (後者在等遠端頭像請求結束),例如 daae06da gesture 依序 37 / 7 / 7 / 36 / 7 秒。用中位數估一輪,會把「下一輪兩趟都慢」
+ *     (82 秒)估成 14 秒 —— 模擬這 29 個 job「三種跑法全落灰區、加量趟全是慢的」,中位數估法把 e6c88132 推到 25.0 分;
+ *     用最慢那趟 × build 數估,歷史最壞仍是 23.6 分(e6c88132 每種跑法都有慢趟,一輪預估 72–78 秒 > 60 秒,一輪都不開)。
+ *   · 代價照實說:以目前 25 分上限,只有「這種跑法每一趟都快」時加量才放得進預算(那 29 個 job × 3 種跑法 = 87 組裡 4 組);
+ *     其餘灰區直接以現有趟數終判:分得開照樣紅,分不開不指控,並印出比值、p 與每趟數字。
+ *   · 估不準的上界:估完才出現慢趟(全快的跑法下一輪兩趟都慢),那一輪最多多花約 82 秒,之後預估值跟著變大、不再開;
+ *     歷史上會走到這裡的只有那 4 組所在的 job,最壞 18.2 分。74 份 log 裡「這一趟儀器沒跑起來,重試」出現 0 次。
+ */
+export const MAX_EXTRA_ROUNDS = 2
+export const EXTRA_ROUNDS_JOB_BUDGET_MS = 60_000
+
+/** 一輪加量的牆鐘估計 = 這種跑法目前最慢那一趟 × build 數(理由見上);沒有任何一趟的時間 → NaN(呼叫端不得開輪)。 */
+export function estimateRoundMs(tripMs, buildCount) {
+  const t = (tripMs ?? []).filter((v) => Number.isFinite(v) && v >= 0)
+  if (!t.length || !(buildCount > 0)) return NaN
+  return Math.max(...t) * buildCount
+}
+
+/**
+ * 要不要再量一輪(灰區加量的迴圈只問這一支;2026-10-14 覆核:原本迴圈寫在閘裡、第一輪不看預算、預算每次呼叫各算一份,
+ * 而且整段拿掉測試照樣全綠)。依序:沒有待決 → 停;這種跑法已經有一項判紅 → 停(再量也翻不回來,只是拖時間);
+ * 輪數到頂 → 停;估不出一輪要多久 → 停(**不知道會不會超時 = 不開**);`spentMs + estRoundMs > budgetMs` → 停。
+ * `spentMs` 是**整個 job** 已花掉的加量時間(帳本讀不到 → NaN → 停,不當 0)。
+ *
+ * @returns {{ go: boolean, why: 'go'|'none-pending'|'already-failing'|'max-rounds'|'no-estimate'|'budget' }}
+ */
+export function nextExtraRound({ extra, pendingCount, anyFail, spentMs, estRoundMs, maxRounds = MAX_EXTRA_ROUNDS, budgetMs = EXTRA_ROUNDS_JOB_BUDGET_MS }) {
+  if (!(pendingCount > 0)) return { go: false, why: 'none-pending' }
+  if (anyFail) return { go: false, why: 'already-failing' }
+  if (!(extra >= 1 && extra <= maxRounds)) return { go: false, why: 'max-rounds' }
+  if (!(Number.isFinite(estRoundMs) && estRoundMs > 0)) return { go: false, why: 'no-estimate' }
+  if (!(Number.isFinite(spentMs) && spentMs >= 0) || spentMs + estRoundMs > budgetMs) return { go: false, why: 'budget' }
+  return { go: true, why: 'go' }
+}
+
+/**
+ * 整個 job 共用的加量帳本(閘只做檔案讀寫,解讀在這裡,好讓判定表驗得到)。`text` = 帳本檔內容,檔案不存在給 null。
+ * 不存在 → 已用 0;別的 job 留下的(key 不同)→ 已用 0;**讀得到卻解不開 / 已用不是數字 → NaN**(不知道還剩多少 = 不開,
+ * `nextExtraRound` 會停)。NaN 寫回去是 null,下一次讀仍是 NaN —— 壞掉的帳本一路擋到 job 結束,不會被下一次呼叫重設成 0。
+ */
+export function readExtraLedger(text, key) {
+  const empty = { key, spentMs: 0, rounds: [] }
+  if (text == null) return empty
+  try {
+    const j = JSON.parse(text)
+    if (!j || typeof j !== 'object' || j.key !== key) return empty
+    return { key, spentMs: typeof j.spentMs === 'number' ? j.spentMs : NaN, rounds: Array.isArray(j.rounds) ? j.rounds : [] }
+  } catch { return { key, spentMs: NaN, rounds: [] } }
+}
+export const chargeExtraLedger = (ledger, mode, ms) => ({ key: ledger.key, spentMs: ledger.spentMs + ms, rounds: [...ledger.rounds, { mode, ms }] })
+
+/**
+ * 單側精確 Mann–Whitney:`mine` 比 `ref` 隨機地大(= 分支比較慢)的 p 值。
+ * 全排列(合併樣本裡「選 |mine| 個當分支」的每一種分法),同值算半個 —— 小樣本、有同值都精確。
+ * 3 對 3 完全分開 = 1/C(6,3) = 0.05;5 對 5 完全分開 = 1/252。
+ */
+export function mannWhitneyGreaterP(mine, ref) {
+  const a = mine.filter(Number.isFinite)
+  const b = ref.filter(Number.isFinite)
+  if (!a.length || !b.length) return NaN
+  if (a.length + b.length > 24) throw new RangeError('mannWhitneyGreaterP:樣本太多(> 24)')
+  const pooled = [...a, ...b]
+  const n = pooled.length
+  const k = a.length
+  const uOf = (inA) => {
+    let u = 0
+    for (let i = 0; i < n; i++) if (inA[i]) for (let j = 0; j < n; j++) if (!inA[j]) u += pooled[i] > pooled[j] ? 1 : pooled[i] === pooled[j] ? 0.5 : 0
+    return u
+  }
+  const observed = uOf(pooled.map((_, i) => i < k))
+  let atLeast = 0
+  let total = 0
+  const pick = new Array(n).fill(false)
+  const walk = (start, left) => {
+    if (left === 0) { total++; if (uOf(pick) >= observed - 1e-9) atLeast++; return }
+    for (let i = start; i <= n - left; i++) { pick[i] = true; walk(i + 1, left - 1); pick[i] = false }
+  }
+  walk(0, k)
+  return atLeast / total
+}
+
+/**
+ * Student t 分布的上尾機率 P(T ≥ t)(df 可為非整數;Welch 的自由度通常不是整數)。
+ * 以正則化不完全 Beta 函數算:P(T ≥ t) = ½·I_{df/(df+t²)}(df/2, ½)(t ≥ 0),t < 0 取 1 − 上式。
+ * 連分式照 Numerical Recipes `betacf`(Lentz 法);判定表用 t 分布臨界值表對過(df 1–22,α = 0.05)。
+ */
+export function studentTUpperP(t, df) {
+  if (!Number.isFinite(df) || df <= 0 || Number.isNaN(t)) return NaN
+  if (t === Infinity) return 0
+  if (t === -Infinity) return 1
+  const x = df / (df + t * t)
+  const tail = 0.5 * regIncBeta(x, df / 2, 0.5)
+  return t >= 0 ? tail : 1 - tail
+}
+function logGamma(z) {
+  // Lanczos(g = 7, n = 9)
+  const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7]
+  if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z)
+  z -= 1
+  let a = c[0]
+  const t = z + 7.5
+  for (let i = 1; i < 9; i++) a += c[i] / (z + i)
+  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(a)
+}
+function betacf(x, a, b) {
+  const MAXIT = 300, EPS = 3e-14, FPMIN = 1e-300
+  const qab = a + b, qap = a + 1, qam = a - 1
+  let c = 1, d = 1 - (qab * x) / qap
+  if (Math.abs(d) < FPMIN) d = FPMIN
+  d = 1 / d
+  let h = d
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2))
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN
+    d = 1 / d; h *= d * c
+    aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2))
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN
+    d = 1 / d
+    const del = d * c
+    h *= del
+    if (Math.abs(del - 1) < EPS) break
+  }
+  return h
+}
+function regIncBeta(x, a, b) {
+  if (x <= 0) return 0
+  if (x >= 1) return 1
+  const bt = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x))
+  return x < (a + 1) / (a + b + 2) ? (bt * betacf(x, a, b)) / a : 1 - (bt * betacf(1 - x, b, a)) / b
+}
+
+/**
+ * 對數尺度的單側 Welch t 檢定:分支的幾何平均是否大於參考(= 分支比較慢)。值先取 ln(1 + v)(長工合計可能是 0)。
+ * 兩邊都 ≥ 2 趟 → Welch(不假設兩邊變異相同);有一邊只有 1 趟 → 用另一邊的變異(合併自由度 = 總趟數 − 2);
+ * 兩邊都只有 1 趟 → 沒有任何雜訊估計,回 df = 0、p = NaN(呼叫端自己決定怎麼辦,不得當成「分不開」或「分得開」)。
+ * @returns {{ t: number, df: number, p: number, logRatio: number }}
+ */
+export function logWelchGreater(mine, ref) {
+  const a = mine.filter(Number.isFinite).map((v) => Math.log1p(Math.max(0, v)))
+  const b = ref.filter(Number.isFinite).map((v) => Math.log1p(Math.max(0, v)))
+  const mean = (x) => x.reduce((s, v) => s + v, 0) / x.length
+  const ss = (x, m) => x.reduce((s, v) => s + (v - m) ** 2, 0)
+  if (!a.length || !b.length) return { t: NaN, df: 0, p: NaN, logRatio: NaN }
+  const ma = mean(a), mb = mean(b), diff = ma - mb
+  let se, df
+  if (a.length >= 2 && b.length >= 2) {
+    const va = ss(a, ma) / (a.length - 1), vb = ss(b, mb) / (b.length - 1)
+    const qa = va / a.length, qb = vb / b.length
+    se = Math.sqrt(qa + qb)
+    df = qa + qb > 0 ? (qa + qb) ** 2 / ((qa ** 2) / (a.length - 1) + (qb ** 2) / (b.length - 1)) : a.length + b.length - 2
+  } else {
+    df = a.length + b.length - 2
+    if (df < 1) return { t: NaN, df: 0, p: NaN, logRatio: diff }
+    const pooled = (ss(a, ma) + ss(b, mb)) / df
+    se = Math.sqrt(pooled * (1 / a.length + 1 / b.length))
+  }
+  const t = se > 0 ? diff / se : diff > 0 ? Infinity : diff < 0 ? -Infinity : 0
+  return { t, df, p: studentTUpperP(t, df), logRatio: diff }
+}
+
+/**
+ * 比值判定(見上方長註解)。回傳 `{ verdict, ratio, p, n, mineMedian, refMedian }`,
+ * verdict ∈ 'skip' | 'pass' | 'fail-cap' | 'fail-separated' | 'needs-more' | 'within-noise'。
+ * 灰區的 p 每一次都算(3 對 3 完全分開 = 0.05 → 當場紅);分不開才看要不要加量。
+ * 'fail-cap' 另帶 `capBasis`(呼叫端印紅的理由只看它,不自己重推):
+ *   'rank'(秩檢定分得開)| 'log-t'(對數 Welch t 分得開)| 'noise-unknown'(兩邊都只有 1 趟)| 'no-noise-allowance'(這項指標不放寬)。
+ * `capNeedsNoiseSupport` 必填(boolean),理由見上方第 2 段。
+ */
+export function refRatioDecision(mineVals, refVals, { limit = BLANK_RATIO_LIMIT, cap = RATIO_HARD_CAP, alpha = RATIO_ALPHA, canAddMore = false, capNeedsNoiseSupport } = {}) {
+  if (typeof capNeedsNoiseSupport !== 'boolean') throw new TypeError('refRatioDecision:capNeedsNoiseSupport 必須明講 true / false(放寬要逐項拿證據,見 RATIO_HARD_CAP 的註解)')
+  const mine = mineVals.filter(Number.isFinite)
+  const ref = refVals.filter(Number.isFinite)
+  const refMedian = ref.length ? median(ref) : NaN
+  const mineMedian = mine.length ? median(mine) : NaN
+  const n = { mine: mine.length, ref: ref.length }
+  const base = { ratio: NaN, p: NaN, n, mineMedian, refMedian }
+  if (!mine.length) return { verdict: 'skip', ...base }
+  const magnitude = refRatioVerdict(mineMedian, refMedian, limit)
+  if (magnitude === 'skip') return { verdict: 'skip', ...base }
+  const ratio = mineMedian / refMedian
+  if (magnitude === 'pass') return { verdict: 'pass', ...base, ratio }
+  const p = mannWhitneyGreaterP(mine, ref)
+  if (mineMedian > refMedian * cap) {
+    // 這項指標不放寬(中央區最長連續空白):照舊不看分布,超過上限直接紅(理由見上方第 2 段)
+    if (!capNeedsNoiseSupport) return { verdict: 'fail-cap', ...base, ratio, p, capBasis: 'no-noise-allowance' }
+    // 長工合計 / 幀距(2026-10-14 R1d 改):超過上限**而且**下列任一成立才紅 ——
+    //   (a) 秩檢定分得開(單側 Mann–Whitney p ≤ α;3 對 3 時等於完全分開,5 對 5 時不必完全分開);
+    //   (b) 對數 Welch t 檢定 p ≤ α:差距大於這個 job 裡**兩邊各自跑間差異**撐得出來的範圍(1 趟偏快的大回歸靠這條紅);
+    //   (c) 兩邊都只有 1 趟,沒有任何雜訊估計 → 照舊以倍數判紅(不知道雜訊多大,不拿「不知道」當放行理由)。
+    // 都不成立 = 兩邊分布重疊、而且同一份程式碼在這個 job 裡自己就差到這個倍數 → 跟灰區分不開同一條路:能加量就加量,不能就不指控。
+    // 為什麼:38346602 gesture 長工合計 867 / 697 / 157 對 101–272(5.96×)與 289bce76 mouse 1720 / 1991 / 1515 對 687–1694(1.70×),
+    // 同一份執行期程式碼在 21e25346 是 1.01× / 1.05×;0464ba54 1.72× 與零改動的 a3045925 1.14×。舊規則「超過 1.5× 不看分布」把它們全判紅。
+    const lt = logWelchGreater(mine, ref)
+    const noiseUnknown = !(lt.df >= 1)
+    const capBasis = p <= alpha ? 'rank' : noiseUnknown ? 'noise-unknown' : lt.p <= alpha ? 'log-t' : null
+    if (capBasis) return { verdict: 'fail-cap', ...base, ratio, p, logT: lt, noiseUnknown, capBasis }
+    return { verdict: canAddMore ? 'needs-more' : 'within-noise', ...base, ratio, p, logT: lt, overCapButNoisy: true }
+  }
+  if (p <= alpha) return { verdict: 'fail-separated', ...base, ratio, p }
+  return { verdict: canAddMore ? 'needs-more' : 'within-noise', ...base, ratio, p }
+}
+
+/**
+ * 待決(還分不開)那一項落在哪一段 —— 閘在加量迴圈裡印這句(2026-10-14 覆核:原本一律印「灰區 1.25–1.5×」,
+ * 5.96× 的項目也被印成 1.25–1.5× 灰區)。只看 lib 的判定結果,不在閘裡另推一次。
+ */
+export const ratioZoneText = (d) => (d.overCapButNoisy ? `超過 ${RATIO_HARD_CAP}× 但兩邊重疊` : `灰區 ${BLANK_RATIO_LIMIT}–${RATIO_HARD_CAP}×`)
+
+/**
+ * **「畫面推進的幀」才算捲動的一格 —— 不是「合成器送出的每一幀」**(2026-10-14,PR #169 `R1a`)。
+ *
+ * 舊的幀距指標數 screencast 收到的**所有**呈現幀,於是「捲動之後主執行緒又補畫一格、但捲動位置沒變」的幀也被算成一格順暢度。
+ * 6b5d8b61 以前的 Tag 列就是這樣:判斷在 passive effect、「+N」的數字等 React 下一個工作才畫(Q1 修掉的那個中間錯誤畫面)——
+ * 每個捲動長工後面固定多一張「只有『+N』出現」的呈現幀。被當成「捲動順暢度」的那個值,其實是「呈現幀數」(M37)。
+ *   · 釘選區(pinned)與 wheel 是主執行緒捲動,共享 runner 上主執行緒滿載、一個長工 ≈ 一次捲動更新,補畫幀直接讓呈現幀數翻倍。
+ *     CI 證據(DataTable 像素 job,釘選區每跑「呈現幀合計 ÷ 長工數合計」):676a298e 之前 25 跑(排除 297b22be 儀器作廢那跑)
+ *     main 中位數 2.04、分支 2.06(兩側合併 p10–p90 1.87–2.13);之後分支 1.13 / 1.16 / 1.15、main 2.02 / 1.89 / 2.08。
+ *     同一跑兩側的長工合計相同(分支 ÷ main 1.01 / 0.98 / 1.06,主執行緒佔滿 2.5 秒窗的 85–98%);長工數 a893fa72 兩側都是
+ *     12 / 12 / 13,676a298e 分支 26 / 23 / 18 對 main 19 / 22 / 18 —— 分支長工不比 main 少,呈現幀卻少將近一半。
+ *   · gesture / mouse 由合成器捲動,**幾乎每張呈現幀都推進,新指標在這兩種跑法 ≈ 舊指標**:CI gesture「呈現幀 ÷ 長工數」
+ *     分支 ÷ main 在 676a298e 之後 1.05 / 1.05 / 0.92 / 0.95 / 0.95,之前中位數 1.00;本機不推進的幀數兩側相同
+ *     (mouse G7 main 3 / 6 / 8 對分支 6 / 6 / 8、G10 6 / 6 / 6 對 7 / 8 / 4)。這兩種跑法一起換,只為三種跑法用同一個定義,
+ *     **不是**因為它們也有補畫幀。676a298e 之後 gesture / mouse 幀距略高(9 個比值裡 4 個超過修改前的 p90:gesture 1.19、1.29,
+ *     mouse 1.19、1.29)**不是補畫幀造成,原因不明,本次不宣稱修好**;daae06da 的 mouse 幀距(163.5 / 182.1 / 190.4 對
+ *     127.5 / 157.8 / 141.2 = 1.29×,3 對 3 完全分開)換了指標照樣紅。
+ *
+ * 判準:只算**捲動欄像素有變**的呈現幀 —— 捲動欄 = 中央捲動區最左邊 120px 的直條(roadmap story 的「標題」欄,
+ * 每列文字不同);「+N」補畫(標籤欄)、頭像解碼(負責人 / 審核欄)、截圖串流重送同一張都碰不到它。`scrollSig` 由閘的
+ * ANALYZE_FRAMES 對每張呈現幀算 FNV-1a(選這一條、不選整個中央區或釘選面板的實測理由寫在那裡)。
+ * 定義與舊指標對齊:以第一張呈現幀為起點,平均 = (最後一張推進幀 − 第一張) ÷ 推進幀數 —— **每一張都推進時與
+ * `presentedGapMean` 逐位元相同**。一張推進幀都沒有(捲了卻沒畫出來 = 畫面凍住)→ 整個觀測窗當一格(不是 NaN:
+ * 「沒看到推進」不得被讀成「不適用」而放行);閘另外檢查「DOM 捲了、捲動欄卻沒變」並以偵測器失效的名義紅。
+ *
+ * @returns {{ advanced: number, advanceGapMean: number, advanceGapMax: number }}(沒有 scrollSig 時全 NaN)
+ */
+export function advanceGapStats(shots, windowEndTs = null) {
+  if (!shots.length || shots.some((s) => s.scrollSig == null)) return { advanced: NaN, advanceGapMean: NaN, advanceGapMax: NaN }
+  const t0 = shots[0].ts
+  let last = t0
+  let advanced = 0
+  let gapMax = 0
+  for (let i = 1; i < shots.length; i++) {
+    if (shots[i].scrollSig === shots[i - 1].scrollSig) continue
+    gapMax = Math.max(gapMax, (shots[i].ts - last) * 1000)
+    last = shots[i].ts
+    advanced++
+  }
+  if (!advanced) {
+    const whole = windowEndTs != null ? Math.max(0, (windowEndTs - t0) * 1000) : NaN
+    return { advanced: 0, advanceGapMean: whole, advanceGapMax: whole }
+  }
+  return { advanced, advanceGapMean: ((last - t0) * 1000) / advanced, advanceGapMax: gapMax }
+}
+
+/**
  * 一趟量測「能不能當證據」。**量不到 ≠ 量到壞東西** —— 兩者的修法完全相反。
  *
  * 2026-09-21 CI 實證:共享 runner 的 CDP screencast 會間歇停擺,某一趟只送出 9 張呈現幀。

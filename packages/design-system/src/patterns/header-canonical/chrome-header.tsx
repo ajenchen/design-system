@@ -5,14 +5,14 @@ import { cn } from '@/lib/utils'
  * Header 家族 tabsSlot wrapper className(W2 SSOT,header-canonical.spec.md Rule W2)。
  * 兩家族(ChromeHeader chrome / SurfaceHeader overlay)的 column-mode tabsSlot row 共用此契約:
  * 對 `[data-slot=tabs-list]`(tabs.tsx 三種 overflow 模式的 role=tablist 元素皆自標,對齊
- * shadcn v4 data-slot idiom)注入內 `px-loose` inset triggers(對齊 header content = W2)。
+ * shadcn v4 data-slot idiom,例 https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L15 )注入內 `px-loose` inset triggers(對齊 header content = W2)。
  * 寬度不在此注入 — TabsList 各模式自帶(none `w-full` border-b 延展全寬 = W1 一條線;
  * scroll/menu `min-w-full` 讓 border 隨溢出內容成長,blanket `w-full` 會把 border 截在可視寬)。
  * v4(2026-07-30 regression fix):beta.86 inlineAction overlay(fc2a3a5c)包 `<div class="relative">`
  * 後,原 `[&>[role=tablist]]` direct-child 結構選擇器全滅(px-loose 靜默消失,且 scroll/menu 深度
  * 本就 >1 從未命中)→ 改 data-slot attribute contract + descendant selector,免疫 DOM 深度重構。
  * SSOT 在此(header-canonical = 跨家族 W-rule owner);overlay-surface.tsx SurfaceHeader 消費同一 const,
- * 禁各自 hardcode(原兩處逐字重複,2026-06-08 收斂為單一 SSOT,per user「照你建議做到完美…不改A壞B」)。
+ * 禁各自 hardcode(原兩處逐字重複,2026-06-08 收斂為單一 SSOT;當時記為 user 核准照建議做、不改 A 壞 B,原話已不可查)。
  */
 export const HEADER_TABS_SLOT_WRAPPER_CLASS =
   '[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]'
@@ -88,7 +88,7 @@ export interface ChromeHeaderProps
    * (sidebar 收合 width = sidebar-width-icon,toggle container 同寬 = toggle center x = sidebar
    * collapsed icon center x = perfect alignment)。
    *
-   * 對齊 GitHub global nav 左側固定寬度 logo 區 / Slack thin workspace rail 慣例。
+   * 固定寬度讓 toggle / logo 跟 sidebar 收合後的 icon 欄落在同一條中線。
    * 提供時自動結構:
    *   row1: [leadingRail (width=sidebar-width-icon)] [children (px-loose flex-1)]
    * 不提供時 fallback 預設 single-row(全 px-loose)。
@@ -108,7 +108,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
     // Column mode(tabsSlot 提供時)— per W2 + W4
     // 2026-05-20:`<div>` → `<header>`(HTML5 sectional content 允許 multiple `<header>`,
     // page-level / sectional 都 a11y safe;統一 element contract 消除「何時用 header / 何時用 div」
-    // 的 consumer drift)。 對應 header-canonical.spec.md 「Element canonical」段。
+    // 的 consumer drift)。 對應 header-canonical.spec.md「7. Element contract」段。
     if (tabsSlot != null) {
       return (
         <header

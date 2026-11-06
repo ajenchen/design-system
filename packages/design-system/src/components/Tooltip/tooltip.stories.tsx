@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { Info } from 'lucide-react'
+import { Palette } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 import { Button } from '../Button/button'
+import { FieldLabel } from '@/design-system/components/Field/field'
+import { Tag } from '@/design-system/components/Tag/tag'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta<typeof TooltipContent> = {
   title: 'Design System/Components/Tooltip/展示',
@@ -17,6 +20,7 @@ const meta: Meta<typeof TooltipContent> = {
   },
   decorators: [
     (Story) => (
+      // @layout-space-magic-ok: decorator 四周 64px 畫布留白是範例原值(與已發布版同值,F-S8),讓 Tooltip 浮層落在畫布內;規格沒寫這個值(放行章 (d))
       <div className="flex items-center justify-center p-16">
         <Story />
       </div>
@@ -31,16 +35,20 @@ type Story = StoryObj<typeof TooltipContent>
 export const Default: Story = {
   name: '基本用法',
   render: () => (
-    <Tooltip defaultOpen>
-      <TooltipTrigger asChild>
-        <Button variant="tertiary" startIcon={Info}>
-          自動套用品牌
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>付款頁會自動帶入你的 logo 與主色</p>
-      </TooltipContent>
-    </Tooltip>
+    // 觸發點是真的動作(按了套用並跳 Toast),Tooltip 只補一句非必要的說明;只給資訊的 ⓘ 用 FieldLabel info(見「長文字」)
+    <>
+      <Tooltip defaultOpen>
+        <TooltipTrigger asChild>
+          <Button variant="tertiary" startIcon={Palette} onClick={() => toast({ variant: 'success', title: '已套用品牌', description: '付款頁已帶入你的 logo 與主色' })}>
+            自動套用品牌
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>付款頁會自動帶入你的 logo 與主色</p>
+        </TooltipContent>
+      </Tooltip>
+      <Toaster />
+    </>
   ),
 }
 
@@ -48,11 +56,10 @@ export const Default: Story = {
 export const NonButtonTrigger: Story = {
   name: '非 Button 元素',
   render: () => (
+    // 狀態標記 = Tag(不手刻紅字底線);停權原因放 tooltip。Tooltip 要鍵盤到得了才算數 → Tag 給 tabIndex(同 tag.spec.md「Keyboard」截斷時可 focus 的理由)
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex items-center gap-1 text-body text-error cursor-default underline underline-offset-2 decoration-dotted">
-          停權中
-        </span>
+        <Tag color="red" tabIndex={0}>停權中</Tag>
       </TooltipTrigger>
       <TooltipContent>此帳號已於 2024/12/01 被管理員停權</TooltipContent>
     </Tooltip>
@@ -68,15 +75,7 @@ export const NonButtonTrigger: Story = {
 export const LongText: Story = {
   name: '長文字',
   render: () => (
-    <Tooltip defaultOpen>
-      <TooltipTrigger asChild>
-        <Button variant="tertiary" startIcon={Info}>
-          API 金鑰安全說明
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        API key 會授權第三方應用存取你的工作區資料,請勿公開分享或提交到公開 repo。
-      </TooltipContent>
-    </Tooltip>
+    // 只給資訊的 ⓘ 用 FieldLabel info(不用 Button:Button 有底色與手形,點了也沒事做);長文字超過 280px 自動換行
+    <FieldLabel info="API key 會授權第三方應用存取你的工作區資料,請勿公開分享或提交到公開 repo。">API 金鑰</FieldLabel>
   ),
 }

@@ -9,7 +9,8 @@
  *       的真對照組就是把鎖拆掉重量一次,量到的就是修法前的形狀。
  *   綠: 三次滾輪的 scrollTop 分別 = 不變 / 有動 / 不變,位移 0px。每次滾輪都先確認事件**真的送到頁面**(window 捕獲階段的見證人收到),
  *       再等 scrollTop 連續靜止 N 個影格才讀 —— 機器慢只會等久一點,不會提早取樣;沒送到 / 容器根本不可捲 = 儀器失效(INSTRUMENT-FAIL),不是綠。
- *   量法: 靜態站開並存夾具 story(Dialog/展示 `CoexistencePoc`,test-only)。夾具的舞台是 overflow-hidden、常駐側欄沒有清單,所以
+ *   量法: 靜態站開並存夾具(scripts/test-fixtures/dialog-coexistence/fixture.tsx,lib/dialog-coexistence-fixture.mjs 打包;2026-11 前是
+ *         Dialog/展示 的 test-only story `CoexistencePoc`,user 2026-09-11 要求刪掉)。夾具的舞台是 overflow-hidden、常駐側欄沒有清單,所以
  *         **閘在活的 DOM 裡把舞台改成可捲(overflow-y:auto + 3000px 撐高)、在側欄裡放一份可捲清單**(不改 story 檔;常駐節點 = `<aside>`
  *         本身,清單在它裡面就在 shard 裡)。先 Esc 關掉再點「開啟」重開一次:量常駐側欄左緣(關著 vs 重開)= 跳版,同時讓 shards 走第二次掛載。
  *         然後 `page.mouse.wheel` 三次:舞台空白處(舞台左下角往內,不在對話框矩形裡)/ 側欄清單中心 / 一般 modal(`OpenSnapshot` story,
@@ -25,12 +26,12 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { INSTRUMENT_FAIL_MARKER, launchBrowserOrSkip, openStory, requireFreshStorybookBuild, settleAfterInteraction, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { startDialogCoexistenceFixture, FixtureInstrumentError } from './lib/dialog-coexistence-fixture.mjs'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))
 const STATIC = path.resolve(staticArg ? staticArg.slice('--static='.length) : path.join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
-const COEXIST_STORY = 'design-system-components-dialog-展示--coexistence-poc'
 const MODAL_STORY = 'design-system-components-dialog-展示--open-snapshot'
 /** 每次合成滾輪的 deltaY(px)。 */
 export const WHEEL_DELTA = 300
@@ -116,10 +117,10 @@ function disarmScrollLock() {
 
 /** 並存夾具:舞台改成可捲 + 撐高;側欄放可捲清單(常駐節點 = aside 本身,清單在它裡面)。 */
 function prepareCoexistFixture({ tall }) {
-  const mask = document.querySelector('[data-coexistence-mask]')
-  const stage = mask?.parentElement
+  // 舞台 = 夾具自己的 #coexist-stage(不經產品的遮罩去找:遮罩沒掛上正是要量的產品行為,找不到它不能變成「儀器失效」)
+  const stage = document.getElementById('coexist-stage')
   const aside = document.getElementById('coexist-aside')
-  if (!stage || !aside) return { ok: false, reason: `找不到 ${!stage ? '舞台(遮罩的父節點)' : ''}${!aside ? ' 常駐側欄 #coexist-aside' : ''}` }
+  if (!stage || !aside) return { ok: false, reason: `找不到 ${!stage ? '舞台 #coexist-stage' : ''}${!aside ? ' 常駐側欄 #coexist-aside' : ''}` }
   stage.style.overflowY = 'auto'
   if (!document.getElementById('scroll-lock-probe-spacer')) {
     const spacer = document.createElement('div')
@@ -158,8 +159,7 @@ function prepareModalFixture({ tall }) {
 
 /** 並存:滾輪落點 —— 舞台左下角往內(不在對話框矩形裡)、側欄清單中心;附 elementFromPoint 作證。 */
 function pickCoexistPoints() {
-  const mask = document.querySelector('[data-coexistence-mask]')
-  const stage = mask?.parentElement
+  const stage = document.getElementById('coexist-stage')
   const dialog = document.querySelector('[role="dialog"][data-state="open"]')
   const list = document.getElementById('scroll-lock-probe-list')
   if (!stage || !dialog || !list) return { ok: false, reason: `找不到 ${!stage ? '舞台' : ''}${!dialog ? ' 開著的對話框' : ''}${!list ? ' 注入的清單' : ''}` }
@@ -184,7 +184,7 @@ function pickModalPoint() {
 
 /** 讀捲動容器(which:stage / list / doc)的 scrollTop 與可捲性。 */
 function readScroller(which) {
-  const el = which === 'stage' ? (document.querySelector('[data-coexistence-mask]')?.parentElement ?? null)
+  const el = which === 'stage' ? document.getElementById('coexist-stage')
     : which === 'list' ? document.getElementById('scroll-lock-probe-list')
     : which === 'doc' ? document.scrollingElement : null
   if (!el) return null
@@ -193,7 +193,7 @@ function readScroller(which) {
 
 /** scrollTop 連續 frames 個影格不變才回(捲動不改 DOM,MutationObserver 看不到;逐影格讀);capMs 只是「等不到」的上限。 */
 function waitScrollSettled({ which, frames, capMs }) {
-  const el = which === 'stage' ? (document.querySelector('[data-coexistence-mask]')?.parentElement ?? null)
+  const el = which === 'stage' ? document.getElementById('coexist-stage')
     : which === 'list' ? document.getElementById('scroll-lock-probe-list')
     : which === 'doc' ? document.scrollingElement : null
   if (!el) return Promise.resolve({ ok: false, reason: `找不到捲動容器 ${which}` })
@@ -235,14 +235,14 @@ const describeProbe = (r) => `scrollTop ${r.before} → ${r.after}(事件${r.del
  * 三處量測。disarm = true 時每個 story 開好之後先把鎖拆掉(對照組)。
  * @returns {Promise<{ stage, persistent, modal, asideLeft, notes: string[] }>}
  */
-async function measure(page, origin, notFound, { disarm }) {
+async function measure(page, origin, notFound, { disarm, fixture }) {
   const story = (id) => `${origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`
   const notes = []
   const waitOpen = () => page.waitForFunction(() => !!document.querySelector('[role="dialog"][data-state="open"]'), null, { timeout: 15000, polling: 'raf' }).then(() => true, () => false)
   const settle = async (label) => { const s = await settleAfterInteraction(page, { frames: SETTLE_FRAMES }); if (!s.ok) fail(`${label}:版面 10 秒內沒有連續靜止 ${SETTLE_FRAMES} 個影格`) }
 
   // ── 並存夾具 ────────────────────────────────────────────────────────────
-  await openStory(page, story(COEXIST_STORY), { waitFor: '#coexist-aside-input', settleFrames: SETTLE_FRAMES, notFound })
+  await openStory(page, fixture.url, { waitFor: '#coexist-aside-input', settleFrames: SETTLE_FRAMES, notFound: fixture.notFound })
   await page.evaluate(installWheelWitness)
   const prep = await page.evaluate(prepareCoexistFixture, { tall: TALL_PX })
   if (!prep.ok) fail(`並存夾具改造失敗:${prep.reason}`)
@@ -283,15 +283,25 @@ async function measure(page, origin, notFound, { disarm }) {
 async function withBrowser(run) {
   requireFreshStorybookBuild(STATIC, SOURCES)
   const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
-  const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
+  let fixture
+  try {
+    fixture = await startDialogCoexistenceFixture(server.servedRoot)
+  } catch (error) {
+    await server.stop()
+    if (error instanceof FixtureInstrumentError) throw new ProbeSetupError(error.message)
+    throw error
+  }
+  const browser = await launchBrowserOrSkip({}, { cleanup: async () => { await server.stop(); await fixture.stop() } })
   if (!browser) return null
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
-    return await run(page, server.origin, server.notFound)
+    return await run(page, server.origin, server.notFound, fixture)
   } finally {
     await browser.close()
     await server.stop()
-    if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))
+    await fixture.stop()
+    const missing = [...server.notFound, ...fixture.notFound]
+    if (missing.length) console.error('同源 404:', [...new Set(missing)].join(', '))
   }
 }
 
@@ -310,7 +320,7 @@ if (isMain) {
       const tableOk = judgeTableSelftest()
       if (!tableOk) { console.error('❌ dialog-coexist-scroll-lock selftest FAIL:判定表對照組沒過'); process.exit(1) }
       // 真對照組:拆掉鎖之後,同一支量測必須看到舞台與文件捲動
-      const m = await withBrowser((page, origin, notFound) => measure(page, origin, notFound, { disarm: true }))
+      const m = await withBrowser((page, origin, notFound, fixture) => measure(page, origin, notFound, { disarm: true, fixture }))
       if (m === null) process.exit(0) // launchBrowserOrSkip 已印 SKIPPED-ENV / BROWSER-REQUIRED
       printMeasurement(m)
       const v = judge(m)
@@ -324,7 +334,7 @@ if (isMain) {
       console.log(`✅ dialog-coexist-scroll-lock selftest PASS(判定表 8 題 + 真對照組:拆鎖後舞台 ${m.stage.before}→${m.stage.after}、文件 ${m.modal.before}→${m.modal.after} 都被抓到)`)
       process.exit(0)
     }
-    const m = await withBrowser((page, origin, notFound) => measure(page, origin, notFound, { disarm: false }))
+    const m = await withBrowser((page, origin, notFound, fixture) => measure(page, origin, notFound, { disarm: false, fixture }))
     if (m === null) process.exit(0)
     printMeasurement(m)
     const v = judge(m)

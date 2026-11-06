@@ -75,7 +75,7 @@ run_hook "/repo/governance/planning/refactor-Y.md" '# Plan
 '
 expect_pass_silent "2. planning propose with file path cite → silent"
 
-# 3. Planning doc with propose + file:line cite → silent
+# 3. Planning doc with propose + file:line cite → silent(@cite-fixture:夾具裡的 combobox.tsx 行號是合成輸入)
 run_hook "/repo/governance/planning/refactor-Z.md" '# Plan
 依 `combobox.tsx:42` 既有 pattern,等你拍板回 A 或 B。
 '

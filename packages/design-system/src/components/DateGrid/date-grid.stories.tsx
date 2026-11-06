@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { zhTW } from 'date-fns/locale/zh-TW'
 import type { DateRange } from 'react-day-picker'
 import { DateGrid } from './date-grid'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/DateGrid/展示',
@@ -31,15 +32,14 @@ const Card = ({
   desc?: string
   children: React.ReactNode
 }) => (
-  <div className="flex flex-col gap-3 mb-10">
-    <div className="flex flex-col gap-1">
-      <h3 className="text-body font-bold text-foreground">{title}</h3>
-      {desc && <p className="text-caption text-fg-muted max-w-[640px] leading-relaxed">{desc}</p>}
-    </div>
-    <div className="inline-flex bg-surface-raised border border-border rounded-lg p-4 w-fit">
+  // 區段標題 + 說明 = 共用 ExampleSection(標題 ↔ 說明 2px、標題區 → 內容 loose;A4 甲)
+  <ExampleSection title={title} description={desc}>
+    {/* 外框不加內距:DateGrid 每張月曆自己四周留 --item-px(date-grid.tsx month),與 DatePicker 的 PopoverContent(不另加內距)是同一個單一內距 owner;
+        讀數列同樣用 --item-px 內縮,不再另加間距 */}
+    <div className="inline-flex bg-surface-raised border border-border rounded-lg w-fit">
       {children}
     </div>
-  </div>
+  </ExampleSection>
 )
 
 const formatDate = (d: Date) =>
@@ -67,7 +67,7 @@ export const Single: Story = {
           title="選擇生日"
           desc="使用者設定頁填寫個人資料時的生日欄位,對標 Notion / Google Account。單日選擇,點新日取代舊選。"
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col">
             <DateGrid
               mode="single"
               selected={date}
@@ -75,9 +75,8 @@ export const Single: Story = {
               defaultMonth={date}
               today={STORY_TODAY}
               locale={zhTW}
-              autoFocus
             />
-            <div className="text-caption text-fg-secondary px-1">
+            <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
               已選生日:<span className="font-medium text-foreground">{date ? formatDate(date) : '尚未選擇'}</span>
             </div>
           </div>
@@ -105,7 +104,7 @@ export const Multiple: Story = {
           title="活動可參加日期"
           desc="參考 Luma / Calendly — 受邀者勾選所有能參加的日期,主辦方彙整後決定最終日期。不連續多選,點已選日即取消。"
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col">
             <DateGrid
               mode="multiple"
               selected={dates}
@@ -114,9 +113,9 @@ export const Multiple: Story = {
               today={STORY_TODAY}
               locale={zhTW}
             />
-            <div className="text-caption text-fg-secondary px-1">
+            <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
               已選 <span className="font-medium text-foreground">{dates.length}</span> 天:
-              <span className="ml-1 text-fg-secondary">
+              <span /* @layout-space-magic-ok: 同一行讀數裡「已選 N 天:」↔ 日期清單的行內 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(ec7466f5 同值) */ className="ml-1 text-fg-secondary">
                 {dates.length ? dates.map(formatDate).join('、') : '尚未選擇'}
               </span>
             </div>
@@ -144,7 +143,7 @@ export const Range: Story = {
           title="營收報表時段"
           desc="參考 Stripe Dashboard / Vercel Analytics — 選擇查詢的起訖日。第一次點擊設起日,第二次點擊設迄日,中間自動填滿。"
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col">
             <DateGrid
               mode="range"
               selected={range}
@@ -154,7 +153,7 @@ export const Range: Story = {
               locale={zhTW}
               numberOfMonths={2}
             />
-            <div className="text-caption text-fg-secondary px-1">
+            <div className="text-caption text-fg-secondary px-[var(--item-px,var(--field-px))] pb-[var(--item-px,var(--field-px))]">
               查詢範圍:<span className="font-medium text-foreground">{formatRange(range?.from, range?.to)}</span>
             </div>
           </div>
@@ -170,6 +169,7 @@ export const Range: Story = {
  */
 export const Inline: Story = {
   name: '行內 — 儀表板小卡',
+  parameters: { docs: { description: { story: '月曆外面那圈框只是示範用的卡片框,DateGrid 本身不帶外框;實際放進儀表板時由所在的卡片或面板提供外框。' } } },
   render: () => {
     const [deadline, setDeadline] = useState<Date | undefined>(
       INLINE_DEADLINE,
@@ -180,9 +180,9 @@ export const Inline: Story = {
           title="專案截止日 widget"
           desc="參考 Linear / Height — 專案側欄的 deadline 選擇器,常駐顯示不需點開浮層。DateGrid 是 inline primitive,不自包 Popover。"
         >
-          <div className="flex flex-col gap-3 w-fit">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-caption text-fg-muted">Project deadline</span>
+          <div className="flex flex-col w-fit">
+            <div className="flex items-center justify-between px-[var(--item-px,var(--field-px))] pt-[var(--item-px,var(--field-px))]">
+              <span className="text-caption text-fg-muted">專案截止日</span>
               <span className="text-caption font-medium text-foreground">
                 {deadline ? formatDate(deadline) : '未設定'}
               </span>

@@ -80,7 +80,7 @@ benchmark:
 
 ### Slot
 
-- **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);**一律 `variant=tertiary`**(含 destructive — `Trash` 等 icon + label 已辨識危險)— **不用 primary、destructive 不上 danger 紅填色**(2026-07-17 user 拍板:批次刪除鈕點下去是**開確認 dialog**非直接刪,紅色強調留給 dialog 內確認最終不可逆 action;對齊 UX Movement / GitLab Pajamas「紅留給不可逆最終確認」+ button.spec.md「Inline destructive 不用高強調」)
+- **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);**一律 `variant=tertiary`**(含 destructive — `Trash` 等 icon + label 已辨識危險)— **不用 primary、destructive 不上 danger 紅填色**(2026-07-17 user 拍板:批次刪除鈕點下去是**開確認 dialog**非直接刪,紅色強調留給 dialog 內確認最終不可逆 action;對齊 UX Movement / GitLab Pajamas「紅留給不可逆最終確認」;原指標『Inline destructive 不用高強調』在 button.spec.md 查無此節,來源不明)
 - **count 區**:`已選 {N} 項`(內建)+ inline filter hidden status `· {M} 個被 filter 隱藏`(`hiddenByFilter` prop 傳入時)
 - **clear**:`<Button iconOnly size=md variant=text dismiss />`(內建,觸發 `onClearSelection`)
 
@@ -89,7 +89,7 @@ benchmark:
 | Placement variant | Buttons size | 理由 |
 |--|--|--|
 | **default**(footer 浮層 / page-bottom 區段)| **md** | 與 DS Dialog footer commit 系及 page primary-button bar 共用 action measure |
-| **top-toolbar 變體**(未來)| sm | 覆蓋 sm-density toolbar / GitHub-style;variant prop 驅動 override |
+| **top-toolbar 變體**(未來)| sm | 覆蓋頁面頂部的 sm-density 工具列(清單上方常駐,不浮在底部);variant prop 驅動 override |
 
 #### Count text color canonical(2026-05-04 升 SSOT)
 
@@ -172,7 +172,7 @@ interface BulkActionBarLabels {
 
 `actions` 由 consumer 注入 ReactNode,**批次操作的非同步生命週期由 consumer 擁有**(BulkActionBar 是 stateless 呈現層,不介入 action 執行):
 
-- **Loading**:非同步 action(批次刪除 / 匯出)進行中,對應 action Button 傳 `loading`(既有 API,spinner + 自動 disabled)——不在 bar 內另加全域 spinner
+- **Loading**:非同步 action(批次刪除 / 匯出)進行中,對應 action Button 傳 `loading`(既有 API:spinner + 可聚焦的停用 —— `aria-busy` / `aria-disabled`、擋掉觸發、焦點留在鈕上,見 `../Button/button.spec.md`「loading」〔UD-U1021-28〕)——不在 bar 內另加全域 spinner
 - **防重複提交**:同一批次操作進行中,consumer 對該 action Button 設 `loading` / `disabled` 阻止連點觸發多次(語義同 `../Field/form-validation.spec.md` double-submit 防護,但 owner 在 consumer 而非 bar)
 - **選取保留**:操作進行中 `selection` 維持不變、bar 持續可見;**成功**後才由 consumer 清空 `selection`(觸發 bar 自動隱藏),**失敗**則保留選取讓 user 重試
 
@@ -188,7 +188,7 @@ interface BulkActionBarLabels {
 
 ## a11y 預設
 
-- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 user 拍板)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。
+- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 記為 user 拍板,來源不明:登記簿查無原話)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(「Left Arrow: Moves focus to the previous control.」「Right Arrow: Moves focus to the next control.」https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/toolbar/toolbar-pattern.html#L59-L72)(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。
 - count 文字用 `aria-live="polite"` + `aria-atomic="true"`(selection 變更時 SR 整句重讀「已選 3 項」)
 - Clear button:`aria-label="清除選取"`
 - Hint banner 用 `role="status"` + `aria-live="polite"`(state 切換時通知)

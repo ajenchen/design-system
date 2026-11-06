@@ -7,7 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import type { FieldMode, FieldVariant } from "@/design-system/components/Field/field-types"
 import { useFieldContext, useResolvedFieldMode, useResolvedFieldDisabled, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
-import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
+import { SelectionItem, selectionItemStyles } from "@/design-system/components/SelectionControl/selection-item"
 import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { fieldWrapperStyles, fieldDisplayTextClass } from "@/design-system/components/Field/field-wrapper"
@@ -141,13 +141,17 @@ const RadioGroup = React.forwardRef<
     // 與 edit 選項 label 同字級。2026-09-15 前是裸 span → 吃到瀏覽器預設 16px(user 抓 view 字比選項大);
     // 閘 scripts/field-view-typography-invariant.mjs 量 view 與 edit 字級相等。
     const viewTextClass = fieldDisplayTextClass(resolvedBoxSize)
+    // 放進 Field 時,Field 依 RadioGroup 宣告的 fieldLayout='block' 走區塊佈局(不給 min-h,靠第一個選項列自帶的
+    // py = (field-height − 1lh) / 2 把第一行中線推到 field-height / 2,見 field.tsx「Control area」)。純顯示只剩一行字,
+    // 沿用同一個選項列幾何(selectionItemStyles),值的中線才會跟同排其他欄位的值同高(修前高 5.5 / lg 7.5px)。
+    const viewRowClass = fieldCtx?.hasFieldWrapper === true ? selectionItemStyles({ size: resolvedBoxSize }) : undefined
     if (!selectedValue) {
-      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={cn(viewTextClass, fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span></div>
+      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={cn(viewRowClass, viewTextClass, fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span></div>
     }
     const selectedLabel = findSelectedRadioLabel(children, selectedValue)
     return (
       <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}>
-        <span className={cn(viewTextClass, 'text-foreground')}>{selectedLabel ?? selectedValue}</span>
+        <span className={cn(viewRowClass, viewTextClass, 'text-foreground')}>{selectedLabel ?? selectedValue}</span>
       </div>
     )
   }
@@ -170,7 +174,7 @@ const RadioGroup = React.forwardRef<
         // aria-required-children 就是 radio,這棵樹在結構上本來就是壞的。
         //
         // 改成 role="group" 是**對齊本 DS 既有先例**(M23):Select 的 ReadonlyDisplay
-        //(select.tsx:374 起)就是純 <span> / <div>,**不掛任何 role**。
+        //(select.tsx#ReadonlyDisplay)就是純 <span> / <div>,**不掛任何 role**。
         // aria-readonly 同時拿掉 —— WAI-ARIA 1.2 沒把它列進 group 的支援屬性
         //(axe 的 aria-allowed-attr 會抓;rating.tsx 唯讀分支 role=img 記過同一個坑)。
         // 唯讀語意已由「裡面根本沒有可互動控件」表達,與 Select 一致。
@@ -360,7 +364,12 @@ const RadioGroupItem = React.forwardRef<
         // 該屬性(readonly 語意由 Root role=radiogroup 宣告,見上方 L167-170)。item 靠
         // data-readonly + tabIndex + click guard 鎖互動。
         data-readonly={effectiveReadonly || undefined}
-        tabIndex={effectiveReadonly ? -1 : undefined}
+        // tabIndex 只在唯讀時才傳(2026-11-05,MASTER-TODO 3f-n6-radio-tabstop):Radix 把這個 prop 放進 Radio(子元素),
+        // 外層 RovingFocusGroup.Item 以 asChild 合併時子元素的 prop 蓋掉 roving 給的 `tabIndex: isCurrentTabStop ? 0 : -1`
+        // (@radix-ui/react-roving-focus dist/index.mjs:153)—— 明寫 `tabIndex={undefined}` 也算「有給」,
+        // 每顆圓於是回到瀏覽器預設可 Tab,違反 radio-group.spec.md「Focus」整組只佔一個 Tab 停留點。
+        // 機械閘 scripts/radio-group-tab-stop-invariant.mjs(實按 Tab / Shift+Tab 數停留點)。
+        {...(effectiveReadonly ? { tabIndex: -1 } : {})}
         className={cn(radioItemVariants({ size }), className)}
         {...props}
         // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click

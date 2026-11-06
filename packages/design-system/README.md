@@ -148,7 +148,7 @@ Token `--font-sans` stack = `Roboto, -apple-system, BlinkMacSystemFont, "Segoe U
 | iconOnly Button 卡死 / warn | App root 缺 `<TooltipProvider>` |
 | Sidebar selection 行為怪 | 不用 `isActive={true}`,改用 `<SidebarProvider activeId={...}>` |
 | Dark mode 不切換 | 確認 `<html data-theme="dark">`(attribute,非 class)|
-| TypeScript `FieldMode` type 找不到 | beta.6 以前 .d.ts 有 `@/` alias leak,升 beta.7+(tsc-alias 已修)|
+| TypeScript `FieldMode` type 找不到 | beta.6 以前 .d.ts 有 `@/` alias leak,升 beta.7+(建置時把 `@/` 別名改寫成相對路徑,改寫不了就直接建置失敗)|
 
 ---
 

@@ -25,7 +25,7 @@ benchmark:
 ## 定位
 
 Tabs 用於在**同一個上下文底下切換平行的視圖**——每個 tab 對應一塊獨立內容區，同時只顯示一塊。
-基於 shadcn/ui Tabs（Radix Tabs），橋接設計系統 token。
+基於 shadcn/ui Tabs（Radix Tabs），橋接設計系統 token([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tabs.tsx#L6))。
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
@@ -100,11 +100,11 @@ TabsContent ← 對應被選中的 trigger
 
   **可視 viewport 契約(2026-08-02 regression fix)**:實際 viewport = overlay 與 trigger 所有 overflow-clipping ancestors 的交集。trigger 完全不相交時不 render action；部分相交時僅在 canonical trailing action slot 完整可見才 render。**禁 clamp** action 到 viewport 內，否則會侵入 label/suffix 並破壞 canonical 8px content→action gap。consumer `style` 可合併其他 key，但不可覆寫該 padding reservation。
 
-  **指標在 inlineAction 上時(巢狀 hover,2026-09-25)**:tab **保留**自己的 hover 字色(`foreground`),action **再亮**自己那一層;停用的 tab 仍是 `fg-disabled`。依據是 user 在「滑到可點卡片內的按鈕上時」一題選的「卡片保留、按鈕再亮一層 (Recommended)」(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」;套到 Tabs 是 AI 依此推導)。action 被 portal 到 tablist 外,CSS 對應不到是哪個 trigger,所以由 action 外層 span 的**原生** `pointerenter` / `pointerleave`(依 DOM 樹判定,與 `:hover` 同一套;觸控不標)在 trigger 上標 `data-action-hover`,trigger 的 `data-[action-hover]:text-foreground` 讀它。
+  **指標在 inlineAction 上時(巢狀 hover,2026-09-25)**:tab **保留**自己的 hover 字色(`foreground`),action **再亮**自己那一層;停用的 tab 仍是 `fg-disabled`。依據是 user 在 AI 出的 D3-2a 那一題(『滑鼠滑到可點卡片(如檔案卡)裡的按鈕上時,卡片本身的滑過狀態?』)選了 AI 列的選項『卡片保留、按鈕再亮一層 (Recommended)』(2026-09-25;取代 AI 先前草擬、未進 repo 的全 DS 模型「只亮最裡層」;套到 Tabs 是 AI 依此推導)。action 被 portal 到 tablist 外,CSS 對應不到是哪個 trigger,所以由 action 外層 span 的**原生** `pointerenter` / `pointerleave`(依 DOM 樹判定,與 `:hover` 同一套;觸控不標)在 trigger 上標 `data-action-hover`,trigger 的 `data-[action-hover]:text-foreground` 讀它。
 
   **action 外層只有 action 本身接指標(2026-09-26,待辦總帳 N53②)**:portal 出去的外層 span 與 trigger 同高(垂直置中 action 用),但 action 只有 icon 高 —— 預設 sm(32px 高的 tab、16px 的 action)時 span 上下各多出 8px。先前那兩塊接指標:指到時分頁字變深(上一段的巢狀滑過標記),點下去卻不切分頁,正是 `../../ds-canonical/references/hit-area-canonical.md` 要防的「看到亮起來卻點不到」。現在外層 span `pointer-events-none`、只有它的直接子元素(action)`pointer-events-auto`:上下兩塊落回底下的 trigger —— 那裡本來就是 trigger 右緣預留的 paddingRight 區(上方 `inlineAction` 條),點了切分頁、滑過由 trigger 自己的 `hover:` 變色,顏色與先前相同,只有游標與點擊結果改變。巢狀滑過不受影響:原生 `pointerenter` / `pointerleave` 依 DOM 樹送到祖先,指標進出 action 時外層 span 照樣收得到。
 
-  **⚠️ ARIA required-children 鐵律(泛化,防同類 regression)**:任何 composite widget 容器(`role=tablist` / `listbox` / `menu` / `radiogroup` / `tree`)只能擁有其 required child role;要在容器「格子」旁塞獨立互動 element(action / dropdown trigger)時,**必 portal 出容器 DOM 子樹 + 量測定位**(aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除)。對齊 W3C ARIA APG composite-widget owned-elements 規範。
+  **⚠️ ARIA required-children 鐵律(泛化,防同類 regression)**:任何 composite widget 容器(`role=tablist` / `listbox` / `menu` / `radiogroup` / `tree`)只能擁有其 required child role;要在容器「格子」旁塞獨立互動 element(action / dropdown trigger)時,**必 portal 出容器 DOM 子樹 + 量測定位**(aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除)。對齊 WAI-ARIA 規範各 composite role 的「Allowed Accessibility Child Roles」(舊版稱 Required Owned Elements;例:`tablist` 只允許 `tab`)([來源](https://github.com/w3c/aria/blob/f894ef467d1b68b5879fd7b92d362e233843e7c8/index.html#L1177-L1182)、[來源](https://github.com/w3c/aria/blob/f894ef467d1b68b5879fd7b92d362e233843e7c8/index.html#L10496-L10497))。
 
 ### 對標對象與故意的偏離
 
@@ -188,11 +188,11 @@ Tabs 是 **navigation anchor**，不是 compact control：
 
 **Triggers 之間 gap**：使用 `--layout-space-loose`（md density 16px / lg density 24px），與其他「pattern 層級的鬆散留白」共用同一 token。Tabs 的 gap 不是裝飾性空白，而是告訴使用者「每個 tab 是獨立的視圖入口」的視覺分隔。
 
-**TabsList 容器寬度(2026-06-12 user 拍板,解 L58 spec≠code)**:**跨滿父容器**(none 模式 `w-full`;scroll/menu 模式 inner list `min-w-full` 保留溢出成長)——底線連成整條、右端達內容區邊緣,與「跨父容器寬度、與 header border 對齊」的角色定義一致(對齊 Ant nav `left:0;right:0` 底線 / Primer UnderlineNav;shadcn 為 pill 式不同型不適用)。Trigger 本身仍 hug content(上段不變)。**左右邊距 ownership**:TabsList **不自加水平 padding**——邊距由容器的 `--layout-space-loose` gutter 提供(standalone = 父容器 padding;withTabs = 繼承 header padding,W2 lockstep),故 tab 左緣永遠對齊兄弟內容左緣。
+**TabsList 容器寬度(2026-06-12 user 拍板,解 L58 spec≠code)**:**跨滿父容器**(none 模式 `w-full`;scroll/menu 模式 inner list `min-w-full` 保留溢出成長)——底線連成整條、右端達內容區邊緣,與「跨父容器寬度、與 header border 對齊」的角色定義一致(對齊 Ant nav `left:0;right:0` 底線 / Primer UnderlineNav;shadcn 預設是 pill 式,另有 `line` 變體但 TabsList 仍是 `w-fit` 不跨滿,不適用)。Trigger 本身仍 hug content(上段不變)。**左右邊距 ownership**:TabsList **不自加水平 padding**——邊距由容器的 `--layout-space-loose` gutter 提供(standalone = 父容器 padding;withTabs = 繼承 header padding,W2 lockstep),故 tab 左緣永遠對齊兄弟內容左緣([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tabs.tsx#L28-L33))。
 
-**TabsContent 與 TabsList 間距(2026-06-12 user 拍板)**:`--layout-space-tight`(md 12px,density 連動),**內建於 TabsContent**(`mt-[var(--layout-space-tight)]`,className 可覆寫;full-height 佈局用 `mt-0`)。依 `layoutSpace.spec`「親疏 3 級」第一級(同 bundle,元件 spec own)+ 規則 3「直接功能依賴 = tight」精神;**不**取 Ant 的固定 16px(M23 自家 token 優先)。內容本身的排版歸 item-anatomy / 各內容元件管,本條只管 list↔content gap。
+**TabsContent 與 TabsList 間距(2026-06-12 user 拍板)**:`--layout-space-tight`(md 12px,density 連動),**內建於 TabsContent**(`mt-[var(--layout-space-tight)]`,className 可覆寫;full-height 佈局用 `mt-0`)。依 `layoutSpace.spec`「親疏 3 級」第一級(同 bundle,元件 spec own)+ 規則 3「直接功能依賴 = tight」精神;**不**取 Ant 的固定 16px(M23 自家 token 優先)。內容本身的排版歸 item-anatomy / 各內容元件管,本條只管 list↔content gap([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L1133))。
 
-> ⚠️ **此預設只在 TabsContent 緊接 tab bar 當直接 sibling 時成立**(standalone 頁面 tabs、ChromeHeader-as-sibling)。當 `tabsSlot` composition 把 tab bar 抬進 chrome header、TabsContent 留在 `DialogBody`/`SheetBody`/`SurfaceBody`(chrome scroll body,已自帶 `pt-/py-[var(--layout-space-tight)]`)內時,body 已擁有 header→content gap,TabsContent 的預設 `mt-tight` 會**雙重疊加**(md 24 / lg 32)。此時 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 body — 詳見下方「出現在 Dialog」段。一軸單一 spacing owner,per `item-anatomy.spec.md`「垂直 padding 歸屬 / 禁雙重 padding」。Hook `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
+> ⚠️ **此預設只在 TabsContent 緊接 tab bar 當直接 sibling 時成立**(standalone 頁面 tabs、ChromeHeader-as-sibling)。當 `tabsSlot` composition 把 tab bar 抬進 chrome header、TabsContent 留在 `DialogBody`/`SheetBody`/`SurfaceBody`(chrome scroll body,已自帶 `pt-/py-[var(--layout-space-tight)]`)內時,body 已擁有 header→content gap,TabsContent 的預設 `mt-tight` 會**雙重疊加**(md 24 / lg 32)。此時 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 body — 詳見下方「出現在 Dialog」段。一軸單一 spacing owner,per `item-anatomy.spec.md`「垂直 padding 歸屬」段。Hook `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
 
 ---
 
@@ -212,9 +212,9 @@ Tabs 常與容器 header 的底邊 border 合併——**視覺上只有一條線
 
 **做法**:Tabs 的 `TabsList` 底部 border 與 header 的 `border-b` 實際上是**同一條線**(設計上重疊、實作上不重複渲染)。**Header 退讓**(移除自己 `border-b`),**Tabs 接管**(自身 `border-b border-divider` per `TABS_LIST_BASE`,2026-05-18 fd843c25 統一 chrome separator 色)。三種 overflow mode 的 TabsList 一律跨滿父容器(none 模式 `w-full`;scroll / menu 模式 inner list `min-w-full` 保留溢出成長,見「寬度行為」段;`TABS_LIST_BASE` + `overflow-y-hidden` 阻 y auto-promote,2026-05-19 c359c711 border owner 升 list 內部);chrome header 內的 W2 px-loose inset 由 `ChromeHeader` tabsSlot wrapper 以 `[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]` 注入(attribute contract:TabsList 三種 overflow 模式皆自標 `data-slot="tabs-list"`,2026-07-30 v4;全寬 paint 由 TabsList 自帶 w-full / min-w-full,wrapper 不注入寬度,見 `header-canonical.spec.md` W2 v4)。
 
-**世界級對照**:GitHub Primer、Ant Tabs 與 Mantine Tabs 都讓 tabs family 擁有自身 separator；Material UI 的替代模式由 parent 擁有 separator。此 DS 採前者，因為 separator 與 active indicator 是同一個 TabsList 狀態邊界；`ChromeHeader` 因此在含 Tabs 時讓出該邊界，避免雙 owner。外部對照只作輔證，內部 authority 見 `header-canonical.spec.md` W1。
+**世界級對照**:GitHub Primer、Ant Tabs 與 Mantine Tabs 都讓 tabs family 擁有自身 separator；Material UI 的替代模式由 parent 擁有 separator。此 DS 採前者，因為 separator 與 active indicator 是同一個 TabsList 狀態邊界；`ChromeHeader` 因此在含 Tabs 時讓出該邊界，避免雙 owner。外部對照只作輔證，內部 authority 見 `header-canonical.spec.md` W1([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components/Tabs/Tabs.module.css#L161-L171)、[來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/tabs/demos/basic/BasicTabs.tsx#L46)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14))。
 
-**Auto-suppress 機制(Phase 2 production code 提案)**:header primitive 加 `withTabs?: boolean` prop → true 時自動移除自身 `border-b`,免 consumer 手動忘記。對齊 GitHub Primer 的 auto-suppress 模式(免 consumer 手動 prop)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
+**Auto-suppress 機制(Phase 2 production code 提案)**:header primitive 加 `withTabs?: boolean` prop → true 時自動移除自身 `border-b`,免 consumer 手動忘記(分隔線只能有一個 owner,見上段)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
 
 Size 建議:overlay / chrome header 內用 `sm`(32/40)— 對應 close X 也是 sm,視覺一致;**獨立取代 chrome header** 的 page-level workspace tabs 用 `lg`(48/56,= chrome-header-height)。
 
@@ -228,7 +228,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 
 | State | 視覺 |
 |---|---|
-| selected | `text-foreground` + `font-medium` + 底部 2px `bg-primary` 底線（semantic.css 選中規則；2026-07-06 拍板持續選中站 base，Ant inkBarColor = colorPrimary 同款）|
+| selected | `text-foreground` + `font-medium` + 底部 2px `bg-primary` 底線（semantic.css 選中規則；2026-07-06 拍板持續選中站 base，Ant inkBarColor = colorPrimary 同款）([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L1132)) |
 | 未選 | `text-fg-secondary` + `font-medium`（與 selected 同 weight，差異僅文字色 + 有無底線，非 weight）、無底線；hover 時文字色轉 `text-foreground`,**瞬間**切換、不過渡(`../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9)。選中切換時的底線換色(`after:transition-colors`)是「選中移動」,不是滑過,保留過渡 |
 | disabled | `text-fg-disabled`；無 hover 色變化、無底線；`cursor-not-allowed`；不接受鍵盤 focus |
 | focus-visible | 內描邊 `focus-visible:focus-ring-inset`(tab 高 = 分頁列高,上下淨空 0 → 往內;`focus-canonical.md`「問題二」;2026-09-09 訂正,原 `ring-offset-1` 是已退役的幾何);鍵盤導覽(左右箭頭)由 Radix 原生處理 |
@@ -258,7 +258,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 - ❌ 不得用 Tabs 做表單單選（選 view ≠ 選 value）——改用 SegmentedControl
 - ❌ 不得用 Tabs 做頁面層級導覽（切路由）——改用 navigation
 - ❌ Trigger `startIcon` 不得超過一個
-- ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加 per user 抓「圖一 tabs 圖示混用」)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon
+- ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加;user 抓到截圖裡同一組 tabs 圖示混用)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon
 - ❌ `endIcon` 不得放動詞性 icon（Download、Trash2）——tab 是視圖切換，不是觸發動作
 - ❌ Dialog / Sidebar header 內不得同時有 header `border-b` 和 TabsList `border-b`——會出現雙線
 - ❌ 不得把 trigger 改成等分 / fullWidth——等寬互斥切換是 SegmentedControl 的身份特徵，Tabs 是 navigation anchor，兩者不同層級。需要等寬改用 SegmentedControl

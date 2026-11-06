@@ -17,7 +17,7 @@ row… This is to act as a buffer as **on some slower machines and browsers, a b
 the user scrolls**」(https://www.ag-grid.com/javascript-data-grid/dom-virtualisation/)。
 AG Grid 是用兩倍於我們原值的緩衝把空白壓到看不見 —— 但**壓小不等於消除**,緩衝再大都追不上任意快的手勢。
 
-> **2026-09-12 撤回**:這裡原本寫「**連 AG Grid 都不宣稱能消除空白**」,語氣上把「業界最好的也只能壓小」
+> **2026-09-12 撤回**:這裡原本把「業界最好的實作也只能把空白壓小」
 > 當成本 DS 的天花板。那是錯的定位 —— user 2026-09-12 原話:「你知道 main 只是低標嗎?理想上 data table
 > 整體互動和體驗越順暢越好」、「我認為任何情境『理想』上都不應該看到空白,但也不應該為了達成此目的而讓
 > 體驗和互動卡頓」。**目的地是零空白**,見下方「零空白不變條件」。緩衝與列殼都只是逼近手段,不是終點。
@@ -31,11 +31,11 @@ AG Grid 是用兩倍於我們原值的緩衝把空白壓到看不見 —— 但*
 overscan = clamp(⌊(50 − fixedCost − 視窗列數 × costPerRow) ÷ (2 × costPerRow)⌋, consumer overscan, 10)
 ```
 
-我們比 AG Grid 多的就是 `costPerRow` / `fixedCost` 這兩個實測值,所以緩衝可以按機器付得起的量給。
+我們比 AG Grid(固定緩衝 `rowBuffer`,預設 10,https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/gridOptions.ts#L836-L841)多的就是 `costPerRow` / `fixedCost` 這兩個實測值,所以緩衝可以按機器付得起的量給。
 
 **兩個被推翻的版本(都留著,免得再走一次)**:
 
-1. **固定 10**(直接照抄 AG Grid):4× 節流下最長連續空白從 451ms 惡化到 **566ms**、面積 516 → 972 ——
+1. **固定 10**(直接照抄 AG Grid `rowBuffer` 預設值,https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/gridOptions.ts#L836-L841):4× 節流下最長連續空白從 451ms 惡化到 **566ms**、面積 516 → 972 ——
    慢機器每次 commit 要掛的列變多。
 2. **事後守衛**(`commitCost > 50ms 就不擴`):**不行,因為它是反應式的** —— `commitCost` 要先被量到變長
    才會觸發,而那幾次變長的 commit 正是它該避免的。同機 3× 節流下 `--ref=main` 判定長工 374ms >
@@ -54,7 +54,7 @@ overscan = clamp(⌊(50 − fixedCost − 視窗列數 × costPerRow) ÷ (2 × c
 所以這條不可用本機單跑判定,要看 CI 的同窗交錯 `--ref=main` 比值。
 
 **機械閘** `scripts/data-table-overscan-adaptive-invariant.mjs`(刻意做成**機器無關** —— 絕對門檻只是在量跑閘的那台機器):
-A1 緩衝不低於 consumer 的 overscan / A2 不超過 AG Grid 的 10 / A3 能力越強緩衝不得更小(抓公式方向反了)/
+A1 緩衝不低於 consumer 的 overscan / A2 不超過 AG Grid 的 10(`rowBuffer` 預設,https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/gridOptions.ts#L836-L841) / A3 能力越強緩衝不得更小(抓公式方向反了)/
 A4 有餘裕時機制必須真的動(沒餘裕的機器明白標為不適用,不假裝驗過)。
 對照組把回報值改成 0 與 99 → A1/A2 必紅。
 
@@ -80,7 +80,7 @@ A4 有餘裕時機制必須真的動(沒餘裕的機器明白標為不適用,不
 
 **機械閘** = `scripts/data-table-scroll-cost.mjs`:R0 每步真的重算的列 ≤ 換列數 + 2、R1 屬性變動、R2 節點增減、R3 commits ≤ 8(固定版本回歸預算:1 次虛擬捲動 + 5 次新列掛載副作用鏈,全在新列;Radix Tooltip / Checkbox 的 ref-state 可 batching,ref → 量測有先後依賴不能併)、**R4 單步內舊列裡被碰到的元件 fiber(含 bailout)最大值 ≤ 12(實測 0;舊列 = 步前就存在且不是最近 2 步內掛載的列,新列的掛載副作用鏈會跨到下一步的量測窗)、R5 表頭 ≤ 4(實測 0)**(fiber 歸因,React DevTools 同法;PerformedWork 會漏算「執行了但 bailout」所以另計 touched;逐步最大值不是平均;計數器丟例外即紅)、1px 步進 gBCR;`--selftest` = 預算歸零必紅 + 正向對照組(點全選 → 表頭與舊列都必須量到 render)。已知邊界:主要量連續捲動,開始/停止捲動時 `TableScrollProvider` 的 context 切換(Avatar / PersonDisplay 的 scroll-defer)不在 R4 內。
 
-**零空白不變條件(2026-09-12;user 拍板「確認,改 data-table.tsx」)**:**送出的任何一幀,中央捲動區都不得有任何一帶是空的** —— 而且**不得為了達成它而讓幀距或長工變差**。兩條必須同時成立,單獨任一條都可以被作弊繞過(只要零空白 → 整片蓋死;只要不卡 → 維持空白)。
+**零空白不變條件(2026-09-12;user 拍板:確認,改 data-table.tsx(轉述))**:**送出的任何一幀,中央捲動區都不得有任何一帶是空的** —— 而且**不得為了達成它而讓幀距或長工變差**。兩條必須同時成立,單獨任一條都可以被作弊繞過(只要零空白 → 整片蓋死;只要不卡 → 維持空白)。
 
 為什麼緩衝與列殼都不夠:捲動跑在**合成執行緒**上,跟主執行緒刻意隔離(Chromium RenderingNG:「Separating the main and compositor threads is critically important for performance isolation of animation and scrolling from main thread work.」<https://developer.chrome.com/docs/chromium/renderingng-architecture>)。主執行緒被長工佔住時,合成器照樣每 16ms 送一幀,React 不可能在那段期間把列放到新位置 —— **任何需要主執行緒的機制都輸掉這場競速**。實測 CPU×1、6000px 手勢:手勢 663ms 中長工 4 個合計 324ms,送出 38 幀有 **27 幀整片空白、17/17 帶全空、最長連續 410ms**,而列殼只出現 1 幀(舊判準 `cannotDrawViewport` 問的是「這台機器畫得完一個視窗嗎」= **能力**,快機器恆為 false)。
 
@@ -93,7 +93,7 @@ A4 有餘裕時機制必須真的動(沒餘裕的機器明白標為不適用,不
 **快速捲動的列殼(2026-09-09 codify;Codex R8 解法 (b))**:上面的不變條件管的是「主執行緒做了多少事」,但使用者看到的是合成器送出的幀 ——
 真實呈現幀量測(`scripts/data-table-fast-scroll.mjs --mode=gesture`,CDP screencast + 合成手勢)抓到 **main 與分支都有**的白:滾輪一甩
 (每秒 6,000–12,000px)時,每側只預掛 5 列 = 200px 緩衝,而把整窗 27 列有錢的儲存格重畫一次要 100ms 以上,合成器一幀就把視窗推到
-還沒掛任何列的區域,連續 17 幀(約 280ms)中央整片白、左右釘選面板停在舊位置。修法對齊 AG Grid `cellRendererParams.deferRender`
+還沒掛任何列的區域,連續 17 幀(約 280ms)中央整片白、左右釘選面板停在舊位置。修法對齊 AG Grid `cellRendererParams.deferRender`(https://www.ag-grid.com/javascript-data-grid/component-cell-renderer/)
 (捲動中先顯示 skeleton cell,停捲後補 renderer)與 MUI X server-side lazy loading 的 skeleton rows:
 - **判準(自適應機器畫列能力,2026-09-10)**:只看**捲動造成的 commit**(初次載入、換頁、靜止時資料變動照舊全畫)。
   跟得上的機器完全走原路:一般速度直接畫真列、零骨架。「跟不上」看真正的症狀 —— 兩次畫圖之間視窗移動的距離超過預掛緩衝
@@ -194,7 +194,7 @@ commit 後那個 layout effect(自身時間 292.6ms / 18.7%)—— 它只讀一�
 1. **把那個讀取拿掉(改用 render 開始時的位置)**:成本不會消失,只是換一個函式背 —— 直接改建置產物做對照,
    292.6ms 只是搬到另一處變成 255.0ms,手勢反而從 1,556ms 變長到 1,657ms、scroll 事件處理中位數 0.47 → 53.02ms。
    **結論:那是整張表固有的版面成本,不是多餘的讀取**;這也是前面第 3 項撤回的獨立佐證。
-2. **不要在 scroll 事件裡同步重繪**(`useFlushSync: false`,對齊 AG Grid 把捲動處理丟進 animation frame 的作法):
+2. **不要在 scroll 事件裡同步重繪**(`useFlushSync: false`,對齊 AG Grid 把捲動處理丟進 animation frame 的作法:`suppressAnimationFrame` 預設 false,https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/gridOptions.ts#L1617-L1622):
    4 次交錯對照下長工最長 157 → 130ms、script 1,109 → 1,049ms 是好的,但**使用者看得到的那幾項全部變差** ——
    空白幀 49.5 → 50.5、最長連續空白中位 516 → 608ms、殼幀 9 → 13.5、停捲後補齊 490 → 600ms。
    user 抱怨的是空白與骨架,所以不採用。
@@ -270,10 +270,10 @@ costPerRow=2.1–4.6ms   fixed=10.0ms   budgetRows=4   slow=1   ahead=1
    但它的 class 裡沒有 `data-[hovered]:bg-neutral-hover`,標了也什麼都不顯示。指標停著不動、底下那列
    在捲動中被套殼,看到的就是整列毫無反應。4× 節流實測:殼存活 505ms,期間 6 幀完全沒有 hover 反應。
    **修法**:殼列補上跟真列同一條 hover 底色。殼是「內容還在路上」,不是「這裡沒有列」;
-   把手與動作鈕仍不畫(那兩個要有真資料才有意義)。對齊 Linear / Jira 的 skeleton 列仍是可 hover 表面。
+   把手與動作鈕仍不畫(那兩個要有真資料才有意義)。skeleton 列仍是可 hover 表面:列殼先到、內容後補時,滑過的回饋不該因為還沒載入就消失。
 2. **捲動中瀏覽器不重新派送 hover**。整段合成手勢期間,指標底下那一列**一次 `mouseover` 都沒有收到**,
    `data-hovered` 還留在早就捲出視窗的舊列上。CSS `:hover` 沒有這個問題(瀏覽器每幀自己算),
-   AG Grid(`.ag-row:hover`)與 MUI X 都走 CSS;本表為了跨三個捲動區同步同一「邏輯列」才用 `data-hovered` 代理,
+   一般表格的列 hover 直接走 CSS `:hover`;本表為了跨三個捲動區同步同一「邏輯列」才用 `data-hovered` 代理,
    代價就是得自己補上瀏覽器免費提供的那一半。**修法**:`syncHoverUnderPointer` 在每次捲動 commit 之後,
    用最後已知的指標座標做一次 `elementFromPoint`,把 `data-hovered` 對到真正在指標底下的那一列。
    這個 effect 本來就已經讀過 `scrollTop`(版面算過了),所以不多逼出一次版面計算。

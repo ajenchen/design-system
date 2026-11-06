@@ -24,7 +24,7 @@ Working directory: <verified-repository-root>
 
 ### 常見 false positive(記憶)
 
-- **「缺 dark mode 覆蓋」** → 若 spec 寫「semantic token 自動處理(見 color.spec.md)」或元件用 `--primary` / `--fg` 等 semantic token = **自動豁免**
+- **「缺 dark mode 覆蓋」** → 若 spec 寫「semantic token 自動處理(見 color.spec.md)」或元件用 `--primary` / `--foreground` 等 semantic token = **自動豁免**
 - **「缺 empty state」** → 若 spec 寫「empty 由 consumer 用 `<Empty>`」= **豁免**
 - **「SSOT reciprocal 缺」** → SSOT pointer 可是 inline prose 不一定是 `##` heading(例:RadioGroup line 24 prose pointer 就足夠)。flag 前 grep 對方 spec 完整,**找不到 target 的 anchor 才是 violation**
 - **「7-dim 7 維度不足」** → scope defaults 豁免「Internal 類 / wrapper 類 / 互動極少類」;flag 前驗證 scope default 是否適用
@@ -446,7 +446,7 @@ Report format:
 - `ComponentName L2: extra story 6 name='6. Orientation(horizontal)' 含英文 context`
 - `ComponentName L3: density dual values in SizeMatrix column`
 - `ComponentName: 6-canonical + name 覆寫完整 + extras [StandardRatios='7. 標準比例'] — OK`
-- `ComponentName: missing StateBehavior — rationale found at badge.spec.md:L45 ✓`
+- `ComponentName: missing StateBehavior — rationale found at badge.spec.md:<行> ✓`
 
 End: `N checked, L1 V1 violations, L2 V2 violations, L3 V3 content issues. Top 5 worst: [list]`. Under 900 words. Don't fix.
 ```
@@ -966,13 +966,13 @@ Working directory: <verified-repository-root>
 1. 讀 `{name}.spec.md` frontmatter `traits:` array(若無則記為「P2 migration pending」)
 2. 讀 `{name}.stories.tsx`(展示 only,排除 anatomy/principles)的 `export const X` 列表
 3. 對照 v2 trait→required stories 表(讀 category-templates.md):
-   - `hasVariants` → AllVariants 或 ≥ 2 per-variant exports
-   - `hasSizes` → AllSizes(merged grid)
-   - `hasInteractiveStates` → Disabled / States
+   - `hasVariants` → 設計規格層 ColorMatrix(讀 `{name}.anatomy.stories.tsx`)或 ≥ 2 per-variant exports
+   - `hasSizes` → 設計規格層 SizeMatrix(讀 `{name}.anatomy.stories.tsx`;展示層不放尺寸對照格)
+   - `hasInteractiveStates` → Disabled(展示層)/ StateBehavior(設計規格層)
    - `isOverlay` → OpenSnapshot 或 defaultOpen scenario + ≥ 3 業務 scenarios
    - `isInputLike` → WithError / ErrorState
-   - `isSelectionMulti` → States + VerticalGroup + Disabled
-   - `isSelectionSingle` → States only
+   - `isSelectionMulti` → VerticalGroup + Disabled;狀態對照格在設計規格層 StateBehavior
+   - `isSelectionSingle` → 狀態對照格在設計規格層 StateBehavior;展示層只放真實情境
    - `isMatrixHeavy` → ≥ 4 matrix stories
    - `isStructural` → 結構變體 stories(無固定數,過 earn-existence)
    - `isInternal` → 1 representative primitive story + ≤ 1 composition scenario(不強迫命名 Default)
@@ -1207,9 +1207,9 @@ Per-file grep `packages/design-system/src/**/*.{tsx,css}` + consumer code,對 `u
 
 ## 50. Bundle size budget per component(2026-05-17 新增,codex Q5 verdict)
 
-**Type**: Absolute / **Canonical**: `package.json` `size-limit` 段 + per-component manifest / **Home**: spec.md「bundle impact」段
+**Type**: Absolute / **Canonical**: `packages/design-system/bundle-budget.json`(原始 byte `totalKB`/`entriesKB` + 含相依 gzip 的 `sizeLimit` 段;根目錄 `.size-limit.mjs` 只由 `sizeLimit` 段推導)/ **Home**: spec.md「bundle impact」段
 
-Per component gzip size 上限(eg. Button ≤ 5KB / DataTable ≤ 50KB);CI fail if regress > 10%。對齊 Material UI `size-limit` + Material Web 公開 tracking + Ant tree-shake article + Polaris bundle audit。需 `size-limit` pkg integration。
+Per component gzip size 上限(eg. Button ≤ 5KB / DataTable ≤ 50KB);CI fail if regress > 10%。對齊 Material UI `size-limit` + Material Web 公開 tracking + Ant tree-shake article + Polaris bundle audit。兩種上限同一份檔、同一支 `node scripts/check-bundle-size.mjs --init` 重設(2026-10-14 前 size-limit 上限另住 package.json,06-11 設定後沒人重設,排程 monitor 連紅;待辦總帳 SM3);package.json 再長出 `size-limit` 段或 `.size-limit.mjs` 被改成寫死陣列,`check:bundle-size` 紅。
 
 ## 51. Theme / density visual matrix(2026-05-17 新增,codex Q5 verdict)
 
@@ -1268,12 +1268,12 @@ Coverage requirement(NO-SAMPLE STRICT):全 `packages/design-system/src/component
 For each component:
 1. Grep `<X>.spec.md` 找 keyword:`known drift` / `hardcoded` / `寫死` / `不消費 token` / `h-NN 硬寫` / `w-NN 硬寫` / `未對齊 token` / `TODO migrate` / `interim hardcode`
 2. 若命中 → 開 `<X>.tsx` grep 對應 className(`h-14` / `w-80` / `px-N` 等具體值)
-3. **若 code 已 token-ified(`h-[var(--chrome-header-height)]` / `w-[var(--field-width-md)]` / `px-loose` 等)** → spec.md 仍寫 drift caveat = **reverse drift**(漏改)。Flag
+3. **若 code 已 token-ified(`h-[var(--chrome-header-height)]` / `w-[var(--sidebar-width)]` / `px-loose` 等)** → spec.md 仍寫 drift caveat = **reverse drift**(漏改)。Flag
 4. Cross-reference write-time hook `check_spec_class_drift.sh`(本 dim batch verify hook 未覆蓋的既存 drift)
 
 錨例(2026-05-17 Phase 1 漏抓):
 - `file-viewer.spec.md` L103 寫「Known drift:h-14 硬寫不消費 token」
-- 但 `file-viewer.tsx:333` 已 `h-[var(--chrome-header-height)]` migrate 完成
+- 但當時的 `file-viewer.tsx`(第 333 行)已 `h-[var(--chrome-header-height)]` migrate 完成
 - → spec.md 那段該刪 / 該改寫 rationale,3+ 次 `--deep` 都沒抓到
 
 Report ONLY violations。Format:
@@ -1353,7 +1353,7 @@ Your job(NO-SAMPLE,DS-src 全 component/pattern):LLM adversarial per-component �
 之間的 macro 垂直/水平 gap、chrome 水平內距、header→content、content→action button」—— 該用 density-scaling
 **layout-space token** 卻硬寫固定 `gap-N`/`space-y-N`/`p-N`/`px-N`(layoutSpace.spec.md 規則 1-6)。
 **判準邊界**(必先讀):`tokens/layoutSpace/layoutSpace.spec.md`「該用 token vs 刻意固定」段 —— **只抓 macro
-結構違規,禁 flag 合法 magic number**(同質 list 列間距 / micro-icon / 刻意視覺平衡 / 元件內部固定如 FieldGroup)。
+結構違規,禁 flag 合法 magic number**(同質 list 列間距 / micro-icon / 刻意視覺平衡 / 元件內部不對外的微幾何)。
 **每 finding 必對抗二次驗證殺假陽性**(2026-07-01 錨:sweep 35 raw → 8 confirmed;over-flag ProfileCard/
 apps-scaffold/list-gap 均被覆核判非違規)。Consumer `check_layout_space_magic_numbers.sh` 只會放行
 `utility-registry.json#/spacing/canonical_micro_geometry` 有同行/有界 nearby 證據的 inline item/control、

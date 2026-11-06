@@ -1,14 +1,25 @@
 import type { Meta } from '@storybook/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ComponentProps } from 'react'
 import { Combobox } from './combobox'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { CAT_SUBTLE_TOKENS } from '@/design-system/tokens/categorical-color'
+import { BpZone, PropRow, Swatch, TkVal, TokenAnnotation } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { CATEGORY_OPTIONS_WITH_CLOTHING as categoryOptions } from '@/design-system/stories-helpers/data/product-catalog'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Combobox/設計規格',
   parameters: { layout: 'padded' },
 }
 export default meta
+
+// 規格頁 / 原則頁 / 展示頁的樣本也要能操作(F-S2「畫面上看得到的按鈕都要能動」):受控元件自帶一份 state,改值會真的改
+function LiveCombobox({ value: initial, ...rest }: ComponentProps<typeof Combobox>) {
+  const [value, setValue] = useState(initial)
+  return <Combobox {...rest} value={value} onChange={setValue} />
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Types & Data
@@ -21,14 +32,6 @@ type ColorSpec = { bg: string; text: string; border: string; icon: string }
 
 const MODES: ModeKey[] = ['edit', 'readonly', 'disabled']
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
-
-const categoryOptions = [
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'food', label: 'Food' },
-  { value: 'lifestyle', label: 'Lifestyle' },
-  { value: 'clothing', label: 'Clothing' },
-]
 
 /** Mode x State token map — traced from field-wrapper.tsx cva + combobox.tsx */
 const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
@@ -108,9 +111,6 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
  * bottom margin, Th/Td use `p-2 border-b border-divider` row style, and
  * Swatch defaults to `size="md"` for inline token chips.
  */
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
 const Desc = ({ children }: { children: React.ReactNode }) => (
   <p className="text-caption text-fg-secondary max-w-[720px]">{children}</p>
 )
@@ -121,46 +121,8 @@ const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) =
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
 
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent' || value === '—') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
-}
-
-const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
-  <div className="flex flex-col gap-0.5 mt-2">
-    {([['bg', 'bg'], ['text', 'text'], ['border', 'bdr'], ['icon', 'icon']] as const).map(([key, label]) => (
-      <span key={key} className="inline-flex items-center gap-1 text-[10px]">
-        <Swatch value={colors[key]} size="sm" />
-        <span className="text-fg-muted w-5 shrink-0">{label}</span>
-        <span className="font-mono text-fg-secondary">{colors[key]}</span>
-      </span>
-    ))}
-  </div>
-)
-
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-secondary font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -176,14 +138,6 @@ const Z = {
   dim:   { text: '#d04040' },
 }
 
-const BpZone = ({ w, color, label, sub }: { w: number; color: typeof Z.pad; label: string; sub?: string }) => (
-  <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
-    style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
-    <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
-  </div>
-)
-
 /* ═══════════════════════════════════════════════════════════════════════════
    1. 元件總覽
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -193,11 +147,7 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* Anatomy — edit mode single-line */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）— edit 單行</H3>
-          <Desc>觸發區是一個可聚焦的容器（combobox 角色），內含 Tags 陣列 + ChevronDown，點擊開啟浮層選單（搜尋 + 選項清單）。無值時容器內顯示 placeholder。不分裝置只有這一條路徑 —— 觸控裝置看到的跟桌機完全一樣（2026-09-18 user 拍板，原本的隱藏原生 select 路徑已移除）。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）— edit 單行" description="觸發區是一個可聚焦的容器（combobox 角色），內含 Tags 陣列 +（searchIn='trigger' 時）欄位內搜尋框 + ChevronDown，點擊開啟浮層選單（搜尋 + 選項清單）。無值時容器內顯示 placeholder；searchIn='trigger' 時由欄位內搜尋框自己的 placeholder 顯示同一句，搜尋框恆在。">
         <div className="flex gap-8">
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-secondary font-medium">有值 + clearable</span>
@@ -207,12 +157,21 @@ export const Overview = {
                 { name: 'Tag', color: 'error' },
                 { name: 'Tag', color: 'error' },
                 { name: '+N', color: 'warning' },
-                { name: 'clear', color: 'magenta' },
+                // 欄位內搜尋框:上方 Desc 已寫它在 Tag 區的最後一格(searchIn='trigger' 時恆在),圖上補上這一格(2026-10-21 r1b fields F7)。
+                // 色塊用 categorical 色相(tokens/categorical-color.ts):語意色 primary 與 info 是同一個藍(semantic.css --primary / --info 都 = --color-blue-6),
+                // 用 primary 會與 chevron 同色(複驗 D2);分類標記本來就該用 categorical 色(ui-development.md「不混語義與色名」),選這一列沒有的色相
+                { name: "搜尋框(searchIn='trigger')", hue: 'purple' as const },
+                // clear 原本寫 color: 'magenta' → var(--magenta) / var(--magenta-subtle) 兩個都不存在(畫成無色);magenta 是 categorical 色相,走同一張 CAT_SUBTLE_TOKENS
+                { name: 'clear', hue: 'magenta' as const },
                 { name: 'chevron', color: 'info' },
-              ].map((s, i) => (
-                <span key={`${s.name}-${i}`} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
-              ))}
+              ].map((s, i) => {
+                const fg = s.hue ? CAT_SUBTLE_TOKENS[s.hue].text : `var(--${s.color})`
+                const bg = s.hue ? CAT_SUBTLE_TOKENS[s.hue].bg : `var(--${s.color}-subtle)`
+                return (
+                  <span key={`${s.name}-${i}`} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+                    style={{ borderColor: fg, backgroundColor: bg, color: fg }}>{s.name}</span>
+                )
+              })}
             </div>
             <span className="text-[10px] text-fg-muted font-mono">role=combobox 觸發容器 · 點擊開浮層選單 · +N = OverflowIndicator</span>
           </div>
@@ -227,17 +186,13 @@ export const Overview = {
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">placeholder span（flex-1 min-w-0 truncate）</span>
+            <span className="text-[10px] text-fg-muted font-mono">placeholder span（flex-1 min-w-0 truncate）· searchIn='trigger'：欄位內搜尋框的 placeholder</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Anatomy — edit mode wrap */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）— edit 換行 (wrap)</H3>
-          <Desc>高度隨內容展開，Tags 自然換行。右側控件 (clear + chevron) 以 self-start 固定在第一行高度位置。wrap 時上下內距 = (field-height − 2px − tag-height) / 2（sm/md 3px、lg 5px，與單行置中同值，第一行 Tag 不位移）。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）— edit 換行 (wrap)" description="高度隨內容展開，Tags 自然換行。右側控件 (clear + chevron) 以 self-start 固定在第一行高度位置。wrap 時上下內距 = (field-height − 2px − tag-height) / 2（sm/md 3px、lg 5px，與單行置中同值，第一行 Tag 不位移）。">
         <div className="flex flex-col gap-2 items-start">
           <div className="inline-flex items-start border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-1 flex-wrap w-64">
             {[
@@ -254,14 +209,10 @@ export const Overview = {
           </div>
           <span className="text-[10px] text-fg-muted font-mono">flex-wrap · height: auto · py = (field − 2 − tag) / 2</span>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Anatomy — readonly / disabled */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）— readonly / disabled</H3>
-          <Desc>Tag 沒有 dismiss 按鈕、沒有 clear;readonly 不顯示 ChevronDown(純值、不可開下拉),disabled 保留為類型身份 indicator(pointer-events-none,fg-disabled)。溢出行為與 edit 相同(+N 指示器)。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）— readonly / disabled" description="Tag 沒有 dismiss 按鈕、沒有 clear;readonly 不顯示 ChevronDown(純值、不可開下拉),disabled 保留為類型身份 indicator(pointer-events-none,fg-disabled)。溢出行為與 edit 相同(+N 指示器)。">
         <div className="flex gap-8">
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-secondary font-medium">有值</span>
@@ -286,11 +237,10 @@ export const Overview = {
             <span className="text-[10px] text-fg-muted font-mono">text-foreground</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props table */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -307,7 +257,9 @@ export const Overview = {
                 ['loading', 'boolean', 'false', '這個值在讀取 / 驗證 / 儲存(Field 家族 SSOT):觸發點右側、箭頭左邊轉圈 + aria-busy;與選項有沒有載入無關'],
                 ['optionsLoading', 'boolean', 'false', '選項清單載入中(2026-09-09 改名自 loading):指示只在選單內的「載入選項中」訊息列;觸發點 / 搜尋列不轉圈'],
                 ['suggestions', 'ComboboxOption[]', '—', '遠端搜尋(filterOption=false)、關鍵字空時的建議清單;DS 自動包成標題「建議」的群組(suggestionsLabel 可覆寫);沒建議時提示列 searchHintText'],
-                ['placeholder', 'string', '—', '無值時的提示文字；未傳時 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號）'],
+                ['searchable', 'boolean', 'false', '開啟搜尋；搜尋框位置由 searchIn 決定'],
+                ['searchIn', "'menu' | 'trigger'", "'menu'", 'menu = 浮層內搜尋框（勾選後關鍵字保留）；trigger = 欄位內搜尋框（恆在，空值也能直接打字；每勾一項清空關鍵字）'],
+                ['placeholder', 'string', '—', '無值時的提示文字（searchIn=\'trigger\' 時由欄位內搜尋框顯示）；未傳時 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號）'],
                 ['disabled', 'boolean', 'false', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -315,7 +267,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -460,42 +412,42 @@ const InspectorInner = () => {
           {/* COLOR */}
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Color</span></div>
-            <PropRow label="Fill"><TokenValue value={colors.bg} /></PropRow>
-            <PropRow label="Text"><TokenValue value={colors.text} /></PropRow>
-            <PropRow label="Stroke"><TokenValue value={colors.border} /></PropRow>
-            {mode !== 'readonly' && <PropRow label="Icon"><TokenValue value={colors.icon} /></PropRow>}
+            <PropRow labelTone="secondary" label="Fill"><TokenValue value={colors.bg} /></PropRow>
+            <PropRow labelTone="secondary" label="Text"><TokenValue value={colors.text} /></PropRow>
+            <PropRow labelTone="secondary" label="Stroke"><TokenValue value={colors.border} /></PropRow>
+            {mode !== 'readonly' && <PropRow labelTone="secondary" label="Icon"><TokenValue value={colors.icon} /></PropRow>}
           </div>
 
           {/* LAYOUT */}
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
-            <PropRow label="高度" dot={Z.dim.text}>
+            <PropRow labelTone="secondary" label="高度" dot={Z.dim.text}>
               {wrap
                 ? <span>auto (content)</span>
                 : <TkVal token={s.heightToken} value={s.height} />
               }
             </PropRow>
-            <PropRow label="tagPadding" dot={Z.pad.text}><TkVal token="calc()" value={s.tagPaddingCalc} /></PropRow>
-            <PropRow label="右側內距">var(--field-px) (12px)</PropRow>
-            <PropRow label="Tag 間距" dot={Z.gap.text}>{s.tagGap}</PropRow>
-            <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>
-            <PropRow label="Tag 高度" dot={Z.tag.text}>{s.tagHeight} ({s.tagSize})</PropRow>
-            {wrap && <PropRow label="上下內距">{s.tagInset} ({s.tagPaddingCalc})</PropRow>}
+            <PropRow labelTone="secondary" label="tagPadding" dot={Z.pad.text}><TkVal token="calc()" value={s.tagPaddingCalc} /></PropRow>
+            <PropRow labelTone="secondary" label="右側內距">var(--field-px) (12px)</PropRow>
+            <PropRow labelTone="secondary" label="Tag 間距" dot={Z.gap.text}>{s.tagGap}</PropRow>
+            <PropRow labelTone="secondary" label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>
+            <PropRow labelTone="secondary" label="Tag 高度" dot={Z.tag.text}>{s.tagHeight} ({s.tagSize})</PropRow>
+            {wrap && <PropRow labelTone="secondary" label="上下內距">{s.tagInset} ({s.tagPaddingCalc})</PropRow>}
           </div>
 
           {/* TYPOGRAPHY */}
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Typography</span></div>
-            <PropRow label="Font"><TkVal token={s.fontToken} value={s.font} /></PropRow>
-            <PropRow label="Weight"><TkVal token="font-normal" value="400" /></PropRow>
+            <PropRow labelTone="secondary" label="Font"><TkVal token={s.fontToken} value={s.font} /></PropRow>
+            <PropRow labelTone="secondary" label="Weight"><TkVal token="font-normal" value="400" /></PropRow>
           </div>
 
           {/* STYLE */}
           <div className="px-4 py-1 pb-3">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
-            <PropRow label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
-            <PropRow label="Border"><TkVal token="border" value="1px solid" /></PropRow>
-            <PropRow label="Focus"><TkVal token="border-primary" value="1px" /></PropRow>
+            <PropRow labelTone="secondary" label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
+            <PropRow labelTone="secondary" label="Border"><TkVal token="border" value="1px solid" /></PropRow>
+            <PropRow labelTone="secondary" label="Focus"><TkVal token="border-primary" value="1px" /></PropRow>
           </div>
         </div>
       </div>
@@ -506,13 +458,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -525,101 +473,97 @@ export const ColorMatrix = {
   render: () => {
     const editStates: StateKey[] = ['default', 'hover', 'focus', 'disabled']
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-1">
-          <H3>Mode x State 色彩對照</H3>
-          <Desc>橫向看同 mode 的 state 變化，色塊即時渲染，切 dark mode 自動更新。wrapper 色彩與 Select 共用同一套 fieldWrapperStyles。</Desc>
-        </div>
+      <ExampleSection title="Mode x State 色彩對照" description="橫向看同 mode 的 state 變化，色塊即時渲染，切 dark mode 自動更新。wrapper 色彩與 Select 共用同一套 fieldWrapperStyles。">
+        <div className="flex flex-col gap-8">
 
-        {/* edit mode */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">edit 模式</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>State</Th>{editStates.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
-              <tbody>
-                <tr>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">normal</td>
-                  {editStates.map((st) => (
-                    <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                      <Combobox
-                        options={categoryOptions}
-                        value={['electronics', 'food']}
-                        size="sm"
-                        disabled={st === 'disabled'}
-                        onChange={() => {}}
-                        aria-label={`產品分類(${st})`}
-                      />
-                      <TokenAnnotation colors={st === 'disabled' ? TOKEN_MAP.disabled.default : TOKEN_MAP.edit[st]} />
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">error</td>
-                  {editStates.map((st) => (
-                    <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                      <Combobox
-                        options={categoryOptions}
-                        value={['electronics', 'food']}
-                        size="sm"
-                        error={st !== 'disabled'}
-                        disabled={st === 'disabled'}
-                        onChange={() => {}}
-                        aria-label={`產品分類(錯誤態、${st})`}
-                      />
-                      <TokenAnnotation colors={st === 'disabled' ? TOKEN_MAP.disabled.default : ERROR_COLORS[st]} />
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* readonly & disabled */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">readonly / disabled</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>Mode</Th><Th>有值</Th><Th>空值</Th><Th>Token</Th></tr></thead>
-              <tbody>
-                {(['readonly', 'disabled'] as const).map((m) => (
-                  <tr key={m}>
-                    <Td mono>{m}</Td>
-                    <td className="p-3 border-b border-divider align-top min-w-[180px]">
-                      <Combobox mode={m} options={categoryOptions} value={['electronics', 'food']} size="sm" aria-label={`產品分類(${m})`} />
-                    </td>
-                    <td className="p-3 border-b border-divider align-top min-w-[160px]">
-                      <Combobox mode={m} options={categoryOptions} value={[]} size="sm" aria-label={`產品分類(${m}、空值)`} />
-                    </td>
-                    <td className="p-3 border-b border-divider align-top min-w-[160px]">
-                      <TokenAnnotation colors={TOKEN_MAP[m].default} />
-                    </td>
+          {/* edit mode */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">edit 模式</span>
+            <div className="overflow-x-auto">
+              <table className="border-collapse">
+                <thead><tr><Th>State</Th>{editStates.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+                <tbody>
+                  <tr>
+                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">normal</td>
+                    {editStates.map((st) => (
+                      <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
+                        <LiveCombobox
+                          options={categoryOptions}
+                          value={['electronics', 'food']}
+                          size="sm"
+                          disabled={st === 'disabled'}
+                          aria-label={`產品分類(${st})`}
+                        />
+                        <TokenAnnotation colors={st === 'disabled' ? TOKEN_MAP.disabled.default : TOKEN_MAP.edit[st]} />
+                      </td>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                  <tr>
+                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">error</td>
+                    {editStates.map((st) => (
+                      <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
+                        <LiveCombobox
+                          options={categoryOptions}
+                          value={['electronics', 'food']}
+                          size="sm"
+                          error={st !== 'disabled'}
+                          disabled={st === 'disabled'}
+                          aria-label={`產品分類(錯誤態、${st})`}
+                        />
+                        <TokenAnnotation colors={st === 'disabled' ? TOKEN_MAP.disabled.default : ERROR_COLORS[st]} />
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        {/* Tag colors in disabled mode */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">disabled 模式的 Tag 色彩</span>
-          <Desc>disabled 時 Tag 使用 bg-disabled (neutral-2) + text-fg-disabled (neutral-6)，品牌色完全移除。</Desc>
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col gap-1 items-start">
-              <span className="text-[11px] text-fg-secondary">正常 Tag</span>
-              <Tag size="sm">Electronics</Tag>
+          {/* readonly & disabled */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">readonly / disabled</span>
+            <div className="overflow-x-auto">
+              <table className="border-collapse">
+                <thead><tr><Th>Mode</Th><Th>有值</Th><Th>空值</Th><Th>Token</Th></tr></thead>
+                <tbody>
+                  {(['readonly', 'disabled'] as const).map((m) => (
+                    <tr key={m}>
+                      <Td mono>{m}</Td>
+                      <td className="p-3 border-b border-divider align-top min-w-[180px]">
+                        <Combobox mode={m} options={categoryOptions} value={['electronics', 'food']} size="sm" aria-label={`產品分類(${m})`} />
+                      </td>
+                      <td className="p-3 border-b border-divider align-top min-w-[160px]">
+                        <Combobox mode={m} options={categoryOptions} value={[]} size="sm" aria-label={`產品分類(${m}、空值)`} />
+                      </td>
+                      <td className="p-3 border-b border-divider align-top min-w-[160px]">
+                        <TokenAnnotation colors={TOKEN_MAP[m].default} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <span className="text-fg-muted text-caption">vs</span>
-            <div className="flex flex-col gap-1 items-start">
-              <span className="text-[11px] text-fg-secondary">disabled Tag</span>
-              {/* aria-disabled:這顆畫的是「停用中的 Tag」,明告 inactive 才不會被 axe 當一般文字誤報 color-contrast(2026-09-29,待辦總帳 OE21) */}
-              <Tag size="sm" className="bg-disabled text-fg-disabled" aria-disabled="true">Electronics</Tag>
+          </div>
+
+          {/* Tag colors in disabled mode */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">disabled 模式的 Tag 色彩</span>
+            <Desc>disabled 時 Tag 使用 bg-disabled (neutral-2) + text-fg-disabled (neutral-6)，品牌色完全移除。</Desc>
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col gap-1 items-start">
+                <span className="text-[11px] text-fg-secondary">正常 Tag</span>
+                <Tag size="sm">Electronics</Tag>
+              </div>
+              <span className="text-fg-muted text-caption">vs</span>
+              <div className="flex flex-col gap-1 items-start">
+                <span className="text-[11px] text-fg-secondary">disabled Tag</span>
+                {/* aria-disabled:這顆畫的是「停用中的 Tag」,明告 inactive 才不會被 axe 當一般文字誤報 color-contrast(2026-09-29,待辦總帳 OE21) */}
+                <Tag size="sm" className="bg-disabled text-fg-disabled" aria-disabled="true">Electronics</Tag>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </ExampleSection>
     )
   },
 }
@@ -631,122 +575,120 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>每個 size 對應的 token 一覽。tagPadding 用 calc() 計算確保 Tag 四邊等距——公式為 (field-height − 2px 邊框 − tag-height) / 2，sm/md 3px、lg 5px（SSOT：Field/field-wrapper.tsx fieldTagInsetX/Y）。Tag 間距固定 4px (GAP constant)。</Desc>
-      </div>
+    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。tagPadding 用 calc() 計算確保 Tag 四邊等距——公式為 (field-height − 2px 邊框 − tag-height) / 2，sm/md 3px、lg 5px。Tag 間距固定 4px。">
+      <div className="flex flex-col gap-8">
 
-      {/* Token comparison table */}
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
-          <thead><tr>
-            <Th>屬性</Th>
-            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
-          </tr></thead>
-          <tbody>
-            <tr>
-              <Td>高度</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">{SIZE_SPECS[sz].heightToken}</div>
-                  <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].height}</div>
-                </Td>
-              ))}
-            </tr>
-            <tr>
-              <Td>Tag 尺寸</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">{SIZE_SPECS[sz].tagSize}</div>
-                  <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagHeight}</div>
-                </Td>
-              ))}
-            </tr>
-            <tr>
-              <Td>tagPadding (x)</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">calc()</div>
-                  <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagPaddingCalc}</div>
-                </Td>
-              ))}
-            </tr>
-            <tr>
-              <Td>右側內距</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">paddingRight</div>
-                  <div className="text-fg-muted text-[10px]">var(--field-px) (12px)</div>
-                </Td>
-              ))}
-            </tr>
-            <tr>
-              <Td>Tag 間距</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">GAP</div>
-                  <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagGap}</div>
-                </Td>
-              ))}
-            </tr>
-            <tr>
-              <Td>字體</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">{SIZE_SPECS[sz].fontToken}</div>
-                  <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].font}</div>
-                </Td>
-              ))}
-            </tr>
-            <tr>
-              <Td>Icon 尺寸</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].icon}px</div>
-                </Td>
-              ))}
-            </tr>
-            <tr>
-              <Td>wrap 上下內距</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">{SIZE_SPECS[sz].tagInset}</div>
-                  <div className="text-fg-muted text-[10px]">(field − 2 − tag) / 2</div>
-                  <div className="text-fg-muted text-[10px]">height: auto</div>
-                </Td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        {/* Token comparison table */}
+        <div className="overflow-x-auto">
+          <table className="border-collapse text-caption">
+            <thead><tr>
+              <Th>屬性</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+            </tr></thead>
+            <tbody>
+              <tr>
+                <Td>高度</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">{SIZE_SPECS[sz].heightToken}</div>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].height}</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>Tag 尺寸</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">{SIZE_SPECS[sz].tagSize}</div>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagHeight}</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>tagPadding (x)</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">calc()</div>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagPaddingCalc}</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>右側內距</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">paddingRight</div>
+                    <div className="text-fg-muted text-[10px]">var(--field-px) (12px)</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>Tag 間距</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">GAP</div>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagGap}</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>字體</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">{SIZE_SPECS[sz].fontToken}</div>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].font}</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>Icon 尺寸</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].icon}px</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>wrap 上下內距</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">{SIZE_SPECS[sz].tagInset}</div>
+                    <div className="text-fg-muted text-[10px]">(field − 2 − tag) / 2</div>
+                    <div className="text-fg-muted text-[10px]">height: auto</div>
+                  </Td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      {/* Visual preview — edit */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽 — 各尺寸 edit</span>
-        <div className="flex flex-col gap-3">
-          {SIZES.map((sz) => (
-            <div key={sz} className="flex items-center gap-3">
-              <Combobox size={sz} options={categoryOptions} value={['electronics', 'food']} onChange={() => {}} className="w-64" aria-label={`產品分類(size=${sz})`} />
-              <span className="text-caption text-fg-secondary font-mono">size=&quot;{sz}&quot;</span>
-            </div>
-          ))}
+        {/* Visual preview — edit */}
+        <div className="flex flex-col gap-4">
+          <span className="text-caption font-medium text-fg-secondary">預覽 — 各尺寸 edit</span>
+          <div className="flex flex-col gap-3">
+            {SIZES.map((sz) => (
+              <div key={sz} className="flex items-center gap-3">
+                <LiveCombobox size={sz} options={categoryOptions} value={['electronics', 'food']} className="w-64" aria-label={`產品分類(size=${sz})`} />
+                <span className="text-caption text-fg-secondary font-mono">size=&quot;{sz}&quot;</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Visual preview — readonly */}
+        <div className="flex flex-col gap-4">
+          <span className="text-caption font-medium text-fg-secondary">預覽 — 各尺寸 readonly</span>
+          <div className="flex flex-col gap-3">
+            {SIZES.map((sz) => (
+              <div key={sz} className="flex items-center gap-3">
+                <Combobox mode="readonly" size={sz} options={categoryOptions} value={['electronics', 'food']} className="w-64" aria-label={`商品分類(readonly ${sz} 範例)`} />
+                <span className="text-caption text-fg-secondary font-mono">size=&quot;{sz}&quot;</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Visual preview — readonly */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽 — 各尺寸 readonly</span>
-        <div className="flex flex-col gap-3">
-          {SIZES.map((sz) => (
-            <div key={sz} className="flex items-center gap-3">
-              <Combobox mode="readonly" size={sz} options={categoryOptions} value={['electronics', 'food']} className="w-64" />
-              <span className="text-caption text-fg-secondary font-mono">size=&quot;{sz}&quot;</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -764,146 +706,132 @@ export const StateBehavior = {
     const [dismissV, setDismissV] = useState(['electronics', 'food', 'lifestyle'])
 
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-1">
-          <H3>狀態行為</H3>
-          <Desc>Combobox 特有的溢出、換行、清除、個別移除行為。</Desc>
-        </div>
+      <ExampleSection title="狀態行為" description="Combobox 特有的溢出、換行、清除、個別移除行為。">
+        <div className="flex flex-col gap-8">
 
-        {/* Overflow +N */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">單行溢出 — +N 指示器</span>
-          <Desc>以量測為基礎：計算容器可用寬度，依序放入 Tag，放不下的隱藏。+N 使用 OverflowIndicator 元件（tag shape），hover 顯示隱藏的 Tag 清單。</Desc>
-          <div className="w-64">
-            <Combobox
-              options={categoryOptions}
-              value={overflowV}
-              onChange={setOverflowV}
-              aria-label="產品分類(單行溢出 +N 範例)"
-            />
-          </div>
-          <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>1. useOverflowCount hook 量測 container 寬度與每個 tag 的自然寬度</span>
-            <span>2. ResizeObserver 持續監聽容器變化</span>
-            <span>3. 量測在 useEffect 內首次 paint 後執行（確保 nested 場景所有 ref 已 attach），double-rAF 保證 layout 完成才量測；代價是可能 1-2 frame 閃爍，由 value-equal setState guard 收斂</span>
-            <span>4. 超出的 tag 以 DOM hidden attribute 隱藏（UA 樣式即 display:none；節點保留在 DOM，量測時先全部解除隱藏再計算）</span>
-          </div>
-        </div>
-
-        {/* Overflow readonly */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">readonly 溢出 — 行為與 edit 相同</span>
-          <div className="w-64">
-            <Combobox
-              mode="readonly"
-              options={categoryOptions}
-              value={allValues}
-            />
-          </div>
-          <span className="text-[11px] text-fg-secondary">readonly 的 +N hover 一樣顯示隱藏項，但 Tag 沒有 dismiss 按鈕</span>
-        </div>
-
-        {/* Wrap mode */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">換行模式（wrap）</span>
-          <Desc>Tags 自然換行，高度隨內容展開。無 +N 指示器——全部可見。右側控件 (clear + chevron) 用 self-start 固定在第一行的 tag 高度位置。</Desc>
-          <div className="flex gap-6">
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] text-fg-secondary">edit wrap</span>
-              <div className="w-56">
-                <Combobox
-                  options={categoryOptions}
-                  value={wrapV}
-                  onChange={setWrapV}
-                  wrap
-                  aria-label="產品分類(換行模式範例)"
-                />
-              </div>
+          {/* Overflow +N */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">單行溢出 — +N 指示器</span>
+            <Desc>以量測為基礎：計算容器可用寬度，依序放入 Tag，放不下的隱藏。+N 使用 OverflowIndicator 元件（tag shape），hover 顯示隱藏的 Tag 清單。</Desc>
+            <div className="w-64">
+              <Combobox
+                options={categoryOptions}
+                value={overflowV}
+                onChange={setOverflowV}
+                aria-label="產品分類(單行溢出 +N 範例)"
+              />
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] text-fg-secondary">readonly wrap</span>
-              <div className="w-56">
-                <Combobox
-                  mode="readonly"
-                  options={categoryOptions}
-                  value={allValues}
-                  wrap
-                />
-              </div>
+            <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
+              {/* 現行做法 = ../OverflowIndicator/overflow-tag-list.tsx useOverflowCount 檔頭(2026-10-13 重寫;2026-10-21 r1b fields F4 前這裡仍描述舊的 useEffect + double-rAF 做法) */}
+              <span>1. 全部攤開量:先把 Tag 全部顯示、+N 當量尺，再量容器可用寬與每個 Tag 的寬（小數 px）</span>
+              <span>2. 每個候選數量用它自己會顯示的那個 +N 的寬（+1、+2、+10 字寬不同）</span>
+              <span>3. 畫面更新前定案：在 layout effect 裡決定，超出的 Tag 以 DOM hidden attribute 隱藏，+N 的數字同一格更新，不閃爍</span>
+              <span>4. ResizeObserver 看容器、Tag、+N、搜尋框量尺與欄位外框的父層；量到的輸入沒變就不重算</span>
             </div>
           </div>
-          <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>wrap 模式差異：flex-wrap · height: auto · 上下內距 (field − 2 − tag) / 2（sm/md 3px、lg 5px，與單行置中同值）</span>
-            <span>chevron 的容器高度固定為 tag 高度 (sm:20px, md/lg:24px)，self-start 對齊</span>
-          </div>
-        </div>
 
-        {/* Clearable */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">清除全部（clearable）</span>
-          <Desc>clearable 在有值 + edit 模式時，在 ChevronDown 左側顯示 X 按鈕，一次清除所有選項。按鈕帶 Tooltip &quot;清除全部&quot;。</Desc>
-          <div className="flex items-center gap-4">
-            <Combobox
-              options={categoryOptions}
-              value={clearV}
-              onChange={setClearV}
-              clearable
-              className="w-64"
-              aria-label="產品分類(清除全部範例)"
-            />
-            <button
-              type="button"
-              onClick={() => setClearV(['electronics', 'food', 'lifestyle'])}
-              className="text-caption text-primary cursor-pointer hover:text-primary-hover"
-            >
-              重設
-            </button>
+          {/* Overflow readonly */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">readonly 溢出 — 行為與 edit 相同</span>
+            <div className="w-64">
+              <Combobox
+                mode="readonly"
+                options={categoryOptions}
+                value={allValues}
+                aria-label="商品分類(readonly 溢出範例)"
+              />
+            </div>
+            <span className="text-[11px] text-fg-secondary">readonly 的 +N hover 一樣顯示隱藏項，但 Tag 沒有 dismiss 按鈕</span>
           </div>
-          <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>showClear = clearable && value.length &gt; 0 && isEditable</span>
-            <span>X 按鈕尺寸：sm/md = 16px icon + 18px hover bg，lg = 20px icon + 22px hover bg</span>
-            <span>clear 色彩：fg-muted → hover: foreground → active: foreground</span>
-          </div>
-        </div>
 
-        {/* Tag dismiss */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">個別移除（Tag dismiss）</span>
-          <Desc>每個 Tag 自帶 dismiss 按鈕（X），點擊移除該選項。已選項仍留在浮層清單中並以打勾標示，再點一次即取消（不分裝置）。</Desc>
-          <div className="flex items-center gap-4">
-            <Combobox
-              options={categoryOptions}
-              value={dismissV}
-              onChange={setDismissV}
-              className="w-72"
-              aria-label="產品分類(個別移除 Tag 範例)"
-            />
-            <button
-              type="button"
-              onClick={() => setDismissV(['electronics', 'food', 'lifestyle'])}
-              className="text-caption text-primary cursor-pointer hover:text-primary-hover"
-            >
-              重設
-            </button>
+          {/* Wrap mode */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">換行模式（wrap）</span>
+            <Desc>Tags 自然換行，高度隨內容展開。無 +N 指示器——全部可見。右側控件 (clear + chevron) 用 self-start 固定在第一行的 tag 高度位置。</Desc>
+            <div className="flex gap-6">
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] text-fg-secondary">edit wrap</span>
+                <div className="w-56">
+                  <Combobox
+                    options={categoryOptions}
+                    value={wrapV}
+                    onChange={setWrapV}
+                    wrap
+                    aria-label="產品分類(換行模式範例)"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] text-fg-secondary">readonly wrap</span>
+                <div className="w-56">
+                  <Combobox
+                    mode="readonly"
+                    options={categoryOptions}
+                    value={allValues}
+                    wrap
+                    aria-label="產品分類(readonly 換行模式範例)"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
+              <span>wrap 模式差異：flex-wrap · height: auto · 上下內距 (field − 2 − tag) / 2（sm/md 3px、lg 5px，與單行置中同值）</span>
+              <span>chevron 的容器高度固定為 tag 高度 (sm:20px, md/lg:24px)，self-start 對齊</span>
+            </div>
           </div>
-          <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>Tag remove = Tag 元件的 onRemove prop，按鈕由 Tag 內部渲染</span>
-            <span>dismiss icon: 16px X，hover bg: 18px rounded-md neutral-hover</span>
-            <span>readonly / disabled 的 Tag 沒有 dismiss 按鈕</span>
-          </div>
-        </div>
 
-        {/* Select behavior */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">新增選擇</span>
-          <Desc>新增選擇只有一條機制，不分裝置：點擊欄位開啟自建浮層選單（SelectMenu），已選項仍留在清單中並以打勾標示，再點一次即取消。2026-09-18 user 拍板「手機跟桌機同步」後，原本觸控裝置的隱藏原生 select overlay 已整個移除。</Desc>
-          <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>不分裝置: 點擊欄位 → 開 SelectMenu popover，已選項打勾保留，toggle 取消</span>
-            <span>chevron / clear: relative z-10 · pointer-events-auto</span>
-            <span>閘: scripts/combobox-single-path-invariant.mjs（觸控模擬下確認沒有原生 select、浮層與其內容都在）</span>
+          {/* Clearable */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">清除全部（clearable）</span>
+            <Desc>clearable 在有值 + edit 模式時，在 ChevronDown 左側顯示 X 按鈕，一次清除所有選項。按鈕帶 Tooltip &quot;清除全部&quot;。</Desc>
+            <div className="flex items-center gap-4">
+              <Combobox
+                options={categoryOptions}
+                value={clearV}
+                onChange={setClearV}
+                clearable
+                className="w-64"
+                aria-label="產品分類(清除全部範例)"
+              />
+            </div>
+            <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
+              <span>showClear = clearable && value.length &gt; 0 && isEditable</span>
+              <span>X 按鈕尺寸：sm/md = 16px icon + 18px hover bg，lg = 20px icon + 22px hover bg</span>
+              <span>clear 色彩：fg-muted → hover: foreground → active: foreground</span>
+            </div>
+          </div>
+
+          {/* Tag dismiss */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">個別移除（Tag dismiss）</span>
+            <Desc>每個 Tag 自帶 dismiss 按鈕（X），點擊移除該選項。已選項仍留在浮層清單中並以打勾標示，再點一次即取消（不分裝置）。</Desc>
+            <div className="flex items-center gap-4">
+              <Combobox
+                options={categoryOptions}
+                value={dismissV}
+                onChange={setDismissV}
+                className="w-72"
+                aria-label="產品分類(個別移除 Tag 範例)"
+              />
+            </div>
+            <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
+              <span>Tag remove = Tag 元件的 onRemove prop，按鈕由 Tag 內部渲染</span>
+              <span>dismiss icon: 16px X，hover bg: 18px rounded-md neutral-hover</span>
+              <span>readonly / disabled 的 Tag 沒有 dismiss 按鈕</span>
+            </div>
+          </div>
+
+          {/* Select behavior */}
+          <div className="flex flex-col gap-3">
+            <span className="text-caption font-medium text-fg-secondary">新增選擇</span>
+            <Desc>新增選擇只有一條機制，不分裝置：點擊欄位開啟自建浮層選單（SelectMenu），已選項仍留在清單中並以打勾標示，再點一次即取消。</Desc>
+            <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
+              <span>不分裝置: 點擊欄位 → 開 SelectMenu popover，已選項打勾保留，toggle 取消</span>
+              <span>chevron / clear: relative z-10 · pointer-events-auto</span>
+            </div>
           </div>
         </div>
-      </div>
+      </ExampleSection>
     )
   },
 }
@@ -914,8 +842,14 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。\n\n開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup=\"dialog\";searchIn='trigger' 時焦點留在觸發區,Tab 照頁面順序離開,宣告 listbox(待辦總帳 B11「行為不變、只改宣告」)。\n\n2026-09-18 user 拍板「手機跟桌機同步」後移除了原本的觸控原生 select 路徑。該路徑當時宣稱的理由是「保留行動裝置的 screen reader、語音輸入與系統層整合」，但實作上並未兌現：那顆 select 的 value 恆為空字串、也沒有 multiple，輔助科技從被命名的控件上讀不到已選了什麼。\n\n欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>鍵盤可達性只有一條路徑，不分裝置：觸發區是一個 combobox 角色的容器，可用 Tab 聚焦，方向鍵在選項間移動，Enter 選取，Esc 關閉——由浮層選單的鍵盤導覽負責。</p>
+        <p>開著時按 Tab:searchIn='menu'(預設,可不可搜尋都一樣)時焦點進到浮層,Tab / Shift+Tab 在面板裡繞圈(浮層內搜尋框(有的話)→ 清單 → 全選),觸發區宣告 aria-haspopup="dialog";searchIn='trigger' 時焦點留在觸發區、宣告 listbox;Tab 照 DOM 順序走,觸發區已是頁面最後一格時會走進浮層。</p>
+        <p>選完之後:滑鼠點選與 Enter 結果相同,焦點不離開開啟時的落點(浮層內搜尋框 / 欄位內搜尋框);欄位內搜尋框恆在,空值時也能直接打字;焦點所在的搜尋框帶 aria-activedescendant 指向反白的選項。</p>
+        <p>欄位上的按鍵:關鍵字空白時按 Backspace = 按最後一個值的 ×,讀屏念「已移除『X』」;searchIn='trigger' 時焦點在欄位內搜尋框或觸發區本身都算,其餘(浮層內搜尋、不可搜尋)要清單關著、焦點在觸發區。焦點在觸發區上直接打字 = 打開清單、字進搜尋框(欄位內或浮層內),欄位內搜尋框的讀屏名稱與欄位相同。</p>
+        <p>欄位內 Tag 容器、ChevronDown、搜尋框上的點擊事件是滑鼠優化的點擊區，不是鍵盤介面——鍵盤使用者不經過它們。這些點擊區不加可聚焦角色，是為了不搶走真正聚焦目標的 Tab focus。</p>
+      </div>
     </div>
   ),
 }

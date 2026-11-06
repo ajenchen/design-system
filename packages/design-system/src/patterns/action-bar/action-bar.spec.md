@@ -277,7 +277,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 **孤立檢查（結果導向的自我驗證）**：任何一顆按鈕若左右兩側都有線，代表其中一條沒有真正的理由 —— 回頭逐條檢查理由，刪掉對不上的那條。
 
-**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：Dialog 標題列（`dialog.tsx:184-193`）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
+**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：Dialog 標題列（`dialog.tsx#DialogHeader`）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
 
 **切換按鈕**：`text` + `pressed` toggle——依預設（未啟用）狀態決定位置與分隔線；切為啟用（`pressed=true`）時不移動、不調整分隔線（啟用態不是 variant，見三節）。
 
@@ -374,7 +374,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 | 操作群不可壓縮 | `shrink-0` | 操作鈕的收合走上方「降級」規則(icon-only / 溢出),不靠被擠 |
 | 搜尋框 ↔ 操作群間距 | `--layout-space-loose`(16px) | 兩者是並列的元素,吃 `layoutSpace.spec.md` 的主間距;user 2026-09-16:「新增任務按鈕和搜尋框至少要間隔 loose space token」。操作群**內部**鈕與鈕仍是 `gap-2`(第五節「水平間距」)|
 | 空間夠(內容寬 ≥ 下限 + 間距 + 操作群)時列不溢出;最後一顆操作鈕右緣 = 內容右緣 | 列 `min-w-0` | 機械閘 `scripts/action-bar-toolbar-invariant.mjs`:五個寬度 × 四支示範量像素;空間連下限都放不下的格子只驗「下限守住」並印出(見下一列) |
-| 空間連下限都放不下 | 本輪**不**收合搜尋框(user 2026-09-16:「目前先做到縮到下限即可」)| 世界級的下一步是「收成放大鏡、點了展開」:Carbon 表格工具列搜尋預設收合、聚焦展開、展開後 `inline-size: 100%`(<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/data-table/action/_data-table-action.scss>);Polaris IndexFilters 小螢幕以搜尋鈕切到 Filtering 模式、查詢欄佔整列(<https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/IndexFilters/IndexFilters.tsx>);MUI Data Grid 快速篩選有觸發鈕展開 / 收合(<https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/quickFilter/QuickFilter.tsx>)—— 另立提案再做 |
+| 空間連下限都放不下 | 本輪**不**收合搜尋框(user 2026-09-16:「然後我們目前先做到「縮到下限」即可」)| 世界級的下一步是「收成放大鏡、點了展開」:Carbon 表格工具列搜尋預設收合、聚焦展開、展開後 `inline-size: 100%`(<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/data-table/action/_data-table-action.scss>);Polaris IndexFilters 小螢幕以搜尋鈕切到 Filtering 模式、查詢欄佔整列(<https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/IndexFilters/IndexFilters.tsx>);MUI Data Grid 快速篩選有觸發鈕展開 / 收合(<https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/quickFilter/QuickFilter.tsx>)—— 另立提案再做 |
 
 **值住哪裡**:下限是版面組合值,**不建 token** —— `tokens/README.md`「新增 token 的 criteria」:消費者只算 DS 元件與產品端程式,stories / 範例重複不算;世界級同樣沒有「工具列搜尋最小寬」token(Carbon 用通用版面尺寸、Polaris 用通用寬度刻度)。DS 示範的四份工具列共用 `stories-helpers/scene/data-toolbar.tsx`,值在那裡定一次;產品端自己的工具列依本表自訂。
 **與 Field 寬度軸的關係**:`field-controls.spec.md`「寬度軸」的 `hug`(toolbar 內 field 依內容收縮)是給狀態篩選這類**依內容定寬**的控件;搜尋框要**填滿到上限**(Gmail / Linear / Notion 派),兩者不衝突。
@@ -487,8 +487,10 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 - `bulk-action-bar.spec.md`
 - `button.spec.md`
 - `calendar.spec.md`
+- `coachmark.spec.md`
 - `data-table.spec.md`
 - `file-viewer.spec.md`
 - `popover.spec.md`
 - `separator.spec.md`
+- `steps.spec.md`
 - `toast.spec.md`

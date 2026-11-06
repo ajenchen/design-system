@@ -31,30 +31,37 @@ const STATUS_OPTIONS = ['待處理', '進行中', '已完成', '已封存'] as c
  *
  * body 主體就是一份可選清單 → 走 `overlay-surface.spec.md`「List-as-region in overlay body」:
  * body 撤掉 chrome padding、`CommandGroup` 自帶 `py-2` 給上下呼吸、item 自帶 `px-loose`。
- * 容器用 `Command`(cmdk)而不是裸 `MenuItem`:`menu-item.spec.md:246` 要求選單項目待在提供鍵盤
+ * 容器用 `Command`(cmdk)而不是裸 `MenuItem`:`menu-item.spec.md`「何時用 / 何時不用」要求選單項目待在提供鍵盤
  * 導覽與 listbox 結構的容器內,`Command` 自帶方向鍵與 `role="listbox"`(`SelectMenu` 內部走同一條路)。
  * **列的水平內距是唯一要客製的東西**,而且**設在清單容器上、不是設在每一列**:
  * 列的內距讀 `--item-px`(owner = `item-anatomy.spec.md`「Token: `--item-px`」,預設 `var(--field-px)` 12px);
  * 這裡在 `Command` 根設一次 `var(--layout-space-loose)`(16px),整份清單(含空狀態 / 載入中訊息列)一起換。
  *
  * 目的是讓**列的最前緣**(這裡是勾選框)對齊 header 標題與 footer 按鈕左緣
- * (`overlay-surface.spec.md:100` 第 2 條 + `:202` footer 同一條對齊線)。**對齊的是前緣不是文字** ——
- * `item-anatomy.spec.md:423` content 槽的 x 是剩餘空間、`:665`/`:671` 跨群組不強求文字對齊、
+ * (`overlay-surface.spec.md`「Canonical pattern」第 2 條 + 同檔「底部區域:按鈕列 vs 列式」footer 同一條對齊線)。**對齊的是前緣不是文字** ——
+ * `item-anatomy.spec.md:421` content 槽的 x 是剩餘空間、`:665`/`:671` 跨群組不強求文字對齊、
  * `:677` 把「為了讓文字齊左而改前綴尺寸」列為錯誤示範。
  *
  * **禁止寫在單列的 `className`**:`CommandItem` 是兩層,外層 cmdk Item 負責「反白底色鋪滿整列」恆為
- * `p-0`(`command.tsx:326`),內層 `MenuItem` 才帶內距(`:352-366`)。寫在 className 會落在外層與內層相加 ——
+ * `p-0`(`command.tsx#CommandItem`),內層 `MenuItem` 才帶內距(同一個宣告)。寫在 className 會落在外層與內層相加 ——
  * 2026-09-17 實測 16+12=28px,標題在 17px、勾選框跑到 29px。機械閘 `scripts/overlay-list-as-region-invariant.mjs`。
  */
 function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {
   // 暫存選擇:勾選只改這裡,按「套用」才 commit(對照 DropdownMenu 的 click 即觸發)。
-  const [staged, setStaged] = React.useState<string[]>(['待處理', '進行中'])
+  // 套用 = 暫存寫成已套用、觸發鈕顯示已套用的條件、收起浮層(2026-10-28 前「套用」點了沒反應,稽核 M099);每次打開從已套用的條件開始。
+  const [open, setOpen] = React.useState(defaultOpen)
+  const [applied, setApplied] = React.useState<string[]>(['待處理', '進行中'])
+  const [staged, setStaged] = React.useState<string[]>(applied)
+  const handleOpenChange = (next: boolean) => {
+    if (next) setStaged(applied)
+    setOpen(next)
+  }
   const toggle = (value: string) =>
     setStaged((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]))
   return (
-    <Popover defaultOpen={defaultOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="tertiary" startIcon={Filter}>依狀態篩選</Button>
+        <Button variant="tertiary" startIcon={Filter}>{applied.length ? `狀態:${applied.join('、')}` : '依狀態篩選'}</Button>
       </PopoverTrigger>
       <PopoverContent align="start">
         <PopoverHeader>
@@ -81,7 +88,7 @@ function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {
         </PopoverBody>
         <PopoverFooter>
           <Button variant="tertiary" size="sm" className="flex-1" onClick={() => setStaged([])}>清除</Button>
-          <Button variant="primary" size="sm" className="flex-1">套用</Button>
+          <Button variant="primary" size="sm" className="flex-1" onClick={() => { setApplied(staged); setOpen(false) }}>套用</Button>
         </PopoverFooter>
       </PopoverContent>
     </Popover>
@@ -93,18 +100,8 @@ export const FilterPanel: Story = {
   render: () => <StatusFilterPanel />,
 }
 
-/**
- * OpenSnapshot — visual-audit 專用 story(非 consumer-facing 教學範例)。
- *
- * 用 `defaultOpen` 讓 Popover 在 render 當下就開著,Playwright 截圖才抓得到
- * Popover chrome(Header + X / Body / Footer)。不用 play() + userEvent,是
- * 因為 Radix `defaultOpen` 對 Portal 自動生效 — 世界級 DS 的 chromatic 稽核
- * 也走同 pattern。
- *
- * 情境沿用 FilterPanel(Jira / Linear 狀態篩選),是 Popover「多選 + footer
- * save CTA」canonical 的完整示範,涵蓋 Header X、checkbox list、footer 雙
- * action 整組 chrome。
- */
+// 開啟狀態 —— 只給截圖 / 閘看(test-only,不進文件頁):defaultOpen 讓浮層一掛上就開著,截得到 Header + × / Body / Footer。
+// 情境沿用篩選面板(多選 + footer 套用),涵蓋 Header ×、可勾選清單、footer 兩顆按鈕整組 chrome。
 export const OpenSnapshot: Story = {
   name: '開啟狀態',
   tags: ['test-only'],
@@ -112,10 +109,10 @@ export const OpenSnapshot: Story = {
 }
 
 // SettingsPanel story 於 2026-04-20 移除:
-//   原本是「顯示設定 mini panel (Notion 頁面設定)」— 用 Popover + 多個 horizontal
+//   原本是「顯示設定 mini panel(頁面設定)」— 用 Popover + 多個 horizontal
 //   Field + Switch 展示 settings list。
 //
-//   B13 決策(user 回饋):Notion 頁面設定的實際做法是 `<DropdownMenu>` +
+//   B13 決策(user 回饋):頁面設定這類純開關清單,實際產品的做法是 `<DropdownMenu>` +
 //   `<DropdownMenuCheckboxItem>` — menu 內 binary toggle 已由 CheckboxItem 覆蓋
 //   (見 `../DropdownMenu/dropdown-menu.stories.tsx` 的 `CheckboxItems` story)。
 //   Popover 的 canonical 是「自由組合 UI 面板」(filter / form / 圖表),純 toggle

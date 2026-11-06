@@ -113,7 +113,9 @@ async function shot(origin, id, notFound) {
     const interactive = /inspector|state-behavior/.test(id)
     // 等不到或判不健康 → openStory 丟 StoryRenderInstrumentError(儀器失效),由呼叫端記成 INSTRUMENT-FAIL
     await openStory(page, `${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:light;density:md`, {
-      navigationTimeoutMs: 60_000, timeoutMs: RENDER_TIMEOUT_MS, requestsSettled: true, notFound,
+      // 圖片:openStory 預設等畫面裡每張圖載完、解碼完(取代 requestsSettled 這個網路層代理);示範圖主機用本機同尺寸合成圖 ——
+      // 這支比的是同一跑之內的兩份建置,兩邊拿到同一張圖,比較與網路無關(lib「圖片就緒」區塊,2026-10-14)
+      navigationTimeoutMs: 60_000, timeoutMs: RENDER_TIMEOUT_MS, notFound,
       // 非互動 story 截圖前 blur:放在靜止判定之前,blur 引起的變動也要等它停
       beforeSettle: interactive ? null : (p) => p.evaluate(() => (document.activeElement)?.blur?.()).catch(() => {}),
       settleFrames: DOM_QUIET_FRAMES, settleTimeoutMs: DOM_QUIET_MAX_MS,

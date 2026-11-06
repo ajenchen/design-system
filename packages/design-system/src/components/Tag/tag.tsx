@@ -85,7 +85,7 @@ export interface TagProps
   /** 深底模式（step-6 背景 + on-emphasis 配對前景;亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark,green 白字例外） */
   solid?: boolean
   /**
-   * 2026-05-15 Q3 真 SSOT fix(per user verbatim「同空間兩判斷點」+「不要冰山一角」):
+   * 2026-05-15 Q3 真 SSOT fix(per user 指出同空間兩判斷點、要求不要冰山一角):
    * Tag 寬度由 parent constrain,不套預設 max-w-40(160px)。用於 cell-as-input narrow cell
    * (< 160px)時 Tag fit cell 寬度 + truncate ellipsis,而非 160px 後被 cell `overflow-hidden`
    * 硬切。對齊「同 cell width → 同 overflow 判斷」SSOT。Default false 保 backward compat
@@ -203,7 +203,7 @@ function TagInner(
         else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       }}
       data-tag-root=""
-      // 截斷時條件性可 focus(2026-07-06 user 拍板「確認世界級有這樣做就做」——APG Tooltip
+      // 截斷時條件性可 focus(2026-07-06 user 拍板:確認世界級有這樣做就做 ——APG Tooltip(來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27)
       // pattern 原文:tooltip 在元素「收到鍵盤焦點」或 hover 時顯示,trigger 可 focus 是
       // W3C 官方 pattern 前提;Radix Tooltip focus-open 自動生效 → 鍵盤 Tab 到即見全文。
       // 未截斷不入 tab 序(維持 tag.spec「靜態 Tag 不取得 focus」預設,不汙染 tab order)。
@@ -216,7 +216,7 @@ function TagInner(
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):
-      // 用 CSS var `--combobox-tag-area-inline-size`(由 Combobox useOverflowCount JS-injected)取代
+      // 用 CSS var `--combobox-tag-area-inline-size`(由 `../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount` 寫在容器上)取代
       // `min(100%, 10rem)` cyclic percentage。CSS Sizing 3 §5.2.1:percentage 在 indefinite containing
       // block 退化為 initial value → Round 4 的 100% 沒 enforce。改 explicit px 值(JS measured)避此 trap。
       // unbounded=true:cap = inject 寬(回 cell-as-input narrow cell 原 behavior)
@@ -230,14 +230,17 @@ function TagInner(
       {...props}
     >
       {Icon && <Icon size={16} aria-hidden />}
-      {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full">{avatar}</span>}
+      {/* 頭像焦點框往內(同下方 × 的理由,focus-canonical「問題二」實測表 Tag 的移除 × 列):Tag 是貼邊宿主 —— root `overflow-hidden` 是正當障礙,
+          16px 頭像上下淨空 sm 2px / md 4px 含邊框,往外畫的框被 Tag 與這一格裁掉(2026-10-21 r1b R1b-DT3:多人欄位內搜尋的頭像名片觸發點整圈看不到)。
+          往內由宿主 Tag 承擔,Avatar 本身維持預設往外(「同一個底層元件被另一個元件放進貼邊的位置」) */}
+      {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full [&_*:focus-visible]:focus-ring-inset">{avatar}</span>}
       <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
       {onRemove && <TagDismiss onRemove={onRemove} label={removeAriaLabel ?? dismissLabel ?? label} solid={solid} color={color ?? 'neutral'} />}
     </div>
   )
 
-  // 永遠 wrap Tooltip、以 open 控制可見(對齊 truncated-text.spec.md:49「永遠 wrap」+ :55「❌ 條件 wrap」canonical
-  // + useTruncated 家族;tooltip.principles.stories.tsx:190「沒被截斷就不該顯示 tooltip」由 open={false} 機械保證)。
+  // 永遠 wrap Tooltip、以 open 控制可見(對齊 truncated-text.spec.md「`open` 控制而非條件 wrap(canonical)」與禁止事項的條件 wrap 那條
+  // + useTruncated 家族;tooltip.principles.stories.tsx#NeedsTooltipRule「沒被截斷就不該顯示 tooltip」由 open={false} 機械保證)。
   // 未截斷 open={false} → tooltip 靜默(TooltipTrigger asChild 只把 handler/data-state 合併到 tag div,零多餘 DOM、
   // 視覺與裸 tag 等價,pixel-identical)。always-wrap 保 tag div 生命週期穩定 → isTruncated false→true 不 remount:
   // 先前條件-wrap(未截斷回裸 tag / 截斷才 wrap)切換 JSX 樹會 remount tag div,但 useTruncated deps=[children] 未變

@@ -13,7 +13,11 @@ import {
 import { AGENT_BRAND, AgentLogo } from './agent-panel-logo'
 import { AgentFab, AgentPanelDock } from './agent-panel-fab'
 import { AgentThinking } from './agent-panel'
+import { Slider } from '@/design-system/components/Slider/slider'
+import { Toaster } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { useAgentDemo, toolbarActions, DemoConversation } from '@/design-system/stories-helpers/scene/agent-demo'
 
 const meta: Meta<typeof AgentPanel> = {
   title: 'Design System/Components/AgentPanel/設計規格',
@@ -23,81 +27,110 @@ const meta: Meta<typeof AgentPanel> = {
 export default meta
 type Story = StoryObj<typeof AgentPanel>
 
+const OVERVIEW_REPLY = '代理回覆:無氣泡、全寬、text-body;輪距 40 = 8+24(工具列)+8;最後一則工具列常駐(AgentConversation 判定)、底距輸入盒 48。'
+
 /** Overview:三段 anatomy(Header / Conversation flex-1 / PromptInput)+ 左緣分隔線。 */
 export const Overview: Story = {
   name: '元件總覽',
-  render: () => (
-    <div className="flex h-dvh justify-end bg-canvas">
-      {/* 解剖圖是並排態(容器滿版),不會出現蓋板遮罩 —— `onClose` 在這裡恆不觸發,
-          但它是必填的(M23(f):沒有內建行為的固定行為不得靠 callback 有無決定),同標題列的 × 寫法。 */}
-      <AgentPanel onClose={() => {}}>
-        <AgentPanelHeader title="智慧代理" onNewConversation={() => {}} onClose={() => {}} />
-        <AgentConversation>
-          <AgentMessage role="user">我方氣泡:bg-secondary、圓角 4、內距 8/12、寬 ≤85%、靠右。</AgentMessage>
-          <AgentMessage
-            role="agent"
-            toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}
-          >
-            代理回覆:無氣泡、全寬、text-body;輪距 40 = 8+24(工具列)+8;最後一則工具列常駐(AgentConversation 判定)、底距輸入盒 48。
-          </AgentMessage>
-        </AgentConversation>
-        <AgentPromptInput
-          value=""
-          onValueChange={() => {}}
-          attachments={[{ id: 'a', label: '附件列 Tag md,間距 4' }]}
-          onSubmit={() => {}}
-          onRemoveAttachment={() => {}}
-          onAddAttachment={() => {}}
-        />
-      </AgentPanel>
-    </div>
-  ),
+  render: function OverviewStory() {
+    // 解剖圖上看得到的按鈕都能動(F-S2;範例依據 Q-specimen 判可推導):× 關面板、入口鈕開回來、+ 開新對話、輸入盒打得進字、
+    // 送出把訊息加進對話、加附件開檔案選擇器、附件 × 移除、工具列複製 / 讚 / 倒讚跳 Toast(共用對話模型 stories-helpers/scene/agent-demo.tsx)
+    const demo = useAgentDemo({
+      sessions: [
+        {
+          id: 'anatomy',
+          title: '智慧代理',
+          group: '今天',
+          messages: [
+            { role: 'user', content: '我方氣泡:bg-secondary、圓角 4、內距 8/12、寬 ≤85%、靠右。' },
+            { role: 'agent', content: OVERVIEW_REPLY, copyText: OVERVIEW_REPLY },
+          ],
+        },
+      ],
+      attachments: [{ id: 'a', label: '附件列 Tag md,間距 4' }],
+    })
+    return (
+      <>
+        <div className="relative flex h-dvh justify-end bg-canvas">
+          <AgentPanelDock defaultOpen logoState="still">
+            {({ close }) => (
+              <AgentPanel onClose={close}>
+                <AgentPanelHeader {...demo.header} onClose={close} />
+                <DemoConversation messages={demo.messages} />
+                <AgentPromptInput {...demo.prompt} />
+              </AgentPanel>
+            )}
+          </AgentPanelDock>
+        </div>
+        <Toaster />
+      </>
+    )
+  },
 }
 
-/** 元件檢閱器:即時預覽 + 藍圖 + Inspect 面板(6-canonical 之一)。
- *  面板是三段式容器,所以檢閱器盯的是**三段的垂直分工**與**寬度契約**——這兩件事決定了
- *  consumer 把面板放進自家版面時會不會走鐘。互動的部分(拖寬、開合、標誌)在展示層。 */
+/** 元件檢閱器:即時預覽 + 藍圖 + Inspect 面板。
+ *  面板是三段式容器,所以檢閱器盯的是三段的垂直分工與寬度契約 —— 這兩件事決定了
+ *  把面板放進自家版面時會不會走鐘。互動的部分(拖寬、開合、標誌)在展示層。 */
+// (原本寫著「6-canonical 之一」這種內部代號,會被 Storybook 當成 docs 說明顯示 —— 範例依據 E1 internal-code)
 export const Inspector: Story = {
   name: '元件檢閱器',
   render: () => <InspectorView />,
 }
 
+const INSPECTOR_REPLY = '有 6 筆同時掛在兩個人身上,已列在下面。'
+
 const InspectorView = () => {
   const [width, setWidth] = React.useState(400)
   const clamped = Math.round(Math.min(Math.max(width, 360), 640))
+  const demo = useAgentDemo({
+    sessions: [
+      {
+        id: 'c1',
+        title: '衝刺待辦整理',
+        group: '今天',
+        messages: [
+          { role: 'user', content: '這週有哪幾筆待辦被重複指派?' },
+          { role: 'agent', content: INSPECTOR_REPLY, copyText: INSPECTOR_REPLY },
+        ],
+      },
+    ],
+  })
   return (
+    <>
+    {/* Toast 區放在版面外(它是 fixed 的播報區,不佔版面;放進 flex gap 容器會多吃一格 gap) */}
+    <Toaster />
     <div className="flex flex-col gap-6 p-8">
       <div className="grid grid-cols-[1fr_340px] gap-6">
-        {/* 左:即時預覽 + 藍圖 */}
-        <div className="flex flex-col gap-6">
+        {/* 左:即時預覽 + 藍圖 —— 兩則有標題的範例上下疊:範例之間 loose × 2(ExampleStack,Q2 ①);原本寫死 gap-6(24,不跟密度) */}
+        <ExampleStack>
           <div>
             <H3>即時預覽</H3>
             <Desc>
               拉下面的滑桿改寬度,看三段怎麼分配:標題列與輸入盒是固定高,訊息區吃掉剩下的全部。
-              寬度夾在 360 ~ 640 之間,且永遠不超過容器寬的 3/8(較小者勝);容器窄於 960 就翻成蓋板。
+              寬度是這種內容的最小 / 初始 / 最大(預設 360 / 400 / 640)加上使用者的寬度紀錄;放在 AppShell 裡時,可拉上限再受「所有並排面板拉滿時 Main 剛好剩最小寬」限制,放不下最小寬就變右側浮層 —— 沒有固定斷點(AppShell「版面規則」)。
             </Desc>
             <div className="border border-divider rounded-lg overflow-hidden" style={{ height: 420 }}>
-              <div className="flex h-full justify-end bg-canvas">
-                <AgentPanel width={clamped} resizable={false} onClose={() => {}}>
-                  <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onNewConversation={() => {}} onClose={() => {}} />
-                  <AgentConversation>
-                    <AgentMessage role="user">這週有哪幾筆待辦被重複指派?</AgentMessage>
-                    <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
-                      有 6 筆同時掛在兩個人身上,已列在下面。
-                    </AgentMessage>
-                  </AgentConversation>
-                  <AgentPromptInput value="" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} />
-                </AgentPanel>
+              <div className="relative flex h-full justify-end bg-canvas">
+                {/* × 關面板 → 右下角入口鈕接手,點一下開回來(同展示頁);面板上的按鈕都接上真的行為(共用對話模型) */}
+                <AgentPanelDock defaultOpen logoState="still">
+                  {({ close }) => (
+                    <AgentPanel width={clamped} resizable={false} onClose={close}>
+                      <AgentPanelHeader {...demo.header} onClose={close} />
+                      <DemoConversation messages={demo.messages} />
+                      <AgentPromptInput {...demo.prompt} />
+                    </AgentPanel>
+                  )}
+                </AgentPanelDock>
               </div>
             </div>
-            <label className="mt-3 flex items-center gap-3 text-footnote text-fg-muted">
+            {/* 寬度滑桿 = DS Slider(原本是原生 <input type="range">;範例依據 native-control) */}
+            <div className="mt-3 flex items-center gap-3 text-footnote text-fg-muted">
               <span className="font-mono">width</span>
-              <input
-                type="range"
+              <Slider
                 min={320}
                 max={700}
-                value={width}
-                onChange={(e) => setWidth(Number(e.target.value))}
+                value={[width]}
+                onValueChange={(v) => setWidth(v[0])}
                 className="flex-1"
                 aria-label="面板寬度"
               />
@@ -105,13 +138,13 @@ const InspectorView = () => {
                 傳入 {width} → 實際 {clamped}
                 {width !== clamped ? '(已夾回範圍內)' : ''}
               </span>
-            </label>
+            </div>
           </div>
 
           <div>
             <H3>藍圖(Blueprint)</H3>
             <Desc>
-              三段垂直分工:標題列與輸入盒各自量身高,中間的訊息區是唯一會伸縮的一段(`flex-1`)。
+              三段垂直分工:標題列與輸入盒各自量身高,中間的訊息區是唯一會伸縮的一段(<code>flex-1</code>)。
               決策卡出現時絕對定位貼底覆蓋輸入區,不改變這個分工。
             </Desc>
             <div className="border border-divider rounded-lg p-4 bg-muted/40 max-w-[520px]">
@@ -134,7 +167,7 @@ const InspectorView = () => {
               </p>
             </div>
           </div>
-        </div>
+        </ExampleStack>
 
         {/* 右:Inspect 面板 */}
         <div>
@@ -143,10 +176,10 @@ const InspectorView = () => {
             <section>
               <p className="font-mono text-fg-muted mb-2">WIDTH</p>
               <ul className="flex flex-col gap-1">
-                <li><span className="font-mono">--agent-panel-width</span> · 400(預設)</li>
-                <li><span className="font-mono">PANEL_WIDTH_MIN</span> · 360(TS 常數,非 token)</li>
-                <li><span className="font-mono">PANEL_WIDTH_MAX</span> · 640(TS 常數,非 token)</li>
-                <li><span className="font-mono">視窗上限</span> · 50vw(與 max 取較小者)</li>
+                <li><span className="font-mono">AGENT_PANEL_WIDTH_DEFAULT</span> · 400(產品沒設時的初始寬;TS 常數,非 token)</li>
+                <li><span className="font-mono">AGENT_PANEL_WIDTH_MIN</span> · 360(產品沒設時的最小寬;TS 常數,非 token)</li>
+                <li><span className="font-mono">AGENT_PANEL_WIDTH_MAX</span> · 640(產品沒設時的最大寬;TS 常數,非 token)</li>
+                <li><span className="font-mono">可拉上限</span> · 由 AppShell 現算(剩餘均分;浮層 = min(最大, 版面寬 − 48))</li>
                 <li><span className="font-mono">鍵盤步進</span> · ←/→ 16 · Home 最窄 · End 最寬</li>
               </ul>
             </section>
@@ -163,10 +196,11 @@ const InspectorView = () => {
             <section>
               <p className="font-mono text-fg-muted mb-2">PUBLIC PROPS(容器)</p>
               <ul className="flex flex-col gap-1">
-                <li><span className="font-mono">width</span> · number — 受控寬度</li>
-                <li><span className="font-mono">defaultWidth</span> · number — 非受控起始寬</li>
+                <li><span className="font-mono">widthRange</span> · {'{'} min, initial, max {'}'} — 這種內容類型的寬度設定</li>
+                <li><span className="font-mono">width</span> · number — 受控寬度紀錄</li>
+                <li><span className="font-mono">defaultWidth</span> · number — 非受控起始紀錄(產品自存的值)</li>
                 <li><span className="font-mono">onWidthChange</span> · 拖曳中每格都發(即時回饋)</li>
-                <li><span className="font-mono">onWidthCommit</span> · 放開/鍵盤一步發一次(要存這個)</li>
+                <li><span className="font-mono">onWidthCommit</span> · 一次調整結束發一次:放開且有拖動 / 鍵盤一步;只點一下不發(要存這個)</li>
                 <li><span className="font-mono">resizable</span> · boolean,預設 true</li>
               </ul>
             </section>
@@ -182,6 +216,7 @@ const InspectorView = () => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
@@ -189,36 +224,39 @@ const InspectorView = () => {
 export const SizeMatrix: Story = {
   name: '尺寸對照表',
   render: () => (
-    <div className="space-y-6 p-12">
-      <section>
-        <H3>標誌</H3>
-        <Desc>同一造型,不設簡化檔(2026-09-02 拍板);尺寸由消費點決定。</Desc>
-        <div className="mt-2 flex items-end gap-8">
-          {[16, 24, 32, 48].map((size) => (
-            <div key={size} className="flex flex-col items-center gap-2">
-              <AgentLogo state="still" size={size} label={`標誌 ${size}px`} />
-              <span className="text-caption text-fg-muted">{size}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section>
-        <H3>尺寸來源</H3>
-        <table className="mt-2 w-full text-body">
-          <thead>
-            <tr><Th>用途</Th><Th>值</Th><Th>Token 來源</Th></tr>
-          </thead>
-          <tbody>
-            <tr><Td>入口鈕(家)</Td><Td mono>40</Td><Td><TokenCell token="--field-height-lg" display="lg 密度 40" /></Td></tr>
-            <tr><Td>入口鈕(貼邊)</Td><Td mono>28</Td><Td><TokenCell token="--field-height-sm" /></Td></tr>
-            <tr><Td>貼邊帶寬</Td><Td mono>36</Td><Td><TokenCell token="--field-height-md" /></Td></tr>
-            <tr><Td>面板寬(預設 / 最小 / 最大)</Td><Td mono>400 / 360 / 640</Td><Td><TokenCell token="--agent-panel-width" display="--agent-panel-width / -min / -max" /></Td></tr>
-            <tr><Td>標題列高</Td><Td mono>48 / 56</Td><Td><TokenCell token="--chrome-header-height" display="md / lg density" /></Td></tr>
-            <tr><Td>訊息輪距</Td><Td mono>40</Td><Td>8 + 24(工具列)+ 8</Td></tr>
-            <tr><Td>最後一則 → 輸入盒</Td><Td mono>48</Td><Td><TokenCell token="--layout-space-bottom" /></Td></tr>
-          </tbody>
-        </table>
-      </section>
+    // 兩段有標題的對照上下疊:段之間 loose × 2(ExampleStack,Q2 ①);原本寫死 space-y-6(24,不跟密度)
+    <div className="p-12">
+      <ExampleStack>
+        <section>
+          <H3>標誌</H3>
+          <Desc>同一造型,不設簡化檔(2026-09-02 拍板);尺寸由消費點決定。</Desc>
+          <div className="mt-2 flex items-end gap-8">
+            {[16, 24, 32, 48].map((size) => (
+              <div key={size} className="flex flex-col items-center gap-2">
+                <AgentLogo state="still" size={size} label={`標誌 ${size}px`} />
+                <span className="text-caption text-fg-muted">{size}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section>
+          <H3>尺寸來源</H3>
+          <table className="mt-2 w-full text-body">
+            <thead>
+              <tr><Th>用途</Th><Th>值</Th><Th>Token 來源</Th></tr>
+            </thead>
+            <tbody>
+              <tr><Td>入口鈕(家)</Td><Td mono>40</Td><Td><TokenCell token="--field-height-lg" display="lg 密度 40" /></Td></tr>
+              <tr><Td>入口鈕(貼邊)</Td><Td mono>28</Td><Td><TokenCell token="--field-height-sm" /></Td></tr>
+              <tr><Td>貼邊帶寬</Td><Td mono>36</Td><Td><TokenCell token="--field-height-md" /></Td></tr>
+              <tr><Td>面板寬(預設 / 最小 / 最大)</Td><Td mono>400 / 360 / 640</Td><Td>AGENT_PANEL_WIDTH_DEFAULT / MIN / MAX(TS 常數,非 token)</Td></tr>
+              <tr><Td>標題列高</Td><Td mono>48 / 56</Td><Td><TokenCell token="--chrome-header-height" display="md / lg density" /></Td></tr>
+              <tr><Td>訊息輪距</Td><Td mono>40</Td><Td>8 + 24(工具列)+ 8</Td></tr>
+              <tr><Td>最後一則 → 輸入盒</Td><Td mono>48</Td><Td><TokenCell token="--layout-space-bottom" /></Td></tr>
+            </tbody>
+          </table>
+        </section>
+      </ExampleStack>
     </div>
   ),
 }
@@ -227,31 +265,34 @@ export const SizeMatrix: Story = {
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => (
-    <div className="space-y-6 p-12">
-      <section>
-        <H3>品牌兩極(入口鈕環 / 光圈)</H3>
-        <Desc>單一數值來源在 agent-panel-logo.tsx 的 AGENT_BRAND;等於自家色階,不隨主題改。</Desc>
-        <table className="mt-2 w-full text-body">
-          <thead><tr><Th /><Th>值</Th><Th>色階</Th></tr></thead>
-          <tbody>
-            <tr><Td><Swatch value={AGENT_BRAND.blue} /> 藍</Td><Td mono>{AGENT_BRAND.blue}</Td><Td><TokenCell token="--color-blue-4" /></Td></tr>
-            <tr><Td><Swatch value={AGENT_BRAND.purple} /> 紫</Td><Td mono>{AGENT_BRAND.purple}</Td><Td><TokenCell token="--color-purple-4" /></Td></tr>
-          </tbody>
-        </table>
-      </section>
-      <section>
-        <H3>面與訊息</H3>
-        <table className="mt-2 w-full text-body">
-          <thead><tr><Th>用途</Th><Th>Token</Th></tr></thead>
-          <tbody>
-            <tr><Td>面板底 / 入口鈕面</Td><Td><TokenCell token="--surface" display="--surface / --surface-raised" /></Td></tr>
-            <tr><Td>我方氣泡</Td><Td><TokenCell token="--secondary" /></Td></tr>
-            <tr><Td>代理內文連結</Td><Td><TokenCell token="--primary" display="--primary / hover --primary-hover" /></Td></tr>
-            <tr><Td>左緣分隔線</Td><Td><TokenCell token="--divider" /></Td></tr>
-            <tr><Td>停靠帶底 / 邊框</Td><Td><TokenCell token="--drop-target" display="--drop-target / --drop-target-border" /></Td></tr>
-          </tbody>
-        </table>
-      </section>
+    // 兩段有標題的對照上下疊:段之間 loose × 2(ExampleStack,Q2 ①);原本寫死 space-y-6(24,不跟密度)
+    <div className="p-12">
+      <ExampleStack>
+        <section>
+          <H3>品牌兩極(入口鈕環 / 光圈)</H3>
+          <Desc>單一數值來源在 agent-panel-logo.tsx 的 AGENT_BRAND;等於自家色階,不隨主題改。</Desc>
+          <table className="mt-2 w-full text-body">
+            <thead><tr><Th /><Th>值</Th><Th>色階</Th></tr></thead>
+            <tbody>
+              <tr><Td><Swatch value={AGENT_BRAND.blue} /> 藍</Td><Td mono>{AGENT_BRAND.blue}</Td><Td><TokenCell token="--color-blue-4" /></Td></tr>
+              <tr><Td><Swatch value={AGENT_BRAND.purple} /> 紫</Td><Td mono>{AGENT_BRAND.purple}</Td><Td><TokenCell token="--color-purple-4" /></Td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section>
+          <H3>面與訊息</H3>
+          <table className="mt-2 w-full text-body">
+            <thead><tr><Th>用途</Th><Th>Token</Th></tr></thead>
+            <tbody>
+              <tr><Td>面板底 / 入口鈕面</Td><Td><TokenCell token="--surface" display="--surface / --surface-raised" /></Td></tr>
+              <tr><Td>我方氣泡</Td><Td><TokenCell token="--secondary" /></Td></tr>
+              <tr><Td>代理內文連結</Td><Td><TokenCell token="--primary" display="--primary / hover --primary-hover" /></Td></tr>
+              <tr><Td>左緣分隔線</Td><Td><TokenCell token="--divider" /></Td></tr>
+              <tr><Td>停靠帶底 / 邊框</Td><Td><TokenCell token="--drop-target" display="--drop-target / --drop-target-border" /></Td></tr>
+            </tbody>
+          </table>
+        </section>
+      </ExampleStack>
     </div>
   ),
 }
@@ -259,7 +300,28 @@ export const ColorMatrix: Story = {
 /** StateBehavior:思考塊進行中/完成、工具列常駐/懸停、送出↔停止——家族互動狀態一覽。 */
 export const StateBehavior: Story = {
   name: '狀態行為',
-  render: () => (
+  render: () => <StateBehaviorView />,
+}
+
+const EARLIER_REPLY = '已把 48 筆待辦按衝刺分組,其中 6 筆同時被指派給兩個人。'
+const LAST_REPLY = '已改派並標記為待確認。'
+
+/**
+ * 標本上看得到的按鈕都能動(F-S2;範例依據 Q-specimen 判可推導):工具列複製 / 讚 / 倒讚跳 Toast;
+ * 兩格輸入盒打得進字、送出 = 清空輸入盒(這兩格只示範輸入盒的樣子,沒有對話可接)、加附件開檔案選擇器;
+ * 「停止」那格按停止 = 代理停止回覆、換回送出鈕。
+ */
+/** 只示範輸入盒時的那一段對話(畫面上不顯示對話;送出 = 清空輸入盒) */
+const PROMPT_ONLY: Parameters<typeof useAgentDemo>[0]['sessions'] = [{ id: 'prompt', title: '', group: '今天', messages: [] }]
+
+function StateBehaviorView() {
+  // 兩格輸入盒各自一份共用對話模型:打得進字、送出清空、加附件開檔案選擇器、附件 × 移除(stories-helpers/scene/agent-demo.tsx)
+  const sendDemo = useAgentDemo({ sessions: PROMPT_ONLY, draft: '幫我整理' })
+  const busyDemo = useAgentDemo({ sessions: PROMPT_ONLY })
+  const [busy, setBusy] = React.useState(true)
+  return (
+    <>
+    <Toaster />
     <div className="flex flex-col gap-8 p-8 text-body">
       <div className="flex gap-12">
         <div className="w-72">
@@ -281,12 +343,12 @@ export const StateBehavior: Story = {
         </div>
         <div className="h-64 border border-divider rounded-md">
           <AgentConversation>
-            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
-              已把 48 筆待辦按衝刺分組,其中 6 筆同時被指派給兩個人。(較早的回覆:工具列懸停才淡入)
+            <AgentMessage role="agent" toolbar={<AgentToolbar {...toolbarActions(EARLIER_REPLY)} />}>
+              {EARLIER_REPLY}(較早的回覆:工具列懸停才淡入)
             </AgentMessage>
             <AgentMessage role="user">那 6 筆先都給我。</AgentMessage>
-            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
-              已改派並標記為待確認。(最後一則代理訊息:工具列常駐,在流內佔位)
+            <AgentMessage role="agent" toolbar={<AgentToolbar {...toolbarActions(LAST_REPLY)} />}>
+              {LAST_REPLY}(最後一則代理訊息:工具列常駐,在流內佔位)
             </AgentMessage>
           </AgentConversation>
         </div>
@@ -294,15 +356,16 @@ export const StateBehavior: Story = {
       <div className="flex gap-12">
         <div className="w-80">
           <div className="mb-2 text-caption text-fg-muted">送出(有內容可按)</div>
-          <AgentPromptInput value="幫我整理" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} />
+          <AgentPromptInput {...sendDemo.prompt} />
         </div>
         <div className="w-80">
           <div className="mb-2 text-caption text-fg-muted">停止(代理進行中同位換實心正方)</div>
-          <AgentPromptInput value="" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} busy onStop={() => {}} />
+          <AgentPromptInput {...busyDemo.prompt} busy={busy} onStop={() => setBusy(false)} />
         </div>
       </div>
     </div>
-  ),
+    </>
+  )
 }
 
 /** 入口鈕的靜態對照表:兩個位置 × 三個標誌狀態。
@@ -344,20 +407,21 @@ export const FabPlacements: Story = {
   ),
 }
 
-/** Accessibility:家族 ARIA 角色與鍵盤約定一覽(規格 spec「Loading / 無障礙預設」節)。 */
+/** 家族 ARIA 角色與鍵盤約定一覽。 */
+// 規格出處:agent-panel.spec.md「Loading / 無障礙預設」(檔名指標不放進 docs 說明;讀者在 Storybook 打不開 spec)
 export const Accessibility: Story = {
   name: '無障礙與鍵盤',
   render: () => (
     <table className="w-full text-body">
       <thead><tr><Th>元件</Th><Th>角色 / 屬性</Th><Th>鍵盤</Th></tr></thead>
       <tbody>
-        <tr><Td>AgentPanel</Td><Td>role=complementary + aria-label</Td><Td>無自動移焦;改名 / 刪除對話框關閉後焦點回標題觸發</Td></tr>
+        <tr><Td>AgentPanel</Td><Td>role=complementary + aria-label</Td><Td>並排:不移焦、Esc 不關面板;浮層:開啟時焦點進面板、面板裡沒有更內層時 Esc 關閉面板(焦點回入口鈕);改名 / 刪除對話框關閉後焦點回標題觸發</Td></tr>
         <tr><Td>AgentPanelHeader chevron</Td><Td>aria-haspopup=dialog + aria-expanded</Td><Td>Enter/Space 開歷史浮層;搜尋框 ↑↓ 走列,插入點在字尾時 → 進該列的改名 / 刪除、← 回;兩顆鈕不在 Tab 路上(B9)</Td></tr>
         <tr><Td>AgentConversation</Td><Td>role=log + aria-live=polite</Td><Td>—</Td></tr>
         <tr><Td>AgentThinking</Td><Td>button + aria-expanded(內文不另設 aria-live)</Td><Td>Enter/Space 開合</Td></tr>
-        <tr><Td>AgentToolbar</Td><Td>各鈕 aria-label</Td><Td>Tab 逐鈕;focus-within 常駐顯示</Td></tr>
+        <tr><Td>AgentToolbar</Td><Td>各鈕 aria-label</Td><Td>Tab 逐鈕;鍵盤焦點在工具列裡時顯示(滑鼠點過不常駐)</Td></tr>
         <tr><Td>AgentPromptInput</Td><Td>textarea aria-label=訊息;停止態 aria-label=停止生成</Td><Td>Enter 送出、Shift+Enter 換行</Td></tr>
-        <tr><Td>AgentDecisionCard</Td><Td>role=group + aria-labelledby;radiogroup 原生</Td><Td>方向鍵選項;無 Esc(阻擋語意)</Td></tr>
+        <tr><Td>AgentDecisionCard</Td><Td>role=group + aria-labelledby;radiogroup 原生(必答單選題帶 aria-required)</Td><Td>方向鍵選項;無 Esc(阻擋語意)</Td></tr>
         <tr><Td>AgentLogo / AgentFab</Td><Td>label 有→role=img;無→aria-hidden;FAB aria-label=開啟智慧代理</Td><Td>減動作:常駐 loop 全停回靜止</Td></tr>
         <tr><Td>AgentFabDock(入口鈕)</Td><Td>button + aria-label(在家/貼邊各一句)+ aria-haspopup=menu + aria-expanded;命中形狀 ≡ 可視形狀(含圓角)</Td><Td>Enter/Space 開面板;在家 → 進貼邊;貼邊 ↑↓ 每步 16;← / Home 回家;Shift+F10 開選單;拖曳中 Esc 取消不落定</Td></tr>
       </tbody>

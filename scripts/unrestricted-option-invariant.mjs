@@ -2,7 +2,7 @@
 /**
  * 不變式:**多選選單的「不限」列必須是「不設限」,不是「一個選項」**。
  *
- * owner:`packages/design-system/src/components/SelectMenu/select-menu.spec.md`「「不限」選項」段
+ * owner:`packages/design-system/src/components/SelectMenu/select-menu-unrestricted.spec.md`「「不限」選項」段(2026-09-30 自 select-menu.spec.md 抽出)
  *(2026-09-18 user 拍板:消費端自行開啟、預設關閉 —— 「消費端要自行判斷到底選單的內容是否要出現
  * 不限這個選項啊,我們又不知道消費端的選單內容,直接開啟反而容易變成怪設計」)。
  *
@@ -82,12 +82,17 @@ const PANEL = () => {
 }
 
 // 欄位:用 h3 標題定位每一格,量「最裡層那個有字的 span」相對欄位框左緣的位移、顏色、是否在 Tag 裡。
-// Tag 的身分證是 `data-tag-text`(tag.tsx:234),不是 class 字串。
+// Tag 的身分證是 `data-tag-text`(tag.tsx:237),不是 class 字串。
 const FIELDS = () => {
   const headings = [...document.querySelectorAll('h3')]
+  // 2026-11-04(fields FL-a4 把這則的區段改成共用 ExampleSection 之後假紅):h3 包在 ExampleSection 的標題區(`[data-example-section]` 第一格,
+  // h3 + 說明)裡,h3 的下一個兄弟是說明或沒有 → 這裡改認 DS 共用元件自己掛的記號:在 ExampleSection 裡就取那一格裡標題區以外的第一個子節點,
+  // 不在就照舊取 h3 的下一個兄弟(同 field-view-typography 閘 2026-10-28 的做法)。
   const panel = (prefix) => {
     const h = headings.find((x) => (x.textContent || '').startsWith(prefix))
-    return h ? h.nextElementSibling : null
+    if (!h) return null
+    const sec = h.closest('[data-example-section]')
+    return sec ? [...sec.children].find((n) => !n.contains(h)) ?? null : h.nextElementSibling
   }
   const read = (wrap) => {
     if (!wrap) return null
@@ -154,7 +159,9 @@ const BREAK = {
   // C:讓只選「不限」的欄位長出一顆 Tag(退化成「不限是一個被選中的項目」)
   欄位: () => {
     const h = [...document.querySelectorAll('h3')].find((x) => (x.textContent || '').startsWith('只選「不限」—— 欄'))
-    const wrap = h?.nextElementSibling
+    // 與上面 FIELDS 的 panel() 同一種找法(ExampleSection 裡取標題區以外那一格)—— 破壞找不到欄位 = 對照組不成立
+    const sec = h?.closest('[data-example-section]')
+    const wrap = sec ? [...sec.children].find((n) => !n.contains(h)) : h?.nextElementSibling
     const el = wrap && [...wrap.querySelectorAll('span')].find((s) => s.childElementCount === 0 && (s.textContent || '').trim())
     if (!el) return false
     el.setAttribute('data-tag-text', '')

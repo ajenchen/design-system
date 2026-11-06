@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react'
 import { Flag } from 'lucide-react'
 import { Select } from './select'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { BpZone, PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Select/設計規格',
@@ -63,7 +65,7 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
   },
 }
 
-// Error state tokens (edit only) — traced from select.tsx:431/444/598(NativeSelect 兩處 + CustomSelect trigger)
+// Error state tokens (edit only) — traced from select.tsx#NativeSelect(兩處)+ select.tsx#CustomSelect(trigger)
 // border-error hover:border-error-hover, focus-within:border-error
 const ERROR_TOKENS: Record<StateKey, ColorSpec> = {
   default:  { bg: '--surface', text: '--foreground', border: '--error',       icon: '--fg-muted' },
@@ -125,9 +127,6 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
    Swatch defaults to `size="md"` for inline token chips.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
 const Desc = ({ children }: { children: React.ReactNode }) => (
   <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
 )
@@ -137,22 +136,6 @@ const Th = ({ children }: { children: React.ReactNode }) => (
 const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) => (
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
-
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
-}
 
 const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
   <div className="flex flex-col gap-0.5 mt-2">
@@ -166,18 +149,8 @@ const TokenAnnotation = ({ colors }: { colors: ColorSpec }) => (
   </div>
 )
 
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -194,14 +167,6 @@ const Z = {
   dim:     { text: '#d04040' },
 }
 
-const BpZone = ({ w, color, label, sub }: { w: number; color: typeof Z.pad; label: string; sub?: string }) => (
-  <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
-    style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
-    <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
-  </div>
-)
-
 /* ═══════════════════════════════════════════════════════════════════════════
    1. 元件總覽
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -211,39 +176,40 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* ── Anatomy: text mode ── */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）— plain 模式</H3>
-          <Desc>display="plain"（預設）。觸發點顯示選中值的純文字 + ChevronDown。可搭配 startIcon 代表 value 的圖示。clearable 有值時出現 clear 按鈕。「plain」表樸素文字呈現,跟 Button variant="text" 區隔(2026-05-01 從 'text' 改名,避免 prop value 跨元件衝突)。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）— plain 模式" description={<>display="plain"（預設）。觸發點顯示選中值的純文字 + ChevronDown。可搭配 startIcon 代表 value 的圖示。clearable 有值時出現 clear 按鈕。「plain」表樸素文字呈現,跟 Button variant="text" 區隔(2026-05-01 從 'text' 改名,避免 prop value 跨元件衝突)。</>}>
         <div className="flex gap-8">
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">基本</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'select （文字）', color: 'success' }, { name: 'select （文字）', color: 'magenta' }].map((s) => (
+              {/* 各格名稱還原 b4711ec5(04-26 加序號時把同列各格都覆寫成第一格的名字)之前的原值;magenta 為 primitive(無 --magenta semantic token)→ 顯式 --color-magenta-{6,1,7}(同本頁 tag 模式那列) */}
+              {[
+                { name: '選中值文字', border: 'var(--success)', bg: 'var(--success-subtle)', text: 'var(--success)' },
+                { name: 'chevron', border: 'var(--color-magenta-6)', bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
+              ].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+                  style={{ borderColor: s.border, backgroundColor: s.bg, color: s.text }}>{s.name}</span>
               ))}
             </div>
           </div>
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">startIcon + clearable</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'startIcon', color: 'info' }, { name: 'startIcon', color: 'success' }, { name: 'startIcon', color: 'warning' }, { name: 'startIcon', color: 'magenta' }].map((s) => (
+              {[
+                { name: 'startIcon', border: 'var(--info)', bg: 'var(--info-subtle)', text: 'var(--info)' },
+                { name: '選中值文字', border: 'var(--success)', bg: 'var(--success-subtle)', text: 'var(--success)' },
+                { name: 'clear', border: 'var(--warning)', bg: 'var(--warning-subtle)', text: 'var(--warning)' },
+                { name: 'chevron', border: 'var(--color-magenta-6)', bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
+              ].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+                  style={{ borderColor: s.border, backgroundColor: s.bg, color: s.text }}>{s.name}</span>
               ))}
             </div>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* ── Anatomy: tag mode ── */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）— tag 模式</H3>
-          <Desc>display="tag"。用一顆 Tag 元件呈現選中值,Tag 設為 pointer-events-none 讓點擊穿透到觸發點容器去開選單。startIcon 不可用於 tag 模式。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）— tag 模式" description={<>display="tag"。用一顆 Tag 元件呈現選中值,Tag 設為 pointer-events-none 讓點擊穿透到觸發點容器去開選單。startIcon 不可用於 tag 模式。</>}>
         <div className="flex gap-8">
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">edit</span>
@@ -251,9 +217,9 @@ export const Overview = {
               {/* turquoise/magenta 為 primitive(無 semantic token)→ 顯式 --color-{hue}-{6,1,7}(ProgressBar 同款修法) */}
               {[
                 { name: 'Tag', border: 'var(--color-turquoise-6)', bg: 'var(--color-turquoise-1)', text: 'var(--color-turquoise-7)' },
-                { name: 'Tag', border: 'var(--success)', bg: 'var(--success-subtle)', text: 'var(--success)' },
-                { name: 'Tag', border: 'var(--info)', bg: 'var(--info-subtle)', text: 'var(--info)' },
-                { name: 'Tag', border: 'var(--color-magenta-6)', bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
+                { name: 'select (hidden)', border: 'var(--success)', bg: 'var(--success-subtle)', text: 'var(--success)' },
+                { name: 'spacer', border: 'var(--info)', bg: 'var(--info-subtle)', text: 'var(--info)' },
+                { name: 'chevron', border: 'var(--color-magenta-6)', bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
               ].map((s, i) => (
                 <span key={i} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: s.border, backgroundColor: s.bg, color: s.text }}>{s.name}</span>
@@ -270,11 +236,10 @@ export const Overview = {
             <span className="text-[10px] text-fg-muted font-mono">chevron:readonly 不顯示 / disabled 保留(類型身份 indicator)· 不可開選單 · tagPadding 置中</span>
           </div>
         </div>
-      </div>
+      </ExampleSection>
 
       {/* ── Display prop catalog ── */}
-      <div className="flex flex-col gap-3">
-        <H3>display 模式一覽</H3>
+      <ExampleSection title="display 模式一覽">
         <div className="flex flex-col gap-2">
           {([
             { display: 'plain' as const, desc: '（預設）狀態、類別等純文字選項。桌面使用 custom trigger + SelectMenu；觸控裝置使用 NativeSelect + ChevronDown' },
@@ -282,7 +247,7 @@ export const Overview = {
           ]).map(({ display, desc }) => (
             <div key={display} className="flex items-center gap-4">
               <div className="w-52 shrink-0">
-                <Select display={display} options={statusOptions} value="active" size="md" />
+                <Select aria-label={`狀態(display=${display})`} display={display} options={statusOptions} value="active" size="md" />
               </div>
               <span className="text-caption text-fg-secondary">
                 <span className="font-mono font-medium">display="{display}"</span> — {desc}
@@ -290,11 +255,10 @@ export const Overview = {
             </div>
           ))}
         </div>
-      </div>
+      </ExampleSection>
 
       {/* ── Props table ── */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -333,7 +297,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -414,7 +378,7 @@ const InspectorInner = () => {
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[340px]">
           <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
-            <Select
+            <Select aria-label="狀態(元件檢閱器)"
               mode={mode}
               display={display}
               size={size}
@@ -567,13 +531,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme / density 的值解析由系統處理。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -586,92 +546,90 @@ const COLOR_STATES: StateKey[] = ['default', 'hover', 'focus', 'disabled']
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Mode x State 色彩對照</H3>
-        <Desc>text 和 tag 模式共用同一組 wrapper 色彩 token（來自 fieldWrapperStyles）。差異在 tag 模式的 Tag 元件有自己的色彩（由 Tag variant 決定）。色塊即時渲染，切 dark mode 自動更新。</Desc>
-      </div>
+    <ExampleSection title="Mode x State 色彩對照" description="text 和 tag 模式共用同一組 wrapper 色彩 token（來自 fieldWrapperStyles）。差異在 tag 模式的 Tag 元件有自己的色彩（由 Tag variant 決定）。色塊即時渲染，切 dark mode 自動更新。">
+      <div className="flex flex-col gap-8">
 
-      {/* ── Normal: mode x state ── */}
-      <div className="overflow-x-auto">
-        <table className="border-collapse">
-          <thead><tr><Th>Mode</Th>{COLOR_STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
-          <tbody>
-            {MODES.map((m) => (
-              <tr key={m}>
-                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{m}</td>
-                {COLOR_STATES.map((st) => {
-                  const stateKey = m === 'disabled' ? 'disabled' : st
-                  const resolvedMode = m === 'disabled' ? 'disabled' : m
-                  return (
-                    <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                      <Select
-                        mode={resolvedMode}
-                        options={statusOptions}
-                        value="active"
-                        size="sm"
-                        disabled={m === 'disabled'}
-                      />
-                      <TokenAnnotation colors={TOKEN_MAP[resolvedMode][stateKey]} />
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Error state (edit only) ── */}
-      <div className="flex flex-col gap-2">
-        <span className="text-caption font-medium text-fg-secondary">error = true（僅 edit 模式有視覺效果）</span>
+        {/* ── Normal: mode x state ── */}
         <div className="overflow-x-auto">
           <table className="border-collapse">
-            <thead><tr><Th>State</Th>{(['default', 'hover', 'focus'] as const).map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
-            <tbody>
-              <tr>
-                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">edit + error</td>
-                {(['default', 'hover', 'focus'] as const).map((st) => (
-                  <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                    <Select options={statusOptions} value="active" size="sm" error />
-                    <TokenAnnotation colors={ERROR_TOKENS[st]} />
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── Tag mode color comparison ── */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">text vs tag 模式色彩差異</span>
-        <Desc>wrapper 色彩相同，tag 模式的 Tag 元件有自己的底色和文字色（neutral = bg-secondary + text-foreground，tagVariant 時用對應色相）。disabled 時 wrapper 變 bg-disabled，Tag 本身色彩不變（Tag 元件無 disabled 樣式）。</Desc>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>Mode</Th><Th>text 模式</Th><Th>tag 模式</Th><Th>差異說明</Th></tr></thead>
+            <thead><tr><Th>Mode</Th>{COLOR_STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
             <tbody>
               {MODES.map((m) => (
                 <tr key={m}>
-                  <Td mono>{m}</Td>
-                  <Td>
-                    <Select mode={m} display="plain" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
-                  </Td>
-                  <Td>
-                    <Select mode={m} display="tag" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
-                  </Td>
-                  <Td>
-                    {m === 'edit' && 'Wrapper 相同。Tag 用 Tag 元件色彩（neutral = bg-secondary + text-foreground）'}
-                    {m === 'readonly' && 'Wrapper 相同（bg-readonly）。Tag 用 tagPadding 置中'}
-                    {m === 'disabled' && 'Wrapper 變 bg-disabled。Tag 本身色彩不變（Tag 元件無 disabled 樣式）'}
-                  </Td>
+                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{m}</td>
+                  {COLOR_STATES.map((st) => {
+                    const stateKey = m === 'disabled' ? 'disabled' : st
+                    const resolvedMode = m === 'disabled' ? 'disabled' : m
+                    return (
+                      <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
+                        <Select aria-label={`狀態(${resolvedMode} · ${st})`}
+                          mode={resolvedMode}
+                          options={statusOptions}
+                          value="active"
+                          size="sm"
+                          disabled={m === 'disabled'}
+                        />
+                        <TokenAnnotation colors={TOKEN_MAP[resolvedMode][stateKey]} />
+                      </td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* ── Error state (edit only) ── */}
+        <div className="flex flex-col gap-2">
+          <span className="text-caption font-medium text-fg-secondary">error = true（僅 edit 模式有視覺效果）</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr><Th>State</Th>{(['default', 'hover', 'focus'] as const).map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+              <tbody>
+                <tr>
+                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">edit + error</td>
+                  {(['default', 'hover', 'focus'] as const).map((st) => (
+                    <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
+                      <Select aria-label={`狀態(edit + error · ${st})`} options={statusOptions} value="active" size="sm" error />
+                      <TokenAnnotation colors={ERROR_TOKENS[st]} />
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── Tag mode color comparison ── */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-medium text-fg-secondary">text vs tag 模式色彩差異</span>
+          <Desc>wrapper 色彩相同，tag 模式的 Tag 元件有自己的底色和文字色（neutral = bg-secondary + text-foreground，tagVariant 時用對應色相）。disabled 時 wrapper 變 bg-disabled，Tag 本身色彩不變（Tag 元件無 disabled 樣式）。</Desc>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr><Th>Mode</Th><Th>text 模式</Th><Th>tag 模式</Th><Th>差異說明</Th></tr></thead>
+              <tbody>
+                {MODES.map((m) => (
+                  <tr key={m}>
+                    <Td mono>{m}</Td>
+                    <Td>
+                      <Select aria-label={`狀態(${m} · text 模式)`} mode={m} display="plain" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
+                    </Td>
+                    <Td>
+                      <Select aria-label={`狀態(${m} · tag 模式)`} mode={m} display="tag" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
+                    </Td>
+                    <Td>
+                      {m === 'edit' && 'Wrapper 相同。Tag 用 Tag 元件色彩（neutral = bg-secondary + text-foreground）'}
+                      {m === 'readonly' && 'Wrapper 相同（bg-readonly）。Tag 用 tagPadding 置中'}
+                      {m === 'disabled' && 'Wrapper 變 bg-disabled。Tag 本身色彩不變（Tag 元件無 disabled 樣式）'}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -682,140 +640,138 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>每個 size 對應的 token 一覽。Field 高度使用 --field-height-* semantic token（rem），與 Button 共用。density 切換由系統自動處理。</Desc>
-      </div>
+    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。Field 高度使用 --field-height-* semantic token（rem），與 Button 共用。density 切換由系統自動處理。">
+      <div className="flex flex-col gap-8">
 
-      {/* ── text mode token table ── */}
-      <div className="flex flex-col gap-2">
-        <span className="text-caption font-medium text-fg-secondary">text 模式</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
-            <thead><tr>
-              <Th>屬性</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
-            </tr></thead>
-            <tbody>
-              {([
-                { label: '高度', get: (s: SizeSpec) => ({ token: s.heightToken, sub: s.height }) },
-                { label: '左右內距', get: (s: SizeSpec) => ({ token: s.pxToken, sub: s.px }) },
-                { label: '元素間距', get: (s: SizeSpec) => ({ token: s.gapToken, sub: s.gap }) },
-                { label: '字體', get: (s: SizeSpec) => ({ token: s.fontToken, sub: s.font }) },
-                { label: 'Icon 尺寸', get: (s: SizeSpec) => ({ token: undefined, sub: `${s.icon}px` }) },
-              ]).map((row) => (
-                <tr key={row.label}>
-                  <Td>{row.label}</Td>
-                  {SIZES.map((sz) => {
-                    const { token, sub } = row.get(SIZE_SPECS[sz])
-                    return (
-                      <Td key={sz} mono>
-                        {token && <div className="text-fg-secondary">{token}</div>}
-                        {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
+        {/* ── text mode token table ── */}
+        <div className="flex flex-col gap-2">
+          <span className="text-caption font-medium text-fg-secondary">text 模式</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-caption">
+              <thead><tr>
+                <Th>屬性</Th>
+                {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+              </tr></thead>
+              <tbody>
+                {([
+                  { label: '高度', get: (s: SizeSpec) => ({ token: s.heightToken, sub: s.height }) },
+                  { label: '左右內距', get: (s: SizeSpec) => ({ token: s.pxToken, sub: s.px }) },
+                  { label: '元素間距', get: (s: SizeSpec) => ({ token: s.gapToken, sub: s.gap }) },
+                  { label: '字體', get: (s: SizeSpec) => ({ token: s.fontToken, sub: s.font }) },
+                  { label: 'Icon 尺寸', get: (s: SizeSpec) => ({ token: undefined, sub: `${s.icon}px` }) },
+                ]).map((row) => (
+                  <tr key={row.label}>
+                    <Td>{row.label}</Td>
+                    {SIZES.map((sz) => {
+                      const { token, sub } = row.get(SIZE_SPECS[sz])
+                      return (
+                        <Td key={sz} mono>
+                          {token && <div className="text-fg-secondary">{token}</div>}
+                          {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
+                        </Td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── tag mode additional tokens ── */}
+        <div className="flex flex-col gap-2">
+          <span className="text-caption font-medium text-fg-secondary">tag 模式額外 token</span>
+          <Desc>tag 模式的 padding 用 calc() 公式讓 Tag 四邊等距：px = (field-height − 2px 邊框 − tag-height) / 2（sm/md 3px、lg 5px）。右側 paddingRight 固定 12px（--field-px token）。</Desc>
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-caption">
+              <thead><tr>
+                <Th>屬性</Th>
+                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <Td>Tag 尺寸</Td>
+                  {SIZES.map((sz) => (
+                    <Td key={sz} mono>
+                      <div className="text-fg-secondary">{sz === 'sm' ? 'tag-sm' : sz === 'md' ? 'tag-md' : 'tag-lg'}</div>
+                      <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagHeight}</div>
+                    </Td>
+                  ))}
+                </tr>
+                <tr>
+                  <Td>tagPadding (px)</Td>
+                  {SIZES.map((sz) => (
+                    <Td key={sz} mono>
+                      <div className="text-fg-secondary">calc()</div>
+                      <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagPaddingFormula}</div>
+                    </Td>
+                  ))}
+                </tr>
+                <tr>
+                  <Td>paddingRight</Td>
+                  {SIZES.map((sz) => (
+                    <Td key={sz} mono>
+                      <div className="text-fg-secondary">var(--field-px)</div>
+                      <div className="text-fg-muted text-[10px]">12px（固定）</div>
+                    </Td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── Visual preview: text mode ── */}
+        <div className="flex flex-col gap-4">
+          <span className="text-caption font-medium text-fg-secondary">預覽 — text 模式</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr>
+                <Th>Mode</Th>
+                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+              </tr></thead>
+              <tbody>
+                {MODES.map((m) => (
+                  <tr key={m}>
+                    <Td mono>{m}</Td>
+                    {SIZES.map((sz) => (
+                      <Td key={sz}>
+                        <Select aria-label={`狀態(${m} · ${sz} · text 模式)`} mode={m} display="plain" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
                       </Td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── tag mode additional tokens ── */}
-      <div className="flex flex-col gap-2">
-        <span className="text-caption font-medium text-fg-secondary">tag 模式額外 token</span>
-        <Desc>tag 模式的 padding 用 calc() 公式讓 Tag 四邊等距：px = (field-height − 2px 邊框 − tag-height) / 2（sm/md 3px、lg 5px；SSOT：Field/field-wrapper.tsx fieldTagInsetX）。右側 paddingRight 固定 12px（--field-px token）。</Desc>
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
-            <thead><tr>
-              <Th>屬性</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-            </tr></thead>
-            <tbody>
-              <tr>
-                <Td>Tag 尺寸</Td>
-                {SIZES.map((sz) => (
-                  <Td key={sz} mono>
-                    <div className="text-fg-secondary">{sz === 'sm' ? 'tag-sm' : sz === 'md' ? 'tag-md' : 'tag-lg'}</div>
-                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagHeight}</div>
-                  </Td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-              <tr>
-                <Td>tagPadding (px)</Td>
-                {SIZES.map((sz) => (
-                  <Td key={sz} mono>
-                    <div className="text-fg-secondary">calc()</div>
-                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagPaddingFormula}</div>
-                  </Td>
-                ))}
-              </tr>
-              <tr>
-                <Td>paddingRight</Td>
-                {SIZES.map((sz) => (
-                  <Td key={sz} mono>
-                    <div className="text-fg-secondary">var(--field-px)</div>
-                    <div className="text-fg-muted text-[10px]">12px（固定）</div>
-                  </Td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* ── Visual preview: text mode ── */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽 — text 模式</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr>
-              <Th>Mode</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-            </tr></thead>
-            <tbody>
-              {MODES.map((m) => (
-                <tr key={m}>
-                  <Td mono>{m}</Td>
-                  {SIZES.map((sz) => (
-                    <Td key={sz}>
-                      <Select mode={m} display="plain" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
-                    </Td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* ── Visual preview: tag mode ── */}
+        <div className="flex flex-col gap-4">
+          <span className="text-caption font-medium text-fg-secondary">預覽 — tag 模式</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr>
+                <Th>Mode</Th>
+                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+              </tr></thead>
+              <tbody>
+                {MODES.map((m) => (
+                  <tr key={m}>
+                    <Td mono>{m}</Td>
+                    {SIZES.map((sz) => (
+                      <Td key={sz}>
+                        <Select aria-label={`狀態(${m} · ${sz} · tag 模式)`} mode={m} display="tag" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
+                      </Td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-
-      {/* ── Visual preview: tag mode ── */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽 — tag 模式</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr>
-              <Th>Mode</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-            </tr></thead>
-            <tbody>
-              {MODES.map((m) => (
-                <tr key={m}>
-                  <Td mono>{m}</Td>
-                  {SIZES.map((sz) => (
-                    <Td key={sz}>
-                      <Select mode={m} display="tag" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
-                    </Td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -825,8 +781,24 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙行為依裝置分兩條路徑:\n\n  ARIA / Pattern  :桌機(非觸控)觸發點是一個容器,標記  role=\"combobox\"  +  aria-expanded  /  aria-haspopup=\"listbox\" ,選項在浮層的 listbox 裡;searchable 模式時容器內另放一個可打字篩選的  <input> 。手機(觸控)改用瀏覽器原生的  <select>  element,直接取得作業系統內建的無障礙與 picker。Field wrapper 兩邊都補  aria-invalid  /  aria-required  /  aria-describedby  /  aria-errormessage ;手機原生  <select>  另由 FieldLabel 的  htmlFor  關聯取得 accessible name。\n\n  Keyboard 行為  :\n\n- Tab — 聚焦到觸發點\n- Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)\n- ↑ / ↓ — 選單展開後在選項間移動\n- 字母鍵 — searchable 模式為打字篩選;手機原生 <select> 為平台內建 type-to-jump 逐字定位(桌機非 searchable combobox 無逐字定位)\n- Enter — 選定目前 highlight 的選項並關閉\n- Tab / Shift+Tab(選單展開時)— 同樣選定目前 highlight 的選項並關閉,焦點走到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格;待辦總帳 B11,規則住 select-menu.spec.md「A11y 預設」)\n- Esc — 關閉選單、不選定(清除值走右側 clear 按鈕,非 Esc)\n\n  Focus  :DS focus 藍框( focus-within:!border-primary )由 Field wrapper 提供;手機原生  <select>  另有系統 focus ring。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>無障礙行為依裝置分兩條路徑:</p>
+        <p><b>ARIA / Pattern</b>:桌機(非觸控)觸發點是一個容器,標記  role="combobox"  +  aria-expanded  /  aria-haspopup="listbox" ,選項在浮層的 listbox 裡;searchable 模式時容器內另放一個可打字篩選的  &lt;input&gt; (開啟時焦點在它身上,帶  aria-activedescendant  指向反白的選項;滑鼠點選項與 Enter 相同,收起前焦點不離開它)。手機(觸控)改用瀏覽器原生的  &lt;select&gt;  element,直接取得作業系統內建的無障礙與 picker。Field wrapper 兩邊都補  aria-invalid  /  aria-required  /  aria-describedby  /  aria-errormessage ;手機原生  &lt;select&gt;  另由 FieldLabel 的  htmlFor  關聯取得 accessible name。</p>
+        <p><b>Keyboard 行為</b>:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tab — 聚焦到觸發點</li>
+          <li>Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)</li>
+          <li>↑ / ↓ — 選單展開後在選項間移動</li>
+          <li>字母鍵 — searchable 模式為打字篩選(焦點在觸發點本身時打字 = 展開選單、字進搜尋框);手機原生 &lt;select&gt; 為平台內建 type-to-jump 逐字定位(桌機非 searchable combobox 無逐字定位)</li>
+          <li>Backspace(clearable、關鍵字空白;不可搜尋時選單關著)— 清掉值,同按右側 clear 按鈕,讀屏念「已移除『X』」</li>
+          <li>Enter — 選定目前 highlight 的選項並關閉</li>
+          <li>Tab / Shift+Tab(選單展開時)— 同樣選定目前 highlight 的選項並關閉,焦點走到觸發點的下一個 / 上一個可 Tab 元素(= 選單關著時按 Tab 會到的同一格)</li>
+          <li>Esc — 關閉選單、不選定(清除值走右側 clear 按鈕或 Backspace,非 Esc)</li>
+        </ul>
+        <p><b>Focus</b>:DS focus 藍框( focus-within:!border-primary )由 Field wrapper 提供;手機原生  &lt;select&gt;  另有系統 focus ring。</p>
+        <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。</p>
+      </div>
     </div>
   ),
 }

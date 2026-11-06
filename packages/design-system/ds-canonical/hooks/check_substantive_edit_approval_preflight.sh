@@ -45,16 +45,52 @@ EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null) \
 # 所以受管產品檔的 shell 寫入**沒有任何 transcript 能放行**,不是「跟走 Edit 一樣要授權」—— 這是刻意的 fail closed:
 # 產品程式一律走 Edit / Write 工具(閘看得到內容才能分工程 / UI),shell 寫檔本來就是本分支要堵的洞。
 # 測試:tests/test_check_substantive_edit_approval_preflight.sh §18(18k 釘住這個行為)。
-# 已知缺口(待辦總帳 N47):相對路徑(`cd packages/design-system && sed -i … src/x.tsx`)抓不到會漏擋 —— §18g 釘住現況,修好後改期望。
+# N47 ①(2026-10-07 已修):相對路徑(`cd packages/design-system && sed -i … src/x.tsx`、或 cwd 本來就在
+# src 底下)與 `perl -0pi` / `sed -E -i` 這類旗標組合原本認不出 —— 閘量的是「命令字串裡有沒有
+# packages/design-system/src/ 這串字」,要保證的是「寫入的檔案在不在受管目錄」(M37)。現在先判寫入動詞,
+# 再把每個 .tsx/.ts/.css token 依 payload cwd 與命令裡的 cd / pushd 解析成絕對路徑後判受管;§18g 改為擋。
+# N47 ① 複核(2026-10-07):(a) payload cwd 原本在正式入口 scripts/run-provider-hook.mjs 被丟掉,直接呼叫 hook
+# 才擋、經入口放行(測試繞過入口 = 假綠)→ 入口改為轉交驗證過的 cwd;(b) 同族寫法補齊:`bash -c` / `sh -c` 內層、
+# `git checkout|restore -- 路徑`、rsync / install、pathlib write_text / write_bytes、prettier --write / eslint --fix,
+# 以及 find / git ls-files / 格式化工具的「目錄參數」(落在受管範圍內或其祖先就算)。§18m 每種寫法各一條。
+# N47 ① 複核二(2026-10-07):套補丁(`git apply 檔`、`patch -p1 < 檔`、`git am 檔`)指令字串裡沒有 .tsx 字樣,原本
+# 算不出目標而放行 —— 先把補丁寫到不受管的暫存檔再套用,就繞過本閘。現在讀補丁的 diff 標頭算目標(讀不到就保守擋
+# 受管根目錄);`git apply --check / --stat` 不寫檔,不算。heredoc 主體若只是給 cat / tee 寫進筆記的資料,裡面提到的
+# .tsx 不再算寫入目標(N47 ④ 同族);給 shell / 直譯器 / 套補丁的 heredoc 照舊掃。§18o。
+# 刻意不涵蓋:刪除(rm / git rm / find -delete)—— Edit / Write 工具無法刪檔,擋下就沒有任何授權途徑可走,
+# 屬於另一個政策問題,見 historical-bugs.md「N47 ① 複核」那一列。
 # N20(裸子字串誤擋純讀)2026-09-29 已修,見下方 bash_cmd_writes;§18f 改為放行期望。
 
 # 命令字串裡有沒有「會寫檔」的動作。回 0 = 有。
 bash_cmd_writes() {
-  local c="$1" rest re_verb re_redirect re_open
-  # 動詞要有詞首分隔(行首 / 空白 / ; | & ( `),`git add` 不再命中 `dd`、`ripgrep` 不命中 `cp`
-  re_verb='(^|[[:space:];|&(`])(sed[[:space:]]+-[A-Za-z]*i|perl[[:space:]]+-[A-Za-z]*i|tee|cp|mv|truncate|dd|patch)[[:space:]]'
+  local c="$1" rest re_verb re_inplace_sed re_inplace_perl re_redirect re_open re_git_tree re_fixer re_prettier_w
+  # 動詞要有詞首分隔(行首 / 空白 / ; | & ( `),`git add` 不再命中 `dd`、`ripgrep` 不命中 `cp`。
+  # rsync / install 與 cp 同族(複製進目標路徑),N47 ① 複核補上。
+  re_verb='(^|[[:space:];|&(`])(tee|cp|mv|truncate|dd|patch|rsync|install)[[:space:]]'
   [[ "$c" =~ $re_verb ]] && return 0
-  case "$c" in *"git apply"*|*"writeFileSync"*|*"outputFileSync"*|*"fs.write"*) return 0 ;; esac
+  # 原地改寫:旗標可以在任何位置、也可以跟其他單字母旗標黏在一起(N47 ①:`perl -0pi`、`sed -E -i`、
+  # `sed -Ei`、`perl -i.bak`)。perl 的 -I / -M / -m 會吃掉同一 token 的其餘字元(-Ilib、-Mstrict),不算 i 旗標。
+  re_inplace_sed='(^|[[:space:];|&(`])sed([[:space:]]+[^[:space:];|&]+)*[[:space:]]+(-[A-Za-z]*i|--in-place)'
+  [[ "$c" =~ $re_inplace_sed ]] && return 0
+  re_inplace_perl='(^|[[:space:];|&(`])(perl|ruby)([[:space:]]+[^[:space:];|&]+)*[[:space:]]+-[0-9]*[a-hj-ln-zA-HJ-LN-Z]*i'
+  [[ "$c" =~ $re_inplace_perl ]] && return 0
+  # git 把版本庫內容寫回工作目錄:`git checkout <rev> -- <路徑>`、`git restore <路徑>`(N47 ① 複核)
+  re_git_tree='(^|[[:space:];|&(`])git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(checkout|restore)([[:space:]]|$)'
+  [[ "$c" =~ $re_git_tree ]] && return 0
+  # 套補丁:`git apply` / `git am`(`patch` 已在上面的動詞清單)。寫到哪些檔看補丁內容,由
+  # approval-evidence.mjs#bashCommandWriteTargets 讀補丁標頭算(N47 ① 複核二,2026-10-07;改前 `git am` 完全沒認)。
+  re_git_patch='(^|[[:space:];|&(`])git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(apply|am)([[:space:]]|$)'
+  [[ "$c" =~ $re_git_patch ]] && return 0
+  # 格式化 / 自動修正工具就地改寫:prettier --write / -w、eslint --fix、biome --write / --apply、stylelint --fix
+  re_fixer='(^|[[:space:]])(--write|--fix|--apply|--apply-unsafe)([[:space:]=]|$)'
+  [[ "$c" =~ $re_fixer ]] && return 0
+  re_prettier_w='(^|[[:space:];|&(`])prettier([[:space:]]+[^[:space:];|&]+)*[[:space:]]+-w([[:space:]]|$)'
+  [[ "$c" =~ $re_prettier_w ]] && return 0
+  # 腳本語言的寫檔 API(node fs / python pathlib、shutil、os)
+  case "$c" in
+    *"git apply"*|*"writeFileSync"*|*"outputFileSync"*|*"fs.write"*|*"writeFile"*|*"appendFile"*|*"copyFile"*) return 0 ;;
+    *"write_text"*|*"write_bytes"*|*"shutil.copy"*|*"shutil.move"*|*"os.rename"*|*"os.replace"*) return 0 ;;
+  esac
   # 腳本語言的寫檔開檔:open(..., 'w' / "w" / 'a' / 'wb' …)
   re_open="open\([^)]*['\"](w|a)[b+]*['\"]"
   [[ "$c" =~ $re_open ]] && return 0
@@ -73,20 +109,21 @@ case "$TOOL" in
   Bash)
     BASH_CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null) \
       || governance_hook_integrity_fail 'substantive approval bash command extraction failed'
-    # 快速退出:命令裡完全沒提到受管根目錄就不是本閘的事(絕大多數 Bash 呼叫走這條)
-    case "$BASH_CMD" in
-      *packages/design-system/src/*|*node_modules/@qijenchen/design-system/*|*apps/*) ;;
-      *) exit 0 ;;
-    esac
     # 寫入動詞:涵蓋原地編輯、重導、複製移動、以及腳本語言的寫檔呼叫。
     # 2026-09-29(待辦總帳 N20):原本用裸子字串比對,`*">"*` 命中 `2>/dev/null` / `2>&1` 的 fd 重導、`*"dd "*` 命中
     # `git add`,純讀取被當成寫檔擋下(測試 §18f 釘過現況)。改成:動詞要有詞首分隔(行首 / 空白 / ; | & ( `),
     # 重導只算「不是 fd 重導(2>、&>、>&)、不是箭頭或比較(=>、->、<>)、目標不是 /dev/…」的 `>` / `>>`,而且逐個檢查
     # (`cmd >/dev/null; echo x > a.tsx` 第一個是 /dev/null 也不能放過第二個)。
+    # 純讀取一律放行(絕大多數 Bash 呼叫走這條);有寫入才往下解析路徑。
     bash_cmd_writes "$BASH_CMD" || exit 0
     ;;
   *) exit 0 ;;
 esac
+
+APPROVAL_HELPER="$(dirname "$0")/lib/approval-evidence.mjs"
+if [ -L "$APPROVAL_HELPER" ] || [ ! -f "$APPROVAL_HELPER" ] || [ ! -r "$APPROVAL_HELPER" ]; then
+  governance_hook_integrity_fail 'approval evidence helper is unavailable or unsafe'
+fi
 
 # MultiEdit/batch payload 的任一 production path 都必須受關；不可用第一個 benign path 遮蔽後續修改。
 PATHS=$(printf '%s' "$INPUT" | jq -r '
@@ -99,10 +136,10 @@ PATHS=$(printf '%s' "$INPUT" | jq -r '
 # Bash 事件沒有 file_path 欄位(2026-09-24):路徑改從命令字串抽,否則 PATHS 為空 → 後面判成「無受管路徑」
 # 而放行,等於補了 case 卻仍然是洞(M32:寫完閘先問「弄壞它會紅嗎」——這一步沒做就會假綠)。
 if [ "$TOOL" = "Bash" ]; then
-  BASH_PATHS=$(printf '%s' "$BASH_CMD" \
-    | tr " \t'\"\`(),;|&<>" '\n' \
-    | grep -E '(^|/)(packages/design-system/src|node_modules/@qijenchen/design-system|apps)/[^[:space:]]*\.(tsx|ts|css)$' \
-    | sort -u) || BASH_PATHS=""
+  # 路徑解析(cwd / cd / bash -c / 目錄參數)在 approval-evidence.mjs#bashCommandWriteTargets,說明見該處。
+  BASH_PATHS=$(printf '%s' "$INPUT" | node "$APPROVAL_HELPER" --bash-write-targets) \
+    || governance_hook_integrity_fail 'substantive approval bash write target extraction failed'
+  BASH_PATHS=$(printf '%s\n' "$BASH_PATHS" | sort -u)
   PATHS=$(printf '%s\n%s' "$PATHS" "$BASH_PATHS" | grep -v '^$' | sort -u)
 fi
 
@@ -132,11 +169,6 @@ EOF
 
 FILE_PATH=$(printf '%s\n' "$GOVERNED_PATHS" | sed -n '1p')
 REL_PATH=${FILE_PATH#*/my-project/}
-
-APPROVAL_HELPER="$(dirname "$0")/lib/approval-evidence.mjs"
-if [ -L "$APPROVAL_HELPER" ] || [ ! -f "$APPROVAL_HELPER" ] || [ ! -r "$APPROVAL_HELPER" ]; then
-  governance_hook_integrity_fail 'approval evidence helper is unavailable or unsafe'
-fi
 
 # A provider may legitimately omit transcript evidence. A native pre-tool hook cannot safely infer
 # product-vs-engineering intent from source bytes alone, so governed production edits remain blocked

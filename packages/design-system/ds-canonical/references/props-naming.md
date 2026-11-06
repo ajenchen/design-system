@@ -29,7 +29,7 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 
 **禁止**:同 prop 名兼 inline + overlay。世界級 Material `BadgedBox`(overlay)vs `Chip.label`(inline)分開;Ant `<Badge overflowCount>` vs `<Tag>` 分開。
 
-**`status` 兩個 value-set family(刻意 overload,非隱性衝突)**:(1) **presence** `'online' | 'away' | 'busy' | 'offline'` — Avatar / ProfileCard / PeoplePicker;(2) **lifecycle** `'uploading' | 'completed' | 'error'`(FileItem / FileUpload)/ `'inProgress' | 'success' | 'error'`(ProgressBar)。兩 family 各自 self-consistent,prop 名沿用同一 presence/lifecycle 軸。
+**`status` 兩個 value-set family(刻意 overload,非隱性衝突)**:(1) **presence** `'online' | 'away' | 'busy' | 'offline'` — Avatar / ProfileCard / PeoplePicker;(2) **lifecycle** `'uploading' | 'completed' | 'error'`(FileItem / FileUpload;TreeItem 只用其中的 `'completed' | 'error'` = 步驟導覽樹每一頁的結果,2026-10-07)/ `'inProgress' | 'success' | 'error'`(ProgressBar)。兩 family 各自 self-consistent,prop 名沿用同一 presence/lifecycle 軸。
 
 **禁止組合**:有 label 的 Button / Chip 疊 `overlayBadge`(badge 飄到 chrome 邊緣遠離 icon 語義) → 計數改用 `badge` inline。詳 `badge.spec.md`「Overlay 適用元件 canonical」。
 

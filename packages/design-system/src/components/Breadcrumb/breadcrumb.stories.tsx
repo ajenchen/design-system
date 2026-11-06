@@ -17,6 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof Breadcrumb> = {
   title: 'Design System/Components/Breadcrumb/展示',
@@ -58,16 +59,19 @@ export const Default: Story = {
 
 export const InteractiveEllipsis: Story = {
   name: '可互動省略',
+  parameters: {
+    docs: {
+      description: {
+        story: '點 ⋯ 會開選單,列出被折疊起來的中間層級。滑鼠移上去時 ⋯ 用中性灰的高亮(和一般連結的主色高亮刻意分開,讓「展開選單」和「跳到某一層」兩種動作一眼可辨),對齊 Material / Atlassian / Ant Design 的做法。',
+      },
+    },
+  },
   render: () => (
-    <div className="flex flex-col gap-4">
+    <>
       {/* 內部實作(對 consumer 不可見):BreadcrumbEllipsis 永遠 render <button> + DropdownMenuTrigger
           asChild 注入 dropdown 行為;hover 走 neutral(fg-muted → foreground + neutral hover bg,消費
-          ItemInlineActionButton),刻意與 BreadcrumbLink 的 primary-hover 語言區隔。 */}
-      <div className="text-caption text-fg-muted max-w-xl">
-        點 <code>⋯</code> 會開選單,列出被折疊起來的中間層級。滑鼠移上去時 <code>⋯</code> 用中性灰的高亮
-        (和一般連結的主色高亮刻意分開,讓「展開選單」和「跳到某一層」兩種動作一眼可辨),對齊 Material /
-        Atlassian / Ant Design 的做法。
-      </div>
+          ItemInlineActionButton),刻意與 BreadcrumbLink 的 primary-hover 語言區隔。
+          畫布只放範例,說明在 docs.description(稽核 L110:展示層畫布只留真實範例)。 */}
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -102,7 +106,7 @@ export const InteractiveEllipsis: Story = {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-    </div>
+    </>
   ),
 }
 
@@ -111,20 +115,23 @@ export const InteractiveEllipsis: Story = {
 //
 // @story-history: 此 story 展示 Phase B declarative `items` API + auto-collapse
 // (maxItems=4)+ flex-shrink hierarchy + truncate-on-overflow + tooltip canonical(per
-// `tooltip.principles.stories.tsx:190`)。Disabled / States 仍由 BreadcrumbLink 內部 :hover /
+// `tooltip.principles.stories.tsx#NeedsTooltipRule`)。Disabled / States 仍由 BreadcrumbLink 內部 :hover /
 // :focus-visible / :active 處理(spec.md 互動狀態 > Disabled 段,無 element-level disabled)。
 
 export const DeclarativeAutoCollapse: Story = {
   name: '宣告式 API + 自動收合',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '用 `items` 傳整條路徑,收不收合由元件決定:路徑超過 4 層時,中間層自動收進 ⋯,點開可以選;收合的門檻(`maxItems`)與保留在尾端的層數(`itemsAfterCollapse`)可以改,例如 7 層、門檻 6、尾端保留 2 層 → 首頁 + ⋯ + 最後兩層。空間不夠時,首項最先被壓縮、中段次之、目前這一頁最後才縮;被截斷的項目滑鼠移上去會用 tooltip 顯示完整名稱,沒被截斷就不顯示。縮放瀏覽器寬度可以觀察最後一則。',
+      },
+    },
+  },
   render: () => (
-    <div className="flex flex-col gap-6 max-w-2xl">
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
-          ≤ maxItems(4)— 全顯
-        </h3>
-        <p className="text-caption text-fg-muted mb-3">
-          3 items 不超 maxItems=4,所有 item 自然 render。
-        </p>
+    // 四則有標題的範例上下疊:範例之間 loose × 2(ExampleStack,Q2 ①;標題離上一則比離自己的範例遠);每一則的標題 → 範例由 ExampleSection 給(A4)
+    <ExampleStack className="max-w-2xl">
+      <ExampleSection title="3 層:全部顯示">
         <Breadcrumb>
           <BreadcrumbList
             items={[
@@ -134,16 +141,9 @@ export const DeclarativeAutoCollapse: Story = {
             ]}
           />
         </Breadcrumb>
-      </div>
+      </ExampleSection>
 
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
-          5 items 超 maxItems(4)— auto-collapse 中段
-        </h3>
-        <p className="text-caption text-fg-muted mb-3">
-          itemsBeforeCollapse=1 + itemsAfterCollapse=1 → 首 + ⋯ + 末。
-          中段 [專案, Q1, 行銷活動] 全進 DropdownMenu(點 ⋯ 看)。
-        </p>
+      <ExampleSection title="5 層:中間收進 ⋯">
         <Breadcrumb>
           <BreadcrumbList
             items={[
@@ -155,15 +155,9 @@ export const DeclarativeAutoCollapse: Story = {
             ]}
           />
         </Breadcrumb>
-      </div>
+      </ExampleSection>
 
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
-          自訂 maxItems / itemsAfterCollapse
-        </h3>
-        <p className="text-caption text-fg-muted mb-3">
-          maxItems=6 + itemsAfterCollapse=2 → 首 1 + ⋯ + 末 2(parent + current)。
-        </p>
+      <ExampleSection title="7 層:尾端保留兩層">
         <Breadcrumb>
           <BreadcrumbList
             maxItems={6}
@@ -179,30 +173,23 @@ export const DeclarativeAutoCollapse: Story = {
             ]}
           />
         </Breadcrumb>
-      </div>
+      </ExampleSection>
 
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">
-          窄容器 + 長 label — flex-shrink hierarchy + truncate + tooltip
-        </h3>
-        <p className="text-caption text-fg-muted mb-3">
-          縮放瀏覽器寬度可觀察:容器變窄時,首項最先被壓縮、中段次之、當前頁最後才縮。
-          每一項文字被截斷時自動顯示 ...,滑鼠移上去會用 tooltip 顯示完整文字;沒被截斷則不顯示 tooltip。
-        </p>
-        {/* @story-history: 2026-05-14 per user 拍板「拿掉 fixed 320px 讓 resize window 測 RWD」— Breadcrumb 是純結構導覽,disabled/states 由 BreadcrumbLink :focus-visible/:hover/:active 處理(spec.md 互動狀態 > Disabled 段),trait check 沿用 file header rationale */}
-        <div className="border border-dashed border-divider rounded-md p-2">
-          <Breadcrumb>
-            <BreadcrumbList
-              items={[
-                { label: 'Global Platform Infrastructure Group', href: '/org' },
-                { label: 'Product Engineering Team', href: '/team' },
-                { label: 'Design System Component Refactor Sprint 23' },
-              ]}
-            />
-          </Breadcrumb>
-        </div>
-      </div>
-    </div>
+      {/* @story-history: 2026-05-14 per user 拍板「拿掉 fixed 320px 讓 resize window 測 RWD」— 不釘寬,縮放視窗即可觀察;
+          原本外圍的虛線框是測試容器,不是產品畫面,拿掉(稽核 L110)。Breadcrumb 是純結構導覽,disabled/states 由 BreadcrumbLink
+          :focus-visible/:hover/:active 處理(spec.md 互動狀態 > Disabled 段),trait check 沿用 file header rationale */}
+      <ExampleSection title="名稱很長:放不下時截斷">
+        <Breadcrumb>
+          <BreadcrumbList
+            items={[
+              { label: 'Global Platform Infrastructure Group', href: '/org' },
+              { label: 'Product Engineering Team', href: '/team' },
+              { label: 'Design System Component Refactor Sprint 23' },
+            ]}
+          />
+        </Breadcrumb>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -226,7 +213,9 @@ export const PairedWithPageTitle: Story = {
     },
   },
   render: () => (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[var(--layout-space-loose)]">
+      {/* 麵包屑 → 它所在頁的標題 = tight:兩個不同元件,麵包屑替標題提供所在位置(layoutSpace 規則 3「跨範疇 + 直接 functional 交互 / 依賴」,
+          layoutSpace.spec.md:76 / :81 的 context dependency);不是同一個元件內部的 micro */}
       <section>
         <Breadcrumb>
           <BreadcrumbList size="sm">
@@ -237,8 +226,8 @@ export const PairedWithPageTitle: Story = {
             <BreadcrumbItem><BreadcrumbPage>個人偏好</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h4 className="text-h4 text-foreground mt-2">個人偏好</h4>
-        <p className="text-caption text-fg-muted mt-1">size="sm" 配 text-h4 — Dialog / Panel / Drawer header</p>
+        <h4 className="text-h4 text-foreground mt-[var(--layout-space-tight)]">個人偏好</h4>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">size="sm" 配 text-h4 — Dialog / Panel / Drawer header</p>
       </section>
 
       <section>
@@ -251,8 +240,8 @@ export const PairedWithPageTitle: Story = {
             <BreadcrumbItem><BreadcrumbPage>Q1 行銷活動</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h3 className="text-h3 text-foreground mt-2">Q1 行銷活動</h3>
-        <p className="text-caption text-fg-muted mt-1">size="md"(預設)配 text-h3 — 一般頁面 header</p>
+        <h3 className="text-h3 text-foreground mt-[var(--layout-space-tight)]">Q1 行銷活動</h3>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">size="md"(預設)配 text-h3 — 一般頁面 header</p>
       </section>
 
       <section>
@@ -265,8 +254,8 @@ export const PairedWithPageTitle: Story = {
             <BreadcrumbItem><BreadcrumbPage>2026 春季新品</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h2 className="text-h2 text-foreground mt-2">2026 春季新品</h2>
-        <p className="text-caption text-fg-muted mt-1">size="lg" 配 text-h2 — Detail page hero / Landing</p>
+        <h2 className="text-h2 text-foreground mt-[var(--layout-space-tight)]">2026 春季新品</h2>
+        <p className="text-caption text-fg-muted mt-[var(--layout-space-tight)]">size="lg" 配 text-h2 — Detail page hero / Landing</p>
       </section>
     </div>
   ),
@@ -284,10 +273,8 @@ export const IntegrateRouterLink: Story = {
     },
   },
   render: () => (
-    <div className="flex flex-col gap-2">
-      <div className="text-caption text-fg-muted">
-        以下用 native &lt;a onClick prevent&gt; 模擬 router Link 行為:
-      </div>
+    <>
+      {/* 這裡用原生 <a onClick preventDefault> 模擬 router 的 Link(畫布只放範例,開發說明不放畫面上;稽核 L110 同類) */}
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -307,7 +294,7 @@ export const IntegrateRouterLink: Story = {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-    </div>
+    </>
   ),
 }
 
@@ -319,8 +306,11 @@ export const IntegrateRouterLink: Story = {
 //   非外層 div = 無 nested-interactive)。此處以 `<a onClick prevent>` 模擬 React Router / Next Link。
 export const IntegrateRouterLinkAutoCollapse: Story = {
   name: '整合 Router Link — 自動摺疊保留導航',
+  // 回歸鎖的夾具(play 斷言),不是給讀者看的範例:讀者版只留「整合 React Router / Next.js Link」一則(稽核 M052;story-rules「Technical probe visibility」)
+  tags: ['test-only'],
   parameters: {
     // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉鍵盤斷言留下的焦點
+    // @example-basis: packages/design-system/ds-canonical/rules/story-rules.md「play 裡明寫 .focus() 或 userEvent.keyboard」
     demoFocus: 'keep',
     docs: {
       description: {

@@ -35,11 +35,105 @@ if [ -z "$AI_REPLY_TEXT" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PAT
 fi
 
 [ -z "$AI_REPLY_TEXT" ] && exit 0
+# 極罕見的逃生口(例:user 明確要求一段英文原文):reply 內寫明理由
+grep -qE '@plain-chinese-skip:[[:space:]]*[^[:space:]>]' <<<"$AI_REPLY_TEXT" && exit 0
 
 # Decision prompt pattern(reply 結尾含 ASK)
 DECISION_RE='(回 [A-Z]|→ ?選 [A-Z]|等你(拍板|決策|回|看)|user 決策|user 拍板|拍板.{0,5}決|決策.{0,5}選|一字回|回 OK)'
 HAS_DECISION=$(echo "$AI_REPLY_TEXT" | grep -cE "$DECISION_RE" 2>/dev/null)
 HAS_DECISION=${HAS_DECISION:-0}
+
+# ── N15(2026-10-07):Sub-rule 1 自 2026-05-31 起管「所有給 user 的 reply」,本規則卻只看含決策提問的
+# reply 而且只提醒 —— 規格寬、閘窄(M7 子規則 M34)。這裡補兩道會擋(Stop exit 2,模型必須重寫才能結束):
+#   (1) 以英文為主:剝掉程式碼區塊、行內程式碼、網址、檔案路徑、雜湊之後,非豁免英文字數 ≥ 30
+#       且多於漢字數的一半(一個中文詞約兩個字)→ 這段回覆 user 讀不懂,等於白做。
+#   (2) 要 user 拍板的回覆裡,有一行只列內部代號(N4、OE24、G7…)卻沒有中文說明(該行漢字 < 6)
+#       → user 2026-09-25:「這到底在講什麼鬼話？鬼看得懂？」
+# 判斷都在下面這段 python 裡,單一住所;沒有命中才往下走原本的術語密度提醒。
+# 原始碼用 read + quoted heredoc 讀進變數(不包在 $(...) 裡:bash 3.2 在命令替換內仍會掃引號,
+# python 字串裡的單引號會讓整支 hook 語法錯)。
+PLAIN_PY=''
+IFS= read -r -d '' PLAIN_PY <<'PLAIN_PY_SOURCE' || true
+import json, re, sys
+text = sys.stdin.read()
+# 逐 token 處理,每一步都是線性時間:回覆可能超過 256 KiB(一長串沒有空白的字元也要撐得住,
+# 不得用 `\S*[/]\S*` 這種會在長 token 上回溯成平方時間的寫法)。
+# 程式碼區塊換成換行(不是空白):區塊前後原本就是不同行,不能被併成一行
+body = re.sub(r'```.*?```', '\n', text, flags=re.S)
+body = re.sub(r'`[^`\n]*`', ' ', body)
+EXT = re.compile(r'[\w.-]+\.(?:tsx?|jsx?|mjs|cjs|json|md|sh|css|ya?ml|py|txt|log|html|png)')
+HEX = re.compile(r'[0-9a-f]{7,40}')
+kept = []
+for token in body.split():
+    if '/' in token or '\\' in token or token.startswith(('http://', 'https://')):
+        continue
+    bare = token.strip('()[]{}<>,.;:!?"\'「」『』,。;:!?、')
+    if EXT.fullmatch(bare) or HEX.fullmatch(bare):
+        continue
+    kept.append(token)
+plain = ' '.join(kept)
+han = len(re.findall(r'[㐀-䶿一-鿿]', plain))
+EXEMPT = re.compile(r'(cva|Radix|Polaris|Material|Atlassian|Carbon|Ant|Apple|MUI|TanStack|shadcn|Recharts|cmdk|dnd-kit|TypeScript|JavaScript|API|UI|UX|Jira|Stripe|Notion|Figma|Linear|GitHub|Gmail|Dropbox|Slack|Spotify|Discord|Storybook|Tailwind|ARIA|WCAG|FAQ|HSL|CSS|HTML|DOM|DS|PR|CI|URL|JSON|SDK|OK|Netlify|Claude|Codex|npm|git)', re.I)
+words = re.findall(r'[A-Za-z][A-Za-z_-]+', plain)
+english = [w for w in words if not EXEMPT.fullmatch(w)]
+code_re = re.compile(r'\b[A-Z]{1,3}[0-9]{1,3}[a-z]?\b')
+# 新清單項目的開頭(1. / 1) / - / * / • / (a))
+item_start = re.compile(r'^\s*(?:\d+[.)、]|[-*•+]|[(（]?[A-Za-z][)）])\s')
+def han_count(value):
+    return len(re.findall(r'[㐀-䶿一-鿿]', value))
+# 掃的是**已剝掉程式碼區塊與行內程式碼**的 body(N15 複核:掃含程式碼區塊的原文,會把 ``` 裡的
+# `SHA256(data)` 當成只寫代號的一行而誤擋)。代號自成一行時,只有「同一項目的接續行」算它的說明:
+# 緊接的下一行(不是新的清單項目),或隔空行但有縮排的接續段落(markdown 清單的續段寫法)。
+# N15 複核二(2026-10-07):原本取「下一個非空行」,代號後空一行接一句無關的總結(「以上是這次要決定的。」)
+# 也被當成說明而放行;頂格、隔空行的那一行是新段落,不是這個項目的說明。
+body_lines = body.splitlines()
+bare_code_lines = []
+for index, line in enumerate(body_lines):
+    if not code_re.search(line):
+        continue
+    if han_count(code_re.sub(' ', line)) >= 6:
+        continue
+    following = ''
+    if index + 1 < len(body_lines) and body_lines[index + 1].strip():
+        following = body_lines[index + 1]
+    else:
+        later = next((item for item in body_lines[index + 1:] if item.strip()), '')
+        if later[:1] in (' ', '\t'):
+            following = later
+    if following and not item_start.match(following) and han_count(code_re.sub(' ', following)) >= 6:
+        continue
+    bare_code_lines.append(line.strip()[:80])
+print(json.dumps({'han': han, 'english': len(english), 'bare_code_lines': bare_code_lines[:5]}, ensure_ascii=False))
+PLAIN_PY_SOURCE
+PLAIN_ANALYSIS=$(python3 -c "$PLAIN_PY" <<< "$AI_REPLY_TEXT" 2>/dev/null) || {
+  # 判斷跑不出來 ≠ 回覆合格:交給 adapter 當成這支 hook 降級(看得見),不靜默放行
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: plain-chinese analysis failed\n' >&2
+  exit 70
+}
+if [ -n "$PLAIN_ANALYSIS" ]; then
+  PLAIN_HAN=$(jq -r '.han' <<<"$PLAIN_ANALYSIS")
+  PLAIN_ENGLISH=$(jq -r '.english' <<<"$PLAIN_ANALYSIS")
+  if [ "$PLAIN_ENGLISH" -ge 30 ] && [ $((PLAIN_ENGLISH * 2)) -gt "$PLAIN_HAN" ]; then
+    printf '%s\n' \
+      "🚨 PLAIN-CHINESE BLOCKER(N15,feedback_propose_discipline Sub-rule 1):這段回覆以英文為主" \
+      "  (程式碼、路徑、網址以外的英文字 ${PLAIN_ENGLISH} 個,漢字 ${PLAIN_HAN} 個)。user 看不懂英文,這樣的回覆等於沒有交代。" \
+      "  請用繁體中文白話重寫:先說發生什麼、影響什麼、接下來做什麼;必要的檔名 / 指令放在反引號裡並緊跟中文說明。" \
+      "  user 原話:「你他媽給我講中文，我們的工作流程不是定義過了嗎」。" >&2
+    exit 2
+  fi
+  if [ "$HAS_DECISION" -gt 0 ]; then
+    BARE_CODES=$(jq -r '.bare_code_lines[]' <<<"$PLAIN_ANALYSIS")
+    if [ -n "$BARE_CODES" ]; then
+      {
+        echo "🚨 PLAIN-CHINESE BLOCKER(N15):要你拍板的回覆裡,下面這幾行只寫了內部代號、沒有中文說明:"
+        printf '%s\n' "$BARE_CODES" | sed 's/^/    • /'
+        echo "  每個要 user 決定的項目都要寫:現在怎樣、改了會怎樣、建議哪個與原因(全中文白話);代號只能當附註。"
+        echo "  user 原話:「這到底在講什麼鬼話？鬼看得懂？」"
+      } >&2
+      exit 2
+    fi
+  fi
+fi
 
 [ "$HAS_DECISION" -eq 0 ] && exit 0
 

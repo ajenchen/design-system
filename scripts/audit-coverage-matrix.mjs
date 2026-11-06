@@ -9,8 +9,14 @@
  *   - DETERMINISTIC:有 deterministic script,sub-agent 必 chain,output 含「N files scanned, 0 violations」cite
  *   - HOOK-ENFORCED:有 write-time PostToolUse hook 偵測該違規。**2026-05-31 誠實化(infra-audit)**:hook 分
  *     BLOCK(exit 2 真擋)vs WARN(exit 0 印 stderr 不擋)兩種;WARN-only hook **不 prevent 違規 landing**,
- *     audit-time 必 DS-wide grep 確認 residue(不可純信賴 hook state)。各 dim mechanism 須註明 block 或 warn。
- *     [TODO queued #9:逐個 audit 全 HOOK-ENFORCED dim 的 hook 是 block 或 warn,mechanism 標註齊]
+ *     audit-time 必 DS-wide grep 確認 residue(不可純信賴 hook state)。
+ *     **擋 / 只提醒不靠散文自述**(2026-10-07 收掉原「TODO queued #9」):每個 HOOK-ENFORCED 維度的
+ *     `enforcement`(block / warn / block-and-warn)、`hook_events`、`prevents_landing` 由本檔機械產出 ——
+ *     能從 hooks/registrations.json 的 outputMode 推出來的(adapter 契約:blocking 只能擋或靜默、
+ *     governance-context / diagnostic 只能提醒)直接推導;同一支 hook 依規則可擋可不擋
+ *     (governance-context-or-block / governance-decision)的,才在 HOOK_RULE_ENFORCEMENT 逐條寫明規則出處,
+ *     並驗證它落在 outputMode 允許的範圍內。只有「PreToolUse 且整條規則都擋」才算 prevents_landing ——
+ *     PostToolUse 的擋發生在寫入之後,違規已落地,同樣要 audit-time 全掃 residue。
  *   - PURE-JUDGMENT:genuinely 需 LLM reasoning(content quality 主觀),dispatch contract 強制「DS-wide all files 不 sample」
  *   - CI-ENFORCED:只能由受保護遠端狀態與綁定精確 commit/release 的可信 CI readback 證明；
  *     本機檔案存在、模型判斷或手寫 receipt 都不能替代。
@@ -113,7 +119,7 @@ const COVERAGE = {
   55: { tier: 'PURE-JUDGMENT', mechanism: 'Token cross-namespace mapping integrity — dispatch agent DS-wide 全掃 semantic.css 12-hue mapping(L246-273)逐 hue 驗 →primitive step 正確;無 deterministic hook(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED 卻無 cite hook)' },
   56: { tier: 'HOOK-ENFORCED', mechanism: 'chrome_header_dispatcher.sh → lib/_app_shell_primary_header_consistency.sh BLOCKER(exit 2 傳播,2026-05-31 修 stdin parsing + dispatcher propagate;escape @app-shell-primary-header-allow)' },
   // Group Q* — Consumer enforcement / fork-context / packaging(57-88,2026-05-30 補滿 per codex Phase B P1:原 56/88 假完整 fix)
-  57: { tier: 'HOOK-ENFORCED', mechanism: 'check_ds_anchor_preflight.sh write-time WARN(exit 0,inject context 讓 AI 自決,L130-132;M29 anchor)+ stop_self_audit Stop hook backstop。2026-05-31 誠實標 WARN(原寫「soft BLOCKER」是矛盾詞)' },
+  57: { tier: 'HOOK-ENFORCED', mechanism: 'check_ds_anchor_preflight.sh write-time P0 BLOCKER(同 turn 沒先讀 DS canonical baseline 就改 production tsx → exit 2;2026-07-07 由 WARN 升級,escape GOVERNANCE_BYPASS_DS_ANCHOR=1 audit-logged;M29 anchor)+ stop_self_audit Stop hook backstop。2026-10-07 更正:本列原寫「write-time WARN(exit 0)」停在升級前' },
   58: { tier: 'HOOK-ENFORCED', mechanism: 'check_plugin_fork_health.sh SessionStart：r1 驗證 committed provider-neutral dispatcher + exact installed fork manifest；legacy plugin 僅相容性回饋、不能滿足治理健康契約' },
   59: { tier: 'HOOK-ENFORCED', mechanism: 'check_substantive_edit_approval_preflight.sh scope apps/** + node_modules/@qijenchen' },
   60: { tier: 'HOOK-ENFORCED', mechanism: 'check_propose_without_benchmark.sh UserPromptSubmit(M26)' },
@@ -148,6 +154,36 @@ const COVERAGE = {
   89: { tier: 'HOOK-ENFORCED', mechanism: 'check_tabs_content_chrome_body_double_gap.sh(write-time P0:Check 1 tabs double-gap + Check 2 overlay-body fixed macro gap)+ audit-time DS-wide sweep per SKILL dim row' },
   90: { tier: 'PURE-JUDGMENT', mechanism: 'LLM layout-space macro 合規 DS-wide 全掃(NO-SAMPLE;regex 分不出 macro/micro);判準 = layoutSpace.spec.md「該用 token vs 刻意固定」邊界段;每 finding 對抗二次驗證(2026-07-01 錨:35 raw → 8 confirmed)' },
   91: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(91) },
+}
+
+// 只收「registrations.json 的 outputMode 推不出來」的 HOOK-ENFORCED 維度:cited hook 是
+// governance-context-or-block / governance-decision,擋或不擋由那條規則自己決定。每列寫明規則出處,
+// 2026-10-07 逐條讀 hook 原始碼確認。outputMode 推得出來的維度**不准**列在這裡(兩份 SSOT 會漂移)。
+//   block          — 該規則的違規一律 exit 2
+//   warn           — 該規則只回 governance context / P1 提醒,不擋
+//   block-and-warn — 同一條規則裡 [P0] 類擋、[P1] / warn 類只提醒
+const HOOK_RULE_ENFORCEMENT = {
+  4: { enforcement: 'block', rule: 'check_opacity_token_usage.sh 硬違規 → exit 2;micro-gap / fraction soft note 不屬本維度' },
+  11: { enforcement: 'block', rule: 'check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)' },
+  13: { enforcement: 'block', rule: 'check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)' },
+  29: { enforcement: 'block-and-warn', rule: 'check_story_invariants.sh R3 category:[P0] trait 缺口 record_worst 2;其餘只印 R3 trait warn' },
+  30: { enforcement: 'block-and-warn', rule: 'check_canonical_propagation.sh E.1:[P0] 新檔擋;[P1] 既有檔只提醒' },
+  34: { enforcement: 'warn', rule: 'check_field_family_invariants.sh A.4 disabled placeholder color(P1 context,exit 0)' },
+  35: { enforcement: 'warn', rule: 'check_pattern_invariants.sh C.1 overlay scroll chain(P1 WARN context)' },
+  37: { enforcement: 'block', rule: 'check_field_family_invariants.sh A.3 Field state ring SSOT(P0,record_worst 2)' },
+  39: { enforcement: 'block', rule: 'check_pattern_invariants.sh C.4 row slot handcraft(P0,record_worst 2)' },
+  54: { enforcement: 'block-and-warn', rule: 'check_story_invariants.sh R8:registry severity=block → record_worst 2;severity=warn → governance context' },
+  57: { enforcement: 'block', rule: 'check_ds_anchor_preflight.sh M29 anchor:同 turn 未讀 DS canonical baseline → exit 2' },
+}
+const ENFORCEMENT_VALUES = ['block', 'warn', 'block-and-warn']
+// registrations outputMode → 這支 hook 在 adapter 契約下「能做到的」(interpretProviderHookChildResult:
+// blocking 的成功必須靜默、governance-context 回 exit 2 是契約違反)。
+const OUTPUT_MODE_CEILING = {
+  blocking: ['block'],
+  'governance-context': ['warn'],
+  diagnostic: ['warn'],
+  'governance-context-or-block': ENFORCEMENT_VALUES,
+  'governance-decision': ENFORCEMENT_VALUES,
 }
 
 // expected dim count = canonical audit skill; missing/duplicate/interior-gap rows fail closed。
@@ -214,6 +250,8 @@ for (let i = 1; i <= expected; i++) {
 // 真實檔案；其他 active source 裡只出現 basename/comment 不算。`原 <name>` 只作明確 historical label。
 const canonicalHooks = path.join(ROOT, 'packages/design-system/ds-canonical/hooks')
 let registeredHooks
+// hook 名 → 它被登記的每一處 { event, outputMode }(同一支 hook 可能同時掛 Pre 與 Post)。
+const hookRegistrations = new Map()
 try {
   const registrationsPath = path.join(canonicalHooks, 'registrations.json')
   const info = fs.lstatSync(registrationsPath)
@@ -221,7 +259,7 @@ try {
   const registrations = JSON.parse(fs.readFileSync(registrationsPath, 'utf8'))
   if (!registrations?.hooks || typeof registrations.hooks !== 'object' || Array.isArray(registrations.hooks)) throw new Error('registrations hooks map is missing')
   registeredHooks = new Set()
-  for (const groups of Object.values(registrations.hooks)) {
+  for (const [event, groups] of Object.entries(registrations.hooks)) {
     if (!Array.isArray(groups)) throw new Error('registration event groups must be arrays')
     for (const group of groups) {
       if (!Array.isArray(group?.hooks)) throw new Error('registration group hooks must be arrays')
@@ -230,6 +268,8 @@ try {
           throw new Error('registration descriptor is not one closed hook filename')
         }
         registeredHooks.add(descriptor.hook)
+        if (!hookRegistrations.has(descriptor.hook)) hookRegistrations.set(descriptor.hook, [])
+        hookRegistrations.get(descriptor.hook).push({ event, outputMode: descriptor.outputMode })
       }
     }
   }
@@ -262,6 +302,7 @@ const dispatcherBindsHelper = (dispatcher, helper) => {
   return helperReference && (genericInvocation || executableLines.some(line => line.includes(`/${helper}`) && /\b(?:run_helper|bash|source)\b/.test(line)))
 }
 const vaporware = []
+const dimActiveRootHooks = new Map()
 for (const [dim, entry] of Object.entries(COVERAGE)) {
   if (/\(planned\)|（planned）/i.test(entry.mechanism)) { vaporware.push({ dim, reason: `「(planned)」未實作: ${entry.mechanism.slice(0, 48)}` }); continue }
   for (const m of entry.mechanism.matchAll(/scripts\/([\w-]+\.mjs)/g)) {
@@ -285,6 +326,7 @@ for (const [dim, entry] of Object.entries(COVERAGE)) {
     for (const hook of [...new Set(rootHooks)]) {
       if (!registeredRootHookExists(hook)) vaporware.push({ dim, reason: `cited active hook is not a registered single-link canonical owner: ${hook}` })
     }
+    dimActiveRootHooks.set(Number(dim), [...new Set(rootHooks)].filter(registeredRootHookExists))
     const dispatchers = [...new Set(rootHooks.filter(hook => /dispatcher\.sh$/.test(hook)))]
     for (const helper of [...new Set(helpers)]) {
       if (!dispatchers.some(dispatcher => dispatcherBindsHelper(dispatcher, helper))) {
@@ -297,11 +339,68 @@ for (const [dim, entry] of Object.entries(COVERAGE)) {
   }
 }
 
+// 擋 / 只提醒:由 registrations 推導,推不出來的才讀 HOOK_RULE_ENFORCEMENT(見檔頭與該常數的說明)。
+const enforcementDrift = []
+const enforcementCounts = { block: 0, 'block-and-warn': 0, warn: 0, prevents_landing: 0 }
+for (const key of Object.keys(HOOK_RULE_ENFORCEMENT)) {
+  if (COVERAGE[key]?.tier !== 'HOOK-ENFORCED') enforcementDrift.push({ dim: key, reason: 'HOOK_RULE_ENFORCEMENT 只能列 HOOK-ENFORCED 維度' })
+}
+for (const [dimText, entry] of Object.entries(COVERAGE)) {
+  if (entry.tier !== 'HOOK-ENFORCED') continue
+  const dim = Number(dimText)
+  const hooks = dimActiveRootHooks.get(dim) || []
+  const registrationsForDim = hooks.flatMap((hook) => (hookRegistrations.get(hook) || []).map((item) => ({ hook, ...item })))
+  if (registrationsForDim.length === 0) continue // 已由 vaporware 報出「沒有已登記的 hook」
+  const ceiling = new Set()
+  for (const item of registrationsForDim) {
+    const allowed = OUTPUT_MODE_CEILING[item.outputMode]
+    if (!allowed) {
+      enforcementDrift.push({ dim, reason: `未知 outputMode:${item.hook}=${item.outputMode}` })
+      continue
+    }
+    for (const value of allowed) ceiling.add(value)
+  }
+  const ruleEntry = HOOK_RULE_ENFORCEMENT[dim]
+  let enforcement
+  let source
+  if (ceiling.size === 1) {
+    enforcement = [...ceiling][0]
+    source = 'registrations.outputMode'
+    if (ruleEntry) enforcementDrift.push({ dim, reason: `outputMode 已決定 ${enforcement},HOOK_RULE_ENFORCEMENT 不得再列(第二份 SSOT)` })
+  } else {
+    if (!ruleEntry) {
+      enforcementDrift.push({ dim, reason: `cited hook 依規則可擋可不擋(${registrationsForDim.map((item) => `${item.hook}=${item.outputMode}`).join(', ')}),HOOK_RULE_ENFORCEMENT 缺這一維的規則出處` })
+      continue
+    }
+    if (!ENFORCEMENT_VALUES.includes(ruleEntry.enforcement) || typeof ruleEntry.rule !== 'string' || !ruleEntry.rule.trim()) {
+      enforcementDrift.push({ dim, reason: 'HOOK_RULE_ENFORCEMENT 列必須是 { enforcement: block|warn|block-and-warn, rule: <出處> }' })
+      continue
+    }
+    if (!ceiling.has(ruleEntry.enforcement)) {
+      enforcementDrift.push({ dim, reason: `宣稱 ${ruleEntry.enforcement} 超出 cited hook outputMode 能做到的範圍(${[...ceiling].join('/')})` })
+      continue
+    }
+    enforcement = ruleEntry.enforcement
+    source = `rule:${ruleEntry.rule}`
+  }
+  const hookEvents = [...new Set(registrationsForDim.map((item) => item.event))].sort()
+  // 寫入前就擋 = 整條規則都擋 + 至少一支能擋的 cited hook 掛在 PreToolUse。
+  const preventsLanding = enforcement === 'block' && registrationsForDim.some((item) =>
+    item.event === 'PreToolUse' && OUTPUT_MODE_CEILING[item.outputMode]?.includes('block'))
+  entry.enforcement = enforcement
+  entry.enforcement_source = source
+  entry.hook_events = hookEvents
+  entry.prevents_landing = preventsLanding
+  enforcementCounts[enforcement] += 1
+  if (preventsLanding) enforcementCounts.prevents_landing += 1
+}
+
 const report = {
   schemaVersion: 1,
   expected_dims: expected,
   classified: expected - counts.UNKNOWN,
   tier_counts: counts,
+  hook_enforcement_counts: enforcementCounts,
   gaps,
   coverage_by_dim: COVERAGE,
 }
@@ -328,10 +427,11 @@ if (CHECK) {
 console.log('═════════════════════════════════════════════════════')
 console.log(`▶ Audit Coverage Matrix(${expected} dims anti-sample tiers)`)
 console.log(`   DETERMINISTIC(deterministic script chain): ${counts.DETERMINISTIC}`)
-console.log(`   HOOK-ENFORCED(write-time PostToolUse): ${counts['HOOK-ENFORCED']}`)
+console.log(`   HOOK-ENFORCED(write-time hook,Pre 或 Post): ${counts['HOOK-ENFORCED']}`)
 console.log(`   PURE-JUDGMENT(AI but DS-wide全 file enumerated): ${counts['PURE-JUDGMENT']}`)
 console.log(`   CI-ENFORCED(protected external readback): ${counts['CI-ENFORCED']}`)
 console.log(`   UNKNOWN: ${counts.UNKNOWN}`)
+console.log(`   HOOK-ENFORCED 擋 / 只提醒:block ${enforcementCounts.block} · block-and-warn ${enforcementCounts['block-and-warn']} · warn ${enforcementCounts.warn}(寫入前就擋 ${enforcementCounts.prevents_landing})`)
 console.log('═════════════════════════════════════════════════════')
 
 if (gaps.length) {
@@ -342,7 +442,11 @@ if (vaporware.length) {
   console.error('\n🚨 VAPORWARE(cited script/hook 不存在 — 紙上保證,綠燈≠真兜底):')
   for (const v of vaporware) console.error(`   Dim ${v.dim}: ${v.reason}`)
 }
+if (enforcementDrift.length) {
+  console.error('\n🚨 HOOK ENFORCEMENT(擋 / 只提醒)無法成立:')
+  for (const item of enforcementDrift) console.error(`   Dim ${item.dim}: ${item.reason}`)
+}
 if (outputDrift) console.error(`\n🚨 COVERAGE ARTIFACT DRIFT: ${outputDrift}`)
-if (CHECK && (gaps.length || vaporware.length || outputDrift)) process.exit(1)
+if (CHECK && (gaps.length || vaporware.length || enforcementDrift.length || outputDrift)) process.exit(1)
 console.log(`\n✅ All ${expected} dims classified + cited mechanisms resolve on disk`)
 process.exit(0)

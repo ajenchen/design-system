@@ -3,7 +3,7 @@ import * as RechartsPrimitive from 'recharts'
 import { cn } from '@/lib/utils'
 
 /**
- * Chart — shadcn-style wrapper over Recharts + 本 DS token
+ * Chart — shadcn-style wrapper over Recharts + 本 DS token(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/chart.tsx#L366-L373)
  *
  * 結構對齊 shadcn chart(ChartContainer / ChartTooltipContent / ChartLegendContent),
  * 但所有視覺(tooltip / legend / grid / axis)改用本 DS token。
@@ -273,7 +273,7 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
                         {nestLabel ? tooltipLabel : null}
                         <span className="text-fg-secondary">{itemConfig?.label || item.name}</span>
                       </div>
-                      {/* 2026-07-04 修:falsy check 會讓合法資料值 0 不渲染(shadcn 上游同病)→ null check */}
+                      {/* 2026-07-04 修:falsy check 會讓合法資料值 0 不渲染(shadcn 上游同病)→ null check(來源:https://github.com/shadcn-ui/ui/blob/6f31c22f1147ae1c48d7b2b78e8ded6b68cff2ff/apps/v4/registry/new-york-v4/ui/chart.tsx#L237) */}
                       {item.value != null && (
                         <span className="text-foreground font-mono font-medium tabular-nums">
                           {item.value.toLocaleString()}

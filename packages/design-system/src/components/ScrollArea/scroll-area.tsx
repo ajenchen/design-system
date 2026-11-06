@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
  * 右側被吃 17px 跑版(「Left pinned + Row Actions」那張圖的問題)。
  *
  * ScrollArea 用 Radix 包裝自建 overlay 捲軸 → **跨 OS 一致不吃寬度**,
- * 捲動時浮現(hover / scroll 自動顯示)。
+ * 指標在捲動區上時浮現(含滾輪捲動;只用鍵盤捲動時不浮現 —— Radix type="hover" 只聽 pointerenter / pointerleave)。
  *
  * ── 何時用 ──
  * - 寬內容橫向捲動(寬表格類 demo / 程式碼區塊;例外:DataTable 中央捲動區走 native

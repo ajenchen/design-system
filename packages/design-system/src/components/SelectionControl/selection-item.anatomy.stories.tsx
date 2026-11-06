@@ -9,9 +9,11 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Mail, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Internal/SelectionControl/設計規格',
@@ -241,7 +243,7 @@ function SelectionInspector() {
 
   return (
     <div className="grid grid-cols-[1fr_320px] gap-8 max-w-5xl">
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>即時預覽</H3>
           <div className="border border-divider rounded-md p-4 bg-muted">
@@ -256,7 +258,7 @@ function SelectionInspector() {
                 />
               }
               icon={prefix === 'icon' ? Shield : undefined}
-              avatar={prefix === 'avatar' ? { alt: 'Ada Chen', color: 'indigo' } : undefined}
+              avatar={prefix === 'avatar' ? { alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen' }) } : undefined}
               label="Admin 層級操作"
               description={hasDesc ? '僅限 workspace owner 啟用此權限範圍' : undefined}
               disabled={disabled}
@@ -281,9 +283,9 @@ function SelectionInspector() {
             </dl>
           </div>
         </div>
-      </div>
+      </ExampleStack>
 
-      <div className="flex flex-col gap-6">
+      <ExampleStack>
         <div>
           <H3>Size</H3>
           {/* 互斥切換消費 SegmentedControl(segmented-control.spec.md「何時用」2–5 個互斥選項);取代手刻 pill:它靜止借 neutral-hover、hover 借 neutral-active(color.spec.md 成對 token 錯配) */}
@@ -302,14 +304,9 @@ function SelectionInspector() {
         <div>
           <H3>Props</H3>
           <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-caption">
-              <input type="checkbox" checked={hasDesc} onChange={(e) => setHasDesc(e.target.checked)} />
-              <span className="font-mono">description</span>
-            </label>
-            <label className="flex items-center gap-2 text-caption">
-              <input type="checkbox" checked={disabled} onChange={(e) => setDisabled(e.target.checked)} />
-              <span className="font-mono">disabled</span>
-            </label>
+            {/* DS Checkbox 取代原生 checkbox(稽核 L054「有元件就用元件」) */}
+            <Checkbox size="sm" checked={hasDesc} onCheckedChange={(v) => setHasDesc(v === true)} label={<span className="font-mono">description</span>} />
+            <Checkbox size="sm" checked={disabled} onCheckedChange={(v) => setDisabled(v === true)} label={<span className="font-mono">disabled</span>} />
           </div>
         </div>
 
@@ -354,7 +351,7 @@ function SelectionInspector() {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleStack>
     </div>
   )
 }
@@ -420,7 +417,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked aria-label="選取 Ada Chen（單行）" />}
-                avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
+                avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?u=ada-chen' }) }}
                 label="Ada Chen"
               />
             </div>
@@ -432,7 +429,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked aria-label="選取 Ada Chen（含職稱）" />}
-                avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
+                avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?u=ada-chen' }) }}
                 label="Ada Chen"
                 description="Design Engineer · Frontend team"
               />
@@ -549,8 +546,22 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"SelectionItem 是純佈局元件,本身不接管鍵盤與焦點——它只渲染外層容器加上指向控件的 label(label 的 htmlFor 連到控件 id,點文字會觸發控件)。\n\n鍵盤操作、焦點框、勾選狀態都由傳入的控件(Checkbox / Radio)負責:\n\n- Tab — 焦點落在控件本身\n- Space — 由控件切換勾選狀態\n- 焦點框(outline 2px var(--ring),往外 2px)由全域 :focus-visible 規則畫在控件上——控件本身不寫任何焦點 class\n\n搭配建議:\n\n- 控件對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應的 checkbox / radio pattern。\n- 用 label 的 htmlFor 連到控件 id,讓點擊文字也能操作。\n- 驗證:Storybook 無障礙面板應 0 項嚴重違規;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1,介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <p>SelectionItem 是純佈局元件,本身不接管鍵盤與焦點——它只渲染外層容器加上指向控件的 label(label 的 htmlFor 連到控件 id,點文字會觸發控件)。</p>
+        <p>鍵盤操作、焦點框、勾選狀態都由傳入的控件(Checkbox / Radio)負責:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Tab — 焦點落在控件本身</li>
+          <li>Space — 由控件切換勾選狀態</li>
+          <li>焦點框(outline 2px var(--ring),往外 2px)由全域 :focus-visible 規則畫在控件上——控件本身不寫任何焦點 class</li>
+        </ul>
+        <p>搭配建議:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>控件對齊 <a href="https://www.w3.org/WAI/ARIA/apg/patterns/" target="_blank" rel="noopener noreferrer">W3C ARIA Authoring Practices Guide</a> 對應的 checkbox / radio pattern。</li>
+          <li>用 label 的 htmlFor 連到控件 id,讓點擊文字也能操作。</li>
+          <li>驗證:Storybook 無障礙面板應 0 項嚴重違規;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1,介面元素對比 ≥ 3:1(WCAG AA)。</li>
+        </ul>
+      </div>
     </div>
   ),
 }

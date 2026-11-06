@@ -17,7 +17,7 @@ benchmark:
 ## 定位
 
 Tooltip 是 hover 或 focus 時出現的短文字提示，用於補充畫面上未能清楚傳達的資訊。
-基於 Radix Tooltip（shadcn 包裝）+ 橋接 DS token。
+基於 Radix Tooltip（shadcn 包裝,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tooltip.tsx#L5）+ 橋接 DS token。
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
@@ -48,7 +48,7 @@ Tooltip 的判斷標準是：**畫面上的資訊是否已經足夠讓使用者�
 | 內容需要互動（按鈕 / 連結 / 輸入框）| `HoverCard` | Tooltip 不可點擊，HoverCard 才支援互動元素 |
 | 需要長篇說明（多段文字 / 圖片）| `HoverCard` / 側邊 help panel | Tooltip 是一句話補充 |
 | 欄位驗證錯誤 | inline error message | Tooltip 需要 hover 才能看到，錯誤必須 persistent |
-| 必要資訊的唯一載體 | 直接顯示在畫面上 | Tooltip 觸控裝置無法觸發，關鍵資訊不能只靠 hover |
+| 必要資訊的唯一載體 | 直接顯示在畫面上 | Tooltip 要滑過停 0.5 秒才出現、滑開就收,使用者不知道那裡藏著東西,關鍵資訊不能只靠 hover〔UD-U1021-27〕 |
 | 按鈕已有完整文字 label | 不要加 tooltip | 重複同樣的文字沒有價值 |
 
 ## 與 Button icon-only 的關係
@@ -85,12 +85,13 @@ Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過�
 
 ## 邊界狀態
 
-- **觸控裝置**:無 hover,tooltip 無法觸發——必要資訊不可只靠 tooltip 承載(見「何時不用」「禁止事項」)
+- **看不出藏著資訊**:tooltip 要滑過停 0.5 秒(`--motion-delay-plain`)才出現、滑開就收,使用者不知道那裡藏著東西——必要資訊不可只靠 tooltip 承載〔UD-U1021-27〕(見「何時不用」「禁止事項」)
 - **長文字**:超過 max-width 280px 自動換行、完整呈現不截斷(見「最大寬度」「內容完整性」)
 - **貼近 viewport 邊**:Radix 自動翻邊 + `collisionPadding` 8px 呼吸距離(見「Edge collision」)
 - **空內容**:`TooltipContent` 的 `children` 為 `null` / `undefined` / `false` / 空字串時**不掛浮層**——不渲染帶 padding 的空 `role="tooltip"` 殼,trigger 原樣保留。Tooltip 是資訊補救機制(見「何時用」),沒有補充內容就不該出現。實作於 `tooltip.tsx` 的 `TooltipContent` 以空值 guard 提早 return null 落地
 - **Loading**:Tooltip API 無 loading prop 或內建 async state；content 的資料生命週期由 consumer own。
-- **錨點失去版面**(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」):觸發點被藏起來(`display:none` 祖先 / keep-mounted 收起 / 隱藏的 docs 分頁 / 虛擬捲動回收)或卸載時,**浮層不得被畫出來**。內容 portal 到 body,不會跟著被藏;錨點量出來是 0×0,Radix 仍會拿它算位置 → `(0, sideOffset)` 視窗左上角,關閉動畫還會在那裡播完。DS 預設開 `hideWhenDetached`(SSOT:`tokens/elevation/overlay-geometry.ts` `OVERLAY_HIDE_WHEN_DETACHED`;Popover / HoverCard / DropdownMenu 同一顆常數),位置與 `visibility:hidden` 由同一次定位計算寫進同一個 style 物件,所以錯位的那一幀不可能被畫出來。機械閘:`scripts/overlay-detached-anchor-invariant.mjs`(修前的 build 跑它會紅在 `translate(0px, 8px)`)。
+- **鍵盤聚焦帶來的捲動**(2026-11-05,AppShell 主標頭佈局 820 寬 Tab 到細列列鈕不開 Tooltip):觸發點在捲動容器裡、聚焦當下不在可視範圍時,瀏覽器會把容器捲到看得見它 —— 那一下 scroll 事件在「聚焦打開提示」之後才派送,而 Radix 對任何「包含觸發點」的祖先捲動一律關閉提示([radix-ui/primitives tooltip.tsx#L546-L552](https://github.com/radix-ui/primitives/blob/main/packages/react/tooltip/src/tooltip.tsx#L546-L552)),結果是 Tab 到的那顆永遠看不到提示,違反上方「A11y 預設」的「Tab — focus trigger 時顯示」與 [WCAG 2.2 SC 1.4.13](https://www.w3.org/TR/WCAG22/#content-on-hover-or-focus)「Persistent:…remains visible until the hover or focus trigger is removed」(焦點還在觸發點上)。**規則**:聚焦之後緊接著的那一段捲動(焦點仍在觸發點、離聚焦或上一個被放過的捲動不到 150ms、總長不超過 1 秒)不關提示;之後使用者自己捲動、Esc、點擊、失焦、指標離開、別的提示打開,一律照 Radix 關閉。同一種「自己造成的捲動不算」的例外,React Aria 對 input / textarea 的捲動也不關浮層([useCloseOnScroll.ts#L52-L57](https://github.com/adobe/react-spectrum/blob/main/packages/react-aria/src/overlays/useCloseOnScroll.ts#L52-L57));MUI Tooltip 則完全沒有捲動關閉([Tooltip.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Tooltip/Tooltip.js) 全檔無 scroll 處理)。實作:`tooltip.tsx`「聚焦帶來的捲動不關提示」(DS `TooltipTrigger` 記下聚焦的觸發點與時間,`Tooltip` 在 scroll 事件派送中收到關閉時判斷);機械閘 `scripts/sidebar-standalone-collapse-invariant.mjs` R3k(真按 Tab 走到細列列鈕,途中外層捲動容器捲過,600ms 後提示仍開著)
+- **錨點失去版面**(2026-09-16 user 回報:關閉那顆按鈕的 tooltip 會先跑到視窗左上角閃一下):觸發點被藏起來(`display:none` 祖先 / keep-mounted 收起 / 隱藏的 docs 分頁 / 虛擬捲動回收)或卸載時,**浮層不得被畫出來**。內容 portal 到 body,不會跟著被藏;錨點量出來是 0×0,Radix 仍會拿它算位置 → `(0, sideOffset)` 視窗左上角,關閉動畫還會在那裡播完。DS 預設開 `hideWhenDetached`(SSOT:`tokens/elevation/overlay-geometry.ts` `OVERLAY_HIDE_WHEN_DETACHED`;Popover / HoverCard / DropdownMenu 同一顆常數),位置與 `visibility:hidden` 由同一次定位計算寫進同一個 style 物件,所以錯位的那一幀不可能被畫出來。機械閘:`scripts/overlay-detached-anchor-invariant.mjs`(修前的 build 跑它會紅在 `translate(0px, 8px)`)。
 
 ## 受控開關(open / defaultOpen / onOpenChange)
 
@@ -100,7 +101,7 @@ Radix idiom passthrough:`open`(受控)/ `defaultOpen`(非受控初始開啟)/ `o
 
 - ❌ 不要在已有完整 label 的按鈕上加 tooltip 重複同樣的文字
 - ❌ 不要在 tooltip 裡放互動元素——改用 HoverCard
-- ❌ 不要把 tooltip 當作必要資訊的唯一載體——tooltip 需要 hover 才能看到，觸控裝置無法觸發
+- ❌ 不要把 tooltip 當作必要資訊的唯一載體——tooltip 要滑過停 0.5 秒才出現、滑開就收,使用者不知道那裡藏著東西〔UD-U1021-27〕
 - ❌ 不要為個別 tooltip 設定不同的延遲時間——全產品統一一組參數
 - ❌ 不要在 tooltip 內截斷資訊——tooltip 是資訊終點，內容必須完整
 - ❌ 不要對 `TooltipContent` 傳空內容——空 tooltip 是無意義的視覺雜訊(空值時元件不掛浮層,見「邊界狀態」)
@@ -123,6 +124,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 
 - `../HoverCard/hover-card.spec.md` — hover 觸發的可互動浮層（**Tooltip vs HoverCard 的分界 SSOT 在 HoverCard spec**「與 Tooltip 的分界」段落）
 - `../Button/button.spec.md` — `iconOnly` 模式自動產生 tooltip（由 aria-label 驅動）
+- `../../tokens/elevation/elevation.spec.md`「浮層間距（sideOffset）」— Tooltip 離觸發點的間距見該節(唯一出過的實例:Sidebar 細列,已修);「疊放順序」— Tooltip `z-[70]`,蓋在 Toast(`z-[60]`)與所有 modal / 浮層之上;唯一可能在它上面的是頁面層的拖曳影像(拖曳元件放在 modal / 浮層裡時,影像被那一層封頂、在提示之下)(user 2026-10-13 採納;理由、世界級對照與閘都在該節)
 
 ## A11y 預設
 

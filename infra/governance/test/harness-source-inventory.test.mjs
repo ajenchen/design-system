@@ -144,7 +144,7 @@ function fixture() {
     entries: [{ commands: [
       ['node', 'infra/governance/bin/run-harness-suite.mjs', '--suite', 'canonical-hook-behavioral'],
       ['node', 'infra/governance/bin/run-harness-suite.mjs', '--suite', 'fixture-remainder'],
-      ['node', 'scripts/run-gate-meta-tests.mjs'],
+      ['node', 'scripts/run-gate-meta-tests.mjs', '--lane', 'core'],
       ['node', 'scripts/test-excluded-gate.mjs'],
       ['node', 'scripts/test-sample-gate.mjs'],
     ] }],
@@ -270,7 +270,18 @@ function fixture() {
         ],
       },
     ],
-    pairedMeta: { command: ['node', 'scripts/run-gate-meta-tests.mjs'], members: ['scripts/test-sample-gate.mjs'] },
+    pairedMeta: {
+      runner: 'scripts/run-gate-meta-tests.mjs',
+      lanes: [{
+        id: 'core',
+        storybook: 'absent',
+        membership: 'remainder',
+        memberTimeoutMs: 60_000,
+        memberTimeoutOverrides: [],
+        totalTimeoutMs: 600_000,
+        members: ['scripts/test-sample-gate.mjs'],
+      }],
+    },
     direct: ['scripts/test-excluded-gate.mjs', 'scripts/test-sample-gate.mjs'],
     externalExclusions: ['scripts/test-external-gate.mjs'],
     nonGovernance: {
@@ -300,7 +311,7 @@ test('actual inventory schemas compile and the canonical registry is dynamically
   assert.equal(validateHarnessSourceInventory(inventory, { repoRoot: ROOT, registry }), true)
   const classified = [...new Set([
     ...inventory.suites.flatMap(suite => suite.members),
-    ...inventory.pairedMeta.members,
+    ...inventory.pairedMeta.lanes.flatMap(lane => lane.members),
     ...inventory.direct,
     ...inventory.externalExclusions,
     ...inventory.reviewedDisabled.map(entry => entry.path),
@@ -334,7 +345,7 @@ test('declared globs include underscores and direct plus paired-meta is the only
     assert.ok(discoverHarnessSources(root).includes('infra/governance/test/hidden_case.test.mjs'))
     assert.equal(validateHarnessSourceInventory(inventory, { repoRoot: root, registry }), true)
     assert.ok(inventory.direct.includes('scripts/test-sample-gate.mjs'))
-    assert.ok(inventory.pairedMeta.members.includes('scripts/test-sample-gate.mjs'))
+    assert.ok(inventory.pairedMeta.lanes[0].members.includes('scripts/test-sample-gate.mjs'))
 
     const duplicateOwner = structuredClone(inventory)
     const fixtureSuite = duplicateOwner.suites.find(suite => suite.id === 'fixture-remainder')
@@ -578,7 +589,7 @@ test('AST safety blocks aliased shell/dynamic execution without flagging RegExp.
 
 test('paired meta members receive the same reviewed-entrypoint AST safety as suite and direct sources', () => {
   const { root, inventory, registry } = fixture()
-  const pairedMember = resolve(root, inventory.pairedMeta.members[0])
+  const pairedMember = resolve(root, inventory.pairedMeta.lanes[0].members[0])
   try {
     writeFileSync(pairedMember, "import { spawnSync } from 'node:child_process'\nspawnSync(process.execPath, ['--eval', '2 + 2'])\n")
     assert.throws(

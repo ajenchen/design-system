@@ -2,7 +2,7 @@
 /**
  * @gate-contract
  *   保證: (1) 每一支註冊成 `test:*` / `check:*` 的 npm script 都有某個 workflow 觸達得到(直接、經 scripts 檔名、或經已觸達 script 的指令字串遞迴);
- *         (2) 每一支有 meta-test 包裝、而且會開瀏覽器的閘,它的 `--selftest`(對照組)都有 CI 瀏覽器 job 明確在跑 —— 不能只靠夜間快照(那裡沒有 storybook-static,恆略過)
+ *         (2) 每一支有 meta-test 包裝、而且會開瀏覽器的閘,它的 `--selftest`(對照組)都有 CI 瀏覽器 job 明確在跑 —— 不能只靠夜間 harness(一晚一次、只在 main 上,PR 的紅側要在 PR 裡證明)
  *   紅: 虛構一支沒人跑的 test:* → 判未觸達;虛構一支只跑現況、不跑 --selftest 的瀏覽器閘 → 指名它(--selftest 兩面對照都在本檔)
  *   綠: 全部觸達得到、全部瀏覽器閘的對照組都有人跑時綠;寫上 --selftest 或直接跑其包裝即放行;不需要瀏覽器的閘不在第二條之列
  *   量法: 純文字靜態掃描 —— workflow yml + package.json scripts + scripts/test-*.mjs 的原始碼(runGateSelftestMeta 與 launch-browser 匯入),
@@ -89,7 +89,10 @@ for (const k of excused) console.log(`  ⏭  ${k} —— ${NOT_A_PR_GATE.get(k)}
 // 56 支 `scripts/test-<閘>.mjs` 包裝(lib/gate-selftest-meta.mjs:現況必綠 + `--selftest` 必紅)只在夜間 harness 的
 // 拋棄式快照裡跑,而快照永不複製 gitignore 的建置產物 → 沒有 storybook-static → 36 支需要瀏覽器的包裝一律
 // 「缺前置 → 略過 → exit 0」(2026-09-29 盤點)。那是設計:真正的紅側是 ci.yml 各瀏覽器 job(自己 build-storybook、
-// 宣告 GOVERNANCE_BROWSER_REQUIRED=1、永不略過)。**但同一次盤點發現 5 支閘的 `--selftest` 在那些 job 裡也沒人跑**
+// 宣告 GOVERNANCE_BROWSER_REQUIRED=1、永不略過)。
+// (2026-10-14 更正,SM2:夜間不再「恆略過」—— 需要瀏覽器的包裝現在住在 storybook: "lane-build" 的 gate-meta lane,
+// 由 lane 先 build 再真跑、略過即紅(infra/governance/providers/harness-source-inventory.json pairedMeta.lanes)。
+// 但夜間 lane 一晚只跑一次、而且只在 main 上,PR 改壞的對照組要等合併後隔天才看得到 —— 所以本條規則照舊:PR 的紅側在 PR 證明。)**但同一次盤點發現 5 支閘的 `--selftest` 在那些 job 裡也沒人跑**
 // (dialog-coexistence / focus-indicator / overlay-shortcut-scope / pagination-narrow-ladder / virtual-cursor-modality):
 // 兩邊都以為對方在跑,結果誰都沒跑,而且零訊號 —— 跟本檔第一條是同一種病(宣稱有對照組、其實沒人跑)。
 // 判準:凡是有 meta-test 包裝、而且會開瀏覽器的閘,它的 `--selftest`(或直接跑它的包裝)必須出現在某個 workflow
@@ -133,7 +136,7 @@ if (process.argv.includes('--selftest')) {
 }
 
 if (controlGroupGaps.length) {
-  console.error('\n✗ 下列瀏覽器閘有 meta-test 包裝,但它的 --selftest 沒有任何 CI 瀏覽器 job 跑 —— 夜間快照裡沒有 storybook-static 恆略過,等於這支閘的紅側從來沒被證明過:')
+  console.error('\n✗ 下列瀏覽器閘有 meta-test 包裝,但它的 --selftest 沒有任何 CI 瀏覽器 job 跑 —— 夜間 harness 一晚一次、只在 main 上跑,PR 改壞的對照組在 PR 裡從來沒被證明過:')
   controlGroupGaps.forEach((stem) => console.error(`  scripts/${stem}.mjs --selftest`))
   console.error('\n  修法:在跑它現況的那個 ci.yml 瀏覽器 job(或它的 npm script)加上 `node scripts/<閘>.mjs --selftest`。')
   process.exit(1)

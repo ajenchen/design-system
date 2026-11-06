@@ -54,7 +54,7 @@ const menuItemVariants = cva(
     // 客製方式:在**清單容器**設一次(例如 List-as-region 設 `var(--layout-space-loose)`),
     // 禁止寫在單列的 className —— 那會落在外層 wrapper 與本層相加(2026-09-17:16+12=28px)。
     'flex items-start gap-2 px-[var(--item-px,var(--field-px))] w-full',
-    'cursor-pointer select-none',
+    'select-none', // 手指游標不在 base:只有點了會有反應的列才有(見主分支 `interactive`)
     // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板)。
     // 列撐滿容器、選項間無 gap → 內描邊(問題二「淨空 < 4px 往裡」)。本節點預設是 <div role="option"> 無 tabIndex,
@@ -119,10 +119,10 @@ export interface MenuItemProps
   /** 作為群組標題（不可選，font-medium，fg-muted） */
   header?: boolean
   /**
-   * 訊息列(2026-09-08 user 拍板):選單裡「不是選項」的提示 —— 沒有結果 / 沒有選項 / 載入中。
+   * 訊息列(2026-09-08 user 拍板):選單裡不是選項的提示 —— 沒有結果 / 沒有選項 / 載入中。
    * 與 `header` 同族:非互動(`role="presentation"`、`pointer-events-none`)、次要色、**與選項完全相同的列幾何**
    * (item-anatomy.spec.md「Row header」),差別是字重一般(medium 是群組標題的辨識訊號)、內容水平置中,
-   * 可帶前綴槽(`startContent`,例如列圖示尺寸的 CircularProgress)。owner:select-menu.spec.md「Empty state / Loading」。
+   * 可帶前綴槽(`startContent`,例如列圖示尺寸的 CircularProgress)。owner:select-menu.spec.md「Empty state」與「Loading」。
    */
   message?: boolean
   /**
@@ -257,6 +257,11 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
     // data-selected / data-disabled 保留(純樣式 hook,非 ARIA)。正規 listbox option 用法
     //(不傳 role)與 select-all row(role="checkbox")不受影響。
     const isPresentation = props.role === 'presentation'
+    // 點了會不會有反應(2026-10-27,稽核 M040;user D17「如果row不能被點擊就不會有hover底色吧？」、FileItem 2026-09-25 同一條已改):
+    // 自己是選項(role=option)或傳了 onClick → 有手指游標與滑過底色;role="presentation" 又沒有 onClick → 不是被巢在選單裡,
+    // 就是 Avatar / Separator / item-anatomy 展示頁的靜態預覽 —— 前者的滑過與游標由外層畫(DropdownMenu / CommandItem 都把本節點
+    // 的底色蓋成透明;cmdk 的選項游標原本就由這裡給,`[[cmdk-item]_&]` 保留),後者點了沒反應就不該變色、不該出手指。
+    const interactive = !isPresentation || !!props.onClick
 
     return (
       <div
@@ -268,7 +273,8 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
         data-disabled={disabled ? '' : undefined}
         className={cn(
           menuItemVariants({ size }),
-          !disabled && !selected && 'hover:bg-neutral-hover',
+          !disabled && (interactive ? 'cursor-pointer' : '[[cmdk-item]_&]:cursor-pointer'),
+          !disabled && !selected && interactive && 'hover:bg-neutral-hover',
           // 選中列滑鼠 hover 釘住不變(上行條件互斥;SSOT = item-anatomy「選中 × 互動疊加」)。
           // 鍵盤游標**不**改底色:游標一律是框(cva base 的 focus-visible:focus-ring-inset;巢在 cmdk / Radix 內時
           // 由外層 CommandItem / DropdownMenu 依反白來歷 useCursorMover 畫在游標列上),選中 × 游標 = 框疊在選中底色上。

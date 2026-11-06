@@ -43,6 +43,16 @@ Canonical `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwi
 
 ---
 
+## `group-*` 變體寫在 `group` 自己身上 = 靜默失效(技術陷阱)
+
+`group-data-[x=y]:…` / `group-hover:…` 等編譯成**後代選擇器**(`:is(:where(.group)[data-x=y] *)`),只比得到 `group` 底下的元素,**比不到帶 `group` 的那個元素自己**。寫在同一個元素上 = 那條 class 永遠不生效,而且沒有任何警告。`peer-*` 同理(編譯成**兄弟選擇器** `:is(:where(.peer):checked ~ *)`,只比得到後面的兄弟);具名的 `group/x` 配 `group-*/x` 也一樣。
+
+**曾發生的 bug**(2026-10-14,2026-10-15 r1b 複驗 F1):Sidebar 外框同時是 `group`,又在自己身上寫 `group-data-[collapsible=icon]:!w-[var(--sidebar-width-icon)]` → 單獨使用的 Sidebar 收起後仍 240 寬。
+**正解**:要比自己的屬性就用自己的變體(`data-[collapsible=icon]:…`),或把那條 class 放到子元素;能由同一個值算出的寬度直接給 style(Sidebar 現行做法)。
+**機械閘**:`scripts/sidebar-standalone-collapse-invariant.mjs` 靜態段掃全 DS 的 `.tsx` / `.ts`:同一個元素的 class 來源(`className=` 屬性,以及 `cn(` / `clsx(` / `twMerge(` / `cva(` 的引數 —— cva 的 base 與各 variant 套在同一個元素上)裡同時有 `group` 與 `group-*` 變體、或 `peer` 與 `peer-*` 變體 → 紅;疊加變體(`md:group-hover:`)算,具名只配同名(`group/x` 配不具名的 `group-*` 不算)。2026-10-20 前只看 `className=`、只認 `group-` 開頭的單一變體(r1b 複核 D5)。
+
+---
+
 ## 何時可以 / 不可以用 Tailwind utility
 
 ### 核可清單(我們的元件 code 可以直接用)

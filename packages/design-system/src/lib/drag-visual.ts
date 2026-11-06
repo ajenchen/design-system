@@ -8,8 +8,9 @@
  *
  * - **Source element**(被拖中的 row/column):`opacity-disabled`(= var(--opacity-disabled) 0.45 半透,user 仍看得到原位;2026-05-06 v14.5.2 由 opacity-30 改)
  *   — 不是 `opacity:0` 全隱形,因 user 拖太遠看不到「源頭」會迷失方向。對齊 TreeView 最早 v1 + Notion / Atlassian / Linear。
- * - **Ghost preview**(浮動 follow cursor):透過 dnd-kit `<DragOverlay>` portal,clone source 的 outerHTML
- *   strip transform/transition/opacity → render 在 portal 層,visually 跟 cursor 走。
+ * - **Ghost preview**(浮動 follow cursor):透過 dnd-kit `<DragOverlay>`(就地渲染在 DndContext 底下,不是 portal),clone source 的 outerHTML
+ *   strip transform/transition/opacity → render 在 `position: fixed` 的 overlay 層,visually 跟 cursor 走。
+ *   疊放:拖曳元件的祖先形成疊放脈絡時被那一層封頂(層級表 tokens/elevation/elevation.spec.md「疊放順序」第 9 列)。
  * - **Drop indicator**(目標位置藍細線):2px(`h-0.5` / `w-0.5`)`bg-primary` absolute line:
  *   - **Row context**(TreeView / table row drag):水平線 在 target row 的 top(before)/ bottom(after)
  *   - **Column context**(table column reorder):垂直線 在 target column 的 left(before)/ right(after)

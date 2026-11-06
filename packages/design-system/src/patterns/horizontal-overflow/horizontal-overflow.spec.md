@@ -31,7 +31,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 - 左右 scroll arrow → text button,ChevronLeft / ChevronRight
 - Menu trigger → text button,ChevronDown
 - **禁止**用 item 自身的視覺語言(chip 形狀、tab 底線等)來渲染 overflow trigger——overflow affordance 是「工具層」,不是「業務層」,不該跟內容爭視覺重量(「工具層必須是視覺重量最低的一層」— 本 spec codify 此原則,owner SSOT 在此)。
-- **~~例外:Pagination 最後一階~~**(2026-09-10 撤銷,owner `pagination.spec.md`「為什麼不捲」):分頁列**不再走 overflow** —— 最後一階改成砍頭尾頁碼(需求寬度 220 → 156px,低於 DS 最窄容器 208px),整條 `overflow-x-auto` 拿掉。原本那條例外是 2026-09-04 依本模組類推來的,查證後 16 家世界級沒有一家讓數字頁碼列橫向捲(唯一命中是 MUI 表格頁尾工具列 `TablePagination.js:29`),主流解是收合頁碼。本模組的原則不變,只是分頁列不再是它的消費者。
+- **~~例外:Pagination 最後一階~~**(2026-09-10 撤銷,owner `pagination.spec.md`「為什麼不捲」):分頁列**不再走 overflow** —— 最後一階改成砍頭尾頁碼(需求寬度 220 → 156px,低於 DS 最窄容器 208px),整條 `overflow-x-auto` 拿掉。原本那條例外是 2026-09-04 依本模組類推來的,查證後 16 家世界級沒有一家讓數字頁碼列橫向捲(唯一命中是 MUI 表格頁尾工具列 `TablePagination.js:29`),主流解是收合頁碼。本模組的原則不變,只是分頁列不再是它的消費者([來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/TablePagination/TablePagination.js#L25-L30))。
 
 這條規則讓使用者看到向下 chevron 或向右 arrow 時,心智是一致的:「這是 overflow 的工具,不是可選內容」,不論這排 items 是什麼類型。
 
@@ -134,7 +134,7 @@ return (
 
 > **箭頭卸載時的焦點接力(2026-09-29,待辦總帳 OE26)**:箭頭是條件渲染,鍵盤使用者按到底的那一下焦點正停在它上面;`OverflowScrollArrow` 在 layout-effect cleanup(React 拿掉節點之前)看到焦點在自己身上,就交給同容器另一側箭頭,兩側都沒有(內容不再溢出)就交給捲動容器(`useScrollEdges` 在容器上標 `data-overflow-scroller`,必要時補 `tabindex=-1`)。消費者不用多傳任何東西;同 BulkActionBar / Dialog 的 return-focus 契約。閘:`horizontal-overflow.stories.tsx`「到底時焦點交給另一側箭頭」play。
 
-> **雙軸 overflow contract(2026-05-19 codify)**:啟用水平捲動時必同時抑制垂直捲動，避免 CSS overflow 軸計算讓 active indicator 進入非預期的垂直 scroll range。確切 utility 由各 consumer source 擁有；Primer UnderlineNav 採同一雙軸約束。
+> **雙軸 overflow contract(2026-05-19 codify)**:啟用水平捲動時必同時抑制垂直捲動，避免 CSS overflow 軸計算讓 active indicator 進入非預期的垂直 scroll range。確切 utility 由各 consumer source 擁有([來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L12-L23))。
 
 ### 典型 menu 模式組裝
 
@@ -193,7 +193,7 @@ return (
 - `components/FileViewer/file-viewer.tsx` — Filmstrip(直接組裝 `useScrollEdges` / `useScrollByPage` / `buildFadeMask` / `OverflowScrollArrow`)
 
 **Non-consumers**(2026-05-10 retire from「未來」清單 — prior prediction stale,spec 已明文不消費):
-- ~~`components/Steps/steps.tsx`~~ — `steps.spec.md:347`「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+ L358「步驟 ≤ 5、水平空間充足」→ 設計上不 overflow
+- ~~`components/Steps/steps.tsx`~~ — `steps.spec.md`「水平模式無 content」「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+「Orientation」段「步驟 ≤ 5、重視「進度條」感、水平空間充足」→ 設計上不 overflow(指標用段名:原本的 `:347` / `L358` 已指到別處,r1b OTH-02 同族)
 - ~~`components/SegmentedControl/*`~~ — `segmented-control.spec.md`「規模限制與邊界案例」段「**不支援 overflow / scroll**——若選項可能超出容器寬度,代表選錯元件了」+「最多 5 個 item」→ 設計上拒絕 overflow
 
 新消費者必須加到這個清單,並且**只從本 module import** overflow 相關的 primitive,不允許自己複製。

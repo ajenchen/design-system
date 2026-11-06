@@ -7,7 +7,7 @@ import { ButtonGroupContext } from './button'
  *
  * 負責群組內的間距（gap 8px）與對齊方式。
  * 垂直排列時透過 ButtonGroupContext 讓所有直接子 Button 自動套用 fullWidth，
- * 無需 cloneElement — 符合 shadcn 的 Context 慣例。
+ * 無需 cloneElement — 符合 shadcn 的 Context 慣例。(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/toggle-group.tsx#L10-L59)
  *
  * @example
  * // 水平排列（預設）

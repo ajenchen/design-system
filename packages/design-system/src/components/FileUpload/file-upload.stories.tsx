@@ -2,11 +2,10 @@
 import type { Meta } from '@storybook/react'
 import { expect, userEvent, within } from '@storybook/test'
 import { useState } from 'react'
-import { Image as ImageIcon, X } from 'lucide-react'
+import { Image as ImageIcon } from 'lucide-react'
 import { FileUpload } from './file-upload'
-import { FileItem } from '@/design-system/components/FileItem/file-item'
-import { Button } from '@/design-system/components/Button/button'
 import { Empty } from '@/design-system/components/Empty/empty'
+import { useDemoFiles, RejectedAlert } from './_file-upload-demo'
 
 const meta: Meta<typeof FileUpload> = {
   title: 'Design System/Components/FileUpload/展示',
@@ -22,59 +21,55 @@ export default meta
 const noop = () => {}
 
 // 單檔上傳:履歷(PDF / Word),5 MB 上限 — LinkedIn / 104 Job 慣例
+// 選檔後列出那一個檔(單檔:再選一次就換掉)、可移除;格式或大小不符時欄位下方出錯誤提示(稽核 L069)
 export const ResumeUpload = {
   name: '單檔上傳',
-  render: () => (
-    <div className="max-w-lg">
-      <FileUpload
-        accept=".pdf,.doc,.docx"
-        maxSize={5_000_000}
-        title="上傳你的履歷"
-        description="PDF / Word 格式,單檔最大 5 MB"
-        onUpload={noop}
-        onReject={noop}
-      />
-    </div>
-  ),
+  render: () => {
+    const resume = useDemoFiles({ single: true })
+    return (
+      <div className="max-w-lg flex flex-col gap-[var(--layout-space-tight)]">
+        <FileUpload
+          accept=".pdf,.doc,.docx"
+          maxSize={5_000_000}
+          title="上傳你的履歷"
+          description="PDF / Word 格式,單檔最大 5 MB"
+          files={resume.files}
+          fileListMode="compact"
+          onUpload={resume.onUpload}
+          onRemove={resume.onRemove}
+          onReject={resume.onReject}
+        />
+        <RejectedAlert rejected={resume.rejected} limit="5 MB" />
+      </div>
+    )
+  },
 }
 
-// 批次上傳:相簿匯入 — Figma / Google Photos / Instagram 慣例
+// 批次上傳:相簿匯入 —— 一次拖進整批照片,逐檔顯示進度
 export const BulkImageUpload = {
   name: '批次上傳',
   render: () => {
-    const [files, setFiles] = useState<File[]>([])
+    // 選好的相片交給 FileUpload 內建 `files` / `onRemove` 清單(與下方 WithFileList / ButtonVariant 同一條路):
+    // 上傳入口 ↔ 清單的距離、清單列距、移除鈕全由元件依 fileListMode 套用(file-item.spec.md「List wrapper canonical」),story 不手刻 FileItem。
+    type Photo = { id: string; name: string; size?: number; status?: 'completed' }
+    const [files, setFiles] = useState<Photo[]>([])
     return (
-      <div className="max-w-lg flex flex-col gap-3">
+      <div className="max-w-lg">
         <FileUpload
           multiple
           accept="image/*"
           title="拖曳相片到這裡,或點擊選取"
           description="支援 JPG / PNG / GIF,可一次選多張"
-          onUpload={(accepted) => setFiles((prev) => [...prev, ...accepted])}
+          files={files}
+          fileListMode="compact"
+          onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))}
+          onUpload={(accepted) =>
+            setFiles((prev) => [
+              ...prev,
+              ...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })),
+            ])
+          }
         />
-        {files.length > 0 && (
-          // Compact FileItem 上傳完成有 bg-secondary 靜態底色 → 必 `gap-1`(4px)防貼邊
-          // (見 file-item.spec.md「List wrapper canonical」+ item-anatomy「連續 item 貼邊合法性」)
-          <div className="flex flex-col gap-1">
-            {files.map((f, i) => (
-              <FileItem
-                key={`${f.name}-${i}`}
-                mode="compact"
-                name={f.name}
-                actions={
-                  <Button
-                    variant="text"
-                    size="xs"
-                    iconOnly
-                    startIcon={X}
-                    aria-label={`移除 ${f.name}`}
-                    onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                  />
-                }
-              />
-            ))}
-          </div>
-        )}
       </div>
     )
   },
@@ -129,6 +124,7 @@ export const WithFileList = {
 export const FileListRemoveFocusContract = {
   name: '移除焦點接力驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:117「移除焦點:在 callback 前把 focus 交給下一項 remove button」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <FileListDemo />,
@@ -144,6 +140,7 @@ export const FileListRemoveFocusContract = {
 export const FileListKeyboardContract = {
   name: '檔案清單鍵盤走法驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
+  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:163「上 / 下一列,不繞回」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <FileListDemo />,
@@ -203,27 +200,30 @@ export const RemoveHoverState = {
   },
 }
 
-// children 覆寫:Figma 匯入資產客製文案 / 品牌 logo
+// children 覆寫:設計資產匯入的客製文案 / 品牌 logo
 export const CustomChildren = {
   name: '自訂內容',
-  render: () => (
+  render: () => {
+    const assets = useDemoFiles()
+    return (
     <div className="max-w-lg">
       {/* children 覆寫的正確用法:換 icon(FileUpload 無 icon prop)時仍**消費 Empty SSOT** —
           字級 / icon 48 / 間距全跟 Empty 不漂移。只改文字用 title/description prop 即可、不必 children;
           children 是給「換 icon」或「加 icon+title+desc 以外的元素(品牌 logo / 格式 chips)」用。
           ❌ 反 pattern:hand-build 自訂字級/icon尺寸/間距(= 偏離 Empty 設計語言)。 */}
-      <FileUpload accept="image/*,.svg,.fig" multiple onUpload={noop}>
+      <FileUpload accept="image/*,.svg,.fig" multiple files={assets.files} fileListMode="compact" onUpload={assets.onUpload} onRemove={assets.onRemove}>
         <Empty
           icon={ImageIcon}
           title="匯入你的設計資產"
-          description="支援 SVG / PNG / Figma 檔案 · 一次最多 50 個"
+          description="支援 SVG / PNG / .fig 檔案 · 一次最多 50 個"
         />
       </FileUpload>
     </div>
-  ),
+    )
+  },
 }
 
-// variant="button":表單內緊湊上傳(*Excel file 欄位場景)— 大 dropzone 太重時用按鈕觸發,
+// variant="button":表單內緊湊上傳(*試算表檔案欄位場景)— 大 dropzone 太重時用按鈕觸發,
 // 檔案清單在按鈕下方(form compact 靜態)。2026-06-03 加 — FileUpload 常出現在 form。
 export const ButtonVariant = {
   name: '按鈕觸發(表單內)',
@@ -236,7 +236,7 @@ export const ButtonVariant = {
       <div className="max-w-md">
         <FileUpload
           variant="button"
-          buttonLabel="Choose Excel file" // i18n-allow: story label
+          buttonLabel="Choose spreadsheet file" // i18n-allow: story label
           accept=".xls,.xlsx,.csv"
           files={items}
           fileListMode="compact"

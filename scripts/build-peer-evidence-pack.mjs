@@ -26,7 +26,7 @@ const CITE = /(?<![\w./-])((?:[\w.-]+\/)*[\w.-]+\.(?:tsx|ts|mjs|cjs|js|css|sh|js
 
 // Citations are written relative to whichever root the author had in mind; resolve
 // against each in order and take the first hit. Longest-prefix roots come first so a
-// bare `dialog.spec.md:91` still lands in the design-system tree.
+// bare `dialog.spec.md:N` still lands in the design-system tree.
 const SEARCH_ROOTS = Object.freeze([
   'packages/design-system/src/components',
   'packages/design-system/src/patterns',
@@ -57,7 +57,7 @@ function contained(root, path) {
 }
 
 /**
- * Authors cite by the name they use in conversation (`dialog.spec.md:91`), not by
+ * Authors cite by the name they use in conversation (`dialog.spec.md:N`), not by
  * full path, so a direct join usually misses. Build a basename index over the tracked
  * source tree once and fall back to it. Ambiguous basenames resolve to nothing rather
  * than to a guess — an unresolved citation is reported, a wrong one would mislead.

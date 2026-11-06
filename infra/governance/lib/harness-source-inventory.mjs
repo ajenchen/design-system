@@ -14,7 +14,11 @@ import {
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
-import { createGateMetaTestInventory } from '../../../scripts/lib/gate-meta-test-inventory.mjs'
+import {
+  createGateMetaTestInventory,
+  gateMetaLaneCommand,
+  validateGateMetaLanes,
+} from '../../../scripts/lib/gate-meta-test-inventory.mjs'
 import { compareUtf8Bytes } from './common.mjs'
 
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -2313,15 +2317,21 @@ export function validateHarnessSourceInventory(inventory, {
   invariant(JSON.stringify(suiteIds) === JSON.stringify([...suiteIds].sort(compareUtf8Bytes)), 'Harness suites must be sorted by id')
   invariant(suiteIds.includes(CANONICAL_HOOK_SUITE_ID), 'Harness canonical hook behavioral suite is missing')
 
-  exactKeys(inventory.pairedMeta, ['command', 'members'], 'Harness paired-meta owner')
-  invariant(JSON.stringify(inventory.pairedMeta.command) === JSON.stringify(['node', 'scripts/run-gate-meta-tests.mjs']), 'Harness paired-meta command is not canonical')
-  assertSortedUnique(inventory.pairedMeta.members, 'Harness paired-meta members')
+  // 每支 gate meta-test 恰好屬於一個 lane(各自一條 `node scripts/run-gate-meta-tests.mjs --lane <id>`、
+  // 各自明文的單支 / lane 預算);形狀、預算與「恰好分割現行 runnable」的判定只有一份實作
+  //(scripts/lib/gate-meta-test-inventory.mjs validateGateMetaLanes),這裡不另寫。
   const expectedPaired = canonicalGateMeta.runnable.map(({ file }) => `scripts/${file}`).sort(compareUtf8Bytes)
-  invariant(JSON.stringify(inventory.pairedMeta.members) === JSON.stringify(expectedPaired), 'Harness paired-meta members differ from the canonical gate-meta inventory')
-  for (const member of inventory.pairedMeta.members) {
-    const absolute = resolveRegularRepoFile(repoRoot, member, 'Harness paired-meta member')
-    addRole(member, 'paired-meta')
-    assertReviewedEntrypointSafety(repoRoot, member, absolute)
+  try {
+    validateGateMetaLanes(inventory.pairedMeta, { runnablePaths: expectedPaired })
+  } catch (error) {
+    throw new Error(`Harness paired-meta lanes differ from the canonical gate-meta inventory:${error.message}`, { cause: error })
+  }
+  for (const lane of inventory.pairedMeta.lanes) {
+    for (const member of lane.members) {
+      const absolute = resolveRegularRepoFile(repoRoot, member, 'Harness paired-meta member')
+      addRole(member, 'paired-meta')
+      assertReviewedEntrypointSafety(repoRoot, member, absolute)
+    }
   }
 
   assertSortedUnique(inventory.direct, 'Harness direct sources')
@@ -2381,7 +2391,9 @@ export function validateHarnessSourceInventory(inventory, {
   for (const suite of inventory.suites) {
     invariant((counts.get(commandKey(suiteCommand(suite.id))) ?? 0) >= 1, `Harness suite is not registered by the canonical runner:${suite.id}`)
   }
-  invariant((counts.get(commandKey(inventory.pairedMeta.command)) ?? 0) >= 1, 'Harness paired-meta owner is not registered by the canonical runner')
+  for (const lane of inventory.pairedMeta.lanes) {
+    invariant((counts.get(commandKey(gateMetaLaneCommand(lane.id))) ?? 0) >= 1, `Harness paired-meta lane is not registered by the canonical runner:${lane.id}`)
+  }
   for (const path of inventory.direct) {
     invariant((counts.get(commandKey(memberCommand(path))) ?? 0) === 1, `Harness direct source must have exactly one registry command:${path}`)
   }

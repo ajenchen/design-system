@@ -14,7 +14,7 @@ ScrollArea 是**跨 OS 視覺一致的自訂捲動容器**——用 overlay 捲�
 
 **Layout Family**:非上述 family — self-contained primitive(純捲動容器,無 slot 結構)。
 
-**實作基礎**:基於 Radix ScrollArea primitive(shadcn passthrough 結構)——由 Radix 處理 viewport / scrollbar / thumb 的 pointer 拖曳與 overflow-detection,本 DS 橋接 token(scrollbar 寬度、thumb bg、hover 反饋)與 a11y 行為(Viewport `tabIndex={0}` 預設 + `viewportTabIndex={-1}` 雙 tab-stop opt-out + `viewportTabIndex={null}` ARIA composite wrapper opt-out + DS focus ring;Radix 不處理 keyboard,亦不自動標 Viewport focusable)。
+**實作基礎**:基於 Radix ScrollArea primitive(shadcn 包裝結構,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/scroll-area.tsx#L5-L13)——由 Radix 處理 viewport / scrollbar / thumb 的 pointer 拖曳與 overflow-detection,本 DS 橋接 token(scrollbar 寬度、thumb bg、hover 反饋)與 a11y 行為(Viewport `tabIndex={0}` 預設 + `viewportTabIndex={-1}` 雙 tab-stop opt-out + `viewportTabIndex={null}` ARIA composite wrapper opt-out + DS focus ring;Radix 不處理 keyboard,亦不自動標 Viewport focusable)。
 
 **實作取向**:本元件包裝既有 scroll-area primitive，目的是統一跨 OS 的捲軸視覺，並避免 DataTable / Sheet / Dialog 在 always-visible scrollbar 環境中被吃掉內容寬度。
 
@@ -31,13 +31,13 @@ Native scrollbar 跨 OS 不一致:
 
 **結果**:同一個 DataTable 橫向捲動、Sheet / Dialog 內容垂直捲動在 macOS 視覺對齊,在 Windows 右側被 scrollbar 吃 17px 跑版。「Left pinned + Row Actions」的 DataTable 截圖即是此類已觀察的跨 OS bug。
 
-ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、捲動時浮出(hover / scroll 自動顯示)**。
+ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、指標在捲動區上時浮出**(含用滾輪捲動;只用鍵盤捲動時不浮出,內容照樣捲動 —— 預設 `type="hover"` 只聽 pointerenter / pointerleave,見 `@radix-ui/react-scroll-area` 的 `ScrollAreaScrollbarHover`)。
 
 ---
 
 ## 何時用
 
-- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸 canonical」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)。**~~例外二:Pagination 最後一階~~**(2026-09-10 撤銷):分頁列**不再有任何捲動** —— 最後一階改成砍頭尾頁碼(156px,低於 DS 最窄容器),`overflow-x-auto` 整條拿掉。查證支持:16 家世界級掃過約 20 個分頁原始檔,沒有一家讓數字頁碼列橫向捲(唯一命中的 `TablePagination.js:29` 是表格頁尾工具列)。理由與數字見 `pagination.spec.md`「為什麼不捲」
+- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸(pinned header / column + scroll canonical)」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)。**~~例外二:Pagination 最後一階~~**(2026-09-10 撤銷):分頁列**不再有任何捲動** —— 最後一階改成砍頭尾頁碼(156px,低於 DS 最窄容器),`overflow-x-auto` 整條拿掉。查證支持:16 家世界級掃過約 20 個分頁原始檔,沒有一家讓數字頁碼列橫向捲(唯一命中的 `TablePagination.js:29` 是表格頁尾工具列)。理由與數字見 `pagination.spec.md`「為什麼不捲」
 - **Sheet / Dialog body 垂直捲動**——內容可能超出容器高度
 - **Sidebar nav 長列表**——導覽項目多於可見高度
 - **任何「內容可能溢出容器」且「跨 OS 視覺必須一致」的 sub-region**
@@ -88,7 +88,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 ## 禁止事項
 
-- ❌ **不用於全頁捲動**——document scroll 保持 native,ScrollArea 是 sub-region 工具。強行包整頁會遮掉瀏覽器 reader mode / native pull-to-refresh 等 OS 能力
+- ❌ **不用於全頁捲動**——document scroll 保持 native,ScrollArea 是 sub-region 工具。強行包整頁會遮掉瀏覽器 reader mode 等 OS 能力
 - ❌ **不用於單行 truncate**——`text-overflow: ellipsis` 就夠,用 ScrollArea 等於讓使用者水平捲動看一行字,UX 扭曲
 - ❌ **不巢狀 ScrollArea**——使用者捲動時分不清是哪個 scope 捲動(外層還是內層?),焦點管理混亂。需要巢狀結構時重新設計 layout(如拆成 Tabs / Accordion)
 - ❌ **不在 Viewport 直接設 overflow**——Radix 已在 Viewport 內部處理 overflow 機制,手動設會破壞 primitive(scrollbar 偵測失效 / thumb 位置錯亂)
@@ -103,7 +103,7 @@ Radix primitive + 本 DS a11y 橋接:
 - **鍵盤捲動**:本 DS 在 Viewport 加 `tabIndex={0}`(預設)使其可被鍵盤聚焦(Radix 不自動把 scroll container 標 focusable,Safari 尤其需要;此即 axe `scrollable-region-focusable` fix)。聚焦後 `ArrowUp/Down/Left/Right` / `PageUp/Down` / `Home/End` 捲動為瀏覽器原生行為,非 Radix 提供。**`viewportTabIndex={-1}` opt-out(2026-07-14)**:內容已有自帶 focusable + 鍵盤處理的元素(如 TimePicker `role="listbox"` `tabIndex={0}`)時傳 `-1`,消除「Viewport+內容雙 tab stop、焦點落 Viewport 時方向鍵觸發原生捲動非元件行為」;axe 由內部 focusable 內容滿足。**`viewportTabIndex={null}` composite opt-out(2026-07-31)**:ScrollArea 被 `role="menu"` 等 ARIA composite 當純結構 wrapper、鍵盤與 focus 由其 item family own 時,完全省略 viewport `tabindex`;`-1` 仍會留下 `div[tabindex]`,不能滿足 composite 的 required-children 結構
 - **Focus 可見**:聚焦的 Viewport 顯示 DS 焦點框(`focus-visible:focus-ring-inset`,往內 2px),非瀏覽器原生 focus ring(2026-09-24 訂正,原 `focus-visible:outline-ring` 是已退役的手寫 outline 寫法,`scroll-area.tsx:69` 實為 `focus-ring-inset`)
 - **Scrollbar 非 tab stop**:scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)
-- **Pointer 支援**:thumb 可拖曳,track 可 click-to-jump(Radix 內建)
+- **Pointer 支援**:thumb 可拖曳,track 可 click-to-jump(Radix 內建)(例外:Sidebar 收成細列時軌道不接指標、只有 thumb 接,`../Sidebar/sidebar.spec.md`「收起後的寬」)
 
 本元件已內建 `tabIndex`(預設 0;`viewportTabIndex={-1}` / `{null}` 依上述兩種 owner 情境 opt-out)+ focus ring(滿足 axe `scrollable-region-focusable`)。但 Viewport 預設**無 `role` / accessible name**——**若 scroll 區域有具體語意(如「留言列表」「程式碼區塊」),consumer 應提供 `aria-label`**,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。(2026-05-31 #31:修正原「consumer 無需額外處理 a11y」過度宣稱)
 

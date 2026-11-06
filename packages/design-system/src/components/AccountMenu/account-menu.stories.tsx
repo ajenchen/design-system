@@ -32,7 +32,9 @@ export const GlobalHeaderEntry: StoryObj = {
   name: '全域標頭帳號入口',
   render: () => (
     <ChromeHeader className="bg-surface">
-      <div className="flex items-center gap-2 min-w-0">
+      {/* 品牌 Avatar ↔ 工作區名稱 8px = 同一個行內標記(圖示 + 名稱)內部的間距:inline-flex 行內群,utility-registry canonical_micro_geometry 的分類器認得,
+          不需要放行章(值沿用已發布版)。這一格是 ChromeHeader 的 flex 子項,inline-flex 在 flex 容器裡照樣算成 flex,畫面不變 */}
+      <div className="inline-flex items-center gap-2 min-w-0">
         {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical; sync with --chrome-header-avatar-size */}
         <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
         <span className="text-body-lg font-medium truncate">Acme Inc</span>
@@ -52,6 +54,7 @@ export const GlobalHeaderEntry: StoryObj = {
 export const OpenSnapshot: StoryObj = {
   name: '展開快照',
   render: () => (
+    // @layout-space-magic-ok: 展開快照在下方保留 256px 畫布高度,讓開著的選單落在 story 畫布內 —— 這是截圖畫布的留白,不是兩個元素之間的間距,layoutSpace 規則管不到;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值
     <div className="flex justify-end pb-64">
       <AccountMenu
         user={DEMO_USER}

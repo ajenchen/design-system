@@ -2,9 +2,11 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3, Bug, Rocket } from 'lucide-react'
-import { MenuItem, MenuGroup, MenuFooter } from './menu-item'
+import { MenuItem, MenuGroup } from './menu-item'
+import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
+import { Button } from '@/design-system/components/Button/button'
 import { CAT_SOLID, type CategoricalHue } from '@/design-system/tokens/categorical-color'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
@@ -12,21 +14,8 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 // / actions / onViewMore,profile-card.spec.md 重要資訊)。demo helper:
 // 真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)
 const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
-const personHover = (name: string, subtitle?: string) => (
-  <ProfileCard
-    name={name}
-    subtitle={subtitle ?? 'Design｜D-0042｜EMP-1001'}
-    avatar={{ src: avatarSrc(name), alt: name }}
-    status="online"
-    statusMessage="Out of Office: Back on Monday!"
-    actions={<ProfileCardDefaultActions />}
-    fields={[
-      { label: 'ID', value: 'YHANAX' },
-      { label: 'Employee number', value: '1234567' },
-    ]}
-    onViewMore={() => {}}
-  />
-)
+// 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
+const personHover = (name: string, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
 
 const meta: Meta<typeof MenuItem> = {
   title: 'Design System/Internal/Menu/展示',
@@ -121,7 +110,7 @@ const TypeBadge = ({ hue, glyph: Glyph }: { hue: CategoricalHue; glyph: typeof F
 export const WithStartContent: Story = {
   name: '自訂前綴內容',
   render: () => (
-    // 工作項類型設定的左側導覽(Jira / Meegle type settings):類型徽章 = 彩底 + glyph,
+    // 工作項類型設定的左側導覽(專案管理工具的類型設定頁):類型徽章 = 彩底 + glyph,
     // LucideIcon 表達不了 → startContent;selected = 目前編輯中的類型
     <MenuContainer width={224}>
       <MenuGroup>
@@ -170,9 +159,10 @@ const MultiSelectDemo = () => {
         <MenuItem role="presentation" checkbox checked={selected.slack} startIcon={Settings} onClick={() => toggle('slack')}>Slack</MenuItem>
         <MenuItem role="presentation" checkbox checked={false} disabled startIcon={Star}>SMS（已停用）</MenuItem>
       </MenuGroup>
-      <MenuFooter>
-        <MenuItem role="presentation" checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
-      </MenuFooter>
+      {/* 全選與 SelectMenu 同一份:SurfaceFooter + 兩態按鈕(全選 / 取消全選),左緣對齊列(menu-item.spec.md MenuFooter 段:2026-09-17 起不再用於全選) */}
+      <SurfaceFooter className="justify-between px-[var(--item-px,var(--field-px))]">
+        <Button variant="tertiary" size="sm" onClick={toggleAll}>{allState === true ? '取消全選' : '全選'}</Button>
+      </SurfaceFooter>
     </>
   )
 }
@@ -208,9 +198,9 @@ export const Groups: Story = {
 export const Messages: Story = {
   name: '訊息列(沒有選項 / 載入中)',
   render: () => (
-    // Jira 議題「指派人員」選單的兩種非選項狀態:名錄回來但沒有人 / 名錄還在載入。
+    // 工單「指派人員」選單的兩種非選項狀態:名錄回來但沒有人 / 名錄還在載入。
     // 前綴槽放列圖示尺寸(md = ICON_SIZE.md)的轉圈,文字仍可見。
-    <div className="flex gap-4">
+    <div className="flex gap-[var(--layout-space-loose)]">
       <MenuContainer width={240} role="group"><MenuGroup>
         <MenuItem role="presentation" message>沒有人員</MenuItem>
       </MenuGroup></MenuContainer>
@@ -252,13 +242,13 @@ const FullExampleDemo = () => {
     <MenuContainer>
       <MenuGroup>
         <MenuItem role="presentation" header>成員</MenuItem>
-        <MenuItem role="presentation" checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice", color: "indigo" }} description="設計部門">Alice Chen</MenuItem>
-        <MenuItem role="presentation" checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob", color: "magenta" }} description="工程部門">Bob Wang</MenuItem>
-        <MenuItem role="presentation" checkbox checked={false} avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol", color: "green" }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice", color: "indigo", hoverCard: personHover('Alice Chen', '設計部門') }} description="設計部門">Alice Chen</MenuItem>
+        <MenuItem role="presentation" checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob", color: "magenta", hoverCard: personHover('Bob Wang', '工程部門') }} description="工程部門">Bob Wang</MenuItem>
+        <MenuItem role="presentation" checkbox checked={false} avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol", color: "green", hoverCard: personHover('Carol Lin', '行銷部門') }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
       </MenuGroup>
-      <MenuFooter>
-        <MenuItem role="presentation" checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>
-      </MenuFooter>
+      <SurfaceFooter className="justify-between px-[var(--item-px,var(--field-px))]">
+        <Button variant="tertiary" size="sm" onClick={toggleAll}>{allState === true ? '取消全選' : '全選'}</Button>
+      </SurfaceFooter>
     </MenuContainer>
   )
 }

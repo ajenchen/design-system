@@ -21,6 +21,9 @@
 //                                                                       逐軸讀 row-gap / column-gap;computed 的 `normal`(flex / grid 沒設那一軸)讀成 0 —— 那一軸畫出來就是 0
 //   color         { name, selector, property, expected }               property 限 COLOR_PROPERTIES;expected 任何 CSS 顏色寫法(hex / rgb / oklch …),
 //                                                                       瀏覽器端用 1×1 canvas 畫一次讀回 sRGB 8-bit(`#rrggbb`,半透明加 `/0.45`)再逐字比
+//   sharesRow     { name, selector, peers, scope? }                    選到的每個元素所在的那一列上,至少還有一個 `peers` 元素(垂直中線落在它的上下緣之間 = 同一列);
+//                                                                       `scope` 給了就只在 `el.closest(scope)` 裡找 peers。用途:「不准自己單獨佔一列」(2026-09-30,
+//                                                                       Combobox 欄位內搜尋框空的時候不得換到空白的一列,combobox.spec.md「欄位內搜尋框的寬度」)
 // 每一條都對**選到的全部元素**判(不再只量第一個);選不到任何元素 = `selectorMissing` 違規(2026-09-12 起的既有語意)。
 //
 // 場景層另有 `globals`(Storybook 全域 toolbar,對齊 packages/storybook-config/preview.tsx 的 globalTypes):
@@ -31,7 +34,7 @@
 
 const GEOMETRY_ASSERTION_TOLERANCE_PX = 0.5
 
-export const GEOMETRY_TYPES = Object.freeze(['equalHeight', 'padding4Sided', 'gap', 'color'])
+export const GEOMETRY_TYPES = Object.freeze(['equalHeight', 'padding4Sided', 'gap', 'color', 'sharesRow'])
 export const PADDING_SYMMETRY = Object.freeze(['all', 'horizontal', 'vertical'])
 export const GAP_AXES = Object.freeze(['both', 'row', 'column'])
 export const COLOR_PROPERTIES = Object.freeze([
@@ -51,6 +54,7 @@ const EXTRA_KEYS = {
   padding4Sided: ['symmetric', 'expected'],
   gap: ['expected', 'axis'],
   color: ['property', 'expected'],
+  sharesRow: ['peers', 'scope'],
 }
 const COMMON_KEYS = ['name', 'type', 'selector', 'rationale']
 
@@ -91,6 +95,9 @@ export function normalizeGeometryAssertion(assertion, label = 'assertion') {
   } else if (type === 'color') {
     if (!COLOR_PROPERTIES.includes(assertion.property)) fail(`${label}.property must be one of ${COLOR_PROPERTIES.join(' / ')},got ${JSON.stringify(assertion.property)}`)
     if (!nonEmptyString(assertion.expected)) fail(`${label}.expected must be a non-empty CSS color string`)
+  } else if (type === 'sharesRow') {
+    if (!nonEmptyString(assertion.peers)) fail(`${label}.peers must be a non-empty trimmed selector string`)
+    if (assertion.scope !== undefined && !nonEmptyString(assertion.scope)) fail(`${label}.scope must be a non-empty trimmed selector string when given`)
   }
   return Object.freeze(out)
 }
@@ -151,6 +158,7 @@ export function gapAxesFor(axis) {
  *   padding4Sided { elements: {top,right,bottom,left}[] }
  *   gap           { elements: {row: number|null, column: number|null, raw: string}[] }   null = computed `normal`
  *   color         { expected: string|null, elements: {actual: string|null, raw: string}[] }
+ *   sharesRow     { elements: {peers: number, sameRow: number, top: number, bottom: number}[] }   peers = 找到幾個可見的 peers;sameRow = 其中幾個在同一列
  * @param {Element[]} els
  * @param {object} a  正規化後的斷言
  */
@@ -205,6 +213,20 @@ export function readGeometryInPage(els, a) {
       elements: els.map((el) => {
         const raw = getComputedStyle(el)[a.property]
         return { actual: normalize(raw), raw: String(raw ?? '') }
+      }),
+    }
+  }
+  if (a.type === 'sharesRow') {
+    return {
+      elements: els.map((el) => {
+        const r = el.getBoundingClientRect()
+        const root = a.scope ? el.closest(a.scope) : document
+        const peers = root ? [...root.querySelectorAll(a.peers)].filter((p) => p !== el && !el.contains(p) && !p.contains(el))
+          .map((p) => p.getBoundingClientRect()).filter((pr) => pr.width > 0 && pr.height > 0) : []
+        // 同一列:peer 的垂直中線落在元素上下緣之間,或元素的中線落在 peer 上下緣之間(±0.5px)
+        const mid = (x) => (x.top + x.bottom) / 2
+        const sameRow = peers.filter((pr) => (mid(pr) >= r.top - 0.5 && mid(pr) <= r.bottom + 0.5) || (mid(r) >= pr.top - 0.5 && mid(r) <= pr.bottom + 0.5)).length
+        return { peers: peers.length, sameRow, top: r.top, bottom: r.bottom }
       }),
     }
   }
@@ -283,6 +305,15 @@ export function judgeGeometryAssertion(assertion, measured) {
       if (reading.actual !== expected) {
         violations.push({ ...base, index, matched: elements.length, property: a.property, expected: a.expected, expectedNormalized: expected, actual: reading.actual, actualRaw: reading.raw })
       }
+    })
+    return violations
+  }
+
+  if (a.type === 'sharesRow') {
+    elements.forEach((reading, index) => {
+      if (!isPlainObject(reading) || !isFiniteNumber(reading.peers) || !isFiniteNumber(reading.sameRow)) fail(`judge ${a.name}:sharesRow readings must be {peers, sameRow}`)
+      if (reading.peers === 0) violations.push({ ...base, index, matched: elements.length, error: `找不到任何 peers(${a.peers})—— 量不到「同一列」,不算通過`, peers: a.peers })
+      else if (reading.sameRow === 0) violations.push({ ...base, index, matched: elements.length, expected: '同一列至少一個 peers', actual: reading })
     })
     return violations
   }

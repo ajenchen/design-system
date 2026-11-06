@@ -44,7 +44,7 @@
 // Run: `node scripts/agent-fab-hit-area-invariant.mjs [--selftest] [--static-dir <Storybook 建置>]`
 //      (併在 `npm run test:agent-panel-invariants`;`--static-dir` 預設 ./storybook-static)
 
-import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, settleAfterInteraction } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -251,6 +251,15 @@ for (const btn of await page.locator('[data-placement] button').all()) {
     content = await page.waitForSelector(TOOLTIP_OPEN, { state: 'attached', timeout: 5000 })
   } catch {
     record('H6', `${tag} hover 鈕中心開得出 tooltip`, false, '5s 內沒有 tooltip 開啟(Provider delay 500ms)')
+    await parkPointer()
+    continue
+  }
+  // 掛上 ≠ 到位(2026-10-13):a6976432 起 Tooltip 的進場動畫真的會播(淡入 + zoom-95 + 從鈕那側滑 8px),
+  // 掛上那一刻量到的內容框還縮著、往鈕那邊偏 —— H7 拿它的中心當指標落點,是拿動畫中途的位置代替靜止位置(M37,
+  // 與 focus-geometry 深掃 Carousel 誤紅同一種形狀)。先等共用的 settleAfterInteraction(進場動畫播完、版面連續兩格不變)再量。
+  const tooltipSettled = await settleAfterInteraction(page, { frames: 2, capMs: 3000 })
+  if (!tooltipSettled.ok) {
+    record('H7', `${tag} tooltip 開到靜止再量`, false, `儀器失效:3 秒內沒有連續 2 格靜止(DOM 變動或進行中的動畫打斷靜止 ${tooltipSettled.lateChanges} 次)—— 不拿動畫中途的位置當落點,這一顆沒量`)
     await parkPointer()
     continue
   }

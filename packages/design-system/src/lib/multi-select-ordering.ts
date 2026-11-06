@@ -20,7 +20,7 @@
  * - 跟 Checkbox.Group 不同(後者沒 Select All button,只是 onChange 回 sort)
  * - **採 path A**(preserve+append)為 ordering canonical
  *
- * **為何 SSOT(per user「以後遇到此類設計都有相同邏輯不會偏移」)**:
+ * **為何 SSOT(user 要求以後同類設計都走同一套邏輯、不偏移;原話已不可考,此為轉述)**:
  * 1. 集中 ordering logic 一處,future 改 ordering policy 只改本檔
  * 2. Future consumers(e.g. DataTable filter checkAll / 任何新 multi-select 元件 with Select All
  *    footer)必 import 本 primitive,hook `check_select_all_canonical.sh` 機械強制

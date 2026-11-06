@@ -79,7 +79,7 @@ export interface NoticeProps
   /**
    * 顯示關閉鈕(預設 true)。**需同時傳 `onDismiss` 才會渲染 X** — Notice 是 controlled-only
    * (不自我移除),無 handler 的 X 是可 focus、SR 播報「關閉通知」但按下零反應的死按鈕
-   * (2026-07-05 D4;對齊 Polaris Banner `onDismiss` 存在才顯示 X / Ant Alert `closable` 預設 false)。
+   * (2026-07-05 D4;對齊 Polaris Banner `onDismiss` 存在才顯示 X / Ant Alert `closable` 預設 false)。(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161 https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/index.en-US.md#L49)
    */
   dismissible?: boolean
   onDismiss?: () => void
@@ -120,7 +120,7 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
 
     // 2026-07-05 D4:X 渲染條件 = dismissible(預設 true)**且**有傳 onDismiss — 原 `dismissible &&`
     // 單獨判斷讓預設用法 <Alert title="…"/> 渲染一顆死 X(controlled-only 不自我移除,onClick=undefined
-    // 零反應;keyboard / SR 使用者按 Enter 零回饋 = 假 affordance)。對齊 Polaris Banner(onDismiss
+    // 零反應;keyboard / SR 使用者按 Enter 零回饋 = 假 affordance)。對齊 Polaris Banner(onDismiss(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161 https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/index.en-US.md#L49)
     // 存在才顯示 X)/ Ant Alert(closable 預設 false)。
     const showDismiss = dismissible !== false && onDismiss != null
     if (process.env.NODE_ENV !== 'production' && dismissible === true && onDismiss == null) {
@@ -156,7 +156,7 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
           // family canonical,patterns/overlay-surface/overlay-chrome-sizing.spec.md「Chrome dismiss size canonical」)。
           <ItemSuffix>
             {endContent}
-            {/* 誤觸保護分隔線由 DS 放,consumer 零自刻(同 Dialog 先例 dialog.tsx:184-193)。
+            {/* 誤觸保護分隔線由 DS 放,consumer 零自刻(同 Dialog 先例 dialog.tsx#DialogHeader)。
                 語意 SSOT → action-bar.spec.md 第五節「誤觸保護」:關閉鈕左邊緊鄰其他操作按鈕時必加;
                 只有關閉鈕(無 endContent)時不加 —— 沒有東西需要被隔開。
                 Alert 與 Toast 共用本基座,因此兩者行為由結構保證一致(2026-08-06 codify:

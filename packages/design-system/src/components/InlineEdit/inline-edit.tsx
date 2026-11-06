@@ -1,6 +1,6 @@
 // ── 消費的 SSOT ──
 // - components/Field/field-controls.spec.md(「軸二 就地編輯 host」段:InlineEdit = view↔edit 二態疊在 Field 之上;edit-in-place + editable 閘)
-// - components/Field/field-edit-keys.ts(makeEditSettleKeyHandler = Enter/Esc + 中文 IME guard 結算 SSOT,與 DataTable cell 同源)
+// - components/Field/field-edit-keys.ts(editSettleKeyProps = Enter/Esc + 中文 IME guard 結算 SSOT + Esc 層宣告,與 DataTable cell 同源)
 // - components/Field/field-wrapper.tsx(fieldViewGeometry = view 幾何 class SSOT〔純值/標題路徑〕;fieldDisplayTextClass = view 字級)
 // - components/Input/input.tsx / Textarea/textarea.tsx(預設 renderEdit;不重刻 input chrome)
 // - components/Field/field-context.ts(useFieldContext / useResolvedFieldSize;接 size/orientation/labelId cascade)
@@ -14,8 +14,8 @@
 //
 // ── Model A(2026-07-16 round16,user GO)──────────────────────────────────────
 // InlineEdit **不自帶 geometry cva**(消 M17 重複):
-//   - 值-格式化(Select→Tag / Date / avatar)→ renderRead 委派 `<Control mode="view">`,幾何 + 內部間距
-//     皆由控件 view×default 提供(read=edit 同一顆 → 天生一致、多 tag/avatar 間距零偏移)。
+//   - 值-格式化(Select→Tag / Date / avatar)→ renderRead 委派 `<Control mode="view">` 取格式化與內部間距,
+//     外包 `fieldViewGeometry`(委派控件 view 左側皆 0 → 統一 field-px;見下方委派分支)→ 多 tag/avatar 間距零偏移。
 //   - 純值 / 標題 `<Tag as="h1">` → 套 `fieldViewGeometry(size, multiline)` helper(= view×default 幾何 SSOT)。
 //   InlineEdit 本體只給:`-mx`(orientation-aware,拉到欄左緣,= 上方 read-view 負邊距對照)+ hover bg + focus 藍框 + 隱形 Pressable。
 //   read↔edit 零跳 = view 與 edit 同一顆控件、只差 chrome。
@@ -23,12 +23,13 @@
 //   (如 `<Select mode="view" display="tag">`),不可自刻 —— 格式化 SSOT 住在該控件的 view mode。
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { useOwnTreeEvents } from '@/design-system/lib/composite-field-focus'
 import { Input } from '@/design-system/components/Input/input'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useRegisterFieldPreferredSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
 import { fieldDisplayTextClass, fieldViewGeometry } from '@/design-system/components/Field/field-wrapper'
-import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
+import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
@@ -71,7 +72,7 @@ export interface InlineEditProps<T = string> {
    * 不可自刻 —— 格式化 + 內部間距 SSOT 住在該控件的 view mode(見檔頭 Model A)。
    */
   renderRead?: (value: T) => React.ReactNode
-  /** 多行欄位(Jira description 類):view 態換行 + 預設 edit 態用 `<Textarea>`,Enter=換行、Cmd/Ctrl+Enter 或 blur 提交 */
+  /** 多行欄位(工作項目描述這類長文):view 態換行 + 預設 edit 態用 `<Textarea>`,Enter=換行、Cmd/Ctrl+Enter 或 blur 提交 */
   multiline?: boolean
   /**
    * 多行 edit 態的高度上限(行數)。預設無上限 —— 高度隨內容,與 view 態同源(= DataTable cell 語意)。
@@ -80,8 +81,8 @@ export interface InlineEditProps<T = string> {
   editMaxRows?: number
   /**
    * 是否可編輯(預設 true)。false → view 態無 hover 入口、無藍框、不可點進 edit(對齊世界級就地編輯
-   * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;cite 見檔頭 MUI X / AG Grid URL)。
-   * 永久唯讀資料 → 用 `<Control mode="view">` 或此 prop false;不用 disabled。
+   * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;cite 見檔頭 MUI X / AG Grid URL)。(來源:https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/data-grid/editing/editing.md?plain=1#L190)
+   * 永久唯讀值何時用此 prop 見 inline-edit.spec.md「editable 閘」;不用 disabled。
    */
   editable?: boolean
   /** 欄位人類可讀名稱 —— 組 view 按鈕 aria-label(「編輯 {label}」)+ 控件 aria-label */
@@ -160,6 +161,8 @@ function InlineEditImpl<T = string>(
     },
     [ref],
   )
+  // 編輯容器的元件樹(含 edit 控件 portal 出去的選單 / 日曆)經過哪些事件 —— 點外結算用它認「本 edit 開的浮層」(lib/composite-field-focus.ts useOwnTreeEvents)
+  const ownTree = useOwnTreeEvents()
 
   const setDraftValue = React.useCallback((next: T) => {
     draftRef.current = next
@@ -198,17 +201,20 @@ function InlineEditImpl<T = string>(
   // portal-aware:overlay 控件(Select/DatePicker)開的 Radix popper/listbox 是 portaled 出子樹,
   //   焦點在其中時**不誤結算**(dropdown 操作中);真正離開(都不在 edit 子樹 + 不在本 edit 的 overlay)才 commit。
   // rAF 延一拍讓焦點落定(Radix 關 popover 時焦點先回 trigger,避免 blur 瞬間誤判)。
+  // 「本 edit 開的 overlay」以元件樹認(2026-11-03,lib/composite-field-focus.ts useOwnTreeEvents):焦點此刻在編輯容器的元件樹裡
+  //   (含 edit 控件 portal 出去的選單)才算。修前認的是「任何 popper / listbox / dialog」—— InlineEdit 放在 Dialog / Sheet / Popover 裡時
+  //   宿主本身也是 dialog / popper,點宿主空白、Tab 到宿主裡的下一格都不結算,卡在 edit。
   const handleEditBlur = React.useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     const wrapper = e.currentTarget
     requestAnimationFrame(() => {
       if (finalizedRef.current) return
       const active = document.activeElement
       if (active && wrapper.contains(active)) return // 仍在 edit 子樹(如 trigger)
-      // 焦點在本 edit 開的 Radix overlay 內 → dropdown 操作中,不結算
-      if (active && active.closest('[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]')) return
+      // 焦點在本 edit 開的 overlay 內(元件樹上的子孫)→ dropdown 操作中,不結算
+      if (ownTree.focusInside()) return
       commit(false) // blur 離開 → 回 view(滑鼠路徑不搶焦)
     })
-  }, [commit])
+  }, [commit, ownTree])
 
   // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
   //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
@@ -236,13 +242,13 @@ function InlineEditImpl<T = string>(
       if (!target) return
       const box = editContainerRef.current
       if (box && box.contains(target)) return // 點在 edit 子樹內(trigger 等)
-      // 點在本 edit 開的 Radix overlay 內(popper / listbox / dialog)→ dropdown 操作中,不結算
-      if (target.closest('[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]')) return
-      commit(false)
+      // 點在本 edit 開的 overlay 內(edit 控件的選單 / 日曆;元件樹上的子孫,lib/composite-field-focus.ts useOwnTreeEvents)→ dropdown 操作中,不結算。
+      // 這支掛在 document 的捕獲階段(比 React 早收到,consumer 在冒泡階段擋掉事件也照樣結算),元件樹的記號要等這一下派送到 React 才有 → 派送完再判。
+      window.setTimeout(() => { if (!finalizedRef.current && !ownTree.owns(e)) commit(false) }, 0)
     }
     document.addEventListener('pointerdown', onPointerDown, true)
     return () => document.removeEventListener('pointerdown', onPointerDown, true)
-  }, [editing, commit])
+  }, [editing, commit, ownTree])
 
   const isEmpty =
     value == null || (value as unknown) === '' || (Array.isArray(value) && value.length === 0)
@@ -259,7 +265,7 @@ function InlineEditImpl<T = string>(
   })
   const plainTruncationActive = singleLinePlainView && !isEmpty && isTruncated
 
-  // 委派 view(renderRead)同規則(tooltip.spec.md「截斷文字 → tooltip,截斷才顯」):委派控件
+  // 委派 view(renderRead)同規則(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」,截斷才顯):委派控件
   // 自帶的截斷 tooltip(Input <TruncatedText> / Tag)trigger 在內層,editable 時同樣被透明
   // Pressable 吞掉 hover → 永不開,故外層容器 Tooltip 一併服務委派路徑。量測 = use-truncated
   // options.measure 自訂策略(檔頭明載 Tag「observe root、量測內層」即同款開口):走訪 wrapper
@@ -279,11 +285,11 @@ function InlineEditImpl<T = string>(
 
   // 對齊盒(orientation-aware,Model A;2026-07-17 移除 fieldCtx gate — root cause 修):
   //   vertical(預設,含 standalone)→ `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label 左緣;
-  //     view 委派控件在 `surface='inline-edit'` 下 px 統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
+  //     view 委派控件被 fieldViewGeometry 包住、左內距統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
   //   horizontal → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
   //   ⚠️ **移除舊 `fieldCtx &&` gate(root cause)**:standalone 預設 orientation='vertical'(:131),舊 gate 讓
   //     standalone 掉到 `w-full` 無 -mx → 內容內縮 field-px 不對齊 label(圖一/圖二 bug)。spec Model A
-  //     (field-controls.spec.md:71「orientation-aware -mx / vertical 貼 label」)只依 orientation、不依 fieldCtx。
+  //     (field-controls.spec.md「Field 框架地圖」InlineEdit 段:「orientation-aware `-mx`(vertical 含 standalone 貼 label / horizontal 對齊 sibling;不依 fieldCtx)」)只依 orientation、不依 fieldCtx。
   //     -mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
   //     (detail panel / card;stories 容器 layout-space-loose 16px > field-px 12px 天然吸收)。
   const alignBleed =
@@ -316,8 +322,9 @@ function InlineEditImpl<T = string>(
         aria-label={label}
         onChange={(e) => setDraftValue(e.target.value as unknown as T)}
         onBlur={() => commit(false)}
-        // 多行:plain Enter=換行、Esc=cancel、Cmd/Ctrl+Enter=commit —— 全走 makeEditSettleKeyHandler SSOT。
-        onKeyDown={makeEditSettleKeyHandler({ onCommit: () => commit(true), onCancel: cancel, commitOnEnter: false })}
+        // 多行:plain Enter=換行、Esc=cancel、Cmd/Ctrl+Enter=commit —— 全走 editSettleKeyProps SSOT(含 Esc 層宣告:
+        // 編輯中是焦點所在控件自己的一層,放在 Dialog / Sheet 裡第一下 Esc 只取消編輯、不關浮層;lib/overlay-escape.ts)。
+        {...editSettleKeyProps({ onCommit: () => commit(true), onCancel: cancel, commitOnEnter: false })}
       />
     ) : (
       <Input
@@ -328,15 +335,15 @@ function InlineEditImpl<T = string>(
         aria-label={label}
         onChange={(e) => setDraftValue(e.target.value as unknown as T)}
         onBlur={() => commit(false)}
-        onKeyDown={makeEditSettleKeyHandler({ onCommit: () => commit(true), onCancel: cancel })}
+        {...editSettleKeyProps({ onCommit: () => commit(true), onCancel: cancel })}
       />
     )
     const editNode = renderEdit ? renderEdit(editProps) : defaultEditNode
     return (
       // exit SSOT 雙保險:onBlur(focusout,tab-out / 非 overlay 控件)+ document pointerdown-outside(overlay
       //   點外面 Radix 送焦回 trigger 時 focusout 不觸發之補位)。任何 edit 控件離開 → 回 view。
-      // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding — Jira 式,user 2026-07-17 拍板)。
-      <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur}>
+      // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding —— 進入編輯就是那個欄位本人;user 2026-07-17 拍板)。
+      <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur} {...ownTree.capture}>
         {editNode}
       </div>
     )
@@ -364,7 +371,7 @@ function InlineEditImpl<T = string>(
         // view 態 typography 預設消費 Field view SSOT(sm/md→text-body,lg→text-body-lg)——
         // plain 用法 view 字級 = edit <Input>(text-body)= <Input mode="view"> 字級,三者一致零跳字。
         fieldDisplayTextClass(size),
-        // 多行:保留換行(pre-wrap)+ 長字斷行 —— view 忠實呈現 Textarea 內容(Jira description 類)。
+        // 多行:保留換行(pre-wrap)+ 長字斷行 —— view 忠實呈現 Textarea 內容(長文描述欄)。
         multiline && 'whitespace-pre-wrap break-words',
         readClassName,
         isEmpty && 'text-fg-muted',
@@ -372,7 +379,7 @@ function InlineEditImpl<T = string>(
     >
       {isEmpty || multiline
         ? (isEmpty ? placeholder : String(value))
-        // 單行 view 恆一行:溢出改 ellipsis(tooltip.spec.md「截斷文字 → tooltip」);
+        // 單行 view 恆一行:溢出改 ellipsis(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容。」);
         // tooltip 掛在外層 view 容器(見 truncationRef 註解——隱形 Pressable 吞 hover)。
         : <span ref={truncationRef} className="truncate min-w-0">{String(value)}</span>}
     </Tag>
@@ -412,7 +419,7 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :397 的 `[&:has(button:focus-visible)]:border-primary`)
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :398 的 `[&:has(button:focus-visible)]:border-primary`)
               className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
             />
           )}

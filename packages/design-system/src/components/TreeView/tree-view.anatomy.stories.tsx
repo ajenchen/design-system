@@ -3,6 +3,12 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Folder, FileText, Image, Users, User, Pencil, Trash2 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { Button } from '@/design-system/components/Button/button'
+import { Dialog, DialogBody, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/design-system/components/Dialog/dialog'
+import { Field, FieldError, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
+import { Toaster, toast } from '@/design-system/components/Toast/toast'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/設計規格',
@@ -36,11 +42,11 @@ export const Overview: Story = {
 
       <div>
         <H3>TreeItem 內部結構</H3>
-        <Desc>依序排列 chevron placeholder、多選模式的 checkbox、indicator 或 icon、label，以及可選的 hover inline action / badge suffix；整體遵循 item-layout pattern。Checkbox 位於 chevron 之後、icon 之前(對齊 tsx render 順序)。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。</Desc>
+        <Desc>依序排列 chevron placeholder、多選模式的 checkbox、indicator 或 icon、label，以及可選的 hover inline action / badge suffix；整體遵循 item-layout pattern。Checkbox 位於 chevron 之後、icon 之前(對齊 tsx render 順序)。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。步驟導覽樹(<code>stepNavigation</code>)在 label 之後多一格列尾的步驟結果(成功綠勾 / 失敗紅叉,常駐、不隨滑過隱藏,與滑過才出現的按鈕並排;沒有結果也保留這一格,標題截斷位置不跳)—— 顏色與疊加見「色彩對照表」,規則見 spec「步驟結果」。</Desc>
       </div>
 
       <div>
-        <H3>TreeView 的三項職責(不超出此範圍)</H3>
+        <H3>TreeView 的四項職責(不超出此範圍)</H3>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>職責</Th><Th>說明</Th></tr></thead>
@@ -48,6 +54,7 @@ export const Overview: Story = {
               <tr><Td>1. 遞迴渲染 + indent</Td><Td mono>indentStep = chevronSize + gap-2(跟 item-layout 一致)</Td></tr>
               <tr><Td>2. 展開 / 收合狀態管理</Td><Td>TreeView 自管 expand state(受控 expandedIds / 非受控 defaultExpandedIds);Radix Collapsible 僅負責子節點高度動畫</Td></tr>
               <tr><Td>3. 鍵盤導覽 + ARIA 樹狀表格</Td><Td>整棵樹一個 Tab 停靠點 / ↑↓ 換列 / → 展開或進這一列的按鈕 / ← 收合或回上一層 / Enter 選取</Td></tr>
+              <tr><Td>4. 步驟導覽樹(stepNavigation)</Td><Td>點大步驟的文字:會換位置就去那裡並只展開、什麼都不會變才開合(同一列的連點只算一下);收起的沒頁面大步驟替目前那一步代顯灰底與列尾結果</Td></tr>
             </tbody>
           </table>
         </div>
@@ -67,7 +74,8 @@ export const Overview: Story = {
                 ['  expandedIds / onExpandedChange', 'Set<string> / handler', '—', '展開狀態受控'],
                 ['  defaultExpandedIds', 'string[]', '—', '初始展開(uncontrolled)'],
                 ['  defaultSelectedIds', 'string[]', '—', '初始選取(uncontrolled)'],
-                ['  expandOnSelect', 'boolean', 'false', '點 label 同時 select + expand(stepper 適用;預設 chevron 是展開唯一控件)'],
+                ['  expandOnSelect', 'boolean', 'false', '點 label 會改變選取就 select + 只展開,不會改變才開合(預設 chevron 是展開唯一控件)'],
+                ['  stepNavigation', 'boolean', 'false', '步驟導覽樹(只用在單選):包含 expandOnSelect,另開灰底代顯、列尾結果與 aria-current="step"'],
                 ['  draggable / onDragEnd', 'boolean / handler', 'false', '拖曳重排'],
                 ['  size', "'sm' | 'md' | 'lg'", "'md'", '尺寸 tier(node 高度 / icon 大小 / indent 寬度連動)'],
                 ['  context', "'sidebar' | 'menu'", "'sidebar'", '使用脈絡,決定水平 padding(sidebar=--layout-space-loose / menu=12px 對齊 MenuItem)'],
@@ -79,7 +87,9 @@ export const Overview: Story = {
                 ['  inlineActions', 'InlineActionConfig[]', '—', '右側 inline actions(宣告式 config,內部用 <ItemInlineAction> 渲染)'],
                 ['  inlineActionsSlot', 'ReactNode', '—', 'escape-hatch slot(放自訂元素,跟 inlineActions 互斥)'],
                 ['  actionsReveal', "false | 'hover'", "'hover'", 'inline actions 顯示時機(hover reveal;false=常駐)'],
-                ['  indicator', 'ReactNode', '—', '取代 icon 位置(chevron 永存);stepper 狀態視覺由此傳入'],
+                ['  indicator', 'ReactNode', '—', '取代 icon 位置(chevron 永存);步驟結果不走這裡(用 status)'],
+                ['  selectable', 'boolean', 'true', 'false = 不能被選;步驟導覽樹的「沒有自己頁面的大步驟」'],
+                ['  status', "'completed' | 'error'", '—', '步驟導覽樹:這一列自己那一頁的結果,畫在列尾'],
                 ['  disabled', 'boolean', 'false', '停用該 node'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -100,6 +110,7 @@ interface InspectorArgs {
   context: 'sidebar' | 'menu'
   selectionMode: 'single' | 'multiple' | 'none'
   expandOnSelect: boolean
+  stepNavigation: boolean
 }
 
 export const Inspector: Story = {
@@ -117,6 +128,7 @@ export const Inspector: Story = {
     context: 'sidebar',
     selectionMode: 'single',
     expandOnSelect: false,
+    stepNavigation: false,
   },
   argTypes: {
     size: {
@@ -138,9 +150,13 @@ export const Inspector: Story = {
       control: 'boolean',
       description: '點 label 同時展開 children(預設 false,chevron 是展開的唯一控件)',
     },
+    stepNavigation: {
+      control: 'boolean',
+      description: '步驟導覽樹(只用在單選):灰底代顯、列尾結果、aria-current="step"',
+    },
   },
   render: (args) => {
-    const { size, context, selectionMode, expandOnSelect } = args as InspectorArgs
+    const { size, context, selectionMode, expandOnSelect, stepNavigation } = args as InspectorArgs
     return (
       <div className="border border-border rounded-lg p-4 max-w-md">
         <TreeView
@@ -148,6 +164,7 @@ export const Inspector: Story = {
           context={context}
           selectionMode={selectionMode}
           expandOnSelect={expandOnSelect}
+          stepNavigation={stepNavigation}
           defaultExpandedIds={['src', 'components']}
           defaultSelectedIds={['button']}
           aria-label="Project file tree"
@@ -274,14 +291,61 @@ export const ColorMatrix: Story = {
             </table>
           </div>
           <p className="text-footnote text-fg-muted mt-3">
-            selected 用 `--neutral-selected`(不是 primary 色)——tree 的選取是「當前導航位置」的標記,
+            selected 用 <code>--neutral-selected</code>(不是 primary 色)——tree 的選取是「當前導航位置」的標記,
             不是「重要強調項」。用 primary 會讓使用者誤以為是可互動操作。
           </p>
         </div>
 
         <div>
+          <H3>步驟結果 × 列狀態(步驟導覽樹)</H3>
+          <Desc>
+            列尾的步驟結果是「事實」,圖示顏色只看結果本身與這一列停不停用 —— 灰底(你在哪)、滑過、收起代顯都不改它的顏色;
+            停用的列一律停用色、靠形狀(勾 / 叉)分辨(disabled 勝過其他狀態)。畫出來的樣子見{' '}
+            <StoryLink kind="Design System/Components/TreeView/展示" name="步驟引導">步驟引導</StoryLink>(預設、灰底、代顯)。
+          </Desc>
+          <div className="overflow-x-auto">
+            <table className="text-caption border-collapse">
+              <thead>
+                <tr>
+                  <Th>列的狀態</Th>
+                  <Th>成功(completed)</Th>
+                  <Th>失敗(error)</Th>
+                  <Th>讀屏說明</Th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <Td mono>default / hover</Td>
+                  <Td>CircleCheck <TokenCell token="--success" display="success" /></Td>
+                  <Td>XCircle <TokenCell token="--error" display="error" /></Td>
+                  <Td>已完成 / 錯誤</Td>
+                </tr>
+                <tr>
+                  <Td mono>selected(你在哪,灰底)</Td>
+                  <Td>同上(只有底色變 <TokenCell token="--neutral-selected" display="neutral-selected" />)</Td>
+                  <Td>同上</Td>
+                  <Td>已完成 / 錯誤(列另有 aria-current="step")</Td>
+                </tr>
+                <tr>
+                  <Td mono>disabled</Td>
+                  <Td>CircleCheck <TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
+                  <Td>XCircle <TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
+                  <Td>已完成 / 錯誤</Td>
+                </tr>
+                <tr>
+                  <Td mono>收起的大步驟(代顯)</Td>
+                  <Td>全部子步驟成功才畫 <TokenCell token="--success" display="success" /></Td>
+                  <Td>任一子步驟失敗就畫 <TokenCell token="--error" display="error" /></Td>
+                  <Td>全部已完成 / 其中有錯誤</Td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
           <H3>Hover + Selected 並存的實際渲染</H3>
-          <Desc>以下 `Documents/Photos/beach.jpg` 為 selected row,可 hover 任一其他 row 觀察 neutral-hover。</Desc>
+          <Desc>以下 <code>Documents/Photos/beach.jpg</code> 為 selected row,可 hover 任一其他 row 觀察 neutral-hover。</Desc>
           <div className="border border-border rounded-lg p-4 max-w-md">
             <TreeView aria-label="色彩狀態範例檔案樹" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
@@ -341,72 +405,126 @@ export const IndentMatrix: Story = {
 
 export const StateBehavior: Story = {
   name: '狀態行為',
-  render: () => {
-    const [selected, setSelected] = React.useState<Set<string>>(new Set(['resume']))
-    return (
-      <div className="flex flex-col gap-8">
-        <div>
-          <H3>Selected vs Expanded 語意分離</H3>
-          <Desc>Chevron 負責展開/收合,label 負責選取——兩者獨立(除非 consumer 顯式 opt-in `expandOnSelect`)。世界級 tree 的共識(VS Code / Finder / Linear)。</Desc>
-          <div className="border border-border rounded-lg p-4 max-w-md">
-            <TreeView aria-label="選取與展開範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
-              <TreeItem id="docs" label="Documents(可點展開)" icon={Folder}>
-                <TreeItem id="resume" label="Resume.pdf(選取中)" icon={FileText} />
-                <TreeItem id="photos" label="Photos(可點展開)" icon={Folder}>
-                  <TreeItem id="beach" label="beach.jpg" icon={Image} />
-                </TreeItem>
-              </TreeItem>
-            </TreeView>
-          </div>
-          <p className="text-footnote text-fg-muted mt-3">↑ 點 chevron 只展開 / 點 label 只選取,兩個獨立互動區</p>
-        </div>
+  render: () => <StateBehaviorDemo />,
+}
 
-        <div>
-          <H3>列上的動作(suffix)</H3>
-          <Desc>
-            滑過列、或鍵盤焦點在這一列(列本身或列上的按鈕)時,suffix 顯示列上的動作(重新命名、刪除等);其他時候隱藏。
-            鍵盤:↑↓ 換列、→ 進這一列的按鈕、← 回到列;Tab 一下就離開整棵樹 —— 別列的按鈕不在 Tab 路上
-            (2026-09-25 前,這棵樹從 Engineering 出發要按 5 下 Tab 才出得去,走過的全是 Alice、Bob 的按鈕)。
-          </Desc>
-          <div className="border border-border rounded-lg p-4 max-w-md">
-            <TreeView aria-label="工程團隊樹" defaultExpandedIds={['eng', 'frontend']}>
-              <TreeItem id="eng" label="Engineering" icon={Users}>
-                <TreeItem id="frontend" label="Frontend" icon={Users}>
-                  <TreeItem
-                    id="alice"
-                    label="Alice"
-                    icon={User}
-                    inlineActions={[
-                      { icon: Pencil, label: '重新命名', onClick: () => {} },
-                      { icon: Trash2, label: '刪除', onClick: () => {} },
-                    ]}
-                  />
-                  <TreeItem
-                    id="bob"
-                    label="Bob"
-                    icon={User}
-                    inlineActions={[
-                      { icon: Pencil, label: '重新命名', onClick: () => {} },
-                      { icon: Trash2, label: '刪除', onClick: () => {} },
-                    ]}
-                  />
-                </TreeItem>
+interface TeamMember { id: string; label: string }
+
+/** 改名對話框的表單:每次打開以那一列現在的名字起算(key = 成員 id,換人就重建)。寫法同 Dialog 展示「表單」:useFormValidation、沒有 <form>、送出成功 Toast 再關 */
+function RenameMemberForm({ member, onSave }: { member: TeamMember; onSave: (label: string) => void }) {
+  const form = useFormValidation({
+    initialValues: { name: member.label },
+    validate: { name: (v) => (String(v ?? '').trim() ? undefined : '名稱必填') },
+    onSubmit: (values) => onSave(String(values.name).trim()),
+  })
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>重新命名</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <Field required invalid={!!form.errors.name}>
+          <FieldLabel>名稱</FieldLabel>
+          <Input {...form.getInputProps('name')} />
+          <FieldError>{form.errors.name}</FieldError>
+        </Field>
+      </DialogBody>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="tertiary">取消</Button>
+        </DialogClose>
+        <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
+      </DialogFooter>
+    </>
+  )
+}
+
+/** 狀態行為:兩棵真的會動的樹 —— 選取 / 展開各自獨立;列上的「重新命名」打開改名對話框、「刪除」真的把那一列拿掉
+ *  (稽核 L097:名稱用真實檔名、說明放 Desc、動作要有反應;2026-10-27 前兩顆都是空的 onClick)。
+ *  「工程團隊樹」的結構與按鈕名稱是 scripts/tree-view-keyboard-route-invariant.mjs 實按量的對象(Engineering ▸ Frontend ▸ Alice / Bob,
+ *  每列「重新命名」「刪除」;列上打字跳位 b / a / f / e),不改。 */
+function StateBehaviorDemo() {
+  const [selected, setSelected] = React.useState<Set<string>>(new Set(['resume']))
+  const [members, setMembers] = React.useState<TeamMember[]>([
+    { id: 'alice', label: 'Alice' },
+    { id: 'bob', label: 'Bob' },
+  ])
+  const [renaming, setRenaming] = React.useState<TeamMember | null>(null)
+  const [renameOpen, setRenameOpen] = React.useState(false)
+  const openRename = (m: TeamMember) => { setRenaming(m); setRenameOpen(true) }
+  const saveRename = (label: string) => {
+    if (!renaming) return
+    setMembers((list) => list.map((x) => (x.id === renaming.id ? { ...x, label } : x)))
+    toast({ variant: 'success', title: '名稱已更新' })
+    setRenameOpen(false)
+  }
+  return (
+    <>
+    {/* Toaster:每個獨立 story root 掛一個(toast.spec.md「app-level-one 是強制合約」允許 Storybook 各 story root 一個);放在版面容器外,不佔間距 */}
+    <Toaster />
+    <div className="flex flex-col gap-8">
+      <div>
+        <H3>Selected vs Expanded 語意分離</H3>
+        <Desc>Chevron 負責展開/收合,label 負責選取——兩者獨立(除非 consumer 顯式 opt-in <code>expandOnSelect</code>)。分開才能「只選不展開」——選一個資料夾看它的資訊,不必連帶把整串子項攤開。現在選取中的是「Resume.pdf」;Documents、Photos 點箭頭可以展開 / 收合。</Desc> {/* 來源:https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/platform/list/browser/listService.ts#L1478-L1482 */}
+        <div className="border border-border rounded-lg p-4 max-w-md">
+          <TreeView aria-label="選取與展開範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
+            <TreeItem id="docs" label="Documents" icon={Folder}>
+              <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
+              <TreeItem id="photos" label="Photos" icon={Folder}>
+                <TreeItem id="beach" label="beach.jpg" icon={Image} />
               </TreeItem>
-            </TreeView>
-          </div>
+            </TreeItem>
+          </TreeView>
         </div>
+        <p className="text-footnote text-fg-muted mt-3">↑ 點 chevron 只展開 / 點 label 只選取,兩個獨立互動區</p>
       </div>
-    )
-  },
+
+      <div>
+        <H3>列上的動作(suffix)</H3>
+        <Desc>
+          滑過列、或鍵盤焦點在這一列(列本身或列上的按鈕)時,suffix 顯示列上的動作(重新命名、刪除等);其他時候隱藏。
+          這裡的「重新命名」打開改名對話框,「刪除」把那個人從樹上拿掉。
+          鍵盤:↑↓ 換列、→ 進這一列的按鈕、← 回到列;Tab 一下就離開整棵樹 —— 別列的按鈕不在 Tab 路上
+          (2026-09-25 前,這棵樹從 Engineering 出發要按 5 下 Tab 才出得去,走過的全是 Alice、Bob 的按鈕)。
+        </Desc>
+        <div className="border border-border rounded-lg p-4 max-w-md">
+          <TreeView aria-label="工程團隊樹" defaultExpandedIds={['eng', 'frontend']}>
+            <TreeItem id="eng" label="Engineering" icon={Users}>
+              <TreeItem id="frontend" label="Frontend" icon={Users}>
+                {members.map((m) => (
+                  <TreeItem
+                    key={m.id}
+                    id={m.id}
+                    label={m.label}
+                    icon={User}
+                    inlineActions={[
+                      { icon: Pencil, label: '重新命名', onClick: () => openRename(m) },
+                      { icon: Trash2, label: '刪除', onClick: () => setMembers((list) => list.filter((x) => x.id !== m.id)) },
+                    ]}
+                  />
+                ))}
+              </TreeItem>
+            </TreeItem>
+          </TreeView>
+        </div>
+        <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+          <DialogContent height="hug">
+            {renaming && <RenameMemberForm key={renaming.id} member={renaming} onSave={saveRename} />}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+    </>
+  )
 }
 
 export const KeyboardMatrix: Story = {
   name: '鍵盤導覽（樹狀表格）',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>鍵盤操作對照 — 焦點在列上</H3>
-        <Desc>整棵樹在 Tab 路上只佔一站(列上的 roving tabindex;2026-09-25 總帳 B9 由 tree 改為 treegrid)。Tab 進來落在上次停的那一列,沒有就落在選中的列,再沒有就第一列。重排鍵位(最後三列)僅在 `draggable` 時生效,每按一下立即 commit(發出 onDragEnd,同 pointer 契約)。</Desc>
+        <Desc>整棵樹在 Tab 路上只佔一站(列上的 roving tabindex)。Tab 進來落在上次停的那一列,沒有就落在選中的列,再沒有就第一列。重排鍵位(最後三列)僅在 <code>draggable</code> 時生效,每按一下立即 commit(發出 onDragEnd,同 pointer 契約)。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>按鍵</Th><Th>行為</Th></tr></thead>
@@ -414,7 +532,7 @@ export const KeyboardMatrix: Story = {
               <tr><Td mono>↑ / ↓</Td><Td>在可見、未停用的列之間移動(跳過已收合的 children)</Td></tr>
               <tr><Td mono>→</Td><Td>收著的資料夾 → 展開;已展開的資料夾或葉節點 → 進這一列的第一顆按鈕;沒有按鈕 → 不動</Td></tr>
               <tr><Td mono>←</Td><Td>展開的資料夾 → 收合;收著的資料夾或葉節點 → 回上一層</Td></tr>
-              <tr><Td mono>Enter / Space</Td><Td>選取這一列</Td></tr>
+              <tr><Td mono>Enter / Space</Td><Td>選取這一列(= 到那一步;步驟導覽樹的沒有自己頁面的大步驟 → 到它底下第一個子步驟並展開,見 spec「步驟導覽樹」)</Td></tr>
               <tr><Td mono>Home / End</Td><Td>跳到第一個 / 最後一個可見列</Td></tr>
               <tr><Td mono>Tab / Shift+Tab</Td><Td>一下就離開整棵樹(別列、本列的按鈕都不在 Tab 路上)</Td></tr>
               <tr><Td mono>Cmd/Ctrl+Shift+↑ / ↓</Td><Td>重排:同層上移 / 下移(需 draggable;整個子樹一起動,結果經 SR live region 播報)</Td></tr>
@@ -426,7 +544,7 @@ export const KeyboardMatrix: Story = {
       </div>
       <div>
         <H3>鍵盤操作對照 — 焦點在列上的按鈕</H3>
-        <Desc>列上的按鈕(更多、新增…)平常可能隱藏,焦點在這一列裡時一定看得到。完整規則見 spec「鍵盤導覽」;可實際操作的範例在「展示 / 列上的動作」。</Desc>
+        <Desc>列上的按鈕(更多、新增…)平常可能隱藏,焦點在這一列裡時一定看得到。可實際操作的範例在{' '}<StoryLink kind="Design System/Components/TreeView/展示" name="列上的動作">列上的動作</StoryLink>。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>按鍵</Th><Th>行為</Th></tr></thead>
@@ -441,7 +559,7 @@ export const KeyboardMatrix: Story = {
           </table>
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -451,8 +569,8 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"treegrid\"(樹狀表格;2026-09-25 由 tree 改,因為只有樹狀表格定義了「列上有按鈕時鍵盤怎麼走」),每個節點的那一列標記為 role=\"row\",列裡分成主格與放按鈕的動作格(role=\"gridcell\");列上逐一寫著展開狀態、是否選取、所在層級,列名只取標籤文字。多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Collapsible 元件,樹的角色、屬性、鍵盤導覽都是元件自己實作的。讀螢幕軟體會念成「樹狀表格」——尚未用讀螢幕軟體實測。\n\n  鍵盤操作(焦點在列上)  :\n\n- Tab — 進到樹,落在上次停的那一列(沒有就選中的列、再沒有就第一列);再按一下就離開整棵樹\n- 上 / 下 — 換到上 / 下一列\n- 右 — 收著的資料夾先展開;已展開的資料夾或葉節點,進到這一列的第一顆按鈕\n- 左 — 收合資料夾,收著或葉節點時回到上一層\n- Home / End — 跳到第一個 / 最後一個可見列\n- Enter / 空白鍵 — 選取這一列\n- Cmd(Ctrl)+Shift+方向鍵 — 重新排列節點(啟用拖曳時:上下=同層移動、右=移入資料夾、左=移出到上層,每按一下立即生效)\n\n  鍵盤操作(焦點在列上的按鈕)  :右 / 左在按鈕之間走,第一顆再按左回到列;上 / 下換到上 / 下一列;Enter / 空白鍵執行按鈕;Tab 一下離開整棵樹,Shift+Tab 回到列。別列的按鈕永遠不在 Tab 路上。\n\n  焦點  :整棵樹只有一個 Tab 停靠點(那一列的 tabIndex 是 0,其他列與所有按鈕都是 -1),焦點是真的落在列或按鈕上。焦點在列上時,列畫一圈內描邊(focus-ring-inset:outline 2px solid var(--ring),往內 2px;由瀏覽器的 :focus-visible 決定畫不畫——滑鼠點列不畫、鍵盤畫);焦點在按鈕上時由按鈕自己畫框。平常隱藏的列上按鈕,焦點在這一列裡時一定看得到。沒有焦點鎖定;唯一的「還焦點」是鍵盤重排後把焦點還給被移動的那一列。\n\n  播報  :鍵盤重排的結果(移到第幾項、移入哪個資料夾)會透過隱藏的即時播報區域唸給螢幕閱讀器;無法移動時(已在最上方、不是資料夾等)也會說明原因。文案預設繁體中文,可用 reorderAnnouncements 屬性覆寫。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作(含列上的按鈕與拖曳重排)。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"treegrid\"(樹狀表格;2026-09-25 由 tree 改,因為只有樹狀表格定義了「列上有按鈕時鍵盤怎麼走」),每個節點的那一列標記為 role=\"row\",列裡分成主格與放按鈕的動作格(role=\"gridcell\");列上逐一寫著展開狀態、是否選取、所在層級,列名只取標籤文字;步驟導覽樹另外在「你在哪」那一列(含收起時替目前那一步代顯的大步驟)標 aria-current=\"step\",每一步的結果(已完成 / 錯誤,代顯時是全部已完成 / 其中有錯誤)掛在列的說明上。多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Collapsible 元件,樹的角色、屬性、鍵盤導覽都是元件自己實作的。讀螢幕軟體會念成「樹狀表格」——尚未用讀螢幕軟體實測。\n\n  鍵盤操作(焦點在列上)  :\n\n- Tab — 進到樹,落在上次停的那一列(沒有就選中的列、再沒有就第一列);再按一下就離開整棵樹\n- 上 / 下 — 換到上 / 下一列\n- 右 — 收著的資料夾先展開;已展開的資料夾或葉節點,進到這一列的第一顆按鈕\n- 左 — 收合資料夾,收著或葉節點時回到上一層\n- Home / End — 跳到第一個 / 最後一個可見列\n- Enter / 空白鍵 — 選取這一列(步驟導覽樹:沒有自己頁面的大步驟會到它底下第一個子步驟並展開,焦點跟過去)\n- Cmd(Ctrl)+Shift+方向鍵 — 重新排列節點(啟用拖曳時:上下=同層移動、右=移入資料夾、左=移出到上層,每按一下立即生效)\n\n  鍵盤操作(焦點在列上的按鈕)  :右 / 左在按鈕之間走,第一顆再按左回到列;上 / 下換到上 / 下一列;Enter / 空白鍵執行按鈕;Tab 一下離開整棵樹,Shift+Tab 回到列。別列的按鈕永遠不在 Tab 路上。\n\n  焦點  :整棵樹只有一個 Tab 停靠點(那一列的 tabIndex 是 0,其他列與所有按鈕都是 -1),焦點是真的落在列或按鈕上。焦點在列上時,列畫一圈內描邊(focus-ring-inset:outline 2px solid var(--ring),往內 2px;由瀏覽器的 :focus-visible 決定畫不畫——滑鼠點列不畫、鍵盤畫);焦點在按鈕上時由按鈕自己畫框。平常隱藏的列上按鈕,焦點在這一列裡時一定看得到。沒有焦點鎖定;唯一的「還焦點」是鍵盤重排後把焦點還給被移動的那一列。\n\n  播報  :鍵盤重排的結果(移到第幾項、移入哪個資料夾)會透過隱藏的即時播報區域唸給螢幕閱讀器;無法移動時(已在最上方、不是資料夾等)也會說明原因。文案預設繁體中文,可用 reorderAnnouncements 屬性覆寫。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作(含列上的按鈕與拖曳重排)。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
     </div>
   ),
 }

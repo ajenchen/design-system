@@ -5,7 +5,7 @@
 //     ——沒有 hover / focus / active state(對齊 Material Chip / Ant Tag 慣例),
 //     唯一 interactive 部位是 onRemove button,其狀態色彩集中於 ColorMatrix 比拆 5. 直觀。
 import type { Meta } from '@storybook/react'
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { Hash } from 'lucide-react'
 import { Tag } from './tag'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
@@ -17,6 +17,8 @@ import {
   type CategoricalColor,
   type CategoricalHue,
 } from '@/design-system/tokens/categorical-color'
+import { BpZone, PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Tag/設計規格',
@@ -99,9 +101,12 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
    Swatch defaults to `size="md"` for inline token chips.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground">{children}</h3>
-)
+// 對照表裡的可移除樣本:按 × 真的移除(F-S2「畫面上看得到的按鈕都要能動」),重新整理頁面回來
+function RemovableSample({ children, ...rest }: Omit<ComponentProps<typeof Tag>, 'onRemove'>) {
+  const [shown, setShown] = useState(true)
+  return shown ? <Tag {...rest} onRemove={() => setShown(false)}>{children}</Tag> : null
+}
+
 const Desc = ({ children }: { children: React.ReactNode }) => (
   <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
 )
@@ -112,35 +117,8 @@ const Td = ({ children, mono }: { children: React.ReactNode; mono?: boolean }) =
   <td className={`p-2 border-b border-divider align-top whitespace-nowrap text-caption ${mono ? 'font-mono' : ''}`}>{children}</td>
 )
 
-/** Token name (primary) + resolved value (secondary) */
-const TkVal = ({ token, value }: { token: string; value?: string }) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="font-mono text-[12px] text-fg-secondary">{token}</span>
-    {value && <span className="font-mono text-[10px] text-fg-muted">{value}</span>}
-  </div>
-)
-
-const Swatch = ({ value, size = 'md' }: { value: string; size?: 'sm' | 'md' }) => {
-  const s = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'
-  if (value === 'transparent') {
-    return <span className={`${s} rounded-md shrink-0 border border-border`}
-      style={{ backgroundImage: 'linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%)', backgroundSize: '6px 6px', backgroundPosition: '0 0,3px 3px' }} />
-  }
-  return <span className={`${s} rounded-md shrink-0 border border-black/10`} style={{ backgroundColor: `var(${value})` }} />
-}
-
-const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
-  <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-secondary font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
-      {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {label}
-    </span>
-    <div className="flex-1 text-[12px] font-mono text-fg-secondary">{children}</div>
-  </div>
-)
-
 const TokenValue = ({ value }: { value: string }) => (
-  <span className="inline-flex items-center gap-2"><Swatch value={value} /><span>{value}</span></span>
+  <span className="inline-flex items-center gap-2"><Swatch value={value} size="md" /><span>{value}</span></span>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -156,14 +134,6 @@ const Z = {
   dim:     { text: '#d04040' },
 }
 
-const BpZone = ({ w, color, label, sub }: { w: number; color: typeof Z.pad; label: string; sub?: string }) => (
-  <div className="flex flex-col items-center justify-center shrink-0 gap-0.5"
-    style={{ width: w, height: '100%', background: color.bg, borderLeft: `1.5px dashed ${color.border}`, borderRight: `1.5px dashed ${color.border}` }}>
-    <span className="text-[11px] font-mono font-bold leading-none" style={{ color: color.text }}>{label}</span>
-    {sub && <span className="text-[9px] font-mono leading-none opacity-70" style={{ color: color.text }}>{sub}</span>}
-  </div>
-)
-
 /* ═══════════════════════════════════════════════════════════════════════════
    1. 元件總覽
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -173,11 +143,7 @@ export const Overview = {
   render: () => (
     <div className="flex flex-col gap-8">
       {/* Anatomy */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <H3>結構（Anatomy）</H3>
-          <Desc>Inline label，用於分類標籤、狀態標記、多選已選值。icon 與 avatar 互斥，onRemove 自動渲染 remove 按鈕。</Desc>
-        </div>
+      <ExampleSection title="結構（Anatomy）" description="Inline label，用於分類標籤、狀態標記、多選已選值。icon 與 avatar 互斥，onRemove 自動渲染 remove 按鈕。">
         <div className="flex gap-8">
           {/* Text only */}
           <div className="flex flex-col gap-2 items-start">
@@ -193,7 +159,7 @@ export const Overview = {
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-secondary font-medium">icon + dismiss</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-1">
-              {[{ name: 'icon', color: 'info' }, { name: 'icon', color: 'success' }, { name: 'icon', color: 'error' }].map((s) => (
+              {[{ name: 'icon', color: 'info' }, { name: 'label', color: 'success' }, { name: 'dismiss', color: 'error' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color}-text)` }}>{s.name}</span>
               ))}
@@ -203,7 +169,7 @@ export const Overview = {
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-secondary font-medium">avatar</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-1">
-              {[{ name: 'avatar', color: 'warning' }, { name: 'avatar', color: 'success' }].map((s) => (
+              {[{ name: 'avatar', color: 'warning' }, { name: 'label', color: 'success' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color}-text)` }}>{s.name}</span>
               ))}
@@ -213,12 +179,10 @@ export const Overview = {
         <div className="text-[10px] text-fg-muted">
           內部由左右 tag padding 包住內容；prefix 可放 icon 或 avatar，中間是具水平文字內距的 label，最後可放 dismiss action。
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Variant catalog */}
-      <div className="flex flex-col gap-3">
-        <H3>Variant 一覽</H3>
-        <Desc>以色名命名（色名即色相），語義由消費端內容與上下文決定。13 色（neutral + 12 categorical 色相）皆直接消費 primitive token（{'`--color-{hue}-*`'}），不對應語義 token。</Desc>
+      <ExampleSection title="Variant 一覽" description={<>以色名命名（色名即色相），語義由消費端內容與上下文決定。13 色（neutral + 12 categorical 色相）皆直接消費 primitive token（<code>{"--color-{hue}-*"}</code>），不對應語義 token。</>} paragraph>
         <div className="flex flex-col gap-2">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-4">
@@ -227,11 +191,10 @@ export const Overview = {
             </div>
           ))}
         </div>
-      </div>
+      </ExampleSection>
 
       {/* Props table */}
-      <div className="flex flex-col gap-3">
-        <H3>Props</H3>
+      <ExampleSection title="Props">
         <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tag 變體對照表(可橫向捲動)">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -249,7 +212,7 @@ export const Overview = {
             </tbody>
           </table>
         </div>
-      </div>
+      </ExampleSection>
     </div>
   ),
 }
@@ -374,35 +337,35 @@ const InspectorInner = () => {
           {/* COLOR */}
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Color</span></div>
-            <PropRow label="Fill"><TokenValue value={colors.bg} /></PropRow>
-            <PropRow label="Text"><TokenValue value={colors.text} /></PropRow>
-            <PropRow label="Border"><TokenValue value={colors.border} /></PropRow>
+            <PropRow labelTone="secondary" label="Fill"><TokenValue value={colors.bg} /></PropRow>
+            <PropRow labelTone="secondary" label="Text"><TokenValue value={colors.text} /></PropRow>
+            <PropRow labelTone="secondary" label="Border"><TokenValue value={colors.border} /></PropRow>
           </div>
 
           {/* LAYOUT */}
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
-            <PropRow label="高度" dot={Z.dim.text}><TkVal token={size === 'sm' ? 'h-5' : 'h-6'} value={s.height} /></PropRow>
-            <PropRow label="Tag 內距" dot={Z.pad.text}><TkVal token={s.tagPx} value={`${s.tagPxVal}px`} /></PropRow>
-            <PropRow label="Text 內距" dot={Z.textPx.text}><TkVal token={s.textPx} value={`${s.textPxVal}px`} /></PropRow>
-            <PropRow label="Max Width"><TkVal token="min(var(--combobox-tag-area-inline-size, 10rem), 10rem)" value="預設 cap 160px（Combobox 窄格可注入更小有效上限）" /></PropRow>
-            <PropRow label="Icon 尺寸" dot={Z.icon.text}>16px（統一不分 size）</PropRow>
-            {withDismiss && <PropRow label="Dismiss" dot={Z.dismiss.text}>16px icon · 18px hover 背景</PropRow>}
+            <PropRow labelTone="secondary" label="高度" dot={Z.dim.text}><TkVal token={size === 'sm' ? 'h-5' : 'h-6'} value={s.height} /></PropRow>
+            <PropRow labelTone="secondary" label="Tag 內距" dot={Z.pad.text}><TkVal token={s.tagPx} value={`${s.tagPxVal}px`} /></PropRow>
+            <PropRow labelTone="secondary" label="Text 內距" dot={Z.textPx.text}><TkVal token={s.textPx} value={`${s.textPxVal}px`} /></PropRow>
+            <PropRow labelTone="secondary" label="Max Width"><TkVal token="min(var(--combobox-tag-area-inline-size, 10rem), 10rem)" value="預設 cap 160px（Combobox 窄格可注入更小有效上限）" /></PropRow>
+            <PropRow labelTone="secondary" label="Icon 尺寸" dot={Z.icon.text}>16px（統一不分 size）</PropRow>
+            {withDismiss && <PropRow labelTone="secondary" label="Dismiss" dot={Z.dismiss.text}>16px icon · 18px hover 背景</PropRow>}
           </div>
 
           {/* TYPOGRAPHY */}
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Typography</span></div>
-            <PropRow label="Font"><TkVal token={s.fontToken} value={s.font} /></PropRow>
-            <PropRow label="Weight"><TkVal token={s.weightToken} value={s.weight} /></PropRow>
+            <PropRow labelTone="secondary" label="Font"><TkVal token={s.fontToken} value={s.font} /></PropRow>
+            <PropRow labelTone="secondary" label="Weight"><TkVal token={s.weightToken} value={s.weight} /></PropRow>
           </div>
 
           {/* STYLE */}
           <div className="px-4 py-1 pb-3">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
-            <PropRow label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
-            <PropRow label="Border"><TkVal token="border-transparent" value="1px solid transparent" /></PropRow>
-            <PropRow label="Truncate"><TkVal token="truncate" value="超過寬度上限（預設 160px）截斷 + tooltip" /></PropRow>
+            <PropRow labelTone="secondary" label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
+            <PropRow labelTone="secondary" label="Border"><TkVal token="border-transparent" value="1px solid transparent" /></PropRow>
+            <PropRow labelTone="secondary" label="Truncate"><TkVal token="truncate" value="超過寬度上限（預設 160px）截斷 + tooltip" /></PropRow>
           </div>
         </div>
       </div>
@@ -413,13 +376,9 @@ const InspectorInner = () => {
 export const Inspector = {
   name: '元件檢閱器',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <H3>元件檢閱器</H3>
-        <Desc>選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme 的值解析由系統處理。</Desc>
-      </div>
+    <ExampleSection title="元件檢閱器" description="選擇任意組合，即時查看所有 token。開發只需確認 token 正確——theme 的值解析由系統處理。">
       <InspectorInner />
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -430,132 +389,128 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Variant 色彩對照</H3>
-        <Desc>
-          Tag 無 hover/active 狀態（非互動元件），只有單一色彩組合。Subtle 模式有色 variant 文字用 --color-&#123;hue&#125;-7 primitive（step-7，不隨 dark mode 反轉），neutral 用 foreground。Solid 模式 step-6 背景 + on-emphasis 配對文字:夠深的 hue 用白字（--on-emphasis），亮色 hue（yellow/amber/orange/lime）用深字（--on-emphasis-dark），green 維持白字（documented exception）。色塊即時渲染，切 dark mode 自動更新。
-        </Desc>
-      </div>
+    <ExampleSection title="Variant 色彩對照" description="Tag 無 hover/active 狀態（非互動元件），只有單一色彩組合。Subtle 模式有色 variant 文字用 --color-&#123;hue&#125;-7 primitive（step-7，不隨 dark mode 反轉），neutral 用 foreground。Solid 模式 step-6 背景 + on-emphasis 配對文字:夠深的 hue 用白字（--on-emphasis），亮色 hue（yellow/amber/orange/lime）用深字（--on-emphasis-dark），green 維持白字（documented exception）。色塊即時渲染，切 dark mode 自動更新。">
+      <div className="flex flex-col gap-8">
 
-      {/* Subtle */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-fg-secondary">Subtle（預設）</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>Variant</Th>
-                <Th>預覽</Th>
-                <Th>背景 (bg)</Th>
-                <Th>文字 (text)</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {VARIANTS.map((v) => {
-                const c = TOKEN_MAP.subtle[v]
-                return (
-                  <tr key={v}>
-                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <Tag color={v} icon={Hash}>Frontend</Tag>
-                    </td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <span className="inline-flex items-center gap-1.5 text-[11px]">
-                        <Swatch value={c.bg} />
-                        <span className="font-mono text-fg-secondary">{c.bg}</span>
-                      </span>
-                    </td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <span className="inline-flex items-center gap-1.5 text-[11px]">
-                        <Swatch value={c.text} />
-                        <span className="font-mono text-fg-secondary">{c.text}</span>
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Solid */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-fg-secondary">Solid</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>Variant</Th>
-                <Th>預覽</Th>
-                <Th>背景 (bg)</Th>
-                <Th>文字 (text)</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {VARIANTS.map((v) => {
-                const c = TOKEN_MAP.solid[v]
-                return (
-                  <tr key={v}>
-                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <Tag color={v} icon={Hash} solid>Bug</Tag>
-                    </td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <span className="inline-flex items-center gap-1.5 text-[11px]">
-                        <Swatch value={c.bg} />
-                        <span className="font-mono text-fg-secondary">{c.bg}</span>
-                      </span>
-                    </td>
-                    <td className="p-3 border-b border-divider align-middle">
-                      <span className="inline-flex items-center gap-1.5 text-[11px]">
-                        <span className="font-mono text-fg-secondary">{c.text}</span>
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Dismiss action colors */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-fg-secondary">Dismiss 按鈕色彩</span>
-        <Desc>Neutral subtle 走 inline-action 預設色階;有色 subtle / solid 則繼承宿主文字色。Subtle 背景使用 neutral-hover/active,solid 背景使用宿主色相的 hover/active token。</Desc>
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
-            <thead><tr><Th>模式</Th><Th>狀態</Th><Th>Icon 色</Th><Th>Hover 背景</Th></tr></thead>
-            <tbody>
-              {[
-                { mode: 'Neutral subtle', state: 'default', iconColor: '--fg-muted', hoverBg: 'transparent' },
-                { mode: '', state: 'hover', iconColor: '--fg-secondary', hoverBg: '--neutral-hover' },
-                { mode: '', state: 'active', iconColor: '--fg-secondary', hoverBg: '--neutral-active' },
-                { mode: 'Colored subtle', state: 'default', iconColor: '繼承 Tag 文字色', hoverBg: 'transparent' },
-                { mode: '', state: 'hover', iconColor: '繼承 Tag 文字色', hoverBg: '--neutral-hover' },
-                { mode: '', state: 'active', iconColor: '繼承 Tag 文字色', hoverBg: '--neutral-active' },
-                { mode: 'Solid', state: 'default', iconColor: '繼承 Tag 文字色', hoverBg: 'transparent' },
-                { mode: '', state: 'hover', iconColor: '繼承 Tag 文字色', hoverBg: '--{hue}-hover（如 --blue-hover）· neutral: --inverse-neutral-hover' },
-                { mode: '', state: 'active', iconColor: '繼承 Tag 文字色', hoverBg: '--{hue}-active（如 --blue-active）· neutral: --inverse-neutral-active' },
-              ].map(({ mode, state, iconColor, hoverBg }, i) => (
-                <tr key={i}>
-                  {mode ? <td className="p-2 border-b border-divider align-top text-caption font-mono font-medium" rowSpan={3}>{mode}</td> : null}
-                  <Td mono>{state}</Td>
-                  <Td>
-                    <span className="font-mono text-fg-secondary text-[11px]">{iconColor}</span>
-                  </Td>
-                  <Td>
-                    <span className="font-mono text-fg-secondary text-[11px]">{hoverBg}</span>
-                  </Td>
+        {/* Subtle */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-semibold text-fg-secondary">Subtle（預設）</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead>
+                <tr>
+                  <Th>Variant</Th>
+                  <Th>預覽</Th>
+                  <Th>背景 (bg)</Th>
+                  <Th>文字 (text)</Th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {VARIANTS.map((v) => {
+                  const c = TOKEN_MAP.subtle[v]
+                  return (
+                    <tr key={v}>
+                      <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
+                      <td className="p-3 border-b border-divider align-middle">
+                        <Tag color={v} icon={Hash}>Frontend</Tag>
+                      </td>
+                      <td className="p-3 border-b border-divider align-middle">
+                        <span className="inline-flex items-center gap-1.5 text-[11px]">
+                          <Swatch value={c.bg} size="md" />
+                          <span className="font-mono text-fg-secondary">{c.bg}</span>
+                        </span>
+                      </td>
+                      <td className="p-3 border-b border-divider align-middle">
+                        <span className="inline-flex items-center gap-1.5 text-[11px]">
+                          <Swatch value={c.text} size="md" />
+                          <span className="font-mono text-fg-secondary">{c.text}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Solid */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-semibold text-fg-secondary">Solid</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead>
+                <tr>
+                  <Th>Variant</Th>
+                  <Th>預覽</Th>
+                  <Th>背景 (bg)</Th>
+                  <Th>文字 (text)</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {VARIANTS.map((v) => {
+                  const c = TOKEN_MAP.solid[v]
+                  return (
+                    <tr key={v}>
+                      <td className="p-3 border-b border-divider font-mono text-caption font-medium align-middle">{v}</td>
+                      <td className="p-3 border-b border-divider align-middle">
+                        <Tag color={v} icon={Hash} solid>Bug</Tag>
+                      </td>
+                      <td className="p-3 border-b border-divider align-middle">
+                        <span className="inline-flex items-center gap-1.5 text-[11px]">
+                          <Swatch value={c.bg} size="md" />
+                          <span className="font-mono text-fg-secondary">{c.bg}</span>
+                        </span>
+                      </td>
+                      <td className="p-3 border-b border-divider align-middle">
+                        <span className="inline-flex items-center gap-1.5 text-[11px]">
+                          <span className="font-mono text-fg-secondary">{c.text}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Dismiss action colors */}
+        <div className="flex flex-col gap-3">
+          <span className="text-caption font-semibold text-fg-secondary">Dismiss 按鈕色彩</span>
+          <Desc>Neutral subtle 走 inline-action 預設色階;有色 subtle / solid 則繼承宿主文字色。Subtle 背景使用 neutral-hover/active,solid 背景使用宿主色相的 hover/active token。</Desc>
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-caption">
+              <thead><tr><Th>模式</Th><Th>狀態</Th><Th>Icon 色</Th><Th>Hover 背景</Th></tr></thead>
+              <tbody>
+                {[
+                  { mode: 'Neutral subtle', state: 'default', iconColor: '--fg-muted', hoverBg: 'transparent' },
+                  { mode: '', state: 'hover', iconColor: '--fg-secondary', hoverBg: '--neutral-hover' },
+                  { mode: '', state: 'active', iconColor: '--fg-secondary', hoverBg: '--neutral-active' },
+                  { mode: 'Colored subtle', state: 'default', iconColor: '繼承 Tag 文字色', hoverBg: 'transparent' },
+                  { mode: '', state: 'hover', iconColor: '繼承 Tag 文字色', hoverBg: '--neutral-hover' },
+                  { mode: '', state: 'active', iconColor: '繼承 Tag 文字色', hoverBg: '--neutral-active' },
+                  { mode: 'Solid', state: 'default', iconColor: '繼承 Tag 文字色', hoverBg: 'transparent' },
+                  { mode: '', state: 'hover', iconColor: '繼承 Tag 文字色', hoverBg: '--{hue}-hover（如 --blue-hover）· neutral: --inverse-neutral-hover' },
+                  { mode: '', state: 'active', iconColor: '繼承 Tag 文字色', hoverBg: '--{hue}-active（如 --blue-active）· neutral: --inverse-neutral-active' },
+                ].map(({ mode, state, iconColor, hoverBg }, i) => (
+                  <tr key={i}>
+                    {mode ? <td className="p-2 border-b border-divider align-top text-caption font-mono font-medium" rowSpan={3}>{mode}</td> : null}
+                    <Td mono>{state}</Td>
+                    <Td>
+                      <span className="font-mono text-fg-secondary text-[11px]">{iconColor}</span>
+                    </Td>
+                    <Td>
+                      <span className="font-mono text-fg-secondary text-[11px]">{hoverBg}</span>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -566,87 +521,85 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <H3>Size Token 對照</H3>
-        <Desc>三種尺寸（子元件補齊原則）：sm 配 field sm，md 配 field md，lg = md alias 配 field lg。Tag 尺寸不引用 field-height token——兩者獨立。</Desc>
-      </div>
+    <ExampleSection title="Size Token 對照" description="三種尺寸（子元件補齊原則）：sm 配 field sm，md 配 field md，lg = md alias 配 field lg。Tag 尺寸不引用 field-height token——兩者獨立。">
+      <div className="flex flex-col gap-8">
 
-      {/* Token comparison table */}
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
-          <thead><tr>
-            <Th>屬性</Th>
-            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : sz === 'lg' ? '（= md alias）' : ''}</Th>)}
-          </tr></thead>
-          <tbody>
-            {([
-              { label: '高度', tokenKey: undefined as string | undefined, valFn: (s: SizeSpec, sz: SizeKey) => ({ token: sz === 'sm' ? 'h-5' : 'h-6', value: s.height }) },
-              { label: 'Tag 內距', tokenKey: 'tagPx', valFn: (s: SizeSpec) => ({ token: s.tagPx, value: `${s.tagPxVal}px` }) },
-              { label: 'Text 內距', tokenKey: 'textPx', valFn: (s: SizeSpec) => ({ token: s.textPx, value: `${s.textPxVal}px` }) },
-              { label: '字體', tokenKey: undefined, valFn: (s: SizeSpec) => ({ token: s.fontToken, value: s.font }) },
-              { label: '字重', tokenKey: undefined, valFn: (s: SizeSpec) => ({ token: s.weightToken, value: s.weight }) },
-              { label: 'Icon', tokenKey: undefined, valFn: (s: SizeSpec) => ({ token: `${s.icon}px`, value: '統一不分 size' }) },
-            ]).map((row) => (
-              <tr key={row.label}>
-                <Td>{row.label}</Td>
-                {SIZES.map((sz) => {
-                  const spec = SIZE_SPECS[sz]
-                  const { token, value } = row.valFn(spec, sz)
-                  return (
-                    <Td key={sz} mono>
-                      <div className="text-fg-secondary">{token}</div>
-                      {value && <div className="text-fg-muted text-[10px]">{value}</div>}
-                    </Td>
-                  )
-                })}
-              </tr>
-            ))}
-            {/* Dismiss specs */}
-            <tr>
-              <Td>Dismiss hover 背景</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">18px</div>
-                  <div className="text-fg-muted text-[10px]">呼吸空間 {sz === 'sm' ? '1px' : '3px'}</div>
-                </Td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Visual preview */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽</span>
+        {/* Token comparison table */}
         <div className="overflow-x-auto">
-          <table className="border-collapse">
+          <table className="border-collapse text-caption">
             <thead><tr>
-              <Th>Variant</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-              {SIZES.map((sz) => <Th key={`icon-${sz}`}>{sz} + icon</Th>)}
-              {SIZES.map((sz) => <Th key={`dismiss-${sz}`}>{sz} + dismiss</Th>)}
+              <Th>屬性</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : sz === 'lg' ? '（= md alias）' : ''}</Th>)}
             </tr></thead>
             <tbody>
-              {(['neutral', 'blue', 'green', 'red', 'purple'] as VariantKey[]).map((v) => (
-                <tr key={v}>
-                  <Td mono>{v}</Td>
-                  {SIZES.map((sz) => (
-                    <Td key={sz}><Tag color={v} size={sz}>Done</Tag></Td>
-                  ))}
-                  {SIZES.map((sz) => (
-                    <Td key={`icon-${sz}`}><Tag color={v} size={sz} icon={Hash}>API</Tag></Td>
-                  ))}
-                  {SIZES.map((sz) => (
-                    <Td key={`dismiss-${sz}`}><Tag color={v} size={sz} onRemove={() => {}}>Review</Tag></Td>
-                  ))}
+              {([
+                { label: '高度', tokenKey: undefined as string | undefined, valFn: (s: SizeSpec, sz: SizeKey) => ({ token: sz === 'sm' ? 'h-5' : 'h-6', value: s.height }) },
+                { label: 'Tag 內距', tokenKey: 'tagPx', valFn: (s: SizeSpec) => ({ token: s.tagPx, value: `${s.tagPxVal}px` }) },
+                { label: 'Text 內距', tokenKey: 'textPx', valFn: (s: SizeSpec) => ({ token: s.textPx, value: `${s.textPxVal}px` }) },
+                { label: '字體', tokenKey: undefined, valFn: (s: SizeSpec) => ({ token: s.fontToken, value: s.font }) },
+                { label: '字重', tokenKey: undefined, valFn: (s: SizeSpec) => ({ token: s.weightToken, value: s.weight }) },
+                { label: 'Icon', tokenKey: undefined, valFn: (s: SizeSpec) => ({ token: `${s.icon}px`, value: '統一不分 size' }) },
+              ]).map((row) => (
+                <tr key={row.label}>
+                  <Td>{row.label}</Td>
+                  {SIZES.map((sz) => {
+                    const spec = SIZE_SPECS[sz]
+                    const { token, value } = row.valFn(spec, sz)
+                    return (
+                      <Td key={sz} mono>
+                        <div className="text-fg-secondary">{token}</div>
+                        {value && <div className="text-fg-muted text-[10px]">{value}</div>}
+                      </Td>
+                    )
+                  })}
                 </tr>
               ))}
+              {/* Dismiss specs */}
+              <tr>
+                <Td>Dismiss hover 背景</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">18px</div>
+                    <div className="text-fg-muted text-[10px]">呼吸空間 {sz === 'sm' ? '1px' : '3px'}</div>
+                  </Td>
+                ))}
+              </tr>
             </tbody>
           </table>
         </div>
+
+        {/* Visual preview */}
+        <div className="flex flex-col gap-4">
+          <span className="text-caption font-medium text-fg-secondary">預覽</span>
+          <div className="overflow-x-auto">
+            <table className="border-collapse">
+              <thead><tr>
+                <Th>Variant</Th>
+                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+                {SIZES.map((sz) => <Th key={`icon-${sz}`}>{sz} + icon</Th>)}
+                {SIZES.map((sz) => <Th key={`dismiss-${sz}`}>{sz} + dismiss</Th>)}
+              </tr></thead>
+              <tbody>
+                {(['neutral', 'blue', 'green', 'red', 'purple'] as VariantKey[]).map((v) => (
+                  <tr key={v}>
+                    <Td mono>{v}</Td>
+                    {SIZES.map((sz) => (
+                      <Td key={sz}><Tag color={v} size={sz}>Done</Tag></Td>
+                    ))}
+                    {SIZES.map((sz) => (
+                      <Td key={`icon-${sz}`}><Tag color={v} size={sz} icon={Hash}>API</Tag></Td>
+                    ))}
+                    {SIZES.map((sz) => (
+                      <Td key={`dismiss-${sz}`}><RemovableSample color={v} size={sz}>Review</RemovableSample></Td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
+    </ExampleSection>
   ),
 }
 
@@ -656,7 +609,7 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <p className="whitespace-pre-line">{"靜態 Tag(無 onRemove)為純視覺呈現,無 keyboard / ARIA role / focus state;包進互動容器(Button / Card / Link)時 a11y 由容器決定。傳 onRemove 時 Tag 渲染原生 remove button(aria-label「移除 {label}」):Tab 可聚焦、Enter/Space 觸發移除、focus-visible 帶 outline ring(詳 spec「A11y 預設」)。"}</p>
     </div>
   ),

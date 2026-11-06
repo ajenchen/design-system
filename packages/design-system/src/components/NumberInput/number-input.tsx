@@ -3,10 +3,11 @@ import { type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import type { InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
@@ -125,7 +126,10 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
 
     // 2026-07-05 D4 draft state:controlled value 回寫會吃掉輸入中間態('-'、'1.'、'0.0' 等
     // parse 後 lossy 的 raw 字串)— 例:已有值 5 全選打「-」→ onChange(null) 回寫把 DOM 重設
-    // 為空,負號被吃、無法打出 -5。修法對齊 Ant InputNumber / Adobe Spectrum NumberField 的
+    // 為空,負號被吃、無法打出 -5。修法對齊 Ant InputNumber(底層 @rc-component/input-number InputNumber.tsx#L322-L332:
+    // https://github.com/react-component/input-number/blob/868bd31d72de99a2ef0ec5a30f36324b044f6084/src/InputNumber.tsx#L322-L332 )
+    // / Adobe Spectrum NumberField(useNumberFieldState.ts#L58-L66 inputValue vs numberValue:
+    // https://github.com/adobe/react-spectrum/blob/36f3adde26ccd12f3cc18c9d0293ece0f10e94c7/packages/react-stately/src/numberfield/useNumberFieldState.ts#L58-L66 )的
     // internal draft string canonical:輸入期間 DOM 顯示以 local draft 優先,parse 成功即時同步
     // onChange(parsed);blur / Enter commit 清 draft、顯示回 committed value;Escape 棄未提交
     // raw draft 字串、顯示回 committed value(NumberInput 為 live-commit:每次合法 parse 即
@@ -143,6 +147,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
           // 否則 axe 把 fg-disabled 的格式化數字當一般文字誤報 color-contrast(4 則 story)。不是轉發 consumer 的 aria-*,是元件自己的狀態
           aria-disabled={resolvedMode === 'disabled' || undefined}
+          // 唯讀 = 可 Tab、不可編輯(field-controls.spec.md「Focus 行為」readonly 那段;角色同編輯態的原生 input = textbox)
+          {...readonlyTabStopProps(resolvedMode, 'textbox', { ariaLabel: (props as { 'aria-label'?: string })['aria-label'], labelledBy: fieldCtx?.labelId })}
         >
           <span
             className={cn(
@@ -197,7 +203,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           // blur / Enter = commit(清 draft,顯示回 committed value);Escape 棄 draft
           onBlur={(e) => { setDraft(null); onBlurProp?.(e) }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === 'Escape') setDraft(null)
+            // 輸入法選字的 Enter / Esc 不結算草稿(判準 lib/ime-composition.ts,全 DS 一支;2026-09-30 補)
+            if ((e.key === 'Enter' || e.key === 'Escape') && !isImeComposing(e)) setDraft(null)
             onKeyDownProp?.(e)
           }}
           aria-invalid={error || undefined}

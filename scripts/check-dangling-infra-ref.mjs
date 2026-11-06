@@ -8,8 +8,21 @@
 // 掃 governance docs 引用的 hook/script/path 名,assert 每個 target 存在磁碟 OR 同行有 retired/未實作 標註。
 // 3-bucket: A=annotated-retired(OK) / B=dangling-LIVE(FAIL,--check exit 1) / C=path-deadref。
 // Usage: node scripts/check-dangling-infra-ref.mjs [--check]
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+//
+// @gate-contract
+//   保證: 治理文件(ds-canonical skills / rules / references / commands、governance/memory、AGENTS.md、CLAUDE.md 的 .md / .json,
+//         以及 .github/workflows 的每一支 .yml)引用的 hook 名(check_ / stop_ … .sh / .py)與 .mjs 腳本在磁碟上真的找得到,
+//         或同一行明確標註已退役 / 未實作 —— 文件講的那道防線、CI 要跑的那支腳本,檔案真的在
+//   紅: 文件裡寫一個不存在的 hook 名、指到 scripts / hooks / 根目錄以外的裸 .mjs 檔名、帶目錄但檔案不在的 .mjs 路徑、
+//       或 workflow 呼叫一支不存在的 .mjs(含簽出前綴 `$GITHUB_WORKSPACE/`、`trusted/` 等寫法)→ --check 指名「檔案:行號 → 名稱」並 exit 1;
+//       宣告要掃的目錄裡有檔卻 0 份被收進來、或整趟 0 份文件 = 儀器失效(INSTRUMENT-FAIL,exit 1),不得讀成「沒有懸空引用」
+//       (scripts/test-check-dangling-infra-ref.mjs 在隔離夾具裡逐面驗)
+//   綠: 引用全部解析得到時 exit 0;只讀檔(.yml 用 js-yaml 取簽出位置)+ 正規表示式,不讀時間、不依機器速度,重複跑結果相同;
+//       meta-test 的「完整路徑、檔案在 → 綠」「workflow 帶簽出前綴、檔案在 → 綠」兩面證明綠不是靠略過
+//       (2026-10-14 前帶目錄的引用與整個 .github/workflows 都是被略過的)
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { load as loadYaml } from 'js-yaml'
 
 const rootIndex = process.argv.indexOf('--root')
 if (rootIndex !== -1 && !process.argv[rootIndex + 1]) {
@@ -40,6 +53,9 @@ const EXCLUDE = /\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
 // 這類通用字 — 否則任一行只要含「(e.g., …)」或「每則 … 範例」就讓真 dangling ref 假綠放行
 // (anchor:check_story_anatomy.sh 被同行 `(e.g., "Badge …")` 假 annotate;
 //  check_principles_canonical.sh 被 `Rule note + 範例` 假 annotate)。
+// 2026-11-04(總帳 SM5)試過把「退役」「已刪」加進來:governance/memory/reference_auto_mode_sandbox_boundaries.md 有一行同時寫
+// 「該鏡像 2026-08-04 已退役」與一個**活的** approval-evidence.mjs 引用 —— 擴字會把那個活引用一起放掉(marker 是整行判)。
+// 所以不擴字;兩句歷史句改在句子裡寫明「檔案已不存在」。
 const ANNOTATED = /retired|未實作|planned|待\s*ship|deprecated|mindset enforcement|@[a-z-]+-skip|@[a-z-]+-allow|folded|rename →|不存在/i
 
 // ── infra name patterns(hook / script)──
@@ -97,6 +113,14 @@ function foldedProvenance() {
   return _foldCache
 }
 
+// ── 收哪些檔 ──
+// 散文文件收 .md / .json;.github/workflows 收 .yml / .yaml。2026-07-07 把 .github/workflows 加進 SCAN_DIRS 時 walk 只收
+// .md / .json,14 支 workflow 一支都沒讀過,輸出只有一行「Scanned 120」看不出來 —— 宣告掃了、實際沒掃(M37 第八種形狀:
+// 沒觀察到被讀成沒發生)。所以下面另外檢查「宣告的目錄有檔、卻 0 份收進來」,收不到就是儀器失效。
+const WORKFLOW_DIR = '.github/workflows'
+const isWorkflowFile = (rel) => rel.startsWith(`${WORKFLOW_DIR}/`) && /\.ya?ml$/.test(rel)
+const isScannedDoc = (rel) => /\.(md|json)$/.test(rel) || isWorkflowFile(rel)
+
 function walk(dir, acc) {
   let ents
   try { ents = readdirSync(join(ROOT, dir), { withFileTypes: true }) } catch { return }
@@ -104,32 +128,103 @@ function walk(dir, acc) {
     const rel = `${dir}/${e.name}`
     if (EXCLUDE.test(rel)) continue
     if (e.isDirectory()) walk(rel, acc)
-    else if (/\.(md|json)$/.test(e.name)) acc.push(rel)
+    else if (isScannedDoc(rel)) acc.push(rel)
   }
 }
 
+function hasAnyFile(dir) {
+  let ents
+  try { ents = readdirSync(join(ROOT, dir), { withFileTypes: true }) } catch { return false }
+  return ents.some((e) => {
+    const rel = `${dir}/${e.name}`
+    if (EXCLUDE.test(rel)) return false
+    return e.isDirectory() ? hasAnyFile(rel) : e.isFile()
+  })
+}
+
+const instrumentFailures = []
 const files = []
-for (const d of SCAN_DIRS) walk(d, files)
+for (const d of SCAN_DIRS) {
+  const before = files.length
+  walk(d, files)
+  if (files.length === before && hasAnyFile(d)) instrumentFailures.push(`${d}:目錄裡有檔,卻 0 份被收進掃描(收檔的副檔名規則沒對上這個目錄)`)
+}
 for (const f of SCAN_FILES) if (existsSync(join(ROOT, f))) files.push(f)
+if (files.length === 0) instrumentFailures.push(`${ROOT}:0 份文件被掃到 —— 根目錄或掃描路徑錯了,不是「沒有懸空引用」`)
+
+// ── workflow 裡的路徑相對於「簽出位置」,不是 repo 根(2026-10-14)──
+//   `$GITHUB_WORKSPACE/`、`${GITHUB_WORKSPACE}/`、`${{ github.workspace }}/` = 主簽出的根;
+//   actions/checkout 的 `with.path`(trusted / source / candidate / reference / recovery-tools)= 同一個 repo 簽在子目錄;
+//   `$RUNNER_TEMP/<簽出 path>/` = release-recover.yml 把簽出搬到 RUNNER_TEMP 之後再呼叫。
+// 三種變數寫法先統一成裸字:MJS_RE 的前置排除擋 `/`,`${{ github.workspace }}/scripts/x.mjs` 原樣整條比不到 = 靜默不檢查。
+// 只拿掉「這支 workflow 自己宣告的簽出 path」,不猜別的前綴;RUNNER_TEMP 底下不是簽出的,照原樣判(找不到就紅)。
+function workflowCheckoutPaths(f, text) {
+  let doc
+  try { doc = loadYaml(text) } catch (error) {
+    instrumentFailures.push(`${f}:YAML 解析失敗,判不了簽出位置(${String(error.message).split('\n')[0]})`)
+    return null
+  }
+  const paths = new Set()
+  for (const job of Object.values(doc?.jobs ?? {})) {
+    for (const step of job?.steps ?? []) {
+      if (typeof step?.uses === 'string' && step.uses.startsWith('actions/checkout@') && typeof step.with?.path === 'string') {
+        paths.add(step.with.path.replace(/^\.\//, '').replace(/\/+$/, ''))
+      }
+    }
+  }
+  return [...paths].sort((a, b) => b.length - a.length)
+}
+const normalizeWorkflowLine = (line) => line
+  .replace(/\$\{\{\s*github\.workspace\s*\}\}|\$\{GITHUB_WORKSPACE\}|\$GITHUB_WORKSPACE\b/g, 'GITHUB_WORKSPACE')
+  .replace(/\$\{\{\s*runner\.temp\s*\}\}|\$\{RUNNER_TEMP\}|\$RUNNER_TEMP\b/g, 'RUNNER_TEMP')
+function workflowRefToRepoPath(name, checkoutPaths) {
+  const underCheckout = (rest) => checkoutPaths.find((p) => rest.startsWith(`${p}/`))
+  let rest = name
+  if (rest.startsWith('GITHUB_WORKSPACE/')) rest = rest.slice('GITHUB_WORKSPACE/'.length)
+  else if (rest.startsWith('RUNNER_TEMP/')) {
+    const afterTemp = rest.slice('RUNNER_TEMP/'.length)
+    if (!underCheckout(afterTemp)) return name
+    rest = afterTemp
+  }
+  const p = underCheckout(rest)
+  return p ? rest.slice(p.length + 1) : rest
+}
+
+// 散文文件的 .mjs 一律驗存在(2026-11-04,總帳 SM5):原本散文只檢查「檔名開頭是 check / sync / audit … 那張清單」的 .mjs,
+// 其餘略過 —— 裸檔名 `consumerctl.mjs`、`approval-evidence.mjs` 這種不在清單裡的,寫錯、搬走、刪掉都從沒被驗過(拿「檔名像不像
+// infra」當「要不要驗」的代理,M37)。拿掉過濾後實測 19 筆:14 筆裸檔名 / 半截路徑(改成完整路徑)、3 筆套件建置產物
+// `dist/index.mjs`(node_modules 裡第三方套件的檔,不是 repo 檔 → BUILD_ARTIFACT 排除)、2 筆早已寫明退役 / 已刪的歷史句(句子裡補「檔案已不存在」,ANNOTATED 不擴字,理由見上)。
+// workflow 原本就不套過濾(2026-10-14)。
+const BUILD_ARTIFACT = /^dist\//
 
 const bucketB = [] // dangling-live(no annotation)= FAIL
 const bucketA = [] // annotated-retired = disclosed OK
 const seen = new Set()
+let workflowCount = 0
 
 for (const f of files) {
-  let lines
-  try { lines = readFileSync(join(ROOT, f), 'utf8').split('\n') } catch { continue }
-  lines.forEach((line, i) => {
+  let text
+  try { text = readFileSync(join(ROOT, f), 'utf8') } catch (error) {
+    instrumentFailures.push(`${f}:讀不到(${error.code ?? error.message}),這一份等於沒掃`)
+    continue
+  }
+  const workflow = isWorkflowFile(f)
+  const checkoutPaths = workflow ? workflowCheckoutPaths(f, text) : []
+  if (!checkoutPaths) continue
+  if (workflow) workflowCount++
+  text.split('\n').forEach((raw, i) => {
+    const line = workflow ? normalizeWorkflowLine(raw) : raw
     const refs = [...line.matchAll(HOOK_RE), ...line.matchAll(MJS_RE)].map((m) => m[1])
     for (const name of refs) {
-      // skip self-evidently-non-infra mjs(config / vendor)
-      if (name.endsWith('.mjs') && !/^(check|sync|audit|dispatch|verify|build|setup|test|deploy|create|lint|score|extract|compose|dogfood|plugin)/.test(name)) continue
-      if (resolvesOnDisk(name)) continue
+      if (BUILD_ARTIFACT.test(name)) continue
+      const target = workflow ? workflowRefToRepoPath(name, checkoutPaths) : name
+      if (resolvesOnDisk(target)) continue
       const key = `${f}:${i + 1}:${name}`
       if (seen.has(key)) continue
       seen.add(key)
-      const entry = { file: f, line: i + 1, name, text: line.trim().slice(0, 120) }
-      if (ANNOTATED.test(line)) bucketA.push(entry)
+      const shown = target === name ? name : `${name}(對到 repo 的 ${target})`
+      const entry = { file: f, line: i + 1, name: shown, text: raw.trim().slice(0, 120) }
+      if (ANNOTATED.test(raw)) bucketA.push(entry)
       else bucketB.push(entry)
     }
   })
@@ -137,10 +232,16 @@ for (const f of files) {
 
 console.log('═══════════════════════════════════════════════════')
 console.log('▶ Infra-ref integrity(dangling hook/script reference scan)')
-console.log(`   Scanned ${files.length} governance docs`)
+console.log(`   Scanned ${files.length} governance docs(其中 workflow ${workflowCount} 支)`)
 console.log(`   Bucket A(annotated retired/未實作/folded/不存在 — OK): ${bucketA.length}`)
 console.log(`   Bucket B(dangling LIVE — no annotation, FAIL):   ${bucketB.length}`)
 console.log('═══════════════════════════════════════════════════')
+
+if (instrumentFailures.length) {
+  console.error('\n✗ INSTRUMENT-FAIL —— 掃描本身壞了,下面的計數不代表「沒有懸空引用」:')
+  for (const m of instrumentFailures) console.error(`   ${m}`)
+  process.exit(1)
+}
 
 if (bucketB.length) {
   console.error('\n🚨 Bucket B — dangling LIVE infra refs(修:repoint live 檔 OR 同行加 retired/未實作 標註):')

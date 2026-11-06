@@ -72,7 +72,7 @@ requireStorybookBuild(join(STATIC, 'iframe.html'))
 //   - 版本本來就釘著:playwright-core 只會去找 browsers.json 裡那一個 revision(本機 / CI 都是 chromium-1217),找不到就啟動失敗;
 //     「瀏覽器裝在 repo 的 node_modules(PLAYWRIGHT_BROWSERS_PATH=0)」的 lane(focus-deep-gates 等)在 job 層就設好這個環境變數,
 //     gate-meta 與 harness runner 也各自替子行程設好(disposable-repository-snapshot / harness-runner),不需要閘自己再解析一次;
-//   - 同一個 CI job(ci.yml verify-browser-interaction,`npx playwright install chromium` 裝在預設快取)裡其他瀏覽器閘都是
+//   - 同一個 CI job(ci.yml verify-browser-field-dialog-steps,2026-10-14 自 verify-browser-interaction 拆出;`npx playwright install chromium` 裝在預設快取)裡其他瀏覽器閘都是
 //     launchBrowser 啟動,只有這支例外 = 平行實作(M17)。
 // 起不了:一般環境 SKIPPED-ENV exit 0;CI 的瀏覽器 job(GOVERNANCE_BROWSER_REQUIRED=1)BROWSER-REQUIRED exit 1,不准略過。
 // 原本起不了是未攔截例外(exit 1、沒有標記),runtime 解析失敗還是一句與瀏覽器無關的 throw —— 兩者都不在共用政策裡。

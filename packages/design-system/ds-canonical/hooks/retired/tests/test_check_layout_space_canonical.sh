@@ -2,7 +2,7 @@
 # Tests for check_layout_space_canonical.sh
 set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../lib/_layout_space_canonical.sh"
+HOOK="$SCRIPT_DIR/../_layout_space_canonical.sh.retired-2026-11-04"
 [ -x "$HOOK" ] || { echo "FATAL: hook not executable"; exit 1; }
 PASS=0; FAIL=0
 

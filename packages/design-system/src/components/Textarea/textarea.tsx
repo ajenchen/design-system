@@ -220,7 +220,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       form.addEventListener('reset', handleReset)
       return () => form.removeEventListener('reset', handleReset)
     }, [isControlled, showDisplaySpan, defaultValue, setResolved])
-    // Merge refs(LinkInput setRef idiom,link-input.tsx:138)
+    // Merge refs(LinkInput setRef idiom,link-input.tsx#setRef)
     const setRef = React.useCallback((el: HTMLTextAreaElement | null) => {
       innerRef.current = el
       if (typeof ref === 'function') ref(el)

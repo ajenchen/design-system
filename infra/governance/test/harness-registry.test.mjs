@@ -845,6 +845,62 @@ test('meta-test inventory derives full zero-debt checker coverage while preservi
   assert.throws(() => validateHarnessRegistry(dilutedOutcome), /required outcome is invalid/)
 })
 
+test('gate meta-test lanes: one registered command per declared lane, outer deadline = lane budget + 60 seconds', () => {
+  // 2026-10-14(SM2):原本整批 meta-test 是一條 45 分鐘的指令,連 7 晚被外層砍、零診斷。
+  // 現在每個 lane 一條指令,外層上限由 lane 預算推導(runner 自己先在 lane 預算內收尾並點名)。
+  const inventory = JSON.parse(readFileSync(resolve(DEFAULT_REPO_ROOT, 'infra/governance/providers/harness-source-inventory.json'), 'utf8'))
+  const lanes = inventory.pairedMeta.lanes
+  assert.ok(lanes.length >= 2, 'browser-heavy meta-tests must live in their own lane(s)')
+  const laneCommand = id => ['node', 'scripts/run-gate-meta-tests.mjs', '--lane', id]
+  const key = command => JSON.stringify(command)
+  const registered = new Set(registry.entries.flatMap(entry => entry.commands).map(key))
+  const fakeGreen = registry.entries.find(entry => entry.domain === 'fake-green')
+  for (const lane of lanes) {
+    assert.ok(registered.has(key(laneCommand(lane.id))), `lane ${lane.id} is not executed by the Harness`)
+    assert.ok(fakeGreen.commands.some(command => key(command) === key(laneCommand(lane.id))), `fake-green must execute every lane:${lane.id}`)
+    assert.equal(
+      registry.runner.timeoutOverrides.find(override => key(override.command) === key(laneCommand(lane.id)))?.timeoutMs,
+      lane.totalTimeoutMs + 60_000,
+      `lane ${lane.id} outer deadline is not derived from its budget`,
+    )
+  }
+  assert.equal(registered.has(key(['node', 'scripts/run-gate-meta-tests.mjs'])), false, 'the bare all-lane runner may not be registered as one Harness command')
+
+  // 夜間 job 的上限必須蓋得住「每個 meta lane 都用到外層上限」+ 45 分鐘(setup 與非 meta 套件;09-28 實測約 2 + 25 分),
+  // 否則 job 會比 runner 先砍,又回到零摘要(.github/workflows/governance-harnesses.yml 的註解寫明同一條式子)。
+  const NON_META_RESERVE_MINUTES = 45
+  const workflow = readFileSync(resolve(DEFAULT_REPO_ROOT, '.github/workflows/governance-harnesses.yml'), 'utf8')
+  const jobDeadlines = [...workflow.matchAll(/^\s+timeout-minutes:\s*(\d+)\s*$/gm)].map(match => Number(match[1]))
+  assert.equal(jobDeadlines.length, 1, 'the nightly All-Harness workflow must declare exactly one job deadline')
+  const laneMinutes = lanes.reduce((sum, lane) => sum + (lane.totalTimeoutMs + 60_000) / 60_000, 0)
+  assert.ok(
+    jobDeadlines[0] >= laneMinutes + NON_META_RESERVE_MINUTES,
+    `nightly job deadline ${jobDeadlines[0]} min < meta lanes ${laneMinutes} min + ${NON_META_RESERVE_MINUTES} min reserve —— rebalance lanes or raise the deadline (GitHub-hosted max 360)`,
+  )
+  assert.ok(jobDeadlines[0] <= 360, 'GitHub-hosted jobs cannot run longer than 360 minutes')
+
+  const remainder = lanes.find(lane => lane.membership === 'remainder')
+  const bare = structuredClone(registry)
+  for (const entry of bare.entries) {
+    entry.commands = entry.commands.map(command => (key(command) === key(laneCommand(remainder.id)) ? ['node', 'scripts/run-gate-meta-tests.mjs'] : command))
+  }
+  assert.throws(() => validateHarnessRegistry(bare), /Harness whitelist|argument shape|source-execution topology/)
+
+  const driftedDeadline = structuredClone(registry)
+  driftedDeadline.runner.timeoutOverrides.find(override => key(override.command) === key(laneCommand(remainder.id))).timeoutMs += 1
+  assert.throws(() => validateHarnessRegistry(driftedDeadline), /lane outer process-group deadline must equal its source-inventory lane budget/)
+
+  const ghostLane = structuredClone(registry)
+  ghostLane.entries.find(entry => entry.domain === 'fake-green').commands.push(laneCommand('ghost'))
+  assert.throws(() => validateHarnessRegistry(ghostLane), /source-execution topology|unregistered execution owner/)
+
+  const droppedLane = structuredClone(registry)
+  const declared = lanes.find(lane => lane.membership === 'declared')
+  for (const entry of droppedLane.entries) entry.commands = entry.commands.filter(command => key(command) !== key(laneCommand(declared.id)))
+  droppedLane.runner.timeoutOverrides = droppedLane.runner.timeoutOverrides.filter(override => key(override.command) !== key(laneCommand(declared.id)))
+  assert.throws(() => validateHarnessRegistry(droppedLane), /lane is not registered|source-execution topology/)
+})
+
 test('product-template classification keeps every DS-author workflow out of the consumer skill role', () => {
   const classification = JSON.parse(readFileSync(resolve(DEFAULT_REPO_ROOT, 'scripts/fork-governance-classification.json'), 'utf8'))
   const skillItems = classification.homes.skills.items

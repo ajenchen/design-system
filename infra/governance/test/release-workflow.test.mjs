@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
@@ -23,6 +23,16 @@ import {
   classifyReleaseLookup,
   countsAsPublishedFromState,
   classifyScheduledMonitorRun,
+  classifyScheduledMonitor,
+  cronAddedOnDefaultBranch,
+  curlGitHubParallel,
+  describeAge,
+  formatScheduledMonitorLines,
+  listScheduledWorkflows,
+  nextCronFire,
+  readScheduledMonitors,
+  scheduleOverdue,
+  scheduledMonitorsForReport,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
   matchesConsumerPullRequest,
@@ -30,6 +40,7 @@ import {
   validateConsumerCheckProvenance,
   consentCoversHead,
   consumerStepAction,
+  nextConsumerVersion,
   productContentDigest,
   productChangeSinceBaseline,
   publishedBaselineRef,
@@ -565,6 +576,52 @@ test('呼叫端真的用 consumerStepAction,而且兩個旗標沒有被合回一
   assert.doesNotMatch(createBranch, /dispatchedConsumers\.add/, '開 PR 不得標記成「已派工」')
 })
 
+test('WM 只在要求時升級:設定標 on-request 的 consumer,第五步不讀、不派工、不算完成條件;template 照做', async () => {
+  // user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+  // 設定是唯一的開關(release-workflow.json `upgrade`),orchestrator 只消費它 —— 不在程式裡另寫一份 WM 名單。
+  const orchestrator = await import('../../../scripts/release-orchestrator.mjs')
+  const wm = workflow.automation.consumers.find(target => target.repository === 'ajenchen/work-management')
+  const template = workflow.automation.consumers.find(target => target.repository === 'ajenchen/ds-product-template')
+  assert.equal(wm?.upgrade, 'on-request', 'WM 在設定裡必須是只在要求時升級')
+  assert.notEqual(template?.upgrade, 'on-request', 'template 照舊自動升級')
+  const consumerStep = workflow.steps.find(step => step.id === 'consumer')
+  assert.ok(!consumerStep.completion.includes('work-management-main-exact-version'), 'WM 不是第五步的完成條件')
+  assert.ok(consumerStep.completion.includes('template-main-exact-version'))
+
+  assert.equal(typeof orchestrator.selectReleaseConsumers, 'function', 'orchestrator 必須有一支挑「這一輪要升級哪些 consumer」的純函式')
+  // 沒要求 → 只有 template
+  const auto = orchestrator.selectReleaseConsumers(workflow.automation.consumers, [])
+  assert.deepEqual(auto.map(target => target.repository), ['ajenchen/ds-product-template'])
+  // user 明確要求 → WM 才加進來(要求只認 repository 全名)
+  const requested = orchestrator.selectReleaseConsumers(workflow.automation.consumers, ['ajenchen/work-management'])
+  assert.deepEqual(requested.map(target => target.repository).sort(), ['ajenchen/ds-product-template', 'ajenchen/work-management'])
+  assert.deepEqual(orchestrator.requestedConsumersFromEnv({}), [])
+  assert.deepEqual(orchestrator.requestedConsumersFromEnv({ RELEASE_REQUESTED_CONSUMERS: ' ajenchen/work-management , ' }), ['ajenchen/work-management'])
+
+  // 第五步的狀態只看這一輪要升級的 consumer:template 完成 → complete,WM 沒被讀也不卡
+  const observation = {
+    onProtectedMain: true,
+    pullRequest: null,
+    releaseCommitSha: 'a'.repeat(40),
+    tagCommitSha: 'a'.repeat(40),
+    protectedMainSha: 'a'.repeat(40),
+    release: { tagName: 'v1.2.3', isDraft: false, isImmutable: true, publishedAt: '2026-08-01T00:00:00Z' },
+    publishRun: null,
+    npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: true })),
+    consumers: auto.map(target => ({ ...target, exactVersion: true, checkReadback: { trusted: true } })),
+  }
+  assert.equal(buildFiveStepStatus(workflow, observation).at(-1).status, 'complete')
+  // 對照組:同一份 observation 但把 WM(沒升級)放回去 = 修前的行為 → 第五步卡 pending
+  const before = { ...observation, consumers: [...observation.consumers, { ...wm, exactVersion: false, checkReadback: { trusted: false } }] }
+  assert.equal(buildFiveStepStatus(workflow, before).at(-1).status, 'pending')
+
+  // 呼叫端真的消費這支純函式(否則判定表全綠、實際仍去讀 / 派工 WM)
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('return {', src.indexOf('export function collectLiveObservation(')))
+  assert.match(collect, /selectReleaseConsumers\(consumers, requestedConsumersFromEnv\(\)\)/, 'collectLiveObservation 必須先挑這一輪的 consumer')
+  assert.doesNotMatch(collect, /\bconsumers\.map\(/, '不得直接對設定裡全部 consumer 做讀回')
+})
+
 test('發版同意綁「使用者看過的產品內容」,不綁 commit 也不綁分支', () => {
   const digest = productContentDigest('HEAD')
   assert.match(digest || '', /^[0-9a-f]{64}$/, '產品內容指紋必須算得出來')
@@ -867,7 +924,7 @@ test('發布前必須確認「宣告的前一版是某個 consumer 手上真的�
   assert.match(installed, /node_modules\/@qijenchen\/design-system/, '讀的必須是實際安裝的那個條目')
 })
 
-test('排程監看的紅燈要有觀眾 —— 發布報告必須印出最新一次視覺回歸週跑的結論,但不得擋發布', () => {
+test('排程監看的紅燈要有觀眾 —— 單次跑的三值判定;讀不到 / 還在跑不得講成綠或紅', () => {
   // 2026-09-22 實證:visual-regression.yml 從 8/12 起連紅六週(runner 映像 20260720 → 20260810 → 20260907,
   // 字型漂移、baseline 停在 7/28),沒有任何人看見 —— 它只排程、不進 PR。紅燈沒有觀眾等於沒有燈。
   assert.deepEqual(classifyScheduledMonitorRun({ status: 'completed', conclusion: 'success', created_at: '2026-08-05T03:23:00Z' }),
@@ -878,17 +935,598 @@ test('排程監看的紅燈要有觀眾 —— 發布報告必須印出最新一
   assert.equal(classifyScheduledMonitorRun(null).verdict, 'unknown')
   assert.equal(classifyScheduledMonitorRun({ status: 'in_progress', conclusion: null, created_at: '2026-09-22T03:23:00Z' }).verdict, 'unknown')
   assert.equal(classifyScheduledMonitorRun({ status: 'completed', conclusion: 'neutral' }).verdict, 'unknown')
+})
 
+test('排程監看清單從 .github/workflows 機械列出(不手列),量具讀不到時講「不完整」而不是「沒有排程」', () => {
+  // 2026-10-14(待辦總帳 SM9):release:status 原本只讀手寫的 visual-regression.yml 一支,其餘排程監看沒有任何執行面讀 ——
+  // All-Harness 連 63 晚、a11y 69 次、bundle 41 天紅,沒有人看見。手寫清單本身是代理(M37)。
+  // ① 真實目錄:清單必須等於「原文宣告 schedule: 的那幾支」(另一條獨立的讀法;兩面對照)
+  const workflowsDir = resolve(ROOT, '.github/workflows')
+  const listing = listScheduledWorkflows()
+  assert.equal(listing.ok, true, listing.reason)
+  const declared = readdirSync(workflowsDir).filter(file => /\.ya?ml$/.test(file))
+    .filter(file => /^[ \t]*schedule[ \t]*:/m.test(readFileSync(join(workflowsDir, file), 'utf8'))).sort()
+  assert.ok(declared.length >= 2, '對照組:原文掃描本身要看得到排程 workflow,否則下一行的相等毫無意義')
+  assert.deepEqual(listing.workflows.map(item => item.file), declared)
+  assert.equal(listing.scanned, readdirSync(workflowsDir).filter(file => /\.ya?ml$/.test(file)).length)
+  for (const item of listing.workflows) {
+    assert.ok(item.crons.length > 0 && item.name, `${item.file} 要有 cron 與名稱`)
+    // 逾期判定要能算:每一條真實的 cron 都必須算得出下一次觸發,否則「逾期」對它永遠是 null(零訊號)
+    for (const cron of item.crons) assert.ok(nextCronFire(cron, '2026-10-14T00:00:00Z'), `${item.file} 的 cron「${cron}」算不出下一次觸發`)
+  }
+
+  // ② fixture:判定表
+  const dir = mkdtempSync(join(tmpdir(), 'scheduled-workflows-'))
+  try {
+    const write = (name, text) => writeFileSync(join(dir, name), text)
+    assert.equal(listScheduledWorkflows({ dir }).ok, false, '0 個 workflow 檔 = 量具沒讀到東西,不是沒有排程')
+    assert.equal(listScheduledWorkflows({ dir: join(dir, 'missing') }).ok, false, '讀不到目錄 = 量具失效')
+    write('nightly.yml', "name: Nightly suite\non:\n  workflow_dispatch:\n  schedule:\n    - cron: '0 3 * * *'\n    - cron: '30 15 * * 5'\njobs: {}\n")
+    write('pr.yaml', 'name: PR\non: [push, pull_request]\njobs: {}\n')
+    write('push.yml', 'on:\n  push:\n    branches: [main]\njobs: {}\n')
+    write('unnamed.yml', "on:\n  schedule:\n    - cron: '17 6 * * 1'   # 每週一\njobs: {}\n")
+    write('notes.txt', "cron: '* * * * *'\n")
+    const good = listScheduledWorkflows({ dir })
+    assert.equal(good.ok, true, good.reason)
+    assert.equal(good.scanned, 4, '只算 .yml / .yaml')
+    assert.deepEqual(good.workflows, [
+      { file: 'nightly.yml', name: 'Nightly suite', crons: ['0 3 * * *', '30 15 * * 5'] },
+      { file: 'unnamed.yml', name: 'unnamed.yml', crons: ['17 6 * * 1'] },
+    ])
+    // 解析不了的那支有沒有排程無從得知:整份標不完整並指名,解析得了的照樣列出
+    write('broken.yml', 'on: [push\njobs: {}\n')
+    const broken = listScheduledWorkflows({ dir })
+    assert.equal(broken.ok, false)
+    assert.match(broken.reason, /broken\.yml/)
+    assert.deepEqual(broken.workflows.map(item => item.file), ['nightly.yml', 'unnamed.yml'])
+    rmSync(join(dir, 'broken.yml'))
+    // 原文有 cron: 卻解析出 0 條排程(寫錯位置)= 解析結果與原文對不上
+    write('misplaced.yml', "on:\n  push:\n    cron: '0 0 * * *'\njobs: {}\n")
+    const misplaced = listScheduledWorkflows({ dir })
+    assert.equal(misplaced.ok, false)
+    assert.match(misplaced.reason, /misplaced\.yml.*cron/)
+    rmSync(join(dir, 'misplaced.yml'))
+    // 解析器丟錯(例如沒裝 js-yaml)→ 每一支都判斷不了,不得回「0 支排程、一切正常」
+    const noParser = listScheduledWorkflows({ dir, parseYaml: () => { throw new Error('Cannot find module js-yaml') } })
+    assert.equal(noParser.ok, false)
+    assert.equal(noParser.workflows.length, 0)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('cron 下一次觸發(UTC):每天 / 每週 / 每月 / 間隔 / 日與星期「任一符合」;不支援的寫法回 null 不猜', () => {
+  const at = (cron, after) => nextCronFire(cron, after)?.toISOString() ?? null
+  // 真實資料:a11y-and-size.yml 10-14 那次 07:00:56 才跑(cron 02:00,晚了 5 小時)→ 下一次是隔天 02:00
+  assert.equal(at('0 2 * * *', '2026-10-14T07:00:56Z'), '2026-10-15T02:00:00.000Z')
+  // visual-regression.yml 週三 08:49 才跑 → 下週三 03:23
+  assert.equal(at('23 3 * * 3', '2026-10-14T08:49:41Z'), '2026-10-21T03:23:00.000Z')
+  assert.equal(at('17 6 * * 1', '2026-10-12T15:40:57Z'), '2026-10-19T06:17:00.000Z')
+  assert.equal(at('17 6 * * 1', '2026-10-12T06:16:00Z'), '2026-10-12T06:17:00.000Z', '同一天還沒到就是同一天')
+  assert.equal(at('17 6 * * 1', '2026-10-12T06:17:00Z'), '2026-10-19T06:17:00.000Z', '嚴格晚於 after')
+  assert.equal(at('*/15 * * * *', '2026-10-14T12:07:30Z'), '2026-10-14T12:15:00.000Z')
+  assert.equal(at('0 0 1 * *', '2026-10-14T00:00:00Z'), '2026-11-01T00:00:00.000Z')
+  assert.equal(at('0 0 31 * *', '2026-11-01T00:00:00Z'), '2026-12-31T00:00:00.000Z', '11 月沒有 31 號')
+  assert.equal(at('0 0 13 * 5', '2026-10-01T00:00:00Z'), '2026-10-02T00:00:00.000Z', '日與星期都限定 = 任一符合(10-02 是星期五)')
+  assert.equal(at('0 0 * * 7', '2026-10-14T00:00:00Z'), '2026-10-18T00:00:00.000Z', '星期 7 = 星期日')
+  assert.equal(at('0 9-17/4 * * 1-5', '2026-10-17T00:00:00Z'), '2026-10-19T09:00:00.000Z', '範圍 + 間隔;週六跳到週一')
+  for (const bad of ['@daily', '0 2 * *', '61 * * * *', '0 2 * * MON', '', null]) {
+    assert.equal(nextCronFire(bad, '2026-10-14T00:00:00Z'), null, `「${bad}」要回 null`)
+  }
+  assert.equal(nextCronFire('0 2 * * *', 'not a date'), null)
+  // 逾期:多條 cron 取最早;任一條算不出就不判(不猜)
+  const now = new Date('2026-10-14T10:00:00Z')
+  assert.equal(scheduleOverdue(['0 2 * * *'], '2026-10-13T07:00:00Z', now).overdue, false, '隔天 02:00 該跑、寬限一天內')
+  assert.equal(scheduleOverdue(['0 2 * * *'], '2026-10-12T07:00:00Z', now).overdue, true, '10-13 02:00 該跑,超過一天沒跑')
+  assert.equal(scheduleOverdue(['23 3 * * 3', '0 2 * * *'], '2026-10-01T09:00:00Z', now).nextDue.toISOString(), '2026-10-02T02:00:00.000Z')
+  assert.deepEqual(scheduleOverdue(['0 2 * * *', '@weekly'], '2026-10-01T09:00:00Z', now), { nextDue: null, overdue: null })
+  assert.deepEqual(scheduleOverdue([], '2026-10-01T09:00:00Z', now), { nextDue: null, overdue: null })
+  assert.equal(describeAge('2026-10-14T09:58:00Z', now), '2 分鐘前')
+  assert.equal(describeAge('2026-10-13T07:00:00Z', now), '27 小時前')
+  assert.equal(describeAge('2026-08-05T03:02:47Z', now), '70 天前')
+  assert.equal(describeAge(undefined, now), '時間不明')
+})
+
+/** 排程 run fixture:形狀照 GitHub `GET /repos/{o}/{r}/actions/workflows/{file}/runs` 的 workflow_runs[](只留判定用到的欄位)。 */
+const scheduledRun = (id, createdAt, conclusion = 'failure', status = 'completed') => ({
+  id, status, conclusion: status === 'completed' ? conclusion : null, event: 'schedule', run_attempt: 1, created_at: createdAt,
+  run_started_at: createdAt, head_sha: 'ec7466f5536b12e85ea712a5afe71e24d2d15b77', html_url: `https://github.com/o/r/actions/runs/${id}`,
+})
+const MONITOR_NOW = new Date('2026-10-14T10:00:00Z')
+const DAILY = { file: 'nightly.yml', name: 'Nightly', crons: ['0 2 * * *'] }
+
+test('排程監看判定表 —— 「0 筆」永遠不是綠也不是紅;先證明查詢拿得到資料,再講是哪一種沒有', () => {
+  const classify = input => classifyScheduledMonitor({ workflow: DAILY, now: MONITOR_NOW, ...input })
+  const empty = { ok: true, totalCount: 0, runs: [] }
+  const zeroCases = {
+    'unproven-empty': { runs: empty, queryProven: false },
+    'meta-unreadable': { runs: empty, queryProven: true, meta: { code: 0 } },
+    'not-registered': { runs: empty, queryProven: true, meta: { code: 404 } },
+    disabled: { runs: empty, queryProven: true, meta: { code: 200, state: 'disabled_inactivity', created_at: '2026-05-25T02:50:27Z' } },
+    'not-yet-due': { runs: empty, queryProven: true, meta: { code: 200, state: 'active', created_at: '2026-10-14T08:00:00Z' }, cronAdded: { '0 2 * * *': '2026-10-14T07:00:00Z' } },
+    'never-ran': { runs: empty, queryProven: true, meta: { code: 200, state: 'active', created_at: '2026-09-01T00:00:00Z' }, cronAdded: { '0 2 * * *': '2026-08-01T10:04:46Z' } },
+    'due-unknown': { runs: empty, queryProven: true, meta: { code: 200, state: 'active', created_at: '2026-09-01T00:00:00Z' }, cronAdded: { '0 2 * * *': null } },
+    'not-on-default-branch': { runs: empty, queryProven: true, meta: { code: 200, state: 'active', created_at: '2026-04-26T03:55:00Z' }, cronAdded: { '0 2 * * *': false } },
+  }
+  for (const [kind, input] of Object.entries(zeroCases)) {
+    const out = classify(input)
+    assert.equal(out.kind, kind, `${kind}: ${out.detail}`)
+    assert.equal(out.verdict, 'unknown', `0 筆(${kind})不得講成綠或紅`)
+  }
+  assert.match(classify(zeroCases['unproven-empty']).detail, /證明不了查詢拿得到資料/, '查詢沒被證明過,不得讀成「沒跑過」')
+  assert.doesNotMatch(classify(zeroCases['unproven-empty']).detail, /從沒|沒跑過」?$/)
+  assert.match(classify(zeroCases.disabled).detail, /disabled_inactivity/)
+  assert.match(classify(zeroCases['not-yet-due']).detail, /2026-10-15 02:00 UTC/)
+  assert.match(classify(zeroCases['never-ran']).detail, /2026-09-01 02:00 UTC.*0 次排程 run/)
+  // 第一次該跑從「註冊」與「cron 加進預設分支」較晚的那一刻起算,不拿註冊時間代替(05-25 就註冊、08-01 才加 cron 的真實情形)
+  const lateCron = { runs: empty, queryProven: true, meta: { code: 200, state: 'active', created_at: '2026-05-25T14:47:42.000+08:00' } }
+  const lateCronNeverRan = classify({ ...lateCron, cronAdded: { '0 2 * * *': '2026-08-01T18:04:46+08:00' } })
+  assert.equal(lateCronNeverRan.kind, 'never-ran')
+  assert.equal(lateCronNeverRan.nextDue, '2026-08-02T02:00:00.000Z', '從 cron 加上的那一刻起算,不是 05-26')
+  const lateCronJustAdded = classify({ ...lateCron, cronAdded: { '0 2 * * *': '2026-10-14T03:00:00Z' } })
+  assert.equal(lateCronJustAdded.kind, 'not-yet-due', '註冊很久了、cron 今天才加上 = 還沒到第一次排程,不是「該跑卻沒跑」')
+  for (const added of [undefined, {}, { '0 2 * * *': null }, { '0 2 * * *': 'not a date' }]) {
+    const out = classify({ ...lateCron, cronAdded: added })
+    assert.equal(out.kind, 'due-unknown', `cron 何時加上讀不到(${JSON.stringify(added)})不得退回拿註冊時間起算`)
+    assert.match(out.detail, /workflow 註冊於 2026-05-25 06:47 UTC.*排程何時加進預設分支未知/)
+    assert.doesNotMatch(out.detail, /第一次排程應在/)
+  }
+  assert.equal(classify({ ...lateCron, workflow: { ...DAILY, crons: ['@daily'] }, cronAdded: { '@daily': '2026-08-01T00:00:00Z' } }).kind, 'due-unknown',
+    'cron 寫法算不出應跑時間也是未知')
+  // 預設分支上從沒有這條 cron(本地有、還沒合併)= GitHub 不會排程:講明,不講「未知」也不講「該跑卻沒跑」
+  assert.match(classify(zeroCases['not-on-default-branch']).detail, /cron 0 2 \* \* \* 不在預設分支上/)
+  // 兩條 cron 只有一條在預設分支上:只拿那一條推「該跑」,另一條註明不算
+  const mixed = classify({ ...lateCron, workflow: { ...DAILY, crons: ['0 2 * * *', '0 9 * * *'] }, cronAdded: { '0 2 * * *': '2026-08-01T18:04:46+08:00', '0 9 * * *': false } })
+  assert.equal(mixed.kind, 'never-ran')
+  assert.equal(mixed.nextDue, '2026-08-02T02:00:00.000Z')
+  assert.match(mixed.detail, /另有 0 9 \* \* \* 不在預設分支上,不算/)
+  // 查詢本身失敗 → query-failed;404 而且查詢已被證明、workflow 也 404 → 沒註冊
+  assert.equal(classify({ runs: { ok: false, code: 500 } }).kind, 'query-failed')
+  assert.match(classify({ runs: { ok: false, code: 500 } }).detail, /HTTP 500.*讀不到 ≠ 綠/)
+  assert.equal(classify({ runs: { ok: false, code: 404 }, queryProven: true, meta: { code: 404 } }).kind, 'not-registered')
+  assert.equal(classify({ runs: { ok: false, code: 404 }, queryProven: false, meta: { code: 404 } }).kind, 'query-failed',
+    '查詢沒被證明過,404 可能是 token / repo 錯,不得斷言「沒註冊」')
+  assert.equal(classify({ runs: undefined }).verdict, 'unknown')
+
+  // 綠:最新跑完那次是綠、沒逾期
+  const green = classify({ runs: { ok: true, totalCount: 40, runs: [scheduledRun(9, '2026-10-14T07:00:00Z', 'success')] } })
+  assert.equal(green.verdict, 'green')
+  assert.equal(green.kind, 'latest')
+  assert.match(green.detail, /^2026-10-14 綠\(3 小時前\)$/)
+  assert.equal(green.url, 'https://github.com/o/r/actions/runs/9')
+  assert.equal(green.failedJobs, null, '綠的不讀 job')
+
+  // 紅,最近幾次裡就看得到最後一次綠 → 確數
+  const recentGreen = classify({ runs: { ok: true, totalCount: 40, runs: [
+    scheduledRun(9, '2026-10-14T07:00:00Z'), scheduledRun(8, '2026-10-13T07:00:00Z', 'cancelled'),
+    scheduledRun(7, '2026-10-12T07:00:00Z', 'success'), scheduledRun(6, '2026-10-11T07:00:00Z'),
+  ] }, jobs: [
+    { name: 'Monitor a11y drift', conclusion: 'failure', html_url: 'https://github.com/o/r/actions/runs/9/job/1',
+      steps: [{ name: 'Checkout', conclusion: 'success' }, { name: 'Run npm run --silent setup:dependencies', conclusion: 'failure' }] },
+    { name: 'Monitor bundle size drift', conclusion: 'success', steps: [] },
+    { name: 'Rebake gate', conclusion: 'skipped', steps: [] },
+  ] })
+  assert.equal(recentGreen.verdict, 'red')
+  // 一支 workflow 跑兩個 job:「最後一次綠 / 連幾次」是整支的(10-14 實數:a11y-and-size 整支最後全綠 08-05、之後 70 次,
+  // bundle 自己最後綠 09-02、之後 42 次)—— 字樣必須講明是整支,並把這次綠的那個 job 也列出來
+  assert.match(recentGreen.detail, /整支\(2 個 job 全綠\)最後一次 2026-10-12,之後連 2 次沒全綠\(次數算整支 workflow,不是各 job 自己的/)
+  assert.doesNotMatch(recentGreen.detail, /;最後一次綠/)
+  assert.deepEqual(recentGreen.jobs.map(job => `${job.name}:${job.conclusion}`), ['Monitor a11y drift:failure', 'Monitor bundle size drift:success'],
+    '這次跑了的 job 全列(略過的不算),綠的也要在')
+  const recentGreenLines = formatScheduledMonitorLines({ listing: { ok: true, reason: null, scanned: 1, count: 1 }, monitors: { 'a.yml': { file: 'a.yml', name: 'A', crons: [], ...recentGreen } } }).join('\n')
+  assert.match(recentGreenLines, /✗ Monitor a11y drift:failure,擋在「Run npm run --silent setup:dependencies」/)
+  assert.match(recentGreenLines, /✓ Monitor bundle size drift:success/, '紅的 run 裡綠的 job 要印出來,不得讓人從「沒列出」去猜')
+  // 只跑了一個 job(其餘略過)= 單一 job 的字樣
+  const oneJob = classify({ runs: { ok: true, totalCount: 40, runs: [scheduledRun(9, '2026-10-14T07:00:00Z'), scheduledRun(7, '2026-10-12T07:00:00Z', 'success')] },
+    jobs: [{ name: 'Monitor a11y drift', conclusion: 'failure', steps: [] }, { name: 'Rebake gate', conclusion: 'skipped', steps: [] }] })
+  assert.match(oneJob.detail, /;最後一次綠 2026-10-12,之後連 1 次沒綠$/)
+  assert.equal(recentGreen.nonGreenStreak, 2)
+  assert.equal(recentGreen.nonGreenStreakIsLowerBound, false)
+  assert.deepEqual(recentGreen.failedJobs, [{ name: 'Monitor a11y drift', conclusion: 'failure',
+    url: 'https://github.com/o/r/actions/runs/9/job/1', failedStep: 'Run npm run --silent setup:dependencies' }],
+  '只列沒綠的 job(略過 / 綠的不列),並指出擋在哪一步')
+
+  // 紅,最近幾次沒綠:最後一次綠與連續次數由另外兩條查詢回答;兩面對得上才講確數
+  const fiveRed = { ok: true, totalCount: 142, runs: [1, 2, 3, 4, 5].map(n => scheduledRun(100 - n, `2026-10-${String(15 - n).padStart(2, '0')}T07:00:00Z`)) }
+  const oldGreen = { ok: true, totalCount: 35, run: scheduledRun(30971099005, '2026-08-05T03:02:47Z', 'success'), proven: true }
+  const exact = classify({ runs: fiveRed, greens: oldGreen, streak: { ok: true, totalCount: 70 }, jobs: [] })
+  assert.match(exact.detail, /最後一次綠 2026-08-05,之後連 70 次沒綠/)
+  assert.equal(exact.nonGreenStreak, 70)
+  assert.equal(exact.lastGreen.id, 30971099005)
+  const contradicts = classify({ runs: fiveRed, greens: oldGreen, streak: { ok: true, totalCount: 3 }, jobs: [] })
+  assert.match(contradicts.detail, /之後至少 5 次沒綠\(連續次數與最近幾次對不上\)/, '查到的次數少於已經看到的沒綠次數 = 查詢不可信,只講至少')
+  assert.equal(contradicts.nonGreenStreakIsLowerBound, true)
+  const noStreak = classify({ runs: fiveRed, greens: oldGreen, streak: { ok: false }, jobs: [] })
+  assert.match(noStreak.detail, /之後至少 5 次沒綠\(連續次數讀不到\)/)
+  // 「綠過沒有」查詢回 0 筆:這一輪同一個篩選對別支拿到過資料才講「全部沒綠」,否則只講最近幾次
+  const neverGreenProven = classify({ runs: fiveRed, greens: { ok: true, totalCount: 0, run: null, proven: true }, jobs: [] })
+  assert.match(neverGreenProven.detail, /全部 142 次排程沒有一次綠/)
+  assert.equal(neverGreenProven.nonGreenStreakIsLowerBound, false)
+  const neverGreenUnproven = classify({ runs: fiveRed, greens: { ok: true, totalCount: 0, run: null, proven: false }, jobs: [] })
+  assert.match(neverGreenUnproven.detail, /最近 5 次排程沒有一次綠\(「綠過沒有」的查詢回 0 筆,但這一輪沒有任何一支證明它拿得到資料/)
+  assert.equal(neverGreenUnproven.nonGreenStreakIsLowerBound, true)
+  assert.match(classify({ runs: fiveRed, greens: { ok: false }, jobs: [] }).detail, /最近 5 次排程沒有一次綠\(更早的讀不到\)/)
+  // 全部都讀到了(筆數 = total_count)就不必問別的查詢
+  const sawAll = classify({ runs: { ok: true, totalCount: 2, runs: [scheduledRun(2, '2026-10-14T07:00:00Z'), scheduledRun(1, '2026-10-13T07:00:00Z')] }, jobs: [] })
+  assert.match(sawAll.detail, /全部 2 次排程沒有一次綠/)
+  assert.match(classify({ runs: fiveRed, greens: oldGreen, streak: { ok: true, totalCount: 70 }, jobs: null }).detail, /讀不到 job 明細/)
+
+  // 最新那次還在跑:講前一次跑完的結論,並註明還在跑;只有還在跑的 → unknown
+  const running = classify({ runs: { ok: true, totalCount: 3, runs: [scheduledRun(3, '2026-10-14T09:00:00Z', null, 'in_progress'),
+    scheduledRun(2, '2026-10-13T07:00:00Z', 'success'), scheduledRun(1, '2026-10-12T07:00:00Z')] } })
+  assert.equal(running.verdict, 'green')
+  assert.match(running.detail, /2026-10-14 那次還在跑/)
+  assert.equal(running.inProgress.id, 3)
+  const onlyRunning = classify({ runs: { ok: true, totalCount: 1, runs: [scheduledRun(3, '2026-10-14T09:00:00Z', null, 'queued')] } })
+  assert.equal(onlyRunning.kind, 'running-only')
+  assert.equal(onlyRunning.verdict, 'unknown')
+
+  // 逾期:舊的綠不是現在的綠(→ unknown);紅照樣紅,但註明可能已不是現況
+  const staleGreen = classify({ runs: { ok: true, totalCount: 9, runs: [scheduledRun(9, '2026-10-01T07:00:00Z', 'success')] },
+    meta: { code: 200, state: 'disabled_inactivity' } })
+  assert.equal(staleGreen.kind, 'stale')
+  assert.equal(staleGreen.verdict, 'unknown')
+  assert.match(staleGreen.detail, /排程應在 2026-10-02 02:00 UTC 再跑,超過一天還沒有新的排程 run\(workflow state=disabled_inactivity\)/)
+  const staleRed = classify({ runs: { ok: true, totalCount: 1, runs: [scheduledRun(9, '2026-10-01T07:00:00Z')] }, jobs: [] })
+  assert.equal(staleRed.kind, 'stale')
+  assert.equal(staleRed.verdict, 'red')
+})
+
+/** 假 GitHub:依路徑回 fixture,並記下每一個被問的路徑(只會收到路徑 —— 讀取端沒有任何寫入的管道)。 */
+function fakeGitHub(routes) {
+  const calls = []
+  const github = path => {
+    calls.push(path)
+    for (const [pattern, respond] of routes) {
+      const match = pattern.exec(path)
+      if (match) {
+        const out = typeof respond === 'function' ? respond(match) : respond
+        return out.code ? out : { ok: true, code: 200, text: JSON.stringify(out) }
+      }
+    }
+    return { ok: false, code: 404, text: '{"message":"Not Found"}' }
+  }
+  return { github, calls }
+}
+const runsBody = (runs, totalCount = runs.length) => ({ total_count: totalCount, workflow_runs: runs })
+const WEEKLY = { file: 'weekly.yml', name: 'Weekly', crons: ['23 3 * * 3'] }
+const FRESH = { file: 'fresh.yml', name: 'Fresh', crons: ['41 3 * * 4'] }
+const LISTING = { ok: true, reason: null, scanned: 9, workflows: [DAILY, WEEKLY, FRESH] }
+/** 0 筆那幾支要讀「cron 何時加進預設分支」(本地 git);讀取端的測試一律注入,不碰真的 repo。 */
+const CRON_ADDED = workflow => Object.fromEntries(workflow.crons.map(cron => [cron, '2026-09-01T00:00:00Z']))
+
+test('讀全部排程監看:只讀、兩批平行;0 筆靠「同一條查詢對別支拿到過資料」或 repo 層對照組證明', () => {
+  const recent = /^repos\/o\/r\/actions\/workflows\/([^/]+)\/runs\?event=schedule&per_page=5$/
+  const greens = /^repos\/o\/r\/actions\/workflows\/([^/]+)\/runs\?event=schedule&status=success&per_page=1$/
+  const streak = /^repos\/o\/r\/actions\/workflows\/([^/]+)\/runs\?event=schedule&status=completed&created=%3E([^&]+)&per_page=1$/
+  const jobs = /^repos\/o\/r\/actions\/runs\/(\d+)\/jobs\?filter=latest&per_page=100$/
+  const meta = /^repos\/o\/r\/actions\/workflows\/([^/?]+)$/
+  const control = /^repos\/o\/r\/actions\/runs\?event=schedule&per_page=1$/
+  const dailyRuns = [5, 4, 3, 2, 1].map(n => scheduledRun(200 + n, `2026-10-${String(9 + n).padStart(2, '0')}T07:00:00Z`))
+
+  // ① 有兩支拿到資料 → 第三支的 0 筆已被證明是真的 0 筆,不必打對照組
+  {
+    const { github, calls } = fakeGitHub([
+      [recent, m => (m[1] === 'nightly.yml' ? runsBody(dailyRuns, 142) : m[1] === 'weekly.yml'
+        ? runsBody([scheduledRun(301, '2026-10-14T08:49:41Z', 'success')], 11) : runsBody([], 0))],
+      [greens, m => (m[1] === 'nightly.yml' ? runsBody([scheduledRun(30971099005, '2026-08-05T03:02:47Z', 'success')], 35)
+        : m[1] === 'weekly.yml' ? runsBody([scheduledRun(301, '2026-10-14T08:49:41Z', 'success')], 1) : runsBody([], 0))],
+      [streak, m => (m[1] === 'nightly.yml' && decodeURIComponent(m[2]) === '2026-08-05T03:02:47Z' ? runsBody([], 70) : { ok: false, code: 422 })],
+      [jobs, m => ({ total_count: 1, jobs: [{ name: `job of ${m[1]}`, run_id: Number(m[1]), run_attempt: 1, conclusion: 'failure', steps: [{ name: 'Install', conclusion: 'failure' }] }] })],
+      [meta, m => (m[1] === 'fresh.yml' ? { state: 'active', created_at: '2026-09-01T00:00:00Z' } : { ok: false, code: 500 })],
+    ])
+    const asked = []
+    const readout = readScheduledMonitors('o/r', { github, now: MONITOR_NOW, listing: LISTING, cronAdded: workflow => { asked.push(workflow.file); return CRON_ADDED(workflow) } })
+    assert.deepEqual(asked, ['fresh.yml'], '「cron 何時加進預設分支」只在 0 筆時才讀')
+    assert.deepEqual(Object.keys(readout.monitors), ['nightly.yml', 'weekly.yml', 'fresh.yml'], '清單上的每一支都要有結論')
+    assert.equal(readout.monitors['nightly.yml'].verdict, 'red')
+    assert.match(readout.monitors['nightly.yml'].detail, /最後一次綠 2026-08-05,之後連 70 次沒綠/)
+    assert.deepEqual(readout.monitors['nightly.yml'].failedJobs.map(job => job.failedStep), ['Install'])
+    assert.equal(readout.monitors['weekly.yml'].verdict, 'green')
+    assert.equal(readout.monitors['fresh.yml'].kind, 'never-ran')
+    assert.equal(readout.monitors['fresh.yml'].verdict, 'unknown')
+    assert.equal(readout.control, null)
+    assert.ok(!calls.some(path => control.test(path)), '已被別支證明的查詢不必再打對照組')
+    assert.ok(calls.every(path => path.startsWith('repos/o/r/actions/')), '只讀 Actions API')
+    assert.equal(calls.filter(path => jobs.test(path)).length, 1, 'job 明細只讀不是綠的那一支')
+    assert.ok(calls.filter(path => /\/workflows\/[^/]+\/runs\?/.test(path)).every(path => path.includes('event=schedule')),
+      '每一條 run 查詢都只取排程那幾次(visual-regression.yml 也接 push / dispatch)')
+  }
+
+  // ② 每一支都 0 筆,repo 層對照組拿得到 → 已證明,逐支講是哪一種沒有
+  {
+    const { github, calls } = fakeGitHub([
+      [recent, runsBody([], 0)],
+      [greens, runsBody([], 0)],
+      [control, runsBody([scheduledRun(1, '2026-10-14T07:00:00Z')], 500)],
+      [meta, m => (m[1] === 'nightly.yml' ? { ok: false, code: 404, text: '{}' }
+        : m[1] === 'weekly.yml' ? { state: 'disabled_inactivity', created_at: '2026-05-25T00:00:00Z' }
+          : { state: 'active', created_at: '2026-10-14T08:00:00Z' })],
+    ])
+    const readout = readScheduledMonitors('o/r', { github, now: MONITOR_NOW, listing: LISTING, cronAdded: workflow => ({ [workflow.crons[0]]: '2026-10-14T08:00:00Z' }) })
+    assert.deepEqual(readout.control, { code: 200, found: 1 })
+    assert.equal(calls.filter(path => control.test(path)).length, 1, '對照組只打一次')
+    assert.deepEqual(Object.values(readout.monitors).map(item => item.kind), ['not-registered', 'disabled', 'not-yet-due'])
+    assert.ok(Object.values(readout.monitors).every(item => item.verdict === 'unknown'))
+  }
+
+  // ③ 每一支都 0 筆,對照組也 0 筆(例如篩選參數壞了)→ 證明不了,全部講量具失效,不得講「沒跑過」
+  for (const controlResponse of [runsBody([], 0), { ok: false, code: 502 }]) {
+    const { github } = fakeGitHub([[recent, runsBody([], 0)], [greens, runsBody([], 0)], [control, controlResponse],
+      [meta, { state: 'active', created_at: '2026-09-01T00:00:00Z' }]])
+    const readout = readScheduledMonitors('o/r', { github, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    assert.deepEqual(Object.values(readout.monitors).map(item => item.kind), ['unproven-empty', 'unproven-empty', 'unproven-empty'])
+  }
+
+  // ④ API 全壞 / 傳輸丟錯 / 不知道 repo:每一支都是 query-failed,不丟錯(只講不擋)
+  {
+    const { github } = fakeGitHub([[/./, { ok: false, code: 503, text: '' }]])
+    const readout = readScheduledMonitors('o/r', { github, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    assert.deepEqual(Object.values(readout.monitors).map(item => item.kind), ['query-failed', 'query-failed', 'query-failed'])
+    assert.equal(readout.transientFailures, 6, '503 是暫時性失敗,要數出來(快取據此不存)')
+    const thrown = readScheduledMonitors('o/r', { githubBatch: () => { throw new Error('curl 不見了') }, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    assert.ok(Object.values(thrown.monitors).every(item => item.kind === 'query-failed' && /curl 不見了/.test(item.detail)))
+    const noRepo = readScheduledMonitors(null, { github: () => assert.fail('不知道 repo 就不得發請求'), listing: LISTING })
+    assert.ok(Object.values(noRepo.monitors).every(item => item.verdict === 'unknown'))
+  }
+
+  // ⑤ 兩批:第一批每支 2 個查詢,第二批依第一批而定;批次介面收到的路徑與單筆介面相同
+  {
+    const batches = []
+    const { github } = fakeGitHub([[recent, runsBody(dailyRuns, 142)], [greens, runsBody([], 0)], [jobs, { jobs: [] }]])
+    readScheduledMonitors('o/r', { githubBatch: paths => { batches.push(paths); return paths.map(github) }, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    assert.equal(batches.length, 2)
+    assert.equal(batches[0].length, LISTING.workflows.length * 2)
+  }
+
+  // ⑥ 「綠過沒有」對每一支都回 0 筆:讀取端不得自己認定「已證明」—— 只講最近幾次,不講「全部 N 次」
+  //   (判定表只驗了 classify 收到 proven 之後怎麼講;這裡驗 proven 是讀取端照實算出來的,M32 參數邊界)
+  {
+    const { github } = fakeGitHub([[recent, runsBody(dailyRuns, 142)], [greens, runsBody([], 0)], [jobs, { jobs: [] }]])
+    const readout = readScheduledMonitors('o/r', { github, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    for (const item of Object.values(readout.monitors)) {
+      assert.equal(item.nonGreenStreakIsLowerBound, true, `${item.file}:沒有任何一支證明「綠過沒有」拿得到資料,只能講至少`)
+      assert.doesNotMatch(item.detail, /全部 \d+ 次/)
+    }
+    // 對照組:同一輪有一支回了 1 筆綠 = 已證明,另外兩支的 0 筆才講「全部沒綠」
+    const proven = fakeGitHub([[recent, runsBody(dailyRuns, 142)],
+      [greens, m => (m[1] === 'weekly.yml' ? runsBody([scheduledRun(301, '2026-10-07T08:49:41Z', 'success')], 1) : runsBody([], 0))],
+      [streak, runsBody([], 3)], [jobs, { jobs: [] }]])
+    const provenOut = readScheduledMonitors('o/r', { github: proven.github, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    assert.match(provenOut.monitors['nightly.yml'].detail, /全部 142 次排程沒有一次綠/)
+    assert.equal(provenOut.monitors['nightly.yml'].nonGreenStreakIsLowerBound, false)
+  }
+
+  // ⑦ 篩選寫在網址上 ≠ 回來的就是那種東西(GitHub 對拼錯 / 不認得的查詢參數靜默忽略):每一筆都拿它自己的欄位對
+  {
+    const pushGreen = { ...scheduledRun(9, '2026-10-14T09:00:00Z', 'success'), event: 'push' }
+    const freshRuns = [5, 4, 3, 2, 1].map(n => scheduledRun(400 + n, `2026-10-${String(9 + n).padStart(2, '0')}T07:00:00Z`))
+    const { github } = fakeGitHub([
+      [recent, m => runsBody(m[1] === 'nightly.yml' ? [pushGreen, ...dailyRuns] : m[1] === 'fresh.yml' ? freshRuns : dailyRuns, 142)],
+      [greens, m => runsBody(m[1] === 'weekly.yml' ? [scheduledRun(42, '2026-09-01T07:00:00Z', 'failure')] : [scheduledRun(41, '2026-08-05T03:02:47Z', 'success')], 35)],
+      // fresh.yml 的「之後跑完幾次」回了一筆還在跑的 → status=completed 沒生效
+      [streak, m => (m[1] === 'fresh.yml' ? runsBody([scheduledRun(77, '2026-10-14T07:00:00Z', null, 'in_progress')], 9) : runsBody([], 70))],
+      // weekly.yml 最新那次(205)的 job 清單回的是別次 run 的 job → 不是這一次的明細
+      [jobs, m => ({ jobs: [{ name: `job of ${m[1]}`, run_id: m[1] === '205' ? 999 : Number(m[1]), run_attempt: 1, conclusion: 'failure', steps: [] }] })],
+    ])
+    const readout = readScheduledMonitors('o/r', { github, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    const nightly = readout.monitors['nightly.yml']
+    assert.notEqual(nightly.verdict, 'green', 'push 的綠不是排程的綠')
+    assert.equal(nightly.kind, 'query-failed')
+    assert.match(nightly.detail, /篩選沒生效:回了 1 筆不符\(event=schedule\)的 run/)
+    const weekly = readout.monitors['weekly.yml']
+    assert.equal(weekly.lastGreen, null, '不是綠的 run 不得當「最後一次綠」')
+    assert.equal(weekly.nonGreenStreakIsLowerBound, true)
+    assert.match(weekly.detail, /更早的讀不到/)
+    const fresh = readout.monitors['fresh.yml']
+    assert.equal(fresh.lastGreen.id, 41)
+    assert.match(fresh.detail, /之後至少 5 次沒綠\(連續次數讀不到\)/, '「之後跑完幾次」回了沒跑完的 run = 篩選沒生效,不得拿它的 total_count 當確數')
+    // job 明細:不屬於這一次 run 的 = 讀不到,不得拿來講「擋在哪一步」
+    assert.equal(weekly.failedJobs, null)
+    assert.match(weekly.detail, /讀不到 job 明細/)
+    assert.deepEqual(fresh.failedJobs.map(job => job.name), ['job of 405'], '屬於這一次 run 的 job 照常列出(對照組)')
+    // 「之後跑完幾次」回了比最後一次綠還早的 run = created 篩選沒生效;job 是較早那一輪(run_attempt 對不上)= filter=latest 沒生效
+    const older = fakeGitHub([[recent, runsBody(dailyRuns, 142)],
+      [greens, runsBody([scheduledRun(41, '2026-08-05T03:02:47Z', 'success')], 35)],
+      [streak, runsBody([scheduledRun(40, '2026-08-01T03:00:00Z')], 74)],
+      [jobs, m => ({ jobs: [{ name: `job of ${m[1]}`, run_id: Number(m[1]), run_attempt: 2, conclusion: 'failure', steps: [] }] })]])
+    const olderOut = readScheduledMonitors('o/r', { github: older.github, now: MONITOR_NOW, listing: { ...LISTING, workflows: [DAILY] }, cronAdded: CRON_ADDED })
+    assert.match(olderOut.monitors['nightly.yml'].detail, /之後至少 5 次沒綠\(連續次數讀不到\)/)
+    assert.match(olderOut.monitors['nightly.yml'].detail, /讀不到 job 明細/)
+    // 對照組也要對:repo 層回了一筆 push 的 run 不算「證明拿得到資料」
+    const control = /^repos\/o\/r\/actions\/runs\?event=schedule&per_page=1$/
+    const fakeControl = fakeGitHub([[recent, runsBody([], 0)], [greens, runsBody([], 0)],
+      [control, runsBody([{ ...scheduledRun(1, '2026-10-14T07:00:00Z'), event: 'push' }], 500)],
+      [meta, { state: 'active', created_at: '2026-09-01T00:00:00Z' }]])
+    const controlOut = readScheduledMonitors('o/r', { github: fakeControl.github, now: MONITOR_NOW, listing: LISTING, cronAdded: CRON_ADDED })
+    assert.deepEqual(Object.values(controlOut.monitors).map(item => item.kind), ['unproven-empty', 'unproven-empty', 'unproven-empty'])
+    assert.equal(controlOut.control.found, null)
+    assert.match(controlOut.control.error, /篩選沒生效/)
+  }
+})
+
+test('排程監看只講不擋:讀取丟錯變成一行量具失效;同一行程 10 分鐘內重用;印出結論、多久以前、擋在哪一步與連結', () => {
+  let reads = 0
+  const read = () => { reads += 1; return { listing: { ok: true, reason: null, scanned: 1, count: 0 }, control: null, monitors: {} } }
+  const first = scheduledMonitorsForReport('cache/test-a', { read, nowMs: 1_000_000 })
+  assert.equal(scheduledMonitorsForReport('cache/test-a', { read, nowMs: 1_000_000 + 9 * 60_000 }), first)
+  assert.equal(reads, 1, '10 分鐘內不重打')
+  scheduledMonitorsForReport('cache/test-a', { read, nowMs: 1_000_000 + 11 * 60_000 })
+  assert.equal(reads, 2, '超過 10 分鐘重讀')
+  const failed = scheduledMonitorsForReport('cache/test-b', { read: () => { throw new Error('boom') }, nowMs: 5 })
+  assert.equal(failed.listing.ok, false)
+  assert.match(failed.listing.reason, /boom/)
+  scheduledMonitorsForReport('cache/test-b', { read, nowMs: 6 })
+  assert.equal(reads, 3, '丟錯的那次不快取')
+  // 不完整的結果也不快取:否則一次斷網會讓接下來 10 分鐘每一輪都印同一份「讀不到」
+  const incomplete = {
+    清單不完整: { listing: { ok: false, reason: 'x', scanned: 0, count: 0 }, control: null, monitors: {} },
+    暫時性失敗: { listing: { ok: true, reason: null, scanned: 1, count: 1 }, control: null, monitors: {}, transientFailures: 2 },
+    查詢失敗: { listing: { ok: true, reason: null, scanned: 1, count: 1 }, control: null, monitors: { 'a.yml': { kind: 'query-failed' } } },
+    證明不了: { listing: { ok: true, reason: null, scanned: 1, count: 1 }, control: null, monitors: { 'a.yml': { kind: 'unproven-empty' } } },
+    讀不到狀態: { listing: { ok: true, reason: null, scanned: 1, count: 1 }, control: null, monitors: { 'a.yml': { kind: 'meta-unreadable' } } },
+  }
+  for (const [label, readout] of Object.entries(incomplete)) {
+    let calls = 0
+    const readBad = () => { calls += 1; return readout }
+    scheduledMonitorsForReport(`cache/${label}`, { read: readBad, nowMs: 100 })
+    scheduledMonitorsForReport(`cache/${label}`, { read: readBad, nowMs: 101 })
+    assert.equal(calls, 2, `${label}的結果不得快取`)
+  }
+  let cleanCalls = 0
+  const readClean = () => { cleanCalls += 1; return { listing: { ok: true, reason: null, scanned: 1, count: 1 }, control: null, transientFailures: 0, monitors: { 'a.yml': { kind: 'latest' } } } }
+  scheduledMonitorsForReport('cache/clean', { read: readClean, nowMs: 100 })
+  scheduledMonitorsForReport('cache/clean', { read: readClean, nowMs: 101 })
+  assert.equal(cleanCalls, 1, '對照組:完整的結果照常快取')
+
+  const lines = formatScheduledMonitorLines({
+    listing: { ok: true, reason: null, scanned: 14, count: 3 },
+    monitors: {
+      'a.yml': { file: 'a.yml', name: 'A', crons: ['0 2 * * *'], verdict: 'red', detail: '2026-10-14 failure(3 小時前);最後一次綠 2026-08-05,之後連 70 次沒綠',
+        url: 'https://github.com/o/r/actions/runs/1', failedJobs: [{ name: 'Monitor a11y drift', conclusion: 'failure', failedStep: 'Install' }] },
+      'b.yml': { file: 'b.yml', name: 'B', crons: ['23 3 * * 3'], verdict: 'green', detail: '2026-10-14 綠(1 小時前)', url: 'https://github.com/o/r/actions/runs/2' },
+      'c.yml': { file: 'c.yml', name: 'C', crons: ['41 3 * * 4'], verdict: 'unknown', detail: '排程 run 查詢回 0 筆…', url: null },
+    },
+  }).join('\n')
+  assert.match(lines, /共 3 支\):🔴 1 紅 · ⚠️ 1 不明 · ⓘ 1 綠/)
+  assert.match(lines, /🔴 A\(a\.yml,cron 0 2 \* \* \* UTC\):2026-10-14 failure\(3 小時前\);最後一次綠 2026-08-05,之後連 70 次沒綠/)
+  assert.match(lines, /✗ Monitor a11y drift:failure,擋在「Install」/)
+  assert.match(lines, /https:\/\/github\.com\/o\/r\/actions\/runs\/1/)
+  assert.match(lines, /ⓘ B/)
+  assert.match(lines, /⚠️ C/)
+  assert.match(formatScheduledMonitorLines({ listing: { ok: false, reason: '讀不到 workflow 目錄(ENOENT)', scanned: 0, count: 0 }, monitors: {} }).join('\n'),
+    /監看清單不完整\(量具\):讀不到 workflow 目錄/)
+  assert.match(formatScheduledMonitorLines({ listing: { ok: true, reason: null, scanned: 3, count: 0 }, monitors: {} }).join('\n'),
+    /掃了 3 支 workflow,沒有任何一支宣告 schedule/)
+  assert.match(formatScheduledMonitorLines(undefined).join('\n'), /監看清單不完整/)
+
+  // 執行面:printReport 真的讀全部、真的印;清單不得手寫檔名;不進五步判定,runner 不因它丟錯
   const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
   const reportBlock = src.slice(src.indexOf('function printReport('), src.indexOf('function waitForRun('))
-  assert.match(reportBlock, /classifyScheduledMonitorRun\(latestScheduledMonitorRun\(observation\.repository, 'visual-regression\.yml'\)\)/,
-    'printReport 必須真的去讀最新一次週跑')
-  assert.match(reportBlock, /每週視覺回歸監看/, '而且必須印給人看')
-  // 只講不擋:五步 status 表不得含它,runner 也不得因它 invariant
+  assert.match(reportBlock, /const monitors = scheduledMonitorsForReport\(observation\.repository\)/, 'printReport 必須去讀全部排程監看')
+  assert.match(reportBlock, /formatScheduledMonitorLines\(monitors\)/, '而且必須印給人看')
+  assert.doesNotMatch(reportBlock, /['"`][\w.-]+\.ya?ml['"`]/, 'printReport 不得手寫 workflow 檔名(清單由 listScheduledWorkflows 機械列出)')
+  const reader = src.slice(src.indexOf('export function readScheduledMonitors('), src.indexOf('let scheduledMonitorCache'))
+  assert.match(reader, /found = listing \?\? listScheduledWorkflows\(\)/, '預設清單來自 workflow 檔')
+  assert.match(reader, /cronAdded = cronAddedOnDefaultBranch \}/, '0 筆時「第一次該跑」預設從預設分支的 git 歷史起算(不是註冊時間)')
+  assert.match(reader, /: curlGitHubParallel\)/, '預設傳輸是有假伺服器測試的平行版')
+  assert.doesNotMatch(reader, /curlGitHub\('(POST|PUT|PATCH|DELETE)'/, '只讀')
   const statusBlock = src.slice(src.indexOf('export function buildFiveStepStatus('), src.indexOf('export function listReleaseTags('))
-  assert.doesNotMatch(statusBlock, /visual-regression|ScheduledMonitor/, '排程監看不得進五步判定(canonical:preview/canary/監看一律 non-blocking)')
+  assert.doesNotMatch(statusBlock, /visual-regression|ScheduledMonitor|scheduledMonitor/, '排程監看不得進五步判定(canonical:preview/canary/監看一律 non-blocking)')
   const runnerBlock = src.slice(src.indexOf('export function executeAutomaticRelease('), src.indexOf('function main('))
-  assert.doesNotMatch(runnerBlock, /invariant\([^\n]*(visualMonitor|ScheduledMonitor)/, 'runner 不得因監看結論丟錯')
+  assert.doesNotMatch(runnerBlock, /invariant\([^\n]*(visualMonitor|ScheduledMonitor|scheduledMonitor|monitors)/, 'runner 不得因監看結論丟錯')
+})
+
+test('curlGitHubParallel:回傳與 paths 同序(完成順序與送出順序不同也一樣)、狀態碼對得上;只有連線層失敗才逐一重打,整批失敗只探一次', async () => {
+  // 假伺服器必須在另一個行程(spawnSync 跑 curl 時本行程的事件迴圈整個停住);以字面路徑啟動(harness 來源政策)。
+  // NO_PROXY:curl 直連 127.0.0.1,不經開發機上的代理
+  const server = spawn(process.execPath, ['infra/governance/test/fixtures/fake-github-parallel-server.mjs'], { cwd: ROOT, stdio: ['pipe', 'pipe', 'inherit'] })
+  const savedProxy = { NO_PROXY: process.env.NO_PROXY, no_proxy: process.env.no_proxy }
+  process.env.NO_PROXY = '127.0.0.1,localhost'
+  process.env.no_proxy = '127.0.0.1,localhost'
+  try {
+    const port = await new Promise((resolvePort, reject) => {
+      let buffered = ''
+      server.once('error', reject)
+      server.once('exit', code => reject(new Error(`假伺服器提前結束(exit ${code})`)))
+      server.stdout.on('data', chunk => {
+        buffered += chunk
+        if (buffered.includes('\n')) resolvePort(Number(buffered.split('\n')[0]))
+      })
+    })
+    const base = `http://127.0.0.1:${port}`
+    const retried = []
+    const retry = path => { retried.push(path); return { code: 203, ok: true, text: JSON.stringify({ path: 'retried' }) } }
+    const paths = [`${base}/slow/600/first`, `${base}/runs?event=schedule&per_page=5`, `${base}/status/500/third`,
+      `${base}/drop/fourth`, `${base}/status/404/fifth`, `${base}/sixth`]
+    const out = curlGitHubParallel(paths, { token: 'fixture-token', retry })
+    assert.equal(out.length, paths.length)
+    assert.deepEqual(out.map(response => JSON.parse(response.text).path),
+      ['/slow/600/first', '/runs?event=schedule&per_page=5', '/status/500/third', 'retried', '/status/404/fifth', '/sixth'],
+      '第 i 個回應必須是第 i 個路徑的(最慢的那個送第一、回最後)')
+    assert.deepEqual(out.map(response => response.code), [200, 200, 500, 203, 404, 200], '狀態碼逐一對上;HTTP 錯誤照實回,不重打')
+    assert.deepEqual(out.map(response => response.ok), [true, true, false, true, false, true])
+    assert.deepEqual(retried, [`${base}/drop/fourth`], '只有連線層失敗(HTTP 0)的那一個逐一重打')
+    assert.equal(JSON.parse(out[0].text).authorization, 'Bearer fixture-token')
+
+    // 整批都在連線層失敗(斷網 / 代理拒絕):只探第一個一次,探不通就整批照實回 0 —— 不逐一重打(每個約 6 秒,N 個就是一分多鐘)
+    retried.length = 0
+    const dead = curlGitHubParallel([`${base}/drop/a`, `${base}/drop/b`, `${base}/drop/c`], { token: 'x', retry: path => { retried.push(path); return { code: 0, ok: false, text: '' } } })
+    assert.deepEqual(retried, [`${base}/drop/a`])
+    assert.deepEqual(dead.map(response => [response.code, response.ok]), [[0, false], [0, false], [0, false]])
+    // 對照組:探得通(暫時性)→ 其餘照常逐一重打,探到的那一個不打第二次
+    retried.length = 0
+    const flaky = curlGitHubParallel([`${base}/drop/a`, `${base}/drop/b`], { token: 'x', retry })
+    assert.deepEqual(retried, [`${base}/drop/a`, `${base}/drop/b`])
+    assert.deepEqual(flaky.map(response => response.code), [203, 203])
+  } finally {
+    for (const [key, value] of Object.entries(savedProxy)) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+    server.stdin.end()
+    server.kill()
+  }
+})
+
+test('cron 何時加進預設分支:走預設分支的 first-parent 歷史、用同一個 YAML 讀法確認;讀不到一律 null,不拿註冊時間代替', () => {
+  // 真實情形:visual-regression / composition-fidelity 05-25 / 05-27 註冊,cron 08-01(8c595fcf #24)才加上
+  const dir = mkdtempSync(join(tmpdir(), 'cron-added-'))
+  const env = {
+    ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: join(dir, 'gitconfig'),
+    GIT_AUTHOR_NAME: 'fixture', GIT_AUTHOR_EMAIL: 'fixture@example.invalid', GIT_COMMITTER_NAME: 'fixture', GIT_COMMITTER_EMAIL: 'fixture@example.invalid',
+  }
+  const repo = join(dir, 'repo')
+  const git = (args, date = null) => execFileSync('git', args, { cwd: repo, encoding: 'utf8', env: date ? { ...env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } : env }).trim()
+  const executor = cwd => args => {
+    const result = spawnSync('git', args, { cwd, encoding: 'utf8', env })
+    return { ok: result.status === 0, stdout: `${result.stdout}`.trim() }
+  }
+  const file = '.github/workflows/nightly.yml'
+  const commit = (text, date, message) => {
+    writeFileSync(join(repo, file), text)
+    git(['add', '-A'])
+    git(['commit', '-q', '-m', message], date)
+  }
+  try {
+    mkdirSync(join(repo, '.github/workflows'), { recursive: true })
+    git(['init', '-q', '-b', 'main'])
+    // 05-25 建立,只在註解提到那條 cron:-S 會中,但 on.schedule 裡沒有 —— 必須靠 YAML 讀法排除
+    commit("name: Nightly\non:\n  push:\n# 之後改成每天 '0 2 * * *' 跑\njobs: {}\n", '2026-05-25T14:00:00Z', 'add workflow')
+    // 07-30 在支線加 cron,08-01 才 merge 進 main:落地時間是 merge 那一刻(--first-parent),不是支線 commit 的時間
+    git(['checkout', '-q', '-b', 'side'])
+    commit("name: Nightly\non:\n  push:\n  schedule:\n    - cron: '0 2 * * *'\n    - cron: '30 2 * * *'\njobs: {}\n", '2026-07-30T00:00:00Z', 'add cron on side')
+    git(['checkout', '-q', 'main'])
+    git(['merge', '-q', '--no-ff', '-m', 'merge side', 'side'], '2026-08-01T10:04:46Z')
+    git(['update-ref', 'refs/remotes/origin/main', 'HEAD'])
+    const nightly = { file: 'nightly.yml', crons: ['0 2 * * *', '30 2 * * *', '45 9 * * *'] }
+    const added = cronAddedOnDefaultBranch(nightly, { defaultBranch: 'main', git: executor(repo) })
+    assert.deepEqual(Object.keys(added), nightly.crons)
+    assert.equal(Date.parse(added['0 2 * * *']), Date.parse('2026-08-01T10:04:46Z'), `註解裡的同一串字不算、支線 commit 的時間不算:${added['0 2 * * *']}`)
+    assert.equal(Date.parse(added['30 2 * * *']), Date.parse('2026-08-01T10:04:46Z'))
+    assert.equal(added['45 9 * * *'], false, '歷史讀得到、預設分支上從沒有這條 cron = false(不是「未知」)')
+    // 某個版本讀不出來(git show 失敗)就不得講「預設分支上沒有」:回 null
+    const flaky = executor(repo)
+    const noShow = cronAddedOnDefaultBranch(nightly, { defaultBranch: 'main', git: args => (args[0] === 'show' ? { ok: false, stdout: '' } : flaky(args)) })
+    assert.deepEqual(noShow, { '0 2 * * *': null, '30 2 * * *': null, '45 9 * * *': false }, '-S 找不到任何 commit 的那條照樣是 false')
+
+    // 讀不到的每一種都回 null(呼叫端講「何時加上未知」):淺 clone(最舊那筆只是截斷點)、沒有 origin/<預設分支>、不知道預設分支、git 丟錯
+    const shallow = join(dir, 'shallow')
+    execFileSync('git', ['clone', '-q', '--depth', '1', `file://${repo}`, shallow], { encoding: 'utf8', env })
+    const allNull = Object.fromEntries(nightly.crons.map(cron => [cron, null]))
+    assert.deepEqual(cronAddedOnDefaultBranch(nightly, { defaultBranch: 'main', git: executor(shallow) }), allNull, '淺 clone')
+    assert.ok(executor(shallow)(['rev-parse', '--verify', 'refs/remotes/origin/main']).ok, '對照組:淺 clone 確實有 origin/main,是因為「淺」才回 null')
+    git(['update-ref', '-d', 'refs/remotes/origin/main'])
+    assert.deepEqual(cronAddedOnDefaultBranch(nightly, { defaultBranch: 'main', git: executor(repo) }), allNull, '沒有 origin/main')
+    assert.deepEqual(cronAddedOnDefaultBranch(nightly, { defaultBranch: null, git: executor(repo) }), allNull, '不知道預設分支')
+    assert.deepEqual(cronAddedOnDefaultBranch(nightly, { defaultBranch: 'main', git: () => { throw new Error('git 不見了') } }), allNull, 'git 丟錯')
+    // 預設分支名取自 canonical(release-workflow.json),不寫死
+    const asked = []
+    cronAddedOnDefaultBranch(nightly, { git: args => { asked.push(args.join(' ')); return { ok: true, stdout: 'false' } } })
+    assert.ok(asked.includes(`rev-parse --verify --quiet refs/remotes/origin/${workflow.automation.defaultBranch}^{commit}`), asked.join('\n'))
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
 
 test('「被取消 / 逾時」不是「失敗」—— 兩者都擋發布,但講錯原因會把人送去修不存在的問題', () => {
@@ -1066,3 +1704,14 @@ test('預覽可見集合不得退回 2026-09-20 修掉的破口', () => {
     'packages/storybook-config/dist/preview.js',
   ]) assert.equal(hit(p), false, `${p} 不進 bundle,不該讓 user 重新確認`)
 })
+
+test('consumer 鏈:少跳一版時先派手上那一版的下一版,不是目前這一版(2026-09-30 WM 145 vs beta.147)', () => {
+  const tags = ['v0.1.0-beta.147', 'v0.1.0-beta.146', 'v0.1.0-beta.145', 'v0.1.0-beta.144']
+  assert.equal(nextConsumerVersion('0.1.0-beta.145', tags, '0.1.0-beta.147'), '0.1.0-beta.146', 'WM 停在 145 → 先派 146')
+  assert.equal(nextConsumerVersion('0.1.0-beta.146', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '146 的下一版就是目前這一版')
+  assert.equal(nextConsumerVersion('0.1.0-beta.146', tags.slice(1), '0.1.0-beta.147'), '0.1.0-beta.147', '本地 tag 還沒 fetch 到 147 → 退回目前這一版')
+  assert.equal(nextConsumerVersion(null, tags, '0.1.0-beta.147'), '0.1.0-beta.147', 'installed 讀不到 → 維持舊行為,不多假設')
+  assert.equal(nextConsumerVersion('0.1.0-beta.999', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '不在鏈上 → 目前這一版')
+  assert.equal(nextConsumerVersion('0.1.0-beta.147', tags, '0.1.0-beta.147'), '0.1.0-beta.147', '已是最新 → 目前這一版')
+})
+

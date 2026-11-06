@@ -21,7 +21,7 @@ benchmark:
 
 MenuItem 是所有 menu 類元件的**共用視覺佈局層**——處理 prefix 對齊、尺寸、狀態。SelectMenu、DropdownMenu、未來的 ContextMenu 等都消費它。它只負責 layout（padding、gap、prefix alignment、typography），互動行為由各 menu 的 Radix primitive 外層控制。
 
-**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Family 1: Menu item anatomy」章節的 scanning-mode 規格。
 
 ---
 
@@ -73,7 +73,7 @@ prefix icon 跟 label 同色（foreground），不是 fg-muted。詳見 item-ana
 | disabled | 自動 `fg-disabled` 換色 | 不變暗（自有 fieldCtx self-dim 體系） | 容器自動 `opacity-disabled` |
 | 對齊 | 永遠 inline（≤ 24px） | 無 desc → inline；有 desc → block | inline(同 startIcon 容器) |
 
-**為什麼三槽而不是一個 ReactNode 口**:合成一口(Atlassian `iconBefore: ReactNode` 式)會失去前兩槽的自動行為 —— 每個 consumer 都得自己記尺寸、自己處理 disabled、自己接 hoverCard = 漂移溫床。世界級同構:MUI List 正是三分 —— [`ListItemIcon`](https://mui.com/material-ui/api/list-item-icon/) 與 [`ListItemAvatar`](https://mui.com/material-ui/api/list-item-avatar/) 是**兩個獨立 wrapper 元件**、任意節點則直接放 —— 我們用 props 表達同一套分工。
+**為什麼三槽而不是一個 ReactNode 口**:合成一口(Atlassian `iconBefore: ReactNode` 式,https://cdn.jsdelivr.net/npm/@atlaskit/menu@11.0.5/dist/types/types.d.ts)會失去前兩槽的自動行為 —— 每個 consumer 都得自己記尺寸、自己處理 disabled、自己接 hoverCard = 漂移溫床。世界級同構:MUI List 正是三分 —— [`ListItemIcon`](https://mui.com/material-ui/api/list-item-icon/) 與 [`ListItemAvatar`](https://mui.com/material-ui/api/list-item-avatar/) 是**兩個獨立 wrapper 元件**、任意節點則直接放 —— 我們用 props 表達同一套分工。
 
 ### avatar 尺寸推導
 
@@ -155,11 +155,11 @@ Menu 的設計目的是「**快速掃視多個選項挑一個**」。垂直空�
 | 狀態 | 背景 | 文字 | 觸發方式 |
 |---|---|---|---|
 | default | transparent | foreground | — |
-| hover | `--neutral-hover` | foreground | 滑鼠 hover |
+| hover | `--neutral-hover` | foreground | 滑鼠 hover —— 只有點了會有反應的列(自己是選項、有 `onClick`,或巢在 DropdownMenu / cmdk 裡由外層畫);靜態預覽(`role="presentation"`、沒有 `onClick`)不變色、不出手指游標(稽核 M040;同 `../FileItem/file-item.spec.md`「滑過」) |
 | selected（單選） | `--neutral-selected` | foreground | bg 高亮（不用 ✓ 勾號，避免影響 prefix 對齊） |
-| **selected × hover（疊加）** | `--neutral-selected`（**selected 勝,釘住不變**） | foreground | owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)。2026-07-04 Q2:bg 是唯一選中指示器,hover 不得洗掉;code = selected 時關 hover bg(menu-item.tsx)。對齊 Ant Menu `:not(-item-selected)` / VS Code list `:hover:not(.selected)` |
-| **鍵盤焦點／游標（未選中）** | transparent（**不上底色**）+ **畫框**（`focus-ring-inset`,2px 內描邊） | foreground | owner = `ds-canonical/references/focus-canonical.md` 規則二。**user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」;2026-09-09 之前這格是 `bg-neutral-hover`（與 hover 同色、不畫框,AI 推導自 Material／Radix／cmdk 慣例,已撤回）。本節點拿真焦點的常駐用法,滑鼠若停在游標列上,hover 底色照上方 hover 列另外出現（底色 + 框都在）;巢在 cmdk／Radix 內時反白只有一個主人,鍵盤搬走反白後滑鼠停留列**沒有** hover 底色（owner = focus-canonical 規則一「兩類元件」,2026-09-09 下午）|
-| **selected × 鍵盤焦點（疊加）** | `--neutral-selected` + **畫框**（框疊在選中底色上,`focus-ring-inset` 2px 內描邊） | foreground | 同上 owner。**2026-09-07 user 拍板「A5畫框」**:底色已被選中佔走,再深一階等於把兩個意義塞進同一個通道;原 `--neutral-selected-focus` 已退役。**舊文勘誤(2026-08-11)**:先前寫 DropdownMenu「僅鍵盤 cursor 深化」用 `-active`——實作上 Radix 反白滑鼠也觸發(規範與實作不符),且 `-active` 是按壓專屬 token;現已全家統一:滑鼠釘住、鍵盤 `-focus` 深化,無消費者差異 |
+| **selected × hover（疊加）** | `--neutral-selected`（**selected 勝,釘住不變**） | foreground | owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)。2026-07-04 Q2:bg 是唯一選中指示器,hover 不得洗掉;code = selected 時關 hover bg(menu-item.tsx)。對齊 Ant Menu `:not(-item-selected)`(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/menu/style/theme.ts#L100-L104)/ VS Code list `:hover:not(.selected)`(https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/base/browser/ui/list/listWidget.ts#L988-L989)|
+| **鍵盤焦點／游標（未選中）** | transparent（**不上底色**）+ **畫框**（`focus-ring-inset`,2px 內描邊） | foreground | owner = `ds-canonical/references/focus-canonical.md` 規則二。**user 2026-09-09**「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」(登記簿 D11);2026-09-09 之前這格是 `bg-neutral-hover`（與 hover 同色、不畫框,AI 推導自 Radix／cmdk 等慣例,已撤回）。本節點拿真焦點的常駐用法,滑鼠若停在游標列上,hover 底色照上方 hover 列另外出現（底色 + 框都在）;巢在 cmdk／Radix 內時反白只有一個主人,鍵盤搬走反白後滑鼠停留列**沒有** hover 底色（owner = focus-canonical 規則一「兩類元件」,2026-09-09 下午）([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/menu/style/theme.ts#L100-L104)、[來源](https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/base/browser/ui/list/listWidget.ts#L988-L989)) |
+| **selected × 鍵盤焦點（疊加）** | `--neutral-selected` + **畫框**（框疊在選中底色上,`focus-ring-inset` 2px 內描邊） | foreground | 同上 owner。**2026-09-07 user 在 A5 選了畫框**:底色已被選中佔走,再深一階等於把兩個意義塞進同一個通道;原 `--neutral-selected-focus` 已退役。**舊文勘誤(2026-08-11)**:先前寫 DropdownMenu「僅鍵盤 cursor 深化」用 `-active`——實作上 Radix 反白滑鼠也觸發(規範與實作不符),且 `-active` 是按壓專屬 token;現已全家統一:滑鼠釘住、鍵盤 `-focus` 深化,無消費者差異 |
 | selected（多選） | transparent | foreground | checkbox 勾選 |
 | disabled | transparent | `--fg-disabled` | disabled prop |
 
@@ -172,7 +172,7 @@ Menu 的設計目的是「**快速掃視多個選項挑一個**」。垂直空�
 
 單選和 DropdownMenu RadioItem 統一用 `bg-neutral-selected`。不用 ✓ 勾號——勾號在 prefix 會影響群組內對齊。
 
-disabled 時：文字（label / description）與 `startIcon` 套 `fg-disabled`；`checkbox` 套用自身 `disabled` 樣式（非 `fg-disabled`）；`tag` / `endContent` / `startContent` 容器套 `opacity-disabled`（自訂節點自帶配色、不能硬換字色,降透明是唯一通用機制;MUI 佐證:disabled MenuItem 整列 root 直接套 `opacity: disabledOpacity` 連 avatar 都 dim — 我們比它細粒度）；`avatar` 在 MenuItem 內不變暗（Avatar 僅在 disabled Field wrapper context 內自 dim，MenuItem 非 Field wrapper）。
+disabled 時：文字（label / description）與 `startIcon` 套 `fg-disabled`；`checkbox` 套用自身 `disabled` 樣式（非 `fg-disabled`）；`tag` / `endContent` / `startContent` 容器套 `opacity-disabled`（自訂節點自帶配色、不能硬換字色,降透明是唯一通用機制;MUI 佐證:disabled MenuItem 整列 root 直接套 `opacity: disabledOpacity` 連 avatar 都 dim(https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/MenuItem/MenuItem.js#L118-L120) — 我們比它細粒度）；`avatar` 在 MenuItem 內不變暗（Avatar 僅在 disabled Field wrapper context 內自 dim，MenuItem 非 Field wrapper）。
 
 ### 浮層關閉行為
 
@@ -210,7 +210,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 - **樣式,與 header 的差異**:同樣 `text-fg-muted`、非互動(`role="presentation"` + `pointer-events-none`)、與一般 item **完全相同的列幾何**(`ROW_PADDING_BY_SIZE`,列高 = `--field-height-{size}`);差別是**一般字重**(medium 是群組標題的辨識訊號)、內容**水平置中**(`items-center justify-center`)、可帶**前綴槽**(`startContent` / `startIcon`,節點尺寸 `ICON_SIZE[size]`,例如載入列的 `CircularProgress`)
 - **必住 `MenuGroup`**:訊息列不自帶邊界留白,由群組的 `py-2` 提供(`item-anatomy.spec.md`「Group auto-separation」)——md 一列訊息 = 8 + 32 + 8 = 48px,與 1 筆選項等高;沒有任何最小高度
 - **非互動**:不可選、不可 hover、不進 cmdk / Radix 導覽;SR 播報由外層 live region 或載入列自帶的 `role="status"` 負責(`../Command/command.spec.md`「邊界案例」Loading / Empty)
-- **消費者**:`CommandEmpty`(字串 children 自動包成訊息列)/ `CommandLoading`(前綴轉圈 + label,`role="status"`),`../Command/command.tsx:155-188`;SelectMenu / Select / Combobox / PeoplePicker / AgentPanel 歷史清單 / CommandDialog 經 Command 消費
+- **消費者**:`CommandEmpty`(字串 children 自動包成訊息列)/ `CommandLoading`(前綴轉圈 + label,`role="status"`),`../Command/command.tsx#CommandEmpty`、`../Command/command.tsx#CommandLoading`;SelectMenu / Select / Combobox / PeoplePicker / AgentPanel 歷史清單 / CommandDialog 經 Command 消費
 - **禁**:不放裝飾圖示(前綴槽只放狀態指示,如轉圈)、不用 `Empty` 元件(Empty 是頁面 / 區塊層級空狀態)、不手刻 `items-center justify-center` / 最小高度(hook `check_pattern_invariants.sh` C.7)
 
 ---
@@ -266,7 +266,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 |---|---|---|---|
 | 場景 | 浮層選單 row,掃視挑一個 | form 內 Checkbox / Radio 的 label 佈局 | 內容列表 row,閱讀 |
 | Clamp 預設 | label / desc 各 1 行 | `'none'` 完整閱讀(SSOT 對照表見 `../Checkbox/checkbox.spec.md`「為什麼不像 MenuItem 強制截斷?」) | 依元件(如 FileItem) |
-| SSOT | `item-anatomy.spec.md`「Menu item layout」 | `../SelectionControl/selection-item.spec.md` | `item-anatomy.spec.md`「List item layout」 |
+| SSOT | `item-anatomy.spec.md`「Family 1: Menu item anatomy」 | `../SelectionControl/selection-item.spec.md` | `item-anatomy.spec.md`「List item layout」 |
 
 ### 常見誤解
 
@@ -318,7 +318,7 @@ MenuItem 的狀態色(default / hover / selected / disabled)是**結構性的**�
 
 以上鍵盤導覽由外層選單元件(SelectMenu 走 cmdk / DropdownMenu 走 Radix)own;MenuItem 為 internal layout primitive,不重複實作鍵盤行為。
 
-**Focus**:鍵盤游標一律**畫框**、不上底色(owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板):cva base 為 `focus-visible:focus-ring-inset`(列撐滿容器 → 內描邊),只有 consumer 給本節點真焦點時才會 match;巢在 cmdk / Radix 內時,游標的框由外層 CommandItem / DropdownMenu 依反白來歷(`hooks/use-input-modality.ts` `useCursorMover`:滑鼠移過搬的反白 → 底色;鍵盤搬的 → 框;兩者不同時出現,外層項目不寫 `hover:`)畫在游標列上。2026-09-09 之前本段寫「以 `bg-neutral-hover` 背景高亮而非畫 outline ring」並附 MUI 對照 —— 那是 AI 推導的慣例,不是 user 決定,已撤回。focus management 由外層元件 own。
+**Focus**:鍵盤游標一律**畫框**、不上底色(owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板):cva base 為 `focus-visible:focus-ring-inset`(列撐滿容器 → 內描邊),只有 consumer 給本節點真焦點時才會 match;巢在 cmdk / Radix 內時,游標的框由外層 CommandItem / DropdownMenu 依反白來歷(`hooks/use-input-modality.ts` `useCursorMover`:滑鼠移過搬的反白 → 底色;鍵盤搬的 → 框;兩者不同時出現,外層項目不寫 `hover:`)畫在游標列上。2026-09-09 之前本段寫「以 `bg-neutral-hover` 背景高亮而非畫 outline ring」並附外部對照 —— 那是 AI 推導的慣例,不是 user 決定,已撤回。focus management 由外層元件 own。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

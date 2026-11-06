@@ -12,6 +12,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { CircularProgress } from './circular-progress'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
+import { ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 /**
@@ -89,9 +90,9 @@ export const Overview: Story = {
 }
 
 export const UsageInButton: Story = {
-  name: '在 Button 載入中 狀態內',
+  name: '在 Button 載入中狀態內',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
         <H3>Button loading</H3>
         <Desc>
@@ -114,24 +115,26 @@ export const UsageInButton: Story = {
           <Button variant="tertiary" size="lg" iconOnly loading aria-label="載入中" />
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
 export const UsageInline: Story = {
   name: '行內使用',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <ExampleStack>
       <div>
-        <H3>Cell / Table row 局部 loading</H3>
-        <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 max-w-xs">
-          <CircularProgress size={16} aria-label="載入訂單資料中" />
-          <span className="text-body text-fg-muted">載入訂單資料...</span>
-        </div>
+        <H3 paragraph>Cell / Table row 局部 loading</H3>
+        {/* 2026-10-27 前這裡是手刻的有框列(稽核 L057);放進真的 DataTable 儲存格的樣子只住展示頁那一則 */}
+        <p className="text-body text-fg-secondary">
+          放在 DataTable 儲存格裡的樣子見{' '}
+          <StoryLink kind="Design System/Components/CircularProgress/展示" name="儲存格局部載入">儲存格局部載入</StoryLink>:
+          16px 轉圈 + 狀態文字,跟著儲存格垂直置中。
+        </p>
       </div>
 
       <div>
-        <H3>Field loading state(Input `loading` prop)</H3>
+        <H3>Field loading state(Input <code>loading</code> prop)</H3>
         <Desc>
           Input 的 <span className="font-mono">loading</span> prop 內部自動在 endAction slot 塞
           CircularProgress,size 對齊 field iconSize(sm/md=16,lg=20)。consumer 不手刻 absolute 對齊。
@@ -160,7 +163,7 @@ export const UsageInline: Story = {
           <CircularProgress value={90} affix="value" aria-label="上傳進度 90%" />
         </div>
       </div>
-    </div>
+    </ExampleStack>
   ),
 }
 
@@ -170,8 +173,8 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"本元件不可聚焦、無鍵盤互動(載入指示不接收鍵盤),但會依模式自動輸出對的 ARIA 給輔助技術:\n\n• 有 value(determinate)→ role=\"progressbar\",並帶 aria-valuenow / aria-valuemin=0 / aria-valuemax=100,螢幕報讀器會念出目前進度。\n• 無 value(indeterminate)+ 有傳 label 或 aria-label → role=\"status\",把 label 當作 aria-label 念出(例如「載入訂單資料中」)。\n• 無 value 且沒給任何 label → 標記 aria-hidden,交由外層容器(如 Button 的 aria-busy)負責語義。\n\n動畫尊重 prefers-reduced-motion:偏好減少動態的使用者不會看到停止的圈(那會像卡住),indeterminate 旋轉改放慢至 3s/圈(預設 1s)——保留「進行中」訊號、降低前庭刺激(Material 流派)。\n\n當把 CircularProgress 包進互動容器(Button / Card / Link)時,聚焦與鍵盤行為由容器決定。"}</p>
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
+      <p className="whitespace-pre-line">{"本元件不可聚焦、無鍵盤互動(載入指示不接收鍵盤),但會依模式自動輸出對的 ARIA 給輔助技術:\n\n• 有 value(determinate)→ role=\"progressbar\",並帶 aria-valuenow / aria-valuemin=0 / aria-valuemax=100,螢幕報讀器會念出目前進度。\n• 無 value(indeterminate)+ 有傳 label 或 aria-label → role=\"status\",把 label 當作 aria-label 念出(例如「載入訂單資料中」)。\n• 無 value 且沒給任何 label → 標記 aria-hidden,交由外層容器(如 Button 的 aria-busy)負責語義。\n\n動畫尊重 prefers-reduced-motion:偏好減少動態的使用者不會看到停止的圈(那會像卡住),indeterminate 旋轉改放慢至 3s/圈(預設 1s)——保留「進行中」訊號、降低前庭刺激。\n\n當把 CircularProgress 包進互動容器(Button / Card / Link)時,聚焦與鍵盤行為由容器決定。"}</p> {/* 來源:https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/progress/internal/_circular-progress.scss#L43-L47 */}
     </div>
   ),
 }

@@ -2,7 +2,7 @@
  * AgentFab — 智慧代理浮動開關鈕(AgentPanel 家族附屬資產)+ AgentFabDock(「家 ↔ 貼邊」兩態定位殼)。
  *
  * ── 消費的 SSOT ──
- * - 40 圓 = --field-height-lg 於 lg 密度(uiSize.spec.md「lg 密度」表);圓形 iconOnly。
+ * - 40 圓 = --field-height-lg 於 lg 密度(uiSize.spec.md「Field Height」表的 lg density 欄);圓形 iconOnly。
  * - 面 = bg-surface-raised + --elevation-200(elevation.spec.md 配對規則;不寫死白色)。
  * - 外框 = AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱;
  *   spec「FAB」節)。配色兩極 = AgentLogo AGENT_BRAND(= 自家色階 blue-4 / purple-4;
@@ -27,7 +27,7 @@
  *   ArrowLeftFromLine —— 線 = 右緣、箭頭方向 = 鍵盤 → / ← 等價路徑;lucide 官方 tags collapse / expand 鏡像對
  *   https://github.com/lucide-icons/lucide/blob/main/icons/arrow-right-to-line.json)。
  *   Tooltip 兩態不同:家「問我或推走我」(邀請拖曳)/ 貼邊「開啟智慧代理」(user 2026-09-03:小鈕只寫開啟)。
- *   動作:形態切換 --motion-duration-overlay(150ms,Carbon moderate-01「小型展開、短距離」)、飛回家 / 落點修正
+ *   動作:形態切換 --motion-duration-overlay(150ms,Carbon moderate-01「小型展開、短距離」)、飛回家 / 落點修正(來源:https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L302 https://atlassian.design/foundations/motion https://github.com/microsoft/fluentui/blob/8830c10bfb2f4c1bdd540287b09713b9679cd1ad/packages/react-components/react-motion/library/src/hooks/useAnimateAtoms.ts#L12)
  *   --motion-duration-surface(250ms,Atlassian transitions 150–400「較長時長幫助追蹤空間變化」)+ enter 曲線、
  *   帶底色淡入淡出 150ms;prefers-reduced-motion 全部直接落定(motion.spec.md a11y 段;Atlassian / Fluent 同)。
  *   位置由 consumer 受控/非受控(placement / defaultPlacement / onPlacementChange),DS 不寫 storage。
@@ -44,6 +44,9 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { ArrowLeftFromLine, ArrowRightToLine } from 'lucide-react'
 import { DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
+import { returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
+import { getLastUserInput } from '@/design-system/hooks/use-input-modality'
+import { AgentPanelDockContext, type AgentPanelDockLink } from './agent-panel-dock-context'
 import {
   AGENT_BRAND,
   AgentLogo,
@@ -211,7 +214,7 @@ const HYSTERESIS = 16
 /**
  * 右緣帶(拖曳中才出現的暫態停靠區)= DS「可放下的區域」配對 `--drop-target` 底 + `--drop-target-border` 虛線框,
  * 貼邊那側不畫、不留圓角(2026-09-03 user 拍板;token 與兩種情境的分工 SSOT 在 color.spec.md「Drop target」段):
- * - 底色半透明(覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律),兩模式同一公式,不用 --primary-subtle
+ * - 底色半透明(覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律),兩模式同一公式,不用 --primary-subtle(來源:https://github.com/microsoft/vscode-docs/blob/7b97a834f5fd6d0a616fa64e3f6dd379367dd68f/api/references/theme-color.md#L409-L410)
  *   (那是元件自己的不透明淡底,底下沒有別人的內容)。
  * - 三邊 dashed:dashed = DS 的「可放下的暫時目標」語彙(file-upload.spec.md);貼右緣那側不畫線不留圓角,
  *   與 Sheet / Sidebar / AppShell 側欄 / 貼邊鈕(環只畫露出三邊)同一語言。
@@ -362,7 +365,7 @@ function useSnapDrag(opts: {
   React.useEffect(() => () => cleanupRef.current(), [])
   const swallowNextClick = () => {
     // 拖曳放開後瀏覽器會對同一顆鈕補發一個 click(pointer capture 讓它一定落在鈕上)→ 必須吞掉,否則「移動」變成「開面板」。
-    // 2026-09-16 user:「拖拉 agent panel 的 fab 很容易一不小心就開啟 panel,但我明明就只是要移動它而已」。
+    // 2026-09-16 user:「然後為何現在拖拉 agent panel 的 fab」「很容易一不小心就開啟panel,但我明明就只是要移動它而已」。
     // 舊版(2026-09-02 第一版起)用 setTimeout(0) 清旗標 —— 假設 click 與 pointerup 落在同一個 task;本機 Chromium 確實如此
     // (實測 pointerup → click 0ms),但遠端隔離 / 輸入代理(user 的 Windows 機器把 *.netlify.app 送進 thin client,
     // 見 governance/memory/reference_perf_validation_same_host.md)或任何讓 click 晚一個 task 送達的環境,旗標已清、click 漏過去。
@@ -597,13 +600,10 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const stage: Stage = { w: size.w, h: size.h, inset }
     const { drag, onPointerDown, onClickCapture } = useSnapDrag({ host, inset, placement, commit: setPlacement })
     const [menuOpen, setMenuOpen] = React.useState(false)
-    // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):只有按 Esc 或選了項目才回入口鈕;
+    // 右鍵選單關閉時焦點去哪(2026-09-25,待辦總帳 B11):按 Esc、選了項目 → 回入口鈕;
     // 點外面 → 留在點的地方、Tab → 由 DropdownMenu 帶到下一站。舊版無條件搶回入口鈕(R8 實測點外面也搶)。
-    const returnFocusOnCloseRef = React.useRef(false)
-    const openMenu = () => {
-      returnFocusOnCloseRef.current = false
-      setMenuOpen(true)
-    }
+    // 判斷住 lib/overlay-focus-return.ts(沒有觸發點 + 非 modal;2026-09-30 前這裡用一個 ref 記「是不是 Esc / 選了項目」)
+    const openMenu = () => setMenuOpen(true)
     // 真正的開啟者是入口鈕(選單錨點是蓋在鈕上、aria-hidden 的透明 span):鈕以 aria-controls 宣告它開的是這個選單,
     // DropdownMenu 據此從鈕算 Tab 的下一站(dropdown-menu.tsx menuOpener)。
     const menuId = React.useId()
@@ -686,7 +686,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           data-dragging={dragging ? '' : undefined}
           data-snapped={drag?.placement ? '' : undefined}
           className={cn(
-            // **殼跟著鈕縮,不再固定 40 寬**(2026-09-04 user 回報「hover 出現 tooltip 的地方點不開」的根因之一):
+            // **殼跟著鈕縮,不再固定 40 寬**(2026-09-04 user 回報滑過出現 tooltip 的地方點了沒反應,根因之一):
             // 舊版把殼釘在 40,貼邊時鈕只有 28,左側就多出 12px 既不吃指標、又落在 tooltip 覆蓋範圍內的空白帶
             // (實測:hover 鈕中心 → tooltip 開;往左移 6px → 命中的是底下的表格、tooltip 仍開著;點下去面板不開)。
             // 殼是 `right` 錨定的,寬度縮到內容大小時右緣一樣不動,形態過渡(40→28)照樣不會凸出舞台,
@@ -717,21 +717,14 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
             <DropdownMenuContent
               id={menuId}
               align="end"
-              // B11:Esc = 退一步回開啟者(W3C menu「Escape … return focus to the element … from which the menu was opened」)
-              onEscapeKeyDown={() => {
-                returnFocusOnCloseRef.current = true
-              }}
-              onCloseAutoFocus={(e) => {
-                // 一律擋掉 Radix 還給透明錨點(聚焦不了 → 焦點會掉到 body);只有 Esc / 選了項目才回入口鈕(B11)
-                e.preventDefault()
-                if (returnFocusOnCloseRef.current) buttonRef.current?.focus()
-                returnFocusOnCloseRef.current = false
-              }}
+              // B11:Esc = 退一步回開啟者(W3C menu「Escape … return focus to the element … from which the menu was opened」);
+              // Radix 的觸發點是透明錨點(聚焦不了 → 焦點會掉到 body),所以開啟者 = 入口鈕、由這裡還(按在外面收起不搶)
+              onCloseAutoFocus={(e) => returnFocusToOpener(e, buttonRef.current, { noTrigger: true })}
             >
               {placement.kind === 'home' ? (
-                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement({ kind: 'dock', y: dockMaxY(stage) }) }}>{text.dock}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => setPlacement({ kind: 'dock', y: dockMaxY(stage) })}>{text.dock}</DropdownMenuItem>
               ) : (
-                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => { returnFocusOnCloseRef.current = true; setPlacement(AGENT_FAB_HOME) }}>{text.home}</DropdownMenuItem>
+                <DropdownMenuItem startIcon={ArrowLeftFromLine} onSelect={() => setPlacement(AGENT_FAB_HOME)}>{text.home}</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -867,7 +860,7 @@ export interface AgentPanelDockProps
 
 /**
  * 面板與入口鈕互斥的唯一住所:開 → 只有面板(× 關閉);關 → 只有入口鈕(點一下開回來),
- * 入口鈕位置與標誌狀態都留在這裡,產品端不必各自寫一份(2026-09-03 user:「所有範例的關閉按鈕都可以加上去了」)。
+ * 入口鈕位置與標誌狀態都留在這裡,產品端不必各自寫一份(2026-09-03 user:「然後所有範例的關閉agent 按鈕的功能都可以加上去了」)。
  * 外層容器需 `relative`(入口鈕以 absolute 定位在其中)。
  */
 const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
@@ -908,7 +901,30 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
       },
       [placementProp, onPlacementChange],
     )
-    const close = React.useCallback(() => setOpen(false), [setOpen])
+    // 使用者用**鍵盤**關閉(浮層時 Esc、焦點在 × 上按 Enter / 空白鍵)→ 入口鈕重掛後把焦點交給它(agent-panel.spec.md「Esc 與關閉語意」
+    // 焦點段:入口鈕在面板開著時卸載、關閉時重掛,要還給新掛上的那一顆;WCAG 2.4.3 管的是鍵盤順序)。
+    // 指標關閉(點 ×、點遮罩)不搬:搬過去會讓入口鈕的提示在點完之後自己彈出來(Radix Tooltip 被程式聚焦就開),
+    // 指標使用者不需要焦點接力(機械閘 scripts/overlay-detached-anchor-invariant.mjs A)。
+    // 版面造成的關閉(AppShell §4 連帶關閉)走 `link.setOpen`,不搬焦點 —— 那由 AppShell 的後備處理(焦點回 Main,K7)。
+    const focusFabAfterCloseRef = React.useRef(false)
+    const fabShellRef = React.useRef<HTMLDivElement | null>(null)
+    const panelWrapRef = React.useRef<HTMLDivElement | null>(null)
+    const close = React.useCallback(() => {
+      // 「這次是不是鍵盤關的」讀最近一次使用者輸入。浮層時的 Esc 由 `useEscapeRegion`(window 捕獲)當場呼叫這裡,
+      // 那一下 Esc 必須已經被記下來 —— 記錄的監聽掛在 window 捕獲、模組載入即掛,結構上先於它(hooks/use-input-modality.ts 檔頭;
+      // 2026-10-14 前掛在 document,讀到的是上一次輸入:滑鼠點進面板再按 Esc,焦點掉到 body)
+      focusFabAfterCloseRef.current = getLastUserInput().kind === 'keyboard'
+      setOpen(false)
+    }, [setOpen])
+    React.useEffect(() => {
+      if (open || !focusFabAfterCloseRef.current) return
+      focusFabAfterCloseRef.current = false
+      const active = document.activeElement
+      // 焦點已被別的東西接走(不在 body、也不在剛藏起來的面板裡 —— display:none 之後瀏覽器要到下一次畫面更新才把焦點移走)→ 不搶
+      if (active && active !== document.body && !panelWrapRef.current?.contains(active)) return
+      fabShellRef.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
+    }, [open])
+    const link = React.useMemo<AgentPanelDockLink>(() => ({ open, setOpen }), [open, setOpen])
     // v14 條 F 的最後半句「**以及原分頁離開宿主後返回**,均重新初始化為關閉的新對話」(2026-09-29,待辦總帳 OE2):
     // 從網址列離開宿主再按上一頁回來,瀏覽器可能直接從 back/forward cache 還原整個舊畫面 —— JS 堆疊原封不動、
     // 元件不會重新掛載,`defaultOpen = false` 那條路不會再走一次,面板就帶著離開前的狀態繼續開著。
@@ -941,12 +957,18 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
     // 用 wrapper 而不是把 `hidden` 交給 render prop:交出去就會有人忘記套。
     return (
       <>
-        <div style={{ display: open ? 'contents' : 'none' }}>
-          {children({ close, logoState })}
+        <div ref={panelWrapRef} style={{ display: open ? 'contents' : 'none' }}>
+          <AgentPanelDockContext.Provider value={link}>
+            {children({ close, logoState })}
+          </AgentPanelDockContext.Provider>
         </div>
         {!open && (
           <AgentFabDock
-            ref={ref}
+            ref={(node) => {
+              fabShellRef.current = node
+              if (typeof ref === 'function') ref(node)
+              else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+            }}
             logoState={logoState}
             placement={placement}
             onPlacementChange={handlePlacementChange}

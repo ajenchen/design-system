@@ -13,19 +13,19 @@
  *
  * **這是工具,不是閘**(零斷言;但「story 沒開起來」必須顯性失敗,不能產出看似正常的截圖)。
  * 載入(2026-09-25):每則 story 由共用的 openStory(lib/launch-browser.mjs)開 —— 等 Storybook 回報渲染完成(含 play)、
- * 畫面健康、渲染期間發出的請求(圖片)全部結束、版面連續靜止 10 個影格(不拍到動畫中途)才截圖;
+ * 畫面健康、畫面裡每張圖(示範圖向遠端要真圖)載完並解碼、版面連續靜止 10 個影格(不拍到動畫中途)才截圖;
  * 取代舊的 networkidle + 固定睡 600ms + 「錯誤頁可見嗎」。
  * 開不起來 → 儀器失效:點名 story、列同源 404,截圖照存供診斷,exit 1。
  *
  * 前置:storybook-static/ 已建(npm run build-storybook)。
  * 用法:node scripts/story-screenshots.mjs --stories=<id1,id2,...> [--out=story-screenshots] [--viewport=800x900] [--touch] [--static-dir=<Storybook 建置>]
  *   --touch:行動裝置模擬(hasTouch + isMobile → Chromium `(pointer: coarse)` match),
- *   驗證 useIsTouchDevice native 分支(Select/Combobox 觸控路徑)的實際渲染。
+ *   驗證觸控下的實際渲染(Select 的 useIsTouchDevice native 分支;Combobox 2026-09-18 起不分裝置,觸控下與桌機同一條路)。
  */
 import { mkdirSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { describeDeterministicImageFailures, launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -57,9 +57,12 @@ let failures = 0
 for (const id of stories) {
   // story 404 / render error / 空畫面 / 頁面例外必須顯性 fail,不可產出誤導性的截圖(openStory 丟 StoryRenderInstrumentError)
   let instrument = null
+  let opened = null
   try {
-    // requestsSettled:渲染期間發出的請求(頭像等圖片)全部結束才拍 —— 取代舊版 networkidle 真正想等的那件事
-    await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { requestsSettled: true, settleFrames: 10, notFound: server.notFound })
+    // 圖片:openStory 預設等畫面裡每張圖載完、解碼完,失敗 / 等不到 = 儀器失效並點名網址(lib「圖片就緒」區塊,2026-10-14)——
+    // 取代原本的 requestsSettled(「請求全部結束」是網路層代理,圖到了不等於畫上了)。
+    // demoImages 'network':這是給人看的截圖,示範圖要是真圖(本機合成圖只給不跟基準比的閘)
+    opened = await openStory(page, `${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { demoImages: 'network', settleFrames: 10, notFound: server.notFound })
   } catch (error) {
     if (!(error instanceof StoryRenderInstrumentError)) throw error
     instrument = error
@@ -71,6 +74,9 @@ for (const id of stories) {
     console.error(`✗ ${instrument.message}(截圖仍已存供診斷:${file})`)
   } else {
     console.log(`✓ ${file}`)
+    // 確定性破圖(任何環境都載不到:RFC 保留名稱、同源 404、示範圖主機上真站沒有的網址)照拍,但點名 —— 照拍 ≠ 靜默拍下
+    const brokenImages = describeDeterministicImageFailures(opened?.images?.deterministicFailures)
+    if (brokenImages) console.warn(`  ${brokenImages}`)
   }
 }
 await browser.close()

@@ -11,7 +11,6 @@ import {
   readFileSync,
   realpathSync,
   renameSync,
-  rmSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
@@ -27,8 +26,9 @@ import {
 import { harnessMemberCommand, harnessSuiteCommand, readHarnessSourceInventory } from './harness-source-inventory.mjs'
 import { resolveProvisionedPlaywrightRuntime } from './playwright-runtime.mjs'
 import { validateProviderCompatibilityJoin } from './provider-compatibility.mjs'
-import { runClosedGit, sha256, stableStringify } from './common.mjs'
+import { removeTreeRepairingOwnerPermissions, runClosedGit, sha256, stableStringify } from './common.mjs'
 import { assertGitVisibleWorktreeUnchanged, captureGitVisibleWorktree } from '../../../scripts/lib/worktree-fingerprint.mjs'
+import { gateMetaLaneCommand } from '../../../scripts/lib/gate-meta-test-inventory.mjs'
 
 const EXTERNAL_CREDENTIAL = /(?:^|_)(?:TOKEN|SECRET|PASSWORD|PRIVATE_KEY|CLIENT_SECRET|API_KEY|ACCESS_KEY(?:_ID)?|AUTH_TOKEN)$/i
 const EXPLICITLY_UNSAFE_ENV = new Set([
@@ -614,7 +614,7 @@ export function buildHarnessExecutionPlan(registry, { repoRoot } = {}) {
   const inventory = readHarnessSourceInventory(resolve(root, registry.sourceInventory.path))
   const sourcePathsByArgv = new Map()
   for (const suite of inventory.suites) sourcePathsByArgv.set(commandKey(harnessSuiteCommand(suite.id)), suite.members)
-  sourcePathsByArgv.set(commandKey(inventory.pairedMeta.command), inventory.pairedMeta.members)
+  for (const lane of inventory.pairedMeta.lanes) sourcePathsByArgv.set(commandKey(gateMetaLaneCommand(lane.id)), lane.members)
   for (const path of inventory.direct) sourcePathsByArgv.set(commandKey(harnessMemberCommand(path)), [path])
   const timeoutOverrides = Array.isArray(registry.runner?.timeoutOverrides) ? registry.runner.timeoutOverrides : []
   const timeoutByArgv = new Map(timeoutOverrides.map(override => [commandKey(override.command), override.timeoutMs]))
@@ -697,8 +697,12 @@ export function executeHarnessCommand(argv, {
         if (forceKillTimer) clearTimeout(forceKillTimer)
         if (closeCleanupTimer) clearTimeout(closeCleanupTimer)
         let isolationCleanupError = null
-        try { rmSync(isolatedHome, { recursive: true, force: true }) }
-        catch (error) { isolationCleanupError = error }
+        // 先照常刪;被砍的行程留下的唯讀目錄(例:closed hook tool profile 的 0o500 根)要先補擁有者權限再刪
+        //(09-22 → 09-28 夜間超時後 `EACCES`、isolatedHomeRemoved: false)。
+        try {
+          const cleanup = removeTreeRepairingOwnerPermissions(isolatedHome)
+          if (!cleanup.removed) isolationCleanupError = new Error(`isolated home still exists after cleanup:${isolatedHome}`)
+        } catch (error) { isolationCleanupError = error }
         const status = timedOut
           ? 'timed-out'
           : launchError || isolationCleanupError

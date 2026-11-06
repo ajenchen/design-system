@@ -1,7 +1,7 @@
 # 本專案 AI 治理核心(provider-neutral;AGENTS.md 開放標準)
 
 **本檔為所有 AI agent 的治理 SSOT bootstrap**:Codex 等 AGENTS.md 標準 agent 原生載入,Claude Code 經 `CLAUDE.md` 的 `@AGENTS.md` 載入同一份。跨模型 bootstrap 原則**只改本檔**。
-**最終 authority 不是本檔**:本檔引導行為,強制層 = provider-neutral governance verifier、受保護 CI 與外部 required check;只有這些控制實際啟用且證據綁定當次 commit 才可宣稱 compliant,**本機 hook 或 workflow 檔存在本身不構成保證**。Claude 另有 write-time hooks 加速回饋(`.claude/hooks/`,provider 專屬加速器,非信任邊界)。
+**最終 authority 不是本檔**:本檔引導行為,強制層 = provider-neutral governance verifier、受保護 CI 與外部 required check;只有這些控制實際啟用且證據綁定當次 commit 才可宣稱 compliant,**本機 hook 或 workflow 檔存在本身不構成保證**。Claude 另有 write-time hooks 加速回饋(`.claude/settings.json` → `scripts/run-provider-hook.mjs` → `packages/design-system/ds-canonical/hooks/`,provider 專屬加速器,非信任邊界)。
 **治理／infra 改動只改 canonical owner**,不得手改 build graph 宣告的 generated outputs(`.claude` provider views、`.agents/**`、`.codex/**`、`generated/**`);完成後跑 `npm run governance:generate` 與 `npm run governance:check`。owner/output/non-authority 邊界由 `infra/governance/protected-root-classification.json` 封閉,新路徑未分類即失敗。
 **巢狀 instruction 只准補充 scope,不得複製本檔**:Codex 由 repo root→cwd 合併 `AGENTS.md`,**整條鏈必守預設 32KiB**(超過會靜默截斷;閘 `check-agents-bootstrap.mjs` A1)。
 
@@ -54,7 +54,7 @@
 
 **6 維度 → skill**:D1 設計語言 / D2 程式語言 / D3 效能 / D4 UX / D5 視覺 / D6 原則自檢,各維對應的 skill 與判準 owner 在 `skills/design-system-audit/`(含 `references/audit-prompts.md` 判準 SSOT),本檔不重述對照表。
 
-**Consistency 類稽核必 Phase 0 全掃再判**。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11 user directive):先全 DS 掃完(NO-SAMPLE)→ 跨元件去重 → **最後一次**列決策清單給 user 拍板;**禁**途中逐元件問。
+**Consistency 類稽核必 Phase 0 全掃再判**。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11;來源不明):先全 DS 掃完(NO-SAMPLE)→ 跨元件去重 → **最後一次**列決策清單給 user 拍板;**禁**途中逐元件問。
 
 **Audit-vs-execute 分權**:判準與 `# 自主執行 canonical` 的分權表**同一份**,本節不重述 —— 只有改變產品／UI／UX SSOT 且存在真實取捨才 STOP、batch-at-end 給 user 拍板;其餘依 Standing Authorization AUTO。對齊／表達統一／清 duplicate／補 pointer 一律 AUTO。
 
@@ -107,7 +107,7 @@
 | 2 `merge` | 有 receipt 後以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
 | 3 `publish` | 從 protected main 自動發布 immutable exact version;禁 mutable dependency tag |
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
-| 5 `consumer` | 自動建立、修復、合併 template 與 WM exact-version PR,讀回 consumer protected main |
+| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;WM 只在要求時升級 |
 
 公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK 只有兩種**:未解決的產品／UI／UX SSOT 真取捨,以及**發版同意**;login/MFA/OAuth／缺 credential reference 只暫停當下動作,完成後 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 
@@ -159,7 +159,7 @@
 | 清 unused imports 後 runtime | tsc 不充分,需 storybook |
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支只傳 consumer child |
-| `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼** | 「tsc -b 通過」不構成型別正確的證據;任何 .tsx 改動一律以 `npm run build:lib` 為準。詳 historical-bugs.md |
+| `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼**;根目錄 `tsc --noEmit` 更是 0 個檔(`files: []`) | 「tsc -b / --noEmit 通過」不構成型別正確的證據;任何 .tsx 改動一律以 `npm run build:lib` 為準。詳 historical-bugs.md |
 | 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 | 必 `--checksum`、flag 分開寫、mktemp 後驗非空。**判準**:純函式測過之後,必再問「這個參數在正式流程裡是誰算的,那支有沒有被測」,並用真實資料跑**兩面對照**(該 true 一筆、該 false 一筆)。詳 historical-bugs.md |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |

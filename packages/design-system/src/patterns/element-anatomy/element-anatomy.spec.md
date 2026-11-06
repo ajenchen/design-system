@@ -11,7 +11,7 @@
 
 Taxonomy 跟 F1+F2 runtime primitive **co-locate 在同 folder** 是 `packages/design-system/src/README.md` L17 的 home governance 決策:**「即使跨 pattern 的 taxonomy(如 4-Family Model)也住在最相關的 pattern topic 資料夾內,folder = topic home,不需要頂層 flat 檔案」**。co-location 讓新 element 查 taxonomy 時,runtime primitive 就在隔壁,查閱效率最高。
 
-**與「layout」命名分家**:「anatomy」= element-level 結構分類;「layout」= page-level 版面(未來頁面設計原則的家)。世界級 DS 一致如此(Material Foundations > Layout = page grid / Polaris / Atlassian / Carbon 皆然)。
+**與「layout」命名分家**:「anatomy」= element-level 結構分類;「layout」= page-level 版面(未來頁面設計原則的家)—— 同一個字只指一個層級,element 規則與 page 規則才不會住進同一個家。
 
 ---
 
@@ -45,7 +45,7 @@ Taxonomy 跟 F1+F2 runtime primitive **co-locate 在同 folder** 是 `packages/d
 
 同結構、不同 role、不同 padding / typography:
 
-| Sub-profile | 成員 | Padding | Typography | Cursor | 為什麼 |
+| Sub-profile | 成員 | Padding | Typography | 游標(`cursor`) | 為什麼 |
 |-------------|------|---------|-----------|--------|------|
 | **Action trigger** | Button / SegmentedControl / Chip | 較鬆(xs=`px-2`, sm+=`px-3`) | 對應 size 的 font-medium | pointer | 需命中區 + 視覺重量搶點擊焦點 |
 | **Data indicator** | Tag | 較緊(`px-1` 所有 size) | font-normal(sm 例外 `font-medium`,詳 `tag.spec.md` 尺寸表) | text | Passive 讀取,不搶焦點 |
@@ -195,8 +195,8 @@ Consumer 自建 chrome-like div 帶 bg/border/shadow 時,參考上表或就近�
 - 機械檢查走 audit dim 22「視覺容器 inner breathing」(design-system-audit SKILL)batch sweep:「consumer 自建 chrome 是否有 inner padding」
 
 **與既有規則的關係**:
-- `overlay-surface.spec.md` 「M11 state walk hover 檢查(三 invariant 必同時 ✓)」第 3 條(content 在 hover bg 內 breathing)= 本規則的**應用層 instance**(hover bg 也算「permanent」在該 state 內),非獨立規則
-- `.claude/rules/ui-development.md`「Padding source 分層規則」定 **padding 來源**(token / Tailwind / calc);本規則定 **padding 是否存在**(是 invariant)
+- `overlay-surface.spec.md` 「M11 state walk hover 檢查」第 3 條(content 在 hover bg 內 breathing)= 本規則的**應用層 instance**(hover bg 也算「permanent」在該 state 內),非獨立規則
+- `ds-canonical/references/ui-dev-rules.md`「Padding source 分層規則」定 **padding 來源**(token / Tailwind / calc);本規則定 **padding 是否存在**(是 invariant)
 
 ---
 

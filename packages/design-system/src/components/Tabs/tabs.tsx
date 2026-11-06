@@ -176,7 +176,7 @@ const Tabs = React.forwardRef<
         {...props}
         // Root 本來是裸 Radix(`display: block`),在「高度受限的 flex column 容器」裡會**斷鏈**:
         // Dialog / Sheet 的契約是 header/footer `shrink-0` + Body `flex-1 min-h-0` → 空間不夠時 body 內捲
-        // (`dialog.spec.md:128`「內容溢出走 body 捲動」)。但只要中間夾一層 `display: block` 且
+        // (`dialog.spec.md`「maxWidth」:「內容溢出走 body 捲動」)。但只要中間夾一層 `display: block` 且
         // `min-height: auto` 的 wrapper,那層就收縮不了,整包內容原樣頂出容器 —— 2026-09-12 user 截圖的
         // 「dialog body 內容超出容器」正是這個:Tabs Root 在 204px 的 dialog 裡撐到 271px。
         // Root 自己成為可收縮的 flex column 之後,這條鏈在任何容器裡都自然接上,consumer 不需要背咒語。
@@ -499,7 +499,7 @@ const tabsTriggerVariants = cva(
     'after:bg-transparent after:transition-colors after:duration-150',
     // hover（未選）：文字轉深
     'hover:text-foreground',
-    // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+    // 巢狀 hover(2026-09-25,user 選了 AI 列的選項『卡片保留、按鈕再亮一層 (Recommended)』;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
     // 指標在這個 tab 的 inlineAction 上時,tab 保留上一行的 hover 字色,action 再亮自己那層。
     // action 依 ARIA required-children 被 portal 到 tablist 外(見 TabsTrigger 的 portal 註解),指標在它上面時 trigger 不算 :hover,
     // CSS 也寫不出「哪顆 action 對應哪個 trigger」→ 由 portal 外層 span 的 pointerenter/leave 在 trigger 上標 `data-action-hover`。
@@ -552,8 +552,8 @@ interface TabsTriggerProps
    */
   endIcon?: LucideIcon
   /**
-   * Inline action slot(2026-05-21 v3 加,per user「圖一 後綴應該是 inline action」+「點擊
-   * 該 tab 的 inline action 跟其他地方應該不同反應」directive):
+   * Inline action slot(2026-05-21 v3 加;user 指示截圖裡的後綴應該是 inline action,而且點它跟點
+   * tab 其他地方要有不同反應):
    * 提供 `<ItemInlineAction>` / `<DropdownMenuTrigger asChild><ItemInlineAction ... /></DropdownMenuTrigger>`
    * 等獨立 click target。**DOM 上是 trigger 的 sibling(絕對定位),非巢狀 button**
    * (2026-07-05 D4 修:Radix TabsTrigger 是原生 `<button>`,巢 button = HTML 不合法 +
@@ -596,7 +596,7 @@ const TabsTrigger = React.forwardRef<
   )
   const [actionPos, setActionPos] = React.useState<{ left: number; top: number; height: number } | null>(null)
 
-  // 巢狀 hover(2026-09-25,user 選「卡片保留、按鈕再亮一層」;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
+  // 巢狀 hover(2026-09-25,user 選了 AI 列的選項『卡片保留、按鈕再亮一層 (Recommended)』;SSOT = tabs.spec.md `inlineAction` 條「指標在 inlineAction 上時」):
   // 指標在 portal 出去的 action 上時,在 trigger 標 `data-action-hover`,cva 的 `data-[action-hover]:text-foreground` 讀它。
   // - 用**原生** pointerenter/leave,不用 React 的 onPointerEnter/Leave:React 依元件樹算進出,而 inlineAction 裡的
   //   DropdownMenuContent 是這個 span 的元件樹後代(DOM 卻在 body)—— 指標移進選單時 React 不發 leave,選單關掉時節點卸載
@@ -707,7 +707,7 @@ const TabsContent = React.forwardRef<
     className={cn(
       // 與 TabsList 的間距 canonical(2026-06-12 user 拍板):--layout-space-tight(md 12px,
       // density 連動)。依 layoutSpace.spec「親疏 3 級」:Tabs↔Content 同 bundle(第一級,
-      // 元件 spec own),值取規則 3「直接功能依賴 = tight」精神(heading → labeled content 同類)。
+      // 元件 spec own),值取規則 3「直接功能依賴 = tight」精神(分頁列按了會換下面的內容 = 操作驅動)。
       // 收斂原 DS-wide 四種土法(無間距 / mt-4 / p-4 / pt-4 — M17 假 SSOT)。
       // full-height 佈局(AppShell pane)用 className="mt-0" 覆寫(tailwind-merge)。
       'mt-[var(--layout-space-tight)]',

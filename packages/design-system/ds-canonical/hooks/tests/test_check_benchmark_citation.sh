@@ -138,6 +138,54 @@ run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '
 '
 expect_pass_silent "11. component claim + direct citation → silent"
 
+# ── K8(2026-11-05):關鍵字 / 來源網域擴充 + tsx 只看註解與 note= + md 不看程式碼框 ──
+SPEC="/repo/packages/design-system/src/components/Foo/foo.spec.md"
+TSX="/repo/packages/design-system/src/components/Foo/foo.stories.tsx"
+
+# 12. 擴充的名稱(MUI)沒來源 → 擋
+run_hook_write "$SPEC" $'# Foo\n\nMUI Autocomplete 開清單時把第一項設為 active。'
+expect_warn "12. K8 名稱 MUI 無來源 → BLOCK" "缺 inline citation"
+
+# 13. 擴充的網域(mui.com)算來源
+run_hook_write "$SPEC" $'# Foo\n\nMUI Autocomplete 開清單時把第一項設為 active(https://mui.com/material-ui/react-autocomplete/)。'
+expect_pass_silent "13. K8 網域 mui.com → silent"
+
+# 14. 不寫 https:// 的 github.com/…#L 路徑算來源
+run_hook_write "$SPEC" $'# Foo\n\nrc-select 擋 mousedown(github.com/react-component/select/blob/59dd/src/OptionList.tsx#L79),Ant Design 也是。'
+expect_pass_silent "14. github.com/… 無 scheme → silent"
+
+# 15. registry.npmjs.org 算來源
+run_hook_write "$SPEC" $'# Foo\n\n對照 AG Grid v33.3.2(npm registry:https://registry.npmjs.org/ag-grid-community)。'
+expect_pass_silent "15. registry.npmjs.org → silent"
+
+# 16. 原 hook 的內插 bug:「-unverified」字樣不再被當成撤回標記
+run_hook_write "/repo/packages/design-system/src/patterns/Foo/foo.spec.md" $'# Foo\n\nPolaris 也這樣(non-unverified 備註)。'
+expect_warn "16. 只有 -unverified 字樣 → BLOCK(修掉 @ 內插)" "缺 inline citation"
+
+# 17. tsx 範例資料裡的產品名不是宣稱
+run_hook_write "$TSX" $'const OPTIONS = [\n  { value: \x27slack\x27, label: \x27Slack #general\x27 },\n  { value: \x27notion\x27, label: \x27Notion 公告頁\x27 },\n]'
+expect_pass_silent "17. tsx 範例資料 → silent"
+
+# 18. tsx 註解裡的對照宣稱照擋
+run_hook_write "$TSX" $'// 對齊 Polaris Banner 的關閉鈕規則\nexport const A = 1'
+expect_warn "18. tsx 註解宣稱無來源 → BLOCK" "缺 inline citation"
+
+# 19. tsx note= 說明文字照擋
+run_hook_write "$TSX" $'<Example note="Material 3 的 chip 也是這樣排" />'
+expect_warn "19. tsx note= 宣稱無來源 → BLOCK" "缺 inline citation"
+
+# 20. md 程式碼框裡的產品名(範例圖)不是宣稱
+run_hook_write "$SPEC" $'# Foo\n\n```\n[checkbox] [avatar] [name]   ← Notion sharing modal\n```'
+expect_pass_silent "20. md 程式碼框 → silent"
+
+# 21. 術語撞名:「Linear vs Non-linear」「Gestalt proximity」不是產品
+run_hook_write "$SPEC" $'# Foo\n\n## Linear vs Non-linear\n\n相同距離代表 heading 擁有下方 items(Gestalt proximity)。'
+expect_pass_silent "21. Linear vs Non-linear / Gestalt proximity → silent"
+
+# 22. 產品 Linear 本身照擋
+run_hook_write "$SPEC" $'# Foo\n\nLinear 的 sidebar 也這樣收合。'
+expect_warn "22. 產品 Linear 無來源 → BLOCK" "缺 inline citation"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

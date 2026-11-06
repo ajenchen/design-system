@@ -111,7 +111,7 @@ col.accessor('price', {
 - **Invalid input**(non-numeric):input 為 `type="text" inputMode="decimal"`,onChange 以 `Number(raw)` parse,NaN 時忽略不觸發 `onChange`(value 維持原值);搭配 Field validation 渲 error variant(`aria-invalid="true"` + wrapper `border-error`(hover 時 `border-error-hover`)+ 下方 error message)。
 - **輸入中間態**(`-`、`1.`、`0.0` 等 parse 後 lossy 的 raw 字串,2026-07-05 D4 codify):edit mode 以 internal draft string 承載——輸入期間 DOM 顯示 draft 原字串(負號、尾點不被 controlled 回寫吃掉),parse 成功即時同步 `onChange(parsed)`;blur / Enter commit(清 draft、顯示回 committed value,不合法殘字自然還原)、Escape 棄未提交 draft 字串、顯示回 committed value(NumberInput 為 live-commit,每次合法 parse 即 onChange,故非回復 pre-edit 原值;真 revert 需另存 snapshot,屬 API 擴充)。value 面語意不變:`''` / `'-'` 視為 `null`。draft 與 committed value 分層是為了同時保留可繼續輸入的文字與對外數值契約。
 - **負數 / 超大數字**:`toLocaleString(locale)` 自動處理負號與千分位分組,無特殊 prop。
-- **科學記號輸入**(`1e5`):`Number(raw)` parse 為 `100000`,非 NaN 即觸發 `onChange`(`number-input.tsx:150-152`)。
+- **科學記號輸入**(`1e5`):`Number(raw)` parse 為 `100000`,非 NaN 即觸發 `onChange`(`number-input.tsx#NumberInput` 的 `Number(raw)`)。
 - **精度上限**:`precision` > 6 為禁止事項(浮點精度雜訊),極端精度走 `Input` + 自驗證。
 - **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。edit/table alignment 不在本檔另立支援決策。
 - **Dark mode / density**:走 Field SSOT,不獨立 own。
@@ -127,7 +127,7 @@ col.accessor('price', {
 
 ## A11y 預設
 
-**ARIA / Pattern**:ARIA / keyboard 機制**僅 edit mode 適用**——edit mode 渲染 native `<input>` element(預設 a11y),且把 `...props`(含 `aria-label` / `aria-describedby` 等)轉發到該 input;該 native input 自身消費 `fieldCtx` 設定 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`(非由 Field wrapper 注入,對齊 Select / Combobox trigger 自設機制)。`view` / `readonly` / `disabled` 三 mode 渲染的是無互動純展示文字(`<div>` + `<span>`,不轉發 `aria-*`),螢幕報讀僅得格式化後的靜態值(對齊 Carbon read-only / Stripe display 慣例)。
+**ARIA / Pattern**:ARIA / keyboard 機制**僅 edit mode 適用**——edit mode 渲染 native `<input>` element(預設 a11y),且把 `...props`(含 `aria-label` / `aria-describedby` 等)轉發到該 input;該 native input 自身消費 `fieldCtx` 設定 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`(非由 Field wrapper 注入,對齊 Select / Combobox trigger 自設機制)。`view` / `readonly` / `disabled` 三 mode 渲染的是無互動純展示文字(`<div>` + `<span>`,不轉發 `aria-*`),螢幕報讀僅得格式化後的靜態值(沒有可操作的東西,就不宣告可操作的語意)。
 
 **Keyboard 行為**:
 

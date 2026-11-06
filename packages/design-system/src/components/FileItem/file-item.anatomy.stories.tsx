@@ -2,8 +2,11 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { X, Download, RotateCw } from 'lucide-react'
 import { FileItem } from './file-item'
+import { useFileDemo, type DemoFile } from './_demo-files'
 import { Button } from '@/design-system/components/Button/button'
+import { Toaster } from '@/design-system/components/Toast/toast'
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof FileItem> = {
   title: 'Design System/Components/FileItem/設計規格',
@@ -46,7 +49,7 @@ export const Overview: Story = {
               {[
                 ['name', 'string', '必填', '檔名'],
                 ['mode', "'compact' | 'rich'", "'compact'", 'compact=Paperclip 16px icon / rich=Avatar 48px 縮圖'],
-                ['surface', "'form' | 'upload-manager'", "'form'", '所在容器 context:form=rich 為 border card / upload-manager=rich 無邊框無 bg(面板自身是容器,avatar 作 item 邊界);upload-manager 的列自帶左右 loose、上下 tight/2,鋪滿面板寬(面板 body 左右 0,2026-09-25 待辦總帳 B12)。詳 spec「邊框 / 背景」「Padding」表'],
+                ['surface', "'form' | 'upload-manager'", "'form'", '所在容器 context:form=rich 為 border card / upload-manager=rich 無邊框無 bg(面板自身是容器,avatar 作 item 邊界);upload-manager 的列自帶左右 loose、上下 tight/2,鋪滿面板寬(面板 body 左右 0)。詳 spec「邊框 / 背景」「Padding」表'],
                 ['status', "'uploading' | 'completed' | 'error'", '—', '上傳狀態(不傳=已上傳靜態)'],
                 ['progress', 'number', '0', '上傳進度 0-100(有 status 時顯示 bar;completed 強制 100%)'],
                 ['description', 'ReactNode', '—', 'rich 任意場景 / compact 只有 error 才顯示。ReactNode — 可含 inline clickable link(如「View log」)'],
@@ -54,7 +57,7 @@ export const Overview: Story = {
                 ['actions', 'ReactNode', '—', 'suffix actions(例:delete / cancel button)'],
                 ['onDownload', '() => void', '—', "hover-swap:status='completed' 時,滑鼠移上整列,綠勾 ✓ 換成下載 ↓。兩種 mode 都用 Button xs(24)iconOnly,符合列內操作 ≤ 24 上限"],
                 ['onRetry', '() => void', '—', "hover-swap:status='error' 時,滑鼠移上整列,紅叉 ✗ 換成重試 ⟲。幾何同上 — 兩種 mode 都用 Button xs(24)"],
-                ['onClick', '() => void', '—', '傳入後整個 item 變可點擊:cursor-pointer + 滑過底色(卡片疊一層 / 小膠囊換 secondary-hover / 透明列換 neutral-hover);不傳就沒有滑過底色 —— 點了會有反應的才加(2026-09-25 待辦總帳 B12)'],
+                ['onClick', '() => void', '—', '傳入後整個 item 變可點擊:cursor-pointer + 滑過底色(卡片疊一層 / 小膠囊換 secondary-hover / 透明列換 neutral-hover);不傳就沒有滑過底色 —— 點了會有反應的才加'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -102,7 +105,7 @@ export const ColorMatrix: Story = {
         <H3>Status × 元素 色彩矩陣</H3>
         <Desc>
           FileItem 本身無色彩變體——text 走 item-anatomy row primitive 共用 token
-          (`--foreground` / `--fg-secondary`);background 依 mode × surface 決定(rich + surface=form = `--surface` + border / rich + surface=upload-manager = 無邊框無 bg / compact 無 status = `--secondary` / compact 有 status = transparent);滑過底色只在有 onClick 時出現(見下方 Container background table)。
+          (<code>--foreground</code> / <code>--fg-secondary</code>);background 依 mode × surface 決定(rich + surface=form = <code>--surface</code> + border / rich + surface=upload-manager = 無邊框無 bg / compact 無 status = <code>--secondary</code> / compact 有 status = transparent);滑過底色只在有 onClick 時出現(見下方 Container background table)。
           Status 才驅動色彩:progress bar 色(inProgress / success / error)+ status icon 色(check / X)+ description 色(error 時升階)。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -152,10 +155,11 @@ export const ColorMatrix: Story = {
 
       <div>
         <H3>Container background(per mode + 有 onClick 時的滑過)</H3>
+        {/* 出處:file-item.spec.md「滑過」段(取代 2026-04-23「永不顯示 hover-bg」);換色配對 = color.spec.md「Hover 換色配對總則」 */}
         <Desc>
-          只有點了會有反應(傳了 onClick)的 FileItem 才有滑過底色,沒傳就沒有(2026-09-25 待辦總帳 B12,取代 2026-04-23「永不顯示 hover-bg」)。
-          換上什麼色依平常底色配對(color.spec.md「Hover 換色配對總則」):「底」疊一層、自己的填色換下一階、透明換 neutral-hover。
-          列內按鈕的滑過色疊在列的滑過色上;不加按住那一階(待辦總帳 N4 未決)。詳 spec「滑過」段。
+          只有點了會有反應(傳了 onClick)的 FileItem 才有滑過底色,沒傳就沒有。
+          換上什麼色依平常底色配對:「底」疊一層、自己的填色換下一階、透明換 neutral-hover。
+          列內按鈕的滑過色疊在列的滑過色上;不加按住那一階。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
@@ -163,14 +167,14 @@ export const ColorMatrix: Story = {
               <tr><Th>Mode / State</Th><Th>Background</Th><Th>Rationale</Th></tr>
             </thead>
             <tbody>
-              <tr><Td mono>rich + surface=form(all status)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface</span> + border</span></Td><Td>card(border + rounded + bg-surface)——Slack / Notion attachment 慣例</Td></tr>
+              <tr><Td mono>rich + surface=form(all status)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface</span> + border</span></Td><Td>card(border + rounded + bg-surface)—— 附件在表單 / 訊息裡要自成一張卡,邊框讓每個檔案視覺獨立</Td></tr>
               <tr><Td mono>rich + surface=upload-manager(all status)</Td><Td><span className="font-mono">無邊框無 bg、直角(列鋪滿面板寬)</span></Td><Td>面板自身是容器,avatar 作 item 邊界。詳 spec「邊框 / 背景」表</Td></tr>
               <tr><Td mono>compact 無 status</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--secondary" size="sm" /><span className="font-mono">--secondary</span>(= neutral-3)</span></Td><Td>靜態 pill,對齊 Badge low / ProgressBar track SSOT</Td></tr>
               <tr><Td mono>compact 有 status</Td><Td><span className="font-mono">transparent</span></Td><Td>底部 progress bar 作 permanent affordance(分隔線型)</Td></tr>
               <tr><Td mono>滑過:rich + surface=form + onClick</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface</span> + 疊 <span className="font-mono">--neutral-hover</span>(bg-interaction-hover)</span></Td><Td>「底」不換色,疊一層</Td></tr>
               <tr><Td mono>滑過:compact 無 status + onClick</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--secondary-hover" size="sm" /><span className="font-mono">--secondary-hover</span></span></Td><Td>自己的填色換成下一階,不借透明底的配對</Td></tr>
               <tr><Td mono>滑過:透明的列(compact 有 status、upload-manager)+ onClick</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--neutral-hover" size="sm" /><span className="font-mono">--neutral-hover</span></span></Td><Td>透明底的配對;upload-manager 的列鋪滿面板寬</Td></tr>
-              <tr><Td mono>滑過:沒有 onClick</Td><Td><span className="font-mono">無變化</span></Td><Td>點了沒反應 → 不上色(B12);hover-swap 的鈕仍有自己的滑過色</Td></tr>
+              <tr><Td mono>滑過:沒有 onClick</Td><Td><span className="font-mono">無變化</span></Td><Td>點了沒反應 → 不上色;hover-swap 的鈕仍有自己的滑過色</Td></tr>
               <tr><Td mono>error</Td><Td><span className="font-mono">容器不變</span></Td><Td>只升階 description / bar / icon,不染容器——避免整 row 轉紅蓋過其他 metadata</Td></tr>
             </tbody>
           </table>
@@ -181,7 +185,7 @@ export const ColorMatrix: Story = {
 }
 
 export const ModeMatrix: Story = {
-  name: '模式 對照（緊湊 vs 豐富）',
+  name: '模式對照（緊湊 vs 豐富）',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -229,7 +233,7 @@ export const SizeMatrix: Story = {
         <H3>Mode 決定 density,不走 size prop</H3>
         <Desc>
           FileItem 沒有 size prop——兩種 mode(compact / rich)已經覆蓋所有密度需求。對齊
-          Dropbox / Google Drive / Linear 的檔案清單慣例:compact 是系統列表預設,rich 是 media-heavy
+          Dropbox / Google Drive / Linear 的檔案清單的分工:compact 是一般系統列表的預設(一屏看多筆),rich 給以縮圖為主、需要看清楚是哪個檔案的場景
           場景(照片、需要縮圖的場景)。Size tier 的區別在 mode 上已足夠表達。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -287,40 +291,75 @@ export const SizeMatrix: Story = {
   ),
 }
 
+// 狀態行為的四張卡各自接上真的反應(原本這些鈕都沒有 onClick;錯誤列兩顆鈕原本自己包一層 gap-1 只剩 4px):
+// 取消 / 移除 = 那一列拿掉;重試 = 回到上傳中、跑完變完成;已完成的列滑過時綠勾換成下載(hover-swap,不再另放一顆下載鈕);
+// static.pdf 點列用 FileViewer 開,它的下載鈕跳通知。
+const STATE_FILES: DemoFile[] = [
+  { uid: 'state-uploading', name: 'uploading.pdf', mimeType: 'application/pdf', status: 'uploading', progress: 60, uploadingText: '2.4 MB · 上傳中 60%', size: '2.4 MB' },
+  { uid: 'state-completed', name: 'completed.pdf', mimeType: 'application/pdf', status: 'completed', size: '2.4 MB', description: '2.4 MB · 已上傳' },
+  { uid: 'state-error', name: 'error.pdf', mimeType: 'application/pdf', status: 'error', size: '2.4 MB', errorText: '網路中斷,請重試', errorLog: false },
+  { uid: 'state-static', name: 'static.pdf', mimeType: 'application/pdf', size: '1.2 MB', description: '已儲存 · 1.2 MB' },
+]
+
 export const StateBehavior: Story = {
   name: '狀態行為',
-  render: () => (
-    <div className="flex flex-col gap-4 max-w-lg">
-      <div>
-        <H3>所有狀態對照</H3>
-        <Desc>
-          只有最後一張(static.pdf)傳了 onClick:游標移上去,卡片的白底不換、疊一層淡灰;游標再移到它的下載鈕上,鈕自己的淡灰再疊上去。
-          前三張沒有 onClick,點卡片本身沒反應,所以不上滑過底色(2026-09-25 待辦總帳 B12)。
-        </Desc>
-        <div className="flex flex-col gap-2">
-          <FileItem name="uploading.pdf" description="2.4 MB · 上傳中 60%" status="uploading" progress={60} mode="rich" actions={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消" />} />
-          <FileItem name="completed.pdf" description="2.4 MB · 已上傳" status="completed" mode="rich" actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />} />
-          <FileItem name="error.pdf" description="網路中斷,請重試" status="error" mode="rich" actions={<div className="flex gap-1"><Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label="重試" /><Button variant="text" size="xs" iconOnly startIcon={X} aria-label="移除" /></div>} />
-          <FileItem name="static.pdf" description="已儲存 · 1.2 MB" mode="rich" onClick={() => {}} actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label="下載" />} />
-        </div>
-      </div>
+  render: function StateBehaviorStory() {
+    const demo = useFileDemo(STATE_FILES, { clickable: false })
+    return (
+      <>
+        <Toaster />
+        {/* 兩則有標題的範例上下疊 → 範例之間 loose × 2(共用 ExampleStack;user 2026-10-27 Q2「照你建議」①) */}
+        <ExampleStack className="max-w-lg">
+          <div>
+            <H3>所有狀態對照</H3>
+            <Desc>
+              只有最後一張(static.pdf)傳了 onClick:游標移上去,卡片的白底不換、疊一層淡灰;游標再移到它的下載鈕上,鈕自己的淡灰再疊上去。
+              前三張沒有 onClick,點卡片本身沒反應,所以不上滑過底色。
+            </Desc>
+            <div className="flex flex-col gap-2">
+              {demo.files.map((f) => {
+                const base = demo.itemProps(f)
+                if (f.status === 'uploading') {
+                  return <FileItem key={f.uid} mode="rich" {...base} actions={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`取消上傳 ${f.name}`} onClick={() => demo.remove(f.uid)} />} />
+                }
+                if (f.status === 'completed') return <FileItem key={f.uid} mode="rich" {...base} actions={undefined} />
+                if (f.status === 'error') {
+                  // 兩顆動作鈕直接交給 actions 槽:槽距由元件的 ItemSuffix 擁有(8px),不自己包一層 flex
+                  return (
+                    <FileItem key={f.uid} mode="rich" {...base} onRetry={undefined}
+                      actions={<>
+                        <Button variant="text" size="xs" iconOnly startIcon={RotateCw} aria-label={`重試 ${f.name}`} onClick={() => demo.retry(f.uid)} />
+                        <Button variant="text" size="xs" iconOnly startIcon={X} aria-label={`移除 ${f.name}`} onClick={() => demo.remove(f.uid)} />
+                      </>} />
+                  )
+                }
+                return (
+                  <FileItem key={f.uid} mode="rich" {...base} onClick={() => demo.open(f.uid)}
+                    actions={<Button variant="text" size="xs" iconOnly startIcon={Download} aria-label={`下載 ${f.name}`} onClick={() => demo.download(f)} />} />
+                )
+              })}
+            </div>
+          </div>
 
-      <div>
-        <H3>Progress bar 色彩</H3>
-        <div className="overflow-x-auto">
-          <table className="text-caption border-collapse">
-            <thead><tr><Th>Status</Th><Th>Progress bar 色</Th><Th>Status icon</Th></tr></thead>
-            <tbody>
-              <tr><Td mono>uploading</Td><Td mono>bg-info</Td><Td>—</Td></tr>
-              <tr><Td mono>completed</Td><Td mono>bg-success(100%)</Td><Td>CircleCheck(text-success)</Td></tr>
-              <tr><Td mono>error</Td><Td mono>bg-error(寬度 = consumer 傳入 progress)</Td><Td>XCircle(text-error)</Td></tr>
-              <tr><Td>(無 status)</Td><Td>無 bar</Td><Td>—</Td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  ),
+          <div>
+            <H3>Progress bar 色彩</H3>
+            <div className="overflow-x-auto">
+              <table className="text-caption border-collapse">
+                <thead><tr><Th>Status</Th><Th>Progress bar 色</Th><Th>Status icon</Th></tr></thead>
+                <tbody>
+                  <tr><Td mono>uploading</Td><Td mono>bg-info</Td><Td>—</Td></tr>
+                  <tr><Td mono>completed</Td><Td mono>bg-success(100%)</Td><Td>CircleCheck(text-success)</Td></tr>
+                  <tr><Td mono>error</Td><Td mono>bg-error(寬度 = consumer 傳入 progress)</Td><Td>XCircle(text-error)</Td></tr>
+                  <tr><Td>(無 status)</Td><Td>無 bar</Td><Td>—</Td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ExampleStack>
+        {demo.viewer}
+      </>
+    )
+  },
 }
 
 // ── Accessibility ─────────────────────────────────────────────────────────
@@ -329,7 +368,8 @@ export const Accessibility = {
   name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
-      <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
+      {/* 標題 → 一段文字 / 清單 = tight(內容之間本來就是 tight;A4 甲,寫死 mb-2 改 token、跟著密度) */}
+      <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
       <ul className="flex flex-col gap-2 list-disc pl-5">
         <li>
           <strong className="text-foreground">進度條有檔名 context</strong>:上傳進度條會自動帶上「檔名 + 上傳進度」的語音標籤,
@@ -347,8 +387,9 @@ export const Accessibility = {
         </li>
         <li>
           <strong className="text-foreground">整列不是一顆按鈕,但鍵盤到得了整列</strong>:為避免與列內操作按鈕互相干擾(巢狀互動),
-          列本身不設成按鈕;傳 onClick 時列裡鋪一顆看不見的整列按鈕(Tab / Enter / Space,名稱「開啟 檔名」),焦點框畫在列上,列內操作按鈕各自一站(file-item.spec.md「Row primary action 鍵盤可達」);滑鼠照樣點整列觸發 onClick。
-          放進 FileUpload 內建清單(有 onRemove)時,整串清單改成一個 Tab 停靠點:列本身拿焦點、↑↓ 換列、→ 進移除鈕(file-upload.spec.md「A11y 預設 › 檔案清單鍵盤」,待辦總帳 B9)。
+          列本身不設成按鈕;傳 onClick 時列裡鋪一顆看不見的整列按鈕(Tab / Enter / Space,名稱「開啟 檔名」),焦點框畫在列上,列內操作按鈕各自一站;滑鼠照樣點整列觸發 onClick。
+          放進 FileUpload 內建清單(有 onRemove)時,整串清單改成一個 Tab 停靠點:列本身拿焦點、↑↓ 換列、→ 進移除鈕。
+          {/* 出處(不給讀者看):file-item.spec.md「A11y 預設」的「Row primary action 鍵盤可達且不 nested-interactive」;FileUpload 那半 = file-upload.spec.md「檔案清單鍵盤(`files` + `onRemove`)= 一個 Tab 停靠點」 */}
         </li>
       </ul>
     </div>

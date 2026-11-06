@@ -2,6 +2,8 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, fn, userEvent, within } from '@storybook/test'
 import { Calendar, type CalendarEvent } from './calendar'
+import { CalendarDemo } from './_calendar-demo'
+import { Tag } from '@/design-system/components/Tag/tag'
 
 const meta: Meta<typeof Calendar> = {
   title: 'Design System/Components/Calendar/展示',
@@ -23,10 +25,7 @@ type Story = StoryObj<typeof Calendar>
 const customTileActivated = fn()
 // 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
 //(calendar.spec.md「日期格與事件方塊:可點或唯讀」;M23(f):不拿「有沒有傳」當渲染閘)。
-// 可點的示範一律給**看得見的反應**,不給空函式 —— 空函式就是「點了沒反應」。真實 app 在這裡開「當日新增事件」面板 / 事件詳情;
-// 示範用 alert 代替(與本檔 onCreateEvent 同一種示範手法)。
-const demoAddOnDate = (date: Date) => alert(`在 ${date.getMonth() + 1}/${date.getDate()} 新增事件`)
-const demoOpenEvent = (event: CalendarEvent) => alert(`點了事件:${event.title}`)
+// 可點的示範一律給**真的結果**(CalendarDemo:點事件開 Popover、點日期 / 新事件開「新增事件」對話框、送出跳 Toast),不給空函式。
 
 // ── 真實業務情境 ─────────────────────────────────────────────────────
 
@@ -52,24 +51,16 @@ export const TeamCalendar: Story = {
       { id: '8', title: 'Customer meeting', start: `${thisMonth}-25`, end: `${thisMonth}-25`, color: 'orange' },
     ]
     return (
-      <div className="h-screen p-4 bg-canvas">
-        <Calendar
-          defaultReferenceDate={now}
-          today={now}
-          events={events}
-          onEventClick={demoOpenEvent}
-          onDateClick={demoAddOnDate}
-          onCreateEvent={() => alert('開啟新事件對話框')}
-        />
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} />
       </div>
     )
   },
 }
 
 /**
- * 產品上線週 — 上線日一天塞滿 5 件事(發版、客服待命、上線公告、監控輪值、慶功)
- * 每格最多畫 3 筆,超出的以「+N more」計數提示(calendar.spec.md「邊界案例 › 單格事件 > 3」;目前不可點,展開 popover 為後續增量,
- * user 2026-09-25 說先不做 —— 待辦總帳 A19)。這一則存在的理由是讓「+N more」在畫面上看得到(M15:stakeholder 看得到的狀態要有快照)。
+ * 產品上線週 — 上線日一天塞滿 5 件事(發版、客服待命、上線公告、監控輪值、慶功)。
+ * 每格最多畫 3 筆,超出的以「+N more」計數提示;這一則讓「+N more」在畫面上看得到。
  */
 export const LaunchWeek: Story = {
   name: '產品上線週',
@@ -84,15 +75,8 @@ export const LaunchWeek: Story = {
       { id: 'l7', title: 'Post-mortem', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
     ]
     return (
-      <div className="h-screen p-4 bg-canvas">
-        <Calendar
-          defaultReferenceDate={now}
-          today={now}
-          events={events}
-          onEventClick={demoOpenEvent}
-          onDateClick={demoAddOnDate}
-          onCreateEvent={() => alert('開啟新事件對話框')}
-        />
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} />
       </div>
     )
   },
@@ -106,35 +90,48 @@ export const LaunchWeek: Story = {
 
 /**
  * 內容發佈排程 — Blog / 影片發布月曆
- * 排內容走右上角「排內容」,日子本身不能點來新增 → `readOnlyDates`(格子不亮、日期數字不是按鈕);
+ * 排內容走右上角「新事件」,日子本身不能點來新增 → `readOnlyDates`(格子不亮、日期數字不是按鈕);
  * 已排好的內容點得開 → `onEventClick`。
  */
 export const ContentPublishingSchedule: Story = {
   name: '內容發佈月曆',
-  // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  parameters: { demoFocus: 'keep' },
   render: () => {
+    // 五種內容各一色;只用字與底色對比 ≥ 4.5 的色相(green / orange 事件色的字對比 3.71 / 3.82,不到 WCAG AA 4.5;色票本身怎麼改是 tokens 的題目,不在範例裡處理)
     const events: CalendarEvent[] = [
       { id: 'p1', title: '週五 newsletter', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' },
       { id: 'p2', title: 'Blog: 設計系統 v2', start: `${thisMonth}-07`, end: `${thisMonth}-07`, color: 'purple' },
       { id: 'p3', title: 'YouTube: tutorial ep 3', start: `${thisMonth}-10`, end: `${thisMonth}-10`, color: 'red' },
-      { id: 'p4', title: 'Podcast: interview', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'green' },
-      { id: 'p5', title: 'Product announcement', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'orange' },
+      { id: 'p4', title: 'Podcast: interview', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'turquoise' },
+      { id: 'p5', title: 'Product announcement', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'magenta' },
     ]
     return (
-      <div className="h-screen p-4 bg-canvas">
-        <Calendar
-          events={events}
-          defaultReferenceDate={now}
-          today={now}
-          renderEventTile={(event) => <span className="block truncate rounded-md bg-secondary px-1.5 py-0.5 text-caption text-foreground">{event.title}</span>}
-          onEventClick={customTileActivated}
-          readOnlyDates
-          onCreateEvent={() => alert('排內容')}
-        />
+      <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+        <CalendarDemo events={events} defaultReferenceDate={now} today={now} readOnlyDates />
       </div>
     )
   },
+}
+
+// 日期格唯讀 × 自訂事件方塊的鍵盤契約(test-only 夾具,原本寫在「內容發佈月曆」的 play):日期數字不是按鈕、格子本身是格陣的鍵盤停靠點;
+// `renderEventTile` 的外層由元件擁有按鈕角色與 Enter 觸發(calendar.spec.md「renderEventTile 的鍵盤責任歸屬」)。story-demo-focus 閘載入每支 story 並跑 play,斷言不成立就紅。
+export const ReadOnlyDatesCustomTileKeyboard: Story = {
+  name: '唯讀日期 × 自訂事件方塊鍵盤',
+  tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:336「Enter/Space activation」
+  parameters: { demoFocus: 'keep' },
+  render: () => (
+    <div className="h-screen p-4 bg-canvas">
+      <Calendar
+        events={[{ id: 'p1', title: '週五 newsletter', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' }]}
+        defaultReferenceDate={now}
+        today={now}
+        renderEventTile={(event) => <Tag size="sm">{event.title}</Tag>}
+        onEventClick={customTileActivated}
+        readOnlyDates
+        onCreateEvent={fn()}
+      />
+    </div>
+  ),
   play: async ({ canvasElement }) => {
     customTileActivated.mockClear()
     const canvas = within(canvasElement)
@@ -150,33 +147,25 @@ export const ContentPublishingSchedule: Story = {
 
 /**
  * 空行事曆 — 無事件時 calendar 本身是空 canvas,不強制顯示 empty state
- * 第一個事件從右上角「加第一個事件」建立,日子本身不能點來新增 → `readOnlyDates`;之後排進來的事件點得開 → `onEventClick`。
+ * 第一個事件從右上角「新事件」建立,日子本身不能點來新增 → `readOnlyDates`;之後排進來的事件點得開 → `onEventClick`。
  */
 export const EmptyCalendar: Story = {
   name: '空行事曆',
   render: () => (
-    <div className="h-screen p-4 bg-canvas">
-      <Calendar
-        events={[]}
-        defaultReferenceDate={now}
-        today={now}
-        onEventClick={demoOpenEvent}
-        readOnlyDates
-        onCreateEvent={() => alert('加第一個事件')}
-      />
+    <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
+      <CalendarDemo events={[]} defaultReferenceDate={now} today={now} readOnlyDates />
     </div>
   ),
 }
 
-/**
- * 點格內空白也帶鍵盤位置(2026-09-29 待辦總帳 N46 月曆子項;calendar.spec.md「Cell 規則 › 命中區」):
- * 滑鼠點日期格的空白處(不是日期數字鈕、不是事件方塊)後,鍵盤停靠點與焦點都搬到這一天的日期鈕 ——
- * 之後方向鍵從這一格出發,而不是從上一次鍵盤停的那一格。test-only:沒有既有月曆瀏覽器閘,以 play 當閘
- *(story-demo-focus 閘會載入每支 story 並跑 play,斷言不成立就紅);對照組 = 先把停靠點放在別的日子,證明真的搬過來。
- */
+// 點格內空白也帶鍵盤位置(calendar.spec.md「Cell 規則 › 命中區」):
+// 滑鼠點日期格的空白處(不是日期數字鈕、不是事件方塊)後,鍵盤停靠點與焦點都搬到這一天的日期鈕 ——
+// 之後方向鍵從這一格出發,而不是從上一次鍵盤停的那一格。test-only:沒有既有月曆瀏覽器閘,以 play 當閘
+// (story-demo-focus 閘會載入每支 story 並跑 play,斷言不成立就紅);對照組 = 先把停靠點放在別的日子,證明真的搬過來。
 export const CellBlankClickMovesKeyboardStop: Story = {
   name: '點格內空白帶鍵盤位置',
   tags: ['test-only'],
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:162「點格內空白處也把鍵盤位置帶過來」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">

@@ -129,11 +129,11 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 
 | 情況 | 指示器 | 依據 |
 |---|---|---|
-| **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」 |
-| **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx:57`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
+| **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 01:06 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」 |
+| **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx#fieldDefaultChromeCompounds`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
 | **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`) | **2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
 
-| **唯讀的 Field 控件**(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 Checkbox・Switch・RadioGroup / 唯讀觸發器 —— 可 Tab、不可編輯) | **不畫外框**;指示 = **邊框轉主色 1px**,與可編輯的同一個欄位完全一樣 | **2026-09-10 兩次修正後定案**(user 原話:「為何不是模擬 field control focus 的樣式?field control focus 應該是 1px 的 border?對吧?」)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。歷程:`ring-*` idiom 於 0cad81e8 退役時沒有補替代品 → 唯讀一度**零指示**(WCAG 2.4.7);同日上午先補成全域外描邊,下午依 user 指正改為與編輯態同一種。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` 完全不改焦點樣式;Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣與可編輯態相同。落地:`field-wrapper.tsx` readonly compound(`focus-within:!border-primary` + `focus-visible:outline-none`,@focus-suppress C)|
+| **唯讀的 Field 控件**(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 Checkbox・Switch・RadioGroup / 唯讀觸發器 —— 可 Tab、不可編輯) | **不畫外框**;指示 = **邊框轉主色 1px**,與可編輯的同一個欄位完全一樣 | **2026-09-10 兩次修正後定案**(user 原話:「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？對吧？」(2026-09-10 18:46))。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。歷程:`ring-*` idiom 於 0cad81e8 退役時沒有補替代品 → 唯讀一度**零指示**(WCAG 2.4.7);同日上午先補成全域外描邊,下午依 user 指正改為與編輯態同一種。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` 完全不改焦點樣式;Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣與可編輯態相同。落地:`field-wrapper.tsx` readonly compound(`focus-within:!border-primary` + `focus-visible:outline-none`,@focus-suppress C)|
 
 **底色只有兩個主人:滑鼠 hover 與「選中」。** 鍵盤游標不借用它們的顏色
 (user 2026-09-07:「不要一下用底色一下用邊框來標示焦點」;2026-09-09:「都不需要上底色」)。疊加時各說各的:
@@ -185,7 +185,8 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 11 個會搶反白的目標 + SubTrigger / **E 常駐清單**:鍵盤框在時 hover 同列或別列,底色與框同時存在;`--selftest` 對照組把兩類都釘回舊行為,全部 'new' 斷言必紅)。
 
 **按鈕不屬於例外列。** 按鈕用滑鼠點下去不顯示焦點框(`:focus-visible` 啟發式:指標點按鈕不視覺化焦點,
-文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有插入點控件。
+文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有插入點控件。**按著修飾鍵點(Shift / ⌘ / Ctrl+點擊)也是滑鼠點**,
+單獨按下的修飾鍵不算鍵盤操作 —— 這句與下方「什麼時候畫(真焦點)」那列同時成立的方式寫在那一列(2026-11-05,待辦 3f G-16)。
 
 ### 一個項目只有一個指示器
 
@@ -219,7 +220,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
 | 位置(框的一段被元素**自己**貼邊的內容疊住) | 幾何不變 —— 仍是 `focus-ring-inset`,只是掛在與元素同形同大的 `::before`「框圖層」上,被疊住的那一段(兩端各多 2px 縫)用遮罩挖空、露出真正的底;**不是第四種幾何**(線寬、顏色、退距、圓角都沒變)。框畫在元素本身時,元素是那段內容的祖先,遮罩會連內容一起挖掉,所以要另一層。目前唯一案例:FileItem compact 列底的進度條(FileUpload 清單列共用) | `components/FileItem/file-item.spec.md`「焦點框 × 貼著列底的進度條」;機制 `file-item.tsx` `FILE_ITEM_RING_LAYER_CLASS` / `fileItemRingCutoutStyle`。方向 user 2026-09-26 選、挖空 + 縫 AI 推導(本檔「這條規則的來源總帳」) |
 | 只准三種幾何 | 全域外描邊 / `focus-ring-inset` / 填色元素專用的 `focus-ring-inset-emphasis`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組、禁手寫其他退距 | `scripts/focus-geometry-invariant.mjs` R1–R6 |
-| 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
+| 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible`,**只修正一個差異:單獨按下的修飾鍵不算鍵盤操作**。Chromium 只把帶 Ctrl / Alt / ⌘ 的按鍵排除在外,單獨的 Shift 照算(`keyboard_event_manager.cc`「If this keydown did not involve a meta-key press, update the keyboard event state and trigger :focus-visible matching」,https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/core/input/keyboard_event_manager.cc),而且點已經聚焦的元素不會把狀態清回滑鼠 —— 於是滑鼠點過的按鈕再按 Shift、或 Shift+點同一個按鈕,框就出來,與上一句「滑鼠點按鈕不畫框」衝突。React Aria 把單獨的修飾鍵排除在鍵盤模態之外(`@react-aria/interactions@3.25.0` `useFocusVisible.ts#L63-L66` `isValidKey`,https://github.com/adobe/react-spectrum/blob/%40react-aria/interactions%403.25.0/packages/%40react-aria/interactions/src/useFocusVisible.ts#L63-L66);規格把啟發式交給瀏覽器(Selectors 4「If the user interacts with the page via a pointing device … don’t indicate focus.」https://drafts.csswg.org/selectors-4/#the-focus-visible-pseudo)。做法:DS 自己定義了「修飾鍵+點擊」行為的控件(目前只有 DataTable 排序區、列勾選框、表格根節點)掛 `lib/pointer-focus-guard.ts`,聚焦那一刻照瀏覽器判斷、之後單獨的修飾鍵不讓框出來、真的按鍵框照回來;畫框的 CSS 一律寫 `:focus-visible:not([data-pointer-focus])` | 元件不判斷模態 —— 判斷仍是瀏覽器的,共用 helper 只補這一個差異;閘 `scripts/modifier-click-focus-invariant.mjs`(指標情境不畫、鍵盤對照必畫) |
 | 什麼時候畫(常駐清單) | 真焦點(規則一「兩類元件」第二表那幾個;TreeView 2026-09-25 起也是,待辦總帳 B9)= 瀏覽器 `:focus-visible`;容器 `aria-activedescendant` 型(TimePicker 欄)= 容器 `:focus-visible` 時畫在被指到的那一格(`time-columns.tsx` `group-focus-visible/listbox:`);常駐虛擬游標若再出現,才照 WICG 模態判準畫(上一節;`useInputModality()` 零消費者實作 2026-09-26 已刪,屆時重建) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
 | 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:方向鍵 / Home / End / PageUp / PageDown / Tab / Esc,或非文字輸入框上的任何鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算、在文字輸入框裡打字不算) | 上一節;同一支閘 D 段 |
 | **選中 × 游標** | 框疊在 `bg-neutral-selected` 上 | 規則二疊加表 |
@@ -301,7 +302,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 「滑鼠停著不算搶,只有 pointer move 才算」「兩種畫法永遠不同時出現」「開啟時的落點用開啟那一下的輸入畫」 | **AI 依 cmdk `onPointerMove` / Radix `onPointerMove` 一手來源歸納**(搶的動作就是 pointermove 事件本身);主 session 的先驗判斷,非 user 決定 |
 | 「不搶反白的常駐清單裡 hover 底色與鍵盤框是兩個獨立狀態,可以同時出現」 | **AI 歸納**:瀏覽器 `:hover` / `:focus-visible` 獨立、Material 3 hover state layer 與 focus ring 是兩個元素;VS Code 因焦點列自帶 focusBackground 才排除 hover(部分反例,DS 焦點不佔底色通道所以可疊)。user 2026-09-06 原話「鍵盤焦點若在在選單選項上會同時有焦點框以及滑鼠hover上去的底色吧?」是問句,且 2026-09-09 下午已把浮層選單那半邊改成「不同時出現」 |
 | 「修改範疇只有會搶反白的元件;TimePicker 焦點落點順手修」 | user 問「這個更改範疇應該只有會搶反白的元件吧?還是還有其他相關地方要修正?」(問句);**AI 依 DS-wide grep 回答**:`hover:` 只在 CommandItem / DropdownMenu 需要拿掉,常駐清單一行不改;TimePicker 是通盤複查抓到的既有缺口(A 類框畫錯元素),與本題無關但同屬「框畫在哪」 |
-| **「鍵盤游標一律畫框、不上底色;唯一不畫框的例外是插入點控件」(規則二現行版)** | **user 2026-09-09 拍板**,逐字:「我基本上都說以畫框為主」「會搶反白的,我當時只有說“除了畫框還要上底色來模擬滑鼠”,那就表示都要畫框吧?」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」「就是基本上都是畫框,唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」 |
+| **「鍵盤游標一律畫框、不上底色;唯一不畫框的例外是插入點控件」(規則二現行版)** | **user 2026-09-09 01:06 拍板**,逐字:「我基本上都說以畫框為主」「會搶反白的,我當時只有說“除了畫框還要上底色來模擬滑鼠”,那就表示都要畫框吧？」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」「就是基本上都是畫框,唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」 |
 | ~~「底色空著(選單／清單選項,未被選中)→ 用 hover 同色底當游標,不畫框」(舊規則二第一列、舊 D 類、舊判斷程序第 6 步)~~ | **AI 推導自 Radix / cmdk / shadcn 慣例**(經 `menu-item.spec.md` 舊句「以背景高亮而非畫 outline ring」),**不是 user 決定**。**2026-09-09 user 撤回**,逐字:「“底色空著(選單／清單選項,未被選中) 用 hover 同色底當游標,不畫框”我們他媽到底哪有定義過這個?」「此外鍵盤焦點框怎麼畫的原則呢?“單一狀態控制項”這個又是如何具體判別?鍵盤焦點框的整理根本不完整」。本檔 2026-09-06〜09-08 三版都把這條當成「既有 canonical 本來就有的答案」寫進規則,那是把 AI 推論升格成定案(M36(a)),一併撤回 |
 | 「會搶反白的地方,鍵盤焦點 = hover 樣式 + 藍框」 | **user 2026-09-07 原話**:「反正就是會搶反白的地方的鍵盤焦點會有hover的樣式+藍框?你確認是這樣的話,那我可以接受」——這句已經是「都要畫框」;「+hover 樣式」的部分由 user 2026-09-09 自己收斂成「都不需要上底色」(底色只在滑鼠真的停在那一列時,照 hover 規則出現) |
 | 「一個藍色 focus ring 就已經夠顯眼了,同時要再加上其他樣式根本畫蛇添足」「不要一下用底色一下用邊框來標示焦點」 | **user 2026-09-06〜09-07 原話**,「一個項目只有一個指示器」與「不上底色」的立檔依據 |
@@ -357,8 +358,8 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 類 | 判準(**看什麼**) | 框由誰畫 | 實例 |
 |---|---|---|---|
 | **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`);或元件 state 管的程式游標(DataTable 試算表模式的格游標,框由 `data-table-interaction-layer.tsx` 畫,2026-09-26),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
-| **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx:49` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
-| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:396`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
+| **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx#fieldDefaultChromeCompounds` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
+| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:666` / `time-picker.tsx:382`)/ 祖先畫(`inline-edit.tsx:404`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
 
 > **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
@@ -379,13 +380,13 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 不是「它屬不屬於某個元件族」(要認得出來)。user 2026-09-09 追問「『單一狀態控制項』這個又是如何具體判別?」——
 答案就是這三個標籤／屬性,而且 `scripts/focus-suppression-registry.mjs` 的 B 類證據檢查(`:112-114`)就是照這個判的。
 
-Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx:49`),那是加成不是必要條件。
+Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#fieldDefaultChromeCompounds`),那是加成不是必要條件。
 **`type="checkbox"` / `"radio"` / `"range"` 的 `<input>` 不是插入點控件**——沒有 caret,照規則二畫框(DS 的 Checkbox / Radio / Slider 都畫)。
 
 ### 一個承擔者只能服務一個 tab stop
 
 判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
-`combobox.tsx:857` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+`combobox.tsx:666` 那種自己畫的情況沒問題(一個元素一個 tab stop),
 但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
 邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
 
@@ -405,7 +406,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:857`、`time-picker.tsx:379` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:666`、`time-picker.tsx:382` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。
@@ -456,7 +457,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 | 它說了 | 它**沒**說 |
 |---|---|
-| 文字輸入的滑鼠與鍵盤共用**同一套** focus 樣式 | 那一套**是什麼**(我們的答案是「整個欄位的邊框轉 primary」,寫在 `field-wrapper.tsx:49`,但規則裡沒提) |
+| 文字輸入的滑鼠與鍵盤共用**同一套** focus 樣式 | 那一套**是什麼**(我們的答案是「整個欄位的邊框轉 primary」,寫在 `field-wrapper.tsx#fieldDefaultChromeCompounds`,但規則裡沒提) |
 | | 所以**輸入框自己不畫框** |
 
 也就是說,「文字編輯器不用特別畫框」**從來沒有被寫下來過** ——
@@ -467,7 +468,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
   成為 Field 家族裡唯一的例外 —— 而且沒有人發現,因為規則裡本來就沒有一句話可以拿來對照它。
 - 每次遇到新的輸入類控件,都要重走那三步推論一次。
 
-現在 B 類把三步全部寫出來了:**誰承擔(`field-wrapper.tsx:49`)、憑什麼合法(實測 5.19:1 / 5.35:1 過 AA)、
+現在 B 類把三步全部寫出來了:**誰承擔(`field-wrapper.tsx#fieldDefaultChromeCompounds`)、憑什麼合法(實測 5.19:1 / 5.35:1 過 AA)、
 以及「所以輸入框自己不畫」**,而且 `scripts/focus-suppression-registry.mjs` 要求每一處都在現場寫明承擔者。
 
 ### B 類為什麼合法 —— 有量過,不是宣稱
@@ -492,10 +493,9 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 (user 2026-09-07 指出我先前沒講明,造成「SelectMenu 自己往裡畫」的誤解。)
 用 SelectMenu 舉例:規則管的是**選項**,不是那個會捲動的清單。
 
-**判準(user 2026-09-07 逐字定調):**
+**判準(user 2026-09-07 16:10 原話〔UD-D08〕):**
 
-> **預設就是往外長。**
-> **只有當元素「可能合法地被塞在四周沒有足夠視覺空間的地方」,才往內長。**
+> 「我只能說我預期的元素的鍵盤焦點邊框預設就是往外長,若元素可能合法被塞在四周沒有足夠視覺空間的地方才會往內長」
 
 機械化的量法:量「被聚焦的那個元素」四邊到最近**正當障礙**的距離,取最小值。
 **≥ 4px → 往外**(`outline-offset: var(--stack-gap)` = 2px)/ **< 4px → 往裡**(`outline-offset: -2px`)。
@@ -506,12 +506,12 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 **量到 < 4px 時,第一個問題永遠是「這個障礙為什麼在這裡」,不是「那就往內畫」。**
 
-實際踩過的坑(2026-09-07,user 質疑「四周視覺明明是空的,為何要往內描邊」後查出):
+實際踩過的坑(2026-09-07,user 15:49 質疑「若該元素四周的視覺就是空蕩蕩的,到底為何要往內描邊?」後查出):
 DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「往內」。
 但**到儲存格邊其實有 11.5 / 62 / 11.5 / 12 px 空白** —— 卡住它的是一個
 `truncate min-w-0`(padding 0、`overflow:hidden`)的**文字截斷** wrapper,
 而勾選框永遠不需要文字截斷。**那不是正當障礙,是 bug。**
-正解是修 wrapper(`data-table.tsx:2085` 的 `isKnownCompound` 補 `boolean`),
+正解是修 wrapper(`data-table.tsx` 的 `isKnownCompound` 補 `boolean`),
 不是讓焦點框改成內描邊去遷就它。
 
 **判斷「正當」的問句**:如果這個障礙消失,畫面會不會壞?
@@ -651,15 +651,15 @@ v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在�
 
 | 條目 | 出處 |
 |---|---|
-| 「預設外 +2px,放不下就內 −2px,只有兩種」 | **user 2026-09-07 拍板**:「A5畫框」+「關於t2如果內描邊沒問題就內描邊,這樣至少不會又多一種」 |
-| 4.00px 算放得下(`≥ 4` 不是 `> 4`) | **user 2026-09-07 逐字**:「算啊」 |
-| 祖先有 overflow 就算會被裁,不問實際會不會捲 | **user 2026-09-07 逐字**:「確認實際不會被捲就算是會被裁啊」 |
-| 疊層/徽章不算鄰居 | **user 2026-09-07 逐字**:「這種堆疊起來的不算是有被堆疊的相關元素限制吧?換言之 avatar 的 x 應該是往外畫框吧?」 |
+| 「預設外 +2px,放不下就內 −2px,只有兩種」 | **user 2026-09-07 原話**:方向 = 16:10〔UD-D08〕「我只能說我預期的元素的鍵盤焦點邊框預設就是往外長,若元素可能合法被塞在四周沒有足夠視覺空間的地方才會往內長」;「只有兩種」= 08:56「關於t2如果內描邊沒問題就內描邊,這樣至少不會又多一種？」(句尾是問號,收成兩種是 AI 依這句寫的;同日 01:22「A5畫框,關於框線何時用ring何時用outline何時用0間隙何時用1px何時用2px?是否有合理規則？以及是否有些要整合？仔細全盤研究檢查」是委託研究,不是裁示) |
+| 4.00px 算放得下(`≥ 4` 不是 `> 4`) | **user 2026-09-07 10:38 逐字**(回 AI 的提問,DS 逐字稿 b1e3fe19 L89576):「「4.00px 到底算不算「放得下」?」算啊。」 |
+| 祖先有 overflow 就算會被裁,不問實際會不會捲 | **user 2026-09-07 10:38 逐字**(同一則):「確認實際不會被捲就算是會被裁啊」 |
+| 疊層/徽章不算鄰居 | **user 2026-09-07 10:38 逐字**(同一則;反問句):「這種堆疊起來的不算是有被堆疊的相關元素限制吧？換言之avatar 的x應該是往外畫框吧？」 |
 | 「取四周最小值、不逐邊混搭」 | **AI 推導**,為了讓判準有唯一解;user 未逐字裁示 |
 | 「元素 < 8px 不開分支」 | **AI 依實測**:DS 內不存在該尺寸的可聚焦元素 |
-| 「日期格的焦點框往內畫」 | **user 2026-09-23 逐字**:「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種,否則會跟區間藍框有視覺衝突,你仔細研究看要怎樣」(是委託研究;往內的量法依既有判準,4px 縫裡有 track / 框線 = 正當障礙,AI 套算) |
-| 「填色格不能只是往內畫,要保住藍底」 | **user 2026-09-23 逐字**:「第五點,應該不只往內畫吧?否則整個選中狀態只會看起來是比較小的藍底?」(問句,但指出了「白線貼邊只是削小藍圓」這個事實;C / D 兩個候選與數值是 AI 依 Carbon 配方提出) |
-| 「1px 白線退 3px(D),不是 2px 退 4px(C)」 | **user 2026-09-23 拍板**,逐字:「我會想要選D,因為 c的白線幾乎要切到文字了,你覺得呢?」+ 結構化選擇「D:1px 白線,退 3px」(AI 同意 D 並列出兩者的淨空數字,user 在兩者間定案) |
+| 「日期格的焦點框往內畫」 | **user 2026-09-23 19:34 逐字**:「然後我覺得date 的鍵盤焦點感覺要改成往內畫的那種，否則會跟區間藍框有視覺衝突，你仔細研究看要怎樣」(是委託研究;往內的量法依既有判準,4px 縫裡有 track / 框線 = 正當障礙,AI 套算) |
+| 「填色格不能只是往內畫,要保住藍底」 | **user 2026-09-23 19:56 逐字**:「第五點，應該不只往內畫吧？否則整個選中狀態只會看起來是比較小的藍底？」(問句,但指出了「白線貼邊只是削小藍圓」這個事實;C / D 兩個候選與數值是 AI 依 Carbon 配方提出) |
+| 「1px 白線退 3px(D),不是 2px 退 4px(C)」 | **user 2026-09-23 拍板**,逐字(20:13):「我會想要選D,因為 c的白線幾乎要切到文字了，你覺得呢？」+ 結構化選擇「D:1px 白線,退 3px」(AI 同意 D 並列出兩者的淨空數字,user 在兩者間定案) |
 | 「第三種幾何只給往內畫的填色元素,不外擴」 | **AI 推導**:DS 內目前只有 DateGrid 選中日 / 端點同時是「往內 + 填色」;往外畫的填色元件框在頁面底上不受影響 |
 | 「框的一段被元素自己貼邊的內容疊住時,框改畫在 `::before` 框圖層並在那一段挖空、兩端留 2px 縫」(「框怎麼畫」框圖層列) | **方向 = user 2026-09-26 選**,逐字:「我喜歡墊在鍵盤焦點上的方向，依此方向仔細研究怎樣最好」(主 session 轉述其意為「進度條留在框上面、底下墊東西讓框不透出來」;另一句原話「我他媽不想要動到這邊的一般視覺」)。**挖空而不是墊底色、縫寬 2px、框改畫在 `::before`** 為 AI 推導,user 同日回「我覺得方向可以，確保整個設計符合我們一致的設計語言且不違背世界級的設計就照你建議」:實測固定墊 `--canvas` 在深色卡片 / 被滑過的列上錯色,「容器宣告底色」的變數在卡片放進浮層面板時錯色(深色 `--surface` 半透明),挖空在四種底 × 兩主題 × 滑過全部與平常 0 差;2px 同全域外描邊的退距與頭像堆疊的縫。**已寫入**(待辦總帳「09-26 第五輪」進度條(續)列:user 原話「我覺得方向可以，確保整個設計符合我們一致的設計語言且不違背世界級的設計就照你建議」→ 已寫入 file-item / file-upload、兩份 spec 與本列;2026-09-27 拿掉過期的「待 user 確認」) |
 

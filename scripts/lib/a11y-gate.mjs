@@ -202,3 +202,19 @@ export function evaluateA11ySeverityGate(results) {
   const { auditErrors } = evaluateA11yScanIntegrity(results?.violationsByStory)
   return { ok: hard === 0 && auditErrors.length === 0, hard, auditErrors }
 }
+
+/**
+ * 表單控件沒有讀屏名稱(2026-10-21,r1b fields N3):axe 的 `aria-input-field-name` 不報 `div[role=combobox]` 這類自建控件 ——
+ * DS 的 Select / Combobox 觸發欄位、cmdk 的搜尋框沒有名稱時,axe 全掃 0 筆,讀屏卻只念「組合方塊」(WCAG 4.1.2 Name, Role, Value)。
+ * 這裡讀瀏覽器算好的無障礙樹(CDP `Accessibility.getFullAXTree`,與讀屏拿到的是同一份),角色是表單控件、名稱是空的就算一個。
+ * 修前實測:DS 1,074 則 story 裡 21 則、47 個控件(Select 範例 15 則、Command inline 範例 5 則、FieldControlGroup 篩選列 1 則)。
+ */
+export const UNNAMED_CONTROL_RULE = 'ds-unnamed-form-control'
+export const UNNAMED_CONTROL_ROLES = Object.freeze(['combobox', 'textbox', 'searchbox', 'listbox', 'spinbutton'])
+/** 純函式:CDP AX 節點 → 名稱為空的表單控件(被 AX 樹忽略的節點不算 —— 它們讀屏也看不到) */
+export function findUnnamedFormControls(nodes) {
+  if (!Array.isArray(nodes)) fail('AX nodes must be an array')
+  return nodes.filter((node) => isRecord(node) && !node.ignored
+    && UNNAMED_CONTROL_ROLES.includes(node.role?.value)
+    && !String(node.name?.value ?? '').trim())
+}

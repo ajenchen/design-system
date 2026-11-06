@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import { classifyConsentPrompt } from './lib/release-consent-language.mjs'
-import { homedir } from 'node:os'
+import { createRequire } from 'node:module'
+import { homedir, tmpdir } from 'node:os'
 import { dirname, resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -421,8 +422,25 @@ export function validateReleaseWorkflow(workflow) {
     invariant(/^\.github\/workflows\/.+\.ya?ml$/.test(check.producerWorkflow || ''), `consumer ${target.repository} verification workflow is invalid`)
     invariant(['pull_request', 'repository_dispatch'].includes(check.producerEvent), `consumer ${target.repository} verification event is invalid`)
     invariant(['pull-request-head', 'pull-request-base'].includes(check.producerHead), `consumer ${target.repository} verification head binding is invalid`)
+    invariant([undefined, 'automatic', 'on-request'].includes(target.upgrade), `consumer ${target.repository} upgrade must be automatic or on-request`)
   }
   return workflow
+}
+
+/**
+ * 這一輪第五步要升級哪些 consumer(2026-11-06)。user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+ * 開關只有一個:release-workflow.json 的 `upgrade`(省略 = automatic)。`on-request` 的 consumer 只有在 user 明確要求、
+ * 由 `RELEASE_REQUESTED_CONSUMERS`(repository 全名,逗號分隔)帶進來時才讀回 / 派工 / 開 PR;沒要求就整個不碰,
+ * 也不算第五步的完成條件。程式裡不另寫 WM 名單 —— 設定是唯一的來源。
+ */
+export function selectReleaseConsumers(consumers = [], requested = []) {
+  const asked = new Set(requested)
+  return consumers.filter(target => (target.upgrade ?? 'automatic') === 'automatic' || asked.has(target.repository))
+}
+
+/** user 明確要求要升級的 on-request consumer(`RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management`)。 */
+export function requestedConsumersFromEnv(env = process.env) {
+  return `${env.RELEASE_REQUESTED_CONSUMERS ?? ''}`.split(',').map(item => item.trim()).filter(Boolean)
 }
 
 /**
@@ -514,13 +532,18 @@ function governanceGhEnv() {
 // 2026-08-11 anti-self-lock fix(user directive):gh 的 Go TLS 在 sandbox 內不信代理憑證,
 // 但 curl 可通(同 token 已實測 merge PR)。以下 shim 把 orchestrator 用到的八種 gh 形狀
 // 翻譯成 GitHub REST + curl;未涵蓋的形狀 fallback 原 gh(會顯性 TLS 失敗,不靜默)。
-function curlGitHub(method, path, { headers = [], body = null } = {}) {
+function governanceGitHubToken() {
   let token = ''
   try { token = readFileSync(GOVERNANCE_TOKEN_PATH, 'utf8').trim() } catch { /* fallthrough */ }
-  if (!token) token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || ''
-  const url = /^https?:/.test(path) ? path : `https://api.github.com/${path.replace(/^\//, '')}`
-  const args = ['-sS', '-X', method, '-H', `Authorization: Bearer ${token}`,
-    '-H', 'Accept: application/vnd.github+json', '-H', 'User-Agent: release-orchestrator',
+  return token || process.env.GH_TOKEN || process.env.GITHUB_TOKEN || ''
+}
+const gitHubApiUrl = path => (/^https?:/.test(path) ? path : `https://api.github.com/${path.replace(/^\//, '')}`)
+const gitHubBaseHeaders = token => ['-H', `Authorization: Bearer ${token}`,
+  '-H', 'Accept: application/vnd.github+json', '-H', 'User-Agent: release-orchestrator']
+
+function curlGitHub(method, path, { headers = [], body = null } = {}) {
+  const url = gitHubApiUrl(path)
+  const args = ['-sS', '-X', method, ...gitHubBaseHeaders(governanceGitHubToken()),
     '-w', '\n__HTTP_STATUS__:%{http_code}']
   for (const header of headers) args.push('-H', header)
   if (body !== null) args.push('-H', 'Content-Type: application/json', '-d', body)
@@ -535,6 +558,48 @@ function curlGitHub(method, path, { headers = [], body = null } = {}) {
     // 瞬時網路抖動(HTTP 0 = curl 連線層失敗)重試兩次再定論,避免長輪詢被單次抖動打斷
     if (code === 0 && attempt < 2) { sleep(3000); continue }
     return { code, ok: code >= 200 && code < 300, text }
+  }
+}
+/**
+ * 一次平行送多個**唯讀 GET**(同一支 curl 的 `--parallel`),回傳與 paths 同序、形狀同 curlGitHub。
+ * 只給「彼此獨立、全部只讀」的查詢用(排程監看)。為什麼:逐一打 6 支監看實測 27 秒(每次 0.7–2.4 秒);
+ * 同樣 12 個查詢平行一批 2.8 秒。每個回應寫進自己的暫存檔,以 `%{urlnum}` 對回第幾個(curl 印 -w 的順序是
+ * **完成順序**,不是送出順序);連線層失敗(HTTP 0)或對不回的那幾個,`retry` 逐一再打(預設 curlGitHub,自己有重試)。
+ * 整批都是 0(斷網 / 代理拒絕 / curl 太舊不認 `--parallel`)時只拿第一個探一次:探得通就照常逐一重打,
+ * 探不通就整批照實回 0 —— 不逐一重打每一個(12 個 × 每個約 6 秒重試 = 一條只講不擋的監看讓 status 多卡一分多鐘)。
+ * `token` / `retry` 可注入,給測試用假伺服器驗「回傳順序 = paths 順序」。
+ */
+export function curlGitHubParallel(paths, { token = null, retry = path => curlGitHub('GET', path) } = {}) {
+  if (!paths.length) return []
+  let dir
+  try { dir = mkdtempSync(join(tmpdir(), 'release-monitors-')) } catch { return paths.map(path => retry(path)) }
+  try {
+    const args = ['-sS', '--parallel', '--parallel-max', '12', ...gitHubBaseHeaders(token ?? governanceGitHubToken()),
+      '-w', '%{urlnum} %{http_code}\n']
+    paths.forEach((path, index) => args.push('-o', join(dir, `${index}.json`), gitHubApiUrl(path)))
+    const result = spawnSync('curl', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
+    if (result.error) throw result.error
+    const codes = new Map()
+    for (const line of `${result.stdout}`.split('\n')) {
+      const match = /^(\d+) (\d{3})$/.exec(line.trim())
+      if (match) codes.set(Number(match[1]), Number(match[2]))
+    }
+    const settled = new Map()
+    if (paths.every((_, index) => !codes.get(index))) {
+      const probe = retry(paths[0])
+      if (!probe?.code) return paths.map((_, index) => (index === 0 && probe ? probe : { code: 0, ok: false, text: '' }))
+      settled.set(0, probe)
+    }
+    return paths.map((path, index) => {
+      if (settled.has(index)) return settled.get(index)
+      const code = codes.get(index) || 0
+      if (code === 0) return retry(path)
+      let text = ''
+      try { text = readFileSync(join(dir, `${index}.json`), 'utf8') } catch { return retry(path) }
+      return { code, ok: code >= 200 && code < 300, text }
+    })
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 }
 function shimDone(response, { allowFailure, label, mapText = null }) {
@@ -926,7 +991,7 @@ function declaredPreviousReleaseVersion() {
 }
 
 /**
- * 排程型監看(每週視覺回歸等)最新一次跑的結論,三值:'green' / 'red' / 'unknown'。
+ * 排程型監看**某一次跑**的結論,三值:'green' / 'red' / 'unknown'(classifyScheduledMonitor 用它判最新跑完的那一次)。
  * 只講、不擋:preview / canary / 排程監看依 canonical 一律 non-blocking。它存在的理由是
  * 2026-09-22 抓到視覺回歸週跑**連紅六週沒人看見**(只排程、不進 PR)—— 紅燈沒有觀眾等於沒有燈。
  * 「讀不到」與「紅」分開講(M37 第八種形狀)。
@@ -944,10 +1009,609 @@ export function classifyScheduledMonitorRun(run) {
   return { verdict: 'unknown', detail: `${when} ${conclusion || '?'}` }
 }
 
-function latestScheduledMonitorRun(repository, workflowFile) {
-  const response = curlGitHub('GET', `repos/${repository}/actions/workflows/${encodeURIComponent(workflowFile)}/runs?per_page=1`)
-  if (!response.ok) return null
-  try { return JSON.parse(response.text).workflow_runs?.[0] || null } catch { return null }
+// ── 排程監看:全部讀、只講不擋(待辦總帳 SM9,2026-10-14)──────────────────────────────────────
+//
+// 原本只讀 visual-regression.yml 一支(檔名手寫在 printReport 裡),其餘排程監看的結論沒有任何執行面讀:
+// 2026-10-14 盤點時 All-Harness 已連 63 晚紅、a11y 69 次排程沒有一次綠、bundle 連 41 天紅,沒有一個人看見
+// —— 與 #144「夜間閘紅了 41 晚沒人看見」同一種病。手寫清單本身就是代理(「記得的那幾支」≠「有排程的那幾支」,
+// M37):新增一支排程 workflow 就會靜默漏讀。現在清單從 .github/workflows 機械列出,每一支都讀、都印。
+
+/**
+ * 每支監看讀最近幾次排程 run:夠看到「最新一次還在跑時,前一次跑完的結論」。不一次讀幾十筆 —— 每筆 run 約 24 KB,
+ * 30 筆一支就 700 KB、2–4 秒;「最後一次綠」與「之後連幾次沒綠」改用 GitHub 的 status / created 篩選直接問。
+ */
+const MONITOR_RECENT_RUNS = 5
+/**
+ * 排程逾期的寬限。GitHub 的排程本來就會延後(本 repo 實測:`0 2 * * *` 那支在 07:00–08:51 UTC 才跑,晚 5–7 小時),
+ * 負載高時也可能整次丟掉;寬限給一天,超過才說「該跑的那次沒跑」。
+ */
+const MONITOR_OVERDUE_GRACE_MS = 24 * 60 * 60 * 1000
+/** release:auto 每輪都印報告;監看一天才變一次,同一個行程 10 分鐘內重用,不每輪重打 API。 */
+const MONITOR_CACHE_TTL_MS = 10 * 60 * 1000
+
+function loadWorkflowYamlParser() {
+  // 延遲載入:這支模組也是發版同意 hook(consent 子命令)的入口,不得因為還沒 npm ci 就整支載入失敗。
+  return createRequire(resolve(ROOT, 'package.json'))('js-yaml').load
+}
+
+/** 一份已解析的 workflow 宣告的排程(`on.schedule[].cron`);清單與「cron 何時加進預設分支」共用同一個讀法。 */
+function scheduleCronsOf(doc) {
+  const triggers = doc && typeof doc === 'object' ? doc.on : null
+  const schedule = triggers && typeof triggers === 'object' && !Array.isArray(triggers) ? triggers.schedule : null
+  return (Array.isArray(schedule) ? schedule : [])
+    .map(entry => (entry && typeof entry.cron === 'string' ? entry.cron.trim() : ''))
+    .filter(Boolean)
+}
+
+/**
+ * 排程監看清單:**從 workflow 檔機械列出**宣告了 `on.schedule` 的那幾支,不手列。
+ *
+ * 量具自己也要能紅(M32「儀器要先有對照組」),讀不到不得講成「沒有排程」:
+ *   - 讀不到目錄、0 個 workflow 檔、載入不了 YAML 解析器 → 儀器失效,0 支。
+ *   - 任一檔讀不到 / YAML 解析不了 → 那一支有沒有排程無從得知:整份清單標「不完整」並指名,解析得了的照樣列出。
+ *   - 原文有 `cron:` 卻解析出 0 條排程(例如 cron 寫在 schedule 以外的位置)→ 解析結果與原文對不上,同上。
+ * 回 `{ ok, reason, scanned, workflows: [{ file, name, crons }] }`。
+ */
+export function listScheduledWorkflows({ dir = resolve(ROOT, '.github/workflows'), parseYaml = null } = {}) {
+  let files
+  try {
+    files = readdirSync(dir).filter(name => /\.ya?ml$/.test(name)).sort()
+  } catch (error) {
+    return { ok: false, reason: `讀不到 workflow 目錄(${error.code || error.message})`, scanned: 0, workflows: [] }
+  }
+  if (!files.length) {
+    return { ok: false, reason: 'workflow 目錄裡 0 個 .yml —— 量具沒讀到東西,不是沒有排程', scanned: 0, workflows: [] }
+  }
+  let parse = parseYaml
+  if (!parse) {
+    try { parse = loadWorkflowYamlParser() } catch (error) {
+      return { ok: false, reason: `載入不了 YAML 解析器 js-yaml(${error.code || error.message};先 npm ci)`, scanned: files.length, workflows: [] }
+    }
+  }
+  const workflows = []
+  const undecidable = []
+  for (const file of files) {
+    let text
+    let doc
+    try { text = readFileSync(join(dir, file), 'utf8') } catch (error) {
+      undecidable.push(`${file}(讀不到:${error.code || error.message})`)
+      continue
+    }
+    try { doc = parse(text) } catch (error) {
+      undecidable.push(`${file}(YAML 解析不了:${`${error.message}`.split('\n')[0]})`)
+      continue
+    }
+    const crons = scheduleCronsOf(doc)
+    if (!crons.length) {
+      if (/^[ \t]*-?[ \t]*cron[ \t]*:/m.test(text)) undecidable.push(`${file}(原文有 cron: 卻解析出 0 條排程)`)
+      continue
+    }
+    workflows.push({ file, name: typeof doc.name === 'string' && doc.name.trim() ? doc.name.trim() : file, crons })
+  }
+  return {
+    ok: undecidable.length === 0,
+    reason: undecidable.length ? `${undecidable.length} 支 workflow 判斷不了有沒有排程:${undecidable.join(';')}` : null,
+    scanned: files.length,
+    workflows,
+  }
+}
+
+const CRON_FIELD_BOUNDS = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 7]]
+
+function parseCronField(field, [min, max]) {
+  const values = new Set()
+  for (const part of field.split(',')) {
+    const match = /^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/.exec(part)
+    if (!match) return null
+    const step = match[2] === undefined ? 1 : Number(match[2])
+    let low = min
+    let high = max
+    if (match[1] !== '*') {
+      const [from, to] = match[1].split('-').map(Number)
+      low = from
+      high = to === undefined ? (match[2] === undefined ? from : max) : to
+    }
+    if (!(step >= 1 && low >= min && high <= max && low <= high)) return null
+    for (let value = low; value <= high; value += step) values.add(value)
+  }
+  return values
+}
+
+/**
+ * 一條 cron(POSIX 五欄、UTC —— GitHub Actions schedule 的語法)在 `after` 之後的下一次觸發時間。
+ * 只支援數字、`*`、範圍、清單、間隔;其餘寫法(名稱、`@daily` 等)回 null,呼叫端一律講「算不出」,不猜。
+ * 日與星期兩欄都有限定時是「任一符合」(Vixie cron:欄位以 `*` 開頭才算沒限定);星期 7 = 星期日。
+ */
+export function nextCronFire(expression, after) {
+  const fields = `${expression || ''}`.trim().split(/\s+/)
+  const start = after instanceof Date ? after.getTime() : Date.parse(after)
+  if (fields.length !== 5 || !Number.isFinite(start)) return null
+  const sets = fields.map((field, index) => parseCronField(field, CRON_FIELD_BOUNDS[index]))
+  if (sets.some(set => !set)) return null
+  const [minutes, hours, daysOfMonth, months, daysOfWeek] = sets
+  if (daysOfWeek.has(7)) daysOfWeek.add(0)
+  const dayOfMonthLimited = !fields[2].startsWith('*')
+  const dayOfWeekLimited = !fields[4].startsWith('*')
+  const sortedHours = [...hours].sort((a, b) => a - b)
+  const sortedMinutes = [...minutes].sort((a, b) => a - b)
+  const from = Math.floor(start / 60000) * 60000 + 60000 // 嚴格晚於 after,以分鐘為單位
+  const first = new Date(from)
+  for (let offset = 0; offset < 400; offset += 1) {
+    const day = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), first.getUTCDate() + offset))
+    if (!months.has(day.getUTCMonth() + 1)) continue
+    const dayOfMonthHit = daysOfMonth.has(day.getUTCDate())
+    const dayOfWeekHit = daysOfWeek.has(day.getUTCDay())
+    if (!(dayOfMonthLimited && dayOfWeekLimited ? dayOfMonthHit || dayOfWeekHit : dayOfMonthHit && dayOfWeekHit)) continue
+    for (const hour of sortedHours) {
+      for (const minute of sortedMinutes) {
+        const at = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hour, minute)
+        if (at >= from) return new Date(at)
+      }
+    }
+  }
+  return null
+}
+
+const toEpochMs = value => (value instanceof Date ? value.getTime() : typeof value === 'number' ? value : Date.parse(value))
+
+/**
+ * 從某個時間點(最新一次排程 run 的建立時間,或這條排程開始生效的時間)推「下一次該跑」,超過寬限還沒跑 = 逾期。
+ * 逾期代表手上那個結論可能已不是現況(排程被停用、被 GitHub 丟掉)—— 舊的綠不得印成現在的綠(M37)。
+ * `since` 可以是一個時間,或 `cron => 時間`(每條 cron 生效的時間不同時)。
+ * 多條 cron 取最早那一次;任一條算不出就整個回 `{ nextDue: null, overdue: null }`,不猜。
+ */
+export function scheduleOverdue(crons, since, now = new Date()) {
+  const list = Array.isArray(crons) ? crons : []
+  const sinceOf = typeof since === 'function' ? since : () => since
+  const dues = list.map(cron => nextCronFire(cron, sinceOf(cron)))
+  if (!list.length || dues.some(due => !due)) return { nextDue: null, overdue: null }
+  const nextDue = new Date(Math.min(...dues.map(due => due.getTime())))
+  return { nextDue, overdue: toEpochMs(now) - nextDue.getTime() > MONITOR_OVERDUE_GRACE_MS }
+}
+
+/** 「多久以前」:< 1 小時講分鐘、< 48 小時講小時,其餘講天。 */
+export function describeAge(iso, now = new Date()) {
+  const at = Date.parse(iso)
+  if (!Number.isFinite(at)) return '時間不明'
+  const minutes = Math.max(0, Math.floor((toEpochMs(now) - at) / 60000))
+  if (minutes < 60) return `${minutes} 分鐘前`
+  const hours = Math.floor(minutes / 60)
+  return hours < 48 ? `${hours} 小時前` : `${Math.floor(hours / 24)} 天前`
+}
+
+/**
+ * 每條 cron **加進預設分支**的時間(GitHub 只照預設分支上的 workflow 檔排程)。0 筆排程 run 時用它推「第一次該跑」——
+ * 不拿 workflow 在 GitHub 的註冊時間(`created_at`)代替:visual-regression / composition-fidelity 05-25 / 05-27 就註冊了,
+ * cron 是 08-01(`8c595fcf` #24)才加上,拿註冊時間會把「還沒到第一次排程」講成「該跑卻沒跑」(M37)。
+ *
+ * 讀法:`git log --first-parent -S<cron> origin/<預設分支> -- <workflow 檔>`(--first-parent = 落到預設分支的那個 commit,
+ * squash 或 merge 都是落地時間),由舊到新逐一用**同一個 YAML 讀法**確認 cron 真的在 `on.schedule` 裡(-S 只比字串:
+ * 註解、或 `30 2 * * *` 裡的 `0 2 * * *` 都會中),第一個確認到的 commit 時間就是答案。
+ * 回 `{ [cron]: ISO 時間 | false | null }`:
+ *   ISO 時間  加進預設分支的那一刻
+ *   false     歷史讀得到,而且預設分支上**從沒有**這條 cron(本地簽出有、還沒合併進去 —— GitHub 不會照它排程)
+ *   null      讀不到(不知道預設分支、沒有 origin/<預設分支>、淺 clone —— 最舊那筆只是截斷點、git 失敗、某個版本讀不出來),
+ *             呼叫端講「何時加上未知」,不猜
+ */
+export function cronAddedOnDefaultBranch(workflow, { defaultBranch, git = args => run('git', args, { allowFailure: true }), parseYaml = null } = {}) {
+  const crons = Array.isArray(workflow?.crons) ? workflow.crons : []
+  const answer = Object.fromEntries(crons.map(cron => [cron, null]))
+  try {
+    const branch = defaultBranch === undefined ? loadReleaseWorkflow().automation.defaultBranch : defaultBranch
+    if (!branch || !workflow?.file) return answer
+    if (git(['rev-parse', '--is-shallow-repository']).stdout !== 'false') return answer
+    const ref = `refs/remotes/origin/${branch}`
+    if (!git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]).ok) return answer
+    const parse = parseYaml || loadWorkflowYamlParser()
+    const path = `.github/workflows/${workflow.file}`
+    for (const cron of crons) {
+      const listed = git(['log', '--first-parent', '--reverse', '--format=%H %cI', `-S${cron}`, ref, '--', path])
+      if (!listed.ok) continue
+      let unreadable = false
+      for (const line of listed.stdout.split('\n')) {
+        const [sha, at] = line.trim().split(' ')
+        if (!sha || !at) continue
+        const shown = git(['show', `${sha}:${path}`])
+        let doc
+        try {
+          if (!shown.ok) throw new Error('git show')
+          doc = parse(shown.stdout)
+        } catch {
+          unreadable = true // 這個版本讀不出來:之後就算沒找到,也不得講「預設分支上沒有」
+          continue
+        }
+        if (scheduleCronsOf(doc).includes(cron)) {
+          answer[cron] = at
+          break
+        }
+      }
+      if (answer[cron] === null && !unreadable) answer[cron] = false
+    }
+  } catch { /* 讀不到 = 未知,回目前為止的答案(其餘是 null) */ }
+  return answer
+}
+
+const formatUtc = date => `${date.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+const runDay = run => (typeof run?.created_at === 'string' ? run.created_at.slice(0, 10) : '?')
+const lower = value => `${value || ''}`.toLowerCase()
+
+function summarizeMonitorRun(run, now) {
+  return {
+    id: run.id ?? null, url: run.html_url || null, status: run.status || null, conclusion: run.conclusion || null,
+    headSha: run.head_sha || null, createdAt: run.created_at || null, age: describeAge(run.run_started_at || run.created_at, now),
+  }
+}
+
+/**
+ * 一支排程監看的判定。純函式:所有外部讀取由呼叫端(readScheduledMonitors)注入,判定表可以直接驗。
+ *
+ *   workflow     { file, name, crons }(listScheduledWorkflows 的一項)
+ *   runs         最近幾次排程 run(`event=schedule`):{ ok: true, totalCount, runs: [新 → 舊] } 或 { ok: false, code, error }
+ *   queryProven  同一條查詢這一輪**證明過拿得到資料**嗎(別支監看回了 ≥ 1 筆,或 repo 層對照組回了 ≥ 1 筆)
+ *   greens       「最後一次綠」(`event=schedule&status=success`):{ ok: true, totalCount, run, proven } 或 { ok: false };
+ *                proven = 這一輪同一個篩選對某一支回過 ≥ 1 筆
+ *   streak       最後一次綠之後跑完的排程有幾次(`status=completed&created=>…`):{ ok: true, totalCount } 或 { ok: false }
+ *   meta         workflow 本身:{ code, state, created_at };只在 0 筆 / 404 / 逾期時才讀
+ *   cronAdded    每條 cron 加進預設分支的時間 `{ [cron]: ISO | false | null }`(cronAddedOnDefaultBranch);只在 0 筆時才讀
+ *   jobs         最新跑完那次的 job 清單;只在不是綠時才讀,讀不到 = null
+ *   沒讀的一律 undefined。
+ *
+ * 一支 workflow 掛好幾個監看 job 時(a11y-and-size:a11y 與 bundle),run 的結論是「任一個 job 沒綠,整支就沒綠」——
+ * 「最後一次綠 / 之後連幾次」是**整支**的數字,不是每個 job 的(10-14 實數:整支最後全綠 08-05、之後 70 次;
+ * bundle 自己最後綠 09-02、之後 42 次)。所以超過一個 job 時字樣講明「整支」,並把這次綠的 job 也列出來(`jobs`),
+ * 不讓人從「沒列出」去猜。
+ *
+ * verdict 三值沿用 classifyScheduledMonitorRun。**「0 筆」永遠不是綠也不是紅**(M37 第八種形狀:沒觀察到 ≠ 沒發生):
+ * 先問查詢有沒有能力看到,再問 workflow 在不在、有沒有被停用、是不是還沒到第一次排程時間,講出是哪一種。
+ * 「連幾次沒綠」也一樣:只有查得到、而且與最近幾次對得上才講確數,否則講「至少」。
+ */
+export function classifyScheduledMonitor({ workflow, runs, queryProven = null, greens, streak, meta, cronAdded, jobs, now = new Date() } = {}) {
+  const crons = Array.isArray(workflow?.crons) ? workflow.crons : []
+  const base = {
+    verdict: 'unknown', kind: null, detail: '', url: null, latest: null, inProgress: null, lastGreen: null,
+    nonGreenStreak: null, nonGreenStreakIsLowerBound: false, nextDue: null, overdue: null, failedJobs: null, jobs: null,
+  }
+  const metaReadable = meta && (meta.code === 404 || (meta.code >= 200 && meta.code < 300))
+  const notRegistered = 'GitHub 上沒有這支 workflow(本地有;排程只在預設分支生效,可能還沒合併進去)'
+  if (!runs || runs.ok !== true || !Array.isArray(runs.runs)) {
+    const code = runs?.code ?? 0
+    if (code === 404 && queryProven === true && meta?.code === 404) return { ...base, kind: 'not-registered', detail: notRegistered }
+    return {
+      ...base, kind: 'query-failed',
+      detail: `排程 run 查詢失敗(${[code ? `HTTP ${code}` : '', runs?.error || ''].filter(Boolean).join(';') || '連線失敗'})—— 讀不到 ≠ 綠`,
+    }
+  }
+  const list = runs.runs.filter(item => item && typeof item === 'object')
+  if (!list.length) {
+    if (queryProven !== true) {
+      return {
+        ...base, kind: 'unproven-empty',
+        detail: '排程 run 查詢回 0 筆,而這一輪同一條查詢對任何一支都沒拿到資料(repo 層對照組也沒有)—— 證明不了查詢拿得到資料,不得讀成「沒跑過」(量具失效)',
+      }
+    }
+    if (!metaReadable) {
+      return { ...base, kind: 'meta-unreadable', detail: `0 次排程 run(查詢已證明拿得到資料),但讀不到 workflow 狀態(${meta?.code ? `HTTP ${meta.code}` : '連線失敗'})` }
+    }
+    if (meta.code === 404) return { ...base, kind: 'not-registered', detail: notRegistered }
+    if (meta.state !== 'active') return { ...base, kind: 'disabled', detail: `排程被停用(workflow state=${meta.state || '?'}),0 次排程 run` }
+    // 第一次該跑 = 每條 cron 從「workflow 註冊」與「這條 cron 加進預設分支」兩者較晚的那一刻起算(cronAddedOnDefaultBranch 的理由)
+    const registeredAt = toEpochMs(meta.created_at)
+    const registered = Number.isFinite(registeredAt) ? `workflow 註冊於 ${formatUtc(new Date(registeredAt))}` : 'workflow 註冊時間讀不到'
+    const startOf = cron => new Date(Math.max(registeredAt, toEpochMs(cronAdded?.[cron])))
+    // 預設分支上從沒有的 cron(本地有、還沒合併進去)GitHub 不會照它排程,不算進「該跑」
+    const offBranch = crons.filter(cron => cronAdded?.[cron] === false)
+    const onBranch = crons.filter(cron => cronAdded?.[cron] !== false)
+    if (crons.length && !onBranch.length) {
+      return {
+        ...base, kind: 'not-on-default-branch',
+        detail: `已註冊(active),0 次排程 run;cron ${offBranch.join(' / ')} 不在預設分支上(本地簽出有、預設分支沒有 —— GitHub 只照預設分支排程,還沒合併進去就不會跑)`,
+      }
+    }
+    const offNote = offBranch.length ? `(另有 ${offBranch.join(' / ')} 不在預設分支上,不算)` : ''
+    if (!onBranch.length || onBranch.some(cron => !Number.isFinite(startOf(cron).getTime()))) {
+      return {
+        ...base, kind: 'due-unknown',
+        detail: `已註冊(active;${registered}),0 次排程 run;排程何時加進預設分支未知(讀不到預設分支的歷史),分不出是「還沒到第一次排程」還是「該跑卻沒跑」${offNote}`,
+      }
+    }
+    const first = scheduleOverdue(onBranch, startOf, now)
+    if (!first.nextDue) {
+      return { ...base, kind: 'due-unknown', detail: `已註冊(active;${registered}),0 次排程 run;cron 寫法算不出應跑時間${offNote}` }
+    }
+    const nextDue = first.nextDue.toISOString()
+    if (first.overdue === false) {
+      return { ...base, kind: 'not-yet-due', nextDue, overdue: false, detail: `已註冊(active),還沒到第一次排程(預計 ${formatUtc(first.nextDue)} 之後;GitHub 常延後數小時)${offNote}` }
+    }
+    return {
+      ...base, kind: 'never-ran', nextDue, overdue: first.overdue,
+      detail: `已註冊(active),第一次排程應在 ${formatUtc(first.nextDue)},至今 0 次排程 run —— 沒觀察到 ≠ 沒問題${offNote}`,
+    }
+  }
+
+  const completed = list.filter(item => lower(item.status) === 'completed')
+  const newest = list[0]
+  const inProgress = lower(newest.status) === 'completed' ? null : newest
+  const timing = scheduleOverdue(crons, newest.created_at, now)
+  const shared = {
+    nextDue: timing.nextDue ? timing.nextDue.toISOString() : null,
+    overdue: timing.overdue,
+    inProgress: inProgress ? summarizeMonitorRun(inProgress, now) : null,
+  }
+  const latest = completed[0]
+  if (!latest) {
+    return {
+      ...base, ...shared, kind: 'running-only', url: newest.html_url || null,
+      detail: `${runDay(newest)} 那次還在跑(${newest.status || '?'});讀到的 ${list.length} 次排程裡沒有跑完的`,
+    }
+  }
+  const outcome = classifyScheduledMonitorRun(latest)
+  let detail = `${outcome.detail}(${describeAge(latest.run_started_at || latest.created_at, now)})`
+  let lastGreen = null
+  let nonGreenStreak = null
+  let lowerBound = false
+  // 這次實際跑了的 job(去掉略過的);超過一個時,「最後一次綠 / 連幾次」是整支的數字,字樣要講明
+  const ranJobs = outcome.verdict !== 'green' && Array.isArray(jobs) ? jobs.filter(job => job && lower(job.conclusion) !== 'skipped') : null
+  const whole = Boolean(ranJobs && ranJobs.length > 1)
+  const green = whole ? '全綠' : '綠'
+  const lastGreenLabel = whole ? `整支(${ranJobs.length} 個 job 全綠)最後一次` : '最後一次綠'
+  if (outcome.verdict !== 'green') {
+    const pageGreen = completed.findIndex(item => lower(item.conclusion) === 'success')
+    const sawAll = Number.isInteger(runs.totalCount) && list.length >= runs.totalCount
+    const completedTotal = Number.isInteger(runs.totalCount) ? runs.totalCount - (list.length - completed.length) : null
+    const seen = completed.length // 最近這幾次裡跑完的,全部沒綠
+    if (pageGreen >= 0) {
+      lastGreen = completed[pageGreen]
+      nonGreenStreak = pageGreen
+      detail += `;${lastGreenLabel} ${runDay(lastGreen)},之後連 ${pageGreen} 次沒${green}`
+    } else if (sawAll) {
+      nonGreenStreak = seen
+      detail += `;全部 ${seen} 次排程沒有一次${green}`
+    } else if (greens?.ok === true && greens.run) {
+      lastGreen = greens.run
+      // 確數要兩面對得上:查到的次數不得少於最近幾次裡已經看到的沒綠次數,否則講「至少」
+      if (streak?.ok === true && Number.isInteger(streak.totalCount) && streak.totalCount >= seen) {
+        nonGreenStreak = streak.totalCount
+        detail += `;${lastGreenLabel} ${runDay(lastGreen)},之後連 ${streak.totalCount} 次沒${green}`
+      } else {
+        nonGreenStreak = seen
+        lowerBound = true
+        detail += `;${lastGreenLabel} ${runDay(lastGreen)},之後至少 ${seen} 次沒${green}(${streak?.ok === true ? '連續次數與最近幾次對不上' : '連續次數讀不到'})`
+      }
+    } else if (greens?.ok === true && !greens.run && greens.proven === true && completedTotal !== null) {
+      nonGreenStreak = completedTotal
+      detail += `;全部 ${completedTotal} 次排程沒有一次${green}`
+    } else {
+      nonGreenStreak = seen
+      lowerBound = true
+      detail += greens?.ok === true
+        ? `;最近 ${seen} 次排程沒有一次${green}(「綠過沒有」的查詢回 0 筆,但這一輪沒有任何一支證明它拿得到資料,更早的不下結論)`
+        : `;最近 ${seen} 次排程沒有一次${green}(更早的讀不到)`
+    }
+    if (whole) detail += '(次數算整支 workflow,不是各 job 自己的;這次各 job 的結論列在下面)'
+  }
+  if (inProgress) detail += `;${runDay(inProgress)} 那次還在跑`
+  let verdict = outcome.verdict
+  let kind = 'latest'
+  if (!inProgress && timing.overdue === true) {
+    kind = 'stale'
+    if (verdict === 'green') verdict = 'unknown' // 舊的綠不是現在的綠;紅照樣是紅(還是沒人證明它好了)
+    detail += `;排程應在 ${formatUtc(timing.nextDue)} 再跑,超過一天還沒有新的排程 run` +
+      `${meta?.state ? `(workflow state=${meta.state})` : ''} —— 這個結論可能已不是現況`
+  }
+  let failedJobs = null
+  if (ranJobs) {
+    failedJobs = ranJobs
+      .filter(job => lower(job.conclusion) !== 'success')
+      .map(job => ({
+        name: job.name || '?', conclusion: job.conclusion || job.status || '?', url: job.html_url || null,
+        failedStep: (job.steps || []).find(step => ['failure', 'cancelled', 'timed_out'].includes(lower(step?.conclusion)))?.name || null,
+      }))
+  } else if (outcome.verdict !== 'green' && jobs === null) detail += ';讀不到 job 明細'
+  return {
+    ...base, ...shared, verdict, kind, detail, url: latest.html_url || null,
+    latest: summarizeMonitorRun(latest, now),
+    lastGreen: lastGreen ? summarizeMonitorRun(lastGreen, now) : null,
+    nonGreenStreak, nonGreenStreakIsLowerBound: lowerBound,
+    failedJobs,
+    jobs: ranJobs ? ranJobs.map(job => ({ name: job.name || '?', conclusion: job.conclusion || job.status || '?', url: job.html_url || null })) : null,
+  }
+}
+
+const ISO_SECOND = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
+/** 讀不到是因為傳輸 / 伺服器暫時性問題(斷線、5xx、限流、回應不是 JSON)—— 這種結果不得進快取。 */
+const transientFailure = response => !response.ok && (response.code === 0 || response.code === 403 || response.code === 408 ||
+  response.code === 429 || response.code >= 500 || response.error === '回應不是 JSON')
+
+/**
+ * 讀全部排程監看。**只讀**:每一個請求都是 GET。分兩批、每批平行送(`githubBatch(paths)` 回與 paths 同序的
+ * `{ ok, code, text }`;預設 curlGitHubParallel)。測試可只注入單筆的 `github(path)`。
+ *   第一批(每支 2 個):最近 5 次排程 run;最後一次綠(status=success 的第 1 筆)。
+ *   第二批(依第一批而定):不是綠 → 那次的 job 清單;最近 5 次沒綠又查得到最後一次綠 → 之後跑完幾次;
+ *     0 筆 / 404 / 逾期 → workflow 狀態;這一輪沒有任何一支拿到資料 → repo 層對照組(同一個 event=schedule 篩選)。
+ *   0 筆的那幾支另讀本地 git:每條 cron 何時加進預設分支(`cronAdded`,預設 cronAddedOnDefaultBranch)。
+ *
+ * **篩選寫在網址上 ≠ 回來的就是那種東西**(M37):GitHub 對拼錯 / 不認得的查詢參數是**靜默忽略**,照樣回 200。
+ * 所以每一條查詢回來的每一筆,都拿它自己的欄位對一次網址上的篩選(event / status / conclusion / created / 哪一次跑的 job),
+ * 任何一筆對不上 = 篩選沒生效 = 這條查詢「讀不到」—— 不是綠、不是紅,也不是 0 筆。(篩選沒生效只會讓結果變**多**,
+ * 所以它不影響「0 筆」的證明:沒套上篩選還是 0 筆,套上了一樣是 0 筆。)
+ * 回傳另帶 `transientFailures`:這一輪因傳輸 / 伺服器暫時性問題沒讀到的請求數(scheduledMonitorsForReport 據此不快取)。
+ */
+export function readScheduledMonitors(repository, { github = null, githubBatch = null, now = new Date(), listing = null, cronAdded = cronAddedOnDefaultBranch } = {}) {
+  const found = listing ?? listScheduledWorkflows()
+  const readout = {
+    listing: { ok: found.ok, reason: found.reason, scanned: found.scanned, count: found.workflows.length },
+    control: null,
+    monitors: {},
+    transientFailures: 0,
+  }
+  const record = (workflow, verdict) => {
+    readout.monitors[workflow.file] = { file: workflow.file, name: workflow.name, crons: workflow.crons, ...verdict }
+  }
+  if (!repository) {
+    for (const workflow of found.workflows) {
+      record(workflow, classifyScheduledMonitor({ workflow, runs: { ok: false, code: 0, error: '不知道目標 repo(release-workflow.json 讀不到)' }, now }))
+    }
+    return readout
+  }
+  const batch = githubBatch ?? (github ? paths => paths.map(path => github(path)) : curlGitHubParallel)
+  const parse = response => {
+    if (!response?.ok) return { ok: false, code: response?.code ?? 0, body: null, error: response?.error || null }
+    try { return { ok: true, code: response.code, body: JSON.parse(response.text) } } catch {
+      return { ok: false, code: response.code, body: null, error: '回應不是 JSON' }
+    }
+  }
+  const fetchAll = paths => {
+    if (!paths.length) return []
+    let responses
+    try { responses = batch(paths) } catch (error) {
+      responses = paths.map(() => ({ ok: false, code: 0, error: `傳輸丟錯:${error?.message || error}` }))
+    }
+    const parsed = paths.map((_, index) => parse(responses?.[index]))
+    readout.transientFailures += parsed.filter(transientFailure).length
+    return parsed
+  }
+  // 一條 run 清單查詢的回應:每一筆都要符合網址上的篩選(event=schedule 一律有;其餘依查詢而定)
+  const runList = (response, { status = null, conclusion = null, createdAfter = null } = {}) => {
+    if (!response.ok) return { ok: false, code: response.code, error: response.error || null }
+    const runs = response.body?.workflow_runs
+    if (!Array.isArray(runs)) return { ok: false, code: response.code, error: '回應裡沒有 workflow_runs' }
+    const after = createdAfter === null ? null : toEpochMs(createdAfter)
+    const off = runs.filter(run => !run || typeof run !== 'object' || lower(run.event) !== 'schedule'
+      || (status !== null && lower(run.status) !== status)
+      || (conclusion !== null && lower(run.conclusion) !== conclusion)
+      || (after !== null && !(toEpochMs(run.created_at) > after)))
+    if (off.length) {
+      const wanted = ['event=schedule', status && `status=${status}`, conclusion && `conclusion=${conclusion}`, createdAfter && `created>${createdAfter}`].filter(Boolean).join('、')
+      return { ok: false, code: response.code, error: `篩選沒生效:回了 ${off.length} 筆不符(${wanted})的 run` }
+    }
+    return { ok: true, totalCount: response.body.total_count, runs }
+  }
+  const workflowPath = file => `repos/${repository}/actions/workflows/${encodeURIComponent(file)}`
+  const scheduled = file => `${workflowPath(file)}/runs?event=schedule`
+
+  // 第一批。只取排程那幾次(event=schedule):visual-regression.yml 也接 PR 分支的重拍請求(push)與 dispatch,
+  // 「這支 workflow 最新的一次」不等於「排程監看最新的一次」(M37)。
+  const first = fetchAll(found.workflows.flatMap(workflow => [
+    `${scheduled(workflow.file)}&per_page=${MONITOR_RECENT_RUNS}`,
+    `${scheduled(workflow.file)}&status=success&per_page=1`,
+  ]))
+  const observed = found.workflows.map((workflow, index) => {
+    const runs = runList(first[index * 2])
+    const greensList = runList(first[index * 2 + 1], { conclusion: 'success' })
+    const greens = greensList.ok ? { ok: true, totalCount: greensList.totalCount, run: greensList.runs[0] || null } : { ok: false }
+    return { workflow, runs, greens }
+  })
+  let queryProven = observed.some(item => item.runs.ok && item.runs.runs.length > 0)
+  const greensProven = observed.some(item => item.greens.ok && item.greens.run)
+
+  // 第二批
+  const plan = []
+  const ask = (path, use) => plan.push({ path, use })
+  const needsProof = observed.some(item => (item.runs.ok && !item.runs.runs.length) || item.runs.code === 404)
+  if (!queryProven && needsProof) {
+    // 對照組(M32「回 0 筆先證明它拿得到資料」):同一個 event=schedule 篩選換成 repo 層 —— repo 只要有過任何排程 run 就必須拿得到。
+    ask(`repos/${repository}/actions/runs?event=schedule&per_page=1`, response => {
+      const control = runList(response)
+      readout.control = { code: response.code, found: control.ok ? control.runs.length : null, ...(control.ok ? {} : { error: control.error }) }
+      queryProven = control.ok && control.runs.length > 0
+    })
+  }
+  for (const item of observed) {
+    const { workflow, runs, greens } = item
+    item.greens = { ...greens, proven: greensProven }
+    const list = runs.ok ? runs.runs : []
+    const newest = list[0] || null
+    const completed = list.filter(run => lower(run.status) === 'completed')
+    const latest = completed[0] || null
+    const stale = Boolean(newest && lower(newest.status) === 'completed'
+      && scheduleOverdue(workflow.crons, newest.created_at, now).overdue === true)
+    if ((runs.ok && !newest) || runs.code === 404 || stale) {
+      ask(workflowPath(workflow.file), response => {
+        item.meta = { code: response.code, state: response.body?.state ?? null, created_at: response.body?.created_at ?? null }
+      })
+    }
+    if (runs.ok && !newest) {
+      try { item.cronAdded = cronAdded(workflow) } catch { item.cronAdded = null }
+    }
+    if (latest && lower(latest.conclusion) !== 'success') {
+      if (/^\d+$/.test(`${latest.id}`)) {
+        // job 也要對:每一個都屬於這一次 run(`filter=latest` 沒生效時會混進較早那一輪的 job)
+        const attempt = Number.isInteger(latest.run_attempt) ? latest.run_attempt : null
+        ask(`repos/${repository}/actions/runs/${latest.id}/jobs?filter=latest&per_page=100`, response => {
+          const jobs = response.ok && Array.isArray(response.body?.jobs) ? response.body.jobs : null
+          item.jobs = jobs && jobs.every(job => job && job.run_id === latest.id && (attempt === null || job.run_attempt === attempt)) ? jobs : null
+        })
+      } else item.jobs = null
+      const sawAll = Number.isInteger(runs.totalCount) && list.length >= runs.totalCount
+      const pageGreen = completed.some(run => lower(run.conclusion) === 'success')
+      const since = greens.ok ? greens.run?.created_at : null
+      if (!pageGreen && !sawAll && typeof since === 'string' && ISO_SECOND.test(since)) {
+        ask(`${scheduled(workflow.file)}&status=completed&created=${encodeURIComponent(`>${since}`)}&per_page=1`, response => {
+          const after = runList(response, { status: 'completed', createdAfter: since })
+          item.streak = after.ok && Number.isInteger(after.totalCount) ? { ok: true, totalCount: after.totalCount } : { ok: false }
+        })
+      }
+    }
+  }
+  const second = fetchAll(plan.map(step => step.path))
+  plan.forEach((step, index) => step.use(second[index]))
+
+  for (const { workflow, runs, greens, streak, meta, cronAdded: added, jobs } of observed) {
+    record(workflow, classifyScheduledMonitor({ workflow, runs, queryProven, greens, streak, meta, cronAdded: added, jobs, now }))
+  }
+  return readout
+}
+
+let scheduledMonitorCache = null
+
+/**
+ * printReport 用的入口:**只講不擋** —— 讀監看的任何失敗都只變成一行儀器失效,不得讓 status / auto 丟錯。
+ * 同一個行程 10 分鐘內重用上一次的結果(release:auto 每輪都印報告)。**不完整的結果不快取**:丟錯、清單不完整、
+ * 這一輪有請求因傳輸 / 伺服器暫時性問題沒讀到、或任何一支是「查詢失敗 / 證明不了 / 讀不到 workflow 狀態」——
+ * 否則一次斷網會讓接下來 10 分鐘每一輪都印同一份「讀不到」。
+ */
+export function scheduledMonitorsForReport(repository, { read = readScheduledMonitors, nowMs = Date.now() } = {}) {
+  if (scheduledMonitorCache && scheduledMonitorCache.repository === repository && nowMs - scheduledMonitorCache.at < MONITOR_CACHE_TTL_MS) {
+    return scheduledMonitorCache.readout
+  }
+  try {
+    const readout = read(repository)
+    const complete = readout?.listing?.ok === true && !(readout.transientFailures > 0)
+      && !Object.values(readout.monitors || {}).some(item => ['query-failed', 'unproven-empty', 'meta-unreadable'].includes(item?.kind))
+    scheduledMonitorCache = complete ? { repository, at: nowMs, readout } : null
+    return readout
+  } catch (error) {
+    return {
+      listing: { ok: false, reason: `讀排程監看時丟錯:${error instanceof Error ? error.message : error}`, scanned: 0, count: 0 },
+      control: null,
+      monitors: {},
+    }
+  }
+}
+
+/**
+ * 排程監看印給人看的幾行(純函式)。每支一行結論 + 多久以前;不是綠的逐一列出這次跑了的 job —— 沒綠的(✗)擋在哪一步,
+ * 綠的(✓)也列(一支 workflow 掛好幾個 job 時,整支紅不代表每個 job 都紅,不得讓人從「沒列出」去猜),再附 run 連結。
+ */
+export function formatScheduledMonitorLines(readout) {
+  const listing = readout?.listing || { ok: false, reason: '沒有讀到監看結果', scanned: 0, count: 0 }
+  const monitors = Object.values(readout?.monitors || {})
+  const tally = { green: 0, red: 0, unknown: 0 }
+  for (const item of monitors) tally[Object.hasOwn(tally, item.verdict) ? item.verdict : 'unknown'] += 1
+  const lines = [`   排程監看(不擋發布;清單由 .github/workflows 裡宣告 schedule 的 workflow 機械列出,共 ${monitors.length} 支):` +
+    `🔴 ${tally.red} 紅 · ⚠️ ${tally.unknown} 不明 · ⓘ ${tally.green} 綠`]
+  if (!listing.ok) lines.push(`   ⚠️ 監看清單不完整(量具):${listing.reason}`)
+  else if (!monitors.length) lines.push(`   ⓘ 掃了 ${listing.scanned} 支 workflow,沒有任何一支宣告 schedule(原文也沒有 cron:)`)
+  for (const item of monitors) {
+    const mark = item.verdict === 'green' ? 'ⓘ' : item.verdict === 'red' ? '🔴' : '⚠️'
+    lines.push(`   ${mark} ${item.name}(${item.file},cron ${(item.crons || []).join(' / ')} UTC):${item.detail}`)
+    for (const job of item.failedJobs || []) {
+      lines.push(`        ✗ ${job.name}:${job.conclusion}${job.failedStep ? `,擋在「${job.failedStep}」` : ''}`)
+    }
+    for (const job of (item.jobs || []).filter(job => lower(job.conclusion) === 'success')) lines.push(`        ✓ ${job.name}:success`)
+    if (item.url) lines.push(`        ${item.url}`)
+  }
+  return lines
 }
 
 /** canonical 宣告的目標 repo;讀不到就回 null,呼叫端一律 fail closed。 */
@@ -1084,6 +1748,25 @@ function withRequiredChecks(repository, pullRequest) {
  * 兩件事各自一個旗標:`dispatched` 只擋重複派工(重派會重跑 sync workflow),
  * `pullRequestOpened` 只擋重複開 PR。
  */
+/**
+ * consumer 手上那一版之後、鏈上的**下一版**:第五步該派給它的版本。
+ *
+ * 2026-09-30 事故:beta.146 的 WM 同步失敗(新增檔案),WM 停在 145;beta.147 發布後第五步照舊派 147,
+ * WM 的升級交易比對 `incoming.immutableHeadSnapshot`(147 宣告的前一版 = 146)與它手上的 currentSnapshot(145)
+ * → GOV-UPGRADE-007,而且**每次重派都一樣**。原本這一步只認「目前這一版」,consumer 少跳一版就永遠接不上,
+ * 只能靠人手動派中間那一版 —— 自家工具的缺陷丟回 user(M36(b)),當晚 user 兩次反問「作繭自縛?」。
+ * 現在直接量要保證的性質(M37):要派的是「installed 在 tag 順序上的下一個」,不是「線上最新」。
+ * installed 讀不到、不在鏈上、或已是清單最後一個 → 退回目前這一版(維持舊行為,不多做假設)。
+ * 純函式,判定表在 infra/governance/test/release-workflow.test.mjs。
+ */
+export function nextConsumerVersion(installed, releaseTagsDesc, currentVersion) {
+  if (!installed || !Array.isArray(releaseTagsDesc)) return currentVersion
+  const ascending = [...releaseTagsDesc].reverse().map((tag) => String(tag).replace(/^v/, ''))
+  const index = ascending.indexOf(installed)
+  if (index < 0) return currentVersion
+  return ascending[index + 1] || currentVersion
+}
+
 export function consumerStepAction({ delivery, branchExists, dispatched = false, pullRequestOpened = false } = {}) {
   if (branchExists) return pullRequestOpened ? 'wait' : 'create-pr'
   if (delivery === 'repository-dispatch-pr') return dispatched ? 'wait' : 'dispatch'
@@ -1237,6 +1920,21 @@ export function buildConsumerPullRequestCreateArgs(target, { version, commit }) 
 export function buildPublishedTemplatePullRequestCreateArgs(target, options) {
   invariant(target.delivery === 'release-published-pr', `consumer ${target.repository} is not published-template driven`)
   return buildConsumerPullRequestCreateArgs(target, options)
+}
+
+/** 鏈上中間版本的 release commit:本地 tag 優先(clone 有 tag),沒有就問 API(annotated tag 要再解一層)。 */
+function releaseCommitForTag(repository, tag) {
+  const local = run('git', ['rev-parse', '--verify', `${tag}^{commit}`], { allowFailure: true })
+  const localSha = local.ok ? String(local.stdout || '').trim() : ''
+  if (/^[a-f0-9]{40}$/.test(localSha)) return localSha
+  const ref = ghJson(['api', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`], { allowFailure: true })
+  let sha = ref?.object?.sha || null
+  if (sha && ref?.object?.type === 'tag') {
+    const annotated = ghJson(['api', `repos/${repository}/git/tags/${sha}`], { allowFailure: true })
+    sha = annotated?.object?.sha || null
+  }
+  invariant(sha && /^[a-f0-9]{40}$/.test(sha), `找不到 ${tag} 指向的 release commit(本地與 API 都讀不到)—— 中間版本無法派給 consumer`)
+  return sha
 }
 
 function consumerAutomationBranchExists(target, version) {
@@ -1430,7 +2128,9 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   const tagCommitSha = tagRef?.object?.sha || null
   const releaseCommitSha = tagCommitSha || main?.sha || null
   const release = ghJson(['release', 'view', tag, '--repo', repository, '--json', 'tagName,isDraft,isImmutable,isPrerelease,publishedAt,url'], { allowFailure: true })
-  const consumerObservations = consumers.map(target => {
+  // 只讀回這一輪要升級的 consumer:`upgrade: on-request`(WM)沒被要求就不讀、不派工、不算完成條件
+  const releaseConsumers = selectReleaseConsumers(consumers, requestedConsumersFromEnv())
+  const consumerObservations = releaseConsumers.map(target => {
     const exactVersion = release ? consumerPackageReadback(target, version) : false
     const targetPullRequest = release ? matchingConsumerPullRequest(target, version, releaseCommitSha) : null
     return {
@@ -1456,6 +2156,8 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
     publishRun: latestRun(repository, publishWorkflow.file, releaseCommitSha),
     npmPackages: packages.map(name => ({ name, exactVersion: release ? npmPackageReadback(name, version) : false })),
     consumers: consumerObservations,
+    // 本輪沒碰的 on-request consumer(要升級時:RELEASE_REQUESTED_CONSUMERS=<repository> npm run release:auto)
+    onRequestConsumersSkipped: consumers.filter(target => !releaseConsumers.includes(target)).map(target => target.repository),
   }
 }
 
@@ -1530,10 +2232,11 @@ function printReport(workflow, observation, json) {
   // 這一版,若沿用舊名(previous…)會讓機器可讀輸出的欄位名與實際語意相反。全 repo 零讀取端。
   report.publishedBaselineRef = baselineRef
   report.productChange = productChangeSinceBaseline(baselineRef, observation.headSha)
-  // 排程監看的最新結論:**只講不擋**。視覺回歸週跑 2026-08-12 起連紅六週(runner 映像換了、
-  // 字型漂移、baseline 沒重拍),沒人看見 —— 因為它只排程、不進 PR。現在每次 status / auto 都印。
-  const visualMonitor = classifyScheduledMonitorRun(latestScheduledMonitorRun(observation.repository, 'visual-regression.yml'))
-  report.scheduledMonitors = { 'visual-regression.yml': visualMonitor }
+  // 排程監看的最新結論:**只講不擋**,而且**全部**讀 —— 清單從 .github/workflows 機械列出(listScheduledWorkflows),
+  // 不手寫檔名。視覺回歸週跑 2026-08-12 起連紅六週沒人看見之後只補了它一支,其餘六個排程 job 照樣沒有觀眾(SM9)。
+  const monitors = scheduledMonitorsForReport(observation.repository)
+  report.scheduledMonitors = monitors.monitors
+  report.scheduledMonitorListing = { ...monitors.listing, control: monitors.control, transientFailures: monitors.transientFailures ?? null }
   if (json) console.log(JSON.stringify(report, null, 2))
   else {
     console.log(`${observation.repository} ${observation.tag}`)
@@ -1546,9 +2249,7 @@ function printReport(workflow, observation, json) {
       // 「量不到」不得看起來像「量到沒變」——講清楚是哪一種,否則這行的沉默無法與「沒差異」區分。
       console.log(`   ⚠️ 無法判斷這一版會不會改變畫面(基準 ref=${baselineRef ?? '找不到'};本地可能沒有 tag,請先 git fetch --tags)。`)
     }
-    const mark = visualMonitor.verdict === 'green' ? 'ⓘ' : visualMonitor.verdict === 'red' ? '🔴' : '⚠️'
-    console.log(`   ${mark} 每週視覺回歸監看(visual-regression.yml,不擋發布):${visualMonitor.detail}` +
-      (visualMonitor.verdict === 'red' ? ' —— 紅燈要有人看:去讀那次 artifact 的 report.json 分類是產品漂移、baseline 過期還是渲染器漂移' : ''))
+    for (const line of formatScheduledMonitorLines(monitors)) console.log(line)
   }
   return report
 }
@@ -1834,32 +2535,46 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       continue
     }
 
+    const desired = readJson(GITHUB_DESIRED_PATH)
+    const releaseTags = listReleaseTags()
     for (const target of observation.consumers.filter(item => !item.exactVersion || item.checkReadback?.trusted !== true)) {
       invariant(
         !(target.exactVersion && target.checkReadback?.trusted !== true),
         `consumer ${target.repository} has the exact package version but lacks trusted release-check provenance: ${target.checkReadback?.reason || 'unknown reason'}`,
       )
-      if (target.pullRequest) {
-        if (target.pullRequest.state === 'MERGED') {
+      // 鏈(2026-09-30):consumer 能接的只有「它手上那一版的下一版」。少跳一版就先派中間那一版,
+      // 該版 PR 合併、lock 讀回之後下一輪自然走到目前這一版。判斷在 nextConsumerVersion(純函式)。
+      const installed = installedConsumerVersion(target)
+      const chainVersion = nextConsumerVersion(installed, releaseTags, observation.version)
+      const chainIsCurrent = chainVersion === observation.version
+      const chainCommit = chainIsCurrent ? observation.releaseCommitSha : releaseCommitForTag(observation.repository, `v${chainVersion}`)
+      const chainPullRequest = chainIsCurrent ? target.pullRequest : matchingConsumerPullRequest(target, chainVersion, chainCommit)
+      const chainCheck = chainIsCurrent ? target.checkReadback : consumerCheckReadback(target, chainPullRequest, desired)
+      const chainKey = `${target.repository}@${chainVersion}`
+      if (!chainIsCurrent) {
+        console.log(`   consumer ${target.repository} 手上是 ${installed || '(讀不到)'},先派鏈上的下一版 ${chainVersion}(${observation.version} 宣告的前一版接不上它)`)
+      }
+      if (chainPullRequest) {
+        if (chainPullRequest.state === 'MERGED') {
           invariant(
-            target.checkReadback?.trusted === true,
-            `merged consumer PR lacks trusted release-check provenance: ${target.pullRequest.url}: ${target.checkReadback?.reason || 'unknown reason'}`,
+            chainCheck?.trusted === true,
+            `merged consumer PR lacks trusted release-check provenance: ${chainPullRequest.url}: ${chainCheck?.reason || 'unknown reason'}`,
           )
           continue
         }
-        const checks = checkRollupStatus(target.pullRequest.requiredChecks)
-        invariant(checks !== 'failed', `consumer PR failed checks: ${target.pullRequest.url}`)
+        const checks = checkRollupStatus(chainPullRequest.requiredChecks)
+        invariant(checks !== 'failed', `consumer PR failed checks: ${chainPullRequest.url}`)
         if (checks === 'pending') {
-          if (!noWait) gh(['pr', 'checks', `${target.pullRequest.number}`, '--repo', target.repository, '--required', '--watch', '--interval', '10'])
+          if (!noWait) gh(['pr', 'checks', `${chainPullRequest.number}`, '--repo', target.repository, '--required', '--watch', '--interval', '10'])
           continue
         }
         invariant(
-          target.checkReadback?.trusted === true,
-          `consumer PR check provenance differs from SSOT: ${target.pullRequest.url}: ${target.checkReadback?.reason || 'unknown reason'}`,
+          chainCheck?.trusted === true,
+          `consumer PR check provenance differs from SSOT: ${chainPullRequest.url}: ${chainCheck?.reason || 'unknown reason'}`,
         )
         gh([
-          'pr', 'merge', `${target.pullRequest.number}`, '--repo', target.repository,
-          '--squash', '--delete-branch', '--match-head-commit', target.pullRequest.headRefOid,
+          'pr', 'merge', `${chainPullRequest.number}`, '--repo', target.repository,
+          '--squash', '--delete-branch', '--match-head-commit', chainPullRequest.headRefOid,
         ])
       } else {
         // 分支還沒被 sync workflow 推上來 → 先派工;已經推上來但還沒有 PR → 由本地 canonical
@@ -1868,23 +2583,23 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
         // 判斷本身在 consumerStepAction(純函式,判定表驗得到);這裡只負責執行。
         const action = consumerStepAction({
           delivery: target.delivery,
-          branchExists: consumerAutomationBranchExists(target, observation.version),
-          dispatched: dispatchedConsumers.has(target.repository),
-          pullRequestOpened: openedConsumerPullRequests.has(target.repository),
+          branchExists: consumerAutomationBranchExists(target, chainVersion),
+          dispatched: dispatchedConsumers.has(chainKey),
+          pullRequestOpened: openedConsumerPullRequests.has(chainKey),
         })
         if (action === 'create-pr') {
           gh(buildConsumerPullRequestCreateArgs(target, {
-            version: observation.version,
-            commit: observation.releaseCommitSha,
+            version: chainVersion,
+            commit: chainCommit,
           }).args)
-          openedConsumerPullRequests.add(target.repository)
+          openedConsumerPullRequests.add(chainKey)
         } else if (action === 'dispatch') {
           dispatchConsumer(target, {
-            version: observation.version,
-            tag: observation.tag,
-            commit: observation.releaseCommitSha,
+            version: chainVersion,
+            tag: `v${chainVersion}`,
+            commit: chainCommit,
           })
-          dispatchedConsumers.add(target.repository)
+          dispatchedConsumers.add(chainKey)
         }
       }
     }

@@ -8,6 +8,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
 import { ICON_SIZE, AVATAR_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { fieldRowPaddingY } from '@/design-system/components/Field/field-wrapper'
 
 // ── Selection Item Styles ───────────────────────────────────────────────────
 // Checkbox 和 RadioGroup 共用的 item 佈局。
@@ -35,10 +36,11 @@ export const selectionItemStyles = cva(
   'flex items-start gap-2',
   {
     variants: {
+      // py 公式的唯一住所 = field-wrapper.tsx `fieldRowPaddingY`(Switch 自帶標題的設定列同一份)
       size: {
-        sm: 'text-body py-[calc((var(--field-height-sm)_-_1lh)_/_2)]',
-        md: 'text-body py-[calc((var(--field-height-md)_-_1lh)_/_2)]',
-        lg: 'text-body-lg py-[calc((var(--field-height-lg)_-_1lh)_/_2)]',
+        sm: `text-body ${fieldRowPaddingY.sm}`,
+        md: `text-body ${fieldRowPaddingY.md}`,
+        lg: `text-body-lg ${fieldRowPaddingY.lg}`,
       },
     },
     defaultVariants: {
@@ -173,7 +175,7 @@ function ContentSlot({ htmlFor, disabled, label, description, sizeKey, labelClam
     <div className="min-w-0 flex-1">
       <label
         htmlFor={htmlFor}
-        // 2026-06-10 a11y:styled-disabled label 明告 inactive(WCAG 1.4.3 豁免可機判;對齊 FieldLabel 同修;a11y 補強不動 SSOT = AUTO 分權,user verbatim「確保所有的任務你都有做到完美做到完整」)
+        // 2026-06-10 a11y:styled-disabled label 明告 inactive(WCAG 1.4.3 豁免可機判;對齊 FieldLabel 同修;a11y 補強不動 SSOT = AUTO 分權,user 要求所有任務都做到完美完整)
         aria-disabled={disabled || undefined}
         className={cn(
           'cursor-pointer block break-words',

@@ -22,7 +22,7 @@ Typography 由三個獨立維度組成，分開疊加：
 **font-weight 等同 `<strong>` 的疊加邏輯：**
 - 不加 = 400，一般文字
 - `font-medium` = 500，行內中等強調
-- `font-bold` = 700，強調（等同 `<strong>`）
+- `font-bold` = 700，強調（等同 `<strong>`）。**以上三階是元件與產品範例的全部字重**;`font-semibold`(600)只用在文件外框的標題 —— 教學頁的段落標題與規則標題(`stories-helpers/examples/tutorial-page.tsx`):來源 user 2026-10-07「第一題照你建議」,採 AI 同日建議 ②「段落標題 text-h3 半粗體 + 淺分隔線、只用在教學頁」(`ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」);設計規格頁的小標(`stories-helpers/anatomy/anatomy-utils.tsx` `H3`;main `ec7466f5` 是 `font-bold`)與展示頁畫布上的分組小標(main 只有 4 處:Avatar 3、item-anatomy 1)改成 600,是本 PR `7ec9cb61`(2026-10-07 AI 全 DS 範例掃除)改的;user 2026-10-27 回「Q2照你建議」—— 採 AI 建議 ③ 維持 600(題目:設計規格頁小標與展示頁分組小標要不要跟教學頁一樣用 600),定案。元件、pattern、token 原始碼不得出現 `font-semibold`(閘 `scripts/owner-claims-invariant.mjs` C4;r1b OTH-06)
 
 
 ## Token 表
@@ -66,7 +66,7 @@ Typography 由三個獨立維度組成，分開疊加：
 
 可用的 override utility：
 - `leading-compact`：1.3（自訂，只給 `text-body` / `text-body-lg`）
-- `leading-normal`：1.5（Tailwind 內建，**極少用**——僅 stories `<p>` 補 10px footnote 段落呼吸感，正式 DS 元件**不需**主動覆蓋成 1.5，因為 `text-body` / `text-body-lg` 預設就是 1.5）
+- `leading-normal`：1.5（Tailwind 內建，正式 DS 元件**不需**主動覆蓋成 1.5，因為 `text-body` / `text-body-lg` 預設就是 1.5）
 
 ### 反 pattern（禁用）
 
@@ -84,8 +84,8 @@ Typography 由三個獨立維度組成，分開疊加：
 
 | 尺寸 | 段落（閱讀） | 標題（掃視 + bold） |
 |---|---|---|
-| 16px | `text-body-lg`（lh 1.5） | `text-h5`（lh 1.3，加 `font-medium`/`font-semibold`） |
-| 14px | `text-body`（lh 1.5） | `text-h6`（lh 1.3，加 `font-medium`/`font-semibold`） |
+| 16px | `text-body-lg`（lh 1.5） | `text-h5`（lh 1.3，加 `font-medium`） |
+| 14px | `text-body`（lh 1.5） | `text-h6`（lh 1.3，加 `font-medium`） |
 
 **結論**：90% 情境用 token 預設就對；唯一覆寫 = body/body-lg 進單行固定高度容器套 `leading-compact`。
 
@@ -139,7 +139,7 @@ Typography 由三個獨立維度組成，分開疊加：
 
 ## Letter-spacing(role-specific only)
 
-**哲學**:`letter-spacing` 跟 font-size / line-height 同層 — utility scale(`tracking-tight..widest`)是 raw scale 非 semantic role,每 consumer 自挑值 = 跨元件不一致。本 DS 採 **single semantic value per role**(對齊 Polaris / Material / Apple),每個需要 letter-spacing 變化的 role 必先 codify token。
+**哲學**:`letter-spacing` 跟 font-size / line-height 同層 — utility scale(`tracking-tight..widest`)是 raw scale 非 semantic role,每 consumer 自挑值 = 跨元件不一致。本 DS 採 **single semantic value per role**,每個需要 letter-spacing 變化的 role 必先 codify token。
 
 ### 既定 role
 
@@ -155,20 +155,14 @@ Typography 由三個獨立維度組成，分開疊加：
 4. 本 spec.md 加 row 到上表 + 對應 role 對齊世界級 cite(M22)
 5. Consumer code 用新 utility
 
-**對齊**:Material 3「letter-spacing per type role」/ Polaris「single semantic letter-spacing per scale」/ GitHub Primer「kbd typography canonical」/ Tailwind「wider tracking for uppercase + labels」。
+**對齊**:Material 3「letter-spacing per type role」(每個 type role 各有 `*-tracking`)/ Tailwind「wider tracking for uppercase + labels」([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-typescale.scss#L40-L57))。
 
 
 ## 世界級對照
 
 對齊 M8(binary strict rule 必 ≥3 家世界級對照),「禁 Tailwind `text-sm`/`text-base` raw utility」+「禁硬寫 fontSize」是本 spec 的 binary strict rule,以下為支撐 rationale。
 
-| 維度 | 本 DS | Material 3 | Carbon | Tailwind v4 | Ant Design | Polaris | Apple HIG |
-|------|-------|-----------|--------|-------------|------------|---------|-----------|
-| 命名哲學 | semantic role(h1-h6 + body)| Type scale roles(Display / Headline / Title / Label / Body)| Productive vs Expressive 雙軌 | utility size(`text-{xs..9xl}`)| 階梯 h1-h5 + base | semantic role(`heading-{md..3xl}` + `body-{sm..lg}`)| Dynamic Type(Title 1-3 / Headline / Body / Callout / Footnote / Caption 1-2)|
-| Body base | **14px** | 14 / 16(可切)| 14(productive)/ 16(expressive)| 16(`text-base`)| 14(`fontSizeBase`)| 14(`body-md`)| 17(`Body`)|
-| Heading 跨度 | h1=48 → h6=14(6 tier)| Display 1-2 + Headline 1-6(8+ tier)| Productive 01-07 + Heading 01-07(14 tier)| `text-xs` (12) → `text-9xl` (128)(13 tier)| h1=38 → h5=16(5 tier)| `heading-md` (16) → `heading-3xl` (40)(5 tier)| Title 1-3(3 tier)|
-| Line-height 哲學 | **二元**(1.5 reading / 1.3 compact)| Ratio ladder(隨 size 1.2-1.6 連續)| 二元(reading 1.5 / supplementary 1.3)| Ratio ladder(`leading-{tight..loose}` 1.25-2)| Unique 1.5715 | 隨 size(0.875-1.5)| 隨 size + Dynamic |
-| Font weight 階 | **3 階**(400/500/700)| 5 階(300-700)| 3 階(Light/Regular/SemiBold)| 9 階(100-900)| 4 階(400/500/600/700)| 4 階(400/500/600/650)| 9 階 + SF |
+本 DS 字級:base 14px、10 個 utility 內;line-height 二元(scanning 1.3 / reading 1.5);字重三階(normal / medium / bold)—— 各自理由見下方三段。
 
 ## 設計哲學
 
@@ -176,23 +170,23 @@ Typography 由三個獨立維度組成，分開疊加：
 
 **(1) Body base = 14px(對齊 Material / Carbon / Ant 三家共識)** <!-- @benchmark-unverified -->
 
-14px 是 productivity tool 共識(Linear / Notion / Figma / Jira / Stripe Dashboard),16px 是 reading-first 哲學(Apple iOS / Polaris 的 storefront / Medium)。本 DS 場景是 dense workspace(規格 / 表格 / Dashboard),14px 同時讓 information density 高 + 對齊 system tool 慣例。捨棄 16 base 的代價是「行動裝置可讀性」,但 DS 主場景是 desktop。
+14px 適合 productivity 工具:一屏要放規格、表格、Dashboard 等密集資訊;16px 是 reading-first 的選擇(長文閱讀、行動裝置)。本 DS 場景是 dense workspace,14px 同時讓 information density 高、又仍是舒適的內文大小。捨棄 16 base 的代價是「行動裝置可讀性」,但 DS 主場景是 desktop。
 
 **(2) 二元 line-height(1.5 / 1.3)— 對齊 Carbon「productive vs supplementary」哲學** <!-- @benchmark-unverified -->
 
-Material / Tailwind 用 ratio ladder(隨 size 連續變化)雖精細,但 consumer 心智負擔重(每 size 對應不同 lh,需查表)。Carbon 的「productive reading 1.5 / supplementary compact 1.3」二元規則,讓 reader 一眼判斷「是要連續閱讀還是 scanning」即可選對 — 對應本 DS 的 scanning(MenuItem / FileItem)vs reading(Empty / Field description)二分法。
+ratio ladder(行高隨字級連續變化)雖精細,但 consumer 心智負擔重(每 size 對應不同 lh,需查表)。二元規則「連續閱讀 1.5 / 掃描 1.3」讓 reader 一眼判斷「是要連續閱讀還是 scanning」即可選對 — 對應本 DS 的 scanning(MenuItem / FileItem)vs reading(Empty / Field description)二分法。
 
 捨棄連續 ratio 的代價是「極大字級 lh 過鬆」(48px h1 仍 1.3),實測無此問題(本 DS 無 60+ display 級字)。
 
 **(3) h5/h6 與 body-lg/body 同 size(16/14)— 靠 lh + weight 區分,不開新 size tier** <!-- @benchmark-unverified -->
 
-Material 用 17 tier(Display 1-2 + Headline 1-6 + Title 1-2 + Subtitle 1-2 + Body 1-2 + Button + Caption + Overline),Apple Dynamic Type 11 tier 跨平台 — 兩家 size scale 過度膨脹是 DS 維護負擔(每加 1 tier 就要全 component grep 評估)。
+Material 3 用 15 個 type role(display / headline / title / body / label 各分 large / medium / small)—— size scale 一大是 DS 維護負擔(每加 1 tier 就要全 component grep 評估)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-typescale.scss))。
 
-本 DS 採 Carbon-aligned 二元覆寫(同 16px 用 lh 1.3 = h5 標題 / lh 1.5 = body-lg 段落),靠 line-height + font-weight + color 區分角色,維持 token table 在 10 個 utility 內。代價是「使用端需有意識選 h5 vs body-lg」,但對應「同尺寸但不同角色的選法」判別法明寫「需有意識地選擇」。
+本 DS 採二元覆寫(同 16px 用 lh 1.3 = h5 標題 / lh 1.5 = body-lg 段落),靠 line-height + font-weight + color 區分角色,維持 token table 在 10 個 utility 內。代價是「使用端需有意識選 h5 vs body-lg」,但對應「同尺寸但不同角色的選法」判別法明寫「需有意識地選擇」。
 
 **(4) Font weight 3 階(400/500/700)— 對齊 Carbon / Polaris 共識** <!-- @benchmark-unverified -->
 
-Tailwind / Apple SF 的 9 階 weight scale 涵蓋 marketing / 印刷需求,但 productivity DS 95% 場景只用 normal / medium / bold(對齊 Carbon Light/Regular/SemiBold + Polaris 400/500/600/650)。捨棄 100-300 hairline + 800-900 black 的代價是「行銷 hero text 表現力」,DS 不收 marketing 場景,接受。
+Tailwind / Apple SF 的 9 階 weight scale 涵蓋 marketing / 印刷需求,但 productivity DS 的場景幾乎只用 normal / medium / bold 三階(Polaris 也只開 regular 450 / medium 550 / semibold 650 / bold 700 四階)。捨棄 100-300 hairline + 800-900 black 的代價是「行銷 hero text 表現力」,DS 不收 marketing 場景,接受([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/font.ts#L108-L118))。
 
 ## 跨元件參考
 

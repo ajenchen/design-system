@@ -26,7 +26,7 @@ benchmark:
 ProgressBar 是**量化 linear 進度** primitive——consumer 必須能回答「目前進度是百分之幾」才能使用。若無法量化（e.g. fetching 中不知道要多久），改用 `CircularProgress`(不傳 value,indeterminate 模式)。
 
 世界級對照:
-- **Material** `LinearProgress`(determinate) — 同樣區分 determinate / indeterminate 兩模式,indeterminate 在我們系統由 `CircularProgress`(無 value)承擔
+- **Material** `LinearProgress`(determinate) — 同樣區分 determinate / indeterminate 兩模式(Material Web `value` + `indeterminate`,[progress.ts#L24-L35](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/progress/internal/progress.ts#L24-L35)),indeterminate 在我們系統由 `CircularProgress`(無 value)承擔
 - 本 DS 以 `affix="value"` 顯示百分比文字，以 `status` 區分一般、完成與失敗語意。
 - ProgressBar 只負責線性進度表達；上傳檔名、重試與移除動作由 FileUpload / FileItem 擁有。
 - **shadcn** `Progress` — 同為 Radix Progress 薄包裝
@@ -35,7 +35,7 @@ ProgressBar 是**量化 linear 進度** primitive——consumer 必須能回答�
 
 ## 何時用
 
-- **批次任務進度**：CSV 匯入、批量同步、報表生成（Linear batch action / Jira bulk edit / Airtable import）
+- **批次任務進度**：CSV 匯入、批量同步、報表生成(範例:展示「批次任務進度」—— 按鈕打開對話框,只顯示百分比,跑完關閉並跳 Toast)
 - **下載 / 匯出進度**（非檔案上傳列表情境）:單檔下載進度、匯出 zip、報表生成
 - **多步驟流程的整體進度**：表單 wizard「步驟 3/5 = 60%」（但**步驟結構本身**用 `Steps` 元件,ProgressBar 只表達整體完成比例）
 - **Table cell / row 內的 inline 進度**：DataTable 裡「配額使用率 45%」、「完成度 78%」等單列靜態指標
@@ -161,7 +161,7 @@ size variant，也不應寫入 consumer recipe。
 
 ❌ **不得將 ProgressBar 當 CircularProgress 用**——進度不可量化的操作一律用 `CircularProgress`(不傳 value),不要傳 `value={indeterminate ? ... : ...}` 假裝進度
 
-❌ **不得堆疊多個 ProgressBar 在同一操作**——每個操作一個 bar。多檔上傳清單 = 每檔一個 ProgressBar,但「整體進度」不再加一條總 bar(Dropbox / Google Drive 皆此做法)
+❌ **不得堆疊多個 ProgressBar 在同一操作**——每個操作一個 bar。多檔上傳清單 = 每檔一個 ProgressBar,但「整體進度」不再加一條總 bar(每檔的 bar 已經把進度講完,再加總 bar 是同一件事講兩次)
 
 ❌ **不得用於 <1 秒的短暫操作**——動畫 transition(300ms)會造成閃爍,改用 CircularProgress 或不顯示
 

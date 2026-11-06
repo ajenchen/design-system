@@ -2,13 +2,45 @@
   "note": "豁免標記到期複查的棘輪。這裡記的是「目前已知的無主(無日期無指標)/ 過期(日期超過 N 天)」標記。數字只准往下 —— 新增的無主、新過期的會讓 exemption-expiry-invariant.mjs 變紅。修好(補日期 / 指標、或拿掉豁免)之後跑 --update-baseline 重記。key 不含行號;改了標記的字仍沒補日期會以新 key 變紅,那是刻意的。",
   "generatedBy": "scripts/exemption-expiry-invariant.mjs --update-baseline",
   "reviewAfterDays": 180,
-  "recordedAt": "2026-09-29",
-  "count": 295,
+  "recordedAt": "2026-11-05",
+  "count": 427,
   "byKind": {
-    "unanchored": 295,
-    "expired": 0
+    "unanchored": 397,
+    "expired": 30
   },
   "entries": [
+    {
+      "key": "escape|packages/design-system/src/components/AccountMenu/account-menu.stories.tsx|@layout-space-magic-ok|9c42f1db87aa",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AccountMenu/account-menu.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 展開快照在下方保留 256px 畫布高度,讓開著的選單落在 story 畫布內 —— 這是截圖畫布的留白,不是兩個元素之間的間距,layoutSp"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx|@layout-space-magic-ok|806d76df8a90",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx|@layout-space-magic-ok|806d76df8a90#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 全螢幕版面(meta layout fullscreen)沒有 Storybook 外距,單獨展示標誌的這一則自己留 48px 畫布邊,也容下招喚"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx|@layout-space-magic-ok|fe39abb81515",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 連結文字 ↔ 外部連結圖示 4px —— 同一個連結內部的行內間距;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同"
+    },
     {
       "key": "cq|packages/design-system/src/components/AgentPanel/agent-panel.tsx|code-quality-allow|54b26ab5d288",
       "family": "cq",
@@ -16,6 +48,14 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: file-size foundational composite family(9 元件一家族檔,同 Sidebar 前例)"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/AgentPanel/agent-panel.tsx|code-quality-allow|b53cef7debfe",
+      "family": "cq",
+      "file": "packages/design-system/src/components/AgentPanel/agent-panel.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — 容器 = 兩種形態(AppShell 裡 / 單獨使用)× 兩種顯示(並排 / 浮層)的單一實作;拆開會讓遮罩、抑制、Es"
     },
     {
       "key": "escape|packages/design-system/src/components/Alert/alert.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
@@ -66,12 +106,52 @@
       "hint": ""
     },
     {
+      "key": "cq|packages/design-system/src/components/AppShell/app-shell.tsx|code-quality-allow|bf3f47222e13",
+      "family": "cq",
+      "file": "packages/design-system/src/components/AppShell/app-shell.tsx",
+      "marker": "code-quality-allow",
+      "kind": "unanchored",
+      "hint": "// code-quality-allow: long-function — AppShell root = 兩種 layout mode 的 JSX + 引擎接線;拆開會把同一份 slot 結構寫兩"
+    },
+    {
       "key": "escape|packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx|@anatomy-rationale|6423055b0ac5",
       "family": "escape",
       "file": "packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx",
       "marker": "@anatomy-rationale",
       "kind": "unanchored",
       "hint": "// @anatomy-rationale: // ColorMatrix N/A — AspectRatio 是 pure layout primitive,bg / radius 由 // con"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx|@principles-rationale|2df989ed859e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + WhenNotToUse into a single // `UsageGuidance` story (3 "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx|@layout-space-magic-ok|c64b2bb8ee71",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 圖片格之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx|@layout-space-magic-ok|c036c73883a1",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 判斷準則列之間 20px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx|@layout-space-magic-ok|c89900192311",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 準則列內比例標籤 ↔ 說明 16px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
     },
     {
       "key": "escape|packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
@@ -90,20 +170,44 @@
       "hint": "// @anatomy-rationale: // StateBehavior 涵蓋 fallback chain(src 失敗 → icon → alt 首字 → User icon) // 與 s"
     },
     {
-      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|bba452a5b030",
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@principles-rationale|3a6ac714e876",
       "family": "escape",
       "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
-      "marker": "@anatomy-exempt-next",
-      "kind": "unanchored",
-      "hint": "{/* @anatomy-exempt-next */}"
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refact"
     },
     {
-      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|bba452a5b030#2",
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|0f8004f3f413",
       "family": "escape",
       "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
       "marker": "@anatomy-exempt-next",
       "kind": "unanchored",
-      "hint": "{/* @anatomy-exempt-next */}"
+      "hint": "{/* @anatomy-exempt-next @layout-space-magic-ok: 圖例 頭像 / 圖示 ↔ 名稱 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@layout-space-magic-ok|069fd72448bc",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 圖例 頭像 / 圖示 ↔ 名稱 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@anatomy-exempt-next|0f8004f3f413#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
+      "marker": "@anatomy-exempt-next",
+      "kind": "unanchored",
+      "hint": "{/* @anatomy-exempt-next @layout-space-magic-ok: 圖例 頭像 / 圖示 ↔ 名稱 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Avatar/avatar.principles.stories.tsx|@layout-space-magic-ok|069fd72448bc#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 圖例 頭像 / 圖示 ↔ 名稱 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
     },
     {
       "key": "cq|packages/design-system/src/components/Avatar/avatar.tsx|code-quality-allow|a4287fe8160c",
@@ -194,6 +298,30 @@
       "hint": "// code-quality-allow: dead-export — public API per spec.md(consumer spread + override)"
     },
     {
+      "key": "escape|packages/design-system/src/components/Button/button.principles.stories.tsx|@layout-space-magic-ok|760d2f18950b",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Button/button.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 樣本 ↔ 箭頭說明 ↔ 樣本 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Button/button.principles.stories.tsx|@layout-space-magic-ok|6148ef320c65",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Button/button.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 卡片列內 名稱 ↔ 行內按鈕 12px(名稱 flex-1 撐滿、按鈕貼右,只在名稱很長時才當最小間隔)—— 規格沒寫這個值、不由 AI 補進規格"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Button/button.stories.tsx|@layout-space-magic-ok|05bc9b7a389b",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Button/button.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 行為對照表欄距 24px、列距 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
       "key": "cq|packages/design-system/src/components/Button/button.tsx|code-quality-allow|d0c3061646b2",
       "family": "cq",
       "file": "packages/design-system/src/components/Button/button.tsx",
@@ -224,6 +352,70 @@
       "marker": "@anatomy-rationale",
       "kind": "unanchored",
       "hint": "// @anatomy-rationale: // SizeMatrix N/A — Calendar 是單一 month canvas，沒有 size variant。 // StateBehavi"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Calendar/calendar.principles.stories.tsx|@principles-rationale|81785648e739",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + WhenNotToUse + VsDatePicker into a single // `UsageGuid"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Carousel/carousel.principles.stories.tsx|@principles-rationale|1e01cc278624",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse + Vs*Rule into single 使用指引 s"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Carousel/carousel.principles.stories.tsx|@layout-space-magic-ok|3e911ebf9da8",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 照片樣本卡文字離邊 20px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Carousel/carousel.principles.stories.tsx|@layout-space-magic-ok|71c14cdd37dd",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 同一列裡「✅/❌ 符號 + 樣本 + 一兩個字」之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Carousel/carousel.principles.stories.tsx|@layout-space-magic-ok|4522b69bdc64",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 行內 ✅/❌ 標記 ↔ 指示點樣本 ↔ 標籤 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) *"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Carousel/carousel.principles.stories.tsx|@layout-space-magic-ok|7109c00ab78b",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 相簿縮圖格之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Carousel/carousel.stories.tsx|@layout-space-magic-ok|d5a1176d84fb",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Carousel/carousel.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 主視覺圖上文字離圖邊 32px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Carousel/carousel.stories.tsx|@layout-space-magic-ok|707d9e539e63",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Carousel/carousel.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 主視覺圖上小字 ↔ 城市名 ↔ 標語各 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 是各一個 mb-"
     },
     {
       "key": "cq|packages/design-system/src/components/Carousel/carousel.tsx|code-quality-allow|32ef3df4e312",
@@ -330,12 +522,28 @@
       "hint": "// @anatomy-rationale: // Inspector N/A — size 為自由 number prop,互動決策點少(僅 value / size / // affix),由 O"
     },
     {
+      "key": "escape|packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx|@principles-rationale|72b1bf4764e5",
+      "family": "escape",
+      "file": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenNotToUse + CircularVsSkeletonRule into a single // `UsageGuidan"
+    },
+    {
       "key": "cq|packages/design-system/src/components/CircularProgress/circular-progress.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/CircularProgress/circular-progress.tsx",
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx|@principles-rationale|1e01cc278624",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse + Vs*Rule into single 使用指引 s"
     },
     {
       "key": "escape|packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx|@anatomy-exempt|09a61c628d23",
@@ -352,14 +560,6 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
-    },
-    {
-      "key": "cq|packages/design-system/src/components/Combobox/combobox.tsx|code-quality-allow|c8995834c17a",
-      "family": "cq",
-      "file": "packages/design-system/src/components/Combobox/combobox.tsx",
-      "marker": "code-quality-allow",
-      "kind": "unanchored",
-      "hint": "// code-quality-allow: file-size — Combobox 含 CustomCombobox/useOverflowCount/OverflowTagList/Combob"
     },
     {
       "key": "cq|packages/design-system/src/components/DataTable/active-editor-controller.ts|code-quality-allow|110f37eaca0d",
@@ -384,6 +584,14 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: dead-export — public type contract,policy interface for cell-edit lifecycle c"
+    },
+    {
+      "key": "cq|packages/design-system/src/components/DataTable/cell-registry.tsx|code-quality-allow|22c6e41b4aeb",
+      "family": "cq",
+      "file": "packages/design-system/src/components/DataTable/cell-registry.tsx",
+      "marker": "code-quality-allow",
+      "kind": "expired",
+      "hint": "// code-quality-allow: file-size — Cell Registry 含 10 cell-type components(string/number/date/time/s"
     },
     {
       "key": "cq|packages/design-system/src/components/DataTable/cell-registry.tsx|any-allow|21d936b6c909",
@@ -432,14 +640,6 @@
       "marker": "eslint-disable-next-line",
       "kind": "unanchored",
       "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
-    },
-    {
-      "key": "escape|packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx|@anatomy-rationale|6db5d8928901",
-      "family": "escape",
-      "file": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx",
-      "marker": "@anatomy-rationale",
-      "kind": "unanchored",
-      "hint": "// @anatomy-rationale: // SizeMatrix 以 RowHeightMatrix 呈現 —— DataTable 的 size(sm / md / lg)主要 // 體現在"
     },
     {
       "key": "escape|packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx|@benchmark-unverified|d0bcf51d55bd",
@@ -762,14 +962,6 @@
       "hint": "// code-quality-allow: long-function — header render 含 selection tri-state / sort indicator / column"
     },
     {
-      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|ba68ed80f6b0",
-      "family": "cq",
-      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
-      "marker": "any-allow",
-      "kind": "unanchored",
-      "hint": "// any-allow: event-cast — TanStack getToggleSortingHandler 內部會 narrow,接受 KeyboardEvent"
-    },
-    {
       "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|da39a3ee5e6b#4",
       "family": "cast",
       "file": "packages/design-system/src/components/DataTable/data-table.tsx",
@@ -882,6 +1074,22 @@
       "hint": "// code-quality-allow: long-function — 13-operator switch dispatch table,table-driven 重構會把 op-specif"
     },
     {
+      "key": "escape|packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx|@principles-rationale|f3b57fed8d8c",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + CalendarVsDatePickerRule + NotAnEventViewRule // into a"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DateGrid/date-grid.tsx|@benchmark-unverified-blanket|bc74cd52e8c8",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DateGrid/date-grid.tsx",
+      "marker": "@benchmark-unverified-blanket",
+      "kind": "expired",
+      "hint": "// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually"
+    },
+    {
       "key": "cq|packages/design-system/src/components/DateGrid/date-grid.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/DateGrid/date-grid.tsx",
@@ -896,6 +1104,14 @@
       "marker": "@anatomy-exempt",
       "kind": "unanchored",
       "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx|@principles-rationale|7bc5e8427bbc",
+      "family": "escape",
+      "file": "packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per r"
     },
     {
       "key": "cq|packages/design-system/src/components/DatePicker/date-picker.tsx|code-quality-allow|32ef3df4e312",
@@ -938,6 +1154,14 @@
       "hint": "// @anatomy-exempt: spec-reference tables(Props 速查 / Layout token / 視覺 token / 開關方式對照 / Focus manage"
     },
     {
+      "key": "escape|packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx|@anatomy-rationale|3b9759e54d72",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: // Inspector N/A — 設計規格頁不放開得起來的對話框(登記簿 A32「dialog 的設計規格的範例給我拿掉」);可調的 props 列在"
+    },
+    {
       "key": "escape|packages/design-system/src/components/Dialog/dialog.stories.tsx|@tabs-content-gap-ok|6c8e26d978ea",
       "family": "escape",
       "file": "packages/design-system/src/components/Dialog/dialog.stories.tsx",
@@ -962,14 +1186,6 @@
       "hint": "<DialogBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 "
     },
     {
-      "key": "escape|packages/design-system/src/components/Dialog/dialog.stories.tsx|@tabs-content-gap-ok|6c8e26d978ea#4",
-      "family": "escape",
-      "file": "packages/design-system/src/components/Dialog/dialog.stories.tsx",
-      "marker": "@tabs-content-gap-ok",
-      "kind": "unanchored",
-      "hint": "<DialogBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 "
-    },
-    {
       "key": "escape|packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx|@overlay-open-skip|d2e2591a4d43",
       "family": "escape",
       "file": "packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx",
@@ -986,12 +1202,28 @@
       "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
     },
     {
+      "key": "escape|packages/design-system/src/components/Empty/empty.principles.stories.tsx|@principles-rationale|ab5d3f6b6217",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Empty/empty.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + WhenNotToUse + NotLoadingNotErrorRule // into a single "
+    },
+    {
       "key": "escape|packages/design-system/src/components/Field/field.anatomy.stories.tsx|@anatomy-exempt|b64f58104854",
       "family": "escape",
       "file": "packages/design-system/src/components/Field/field.anatomy.stories.tsx",
       "marker": "@anatomy-exempt",
       "kind": "unanchored",
       "hint": "// @anatomy-exempt: anatomy 參考用靜態 props / 責任 / 色彩對照表（純文件,非互動資料表格,不需 DataTable runtime）"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Field/field.principles.stories.tsx|@principles-rationale|3a6ac714e876",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Field/field.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refact"
     },
     {
       "key": "cq|packages/design-system/src/components/Field/field.tsx|code-quality-allow|cd6e62c11ca3",
@@ -1090,6 +1322,14 @@
       "hint": "// code-quality-allow: file-size — composite 拼裝(Toolbar / ZoomInput / InfoPanel / Filmstrip + Dialog"
     },
     {
+      "key": "escape|packages/design-system/src/components/FileViewer/file-viewer.tsx|@theme-boundary-ok|cadbd33c808e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/FileViewer/file-viewer.tsx",
+      "marker": "@theme-boundary-ok",
+      "kind": "unanchored",
+      "hint": "{/* @theme-boundary-ok: 外層 DropdownMenuContent 已是同一個 dark 主題並宣告 text-foreground,這層不換主題 */}"
+    },
+    {
       "key": "cq|packages/design-system/src/components/FileViewer/file-viewer.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/FileViewer/file-viewer.tsx",
@@ -1104,6 +1344,22 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/FileViewer/file-viewer.tsx|@theme-boundary-ok|7d76b947ef95",
+      "family": "escape",
+      "file": "packages/design-system/src/components/FileViewer/file-viewer.tsx",
+      "marker": "@theme-boundary-ok",
+      "kind": "unanchored",
+      "hint": "{/* @theme-boundary-ok: 並存遮罩沒有文字,data-theme 只讓遮罩色解析成深色 */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/FileViewer/file-viewer.tsx|@theme-boundary-ok|89346294e7df",
+      "family": "escape",
+      "file": "packages/design-system/src/components/FileViewer/file-viewer.tsx",
+      "marker": "@theme-boundary-ok",
+      "kind": "unanchored",
+      "hint": "{/* @theme-boundary-ok: 遮罩沒有文字,data-theme 只讓 --overlay 解析成深色 */}"
     },
     {
       "key": "eslint|packages/design-system/src/components/FileViewer/image-renderer.tsx|eslint-disable-next-line|193b336d7068",
@@ -1122,12 +1378,108 @@
       "hint": "// @anatomy-rationale: // Inspector / ColorMatrix / SizeMatrix / StateBehavior N/A — HoverCard 是 // "
     },
     {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx|@layout-space-magic-ok|ef5cd7d70947",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 句子裡的行內人名連結左右 4px = 已發布版展示頁「連結預覽卡」同一種行內連結的值(F-S8),規格沒寫(放行章 (d))"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx|@layout-space-magic-ok|18549fb4109a",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: +N 浮層內人員列之間 4px = 已發布版展示頁「溢出清單」同一份清單的值(F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx|@principles-rationale|44414cc355e6",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + VsTooltipRule + NotForCriticalInfoRule // into a single"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx|@layout-space-magic-ok|4b48930e30c4",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 頭像 ↔ 姓名 12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
       "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@story-trait-allow|cd36123f56e4",
       "family": "escape",
       "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
       "marker": "@story-trait-allow",
       "kind": "unanchored",
       "hint": "// @story-trait-allow: missing-default missing-opensnapshot"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|265e6e3b6804",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 行內「Reviewer:」標籤 ↔ 頭像值 12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|7ed6459bca45",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 句子裡的行內連結左右 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|8c34db8f893c",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 圖示 ↔ 來源文字 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|482fa3121f6a",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: meta 行內兩段(更新時間 · 閱讀時間)12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|a666488e25d8",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: +N 浮層內人員列之間 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|45b975c4250d",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|7ed6459bca45#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 句子裡的行內連結左右 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/HoverCard/hover-card.stories.tsx|@layout-space-magic-ok|fa934c441d1e",
+      "family": "escape",
+      "file": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: meta 行內三段(語言 · stars · contributors)16px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d"
     },
     {
       "key": "cast|packages/design-system/src/components/InlineEdit/inline-edit.tsx|as unknown as|da39a3ee5e6b",
@@ -1160,6 +1512,14 @@
       "marker": "as unknown as",
       "kind": "unanchored",
       "hint": ""
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Input/input.principles.stories.tsx|@principles-rationale|7bc5e8427bbc",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Input/input.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per r"
     },
     {
       "key": "cq|packages/design-system/src/components/Input/input.tsx|code-quality-allow|32ef3df4e312",
@@ -1226,12 +1586,36 @@
       "hint": "// @anatomy-rationale: // ColorMatrix represented as VariantIconMap — Notice 不擁有底色 / 邊框,只 // 負責 layo"
     },
     {
+      "key": "escape|packages/design-system/src/components/Notice/notice.principles.stories.tsx|@benchmark-unverified-blanket|80b78a336c7a",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Notice/notice.principles.stories.tsx",
+      "marker": "@benchmark-unverified-blanket",
+      "kind": "expired",
+      "hint": "// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx|@principles-rationale|f45900768bff",
+      "family": "escape",
+      "file": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per r"
+    },
+    {
       "key": "cq|packages/design-system/src/components/NumberInput/number-input.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/NumberInput/number-input.tsx",
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "cq|packages/design-system/src/components/NumberInput/number-input.tsx|code-quality-allow|bcb4b84b5b4c",
+      "family": "cq",
+      "file": "packages/design-system/src/components/NumberInput/number-input.tsx",
+      "marker": "code-quality-allow",
+      "kind": "expired",
+      "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use // Story a"
     },
     {
       "key": "cq|packages/design-system/src/components/NumberInput/number-input.tsx|code-quality-allow|bc7951a83b5c",
@@ -1242,12 +1626,52 @@
       "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
     },
     {
+      "key": "escape|packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx|@layout-space-magic-ok|a666488e25d8",
+      "family": "escape",
+      "file": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: +N 浮層內人員列之間 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx|@layout-space-magic-ok|45b975c4250d",
+      "family": "escape",
+      "file": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx|@layout-space-magic-ok|a666488e25d8#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: +N 浮層內人員列之間 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx|@layout-space-magic-ok|45b975c4250d#2",
+      "family": "escape",
+      "file": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 人員列內 頭像 ↔ 姓名 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))"
+    },
+    {
       "key": "escape|packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
       "family": "escape",
       "file": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx",
       "marker": "@anatomy-exempt",
       "kind": "unanchored",
       "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Pagination/pagination.stories.tsx|@layout-space-magic-ok|91c48194d96f",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Pagination/pagination.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 量測框內距 8px(外寬 = 標示的容器寬,內距固定每一格的可用寬才可預期)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值"
     },
     {
       "key": "cq|packages/design-system/src/components/PeoplePicker/people-picker-helpers.ts|code-quality-allow|e9baabc38088",
@@ -1298,12 +1722,12 @@
       "hint": "{/* @overlay-open-skip:12-cell 定位矩陣示範 side×align 落點,全部 defaultOpen 會讓 12 個浮層互相重疊;點擊逐格開啟即可觀察定位,開啟態視覺覆"
     },
     {
-      "key": "escape|packages/design-system/src/components/Popover/popover.principles.stories.tsx|@overlay-open-skip|0dca9264729e",
+      "key": "escape|packages/design-system/src/components/Popover/popover.principles.stories.tsx|@overlay-open-skip|af45316f922b",
       "family": "escape",
       "file": "packages/design-system/src/components/Popover/popover.principles.stories.tsx",
       "marker": "@overlay-open-skip",
       "kind": "unanchored",
-      "hint": "{/* @overlay-open-skip:視覺語言比較卡片——同一「顯示欄位」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見"
+      "hint": "{/* @overlay-open-skip:視覺語言比較卡片——同一「欄位顯示」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見"
     },
     {
       "key": "escape|packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
@@ -1322,12 +1746,20 @@
       "hint": "// @overlay-open-skip: 本檔絕大多數 story 直接 render ProfileCard(內容不藏在浮層,snapshot 可見); // 唯一 HoverCard demo"
     },
     {
-      "key": "escape|packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx|@anatomy-rationale|d433c8025854",
+      "key": "escape|packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx|@anatomy-rationale|81d43f271607",
       "family": "escape",
       "file": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx",
       "marker": "@anatomy-rationale",
       "kind": "unanchored",
       "hint": "// @anatomy-rationale: // SizeMatrix N/A — ProfileCard 是固定寬度(320px)hover content template, // 不提供 si"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ProfileCard/profile-card.stories.tsx|@layout-space-magic-ok|2e2112ea0db6",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ProfileCard/profile-card.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 四周 64px 畫布留白是範例原值(與已發布版同值,F-S8),讓開著的人員卡落在 story 畫布內;規格沒寫這個值(放行章 (d))"
     },
     {
       "key": "cq|packages/design-system/src/components/ProfileCard/profile-card.tsx|code-quality-allow|32ef3df4e312",
@@ -1346,6 +1778,22 @@
       "hint": "// @anatomy-rationale: // SizeMatrix N/A — Track 高度固定 4px(無 size prop),與 Material / Carbon / // Atla"
     },
     {
+      "key": "escape|packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx|@principles-rationale|92db9d3ea618",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + WhenNotToUse + VsCircularProgressRule // + FileItemBoun"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx|@principles-rationale|3a6ac714e876",
+      "family": "escape",
+      "file": "packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refact"
+    },
+    {
       "key": "cq|packages/design-system/src/components/Rating/rating.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/Rating/rating.tsx",
@@ -1362,6 +1810,38 @@
       "hint": "// @anatomy-rationale: // StateBehavior represented as OrientationBehavior — ScrollArea 是 OS chrome "
     },
     {
+      "key": "escape|packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx|@layout-space-magic-ok|68f1427810f6",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 內層捲動區裡頁名列外圈 8px —— 反例本身的寫法;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx|@layout-space-magic-ok|d074b09c467a",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 頁名列內距 8 / 4px —— 反例本身的寫法;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx|@layout-space-magic-ok|eec3b21905c9",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 外層頁名列上下 4px —— 反例本身的寫法;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/ScrollArea/scroll-area.stories.tsx|@layout-space-magic-ok|bf913a2facdc",
+      "family": "escape",
+      "file": "packages/design-system/src/components/ScrollArea/scroll-area.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 句子裡的行內 code 左右 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
       "key": "escape|packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx|@anatomy-rationale|6229d1e60eb7",
       "family": "escape",
       "file": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx",
@@ -1376,6 +1856,14 @@
       "marker": "@anatomy-rationale",
       "kind": "unanchored",
       "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「Mode x State 色彩對照」段(3 mode × // 4 sta"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Select/select.principles.stories.tsx|@principles-rationale|bbed9eec8b6c",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Select/select.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + WhenNotToUse(已是 vs 近親 — RadioGroup / // SegmentedContro"
     },
     {
       "key": "cq|packages/design-system/src/components/Select/select.tsx|code-quality-allow|8a5962e5fd93",
@@ -1426,6 +1914,14 @@
       "hint": "// @anatomy-rationale: // ColorMatrix represented as ModeMatrix — SelectMenu 是 Internal composite //"
     },
     {
+      "key": "escape|packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx|@benchmark-unverified-blanket|bf7843a94a11",
+      "family": "escape",
+      "file": "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx",
+      "marker": "@benchmark-unverified-blanket",
+      "kind": "expired",
+      "hint": "// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually"
+    },
+    {
       "key": "escape|packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx|@anatomy-rationale|16993dde7048",
       "family": "escape",
       "file": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx",
@@ -1442,12 +1938,12 @@
       "hint": "// code-quality-allow: dead-export — public API surface — consumer-exposed for future use"
     },
     {
-      "key": "escape|packages/design-system/src/components/Sheet/sheet.principles.stories.tsx|@tabs-content-gap-ok|72655d98d88c",
+      "key": "escape|packages/design-system/src/components/Separator/separator.stories.tsx|@layout-space-magic-ok|97de5e6a983e",
       "family": "escape",
-      "file": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx",
-      "marker": "@tabs-content-gap-ok",
+      "file": "packages/design-system/src/components/Separator/separator.stories.tsx",
+      "marker": "@layout-space-magic-ok",
       "kind": "unanchored",
-      "hint": "<SheetBody className=\"!px-0 !pt-0 !pb-0\">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 c"
+      "hint": "// @layout-space-magic-ok: 同一行 meta 文字 ↔ 分隔線 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 的「垂直」範例同為 g"
     },
     {
       "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|c26a07c9832b",
@@ -1466,12 +1962,12 @@
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
     },
     {
-      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|e82566c9cdb8",
+      "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|cecc4b622daf",
       "family": "cq",
       "file": "packages/design-system/src/components/Sidebar/sidebar.tsx",
       "marker": "code-quality-allow",
       "kind": "unanchored",
-      "hint": "// code-quality-allow: long-function — SidebarProvider 內 dual-state(open + activeId)+ mobile + handl"
+      "hint": "// code-quality-allow: long-function — SidebarProvider 內 dual-state(open + activeId)+ 版面接口 + handler"
     },
     {
       "key": "cq|packages/design-system/src/components/Sidebar/sidebar.tsx|code-quality-allow|32ef3df4e312#2",
@@ -1496,6 +1992,14 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Skeleton/skeleton.principles.stories.tsx|@principles-rationale|1e01cc278624",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Skeleton/skeleton.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse + Vs*Rule into single 使用指引 s"
     },
     {
       "key": "cq|packages/design-system/src/components/Slider/slider.tsx|code-quality-allow|db2ed45f408f",
@@ -1570,6 +2074,14 @@
       "hint": "{/* @row-slot-handcraft-allow: Field 控件的 1lh 首行對齊 wrapper(selection-control 家族 Checkbox/RadioGroup 同"
     },
     {
+      "key": "escape|packages/design-system/src/components/Tabs/tabs.principles.stories.tsx|@principles-rationale|83b635b6e936",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + WhenNotToUse + TabsVsSegmentedControl // into a single "
+    },
+    {
       "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|993b879cf01b",
       "family": "cq",
       "file": "packages/design-system/src/components/Tabs/tabs.tsx",
@@ -1626,6 +2138,14 @@
       "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「Dismiss 按鈕色彩」段(default / // hover / a"
     },
     {
+      "key": "escape|packages/design-system/src/components/Tag/tag.principles.stories.tsx|@principles-rationale|3a6ac714e876",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tag/tag.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refact"
+    },
+    {
       "key": "escape|packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx|@anatomy-rationale|b04f2ce268ce",
       "family": "escape",
       "file": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx",
@@ -1674,6 +2194,22 @@
       "hint": "// @anatomy-rationale: // StateBehavior covered by ColorMatrix「Trigger Field family + Panel item // "
     },
     {
+      "key": "escape|packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx|@benchmark-unverified-blanket|4ad7d567b5cb",
+      "family": "escape",
+      "file": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx",
+      "marker": "@benchmark-unverified-blanket",
+      "kind": "expired",
+      "hint": "// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/TimePicker/time-picker.stories.tsx|@benchmark-unverified-blanket|964cf0dd7bb5",
+      "family": "escape",
+      "file": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx",
+      "marker": "@benchmark-unverified-blanket",
+      "kind": "expired",
+      "hint": "// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually"
+    },
+    {
       "key": "cq|packages/design-system/src/components/TimePicker/time-picker.tsx|code-quality-allow|bc7951a83b5c",
       "family": "cq",
       "file": "packages/design-system/src/components/TimePicker/time-picker.tsx",
@@ -1712,6 +2248,54 @@
       "marker": "@anatomy-rationale",
       "kind": "unanchored",
       "hint": "// @anatomy-rationale: // ColorMatrix N/A — Tooltip 色彩固定(--tooltip bg + white text,內部 wrapper // 強制 "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx|@principles-rationale|2039ed47628b",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: Merged WhenToUse + VsHoverCardRule + NotForEssentialInfoRule // into a sin"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx|@layout-space-magic-ok|009294ff9d09",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 反例 tooltip 內 名稱 ↔ 按鈕 4px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Tooltip/tooltip.stories.tsx|@layout-space-magic-ok|2b3a9fd66554",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: decorator 四周 64px 畫布留白是範例原值(與已發布版同值,F-S8),讓 Tooltip 浮層落在畫布內;規格沒寫這個值(放行章 ("
+    },
+    {
+      "key": "escape|packages/design-system/src/components/Tooltip/tooltip.tsx|@theme-boundary-ok|c6d1843e6ec1",
+      "family": "escape",
+      "file": "packages/design-system/src/components/Tooltip/tooltip.tsx",
+      "marker": "@theme-boundary-ok",
+      "kind": "unanchored",
+      "hint": "{/* @theme-boundary-ok: 外層 Content 已宣告 text-on-emphasis,這層只讓子元件的 token 解析成深色,字色照外層 */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx|@principles-rationale|bd5e9444066f",
+      "family": "escape",
+      "file": "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx",
+      "marker": "@principles-rationale",
+      "kind": "expired",
+      "hint": "// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse(含近親對照)into single 使用指引 story"
+    },
+    {
+      "key": "eslint|packages/design-system/src/components/TreeView/tree-view.stories.tsx|eslint-disable-next-line|193b336d7068",
+      "family": "eslint",
+      "file": "packages/design-system/src/components/TreeView/tree-view.stories.tsx",
+      "marker": "eslint-disable-next-line",
+      "kind": "unanchored",
+      "hint": "// eslint-disable-next-line react-hooks/exhaustive-deps"
     },
     {
       "key": "cq|packages/design-system/src/components/TreeView/tree-view.tsx|code-quality-allow|da2bd8d19852",
@@ -1858,6 +2442,14 @@
       "hint": "**世界級對照**: <!-- @benchmark-unverified -->"
     },
     {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|dee01a83dd9f",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "expired",
+      "hint": "### 世界級 benchmark(2026-04-22 掃 6 家) <!-- @benchmark-unverified -->"
+    },
+    {
       "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|def0b85c320c",
       "family": "escape",
       "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
@@ -1920,6 +2512,446 @@
       "marker": "@anatomy-exempt",
       "kind": "unanchored",
       "hint": "// @anatomy-exempt: Item Anatomy pattern spec 的教學 story,使用 raw <table> 呈現 token/align/primitive 對照表("
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e51d106f2046",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e51d106f2046#2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e51d106f2046#3",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e51d106f2046#4",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|57422f15eeed",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 規格表 / 屬性列量測工具(Th / Td / TkVal / PropRow)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#3",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#4",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#5",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#6",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#7",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#3",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#8",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#9",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#10",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#11",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#12",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#13",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#4",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#5",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#6",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#7",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#14",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#15",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#16",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#8",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#17",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#18",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#19",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#20",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|d83726671581#9",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main "
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#21",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#22",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#23",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#24",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#25",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#26",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#27",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e503310fe200#28",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e09d2c9f4c88",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e09d2c9f4c88#2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e09d2c9f4c88#3",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e09d2c9f4c88#4",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e09d2c9f4c88#5",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e09d2c9f4c88#6",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|e09d2c9f4c88#7",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|c310f189cd65",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 尺寸標籤 pt 8px 對齊列首文字 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|fdec12d32686",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 模式註記三行之間 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|c310f189cd65#2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 尺寸標籤 pt 8px 對齊列首文字 —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|fdec12d32686#2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 模式註記三行之間 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|eeb06d3c021e",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 精簡列的列內距 12 / 8px + 內容 ↔ 動作群 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx|@layout-space-magic-ok|eeb06d3c021e#2",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 精簡列的列內距 12 / 8px + 內容 ↔ 動作群 12px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main"
     },
     {
       "key": "cq|packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx|code-quality-allow|4d9d1769bf3e",
@@ -1994,12 +3026,44 @@
       "hint": "- 中間階梯(md=40)無清楚場景 — 多家世界級 DS(Material / MUI / Primer / Polaris)只有 1 個 default size(無 sm/md/lg 階梯)= "
     },
     {
+      "key": "escape|packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx|@layout-space-magic-ok|5944ad2ec6c8",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: meta 行 ↔ 內文 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx|@layout-space-magic-ok|a9b766b0ee60",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 概覽兩行(專案 meta ↔ 說明)4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
       "key": "escape|packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md|@benchmark-unverified|0d067cb72fa2",
       "family": "escape",
       "file": "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md",
       "marker": "@benchmark-unverified",
       "kind": "unanchored",
       "hint": "回傳 `linear-gradient` 字串。`reserveArrowWidth` > 0 時 fade 會延伸到 arrow button 底下(Material 3 scrim 原理);= 0"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.stories.tsx|@layout-space-magic-ok|7484baef3a5b",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 膠片列上下 4px(給縮圖焦點框空間)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.stories.tsx|@layout-space-magic-ok|44f32b736bf3",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 投影片縮圖內距 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)"
     },
     {
       "key": "cq|packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx|code-quality-allow|5ca6b29567ae",
@@ -2058,12 +3122,44 @@
       "hint": "| Material M3 / Polaris Modal+List | px only | item inset | ✗(另一合法家族,鬆散版)| <!-- @benchmark-unverifie"
     },
     {
+      "key": "escape|packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx|@layout-space-magic-ok|bd14aa406dd1",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: SurfaceBody 內第二段落的段距 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
+      "key": "escape|packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx|@layout-space-magic-ok|78152ac400c4",
+      "family": "escape",
+      "file": "packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 條款逐條之間 12px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
+    },
+    {
       "key": "escape|packages/design-system/src/patterns/resize-handle/resize-handle.spec.md|@benchmark-unverified|865ced6330d9",
       "family": "escape",
       "file": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md",
       "marker": "@benchmark-unverified",
       "kind": "unanchored",
       "hint": "| **Material X-DataGrid** | column-separator(resize 命中區)~8px | 1px hairline(`MuiDataGrid-iconSeparat"
+    },
+    {
+      "key": "escape|packages/design-system/src/stories-helpers/examples/tutorial-page.tsx|@layout-space-magic-ok|b515b764eb6c",
+      "family": "escape",
+      "file": "packages/design-system/src/stories-helpers/examples/tutorial-page.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "{/* @layout-space-magic-ok: 段落標題字 ↔ 自己的底線 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7);沿用已發布值(main 各頁 23 個段落標題是 p"
+    },
+    {
+      "key": "escape|packages/design-system/src/stories-helpers/examples/tutorial-page.tsx|@layout-space-magic-ok|534c36fb051e",
+      "family": "escape",
+      "file": "packages/design-system/src/stories-helpers/examples/tutorial-page.tsx",
+      "marker": "@layout-space-magic-ok",
+      "kind": "unanchored",
+      "hint": "// @layout-space-magic-ok: 清單左縮排 20px、列距 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7);沿用已發布值(main 各頁清單 `list-disc"
     },
     {
       "key": "escape|packages/design-system/src/tokens/color/color.stories.tsx|@anatomy-exempt-next|cc7abebbf85a",
@@ -2128,6 +3224,14 @@
       "marker": "@benchmark-unverified",
       "kind": "unanchored",
       "hint": "選 0.45 的位置: <!-- @benchmark-unverified -->"
+    },
+    {
+      "key": "escape|packages/design-system/src/tokens/opacity/opacity.spec.md|@benchmark-unverified|9bdb76c11e66",
+      "family": "escape",
+      "file": "packages/design-system/src/tokens/opacity/opacity.spec.md",
+      "marker": "@benchmark-unverified",
+      "kind": "expired",
+      "hint": "世界級對照(2026-05-01 加): <!-- @benchmark-unverified -->"
     },
     {
       "key": "escape|packages/design-system/src/tokens/opacity/opacity.spec.md|@benchmark-unverified|3cd1d0e70439",
@@ -2250,14 +3354,6 @@
       "hint": "- 對齊 **Polaris / Atlassian** 的 iconOnly idiom(2/4 家世界級派,另 2 家 Material/Ant 用 padding-based 屬不同設計取捨) "
     },
     {
-      "key": "escape|apps/template/src/AllDsComponents.stories.tsx|@layout-space-magic-ok|66c2a5c386e8",
-      "family": "escape",
-      "file": "apps/template/src/AllDsComponents.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "// @layout-space-magic-ok: portal 入口 dev artifact(import smoke + export dump)debug 外框,非 consumer 產品 "
-    },
-    {
       "key": "escape|apps/template/src/AllDsComponents.stories.tsx|@layout-space-magic-ok|4d7ebdaa4e0f",
       "family": "escape",
       "file": "apps/template/src/AllDsComponents.stories.tsx",
@@ -2272,46 +3368,6 @@
       "marker": "@layout-space-magic-ok",
       "kind": "unanchored",
       "hint": "{/* @layout-space-magic-ok: Sidebar#IconCollapse chrome-header-brand baseline owns fixed 8px Avatar-"
-    },
-    {
-      "key": "escape|apps/template/src/App.tsx|@layout-space-magic-ok|d955fc8ec00d",
-      "family": "escape",
-      "file": "apps/template/src/App.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: Sidebar#IconCollapse PageContent metric-card baseline owns fixed 4px lab"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|b54fe04e8ff3",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 16px outer story rh"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294#2",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
-    },
-    {
-      "key": "escape|apps/template/src/CompositionFidelityReplica.stories.tsx|@layout-space-magic-ok|32927f836294#3",
-      "family": "escape",
-      "file": "apps/template/src/CompositionFidelityReplica.stories.tsx",
-      "marker": "@layout-space-magic-ok",
-      "kind": "unanchored",
-      "hint": "{/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; d"
     },
     {
       "key": "eslint|scripts/agent-logo-brand-scale-invariant.mjs|eslint-disable-next-line|911d91cb172c",

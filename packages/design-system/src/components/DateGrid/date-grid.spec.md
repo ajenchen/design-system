@@ -7,7 +7,7 @@ traits:
   - hasInteractiveStates
   - isInternal
 benchmark:
-  - react-day-picker (shadcn Calendar base): github.com/gpbl/react-day-picker
+  - react-day-picker (shadcn Calendar base): github.com/gpbl/react-day-picker([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/calendar.tsx#L14))
   - Ant Design DatePicker: github.com/ant-design/ant-design/tree/master/components/date-picker
   - MUI X Date Pickers: github.com/mui/mui-x/tree/master/packages/x-date-pickers
 ---
@@ -31,10 +31,6 @@ DateGrid 是 **DatePicker 內部的 date-grid primitive**(月份格網 + 前後�
 
 | DS | 「Calendar」此名字給誰 | DayPicker 內部格網叫什麼 |
 |----|-----------------------|-------------------------|
-| Notion | event calendar 檢視(月/週/日) | 無(DatePicker 另有 calendar popup) |
-| Google | Google Calendar(event 檢視) | 無公開 DS,DatePicker 另管 |
-| Ant Design | inline 行事曆(含事件) | 無(DatePicker 自建 panel) |
-| Apple HIG / Fantastical | event 檢視 | 無(DatePicker inline) |
 | Material MUI | `<Calendar>` 已棄 → `<DateCalendar>`(date picker grid,single-date only;Range 走另元件 `<DateRangeCalendar>`)— source: [github.com/mui/mui-x](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DateCalendar.tsx) | `<DateCalendar>` |
 | React Aria | `<Calendar>`(date picker grid)— source: [React Aria Calendar](https://react-spectrum.adobe.com/react-aria/Calendar.html) | `<Calendar>` |
 | **本 DS** | **`<Calendar>`**(event 檢視 canvas,見 `../Calendar/`) | **`<DateGrid>`**(本元件) |
@@ -107,8 +103,8 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **selected / range 端點** | 藍底白字圓 | button `primary` 底 + `on-emphasis` 字 | range_start / range_end 共用此視覺 |
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
-| **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
-| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table、圓外的四個角屬於 td,指標經過這些地方會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到「水平移動到隔日框會閃一下」)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**,停在縫裡或可點日子圓外的角裡都算「還在上一天」(不論移得多快多慢、走不走中線;慢慢從縫裡走出去的那條路 2026-09-26 補上 = D1,圓外的角 2026-09-26 補上 = D2),見下方「日期格的命中區 = 可視形狀」的「現行機制」;框亮著時在縫或角裡點下去 = 點停留日,見同節「縫與角裡的點擊」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
+| **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一〔UD-J26〕:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
+| **range 預覽框(停留 / 焦點)** | 同色同粗的藍色細框把「點下去會變成」的區間框起來,兩端半圓、與 track 同高;停留日就是框的那一端 | td `::after`(track 用 `::before`),1.5px `primary-hover`;class 住在 tsx `RANGE_PREVIEW_CLASSNAMES` | 只有 `DatePicker.Range` 會算出這組 modifier(它才知道正在選哪一端);DateGrid 只擁有畫法。規則見下方「區間預覽框」。**跨格不閃**:停留日掛在 button 的 mouseenter / mouseleave,格間 4px 縫隙屬於 table、圓外的四個角屬於 td,指標經過這些地方會先 leave 再 enter、整條框卸掉一幀(user 2026-09-23 抓到水平移動到隔日時框會閃一下)—— 現行解法是 DateGrid **只在指標真的離開整張格陣時才轉發 leave**,停在縫裡或可點日子圓外的角裡都算「還在上一天」(不論移得多快多慢、走不走中線;慢慢從縫裡走出去的那條路 2026-09-26 補上 = D1,圓外的角 2026-09-26 補上 = D2),見下方「日期格的命中區 = 可視形狀」的「現行機制」;框亮著時在縫或角裡點下去 = 點停留日,見同節「縫與角裡的點擊」;2026-09-23 曾用 day button `::before` 外擴 2px 吃掉那道縫,已於 2026-09-24 撤除(命中區大於可視形狀) |
 | **focus-visible(鍵盤焦點)** | 非填色格:往內 2px 藍線;填色格(selected / range 端點):1px 白線退 3px,外圈留藍 | day button `focus-visible:focus-ring-inset`;填色 modifier 另掛 `EMPHASIS_FOCUS_RING_CLASSNAME`(= `focus-ring-inset-emphasis`,幾何 owner `styles/base.css` + `focus-canonical.md`「填色元素上的內描邊」)| 格與格只隔 4px,track / 預覽框就跑在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,原話在 focus-canonical 來源總帳) |
 
 ### 鄰月日子:一條原則(2026-09-24 user 拍板)
@@ -128,14 +124,14 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | [Ant `panel.ts`](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts) | 淡字 | 兩面板都淡字,in-range / range-start / range-end 鎖 `&-in-view` |
 | [Atlassian Calendar](https://atlassian.design/components/calendar/examples) | 淡字(範例可見 29、30 與 1–9) | 無兩月 |
 
-一張月曆:淡字 5 家、預設不渲染 3 家;兩張並排:不渲染 4 家、淡字 2 家;依月數切換只有 flatpickr 明寫,MUI X 的開關語意相同(只在單一月曆時生效)。本 DS 現況正是兩題各自的多數組合。
+一張月曆:淡字 5 家、預設不渲染 3 家;兩張並排:不渲染 4 家、淡字 2 家;依月數切換只有 flatpickr 明寫,MUI X 的開關語意相同(只在單一月曆時生效)。本 DS 現況正是兩題各自的多數組合([來源](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx#L476-L477))。
 
 ## 組合狀態(state stacking order)
 
 - today + selected → selected 勝出的**底色**(藍底白字圓);bar 跟著切 on-emphasis(白)保持可見
 - range-start / range-end → selected 規則(cell 半圓 track + button 圓)
 - range-middle → track 規則(cell 灰底矩形 + button 透明)
-- today + range-middle → track(灰底)+ today bar **維持藍色**(2026-07-07 user 拍板:切白只屬「藍底白字圓」的選中日/端點;range 中段是淺灰底,白 bar 近乎隱形 = today 標記消失。range_middle 以 `!bg-primary` 覆寫 today 的 `data-selected` 切白——RDP v9 range 中段日同樣掛 selected modifier 故會誤觸發。對照 Ant panel.ts:cell-today 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示)
+- today + range-middle → track(灰底)+ today bar **維持藍色**(2026-07-07 記為 user 拍板,來源不明:登記簿查無原話 —— 切白只屬藍底白字圓的選中日/端點;range 中段是淺灰底,白 bar 近乎隱形 = today 標記消失。range_middle 以 `!bg-primary` 覆寫 today 的 `data-selected` 切白——RDP v9 range 中段日同樣掛 selected modifier 故會誤觸發。對照 Ant panel.ts:cell-today 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/panel.ts#L62-L71))
 - hover 在 selected / disabled 上被 ring-0 壓制(避免二次 hover 出現方框 bug);RDP `mode="range"` 的 range-middle 因同樣掛 selected modifier,button hover ring 一併被壓制(2026-07-05 對照 RDP source 修正舊句「hover ring 仍顯示」)。**`DatePicker.Range` 的中段不掛 selected,停留時由「區間預覽框」接手:停留日不畫單格圈,改畫框的半圓端點**(2026-09-23 user 拍板;此前這一句被當成「中段 hover 不該有圈」的規則,其實它只是描述套件行為,從未有人拍板 —— 來源總帳見 `../DatePicker/date-picker.spec.md`「區間預覽」)
 - **選中日 hover 底色升階**:ring 壓制之外,選中日 hover 時 `bg-primary → bg-primary-hover`(2026-07-06 補明文——「選中之上 hover = 同色相升 hover 階」家族,Checkbox / Switch checked hover 同款;code 已有此行為,本句消 spec-code 落差)
 - focus-visible + range-middle(RDP `mode="range"`)→ 中段同掛 selected 會吃到填色格的白線,但中段底是淺灰、白線看不見,以 `[&>button]:focus-visible:!focus-ring-inset` 壓回一般往內 2px 藍線(同權重靠順序不可靠);`DatePicker.Range` 的中段不掛 selected,直接走 day button 的內描邊
@@ -153,12 +149,12 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | 終點 | 鏡射起點 |
 | 單格(起訖同一天) | 完整一圈(左右側邊 + 全圓角),位置與大小 = 單日 hover 圈 |
 | 列首 / 列尾(換列處) | 不畫側邊,框是開口的;外擴歸零不溢出面板留白 —— 與 track 在換列處的處理同款 |
-| 停留日 | **不畫 button 的單格 hover 圈**,框的半圓端點就是它;缺口朝區間內側,方向依正在選開始日或結束日而定(user 原話:「所 hover 的日期的藍框不會是完整的圓形,而會是一個半圓,至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」) |
+| 停留日 | **不畫 button 的單格 hover 圈**,框的半圓端點就是它;缺口朝區間內側,方向依正在選開始日或結束日而定(user 原話:「所hover的日期的藍框不會是完整的圓形，而會是一個半圓，至於這個半圓的缺口朝向哪一邊則取決於正在選的是起始日還是結束日」) |
 | 已選端點落在框裡 | 藍圓在 button 層(z 在框之上),框的線從圓的上下切點進出,視覺連續;不另外處理 |
 
 **層次**:track = td `::before`、預覽框 = td `::after`、today bar = button 的 `::after`,三者互不衝突;button 在最上層。
 
-**世界級對照**(讀原始碼,2026-09-23):五家有區間選擇的元件庫都在停留時預覽區間,差別只在畫法 —— Ant Design v4 用虛線上下邊 + 兩端側邊([panel.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/date-picker/style/panel.less) `-range-hover*`,`border-top/bottom: dashed @picker-date-hover-range-border-color`)、MUI X 用 1.2px 虛線([DateRangePickerDay.tsx](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangePickerDay/DateRangePickerDay.tsx) `previewStyles`)、Ant v5 現行與 Polaris 用與已選區間同色的淺色填([rc-picker PanelBody.tsx](https://github.com/react-component/picker/blob/master/src/PickerPanel/PanelBody.tsx) 把 `hoverRangeValue` 算成 `-in-range`;[Polaris Day.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Day/Day.tsx) `(inRange || inHoveringRange) && styles['Day-inRange']`)、Carbon(flatpickr)用填色([index.ts](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) `onMouseOver` → `startRange / inRange / endRange`)。**本 DS 選實線**:沿用單日 hover 圈的顏色與粗細,不新增第二種「暫定」表達(M23 DS 既有語言優先;user 2026-09-23 Q2 拍板)。我們包的 react-day-picker 本身沒有預覽([range-mode 文件](https://daypicker.dev/selections/range-mode)只有 `range_start / range_middle / range_end`),所以由 DatePicker.Range 自算。
+**世界級對照**(讀原始碼,2026-09-23):五家有區間選擇的元件庫都在停留時預覽區間,差別只在畫法 —— Ant Design v4 用虛線上下邊 + 兩端側邊([panel.less](https://github.com/ant-design/ant-design/blob/4.x-stable/components/date-picker/style/panel.less) `-range-hover*`,`border-top/bottom: dashed @picker-date-hover-range-border-color`)、MUI X 用 1.2px 虛線([DateRangePickerDay.tsx](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers-pro/src/DateRangePickerDay/DateRangePickerDay.tsx) `previewStyles`)、Ant v5 現行與 Polaris 用與已選區間同色的淺色填([rc-picker PanelBody.tsx](https://github.com/react-component/picker/blob/master/src/PickerPanel/PanelBody.tsx) 把 `hoverRangeValue` 算成 `-in-range`;[Polaris Day.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DatePicker/components/Day/Day.tsx) `(inRange || inHoveringRange) && styles['Day-inRange']`)、Carbon(flatpickr)用填色([index.ts](https://github.com/flatpickr/flatpickr/blob/master/src/index.ts) `onMouseOver` → `startRange / inRange / endRange`)。**本 DS 選實線**:沿用單日 hover 圈的顏色與粗細,不新增第二種「暫定」表達(M23 DS 既有語言優先;user 2026-09-23 Q2 拍板〔UD-H22〕)。我們包的 react-day-picker 本身沒有預覽([range-mode 文件](https://daypicker.dev/selections/range-mode)只有 `range_start / range_middle / range_end`),所以由 DatePicker.Range 自算([來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/react/src/components/DatePicker/DatePicker.tsx#L20))。
 
 ## 日期格的命中區 = 可視形狀(2026-09-24 逐案裁定)
 
@@ -183,7 +179,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ### 那條帶原本在解什麼 —— 以及為什麼那是表層解
 
-它解的是 user 2026-09-23 抓到的「從某日水平移動到其隔日,藍色的區間框線都會閃動一下」:
+它解的是 user 2026-09-23 抓到的問題(從某日水平移動到隔日,藍色區間框線會閃動一下):
 停留日掛在 button 的 `mouseenter` / `mouseleave`(react-day-picker 只給這一層),
 而格與格之間的 4px(`border-spacing-1`)屬於 `<table>`、不屬於任何一天 ——
 指標經過縫時先 leave(整條框卸掉)再 enter(補回)。
@@ -207,7 +203,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
    - 若整張 DateGrid 被放進別的表格的格子裡,`closest('td,th')` 會找到外面那一格;判斷一律以「那一格在不在本格陣裡」為準,不會把縫誤判成離開。
 3. `handleGridMouseOver`:補掉「穿過縫或角之後停在**不可點**的日子、空白補位格或星期列」那條路徑 ——
    disabled 的 button 收不到滑鼠事件、不會再有任何 day enter/leave,沒有這一段的話上一天的預覽框會留著
-   (`datepicker-range-preview.mjs`「順序不合不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。停在縫或角裡不動作(與第 2 條同一支判斷)。
+   (`datepicker-range-preview.mjs`「順序不合(5/3 在開始日之前)不預覽」與「順序不合(5/13 在結束日之後)不預覽」那兩條斷言就是這樣紅的,2026-09-24 實測)。停在縫或角裡不動作(與第 2 條同一支判斷)。
 4. `handleGridMouseLeave`(2026-09-26 補,D1,待辦總帳 N54):補掉「**從縫或角直接離開格陣**」那條路徑 ——
    指標離開最外圈那一天時落在縫或角裡,那次 leave 依第 2 條被吞(欠著);接著指標走出 `<table>`,已經沒有任何一天會再收到 leave、
    也沒有 `td` / `th` 會收到 mouseover,預覽框就卡在上一天。實測(2026-09-26 前):從 6/13 每步 1px 往右,經過縫、月曆內距、浮層邊,
@@ -281,7 +277,7 @@ React Aria 實測相同,R20 已指出 —— 它在「月曆裡、但不在按�
 | Ant Design RangePicker 6.6.5 | 沒有縫:整格就是那一天 | 選那一天 | [`panel.ts#L346-L349`](https://github.com/ant-design/ant-design/blob/4a39f54842eade4e565ab336ef6097cd7e723cdd/components/date-picker/style/panel.ts#L346-L349) `borderCollapse: 'collapse',`、[`#L364-L367`](https://github.com/ant-design/ant-design/blob/4a39f54842eade4e565ab336ef6097cd7e723cdd/components/date-picker/style/panel.ts#L364-L367) 整格 `cursor: 'pointer',`;[rc-picker `PanelBody.tsx#L145-L164`](https://github.com/react-component/picker/blob/a975a11f9a959a811b1ecd901e8ff8ae8f0e515b/src/PickerPanel/PanelBody.tsx#L145-L164) 同一個 `<td>` 掛 `onClick` / `onMouseEnter` / `onMouseLeave` |
 | **本 DS** | 維持上一天(縫 + 可點日子圓外的角) | 框亮著時 = 點那一天 | 本節 |
 
-沒有一家兩件事都做:「縫與角維持上一天」取 MUI X、Chakra,「縫裡點下去確認」取 React Aria。
+沒有一家兩件事都做:「縫與角維持上一天」取 MUI X、Chakra,「縫裡點下去確認」取 React Aria([來源](https://github.com/mui/mui-x/blob/c83b3dd6996f6913947b1be3e5d47655153ced60/packages/x-date-pickers-pro/src/DateRangeCalendar/DateRangeCalendar.tsx#L481-L486)、[來源](https://github.com/chakra-ui/zag/blob/46f88c089c1dbb0fc681b31172dc5eb8a07eef0d/packages/machines/date-picker/src/date-picker.connect.ts#L546-L548)、[來源](https://github.com/adobe/react-spectrum/blob/4dd44e0f400636a87a9ad4390903e78c5ae6113c/packages/react-aria/src/calendar/useRangeCalendar.ts#L23-L32)、[來源](https://github.com/ant-design/ant-design/blob/4a39f54842eade4e565ab336ef6097cd7e723cdd/components/date-picker/style/panel.ts#L364-L367))。
 Ant 靠「整格都是那一天」達成同樣的「亮了就點得到」,但它能點的方格(36)大於畫出來的方塊(24),正是本 DS 09-24 撤掉的那條路(上方「先前這裡有一條隱形帶」)。
 Ant 整格是手形(上表 `#L364-L367`),與本節「點得到的縫與角是手形」同一個道理。
 
@@ -334,7 +330,7 @@ Chromium 單一行程、1280×900;「現行建置」= repo 的 `storybook-static
   - **所以沒有、也不需要月間距 token** —— 少一個可以漂的東西。
     同日稍早一度改成 `gap-[var(--layout-space-loose)]`,那是「再加一顆要維護的數字」,已撤回。
   - **對稱是結構保證的**:單張與並排長得完全一樣,不靠任何人記得維護某個值。
-  - 世界級同款:**Ant Design 就是這個作法**(兩張各自帶左右內距、中間不設 gap),
+  - 世界級同款:**Ant Design 就是這個作法**(兩張各自帶左右內距、中間不設 gap)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/panel.ts#L421-L423)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/date-picker/style/index.ts#L472-L474)),
     且 v4(內距 12 → 間距 24)與 v5(18 → 36)跨大版本維持 1:2,是刻意的比例。
   - ⚠️ **nav 必須跟著內距走**:`button_previous/next` 相對 `month` 的 **padding box** 做 absolute 定位
     (= 盒子最外緣)。內距搬到 `month` 之後不補偏移,chevron 會比日期格往外 12px(2026-09-18 實測確認)。
@@ -345,7 +341,7 @@ Chromium 單一行程、1280×900;「現行建置」= repo 的 `storybook-static
   這 4px **從來沒有人決定過**(2026-09-18 查 git 全史:原規格只說「四邊對稱 12px」),是 `border-separate` 的副作用。
   - **同 repo 早有正確先例**:`Carousel` 用每張投影片的 `pl-4` 當間距,容器就用 `-ml-4` 抵掉(`../Carousel/carousel.tsx:202`)。
   - **上游也不外溢**:`react-day-picker` 自己是 `border-collapse: collapse`,其 457 行 `style.css` 裡 `border-spacing` 出現 **0 次**;
-    IBM Carbon 的日曆第一格同樣貼齊容器內距(2026-09-18 讀原始碼 + 實測)。
+    IBM Carbon 的日曆第一格貼齊容器內距(2026-09-18 實測)。
   - **範圍軌道在列的頭尾要夾住**:range 的 `-2px` bridge 是用來跨過格間 4px 縫接鄰格,
     但列的第一格左邊、最後一格右邊沒有鄰格,不夾就會溢出內距(實測 2px)。
     夾在 `month_grid`(`[&_tr>td:first-child]:before:!left-0` / `last-child`)—— 實測 react-day-picker
@@ -376,7 +372,7 @@ Prev/Next chevron 用 `<Button variant="text" size="xs" iconOnly>`(DS primitive 
 - `fg-muted`(45%)專屬 dismiss / inline action / placeholder(spec.md 既有定義)
 - chevron nav 是 functional navigation,不是 dismiss → 不該套 fg-muted 自開新 tier
 
-歷史(2026-05-03):v6-v8 曾以未驗證的「Ant chevron muted」印象覆蓋 DS canonical,已撤回(M23 防再犯)。
+歷史(2026-05-03):v6-v8 曾以未驗證的外部印象覆蓋 DS 的 chevron 色,已撤回(M23 防再犯)。
 
 ⚠️ RDP `PreviousMonthButton` override 必丟 `children`(RDP 把 `<Chevron>` 當 children 傳)否則 double svg(2026-05-03 v8 抓到 bug)。
 
@@ -416,11 +412,11 @@ react-day-picker v9 自動處理:
 
 ---
 
-## shadcn passthrough 例外說明
+## shadcn passthrough 例外說明([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/calendar.tsx#L14-L34))
 
 DateGrid 本元件是**對 `react-day-picker` 的 `<DayPicker>` 元件薄包裝**,用於橋接 DS token(classNames 覆寫 + components 注入自訂 `PreviousMonthButton` / `NextMonthButton`)。
 
-**ref 處理**:採 **DS 統一 `React.forwardRef` 慣例**(`forwardRef<HTMLDivElement, DateGridProps>`),但因 react-day-picker v9 的 `DayPicker` 內部是多 `<div>` 結構、未對外 forward ref 到單一 DOM 節點,故 **ref 簽名保留但不附著**(真要取 DOM 由 consumer 包一層 wrapper)。保留 forwardRef 簽名是為了跟 Radix / shadcn 其餘元件的一致設計語言對齊,即使 ref 不附著。
+**ref 處理**:採 **DS 統一 `React.forwardRef` 慣例**(`forwardRef<HTMLDivElement, DateGridProps>`),但因 react-day-picker v9 的 `DayPicker` 內部是多 `<div>` 結構、未對外 forward ref 到單一 DOM 節點,故 **ref 簽名保留但不附著**(真要取 DOM 由 consumer 包一層 wrapper)。保留 forwardRef 簽名是為了跟 DS 其餘元件(以及它們包的 Radix primitive)同一套 API 形狀,即使 ref 不附著([來源](https://github.com/radix-ui/primitives/blob/eb3a2b7091293e27df8f9ba906632d8daa3d81a3/packages/react/aspect-ratio/src/aspect-ratio.tsx#L14)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/aspect-ratio.tsx#L5-L9))。
 
 **props passthrough**:`DateGridProps = React.ComponentProps<typeof DayPicker>`,經 `{...props}` 直接 spread 至 `DayPicker`(declarative API:selected / onSelect / mode / classNames / components 等)。
 
