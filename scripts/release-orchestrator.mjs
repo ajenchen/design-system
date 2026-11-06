@@ -422,8 +422,25 @@ export function validateReleaseWorkflow(workflow) {
     invariant(/^\.github\/workflows\/.+\.ya?ml$/.test(check.producerWorkflow || ''), `consumer ${target.repository} verification workflow is invalid`)
     invariant(['pull_request', 'repository_dispatch'].includes(check.producerEvent), `consumer ${target.repository} verification event is invalid`)
     invariant(['pull-request-head', 'pull-request-base'].includes(check.producerHead), `consumer ${target.repository} verification head binding is invalid`)
+    invariant([undefined, 'automatic', 'on-request'].includes(target.upgrade), `consumer ${target.repository} upgrade must be automatic or on-request`)
   }
   return workflow
+}
+
+/**
+ * 這一輪第五步要升級哪些 consumer(2026-11-06)。user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+ * 開關只有一個:release-workflow.json 的 `upgrade`(省略 = automatic)。`on-request` 的 consumer 只有在 user 明確要求、
+ * 由 `RELEASE_REQUESTED_CONSUMERS`(repository 全名,逗號分隔)帶進來時才讀回 / 派工 / 開 PR;沒要求就整個不碰,
+ * 也不算第五步的完成條件。程式裡不另寫 WM 名單 —— 設定是唯一的來源。
+ */
+export function selectReleaseConsumers(consumers = [], requested = []) {
+  const asked = new Set(requested)
+  return consumers.filter(target => (target.upgrade ?? 'automatic') === 'automatic' || asked.has(target.repository))
+}
+
+/** user 明確要求要升級的 on-request consumer(`RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management`)。 */
+export function requestedConsumersFromEnv(env = process.env) {
+  return `${env.RELEASE_REQUESTED_CONSUMERS ?? ''}`.split(',').map(item => item.trim()).filter(Boolean)
 }
 
 /**
@@ -2111,7 +2128,9 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   const tagCommitSha = tagRef?.object?.sha || null
   const releaseCommitSha = tagCommitSha || main?.sha || null
   const release = ghJson(['release', 'view', tag, '--repo', repository, '--json', 'tagName,isDraft,isImmutable,isPrerelease,publishedAt,url'], { allowFailure: true })
-  const consumerObservations = consumers.map(target => {
+  // 只讀回這一輪要升級的 consumer:`upgrade: on-request`(WM)沒被要求就不讀、不派工、不算完成條件
+  const releaseConsumers = selectReleaseConsumers(consumers, requestedConsumersFromEnv())
+  const consumerObservations = releaseConsumers.map(target => {
     const exactVersion = release ? consumerPackageReadback(target, version) : false
     const targetPullRequest = release ? matchingConsumerPullRequest(target, version, releaseCommitSha) : null
     return {
@@ -2137,6 +2156,8 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
     publishRun: latestRun(repository, publishWorkflow.file, releaseCommitSha),
     npmPackages: packages.map(name => ({ name, exactVersion: release ? npmPackageReadback(name, version) : false })),
     consumers: consumerObservations,
+    // 本輪沒碰的 on-request consumer(要升級時:RELEASE_REQUESTED_CONSUMERS=<repository> npm run release:auto)
+    onRequestConsumersSkipped: consumers.filter(target => !releaseConsumers.includes(target)).map(target => target.repository),
   }
 }
 

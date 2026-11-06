@@ -576,6 +576,52 @@ test('呼叫端真的用 consumerStepAction,而且兩個旗標沒有被合回一
   assert.doesNotMatch(createBranch, /dispatchedConsumers\.add/, '開 PR 不得標記成「已派工」')
 })
 
+test('WM 只在要求時升級:設定標 on-request 的 consumer,第五步不讀、不派工、不算完成條件;template 照做', async () => {
+  // user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。
+  // 設定是唯一的開關(release-workflow.json `upgrade`),orchestrator 只消費它 —— 不在程式裡另寫一份 WM 名單。
+  const orchestrator = await import('../../../scripts/release-orchestrator.mjs')
+  const wm = workflow.automation.consumers.find(target => target.repository === 'ajenchen/work-management')
+  const template = workflow.automation.consumers.find(target => target.repository === 'ajenchen/ds-product-template')
+  assert.equal(wm?.upgrade, 'on-request', 'WM 在設定裡必須是只在要求時升級')
+  assert.notEqual(template?.upgrade, 'on-request', 'template 照舊自動升級')
+  const consumerStep = workflow.steps.find(step => step.id === 'consumer')
+  assert.ok(!consumerStep.completion.includes('work-management-main-exact-version'), 'WM 不是第五步的完成條件')
+  assert.ok(consumerStep.completion.includes('template-main-exact-version'))
+
+  assert.equal(typeof orchestrator.selectReleaseConsumers, 'function', 'orchestrator 必須有一支挑「這一輪要升級哪些 consumer」的純函式')
+  // 沒要求 → 只有 template
+  const auto = orchestrator.selectReleaseConsumers(workflow.automation.consumers, [])
+  assert.deepEqual(auto.map(target => target.repository), ['ajenchen/ds-product-template'])
+  // user 明確要求 → WM 才加進來(要求只認 repository 全名)
+  const requested = orchestrator.selectReleaseConsumers(workflow.automation.consumers, ['ajenchen/work-management'])
+  assert.deepEqual(requested.map(target => target.repository).sort(), ['ajenchen/ds-product-template', 'ajenchen/work-management'])
+  assert.deepEqual(orchestrator.requestedConsumersFromEnv({}), [])
+  assert.deepEqual(orchestrator.requestedConsumersFromEnv({ RELEASE_REQUESTED_CONSUMERS: ' ajenchen/work-management , ' }), ['ajenchen/work-management'])
+
+  // 第五步的狀態只看這一輪要升級的 consumer:template 完成 → complete,WM 沒被讀也不卡
+  const observation = {
+    onProtectedMain: true,
+    pullRequest: null,
+    releaseCommitSha: 'a'.repeat(40),
+    tagCommitSha: 'a'.repeat(40),
+    protectedMainSha: 'a'.repeat(40),
+    release: { tagName: 'v1.2.3', isDraft: false, isImmutable: true, publishedAt: '2026-08-01T00:00:00Z' },
+    publishRun: null,
+    npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: true })),
+    consumers: auto.map(target => ({ ...target, exactVersion: true, checkReadback: { trusted: true } })),
+  }
+  assert.equal(buildFiveStepStatus(workflow, observation).at(-1).status, 'complete')
+  // 對照組:同一份 observation 但把 WM(沒升級)放回去 = 修前的行為 → 第五步卡 pending
+  const before = { ...observation, consumers: [...observation.consumers, { ...wm, exactVersion: false, checkReadback: { trusted: false } }] }
+  assert.equal(buildFiveStepStatus(workflow, before).at(-1).status, 'pending')
+
+  // 呼叫端真的消費這支純函式(否則判定表全綠、實際仍去讀 / 派工 WM)
+  const src = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
+  const collect = src.slice(src.indexOf('export function collectLiveObservation('), src.indexOf('return {', src.indexOf('export function collectLiveObservation(')))
+  assert.match(collect, /selectReleaseConsumers\(consumers, requestedConsumersFromEnv\(\)\)/, 'collectLiveObservation 必須先挑這一輪的 consumer')
+  assert.doesNotMatch(collect, /\bconsumers\.map\(/, '不得直接對設定裡全部 consumer 做讀回')
+})
+
 test('發版同意綁「使用者看過的產品內容」,不綁 commit 也不綁分支', () => {
   const digest = productContentDigest('HEAD')
   assert.match(digest || '', /^[0-9a-f]{64}$/, '產品內容指紋必須算得出來')

@@ -107,7 +107,7 @@
 | 2 `merge` | 有 receipt 後以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
 | 3 `publish` | 從 protected main 自動發布 immutable exact version;禁 mutable dependency tag |
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
-| 5 `consumer` | 自動建立、修復、合併 template 與 WM exact-version PR,讀回 consumer protected main |
+| 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;**WM 只在 user 明確要求時升級**(2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」;開關 = `release-workflow.json` consumer `upgrade: on-request`,要求時 `RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management`) |
 
 公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK 只有兩種**:未解決的產品／UI／UX SSOT 真取捨,以及**發版同意**;login/MFA/OAuth／缺 credential reference 只暫停當下動作,完成後 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 

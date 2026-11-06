@@ -68,7 +68,6 @@
       "authority": "AUTO",
       "completion": [
         "template-main-exact-version",
-        "work-management-main-exact-version",
         "actions-bound-consumer-check-provenance"
       ]
     }
@@ -124,6 +123,7 @@
       {
         "repository": "ajenchen/ds-product-template",
         "defaultBranch": "main",
+        "upgrade": "automatic",
         "delivery": "release-published-pr",
         "readbackPath": "package-lock.json",
         "packages": [
@@ -141,6 +141,7 @@
       {
         "repository": "ajenchen/work-management",
         "defaultBranch": "main",
+        "upgrade": "on-request",
         "dispatchEvent": "design-system-published",
         "delivery": "repository-dispatch-pr",
         "readbackPath": "package-lock.json",

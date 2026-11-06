@@ -623,6 +623,13 @@
         }
       ]
     },
+    "consumerUpgrade": {
+      "description": "第五步要不要自動升級這個 consumer。省略 = automatic。on-request = 只在 user 明確要求時(RELEASE_REQUESTED_CONSUMERS)才讀回 / 派工 / 開 PR,不算標準發版的完成條件(user 2026-11-05:「以後WM的升級都不要自動做除非我有特別要求」)。",
+      "enum": [
+        "automatic",
+        "on-request"
+      ]
+    },
     "releasePublishedConsumer": {
       "type": "object",
       "additionalProperties": false,
@@ -642,6 +649,9 @@
         "defaultBranch": {
           "type": "string",
           "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "upgrade": {
+          "$ref": "#/$defs/consumerUpgrade"
         },
         "delivery": {
           "const": "release-published-pr"
@@ -677,6 +687,9 @@
         "defaultBranch": {
           "type": "string",
           "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "upgrade": {
+          "$ref": "#/$defs/consumerUpgrade"
         },
         "dispatchEvent": {
           "const": "design-system-published"

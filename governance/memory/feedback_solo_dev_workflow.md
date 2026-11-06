@@ -12,6 +12,7 @@
 - Merging is a standing-delegated engineering action once all hard gates are green **and the user has said「發版」for the product they reviewed**(2026-09-02 user directive:preview on Netlify → user confirms → user says 發版 → merge/publish). A status report or milestone is not that consent; a question or a denial is not that consent either. The receipt lives at `.git/governance-runtime/release-consent/current.json` (schemaVersion 3) and is bound to a **digest of the preview-visible sources the user approved** — not to a commit and not to a branch. 2026-09-20 二次修正:綁 commit 讓版號 bump 就失效;改綁分支之後開一條新分支又失效 —— 兩者都是 agent 切工作的單位,不是 user 授權的單位(user 原話:「你他媽我從頭到尾就這樣要求,也沒有新增任何設計需求?」)。內容沒變 → 跨 commit、跨分支都成立;內容變了 → 必須重新確認;明確否定 → 撤回(撤回會清掉讀取端會認的**每一份**收據)。問句/否定的判準只有一份(`infra/governance/release-workflow.json` + `scripts/lib/release-consent-language.mjs`),hook 與 `npm run release:consent -- --quote "<verbatim>"` 共用,agent 無法繞過。**一份同意 = 一次 final release**:帳本記在 receipt 的 `releases`,第二次發布必須有 incident 證據。
 - A GitHub App may open propagation/upgrade PRs. It may never write `main` directly or bypass required checks.
 - Dependency inputs are exact versions. `beta`, `latest`, ranges, and unattended `npm update` are forbidden for governed consumers.
+- **WM(ajenchen/work-management)不自動升級**(2026-11-05 user 原話:「以後WM的升級都不要自動做除非我有特別要求」):第五步只自動升級 template;WM 在 `infra/governance/release-workflow.json` 標 `upgrade: on-request`,不是完成條件,orchestrator 不讀回、不派工、不開 PR —— 只有 user 明確要求時才以 `RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management npm run release:auto` 帶進來。判定在 `scripts/release-orchestrator.mjs` `selectReleaseConsumers`(測試:`infra/governance/test/release-workflow.test.mjs`「WM 只在要求時升級」)。
 
 ## Canonical sequence
 
@@ -42,7 +43,7 @@ Tag creation/push is owned by `release:auto` + the registered Release workflow, 
 
 ## Release hard gate
 
-The standard release gate is the machine-readable five-step graph in `infra/governance/release-workflow.json`, executed by `npm run release:auto` and read by `npm run release:status -- --json`. Required PR CI, protected merge, immutable npm publish, GitHub/npm exact readback, and template/WM exact-version protected-main readback are the only standard blockers. Optional assurance never rewrites this graph.
+The standard release gate is the machine-readable five-step graph in `infra/governance/release-workflow.json`, executed by `npm run release:auto` and read by `npm run release:status -- --json`. Required PR CI, protected merge, immutable npm publish, GitHub/npm exact readback, and template exact-version protected-main readback are the only standard blockers (WM is `upgrade: on-request` since 2026-11-05 — only when the user explicitly asks). Optional assurance never rewrites this graph.
 
 ## Why the old flow was retired
 
