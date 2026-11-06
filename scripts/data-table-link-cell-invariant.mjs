@@ -124,8 +124,8 @@ async function injectBreaks(kind) {
   // L9:格游標框強制畫出(= 修前兩個指示)
   if (kind === 'L9') await page.addStyleTag({ content: '[data-selected-cell-id]{visibility:visible!important}' })
   // L10:拿掉連結的延伸區(= 修前:不能編輯的框只有網址文字能點);L10s:試算表沒選中的格也延伸(= 第一下就開分頁)
-  if (kind === 'L10') await page.addStyleTag({ content: '[data-link-stretch]::after{display:none!important}' })
-  if (kind === 'L10s') await page.addStyleTag({ content: '[data-dt-link-select-first] [data-link-stretch]::after{display:block!important}' })
+  if (kind === 'L10') await page.addStyleTag({ content: '[data-link-stretch]::before{display:none!important}' })
+  if (kind === 'L10s') await page.addStyleTag({ content: '[data-dt-link-select-first] [data-link-stretch]::before{display:block!important}' })
   await page.evaluate(([kind, linkCols]) => {
     if (kind === 'L2') {
       // 連結格上「不是連結、不是按鈕」的點擊攔下(= 修前的「url 排除點格」):內距那一區不進編輯、試算表第一下也不選格

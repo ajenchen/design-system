@@ -75,10 +75,11 @@ function formatHostname(url: string): string {
 // 不用 `w-fit`:block + w-fit 會讓靠右 / 置中的連結欄文字跑到左邊(實測靠右時文字左緣 1546 → 1480)。
 // **不能編輯的地方整個框都開連結**(`stretch`;2026-11-06 user「照①乙②b」,link-input.spec.md「Link 狀態」②b):
 // 唯讀、沒有編輯入口的檢視、DataTable 不能編輯的網址格 —— 框裡沒有第二個動作,最常用的「開連結」拿整個框。
-// 做法 = 延伸連結(連結自己的 `::after` 鋪滿最近的定位祖先;Bootstrap `.stretched-link` 同一招:
+// 做法 = 延伸連結(連結自己的 `::before` 鋪滿最近的定位祖先;Bootstrap `.stretched-link` 同一招(它用 ::after):
 // https://github.com/twbs/bootstrap/blob/v5.3.3/scss/helpers/_stretched-link.scss#L1-L15),所以中鍵 / Ctrl+點 / 右鍵選單都是真的連結,
 // 而且滑過整框就是滑過連結:底線 + 手形跟點擊範圍同一塊(hit-area-canonical「懸停回饋 ≡ 命中區」)。
-// 盒子本身仍是文字寬(L1 量的那一個);文字那一層墊高一層(`[&>*]:relative z-[1]`),截斷提示仍抓得到滑過。
+// 盒子本身仍是文字寬(L1 量的那一個)。用 `::before` 不用 `::after`:文字那一層也設 `relative`(`[&>*]:relative`)後,
+// 兩者同在定位層、照樹的順序畫 —— ::before 在前、文字在上,截斷提示仍抓得到滑過,不必另開 z 值(疊放順序表,layer-order 閘)。
 // `data-link-stretch`:宿主要暫時收起延伸區時用(DataTable 試算表沒選中的格第一下只選格,見 data-table.css)。
 function renderLinkAnchor(value: string, label?: string, stretch = false) {
   const displayText = linkDisplayText(value, label)
@@ -91,7 +92,7 @@ function renderLinkAnchor(value: string, label?: string, stretch = false) {
       data-link-stretch={stretch ? '' : undefined}
       className={cn(
         'inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline',
-        stretch && "after:absolute after:inset-0 after:content-[''] [&>*]:relative [&>*]:z-[1]",
+        stretch && "before:absolute before:inset-0 before:content-[''] [&>*]:relative",
       )}
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
