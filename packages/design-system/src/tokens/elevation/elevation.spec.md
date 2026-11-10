@@ -136,5 +136,4 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 - `motion.spec.md`
 - `slider.spec.md`
 - `toast.spec.md`
-- `token-system.spec.md`
 - `tooltip.spec.md`

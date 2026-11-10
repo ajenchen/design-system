@@ -1181,6 +1181,5 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `tabs.spec.md`
 - `time-picker.spec.md`
 - `toast.spec.md`
-- `token-system.spec.md`
 - `tree-view.spec.md`
 - `typography.spec.md`

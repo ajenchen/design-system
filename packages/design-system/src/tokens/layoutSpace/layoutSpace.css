@@ -5,9 +5,9 @@
   --layout-space-tight:  12px;
   --layout-space-bottom: 48px; /* intentionally fixed — same in md and lg density (see spec) */
   /* 浮層外殼到視窗邊的安全距離(2026-09-11 從 --layout-space-bottom 拆出)。
-     命名走 `--layout-space-<role>`(token-system.spec.md 規則 1 的 L4 Layout family)——
-     **不可**用 `--overlay-*`:`--overlay` 已經是 L2 Semantic 的顏色 token(dialog backdrop 遮罩,
-     color/semantic.css),同一前綴掛兩個 family = 該 spec 反 pattern 表的「1 個 token 屬 N 個 family」。
+     命名走 `--layout-space-<role>`(版面間距這組共用刻度;分類見 tokens/token-registry.json)——
+     **不可**用 `--overlay-*`:`--overlay` 已經是語意色(dialog backdrop 遮罩,color/semantic.css),
+     同一前綴掛兩個主人 = token-system.spec.md「命名」:名字開頭對到哪個主人以分類表為準,不再新增同開頭、不同主人。
      為什麼要拆:layoutSpace.spec.md 的 Token 表把 --layout-space-bottom 定義成
      「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」(body 收尾)。而 Dialog 借它來當視窗 inset —— 那是另一個概念,
      純粹因為數值剛好都是 48 才耦合在一起(M17「同值不同義」的變體)。

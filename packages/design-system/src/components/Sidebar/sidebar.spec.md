@@ -679,7 +679,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 ## 尺寸規範
 
-元件 scope 的 design token，consumer 可覆寫：
+元件 scope 的 design token(側欄的值;分類與住處見 `../../tokens/token-registry.json`)。**產品要設定寬度用參數,不覆寫 token**:Menu 用 AppShell 的 `widthRange` / `defaultWidth`,token 只是產品沒設時的預設值 —— user 2026-11-10 拍板 token 第 4 題「4甲」(要設定的值只走元件參數,側欄 4 顆不開放產品覆寫;原句「consumer 可覆寫」同日改):
 
 | Token | 預設值 | 用途 |
 |-------|--------|------|

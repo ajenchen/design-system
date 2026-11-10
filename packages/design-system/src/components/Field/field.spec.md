@@ -487,6 +487,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - `form-validation.spec.md`
 - `inline-edit.spec.md`
 - `input.spec.md`
+- `link-input.spec.md`
 - `radio-group.spec.md`
 - `steps-state-visuals.spec.md`
 - `switch.spec.md`
