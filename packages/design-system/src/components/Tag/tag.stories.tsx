@@ -27,7 +27,7 @@ export const WithAvatar: Story = {
   name: '頭像',
   parameters: { docs: { description: { story: 'Tag 內的頭像統一 16px(跟圖示一樣大),消費端不用指定尺寸;滑過人員頭像會浮出名片。' } } },
   render: () => (
-    // @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own)
+    // @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own)
     <div className="flex flex-wrap gap-1">
       <Tag color="neutral" avatar={
         <Avatar size={16} src="https://i.pravatar.cc/32?u=alice" alt="Alice Chen" hoverCard={samplePersonCard({ name: 'Alice Chen', avatarSrc: 'https://i.pravatar.cc/96?u=alice' })} />
@@ -50,7 +50,7 @@ export const Dismissable: Story = {
     const [tags, setTags] = React.useState(['Electronics', 'Furniture', 'Food'])
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
-        {/* @layout-space-magic-ok: Tag ↔ Tag gap 4px(tag.spec.md:230,元件 spec own)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag ↔ Tag gap 4px(tag.spec.md:230,元件 spec own)(layoutSpace.spec.md:115 同範疇 spec-own) */}
         <div className="flex flex-wrap gap-1">
           {tags.map(t => (
             <Tag key={t} color="neutral" onRemove={() => setTags(prev => prev.filter(x => x !== t))}>{t}</Tag>

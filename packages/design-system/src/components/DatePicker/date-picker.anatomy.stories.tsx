@@ -706,7 +706,7 @@ export const CalendarTokens = {
           <div className="flex gap-8 items-start">
             {/* 真的 DatePicker 浮層(play 點開,同展示頁「浮層展開狀態」那幾則),不手刻浮層外殼(稽核 L058;overlay-surface 外殼屬 Popover);
                 下方留出浮層落點的畫布空間 */}
-            {/* @layout-space-magic-ok: 展開快照在欄位下方保留 360px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準) */}
+            {/* @layout-space-magic-ok: 展開快照在欄位下方保留 360px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:178 判準) */}
             <div className="flex flex-col gap-2 w-[300px] pb-[360px]">
               <span className="text-caption font-medium text-fg-secondary">實際渲染</span>
               <DatePicker value={deadline} onChange={setDeadline} aria-label="專案截止日" />

@@ -135,7 +135,7 @@ export const UsageGuidance: Story = {
           note="「熱門」「Beta」「NEW」是 categorical label，不是 1–5 評分。分類標籤用 Tag——Badge 是通知計數 / 紅點指示器，不用來做分類標籤。Tag 傳達「屬於哪類」，Rating 傳達「值多少分」。"
         >
           <Example>
-            {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+            {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
             <div className="flex items-center gap-1">
               <Tag color="blue">熱門</Tag>
               <Tag color="neutral">Beta</Tag>

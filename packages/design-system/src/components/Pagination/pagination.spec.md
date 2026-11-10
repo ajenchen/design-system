@@ -129,7 +129,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`,[Pagination.tsx#L99-L120](https:
     240px(`../Sidebar/sidebar.css#--sidebar-width-min`),扣內距約 208px —— 支援得到的寬度都放得下,不需要捲。
   - **連帶修掉的副作用**:`overflow-x-auto` 常掛時,CSS 規範讓另一軸也算成 auto,於是**每一個寬度**都在裁上下 ——
     焦點框(實測往外的框上下像素 0 / 0)、陰影、浮層一起被切。拿掉之後這三件同時解決,分頁按鈕的焦點框
-    因此回到預設的**往外**(`ds-canonical/references/focus-canonical.md:501`「≥ 4px → 往外」)。
+    因此回到預設的**往外**(`ds-canonical/references/focus-canonical.md:507`「≥ 4px → 往外」)。
   - **原本那條捲動的來歷(據實留檔)**:commit `0eff9ab6`(2026-09-04)依我們自己的 `tabs.spec.md`「極長 label」條(當時第 235 行)類推而來,
     **沒有任何 user 原話核准**;查證時另發現連 Radix Tabs 原始碼也零 overflow,那條 Tabs 規範同樣是我們自己寫的。
   - **不消費 `<ScrollArea orientation="horizontal">`**:理由不變(它的 affordance 是 ChevronLeft/Right,跟分頁自己的

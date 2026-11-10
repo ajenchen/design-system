@@ -29,7 +29,7 @@ type Story = StoryObj<typeof Slider>
 function SyncedVolume({ size }: { size: 'sm' | 'md' | 'lg' }) {
   const [volume, setVolume] = React.useState(40)
   return (
-    // @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:140 規則 5)
+    // @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:142 規則 5)
     <div className="flex flex-1 min-w-0 items-center gap-2">
       <Slider size={size} value={[volume]} onValueChange={(v) => setVolume(v[0] ?? 0)} className="flex-1" />
       <NumberInput size={size} value={volume} onChange={(n) => setVolume(Math.min(100, Math.max(0, n ?? 0)))} aria-label="音量數值" className="w-20 shrink-0" />
