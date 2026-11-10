@@ -10,6 +10,12 @@
 - 繼承 Popover surface(rounded-lg、border、elevation-200、compact header 45)+SurfaceFooter;
   改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
 - Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`;小標字樣、距題目與 × 的位置照 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區(`SurfaceEyebrow`)。
+  **選填題題目後加「(選填)」,必答題不變**(依據:user 2026-11-10 在決策頁選「標示:甲」,甲的原文:「選填題題目後加「(選填)」,必答題不變。」):
+  字由元件加(`labels.optionalSuffix`,DS 預設「(選填)」,consumer 可換英文),接在題目文字後、同一行同字級同色 —— 照 DS 既有寫法
+  (`../Accordion/accordion.stories.tsx` 的 FieldLabel「專案識別碼(選填)」、`../PeoplePicker/people-picker.stories.tsx`「代理人(選填)」;
+  同本卡選項後的「(建議)」接法)。只標少數那一邊:決策卡預設必答、選填是少數 —— GOV.UK「add ‘(optional)’ to the legend」「Never mark mandatory fields with asterisks.」
+  (<https://design-system.service.gov.uk/patterns/question-pages/>)、Carbon「If the majority of the fields are required, mark only the optional field labels with (optional).」
+  (<https://carbondesignsystem.com/patterns/forms-pattern/>)。
 - 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
   **整卡可點**:卡內任一點點一下 = 點控件一次(`ds-canonical/references/hit-area-canonical.md` 一-4「點下去等於點控件」;控件與 SelectionItem 的 `<label for>` 照它們自己的轉發、「其他」輸入格的外框歸輸入格,其餘由卡轉給控件 —— 同一下點擊只有一個主人,`agent-panel.tsx` `pressOptionCard`;機械閘 `scripts/agent-decision-card-option-press-invariant.mjs` 逐點量切換次數;滑過見下一條);卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
   (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)
@@ -40,7 +46,7 @@
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
   2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);後=「下一題」、末步「送出」;header × 恆為跳過。
   「下一題」/「送出」恆可按(新建表單,`../Field/form-validation.spec.md`「Submit Button 狀態」),只在按下時驗這一題(「其他」要不要填看「其他」選了沒 = 跨欄位,規則 9):
-  沒選(選填題 `optional` 除外:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後(距離【待確認】:現行 = 卡間距 8,user 2026-10-29 問句中的提案;另一案 = Field 內部 gap-1 4);
+  沒選(選填題 `optional` 除外 —— 題目後有「(選填)」,見 Header 條:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後(距離【待確認】:現行 = 卡間距 8,user 2026-10-29 問句中的提案;另一案 = Field 內部 gap-1 4);
   焦點移到第一個出錯的控件(沒選 → 第一個圓 / 方框,「其他」→ 輸入格並帶錯誤框;只聚焦不置中捲動,產題守則 13)。清除與 aria 接線照規則 5 與 `../Field/field.spec.md`「驗證與 aria 屬性」;
   本卡沒有 Field context:`aria-errormessage` 掛在 radiogroup / 每個方框 / 輸入格(WAI-ARIA 1.2 不適用於 radio 與 group),複選群組另帶 `aria-invalid`(同 `../Checkbox/checkbox-group.tsx`)。
   選填單選題有選取時,footer 左側出現「清除選取」(user 2026-10-30 提案:「在使用者選了選項之後出現」;預選的建議解也算有選取、一打開就有 = AI 依 `../Select/select.spec.md`「Clearable」有值就顯示推導;
@@ -51,6 +57,7 @@
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
 - 進出=淡入+下滑 8、`--motion-duration-overlay`。
 - A11y:`role="group"` + `aria-labelledby`;radiogroup / checkbox 原生鍵盤;必答單選題的 radiogroup 帶 `aria-required`(`../Field/field.spec.md`「SR 識別路徑」),複選群組是 `role="group"`、WAI-ARIA 1.2 的 `aria-required` 不適用,不帶。
+  選填題的「(選填)」在題目那個元素裡,卡片 group、radiogroup 與複選 group 都以 `aria-labelledby` 指向它 —— 名稱含「(選填)」,讀屏跟題目一起念(複選群組沒有 `aria-required` 可報,只靠這幾個字)。
 
 #### 產題守則(約束代理出題品質;標 ⚙ 者由元件 DEV 警告或渲染邏輯機械強制)
 
@@ -61,6 +68,7 @@
    ([GOV.UK 需要才加簡單「Question 3 of 9」](https://design-system.service.gov.uk/patterns/question-pages/);
    [NN/g wizards 標出目前步、強制順序](https://www.nngroup.com/articles/wizards/))
 3. ⚙ **題目=一句完整問句、以「?」結尾、句內點名決策對象**(「公告要用哪種語氣?」);禁「確定嗎?」「注意!」。
+   選填題標 `optional`,「(選填)」由元件接在題目後(Header 條),代理不寫該字樣(DEV 警告)。
    ([Material 對話框標題=問句或陳述、禁 Are you sure?](https://m1.material.io/components/dialogs.html))
 4. ⚙ **具名選項 2–4 個**(不含「其他」);>4 → 拆題。
    ([SDK 2–4 options](https://code.claude.com/docs/en/agent-sdk/user-input);

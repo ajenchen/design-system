@@ -9,8 +9,10 @@
  *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息 —— 只用鍵盤也一樣:清掉之後只用 Tab 走到「下一題」按 Enter(O10)、
  *         複選題不勾只用 Tab 走到「送出」(O14),途中經過「其他」輸入格不改選取;必答題 Tab 經過也不把建議解換掉(O18)。
  *         讀屏:必答單選題的 radiogroup aria-required="true",選填單選題不是(field.spec.md「SR 識別路徑」)。
+ *         選填題題目後有「(選填)」,卡片 / radiogroup / 複選群組的名字也以它結尾;必答題沒有(O19–O21;user 2026-11-10 選「標示:甲」,
+ *         agent-decision-card.spec.md Header 條)。--selftest ⑪ 拿掉選填題的字 → O19 紅、⑫ 必答題也加 → O20 紅;214fc699 的建置 → O19 / O21 紅。
  *         量的是 getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked、aria-required、input.value,不讀 class(M37)。
- *   紅: --selftest 逐一補回十種病(每種開一次新頁):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
+ *   紅: --selftest 逐一補回十二種病(每種開一次新頁;⑪⑫ 見上方「(選填)」那段):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
  *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「跳過」不同 ⑦ 鍵盤走到「清除選取」的路上選取被換掉
  *       ⑧ 必答題的 radiogroup 沒有 aria-required ⑨ 選填題的 radiogroup 也標 aria-required ⑩ Tab 聚焦「其他」輸入格就選中「其他」
  *       —— 各自必須被指名紅
@@ -56,6 +58,8 @@ const CARD = '[class~="group/agent-option"]'
 const CLEAR = '清除選取'
 const NAV = ['跳過', '上一題']
 const PRIMARY = ['下一題', '送出']
+// 選填題題目後的標記 = DEFAULT_DECISION_LABELS.optionalSuffix 的 DS 預設(user 換字時兩邊一起改)
+const OPTIONAL_SUFFIX = '(選填)'
 
 requireFreshStorybookBuild(STATIC, [
   'packages/design-system/src/components/AgentPanel/agent-panel.tsx',
@@ -128,6 +132,17 @@ const FAULTS = {
     what: '⑨ 選填題的 radiogroup 也標 aria-required',
     script: SICK(`() => { for (const g of document.querySelectorAll('[role="radiogroup"]')) if (g.getAttribute('aria-required') !== 'true') g.setAttribute('aria-required', 'true') }`),
   },
+  suffixMissing: {
+    expect: ['O19'],
+    what: '⑪ 選填題題目後沒有「(選填)」(= 2026-11-10 前)',
+    script: SICK(`() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n = w.nextNode(); n; n = w.nextNode()) if (n.data === '${OPTIONAL_SUFFIX}') n.data = '' }`, '{ subtree: true, childList: true, characterData: true }'),
+  },
+  suffixOnRequired: {
+    scope: 'required',
+    expect: ['O20'],
+    what: '⑫ 必答題題目後也加了「(選填)」',
+    script: SICK(`() => { for (const t of document.querySelectorAll('[data-slot="surface-header"] span[id]')) if (!t.textContent.endsWith('${OPTIONAL_SUFFIX}')) t.append('${OPTIONAL_SUFFIX}') }`, '{ subtree: true, childList: true, characterData: true }'),
+  },
 }
 
 const flushOn = (page) => page.evaluate(() => new Promise((r) => setTimeout(() => setTimeout(r, 0), 0)))
@@ -163,6 +178,9 @@ const readCard = (page) => page.evaluate(({ CARD, CLEAR }) => {
   const clears = [...root.querySelectorAll('button')].filter((b) => b.textContent.trim() === CLEAR && b.checkVisibility())
   const controls = [...root.querySelectorAll('[role="radio"], [role="checkbox"]')]
   const radiogroup = root.querySelector('[role="radiogroup"]')
+  // 選項群組(單選 radiogroup / 複選 group)的名字 = aria-labelledby 指到的元素文字(讀屏念的就是這個)
+  const optionGroup = root.querySelector('[role="radiogroup"], [role="group"][aria-labelledby]')
+  const nameOf = (el) => (el?.getAttribute('aria-labelledby') ?? '').split(/\s+/).filter(Boolean).map((id) => document.getElementById(id)?.textContent ?? '').join(' ').trim()
   const input = root.querySelector('input[aria-label="其他(自由輸入)"]')
   const err = root.querySelector('[data-field-slot="error"]')
   const a = document.activeElement
@@ -170,6 +188,9 @@ const readCard = (page) => page.evaluate(({ CARD, CLEAR }) => {
     step: stepEl ? stepEl.textContent.trim() : '(單題)',
     rootTop: rect(root).y,
     title: rect(title),
+    titleText: title ? title.textContent : null,
+    cardName: nameOf(root),
+    groupName: optionGroup ? nameOf(optionGroup) : null,
     footer: rect(footer),
     buttons,
     clearCount: clears.length,
@@ -214,6 +235,10 @@ async function runOptional(fault) {
   if (s.controls[0].checked !== 'true') throw new Error('第 1 題(預選建議解)一開始沒有選取 —— story 不是本閘要量的形狀')
   record('O17', '選填單選題的 radiogroup 不標 aria-required(選填 = 可以不答)', s.groupRequired !== 'true', `aria-required = ${s.groupRequired}`)
   if (fault === 'ariaEverywhere') return results
+  // 選填題題目後加「(選填)」(user 2026-11-10 選「標示:甲」;agent-decision-card.spec.md Header 條):畫面上的題目、卡片與 radiogroup 的名字都以它結尾
+  record('O19', `第 1 題(選填單選)題目以「${OPTIONAL_SUFFIX}」結尾,卡片與 radiogroup 的名字也是(讀屏跟題目一起念)`,
+    [s.titleText, s.cardName, s.groupName].every((t) => typeof t === 'string' && t.endsWith(OPTIONAL_SUFFIX)), JSON.stringify({ title: s.titleText, card: s.cardName, group: s.groupName }))
+  if (fault === 'suffixMissing') return results
 
   // ── 第 1 題(選填、預選建議解):一打開就有選取 → 鈕一打開就在 ──
   record('O1', '第 1 題(選填、預選建議解)一打開就有選取,「清除選取」一打開就在 footer、是 footer 的第一顆',
@@ -341,6 +366,9 @@ async function runOptional(fault) {
   // ── 第 3 題(選填、複選):勾了也沒有鈕;不勾按「送出」沒有錯誤 ──
   await page.waitForSelector('[role="checkbox"]', { timeout: 10_000 })
   s = await readCard(page)
+  // 複選群組沒有 aria-required 可報,選填只靠題目後的字 —— 群組名字也要以「(選填)」結尾
+  record('O21', `第 3 題(選填複選)題目以「${OPTIONAL_SUFFIX}」結尾,複選群組的名字也是`,
+    [s.titleText, s.groupName].every((t) => typeof t === 'string' && t.endsWith(OPTIONAL_SUFFIX)), JSON.stringify({ title: s.titleText, group: s.groupName }))
   await page.mouse.click(s.cards[0].x + 40, s.cards[0].y + 14)
   await flushOn(page)
   s = await readCard(page)
@@ -370,6 +398,11 @@ async function runRequired(fault) {
   results.push({ id: 'O16', label: '必答單選題的 radiogroup 帶 aria-required="true"(field.spec.md「SR 識別路徑」)', pass: s.groupRequired === 'true',
     detail: `aria-required = ${s.groupRequired}` })
   if (fault === 'ariaMissing') return results
+  // 必答題不變:題目、卡片、radiogroup 的名字都沒有「(選填)」(對照:證明 O19 / O21 不是每題都加)
+  results.push({ id: 'O20', label: `必答題(第 1 題)題目與名字都沒有「${OPTIONAL_SUFFIX}」`,
+    pass: [s.titleText, s.cardName, s.groupName].every((t) => typeof t === 'string' && t.length > 0 && !t.includes(OPTIONAL_SUFFIX)),
+    detail: JSON.stringify({ title: s.titleText, card: s.cardName, group: s.groupName }) })
+  if (fault === 'suffixOnRequired') return results
   // 必答題(預選建議解):焦點在第一個圓 → 只用 Tab 走到「下一題」,途中經過「其他」輸入格不能把建議解換成「其他」
   await page.evaluate((cid) => document.getElementById(cid)?.focus(), s.controls[0].id)
   const walked = await tabUntil((x) => x.active?.text === '下一題')

@@ -399,7 +399,7 @@ export const DecisionCardSingle: Story = {
   render: () => <DecisionCardScene questions={[THREE_QUESTIONS[0]]} intro="只剩語氣沒定,選一個就能繼續。" />,
 }
 
-/** 選填題(`optional`):不答也能前進(送出值是空字串)。三題各示範一種:
+/** 選填題(`optional`):不答也能前進(送出值是空字串);題目後由元件接「(選填)」(題目文字本身不寫,agent-decision-card.spec.md Header 條)。三題各示範一種:
  *  1. 單選、預選建議解 —— 一打開就有選取,footer 左側的「清除選取」一打開就在(OpenSnapshot:M15 不留只有點了才看得到的狀態);
  *     按了清掉答案、鈕消失,再選又出現;
  *  2. 單選、不預選(署名 = 稱謂類,產題守則 8 例外)—— 沒選時沒有鈕,選了之後才出現;
@@ -438,7 +438,8 @@ const OPTIONAL_QUESTIONS: AgentDecisionQuestion[] = [
   },
 ]
 
-/** 決策卡選填題(OpenSnapshot):第 1 題預選建議解,footer 左側「清除選取」一打開就在;規則見 agent-decision-card.spec.md「步進」。 */
+/** 決策卡選填題(OpenSnapshot):每題題目後都有「(選填)」(必答題的對照看「決策卡三題步進」);第 1 題預選建議解,footer 左側「清除選取」一打開就在;
+ *  規則見 agent-decision-card.spec.md Header 條與「步進」。 */
 export const DecisionCardOptional: Story = {
   name: '決策卡選填題',
   render: () => (

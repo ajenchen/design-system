@@ -1465,6 +1465,8 @@ export interface AgentDecisionCardLabels {
   otherAriaLabel: string
   /** 預選項(建議解)label 後的標記 */
   recommendedSuffix: string
+  /** 選填題(`optional`)題目後的標記;必答題不加(agent-decision-card.spec.md Header 條) */
+  optionalSuffix: string
   /** 按「下一題 / 送出」這一題沒過:單選沒選 */
   errorSingle: string
   /** 同上:複選一項都沒勾 */
@@ -1480,6 +1482,9 @@ const MULTI_JOIN = '\n'
 /**
  * DS 預設文字(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫(同 Coachmark `DEFAULT_LABELS`)。
  * - `clearSelection`:同 Select 單選一鍵清空的「清除選取」(select.tsx)與 BulkActionBar `clear` —— 清掉選了的那一個,全 DS 一種說法。
+ * - `optionalSuffix`:選填題題目後加「(選填)」、必答題不變(user 2026-11-10 在決策頁選「標示:甲」);寫法照 DS 既有 ——
+ *   標籤文字直接接「(選填)」、同字級同色(accordion.stories「專案識別碼(選填)」的 FieldLabel、people-picker.stories「代理人(選填)」),
+ *   同本卡選項的「(建議)」接法(`recommendedSuffix`)。
  * - `error*`:按「下一題 / 送出」時這一題沒過的錯誤訊息(句型照 DS 既有範例:select.stories「請選擇出貨倉庫」、
  *   combobox.stories「請至少選擇一個商品類別」、field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,
  *   見 agent-decision-card.spec.md「步進」)。三句是新的元件預設文案(產品文案語意):AI 依上述句型擬的建議,【待確認】——
@@ -1496,6 +1501,7 @@ const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
   otherPlaceholder: '輸入其他選項',
   otherAriaLabel: '其他(自由輸入)',
   recommendedSuffix: RECOMMENDED_SUFFIX,
+  optionalSuffix: '(選填)',
   errorSingle: '請選擇一個選項',
   errorMulti: '請至少選擇一個選項',
   errorOther: '請輸入其他選項',
@@ -1508,6 +1514,7 @@ function warnDecisionRules(questions: AgentDecisionQuestion[]) {
   if (questions.length === 0 || questions.length > 3) warn(`題數 1–3(收到 ${questions.length})。`)
   for (const q of questions) {
     if (!/[??]$/.test(q.label.trim())) warn(`題目必是完整問句、以「?」結尾(${q.id}:「${q.label}」)。`)
+    if (/\(選填\)|（選填）|\(optional\)/i.test(q.label)) warn(`「(選填)」由元件依 optional 標,勿寫進題目(${q.id}:「${q.label}」)。`)
     if (q.options.length < 2 || q.options.length > 4) warn(`每題 2–4 個具名選項(${q.id} 有 ${q.options.length})。`)
     for (const o of q.options) {
       if (/\n/.test(o.label) || o.label.length > 10) warn(`選項標籤單行且 ≤10 字(${q.id}:「${o.label}」)。`)
@@ -1766,8 +1773,11 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                 {step + 1} / {total}
               </SurfaceEyebrow>
             )}
+            {/* 選填題題目後接「(選填)」:同一個 span、同字級同色(DS 既有寫法,見 DEFAULT_DECISION_LABELS 註解);
+                卡片 group 與 radiogroup / 複選 group 都以 aria-labelledby 指向這個 span,讀屏跟題目一起念 */}
             <span id={titleId} className="text-body font-medium text-foreground">
               {question.label}
+              {question.optional ? labels.optionalSuffix : null}
             </span>
           </div>
         </SurfaceHeader>
