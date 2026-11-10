@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
+    "contractDigest": "sha256:2012875d2d0d176c5d5522ea3ad897d6cae5e3ad977427a624f4b5a0e6241374",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.148",
@@ -1714,12 +1714,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c394e11154608211709e92b88c0ec14e7eb0636c7a3f0b9ac10e1dfcd90607a2",
+      "hash": "sha256:3b3e977d936229c0ea7937f911935b599eb81139335494677be13b702147357b",
       "id": "governance-build-graph-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-governance-build-graph.mjs",
-      "size": 72671,
+      "size": 72719,
       "type": "file"
     },
     {
@@ -2908,12 +2908,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9c26299078fd67d5debe9834d2022ea49f11f1045e10a1456734d815ebca7aaa",
+      "hash": "sha256:c3a8c7b042352b286af8332726b68526cc599e1255a61f1e97295126ad9ffdfc",
+      "id": "release-github-release-removal-notes",
+      "mode": "0644",
+      "ownerRepo": "design-system",
+      "path": "scripts/lib/root-exports-release-notes.mjs",
+      "size": 5133,
+      "type": "file"
+    },
+    {
+      "hash": "sha256:46b6f0b81c03f09cd47614f1a5dd4149587d748f1db516cf4813f387766c9697",
       "id": "release-github-release-writer",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-github-release.mjs",
-      "size": 9146,
+      "size": 11936,
       "type": "file"
     },
     {
@@ -3075,8 +3084,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 709,
-      "hash": "sha256:13cf1d448a2b967e355775ae6c676564bd09a082ac527323bbf982320cb9bd08",
+      "files": 710,
+      "hash": "sha256:3265efaea0f51b7a9944517635b98b2381057b953fb01417603377e1039bf8da",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

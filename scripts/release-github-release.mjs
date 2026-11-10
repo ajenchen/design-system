@@ -3,7 +3,8 @@
 
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { captureClosedGitHubToken, runClosedGh } from './lib/closed-tool-execution.mjs'
+import { captureClosedGitHubToken, runClosedGh, runClosedGit } from './lib/closed-tool-execution.mjs'
+import { namesMissingFromNotes, rootExportsRemovalNotes } from './lib/root-exports-release-notes.mjs'
 import { inspectReleaseSet } from './release-set.mjs'
 
 const sleep = milliseconds => new Promise(done => setTimeout(done, milliseconds))
@@ -114,6 +115,55 @@ export function compareReleaseAssets(state, expectedFiles) {
   return expectedFiles.filter(item => !actual.has(item.name))
 }
 
+function gitRead(args) {
+  const result = runClosedGit(args, { cwd: ROOT, maxOutputBytes: 16 * 1024 * 1024, timeoutMs: 15_000 })
+  if (result.error || result.signal !== null) {
+    throw new Error(`release closed Git read failed:${args[0]}:${String(result.error?.message || result.signal)}`)
+  }
+  return { status: result.status, stdout: String(result.stdout ?? ''), stderr: String(result.stderr ?? '') }
+}
+
+// 「破壞性變更 → root 出口」段:登記清單(scripts/root-exports-removals.json)在 gitHead 上、
+// 對應上一次發布 tag 的那一段。main() 與 root-exports-invariant --selftest 走同一支(見 lib/root-exports-release-notes.mjs)。
+export function releaseRemovalNotes(gitHead, tag) {
+  return rootExportsRemovalNotes({ gitHead, tag, git: gitRead })
+}
+
+// GitHub API:generate_release_notes 與 body 同時給時,body 接在自動產生的說明前面。
+export function releaseCreateArgs(expected, removalSection) {
+  const args = [
+    'release', 'create', expected.tag, '--repo', expected.repository, '--verify-tag',
+    '--target', expected.gitHead, '--generate-notes', '--title', expected.tag, '--draft',
+  ]
+  if (removalSection) args.push('--notes', removalSection)
+  return args
+}
+
+const removalNamesMissing = (entries, body) => (
+  typeof body === 'string' && body.trim() ? namesMissingFromNotes(entries, body) : entries.map(entry => entry.name)
+)
+
+// 發布(--draft=false)前讀回草稿說明:登記的名字少一個就不發布。續跑時草稿可能是舊程式建的(沒有這一段),
+// 那就把整段接到最前面再讀回一次 —— 「傳了 --notes」不等於「說明真的有寫」(M37),驗的是讀回來的說明本身。
+function ensureDraftRemovalNotes(ghContext, expected, removalNotes) {
+  if (!removalNotes.entries.length) return
+  const readBody = () => ghJson(ghContext, ['release', 'view', expected.tag, '--repo', expected.repository, '--json', 'body']).body
+  let body = readBody()
+  if (removalNamesMissing(removalNotes.entries, body).length) {
+    recheckRemoteTag(ghContext, expected)
+    ghRun(ghContext, [
+      'release', 'edit', expected.tag, '--repo', expected.repository,
+      '--notes', [removalNotes.section, String(body ?? '').trim()].filter(Boolean).join('\n\n'),
+    ])
+    body = readBody()
+  }
+  const missing = removalNamesMissing(removalNotes.entries, body)
+  if (missing.length) {
+    throw new Error(`GitHub draft release notes omit ${missing.length} removed root export(s) registered for ${removalNotes.previousTag}: ${missing.join(', ')}`)
+  }
+  console.log(`✅ draft release notes list all ${removalNotes.entries.length} root exports removed since ${removalNotes.previousTag}`)
+}
+
 function validateIdentity(state, expected, { published }) {
   if (state.tagName !== expected.tag || state.name !== expected.tag) throw new Error('GitHub Release tag/title identity mismatch')
   if (published) {
@@ -170,12 +220,10 @@ async function main() {
     return
   }
 
+  const removalNotes = releaseRemovalNotes(expected.gitHead, expected.tag)
   if (!state) {
     recheckRemoteTag(ghContext, expected)
-    ghRun(ghContext, [
-      'release', 'create', expected.tag, '--repo', expected.repository, '--verify-tag',
-      '--target', expected.gitHead, '--generate-notes', '--title', expected.tag, '--draft',
-    ])
+    ghRun(ghContext, releaseCreateArgs(expected, removalNotes.section))
     state = viewRelease(ghContext, expected.repository, expected.tag)
     if (!state) throw new Error('GitHub draft creation returned success but the draft is unavailable')
   }
@@ -190,6 +238,7 @@ async function main() {
   validateIdentity(state, expected, { published: false })
   const stillMissing = compareReleaseAssets(state, expectedFiles)
   if (stillMissing.length) throw new Error(`GitHub draft upload is incomplete: ${stillMissing.map(item => item.name).join(', ')}`)
+  ensureDraftRemovalNotes(ghContext, expected, removalNotes)
 
   recheckRemoteTag(ghContext, expected)
   ghRun(ghContext, [

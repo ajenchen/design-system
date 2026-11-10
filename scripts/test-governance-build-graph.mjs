@@ -606,6 +606,7 @@ for (const releaseTrustSource of [
   'scripts/release-npm-finalization-receipt.mjs',
   'scripts/release-npm-finalize-verify.mjs',
   'scripts/release-github-release.mjs',
+  'scripts/lib/root-exports-release-notes.mjs',
   'scripts/release-remote-tag.mjs',
   'scripts/schemas/npm-stage-receipt.schema.json',
   'scripts/schemas/npm-finalization-receipt.schema.json',
