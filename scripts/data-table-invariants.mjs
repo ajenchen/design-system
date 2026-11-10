@@ -1769,7 +1769,7 @@ if (!urlDisplay) {
 /* ── I25:巢狀列展開箭頭 = ItemPrefix + ItemInlineActionButton 的幾何(一-04)──
  * 根 invariant:同目的行內圖示按鈕與 prefix 槽必消費 item-anatomy primitive:按鈕盒 = `ICON_SIZE[size]`
  * (item-anatomy.tsx:67-71,md 16)、hover 底色 overlay = `INLINE_ACTION_HOVER_BG_SIZE[size]`(:128-132,md 18)
- * 且置中於按鈕;槽寬 + `mr-2` 必與 `--tree-indent-{size}`(uiSize.css:108-110)同源,子列的箭頭 / 文字
+ * 且置中於按鈕;槽寬 + `mr-2` 必與 `--tree-indent-{size}`(uiSize.css 的 `--tree-indent-sm/md/lg`)同源,子列的箭頭 / 文字
  * 因此每深一層剛好位移一個 indent。修前是手刻 `w-4 h-4 mr-2` 的 button,三個常數與 token 分家。
  * 唯一的像素證據是 2026-08-01 的 curated baseline(早於修正、非 required check)。這裡對 `nested-rows`
  * (md)量按鈕 rect、真 hover 後 overlay 的 rect 與 computed 底色、相鄰兩層的箭頭 / 文字左緣差、以及

@@ -29,7 +29,7 @@
 | 疑似要放這但其實不是 | 實際應去 | 為什麼 |
 |-------------------|---------|--------|
 | 元件消費 token 的 code | `../components/{Name}/` | token 被 consume,不在 token home 寫 consumer |
-| 元件自己的值(拿掉那個元件就沒意義的) | 主人元件資料夾的樣式檔(`token-system.spec.md` 規則 1) | 住處 = 主人;寄住在 `uiSize/` 的 14 顆依分類表 `target` 分批搬 |
+| 元件自己的值(拿掉那個元件就沒意義的) | 主人元件資料夾的樣式檔(`token-system.spec.md` 規則 1) | 住處 = 主人;還寄住在 `uiSize/` 的(分類表 `home` ≠ `target` 的列)依 `target` 分批搬,進度見 `token-system.spec.md`「現況與目標不一致的地方」 |
 | 只有展示頁用的值 | `stories-helpers/` | 不開 token(`token-system.spec.md` 第 0 題) |
 | cross-cutting design rule(如「何時用 semantic token vs primitive」)| `packages/design-system/ds-canonical/rules/ui-development.md`「Token 命名 4 條硬規則」 | 系統級 rule,不只關某個 token |
 | shadcn compat alias 遷移規則 | `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」 | 技術陷阱屬 UI 開發 |

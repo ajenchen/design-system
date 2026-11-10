@@ -125,7 +125,11 @@ export const Overview: Story = {
 
 type DensityMode = 'md' | 'lg'
 
-/** 量一顆長度 token 在這個位置算出來幾 px。probeClass = 讀者的字級(--field-control-py-* 的 1lh 在使用端解析) */
+/**
+ * 量一顆長度 token 在這個位置算出來幾 px。probeClass = 讀者的字級(--field-control-py-* 的 1lh 在使用端解析)。
+ * 只負責量與印數字,不帶字級 / 字色:讀數是表格的一格,字樣由表格那一列給(跟欄位標題同一處寫),
+ * 它不是範例的說明(說明一律 ExampleCaption;tutorial-page-invariant R10)。
+ */
 function MeasuredLength({ token, probeClass = 'text-body' }: { token: string; probeClass?: string }) {
   const probe = useRef<HTMLSpanElement>(null)
   const [px, setPx] = useState('')
@@ -134,13 +138,16 @@ function MeasuredLength({ token, probeClass = 'text-body' }: { token: string; pr
     if (h != null) setPx(`${Math.round(h * 10) / 10}px`)
   }, [token])
   return (
-    // block:數字的行框用 caption 自己的行高,跟同列 token 名字同一條基線(inline 的話會吃到外層 body 行高,往下掉 2px)
-    <span className="relative block text-caption font-mono text-fg-muted">
+    // block:數字的行框用這一格(caption)自己的行高,跟同列 token 名字同一條基線(inline 的話會吃到外層 body 行高,往下掉 2px)
+    <span className="relative block">
       <span ref={probe} aria-hidden className={`invisible absolute left-0 top-0 block w-px ${probeClass}`} style={{ height: `var(${token})` }} />
       {px}
     </span>
   )
 }
+
+/** 讀數格的字樣(表格這一欄的字樣,只寫這一處) */
+const READING_CELL = 'text-caption font-mono text-fg-muted'
 
 const ALIGN_COLS = '240px 96px 96px'
 
@@ -191,8 +198,8 @@ function AlignmentFamilyRows({ family }: { family: AlignmentFamily }) {
       {family.tokens.map(({ token, probeClass }) => (
         <div key={token} className="grid items-center gap-x-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]" style={{ gridTemplateColumns: ALIGN_COLS }}>
           <code className="text-caption font-medium text-fg-secondary">{token}</code>
-          <div data-density="md"><MeasuredLength token={token} probeClass={probeClass} /></div>
-          <div data-density="lg"><MeasuredLength token={token} probeClass={probeClass} /></div>
+          <div data-density="md" className={READING_CELL}><MeasuredLength token={token} probeClass={probeClass} /></div>
+          <div data-density="lg" className={READING_CELL}><MeasuredLength token={token} probeClass={probeClass} /></div>
         </div>
       ))}
     </div>

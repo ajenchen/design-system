@@ -1351,7 +1351,7 @@ jobs:
           # 局部換密度 = 整頁該密度,逐 token 相等(2026-11-11):`uiSize.css` 寫著「md-lock subtree 必須與 root md 逐 token 相等」,
           # 但 token-creation-invariant C5 只看名字有沒有出現在回復段 —— 用 var() 組出來、只寫在 :root 的值(側欄收合寬)
           # 它看不到,實測大密度頁面裡鎖回一般密度的區塊收合寬仍是 68 而不是 48。這支在瀏覽器裡實算 12 種組合 × 全部 token;
-          # 純 CSS 計算、不需要 storybook 建置。--selftest 注入四種缺陷(拿掉回復 ×2、衍生值只寫 :root、表格根元素不重算)各自必紅。
+          # 純 CSS 計算、不需要 storybook 建置。--selftest 注入的缺陷各自必紅、現況必綠(注入清單見腳本 selftest(),這裡不寫數字 —— 會隨住處搬家增加)。
           npm run test:density-subtree-parity
           node scripts/test-density-subtree-token-parity.mjs --selftest
           npm run test:header-tabs-slot-invariants

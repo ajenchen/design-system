@@ -239,7 +239,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 ### Layer 1 — Token shared
 
 兩家族連動 token 清單(各 token 標注實際消費者;非全部兩家族交集):
-- `--chrome-header-height`(uiSize.css:55,103)— B 家族 tsx 直接消費(chrome-header.tsx);A 家族不直接消費,靠 padding 算式對齊(24 + 2×tight = 48;等式由 overlay-surface.tsx anatomy 註解 + `lib/_tab_lg_chrome_header_equal.sh` W3 assert 守)
+- `--chrome-header-height`(`uiSize.css`:`:root` 預設、大密度覆寫、鎖回一般密度三段)— B 家族 tsx 直接消費(chrome-header.tsx);A 家族不直接消費,靠 padding 算式對齊(24 + 2×tight = 48;等式由 overlay-surface.tsx anatomy 註解 + `lib/_tab_lg_chrome_header_equal.sh` W3 assert 守)
 - `--layout-space-loose`(兩家族 px)/ `--layout-space-tight`(僅 A 家族 py;B 家族 fixed-height 無 py)
 - `--divider`(semantic.css:333;兩家族經 `border-divider` utility 消費)
 - `--tab-height-sm` / `--tab-height-lg`(`components/Tabs/tabs.css`:預設 + 大密度覆寫 + 鎖回一般密度三段)

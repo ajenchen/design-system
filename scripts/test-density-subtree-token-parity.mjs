@@ -21,7 +21,7 @@
  *
  * 跑法:
  *   node scripts/test-density-subtree-token-parity.mjs              現況(要綠)
- *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:四種注入的缺陷各自必紅且指名(衍生值那一種在側欄 sidebar.css 與多行輸入框 uiSize.css 各注入一次、各自指名;含「在主人根元素上量」那條),現況必綠
+ *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:注入的缺陷(清單見 selftest())各自必紅且指名(衍生值那一種在側欄 sidebar.css 與多行輸入框 uiSize.css 各注入一次、各自指名;含「在主人根元素上量」那條),現況必綠
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
