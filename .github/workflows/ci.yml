@@ -1345,6 +1345,9 @@ jobs:
           # 區塊 ↔ 區塊(2026-11-06 user #18):一條分隔線的位置、上下各 loose —— 不畫線 = loose × 2(FileViewer 資訊面板 說明 → 檔案資訊),
           # 畫 Separator = 線兩側各 loose;md / lg 量像素。修前 main 8eb473c7 建置 FileViewer 量到 16 / 24(紅);selftest 把修前實測餵進判定必紅。
           npm run test:section-gap
+          # 標頭 → 第一個東西(layoutSpace 規則 2,2026-11-10 user 問「四周的距離是正確的？」):依第一個東西的角色 bounded = loose / unbounded = 0 / element = tight,
+          # 全 DS 盤點出的每一處 md / lg 量像素、角色從 DOM 判。修前 c2fc683d 建置 Sidebar 混合內容資料夾 / 檔案兩張表格外層是 tight(紅);selftest 判定表 + 角色判法逐列。
+          npm run test:header-first-gap
           # 表單範例放進卡片(2026-11-10 FORM-EXAMPLE-CARD 甲;user 10-21「Q5可以基於你的建議」、10-28「頁面上的卡片照你建議」):Field 表單驗證 ×2、
           # Rating 包在 Field 內、Select 隨 form 送出 —— 送出鈕往上找卡片、卡片內上 / 左 / 下 = loose(md / lg 量像素)。修前 main 8eb473c7 建置 4 處都沒有卡片(紅)。
           npm run test:form-example-card

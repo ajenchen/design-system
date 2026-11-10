@@ -106,6 +106,8 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 | **unbounded region**(自帶 py 的 list / nav stack)| **0**(讓 list 自帶 py 撐 spacing) |
 | **element**(input / button / alert) | `tight` |
 
+本規則由 `scripts/header-first-gap-invariant.mjs` 機械檢查:全 DS 盤點出「chrome 標頭底下由範例自己給頂部內距」的每一處,從 DOM 判第一個東西的角色,md / lg 量「標頭底 → 第一個內容頂」比對上表。
+
 ### 規則 3:元素間 gap(**只看親疏,role 無關**)
 
 | 親疏 | gap |

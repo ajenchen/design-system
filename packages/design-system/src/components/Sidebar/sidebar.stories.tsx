@@ -290,20 +290,25 @@ const FILE_VERSIONS: Record<string, FileVersionRow[]> = {
   ],
 }
 
-/** 專案樹:資料夾 → 檔案清單、檔案 → 這個檔案的版本紀錄(兩者都是 layoutSpace「Page 情境」:表格直接接在標頭下)。 */
+/**
+ * 專案樹:資料夾 → 檔案清單、檔案 → 這個檔案的版本紀錄(兩者都是 layoutSpace「Page 情境」:表格直接接在標頭下)。
+ * 頂部依 layoutSpace.spec.md 規則 2「標頭 → bounded region = loose」:標頭下第一個東西是有框的 DataTable(bounded region),
+ * 所以 pt = loose(md 16 / lg 24),四邊同為 loose;上方 TableSection 第一個是區段標題(element)才是 tight。
+ * 閘 `scripts/header-first-gap-invariant.mjs`(2026-11-10 前兩處誤寫 tight —— 抄 TableSection 沒依第一個東西的角色重推規則 2)。
+ */
 function ProjectTreeView({ id }: { id: string }) {
   const node = PROJECTS_TREE.flatMap((p) => [p, ...(p.children ?? [])]).find((n) => n.id === id)
   if (!node) return null
   if (node.icon === Folder) {
     return (
-      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
+      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
         <DataTable columns={FILE_COLUMNS} data={FOLDER_FILES[id] ?? []} height="auto" aria-label={`${node.label} 裡的檔案`} />
       </div>
     )
   }
-  // 樹上唯一的檔案是 README.md(iOS / Android 是 Mobile App 底下的平台資料夾,見 PROJECTS_TREE)
+  // 樹上唯一的檔案是 README.md(iOS / Android 是 Mobile App 底下的平台資料夾,見 PROJECTS_TREE);頂部同上 = 規則 2 標頭 → bounded region = loose
   return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
       <DataTable columns={FILE_VERSION_COLUMNS} data={FILE_VERSIONS[id] ?? []} height="auto" aria-label={`${node.label} 的版本紀錄`} />
     </div>
   )

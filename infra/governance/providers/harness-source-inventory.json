@@ -620,6 +620,7 @@
           "scripts/test-data-table-pinned-resize-invariant.mjs",
           "scripts/test-dialog-coexistence-invariant.mjs",
           "scripts/test-field-text-left-edge-invariant.mjs",
+          "scripts/test-header-first-gap-invariant.mjs",
           "scripts/test-overlay-footer-gutter-invariant.mjs",
           "scripts/test-section-gap-invariant.mjs",
           "scripts/test-select-tab-leave-invariant.mjs",
