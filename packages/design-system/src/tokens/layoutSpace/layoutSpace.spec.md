@@ -13,7 +13,7 @@ Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放
 | `--layout-space-bottom` | 48px | 48px | 結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底(容器會擋住頁面或高度撐滿時;規則 4 第 1 列)|
 | `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它;AppShell 的 AI agent 浮層左側、Menu 浮層右側「至少留」也吃它 —— user 2026-10-14 規格「另一側至少保留 48px」,`../../components/AppShell/app-shell.spec.md`「版面規則」§9)|
 
-**Co-located:item-gap tokens** — `layoutSpace.css` 另定義 `--item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg}`(皆 2px):**非**巨觀 layout token,是 item 內 label ↔ description 的 typography-mode-aware micro gap;設計 SSOT 在 `item-anatomy.spec.md`「Label ↔ Desc 間距」段,本檔只是 CSS 住所。修改值 / 加 mode → 走 item-anatomy spec。
+**Co-located:item-gap tokens** — `layoutSpace.css` 另定義 `--item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg}`(皆 2px):**非**巨觀 layout token,是 item 內 label ↔ description 的 typography-mode-aware micro gap;設計 SSOT 在 `item-anatomy.spec.md`「Label ↔ Desc 間距」段,本檔只是 CSS 住所。修改值 / 加 mode → 走 item-anatomy spec。同一處另住 `--item-gap-eyebrow-title`(2px,浮層標題區小標 ↔ 標題):設計 SSOT 在 `patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區,本檔同樣只是 CSS 住所。
 
 **為什麼 viewport-inset 要跟 bottom 分開**(2026-09-11):兩者值都是 48px,但語意不同 ——
 `bottom` 是「body 收尾的結論留白」,`viewport-inset` 是「浮層外殼 → 視窗邊」。

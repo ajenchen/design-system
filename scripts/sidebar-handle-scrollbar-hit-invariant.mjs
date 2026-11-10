@@ -12,7 +12,7 @@
  *   紅: 修前(8eb473c7 建置,`--build=<那份建置>`):滑塊右側 5px 打到把手 → H1 紅(2026-11-05 實測滑塊 x232–239、把手 x236–243)。
  *        `--selftest`:同一份建置注入兩種破法 —— 捲軸 z-index 拿掉(= 修前的疊放)H1 必紅;把手外推拿掉(margin 0)H2 必紅;
  *        不注入的那一次全綠(對照列)。找不到把手 / 捲軸 / 滑塊、捲軸不收 = INSTRUMENT-FAIL(exit 2),不當成通過。
- *   綠: 修好的建置四項全過。
+ *   綠: 修好的建置 H1–H4 全過;量的是 elementFromPoint 逐 px 拿到的元素(確定值,不是時間或尾端統計),捲軸等滑過叫出、版面靜止後才量,重跑同結果。
  *   node scripts/sidebar-handle-scrollbar-hit-invariant.mjs [--build=<storybook 建置目錄>] [--selftest]
  */
 import { dirname, isAbsolute, join } from 'node:path'
