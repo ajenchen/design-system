@@ -29,8 +29,8 @@
  *   - 只有一欄排序時不顯示數字;第 10 個以後一律「9+」、不限欄數(「4. 不要限制欄數,超過一律9+」)
  * Shift+點擊在排序中的欄**順位不動**是 AI 推導(user 規格沒寫;世界級不一致:AG Grid 會把它移到最後、MUI X 原地替換,見 spec 該列的對照):
  * 理由 = 與排序面板(`../data-table-sort-manager.tsx` `updateAt`:改方向原地替換)同一個動作同一個結果。
- * ⌄ 選單的「取消排序」在多重排序時**不顯示**(同修前):按了要拿掉這一欄還是清掉全部,規格沒寫、DS 前例與世界級相反,要 user 決定
- * (`columnMenuShowsCancelSort`)。
+ * ⌄ 選單的「取消排序」:這一欄在排序裡就出,按了**清掉全部排序**(多重排序也一樣;`columnMenuShowsCancelSort` / `sortingFromColumnMenu`)——
+ * 與同一個選單的「升冪 / 降冪排序」同屬一般點擊那一套(清掉其他欄);只拿掉一欄走 Shift+點擊或排序面板。依據見 `sortingFromColumnMenu`。
  */
 import type { SortingState } from '@tanstack/react-table'
 
@@ -65,24 +65,29 @@ export function sortingAfterHeaderActivate(sorting: SortingState, columnId: stri
  * 表頭 ⌄ 欄位選單的三個排序項。
  *   升冪排序 / 降冪排序 = 一般點擊的同一種動作(不按 Shift):清掉其他欄、只用這一欄這個方向(AG Grid v33 選單 `setSortForColumn(column, 'asc', false)`、
  *   MUI X v7 選單 `sortColumn(field, 'asc')` 同樣清掉其他欄)。
- *   取消排序(`null`)= 拿掉這一欄;選單只在 `columnMenuShowsCancelSort` 為真(只有這一欄在排序)時出這一項,所以實際結果恆為「沒有排序」。
+ *   取消排序(`null`)= 清掉全部排序(多重排序時也是):AG Grid v33 選單 `sortUnSort` → `setSortForColumn(column, null, false)`,不是多重排序就清掉其他欄
+ *   (https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-enterprise/src/menu/menuItemMapper.ts#L413-L419、
+ *   https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/sort/sortService.ts#L51-L57);MUI X v7 選單 Unsort → `sortColumn(field, null)`
+ *   → `sortModel = []`(https://github.com/mui/mui-x/blob/v7.29.0/packages/x-data-grid/src/components/menu/columnMenu/menuItems/GridColumnMenuSortItem.tsx#L29-L39、
+ *   https://github.com/mui/mui-x/blob/v7.29.0/packages/x-data-grid/src/hooks/features/sorting/useGridSorting.ts#L193-L195)。**AI 依世界級與 DS 一般點擊規則推導**
+ *   (user 2026-10-30 一般點擊「直接點了就會清空所有排序」):同一個選單三項同一套,使用者不用記兩種。
  * 修前「升冪 / 降冪」走 TanStack `toggleSorting(desc, false)`,這一欄剛好是多重排序的最後一欄時只改它、其他欄留著,
  * 不是最後一欄時清掉其他欄 —— 同一個選單項,結果看順位而定。
+ * 三項的結果都不看目前的排序(只由這一欄與方向決定);第一個參數保留,呼叫端與判定表照 `(目前排序, 欄, 方向)` 同一個形狀。
  */
-export function sortingFromColumnMenu(sorting: SortingState, columnId: string, direction: SortDirection | null): SortingState {
-  if (direction === null) return sorting.filter((s) => s.id !== columnId)
+export function sortingFromColumnMenu(_sorting: SortingState, columnId: string, direction: SortDirection | null): SortingState {
+  if (direction === null) return []
   return [{ id: columnId, desc: direction === 'desc' }]
 }
 
 /**
- * ⌄ 選單要不要出「取消排序」:這一欄在排序裡,而且**只有這一欄**在排序。
- * 多重排序時不出(同 2026-05-04 K7 起的行為):K7 藏它的理由(沒有順位數字的箭頭是片段資訊)已經消失,但按了要「只拿掉這一欄」
- * (DS 排序面板的刪除鈕、Shift+點擊的清除)還是「清掉全部」(AG Grid v33 選單 `sortUnSort` → `setSortForColumn(column, null, false)`;
- * MUI X v7 選單 Unsort → `sortColumn(field, null)` → `sortModel = []`)規格沒寫、DS 前例與世界級相反 → 要 user 決定,決定前維持修前
+ * ⌄ 選單要不要出「取消排序」:這一欄在排序裡就出(多重排序也出)。AG Grid v33 欄位選單只要這一欄有排序就出「Clear Sort」
+ * (https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-enterprise/src/menu/columnMenuFactory.ts#L123-L133)、MUI X v7 這一欄有排序就出「Unsort」
+ * (`GridColumnMenuSortItem.tsx`,出處同上)。2026-05-04 K7 起多重排序時藏它的理由(沒有順位數字的箭頭是片段資訊)已隨順位數字消失
  * (data-table.spec.md「Multi-sort header」列)。
  */
 export function columnMenuShowsCancelSort(sorting: SortingState, columnId: string): boolean {
-  return sorting.length === 1 && sorting[0].id === columnId
+  return sorting.some((s) => s.id === columnId)
 }
 
 /** 數字最多顯示到 9,第 10 個以後一律「9+」(Badge `max` 的「max+」寫法,`../../Badge/badge.tsx`)。 */

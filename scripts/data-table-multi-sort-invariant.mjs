@@ -7,7 +7,7 @@
  *        N 數字:只有一欄排序不顯示數字、≥2 欄每個被排序的欄都有、第 10 個以後「9+」、箭頭與數字同進同出;
  *        G 長相(md 專案排程 + 設計規格「元件檢閱器」sm / lg 兩種尺寸):數字在箭頭右側、間距 2px、字級 / 行高 / 字重 = 表頭字、顏色 = 箭頭
  *          (靜止與滑過都相等)、垂直置中、指示佔原本單一箭頭的位置(label 之後 4px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
- *        M ⌄ 選單:多重排序時**沒有**「取消排序」(按了拿掉這一欄還是清掉全部待 user 決定,決定前同修前)、只有一欄排序時有且按了 = 沒有排序;
+ *        M ⌄ 選單:多重排序時也有「取消排序」、按了清掉全部排序(與「升冪 / 降冪排序」同一套,lib/sort-cycle.ts);只有一欄排序時有且按了 = 沒有排序;
  *          「降冪排序」只用這一欄;
  *        A 讀屏:順位走 aria-describedby(「排序順位 N」,9+ 時照實說)、數字 aria-hidden、播報區在表格根節點外、播報句子;
  *          多重排序狀態(3 欄、11 欄 9+、lg 尺寸)跑 axe(wcag2a / wcag2aa,同 a11y 閘 `scripts/audit-a11y.mjs`),違規不比同一則 story 沒排序時多
@@ -15,11 +15,12 @@
  *        S 與排序面板雙向同步:表頭改 → 面板列序與方向相同;面板改方向 / 刪除 → 表頭跟著變;只從面板加排序時列把手不可拖;
  *        U 不受控的表格(內部 state)同一套行為。
  *   紅: --selftest 在頁面注入各組破法(丟掉 Shift 的點擊與按鍵 / 數字藏起來 / 間距改 4px / 數字換字級與顏色 / 數字搬到箭頭左邊 /
- *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 只有一欄時藏起「取消排序」/ 多重排序時塞進「取消排序」/
+ *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 藏起「取消排序」/ 只在多重排序時藏起「取消排序」/
  *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法),各組必紅,對照列必綠;
  *        108a736f 的建置跑(`--build=<那份建置>`,2026-11-04 實測):紅 43 項(P 13 / N 10 / A 9 / G 3 / M 2 / S 3 / U 3;多重排序藏箭頭、一般點擊最後一欄
  *        不清掉其他欄、數字 / 人員欄第一下降冪、沒有播報區、只從面板加排序時列把手可拖),G 與 11 欄 axe 量不到箭頭 / 9+ → INSTRUMENT-FAIL(exit 2);
- *        「多重排序時 ⌄ 沒有取消排序」在 108a736f 也綠 —— 這條本來就是「同修前」。
+ *        M 組「多重排序時 ⌄ 有取消排序」與「按了清掉全部」在 8eb473c7 的建置紅(修前多重排序時不出這一項;2026-11-10 實測);
+ *        「按了清掉全部」的結果另由判定表 `scripts/test-data-table-sort-cycle.mjs` 判定表 3 的對照組守(修前只拿掉這一欄)。
  *        其餘本機實測數字(判定列數、--selftest 應紅 / 對照列數、秒數)寫在交付時的 log,不抄進這裡(抄了就會過期 —— 11-03 這裡曾寫 148,實為 147)。
  *   綠: 修好的建置全綠;找不到表頭 / 排序區 / 面板 / 選單項等量不到的情況以 INSTRUMENT-FAIL 紅,不當成通過。
  * ─────
@@ -131,16 +132,14 @@ async function injectBreak(kind) {
       }
       new MutationObserver(add).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-sort'] })
     }
-    if (kind === 'menu-cancel-shown') {
-      // 多重排序時 ⌄ 選單打開就塞一個「取消排序」(= 沒照「多重排序時不出,待 user 決定」)
-      const add = () => {
+    if (kind === 'menu-cancel-multi-hidden') {
+      // 多重排序時 ⌄ 選單把「取消排序」藏起來(= 修前 K7 的行為;只有一欄排序時照常)
+      const hide = () => {
         const sortedCount = document.querySelectorAll('[role="columnheader"][aria-sort="ascending"], [role="columnheader"][aria-sort="descending"]').length
-        for (const menu of document.querySelectorAll('[role="menu"]')) {
-          if (sortedCount < 2 || [...menu.querySelectorAll('[role="menuitem"]')].some((m) => (m.textContent || '').trim() === '取消排序')) continue
-          const item = document.createElement('div'); item.setAttribute('role', 'menuitem'); item.textContent = '取消排序'; menu.appendChild(item)
-        }
+        if (sortedCount < 2) return
+        for (const m of document.querySelectorAll('[role="menu"] [role="menuitem"]')) if ((m.textContent || '').trim() === '取消排序' && m.style.display !== 'none') m.style.display = 'none'
       }
-      new MutationObserver(add).observe(document.body, { subtree: true, childList: true })
+      new MutationObserver(hide).observe(document.body, { subtree: true, childList: true })
     }
     if (kind === 'num-role-img') {
       // 數字從讀屏裡露出來、而且變成沒有名字的圖(axe role-img-alt;只有多重排序時有數字,沒排序的基準不受影響)
@@ -375,9 +374,9 @@ async function openColumnMenu(col, name) {
   await trigger.first().click(); await settle()
   return true
 }
-for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-shown'], ['aria-stripped', 'live-silent']] : [[]]) {
+for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-multi-hidden'], ['aria-stripped', 'live-silent']] : [[]]) {
   if (!(await open(ROADMAP, breaks))) continue
-  const hideBreak = breaks.includes('menu-cancel-hidden'); const showBreak = breaks.includes('menu-cancel-shown'); const ariaBreak = breaks.includes('aria-stripped')
+  const hideBreak = breaks.includes('menu-cancel-hidden'); const multiHideBreak = breaks.includes('menu-cancel-multi-hidden'); const ariaBreak = breaks.includes('aria-stripped')
   await act('click', 'title'); await act('shift', 'status'); await act('shift', 'priority')
   // A:順位描述、數字 aria-hidden、名字不含數字、播報區在根節點外
   const a11y = await page.evaluate(() => {
@@ -397,16 +396,16 @@ for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-shown'], 
   check('A', '排序區的名字仍是欄標題「狀態」(數字與描述不進名字)', nameOk, '', { control: !ariaBreak })
   check('A', '播報區在表格根節點外、role=status、polite', !!a11y.live && !a11y.live.inTable && a11y.live.role === 'status' && a11y.live.politeness === 'polite', JSON.stringify(a11y.live), { control: true })
   check('A', '播報區唸出整串排序', a11y.live?.text === '排序:1 標題 升冪,2 狀態 升冪,3 優先級 升冪', `實得「${a11y.live?.text}」`, { control: !breaks.includes('live-silent') })
-  // M:多重排序時 ⌄ 沒有「取消排序」—— 按了要拿掉這一欄還是清掉全部,規格沒寫、DS 前例與世界級相反,待 user 決定;決定前同修前(spec「Multi-sort header」列)
+  // M:多重排序時 ⌄ 也有「取消排序」(lib/sort-cycle.ts `columnMenuShowsCancelSort`;spec「Multi-sort header」列)
   if (await openColumnMenu('status', '狀態')) {
     const cancel = page.getByRole('menuitem', { name: '取消排序' })
     const asc = page.getByRole('menuitem', { name: '升冪排序' })
     check('M', '多重排序時 ⌄ 選單有「升冪排序」', (await asc.count()) === 1, '', { control: true })
     const has = (await cancel.count()) >= 1 && (await cancel.first().isVisible())
-    check('M', '多重排序時 ⌄ 選單沒有「取消排序」(按了的結果待 user 決定,決定前同修前)', !has, '', { control: !showBreak })
+    check('M', '多重排序時 ⌄ 選單有「取消排序」', has, '', { control: !hideBreak && !multiHideBreak })
     await page.keyboard.press('Escape'); await parkPointer(page); await settle()
   }
-  if (!hideBreak && !showBreak) {
+  if (!hideBreak && !multiHideBreak) {
     if (await openColumnMenu('priority', '優先級')) {
       await page.getByRole('menuitem', { name: '降冪排序' }).click(); await parkPointer(page); await settle()
       const r = await readHeaders()
@@ -427,6 +426,17 @@ for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-shown'], 
       const r = await readHeaders()
       check('M', '只有一欄排序時按「取消排序」→ 沒有排序', r.state === '', `實得「${r.state || '(無)'}」`, { control: true })
     } else { await page.keyboard.press('Escape'); await settle() }
+  }
+  // M:多重排序時按「取消排序」→ 清掉全部排序(lib/sort-cycle.ts `sortingFromColumnMenu`;不是只拿掉這一欄)
+  if (!hideBreak && !multiHideBreak) {
+    await act('click', 'title'); await act('shift', 'status'); await act('shift', 'priority')
+    if (await openColumnMenu('status', '狀態')) {
+      const cancel = page.getByRole('menuitem', { name: '取消排序' })
+      const has = (await cancel.count()) === 1 && (await cancel.isVisible())
+      if (has) { await cancel.click(); await parkPointer(page); await settle() } else { await page.keyboard.press('Escape'); await settle() }
+      const r = await readHeaders()
+      check('M', '多重排序時按「狀態」⌄ 的「取消排序」→ 清掉全部排序', has && r.state === '', has ? `實得「${r.state || '(無)'}」` : '選單裡沒有「取消排序」', { control: true })
+    }
   }
 }
 

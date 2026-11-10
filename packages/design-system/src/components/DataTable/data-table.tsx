@@ -1663,17 +1663,17 @@ function DataTableInner<TData>(
   //   此 pre-process 把 meta 值 copy 到 root size/minSize/maxSize,確保 TanStack column
   //   resize state 正常運作。**Back-compat**:consumer 寫 root `size` 仍 work(meta.width 沒設則
   //   不覆蓋 root)。新 code 一律用 meta.width。
-  // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表)。
+  // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表);select / multiSelect 帶 `meta.options`(照選項順序)。
   const dsProcessedColumns = React.useMemo<ColumnDef<TData>[]>(() => {
     return columns.map((c) => {
-      const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number; type?: ColumnType } | undefined
+      const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number; type?: ColumnType; options?: ReadonlyArray<{ value: unknown }> } | undefined
       if (!meta) return c
       const cAny = c as { size?: number; minSize?: number; maxSize?: number; sortingFn?: unknown }
       const updates: { size?: number; minSize?: number; maxSize?: number; sortingFn?: SortingFn<TData> } = {}
       if (meta.width !== undefined && cAny.size === undefined) updates.size = meta.width
       if (meta.minWidth !== undefined && cAny.minSize === undefined) updates.minSize = meta.minWidth
       if (meta.maxWidth !== undefined && cAny.maxSize === undefined) updates.maxSize = meta.maxWidth
-      if (meta.type !== undefined && cAny.sortingFn === undefined) updates.sortingFn = sortingFnForColumnType<TData>(meta.type)
+      if (meta.type !== undefined && cAny.sortingFn === undefined) updates.sortingFn = sortingFnForColumnType<TData>(meta.type, meta.options)
       return Object.keys(updates).length > 0 ? ({ ...c, ...updates } as ColumnDef<TData>) : c
     })
   }, [columns])
@@ -4021,7 +4021,7 @@ function DataTableInner<TData>(
     const sortDir = header.column.getIsSorted() // false | 'asc' | 'desc'
     // 多重排序(≥2 欄)時每個被排序的欄顯示「箭頭 + 順位數字」(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
     // 2026-05-04 的 K7 在多重排序時把箭頭與「取消排序」藏起來,理由是「沒有順位編號的箭頭是片段資訊」—— 有了順位數字,箭頭恢復;
-    // ⌄ 選單的「取消排序」在多重排序時仍不顯示:按了要拿掉這一欄還是清掉全部,要 user 決定(lib/sort-cycle.ts `columnMenuShowsCancelSort`)。
+    // ⌄ 選單的「取消排序」在多重排序時也顯示,按了清掉全部排序(lib/sort-cycle.ts `columnMenuShowsCancelSort` / `sortingFromColumnMenu`)。
     // 只有一欄排序時不顯示數字(`sortPriorityLabel` 回 null);0 欄自然不顯示(canSort && sortDir 短路)。
     const sortingState = table.getState().sorting ?? []
     const priorityLabel = canSort && sortDir ? sortPriorityLabel(sortingState, header.column.id) : null
@@ -4163,7 +4163,7 @@ function DataTableInner<TData>(
               {canSort && (
                 <>
                   {/* 三項的結果住 lib/sort-cycle.ts `sortingFromColumnMenu`:升冪 / 降冪 = 一般點擊同一種(清掉其他欄、只用這一欄);
-                      取消排序只在只有這一欄排序時出現(`columnMenuShowsCancelSort`;多重排序時按了的結果要 user 決定,見上方 priorityLabel 註解)。 */}
+                      取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了清掉全部排序,與升冪 / 降冪同一套。 */}
                   <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'asc'))}>升冪排序</DropdownMenuItem>
                   <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'desc'))}>降冪排序</DropdownMenuItem>
                   {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, null))}>取消排序</DropdownMenuItem>}

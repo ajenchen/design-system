@@ -4,7 +4,7 @@
  *   保證: DataTable 表頭排序的判定(components/DataTable/lib/sort-cycle.ts)對每一種狀態轉移都回
  *        data-table.spec.md「Multi-sort header」列寫的那個結果:循環 = 升冪 → 降冪 → 清除;一般點擊清掉其他欄、這一欄從目前方向切下一個;
  *        Shift+點擊只動這一欄(不在排序裡 → 加到最後、升冪;在排序裡 → 循環下一步、順位不動;清除 → 後面順位往前補);
- *        ⌄ 選單升冪 / 降冪 = 只用這一欄;「取消排序」只在只有這一欄排序時出現(多重排序時按了的結果待 user 決定,決定前同修前);
+ *        ⌄ 選單升冪 / 降冪 = 只用這一欄;「取消排序」這一欄在排序裡就出現(多重排序也出)、按了清掉全部排序(與升冪 / 降冪同一套);
  *        順位數字只在 ≥2 欄排序時出現、1–9 照寫、第 10 個以後「9+」;
  *        讀屏描述照實說第幾;播報句型。另驗呼叫端(data-table.tsx)真的消費這支判定,而不是 TanStack 內建的切換。
  *   紅: 判定表任一格與純函式輸出不符即 exit 1(判定表列的是**期望值**,不是抄輸出);
@@ -64,7 +64,7 @@ const legacy = (() => {
       if (existing) return old.map((d) => (d.id === id ? { ...d, desc: dir === 'desc' } : d))
       return [{ id, desc: dir === 'desc' }]
     },
-    // 修前 ⌄ 選單:`sortDir && !isMultiSort` 才出「取消排序」—— 與修後(待 user 決定前)相同,判定表 3b 在對照組也綠
+    // 修前 ⌄ 選單:`sortDir && !isMultiSort` 才出「取消排序」(多重排序時不出);修前按了只拿掉這一欄(上方 dir === null 那行)
     columnMenuShowsCancelSort: (old, id) => old.length === 1 && old[0].id === id,
     // 修前:多重排序時表頭不顯示任何東西(K7)
     sortPriorityLabel: () => null,
@@ -131,17 +131,20 @@ const MENU = [
   ['升冪排序 / 多重排序裡的第一欄 → 只用這一欄', 'title↓ status↑', 'title', 'asc', 'title↑'],
   ['升冪排序 / 沒排序的欄 → 只用這一欄', 'title↑', 'status', 'asc', 'status↑'],
   ['取消排序 / 唯一一欄 → 沒有排序', 'title↑', 'title', null, '(無)'],
+  ['取消排序 / 多重排序裡的一欄 → 清掉全部(不是只拿掉這一欄)', 'title↑ status↓ priority↑', 'status', null, '(無)'],
+  ['取消排序 / 多重排序裡的第一欄 → 清掉全部', 'title↑ status↓', 'title', null, '(無)'],
 ]
 for (const [name, from, col, dir, want] of MENU) {
   row(`選單 ${name}`, show(impl.sortingFromColumnMenu(S(from), col, dir)), want)
 }
-// ── 判定表 3b:⌄ 選單要不要出「取消排序」(多重排序時不出:按了拿掉這一欄還是清掉全部,待 user 決定;決定前同修前)──
+// ── 判定表 3b:⌄ 選單要不要出「取消排序」(這一欄在排序裡就出,多重排序也出)──
 const MENU_CANCEL = [
   ['唯一一欄排序、就是這欄 → 出', 'title↑', 'title', 'true'],
   ['唯一一欄排序、不是這欄 → 不出', 'title↑', 'status', 'false'],
   ['沒有排序 → 不出', '', 'title', 'false'],
-  ['多重排序、這欄在裡面 → 不出(待 user 決定)', 'title↑ status↓', 'status', 'false'],
-  ['多重排序、這欄是第一欄 → 不出(待 user 決定)', 'title↑ status↓', 'title', 'false'],
+  ['多重排序、這欄在裡面 → 出', 'title↑ status↓', 'status', 'true'],
+  ['多重排序、這欄是第一欄 → 出', 'title↑ status↓', 'title', 'true'],
+  ['多重排序、這欄不在裡面 → 不出', 'title↑ status↓', 'priority', 'false'],
 ]
 for (const [name, from, col, want] of MENU_CANCEL) {
   row(`選單「取消排序」${name}`, String(impl.columnMenuShowsCancelSort(S(from), col)), want)
