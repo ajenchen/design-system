@@ -5214,9 +5214,11 @@ function DataTableInner<TData>(
       {/* Slice D Step 1B(2026-05-10):Interaction Layer singleton(`.claude/planning/datatable-spreadsheet-rfc.md`)。
           Default disabled — backward-compat。Enable 後 hover/editor/selected/range 由 layer 統一畫,
           per Contract 8 「one geometry owner, two paint owners」。
-          Step 1C-fix(2026-05-10):wire Contract 15 cellClickEntersEdit predicate 過濾 readonly /
+          Step 1C-fix(2026-05-10):wire Contract 15 hover predicate 過濾 readonly /
           boolean cells(per RFC + user 拍板 USER #15:checkbox / url 格不上滑過底色(轉述);url 那一半 2026-10-13 由 user 拍板乙推翻,
-          連結格滑過出淺框、點格進編輯,只有網址文字開連結 —— 待辦總帳 Q3f)。
+          待辦總帳 Q3f)。現況(url 格):2026-11-06 起格裡鉛筆以外點了開連結(有連結時);2026-11-10 起可編輯的格滑過出淺框
+          (含有連結的),predicate 改名 `cellShowsEditableHover`、只看能不能編輯 —— 見 data-table.spec.md
+          「Navigate-valued cell 通用類別」第 1 條。
           Step 4(2026-05-10):wire spreadsheetMode select / range cells。 */}
       <DataTableInteractionLayer
         enabled={experimentalSpreadsheetOverlay || spreadsheetMode}
