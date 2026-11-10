@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-10T06:54:41.020Z",
-    "stories": 1079,
+    "generatedAt": "2026-11-10T20:47:10.019Z",
+    "stories": 1080,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -1082,10 +1082,11 @@
       "design-system-tokens-typography--font-weight",
       "design-system-tokens-typography--line-height",
       "design-system-tokens-typography--type-scale",
-      "design-system-tokens-uisize--overview"
+      "design-system-tokens-uisize--overview",
+      "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "55c2d71b94d94184f6d9bc1b413eac6ab187b02757f34312b0ef754e8996d756",
-    "fingerprints": 727
+    "storyIdsSha256": "d0c39502b6be0a67c2cc51d2d8589cf84de056ceb8f56313b6ec82963a959715",
+    "fingerprints": 728
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1814,6 +1815,7 @@
     "design-system-tokens-radius--overview|color-contrast": 1,
     "design-system-tokens-typography--font-weight|color-contrast": 3,
     "design-system-tokens-typography--type-scale|color-contrast": 10,
-    "design-system-tokens-uisize--overview|color-contrast": 8
+    "design-system-tokens-uisize--overview|color-contrast": 8,
+    "design-system-tokens-uisize--product-alignment|color-contrast": 41
   }
 }
