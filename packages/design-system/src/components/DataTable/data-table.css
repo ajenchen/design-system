@@ -1,3 +1,48 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   DataTable — 列高 --table-row-sm / md / lg(元件的值;主人 = DataTable)
+   ═══════════════════════════════════════════════════════════════════════
+
+   分類、主人、住處、誰可以讀 → tokens/token-registry.json「--table-row-」那一列(唯一一份;本檔不重述)。
+   2026-11-11 從 tokens/uiSize/uiSize.css 搬來(user 2026-11-10 token「2甲」,第二階段第四批):
+   名字、每一檔密度的值都沒變;產品經對外彙總檔 styles/tokens.css 拿到,不用改任何一行。
+   每一檔的值與 Tailwind 寫法 → data-table.spec.md「一、Table Size」。
+
+   ── 三段的順序不能動 ──
+   `:root` 與 `[data-density="lg"]` 權重相同(各一個偽類 / 屬性選擇器)。密度標記放在 <html> 上時,
+   兩條規則命中同一個元素,靠「後寫的贏」—— 所以預設值、大密度覆寫、鎖回一般密度三段必須同一個檔、照這個順序。
+   (token-creation-invariant C5 管「同一個檔」;順序由 test-density-subtree-token-parity 在瀏覽器實算守住。)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --table-row-sm: 2rem;         /* 32px */
+  --table-row-md: 2.5rem;       /* 40px */
+  --table-row-lg: 3rem;         /* 48px */
+}
+
+/* 大密度:三檔統一 +0.5rem(+8px) */
+[data-ui-size="lg"],
+[data-density="lg"] {
+  --table-row-sm: 2.5rem;       /* 40px */
+  --table-row-md: 3rem;         /* 48px */
+  --table-row-lg: 3.5rem;       /* 56px */
+}
+
+/* 鎖回一般密度:祖先是大密度、這一塊宣告 data-density="md" / data-ui-size="md" 時回到 :root 的值
+   (浮層經 Portal 掛到 body 之外時一樣要能鎖回;uiSize.css 同名段落的理由)。 */
+[data-ui-size="md"],
+[data-density="md"] {
+  --table-row-sm: 2rem;         /* 32px */
+  --table-row-md: 2.5rem;       /* 40px */
+  --table-row-lg: 3rem;         /* 48px */
+}
+
+/* Tailwind 轉接名:讓 h-table-row-sm / md / lg 這類樣式類別可用(跟著本尊住;轉接名本身不登記) */
+@theme inline {
+  --spacing-table-row-sm: var(--table-row-sm);
+  --spacing-table-row-md: var(--table-row-md);
+  --spacing-table-row-lg: var(--table-row-lg);
+}
+
 /* DataTable Cell Padding
    ─────────────────────────────────────────────────────────
    py = (table-row-height - 1lh) / 2 — 單行時行高 = table-row token

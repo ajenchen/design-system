@@ -528,6 +528,7 @@ function selftest() {
   const mainNames = buildModel(files).names
   const clone = (o) => JSON.parse(JSON.stringify(o))
   const UI = `${DS_ROOT}/tokens/uiSize/uiSize.css`
+  const DT = `${DS_ROOT}/components/DataTable/data-table.css`
   const withFiles = (extra, drop = []) => { const f = new Map(files); for (const d of drop) f.delete(d); for (const [k, v] of Object.entries(extra)) f.set(k, v); return f }
   const addRows = (...rows) => { const r = clone(registry); r.rows.push(...rows); return r }
   const appendRoot = (decl) => withFiles({ [UI]: `${files.get(UI)}\n:root { ${decl} }\n` })
@@ -559,7 +560,8 @@ function selftest() {
     ['C4', true, '--fixture-listed', '已知名單多出一筆(比 main 長)', () => run({ registry: (() => { const r = clone(registry); r.known.missingSpec.push('--fixture-listed'); return r })() })],
     ['C4', false, String(registry.known?.missingSpec?.[0] ?? '--none'), '已知名單裡的舊名字', () => run({})],
     // C5
-    ['C5', true, '--table-row-sm', '拿掉一顆的回復', () => run({ files: withFiles({ [UI]: files.get(UI).replace(/(\[data-density="md"\][^{]*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1') }) })],
+    // 列高 2026-11-11 搬到 data-table.css(token「2甲」第四批);注入點跟著住處走(住處搬了還注入舊檔 = 沒改到東西,這條會變成假綠)
+    ['C5', true, '--table-row-sm', '拿掉一顆的回復', () => run({ files: withFiles({ [DT]: files.get(DT).replace(/(\[data-density="md"\][^{]*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1') }) })],
     ['C5', true, '--tab-height-sm', '把覆寫放到另一個檔', () => run({ files: withFiles({ [`${DS_ROOT}/tokens/layoutSpace/layoutSpace.css`]: `${files.get(`${DS_ROOT}/tokens/layoutSpace/layoutSpace.css`)}\n[data-density="lg"] { --tab-height-sm: 2.5rem; }\n` }) })],
     ['C5', false, '--table-row-sm', '現況', () => run({})],
     // C6

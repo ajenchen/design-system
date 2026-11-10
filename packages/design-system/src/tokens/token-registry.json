@@ -824,12 +824,12 @@
       "match": "--table-row-",
       "class": "component",
       "owner": "DataTable",
-      "home": "tokens/uiSize/uiSize.css",
+      "home": "components/DataTable/data-table.css",
       "target": "components/DataTable/data-table.css",
-      "spec": "tokens/uiSize/uiSize.spec.md",
+      "spec": "components/DataTable/data-table.spec.md",
       "product": "read",
       "dsReaders": "any",
-      "why": "表格列高,隨密度切換:拿掉表格就沒有意義 → 表格的值。產品可讀:主人規格點名(data-table.spec.md「+ 新增」列要讀表格列高對齊;user 2026-11-10 拍板 token 第 4 題甲)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),排第四批"
+      "why": "表格列高,隨密度切換:拿掉表格就沒有意義 → 表格的值。產品可讀(對齊用,主人規格點名):data-table.spec.md「Inline create row」要產品自組的「+ 新增」列讀表格列高對齊;不可覆寫(user 2026-11-10 拍板 token 第 4 題甲)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第四批 2026-11-11 已搬到 components/DataTable/data-table.css,名字與值不變"
     },
     {
       "match": "--table-cell-px",

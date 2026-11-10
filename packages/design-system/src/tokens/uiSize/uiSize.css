@@ -14,8 +14,9 @@
    │  外框標頭高 --chrome-header-height                                   │
    └───────────────────────────────────────────────────────────────────┘
    ┌─ 元件的值(暫時寄住;分類表 target 是它們的目標住處) ────────────────┐
-   │  標籤高、表格列高、側欄寬 / 收合寬 / 選單圖示、頭像重疊量 →          │
-   │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾(分頁高已搬); │
+   │  標籤高、側欄寬 / 收合寬 / 選單圖示、頭像重疊量 →                    │
+   │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾               │
+   │  (分頁高、表格列高已搬);                                           │
    │  選單最大高、按鈕群組分隔線、表格面板寬 → 「3全收」收回成元件常數     │
    └───────────────────────────────────────────────────────────────────┘
    新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要再放進來。
@@ -82,10 +83,7 @@
   --tag-height-md: 1.5rem;      /* 24px */
   --tag-height-lg: 1.5rem;      /* 24px — md alias */
 
-  /* Table Row Height — DataTable */
-  --table-row-sm: 2rem;         /* 32px */
-  --table-row-md: 2.5rem;       /* 40px */
-  --table-row-lg: 3rem;         /* 48px */
+  /* 表格列高 --table-row-* 2026-11-11 搬到 components/DataTable/data-table.css(主人 = DataTable;token「2甲」第四批) */
 
   /* 分頁高 --tab-height-* 2026-11-11 搬到 components/Tabs/tabs.css(主人 = Tabs;token「2甲」第一批) */
 
@@ -148,10 +146,6 @@
   --field-height-md: 2.25rem;   /* 36px */
   --field-height-lg: 2.5rem;    /* 40px */
 
-  --table-row-sm: 2.5rem;       /* 40px */
-  --table-row-md: 3rem;         /* 48px */
-  --table-row-lg: 3.5rem;       /* 56px */
-
   --chrome-header-height: 3.5rem; /* 56px(lg density) */
 }
 
@@ -164,10 +158,6 @@
   --field-height-sm: 1.75rem;   /* 28px — md default */
   --field-height-md: 2rem;      /* 32px — md default */
   --field-height-lg: 2.25rem;   /* 36px — md default */
-
-  --table-row-sm: 2rem;         /* 32px */
-  --table-row-md: 2.5rem;       /* 40px */
-  --table-row-lg: 3rem;         /* 48px */
 
   /* 2026-07-16 dim 52 補洞:lg block(上方)有 override --chrome-header-height 3.5rem,
      md-reset 原漏重設 → lg 祖先下 subtree lock md 時 chrome header 仍 56px,破 W3
@@ -206,15 +196,13 @@
 
 
 /* ── Tailwind Theme Bridge ──
-   橋接成 spacing utility，讓 h-field-md / h-table-row-lg 等 class 可用 */
+   橋接成 spacing utility，讓 h-field-md / h-tag-md 等 class 可用 */
 @theme inline {
   --spacing-field-xs:    var(--field-height-xs);
   --spacing-field-sm:    var(--field-height-sm);
   --spacing-field-md:    var(--field-height-md);
   --spacing-field-lg:    var(--field-height-lg);
-  --spacing-table-row-sm: var(--table-row-sm);
-  --spacing-table-row-md: var(--table-row-md);
-  --spacing-table-row-lg: var(--table-row-lg);
+  /* h-table-row-* 的轉接名跟著本尊住 components/DataTable/data-table.css */
   --spacing-tag-sm: var(--tag-height-sm);   /* h-tag-sm(規則 3 utility bridge,同 h-field-* / h-tab-*)*/
   --spacing-tag-md: var(--tag-height-md);
   --spacing-tag-lg: var(--tag-height-lg);

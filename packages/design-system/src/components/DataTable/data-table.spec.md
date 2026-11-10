@@ -69,6 +69,14 @@ DataTable 是基於 TanStack Table 的資料表格元件，提供排序、篩選
 
 DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。**Size 不等於 density。** Size 是這張表格的結構決策（需要多緊湊），density 是全域的使用者偏好。同一頁可以有不同 size 的表格，density 全頁一致。
 
+**列高 token**(DataTable 自己的值):宣告住 `data-table.css`(預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變),Tailwind 寫法 `h-table-row-sm` / `h-table-row-md` / `h-table-row-lg`(轉接名同檔)。大密度三檔統一 +0.5rem(+8px)。產品可讀來對齊、不可覆寫 —— 本規格點名的只有「Inline create row」那一列(分類表 `../../tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
+
+| Token | md density | lg density |
+|-------|-----------|-----------|
+| `--table-row-sm` | 2rem (32px) | 2.5rem (40px) |
+| `--table-row-md` | 2.5rem (40px) | 3rem (48px) |
+| `--table-row-lg` | 3rem (48px) | 3.5rem (56px) |
+
 水平 padding 固定,不隨 size 或 density 變化(具體 token 見 `data-table.tsx`);垂直方向由行高模式決定(見第四節)。
 
 **Cell / header 字級隨 size,對齊 Field family。** 三種 size 的 cell 與 header 預設字級**必與同 size 的 Field 一致**:`sm`/`md` → `text-body`(14px)、`lg` → `text-body-lg`(16px),SSOT = `fieldDisplayTextClass()`(`field-wrapper.tsx`)。`lg` 行高放大時字級同步放大,避免「字小、行高大」失衡。**機制**:typed cell 由各自 Field 控件吃 `size` 自動套用(cell-registry 各 cell view mode 必傳 `size`,**禁漏傳**否則 fallback md 卡 14px);header 與非-Field 內容(consumer 自訂 cell)由 cell wrapper / header `cn(fieldDisplayTextClass(size))` 套用。`1lh`-based cell-py 公式(見第四節)隨字級自動吸收,row 高不變。
@@ -639,7 +647,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 - `../Button/button.spec.md` — row actions 按鈕規則
 - `../DescriptionList/description-list.spec.md` — 唯讀屬性列表（非多 row 場景）
 - `../TreeView/tree-view.spec.md` — 階層結構的對應元件
-- `../../tokens/uiSize/uiSize.spec.md` — `--table-row-*` / `--field-height-*` token
+- `../../tokens/uiSize/uiSize.spec.md` — `--field-height-*` token(列高 `--table-row-*` 是本元件的值,見「一、Table Size」)
 - `../../tokens/color/color.spec.md` — 語義色彩
 - `../../tokens/elevation/elevation.spec.md` — drag ghost 陰影(`--elevation-200`;固定欄分界為 1px divider,無陰影)
 - `../Field/field-controls.spec.md` — cell editable 時的 Field Control 共用規則

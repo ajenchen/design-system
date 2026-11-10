@@ -158,7 +158,8 @@ async function selftest(page) {
     ['拿掉 --sidebar-menu-icon-size 的回復', '--sidebar-menu-icon-size', mutate(UI_SIZE, '拿掉回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--sidebar-menu-icon-size:[^;]*;/, '$1')],
     ['衍生值只宣告在 :root(不在區塊上重算)', '--sidebar-width-icon', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
     ['衍生值只宣告在 :root —— 多行輸入框內距那組也要被指名', '--field-control-py-md', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
-    ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(UI_SIZE, '拿掉 table-row 回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],
+    // 列高 2026-11-11 搬到 data-table.css(token「2甲」第四批):注入點跟著住處走,否則 mutate 找不到而 INSTRUMENT-FAIL
+    ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(DATA_TABLE, '拿掉 table-row 回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],
     // 「在主人根元素上量」不是恆綠:表格根元素不再重算 → 繼承整頁的值 → 必紅
     ['表格根元素不再重算 --table-cell-py', '--table-cell-py', mutate(DATA_TABLE, '表格只留 :root', /:root,\s*\[data-table-size="md"\]\s*\{/, ':root {')],
   ]

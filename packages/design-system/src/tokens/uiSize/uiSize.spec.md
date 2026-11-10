@@ -146,13 +146,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 
 ## Table Row
 
-DataTable 行高。density 切換統一 +0.5rem (+8px)。
-
-| Token | md density | lg density |
-|-------|-----------|-----------|
-| `--table-row-sm` | 2rem (32px) | 2.5rem (40px) |
-| `--table-row-md` | 2.5rem (40px) | 3rem (48px) |
-| `--table-row-lg` | 3rem (48px) | 3.5rem (56px) |
+表格列高 `--table-row-*` 是 DataTable 自己的值(元件的值),2026-11-11 搬到 `components/DataTable/data-table.css`(user 2026-11-10 token「2甲」第四批;名字與每一檔密度的值都沒變)。每一檔的值、Tailwind `h-table-row-*` 寫法、產品可讀來對齊的範圍 → `components/DataTable/data-table.spec.md`「一、Table Size」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
 
 ---
 
@@ -461,11 +455,10 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ## Tailwind Bridge
 
-透過 `@theme inline` 橋接到 Tailwind spacing：
+透過 `@theme inline` 橋接到 Tailwind spacing(元件的值的轉接名跟著本尊住主人的樣式檔,例:`h-table-row-*` 在 `components/DataTable/data-table.css`、`h-tab-*` 在 `components/Tabs/tabs.css`):
 
 ```tsx
 <div className="h-field-md" />       /* = var(--field-height-md) */
-<div className="h-table-row-md" />   /* = var(--table-row-md) */
 ```
 
 ## 模式切換
