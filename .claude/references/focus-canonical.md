@@ -354,12 +354,18 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 舊表的 **D 類(選單未選中項用 hover 同色底當游標)已整類撤回**(來源總帳),沒有替代品:那些列現在就是畫框。
 
 **共同前提**:四類都要指得出**承擔者是誰**(file:line)。指不出來就是要畫,沒有第五類。
+**指標怎麼寫(2026-11-11)**:別檔的承擔者一律寫**宣告名** `檔名.tsx#宣告名`(物件裡的一項寫 `檔名.tsx#宣告名.鍵`),
+不准寫行號;`檔名.tsx:行號` 只准指同一個檔。原因是一次真實事故:data-table.tsx 的 A 類標記寫「承擔者:data-table-interaction-layer.tsx:379」,
+4bc1b6e9 在對方檔案上方加了 4 行註解,承擔者 `CELL_RING_STYLES.selected` 一字未改、只被推到 383 行,閘卻在**另一個檔**紅 ——
+行號只在寫下的那一刻剛好等於承擔者(M37 代理)。同次盤點 8 個行號指標有 4 個已過期,其中 3 個因為同檔另有證據而從沒被驗過。
+`scripts/focus-suppression-registry.mjs` 現在:跨檔寫行號 → 紅;標記裡寫出來的**每一個**指標(含旁白)都要指得到、而且指到的程式
+(剝掉註解後)真的有畫框;只寫 `:行號` 沒寫檔名 → 紅。
 
 | 類 | 判準(**看什麼**) | 框由誰畫 | 實例 |
 |---|---|---|---|
 | **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`);或元件 state 管的程式游標(DataTable 試算表模式的格游標,框由 `data-table-interaction-layer.tsx` 畫,2026-09-26),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單的容器看自己的 `:focus-visible`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`)。TreeView 2026-09-25 起改列上真焦點(待辦總帳 B9),已不屬本類 |
-| **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx#fieldDefaultChromeCompounds` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
-| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(2026-09-26 FileUpload 清單列) | 欄位外框自己(`combobox.tsx:666` / `time-picker.tsx:382`)/ 祖先畫(`inline-edit.tsx:404`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
+| **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx#fieldDefaultChromeCompounds` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs` 的 `evidence.B`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
+| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框。自己的 `::before` 框圖層(「框怎麼畫」框圖層列)也算自己這圈 —— 元素本身抑制全域外描邊,承擔者寫成掛 `focus-visible:before:focus-ring-inset` 那一行的 `檔名.tsx:行號`(同檔;2026-09-26 FileUpload 清單列) | 欄位外框自己(Combobox / TimePicker 觸發器那一行,承擔者 `field-wrapper.tsx#fieldDefaultChromeCompounds`)/ 祖先畫(InlineEdit 外層 div 的 `[&:has(button:focus-visible)]:border-primary`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
 
 > **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
@@ -378,7 +384,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 那本身就是「我在這裡」——這也是 WCAG 對文字欄位不另外要求外框的原因。
 所以判準應該是**「它是不是 `<input>` 文字類 / `<textarea>` / `[contenteditable]`」**(看標籤名與屬性,一眼可答),
 不是「它屬不屬於某個元件族」(要認得出來)。user 2026-09-09 追問「『單一狀態控制項』這個又是如何具體判別?」——
-答案就是這三個標籤／屬性,而且 `scripts/focus-suppression-registry.mjs` 的 B 類證據檢查(`:112-114`)就是照這個判的。
+答案就是這三個標籤／屬性,而且 `scripts/focus-suppression-registry.mjs` 的 B 類證據檢查(`evidence.B`)就是照這個判的。
 
 Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#fieldDefaultChromeCompounds`),那是加成不是必要條件。
 **`type="checkbox"` / `"radio"` / `"range"` 的 `<input>` 不是插入點控件**——沒有 caret,照規則二畫框(DS 的 Checkbox / Radio / Slider 都畫)。
@@ -423,7 +429,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 |---|---|---|---|
 | 1 | **它可以被操作嗎?**(有 onClick / onKeyDown / 是原生互動元素?) | **否 → 不畫**,而且要拿掉 tabIndex。這張表不適用 | `N`,寫「不可操作」 |
 | 2 | **它的 `tabIndex` 是 `-1`,而且是某個浮層開啟時被程式 `.focus()` 的殼嗎?** | **E** — 不畫(回問題一) | 「浮層開啟時的程式落點;內部控件各自有指示」 |
-| 3 | **它身上有 `aria-activedescendant`,或它是 cmdk / Radix 管理游標的項目嗎?** | **A** — 容器不畫瀏覽器那圈,框由元件畫在被指到的那個元素上(常駐清單:容器的 `:focus-visible`;會搶反白的選單:鍵盤來歷 `useCursorMover`) | 那個元素／那條 class 的 file:line(例:`time-columns.tsx` 的 `group-focus-visible/listbox:aria-selected:focus-ring-inset`)|
+| 3 | **它身上有 `aria-activedescendant`,或它是 cmdk / Radix 管理游標的項目,或它的游標是元件 state 管的程式游標(框由別檔畫)嗎?** | **A** — 容器不畫瀏覽器那圈,框由元件畫在被指到的那個元素上(常駐清單:容器的 `:focus-visible`;會搶反白的選單:鍵盤來歷 `useCursorMover`;程式游標:畫框的那一檔) | 那個元素／那條 class 的位置(例:`time-columns.tsx` 的 `group-focus-visible/listbox:aria-selected:focus-ring-inset`;別檔 = `data-table-interaction-layer.tsx#CELL_RING_STYLES.selected`)|
 | 4 | **它的標籤名是 `input`(文字類)或 `textarea`,或帶 `contenteditable` 嗎?** | **B** — 不畫,插入點(caret)就是指示 | 「caret」,外框另有 focus 樣式時一併寫上 |
 | 5 | **從自己往上找,有沒有元素在聚焦時改邊框?**(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **C** — 不另外畫外框,那圈邊框就是指示 | 那個元素的 file:line 與 class(自己也算)|
 | 6 | **以上皆否** | **要畫**(幾何走「框怎麼畫」) | — |
@@ -440,7 +446,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 2. **順序不可調換**:先問「能不能操作」(問題一),再問四類,最後才是「要畫」。
    浮層落點排第 2 是因為它最容易被誤判成 A(兩者都是「容器拿到焦點」)——
    差別是浮層那個沒有 `aria-activedescendant`,一查就分得開。
-3. **每一類都要求寫出承擔者是誰**,而且承擔者是**具體的 file:line 或 class**,不是「別的元素」。
+3. **每一類都要求寫出承擔者是誰**,而且承擔者是**具體的 file:line 或 class**,不是「別的元素」(別檔寫 `檔名.tsx#宣告名`,不寫行號,見上方「指標怎麼寫」)。
    寫不出來就代表判斷錯了 —— `scripts/focus-suppression-registry.mjs` 機械強制這一點。
 
 ### 這張表之前是怎麼寫的(2026-09-07 user 問「未修改前到底怎麼定義」,原文保留)
