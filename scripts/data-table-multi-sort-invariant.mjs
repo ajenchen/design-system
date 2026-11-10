@@ -8,7 +8,8 @@
  *        G 長相(md 專案排程 + 設計規格「元件檢閱器」sm / lg 兩種尺寸):數字在箭頭右側、間距 2px、字級 / 行高 / 字重 = 表頭字、顏色 = 箭頭
  *          (靜止與滑過都相等)、垂直置中、指示佔原本單一箭頭的位置(label 之後 4px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
  *        M ⌄ 選單:多重排序時也有「取消排序」、按了清掉全部排序(與「升冪 / 降冪排序」同一套,lib/sort-cycle.ts);只有一欄排序時有且按了 = 沒有排序;
- *          「降冪排序」只用這一欄;
+ *          「降冪排序」只用這一欄;「升冪 / 降冪排序」只列這一欄目前不是的那個方向(多重排序升冪 / 多重排序降冪 / 只有一欄降冪三種狀態各量一次,
+ *          沒排序的欄兩項都在;lib/sort-cycle.ts `columnMenuShowsSortDirection`,user 2026-11-10 PR #172 留言);
  *        A 讀屏:順位走 aria-describedby(「排序順位 N」,9+ 時照實說)、數字 aria-hidden、播報區在表格根節點外、播報句子;
  *          多重排序狀態(3 欄、11 欄 9+、lg 尺寸)跑 axe(wcag2a / wcag2aa,同 a11y 閘 `scripts/audit-a11y.mjs`),違規不比同一則 story 沒排序時多
  *          —— 全 DS 像素 / a11y 閘只拍 story 初始狀態,而沒有任何 story 一開始就多重排序,這個狀態只有本閘看得到;
@@ -16,11 +17,13 @@
  *        U 不受控的表格(內部 state)同一套行為。
  *   紅: --selftest 在頁面注入各組破法(丟掉 Shift 的點擊與按鍵 / 數字藏起來 / 間距改 4px / 數字換字級與顏色 / 數字搬到箭頭左邊 /
  *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 藏起「取消排序」/ 只在多重排序時藏起「取消排序」/
+ *        選單補回「這一欄目前已經是的那個方向」/
  *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法),各組必紅,對照列必綠;
  *        108a736f 的建置跑(`--build=<那份建置>`,2026-11-04 實測):紅 43 項(P 13 / N 10 / A 9 / G 3 / M 2 / S 3 / U 3;多重排序藏箭頭、一般點擊最後一欄
  *        不清掉其他欄、數字 / 人員欄第一下降冪、沒有播報區、只從面板加排序時列把手可拖),G 與 11 欄 axe 量不到箭頭 / 9+ → INSTRUMENT-FAIL(exit 2);
  *        M 組「多重排序時 ⌄ 有取消排序」與「按了清掉全部」在 8eb473c7 的建置紅(修前多重排序時不出這一項;2026-11-10 實測);
  *        「按了清掉全部」的結果另由判定表 `scripts/test-data-table-sort-cycle.mjs` 判定表 3 的對照組守(修前只拿掉這一欄)。
+ *        M 組「只列這一欄目前不是的那個方向」三列在 2e1f2e27 的建置紅(修前兩項永遠都列);判定另由判定表 3c 的對照組守。
  *        其餘本機實測數字(判定列數、--selftest 應紅 / 對照列數、秒數)寫在交付時的 log,不抄進這裡(抄了就會過期 —— 11-03 這裡曾寫 148,實為 147)。
  *   綠: 修好的建置全綠;找不到表頭 / 排序區 / 面板 / 選單項等量不到的情況以 INSTRUMENT-FAIL 紅,不當成通過。
  * ─────
@@ -100,6 +103,7 @@ async function injectBreak(kind) {
     'height-grow': '[data-sort-priority]{line-height:44px!important}',
     'number-offset': '[data-sort-priority]{position:relative!important;top:3px!important}',
     'menu-cancel-hidden': '[role="menuitem"]:has(svg.lucide-x){display:none!important}',
+    'menu-current-dir-shown': '',
     'num-role-img': '',
   }[kind]
   if (css) { await page.addStyleTag({ content: css }); return }
@@ -140,6 +144,25 @@ async function injectBreak(kind) {
         for (const m of document.querySelectorAll('[role="menu"] [role="menuitem"]')) if ((m.textContent || '').trim() === '取消排序' && m.style.display !== 'none') m.style.display = 'none'
       }
       new MutationObserver(hide).observe(document.body, { subtree: true, childList: true })
+    }
+    if (kind === 'menu-current-dir-shown') {
+      // ⌄ 選單把「這一欄目前已經是的那個方向」也列出來(= 2e1f2e27 以前:升冪 / 降冪兩項永遠都在):選單裡只有其中一項時,複製它補上另一項
+      const pairs = [['升冪排序', '降冪排序'], ['降冪排序', '升冪排序']]
+      const add = () => {
+        for (const menu of document.querySelectorAll('[role="menu"]')) {
+          const items = [...menu.querySelectorAll('[role="menuitem"]')]
+          const find = (t) => items.find((m) => (m.textContent || '').trim() === t)
+          for (const [have, missing] of pairs) {
+            const src = find(have)
+            if (!src || find(missing)) continue
+            const clone = src.cloneNode(true)
+            const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT)
+            for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.nodeValue.includes(have)) n.nodeValue = n.nodeValue.replace(have, missing)
+            src.after(clone)
+          }
+        }
+      }
+      new MutationObserver(add).observe(document.body, { subtree: true, childList: true })
     }
     if (kind === 'num-role-img') {
       // 數字從讀屏裡露出來、而且變成沒有名字的圖(axe role-img-alt;只有多重排序時有數字,沒排序的基準不受影響)
@@ -374,9 +397,15 @@ async function openColumnMenu(col, name) {
   await trigger.first().click(); await settle()
   return true
 }
-for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-multi-hidden'], ['aria-stripped', 'live-silent']] : [[]]) {
+/** 選單裡「升冪排序」「降冪排序」各有幾項(lib/sort-cycle.ts `columnMenuShowsSortDirection`:只列這一欄目前不是的那個方向) */
+const menuDirections = async () => ({
+  asc: await page.getByRole('menuitem', { name: '升冪排序' }).count(),
+  desc: await page.getByRole('menuitem', { name: '降冪排序' }).count(),
+})
+for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-multi-hidden'], ['menu-current-dir-shown'], ['aria-stripped', 'live-silent']] : [[]]) {
   if (!(await open(ROADMAP, breaks))) continue
   const hideBreak = breaks.includes('menu-cancel-hidden'); const multiHideBreak = breaks.includes('menu-cancel-multi-hidden'); const ariaBreak = breaks.includes('aria-stripped')
+  const dirBreak = breaks.includes('menu-current-dir-shown')
   await act('click', 'title'); await act('shift', 'status'); await act('shift', 'priority')
   // A:順位描述、數字 aria-hidden、名字不含數字、播報區在根節點外
   const a11y = await page.evaluate(() => {
@@ -399,10 +428,18 @@ for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-multi-hid
   // M:多重排序時 ⌄ 也有「取消排序」(lib/sort-cycle.ts `columnMenuShowsCancelSort`;spec「Multi-sort header」列)
   if (await openColumnMenu('status', '狀態')) {
     const cancel = page.getByRole('menuitem', { name: '取消排序' })
-    const asc = page.getByRole('menuitem', { name: '升冪排序' })
-    check('M', '多重排序時 ⌄ 選單有「升冪排序」', (await asc.count()) === 1, '', { control: true })
+    const d = await menuDirections()
+    // 「狀態」此刻升冪(三欄都升冪)→ 不列「升冪排序」(選了沒變化)、列「降冪排序」(user 2026-11-10 PR #172 留言;2e1f2e27 建置兩項都列 → 紅)
+    check('M', '多重排序、「狀態」升冪 → ⌄ 選單沒有「升冪排序」、有「降冪排序」', d.asc === 0 && d.desc === 1, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: !dirBreak })
     const has = (await cancel.count()) >= 1 && (await cancel.first().isVisible())
     check('M', '多重排序時 ⌄ 選單有「取消排序」', has, '', { control: !hideBreak && !multiHideBreak })
+    await page.keyboard.press('Escape'); await parkPointer(page); await settle()
+  }
+  // 多重排序裡這一欄改成降冪(Shift+點「狀態」= 循環下一步、順位不動)→ 選單看的是這一欄自己:不列「降冪排序」、列「升冪排序」
+  await act('shift', 'status')
+  if (await openColumnMenu('status', '狀態')) {
+    const d = await menuDirections()
+    check('M', '多重排序、「狀態」降冪(標題 / 優先級仍升冪)→ ⌄ 選單沒有「降冪排序」、有「升冪排序」', d.asc === 1 && d.desc === 0, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: !dirBreak })
     await page.keyboard.press('Escape'); await parkPointer(page); await settle()
   }
   if (!hideBreak && !multiHideBreak) {
@@ -419,6 +456,8 @@ for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-multi-hid
   // M:只有一欄排序時 ⌄ 有「取消排序」,按了 = 沒有排序(同修前)
   if (await openColumnMenu('priority', '優先級')) {
     const cancel = page.getByRole('menuitem', { name: '取消排序' })
+    const d = await menuDirections()
+    check('M', '只有一欄排序、「優先級」降冪 → ⌄ 選單沒有「降冪排序」、有「升冪排序」', d.asc === 1 && d.desc === 0, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: !dirBreak })
     const has = (await cancel.count()) === 1 && (await cancel.isVisible())
     check('M', '只有一欄排序時 ⌄ 選單有「取消排序」', has, '', { control: !hideBreak })
     if (has) {
@@ -426,6 +465,12 @@ for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-multi-hid
       const r = await readHeaders()
       check('M', '只有一欄排序時按「取消排序」→ 沒有排序', r.state === '', `實得「${r.state || '(無)'}」`, { control: true })
     } else { await page.keyboard.press('Escape'); await settle() }
+  }
+  // M:沒排序的欄 → 兩項都列(「標題」此刻不在排序裡;破法只補缺的那一項,這裡兩項本來就在 → 對照列)
+  if (await openColumnMenu('title', '標題')) {
+    const d = await menuDirections()
+    check('M', '「標題」沒排序 → ⌄ 選單「升冪排序」「降冪排序」兩項都在', d.asc === 1 && d.desc === 1, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: true })
+    await page.keyboard.press('Escape'); await parkPointer(page); await settle()
   }
   // M:多重排序時按「取消排序」→ 清掉全部排序(lib/sort-cycle.ts `sortingFromColumnMenu`;不是只拿掉這一欄)
   if (!hideBreak && !multiHideBreak) {

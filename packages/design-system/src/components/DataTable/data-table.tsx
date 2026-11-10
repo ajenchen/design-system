@@ -56,7 +56,7 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
-import { sortingAfterHeaderActivate, sortingFromColumnMenu, columnMenuShowsCancelSort, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
+import { sortingAfterHeaderActivate, sortingFromColumnMenu, columnMenuShowsCancelSort, columnMenuShowsSortDirection, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
 import { sortingFnForColumnType } from './lib/column-sorting'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
@@ -4166,9 +4166,11 @@ function DataTableInner<TData>(
               {canSort && (
                 <>
                   {/* 三項的結果住 lib/sort-cycle.ts `sortingFromColumnMenu`:升冪 / 降冪 = 一般點擊同一種(清掉其他欄、只用這一欄);
-                      取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了清掉全部排序,與升冪 / 降冪同一套。 */}
-                  <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'asc'))}>升冪排序</DropdownMenuItem>
-                  <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'desc'))}>降冪排序</DropdownMenuItem>
+                      取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了清掉全部排序,與升冪 / 降冪同一套。
+                      升冪 / 降冪只列這一欄目前不是的那個方向(`columnMenuShowsSortDirection`;選了沒變化的不列,多重排序也看這一欄自己;
+                      user 2026-11-10 PR #172 留言 + AG Grid / MUI X 同做法,出處在該函式)。 */}
+                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'asc') && <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'asc'))}>升冪排序</DropdownMenuItem>}
+                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'desc') && <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'desc'))}>降冪排序</DropdownMenuItem>}
                   {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, null))}>取消排序</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                 </>

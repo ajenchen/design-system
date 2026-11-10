@@ -31,6 +31,8 @@
  * 理由 = 與排序面板(`../data-table-sort-manager.tsx` `updateAt`:改方向原地替換)同一個動作同一個結果。
  * ⌄ 選單的「取消排序」:這一欄在排序裡就出,按了**清掉全部排序**(多重排序也一樣;`columnMenuShowsCancelSort` / `sortingFromColumnMenu`)——
  * 與同一個選單的「升冪 / 降冪排序」同屬一般點擊那一套(清掉其他欄);只拿掉一欄走 Shift+點擊或排序面板。依據見 `sortingFromColumnMenu`。
+ * ⌄ 選單的「升冪 / 降冪排序」只列這一欄**目前不是**的那個方向(2026-11-10;`columnMenuShowsSortDirection`):這一欄升冪 → 不列「升冪排序」,
+ * 降冪 → 不列「降冪排序」,沒排序 → 兩項都列;多重排序時看的也是這一欄自己的方向。
  */
 import type { SortingState } from '@tanstack/react-table'
 
@@ -88,6 +90,19 @@ export function sortingFromColumnMenu(_sorting: SortingState, columnId: string, 
  */
 export function columnMenuShowsCancelSort(sorting: SortingState, columnId: string): boolean {
   return sorting.some((s) => s.id === columnId)
+}
+
+/**
+ * ⌄ 選單要不要出「升冪排序」(`'asc'`)/「降冪排序」(`'desc'`):這一欄**目前就是**這個方向 → 不出(選了沒有任何變化),其餘都出。
+ * 看的是**這一欄自己**的方向,不看它在多重排序裡排第幾、也不看其他欄(AG Grid / MUI X 同樣只看這一欄;兩家出處見下)。
+ * 來源:user 2026-11-10 PR #172 決策頁留言(問句,逐字)「應該要把當前的排序的選項拿掉吧？因為選了沒意義啊」;AI 查證世界級一致後照做:
+ * AG Grid 欄位選單 `if (!(isAscending && isDefaultSort)) result.push('sortAscending')`、`if (!(isDescending && isDefaultSort)) result.push('sortDescending')`
+ * (https://github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-enterprise/src/menu/columnMenuFactory.ts#L137-L160)、
+ * MUI X `sortDirection !== 'asc'` / `sortDirection !== 'desc'` 才渲染該項
+ * (https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/menu/columnMenu/menuItems/GridColumnMenuSortItem.tsx#L56-L73)。
+ */
+export function columnMenuShowsSortDirection(sorting: SortingState, columnId: string, direction: SortDirection): boolean {
+  return directionOf(sorting, columnId) !== direction
 }
 
 /** 數字最多顯示到 9,第 10 個以後一律「9+」(Badge `max` 的「max+」寫法,`../../Badge/badge.tsx`)。 */

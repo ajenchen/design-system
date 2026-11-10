@@ -5,6 +5,8 @@
  *        data-table.spec.md「Multi-sort header」列寫的那個結果:循環 = 升冪 → 降冪 → 清除;一般點擊清掉其他欄、這一欄從目前方向切下一個;
  *        Shift+點擊只動這一欄(不在排序裡 → 加到最後、升冪;在排序裡 → 循環下一步、順位不動;清除 → 後面順位往前補);
  *        ⌄ 選單升冪 / 降冪 = 只用這一欄;「取消排序」這一欄在排序裡就出現(多重排序也出)、按了清掉全部排序(與升冪 / 降冪同一套);
+ *        ⌄ 選單「升冪 / 降冪排序」只列這一欄目前不是的那個方向(這一欄升冪 → 不列升冪;降冪 → 不列降冪;沒排序 → 兩項都列;多重排序看這一欄自己;
+ *        user 2026-11-10 PR #172 留言,判定表 3c;修前兩項永遠都列 → 對照組在 3c 紅);
  *        順位數字只在 ≥2 欄排序時出現、1–9 照寫、第 10 個以後「9+」;
  *        讀屏描述照實說第幾;播報句型。另驗呼叫端(data-table.tsx)真的消費這支判定,而不是 TanStack 內建的切換。
  *   紅: 判定表任一格與純函式輸出不符即 exit 1(判定表列的是**期望值**,不是抄輸出);
@@ -66,6 +68,8 @@ const legacy = (() => {
     },
     // 修前 ⌄ 選單:`sortDir && !isMultiSort` 才出「取消排序」(多重排序時不出);修前按了只拿掉這一欄(上方 dir === null 那行)
     columnMenuShowsCancelSort: (old, id) => old.length === 1 && old[0].id === id,
+    // 修前(2e1f2e27 以前)⌄ 選單:「升冪排序」「降冪排序」兩項永遠都列,不看這一欄目前的方向
+    columnMenuShowsSortDirection: () => true,
     // 修前:多重排序時表頭不顯示任何東西(K7)
     sortPriorityLabel: () => null,
     sortPriorityDescription: () => null,
@@ -149,6 +153,22 @@ const MENU_CANCEL = [
 for (const [name, from, col, want] of MENU_CANCEL) {
   row(`選單「取消排序」${name}`, String(impl.columnMenuShowsCancelSort(S(from), col)), want)
 }
+// ── 判定表 3c:⌄ 選單要不要列「升冪排序」/「降冪排序」(只列這一欄目前不是的那個方向;user 2026-11-10 PR #172 留言)
+//    [名稱, 目前排序, 開哪一欄的選單, 期望「升冪排序」出不出, 期望「降冪排序」出不出] ──
+const MENU_DIRECTION = [
+  ['沒有排序 → 兩項都列', '', 'title', 'true', 'true'],
+  ['唯一一欄、這欄升冪 → 不列升冪、列降冪', 'title↑', 'title', 'false', 'true'],
+  ['唯一一欄、這欄降冪 → 列升冪、不列降冪', 'title↓', 'title', 'true', 'false'],
+  ['唯一一欄排序、不是這欄 → 兩項都列', 'title↑', 'status', 'true', 'true'],
+  ['多重排序、這欄升冪(中間)→ 不列升冪、列降冪', 'title↑ status↑ priority↑', 'status', 'false', 'true'],
+  ['多重排序、這欄降冪(第一欄)→ 列升冪、不列降冪', 'title↓ status↑', 'title', 'true', 'false'],
+  ['多重排序、別欄降冪而這欄升冪 → 只看這欄:不列升冪', 'title↓ status↑', 'status', 'false', 'true'],
+  ['多重排序、這欄不在裡面 → 兩項都列', 'title↑ status↓', 'priority', 'true', 'true'],
+]
+for (const [name, from, col, wantAsc, wantDesc] of MENU_DIRECTION) {
+  row(`選單「升冪排序」${name}`, String(impl.columnMenuShowsSortDirection(S(from), col, 'asc')), wantAsc)
+  row(`選單「降冪排序」${name}`, String(impl.columnMenuShowsSortDirection(S(from), col, 'desc')), wantDesc)
+}
 
 // ── 判定表 4:順位數字 / 讀屏描述 ──
 const TEN = S('a↑ b↑ c↑ d↑ e↑ f↑ g↑ h↑ i↑ j↑ k↓')
@@ -181,6 +201,8 @@ if (!SELFTEST) {
     ['Enter / Space 帶 Shift', /if \(e\.key === 'Enter' \|\| e\.key === ' '\) \{ e\.preventDefault\(\); activateSort\(e\.shiftKey\) \}/],
     ['⌄ 選單三項經 sortingFromColumnMenu', /sortingFromColumnMenu\(current, header\.column\.id, 'asc'\)[\s\S]*sortingFromColumnMenu\(current, header\.column\.id, 'desc'\)[\s\S]*sortingFromColumnMenu\(current, header\.column\.id, null\)/],
     ['⌄ 選單「取消排序」出不出經 columnMenuShowsCancelSort', /\{columnMenuShowsCancelSort\(sortingState, header\.column\.id\) && <DropdownMenuItem startIcon=\{XIcon\}/],
+    ['⌄ 選單「升冪排序」出不出經 columnMenuShowsSortDirection', /\{columnMenuShowsSortDirection\(sortingState, header\.column\.id, 'asc'\) && <DropdownMenuItem startIcon=\{ArrowUp\}/],
+    ['⌄ 選單「降冪排序」出不出經 columnMenuShowsSortDirection', /\{columnMenuShowsSortDirection\(sortingState, header\.column\.id, 'desc'\) && <DropdownMenuItem startIcon=\{ArrowDown\}/],
     ['數字經 sortPriorityLabel', /sortPriorityLabel\(sortingState, header\.column\.id\)/],
     ['播報經 sortChangeAnnouncement', /setSortAnnouncement\(sortChangeAnnouncement\(next,/],
   ]
