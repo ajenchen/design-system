@@ -346,7 +346,7 @@ const SidebarProvider = React.forwardRef<
     // 供 SidebarMenuButton collapsed pl 公式消費,讓所有 prefix 中心(icon/avatar)鎖回
     // rail center = --sidebar-width-icon/2(per user mental model:rail anchor =
     // GlobalHeader toggle geometry,sidebar 收合所有元素 cx 對齊此 rail center)。
-    // Rail anchor 不隨 Sidebar size 變,只隨密度變(--sidebar-menu-icon-size md 1rem / lg 1.25rem,住 uiSize.css)。
+    // Rail anchor 不隨 Sidebar size 變,只隨密度變(--sidebar-menu-icon-size md 1rem / lg 1.25rem,住 sidebar.css)。
     const wrapperStyle = React.useMemo<React.CSSProperties>(
       () =>
         ({
@@ -785,7 +785,7 @@ const SidebarHeader = React.forwardRef<
         //
         // SSOT 連動鏈:
         //   --layout-space-loose (density token) ─┐
-        //   --sidebar-menu-icon-size              ├→ --sidebar-width-icon (calc;uiSize.css「衍生值」段,每個換密度的元素上重算)
+        //   --sidebar-menu-icon-size              ├→ --sidebar-width-icon (calc;sidebar.css「衍生值」段,每個換密度的元素上重算)
         //                                          └→ 公式自動跟 ✓
         //   --chrome-header-avatar-size (header-canonical.css local token):公式 var 引用,
         //                                JS 端透過 WorkspaceBrand RowSizeProvider value="md"

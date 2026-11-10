@@ -813,12 +813,12 @@
       "match": "--sidebar-",
       "class": "component",
       "owner": "Sidebar",
-      "home": "tokens/uiSize/uiSize.css",
+      "home": "components/Sidebar/sidebar.css",
       "target": "components/Sidebar/sidebar.css",
       "spec": "components/Sidebar/sidebar.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "側欄寬、最小寬、收合寬、選單圖示尺寸:拿掉側欄就沒有意義 → 側欄的值(版面外框、標頭讀它們是為了排側欄的位置)。產品要設定寬度走版面外框參數 widthRange / defaultWidth,token 不開放產品覆寫(user 2026-11-10 拍板 token 第 4 題甲;sidebar.spec.md「consumer 可覆寫」那句同批改成「用參數設定」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),排第五批"
+      "why": "側欄寬、最小寬、收合寬、選單圖示尺寸:拿掉側欄就沒有意義 → 側欄的值(版面外框、標頭讀它們是為了排側欄的位置)。產品不可覆寫,設定走 AppShell 參數 widthRange / defaultWidth —— token 只是產品沒設時的預設值(user 2026-11-10 拍板 token 第 4 題甲;sidebar.spec.md「consumer 可覆寫」那句同批改成「用參數設定」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第五批 2026-11-11 已搬到 components/Sidebar/sidebar.css,名字與值不變;新檔由對外彙總檔 styles/tokens.css 匯入(2026-05-26 產品拿不到側欄寬的事故)"
     },
     {
       "match": "--table-row-",

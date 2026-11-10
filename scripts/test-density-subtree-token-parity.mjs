@@ -21,7 +21,7 @@
  *
  * 跑法:
  *   node scripts/test-density-subtree-token-parity.mjs              現況(要綠)
- *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:四種注入的缺陷各自必紅且指名(衍生值那一種要同時指名側欄與多行輸入框兩組;含「在主人根元素上量」那條),現況必綠
+ *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:四種注入的缺陷各自必紅且指名(衍生值那一種在側欄 sidebar.css 與多行輸入框 uiSize.css 各注入一次、各自指名;含「在主人根元素上量」那條),現況必綠
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -32,6 +32,7 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DS = join(REPO, 'packages/design-system/src')
 const AGGREGATOR = join(DS, 'styles/tokens.css')
 const UI_SIZE = join(DS, 'tokens/uiSize/uiSize.css')
+const SIDEBAR = join(DS, 'components/Sidebar/sidebar.css')
 
 /** 已知、還沒修的名字(只能變短:名單裡的名字已經不違規 → 紅,要刪掉)。 */
 const KNOWN = new Set([])
@@ -155,8 +156,10 @@ async function selftest(page) {
   }
   const cases = [
     ['現況', null, new Map()],
-    ['拿掉 --sidebar-menu-icon-size 的回復', '--sidebar-menu-icon-size', mutate(UI_SIZE, '拿掉回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--sidebar-menu-icon-size:[^;]*;/, '$1')],
-    ['衍生值只宣告在 :root(不在區塊上重算)', '--sidebar-width-icon', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
+    // 側欄 4 顆 2026-11-11 搬到 components/Sidebar/sidebar.css(token「2甲」第五批):回復段與衍生值段都跟著搬,
+    // 注入點跟著住處走 —— 衍生值這一種因此分兩個檔各注入一次(側欄在 sidebar.css、多行輸入框內距留在 uiSize.css),各自要被指名
+    ['拿掉 --sidebar-menu-icon-size 的回復', '--sidebar-menu-icon-size', mutate(SIDEBAR, '拿掉回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--sidebar-menu-icon-size:[^;]*;/, '$1')],
+    ['衍生值只宣告在 :root(不在區塊上重算)', '--sidebar-width-icon', mutate(SIDEBAR, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
     ['衍生值只宣告在 :root —— 多行輸入框內距那組也要被指名', '--field-control-py-md', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
     // 列高 2026-11-11 搬到 data-table.css(token「2甲」第四批):注入點跟著住處走,否則 mutate 找不到而 INSTRUMENT-FAIL
     ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(DATA_TABLE, '拿掉 table-row 回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],

@@ -14,9 +14,9 @@
    │  外框標頭高 --chrome-header-height                                   │
    └───────────────────────────────────────────────────────────────────┘
    ┌─ 元件的值(暫時寄住;分類表 target 是它們的目標住處) ────────────────┐
-   │  標籤高、側欄寬 / 收合寬 / 選單圖示、頭像重疊量 →                    │
+   │  標籤高、頭像重疊量 →                                                │
    │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾               │
-   │  (分頁高、表格列高已搬);                                           │
+   │  (分頁高、表格列高、側欄 4 顆已搬);                                │
    │  選單最大高、按鈕群組分隔線、表格面板寬 → 「3全收」收回成元件常數     │
    └───────────────────────────────────────────────────────────────────┘
    新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要再放進來。
@@ -99,20 +99,10 @@
      不寫成 calc() 公式因為 lg 無法完美遵守(54 → 56 為了 8px grid 取整),hardcode 比假公式誠實。 */
   --chrome-header-height: 3rem; /* 48px */
 
-  /* Sidebar / Layout primitive sizing(2026-05-26 ship 進 published per consumer SSOT gap):
-     原本 declared in DS repo `src/globals.css`,沒進 npm-published tokens aggregator
-     → consumer install DS + import `@qijenchen/design-system/styles/tokens` 拿不到
-     → AppShell + Sidebar gap div 用 `var(--sidebar-width)` undefined → 解析 0px → flex 跑版
-     對齊 docs:`components/Sidebar/sidebar.spec.md`「尺寸規範」token table(段名不用行號:原本的 L613-614 已過期,r1b OTH-02)
-     Why uiSize.css:layout primitive widths 是 ui sizing semantic 範疇(對齊 --field-height / --chrome-header)
-     */
-  --sidebar-width: 15rem;          /* 240px:產品沒設時 Menu 的初始寬(user 2026-05-21) */
-  --sidebar-width-min: 240px;      /* 產品沒設時 Menu 與 Right panel 的最小寬(2026-05-21 起 Right panel 也參照這個最小寬 —— user 要求 aside 一起參照,轉述;那段對話紀錄已不存在、登記簿查無原話);2026-10-14 起不再硬夾 —— app-shell.spec.md「版面規則」§1 */
-  /* --sidebar-width-mobile(18rem 手機抽屜寬)2026-10-14 退場:Menu 浮層與並排共用同一份寬度紀錄(「版面規則」§7、§9) */
-  /* 16px —— 收合細列寬公式裡的圖示欄;大密度覆寫 1.25rem(20px),鎖回一般密度段回到 1rem。
-     讀它的只有下方「衍生值」段的 --sidebar-width-icon;畫出來的選單圖示大小由 Sidebar 的 size 決定(ICON_SIZE),不讀它。 */
-  --sidebar-menu-icon-size: 1rem;
-  /* --sidebar-width-icon(收合細列寬 = 2 × loose + 選單圖示)用 var() 組出來,住下方「衍生值」段 —— 每個換密度的元素上重算 */
+  /* 側欄 4 顆 --sidebar-width / --sidebar-width-min / --sidebar-width-icon / --sidebar-menu-icon-size
+     2026-11-11 搬到 components/Sidebar/sidebar.css(主人 = Sidebar;token「2甲」第五批)。
+     2026-05-26 那次「產品拿不到側欄寬、版面跑掉」的事故(當時宣告在 DS repo 的 src/globals.css、沒進對外彙總檔)
+     記在新檔檔頭;新檔由 styles/tokens.css 匯入,token-creation-invariant C6 在 CI 擋漏匯入。 */
 
   /* AgentPanel 面板寬**不設 token**(2026-10-15 退役 --agent-panel-width 25rem):預設 360 / 400 / 640 只住
      agent-panel.tsx 的 AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX —— 那個 token 執行期從沒有讀取者,元件一直用 JS 常數 400(r1b 複驗 F8,M17)。
@@ -139,9 +129,6 @@
 
 [data-ui-size="lg"],
 [data-density="lg"] {
-  /* 側欄收合寬公式裡的圖示欄,寬鬆密度 20px(鎖回一般密度段回到 16px;不是 Sidebar size=lg —— 畫出來的圖示由 size 決定,不讀它) */
-  --sidebar-menu-icon-size: 1.25rem; /* 20px(lg)*/
-
   --field-height-sm: 2rem;      /* 32px */
   --field-height-md: 2.25rem;   /* 36px */
   --field-height-lg: 2.5rem;    /* 40px */
@@ -164,10 +151,6 @@
      像素相等恆等式(md-lock subtree 必須與 root md 逐 token 相等)。值 = :root md default。 */
   --chrome-header-height: 3rem; /* 48px — md default */
 
-  /* 2026-11-11 補洞(同上一段那一種):大密度段有覆寫 --sidebar-menu-icon-size 1.25rem,這裡原本漏了 →
-     大密度頁面裡鎖回一般密度的區塊仍拿 20px(token-creation-invariant C5 已知名單登記過)。值 = :root 預設。 */
-  --sidebar-menu-icon-size: 1rem; /* 16px — md default */
-
   --tree-indent-sm: 1.5rem;     /* 24px — md default */
   --tree-indent-md: 1.5rem;     /* 24px — md default */
   --tree-indent-lg: 1.75rem;    /* 28px — md default */
@@ -177,9 +160,10 @@
    用 var() 由別的 token 組出來的值,瀏覽器在「宣告它的那個元素」上就把 var() 代換掉,子孫繼承的是代換後的結果
    (W3C CSS Custom Properties Level 1:custom property 的 Computed value =「specified value with variables substituted」,
    https://www.w3.org/TR/css-variables-1/#defining-variables)。只寫在 :root 的話,區塊換了密度
-   (data-density / data-ui-size / data-layout-space),它的輸入跟著變、它自己不會重算 —— 實測大密度頁面裡
-   鎖回一般密度的區塊,收合細列寬仍是 68 而不是 48;一般密度頁面裡局部放大的區塊,仍是 48 而不是 68。
+   (data-density / data-ui-size / data-layout-space),它的輸入跟著變、它自己不會重算 —— 實測整頁 md、區塊 data-density="lg",
+   單行高的多行盒量到 32px,同區塊單行 Input 是 36px(本檔 :root 段「Field control vertical padding」)。
    所以公式只寫這一份,宣告在 :root 與每個可能換密度的元素上,每一層都用自己的輸入重算。
+   元件的值也照這個做法:側欄收合細列寬 --sidebar-width-icon 住 components/Sidebar/sidebar.css 的同名段(2026-11-11 搬走)。
    閘:scripts/test-density-subtree-token-parity.mjs(區塊裡每一顆 token = 整頁直接設成那個密度的值,瀏覽器實算)。 */
 :root,
 [data-density],
@@ -189,9 +173,6 @@
   --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - 1px);
   --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);
   --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - 1px);
-
-  /* 側欄收合細列寬:md = 2×16+16 = 48 / lg = 2×24+20 = 68(components/Sidebar/sidebar.spec.md「尺寸規範」) */
-  --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
 }
 
 

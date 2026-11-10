@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Sidebar — 側欄寬 / 最小寬 / 收合細列寬 / 選單圖示欄(元件的值;主人 = Sidebar)
+   ═══════════════════════════════════════════════════════════════════════
+
+   分類、主人、住處、誰可以讀 → tokens/token-registry.json「--sidebar-」那一列(唯一一份;本檔不重述)。
+   2026-11-11 從 tokens/uiSize/uiSize.css 搬來(user 2026-11-10 token「2甲」,第二階段第五批、放最後):
+   名字、每一檔密度的值都沒變;產品經對外彙總檔 styles/tokens.css 拿到,不用改任何一行。
+   每一顆的值與理由 → sidebar.spec.md「尺寸規範」。
+
+   ── 產品要設定寬度用參數,不覆寫這幾顆 ──
+   user 2026-11-10 token「4甲」:要設定的值只走元件參數(Menu 用 AppShell 的 widthRange / defaultWidth),
+   這 4 顆只是產品沒設時的預設值,產品不可覆寫。
+
+   ── 本檔必須在對外彙總檔裡(2026-05-26 事故)──
+   側欄寬原本宣告在 DS repo 的 src/globals.css,沒進套件的對外彙總檔 → 安裝套件的產品拿不到 --sidebar-width →
+   AppShell 與 Sidebar 的寬度 var() 解析成空 → 版面跑掉。所以本檔由 styles/tokens.css 匯入
+   (token-creation-invariant C6 在 CI 擋「元件樣式檔沒進彙總檔也沒被程式匯入」)。
+
+   ── 段落順序不能動 ──
+   `:root` 與 `[data-density="lg"]` 權重相同(各一個偽類 / 屬性選擇器)。密度標記放在 <html> 上時,
+   兩條規則命中同一個元素,靠「後寫的贏」—— 所以預設值、大密度覆寫、鎖回一般密度三段必須同一個檔、照這個順序。
+   (token-creation-invariant C5 管「同一個檔」;順序由 test-density-subtree-token-parity 在瀏覽器實算守住。)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --sidebar-width: 15rem;          /* 240px:產品沒設時 Menu 的初始寬(user 2026-05-21) */
+  --sidebar-width-min: 240px;      /* 產品沒設時 Menu 與 Right panel 的最小寬(2026-05-21 起 Right panel 也參照這個最小寬 —— user 原話「aside應該也要一起參照」,commit e58576a6;全句見 sidebar.spec.md「尺寸規範」。搬家前這裡寫「轉述、查無原話」,是錯的,原話在那個 commit 訊息裡);2026-10-14 起不再硬夾 —— app-shell.spec.md「版面規則」§1 */
+  /* --sidebar-width-mobile(18rem 手機抽屜寬)2026-10-14 退場:Menu 浮層與並排共用同一份寬度紀錄(app-shell.spec.md「版面規則」§7、§9) */
+  /* 16px —— 收合細列寬公式裡的圖示欄;大密度覆寫 1.25rem(20px),鎖回一般密度段回到 1rem。
+     讀它的只有下方「衍生值」段的 --sidebar-width-icon;畫出來的選單圖示大小由 Sidebar 的 size 決定(ICON_SIZE),不讀它。 */
+  --sidebar-menu-icon-size: 1rem;
+  /* --sidebar-width-icon(收合細列寬 = 2 × loose + 選單圖示)用 var() 組出來,住下方「衍生值」段 —— 每個換密度的元素上重算 */
+}
+
+[data-ui-size="lg"],
+[data-density="lg"] {
+  /* 收合細列寬公式裡的圖示欄,寬鬆密度 20px(鎖回一般密度段回到 16px;不是 Sidebar size=lg —— 畫出來的圖示由 size 決定,不讀它) */
+  --sidebar-menu-icon-size: 1.25rem; /* 20px(lg)*/
+}
+
+/* 鎖回一般密度:祖先是大密度、這一塊宣告 data-density="md" / data-ui-size="md" 時回到 :root 的值
+   (浮層經 Portal 掛到 body 之外時一樣要能鎖回;uiSize.css 同名段落的理由)。
+   2026-11-11 補洞(搬來之前在 uiSize.css 補的):原本漏了這顆 → 大密度頁面裡鎖回一般密度的區塊仍拿 20px。 */
+[data-ui-size="md"],
+[data-density="md"] {
+  --sidebar-menu-icon-size: 1rem; /* 16px — md default */
+}
+
+/* ── 衍生值:在每個換密度的元素上重算 ──
+   用 var() 組出來的值,瀏覽器在「宣告它的那個元素」上就把 var() 代換掉,子孫繼承代換後的結果
+   (W3C CSS Custom Properties Level 1:custom property 的 Computed value =「specified value with variables substituted」,
+   https://www.w3.org/TR/css-variables-1/#defining-variables)。只寫在 :root 的話,區塊換了密度,收合細列寬不會重算 ——
+   實測大密度頁面裡鎖回一般密度的區塊,收合細列寬仍是 68 而不是 48。做法與 uiSize.css「衍生值」段相同。
+   閘:scripts/test-density-subtree-token-parity.mjs(區塊裡每一顆 token = 整頁直接設成那個密度的值,瀏覽器實算)。 */
+:root,
+[data-density],
+[data-ui-size],
+[data-layout-space] {
+  /* 側欄收合細列寬:md = 2×16+16 = 48 / lg = 2×24+20 = 68(sidebar.spec.md「尺寸規範」) */
+  --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
+}

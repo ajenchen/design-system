@@ -126,7 +126,7 @@ Ant Pagination 的 `responsive`(`useBreakpoint`,[Pagination.tsx#L99-L120](https:
     Primer / shadcn / Polaris / Bootstrap / Atlassian / Angular Material / GOV.UK / Mantine / EUI / Base Web / Vuetify 皆 0。
     主流解是**收合頁碼**(Atlassian `max = 7` 插省略號、Carbon PaginationNav 在 `isSm` 砍到 4 顆、Ant `pageBufferSize`)。
   - **我們的數字**:砍完頭尾的最後一階 = 5 格 × 28px + 4 × gap 4px = **156px**;DS 定義的最窄容器是側欄面板下限
-    240px(`../../tokens/uiSize/uiSize.css#--sidebar-width-min`),扣內距約 208px —— 支援得到的寬度都放得下,不需要捲。
+    240px(`../Sidebar/sidebar.css#--sidebar-width-min`),扣內距約 208px —— 支援得到的寬度都放得下,不需要捲。
   - **連帶修掉的副作用**:`overflow-x-auto` 常掛時,CSS 規範讓另一軸也算成 auto,於是**每一個寬度**都在裁上下 ——
     焦點框(實測往外的框上下像素 0 / 0)、陰影、浮層一起被切。拿掉之後這三件同時解決,分頁按鈕的焦點框
     因此回到預設的**往外**(`ds-canonical/references/focus-canonical.md:501`「≥ 4px → 往外」)。
