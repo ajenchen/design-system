@@ -5,7 +5,7 @@
  * 語意 SSOT = patterns/action-bar/action-bar.spec.md 第五節(四個理由)。
  * 語意本身(功能域切換是否成立)無法從程式碼判定,本檔只鎖**結構可判定**的三件事:
  *
- *  (1) 誤觸保護的分隔線由元件自動放,不是 consumer 自刻 —— Dialog / Notice 家族兩個基座
+ *  (1) 誤觸保護的分隔線由元件自動放,不是 consumer 自刻 —— 浮層標題列(SurfaceHeader)/ Notice 家族兩個基座
  *      必須各自渲染 ButtonDivider,且渲染條件是「有其他操作 && 有關閉鈕」。
  *      少了條件 = 只有關閉鈕時也畫線(規範明訂不加);少了渲染 = consumer 又得自刻(漂移根因)。
  *  (2) Alert 與 Toast 共用同一基座,因此不得任一方自己再放一條(會變兩條)。
@@ -28,10 +28,12 @@ const fail = msg => { console.error(`✗ ${msg}`); failures += 1 }
 // ── (1) 兩個基座都要「有條件地」自動放分隔線 ─────────────────────────────
 const AUTO_PLACERS = [
   {
-    label: 'Dialog 標題列',
-    file: 'packages/design-system/src/components/Dialog/dialog.tsx',
-    // actions 存在才渲染
-    condition: /actions\s*!=\s*null\s*\?/,
+    // 2026-11-10 自 dialog.tsx#DialogHeader 搬到 SurfaceHeader 的右側按鈕位,Dialog / Sheet / Popover / DataTable 面板共用
+    //(overlay-surface.spec.md「SurfaceHeader」右側按鈕位;幾何閘 scripts/overlay-header-actions-invariant.mjs)
+    label: '浮層標題列(SurfaceHeader 右側按鈕位)',
+    file: 'packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx',
+    // actions 與 × 同時存在才渲染
+    condition: /actions\s*!=\s*null\s*\?[\s\S]*?dismiss\s*!=\s*null\s*&&\s*<ButtonDivider\s*\/>/,
   },
   {
     label: 'Notice 家族(Alert / Toast 共用)',
@@ -65,6 +67,7 @@ for (const rel of [
 // ── (3) 禁手刻分隔線(action region scope)───────────────────────────────
 const HANDCRAFT = /className="[^"]*\b(?:w-px|h-px)\b[^"]*bg-divider[^"]*"|className="[^"]*bg-divider[^"]*\b(?:w-px|h-px)\b[^"]*"/
 const HANDCRAFT_SCOPE = [
+  'packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx',
   'packages/design-system/src/components/Dialog/dialog.tsx',
   'packages/design-system/src/components/Notice/notice.tsx',
   'packages/design-system/src/components/Alert/alert.tsx',

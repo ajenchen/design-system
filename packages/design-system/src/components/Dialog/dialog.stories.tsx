@@ -302,7 +302,7 @@ export const LongContent = {
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
             30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:96「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
+          {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
           <div role="list" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
               <MemberRow key={m.empNum} member={m} index={i} />
@@ -432,7 +432,7 @@ export const ListBody = {
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
           <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
-            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:96「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
+            {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
             <div role="list" className="flex flex-col py-2">
               {MEMBERS.slice(0, 6).map((m, i) => (
                 <MemberRow key={m.empNum} member={m} index={i} />
@@ -652,7 +652,7 @@ export const OpenSnapshot = {
    量測由 `scripts/dialog-focus-trap-poc.mjs` 執行。 */
 export const FocusTrapWithConcurrentOverlay: Story = {
   name: '焦點鎖 × 並存浮層',
-  // @example-basis: dialog.spec.md:282「焦點鎖在 Dialog 內，Tab 循環不逃出」
+  // @example-basis: dialog.spec.md:280「焦點鎖在 Dialog 內，Tab 循環不逃出」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (
@@ -692,7 +692,7 @@ export const FocusTrapWithConcurrentOverlay: Story = {
 export const FocusTrapControlNoDialog: Story = {
   name: '同一版面沒有對話框時的焦點順序',
   // 上一則的對照組(同一版面拿掉 Dialog,Tab 走得到背景鈕),示範的是同一句焦點規格:
-  // @example-basis: dialog.spec.md:282「焦點鎖在 Dialog 內，Tab 循環不逃出」
+  // @example-basis: dialog.spec.md:280「焦點鎖在 Dialog 內，Tab 循環不逃出」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => (

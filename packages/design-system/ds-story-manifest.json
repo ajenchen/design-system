@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-04T21:28:59.130Z"
+    "generatedAt": "2026-11-10T03:02:44.115Z"
   },
   "components": {
     "accordion": {
@@ -589,7 +589,8 @@
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
           "design-system-components-datatable-展示--roadmap-perf-budget",
-          "design-system-components-datatable-展示--with-pagination"
+          "design-system-components-datatable-展示--with-pagination",
+          "design-system-components-datatable-展示--header-actions-fixture"
         ],
         "設計規格": [
           "design-system-components-datatable-設計規格--overview",
@@ -1857,5 +1858,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1025
+  "totalStories": 1026
 }

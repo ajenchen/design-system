@@ -496,6 +496,7 @@
           "scripts/test-data-table-header-scroll-sync.mjs",
           "scripts/test-field-view-typography-invariant.mjs",
           "scripts/test-modifier-click-focus-invariant.mjs",
+          "scripts/test-overlay-header-actions-invariant.mjs",
           "scripts/test-overlay-header-title-area-invariant.mjs",
           "scripts/test-overlay-shortcut-scope-invariant.mjs",
           "scripts/test-row-suffix-first-line-invariant.mjs",

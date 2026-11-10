@@ -210,17 +210,13 @@ function SheetCloseButton() {
 
 const SheetHeader = React.forwardRef<
   HTMLDivElement,
-  SurfaceHeaderProps
+  Omit<SurfaceHeaderProps, 'dismiss'>
 >(({ className, children, ...props }, ref) => (
   // 2026-05-18:className 不再硬加 justify-between(同 DialogHeader 邏輯,避 column mode 破裂)。
-  <SurfaceHeader
-    ref={ref}
-    className={className}
-    {...props}
-  >
-    <div className="flex-1 min-w-0">{children}</div>
-    {/* Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → chrome-header-height */}
-    <SheetCloseButton />
+  // 右側〔actions〕〔分隔線〕〔×〕由 SurfaceHeader 的右側按鈕位排(overlay-surface.spec.md「SurfaceHeader」右側按鈕位);
+  // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → chrome-header-height
+  <SurfaceHeader ref={ref} className={className} {...props} dismiss={<SheetCloseButton />}>
+    {children}
   </SurfaceHeader>
 ))
 SheetHeader.displayName = "SheetHeader"

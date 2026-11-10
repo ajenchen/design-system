@@ -347,7 +347,7 @@ Chromium 單一行程、1280×900;「現行建置」= repo 的 `storybook-static
     夾在 `month_grid`(`[&_tr>td:first-child]:before:!left-0` / `last-child`)—— 實測 react-day-picker
     **不會**把加在 `classNames.range_*` 的 class 帶到 `<td>`,掛在那裡不會生效。
 - **對齊基準是盒,不是圖示**:chevron 是 24px 按鈕、內含 16px 圖示置中,所以**圖示**在 16、**盒**在 12。
-  本 DS 一律盒對盒 —— `../../patterns/overlay-surface/overlay-surface.spec.md:121-122`
+  本 DS 一律盒對盒 —— `../../patterns/overlay-surface/overlay-surface.spec.md:122-123`
   「item 的 **padding-box 左緣** = header title 左緣」「**對齊的是列的前緣,不是文字**」、:121「對齊的同樣是**按鈕左緣**」。
   ⚠️ 不要拿 `data-unbounded` 當水平對齊前例:它的負 margin 全庫**只有垂直的 `my-`**(`overlay-surface.tsx:68`)。
 - 實測(2026-09-18 修後):裸 DateGrid 四邊 chevron 盒 12 / 日期格 12 / 最後一排到底 12;

@@ -70,6 +70,7 @@
     "test:sidebar-standalone-collapse": "node scripts/sidebar-standalone-collapse-invariant.mjs && node scripts/sidebar-standalone-collapse-invariant.mjs --selftest",
     "test:row-suffix-first-line": "node scripts/row-suffix-first-line-invariant.mjs && node scripts/row-suffix-first-line-invariant.mjs --selftest",
     "test:overlay-header-title-area": "node scripts/overlay-header-title-area-invariant.mjs && node scripts/overlay-header-title-area-invariant.mjs --selftest",
+    "test:overlay-header-actions": "node scripts/overlay-header-actions-invariant.mjs && node scripts/overlay-header-actions-invariant.mjs --selftest",
     "test:field-view-typography": "node scripts/field-view-typography-invariant.mjs && node scripts/field-view-typography-invariant.mjs --selftest",
     "test:radio-group-tab-stop": "node scripts/radio-group-tab-stop-invariant.mjs && node scripts/radio-group-tab-stop-invariant.mjs --selftest",
     "test:action-bar-toolbar": "node scripts/action-bar-toolbar-invariant.mjs && node scripts/action-bar-toolbar-invariant.mjs --selftest",

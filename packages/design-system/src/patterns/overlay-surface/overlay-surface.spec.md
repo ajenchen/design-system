@@ -43,11 +43,12 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 - `border-b border-divider`(上下分隔;**例外**:`withTabs` / `tabsSlot` 時撤 border-b,由 tabs underline 接管 paint,`tabsSlot` 並自動切 column mode — 契約 SSOT 見 `patterns/header-canonical/header-canonical.spec.md` W1 / W2)
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - `flex items-center gap-2 shrink-0`(不被 flex-grow 壓縮)
-- **標題區(浮層標題區的唯一住所;Dialog / Sheet / Popover / 決策卡各自的規格只指回這裡)**:左欄由上而下 =〔小標〕〔標題〕〔說明〕,右側 = ×(× 永遠最右)。**小標、說明預設都不出現,兩者不同時用**;都需要時說明寫進內文。
+- **標題區(浮層標題區的唯一住所;Dialog / Sheet / Popover / 決策卡各自的規格只指回這裡)**:左欄由上而下 =〔小標〕〔標題〕〔說明〕,右側 =〔操作〕〔分隔線〕〔×〕(× 永遠最右;排法見下方「右側按鈕位」)。**小標、說明預設都不出現,兩者不同時用**;都需要時說明寫進內文。
   - **標題**:單行截斷 + 截斷才顯的 tooltip(`components/Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容」);字級 modal 16 / 非 modal 14(`./overlay-chrome-sizing.spec.md`「Overlay title typography canonical」)。
   - **小標**(`SurfaceEyebrow`;程式名 eyebrow 是 `naming-conventions.md` 三重測試唯一三題全過的詞:strapline / caption / label / overline 各有一題不過):選填,放標題上方;一行(截斷規則同標題);`text-caption font-medium text-fg-secondary`(12px / 500);距標題 `--item-gap-eyebrow-title`(2px,與 `--item-gap-label-desc-*` 同組)。例:決策卡步數「1 / 3」。規格值出自 user 2026-10-29T09:03:42Z 提案(逐字節錄:「strap line 距離 title 一樣是規範的2px 然後strap line 不超過一行,然後是12px的500粗的fg-secondary色的字體 你覺得如何？」;句尾是問句,落地 = AI 採用提案)。
   - **說明**:選填,放標題下方;只放跟標題緊密相關的一句短資訊(例:編號 · 指派、最後編輯時間),較長的寫進內文;`text-body text-fg-secondary`、距標題 `--item-gap-label-desc-reading-lg`(`DialogDescription` / `SheetDescription`);換行照 `patterns/element-anatomy/item-anatomy.spec.md`「兩種閱讀模式」的閱讀模式,自然換行、不截斷。出處:user 2026-11-06 回「照你建議」,選定 AI 提的說明位置乙(說明留在標題區但只放一句短資訊、不跟小標同時用)。
   - **×**:固定在 header 頂部,佔位 = 標題一行高(`CHROME_UNBOUNDED_SLOT` 把 × 縮成標題行高、`[data-dismiss]` 靠上),小標、說明出現與否都不移動;沒有小標時 × 中線 = 標題中線。方向出自 user 2026-10-29T08:36:00Z 反問(逐字節錄:「但 strap line本身是 optional 的 如果因為其的出現與否而讓 x 距離 header 頂部的距離變來變去不是非常奇怪嗎？」;問句只取方向);佔位取標題行而非小標行 = AI 推導(沿用既有 slot = 標題行高,所有既有標題區零變化)。閘 `scripts/overlay-header-title-area-invariant.mjs`。
+- **右側按鈕位**(`actions` / `dismiss`,Dialog / Sheet / Popover 的 Header 與 DataTable 狀態面板共用):consumer 只傳按鈕 —— 標題列操作放 `actions`,× 由 DialogHeader / SheetHeader / PopoverHeader 內建(raw SurfaceHeader 放 `dismiss`);SurfaceHeader 排成〔操作 …〕〔分隔線〕〔×〕,兩者都有時**自動**放分隔線、只有一方時不放。排序、variant 與分隔線照 `../action-bar/action-bar.spec.md`「三、Variant 與排序」「五、分隔線規則」第 3 條(誤觸保護)與「分隔線幾何」(兩側各 12),尺寸一律 `sm`(`../header-canonical/header-canonical.spec.md` §4);標題列操作預設 `variant="text"`(不撐高標題列),放有外框的按鈕時標題列自然長高、按鈕與標題同一條中線。**禁**在 children 自刻右側操作區或分隔線、或 `hideClose` 後自己塞 ×。閘 `scripts/overlay-header-actions-invariant.mjs`(靜態 + 幾何)。
 
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
@@ -382,7 +383,7 @@ border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-i
 
 ## 不屬本 primitive 的職責
 
-- **Close 按鈕渲染**:由 consumer(Dialog / Sheet / Popover)自己包 `<Button iconOnly dismiss>` 在 Header 內,綁各自 Radix Close primitive。SurfaceHeader 本身不渲染 close,避免 pattern 與 consumer 的職責耦合。
+- **Close 按鈕綁哪個 Radix Close**:由 consumer(Dialog / Sheet / Popover)自己包 `<Button iconOnly dismiss>`,綁各自 Radix Close primitive,經 `dismiss` 交給 SurfaceHeader;**放在哪**(右側按鈕位、分隔線)由 SurfaceHeader 決定(見上方「右側按鈕位」)。
 - **viewport-fill 高度邏輯**:Dialog 特有(填滿 viewport - inset),由 DialogContent 自行計算 `height: calc(100vh - inset*2)`,與 Body 協作 `flex-1 overflow-y-auto`。
 - **radius / border / shadow / bg**:浮層外殼職責,由 Dialog / Popover 的 Content 自己套(都套同一組 token:`bg-surface-raised` / `border-border` / `rounded-lg` / `shadow-[var(--elevation-200)]`——由本段記錄共同 consumer contract,並遵循 `packages/design-system/ds-canonical/rules/ui-development.md`「Token 命名 4 條硬規則」,不另外抽 primitive)。
 
@@ -414,7 +415,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 |------|------|
 | 「Dialog / Sheet body 直接 wrap SurfaceBody」 | 否——走 ScrollArea canonical(見「Body overflow canonical」) |
 | 「list 場景需要 `flush` variant」 | 已撤回;用 className override + 自管 list wrapper(見「List-as-region」) |
-| 「SurfaceHeader 自帶 close X」 | 否——close 由 consumer 包 `<Button iconOnly dismiss>`(見「不屬本 primitive 的職責」) |
+| 「SurfaceHeader 自帶 close X」 | 否——× 由 consumer 包 `<Button iconOnly dismiss>` 綁自己的 Radix Close,經 `dismiss` 交給 SurfaceHeader 排位(見「不屬本 primitive 的職責」) |
 | 「SurfaceFooter 也套 unbounded slot trick」 | 否——footer 慣例放 bounded action buttons,僅 padding + border-t |
 
 ---

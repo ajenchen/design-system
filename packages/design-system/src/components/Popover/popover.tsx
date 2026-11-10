@@ -4,7 +4,7 @@ import * as PopoverPrimitive from "@radix-ui/react-popover"
 import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { SurfaceHeader, SurfaceBody, SurfaceFooter, COMPACT_HEADER_SLOT } from "@/design-system/patterns/overlay-surface/overlay-surface"
+import { SurfaceHeader, SurfaceBody, SurfaceFooter, COMPACT_HEADER_SLOT, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { Button } from "@/design-system/components/Button/button"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
@@ -186,7 +186,7 @@ PopoverContent.displayName = PopoverPrimitive.Content.displayName
 
 // PopoverHeader: SurfaceHeader + Close X(對齊 Dialog 的 canonical,見 docblock)
 // justify-between 讓 children 與 Close 分左右。
-interface PopoverHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+interface PopoverHeaderProps extends React.HTMLAttributes<HTMLDivElement>, Pick<SurfaceHeaderProps, 'actions'> {
   /**
    * 隱藏右上 close X(預設 false,顯示)。
    * Coachmark / Tour 類 composition 用 Skip / Done 自管 close,不需 X。
@@ -205,7 +205,7 @@ function PopoverCloseButton() {
 }
 
 const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
-  ({ className, children, hideClose = false, ...props }, ref) => (
+  ({ className, children, hideClose = false, actions, ...props }, ref) => (
     // Popover lightweight chrome canonical(2026-05-04 重思 v2;2026-06-16 slot 改衍生 + 收斂 SSOT):
     //   走 `COMPACT_HEADER_SLOT`(= calc(--font-body-size×1.5) = 14×1.5 = 21 = PopoverTitle text-body line-box,
     //   衍生非寫死,取代舊各自寫死的 1.25rem / 20 巧合值)→ slot = title 行高,title 字級改 slot 自動跟。
@@ -215,12 +215,12 @@ const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
       ref={ref}
       className={cn("justify-between", COMPACT_HEADER_SLOT, className)}
       {...props}
+      // 右側〔actions〕〔分隔線〕〔×〕由 SurfaceHeader 的右側按鈕位排(overlay-surface.spec.md「SurfaceHeader」右側按鈕位);
+      // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位縮到 slot(21 = title line-box)
+      actions={actions}
+      dismiss={hideClose ? undefined : <PopoverCloseButton />}
     >
-      <div className="flex-1 min-w-0">{children}</div>
-      {!hideClose && (
-        // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位縮到 slot(21 = title line-box)
-        <PopoverCloseButton />
-      )}
+      {children}
     </SurfaceHeader>
   ),
 )

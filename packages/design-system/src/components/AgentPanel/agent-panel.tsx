@@ -1748,8 +1748,11 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         {...props}
       >
         {/* 標題列:N>1 時小標「n / N」(SurfaceEyebrow:字樣與距題目 2px 照 overlay-surface.spec.md「SurfaceHeader」)+ 題目 + ×(跳過,固定頂部、佔位 = 題目一行高);改寫:header 下無分隔線。 */}
-        <SurfaceHeader className={cn(COMPACT_HEADER_SLOT, 'items-start justify-between border-b-0')}>
-          <div className="flex min-w-0 flex-1 flex-col">
+        <SurfaceHeader
+          className={cn(COMPACT_HEADER_SLOT, 'items-start justify-between border-b-0')}
+          dismiss={<Button dismiss size="sm" startIcon={XIcon} aria-label={labels.skip} onClick={skip} />}
+        >
+          <div className="flex min-w-0 flex-col">
             {total > 1 && (
               <SurfaceEyebrow>
                 {step + 1} / {total}
@@ -1759,7 +1762,6 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
               {question.label}
             </span>
           </div>
-          <Button dismiss size="sm" startIcon={XIcon} aria-label={labels.skip} onClick={skip} />
         </SurfaceHeader>
         {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。
             錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後(agent-decision-card.spec.md「步進」);

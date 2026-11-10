@@ -2605,3 +2605,35 @@ export const WithPagination: Story = {
     </div>
   ),
 }
+
+// ── 三個狀態面板的標題列右側按鈕位(測試;閘 scripts/overlay-header-actions-invariant.mjs)──
+// 面板放在 Popover 根(不開浮層)裡、照產品用法傳 onClose,讓「重置 + 分隔線 + ×」三者都在;
+// 欄位顯示面板的標題列 = PopoverHeader + actions,與 overlay-surface「標題列右側按鈕位(測試)」的 popover-header 那格同一條路徑,不在這裡重複
+//(它的 footer 一展開就讓 overlay-footer-gutter 閘假紅:列是無 role 的 div、閘認不得,改回 body 左緣比 —— 已記 found.md)。
+// 規則 = overlay-surface.spec.md「SurfaceHeader」右側按鈕位(分隔線由 SurfaceHeader 放,兩側各 12)。
+export const HeaderActionsFixture: Story = {
+  name: '面板標題列右側按鈕位(測試)',
+  tags: ['test-only'],
+  render: function Render() {
+    const [sorting, setSorting] = React.useState<SortingState>([{ id: 'name', desc: false }])
+    const [tree, setTree] = React.useState<FilterTree>(() => ({
+      mode: 'flat', conjunction: 'and',
+      children: [{ kind: 'cond', id: 'c1', field: 'name', op: 'contains', value: 'phone' }],
+    }))
+    const shell = 'overflow-hidden rounded-lg border border-border bg-surface-raised'
+    return (
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <div data-case="sort" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
+          <Popover>
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} onReset={() => setSorting([])} onClose={() => {}} />
+          </Popover>
+        </div>
+        <div data-case="filter" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
+          <Popover>
+            <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={tree} onChange={setTree} defaultValue={createEmptyFilterTree('flat')} onClose={() => {}} />
+          </Popover>
+        </div>
+      </div>
+    )
+  },
+}
