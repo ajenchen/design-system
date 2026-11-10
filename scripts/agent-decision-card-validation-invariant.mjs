@@ -2,9 +2,10 @@
 /**
  * @gate-contract
  *   保證: AgentDecisionCard 的「下一題 / 送出」恆可按(沒選、「其他」文字空白時都不停用);按下時這一題沒過 →
- *         不前進,錯誤訊息出現在最後一張選項卡之後、左緣對齊選項卡;與最後一張卡的距離守的是**現行值** = 卡間距(卡 i+1 上緣 − 卡 i 下緣)
- *         —— 這個距離【待確認】(user 2026-10-29 問句中的提案,另一案 = Field 內部 gap-1 4;agent-decision-card.spec.md「步進」),
- *         user 選定後 E4 / E10 與 agent-panel.tsx 一起改;
+ *         不前進,錯誤訊息出現在最後一張選項卡之後、左緣對齊選項卡;與最後一張卡的距離 = 卡間距(卡 i+1 上緣 − 卡 i 下緣)
+ *         —— 定案(user 2026-10-29 問句「…跟最後一個選項距離=選項跟選項之間的距離？你覺得如何？」照提案落地;8 是 AI 依既有規則定:
+ *         Polaris ChoiceList / Carbon 都不讓錯誤比選項之間更近,Field 內部 gap-1 4 排除;出處見 agent-decision-card.spec.md「步進」),
+ *         改距離時 E4 / E10 / N6 與 agent-panel.tsx 一起改;
  *         字級 / 行高 / 字重 / 顏色等於 Field 裡的 FieldError(量 Field「垂直」story 裡出錯那一欄的 FieldError),role="alert";
  *         焦點移到第一個出錯的控件(「其他」空白 → 輸入格;複選沒勾 → 第一個方框);「其他」那一種輸入格的框色 = Field 裡出錯的
  *         Input 框色、aria-invalid + aria-errormessage 指向錯誤訊息;複選沒勾 → 群組 aria-invalid、每個方框 aria-invalid +
@@ -57,7 +58,7 @@ const SELFTEST = process.argv.includes('--selftest')
 const CARD = '[class~="group/agent-option"]'
 const CONTROL = '[role="checkbox"], [role="radio"]'
 const OTHER_INPUT = 'input[aria-label="其他(自由輸入)"]'
-// 錯誤文案【待確認】(agent-panel.tsx DEFAULT_DECISION_LABELS 的 errorOther / errorMulti / errorSingle,AI 擬的建議、交 user 定);user 換字時兩邊一起改
+// 錯誤文案(agent-panel.tsx DEFAULT_DECISION_LABELS 的 errorOther / errorMulti / errorSingle;AI 依 DS 既有句型定,agent-decision-card.spec.md「步進」);DS 預設換字時兩邊一起改
 const TEXT = { other: '請輸入其他選項', multi: '請至少選擇一個選項', single: '請選擇一個選項' }
 const RECOMMENDED_SUFFIX = '(建議)' // agent-panel.tsx RECOMMENDED_SUFFIX
 
@@ -220,7 +221,7 @@ async function runCard(ref, fault) {
       record('E3', '錯誤訊息字級 / 行高 / 字重 / 字族 / 顏色 = Field 的 FieldError', sameFont, `決策卡 ${JSON.stringify(s.error.font)} vs Field ${JSON.stringify(ref.font)}`)
       const gapCards = s.cards[1].y - s.cards[0].bottom
       const gapError = s.error.rect.y - s.cards[s.cards.length - 1].bottom
-      record('E4', '錯誤訊息在最後一張卡之後、左緣對齊選項卡;距離 = 現行值卡間距 8(【待確認】user 提案,另一案 Field gap-1 4)',
+      record('E4', '錯誤訊息在最後一張卡之後、左緣對齊選項卡;距離 = 卡間距 8(user 10-29 提案照落地、8 依既有規則定)',
         near(gapError, gapCards) && near(gapCards, 8) && near(s.error.rect.x, s.cards[0].x),
         `卡間距 ${gapCards.toFixed(2)}、錯誤距最後一張卡 ${gapError.toFixed(2)}、左緣 ${s.error.rect.x.toFixed(2)} vs 卡 ${s.cards[0].x.toFixed(2)}`)
     } else {
@@ -271,7 +272,7 @@ async function runCard(ref, fault) {
       JSON.stringify({ group: s.group, controls: s.controls.map((c) => [c.invalid, c.errormessage]), errorId: s.error?.id }))
     if (s.error) {
       const gapError = s.error.rect.y - s.cards[s.cards.length - 1].bottom
-      record('E10', '複選:錯誤訊息距最後一張卡 = 現行值卡間距(【待確認】,同 E4)', near(gapError, s.cards[1].y - s.cards[0].bottom), `錯誤距 ${gapError.toFixed(2)}`)
+      record('E10', '複選:錯誤訊息距最後一張卡 = 卡間距(同 E4)', near(gapError, s.cards[1].y - s.cards[0].bottom), `錯誤距 ${gapError.toFixed(2)}`)
     }
     // 點一張具名卡的標籤 → 恰好勾上、錯誤在這一下點完之後清掉;再點一次取消,回到一項都沒勾
     const slack = s.cards[0]
@@ -362,7 +363,7 @@ async function runNoDefault(ref, fault) {
   if (s.error) {
     const gapCards = s.cards[1].y - s.cards[0].bottom
     const gapError = s.error.rect.y - s.cards[s.cards.length - 1].bottom
-    record('N6', '錯誤訊息在最後一張卡之後、左緣對齊選項卡;距離 = 卡間距 8(【待確認】,同 E4)',
+    record('N6', '錯誤訊息在最後一張卡之後、左緣對齊選項卡;距離 = 卡間距 8(同 E4)',
       near(gapError, gapCards) && near(gapCards, 8) && near(s.error.rect.x, s.cards[0].x),
       `卡間距 ${gapCards.toFixed(2)}、錯誤距最後一張卡 ${gapError.toFixed(2)}、左緣 ${s.error.rect.x.toFixed(2)} vs 卡 ${s.cards[0].x.toFixed(2)}`)
     const sameFont = Object.keys(ref.font).every((k) => s.error.font[k] === ref.font[k])

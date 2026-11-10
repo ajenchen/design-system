@@ -46,7 +46,14 @@
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
   2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);後=「下一題」、末步「送出」;header × 恆為跳過。
   「下一題」/「送出」恆可按(新建表單,`../Field/form-validation.spec.md`「Submit Button 狀態」),只在按下時驗這一題(「其他」要不要填看「其他」選了沒 = 跨欄位,規則 9):
-  沒選(選填題 `optional` 除外 —— 題目後有「(選填)」,見 Header 條:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後(距離【待確認】:現行 = 卡間距 8,user 2026-10-29 問句中的提案;另一案 = Field 內部 gap-1 4);
+  沒選(選填題 `optional` 除外 —— 題目後有「(選填)」,見 Header 條:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後,**距離 = 卡間距 8**
+  (依據:user 2026-10-29 原話「此外決策卡是否next/submit按鈕都不應該disable?然後點擊這些按鈕若有出錯 應該用跟 field 的 error msg 一樣的字放在最後一個選項的後面跟最後一個選項距離=選項跟選項之間的距離？你覺得如何？」—— 問句,照提案落地;
+  8 這個數是 AI 依既有規則定:世界級一致的只有「錯誤不比選項之間更靠近最後一個選項」—— Polaris ChoiceList 選項間 16 時錯誤也離 16、選項貼齊時錯誤 4
+  (<https://github.com/Shopify/polaris/blob/5131f8a68b366f55a6e9e3a9e2dd624d4989cd33/polaris-react/src/components/ChoiceList/ChoiceList.tsx#L132-L150>)、
+  Carbon 直排選項間 6、錯誤離最後一項 12(<https://github.com/carbon-design-system/carbon/blob/487b24869143fe35599118760ef39d17d8696c65/packages/styles/scss/components/radio-button/_radio-button.scss>
+  `--vertical .radio-button-wrapper` 與 `__validation-msg`);Field 內部 gap-1 4 比卡間距 8 還近,兩家都排除,剩下的 8 = user 提的「= 選項跟選項之間的距離」、不新增數值);
+  錯誤文案(DS 預設,`labels.errorSingle` / `errorMulti` / `errorOther`)=「請選擇一個選項」「請至少選擇一個選項」「請輸入其他選項」—— AI 依 DS 既有句型定
+  (`../Select/select.stories.tsx`「請選擇出貨倉庫」、`../Combobox/combobox.stories.tsx`「請至少選擇一個商品類別」、同一格的提示字「輸入其他選項」;題目由代理出,錯誤句以「選項」通稱),consumer 可經 `labels` 換字;
   焦點移到第一個出錯的控件(沒選 → 第一個圓 / 方框,「其他」→ 輸入格並帶錯誤框;只聚焦不置中捲動,產題守則 13)。清除與 aria 接線照規則 5 與 `../Field/field.spec.md`「驗證與 aria 屬性」;
   本卡沒有 Field context:`aria-errormessage` 掛在 radiogroup / 每個方框 / 輸入格(WAI-ARIA 1.2 不適用於 radio 與 group),複選群組另帶 `aria-invalid`(同 `../Checkbox/checkbox-group.tsx`)。
   選填單選題有選取時,footer 左側出現「清除選取」(user 2026-10-30 提案:「在使用者選了選項之後出現」;預選的建議解也算有選取、一打開就有 = AI 依 `../Select/select.spec.md`「Clearable」有值就顯示推導;

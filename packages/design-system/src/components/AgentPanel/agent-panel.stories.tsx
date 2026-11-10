@@ -454,7 +454,7 @@ export const DecisionCardOptional: Story = {
  *  錯誤訊息放在最後一張選項卡之後、焦點移到第一個出錯的控件。play 依序走兩種錯:
  *  1. 第 1 題選「其他」卻沒填字就按「下一題」→「請輸入其他選項」;填好再按就前進,第 2 題用預選的建議解;
  *  2. 第 3 題(複選)一項都沒勾就按「送出」→「請至少選擇一個選項」,停在這個畫面。
- *  規則見 agent-decision-card.spec.md「步進」(錯誤訊息的距離與文案【待確認】,寫在同一段)。 */
+ *  規則見 agent-decision-card.spec.md「步進」(錯誤訊息距最後一張卡 = 卡間距 8、三句文案照 DS 既有句型,依據寫在同一段)。 */
 export const DecisionCardErrors: Story = {
   name: '決策卡錯誤狀態',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,

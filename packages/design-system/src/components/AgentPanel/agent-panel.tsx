@@ -1487,8 +1487,9 @@ const MULTI_JOIN = '\n'
  *   同本卡選項的「(建議)」接法(`recommendedSuffix`)。
  * - `error*`:按「下一題 / 送出」時這一題沒過的錯誤訊息(句型照 DS 既有範例:select.stories「請選擇出貨倉庫」、
  *   combobox.stories「請至少選擇一個商品類別」、field 範例「請輸入姓名」;產題守則 7 / 10 的「不得前進」改用錯誤訊息說出來,
- *   見 agent-decision-card.spec.md「步進」)。三句是新的元件預設文案(產品文案語意):AI 依上述句型擬的建議,【待確認】——
- *   user 換字時改這裡,閘 `scripts/agent-decision-card-validation-invariant.mjs` 的 TEXT 一起改。
+ *   見 agent-decision-card.spec.md「步進」)。三句定案:AI 依 DS 既有句型定(只有一種寫法、不是選擇題;依據 user 2026-10-29 問句
+ *   「…應該用跟 field 的 error msg 一樣的字…」照提案落地),consumer 可經 `labels` 換字;
+ *   DS 預設要換字時改這裡,閘 `scripts/agent-decision-card-validation-invariant.mjs` 的 TEXT 一起改。
  */
 // i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
 const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
@@ -1783,8 +1784,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         </SurfaceHeader>
         {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。
             錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後(agent-decision-card.spec.md「步進」);
-            沒有錯誤時 FieldError 不渲染、不佔位。與最後一張卡的距離【待確認】:現行放進選項卡同一個 gap 8 堆疊 = user 2026-10-29 問句裡的提案
-            (「跟最後一個選項距離=選項跟選項之間的距離」),不是既有規範推出的;另一案 = Field 內部 gap-1 4。user 選定後改這裡,閘 `scripts/agent-decision-card-validation-invariant.mjs` E4 / E10 一起改。 */}
+            沒有錯誤時 FieldError 不渲染、不佔位。與最後一張卡的距離 = 卡間距 8:放進選項卡同一個 gap 8 堆疊 —— user 2026-10-29 問句裡的提案
+            (「跟最後一個選項距離=選項跟選項之間的距離？」)照提案落地;8 是 AI 依既有規則定(Polaris ChoiceList / Carbon 都不讓錯誤比選項之間更近,
+            Field 內部 gap-1 4 因此排除;出處見 agent-decision-card.spec.md「步進」)。改距離時閘 `scripts/agent-decision-card-validation-invariant.mjs` E4 / E10 / N6 一起改。 */}
         <ScrollArea fillX className="min-h-0">
           <div className="flex flex-col gap-2 px-[var(--layout-space-loose)]">
             {multi ? (
