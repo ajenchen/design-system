@@ -44,17 +44,38 @@ const REQUIRED_KEYS = Object.freeze(['保證', '紅', '綠'])
 const MIN_LEN = 12
 
 /**
+ * @gate-contract 宣告**所在的那一段註解**:`/* … *\/` 讀到註解結束;`// …` 讀到連續的 `//` 行結束。
+ *
+ * 2026-11-11 前是「從 @gate-contract 起讀 2000 個字」—— 固定字數是「宣告範圍」的代理(M37),而且是截斷(M10「掃描不得截斷」)。
+ * f40a2db1 在 data-table-multi-sort-invariant.mjs 的「保證」「紅」各補了一段(選單只列另一個方向),「綠:」被推到第 2077 字,
+ * 宣告一字沒少,本閘卻報「宣告缺少:綠」。宣告越寫越完整反而被判成沒寫,這是量具壞了,不是宣告壞了。
+ * 改讀到註解結束之後,全部 required CI 閘只有這一支判定改變(其餘 174 支與舊解析逐支相同,2026-11-11 實測)。
+ */
+export function contractBlock(source) {
+  const start = source.indexOf('@gate-contract')
+  if (start < 0) return null
+  const lineStart = source.lastIndexOf('\n', start) + 1
+  if (/^\s*\/\/\s*$/.test(source.slice(lineStart, start))) {
+    const lines = []
+    for (const l of source.slice(lineStart).split('\n')) { if (!/^\s*\/\//.test(l)) break; lines.push(l) }
+    return lines.join('\n')
+  }
+  const end = source.indexOf('*/', start)
+  return source.slice(lineStart, end < 0 ? source.length : end)
+}
+
+/**
  * 從腳本原始碼取出 @gate-contract 宣告。
  * 刻意只認**明確宣告**,不從行文關鍵字猜 —— 用關鍵字猜就又是一個代理,正是本閘要消滅的東西。
+ * 所以鍵必須**是一行的開頭**(`* 綠:` / `// 綠:`),句子中間剛好出現「紅:」不算。
  */
 export function readGateContract(source) {
-  const start = source.indexOf('@gate-contract')
-  if (start < 0) return { ok: false, reason: '沒有 @gate-contract 宣告' }
-  const block = source.slice(start, start + 2000)
+  const block = contractBlock(source)
+  if (block == null) return { ok: false, reason: '沒有 @gate-contract 宣告' }
   const missing = []
   const thin = []
   for (const key of REQUIRED_KEYS) {
-    const m = block.match(new RegExp(`${key}\\s*[:：]\\s*(.+)`))
+    const m = block.match(new RegExp(`^[ \\t]*(?:\\*|//)[ \\t]*${key}\\s*[:：]\\s*(.+)`, 'm'))
     if (!m) { missing.push(key); continue }
     if (m[1].trim().length < MIN_LEN) thin.push(key)
   }
@@ -93,6 +114,15 @@ function selftest() {
     ['缺「保證」→ 抓出來(不寫保證什麼,就不會發現自己用的是代理)',
       `/**\n * @gate-contract\n *   紅: 把被保證的東西弄壞一次,它必須指名該處並紅\n *   綠: 沒弄壞時必須綠,而且重複跑不會抽籤\n */`, false],
     ['宣告在但敷衍(過短)→ 抓出來', `/**\n * @gate-contract\n *   保證: 有\n *   紅: 會紅\n *   綠: 會綠\n */`, false],
+    // 2026-11-11 f40a2db1 的形狀:宣告齊全,只是「保證」「紅」寫得長,「綠:」落在第 2000 字之後 —— 舊解析(固定讀 2000 字)判成缺「綠」
+    ['宣告齊全但很長(「綠:」在第 2000 字之後)→ 放行',
+      `/**\n * @gate-contract\n *   保證: 這裡寫一句夠長的人話說明它保證什麼東西\n${' *        續寫保證的細節,一行一行把每一組量測寫清楚。\n'.repeat(60)} *   紅: 把被保證的東西弄壞一次,它必須指名該處並紅\n *   綠: 沒弄壞時必須綠,而且重複跑不會抽籤\n */`, true],
+    ['「綠:」只出現在宣告那段註解結束之後 → 抓出來(讀到註解結束為止,不往下撿)',
+      `/**\n * @gate-contract\n *   保證: 這裡寫一句夠長的人話說明它保證什麼東西\n *   紅: 把被保證的東西弄壞一次,它必須指名該處並紅\n */\n/* 另一段:\n *   綠: 沒弄壞時必須綠,而且重複跑不會抽籤\n */`, false],
+    ['「綠:」只出現在句子中間、不是一行的開頭 → 抓出來(只認明確宣告)',
+      `/**\n * @gate-contract\n *   保證: 這裡寫一句夠長的人話說明它保證什麼東西,另外順帶一提 綠: 沒弄壞時必須綠,而且重複跑不會抽籤\n *   紅: 把被保證的東西弄壞一次,它必須指名該處並紅\n */`, false],
+    ['`//` 行註解寫的宣告齊全 → 放行',
+      `// @gate-contract\n//   保證: 這裡寫一句夠長的人話說明它保證什麼東西\n//   紅: 把被保證的東西弄壞一次,它必須指名該處並紅\n//   綠: 沒弄壞時必須綠,而且重複跑不會抽籤\nconst x = 1\n`, true],
   ]
   let ok = true
   for (const [why, source, expectPass] of cases) {
