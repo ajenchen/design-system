@@ -50,6 +50,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier, DRAG_ACTIVATION_DISTANCE_PX, createStepToNeighborCoordinateGetter } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { isLinkInputValueLinkable } from '@/design-system/components/LinkInput/link-input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
@@ -350,7 +351,7 @@ export interface DataTablePaginationOptions {
 //   - string / number / currency:cell click → inline edit
 //   - date / time / select / multiSelect / person / multiPerson:cell click → 進 edit mode
 //   - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
-//   - url:read = LinkInput view(連結只有網址文字寬)+ 滑過 / 聚焦出現的 Pencil;點網址文字開連結,點格的其他地方或 Pencil 進 edit
+//   - url:read = LinkInput view(連結盒子只有網址文字寬,點擊範圍延伸到整格)+ 滑過 / 聚焦出現的 Pencil;格裡 Pencil 以外開連結,Pencil 進 edit
 //
 // Cell id format: `${rowId}__${columnId}`(編輯狀態 keying)
 // Commit: blur OR Enter OR overlay close → 呼叫 onCellCommit
@@ -3424,16 +3425,18 @@ function DataTableInner<TData>(
     //   DataTable cellEl 不再 render parallel indicator — SSOT 對齊 Field family。
     //   詳 `.claude/planning/cell-indicator-ssot-rfc.md` Step 9。
     // Cell click → 進 edit mode(boolean 不需 — 勾選框自己切換)。
-    // url(2026-10-13 user 拍板乙「照你建議做到完美並自行驗證到完美」,待辦總帳 Q3f):跟其他可編輯格一樣 —— 滑過出淺框、
-    // 點格進編輯;只有點**網址文字**開連結(連結自己的行為,不進編輯)。與 LinkInput 09-26「點網址文字 = 開連結;
-    // 點外框裡其他地方 = 進編輯」同一句(link-input.spec.md「Link 狀態」)。07-14 寫進規格的「url 排除點格編輯與滑過淺框」撤回。
+    // url(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條):有連結的網址格,格裡鉛筆以外
+    // 點了開連結(LinkInput 的延伸連結鋪滿整格,瀏覽器照常開),鉛筆 = 滑鼠唯一的編輯入口 → 它**不是**「點格即編輯」的格:不出淺框、
+    // 點格不進編輯。空值 / 不是網址 = 沒有連結可開,照其他可編輯格(滑過淺框、點格進編輯)。判斷與 LinkInput 畫不畫連結同一支。
+    // 10-13 – 11-06 是「只有點網址文字開連結、其他地方進編輯」(待辦總帳 Q3f 乙)。
     const cellSpreadsheetId = `${cellRowId}:${cellColId}`
     const isSelectedCell = spreadsheetMode && selectedCellId === cellSpreadsheetId
     // 「點格即編輯」的格:滑過淺框、手形游標都只跟著這一種(滑過樣式不因下方點擊改動而變)。
-    const cellClickEntersEdit = cellEditable && colType !== 'boolean'
-    // 這一下點擊是不是落在格裡「自有行為」的東西上、或只是選字(連結格):是的話不進編輯 ——
-    // 點網址文字 = 開連結(瀏覽器照常);按在空白處拖過網址文字再放開 = 選字,不算點一下(link-input.spec.md「Link 狀態」;
-    // 判準同 LinkInput 外框,全 DS 共用 lib/pointer-press.ts,不另寫一份)。鉛筆自己 stopPropagation,到不了這裡。
+    const urlCellOpensLink = colType === 'url' && isLinkInputValueLinkable(cell.getValue())
+    const cellClickEntersEdit = cellEditable && colType !== 'boolean' && !urlCellOpensLink
+    // 這一下點擊是不是落在格裡「自有行為」的東西上、或只是選字(網址格):是的話不進編輯 —— 有連結的網址格本來就不是點格即編輯的格
+    // (上方),這裡管的是沒有連結、畫成一般文字的值(例:不是網址的字):按著拖過字再放開 = 選字,不算點一下
+    //(判準全 DS 共用 lib/pointer-press.ts,不另寫一份)。鉛筆自己 stopPropagation,到不了這裡。
     const clickIsForCellContent = (e: React.MouseEvent<HTMLElement>): boolean => {
       if (colType !== 'url') return false
       const target = e.target
@@ -5349,13 +5352,14 @@ function DataTableInner<TData>(
           const meta = (colDef?.columnDef as any)?.meta as Record<string, any> | undefined
           if (!meta) return false
           // Allowlist editable types(per Contract 15;未知 / boolean / readonly default false)。
-          // url 2026-10-13 加入(user 拍板乙,待辦總帳 Q3f):滑過出淺框,跟其他可編輯格同一套 —— 這張表與格上的點擊規則(cellClickEntersEdit)同步。
+          // url:沒有連結可開(空值 / 不是網址)才是點格即編輯的格(2026-11-06 user「照①乙②b」)—— 這張表與格上的點擊規則(cellClickEntersEdit)同步。
           const EDITABLE_CLICK_TYPES = ['string', 'number', 'currency', 'date', 'time', 'select', 'multiSelect', 'person', 'multiPerson', 'combobox', 'url']
           if (!EDITABLE_CLICK_TYPES.includes(meta.type)) return false
           // Row-level editable(row) function support(canonical per `isCellEditable` L720)
           // 2026-05-13:canEditCell helper consolidation(per V4)
           const row = table.getRowModel().rowsById[rowId]
           if (!row) return false
+          if (meta.type === 'url' && isLinkInputValueLinkable(row.getValue(colId))) return false
           return canEditCell(meta, row.original)
         }}
       />

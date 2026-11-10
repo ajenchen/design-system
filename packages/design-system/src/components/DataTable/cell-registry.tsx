@@ -461,11 +461,11 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel 
 }
 
 /**
- * UrlCell(2026-10-13 對齊 user 拍板乙,待辦總帳 Q3f):
+ * UrlCell(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條):
  *   view branch = `<LinkInput mode="view">`(URL parse / hostname 顯示 / 不合法的值畫成一般文字,SSOT 在 LinkInput);
- *   連結只有網址文字那麼寬(LinkInput `renderLinkAnchor`)。editable 時**跟其他可編輯格一樣**:滑過出淺框、
- *   點格的其他地方進編輯(由 data-table.tsx 的點格規則處理),只有點網址文字開連結;右側 Pencil 照舊在滑過格 / 鍵盤走到時出現,
- *   是鍵盤的編輯入口(格本身不是 Tab 停靠點,同 link-input.spec.md「外框本身不是 tab stop,鍵盤走 Pencil」)。
+ *   連結盒子只有網址文字那麼寬(LinkInput `renderLinkAnchor`),點擊範圍延伸到整格:格裡 Pencil 以外點了開連結,能不能編輯都一樣
+ *   (有連結的格因此不是點格即編輯的格,data-table.tsx `isLinkInputValueLinkable`)。editable 時右側 Pencil 在滑過格 / 鍵盤走到時出現,
+ *   是滑鼠唯一、也是鍵盤的編輯入口(格本身不是 Tab 停靠點,同 link-input.spec.md「外框本身不是 tab stop」)。
  *   Pencil = Button text xs iconOnly(24、無框;2026-10-28 user「Q4用乙'」,inline-action.spec.md 實例表
  *   「DataTable body cell internal — 檢視態滑過才出現的動作」),由 LinkInput 的 `viewEditAction` 自己畫(單一主人);
  *   表格只給出現時機(`revealGroup: 'cell'` = 滑過格 / 格裡有鍵盤焦點,td 帶 `group/cell`)與按下去做什麼(`onRequestEdit`)。
@@ -477,13 +477,13 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
   if (mode === 'view') {
     // showDisplayEndIcon ← D path Phase 2(2026-05-08):Field naked wrapper 包 anchor,與 Input edit 同 chrome。
     // 修 I1:原無條件 true 違反「= isEditable」knob 等式(field-controls.spec.md cell 例外),改等式。
-    // 可編輯時再給 viewEditAction:鉛筆由 LinkInput 畫在自己外殼的右側槽(data-table.spec.md 編輯表 url 列;
-    // 點格其他地方進編輯由 data-table.tsx 格的點擊規則處理)。出現時機 = `revealGroup: 'cell'`(item-anatomy ItemSuffix
+    // 可編輯時再給 viewEditAction:鉛筆由 LinkInput 畫在自己外殼的右側槽(data-table.spec.md 編輯表 url 列),是滑鼠唯一的編輯入口。出現時機 = `revealGroup: 'cell'`(item-anatomy ItemSuffix
     // hoverReveal 同一份:滑過格 / 格裡有鍵盤焦點,`group-has-[:focus-visible]` 不用 focus-within —— r1b DT-06;瞬間出現不淡入;
     // guard scripts/test-hover-revealed-affordances.mjs)。鈕自己 stopPropagation:鉛筆已經進編輯,不讓格的點擊規則再處理一次。
     // 不可編 URL 不給(純 view 顯示連結,無編輯入口)。
-    // 不可編 URL 整格點了開連結(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」):
+    // 格裡鉛筆以外點了開連結,能不能編輯都一樣(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」):
     // `linkHitAreaFromHost` 讓連結的延伸範圍鋪到格(格本來就 `relative`);試算表沒選中的格第一下只選格(data-table.css)。
+    // 空值 / 不是網址 = 沒有連結,可編輯的格照其他可編輯格點格進編輯(data-table.tsx `isLinkInputValueLinkable`)。
     return (
       <LinkInput
         variant="naked"
@@ -493,7 +493,7 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
         size={size}
         showDisplayEndIcon={isEditable === true}
         viewEditAction={isEditable ? { onClick: () => onRequestEdit?.(), revealGroup: 'cell' } : undefined}
-        linkHitAreaFromHost={!isEditable}
+        linkHitAreaFromHost
       />
     )
   }
