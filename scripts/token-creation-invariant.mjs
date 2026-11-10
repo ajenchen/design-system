@@ -18,6 +18,9 @@
  *   C2 新名字逐顆登記、要有理由:相對 main 新增、需要登記的名字,分類表必須有它完整名字的一列,`why` 不可空;
  *      類別是共用刻度的,要寫出它屬於哪一組既有刻度(`scale`)或第二個讀者(`secondReader`,那個檔必須真的讀它)。
  *   C3 宣告的檔案 = 登記的住處:整頁生效的宣告只准出現在該列 `home`;`home` 列的每個檔都真的宣告了它(住處不准過期)。
+ *      預定住處 `target`(2026-11-11 審查補:原本完全沒人驗,卻被 C9 當成「主人的資料夾」放行):元件的值的 `target` 必須在
+ *      主人的資料夾(`components/<owner>` 或 `patterns/<owner>`,資料夾要真的存在;檔本身可以還沒建,第二階段還沒搬的就是這樣);
+ *      原料 / 共用刻度不搬家,`target` 只能等於 `home`。
  *   C4 新名字完整出現在登記的那份規格裡(整個名字比對);既有在規格裡完全找不到的,列已知名單 `known.missingSpec`,只能變短。
  *   C5 有大密度覆寫就要有回復,而且覆寫、回復、預設值同一個檔;深色主題覆寫也跟預設值同檔。已知名單 `known.missingRestore`。
  *   C6 元件樣式檔有進對外彙總檔(`styles/tokens.css`)或被設計系統程式匯入 —— 2026-05-26 事故(產品拿不到值、版面跑掉)。
@@ -307,6 +310,7 @@ export function runChecks(ctx) {
     if (r.class === 'ignore') continue
     if (typeof r.owner !== 'string' || !r.owner) P.C1.push(`${r.match}:owner 不可空`)
     if (!(r.home === null || typeof r.home === 'string' || (Array.isArray(r.home) && r.home.length))) P.C1.push(`${r.match}:home 必須是路徑、路徑陣列或 null`)
+    if (!(r.target === undefined || r.target === null || typeof r.target === 'string' || (Array.isArray(r.target) && r.target.length && r.target.every((t) => typeof t === 'string')))) P.C1.push(`${r.match}:target 必須是路徑、路徑陣列或 null`)
     if (typeof r.spec !== 'string') P.C1.push(`${r.match}:spec 必須是路徑`)
     if (!PRODUCT.includes(r.product)) P.C1.push(`${r.match}:product 必須是 ${PRODUCT.join(' / ')}`)
     if (!(r.dsReaders === 'any' || Array.isArray(r.dsReaders))) P.C1.push(`${r.match}:dsReaders 必須是 "any" 或資料夾陣列`)
@@ -370,6 +374,21 @@ export function runChecks(ctx) {
     for (const h of homesOf(r)) {
       if (!ctx.files.has(h)) { P.C3.push(`${r.match} 登記的住處 ${dsRel(h)} 不存在`); continue }
       if (!names.some((n) => (m.allDecls.get(n) ?? []).some((d) => d.path === h))) P.C3.push(`${r.match} 登記的住處 ${dsRel(h)} 沒有宣告它(住處過期)`)
+    }
+  }
+  // C3(target):預定住處只能在主人的資料夾 —— C9 拿 home 與 target 的資料夾當「主人」,target 指錯資料夾就會把別人當主人而放行
+  const dsFolders = new Set([...ctx.files.keys()].filter((p) => p.startsWith(`${DS_ROOT}/`)).map(folderOf))
+  for (const r of rows) {
+    if (!real(r) || typeof r?.match !== 'string') continue
+    const targets = targetsOf(r)
+    if (!targets.length) continue
+    if (r.class === 'component') {
+      const own = [`components/${r.owner}`, `patterns/${r.owner}`].filter((f) => dsFolders.has(f))
+      if (!own.length) { P.C3.push(`${r.match} 有 target,但主人 ${r.owner} 對不到任何資料夾(components/${r.owner} 或 patterns/${r.owner})`); continue }
+      for (const t of targets) if (!own.includes(folderOf(t))) P.C3.push(`${r.match} 的 target ${dsRel(t)} 不在主人 ${r.owner} 的資料夾(${own.join(' / ')})`)
+    } else {
+      const homes = homesOf(r)
+      for (const t of targets) if (!homes.includes(t)) P.C3.push(`${r.match} 是${r.class === 'raw' ? '原料' : '共用刻度'},不搬家:target ${dsRel(t)} 必須等於 home(${homes.map(dsRel).join(' / ') || '無'})`)
     }
   }
 
@@ -594,6 +613,12 @@ function selftest() {
     ['C3', true, '--sidebar-width', '登記在別處的值被宣告在別的檔', () => run({ files: withFiles({ [`${DS_ROOT}/components/Button/fixture.css`]: ':root { --sidebar-width: 1px; }\n' }) })],
     ['C3', true, '--table-cell-px', '登記的住處過期(住處檔不再宣告它)', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--table-cell-px').home = 'components/DataTable/data-table.tsx'; return r })() })],
     ['C3', false, '--sidebar-width', '現況', () => run({})],
+    // C3(target)—— 審查 2026-11-11:target 原本沒人驗,C9 卻拿它的資料夾當主人
+    ['C3', true, '--tag-height-', '元件的值 target 指到別的元件資料夾', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--tag-height-').target = 'components/Avatar/tag.css'; return r })() })],
+    ['C3', true, '--field-px', '共用刻度 target ≠ home(共用刻度不搬家)', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--field-px').target = 'components/Field/field.css'; return r })() })],
+    ['C3', true, '--tag-height-', '主人對不到任何資料夾', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--tag-height-').owner = 'NoSuchOwner'; return r })() })],
+    ['C3', false, '--tag-height-', '現況:target 在主人資料夾、檔還沒建(第二階段還沒搬)', () => run({})],
+    ['C1', true, '--tag-height-', 'target 不是路徑', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--tag-height-').target = 5; return r })() })],
     // C4
     ['C4', true, '--fixture-spec-elsewhere', '新名字只出現在別份規格', () => run({ files: appendRoot('--fixture-spec-elsewhere: 1px;'), registry: addRows(row({ match: '--fixture-spec-elsewhere', spec: 'tokens/color/color.spec.md' })) })],
     ['C4', true, '--fixture-half', '新名字剛好是規格裡另一顆的前半段', () => run({ files: appendRoot('--fixture-half: 1px;'), registry: addRows(row({ match: '--fixture-half', spec: 'tokens/fixture.spec.md' })), readSpec: (p) => (p.endsWith('tokens/fixture.spec.md') ? '| `--fixture-half-md` | 1px |' : readSpecFromDisk(p)) })],
