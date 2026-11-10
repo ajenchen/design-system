@@ -90,6 +90,11 @@ jobs:
           # 那條規則當時只是一句給人看的話,沒有機械防線。這支就是那道防線。
           npm run test:decided-clause-downgrade
           npm run test:button-variants
+          # 按鈕群組分隔線的結構契約(2026-11-11 接上):token「3全收」把 inset 收回成 ButtonDivider 的元件內變數後,
+          # overlay-header-actions-invariant.mjs 量線長改用規格值 8px、並指名「元件那一份由這支鎖住 = 0.5rem」——
+          # 但這支原本只在夜間 harness 跑(非必過)、也沒有對照組。--selftest 在記憶體裡注入五種違規各自必紅。純靜態,約 1 秒。
+          node scripts/test-action-divider-placement.mjs
+          node scripts/test-action-divider-placement.mjs --selftest
           # Token 建立不變式(2026-09-11;user:「為何你他媽又不照規範來建立 token?要講幾次?」)。
           # 2026-11-11 擴成拿分類表 packages/design-system/src/tokens/token-registry.json 驗(user 2026-11-10 拍板 token「1甲」):
           # C1 有登記 / C2 新名字自己一列 + 理由 / C3 宣告檔 = 住處 / C4 新名字在規格裡 / C5 密度覆寫有回復且同檔 /

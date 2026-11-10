@@ -179,7 +179,8 @@ export function judgeProbe(p) {
 
 // 分隔線內縮 8px:規格值(action-bar.spec.md「分隔線幾何」;本檔頭「長 = 同列最高按鈕原生高 − 8、不短於 16」)。
 // 2026-11-11 前從 uiSize.css 的兩顆分隔線 token 量;token「3全收」把它收回成 ButtonDivider 的元件內變數,
-// 頁面上不再有全系統的名字可量 —— 這裡改用規格值,元件那一份由 scripts/test-action-divider-placement.mjs 鎖住 = 0.5rem。
+// 頁面上不再有全系統的名字可量 —— 這裡改用規格值,元件那一份由 scripts/test-action-divider-placement.mjs 鎖住 = 0.5rem
+// (CI verify-static 必跑,含 --selftest 對照組;2026-11-11 前它只在夜間 harness 跑,這句話當時沒有合併前的執行面)。
 const DIVIDER_INSET_PX = 8
 
 function measurePage(insetPx) {
