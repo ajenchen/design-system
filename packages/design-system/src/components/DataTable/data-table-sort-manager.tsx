@@ -122,11 +122,12 @@ function DataTableSortManagerInner<TData>({
   }
 
   // K11 fix(2026-05-04): viewport-aware scroll chain invariant — 詳 overlay-surface.spec.md
-  // 2026-05-23 Phase A.4 Decision 2: w-[480px] → token `--data-table-sort-panel-width`(SSOT in uiSize.css)
+  // 面板寬 30rem(480px):只有這個面板在用、不隨密度切換 → 元件自己的值,不開 token
+  // (token-system.spec.md 判斷流程第 0 題;2026-11-11 token「3全收」從 uiSize.css 收回)。rem 讓它跟著使用者字級設定縮放
   return (
     <div
       ref={ref}
-      className={cn('flex flex-col h-full min-h-0 w-[var(--data-table-sort-panel-width)]', className)}
+      className={cn('flex flex-col h-full min-h-0 w-[30rem]', className)}
       {...props}
       // 鍵盤搬排序條件(Space 提起、方向鍵移、Esc 取消)時按 Esc 只取消拖曳、面板不關(2026-10-01;修前一下少兩層,實測):
       // 拖曳中宣告 Esc 層 + 把這一下標成拖曳獨占(lib/drag-announcements.ts useDragAccessibility.escapeLayer;drag-canonical.md invariant 8)

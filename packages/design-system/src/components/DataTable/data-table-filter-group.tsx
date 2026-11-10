@@ -7,8 +7,8 @@
 //   FilterValuePicker 為 direct child,className forward 不開 wrapper div — 2026-05-04 #2 fix)
 // - Button(variant="text" iconOnly)row meta trash / Select(size="sm")conjunction・field・op
 //   (data-table.spec.md「四、UI canonical」:trash = form-control row text Button;A6 conjunction)
-// - Width tokens:--data-table-filter-field-width / --data-table-filter-op-width(uiSize.css SSOT,
-//   2026-05-23 Phase A.4 Decision 2)
+// - 欄位 / 條件下拉的寬:元件自己的值 10rem / 7.5rem(只有 FilterRow 在用、不隨密度切換 → 不開 token,
+//   token-system.spec.md 判斷流程第 0 題;2026-11-11 token「3全收」從 uiSize.css 收回)
 // - Operator SSOT:./filter-operators.ts OPERATOR_REGISTRY(禁 hardcode op 字串)
 // - Group container 灰底 bg-muted:color.spec.md L651-654 靜態低重要 surface semantic(2026-05-09 Q3 A)
 // 設計規則:./filter-operators.spec.md + ./data-table.spec.md「進階篩選」段
@@ -137,14 +137,13 @@ export function FilterRow({
     <div className="flex items-center gap-2">
       <ConjunctionLabel index={index} conjunction={conjunction} onChange={onChangeConjunction} labels={labels} />
       {/* **#9 fix(2026-05-04 v4)**:Field controls trigger `w-full` override 外 className,改用 Tailwind `!`
-          important 強制 override(`!w-[160px]` / `!w-[120px]`),value 用 `!flex-1 !min-w-0`。
+          important 強制 override(`!w-[10rem]` / `!w-[7.5rem]`),value 用 `!flex-1 !min-w-0`。
           Select 元件本身沒 destructure `style` prop 所以 inline style flex-basis 行不通,只能用 className。 */}
       <FieldControlGroup block className="flex-1 min-w-0">
-        {/* 2026-05-23 Phase A.4 Decision 2:`!w-[160px]` / `!w-[120px]` → tokens
-            `--data-table-filter-field-width` / `--data-table-filter-op-width`(SSOT in uiSize.css)
-            Behavior preserved 完好如初:flat + nested 同 width(token 是 design constant) */}
+        {/* 欄位下拉 10rem(160px)、條件下拉 7.5rem(120px):flat 與 nested 同寬,值只住這兩行
+            (2026-11-11 token「3全收」:原本的兩顆 token 只有這裡在讀,收回成元件自己的值;rem 跟著使用者字級設定縮放) */}
         <Select
-          className="!w-[var(--data-table-filter-field-width)] flex-shrink-0 [&_.text-fg-muted]:!text-fg-secondary"
+          className="!w-[10rem] flex-shrink-0 [&_.text-fg-muted]:!text-fg-secondary"
           size="sm"
           options={fieldOptions}
           value={condition.field}
@@ -153,7 +152,7 @@ export function FilterRow({
           aria-label={labels.fieldAriaLabel}
         />
         <Select
-          className={hasValueCell ? '!w-[var(--data-table-filter-op-width)] flex-shrink-0' : '!flex-1 !min-w-0'}
+          className={hasValueCell ? '!w-[7.5rem] flex-shrink-0' : '!flex-1 !min-w-0'}
           size="sm"
           options={operatorOptions}
           value={condition.op}
