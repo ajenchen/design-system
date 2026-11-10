@@ -37,7 +37,8 @@ import {
   DropdownMenuGroup,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
-import { InsightsView } from '@/design-system/components/AppShell/_demo-helpers'
+import { DataTable, type DataTableProps } from '@/design-system/components/DataTable/data-table'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/展示',
@@ -126,11 +127,13 @@ const UserFooter = () => (
  * header-canonical.spec.md「6. Background ownership」段:top-level chrome
  * 自畫 bg-surface;Element canonical:ChromeHeader 內部用 `<header>`)。
  * Trigger 是唯一的 sidebar 切換入口。
- * 主區放真實頁面內容(D6 甲,user 10-21「D6 照你建議」:不做手刻指標卡、不亂造元件)—— 同一份 InsightsView
- * (AppShell 展示與設計規格「元件總覽」的 Main 也是它:本週 Sprint 摘要,DescriptionList 組成);
+ * 主區放真實頁面內容(D6 甲,user 10-21「D6 照你建議」:不做手刻指標卡、不亂造元件),而且**跟著選到的項目走**
+ * (2026-11-06 #56 甲):資料夾 → 裡面的檔案清單;檔案 → 這個檔案的屬性;專案 → 這個專案的議題;Dashboard 等主導覽 →
+ * 同範本 DashboardPage 的做法(DS 元件組成的真實內容:「今日待處理」DataTable;apps/template/src/App.tsx)。
+ * dashboard 放什麼由產品決定,DS 不定義卡片 / 內容框架(app-shell.spec.md「Main 內塞什麼」),所以這裡不做成像 DS 規定的版型。
  * 每則的說明寫在 parameters.docs.description.story(story-rules「整頁情境」:畫布不放便條)。
  */
-const PageContent = ({ title }: { title: string }) => (
+const PageContent = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <main className="flex-1 flex flex-col min-w-0 min-h-svh bg-canvas">
     <ChromeHeader className="bg-surface">
       {/* 不加 -ml-1(shadcn 原版的 offset 是補償 Button 的 px-3;我們 text iconOnly 是 p-0 無 padding,
@@ -140,13 +143,141 @@ const PageContent = ({ title }: { title: string }) => (
           平等 sibling。「當下在哪頁」的訊號由 sidebar active item 負責,不靠 title 字重 */}
       <h1 className="text-body-lg font-medium">{title}</h1>
     </ChromeHeader>
-    <div className="flex-1 overflow-auto">
-      <div className="max-w-2xl">
-        <InsightsView />
-      </div>
-    </div>
+    <div className="flex-1 overflow-auto">{children}</div>
   </main>
 )
+
+// ── 主區內容(跟著選到的項目走)────────────────────────────────────────────
+// 版面照 layoutSpace.spec.md「Page 情境(全頁 list / dashboard)」:左右 loose;標頭 → 第一個元素 tight(規則 2);
+// 區段標題(+ 說明)→ 表格 loose(規則 3);最後是有框的 DataTable → 底 loose,最後是一般元素 → 底 bottom 48(規則 4)。
+// 表格資料極簡、不開虛擬捲動 / 拖曳 / 篩選(story-rules「整頁情境」)。日期寫死(story-determinism-invariant)。
+
+type IssueRow = { key: string; title: string; assignee: string; due: string }
+const ISSUE_COLUMNS: DataTableProps<IssueRow>['columns'] = [
+  { accessorKey: 'key', header: '議題', meta: { type: 'string', width: 120 } },
+  { accessorKey: 'title', header: '標題', meta: { type: 'string', width: 320 } },
+  { accessorKey: 'assignee', header: '負責人', meta: { type: 'person', width: 160 } },
+  { accessorKey: 'due', header: '截止日', meta: { type: 'date', width: 140 } },
+]
+const PENDING_ISSUES: IssueRow[] = [
+  { key: 'ENG-1042', title: '結帳頁 Apple Pay 按鈕在 Safari 17 不出現', assignee: '林雅婷', due: '2026/11/10' },
+  { key: 'ENG-1041', title: '退款成功後訂單狀態沒有更新', assignee: '陳柏翰', due: '2026/11/10' },
+  { key: 'ENG-1037', title: '對帳報表匯出 CSV 金額少了千分位', assignee: '張詠晴', due: '2026/11/11' },
+  { key: 'ENG-1029', title: '支付失敗通知信的重試連結過期', assignee: '王俊傑', due: '2026/11/12' },
+]
+// 專案 → 這個專案的議題(「群組動作」新建的專案還沒有議題 → DataTable 自己的空狀態)
+const PROJECT_ISSUES: Record<string, IssueRow[]> = {
+  結帳流程改版: [
+    { key: 'ENG-1042', title: '結帳頁 Apple Pay 按鈕在 Safari 17 不出現', assignee: '林雅婷', due: '2026/11/10' },
+    { key: 'ENG-1035', title: '運費試算在離島地址回傳錯誤', assignee: '陳柏翰', due: '2026/11/14' },
+    { key: 'ENG-1031', title: '折扣碼欄位按 Enter 會直接送出訂單', assignee: '林雅婷', due: '2026/11/18' },
+  ],
+  對帳批次: [
+    { key: 'ENG-1037', title: '對帳報表匯出 CSV 金額少了千分位', assignee: '張詠晴', due: '2026/11/11' },
+    { key: 'ENG-1033', title: '跨日批次在 00:00 前後重複入帳', assignee: '張詠晴', due: '2026/11/15' },
+  ],
+  支付失敗通知: [
+    { key: 'ENG-1029', title: '支付失敗通知信的重試連結過期', assignee: '王俊傑', due: '2026/11/12' },
+    { key: 'ENG-1026', title: '簡訊通知在夜間時段不應發送', assignee: '王俊傑', due: '2026/11/20' },
+  ],
+}
+
+type FileRow = { name: string; updatedAt: string; updatedBy: string }
+const FILE_COLUMNS: DataTableProps<FileRow>['columns'] = [
+  { accessorKey: 'name', header: '名稱', meta: { type: 'string', width: 280 } },
+  { accessorKey: 'updatedAt', header: '最後修改', meta: { type: 'date', width: 160 } },
+  { accessorKey: 'updatedBy', header: '修改者', meta: { type: 'person', width: 180 } },
+]
+// 資料夾 → 裡面的檔案(「混合內容」專案樹的資料夾;有子節點的資料夾就是樹上那幾個子節點)
+const FOLDER_FILES: Record<string, FileRow[]> = {
+  web: [
+    { name: 'frontend', updatedAt: '2026/11/09', updatedBy: '林雅婷' },
+    { name: 'backend', updatedAt: '2026/11/08', updatedBy: '陳柏翰' },
+    { name: 'README.md', updatedAt: '2026/10/30', updatedBy: '張詠晴' },
+  ],
+  frontend: [
+    { name: 'src', updatedAt: '2026/11/09', updatedBy: '林雅婷' },
+    { name: 'public', updatedAt: '2026/10/21', updatedBy: '林雅婷' },
+    { name: 'package.json', updatedAt: '2026/11/06', updatedBy: '陳柏翰' },
+    { name: 'vite.config.ts', updatedAt: '2026/10/15', updatedBy: '林雅婷' },
+  ],
+  backend: [
+    { name: 'api', updatedAt: '2026/11/08', updatedBy: '陳柏翰' },
+    { name: 'migrations', updatedAt: '2026/11/03', updatedBy: '王俊傑' },
+    { name: 'Dockerfile', updatedAt: '2026/10/27', updatedBy: '王俊傑' },
+  ],
+  mobile: [
+    { name: 'iOS', updatedAt: '2026/11/07', updatedBy: '張詠晴' },
+    { name: 'Android', updatedAt: '2026/11/05', updatedBy: '王俊傑' },
+  ],
+  docs: [
+    { name: '上線檢查清單.md', updatedAt: '2026/11/04', updatedBy: '張詠晴' },
+    { name: '付款流程說明.md', updatedAt: '2026/10/28', updatedBy: '林雅婷' },
+  ],
+  design: [
+    { name: '色彩 token.fig', updatedAt: '2026/11/02', updatedBy: '林雅婷' },
+    { name: '元件清單.fig', updatedAt: '2026/10/25', updatedBy: '林雅婷' },
+  ],
+  infra: [
+    { name: 'terraform', updatedAt: '2026/11/01', updatedBy: '王俊傑' },
+    { name: 'k8s', updatedAt: '2026/10/29', updatedBy: '王俊傑' },
+  ],
+  analytics: [
+    { name: '每週營收.sql', updatedAt: '2026/11/03', updatedBy: '張詠晴' },
+    { name: '轉換漏斗.sql', updatedAt: '2026/10/31', updatedBy: '張詠晴' },
+  ],
+}
+
+/** 區段標題 + 說明 + 表格(同範本 DashboardPage:標題 ↔ 說明 = item-anatomy「Label ↔ Desc」2px)。 */
+function TableSection<T>({ title, description, columns, data }: { title: string; description: string; columns: DataTableProps<T>['columns']; data: T[] }) {
+  const titleId = React.useId()
+  return (
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
+      <section className="flex flex-col gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-[var(--item-gap-label-desc-reading-lg)]">
+          <h2 id={titleId} className="text-h5">{title}</h2>
+          <p className="text-body text-fg-secondary">{description}</p>
+        </div>
+        <DataTable columns={columns} data={data} height="auto" aria-labelledby={titleId} />
+      </section>
+    </div>
+  )
+}
+
+/** Dashboard 等主導覽:同範本 DashboardPage 的做法 —— 一個區段 + DataTable,不做 DS 規定的 dashboard 版型。 */
+const PendingIssuesView = () => (
+  <TableSection title="今日待處理議題" description="指派給你、今天到期或快到期的議題,依截止日排序。" columns={ISSUE_COLUMNS} data={PENDING_ISSUES} />
+)
+
+/** 專案 → 這個專案進行中的議題。 */
+const ProjectIssuesView = ({ project }: { project: string }) => (
+  <TableSection title="進行中的議題" description={`「${project}」還沒關閉的議題,依截止日排序。`} columns={ISSUE_COLUMNS} data={PROJECT_ISSUES[project] ?? []} />
+)
+
+/** 專案樹:資料夾 → 檔案清單(layoutSpace「Page 情境」:表格直接接在標頭下);檔案 → 這個檔案的屬性(一件東西的幾項屬性 = DescriptionList,description-list.spec.md)。 */
+function ProjectTreeView({ id }: { id: string }) {
+  const node = PROJECTS_TREE.flatMap((p) => [p, ...(p.children ?? [])]).find((n) => n.id === id)
+  if (!node) return null
+  if (node.icon === Folder) {
+    return (
+      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
+        <DataTable columns={FILE_COLUMNS} data={FOLDER_FILES[id] ?? []} height="auto" aria-label={`${node.label} 裡的檔案`} />
+      </div>
+    )
+  }
+  const parent = PROJECTS_TREE.find((p) => p.children?.some((c) => c.id === id))
+  const row = parent ? FOLDER_FILES[parent.id]?.find((f) => f.name === node.label) : undefined
+  return (
+    // 屬性清單限寬(同改版前主區的 max-w-2xl):標籤與值不被拉到整個主區兩端
+    <div className="max-w-2xl px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+      <DescriptionList orientation="horizontal" divided>
+        <DescriptionItem label="位置">{parent ? `${parent.label} / ${node.label}` : node.label}</DescriptionItem>
+        <DescriptionItem label="最後修改">{row?.updatedAt ?? '-'}</DescriptionItem>
+        <DescriptionItem label="修改者">{row?.updatedBy ?? '-'}</DescriptionItem>
+      </DescriptionList>
+    </div>
+  )
+}
 
 // ── 1. 完整佈局(icon 收合模式,預設推薦)────────────────────────────────
 
@@ -186,9 +317,9 @@ export const IconCollapse: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent
-          title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
-        />
+        <PageContent title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}>
+          <PendingIssuesView />
+        </PageContent>
       </SidebarProvider>
     )
   },
@@ -239,6 +370,7 @@ export const GroupAction: Story = {
       if (!next) return
       setProjects((list) => [...list, { id: `p${list.length + 1}`, label: next }])
     }
+    const currentProject = projects.find((p) => p.id === activeId)
     return (
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
         <Sidebar collapsible="icon">
@@ -279,9 +411,9 @@ export const GroupAction: Story = {
             <UserFooter />
           </SidebarFooter>
         </Sidebar>
-        <PageContent
-          title={projects.find((p) => p.id === activeId)?.label ?? MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
-        />
+        <PageContent title={projects.find((p) => p.id === activeId)?.label ?? MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}>
+          {currentProject ? <ProjectIssuesView project={currentProject.label} /> : <PendingIssuesView />}
+        </PageContent>
       </SidebarProvider>
     )
   },
@@ -354,6 +486,7 @@ export const MixedContent: Story = {
     const remainingCount = PROJECTS_TREE.length - 2
     const [favorites, setFavorites] = React.useState(FAVORITES_SEED)
     const [showArchived, setShowArchived] = React.useState(true)
+    const currentFavorite = favorites.find((x) => x.id === activeId)
 
     return (
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
@@ -473,9 +606,11 @@ export const MixedContent: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent
-          title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? treeLabel(activeId) ?? favorites.find((x) => x.id === activeId)?.label ?? ''}
-        />
+        <PageContent title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? treeLabel(activeId) ?? favorites.find((x) => x.id === activeId)?.label ?? ''}>
+          {isInMainNav ? <PendingIssuesView />
+            : currentFavorite ? <ProjectIssuesView project={currentFavorite.label} />
+            : <ProjectTreeView id={activeId} />}
+        </PageContent>
         <Toaster />
       </SidebarProvider>
     )
@@ -516,9 +651,9 @@ export const Offcanvas: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent
-          title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}
-        />
+        <PageContent title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}>
+          <PendingIssuesView />
+        </PageContent>
       </SidebarProvider>
     )
   },
@@ -590,11 +725,9 @@ export const IntegrationSidebar: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent
-          title={
-            [...NAV_ITEMS, ...INTEGRATIONS].find((n) => n.id === activeId)?.label ?? 'Home'
-          }
-        />
+        <PageContent title={[...NAV_ITEMS, ...INTEGRATIONS].find((n) => n.id === activeId)?.label ?? 'Home'}>
+          <PendingIssuesView />
+        </PageContent>
       </SidebarProvider>
     )
   },

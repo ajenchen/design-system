@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:46efe7dcc3279829315e268df198d441b053cbdf313088ed7a80f91980789fc4",
+      "hash": "sha256:b7844430be459f614b0fde97fb9aab7596bb940219db50089d0273bce480cb0f",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:942d0f211c78e791a320512cf045790d6be05d04bc88332ea44f6c334166ffca",
+      "hash": "sha256:4f755d479db1346f696891cea6a6f3bc21ae50cfe6e2842802bef3bd6af28513",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 30209,
+      "size": 30522,
       "type": "file"
     },
     {
@@ -3075,8 +3075,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 698,
-      "hash": "sha256:a4e71062f720887933ac10a4cfe192614144d1bee0defddbbda4312da9627e23",
+      "files": 700,
+      "hash": "sha256:46f00d1050e0577d2b35196dd62b0df7a560a3b7acbee09ab6d3907875d0af15",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

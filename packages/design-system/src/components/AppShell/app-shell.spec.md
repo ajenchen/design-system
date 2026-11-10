@@ -343,7 +343,7 @@ Main 與已決定並排面板的最小寬(+ 細列)合計超過視窗寬 → 各
 
 **`<main>` landmark + padding=0**。AppShell.Main 是空殼 layout primitive,**不發明任何內距規則**。
 
-Main 內塞什麼(table / field / card / page header / list)的 layout + spacing → **完全遵循 `layoutSpace.spec.md` 既有 6 條規則 + 親疏 3 級**:
+Main 內塞什麼(table / field / card / page header / list)由產品決定 —— DS 不定義 dashboard 的卡片 / 內容框架,也不規定一定用 `DescriptionList`(user 2026-11-06 原話:「dashboard總覽沒用card只是因為card的內容很彈性，我們不想定義來框架住消費者，也沒有要強迫消費者一定要使用description list,甚至其實dashboard 沒有消費者的客製化反而無法有效利用版面」);DS 只管它們的 layout + spacing → **完全遵循 `layoutSpace.spec.md` 既有 6 條規則 + 親疏 3 級**:
 - 規則 1:水平 padding(3 patterns 並存 — bounded surface 自帶 / 純 layout 父層管 / list item 自帶)
 - 規則 2:頂部(Header → 第一個元素的 gap)
 - 規則 3:元素間 gap(只看親疏)
