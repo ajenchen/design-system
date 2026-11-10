@@ -2614,7 +2614,7 @@ export const WithPagination: Story = {
 //(它的 footer 一展開就讓 overlay-footer-gutter 閘假紅:列是無 role 的 div、閘認不得,改回 body 左緣比 —— 已記 found.md)。
 // 規則 = overlay-surface.spec.md「SurfaceHeader」右側按鈕位(分隔線由 SurfaceHeader 放,兩側各 12)。
 export const HeaderActionsFixture: Story = {
-  name: '面板標題列右側按鈕位(測試)',
+  name: '面板標題列右側按鈕位',
   tags: ['test-only'],
   render: function Render() {
     const [sorting, setSorting] = React.useState<SortingState>([{ id: 'name', desc: false }])

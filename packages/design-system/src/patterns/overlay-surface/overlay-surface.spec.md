@@ -430,6 +430,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `action-bar.spec.md`
 - `app-shell.spec.md`
 - `coachmark.spec.md`
 - `date-picker.spec.md`
@@ -438,6 +439,7 @@ overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `Surfac
 - `file-item.spec.md`
 - `header-canonical.spec.md`
 - `item-anatomy.spec.md`
+- `layoutSpace.spec.md`
 - `motion.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `popover.spec.md`

@@ -186,7 +186,7 @@ function TitleAreaCase({ tier, name, eyebrow, title, description }: { tier: 'mod
 }
 
 export const HeaderTitleArea: Story = {
-  name: '標題區組合(測試)',
+  name: '標題區組合',
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-tight)]">
@@ -219,7 +219,7 @@ function ActionsCase({ name, expect, compact, children }: { name: string; expect
 const caseTitleClass = (compact?: boolean) => cn('font-medium text-foreground', compact ? 'text-body' : 'text-body-lg')
 
 export const HeaderActions: Story = {
-  name: '標題列右側按鈕位(測試)',
+  name: '標題列右側按鈕位',
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-tight)]">
@@ -263,7 +263,7 @@ function TooltipCase({ name, expect, children }: { name: string; expect: 'toolti
   )
 }
 export const HeaderTitleTooltip: Story = {
-  name: '標題截斷 tooltip(測試)',
+  name: '標題截斷時滑過看全文',
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-tight)]">

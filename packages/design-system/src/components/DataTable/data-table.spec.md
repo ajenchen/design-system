@@ -702,6 +702,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 - `data-table-scroll-performance.spec.md`
 - `description-list.spec.md`
 - `filter-operators.spec.md`
+- `link-input.spec.md`
 - `opacity.spec.md`
 - `pagination.spec.md`
 - `scroll-area.spec.md`

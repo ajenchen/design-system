@@ -153,5 +153,6 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 - `item-anatomy.spec.md`
 - `link-input.spec.md`
 - `motion.spec.md`
+- `overlay-surface.spec.md`
 - `popover.spec.md`
 - `profile-card.spec.md`
