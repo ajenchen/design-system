@@ -4,7 +4,7 @@
     "閘:scripts/token-creation-invariant.mjs(CI verify-static 必跑)。搬一顆 token 就改一列(home);名字退場就刪一列。",
     "match:結尾是 - 或 _ 的是「名字開頭」,其餘是完整名字;一個名字取最長且吻合的那一列。新名字一定要有自己完整名字的一列。",
     "class:raw 原料 / shared 共用刻度 / component 元件的值 / ignore 不是設計數值(第三方或 Tailwind 內部)。",
-    "home:現在宣告它的檔(相對 packages/design-system/src);target:目標住處(targetKind: constant = 收回成元件常數、token 名退場)。",
+    "home:現在宣告它的檔(相對 packages/design-system/src);target:目標住處(主人的資料夾)。",
     "spec:現在說明它的那份規格。product:no 不可讀 / read 可讀來對齊不可覆寫 / read-write 可讀也可覆寫。dsReaders:設計系統裡誰可以讀(\"any\" 或資料夾)。",
     "known:只能變短的已知名單。missingSpec = 在登記的規格裡完全找不到(萬用寫法涵蓋也算找得到);missingRestore = 有大密度覆寫卻沒有回復;",
     "dsRawColorReads = 設計系統元件直接讀原料、不在 dsReaders;productReads / productWrites = 本 repo apps/ 讀了不開放的名字 / 覆寫了不開放覆寫的名字;",
@@ -921,18 +921,6 @@
       "product": "no",
       "dsReaders": "any",
       "why": "下拉多選的標籤區寬度,執行期由程式設定、標籤讀它決定截斷寬。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
-    },
-    {
-      "match": "--menu-max-height",
-      "class": "component",
-      "owner": "Command",
-      "home": "tokens/uiSize/uiSize.css",
-      "target": "components/Command/command.tsx",
-      "targetKind": "constant",
-      "spec": "tokens/uiSize/uiSize.spec.md",
-      "product": "no",
-      "dsReaders": "any",
-      "why": "清單捲動上限:只有 command.tsx 在讀、不隨密度切換。user 2026-11-10 拍板 token 第 3 題「全收」:第三階段收回成元件自己的常數,token 名退場(排第三組;select.spec.md「大量選項」的引用一起改)"
     },
     {
       "match": "--tw-",

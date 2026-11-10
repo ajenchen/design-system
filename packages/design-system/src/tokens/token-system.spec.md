@@ -28,7 +28,7 @@
 
 每個名字只落在一類;顆數與逐顆歸屬以分類表為準。分類表另有 `ignore` 一類,收第三方或 Tailwind 自己的變數(`--radix-*`、`--tw-*`),它們不是設計數值。
 
-**現況與目標不一致的地方**(分類表 `home` ≠ `target` 的列):user 2026-11-10 拍板 token 第 2 題「2甲」—— 14 顆元件的值目前寄住 `uiSize/uiSize.css`,第二階段分五批搬到主人資料夾(先試搬分頁高、側欄最後、每批畫面零差異);第 3 題「3全收」—— 6 顆只有一處在用的值,第三階段收回成元件自己的常數。搬一顆改分類表一列。
+**現況與目標不一致的地方**(分類表 `home` ≠ `target` 的列):user 2026-11-10 拍板 token 第 2 題「2甲」—— 14 顆元件的值目前寄住 `uiSize/uiSize.css`,第二階段分五批搬到主人資料夾(先試搬分頁高、側欄最後、每批畫面零差異);搬一顆改分類表一列。第 3 題「3全收」的 6 顆只有一處在用的值已收回成元件自己的值(2026-11-11,名字退場、分類表刪列,畫面零差異):表格排序 / 篩選面板寬 3 顆 → `components/DataTable/data-table-sort-manager.tsx`、`data-table-filter-group.tsx`;按鈕群組分隔線 2 顆 → `components/Button/button-group.tsx`;選單最大高度 → `components/Command/command.tsx`。
 
 ---
 
@@ -182,3 +182,9 @@ C5 只看「名字有沒有出現在回復段」;「區塊裡的值真的等於�
 - `uiSize/uiSize.spec.md` — 共用尺寸刻度
 - `typography/typography.spec.md`、`radius/radius.spec.md`、`opacity/opacity.spec.md`、`motion/motion.spec.md`、`layoutSpace/layoutSpace.spec.md`、`elevation/elevation.spec.md`
 - 閘:`scripts/token-creation-invariant.mjs`、`scripts/token-twin-invariant.mjs`
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `command.spec.md`

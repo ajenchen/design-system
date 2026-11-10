@@ -323,4 +323,3 @@ Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/512/560/7
 - `scroll-area.spec.md`
 - `sheet.spec.md`
 - `toast.spec.md`
-- `uiSize.spec.md`

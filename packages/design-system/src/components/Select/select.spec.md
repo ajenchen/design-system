@@ -321,7 +321,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 - **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列,不是「沒有選項」。SSOT `select-menu.spec.md`「Empty state」「Suggestions」
 - **disabled 選項**:`option.disabled` forward 至 menu item——不可點選,鍵盤導覽自動跳過(cmdk `aria-disabled` 行為)
-- **大量選項**:選單固定最大高度內捲動(`--menu-max-height` 預設 300px),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
+- **大量選項**:選單固定最大高度內捲動(300px,值與理由住 `../Command/command.spec.md`「邊界案例」清單捲動上限),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
 - **空值**:無選擇時顯 placeholder;「無選擇是有效狀態」場景開 `clearable`(見「Clearable」)
 
 ---
@@ -376,7 +376,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 - `checkbox.spec.md`
 - `combobox.spec.md`
+- `command.spec.md`
 - `people-picker.spec.md`
 - `radio-group.spec.md`
 - `select-menu.spec.md`
-- `uiSize.spec.md`

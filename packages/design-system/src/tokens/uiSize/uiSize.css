@@ -16,8 +16,8 @@
    ┌─ 元件的值(暫時寄住;分類表 target 是它們的目標住處) ────────────────┐
    │  標籤高、頭像重疊量 →                                                │
    │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾               │
-   │  (分頁高、表格列高、側欄 4 顆已搬);                                │
-   │  選單最大高 → 「3全收」收回成元件常數(表格面板寬、分隔線已收)     │
+   │  (分頁高、表格列高、側欄 4 顆已搬)。                                │
+   │  「3全收」的 6 顆(表格面板寬、分隔線、選單最大高)已收回成元件的值 │
    └───────────────────────────────────────────────────────────────────┘
    新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要再放進來。
    ═══════════════════════════════════════════════════════════════════════ */
@@ -27,8 +27,9 @@
   --field-height-xs: 1.5rem;    /* 24px — 固定，不隨 density 縮放 */
   --field-height-sm: 1.75rem;   /* 28px */
   --field-height-md: 2rem;      /* 32px */
-  --menu-max-height: 18.75rem;  /* 300px — CommandList / SelectMenu 清單捲動上限(2026-09-08 從 command.tsx 的 fallback 字面值升格為 token;select.spec.md「大量選項」引用它) */
   --field-height-lg: 2.25rem;   /* 36px */
+  /* 清單型浮層的捲動上限(300px)**不設 token**(2026-11-11 token「3全收」收回):只有 CommandList 在讀、不隨密度切換,
+     值住 Command/command.tsx,理由住 command.spec.md「邊界案例」。 */
 
   /* Field control vertical padding — 讓「單行的多行控件」與同 size 單行 Input 等高 SSOT。
      公式 = (field-height − 1lh)/2 − 1px:`1lh` 在使用端解析成該元素自己的行高(text-body 21px /
