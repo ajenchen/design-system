@@ -147,7 +147,7 @@
 
 [data-ui-size="lg"],
 [data-density="lg"] {
-  /* Sidebar lg override(per src/globals.css 原 declaration:size=lg 罕見 case)*/
+  /* 側欄收合寬公式裡的圖示欄,寬鬆密度 20px(鎖回一般密度段回到 16px;不是 Sidebar size=lg —— 畫出來的圖示由 size 決定,不讀它) */
   --sidebar-menu-icon-size: 1.25rem; /* 20px(lg)*/
 
   --field-height-sm: 2rem;      /* 32px */
