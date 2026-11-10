@@ -346,6 +346,7 @@
         "scripts/test-data-table-range-hover.mjs",
         "scripts/test-data-table-sort-cycle.mjs",
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
+        "scripts/test-density-subtree-token-parity.mjs",
         "scripts/test-design-system-codemod.mjs",
         "scripts/test-deterministic-vite-output.mjs",
         "scripts/test-devmode-geometry-invariant.mjs",
