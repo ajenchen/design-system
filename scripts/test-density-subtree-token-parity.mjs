@@ -21,7 +21,7 @@
  *
  * 跑法:
  *   node scripts/test-density-subtree-token-parity.mjs              現況(要綠)
- *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:四種注入的缺陷各自必紅且指名(含「在主人根元素上量」那條),現況必綠
+ *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:四種注入的缺陷各自必紅且指名(衍生值那一種要同時指名側欄與多行輸入框兩組;含「在主人根元素上量」那條),現況必綠
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -34,7 +34,7 @@ const AGGREGATOR = join(DS, 'styles/tokens.css')
 const UI_SIZE = join(DS, 'tokens/uiSize/uiSize.css')
 
 /** 已知、還沒修的名字(只能變短:名單裡的名字已經不違規 → 紅,要刪掉)。 */
-const KNOWN = new Set(['--field-control-py-sm', '--field-control-py-md', '--field-control-py-lg'])
+const KNOWN = new Set([])
 
 /**
  * 主人自己在「自己的根元素」上重算的值:讀者全在那個根元素底下,所以在那裡量,不在空白區塊量。
@@ -157,6 +157,7 @@ async function selftest(page) {
     ['現況', null, new Map()],
     ['拿掉 --sidebar-menu-icon-size 的回復', '--sidebar-menu-icon-size', mutate(UI_SIZE, '拿掉回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--sidebar-menu-icon-size:[^;]*;/, '$1')],
     ['衍生值只宣告在 :root(不在區塊上重算)', '--sidebar-width-icon', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
+    ['衍生值只宣告在 :root —— 多行輸入框內距那組也要被指名', '--field-control-py-md', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
     ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(UI_SIZE, '拿掉 table-row 回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],
     // 「在主人根元素上量」不是恆綠:表格根元素不再重算 → 繼承整頁的值 → 必紅
     ['表格根元素不再重算 --table-cell-py', '--table-cell-py', mutate(DATA_TABLE, '表格只留 :root', /:root,\s*\[data-table-size="md"\]\s*\{/, ':root {')],
