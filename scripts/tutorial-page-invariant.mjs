@@ -21,7 +21,8 @@
  *
  * SSOT:packages/design-system/src/stories-helpers/examples/tutorial-page.tsx(元件與 ② 的出處);
  *       packages/design-system/ds-canonical/skills/story-writing/references/category-templates.md「教學框的間距與標題」(規範文字);
- *       packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 3(指標:這一級只用在 Storybook 文件頁 —— 教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊;不用在產品頁)。
+ *       packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 3「組 ↔ 組」(指標:文件頁 —— 教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊 —— 的這一級只由共用元件給;
+ *       2026-11-06 起同一級也用在產品畫面的區塊 ↔ 區塊,那一面由 scripts/section-gap-invariant.mjs 量)。
  *
  * 為什麼要有這支(2026-10-14):研究時 66 個設計原則頁 + Action Bar 教學框各自抄一份 Rule / Section,段落標題至少 6 種長相、
  * 段落之間的間距有 16 / 32 / 33 三種(gap + 下方 margin 疊加、或分隔線 + 內距)—— 同一個值散在 60 個檔,只要有一頁照舊寫,② 就漂回去。
@@ -51,7 +52,8 @@
  *        需要它的範例上 —— 規則的範例區 = createTutorialRule({ examplesClassName }),規則外的表格 / 示範塊 = 自己容器的 class;
  *        段落文字跟著頁寬走(與其餘頁相同)。
  *   (R6) createTutorialRule(…) 只能在 module 層呼叫(寫在 render 裡會每次重建元件;story-rules.md「元件一律定義在 module 層」)。
- *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則 / 範例堆疊間距。
+ *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))在 story 檔與 stories-helpers 只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則 / 範例堆疊間距。
+ *        元件 / pattern 原始碼(非 story、非 stories-helpers)不在 R7 範圍:產品畫面的區塊 ↔ 區塊本來就是這一級(layoutSpace 規則 3「組 ↔ 組」,user 2026-11-06 #18)。
  *   (R8) tutorial-page.tsx 本身仍是 ②:塊距 = calc(var(--layout-space-loose)*2)、不出現 --layout-space-bottom、
  *        段落標題 <h2> = text-h3 + font-semibold + border-divider、規則標題 <h3> = text-h6 + font-semibold;
  *        (2026-10-20)頁根有 text-body、使用指引三段段名 = 何時用 / 何時不用 / 和相近元件怎麼選、沒有 noteTone、
@@ -752,6 +754,7 @@ export function checkTutorialFile(file, text) {
 /** (R7) loose × 2 只准在共用元件裡 */
 export function checkLooseTimesTwo(file, text) {
   if (file === HELPER) return []
+  if (!/\.stories\.tsx$/.test(file) && !file.includes('/stories-helpers/')) return [] // 產品原始碼:區塊 ↔ 區塊(section-gap-invariant 量)
   const out = []
   text.split('\n').forEach((l, i) => { if (LOOSE_TIMES_TWO.test(l)) out.push({ rule: 'R7', file, line: i + 1, message: '「loose × 2」寫在共用元件以外 = 手寫段落 / 規則 / 範例堆疊間距 —— 改用 TutorialPage / TutorialSection / ExampleStack(stories-helpers/examples/tutorial-page.tsx)' }) })
   return out
@@ -1148,6 +1151,10 @@ export function runSelftest(root = SCRIPT_ROOT) {
   expect(checkHelper(helper.replace('gap-[calc(var(--layout-space-loose)*2)]', 'gap-[var(--layout-space-bottom)]')).filter((h) => h.rule === 'R8').length === 2, '塊距改成 --layout-space-bottom → R8 兩筆(值不對 + 借 bottom)')
   expect(checkHelper(helper.replace('text-h3 font-semibold', 'text-h5 font-semibold')).length === 1, '段落標題改回 text-h5 → R8')
   expect(checkLooseTimesTwo(HELPER, helper).length === 0, 'loose × 2 寫在共用元件裡 → 不算(那是它唯一的住所)')
+  const LT2 = 'className="gap-[calc(var(--layout-space-loose)*2)]"'
+  expect(checkLooseTimesTwo(`${SRC}/components/FileViewer/file-viewer.tsx`, LT2).length === 0, '產品元件原始碼的區塊 ↔ 區塊 → 不算(layoutSpace 規則 3「組 ↔ 組」)')
+  expect(checkLooseTimesTwo(`${SRC}/components/FileViewer/file-viewer.stories.tsx`, LT2).length === 1, 'story 檔手寫 loose × 2 → R7 仍紅')
+  expect(checkLooseTimesTwo(`${SRC}/stories-helpers/examples/other-helper.tsx`, LT2).length === 1, 'stories-helpers 其他檔手寫 loose × 2 → R7 仍紅')
   // R8(2026-10-20):頁根字級 / 三段段名 / noteTone / Children.count —— 現況綠、各注入一種舊形狀紅、be2f1324 的原檔紅
   const r8 = (t) => checkHelper(t).filter((h) => h.rule === 'R8').map((h) => h.message)
   expect(r8(helper.replace("const PAGE_TEXT = 'text-body'", "const PAGE_TEXT = ''")).some((m) => m.includes('text-body')), '頁根拿掉 text-body → R8')

@@ -712,8 +712,8 @@ export const SizeMatrix: Story = {
               </tr>
               <tr>
                 <Td>Section 間 gap</Td>
-                <Td mono>gap-[var(--layout-space-loose)]</Td>
-                <Td>說明 ↔ 檔案資訊 16 / 24 px(隨 density;跨範疇 parallel = loose)</Td>
+                <Td mono>gap = --layout-space-loose 的兩倍</Td>
+                <Td>說明 ↔ 檔案資訊 32 / 48 px(隨 density;區塊 ↔ 區塊 = 一條隱形分隔線的位置、上下各 loose,layoutSpace 規則 3「組 ↔ 組」)</Td>
               </tr>
               <tr>
                 <Td>檔案資訊 metadata</Td>

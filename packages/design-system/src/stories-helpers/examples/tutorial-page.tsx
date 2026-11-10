@@ -16,8 +16,8 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  * 間距(只在這裡寫一次):
  * - **規則 ↔ 規則 = 段落 ↔ 段落 = `calc(var(--layout-space-loose) * 2)`**:從 loose 推出,所以永遠是「範例之間」的兩倍、跟著密度走;
  *   不借 `--layout-space-bottom` —— 那個 token 的語意是「結論留白:一塊 body 的最後一個 element(含按鈕)→ body 底」(layoutSpace.spec.md:13),
- *   段落之間只是值可能剛好一樣。也不是公開 token:這一級只用在 Storybook 文件頁(教學頁、Tokens / Patterns 文件頁、
- *   展示 / 設計規格頁的範例堆疊),不用在產品頁(layoutSpace.spec.md 規則 3 的指標)。
+ *   段落之間只是值可能剛好一樣。也不是公開 token(layoutSpace.spec.md 規則 3「組 ↔ 組」:同一級也用在產品畫面的區塊 ↔ 區塊);
+ *   文件頁(教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊)的這個值只寫在本檔。
  * - 規則標題 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`:text-h6 14 / 1.3 + text-caption 12 / 1.3 正是 item-anatomy
  *   「Label ↔ Desc 間距」scanning 那一型);規則標題區(標題 + 說明)→ 範例區 = `--layout-space-loose`(user 2026-10-21 A4 甲:
  *   標題 + 說明是整組內容的標題、不是第一則內容的小標,內容之間是 loose,它到內容也是 loose;layoutSpace.spec.md 規則 3

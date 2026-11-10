@@ -114,7 +114,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 | **跨範疇 + functional 交互** | `tight` |
 | **跨範疇 + parallel** | `loose` |
 
-**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **教學頁的「組 ↔ 組」另有一級(只用在 Storybook 文件頁;2026-10-14 先定在教學頁,後來加的範圍見本段後文)**:設計原則頁 / Patterns 教學框裡,每則規則、每個段落本身已經是「一組用 loose 排好的範例」,組與組之間要比組內更開才分得出範例屬於哪一則 —— 規則 ↔ 規則 = 段落 ↔ 段落 = **loose × 2**(user 2026-10-07「第一題照你建議」= 建議 ②)。這一級**不是公開 token、不用在產品頁**(產品頁仍只有本表 tight / loose 兩級),也**不借 `bottom`**(本表 `bottom` 列的結論留白)。值與元件的唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。**展示頁 / 設計規格頁「一則一個標題」的範例堆疊,範例 ↔ 範例也屬這一級**(2026-10-27 user 回「Q2照你建議」—— 採 AI 建議 ①:原本範例之間只有 loose,與標題 → 自己的內容同一個量級,看不出標題屬於哪一則)([來源](https://www.nngroup.com/articles/gestalt-proximity/))。
+**核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **「組 ↔ 組」(區塊 ↔ 區塊)另有一級(2026-10-14 先定在教學頁,2026-11-06 擴到產品畫面;後來加的範圍見本段後文)**:一塊內容本身已經用 loose / tight 排好 —— 教學頁的每則規則、每個段落;產品畫面裡分屬不同主題的一塊(例:FileViewer 資訊面板的「說明」欄位、「檔案資訊」標題 + 清單)—— 塊與塊之間要比塊內更開,才分得出標題屬於哪一塊。**區塊之間 = 一條分隔線的位置,上下各 loose**(合計 **loose × 2**:md 32 / lg 48);區塊感夠時不畫線,不夠時畫 `Separator`,間距不變。出處:教學頁的規則 ↔ 規則 = 段落 ↔ 段落 = user 2026-10-07「第一題照你建議」= 建議 ②;產品畫面 = user 2026-11-06 #18 原話「#18 可以照你建議，其實感覺就像是輸入框跟下方標題之間還有一條隱形的分隔線，然後線的上下間距依然都是loose的概念，然後可能有時候若區塊感不夠的話，這個分隔線就不會是隱形的，但間距都一如往常？」(「照你建議」= 決策頁乙:產品畫面的「區塊 ↔ 區塊」也用 loose 的兩倍;分隔線那段是 user 用自己的話確認理解,句尾問號是向 AI 確認,AI 回覆一致)。並列的元素(欄位 ↔ 欄位、卡片 ↔ 卡片)仍是本表 parallel = loose。這一級**不是公開 token**(值由 loose 推出),也**不借 `bottom`**(本表 `bottom` 列的結論留白)。閘 `scripts/section-gap-invariant.mjs`。教學頁的值與元件唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。**展示頁 / 設計規格頁「一則一個標題」的範例堆疊,範例 ↔ 範例也屬這一級**(2026-10-27 user 回「Q2照你建議」—— 採 AI 建議 ①:原本範例之間只有 loose,與標題 → 自己的內容同一個量級,看不出標題屬於哪一則)([來源](https://www.nngroup.com/articles/gestalt-proximity/))。
 
 世界級對齊:Material 3 / Polaris / Apple HIG / Atlassian 都按「relationship not type」決定 spacing。 <!-- @benchmark-unverified -->
 
@@ -162,7 +162,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 
 | 該用 layout-space token(density-scaling) | 刻意固定值 OK(magic number 合法) |
 |---|---|
-| 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,**且有規格定了列距**,規則 3「同範疇 spec-own」;判準見上方「親疏 3 級」的 Bundled component family 客觀判斷)|
+| 並列獨立 **卡片 / 表單欄位** 之間(規則 3 parallel = loose)、**區塊 ↔ 區塊**(規則 3「組 ↔ 組」= loose × 2)| **同質 list 的列間距**(一串同類 rows,**且有規格定了列距**,規則 3「同範疇 spec-own」;判準見上方「親疏 3 級」的 Bundled component family 客觀判斷)|
 | **Header → 內容**(規則 2 = tight)| **micro / icon / 控件內部** 間距(gap-1/2、icon padding)|
 | **Chrome 水平內距**(規則 6 = loose)| **為視覺平衡 / 對稱 刻意調的值**(設計裁量)|
 | **body 收尾**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
