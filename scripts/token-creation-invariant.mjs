@@ -24,7 +24,9 @@
  *      判準同 `packages/design-system/ds-canonical/hooks/check_orphan_ds_css.sh`(那支只在本機收工時提醒),這裡是 CI 必跑的那一份。
  *   C7 誰可以讀:(甲)產品端程式(本 repo `apps/`)不得讀 `product: "no"` 的名字、不得覆寫非 `read-write` 的名字;
  *      (乙)設計系統 `components/` / `patterns/` / `styles/` 讀原料,資料夾必須在該列 `dsReaders`。兩邊都是已知名單以外的才擋。
- *   C9 只有主人自己在讀、又不切換的新值,不該有全系統的名字(第一階段只對相對 main 新增的名字開)。
+ *   C9 只有主人自己在讀、又不切換的值,不該有全系統的名字。第一階段只對相對 main 新增的名字開;2026-11-11 第三階段
+ *      收完 6 顆之後全面打開:「元件的值」不分新舊全查(主人 = 該列 home 與 target 的資料夾),其他類別仍只查新名字
+ *      (既有的原料 / 共用刻度以「一組」為單位判,不逐顆問)。
  * 三件跨條的事:拿不到 main → **紅**(INSTRUMENT-FAIL,不是跳過);讀者一律去掉註解(程式檔用 TypeScript 語法樹只取字串);
  * 已知名單「只能變短」= 比 main 的那份多一筆就紅、修好了還留著也紅。
  *
@@ -258,6 +260,7 @@ export function lookup(rows, name) {
   return best
 }
 const homesOf = (r) => (r.home == null ? [] : Array.isArray(r.home) ? r.home : [r.home]).map((h) => `${DS_ROOT}/${h}`)
+const targetsOf = (r) => (r.target == null ? [] : Array.isArray(r.target) ? r.target : [r.target]).map((h) => `${DS_ROOT}/${h}`)
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 export const specHasWhole = (spec, name) => new RegExp(`(?<![\\w-])${esc(name)}(?![\\w-])`).test(spec)
 /** 規格裡的萬用寫法(`--color-{hue}-{1~10}`、`--field-height-*`、`--x-<size>`)涵蓋到它也算「找得到」—— 只用在既有名字的已知名單。 */
@@ -431,16 +434,23 @@ export function runChecks(ctx) {
   ratchet(P.C7, 'productWrites', [...new Set(productWrite)], known.productWrites, ctx.mainRegistry?.known?.productWrites, ctx.mainRegistry, (k) => `產品端覆寫了不開放覆寫的名字:${k.replace('|', ' 覆寫 ')}`)
   ratchet(P.C7, 'dsRawColorReads', [...new Set(dsRaw)], known.dsRawColorReads, ctx.mainRegistry?.known?.dsRawColorReads, ctx.mainRegistry, (k) => `設計系統元件直接讀原料:${k.replace('|', ' 讀 ')}(改用語意色,或在該列 dsReaders 點名)`)
 
-  // C9
+  // C9 只有主人自己在讀、又不切換的值,不該有全系統的名字(token-system.spec.md 判斷流程第 0 題)。
+  // 2026-11-11 第三階段收完 6 顆之後全面打開:分類表登記成「元件的值」的名字,不分新舊全部查;
+  // 其他類別照第一階段只查相對 main 新增的名字 —— 既有的原料 / 共用刻度「以一組為單位判」(token-system.spec.md
+  // 判斷流程「讓答案唯一的兩個補充規定」),一組裡某一顆目前只有同組的人讀(色票被語意色讀)或暫時沒人讀,
+  // 仍是那組刻度的一員,不逐顆問「只有誰在讀」。
+  // 「主人」= 該列 home 與 target 所在的資料夾:寄住在共用檔(home = tokens/uiSize)、只有主人元件(target 那個資料夾)
+  // 在讀的,一樣算只有主人在讀 —— 第三階段收回的 6 顆正是這種(只看 home 會把主人元件當成「別人」而放行)。
   for (const [n, list] of m.globalDecls) {
-    if (!isNew(n)) continue
     const r = ownRow(n)
     if (!real(r)) continue
+    const fresh = isNew(n)
+    if (!fresh && r.class !== 'component') continue
     if (list.some((d) => d.block !== 'root')) continue
-    const homeFolders = new Set(homesOf(r).map(folderOf))
+    const ownerFolders = new Set([...homesOf(r), ...targetsOf(r)].map(folderOf))
     const readerFolders = new Set(m.reads.filter((x) => x.name === n).map((x) => x.folder))
-    if (![...readerFolders].some((f) => !homeFolders.has(f))) {
-      P.C9.push(`${n} 是新名字,只有 ${[...readerFolders].join(' / ') || '(沒有人)'} 在讀、也不隨密度或主題切換 —— 寫成元件自己的常數,不開全系統的名字`)
+    if (![...readerFolders].some((f) => !ownerFolders.has(f))) {
+      P.C9.push(`${n}${fresh ? ' 是新名字,' : ' '}只有 ${[...readerFolders].join(' / ') || '(沒有人)'} 在讀(主人:${[...ownerFolders].join(' / ')})、也不隨密度或主題切換 —— 寫成元件自己的常數,不開全系統的名字`)
     }
   }
 
@@ -487,7 +497,7 @@ const LABEL = {
   C5: 'C5 大密度覆寫有回復、覆寫與預設同檔',
   C6: 'C6 樣式檔有進對外彙總檔或被程式匯入',
   C7: 'C7 誰可以讀(產品 / 設計系統讀原料)',
-  C9: 'C9 新名字不是只有主人自己在讀的常數',
+  C9: 'C9 只有主人自己在讀、又不切換的值不開全系統的名字(元件的值全查;其他類別查新名字)',
 }
 
 function main() {
@@ -582,6 +592,22 @@ function selftest() {
         ['C9', true, '--sidebar-section-gap', '只有主人自己讀、不切換的新值', () => run({ files: withFiles(base), registry: reg })],
         ['C9', true, '--sidebar-section-gap', '別的檔只在註解裡提到 → 仍然紅', () => run({ files: withFiles({ ...base, [`${DS_ROOT}/components/AppShell/fixture.tsx`]: '// 對齊 var(--sidebar-section-gap)\nexport const z = 1\n' }), registry: reg })],
         ['C9', false, '--sidebar-section-gap', '真的被別的資料夾讀', () => run({ files: withFiles({ ...base, [`${DS_ROOT}/components/AppShell/fixture.tsx`]: "export const z = 'gap-[var(--sidebar-section-gap)]'\n" }), registry: reg })],
+      ]
+    })(),
+    // C9 全面打開(2026-11-11 第三階段收完 6 顆之後):既有的名字也查。基準換成「main 上已經有它」(mainNames 含它 = 不是新名字);
+    // 第一條在舊寫法(只查新名字、主人只看 home)下兩個原因都會放行 —— 它是這次打開的對照組
+    ...(() => {
+      const owner = `${DS_ROOT}/components/FixtureOwner/owner.tsx`
+      const parked = { [UI]: `${files.get(UI)}\n:root { --fixture-parked-width: 30rem; }\n`, [owner]: "export const c = 'w-[var(--fixture-parked-width)]'\n" }
+      const reg = addRows(row({ match: '--fixture-parked-width', owner: 'FixtureOwner', target: 'components/FixtureOwner/owner.tsx' }))
+      const scale = { [UI]: `${files.get(UI)}\n:root { --fixture-scale-step: 1px; }\n` }
+      const regScale = addRows(row({ match: '--fixture-scale-step', class: 'shared', owner: 'uiSize', scale: '--field-height-' }))
+      const onMain = (extra, r) => { const f = withFiles(extra); return run({ files: f, registry: r, mainNames: buildModel(f).names }) }
+      return [
+        ['C9', true, '--fixture-parked-width', '既有的元件的值寄住在共用檔、只有主人元件(target 的資料夾)在讀 —— 第三階段收回的 6 顆就是這種', () => onMain(parked, reg)],
+        ['C9', false, '--fixture-parked-width', '同一顆有第二個元件在讀', () => onMain({ ...parked, [`${DS_ROOT}/components/FixtureOther/other.tsx`]: "export const d = 'w-[var(--fixture-parked-width)]'\n" }, reg)],
+        ['C9', false, '--fixture-scale-step', '既有的共用刻度成員沒人讀 —— 以一組為單位判,不逐顆問', () => onMain(scale, regScale)],
+        ['C9', true, '--fixture-scale-step', '同一顆共用刻度若是新名字,照樣要有主人以外的讀者(第一階段的範圍不縮)', () => run({ files: withFiles(scale), registry: regScale })],
       ]
     })(),
   ]
