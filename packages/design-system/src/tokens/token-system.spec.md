@@ -94,7 +94,7 @@
 - **元件的值**:主人元件資料夾的樣式檔。預設、覆寫、回復三段一起搬(規則 1)。
 - **用 `var()` 由別的 token 組出來、輸入會隨密度變的值**:公式只寫一份,宣告在 `:root` 與每個換密度的元素上(`uiSize/uiSize.css`「衍生值」段),不只寫在 `:root` —— 否則區塊換密度時它沿用整頁的值(`density/density.spec.md`「局部覆蓋」的保證;閘 `scripts/test-density-subtree-token-parity.mjs`)。主人在自己根元素上重算的也算數(`--table-cell-py` 在 DataTable 根元素的 `data-table-size` 上重算)。
 - **給 Tailwind class 用的轉接名**(例:`h-tab-md` 背後的 `--spacing-tab-md: var(--tab-height-md)`)跟著本尊走;轉接名本身不登記,只檢查它指向的本尊有登記(閘 C1)。
-- 新的元件樣式檔一定要進對外彙總檔 `styles/tokens.css`(`node scripts/gen-figma-make-artifacts.mjs` 自動掃)或被元件程式匯入,否則安裝套件的產品拿不到值(2026-05-26 側欄寬事故;閘 C6)。
+- 新的元件樣式檔一定要進對外彙總檔 `styles/tokens.css`(`node scripts/gen-figma-make-artifacts.mjs` 自動掃;被元件程式匯入的不收)或被元件程式匯入,否則安裝套件的產品拿不到值(2026-05-26 側欄寬事故;閘 C6)。彙總檔不手改:CI 跑產生器的 `--check`,提交的檔不等於產生器輸出就紅(2026-11-11 接上)。
 
 ---
 

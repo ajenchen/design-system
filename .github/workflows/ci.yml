@@ -106,6 +106,12 @@ jobs:
           node scripts/named-constant-drift-invariant.mjs
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
+          # 對外彙總檔 styles/tokens.css 檔頭寫「自動產生、禁止手改」,產生器檔頭也寫「--check 在 CI 跑」—— 2026-11-11 盤點兩者都不是真的:
+          # 沒有任何 workflow / npm script 呼叫它,彙總檔被手加兩行(Tabs / Sidebar)、產生器輸出與提交的檔不同,零訊號。
+          # 上面 C6 只管「元件樣式檔有進彙總檔或被程式匯入」,不管彙總檔是不是產生器的輸出(重跑會不會改樣式載入順序)。
+          # --selftest 在記憶體裡造三種漂移各自必紅、兩種一致必綠。純靜態,約 1 秒。
+          node scripts/gen-figma-make-artifacts.mjs --check
+          node scripts/gen-figma-make-artifacts.mjs --selftest
           # 色相色票(2026-09-26 接進 PR 檢查;原本只在夜間 harness):名實一致 / 完整性 / token 存在 / 實心字對比,
           # 加 I5 色階順序「號碼 = 離所在底色多遠」(淺色越大越深、深色越大越亮,每種底都成立)。
           # meta-test 含兩組對照:把某色相偷換成別的色相 → I1 紅;深色 step-2 退回往純黑退的舊公式 → I5 紅。
