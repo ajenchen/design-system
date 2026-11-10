@@ -689,8 +689,9 @@ function UpdateProjectSettingsForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      {/* 欄位 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」:一條隱形分隔線的位置,上下各 loose;user 2026-11-10 PR #172 留言指這顆鈕)。
+          規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事 */}
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         {/* 送出中 = 忙碌(焦點留著、擋重送);存檔後因 pristine 停用 —— 兩種都不把焦點丟到 body(button.tsx 可聚焦的停用,待辦總帳 N69) */}
         <Button type="submit" variant="primary" loading={form.isSubmitting} disabled={form.submitDisabled}>儲存變更</Button>
       </ButtonGroup>
@@ -723,8 +724,8 @@ function CreateProjectForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      {/* 欄位 → 表單按鈕列 = loose × 2(同上方更新表單;layoutSpace.spec.md 規則 3「組 ↔ 組」) */}
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         <Button type="submit" variant="primary" loading={form.isSubmitting}>建立專案</Button>
       </ButtonGroup>
     </form>

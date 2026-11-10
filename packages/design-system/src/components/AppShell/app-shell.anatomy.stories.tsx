@@ -196,7 +196,8 @@ function CompleteSprintAction() {
 
 /**
  * Main 裡的即時讀數:各區此刻的顯示方式(`useAppShell().display`)+ 頁面動作。
- * 讀數清單 → 跟在後面的按鈕 = loose(按鈕跟在內容後,上方一律 loose;最後一個 DescriptionList 列不自帶下內距,這段只由 space-y 給);
+ * 讀數清單 → 跟在後面的頁面動作鈕 = loose(layoutSpace.spec.md 規則 3;這裡不是表單 —— 表單欄位 → 表單按鈕列才是「組 ↔ 組」loose × 2;
+ * 最後一個 DescriptionList 列不自帶下內距,這段只由 space-y 給);
  * 按鈕 → Main 底 = bottom 48(整頁 Main 撐滿、最後是一般元素,layoutSpace.spec.md 規則 4 第 1 列)。
  */
 function LayoutReadout() {
