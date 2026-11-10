@@ -715,12 +715,12 @@ export const ChromeTokens: Story = {
             <tr>
               <Td><TkVal token="--sidebar-width-icon" value="calc(2 × loose + icon)" /></Td>
               <Td mono>calc()</Td>
-              <Td>icon 收合模式寬度(= 左右各一個 loose + 圖示寬:md 2×16+16 = 48 / lg 2×24+20 = 68,展開與收合時圖示中心 x 不動)</Td>
+              <Td>icon 收合模式寬度(= 左右各一個 loose + 圖示寬:md 2×16+16 = 48 / lg 2×24+20 = 68,展開與收合時圖示中心 x 不動;換了密度的區塊裡照區塊的密度算)</Td>
             </tr>
             <tr>
               <Td><TkVal token="--sidebar-menu-icon-size" value="1rem (16px)" /></Td>
               <Td mono>1rem</Td>
-              <Td>menu icon 大小(sm / md 16px;size = lg 的列另外覆寫成 20px)</Td>
+              <Td>收合寬公式裡的圖示欄(標準密度 16px / 寬鬆密度 20px,鎖回標準密度的區塊回到 16px);畫出來的選單圖示大小由 Sidebar 的 size 決定,不讀這顆</Td>
             </tr>
           </tbody>
         </table>

@@ -3,7 +3,8 @@
    ═══════════════════════════════════════════════════════════════════════
 
    rem 單位,尊重使用者瀏覽器字體設定(WCAG)。透過 data-density / data-ui-size 切換 md / lg;
-   有大密度覆寫的值,下方「鎖回一般密度」段必須有它(token-creation-invariant C5)。
+   有大密度覆寫的值,下方「鎖回一般密度」段必須有它(token-creation-invariant C5);
+   用 var() 組出來的值住最下方「衍生值」段,在每個換密度的元素上重算(test-density-subtree-token-parity)。
 
    每一顆屬於哪一類、主人是誰、目標住處在哪 → tokens/token-registry.json(唯一一份;本檔頭不重列)。
    本檔現在裝兩種值:
@@ -117,8 +118,10 @@
   --sidebar-width: 15rem;          /* 240px:產品沒設時 Menu 的初始寬(user 2026-05-21) */
   --sidebar-width-min: 240px;      /* 產品沒設時 Menu 與 Right panel 的最小寬(2026-05-21 起 Right panel 也參照這個最小寬 —— user 要求 aside 一起參照,轉述;那段對話紀錄已不存在、登記簿查無原話);2026-10-14 起不再硬夾 —— app-shell.spec.md「版面規則」§1 */
   /* --sidebar-width-mobile(18rem 手機抽屜寬)2026-10-14 退場:Menu 浮層與並排共用同一份寬度紀錄(「版面規則」§7、§9) */
-  --sidebar-menu-icon-size: 1rem;   /* 16px sm/md row(per ICON_SIZE.sm/md);size=lg 罕見 case 下方 override 1.25rem(20px) */
-  --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
+  /* 16px —— 收合細列寬公式裡的圖示欄;大密度覆寫 1.25rem(20px),鎖回一般密度段回到 1rem。
+     讀它的只有下方「衍生值」段的 --sidebar-width-icon;畫出來的選單圖示大小由 Sidebar 的 size 決定(ICON_SIZE),不讀它。 */
+  --sidebar-menu-icon-size: 1rem;
+  /* --sidebar-width-icon(收合細列寬 = 2 × loose + 選單圖示)用 var() 組出來,住下方「衍生值」段 —— 每個換密度的元素上重算 */
 
   /* AgentPanel 面板寬**不設 token**(2026-10-15 退役 --agent-panel-width 25rem):預設 360 / 400 / 640 只住
      agent-panel.tsx 的 AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX —— 那個 token 執行期從沒有讀取者,元件一直用 JS 常數 400(r1b 複驗 F8,M17)。
@@ -186,9 +189,29 @@
      像素相等恆等式(md-lock subtree 必須與 root md 逐 token 相等)。值 = :root md default。 */
   --chrome-header-height: 3rem; /* 48px — md default */
 
+  /* 2026-11-11 補洞(同上一段那一種):大密度段有覆寫 --sidebar-menu-icon-size 1.25rem,這裡原本漏了 →
+     大密度頁面裡鎖回一般密度的區塊仍拿 20px(token-creation-invariant C5 已知名單登記過)。值 = :root 預設。 */
+  --sidebar-menu-icon-size: 1rem; /* 16px — md default */
+
   --tree-indent-sm: 1.5rem;     /* 24px — md default */
   --tree-indent-md: 1.5rem;     /* 24px — md default */
   --tree-indent-lg: 1.75rem;    /* 28px — md default */
+}
+
+/* ── 衍生值:在每個換密度的元素上重算(2026-11-11)──
+   用 var() 由別的 token 組出來的值,瀏覽器在「宣告它的那個元素」上就把 var() 代換掉,子孫繼承的是代換後的結果
+   (W3C CSS Custom Properties Level 1:custom property 的 Computed value =「specified value with variables substituted」,
+   https://www.w3.org/TR/css-variables-1/#defining-variables)。只寫在 :root 的話,區塊換了密度
+   (data-density / data-ui-size / data-layout-space),它的輸入跟著變、它自己不會重算 —— 實測大密度頁面裡
+   鎖回一般密度的區塊,收合細列寬仍是 68 而不是 48;一般密度頁面裡局部放大的區塊,仍是 48 而不是 68。
+   所以公式只寫這一份,宣告在 :root 與每個可能換密度的元素上,每一層都用自己的輸入重算。
+   閘:scripts/test-density-subtree-token-parity.mjs(區塊裡每一顆 token = 整頁直接設成那個密度的值,瀏覽器實算)。 */
+:root,
+[data-density],
+[data-ui-size],
+[data-layout-space] {
+  /* 側欄收合細列寬:md = 2×16+16 = 48 / lg = 2×24+20 = 68(components/Sidebar/sidebar.spec.md「尺寸規範」) */
+  --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
 }
 
 

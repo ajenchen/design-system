@@ -91,6 +91,7 @@
 
 - **原料、共用刻度**:`tokens/<類別>/`。陰影(`--elevation-*`)住 `color/primitives.css`:它跟顏色共用同一段 `[data-theme="dark"]` 切換,放同一個區塊改主題設定一處全聯動;拆出去就有兩處主題觸發點,容易「改 a 壞 b」。拆分條件是「陰影需要獨立的明暗切換」(例:高對比模式不變色但加重陰影),目前不成立。對齊:Atlassian 的 shadow 與 color 同在一份主題檔(atlassian-light.js `--ds-shadow-raised` 與 `--ds-text-subtlest` 同檔,[來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-light.js));Polaris `shadow` 與 `color` 同住 `themes/base/`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/shadow.ts#L41))。
 - **元件的值**:主人元件資料夾的樣式檔。預設、覆寫、回復三段一起搬(規則 1)。
+- **用 `var()` 由別的 token 組出來、輸入會隨密度變的值**:公式只寫一份,宣告在 `:root` 與每個換密度的元素上(`uiSize/uiSize.css`「衍生值」段),不只寫在 `:root` —— 否則區塊換密度時它沿用整頁的值(`density/density.spec.md`「局部覆蓋」的保證;閘 `scripts/test-density-subtree-token-parity.mjs`)。主人在自己根元素上重算的也算數(`--table-cell-py` 在 DataTable 根元素的 `data-table-size` 上重算)。
 - **給 Tailwind class 用的轉接名**(例:`h-tab-md` 背後的 `--spacing-tab-md: var(--tab-height-md)`)跟著本尊走;轉接名本身不登記,只檢查它指向的本尊有登記(閘 C1)。
 - 新的元件樣式檔一定要進對外彙總檔 `styles/tokens.css`(`node scripts/gen-figma-make-artifacts.mjs` 自動掃)或被元件程式匯入,否則安裝套件的產品拿不到值(2026-05-26 側欄寬事故;閘 C6)。
 
@@ -134,6 +135,7 @@
 ## 機器擋得住什麼、擋不住什麼
 
 閘 `scripts/token-creation-invariant.mjs`(檢查清單在檔頭,不在這裡重述)擋得住:放錯地方、沒登記、新名字靠開頭混過去、規格沒寫、密度覆寫漏回復、樣式檔沒進彙總檔、產品或元件讀了不該讀的。已知的舊缺漏(規格找不到的名字、元件直接讀原料的地方、漏回復)列在分類表 `known.*`,**只能變短**。
+C5 只看「名字有沒有出現在回復段」;「區塊裡的值真的等於整頁該密度」由 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算(用 `var()` 組出來的值 C5 看不到)。
 
 擋不住、靠審查的人看分類表那一句 `why`:
 - **這顆值的主人是誰、該歸哪一類** —— 設計判斷。機器只確認「有登記、登記不互相打架」。

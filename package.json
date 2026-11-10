@@ -164,6 +164,7 @@
     "audit:spec-deadlinks": "node scripts/audit-spec-deadlinks.mjs",
     "audit:hook-test-coverage": "node scripts/audit-hook-test-coverage.mjs",
     "test:devmode-geometry": "node scripts/test-devmode-geometry-invariant.mjs",
+    "test:density-subtree-parity": "node scripts/test-density-subtree-token-parity.mjs",
     "sync-memory": "node scripts/sync-memory.mjs",
     "sync:ds-canonical": "node scripts/sync-ds-canonical.mjs",
     "verify:consumer-css": "node scripts/verify-consumer-css-entry.mjs",

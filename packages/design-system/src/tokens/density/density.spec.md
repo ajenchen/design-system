@@ -72,6 +72,11 @@ document.documentElement.setAttribute('data-ui-size', 'lg')
 </div>
 ```
 
+**保證:區塊裡每一顆 token = 整頁直接設成那個密度的值**(逐 token 相等;兩個方向都算 —— 大密度頁面裡鎖回一般密度、一般密度頁面裡局部放大)。兩種寫法會破這條,`tokens/uiSize/uiSize.css` 各有一段處理:
+- 有大密度覆寫的值,「鎖回一般密度」段要有它(閘 `token-creation-invariant.mjs` C5);
+- 用 `var()` 由別的 token 組出來的值(例:側欄收合寬 `--sidebar-width-icon`)不能只寫在 `:root` —— 瀏覽器在宣告它的元素上就把 `var()` 代換掉,子孫繼承代換後的結果([W3C CSS Custom Properties Level 1](https://www.w3.org/TR/css-variables-1/#defining-variables):Computed value =「specified value with variables substituted」),區塊換密度時它不會重算。所以這類值住「衍生值」段,宣告在 `:root` 與每個換密度的元素上。
+閘 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算 12 種組合 × 對外彙總檔的全部 token。
+
 ## 動態切換
 
 ```ts

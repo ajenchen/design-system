@@ -684,8 +684,8 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 | Token | 預設值 | 用途 |
 |-------|--------|------|
 | `--sidebar-width` | `15rem` (240px) | 產品沒設時 Menu 的初始寬;`--sidebar-width-min`(240px)= 產品沒設時 Menu 與 Right panel 的最小寬。user 2026-05-21 原話(commit `e58576a6`):「--sidebar-width: 15rem = 240px,然後--sidebar-width-min就先設成240px吧,讓drag resize有一個最小寬度,aside應該也要一起參照」。2026-10-14 起產品設的最小 / 初始 / 最大為準,DS 不再硬夾(`../AppShell/app-shell.spec.md`「版面規則」§1)|
-| `--sidebar-width-icon` | `calc(2 * var(--layout-space-loose) + var(--sidebar-menu-icon-size))` | icon 模式寬度(2026-05-21 v3 撤回 `3rem` hardcode,改 geometry formula 保證 icon center x = loose + icon/2 在展開/收合一致;**md = 2×16+16 = 48 / lg = 2×24+20 = 68**,跟 chrome-header-height 解耦)|
-| `--sidebar-menu-icon-size` | `1rem` (16px) | sidebar menu icon 大小(per ICON_SIZE.sm/md=16);size=lg 罕見 case override `1.25rem` |
+| `--sidebar-width-icon` | `calc(2 * var(--layout-space-loose) + var(--sidebar-menu-icon-size))` | icon 模式寬度(2026-05-21 v3 撤回 `3rem` hardcode,改 geometry formula 保證 icon center x = loose + icon/2 在展開/收合一致;**md = 2×16+16 = 48 / lg = 2×24+20 = 68**,跟 chrome-header-height 解耦)。換了密度的區塊裡也照區塊的密度算:大密度頁面裡鎖回一般密度的區塊 = 48、一般密度頁面裡局部放大的區塊 = 68(公式住 `uiSize.css`「衍生值」段,在每個換密度的元素上重算;2026-11-11 前只寫在 `:root`,區塊裡會沿用整頁的值。閘 `scripts/test-density-subtree-token-parity.mjs`)|
+| `--sidebar-menu-icon-size` | `1rem` (16px) | 收合細列寬公式裡的圖示欄(對齊 ICON_SIZE.sm/md = 16);大密度覆寫 `1.25rem`(20px),鎖回一般密度的區塊回到 `1rem`。只有 `--sidebar-width-icon` 讀它 —— 畫出來的選單圖示大小由 Sidebar 的 `size` 決定(ICON_SIZE),不讀這顆 |
 
 **用 rem**：跟隨 root font-size，支援 accessibility 等比例縮放。**不用 layoutSpace / uiSize 推導**：sidebar width 是容器維度，不是間距或元件內高度，語意不同；耦合會讓寬度跟間距連動。**15rem** = 240,user 2026-05-21 原話定的(逐字見上表 `--sidebar-width` 那列,commit `e58576a6`);浮層與並排共用同一份寬度紀錄,沒有浮層專用寬(2026-10-14 前的 `--sidebar-width-mobile` 18rem 隨 768 抽屜退場)。`--sidebar-width-icon` 用 geometry formula(2026-05-21 v3)`calc(2*loose + icon-size)` 保證 collapse/expand icon center x 一致。
 

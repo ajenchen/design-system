@@ -1019,9 +1019,7 @@
       "--white-a65",
       "--white-a85"
     ],
-    "missingRestore": [
-      "--sidebar-menu-icon-size"
-    ],
+    "missingRestore": [],
     "dsRawColorReads": [
       "components/AgentPanel/agent-panel.css|--color-neutral-6",
       "styles/base.css|--color-neutral-5"
