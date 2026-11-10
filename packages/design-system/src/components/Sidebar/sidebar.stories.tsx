@@ -3,7 +3,7 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
-  LayoutDashboard, Inbox, Users, Settings, Folder, FileText, FileCode, Plus, MoreVertical,
+  LayoutDashboard, Inbox, Users, Settings, Folder, FileText, Plus, MoreVertical,
   User, LogOut, StarOff,
 } from 'lucide-react'
 import {
@@ -38,7 +38,6 @@ import {
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { DataTable, type DataTableProps } from '@/design-system/components/DataTable/data-table'
-import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/展示',
@@ -128,7 +127,7 @@ const UserFooter = () => (
  * 自畫 bg-surface;Element canonical:ChromeHeader 內部用 `<header>`)。
  * Trigger 是唯一的 sidebar 切換入口。
  * 主區放真實頁面內容(D6 甲,user 10-21「D6 照你建議」:不做手刻指標卡、不亂造元件),而且**跟著選到的項目走**
- * (2026-11-06 #56 甲):資料夾 → 裡面的檔案清單;檔案 → 這個檔案的屬性;專案 → 這個專案的議題;Dashboard 等主導覽 →
+ * (2026-11-06 #56 甲):資料夾 → 裡面的檔案清單;檔案 → 這個檔案的版本紀錄(2026-11-10 PR #172 留言起;原本是屬性清單);專案 → 這個專案的議題;Dashboard 等主導覽 →
  * 同範本 DashboardPage 的做法(DS 元件組成的真實內容:「今日待處理」DataTable;apps/template/src/App.tsx)。
  * dashboard 放什麼由產品決定,DS 不定義卡片 / 內容框架(app-shell.spec.md「Main 內塞什麼」),所以這裡不做成像 DS 規定的版型。
  * 每則的說明寫在 parameters.docs.description.story(story-rules「整頁情境」:畫布不放便條)。
@@ -210,6 +209,16 @@ const FOLDER_FILES: Record<string, FileRow[]> = {
     { name: 'iOS', updatedAt: '2026/11/07', updatedBy: '張詠晴' },
     { name: 'Android', updatedAt: '2026/11/05', updatedBy: '王俊傑' },
   ],
+  ios: [
+    { name: 'Podfile', updatedAt: '2026/11/07', updatedBy: '張詠晴' },
+    { name: 'Podfile.lock', updatedAt: '2026/11/07', updatedBy: '張詠晴' },
+    { name: 'Info.plist', updatedAt: '2026/10/22', updatedBy: '王俊傑' },
+  ],
+  android: [
+    { name: 'build.gradle', updatedAt: '2026/11/05', updatedBy: '王俊傑' },
+    { name: 'gradle.properties', updatedAt: '2026/11/04', updatedBy: '王俊傑' },
+    { name: 'proguard-rules.pro', updatedAt: '2026/10/24', updatedBy: '王俊傑' },
+  ],
   docs: [
     { name: '上線檢查清單.md', updatedAt: '2026/11/04', updatedBy: '張詠晴' },
     { name: '付款流程說明.md', updatedAt: '2026/10/28', updatedBy: '林雅婷' },
@@ -254,7 +263,34 @@ const ProjectIssuesView = ({ project }: { project: string }) => (
   <TableSection title="進行中的議題" description={`「${project}」還沒關閉的議題,依截止日排序。`} columns={ISSUE_COLUMNS} data={PROJECT_ISSUES[project] ?? []} />
 )
 
-/** 專案樹:資料夾 → 檔案清單(layoutSpace「Page 情境」:表格直接接在標頭下);檔案 → 這個檔案的屬性(一件東西的幾項屬性 = DescriptionList,description-list.spec.md)。 */
+/**
+ * 選到檔案 → 這個檔案的版本紀錄(DataTable:版本 / 說明 / 修改者 / 時間;GitHub 的檔案 History、Google Drive 的版本紀錄同類 ——【AI 推導】)。
+ * 2026-11-10 前是 `max-w-2xl` 包一份 DescriptionList(位置 / 最後修改 / 修改者);那個寬度沿用自改版前「Sprint 42」摘要,
+ * description-list.spec.md、layoutSpace.spec.md 都沒有依據。user 2026-11-10 PR #172 留言(逐字):
+ * 「為何 description list 沒有撐滿容器寬度？設計原則是？而且我不想要提供主內容是 description list的範例，太浪費空間了」;
+ * 同日補充(逐字):「我的意思是不想要看到description list類型的主內容，我建議改成table之類的」。
+ * 版面同資料夾 → 檔案清單(layoutSpace「Page 情境」:表格直接接在標頭下,撐滿主區、只扣頁面左右 loose)。日期寫死(story-determinism-invariant)。
+ */
+type FileVersionRow = { version: string; note: string; author: string; at: string }
+const FILE_VERSION_COLUMNS: DataTableProps<FileVersionRow>['columns'] = [
+  { accessorKey: 'version', header: '版本', meta: { type: 'string', width: 120 } },
+  { accessorKey: 'note', header: '說明', meta: { type: 'string', width: 360 } },
+  { accessorKey: 'author', header: '修改者', meta: { type: 'person', width: 180 } },
+  { accessorKey: 'at', header: '時間', meta: { type: 'date', width: 160 } },
+]
+// 最新一筆 = 資料夾清單上 README.md 的「最後修改 2026/10/30、張詠晴」(FOLDER_FILES.web)
+const FILE_VERSIONS: Record<string, FileVersionRow[]> = {
+  readme: [
+    { version: '第 12 版', note: '補上發版流程與上線檢查清單的位置', author: '張詠晴', at: '2026/10/30' },
+    { version: '第 11 版', note: '本機開發改用 pnpm 9', author: '陳柏翰', at: '2026/10/18' },
+    { version: '第 10 版', note: '加入測試環境金流金鑰的申請方式', author: '林雅婷', at: '2026/09/26' },
+    { version: '第 9 版', note: '說明結帳流程改版的議題放在哪個專案', author: '林雅婷', at: '2026/09/12' },
+    { version: '第 8 版', note: 'Node.js 版本需求改成 20', author: '陳柏翰', at: '2026/08/29' },
+    { version: '第 7 版', note: '新增前端與 API 的資料夾說明', author: '王俊傑', at: '2026/08/14' },
+  ],
+}
+
+/** 專案樹:資料夾 → 檔案清單、檔案 → 這個檔案的版本紀錄(兩者都是 layoutSpace「Page 情境」:表格直接接在標頭下)。 */
 function ProjectTreeView({ id }: { id: string }) {
   const node = PROJECTS_TREE.flatMap((p) => [p, ...(p.children ?? [])]).find((n) => n.id === id)
   if (!node) return null
@@ -265,16 +301,10 @@ function ProjectTreeView({ id }: { id: string }) {
       </div>
     )
   }
-  const parent = PROJECTS_TREE.find((p) => p.children?.some((c) => c.id === id))
-  const row = parent ? FOLDER_FILES[parent.id]?.find((f) => f.name === node.label) : undefined
+  // 樹上唯一的檔案是 README.md(iOS / Android 是 Mobile App 底下的平台資料夾,見 PROJECTS_TREE)
   return (
-    // 屬性清單限寬(同改版前主區的 max-w-2xl):標籤與值不被拉到整個主區兩端
-    <div className="max-w-2xl px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      <DescriptionList orientation="horizontal" divided>
-        <DescriptionItem label="位置">{parent ? `${parent.label} / ${node.label}` : node.label}</DescriptionItem>
-        <DescriptionItem label="最後修改">{row?.updatedAt ?? '-'}</DescriptionItem>
-        <DescriptionItem label="修改者">{row?.updatedBy ?? '-'}</DescriptionItem>
-      </DescriptionList>
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
+      <DataTable columns={FILE_VERSION_COLUMNS} data={FILE_VERSIONS[id] ?? []} height="auto" aria-label={`${node.label} 的版本紀錄`} />
     </div>
   )
 }
@@ -427,9 +457,10 @@ const PROJECTS_TREE = [
     { id: 'backend', label: 'backend', icon: Folder },
     { id: 'readme', label: 'README.md', icon: FileText },
   ]},
+  // iOS / Android = 兩個平台的資料夾(真實 repo 的 mobile/ios、mobile/android;2026-11-10 前畫成程式碼檔圖示、點了顯示屬性清單)
   { id: 'mobile', label: 'Mobile App', icon: Folder, children: [
-    { id: 'ios', label: 'iOS', icon: FileCode },
-    { id: 'android', label: 'Android', icon: FileCode },
+    { id: 'ios', label: 'iOS', icon: Folder },
+    { id: 'android', label: 'Android', icon: Folder },
   ]},
   { id: 'docs', label: 'Docs', icon: Folder },
   { id: 'design', label: 'Design System', icon: Folder },

@@ -3,7 +3,9 @@
  * @gate-contract
  *   保證: Sidebar 展示五則有主區的範例,主區內容跟著選到的項目走(user 2026-11-06 #56 選甲):
  *         · 資料夾 → 那個資料夾裡的檔案清單(DataTable,欄位 名稱 / 最後修改 / 修改者);
- *         · 檔案 → 這個檔案的屬性(DescriptionList,含「位置」);專案 → 這個專案的議題(DataTable);
+ *         · 檔案 → 這個檔案的版本紀錄(DataTable,欄位 版本 / 說明 / 修改者 / 時間,撐滿主區、不放 DescriptionList;user 2026-11-10 PR #172 留言
+ *           「我的意思是不想要看到description list類型的主內容，我建議改成table之類的」;2e1f2e27 以前是 max-w-2xl 的屬性清單 → 該步紅);
+ *           專案 → 這個專案的議題(DataTable);每一步的表格都要撐滿主區(只扣頁面左右內距);
  *         · Dashboard 等主導覽 → 同範本 DashboardPage 的做法(一個區段 +「今日待處理」DataTable),主區不放 DescriptionList
  *           (user 同日原話「也沒有要強迫消費者一定要使用description list」)。
  *         「混合內容」實際點樹:frontend(預設)→ backend → README.md → Dashboard,每一步都驗標題與主區。
@@ -35,7 +37,7 @@ export const CASES = [
   { story: 'mixed-content', steps: [
     { click: null, h1: 'frontend', table: 'frontend 裡的檔案', headers: FILES, rows: 4, dl: false },
     { click: 'backend', h1: 'backend', table: 'backend 裡的檔案', headers: FILES, rows: 3, dl: false },
-    { click: 'README.md', h1: 'README.md', table: null, dl: true, dlHas: 'Web App / README.md' },
+    { click: 'README.md', h1: 'README.md', table: 'README.md 的版本紀錄', headers: ['版本', '說明', '修改者', '時間'], rows: 6, dl: false, fileView: true },
     { click: 'Dashboard', h1: 'Dashboard', ...PENDING },
   ] },
 ]
@@ -54,8 +56,8 @@ export function judge(results) {
         if (g.rows !== e.rows) failures.push(`${where} 列數 = ${g.rows},應 ${e.rows}`)
       }
     } else if (g.tableName) failures.push(`${where} 不該有表格,實得「${g.tableName}」`)
-    if (e.dl !== g.dl) failures.push(`${where} 主區 ${g.dl ? '有' : '沒有'} DescriptionList,應${e.dl ? '有' : '沒有'}${e.table === PENDING.table ? '(主導覽照範本 DashboardPage,不強迫 DescriptionList)' : ''}`)
-    if (e.dlHas && !(g.dlText ?? '').includes(e.dlHas)) failures.push(`${where} 屬性清單沒有「${e.dlHas}」`)
+    if (e.dl !== g.dl) failures.push(`${where} 主區 ${g.dl ? '有' : '沒有'} DescriptionList,應${e.dl ? '有' : '沒有'}${e.table === PENDING.table ? '(主導覽照範本 DashboardPage,不強迫 DescriptionList)' : e.fileView ? '(選到檔案 = 版本紀錄表格,不是屬性清單;user 2026-11-10 PR #172 留言)' : ''}`)
+    if (e.table && g.tableName === e.table && !(g.fillGap <= 1)) failures.push(`${where} 表格沒有撐滿主區(比主區窄 ${g.fillGap}px)—— 不限寬,只扣頁面左右內距`)
   }
   return failures
 }
@@ -63,7 +65,7 @@ export function judge(results) {
 function selftest() {
   let ok = true
   const expect = (cond, msg) => { if (!cond) { console.error(`✗ selftest:${msg}`); ok = false } }
-  const gotFor = (e) => ({ h1: e.h1, tableName: e.table, headers: e.headers, rows: e.rows, dl: e.dl, dlText: e.dlHas ?? '' })
+  const gotFor = (e) => ({ h1: e.h1, tableName: e.table, headers: e.headers, rows: e.rows, dl: e.dl, dlText: '', fillGap: 0 })
   const good = CASES.flatMap((c) => c.steps.map((e, i) => ({ story: c.story, step: i, expect: e, got: gotFor(e) })))
   expect(judge(good).length === 0, `修後形狀應綠,實得 ${JSON.stringify(judge(good))}`)
   // 修前 main 8eb473c7:主區一律 Sprint 摘要 DescriptionList、沒有表格
@@ -74,6 +76,12 @@ function selftest() {
   expect(judge(wrongFolder).some((s) => s.includes('backend') && s.includes('frontend 裡的檔案')), '點 backend 主區還是 frontend 應紅')
   const dlOnDashboard = good.map((r) => (r.story === 'icon-collapse' ? { ...r, got: { ...r.got, dl: true } } : r))
   expect(judge(dlOnDashboard).some((s) => s.includes('不強迫 DescriptionList')), '主導覽放 DescriptionList 應紅')
+  // 2e1f2e27 的 README.md:主區是 max-w-2xl 的屬性清單(位置 / 最後修改 / 修改者),沒有表格
+  const readmeBefore = good.map((r) => (r.expect.click === 'README.md' ? { ...r, got: { ...r.got, tableName: null, headers: [], rows: 0, dl: true, dlText: '位置Web App / README.md' } } : r))
+  const fr = judge(readmeBefore)
+  expect(fr.some((s) => s.includes('不是屬性清單')) && fr.some((s) => s.includes('README.md 的版本紀錄')), `檔案主區放屬性清單應紅,實得 ${JSON.stringify(fr)}`)
+  const readmeNarrow = good.map((r) => (r.expect.click === 'README.md' ? { ...r, got: { ...r.got, fillGap: 368 } } : r))
+  expect(judge(readmeNarrow).some((s) => s.includes('沒有撐滿主區')), '表格限寬(比主區窄,例:max-w-2xl)應紅')
   expect(judge([{ ...good[0], got: null }]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '沒量到應判儀器失效')
   console.log(ok ? '✅ sidebar-main-follows-selection selftest PASS' : '❌ sidebar-main-follows-selection selftest FAIL')
   return ok
@@ -88,15 +96,26 @@ const readMain = () => {
   const headers = table ? [...table.querySelectorAll('[role="columnheader"]')].map((h) => h.textContent.trim()).filter(Boolean) : []
   const rows = table ? [...table.querySelectorAll('[role="row"]')].filter((r) => r.querySelector('[role="cell"], [role="gridcell"]')).length : 0
   const dl = main.querySelector('dl')
-  return { h1: main.querySelector('h1')?.textContent.trim() ?? null, tableName, headers, rows, dl: !!dl, dlText: dl?.textContent ?? '' }
+  // 撐滿:表格外框寬 vs 主區捲動容器內寬扣掉頁面左右內距(表格的包層 = 主區捲動容器的直接子元素,內距由它給)
+  let fillGap = null
+  if (table) {
+    let wrap = table
+    while (wrap.parentElement && !wrap.parentElement.classList.contains('overflow-auto')) wrap = wrap.parentElement
+    const cs = getComputedStyle(wrap)
+    const inner = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+    let box = table
+    while (box.parentElement && box.parentElement !== wrap) box = box.parentElement
+    fillGap = Math.round((inner - box.getBoundingClientRect().width) * 10) / 10
+  }
+  return { h1: main.querySelector('h1')?.textContent.trim() ?? null, tableName, headers, rows, dl: !!dl, dlText: dl?.textContent ?? '', fillGap }
 }
 
 async function waitMain(page, e) {
-  // 等主區的內容本身:有表格的步等那張表、只有屬性清單的步等 dl,且 h1 已換成這一步的標題
+  // 等主區的內容本身:有表格的步等那張表(拿舊建置當對照組時 README.md 那步是 dl,也一併等),且 h1 已換成這一步的標題
   await page.waitForFunction(({ h1, wantTable }) => {
     const main = document.querySelector('#storybook-root main')
     if (!main || main.querySelector('h1')?.textContent.trim() !== h1) return false
-    return wantTable ? !!main.querySelector('[role="table"] [role="columnheader"], [role="grid"] [role="columnheader"]') : !!main.querySelector('dl')
+    return wantTable ? !!main.querySelector('[role="table"] [role="columnheader"], [role="grid"] [role="columnheader"], dl') : !!main.querySelector('dl')
   }, { h1: e.h1, wantTable: !!e.table }, { timeout: 10_000 }).catch(() => {})
   return page.evaluate(readMain)
 }

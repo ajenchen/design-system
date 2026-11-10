@@ -5,6 +5,7 @@
 // Sidebar 既有範例視覺偏移(2026-05-20 user 抓 anti-drift)。
 // Showcase + Anatomy stories 全部 consume 此 file 不重發明 simplified mock。
 
+import { useId } from 'react'
 import {
   Inbox,
   Calendar,
@@ -37,7 +38,7 @@ import {
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { AccountMenu as AccountMenuPrimitive } from '@/design-system/components/AccountMenu/account-menu'
-import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { DataTable, type DataTableProps } from '@/design-system/components/DataTable/data-table'
 // 帳號選單內容(AccountMenuItems)在本檔以 DropdownMenu primitives 直接組,
 // 供 header AccountMenu demo wrapper 與 footer UserFooter 共用(M17 單一 SSOT)。
 import {
@@ -329,21 +330,42 @@ export function PageHeader({
   )
 }
 
+type SprintIssueRow = { id: string; title: string; assignee: string; due: string }
+const SPRINT_OPEN_COLUMNS: DataTableProps<SprintIssueRow>['columns'] = [
+  { accessorKey: 'id', header: '議題', meta: { type: 'string', width: 120 } },
+  { accessorKey: 'title', header: '標題', meta: { type: 'string', width: 280 } },
+  { accessorKey: 'assignee', header: '負責人', meta: { type: 'person', width: 160 } },
+  { accessorKey: 'due', header: '截止日', meta: { type: 'date', width: 140 } },
+]
+// 同 app-shell.stories.tsx `ISSUES` 裡還沒完成的五筆(議題、標題、負責人、截止日照抄;日期寫死,story-determinism-invariant)
+const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
+  { id: 'ENG-1042', title: '登入後 redirect 失敗', assignee: 'Alan Chen', due: '2026-05-22' },
+  { id: 'ENG-1041', title: 'Stripe webhook timeout > 10s', assignee: 'Jamie Lin', due: '2026-05-25' },
+  { id: 'ENG-1038', title: 'PeoplePicker multi-select bug', assignee: 'Sophia Wang', due: '2026-05-26' },
+  { id: 'ENG-1031', title: '匯出 CSV 漏特殊字元', assignee: 'Sophia Wang', due: '2026-05-28' },
+  { id: 'ENG-1028', title: 'Onboarding 第 3 步無 a11y', assignee: 'Jamie Lin', due: '2026-06-02' },
+]
+
 /**
  * Insights 頁(本週 Sprint 的燃盡摘要):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
  * —— 兩處同一份真實頁面內容(稽核 L117:總覽的 Main 原本是一段說明文字,說明搬到 docs)。
- * 底部 = bottom 48:整頁 Main 高度撐滿、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28「這個沒問題」);
- * 最後一個 DescriptionList 列不自帶下內距(description-list.tsx `last:pb-0`),底部只由這一層給。
+ * 內容 = 一個區段(標題 + 一句燃盡摘要)+ 還沒完成的議題 DataTable,同 Sidebar 展示 / 範本 DashboardPage 的做法。
+ * 2026-11-10 前主區只有一份 DescriptionList(Sprint / 已完成 / 燃盡進度 / P0 未處理):user 2026-11-10 PR #172 留言(逐字)
+ * 「而且我不想要提供主內容是 description list的範例，太浪費空間了」—— 全 DS 同族一起改(app-shell.spec.md「Main 內塞什麼」:DS 不規定一定用 DescriptionList)。
+ * 間距照 layoutSpace.spec.md「Page 情境」:標頭 → 第一個元素 tight(規則 2);標題 ↔ 說明 = item-anatomy「Label ↔ Desc」;
+ * 區段標題(+ 說明)→ 表格 loose(規則 3);最後是有框的 DataTable → 底 loose(規則 4 第 2 列)。
  */
 export function InsightsView() {
+  const titleId = useId()
   return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      <DescriptionList orientation="horizontal" divided>
-        <DescriptionItem label="Sprint">Sprint 42(5/18 – 5/29)</DescriptionItem>
-        <DescriptionItem label="已完成">12 / 18 筆議題</DescriptionItem>
-        <DescriptionItem label="燃盡進度">67%,比計畫慢 1 天</DescriptionItem>
-        <DescriptionItem label="P0 未處理">ENG-1042、ENG-1041</DescriptionItem>
-      </DescriptionList>
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
+      <section className="flex flex-col gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-[var(--item-gap-label-desc-reading-lg)]">
+          <h2 id={titleId} className="text-h5">Sprint 42 還沒完成的議題</h2>
+          <p className="text-body text-fg-secondary">5/18 – 5/29,已完成 13 / 18 筆;燃盡進度比計畫慢 1 天,P0 還有 2 筆沒處理。</p>
+        </div>
+        <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} height="auto" aria-labelledby={titleId} />
+      </section>
     </div>
   )
 }
