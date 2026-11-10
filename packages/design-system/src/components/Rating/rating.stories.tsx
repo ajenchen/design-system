@@ -86,7 +86,8 @@ function ServiceRatingForm() {
     onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
   })
   return (
-    <form onSubmit={form.handleSubmit} className="w-80" aria-label="為這次服務評分">
+    // 表單放進卡片(同 field.stories.tsx「表單驗證」兩張):按鈕下方 = 卡片自己的底內距(layoutSpace.spec.md 規則 4)
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-lg p-[var(--layout-space-loose)]" aria-label="為這次服務評分">
       <Field required invalid={!!form.errors.rating} mode={submitted ? 'readonly' : 'edit'}>
         <FieldLabel>整體滿意度</FieldLabel>
         <Rating {...form.getInputProps('rating')} />

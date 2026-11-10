@@ -1342,6 +1342,15 @@ jobs:
           # Steps 連接線幾何(2026-09-29 待辦總帳 N52):三尺寸垂直、無說明文字時線高 ≥ 24、兩端縫 8 —— 修法前 md 只有 2.2px、lg 是 0
           # (線長是列高的餘數);selftest 把修法前的實測餵進判定函式必紅。
           npm run test:steps-connector-geometry
+          # 區塊 ↔ 區塊(2026-11-06 user #18):一條分隔線的位置、上下各 loose —— 不畫線 = loose × 2(FileViewer 資訊面板 說明 → 檔案資訊),
+          # 畫 Separator = 線兩側各 loose;md / lg 量像素。修前 main 8eb473c7 建置 FileViewer 量到 16 / 24(紅);selftest 把修前實測餵進判定必紅。
+          npm run test:section-gap
+          # 表單範例放進卡片(2026-11-10 FORM-EXAMPLE-CARD 甲;user 10-21「Q5可以基於你的建議」、10-28「頁面上的卡片照你建議」):Field 表單驗證 ×2、
+          # Rating 包在 Field 內、Select 隨 form 送出 —— 送出鈕往上找卡片、卡片內上 / 左 / 下 = loose(md / lg 量像素)。修前 main 8eb473c7 建置 4 處都沒有卡片(紅)。
+          npm run test:form-example-card
+          # Sidebar 展示主區跟著選到的項目走(2026-11-06 user #56 甲):資料夾 → 檔案清單 DataTable、檔案 → 屬性、專案 → 議題、主導覽 → 範本 DashboardPage 做法(不放 DescriptionList);
+          # 「混合內容」實際點樹 frontend → backend → README.md → Dashboard。修前 main 8eb473c7 建置五則都是同一份 Sprint 摘要(紅)。
+          npm run test:sidebar-main-follows-selection
           # Steps 內容跟著目前那一步(2026-09-30 退役「可同時打開多步」模式):每則 import Steps 的 story 逐一點 header / 按「下一步」,
           # 內容區只准出現在 aria-current="step" 那一步、header 不得帶 aria-expanded / aria-controls;selftest 判定表 + 真建置上注入三種舊毛病(header 帶 aria-expanded、內容放錯步、點 header 後舊內容留在原步)必被抓到。
           npm run test:steps-content-follows-current
