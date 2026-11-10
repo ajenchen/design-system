@@ -427,6 +427,7 @@
           "scripts/test-header-tabs-slot-invariants.mjs",
           "scripts/test-menu-message-row-invariant.mjs",
           "scripts/test-pagination-narrow-ladder-invariant.mjs",
+          "scripts/test-sidebar-handle-scrollbar-hit-invariant.mjs",
           "scripts/test-switch-thumb-ring-invariant.mjs"
         ]
       },
@@ -457,6 +458,7 @@
           "scripts/test-avatar-anchor-box-invariant.mjs",
           "scripts/test-data-table-column-sorting-invariant.mjs",
           "scripts/test-focus-indicator-invariants.mjs",
+          "scripts/test-form-example-card-invariant.mjs",
           "scripts/test-open-close-motion-invariant.mjs",
           "scripts/test-overlay-detached-anchor-invariant.mjs",
           "scripts/test-overlay-list-as-region-invariant.mjs",
@@ -538,6 +540,7 @@
           "scripts/test-dialog-height-invariant.mjs",
           "scripts/test-radio-group-tab-stop-invariant.mjs",
           "scripts/test-select-all-footer-invariant.mjs",
+          "scripts/test-sidebar-main-follows-selection-invariant.mjs",
           "scripts/test-sidebar-menu-keyboard-invariant.mjs",
           "scripts/test-sidebar-standalone-collapse-invariant.mjs",
           "scripts/test-tree-view-keyboard-route-invariant.mjs",
@@ -618,6 +621,7 @@
           "scripts/test-dialog-coexistence-invariant.mjs",
           "scripts/test-field-text-left-edge-invariant.mjs",
           "scripts/test-overlay-footer-gutter-invariant.mjs",
+          "scripts/test-section-gap-invariant.mjs",
           "scripts/test-select-tab-leave-invariant.mjs",
           "scripts/test-story-demo-focus-invariant.mjs"
         ]
@@ -741,7 +745,6 @@
           "scripts/test-setup-netlify-access.mjs",
           "scripts/test-setup-provider-cli-toolchain.mjs",
           "scripts/test-setup-workspace.mjs",
-          "scripts/test-sidebar-handle-scrollbar-hit-invariant.mjs",
           "scripts/test-status-color-invariant.mjs",
           "scripts/test-story-determinism-invariant.mjs",
           "scripts/test-story-helper-duplication-invariant.mjs",

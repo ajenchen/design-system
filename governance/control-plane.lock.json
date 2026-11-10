@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9edfa9b2b78767a2d4a0dba35e2cd0e1bc76575912f0266e81653b3bb328d177",
   "files": [
     {
-      "hash": "sha256:59ec2aa35828520ccbed3b6311ed8b5cf10fc874ffdd07d0538bd76824eeccec",
+      "hash": "sha256:cd1a5af615c0ce1068a31389e1478ba473f18593506ae84f0bb7b873d4fe55ea",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:31a775e77bddb8003f7e21d63635c85f9102836a026d5a97e16f4d4628f8990c",
+      "hash": "sha256:14b21b5ed384aa81f46767e45e4c15286310fe77e90829a983e7e2e6c0da5a4a",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139534,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:28b45fa0d9f25c57cd12cff2866c47fc3d1794b517830d978dc90f1be20bf9f7",
+  "inputDigest": "sha256:0fb6ca6e9e3abf7e0176828035281ffafca17e7b6ea7a6a8147bb5ae5cff9fa3",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:c069747b1c272ca96de966b4f8ab8518264ca9771d6dc069c43da42fdead257d",
+  "snapshotDigest": "sha256:d931bd25b7f14b14fce579bc8ae11bd3b87c1ff98d2d5864eb44d70063370cbc",
   "sources": [
     {
       "hash": "sha256:2c0e1fa5342aea91edf94d03338b9c0a3708a4e12d02b43646b6e886f2bd64f0",
@@ -2346,7 +2346,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6826618e15c8430aadaa8bc24f9fe20bd5a2c6456daa46df45eab303364f15e4",
+      "hash": "sha256:b177a7d39f33cfe43c9101db40aabed02d6717e765734c09167fa1f26fff654b",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2409,12 +2409,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9a02adf2c899657f004f8d3bb09d4148755a994977087ee271f5f08730c2ab6e",
+      "hash": "sha256:12b9d81dde20df669ceb717450818c05deb64f7ad43b7f574dde278dfe7bbe69",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 38145,
+      "size": 38326,
       "type": "file"
     },
     {
@@ -3089,7 +3089,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6aa5faf05852c8f1167f05e992787ac917234d136f0b8201edba2eb37e8f73ea",
+      "hash": "sha256:8d76123336204eb3c58568f44a5a77f96613f8df693e16700118a3d1fe8dd2c1",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3587,8 +3587,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 706,
-      "hash": "sha256:69db83ff69e0943319810440814d9ff7222bb3e3f940f17e42cef39976a1f8c9",
+      "files": 709,
+      "hash": "sha256:ae8207c5e5dbb7271d72c1300239e4b86eb40be4f1c6e1c179dea2d838a2e8ca",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

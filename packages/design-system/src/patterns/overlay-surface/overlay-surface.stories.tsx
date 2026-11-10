@@ -214,13 +214,9 @@ function ActionsCase({ name, expect, compact, children }: { name: string; expect
     </Shell>
   )
 }
-function CaseTitle({ compact, children }: { compact?: boolean; children: ReactNode }) {
-  return (
-    <h2 data-header-part="title" className={cn('font-medium text-foreground', compact ? 'text-body' : 'text-body-lg')}>
-      <TruncatedText display="block">{children}</TruncatedText>
-    </h2>
-  )
-}
+// 標題寫在標題槽裡(同上方 TitleAreaCase):chrome / 浮層標題槽裡的 <h2> 是範例的產品標題,
+// 包成回傳 <h2> 的小元件會被 tutorial-page-invariant R2 當成手寫段落標題(Patterns 文件頁)。
+const caseTitleClass = (compact?: boolean) => cn('font-medium text-foreground', compact ? 'text-body' : 'text-body-lg')
 
 export const HeaderActions: Story = {
   name: '標題列右側按鈕位(測試)',
@@ -228,19 +224,19 @@ export const HeaderActions: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-tight)]">
       <ActionsCase name="surface-actions-dismiss" expect="actions,dismiss">
-        <SurfaceHeader actions={<>{prev}{next}</>} dismiss={xBtn}><CaseTitle>WM-142 結帳流程改版</CaseTitle></SurfaceHeader>
+        <SurfaceHeader actions={<>{prev}{next}</>} dismiss={xBtn}><h2 data-header-part="title" className={caseTitleClass()}><TruncatedText display="block">WM-142 結帳流程改版</TruncatedText></h2></SurfaceHeader>
       </ActionsCase>
       <ActionsCase name="surface-bounded-dismiss" expect="actions,dismiss,bounded">
-        <SurfaceHeader actions={<Button variant="tertiary" size="sm" startIcon={Link2}>複製連結</Button>} dismiss={xBtn}><CaseTitle>WM-142 結帳流程改版</CaseTitle></SurfaceHeader>
+        <SurfaceHeader actions={<Button variant="tertiary" size="sm" startIcon={Link2}>複製連結</Button>} dismiss={xBtn}><h2 data-header-part="title" className={caseTitleClass()}><TruncatedText display="block">WM-142 結帳流程改版</TruncatedText></h2></SurfaceHeader>
       </ActionsCase>
       <ActionsCase name="surface-actions-only" expect="actions">
-        <SurfaceHeader actions={<Button variant="text" iconOnly size="sm" startIcon={ChevronDown} aria-label="收合" />}><CaseTitle>上傳 3 個檔案</CaseTitle></SurfaceHeader>
+        <SurfaceHeader actions={<Button variant="text" iconOnly size="sm" startIcon={ChevronDown} aria-label="收合" />}><h2 data-header-part="title" className={caseTitleClass()}><TruncatedText display="block">上傳 3 個檔案</TruncatedText></h2></SurfaceHeader>
       </ActionsCase>
       <ActionsCase name="surface-dismiss-only" expect="dismiss">
-        <SurfaceHeader dismiss={xBtn}><CaseTitle>邀請成員加入專案</CaseTitle></SurfaceHeader>
+        <SurfaceHeader dismiss={xBtn}><h2 data-header-part="title" className={caseTitleClass()}><TruncatedText display="block">邀請成員加入專案</TruncatedText></h2></SurfaceHeader>
       </ActionsCase>
       <ActionsCase name="surface-compact-actions-dismiss" expect="actions,dismiss" compact>
-        <SurfaceHeader className={COMPACT_HEADER_SLOT} actions={<Button variant="text" iconOnly size="sm" startIcon={RotateCcw} aria-label="重置" />} dismiss={xBtn}><CaseTitle compact>看板篩選</CaseTitle></SurfaceHeader>
+        <SurfaceHeader className={COMPACT_HEADER_SLOT} actions={<Button variant="text" iconOnly size="sm" startIcon={RotateCcw} aria-label="重置" />} dismiss={xBtn}><h2 data-header-part="title" className={caseTitleClass(true)}><TruncatedText display="block">看板篩選</TruncatedText></h2></SurfaceHeader>
       </ActionsCase>
       <ActionsCase name="dialog-header" expect="actions,dismiss">
         <Dialog><DialogHeader actions={<>{prev}{next}</>}><DialogTitle>WM-142 結帳流程改版</DialogTitle></DialogHeader></Dialog>
