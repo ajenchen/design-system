@@ -464,7 +464,8 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit, ariaLabel 
  * UrlCell(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條):
  *   view branch = `<LinkInput mode="view">`(URL parse / hostname 顯示 / 不合法的值畫成一般文字,SSOT 在 LinkInput);
  *   連結盒子只有網址文字那麼寬(LinkInput `renderLinkAnchor`),點擊範圍延伸到整格:格裡 Pencil 以外點了開連結,能不能編輯都一樣
- *   (有連結的格因此不是點格即編輯的格,data-table.tsx `isLinkInputValueLinkable`)。editable 時右側 Pencil 在滑過格 / 鍵盤走到時出現,
+ *   (有連結的格因此不是點格即編輯的格,data-table.tsx `isLinkInputValueLinkable`;但能編輯的格滑過照樣出淺框 = 這格可以編輯,
+ *   data-table.tsx `cellShowsEditableHover`,2026-11-10)。editable 時右側 Pencil 在滑過格 / 鍵盤走到時出現,
  *   是滑鼠唯一、也是鍵盤的編輯入口(格本身不是 Tab 停靠點,同 link-input.spec.md「外框本身不是 tab stop」)。
  *   Pencil = Button text xs iconOnly(24、無框;2026-10-28 user「Q4用乙'」,inline-action.spec.md 實例表
  *   「DataTable body cell internal — 檢視態滑過才出現的動作」),由 LinkInput 的 `viewEditAction` 自己畫(單一主人);

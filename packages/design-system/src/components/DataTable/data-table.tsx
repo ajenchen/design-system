@@ -3426,14 +3426,18 @@ function DataTableInner<TData>(
     //   詳 `.claude/planning/cell-indicator-ssot-rfc.md` Step 9。
     // Cell click → 進 edit mode(boolean 不需 — 勾選框自己切換)。
     // url(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條):有連結的網址格,格裡鉛筆以外
-    // 點了開連結(LinkInput 的延伸連結鋪滿整格,瀏覽器照常開),鉛筆 = 滑鼠唯一的編輯入口 → 它**不是**「點格即編輯」的格:不出淺框、
-    // 點格不進編輯。空值 / 不是網址 = 沒有連結可開,照其他可編輯格(滑過淺框、點格進編輯)。判斷與 LinkInput 畫不畫連結同一支。
+    // 點了開連結(LinkInput 的延伸連結鋪滿整格,瀏覽器照常開),鉛筆 = 滑鼠唯一的編輯入口 → 它**不是**「點格即編輯」的格:點格不進編輯。
+    // 空值 / 不是網址 = 沒有連結可開,照其他可編輯格(點格進編輯)。判斷與 LinkInput 畫不畫連結同一支。
     // 10-13 – 11-06 是「只有點網址文字開連結、其他地方進編輯」(待辦總帳 Q3f 乙)。
     const cellSpreadsheetId = `${cellRowId}:${cellColId}`
     const isSelectedCell = spreadsheetMode && selectedCellId === cellSpreadsheetId
-    // 「點格即編輯」的格:滑過淺框、手形游標都只跟著這一種(滑過樣式不因下方點擊改動而變)。
     const urlCellOpensLink = colType === 'url' && isLinkInputValueLinkable(cell.getValue())
     const cellClickEntersEdit = cellEditable && colType !== 'boolean' && !urlCellOpensLink
+    // 滑過外框(L4,field.spec.md)= 「這格可以編輯」,跟著**能不能編輯**走,不跟點擊結果走(2026-11-10 user「表格跟輸入框難道不應該是類似的邏輯嗎？
+    // hover連結表格難道不應該出現更深顏色的框嗎？…這樣不是跟輸入框一致？」):可編輯的網址格有連結時點了開連結,但照樣出外框
+    // —— 同 LinkInput 編輯模式的連結狀態,外框滑過變深、框裡點了開連結。不能編輯的格不出(同唯讀 LinkInput);boolean 是勾選框自己切換,不出。
+    // 手形游標仍只跟「點格即編輯」(有連結的格手形由延伸連結自己給)。
+    const cellShowsEditableHover = cellEditable && colType !== 'boolean' && !isEditingThisCell
     // 這一下點擊是不是落在格裡「自有行為」的東西上、或只是選字(網址格):是的話不進編輯 —— 有連結的網址格本來就不是點格即編輯的格
     // (上方),這裡管的是沒有連結、畫成一般文字的值(例:不是網址的字):按著拖過字再放開 = 選字,不算點一下
     //(判準全 DS 共用 lib/pointer-press.ts,不另寫一份)。鉛筆自己 stopPropagation,到不了這裡。
@@ -3633,7 +3637,8 @@ function DataTableInner<TData>(
           // Field naked edit border 仍 own(per Field SSOT)— 編輯時 Field 自帶 border 1px,
           // 跟 cell 4 邊 inset divider 視覺相疊(同 pixel)= 1 line visual,不雙線。
           inlineEdit && 'dtCellGrid',
-          onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell view hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
+          onEditableCellClick && 'cursor-pointer',
+          cellShowsEditableHover && nakedCellEditableDisplayHover,  // editable cell view hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical;可編輯就出,含有連結的網址格)
           // a11y(2026-07-14 dim-10 修):非 spreadsheet inlineEdit cell 可 Tab 聚焦(見下方
           // tabIndex/onKeyDown)— focus-visible ring 對齊本檔 expand button / sortable header canonical。
           cellIsTabStop && 'focus-visible:focus-ring-inset',
@@ -5340,7 +5345,8 @@ function DataTableInner<TData>(
         //     RangeOuterRing / rangeCellIds prop 已 retire)
         // 2026-09-26:格游標框只在焦點在格線區裡時畫(`gridHasFocus`);收起時位置仍在 selectedCellId,回來原格重現
         selectedCellId={spreadsheetMode && gridHasFocus ? selectedCellId : null}
-        cellClickEntersEdit={(cellId) => {
+        cellShowsEditableHover={(cellId) => {
+          // 與格上的 `cellShowsEditableHover` 同一條規則:滑過外框 = 這格可以編輯(2026-11-10 user「…這樣不是跟輸入框一致？」)
           // 2026-05-10 codex review red light fix(per dual-track verify):
           //   1. cellId parse 用 lastIndexOf(':')(row id 可含 colon)
           //   2. type allowlist(未知 type default false,non-editable types blocked)
@@ -5354,14 +5360,13 @@ function DataTableInner<TData>(
           const meta = (colDef?.columnDef as any)?.meta as Record<string, any> | undefined
           if (!meta) return false
           // Allowlist editable types(per Contract 15;未知 / boolean / readonly default false)。
-          // url:沒有連結可開(空值 / 不是網址)才是點格即編輯的格(2026-11-06 user「照①乙②b」)—— 這張表與格上的點擊規則(cellClickEntersEdit)同步。
-          const EDITABLE_CLICK_TYPES = ['string', 'number', 'currency', 'date', 'time', 'select', 'multiSelect', 'person', 'multiPerson', 'combobox', 'url']
-          if (!EDITABLE_CLICK_TYPES.includes(meta.type)) return false
+          // url:可編輯就出,有沒有連結都一樣(2026-11-10;10-13 – 11-10 有連結的網址格不出,當時把外框當成「點了會進編輯」)。
+          const EDITABLE_HOVER_TYPES = ['string', 'number', 'currency', 'date', 'time', 'select', 'multiSelect', 'person', 'multiPerson', 'combobox', 'url']
+          if (!EDITABLE_HOVER_TYPES.includes(meta.type)) return false
           // Row-level editable(row) function support(canonical per `isCellEditable` L720)
           // 2026-05-13:canEditCell helper consolidation(per V4)
           const row = table.getRowModel().rowsById[rowId]
           if (!row) return false
-          if (meta.type === 'url' && isLinkInputValueLinkable(row.getValue(colId))) return false
           return canEditCell(meta, row.original)
         }}
       />

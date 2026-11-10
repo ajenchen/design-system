@@ -5,8 +5,11 @@
  *        2026-10-21 起(r1b DT-01 / DT-02 / DT-03 / NEW-1 / DT-07):連結(表格兩種模式、LinkInput 唯讀 / 檢視)與可拖的欄頭,鍵盤焦點框四邊真的畫出來(截圖比對,L8);
  *        試算表格裡的控件被鍵盤聚焦時只有一個指示(控件的框,格游標框收起)、在格裡按 Tab 格游標跟著焦點走(L9);就地編輯範例的連結欄各列顯示不同的網址(L1);
  *        2026-11-06 起(user「照①乙②b」):網址框(LinkInput 各模式、DataTable 網址格,能不能編輯都一樣)裡鉛筆以外點了開連結、滑過整框出底線 + 手形,
- *        試算表沒選中的格第一下只選格、選中後再點才開(L2 / L10;L1 的「文字寬」從此只量連結盒子,點擊範圍看 L2 / L10)
- *   紅(L2 / L10): --selftest 拿掉延伸區 → 框裡文字以外那幾列必紅;讓試算表沒選中的格也延伸 → 「第一下只選格」必紅;52ec0b6a 建置的 LinkInput 唯讀 / 檢視那幾列、8eb473c7 建置的編輯模式與可編輯格那幾列必紅
+ *        試算表沒選中的格第一下只選格、選中後再點才開(L2 / L10;L1 的「文字寬」從此只量連結盒子,點擊範圍看 L2 / L10);
+ *        2026-11-10 起(user「…這樣不是跟輸入框一致？」):能編輯的網址格滑過出淺框(= 這格可以編輯,兩種模式;點了照樣開連結、不進編輯),
+ *        不能編輯的網址格滑過不出淺框(L2 / L10)
+ *   紅(L2 / L10): --selftest 拿掉延伸區 → 框裡文字以外那幾列必紅;讓試算表沒選中的格也延伸 → 「第一下只選格」必紅;52ec0b6a 建置的 LinkInput 唯讀 / 檢視那幾列、8eb473c7 建置的編輯模式與可編輯格那幾列必紅;
+ *       --selftest L2 同時收掉格的滑過外框與浮層外框 → 「能編輯的網址格滑過出淺框」那幾列必紅;214fc699 的建置跑那幾列必紅(當時有連結的網址格一律不出淺框)
  *   紅: --selftest 注入連結改回 block、攔下格的點擊、攔下根節點 Enter / F2、把焦點丟回 body、一般模式可編輯格拿掉 Tab 停靠 + 攔下格上的 Enter / F2(L4 鍵盤)、拿掉名字、鉛筆改 24px 有框、塞 javascript: 連結、
  *       連結外面包回會裁切的 wrapper + 欄頭框改回往外(L8)、格游標框強制畫出 + 擋下格內控件的 focusin(L9),各組必紅;7777b61c 的建置跑必紅(L1–L7);
  *       a6390356 的建置跑 L8 / L9 / L5 型別註記 / L1 網址各列不同必紅
@@ -24,7 +27,8 @@
  *   L2 可編輯的表格連結格 4 個點擊區 × 兩種模式的結果(2026-11-06 ①乙;10-13 Q3f 那版是空白 / 內距進編輯):
  *        一般模式  網址文字 / 文字右邊空白 / 內距 → 開連結、不進編輯;鉛筆 → 進編輯、不開連結
  *        試算表    網址文字 → 開連結 + 格游標移過來、不進編輯;空白 / 內距 → 第一下只選格、選中後再點開連結;鉛筆 → 一下進編輯
- *      另:滑過空白處 = 網址底線 + 手形、不出淺框(淺框只給點格即編輯的格);試算表沒選中的格滑過空白沒有底線
+ *      另:滑過空白處 = 網址底線 + 手形 + 淺框(淺框 = 這格可以編輯,2026-11-10;11-06 – 11-10 是不出淺框);
+ *      試算表沒選中的格滑過空白沒有底線、有淺框(第一下只選格,但格可以編輯);不能編輯的網址格滑過不出淺框(L10)
  *   L3 試算表格游標停在連結格 / 開關格:Enter、F2 焦點進到格裡的控件(連結 / 勾選框),Tab 到鉛筆,F2 / Esc 回格導覽、
  *      之後方向鍵從原格走(Q3c)
  *   L4 一般模式編輯結束後焦點回到打開編輯的那個東西:文字格 Enter / Esc → 那一格;選單格選值 → 那一格;連結格 Enter → 鉛筆;
@@ -116,7 +120,8 @@ async function injectBreaks(kind) {
   // 連結撐滿外層(= 2026-10-13 前的 block):L1 的可點範圍
   if (kind === 'L1') await page.addStyleTag({ content: 'a[href]{display:block!important;width:100%!important}' })
   // L2:收起延伸區(= ①乙 之前:可編輯的網址格只有網址文字是連結)—— 空白 / 內距 / 滑過那幾列必紅
-  if (kind === 'L2') await page.addStyleTag({ content: '[data-link-stretch]::before{display:none!important}' })
+  // 同時收掉格的滑過外框與試算表浮層的外框(= 2026-11-10 前:有連結的網址格不出淺框)—— 「能編輯的網址格滑過出淺框」那幾列必紅
+  if (kind === 'L2') await page.addStyleTag({ content: '[data-link-stretch]::before{display:none!important} [data-cell-id]:hover{outline-style:none!important} [aria-hidden] div{outline-style:none!important}' })
   // L6:鉛筆改回 16px(= 2026-10-13 – 10-28 的行內小按鈕)而且加框(= 乙 tertiary 有框)—— 任一都要紅
   if (kind === 'L6') await page.addStyleTag({ content: '[data-link-edit-entry] button, [data-cell-id] button[aria-label="編輯連結"]{width:16px!important;height:16px!important;min-width:16px!important;border:1px solid red!important}' })
   // L8:連結外面包回會裁切的 wrapper(= a6390356 的 `truncate` 外殼)、可拖欄頭的框改回往外(= 修前)
@@ -310,7 +315,8 @@ const outlineAround = (cellId) => page.evaluate((cellId) => {
 }, cellId)
 
 // ①乙(2026-11-06 user「照①乙②b」):可編輯的網址格,格裡鉛筆以外都開連結,鉛筆 = 滑鼠唯一的編輯入口;
-// 滑過格裡文字以外 = 網址底線 + 手形,不出淺框(淺框只給「點格即編輯」的格,data-table.spec.md 試算表段「滑過樣式」)。
+// 滑過格裡文字以外 = 網址底線 + 手形 + 淺框(淺框 = 這格可以編輯,2026-11-10 user「…這樣不是跟輸入框一致？」;
+// data-table.spec.md「Navigate-valued cell 通用類別」第 1 條、試算表段「滑過樣式」)。
 // --selftest 'L2' 破法 = 收起延伸區(= 修前:只有網址文字是連結)→ 空白 / 內距 / 滑過那幾列必紅;網址文字、鉛筆是對照列。
 currentBreak = 'L2'
 for (const key of ['normal', 'roadmap']) {
@@ -332,7 +338,7 @@ for (const key of ['normal', 'roadmap']) {
     const under = await underlineAt(p.pts.blank.x, p.pts.blank.y, `[data-cell-id="${p.id}"]`)
     const hit = await hitAt(p.pts.blank.x, p.pts.blank.y)
     const ring = await outlineAround(p.id)
-    check('L2', `${label} 滑過連結格空白處 → 網址出底線 + 手形、不出淺框`, under && hit.onLink && hit.cursor === 'pointer' && ring === null, `底線 ${under}、命中連結 ${hit.onLink}、游標 ${hit.cursor}、框 ${ring ?? '無'}`)
+    check('L2', `${label} 滑過能編輯的連結格空白處 → 網址出底線 + 手形 + 淺框(淺框 = 可以編輯)`, under && hit.onLink && hit.cursor === 'pointer' && ring !== null, `底線 ${under}、命中連結 ${hit.onLink}、游標 ${hit.cursor}、框 ${ring ?? '無'}`)
   }
 }
 
@@ -377,10 +383,12 @@ for (const key of ['normal', 'roadmap']) {
     const og = other ? await linkCellGeo(other) : null
     const opts = og ? regionPoints(og) : null
     if (opts) {
-      // 沒選中的格第一下只選格 → 滑過空白也不能像連結(滑過有變化的範圍 = 點擊範圍);不出淺框(url 不是點格即編輯的格)
+      // 沒選中的格第一下只選格 → 滑過空白也不能像連結(滑過有變化的範圍 = 點擊範圍)→ 對照列
       const under2 = await underlineAt(opts.blank.x, opts.blank.y, `[data-cell-id="${other}"]`)
       const ring2 = await outlineAround(other)
-      check('L2', `${label} 滑過(沒選取的)連結格空白 → 沒有底線、不出淺框(第一下只選格)`, !under2 && ring2 === null, `底線 ${under2}、框 = ${ring2 ?? '無'}`, { control: true })
+      check('L2', `${label} 滑過(沒選取的)連結格空白 → 沒有底線(第一下只選格)`, !under2, `底線 ${under2}`, { control: true })
+      // 但這格可以編輯 → 出淺框(試算表浮層畫;同其他可編輯格,2026-11-10)
+      check('L2', `${label} 滑過(沒選取、能編輯的)連結格 → 出淺框(淺框 = 可以編輯)`, ring2 !== null, `框 = ${ring2 ?? '無'}`)
     } else instrument(`L2 ${label} 滑過`, `找不到第 ${p.row + 1} 列有空白的連結格`)
   }
 }
@@ -913,6 +921,9 @@ for (const region of ['blank', 'padding']) {
   if (region === 'blank') {
     check('L10', `${TABLES.normal.label} 不能編輯的網址格(${c.id}):格裡文字以外命中連結 + 手形`, !!probe && probe.onLink && probe.cursor === 'pointer', JSON.stringify(probe))
     check('L10', `${TABLES.normal.label} 不能編輯的網址格:滑過空白 → 網址出底線`, await underlineAt(pt.x, pt.y, `[data-cell-id="${c.id}"]`))
+    // 淺框 = 這格可以編輯(2026-11-10):不能編輯的不出(同唯讀 LinkInput)。行為沒變 → 對照列(證明「能編輯的出淺框」不是全表都畫框)
+    const ringFixed = await outlineAround(c.id)
+    check('L10', `${TABLES.normal.label} 不能編輯的網址格:滑過不出淺框`, ringFixed === null, `框 ${ringFixed ?? '無'}`, { control: true })
   }
   const r = await clickAt(pt.x, pt.y)
   const editors = await editorCount()
@@ -933,6 +944,11 @@ for (const brk of ['L10', 'L10s']) {
   const c = await fixedLinkCell('sheet')
   if (!c) break
   const before = await underlineAt(c.blank.x, c.blank.y, `[data-cell-id="${c.id}"]`)
+  if (brk === 'L10') {
+    // 不能編輯 → 試算表浮層也不畫淺框(淺框 = 這格可以編輯,2026-11-10);行為沒變 → 對照列
+    const ringFixed = await outlineAround(c.id)
+    check('L10', `${TABLES.sheet.label} 不能編輯的網址格沒選中:滑過不出淺框`, ringFixed === null, `框 ${ringFixed ?? '無'}`, { control: true })
+  }
   const r1 = await clickAt(c.blank.x, c.blank.y)
   const cur = await cursorOf()
   // 第一下:只選格、不開分頁、滑過也沒有底線(滑過有變化的範圍 = 點擊範圍)。'L10' 破法(拿掉延伸)不影響這一列 → 對照列
@@ -951,5 +967,5 @@ if (instrumentFail) {
   console.error(`\n✗ data-table-link-cell:${INSTRUMENT_FAIL_MARKER} —— 有量測沒有真的量到${SELFTEST ? '(對照組沒有真的跑,不得讀成「如預期紅」)' : ''}`)
   process.exit(2)
 }
-console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 L1–L9 如預期變紅(儀器有效)' : '網址欄點擊範圍、表格連結格四區 × 兩模式、格內鍵盤、編輯結束焦點、編輯器名字、鉛筆、不合法網址顯示、焦點框四邊、格內只有一個指示,全通過'}`)
+console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 L1–L9 如預期變紅(儀器有效)' : '網址欄點擊範圍、表格連結格四區 × 兩模式、能編輯才出淺框、格內鍵盤、編輯結束焦點、編輯器名字、鉛筆、不合法網址顯示、焦點框四邊、格內只有一個指示,全通過'}`)
 process.exit(failCount ? 1 : 0)
