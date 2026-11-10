@@ -14,8 +14,8 @@
    │  外框標頭高 --chrome-header-height                                   │
    └───────────────────────────────────────────────────────────────────┘
    ┌─ 元件的值(暫時寄住;分類表 target 是它們的目標住處) ────────────────┐
-   │  標籤高、表格列高、分頁高、側欄寬 / 收合寬 / 選單圖示、頭像重疊量 →  │
-   │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾;               │
+   │  標籤高、表格列高、側欄寬 / 收合寬 / 選單圖示、頭像重疊量 →          │
+   │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾(分頁高已搬); │
    │  選單最大高、按鈕群組分隔線、表格面板寬 → 「3全收」收回成元件常數     │
    └───────────────────────────────────────────────────────────────────┘
    新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要再放進來。
@@ -87,13 +87,7 @@
   --table-row-md: 2.5rem;       /* 40px */
   --table-row-lg: 3rem;         /* 48px */
 
-  /* Tab Height — Tabs
-     獨立於 field-height 與 table-row：tabs 是 navigation container，
-     需要比 form control 更大的呼吸感。數值目前與 table-row 對齊，
-     但概念獨立，不用 var() alias — 未來任何一方調整都不牽動另一方。 */
-  --tab-height-sm: 2rem;        /* 32px — ★ 預設(2026-05-17 從 md 改),overlay / chrome / dense */
-  --tab-height-md: 2.5rem;      /* 40px — future tier(無 recommended use case,2026-05-17 從 default 降級) */
-  --tab-height-lg: 3rem;        /* 48px — 獨立 tabs 取代 chrome header(= --chrome-header-height) */
+  /* 分頁高 --tab-height-* 2026-11-11 搬到 components/Tabs/tabs.css(主人 = Tabs;token「2甲」第一批) */
 
   /* Chrome Header Height — Sidebar / FileViewer Toolbar+InfoPanel / app top bar / page header
      + Overlay family chrome (Dialog/Sheet/Popover/Coachmark header+footer via overlay-surface SurfaceHeader/SurfaceFooter)
@@ -158,10 +152,6 @@
   --table-row-md: 3rem;         /* 48px */
   --table-row-lg: 3.5rem;       /* 56px */
 
-  --tab-height-sm: 2.5rem;      /* 40px */
-  --tab-height-md: 3rem;        /* 48px */
-  --tab-height-lg: 3.5rem;      /* 56px */
-
   --chrome-header-height: 3.5rem; /* 56px(lg density) */
 }
 
@@ -178,10 +168,6 @@
   --table-row-sm: 2rem;         /* 32px */
   --table-row-md: 2.5rem;       /* 40px */
   --table-row-lg: 3rem;         /* 48px */
-
-  --tab-height-sm: 2rem;        /* 32px */
-  --tab-height-md: 2.5rem;      /* 40px */
-  --tab-height-lg: 3rem;        /* 48px */
 
   /* 2026-07-16 dim 52 補洞:lg block(上方)有 override --chrome-header-height 3.5rem,
      md-reset 原漏重設 → lg 祖先下 subtree lock md 時 chrome header 仍 56px,破 W3
@@ -232,9 +218,7 @@
   --spacing-tag-sm: var(--tag-height-sm);   /* h-tag-sm(規則 3 utility bridge,同 h-field-* / h-tab-*)*/
   --spacing-tag-md: var(--tag-height-md);
   --spacing-tag-lg: var(--tag-height-lg);
-  --spacing-tab-sm: var(--tab-height-sm);
-  --spacing-tab-md: var(--tab-height-md);
-  --spacing-tab-lg: var(--tab-height-lg);
+  /* h-tab-* 的轉接名跟著本尊住 components/Tabs/tabs.css */
   --spacing-tree-indent-sm: var(--tree-indent-sm);
   --spacing-tree-indent-md: var(--tree-indent-md);
   --spacing-tree-indent-lg: var(--tree-indent-lg);

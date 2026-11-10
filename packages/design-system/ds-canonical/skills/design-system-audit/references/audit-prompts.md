@@ -1238,7 +1238,7 @@ Coverage requirement(NO-SAMPLE STRICT):全 `packages/design-system/src/component
 For each header tsx:
 1. **W1** — grep `<Tabs` / `<TabsList` inside header — 若有 → require `withTabs` prop on header element。手寫 `border-b-0` / `border-b-transparent` 同步 flag
 2. **W2** — Tabs padding 必 reference `var(--layout-space-loose)`,不可硬寫 `px-N` 或別的 token
-3. **W3** — open tokens/uiSize / tokens/layoutSpace spec.md verify `--tab-height-lg === --chrome-header-height`(計算公式對等;不等 = token drift)
+3. **W3** — open components/Tabs/tabs.spec.md + tokens/uiSize/uiSize.spec.md verify `--tab-height-lg === --chrome-header-height`(兩顆住處以 tokens/token-registry.json 為準;計算公式對等;不等 = token drift)
 4. **W4** — grep `-mt-px` / `-mb-px` / `-mt-N` 在 header + tabs flush stack region = violation
 5. **W5** — grep `<Tabs ... size="md"` in chrome header usage = violation(default sm)
 6. **W6** — grep `defaultVariants:\s*\{\s*size:\s*['"]md['"]` in `tabs.tsx` cva = violation

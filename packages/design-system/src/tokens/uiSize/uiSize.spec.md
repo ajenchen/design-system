@@ -229,15 +229,7 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 
 ## Tab Height
 
-Tabs 導覽容器的高度。獨立於 field-height 和 table-row——tabs 是 navigation container，需要比 form control 更大的呼吸感。數值目前與 table-row 對齊，但概念獨立，未來任何一方調整都不牽動另一方。
-
-| Token | md | lg | 消費者 |
-|-------|----|----|--------|
-| `--tab-height-sm` | 32px | 40px | **預設**(2026-05-17 從 md 改,per `header-canonical.spec.md` Rule W6)— overlay / chrome / dense toolbar tabs |
-| `--tab-height-md` | 40px | 48px | future tier(無 recommended use case,2026-05-17 從預設降級) |
-| `--tab-height-lg` | 48px | 56px | Page-level hero tabs(獨立 tabs 取代 chrome header,值 = `--chrome-header-height`) |
-
-Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
+分頁高 `--tab-height-*` 是 Tabs 自己的值(元件的值),2026-11-11 搬到 `components/Tabs/tabs.css`(user 2026-11-10 token「2甲」第一批;名字與每一檔密度的值都沒變)。每一檔的值、為什麼獨立於 `--field-height-*` 與 `--table-row-*`、Tailwind `h-tab-*` 寫法 → `components/Tabs/tabs.spec.md`「Size」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
 
 ## Chrome Header Height
 

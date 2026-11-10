@@ -129,7 +129,7 @@ Tabs trigger = **item-layout 橫向變體 + Button 高度系統**。對標 item-
 
 ## Size
 
-Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-density` 自動縮放。
+Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-density` 自動縮放。這三顆是 Tabs 自己的值,宣告住 `components/Tabs/tabs.css`(預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變);Tailwind 寫法 `h-tab-sm` / `h-tab-md` / `h-tab-lg`(轉接名同檔)。產品不讀不覆寫(分類表 `tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
 
 | Size | md density | lg density | 字體 | 何時用 | 世界級對照 |
 |------|-----------|-----------|------|--------|-----------|

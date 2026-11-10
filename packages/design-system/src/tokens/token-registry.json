@@ -868,12 +868,12 @@
       "match": "--tab-height-",
       "class": "component",
       "owner": "Tabs",
-      "home": "tokens/uiSize/uiSize.css",
+      "home": "components/Tabs/tabs.css",
       "target": "components/Tabs/tabs.css",
-      "spec": "tokens/uiSize/uiSize.spec.md",
+      "spec": "components/Tabs/tabs.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "分頁高,隨密度切換:拿掉分頁就沒有意義 → 分頁的值。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),排第一批(試搬)"
+      "why": "分頁高,隨密度切換:拿掉分頁就沒有意義 → 分頁的值。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第一批(試搬)2026-11-11 已搬到 components/Tabs/tabs.css,名字與值不變"
     },
     {
       "match": "--tag-height-",

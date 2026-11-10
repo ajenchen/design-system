@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2012875d2d0d176c5d5522ea3ad897d6cae5e3ad977427a624f4b5a0e6241374",
   "files": [
     {
-      "hash": "sha256:262d0272195adc809e268d9a468acf4a1e0254becfe2b19aae93f7816f3dd040",
+      "hash": "sha256:2c8b8f5b66e6cfa700c26b9151bb684a876db29959831d6c8ff5ab2b47bd043e",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59107,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a525beba81b129fc2b82b746fffa42da6c65a581e4e6f24ff7ce0452fd70dbe1",
+      "hash": "sha256:87534d0a87466d9cb63bbdd71700cc5860fe2da01efc7200a017b6e75dc84c2e",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139848,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:bf267f7a61f8a576eaae47fa93923828fd4fd47e81d06d1d34260c391bc383ae",
+  "inputDigest": "sha256:4ee356099629e8f5ea86fa9a0f04e74e0d1d7434494d42630960eced6724ebc0",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -138,10 +138,10 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:a0d48f0401f37d20047666e77ee356328475a8a600fcd7cf088d19253a544159",
+          "expectedTargetDigest": "sha256:886c3432d364c0bff65caa75f8bbcafc0c4eb22b773db5a8e04016eb93c2afab",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:8e09cd8f01f095596133b067d3bb2ca3372852fbf6a7d5aa33f8c44529451a3e",
-          "targetDigest": "sha256:a0d48f0401f37d20047666e77ee356328475a8a600fcd7cf088d19253a544159"
+          "sourceDigest": "sha256:3c29c909fd184d7872f8bd8963ded664d616ae424c9064e3dd322748a37a7ddd",
+          "targetDigest": "sha256:886c3432d364c0bff65caa75f8bbcafc0c4eb22b773db5a8e04016eb93c2afab"
         },
         {
           "expectedTargetDigest": "sha256:aa92ec8c02d08e0de289622ca641acea0621186e6508c8b7bf9e415d1ba32456",
@@ -361,10 +361,10 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:5cd4323ae3ca52be5a041d340e13a0f9f107ae8960ee503c871804470ee56776",
+          "expectedTargetDigest": "sha256:da6b1fa3dbaf1e71ffc4ebd5f60c348d881f297c7312609b48575eb1ba0d64fe",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:8e09cd8f01f095596133b067d3bb2ca3372852fbf6a7d5aa33f8c44529451a3e",
-          "targetDigest": "sha256:5cd4323ae3ca52be5a041d340e13a0f9f107ae8960ee503c871804470ee56776"
+          "sourceDigest": "sha256:3c29c909fd184d7872f8bd8963ded664d616ae424c9064e3dd322748a37a7ddd",
+          "targetDigest": "sha256:da6b1fa3dbaf1e71ffc4ebd5f60c348d881f297c7312609b48575eb1ba0d64fe"
         },
         {
           "expectedTargetDigest": "sha256:ea09df77193adf7cf92d5ac5d4472b1abd9d2e18f216b560de779c7cecf7e7a3",
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:4f1a62ecff0f5d79af4fe7d8c4dc08aaba1a4e56eaccd95f16ff8fd354e0952b",
+  "snapshotDigest": "sha256:4a616ce1ea6d2752220dfcece61d615483095a9578b9dcc9d3e2ecf31375ee73",
   "sources": [
     {
       "hash": "sha256:2c0e1fa5342aea91edf94d03338b9c0a3708a4e12d02b43646b6e886f2bd64f0",
@@ -539,12 +539,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:bd42739408a0203f6571deb842b979a68862d65157d3b6668b31c26907847241",
+      "hash": "sha256:95d93eb7e1b96281e7f884570540a73bf995070b3474a81a2d04e8db231e0530",
       "id": "audit-rubric",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md",
-      "size": 85978,
+      "size": 86045,
       "type": "file"
     },
     {
@@ -645,7 +645,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:a9e118c0fe6898a00f4527d63fdc4fbe7bf49e3752d654ff1f6b703fce18ecfd",
+      "hash": "sha256:aceecbb52920108b3e0b57c7e9a94348242c50e3c3bb037b4d0eff1d5e14e855",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -689,7 +689,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:3fbc5e763d0727d3692fc640004edff051b00db22abcfecd722e8bbb07c2a06d",
+      "hash": "sha256:dd77662ff289c26510f4b24bd230afca9fc1363cd3092ff458746eddef707ca3",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",

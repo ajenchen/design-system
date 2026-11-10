@@ -726,7 +726,7 @@ export const tabsMeta = {
   variants: {
 
   },
-  // 注:`fieldHeight` 為 meta 通用 height key;Tabs **不複用 field-height**,值為 `--tab-height-*`(md density,對齊 spec.md size table + uiSize.css)
+  // 注:`fieldHeight` 為 meta 通用 height key;Tabs **不複用 field-height**,值為 `--tab-height-*`(md density,對齊 spec.md size table + tabs.css)
   sizes: {
     sm: { fieldHeight: 32, iconSize: 16, typography: 'body' },
     md: { fieldHeight: 40, iconSize: 16, typography: 'body' },

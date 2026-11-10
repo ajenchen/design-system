@@ -201,9 +201,9 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 | **B. Chrome header(Fixed-h)** | `sm`(32/40)| chrome 內 buttons 全部 sm(real grep:`Sidebar / FileViewer toolbar / InfoPanel` 所有 buttons size=sm),tabs 跟齊 |
 | **C. Standalone(tabs 取代 chrome header)** | `lg`(48/56)| Tabs 直接取代 header 用,**tab 高 = chrome-header-height 像素相等**(48/56)— Ant verbatim「Large size tabs are usually used in page header」 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
-**Token alignment 強連動**:`--tab-height-lg` md=48 / lg=56 與 `--chrome-header-height` md=48 / lg=56 **像素完全相等**(皆定義於 `uiSize.css`:`--chrome-header-height` L55/L103、`--tab-height-lg` 同檔;`globals.css` 僅 21 行 aggregator,不定義此 token)— 這是「lg tabs 取代 chrome header」的 SSOT linkage 鐵證。**禁止任何一方獨自調整**(動 chrome-header-height 必同步 tab-height-lg,反之同)。
+**Token alignment 強連動**:`--tab-height-lg` md=48 / lg=56 與 `--chrome-header-height` md=48 / lg=56 **像素完全相等**(`--chrome-header-height` 是共用刻度,住 `tokens/uiSize/uiSize.css`;`--tab-height-lg` 是 Tabs 的值,2026-11-11 起住 `components/Tabs/tabs.css`;兩顆住處的唯一登記在 `tokens/token-registry.json`;`globals.css` 只是 aggregator,不定義此 token)— 這是「lg tabs 取代 chrome header」的 SSOT linkage 鐵證。**禁止任何一方獨自調整**(動 chrome-header-height 必同步 tab-height-lg,反之同)。
 
-**Enforcement = assert,不 CSS alias**(per M31 codex 比稿 Step 5):`uiSize.css` 的 `--tab-height-*` 有 `data-ui-size="md"` reset selector(component-size scope),`--chrome-header-height` 是 layout/density token(app-chrome scope)— alias 會把兩個不同 scope 綁死。**機制**:保留 duplicated literals + `chrome_header_dispatcher.sh` → `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 升 exit 2 BLOCK)parse CSS 提取 md/lg 值 assert equality → 任一方獨自改 = BLOCKER。
+**Enforcement = assert,不 CSS alias**(per M31 codex 比稿 Step 5):`tabs.css` 的 `--tab-height-*` 有 `data-ui-size="md"` reset selector(component-size scope),`--chrome-header-height` 是 layout/density token(app-chrome scope)— alias 會把兩個不同 scope 綁死。**機制**:保留 duplicated literals + `chrome_header_dispatcher.sh` → `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 升 exit 2 BLOCK;2026-11-11 改成從分類表讀兩顆的住處,改任一邊的住處或分類表都會觸發)parse CSS 提取 md/lg 值 assert equality → 任一方獨自改 = BLOCKER。
 
 ### Rule W4:Tabs row 與 header content row 為 flush stack(無 negative margin)
 
@@ -242,7 +242,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - `--chrome-header-height`(uiSize.css:55,103)— B 家族 tsx 直接消費(chrome-header.tsx);A 家族不直接消費,靠 padding 算式對齊(24 + 2×tight = 48;等式由 overlay-surface.tsx anatomy 註解 + `lib/_tab_lg_chrome_header_equal.sh` W3 assert 守)
 - `--layout-space-loose`(兩家族 px)/ `--layout-space-tight`(僅 A 家族 py;B 家族 fixed-height 無 py)
 - `--divider`(semantic.css:333;兩家族經 `border-divider` utility 消費)
-- `--tab-height-sm` / `--tab-height-lg`(uiSize.css:41-43 md default + 99-101 lg-density override)
+- `--tab-height-sm` / `--tab-height-lg`(`components/Tabs/tabs.css`:預設 + 大密度覆寫 + 鎖回一般密度三段)
 - `--field-height-sm`(button sm 透過 button family 連動)
 
 ### Layer 2 — Spec pointer
@@ -289,7 +289,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 - `lib/_app_shell_primary_header_consistency.sh`(2026-05-31 exit 2 BLOCK)— primary-header layout 必傳 `globalHeader` prop,缺則 BLOCKER
 - `lib/_header_with_tabs_border.sh`(2026-05-31 exit 2 BLOCK)— grep tsx 若 header 元件含 `<Tabs>` child 但未走 `withTabs` API → BLOCKER
-- `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 exit 2 BLOCK,W3 pointer)— parse `uiSize.css` assert `--tab-height-lg` 像素等於 `--chrome-header-height`,任一方獨自改 → BLOCKER
+- `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 exit 2 BLOCK,W3 pointer)— 從分類表 `tokens/token-registry.json` 讀兩顆的住處(現況 `tabs.css` / `uiSize.css`),parse 後 assert `--tab-height-lg` 像素等於 `--chrome-header-height`,任一方獨自改 → BLOCKER
 - `lib/_chrome_header_handcraft.sh`(WARN,Phase 3 才升 P0)— grep 是否仍有 hardcoded `h-[var(--chrome-header-height)] border-b` 自刻 chrome header(該消費 ChromeHeader primitive)
 - （以上皆 lib helper,經 `chrome_header_dispatcher.sh` 統一 dispatch;無 standalone `check_*.sh` 檔。前 3 個 SSOT-canonical deterministic helper exit 2 傳播真 block;`_chrome_header_handcraft` 維持 warn）
 
