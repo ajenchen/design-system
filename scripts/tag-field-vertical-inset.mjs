@@ -26,6 +26,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { launchBrowser, openStory, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
+import { readTwinRecord } from './token-twin-invariant.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const SELFTEST = process.argv.includes('--selftest')
@@ -99,8 +100,11 @@ for (const r of all.filter((x) => x.wrap)) {
   rec(!!ref && Math.abs(r.gapTop - ref.gapTop) <= 0.5, `I2 ${r.story} ${r.size} ${r.mode}:wrap 第一行上隙 ${r.gapTop} vs 單行 ${ref ? ref.gapTop : '?'}(±0.5)`)
 }
 for (const r of single.filter((x) => x.textTop != null)) rec(Math.abs(r.textTop - r.textBottom) <= 0.5, `I3 ${r.story} ${r.size}:Tag 內文字上 ${r.textTop} / 下 ${r.textBottom}`)
-// I7 Tag 盒高 = TAG_HEIGHT_PX / --tag-height-*(20/24/24):CSS token 與 JS 常數兩住所不可漂移。
-for (const r of all) rec(Math.abs(r.tagH - (r.size === 'sm' ? 20 : 24)) <= 0.5, `I7 ${r.story} ${r.size}:Tag 高 ${r.tagH}(需 ${r.size === 'sm' ? 20 : 24})`)
+// I7 Tag 盒高 = TAG_HEIGHT_PX(tag.tsx)= --tag-height-*:畫出來的高度對程式常數。期望值直接讀 TAG_HEIGHT_PX,
+// 不在這裡另寫一份 20/24(2026-11-11 token 分類落地計畫檢查 8;CSS ↔ 常數的靜態鎖在 scripts/token-twin-invariant.mjs)。
+const TAG_H = readTwinRecord('TAG_HEIGHT_PX')
+if (!TAG_H) { console.log('✗ INSTRUMENT-FAIL 讀不到 tag.tsx 的 TAG_HEIGHT_PX —— I7 沒有期望值'); process.exit(1) }
+for (const r of all) rec(Math.abs(r.tagH - TAG_H[r.size]) <= 0.5, `I7 ${r.story} ${r.size}:Tag 高 ${r.tagH}(需 TAG_HEIGHT_PX.${r.size} = ${TAG_H[r.size]})`)
 // I5 wrap 的總高是公式不是巧合:2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px 列距。
 // 1 列時就是尺寸 token(28/32/36)—— 舊 py-1 會讓 sm/md 多 2px、lg 少 2px。
 for (const r of all.filter((x) => x.wrap)) {

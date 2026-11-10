@@ -91,8 +91,11 @@ jobs:
           npm run test:decided-clause-downgrade
           npm run test:button-variants
           # Token 建立不變式(2026-09-11;user:「為何你他媽又不照規範來建立 token?要講幾次?」)。
-          # T1 前綴不得跨 family(錨:--overlay-viewport-inset 借用了顏色 token --overlay 的前綴)、
-          # T2 這次新增的 token 必須登記進所屬 family 的 spec(錨:同一顆 token 加了 CSS 卻沒加 spec)。
+          # 2026-11-11 擴成拿分類表 packages/design-system/src/tokens/token-registry.json 驗(user 2026-11-10 拍板 token「1甲」):
+          # C1 有登記 / C2 新名字自己一列 + 理由 / C3 宣告檔 = 住處 / C4 新名字在規格裡 / C5 密度覆寫有回復且同檔 /
+          # C6 元件樣式檔有進對外彙總檔 styles/tokens.css 或被程式匯入(原本只有本機收工提醒 check_orphan_ds_css.sh,
+          #    2026-05-26 側欄寬事故的那一種)/ C7 產品與設計系統誰可以讀 / C9 新名字不是只有主人自己讀。拿不到 origin/main 一律紅。
+          # --selftest 每一條各自注入違規、確認紅的是它(每條也有一筆該綠的)。
           # 寫成 deterministic script 而不是 Claude 專屬 hook —— provider 專屬的 hook 換一個 agent 或在 CI 裡就沒人擋。
           # 同名數值常數不得在不同檔案有不同值(2026-09-12)。2026-09-12 實際踩過:出殼門檻
           # SHELL_ENGAGE_VIEWPORT_MS 在元件是 60、在閘是 120(改元件時沒改另一份),
@@ -107,7 +110,8 @@ jobs:
           # 加 I5 色階順序「號碼 = 離所在底色多遠」(淺色越大越深、深色越大越亮,每種底都成立)。
           # meta-test 含兩組對照:把某色相偷換成別的色相 → I1 紅;深色 step-2 退回往純黑退的舊公式 → I5 紅。
           npm run test:categorical-color
-          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX):
+          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX;
+          # 2026-11-11 加 `--tree-indent-*` ↔ INDENT_STEP、`--tag-height-*` ↔ TAG_HEIGHT_PX):
           # 2026-09-26 抽 token 時同一個值仍要在 JS 算遮罩幾何,兩份會漂 —— 這支讓「只改一邊」當場紅(含 selftest 對照組)。
           npm run test:token-twin
           # Rating 的尺寸解析(Field 內跟 Field、Field 外 xs、prop 最優先):2026-07-29 改 useResolvedFieldSize 優先序後,
