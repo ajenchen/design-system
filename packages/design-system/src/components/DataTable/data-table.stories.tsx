@@ -1715,18 +1715,20 @@ const FILTER_PANEL_ENGLISH_LABELS: Partial<DataTableFilterPanelLabels> = {
 }
 
 /* ── 進階篩選 — 空狀態 ── */
+// 本段與下方兩則把面板放在 `<Popover>` 根裡(不開浮層):面板標題列的 × 恆渲染、關閉走 PopoverClose,要有 Popover 才能渲染(data-table-filter-panel.tsx)。
+// 2026-11-10 前這幾格沒傳 onClose 就沒有 ×,跟產品裡的面板長相不同(n7 第七節 3、M23(f))。
 export const FilterPanelEmpty: Story = {
   name: '進階篩選 — 空狀態',
   render: () => {
     const [value, setValue] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
     return (
       <div className="w-full max-w-[680px]">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS]}
           value={value}
           onChange={setValue}
 
-        />
+        /></Popover>
       </div>
     )
   },
@@ -1815,28 +1817,28 @@ export const FilterPanelStates: Story = {
     return (
       <ExampleStack>
         <ExampleSection title="已填條件" className={FILTER_SECTION_WIDTH}>
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} /></Popover>
         </ExampleSection>
 
         <ExampleSection title="巢狀群組" className={FILTER_SECTION_WIDTH}>
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} /></Popover>
         </ExampleSection>
 
         <ExampleSection title="相對時間" className={FILTER_SECTION_WIDTH} description="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} /></Popover>
         </ExampleSection>
 
         <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
-          <DataTableFilterPanel
+          <Popover><DataTableFilterPanel
             columns={[...FILTER_COLUMNS]}
             value={modified}
             defaultValue={modifiedInitial}
             onChange={setModified}
-          />
+          /></Popover>
         </ExampleSection>
 
         <ExampleSection title="長標籤溢出" className={FILTER_SECTION_WIDTH} description="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
-          <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
+          <Popover><DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} /></Popover>
         </ExampleSection>
       </ExampleStack>
     )
@@ -1891,60 +1893,60 @@ const FilterPanelLabelsAndLimitHarness = () => {
   return (
     <ExampleStack>
       <ExampleSection data-testid="filter-label-child-pickers" title="English child-picker labels">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_CHILD_PICKER_COLUMNS]}
           value={childPickerLabels}
           onChange={setChildPickerLabels}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-flat" title="English labels + flat cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={flat}
           onChange={setFlat}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-nested-condition" title="Nested condition cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedCondition}
           onChange={setNestedCondition}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-nested-group" title="Nested group cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedGroup}
           onChange={setNestedGroup}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-mount-zero" title="Initial mount at zero capacity">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={mountCapZero}
           onChange={setMountCapZero}
           maxConditions={0}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-prefill" title="Prefill at capacity">
         <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
           Prefill consumed: {prefillConsumed ? 'yes' : 'no'}
         </p>
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={prefillValue}
           onChange={setPrefillValue}
@@ -1955,7 +1957,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
           }}
           maxConditions={1}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
     </ExampleStack>
   )
@@ -2631,6 +2633,17 @@ export const HeaderActionsFixture: Story = {
         <div data-case="filter" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
           <Popover>
             <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={tree} onChange={setTree} defaultValue={createEmptyFilterTree('flat')} onClose={() => {}} />
+          </Popover>
+        </div>
+        {/* 沒傳 onClose:× 照樣在(M23(f);2026-11-10 前以 onClose 有無當 × 的渲染閘,這兩格少了分隔線與 ×) */}
+        <div data-case="sort-no-onclose" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
+          <Popover>
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} onReset={() => setSorting([])} />
+          </Popover>
+        </div>
+        <div data-case="filter-no-onclose" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
+          <Popover>
+            <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={tree} onChange={setTree} defaultValue={createEmptyFilterTree('flat')} />
           </Popover>
         </div>
       </div>

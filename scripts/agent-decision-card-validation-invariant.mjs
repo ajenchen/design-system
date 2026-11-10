@@ -8,7 +8,7 @@
  *         字級 / 行高 / 字重 / 顏色等於 Field 裡的 FieldError(量 Field「垂直」story 裡出錯那一欄的 FieldError),role="alert";
  *         焦點移到第一個出錯的控件(「其他」空白 → 輸入格;複選沒勾 → 第一個方框);「其他」那一種輸入格的框色 = Field 裡出錯的
  *         Input 框色、aria-invalid + aria-errormessage 指向錯誤訊息;複選沒勾 → 群組 aria-invalid、每個方框 aria-invalid +
- *         aria-errormessage;改答案 / 打字即清掉;按著滑鼠的那一下改了答案(按下「其他」輸入格 = 聚焦即選中),按下到放開之間
+ *         aria-errormessage;改答案 / 打字即清掉;按著滑鼠的那一下改了答案(按下「其他」輸入格 = 按下即選中),按下到放開之間
  *         版面不動、放開後「其他」恰好是勾上的、焦點在輸入格、錯誤才清;填好之後按下去照常前進;footer 按鈕位置在錯誤出現前後不變。
  *         不預選的單選(`noDefault`,N 系列):一打開沒有任何選取、沒有「(建議)」;沒選就按「送出」→ 不送出、錯誤「請選擇一個選項」
  *         (距離 / 字樣同上)、radiogroup 本身 aria-invalid + aria-errormessage(WAI-ARIA 1.2 兩者適用於 radiogroup、不適用於 radio)、
@@ -290,7 +290,7 @@ async function runCard(ref, fault) {
       return { results, reached: true }
     }
 
-    // 按著指標的那一下:滑鼠按在「其他」輸入格上(聚焦即選中 → 錯誤該清),按下與放開之間版面不能動
+    // 按著指標的那一下:滑鼠按在「其他」輸入格上(按下即選中 → 錯誤該清),按下與放開之間版面不能動
     const inputBefore = s.input.rect
     await page.mouse.move(inputBefore.x + inputBefore.w / 2, inputBefore.y + inputBefore.h / 2)
     await page.mouse.down()

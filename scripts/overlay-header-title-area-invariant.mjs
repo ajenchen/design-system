@@ -9,7 +9,9 @@
  *   紅: 任一處差超過容許值 → 指名「哪一則、哪一種情境、哪一項、差多少」並 exit 1。
  *       例:2026-11-10 修前(main 8eb473c7)決策卡「1 / 3」到題目 0px(應 2)。
  *       該量到的東西少於下限 = 儀器失效(INSTRUMENT-FAIL),exit 1,不讀成通過。
- *       `--selftest` 四種對照組:(a) 判定函式吃實測數字(修前 0 / 修後 2 / OV-ga02 修前 × 在兩行正中 +11.5)必紅 / 必綠;
+ *         (3) **標題截斷時滑過看全文**(Dialog / Sheet / Popover 真元件各一格 + 沒截斷的對照;Playwright 真的滑過,等 tooltip 畫出來)。
+ *       2026-11-10 修前(b1-overlay d3c92e47):Sheet 標題截斷後滑過沒有 tooltip(n7 第六節 1;Dialog / Popover 07-29 b644488f 已補、Sheet 漏)。
+ *       `--selftest` 五種對照組((e) = 藏掉 tooltip → 截斷的每格必紅、沒截斷那格照舊綠):(a) 判定函式吃實測數字(修前 0 / 修後 2 / OV-ga02 修前 × 在兩行正中 +11.5)必紅 / 必綠;
  *       (b) 頁面上把標題區打回置中(header 與 × 都 align center)→ 有小標或說明的情境 × 必紅、只有標題的照舊綠;
  *       (c) 小標下距歸零 → 每個小標必紅、× 不受牽連;(d) 每顆 × 往下推 3px → 每一處 × 必紅且位移 = 3(±0.25)。
  *   綠: 全部在容許值內、每一則都量到下限以上。
@@ -54,10 +56,14 @@ const KIND_NAME = {
   'x-same': '× 離頂:有小標 − 只有標題(同一層級)',
   'eyebrow-gap': '小標下緣 → 標題上緣(應 2)',
   'eyebrow-type': '小標字樣(12 / 500 / fg-secondary / 一行)',
+  'title-tooltip': '標題截斷時滑過看全文',
 }
 
 // ── 判定(純函式;selftest (a) 直接吃實測數字)──
 function judgeProbe(p) {
+  if (p.kind === 'title-tooltip') {
+    return { ok: p.expect === p.got, why: `截斷 ${p.expect ? '是' : '否'}、滑過${p.got ? '有' : '沒有'}全文 tooltip(應${p.expect ? '有' : '沒有'})` }
+  }
   if (p.kind === 'eyebrow-gap') {
     const ok = Math.abs(p.value - 2) <= TOL_GAP
     return { ok, why: `${p.value.toFixed(2)}px(應 2 ± ${TOL_GAP})` }
@@ -173,7 +179,52 @@ const JUDGE_TABLE = [
   ['Dialog 有說明時 × 在兩行正中(OV-ga02 修前 +11.5)', { kind: 'x-title', value: 11.5 }, false],
   ['決策卡有小標時 × 改對齊小標行(n7 D2-B,上移 2.7)', { kind: 'x-same', value: -2.71 }, false],
   ['× 固定頂部(現況 0)', { kind: 'x-slot', value: 0 }, true],
+  ['Sheet 標題截斷、滑過沒有 tooltip(修前 sheet.tsx SheetTitle 只有 truncate)', { kind: 'title-tooltip', expect: true, got: false }, false],
+  ['沒截斷卻出 tooltip', { kind: 'title-tooltip', expect: false, got: true }, false],
+  ['截斷且有 tooltip', { kind: 'title-tooltip', expect: true, got: true }, true],
 ]
+
+// ── (3) 標題截斷 tooltip(overlay-surface.spec.md「SurfaceHeader」標題:單行截斷 + 截斷才顯的 tooltip)──
+// Dialog / Sheet / Popover 的真元件各一格(夾具不 inert,滑鼠才進得去)+ 一格沒截斷的對照(不該出 tooltip)。
+// 量法:Playwright 真的滑過標題,等「全文那一則 tooltip 畫出來」(寬 > 1,不是只在 DOM 裡);沒截斷那格等滿 2.5s 都不該出現。
+const TOOLTIP_STORY = 'design-system-internal-patterns-overlay-surface--header-title-tooltip'
+const TOOLTIP_MIN = 4
+async function runTooltip(page, sv, sabotageCss) {
+  const rows = []
+  const instrument = []
+  const url = `${sv.origin}/iframe.html?id=${encodeURIComponent(TOOLTIP_STORY)}&viewMode=story`
+  try {
+    await openStory(page, url, {
+      settleFrames: 5,
+      notFound: sv.notFound,
+      waitFor: () => document.querySelectorAll('[data-tooltip-case] h2').length >= 4,
+      beforeSettle: sabotageCss ? async (p) => { await p.addStyleTag({ content: sabotageCss }) } : null,
+    })
+  } catch (error) {
+    if (!(error instanceof StoryRenderInstrumentError)) throw error
+    return { rows, instrument: [`${TOOLTIP_STORY}:${error.message}`] }
+  }
+  const cases = await page.$$eval('[data-tooltip-case]', (els) => els.map((e) => {
+    const h = e.querySelector('h2')
+    const t = h.querySelector('span') ?? h
+    return { name: e.dataset.tooltipCase, expect: e.dataset.expect === 'tooltip', full: h.textContent, truncated: t.scrollWidth > t.clientWidth + 0.5 }
+  }))
+  if (cases.length < TOOLTIP_MIN) instrument.push(`${TOOLTIP_STORY}:只量到 ${cases.length} 格(下限 ${TOOLTIP_MIN})`)
+  for (const c of cases) {
+    if (c.expect !== c.truncated) { instrument.push(`${c.name}:標題${c.truncated ? '被' : '沒有被'}截斷,夾具前提不成立`); continue }
+    try { await page.locator(`[data-tooltip-case="${c.name}"] h2`).hover({ timeout: 5000 }) } catch (e) { instrument.push(`${c.name}:滑不到標題(${e.message.split('\n')[0]})`); continue }
+    const got = await page.waitForFunction((full) => [...document.querySelectorAll('[role="tooltip"]')]
+      .some((x) => x.textContent === full && x.parentElement.getBoundingClientRect().width > 1), c.full, { timeout: 2500 }).then(() => true, () => false)
+    // 收掉 tooltip 再量下一格(不然它蓋在下一格標題上):Radix 離開觸發點後要再一次指標移動才判定出了 grace 區,所以分步移兩次
+    await page.mouse.move(1, 1, { steps: 4 })
+    await page.mouse.move(3, 3)
+    await page.waitForFunction(() => !document.querySelector('[data-radix-popper-content-wrapper]'), null, { timeout: 4000 }).catch(() => {})
+    const p = { kind: 'title-tooltip', case: c.name, expect: c.expect, got }
+    const j = judgeProbe(p)
+    rows.push({ ...p, story: TOOLTIP_STORY, density: 'md', ok: j.ok, why: j.why, label: `header-title-tooltip / ${c.name} / ${KIND_NAME[p.kind]}` })
+  }
+  return { rows, instrument }
+}
 
 // ── selftest (b)(c)(d):頁面破壞 ──
 const PAGE_SABOTAGE = [
@@ -209,6 +260,9 @@ requireFreshStorybookBuild(S, [
   'packages/design-system/src/patterns/overlay-surface/overlay-surface.stories.tsx',
   'packages/design-system/src/components/AgentPanel/agent-panel.tsx',
   'packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx',
+  'packages/design-system/src/components/Sheet/sheet.tsx',
+  'packages/design-system/src/components/Dialog/dialog.tsx',
+  'packages/design-system/src/components/Popover/popover.tsx',
   'packages/design-system/src/tokens/layoutSpace/layoutSpace.css',
 ])
 const sv = await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
@@ -218,6 +272,9 @@ const page = await br.newPage({ viewport: { width: 1280, height: 900 } })
 const finish = async (code) => { await br.close(); await sv.stop(); process.exit(code) }
 
 const base = await runPages(page, sv, null)
+const tip = await runTooltip(page, sv, null)
+base.rows.push(...tip.rows)
+base.instrument.push(...tip.instrument)
 if (JSON_OUT) writeFileSync(JSON_OUT, JSON.stringify(base.rows, null, 1))
 if (!SELFTEST) {
   for (const r of base.rows) console.log(`${r.ok ? '✓' : '✗'} ${r.label}:${r.why}`)
@@ -240,12 +297,17 @@ if (SELFTEST) {
     else problems.push(`對照組「${name}」沒有讓指定的量測紅(紅 ${red.length} / ${run.rows.length})—— 量具無效;`
       + `${run.rows.slice(0, 12).map((r) => `${r.ok ? '綠' : '紅'} ${r.label}:${r.why}`).join(' / ')}`)
   }
+  // (e) tooltip 畫不出來(包住浮層內容的那層藏掉)→ 每一格截斷的都必紅、沒截斷那格照舊綠
+  const tipRun = await runTooltip(page, sv, '[data-radix-popper-content-wrapper]{display:none!important}')
+  if (tipRun.instrument.length) { console.error(`\n✗ ${INSTRUMENT_FAIL_MARKER}(對照組 tooltip):\n  ${tipRun.instrument.join('\n  ')}`); await finish(1) }
+  if (tipRun.rows.some((r) => r.expect) && tipRun.rows.every((r) => (r.expect ? !r.ok : r.ok))) console.log(`✓ 對照組「tooltip 藏掉」→ ${tipRun.rows.filter((r) => !r.ok).length} / ${tipRun.rows.length} 處紅`)
+  else problems.push(`對照組「tooltip 藏掉」沒有讓截斷的格紅 —— 量具無效;${tipRun.rows.map((r) => `${r.ok ? '綠' : '紅'} ${r.label}:${r.why}`).join(' / ')}`)
 }
 if (problems.length) {
   console.log(`\n✗ ${SELFTEST ? 'selftest' : '浮層標題區'}:\n  ${problems.join('\n  ')}`)
   await finish(1)
 }
 console.log(SELFTEST
-  ? '\n✓ selftest:判定表、打回置中、小標下距歸零、× 下移 3px 四種對照組各自讓閘紅 —— 量具會紅'
+  ? '\n✓ selftest:判定表、打回置中、小標下距歸零、× 下移 3px、tooltip 藏掉 五種對照組各自讓閘紅 —— 量具會紅'
   : `\n✅ 浮層標題區:${TARGETS.length} 則 story × ${DENSITIES.length} 種密度,共 ${base.rows.length} 項全部在容許值內`)
 await finish(0)

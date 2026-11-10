@@ -6,12 +6,14 @@
  *         出現 / 消失前後:右側兩鈕(跳過|上一題、下一題|送出)與 footer、決策卡上緣的位置不變;
  *         左緣 = 題目標題左緣(overlay-surface.spec.md「要對齊誰」:只有 SurfaceHeader 時對齊標題)、垂直中線 = 右側兩鈕;
  *         長相 = 同一列的「跳過」(同為 tertiary sm:高、字級、字重、顏色、底色、左右內距、圓角)。
- *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息。
+ *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息 —— 只用鍵盤也一樣:清掉之後只用 Tab 走到「下一題」按 Enter(O10)、
+ *         複選題不勾只用 Tab 走到「送出」(O14),途中經過「其他」輸入格不改選取;必答題 Tab 經過也不把建議解換掉(O18)。
  *         讀屏:必答單選題的 radiogroup aria-required="true",選填單選題不是(field.spec.md「SR 識別路徑」)。
  *         量的是 getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked、aria-required、input.value,不讀 class(M37)。
- *   紅: --selftest 逐一補回九種病(每種開一次新頁):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
+ *   紅: --selftest 逐一補回十種病(每種開一次新頁):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
  *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「跳過」不同 ⑦ 鍵盤走到「清除選取」的路上選取被換掉
- *       ⑧ 必答題的 radiogroup 沒有 aria-required ⑨ 選填題的 radiogroup 也標 aria-required —— 各自必須被指名紅
+ *       ⑧ 必答題的 radiogroup 沒有 aria-required ⑨ 選填題的 radiogroup 也標 aria-required ⑩ Tab 聚焦「其他」輸入格就選中「其他」
+ *       —— 各自必須被指名紅
  *   綠: 現行 agent-panel.tsx(clearSelection / showClear)全綠;修前(本項基底 d27563f1:沒有 optional、沒有清除鈕)
  *       的建置配上本項新增的 story:鈕不在 → O1 起一串紅、選填沒選按「下一題」跳錯誤 → 紅(本機實測,見 commit 說明)
  *
@@ -28,9 +30,8 @@
  *
  * 選填 story(DecisionCardOptional)三題:第 1 題單選預選建議解(一打開鈕就在)、第 2 題單選不預選、第 3 題複選;必答對照用 DecisionCardOpen 第 1 題。
  * 每一下點擊都是真滑鼠(page.mouse,含 mousedown);鍵盤用 page.keyboard。點完等兩層 setTimeout(0) 再讀。
- * 鍵盤走到「清除選取」用 Shift+Tab 從右側「跳過」倒退一步(O6 / O7),不從第一個圓往前 Tab:往前會經過「其他」輸入格,
- * 而規格「聚焦即選中「其他」」讓那一步把選取換成「其他」—— 量到的就不是「清掉使用者選的那一個」。那條往前的路線
- * (選填題只用鍵盤做不到「不答就前進」)交 user 決定(new-items/n6-decision-clear/answer.md「要 user 決定」①),定案前不在這支閘裡。
+ * 鍵盤走到「清除選取」= 從第一個圓往前 Tab(O6 / O7),途中會經過「其他」輸入格 —— 按之前先斷言選取仍是第一個圓
+ * (Tab 經過輸入格不改選取;2026-11-04 前「聚焦即選中」會在這一步把選取換成「其他」)。
  * 開不起來 / 量途中找不到元素 → 儀器失效(exit 2),不是產品裁決,也絕不當成通過。
  *
  * Run: `node scripts/agent-decision-card-clear-invariant.mjs [--selftest] [--static-dir <Storybook 建置>]`
@@ -116,6 +117,12 @@ const FAULTS = {
     what: '⑧ 必答題的 radiogroup 沒有 aria-required',
     script: SICK(`() => { for (const g of document.querySelectorAll('[role="radiogroup"]')) if (g.getAttribute('aria-required') !== 'false') g.setAttribute('aria-required', 'false') }`),
   },
+  focusSelectsOther: {
+    scope: 'both',
+    expect: ['O6', 'O10', 'O14', 'O18'],
+    what: '⑩ Tab 聚焦「其他」輸入格就選中「其他」(2026-11-04 前的「聚焦即選中」)',
+    script: `document.addEventListener('focusin', (e) => { if (!(e.target instanceof HTMLInputElement) || e.target.getAttribute('aria-label') !== '其他(自由輸入)') return; const card = e.target.closest('[class~="group/agent-option"]'); const c = card && card.querySelector('[role="radio"], [role="checkbox"]'); if (c && c.getAttribute('aria-checked') !== 'true') c.click() }, true)`,
+  },
   ariaEverywhere: {
     expect: ['O17'],
     what: '⑨ 選填題的 radiogroup 也標 aria-required',
@@ -182,6 +189,19 @@ const btn = (s, names) => s.buttons.find((b) => names.includes(b.text))
 const clickCenter = async (r) => { await page.mouse.click(r.x + r.w / 2, r.y + r.h / 2); await flushOn(page); await settleTransitions(page) }
 const noneChecked = (s) => s.controls.every((c) => c.checked !== 'true')
 const press = async (key) => { await page.keyboard.press(key); await flushOn(page); await settleTransitions(page) }
+/** 只用 Tab 往前走,直到 until(狀態) 成立(最多 8 步);每一步都記下選取,回傳途中有沒有任何一步選取跟出發時不同。 */
+const tabUntil = async (until) => {
+  let s = await readCard(page)
+  const start = JSON.stringify(s.controls.map((c) => c.checked))
+  const trail = []
+  for (let i = 0; i < 8; i++) {
+    await press('Tab')
+    s = await readCard(page)
+    trail.push({ active: s.active?.text || s.active?.tag, checked: s.controls.map((c) => c.checked) })
+    if (until(s)) return { reached: true, s, changed: trail.some((t) => JSON.stringify(t.checked) !== start), trail }
+  }
+  return { reached: false, s, changed: trail.some((t) => JSON.stringify(t.checked) !== start), trail }
+}
 const pickRadio = async (s, i) => { const c = s.cards[i]; await page.mouse.click(c.x + 40, c.y + 14); await flushOn(page); await settleTransitions(page) }
 
 async function runOptional(fault) {
@@ -232,19 +252,17 @@ async function runOptional(fault) {
   } else { pre('O4', '滑鼠按了清掉', '鈕不在'); pre('O5', '消失 / 再出現不跳', '鈕不在') }
   if (fault === 'jump') return results
 
-  // ── 鍵盤:選第一個圓(Space)→ 從右側「跳過」Shift+Tab 一步到「清除選取」(路線理由見檔頭「量法」)→ 按之前選取仍是第一個圓 → Enter / Space ──
+  // ── 鍵盤:選第一個圓(Space)→ 往前 Tab 到「清除選取」(途中經過「其他」輸入格)→ 按之前選取仍是第一個圓 → Enter / Space ──
   for (const key of ['Enter', 'Space']) {
     const id = key === 'Enter' ? 'O6' : 'O7'
-    const label = `鍵盤:從「跳過」Shift+Tab 一步到「清除選取」、途中選取不變,按 ${key} → 都沒選、鈕消失、焦點在第一個圓(不在 body)`
+    const label = `鍵盤:往前 Tab 走得到「清除選取」、途中經過「其他」輸入格選取不變,按 ${key} → 都沒選、鈕消失、焦點在第一個圓(不在 body)`
     await page.evaluate((cid) => document.getElementById(cid)?.focus(), s.controls[0].id)
     await press('Space')
     s = await readCard(page)
     if (s.controls[0].checked !== 'true') { pre(id, label, `焦點在第一個圓按 Space 沒選中(${JSON.stringify(s.controls.map((c) => c.checked))})`); continue }
-    const focusedSkip = await page.evaluate((names) => { const b = [...document.querySelectorAll('[data-slot="surface-footer"] button')].find((x) => names.includes(x.textContent.trim())); b?.focus(); return !!b && document.activeElement === b }, NAV)
-    if (!focusedSkip) { pre(id, label, '右側「跳過 / 上一題」聚焦不到'); continue }
-    await press('Shift+Tab')
-    s = await readCard(page)
-    if (s.active?.text !== CLEAR) { record(id, label, false, `Shift+Tab 一步沒停在「清除選取」(焦點 ${JSON.stringify(s.active)})`); continue }
+    const walked = await tabUntil((x) => x.active?.text === CLEAR)
+    s = walked.s
+    if (!walked.reached) { record(id, label, false, `Tab 8 次沒停在「清除選取」(最後焦點 ${JSON.stringify(s.active)})`); continue }
     const kept = s.controls[0].checked === 'true' && s.controls.slice(1).every((c) => c.checked !== 'true')
     if (!kept) { record(id, label, false, `走到「清除選取」時選取已經被換掉:${JSON.stringify(s.controls.map((c) => c.checked))}(應為第一個圓)`); continue }
     await press(key)
@@ -277,12 +295,17 @@ async function runOptional(fault) {
     // 修前(沒有清除鈕):自己回不到沒選 —— 本條改在第 2 題(不預選)量,這裡先記前置不成立
     pre('O10', '選填題沒選按「下一題」→ 前進、沒有錯誤', '第 1 題回不到沒選(沒有清除鈕)')
   } else {
-    await clickCenter(btn(s, PRIMARY).rect)
-    await settleAfterInteraction(page, { frames: 5 })
+    // 只用鍵盤:焦點在第一個圓(清除後交過來的)→ 只用 Tab 走到「下一題」→ Enter;途中經過「其他」輸入格不能把選取改成「其他」
+    const walked = await tabUntil((x) => x.active?.text === '下一題')
+    if (walked.reached) { await press('Enter'); await settleAfterInteraction(page, { frames: 5 }) }
     s = await readCard(page)
-    record('O10', '第 1 題清掉後(沒選)按「下一題」→ 前進到 2 / 3、沒有錯誤訊息', s.step === '2 / 3' && !s.error, `${s.step}、錯誤 ${s.error ?? '無'}`)
+    record('O10', '第 1 題清掉後(沒選)只用 Tab 走到「下一題」按 Enter → 前進到 2 / 3、沒有錯誤訊息、途中選取不變',
+      walked.reached && !walked.changed && s.step === '2 / 3' && !s.error,
+      `走到 ${walked.reached}、途中選取變了 ${walked.changed}(${JSON.stringify(walked.trail.map((t) => `${t.active}:${t.checked.join('')}`))});${s.step}、錯誤 ${s.error ?? '無'}`)
   }
   if (s.step === '1 / 3') {
+    // O10 沒過(例:Tab 經過輸入格選中了「其他」、按 Enter 跳錯誤)→ 先清掉再用滑鼠前進,後面幾條照樣量得到
+    if (s.clear) { await clickCenter(s.clear.rect); s = await readCard(page) }
     await clickCenter(btn(s, PRIMARY).rect)
     await settleAfterInteraction(page, { frames: 5 })
     s = await readCard(page)
@@ -325,13 +348,17 @@ async function runOptional(fault) {
   await page.mouse.click(s.cards[0].x + 40, s.cards[0].y + 14)
   await flushOn(page)
   s = await readCard(page)
-  await clickCenter(btn(s, PRIMARY).rect)
-  await settleAfterInteraction(page, { frames: 5 })
+  // 只用鍵盤:焦點在第一個方框 → 只用 Tab 走到「送出」→ Enter;途中經過「其他」輸入格不能把「其他」勾起來
+  await page.evaluate((cid) => document.getElementById(cid)?.focus(), s.controls[0].id)
+  const walked = await tabUntil((x) => x.active?.text === '送出')
+  if (walked.reached) { await press('Enter'); await settleAfterInteraction(page, { frames: 5 }) }
   s = await readCard(page)
   // 範例的送出 = 真的送出(共用 DecisionCardScene:卡收起、對話多一則決策回執),所以「照常送出」量的是卡收起 + 回執出現;
   // 沒過驗證時卡留著、錯誤訊息掛在卡裡 → s 不是 null,本條紅。
   const receipt = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
-  record('O14', '選填複選一項都不勾按「送出」→ 照常送出(卡收起、對話多一則決策回執)、沒有錯誤訊息', s === null && receipt, s ? `卡還在、錯誤 ${s.error ?? '無'}` : `回執 ${receipt ? '有' : '沒有'}`)
+  record('O14', '選填複選一項都不勾,只用 Tab 走到「送出」按 Enter → 照常送出(卡收起、對話多一則決策回執)、途中「其他」沒被勾起來',
+    walked.reached && !walked.changed && s === null && receipt,
+    `走到 ${walked.reached}、途中選取變了 ${walked.changed}(${JSON.stringify(walked.trail.map((t) => `${t.active}:${t.checked.join('')}`))});${s ? `卡還在、錯誤 ${s.error ?? '無'}` : `回執 ${receipt ? '有' : '沒有'}`}`)
   return results
 }
 
@@ -343,6 +370,13 @@ async function runRequired(fault) {
   results.push({ id: 'O16', label: '必答單選題的 radiogroup 帶 aria-required="true"(field.spec.md「SR 識別路徑」)', pass: s.groupRequired === 'true',
     detail: `aria-required = ${s.groupRequired}` })
   if (fault === 'ariaMissing') return results
+  // 必答題(預選建議解):焦點在第一個圓 → 只用 Tab 走到「下一題」,途中經過「其他」輸入格不能把建議解換成「其他」
+  await page.evaluate((cid) => document.getElementById(cid)?.focus(), s.controls[0].id)
+  const walked = await tabUntil((x) => x.active?.text === '下一題')
+  results.push({ id: 'O18', label: '必答題只用 Tab 走到「下一題」:途中經過「其他」輸入格,預選的建議解不被換成「其他」', pass: walked.reached && !walked.changed,
+    detail: `走到 ${walked.reached}、途中選取變了 ${walked.changed}(${JSON.stringify(walked.trail.map((t) => `${t.active}:${t.checked.join('')}`))})` })
+  await open(REQUIRED_STORY, fault)
+  s = await readCard(page)
   const preselected = s.controls[0].checked === 'true'
   await pickRadio(s, 1)
   s = await readCard(page)

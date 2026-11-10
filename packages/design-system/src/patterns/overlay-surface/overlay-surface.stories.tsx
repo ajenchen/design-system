@@ -254,3 +254,27 @@ export const HeaderActions: Story = {
     </div>
   ),
 }
+
+// ── 標題截斷 tooltip(測試;閘 scripts/overlay-header-title-area-invariant.mjs 第 (3) 層)──
+// 規則住 overlay-surface.spec.md「SurfaceHeader」標題:單行截斷 + 截斷才顯的 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容」)。
+// Dialog / Sheet / Popover 的真標題元件各一格(不 inert:閘要真的滑過)+ 一格沒截斷的對照(不該出 tooltip)。
+const LONG_TITLE = 'WM-142 結帳流程改版:信用卡分期、行動支付與發票載具整合(第二階段)'
+function TooltipCase({ name, expect, children }: { name: string; expect: 'tooltip' | 'none'; children: ReactNode }) {
+  return (
+    <Shell className="w-[280px]">
+      <div data-tooltip-case={name} data-expect={expect}>{children}</div>
+    </Shell>
+  )
+}
+export const HeaderTitleTooltip: Story = {
+  name: '標題截斷 tooltip(測試)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
+      <TooltipCase name="dialog" expect="tooltip"><Dialog><DialogHeader><DialogTitle>{LONG_TITLE}</DialogTitle></DialogHeader></Dialog></TooltipCase>
+      <TooltipCase name="sheet" expect="tooltip"><Sheet><SheetHeader><SheetTitle>{LONG_TITLE}</SheetTitle></SheetHeader></Sheet></TooltipCase>
+      <TooltipCase name="popover" expect="tooltip"><Popover><PopoverHeader><PopoverTitle>{LONG_TITLE}</PopoverTitle></PopoverHeader></Popover></TooltipCase>
+      <TooltipCase name="sheet-short" expect="none"><Sheet><SheetHeader><SheetTitle>邀請成員</SheetTitle></SheetHeader></Sheet></TooltipCase>
+    </div>
+  ),
+}

@@ -127,6 +127,7 @@ const CHROME_UNBOUNDED_SLOT =
 - Dismiss X(`<Button dismiss />`)→ data-unbounded ✓
 - Text variant action(`<Button variant="text" />` 如 Share / Refresh / Settings)→ data-unbounded ✓
 - 所有無視覺邊界的 button,不限 dismiss
+- **例外:SurfaceHeader 右側操作區(`[data-slot="surface-header-actions"]`)裡的按鈕不各自縮,改由整個操作區縮位**(`ACTIONS_GROUP_SLOT`,同一個公式;區裡有 Bounded 按鈕時不縮)。區內按鈕保持原生高,分隔線才量得到「最高元件」(`../action-bar/action-bar.spec.md`「分隔線幾何」前提:要住在自動高度的 cluster 內);× 與操作的位置、header 高度不變。2026-11-10 前每顆各自縮成 24,區高 24 → 線 16(Popover 21 → 13 → 地板 16),比常駐標題列的 20 短(n7 第七節 2)。
 
 **為什麼用負 margin 而非 fixed wrapper / size="xs"**:
 - `size="xs"` 會縮小 button 本身,**命中區也跟著縮到 24**,與 overlay chrome 的比例不協調(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於 `tokens/uiSize/uiSize.spec.md`「元件高度地板」訂的最小值,沒有低於任何我們採用的門檻;先前這裡寫的「違反 a11y 最小 24+ hit target」既與「元件高度地板」自相矛盾、也查無出處,2026-09-24 更正(同 `uiSize.spec.md`「選錯的後果(驗證 decision tree 的重要性)」)

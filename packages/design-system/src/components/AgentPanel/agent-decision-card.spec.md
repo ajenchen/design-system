@@ -16,7 +16,7 @@
   + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8。
   「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
   [Polaris ChoiceChildren 同款](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Choice/Choice.module.css);
-  距卡右/下各 12);聚焦即選中「其他」;**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
+  距卡右/下各 12);指標按進輸入格或開始打字即選中「其他」,只用 Tab 經過不改選取(只用鍵盤的人才走得過這一格:選填題清掉後只用 Tab 走到「下一題」,[WCAG 2.1.1](https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html));**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
   鍵盤選中不搶焦點 —— 方向鍵(APG radio roving)、焦點在圓 / 方框上按 Space(APG radio「Space: checks the focused radio button」,
   <https://www.w3.org/WAI/ARIA/apg/patterns/radio/>)都只改選取狀態、焦點留在原處,Tab 一步即到 Input;radio `aria-controls` 指向 Input。
   幾何:一般卡 8+21+2+21+8 = 60;「其他」卡 8+21+8+32+12 = 81。
@@ -47,7 +47,6 @@
   tertiary sm,左 = 操作選取、右 = 提交,`../../patterns/overlay-surface/overlay-surface.spec.md`「選取類浮層的 footer 內容順序」):
   按了清掉答案與「其他」的字、鈕消失、焦點交給第一個圓(同 `../Select/select.spec.md`「Clearable」清除後焦點),右側兩鈕不動;
   必答題沒有(「何時開 clearable」:必須有選擇不開),複選題沒有(方框本來就能取消)。
-  【待確認】只用 Tab 的人經過「其他」輸入格就會選中「其他」(上方選項卡條「聚焦即選中」),選填題因此只用鍵盤無法不答就前進;改法交 user。
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
 - 進出=淡入+下滑 8、`--motion-duration-overlay`。

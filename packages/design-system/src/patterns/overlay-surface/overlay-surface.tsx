@@ -67,7 +67,7 @@ import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-
 // 負 my 公式:(slot - native) / 2,density-aware:
 //   Dialog md: (24 - 28) / 2 = -2px;  lg: (24 - 32) / 2 = -4px
 //   Popover md: (21 - 28) / 2 = -3.5px(sub-pixel,可接受)
-const CHROME_UNBOUNDED_SLOT = '[&_[data-unbounded]]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
+const CHROME_UNBOUNDED_SLOT = '[&_[data-unbounded]:not([data-slot=surface-header-actions]_*)]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]' // 右側操作區裡的改由整區縮位(見檔尾 ACTIONS_GROUP_SLOT)
 
 /**
  * 輕量浮層 header 的 slot override —— **SSOT,禁各自 inline**(2026-06-16 收斂)。
@@ -271,6 +271,12 @@ export interface SurfaceHeaderProps {
 // 右側按鈕位的排法(SurfaceHeader 兩個分支共用):左欄 flex-1 min-w-0,右側〔操作〕〔分隔線〕〔×〕。
 // 都沒傳 → children 原樣(既有 consumer 自己排的寫法不受影響);只有 × → × 直接是標題列的子節點(靠上那條規則 DISMISS_FIRST_LINE 認它)。
 // 操作區靠上(self-start):同 ×,群組對齊標題第一行;單行標題時位置不變(原 dialog.tsx#DialogHeader 的同一段,2026-11-10 搬下來共用)。
+// 右側操作區的縮位(2026-11-10,n7 第七節 2):縮位從「每顆無外框鈕」移到「整個操作區」—— 區內按鈕回到原生高(sm 28 / 寬鬆 32),
+// 區整體佔位縮回標題行高(公式同 CHROME_UNBOUNDED_SLOT,× 與操作的位置、標題列高度都不變)。理由:分隔線長 = 同列最高元件 − 8,
+// 基準要在「自動高度的操作區」裡才成立(action-bar.spec.md「分隔線幾何」前提);每顆鈕各自縮成 24 時,區高 24 → 線 16(Popover 21 → 13 → 地板 16),
+// 比常駐標題列(AI 面板 / FileViewer,同樣 sm 鈕)的 20 短。區裡有外框按鈕時不縮(有外框的不縮,標題列自然長高 —— overlay-chrome-sizing.spec.md「Bounded」列)。
+const ACTIONS_GROUP_SLOT = '[&:not(:has(button:not([data-unbounded])))]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
+
 function surfaceHeaderRow(children: React.ReactNode, actions: React.ReactNode, dismiss: React.ReactNode) {
   if (actions == null && dismiss == null) return children
   return (
@@ -278,7 +284,7 @@ function surfaceHeaderRow(children: React.ReactNode, actions: React.ReactNode, d
       <div className="flex-1 min-w-0">{children}</div>
       {actions != null ? (
         // @layout-space-magic-ok: gap-2 = packages/design-system/src/patterns/action-bar/action-bar.spec.md:292「自身兩端各 4px 於 `gap-2` 容器」(分隔線兩側 12px 對稱)
-        <div data-slot="surface-header-actions" className="flex items-center gap-2 shrink-0 self-start">
+        <div data-slot="surface-header-actions" className={cn('flex items-center gap-2 shrink-0 self-start', ACTIONS_GROUP_SLOT)}>
           {actions}
           {dismiss != null && <ButtonDivider />}
           {dismiss}

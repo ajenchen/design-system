@@ -44,7 +44,7 @@ export interface DataTableSortManagerProps<TData> extends Omit<React.HTMLAttribu
   onSortingChange: (next: SortingState) => void
   /** Refresh 按鈕點擊(可選 — 重置或外部 refetch) */
   onReset?: () => void
-  /** Close 按鈕點擊(若有 — 通常是包在 Popover 外層的 close 行為) */
+  /** × 按下時的通知(選填)。× 恆渲染、關閉由 PopoverClose 內建 —— 面板必須放在 `<Popover>` 裡 */
   onClose?: () => void
   className?: string
 }
@@ -134,11 +134,12 @@ function DataTableSortManagerInner<TData>({
     >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
       {/* 右側「重置 │ ×」走 SurfaceHeader 的右側按鈕位(分隔線由 SurfaceHeader 放,overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
-          × 仍以 onClose 有無決定(畫面不變;onClose 當渲染閘的規格不符另案處理,MASTER-TODO §0「三處規格不符」)。 */}
+          × 恆渲染(data-table.spec.md「Header refresh icon」條:ButtonDivider 串接 close X;M23(f) 禁以 callback 有無當渲染閘),關閉由 PopoverClose 內建,
+          onClose 只是通知 —— 所以面板必須放在 Popover 裡(2026-11-10 前沒傳 onClose 就沒有 ×,n7 第七節 3)。 */}
       <SurfaceHeader
         className={COMPACT_HEADER_SLOT}
         actions={onReset && sorting.length > 0 ? <Button variant="text" size="sm" iconOnly startIcon={RotateCcw} aria-label="重置" onClick={onReset} /> : undefined}
-        dismiss={onClose ? <PopoverClose asChild><Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} /></PopoverClose> : undefined}
+        dismiss={<PopoverClose asChild><Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} /></PopoverClose>}
       >
         <PopoverTitle>排序</PopoverTitle>
       </SurfaceHeader>

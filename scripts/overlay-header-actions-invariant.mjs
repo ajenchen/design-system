@@ -5,16 +5,19 @@
  *         `patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位:consumer 只傳按鈕(`actions`)與 ×(`dismiss`),
  *         由 SurfaceHeader 排 ——〔操作 …〕〔分隔線〕〔×〕,× 永遠最右、右緣貼齊標題列內距;操作之間 8;
  *         操作與 × 都有時**自動**放一條分隔線,兩側各 12(`action-bar.spec.md`「五、分隔線規則」第 3 條 + 「分隔線幾何」);
- *         只有操作或只有 × 時不放;無外框的操作與 × 同一條中線;放有外框按鈕時按鈕中線 = 標題中線。
+ *         只有操作或只有 × 時不放;分隔線長 = 同列最高按鈕原生高 − 8、不短於 16(「分隔線幾何」;sm 28 → 20、寬鬆 32 → 24);
+ *         無外框的操作與 × 同一條中線;放有外框按鈕時按鈕中線 = 標題中線;× 恆渲染(M23(f),不以 onClose 有無當渲染閘)。
  *         兩層:(1) 靜態 —— 原始碼裡任何 SurfaceHeader / DialogHeader / SheetHeader / PopoverHeader 的 children 不得自刻分隔線
- *         (`<ButtonDivider`)或在 `hideClose` 後自己塞 ×;(2) 幾何 —— 量 getBoundingClientRect 的數字(M32),不讀 class,標準 / 寬鬆都量。
+ *         (`<ButtonDivider`)、在 `hideClose` 後自己塞 ×、或 `dismiss={onX ? … : …}` 以 callback 當 × 的渲染閘;(2) 幾何 —— 量 getBoundingClientRect 的數字(M32),不讀 class,標準 / 寬鬆都量。
  *   紅: 任一處不符 → 指名「哪一格、哪一項、差多少」並 exit 1。例:2026-11-10 修前(main 8eb473c7)DataTable 欄位顯示面板
  *       「恢復預設 ←8→ │ ←8→ ×」(應 12 / 12);排序 / 篩選面板與 DialogHeader 的分隔線寫在 children 裡(靜態)。
+ *       2026-11-10 第二段修前(b1-overlay d3c92e47):浮層標題列分隔線 16(應 20 / 寬鬆 24,n7 第七節 2);篩選 / 排序面板沒傳 onClose 就沒有 ×(n7 第七節 3)。
  *       該量到的東西少於下限 = 儀器失效(INSTRUMENT-FAIL),exit 1,不讀成通過。
  *       `--selftest` 對照組:(a) 判定函式吃實測數字(修前 8 → 紅、12 → 綠;多一條 / 少一條 / × 不在最右 → 紅);
  *       (b) 靜態掃描吃假原始碼(children 裡的分隔線 → 紅、只出現在註解裡 → 綠、hideClose 後自塞 × → 紅);
  *       (c) 頁面上拿掉分隔線兩側 4px → 每條分隔線兩側必紅(= 8)、其他不受牽連;(d) 藏掉分隔線 → 每個「操作 + ×」格的條數必紅;
- *       (e) 標題列改 align-items:flex-start → 有外框按鈕那格的標題中線必紅。
+ *       (e) 標題列改 align-items:flex-start → 有外框按鈕那格的標題中線必紅;
+ *       (f) 操作區裡每顆無外框鈕各自縮位(修前寫法)→ 每個無外框格的分隔線長必紅、有外框那格照舊綠。
  *   綠: 全部在容許值內、每一格都量到、靜態掃描掃到下限以上的標題列。
  *
  * 出處:user 2026-10-30T05:31:55Z(逐字):「到底 header 的 ssot 右側有沒有置放按鈕的位置？ / 像 AI agent header 那樣，且其中按鈕和排列會遵循 action bar? /
@@ -91,6 +94,10 @@ export function scanSource(text, file = '<memory>') {
       if (tag === 'PopoverHeader' && /\bhideClose\b/.test(head[0]) && /PopoverClose|\bdismiss\b/.test(body)) {
         found.push({ file, line, tag, kind: 'hand-close', why: '<PopoverHeader hideClose> 後在 children 自己塞 ×(應用 PopoverHeader 內建的 × + actions)' })
       }
+      // × 以「callback 有沒有傳」當渲染閘(M23(f):規格列出的固定元素恆渲染;2026-11-10 修前篩選 / 排序面板 `dismiss={onClose ? … : undefined}`)
+      if (/\bdismiss=\{\s*!?\s*on[A-Z]\w*\s*(\?|&&)/.test(head[0])) {
+        found.push({ file, line, tag, kind: 'gated-dismiss', why: `<${tag}> 的 × 以 callback 有無當渲染閘(M23(f):× 恆渲染,callback 只做通知)` })
+      }
     }
   }
   return { found, blocks }
@@ -124,6 +131,9 @@ const STATIC_TABLE = [
   ['走 actions / dismiss 位', '<SurfaceHeader actions={<Button />} dismiss={<PopoverClose asChild><Button dismiss /></PopoverClose>}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 0],
   ['屬性值三層巢狀照樣讀完', '<SurfaceHeader actions={<Button onClick={() => f({ a: 1 })} />}>\n  <ButtonDivider />\n</SurfaceHeader>', 1],
   ['巢狀同名標籤不提早結束', '<DialogHeader actions={a}>\n  <DialogHeader><DialogTitle /></DialogHeader>\n  <ButtonDivider />\n</DialogHeader>', 1],
+  ['× 以 onClose 有無當渲染閘(修前 data-table-sort-manager.tsx 的寫法)', '<SurfaceHeader actions={r} dismiss={onClose ? <PopoverClose asChild><Button dismiss /></PopoverClose> : undefined}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 1],
+  ['× 以 onClose && 當渲染閘', '<SurfaceHeader dismiss={onClose && <Button dismiss />}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 1],
+  ['× 恆渲染、onClose 只做通知', '<SurfaceHeader dismiss={<PopoverClose asChild><Button dismiss onClick={onClose} /></PopoverClose>}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 0],
 ]
 
 // ── (2) 幾何 ──────────────────────────────────────────────────────────────
@@ -131,7 +141,7 @@ const TOL = 0.5
 const TOL_TITLE = 1
 const TARGETS = [
   { id: 'design-system-internal-patterns-overlay-surface--header-actions', cases: 8 },
-  { id: 'design-system-components-datatable-展示--header-actions-fixture', cases: 2 }, // 排序 / 篩選面板;欄位顯示面板 = PopoverHeader actions,由上一則 popover-header 那格量
+  { id: 'design-system-components-datatable-展示--header-actions-fixture', cases: 4 }, // 排序 / 篩選面板(有 / 沒傳 onClose);欄位顯示面板 = PopoverHeader actions,由上一則 popover-header 那格量
 ]
 const KIND_NAME = {
   'has-dismiss': '× 有 / 無',
@@ -142,6 +152,7 @@ const KIND_NAME = {
   'gap-actions': '操作之間(應 8)',
   'gap-action-divider': '最後一個操作 → 分隔線(應 12)',
   'gap-divider-x': '分隔線 → ×(應 12)',
+  'divider-length': '分隔線長(= 同列最高按鈕 − 8,不短於 16)',
   'v-center': '無外框操作中線 − × 中線',
   'title-center': '有外框按鈕中線 − 標題中線',
 }
@@ -159,6 +170,7 @@ export function judgeProbe(p) {
     case 'gap-actions': return near(p.value, 8, TOL)
     case 'gap-action-divider':
     case 'gap-divider-x': return near(p.value, 12, TOL)
+    case 'divider-length': return near(p.value, p.want, TOL)
     case 'v-center': return near(p.value, 0, TOL)
     case 'title-center': return near(p.value, 0, TOL_TITLE)
     default: return { ok: false, why: `未知量測 ${p.kind}` }
@@ -170,7 +182,8 @@ function measurePage() {
   const errors = []
   const r = (n) => Math.round(n * 100) / 100
   const mid = (el) => { const b = el.getBoundingClientRect(); return b.top + b.height / 2 }
-  const cases = [...document.querySelectorAll('[data-case][data-expect]')]
+  const tokenPx = (v) => { const e = document.createElement('div'); e.style.height = `var(${v})`; document.body.appendChild(e); const px = e.getBoundingClientRect().height; e.remove(); return px }
+  const cases =[...document.querySelectorAll('[data-case][data-expect]')]
   for (const c of cases) {
     const name = c.getAttribute('data-case')
     const expect = new Set(c.getAttribute('data-expect').split(','))
@@ -198,6 +211,12 @@ function measurePage() {
       const d = divs[0].getBoundingClientRect()
       out.push({ kind: 'gap-action-divider', case: name, value: r(d.left - acts.at(-1).getBoundingClientRect().right) })
       out.push({ kind: 'gap-divider-x', case: name, value: r(x.getBoundingClientRect().left - d.right) })
+    }
+    if (divs.length === 1) {
+      // 線長 = 同列最高按鈕(原生高,不是縮位後的佔位)− inset,不短於 min(action-bar.spec.md「分隔線幾何」);inset / min 從 token 量,不寫死
+      const tallest = Math.max(...btns.map((b) => b.getBoundingClientRect().height))
+      out.push({ kind: 'divider-length', case: name, value: r((divs[0].firstElementChild ?? divs[0]).getBoundingClientRect().height), // 畫出來的那條線 = 內層;外層 self-stretch 撐滿列高
+        want: r(Math.max(tallest - tokenPx('--action-divider-inset'), tokenPx('--action-divider-min'))), bounded: acts.some((a) => !a.hasAttribute('data-unbounded')) })
     }
     if (x) for (const a of acts) if (a.hasAttribute('data-unbounded')) out.push({ kind: 'v-center', case: name, value: r(mid(a) - mid(x)) })
     if (expect.has('bounded')) {
@@ -249,6 +268,9 @@ const JUDGE_TABLE = [
   ['只有 × 卻有分隔線', { kind: 'divider-count', expect: 0, got: 1 }, false],
   ['× 不在最右', { kind: 'x-last', ok: false }, false],
   ['標題列整列靠上、有外框按鈕(n7 實測差 2)', { kind: 'title-center', value: 2 }, false],
+  ['浮層標題列分隔線 標準(修前 main 8eb473c7 實測 16;sm 28 → 應 20)', { kind: 'divider-length', value: 16, want: 20 }, false],
+  ['浮層標題列分隔線 寬鬆(修前 16;32 → 應 24)', { kind: 'divider-length', value: 16, want: 24 }, false],
+  ['分隔線 20(規格)', { kind: 'divider-length', value: 20, want: 20 }, true],
 ]
 
 const PAGE_SABOTAGE = [
@@ -263,7 +285,12 @@ const PAGE_SABOTAGE = [
       const d = res.rows.filter((r) => r.kind === 'divider-count')
       return d.some((r) => r.expect === 1) && d.every((r) => (r.expect === 1 ? !r.ok : r.ok))
     }],
-  ['標題列改 align-items:flex-start', { css: '[data-slot="surface-header"]{align-items:flex-start!important}' },
+  ['操作區裡每顆無外框鈕各自縮位(修前寫法)', { css: '[data-slot="surface-header-actions"] [data-unbounded]{margin-top:-2px!important;margin-bottom:-2px!important}' },
+    (res) => {
+      const d = res.rows.filter((r) => r.kind === 'divider-length')
+      return d.some((r) => !r.bounded) && d.every((r) => (r.bounded ? r.ok : !r.ok))
+    }],
+  ['標題列改 align-items:flex-start',{ css: '[data-slot="surface-header"]{align-items:flex-start!important}' },
     (res) => {
       const t = res.rows.filter((r) => r.kind === 'title-center')
       return t.length > 0 && t.every((r) => !r.ok) && res.rows.filter((r) => r.kind === 'v-center').every((r) => r.ok)
@@ -345,6 +372,6 @@ if (problems.length) {
   await finish(1)
 }
 console.log(SELFTEST
-  ? '\n✓ selftest:判定表、靜態假原始碼、拿掉分隔線兩側 4px、藏掉分隔線、整列靠上 各自讓閘紅 —— 量具會紅'
+  ? '\n✓ selftest:判定表、靜態假原始碼、拿掉分隔線兩側 4px、藏掉分隔線、每顆鈕各自縮位、整列靠上 各自讓閘紅 —— 量具會紅'
   : `\n✅ 浮層標題列右側按鈕位:靜態 ${tree.blocks} 個標題列 0 自刻;${TARGETS.length} 則 story × ${DENSITIES.length} 種密度共 ${base.rows.length} 項全部在容許值內`)
 await finish(0)
