@@ -739,6 +739,7 @@
           "scripts/test-setup-netlify-access.mjs",
           "scripts/test-setup-provider-cli-toolchain.mjs",
           "scripts/test-setup-workspace.mjs",
+          "scripts/test-sidebar-handle-scrollbar-hit-invariant.mjs",
           "scripts/test-status-color-invariant.mjs",
           "scripts/test-story-determinism-invariant.mjs",
           "scripts/test-story-helper-duplication-invariant.mjs",

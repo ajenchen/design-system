@@ -884,7 +884,12 @@ const SidebarContent = React.forwardRef<
         className={cn(
           "flex-1",
           // 細列:捲軸軌道(Radix ScrollAreaScrollbar,`data-orientation="vertical"`,Root 的直接子層)不接指標,滑塊(它的直接子層)照常接 → 拖曳照常(事件冒泡到捲軸上的 Radix 處理)、滾輪落到底下的列鈕再捲動區
-          "group-data-[collapsible=icon]:[&>[data-orientation=vertical]]:pointer-events-none group-data-[collapsible=icon]:[&>[data-orientation=vertical]>*]:pointer-events-auto"
+          "group-data-[collapsible=icon]:[&>[data-orientation=vertical]]:pointer-events-none group-data-[collapsible=icon]:[&>[data-orientation=vertical]>*]:pointer-events-auto",
+          // 直捲軸疊在右緣「調整選單寬度」把手之上(把手 `z-[1]`,resize-handle.tsx):把手命中帶內側 3px + 線那 1px 落在捲軸上,
+          // 重疊那段由捲軸收、滑塊整條拖得到;把手在捲軸出現那段只剩外側 3px,捲軸收起或沒捲軸的高度照舊 7px
+          // (`ds-canonical/references/hit-area-canonical.md`「例外的四個條件」第 4 條與「不得蓋住別人的把手」;
+          // `../../patterns/resize-handle/resize-handle.spec.md`「命中區」;閘 `scripts/sidebar-handle-scrollbar-hit-invariant.mjs`)
+          "[&>[data-orientation=vertical]]:z-[2]"
         )}
       >
         <div className="flex flex-col">{children}</div>

@@ -54,7 +54,7 @@
     "test:tree-view-keyboard-route": "node scripts/tree-view-keyboard-route-invariant.mjs && node scripts/tree-view-keyboard-route-invariant.mjs --selftest",
     "test:range-preview": "node scripts/test-range-preview.mjs",
     "test:app-shell-layout-model": "node scripts/test-app-shell-layout-model.mjs && node scripts/test-app-shell-layout-model.mjs --selftest",
-    "test:app-shell-layout": "node scripts/app-shell-layout-invariant.mjs && node scripts/app-shell-layout-invariant.mjs --selftest",
+    "test:app-shell-layout": "node scripts/app-shell-layout-invariant.mjs && node scripts/app-shell-layout-invariant.mjs --selftest && node scripts/sidebar-handle-scrollbar-hit-invariant.mjs && node scripts/sidebar-handle-scrollbar-hit-invariant.mjs --selftest",
     "test:tree-keyboard-route": "node scripts/test-tree-keyboard-route.mjs && node scripts/test-tree-keyboard-route.mjs --selftest",
     "test:tree-step-navigation": "node scripts/test-tree-step-navigation.mjs && node scripts/test-tree-step-navigation.mjs --selftest",
     "test:tree-view-step-navigation": "node scripts/tree-view-step-navigation-invariant.mjs && node scripts/tree-view-step-navigation-invariant.mjs --selftest",
