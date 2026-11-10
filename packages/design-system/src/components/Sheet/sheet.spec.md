@@ -128,7 +128,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 
 ## A11y 預設
 
-**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(畫面上的副標還沒定義,先不要用;`SheetDescription` 只留給讀屏器的說明)(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
+**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(畫面上的說明何時用、長什麼樣照 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區)(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
 
 **Keyboard 行為**:
 

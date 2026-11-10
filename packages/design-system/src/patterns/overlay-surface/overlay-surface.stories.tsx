@@ -10,7 +10,7 @@ import * as React from 'react'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { SurfaceHeader, SurfaceBody, SurfaceFooter } from './overlay-surface'
+import { SurfaceHeader, SurfaceBody, SurfaceFooter, SurfaceEyebrow, COMPACT_HEADER_SLOT } from './overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 
@@ -83,7 +83,7 @@ export const ThreePartStructure: Story = {
       </Shell>
       <p className="max-w-[420px] text-caption text-fg-muted">
         三段共用 px-loose / py-tight;Header 自畫 border-b、Footer 自畫 border-t。Header 是
-        padding-based(title 可換行、chrome 隨內容長高),dismiss 按鈕 native size 保 sm、
+        padding-based(可附小標 / 說明、chrome 隨內容長高;標題本身單行截斷),dismiss 按鈕 native size 保 sm、
         layout 佔位由 unbounded slot trick 縮回 title 行高 → header 自然閉合 48px。
       </p>
     </div>
@@ -140,7 +140,7 @@ export const BodyScroll: Story = {
 export const BodyScrollKeyboard: Story = {
   name: '內文捲動(鍵盤)',
   tags: ['test-only'],
-  // @example-basis: overlay-surface.spec.md:51「機械驗證該具名節點確實 overflow 且可聚焦」
+  // @example-basis: overlay-surface.spec.md:56「機械驗證該具名節點確實 overflow 且可聚焦」
   parameters: { demoFocus: 'keep' },
   render: () => <BodyScrollDemo />,
   play: async ({ canvasElement }) => {
@@ -154,4 +154,44 @@ export const BodyScrollKeyboard: Story = {
     scrollRegion.focus()
     await expect(scrollRegion).toHaveFocus()
   },
+}
+
+// test-only:標題區幾何夾具(閘 scripts/overlay-header-title-area-invariant.mjs 量)。
+// 規則住 overlay-surface.spec.md「SurfaceHeader」標題區:× 固定頂部、佔位 = 標題一行高,小標 / 說明出現與否都不移動;小標 12 / 500 / fg-secondary、距標題 2px、一行;
+// 說明與小標不並用(所以沒有「小標 + 說明」這格)。Modal 層級(標題 16,Dialog / Sheet)與非 modal 層級(標題 14、COMPACT_HEADER_SLOT,Popover / 決策卡)各一組。
+// 寫法照 DialogHeader / PopoverHeader:左欄 flex-1 min-w-0、× 帶 data-dismiss(靠上那條規則認它);說明照 DialogDescription 的字樣與間距。
+function TitleAreaCase({ tier, name, eyebrow, title, description }: { tier: 'modal' | 'popover'; name: string; eyebrow?: string; title: string; description?: string }) {
+  const modal = tier === 'modal'
+  return (
+    <Shell className="w-[420px]" inert>
+      <div data-tier={tier} data-case={name}>
+        <SurfaceHeader className={modal ? undefined : COMPACT_HEADER_SLOT}>
+          <div className="flex-1 min-w-0">
+            {eyebrow && <SurfaceEyebrow>{eyebrow}</SurfaceEyebrow>}
+            <h2 data-header-part="title" className={cn('font-medium text-foreground', modal ? 'text-body-lg' : 'text-body')}>
+              <TruncatedText display="block">{title}</TruncatedText>
+            </h2>
+            {description && (
+              <p data-header-part="description" className="mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary">{description}</p>
+            )}
+          </div>
+          <Button data-dismiss iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
+        </SurfaceHeader>
+      </div>
+    </Shell>
+  )
+}
+
+export const HeaderTitleArea: Story = {
+  name: '標題區組合(測試)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-[var(--layout-space-tight)]">
+      <TitleAreaCase tier="modal" name="modal-title" title="修復付款流程 bug" />
+      <TitleAreaCase tier="modal" name="modal-description" title="修復付款流程 bug" description="#PROJ-1234 · 指派給陳大明" />
+      <TitleAreaCase tier="modal" name="modal-eyebrow" eyebrow="Acme 品牌改版 · 官網、App 與門市視覺識別全面更新(設計、行銷、工程三組共同專案)" title="邀請成員加入專案" />
+      <TitleAreaCase tier="popover" name="popover-title" title="看板篩選" />
+      <TitleAreaCase tier="popover" name="popover-eyebrow" eyebrow="專案 Apollo" title="看板篩選" />
+    </div>
+  ),
 }

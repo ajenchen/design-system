@@ -170,7 +170,7 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 
 `text-body-lg font-medium truncate`——單行截斷，不換行；截斷時 hover 顯 tooltip 補完整標題（僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容」；實作消費 `patterns/element-anatomy/truncated-text.spec.md` `<TruncatedText>`）。
 
-**Header 可成長**:Dialog 提供 `<DialogDescription>` primitive 作副標/補充說明(`mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary` — title body-lg 16 + desc body 14 → reading-lg token)。Consumer 傳 title + description 時 header 自然長高(這也是為何 Dialog / Sheet / Popover 的 SurfaceHeader 刻意 **padding-based 而非 fixed-h** — 宣告 chrome 可成長)。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「為什麼 SurfaceHeader 是 padding-based」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」節(含「2 種 pattern 對照」)。
+**Header 可成長**:標題下方可放 `<DialogDescription>`(說明);小標 / 說明的字樣、間距、何時用與 × 的位置住 `patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區,本處不重述。Consumer 傳 title + description 時 header 自然長高(這也是為何 Dialog / Sheet / Popover 的 SurfaceHeader 刻意 **padding-based 而非 fixed-h** — 宣告 chrome 可成長)。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「為什麼 SurfaceHeader 是 padding-based」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」節(含「2 種 pattern 對照」)。
 
 ## Footer 按鈕
 

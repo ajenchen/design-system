@@ -9,7 +9,7 @@
 - 僅代理被阻擋、需人決策時出現;完全覆蓋輸入區、貼面板底。
 - 繼承 Popover surface(rounded-lg、border、elevation-200、compact header 45)+SurfaceFooter;
   改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
-- Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`,items-start。
+- Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`;小標字樣、距題目與 × 的位置照 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區(`SurfaceEyebrow`)。
 - 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
   **整卡可點**:卡內任一點點一下 = 點控件一次(`ds-canonical/references/hit-area-canonical.md` 一-4「點下去等於點控件」;控件與 SelectionItem 的 `<label for>` 照它們自己的轉發、「其他」輸入格的外框歸輸入格,其餘由卡轉給控件 —— 同一下點擊只有一個主人,`agent-panel.tsx` `pressOptionCard`;機械閘 `scripts/agent-decision-card-option-press-invariant.mjs` 逐點量切換次數;滑過見下一條);卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
   (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)

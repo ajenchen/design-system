@@ -64,7 +64,7 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { fieldChromeStyles, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import {
-  SurfaceHeader,
+  SurfaceHeader, SurfaceEyebrow,
   SurfaceFooter,
   COMPACT_HEADER_SLOT,
 } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -1747,13 +1747,13 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         )}
         {...props}
       >
-        {/* 標題列:N>1 時小標「n / N」+ 題目 + ×(跳過);改寫:header 下無分隔線。 */}
+        {/* 標題列:N>1 時小標「n / N」(SurfaceEyebrow:字樣與距題目 2px 照 overlay-surface.spec.md「SurfaceHeader」)+ 題目 + ×(跳過,固定頂部、佔位 = 題目一行高);改寫:header 下無分隔線。 */}
         <SurfaceHeader className={cn(COMPACT_HEADER_SLOT, 'items-start justify-between border-b-0')}>
           <div className="flex min-w-0 flex-1 flex-col">
             {total > 1 && (
-              <span className="text-caption font-medium text-fg-secondary">
+              <SurfaceEyebrow>
                 {step + 1} / {total}
-              </span>
+              </SurfaceEyebrow>
             )}
             <span id={titleId} className="text-body font-medium text-foreground">
               {question.label}

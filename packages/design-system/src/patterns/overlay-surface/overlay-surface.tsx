@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'; import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text' // 同一行:別處以行號引用本檔(見檔尾註)
 // W2 tabsSlot wrapper 契約 SSOT 在 header-canonical(跨家族 W-rule owner);SurfaceHeader 消費同一 const 不 hardcode。
 import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-canonical/chrome-header'
 
@@ -227,3 +227,24 @@ SurfaceFooter.displayName = 'SurfaceFooter'
 // Primer Dialog `.HeaderInner { display: flex }` 不置中、關閉鈕是固定高度 → 靠上(https://github.com/primer/react/blob/main/packages/react/src/Dialog/Dialog.module.css)。
 // 只管直接放在標題區的 ×;DialogHeader 的 actions 群組在 dialog.tsx 同樣靠上。
 const DISMISS_FIRST_LINE = '[&>[data-dismiss]]:self-start'
+
+/**
+ * 標題區小標(eyebrow):放在標題正上方、同一欄。字樣 / 間距 / 行數 / 與說明不並用 → overlay-surface.spec.md「SurfaceHeader」標題區。
+ * 一行:超出截斷,截斷時滑過出全文(tooltip.spec.md「截斷文字 → tooltip」,同 DialogTitle 的 TruncatedText display="block")。
+ * 與標題的距離由小標自己帶(mb),同 DialogDescription 由說明自己帶 mt —— 標題元件不必知道上下有沒有東西。
+ * × 不因小標而移動:× 的佔位是標題一行高、靠上(CHROME_UNBOUNDED_SLOT + DISMISS_FIRST_LINE),小標只把左欄撐高。
+ */
+export const SurfaceEyebrow = React.forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement>
+>(({ className, children, ...props }, ref) => (
+  <span
+    ref={ref}
+    data-slot="surface-eyebrow"
+    className={cn('block mb-[var(--item-gap-eyebrow-title)] text-caption font-medium text-fg-secondary', className)}
+    {...props}
+  >
+    <TruncatedText display="block">{children}</TruncatedText>
+  </span>
+))
+SurfaceEyebrow.displayName = 'SurfaceEyebrow'

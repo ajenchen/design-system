@@ -328,7 +328,7 @@ export const OrderRule: Story = {
         note={<>對齊方向看這一列有沒有標題：有標題（標題在左）→ 按鈕靠右、primary 最右；沒有標題 → 按鈕靠左、primary 最左；Dialog / Sheet / Popover 的頁腳一律靠右。排序規則不因對齊方向改變，只是方向鏡像。判準與工具層的位置見 <StoryLink kind="Design System/Patterns/Action Bar" name="排列與結構">Patterns / Action Bar(操作列)→ 排列與結構</StoryLink></>}
       >
         {/* 2026-10-20 R1b-T8:原本的說明是「靠左:表單送出;靠右:對話框底部」,不是 SSOT 的判準 —— 判準是這一列有沒有標題
-            (patterns/action-bar/action-bar.spec.md:109),浮層頁腳靠右另由 dialog.spec.md:177 / overlay-surface.spec.md:237 規定 */}
+            (patterns/action-bar/action-bar.spec.md:109),浮層頁腳靠右另由 dialog.spec.md:177 / overlay-surface.spec.md:242 規定 */}
         {/* 兩種對齊並列 = loose;每一列的 群組 ↔ 旁邊的說明 = tight(說明在替那一組命名,layoutSpace.spec.md 規則 3) */}
         <div className="flex flex-col gap-[var(--layout-space-loose)] w-full">
           <div className="flex items-center gap-[var(--layout-space-tight)]">
