@@ -935,18 +935,6 @@
       "why": "清單捲動上限:只有 command.tsx 在讀、不隨密度切換。user 2026-11-10 拍板 token 第 3 題「全收」:第三階段收回成元件自己的常數,token 名退場(排第三組;select.spec.md「大量選項」的引用一起改)"
     },
     {
-      "match": "--action-divider-",
-      "class": "component",
-      "owner": "ButtonDivider",
-      "home": "tokens/uiSize/uiSize.css",
-      "target": "components/Button/button-group.tsx",
-      "targetKind": "constant",
-      "spec": "patterns/action-bar/action-bar.spec.md",
-      "product": "no",
-      "dsReaders": "any",
-      "why": "按鈕群組分隔線的上下留白與最短高度:只有 button-group.tsx 在讀、不隨密度切換。user 2026-11-10 拍板 token 第 3 題「全收」:第三階段收回成元件自己的常數,token 名退場(排第二組;scripts/test-action-divider-placement.mjs 的算式同一個提交改讀新位置)"
-    },
-    {
       "match": "--tw-",
       "class": "ignore",
       "why": "Tailwind 自己的內部變數(--tw-duration 等),不是設計數值"

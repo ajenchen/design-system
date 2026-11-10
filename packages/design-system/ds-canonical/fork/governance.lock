@@ -751,7 +751,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "e96fcb804d4e297e0994172978669ed7a96a545589db11dbbb67ed3e7a4749aa",
+      "sha256": "258126371e53c98fc398399ce429a9aaf3cca9a7d1c1399be47d6de2a23b9a05",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

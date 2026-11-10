@@ -177,7 +177,12 @@ export function judgeProbe(p) {
   }
 }
 
-function measurePage() {
+// 分隔線內縮 8px:規格值(action-bar.spec.md「分隔線幾何」;本檔頭「長 = 同列最高按鈕原生高 − 8、不短於 16」)。
+// 2026-11-11 前從 uiSize.css 的兩顆分隔線 token 量;token「3全收」把它收回成 ButtonDivider 的元件內變數,
+// 頁面上不再有全系統的名字可量 —— 這裡改用規格值,元件那一份由 scripts/test-action-divider-placement.mjs 鎖住 = 0.5rem。
+const DIVIDER_INSET_PX = 8
+
+function measurePage(insetPx) {
   const out = []
   const errors = []
   const r = (n) => Math.round(n * 100) / 100
@@ -213,10 +218,11 @@ function measurePage() {
       out.push({ kind: 'gap-divider-x', case: name, value: r(x.getBoundingClientRect().left - d.right) })
     }
     if (divs.length === 1) {
-      // 線長 = 同列最高按鈕(原生高,不是縮位後的佔位)− inset,不短於 min(action-bar.spec.md「分隔線幾何」);inset / min 從 token 量,不寫死
+      // 線長 = 同列最高按鈕(原生高,不是縮位後的佔位)− inset,不短於地板 = 最小控制項高 − inset(action-bar.spec.md「分隔線幾何」);
+      // inset 是規格值(probeArg),最小控制項高從共用刻度 --field-height-xs 量
       const tallest = Math.max(...btns.map((b) => b.getBoundingClientRect().height))
       out.push({ kind: 'divider-length', case: name, value: r((divs[0].firstElementChild ?? divs[0]).getBoundingClientRect().height), // 畫出來的那條線 = 內層;外層 self-stretch 撐滿列高
-        want: r(Math.max(tallest - tokenPx('--action-divider-inset'), tokenPx('--action-divider-min'))), bounded: acts.some((a) => !a.hasAttribute('data-unbounded')) })
+        want: r(Math.max(tallest - insetPx, tokenPx('--field-height-xs') - insetPx)), bounded: acts.some((a) => !a.hasAttribute('data-unbounded')) })
     }
     if (x) for (const a of acts) if (a.hasAttribute('data-unbounded')) out.push({ kind: 'v-center', case: name, value: r(mid(a) - mid(x)) })
     if (expect.has('bounded')) {
@@ -242,6 +248,7 @@ async function runPages(page, sv, sabotage) {
         waitFor: () => document.querySelectorAll('[data-case] [data-slot="surface-header"]').length > 0,
         beforeSettle: sabotage?.css ? async (p) => { await p.addStyleTag({ content: sabotage.css }) } : null,
         probe: measurePage,
+        probeArg: DIVIDER_INSET_PX,
       })
     } catch (error) {
       if (!(error instanceof StoryRenderInstrumentError)) throw error
