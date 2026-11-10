@@ -12,7 +12,6 @@ import { dragSourceStyle, dragHandleCursorClass, forwardDragActivatorAttributes,
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
-import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { getColumnId, getColumnLabel } from './lib/column-meta'
@@ -45,7 +44,7 @@ export interface DataTableSortManagerProps<TData> extends Omit<React.HTMLAttribu
   onSortingChange: (next: SortingState) => void
   /** Refresh 按鈕點擊(可選 — 重置或外部 refetch) */
   onReset?: () => void
-  /** Close 按鈕點擊(若有 — 通常是包在 Popover 外層的 close 行為) */
+  /** × 按下時的通知(選填)。× 恆渲染、關閉由 PopoverClose 內建 —— 面板必須放在 `<Popover>` 裡 */
   onClose?: () => void
   className?: string
 }
@@ -134,19 +133,15 @@ function DataTableSortManagerInner<TData>({
       {...drag.escapeLayer}
     >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
-      <SurfaceHeader className={COMPACT_HEADER_SLOT}>
-        <PopoverTitle className="flex-1">排序</PopoverTitle>
-        {onReset && sorting.length > 0 && (
-          <>
-            <Button variant="text" size="sm" iconOnly startIcon={RotateCcw} aria-label="重置" onClick={onReset} />
-            {onClose && <ButtonDivider />}
-          </>
-        )}
-        {onClose && (
-          <PopoverClose asChild>
-            <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} />
-          </PopoverClose>
-        )}
+      {/* 右側「重置 │ ×」走 SurfaceHeader 的右側按鈕位(分隔線由 SurfaceHeader 放,overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
+          × 恆渲染(data-table.spec.md「Header refresh icon」條:ButtonDivider 串接 close X;M23(f) 禁以 callback 有無當渲染閘),關閉由 PopoverClose 內建,
+          onClose 只是通知 —— 所以面板必須放在 Popover 裡(2026-11-10 前沒傳 onClose 就沒有 ×,n7 第七節 3)。 */}
+      <SurfaceHeader
+        className={COMPACT_HEADER_SLOT}
+        actions={onReset && sorting.length > 0 ? <Button variant="text" size="sm" iconOnly startIcon={RotateCcw} aria-label="重置" onClick={onReset} /> : undefined}
+        dismiss={<PopoverClose asChild><Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} /></PopoverClose>}
+      >
+        <PopoverTitle>排序</PopoverTitle>
       </SurfaceHeader>
 
       {/* Body — 條件 list + inline 加排序 CTA(對齊 filter panel canonical Q3+Q6,2026-05-04)

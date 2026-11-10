@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } from "@/design-system/lib/overlay-focus-return"
 import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescription } from "@/design-system/lib/overlay-description"
@@ -210,17 +211,13 @@ function SheetCloseButton() {
 
 const SheetHeader = React.forwardRef<
   HTMLDivElement,
-  SurfaceHeaderProps
+  Omit<SurfaceHeaderProps, 'dismiss'>
 >(({ className, children, ...props }, ref) => (
   // 2026-05-18:className 不再硬加 justify-between(同 DialogHeader 邏輯,避 column mode 破裂)。
-  <SurfaceHeader
-    ref={ref}
-    className={className}
-    {...props}
-  >
-    <div className="flex-1 min-w-0">{children}</div>
-    {/* Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → chrome-header-height */}
-    <SheetCloseButton />
+  // 右側〔actions〕〔分隔線〕〔×〕由 SurfaceHeader 的右側按鈕位排(overlay-surface.spec.md「SurfaceHeader」右側按鈕位);
+  // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → chrome-header-height
+  <SurfaceHeader ref={ref} className={className} {...props} dismiss={<SheetCloseButton />}>
+    {children}
   </SurfaceHeader>
 ))
 SheetHeader.displayName = "SheetHeader"
@@ -264,12 +261,16 @@ SheetFooter.displayName = "SheetFooter"
 const SheetTitle = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
     className={cn("text-body-lg font-medium truncate", className)}
     {...props}
-  />
+  >
+    {/* 截斷必附 tooltip(tooltip.spec.md「截斷文字 → 用 tooltip 顯示完整內容」),同 DialogTitle / PopoverTitle(07-29 b644488f 全 DS 收斂時 Sheet 漏了,
+        2026-11-10 補;n7 第六節 1)。display="block":h2 是 block container,inline span 量不到 clientWidth。 */}
+    <TruncatedText display="block">{children}</TruncatedText>
+  </SheetPrimitive.Title>
 ))
 SheetTitle.displayName = SheetPrimitive.Title.displayName
 

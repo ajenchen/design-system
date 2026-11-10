@@ -45,7 +45,7 @@ benchmark:
 | **A. Padding-based**(overlay)| `py-[var(--layout-space-tight)]` + `data-unbounded` slot trick;高度由內容決定但對齊 `--chrome-header-height` | DialogHeader / SheetHeader / PopoverHeader / 未來 Drawer | `patterns/overlay-surface/overlay-surface.spec.md`(L1 SSOT)+ 本 spec(cross-family canonical) |
 | **B. Fixed-height**(chrome)| `h-[var(--chrome-header-height)]` + `items-center`,剛性高度 | SidebarHeader / FileViewer Toolbar / FileViewer InfoPanel / Page top bar | `tokens/uiSize/uiSize.spec.md` L242(`Fixed-height` 段)+ 本 spec(cross-family canonical) |
 
-**為什麼兩家族?** 因 overlay 內 slot 可能塞 multi-line content(`HoverCard` title + description)— 剛性高度會切掉。Chrome 家族 永遠 single-row(toolbar / nav)— 剛性高度給 layout 預測性。兩 pattern 並存(對齊 `tokens/uiSize/uiSize.spec.md` L240-260「Padding-based vs Fixed-h decision tree」)。
+**為什麼兩家族?** 因 overlay 標題區可能附小標 / 說明(Dialog / Sheet 標題 + 說明、決策卡小標 + 題目)— 剛性高度會切掉。Chrome 家族 永遠 single-row(toolbar / nav)— 剛性高度給 layout 預測性。兩 pattern 並存(對齊 `tokens/uiSize/uiSize.spec.md` L240-260「Padding-based vs Fixed-h decision tree」)。
 
 ---
 
@@ -71,7 +71,9 @@ benchmark:
 
 - **Token**:`<Button iconOnly size="sm" dismiss />`(28px @ md / 32px @ lg)
 - **永遠 size="sm"**(不論家族 / density):chrome / overlay header 內 button 一律 sm。**廣化(2026-06-12 user 拍板)**:header 內**所有 field-height 控件**(Button / Input / Select / SegmentedControl / Combobox 等)一律 `sm`,禁混雜不同 field height(Tabs 跟齊 chrome 高度,唯一例外 = 「Tabs 取代整個 header」的 standalone `size="lg"`,見上方表)
-- 對齊 既有 `dialog.tsx#DialogHeader` + `sheet.tsx#SheetHeader` + `popover.tsx#PopoverHeader`(Dialog/Sheet/Popover 已內建 close X)
+- **右側操作區**(兩個家族同一套規則):〔操作 …〕〔分隔線〕〔×〕,× 永遠最右;排序與 variant 照 `../action-bar/action-bar.spec.md` 二、三節,兩者都有時必加分隔線(同 spec 五 第 3 條 + 「分隔線幾何」)。寫法分兩個家族:
+  - **B 家族(SurfaceHeader)**:走 SurfaceHeader 的右側按鈕位(`actions`;Dialog / Sheet / Popover 已內建 ×),分隔線由 DS 放,consumer 禁止在 children 自刻 —— 規則住 `../overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位。
+  - **A 家族(ChromeHeader)**:右側放 `<ButtonGroup>`(操作 + `ButtonDivider` + 關閉),照本 pattern 的 canonical 範例 `header-canonical.stories.tsx` SingleRow(ButtonDivider 要住在自動高度的 ButtonGroup 裡,`action-bar.spec.md`「分隔線幾何」前提)。
 
 ### 4.5 Chrome header avatar SSOT(2026-05-21 codify per user directive;2026-06-17 擴涵 account entry)
 

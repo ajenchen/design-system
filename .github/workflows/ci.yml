@@ -1299,6 +1299,14 @@ jobs:
           # (轉圈先停在四分之一圈 —— 位移若加在旋轉中的子元素上量到 3·cos θ,第一版因此一半機率不紅);
           # Notice 打回置中(外框 items-center、槽不再一行高)必讓每則多行通知的每一處紅、其他不受牽連。
           npm run test:row-suffix-first-line
+          # 浮層標題區(overlay-surface.spec.md「SurfaceHeader」標題區,2026-11-10):× 固定頂部、佔位 = 標題一行高,小標 / 說明出現與否都不移動;
+          # 小標 12 / 500 / fg-secondary、一行、距標題 2px。量決策卡(有 / 無小標)與 overlay-surface test-only 夾具(Modal / 非 modal 各組),標準與寬鬆。
+          # --selftest:判定表吃修前實測(小標距題目 0、OV-ga02 修前 × +11.5)必紅;打回置中 / 小標下距歸零 / × 下移 3px 各自指名紅。
+          npm run test:overlay-header-title-area
+          # 浮層標題列右側按鈕位(overlay-surface.spec.md「SurfaceHeader」右側按鈕位,2026-11-10):consumer 只傳按鈕(actions)與 ×(dismiss),
+          # 分隔線由 SurfaceHeader 自動放、兩側各 12;靜態掃 children 不得自刻分隔線 / hideClose 後自塞 ×。修前紅:欄位顯示面板 8 / 8、4 處自刻。
+          # --selftest:判定表、靜態假原始碼、拿掉分隔線兩側 4px / 藏掉分隔線 / 整列靠上 各自指名紅。
+          npm run test:overlay-header-actions
           # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
           # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
           # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,

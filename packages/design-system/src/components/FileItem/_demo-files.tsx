@@ -195,17 +195,22 @@ export function UploadManagerPanel({
         className="max-w-md flex flex-col rounded-lg border border-border bg-surface-raised shadow-[var(--elevation-200)]"
       >
         {/* header 消費 overlay-surface SurfaceHeader + PopoverTitle(輕量浮層 chrome SSOT,非手刻) */}
-        <SurfaceHeader className={`justify-between ${COMPACT_HEADER_SLOT}`}>
-          <div className="flex-1 min-w-0"><PopoverTitle>{title}</PopoverTitle></div>
-          <Button
-            iconOnly
-            variant="text"
-            size="sm"
-            startIcon={expanded ? ChevronDown : ChevronUp}
-            aria-label={expanded ? '收合' : '展開'}
-            aria-expanded={expanded}
-            onClick={() => setExpanded((v) => !v)}
-          />
+        {/* 右側收合鈕走 SurfaceHeader 的右側按鈕位(overlay-surface.spec.md「SurfaceHeader」右側按鈕位;沒有 × 所以不放分隔線) */}
+        <SurfaceHeader
+          className={`justify-between ${COMPACT_HEADER_SLOT}`}
+          actions={
+            <Button
+              iconOnly
+              variant="text"
+              size="sm"
+              startIcon={expanded ? ChevronDown : ChevronUp}
+              aria-label={expanded ? '收合' : '展開'}
+              aria-expanded={expanded}
+              onClick={() => setExpanded((v) => !v)}
+            />
+          }
+        >
+          <PopoverTitle>{title}</PopoverTitle>
         </SurfaceHeader>
         {/* body 消費 overlay-surface SurfaceBody:左右 0、上下 tight/2、列間 0(列自己帶 gutter 與另一半上下,見 file-item.spec.md) */}
         {expanded && (

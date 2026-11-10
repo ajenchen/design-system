@@ -277,7 +277,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 **孤立檢查（結果導向的自我驗證）**：任何一顆按鈕若左右兩側都有線，代表其中一條沒有真正的理由 —— 回頭逐條檢查理由，刪掉對不上的那條。
 
-**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：Dialog 標題列（`dialog.tsx#DialogHeader`）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
+**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：浮層標題列（SurfaceHeader 右側按鈕位 —— Dialog / Sheet / Popover / DataTable 狀態面板共用，`../overlay-surface/overlay-surface.spec.md`「SurfaceHeader」）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
 
 **切換按鈕**：`text` + `pressed` toggle——依預設（未啟用）狀態決定位置與分隔線；切為啟用（`pressed=true`）時不移動、不調整分隔線（啟用態不是 variant，見三節）。
 

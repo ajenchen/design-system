@@ -467,7 +467,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 - **CTA 位置**:緊貼最後一條 row(**廢 SurfaceFooter**),條件與「加入」屬同一語境;root-level「加篩選 / 加入篩選器」用 `tertiary`(輕量但有邊界,符合 root-CTA 重量),group 內「加入巢狀篩選」才用 `text`(更輕,inline 於 group 內)
 - **Trash / 刪除**:row 是 form-control row → text Button(non Inline Action,違 item-anatomy canonical)
 - **And/Or Select**:不再需要縮選單高度(2026-09-08 起選單 0 筆走與選項等高的訊息列、無最小高度,舊 `minRows` 已退役);**Where padding** `px-[var(--field-px)]` align Field
-- Header refresh icon:`value !== defaultValue` 顯;ButtonDivider 串接 close X(對齊欄位顯示 chrome canonical)
+- Header refresh icon:`value !== defaultValue` 顯;ButtonDivider 串接 close X(對齊欄位顯示 chrome canonical)。× 恆渲染,關閉走 PopoverClose、`onClose` 只是通知 —— 面板必須放在 `<Popover>` 裡(M23(f);2026-11-10 前沒傳 `onClose` 就沒有 ×)
 - **Relative date 群組**:`DATE_RELATIVE_GROUPS` Past / Current / Future,走 `<Select groups>`
 - **Labels / i18n**:所有 panel-owned 可見文字與 accessible name 經 `labels`；operator 與 relative-date maps 是 nested partial override。Column header / option label 仍由 consumer 的 `ColumnDef` 提供，不由 panel 翻譯。
 - **Readable secondary copy**:`Where` / 第 3 列起 conjunction 與 field placeholder 用 `fg-secondary`，在 `surface` / nested `muted` 背景維持 WCAG AA 正文對比；不可退回只適合弱化 icon / 非正文 metadata 的 `fg-muted`。

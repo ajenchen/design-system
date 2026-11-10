@@ -49,15 +49,15 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 
 **SurfaceHeader 永遠 padding-based**(`py-tight`,不鎖固定高度)。Header 高度 = `max(title line-height, button slot)+ 2×py`,**slot 設計為 ≤ title line-height** 讓 title 主導 → header 高度 = title 決定(slot 縮位 / CSS var 參數化等實作細節詳下方「Chrome dismiss size canonical」)。SurfaceFooter **不**套 unbounded slot trick(僅 padding + `border-t`,慣例放 bounded action buttons)。**語義宣告**:
 
-**Padding-based 宣告**:「本 chrome **可以成長** — title 可換行、可附 subtitle / description」。適用 overlay family(Dialog / Sheet / Popover / Coachmark),這些都是 modal/semi-modal 情境,title 有可能長(例如「確認要永久刪除 Marketing Q4 Campaign 這個專案嗎?」兩行 title),或有 subtitle(「這個操作無法復原」補充說明)。
+**Padding-based 宣告**:「本 chrome **可以成長** — 可附小標 / 說明」(標題本身單行截斷;結構住 `./overlay-surface.spec.md`「SurfaceHeader」標題區)。適用 overlay family(Dialog / Sheet / Popover / Coachmark),標題上方可能有小標(例:決策卡步數「1 / 3」),下方可能有一句說明(例:「#PROJ-1234 · 指派給陳大明」)。
 
 **Fixed-height 宣告**:「本 chrome **永遠單行固定結構** — 不會長高」。適用 chrome 類如 Sidebar / FileViewer toolbar / app top bar,這些 chrome 的內容是 logo / icons / 短固定 label,不會 grow。
 
 **兩者視覺上在單行 content 時都是 48/56,但是不同的設計宣告**:
-- 若 Dialog 用 fixed-h,未來塞兩行 title / subtitle 會被剪掉 → 違反 modal 作為「完整決策 context」的職責
+- 若 Dialog 用 fixed-h,附小標 / 說明時會被剪掉 → 違反 modal 作為「完整決策 context」的職責
 - 若 Sidebar 用 padding-based,chrome 可能在長 label 時變動 → 違反 sidebar chrome「剛性佈局」的職責
 
-**判斷 tree**:問「這個 chrome 的 title 有可能多行 / 有 subtitle / 有 description 嗎?」
+**判斷 tree**:問「這個 chrome 會不會附小標 / 說明?」
 - **會** → padding-based(SurfaceHeader 或自刻 py-tight)
 - **不會** → fixed-h(`h-[var(--chrome-header-height)]`)
 
@@ -127,6 +127,7 @@ const CHROME_UNBOUNDED_SLOT =
 - Dismiss X(`<Button dismiss />`)→ data-unbounded ✓
 - Text variant action(`<Button variant="text" />` 如 Share / Refresh / Settings)→ data-unbounded ✓
 - 所有無視覺邊界的 button,不限 dismiss
+- **例外:SurfaceHeader 右側操作區(`[data-slot="surface-header-actions"]`)裡的按鈕不各自縮,改由整個操作區縮位**(`ACTIONS_GROUP_SLOT`,同一個公式;區裡有 Bounded 按鈕時不縮)。區內按鈕保持原生高,分隔線才量得到「最高元件」(`../action-bar/action-bar.spec.md`「分隔線幾何」前提:要住在自動高度的 cluster 內);× 與操作的位置、header 高度不變。2026-11-10 前每顆各自縮成 24,區高 24 → 線 16(Popover 21 → 13 → 地板 16),比常駐標題列的 20 短(n7 第七節 2)。
 
 **為什麼用負 margin 而非 fixed wrapper / size="xs"**:
 - `size="xs"` 會縮小 button 本身,**命中區也跟著縮到 24**,與 overlay chrome 的比例不協調(chrome 的 dismiss 是 `sm` = 28)。**問題在比例,不在 a11y** —— 24 正好等於 `tokens/uiSize/uiSize.spec.md`「元件高度地板」訂的最小值,沒有低於任何我們採用的門檻;先前這裡寫的「違反 a11y 最小 24+ hit target」既與「元件高度地板」自相矛盾、也查無出處,2026-09-24 更正(同 `uiSize.spec.md`「選錯的後果(驗證 decision tree 的重要性)」)

@@ -159,18 +159,16 @@ Radix Tabs Root 是裸 `display: block` + `min-height: auto`,夾在中間時整�
 
 ### Header actions slot(2026-07-08)
 
-Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「作用於整個 dialog 內容」的操作)走 `<DialogHeader actions={…}>` slot,**不**塞 children 自刻右側 cluster。
+Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「作用於整個 dialog 內容」的操作)走 `<DialogHeader actions={…}>`。
 
 - **何時用**:操作對象是 dialog 承載的記錄本身(切換上下筆、複製連結、更多選單)。欄位級操作仍歸 body;confirm / cancel 歸 footer。
-- **分隔線**:依 `../../patterns/action-bar/action-bar.spec.md:263`「誤觸保護」(「五、分隔線規則」第 3 條)。實作:actions 與內建 Close X 之間 DS 渲 `<ButtonDivider>`;幾何見同 spec「分隔線幾何」段(ButtonDivider `mx-1` 於 `gap-2` cluster,兩側各 12px)。
-- **按鈕形態**:`<Button variant="text" iconOnly …>`(text variant 自動 `data-unbounded`,不撐高 chrome header;對齊 action-bar「溢出按鈕一律最低視覺重量」)。
-- ❌ **禁**:consumer 在 children 內自刻 cluster + divider(分隔線落點歸 DS,自刻 = 漏分隔線 / 幾何 drift 根因 — 2026-07-08 WM 詳情 header 錨例)。
+- **排法、分隔線、按鈕形態與禁令**:Dialog / Sheet / Popover 共用 SurfaceHeader 的右側按鈕位,規則住 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位,本處不重述(2026-11-10 自本節搬過去;原 2026-07-08 WM 詳情 header 錨例:consumer 自刻 cluster = 漏分隔線 / 幾何漂移)。
 
 ## Title
 
 `text-body-lg font-medium truncate`——單行截斷，不換行；截斷時 hover 顯 tooltip 補完整標題（僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md`「截斷文字 → 用 tooltip 顯示完整內容」；實作消費 `patterns/element-anatomy/truncated-text.spec.md` `<TruncatedText>`）。
 
-**Header 可成長**:Dialog 提供 `<DialogDescription>` primitive 作副標/補充說明(`mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary` — title body-lg 16 + desc body 14 → reading-lg token)。Consumer 傳 title + description 時 header 自然長高(這也是為何 Dialog / Sheet / Popover 的 SurfaceHeader 刻意 **padding-based 而非 fixed-h** — 宣告 chrome 可成長)。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「為什麼 SurfaceHeader 是 padding-based」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」節(含「2 種 pattern 對照」)。
+**Header 可成長**:標題下方可放 `<DialogDescription>`(說明);小標 / 說明的字樣、間距、何時用與 × 的位置住 `patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區,本處不重述。Consumer 傳 title + description 時 header 自然長高(這也是為何 Dialog / Sheet / Popover 的 SurfaceHeader 刻意 **padding-based 而非 fixed-h** — 宣告 chrome 可成長)。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「為什麼 SurfaceHeader 是 padding-based」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」節(含「2 種 pattern 對照」)。
 
 ## Footer 按鈕
 

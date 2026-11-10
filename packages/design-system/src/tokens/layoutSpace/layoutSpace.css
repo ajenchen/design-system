@@ -26,6 +26,9 @@
   --item-gap-label-desc-reading-lg:  2px;  /* reading-lg: body-lg(16/1.5) + body(14/1.5) — Dialog / Sheet / Empty / FileUpload / Coachmark / ProfileCard / SelectionItem lg / Switch lg */
   --item-gap-label-desc-scanning:    2px;  /* scanning:   body(14/1.3)    + caption(12/1.3) — FileItem compact+rich / MenuItem sm-md / Steps sm-md */
   --item-gap-label-desc-scanning-lg: 2px;  /* scanning-lg:body-lg(16/1.3) + body(14/1.3) — MenuItem lg / Steps lg */
+  /* 同組、方向相反的一對:小字在上、標題在下(上面 4 mode 都是大字在上)。浮層標題區小標 caption(12/1.3)→ 標題(body-lg 16/1.5 或 body 14/1.5)。
+     owner:patterns/overlay-surface/overlay-surface.spec.md「SurfaceHeader」;值 2px = user 2026-10-29 提案「strap line 距離 title 一樣是規範的2px」 */
+  --item-gap-eyebrow-title:          2px;  /* eyebrow:   caption(12/1.3) 在 body / body-lg 標題之上 — SurfaceEyebrow(決策卡步數「n / N」) */
 }
 
 [data-layout-space="lg"],

@@ -64,7 +64,7 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { fieldChromeStyles, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import {
-  SurfaceHeader,
+  SurfaceHeader, SurfaceEyebrow,
   SurfaceFooter,
   COMPACT_HEADER_SLOT,
 } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -1605,7 +1605,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const question = questions[Math.min(step, total - 1)]
     const isLast = step >= total - 1
     // 改了這一題的答案(換選、勾 / 取消勾、在「其他」打字)就清掉這一題的錯誤(form-validation.spec.md 規則 5「開始編輯時立即清除 error」);
-    // 值沒變(點已選中的那張、聚焦已選中的「其他」)不算改。按著指標的那一下改了值(按下「其他」輸入格 = 聚焦即選中)→ 等這一下按完才清:
+    // 值沒變(點已選中的那張、按已選中的「其他」輸入格)不算改。按著指標的那一下改了值(按下「其他」輸入格 = 按下即選中)→ 等這一下按完才清:
     // 決策卡貼底往上長,錯誤一消失,上面每一張卡都往下移一行;按下與放開之間版面一動,放開時指標已不在同一處,
     // 這一下 click 落到別的元素上(複選「其他」會被卡轉給方框而切掉)。
     const clearError = (id: string) => {
@@ -1672,12 +1672,22 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       setAnswers((prev) => ({ ...prev, [question.id]: '' }))
       setOtherText((prev) => ({ ...prev, [question.id]: '' }))
     }
+    // 選中「其他」= 指標按進輸入格的外框(含輸入格本身),或開始打字(值不是空字串);只用 Tab 經過不改選取 ——
+    // 只用鍵盤的人才走得過這一格:選填題清掉後要能只用 Tab 走到「下一題」(WCAG 2.1.1 鍵盤),必答題 Tab 經過也不會把建議解換成「其他」。
+    // 2026-11-10 前是 onFocus 就選中(「聚焦即選中」,#122),Tab 經過就換掉選取(agent-decision-card.spec.md 選項卡條)。
+    const pickOther = () => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))
     const renderOtherInput = () => (
       // 「其他」卡:常駐 32 高輸入格;label 行框↔Input 8(mt-2);距卡右/下各 12(卡 px 12;卡 py 8 + mb 4);
       // 左縮排 24 = radio 16 + gap 8,與 label 對齊(Polaris ChoiceChildren 同款)。
       // otherFieldRowRef:這一列唯一的子元素就是 Input 的外框 —— 外框整塊都是輸入處(field-controls.spec.md「點擊與游標原則」),
-      // 按在外框裡由輸入格自己負責(聚焦即選中「其他」);縮排 24 與外框圓角外的那一點點仍是卡 —— 判定見下方 pressOptionCard。
-      <div ref={otherFieldRowRef} className="mb-1 mt-2 pl-6">
+      // 按在外框裡由輸入格自己負責(按下即選中「其他」,這一列的 onPointerDown);縮排 24 與外框圓角外的那一點點仍是卡 —— 判定見下方 pressOptionCard。
+      <div
+        ref={otherFieldRowRef}
+        className="mb-1 mt-2 pl-6"
+        onPointerDown={(e) => {
+          if (e.target instanceof Node && otherFieldRowRef.current?.firstElementChild?.contains(e.target)) pickOther()
+        }}
+      >
         <Input
           id={otherInputId}
           value={otherText[question.id] ?? ''}
@@ -1687,10 +1697,8 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
           // 「其他」選中而文字空白:輸入格紅框 + aria-invalid(Input 自己接),aria-errormessage 指向下方錯誤訊息(field.spec.md「驗證與 aria 屬性」)
           error={errorKind === 'other'}
           aria-errormessage={errorKind === 'other' ? errorId : undefined}
-          // 聚焦即選中「其他」(agent-decision-card.spec.md 選項卡條)。【待確認】只用 Tab 經過這格也會選中「其他」:選填題因此無法只用鍵盤
-          // 「不答就前進」(清除 → 焦點回第一個圓 → Tab 又經過這格 → 又選中);必答題 Tab 經過也會把預選的建議解換成「其他」。改不改交 user。
-          onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
           onChange={(e) => {
+            if (e.target.value !== '') pickOther()
             clearError(question.id)
             setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))
           }}
@@ -1705,7 +1713,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     // 什麼都不做(https://html.spec.whatwg.org/multipage/forms.html#the-label-element):
     //   · 落在控件、或 SelectionItem 的 `<label for>` 上 → 控件自己切換 / 瀏覽器把這一下轉給控件一次;
     //     判準 = DS 共用的「容器裡自有行為的東西」(lib/pointer-press.ts isOwnPointerTarget)再加 label(WHATWG 把 label 列為 interactive content)
-    //   · 落在「其他」輸入格的外框裡 → 輸入格自己負責(聚焦即選中)
+    //   · 落在「其他」輸入格的外框裡 → 輸入格自己負責(按下即選中)
     //   · 其餘(內距、圓與字的空隙、說明文字)→ 卡把這一下轉給控件:`control.click()`,切換只由控件做
     // 2026-11-03 前卡自己呼叫 toggle、label 又照常轉發 → 點標籤那一整行切兩次抵銷(複選看得出,單選同值看不出);
     // 點「其他」輸入格的外框:按下時聚焦已選中、放開時卡再切一次 → 又抵銷(user 2026-10-29 第十一輪問句「為何多選的那道題目的選項那麼難按？」)。
@@ -1747,19 +1755,21 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         )}
         {...props}
       >
-        {/* 標題列:N>1 時小標「n / N」+ 題目 + ×(跳過);改寫:header 下無分隔線。 */}
-        <SurfaceHeader className={cn(COMPACT_HEADER_SLOT, 'items-start justify-between border-b-0')}>
-          <div className="flex min-w-0 flex-1 flex-col">
+        {/* 標題列:N>1 時小標「n / N」(SurfaceEyebrow:字樣與距題目 2px 照 overlay-surface.spec.md「SurfaceHeader」)+ 題目 + ×(跳過,固定頂部、佔位 = 題目一行高);改寫:header 下無分隔線。 */}
+        <SurfaceHeader
+          className={cn(COMPACT_HEADER_SLOT, 'items-start justify-between border-b-0')}
+          dismiss={<Button dismiss size="sm" startIcon={XIcon} aria-label={labels.skip} onClick={skip} />}
+        >
+          <div className="flex min-w-0 flex-col">
             {total > 1 && (
-              <span className="text-caption font-medium text-fg-secondary">
+              <SurfaceEyebrow>
                 {step + 1} / {total}
-              </span>
+              </SurfaceEyebrow>
             )}
             <span id={titleId} className="text-body font-medium text-foreground">
               {question.label}
             </span>
           </div>
-          <Button dismiss size="sm" startIcon={XIcon} aria-label={labels.skip} onClick={skip} />
         </SurfaceHeader>
         {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。
             錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後(agent-decision-card.spec.md「步進」);

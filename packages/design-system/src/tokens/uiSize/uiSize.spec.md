@@ -286,8 +286,8 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Q: 這個 chrome header 的 title 有可能多行 /             │
-│    有 subtitle / 有 description 嗎?                        │
+│ Q: 這個 chrome header 會不會附小標 / 說明?              │
+│    (標題本身單行截斷)                                      │
 └──────────────┬──────────────────────────────────────────────┘
                │
       ┌────────┴────────┐
@@ -315,7 +315,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 | Pattern | CSS | 語義宣告 | 適用場景 |
 |---------|-----|---------|---------|
 | **Fixed-height**(剛性)| `h-[var(--chrome-header-height)]` + `items-center` | 「content 永遠單行固定結構,不會 grow」 | Sidebar / FileViewer toolbar / FileViewer InfoPanel / app top bar / page header |
-| **Padding-based**(彈性)| `py-[var(--layout-space-tight)]` + unbounded slot trick | 「content 可以 grow — title 多行 / subtitle / description」 | Dialog / Sheet / Popover / Coachmark header + footer |
+| **Padding-based**(彈性)| `py-[var(--layout-space-tight)]` + unbounded slot trick | 「content 可以 grow — 小標 / 說明」 | Dialog / Sheet / Popover / Coachmark header + footer |
 
 **兩個 pattern 在單行 content 下視覺等效都是 48/56,但語義不同 — 選錯違反元件設計意圖**。
 
@@ -365,7 +365,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 #### 新元件 chrome 建立 checklist
 
 建新 surface with chrome header 前必過:
-1. ☐ 跑 decision tree:title 會 grow 嗎?(有 multi-line / subtitle / description 可能性?)
+1. ☐ 跑 decision tree:header 會 grow 嗎?(會不會附小標 / 說明?)
 2. ☐ 選 pattern:fixed-h OR padding-based
 3. ☐ 若 fixed-h:用 `h-[var(--chrome-header-height)]` + items-center,不自訂高度
 4. ☐ 若 padding-based + overlay family:直接用 SurfaceHeader / SurfaceFooter primitive(繼承 v5 trick)

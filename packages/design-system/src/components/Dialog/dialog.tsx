@@ -7,7 +7,7 @@ import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/components/Button/button"
-import { ButtonDivider } from "@/design-system/components/Button/button-group"
+// (原 ButtonDivider import:分隔線 2026-11-10 移到 SurfaceHeader 的右側按鈕位;留這行讓別處引用本檔的行號不位移)
 import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
@@ -365,13 +365,11 @@ DialogContent.displayName = DialogPrimitive.Content.displayName
 // 薄包裝,withTabs / tabsSlot props 透過 spread 已 forward,但 TS type 沒 expose
 // 導致 consumer 不能用 `<DialogHeader withTabs>` 而只能寫 `as any` 繞。Type lift 修
 // per header-canonical.spec.md W1 跨 6 consumer 同契約。
-export interface DialogHeaderProps extends SurfaceHeaderProps {
+export interface DialogHeaderProps extends Omit<SurfaceHeaderProps, 'dismiss'> {
   /**
    * Header 級操作 cluster(2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)。
    *
-   * 提供時 render 在 Close X 左側,DS 自動在 actions 與 Close 之間放 `<ButtonDivider>`
-   * (action-bar.spec.md「五、分隔線規則」第 3 條誤觸保護:關閉 / 解除鈕的左側緊鄰其他操作按鈕 → 必加;
-   * 幾何 = ButtonDivider mx-1 於 gap-2 cluster → 12px 對稱,同 spec「分隔線幾何」段)。
+   * 提供時 render 在 Close X 左側,分隔線由 SurfaceHeader 的右側按鈕位自動放(規則與幾何住 overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
    *
    * 用例:任務詳情 prev/next 導覽、header 級溢出選單(⋮)。
    * Consumer 傳 `<Button variant="text" iconOnly …>`(text variant 自動 data-unbounded,
@@ -403,27 +401,15 @@ const DialogHeader = React.forwardRef<
     // 第一 child flex-1 grow 自然 push close X 靠右,跟 justify-between 同視覺)。
     // 並且 column mode(tabsSlot 提供)justify-between 會把 row 1 / row 2 上下推開 = 破裂。
     // tabsSlot via `...props` spread 自動 forward(type 來自 SurfaceHeaderProps)。
+    // 右側〔actions〕〔分隔線〕〔×〕由 SurfaceHeader 的右側按鈕位排(2026-11-10 自本處搬下去共用,overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
     <SurfaceHeader
       ref={ref}
       className={className}
       {...props}
+      actions={actions}
+      dismiss={closeButton}
     >
-      <div className="flex-1 min-w-0">{children}</div>
-      {actions != null ? (
-        // actions 提供 → 右側一體 cluster:{actions} + ButtonDivider + Close。
-        // 分隔線 = 關閉保護 canonical(action-bar.spec.md「五、分隔線規則」),由 DS 放,consumer 零自刻。
-        // gap-2 + ButtonDivider mx-1 = 兩側 12px 對稱(action-bar.spec.md「分隔線幾何」)。
-        // self-start:同 × 自己,群組靠上對齊標題第一行(overlay-surface.tsx DISMISS_FIRST_LINE;單行標題時位置不變)
-        // @layout-space-magic-ok: gap-2 = packages/design-system/src/patterns/action-bar/action-bar.spec.md:292「自身兩端各 4px 於 `gap-2` 容器」(分隔線兩側 12px 對稱)
-        <div className="flex items-center gap-2 shrink-0 self-start">
-          {actions}
-          <ButtonDivider />
-          {closeButton}
-        </div>
-      ) : (
-        // 無 actions → 原結構(Close 直接是 SurfaceHeader child),行為零回歸
-        closeButton
-      )}
+      {children}
     </SurfaceHeader>
   )
 })

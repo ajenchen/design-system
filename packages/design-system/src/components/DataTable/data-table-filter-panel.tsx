@@ -8,7 +8,6 @@ import { Button } from '@/design-system/components/Button/button'
 import type { SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
-import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import type { ColumnType } from './column-types'
 import { getColumnId, getColumnLabel, getColumnMeta } from './lib/column-meta'
 import {
@@ -170,6 +169,7 @@ export interface DataTableFilterPanelProps<TData> extends Omit<React.HTMLAttribu
   maxConditions?: number
   /** Panel chrome/operator/value-picker labels. Nested maps are deep-merged with defaults. */
   labels?: Partial<DataTableFilterPanelLabels>
+  /** × 按下時的通知(選填)。× 恆渲染、關閉由 PopoverClose 內建 —— 面板必須放在 `<Popover>` 裡 */
   onClose?: () => void
   className?: string
 }
@@ -361,25 +361,15 @@ function DataTableFilterPanelInner<TData>({
       {...props}
     >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
-      <SurfaceHeader className={COMPACT_HEADER_SLOT}>
-        <PopoverTitle className="flex-1">{labels.title}</PopoverTitle>
-        {/* Refresh icon — 只在 value ≠ defaultValue 時顯示(對齊 sort modified-from-default UX)
-            含 ButtonDivider 對齊「欄位顯示」+「排序」chrome corner action canonical(2026-05-04) */}
-        {defaultValue && !isFilterTreeEqual(value, defaultValue) && (
-          <>
-            <Button
-              variant="text" size="sm" iconOnly startIcon={RotateCcw}
-              aria-label={labels.resetToDefault}
-              onClick={() => onChange(defaultValue)}
-            />
-            {onClose && <ButtonDivider />}
-          </>
-        )}
-        {onClose && (
-          <PopoverClose asChild>
-            <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={labels.close} onClick={onClose} />
-          </PopoverClose>
-        )}
+      {/* 右側「重置 │ ×」走 SurfaceHeader 的右側按鈕位(分隔線由 SurfaceHeader 放,overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
+          × 恆渲染(data-table.spec.md「Header refresh icon」條:ButtonDivider 串接 close X;M23(f) 禁以 callback 有無當渲染閘),關閉由 PopoverClose 內建,
+          onClose 只是通知 —— 所以面板必須放在 Popover 裡(2026-11-10 前沒傳 onClose 就沒有 ×,n7 第七節 3)。 */}
+      <SurfaceHeader
+        className={COMPACT_HEADER_SLOT}
+        actions={defaultValue && !isFilterTreeEqual(value, defaultValue) ? <Button variant="text" size="sm" iconOnly startIcon={RotateCcw} aria-label={labels.resetToDefault} onClick={() => onChange(defaultValue)} /> : undefined}
+        dismiss={<PopoverClose asChild><Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={labels.close} onClick={onClose} /></PopoverClose>}
+      >
+        <PopoverTitle>{labels.title}</PopoverTitle>
       </SurfaceHeader>
 
       {/* Body — flat / nested 條件;空條件 → 直接顯 + 加篩選 CTA(對齊 Notion / Airtable / Linear inline 派,

@@ -15,8 +15,8 @@
  *       掃到 0 檔或 0 列 = 儀器失效(exit 2),不讀成通過。
  *
  * SSOT:patterns/action-bar/action-bar.spec.md 第二節「對齊方向的決定」(:109)與第三節「全局排序」「danger 位置」(:121–:122);
- *       components/Button/button.spec.md「按鈕排列 › 垂直排列」;浮層 footer 靠右的 owner = components/Dialog/dialog.spec.md:177
- *       「Footer 按鈕」(按鈕靠右 justify-end)+ patterns/overlay-surface/overlay-surface.spec.md:237(SurfaceFooter justify-end,
+ *       components/Button/button.spec.md「按鈕排列 › 垂直排列」;浮層 footer 靠右的 owner = components/Dialog/dialog.spec.md:175
+ *       「Footer 按鈕」(按鈕靠右 justify-end)+ patterns/overlay-surface/overlay-surface.spec.md:243(SurfaceFooter justify-end,
  *       Sheet / Popover 頁腳純轉發);
  *       ButtonGroup 擁有群組內鈕距(components/Button/button-group.tsx 檔頭:「負責群組內的間距(gap 8px)與對齊方式」)。
  *
