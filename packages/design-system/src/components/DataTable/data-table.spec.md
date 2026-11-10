@@ -69,7 +69,7 @@ DataTable 是基於 TanStack Table 的資料表格元件，提供排序、篩選
 
 DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。**Size 不等於 density。** Size 是這張表格的結構決策（需要多緊湊），density 是全域的使用者偏好。同一頁可以有不同 size 的表格，density 全頁一致。
 
-**列高 token**(DataTable 自己的值):宣告住 `data-table.css`(預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變),Tailwind 寫法 `h-table-row-sm` / `h-table-row-md` / `h-table-row-lg`(轉接名同檔)。大密度三檔統一 +0.5rem(+8px)。產品可讀來對齊、不可覆寫 —— 本規格點名的只有「Inline create row」那一列(分類表 `../../tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
+**列高 token**(DataTable 自己的值):宣告住 `data-table.css`(預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變),Tailwind 寫法 `h-table-row-sm` / `h-table-row-md` / `h-table-row-lg`(轉接名同檔)。大密度三檔統一 +0.5rem(+8px)。產品可不可以讀:本規格只在「Inline create row」那一段點名(列高 3 顆 + 儲存格左右內距,讀來對齊、不可覆寫);其餘表格的值產品不讀(分類表 `../../tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
 
 | Token | md density | lg density |
 |-------|-----------|-----------|
@@ -509,6 +509,8 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 ### Inline create row(表格底部「+ 新增」列)— 只定義 idle 態(2026-07-08 WM 戰役 codify,user 拍板)
 
 **點擊後的編輯內容 consumer 自組**(常被客製,不 canonical 化、不加 DS API):TanStack headless 無此 feature(https://tanstack.com/table/v8/docs/guide/custom-features)、AG Grid 無內建(官方 blog 教 pinned row DIY:https://blog.ag-grid.com/add-new-rows-using-a-pinned-row-at-the-top-of-the-grid/)。**可定義的只有尚未點擊的 idle 列**,幾何全消費既有 token(零新值):
+
+**主人規格點名・產品可讀**(讀來對齊、不可覆寫):`--table-row-sm` / `--table-row-md` / `--table-row-lg`(列高 3 顆)、`--table-cell-px`(儲存格左右內距)。產品自組的「+ 新增」列讀這 4 顆,才會跟上方資料列同高、同一條左緣。表格其他的值(`--table-cell-py`、`--cell-hover-outline-color` 等)產品不讀。依據:user 2026-11-10 token 第 4 題「4甲」(拿來對齊的值要主人規格點名才可讀,第一批只有這 4 顆);本段標題「user 拍板」那一條(2026-07-08)登記簿查無逐字原話,4甲 是目前可引的依據。分類表 `../../tokens/token-registry.json` 該列 `product: "read"` 與本段一致,閘 `scripts/token-creation-invariant.mjs` C7 比對兩邊。
 
 - **高度** = `h-table-row-{size}`(與 data row 精確同高 — 上方「三 region row 精確同高」延伸到此列)
 - **左 padding** = `--table-cell-px`,「+ icon + 文字」對齊**第一資料欄**內容起點(啟 selection / drag 系統欄時同樣對齊第一資料欄,新增列的文字才會跟上方資料同一條左緣)

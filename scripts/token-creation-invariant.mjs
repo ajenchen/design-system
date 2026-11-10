@@ -24,6 +24,9 @@
  *      判準同 `packages/design-system/ds-canonical/hooks/check_orphan_ds_css.sh`(那支只在本機收工時提醒),這裡是 CI 必跑的那一份。
  *   C7 誰可以讀:(甲)產品端程式(本 repo `apps/`)不得讀 `product: "no"` 的名字、不得覆寫非 `read-write` 的名字;
  *      (乙)設計系統 `components/` / `patterns/` / `styles/` 讀原料,資料夾必須在該列 `dsReaders`。兩邊都是已知名單以外的才擋。
+ *      (丙)元件的值「主人規格點名才可讀」(user 2026-11-10 token 第 4 題甲):分類表 `product` 不是 no 的元件的值,
+ *      主人規格(該列 `spec`)要有點名句;規格點名的名字,分類表那一列也要是「元件的值、主人規格是這份、product 不是 no」。
+ *      點名句 = 一行裡從「主人規格點名・產品可讀」到第一個句號為止的那一段。閘只比對兩邊,不另存第二份名單。
  *   C9 只有主人自己在讀、又不切換的值,不該有全系統的名字。第一階段只對相對 main 新增的名字開;2026-11-11 第三階段
  *      收完 6 顆之後全面打開:「元件的值」不分新舊全查(主人 = 該列 home 與 target 的資料夾),其他類別仍只查新名字
  *      (既有的原料 / 共用刻度以「一組」為單位判,不逐顆問)。
@@ -46,6 +49,8 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 export const DS_ROOT = 'packages/design-system/src'
 export const REGISTRY_PATH = `${DS_ROOT}/tokens/token-registry.json`
 const AGGREGATOR = 'styles/tokens.css'
+/** 主人規格的點名句開頭(C7 丙;寫法定義住 token-system.spec.md「誰可以讀」) */
+export const NAMED = '主人規格點名・產品可讀'
 
 // ── 掃描範圍 ──────────────────────────────────────────────────────────────
 // 執行期程式 = 設計系統 src 與產品 apps/*/src 的 .css / .ts / .tsx;範例(stories、stories-helpers、story-governance)與測試不算。
@@ -430,6 +435,32 @@ export function runChecks(ctx) {
       if (real(row) && row.product !== 'read-write') productWrite.push(`${e.path}|${d.name}`)
     }
   }
+  // C7(丙)主人規格點名 ↔ 分類表 product(兩個方向都比)
+  const namedCache = new Map()
+  const namedIn = (spec) => {
+    if (!namedCache.has(spec)) {
+      const out = new Set()
+      for (const line of (specText(spec) ?? '').split('\n')) {
+        for (let i = line.indexOf(NAMED); i >= 0; i = line.indexOf(NAMED, i + NAMED.length)) {
+          for (const mm of line.slice(i + NAMED.length).split('。')[0].matchAll(/--[A-Za-z0-9_-]+/g)) out.add(mm[0])
+        }
+      }
+      namedCache.set(spec, out)
+    }
+    return namedCache.get(spec)
+  }
+  for (const sp of new Set(rows.filter((r) => r?.class === 'component' && typeof r.spec === 'string').map((r) => r.spec))) {
+    for (const n of namedIn(sp)) {
+      const r = ownRow(n)
+      const why = !r ? '分類表沒有這個名字' : r.class !== 'component' ? `分類表登記成 ${r.class}(點名只給元件的值)` : r.spec !== sp ? `分類表登記的主人規格是 ${r.spec}` : r.product === 'no' ? '分類表該列 product 是 no' : null
+      if (why) P.C7.push(`${sp} 點名 ${n} 產品可讀,但${why} —— 兩邊要一致`)
+    }
+  }
+  for (const n of need.keys()) {
+    const r = ownRow(n)
+    if (!real(r) || r.class !== 'component' || r.product === 'no') continue
+    if (!namedIn(r.spec).has(n)) P.C7.push(`${n} 分類表寫產品可讀(${r.product}),但主人規格 ${r.spec} 沒有點名(一句以「${NAMED}」開頭、到句號為止、寫完整名字)`)
+  }
   ratchet(P.C7, 'productReads', [...new Set(productRead)], known.productReads, ctx.mainRegistry?.known?.productReads, ctx.mainRegistry, (k) => `產品端讀了不開放給產品的名字:${k.replace('|', ' 讀 ')}`)
   ratchet(P.C7, 'productWrites', [...new Set(productWrite)], known.productWrites, ctx.mainRegistry?.known?.productWrites, ctx.mainRegistry, (k) => `產品端覆寫了不開放覆寫的名字:${k.replace('|', ' 覆寫 ')}`)
   ratchet(P.C7, 'dsRawColorReads', [...new Set(dsRaw)], known.dsRawColorReads, ctx.mainRegistry?.known?.dsRawColorReads, ctx.mainRegistry, (k) => `設計系統元件直接讀原料:${k.replace('|', ' 讀 ')}(改用語意色,或在該列 dsReaders 點名)`)
@@ -496,7 +527,7 @@ const LABEL = {
   C4: 'C4 新名字完整出現在登記的規格裡;既有缺漏只能變短',
   C5: 'C5 大密度覆寫有回復、覆寫與預設同檔',
   C6: 'C6 樣式檔有進對外彙總檔或被程式匯入',
-  C7: 'C7 誰可以讀(產品 / 設計系統讀原料)',
+  C7: 'C7 誰可以讀(產品 / 設計系統讀原料 / 元件的值主人規格點名 ↔ 分類表)',
   C9: 'C9 只有主人自己在讀、又不切換的值不開全系統的名字(元件的值全查;其他類別查新名字)',
 }
 
@@ -583,6 +614,18 @@ function selftest() {
     ['C7', true, '--color-teal-6', '按鈕元件讀原料色', () => run({ files: withFiles({ [BTN]: "export const c = 'bg-[var(--color-teal-6)]'\n" }) })],
     ['C7', false, '--color-blue-6', '標籤(已點名)讀分類色', () => run({ files: withFiles({ [`${DS_ROOT}/components/Tag/fixture-raw.tsx`]: "export const c = 'bg-[var(--color-blue-6)]'\n" }) })],
     ['C7', true, '--field-height-md', '產品覆寫只開放讀的名字', () => run({ files: withFiles({ 'apps/template/src/fixture-write.tsx': "export const c = '[--field-height-md:40px]'\n" }) })],
+    // C7(丙)主人規格點名 ↔ 分類表 product(user 2026-11-10 token 第 4 題甲)
+    ...(() => {
+      const DTS = 'components/DataTable/data-table.spec.md'
+      const dtSpec = (edit) => (p) => (p.endsWith(DTS) ? edit(readSpecFromDisk(p)) : readSpecFromDisk(p))
+      const tabRead = (() => { const r = clone(registry); r.rows.find((x) => x.match === '--tab-height-').product = 'read'; return r })()
+      return [
+        ['C7', true, '--tab-height-sm', '分類表把分頁高改成產品可讀、分頁規格沒有點名', () => run({ registry: tabRead })],
+        ['C7', true, '--table-cell-py', '表格規格點名一顆分類表寫 no 的', () => run({ readSpec: dtSpec((t) => t.replace('`--table-cell-px`(儲存格左右內距)', '`--table-cell-px`、`--table-cell-py`(儲存格內距)')) })],
+        ['C7', true, '--table-cell-px', '表格規格拿掉點名句(分類表仍寫可讀)', () => run({ readSpec: dtSpec((t) => t.split(NAMED).join('點名已拿掉')) })],
+        ['C7', false, '--table-row-sm', '現況:表格規格點名 4 顆、分類表 4 顆可讀', () => run({})],
+      ]
+    })(),
     // C9(審查案例 E:在側欄加只有側欄自己讀的 --sidebar-section-gap)
     ...(() => {
       const css = `${DS_ROOT}/components/Sidebar/fixture.css`

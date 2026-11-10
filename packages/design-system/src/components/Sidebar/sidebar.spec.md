@@ -679,7 +679,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 ## 尺寸規範
 
-元件 scope 的 design token(側欄的值;宣告住 `sidebar.css`,2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來、名字與值不變,由對外彙總檔 `styles/tokens.css` 匯入;分類見 `../../tokens/token-registry.json`)。**產品要設定寬度用參數,不覆寫 token**:Menu 用 AppShell 的 `widthRange` / `defaultWidth`,token 只是產品沒設時的預設值 —— user 2026-11-10 拍板 token 第 4 題「4甲」(要設定的值只走元件參數,側欄 4 顆不開放產品覆寫;原句「consumer 可覆寫」同日改):
+元件 scope 的 design token(側欄的值;宣告住 `sidebar.css`,2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來、名字與值不變,由對外彙總檔 `styles/tokens.css` 匯入;分類見 `../../tokens/token-registry.json`)。**寬度由 AppShell 參數 `widthRange` / `defaultWidth` 設定;token 只是產品沒設時的預設值,不開放產品覆寫**(產品也不讀這 4 顆)。來源:user 2026-11-10 對「產品要自己設的值(例如側欄寬):每家都是做成元件參數」回「想補充一下，我也覺得這種方向才是對的吧？？？」(問句,逐字);同日決策頁正式選 token 第 4 題「4甲」(要設定的值只走元件參數,側欄 4 顆不開放產品覆寫)。原句「元件 scope 的 design token，consumer 可覆寫」同日改成本句:
 
 | Token | 預設值 | 用途 |
 |-------|--------|------|

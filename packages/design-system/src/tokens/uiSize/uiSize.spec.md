@@ -140,6 +140,30 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 
 **分類**:`--stack-gap` 是共用刻度(不屬於任何一個元件,所以不帶元件名);`--avatar-stack-overlap` 是頭像的值(選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量),目前寄住本檔,目標住處見 `../token-registry.json` 該列 `target`。要不要開 token 的門檻只住 `../token-system.spec.md` 判斷流程第 0 題,本檔不重述。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
 
+## Field Control Vertical Padding 與 Tree Indent(2026-11-11 補進規格)
+
+這兩組在 `uiSize.css` 宣告已久,規格一直沒寫(分類表 `known.missingSpec` 登記過),這次因為開放產品讀來對齊而補上。
+
+| Token | 值 | 用法 |
+|-------|-----|------|
+| `--field-control-py-sm` / `--field-control-py-md` / `--field-control-py-lg` | `calc((var(--field-height-*) - 1lh) / 2 - 1px)` | 讓「只有一行的多行盒」跟同 size 單行 Input 等高的上下內距。`1lh` 在使用端解析成那個元素自己的行高,`- 1px` 補 border-box 裡上下各 1px 的框。跟著 `--field-height-*` 隨密度變;公式住 `uiSize.css`「衍生值」段,在每個換密度的元素上重算(閘 `scripts/test-density-subtree-token-parity.mjs`)。讀者:Textarea 編輯態、多行 view(`Field/field-wrapper.tsx`;兩者相等 = InlineEdit 多行零跳,閘 `scripts/inline-edit-view-geometry-invariant.mjs`)、AgentPanel 輸入盒 |
+| `--tree-indent-sm` / `--tree-indent-md` / `--tree-indent-lg` | 1.5rem(24px)/ 1.5rem(24px)/ 1.75rem(28px) | 每一層巢狀往右縮的量 = 展開箭頭 + 箭頭與文字的間距(16 + 8 / 20 + 8)。級距跟元件 `size` 走、不隨密度變。讀者:DataTable 巢狀列縮排(`data-table.tsx`);TreeView 用同值的程式常數 `tree-view.tsx` `INDENT_STEP`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等 |
+
+## 產品對齊用(讀來對齊、不可覆寫)
+
+本檔的共用刻度 —— 控制項高度 `--field-height-*`(4 顆)、上下內距 `--field-control-py-*`(3 顆)、左右內距 `--field-px`、堆疊間距 `--stack-gap`、樹狀縮排 `--tree-indent-*`(3 顆),共 12 顆,加上外框標頭高 `--chrome-header-height`(見下方「Chrome Header Height」)—— 產品可以**讀**來讓自己排的東西跟 DS 元件對齊:同高、文字起點在同一條線、跟著同一份密度切換。產品**不覆寫**(要換尺寸用元件的 `size` 參數),也**不拿來自己刻輸入框**(要輸入框就用 `Input` / `Select`)。依據:user 2026-11-10 token 第 5 題「5甲」。誰可以讀,唯一一份資料是 `../token-registry.json` 各列 `product`;寄住本檔的元件的值(標籤高、頭像重疊量)產品不讀。
+
+範例(產品的權限條件面板:自己排的條件文字「這個角色是」接在 DS `Select` 旁邊;讀 `--field-height-sm` 當最小高度、內容垂直置中,才會跟 `size="sm"` 的選單同高,換密度兩邊一起變):
+
+```tsx
+<span className="flex min-h-[var(--field-height-sm)] items-center text-body">這個角色是</span>
+<Select size="sm" … />
+```
+
+自己排的文字要跟輸入框裡的文字起點對齊時,同理讀 `--field-px` 當左右內距。
+
+展示頁:Storybook `Design System/Tokens/UiSize`「產品對齊用的共用尺寸」(一般與大密度並排,量得到兩邊同高)。
+
 ## Table Row
 
 表格列高 `--table-row-*` 是 DataTable 自己的值(元件的值),2026-11-11 搬到 `components/DataTable/data-table.css`(user 2026-11-10 token「2甲」第四批;名字與每一檔密度的值都沒變)。每一檔的值、Tailwind `h-table-row-*` 寫法、產品可讀來對齊的範圍 → `components/DataTable/data-table.spec.md`「一、Table Size」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
@@ -239,6 +263,8 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 |---------|-------------|
 | `<header className="h-16">`(64px 硬寫) | `<header className="h-[var(--chrome-header-height)]">` |
 | Sidebar 48、top bar 56、page header 64(跨元件不一致) | 全部 `--chrome-header-height`(md=48 / lg=56),density 自動聯動 |
+
+**產品可讀(對齊用)、不可覆寫**:DS 沒有「頁首」元件,產品的頁首是自己排的,照上表右欄讀這顆才會跟側欄頂部同高;產品不改它的值。分類表該列 `product: "read"`。來源:本段 2026-04-21 的 canonical 本來就給了產品寫法;2026-11-10 token 決策頁(AI 寫給 user 的題目)第 5 題附註寫明「照本段登記成產品可讀、要改成不給讀說一聲即可」,user 當天的回覆沒有提到標頭高 —— 視為未推翻(AI 推導,不是 user 拍板)。
 
 ### 為什麼 48 跟 56 是「同一個 token 不同密度」不是不一致
 

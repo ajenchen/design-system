@@ -82,7 +82,8 @@
 | 元件的值 | 可以讀來跟主人對齊 | 預設不讀不覆寫;**主人的規格點名**才可以讀 |
 
 - **產品要「設定」元件的值,走元件參數,不覆寫 token**(user 2026-11-10 拍板 token 第 4 題「4甲」):參數有型別、寫錯會報錯、可以每頁不同;覆寫變數寫錯沒有任何提示。例:側欄寬用 AppShell 的 `widthRange` / `defaultWidth`,token 只是產品沒設時的預設。
-- **產品要「對齊」**(自己排的東西要跟 DS 一樣高、一樣內距):讀共用刻度(user 2026-11-10 拍板 token 第 5 題「5甲」:輸入框高度與內距、堆疊間距、樹狀縮排開放讀、不開放覆寫;標頭高照 `uiSize/uiSize.spec.md` 已寫明可讀),或讀主人規格點名可讀的元件的值(目前只有表格列高與儲存格左右內距,`components/DataTable/data-table.spec.md`「+ 新增」列)。要輸入框還是用元件,不拿 token 自己刻。
+- **產品要「對齊」**(自己排的東西要跟 DS 一樣高、一樣內距):讀共用刻度(user 2026-11-10 拍板 token 第 5 題「5甲」:共用尺寸 12 顆 —— 輸入框高度 4、上下內距 3、左右內距 1、堆疊間距 1、樹狀縮排 3 —— 開放讀、不開放覆寫;標頭高照 `uiSize/uiSize.spec.md`「Chrome Header Height」已寫明可讀),或讀主人規格點名可讀的元件的值(目前只有表格列高 3 顆與儲存格左右內距,`components/DataTable/data-table.spec.md`「Inline create row」)。要輸入框還是用元件,不拿 token 自己刻。展示頁:Storybook `Design System/Tokens/UiSize`「產品對齊用的共用尺寸」(權限條件面板讀這些值跟選單對齊,大密度一起示範)。
+- **主人規格怎麼點名**:主人規格寫一句以「主人規格點名・產品可讀」開頭、到句號為止,句中寫完整名字(例:`components/DataTable/data-table.spec.md`「Inline create row」)。分類表該列 `product` 不是 `no` 的元件的值必須被點名;被點名的名字分類表那一列也必須是可讀 —— 閘 C7 兩個方向都比,資料仍只有分類表一份,規格那句是給人看的承諾。
 - 每一顆的實際值看分類表;產品端違規由閘 C7 擋(本 repo `apps/`),設計系統以外的產品 repo 看不到,登記在分類表 `known.productExternal`。
 
 ---
