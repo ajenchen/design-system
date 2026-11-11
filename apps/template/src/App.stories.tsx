@@ -17,7 +17,7 @@ const meta: Meta<typeof App> = {
           '客製 `App.tsx` 內的:\n' +
           '- `NAV` array(sidebar navigation 項目)\n' +
           '- `PageHeader` content(business-specific 標題 / actions)\n' +
-          '- Page component(DashboardPage / OrderListPage / etc.):換成產品真實的主內容(例:訂單、收入、待處理任務),用 DS 元件組(DataTable / Chart 等)接自己的資料來源;範本示範的是「今日待處理訂單」DataTable\n\n' +
+          '- Page component(DashboardPage / OrderListPage / etc.):換成產品真實的主內容(例:訂單、收入、待處理任務),用 DS 元件組(DataTable / Chart 等)接自己的資料來源;範本示範的是「今日待處理訂單」DataTable,直接接在標頭下 —— 主區只有一塊內容時,標頭標題就說明了這頁是什麼,不在主區另放標題與說明(DS `app-shell.spec.md`「Main 內塞什麼」)\n\n' +
           'SSOT 鐵律:只 import `@qijenchen/design-system` exports,**禁修改 DS source**。\n\n' +
           '從 template 衍生新 app:`npm run create-app <kebab-case-name>`。',
       },

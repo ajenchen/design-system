@@ -5,7 +5,6 @@
 // Sidebar 既有範例視覺偏移(2026-05-20 user 抓 anti-drift)。
 // Showcase + Anatomy stories 全部 consume 此 file 不重發明 simplified mock。
 
-import { useId } from 'react'
 import {
   Inbox,
   Calendar,
@@ -349,23 +348,19 @@ const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
 /**
  * Insights 頁(本週 Sprint 的燃盡摘要):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
  * —— 兩處同一份真實頁面內容(稽核 L117:總覽的 Main 原本是一段說明文字,說明搬到 docs)。
- * 內容 = 一個區段(標題 + 一句燃盡摘要)+ 還沒完成的議題 DataTable,同 Sidebar 展示 / 範本 DashboardPage 的做法。
+ * 內容 = 還沒完成的議題 DataTable 一張,直接接在頁面標頭下,同 Sidebar 展示 / 範本 DashboardPage 的做法。
  * 2026-11-10 前主區只有一份 DescriptionList(Sprint / 已完成 / 燃盡進度 / P0 未處理):user 2026-11-10 PR #172 留言(逐字)
  * 「而且我不想要提供主內容是 description list的範例，太浪費空間了」—— 全 DS 同族一起改(app-shell.spec.md「Main 內塞什麼」:DS 不規定一定用 DescriptionList)。
- * 間距照 layoutSpace.spec.md「Page 情境」:標頭 → 第一個元素 tight(規則 2);標題 ↔ 說明 = item-anatomy「Label ↔ Desc」;
- * 區段標題(+ 說明)→ 表格 loose(規則 3);最後是有框的 DataTable → 底 loose(規則 4 第 2 列)。
+ * 2026-11-11 前表格上方還有區段標題「Sprint 42 還沒完成的議題」+ 一句燃盡摘要:user 2026-11-11 在這張圖留言(逐字)
+ * 「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」——
+ * 主區只有一塊內容,標頭已說明這頁是什麼,不再重複放標題與說明(app-shell.spec.md「Main 內塞什麼」);原標題改當表格的讀屏名稱(aria-label)。
+ * 間距照 layoutSpace.spec.md「Page 情境」:標頭 → 有框的 DataTable = bounded region = loose(規則 2)、左右 loose(規則 1)、
+ * 最後是有框的 DataTable → 底 loose(規則 4 第 2 列)—— 四邊同為 loose。閘 `scripts/header-first-gap-invariant.mjs` appshell-insights。
  */
 export function InsightsView() {
-  const titleId = useId()
   return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
-      <section className="flex flex-col gap-[var(--layout-space-loose)]">
-        <div className="flex flex-col gap-[var(--item-gap-label-desc-reading-lg)]">
-          <h2 id={titleId} className="text-h5">Sprint 42 還沒完成的議題</h2>
-          <p className="text-body text-fg-secondary">5/18 – 5/29,已完成 13 / 18 筆;燃盡進度比計畫慢 1 天,P0 還有 2 筆沒處理。</p>
-        </div>
-        <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} height="auto" aria-labelledby={titleId} />
-      </section>
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
+      <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} height="auto" aria-label="Sprint 42 還沒完成的議題" />
     </div>
   )
 }

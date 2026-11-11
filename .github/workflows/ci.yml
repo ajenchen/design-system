@@ -1372,8 +1372,9 @@ jobs:
           # 表單範例放進卡片(2026-11-10 FORM-EXAMPLE-CARD 甲;user 10-21「Q5可以基於你的建議」、10-28「頁面上的卡片照你建議」):Field 表單驗證 ×2、
           # Rating 包在 Field 內、Select 隨 form 送出 —— 送出鈕往上找卡片、卡片內上 / 左 / 下 = loose(md / lg 量像素)。修前 main 8eb473c7 建置 4 處都沒有卡片(紅)。
           npm run test:form-example-card
-          # Sidebar 展示主區跟著選到的項目走(2026-11-06 user #56 甲):資料夾 → 檔案清單 DataTable、檔案 → 屬性、專案 → 議題、主導覽 → 範本 DashboardPage 做法(不放 DescriptionList);
-          # 「混合內容」實際點樹 frontend → backend → README.md → Dashboard。修前 main 8eb473c7 建置五則都是同一份 Sprint 摘要(紅)。
+          # Sidebar 展示主區跟著選到的項目走(2026-11-06 user #56 甲):資料夾 → 檔案清單 DataTable、檔案 → 版本紀錄、專案 → 議題、主導覽 → 範本 DashboardPage 做法(不放 DescriptionList);
+          # 主區只有一張表格 → 標頭下不放區段標題(2026-11-11 user 留言;app-shell.spec.md「Main 內塞什麼」)。
+          # 「混合內容」實際點樹 frontend → backend → README.md → Dashboard。修前 main 8eb473c7 建置五則都是同一份 Sprint 摘要(紅);修前 411fcc49 建置表格上方有區段標題(紅)。
           npm run test:sidebar-main-follows-selection
           # Steps 內容跟著目前那一步(2026-09-30 退役「可同時打開多步」模式):每則 import Steps 的 story 逐一點 header / 按「下一步」,
           # 內容區只准出現在 aria-current="step" 那一步、header 不得帶 aria-expanded / aria-controls;selftest 判定表 + 真建置上注入三種舊毛病(header 帶 aria-expanded、內容放錯步、點 header 後舊內容留在原步)必被抓到。

@@ -350,6 +350,8 @@ Main 內塞什麼(table / field / card / page header / list)由產品決定 —�
 - 規則 4:底部(Main 高度撐滿 → 最後是一般元素時底部 `bottom` 48;有框區塊 `loose`、無框清單 0)
 - 規則 6:Chrome 表面水平 padding 統一 `loose`
 
+**主區只有一塊內容時,不在主區重複放標題與說明**:頁面標頭(`PageHeader` / ChromeHeader 的標題)已經說明這頁是什麼時,主區不再放區段標題 + 說明,內容直接接在標頭下 —— 例:整頁一張 DataTable → 標頭 → 表格 `loose`(規則 2 bounded region)、左右 `loose`(規則 1)、表格 → 主區底 `loose`(規則 4 第 2 列),表格用 `aria-label` 命名。出處:user 2026-11-11 在 Insights 頁(當時表格上方有區段標題 + 一句說明)留言(逐字):「標題距離上方標頭和描述距離下方表格的距離都是一樣的？按照layout space設計原則都是tight? 此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」。主區有兩塊以上並列內容時,各塊才有自己的標題(用來分出哪塊是哪塊;塊與塊之間照 `layoutSpace.spec.md` 規則 3「組 ↔ 組」)【AI 推導】。範例:AppShell `_demo-helpers.tsx` InsightsView、Sidebar 展示的主區、範本 `apps/template/src/App.tsx` DashboardPage(= `ds-canonical/templates/dashboard-app.tsx`);閘 `scripts/header-first-gap-invariant.mjs`(這幾處登記的第一個內容 = bounded,主區若又放回標題,角色變 element → 紅)+ `scripts/sidebar-main-follows-selection-invariant.mjs`(Sidebar 展示每一步主區都不得有區段標題)。
+
 **禁止**:AppShell.Main 強制 padding(會跟內部 DataTable / naked list 衝突 + 違反規則 1B「純 layout primitive 無邊界 → 父層管」)。
 
 **Consumer examples**(per codex Layer B 建議補):

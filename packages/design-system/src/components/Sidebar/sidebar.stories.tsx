@@ -129,6 +129,7 @@ const UserFooter = () => (
  * 主區放真實頁面內容(D6 甲,user 10-21「D6 照你建議」:不做手刻指標卡、不亂造元件),而且**跟著選到的項目走**
  * (2026-11-06 #56 甲):資料夾 → 裡面的檔案清單;檔案 → 這個檔案的版本紀錄(2026-11-10 PR #172 留言起;原本是屬性清單);專案 → 這個專案的議題;Dashboard 等主導覽 →
  * 同範本 DashboardPage 的做法(DS 元件組成的真實內容:「今日待處理」DataTable;apps/template/src/App.tsx)。
+ * 每一頁主區都只有一張表格、標頭標題已說明這頁是什麼,所以不在主區重複放區段標題與說明(app-shell.spec.md「Main 內塞什麼」,user 2026-11-11)。
  * dashboard 放什麼由產品決定,DS 不定義卡片 / 內容框架(app-shell.spec.md「Main 內塞什麼」),所以這裡不做成像 DS 規定的版型。
  * 每則的說明寫在 parameters.docs.description.story(story-rules「整頁情境」:畫布不放便條)。
  */
@@ -147,8 +148,8 @@ const PageContent = ({ title, children }: { title: string; children: React.React
 )
 
 // ── 主區內容(跟著選到的項目走)────────────────────────────────────────────
-// 版面照 layoutSpace.spec.md「Page 情境(全頁 list / dashboard)」:左右 loose;標頭 → 第一個元素 tight(規則 2);
-// 區段標題(+ 說明)→ 表格 loose(規則 3);最後是有框的 DataTable → 底 loose,最後是一般元素 → 底 bottom 48(規則 4)。
+// 版面照 layoutSpace.spec.md「Page 情境(全頁 list / dashboard)」:每一頁主區都只有一張表格,直接接在標頭下(MainTable)——
+// 左右 loose(規則 1)、標頭 → 有框的表格 loose(規則 2 bounded region)、表格 → 底 loose(規則 4 第 2 列)。
 // 表格資料極簡、不開虛擬捲動 / 拖曳 / 篩選(story-rules「整頁情境」)。日期寫死(story-determinism-invariant)。
 
 type IssueRow = { key: string; title: string; assignee: string; due: string }
@@ -237,30 +238,27 @@ const FOLDER_FILES: Record<string, FileRow[]> = {
   ],
 }
 
-/** 區段標題 + 說明 + 表格(同範本 DashboardPage:標題 ↔ 說明 = item-anatomy「Label ↔ Desc」2px)。 */
-function TableSection<T>({ title, description, columns, data }: { title: string; description: string; columns: DataTableProps<T>['columns']; data: T[] }) {
-  const titleId = React.useId()
+/**
+ * 主區只有一張表格:直接接在標頭下,不放區段標題 + 說明(app-shell.spec.md「Main 內塞什麼」;user 2026-11-11 留言(逐字)
+ * 「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」)。
+ * 表格的讀屏名稱用 aria-label(原本的區段標題文字)。間距照 layoutSpace.spec.md「Page 情境」:標頭 → 有框的 DataTable = bounded region
+ * = loose(規則 2)、左右 loose(規則 1)、表格 → 底 loose(規則 4 第 2 列)—— 四邊同為 loose。閘 `scripts/header-first-gap-invariant.mjs`。
+ * 2026-11-11 前 Dashboard / 專案兩處是 TableSection(區段標題 + 說明 + 表格,頂部 tight);資料夾 / 檔案兩處早就是表格直接接標頭。
+ */
+function MainTable<T>({ label, columns, data }: { label: string; columns: DataTableProps<T>['columns']; data: T[] }) {
   return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
-      <section className="flex flex-col gap-[var(--layout-space-loose)]">
-        <div className="flex flex-col gap-[var(--item-gap-label-desc-reading-lg)]">
-          <h2 id={titleId} className="text-h5">{title}</h2>
-          <p className="text-body text-fg-secondary">{description}</p>
-        </div>
-        <DataTable columns={columns} data={data} height="auto" aria-labelledby={titleId} />
-      </section>
+    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
+      <DataTable columns={columns} data={data} height="auto" aria-label={label} />
     </div>
   )
 }
 
-/** Dashboard 等主導覽:同範本 DashboardPage 的做法 —— 一個區段 + DataTable,不做 DS 規定的 dashboard 版型。 */
-const PendingIssuesView = () => (
-  <TableSection title="今日待處理議題" description="指派給你、今天到期或快到期的議題,依截止日排序。" columns={ISSUE_COLUMNS} data={PENDING_ISSUES} />
-)
+/** Dashboard 等主導覽:同範本 DashboardPage 的做法 —— 一張 DataTable,不做 DS 規定的 dashboard 版型。 */
+const PendingIssuesView = () => <MainTable label="今日待處理議題" columns={ISSUE_COLUMNS} data={PENDING_ISSUES} />
 
-/** 專案 → 這個專案進行中的議題。 */
+/** 專案 → 這個專案進行中的議題(標頭標題就是專案名)。 */
 const ProjectIssuesView = ({ project }: { project: string }) => (
-  <TableSection title="進行中的議題" description={`「${project}」還沒關閉的議題,依截止日排序。`} columns={ISSUE_COLUMNS} data={PROJECT_ISSUES[project] ?? []} />
+  <MainTable label="進行中的議題" columns={ISSUE_COLUMNS} data={PROJECT_ISSUES[project] ?? []} />
 )
 
 /**
@@ -291,27 +289,17 @@ const FILE_VERSIONS: Record<string, FileVersionRow[]> = {
 }
 
 /**
- * 專案樹:資料夾 → 檔案清單、檔案 → 這個檔案的版本紀錄(兩者都是 layoutSpace「Page 情境」:表格直接接在標頭下)。
+ * 專案樹:資料夾 → 檔案清單、檔案 → 這個檔案的版本紀錄(兩者都是 layoutSpace「Page 情境」:表格直接接在標頭下,同 MainTable)。
  * 頂部依 layoutSpace.spec.md 規則 2「標頭 → bounded region = loose」:標頭下第一個東西是有框的 DataTable(bounded region),
- * 所以 pt = loose(md 16 / lg 24),四邊同為 loose;上方 TableSection 第一個是區段標題(element)才是 tight。
- * 閘 `scripts/header-first-gap-invariant.mjs`(2026-11-10 前兩處誤寫 tight —— 抄 TableSection 沒依第一個東西的角色重推規則 2)。
+ * 所以 pt = loose(md 16 / lg 24),四邊同為 loose。
+ * 閘 `scripts/header-first-gap-invariant.mjs`(2026-11-10 前兩處誤寫 tight —— 抄當時的 TableSection(第一個是區段標題 = element = tight)沒依第一個東西的角色重推規則 2)。
  */
 function ProjectTreeView({ id }: { id: string }) {
   const node = PROJECTS_TREE.flatMap((p) => [p, ...(p.children ?? [])]).find((n) => n.id === id)
   if (!node) return null
-  if (node.icon === Folder) {
-    return (
-      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
-        <DataTable columns={FILE_COLUMNS} data={FOLDER_FILES[id] ?? []} height="auto" aria-label={`${node.label} 裡的檔案`} />
-      </div>
-    )
-  }
-  // 樹上唯一的檔案是 README.md(iOS / Android 是 Mobile App 底下的平台資料夾,見 PROJECTS_TREE);頂部同上 = 規則 2 標頭 → bounded region = loose
-  return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
-      <DataTable columns={FILE_VERSION_COLUMNS} data={FILE_VERSIONS[id] ?? []} height="auto" aria-label={`${node.label} 的版本紀錄`} />
-    </div>
-  )
+  if (node.icon === Folder) return <MainTable label={`${node.label} 裡的檔案`} columns={FILE_COLUMNS} data={FOLDER_FILES[id] ?? []} />
+  // 樹上唯一的檔案是 README.md(iOS / Android 是 Mobile App 底下的平台資料夾,見 PROJECTS_TREE)
+  return <MainTable label={`${node.label} 的版本紀錄`} columns={FILE_VERSION_COLUMNS} data={FILE_VERSIONS[id] ?? []} />
 }
 
 // ── 1. 完整佈局(icon 收合模式,預設推薦)────────────────────────────────

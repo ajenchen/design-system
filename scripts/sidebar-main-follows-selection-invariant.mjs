@@ -6,11 +6,14 @@
  *         · 檔案 → 這個檔案的版本紀錄(DataTable,欄位 版本 / 說明 / 修改者 / 時間,撐滿主區、不放 DescriptionList;user 2026-11-10 PR #172 留言
  *           「我的意思是不想要看到description list類型的主內容，我建議改成table之類的」;2e1f2e27 以前是 max-w-2xl 的屬性清單 → 該步紅);
  *           專案 → 這個專案的議題(DataTable);每一步的表格都要撐滿主區(只扣頁面左右內距);
- *         · Dashboard 等主導覽 → 同範本 DashboardPage 的做法(一個區段 +「今日待處理」DataTable),主區不放 DescriptionList
+ *         · Dashboard 等主導覽 → 同範本 DashboardPage 的做法(「今日待處理」DataTable 一張),主區不放 DescriptionList
  *           (user 同日原話「也沒有要強迫消費者一定要使用description list」)。
+ *         · 每一步主區都只有一張表格 → 標頭下不再放區段標題(h2–h6 / role=heading),表格直接接在標頭下(app-shell.spec.md「Main 內塞什麼」;
+ *           user 2026-11-11 留言「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」)。
  *         「混合內容」實際點樹:frontend(預設)→ backend → README.md → Dashboard,每一步都驗標題與主區。
- *   紅: 任一步主區的標題 / 表格名稱 / 欄名 / 列數 / 有無 DescriptionList 與期望不符 → 指名 story / 步驟並 exit 1。
+ *   紅: 任一步主區的標題 / 表格名稱 / 欄名 / 列數 / 有無 DescriptionList / 有無區段標題與期望不符 → 指名 story / 步驟並 exit 1。
  *       歷史紅燈(修前 main 8eb473c7 建置):五則主區都是同一份 Sprint 摘要 DescriptionList,沒有表格,選 frontend 也一樣。
+ *       修前 411fcc49 建置:Dashboard / 專案 / 整合那幾步表格上方有區段標題 h2(今日待處理議題 / 進行中的議題)→ 紅。
  *   綠: 每一步都對。無動畫判斷;重複跑恆等。
  *   量法: 靜態站開 story,等主區的表格 / 清單本身出現(不睡固定時間);點樹用 TreeView(treegrid)列的可見文字。
  *         `--selftest` 把修前形狀、表格名稱錯、主導覽放 DescriptionList、沒量到餵進判定函式必紅,修後形狀必綠。
@@ -58,6 +61,7 @@ export function judge(results) {
     } else if (g.tableName) failures.push(`${where} 不該有表格,實得「${g.tableName}」`)
     if (e.dl !== g.dl) failures.push(`${where} 主區 ${g.dl ? '有' : '沒有'} DescriptionList,應${e.dl ? '有' : '沒有'}${e.table === PENDING.table ? '(主導覽照範本 DashboardPage,不強迫 DescriptionList)' : e.fileView ? '(選到檔案 = 版本紀錄表格,不是屬性清單;user 2026-11-10 PR #172 留言)' : ''}`)
     if (e.table && g.tableName === e.table && !(g.fillGap <= 1)) failures.push(`${where} 表格沒有撐滿主區(比主區窄 ${g.fillGap}px)—— 不限寬,只扣頁面左右內距`)
+    if (g.sectionTitle) failures.push(`${where} 主區只有一張表格,標頭下又放了區段標題「${g.sectionTitle}」—— 標頭已說明這頁是什麼,不重複放標題與說明(app-shell.spec.md「Main 內塞什麼」)`)
   }
   return failures
 }
@@ -65,7 +69,7 @@ export function judge(results) {
 function selftest() {
   let ok = true
   const expect = (cond, msg) => { if (!cond) { console.error(`✗ selftest:${msg}`); ok = false } }
-  const gotFor = (e) => ({ h1: e.h1, tableName: e.table, headers: e.headers, rows: e.rows, dl: e.dl, dlText: '', fillGap: 0 })
+  const gotFor = (e) => ({ h1: e.h1, tableName: e.table, headers: e.headers, rows: e.rows, dl: e.dl, dlText: '', fillGap: 0, sectionTitle: null })
   const good = CASES.flatMap((c) => c.steps.map((e, i) => ({ story: c.story, step: i, expect: e, got: gotFor(e) })))
   expect(judge(good).length === 0, `修後形狀應綠,實得 ${JSON.stringify(judge(good))}`)
   // 修前 main 8eb473c7:主區一律 Sprint 摘要 DescriptionList、沒有表格
@@ -82,6 +86,12 @@ function selftest() {
   expect(fr.some((s) => s.includes('不是屬性清單')) && fr.some((s) => s.includes('README.md 的版本紀錄')), `檔案主區放屬性清單應紅,實得 ${JSON.stringify(fr)}`)
   const readmeNarrow = good.map((r) => (r.expect.click === 'README.md' ? { ...r, got: { ...r.got, fillGap: 368 } } : r))
   expect(judge(readmeNarrow).some((s) => s.includes('沒有撐滿主區')), '表格限寬(比主區窄,例:max-w-2xl)應紅')
+  // 修前 411fcc49:Dashboard / 專案那幾步表格上方有區段標題(TableSection 的 h2),表格名稱由它 aria-labelledby 給 —— 名稱對、但多了標題
+  const titleBack = good.map((r) => (r.expect.table === PENDING.table || r.story === 'group-action' ? { ...r, got: { ...r.got, sectionTitle: r.expect.table } } : r))
+  const ft = judge(titleBack)
+  expect(['icon-collapse', 'group-action', 'offcanvas', 'integration-sidebar', 'mixed-content'].every((s) => ft.some((m) => m.startsWith(s) && m.includes('區段標題'))), `主區放回區段標題應每則都紅,實得 ${JSON.stringify(ft)}`)
+  const injected = titleBack.filter((r) => r.got.sectionTitle).length
+  expect(injected === 5 && ft.length === injected, `只有放回標題的 5 步該紅(資料夾 / 檔案那幾步本來就沒標題,不得被誤判),實得 ${ft.length} / ${injected}`)
   expect(judge([{ ...good[0], got: null }]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '沒量到應判儀器失效')
   console.log(ok ? '✅ sidebar-main-follows-selection selftest PASS' : '❌ sidebar-main-follows-selection selftest FAIL')
   return ok
@@ -107,7 +117,9 @@ const readMain = () => {
     while (box.parentElement && box.parentElement !== wrap) box = box.parentElement
     fillGap = Math.round((inner - box.getBoundingClientRect().width) * 10) / 10
   }
-  return { h1: main.querySelector('h1')?.textContent.trim() ?? null, tableName, headers, rows, dl: !!dl, dlText: dl?.textContent ?? '', fillGap }
+  // 區段標題:主區裡、標頭(header)之外、看得見的標題元素(h2–h6 或 role=heading)—— 表格內部沒有標題元素
+  const heading = [...main.querySelectorAll('h2, h3, h4, h5, h6, [role="heading"]')].find((h) => !h.closest('header') && h.getBoundingClientRect().height > 0)
+  return { h1: main.querySelector('h1')?.textContent.trim() ?? null, tableName, headers, rows, dl: !!dl, dlText: dl?.textContent ?? '', fillGap, sectionTitle: heading ? heading.textContent.trim() : null }
 }
 
 async function waitMain(page, e) {
@@ -149,10 +161,10 @@ if (isMain) {
   try {
     const results = await measure()
     if (results === null) process.exit(0) // launchBrowserOrSkip 已印 SKIPPED-ENV / INSTRUMENT-FAIL 判定
-    for (const r of results) console.log(`  ${r.story.padEnd(20)} 步 ${r.step + 1}  h1 ${r.got?.h1}  表格 ${r.got?.tableName ?? '-'}  列 ${r.got?.rows ?? '-'}  dl ${r.got?.dl}`)
+    for (const r of results) console.log(`  ${r.story.padEnd(20)} 步 ${r.step + 1}  h1 ${r.got?.h1}  表格 ${r.got?.tableName ?? '-'}  列 ${r.got?.rows ?? '-'}  dl ${r.got?.dl}  區段標題 ${r.got?.sectionTitle ?? '-'}`)
     const failures = judge(results)
     if (failures.length) { console.error('❌ sidebar-main-follows-selection FAIL:\n  ' + failures.join('\n  ')); process.exit(1) }
-    console.log('✅ sidebar-main-follows-selection PASS(主區跟著選到的項目走;主導覽照範本 DashboardPage)')
+    console.log('✅ sidebar-main-follows-selection PASS(主區跟著選到的項目走;主導覽照範本 DashboardPage;只有一張表格的主區不重複放區段標題)')
   } catch (error) {
     if (error instanceof StoryRenderInstrumentError) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:${error.message}`); process.exit(1) }
     throw error

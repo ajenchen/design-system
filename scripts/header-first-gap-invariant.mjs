@@ -12,6 +12,8 @@
  *       從 DOM 判出的角色 ≠ 盤點時登記的角色 → 紅(範例換了第一個東西,要重新照規則 2 推一次,不准默默沿用舊頂距)。
  *       歷史紅燈(c2fc683d 建置實測):Sidebar「混合內容」資料夾 → 檔案表格、檔案 → 版本紀錄表格,第一個是有框的 DataTable
  *       (bounded),頂距卻是 tight(md 12 / lg 16)—— 抄旁邊 TableSection(第一個是區段標題 = element = tight)沒照角色重推。
+ *       2026-11-11 起主區只有一張表格的頁不再放區段標題(app-shell.spec.md「Main 內塞什麼」,user 2026-11-11 留言):Sidebar Dashboard / 專案、
+ *       AppShell InsightsView、範本 DashboardPage 登記改為 bounded;拿修前 411fcc49 建置跑,這 4 處判出 element(h2)→ 與登記不符必紅。
  *   綠: 每一處都等於角色的期望值。純幾何,等元素本身出現、動畫跑完才量;重複跑恆等。
  *   量法: 靜態站開 story(globals density),必要時先點到該狀態(例:樹上點 README.md、展開 FileViewer 資訊面板),
  *         等該狀態的元素本身出現(waitForSelector,不睡固定時間)、`document.getAnimations()` 沒有跑動中的動畫(浮層開場縮放會把距離一起縮)
@@ -50,18 +52,20 @@ const SURFACE_HEADER = '[data-slot="surface-header"]'
  */
 export const CASES = [
   // ── 範例自己給的頂部內距(consumer 組裝)
-  { id: 'sidebar-mixed-folder', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:304`, label: 'Sidebar 混合內容 資料夾 frontend → 檔案表格' },
-  { id: 'sidebar-mixed-file', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'README.md', waitFor: '[aria-label="README.md 的版本紀錄"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:311`, label: 'Sidebar 混合內容 檔案 README.md → 版本紀錄表格' },
-  { id: 'sidebar-dashboard-section', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main h2', role: 'element', src: `${DS}components/Sidebar/sidebar.stories.tsx:244`, label: 'Sidebar 完整佈局 Dashboard → 區段標題(TableSection)' },
-  { id: 'sidebar-project-section', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main h2', role: 'element', src: `${DS}components/Sidebar/sidebar.stories.tsx:244`, label: 'Sidebar 群組動作 專案 → 區段標題(TableSection)' },
-  { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main h2', role: 'element', src: `${DS}components/AppShell/_demo-helpers.tsx:361`, label: 'AppShell 元件總覽 Main → InsightsView 區段標題' },
+  // 主區只有一張表格的頁(app-shell.spec.md「Main 內塞什麼」:不在主區重複放標題與說明,2026-11-11 起)—— 第一個內容 = 有框的 DataTable = bounded;
+  // 主區若又放回區段標題,DOM 判出的角色變 element → 與登記的 bounded 不符 → 紅
+  { id: 'sidebar-mixed-folder', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 資料夾 frontend → 檔案表格(MainTable)' },
+  { id: 'sidebar-mixed-file', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'README.md', waitFor: '[aria-label="README.md 的版本紀錄"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 檔案 README.md → 版本紀錄表格(MainTable)' },
+  { id: 'sidebar-dashboard-table', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 完整佈局 Dashboard → 今日待處理議題表格(MainTable)' },
+  { id: 'sidebar-project-table', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 群組動作 專案 → 進行中的議題表格(MainTable)' },
+  { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main [role="table"]', role: 'bounded', src: `${DS}components/AppShell/_demo-helpers.tsx:362`, label: 'AppShell 元件總覽 Main → InsightsView 表格' },
   { id: 'appshell-aside-order', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: '訂單詳情', waitFor: 'dl', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:72`, label: 'AppShell 元件總覽 Right panel 訂單詳情 → DescriptionList' },
   { id: 'appshell-readout', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'Sprint 42 議題', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:206`, label: 'AppShell 狀態行為 Main → 讀數 DescriptionList' },
   { id: 'appshell-rule-aside', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'ENG-1042', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:277`, label: 'AppShell 狀態行為 Right panel → 一段文字' },
   { id: 'appshell-inbox-toolbar', story: `${C}appshell-展示--primary-sidebar`, header: 'header', headerText: 'Inbox', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AppShell 主側欄 Inbox → 工具列(搜尋 / 篩選)' },
   { id: 'appshell-inbox-tabs-toolbar', story: `${C}appshell-展示--primary-sidebar-with-tabs`, header: 'header', headerText: 'Inbox', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AppShell 主側欄 + 分頁 Inbox → 分頁內容的工具列' },
   { id: 'appshell-issue-detail', story: `${C}appshell-展示--primary-sidebar`, header: 'header', headerText: 'ENG-1042', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}components/AppShell/app-shell.stories.tsx:251`, label: 'AppShell 主側欄 Right panel 議題詳情 → 標題列' },
-  { id: 'template-dashboard', story: 'apps-template-appshell-dashboard--default', header: 'header', headerText: '總覽', waitFor: 'main h2', role: 'element', src: 'apps/template/src/App.tsx:176', label: '範本 DashboardPage → 區段標題(ds-canonical/templates/dashboard-app.tsx 同一份)' },
+  { id: 'template-dashboard', story: 'apps-template-appshell-dashboard--default', header: 'header', headerText: '總覽', waitFor: 'main [role="table"]', role: 'bounded', src: 'apps/template/src/App.tsx:178', label: '範本 DashboardPage → 今日待處理訂單表格(ds-canonical/templates/dashboard-app.tsx 同一份)' },
   { id: 'agentpanel-task-list', story: `${C}agentpanel-展示--url-registry-demo`, header: 'header', headerText: '結帳流程改版', waitFor: '#demo-stage-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AgentPanel 有網址的頁 任務清單 → 分頁內容的工具列' },
   { id: 'header-single-row', story: 'design-system-patterns-header-anatomy--single-row', header: 'header', waitFor: 'header + div p', role: 'element', src: `${DS}patterns/header-canonical/header-canonical.stories.tsx:131`, label: 'Header 單列 → 一行說明' },
   { id: 'header-with-tabs', story: 'design-system-patterns-header-anatomy--with-tabs', header: 'header', waitFor: '[role="tabpanel"] p', role: 'element', src: `${DS}patterns/header-canonical/header-canonical.stories.tsx:173`, label: 'Header 帶分頁 → 概覽兩行(TabsContent 內建 mt-tight)' },
@@ -131,9 +135,14 @@ function selftest() {
   // c2fc683d 實測:Sidebar 混合內容兩處表格外層是 tight(12 / 16)
   const before = judge(['sidebar-mixed-folder', 'sidebar-mixed-file'].flatMap((id) => [row(id, 'bounded', 'bounded', 'md', 12), row(id, 'bounded', 'bounded', 'lg', 16)]))
   expect(before.length === 4 && before.every((s) => s.includes('bounded region → loose')), `表格外層改 tight 應 4 格都紅,實得 ${JSON.stringify(before)}`)
-  // 標題在前卻用 loose(TableSection 若改成 loose)
-  const titleLoose = judge([row('sidebar-dashboard-section', 'element', 'element', 'md', 16), row('sidebar-dashboard-section', 'element', 'element', 'lg', 24)])
+  // 標題在前卻用 loose(第一個是標題列 / 文字的那幾處若改成 loose)
+  const titleLoose = judge([row('appshell-issue-detail', 'element', 'element', 'md', 16), row('appshell-issue-detail', 'element', 'element', 'lg', 24)])
   expect(titleLoose.length === 2 && titleLoose.every((s) => s.includes('element → tight')), `標題在前卻用 loose 應兩密度都紅,實得 ${JSON.stringify(titleLoose)}`)
+  // 主區只有一張表格卻又放回區段標題(修前 411fcc49 建置實測的形狀:第一個 = h2 = element、頂距 tight 12 / 16)—— 登記是 bounded,必紅
+  const SINGLE_TABLE = ['sidebar-dashboard-table', 'sidebar-project-table', 'appshell-insights', 'template-dashboard']
+  expect(SINGLE_TABLE.every((id) => CASES.find((c) => c.id === id)?.role === 'bounded'), `主區只有一張表格的 ${SINGLE_TABLE.join(' / ')} 應登記 bounded`)
+  const titleBack = judge(SINGLE_TABLE.flatMap((id) => [row(id, 'bounded', 'element', 'md', 12), row(id, 'bounded', 'element', 'lg', 16)]))
+  expect(SINGLE_TABLE.every((id) => ['md', 'lg'].every((d) => titleBack.some((s) => s.startsWith(`${id} @${d}`) && s.includes('盤點登記的是 bounded')))), `主區放回區段標題應 4 處 × 2 密度都紅,實得 ${JSON.stringify(titleBack)}`)
   expect(judge([row('x', 'unbounded', 'unbounded', 'md', 12), row('x', 'unbounded', 'unbounded', 'lg', 0)]).some((s) => s.includes('unbounded region → 0') && s.includes('@md')), '清單沒貼標頭(多了 tight)應紅')
   expect(judge([row('x', 'bounded', 'element', 'md', 12), row('x', 'bounded', 'element', 'lg', 16)]).some((s) => s.includes('盤點登記的是 bounded')), '角色與盤點不符應紅(即使頂距照新角色算是對的)')
   expect(judge([{ id: 'x', density: 'md', declared: 'bounded', err: '找不到標頭' }]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '沒量到應判儀器失效')

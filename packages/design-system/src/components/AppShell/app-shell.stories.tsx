@@ -471,7 +471,7 @@ function TriageReply() {
   return (
     <>
       有兩筆:ENG-1042「登入後 redirect 失敗」由 Alan Chen 處理中,週五到期;ENG-1041「Stripe webhook timeout」還在 Backlog、
-      下週一到期,建議今天先指派給 Jamie Lin。本週燃盡進度在{' '}
+      下週一到期,建議今天先指派給 Jamie Lin。Sprint 42 還沒完成的議題都整理在{' '}
       <a
         href="#insights"
         data-agent-link="insights"

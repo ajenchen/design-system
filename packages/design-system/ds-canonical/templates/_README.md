@@ -6,7 +6,9 @@ Per user 2026-05-27「ds repo push main → PW template 永遠 latest」directiv
 ## Files
 
 - `dashboard-app.tsx` — AppShell + Sidebar + DashboardPage canonical full composition
-  (aligned with `sidebar.stories.tsx#IconCollapse` + `header-canonical.spec.md:57-72`)
+  (aligned with `sidebar.stories.tsx#IconCollapse` + `header-canonical.spec.md:57-72`)。
+  DashboardPage 的主區只有一張 DataTable,直接接在 PageHeader 下(四邊 `--layout-space-loose`,`layoutSpace.spec.md` 規則 1 / 2 / 4),
+  不另放區段標題與說明 —— 頁面標頭已經說明這頁是什麼(`app-shell.spec.md`「Main 內塞什麼」);表格用 `aria-label` 命名。
 
 ## Sync mechanism
 
