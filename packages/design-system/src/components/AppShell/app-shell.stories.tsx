@@ -259,7 +259,7 @@ function IssueDetail({ issue }: { issue: Issue | null }) {
             labelTruncate={false}
             labelClassName="font-medium text-foreground"
           />
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
           <div className="flex flex-wrap gap-1">
             <Tag size="sm" color={STATUS_COLOR[issue.status]}>{issue.status}</Tag>
             <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>

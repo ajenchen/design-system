@@ -52,17 +52,21 @@ const SURFACE_HEADER = '[data-slot="surface-header"]'
  * 盤點出的每一處。header = 標頭選擇器(+ headerText:標頭文字須包含;+ nth);waitFor = 這個狀態的內容本身;
  * steps = 量之前要點到的狀態(click = 樹列 / 按鈕的可見文字,或 clickSelector),點完等 waitFor 那個元素出現;
  * role = 盤點時照規則 2 判的角色;src = 給頂部內距的那一行(repo 相對路徑,也是新鮮度守衛的來源清單)。
+ * src 寫「檔名#宣告」優先於「檔名:行號」(owner-claims C6(c) 驗宣告存在;行號在被引用檔上方加一行就過期 —— 2026-11-11 Sidebar 的 MainTable
+ * 那一行在同一串 commit 裡從第 250 行被推到第 260 行,C6(b) 紅;改成宣告名後不再跟行數走)。
  */
+/** CASES.src → 檔案路徑(去掉 `:行號` 或 `#宣告`),新鮮度守衛用;姊妹閘 import 同一支 */
+export const srcFile = (c) => c.src.replace(/(?::\d+|#[\w$-]+)$/, '')
 export const CASES = [
   // ── 範例自己給的頂部內距(consumer 組裝)
   // 主區只有一張表格的頁(app-shell.spec.md「Main 內塞什麼」:不在主區重複放標題與說明,2026-11-11 起)—— 第一個內容 = 有框的 DataTable = bounded;
   // 主區若又放回區段標題,DOM 判出的角色變 element → 與登記的 bounded 不符 → 紅
-  { id: 'sidebar-mixed-folder', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 資料夾 frontend → 檔案表格(MainTable)' },
-  { id: 'sidebar-mixed-file', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'README.md', waitFor: '[aria-label="README.md 的版本紀錄"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 檔案 README.md → 版本紀錄表格(MainTable)' },
-  { id: 'sidebar-mixed-ios', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'Mobile App', waitFor: '[aria-label="Mobile App 裡的檔案"]' }, { press: 'ArrowRight', waitFor: '#storybook-root [role="treegrid"] [role="row"][aria-level="2"]:has-text("iOS")' }, { click: 'iOS', waitFor: '[aria-label="iOS 裡的檔案"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 資料夾 Mobile App → iOS → 檔案表格(MainTable;user 2026-11-11 在這張圖留言「你要確保這個table有按照layout space的設計原則排版吧？」)' },
-  { id: 'sidebar-dashboard-table', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 完整佈局 Dashboard → 今日待處理議題表格(MainTable)' },
-  { id: 'sidebar-project-table', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 群組動作 專案 → 進行中的議題表格(MainTable)' },
-  { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main [role="table"]', role: 'bounded', src: `${DS}components/AppShell/_demo-helpers.tsx:362`, label: 'AppShell 元件總覽 Main → InsightsView 表格' },
+  { id: 'sidebar-mixed-folder', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 混合內容 資料夾 frontend → 檔案表格(MainTable)' },
+  { id: 'sidebar-mixed-file', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'README.md', waitFor: '[aria-label="README.md 的版本紀錄"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 混合內容 檔案 README.md → 版本紀錄表格(MainTable)' },
+  { id: 'sidebar-mixed-ios', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'Mobile App', waitFor: '[aria-label="Mobile App 裡的檔案"]' }, { press: 'ArrowRight', waitFor: '#storybook-root [role="treegrid"] [role="row"][aria-level="2"]:has-text("iOS")' }, { click: 'iOS', waitFor: '[aria-label="iOS 裡的檔案"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 混合內容 資料夾 Mobile App → iOS → 檔案表格(MainTable;user 2026-11-11 在這張圖留言「你要確保這個table有按照layout space的設計原則排版吧？」)' },
+  { id: 'sidebar-dashboard-table', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 完整佈局 Dashboard → 今日待處理議題表格(MainTable)' },
+  { id: 'sidebar-project-table', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 群組動作 專案 → 進行中的議題表格(MainTable)' },
+  { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main [role="table"]', role: 'bounded', src: `${DS}components/AppShell/_demo-helpers.tsx#InsightsView`, label: 'AppShell 元件總覽 Main → InsightsView 表格' },
   { id: 'appshell-aside-order', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: '訂單詳情', waitFor: 'dl', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:72`, label: 'AppShell 元件總覽 Right panel 訂單詳情 → DescriptionList' },
   { id: 'appshell-readout', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'Sprint 42 議題', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:206`, label: 'AppShell 狀態行為 Main → 讀數 DescriptionList' },
   { id: 'appshell-rule-aside', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'ENG-1042', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:277`, label: 'AppShell 狀態行為 Right panel → 一段文字' },
@@ -326,7 +330,7 @@ async function measureCase(page, origin, c, density) {
 }
 
 async function measure() {
-  if (!staticArg) requireFreshStorybookBuild(STATIC, [...new Set(CASES.map((c) => c.src.replace(/:\d+$/, '')))].concat(['packages/design-system/src/tokens/layoutSpace/layoutSpace.css', 'packages/design-system/src/components/DataTable/data-table.tsx', 'packages/design-system/src/patterns/header-canonical/chrome-header.tsx']))
+  if (!staticArg) requireFreshStorybookBuild(STATIC, [...new Set(CASES.map(srcFile))].concat(['packages/design-system/src/tokens/layoutSpace/layoutSpace.css', 'packages/design-system/src/components/DataTable/data-table.tsx', 'packages/design-system/src/patterns/header-canonical/chrome-header.tsx']))
   const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
   const browser = await launchBrowserOrSkip()
   if (!browser) { await server.stop(); return null }

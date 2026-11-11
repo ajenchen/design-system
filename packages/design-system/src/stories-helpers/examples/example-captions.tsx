@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
  *   併成一組(前面沒有範例時跟後面那一則併成一組 —— 標題式的說明);組與組之間 loose。一段裡有好幾則範例時,範例之間照樣 loose。
  *
  * 不收的:同一列裡「✅/❌ 符號 + 樣本 + 一兩個字」的行內群、token 表列裡「色塊 / 圖示 + 名稱」的儲存格(行內 item 的 micro 幾何,
- * layoutSpace.spec.md:168);卡片 / 列裡「標題 ↔ 說明」同一個文字塊(item-anatomy.spec.md「Label ↔ Desc 間距」的
+ * layoutSpace.spec.md:172);卡片 / 列裡「標題 ↔ 說明」同一個文字塊(item-anatomy.spec.md「Label ↔ Desc 間距」的
  * `--item-gap-label-desc-*`);只有說明、沒有範例的 Rule(一串並列的 ✅ / ❌ 敘述,彼此照樣 loose)。
  */
 

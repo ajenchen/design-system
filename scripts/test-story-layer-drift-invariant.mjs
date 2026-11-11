@@ -11,7 +11,7 @@
  *       ci.yml 出現 --write-baseline、CI 不再呼叫 test:story-layer-drift → 紅;
  *       「基準不得比 base 寬」以 HEAD 那棵樹的真資料走:多記一筆 / 替新檔預留 → 紅,反例標記多 → 只列 review;--base 打錯 → 儀器失效;
  *       基準裡出現「還沒輪到的九個資料夾」以外的漂移數字(反例標記 / 逃生口放行除外)→ 紅;任一個 story 標記引用的 `*.spec.md:N` 指到不存在的檔或
- *       超出檔尾、或 2026-10-01 掃除標記最常引用的那幾行(layoutSpace.spec.md :115 :140 :165–:168 :176、tag.spec.md:230、
+ *       超出檔尾、或 2026-10-01 掃除標記最常引用的那幾行(layoutSpace.spec.md :117 :140 :165–:168 :176、tag.spec.md:232、
  *       file-item.spec.md:264、category-templates.md:168)內容被改掉 → 紅。
  *       CLI 接線端到端(2026-10-06 審查:13 個突變只碰純函式,把「有新增就紅」改成 if (false) 沒有任何檢查發現):在臨時 git repo
  *       (閘 + 分類器 + 字級 token + 出處原文 + 三層各一支夾具 story,基準由閘自己寫、提交成 base)裡跑 runCli 與真的 `node 閘`:

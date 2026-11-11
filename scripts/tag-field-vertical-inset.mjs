@@ -6,7 +6,7 @@
  *   I1 單行:每個 field wrapper 裡第一個 Tag 的上隙 − 下隙 ≤ 0.5px(對稱置中)。
  *   I2 wrap:第一行 Tag 的上隙 = 同尺寸單行的上隙(±0.5px)—— 切到 wrap 第一行不位移。
  *   I3 Tag 內文字在 Tag 裡上下對稱(≤ 0.5px)。
- *   I4 四邊等距:左隙 = 上隙(tag.spec.md:231;SSOT field-wrapper.tsx fieldTagInsetX/Y)。
+ *   I4 四邊等距:左隙 = 上隙(tag.spec.md:233;SSOT field-wrapper.tsx fieldTagInsetX/Y)。
  *   I5 wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4(1 列 = 尺寸 token)。
  *   I6 右側 chevron 右隙 = --field-px 12px(field-controls.spec.md「下拉箭頭（Select / Combobox）與類型身份 indicator」re-assert)。
  *   I7 Tag 盒高 = TAG_HEIGHT_PX = --tag-height-*(兩住所不可漂移)。
@@ -114,7 +114,7 @@ for (const r of all.filter((x) => x.wrap)) {
 }
 // I6 右側 chevron 右緣 = --field-px 12px(field-controls.spec.md「下拉箭頭（Select / Combobox）與類型身份 indicator」:tag 容器必 re-assert paddingRight)。
 for (const r of all.filter((x) => x.chevRight != null)) rec(Math.abs(r.chevRight - 12) <= 0.5, `I6 ${r.story} ${r.size} ${r.mode}:chevron 右隙 ${r.chevRight}(需 12 ±0.5)`)
-// I4 四邊等距(tag.spec.md:231):左隙 = 上隙(±0.5)。PeoplePicker stack 模式刻意用 --field-px 12px 蓋掉左隙,不在本閘取樣(它沒有 [data-tag-root])。
+// I4 四邊等距(tag.spec.md:233):左隙 = 上隙(±0.5)。PeoplePicker stack 模式刻意用 --field-px 12px 蓋掉左隙,不在本閘取樣(它沒有 [data-tag-root])。
 for (const r of all) rec(Math.abs(r.gapLeft - r.gapTop) <= 0.5, `I4 ${r.story} ${r.size} ${r.mode}${r.wrap ? '(wrap)' : ''}:Tag 左隙 ${r.gapLeft} vs 上隙 ${r.gapTop}(四邊等距 ±0.5)`)
 if (SELFTEST) { const ok = failed > 0; console.log(ok ? `✓ selftest:對照組(區塊盒 + py-1)讓 ${failed} 條紅,量具會紅` : '✗ selftest:對照組沒讓任何一條紅 —— 量具無效'); process.exit(ok ? 0 : 1) }
 console.log(failed ? `✗ tag-field-vertical-inset ${failed} 條失敗` : `✅ tag-field-vertical-inset PASS(${all.length} 個實例)`)

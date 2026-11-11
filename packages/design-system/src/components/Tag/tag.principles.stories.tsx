@@ -59,7 +59,7 @@ export const UsageGuidance: Story = {
           title="Tag — 分類標籤、狀態標記、多選已選值"
           note="承載語意(類別 / 狀態),通常有 variant 色彩區分。較大、可含 icon / dismiss button、適合放語意內容"
         >
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
           <div className="flex items-center gap-1 flex-wrap">
             <Tag color="blue">進行中</Tag>
             <Tag color="green">已完成</Tag>
@@ -93,7 +93,7 @@ export const VariantNotSemanticRule: Story = {
         title="Variant 是「顏色」,不是「語意」"
         note="red 不一定代表「錯誤」,green 不一定代表「成功」。語意由消費端的內容和上下文決定。世界級 DS(Atlassian/Polaris)都採這個架構——避免強綁語意後 categorical color 不夠用的困境"
       >
-        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
           {/* 真實分類:部門標籤 —— 紅色是「行銷部」、綠色是「財務部」,跟狀態好壞無關(稽核 L063) */}
           <Tag color="red">行銷部</Tag>
@@ -111,7 +111,7 @@ export const VariantNotSemanticRule: Story = {
         title="❌ 只靠 variant 色傳達狀態(color-blind 失效)"
         note="「這個 Tag 是紅色 → 錯誤」這種單靠顏色的語意對 color-blind 使用者失效。必須用 label 文字明確傳達"
       >
-        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
         <div className="flex items-center gap-1">
           <Tag color="red" />
           <Tag color="green" />
@@ -131,7 +131,7 @@ export const SubtleVsSolidRule: Story = {
         title="Subtle(預設)— 淺底深字,適合一般分類 / 狀態"
         note="視覺重量較輕,不搶頁面焦點。99% 場景用 subtle"
       >
-        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
           <Tag color="blue">Draft</Tag>
           <Tag color="green">Published</Tag>
@@ -145,7 +145,7 @@ export const SubtleVsSolidRule: Story = {
         title="Solid — 深底白字,需要視覺強調時"
         note="重點標籤、重要狀態標記。視覺重量較高,一頁內不該多個 solid(會互相搶戲)"
       >
-        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
           <Tag color="red" solid>緊急</Tag>
           <Tag color="blue" solid>VIP</Tag>
@@ -158,7 +158,7 @@ export const SubtleVsSolidRule: Story = {
         title="❌ 所有 Tag 都用 solid"
         note="視覺重量太高,使用者無法分辨哪個真的重要。subtle 是基礎,solid 是強調——多數應該是 subtle"
       >
-        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
           <Tag color="blue" solid>電子產品</Tag>
           <Tag color="green" solid>服飾</Tag>
@@ -189,7 +189,7 @@ export const DismissRule: Story = {
           title="用 onRemove callback,Tag 自動渲染 X button"
           note="消費者不需要自己組 remove button——傳 onRemove,Tag 內部處理尺寸、hover、a11y。多選 Combobox 的已選 tag 用這個 pattern"
         >
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
           <div className="flex items-center gap-1 flex-wrap">
             {tags.map(t => (
               <Tag key={t} color="blue" onRemove={() => setTags(tags.filter(x => x !== t))}>
@@ -204,7 +204,7 @@ export const DismissRule: Story = {
           title="Dismiss icon 繼承 Tag 文字色(有色時跟色)"
           note="不同於一般 inline action 的 fg-muted——Tag 有色變體時 dismiss 跟 Tag 文字同色,視覺一體"
         >
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
           <div className="flex items-center gap-1 flex-wrap">
             {colored.map((t) => (
               <Tag key={t.label} color={t.color} onRemove={() => setColored((prev) => prev.filter((x) => x.label !== t.label))}>{t.label}</Tag>
@@ -232,7 +232,7 @@ export const IconRule: Story = {
         title="icon — 類別圖示(tag label 的視覺強化)"
         note="用 LucideIcon,Tag 一律固定 16px、不隨 Tag 尺寸縮放——讓所有 Tag 的 icon 前綴維持相同節奏,一整排並排掃視時對齊不跳動。icon 顏色繼承 Tag 文字色(有色 variant 就跟該色),而不是自成一色:避免 icon 變成 Tag 內第二個視覺焦點,搶走 label 的主體性。"
       >
-        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
           <Tag color="blue" icon={TagIcon}>Feature</Tag>
           <Tag color="green" icon={TagIcon}>Bug Fix</Tag>
@@ -243,7 +243,7 @@ export const IconRule: Story = {
         title="avatar — 人員 / 組織類 Tag 前綴"
         note="多選 Combobox 的已選成員用 avatar + name 組合。avatar 只提供視覺辨識(一眼看到「是個人」),真正承載身份的是名字;兩者並用才能避免相似頭像、或圖片載入失敗時的誤認——所以 avatar Tag 一定要保留可見姓名,不能只放頭像。人員 / 組織標籤同理。"
       >
-        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+        {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
           {/* 人員頭像帶名片(稽核 M073;同 PeoplePicker 的 <Avatar size={16} hoverCard> 寫法) */}
           <Tag color="neutral" avatar={<Avatar size={16} src={demoPersonPhoto('Ada Chen', 32)} alt="Ada Chen" hoverCard={samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128), id: 'ADACHEN' })} />}>

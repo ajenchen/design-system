@@ -104,7 +104,7 @@ export const UsageGuidance: Story = {
           title="純顯示、不可互動 → Tag"
           note="Chip 是 control(選擇 / 未選),Tag 是 label(資訊標記)。商品卡上「新品 / 熱銷」是 Tag 不是 Chip"
         >
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
           <div className="flex items-center gap-1">
             <Tag color="red">熱銷</Tag>
             <Tag color="blue">新品</Tag>

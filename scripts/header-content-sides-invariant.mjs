@@ -34,7 +34,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { INSTRUMENT_FAIL_MARKER, launchBrowserOrSkip, requireFreshStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
-import { CASES, NOT_COVERED, classifyFirst, expectedGap, installPageKit, openCase } from './header-first-gap-invariant.mjs'
+import { CASES, NOT_COVERED, classifyFirst, expectedGap, installPageKit, openCase, srcFile } from './header-first-gap-invariant.mjs'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const staticArg = process.argv.find((a) => a.startsWith('--static='))
@@ -326,7 +326,7 @@ async function measureCase(page, origin, c, density) {
 }
 
 async function measure() {
-  if (!staticArg) requireFreshStorybookBuild(STATIC, [...new Set(CASES.map((c) => c.src.replace(/:\d+$/, '')))].concat(['packages/design-system/src/tokens/layoutSpace/layoutSpace.css', 'packages/design-system/src/components/DataTable/data-table.tsx', 'packages/design-system/src/patterns/header-canonical/chrome-header.tsx']))
+  if (!staticArg) requireFreshStorybookBuild(STATIC, [...new Set(CASES.map(srcFile))].concat(['packages/design-system/src/tokens/layoutSpace/layoutSpace.css', 'packages/design-system/src/components/DataTable/data-table.tsx', 'packages/design-system/src/patterns/header-canonical/chrome-header.tsx']))
   const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
   const browser = await launchBrowserOrSkip()
   if (!browser) { await server.stop(); return null }
