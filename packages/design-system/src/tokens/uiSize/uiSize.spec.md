@@ -105,7 +105,7 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 |-------|-----|------|
 | `--field-px` | 0.75rem (12px) | form-context field 左右內距 SSOT;固定不隨 size / density |
 
-**Tag 盒高(2026-09-15 新增,唯一住所)**:`--tag-height-sm` = 1.25rem(20px)、`--tag-height-md` = 1.5rem(24px)、`--tag-height-lg` = 1.5rem(24px,md alias)。utility bridge:`h-tag-sm` / `h-tag-md` / `h-tag-lg`(`@theme inline` 的 `--spacing-tag-sm` / `--spacing-tag-md` / `--spacing-tag-lg`,規則 3;Tag cva 消費)。消費者:`Tag` cva 的 `h-tag-sm` / `h-tag-md` / `h-tag-lg`(經上述 bridge)、`Field/field-wrapper.tsx` 的 `fieldTagInsetX/Y`(四邊等距公式 `(field-height − 2px − tag-height)/2`)。JS 側對應 `tag.tsx` `TAG_HEIGHT_PX`,閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際高度對齊兩者。收斂前 Tag 高度散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc),那正是漂移的根(M17)。
+**Tag 盒高**:標籤高 `--tag-height-*` 是 Tag 自己的值(元件的值),2026-11-11 搬到 `components/Tag/tag.css`(user 2026-11-10 token「2甲」第二批;名字與值都沒變)。每一檔的值、Tailwind `h-tag-*` 寫法、讀者與程式對照常數 → `components/Tag/tag.spec.md`「尺寸」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
 
 **消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
 
@@ -151,7 +151,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 
 ## 產品對齊用(讀來對齊、不可覆寫)
 
-本檔的共用刻度 —— 控制項高度 `--field-height-*`(4 顆)、上下內距 `--field-control-py-*`(3 顆)、左右內距 `--field-px`、堆疊間距 `--stack-gap`、樹狀縮排 `--tree-indent-*`(3 顆),共 12 顆,加上外框標頭高 `--chrome-header-height`(見下方「Chrome Header Height」)—— 產品可以**讀**來讓自己排的東西跟 DS 元件對齊:同高、文字起點在同一條線、跟著同一份密度切換。產品**不覆寫**(要換尺寸用元件的 `size` 參數),也**不拿來自己刻輸入框**(要輸入框就用 `Input` / `Select`)。依據:user 2026-11-10 token 第 5 題「5甲」。誰可以讀,唯一一份資料是 `../token-registry.json` 各列 `product`;寄住本檔的元件的值(標籤高、頭像重疊量)產品不讀。
+本檔的共用刻度 —— 控制項高度 `--field-height-*`(4 顆)、上下內距 `--field-control-py-*`(3 顆)、左右內距 `--field-px`、堆疊間距 `--stack-gap`、樹狀縮排 `--tree-indent-*`(3 顆),共 12 顆,加上外框標頭高 `--chrome-header-height`(見下方「Chrome Header Height」)—— 產品可以**讀**來讓自己排的東西跟 DS 元件對齊:同高、文字起點在同一條線、跟著同一份密度切換。產品**不覆寫**(要換尺寸用元件的 `size` 參數),也**不拿來自己刻輸入框**(要輸入框就用 `Input` / `Select`)。依據:user 2026-11-10 token 第 5 題「5甲」。誰可以讀,唯一一份資料是 `../token-registry.json` 各列 `product`;寄住本檔的元件的值(頭像重疊量)產品不讀。
 
 範例(產品的權限條件面板:自己排的條件文字「這個角色是」接在 DS `Select` 旁邊;讀 `--field-height-sm` 當最小高度、內容垂直置中,才會跟 `size="sm"` 的選單同高,換密度兩邊一起變):
 
@@ -477,7 +477,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ## Tailwind Bridge
 
-透過 `@theme inline` 橋接到 Tailwind spacing(元件的值的轉接名跟著本尊住主人的樣式檔,例:`h-table-row-*` 在 `components/DataTable/data-table.css`、`h-tab-*` 在 `components/Tabs/tabs.css`):
+透過 `@theme inline` 橋接到 Tailwind spacing(元件的值的轉接名跟著本尊住主人的樣式檔,例:`h-table-row-*` 在 `components/DataTable/data-table.css`、`h-tag-*` 在 `components/Tag/tag.css`、`h-tab-*` 在 `components/Tabs/tabs.css`):
 
 ```tsx
 <div className="h-field-md" />       /* = var(--field-height-md) */

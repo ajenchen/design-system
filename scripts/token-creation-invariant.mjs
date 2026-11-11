@@ -617,7 +617,10 @@ function selftest() {
     ['C3', true, '--tag-height-', '元件的值 target 指到別的元件資料夾', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--tag-height-').target = 'components/Avatar/tag.css'; return r })() })],
     ['C3', true, '--field-px', '共用刻度 target ≠ home(共用刻度不搬家)', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--field-px').target = 'components/Field/field.css'; return r })() })],
     ['C3', true, '--tag-height-', '主人對不到任何資料夾', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--tag-height-').owner = 'NoSuchOwner'; return r })() })],
-    ['C3', false, '--tag-height-', '現況:target 在主人資料夾、檔還沒建(第二階段還沒搬)', () => run({})],
+    ['C3', false, '--tag-height-', '現況:已搬到主人資料夾(home = target = components/Tag/tag.css)', () => run({})],
+    // 「檔可以還沒建」這條規則原本拿現況的標籤高當綠的那一筆;標籤高 2026-11-11 搬完(token「2甲」第二批)之後改用夾具,
+    // 免得規則還在、卻再也沒有任何一筆在驗它
+    ['C3', false, '--fixture-parked-gap', '寄住共用檔、target 在主人資料夾但檔還沒建(還沒搬的就是這樣)', () => run({ files: appendRoot('--fixture-parked-gap: 1px;'), registry: addRows(row({ match: '--fixture-parked-gap', owner: 'Tag', target: 'components/Tag/fixture-not-yet.css' })) })],
     ['C1', true, '--tag-height-', 'target 不是路徑', () => run({ registry: (() => { const r = clone(registry); r.rows.find((x) => x.match === '--tag-height-').target = 5; return r })() })],
     // C4
     ['C4', true, '--fixture-spec-elsewhere', '新名字只出現在別份規格', () => run({ files: appendRoot('--fixture-spec-elsewhere: 1px;'), registry: addRows(row({ match: '--fixture-spec-elsewhere', spec: 'tokens/color/color.spec.md' })) })],

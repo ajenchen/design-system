@@ -14,9 +14,9 @@
    │  外框標頭高 --chrome-header-height                                   │
    └───────────────────────────────────────────────────────────────────┘
    ┌─ 元件的值(暫時寄住;分類表 target 是它們的目標住處) ────────────────┐
-   │  標籤高、頭像重疊量 →                                                │
+   │  頭像重疊量 →                                                        │
    │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾               │
-   │  (分頁高、表格列高、側欄 4 顆已搬)。                                │
+   │  (分頁高、標籤高、表格列高、側欄 4 顆已搬)。                        │
    │  「3全收」的 6 顆(表格面板寬、分隔線、選單最大高)已收回成元件的值 │
    └───────────────────────────────────────────────────────────────────┘
    新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要再放進來。
@@ -64,13 +64,7 @@
      + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */
   --field-px: 0.75rem;          /* 12px */
 
-  /* Tag 盒高 — Tag 自身尺寸的唯一住所(2026-09-15 收斂:原本寫在 tag.tsx cva h-5/h-6、tag.tsx metrics 20/24、
-     combobox.tsx 三處 20/24、field-wrapper.tsx 內距 calc 的 1.25rem/1.5rem —— 四處各一份就是漂移的根)。
-     消費者:tag.tsx cva(h-tag-sm/md/lg,經下方 @theme inline 的 --spacing-tag-* bridge)、field-wrapper.tsx fieldTagInsetX/Y(四邊等距公式)。
-     JS 側對應常數 = tag.tsx `TAG_HEIGHT_PX`(閘 tag-field-vertical-inset I7 量實際高度對齊兩者)。lg = md alias。 */
-  --tag-height-sm: 1.25rem;     /* 20px */
-  --tag-height-md: 1.5rem;      /* 24px */
-  --tag-height-lg: 1.5rem;      /* 24px — md alias */
+  /* 標籤高 --tag-height-* 2026-11-11 搬到 components/Tag/tag.css(主人 = Tag;token「2甲」第二批) */
 
   /* 表格列高 --table-row-* 2026-11-11 搬到 components/DataTable/data-table.css(主人 = DataTable;token「2甲」第四批) */
 
@@ -161,16 +155,14 @@
 
 
 /* ── Tailwind Theme Bridge ──
-   橋接成 spacing utility，讓 h-field-md / h-tag-md 等 class 可用 */
+   橋接成 spacing utility，讓 h-field-md / h-tree-indent-md 等 class 可用 */
 @theme inline {
   --spacing-field-xs:    var(--field-height-xs);
   --spacing-field-sm:    var(--field-height-sm);
   --spacing-field-md:    var(--field-height-md);
   --spacing-field-lg:    var(--field-height-lg);
   /* h-table-row-* 的轉接名跟著本尊住 components/DataTable/data-table.css */
-  --spacing-tag-sm: var(--tag-height-sm);   /* h-tag-sm(規則 3 utility bridge,同 h-field-* / h-tab-*)*/
-  --spacing-tag-md: var(--tag-height-md);
-  --spacing-tag-lg: var(--tag-height-lg);
+  /* h-tag-* 的轉接名跟著本尊住 components/Tag/tag.css */
   /* h-tab-* 的轉接名跟著本尊住 components/Tabs/tabs.css */
   --spacing-tree-indent-sm: var(--tree-indent-sm);
   --spacing-tree-indent-md: var(--tree-indent-md);

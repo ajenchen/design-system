@@ -879,12 +879,12 @@
       "match": "--tag-height-",
       "class": "component",
       "owner": "Tag",
-      "home": "tokens/uiSize/uiSize.css",
+      "home": "components/Tag/tag.css",
       "target": "components/Tag/tag.css",
-      "spec": "tokens/uiSize/uiSize.spec.md",
+      "spec": "components/Tag/tag.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "標籤盒高:輸入框讀它是為了替「放在輸入框裡的標籤」算內距,沒有標籤就沒有這個高度 → 標籤的值。程式對照常數 tag.tsx TAG_HEIGHT_PX 由 scripts/token-twin-invariant.mjs 鎖住。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),排第二批"
+      "why": "標籤盒高:輸入框讀它是為了替「放在輸入框裡的標籤」算內距,沒有標籤就沒有這個高度 → 標籤的值。程式對照常數 tag.tsx TAG_HEIGHT_PX 由 scripts/token-twin-invariant.mjs 鎖住。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第二批 2026-11-11 已搬到 components/Tag/tag.css,名字與值不變"
     },
     {
       "match": "--avatar-stack-overlap",

@@ -44,6 +44,7 @@
 @import './../components/DataTable/data-table.css';
 @import './../components/Sidebar/sidebar.css';
 @import './../components/Tabs/tabs.css';
+@import './../components/Tag/tag.css';
 @import './../patterns/header-canonical/header-canonical.css';
 
 /* Base layer — body typography(font-family var(--font-sans))+ reset + focus + button cursor。

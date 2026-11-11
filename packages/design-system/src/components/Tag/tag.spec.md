@@ -201,6 +201,8 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 
 **Tag 內 icon 統一 16px**，不分 Tag 尺寸。
 
+**盒高的 token(唯一住所)**：`--tag-height-sm` = 1.25rem(20px)、`--tag-height-md` = 1.5rem(24px)、`--tag-height-lg` = 1.5rem(24px，md alias)，住本資料夾 `tag.css`(2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來，user 2026-11-10 token「2甲」第二批；名字與值不變，產品經對外彙總檔 `styles/tokens.css` 拿到)。Tailwind 寫法 `h-tag-sm` / `h-tag-md` / `h-tag-lg`(轉接名 `--spacing-tag-*` 跟著住 `tag.css`)。讀者：本元件 cva、`Field/field-wrapper.tsx` 的 `fieldTagInsetX` / `fieldTagInsetY`(下方「圓角與間距」的四邊等距公式)。程式對照常數 `tag.tsx` `TAG_HEIGHT_PX`(兩邊相等由 `scripts/token-twin-invariant.mjs` 靜態鎖住；畫出來的高度由 `scripts/tag-field-vertical-inset.mjs` I7 量)。分類與誰可以讀 → `tokens/token-registry.json`「--tag-height-」那一列。收斂前盒高散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc)，那正是漂移的根(M17，2026-09-15 收斂)。
+
 ## 內部結構
 
 ```
@@ -303,3 +305,4 @@ main 223ms / 加快取後 380ms / 再把快取鍵最佳化後 412ms —— 每�
 - `badge.spec.md`
 - `inline-action.spec.md`
 - `overflow-indicator.spec.md`
+- `uiSize.spec.md`

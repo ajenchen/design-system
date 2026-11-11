@@ -27,7 +27,7 @@ function getMeasureCtx() {
 }
 
 /**
- * Tag 盒高(px)。CSS 側住所是 `--tag-height-*`(tokens/uiSize/uiSize.css),兩者必須相等 ——
+ * Tag 盒高(px)。CSS 側住所是 `--tag-height-*`(本資料夾 tag.css),兩者必須相等 —— 靜態鎖 `scripts/token-twin-invariant.mjs`,
  * 閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際 rect 高度對齊這裡。消費者:tagMeta.sizes、Combobox(chevron 鎖第一行的高度)。
  */
 export const TAG_HEIGHT_PX = { sm: 20, md: 24, lg: 24 } as const
@@ -46,7 +46,7 @@ const tagVariants = cva(
         ...CAT_SUBTLE,
       },
       size: {
-        // 高度走 utility bridge h-tag-*(= --tag-height-*,tokens/uiSize/uiSize.css @theme inline;token-system.spec.md 規則 3,
+        // 高度走 utility bridge h-tag-*(= --tag-height-*,本資料夾 tag.css @theme inline;token-system.spec.md 規則 3,
         // 同 Field 的 h-field-* / Tabs 的 h-tab-* idiom)。Tag 盒高唯一住所 = 該 token;JS 側 = TAG_HEIGHT_PX。
         sm: "h-tag-sm px-1 text-caption font-medium",
         md: "h-tag-md px-1 text-body font-normal",
