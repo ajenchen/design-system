@@ -1168,6 +1168,10 @@ jobs:
           # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
           # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 兩格都跑(不寫條件式)。
           npm run test:data-table-click-outside
+          # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」):
+          # 恢復預設看資料(值 ≠ defaultSorting / defaultValue)、清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕不掉 body、polite 播報。
+          # 不需要 storybook;判定本機約 8 秒、--selftest(基準 + 16 個根因突變,含兩個修前寫法)約 2 分 → 兩格都跑(同上一支,不寫條件式)。
+          npm run test:data-table-panel-reset-clear
         env:
           SHARD: ${{ matrix.shard }}
 

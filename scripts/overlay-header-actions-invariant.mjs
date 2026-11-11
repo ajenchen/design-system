@@ -8,7 +8,8 @@
  *         只有操作或只有 × 時不放;分隔線長 = 同列最高按鈕原生高 − 8、不短於 16(「分隔線幾何」;sm 28 → 20、寬鬆 32 → 24);
  *         無外框的操作與 × 同一條中線;放有外框按鈕時按鈕中線 = 標題中線;× 恆渲染(M23(f),不以 onClose 有無當渲染閘)。
  *         兩層:(1) 靜態 —— 原始碼裡任何 SurfaceHeader / DialogHeader / SheetHeader / PopoverHeader 的 children 不得自刻分隔線
- *         (`<ButtonDivider`)、在 `hideClose` 後自己塞 ×、或 `dismiss={onX ? … : …}` 以 callback 當 × 的渲染閘;(2) 幾何 —— 量 getBoundingClientRect 的數字(M32),不讀 class,標準 / 寬鬆都量。
+ *         (`<ButtonDivider`)、在 `hideClose` 後自己塞 ×、或 `dismiss={onX ? … : …}` / `actions={onX && …}` 以 callback 當 × / 右側操作的渲染閘
+ *         (後者 2026-11-11 補:修前排序面板「重置」`actions={onReset && sorting.length > 0 ? …}`);(2) 幾何 —— 量 getBoundingClientRect 的數字(M32),不讀 class,標準 / 寬鬆都量。
  *   紅: 任一處不符 → 指名「哪一格、哪一項、差多少」並 exit 1。例:2026-11-10 修前(main 8eb473c7)DataTable 欄位顯示面板
  *       「恢復預設 ←8→ │ ←8→ ×」(應 12 / 12);排序 / 篩選面板與 DialogHeader 的分隔線寫在 children 裡(靜態)。
  *       2026-11-10 第二段修前(b1-overlay d3c92e47):浮層標題列分隔線 16(應 20 / 寬鬆 24,n7 第七節 2);篩選 / 排序面板沒傳 onClose 就沒有 ×(n7 第七節 3)。
@@ -98,6 +99,11 @@ export function scanSource(text, file = '<memory>') {
       if (/\bdismiss=\{\s*!?\s*on[A-Z]\w*\s*(\?|&&)/.test(head[0])) {
         found.push({ file, line, tag, kind: 'gated-dismiss', why: `<${tag}> 的 × 以 callback 有無當渲染閘(M23(f):× 恆渲染,callback 只做通知)` })
       }
+      // 右側操作以「callback 有沒有傳」當渲染閘(M23(f);2026-11-11 修前排序面板 `actions={onReset && sorting.length > 0 ? … : undefined}`
+      // —— 出不出現要看資料(值 ≠ 預設),不看 consumer 有沒有接 callback;data-table.spec.md L4「Header 恢復預設 / 清除全部」)
+      if (/\bactions=\{\s*!?\s*on[A-Z]\w*\s*(\?|&&)/.test(head[0])) {
+        found.push({ file, line, tag, kind: 'gated-actions', why: `<${tag}> 的右側操作以 callback 有無當渲染閘(M23(f):出現條件看資料,callback 只做動作)` })
+      }
     }
   }
   return { found, blocks }
@@ -134,6 +140,8 @@ const STATIC_TABLE = [
   ['× 以 onClose 有無當渲染閘(修前 data-table-sort-manager.tsx 的寫法)', '<SurfaceHeader actions={r} dismiss={onClose ? <PopoverClose asChild><Button dismiss /></PopoverClose> : undefined}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 1],
   ['× 以 onClose && 當渲染閘', '<SurfaceHeader dismiss={onClose && <Button dismiss />}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 1],
   ['× 恆渲染、onClose 只做通知', '<SurfaceHeader dismiss={<PopoverClose asChild><Button dismiss onClick={onClose} /></PopoverClose>}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 0],
+  ['右側操作以 onReset 有無當渲染閘(2026-11-11 修前 data-table-sort-manager.tsx 的寫法)', '<SurfaceHeader actions={onReset && sorting.length > 0 ? <Button aria-label="重置" onClick={onReset} /> : undefined} dismiss={<Button dismiss />}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 1],
+  ['右側操作看資料(值 ≠ 預設)', '<SurfaceHeader actions={showReset ? <Button aria-label="恢復預設" onClick={reset} /> : undefined} dismiss={<Button dismiss />}>\n  <PopoverTitle>排序</PopoverTitle>\n</SurfaceHeader>', 0],
 ]
 
 // ── (2) 幾何 ──────────────────────────────────────────────────────────────

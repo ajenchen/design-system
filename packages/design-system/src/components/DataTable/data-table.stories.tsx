@@ -1354,11 +1354,11 @@ export const WithBulkActions: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
             <PopoverContent align="end" className="w-auto p-0">
+              {/* 這個後台沒有存預設排序 → 不傳 defaultSorting(標題列不出現「恢復預設」);「清除全部」在加排序那一排最右(clearable 預設開) */}
               <DataTableSortManager
                 columns={baseColumns}
                 sorting={sorting}
                 onSortingChange={setSorting}
-                onReset={() => setSorting([])}
                 onClose={() => setSortOpen(false)}
               />
             </PopoverContent>
@@ -1641,6 +1641,9 @@ const FILTER_CHILD_PICKER_COLUMNS = [
 const FILTER_PANEL_ENGLISH_LABELS: Partial<DataTableFilterPanelLabels> = {
   title: 'Filters',
   resetToDefault: 'Reset to default',
+  resetToDefaultDone: 'Default filters restored',
+  clearAll: 'Clear all',
+  clearAllDone: 'All filters cleared',
   close: 'Close',
   where: 'Where',
   and: 'And',
@@ -1829,7 +1832,7 @@ export const FilterPanelStates: Story = {
           <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} /></Popover>
         </ExampleSection>
 
-        <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
+        <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="商品後台存的預設篩選是「類別 = Electronics」,這次改成 Furniture:標題列出現「恢復預設」,按下回到存的那一份;加篩選那一排最右的「清除全部」則是清掉全部條件。">
           <Popover><DataTableFilterPanel
             columns={[...FILTER_COLUMNS]}
             value={modified}
@@ -1840,6 +1843,50 @@ export const FilterPanelStates: Story = {
 
         <ExampleSection title="長標籤溢出" className={FILTER_SECTION_WIDTH} description="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
           <Popover><DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} /></Popover>
+        </ExampleSection>
+      </ExampleStack>
+    )
+  },
+}
+
+/* ── 排序面板 — 各種狀態(2026-11-11)──
+ * 「恢復預設」與「清除全部」是兩件事(user 2026-11-11):前者回到產品存的排序(defaultSorting,與目前不同才出現),後者清掉全部排序(clearable,預設開、有排序才出現)。
+ * 規格:data-table.spec.md L4「Header 恢復預設 / 清除全部」;閘 scripts/data-table-panel-reset-clear-invariant.mjs。
+ */
+type SavedFilterIssue = { key: string; summary: string; priority: string; status: string; dueDate: string; updatedAt: string }
+const issueCol = createColumnHelper<SavedFilterIssue>()
+const ISSUE_SORT_COLUMNS = [
+  issueCol.accessor('key', { header: '鍵值' }),
+  issueCol.accessor('summary', { header: '摘要' }),
+  issueCol.accessor('priority', { header: '優先級' }),
+  issueCol.accessor('status', { header: '狀態' }),
+  issueCol.accessor('dueDate', { header: '到期日' }),
+  issueCol.accessor('updatedAt', { header: '更新時間' }),
+]
+/** Jira 篩選器「我的未解決問題」存檔時的排序:優先級 降冪 → 到期日 升冪 */
+const SAVED_FILTER_SORTING: SortingState = [{ id: 'priority', desc: true }, { id: 'dueDate', desc: false }]
+const SORT_SECTION_WIDTH = 'w-full max-w-[480px]'
+
+export const SortPanelStates: Story = {
+  name: '排序面板 — 各種狀態',
+  render: function Render() {
+    const [saved, setSaved] = React.useState<SortingState>([{ id: 'updatedAt', desc: true }, { id: 'priority', desc: true }])
+    const [plain, setPlain] = React.useState<SortingState>([{ id: 'dueDate', desc: false }])
+    const [noClear, setNoClear] = React.useState<SortingState>([{ id: 'priority', desc: true }])
+    return (
+      <ExampleStack>
+        <ExampleSection
+          title="產品存了預設排序"
+          className={SORT_SECTION_WIDTH}
+          description="Jira 篩選器「我的未解決問題」存檔時排的是 優先級 降冪 → 到期日 升冪,這次改成先看最近更新的。標題列的「恢復預設」回到存檔那一份;「清除全部」是不排序。"
+        >
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={saved} onSortingChange={setSaved} defaultSorting={SAVED_FILTER_SORTING} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="沒有預設排序" className={SORT_SECTION_WIDTH} description="產品沒有存排序(不傳 defaultSorting):標題列沒有「恢復預設」,只剩加排序那一排最右的「清除全部」。">
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={plain} onSortingChange={setPlain} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="不提供清除全部" className={SORT_SECTION_WIDTH} description="產品決定不給一鍵清除(clearable={false}):每一列的刪除鈕照舊可以逐條拿掉。">
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={noClear} onSortingChange={setNoClear} clearable={false} /></Popover>
         </ExampleSection>
       </ExampleStack>
     )
@@ -2382,11 +2429,11 @@ export const RoadmapAllInOne: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
             <PopoverContent align="end" className="w-auto p-0">
+              {/* 沒有存預設排序 → 不傳 defaultSorting;「清除全部」在加排序那一排最右 */}
               <DataTableSortManager
                 columns={columns}
                 sorting={sorting}
                 onSortingChange={setSorting}
-                onReset={() => setSorting([])}
                 onClose={() => setSortOpen(false)}
               />
             </PopoverContent>
@@ -2610,7 +2657,7 @@ export const WithPagination: Story = {
 }
 
 // ── 三個狀態面板的標題列右側按鈕位(測試;閘 scripts/overlay-header-actions-invariant.mjs)──
-// 面板放在 Popover 根(不開浮層)裡、照產品用法傳 onClose,讓「重置 + 分隔線 + ×」三者都在;
+// 面板放在 Popover 根(不開浮層)裡、照產品用法傳 onClose,並給一份與目前不同的預設(defaultSorting / defaultValue),讓「恢復預設 + 分隔線 + ×」三者都在;
 // 欄位顯示面板的標題列 = PopoverHeader + actions,與 overlay-surface「標題列右側按鈕位(測試)」的 popover-header 那格同一條路徑,不在這裡重複
 //(它的 footer 一展開就讓 overlay-footer-gutter 閘假紅:列是無 role 的 div、閘認不得,改回 body 左緣比 —— 已記 found.md)。
 // 規則 = overlay-surface.spec.md「SurfaceHeader」右側按鈕位(分隔線由 SurfaceHeader 放,兩側各 12)。
@@ -2628,7 +2675,7 @@ export const HeaderActionsFixture: Story = {
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <div data-case="sort" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
           <Popover>
-            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} onReset={() => setSorting([])} onClose={() => {}} />
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} defaultSorting={[{ id: 'updatedAt', desc: true }]} onClose={() => {}} />
           </Popover>
         </div>
         <div data-case="filter" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
@@ -2639,7 +2686,7 @@ export const HeaderActionsFixture: Story = {
         {/* 沒傳 onClose:× 照樣在(M23(f);2026-11-10 前以 onClose 有無當 × 的渲染閘,這兩格少了分隔線與 ×) */}
         <div data-case="sort-no-onclose" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
           <Popover>
-            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} onReset={() => setSorting([])} />
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} defaultSorting={[{ id: 'updatedAt', desc: true }]} />
           </Popover>
         </div>
         <div data-case="filter-no-onclose" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>

@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-10T03:02:44.115Z"
+    "generatedAt": "2026-11-11T09:52:45.559Z"
   },
   "components": {
     "accordion": {
@@ -584,6 +584,7 @@
           "design-system-components-datatable-展示--selection-disabled-rows",
           "design-system-components-datatable-展示--filter-panel-empty",
           "design-system-components-datatable-展示--filter-panel-states",
+          "design-system-components-datatable-展示--sort-panel-states",
           "design-system-components-datatable-展示--filter-panel-labels-and-limit",
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
@@ -1858,5 +1859,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1026
+  "totalStories": 1027
 }
