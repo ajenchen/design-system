@@ -12,7 +12,8 @@
  *         第 2 題用鍵盤按「上一題」回第 1 題(那顆鈕跟著卸載)→ 焦點在第 1 題已選的圓,不掉到 body(O27);goBack 的另外兩條路
  *         (2026-11-11 r3 審查補):第 1 題沒選 → 焦點在第一個圓(O27b)、選了「其他」打字 → 焦點在「其他」的圓、字還在(O27c)。
  *         複選題那條路(第 1 題是複選)沒有任何 story 的第 1 題是複選,量不到;不為此新增 story(會動視覺基準),列待補。
- *         卡收起之後焦點去哪:實量掉到 body,落點規格沒寫 → 只印 ℹ 回報,不判紅(見 O28 那段)。
+ *         卡收起之後焦點(agent-decision-card.spec.md「收起後的焦點」):鍵盤按「送出」(O14f)、滑鼠按 ×(O28f)→ 卡卸載,
+ *         焦點在面板的對話輸入框,不在 body;2026-11-11 前兩條都落在 body(r3 實量)。--selftest ⑱ 卸載後 blur → O14f / O28f 紅。
  *         --selftest ⑬–⑰ 各補回一種(footer 又出現跳過 / × 改回「跳過」/ tooltip 換字 / 回第 1 題焦點掉到 body / 按 × 沒反應);
  *         2026-11-11 前的建置(第 1 題 footer 有「跳過」、× 名字「跳過」)→ O22 / O24 / O25 / O26 / O27 紅。
  *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息 —— 只用鍵盤也一樣:清掉之後只用 Tab 走到「下一題」按 Enter(O10)、
@@ -21,7 +22,7 @@
  *         選填題題目後有「(選填)」,卡片 / radiogroup / 複選群組的名字也以它結尾;必答題沒有(O19–O21;user 2026-11-10 選「標示:甲」,
  *         agent-decision-card.spec.md Header 條)。--selftest ⑪ 拿掉選填題的字 → O19 紅、⑫ 必答題也加 → O20 紅;214fc699 的建置 → O19 / O21 紅。
  *         量的是 getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked、aria-required、input.value,不讀 class(M37)。
- *   紅: --selftest 逐一補回十七種病(每種開一次新頁;⑪⑫ 見上方「(選填)」那段,⑬–⑰ 見「footer 組成與跳過」那段):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
+ *   紅: --selftest 逐一補回十八種病(每種開一次新頁;⑪⑫ 見上方「(選填)」那段,⑬–⑰ 見「footer 組成與跳過」那段,⑱ 見「卡收起之後焦點」):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
  *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「上一題」不同 ⑦ 鍵盤走到「清除選取」的路上選取被換掉
  *       ⑧ 必答題的 radiogroup 沒有 aria-required ⑨ 選填題的 radiogroup 也標 aria-required ⑩ Tab 聚焦「其他」輸入格就選中「其他」
  *       —— 各自必須被指名紅
@@ -187,7 +188,20 @@ const FAULTS = {
     what: '⑰ 按標題列 × 沒反應(跳過的唯一入口失效)',
     script: `document.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[data-slot="surface-header"] button')) e.stopPropagation() }, true)`,
   },
+  collapseFocusLost: {
+    scope: 'both',
+    expect: ['O14f', 'O28f'],
+    what: '⑱ 卡收起(送出 / ×)之後焦點掉到 body(= 2026-11-11 前)',
+    script: `document.addEventListener('click', (e) => { const b = e.target instanceof Element && e.target.closest('button'); if (b && (b.textContent.trim() === '送出' || b.closest('[data-slot="surface-header"]'))) setTimeout(() => document.activeElement && document.activeElement.blur(), 0) }, true)`,
+  },
 }
+/** 面板的對話輸入框(AgentPromptInput 的 textarea,aria-label = DS 預設「訊息」;改字時兩邊一起改)—— 決策卡收起後的焦點落點 */
+const COMPOSER = 'textarea[aria-label="訊息"]'
+/** 卡收起之後的焦點:在不在 body、是不是對話輸入框(量 document.activeElement,不讀 class) */
+const readFocus = (page) => page.evaluate((sel) => {
+  const a = document.activeElement
+  return { isBody: !a || a === document.body, onComposer: !!a && a.matches(sel), tag: a?.tagName ?? null, name: a?.getAttribute('aria-label') ?? a?.textContent?.trim().slice(0, 20) ?? null }
+}, COMPOSER)
 
 const flushOn = (page) => page.evaluate(() => new Promise((r) => setTimeout(() => setTimeout(r, 0), 0)))
 /** 等有限次的動畫 / 過渡跑完再量(按鈕有 transition-colors;卡片進場有淡入下滑)—— 量到過渡中間值是已知陷阱。上限 3 秒。 */
@@ -449,6 +463,11 @@ async function runOptional(fault) {
   record('O14', '選填複選一項都不勾,只用 Tab 走到「送出」按 Enter → 照常送出(卡收起、對話多一則決策回執)、途中「其他」沒被勾起來',
     walked.reached && !walked.changed && s === null && receipt,
     `走到 ${walked.reached}、途中選取變了 ${walked.changed}(${JSON.stringify(walked.trail.map((t) => `${t.active}:${t.checked.join('')}`))});${s ? `卡還在、錯誤 ${s.error ?? '無'}` : `回執 ${receipt ? '有' : '沒有'}`}`)
+  // 卡收起後焦點(agent-decision-card.spec.md「收起後的焦點」):鍵盤按「送出」→ 卡卸載、按的鈕跟著不見 → 焦點在面板的對話輸入框,不在 body
+  if (walked.reached && s === null) {
+    const f = await readFocus(page)
+    record('O14f', `鍵盤按「送出」卡收起之後,焦點在對話輸入框(${COMPOSER}),不在 body`, f.onComposer && !f.isBody, JSON.stringify(f))
+  } else pre('O14f', '鍵盤按「送出」卡收起之後焦點在對話輸入框', `前置不成立:沒走到送出或卡沒收起(走到 ${walked.reached};卡${s ? '還在' : '收起'})`)
 
   // ── O27b(2026-11-11 r3 審查補):goBack 的「沒選 = 第一個圓」那條路 —— 第 1 題清成沒選 → 前進 → 第 2 題用鍵盤按「上一題」回來 ──
   // O27 只走「已選了一個單選」;這裡另開一頁,第 1 題清掉選取再前進,回來時焦點應在第 1 題第一個圓(仍沒選),不在 body
@@ -548,13 +567,15 @@ async function runRequired(fault) {
     await settleAfterInteraction(page, { frames: 5 })
     const after = await readCard(page)
     const receipt = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
-    const focusAfter = await page.evaluate(() => { const a = document.activeElement; return { isBody: !a || a === document.body, tag: a?.tagName ?? null, name: a?.getAttribute('aria-label') ?? a?.textContent?.trim().slice(0, 20) ?? null } })
+    const focusAfter = await readFocus(page)
     results.push({ id: 'O28', label: '按標題列 ×(跳過全部)→ 卡收起、對話多一則決策回執', pass: !receiptBefore && after === null && receipt,
       detail: `按之前已有回執 ${receiptBefore};按之後卡${after ? '還在' : '收起'}、回執 ${receipt ? '有' : '沒有'};焦點 ${JSON.stringify(focusAfter)}` })
-    // 卡收起後焦點去哪:2026-11-11 r3 實量 = 掉到 body(focusAfter.isBody = true;× 與送出兩條收尾都是卡整個卸載)。
-    // keyboard-model-canonical「焦點不可因 DOM unmount 掉到 body」成立,但落點(例:下方的輸入框)規格沒寫 —— 產品 / UX 取捨,回報 user,
-    // 定案前不加會紅的斷言(加了 CI 恆紅);落點定了之後在這裡補 O28f(該紅的對照:卸載後 blur)。
-    if (focusAfter.isBody) console.log(`ℹ O28 收尾焦點落在 body(待規格定落點,回報 user):${JSON.stringify(focusAfter)}`)
+    // 卡收起後焦點(agent-decision-card.spec.md「收起後的焦點」,落點 = 面板的對話輸入框【AI 推導】;2026-11-11 r3 實量修前 = body)。
+    // 滑鼠按 × 時 Chrome 在 mousedown 就把焦點給了 ×(焦點在卡片裡),卡卸載後交給輸入框;--selftest ⑱ 卸載後 blur → 本條與 O14f 紅。
+    if (after === null) {
+      results.push({ id: 'O28f', label: `按標題列 × 卡收起之後,焦點在對話輸入框(${COMPOSER}),不在 body`, pass: focusAfter.onComposer && !focusAfter.isBody,
+        detail: JSON.stringify(focusAfter) })
+    } else results.push({ id: 'O28f', label: '按標題列 × 卡收起之後焦點在對話輸入框', pass: false, detail: '前置不成立:卡沒收起' })
   }
   if (fault === 'dismissDead') return results
 

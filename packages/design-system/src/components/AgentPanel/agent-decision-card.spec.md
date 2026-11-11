@@ -47,6 +47,13 @@
   依據:user 2026-11-11 回覆「跳過:甲」;甲的原文(AI 建議、user 選甲):「拿掉下方的「跳過」，只留右上角 ×；× 的提示文字改成「跳過全部，用建議繼續」。第一題下方只剩「下一題」，第二題起是「上一題 / 下一題」。」
   user 原本的提問(逐字):「再者，ai agent決策卡的部分，下方有「跳過」，其應該跟點擊x是一樣的意思？那是否文案要改成「取消」之類的？或是建議拿掉這個按鈕？」;
   另在選填題那張圖留言(逐字,問句):「跳過要拿掉？」(AI 回答「要」)。2026-09-02 到 2026-11-10:第一題 footer 左鈕是「跳過」(與 × 同一行為),× 的名字也是「跳過」。
+- 收起後的焦點:送出 / 按 × 之後 consumer 卸載卡片,握著焦點的那顆鈕跟著不見 —— 焦點在卡片裡時交給**面板的對話輸入框**(`AgentPromptInput` 的輸入格),不掉到 body
+  (`../../../ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」;W3C APG dialog:按的元素不在了 →
+  「focus is set on another element that provides logical work flow」,原文與出處見同檔 Dialog 那一段)。落點【AI 推導】:卡片本來就完全覆蓋輸入區(本節第一條),
+  收起後露出來的就是它,使用者下一步是看代理怎麼接、或自己再打一句。焦點不在卡片裡不動;consumer 送出後不卸載卡片(例如換成讀取中)時焦點留在原處。
+  作法:`AgentPanel` 提供、`AgentPromptInput` 登記輸入格(`agent-panel.tsx` `AgentComposerContext`),卡片在卸載那一刻(版面效果收尾,DOM 還在)檢查焦點、
+  交接走 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`(同「上一題」「清除選取」)。面板外單獨用卡片、或面板裡沒有輸入框時沒有落點可交,不動。
+  閘:`scripts/story-demo-focus-invariant.mjs` 決策卡兩列(送出、×,鍵盤路線;斷言焦點 = 輸入格,修前 = body)。2026-11-11 前兩條路線焦點都落在 body(r3 實測)。
 - 步進:**一題一步**,footer 右側:第一題只有「下一題」(只有一題的卡 =「送出」);第二題起「上一題」+「下一題」、末步「送出」(上一題:答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
   2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);主鈕靠右、每一題同一個位置;header × 恆為跳過。

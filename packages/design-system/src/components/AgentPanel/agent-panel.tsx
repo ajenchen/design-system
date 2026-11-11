@@ -255,6 +255,13 @@ function measureTokenWidth(host: HTMLElement, cssWidth: string): number {
   return width
 }
 
+/**
+ * 面板裡的對話輸入框(AgentPromptInput 的 textarea)—— 由 AgentPanel 提供、AgentPromptInput 登記,AgentDecisionCard 收起時讀它。
+ * 決策卡「完全覆蓋輸入區」(agent-decision-card.spec.md 第一條),送出 / 按 × 之後卡片卸載,握著焦點的那顆鈕跟著不見 ——
+ * 焦點不可因 DOM unmount 掉到 body(keyboard-model-canonical.md),交給卡片底下露出來的這個輸入框(落點見 AgentDecisionCard 的收起效果)。
+ */
+const AgentComposerContext = React.createContext<React.MutableRefObject<HTMLTextAreaElement | null> | null>(null)
+
 // code-quality-allow: long-function — 容器 = 兩種形態(AppShell 裡 / 單獨使用)× 兩種顯示(並排 / 浮層)的單一實作;拆開會讓遮罩、抑制、Esc、把手的啟用條件各寫兩份
 const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
   (
@@ -280,6 +287,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
   ) => {
     const dock = React.useContext(AgentPanelDockContext)
     const rootRef = React.useRef<HTMLDivElement | null>(null)
+    const composerRef = React.useRef<HTMLTextAreaElement | null>(null)
     // 把手以 aria-controls 指向面板本身(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`);consumer 給了 id 就用它的(來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L95)
     const autoId = React.useId()
     const panelId = props.id ?? autoId
@@ -510,7 +518,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
               onDraggingChange={resize.onDraggingChange}
             />
           )}
-          {children}
+          <AgentComposerContext.Provider value={composerRef}>{children}</AgentComposerContext.Provider>
         </div>
       </>
     )
@@ -1316,6 +1324,18 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
       onSubmit()
     }
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
+    // 登記給面板(AgentComposerContext):決策卡收起時把焦點交給這裡。只在登記的就是自己時才清,不清掉別的輸入框的登記。
+    const composer = React.useContext(AgentComposerContext)
+    const setTextarea = React.useCallback(
+      (node: HTMLTextAreaElement | null) => {
+        const previous = textareaRef.current
+        textareaRef.current = node
+        if (!composer) return
+        if (node) composer.current = node
+        else if (composer.current === previous) composer.current = null
+      },
+      [composer],
+    )
     return (
       <div
         ref={ref}
@@ -1337,7 +1357,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
           <PromptAttachmentRow attachments={attachments} onRemove={onRemoveAttachment} owner={textareaRef} />
         )}
         <textarea
-          ref={textareaRef}
+          ref={setTextarea}
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
           onKeyDown={(e) => {
@@ -1667,6 +1687,19 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       }
       setStep((s) => Math.max(0, s - 1))
     }
+    // 卡片收起(送出 / 按 × 之後 consumer 卸載它):握著焦點的那顆鈕跟著不見,焦點不可掉到 body
+    // (`ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」;W3C APG dialog:按的元素不在了
+    // →「focus is set on another element that provides logical work flow」,原文與出處同檔 Dialog 那一段)。
+    // 落點 = 面板的對話輸入框(AgentComposerContext,由 AgentPromptInput 登記)【AI 推導】:卡片本來就蓋在它上面,收起後露出來的就是它,
+    // 使用者下一步是看代理怎麼接、或自己再打一句。焦點在卡片裡才接手(同 keepFieldFocusBeforeUnmount「不在就不動」);
+    // 用版面效果的收尾:React 卸載時先跑它、再把 DOM 拿掉,這一刻卡片還在、還看得到焦點在不在裡面。
+    // consumer 送出後不卸載卡片(例如換成讀取中)就不會跑,焦點照舊留在原處。2026-11-11 前送出 / × 之後焦點落在 body(r3 實測)。
+    const rootRef = React.useRef<HTMLDivElement | null>(null)
+    const composer = React.useContext(AgentComposerContext)
+    React.useLayoutEffect(
+      () => () => keepFieldFocusBeforeUnmount(rootRef.current, composer?.current),
+      [composer],
+    )
 
     if (!question) return null
     const multi = Boolean(question.multiSelect)
@@ -1775,7 +1808,11 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     const cardClass = 'group/agent-option cursor-pointer rounded-md bg-secondary px-3 py-2'
     return (
       <div
-        ref={ref}
+        ref={(node) => {
+          rootRef.current = node
+          if (typeof ref === 'function') ref(node)
+          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+        }}
         role="group"
         aria-labelledby={titleId}
         className={cn(
