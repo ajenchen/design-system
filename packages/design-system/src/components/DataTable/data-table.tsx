@@ -56,7 +56,7 @@ import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncate
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
-import { sortingAfterHeaderActivate, sortingFromColumnMenu, columnMenuShowsCancelSort, columnMenuShowsSortDirection, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
+import { nextSorting, columnMenuShowsCancelSort, columnMenuShowsSortDirection, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement, DATA_TABLE_SORT_DEFAULT_LABELS, type SortAction } from './lib/sort-cycle'
 import { sortingFnForColumnType } from './lib/column-sorting'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
@@ -1783,15 +1783,18 @@ function DataTableInner<TData>(
     columnResizeMode: 'onChange',
   })
 
-  // ── 表頭排序(2026-11-03,user 2026-10-30 多重排序規格;判定的唯一住所 = lib/sort-cycle.ts)──────────────
-  // 表頭點擊、表頭鍵盤、⌄ 欄位選單都經這一支:以**表格此刻的排序**(受控時 = consumer 的 state,也就是排序面板寫的那一份)算出下一個,
+  // ── 表頭排序(2026-11-03 立,2026-11-11 user R16 定案改寫;判定的唯一住所 = lib/sort-cycle.ts `nextSorting`)──────────────
+  // 表頭點擊、表頭 Enter / Space(含 Shift)、⌄ 欄位選單三項都經這一支,呼叫端只說「使用者對哪一欄做了什麼」(`SortAction`),
+  // 不自己判斷:以**表格此刻的排序**(受控時 = consumer 的 state,也就是排序面板寫的那一份)算出下一個,
   // 用**值**(不是 updater)交給 TanStack → 上面的 onSortingChange:內部 state 與 consumer 拿到同一個值,不會各自從舊值推出兩個答案。
-  // 修前走 TanStack 內建 `getToggleSortingHandler`:一般點擊多重排序的最後一欄不清掉其他欄、數字 / 人員欄第一下是降冪(實測見 sort-cycle.ts 檔頭)。
+  // 播報拿的「之前」就是交給 `nextSorting` 的同一個值(不另外推)。
+  // 修前走 TanStack 內建 `getToggleSortingHandler`:一般點擊多重排序的最後一欄不清掉其他欄、數字 / 人員欄第一下是降冪(見 sort-cycle.ts 檔頭)。
   const [sortAnnouncement, setSortAnnouncement] = React.useState('')
-  const applyHeaderSorting = React.useCallback((compute: (current: SortingState) => SortingState) => {
-    const next = compute(table.getState().sorting ?? [])
+  const applyHeaderSorting = React.useCallback((columnId: string, action: SortAction) => {
+    const previous = table.getState().sorting ?? []
+    const next = nextSorting(previous, columnId, action)
     table.setSorting(next)
-    setSortAnnouncement(sortChangeAnnouncement(next, (id) => {
+    setSortAnnouncement(sortChangeAnnouncement(previous, next, columnId, (id) => {
       const column = table.getColumn(id)
       return column ? columnAccessibleName(column) : id
     }))
@@ -4022,24 +4025,25 @@ function DataTableInner<TData>(
     // 對齊只作用在儲存格內容,表頭一律靠左,所以這裡刻意不算 `align` —— 留著一個沒人用的變數
     // 會讓下一個人以為表頭還吃對齊。儲存格那側仍照常讀(見 `renderBodyRows` 的 cell 分支)。
     // Sort UI(Phase A.1):header cell 兩區結構
-    //   左區(label + indicator slot):click → toggle sort 三態(asc → desc → none)
-    //   右區:reserve future ⌄ menu(filter / hide / pin 等;hover 才出,A.x 加)
+    //   左區(label + indicator slot):點擊 / Enter / Space → 排序(兩態:已排序的欄只在升冪 ↔ 降冪之間切,點不回沒排序;lib/sort-cycle.ts)
+    //   右區:⌄ 欄位選單(排序 / 篩選 / 隱藏 / 自動調整寬度;滑過或鍵盤焦點才展開,一直在 Tab 順序裡)
     // Indicator inline collapse:已套才顯;未套不顯(任何混雜組合不推 — 對齊 AG Grid / Notion)
     const canSort = header.column.getCanSort()
     const sortDir = header.column.getIsSorted() // false | 'asc' | 'desc'
     // 多重排序(≥2 欄)時每個被排序的欄顯示「箭頭 + 順位數字」(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
     // 2026-05-04 的 K7 在多重排序時把箭頭與「取消排序」藏起來,理由是「沒有順位編號的箭頭是片段資訊」—— 有了順位數字,箭頭恢復;
-    // ⌄ 選單的「取消排序」在多重排序時也顯示,按了清掉全部排序(lib/sort-cycle.ts `columnMenuShowsCancelSort` / `sortingFromColumnMenu`)。
+    // ⌄ 選單的「取消排序」在多重排序時也顯示,按了只拿掉這一欄、後面順位往前補(lib/sort-cycle.ts `columnMenuShowsCancelSort` / `nextSorting` 的 `remove`)。
     // 只有一欄排序時不顯示數字(`sortPriorityLabel` 回 null);0 欄自然不顯示(canSort && sortDir 短路)。
     const sortingState = table.getState().sorting ?? []
     const priorityLabel = canSort && sortDir ? sortPriorityLabel(sortingState, header.column.id) : null
     const priorityDescription = canSort && sortDir ? sortPriorityDescription(sortingState, header.column.id) : null
     const priorityDescriptionId = priorityDescription ? `${columnHeaderDomId(headerIdBase, header.column.id)}-sort-priority` : undefined
     const SortIcon = sortDir === 'asc' ? ArrowUp : ArrowDown // 未套不渲染;套用後二擇一
-    // Shift+點擊 / Shift+Enter / Shift+Space = 多重排序(這張表允許、這一欄也允許時);判定在 lib/sort-cycle.ts
+    // 點擊 / Enter / Space 與 Shift+點擊 / Shift+Enter / Shift+Space 同一支;Shift 只在「這張表允許、這一欄也允許多重排序」時算數,
+    // 且只對**沒排序的欄**有差別(加到最後 vs 取代全部);已排序的欄兩者都只翻方向。判定在 lib/sort-cycle.ts `nextSorting`
     const activateSort = (shiftKey: boolean) => {
       const additive = shiftKey && enableMultiSort && header.column.getCanMultiSort()
-      applyHeaderSorting((current) => sortingAfterHeaderActivate(current, header.column.id, additive))
+      applyHeaderSorting(header.column.id, { kind: 'activate', additive })
     }
     return (
       <div
@@ -4075,7 +4079,8 @@ function DataTableInner<TData>(
         )}
         style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
       >
-        {/* 左區:label + sort indicator(整區 click → 升冪 → 降冪 → 清除,並清掉其他欄;Shift+click 只動這一欄、加進多重排序,enableMultiSort 啟用時) */}
+        {/* 左區:label + sort indicator(整區點擊:沒排序的欄 → 只剩這一欄、升冪;已排序的欄 → 只翻這一欄的方向,其他欄不動;
+            Shift+點擊沒排序的欄 → 加到多重排序最後,enableMultiSort 啟用時。取消只走 ⌄ 選單「取消排序」或排序面板) */}
         <div
           role={canSort ? 'button' : undefined}
           tabIndex={canSort ? 0 : undefined}
@@ -4170,13 +4175,14 @@ function DataTableInner<TData>(
             <DropdownMenuContent align="end">
               {canSort && (
                 <>
-                  {/* 三項的結果住 lib/sort-cycle.ts `sortingFromColumnMenu`:升冪 / 降冪 = 一般點擊同一種(清掉其他欄、只用這一欄);
-                      取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了清掉全部排序,與升冪 / 降冪同一套。
+                  {/* 三項的結果都經 lib/sort-cycle.ts `nextSorting`(與表頭點擊同一支):
                       升冪 / 降冪只列這一欄目前不是的那個方向(`columnMenuShowsSortDirection`;選了沒變化的不列,多重排序也看這一欄自己;
-                      user 2026-11-10 PR #172 留言 + AG Grid / MUI X 同做法,出處在該函式)。 */}
-                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'asc') && <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'asc'))}>升冪排序</DropdownMenuItem>}
-                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'desc') && <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'desc'))}>降冪排序</DropdownMenuItem>}
-                  {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, null))}>取消排序</DropdownMenuItem>}
+                      user 2026-11-10 PR #172 留言 + AG Grid / MUI X 同做法,出處在該函式)→ 已排序的欄只剩相反方向一項,點了只翻這一欄;
+                      沒排序的欄兩項都列,點了取代全部(同一般點擊)。
+                      取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了只拿掉這一欄、後面順位往前補(user 2026-11-11 R16 定案)。 */}
+                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'asc') && <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting(header.column.id, { kind: 'set', direction: 'asc' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.sortAscending}</DropdownMenuItem>}
+                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'desc') && <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting(header.column.id, { kind: 'set', direction: 'desc' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.sortDescending}</DropdownMenuItem>}
+                  {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting(header.column.id, { kind: 'remove' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.cancelSort}</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                 </>
               )}

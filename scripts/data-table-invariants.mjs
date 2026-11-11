@@ -1508,9 +1508,8 @@ const assertPinnedHeaderStable = async (storyName, side, label) => {
     record('I20', `${label}:排序後 center 每欄 header 的 left 與 width 全部不動`,
       worstDelta(base.heads, sorted.heads) <= 0.5 && Math.abs(base.centerHeadLeft - sorted.centerHeadLeft) <= 0.5,
       `worst head Δ ${worstDelta(base.heads, sorted.heads).toFixed(2)}(列會重排所以不比 cell 的內容,但欄位 rect 仍由 header 決定)`)
-    // 還原排序(asc → desc → none 三態,再點兩次),避免殘留狀態影響同 story 的後續量測
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 等排序三態切換的重畫
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 同上
+    // 不還原排序:2026-11-11 起表頭排序是兩態(升冪 ↔ 降冪),再點也回不到「沒排序」(修前這裡點兩下走完三態);
+    // 本函式之後沒有同一則 story 的量測 —— 下一次呼叫由 loadStory 重新開 story,排序狀態從頭開始。
   } else {
     record('I20', `${label}:第一個釘選欄可排序(否則排序那半沒測到)`, false, 'sort zone 找不到')
   }
