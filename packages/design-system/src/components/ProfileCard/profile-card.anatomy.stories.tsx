@@ -12,7 +12,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { ProfileCard, ProfileCardDefaultActions } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { SAMPLE_PEOPLE, demoPersonActions, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, demoPersonActions, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 // 範例人員一律讀共用名錄(stories-helpers/scene/person-card.tsx):同一個人在全 DS 範例同一組部門 / ID / 員工編號
 // (2026-10-28 前本頁的 Ada Chen 是 EMP-2101,HoverCard 頁是 ADACHEN / 1048217)
@@ -336,6 +336,7 @@ export const StateBehavior: Story = {
           <ProfileCard
             name="Alexander Benjamin Christopher Davidson-Williams III"
             subtitle="Senior Staff Principal Engineer"
+            avatar={{ src: demoPersonPhoto('Alexander Benjamin Christopher Davidson-Williams III', 128), alt: 'Alexander Benjamin Christopher Davidson-Williams III' }}
           />
         </div>
       </div>
@@ -350,6 +351,7 @@ export const StateBehavior: Story = {
           <ProfileCard
             name="Ada Chen"
             subtitle="Design Engineer"
+            avatar={{ src: ada.avatarSrc, alt: ada.name }}
             status="busy"
             statusMessage="目前正在衝刺 Sprint 23 的 design system audit,預計 4/25 完成,期間除 P0 issue 外不處理新功能需求,緊急事項請聯絡 @alice 或 @bob 代理"
           />

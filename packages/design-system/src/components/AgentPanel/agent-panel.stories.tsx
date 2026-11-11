@@ -37,6 +37,7 @@ import { Select, type SelectOption } from '@/design-system/components/Select/sel
 import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
+import { demoPersonData } from '@/design-system/stories-helpers/scene/person-card'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 import { useAgentDemo, decisionReceipt, DemoConversation, type DemoMessage, type DemoSession } from '@/design-system/stories-helpers/scene/agent-demo'
 import { ORDER_ROWS, orderColumns } from '@/design-system/stories-helpers/data/order-table'
@@ -725,7 +726,9 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'done', label: '完成' },
 ]
 const statusLabel = (status: TaskStatus) => STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status
-const PEOPLE: PersonData[] = [{ name: 'Betty Wu' }, { name: 'Alan Chen' }, { name: 'Ada Chen' }]
+// 照片走照片名冊(同一個人全 DS 同一張臉);已選值也要傳這裡的物件,字串只會顯示縮寫(person-display.tsx toPersonData)
+const PEOPLE: PersonData[] = [demoPersonData('Betty Wu', 48), demoPersonData('Alan Chen', 48), demoPersonData('Ada Chen', 48)]
+const personByName = (name: string) => PEOPLE.find((p) => p.name === name) ?? null
 const personName = (p: PersonValue) => (typeof p === 'string' ? p : p.name)
 /** 目前登入的人 ——「我的任務」= 指派給她的任務。 */
 const CURRENT_USER = 'Betty Wu'
@@ -909,7 +912,7 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
             </Field>
             <Field>
               <FieldLabel>指派人</FieldLabel>
-              <PeoplePicker aria-label="指派人" value={form.values.assignee || null} people={PEOPLE} onChange={(v) => setFieldValue('assignee', v[0] ? personName(v[0]) : '')} />
+              <PeoplePicker aria-label="指派人" value={personByName(form.values.assignee)} people={PEOPLE} onChange={(v) => setFieldValue('assignee', v[0] ? personName(v[0]) : '')} />
             </Field>
             <Field>
               <FieldLabel>狀態</FieldLabel>

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { within } from '@storybook/test'
 import { Tag } from './tag'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta<typeof Tag> = {
   title: 'Design System/Components/Tag/展示',
@@ -30,12 +30,12 @@ export const WithAvatar: Story = {
     // @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own)
     <div className="flex flex-wrap gap-1">
       <Tag color="neutral" avatar={
-        <Avatar size={16} src="https://i.pravatar.cc/32?u=alice" alt="Alice Chen" hoverCard={samplePersonCard({ name: 'Alice Chen', avatarSrc: 'https://i.pravatar.cc/96?u=alice' })} />
+        <Avatar size={16} src={demoPersonPhoto('Alice Chen', 32)} alt="Alice Chen" hoverCard={samplePersonCard({ name: 'Alice Chen', avatarSrc: demoPersonPhoto('Alice Chen', 128) })} />
       }>
         Alice Chen
       </Tag>
       <Tag color="neutral" avatar={
-        <Avatar size={16} src="https://i.pravatar.cc/32?u=bob" alt="Bob Lin" hoverCard={samplePersonCard({ name: 'Bob Lin', avatarSrc: 'https://i.pravatar.cc/96?u=bob', employeeNumber: 'EMP-1002' })} />
+        <Avatar size={16} src={demoPersonPhoto('Bob Lin', 32)} alt="Bob Lin" hoverCard={samplePersonCard({ name: 'Bob Lin', avatarSrc: demoPersonPhoto('Bob Lin', 128), employeeNumber: 'EMP-1002' })} />
       }>
         Bob Lin
       </Tag>

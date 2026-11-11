@@ -6,6 +6,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown, Copy } from 'lucide-react'
 import { DataTable, type DataTableSelection } from './data-table'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { PerfDebugOverlay } from './perf-debug-overlay'
 import { DataTableSortManager } from './data-table-sort-manager'
 import { DataTableColumnVisibilityPanel } from './data-table-column-visibility-panel'
@@ -46,12 +47,12 @@ import { productCatalog } from '@/design-system/stories-helpers/data/product-cat
 import { orderColumns, ORDER_ROWS } from '@/design-system/stories-helpers/data/order-table'
 
 const SELLERS: PersonData[] = [
-  { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/128?u=alice', description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
-  { name: 'Bob Christopher Chen', avatarUrl: 'https://i.pravatar.cc/128?u=bob', description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', id: 'BCC002', employeeNumber: 'EMP-1002', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
-  { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/128?u=carol', description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', id: 'CL003', employeeNumber: 'EMP-1003', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
-  { name: 'Alexander Hamilton Zhang', avatarUrl: 'https://i.pravatar.cc/128?u=alex', description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'AHZ004', employeeNumber: 'EMP-1004', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
-  { name: 'David Wu', avatarUrl: 'https://i.pravatar.cc/128?u=david', description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', id: 'DW005', employeeNumber: 'EMP-1005', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
-  { name: 'Elizabeth Montgomery Johnson', avatarUrl: 'https://i.pravatar.cc/128?u=elizabeth', description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', id: 'EMJ006', employeeNumber: 'EMP-1006', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
+  { name: 'Alice Wonderland Wang', avatarUrl: demoPersonPhoto('Alice Wonderland Wang', 128), description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
+  { name: 'Bob Christopher Chen', avatarUrl: demoPersonPhoto('Bob Christopher Chen', 128), description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', id: 'BCC002', employeeNumber: 'EMP-1002', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
+  { name: 'Carol Liu', avatarUrl: demoPersonPhoto('Carol Liu', 128), description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', id: 'CL003', employeeNumber: 'EMP-1003', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
+  { name: 'Alexander Hamilton Zhang', avatarUrl: demoPersonPhoto('Alexander Hamilton Zhang', 128), description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'AHZ004', employeeNumber: 'EMP-1004', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
+  { name: 'David Wu', avatarUrl: demoPersonPhoto('David Wu', 128), description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', id: 'DW005', employeeNumber: 'EMP-1005', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
+  { name: 'Elizabeth Montgomery Johnson', avatarUrl: demoPersonPhoto('Elizabeth Montgomery Johnson', 128), description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', id: 'EMJ006', employeeNumber: 'EMP-1006', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
 ]
 
 interface Product {
@@ -701,7 +702,7 @@ const TAG_OPTIONS = [
 // Email / Phone / Department / Location 透過 `fields` array opt-in。
 const SAMPLE_PEOPLE: PersonData[] = [
   {
-    name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice', description: 'Design',
+    name: 'Alice Chen', avatarUrl: demoPersonPhoto('Alice Chen', 48), description: 'Design',
     id: 'AC001', employeeNumber: 'EMP-1001',
     status: 'online', statusMessage: '本週設計評審,週四前 standup 移到 4pm',
     fields: [
@@ -712,7 +713,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/48?u=bob', description: 'Engineering',
+    name: 'Bob Lin', avatarUrl: demoPersonPhoto('Bob Lin', 48), description: 'Engineering',
     id: 'BL002', employeeNumber: 'EMP-1002',
     status: 'busy', statusMessage: 'Code review 中,訊息我會晚點回',
     fields: [
@@ -723,7 +724,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Charlie Wu', avatarUrl: 'https://i.pravatar.cc/48?u=charlie', description: 'Product',
+    name: 'Charlie Wu', avatarUrl: demoPersonPhoto('Charlie Wu', 48), description: 'Product',
     id: 'CWU003', employeeNumber: 'EMP-1003',
     status: 'online', statusMessage: '今日 OKR 規劃日,可線上協助',
     fields: [
@@ -734,7 +735,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Diana Huang', avatarUrl: 'https://i.pravatar.cc/48?u=diana', description: 'Marketing',
+    name: 'Diana Huang', avatarUrl: demoPersonPhoto('Diana Huang', 48), description: 'Marketing',
     id: 'DH004', employeeNumber: 'EMP-1004',
     status: 'away', statusMessage: '客戶會議中,週四上午回辦公室',
     fields: [

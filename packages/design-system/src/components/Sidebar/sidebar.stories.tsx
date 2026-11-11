@@ -38,6 +38,8 @@ import {
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { DataTable, type DataTableProps } from '@/design-system/components/DataTable/data-table'
+import type { PersonData } from '@/design-system/components/PeoplePicker/person-display'
+import { demoPersonData, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/展示',
@@ -98,7 +100,7 @@ const UserFooter = () => (
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton asChild tooltip="Alan Chen">
             <button type="button" aria-label="帳號與設定">
-              <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+              <ItemAvatar src={demoPersonPhoto('Alan Chen', 48)} alt="Alan Chen" color="blue" />
               <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
             </button>
           </SidebarMenuButton>
@@ -152,7 +154,15 @@ const PageContent = ({ title, children }: { title: string; children: React.React
 // 左右 loose(規則 1)、標頭 → 有框的表格 loose(規則 2 bounded region)、表格 → 底 loose(規則 4 第 2 列)。
 // 表格資料極簡、不開虛擬捲動 / 拖曳 / 篩選(story-rules「整頁情境」)。日期寫死(story-determinism-invariant)。
 
-type IssueRow = { key: string; title: string; assignee: string; due: string }
+// 人員欄傳人員物件(字串只會顯示縮寫,person-display.tsx toPersonData);照片走照片名冊,同一個人全 DS 同一張臉
+const TEAM = {
+  林雅婷: demoPersonData('林雅婷', 48),
+  陳柏翰: demoPersonData('陳柏翰', 48),
+  張詠晴: demoPersonData('張詠晴', 48),
+  王俊傑: demoPersonData('王俊傑', 48),
+} as const
+
+type IssueRow = { key: string; title: string; assignee: PersonData; due: string }
 const ISSUE_COLUMNS: DataTableProps<IssueRow>['columns'] = [
   { accessorKey: 'key', header: '議題', meta: { type: 'string', width: 120 } },
   { accessorKey: 'title', header: '標題', meta: { type: 'string', width: 320 } },
@@ -160,29 +170,29 @@ const ISSUE_COLUMNS: DataTableProps<IssueRow>['columns'] = [
   { accessorKey: 'due', header: '截止日', meta: { type: 'date', width: 140 } },
 ]
 const PENDING_ISSUES: IssueRow[] = [
-  { key: 'ENG-1042', title: '結帳頁 Apple Pay 按鈕在 Safari 17 不出現', assignee: '林雅婷', due: '2026/11/10' },
-  { key: 'ENG-1041', title: '退款成功後訂單狀態沒有更新', assignee: '陳柏翰', due: '2026/11/10' },
-  { key: 'ENG-1037', title: '對帳報表匯出 CSV 金額少了千分位', assignee: '張詠晴', due: '2026/11/11' },
-  { key: 'ENG-1029', title: '支付失敗通知信的重試連結過期', assignee: '王俊傑', due: '2026/11/12' },
+  { key: 'ENG-1042', title: '結帳頁 Apple Pay 按鈕在 Safari 17 不出現', assignee: TEAM.林雅婷, due: '2026/11/10' },
+  { key: 'ENG-1041', title: '退款成功後訂單狀態沒有更新', assignee: TEAM.陳柏翰, due: '2026/11/10' },
+  { key: 'ENG-1037', title: '對帳報表匯出 CSV 金額少了千分位', assignee: TEAM.張詠晴, due: '2026/11/11' },
+  { key: 'ENG-1029', title: '支付失敗通知信的重試連結過期', assignee: TEAM.王俊傑, due: '2026/11/12' },
 ]
 // 專案 → 這個專案的議題(「群組動作」新建的專案還沒有議題 → DataTable 自己的空狀態)
 const PROJECT_ISSUES: Record<string, IssueRow[]> = {
   結帳流程改版: [
-    { key: 'ENG-1042', title: '結帳頁 Apple Pay 按鈕在 Safari 17 不出現', assignee: '林雅婷', due: '2026/11/10' },
-    { key: 'ENG-1035', title: '運費試算在離島地址回傳錯誤', assignee: '陳柏翰', due: '2026/11/14' },
-    { key: 'ENG-1031', title: '折扣碼欄位按 Enter 會直接送出訂單', assignee: '林雅婷', due: '2026/11/18' },
+    { key: 'ENG-1042', title: '結帳頁 Apple Pay 按鈕在 Safari 17 不出現', assignee: TEAM.林雅婷, due: '2026/11/10' },
+    { key: 'ENG-1035', title: '運費試算在離島地址回傳錯誤', assignee: TEAM.陳柏翰, due: '2026/11/14' },
+    { key: 'ENG-1031', title: '折扣碼欄位按 Enter 會直接送出訂單', assignee: TEAM.林雅婷, due: '2026/11/18' },
   ],
   對帳批次: [
-    { key: 'ENG-1037', title: '對帳報表匯出 CSV 金額少了千分位', assignee: '張詠晴', due: '2026/11/11' },
-    { key: 'ENG-1033', title: '跨日批次在 00:00 前後重複入帳', assignee: '張詠晴', due: '2026/11/15' },
+    { key: 'ENG-1037', title: '對帳報表匯出 CSV 金額少了千分位', assignee: TEAM.張詠晴, due: '2026/11/11' },
+    { key: 'ENG-1033', title: '跨日批次在 00:00 前後重複入帳', assignee: TEAM.張詠晴, due: '2026/11/15' },
   ],
   支付失敗通知: [
-    { key: 'ENG-1029', title: '支付失敗通知信的重試連結過期', assignee: '王俊傑', due: '2026/11/12' },
-    { key: 'ENG-1026', title: '簡訊通知在夜間時段不應發送', assignee: '王俊傑', due: '2026/11/20' },
+    { key: 'ENG-1029', title: '支付失敗通知信的重試連結過期', assignee: TEAM.王俊傑, due: '2026/11/12' },
+    { key: 'ENG-1026', title: '簡訊通知在夜間時段不應發送', assignee: TEAM.王俊傑, due: '2026/11/20' },
   ],
 }
 
-type FileRow = { name: string; updatedAt: string; updatedBy: string }
+type FileRow = { name: string; updatedAt: string; updatedBy: PersonData }
 const FILE_COLUMNS: DataTableProps<FileRow>['columns'] = [
   { accessorKey: 'name', header: '名稱', meta: { type: 'string', width: 280 } },
   { accessorKey: 'updatedAt', header: '最後修改', meta: { type: 'date', width: 160 } },
@@ -191,50 +201,50 @@ const FILE_COLUMNS: DataTableProps<FileRow>['columns'] = [
 // 資料夾 → 裡面的檔案(「混合內容」專案樹的資料夾;有子節點的資料夾就是樹上那幾個子節點)
 const FOLDER_FILES: Record<string, FileRow[]> = {
   web: [
-    { name: 'frontend', updatedAt: '2026/11/09', updatedBy: '林雅婷' },
-    { name: 'backend', updatedAt: '2026/11/08', updatedBy: '陳柏翰' },
-    { name: 'README.md', updatedAt: '2026/10/30', updatedBy: '張詠晴' },
+    { name: 'frontend', updatedAt: '2026/11/09', updatedBy: TEAM.林雅婷 },
+    { name: 'backend', updatedAt: '2026/11/08', updatedBy: TEAM.陳柏翰 },
+    { name: 'README.md', updatedAt: '2026/10/30', updatedBy: TEAM.張詠晴 },
   ],
   frontend: [
-    { name: 'src', updatedAt: '2026/11/09', updatedBy: '林雅婷' },
-    { name: 'public', updatedAt: '2026/10/21', updatedBy: '林雅婷' },
-    { name: 'package.json', updatedAt: '2026/11/06', updatedBy: '陳柏翰' },
-    { name: 'vite.config.ts', updatedAt: '2026/10/15', updatedBy: '林雅婷' },
+    { name: 'src', updatedAt: '2026/11/09', updatedBy: TEAM.林雅婷 },
+    { name: 'public', updatedAt: '2026/10/21', updatedBy: TEAM.林雅婷 },
+    { name: 'package.json', updatedAt: '2026/11/06', updatedBy: TEAM.陳柏翰 },
+    { name: 'vite.config.ts', updatedAt: '2026/10/15', updatedBy: TEAM.林雅婷 },
   ],
   backend: [
-    { name: 'api', updatedAt: '2026/11/08', updatedBy: '陳柏翰' },
-    { name: 'migrations', updatedAt: '2026/11/03', updatedBy: '王俊傑' },
-    { name: 'Dockerfile', updatedAt: '2026/10/27', updatedBy: '王俊傑' },
+    { name: 'api', updatedAt: '2026/11/08', updatedBy: TEAM.陳柏翰 },
+    { name: 'migrations', updatedAt: '2026/11/03', updatedBy: TEAM.王俊傑 },
+    { name: 'Dockerfile', updatedAt: '2026/10/27', updatedBy: TEAM.王俊傑 },
   ],
   mobile: [
-    { name: 'iOS', updatedAt: '2026/11/07', updatedBy: '張詠晴' },
-    { name: 'Android', updatedAt: '2026/11/05', updatedBy: '王俊傑' },
+    { name: 'iOS', updatedAt: '2026/11/07', updatedBy: TEAM.張詠晴 },
+    { name: 'Android', updatedAt: '2026/11/05', updatedBy: TEAM.王俊傑 },
   ],
   ios: [
-    { name: 'Podfile', updatedAt: '2026/11/07', updatedBy: '張詠晴' },
-    { name: 'Podfile.lock', updatedAt: '2026/11/07', updatedBy: '張詠晴' },
-    { name: 'Info.plist', updatedAt: '2026/10/22', updatedBy: '王俊傑' },
+    { name: 'Podfile', updatedAt: '2026/11/07', updatedBy: TEAM.張詠晴 },
+    { name: 'Podfile.lock', updatedAt: '2026/11/07', updatedBy: TEAM.張詠晴 },
+    { name: 'Info.plist', updatedAt: '2026/10/22', updatedBy: TEAM.王俊傑 },
   ],
   android: [
-    { name: 'build.gradle', updatedAt: '2026/11/05', updatedBy: '王俊傑' },
-    { name: 'gradle.properties', updatedAt: '2026/11/04', updatedBy: '王俊傑' },
-    { name: 'proguard-rules.pro', updatedAt: '2026/10/24', updatedBy: '王俊傑' },
+    { name: 'build.gradle', updatedAt: '2026/11/05', updatedBy: TEAM.王俊傑 },
+    { name: 'gradle.properties', updatedAt: '2026/11/04', updatedBy: TEAM.王俊傑 },
+    { name: 'proguard-rules.pro', updatedAt: '2026/10/24', updatedBy: TEAM.王俊傑 },
   ],
   docs: [
-    { name: '上線檢查清單.md', updatedAt: '2026/11/04', updatedBy: '張詠晴' },
-    { name: '付款流程說明.md', updatedAt: '2026/10/28', updatedBy: '林雅婷' },
+    { name: '上線檢查清單.md', updatedAt: '2026/11/04', updatedBy: TEAM.張詠晴 },
+    { name: '付款流程說明.md', updatedAt: '2026/10/28', updatedBy: TEAM.林雅婷 },
   ],
   design: [
-    { name: '色彩 token.fig', updatedAt: '2026/11/02', updatedBy: '林雅婷' },
-    { name: '元件清單.fig', updatedAt: '2026/10/25', updatedBy: '林雅婷' },
+    { name: '色彩 token.fig', updatedAt: '2026/11/02', updatedBy: TEAM.林雅婷 },
+    { name: '元件清單.fig', updatedAt: '2026/10/25', updatedBy: TEAM.林雅婷 },
   ],
   infra: [
-    { name: 'terraform', updatedAt: '2026/11/01', updatedBy: '王俊傑' },
-    { name: 'k8s', updatedAt: '2026/10/29', updatedBy: '王俊傑' },
+    { name: 'terraform', updatedAt: '2026/11/01', updatedBy: TEAM.王俊傑 },
+    { name: 'k8s', updatedAt: '2026/10/29', updatedBy: TEAM.王俊傑 },
   ],
   analytics: [
-    { name: '每週營收.sql', updatedAt: '2026/11/03', updatedBy: '張詠晴' },
-    { name: '轉換漏斗.sql', updatedAt: '2026/10/31', updatedBy: '張詠晴' },
+    { name: '每週營收.sql', updatedAt: '2026/11/03', updatedBy: TEAM.張詠晴 },
+    { name: '轉換漏斗.sql', updatedAt: '2026/10/31', updatedBy: TEAM.張詠晴 },
   ],
 }
 
@@ -269,7 +279,7 @@ const ProjectIssuesView = ({ project }: { project: string }) => (
  * 同日補充(逐字):「我的意思是不想要看到description list類型的主內容，我建議改成table之類的」。
  * 版面同資料夾 → 檔案清單(layoutSpace「Page 情境」:表格直接接在標頭下,撐滿主區、只扣頁面左右 loose)。日期寫死(story-determinism-invariant)。
  */
-type FileVersionRow = { version: string; note: string; author: string; at: string }
+type FileVersionRow = { version: string; note: string; author: PersonData; at: string }
 const FILE_VERSION_COLUMNS: DataTableProps<FileVersionRow>['columns'] = [
   { accessorKey: 'version', header: '版本', meta: { type: 'string', width: 120 } },
   { accessorKey: 'note', header: '說明', meta: { type: 'string', width: 360 } },
@@ -279,12 +289,12 @@ const FILE_VERSION_COLUMNS: DataTableProps<FileVersionRow>['columns'] = [
 // 最新一筆 = 資料夾清單上 README.md 的「最後修改 2026/10/30、張詠晴」(FOLDER_FILES.web)
 const FILE_VERSIONS: Record<string, FileVersionRow[]> = {
   readme: [
-    { version: '第 12 版', note: '補上發版流程與上線檢查清單的位置', author: '張詠晴', at: '2026/10/30' },
-    { version: '第 11 版', note: '本機開發改用 pnpm 9', author: '陳柏翰', at: '2026/10/18' },
-    { version: '第 10 版', note: '加入測試環境金流金鑰的申請方式', author: '林雅婷', at: '2026/09/26' },
-    { version: '第 9 版', note: '說明結帳流程改版的議題放在哪個專案', author: '林雅婷', at: '2026/09/12' },
-    { version: '第 8 版', note: 'Node.js 版本需求改成 20', author: '陳柏翰', at: '2026/08/29' },
-    { version: '第 7 版', note: '新增前端與 API 的資料夾說明', author: '王俊傑', at: '2026/08/14' },
+    { version: '第 12 版', note: '補上發版流程與上線檢查清單的位置', author: TEAM.張詠晴, at: '2026/10/30' },
+    { version: '第 11 版', note: '本機開發改用 pnpm 9', author: TEAM.陳柏翰, at: '2026/10/18' },
+    { version: '第 10 版', note: '加入測試環境金流金鑰的申請方式', author: TEAM.林雅婷, at: '2026/09/26' },
+    { version: '第 9 版', note: '說明結帳流程改版的議題放在哪個專案', author: TEAM.林雅婷, at: '2026/09/12' },
+    { version: '第 8 版', note: 'Node.js 版本需求改成 20', author: TEAM.陳柏翰, at: '2026/08/29' },
+    { version: '第 7 版', note: '新增前端與 API 的資料夾說明', author: TEAM.王俊傑, at: '2026/08/14' },
   ],
 }
 

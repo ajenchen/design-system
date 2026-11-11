@@ -15,13 +15,13 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { Slider } from '@/design-system/components/Slider/slider'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 // 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
 const personHover = (name: string, src?: string) => samplePersonCard({ name, avatarSrc: src })
 const P = { A: 'Alan Chen', B: 'Betty Wu', C: 'Charlie Lee' } as const
-// 真實人像(2026-07-08 sweep):u=EMP-100x 對齊 dialog.stories.tsx MEMBERS 同名人物(跨 story 同人同照)
-const P_SRC = { A: 'https://i.pravatar.cc/48?u=EMP-1001', B: 'https://i.pravatar.cc/48?u=EMP-1002', C: 'https://i.pravatar.cc/48?u=EMP-1003' } as const
+// 真實人像走照片名冊(stories-helpers/data/people.ts):與 dialog.stories.tsx MEMBERS 同名人物同一張臉
+const P_SRC = { A: demoPersonPhoto(P.A, 48), B: demoPersonPhoto(P.B, 48), C: demoPersonPhoto(P.C, 48) } as const
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 

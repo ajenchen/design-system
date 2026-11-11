@@ -38,6 +38,8 @@ import {
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { AccountMenu as AccountMenuPrimitive } from '@/design-system/components/AccountMenu/account-menu'
 import { DataTable, type DataTableProps } from '@/design-system/components/DataTable/data-table'
+import type { PersonData } from '@/design-system/components/PeoplePicker/person-display'
+import { demoPersonData, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 // 帳號選單內容(AccountMenuItems)在本檔以 DropdownMenu primitives 直接組,
 // 供 header AccountMenu demo wrapper 與 footer UserFooter 共用(M17 單一 SSOT)。
 import {
@@ -108,7 +110,7 @@ export const UserFooter = () => (
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton asChild tooltip="Alan Chen">
             <button type="button" aria-label="帳號與設定">
-              <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+              <ItemAvatar src={demoPersonPhoto('Alan Chen', 48)} alt="Alan Chen" color="blue" />
               <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
             </button>
           </SidebarMenuButton>
@@ -267,7 +269,7 @@ export function AccountMenu() {
     <AccountMenuPrimitive
       user={{
         name: 'Alan Chen',
-        avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' },
+        avatar: { src: demoPersonPhoto('Alan Chen', 48), color: 'blue' },
       }}
       onViewProfile={() => {}}
       onOpenSettings={() => {}}
@@ -329,7 +331,8 @@ export function PageHeader({
   )
 }
 
-type SprintIssueRow = { id: string; title: string; assignee: string; due: string }
+// 負責人傳人員物件(字串只會顯示縮寫,person-display.tsx toPersonData);照片走照片名冊,同一個人全 DS 同一張臉
+type SprintIssueRow = { id: string; title: string; assignee: PersonData; due: string }
 const SPRINT_OPEN_COLUMNS: DataTableProps<SprintIssueRow>['columns'] = [
   { accessorKey: 'id', header: '議題', meta: { type: 'string', width: 120 } },
   { accessorKey: 'title', header: '標題', meta: { type: 'string', width: 280 } },
@@ -338,11 +341,11 @@ const SPRINT_OPEN_COLUMNS: DataTableProps<SprintIssueRow>['columns'] = [
 ]
 // 同 app-shell.stories.tsx `ISSUES` 裡還沒完成的五筆(議題、標題、負責人、截止日照抄;日期寫死,story-determinism-invariant)
 const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
-  { id: 'ENG-1042', title: '登入後 redirect 失敗', assignee: 'Alan Chen', due: '2026-05-22' },
-  { id: 'ENG-1041', title: 'Stripe webhook timeout > 10s', assignee: 'Jamie Lin', due: '2026-05-25' },
-  { id: 'ENG-1038', title: 'PeoplePicker multi-select bug', assignee: 'Sophia Wang', due: '2026-05-26' },
-  { id: 'ENG-1031', title: '匯出 CSV 漏特殊字元', assignee: 'Sophia Wang', due: '2026-05-28' },
-  { id: 'ENG-1028', title: 'Onboarding 第 3 步無 a11y', assignee: 'Jamie Lin', due: '2026-06-02' },
+  { id: 'ENG-1042', title: '登入後 redirect 失敗', assignee: demoPersonData('Alan Chen', 48), due: '2026-05-22' },
+  { id: 'ENG-1041', title: 'Stripe webhook timeout > 10s', assignee: demoPersonData('Jamie Lin', 48), due: '2026-05-25' },
+  { id: 'ENG-1038', title: 'PeoplePicker multi-select bug', assignee: demoPersonData('Sophia Wang', 48), due: '2026-05-26' },
+  { id: 'ENG-1031', title: '匯出 CSV 漏特殊字元', assignee: demoPersonData('Sophia Wang', 48), due: '2026-05-28' },
+  { id: 'ENG-1028', title: 'Onboarding 第 3 步無 a11y', assignee: demoPersonData('Jamie Lin', 48), due: '2026-06-02' },
 ]
 
 /**

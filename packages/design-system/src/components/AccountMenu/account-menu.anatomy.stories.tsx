@@ -5,6 +5,7 @@
 // @story-baseline: packages/design-system/src/components/AccountMenu/account-menu.stories.tsx#GlobalHeaderEntry
 import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta<typeof AccountMenu> = {
@@ -18,7 +19,7 @@ type Story = StoryObj<typeof AccountMenu>
 const noop = () => {}
 const DEMO_USER = {
   name: 'Alan Chen',
-  avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' as const },
+  avatar: { src: demoPersonPhoto('Alan Chen', 48), color: 'blue' as const },
 }
 
 export const Overview: Story = {

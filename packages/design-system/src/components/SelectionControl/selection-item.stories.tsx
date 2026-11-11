@@ -2,7 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Mail, Bell, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
@@ -121,19 +121,19 @@ export const WithPrefixAvatarBlock: Story = {
       <CheckboxGroup aria-label="Reviewers">
         <SelectionItem
           control={<Checkbox defaultChecked aria-label="選取 Ada Chen" />}
-          avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?u=ada-chen' }) }}
+          avatar={{ src: demoPersonPhoto('Ada Chen', 64), alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128) }) }}
           label="Ada Chen"
           description="Design Engineer · Frontend team"
         />
         <SelectionItem
           control={<Checkbox aria-label="選取張美真" />}
-          avatar={{ src: 'https://i.pravatar.cc/64?u=zhang-meizhen', alt: '張美真', color: 'magenta', hoverCard: samplePersonCard({ name: '張美真', avatarSrc: 'https://i.pravatar.cc/96?u=zhang-meizhen' }) }}
+          avatar={{ src: demoPersonPhoto('張美真', 64), alt: '張美真', color: 'magenta', hoverCard: samplePersonCard({ name: '張美真', avatarSrc: demoPersonPhoto('張美真', 128) }) }}
           label="張美真"
           description="Product Designer · Platform team"
         />
         <SelectionItem
           control={<Checkbox defaultChecked aria-label="選取林伯彥" />}
-          avatar={{ src: 'https://i.pravatar.cc/64?u=lin-boyan', alt: '林伯彥', color: 'green', hoverCard: samplePersonCard({ name: '林伯彥', avatarSrc: 'https://i.pravatar.cc/96?u=lin-boyan' }) }}
+          avatar={{ src: demoPersonPhoto('林伯彥', 64), alt: '林伯彥', color: 'green', hoverCard: samplePersonCard({ name: '林伯彥', avatarSrc: demoPersonPhoto('林伯彥', 128) }) }}
           label="林伯彥"
           description="Staff Engineer · Infra team"
         />

@@ -14,6 +14,7 @@ import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Internal/SelectMenu/設計規格',
@@ -44,10 +45,10 @@ const statusOptions: SelectMenuOption[] = [
 ]
 
 const reviewerOptions: SelectMenuOption[] = [
-  { value: 'alice', label: 'Ada Chen', avatar: { src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }, description: 'Frontend' },
-  { value: 'bob', label: '張美真', avatar: { src: 'https://i.pravatar.cc/48?u=zhang-meizhen', alt: '張美真', color: 'magenta' }, description: 'Platform' },
-  { value: 'carol', label: '林伯彥', avatar: { src: 'https://i.pravatar.cc/48?u=lin-boyan', alt: '林伯彥', color: 'green' }, description: 'Infra' },
-  { value: 'dave', label: '黃怡君', avatar: { src: 'https://i.pravatar.cc/48?u=huang-yijun', alt: '黃怡君', color: 'turquoise' }, description: 'QA' },
+  { value: 'alice', label: 'Ada Chen', avatar: { src: demoPersonPhoto('Ada Chen', 48), alt: 'Ada Chen', color: 'indigo' }, description: 'Frontend' },
+  { value: 'bob', label: '張美真', avatar: { src: demoPersonPhoto('張美真', 48), alt: '張美真', color: 'magenta' }, description: 'Platform' },
+  { value: 'carol', label: '林伯彥', avatar: { src: demoPersonPhoto('林伯彥', 48), alt: '林伯彥', color: 'green' }, description: 'Infra' },
+  { value: 'dave', label: '黃怡君', avatar: { src: demoPersonPhoto('黃怡君', 48), alt: '黃怡君', color: 'turquoise' }, description: 'QA' },
 ]
 
 const labelOptions: SelectMenuOption[] = [

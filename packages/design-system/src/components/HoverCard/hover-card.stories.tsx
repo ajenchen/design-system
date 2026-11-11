@@ -14,7 +14,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
 import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { demoNavigate } from '@/design-system/stories-helpers/scene/demo-actions'
 
 const meta: Meta = {
@@ -130,12 +130,12 @@ export const OverflowList: Story = {
   name: '溢出清單',
   render: () => {
     const people = [
-      { name: 'Ada Chen', account: 'ADACHEN', employeeNumber: '1048217', role: 'Design Engineer', color: 'indigo' as const, avatarUrl: 'https://i.pravatar.cc/48?u=ada-chen' },
-      { name: '張美真', account: 'MEIZHEN', employeeNumber: '1051302', role: 'Product Manager', color: 'magenta' as const, avatarUrl: 'https://i.pravatar.cc/48?u=zhang-meizhen' },
-      { name: '林伯彥', account: 'BOYAN', employeeNumber: '1062145', role: 'Backend Engineer', color: 'green' as const, avatarUrl: 'https://i.pravatar.cc/48?u=lin-boyan' },
-      { name: '黃怡君', account: 'YIJUN', employeeNumber: '1070388', role: 'QA Engineer', color: 'turquoise' as const, avatarUrl: 'https://i.pravatar.cc/48?u=huang-yijun' },
-      { name: '王文彬', account: 'WENBIN', employeeNumber: '1074920', role: 'Data Analyst', color: 'purple' as const, avatarUrl: 'https://i.pravatar.cc/48?u=wang-wenbin' },
-      { name: '李思妤', account: 'SIYU', employeeNumber: '1081536', role: 'UX Researcher', color: 'yellow' as const, avatarUrl: 'https://i.pravatar.cc/48?u=li-siyu' },
+      { name: 'Ada Chen', account: 'ADACHEN', employeeNumber: '1048217', role: 'Design Engineer', color: 'indigo' as const, avatarUrl: demoPersonPhoto('Ada Chen', 64) },
+      { name: '張美真', account: 'MEIZHEN', employeeNumber: '1051302', role: 'Product Manager', color: 'magenta' as const, avatarUrl: demoPersonPhoto('張美真', 64) },
+      { name: '林伯彥', account: 'BOYAN', employeeNumber: '1062145', role: 'Backend Engineer', color: 'green' as const, avatarUrl: demoPersonPhoto('林伯彥', 64) },
+      { name: '黃怡君', account: 'YIJUN', employeeNumber: '1070388', role: 'QA Engineer', color: 'turquoise' as const, avatarUrl: demoPersonPhoto('黃怡君', 64) },
+      { name: '王文彬', account: 'WENBIN', employeeNumber: '1074920', role: 'Data Analyst', color: 'purple' as const, avatarUrl: demoPersonPhoto('王文彬', 64) },
+      { name: '李思妤', account: 'SIYU', employeeNumber: '1081536', role: 'UX Researcher', color: 'yellow' as const, avatarUrl: demoPersonPhoto('李思妤', 64) },
     ]
     const visible = people.slice(0, 3)
     const hidden = people.slice(3)

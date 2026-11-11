@@ -15,7 +15,7 @@ import { DescriptionList, DescriptionItem } from '@/design-system/components/Des
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 
 /**
  * 通知設定 —— 對話框裡直接改的設定列(對齊 Gmail 通知設定 / macOS 系統設定 / Notion 偏好設定)
@@ -70,7 +70,8 @@ function NotificationSettings() {
  * - description = 「職稱｜員編｜工號」(full-width 「｜」separator;世界級成員卡以職稱辨識工作身份)
  */
 const MEMBER_ROLES = ['Design', 'Engineering', 'Product', 'Research'] as const
-const MEMBERS = [
+// 照片走照片名冊(stories-helpers/data/people.ts):30 人同一支檔,30 張臉互不重複(閘 demo-people-roster-invariant)
+const MEMBERS: { name: DemoPersonName; empId: string; empNum: string }[] = [
   { name: 'Alan Chen', empId: 'D-0042', empNum: 'EMP-1001' },
   { name: 'Betty Wu', empId: 'E-0183', empNum: 'EMP-1002' },
   { name: 'Charlie Lee', empId: 'D-0127', empNum: 'EMP-1003' },
@@ -114,7 +115,7 @@ const MEMBER_PRESENCE = [
 function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index: number }) {
   const role = MEMBER_ROLES[index % MEMBER_ROLES.length]
   const presence = MEMBER_PRESENCE[index % MEMBER_PRESENCE.length]
-  const avatarSrc = `https://i.pravatar.cc/80?u=${member.empNum}`
+  const avatarSrc = demoPersonPhoto(member.name, 80)
   return (
     // 成員列不能被點(listitem、無 onClick)→ 不給 hover 底色:hover 回饋要誠實回答「再點會發生什麼」
     // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用」那條:成員名單這種展示列,走 Family 2 手組)

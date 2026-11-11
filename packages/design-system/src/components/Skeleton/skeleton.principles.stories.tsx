@@ -5,7 +5,7 @@ import { CircularProgress } from '@/design-system/components/CircularProgress/ci
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
 import { Empty } from '@/design-system/components/Empty/empty'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -72,7 +72,7 @@ export const UsageGuidance: Story = {
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」:ALL person avatars,無例外;稽核 M010)——
                 反例示範的是「半載入」,已經載入的頭像行為仍跟正式產品一樣 */}
-            <Avatar alt="陳小明" size={40} color="blue" hoverCard={samplePersonCard({ name: '陳小明' })} />
+            <Avatar alt="陳小明" src={demoPersonPhoto('陳小明', 80)} size={40} color="blue" hoverCard={samplePersonCard({ name: '陳小明', avatarSrc: demoPersonPhoto('陳小明', 128) })} />
             <div className="flex flex-col gap-[var(--item-gap-label-desc-reading)] flex-1">
               <span className="text-body">陳小明</span>
               <Skeleton className="h-3 w-24" />
@@ -155,7 +155,7 @@ export const ShapeMatchRule: Story = {
           {/* @layout-space-magic-ok: 真 Avatar ↔ 文字區 = 列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
           <div className="flex items-center gap-3 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
             {/* 人員頭像滑過出名片(avatar.spec.md「Avatar HoverCard 原則」;稽核 M010) */}
-            <Avatar alt="林雅婷" size={40} color="blue" className="shrink-0" hoverCard={samplePersonCard({ name: '林雅婷' })} />
+            <Avatar alt="林雅婷" src={demoPersonPhoto('林雅婷', 80)} size={40} color="blue" className="shrink-0" hoverCard={samplePersonCard({ name: '林雅婷', avatarSrc: demoPersonPhoto('林雅婷', 128) })} />
             <div className="flex flex-col gap-[var(--item-gap-label-desc-reading)] flex-1 min-w-0">
               <span className="text-body font-medium">林雅婷</span>
               <span className="text-caption text-fg-secondary truncate">已傳送設計稿連結,請查收</span>

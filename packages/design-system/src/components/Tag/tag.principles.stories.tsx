@@ -6,7 +6,7 @@ import { Tag as TagIcon, Bell } from 'lucide-react'
 import { Tag } from './tag'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Badge } from '@/design-system/components/Badge/badge'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 
@@ -246,10 +246,10 @@ export const IconRule: Story = {
         {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:115 同範疇 spec-own) */}
         <div className="flex items-center gap-1 flex-wrap">
           {/* 人員頭像帶名片(稽核 M073;同 PeoplePicker 的 <Avatar size={16} hoverCard> 寫法) */}
-          <Tag color="neutral" avatar={<Avatar size={16} src="https://i.pravatar.cc/40?img=1" alt="Ada Chen" hoverCard={samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?img=1', id: 'ADACHEN' })} />}>
+          <Tag color="neutral" avatar={<Avatar size={16} src={demoPersonPhoto('Ada Chen', 32)} alt="Ada Chen" hoverCard={samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128), id: 'ADACHEN' })} />}>
             Ada Chen
           </Tag>
-          <Tag color="neutral" avatar={<Avatar size={16} src="https://i.pravatar.cc/40?img=2" alt="Alice Chen" hoverCard={samplePersonCard({ name: 'Alice Chen', avatarSrc: 'https://i.pravatar.cc/96?img=2', employeeNumber: 'EMP-1003' })} />}>
+          <Tag color="neutral" avatar={<Avatar size={16} src={demoPersonPhoto('Alice Chen', 32)} alt="Alice Chen" hoverCard={samplePersonCard({ name: 'Alice Chen', avatarSrc: demoPersonPhoto('Alice Chen', 128), employeeNumber: 'EMP-1003' })} />}>
             Alice Chen
           </Tag>
         </div>

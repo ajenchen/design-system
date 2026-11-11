@@ -23,6 +23,7 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 import { H3, Desc, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計規格',
@@ -131,7 +132,7 @@ const SidebarPreview = ({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <button type="button">
-                    <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+                    <ItemAvatar src={demoPersonPhoto('Alan Chen', 48)} alt="Alan Chen" color="blue" />
                     <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
                   </button>
                 </SidebarMenuButton>

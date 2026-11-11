@@ -3,6 +3,7 @@
 // 不新增 email、account switcher 或其他 aspirational contract。
 import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -16,7 +17,7 @@ type Story = StoryObj
 const noop = () => {}
 const DEMO_USER = {
   name: 'Alan Chen',
-  avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' as const },
+  avatar: { src: demoPersonPhoto('Alan Chen', 48), color: 'blue' as const },
 }
 
 // 規則的內容是一段說明(不是範例區)

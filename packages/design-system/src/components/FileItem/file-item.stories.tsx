@@ -7,6 +7,10 @@ import { FileItem } from './file-item'
 import { useFileDemo, UploadManagerPanel, type DemoFile } from './_demo-files'
 import { Button } from '@/design-system/components/Button/button'
 import { Toaster } from '@/design-system/components/Toast/toast'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
+
+// 「Alan Profile.png」是 Alan Chen 的大頭照檔案 → 縮圖用照片名冊裡 Alan Chen 的那一張(同一個人全 DS 同一張臉)
+const ALAN_PROFILE_PNG = demoPersonPhoto('Alan Chen', 80)
 
 const meta: Meta<typeof FileItem> = {
   title: 'Design System/Components/FileItem/展示',
@@ -26,9 +30,9 @@ export default meta
 
 // 同一張人像照(圖片檔,縮圖就是照片本身)的三種狀態;上傳中 40% = 3.0 / 7.5 MB,完成後 7.5 MB,前後對得上(之前上傳中寫 5.7 MB of 7.5MB、完成後寫 5.7 MB)
 const RICH_FILES: DemoFile[] = [
-  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
-  { uid: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan', url: 'https://i.pravatar.cc/800?u=alan' },
-  { uid: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
+  { uid: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG, url: demoPersonPhoto('Alan Chen', 800) },
+  { uid: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
 ]
 
 export const Rich = {
@@ -76,7 +80,7 @@ export const RichRowKeyboardContract = {
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="max-w-md">
-      <FileItem mode="rich" name="Alan Profile.png" status="completed" description="7.5 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan"
+      <FileItem mode="rich" name="Alan Profile.png" status="completed" description="7.5 MB" thumbnailSrc={ALAN_PROFILE_PNG}
         onClick={keyboardOpen} onDownload={() => {}}
         actions={<Button size="xs" iconOnly variant="text" startIcon={Trash2} aria-label="刪除 Alan Profile.png" onClick={keyboardDelete} />} />
     </div>
@@ -245,7 +249,7 @@ export const CompactMixed = {
 //   - 標頭只有收合鈕(傳輸中只能收合);全部成功 5 秒後整個面板收起,滑過 / 聚焦時暫停;有失敗就不收起
 // 試算表與 PDF 沒有圖片縮圖,不放人臉照片。
 const UPLOAD_MANAGER_RICH: DemoFile[] = [
-  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: 'https://i.pravatar.cc/80?u=alan' },
+  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
   { uid: 'um-rich-completed', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
   { uid: 'um-rich-error', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
 ]
