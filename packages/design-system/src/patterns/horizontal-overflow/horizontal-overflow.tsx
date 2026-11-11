@@ -108,6 +108,9 @@ export function buildFadeMask({
  * 使用 useCallback 並以 scrollRef 為 dependency,確保消費者可以安全把回傳函式
  * 傳給 `<OverflowScrollArrow onClick>`。
  */
+/** 箭頭翻頁發在捲動容器上的事件:使用者自己捲的(useRevealSelected 據此不在尺寸改變時搶回位置)。 */
+const OVERFLOW_USER_SCROLL_EVENT = 'ds-overflow-user-scroll'
+
 export function useScrollByPage<T extends HTMLElement>(
   scrollRef: React.RefObject<T | null>,
 ): (direction: 'left' | 'right') => void {
@@ -115,6 +118,8 @@ export function useScrollByPage<T extends HTMLElement>(
     (direction: 'left' | 'right') => {
       const el = scrollRef.current
       if (!el) return
+      // 告訴同一排的 useRevealSelected「這是使用者自己捲的」(尺寸改變時不搶回;2026-11-12)
+      el.dispatchEvent(new Event(OVERFLOW_USER_SCROLL_EVENT))
       el.scrollBy({
         left: el.clientWidth * SCROLL_PAGE_RATIO * (direction === 'left' ? -1 : 1),
         behavior: 'smooth',
@@ -189,7 +194,9 @@ function matchesSafe(el: Element, selector: string): boolean {
  *    一次只有一個項目變成選中 → 揭露它;沒有項目變成選中、只有一個項目被取消(多選 Chip 點掉)→ 揭露被點掉的那一個(使用者剛動的就是它);
  *    一次多個變成選中(全選之類的批次)→ 不捲,沒有「使用者剛動的那一個」。
  * 2. **鍵盤焦點移到項目上**(`:focus-visible`;Chip 方向鍵只移焦點不選、Tab 進入整組、Tabs 手動啟用模式):滑鼠點擊的焦點不算,那一下由 1 處理。
- * 3. **容器尺寸改變**(含掛載後第一次排版):揭露「上一次揭露的項目」,還沒有就揭露唯一的選中項;多選且沒動過 → 不捲。
+ *    新加進來的項目一掛上去就是選中(沒有屬性變動)也算這一條(childList)。
+ * 3. **容器尺寸改變**(含掛載後第一次排版):揭露「上一次揭露的項目」,還沒有就揭露唯一的選中項;多選且沒動過 → 不捲;
+ *    上一次揭露之後使用者自己捲過 → 不捲(不搶回使用者的位置)。
  *    尺寸改變與掛載不用動畫(拖拉視窗時每一格都在變)。
  * 1 / 2 用 smooth,`prefers-reduced-motion: reduce` 時改瞬間。
  * 只捲這個容器本身(`scrollTo`),不用 `scrollIntoView` —— 後者會連帶捲動外層頁面與任何可捲動的祖先。
@@ -207,8 +214,14 @@ export function useRevealSelected<T extends HTMLElement>(
       el instanceof HTMLElement && el !== scroller && scroller.contains(el) && matchesSafe(el, itemSelector)
     const isSelected = (el: HTMLElement) => el.getAttribute(attrName) === attrValue
 
+    // 「上一次揭露之後使用者自己捲過」(2026-11-12 審查):自己捲開之後視窗一變寬窄就被拉回上次置中的那一項 = 搶走使用者的捲動位置。
+    // 看的是**使用者的捲動輸入**(滾輪 / 觸控 / 在捲軸或空白處按下 / 箭頭翻頁),不看 scroll 事件 —— 容器變窄時瀏覽器把
+    // scrollLeft 夾回範圍內也會發 scroll 事件,那不是使用者捲的(第一版用 scroll / scrollend 判,overflow-reveal-selected 的
+    // 縮放格全部變成「沒置中」,就是被這種事件誤判)。
+    let userScrolledSinceReveal = false
     const reveal = (item: HTMLElement, animate: boolean) => {
       anchor = item
+      userScrolledSinceReveal = false
       const s = scroller.getBoundingClientRect()
       const r = item.getBoundingClientRect()
       // 祖先若在做縮放動畫(Dialog / FileViewer 進場),getBoundingClientRect 是縮放後的值 → 換回版面像素
@@ -225,11 +238,27 @@ export function useRevealSelected<T extends HTMLElement>(
       // 一律呼叫(即使已在目標):同時取消進行中的 smooth 捲動,免得它把畫面帶到舊目標
       scroller.scrollTo({ left, behavior: animate && !reduce ? 'smooth' : 'auto' })
     }
+    const markUserScroll = () => { userScrolledSinceReveal = true }
+    // 在捲軸 / 容器空白處按下(拖捲軸);按在項目上是點選,由選中狀態那條處理
+    const onPointerDown = (e: PointerEvent) => { if (e.target === scroller) userScrolledSinceReveal = true }
+    scroller.addEventListener('wheel', markUserScroll, { passive: true })
+    scroller.addEventListener('touchstart', markUserScroll, { passive: true })
+    scroller.addEventListener('pointerdown', onPointerDown)
+    scroller.addEventListener(OVERFLOW_USER_SCROLL_EVENT, markUserScroll)
 
-    // 1. 選中狀態改變
+    // 1. 選中狀態改變 —— 含「新加進來的項目一掛上去就是選中」(沒有屬性變動,只有 childList;2026-11-12 審查:
+    //    FileViewer 原本的 useEffect([activeIndex]) 拿掉後,新縮圖帶著選中掛上來時捲去的是舊的那一個)
     const mo = new MutationObserver((records) => {
       const changed = new Set<HTMLElement>()
       for (const rec of records) {
+        if (rec.type === 'childList') {
+          rec.addedNodes.forEach((node) => {
+            if (!(node instanceof HTMLElement)) return
+            const candidates: HTMLElement[] = [node, ...Array.from(node.querySelectorAll<HTMLElement>(itemSelector))]
+            for (const it of candidates) if (isItem(it) && isSelected(it)) changed.add(it)
+          })
+          continue
+        }
         if (!isItem(rec.target)) continue
         if (rec.oldValue === rec.target.getAttribute(attrName)) continue // 設了同一個值,沒有改變
         changed.add(rec.target)
@@ -240,7 +269,7 @@ export function useRevealSelected<T extends HTMLElement>(
       const target = nowSelected.length === 1 ? nowSelected[0] : nowSelected.length === 0 && list.length === 1 ? list[0] : null
       if (target) reveal(target, true)
     })
-    mo.observe(scroller, { attributes: true, attributeFilter: [attrName], attributeOldValue: true, subtree: true })
+    mo.observe(scroller, { attributes: true, attributeFilter: [attrName], attributeOldValue: true, subtree: true, childList: true })
 
     // 2. 鍵盤焦點移到項目上
     const onFocusIn = (e: FocusEvent) => {
@@ -250,6 +279,7 @@ export function useRevealSelected<T extends HTMLElement>(
 
     // 3. 容器尺寸改變(observe 當下的第一次回呼 = 掛載後第一次排版)
     const ro = new ResizeObserver(() => {
+      if (userScrolledSinceReveal) return // 使用者在上一次揭露之後自己捲過 → 尺寸改變不搶回他的位置
       let target: HTMLElement | null = anchor && anchor.isConnected && isItem(anchor) ? anchor : null
       if (!target) {
         const selected = Array.from(scroller.querySelectorAll<HTMLElement>(itemSelector)).filter(isSelected)
@@ -263,6 +293,10 @@ export function useRevealSelected<T extends HTMLElement>(
       mo.disconnect()
       ro.disconnect()
       scroller.removeEventListener('focusin', onFocusIn)
+      scroller.removeEventListener('wheel', markUserScroll)
+      scroller.removeEventListener('touchstart', markUserScroll)
+      scroller.removeEventListener('pointerdown', onPointerDown)
+      scroller.removeEventListener(OVERFLOW_USER_SCROLL_EVENT, markUserScroll)
     }
   }, [scrollRef, itemSelector, attrName, attrValue, reserveArrowWidth])
 }
