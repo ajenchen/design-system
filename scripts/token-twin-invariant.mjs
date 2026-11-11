@@ -17,6 +17,8 @@
  * `target` 已指向別的檔 —— 第 2、3 批搬家時這支必以 INSTRUMENT-FAIL 紅、要另改一處。現在住處 = 分類表
  * `tokens/token-registry.json` 該名字最長吻合那一列的 `home`(查法用 token-creation-invariant 的 lookup,
  * 與 `ds-canonical/hooks/lib/_tab_lg_chrome_header_equal.sh` 同一個來源),搬家只改分類表一列。
+ * (2026-11-11 第 2、3 批 —— 標籤高 → components/Tag/tag.css、頭像重疊量 → components/Avatar/avatar.css —— 搬完,
+ * 只改了分類表兩列,這支一行沒動。)
  * 只比第一個宣告(`:root`)也是同一次補的:`--tree-indent-*` 在 `:root` 與「鎖回一般密度」段各宣告一次,
  * 程式常數不分密度,所以每一個宣告都必須等於它。
  */

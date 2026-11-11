@@ -41,6 +41,7 @@
    or component-internal styles — auto-detected by generator scan. Per 2026-05-27
    root-cause fix: src/globals.css 已 import for DS internal, 但 consumer-facing
    tokens.css aggregator 必須也包含, 不然 consumer 拿不到 → 跑版。 */
+@import './../components/Avatar/avatar.css';
 @import './../components/DataTable/data-table.css';
 @import './../components/Sidebar/sidebar.css';
 @import './../components/Tabs/tabs.css';

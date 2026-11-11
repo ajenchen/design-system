@@ -138,7 +138,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 | `--stack-gap` | 2px | 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值:全域焦點框往外畫的間隙(`styles/base.css` `:focus-visible` outline-offset)、頭像堆疊 / 狀態圓點 / 計數徽章 / 移除 × 的挖空縫(`avatar.tsx`)、上傳列進度條與焦點框之間的縫(`file-item.tsx`)、步驟條外圈與圓之間的縫(`steps.tsx`)。抽 token 前是 6 處字面值 |
 | `--avatar-stack-overlap` | 2px | 頭像堆疊第 2 顆起往左疊的量(`avatar.tsx` 遮罩幾何與項目位移、PeoplePicker 編輯態標籤 wrapper `-ml-[var(--avatar-stack-overlap)]`)。抽 token 前 `-ml-0.5` 字面值散在兩處、常數另一份 |
 
-**分類**:`--stack-gap` 是共用刻度(不屬於任何一個元件,所以不帶元件名);`--avatar-stack-overlap` 是頭像的值(選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量),目前寄住本檔,目標住處見 `../token-registry.json` 該列 `target`。要不要開 token 的門檻只住 `../token-system.spec.md` 判斷流程第 0 題,本檔不重述。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
+**分類**:`--stack-gap` 是共用刻度(不屬於任何一個元件,所以不帶元件名);`--avatar-stack-overlap` 是頭像的值(選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量),宣告住 `components/Avatar/avatar.css`(2026-11-11 從 `tokens/uiSize/uiSize.css` 搬去,user 2026-11-10 token「2甲」第三批;名字與值不變),值與用法仍登記在上表(分類表該列 `spec` 指本檔)。要不要開 token 的門檻只住 `../token-system.spec.md` 判斷流程第 0 題,本檔不重述。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
 
 ## Field Control Vertical Padding 與 Tree Indent(2026-11-11 補進規格)
 
@@ -151,7 +151,7 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 
 ## 產品對齊用(讀來對齊、不可覆寫)
 
-本檔的共用刻度 —— 控制項高度 `--field-height-*`(4 顆)、上下內距 `--field-control-py-*`(3 顆)、左右內距 `--field-px`、堆疊間距 `--stack-gap`、樹狀縮排 `--tree-indent-*`(3 顆),共 12 顆,加上外框標頭高 `--chrome-header-height`(見下方「Chrome Header Height」)—— 產品可以**讀**來讓自己排的東西跟 DS 元件對齊:同高、文字起點在同一條線、跟著同一份密度切換。產品**不覆寫**(要換尺寸用元件的 `size` 參數),也**不拿來自己刻輸入框**(要輸入框就用 `Input` / `Select`)。依據:user 2026-11-10 token 第 5 題「5甲」。誰可以讀,唯一一份資料是 `../token-registry.json` 各列 `product`;寄住本檔的元件的值(頭像重疊量)產品不讀。
+本檔的共用刻度 —— 控制項高度 `--field-height-*`(4 顆)、上下內距 `--field-control-py-*`(3 顆)、左右內距 `--field-px`、堆疊間距 `--stack-gap`、樹狀縮排 `--tree-indent-*`(3 顆),共 12 顆,加上外框標頭高 `--chrome-header-height`(見下方「Chrome Header Height」)—— 產品可以**讀**來讓自己排的東西跟 DS 元件對齊:同高、文字起點在同一條線、跟著同一份密度切換。產品**不覆寫**(要換尺寸用元件的 `size` 參數),也**不拿來自己刻輸入框**(要輸入框就用 `Input` / `Select`)。依據:user 2026-11-10 token 第 5 題「5甲」。誰可以讀,唯一一份資料是 `../token-registry.json` 各列 `product`;原本寄住本檔的 14 顆元件的值 2026-11-11 已全部搬到主人資料夾,不在這 12 顆裡(標籤高、頭像重疊量產品不讀;表格列高產品可讀與否看 `components/DataTable/data-table.spec.md` 與分類表那一列)。
 
 範例(產品的權限條件面板:自己排的條件文字「這個角色是」接在 DS `Select` 旁邊;讀 `--field-height-sm` 當最小高度、內容垂直置中,才會跟 `size="sm"` 的選單同高,換密度兩邊一起變):
 

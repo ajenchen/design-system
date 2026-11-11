@@ -890,12 +890,12 @@
       "match": "--avatar-stack-overlap",
       "class": "component",
       "owner": "Avatar",
-      "home": "tokens/uiSize/uiSize.css",
+      "home": "components/Avatar/avatar.css",
       "target": "components/Avatar/avatar.css",
       "spec": "tokens/uiSize/uiSize.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "頭像堆疊往左疊的量:選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量 → 頭像的值(設計理由只住 avatar.spec.md)。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。產品覆寫一處見 known.productExternal(user 2026-11-10 token 第 6 題甲,但「先不要動wm」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),排第三批"
+      "why": "頭像堆疊往左疊的量:選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量 → 頭像的值(設計理由只住 avatar.spec.md)。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。產品覆寫一處見 known.productExternal(user 2026-11-10 token 第 6 題甲,但「先不要動wm」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第三批 2026-11-11 已搬到 components/Avatar/avatar.css,名字與值不變。spec 仍指 uiSize.spec.md 那張表(值與用法登記在那裡;avatar.spec.md 只寫設計理由、沒寫這顆 token 的名字)"
     },
     {
       "match": "--chrome-header-avatar-size",

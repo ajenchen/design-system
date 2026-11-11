@@ -1,25 +1,22 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   UI Size — 跨元件共用的尺寸刻度(+ 暫時寄住的元件的值)
+   UI Size — 跨元件共用的尺寸刻度
    ═══════════════════════════════════════════════════════════════════════
 
    rem 單位,尊重使用者瀏覽器字體設定(WCAG)。透過 data-density / data-ui-size 切換 md / lg;
    有大密度覆寫的值,下方「鎖回一般密度」段必須有它(token-creation-invariant C5);
    用 var() 組出來的值住最下方「衍生值」段,在每個換密度的元素上重算(test-density-subtree-token-parity)。
 
-   每一顆屬於哪一類、主人是誰、目標住處在哪 → tokens/token-registry.json(唯一一份;本檔頭不重列)。
-   本檔現在裝兩種值:
+   每一顆屬於哪一類、主人是誰、住處在哪 → tokens/token-registry.json(唯一一份;本檔頭不重列)。
+   本檔只裝共用刻度:
    ┌─ 共用刻度(住這裡) ────────────────────────────────────────────────┐
    │  控制項高度 --field-height-* / 上下內距 --field-control-py-* /       │
    │  左右內距 --field-px、堆疊間距 --stack-gap、樹狀縮排 --tree-indent-*、│
    │  外框標頭高 --chrome-header-height                                   │
    └───────────────────────────────────────────────────────────────────┘
-   ┌─ 元件的值(暫時寄住;分類表 target 是它們的目標住處) ────────────────┐
-   │  頭像重疊量 →                                                        │
-   │  user 2026-11-10 拍板 token「2甲」分五批搬到主人資料夾               │
-   │  (分頁高、標籤高、表格列高、側欄 4 顆已搬)。                        │
-   │  「3全收」的 6 顆(表格面板寬、分隔線、選單最大高)已收回成元件的值 │
-   └───────────────────────────────────────────────────────────────────┘
-   新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要再放進來。
+   原本寄住在這裡的 14 顆元件的值,依 user 2026-11-10 token「2甲」2026-11-11 全部搬到主人資料夾
+   (分頁高 → Tabs/tabs.css、標籤高 → Tag/tag.css、頭像重疊量 → Avatar/avatar.css、表格列高 → DataTable/data-table.css、
+   側欄 4 顆 → Sidebar/sidebar.css);「3全收」的 6 顆(表格面板寬、分隔線、選單最大高)已收回成元件的值。
+   新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要放進來(token-system.spec.md 規則 1:住主人資料夾)。
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -53,11 +50,7 @@
      JS 雙生:tokens/uiSize/stack-gap.ts `STACK_GAP_PX`(遮罩幾何與 outline 內距要用數字算),由
      scripts/token-twin-invariant.mjs 機械鎖住兩邊相等。設計理由住 avatar.spec.md「頭像堆疊(疊在一起時)」段。 */
   --stack-gap: 2px;
-  /* Avatar stack overlap — 頭像堆疊第 2 顆起往左疊的量(2026-09-26 抽 token:此前 `-ml-0.5` 字面值散在
-     people-picker-helpers.ts / people-picker.tsx,與 avatar.tsx 常數各寫一份)。JS 雙生:avatar.tsx `AVATAR_STACK_OVERLAP_PX`
-     (量寬要用數字算),同樣由 scripts/token-twin-invariant.mjs 鎖住。消費者:avatar.tsx 挖空遮罩與項目位移、
-     PeoplePicker 編輯態的標籤 wrapper。 */
-  --avatar-stack-overlap: 2px;
+  /* 頭像重疊量 --avatar-stack-overlap 2026-11-11 搬到 components/Avatar/avatar.css(主人 = Avatar;token「2甲」第三批) */
 
   /* Field horizontal padding — 固定 12px(不隨 size/density);form-context field 左右內距 SSOT。
      跟 --table-cell-px(cell-context)同 -px 慣例;Input/Select/Combobox/DatePicker/TimePicker/Textarea
