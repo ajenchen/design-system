@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-10T20:47:10.019Z",
-    "stories": 1080,
+    "generatedAt": "2026-11-11T16:47:43.215Z",
+    "stories": 1081,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -323,6 +323,7 @@
       "design-system-components-datatable-展示--selection-disabled-rows",
       "design-system-components-datatable-展示--selection-keyboard-and-shift",
       "design-system-components-datatable-展示--selection-single-mode",
+      "design-system-components-datatable-展示--sort-panel-states",
       "design-system-components-datatable-展示--spreadsheet-cursor-contract",
       "design-system-components-datatable-展示--virtual-scroll",
       "design-system-components-datatable-展示--with-bulk-actions",
@@ -1085,8 +1086,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "d0c39502b6be0a67c2cc51d2d8589cf84de056ceb8f56313b6ec82963a959715",
-    "fingerprints": 728
+    "storyIdsSha256": "962ff1af5f24ceb3e1d905c32dff907947e3b79723bd2118109ebc535c90c04d",
+    "fingerprints": 730
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1128,6 +1129,7 @@
     "design-system-components-appshell-設計原則--composition-rules|color-contrast": 9,
     "design-system-components-appshell-設計原則--usage-guidance|color-contrast": 1,
     "design-system-components-appshell-設計規格--layout-mode-diagram|color-contrast": 10,
+    "design-system-components-appshell-設計規格--overview|color-contrast": 1,
     "design-system-components-appshell-設計規格--size-matrix|color-contrast": 2,
     "design-system-components-appshell-設計規格--state-behavior|color-contrast": 1,
     "design-system-components-aspectratio-展示--product-photo-4-x-3|color-contrast": 5,
@@ -1309,6 +1311,7 @@
     "design-system-components-datatable-展示--selection-disabled-rows|color-contrast": 1,
     "design-system-components-datatable-展示--selection-keyboard-and-shift|color-contrast": 6,
     "design-system-components-datatable-展示--selection-single-mode|color-contrast": 3,
+    "design-system-components-datatable-展示--sort-panel-states|color-contrast": 3,
     "design-system-components-datatable-展示--spreadsheet-cursor-contract|scrollable-region-focusable": 1,
     "design-system-components-datatable-展示--with-pagination|color-contrast": 1,
     "design-system-components-datatable-設計原則--column-type-rule|color-contrast": 12,
