@@ -6,8 +6,8 @@ import * as React from 'react'
 import { userEvent, within } from '@storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Search, Filter, ArrowUpDown, Info } from 'lucide-react'
-import { AppShell, AppShellAside, useAppShell, type PanelWidthRange } from './app-shell'
-import { AcmeSidebar, PageHeader, GlobalHeader, InsightsView, MAIN_NAV } from './_demo-helpers'
+import { AppShell, AppShellAside, useAppShell } from './app-shell'
+import { AcmeSidebar, PageHeader, GlobalHeader, InsightsView, MAIN_NAV, ISSUES, ISSUE_DETAIL_WIDTH, IssueDetail, type Issue } from './_demo-helpers'
 import { SidebarProvider } from '@/design-system/components/Sidebar/sidebar'
 import {
   AgentPanel,
@@ -17,17 +17,14 @@ import {
 import { AgentPanelDock } from '@/design-system/components/AgentPanel/agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
-import { Tag } from '@/design-system/components/Tag/tag'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { DataTableFilterPanel, createEmptyFilterTree, isFilterTreeActive, type FilterTree } from '@/design-system/components/DataTable/data-table-filter-panel'
 import { DataTableSortManager } from '@/design-system/components/DataTable/data-table-sort-manager'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 import { useAgentDemo, DemoConversation } from '@/design-system/stories-helpers/scene/agent-demo'
-import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import type { SortingState } from '@tanstack/react-table'
 
@@ -46,25 +43,8 @@ type Story = StoryObj<typeof AppShell>
 // Helpers(AcmeSidebar / PageHeader / WorkspaceBrand / UserFooter / MAIN_NAV)從 ./_demo-helpers
 // import,跟 anatomy stories 共用 single baseline source(避免 anatomy 跟 showcase 自分歧)。
 
-// ── Mock data — 議題追蹤(issue tracker)────────────────────────────────
-
-type Issue = {
-  id: string
-  title: string
-  status: 'In Progress' | 'Backlog' | 'In Review' | 'Done'
-  assignee: string
-  priority: 'P0' | 'P1' | 'P2'
-  due: string
-}
-
-const ISSUES: Issue[] = [
-  { id: 'ENG-1042', title: '登入後 redirect 失敗',         status: 'In Progress', assignee: 'Alan Chen',   priority: 'P0', due: '2026-05-22' },
-  { id: 'ENG-1041', title: 'Stripe webhook timeout > 10s', status: 'Backlog',     assignee: 'Jamie Lin',   priority: 'P0', due: '2026-05-25' },
-  { id: 'ENG-1038', title: 'PeoplePicker multi-select bug', status: 'In Review',  assignee: 'Sophia Wang', priority: 'P1', due: '2026-05-26' },
-  { id: 'ENG-1035', title: 'DataTable Safari scroll jitter', status: 'Done',      assignee: 'Marco Tsai',  priority: 'P1', due: '2026-05-20' },
-  { id: 'ENG-1031', title: '匯出 CSV 漏特殊字元',           status: 'In Progress', assignee: 'Sophia Wang', priority: 'P2', due: '2026-05-28' },
-  { id: 'ENG-1028', title: 'Onboarding 第 3 步無 a11y',     status: 'Backlog',     assignee: 'Jamie Lin',   priority: 'P2', due: '2026-06-02' },
-]
+// ── Mock data — 議題追蹤(issue tracker):Issue / ISSUES / ISSUE_DETAIL_WIDTH / IssueDetail 住 ./_demo-helpers
+// (設計規格「元件總覽」的 Right panel 也用同一份,2026-11-11 起)
 
 // ── 版面寬度設定(示範產品的值;規則見 app-shell.spec.md「版面規則」§1:Main 最小寬必填、各區依內容類型給最小 / 初始 / 最大)──
 /**
@@ -73,8 +53,6 @@ const ISSUES: Issue[] = [
  * 不撐開 AppShell。2026-10-14 這裡寫「議題表 6 欄的可讀下限」是 AI 編的理由(與欄寬宣告矛盾;2026-10-15 r1b 複驗 F6,M36(a)),已改正。
  */
 const MAIN_MIN_WIDTH = 600
-/** Right panel「議題詳情」這種內容的寬度(示範值:最小 320 放得下欄位標籤 + 值兩欄,最大 560 免得留言行過長)。 */
-const ISSUE_DETAIL_WIDTH: PanelWidthRange = { min: 320, initial: 360, max: 560 }
 
 const ch = createColumnHelper<Issue>()
 const ISSUE_COLUMNS = [
@@ -205,70 +183,6 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
             />
           )}
         />
-      </div>
-    </div>
-  )
-}
-
-// Status / Priority → Tag color mapping(per Tag spec status marker canonical)
-const STATUS_COLOR = {
-  'In Progress': 'blue',
-  'Backlog': 'neutral',
-  'In Review': 'yellow',
-  'Done': 'green',
-} as const
-
-const PRIORITY_COLOR = {
-  P0: 'red',
-  P1: 'yellow',
-  P2: 'neutral',
-} as const
-
-/**
- * Aside content:Issue detail panel。
- * @usage-ref: packages/design-system/src/components/DescriptionList/description-list.stories.tsx
- * @usage-consumes: ItemContent(entity identity)+ Tag(status/priority)+ DescriptionList(metadata)
- *
- * Per codex Layer B D1+D2(2026-05-20):
- * - Entity identity(title + id 副標)→ ItemContent(item-anatomy Family 2 subtitle pattern,非 ProfileCard 因 scope 是 people only)
- * - Status / Priority marker → Tag color-coded(per tag.spec.md status use case)
- * - Metadata fields → DescriptionList + DescriptionItem(per description-list.spec.md「Profile / detail panel 的屬性列表」use case)
- *
- * 2026-10-28:原本面板底部還有「分派給我」「標記完成」兩顆按鈕 —— 沒有規格依據、按了沒反應,user 訊息裡搜『分派』『標記完成』都是 0 筆;
- * 詳情面板該放哪些動作是產品內容,範例不替產品決定,拿掉(稽核 M057;ssot PA5)。面板只示範內容。
- * 底部 = bottom 48:右欄高度撐滿版面欄、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28「這個沒問題」)。
- * 最後一個 DescriptionList 列不自帶下內距(description-list.tsx `last:pb-0`),底部只由這一層給。
- */
-function IssueDetail({ issue }: { issue: Issue | null }) {
-  if (!issue) {
-    return (
-      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] text-fg-muted">
-        選一個 issue 看詳情
-      </div>
-    )
-  }
-  return (
-    <div className="flex flex-col px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <ItemContent
-            size="lg"
-            label={issue.title}
-            description={issue.id}
-            descriptionTone="muted"
-            labelTruncate={false}
-            labelClassName="font-medium text-foreground"
-          />
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
-          <div className="flex flex-wrap gap-1">
-            <Tag size="sm" color={STATUS_COLOR[issue.status]}>{issue.status}</Tag>
-            <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>
-          </div>
-        </div>
-        <DescriptionList orientation="horizontal" divided>
-          <DescriptionItem label="Assignee">{issue.assignee}</DescriptionItem>
-          <DescriptionItem label="Due">{issue.due}</DescriptionItem>
-        </DescriptionList>
       </div>
     </div>
   )

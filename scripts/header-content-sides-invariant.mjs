@@ -57,7 +57,7 @@ export const SIDES = {
   'sidebar-dashboard-table': { last: 'bounded', box: 'fill', pattern: 'AB' },
   'sidebar-project-table': { last: 'bounded', box: 'fill', pattern: 'AB' },
   'appshell-insights': { last: 'bounded', box: 'fill', pattern: 'AB' },
-  'appshell-aside-order': { last: 'element', box: 'fill', pattern: 'AB' },
+  'appshell-aside-issue': { last: 'element', box: 'fill', pattern: 'AB' },
   'appshell-readout': { last: 'element', box: 'fill', pattern: 'AB' },
   'appshell-rule-aside': { last: 'element', box: 'fill', pattern: 'AB' },
   'appshell-inbox-toolbar': { last: 'bounded', box: 'fill', pattern: 'AB' },

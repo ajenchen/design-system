@@ -69,12 +69,12 @@ export const CASES = [
   { id: 'sidebar-dashboard-table', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main [role="table"]', tableName: '今日待處理議題', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 完整佈局 Dashboard → 今日待處理議題表格(MainTable)' },
   { id: 'sidebar-project-table', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main [role="table"]', tableName: '進行中的議題', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 群組動作 專案 → 進行中的議題表格(MainTable)' },
   { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main [role="table"]', tableName: 'Sprint 42 還沒完成的議題', role: 'bounded', src: `${DS}components/AppShell/_demo-helpers.tsx#InsightsView`, label: 'AppShell 元件總覽 Main → InsightsView 表格' },
-  { id: 'appshell-aside-order', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: '訂單詳情', waitFor: 'dl', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:72`, label: 'AppShell 元件總覽 Right panel 訂單詳情 → DescriptionList' },
-  { id: 'appshell-readout', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'Sprint 42 議題', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:206`, label: 'AppShell 狀態行為 Main → 讀數 DescriptionList' },
-  { id: 'appshell-rule-aside', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'ENG-1042', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:277`, label: 'AppShell 狀態行為 Right panel → 一段文字' },
+  { id: 'appshell-aside-issue', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'ENG-1042', waitFor: 'dl', role: 'element', src: `${DS}components/AppShell/_demo-helpers.tsx:437`, label: 'AppShell 元件總覽 Right panel 議題詳情(主區表格的 ENG-1042)→ 標題列' },
+  { id: 'appshell-readout', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'Sprint 42 議題', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:200`, label: 'AppShell 狀態行為 Main → 讀數 DescriptionList' },
+  { id: 'appshell-rule-aside', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'ENG-1042', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:271`, label: 'AppShell 狀態行為 Right panel → 一段文字' },
   { id: 'appshell-inbox-toolbar', story: `${C}appshell-展示--primary-sidebar`, header: 'header', headerText: 'Inbox', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AppShell 主側欄 Inbox → 工具列(搜尋 / 篩選)' },
   { id: 'appshell-inbox-tabs-toolbar', story: `${C}appshell-展示--primary-sidebar-with-tabs`, header: 'header', headerText: 'Inbox', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AppShell 主側欄 + 分頁 Inbox → 分頁內容的工具列' },
-  { id: 'appshell-issue-detail', story: `${C}appshell-展示--primary-sidebar`, header: 'header', headerText: 'ENG-1042', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}components/AppShell/app-shell.stories.tsx:251`, label: 'AppShell 主側欄 Right panel 議題詳情 → 標題列' },
+  { id: 'appshell-issue-detail', story: `${C}appshell-展示--primary-sidebar`, header: 'header', headerText: 'ENG-1042', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}components/AppShell/_demo-helpers.tsx:437`, label: 'AppShell 主側欄 Right panel 議題詳情 → 標題列' },
   { id: 'template-dashboard', story: 'apps-template-appshell-dashboard--default', header: 'header', headerText: '總覽', waitFor: 'main [role="table"]', tableName: '今日待處理訂單', role: 'bounded', src: 'apps/template/src/App.tsx:178', label: '範本 DashboardPage → 今日待處理訂單表格(ds-canonical/templates/dashboard-app.tsx 同一份)' },
   { id: 'agentpanel-task-list', story: `${C}agentpanel-展示--url-registry-demo`, header: 'header', headerText: '結帳流程改版', waitFor: '#demo-stage-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AgentPanel 有網址的頁 任務清單 → 分頁內容的工具列' },
   { id: 'header-single-row', story: 'design-system-patterns-header-anatomy--single-row', header: 'header', waitFor: 'header + div p', role: 'element', src: `${DS}patterns/header-canonical/header-canonical.stories.tsx:131`, label: 'Header 單列 → 一行說明' },
@@ -93,8 +93,8 @@ export const CASES = [
 
 /** 盤點到但不在 CASES 的(報告與檔頭的同一份理由;改動時兩邊一起看)。 */
 export const NOT_COVERED = [
-  ['AgentConversation 內距 loose(agent-panel.tsx:1013,agent-panel.spec.md:198「內距 16(--layout-space-loose)」)', '元件規格層待決:第一則若是代理的文字(element)規則 2 會是 tight;不改元件、回報'],
-  ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-panel.tsx:1793 / agent-panel.tsx:1810)', '元件規格層待決:標題列 border-b-0,規則 2 的「chrome 標頭 → 內容」前提(有分隔的標頭)不成立;回報'],
+  ['AgentConversation 內距 loose(agent-panel.tsx:1021,agent-panel.spec.md:198「內距 16(--layout-space-loose)」)', '元件規格層待決:第一則若是代理的文字(element)規則 2 會是 tight;不改元件、回報'],
+  ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-panel.tsx:1830 / agent-panel.tsx:1847)', '元件規格層待決:標題列 border-b-0,規則 2 的「chrome 標頭 → 內容」前提(有分隔的標頭)不成立;回報'],
   ['Coachmark 標頭 → 媒體區 0', '元件規格層待決:coachmark.spec.md「Media 區規則」media 貼齊外殼(滿版),但沒寫標頭 → 媒體的距離;回報'],
   ['FileViewer 工具列 → 檢視畫布', '版面分區(畫布貼齊、圖置中),不是容器內的第一個內容'],
   ['Alert placement="fixed"', 'alert.spec.md:154「頂部全域警告,無圓角無邊框,橫跨頁面寬度」= 頁首橫條,不是內容'],
