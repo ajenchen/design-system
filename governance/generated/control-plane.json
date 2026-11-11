@@ -177,7 +177,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:dd77662ff289c26510f4b24bd230afca9fc1363cd3092ff458746eddef707ca3",
+      "hash": "sha256:b85436d7d5651a32089492c553f2614d1188a6e23061e3a448e499ff7bcac20e",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3085,7 +3085,7 @@
         "scripts/generated/"
       ],
       "files": 717,
-      "hash": "sha256:4400b35b330573275e0a05bbc2bd96156505fdcea34d933d39413b7c3a30cb93",
+      "hash": "sha256:a16a83568eb2e5662c872b787af7bb26690d786a4b2ed7002231e806a18d164e",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3543,10 +3543,10 @@
           "targetDigest": "sha256:9dca84e613c03426fba58e3a629994bbb235d6d49085278078942ccdd1e342b9"
         },
         {
-          "expectedTargetDigest": "sha256:985deb57397dc6b7a4f8220d5c06eac9960df2ce9d27fb61632c1670554acb52",
+          "expectedTargetDigest": "sha256:bf60e573df734268a059fdbb899409cbc8abe24a071a5d37ac758da94c9434fc",
           "name": "story-writing",
-          "sourceDigest": "sha256:3f44361f690e480a4513bdf1b5f804bb099a3d7d6e78ddd14dc344f8ac6e3e86",
-          "targetDigest": "sha256:985deb57397dc6b7a4f8220d5c06eac9960df2ce9d27fb61632c1670554acb52"
+          "sourceDigest": "sha256:52d3ffb661c4be698fac5c8146db29a806931b1745a4359b738dce2d325ad37e",
+          "targetDigest": "sha256:bf60e573df734268a059fdbb899409cbc8abe24a071a5d37ac758da94c9434fc"
         },
         {
           "expectedTargetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf",
@@ -3766,10 +3766,10 @@
           "targetDigest": "sha256:28c85166fc5072e28d11cd59d336dacfa0fb9be8d11ed35ad720bc254b551c81"
         },
         {
-          "expectedTargetDigest": "sha256:06796dfcf55dfbca62956f094dfa00700419fa226eef464036482f6fe56e7e7b",
+          "expectedTargetDigest": "sha256:9734174f1ef5ec9ca5c1fc7e497301c14a0986f97afc9928054de470cac15c58",
           "name": "story-writing",
-          "sourceDigest": "sha256:3f44361f690e480a4513bdf1b5f804bb099a3d7d6e78ddd14dc344f8ac6e3e86",
-          "targetDigest": "sha256:06796dfcf55dfbca62956f094dfa00700419fa226eef464036482f6fe56e7e7b"
+          "sourceDigest": "sha256:52d3ffb661c4be698fac5c8146db29a806931b1745a4359b738dce2d325ad37e",
+          "targetDigest": "sha256:9734174f1ef5ec9ca5c1fc7e497301c14a0986f97afc9928054de470cac15c58"
         },
         {
           "expectedTargetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d",

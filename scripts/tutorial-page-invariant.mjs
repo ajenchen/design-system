@@ -54,6 +54,10 @@
  *   (R6) createTutorialRule(…) 只能在 module 層呼叫(寫在 render 裡會每次重建元件;story-rules.md「元件一律定義在 module 層」)。
  *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))在 story 檔與 stories-helpers 只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則 / 範例堆疊間距。
  *        元件 / pattern 原始碼(非 story、非 stories-helpers)不在 R7 範圍:產品畫面的區塊 ↔ 區塊本來就是這一級(layoutSpace 規則 3「組 ↔ 組」,user 2026-11-06 #18)。
+ *        唯一放行(2026-11-11):範例裡的**表單按鈕列** —— `<ButtonGroup>`,或子層只有 `<Button>` 的容器 —— 自己 className(字面字串)上的
+ *        `mt-[calc(var(--layout-space-loose)*2)]`。依據 layoutSpace.spec.md 規則 3「表單欄位 → 跟在後面的表單按鈕列 = loose × 2」(user 2026-11-10
+ *        PR #172 決策頁留言);那是範例畫面本身(consumer 照抄的產品寫法),不是教學頁的段落間距,值由 section-gap-invariant 表單 8 列量像素在守。
+ *        其他形狀(gap / 帶前綴 / 容器混了非按鈕 / className 不是字面字串 / 包的是 ButtonGroup 而非按鈕)照紅。
  *   (R8) tutorial-page.tsx 本身仍是 ②:塊距 = calc(var(--layout-space-loose)*2)、不出現 --layout-space-bottom、
  *        段落標題 <h2> = text-h3 + font-semibold + border-divider、規則標題 <h3> = text-h6 + font-semibold;
  *        (2026-10-20)頁根有 text-body、使用指引三段段名 = 何時用 / 何時不用 / 和相近元件怎麼選、沒有 noteTone、
@@ -751,12 +755,53 @@ export function checkTutorialFile(file, text) {
   return hits
 }
 
-/** (R7) loose × 2 只准在共用元件裡 */
+/** (R7) 表單按鈕列的上外距 —— 放行的只有這一個 class 本體,不帶 variant 前綴 */
+const FORM_ACTION_TOP = 'mt-[calc(var(--layout-space-loose)*2)]'
+/** 表單按鈕列 = <ButtonGroup>,或子層(去掉空白與空的 {})只有 <Button> 的容器 */
+function isFormActionRow(sf, el) {
+  if (tagName(sf, el) === 'ButtonGroup') return true
+  if (!ts.isJsxElement(el)) return false
+  const kids = el.children.filter((c) => !(ts.isJsxText(c) && !c.text.trim()) && !(ts.isJsxExpression(c) && !c.expression))
+  return kids.length > 0 && kids.every((c) => isJsx(c) && tagName(sf, c) === 'Button')
+}
+/** 放行範圍:表單按鈕列的 className 是字面字串,且裡面每個含 loose × 2 的 class 都正好是 FORM_ACTION_TOP */
+function formActionRanges(file, text) {
+  if (!file.endsWith('.tsx')) return []
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const ranges = []
+  const walk = (n) => {
+    if (isJsx(n) && isFormActionRow(sf, n)) {
+      const a = attrs(n).find((p) => ts.isJsxAttribute(p) && p.name.getText() === 'className')
+      if (a?.initializer && ts.isStringLiteral(a.initializer)) {
+        const hot = a.initializer.text.split(/\s+/).filter((t) => LOOSE_TIMES_TWO.test(t))
+        if (hot.length && hot.every((t) => t === FORM_ACTION_TOP)) ranges.push([a.initializer.getStart(sf), a.initializer.end])
+      }
+    }
+    ts.forEachChild(n, walk)
+  }
+  walk(sf)
+  return ranges
+}
+
+/** (R7) loose × 2 只准在共用元件裡(唯一放行:表單按鈕列的上外距,見檔頭 R7) */
 export function checkLooseTimesTwo(file, text) {
   if (file === HELPER) return []
   if (!/\.stories\.tsx$/.test(file) && !file.includes('/stories-helpers/')) return [] // 產品原始碼:區塊 ↔ 區塊(section-gap-invariant 量)
+  if (!LOOSE_TIMES_TWO.test(text)) return []
+  const allowed = formActionRanges(file, text)
+  const lineStarts = [0]
+  for (let i = 0; i < text.length; i++) if (text[i] === '\n') lineStarts.push(i + 1)
+  const lineAt = (pos) => { let lo = 0; let hi = lineStarts.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (lineStarts[mid] <= pos) lo = mid; else hi = mid - 1 } return lo + 1 }
   const out = []
-  text.split('\n').forEach((l, i) => { if (LOOSE_TIMES_TWO.test(l)) out.push({ rule: 'R7', file, line: i + 1, message: '「loose × 2」寫在共用元件以外 = 手寫段落 / 規則 / 範例堆疊間距 —— 改用 TutorialPage / TutorialSection / ExampleStack(stories-helpers/examples/tutorial-page.tsx)' }) })
+  const seen = new Set()
+  const re = new RegExp(LOOSE_TIMES_TWO.source, 'g')
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    if (allowed.some(([s, e]) => m.index >= s && m.index < e)) continue
+    const line = lineAt(m.index)
+    if (seen.has(line)) continue
+    seen.add(line)
+    out.push({ rule: 'R7', file, line, message: '「loose × 2」寫在共用元件以外 = 手寫段落 / 規則 / 範例堆疊間距 —— 改用 TutorialPage / TutorialSection / ExampleStack(stories-helpers/examples/tutorial-page.tsx);唯一放行的是範例裡表單按鈕列(<ButtonGroup> 或只包 <Button> 的容器)字面 className 上的 mt-[calc(var(--layout-space-loose)*2)](layoutSpace.spec.md 規則 3,user 2026-11-10)' })
+  }
   return out
 }
 
@@ -1155,6 +1200,27 @@ export function runSelftest(root = SCRIPT_ROOT) {
   expect(checkLooseTimesTwo(`${SRC}/components/FileViewer/file-viewer.tsx`, LT2).length === 0, '產品元件原始碼的區塊 ↔ 區塊 → 不算(layoutSpace 規則 3「組 ↔ 組」)')
   expect(checkLooseTimesTwo(`${SRC}/components/FileViewer/file-viewer.stories.tsx`, LT2).length === 1, 'story 檔手寫 loose × 2 → R7 仍紅')
   expect(checkLooseTimesTwo(`${SRC}/stories-helpers/examples/other-helper.tsx`, LT2).length === 1, 'stories-helpers 其他檔手寫 loose × 2 → R7 仍紅')
+  // R7 唯一放行:表單按鈕列的上外距(layoutSpace 規則 3「表單欄位 → 表單按鈕列 = loose × 2」,user 2026-11-10)—— 兩面都要成立
+  const STORY = `${SRC}/components/Demo/demo.stories.tsx`
+  const MT2 = 'mt-[calc(var(--layout-space-loose)*2)]'
+  const r7 = (t) => checkLooseTimesTwo(STORY, t).map((h) => h.line)
+  expect(r7(`<form>\n  <Field />\n  <ButtonGroup className="${MT2}">\n    <Button>儲存</Button>\n  </ButtonGroup>\n</form>\n`).length === 0, 'R7 放行:<ButtonGroup> 表單按鈕列的 mt loose × 2')
+  expect(r7(`<div>\n  <Switch />\n  <div className="${MT2}">\n    {/* 註解 */}\n    <Button>送出</Button>\n  </div>\n</div>\n`).length === 0, 'R7 放行:只包 <Button> 的容器的 mt loose × 2')
+  expect(r7(`<ButtonGroup className="gap-[calc(var(--layout-space-loose)*2)]">\n  <Button>儲存</Button>\n</ButtonGroup>\n`).join() === '1', 'R7 紅:ButtonGroup 上寫的是 gap(不是表單按鈕列上外距)')
+  expect(r7(`<ButtonGroup className="md:${MT2}">\n  <Button>儲存</Button>\n</ButtonGroup>\n`).join() === '1', 'R7 紅:帶 variant 前綴')
+  expect(r7(`<ButtonGroup className={cn('${MT2}', extra)}>\n  <Button>儲存</Button>\n</ButtonGroup>\n`).join() === '1', 'R7 紅:className 不是字面字串(閘讀不到全部 class)')
+  expect(r7(`<div className="${MT2}">\n  <Button>送出</Button>\n  <p>說明</p>\n</div>\n`).join() === '1', 'R7 紅:容器混了非按鈕')
+  expect(r7(`<section className="${MT2}">\n  <ButtonGroup><Button>儲存</Button></ButtonGroup>\n</section>\n`).join() === '1', 'R7 紅:包的是 ButtonGroup 而非按鈕(上外距應寫在按鈕列自己)')
+  expect(r7(`<div className="${MT2}" />\n`).join() === '1', 'R7 紅:空容器')
+  expect(r7(`<div className="gap-[calc(var(--layout-space-loose)*2)]">\n  <p>規則</p>\n  <ButtonGroup className="${MT2}"><Button>儲存</Button></ButtonGroup>\n</div>\n`).join() === '1', 'R7:同檔放行與紅並存 → 只紅段落那一處')
+  // 真檔兩面:現況 Checkbox 設計原則頁(❌ Switch 同意的「只包 Button 的 div」+ ButtonGroup)0 筆;把按鈕容器塞進一段說明 → 該行紅
+  const cbFile = `${SRC}/components/Checkbox/checkbox.principles.stories.tsx`
+  const cb = readFileSync(join(root, cbFile), 'utf8')
+  const cbDiv = `<div className="${MT2}">`
+  expect(cb.includes(cbDiv) && checkLooseTimesTwo(cbFile, cb).length === 0, `真檔 ${cbFile.split('/').pop()} 現況 R7 0 筆`)
+  const cbBad = cb.replace(cbDiv, `${cbDiv}\n                <p>說明</p>`)
+  const cbWant = cbBad.split('\n').findIndex((l) => l.includes(cbDiv)) + 1
+  expect(checkLooseTimesTwo(cbFile, cbBad).map((h) => h.line).join() === String(cbWant), `真檔 ${cbFile.split('/').pop()} 按鈕容器混進說明 → R7 :${cbWant}`)
   // R8(2026-10-20):頁根字級 / 三段段名 / noteTone / Children.count —— 現況綠、各注入一種舊形狀紅、be2f1324 的原檔紅
   const r8 = (t) => checkHelper(t).filter((h) => h.rule === 'R8').map((h) => h.message)
   expect(r8(helper.replace("const PAGE_TEXT = 'text-body'", "const PAGE_TEXT = ''")).some((m) => m.includes('text-body')), '頁根拿掉 text-body → R8')
