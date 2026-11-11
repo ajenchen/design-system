@@ -2014,8 +2014,14 @@ function DataTableInner<TData>(
     //
     // **只在 size / 密度真的變了才讀**(2026-09-10 自己踩到、用 trace 抓出來):第一版寫成沒有依賴
     // 陣列的 layout effect,於是每次 render 都跑一次 getComputedStyle —— 捲動中每一幀都在強迫重算樣式,
-    // `getPropertyValue` 自時間衝到 80ms(5.4%),把前面省下來的成本吃掉一半。密度是祖先上的
-    // `data-density` 屬性,用 MutationObserver 盯那一個屬性即可,零輪詢。
+    // `getPropertyValue` 自時間衝到 80ms(5.4%),把前面省下來的成本吃掉一半。密度是祖先上的屬性,
+    // 用 MutationObserver 盯屬性即可,零輪詢。
+    //
+    // **盯哪些屬性(2026-11-12 修,f90c767a 雙寫法的同族)**:列高 token 屬於控制項大小軸,區塊可以只寫
+    // `data-ui-size`(勝過同元素的 data-density;density.spec.md「同一個元素帶兩種屬性」),所以兩個都要盯;
+    // 原本只盯最近一個帶 data-density 的祖先 —— 區塊只寫 data-ui-size、或之後才在更近的祖先加上屬性,列高 token
+    // 變了估計值卻停在舊的。改成盯整份文件這兩個屬性,但只有「變動的元素包著這張表」才重讀(浮層開關也會寫
+    // data-ui-size,那些不在表的祖先鏈上,不觸發)。
     const read = () => {
       const raw = getComputedStyle(el).getPropertyValue(`--table-row-${size}`).trim()
       const px = raw.endsWith('rem')
@@ -2024,9 +2030,10 @@ function DataTableInner<TData>(
       if (Number.isFinite(px) && px > 0) setTokenEstimate((prev) => (prev === px ? prev : px))
     }
     read()
-    const densityHost = el.closest<HTMLElement>('[data-density]') ?? document.documentElement
-    const mo = new MutationObserver(read)
-    mo.observe(densityHost, { attributes: true, attributeFilter: ['data-density'] })
+    const mo = new MutationObserver((records) => {
+      if (records.some((r) => r.target instanceof Node && r.target.contains(el))) read()
+    })
+    mo.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['data-density', 'data-ui-size'] })
     return () => mo.disconnect()
   }, [estimateRowHeight, size])
   const resolvedEstimate = estimateRowHeight ?? tokenEstimate ?? estimateFallback
@@ -4162,6 +4169,11 @@ function DataTableInner<TData>(
           'group-has-[:focus-visible:not([data-pointer-focus])]:w-auto group-has-[:focus-visible:not([data-pointer-focus])]:ml-2 group-has-[:focus-visible:not([data-pointer-focus])]:overflow-visible group-has-[:focus-visible:not([data-pointer-focus])]:opacity-100',
           // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
+          // 沒有滑過能力的裝置(觸控)恆顯示(2026-11-12,PR #172 r4 審查):排序改兩態之後「取消排序」只剩 ⌄ 與排序面板兩個入口,
+          // 滑過才出現的 ⌄ 在觸控上永遠出不來 → 沒有排序面板的表關不掉排序。鍵盤那一條上面已有(focus-visible),這裡補觸控那一條;
+          // 有滑過能力的裝置長相不變。【AI 推導】—— 是否連桌機也讓已排序欄的 ⌄ 恆顯示,列給 user。
+          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
+          '[@media(hover:none)]:w-auto [@media(hover:none)]:ml-2 [@media(hover:none)]:overflow-visible [@media(hover:none)]:opacity-100',
         )}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

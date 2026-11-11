@@ -148,10 +148,11 @@ const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
     return (
       <ToggleGroupPrimitive.Item
         ref={ref}
-        // 「選到就露出來」認項目的記號(scroll / menu 模式的 useRevealSelected itemSelector;horizontal-overflow.spec.md)
-        data-slot="chip"
         className={cn(chipVariants(), className)}
         {...(props as React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>)}
+        // 「選到就露出來」認項目的記號(scroll / menu 模式的 useRevealSelected itemSelector;horizontal-overflow.spec.md)。
+        // 寫在 props 展開**之後**:consumer 傳同名 data-slot 不得蓋掉它,否則置中靜默失效(2026-11-12 審查)。
+        data-slot="chip"
       >
         {inner}
       </ToggleGroupPrimitive.Item>
