@@ -96,6 +96,8 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 
 Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overlay body」的「3 條 invariant」(hover bg 0 gutter 貼邊 + content 由 item-px 推進)。
 
+本規則(與規則 6)在 chrome 標頭底下由 `scripts/header-content-sides-invariant.mjs` 機械檢查:同一份盤點(規則 2 那支閘的 CASES),md / lg 量「容器內緣 → 內容外框」左右都 = loose;誰給內距從 DOM 判 —— 每一列自帶(pattern C,可互動列的清單)時另要求列本身貼齊容器(0)。
+
 ### 規則 2:頂部(Header → 第一個元素)
 
 **這裡的 Header 指 chrome header**(ChromeHeader / SurfaceHeader / page header / app top bar,`header-canonical.spec.md`);內容區裡用 typography 打的小標題(`text-heading` 之類)不是 chrome header,它與下方被它標示的內容走規則 3。
@@ -132,6 +134,8 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 | **element → 容器底,容器不擋頁面、高度貼著內容** | 與頂部同值(值由元件自己的內距給)| **Spatial 邊界(上下對稱)** |
 
 **Note**:Dialog / Sheet body `pb-bottom 48` 是第 1 列的實作,**不是元件特例**。表格 → 「**底部 chrome band**」(Alert / BulkActionBar / Status bar)= 第 2 列的 `loose`,band 裡有沒有 action 都一樣。**第 1 / 4 列怎麼分**:看容器自己,不列名單 —— 會不會擋住頁面(modal)、高度由視窗 / 版面欄決定(撐滿)還是由內容決定。這兩個條件是 DS 給 / 不給 48 時原本就寫下的理由:`../../patterns/overlay-surface/overlay-surface.spec.md`『`pb-bottom` 保留 Dialog / Sheet「大容器底部多一拍」的 canonical』,Popover 不給是因為『Popover 無 viewport-fill、內容預期短』。出處:user 2026-10-28 看過 AppShell 右欄 IssueDetail、右欄訂單詳情、整頁 Main、Insights 頁、FileViewer 資訊面板依此改成 48 的前後圖,回「這個沒問題」;同日對頁面卡片(不擋頁面、貼內容 → 四邊 16)回「頁面上的卡片照你建議」。
+
+本規則在 chrome 標頭底下由 `scripts/header-content-sides-invariant.mjs` 機械檢查:最後一個東西的角色與容器種類(擋住頁面 / 撐滿 / 貼著內容)都從 DOM 判,md / lg 量「最後一個內容 → 容器底(捲動終點)」比對上表;第 4 列的「與頂部同值」= 規則 2 對第一個東西的值。
 
 ### 規則 5:橫排 Input Gap(固定不隨 density)
 

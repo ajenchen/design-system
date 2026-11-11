@@ -1369,6 +1369,10 @@ jobs:
           # 標頭 → 第一個東西(layoutSpace 規則 2,2026-11-10 user 問「四周的距離是正確的？」):依第一個東西的角色 bounded = loose / unbounded = 0 / element = tight,
           # 全 DS 盤點出的每一處 md / lg 量像素、角色從 DOM 判。修前 c2fc683d 建置 Sidebar 混合內容資料夾 / 檔案兩張表格外層是 tight(紅);selftest 判定表 + 角色判法逐列。
           npm run test:header-first-gap
+          # 標頭下內容的左 / 右 / 底(layoutSpace 規則 1 / 6 / 4,2026-11-11 user「其他有漂移的地方也應該自動修一修吧？」):頂邊由上一支管,這支量另外三邊 ——
+          # 左右 = loose(誰給內距從 DOM 判 pattern AB / C,C 的列必貼齊容器)、底依最後一個東西的角色 + 容器會不會擋頁 / 撐滿(bounded loose / unbounded 0 / element 48 或與頂同值)。
+          # 同一份盤點(上一支的 CASES)md / lg 量像素;selftest 判定表每一邊各有該紅 / 該綠 / 儀器失效。
+          npm run test:header-content-sides
           # 表單範例放進卡片(2026-11-10 FORM-EXAMPLE-CARD 甲;user 10-21「Q5可以基於你的建議」、10-28「頁面上的卡片照你建議」):Field 表單驗證 ×2、
           # Rating 包在 Field 內、Select 隨 form 送出 —— 送出鈕往上找卡片、卡片內上 / 左 / 下 = loose(md / lg 量像素)。修前 main 8eb473c7 建置 4 處都沒有卡片(紅)。
           npm run test:form-example-card

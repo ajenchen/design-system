@@ -21,7 +21,8 @@
  *         第一個內容 = 標頭之後的下一塊(同層下一個看得見的兄弟,沒有就往上找)裡所有「看得見的東西」中頂邊最高的那個
  *         (有框 / 底色 / 陰影、有自己的字、控件、或清單 / 表格語意;絕對定位的裝飾與捲軸不算)。頂邊:有框的東西、清單、控件量外框;
  *         只有字的包層量內容框(包層的上內距是間距不是內容)。角色判法(classifyFirst,純函式,selftest 逐列驗):
- *           · DataTable 外殼(`[data-data-table-outer]`)、或有框(≥ 3 邊框線 / 跟外層不同的底色 / 陰影)且不是單一欄位控件、不是 Alert → bounded;
+ *           · DataTable 外殼(`[data-data-table-outer]`)、或有框(≥ 3 邊框線 / 跟外層不同的底色 / 陰影)且不是單一欄位控件、不是控件 / 縮圖
+ *             (按鈕 / 連結 / 勾選 / 進度條 / role=img)、不是 Alert → bounded;
  *           · role = list / listbox / menu / tree / navigation 或 ul / ol / nav、沒有框、而且自帶上內距(第一列不貼清單頂)→ unbounded;
  *           · 其他(標題、文字、欄位、按鈕、工具列、沒自帶 py 的純文字清單)→ element。
  *         期望值的 loose / tight 從第一個內容的外層 computed `--layout-space-*` 讀(部分浮層刻意鎖 md,照它自己讀到的算);
@@ -30,6 +31,8 @@
  *         `--selftest`:(a) 判定表 —— 表格外層改 tight 必紅、標題在前卻用 loose 必紅、清單不貼標頭必紅、角色與盤點不符必紅、
  *         沒量到 / 距離 NaN / 密度沒套上判儀器失效、修後形狀必綠;(b) classifyFirst 逐列。
  *         `--static=<dir>` 指定建置(例:拿 c2fc683d 建置證明 Sidebar 那兩處會紅);指定時不跑新鮮度守衛。
+ *   姊妹閘: header-content-sides-invariant.mjs 量同一份 CASES 的左 / 右 / 底(規則 1 / 6 / 4);盤點(CASES / NOT_COVERED)、導航(openCase)、
+ *         頁面端量具(pageKit)、角色判法(classifyFirst)只住本檔,兩支 import 同一份。新增一處 = 本檔 CASES + 姊妹閘 SIDES(它的 selftest 驗一一對應)。
  */
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -56,6 +59,7 @@ export const CASES = [
   // 主區若又放回區段標題,DOM 判出的角色變 element → 與登記的 bounded 不符 → 紅
   { id: 'sidebar-mixed-folder', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 資料夾 frontend → 檔案表格(MainTable)' },
   { id: 'sidebar-mixed-file', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'README.md', waitFor: '[aria-label="README.md 的版本紀錄"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 檔案 README.md → 版本紀錄表格(MainTable)' },
+  { id: 'sidebar-mixed-ios', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'Mobile App', waitFor: '[aria-label="Mobile App 裡的檔案"]' }, { press: 'ArrowRight', waitFor: '#storybook-root [role="treegrid"] [role="row"][aria-level="2"]:has-text("iOS")' }, { click: 'iOS', waitFor: '[aria-label="iOS 裡的檔案"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 混合內容 資料夾 Mobile App → iOS → 檔案表格(MainTable;user 2026-11-11 在這張圖留言「你要確保這個table有按照layout space的設計原則排版吧？」)' },
   { id: 'sidebar-dashboard-table', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 完整佈局 Dashboard → 今日待處理議題表格(MainTable)' },
   { id: 'sidebar-project-table', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx:250`, label: 'Sidebar 群組動作 專案 → 進行中的議題表格(MainTable)' },
   { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main [role="table"]', role: 'bounded', src: `${DS}components/AppShell/_demo-helpers.tsx:362`, label: 'AppShell 元件總覽 Main → InsightsView 表格' },
@@ -91,11 +95,15 @@ export const NOT_COVERED = [
   ['Sidebar 標頭 → nav', 'unbounded = 0 成立(SidebarContent 頂 = 標頭底),但清單的 py 在 SidebarGroup 包層(p-2)上、不在清單元素上,DOM 判法分不出;Sidebar 規格自管'],
 ]
 
-/** 純函式:第一個內容的特徵 → 角色。f = { dataTable, border(邊數), ownBg, shadow, role, tag, fieldControl, selfPad }。 */
+/**
+ * 純函式:第一個(或姊妹閘的最後一個)內容的特徵 → 角色。f = { dataTable, border(邊數), ownBg, shadow, role, tag, fieldControl, control, selfPad }。
+ * control = 按鈕 / 連結 / 勾選 / 進度條這類控件(規則 2 表「element(input / button / alert)」、規則 4 表「element(欄位 / 文字 / 按鈕)」):
+ * 有框有底色也是 element,不是 bounded region(2026-11-11 姊妹閘量「最後一個東西」時加 —— 最後一個常是按鈕 / 進度條)。
+ */
 export function classifyFirst(f) {
   if (f.dataTable) return 'bounded'
   const framed = f.border >= 3 || f.ownBg || f.shadow
-  if (framed && !f.fieldControl && !/^(alert|status)$/.test(f.role ?? '')) return 'bounded'
+  if (framed && !f.fieldControl && !f.control && !/^(alert|status)$/.test(f.role ?? '')) return 'bounded'
   const listy = /^(list|listbox|menu|tree|navigation)$/.test(f.role ?? '') || /^(ul|ol|nav)$/.test(f.tag)
   if (!framed && listy && f.selfPad) return 'unbounded'
   return 'element'
@@ -153,8 +161,11 @@ function selftest() {
   expect(judge(locked).length === 0, `浮層鎖 md 應綠,實得 ${JSON.stringify(judge(locked))}`)
   expect(judge([{ ...locked[0] }, { ...locked[1], rootLoose: 16 }]).some((s) => s.includes('密度沒套上')), '頁面根兩密度同值應判儀器失效')
   // classifyFirst 逐列
-  const base = { dataTable: false, border: 0, ownBg: false, shadow: false, role: null, tag: 'div', fieldControl: false, selfPad: false }
+  const base = { dataTable: false, border: 0, ownBg: false, shadow: false, role: null, tag: 'div', fieldControl: false, control: false, selfPad: false }
   const cls = [
+    [{ ...base, tag: 'button', border: 4, ownBg: true, control: true }, 'element', '有框有底色的按鈕(規則 4 表「element(欄位 / 文字 / 按鈕)」)'],
+    [{ ...base, role: 'progressbar', ownBg: true, control: true }, 'element', '進度條(有底色的細條)'],
+    [{ ...base, role: 'img', ownBg: true, control: true }, 'element', '有底色的頭像 / 縮圖(role=img)'],
     [{ ...base, dataTable: true, border: 4, ownBg: true }, 'bounded', 'DataTable 外殼'],
     [{ ...base, dataTable: true }, 'bounded', 'DataTable 外殼(bordered=false 也是表格外殼)'],
     [{ ...base, border: 4, ownBg: true }, 'bounded', '有框有底色的卡'],
@@ -175,8 +186,12 @@ function selftest() {
   return ok
 }
 
-/** 頁面函式:找標頭 → 下一塊 → 頂邊最高的「看得見的東西」,回傳特徵與距離(角色由 Node 端 classifyFirst 判)。 */
-const probeFirst = ({ header, headerText = null, nth = 0 }) => {
+/**
+ * 頁面端共用量具:看得見嗎 / 特徵 / 算不算一個「東西」/ 頂邊 / 找標頭 / 找標頭之後那塊 / 收集那塊裡看得見的東西。
+ * 原閘與姊妹閘 header-content-sides-invariant.mjs 都用 installPageKit 裝進同一頁,判法只有這一個住所(M17)。
+ * 函式本身被 toString 送進頁面,不得引用外層變數。
+ */
+export const pageKit = () => {
   const vis = (el) => {
     const r = el.getBoundingClientRect()
     if (r.width < 2 || r.height < 2) return false
@@ -201,42 +216,64 @@ const probeFirst = ({ header, headerText = null, nth = 0 }) => {
     // 自帶 py:清單第一個項目不貼清單頂(項目 = option / menuitem / treeitem / li / 連結)
     const firstItem = (LIST_ROLE.test(role ?? '') || /^(ul|ol|nav)$/.test(tag)) ? [...el.querySelectorAll('[role=option], [role^=menuitem], [role=treeitem], [role=listitem], li, a')].find(vis) : null
     const selfPad = !!firstItem && firstItem.getBoundingClientRect().top - el.getBoundingClientRect().top > 0.5
-    return { dataTable: el.hasAttribute('data-data-table-outer'), border, ownBg, shadow, framed, role, tag, fieldControl, text, selfPad }
+    // 控件 / 縮圖:按鈕 / 連結 / 勾選 / 進度條 / 頭像縮圖這類(規則 2 / 4 表的 element),有框有底色也不是 bounded region
+    const control = /^(button|a|img)$/.test(tag) || /^(button|link|checkbox|radio|switch|tab|combobox|slider|progressbar|meter|spinbutton|separator|img)$/.test(role ?? '')
+    return { dataTable: el.hasAttribute('data-data-table-outer'), border, ownBg, shadow, framed, role, tag, fieldControl, control, text, selfPad }
   }
   // 沒框的按鈕 / 連結不算一個「東西」(它的外框看不見,可能還用負邊距撐出列外),往裡找看得見的圖示或字
   const isThing = (f) => f.dataTable || f.framed || f.border >= 1 || f.text || f.fieldControl
     || /^(img|svg|canvas|video|iframe|hr|ul|ol|dl|table|nav|p|h1|h2|h3|h4|h5|h6|label)$/.test(f.tag)
     || /^(list|listbox|menu|menubar|tree|treegrid|table|grid|navigation|separator|radiogroup|group|alert|status|img)$/.test(f.role ?? '')
-  // 頂邊:有框 / 清單 / 控件 / 圖量外框;只有字的包層量內容框(包層的上內距是間距)
+  // 有框 / 清單 / 控件 / 圖量外框;只有字的包層量內容框(包層的內距是間距不是內容)
+  const boxedOf = (f) => f.dataTable || f.framed || f.border >= 1 || f.fieldControl || /^(ul|ol|nav|img|svg|canvas|video|iframe|hr)$/.test(f.tag) || /^(list|listbox|menu|tree|navigation|table|grid|treegrid|img)$/.test(f.role ?? '')
   const topOf = (el, f) => {
     const r = el.getBoundingClientRect()
-    const boxed = f.dataTable || f.framed || f.border >= 1 || f.fieldControl || /^(ul|ol|nav|img|svg|canvas|video|iframe|hr)$/.test(f.tag) || /^(list|listbox|menu|tree|navigation|table|grid|treegrid|img)$/.test(f.role ?? '')
-    if (boxed) return r.top
+    if (boxedOf(f)) return r.top
     const cs = getComputedStyle(el)
     return r.top + parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop)
   }
-  const h = [...document.querySelectorAll(header)].filter((el) => vis(el) && (!headerText || el.textContent.includes(headerText)))[nth]
+  const findHeader = (header, headerText, nth) => [...document.querySelectorAll(header)].filter((el) => vis(el) && (!headerText || el.textContent.includes(headerText)))[nth]
+  // 標頭之後那塊 = 同層下一個看得見的兄弟,沒有就往上找(最多三層)
+  const findBody = (h) => {
+    let node = h, body = null
+    for (let up = 0; up < 3 && node && !body; up++) {
+      let s = node.nextElementSibling
+      while (s && !vis(s)) s = s.nextElementSibling
+      body = s
+      node = node.parentElement
+    }
+    return body
+  }
+  // 那塊裡所有「看得見的東西」(遇到東西就停、不往裡找);skipSelf = 只看 root 的子孫(姊妹閘往無框清單裡找列內容時用)
+  const collectThings = (root, { skipSelf = false } = {}) => {
+    const things = []
+    const visit = (el) => {
+      if (!(el instanceof Element)) return
+      const cs = getComputedStyle(el)
+      if (cs.display === 'contents') { [...el.children].forEach(visit); return }
+      if (!vis(el)) return
+      if ((cs.position === 'absolute' || cs.position === 'fixed') && el !== root) return // 裝飾 / 捲軸 / 浮出的提示,不是內容流
+      const f = feat(el)
+      if (isThing(f) && !(skipSelf && el === root)) { things.push({ el, f, top: topOf(el, f) }); return }
+      ;[...el.children].forEach(visit)
+    }
+    visit(root)
+    return things
+  }
+  return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, findHeader, findBody, collectThings }
+}
+
+/** 把 pageKit 裝進目前頁面(window.__layoutKit);每次換頁後、量之前呼叫。 */
+export const installPageKit = (page) => page.evaluate(`window.__layoutKit = (${pageKit.toString()})()`)
+
+/** 頁面函式:找標頭 → 下一塊 → 頂邊最高的「看得見的東西」,回傳特徵與距離(角色由 Node 端 classifyFirst 判)。 */
+export const probeFirst = ({ header, headerText = null, nth = 0 }) => {
+  const K = window.__layoutKit
+  const h = K.findHeader(header, headerText, nth)
   if (!h) return { err: `找不到標頭 ${header}${headerText ? `(含「${headerText}」)` : ''}` }
-  let node = h, body = null
-  for (let up = 0; up < 3 && node && !body; up++) {
-    let s = node.nextElementSibling
-    while (s && !vis(s)) s = s.nextElementSibling
-    body = s
-    node = node.parentElement
-  }
+  const body = K.findBody(h)
   if (!body) return { err: '標頭之後沒有內容' }
-  const things = []
-  const visit = (el) => {
-    if (!(el instanceof Element)) return
-    const cs = getComputedStyle(el)
-    if (cs.display === 'contents') { [...el.children].forEach(visit); return }
-    if (!vis(el)) return
-    if ((cs.position === 'absolute' || cs.position === 'fixed') && el !== body) return // 裝飾 / 捲軸 / 浮出的提示,不是內容流
-    const f = feat(el)
-    if (isThing(f)) { things.push({ el, f, top: topOf(el, f) }); return }
-    ;[...el.children].forEach(visit)
-  }
-  visit(body)
+  const things = K.collectThings(body)
   if (!things.length) return { err: '標頭之後找不到看得見的內容' }
   const minTop = Math.min(...things.map((t) => t.top))
   const pick = things.find((t) => t.top - minTop < 0.5)
@@ -255,10 +292,19 @@ const probeFirst = ({ header, headerText = null, nth = 0 }) => {
 
 const noRunningAnimation = () => document.getAnimations().every((a) => a.playState !== 'running')
 
-async function measureCase(page, origin, c, density) {
+/**
+ * 開到盤點那一處的狀態(開 story → 依 steps 點 → 等 waitFor 本身出現 → 指標移開 → 動畫跑完);成功回 null、失敗回 { err }。
+ * 姊妹閘 header-content-sides-invariant.mjs(左 / 右 / 底)共用同一份導航,兩支量的是同一個畫面。
+ */
+export async function openCase(page, origin, c, density) {
   const url = `${origin}/iframe.html?id=${encodeURIComponent(c.story)}&viewMode=story&globals=${encodeURIComponent(`theme:light;density:${density}`)}`
   await openStory(page, url, { waitFor: c.waitFor ?? c.header, label: c.story })
   for (const s of c.steps ?? []) {
+    if (s.press) { // 鍵盤步驟(例:樹狀表格的列選到後按 ArrowRight 展開,WAI-ARIA Treegrid)
+      await page.keyboard.press(s.press)
+      try { await page.waitForSelector(s.waitFor, { state: 'visible', timeout: 10_000 }) } catch { return { err: `按 ${s.press} 之後等不到 ${s.waitFor}` } }
+      continue
+    }
     const target = s.clickSelector
       ? page.locator(s.clickSelector).first()
       : page.locator('#storybook-root [role="treegrid"] [role="row"], #storybook-root [role="tree"] [role="treeitem"], #storybook-root button').filter({ hasText: new RegExp(`^\\s*${s.click.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`) }).first()
@@ -268,6 +314,13 @@ async function measureCase(page, origin, c, density) {
   }
   await page.mouse.move(0, 0)
   try { await page.waitForFunction(noRunningAnimation, null, { timeout: 10_000 }) } catch { return { err: '10 秒內動畫沒跑完' } }
+  return null
+}
+
+async function measureCase(page, origin, c, density) {
+  const opened = await openCase(page, origin, c, density)
+  if (opened) return opened
+  await installPageKit(page)
   const r = await page.evaluate(probeFirst, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0 })
   return r.err ? r : { ...r, role: classifyFirst(r.f) }
 }
