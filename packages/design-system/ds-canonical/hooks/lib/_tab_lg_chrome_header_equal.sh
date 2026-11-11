@@ -233,9 +233,9 @@ extract_values() {
       BEGIN { context = ""; pending = "" }
       /^[[:space:]]*:root[[:space:]]*\{/ { context = "root"; next }
       /^[[:space:]]*\[data-ui-size="lg"\][[:space:]]*,[[:space:]]*$/ { pending = "lg"; next }
-      pending == "lg" && /^[[:space:]]*\[data-density="lg"\][[:space:]]*\{/ { context = "lg"; pending = ""; next }
+      pending == "lg" && /^[[:space:]]*\[data-density="lg"\](:not\(\[data-ui-size\]\))?[[:space:]]*\{/ { context = "lg"; pending = ""; next }
       /^[[:space:]]*\[data-ui-size="md"\][[:space:]]*,[[:space:]]*$/ { pending = "md-reset"; next }
-      pending == "md-reset" && /^[[:space:]]*\[data-density="md"\][[:space:]]*\{/ { context = "md-reset"; pending = ""; next }
+      pending == "md-reset" && /^[[:space:]]*\[data-density="md"\](:not\(\[data-ui-size\]\))?[[:space:]]*\{/ { context = "md-reset"; pending = ""; next }
       /^[[:space:]]*}/ { context = ""; pending = ""; next }
       {
         line = $0

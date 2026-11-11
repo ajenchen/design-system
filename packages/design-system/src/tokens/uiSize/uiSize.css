@@ -98,8 +98,11 @@
      不隨密度切換,值住 DataTable/data-table-sort-manager.tsx 與 data-table-filter-group.tsx(token-system.spec.md 判斷流程第 0 題)。 */
 }
 
+/* 同一個元素同時帶 data-density 與 data-ui-size 時只看明寫的 data-ui-size(便捷屬性那一半加 :not([data-ui-size]));
+   2026-11-11 前兩者權重相同、靠後寫的贏 → 只要其中一個是 md 就永遠 md 勝,規格示範的「單獨切控制項大小」在
+   html 已帶 data-density="md" 的頁面上完全沒作用(稽核 R7-01)。規則住 density.spec.md「同一個元素帶兩種屬性」。 */
 [data-ui-size="lg"],
-[data-density="lg"] {
+[data-density="lg"]:not([data-ui-size]) {
   --field-height-sm: 2rem;      /* 32px */
   --field-height-md: 2.25rem;   /* 36px */
   --field-height-lg: 2.5rem;    /* 40px */
@@ -107,12 +110,12 @@
   --chrome-header-height: 3.5rem; /* 56px(lg density) */
 }
 
-/* 2026-04-22:md reset selector — 當祖先層級(e.g. html[data-density="lg"])已 cascading
-   lg overrides 下來,subtree 元件(Popover / DropdownMenu / Tooltip 等)宣告 `data-density="md"`
-   或 `data-ui-size="md"` 時必須能 reset 回 md default,否則 Portal 逃逸 + cascading
-   會讓 lock md 失效(Meta-Pattern M3 Portal subtree context drift 類)。 */
+/* 鎖回一般密度(2026-04-22 起):祖先(例:html[data-density="lg"])的大密度值已經繼承下來時,
+   某一塊宣告 `data-density="md"` 或 `data-ui-size="md"` 必須能回到 :root 的值(大密度頁面裡的一般密度區塊靠這一段)。
+   2026-06-15 起 Popover / DropdownMenu / Tooltip 都不在根元素寫 data-density="md"(density.spec.md 情境 1),
+   原註解「subtree 元件(Popover / DropdownMenu / Tooltip 等)宣告 data-density="md"」已不成立(稽核 R7-06)。 */
 [data-ui-size="md"],
-[data-density="md"] {
+[data-density="md"]:not([data-ui-size]) {
   --field-height-sm: 1.75rem;   /* 28px — md default */
   --field-height-md: 2rem;      /* 32px — md default */
   --field-height-lg: 2.25rem;   /* 36px — md default */

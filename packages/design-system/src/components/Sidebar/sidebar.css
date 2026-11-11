@@ -17,10 +17,12 @@
    AppShell 與 Sidebar 的寬度 var() 解析成空 → 版面跑掉。所以本檔由 styles/tokens.css 匯入
    (token-creation-invariant C6 在 CI 擋「元件樣式檔沒進彙總檔也沒被程式匯入」)。
 
-   ── 段落順序不能動 ──
-   `:root` 與 `[data-density="lg"]` 權重相同(各一個偽類 / 屬性選擇器)。密度標記放在 <html> 上時,
+   ── 段落順序不能動;同一個元素上明寫的單軸屬性勝過 data-density ──
+   `:root` 與 `[data-ui-size="lg"]` 權重相同(各一個偽類 / 屬性選擇器)。密度標記放在 <html> 上時,
    兩條規則命中同一個元素,靠「後寫的贏」—— 所以預設值、大密度覆寫、鎖回一般密度三段必須同一個檔、照這個順序。
-   (token-creation-invariant C5 管「同一個檔」;順序由 test-density-subtree-token-parity 在瀏覽器實算守住。)
+   便捷屬性那一半寫成 `[data-density="…"]:not([data-ui-size])`:同一個元素同時帶兩種屬性時只看明寫的 data-ui-size
+   (理由與規則住 tokens/density/density.spec.md「同一個元素帶兩種屬性」,uiSize.css 同名段落同寫法)。
+   (token-creation-invariant C5 管「同一個檔」;順序與雙屬性由 test-density-subtree-token-parity 在瀏覽器實算守住。)
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -34,7 +36,7 @@
 }
 
 [data-ui-size="lg"],
-[data-density="lg"] {
+[data-density="lg"]:not([data-ui-size]) {
   /* 收合細列寬公式裡的圖示欄,寬鬆密度 20px(鎖回一般密度段回到 16px;不是 Sidebar size=lg —— 畫出來的圖示由 size 決定,不讀它) */
   --sidebar-menu-icon-size: 1.25rem; /* 20px(lg)*/
 }
@@ -43,7 +45,7 @@
    (浮層經 Portal 掛到 body 之外時一樣要能鎖回;uiSize.css 同名段落的理由)。
    2026-11-11 補洞(搬來之前在 uiSize.css 補的):原本漏了這顆 → 大密度頁面裡鎖回一般密度的區塊仍拿 20px。 */
 [data-ui-size="md"],
-[data-density="md"] {
+[data-density="md"]:not([data-ui-size]) {
   --sidebar-menu-icon-size: 1rem; /* 16px — md default */
 }
 

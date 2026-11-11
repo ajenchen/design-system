@@ -31,7 +31,16 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 - **md**(預設):資訊密集的桌面 UI / form-heavy 頁面
 - **lg**:元件高度與版面間距都放大一階(例:欄位高 md 32 → lg 36)
 
-`data-density` 內部等同同時設 `data-ui-size` + `data-layout-space` 相同 tier。CSS selectors 同時監聽 `[data-density="lg"], [data-ui-size="lg"]` 等(見 `uiSize.css` + `layoutSpace.css`)。
+`data-density` 內部等同同時設 `data-ui-size` + `data-layout-space` 相同 tier。CSS selectors 同時監聽 `[data-ui-size="lg"], [data-density="lg"]:not([data-ui-size])` 等(見 `uiSize.css` + `layoutSpace.css`)。
+
+### 同一個元素帶兩種屬性
+
+**明寫的單軸屬性勝過 `data-density`**:同一個元素同時帶 `data-density="X"` 與 `data-ui-size="Y"`(或 `data-layout-space="Y"`)時,那一軸取 Y,另一軸取 X。往外找的順序是逐層由內往外:最近一層有寫那一軸(單軸屬性或 `data-density`)的就是答案。
+
+- **為什麼**:`data-density` 是兩軸的便捷開關(本節開頭);單軸屬性是更明確的意圖。2026-11-11 前兩者權重相同、靠後寫的贏,結果只要其中一個是 md 就永遠 md 勝 —— html 已帶 `data-density="md"` 的頁面(`index.html`、Storybook)上,情境 2「單獨切 ui-size」完全沒有作用(稽核 R7-01:控制項高實量 32,應為 36)。
+- **寫法**:便捷屬性那一半寫成 `[data-density="…"]:not([data-ui-size])`(版面間距那一軸是 `:not([data-layout-space])`),全部有密度段的檔同一寫法:`uiSize.css`、`layoutSpace.css`、`Sidebar/sidebar.css`、`Tabs/tabs.css`、`DataTable/data-table.css`。
+- **JS 端同一條規則**:要在程式裡算「某個元素在哪一檔」時(例:浮層讀觸發點那一區,見「浮層跟觸發點」),用同一個解析順序,不另訂。
+- **閘**:`scripts/test-density-subtree-token-parity.mjs` 的同元素雙屬性、整頁解耦、兩層巢狀三類組合(期望值由同檔 `resolveTiers()` 依本節規則算)。
 
 ## 解耦用法(canonical 情境)
 
@@ -75,7 +84,7 @@ document.documentElement.setAttribute('data-ui-size', 'lg')
 **保證:區塊裡每一顆 token = 整頁直接設成那個密度的值**(逐 token 相等;兩個方向都算 —— 大密度頁面裡鎖回一般密度、一般密度頁面裡局部放大)。兩種寫法會破這條,`tokens/uiSize/uiSize.css` 各有一段處理:
 - 有大密度覆寫的值,「鎖回一般密度」段要有它(閘 `token-creation-invariant.mjs` C5);
 - 用 `var()` 由別的 token 組出來的值(例:側欄收合寬 `--sidebar-width-icon`)不能只寫在 `:root` —— 瀏覽器在宣告它的元素上就把 `var()` 代換掉,子孫繼承代換後的結果([W3C CSS Custom Properties Level 1](https://www.w3.org/TR/css-variables-1/#defining-variables):Computed value =「specified value with variables substituted」),區塊換密度時它不會重算。所以這類值住「衍生值」段,宣告在 `:root` 與每個換密度的元素上。
-閘 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算 12 種組合 × 對外彙總檔的全部 token。
+閘 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算 32 種組合(單一屬性區塊、同元素雙屬性、整頁解耦、兩個單軸屬性 = 便捷屬性、兩層巢狀)× 對外彙總檔的全部 token。
 
 ## 動態切換
 
@@ -119,7 +128,7 @@ document.documentElement.setAttribute('data-layout-space', 'md')
 
 ## Anti-patterns(禁止)
 
-- ❌ 元件同時設 `data-density` + `data-ui-size`(重複,以後者為準但混亂)
+- ❌ 元件同時設 `data-density` + `data-ui-size` 表達「兩軸同檔」(重複;要解耦就只寫兩個單軸屬性)。真的同時出現時以單軸屬性為準(「同一個元素帶兩種屬性」),不是未定義
 - ❌ **用 `data-density` master switch 鎖浮層**(連 ui-size 一起鎖 → 內部控件 / 選單 item 對不上觸發點)。只鎖該元件真正消費的 dial(見情境 1 表)
 - ❌ **把 density/layout-space lock 設在 header primitive(ChromeHeader / SurfaceHeader)而非 surface 根**——header 鎖、body 沒鎖 → 左緣不對齊(FileViewer 圖二 bug)。lock 一律放 surface 根容器
 - ❌ 為了追求表面一致性硬把 Dialog button 綁 lg ui-size(犧牲 header 高度 / strapline 彈性)

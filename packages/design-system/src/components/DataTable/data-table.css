@@ -7,10 +7,12 @@
    名字、每一檔密度的值都沒變;產品經對外彙總檔 styles/tokens.css 拿到,不用改任何一行。
    每一檔的值與 Tailwind 寫法 → data-table.spec.md「一、Table Size」。
 
-   ── 三段的順序不能動 ──
-   `:root` 與 `[data-density="lg"]` 權重相同(各一個偽類 / 屬性選擇器)。密度標記放在 <html> 上時,
+   ── 三段的順序不能動;同一個元素上明寫的單軸屬性勝過 data-density ──
+   `:root` 與 `[data-ui-size="lg"]` 權重相同(各一個偽類 / 屬性選擇器)。密度標記放在 <html> 上時,
    兩條規則命中同一個元素,靠「後寫的贏」—— 所以預設值、大密度覆寫、鎖回一般密度三段必須同一個檔、照這個順序。
-   (token-creation-invariant C5 管「同一個檔」;順序由 test-density-subtree-token-parity 在瀏覽器實算守住。)
+   便捷屬性那一半寫成 `[data-density="…"]:not([data-ui-size])`:同一個元素同時帶兩種屬性時只看明寫的 data-ui-size
+   (理由與規則住 density/density.spec.md「同一個元素帶兩種屬性」,uiSize.css 同名段落同寫法)。
+   (token-creation-invariant C5 管「同一個檔」;順序與雙屬性由 test-density-subtree-token-parity 在瀏覽器實算守住。)
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -21,7 +23,7 @@
 
 /* 大密度:三檔統一 +0.5rem(+8px) */
 [data-ui-size="lg"],
-[data-density="lg"] {
+[data-density="lg"]:not([data-ui-size]) {
   --table-row-sm: 2.5rem;       /* 40px */
   --table-row-md: 3rem;         /* 48px */
   --table-row-lg: 3.5rem;       /* 56px */
@@ -30,7 +32,7 @@
 /* 鎖回一般密度:祖先是大密度、這一塊宣告 data-density="md" / data-ui-size="md" 時回到 :root 的值
    (浮層經 Portal 掛到 body 之外時一樣要能鎖回;uiSize.css 同名段落的理由)。 */
 [data-ui-size="md"],
-[data-density="md"] {
+[data-density="md"]:not([data-ui-size]) {
   --table-row-sm: 2rem;         /* 32px */
   --table-row-md: 2.5rem;       /* 40px */
   --table-row-lg: 3rem;         /* 48px */

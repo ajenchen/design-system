@@ -31,8 +31,10 @@
   --item-gap-eyebrow-title:          2px;  /* eyebrow:   caption(12/1.3) 在 body / body-lg 標題之上 — SurfaceEyebrow(決策卡步數「n / N」) */
 }
 
+/* 同一個元素同時帶 data-density 與 data-layout-space 時只看明寫的 data-layout-space(便捷屬性那一半加 :not(…);
+   規則住 density/density.spec.md「同一個元素帶兩種屬性」,uiSize.css 同寫法)。 */
 [data-layout-space="lg"],
-[data-density="lg"] {
+[data-density="lg"]:not([data-layout-space]) {
   --layout-space-loose:  24px;
   --layout-space-tight:  16px;
   --layout-space-bottom: 48px; /* intentionally fixed — same in md and lg density (see spec) */
@@ -42,7 +44,7 @@
    時必須能 reset 回 md default(對齊 uiSize md reset rationale,Meta-Pattern M3 Portal
    subtree context drift) */
 [data-layout-space="md"],
-[data-density="md"] {
+[data-density="md"]:not([data-layout-space]) {
   --layout-space-loose:  16px;
   --layout-space-tight:  12px;
   --layout-space-bottom: 48px;

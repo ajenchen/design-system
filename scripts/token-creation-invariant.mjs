@@ -106,7 +106,8 @@ export function resolveBaseRef() {
 
 // ── 解析 ─────────────────────────────────────────────────────────────────
 const NAME = '--[A-Za-z0-9_-]+'
-const GLOBAL_PART = /^(?::root|html)?(?:\[data-(?:theme|density|ui-size|layout-space)(?:=["']?[\w-]+["']?)?\])*$/
+// 尾端可帶 `:not([data-ui-size])` / `:not([data-layout-space])`:便捷屬性那一半讓明寫的單軸屬性勝出(density.spec.md「同一個元素帶兩種屬性」)
+const GLOBAL_PART = /^(?::root|html)?(?:\[data-(?:theme|density|ui-size|layout-space)(?:=["']?[\w-]+["']?)?\])*(?::not\(\[data-(?:ui-size|layout-space)\]\))?$/
 const AT_TRANSPARENT = /^@(media|supports|layer|container)\b/
 
 function blockOf(stack) {

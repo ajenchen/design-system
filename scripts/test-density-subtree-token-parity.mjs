@@ -4,7 +4,8 @@
  *   保證: 一塊用 data-density / data-ui-size / data-layout-space 換了密度的區塊,裡面每一顆 token 的值
  *        = 整頁直接設成那個密度時的值(逐 token 相等)。兩個方向都驗:大密度頁面裡鎖回一般密度、一般密度頁面裡局部放大。
  *   紅: 任一組合裡任一顆 token 跟「整頁該密度」的值不同 → 指名 token、組合、兩邊的值,exit 1。
- *   綠: 12 種組合(整頁 2 種 × 屬性 3 種 × 區塊 2 種)× 對外彙總檔宣告的全部 token 都相等。
+ *   綠: 32 種組合(densityCases() 的 A–E 五類:單一屬性區塊 12、同元素雙屬性 8、整頁解耦 4、兩個單軸屬性 = 便捷屬性 2、
+ *       兩層巢狀 6)× 對外彙總檔宣告的全部 token 都相等。期望值的解析規則 = resolveTiers()(density.spec.md「同一個元素帶兩種屬性」)。
  *   註: 純 CSS 計算,不開 storybook、不量時間;機器快慢不影響結果。
  *
  * 為什麼要有這支(2026-11-11):
@@ -61,31 +62,82 @@ export function declaredNames(css) {
   return [...new Set([...src.matchAll(/(--[A-Za-z0-9_-]+)\s*:/g)].map((m) => m[1]))].sort()
 }
 
-/** 12 種組合:整頁密度 × 區塊用哪個屬性 × 區塊設成哪一檔。expected = 整頁直接設成「區塊該有的兩個維度」。 */
+/**
+ * 規格的密度解析規則(density.spec.md「同一個元素帶兩種屬性」),逐層由外往內:
+ * 某一層明寫 data-ui-size → 控制項那一軸取它;沒寫但有 data-density → 取 data-density;都沒有 → 沿用外層。layout-space 同理。
+ * layers:由外往內的屬性字串(html、外層區塊、區塊)。回傳 { ui, ls }。
+ */
+export function resolveTiers(layers) {
+  let ui = 'md'
+  let ls = 'md'
+  for (const s of layers) {
+    const get = (a) => new RegExp(`(?:^|\\s)data-${a}="(md|lg)"`).exec(s ?? '')?.[1]
+    const d = get('density')
+    ui = get('ui-size') ?? d ?? ui
+    ls = get('layout-space') ?? d ?? ls
+  }
+  return { ui, ls }
+}
+
+const expectOf = ({ ui, ls }) => ({
+  expected: { html: ui === ls ? `data-density="${ui}"` : `data-ui-size="${ui}" data-layout-space="${ls}"`, outer: '', block: '' },
+  expectedLabel: ui === ls ? `整頁 ${ui}` : `整頁 ui-size ${ui} / layout-space ${ls}`,
+})
+
+/**
+ * 組合(expected = 整頁直接設成「區塊該有的兩個維度」):
+ *   A. 12 種:整頁密度 × 區塊用哪個屬性 × 區塊設成哪一檔(2026-11-11 起)
+ *   B. 8 種:區塊**同一個元素**同時帶 data-density 與單軸屬性、兩者不同檔(稽核 R7-01:原本一般密度永遠勝)
+ *   C. 4 種:**整頁本身**解耦 —— html 同時帶 data-density 與單軸屬性(規格情境 2;index.html / Storybook 的 html 一律帶 data-density)
+ *   D. 2 種:整頁 data-ui-size + data-layout-space 同檔 = 整頁 data-density 那一檔(便捷屬性與兩個單軸屬性的值必須是同一份)
+ *   E. 6 種:兩層巢狀 —— 外層區塊 data-density 與整頁不同,內層區塊再用單軸 / 便捷屬性換回去
+ * (稽核 R7-10:原本只有 A,本輪每一項發現它都不會紅。)
+ */
 export function densityCases() {
   const TIERS = ['md', 'lg']
-  const AXES = { density: ['ui', 'ls'], 'ui-size': ['ui'], 'layout-space': ['ls'] }
+  const other = (t) => (t === 'md' ? 'lg' : 'md')
+  const ATTRS = ['density', 'ui-size', 'layout-space']
   const out = []
+  const push = (label, actual) => out.push({ label, actual: { outer: '', block: '', ...actual }, ...expectOf(resolveTiers([actual.html, actual.outer, actual.block])) })
   for (const page of TIERS) {
-    for (const [attr, axes] of Object.entries(AXES)) {
-      for (const tier of TIERS) {
-        const ui = axes.includes('ui') ? tier : page
-        const ls = axes.includes('ls') ? tier : page
-        out.push({
-          label: `整頁 data-density="${page}"、區塊 data-${attr}="${tier}"`,
-          actual: { html: `data-density="${page}"`, block: `data-${attr}="${tier}"` },
-          expected: { html: ui === ls ? `data-density="${ui}"` : `data-ui-size="${ui}" data-layout-space="${ls}"`, block: '' },
-          expectedLabel: ui === ls ? `整頁 ${ui}` : `整頁 ui-size ${ui} / layout-space ${ls}`,
-        })
+    for (const attr of ATTRS) {
+      for (const tier of TIERS) push(`整頁 data-density="${page}"、區塊 data-${attr}="${tier}"`, { html: `data-density="${page}"`, block: `data-${attr}="${tier}"` })
+    }
+  }
+  for (const page of TIERS) {
+    for (const d of TIERS) {
+      for (const axis of ['ui-size', 'layout-space']) {
+        const block = `data-density="${d}" data-${axis}="${other(d)}"`
+        push(`整頁 data-density="${page}"、區塊同一個元素 ${block}`, { html: `data-density="${page}"`, block })
       }
+    }
+  }
+  for (const d of TIERS) {
+    for (const axis of ['ui-size', 'layout-space']) {
+      const html = `data-density="${d}" data-${axis}="${other(d)}"`
+      push(`整頁本身解耦 html ${html}`, { html })
+    }
+  }
+  for (const t of TIERS) {
+    out.push({
+      label: `整頁 data-ui-size="${t}" data-layout-space="${t}"(兩個單軸屬性同檔)`,
+      actual: { html: `data-ui-size="${t}" data-layout-space="${t}"`, outer: '', block: '' },
+      expected: { html: `data-density="${t}"`, outer: '', block: '' },
+      expectedLabel: `整頁 data-density="${t}"`,
+    })
+  }
+  for (const page of TIERS) {
+    for (const attr of ATTRS) {
+      const outer = `data-density="${other(page)}"`
+      push(`整頁 data-density="${page}"、外層區塊 ${outer}、內層區塊 data-${attr}="${page}"`, { html: `data-density="${page}"`, outer, block: `data-${attr}="${page}"` })
     }
   }
   return out
 }
 
-const doc = (css, { html, block }) => `<!doctype html><html ${html}><head><style>${css}</style></head>` +
-  `<body><div id="probe" ${block}><i id="len" style="position:absolute;visibility:hidden"></i>` +
-  SCOPES.map((s, i) => `<div id="scope-${i}" ${s}></div>`).join('') + '</div></body></html>'
+const doc = (css, { html, outer = '', block }) => `<!doctype html><html ${html}><head><style>${css}</style></head>` +
+  `<body><div id="outer" ${outer}><div id="probe" ${block}><i id="len" style="position:absolute;visibility:hidden"></i>` +
+  SCOPES.map((s, i) => `<div id="scope-${i}" ${s}></div>`).join('') + '</div></div></body></html>'
 
 /** 在區塊上讀每顆 token 的計算值(主人自己重算的,在主人根元素上讀);能當長度的另外換成 px(寫法不同、長度相同不算違規)。 */
 async function readTokens(page, css, ctx, names) {
@@ -158,11 +210,14 @@ async function selftest(page) {
     ['現況', null, new Map()],
     // 側欄 4 顆 2026-11-11 搬到 components/Sidebar/sidebar.css(token「2甲」第五批):回復段與衍生值段都跟著搬,
     // 注入點跟著住處走 —— 衍生值這一種因此分兩個檔各注入一次(側欄在 sidebar.css、多行輸入框內距留在 uiSize.css),各自要被指名
-    ['拿掉 --sidebar-menu-icon-size 的回復', '--sidebar-menu-icon-size', mutate(SIDEBAR, '拿掉回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--sidebar-menu-icon-size:[^;]*;/, '$1')],
+    ['拿掉 --sidebar-menu-icon-size 的回復', '--sidebar-menu-icon-size', mutate(SIDEBAR, '拿掉回復', /(\[data-density="md"\][^{]*\{[\s\S]*?)--sidebar-menu-icon-size:[^;]*;/, '$1')],
+    // R7-01:便捷屬性那一半拿掉 :not(…) → 回到「權重相同、後寫的贏」→ 同元素雙屬性 / 整頁解耦時一般密度永遠勝 → 必紅
+    ['同元素雙屬性:控制項軸拿掉 :not([data-ui-size])', '--field-height-md', mutate(UI_SIZE, '拿掉 :not', /\[data-density="(lg|md)"\]:not\(\[data-ui-size\]\)/g, '[data-density="$1"]')],
+    ['同元素雙屬性:版面間距軸拿掉 :not([data-layout-space])', '--layout-space-loose', mutate(join(DS, 'tokens/layoutSpace/layoutSpace.css'), '拿掉 :not', /\[data-density="(lg|md)"\]:not\(\[data-layout-space\]\)/g, '[data-density="$1"]')],
     ['衍生值只宣告在 :root(不在區塊上重算)', '--sidebar-width-icon', mutate(SIDEBAR, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
     ['衍生值只宣告在 :root —— 多行輸入框內距那組也要被指名', '--field-control-py-md', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
     // 列高 2026-11-11 搬到 data-table.css(token「2甲」第四批):注入點跟著住處走,否則 mutate 找不到而 INSTRUMENT-FAIL
-    ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(DATA_TABLE, '拿掉 table-row 回復', /(\[data-density="md"\]\s*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],
+    ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(DATA_TABLE, '拿掉 table-row 回復', /(\[data-density="md"\][^{]*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],
     // 「在主人根元素上量」不是恆綠:表格根元素不再重算 → 繼承整頁的值 → 必紅
     ['表格根元素不再重算 --table-cell-py', '--table-cell-py', mutate(DATA_TABLE, '表格只留 :root', /:root,\s*\[data-table-size="md"\]\s*\{/, ':root {')],
   ]
