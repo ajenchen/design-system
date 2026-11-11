@@ -7,7 +7,9 @@
  *           hover 底色才會貼邊(規則 1 C、「常見誤解」第 2 條)。
  *         底(規則 4):最後一個內容 → 容器底(有捲動 = 捲動終點)依最後一個東西的角色 —— bounded region = loose、unbounded region = 0、
  *           element:容器擋住頁面或高度撐滿 = bottom(48);容器不擋頁面、高度貼著內容 = 與頂部同值(同一處量到的頂,上下對稱;
- *           頂距本身對不對是規則 2 的事,由原閘判)。容器被 max-height 卡住而在捲動 = 規則 4 沒寫的第三種 → 紅「待規格」,不默默套用任一列。
+ *           頂距本身對不對是規則 2 的事,由原閘判)。容器被 max-height 卡住而在捲動、高度寫死、被 min-height 撐住(規則 4 表沒逐字寫的三種)
+ *           → 依規則 4「沒寫到的三種容器」(Note 的理由推導,【AI 推導】):不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值。
+ *           2026-11-11 前這三種一律紅「待規格」。
  *         盤點 = 原閘的 CASES(同一份,import;不在盤點裡的理由同原閘 NOT_COVERED),本檔只補每處的 SIDES 登記
  *         (最後一個東西的角色、容器種類、左右 pattern)。
  *   為何新增姊妹閘、不擴原閘(二擇一):原閘的名字與契約(規則 2 頂部)已被 ci.yml 註解、layoutSpace.spec.md、Sidebar / AppShell story 註解指名;
@@ -27,8 +29,8 @@
  *     容器種類:fill = 標頭所在的 role=dialog 是 modal(aria-modal 或 body 被鎖 pointer-events)、容器內緣底比收尾終點低(有多出來的空白)、
  *            或內容在捲而高度不是被 max-height 卡住的;capped = 在捲且捲動容器到外殼之間有一層高度 = 它的 max-height;其餘 = hug。
  *            pinned(2026-11-11 r3 審查拆出):不是 modal、但「多出來的空白」或「在捲」是因為內容那塊到外殼之間有一層高度寫死(computed height = px,
- *            且不等於視窗高)或被 min-height 撐住 —— 規則 4 Note 只分「視窗 / 版面欄決定(撐滿)」與「內容決定(貼內容)」,這種沒寫 → 紅「待規格」,
- *            不再默默當撐滿套 48。【AI 推導】fill / hug / capped / pinned 這組分類是閘作者把規則 4 Note 落成量法的判準,規格沒逐字寫。
+ *            且不等於視窗高)或被 min-height 撐住 —— 不再默默當撐滿套 48;期望值見 bottomWant(capped / pinned = 與頂部同值,規則 4「沒寫到的三種容器」)。
+ *            【AI 推導】fill / hug / capped / pinned 這組分類是閘作者把規則 4 Note 落成量法的判準,規格沒逐字寫。
  *     期望值的 loose / tight / bottom 從容器(標頭之後那塊)computed `--layout-space-*` 讀(浮層鎖 md 照它讀到的算);頁面根 loose md = lg → 儀器失效。
  *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;(b)SIDES 與 CASES 一一對應。
  *   --static=<dir> 指定建置(對照組用);指定時不跑新鮮度守衛。
@@ -48,7 +50,8 @@ const ROLES = ['bounded', 'unbounded', 'element']
 
 /**
  * 每一處的左右 / 底登記(2026-11-11 盤點時照規則推的;DOM 判出的 ≠ 登記 → 紅)。
- * last = 最後一個東西的角色;box = fill(擋住頁面或高度撐滿)/ hug(不擋頁面、貼著內容);pattern = AB(容器 / 包層給左右內距)/ C(每一列自帶)。
+ * last = 最後一個東西的角色;box = fill(擋住頁面或高度撐滿)/ hug(不擋頁面、貼著內容)/ capped(被 max-height 卡住在捲)/ pinned(高度寫死或被 min-height 撐住);
+ * pattern = AB(容器 / 包層給左右內距)/ C(每一列自帶)。目前登記的處所沒有 capped / pinned(2026-11-11 盤點)。
  */
 export const SIDES = {
   'sidebar-mixed-folder': { last: 'bounded', box: 'fill', pattern: 'AB' },
@@ -80,14 +83,19 @@ export const SIDES = {
 
 /**
  * 純函式:規則 4 的期望值。top = 同一處量到的「標頭底 → 第一個內容頂」(規則 4 第 4 列「與頂部同值(值由元件自己的內距給)」= 上下對稱;
- * 頂距本身對不對是規則 2 的事,由原閘判)。box = 'capped'(被高度上限卡住而在捲動)規則 4 沒寫 → want = NaN,由 judge 指名「待規格」。
+ * 頂距本身對不對是規則 2 的事,由原閘判)。
+ * box = 'capped'(被 max-height 卡住而在捲動)/ 'pinned'(高度寫死或被 min-height 撐住)—— 規則 4 表沒逐字寫,照 Note 寫下的理由判
+ * (layoutSpace.spec.md 規則 4「沒寫到的三種容器」【AI 推導】):48 只給擋住頁面(modal,classifyBox 先判成 fill)或高度由視窗 / 版面欄決定的容器;
+ * 這兩種的高度是元件上的固定值或上下限、不擋頁面 → 與 Popover 同一邊 = 第 4 列,與頂部同值。2026-11-11 前 want = NaN,由 judge 紅「待規格」。
  */
 export function bottomWant({ last, box, top }, t) {
   if (last === 'bounded') return { want: t.loose, rule: '規則 4:bounded region → 容器底 = loose' }
   if (last === 'unbounded') return { want: 0, rule: '規則 4:unbounded region → 容器底 = 0(清單自帶 py)' }
   if (box === 'fill') return { want: t.bottom, rule: '規則 4:element → 容器底,容器擋住頁面或撐滿 = bottom' }
   if (box === 'hug') return { want: top, rule: `規則 4:element → 容器底,容器不擋頁面、貼著內容 = 與頂部同值(頂 ${top})` }
-  return { want: NaN, rule: '規則 4 沒寫:容器被高度上限卡住而在捲動(不是擋頁面、也不是撐滿或貼內容)' }
+  if (box === 'capped') return { want: top, rule: `規則 4「沒寫到的三種容器」:被 max-height 卡住在捲、不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值(頂 ${top})` }
+  if (box === 'pinned') return { want: top, rule: `規則 4「沒寫到的三種容器」:高度寫死或被 min-height 撐住、不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值(頂 ${top})` }
+  return { want: NaN, rule: `容器種類 ${box} 不在判定表裡` }
 }
 
 /**
@@ -104,8 +112,6 @@ export function judge(rows) {
       failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒量到左 / 右 / 底 / 頂或角色(左 ${r.left} / 右 ${r.right} / 底 ${r.bottom} / 頂 ${r.top} / 最後 ${r.last})`)
       continue
     }
-    if (r.box === 'capped') failures.push(`${where} 容器被高度上限卡住而在捲動(最後一個東西 = ${r.lastDesc ?? '?'},底 ${r.bottom}px)—— 規則 4 第 1 / 4 列沒寫這種容器該用 bottom 還是與頂部同值;待規格定案,不准默默套用其中一列`)
-    if (r.box === 'pinned') failures.push(`${where} 容器高度被寫死或被 min-height 撐住(${r.pinned ?? '?'};最後一個東西 = ${r.lastDesc ?? '?'},底 ${r.bottom}px)—— 規則 4 Note 只分「視窗 / 版面欄決定」與「內容決定」,這種沒寫;待規格定案,不准默默當撐滿套 bottom`)
     const d = r.declared ?? {}
     if (r.last !== d.last) failures.push(`${where} 最後一個東西的角色 = ${r.last}(${r.lastDesc ?? '?'}),登記的是 ${d.last} —— 內容換了,照規則 4 重推底距並更新 SIDES`)
     if (r.box !== d.box) failures.push(`${where} 容器種類 = ${r.box}(多出來的空白 ${r.free ?? '?'}px、modal ${r.modal ?? '?'}、捲動 ${r.scrolls ?? '?'}),登記的是 ${d.box} —— 照規則 4 第 1 / 4 列重推`)
@@ -115,7 +121,8 @@ export function judge(rows) {
     if (Math.abs(r.right - t.loose) > TOL) failures.push(`${where} 右 = ${r.right}px,應 ${t.loose}(規則 1 / 6:內容左右 = loose;最右的內容 = ${r.rightDesc ?? '?'})`)
     if (r.pattern === 'C' && (Math.abs(r.rowLeft ?? NaN) > TOL || Math.abs(r.rowRight ?? NaN) > TOL)) failures.push(`${where} 每列自帶內距(pattern C),列本身離容器 左 ${r.rowLeft} / 右 ${r.rowRight}px,應 0(規則 1 C:列貼齊容器,hover 底色才貼邊)`)
     const { want, rule } = bottomWant(r, t)
-    if (Number.isFinite(want) && Math.abs(r.bottom - want) > TOL) failures.push(`${where} 底 = ${r.bottom}px,應 ${want}(${rule};最後一個東西 = ${r.lastDesc ?? '?'})`)
+    if (!Number.isFinite(want)) failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 底的期望值算不出來(${rule})`)
+    else if (Math.abs(r.bottom - want) > TOL) failures.push(`${where} 底 = ${r.bottom}px,應 ${want}(${rule};最後一個東西 = ${r.lastDesc ?? '?'}${r.pinned ? `;${r.pinned}` : ''})`)
   }
   // 密度有沒有套上看頁面根(同原閘):浮層刻意鎖 md 時兩密度同值是正確的
   for (const id of new Set(rows.map((r) => r.id))) {
@@ -143,7 +150,7 @@ function selftest() {
   const caseIds = CASES.map((c) => c.id)
   expect(caseIds.every((id) => SIDES[id]), `CASES 裡沒有 SIDES 登記的:${caseIds.filter((id) => !SIDES[id]).join(', ')}`)
   expect(Object.keys(SIDES).every((id) => caseIds.includes(id)), `SIDES 裡多出 CASES 沒有的:${Object.keys(SIDES).filter((id) => !caseIds.includes(id)).join(', ')}`)
-  expect(Object.values(SIDES).every((s) => ROLES.includes(s.last) && /^(fill|hug)$/.test(s.box) && /^(AB|C)$/.test(s.pattern)), 'SIDES 欄位值只能是 last ∈ 角色、box ∈ fill / hug、pattern ∈ AB / C')
+  expect(Object.values(SIDES).every((s) => ROLES.includes(s.last) && /^(fill|hug|capped|pinned)$/.test(s.box) && /^(AB|C)$/.test(s.pattern)), 'SIDES 欄位值只能是 last ∈ 角色、box ∈ fill / hug / capped / pinned、pattern ∈ AB / C')
   // (a) 判定表 —— 修後形狀(每處照登記、期望值)必綠
   const good = caseIds.flatMap((id) => DENSITIES.map((d) => row(id, d)))
   expect(judge(good).length === 0, `照規則的形狀應綠,實得 ${JSON.stringify(judge(good))}`)
@@ -179,12 +186,22 @@ function selftest() {
   expect(judge([row('surface-body', 'md', { top: 0, bottom: 0 })]).length === 0, '貼內容的容器頂 0 收尾 0 應綠(上下對稱)')
   expect(judge([row('surface-body', 'md', { top: 0, bottom: 12 })]).some((s) => s.includes('與頂部同值(頂 0)')), '貼內容的容器頂 0 收尾 12 應紅')
   expect(judge([row('x', 'md', { top: NaN })]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '頂沒量到應判儀器失效(與頂部同值無從比)')
-  // 被高度上限卡住而在捲動:規則 4 沒寫 → 紅(待規格),不准默默套用第 1 或第 4 列
-  const capped = judge([row('surface-body', 'md', { box: 'capped', bottom: 12 })])
-  expect(capped.some((s) => s.includes('待規格定案')) && !capped.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `被上限卡住的捲動容器應紅(待規格),實得 ${JSON.stringify(capped)}`)
-  // 高度寫死 / 被 min-height 撐住:規則 4 沒寫 → 紅(待規格),即使底剛好 48 也不准當撐滿放行(2026-11-11 r3 審查)
-  const pinnedRow = judge([row('dialog-body', 'md', { box: 'pinned', pinned: '<div> height 280px', bottom: 48 })])
-  expect(pinnedRow.some((s) => s.includes('寫死或被 min-height 撐住') && s.includes('待規格定案')) && !pinnedRow.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `高度寫死的容器應紅(待規格),實得 ${JSON.stringify(pinnedRow)}`)
+  // 規則 4「沒寫到的三種容器」(layoutSpace.spec.md,2026-11-11【AI 推導】):被 max-height 卡住在捲 / 高度寫死 / 被 min-height 撐住,
+  // 不擋頁面、高度不是視窗 / 版面欄給的 → 與頂部同值。兩面:收尾 = 頂 → 綠;收尾給 48(當成撐滿)→ 紅,訊息指名這一條。
+  // 登記要寫成 capped / pinned 本身(不得登記成 hug 蒙混:容器種類與登記不符照樣紅)。2026-11-11 前這三種一律紅「待規格」。
+  const asCapped = { declared: { last: 'element', box: 'capped', pattern: 'AB' }, box: 'capped' }
+  const asPinned = { declared: { last: 'element', box: 'pinned', pattern: 'AB' }, box: 'pinned', pinned: '<div> height 280px' }
+  const asMin = { declared: { last: 'element', box: 'pinned', pattern: 'AB' }, box: 'pinned', pinned: '<div> min-height 120px' }
+  for (const [what, over] of [['被 max-height 卡住在捲', asCapped], ['高度寫死', asPinned], ['被 min-height 撐住', asMin]]) {
+    const sym = judge(DENSITIES.map((d) => row('surface-body', d, { ...over, top: T[d].tight, bottom: T[d].tight })))
+    expect(sym.length === 0, `${what}、收尾 = 頂應綠(與頂部同值),實得 ${JSON.stringify(sym)}`)
+    const as48 = judge([row('surface-body', 'md', { ...over, top: 12, bottom: 48 })])
+    expect(as48.some((s) => s.includes('底 = 48px,應 12') && s.includes('沒寫到的三種容器')) && !as48.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `${what}、收尾給 48 應紅並指名「沒寫到的三種容器」,實得 ${JSON.stringify(as48)}`)
+    const asHug = judge([row('surface-body', 'md', { ...over, declared: { last: 'element', box: 'hug', pattern: 'AB' }, top: 12, bottom: 12 })])
+    expect(asHug.some((s) => s.includes(`容器種類 = ${over.box}`) && s.includes('登記的是 hug')), `${what} 登記成 hug 應紅(登記不符),實得 ${JSON.stringify(asHug)}`)
+  }
+  // 判定表外的容器種類 → 儀器失效(不得默默放行)
+  expect(judge([row('surface-body', 'md', { box: 'mystery', declared: { last: 'element', box: 'mystery', pattern: 'AB' } })]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '判定表外的容器種類應判儀器失效')
   console.log(ok ? '✅ header-content-sides selftest PASS' : '❌ header-content-sides selftest FAIL')
   return ok
 }

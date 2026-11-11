@@ -203,7 +203,7 @@ export const RULES = Object.freeze({
   },
   'hardcoded-spacing': {
     label: '(b) 寫死的間距',
-    owner: 'packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:333「❌ 元素間 gap 硬寫」+ :159-178「該用 token vs 刻意固定」(設計規格層不收)',
+    owner: 'packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:335「❌ 元素間 gap 硬寫」+ :159-178「該用 token vs 刻意固定」(設計規格層不收)',
     fix: '改用 gap-/p-/m-[var(--layout-space-tight|loose|bottom)];刻意固定的 micro 值在該行正上方寫 {/* @layout-space-magic-ok: 理由 */}(同 check_layout_space_magic_numbers.sh)',
   },
   'div-heading': {

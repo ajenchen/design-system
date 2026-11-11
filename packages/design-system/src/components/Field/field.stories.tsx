@@ -619,7 +619,7 @@ export const SliderWithLiveNumberInput: Story = {
       <div className="max-w-sm">
         <Field>
           <FieldLabel>縮放比例</FieldLabel>
-          {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:166 規則 5) */}
+          {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:168 規則 5) */}
           <div className="flex items-center gap-2 w-full">
             <div className="flex-1 min-w-0">
               <Slider
