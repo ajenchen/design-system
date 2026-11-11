@@ -24,13 +24,18 @@
  *            按鈕 / 連結裡的圖示或字量按鈕外框(元件邊緣是對齊線,透明按鈕的內距是元件自己的;頂邊沿用原閘的「看得見的圖示 / 字」)。
  *     底 = 收尾內距:最後一個東西(內容底最低的,按鈕同上量外框)往上加總每層 padding-bottom + border-bottom + margin-bottom(照 CSS 外距合併),
  *            同層後面看不見的佔位元素也算;撐滿高度的包層多出來的空白不算(那是容器比內容高,不是收尾內距)。
- *     容器種類:fill = 標頭所在的 role=dialog 是 modal(aria-modal 或 body 被鎖 pointer-events)、容器內緣底比收尾終點低(有多出來的空白)、
- *            或內容在捲而高度不是被 max-height 卡住的;capped = 在捲且捲動容器到外殼之間有一層高度 = 它的 max-height;其餘 = hug。
+ *     容器種類(classifyBox):標頭所在的 role=dialog 是 modal(aria-modal 或 body 被鎖 pointer-events)= fill。其餘先直接量「高度是不是由內容決定」——
+ *            內容那塊最後一個在流裡的子元素,下外距暫時 +20px,容器跟著長足 20 = hug(量完立即還原;同步排版、不等時間,
+ *            挪的是外距不是字,與機器速度 / 字型無關)。沒跟著(版面給的高 / 寫死 / 被撐住 / 被上限卡住)才往下判:容器內緣底比收尾終點低
+ *            (有多出來的空白)或內容在捲而高度不是被 max-height 卡住的 = fill;capped = 在捲且捲動容器到外殼之間有一層高度 = 它的 max-height;其餘 = hug。
+ *            2026-11-11 前「多出來的空白 > 0.5」單獨就判 fill —— 那是代理(M37):PR #172 CI 上篩選面板 @md 容器貼著內容,卻因「加篩選」包層的行盒
+ *            比按鈕低 1px 被判撐滿、期望 48 而假紅(按鈕基線落在圖示底 = 基線下 6px;包層 16px / 24px 那行的 strut 基線下,本機 6px、Arial / Helvetica 字距
+ *            7px —— 本機換這兩個字型逐數重現 CI;【AI 推導】CI 的 Linux 主字型落到同一種字距)。--selftest 對照組把直接量拿掉,重現那筆假紅。
  *            pinned(2026-11-11 r3 審查拆出):不是 modal、但「多出來的空白」或「在捲」是因為內容那塊到外殼之間有一層高度寫死(computed height = px,
  *            且不等於視窗高)或被 min-height 撐住 —— 規則 4 Note 只分「視窗 / 版面欄決定(撐滿)」與「內容決定(貼內容)」,這種沒寫 → 紅「待規格」,
  *            不再默默當撐滿套 48。【AI 推導】fill / hug / capped / pinned 這組分類是閘作者把規則 4 Note 落成量法的判準,規格沒逐字寫。
  *     期望值的 loose / tight / bottom 從容器(標頭之後那塊)computed `--layout-space-*` 讀(浮層鎖 md 照它讀到的算);頁面根 loose md = lg → 儀器失效。
- *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;(b)SIDES 與 CASES 一一對應。
+ *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;容器種類(classifyBox)各形狀一列 + 對照組;(b)SIDES 與 CASES 一一對應。
  *   --static=<dir> 指定建置(對照組用);指定時不跑新鮮度守衛。
  */
 import path from 'node:path'
@@ -90,6 +95,26 @@ export function bottomWant({ last, box, top }, t) {
   return { want: NaN, rule: '規則 4 沒寫:容器被高度上限卡住而在捲動(不是擋頁面、也不是撐滿或貼內容)' }
 }
 
+/** 內容加高多少去量「容器跟不跟著長」(probeSides 的 followStep 由 measureCase 傳這個值,判定也用它 —— 同一個數字一個住所)。 */
+export const FOLLOW_STEP = 20
+
+/**
+ * 純函式:容器種類。modal 先判(不變)。接著看直接量的性質:內容加高 FOLLOW_STEP,容器跟著長 grow = FOLLOW_STEP → 高度由內容決定 = hug。
+ * 沒長足(版面給的高只讓出多出來的空白、寫死 / 被撐住 / 被上限卡住都長不足)→ 才看多出來的空白(fill / pinned)與捲動(capped / pinned / fill)。
+ * grow 量不到 → null(judge 判儀器失效;沒量到不得默默退回「多出來的空白」那個代理)。
+ * byFollow: false 只給 --selftest 對照組:拿掉直接量 = 2026-11-11 前的舊判法(多出來的空白 > 0.5 就撐滿),證明它重現 CI 的假紅。
+ */
+export function classifyBox({ modal, grow, free, scrolls, capped, pinned }, { byFollow = true } = {}) {
+  if (modal) return 'fill'
+  if (byFollow) {
+    if (!Number.isFinite(grow)) return null
+    if (Math.abs(grow - FOLLOW_STEP) <= TOL) return 'hug'
+  }
+  return free > 0.5 ? (pinned ? 'pinned' : 'fill')
+    : scrolls ? (capped ? 'capped' : pinned ? 'pinned' : 'fill')
+      : 'hug'
+}
+
 /**
  * 純函式:[{ id, density, declared, last, first, box, pattern, left, right, bottom, rowLeft, rowRight, loose, tight, bottom token, rootLoose, err }]
  * → 不符合的訊息清單(呼叫端與 selftest 共用)。
@@ -101,14 +126,14 @@ export function judge(rows) {
     if (r.err) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} ${r.err}`); continue }
     if (!(r.loose > 0) || !(r.tight > 0) || !(r.bottomToken > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-loose / tight / bottom`); continue }
     if (![r.left, r.right, r.bottom, r.top].every(Number.isFinite) || !ROLES.includes(r.last) || !r.box || !r.pattern) {
-      failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒量到左 / 右 / 底 / 頂或角色(左 ${r.left} / 右 ${r.right} / 底 ${r.bottom} / 頂 ${r.top} / 最後 ${r.last})`)
+      failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒量到左 / 右 / 底 / 頂、角色或容器種類(左 ${r.left} / 右 ${r.right} / 底 ${r.bottom} / 頂 ${r.top} / 最後 ${r.last} / 容器 ${r.box}:內容加高 ${FOLLOW_STEP}px 容器長 ${r.grow})`)
       continue
     }
     if (r.box === 'capped') failures.push(`${where} 容器被高度上限卡住而在捲動(最後一個東西 = ${r.lastDesc ?? '?'},底 ${r.bottom}px)—— 規則 4 第 1 / 4 列沒寫這種容器該用 bottom 還是與頂部同值;待規格定案,不准默默套用其中一列`)
     if (r.box === 'pinned') failures.push(`${where} 容器高度被寫死或被 min-height 撐住(${r.pinned ?? '?'};最後一個東西 = ${r.lastDesc ?? '?'},底 ${r.bottom}px)—— 規則 4 Note 只分「視窗 / 版面欄決定」與「內容決定」,這種沒寫;待規格定案,不准默默當撐滿套 bottom`)
     const d = r.declared ?? {}
     if (r.last !== d.last) failures.push(`${where} 最後一個東西的角色 = ${r.last}(${r.lastDesc ?? '?'}),登記的是 ${d.last} —— 內容換了,照規則 4 重推底距並更新 SIDES`)
-    if (r.box !== d.box) failures.push(`${where} 容器種類 = ${r.box}(多出來的空白 ${r.free ?? '?'}px、modal ${r.modal ?? '?'}、捲動 ${r.scrolls ?? '?'}),登記的是 ${d.box} —— 照規則 4 第 1 / 4 列重推`)
+    if (r.box !== d.box) failures.push(`${where} 容器種類 = ${r.box}(內容加高 ${FOLLOW_STEP}px 容器長 ${r.grow ?? '?'}、多出來的空白 ${r.free ?? '?'}px、modal ${r.modal ?? '?'}、捲動 ${r.scrolls ?? '?'}),登記的是 ${d.box} —— 照規則 4 第 1 / 4 列重推`)
     if (r.pattern !== d.pattern) failures.push(`${where} 左右內距的 pattern = ${r.pattern}(給內距的是 ${r.owner ?? '?'}),登記的是 ${d.pattern} —— 照規則 1 重推`)
     const t = { loose: r.loose, tight: r.tight, bottom: r.bottomToken }
     if (Math.abs(r.left - t.loose) > TOL) failures.push(`${where} 左 = ${r.left}px,應 ${t.loose}(規則 1 / 6:內容左右 = loose;最左的內容 = ${r.leftDesc ?? '?'})`)
@@ -185,12 +210,35 @@ function selftest() {
   // 高度寫死 / 被 min-height 撐住:規則 4 沒寫 → 紅(待規格),即使底剛好 48 也不准當撐滿放行(2026-11-11 r3 審查)
   const pinnedRow = judge([row('dialog-body', 'md', { box: 'pinned', pinned: '<div> height 280px', bottom: 48 })])
   expect(pinnedRow.some((s) => s.includes('寫死或被 min-height 撐住') && s.includes('待規格定案')) && !pinnedRow.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `高度寫死的容器應紅(待規格),實得 ${JSON.stringify(pinnedRow)}`)
+  // 容器種類(classifyBox)= 直接量「容器跟不跟著內容」。ci = PR #172 CI(5db512f2)篩選面板 @md 量到的形狀:多出來的空白 1px、不 modal、不捲、頂 12 / 底 12
+  const ci = { modal: false, free: 1, scrolls: false, capped: false, pinned: null }
+  const panel = (sig, opt) => row('datatable-filter-panel', 'md', { box: classifyBox(sig, opt), top: 12, bottom: 12, ...sig })
+  const B = (sig) => classifyBox({ ...ci, ...sig })
+  // 多 1px 空白、但內容加高 20 容器跟著長足 20 → hug,整格綠(該綠)
+  const follow = judge([panel({ ...ci, grow: 20 })])
+  expect(B({ grow: 20 }) === 'hug' && follow.length === 0, `多 1px 空白但跟著內容長足 → hug 應綠,實得 ${B({ grow: 20 })} / ${JSON.stringify(follow)}`)
+  // 撐滿外殼:版面給的高,內容加高也不動 → fill;登記 hug 的面板量到這種形狀必紅(該紅)
+  const shell = judge([panel({ ...ci, free: 600, grow: 0 })])
+  expect(B({ free: 600, grow: 0 }) === 'fill' && shell.some((s) => s.includes('容器種類 = fill')), `撐滿外殼應判 fill 並紅,實得 ${JSON.stringify(shell)}`)
+  // 撐滿外殼只多 1px(版面給的高;flex 子項 min-height:auto —— 內容加高 20 外殼只讓出 19)→ fill:多出來的空白跟 CI 那格同樣 1px,差別只在跟不跟著內容
+  expect(B({ grow: 19 }) === 'fill', `外殼只多 1px、長 19 應判 fill,實得 ${B({ grow: 19 })}`)
+  // 被 min-height 撐住(多出來的空白先被吃掉才長)→ pinned;被上限卡住在捲 → capped;modal 不看跟隨 → fill
+  expect(B({ grow: 19, pinned: '<div> min-height 120px' }) === 'pinned', '被 min-height 撐住、長不足應判 pinned')
+  expect(B({ free: 0, scrolls: true, capped: true, grow: 0 }) === 'capped', '被上限卡住在捲應判 capped')
+  expect(B({ modal: true, grow: 20 }) === 'fill', 'modal 即使跟著內容也判 fill(modal 判定不變)')
+  // 跟隨量不到 → 儀器失效,不得默默退回「多出來的空白」代理
+  const blind = judge([panel({ ...ci, grow: NaN })])
+  expect(B({ grow: NaN }) === null && blind.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `跟隨量不到應判儀器失效,實得 ${JSON.stringify(blind)}`)
+  // 對照組:拿掉直接量(byFollow: false = 舊判法「多出來的空白 > 0.5 就撐滿」),同一格量測必須重現 CI 那兩行假紅
+  const legacy = judge([panel({ ...ci, grow: 20 }, { byFollow: false })])
+  expect(legacy.some((s) => s.includes('容器種類 = fill') && s.includes('多出來的空白 1px') && s.includes('登記的是 hug')) && legacy.some((s) => s.includes('底 = 12px,應 48')),
+    `對照組(舊判法)應重現 CI 假紅「容器種類 = fill … 登記的是 hug」+「底 = 12px,應 48」,實得 ${JSON.stringify(legacy)}`)
   console.log(ok ? '✅ header-content-sides selftest PASS' : '❌ header-content-sides selftest FAIL')
   return ok
 }
 
 /** 頁面函式(依賴 window.__layoutKit = 原閘 pageKit):量標頭之後那塊的左 / 右 / 底結構內距、最後 / 第一個東西的特徵、容器種類、pattern。 */
-export const probeSides = ({ header, headerText = null, nth = 0 }) => {
+export const probeSides = ({ header, headerText = null, nth = 0, followStep }) => {
   const K = window.__layoutKit
   const h = K.findHeader(header, headerText, nth)
   if (!h) return { err: `找不到標頭 ${header}${headerText ? `(含「${headerText}」)` : ''}` }
@@ -327,16 +375,36 @@ export const probeSides = ({ header, headerText = null, nth = 0 }) => {
     if (mh > 0.5 && !viewportH(mh) && Math.abs(r.height - mh) < 1 && free > 0.5) { pinned = `${desc(n)} min-height ${round(mh)}px`; break }
     if (n.contains(h)) break
   }
-  const box = modal ? 'fill'
-    : free > 0.5 ? (pinned ? 'pinned' : 'fill')
-      : scrolls ? (capped ? 'capped' : pinned ? 'pinned' : 'fill')
-        : 'hug'
+  // 容器跟不跟著內容(classifyBox 的直接量;上面的量值都已讀完才動頁面):內容那塊最後一個在流裡的子元素(穿過 display: contents),
+  // 下外距暫時 +followStep,量容器高長了多少。改外距、不插新元素:插進去會多一段 flex / grid gap(不知道多少,「長了剛好 followStep」就無從比),
+  // 而先插再比兩種高度的差,第一次插入本身就可能吃光撐滿外殼那 1px 的空白(min-height:auto 的 flex 子項),讓外殼看起來跟著長。
+  // 過渡關掉再改(否則讀到過渡起點);先在過渡關閉下還原外距並排版,再還原 style 屬性,還原本身不起過渡。
+  const tailOf = (el) => {
+    for (let c = el.lastElementChild; c; c = c.previousElementSibling) {
+      const cs = getComputedStyle(c)
+      if (cs.display === 'none' || /(absolute|fixed)/.test(cs.position)) continue
+      if (cs.display === 'contents') { const inner = tailOf(c); if (inner) return inner; continue }
+      return c
+    }
+    return null
+  }
+  let grow = NaN
+  const tail = tailOf(body)
+  if (tail && followStep > 0) {
+    const savedStyle = tail.getAttribute('style'), base = mar(tail, 'bottom')
+    tail.style.setProperty('transition', 'none', 'important')
+    const hAt = (d) => { tail.style.setProperty('margin-bottom', `${base + d}px`, 'important'); return body.getBoundingClientRect().height }
+    const h0 = hAt(0)
+    grow = hAt(followStep) - h0
+    hAt(0)
+    if (savedStyle === null) tail.removeAttribute('style'); else tail.setAttribute('style', savedStyle)
+  }
   const v = (name) => parseFloat(getComputedStyle(body).getPropertyValue(name))
   return {
     left: round(L.v), right: round(R.v), bottom: round(e - bottomOf(last)), top: round(top),
     leftDesc: desc(L.t.el), rightDesc: desc(R.t.el), lastDesc: desc(last.el), owner: owner ? desc(owner) : null,
     lastF: last.f, firstF: first.f, pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
-    box, modal, scrolls, free: round(free), pinned,
+    modal, scrolls, capped, free: round(free), pinned, grow: round(grow),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
     rootLoose: parseFloat(getComputedStyle(document.querySelector('#storybook-root') ?? document.documentElement).getPropertyValue('--layout-space-loose')),
   }
@@ -346,10 +414,10 @@ async function measureCase(page, origin, c, density) {
   const opened = await openCase(page, origin, c, density)
   if (opened) return opened
   await installPageKit(page)
-  const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0 })
+  const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, followStep: FOLLOW_STEP })
   if (r.err) return r
   const { lastF, firstF, ...rest } = r
-  return { ...rest, last: classifyFirst(lastF), first: classifyFirst(firstF) }
+  return { ...rest, box: classifyBox(rest), last: classifyFirst(lastF), first: classifyFirst(firstF) }
 }
 
 async function measure() {
@@ -371,7 +439,7 @@ if (isMain) {
   try {
     const rows = await measure()
     if (rows === null) process.exit(0) // launchBrowserOrSkip 已印 SKIPPED-ENV / INSTRUMENT-FAIL 判定
-    for (const r of rows) console.log(`  ${r.id.padEnd(28)} ${r.density}  左 ${String(r.left ?? '-').padEnd(4)} 右 ${String(r.right ?? '-').padEnd(4)} 底 ${String(r.bottom ?? '-').padEnd(4)} 最後 ${(r.last ?? '-').padEnd(9)} ${(r.box ?? '-').padEnd(4)} ${(r.pattern ?? '-').padEnd(2)} (loose ${r.loose ?? '-'} / tight ${r.tight ?? '-'} / bottom ${r.bottomToken ?? '-'})  ${r.lastDesc ?? r.err ?? ''}`)
+    for (const r of rows) console.log(`  ${r.id.padEnd(28)} ${r.density}  左 ${String(r.left ?? '-').padEnd(4)} 右 ${String(r.right ?? '-').padEnd(4)} 底 ${String(r.bottom ?? '-').padEnd(4)} 最後 ${(r.last ?? '-').padEnd(9)} ${(r.box ?? '-').padEnd(4)} 長 ${String(r.grow ?? '-').padEnd(3)} ${(r.pattern ?? '-').padEnd(2)} (loose ${r.loose ?? '-'} / tight ${r.tight ?? '-'} / bottom ${r.bottomToken ?? '-'})  ${r.lastDesc ?? r.err ?? ''}`)
     const failures = judge(rows)
     if (failures.length) { console.error('❌ header-content-sides FAIL:\n  ' + failures.join('\n  ')); process.exit(1) }
     console.log(`✅ header-content-sides PASS(${CASES.length} 處 × md / lg:左右 = loose(規則 1 / 6)、底依最後一個東西與容器(規則 4);頂見 header-first-gap;不在盤點的 ${NOT_COVERED.length} 類理由見原閘 NOT_COVERED)`)
