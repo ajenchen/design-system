@@ -46,7 +46,7 @@ export const HOVER_CARD_TOOLTIP_SURFACE_CLASS = 'bg-tooltip text-foreground roun
 // Consumer 仍可 per-instance override(Avatar 同值傳入、OverflowIndicator 傳 plain)。
 // 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」)
 const HoverCard = ({ openDelay = MOTION_DELAY_RICH_MS, closeDelay = MOTION_DELAY_CLOSE_MS, ...props }: React.ComponentProps<typeof HoverCardPrimitive.Root>) => (
-  <OverlayAnchorScope>
+  <OverlayAnchorScope family="hover-card">
     <HoverCardPrimitive.Root openDelay={openDelay} closeDelay={closeDelay} {...props} />
   </OverlayAnchorScope>
 )
@@ -55,7 +55,7 @@ const HoverCardTrigger = React.forwardRef<
   React.ElementRef<typeof HoverCardPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Trigger>
 >((props, ref) => {
-  const composedRef = useRegisterOverlayNode("trigger", ref)
+  const composedRef = useRegisterOverlayNode("hover-card", "trigger", ref)
   return <HoverCardPrimitive.Trigger ref={composedRef} {...props} />
 })
 HoverCardTrigger.displayName = HoverCardPrimitive.Trigger.displayName
@@ -65,7 +65,7 @@ const HoverCardContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
 >(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = 12, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, ...props }, ref) => {
   // 觸發點那一區的兩軸檔位(不鎖任何一軸;稽核 R7-04 甲:照 density.spec.md 預設「繼承」,只是來源從整頁改成觸發點那一區)
-  const regionDensity = useTriggerRegionDensity()
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("hover-card", ref)
   return (
   // HoverCardPrimitive.Portal(2026-04-23):把 Content 搬到 `document.body`。
   // 不 Portal 時 Content 會 DOM-nested 在 trigger subtree,如 trigger 位於 OverflowIndicator
@@ -77,7 +77,7 @@ const HoverCardContent = React.forwardRef<
   // 提高到 12 保證使用者實際看到 ≥ 8px viewport edge gap(overlay-surface「靠邊 8px」canonical)。
   <HoverCardPrimitive.Portal>
     <HoverCardPrimitive.Content
-      ref={ref}
+      ref={contentRef}
       {...regionDensity}
       align={align}
       sideOffset={sideOffset}

@@ -4,7 +4,9 @@
  *   保證: 浮層的密度只有規格允許的那幾種寫法(tokens/density/density.spec.md 情境 1「浮層跟觸發點」表):
  *     L1 任何浮層內容根元素(*Content / *SubContent)不准寫 data-density(總開關鎖法,規格 Anti-patterns 禁止);
  *     L2 版面間距只有 Popover 的內容根元素可以鎖,而且只能鎖 md;
- *     L3 header primitive 不准鎖密度(`lockDensity=` 已移除;FileViewer 圖二 —— header 鎖、body 沒鎖 → 左緣不對齊);
+ *     L3 header primitive 不准鎖密度(FileViewer 圖二 —— header 鎖、body 沒鎖 → 左緣不對齊)。**事實(2026-11-12 更正)**:
+ *        `lockDensity` 參數**還在** patterns/header-canonical/chrome-header.tsx(公開型別與實作都在,稽核 R7-08「移除」尚未做);
+ *        本閘只擋「有人傳它」(DS 0 處、WM 0 處),原本寫的「已移除」不是事實。移除參數時把這一句一起改掉;
  *     L4 機器可讀的浮層表(本檔 OVERLAY_POLICY):密度來源「觸發點」的浮層原始碼必須用 lib/overlay-density.tsx 的
  *        useTriggerRegionDensity,「整頁」的浮層不准用;density.spec.md 情境 1 表每一列的「密度來源」必須與這份表一致。
  *   紅: 指名檔案:行與哪一條,exit 1。
@@ -55,7 +57,7 @@ export function checkSource(src, rel = 'snippet.tsx') {
       for (const a of node.attributes.properties) {
         if (!ts.isJsxAttribute(a)) continue
         const name = a.name.getText(sf)
-        if (name === 'lockDensity') out.push({ line, rule: 'L3', msg: `<${tag} lockDensity> —— 密度不鎖在 header primitive(參數已移除;要鎖放 surface 根)` })
+        if (name === 'lockDensity') out.push({ line, rule: 'L3', msg: `<${tag} lockDensity> —— 密度不鎖在 header primitive(參數尚未移除但禁用,見檔頭 L3;要鎖放 surface 根)` })
         if (!CONTENT_TAG.test(tag)) continue
         if (name === 'data-density') out.push({ line, rule: 'L1', msg: `<${tag} data-density> —— 浮層不准用總開關鎖密度(連控制項一起鎖 → 選項對不上觸發點)` })
         if (name === 'data-layout-space') {

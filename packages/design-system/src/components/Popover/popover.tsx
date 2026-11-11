@@ -12,7 +12,7 @@ import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
 import { useI18n } from "@/design-system/lib/i18n/i18n-context"
-import { OverlayAnchorScope, useOverlayAnchorRegistry, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
+import { OverlayAnchorScope, useOverlayAnchorRegistry, useRegisterOverlayNode, useRegisterVirtualAnchor, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
 
 /**
  * Popover — Radix Popover + 設計系統 token
@@ -34,13 +34,16 @@ import { OverlayAnchorScope, useOverlayAnchorRegistry, useRegisterOverlayNode, u
  * 不加 X(click-outside / Esc 即可)。
  */
 
-// 觸發點 / 錨點節點登記處(lib/overlay-density.tsx,全部小浮層共用一支):Root 開登記處、Trigger 與 Anchor 把節點登記進來。
+// 觸發點 / 錨點節點登記處(lib/overlay-density.tsx;Popover 自己一個 context,不與 Tooltip 等其他浮層共用):
+// Root 開登記處、Trigger 與 Anchor 把節點登記進來。
 // 兩個用途:(1) 密度跟觸發點 —— Content 從錨點(沒有就觸發點)那一區讀兩軸檔位(density.spec.md「浮層跟觸發點」);
 // (2) 焦點歸還(2026-10-21,r1b fields N1)—— PopoverContent 在關閉的那一刻就要做 Radix 卸載時才做的「還給觸發點」
 // (lib/overlay-focus-return.ts useExitStartFocusReturn),Radix 的 context 不外露。Root / Trigger / Anchor 的 props 與行為原樣轉給 Radix。
+// 為什麼一定要「Popover 自己一個」:DatePicker 單日模式是 <Popover><Tooltip><PopoverTrigger>,共用時 PopoverTrigger 會被
+// 中間那層 Tooltip 的登記處接走 → 焦點歸還拿到 null → Esc 收起後 Tab 掉到 body(2026-11-12 修;lib/overlay-density.tsx 檔頭)。
 const Popover = ({ children, ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) => (
   <PopoverPrimitive.Root {...props}>
-    <OverlayAnchorScope>{children}</OverlayAnchorScope>
+    <OverlayAnchorScope family="popover">{children}</OverlayAnchorScope>
   </PopoverPrimitive.Root>
 )
 Popover.displayName = "Popover"
@@ -49,7 +52,7 @@ const PopoverTrigger = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger>
 >((props, ref) => {
-  const composedRef = useRegisterOverlayNode("trigger", ref)
+  const composedRef = useRegisterOverlayNode("popover", "trigger", ref)
   return <PopoverPrimitive.Trigger ref={composedRef} {...props} />
 })
 PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
@@ -58,7 +61,9 @@ const PopoverAnchor = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Anchor>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Anchor>
 >((props, ref) => {
-  const composedRef = useRegisterOverlayNode("anchor", ref)
+  const composedRef = useRegisterOverlayNode("popover", "anchor", ref)
+  // virtualRef 時 Radix 不畫元素(callback ref 拿不到節點)→ 登記 ref 本身,密度改從它指到的元素那一區讀
+  useRegisterVirtualAnchor("popover", props.virtualRef)
   return <PopoverPrimitive.Anchor ref={composedRef} {...props} />
 })
 PopoverAnchor.displayName = PopoverPrimitive.Anchor.displayName
@@ -116,10 +121,8 @@ const PopoverContent = React.forwardRef<
   // 收起動畫不延後焦點歸還(lib/overlay-focus-return.ts useExitStartFocusReturn;2026-10-21 r1b fields N1):
   // 關閉的那一刻就跑 consumer 的 onCloseAutoFocus,沒被擋再走 Radix 非 modal 的預設 —— 沒互動過外面就還給觸發點
   // (@radix-ui/react-popover 1.1.15 dist/index.mjs PopoverContentNonModal 的 onCloseAutoFocus / onInteractOutside,這裡照抄同一個判斷)。
-  const anchorRegistry = useOverlayAnchorRegistry()
+  const anchorRegistry = useOverlayAnchorRegistry("popover")
   const triggerNodeRef = anchorRegistry?.trigger ?? null
-  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx);版面間距那一軸下面再鎖回 md
-  const regionDensity = useTriggerRegionDensity()
   const interactedOutsideRef = React.useRef(false)
   const resolvedOpenAutoFocus = onOpenAutoFocus ?? handlePopoverOpenAutoFocus
   const exitFocus = useExitStartFocusReturn({
@@ -131,12 +134,14 @@ const PopoverContent = React.forwardRef<
     },
   })
   const attachExitFocus = exitFocus.ref
-  const composedRef = React.useCallback((node: HTMLDivElement | null) => {
+  const innerRef = React.useCallback((node: HTMLDivElement | null) => {
     contentRef.current = node
     attachExitFocus(node)
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
   }, [ref, attachExitFocus])
+  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx;內容根元素掛上去才讀、關著不讀);版面間距那一軸下面再鎖回 md
+  const { attrs: regionDensity, ref: composedRef } = useTriggerRegionDensity("popover", innerRef)
   // Provider 必須包在 Portal **外面**(2026-10-13,待辦總帳 T11):Radix PopoverPortal 自己有一層 Presence
   // (@radix-ui/react-popover dist/index.mjs:110),它經 Slot 把 ref 交給 Portal 的**直接子元素**、靠那個 DOM 節點讀
   // animation-name 決定「等收起動畫播完才卸載」。eff41482(2026-07-07)把 Provider 夾在 Portal 與 Content 之間,

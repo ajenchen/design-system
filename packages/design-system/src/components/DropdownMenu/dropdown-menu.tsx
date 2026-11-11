@@ -135,7 +135,7 @@ const DropdownMenu = ({
     <DropdownMenuModalOpenContext.Provider value={modal && resolvedOpen}>
       <DropdownMenuKeyboardProvider keyboard={keyboard} level={level}>
         {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」) */}
-        <OverlayAnchorScope>
+        <OverlayAnchorScope family="dropdown-menu">
           <DropdownMenuPrimitive.Root
             open={resolvedOpen}
             onOpenChange={handleOpenChange}
@@ -157,7 +157,7 @@ const DropdownMenuTrigger = React.forwardRef<
   // 記下觸發點:選單開著按 Tab 時從它算下一站(B11;dropdown-menu-keyboard.ts)
   const setMenuTriggerRef = useMenuTriggerRef(ref)
   // 同一個節點也登記成密度來源(lib/overlay-density.tsx)
-  const setRef = useRegisterOverlayNode("trigger", setMenuTriggerRef)
+  const setRef = useRegisterOverlayNode("dropdown-menu", "trigger", setMenuTriggerRef)
   return (
     <DropdownMenuPrimitive.Trigger
       ref={setRef}
@@ -206,6 +206,8 @@ const DropdownMenuGroup = React.forwardRef<
 ))
 DropdownMenuGroup.displayName = 'DropdownMenuGroup'
 
+// 不得拿來包 DropdownMenuSubContent:子選單刻意不經 Portal、留在父選單裡,才吃得到父選單那一層的密度屬性
+// (density.spec.md「浮層跟觸發點」表「子選單」列);包了就會逃到 body、拿整頁密度。DS 與 WM 目前沒有使用處(2026-11-12 git grep 0 筆)。
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
 // ── Sub ──
@@ -249,12 +251,12 @@ const DropdownMenuContent = React.forwardRef<
 >(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, onKeyDown, onCloseAutoFocus, ...props }, ref) => {
   // 記下根內容(觸發點是透明錨點時靠它的 id 找開啟者)+ 開著按 Tab(B11)+ Tab 離開時不自動還焦點(dropdown-menu-keyboard.ts)
   const menuKeyboard = useMenuContentKeyboard(ref, onKeyDown, onCloseAutoFocus)
-  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx)
-  const regionDensity = useTriggerRegionDensity()
+  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx;內容根元素掛上去才讀、關著不讀)
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("dropdown-menu", menuKeyboard.ref)
   return (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
-      ref={menuKeyboard.ref}
+      ref={contentRef}
       {...regionDensity}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}

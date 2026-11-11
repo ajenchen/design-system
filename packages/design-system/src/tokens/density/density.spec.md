@@ -55,7 +55,11 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 **小浮層跟觸發它的那一區;蓋住整頁的浮層跟整頁。** user 2026-11-11 決策頁「浮層密度」答「跟按鈕」—— 選項原文「跟打開它的按鈕所在的區塊」「對話框、側拉面板這種蓋住整頁的，維持跟整頁。」(【AI 建議、user 選】)。
 
 - **為什麼**:浮層經 Portal 掛到 body,CSS 繼承鏈從 html 起算(M3),拿到的是整頁密度。實測一般密度頁面裡的大密度區塊,sm 下拉按鈕 32 高、打開的選項列 28;反方向 28 / 32(稽核 R7-02)—— 正是本節「對不上觸發點」要避免的事。
-- **做法(全 DS 一支)**:`lib/overlay-density.tsx`。各小浮層的 Root 開登記處(`OverlayAnchorScope`)、Trigger / Anchor 把節點登記進來、Content 用 `useTriggerRegionDensity()` 從錨點(沒有就觸發點)往外讀兩軸檔位(解析順序 = 上方「同一個元素帶兩種屬性」),當 `data-ui-size` / `data-layout-space` 蓋到 Portal 內容的根元素上;要鎖某一軸的浮層把那一軸寫在後面覆蓋。往外找不到任何宣告時不寫(= 整頁 `:root`)。
+- **做法(全 DS 一支)**:`lib/overlay-density.tsx`。各小浮層的 Root 開登記處(`OverlayAnchorScope family=…`)、Trigger / Anchor 把節點登記進來、Content 用 `useTriggerRegionDensity(family, ref)` 從錨點(沒有就觸發點)往外讀兩軸檔位(解析順序 = 上方「同一個元素帶兩種屬性」),當 `data-ui-size` / `data-layout-space` 蓋到 Portal 內容的根元素上;要鎖某一軸的浮層把那一軸寫在後面覆蓋。往外找不到任何宣告時不寫(= 整頁 `:root`)。
+  - **登記處一種浮層一個**(Popover / DropdownMenu / HoverCard / Tooltip 各自一個 context,跟 Radix 每一種 primitive 各用自己的 context scope 同一個身分):浮層互相包的時候(DatePicker 單日是 `<Popover><Tooltip><PopoverTrigger>`),Trigger 只登記到同一種浮層的 Root,不會被包在中間的另一種接走。
+  - **什麼時候讀**:浮層關著不讀(內容根元素沒掛上就不碰 DOM);根元素掛上去那一刻讀一次(畫面畫出來之前);開著的期間文件裡任何元素的 `data-density` / `data-ui-size` / `data-layout-space` 變了就重讀 —— 區塊密度在浮層開著時被改,浮層跟著變。
+  - **錨點是 `virtualRef` 時**(Radix 不畫錨點元素,例:Calendar 示範的 `<PopoverAnchor virtualRef>`):讀 `virtualRef.current` 指到的元素;它是只有量測方法的物件時讀它的 `contextElement`;兩者都不是元素 → 改讀觸發點;連觸發點都沒有 → 不寫(= 整頁)。
+  - **【AI 推導】**上面三條是實作邊界的工程答案,不是 user 逐字決定;user 定的只有「跟按鈕」與「蓋住整頁的跟整頁」。
 - **世界級**:React Spectrum 的浮層在 Portal 裡再包一層 Provider([Overlay.tsx#L59](https://github.com/adobe/react-spectrum/blob/main/packages/@react-spectrum/overlays/src/Overlay.tsx#L59)),那一層的 scale(medium / large)沒指定時沿用最近一層上層 Provider —— 觸發點所在那一區([Provider.tsx#L57](https://github.com/adobe/react-spectrum/blob/main/packages/@react-spectrum/provider/src/Provider.tsx#L57):`scale = prevContext ? prevContext.scale : autoScale`)。
 - **閘**:`scripts/overlay-density-follows-trigger-invariant.mjs`(瀏覽器實量:整頁一般 / 大 × 一般 / 大密度區塊的 sm 下拉,選項列高 = 那一區的 `--field-height-sm` = 觸發點高;Popover 版面間距仍 16)。
 
@@ -156,3 +160,4 @@ document.documentElement.setAttribute('data-layout-space', 'md')
 - `dropdown-menu.spec.md`
 - `file-viewer.spec.md`
 - `header-canonical.spec.md`
+- `overlay-chrome-sizing.spec.md`

@@ -99,7 +99,7 @@ const Tooltip = ({
   return (
     <FocusScrollGuardContext.Provider value={guardRef}>
       {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」) */}
-      <OverlayAnchorScope>
+      <OverlayAnchorScope family="tooltip">
         <TooltipPrimitive.Root
           delayDuration={delayDuration}
           open={open}
@@ -117,7 +117,7 @@ const TooltipTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 >(({ onFocus, onBlur, ...props }, ref) => {
   const guardRef = React.useContext(FocusScrollGuardContext)
-  const composedRef = useRegisterOverlayNode("trigger", ref)
+  const composedRef = useRegisterOverlayNode("tooltip", "trigger", ref)
   return (
     <TooltipPrimitive.Trigger
       ref={composedRef}
@@ -146,8 +146,10 @@ const TooltipContent = React.forwardRef<
   // 空內容不掛浮層:children 為 null / undefined / false / 空字串時不渲染帶 padding 的空
   // role="tooltip" 殼(見 spec「邊界狀態」)。Tooltip 是資訊補救機制,無補充內容即不出現,
   // trigger 由 TooltipTrigger 原樣保留。
-  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx);hook 寫在提早 return 之前,呼叫順序固定
-  const regionDensity = useTriggerRegionDensity()
+  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx)。hook 依 React 規則寫在提早 return 之前,但它關著時一次都不讀 DOM:
+  // 只在內容根元素真的掛上去(= Tooltip 打開)那一刻讀一次,開著的期間才盯密度屬性。表格每一格的 TruncatedText 都包著
+  // Tooltip,關著時的成本 = 兩個 useState + 兩個 useCallback + 一個 no-op effect(2026-11-12 修;原本每格每次重繪都爬祖先鏈)。
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("tooltip", ref)
   const isEmptyContent =
     children == null ||
     children === false ||
@@ -158,7 +160,7 @@ const TooltipContent = React.forwardRef<
   // 消費 OVERLAY_COLLISION_PADDING overlay 家族 canonical(與 Popover 一致;HoverCard 特例 12 補 rounding)避免 viewport edge clipping
   <TooltipPrimitive.Portal>
     <TooltipPrimitive.Content
-      ref={ref}
+      ref={contentRef}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       // 錨點失去版面(被 display:none 藏起來 / 卸載 / 回收)時不畫:否則 Radix 拿 0×0 量測值把它定位到視窗左上角
