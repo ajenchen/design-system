@@ -277,7 +277,7 @@ export const ProductAlignment: Story = {
       <TutorialSection title="可以讀的 12 顆,加上外框標頭高">
         <div className="max-w-3xl">
           <p className="text-body text-fg-secondary mb-[var(--layout-space-tight)]">
-            數字是在這一頁當場量出來的(左欄一般密度、右欄大密度)。寄住在同一個檔的標籤高、頭像重疊量是元件自己的值,產品不讀。
+            數字是在這一頁當場量出來的(左欄一般密度、右欄大密度)。標籤高、頭像重疊量是元件自己的值,住在主人元件的樣式檔,產品不讀。
           </p>
           {/* 欄位標題 */}
           <div className="grid gap-x-[var(--layout-space-loose)] border-b border-border pb-[var(--layout-space-tight)]" style={{ gridTemplateColumns: ALIGN_COLS }}>

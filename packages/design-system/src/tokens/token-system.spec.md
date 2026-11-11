@@ -28,7 +28,7 @@
 
 每個名字只落在一類;顆數與逐顆歸屬以分類表為準。分類表另有 `ignore` 一類,收第三方或 Tailwind 自己的變數(`--radix-*`、`--tw-*`),它們不是設計數值。
 
-**現況與目標不一致的地方**(分類表 `home` ≠ `target` 的列;現在還有哪幾顆寄住以分類表為準):user 2026-11-10 拍板 token 第 2 題「2甲」—— 原本寄住 `uiSize/uiSize.css` 的 14 顆元件的值,第二階段分批搬到主人資料夾,每批畫面零差異;搬一顆改分類表一列。甲案原文是「分五批,先試搬分頁高;側欄排最後、驗最嚴」(批次:分頁高 → 標籤高 → 頭像重疊量 → 表格列高 → 側欄)。2026-11-11 實際搬了分頁高、表格列高、側欄三批;標籤高、頭像重疊量兩批還沒搬、仍寄住 —— 順序與甲案不同(側欄已在這兩批之前搬完)。第 3 題「3全收」的 6 顆只有一處在用的值已收回成元件自己的值(2026-11-11,名字退場、分類表刪列,畫面零差異):表格排序 / 篩選面板寬 3 顆 → `components/DataTable/data-table-sort-manager.tsx`、`data-table-filter-group.tsx`;按鈕群組分隔線 2 顆 → `components/Button/button-group.tsx`;選單最大高度 → `components/Command/command.tsx`。
+**搬家與收回的紀錄**(住處以分類表 `home` 為準):user 2026-11-10 拍板 token 第 2 題「2甲」—— 原本寄住 `uiSize/uiSize.css` 的 14 顆元件的值,第二階段分批搬到主人資料夾,每批畫面零差異;搬一顆改分類表一列。甲案原文是「分五批,先試搬分頁高;側欄排最後、驗最嚴」(批次:分頁高 → 標籤高 → 頭像重疊量 → 表格列高 → 側欄)。2026-11-11 五批全部搬完:分頁高 → `components/Tabs/tabs.css`、表格列高 → `components/DataTable/data-table.css`、側欄 4 顆 → `components/Sidebar/sidebar.css`、標籤高 → `components/Tag/tag.css`、頭像重疊量 → `components/Avatar/avatar.css`;`uiSize/uiSize.css` 現在只剩共用刻度。實際順序與甲案不同:側欄(甲案排最後)比標籤高、頭像重疊量先搬,這兩批第一輪沒做,審查後(commit a787e743 先把「還沒搬、順序偏離」照實寫進本段)才補上,搬法與驗法同前三批。第 3 題「3全收」的 6 顆只有一處在用的值已收回成元件自己的值(2026-11-11,名字退場、分類表刪列,畫面零差異):表格排序 / 篩選面板寬 3 顆 → `components/DataTable/data-table-sort-manager.tsx`、`data-table-filter-group.tsx`;按鈕群組分隔線 2 顆 → `components/Button/button-group.tsx`;選單最大高度 → `components/Command/command.tsx`。
 
 ---
 

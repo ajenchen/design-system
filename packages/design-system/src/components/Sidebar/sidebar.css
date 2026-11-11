@@ -4,7 +4,7 @@
 
    分類、主人、住處、誰可以讀 → tokens/token-registry.json「--sidebar-」那一列(唯一一份;本檔不重述)。
    2026-11-11 從 tokens/uiSize/uiSize.css 搬來(user 2026-11-10 token「2甲」,計畫上的第五批;甲案寫「側欄排最後」,
-   實際比第二批標籤高、第三批頭像重疊量先搬 —— 那兩批還沒做,見 token-system.spec.md「現況與目標不一致的地方」):
+   實際比第二批標籤高、第三批頭像重疊量先搬 —— 那兩批同日之後補搬完,見 token-system.spec.md「搬家與收回的紀錄」):
    名字、每一檔密度的值都沒變;產品經對外彙總檔 styles/tokens.css 拿到,不用改任何一行。
    每一顆的值與理由 → sidebar.spec.md「尺寸規範」。
 
