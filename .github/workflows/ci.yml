@@ -1253,6 +1253,10 @@ jobs:
           # DatePicker.Range 停留預覽框(2026-09-23 user 拍板):逐格量 td::after 的 1.5px 邊、兩端半圓、停留日無單格圈、
           # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
           npm run test:datepicker-range-preview
+          # 水平溢出「選到就露出來」(2026-11-11 user「都先B」;horizontal-overflow.spec.md):Chip scroll / menu、Tabs scroll / menu、FileViewer 縮圖列
+          # × 點半露的項目 / 方向鍵 / ⌄ 選單 / 縮放,剛動到的那一項中心在容器中心 ±2px(兩端夾住另判)且完整可讀;
+          # --selftest 判定表 + 每種輸入前一刻拿掉 primitive 的作用(捲動容器 scrollTo 換空函式)17 格必紅。修前建置對照組在本機跑過(commit 訊息)。
+          npm run test:overflow-reveal-selected
           # useFormValidation 契約(2026-10-01 待辦總帳 N65 / N67):hook 原始碼 + 同名欄位的幾張表單、沒有 <form> 的 footer 送出區,
           # 真鍵盤 / 滑鼠 / 觸控逐條走 form-validation.spec.md 規則 1 / 2 / 4 / 5 / 6 / 7 / 8(錯誤會清掉、Escape 回原值、焦點只在被送出的
           # 那張表裡找、錯誤長出來不會把這一下 click 推離送出 / 重設鈕、原生拖曳之後「按著」不會卡住);不需要 storybook。

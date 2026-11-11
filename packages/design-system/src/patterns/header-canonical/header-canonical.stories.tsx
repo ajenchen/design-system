@@ -167,7 +167,7 @@ export const WithTabs = () => (
             </h2>
             <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" onClick={close} />
           </ChromeHeader>
-          {/* TabsContent 內建 mt-tight 已擁有 header → content(tabs.spec.md:193);內層只補水平 loose + 底部與頂部同值 tight(有框面板不擋頁面、高度貼內容 → 上下對稱,layoutSpace.spec.md 規則 4 第 4 列) */}
+          {/* TabsContent 內建 mt-tight 已擁有 header → content(tabs.spec.md:195);內層只補水平 loose + 底部與頂部同值 tight(有框面板不擋頁面、高度貼內容 → 上下對稱,layoutSpace.spec.md 規則 4 第 4 列) */}
           <TabsContent value="overview">
             {/* @layout-space-magic-ok: 概覽兩行(專案 meta ↔ 說明)4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <div className="flex flex-col gap-1 px-[var(--layout-space-loose)] pb-[var(--layout-space-tight)] text-body text-fg-secondary">

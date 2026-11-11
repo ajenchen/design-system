@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:250118c508fcc3a9b9a3c9a854337dfd30510ef5f89ecbb96fe20a96c66ac974",
+      "hash": "sha256:66a48cf00bc4a5e627bb980852b2e1d09713159bf9621eeb2557aa10178078e9",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -155,7 +155,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:69ddfe090a9a7e9c823fa98d59f79e8dc782986038124ee61824515ca73d73e0",
+      "hash": "sha256:2393c32b3db2967756741c50fb68bd49720ea5e8f518da85f9f23b345fcc4b3e",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:f2578f5864b4a79f09ce794bf4ba32f7c10571e2846a25e9cdfb4bb000233fd1",
+      "hash": "sha256:396d2b5ce8fee9dfb24cd7bcf8e36fe377cbcac098cbf8e01fdd58f546c92283",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1834,7 +1834,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a095ee48a2d6c4428affd92feb2f1db6252a4818f1d9ae54cc7aa08e082ae7bc",
+      "hash": "sha256:8f9c7877c2816a5e4e2c45116c2dd54b14049424ff7f0dcb4f1177c858746962",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1897,12 +1897,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2047d30dba22c1a56157f264095d122b360f6915e5f1435854103e996b6b4f08",
+      "hash": "sha256:e0074882e8f506d01fbb64ef24c8a8feb856528206da6851fb1113b8fcf76592",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 38629,
+      "size": 38694,
       "type": "file"
     },
     {
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1f5563685b802fad88e5b023350a433e5f9c5519ca23820eb7e00f4b6681b2fa",
+      "hash": "sha256:1e2f17a91dc7f46a6a0aac7a9fd8562c421e426fd48afca510ad90c10a825d7d",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 31643,
+      "size": 31801,
       "type": "file"
     },
     {
@@ -2577,7 +2577,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ec0a6c4fc979f5605eac24260480ce05116b4368e79ac1d1a2c4c17556937135",
+      "hash": "sha256:9ad1b307f0f6dd06b022515502515b855488dba505e65aa4bee00820574f6af9",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3084,8 +3084,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 719,
-      "hash": "sha256:c05903fc6e792f077f5e5e9d3e37d3794790352a8773432c96d35003e057dd3a",
+      "files": 721,
+      "hash": "sha256:1c5016c88c030142329d96c62d86fbe1214aad2de72e7334997836b99a5b2860",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

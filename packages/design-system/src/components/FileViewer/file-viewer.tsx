@@ -39,6 +39,7 @@ import {
 import { ARROW_BUTTON_WIDTH,
   useScrollEdges,
   useScrollByPage,
+  useRevealSelected,
   buildFadeMask,
   OverflowScrollArrow,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
@@ -588,13 +589,13 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
   const scrollByPage = useScrollByPage(scrollRef)
   const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: ARROW_BUTTON_WIDTH })  // 2026-07-04:消 SSOT 硬寫(spec 禁止重新定義 ARROW_BUTTON_WIDTH)
 
-  // 切換當前檔案時,自動 scroll 讓 active thumb 可見
-  React.useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const active = el.querySelector<HTMLButtonElement>(`[data-thumb-index="${activeIndex}"]`)
-    active?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-  }, [activeIndex, scrollRef])
+  // 目前那張(aria-current)置中:切換檔案(點縮圖 / ← → / 程式改 index)、Tab 鍵焦點、縮放視窗 —— 同一個 primitive
+  //(horizontal-overflow.spec.md「選到就露出來」,對齊 B;2026-11-11 前這裡自己寫一份 scrollIntoView,只看 activeIndex)
+  useRevealSelected(scrollRef, {
+    itemSelector: '[data-thumb-index]',
+    selectedAttribute: { name: 'aria-current', value: 'true' },
+    reserveArrowWidth: ARROW_BUTTON_WIDTH,
+  })
 
   return (
     <div

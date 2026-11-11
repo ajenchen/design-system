@@ -132,7 +132,7 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 - `withTabs={false}` → header 自畫(`border-b border-divider`)
 - `withTabs={true}` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)
 
-**這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = withTabs 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:185-187`),paint owner 不在 tabs 會讓 underline 失去 base line。
+**這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = withTabs 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:187-189`),paint owner 不在 tabs 會讓 underline 失去 base line。
 
 **世界級對照**:
 - GitHub Primer PageHeader verbatim:「`hasBorder` defaults true,**but border NOT rendered if Navigation child contains UnderlineNav**;UnderlineNav itself provides bottom border」(`primer.style/components/page-header/react`)
@@ -153,7 +153,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
   - **選取契約 = `data-slot="tabs-list"` attribute(v4,2026-07-30)**:`tabs.tsx` 三種 overflow 模式(none / scroll / menu)的 `role=tablist` 元素(TabsPrimitive.List)皆自標 `data-slot="tabs-list"`(對齊 shadcn v4 tabs.tsx `data-slot` idiom,https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/tabs.tsx + DS 既有 `data-unbounded` 標記式契約);wrapper 用 descendant selector,不依賴 DOM 深度(beta.86 overlay 包裹層教訓,見下 v1-v4 歷史)
   - **TabsList 全 dialog 寬 = TabsList 自帶,wrapper 不注入寬度**:none 模式 `w-full`(tabs.tsx 自帶)→ 自身 `border-b border-divider` 延展全 dialog 寬 = W1 視覺一條線;scroll / menu 模式 `min-w-full`(border 隨溢出內容成長;blanket `w-full` 會把 border 截在可視寬 → **禁**由 wrapper 注入寬度)
   - **TabsList 內 padding-x = px-loose** → triggers 從 px-loose 內邊起,對齊 header content row(W2 alignment 達成;三種 overflow 模式同享)
-  - Selected trigger 2px primary 真 overlay TabsList 1px gray border(`tabs.spec.md:187-189` canonical)
+  - Selected trigger 2px primary 真 overlay TabsList 1px gray border(`tabs.spec.md:189-191` canonical)
 
 **v1/v2/v3 反 pattern**(歷史錨):
 - v1(2026-05-18 initial):wrapper 加 `border-b border-divider` + TabsList 自身 `border-b border-border` 共存 → 雙線(色不同 + 1px box gap)
@@ -226,7 +226,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 ### Rule W6:Default tabs size 為 sm(已 land)
 
-**規則**:Tabs `cva defaultVariants.size = 'sm'` — **已 land**(`tabs.tsx:135` TabsList param `size = 'sm'` + `:394` trigger cva `defaultVariants.size = 'sm'`,inline comment「2026-05-17 從 'md' 改 'sm'」)。
+**規則**:Tabs `cva defaultVariants.size = 'sm'` — **已 land**(`tabs.tsx#TabsList` param `size = 'sm'` + `tabs.tsx#tabsTriggerVariants` trigger cva `defaultVariants.size = 'sm'`,inline comment「2026-05-17 從 'md' 改 'sm'」)。
 
 **邊界 — tabs 超寬溢出**:header 內 TabsList 溢出處理走 `components/Tabs/tabs.spec.md`「Overflow 模式」(`TabsList` `overflow` prop:none / scroll / menu),非本 SSOT scope。
 

@@ -130,7 +130,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
           {/* Row 2:tabsSlot wrapper — TabsList 全 dialog 寬 + 內 px-loose inset triggers
               2026-05-18 v3 fix(同 SurfaceHeader,per user verbatim「分隔線寬度應該要填滿整個
               dialog」+「就這樣做」approval):TabsList 自己 px-loose 內 padding 而非 wrapper
-              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md:199` 既有 canonical。
+              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md:201` 既有 canonical。
               2026-07-30 v4:選取機制改 `data-slot="tabs-list"` attribute contract(beta.86
               overlay 包裹層破 direct-child;詳 HEADER_TABS_SLOT_WRAPPER_CLASS 註解)。*/}
           <div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>

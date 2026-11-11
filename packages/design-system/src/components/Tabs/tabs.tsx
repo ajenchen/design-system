@@ -15,11 +15,15 @@ import {
 import {
   useScrollEdges,
   useScrollByPage,
+  useRevealSelected,
   buildFadeMask,
   ARROW_BUTTON_WIDTH,
   OverflowScrollArrow,
   OverflowMenuTriggerButton,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
+
+// 「選到就露出來」(horizontal-overflow.spec.md):Tabs 的項目與選中屬性。scroll / menu 兩模式共用,只差兩側箭頭預留寬。
+const TABS_REVEAL = { itemSelector: '[role="tab"]', selectedAttribute: { name: 'aria-selected', value: 'true' } } as const
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import {
@@ -114,26 +118,11 @@ const TabsValueContext = React.createContext<{
 }>({})
 
 
-// ── getElementRef(Radix Slot idiom;鏡射 chip.tsx 同名 helper — 2026-07-05 M10 同型修)──
-// 讀 child 既有 ref 而不觸發 React 18/19 dev deprecation warning。
-function getElementRef(element: React.ReactElement): React.Ref<HTMLElement> | undefined {
-  let getter = Object.getOwnPropertyDescriptor(element.props, 'ref')?.get
-  let mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
-  if (mayWarn) return (element as unknown as { ref?: React.Ref<HTMLElement> }).ref
-  getter = Object.getOwnPropertyDescriptor(element, 'ref')?.get
-  mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
-  if (mayWarn) return (element.props as { ref?: React.Ref<HTMLElement> }).ref
-  return (
-    (element.props as { ref?: React.Ref<HTMLElement> }).ref ??
-    (element as unknown as { ref?: React.Ref<HTMLElement> }).ref ??
-    undefined
-  )
-}
-
 // 遞迴攤平 Fragment：React.Children.toArray 不展開 <>…</>(把 Fragment 當單一 element),
-// 導致 menu 模式 dropdown 漏掉被 Fragment 包起來的 trigger（如條件渲染的溢出 tabs）+ cloneElement
-// 對 Fragment 傳 ref 會噴 React warning。攤平後每個 keyless child 補 path-index key,對齊
-// React.Children.toArray 的自動 key 行為,避免 list key warning。
+// 導致 menu 模式 dropdown 漏掉被 Fragment 包起來的 trigger（如條件渲染的溢出 tabs）。攤平後每個 keyless child 補 path-index key,
+// 對齊 React.Children.toArray 的自動 key 行為,避免 list key warning。
+// (2026-11-11 前這份清單也拿來 cloneElement 合併 ref,供選單選取後找 tab 去 scrollIntoView;揭露搬進 useRevealSelected 後只剩選單用,
+//  tablist 裡的 triggers 原樣渲染,getElementRef 一併拿掉。)
 function flattenTabTriggers(children: React.ReactNode, prefix = ''): React.ReactElement[] {
   const out: React.ReactElement[] = []
   React.Children.forEach(children, (child, i) => {
@@ -281,16 +270,18 @@ TabsList.displayName = 'TabsList'
 // ── Scroll mode ──
 //
 // 共同策略(對齊 Material 3 / Ant Design / Primer UnderlineNav 世界級作法):
-//   - 容器 overflow-x-auto + overflow-y-hidden(真的可滾,鍵盤焦點可 scroll-into-view;
-//     明示 y-hidden 阻 CSS overflow-3 spec「一軸 auto 時另軸 visible compute auto」)
+//   - 容器 overflow-x-auto + overflow-y-hidden(真的可滾;明示 y-hidden 阻 CSS overflow-3 spec「一軸 auto 時另軸 visible compute auto」)
+//   - 選中 / 鍵盤焦點 / 容器尺寸改變 → useRevealSelected 把那個 tab 置中(對齊 B,兩端夾住;horizontal-overflow.spec.md「選到就露出來」)。
+//     2026-11-11 前這裡寫「鍵盤焦點可 scroll-into-view」,實測不成立:Chromium 對水平「部分可見」的項目 focus 不捲,
+//     方向鍵選中的 tab 可以整顆落在箭頭 + 淡出底下(可讀 0)。
 //   - border-b 在 TabsList 內部(TABS_LIST_BASE),不在 outer wrapper,避免
 //     active underline `after:bottom:-1px` 跟 outer + overflow-x-auto 觸發 y promote bug
 //   - mask / arrow / fade 全部從 horizontal-overflow pattern module 取得——
 //     參見 `patterns/horizontal-overflow/horizontal-overflow.spec.md`
-//   - Menu 模式 = scroll 模式 + 額外的 ⌄ quick-jump button,點 menu item 同時
-//     觸發 onValueChange + scrollIntoView,讓使用者在 tab strip 看到選中的 tab
+//   - Menu 模式 = scroll 模式 + 額外的 ⌄ quick-jump button,點 menu item 只觸發 onValueChange,
+//     置中由同一個 useRevealSelected 做(與直接點、方向鍵同一條)
 // 單行水平滾動 + 邊緣 fade mask 延伸到 arrow button 底下 + 左右 always-visible arrows
-//   - 鍵盤: Radix 原生方向鍵 + 瀏覽器 scroll-into-view
+//   - 鍵盤: Radix 原生方向鍵(自動啟用 = 選中改變)→ useRevealSelected 置中
 //   - Trackpad: 兩指橫向滑動
 //   - 滑鼠滾輪: 點 arrow buttons (Shift+wheel 太隱晦)
 
@@ -300,6 +291,7 @@ const ScrollTabsList = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const scrollByPage = useScrollByPage(scrollRef)
+  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: ARROW_BUTTON_WIDTH })
   const maskImage = buildFadeMask({
     canScroll,
     atStart,
@@ -345,12 +337,11 @@ ScrollTabsList.displayName = 'ScrollTabsList'
 // ── Menu mode ──
 // Show-all navigator pattern (Chrome tab dropdown / VS Code editor tabs / Discord channel jumper):
 //   - Menu 永遠顯示全部 tabs,active 的用 checked 標記 (單選語意)
-//   - 點 menu item = onValueChange + scrollIntoView(center),把該 tab 捲到視圖中央
+//   - 點 menu item = onValueChange;選中一改,useRevealSelected 把該 tab 捲到視圖中央(與直接點、方向鍵同一條)
 //   - Menu 內容穩定,跟 scroll 位置無關,使用者對「⌄ = navigator」的直覺一致
 //
 // 為什麼底層仍是 overflow-x-auto 而非 overflow-hidden:
-//   - scrollIntoView 需要真實 scroll 容器
-//   - 鍵盤 focus 也依賴真實 scroll 讓 browser auto scroll-into-view
+//   - 置中靠捲動容器的 scrollLeft(useRevealSelected 的 scrollTo),需要真實 scroll 容器;trackpad 兩指橫滑也要
 //   - scrollbar 用 CSS 隱藏,視覺看不出來
 //
 // Fade mask 純視覺,軟化內容硬邊,跟 menu 機制正交 (兩者可並存)。
@@ -363,60 +354,17 @@ const MenuTabsList = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const { onValueChange, value: activeValue } = React.useContext(TabsValueContext)
+  // 不用 useOverflowIndices:menu 永遠顯示全部,不需要動態 overflow 計算。
+  useRevealSelected(scrollRef, { ...TABS_REVEAL, reserveArrowWidth: 0 })
 
-  // Local ref map — 追蹤每個 trigger 的 DOM 元素,供 scrollIntoView 使用。
-  // 不用 useOverflowIndices 因為 menu 永遠顯示全部,不需要動態 overflow 計算。
-  // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
-  const itemRefs = React.useRef<Map<number, HTMLElement>>(new Map())
-  // 2026-05-16 audit codex Round 6:capture rAF + cancel on unmount(defensive hygiene)
-  const scrollRafIdRef = React.useRef<number>(0)
-  React.useEffect(() => () => { if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current) }, [])
-  const registerItem = React.useCallback(
-    (index: number) => (el: HTMLElement | null) => {
-      if (el) itemRefs.current.set(index, el)
-      else itemRefs.current.delete(index)
-    },
-    []
-  )
-
-  // Fragment-safe:攤平 <>…</> 讓條件渲染的溢出 tabs 也進 dropdown / ref map(見 flattenTabTriggers）
+  // Fragment-safe:攤平 <>…</> 讓條件渲染的溢出 tabs 也進 dropdown(見 flattenTabTriggers)
   const items = React.useMemo(
     () => flattenTabTriggers(children),
     [children]
   )
 
-  // 2026-07-05 M10 同型修(Chip MenuChipGroup 同款):原 cloneElement 直接覆寫 child ref,
-  // consumer 自有 ref 被靜默取代 → compose(registerItem + child 原 ref)。
-  const enhancedChildren = items.map((child, i) => {
-    const childRef = getElementRef(child)
-    return React.cloneElement(
-      child as React.ReactElement<{ ref?: React.Ref<HTMLElement> }>,
-      {
-        ref: (el: HTMLElement | null) => {
-          registerItem(i)(el)
-          if (typeof childRef === 'function') childRef(el)
-          else if (childRef) (childRef as React.MutableRefObject<HTMLElement | null>).current = el
-        },
-      }
-    )
-  })
-
   // Menu 模式沒有 arrows,但仍套 fade mask (reserveArrowWidth: 0) 軟化內容硬邊
-  // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
   const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: 0 })
-
-  const handleMenuSelect = React.useCallback(
-    (triggerValue: string, index: number) => {
-      onValueChange?.(triggerValue)
-      // 下一個 tick 再 scroll, 讓 Radix 先完成 data-state 更新
-      if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current)
-      scrollRafIdRef.current = requestAnimationFrame(() => {
-        scrollRafIdRef.current = 0
-        itemRefs.current.get(index)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-      })
-    },
-    [onValueChange]
-  )
 
   return (
     // 2026-05-19 fix(scroll-overflow underline clip + y auto-promote,parallel to ScrollTabsList):
@@ -435,7 +383,7 @@ const MenuTabsList = React.forwardRef<
           className={cn(TABS_LIST_BASE, 'min-w-full', className)}
           {...props}
         >
-          {enhancedChildren}
+          {children}
         </TabsPrimitive.List>
       </div>
       {canScroll && (
@@ -447,7 +395,7 @@ const MenuTabsList = React.forwardRef<
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {items.map((trigger, index) => {
+              {items.map((trigger) => {
                 const triggerProps = trigger.props as {
                   value?: string
                   children?: React.ReactNode
@@ -463,7 +411,7 @@ const MenuTabsList = React.forwardRef<
                     key={triggerValue}
                     disabled={triggerProps.disabled}
                     selected={activeValue === triggerValue}
-                    onSelect={() => handleMenuSelect(triggerValue, index)}
+                    onSelect={() => onValueChange?.(triggerValue)}
                   >
                     {triggerProps.children}
                   </DropdownMenuItem>

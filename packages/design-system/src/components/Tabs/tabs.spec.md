@@ -163,17 +163,19 @@ Tabs 支援三種 overflow 策略，透過 `TabsList` 的 `overflow` prop 選擇
 
 外層 overflow-x scroll(scrollbar 隱藏)+ 邊緣 mask-image gradient 依滾動位置動態 fade(不可滾無 mask / 可右→右 fade / 可左→左 fade / 雙向→兩側)。`useScrollEdges()` hook 追蹤狀態。**Mask 不用 gradient overlay**:mask 淡化內容本身 alpha,自動融合任何背景(dark / card / surface);overlay 需寫死背景色會漂移。
 
-**Scroll arrow buttons**(`atStart/atEnd === false` 時顯示 `<ChevronLeft/Right>`,點擊捲 80% 容器寬,smooth scroll):三輸入方式都要顧——鍵盤(底層 primitive 方向鍵 + scroll-into-view) / trackpad(兩指橫滑) / 滑鼠滾輪(需 `Shift+wheel`,不易發現,因此**必須補 arrow buttons**)。Arrow 容器 `pointer-events-none` + 內層 Button `pointer-events-auto`,不阻擋下方 trigger hit test。
+**Scroll arrow buttons**(`atStart/atEnd === false` 時顯示 `<ChevronLeft/Right>`,點擊捲 80% 容器寬,smooth scroll):三輸入方式都要顧——鍵盤(底層 primitive 方向鍵;選中的 tab 由「選到就露出來」置中) / trackpad(兩指橫滑) / 滑鼠滾輪(需 `Shift+wheel`,不易發現,因此**必須補 arrow buttons**)。Arrow 容器 `pointer-events-none` + 內層 Button `pointer-events-auto`,不阻擋下方 trigger hit test。
+
+**選到就露出來**(scroll / menu 兩模式同一條):點 tab(含半露的那一個)、方向鍵(自動啟用 = 選中改變)、⌄ 選單選取、容器尺寸改變 → 選中的 tab **置中**,兩端到底時夾住(對齊 B;契約、根因與 user 原話見 `horizontal-overflow.spec.md`「選到就露出來」)。2026-11-11 前本段寫「鍵盤(底層 primitive 方向鍵 + scroll-into-view)」,實測不成立:Chromium 對水平部分可見的項目 focus 不捲,scroll 模式方向鍵選中的分頁可整顆落在箭頭 + 淡出底下(可讀 0);直接點半露的 tab 也不捲。
 
 ### menu 模式
 
-menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator pattern)。全部 TabsTrigger 一直可見、留在底層 `overflow-x-auto` 捲動容器內(**不套 `invisible`、不隱藏溢出**)。右側 `OverflowMenuTriggerButton`(`ChevronDown` ⌄ icon)在有溢出空間時(`canScroll`)出現,點開 DropdownMenu **列出全部 tab**(非只溢出者);當前選中的 tab 用 DropdownMenuItem 的 `selected` 標記(`bg-neutral-selected`,跟 SelectMenu 單選同一套視覺)。點 menu item 經 Tabs context `onValueChange` 觸發切換(底層 primitive 自然更新 `data-state`),同時 `scrollIntoView`(`inline: center`)把該 tab 捲到視圖中央。底層仍是真實捲動容器(非 `overflow-hidden`)的理由:`scrollIntoView` 與鍵盤 focus 的 auto scroll-into-view 都需要真實 scroll 容器;捲軸用 CSS 隱藏。
+menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator pattern)。全部 TabsTrigger 一直可見、留在底層 `overflow-x-auto` 捲動容器內(**不套 `invisible`、不隱藏溢出**)。右側 `OverflowMenuTriggerButton`(`ChevronDown` ⌄ icon)在有溢出空間時(`canScroll`)出現,點開 DropdownMenu **列出全部 tab**(非只溢出者);當前選中的 tab 用 DropdownMenuItem 的 `selected` 標記(`bg-neutral-selected`,跟 SelectMenu 單選同一套視覺)。點 menu item 經 Tabs context `onValueChange` 觸發切換(底層 primitive 自然更新 `data-state`);選中一改,「選到就露出來」把該 tab 捲到視圖中央(與直接點、方向鍵同一條,不是選單專屬)。底層仍是真實捲動容器(非 `overflow-hidden`)的理由:置中靠捲動容器的 `scrollLeft`,trackpad 兩指橫滑也需要真實 scroll 容器;捲軸用 CSS 隱藏。
 
 **a11y**:全部 trigger 一直在 DOM 且可見(保留 roving tabindex);鍵盤使用者可用方向鍵導覽全部 tab,或 Tab 到 ⌄ 用 dropdown 快速跳轉,兩路徑並存。
 
 ### 跨元件共用
 
-`useScrollEdges`(及 `OverflowScrollArrow` / `OverflowMenuTriggerButton`)在 `patterns/horizontal-overflow/horizontal-overflow.tsx`(re-export 自 `hooks/use-overflow-items.ts`),`ChipGroup` 的 `layout="scroll" | "menu"` 消費同一組 primitive,確保 Tabs / Chip overflow 行為一致。注意 Tabs / Chip 的 menu 模式都是 show-all navigator(用 `useScrollEdges` 偵測捲動邊界),**不用** `useOverflowIndices`(那是「動態算溢出 index」用,menu 永遠顯示全部所以不需要)。
+`useScrollEdges`(及 `OverflowScrollArrow` / `OverflowMenuTriggerButton` / `useRevealSelected`)在 `patterns/horizontal-overflow/horizontal-overflow.tsx`(re-export 自 `hooks/use-overflow-items.ts`),`ChipGroup` 的 `layout="scroll" | "menu"` 消費同一組 primitive,確保 Tabs / Chip overflow 行為一致。注意 Tabs / Chip 的 menu 模式都是 show-all navigator(用 `useScrollEdges` 偵測捲動邊界),**不用** `useOverflowIndices`(那是「動態算溢出 index」用,menu 永遠顯示全部所以不需要)。
 
 ---
 

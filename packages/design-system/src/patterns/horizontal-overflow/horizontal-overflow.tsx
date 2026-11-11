@@ -124,6 +124,149 @@ export function useScrollByPage<T extends HTMLElement>(
   )
 }
 
+// ── 選到就露出來(reveal-selected)────────────────────────────────────────
+//
+// 契約 SSOT = horizontal-overflow.spec.md「選到就露出來」。對齊方式 B:一律把目標項置中,兩端到底時夾住(不留空白)。
+// user 2026-11-11(逐字):「Chip 的問題確保有找到root cause，並修 root cause，然後我覺得 B比較好吧？」、
+// 「「我建議 A。你還是想要 B 也完全可以，根因的修法三種都一樣。」都先B」。
+//
+// 根因(2026-11-11 研究,MASTER-TODO 11-11):捲動原本只寫在 Chip / Tabs 的 ⌄ 選單處理程式裡(requestAnimationFrame + scrollIntoView),
+// 直接點擊走 Radix Toggle / Tabs Trigger、方向鍵靠瀏覽器 focus(Chromium 對水平「部分可見」的項目不捲),兩條路都沒有揭露;
+// 這個模組也沒有「選到就露出來」的 primitive 與契約 → 各消費者各寫各的(縮圖列另一份 scrollIntoView)。
+// 現在揭露只住這裡:消費者宣告「哪些元素是項目、選中寫在哪個屬性」,觸發來源不再分滑鼠 / 鍵盤 / 選單 / 程式。
+
+/**
+ * 揭露目標的捲動位置(純函式;閘 `scripts/overflow-reveal-selected-invariant.mjs` 量的就是它的結果)。
+ * - 置中:項目中心對齊容器可視寬的中心;
+ * - 夾住:算出來 < 0 或 > 最大捲動量時夾到兩端(到底時不留空白,此時項目落在靠那一端的半邊);
+ * - 項目比「扣掉兩側遮擋後的可讀寬」還寬(置中也會被兩側箭頭 + 淡出切掉):改把開頭對齊左側可讀邊 ——【AI 推導】
+ *   置中時兩頭都被切,對齊開頭至少讀得到標籤的開頭;實際 DS 內沒有這麼寬的項目(邊界保護,不是常態路徑)。
+ */
+export function computeRevealScrollLeft({
+  itemStart,
+  itemWidth,
+  clientWidth,
+  scrollWidth,
+  obstruction,
+}: {
+  /** 項目在捲動內容座標系的左緣(px) */
+  itemStart: number
+  itemWidth: number
+  clientWidth: number
+  scrollWidth: number
+  /** 單側被遮擋的寬度(px)= 預留給箭頭的寬度 + FADE_WIDTH */
+  obstruction: number
+}): number {
+  const max = Math.max(0, scrollWidth - clientWidth)
+  const target =
+    itemWidth > clientWidth - 2 * obstruction
+      ? itemStart - obstruction
+      : itemStart + itemWidth / 2 - clientWidth / 2
+  return Math.min(max, Math.max(0, target))
+}
+
+export interface UseRevealSelectedOptions {
+  /** 這一排的項目(在捲動容器內找;Chip `[data-slot="chip"]` / Tabs `[role="tab"]` / 縮圖列 `[data-thumb-index]`) */
+  itemSelector: string
+  /** 「選中」寫在項目的哪個屬性、等於哪個值(Chip `data-state=on` / Tabs `aria-selected=true` / 縮圖列 `aria-current=true`) */
+  selectedAttribute: { name: string; value: string }
+  /** 兩側預留給箭頭的寬度,與同一排 `buildFadeMask` 傳的 `reserveArrowWidth` 同一個值(scroll 模式 `ARROW_BUTTON_WIDTH`、menu 模式 0) */
+  reserveArrowWidth?: number
+}
+
+function matchesSafe(el: Element, selector: string): boolean {
+  try {
+    return el.matches(selector)
+  } catch {
+    return false // 不支援的選擇器(舊測試環境的 :focus-visible)視為不成立
+  }
+}
+
+/**
+ * 選到就露出來 —— 水平溢出那一排的「目前項目」一律置中(對齊 B,兩端夾住)。觸發:
+ * 1. **選中狀態改變**(滑鼠點、鍵盤 Space / Enter / 方向鍵自動啟用、⌄ 選單選取、consumer 程式改 value 全部同一條):
+ *    看項目上的選中屬性(MutationObserver),不看事件來源 —— 選中狀態本身就是要保證的性質,不拿「哪個處理程式跑過」當代理(M37)。
+ *    一次只有一個項目變成選中 → 揭露它;沒有項目變成選中、只有一個項目被取消(多選 Chip 點掉)→ 揭露被點掉的那一個(使用者剛動的就是它);
+ *    一次多個變成選中(全選之類的批次)→ 不捲,沒有「使用者剛動的那一個」。
+ * 2. **鍵盤焦點移到項目上**(`:focus-visible`;Chip 方向鍵只移焦點不選、Tab 進入整組、Tabs 手動啟用模式):滑鼠點擊的焦點不算,那一下由 1 處理。
+ * 3. **容器尺寸改變**(含掛載後第一次排版):揭露「上一次揭露的項目」,還沒有就揭露唯一的選中項;多選且沒動過 → 不捲。
+ *    尺寸改變與掛載不用動畫(拖拉視窗時每一格都在變)。
+ * 1 / 2 用 smooth,`prefers-reduced-motion: reduce` 時改瞬間。
+ * 只捲這個容器本身(`scrollTo`),不用 `scrollIntoView` —— 後者會連帶捲動外層頁面與任何可捲動的祖先。
+ */
+export function useRevealSelected<T extends HTMLElement>(
+  scrollRef: React.RefObject<T | null>,
+  { itemSelector, selectedAttribute, reserveArrowWidth = 0 }: UseRevealSelectedOptions,
+): void {
+  const { name: attrName, value: attrValue } = selectedAttribute
+  React.useEffect(() => {
+    const scroller = scrollRef.current
+    if (!scroller) return
+    let anchor: HTMLElement | null = null
+    const isItem = (el: EventTarget | Node | null): el is HTMLElement =>
+      el instanceof HTMLElement && el !== scroller && scroller.contains(el) && matchesSafe(el, itemSelector)
+    const isSelected = (el: HTMLElement) => el.getAttribute(attrName) === attrValue
+
+    const reveal = (item: HTMLElement, animate: boolean) => {
+      anchor = item
+      const s = scroller.getBoundingClientRect()
+      const r = item.getBoundingClientRect()
+      // 祖先若在做縮放動畫(Dialog / FileViewer 進場),getBoundingClientRect 是縮放後的值 → 換回版面像素
+      const scale = scroller.offsetWidth > 0 ? s.width / scroller.offsetWidth : 1
+      const k = scale > 0 ? scale : 1
+      const left = computeRevealScrollLeft({
+        itemStart: (r.left - s.left) / k - scroller.clientLeft + scroller.scrollLeft,
+        itemWidth: r.width / k,
+        clientWidth: scroller.clientWidth,
+        scrollWidth: scroller.scrollWidth,
+        obstruction: reserveArrowWidth + FADE_WIDTH,
+      })
+      const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      // 一律呼叫(即使已在目標):同時取消進行中的 smooth 捲動,免得它把畫面帶到舊目標
+      scroller.scrollTo({ left, behavior: animate && !reduce ? 'smooth' : 'auto' })
+    }
+
+    // 1. 選中狀態改變
+    const mo = new MutationObserver((records) => {
+      const changed = new Set<HTMLElement>()
+      for (const rec of records) {
+        if (!isItem(rec.target)) continue
+        if (rec.oldValue === rec.target.getAttribute(attrName)) continue // 設了同一個值,沒有改變
+        changed.add(rec.target)
+      }
+      if (changed.size === 0) return
+      const list = Array.from(changed)
+      const nowSelected = list.filter(isSelected)
+      const target = nowSelected.length === 1 ? nowSelected[0] : nowSelected.length === 0 && list.length === 1 ? list[0] : null
+      if (target) reveal(target, true)
+    })
+    mo.observe(scroller, { attributes: true, attributeFilter: [attrName], attributeOldValue: true, subtree: true })
+
+    // 2. 鍵盤焦點移到項目上
+    const onFocusIn = (e: FocusEvent) => {
+      if (isItem(e.target) && matchesSafe(e.target, ':focus-visible')) reveal(e.target, true)
+    }
+    scroller.addEventListener('focusin', onFocusIn)
+
+    // 3. 容器尺寸改變(observe 當下的第一次回呼 = 掛載後第一次排版)
+    const ro = new ResizeObserver(() => {
+      let target: HTMLElement | null = anchor && anchor.isConnected && isItem(anchor) ? anchor : null
+      if (!target) {
+        const selected = Array.from(scroller.querySelectorAll<HTMLElement>(itemSelector)).filter(isSelected)
+        target = selected.length === 1 ? selected[0] : null
+      }
+      if (target) reveal(target, false)
+    })
+    ro.observe(scroller)
+
+    return () => {
+      mo.disconnect()
+      ro.disconnect()
+      scroller.removeEventListener('focusin', onFocusIn)
+    }
+  }, [scrollRef, itemSelector, attrName, attrValue, reserveArrowWidth])
+}
+
 // ── Primitives ────────────────────────────────────────────────────────────
 
 export interface OverflowScrollArrowProps {
