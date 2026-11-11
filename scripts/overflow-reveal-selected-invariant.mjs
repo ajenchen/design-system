@@ -40,7 +40,10 @@ const SOURCES = [
   'packages/design-system/src/components/Tabs/tabs.stories.tsx',
   'packages/design-system/src/components/FileViewer/file-viewer.stories.tsx',
 ]
-const TOLERANCE = 2
+// 中心偏離容許值 = horizontal-overflow.spec.md「閘」句的「容器中心 ±2px」(唯一一份規範數字)。原名 TOLERANCE 與
+// switch-thumb-ring-invariant.mjs 的 TOLERANCE = 8 撞名被 named-constant-drift 抓到 —— 那支的 8 是截圖每通道色差(/255),
+// 與這裡的像素距離無關、不是同一個值的兩份,改名分開(2026-11-12)。
+const CENTER_TOLERANCE_PX = 2
 
 // ── 受測的五排 ─────────────────────────────────────────────────────────────
 // scroller = 頁面上第幾個 [data-overflow-scroller];item = 項目選擇器(修前建置也認得,對照組才量得到);
@@ -86,13 +89,13 @@ export function judge(g, where = '') {
   const readable = g.left >= g.obstruction.left - 0.5 && g.right <= g.width - g.obstruction.right + 0.5 && !g.arrowOverlap
   const clampedStart = g.scrollLeft <= 1 && offset < 0
   const clampedEnd = g.scrollLeft >= g.maxScroll - 1 && offset > 0
-  const centered = Math.abs(offset) <= TOLERANCE
+  const centered = Math.abs(offset) <= CENTER_TOLERANCE_PX
   const how = centered ? 'centered' : clampedStart ? 'clamped-start' : clampedEnd ? 'clamped-end' : 'off-center'
   if (!readable) {
     const why = g.arrowOverlap ? '被箭頭蓋住' : `落在淡出區(項目 ${g.left.toFixed(1)}..${g.right.toFixed(1)},可讀區 ${g.obstruction.left.toFixed(1)}..${(g.width - g.obstruction.right).toFixed(1)})`
     return { ok: false, how, kind: 'unreadable', offset, text: `${where}:選到的項目沒有完整可讀 —— ${why}` }
   }
-  if (how === 'off-center') return { ok: false, how, kind: 'off-center', offset, text: `${where}:選到的項目中心偏離容器中心 ${offset}px(> ±${TOLERANCE};scrollLeft ${g.scrollLeft.toFixed(1)} / 最大 ${g.maxScroll},不是兩端夾住)` }
+  if (how === 'off-center') return { ok: false, how, kind: 'off-center', offset, text: `${where}:選到的項目中心偏離容器中心 ${offset}px(> ±${CENTER_TOLERANCE_PX};scrollLeft ${g.scrollLeft.toFixed(1)} / 最大 ${g.maxScroll},不是兩端夾住)` }
   return { ok: true, how, offset, text: `${where}:${how} ${offset}px` }
 }
 
@@ -363,7 +366,7 @@ if (isMain) {
       process.exit(1)
     }
     const n = result.totals.nonClamped
-    console.log(`✅ overflow-reveal-selected PASS(${result.cells.length} 格:${STRIPS.length} 排 × 點擊 / 方向鍵 / 選單 / 縮放;需要置中的 點擊 ${n.click}、方向鍵 ${n.keys}、選單 ${n.menu}、縮放 ${n.resize} 格全在中心 ±${TOLERANCE}px,其餘合法夾住且完整可讀)`)
+    console.log(`✅ overflow-reveal-selected PASS(${result.cells.length} 格:${STRIPS.length} 排 × 點擊 / 方向鍵 / 選單 / 縮放;需要置中的 點擊 ${n.click}、方向鍵 ${n.keys}、選單 ${n.menu}、縮放 ${n.resize} 格全在中心 ±${CENTER_TOLERANCE_PX}px,其餘合法夾住且完整可讀)`)
   } catch (error) {
     if (error instanceof StoryRenderInstrumentError) { console.error(`✗ ${error.message}`); process.exit(1) }
     throw error

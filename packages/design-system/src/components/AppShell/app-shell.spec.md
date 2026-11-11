@@ -485,6 +485,7 @@ Main 內塞什麼(table / field / card / page header / list)由產品決定 —�
 - `agent-panel.spec.md`
 - `dialog.spec.md`
 - `header-canonical.spec.md`
+- `layoutSpace.spec.md`
 - `resize-handle.spec.md`
 - `sheet.spec.md`
 - `sidebar.spec.md`

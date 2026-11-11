@@ -218,4 +218,5 @@ DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant
 - `data-table.spec.md`
 - `field.spec.md`
 - `item-anatomy.spec.md`
+- `layoutSpace.spec.md`
 - `profile-card.spec.md`

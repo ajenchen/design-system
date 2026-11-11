@@ -53,7 +53,11 @@
   收起後露出來的就是它,使用者下一步是看代理怎麼接、或自己再打一句。焦點不在卡片裡不動;consumer 送出後不卸載卡片(例如換成讀取中)時焦點留在原處。
   作法:`AgentPanel` 提供、`AgentPromptInput` 登記輸入格(`agent-panel.tsx` `AgentComposerContext`),卡片在卸載那一刻(版面效果收尾,DOM 還在)檢查焦點、
   交接走 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`(同「上一題」「清除選取」)。面板外單獨用卡片、或面板裡沒有輸入框時沒有落點可交,不動。
-  閘:`scripts/story-demo-focus-invariant.mjs` 決策卡兩列(送出、×,鍵盤路線;斷言焦點 = 輸入格,修前 = body)。2026-11-11 前兩條路線焦點都落在 body(r3 實測)。
+  **尚未涵蓋(2026-11-12 審查補記)**:consumer 若在卡片顯示時不畫輸入框、卡片收起後才畫,卸載那一刻輸入格還沒登記(`AgentComposerContext` 是空的),
+  `keepFieldFocusBeforeUnmount` 沒有落點、焦點照舊掉到 body;這個用法目前沒有任何範例與閘量得到(DS 範例輸入框恆在,WM 沒有使用 `AgentDecisionCard`)。
+  要不要改成「輸入框掛上時若焦點在 body 且剛有卡片收起就接手」,屬於 × / Esc 語意那一批(第三批頁「× = 取消、焦點到輸入框」排在 r4c,user 原話是問句),一起定。
+  閘:`scripts/agent-decision-card-clear-invariant.mjs` O14f(鍵盤按「送出」)與 O28f(滑鼠按標題列 ×)—— 斷言卡收起之後焦點 = 輸入格、不是 body;
+  `--selftest` ⑱ 卸載後 blur → 兩條都紅。2026-11-11 前兩條路線焦點都落在 body(r3 實測)。(本句原寫成 `scripts/story-demo-focus-invariant.mjs`,那支裡沒有決策卡的格子,2026-11-12 更正。)
 - 步進:**一題一步**,footer 右側:第一題只有「下一題」(只有一題的卡 =「送出」);第二題起「上一題」+「下一題」、末步「送出」(上一題:答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
   2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);主鈕靠右、每一題同一個位置;header × 恆為跳過。

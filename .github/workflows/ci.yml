@@ -111,7 +111,7 @@ jobs:
           node scripts/named-constant-drift-invariant.mjs
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
-          # 浮層密度寫法(2026-11-11 稽核 R7-07):前身 overlay-density-lock-placement.mjs 沒有任何執行面呼叫(孤兒閘),
+          # 浮層密度寫法(2026-11-11 稽核 R7-07):前身 overlay-density-lock-placement.mjs(retired,已改名為下面這支)沒有任何執行面呼叫(孤兒閘),
           # 檔名也對不上可達性棘輪。浮層內容不准寫 data-density、版面間距只有 Popover 能鎖且只鎖 md、header 不鎖、
           # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 8 條必紅、4 條必綠。
           node scripts/overlay-density-lock-invariant.mjs --selftest
