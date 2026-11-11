@@ -93,13 +93,13 @@ export const Overview: Story = {
 export const LayoutModeDiagram: Story = {
   name: '兩種布局模式對照圖',
   render: () => (
-    // 間距(A4,layoutSpace.spec.md 規則 3):標題 → 它底下的並列內容 = loose(md 16 / lg 24);兩個有標題的區段上下疊 = loose × 2
-    // (ExampleStack,Q2 ①:區段標題離上一段比離自己的圖遠);
+    // 間距(layoutSpace.spec.md 規則 3「標題區 → 內容」):「兩 mode 對照」底下兩段並列 = loose;每個 h3 底下只有一塊
+    // (一張對照圖 + 它的說明)= tight(2026-11-11);兩個有標題的區段上下疊 = loose × 2(ExampleStack,Q2 ①:區段標題離上一段比離自己的圖遠);
     // 對照圖 ↔ 它下面那句說明 = tight(說明替緊鄰的圖命名,規則 3「labeling」)。原本寫死 space-y-6 / space-y-2(24 / 8,不跟密度)
     <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] flex flex-col gap-[var(--layout-space-loose)] text-body">
       <h2 className="text-h4">兩 mode 對照</h2>
         <ExampleStack>
-        <section className="flex flex-col gap-[var(--layout-space-loose)]">
+        <section className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-h5">primary-sidebar(header 是當前頁的 local toolbar)</h3>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <div className="flex gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
@@ -114,7 +114,7 @@ export const LayoutModeDiagram: Story = {
             <p className="text-fg-muted">Header scope = <strong>local toolbar</strong>(當前頁 actions / breadcrumb / page-level filter)。Workspace 多寡無關,Notion / Linear 多 workspace 也用 primary-sidebar。</p>
           </div>
         </section>
-        <section className="flex flex-col gap-[var(--layout-space-loose)]">
+        <section className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-h5">primary-header(多一條跨頁的 global header)</h3>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <div className="flex flex-col gap-px bg-divider border border-divider rounded overflow-hidden text-caption">

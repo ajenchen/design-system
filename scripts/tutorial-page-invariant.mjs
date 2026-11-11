@@ -74,6 +74,12 @@
  *   (R12) Tokens / Patterns 文件頁(tokens/** 與 patterns/** 的 *.stories.tsx,不論有沒有 import 共用元件):story 裡疊了 ≥ 2 塊以標題
  *        (h1–h6,或大寫小字 / text-h* / 半粗體的一行字)開頭的區塊 = 手刻的段落 → 改用 TutorialPage + TutorialSection(T7 甲);
  *        這些頁手寫 <h2> / <section> 也由 R2 收(chrome / 浮層標題槽 *Header 裡的 <h2> 是範例的產品標題,不算)。
+ *   (R14) 標題區 → 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」;user 2026-11-11「我覺得主要取決於那個標題和說明是否是
+ *        完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？…」+ 決策頁「說明頁:甲」):
+ *        底下只有一塊 → tight、兩塊以上並列 → loose,由共用元件自己數(各頁不寫、不選)。守:tutorial-page.tsx 有 `headingContentOf` /
+ *        `useHeadingContent`,`ExampleSection` 呼叫 `useHeadingContent`;區塊模式的 gap 與設計規格頁小標的下方距離都是「預設 loose +
+ *        data-[heading-content=one] 時 tight」;anatomy-utils.tsx 的 `H3` / `Desc` 都呼叫 `useHeadingContent`、用 `SPEC_HEADING_GAP`,
+ *        不自己寫 loose(值只在 tutorial-page.tsx)。數法本身(幾塊、隔多遠算並列)由 section-gap-invariant 的「標題區 → 內容」各列量像素。
  *
  * 教學頁的範圍:全部 *.principles.stories.tsx(R1–R11、R13),加上 tokens/** 與 patterns/** 裡 import 共用元件的 *.stories.tsx(R2–R6、R10、R11、R13);
  * 其餘 Tokens / Patterns 文件頁只收「自抄教學框小元件」、手寫 <h2> / <section>(R2)與手刻段落清單(R12)。
@@ -851,6 +857,54 @@ export function checkHelper(text) {
   return out
 }
 
+export const ANATOMY_UTILS = 'packages/design-system/src/stories-helpers/anatomy/anatomy-utils.tsx'
+const HEADING_ONE_GAP = 'data-[heading-content=one]:gap-[var(--layout-space-tight)]'
+const HEADING_ONE_MB = 'data-[heading-content=one]:mb-[var(--layout-space-tight)]'
+
+/** (R14) 標題區 → 內容:共用元件自己數幾塊(一塊 tight / 兩塊以上 loose);值只在 tutorial-page.tsx */
+export function checkHeadingProximity(helperText, anatomyText) {
+  const out = []
+  const r14 = (file, message) => out.push({ rule: 'R14', file, line: 1, message })
+  const sf = ts.createSourceFile(HELPER, helperText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const decls = new Map()
+  const exported = new Set()
+  const v = (n) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) decls.set(n.name.text, unwrap(n.initializer))
+    ts.forEachChild(n, v)
+  }
+  v(sf)
+  for (const st of sf.statements) {
+    const isExp = st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+    if (!isExp) continue
+    if (ts.isFunctionDeclaration(st) && st.name) exported.add(st.name.text)
+    if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name)) exported.add(d.name.text)
+  }
+  for (const name of ['headingContentOf', 'useHeadingContent', 'specHeadingContent', 'SPEC_HEADING_GAP']) if (!exported.has(name)) r14(HELPER, `共用元件沒有 export ${name} —— 標題區 → 內容的判斷與值只住在 tutorial-page.tsx(layoutSpace.spec.md 規則 3「標題區 → 內容」)`)
+  const strOf = (name) => { const d = decls.get(name); return d && (ts.isStringLiteral(d) || ts.isNoSubstitutionTemplateLiteral(d)) ? d.text : '' }
+  const blockGap = strOf('SECTION_BLOCK_GAP').split(/\s+/)
+  if (!(blockGap.includes('gap-[var(--layout-space-loose)]') && blockGap.includes(HEADING_ONE_GAP))) r14(HELPER, `ExampleSection 區塊模式的間距不是「預設 loose + ${HEADING_ONE_GAP}」(現為「${blockGap.join(' ')}」)—— 只有一塊時要 tight(user 2026-11-11)`)
+  const specGap = strOf('SPEC_HEADING_GAP').split(/\s+/)
+  if (!(specGap.includes('mb-[var(--layout-space-loose)]') && specGap.includes(HEADING_ONE_MB))) r14(HELPER, `設計規格頁小標的下方距離不是「預設 loose + ${HEADING_ONE_MB}」(現為「${specGap.join(' ')}」)`)
+  const esFn = sf.statements.find((st) => ts.isFunctionDeclaration(st) && st.name?.text === 'ExampleSection')
+  if (!esFn || !/\buseHeadingContent\(/.test(esFn.getText(sf)) || !/\bSECTION_BLOCK_GAP\b/.test(esFn.getText(sf))) r14(HELPER, 'ExampleSection 沒有呼叫 useHeadingContent / 沒用 SECTION_BLOCK_GAP —— 標題區 → 內容不再看底下幾塊')
+  if (anatomyText === null) { r14(ANATOMY_UTILS, '讀不到 anatomy-utils.tsx(設計規格頁的 H3 / Desc)'); return out }
+  const af = ts.createSourceFile(ANATOMY_UTILS, anatomyText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const comp = (name) => {
+    let found = null
+    const w = (n) => { if (!found && ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === name) found = n; if (!found) ts.forEachChild(n, w) }
+    w(af)
+    return found ? found.getText(af) : ''
+  }
+  for (const name of ['H3', 'Desc']) {
+    const text = comp(name)
+    if (!text) { r14(ANATOMY_UTILS, `anatomy-utils.tsx 沒有 ${name}`); continue }
+    if (!/\buseHeadingContent\(/.test(text)) r14(ANATOMY_UTILS, `${name} 沒有呼叫 useHeadingContent —— 設計規格頁的小標不再看底下幾塊`)
+    if (!/\bSPEC_HEADING_GAP\b/.test(text)) r14(ANATOMY_UTILS, `${name} 沒用 SPEC_HEADING_GAP(值只在 tutorial-page.tsx)`)
+    if (/mb-\[var\(--layout-space-loose\)\]/.test(text)) r14(ANATOMY_UTILS, `${name} 自己寫了 mb-[var(--layout-space-loose)] —— 標題區 → 內容的值只在 tutorial-page.tsx(SPEC_HEADING_GAP)`)
+  }
+  return out
+}
+
 function walkFiles(dir, acc = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
@@ -871,8 +925,12 @@ export function scanTree(root) {
   for (const f of [...principles, ...patternPages]) hits.push(...checkTutorialFile(f, readFileSync(join(root, f), 'utf8')))
   for (const f of all.filter((x) => /\.(tsx?|css)$/.test(x))) hits.push(...checkLooseTimesTwo(f, readFileSync(join(root, f), 'utf8')))
   const helperPath = join(root, HELPER)
-  if (existsSync(helperPath)) hits.push(...checkHelper(readFileSync(helperPath, 'utf8')))
-  else hits.push({ rule: 'R8', file: HELPER, line: 1, message: '共用教學頁元件不存在' })
+  if (existsSync(helperPath)) {
+    const helperText = readFileSync(helperPath, 'utf8')
+    hits.push(...checkHelper(helperText))
+    const anatomyPath = join(root, ANATOMY_UTILS)
+    hits.push(...checkHeadingProximity(helperText, existsSync(anatomyPath) ? readFileSync(anatomyPath, 'utf8') : null))
+  } else hits.push({ rule: 'R8', file: HELPER, line: 1, message: '共用教學頁元件不存在' })
   return { hits, scanned: { principles: principles.length, patternPages: patternPages.length, files: all.length } }
 }
 
@@ -1231,6 +1289,18 @@ export function runSelftest(root = SCRIPT_ROOT) {
   if (gitBlobId(baseHelper) !== BASE_HELPER.blob) throw new InstrumentError(`對照組 fixture ${BASE_HELPER.fixture} 不是 be2f1324 的原檔`)
   const baseR8 = r8(baseHelper.toString('utf8'))
   for (const k of ['text-body', '段名', 'noteTone', 'toArray']) expect(baseR8.some((m) => m.includes(k)), `be2f1324 的 tutorial-page.tsx → R8「${k}」(實得 ${baseR8.length} 筆)`)
+  // R14(2026-11-11):標題區 → 內容由共用元件數幾塊 —— 現況綠;拿掉「一塊 → tight」/ 不再呼叫判斷 / H3 自己寫 loose 各紅;
+  // 本規則上線前的共用元件(be2f1324,標題區 → 內容一律 loose)紅
+  const anatomy = readFileSync(join(root, ANATOMY_UTILS), 'utf8')
+  const r14 = (h, a = anatomy) => checkHeadingProximity(h, a).map((x) => x.message)
+  expect(r14(helper).length === 0, `現況 tutorial-page.tsx + anatomy-utils.tsx R14 0 筆(實得 ${JSON.stringify(r14(helper))})`)
+  expect(r14(helper.replace(` ${HEADING_ONE_GAP}'`, "'")).some((m) => m.includes('ExampleSection 區塊模式')), '區塊模式拿掉 data-[heading-content=one] → R14')
+  expect(r14(helper.replace(` ${HEADING_ONE_MB}'`, "'")).some((m) => m.includes('設計規格頁小標')), '設計規格頁小標拿掉 data-[heading-content=one] → R14')
+  expect(r14(helper.replace('useHeadingContent(ref, (el) => (paragraph ? null : sectionContent(el)))', '')).some((m) => m.includes('ExampleSection 沒有呼叫')), 'ExampleSection 不再呼叫 useHeadingContent → R14')
+  expect(r14(helper, anatomy.replace('paragraph ? SPEC_HEADING_GAP_PARAGRAPH : SPEC_HEADING_GAP', "paragraph ? SPEC_HEADING_GAP_PARAGRAPH : 'mb-[var(--layout-space-loose)]'")).some((m) => m.includes('H3 沒用 SPEC_HEADING_GAP')), 'H3 改回自己寫 mb loose → R14')
+  expect(r14(helper, null).some((m) => m.includes('讀不到 anatomy-utils')), '讀不到 anatomy-utils.tsx → R14(不讀成通過)')
+  const baseR14 = r14(baseHelper.toString('utf8'))
+  expect(baseR14.some((m) => m.includes('headingContentOf')) && baseR14.some((m) => m.includes('ExampleSection 沒有呼叫')), `be2f1324 的 tutorial-page.tsx(標題區 → 內容一律 loose)→ R14(實得 ${baseR14.length} 筆)`)
   return { ok, fails }
 }
 

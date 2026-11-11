@@ -128,7 +128,7 @@ export const UsageGuidance: Story = {
         >
           <ExampleGroup className="w-[320px]">
             <ScrollArea className="h-[220px] border border-error/40 rounded-md bg-surface p-[var(--layout-space-loose)]">
-              {/* 標題 → 它底下的內容(內層捲動區、外層後續內容)= loose(A4:標題區 → 它底下的並列內容) */}
+              {/* 標題 → 它底下的內容(內層捲動區、外層後續內容)= loose(layoutSpace.spec.md 規則 3「標題區 → 內容」:兩塊以上並列) */}
               <h4 className="text-h6 font-semibold mb-[var(--layout-space-loose)]">外層 ScrollArea</h4>
               <ScrollArea className="h-[120px] border border-error/40 rounded-md bg-canvas">
                 {/* @layout-space-magic-ok: 內層捲動區裡頁名列外圈 8px —— 反例本身的寫法;規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}

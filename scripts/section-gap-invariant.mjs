@@ -9,6 +9,10 @@
  *         · 表單欄位 → 跟在後面的表單按鈕列(不在浮層 footer 裡)也是這一級(user 2026-11-10 PR #172 留言):全 DS 盤點出的 8 處
  *           (Field 表單驗證 2、Rating 包在 Field 內、Select 隨 form 送出、Field 不放 form 動作、Checkbox 同意條款與 ❌ Switch 同意、Steps 精靈)
  *           各量「最後一個欄位底 → 按鈕列頂」= loose × 2。歷史紅燈:2e1f2e27 建置 8 處都是 md 16 / lg 24(只有一份 loose)。
+ *         · 標題區 → 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」;user 2026-11-11「我覺得主要取決於那個標題和說明是否是
+ *           完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？…」+ 決策頁「說明頁:甲」):
+ *           底下只有一塊 = tight(heading-one)、兩塊以上並列 = loose(heading-many)。三種共用元件(設計規格頁 H3 / H3 + Desc、
+ *           ExampleSection、TutorialRule)× 一塊 / 兩塊以上各挑真頁量「標題區底 → 第一個內容頂」。歷史紅燈:3d7f8ae6 建置一塊的也是 md 16 / lg 24。
  *   紅: 任一處距離與期望差 > 0.6px(subpixel)→ 指名 case / 密度 / 數字並 exit 1。
  *       歷史紅燈(修前 main 8eb473c7 建置實測):FileViewer 資訊面板 md 16 / lg 24(= 只有一份 loose,標題比離自己的清單還近上一塊)。
  *   綠: 修後 FileViewer md 32 / lg 48;Separator 兩側 md 16 / 16、lg 24 / 24。純幾何,無動畫;重複跑恆等。
@@ -41,21 +45,32 @@ export const CASES = [
   { id: 'form-checkbox-consent', kind: 'form', story: 'design-system-components-checkbox-設計原則--usage-guidance', button: '儲存', label: 'Checkbox 同意條款 → 儲存 / 取消' },
   { id: 'form-checkbox-switch-consent', kind: 'form', story: 'design-system-components-checkbox-設計原則--usage-guidance', button: '送出', label: 'Checkbox ❌ 用 Switch 同意 → 送出' },
   { id: 'form-steps-wizard', kind: 'form', story: 'design-system-components-steps-展示--default', button: '下一步', label: 'Steps 精靈這一步的欄位 → 下一步' },
+  // 標題區 → 內容(2026-11-11):h3 = 設計規格頁 H3(標題區尾巴 = 它自己或緊接的 Desc)、es = ExampleSection、rule = TutorialRule;
+  // text = 標題字樣(開頭比對),一塊 → tight、兩塊以上 → loose。各挑一頁實際的設計規格 / 設計原則頁。
+  { id: 'heading-h3-one-table', kind: 'heading-one', story: 'design-system-internal-notice-設計規格--overview', at: 'h3', text: 'Slot 對照', label: 'Notice 設計規格「Slot 對照」→ 一張表(外包一層捲動容器)' },
+  { id: 'heading-es-many-sections', kind: 'heading-many', story: 'design-system-components-button-設計規格--state-behavior', at: 'es', text: '狀態行為', label: 'Button 設計規格「狀態行為」→ 一個容器裡隔 32 的三段' },
+  { id: 'heading-rule-many-examples', kind: 'heading-many', story: 'design-system-components-badge-設計原則--default-low-rule', at: 'rule', text: '選 level 時問', label: 'Badge 設計原則「選 level 時問…」→ 四則範例' },
+  { id: 'heading-rule-one-example', kind: 'heading-one', story: 'design-system-components-badge-設計原則--default-low-rule', at: 'rule', text: '❌ 把 passive count 當 critical', label: 'Badge 設計原則「❌ 把 passive count 當 critical」→ 一則範例 + 說明' },
 ]
 
-/** 純函式:[{ id, kind, density, loose, gaps:[數字] }] → 不符合的訊息清單(呼叫端與 selftest 共用)。 */
+/** 純函式:[{ id, kind, density, loose, tight?, gaps:[數字] }] → 不符合的訊息清單(呼叫端與 selftest 共用)。 */
 export function judge(rows) {
   const failures = []
   for (const r of rows) {
     const where = `${r.id} @${r.density}`
     if (!(r.loose > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-loose`); continue }
-    const expected = r.kind === 'line' ? [r.loose, r.loose] : [r.loose * 2]
+    if (r.kind === 'heading-one' && !(r.tight > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-tight`); continue }
+    const expected = r.kind === 'line' ? [r.loose, r.loose] : r.kind === 'heading-one' ? [r.tight] : r.kind === 'heading-many' ? [r.loose] : [r.loose * 2]
     if (!Array.isArray(r.gaps) || r.gaps.length !== expected.length || r.gaps.some((g) => !Number.isFinite(g))) {
       failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒量到區塊(應 ${expected.length} 段距離,實得 ${JSON.stringify(r.gaps)})`)
       continue
     }
     r.gaps.forEach((g, i) => {
       if (Math.abs(g - expected[i]) > TOL) {
+        if (r.kind === 'heading-one' || r.kind === 'heading-many') {
+          failures.push(`${where} 標題區底 → 內容頂 = ${g}px,應 ${expected[i]}(${r.kind === 'heading-one' ? 'tight:標題底下只有一塊' : 'loose:標題底下兩塊以上並列'},layoutSpace 規則 3「標題區 → 內容」)`)
+          return
+        }
         const what = r.kind === 'form' ? '最後一個欄位底 → 表單按鈕列頂' : r.kind === 'no-line' ? '上一塊底 → 下一塊頂' : (i === 0 ? '上一塊底 → 線頂' : '線底 → 下一塊頂')
         failures.push(`${where} ${what} = ${g}px,應 ${expected[i]}(${r.kind === 'line' ? 'loose:線的上下各 loose' : 'loose × 2:一條隱形分隔線、上下各 loose'})`)
       }
@@ -90,12 +105,49 @@ function selftest() {
   expect(judge(formGood).length === 0, `表單修後形狀應綠,實得 ${JSON.stringify(judge(formGood))}`)
   const formBefore = judge(formIds.flatMap((id) => [row(id, 'form', 'md', 16, [16]), row(id, 'form', 'lg', 24, [24])]))
   expect(formBefore.length === formIds.length * 2 && formBefore.every((s) => s.includes('最後一個欄位底 → 表單按鈕列頂')), `表單修前 16 / 24 應 ${formIds.length * 2} 格都紅,實得 ${formBefore.length}`)
+  // 標題區 → 內容(2026-11-11):一塊 tight(md 12 / lg 16)、兩塊以上 loose(16 / 24)綠;3d7f8ae6 建置一塊的也是 loose → 紅;
+  // 兩塊以上被縮成 tight → 紅;讀不到 tight → 儀器失效
+  const hrow = (id, kind, density, loose, tight, gaps) => ({ id, kind, density, loose, tight, gaps })
+  const headingCases = CASES.filter((c) => c.kind === 'heading-one' || c.kind === 'heading-many')
+  const headingGood = headingCases.flatMap((c) => [hrow(c.id, c.kind, 'md', 16, 12, [c.kind === 'heading-one' ? 12 : 16]), hrow(c.id, c.kind, 'lg', 24, 16, [c.kind === 'heading-one' ? 16 : 24])])
+  expect(headingCases.length >= 4 && judge(headingGood).length === 0, `標題區 → 內容修後形狀應綠,實得 ${JSON.stringify(judge(headingGood))}`)
+  const oneIds = headingCases.filter((c) => c.kind === 'heading-one').map((c) => c.id)
+  const headingBefore = judge(oneIds.flatMap((id) => [hrow(id, 'heading-one', 'md', 16, 12, [16]), hrow(id, 'heading-one', 'lg', 24, 16, [24])]))
+  expect(oneIds.length >= 2 && headingBefore.length === oneIds.length * 2 && headingBefore.every((s) => s.includes('tight:標題底下只有一塊')), `一塊的修前 16 / 24 應 ${oneIds.length * 2} 格都紅,實得 ${headingBefore.length}`)
+  const manyId = headingCases.find((c) => c.kind === 'heading-many').id
+  expect(judge([hrow(manyId, 'heading-many', 'md', 16, 12, [12]), hrow(manyId, 'heading-many', 'lg', 24, 16, [24])]).some((s) => s.includes('@md') && s.includes('loose:標題底下兩塊以上')), '兩塊以上被縮成 tight 應紅')
+  expect(judge([hrow(oneIds[0], 'heading-one', 'md', 16, NaN, [12])]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('tight')), '讀不到 tight 應判儀器失效')
   console.log(ok ? '✅ section-gap selftest PASS' : '❌ section-gap selftest FAIL')
   return ok
 }
 
 async function measureCase(page, origin, c, density) {
   const url = `${origin}/iframe.html?id=${encodeURIComponent(c.story)}&viewMode=story&globals=${encodeURIComponent(`theme:light;density:${density}`)}`
+  if (c.kind === 'heading-one' || c.kind === 'heading-many') {
+    // 等被量的標題本身出現;標題區底 = H3(或緊接的 Desc)/ ExampleSection 第一個子節點(標題 + 說明)的底,內容頂 = 下一個畫面上佔位置的節點
+    const sel = c.at === 'h3' ? '[data-spec-heading]' : c.at === 'rule' ? '[data-tutorial-rule]' : '[data-example-section]:not([data-tutorial-rule])'
+    await openStory(page, url, { waitFor: sel, label: c.story })
+    return page.evaluate(({ sel, at, text }) => {
+      const inFlow = (e) => { const cs = getComputedStyle(e); return cs.display !== 'none' && cs.position !== 'absolute' && cs.position !== 'fixed' }
+      const host = [...document.querySelectorAll(`#storybook-root ${sel}`)].find((e) => (at === 'h3' ? e.textContent : e.firstElementChild?.textContent ?? '').trim().startsWith(text))
+      const root = document.querySelector('#storybook-root')
+      const loose = parseFloat(getComputedStyle(host ?? root).getPropertyValue('--layout-space-loose'))
+      const tight = parseFloat(getComputedStyle(host ?? root).getPropertyValue('--layout-space-tight'))
+      if (!host) return { loose, tight, gaps: [] }
+      let label = host
+      let next = null
+      if (at === 'h3') {
+        if (host.nextElementSibling?.hasAttribute('data-spec-desc')) label = host.nextElementSibling
+        for (let n = label.nextElementSibling; n; n = n.nextElementSibling) if (inFlow(n)) { next = n; break }
+      } else {
+        const kids = [...host.children].filter(inFlow)
+        label = kids[0]
+        next = kids[1] ?? null
+      }
+      const round = (v) => Math.round(v * 10) / 10
+      return { loose, tight, gaps: next ? [round(next.getBoundingClientRect().top - label.getBoundingClientRect().bottom)] : [] }
+    }, { sel, at: c.at, text: c.text })
+  }
   if (c.kind === 'form') {
     // 等被量的按鈕本身出現;按鈕列 = 從按鈕往上第一個「有前一個兄弟」的節點(ButtonGroup / 包按鈕的 div),前一個兄弟 = 最後一個欄位(或欄位群組)
     await openStory(page, url, { waitFor: '#storybook-root button', label: c.story })
@@ -137,7 +189,7 @@ async function measureCase(page, origin, c, density) {
 }
 
 async function measure() {
-  if (!staticArg) requireFreshStorybookBuild(STATIC, ['packages/design-system/src/components/FileViewer/file-viewer.tsx', 'packages/design-system/src/components/Separator', 'packages/design-system/src/tokens/layoutSpace/layoutSpace.css', 'packages/design-system/src/components/Field/field.stories.tsx', 'packages/design-system/src/components/Field/field.principles.stories.tsx', 'packages/design-system/src/components/Rating/rating.stories.tsx', 'packages/design-system/src/components/Select/select.principles.stories.tsx', 'packages/design-system/src/components/Checkbox/checkbox.principles.stories.tsx', 'packages/design-system/src/components/Steps/steps.stories.tsx'])
+  if (!staticArg) requireFreshStorybookBuild(STATIC, ['packages/design-system/src/components/FileViewer/file-viewer.tsx', 'packages/design-system/src/components/Separator', 'packages/design-system/src/tokens/layoutSpace/layoutSpace.css', 'packages/design-system/src/components/Field/field.stories.tsx', 'packages/design-system/src/components/Field/field.principles.stories.tsx', 'packages/design-system/src/components/Rating/rating.stories.tsx', 'packages/design-system/src/components/Select/select.principles.stories.tsx', 'packages/design-system/src/components/Checkbox/checkbox.principles.stories.tsx', 'packages/design-system/src/components/Steps/steps.stories.tsx', 'packages/design-system/src/stories-helpers/examples/tutorial-page.tsx', 'packages/design-system/src/stories-helpers/anatomy/anatomy-utils.tsx'])
   const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
   const browser = await launchBrowserOrSkip()
   if (!browser) { await server.stop(); return null }
