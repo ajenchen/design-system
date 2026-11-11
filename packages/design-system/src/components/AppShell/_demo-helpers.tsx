@@ -349,7 +349,7 @@ const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
 ]
 
 /**
- * Insights 頁(本週 Sprint 的燃盡摘要):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
+ * Insights 頁(Sprint 42 還沒完成的議題):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
  * —— 兩處同一份真實頁面內容(稽核 L117:總覽的 Main 原本是一段說明文字,說明搬到 docs)。
  * 內容 = 還沒完成的議題 DataTable 一張,直接接在頁面標頭下,同 Sidebar 展示 / 範本 DashboardPage 的做法。
  * 2026-11-10 前主區只有一份 DescriptionList(Sprint / 已完成 / 燃盡進度 / P0 未處理):user 2026-11-10 PR #172 留言(逐字)

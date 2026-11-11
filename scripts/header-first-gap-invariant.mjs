@@ -52,6 +52,8 @@ const SURFACE_HEADER = '[data-slot="surface-header"]'
  * 盤點出的每一處。header = 標頭選擇器(+ headerText:標頭文字須包含;+ nth);waitFor = 這個狀態的內容本身;
  * steps = 量之前要點到的狀態(click = 樹列 / 按鈕的可見文字,或 clickSelector),點完等 waitFor 那個元素出現;
  * role = 盤點時照規則 2 判的角色;src = 給頂部內距的那一行(repo 相對路徑,也是新鮮度守衛的來源清單)。
+ * tableName = 主區只有一張表、不放區段標題的那幾處:表格的讀屏名稱(aria-label)必須是這個字串 —— 看得見的標題拿掉後,名字只剩這裡
+ * (Sidebar 那幾處另有 sidebar-main-follows-selection 比對;AppShell Insights 與範本原本沒有任何閘守,2026-11-11 r3 審查補)。
  * src 寫「檔名#宣告」優先於「檔名:行號」(owner-claims C6(c) 驗宣告存在;行號在被引用檔上方加一行就過期 —— 2026-11-11 Sidebar 的 MainTable
  * 那一行在同一串 commit 裡從第 250 行被推到第 260 行,C6(b) 紅;改成宣告名後不再跟行數走)。
  */
@@ -64,16 +66,16 @@ export const CASES = [
   { id: 'sidebar-mixed-folder', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 混合內容 資料夾 frontend → 檔案表格(MainTable)' },
   { id: 'sidebar-mixed-file', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'README.md', waitFor: '[aria-label="README.md 的版本紀錄"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 混合內容 檔案 README.md → 版本紀錄表格(MainTable)' },
   { id: 'sidebar-mixed-ios', story: `${C}sidebar-展示--mixed-content`, header: 'main > header', waitFor: '[aria-label="frontend 裡的檔案"]', steps: [{ click: 'Mobile App', waitFor: '[aria-label="Mobile App 裡的檔案"]' }, { press: 'ArrowRight', waitFor: '#storybook-root [role="treegrid"] [role="row"][aria-level="2"]:has-text("iOS")' }, { click: 'iOS', waitFor: '[aria-label="iOS 裡的檔案"]' }], role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 混合內容 資料夾 Mobile App → iOS → 檔案表格(MainTable;user 2026-11-11 在這張圖留言「你要確保這個table有按照layout space的設計原則排版吧？」)' },
-  { id: 'sidebar-dashboard-table', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 完整佈局 Dashboard → 今日待處理議題表格(MainTable)' },
-  { id: 'sidebar-project-table', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main [role="table"]', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 群組動作 專案 → 進行中的議題表格(MainTable)' },
-  { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main [role="table"]', role: 'bounded', src: `${DS}components/AppShell/_demo-helpers.tsx#InsightsView`, label: 'AppShell 元件總覽 Main → InsightsView 表格' },
+  { id: 'sidebar-dashboard-table', story: `${C}sidebar-展示--icon-collapse`, header: 'main > header', waitFor: 'main [role="table"]', tableName: '今日待處理議題', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 完整佈局 Dashboard → 今日待處理議題表格(MainTable)' },
+  { id: 'sidebar-project-table', story: `${C}sidebar-展示--group-action`, header: 'main > header', waitFor: 'main [role="table"]', tableName: '進行中的議題', role: 'bounded', src: `${DS}components/Sidebar/sidebar.stories.tsx#MainTable`, label: 'Sidebar 群組動作 專案 → 進行中的議題表格(MainTable)' },
+  { id: 'appshell-insights', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: 'Dashboard', waitFor: '#app-shell-main [role="table"]', tableName: 'Sprint 42 還沒完成的議題', role: 'bounded', src: `${DS}components/AppShell/_demo-helpers.tsx#InsightsView`, label: 'AppShell 元件總覽 Main → InsightsView 表格' },
   { id: 'appshell-aside-order', story: `${C}appshell-設計規格--overview`, header: 'header', headerText: '訂單詳情', waitFor: 'dl', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:72`, label: 'AppShell 元件總覽 Right panel 訂單詳情 → DescriptionList' },
   { id: 'appshell-readout', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'Sprint 42 議題', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:206`, label: 'AppShell 狀態行為 Main → 讀數 DescriptionList' },
   { id: 'appshell-rule-aside', story: `${C}appshell-設計規格--state-behavior`, header: 'header', headerText: 'ENG-1042', waitFor: '[data-readout="menu"]', role: 'element', src: `${DS}components/AppShell/app-shell.anatomy.stories.tsx:277`, label: 'AppShell 狀態行為 Right panel → 一段文字' },
   { id: 'appshell-inbox-toolbar', story: `${C}appshell-展示--primary-sidebar`, header: 'header', headerText: 'Inbox', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AppShell 主側欄 Inbox → 工具列(搜尋 / 篩選)' },
   { id: 'appshell-inbox-tabs-toolbar', story: `${C}appshell-展示--primary-sidebar-with-tabs`, header: 'header', headerText: 'Inbox', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AppShell 主側欄 + 分頁 Inbox → 分頁內容的工具列' },
   { id: 'appshell-issue-detail', story: `${C}appshell-展示--primary-sidebar`, header: 'header', headerText: 'ENG-1042', waitFor: '#app-shell-main [role="table"]', role: 'element', src: `${DS}components/AppShell/app-shell.stories.tsx:251`, label: 'AppShell 主側欄 Right panel 議題詳情 → 標題列' },
-  { id: 'template-dashboard', story: 'apps-template-appshell-dashboard--default', header: 'header', headerText: '總覽', waitFor: 'main [role="table"]', role: 'bounded', src: 'apps/template/src/App.tsx:178', label: '範本 DashboardPage → 今日待處理訂單表格(ds-canonical/templates/dashboard-app.tsx 同一份)' },
+  { id: 'template-dashboard', story: 'apps-template-appshell-dashboard--default', header: 'header', headerText: '總覽', waitFor: 'main [role="table"]', tableName: '今日待處理訂單', role: 'bounded', src: 'apps/template/src/App.tsx:178', label: '範本 DashboardPage → 今日待處理訂單表格(ds-canonical/templates/dashboard-app.tsx 同一份)' },
   { id: 'agentpanel-task-list', story: `${C}agentpanel-展示--url-registry-demo`, header: 'header', headerText: '結帳流程改版', waitFor: '#demo-stage-main [role="table"]', role: 'element', src: `${DS}stories-helpers/scene/data-toolbar.tsx:41`, label: 'AgentPanel 有網址的頁 任務清單 → 分頁內容的工具列' },
   { id: 'header-single-row', story: 'design-system-patterns-header-anatomy--single-row', header: 'header', waitFor: 'header + div p', role: 'element', src: `${DS}patterns/header-canonical/header-canonical.stories.tsx:131`, label: 'Header 單列 → 一行說明' },
   { id: 'header-with-tabs', story: 'design-system-patterns-header-anatomy--with-tabs', header: 'header', waitFor: '[role="tabpanel"] p', role: 'element', src: `${DS}patterns/header-canonical/header-canonical.stories.tsx:173`, label: 'Header 帶分頁 → 概覽兩行(TabsContent 內建 mt-tight)' },
@@ -92,7 +94,7 @@ export const CASES = [
 /** 盤點到但不在 CASES 的(報告與檔頭的同一份理由;改動時兩邊一起看)。 */
 export const NOT_COVERED = [
   ['AgentConversation 內距 loose(agent-panel.tsx:1013,agent-panel.spec.md:198「內距 16(--layout-space-loose)」)', '元件規格層待決:第一則若是代理的文字(element)規則 2 會是 tight;不改元件、回報'],
-  ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-panel.tsx:1787 / 1804)', '元件規格層待決:標題列 border-b-0,規則 2 的「chrome 標頭 → 內容」前提(有分隔的標頭)不成立;回報'],
+  ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-panel.tsx:1793 / agent-panel.tsx:1810)', '元件規格層待決:標題列 border-b-0,規則 2 的「chrome 標頭 → 內容」前提(有分隔的標頭)不成立;回報'],
   ['Coachmark 標頭 → 媒體區 0', '元件規格層待決:coachmark.spec.md「Media 區規則」media 貼齊外殼(滿版),但沒寫標頭 → 媒體的距離;回報'],
   ['FileViewer 工具列 → 檢視畫布', '版面分區(畫布貼齊、圖置中),不是容器內的第一個內容'],
   ['Alert placement="fixed"', 'alert.spec.md:154「頂部全域警告,無圓角無邊框,橫跨頁面寬度」= 頁首橫條,不是內容'],
@@ -127,6 +129,8 @@ export function judge(rows) {
     if (r.role !== r.declared) failures.push(`${where} 第一個內容的角色 = ${r.role}(${r.first ?? '?'}),盤點登記的是 ${r.declared} —— 第一個東西換了,照規則 2 重推頂距並更新 CASES`)
     const want = expectedGap(r.role, r)
     if (Math.abs(r.gap - want) > TOL) failures.push(`${where} 標頭底 → 第一個內容頂 = ${r.gap}px,應 ${want}(規則 2:${RULE[r.role]};第一個內容 = ${r.first ?? '?'})`)
+    // 主區只有一張表、不放區段標題的頁(app-shell.spec.md「Main 內塞什麼」):表格的讀屏名稱是那個標題唯一剩下的地方 —— 拿掉不能沒人知道
+    if (r.tableName && !(r.tableNameGot ?? []).includes(r.tableName)) failures.push(`${where} 主區表格的讀屏名稱(aria-label)= ${JSON.stringify(r.tableNameGot ?? [])},應含「${r.tableName}」—— 主區不放區段標題後,表格的名字只剩 aria-label`)
   }
   // 密度有沒有套上看頁面根(#storybook-root):部分浮層刻意鎖 md(M3、density.spec.md),浮層裡兩密度同值是正確的,期望值照它自己讀到的 token 算
   for (const id of new Set(rows.map((r) => r.id))) {
@@ -144,6 +148,13 @@ function selftest() {
   const good = CASES.flatMap((c) => DENSITIES.map((d) => row(c.id, c.role, c.role, d, expectedGap(c.role, T[d]))))
   expect(judge(good).length === 0, `修後形狀應綠,實得 ${JSON.stringify(judge(good))}`)
   expect(new Set(CASES.map((c) => c.id)).size === CASES.length, 'CASES id 不得重複')
+  // 主區表格的讀屏名稱(2026-11-11 r3 審查:拿掉區段標題後,AppShell Insights / 範本兩張表的 aria-label 被拿掉不會有任何紅燈)
+  const named = CASES.filter((c) => c.tableName)
+  expect(named.length === 4 && ['appshell-insights', 'template-dashboard', 'sidebar-dashboard-table', 'sidebar-project-table'].every((id) => named.some((c) => c.id === id)), `登記 tableName 的應是主區只有一張表的 4 處,實得 ${named.map((c) => c.id).join(', ')}`)
+  const nameRow = (got) => ({ ...row('appshell-insights', 'bounded', 'bounded', 'md', 16), tableName: 'Sprint 42 還沒完成的議題', tableNameGot: got })
+  expect(judge([nameRow(['Sprint 42 還沒完成的議題'])]).length === 0, '表格讀屏名稱對 → 綠')
+  expect(judge([nameRow([])]).some((s) => s.includes('讀屏名稱') && !s.includes(INSTRUMENT_FAIL_MARKER)), '表格拿掉 aria-label → 紅(產品缺名字,不是儀器失效)')
+  expect(judge([nameRow(['Sprint 42'])]).some((s) => s.includes('應含「Sprint 42 還沒完成的議題」')), '表格名字換成別的 → 紅')
   // c2fc683d 實測:Sidebar 混合內容兩處表格外層是 tight(12 / 16)
   const before = judge(['sidebar-mixed-folder', 'sidebar-mixed-file'].flatMap((id) => [row(id, 'bounded', 'bounded', 'md', 12), row(id, 'bounded', 'bounded', 'lg', 16)]))
   expect(before.length === 4 && before.every((s) => s.includes('bounded region → loose')), `表格外層改 tight 應 4 格都紅,實得 ${JSON.stringify(before)}`)
@@ -326,7 +337,10 @@ async function measureCase(page, origin, c, density) {
   if (opened) return opened
   await installPageKit(page)
   const r = await page.evaluate(probeFirst, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0 })
-  return r.err ? r : { ...r, role: classifyFirst(r.f) }
+  if (r.err) return r
+  // 主區不放區段標題的那幾處:表格的名字只剩 aria-label(看得見的標題拿掉了)—— 量畫面上那張表格的讀屏名稱本身,不靠 waitFor 猜
+  const tableNameGot = c.tableName ? await page.evaluate((sel) => [...document.querySelectorAll(sel)].map((t) => t.getAttribute('aria-label') ?? '').filter(Boolean), c.waitFor) : undefined
+  return { ...r, role: classifyFirst(r.f), tableName: c.tableName, tableNameGot }
 }
 
 async function measure() {

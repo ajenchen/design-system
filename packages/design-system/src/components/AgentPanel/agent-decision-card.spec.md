@@ -42,6 +42,8 @@
   ([_tile.scss#L62-L73](https://github.com/carbon-design-system/carbon/blob/7e8c8f7db6dd2ed98c4947b78b37614f43eda920/packages/styles/scss/components/tile/_tile.scss#L62-L73)),
   本 DS 不採 —— 單選狀態表的底色欄一律不變(`../Checkbox/checkbox.spec.md`「狀態 › Radio」)。
 - 關閉:header × 恆渲染、恆為跳過(= 全部用預設 / 已選值繼續,`onSkip`),**是唯一的跳過入口**,footer 沒有跳過鈕;無 Esc、無外點關閉(阻擋語意)。
+  `onSkip` / `onSubmit` 為必填 prop(× 與送出鈕恆渲染、卡片沒有內建行為,沒傳 = 按了沒反應、使用者離不開這張卡;agent-panel.spec.md 固定 anatomy 律,
+  `scripts/agent-panel-fixed-anatomy-invariant.mjs` 守型別層)。
   依據:user 2026-11-11 回覆「跳過:甲」;甲的原文(AI 建議、user 選甲):「拿掉下方的「跳過」，只留右上角 ×；× 的提示文字改成「跳過全部，用建議繼續」。第一題下方只剩「下一題」，第二題起是「上一題 / 下一題」。」
   user 原本的提問(逐字):「再者，ai agent決策卡的部分，下方有「跳過」，其應該跟點擊x是一樣的意思？那是否文案要改成「取消」之類的？或是建議拿掉這個按鈕？」;
   另在選填題那張圖留言(逐字,問句):「跳過要拿掉？」(AI 回答「要」)。2026-09-02 到 2026-11-10:第一題 footer 左鈕是「跳過」(與 × 同一行為),× 的名字也是「跳過」。
@@ -96,7 +98,9 @@
 8. ⚙ **單選題必預選推薦解、推薦解排第一、「(建議)」由元件標**(代理不寫該字樣);推薦必是代理有證據的最佳解。
    例外:不可逆/安全/法律/身分稱謂類題 `noDefault` 不預選,把後果寫進描述。
    ([NN/g:pre-select the recommended when confident;例外 legal/presumptuous](https://www.nngroup.com/articles/radio-buttons-default-selection/);
-   反例 [GOV.UK do not pre-select](https://design-system.service.gov.uk/components/radios/) 的顧慮是漏答/交錯答,本卡一題一步且 Skip(標題列 ×)的名字明示「跳過全部，用建議繼續」,故取 NN/g 立場)
+   反例 [GOV.UK do not pre-select](https://design-system.service.gov.uk/components/radios/) 的顧慮是漏答/交錯答,本卡一題一步且 Skip(標題列 ×)明示用預設繼續,故取 NN/g 立場。
+   【AI 推導,2026-11-11 改寫時加的前提,待 user 看過】「明示」現在只靠 × 的讀屏名稱 / 滑過提示「跳過全部，用建議繼續」(這個名字是 user 選的甲);
+   觸控與不滑過去的使用者看不到任何字 —— 比 2026-11-11 前 footer 有一顆寫著字的跳過鈕時弱,這條理由是否仍撐得住「預選建議項」未經 user 確認)
 9. **排序**:推薦第一;其餘常見→少見或邏輯序(小→大、保守→激進),禁字母序;「其他」最後。
    ([GOV.UK most-to-least common](https://design-system.service.gov.uk/components/radios/))
 10. ⚙ **單選為預設;答案本質可複選才 `multiSelect`**(「要包含哪些章節?」):複選改 CheckboxGroup、選項不得互斥、

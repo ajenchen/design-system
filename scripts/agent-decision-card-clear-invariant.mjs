@@ -9,7 +9,10 @@
  *         footer 組成與跳過(user 2026-11-11「跳過:甲」,agent-decision-card.spec.md「關閉」條):footer 沒有「跳過」——
  *         第 1 題右側只有「下一題」(O22 選填 / O26 必答)、只有一題的卡只有「送出」(O26)、第 2 題起「上一題 / 下一題」(O23);
  *         跳過只在標題列 ×:名字 = 「跳過全部，用建議繼續」(O24)、滑上去的 tooltip 同字(O25)、按了卡收起並記下決策回執(O28);
- *         第 2 題用鍵盤按「上一題」回第 1 題(那顆鈕跟著卸載)→ 焦點在第 1 題已選的圓,不掉到 body(O27)。
+ *         第 2 題用鍵盤按「上一題」回第 1 題(那顆鈕跟著卸載)→ 焦點在第 1 題已選的圓,不掉到 body(O27);goBack 的另外兩條路
+ *         (2026-11-11 r3 審查補):第 1 題沒選 → 焦點在第一個圓(O27b)、選了「其他」打字 → 焦點在「其他」的圓、字還在(O27c)。
+ *         複選題那條路(第 1 題是複選)沒有任何 story 的第 1 題是複選,量不到;不為此新增 story(會動視覺基準),列待補。
+ *         卡收起之後焦點去哪:實量掉到 body,落點規格沒寫 → 只印 ℹ 回報,不判紅(見 O28 那段)。
  *         --selftest ⑬–⑰ 各補回一種(footer 又出現跳過 / × 改回「跳過」/ tooltip 換字 / 回第 1 題焦點掉到 body / 按 × 沒反應);
  *         2026-11-11 前的建置(第 1 題 footer 有「跳過」、× 名字「跳過」)→ O22 / O24 / O25 / O26 / O27 紅。
  *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息 —— 只用鍵盤也一樣:清掉之後只用 Tab 走到「下一題」按 Enter(O10)、
@@ -173,8 +176,8 @@ const FAULTS = {
     script: SICK(`() => { for (const t of document.querySelectorAll('[role="tooltip"]')) if (t.textContent !== '${OLD_SKIP}') t.textContent = '${OLD_SKIP}' }`, '{ subtree: true, childList: true, characterData: true }'),
   },
   backFocusLost: {
-    scope: 'required',
-    expect: ['O27'],
+    scope: 'both',
+    expect: ['O27', 'O27b', 'O27c'],
     what: '⑯ 第 2 題按「上一題」回第 1 題,焦點掉到 body',
     script: `document.addEventListener('click', (e) => { const b = e.target instanceof Element && e.target.closest('button'); if (b && b.textContent.trim() === '上一題') setTimeout(() => document.activeElement && document.activeElement.blur(), 0) }, true)`,
   },
@@ -446,6 +449,25 @@ async function runOptional(fault) {
   record('O14', '選填複選一項都不勾,只用 Tab 走到「送出」按 Enter → 照常送出(卡收起、對話多一則決策回執)、途中「其他」沒被勾起來',
     walked.reached && !walked.changed && s === null && receipt,
     `走到 ${walked.reached}、途中選取變了 ${walked.changed}(${JSON.stringify(walked.trail.map((t) => `${t.active}:${t.checked.join('')}`))});${s ? `卡還在、錯誤 ${s.error ?? '無'}` : `回執 ${receipt ? '有' : '沒有'}`}`)
+
+  // ── O27b(2026-11-11 r3 審查補):goBack 的「沒選 = 第一個圓」那條路 —— 第 1 題清成沒選 → 前進 → 第 2 題用鍵盤按「上一題」回來 ──
+  // O27 只走「已選了一個單選」;這裡另開一頁,第 1 題清掉選取再前進,回來時焦點應在第 1 題第一個圓(仍沒選),不在 body
+  await open(OPTIONAL_STORY, fault)
+  s = await readCard(page)
+  if (s?.clear) { await clickCenter(s.clear.rect); s = await readCard(page) }
+  const firstId = s?.controls[0]?.id
+  const emptyQ1 = !!s && s.step === '1 / 3' && noneChecked(s)
+  if (emptyQ1 && btn(s, PRIMARY)) { await clickCenter(btn(s, PRIMARY).rect); await settleAfterInteraction(page, { frames: 5 }); s = await readCard(page) }
+  if (!emptyQ1 || s?.step !== '2 / 3' || !btn(s, NAV)) {
+    pre('O27b', '第 1 題沒選、按「上一題」回來 → 焦點在第一個圓', `第 1 題清不成沒選或到不了第 2 題(沒選 ${emptyQ1};${s?.step})`)
+  } else {
+    await page.evaluate(() => [...document.querySelectorAll('[data-slot="surface-footer"] button')].find((b) => b.textContent.trim() === '上一題')?.focus())
+    await press('Enter')
+    s = await readCard(page)
+    record('O27b', '第 1 題沒選、從第 2 題用鍵盤按「上一題」回第 1 題 → 焦點在第 1 題第一個圓(仍沒選),不在 body',
+      s?.step === '1 / 3' && s.active?.id === firstId && noneChecked(s) && !s.active?.isBody,
+      JSON.stringify({ step: s?.step, active: s?.active, firstId, checked: s?.controls.map((c) => c.checked) }))
+  }
   return results
 }
 
@@ -495,6 +517,26 @@ async function runRequired(fault) {
       pass: s?.step === '1 / 3' && s.active?.id === picked && s.controls[1].checked === 'true' && !s.active?.isBody,
       detail: JSON.stringify({ step: s?.step, active: s?.active, picked, checked: s?.controls.map((c) => c.checked) }) })
   }
+  // ── O27c(2026-11-11 r3 審查補):goBack 的「選了『其他』」那條路 —— 第 1 題選「其他」打字 → 前進 → 按「上一題」回來 → 焦點在「其他」那個圓 ──
+  if (s?.step === '1 / 3') {
+    const other = s.controls[s.controls.length - 1]
+    await page.evaluate((id) => document.getElementById(id)?.click(), other.id)
+    await flushOn(page)
+    await page.fill('input[aria-label="其他(自由輸入)"]', '改成下週一早上 9 點發')
+    s = await readCard(page)
+    const otherPicked = s.controls[s.controls.length - 1].checked === 'true'
+    if (otherPicked && btn(s, PRIMARY)) { await clickCenter(btn(s, PRIMARY).rect); await settleAfterInteraction(page, { frames: 5 }); s = await readCard(page) }
+    if (!otherPicked || s?.step !== '2 / 3' || !btn(s, NAV)) {
+      results.push({ id: 'O27c', label: '第 1 題選「其他」、按「上一題」回來 → 焦點在「其他」的圓', pass: false, detail: `前置不成立:選不到「其他」或到不了第 2 題(選到 ${otherPicked};${s?.step};錯誤 ${s?.error ?? '無'})` })
+    } else {
+      await page.evaluate(() => [...document.querySelectorAll('[data-slot="surface-footer"] button')].find((b) => b.textContent.trim() === '上一題')?.focus())
+      await press('Enter')
+      s = await readCard(page)
+      results.push({ id: 'O27c', label: '第 1 題選「其他」(打了字)、從第 2 題用鍵盤按「上一題」回第 1 題 → 焦點在「其他」那個圓(仍選著、字還在),不在 body',
+        pass: s?.step === '1 / 3' && s.active?.id === other.id && s.controls[s.controls.length - 1].checked === 'true' && s.input?.value === '改成下週一早上 9 點發' && !s.active?.isBody,
+        detail: JSON.stringify({ step: s?.step, active: s?.active, other: other.id, input: s?.input }) })
+    }
+  } else results.push({ id: 'O27c', label: '第 1 題選「其他」、按「上一題」回來 → 焦點在「其他」的圓', pass: false, detail: `前置不成立:O27 之後不在第 1 題(${s?.step})` })
   if (fault === 'backFocusLost') return results
 
   // ── 按標題列 ×(跳過的唯一入口)→ 卡收起、對話多一則決策回執(DecisionCardScene 的 onSkip 與 onSubmit 同一個收尾) ──
@@ -506,8 +548,13 @@ async function runRequired(fault) {
     await settleAfterInteraction(page, { frames: 5 })
     const after = await readCard(page)
     const receipt = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
+    const focusAfter = await page.evaluate(() => { const a = document.activeElement; return { isBody: !a || a === document.body, tag: a?.tagName ?? null, name: a?.getAttribute('aria-label') ?? a?.textContent?.trim().slice(0, 20) ?? null } })
     results.push({ id: 'O28', label: '按標題列 ×(跳過全部)→ 卡收起、對話多一則決策回執', pass: !receiptBefore && after === null && receipt,
-      detail: `按之前已有回執 ${receiptBefore};按之後卡${after ? '還在' : '收起'}、回執 ${receipt ? '有' : '沒有'}` })
+      detail: `按之前已有回執 ${receiptBefore};按之後卡${after ? '還在' : '收起'}、回執 ${receipt ? '有' : '沒有'};焦點 ${JSON.stringify(focusAfter)}` })
+    // 卡收起後焦點去哪:2026-11-11 r3 實量 = 掉到 body(focusAfter.isBody = true;× 與送出兩條收尾都是卡整個卸載)。
+    // keyboard-model-canonical「焦點不可因 DOM unmount 掉到 body」成立,但落點(例:下方的輸入框)規格沒寫 —— 產品 / UX 取捨,回報 user,
+    // 定案前不加會紅的斷言(加了 CI 恆紅);落點定了之後在這裡補 O28f(該紅的對照:卸載後 blur)。
+    if (focusAfter.isBody) console.log(`ℹ O28 收尾焦點落在 body(待規格定落點,回報 user):${JSON.stringify(focusAfter)}`)
   }
   if (fault === 'dismissDead') return results
 

@@ -1437,10 +1437,16 @@ export interface AgentDecisionCardProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSubmit' | 'title'> {
   /** ≤3 題;一題一問步進,N>1 時標題列顯示「n / N」。 */
   questions: AgentDecisionQuestion[]
-  /** 全部作答後送出:answers[questionId] = 選項值或「其他」文字(複選以 `\n` 連接;選填題沒答 = 空字串)。 */
-  onSubmit?: (answers: Record<string, string>) => void
-  /** 跳過=採預設值繼續(header × 的行為;× 是唯一的跳過入口,2026-11-11 起 footer 沒有跳過鈕);回傳目前預設/已選值。 */
-  onSkip?: (answers: Record<string, string>) => void
+  /**
+   * 全部作答後送出:answers[questionId] = 選項值或「其他」文字(複選以 `\n` 連接;選填題沒答 = 空字串)。
+   * 必填:送出鈕恆渲染、卡片沒有內建的送出行為(M23(f)「無內建行為的 callback 一律必填」;agent-panel-fixed-anatomy-invariant 守)。
+   */
+  onSubmit: (answers: Record<string, string>) => void
+  /**
+   * 跳過=採預設值繼續(header × 的行為;× 是唯一的跳過入口,2026-11-11 起 footer 沒有跳過鈕、沒有 Esc / 外點關閉);回傳目前預設/已選值。
+   * 必填:× 恆渲染,沒傳時按了沒反應,使用者除了答完沒有任何離開的路(2026-11-11 r3 審查;同上 M23(f))。
+   */
+  onSkip: (answers: Record<string, string>) => void
   /** 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。 */
   labels?: Partial<AgentDecisionCardLabels>
 }
@@ -1641,7 +1647,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         return { ...prev, [question.id]: [...set].join(MULTI_JOIN) }
       })
     }
-    const skip = () => onSkip?.(resolvedAnswers())
+    const skip = () => onSkip(resolvedAnswers())
     // 「上一題」從第 2 題回第 1 題:第 1 題沒有上一題,按下去的那顆鈕跟著卸載 —— 焦點不可掉到 body
     // (`ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」)。焦點在它身上才接手(同 keepFieldFocusBeforeUnmount
     // 「不在就不動」),交給第 1 題的選項入口:單選 = 已選的那個圓、沒選 = 第一個(APG radio Tab 進群組的落點,同「清除選取」後的落點),複選 = 第一個方框。
@@ -1922,7 +1928,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
               </Button>
             )}
             {isLast ? (
-              <Button variant="primary" size="sm" onClick={() => advance(() => onSubmit?.(resolvedAnswers()))}>
+              <Button variant="primary" size="sm" onClick={() => advance(() => onSubmit(resolvedAnswers()))}>
                 {labels.submit}
               </Button>
             ) : (

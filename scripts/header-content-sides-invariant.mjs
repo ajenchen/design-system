@@ -26,6 +26,9 @@
  *            同層後面看不見的佔位元素也算;撐滿高度的包層多出來的空白不算(那是容器比內容高,不是收尾內距)。
  *     容器種類:fill = 標頭所在的 role=dialog 是 modal(aria-modal 或 body 被鎖 pointer-events)、容器內緣底比收尾終點低(有多出來的空白)、
  *            或內容在捲而高度不是被 max-height 卡住的;capped = 在捲且捲動容器到外殼之間有一層高度 = 它的 max-height;其餘 = hug。
+ *            pinned(2026-11-11 r3 審查拆出):不是 modal、但「多出來的空白」或「在捲」是因為內容那塊到外殼之間有一層高度寫死(computed height = px,
+ *            且不等於視窗高)或被 min-height 撐住 —— 規則 4 Note 只分「視窗 / 版面欄決定(撐滿)」與「內容決定(貼內容)」,這種沒寫 → 紅「待規格」,
+ *            不再默默當撐滿套 48。【AI 推導】fill / hug / capped / pinned 這組分類是閘作者把規則 4 Note 落成量法的判準,規格沒逐字寫。
  *     期望值的 loose / tight / bottom 從容器(標頭之後那塊)computed `--layout-space-*` 讀(浮層鎖 md 照它讀到的算);頁面根 loose md = lg → 儀器失效。
  *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;(b)SIDES 與 CASES 一一對應。
  *   --static=<dir> 指定建置(對照組用);指定時不跑新鮮度守衛。
@@ -102,6 +105,7 @@ export function judge(rows) {
       continue
     }
     if (r.box === 'capped') failures.push(`${where} 容器被高度上限卡住而在捲動(最後一個東西 = ${r.lastDesc ?? '?'},底 ${r.bottom}px)—— 規則 4 第 1 / 4 列沒寫這種容器該用 bottom 還是與頂部同值;待規格定案,不准默默套用其中一列`)
+    if (r.box === 'pinned') failures.push(`${where} 容器高度被寫死或被 min-height 撐住(${r.pinned ?? '?'};最後一個東西 = ${r.lastDesc ?? '?'},底 ${r.bottom}px)—— 規則 4 Note 只分「視窗 / 版面欄決定」與「內容決定」,這種沒寫;待規格定案,不准默默當撐滿套 bottom`)
     const d = r.declared ?? {}
     if (r.last !== d.last) failures.push(`${where} 最後一個東西的角色 = ${r.last}(${r.lastDesc ?? '?'}),登記的是 ${d.last} —— 內容換了,照規則 4 重推底距並更新 SIDES`)
     if (r.box !== d.box) failures.push(`${where} 容器種類 = ${r.box}(多出來的空白 ${r.free ?? '?'}px、modal ${r.modal ?? '?'}、捲動 ${r.scrolls ?? '?'}),登記的是 ${d.box} —— 照規則 4 第 1 / 4 列重推`)
@@ -170,13 +174,17 @@ function selftest() {
   // 浮層鎖 md:頁面根不同、浮層裡同值 → 期望照浮層讀到的值,綠
   const locked = [row('popover-inspector', 'md'), row('popover-inspector', 'lg', { ...T.md, rootLoose: 24 })]
   expect(judge(locked).length === 0, `浮層鎖 md 應綠,實得 ${JSON.stringify(judge(locked))}`)
-  // 與頂部同值 = 同一處量到的頂(上下對稱),不是另算:頂 0(無分隔標頭、body 無上內距)→ 收尾 0 綠;頂 0 收尾 12 紅
+  // 與頂部同值 = 閘的量法取同一處量到的頂(上下對稱;頂本身對不對由原閘的規則 2 判):頂 0 → 收尾 0 綠;頂 0 收尾 12 紅
+  // (只驗判定函式的對稱性;不代表任何「頂 0」的元件已定案 —— 決策卡無分隔線標頭在原閘 NOT_COVERED,待元件規格)
   expect(judge([row('surface-body', 'md', { top: 0, bottom: 0 })]).length === 0, '貼內容的容器頂 0 收尾 0 應綠(上下對稱)')
   expect(judge([row('surface-body', 'md', { top: 0, bottom: 12 })]).some((s) => s.includes('與頂部同值(頂 0)')), '貼內容的容器頂 0 收尾 12 應紅')
   expect(judge([row('x', 'md', { top: NaN })]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '頂沒量到應判儀器失效(與頂部同值無從比)')
   // 被高度上限卡住而在捲動:規則 4 沒寫 → 紅(待規格),不准默默套用第 1 或第 4 列
   const capped = judge([row('surface-body', 'md', { box: 'capped', bottom: 12 })])
   expect(capped.some((s) => s.includes('待規格定案')) && !capped.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `被上限卡住的捲動容器應紅(待規格),實得 ${JSON.stringify(capped)}`)
+  // 高度寫死 / 被 min-height 撐住:規則 4 沒寫 → 紅(待規格),即使底剛好 48 也不准當撐滿放行(2026-11-11 r3 審查)
+  const pinnedRow = judge([row('dialog-body', 'md', { box: 'pinned', pinned: '<div> height 280px', bottom: 48 })])
+  expect(pinnedRow.some((s) => s.includes('寫死或被 min-height 撐住') && s.includes('待規格定案')) && !pinnedRow.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), `高度寫死的容器應紅(待規格),實得 ${JSON.stringify(pinnedRow)}`)
   console.log(ok ? '✅ header-content-sides selftest PASS' : '❌ header-content-sides selftest FAIL')
   return ok
 }
@@ -303,13 +311,32 @@ export const probeSides = ({ header, headerText = null, nth = 0 }) => {
     const mh = getComputedStyle(n).maxHeight
     if (mh !== 'none' && Math.abs(n.getBoundingClientRect().height - parseFloat(mh)) < 1) { capped = true; break }
   }
-  const box = modal || free > 0.5 ? 'fill' : scrolls ? (capped ? 'capped' : 'fill') : 'hug'
+  // 高度被寫死(computed height 是 px 長度,不是 auto / 百分比 —— flex / grid 撐開的是 auto)或被 min-height 撐住(高 = min-height 而內容比它矮):
+  // 容器高度既不是「由視窗 / 版面欄決定」也不是「由內容決定」(規則 4 Note 的兩種),規則 4 沒寫 → pinned,判「待規格」。
+  // 2026-11-11 r3 審查:原本這兩種都被歸成撐滿(期望 48)—— 例:overlay-surface「內文捲動」定高外殼 —— 等於閘先替規格做了決定。
+  // 範圍 = 內容那塊(body)往上到第一個同時包住標頭的外殼(含);視窗高的 px(= innerHeight,100vh / 100svh 算出來的值)算版面給的,不算寫死
+  // (第一版沒排除 min-height = 視窗高,Sidebar / AppShell 的 min-h-svh 外殼被誤判 pinned —— 2026-11-11 實跑 20 處 × 2 密度假紅後修正)。
+  let pinned = null
+  const viewportH = (v) => Math.abs(v - window.innerHeight) < 1
+  for (let n = body; n; n = n.parentElement) {
+    let hv = null
+    try { hv = n.computedStyleMap().get('height') } catch { hv = null }
+    const r = n.getBoundingClientRect()
+    if (hv && hv.unit === 'px' && !viewportH(hv.value)) { pinned = `${desc(n)} height ${round(hv.value)}px`; break }
+    const mh = parseFloat(getComputedStyle(n).minHeight)
+    if (mh > 0.5 && !viewportH(mh) && Math.abs(r.height - mh) < 1 && free > 0.5) { pinned = `${desc(n)} min-height ${round(mh)}px`; break }
+    if (n.contains(h)) break
+  }
+  const box = modal ? 'fill'
+    : free > 0.5 ? (pinned ? 'pinned' : 'fill')
+      : scrolls ? (capped ? 'capped' : pinned ? 'pinned' : 'fill')
+        : 'hug'
   const v = (name) => parseFloat(getComputedStyle(body).getPropertyValue(name))
   return {
     left: round(L.v), right: round(R.v), bottom: round(e - bottomOf(last)), top: round(top),
     leftDesc: desc(L.t.el), rightDesc: desc(R.t.el), lastDesc: desc(last.el), owner: owner ? desc(owner) : null,
     lastF: last.f, firstF: first.f, pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
-    box, modal, scrolls, free: round(free),
+    box, modal, scrolls, free: round(free), pinned,
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
     rootLoose: parseFloat(getComputedStyle(document.querySelector('#storybook-root') ?? document.documentElement).getPropertyValue('--layout-space-loose')),
   }

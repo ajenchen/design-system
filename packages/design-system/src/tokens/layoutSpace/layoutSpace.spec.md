@@ -135,7 +135,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 
 **Note**:Dialog / Sheet body `pb-bottom 48` 是第 1 列的實作,**不是元件特例**。表格 → 「**底部 chrome band**」(Alert / BulkActionBar / Status bar)= 第 2 列的 `loose`,band 裡有沒有 action 都一樣。**第 1 / 4 列怎麼分**:看容器自己,不列名單 —— 會不會擋住頁面(modal)、高度由視窗 / 版面欄決定(撐滿)還是由內容決定。這兩個條件是 DS 給 / 不給 48 時原本就寫下的理由:`../../patterns/overlay-surface/overlay-surface.spec.md`『`pb-bottom` 保留 Dialog / Sheet「大容器底部多一拍」的 canonical』,Popover 不給是因為『Popover 無 viewport-fill、內容預期短』。出處:user 2026-10-28 看過 AppShell 右欄 IssueDetail、右欄訂單詳情、整頁 Main、Insights 頁、FileViewer 資訊面板依此改成 48 的前後圖,回「這個沒問題」;同日對頁面卡片(不擋頁面、貼內容 → 四邊 16)回「頁面上的卡片照你建議」。
 
-本規則在 chrome 標頭底下由 `scripts/header-content-sides-invariant.mjs` 機械檢查:最後一個東西的角色與容器種類(擋住頁面 / 撐滿 / 貼著內容)都從 DOM 判,md / lg 量「最後一個內容 → 容器底(捲動終點)」比對上表;第 4 列的「與頂部同值」= 規則 2 對第一個東西的值。
+本規則在 chrome 標頭底下由 `scripts/header-content-sides-invariant.mjs` 機械檢查:最後一個東西的角色與容器種類(擋住頁面 / 撐滿 / 貼著內容)都從 DOM 判,md / lg 量「最後一個內容 → 容器底(捲動終點)」比對上表。【AI 推導,閘的量法、不是本表的另一種定義】第 4 列「與頂部同值」量成同一處量到的頂(上下對稱;頂本身對不對由 `scripts/header-first-gap-invariant.mjs` 依規則 2 判);容器高度被寫死或被 min-height 撐住、或被 max-height 卡住而在捲動,本表沒寫,閘判「待規格」不套任一列。
 
 ### 規則 5:橫排 Input Gap(固定不隨 density)
 

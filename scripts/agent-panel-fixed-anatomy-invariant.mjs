@@ -25,10 +25,13 @@ const REQUIRED_PROPS = {
   // 實際後果:URL 註冊表示意那則沒傳,user 在預覽站點遮罩「根本沒有任何反應」(2026-09-18 回報)。
   // 同一條律的第三個住所(前兩個是標題列與輸入盒),不是新規則。
   AgentPanelProps: ['onClose'],
+  // 2026-11-11 加(r3 審查):決策卡的標題列 × 是唯一的跳過入口(19af33cc 拿掉 footer 跳過鈕,沒有 Esc / 外點關閉),送出鈕也恆渲染 ——
+  // 兩者都沒有內建行為,寫成可選 = 沒傳的 consumer 按了沒反應、使用者除了答完沒有離開的路。同一條律的第四個住所。
+  AgentDecisionCardProps: ['onSubmit', 'onSkip'],
 }
 /** 任何固定 anatomy callback 都不得當渲染閘。 */
 const GATE_CALLBACKS = [
-  'onNewConversation', 'onClose', 'onSubmit', 'onRemoveAttachment', 'onAddAttachment',
+  'onNewConversation', 'onClose', 'onSubmit', 'onSkip', 'onRemoveAttachment', 'onAddAttachment',
   'onStop', 'onCopy', 'onLike', 'onDislike', 'onSelectConversation', 'onRenameConversation', 'onDeleteConversation',
 ]
 
@@ -49,8 +52,12 @@ export function checkSource(src) {
 }
 
 function selftest() {
-  const iface = 'export interface AgentPanelHeaderProps {\n  onNewConversation: () => void\n  onClose: () => void\n}\nexport interface AgentPromptInputProps {\n  onSubmit: () => void\n  onRemoveAttachment: (id: string) => void\n  onAddAttachment: () => void\n}\nexport interface AgentPanelProps {\n  onClose: () => void\n}\n'
+  const iface = 'export interface AgentPanelHeaderProps {\n  onNewConversation: () => void\n  onClose: () => void\n}\nexport interface AgentPromptInputProps {\n  onSubmit: () => void\n  onRemoveAttachment: (id: string) => void\n  onAddAttachment: () => void\n}\nexport interface AgentPanelProps {\n  onClose: () => void\n}\nexport interface AgentDecisionCardProps\n  extends Omit<X, \'onSubmit\'> {\n  onSubmit: (a: A) => void\n  onSkip: (a: A) => void\n}\n'
   const c = [
+    // 2026-11-11 迴歸:決策卡 × 是唯一的跳過入口,onSkip 可選 = × 按了沒反應,必須抓;送出同理
+    { n: '可選 onSkip(決策卡 ×)= 該抓', src: iface.replace('  onSkip: (a: A)', '  onSkip?: (a: A)'), e: 1 },
+    { n: '可選 onSubmit(決策卡送出)= 該抓', src: iface.replace('  onSubmit: (a: A)', '  onSubmit?: (a: A)'), e: 1 },
+    { n: '{onSkip && (<Button/>)} 閘 = 該抓', src: iface + '{onSkip && (<Button dismiss />)}', e: 1 },
     { n: '必填 + 無閘 = 合格', src: iface + 'onStop?.()', e: 0 },
     { n: '可選 onClose(標題列)= 該抓', src: iface.replace('onClose:', 'onClose?:'), e: 1 },
     // 2026-09-18 迴歸:面板本身的 onClose 寫成可選 = 遮罩點了不關,必須抓
