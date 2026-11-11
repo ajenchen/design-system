@@ -110,6 +110,7 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 
 與其他 Field 一致：
 - readonly：顯示藍色連結（可點擊），無 Pencil action
+- **readonly 的焦點**(2026-11-11):連結是這個欄位唯一的 tab stop —— 鍵盤聚焦 = 連結自己的全域 2px 外描邊(下方「Focus」),**欄位邊框不亮**(一個 tab stop 一個指示器;修前 `focus-within` 讓連結外描邊 + 欄位邊框兩個同時出現);滑鼠點連結兩者都不畫(唯讀欄位滑鼠點不變,規則 `../Field/field-controls.spec.md`「Focus 行為」readonly 段)
 - **值不是網址時(readonly / view,含 DataTable 連結格)畫成一般文字、不給連結**(2026-10-13,待辦總帳 Q3e;2026-10-21 F2 乙):判準與編輯模式同一支 `toWebUrl`(本檔「驗證」:http(s) 開頭,或看起來像網址就補 `https://` —— 例:`www.acme.com` 畫成連結、`href` = `https://www.acme.com`),`javascript:`、`data:`、`mailto:` 等別的協定與信箱永遠不會變成 `href`。**唯一另外放行的是站內路徑**(以 `/` 開頭、解析後仍在同一個網站,例:`/projects/8821/tasks/4821`):它解析後就是本站的 http(s),修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;`//host`、`/\host` 這類會被瀏覽器正規化成別的網站的寫法不算。編輯模式不收站內路徑(只收網頁網址;上方「不適用場景」站內路由請用 Input)。DataTable 存檔時的驗證仍由 consumer 做(`../DataTable/data-table.spec.md` cellErrors),表格不另加
 - disabled：連結灰化，不可點擊。**顯示的字與 readonly 同一份**(合法網址顯示主機名、其他值顯示原字串;停用只換顏色,有值不能畫成「-」—— M24):`link-input.tsx` `linkDisplayText` 一支給連結、一般文字、停用三處用(2026-10-21,r1b fields F2:修前停用另寫一份,`mailto:` / `tel:` / `javascript:` / `data:` 在停用時畫成「-」、`ftp:` 只剩主機名;閘 `scripts/link-input-url-display-invariant.mjs` 判定表「停用時字與唯讀不同」必紅)
 

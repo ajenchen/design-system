@@ -48,10 +48,11 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     disabled: { bg: 'transparent',    text: '--fg-disabled',  border: 'transparent' },
   },
   readonly: {
-    // readonly cva = `bg-readonly border border-transparent`(field-wrapper.tsx#fieldDefaultChromeCompounds)—— 鎖定,無 hover / focus / error bg 轉換
+    // readonly cva = `bg-readonly border border-transparent`(field-wrapper.tsx#fieldDefaultChromeCompounds)—— 鎖定,無 hover / error bg 轉換;
+    // focus 欄 = 鍵盤聚焦 → 透明邊框轉主色、滑鼠點不變(2026-11-11;原寫透明自 2026-09-10 起已過時)
     default:  { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
     hover:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
-    focus:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
+    focus:    { bg: '--bg-readonly',  text: '--foreground',   border: '--primary' },
     error:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
     disabled: { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
   },
@@ -400,7 +401,7 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Mode x State 色彩對照" description="edit 模式有完整的 state 變化（hover / focus / error），readonly 和 disabled 為靜態。色塊即時渲染，切 dark mode 自動更新。">
+    <ExampleSection title="Mode x State 色彩對照" description="edit 模式有完整的 state 變化（hover / focus / error）;readonly 只有用鍵盤 Tab 進來時邊框轉主色(focus 欄;滑鼠點不變),其餘靜態;disabled 為靜態。色塊即時渲染，切 dark mode 自動更新。">
       <div className="flex flex-col gap-8">
 
         {/* Edit mode — full state progression */}

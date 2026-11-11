@@ -68,7 +68,7 @@ const SUPPRESS = /\boutline-none\b|\boutline-0\b|\boutline-hidden\b/
  *   (1) 跨檔指標必須指宣告名(不受別人在上方加行影響,宣告被刪 / 改名 / 不再掛 class 才紅);
  *   (2) 標記裡寫出來的**每一個**指標都驗,不只是被拿來當證據的那一個(`pointerProblems`)。
  * 同檔行號仍可用:會讓它過期的編輯就在同一個檔,紅燈指著的正是改的人手上那一檔。
- * 檢查一律剝掉註解:2026-11-11 前不剝,`field-wrapper.tsx:58` 前後 3 行裡只有一句**註解**提到 focus-within:!border-primary,照樣過。
+ * 檢查一律剝掉註解:2026-11-11 前不剝,`field-wrapper.tsx:66` 前後 3 行裡只有一句**註解**提到 focus-within:!border-primary,照樣過。
  *
  * `text` 必須是**從標記本身起算**的文字(呼叫端傳 `window.slice(m.index)`):傳整個回看視窗會撿到標記上方無關註解裡的
  * 指標(例:「參考 x.tsx:8 的做法」),讓承擔者只寫一句話的標記憑別人的指標過關(2026-09-27,A 類原本就切、C 類沒切)。
@@ -202,7 +202,7 @@ export function scan(files) {
         return
       }
       // 證據過了,標記裡**寫出來的**每一個指標仍要成立 —— 同檔另有證據時指標只是旁白,2026-11-11 前從沒被驗過,
-      // 盤點時 8 個裡 3 個這種旁白指標已經過期(field-wrapper.tsx:58 ×2、inline-edit 的 :398)
+      // 盤點時 8 個裡 3 個這種旁白指標已經過期(field-wrapper.tsx:66 ×2、inline-edit 的 :398)
       const stale = pointerProblems(window.slice(m.index), path, files)
       if (stale.length) {
         for (const why of stale) problems.push({ path, line: i + 1, why, text: trimmed.slice(0, 80) })
@@ -289,7 +289,7 @@ if (process.argv.includes('--selftest')) {
     { n: 'C 類框圖層:同檔寫 檔名.tsx:行號,那一行真的掛 focus-visible:before:focus-ring-inset → 綠(FileUpload 的形狀)', src: "const r = 'focus-visible:before:focus-ring-inset'\n// @focus-suppress C — 自己的 ::before;承擔者:t.tsx:1\ncn('focus-visible:outline-none')", bad: false },
     { n: 'C 類框圖層:同檔行號指的那一行只有**註解**提到畫框 → 紅(剝註解後檢查)', src: "// 'focus-visible:before:focus-ring-inset'\n// @focus-suppress C — 自己的 ::before;承擔者:t.tsx:1\ncn('focus-visible:outline-none')", bad: true },
     { n: 'C 類框圖層:跨檔寫行號 → 紅(即使那一行此刻真的有畫)', src: "// @focus-suppress C — 自己的 ::before;承擔者:before-ring.tsx:8\ncn('focus-visible:outline-none')", extra: [BEFORE_RING], bad: true },
-    // 旁白指標(2026-11-11):同檔另有證據(focus-within:)時,指標以前根本不驗 —— field-wrapper.tsx:58 就是這樣過期的
+    // 旁白指標(2026-11-11):同檔另有證據(focus-within:)時,指標以前根本不驗 —— field-wrapper.tsx:66 就是這樣過期的
     { n: 'C 類:同檔有 focus-within(證據過),但旁白指標跨檔寫行號 → 紅', src: "const w = 'focus-within:!border-primary'\n// @focus-suppress C — x;承擔者:自己(fw.tsx:2)\ncn('focus-visible:outline-none')", extra: [FW], bad: true },
     { n: 'C 類:同檔有 focus-within(證據過),旁白指標指的宣告沒有畫框 → 紅', src: "const w = 'focus-within:!border-primary'\n// @focus-suppress C — x;承擔者:自己(fw.tsx#fieldPlainChrome)\ncn('focus-visible:outline-none')", extra: [FW], bad: true },
     { n: 'C 類:同檔有 focus-within(證據過),旁白指標指的宣告真的畫框 → 綠', src: "const w = 'focus-within:!border-primary'\n// @focus-suppress C — x;承擔者:自己(fw.tsx#fieldChrome)\ncn('focus-visible:outline-none')", extra: [FW], bad: false },

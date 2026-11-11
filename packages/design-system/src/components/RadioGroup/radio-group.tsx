@@ -184,12 +184,13 @@ const RadioGroup = React.forwardRef<
         aria-labelledby={fieldCtx?.labelId}
         aria-invalid={fieldCtx?.invalid || undefined}
         data-readonly="true"
+        // Field 家族控件宿主標記:唯讀焦點只認鍵盤的判斷靠它(lib/pointer-focus-guard.ts isInReadonlyField;同 checkbox.tsx)
+        data-field-mode="readonly"
         tabIndex={0}
         className={cn(
           fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
-          // 2026-09-07:刪掉本地重抄的 `ring-2 ring-ring` —— fieldWrapperStyles 的 readonly
-          // 2026-09-07 遷移後:整條焦點 ring 已由全域外描邊接手(base.css),
-          // 這裡連 `outline-none` 都不能留 —— 留著就把唯一的框關掉了。
+          // 焦點指示全由 fieldWrapperStyles 的 readonly compound 承擔(鍵盤聚焦 → 邊框轉主色 1px;滑鼠點不變,2026-11-11)——
+          // 這裡不另寫 ring / outline(2026-09-07 刪掉本地重抄的 `ring-2 ring-ring`;2026-09-10 起改邊框轉色,註解原寫「全域外描邊接手」已過時)。
           className,
         )}
       >

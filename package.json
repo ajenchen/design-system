@@ -257,6 +257,7 @@
     "test:steps-connector-geometry": "node scripts/steps-connector-geometry-invariant.mjs && node scripts/steps-connector-geometry-invariant.mjs --selftest",
     "test:steps-content-follows-current": "node scripts/steps-content-follows-current-invariant.mjs && node scripts/steps-content-follows-current-invariant.mjs --selftest",
     "test:overflow-reveal-selected": "node scripts/overflow-reveal-selected-invariant.mjs && node scripts/overflow-reveal-selected-invariant.mjs --selftest",
+    "test:readonly-focus-pointer": "node scripts/readonly-focus-pointer-invariant.mjs && node scripts/readonly-focus-pointer-invariant.mjs --selftest",
     "check:agents-bootstrap": "node scripts/check-agents-bootstrap.mjs --check",
     "test:hover-color-pair": "node scripts/hover-color-pair-invariant.mjs",
     "test:hover-latency-policy": "node scripts/test-hover-latency-policy.mjs"

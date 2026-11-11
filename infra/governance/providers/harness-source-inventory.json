@@ -625,6 +625,7 @@
           "scripts/test-header-first-gap-invariant.mjs",
           "scripts/test-overflow-reveal-selected-invariant.mjs",
           "scripts/test-overlay-footer-gutter-invariant.mjs",
+          "scripts/test-readonly-focus-pointer-invariant.mjs",
           "scripts/test-section-gap-invariant.mjs",
           "scripts/test-select-tab-leave-invariant.mjs",
           "scripts/test-story-demo-focus-invariant.mjs"

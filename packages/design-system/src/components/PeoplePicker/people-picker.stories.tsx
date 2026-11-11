@@ -220,7 +220,7 @@ export const HugWidthMultiStack: Story = {
 export const MultiRemoveFocusContract: Story = {
   name: '移除焦點接力驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  // @example-basis: packages/design-system/src/components/PeoplePicker/people-picker.spec.md:331「下一個 remove control → 前一個 → owner combobox trigger」
+  // @example-basis: packages/design-system/src/components/PeoplePicker/people-picker.spec.md:332「下一個 remove control → 前一個 → owner combobox trigger」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <MultiPicker />,

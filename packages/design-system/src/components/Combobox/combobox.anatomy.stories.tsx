@@ -44,7 +44,8 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
   readonly: {
     default:  { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
     hover:    { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
-    focus:    { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
+    // focus 欄 = 鍵盤聚焦 → 透明邊框轉主色;滑鼠點不變(field-wrapper.tsx readonly compound,2026-11-11;原寫透明自 2026-09-10 起已過時)
+    focus:    { bg: '--bg-readonly', text: '--foreground', border: '--primary', icon: '—' },
     disabled: { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
   },
   disabled: {

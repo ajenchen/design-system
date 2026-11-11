@@ -253,6 +253,7 @@ interface PersonData {
 
 與其他 Field 一致：
 - **readonly**：顯示選中人員（Avatar + Name），無 dropdown trigger、無搜尋；avatar hover ProfileCard 保留（純展示仍可查閱人員資訊）
+- **readonly 的焦點**(2026-11-11):外框本身不是 tab stop,頭像才是(開名片卡)—— 鍵盤聚焦頭像 = 頭像自己的全域 2px 外描邊,**欄位邊框不亮**(一個 tab stop 一個指示器;修前 `focus-within` 讓頭像外描邊 + 欄位邊框兩個同時出現);滑鼠點頭像兩者都不畫(唯讀欄位滑鼠點不變,規則 `../Field/field-controls.spec.md`「Focus 行為」readonly 段)
 - **disabled**：灰化整個 field，不可互動——含 avatar dim（host-controlled opacity）+ 抑制 avatar ProfileCard hoverCard（無 HoverCard wrapper / 無 tab stop；2026-07-14 修，原 hoverCard 未抑制 falsify「不可互動」）
 
 ---

@@ -1502,6 +1502,7 @@ jobs:
   verify-browser-cursor:
     # 2026-10-14 拆自 verify-browser-agent(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
     # Storybook 層的兩支(docs 生命週期競態、Devmode addon 視覺驗證)與虛擬游標模態;逐支計時合計 327–391 秒,估約 9 分。
+    # 2026-11-11 加唯讀欄位焦點閘(本機約 105 秒,CI 估 2.5 分)→ 估約 11.5 分,上限 15 不動。
     name: Verify browser(docs race + virtual cursor + devmode)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -1542,6 +1543,11 @@ jobs:
           # 對照組驗鍵盤移回已選項必須有框、純鍵盤開啟立刻有框;F 段(2026-09-10):在文字輸入框裡打字不算鍵盤搬游標。
           # 對照組(--selftest,把游標列釘回舊行為)按預算放在 verify-browser-control-groups。
           npm run test:virtual-cursor-modality
+          # 唯讀欄位滑鼠點不變、鍵盤進來才出 1px 主色邊框(2026-11-11 user「確認 polaris真的就是這樣的話那就照你建議」;focus-canonical.md
+          # 規則二「唯讀的 Field 控件」列):16 個唯讀欄位 × 滑鼠點 / 點過按 Shift / Tab 後再點 / 點標籤(不變)+ Tab / 點過按鍵(恰好一個指示器)
+          # + 同頁可編輯欄位滑鼠點仍亮。--selftest 兩種破法:還原舊 CSS(P 全紅)、拿掉 data-pointer-focus guard(文字框 P1 與全部 P2–P4 紅,
+          # div 型 P1 / K / E 照綠)。同屬「什麼時候畫焦點」,放這個 job:本機現況 35 秒 + 對照組約 70 秒(CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          npm run test:readonly-focus-pointer
           # DS Devmode addon 的視覺驗證(定位層 / 小距離紅線 / 緊湊標籤 / 兄弟距離,6 案例,本機 12 秒):
           # 2026-09-27 gate-reachability 把 package.json 從執行面拿掉(N33)後它成了孤兒 —— 只有 `npm run devmode:test` 提到它、
           # 從沒有 workflow 跑過。本機實跑全綠才接上(不是把紅燈接進 CI)。

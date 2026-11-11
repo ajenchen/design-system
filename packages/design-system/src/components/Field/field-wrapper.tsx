@@ -4,6 +4,10 @@ import type { HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
+import { installReadonlyPointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
+
+// 唯讀欄位「滑鼠點不畫焦點、鍵盤進來才畫」的判斷(lib/pointer-focus-guard.ts 檔尾)—— 所有 Field 控件都載入本檔,在這裡裝一次,元件端零接線。
+installReadonlyPointerFocusGuard()
 
 // ── Field Wrapper Styles ────────────────────────────────────────────────────
 // 所有 Field 元件共用的 input wrapper 樣式。
@@ -30,20 +34,24 @@ import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
  * 三個宿主共用同一份 compoundVariants:單行 wrapper(fieldWrapperStyles)、多行 Textarea(textareaVariants)、
  * 複合輸入盒(AgentPromptInput 等經 `fieldChromeStyles(...)` 消費)。任何新的「像欄位的容器」一律消費
  * `fieldChromeStyles`,禁自刻 border/hover/focus 字串(2026-09-02 user 抓 AgentPromptInput 與 Textarea 互動不同)。
- * **readonly 的焦點指示**(2026-09-10 兩次修正後的定案):**跟編輯態同一種 —— 欄位邊框轉主色 1px**。
- * 唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),所以聚焦時把它轉成主色
- * 不會有位移,長相與可編輯的欄位完全一致。理由是 Field 家族「一個家族一種焦點長相」(focus-canonical 規則二);
- * 世界級對照同向:MUI OutlinedInput / Ant Input / Fluent Input 的 readOnly **完全不改焦點樣式**(它們的唯讀
- * 靜止態與可編輯態本來就長一樣),Carbon 與 Polaris 雖然唯讀另有靜止樣式,但焦點指示同樣**與可編輯態相同**。
- * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**
- *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出(18:46,逐字):
- *「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？」,改為現在這版並撤回那個具名外描邊 utility。
+ * **readonly 的焦點指示**:**長相**跟編輯態同一種 —— 欄位邊框轉主色 1px(2026-09-10 user 原話,逐字:
+ *「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？」);**什麼時候畫**與編輯態不同 ——
+ * **滑鼠點不變,鍵盤進來才畫**(2026-11-11 user,逐字:「確認 polaris真的就是這樣的話那就照你建議」;Shopify Polaris 現行
+ * `s-text-field` 唯讀滑鼠點 0 變化、Tab 才出藍環,它自己有唯讀專屬的 `.input-wrapper.read-only:has(input:focus, textarea:focus)
+ * { box-shadow: none; }` —— https://shopify.dev/docs/api/app-home/latest/web-components/forms/text-field 官方範例「Store URL」實機讀
+ * shadow root 樣式)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉主色不會有位移。
+ * 判斷「這次焦點是不是滑鼠給的」= 瀏覽器 `:focus-visible` + `lib/pointer-focus-guard.ts` 的 `data-pointer-focus`(唯讀文字框滑鼠點
+ * 瀏覽器也判成立,只有那一個差異由 guard 補);規則 owner = `ds-canonical/references/focus-canonical.md` 規則二「唯讀的 Field 控件」列。
+ * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**(WCAG 2.4.7);
+ * 2026-09-10 上午先補成全域外描邊,同日下午依上面那句改成邊框轉色,觸發條件順帶寫成 `focus-within`(滑鼠鍵盤都亮 —— AI 推導,
+ * 不是 user 原話);2026-11-11 依上面那句改成只認鍵盤。
  */
 export type FieldChromeHost =
-  /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
-   *  overlay trigger 開啟時維持 hover 框(`data-[state=open]`)。 */
+  /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly 邊框只認**自己**或**裡面的文字框**的鍵盤焦點
+   * (`focus-visible:` + `has-[:is(input,textarea):focus-visible]`,都排除 `data-pointer-focus`);裡面其他自己會畫框的東西(連結、頭像)
+   * 聚焦時外框不亮 —— 一個 tab stop 一個指示器。overlay trigger 開啟時維持 hover 框(`data-[state=open]`)。 */
   | 'wrapper'
-  /** 宿主本身就是可聚焦控件(`<textarea>`):readonly ring 用 `focus-visible:`,無 overlay 開啟態。 */
+  /** 宿主本身就是可聚焦控件(`<textarea>`):readonly 邊框用 `focus-visible:`(排除 `data-pointer-focus`),無 overlay 開啟態。 */
   | 'control'
 
 /**
@@ -60,7 +68,7 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     },
     // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
     // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
-    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
+    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」)。Field 家族的焦點指示統一 = 邊框轉色;編輯態不分開著關著、不分滑鼠鍵盤(唯讀只認鍵盤,見下方 readonly 條);
     // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
     // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「互動狀態」表 overlay 開啟那一列:同 host hover;field.spec.md「Field state machine」表)。
     // 放在 error:false 這條、不放上面的共用條:error 欄位的 hover 是 error-hover,共用條的 border-hover 會把紅框換成灰框(2026-09-25 實測 TimePicker)。
@@ -71,15 +79,18 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     {
       mode: 'readonly' as const,
       variant: 'default' as const,
-      // 唯讀:靜止是 1px 透明邊框(盒子在、只是看不見),聚焦時把它轉成主色 —— 焦點指示與編輯態同一種長相,
-      // 不是全域外描邊(Field 家族「一個家族一種焦點長相」,user 2026-09-10 拍板;見本檔頂端 JSDoc)。
-      // wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器):focus-within:!border-primary 畫框,同一行的
-      // focus-visible:outline-none 把全域外描邊壓掉;control 宿主(<textarea>)焦點就在自己身上,用 focus-visible:!border-primary。
-      // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器);
-      //   承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
+      // 唯讀:靜止是 1px 透明邊框(盒子在、只是看不見),**鍵盤**聚焦時把它轉成主色 —— 長相與編輯態同一種(user 2026-09-10),
+      // **滑鼠點不變**(user 2026-11-11 B-Polaris;見本檔頂端 JSDoc)。條件 = 瀏覽器 :focus-visible 而且不帶 data-pointer-focus
+      //(唯讀文字框滑鼠點瀏覽器也判 :focus-visible,lib/pointer-focus-guard.ts installReadonlyPointerFocusGuard 補掛)。
+      // wrapper 宿主:自己是 tab stop(唯讀三兄弟 / 觸發器 / NumberInput)→ focus-visible:;裡面是唯讀 <input>(Input)→ has-[…input…]。
+      //   只認 input / textarea:LinkInput 的連結、PeoplePicker 的頭像自己會畫全域外描邊,外框再亮就是一個 tab stop 兩個指示器
+      //  (focus-canonical「一個項目只有一個指示器」;2026-11-11 前 focus-within 兩個都亮)。
+      // control 宿主(<textarea>)焦點就在自己身上 → focus-visible:。
+      // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器、NumberInput);
+      //   承擔者:同一行的 focus-visible:not-data-pointer-focus:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
       className: wrapper
-        ? 'bg-readonly border border-transparent focus-within:!border-primary focus-visible:outline-none'
-        : 'bg-readonly border border-transparent focus-visible:!border-primary',
+        ? 'bg-readonly border border-transparent focus-visible:not-data-pointer-focus:!border-primary has-[:is(input,textarea):focus-visible:not([data-pointer-focus])]:!border-primary focus-visible:outline-none'
+        : 'bg-readonly border border-transparent focus-visible:not-data-pointer-focus:!border-primary',
     },
     { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
     // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
@@ -271,7 +282,7 @@ export const bareInputStyles = [
   // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md「十一、Cell 單行截斷原則」(空間不足一律 ellipsis)+ field-controls.spec.md「共享 contract」
   // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
-  // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的 focus-within:!border-primary
+  // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的邊框轉色(編輯態 focus-within:!border-primary;唯讀只認鍵盤,見 readonly compound)
   'outline-none border-none p-0',
   'text-[inherit] font-[inherit] leading-[inherit]',
   // A3 fix(2026-05-05):`<input>` UA stylesheet 強制 `text-align: start`,阻斷 parent 的
@@ -464,7 +475,7 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
  * TimePicker / NumberInput 的唯讀外框是沒有 tabIndex 的 div,按 Tab 停不到(PR 與 beta.147 實測相同)。
  * 只在 mode === 'readonly' 回傳屬性:view 是純展示(不是表單欄位)、disabled 不可聚焦,兩者回空物件。
  * 角色沿用該控件編輯態的角色 + aria-readonly(同 checkbox.tsx「mode='readonly' in Field」分支的先例);
- * 焦點長相由 fieldWrapperStyles 的 readonly compound(focus-within:!border-primary)承擔,與編輯態同一種。
+ * 焦點長相由 fieldWrapperStyles 的 readonly compound 承擔(邊框轉主色 1px,與編輯態同一種長相;只在鍵盤聚焦時畫,滑鼠點不變)。
  */
 export function readonlyTabStopProps(
   mode: string | undefined,
