@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: 全 DS 範例(story / stories-helpers / _demo 檔)裡的人員照片只走照片名冊 stories-helpers/data/people.ts:網址形狀固定為 /<px≤1000>?img=<n>、名冊不引用不合格的臉、同一支檔裡不同人不共用臉、範例只用名冊裡有的名字;consumer 範本 apps/template 不帶第三方照片網址
+ *   保證: 全 DS 範例(story / stories-helpers / _demo 檔)裡的人員照片只走照片名冊 stories-helpers/data/people.ts:網址形狀固定為 /<px≤1000>?img=<n>、名冊不引用不合格的臉、同一支檔裡不同人不共用臉、範例只用名冊裡有的名字;consumer 範本(apps/template/src 與其 canonical 副本 ds-canonical/templates)不帶第三方照片網址
  *   紅: 名冊把任一人改成 DEMO_FACE_UNUSABLE 裡的臉、任一 story 寫回 `https://i.pravatar.cc/48?u=…` 字串、同一支檔放兩個同臉的人、或 demoPersonPhoto 傳名冊沒有的名字 → 本閘指名檔案與人名並紅(selftest 逐條合成驗)
  *   綠: 現行樹(名冊 + 全部遷移後的範例)必須綠;selftest 另以合成的合規名冊與合規 story 驗「該放行的會放行」,不靠關鍵字猜
  *
@@ -17,6 +17,9 @@
  * - components/Avatar/** 整個略過:那是 Avatar 元件自己的照片示範,要不要一起換由 user 決定(本閘不替 user 做這個決定)。
  * - 檔案縮圖不是人員頭像(NON_PERSON_FILES):照樣檢查網址形狀與不合格的臉,但不要求對得到名冊。
  * - 「同一支檔」= 該檔自己用到的名字 + 它 import 的 _demo-* 畫面檔用到的名字(同一個畫面);名冊檔本身(person-card / people)不算畫面。
+ *   已知看不到的(靜態判法的界線,照實寫):名字從別的資料模組或變數組出來的(非字串字面值、非 SAMPLE_PEOPLE、非 _demo-* 匯入)。
+ *   這一半要在瀏覽器端量「同一則 story 畫面上不同 alt 的頭像不得同一個 src」才守得住 —— 2026-11-11 r3 審查列為待補,尚未建閘。
+ * - scripts/ 不掃:那裡的 pravatar 網址是測試夾具(例 test-data-table-column-sorting 的排序資料),不是給人看的範例畫面。
  *
  * 用法: node scripts/demo-people-roster-invariant.mjs [--selftest]
  */
@@ -28,7 +31,11 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SRC = 'packages/design-system/src'
 const ROSTER = `${SRC}/stories-helpers/data/people.ts`
 const CARD = `${SRC}/stories-helpers/scene/person-card.tsx`
-const TEMPLATE = 'apps/template/src'
+/**
+ * consumer 範本:apps/template/src 與 ds-canonical/templates(後者是同一份範本的 canonical 副本,dashboard-app.tsx 與 App.tsx 同內容)。
+ * 2026-11-11 r3 審查:原本只掃 apps/template/src(「範本不帶第三方照片網址」拿一個資料夾當代理,M37),ds-canonical/templates 不在範圍。
+ */
+const TEMPLATES = ['apps/template/src', 'packages/design-system/ds-canonical/templates']
 const MAX_IMG = 70
 const MAX_PX = 1000
 
@@ -172,8 +179,12 @@ function isScanned(rel) {
 function readTree() {
   const files = walk(join(ROOT, SRC)).map((full) => relative(ROOT, full).split('\\').join('/')).filter(isScanned)
     .map((path) => ({ path, source: readFileSync(join(ROOT, path), 'utf8') }))
-  const template = existsSync(join(ROOT, TEMPLATE)) ? walk(join(ROOT, TEMPLATE)).filter((f) => /\.(tsx?|css|html)$/.test(f))
-    .map((full) => ({ path: relative(ROOT, full).split('\\').join('/'), source: readFileSync(full, 'utf8') })) : []
+  const template = TEMPLATES.flatMap((dir) => {
+    // 範本資料夾不存在 = 量具失效(不是「沒有違規」):讀不到就丟,不默默回空陣列
+    if (!existsSync(join(ROOT, dir))) throw new Error(`demo-people-roster:範本資料夾 ${dir} 不存在(量具失效,不是放行)`)
+    return walk(join(ROOT, dir)).filter((f) => /\.(tsx?|css|html)$/.test(f))
+      .map((full) => ({ path: relative(ROOT, full).split('\\').join('/'), source: readFileSync(full, 'utf8') }))
+  })
   return { rosterSource: readFileSync(join(ROOT, ROSTER), 'utf8'), cardSource: readFileSync(join(ROOT, CARD), 'utf8'), files, template }
 }
 
@@ -181,32 +192,41 @@ function selftest() {
   const rosterOk = `export const DEMO_PERSON_PHOTO = {\n  'Ada Chen': 32,\n  'Bob Lin': 8,\n  林雅婷: 44,\n  'Julia Shen': 44,\n} as const\nexport const DEMO_FACE_UNUSABLE = {\n  1: '兩人同框',\n  24: '杯子遮臉',\n} as const\nreturn ${HELPER_TEMPLATE}\n`
   const card = `export const SAMPLE_PEOPLE = {\n  ada: {\n    name: 'Ada Chen',\n  },\n}\n`
   const story = (path, source) => ({ path: `${SRC}/components/X/${path}`, source })
+  const A = `${SRC}/components/X/a.stories.tsx`
+  const FI = Object.keys(NON_PERSON_FILES)[0]
+  // 第三欄:0 = 必須 0 筆;字串 = 必須有一筆「以這個檔名開頭、含這句規則」的違規(紅的是指名的那一條,不是別條剛好紅 —— r3 審查 M37)
   const cases = [
     ['合規名冊 + 合規 story → 綠', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('Ada Chen', 48); demoPersonData('Bob Lin', 48); SAMPLE_PEOPLE.ada")] }, 0],
     ['跨檔共用臉(林雅婷 / Julia Shen 各在一支檔)→ 綠', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('林雅婷', 48)"), story('b.stories.tsx', "demoPersonPhoto('Julia Shen', 48)")] }, 0],
-    ['名冊引用不合格的臉 → 紅', { rosterSource: rosterOk.replace("'Bob Lin': 8", "'Bob Lin': 24"), cardSource: card, files: [] }, 1],
-    ['手寫 ?u= 網址 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "src: 'https://i.pravatar.cc/48?u=bob'")] }, 1],
-    ['同一支檔兩人同臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('林雅婷', 48); demoPersonPhoto('Julia Shen', 48)")] }, 1],
-    ['畫面檔(_demo-*)與 import 它的 story 同臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('_demo-helpers.tsx', "demoPersonData('林雅婷', 48)"), story('a.stories.tsx', "import { X } from './_demo-helpers'\ndemoPersonPhoto('Julia Shen', 48)")] }, 1],
-    ['名冊沒有的名字 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('Nobody Here', 48)")] }, 1],
-    ['尺寸超過 1000 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('Ada Chen', 1200)")] }, 1],
+    ['名冊引用不合格的臉 → 紅', { rosterSource: rosterOk.replace("'Bob Lin': 8", "'Bob Lin': 24"), cardSource: card, files: [] }, [ROSTER, '「Bob Lin」用了不合格的臉 img=24']],
+    ['手寫 ?u= 網址 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "src: 'https://i.pravatar.cc/48?u=bob'")] }, [A, '手寫照片網址 https://i.pravatar.cc/48?u=bob']],
+    ['同一支檔兩人同臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('林雅婷', 48); demoPersonPhoto('Julia Shen', 48)")] }, [A, '「林雅婷」與「Julia Shen」同一張臉 img=44']],
+    ['畫面檔(_demo-*)與 import 它的 story 同臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('_demo-helpers.tsx', "demoPersonData('林雅婷', 48)"), story('a.stories.tsx', "import { X } from './_demo-helpers'\ndemoPersonPhoto('Julia Shen', 48)")] }, [A, '「Julia Shen」與「林雅婷」同一張臉 img=44']],
+    ['名冊沒有的名字 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('Nobody Here', 48)")] }, [A, '「Nobody Here」不在照片名冊']],
+    ['尺寸超過 1000 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('Ada Chen', 1200)")] }, [A, '「Ada Chen」尺寸 1200 超出 1–1000']],
     ['Avatar/** 寫死的照片 → 略過(綠)', { rosterSource: rosterOk, cardSource: card, files: [{ path: `${SRC}/components/Avatar/avatar.stories.tsx`, source: "src: 'https://i.pravatar.cc/80?u=alice-chen'" }] }, 0],
-    ['檔案縮圖用合格臉 → 綠', { rosterSource: rosterOk, cardSource: card, files: [{ path: Object.keys(NON_PERSON_FILES)[0], source: "thumbnailSrc: 'https://i.pravatar.cc/112?img=3'" }] }, 0],
-    ['檔案縮圖用不合格的臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: Object.keys(NON_PERSON_FILES)[0], source: "thumbnailSrc: 'https://i.pravatar.cc/112?img=24'" }] }, 1],
-    ['檔案縮圖網址形狀錯(/128/128)→ 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: Object.keys(NON_PERSON_FILES)[0], source: "thumbnailSrc: 'https://i.pravatar.cc/128/128?img=3'" }] }, 1],
-    ['consumer 範本帶照片網址 → 紅', { rosterSource: rosterOk, cardSource: card, files: [], template: [{ path: `${TEMPLATE}/App.tsx`, source: "src: 'https://i.pravatar.cc/48?img=5'" }] }, 1],
-    ['名錄成員不在名冊 → 紅', { rosterSource: rosterOk, cardSource: card.replace('Ada Chen', 'Ghost Person'), files: [] }, 1],
-    ['名冊讀不到(量具失效)→ 紅', { rosterSource: 'export const X = 1', cardSource: card, files: [] }, 1],
+    ['檔案縮圖用合格臉 → 綠', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/112?img=3'" }] }, 0],
+    ['檔案縮圖用不合格的臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/112?img=24'" }] }, [FI, 'img=24 是不合格的臉']],
+    ['檔案縮圖網址形狀錯(/128/128)→ 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/128/128?img=3'" }] }, [FI, '照片網址形狀不對']],
+    ['consumer 範本帶照片網址 → 紅', { rosterSource: rosterOk, cardSource: card, files: [], template: [{ path: `${TEMPLATES[0]}/App.tsx`, source: "src: 'https://i.pravatar.cc/48?img=5'" }] }, [`${TEMPLATES[0]}/App.tsx`, 'consumer 範本不放第三方照片網址']],
+    ['canonical 範本副本(ds-canonical/templates)帶照片網址 → 紅', { rosterSource: rosterOk, cardSource: card, files: [], template: [{ path: `${TEMPLATES[1]}/dashboard-app.tsx`, source: "src: 'https://i.pravatar.cc/48?img=5'" }] }, [`${TEMPLATES[1]}/dashboard-app.tsx`, 'consumer 範本不放第三方照片網址']],
+    ['名錄成員不在名冊 → 紅', { rosterSource: rosterOk, cardSource: card.replace('Ada Chen', 'Ghost Person'), files: [] }, [CARD, 'SAMPLE_PEOPLE.ada「Ghost Person」不在照片名冊']],
+    ['名冊讀不到(量具失效)→ 紅', { rosterSource: 'export const X = 1', cardSource: card, files: [] }, [ROSTER, '讀不到 DEMO_PERSON_PHOTO / DEMO_FACE_UNUSABLE']],
   ]
+  // 範圍本身也要驗:真實樹讀得到兩個範本資料夾(各至少一支檔),否則「沒違規」只是沒掃到
+  const tree = readTree()
+  const scannedDirs = TEMPLATES.filter((dir) => tree.template.some((f) => f.path.startsWith(`${dir}/`)))
   let failed = 0
-  for (const [label, input, expectMin] of cases) {
+  if (scannedDirs.length !== TEMPLATES.length) { failed++; console.error(`✗ 範本掃描範圍:應讀到 ${TEMPLATES.join(' / ')},實際只讀到 ${scannedDirs.join(' / ') || '0 個'}`) }
+  else console.log(`✓ 範本掃描範圍讀到 ${TEMPLATES.length} 個資料夾(${tree.template.length} 支檔)`)
+  for (const [label, input, want] of cases) {
     const v = check(input)
-    const ok = expectMin === 0 ? v.length === 0 : v.length >= expectMin
-    if (!ok) { failed++; console.error(`✗ ${label}:預期 ${expectMin === 0 ? '0 筆' : '≥1 筆'},實得 ${v.length} 筆\n  ${v.join('\n  ')}`) }
+    const ok = want === 0 ? v.length === 0 : v.some((line) => line.startsWith(`${want[0]}:`) && line.includes(want[1]))
+    if (!ok) { failed++; console.error(`✗ ${label}:預期 ${want === 0 ? '0 筆' : `一筆「${want[0]}: …${want[1]}…」`},實得 ${v.length} 筆\n  ${v.join('\n  ')}`) }
     else console.log(`✓ ${label}`)
   }
-  if (failed) { console.error(`selftest 失敗 ${failed} / ${cases.length}`); process.exit(1) }
-  console.log(`selftest 通過 ${cases.length} / ${cases.length}`)
+  if (failed) { console.error(`selftest 失敗 ${failed} / ${cases.length + 1}`); process.exit(1) }
+  console.log(`selftest 通過 ${cases.length + 1} / ${cases.length + 1}`)
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {

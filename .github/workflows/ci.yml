@@ -192,7 +192,8 @@ jobs:
           npm run test:story-helper-duplication
           # 範例人員照片只走照片名冊(2026-11-11,user「此外avatar的部分是否可以盡量都用真實圖片？…希望除了 avatar 本身元件與範例之外的範例可以美觀一點」):
           # stories-helpers/data/people.ts 一人一張臉;網址 /<px≤1000>?img=<n>(本機替身的形狀)、不合格的臉不得用、同一支檔不同人不共用臉、
-          # 不准再手寫 ?u= 網址;Avatar/** 自己的照片示範略過(由 user 決定)。對照組 = selftest 15 則合成正反例。純靜態,約 1 秒。
+          # 不准再手寫 ?u= 網址;範本(apps/template/src + ds-canonical/templates)不帶照片網址;Avatar/** 自己的照片示範暫時略過
+          # (要不要一起換待 user 決定,尚未定案)。對照組 = selftest 合成正反例(紅的必須是指名的那一條)。純靜態,約 1 秒。
           npm run test:demo-people-roster
           # owner 文件說的與程式一致(2026-10-21,r1b others 家族):color.spec 的 bg-muted / bg-secondary 消費者登記簿(以 檔案#宣告 登記、
           # 宣告真的用了 token、用了就要登記)、lib/README 每個模組的公開 / @internal 與 root barrel 一致、Button loading 不再被說成「自動 disabled」、
