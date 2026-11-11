@@ -336,7 +336,7 @@ const THREE_QUESTIONS: AgentDecisionQuestion[] = [
   },
 ]
 
-/** 決策卡:送出或跳過(= 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
+/** 決策卡:送出或按標題列 ×(跳過 = 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
 function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuestion[]; intro: string }) {
   const demo = useAgentDemo({ ...demoScene('c2', { messages: [{ role: 'agent', content: intro }] }) })
   const [asking, setAsking] = React.useState(true)
@@ -360,7 +360,8 @@ function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuest
   )
 }
 
-/** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格、跳過 / 下一題;送出或跳過後卡片收起,答案記成決策回執。 */
+/** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格;第一題 footer 只有下一題,第二題起多一顆上一題;
+ *  跳過只在標題列 ×(滑上去提示「跳過全部，用建議繼續」);送出或跳過後卡片收起,答案記成決策回執。 */
 export const DecisionCardOpen: Story = {
   name: '決策卡三題步進',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
@@ -461,8 +462,8 @@ export const DecisionCardErrors: Story = {
   play: async ({ canvasElement }) => {
     const { expect, userEvent, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
-    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 含「跳過」鈕的 role="group"(第 1 題標題列 × 與 footer 各一顆「跳過」,取第一顆)
-    const card = () => within(canvas.getAllByRole('button', { name: '跳過' })[0].closest('[role="group"]') as HTMLElement)
+    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「跳過全部，用建議繼續」,整張卡唯一一顆)所在的 role="group"
+    const card = () => within(canvas.getByRole('button', { name: '跳過全部，用建議繼續' }).closest('[role="group"]') as HTMLElement)
     const otherInput = () => card().getByRole('textbox', { name: '其他(自由輸入)' })
     // 第 1 題:按下「其他」輸入格 = 選中「其他」;文字留空就按「下一題」
     await userEvent.click(otherInput())

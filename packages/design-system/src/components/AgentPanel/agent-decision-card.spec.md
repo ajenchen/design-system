@@ -9,7 +9,7 @@
 - 僅代理被阻擋、需人決策時出現;完全覆蓋輸入區、貼面板底。
 - 繼承 Popover surface(rounded-lg、border、elevation-200、compact header 45)+SurfaceFooter;
   改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
-- Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`;小標字樣、距題目與 × 的位置照 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區(`SurfaceEyebrow`)。
+- Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過全部]`;× 的名字(aria-label;icon-only Button 自動帶出同字 tooltip)=「跳過全部，用建議繼續」(`labels.skip`,見「關閉」條);小標字樣、距題目與 × 的位置照 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區(`SurfaceEyebrow`)。
   **選填題題目後加「(選填)」,必答題不變**(依據:user 2026-11-10 在決策頁選「標示:甲」,甲的原文:「選填題題目後加「(選填)」,必答題不變。」):
   字由元件加(`labels.optionalSuffix`,DS 預設「(選填)」,consumer 可換英文),接在題目文字後、同一行同字級同色 —— 照 DS 既有寫法
   (`../Accordion/accordion.stories.tsx` 的 FieldLabel「專案識別碼(選填)」、`../PeoplePicker/people-picker.stories.tsx`「代理人(選填)」;
@@ -41,10 +41,16 @@
   同形(整卡可點、滑過只變圓;Joy UI 已於 2026-03-11 自 MUI 主 repo 移除,只作曾經的做法);Carbon RadioTile 改換卡片底色
   ([_tile.scss#L62-L73](https://github.com/carbon-design-system/carbon/blob/7e8c8f7db6dd2ed98c4947b78b37614f43eda920/packages/styles/scss/components/tile/_tile.scss#L62-L73)),
   本 DS 不採 —— 單選狀態表的底色欄一律不變(`../Checkbox/checkbox.spec.md`「狀態 › Radio」)。
-- 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
-- 步進:**一題一步**,footer 右側兩鈕:前=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
+- 關閉:header × 恆渲染、恆為跳過(= 全部用預設 / 已選值繼續,`onSkip`),**是唯一的跳過入口**,footer 沒有跳過鈕;無 Esc、無外點關閉(阻擋語意)。
+  依據:user 2026-11-11 回覆「跳過:甲」;甲的原文(AI 建議、user 選甲):「拿掉下方的「跳過」，只留右上角 ×；× 的提示文字改成「跳過全部，用建議繼續」。第一題下方只剩「下一題」，第二題起是「上一題 / 下一題」。」
+  user 原本的提問(逐字):「再者，ai agent決策卡的部分，下方有「跳過」，其應該跟點擊x是一樣的意思？那是否文案要改成「取消」之類的？或是建議拿掉這個按鈕？」;
+  另在選填題那張圖留言(逐字,問句):「跳過要拿掉？」(AI 回答「要」)。2026-09-02 到 2026-11-10:第一題 footer 左鈕是「跳過」(與 × 同一行為),× 的名字也是「跳過」。
+- 步進:**一題一步**,footer 右側:第一題只有「下一題」(只有一題的卡 =「送出」);第二題起「上一題」+「下一題」、末步「送出」(上一題:答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
-  2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);後=「下一題」、末步「送出」;header × 恆為跳過。
+  2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);主鈕靠右、每一題同一個位置;header × 恆為跳過。
+  第二題按「上一題」回第一題:第一題沒有上一題,那顆鈕跟著卸載 —— 焦點在它身上時交給第一題的選項入口(單選 = 已選的圓、沒選 = 第一個圓;複選 = 第一個方框),不掉到 body
+  (`../../../ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」;落點【AI 推導】:按上一題 = 要改上一題的答案,同「清除選取」後的落點;
+  焦點不在它身上不動,同 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`;第三題回第二題時上一題還在,焦點留在原處)。
   「下一題」/「送出」恆可按(新建表單,`../Field/form-validation.spec.md`「Submit Button 狀態」),只在按下時驗這一題(「其他」要不要填看「其他」選了沒 = 跨欄位,規則 9):
   沒選(選填題 `optional` 除外 —— 題目後有「(選填)」,見 Header 條:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後,**距離 = 卡間距 8**
   (依據:user 2026-10-29 原話「此外決策卡是否next/submit按鈕都不應該disable?然後點擊這些按鈕若有出錯 應該用跟 field 的 error msg 一樣的字放在最後一個選項的後面跟最後一個選項距離=選項跟選項之間的距離？你覺得如何？」—— 問句,照提案落地;
@@ -58,7 +64,7 @@
   本卡沒有 Field context:`aria-errormessage` 掛在 radiogroup / 每個方框 / 輸入格(WAI-ARIA 1.2 不適用於 radio 與 group),複選群組另帶 `aria-invalid`(同 `../Checkbox/checkbox-group.tsx`)。
   選填單選題有選取時,footer 左側出現「清除選取」(user 2026-10-30 提案:「在使用者選了選項之後出現」;預選的建議解也算有選取、一打開就有 = AI 依 `../Select/select.spec.md`「Clearable」有值就顯示推導;
   tertiary sm,左 = 操作選取、右 = 提交,`../../patterns/overlay-surface/overlay-surface.spec.md`「選取類浮層的 footer 內容順序」):
-  按了清掉答案與「其他」的字、鈕消失、焦點交給第一個圓(同 `../Select/select.spec.md`「Clearable」清除後焦點),右側兩鈕不動;
+  按了清掉答案與「其他」的字、鈕消失、焦點交給第一個圓(同 `../Select/select.spec.md`「Clearable」清除後焦點),右側的鈕不動;
   必答題沒有(「何時開 clearable」:必須有選擇不開),複選題沒有(方框本來就能取消)。
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
@@ -90,15 +96,16 @@
 8. ⚙ **單選題必預選推薦解、推薦解排第一、「(建議)」由元件標**(代理不寫該字樣);推薦必是代理有證據的最佳解。
    例外:不可逆/安全/法律/身分稱謂類題 `noDefault` 不預選,把後果寫進描述。
    ([NN/g:pre-select the recommended when confident;例外 legal/presumptuous](https://www.nngroup.com/articles/radio-buttons-default-selection/);
-   反例 [GOV.UK do not pre-select](https://design-system.service.gov.uk/components/radios/) 的顧慮是漏答/交錯答,本卡一題一步且 Skip 明示用預設繼續,故取 NN/g 立場)
+   反例 [GOV.UK do not pre-select](https://design-system.service.gov.uk/components/radios/) 的顧慮是漏答/交錯答,本卡一題一步且 Skip(標題列 ×)的名字明示「跳過全部，用建議繼續」,故取 NN/g 立場)
 9. **排序**:推薦第一;其餘常見→少見或邏輯序(小→大、保守→激進),禁字母序;「其他」最後。
    ([GOV.UK most-to-least common](https://design-system.service.gov.uk/components/radios/))
 10. ⚙ **單選為預設;答案本質可複選才 `multiSelect`**(「要包含哪些章節?」):複選改 CheckboxGroup、選項不得互斥、
     **不預選**、仍附「其他」。([SDK multiSelect](https://code.claude.com/docs/en/agent-sdk/user-input);
     [GOV.UK checkboxes 不預選](https://design-system.service.gov.uk/components/checkboxes/))
-11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip;footer 右側只有兩鈕(第一題 跳過/下一題,之後 上一題/下一題|送出),左側只有選填單選題的「清除選取」。
+11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip、是唯一入口(名字「跳過全部，用建議繼續」,2026-11-11 拿掉 footer 跳過鈕,見「關閉」條);
+    footer 右側最多兩鈕(第一題只有 下一題|送出,之後 上一題/下一題|送出),左側只有選填單選題的「清除選取」。
     ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html):「Dialogs should not include more than two actions. A third action, such as “Learn more,” navigates away from the dialog, potentially leaving the task unfinished.」—— 上限是一般規則,「Learn more」只是舉例;
-    本卡偏離它的只有左側「清除選取」:user 2026-10-30 提案加的第三顆,排法依 overlay-surface footer 順序,不是 Material 放行的;[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
+    本卡偏離它的只有第二題起左側的「清除選取」(第一題最多「清除選取」+「下一題」兩顆):user 2026-10-30 提案加的,排法依 overlay-surface footer 順序,不是 Material 放行的;[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
 12. **題與題互不依賴**:後題不因前題答案改變;需要分支 → 下一回合另開一張卡。
     ([NN/g wizards self-sufficient steps](https://www.nngroup.com/articles/wizards/))
 13. **每步不需捲動即可讀完**(面板寬內 4 選項+描述皆單行);描述過長=精簡,不截斷

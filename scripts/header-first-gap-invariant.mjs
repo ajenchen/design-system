@@ -80,7 +80,7 @@ export const CASES = [
 /** 盤點到但不在 CASES 的(報告與檔頭的同一份理由;改動時兩邊一起看)。 */
 export const NOT_COVERED = [
   ['AgentConversation 內距 loose(agent-panel.tsx:1013,agent-panel.spec.md:198「內距 16(--layout-space-loose)」)', '元件規格層待決:第一則若是代理的文字(element)規則 2 會是 tight;不改元件、回報'],
-  ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-panel.tsx:1768 / 1785)', '元件規格層待決:標題列 border-b-0,規則 2 的「chrome 標頭 → 內容」前提(有分隔的標頭)不成立;回報'],
+  ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-panel.tsx:1787 / 1804)', '元件規格層待決:標題列 border-b-0,規則 2 的「chrome 標頭 → 內容」前提(有分隔的標頭)不成立;回報'],
   ['Coachmark 標頭 → 媒體區 0', '元件規格層待決:coachmark.spec.md「Media 區規則」media 貼齊外殼(滿版),但沒寫標頭 → 媒體的距離;回報'],
   ['FileViewer 工具列 → 檢視畫布', '版面分區(畫布貼齊、圖置中),不是容器內的第一個內容'],
   ['Alert placement="fixed"', 'alert.spec.md:154「頂部全域警告,無圓角無邊框,橫跨頁面寬度」= 頁首橫條,不是內容'],

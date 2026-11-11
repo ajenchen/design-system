@@ -24,7 +24,7 @@
  *   附件列=Tag md 單列 + 超寬 +N(OverflowTagList,與 Combobox 多選同一份量測);送出/停止=Button primary xs。
  * - 決策卡:SurfaceHeader(compact)+SurfaceFooter(overlay-surface);選項=灰底卡(--secondary、
  *   rounded-md、內距 8/12、整卡可點)包 RadioGroup md(Popover all-sm 律之拍板豁免;footer 鈕 sm 守律);
- *   一題一問步進(跳過 / 上一題 / 下一題 / 送出);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay;
+ *   一題一問步進(上一題 / 下一題 / 送出;跳過只在標題列 ×);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay;
  *   選填單選題有選取時 footer 左側「清除選取」(選取類浮層 footer 順序,overlay-surface.spec.md;Select clearable 的有值才出現 / 焦點交回)。
  * - 改名/刪除:Dialog(header md+X;body Field+Input;footer md 鈕;刪除=primary+danger;
  *   form-validation:儲存 dirty 規則、空名 blur 顯錯;Esc=Dialog 取消)。
@@ -1439,7 +1439,7 @@ export interface AgentDecisionCardProps
   questions: AgentDecisionQuestion[]
   /** 全部作答後送出:answers[questionId] = 選項值或「其他」文字(複選以 `\n` 連接;選填題沒答 = 空字串)。 */
   onSubmit?: (answers: Record<string, string>) => void
-  /** 跳過=採預設值繼續(Skip 鈕與 header × 同一行為);回傳目前預設/已選值。 */
+  /** 跳過=採預設值繼續(header × 的行為;× 是唯一的跳過入口,2026-11-11 起 footer 沒有跳過鈕);回傳目前預設/已選值。 */
   onSkip?: (answers: Record<string, string>) => void
   /** 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。 */
   labels?: Partial<AgentDecisionCardLabels>
@@ -1447,7 +1447,7 @@ export interface AgentDecisionCardProps
 
 /** 決策卡自帶的文字(全部可覆寫)。 */
 export interface AgentDecisionCardLabels {
-  /** footer 第一題的鈕與 header ×(aria-label):跳過 = 用預設繼續 */
+  /** header × 的名字(aria-label;icon-only Button 自動帶出同字 tooltip):跳過全部 = 用預設 / 已選值繼續 */
   skip: string
   /** 第二題起 footer 的回頭鈕 */
   previous: string
@@ -1493,7 +1493,7 @@ const MULTI_JOIN = '\n'
  */
 // i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
 const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
-  skip: '跳過',
+  skip: '跳過全部，用建議繼續',
   previous: '上一題',
   next: '下一題',
   submit: '送出',
@@ -1642,6 +1642,25 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       })
     }
     const skip = () => onSkip?.(resolvedAnswers())
+    // 「上一題」從第 2 題回第 1 題:第 1 題沒有上一題,按下去的那顆鈕跟著卸載 —— 焦點不可掉到 body
+    // (`ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」)。焦點在它身上才接手(同 keepFieldFocusBeforeUnmount
+    // 「不在就不動」),交給第 1 題的選項入口:單選 = 已選的那個圓、沒選 = 第一個(APG radio Tab 進群組的落點,同「清除選取」後的落點),複選 = 第一個方框。
+    // 【AI 推導】按上一題 = 要改上一題的答案,所以落在答案上。2026-11-11 前第 1 題同一格是「跳過」鈕(React 沿用同一個 DOM 元素,焦點留在原處),拿掉後才需要接手。
+    // 第 1 題的控件要等這一次渲染完才在 → 按下時記下目標,版面效果裡聚焦(只 focus、不另外捲動,同 advance)。
+    const focusAfterBack = React.useRef<string | null>(null)
+    React.useLayoutEffect(() => {
+      const id = focusAfterBack.current
+      focusAfterBack.current = null
+      if (id) document.getElementById(id)?.focus()
+    }, [step])
+    const goBack = (event: React.MouseEvent<HTMLButtonElement>) => {
+      const prev = questions[step - 1]
+      if (step === 1 && prev && event.currentTarget.contains(document.activeElement)) {
+        const picked = prev.multiSelect ? '' : (answers[prev.id] ?? '')
+        focusAfterBack.current = `${optionIdBase}-${picked || prev.options[0]?.value}`
+      }
+      setStep((s) => Math.max(0, s - 1))
+    }
 
     if (!question) return null
     const multi = Boolean(question.multiSelect)
@@ -1763,7 +1782,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         )}
         {...props}
       >
-        {/* 標題列:N>1 時小標「n / N」(SurfaceEyebrow:字樣與距題目 2px 照 overlay-surface.spec.md「SurfaceHeader」)+ 題目 + ×(跳過,固定頂部、佔位 = 題目一行高);改寫:header 下無分隔線。 */}
+        {/* 標題列:N>1 時小標「n / N」(SurfaceEyebrow:字樣與距題目 2px 照 overlay-surface.spec.md「SurfaceHeader」)+ 題目 + ×(跳過全部 = 唯一的跳過入口,名字 / tooltip「跳過全部，用建議繼續」;固定頂部、佔位 = 題目一行高);改寫:header 下無分隔線。 */}
         <SurfaceHeader
           className={cn(COMPACT_HEADER_SLOT, 'items-start justify-between border-b-0')}
           dismiss={<Button dismiss size="sm" startIcon={XIcon} aria-label={labels.skip} onClick={skip} />}
@@ -1882,10 +1901,12 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
             <FieldError id={errorId}>{errorText}</FieldError>
           </div>
         </ScrollArea>
-        {/* footer:右側兩鈕 —— 第一題=跳過(用預設繼續)、第二題起=上一題(答案保留,回上一題可改答),(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/ChoiceList/ChoiceList.module.css#L1-L4)
-            右=下一題 / 送出(末題);左側 = 操作選取的「清除選取」(選填單選題有選取時才有;選取類浮層 footer 順序:左操作選取、右提交,
-            overlay-surface.spec.md;排法照 Coachmark footer 的 justify-between + 右側一組,沒有清除鈕時左邊留空 span,右側兩鈕的位置不因它出現 / 消失而動)。
-            鈕 sm 守 Popover all-sm 律;清除與跳過 / 上一題同為 tertiary(同 SelectMenu 多選 footer 的全選 / 取消全選);無上分隔線;× 恆為跳過。 */}
+        {/* footer:右側 —— 第一題只有「下一題」(單題卡 = 「送出」)、第二題起「上一題」(答案保留,回上一題可改答)+「下一題 / 送出(末題)」,(來源:https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/ChoiceList/ChoiceList.module.css#L1-L4)
+            主鈕靠右、每一題同一個位置;左側 = 操作選取的「清除選取」(選填單選題有選取時才有;選取類浮層 footer 順序:左操作選取、右提交,
+            overlay-surface.spec.md;排法照 Coachmark footer 的 justify-between + 右側一組,沒有清除鈕時左邊留空 span,右側鈕的位置不因它出現 / 消失而動)。
+            鈕 sm 守 Popover all-sm 律;清除與上一題同為 tertiary(同 SelectMenu 多選 footer 的全選 / 取消全選);無上分隔線。
+            跳過只在標題列 ×(user 2026-11-11「跳過:甲」;甲 = 拿掉下方的「跳過」、只留右上角 ×,agent-decision-card.spec.md「關閉」條);
+            2026-11-10 前第一題左鈕是「跳過」,與 × 同一行為。 */}
         <SurfaceFooter className="justify-between border-t-0">
           {showClear ? (
             <Button variant="tertiary" size="sm" onClick={clearSelection}>
@@ -1895,13 +1916,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
             <span aria-hidden />
           )}
           <div className="flex items-center gap-2">
-            {step > 0 ? (
-              <Button variant="tertiary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>
+            {step > 0 && (
+              <Button variant="tertiary" size="sm" onClick={goBack}>
                 {labels.previous}
-              </Button>
-            ) : (
-              <Button variant="tertiary" size="sm" onClick={skip}>
-                {labels.skip}
               </Button>
             )}
             {isLast ? (

@@ -3,17 +3,23 @@
  * @gate-contract
  *   保證: AgentDecisionCard 選填(`optional`)單選題有選取時,footer 左側出現「清除選取」;沒有選取、必答題、複選題都沒有。
  *         按了 → 這一題回到沒有選取(含「其他」打到一半的字)、鈕消失、焦點交給第一個圓(不掉到 body);再選又出現。
- *         出現 / 消失前後:右側兩鈕(跳過|上一題、下一題|送出)與 footer、決策卡上緣的位置不變;
- *         左緣 = 題目標題左緣(overlay-surface.spec.md「要對齊誰」:只有 SurfaceHeader 時對齊標題)、垂直中線 = 右側兩鈕;
- *         長相 = 同一列的「跳過」(同為 tertiary sm:高、字級、字重、顏色、底色、左右內距、圓角)。
+ *         出現 / 消失前後:右側的鈕(上一題、下一題|送出)與 footer、決策卡上緣的位置不變;
+ *         左緣 = 題目標題左緣(overlay-surface.spec.md「要對齊誰」:只有 SurfaceHeader 時對齊標題)、垂直中線 = 右側主鈕;
+ *         長相 = 同一列的「上一題」(同為 tertiary sm:高、字級、字重、顏色、底色、左右內距、圓角;第 2 題量,第 1 題右側只剩主鈕)。
+ *         footer 組成與跳過(user 2026-11-11「跳過:甲」,agent-decision-card.spec.md「關閉」條):footer 沒有「跳過」——
+ *         第 1 題右側只有「下一題」(O22 選填 / O26 必答)、只有一題的卡只有「送出」(O26)、第 2 題起「上一題 / 下一題」(O23);
+ *         跳過只在標題列 ×:名字 = 「跳過全部，用建議繼續」(O24)、滑上去的 tooltip 同字(O25)、按了卡收起並記下決策回執(O28);
+ *         第 2 題用鍵盤按「上一題」回第 1 題(那顆鈕跟著卸載)→ 焦點在第 1 題已選的圓,不掉到 body(O27)。
+ *         --selftest ⑬–⑰ 各補回一種(footer 又出現跳過 / × 改回「跳過」/ tooltip 換字 / 回第 1 題焦點掉到 body / 按 × 沒反應);
+ *         2026-11-11 前的建置(第 1 題 footer 有「跳過」、× 名字「跳過」)→ O22 / O24 / O25 / O26 / O27 紅。
  *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息 —— 只用鍵盤也一樣:清掉之後只用 Tab 走到「下一題」按 Enter(O10)、
  *         複選題不勾只用 Tab 走到「送出」(O14),途中經過「其他」輸入格不改選取;必答題 Tab 經過也不把建議解換掉(O18)。
  *         讀屏:必答單選題的 radiogroup aria-required="true",選填單選題不是(field.spec.md「SR 識別路徑」)。
  *         選填題題目後有「(選填)」,卡片 / radiogroup / 複選群組的名字也以它結尾;必答題沒有(O19–O21;user 2026-11-10 選「標示:甲」,
  *         agent-decision-card.spec.md Header 條)。--selftest ⑪ 拿掉選填題的字 → O19 紅、⑫ 必答題也加 → O20 紅;214fc699 的建置 → O19 / O21 紅。
  *         量的是 getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked、aria-required、input.value,不讀 class(M37)。
- *   紅: --selftest 逐一補回十二種病(每種開一次新頁;⑪⑫ 見上方「(選填)」那段):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
- *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「跳過」不同 ⑦ 鍵盤走到「清除選取」的路上選取被換掉
+ *   紅: --selftest 逐一補回十七種病(每種開一次新頁;⑪⑫ 見上方「(選填)」那段,⑬–⑰ 見「footer 組成與跳過」那段):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
+ *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「上一題」不同 ⑦ 鍵盤走到「清除選取」的路上選取被換掉
  *       ⑧ 必答題的 radiogroup 沒有 aria-required ⑨ 選填題的 radiogroup 也標 aria-required ⑩ Tab 聚焦「其他」輸入格就選中「其他」
  *       —— 各自必須被指名紅
  *   綠: 現行 agent-panel.tsx(clearSelection / showClear)全綠;修前(本項基底 d27563f1:沒有 optional、沒有清除鈕)
@@ -30,7 +36,7 @@
  *
  * ── 量法 ──
  *
- * 選填 story(DecisionCardOptional)三題:第 1 題單選預選建議解(一打開鈕就在)、第 2 題單選不預選、第 3 題複選;必答對照用 DecisionCardOpen 第 1 題。
+ * 選填 story(DecisionCardOptional)三題:第 1 題單選預選建議解(一打開鈕就在)、第 2 題單選不預選、第 3 題複選;必答對照用 DecisionCardOpen 第 1 / 2 題(含 × 與上一題),只有一題的卡用 DecisionCardSingle。
  * 每一下點擊都是真滑鼠(page.mouse,含 mousedown);鍵盤用 page.keyboard。點完等兩層 setTimeout(0) 再讀。
  * 鍵盤走到「清除選取」= 從第一個圓往前 Tab(O6 / O7),途中會經過「其他」輸入格 —— 按之前先斷言選取仍是第一個圓
  * (Tab 經過輸入格不改選取;2026-11-04 前「聚焦即選中」會在這一步把選取換成「其他」)。
@@ -52,12 +58,16 @@ const staticDirArg = process.argv.find((a) => a.startsWith('--static-dir='))?.sl
 const STATIC = resolve(staticDirArg ?? join(ROOT, 'storybook-static'))
 const OPTIONAL_STORY = 'design-system-components-agentpanel-展示--decision-card-optional'
 const REQUIRED_STORY = 'design-system-components-agentpanel-展示--decision-card-open'
+const SINGLE_STORY = 'design-system-components-agentpanel-展示--decision-card-single'
 const SELFTEST = process.argv.includes('--selftest')
 const CARD = '[class~="group/agent-option"]'
-// 按鈕文字 = agent-panel.tsx DEFAULT_DECISION_LABELS 的 DS 預設(clearSelection / skip / previous / next / submit)
+// 按鈕文字 = agent-panel.tsx DEFAULT_DECISION_LABELS 的 DS 預設(clearSelection / skip / previous / next / submit);DS 預設換字時兩邊一起改
 const CLEAR = '清除選取'
-const NAV = ['跳過', '上一題']
+const NAV = ['上一題']
 const PRIMARY = ['下一題', '送出']
+// 標題列 × 的名字(= labels.skip;user 2026-11-11「跳過:甲」);footer 不得再出現的舊鈕字樣
+const DISMISS = '跳過全部，用建議繼續'
+const OLD_SKIP = '跳過'
 // 選填題題目後的標記 = DEFAULT_DECISION_LABELS.optionalSuffix 的 DS 預設(user 換字時兩邊一起改)
 const OPTIONAL_SUFFIX = '(選填)'
 
@@ -87,7 +97,7 @@ const FAULTS = {
   },
   jump: {
     expect: ['O5'],
-    what: '② 鈕出現時右側兩鈕被推動',
+    what: '② 鈕出現時右側的鈕被推動',
     script: SICK(`() => { for (const f of document.querySelectorAll('[data-slot="surface-footer"]')) { const has = [...f.querySelectorAll('button')].some((b) => b.textContent.trim() === '${CLEAR}'); const want = has ? '20px' : ''; if (f.style.paddingTop !== want) f.style.paddingTop = want } }`),
   },
   focus: {
@@ -107,7 +117,7 @@ const FAULTS = {
   },
   variant: {
     expect: ['O3'],
-    what: '⑥ 鈕的長相跟「跳過」不同(換成實心底)',
+    what: '⑥ 鈕的長相跟「上一題」不同(換成實心底)',
     script: SICK(`() => { for (const b of ${FIND_CLEAR}()) if (b.style.backgroundColor !== 'rgb(0, 0, 255)') b.style.backgroundColor = 'rgb(0, 0, 255)' }`),
   },
   routeSelect: {
@@ -143,6 +153,37 @@ const FAULTS = {
     what: '⑫ 必答題題目後也加了「(選填)」',
     script: SICK(`() => { for (const t of document.querySelectorAll('[data-slot="surface-header"] span[id]')) if (!t.textContent.endsWith('${OPTIONAL_SUFFIX}')) t.append('${OPTIONAL_SUFFIX}') }`, '{ subtree: true, childList: true, characterData: true }'),
   },
+  // ⑬–⑰:footer 組成與跳過(user 2026-11-11「跳過:甲」)
+  skipBack: {
+    scope: 'both',
+    expect: ['O22', 'O26'],
+    what: '⑬ 第 1 題 footer 又出現「跳過」(= 2026-11-11 前)',
+    script: SICK(`() => { for (const f of document.querySelectorAll('[data-slot="surface-footer"]')) { const t = [...f.querySelectorAll('button')].map((b) => b.textContent.trim()); const right = f.lastElementChild; if (!right || t.includes('${OLD_SKIP}') || t.includes('上一題')) continue; const b = document.createElement('button'); b.type = 'button'; b.textContent = '${OLD_SKIP}'; right.prepend(b) } }`, '{ subtree: true, childList: true }'),
+  },
+  dismissName: {
+    scope: 'required',
+    expect: ['O24'],
+    what: '⑭ 標題列 × 的名字改回「跳過」',
+    script: SICK(`() => { for (const b of document.querySelectorAll('[data-slot="surface-header"] button')) if (b.getAttribute('aria-label') !== '${OLD_SKIP}') b.setAttribute('aria-label', '${OLD_SKIP}') }`),
+  },
+  tooltipText: {
+    scope: 'required',
+    expect: ['O25'],
+    what: '⑮ 滑到 × 的 tooltip 字跟名字不同',
+    script: SICK(`() => { for (const t of document.querySelectorAll('[role="tooltip"]')) if (t.textContent !== '${OLD_SKIP}') t.textContent = '${OLD_SKIP}' }`, '{ subtree: true, childList: true, characterData: true }'),
+  },
+  backFocusLost: {
+    scope: 'required',
+    expect: ['O27'],
+    what: '⑯ 第 2 題按「上一題」回第 1 題,焦點掉到 body',
+    script: `document.addEventListener('click', (e) => { const b = e.target instanceof Element && e.target.closest('button'); if (b && b.textContent.trim() === '上一題') setTimeout(() => document.activeElement && document.activeElement.blur(), 0) }, true)`,
+  },
+  dismissDead: {
+    scope: 'required',
+    expect: ['O28'],
+    what: '⑰ 按標題列 × 沒反應(跳過的唯一入口失效)',
+    script: `document.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[data-slot="surface-header"] button')) e.stopPropagation() }, true)`,
+  },
 }
 
 const flushOn = (page) => page.evaluate(() => new Promise((r) => setTimeout(() => setTimeout(r, 0), 0)))
@@ -166,10 +207,13 @@ async function open(id, fault = null) {
 const readCard = (page) => page.evaluate(({ CARD, CLEAR }) => {
   const rect = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom } }
   const cards = [...document.querySelectorAll(CARD)]
-  const root = cards[0] && (() => { let el = cards[0].parentElement; while (el && !(el.getAttribute('role') === 'group' && el.querySelector('button[aria-label="跳過"]'))) el = el.parentElement; return el })()
+  // 卡片根 = 往上第一個含 footer 的 role="group"(複選題的 CheckboxGroup 也是 role="group",但不含 footer);
+  // 2026-11-11 前用「含 aria-label="跳過" 的鈕」認,× 改名後改認結構 —— 根不綁文案,× 的名字另由 O24 量
+  const root = cards[0] && (() => { let el = cards[0].parentElement; while (el && !(el.getAttribute('role') === 'group' && el.querySelector('[data-slot="surface-footer"]'))) el = el.parentElement; return el })()
   if (!root) return null
   const footer = root.querySelector('[data-slot="surface-footer"]')
   const header = root.querySelector('[data-slot="surface-header"]')
+  const dismissBtn = header && header.querySelector('button')
   const title = root.getAttribute('aria-labelledby') && document.getElementById(root.getAttribute('aria-labelledby'))
   const stepEl = header && [...header.querySelectorAll('span')].find((s) => /^\s*\d+ \/ \d+\s*$/.test(s.textContent))
   const look = (b) => { const cs = getComputedStyle(b); return { height: b.getBoundingClientRect().height, fontSize: cs.fontSize, fontWeight: cs.fontWeight, color: cs.color, backgroundColor: cs.backgroundColor, paddingLeft: cs.paddingLeft, paddingRight: cs.paddingRight, borderRadius: cs.borderTopLeftRadius } }
@@ -193,6 +237,7 @@ const readCard = (page) => page.evaluate(({ CARD, CLEAR }) => {
     groupName: optionGroup ? nameOf(optionGroup) : null,
     footer: rect(footer),
     buttons,
+    dismiss: dismissBtn ? { name: dismissBtn.getAttribute('aria-label'), text: dismissBtn.textContent.trim(), rect: rect(dismissBtn) } : null,
     clearCount: clears.length,
     clear: clears[0] ? { rect: rect(clears[0]), look: look(clears[0]), inFooter: !!footer?.contains(clears[0]), firstInFooter: footer ? [...footer.querySelectorAll('button')][0] === clears[0] : false } : null,
     controls: controls.map((c) => ({ id: c.id, role: c.getAttribute('role'), checked: c.getAttribute('aria-checked') })),
@@ -243,22 +288,25 @@ async function runOptional(fault) {
   // ── 第 1 題(選填、預選建議解):一打開就有選取 → 鈕一打開就在 ──
   record('O1', '第 1 題(選填、預選建議解)一打開就有選取,「清除選取」一打開就在 footer、是 footer 的第一顆',
     !!s.clear && s.clear.inFooter && s.clear.firstInFooter, JSON.stringify(s.clear && { inFooter: s.clear.inFooter, first: s.clear.firstInFooter }) ?? '沒有')
-  const nav0 = btn(s, NAV), pri0 = btn(s, PRIMARY)
-  if (!nav0 || !pri0) throw new Error(`footer 讀不到右側兩鈕:${JSON.stringify(s.buttons.map((b) => b.text))}`)
-  const base = { nav: nav0.rect, primary: pri0.rect, footer: s.footer, top: s.rootTop }
-  const steady = (x) => sameRect(btn(x, NAV)?.rect, base.nav) && sameRect(btn(x, PRIMARY)?.rect, base.primary) && sameRect(x.footer, base.footer) && near(x.rootTop, base.top)
-  const where = (x) => `跳過 ${JSON.stringify(btn(x, NAV)?.rect)} vs ${JSON.stringify(base.nav)};footer ${JSON.stringify(x.footer)} vs ${JSON.stringify(base.footer)};上緣 ${x.rootTop} vs ${base.top}`
+  const pri0 = btn(s, PRIMARY)
+  if (!pri0) throw new Error(`footer 讀不到右側主鈕:${JSON.stringify(s.buttons.map((b) => b.text))}`)
+  // 第 1 題 footer 的組成:左「清除選取」(預選建議解 → 一打開就在)、右只有「下一題」—— 沒有「跳過」(user 2026-11-11「跳過:甲」)
+  const right1 = s.buttons.filter((b) => b.text !== CLEAR).map((b) => b.text)
+  record('O22', '第 1 題(選填)footer 右側只有「下一題」,沒有「跳過」(跳過只在標題列 ×)',
+    right1.length === 1 && right1[0] === '下一題', `footer 鈕:${JSON.stringify(s.buttons.map((b) => b.text))}`)
+  if (fault === 'skipBack') return results
+  const base = { primary: pri0.rect, footer: s.footer, top: s.rootTop }
+  const steady = (x) => sameRect(btn(x, PRIMARY)?.rect, base.primary) && sameRect(x.footer, base.footer) && near(x.rootTop, base.top)
+  const where = (x) => `主鈕 ${JSON.stringify(btn(x, PRIMARY)?.rect)} vs ${JSON.stringify(base.primary)};footer ${JSON.stringify(x.footer)} vs ${JSON.stringify(base.footer)};上緣 ${x.rootTop} vs ${base.top}`
   if (s.clear) {
-    record('O2', '左緣 = 題目標題左緣、垂直中線 = 右側兩鈕中線',
-      near(s.clear.rect.x, s.title.x) && near(s.clear.rect.y + s.clear.rect.h / 2, nav0.rect.y + nav0.rect.h / 2),
-      `左緣 ${s.clear.rect.x.toFixed(2)} vs 標題 ${s.title.x.toFixed(2)};中線 ${(s.clear.rect.y + s.clear.rect.h / 2).toFixed(2)} vs ${(nav0.rect.y + nav0.rect.h / 2).toFixed(2)}`)
-    const diff = Object.keys(nav0.look).filter((k) => String(s.clear.look[k]) !== String(nav0.look[k]))
-    record('O3', '長相 = 同一列的「跳過」(tertiary sm:高 / 字級 / 字重 / 顏色 / 底色 / 左右內距 / 圓角)', diff.length === 0,
-      diff.map((k) => `${k} ${s.clear.look[k]} vs ${nav0.look[k]}`).join(';'))
+    record('O2', '左緣 = 題目標題左緣、垂直中線 = 右側主鈕中線',
+      near(s.clear.rect.x, s.title.x) && near(s.clear.rect.y + s.clear.rect.h / 2, pri0.rect.y + pri0.rect.h / 2),
+      `左緣 ${s.clear.rect.x.toFixed(2)} vs 標題 ${s.title.x.toFixed(2)};中線 ${(s.clear.rect.y + s.clear.rect.h / 2).toFixed(2)} vs ${(pri0.rect.y + pri0.rect.h / 2).toFixed(2)}`)
   } else {
-    pre('O2', '左緣 / 中線', '鈕不在'); pre('O3', '長相 = 跳過', '鈕不在')
+    pre('O2', '左緣 / 中線', '鈕不在')
   }
-  if (fault === 'hidden' || fault === 'variant') return results
+  // O3(長相 = 同一列的「上一題」)改在第 2 題量:第 1 題右側只剩主鈕,同一列沒有 tertiary 可比
+  if (fault === 'hidden') return results
 
   // ── 滑鼠按「清除選取」→ 都沒選、鈕消失、焦點第一個圓;再選第二個 → 鈕又出現;兩次轉換右側兩鈕 / footer / 卡上緣都不動 ──
   let reappeared = null
@@ -272,7 +320,7 @@ async function runOptional(fault) {
     await pickRadio(s, 1)
     s = await readCard(page)
     reappeared = s
-    record('O5', '鈕消失、再選第二個鈕又出現:兩次轉換右側兩鈕、footer、決策卡上緣的位置都不變',
+    record('O5', '鈕消失、再選第二個鈕又出現:兩次轉換右側主鈕、footer、決策卡上緣的位置都不變',
       steady(gone) && s.controls[1].checked === 'true' && !!s.clear && steady(s), `消失後 ${where(gone)};再出現 ${!!s.clear} ${where(s)}`)
   } else { pre('O4', '滑鼠按了清掉', '鈕不在'); pre('O5', '消失 / 再出現不跳', '鈕不在') }
   if (fault === 'jump') return results
@@ -336,18 +384,29 @@ async function runOptional(fault) {
     s = await readCard(page)
   }
   if (s.step !== '2 / 3') {
-    for (const [id, label] of [['O11', '不預選的選填題'], ['O12', '不預選沒選前進'], ['O13', '複選沒有鈕'], ['O14', '複選不勾照常送出']]) pre(id, label, '到不了第 2 題')
+    for (const [id, label] of [['O23', '第 2 題 footer 組成'], ['O11', '不預選的選填題'], ['O3', '長相 = 上一題'], ['O12', '不預選沒選前進'], ['O13', '複選沒有鈕'], ['O14', '複選不勾照常送出']]) pre(id, label, '到不了第 2 題')
     return results
   }
 
   // ── 第 2 題(選填、不預選):沒選時沒有鈕、選了才出現(右側是「上一題 / 下一題」);沒選按「下一題」照常前進 ──
   const nav2 = btn(s, NAV)?.rect, pri2 = btn(s, PRIMARY)?.rect
   const emptyAtStart = noneChecked(s) && s.clearCount === 0 && !!btn(s, ['上一題'])
+  const right2 = s.buttons.filter((b) => b.text !== CLEAR).map((b) => b.text)
+  record('O23', '第 2 題 footer 右側 =「上一題 / 下一題」(第 2 題起才有上一題;主鈕與第 1 題同一個位置)',
+    right2.length === 2 && right2[0] === '上一題' && right2[1] === '下一題' && sameRect(pri2, base.primary),
+    `footer 鈕:${JSON.stringify(s.buttons.map((b) => b.text))};主鈕 ${JSON.stringify(pri2)} vs 第 1 題 ${JSON.stringify(base.primary)}`)
   await pickRadio(s, 0)
   s = await readCard(page)
   record('O11', '第 2 題(選填、不預選)沒選時沒有「清除選取」,選了才出現,右側「上一題 / 下一題」不動',
     emptyAtStart && s.controls[0].checked === 'true' && !!s.clear && sameRect(btn(s, NAV)?.rect, nav2) && sameRect(btn(s, PRIMARY)?.rect, pri2),
     JSON.stringify({ emptyAtStart, checked: s.controls.map((c) => c.checked), clear: !!s.clear, buttons: s.buttons.map((b) => b.text) }))
+  const prev2 = btn(s, NAV)
+  if (s.clear && prev2) {
+    const diff = Object.keys(prev2.look).filter((k) => String(s.clear.look[k]) !== String(prev2.look[k]))
+    record('O3', '長相 = 同一列的「上一題」(tertiary sm:高 / 字級 / 字重 / 顏色 / 底色 / 左右內距 / 圓角)', diff.length === 0,
+      diff.map((k) => `${k} ${s.clear.look[k]} vs ${prev2.look[k]}`).join(';'))
+  } else pre('O3', '長相 = 上一題', s.clear ? '同一列沒有「上一題」' : '鈕不在')
+  if (fault === 'variant') return results
   if (s.clear) { await clickCenter(s.clear.rect); s = await readCard(page) }
   if (noneChecked(s)) {
     await clickCenter(btn(s, PRIMARY).rect)
@@ -403,6 +462,11 @@ async function runRequired(fault) {
     pass: [s.titleText, s.cardName, s.groupName].every((t) => typeof t === 'string' && t.length > 0 && !t.includes(OPTIONAL_SUFFIX)),
     detail: JSON.stringify({ title: s.titleText, card: s.cardName, group: s.groupName }) })
   if (fault === 'suffixOnRequired') return results
+  // footer 組成與跳過(user 2026-11-11「跳過:甲」):第 1 題右側只有「下一題」;標題列 × 的名字 =「跳過全部，用建議繼續」
+  const right1 = s.buttons.filter((b) => b.text !== CLEAR).map((b) => b.text)
+  results.push({ id: 'O24', label: `標題列 × 的名字(aria-label)=「${DISMISS}」`, pass: s.dismiss?.name === DISMISS,
+    detail: JSON.stringify(s.dismiss) })
+  if (fault === 'dismissName') return results
   // 必答題(預選建議解):焦點在第一個圓 → 只用 Tab 走到「下一題」,途中經過「其他」輸入格不能把建議解換成「其他」
   await page.evaluate((cid) => document.getElementById(cid)?.focus(), s.controls[0].id)
   const walked = await tabUntil((x) => x.active?.text === '下一題')
@@ -415,6 +479,59 @@ async function runRequired(fault) {
   s = await readCard(page)
   results.push({ id: 'O15', label: '必答題(預選)有選取、換選第二個之後,都沒有「清除選取」', pass: preselected && s.controls[1].checked === 'true' && s.clearCount === 0,
     detail: JSON.stringify({ preselected, second: s.controls[1].checked, clear: s.clearCount }) })
+
+  // ── 第 2 題用鍵盤按「上一題」回第 1 題:那顆鈕跟著卸載(第 1 題沒有上一題)→ 焦點交給第 1 題已選的圓(這裡是剛換選的第二個),不掉到 body ──
+  const picked = s.controls[1].id
+  await clickCenter(btn(s, PRIMARY).rect)
+  await settleAfterInteraction(page, { frames: 5 })
+  s = await readCard(page)
+  if (s?.step !== '2 / 3' || !btn(s, NAV)) {
+    results.push({ id: 'O27', label: '第 2 題按「上一題」回第 1 題,焦點在第 1 題已選的圓', pass: false, detail: `前置不成立:到不了第 2 題或沒有上一題(${s?.step};${JSON.stringify(s?.buttons.map((b) => b.text))})` })
+  } else {
+    await page.evaluate(() => [...document.querySelectorAll('[data-slot="surface-footer"] button')].find((b) => b.textContent.trim() === '上一題')?.focus())
+    await press('Enter')
+    s = await readCard(page)
+    results.push({ id: 'O27', label: '第 2 題用鍵盤按「上一題」回第 1 題(那顆鈕跟著卸載)→ 焦點在第 1 題已選的圓,不在 body',
+      pass: s?.step === '1 / 3' && s.active?.id === picked && s.controls[1].checked === 'true' && !s.active?.isBody,
+      detail: JSON.stringify({ step: s?.step, active: s?.active, picked, checked: s?.controls.map((c) => c.checked) }) })
+  }
+  if (fault === 'backFocusLost') return results
+
+  // ── 按標題列 ×(跳過的唯一入口)→ 卡收起、對話多一則決策回執(DecisionCardScene 的 onSkip 與 onSubmit 同一個收尾) ──
+  if (!s?.dismiss) {
+    results.push({ id: 'O28', label: '按標題列 × → 卡收起、記下決策回執', pass: false, detail: '前置不成立:讀不到標題列 ×' })
+  } else {
+    const receiptBefore = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
+    await clickCenter(s.dismiss.rect)
+    await settleAfterInteraction(page, { frames: 5 })
+    const after = await readCard(page)
+    const receipt = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
+    results.push({ id: 'O28', label: '按標題列 ×(跳過全部)→ 卡收起、對話多一則決策回執', pass: !receiptBefore && after === null && receipt,
+      detail: `按之前已有回執 ${receiptBefore};按之後卡${after ? '還在' : '收起'}、回執 ${receipt ? '有' : '沒有'}` })
+  }
+  if (fault === 'dismissDead') return results
+
+  // ── 只有一題的卡:footer 只有「送出」;兩支 story 的第 1 題合起來就是 O26 ──
+  await open(SINGLE_STORY, fault)
+  s = await readCard(page)
+  if (!s || s.step !== '(單題)') throw new Error(`單題卡讀不到(${s?.step})`)
+  const rightSingle = s.buttons.filter((b) => b.text !== CLEAR).map((b) => b.text)
+  results.push({ id: 'O26', label: 'footer 沒有「跳過」:必答題第 1 題右側只有「下一題」、只有一題的卡只有「送出」',
+    pass: right1.length === 1 && right1[0] === '下一題' && rightSingle.length === 1 && rightSingle[0] === '送出',
+    detail: JSON.stringify({ 必答第1題: right1, 單題: rightSingle }) })
+  if (fault === 'skipBack') return results
+
+  // ── 滑到 × → tooltip 字 = 名字(icon-only Button 由 aria-label 自動帶出;button.tsx「沒有文字的按鈕 + aria-label → 自動包 Tooltip」) ──
+  const d = s.dismiss
+  let tip = null
+  if (d) {
+    await page.mouse.move(d.rect.x + 1, d.rect.y + 1)
+    await page.mouse.move(d.rect.x + d.rect.w / 2, d.rect.y + d.rect.h / 2)
+    // Radix 把 tooltip 文字另放一份在視覺隱藏的 role="tooltip"(讀屏念的就是它)—— 等它掛上(attached;1px 視覺隱藏不算 visible)
+    tip = await page.waitForSelector('[role="tooltip"]', { state: 'attached', timeout: 5_000 }).then((el) => el.evaluate((n) => n.textContent)).catch(() => null)
+  }
+  results.push({ id: 'O25', label: `滑到標題列 × 出現的 tooltip =「${DISMISS}」`, pass: tip === DISMISS, detail: tip === null ? 'tooltip 沒出現(5 秒)' : `tooltip「${tip}」` })
+  await page.mouse.move(0, 0)
   return results
 }
 
