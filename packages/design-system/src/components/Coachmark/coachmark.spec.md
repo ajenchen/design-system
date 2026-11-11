@@ -219,7 +219,7 @@ const steps = [
 
 ## 邊界狀態
 
-disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 header py-tight 精簡;ui-size / 控件大小繼承 page density),SSOT 見 `tokens/density/density.spec.md` L47;empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
+disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 header py-tight 精簡;ui-size / 控件大小跟觸發點那一區),SSOT 見 `tokens/density/density.spec.md` 情境 1「浮層跟觸發點」;empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
 
 - **步數 > 5**:元件不機械限制 — `step.total` 照實顯示(如「6 of 8」);≤ 5 是設計建議(見 Multi-step Tour),超過應改靜態 onboarding 頁
 - **無 `image`**:整個 Media 區不渲染(非 skeleton 佔位,見「Props 結構」)

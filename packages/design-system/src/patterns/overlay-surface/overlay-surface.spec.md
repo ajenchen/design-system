@@ -197,7 +197,7 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 不要另外用表單控制項(`CheckboxGroup` + 裸 `Checkbox`)自組。
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
-  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:370`),DataTable 的欄位顯示面板也已經是
+  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:378`),DataTable 的欄位顯示面板也已經是
   (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。

@@ -22,9 +22,9 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
-**視覺對齊 Dialog**：外殼 token 與 Dialog 完全一致（`bg-surface-raised` / `border-border` / `rounded-lg` / `elevation-200`）。差別僅兩點：(1) Popover 是 non-modal 輕量浮層不阻斷背景，(2) **layout-space 鎖 `md`** — header / footer padding 不隨頁面放大（輕量 chrome 保持精簡）；**ui-size 不鎖、繼承 page** — 內部控件隨 page 放大、對齊觸發點（2026-06-15 改,原 `data-density` master switch,見 `popover.tsx` docblock）。
+**視覺對齊 Dialog**：外殼 token 與 Dialog 完全一致（`bg-surface-raised` / `border-border` / `rounded-lg` / `elevation-200`）。差別僅兩點：(1) Popover 是 non-modal 輕量浮層不阻斷背景，(2) **layout-space 鎖 `md`** — header / footer padding 不隨頁面放大（輕量 chrome 保持精簡）；**ui-size 不鎖、跟觸發點那一區** — 內部控件跟觸發點同一檔(2026-06-15 起不鎖,原 `data-density` master switch;2026-11-11 起來源從「整頁」改成「觸發點那一區」,user「浮層密度:跟按鈕」,`tokens/density/density.spec.md`「浮層跟觸發點」、`lib/overlay-density.tsx`)。
 
-**Content size canonical（2026-04-29,2026-06-15 更新）**:ui-size 繼承 page → **fields(Input / Select / Checkbox)預設隨 page ui-size**(md page = `size="md"` field-height-md 32px;lg page 放大,與觸發點一致)。其餘細節走 SSOT pointer:
+**Content size canonical（2026-04-29,2026-06-15 更新）**:ui-size 跟觸發點那一區 → **fields(Input / Select / Checkbox)預設隨那一區的 ui-size**(一般密度 = `size="md"` field-height-md 32px;大密度放大到 36,與觸發點一致)。其餘細節走 SSOT pointer:
 - Chrome corner buttons(close X / refresh / dismiss)→ `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」(sm native + v5 trick)
 - Row inline action(panel list row 內 Eye / drag / suffix toggle)→ `patterns/element-anatomy/inline-action.spec.md`「尺寸對照」table(md = 16+18 hover bg)
 - Footer action button → `action-bar.spec.md`(輕量 chrome,sm canonical)
@@ -145,7 +145,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 - **Viewport 邊緣**:`collisionPadding = 8` 自動推開(見「Viewport 邊距 canonical」)。
 - **嵌套 Popover**:禁止(見「禁止事項」)。
 - **Dark mode**:殼走 semantic token 自動 adapt(見 `color.spec.md`)。
-- **Density**:layout-space 鎖 `md`(header / footer padding 精簡);ui-size 繼承 page(見「定位」段)。
+- **Density**:layout-space 鎖 `md`(header / footer padding 精簡);ui-size 跟觸發點那一區(見「定位」段;Trigger 與 Anchor 都登記,區間 DatePicker 只用 Anchor 也照樣讀得到)。
 - **空內容 / loading / error / validation ownership**:Popover shell **不擁有**這些狀態——由 `PopoverBody` 內的 consumer 內容層負責:空狀態放 `<Empty>`、載入放 `<Skeleton>`、錯誤放 `<Alert>`、表單驗證放 `<Field>` 的 `FieldError`。structural pattern 的職責邊界 SSOT 見 `../../patterns/overlay-surface/overlay-surface.spec.md` SurfaceBody「邊界」段(loading / error / empty 屬 consumer 內容層)。
 - **disabled ownership**:Popover 容器無 disabled 態;trigger 的 disabled 由 trigger 元件自管(`<Button disabled>`),content 內控件各自的 disabled 由該控件負責(對應 `StateBehavior` story「職責邊界」段)。
 

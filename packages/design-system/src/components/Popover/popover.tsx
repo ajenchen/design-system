@@ -12,13 +12,15 @@ import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
 import { useI18n } from "@/design-system/lib/i18n/i18n-context"
+import { OverlayAnchorScope, useOverlayAnchorRegistry, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
 
 /**
  * Popover — Radix Popover + 設計系統 token
  *
  * ── 視覺 ──
  * 與 Dialog 對齊：bg-surface-raised / rounded-lg / border-border / elevation-200。
- * layout-space 鎖 md（輕量浮層 header py-tight 保持精簡）；ui-size 繼承 page（內部控件對齊觸發點，2026-06-15 改，原 data-density master switch）。
+ * layout-space 鎖 md（輕量浮層 header py-tight 保持精簡）；ui-size 跟觸發點那一區（內部控件對齊觸發點；2026-06-15 起不鎖、
+ * 2026-11-11 起從「跟整頁」改成「跟觸發點」—— user「浮層密度:跟按鈕」,lib/overlay-density.tsx）。
  *
  * ── 結構 ──
  * PopoverContent：外殼（bg / border / radius / shadow / density），無內距。
@@ -32,35 +34,34 @@ import { useI18n } from "@/design-system/lib/i18n/i18n-context"
  * 不加 X(click-outside / Esc 即可)。
  */
 
-// 觸發點節點(2026-10-21,r1b fields N1):PopoverContent 在關閉的那一刻就要做 Radix 卸載時才做的「還給觸發點」
-// (lib/overlay-focus-return.ts useExitStartFocusReturn),Radix 的 context 不外露 → Root 開一個 ref、Trigger 把節點登記進來。
-// 只多記一個節點,Root / Trigger 的 props 與行為原樣轉給 Radix。
-const PopoverTriggerNodeContext = React.createContext<React.MutableRefObject<HTMLElement | null> | null>(null)
-
-const Popover = ({ children, ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) => {
-  const triggerNodeRef = React.useRef<HTMLElement | null>(null)
-  return (
-    <PopoverPrimitive.Root {...props}>
-      <PopoverTriggerNodeContext.Provider value={triggerNodeRef}>{children}</PopoverTriggerNodeContext.Provider>
-    </PopoverPrimitive.Root>
-  )
-}
+// 觸發點 / 錨點節點登記處(lib/overlay-density.tsx,全部小浮層共用一支):Root 開登記處、Trigger 與 Anchor 把節點登記進來。
+// 兩個用途:(1) 密度跟觸發點 —— Content 從錨點(沒有就觸發點)那一區讀兩軸檔位(density.spec.md「浮層跟觸發點」);
+// (2) 焦點歸還(2026-10-21,r1b fields N1)—— PopoverContent 在關閉的那一刻就要做 Radix 卸載時才做的「還給觸發點」
+// (lib/overlay-focus-return.ts useExitStartFocusReturn),Radix 的 context 不外露。Root / Trigger / Anchor 的 props 與行為原樣轉給 Radix。
+const Popover = ({ children, ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) => (
+  <PopoverPrimitive.Root {...props}>
+    <OverlayAnchorScope>{children}</OverlayAnchorScope>
+  </PopoverPrimitive.Root>
+)
 Popover.displayName = "Popover"
 
 const PopoverTrigger = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger>
 >((props, ref) => {
-  const triggerNodeRef = React.useContext(PopoverTriggerNodeContext)
-  const composedRef = React.useCallback((node: HTMLButtonElement | null) => {
-    if (triggerNodeRef) triggerNodeRef.current = node
-    if (typeof ref === 'function') ref(node)
-    else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
-  }, [ref, triggerNodeRef])
+  const composedRef = useRegisterOverlayNode("trigger", ref)
   return <PopoverPrimitive.Trigger ref={composedRef} {...props} />
 })
 PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
-const PopoverAnchor = PopoverPrimitive.Anchor
+
+const PopoverAnchor = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Anchor>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Anchor>
+>((props, ref) => {
+  const composedRef = useRegisterOverlayNode("anchor", ref)
+  return <PopoverPrimitive.Anchor ref={composedRef} {...props} />
+})
+PopoverAnchor.displayName = PopoverPrimitive.Anchor.displayName
 const PopoverClose = PopoverPrimitive.Close
 
 // AutoFocus canonical(對齊 Dialog / Sheet / Material / Polaris)—
@@ -115,7 +116,10 @@ const PopoverContent = React.forwardRef<
   // 收起動畫不延後焦點歸還(lib/overlay-focus-return.ts useExitStartFocusReturn;2026-10-21 r1b fields N1):
   // 關閉的那一刻就跑 consumer 的 onCloseAutoFocus,沒被擋再走 Radix 非 modal 的預設 —— 沒互動過外面就還給觸發點
   // (@radix-ui/react-popover 1.1.15 dist/index.mjs PopoverContentNonModal 的 onCloseAutoFocus / onInteractOutside,這裡照抄同一個判斷)。
-  const triggerNodeRef = React.useContext(PopoverTriggerNodeContext)
+  const anchorRegistry = useOverlayAnchorRegistry()
+  const triggerNodeRef = anchorRegistry?.trigger ?? null
+  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx);版面間距那一軸下面再鎖回 md
+  const regionDensity = useTriggerRegionDensity()
   const interactedOutsideRef = React.useRef(false)
   const resolvedOpenAutoFocus = onOpenAutoFocus ?? handlePopoverOpenAutoFocus
   const exitFocus = useExitStartFocusReturn({
@@ -148,10 +152,12 @@ const PopoverContent = React.forwardRef<
           collisionPadding={collisionPadding}
           // 錨點失去版面時不畫(同 Tooltip;詳 tokens/elevation/overlay-geometry.ts)
           hideWhenDetached={hideWhenDetached}
-          // Layout-space lock(2026-06-15 canonical,原 data-density="md" 改為只鎖 layout-space):Popover 是
-          // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;但
-          // **ui-size 不鎖、繼承 page** → 內部 field 控件 / dismiss 按鈕隨 page 放大,跟觸發點一致(decouple)。
-          // [data-layout-space="md"] 有 reset selector(layoutSpace.css「md reset selector」那段)→ lg page 上正確 reset 回 md。
+          // 控制項大小跟觸發點那一區(2026-11-11 user「浮層密度:跟按鈕」;lib/overlay-density.tsx):
+          // 一般密度頁面裡的大密度區塊打開的下拉,選項列 = 該區塊的值,跟觸發點對齊。
+          {...regionDensity}
+          // 版面間距鎖 md(2026-06-15 canonical,原 data-density="md" 改為只鎖 layout-space):Popover 是
+          // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;寫在上面那組屬性之後,
+          // 覆蓋讀到的版面間距檔位。[data-layout-space="md"] 有 reset selector(layoutSpace.css「鎖回一般密度」段)→ lg 上正確回到 md。
           data-layout-space="md"
           onOpenAutoFocus={(e) => { interactedOutsideRef.current = false; resolvedOpenAutoFocus(e) }}
           onCloseAutoFocus={(e) => { exitFocus.onCloseAutoFocus(e); interactedOutsideRef.current = false }}

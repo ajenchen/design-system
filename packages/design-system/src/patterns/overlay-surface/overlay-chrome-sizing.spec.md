@@ -35,7 +35,7 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 | Figma | 16 | 13-14 |
 | GitHub Primer | 16 | 14 |
 
-**跟「density 鎖 md」同源**:Popover / Coachmark 把「輕量」貫穿 chrome:density 鎖 md + chrome button 透過 v5 unbounded trick 縮 layout + **title 小一級**。三件一起構成「輕量浮層」視覺語言,跟 Modal heavy 形成明確分化。
+**跟「版面間距鎖 md」同源**:Popover / Coachmark 把「輕量」貫穿 chrome:版面間距(layout-space)鎖 md(控制項大小不鎖、跟觸發點那一區,`tokens/density/density.spec.md`「浮層跟觸發點」)+ chrome button 透過 v5 unbounded trick 縮 layout + **title 小一級**。三件一起構成「輕量浮層」視覺語言,跟 Modal heavy 形成明確分化。
 
 **禁止**:consumer 自刻 `<h2 className="text-body-lg">` 繞 `PopoverTitle` — 若需要大 title 代表該用 Dialog 而非 Popover(選錯元件)。
 
@@ -67,23 +67,23 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 
 ## Size canonical(per-overlay default size SSOT,2026-05-04)
 
-> **背景**:Popover / HoverCard 是「輕量浮層」(chrome 45 / slot 21 / title 小一級 / density 鎖 md);Dialog / Sheet 是「heavy commitment chrome」(chrome 48 / slot 24)。Per-surface body+footer button/field default size 跟「輕量 vs heavy」分化對應。
+> **背景**:Popover / HoverCard 是「輕量浮層」(chrome 45 / slot 21 / title 小一級;Popover 版面間距鎖 md、HoverCard 不鎖 —— 兩者控制項大小都跟觸發點那一區,`tokens/density/density.spec.md` 情境 1 表);Dialog / Sheet 是「heavy commitment chrome」(chrome 48 / slot 24)。Per-surface body+footer button/field default size 跟「輕量 vs heavy」分化對應。
 >
 > **依據**:Linear / Notion / Airtable / Carbon / Material Menu / Atlassian Popup popover bodies 共識用 sm-density;Material AlertDialog / Carbon Modal / shadcn Dialog 共識用 md。world-class 雙派分明依「浮層密度」分。 <!-- @benchmark-unverified -->
 
 | Overlay | Header chrome | Body field controls | Body inline action(drag handle / trash / +CTA)| Footer action Buttons |
 |--|--|--|--|--|
 | **Popover** | unbounded sm → 21 slot(輕)| **sm**(輕量 dense info)| inline-action sm/md = **16+18** | **sm** |
-| **HoverCard** | (同 Popover)| **sm** | 同 | **sm** |
+| **HoverCard** | unbounded sm → 21 slot(版面間距不鎖,跟觸發點那一區)| **sm** | 同 | **sm** |
 | **Dialog** | unbounded sm → 24 slot | **md** | inline-action sm/md = 16+18 | **md** |
 | **Sheet** | (同 Dialog)| **md** | 同 | **md** |
 | **BulkActionBar** | N/A | N/A | N/A | **md**(default footer placement);未來 top-toolbar variant → sm |
 
 **核心 invariant**:overlay surface 內 **body field controls + footer Buttons 同一 size**(per-surface 一致)。違反 = 視覺重量割裂。
 
-**為什麼 Popover all-sm 而非 mix**:Popover 整體已是「輕量浮層」設計語言(chrome 短、title 小、density 鎖 md)。如果 body 用 md fields(32 高)+ footer sm Buttons(28 高),視覺重量割裂破壞「輕量」一致性。**all-sm 是內部一致性**(body 28 / footer 28 同高,延伸 chrome 輕一級的密度)。
+**為什麼 Popover all-sm 而非 mix**:Popover 整體已是「輕量浮層」設計語言(chrome 短、title 小、版面間距鎖 md)。如果 body 用 md fields(一般密度 32 / 大密度 36 高)+ footer sm Buttons(28 / 32 高),視覺重量割裂破壞「輕量」一致性。**all-sm 是內部一致性**(body 與 footer 同高:一般密度 28、大密度 32,延伸 chrome 輕一級的密度)。
 
-**為什麼 Dialog all-md 而非 mix**:Dialog 是 heavy commitment chrome,body 操作往往 form-heavy,md (32) 是 Field family default(`--field-height-md` SSOT),footer Buttons 同 md commit 視覺重量配得上 modal 結論性。
+**為什麼 Dialog all-md 而非 mix**:Dialog 是 heavy commitment chrome,body 操作往往 form-heavy,md(一般密度 32 / 大密度 36)是 Field family default(`--field-height-md` SSOT),footer Buttons 同 md commit 視覺重量配得上 modal 結論性。
 
 **Drag handle / inline-action sizing**(對齊 `patterns/element-anatomy/inline-action.spec.md`):
 - Field sm/md 同 row → inline action **16 icon / 18 hover bg**
@@ -154,7 +154,7 @@ const CHROME_UNBOUNDED_SLOT =
 - Dialog header 只有 title + close X(sm,`dismiss` → 自動 `data-unbounded`)→ layout 佔位 24 → header = 48 md / 56 lg ✓
 - Dialog header 有 refresh/share(text variant)/ close(dismiss)sm → 全自動標 `data-unbounded` → 全部 layout 佔位 24 → header 仍 48/56
 - Dialog header 塞 primary sm(bounded,無 `data-unbounded`)→ primary layout 佔 28 → header = 52 md(自然長)
-- Popover header 同 pattern:48 md / 56 lg
+- Popover header 同 pattern,但版面間距鎖 md:unbounded 時 21 + 12 × 2 = **45**(外加 1px 底線,實量一般 / 大密度都是 46;稽核 2026-11-11 抓到原寫「48 md / 56 lg」是錯的,與上表 45 及 `tokens/density/density.spec.md` 情境 1「Tier alignment」矛盾)
 
 **Rationale**:Unbounded 無 bg/border → 2×py-tight 過大,縮 layout 佔位至 xs(24)讓 header = chrome-header-height = 48 自然閉合,跟 Sidebar / page header / top bar 對齊。Bounded 自帶視覺重量,自然長到 52+,跟 footer 一致。
 

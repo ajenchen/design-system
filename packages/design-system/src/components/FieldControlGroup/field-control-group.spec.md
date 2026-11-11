@@ -106,7 +106,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 </FieldControlGroup>
 ```
 
-**Popover 鎖 md**(進 Popover,density 鎖 md):children 自然吃 md(Popover density canonical)。
+**進 Popover**:Popover 只把版面間距鎖 md,控制項大小跟觸發點那一區(`tokens/density/density.spec.md` 情境 1「浮層跟觸發點」)→ children 的高度跟觸發點同一檔,間距吃 md。(2026-11-11 前這句寫「density 鎖 md、children 吃 md」—— 2026-06-15 起就只鎖版面間距,寫下的當天已不成立,稽核 R7-05。)
 
 ## A11y 預設
 
