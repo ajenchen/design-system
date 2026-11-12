@@ -4104,7 +4104,10 @@ function DataTableInner<TData>(
           className={cn(
             // 焦點框 = 全域 `:focus-visible` 外描邊(往外,理由見下方 `canSort && 'rounded-md'` 那段 2026-09-10 註解);這裡不能留 outline-none ——
             // 那會把這個 tab stop 的框整個吃掉(H2a 同款)。2026-10-21 前這句寫「由 canSort 那行的 focus-ring-inset 負責」,與下方「改回往外」矛盾(r1b DT-02)。
-            'flex items-center min-w-0 flex-1 gap-1',
+            // label ↔ 排序指示 8px(`gap-2`)= label ↔ 後綴 slot 的全 DS 間距(tabs.spec.md「單個 Trigger 內部」label ─gap-2─ suffix、
+            // button.spec.md icon ↔ label 實際 8px、item-anatomy.spec.md「suffix 獨立後綴 gap 8px」);2026-11-12 前是 4px(`gap-1`),
+            // 那是 2026-05-22 搬遷時帶進來的值,沒有規格或決策依據(SSOT = data-table.spec.md「Multi-sort header」列)。
+            'flex items-center min-w-0 flex-1 gap-2',
             // 這一層**不再跟著欄位 align 走**(見外層說明):表頭一律靠左。
             // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
             // hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
@@ -4126,10 +4129,10 @@ function DataTableInner<TData>(
             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
           </TruncatedText>
           {canSort && sortDir && (
-            // 排序指示 = 箭頭 + (多重排序時)順位數字,一個單位、同進同出,佔原本單一箭頭的位置(label 之後、gap-1);
+            // 排序指示 = 箭頭 + (多重排序時)順位數字,一個單位、同進同出,佔原本單一箭頭的位置(label 之後、gap-2 = 8px);
             // 寬高由「箭頭 + 數字」決定(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
             // 箭頭 ↔ 數字 2px(`gap-0.5`)= user 2026-10-30 視覺偏好(「不用給我看2px和4px的差異,我自己早就看過了,我認為視覺上2px比較好看,主要是不確定合理性」)
-            // + AI 合理性查證(data-table.spec.md 同一列):元件內間距由該列自管;2px 比 label ↔ 指示的 4px(gap-1)近一級,數字跟著箭頭成組、不跟 label 成組 ——
+            // + AI 合理性查證(data-table.spec.md 同一列):元件內間距由該列自管;2px 比 label ↔ 指示的 8px(gap-2)更近,數字跟著箭頭成組、不跟 label 成組 ——
             // 依 tokens/layoutSpace/layoutSpace.spec.md 規則 3「gap 只看親疏不看 role」的親疏原理(Gestalt proximity)類推(同範疇的間距該規則交給元件 spec 自管)。
             <span data-sort-indicator="" className="inline-flex items-center gap-0.5 shrink-0">
               {/* 2026-05-18 改 per user 拍板:DataTable sort 跟 row size 變(轉述)+「做完」approval:

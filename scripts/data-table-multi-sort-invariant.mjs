@@ -7,7 +7,7 @@
  *          多重排序第 1 / 中間 / 最後一欄各點一次,其他欄與順位不動;沒排序的欄一般點擊取代全部、Shift 加到最後;數字欄第一下升冪);
  *        N 數字:只有一欄排序不顯示數字、≥2 欄每個被排序的欄都有、第 10 個以後「9+」、箭頭與數字同進同出;
  *        G 長相(md 專案排程 + 設計規格「元件檢閱器」sm / lg 兩種尺寸):數字在箭頭右側、間距 2px、字級 / 行高 / 字重 = 表頭字、顏色 = 箭頭
- *          (靜止與滑過都相等)、垂直置中、指示佔原本單一箭頭的位置(label 之後 4px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
+ *          (靜止與滑過都相等)、垂直置中、指示佔原本單一箭頭的位置(label 之後 8px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
  *        M ⌄ 選單:多重排序時也有「取消排序」、按了**只拿掉這一欄**、後面順位往前補(第 1 欄與中間欄各按一次);已排序的欄只列相反方向一項、
  *          按了只翻這一欄;沒排序的欄兩項都列、按了取代全部;只有一欄排序時按「取消排序」= 沒有排序(lib/sort-cycle.ts `nextSorting`,
  *          「升冪 / 降冪排序」出不出 `columnMenuShowsSortDirection`,user 2026-11-10 PR #172 留言);
@@ -338,6 +338,8 @@ const geo = (col, hover = false) => page.evaluate(([col]) => {
   }
 }, [col, hover])
 const near = (a, b, tol) => a != null && b != null && Math.abs(a - b) <= tol
+/** label ↔ 排序指示的間距(px)= data-table.tsx 排序區的 `gap-2`;SSOT = data-table.spec.md「Multi-sort header」列 */
+const LABEL_INDICATOR_GAP = 8
 
 /** 每一列 `hitBy` = 會讓它紅的破法;--selftest 下不在 hitBy 的破法 → 對照列(必須綠) */
 const gcheck = (breaks, hitBy, name, pass, detail) => check('G', name, pass, detail, { control: !hitBy.some((b) => breaks.includes(b)) })
@@ -367,7 +369,7 @@ async function geometryChecks(tag, breaks, target = G_ROADMAP) {
     if (off.length) { instrument(`G ${tag} 尺寸`, `量到的不是要量的尺寸:${off.join(';')}`); return }
   }
   gcheck(breaks, ['number-in-single'], `${tag} 只有一欄排序:指示 = 一個箭頭(寬 ${single.arrow.w}px),沒有數字`, near(single.indicator.w, single.arrow.w, 0.5) && single.num === null, `指示寬 ${single.indicator.w} 數字 ${JSON.stringify(single.num)}`)
-  gcheck(breaks, ['slot-shift'], `${tag} 只有一欄排序:箭頭在 label 盒之後 4px(同修前)`, near(single.indicator.l - (single.label?.r ?? NaN), 4, 0.5), `${(single.indicator.l - (single.label?.r ?? NaN)).toFixed(2)}px`)
+  gcheck(breaks, ['slot-shift'], `${tag} 只有一欄排序:箭頭在 label 盒之後 8px`, near(single.indicator.l - (single.label?.r ?? NaN), LABEL_INDICATOR_GAP, 0.5), `${(single.indicator.l - (single.label?.r ?? NaN)).toFixed(2)}px`)
   const rs = await readHeaders()
   gcheck(breaks, ['number-in-single'], `${tag} 只有一欄排序:同進同出(沒有數字)`, rs.outOfSync.length === 0, rs.outOfSync.join(';'))
   if (breaks.includes('number-in-single')) return
@@ -383,7 +385,7 @@ async function geometryChecks(tag, breaks, target = G_ROADMAP) {
     gcheck(breaks, ['number-style', 'height-grow'], `${tag} ${name} 數字字級 / 行高 / 字重 / 字族 = 表頭字`, sameType, `數字 ${JSON.stringify(g.numFont)} 表頭字 ${JSON.stringify(g.labelFont)}`)
     gcheck(breaks, ['number-style'], `${tag} ${name} 數字顏色 = 箭頭顏色(靜止)`, g.numFont.color === g.arrowColor, `數字 ${g.numFont.color} 箭頭 ${g.arrowColor}`)
     gcheck(breaks, ['number-offset'], `${tag} ${name} 數字與箭頭垂直置中對齊(±0.75px)`, near(g.num.cy, g.arrow.cy, 0.75), `數字中線 ${g.num.cy.toFixed(2)} 箭頭中線 ${g.arrow.cy.toFixed(2)}`)
-    gcheck(breaks, ['slot-shift'], `${tag} ${name} 指示佔原本箭頭的位置:label 盒之後 4px`, near(g.indicator.l - (g.label?.r ?? NaN), 4, 0.5), `label 盒右緣 → 指示左緣 ${(g.indicator.l - (g.label?.r ?? NaN)).toFixed(2)}px`)
+    gcheck(breaks, ['slot-shift'], `${tag} ${name} 指示佔原本箭頭的位置:label 盒之後 8px`, near(g.indicator.l - (g.label?.r ?? NaN), LABEL_INDICATOR_GAP, 0.5), `label 盒右緣 → 指示左緣 ${(g.indicator.l - (g.label?.r ?? NaN)).toFixed(2)}px`)
     gcheck(breaks, ['gap-4'], `${tag} ${name} 指示寬 = 箭頭 + 2 + 數字`, near(g.indicator.w, g.arrow.w + 2 + g.num.w, 0.6), `指示 ${g.indicator.w.toFixed(2)} 箭頭 ${g.arrow.w} 數字 ${g.num.w.toFixed(2)}`)
     gcheck(breaks, ['height-grow', 'number-style'], `${tag} ${name} 指示高 = 表頭字的行高(數字沒有把指示撐得比 label 高)`, near(g.indicator.h, g.label?.h, 0.5), `指示 ${g.indicator.h.toFixed(2)} label ${g.label?.h}`)
   }

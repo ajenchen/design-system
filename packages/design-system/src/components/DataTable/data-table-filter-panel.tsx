@@ -434,7 +434,7 @@ function DataTableFilterPanelInner<TData>({
         {/* Inline CTA(2026-05-04 A1)— root-level「加篩選」用 tertiary(視覺輕量但有邊界,
             符合 root-CTA 視覺重量);nested 內「加入巢狀篩選」走 text variant(更輕,在 group 內 inline)
             不放 SurfaceFooter:條件與「加入」屬同一語義群,中間插 footer 切斷敘事。
-            同一排最右「清除全部」(2026-11-11,同排序面板):text variant;沒有條件列時不出現;按下 = 回到空的篩選(保留 flat / nested,mode 掛載後鎖死) */}
+            同一排最右「清除全部」(2026-11-11,同排序面板):tertiary variant(user 2026-11-12 「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」);沒有條件列時不出現(初次掛載自動加的那一列空條件也算一列 —— 同一句原話採用的建議選項「有任何一列就出現」);按下 = 回到空的篩選(保留 flat / nested,mode 掛載後鎖死) */}
         <div className="flex items-center justify-between gap-2" data-panel-add-row="">
           <Button
             ref={addRef}
@@ -445,7 +445,7 @@ function DataTableFilterPanelInner<TData>({
             {value.mode === 'nested' ? labels.addGroup : labels.addFilter}
           </Button>
           {showClearAll ? (
-            <Button variant="text" size="sm" onClick={(e) => bulk.run(e, value.mode === 'flat' ? createEmptyFilterTree('flat') : createEmptyFilterTree('nested'), labels.clearAllDone)}>{labels.clearAll}</Button>
+            <Button variant="tertiary" size="sm" onClick={(e) => bulk.run(e, value.mode === 'flat' ? createEmptyFilterTree('flat') : createEmptyFilterTree('nested'), labels.clearAllDone)}>{labels.clearAll}</Button>
           ) : null}
         </div>
         {bulk.liveRegion}

@@ -7,7 +7,7 @@
  *              對照組才量得到);
  *         (2) 步驟的 header(`li[data-state]` 的第一個子元素,含其子樹、不含內容區)沒有 `aria-expanded` / `aria-controls`——
  *             header 是「跳到那一步」,不是開合鈕(2026-09-30 退役「可同時打開多步」模式;2026-07-05 `7e69aad7` 加的 ARIA 一併拿掉)。
- *         (3) 步驟標題區 → 內容 = `--layout-space-loose`(A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:一步的內容是表單的好幾個欄位 = 兩塊以上並列);
+ *         (3) 步驟標題區 → 內容 = `--layout-space-loose`(A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:一步的內容是表單的好幾個欄位 = 兩塊以上);
  *         (4) 展開內容的那一步 → 下一步 = `--layout-space-bottom`,最後一步 = 0(A3 甲);
  *         (5) 內容區裡跟在內容後面的按鈕列,上方 = `--layout-space-loose` × 2(Steps 的內容區都是一步一張表單:表單欄位 → 表單按鈕列 =
  *             layoutSpace.spec.md 規則 3「組 ↔ 組」;user 2026-11-10 PR #172 留言,取代 ssot A-S4 的 loose);
@@ -89,7 +89,7 @@ export function judge(snapshot, label = '') {
       }
       if (it.hasContent && it.headerToContent !== null && it.headerToContent !== undefined) {
         if (it.loose === null || it.loose === undefined) violations.push({ kind: 'header-content-gap', where, text: `${where}:內容區上讀不到 --layout-space-loose(量具讀不到 token)` })
-        else if (Math.abs(it.headerToContent - it.loose) > 0.6) violations.push({ kind: 'header-content-gap', where, text: `${where}:標題區 → 內容 ${it.headerToContent}px ≠ loose ${it.loose}px(layoutSpace.spec.md 規則 3「標題區 → 內容」:表單的好幾個欄位 = 兩塊以上並列 → loose)` })
+        else if (Math.abs(it.headerToContent - it.loose) > 0.6) violations.push({ kind: 'header-content-gap', where, text: `${where}:標題區 → 內容 ${it.headerToContent}px ≠ loose ${it.loose}px(layoutSpace.spec.md 規則 3「標題區 → 內容」:表單的好幾個欄位 = 兩塊以上 → loose)` })
       }
     })
   })

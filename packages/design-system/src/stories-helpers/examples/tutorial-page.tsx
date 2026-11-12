@@ -20,9 +20,11 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *   文件頁(教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊)的這個值只寫在本檔。
  * - 規則標題 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`:text-h6 14 / 1.3 + text-caption 12 / 1.3 正是 item-anatomy
  *   「Label ↔ Desc 間距」scanning 那一型)。
- * - 標題區(標題 + 說明)→ 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」):**底下只有一塊 → tight;兩塊以上並列 → loose**。
+ * - 標題區(標題 + 說明)→ 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」):**底下只有一塊 → tight;兩塊以上 → loose**。
  *   出處:user 2026-11-11「我覺得主要取決於那個標題和說明是否是完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？」
  *   + 決策頁「說明頁:甲」(說明頁也套);兩塊以上 = loose 即 user 2026-10-21 A4 甲(「他是所有內容的標題而非內容第一個的小標，所以內容之間是 loose的話，那內容到‘標題＋說明’也是loose吧」)。
+ *   好幾個示範塊彼此只隔 tight 也算兩塊以上 → loose:user 2026-11-12「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,
+ *   第四批成品頁「多塊緊排」題的建議選項是「乙：有兩塊以上就維持遠的距離」。
  *   「幾塊」怎麼數只寫在本檔 `headingContentOf`(【AI 推導】的數法,見該函式)。規則內容是一段文字 / 清單(段落)時照舊一律 tight(內容之間本來就是 tight)。
  *   值與判斷只寫在本檔:規則、展示頁的範例區段(`ExampleSection`)、設計規格頁的 `H3` / `Desc`(anatomy-utils.tsx,用本檔的 `useHeadingContent` 與 `SPEC_HEADING_GAP`)都從這裡來。
  * - 段落標題 → 段落內第一則規則 = loose × 2(同規則 ↔ 規則;Q2 ②):段落標題上下等距,靠 24px 半粗體 + 底線分出它屬於下面。
@@ -162,11 +164,22 @@ export const SectionDescription = React.forwardRef<HTMLParagraphElement, React.H
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   標題區 → 內容:幾塊(2026-11-11)
+   標題區 → 內容:幾塊(2026-11-11;2026-11-12 好幾個示範塊緊排也算兩塊以上)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** 標題區底下的內容:`one` = 只有一塊(→ tight)、`many` = 兩塊以上並列(→ loose)。 */
+/** 標題區底下的內容:`one` = 只有一塊(→ tight)、`many` = 兩塊以上(→ loose)。 */
 export type HeadingContent = 'one' | 'many'
+
+/**
+ * 兩塊之間至少隔這麼遠才算「兩塊」;比它近 = 元件自己的微距(一列按鈕、一排 chip、一串清單列),合起來是一塊。
+ * 值 = 版面間距刻度最小的一格(md 的 `--layout-space-tight`,tokens/layoutSpace/layoutSpace.css)。
+ * 寫成固定值、不從被量的元素讀,兩個原因:
+ * (1) 門檻跟著密度走的話,同一頁在 md 與 lg 會數出不同塊數 —— 用固定 `gap-3` / `gap-4` 排的示範不會跟著密度變寬;
+ * (2) Storybook 的密度屬性是在這個判斷**之後**才套到 `<html>` 上(packages/storybook-config/preview.tsx 的 useEffect 晚於這裡的
+ *     layout effect),判斷當下讀到的永遠是 md 的值。
+ * 跟 layoutSpace.css 對不上由 `scripts/tutorial-page-invariant.mjs`(R14)抓。
+ */
+const HEADING_BLOCK_MIN_GAP_PX = 12
 
 /** 畫面上真的佔位置的子節點(display:none / 絕對定位的讀屏區 / style、script 不算;display:contents 換成它自己的子節點)。 */
 function inFlowChildren(el: Element): Element[] {
@@ -200,24 +213,48 @@ function minGapBetween(nodes: Element[]): number {
   return min
 }
 
+/** 只負責排版的容器除了 class / style 之外可以帶的屬性:主題 / 密度的範圍宣告,與 FieldGroup(一疊欄位的排版群組,不是一個元件)。 */
+const LAYOUT_WRAPPER_ATTRS = new Set(['class', 'style', 'data-theme', 'data-density', 'data-layout-space', 'data-field-group'])
+const LAYOUT_WRAPPER_TAGS = new Set(['DIV', 'SECTION', 'SPAN', 'ARTICLE', 'MAIN'])
+
+/**
+ * 只負責排版的容器:沒有自己語意的標籤,而且除了上面那幾個屬性之外什麼都沒帶。
+ * 帶了別的屬性(`data-*` / `role` / `aria-*` / `id` / `dir` …)= 一個元件的根(一個 Field、一組 Tabs)—— 元件裡面怎麼排是元件自己的事,整個算一塊。
+ */
+function isLayoutWrapper(el: Element): boolean {
+  return LAYOUT_WRAPPER_TAGS.has(el.tagName) && Array.from(el.attributes).every((a) => LAYOUT_WRAPPER_ATTRS.has(a.name))
+}
+
+/** 一段說明文字(沒有邊界的 `<p>`):它在說明旁邊那一塊,自己不算一塊。 */
+function isProse(el: Element): boolean {
+  return el.tagName === 'P' && !hasVisualBoundary(el)
+}
+
 /**
  * 標題區底下有幾塊 —— 規範 layoutSpace.spec.md 規則 3「標題區 → 內容」;user 原話與決策見本檔檔頭。
  * 【AI 推導】數法(機械可判,同一份給 `ExampleSection`、`TutorialRule`、設計規格頁 `H3` / `Desc`):
- * 1. 標題區之後的節點(`nodes`)有兩個以上,且彼此隔 ≥ loose → 並列 = `many`;彼此隔得比 loose 近 → 合起來是同一塊 = `one`
- *    (layoutSpace 規則 3:並列 = loose,比 loose 近的是 tight 的「相關」或元件內部的微距,不是並列)。
- * 2. 只有一個節點:有視覺邊界(邊框 / 底色 / 陰影)= 一塊(`one`);沒有邊界 = 只負責排版的容器,往裡看它的子節點,回到第 1 步。
- * 3. 看到底都沒有子節點(一張圖、一段字、一個輸入框)= `one`。
- * 所以:一張表 / 一張圖 / 一份清單 / 一個元件 / 一列按鈕(按鈕之間是微距)= 一塊;好幾則範例(範例組之間 loose)、
- * 一個容器裡用 ≥ loose 隔開的好幾段 = 兩塊以上。`loose` 由呼叫端從被量的元素讀(跟著密度走)。
+ * 1. 只有一個節點:有視覺邊界(邊框 / 底色 / 陰影),或不是只負責排版的容器(一個元件的根、`<p>`、`<table>`、`<dl>`、`<label>` …)
+ *    = 一塊(`one`);是只負責排版的容器 → 往裡看它的子節點,回到這一步。看到底都沒有子節點(一張圖、一個空容器)= `one`。
+ * 2. 有兩個以上節點,先扣掉說明文字(`isProse`),看剩幾塊:
+ *    - 剩兩塊以上,彼此至少隔一格版面間距(`HEADING_BLOCK_MIN_GAP_PX`)→ `many`;隔得更近 = 元件的微距(一列按鈕、一排 chip)= `one`
+ *    - 只剩一塊(一則示範 + 說明它的文字)→ `one`
+ *    - 全是說明文字:段落之間隔 ≥ loose → 並列的好幾段 = `many`;比 loose 近 = 同一段話 = `one`(`loose` 由呼叫端從被量的元素讀)
+ * 所以:一張表 / 一張圖 / 一份清單 / 一個元件 / 一列按鈕 / 一則示範 + 一段說明 = 一塊;
+ * 好幾則示範(不論彼此隔 tight 還是 loose —— user 2026-11-12)、FieldGroup 裡的好幾個欄位 = 兩塊以上。
  */
 export function headingContentOf(nodes: Element[], loose: number): HeadingContent {
   let run = nodes
   // 每多一層只往一個子節點裡走;深度上限只是防呆(實際頁面 3 層內就分出來)
   for (let depth = 0; depth < 12; depth++) {
     if (run.length === 0) return 'one'
-    if (run.length >= 2) return minGapBetween(run) >= loose - 0.5 ? 'many' : 'one'
-    if (hasVisualBoundary(run[0])) return 'one'
-    run = inFlowChildren(run[0])
+    if (run.length >= 2) {
+      const blocks = run.filter((node) => !isProse(node)).length
+      if (blocks === 1) return 'one'
+      return minGapBetween(run) >= (blocks >= 2 ? HEADING_BLOCK_MIN_GAP_PX : loose) - 0.5 ? 'many' : 'one'
+    }
+    const only = run[0]
+    if (hasVisualBoundary(only) || !isLayoutWrapper(only)) return 'one'
+    run = inFlowChildren(only)
   }
   return 'one'
 }
@@ -242,7 +279,7 @@ export function useHeadingContent<T extends HTMLElement>(ref: React.RefObject<T>
 
 /**
  * 設計規格頁 `H3` / `Desc`(anatomy-utils.tsx)的內容:自己之後、下一個小標(`data-spec-heading`)之前、畫面上佔位置的兄弟節點。
- * 兄弟節點之間的距離是各頁自己排的,所以兩個以上時照 `headingContentOf` 第 1 步量距離(不像 `ExampleSection` 由區段的 gap 排開)。
+ * 兄弟節點之間的距離是各頁自己排的,所以兩個以上時照 `headingContentOf` 第 2 步量距離(不像 `ExampleSection` 由區段的 gap 排開)。
  */
 export function specHeadingContent(el: HTMLElement): Element[] | null {
   const parent = el.parentElement
@@ -279,7 +316,7 @@ export interface ExampleSectionProps extends Omit<React.HTMLAttributes<HTMLDivEl
   /**
    * 底下是一段純文字 / 清單(段落)→ `true`:標題區 → 內容、內容之間都是 tight(內容之間本來就是 tight,標題跟著內容走)。
    * 不給 = 區塊:內容之間 loose;標題區 → 內容看底下幾塊(`headingContentOf`)—— 只有一塊(一張表 / 一張圖 / 一個元件)tight、
-   * 兩塊以上並列 loose。
+   * 兩塊以上 loose。
    */
   paragraph?: boolean
 }
@@ -295,7 +332,7 @@ const sectionContent = (el: HTMLElement): Element[] | 'many' | null => {
 
 /**
  * 範例區段(2026-10-27,user 2026-10-21 A4;2026-11-11 標題區 → 內容看幾塊):標題 ↔ 說明 2px;(標題 + 說明)→ 內容:
- * 段落 tight、區塊底下只有一塊 tight、兩塊以上並列 loose;跟著密度走。
+ * 段落 tight、區塊底下只有一塊 tight、兩塊以上 loose;跟著密度走。
  * 展示頁 / 原則頁 / 設計規格頁裡「一個小標 + 說明 + 一塊範例」一律用這支,不再手寫 `<h3 className="text-h6 font-semibold …">`;
  * `TutorialRule` 就是它加上範例區。間距由外層 gap 給,各塊不留自己的下方 margin。
  */
@@ -337,8 +374,8 @@ export interface TutorialRuleProps {
   note?: React.ReactNode
   /**
    * 規則內容是一段文字 / 清單(段落)→ 標題區 → 內容 tight;是範例 / 示範區塊 → 區塊(同 `ExampleSection`:只有一則範例 tight、
-   * 兩則以上並列 loose)。預設跟著 `examples`:有範例區 = 區塊、沒有 = 段落。沒走範例區、內容卻是示範區塊的規則寫 `paragraph={false}`
-   * (內容之間仍照順序以 tight 排;標題區 → 內容照「幾塊」判 —— 彼此 tight 的一疊算同一塊)。
+   * 兩則以上 loose)。預設跟著 `examples`:有範例區 = 區塊、沒有 = 段落。沒走範例區、內容卻是示範區塊的規則寫 `paragraph={false}`
+   * (內容之間仍照順序以 tight 排;標題區 → 內容照「幾塊」判 —— 好幾個示範塊即使彼此只隔 tight 也是兩塊以上 → loose,user 2026-11-12)。
    */
   paragraph?: boolean
   children?: React.ReactNode

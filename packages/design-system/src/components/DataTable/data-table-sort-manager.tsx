@@ -202,8 +202,8 @@ function DataTableSortManagerInner<TData>({
         )}
 
         {/* B1 加排序 → tertiary,parallel filter「加篩選」(root-level CTA 對等視覺重量)。
-            同一排最右「清除全部」(user 2026-11-11「該按鈕應該放在 add sort 那排然後直接靠在最右邊？」):text variant(低視覺權重的輔助動作,
-            button.spec.md「Variant」表);沒有排序時不出現(同 Combobox「清除全部」有值才出現、標題列「恢復預設」與預設不同才出現)。 */}
+            同一排最右「清除全部」(user 2026-11-11「該按鈕應該放在 add sort 那排然後直接靠在最右邊？」):tertiary variant
+            (user 2026-11-12 「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」;2026-11-12 前是 text);沒有排序時不出現(同 Combobox「清除全部」有值才出現、標題列「恢復預設」與預設不同才出現)。 */}
         <div className="flex items-center justify-between gap-2" data-panel-add-row="">
           <Button
             ref={addRef}
@@ -216,7 +216,7 @@ function DataTableSortManagerInner<TData>({
             加排序
           </Button>
           {showClearAll ? (
-            <Button variant="text" size="sm" onClick={(e) => bulk.run(e, [], '已清除全部排序')}>清除全部</Button>
+            <Button variant="tertiary" size="sm" onClick={(e) => bulk.run(e, [], '已清除全部排序')}>清除全部</Button>
           ) : null}
         </div>
         {bulk.liveRegion}

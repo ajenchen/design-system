@@ -74,7 +74,7 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 |------|------|------------|
 | **同範疇 / bundled component family** | 元件 spec 寫成 bundle 並定 inter-component spacing(FileUpload+FileList、Pagination 內部、Toolbar+ButtonGroup) | 元件 spec own,layout rule **跳過** |
 | **跨範疇 + 直接 functional 交互 / 依賴** | search → filter list / toolbar → table / 標題(+ 說明)→ 它底下**只有一塊**的內容(一張表 / 一張圖 / 一份清單 / 一個元件)| 規則 3 = **tight** |
-| **跨範疇 + parallel / independent** | form fields stack(parallel inputs)/ unrelated sections / 兩個獨立 functional groups / 標題(+ 說明)→ 它底下**兩塊以上**並列的內容 | 規則 3 = **loose** |
+| **跨範疇 + parallel / independent** | form fields stack(parallel inputs)/ unrelated sections / 兩個獨立 functional groups / 標題(+ 說明)→ 它底下**兩塊以上**的內容 | 規則 3 = **loose** |
 
 「**Bundled component family**」客觀判斷:**有沒有 spec 文件把這些 components 寫成 bundle 並定義它們之間 spacing**(不是「同種類 component instance 多個」)。
 
@@ -118,24 +118,31 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 | **跨範疇 + functional 交互** | `tight` |
 | **跨範疇 + parallel** | `loose` |
 
-**標題區 → 內容**(2026-11-11;標題區 = 內容區裡的小標題 + 它的說明,不是 chrome header):**標題底下只有一塊 → `tight`;兩塊以上並列 → `loose`**;底下是一段文字 / 清單(段落)→ `tight`(不變)。
+**標題區 → 內容**(2026-11-11;標題區 = 內容區裡的小標題 + 它的說明,不是 chrome header):**標題底下只有一塊 → `tight`;兩塊以上 → `loose`**(那幾塊彼此隔 tight 還是 loose 都一樣 —— 2026-11-12);底下是一段文字 / 清單(段落)→ `tight`(不變)。
 
 - 出處:user 2026-11-11 逐字「我覺得主要取決於那個標題和說明是否是完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？應該是我上述說的這樣？？」;同日決策頁「說明頁:甲」= 文件頁(設計原則頁、展示頁、設計規格頁)也照這條。兩塊以上 = loose 即 user 2026-10-21 A4 甲逐字「我認為標題+說明 -> 內容之間的距離應該 loose，畢竟他是所有內容的標題而非內容第一個的小標，所以內容之間是 loose的話，那內容到‘標題＋說明’也是loose吧」—— 2026-10-27 那版把本表 labeling 寫成只有「說明級的字」,只描述一塊的標題因此落到 loose,本段補上。
+- 2026-11-12 兩個決定,user 逐字「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」(第四批成品頁上標「建議」的選項):
+  - 「原則頁」題 = 「甲：維持，三種頁面同一條規則」—— 設計原則頁、展示頁、設計規格頁同一條,原則頁不是例外。
+  - 「多塊緊排」題 = 「乙：有兩塊以上就維持遠的距離」—— 標題底下有好幾個示範塊時,即使那幾塊彼此只隔 tight,標題 → 內容仍是 loose(頁上寫的結果:「照你原話的字面：描述多個東西 → 遠。標題跟整組內容明顯分開；兩種密度結果一致。」)。
 - **幾塊怎麼數**【AI 推導,機械可判;實作只有一份 = `stories-helpers/examples/tutorial-page.tsx` `headingContentOf`】:
-  1. 標題區之後的節點有兩個以上、且彼此隔 ≥ `loose` → 並列 = 兩塊以上;彼此隔得比 `loose` 近 → 合起來算一塊(本表:並列 = loose,比 loose 近的是 tight 的「相關」或元件內部的微距,都不是並列)。
-  2. 只有一個節點:有視覺邊界(邊框 / 底色 / 陰影,同上方「元件角色」bounded)= 一塊;沒有邊界 = 只負責排版的容器,往裡看它的子節點,回到第 1 步。
-  3. 看到底沒有子節點(一張圖、一段字、一個輸入框)= 一塊。
+  1. 只有一個節點:有視覺邊界(邊框 / 底色 / 陰影,同上方「元件角色」bounded),或它是一個元件 / 有自己語意的標籤(一個 Field、一組 Tabs、`<p>`、`<table>`、`<dl>`、`<label>` …)= 一塊 —— 元件裡面怎麼排是元件自己的事;只負責排版的容器(沒有自己語意的標籤,而且只帶 class / style / 主題與密度的範圍宣告 / FieldGroup 標記)→ 往裡看它的子節點,回到這一步。看到底沒有子節點(一張圖、一個空容器)= 一塊。
+  2. 有兩個以上節點,先扣掉說明文字(沒有邊界的 `<p>`:它在說明旁邊那一塊,自己不算一塊),看剩幾塊:
+     - 剩兩塊以上,彼此至少隔一格版面間距(刻度最小的一格 = md 的 `tight`)→ 兩塊以上;隔得更近 = 元件的微距(一列按鈕、一排 chip)→ 合起來算一塊。
+     - 只剩一塊(一則示範 + 說明它的文字)→ 一塊。
+     - 全是說明文字:段落之間隔 ≥ `loose` → 並列的好幾段 = 兩塊以上;比 `loose` 近 → 同一段話 = 一塊。
+  - 「一格版面間距」的門檻是固定值、不跟密度走:門檻跟密度走的話,用固定 `gap-3` / `gap-4` 排的示範在 md 與 lg 會數出不同塊數(2026-11-12 全庫實量:2026-11-11 那版數法下,1346 個標題裡有 39 個用 lg 的距離會數成跟 md 不同;固定門檻下 0 個);值只寫在 `tutorial-page.tsx`,跟 `layoutSpace.css` 對不上由 R14 抓。
 - **邊角怎麼判**(同一套數法的結果,不另訂例外):
   | 小標底下 | 判 | 為什麼 |
   |---|---|---|
-  | 一張表(含外面只包一層捲動容器)/ 一張示意圖 / 一份 DescriptionList / 一個元件 | 一塊 → tight | 第 2、3 步 |
+  | 一張表(含外面只包一層捲動容器)/ 一張示意圖 / 一份 DescriptionList / 一個元件(一個 Field、一組 Tabs)| 一塊 → tight | 第 1 步 |
   | 說明文字 + 一張圖 | 一塊 → tight | 說明屬於標題區(標題 ↔ 說明 = `--item-gap-label-desc-*`),後面只剩一張圖 |
-  | 一則範例 + 它的 ExampleCaption | 一塊 → tight | 範例 ↔ 說明 = tight(labeling),比 loose 近 |
-  | 一列按鈕 / 一排 chip / 一串清單列(彼此是元件的微距)| 一塊 → tight | 第 1 步:比 loose 近 |
-  | 兩則以上範例(範例組之間 loose)/ 一個容器裡用 ≥ loose 隔開的好幾段(例:「狀態行為」底下的 Loading / Disabled / Checked 三段)| 兩塊以上 → loose | 第 1 步 |
-  | 好幾則示範塊但彼此只隔 tight(規則內容寫 `paragraph={false}` 的那種)| 一塊 → tight | 第 1 步:tight = 相關,不是並列 |
-  | 用固定 `gap-4`(16px)排開的一列 | md 兩塊以上(16 ≥ 16)/ lg 一塊(16 < 24)| 固定值不跟密度;寫成 token 就不會分歧(本檔「該用 token」那節)|
-- 產品畫面:主區只有一塊內容時不在主區重複放標題與說明(`../../components/AppShell/app-shell.spec.md`「主區只有一塊內容時」那段,含 user 原話);有區段標題的地方同樣照本段。Steps 的步驟標題區 → 內容寫在 `steps.tsx`(範例都是一張多欄表單 = 兩塊以上並列 → loose,不變)。DescriptionList 的區段標題(`../../components/DescriptionList/description-list.spec.md`「Section heading 模式」)= 只描述一份清單 → tight,同一個答案。
+  | 一則範例 + 說明它的文字(ExampleCaption / 一段 `<p>`)| 一塊 → tight | 第 2 步:說明文字不算一塊,只剩一塊 |
+  | 一列按鈕 / 一排 chip / 一串清單列(彼此是元件的微距)| 一塊 → tight | 第 2 步:隔得比一格版面間距近 |
+  | 兩則以上範例(範例組之間 loose)/ 一個容器裡用 ≥ loose 隔開的好幾段(例:「狀態行為」底下的 Loading / Disabled / Checked 三段)| 兩塊以上 → loose | 第 2 步 |
+  | 好幾則示範塊但彼此只隔 tight(規則內容寫 `paragraph={false}` 的那種)| 兩塊以上 → loose | 第 2 步;user 2026-11-12「多塊緊排」= 乙(2026-11-11 那版判成一塊 → tight,本列改掉)|
+  | 用固定 `gap-3` / `gap-4`(12 / 16px)排開的好幾塊 | 兩塊以上 → loose(md、lg 相同)| 第 2 步:門檻是固定值(2026-11-11 那版 md 兩塊以上 / lg 一塊,兩種密度不一致)|
+  | FieldGroup 裡的好幾個欄位 | 兩塊以上 → loose | 第 1 步:FieldGroup 是排版群組不是一個元件,往裡看;欄位 ↔ 欄位 = parallel |
+- 產品畫面:主區只有一塊內容時不在主區重複放標題與說明(SSOT 在 `../../components/AppShell/app-shell.spec.md`「主區只有一塊內容時」那段,含 user 原話);有區段標題的地方同樣照本段。Steps 的步驟標題區 → 內容寫在 `steps.tsx`(範例都是一張多欄表單 = 兩塊以上 → loose,不變)。DescriptionList 的區段標題(`../../components/DescriptionList/description-list.spec.md`「Section heading 模式」)= 只描述一份清單 → tight,同一個答案。
 - 機械:`scripts/section-gap-invariant.mjs` 的「標題區 → 內容」各列(一塊 / 兩塊以上各量 md / lg 像素);`scripts/tutorial-page-invariant.mjs` R14(共用元件仍由 `headingContentOf` 判、值只寫在共用元件)。
 
 **核心**:gap 只看親疏不看 role(原 v1「block-adjacent 一律 tight」過機械,違 Gestalt proximity)。 **「組 ↔ 組」(區塊 ↔ 區塊)另有一級(2026-10-14 先定在教學頁,2026-11-06 擴到產品畫面;後來加的範圍見本段後文)**:一塊內容本身已經用 loose / tight 排好 —— 教學頁的每則規則、每個段落;產品畫面裡分屬不同主題的一塊(例:FileViewer 資訊面板的「說明」欄位、「檔案資訊」標題 + 清單)—— 塊與塊之間要比塊內更開,才分得出標題屬於哪一塊。**區塊之間 = 一條分隔線的位置,上下各 loose**(合計 **loose × 2**:md 32 / lg 48);區塊感夠時不畫線,不夠時畫 `Separator`,間距不變。出處:教學頁的規則 ↔ 規則 = 段落 ↔ 段落 = user 2026-10-07「第一題照你建議」= 建議 ②;產品畫面 = user 2026-11-06 #18 原話「#18 可以照你建議，其實感覺就像是輸入框跟下方標題之間還有一條隱形的分隔線，然後線的上下間距依然都是loose的概念，然後可能有時候若區塊感不夠的話，這個分隔線就不會是隱形的，但間距都一如往常？」(「照你建議」= 決策頁乙:產品畫面的「區塊 ↔ 區塊」也用 loose 的兩倍;分隔線那段是 user 用自己的話確認理解,句尾問號是向 AI 確認,AI 回覆一致)。並列的元素(欄位 ↔ 欄位、卡片 ↔ 卡片)仍是本表 parallel = loose。這一級**不是公開 token**(值由 loose 推出),也**不借 `bottom`**(本表 `bottom` 列的結論留白)。閘 `scripts/section-gap-invariant.mjs`。教學頁的值與元件唯一住所 `stories-helpers/examples/tutorial-page.tsx`,規範 `ds-canonical/skills/story-writing/references/category-templates.md`「教學框的間距與標題」,閘 `scripts/tutorial-page-invariant.mjs`。**Tokens / Patterns 文件頁的段落同屬這一級**(2026-10-20 user「你提的問題可以都照你建議」核准 T7 甲:各 token 頁原本段落之間只剩 loose,與段落內同一個量級,段落分不開;改由同一個 `TutorialPage` / `TutorialSection` 給 loose × 2,閘 R12)。**展示頁 / 設計規格頁「一則一個標題」的範例堆疊,範例 ↔ 範例也屬這一級**(2026-10-27 user 回「Q2照你建議」—— 採 AI 建議 ①:原本範例之間只有 loose,與標題 → 自己的內容同一個量級,看不出標題屬於哪一則)([來源](https://www.nngroup.com/articles/gestalt-proximity/))。**表單欄位 → 跟在後面的表單按鈕列(送出 / 儲存 / 取消 / 下一步)也屬這一級**(2026-11-10;修前寫成「內容 → 跟在後面的按鈕 = loose」):欄位與欄位之間是並列 = loose,按鈕列是整張表單的動作、不是再多一個欄位,所以離最後一個欄位要比欄位之間更開。出處:user 2026-11-10 PR #172 決策頁留言,指 Field 展示「表單驗證」的送出鈕,逐字「我現在覺得這個按鈕距離上方雖然按照之前訂的規則是loose token，但我總覺得看起來好像有點太近，感覺應該也是要跟 file viewer 那個說明跟檔案資訊區塊之間假裝之間有一條隱形的分隔線，所以實際是距離兩倍loose」;世界級同樣讓按鈕列比欄位間距大 —— Atlassian `@atlaskit/form@18.3.2` 表單按鈕列 `margin-block-start:var(--ds-space-300,24px)`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/form@18.3.2/dist/es2019/form-footer.compiled.css))對欄位 `margin-block-start:var(--ds-space-100,8px)`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/form@18.3.2/dist/es2019/field.compiled.css));Carbon 表單 Form items margin-bottom 32 / Buttons margin-top 48([來源](https://github.com/carbon-design-system/carbon-website/blob/main/src/pages/components/form/style.mdx))。**不適用**:浮層 chrome 的 footer(SurfaceFooter / DialogFooter / SheetFooter —— 按鈕在 footer 帶裡,上方是 body 的規則 4 收尾 + footer 自己的 chrome 內距)、單一欄位旁的行內按鈕、toolbar。閘:`scripts/section-gap-invariant.mjs` 的表單各列、`scripts/steps-content-follows-current-invariant.mjs` (5)。
@@ -240,7 +247,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 | 容器水平左右 padding | **規則 1** | 元件有無視覺邊界? | 有 → A 元件自帶 `px-loose` / 無 → B 父層管 / list-with-hover-row → C item 自帶 |
 | Header → 第一個元素 gap | **規則 2** | 第一個元素 role | bounded region → `loose` / unbounded region → **0**(list 自帶 py 撐)/ element → `tight` |
 | 兩元素之間 gap | **規則 3** | 親疏 | 同範疇 → 元件 spec own(跳)/ 跨範疇相關 → `tight` / 跨範疇 parallel → `loose` |
-| 內容區小標題(+ 說明)→ 內容 | **規則 3「標題區 → 內容」** | 底下幾塊 | 一塊 → `tight` / 兩塊以上並列 → `loose` / 段落 → `tight` |
+| 內容區小標題(+ 說明)→ 內容 | **規則 3「標題區 → 內容」** | 底下幾塊 | 一塊 → `tight` / 兩塊以上 → `loose` / 段落 → `tight` |
 | 最後內容 → 容器底 | **規則 4** | 元件 role(element 再看哪種容器)| element → 容器擋頁面或撐滿 = `bottom`(48)、不擋頁面又貼內容 = 與頂部同值(元件自己的內距)/ bounded → `loose` / unbounded → **0** |
 | 橫排並列 input 之間 gap | **規則 5** | 內容語意緊密度 | 同組值起迄 → `gap-2`(8) / 不同組並列 → `gap-4`(16) |
 | Chrome 表面水平 padding | **規則 6** | (永遠) | `loose` |

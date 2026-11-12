@@ -23,6 +23,11 @@
  *         並在輸出標「自備幾何」。調完仍然沒有 = 儀器失效。
  *         selftest 兩面:把可視寬撐到「整排塞得下」/「只切到最後一項」(= CI 那一輪的兩種可能)——
  *         關掉自備幾何 → 重現當時的紅(儀器失效,訊息同 CI);開著 → 每一格都量到、全綠,而且點擊 / 方向鍵 / 選單 / 縮放都有「需要置中」的格子。
+ *   自備幾何要讓每一步都有鑑別力(2026-11-12 第二次): c55c3786 在 CI runner 上自備幾何切在 136px、滑鼠點到的那一項太靠起點,
+ *         縮放那一格怎麼改寬度都只能夾在起點 —— 主量測照樣綠,但「拿掉 primitive」的對照組那兩格也綠(沒捲與捲對了落進同一個判定),
+ *         selftest 因此紅。現在 `overflowPlan` 挑寬度時就保證:預計點到的那一項置中後離兩端各 ≥ 8px、縮放切得出「改完仍然置中」的寬度;
+ *         `resizePlan` 切不出來就回 null(不再退而回一個只能夾住的寬度)。天然排版下縮放切不出來 → 這一排改用自備幾何整圈重量;
+ *         還是切不出來 = 儀器失效。selftest 多一面:「整排塞得下、自備幾何開、拿掉 primitive」Tabs 兩排每種輸入都必須紅(runner 上沒紅的那個幾何)。
  *
  * Run: node scripts/overflow-reveal-selected-invariant.mjs [--static=<dir>] [--selftest [--control-static=<修前建置>]]
  */
@@ -57,6 +62,14 @@ const CENTER_TOLERANCE_PX = 2
 const WIDEST_OBSTRUCTION_PX = 48
 // menu 模式右側淡出的寬度:項目右緣超過「可視寬 − 這個值」= 沒有完整可讀
 const MENU_FADE_PX = 16
+// 「不是兩端夾住」的餘量:置中所需的 scrollLeft 離兩端至少這麼遠,這一格才算量到「真的在中心」。
+// 必須 > CENTER_TOLERANCE_PX:這樣拿掉 primitive(scrollLeft 留在 0)時,項目中心離容器中心至少這麼遠 → 對照組必紅。
+// 餘量 ≤ 容許值的話「沒捲」與「捲對了」會落進同一個判定(c55c3786 在 CI runner 上兩格縮放對照組沒紅的根因,見 resizePlan)。
+const CLAMP_MARGIN_PX = 8
+// 縮放那一格:可視寬至少要變這麼多才算「寬度真的變了」(比這少 = 視窗縮放沒碰到捲動容器,或自己改的寬度沒生效)
+const RESIZE_MIN_DELTA_PX = 16
+// 自備幾何挑寬度時「右側半露的是哪一項」不能卡在邊界上:改寬度的實際結果容許 ±1px(setVisibleWidth),邊界多留這麼多才不會換人
+const PICK_STABILITY_PX = 2
 
 // ── 受測的五排 ─────────────────────────────────────────────────────────────
 // scroller = 頁面上第幾個 [data-overflow-scroller];item = 項目選擇器(修前建置也認得,對照組才量得到);
@@ -94,16 +107,51 @@ export function maskObstruction(mask, width) {
   }
 }
 
+// ── 純函式:某一項要「置中、而且不是兩端夾住」,可視寬可以落在哪個範圍 ────────────────────
+// g = { itemWidth, itemCentre(內容座標 = 含 scrollLeft), content(scrollWidth) }
+// 下限:放得下那一項加兩側最寬遮擋(置中時完整可讀)。
+// 上限:置中所需的 scrollLeft = itemCentre − W/2 離起點、終點各 ≥ CLAMP_MARGIN_PX。沒有這樣的寬度 → null。
+// 為什麼上限重要:在這個範圍裡,就算完全沒捲(scrollLeft 0),那一項的中心也離容器中心 ≥ CLAMP_MARGIN_PX、
+// 而且不算起點夾住(它在右半邊)—— 所以「有捲到中心」與「沒捲」一定判成不同結果,對照組才紅得起來。
+export function centringWindow(g) {
+  const lo = Math.ceil(g.itemWidth + 2 * WIDEST_OBSTRUCTION_PX + 8)
+  const hi = Math.floor(2 * Math.min(g.itemCentre - CLAMP_MARGIN_PX, g.content - g.itemCentre - CLAMP_MARGIN_PX))
+  return lo <= hi ? { lo, hi } : null
+}
+
+// ── 純函式:視窗縮放碰不到捲動容器時,可視寬該改成多少 ───────────────────────────
+// g = { width(目前可視寬), itemWidth / itemCentre(剛點的那一項), content(scrollWidth) }
+// 只回「改完之後那一項仍然置中、不是夾住」的寬度(centringWindow 裡),而且跟現在差 ≥ RESIZE_MIN_DELTA_PX:
+// 依序試 縮 64 / 放寬 64 / 縮 32 / 放寬 32,都不在範圍裡再試範圍的兩個端點(離現在近的先)。沒有 → null。
+// 2026-11-12 之前沒有的話會退而回一個「只能夾在端點」的寬度 —— 那一格對「有沒有捲」沒有鑑別力:CI runner 的字比較窄,
+// Tabs 兩排自備幾何切到 136px、點到第 3 項(中心 80),縮放只能夾在起點 → 拿掉 primitive 那一格照樣綠(c55c3786 selftest 紅的兩行)。
+// 現在沒有就是沒有,呼叫端改用自備幾何重切(overflowPlan force),還是沒有才當儀器失效。
+export function resizePlan(g) {
+  const win = centringWindow(g)
+  if (!win) return null
+  const far = (w) => Math.abs(w - g.width) >= RESIZE_MIN_DELTA_PX
+  const stepped = [g.width - 64, g.width + 64, g.width - 32, g.width + 32].map(Math.round).find((w) => w >= win.lo && w <= win.hi)
+  if (stepped != null) return { width: stepped }
+  const edge = [win.lo, win.hi].filter(far).sort((x, y) => Math.abs(x - g.width) - Math.abs(y - g.width))[0]
+  return edge != null ? { width: edge } : null
+}
+
 // ── 純函式:歸零時這一排的幾何夠不夠驗;不夠 → 該把可視寬調成多少 ─────────────────
 // list = listInPage 的結果(每一項相對捲動容器左緣的 left / right,scW = 可視寬),必須在 scrollLeft 0 時量。
-// 夠 = 有一個「不是最後一項」的項目沒有完整可讀(右緣超過可視寬 − 淡出寬:伸進淡出區或被切掉)。
-// 不夠 → target = 中間那一項的中心,夾在 [最寬的項目 + 兩側最寬遮擋 + 8, 倒數第二項的右緣 + 8]:
+// 夠 = 有一個「不是最後一項」的項目沒有完整可讀(右緣超過可視寬 − 淡出寬:伸進淡出區或被切掉)。force = 不管夠不夠都自己切。
+// 不夠 → 可視寬的範圍 [最寬的項目 + 兩側最寬遮擋 + 8, 倒數第二項的右緣 + 8]:
 //   下限保證任何一項置中時放得進可讀區;上限保證倒數第二項仍然沒有完整可讀。下限 > 上限 = 這一排太短,切不出來。
-export function overflowPlan(list) {
+// 在範圍裡從「中間那一項的中心」往兩邊找,取第一個讓後面每一步都量得到「真的置中」的寬度(anchor = 預計會被點到的那一項):
+//   (1) 滑鼠會點到的那一項(第一個右緣超過 可視寬 − 最寬遮擋 的)不卡在邊界上、有點得到的部分、不是最後一項;
+//   (2) 點它之後置中所需的 scrollLeft 離兩端各 ≥ CLAMP_MARGIN_PX;
+//   (3) 承上縮放切得出寬度(resizePlan 不是 null;改寬度的實際結果容許 ±1px,所以這個寬度與左右各 1px 都要切得出);
+//   (4) ⌄ 選單會選的那一項(第一個右緣超過 可視寬 − 淡出寬 的)置中時不會夾在終點。
+// 四條都滿足的沒有 → 退而取滿足 (1)–(3) 的;還是沒有 → 回中間那一項的中心、anchor = null(縮放那一格由呼叫端判儀器失效)。
+export function overflowPlan(list, { force = false } = {}) {
   const n = list?.length ?? 0
   if (n === 0) return { enough: false, target: null, why: '量不到任何項目' }
   const scW = list[0].scW
-  if (list.some((it, i) => i < n - 1 && it.right > scW - MENU_FADE_PX)) return { enough: true }
+  if (!force && list.some((it, i) => i < n - 1 && it.right > scW - MENU_FADE_PX)) return { enough: true }
   if (n < 3) return { enough: false, target: null, why: `只有 ${n} 項,沒有「中間那一項」可以切` }
   const centre = (it) => (it.left + it.right) / 2
   const mid = (list[0].left + list[n - 1].right) / 2
@@ -113,23 +161,34 @@ export function overflowPlan(list) {
   const lo = Math.ceil(widest + 2 * WIDEST_OBSTRUCTION_PX + 8)
   const hi = Math.floor(list[n - 2].right + 8)
   if (lo > hi) return { enough: false, target: null, why: `這一排太短:最寬的項目 ${widest.toFixed(1)}px 加兩側遮擋至少要 ${lo}px 可視寬,但倒數第二項的右緣只到 ${list[n - 2].right.toFixed(1)}px` }
-  return { enough: false, target: Math.min(hi, Math.max(lo, Math.round(centre(list[m])))), middle: m }
-}
-
-// ── 純函式:視窗縮放碰不到捲動容器時,可視寬該改成多少 ───────────────────────────
-// g = { width(目前可視寬), itemWidth / itemCentre(剛點的那一項;centre 是內容座標 = 含 scrollLeft), content(scrollWidth) }
-// 依序試 縮 64 / 放寬 64 / 縮 32 / 放寬 32(都 ≥ 16px:呼叫端「寬度沒變 = 儀器失效」的門檻),取第一個同時滿足:
-//   (a) 放得下那一項加兩側最寬遮擋(置中時完整可讀);(b) 改完之後那一項置中所需的 scrollLeft 不在兩端(差 ≥ 2px)——
-//   這樣這一格量到的是「真的留在中心」,不是合法夾住。都不滿足 (b) → 退而取第一個滿足 (a) 的(那一格會是夾住,
-//   有沒有任何一格縮放量到置中由 instrumentProblems 把關);連 (a) 都沒有 → null(呼叫端當儀器失效)。
-export function resizePlan(g) {
-  const fits = (w) => w >= g.itemWidth + 2 * WIDEST_OBSTRUCTION_PX + 8
-  const centres = (w) => { const want = g.itemCentre - w / 2; return want >= 2 && want <= g.content - w - 2 }
-  const candidates = [g.width - 64, g.width + 64, g.width - 32, g.width + 32].map(Math.round)
-  const best = candidates.find((w) => fits(w) && centres(w))
-  if (best != null) return { width: best, centres: true }
-  const fallback = candidates.find(fits)
-  return fallback != null ? { width: fallback, centres: false } : null
+  const preferred = Math.min(hi, Math.max(lo, Math.round(centre(list[m]))))
+  const content = list[n - 1].right
+  const S = PICK_STABILITY_PX
+  const anchorAt = (W, withMenu) => {
+    const edge = W - WIDEST_OBSTRUCTION_PX
+    const p = list.findIndex((it) => it.right > edge - S)
+    if (p < 0 || p >= n - 1) return -1
+    const it = list[p]
+    if (!(it.left < edge - S && it.right > edge + S)) return -1
+    const want = centre(it) - W / 2
+    if (want < CLAMP_MARGIN_PX || want > content - W - CLAMP_MARGIN_PX) return -1
+    if (![W - 1, W, W + 1].every((w) => resizePlan({ width: w, itemWidth: it.right - it.left, itemCentre: centre(it), content }))) return -1
+    if (withMenu) {
+      const q = list.findIndex((x, i) => i < n - 1 && x.right > W - MENU_FADE_PX)
+      if (q < 0 || centre(list[q]) - W / 2 > content - W - CLAMP_MARGIN_PX) return -1
+    }
+    return p
+  }
+  for (const withMenu of [true, false]) {
+    for (let d = 0; d <= hi - lo; d += 1) {
+      for (const W of d === 0 ? [preferred] : [preferred - d, preferred + d]) {
+        if (W < lo || W > hi) continue
+        const p = anchorAt(W, withMenu)
+        if (p >= 0) return { enough: false, target: W, middle: m, anchor: p }
+      }
+    }
+  }
+  return { enough: false, target: preferred, middle: m, anchor: null }
 }
 
 // ── 純函式:一格量測 → 判定 ─────────────────────────────────────────────────
@@ -225,6 +284,8 @@ const fail = (storyId, reason) => new Instrument({ storyId, kind: 'dom-not-settl
 
 // ── 主量測 ─────────────────────────────────────────────────────────────────
 // neutralize:'none' | 'before-action'(每種輸入動作前一刻注入)。回傳 { cells, totals, selfCuts }
+// 每一排先照天然排版量;天然排版下「縮放」切不出「改完仍然置中」的寬度(剛點的那一項太靠端點)→ 這一排改用自備幾何(forced)重量,
+// 點擊 / 縮放那一圈已經記的格子收回,後面的方向鍵 / 選單也用同一個幾何。
 // 以下四個只給 selftest 的對照組用:
 //   only   = 只跑這幾排(STRIPS 的 key);inputs = 只跑這幾種輸入(縮放承接點擊,要一起給)
 //   starve = 開 story 歸零後先把可視寬撐成「整排塞得下」('fit')或「只切到最後一項」('last-only')—— CI 沒有中文字型時的兩種幾何
@@ -243,6 +304,7 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
     for (const strip of STRIPS) {
       if (only && !only.includes(strip.key)) continue
       const url = `${server.origin}/iframe.html?id=${encodeURIComponent(strip.story)}&viewMode=story`
+      let forced = false // 這一排改用自備幾何(天然排版有溢出、但縮放量不到「需要置中」的格子時由點擊 / 縮放那一圈設起來)
       const open = async () => {
         await page.setViewportSize(strip.viewport)
         await page.mouse.move(1, 1)
@@ -259,13 +321,14 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
           const last = list[list.length - 1]
           await setVisibleWidth(Math.round(starve === 'fit' ? last.right + 64 : last.right - 4), `對照組幾何(${starve})`)
         }
-        if (!selfCut) return
-        const plan = overflowPlan(await page.evaluate(listInPage, [strip.scroller, strip.item]))
-        if (plan.enough) return
-        if (plan.target == null) throw fail(strip.story, `${strip.label} 歸零後沒有可以驗的溢出,也切不出自備幾何 —— ${plan.why}`)
+        if (!selfCut) return { cut: false, plan: null }
+        const plan = overflowPlan(await page.evaluate(listInPage, [strip.scroller, strip.item]), { force: forced })
+        if (plan.enough) return { cut: false, plan }
+        if (plan.target == null) throw fail(strip.story, `${strip.label} ${forced ? '天然排版下縮放量不到「需要置中」的格子' : '歸零後沒有可以驗的溢出'},也切不出自備幾何 —— ${plan.why}`)
         const got = await setVisibleWidth(plan.target, '自備幾何')
         if (!overflowPlan(await page.evaluate(listInPage, [strip.scroller, strip.item])).enough) throw fail(strip.story, `${strip.label} 把可視寬調成 ${plan.target}px(實得 ${got}px)之後,仍然沒有「不是最後一項、又沒有完整可讀」的項目`)
-        if (!selfCuts.some((c) => c.strip === strip.key)) selfCuts.push({ strip: strip.key, label: strip.label, width: got })
+        if (!selfCuts.some((c) => c.strip === strip.key)) selfCuts.push({ strip: strip.key, label: strip.label, width: got, forced })
+        return { cut: true, plan }
       }
       const zero = async (what) => {
         await page.evaluate((i) => { const sc = document.querySelectorAll('[data-overflow-scroller]')[i]; sc.scrollLeft = 0 }, strip.scroller)
@@ -301,61 +364,75 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
         return res
       }
       // 1. 滑鼠點右側「沒有完整可讀」的項目(伸進右側淡出 / 箭頭區或被容器切掉,而且有點得到的可見部分 —— 使用者真的點得到的那一顆)
-      if (runs('click')) {
-      await open()
-      const hitPick = await page.evaluate(([scIndex, itemSel, widest]) => {
-        const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
-        const s = sc.getBoundingClientRect()
-        const items = [...sc.querySelectorAll(itemSel)]
-        for (let i = 0; i < items.length; i += 1) {
-          const r = items[i].getBoundingClientRect()
-          if (r.right <= s.right - widest || r.left >= s.right) continue // 完整在可讀區(以最寬的遮擋估)或整顆在外
-          const y = (r.top + r.bottom) / 2
-          for (let x = Math.min(r.right, s.right) - 2; x > Math.max(r.left, s.left); x -= 2) {
-            const hit = document.elementFromPoint(x, y)
-            if (hit && (hit === items[i] || items[i].contains(hit))) return { i, x, y }
-          }
-        }
-        return null
-      }, [strip.scroller, strip.item, WIDEST_OBSTRUCTION_PX])
-      if (!hitPick) throw fail(strip.story, `${strip.label} 歸零後找不到右側沒有完整可讀、又點得到的項目(這一排沒有溢出?)`)
-      const pi = hitPick.i
-      const pt = { x: hitPick.x, y: hitPick.y }
-      await before()
-      await page.mouse.click(pt.x, pt.y)
-      await still('點擊')
-      await record('click', '', pi)
-      const clickedIndex = pi
-
       // 2. 縮放視窗(承上:剛點的那一項是上一次揭露的項目)
-      if (runs('resize')) {
-      const w0 = await page.evaluate((i) => document.querySelectorAll('[data-overflow-scroller]')[i].clientWidth, strip.scroller)
-      await before()
-      await page.setViewportSize({ width: strip.narrowTo, height: strip.viewport.height })
-      await still('縮放視窗')
-      let w1 = await page.evaluate((i) => document.querySelectorAll('[data-overflow-scroller]')[i].clientWidth, strip.scroller)
-      let how = `視窗 ${strip.viewport.width} → ${strip.narrowTo}`
-      if (Math.abs(w1 - w0) < 16) {
-        // 展示 story 的外框寫死寬度(或已經是自備幾何),視窗縮放碰不到捲動容器 → 直接改捲動容器的可視寬(同一個觸發:容器尺寸改變)。
-        // 改成多少由純函式 resizePlan 從量到的幾何算:縮或放寬都算尺寸改變,選「改完之後那一項仍然需要置中」的那個寬度。
-        const geo = await page.evaluate(([i, sel, idx]) => {
-          const sc = document.querySelectorAll('[data-overflow-scroller]')[i]
-          const s = sc.getBoundingClientRect()
-          const r = sc.querySelectorAll(sel)[idx].getBoundingClientRect()
-          return { width: sc.clientWidth, itemWidth: r.width, itemCentre: r.left + r.width / 2 - s.left - sc.clientLeft + sc.scrollLeft, content: sc.scrollWidth, scrollLeft: sc.scrollLeft }
-        }, [strip.scroller, strip.item, clickedIndex])
-        const plan = resizePlan(geo)
-        if (!plan) throw fail(strip.story, `${strip.label} 縮放:外框寫死寬度,而可視寬 ${geo.width}px 縮或放寬都放不下剛點的那一項(${geo.itemWidth.toFixed(1)}px)加兩側遮擋`)
-        for (let k = 0; k < 4 && Math.abs(w1 - plan.width) > 1; k += 1) {
-          await page.evaluate(nudgeScrollerWidthInPage, [strip.scroller, plan.width])
-          await still('改容器寬度')
-          w1 = Math.round(await page.evaluate(scrollerWidthInPage, strip.scroller))
+      // 兩步包在一圈裡:外框寫死寬度、而天然排版下縮放切不出「改完仍然置中」的寬度 → 收回這一圈記的格子,這一排改用自備幾何整圈重來一次。
+      if (runs('click')) {
+        for (;;) {
+          const mark = { length: cells.length, cells: totals.cells, nonClamped: { ...totals.nonClamped } }
+          const opened = await open()
+          const hitPick = await page.evaluate(([scIndex, itemSel, widest]) => {
+            const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+            const s = sc.getBoundingClientRect()
+            const items = [...sc.querySelectorAll(itemSel)]
+            for (let i = 0; i < items.length; i += 1) {
+              const r = items[i].getBoundingClientRect()
+              if (r.right <= s.right - widest || r.left >= s.right) continue // 完整在可讀區(以最寬的遮擋估)或整顆在外
+              const y = (r.top + r.bottom) / 2
+              for (let x = Math.min(r.right, s.right) - 2; x > Math.max(r.left, s.left); x -= 2) {
+                const hit = document.elementFromPoint(x, y)
+                if (hit && (hit === items[i] || items[i].contains(hit))) return { i, x, y }
+              }
+            }
+            return null
+          }, [strip.scroller, strip.item, WIDEST_OBSTRUCTION_PX])
+          if (!hitPick) throw fail(strip.story, `${strip.label} 歸零後找不到右側沒有完整可讀、又點得到的項目(這一排沒有溢出?)`)
+          const clickedIndex = hitPick.i
+          await before()
+          await page.mouse.click(hitPick.x, hitPick.y)
+          await still('點擊')
+          await record('click', '', clickedIndex)
+          if (!runs('resize')) break
+
+          const w0 = await page.evaluate((i) => document.querySelectorAll('[data-overflow-scroller]')[i].clientWidth, strip.scroller)
+          await before()
+          await page.setViewportSize({ width: strip.narrowTo, height: strip.viewport.height })
+          await still('縮放視窗')
+          let w1 = await page.evaluate((i) => document.querySelectorAll('[data-overflow-scroller]')[i].clientWidth, strip.scroller)
+          let how = `視窗 ${strip.viewport.width} → ${strip.narrowTo}`
+          if (Math.abs(w1 - w0) < RESIZE_MIN_DELTA_PX) {
+            // 展示 story 的外框寫死寬度(或已經是自備幾何),視窗縮放碰不到捲動容器 → 直接改捲動容器的可視寬(同一個觸發:容器尺寸改變)。
+            // 改成多少由純函式 resizePlan 從量到的幾何算:縮或放寬都算尺寸改變,只取「改完之後那一項仍然置中、不是夾在端點」的寬度。
+            const geo = await page.evaluate(([i, sel, idx]) => {
+              const sc = document.querySelectorAll('[data-overflow-scroller]')[i]
+              const s = sc.getBoundingClientRect()
+              const r = sc.querySelectorAll(sel)[idx].getBoundingClientRect()
+              return { width: sc.clientWidth, itemWidth: r.width, itemCentre: r.left + r.width / 2 - s.left - sc.clientLeft + sc.scrollLeft, content: sc.scrollWidth, scrollLeft: sc.scrollLeft }
+            }, [strip.scroller, strip.item, clickedIndex])
+            const plan = resizePlan(geo)
+            if (!plan) {
+              if (selfCut && !forced && !opened.cut) {
+                // 天然排版有溢出,但剛點的那一項太靠端點:這一格量出來只會是「夾住」,對有沒有捲沒有鑑別力 → 收回、改用自備幾何重來
+                cells.length = mark.length
+                totals.cells = mark.cells
+                totals.nonClamped = mark.nonClamped
+                forced = true
+                continue
+              }
+              const planned = opened.cut ? `;自備幾何(可視寬 ${opened.plan.target}px)預計點到第 ${opened.plan.anchor == null ? '?(沒有任何寬度滿足)' : opened.plan.anchor + 1} 項` : ''
+              throw fail(strip.story, `${strip.label} 縮放:外框寫死寬度,剛點的第 ${clickedIndex + 1} 項(中心 ${geo.itemCentre.toFixed(1)}、寬 ${geo.itemWidth.toFixed(1)}px,整排 ${geo.content}px)在可視寬 ${geo.width}px 下切不出「改完仍然置中、不是夾在端點」的寬度${planned}`)
+            }
+            for (let k = 0; k < 4 && Math.abs(w1 - plan.width) > 1; k += 1) {
+              await page.evaluate(nudgeScrollerWidthInPage, [strip.scroller, plan.width])
+              await still('改容器寬度')
+              w1 = Math.round(await page.evaluate(scrollerWidthInPage, strip.scroller))
+            }
+            if (Math.abs(w1 - plan.width) > 1) throw fail(strip.story, `${strip.label} 縮放:可視寬調不到 ${plan.width}px(停在 ${w1}px)`)
+            how = `外框寫死寬度 → 可視寬 ${plan.width > w0 ? '放寬' : '縮'}到 ${plan.width}px(改寬度前 scrollLeft ${geo.scrollLeft.toFixed(1)})`
+          }
+          if (Math.abs(w1 - w0) < RESIZE_MIN_DELTA_PX) throw fail(strip.story, `${strip.label} 縮放後捲動容器寬度沒變(${w0} → ${w1})`)
+          await record('resize', `(${how},容器 ${w0} → ${w1})`, clickedIndex)
+          break
         }
-        how = `外框寫死寬度 → 可視寬 ${plan.width > w0 ? '放寬' : '縮'}到 ${plan.width}px(改寬度前 scrollLeft ${geo.scrollLeft.toFixed(1)}${plan.centres ? '' : ';這個幾何下那一項只能夾在端點'})`
-      }
-      if (Math.abs(w1 - w0) < 16) throw fail(strip.story, `${strip.label} 縮放後捲動容器寬度沒變(${w0} → ${w1})`)
-      await record('resize', `(${how},容器 ${w0} → ${w1})`, clickedIndex)
-      }
       }
 
       // 3. 方向鍵:Tab 進入這一排(或檢視器)後連按 → 每一步都量
@@ -407,7 +484,7 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
         }
       }
       const cut = selfCuts.find((c) => c.strip === strip.key)
-      log(`  ${strip.label}:${cells.filter((c) => c.strip === strip.key).map((c) => `${c.input}${c.ok ? '✓' : '✗'}`).join(' ')}${cut ? `  〔自備幾何:這台機器的字寬下這一排沒有溢出到中間的項目,可視寬改成 ${cut.width}px 再量〕` : ''}`)
+      log(`  ${strip.label}:${cells.filter((c) => c.strip === strip.key).map((c) => `${c.input}${c.ok ? '✓' : '✗'}`).join(' ')}${cut ? `  〔自備幾何:${cut.forced ? '天然排版下剛點的那一項太靠端點,縮放量不到「需要置中」的格子' : '這台機器的字寬下這一排沒有溢出到中間的項目'},可視寬改成 ${cut.width}px 再量〕` : ''}`)
     }
   } finally { await browser.close(); await server.stop() }
   return { cells, totals, selfCuts }
@@ -451,13 +528,44 @@ async function selftest() {
   check(overflowPlan(L(3, 400, 100)).target === 204, '幾何:3 項 × 100px → 下限 204 ≤ 上限(倒數第二項右緣 208 + 8)→ 204')
   check(overflowPlan(L(3, 400, 60)).target === null && /太短/.test(overflowPlan(L(3, 400, 60)).why), '幾何:3 項 × 60px(下限 164 > 上限 136)→ 切不出來,原因講明')
   check(overflowPlan(L(2, 400)).target === null && overflowPlan([]).target === null, '幾何:只有 2 項 / 量不到項目 → 切不出來(呼叫端當儀器失效)')
-  // 縮放退路的寬度(resizePlan)
-  const natural = resizePlan({ width: 286, itemWidth: 70, itemCentre: 300, content: 520 })
-  check(natural?.width === 222 && natural.centres === true, '縮放寬度:天然排版(可視寬 286)→ 縮 64 到 222,那一項仍需置中')
+  check(overflowPlan(L(8, 400)).anchor === 2 && overflowPlan(L(4, 1000, 120)).anchor === 1, '幾何:回傳預計會被滑鼠點到的那一項(8 項切在 164 → 第 3 項;4 項切在 224 → 第 2 項)')
+  const runner = overflowPlan(L(8, 400, 32, 0))
+  check(runner.target === 147 && runner.anchor === 3, `幾何:c55c3786 在 CI runner 的排版(8 項 × 32px、沒有間距)→ 不再切在 136(點到第 3 項、縮放只能夾在起點),改切 147、點到第 4 項(實得 ${runner.target} / 第 ${runner.anchor == null ? '?' : runner.anchor + 1} 項)`)
+  const stuck = overflowPlan([{ left: 0, right: 100, scW: 400 }, { left: 108, right: 208, scW: 400 }, { left: 216, right: 236, scW: 400 }])
+  check(stuck.target === 204 && stuck.anchor === null, '幾何:切得出寬度、但預計點到的那一項置中會夾在終點(最後一項太短)→ anchor null(呼叫端縮放那一格判儀器失效,不當綠燈)')
+  const anchorHolds = (list) => {
+    const plan = overflowPlan(list)
+    if (plan.target == null || plan.anchor == null) return false
+    const it = list[plan.anchor]
+    const c = (it.left + it.right) / 2
+    const content = list[list.length - 1].right
+    return [plan.target - 1, plan.target, plan.target + 1].every((W) => {
+      const want = c - W / 2
+      return want > CENTER_TOLERANCE_PX && want <= content - W - CENTER_TOLERANCE_PX && resizePlan({ width: W, itemWidth: it.right - it.left, itemCentre: c, content }) !== null
+    })
+  }
+  check([L(8, 400), L(8, 372), L(4, 1000, 120), L(3, 400, 100), L(8, 400, 32, 0)].every(anchorHolds), '幾何:回傳的寬度(實得 ±1px)下,預計點到的那一項置中不會夾在兩端、縮放也切得出寬度')
+  // 置中範圍(centringWindow):範圍裡的寬度,「沒捲」與「捲到中心」一定是不同的判定(對照組才紅得起來)
+  const windowHolds = (g) => {
+    const win = centringWindow(g)
+    if (!win) return false
+    const half = g.itemWidth / 2
+    return [win.lo, Math.round((win.lo + win.hi) / 2), win.hi].every((W) => {
+      const base = { width: W, maxScroll: g.content - W, arrowOverlap: false }
+      const unscrolled = judge({ ...base, left: g.itemCentre - half, right: g.itemCentre + half, scrollLeft: 0, obstruction: { left: 0, right: 0 } })
+      const scrolled = judge({ ...base, left: W / 2 - half, right: W / 2 + half, scrollLeft: g.itemCentre - W / 2, obstruction: { left: WIDEST_OBSTRUCTION_PX, right: WIDEST_OBSTRUCTION_PX } })
+      return unscrolled.ok === false && scrolled.ok === true && scrolled.how === 'centered'
+    })
+  }
+  check([{ itemWidth: 70, itemCentre: 300, content: 520 }, { itemWidth: 62, itemCentre: 116, content: 420 }, { itemWidth: 32, itemCentre: 112, content: 256 }].every(windowHolds), '置中範圍:範圍兩端與中間的寬度 —— 沒捲(scrollLeft 0)一定判紅、捲到中心一定判 centered 且完整可讀')
+  check(centringWindow({ itemWidth: 62, itemCentre: 80, content: 420 }) === null, '置中範圍:那一項太靠起點(中心 80、至少要 166px 可視寬)→ 沒有這樣的寬度')
+  // 縮放退路的寬度(resizePlan):只回「改完之後那一項仍然置中、不是夾在端點」的寬度,沒有就 null
+  check(resizePlan({ width: 286, itemWidth: 70, itemCentre: 300, content: 520 })?.width === 222, '縮放寬度:天然排版(可視寬 286)→ 縮 64 到 222,那一項仍需置中')
   check(resizePlan({ width: 174, itemWidth: 62, itemCentre: 116, content: 420 })?.width === 206, '縮放寬度:自備幾何 174 —— 縮 64 / 32 放不下那一項加遮擋、放寬 64 會夾在起點(116 − 119 < 0)→ 放寬 32 到 206(116 − 103 = 13,在中心)')
-  const pinned = resizePlan({ width: 174, itemWidth: 62, itemCentre: 80, content: 420 })
-  check(pinned?.centres === false && pinned.width === 238, '縮放寬度:那一項太靠起點、怎麼改都夾住 → 退而取第一個放得下的寬度,標明不是置中')
-  check(resizePlan({ width: 120, itemWidth: 200, itemCentre: 300, content: 900 }) === null, '縮放寬度:縮或放寬都放不下那一項 → null(呼叫端當儀器失效)')
+  check(resizePlan({ width: 174, itemWidth: 62, itemCentre: 80, content: 420 }) === null, '縮放寬度:那一項太靠起點、怎麼改都夾在起點 → null(2026-11-12 之前退而回 238 並標「不是置中」—— 那一格對有沒有捲沒有鑑別力)')
+  check(resizePlan({ width: 120, itemWidth: 200, itemCentre: 300, content: 900 })?.width === 304, '縮放寬度:縮 / 放寬 64、32 都放不下那一項加遮擋 → 取範圍裡離現在最近的端點 304')
+  check(resizePlan({ width: 120, itemWidth: 200, itemCentre: 110, content: 900 }) === null, '縮放寬度:放得下的寬度都會夾在起點 → null')
+  check(resizePlan({ width: 136, itemWidth: 32, itemCentre: 80, content: 256 }) === null, '縮放寬度:c55c3786 在 CI runner 的幾何(自備幾何 136、點到第 3 項、中心 80)→ null(範圍 136..144 裡沒有離現在 ≥ 16px 的寬度)')
   const cutAt = (list, w) => list.map((it) => ({ ...it, scW: w }))
   check([L(8, 400), L(8, 372), L(4, 1000, 120), L(3, 400, 100)].every((l) => overflowPlan(cutAt(l, overflowPlan(l).target)).enough === true), '幾何:照回傳的可視寬切完再問一次 → 都夠(回傳值自己滿足自己的條件)')
   check(instrumentProblems({ cells: 0, nonClamped: { click: 0, keys: 0, menu: 0, resize: 0 } }).length === 5, '儀器失效:零格 + 四種輸入都沒有置中量測 → 五條')
@@ -490,6 +598,12 @@ async function selftest() {
   const fitGaps = INPUTS.filter((i) => !fit.totals.nonClamped[i])
   check(fitBad.length === 0 && fitGaps.length === 0 && fit.selfCuts.length === 2,
     `對照組(整排塞得下、自備幾何開):Tabs scroll / Tabs menu ${fit.cells.length} 格全綠,四種輸入都有「需要置中」的格子(${INPUTS.map((i) => `${i} ${fit.totals.nonClamped[i]}`).join('、')})${fitBad.length ? `;紅:${fitBad.map((c) => c.text).join(' / ')}` : ''}${fitGaps.length ? `;沒有置中量測:${fitGaps.join('、')}` : ''}`)
+  // 同一個幾何再拿掉 primitive:Tabs 兩排每種輸入都要紅(c55c3786 在 CI runner 上 tabs-scroll|resize、tabs-menu|resize 沒紅 —— runner 的天然排版就是「整排塞得下」)
+  const fitBroken = await scanBuild(STATIC, { ...quiet, only: ['tabs-scroll', 'tabs-menu'], starve: 'fit', neutralize: 'before-action' })
+  const fitWant = STRIPS.filter((s) => s.key === 'tabs-scroll' || s.key === 'tabs-menu').flatMap((s) => INPUTS.filter((i) => i !== 'menu' || s.menu).map((i) => `${s.key}|${i}`))
+  const fitRed = new Set(fitBroken.cells.filter((c) => !c.ok).map((c) => `${c.strip}|${c.input}`))
+  const fitMissed = fitWant.filter((k) => !fitRed.has(k))
+  check(fitMissed.length === 0, `對照組(整排塞得下、自備幾何開、拿掉 primitive 呼叫):Tabs 兩排 ${fitWant.length} 個「排 × 輸入」應紅,${fitWant.length - fitMissed.length} 個紅${fitMissed.length ? `(沒紅:${fitMissed.join(', ')})` : ''}`)
   if (CONTROL_STATIC) {
     const before = await scanBuild(CONTROL_STATIC, { fresh: false, log: () => {} })
     const r = new Set(before.cells.filter((c) => !c.ok).map((c) => `${c.strip}|${c.input}`))

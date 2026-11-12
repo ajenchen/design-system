@@ -1159,6 +1159,7 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `button.spec.md`
 - `checkbox.spec.md`
 - `color.spec.md`
+- `data-table.spec.md`
 - `dropdown-menu.spec.md`
 - `element-anatomy.spec.md`
 - `empty.spec.md`

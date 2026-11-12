@@ -575,7 +575,7 @@ function VerticalLayout({
       </StepItemHeader>
       {showContent && (
         // 步驟標題區 → 內容 = loose(md 16 / lg 24):標題 + 說明是這一步整組內容的標題,不是第一個內容的小標
-        //(user 2026-10-21 A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:一步的內容是一張表單的好幾個欄位 = 兩塊以上並列 → loose)。
+        //(user 2026-10-21 A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:一步的內容是一張表單的好幾個欄位 = 兩塊以上 → loose)。
         // 已發布版寫死 mt-3(md、lg 都 12);閘 steps-content-follows-current (3)
         <div className="flex items-start gap-3 mt-[var(--layout-space-loose)]">
           <div className="shrink-0" style={{ width: indicatorBox }} />

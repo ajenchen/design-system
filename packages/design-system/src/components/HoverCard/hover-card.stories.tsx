@@ -218,7 +218,7 @@ export const RepoCard: Story = {
             <div className="flex flex-col gap-[var(--layout-space-tight)]">
               {/* 40px 圖示方塊 > 24px 閾值 → item-anatomy「Card header 大 prefix 對齊」(同 ProfileCard 標頭):
                   文字欄 justify-center + minHeight = 圖示高;標題 ↔ 說明的 2px 由 ItemContent 擁有 */}
-              {/* @layout-space-magic-ok: 卡片標頭 大 prefix ↔ 文字欄 12px = item-anatomy.spec.md:319 card header 模式的規格寫法(layoutSpace.spec.md:194 micro) */}
+              {/* @layout-space-magic-ok: 卡片標頭 大 prefix ↔ 文字欄 12px = item-anatomy.spec.md:319 card header 模式的規格寫法(layoutSpace.spec.md:201 micro) */}
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 shrink-0 rounded-md bg-primary-subtle grid place-content-center text-primary">
                   <Github size={18} />

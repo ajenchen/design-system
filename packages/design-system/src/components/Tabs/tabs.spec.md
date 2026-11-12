@@ -312,6 +312,7 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 - `accordion.spec.md`
 - `button.spec.md`
 - `carousel.spec.md`
+- `data-table.spec.md`
 - `header-canonical.spec.md`
 - `horizontal-overflow.spec.md`
 - `segmented-control.spec.md`

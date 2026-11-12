@@ -18,7 +18,7 @@ import { SectionTitle, SectionDescription, SPEC_HEADING_GAP, SPEC_HEADING_GAP_PA
  * 這兩個是兄弟節點、各頁直接排在內容前面,所以間距用下方 margin 給(其他地方一律用 `ExampleSection` 的外層 gap):
  * - 小標 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`,text-h6 + text-caption 正是 item-anatomy scanning 那一型);
  * - 區塊(預設):標題區(小標 + 說明)→ 內容看底下幾塊(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」):
- *   只有一塊(一張表、一張圖、一個元件)= `--layout-space-tight`;兩塊以上並列 = `--layout-space-loose`(user 2026-10-21 A4 甲)。
+ *   只有一塊(一張表、一張圖、一個元件)= `--layout-space-tight`;兩塊以上 = `--layout-space-loose`(user 2026-10-21 A4 甲;好幾個示範塊彼此只隔 tight 也算兩塊以上 —— user 2026-11-12)。
  *   幾塊由 tutorial-page.tsx `headingContentOf` 數(數「自己之後、下一個小標之前」的兄弟節點),值也只寫在那裡(`SPEC_HEADING_GAP`)。
  * - 段落(`<H3 paragraph>`):底下是一段純文字 / 清單 → 標題區 → 文字 = `--layout-space-tight`(內容之間本來就是 tight,
  *   同 tutorial-page.tsx `createTutorialRule` 不給 `examples` 那種規則)。之前寫死 `mb-2` / `mb-4`(8 / 16,不跟密度)。

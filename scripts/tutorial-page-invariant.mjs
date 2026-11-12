@@ -76,10 +76,13 @@
  *        這些頁手寫 <h2> / <section> 也由 R2 收(chrome / 浮層標題槽 *Header 裡的 <h2> 是範例的產品標題,不算)。
  *   (R14) 標題區 → 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」;user 2026-11-11「我覺得主要取決於那個標題和說明是否是
  *        完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？…」+ 決策頁「說明頁:甲」):
- *        底下只有一塊 → tight、兩塊以上並列 → loose,由共用元件自己數(各頁不寫、不選)。守:tutorial-page.tsx 有 `headingContentOf` /
+ *        底下只有一塊 → tight、兩塊以上 → loose(好幾個示範塊彼此只隔 tight 也算兩塊以上 —— user 2026-11-12 第四批成品頁「多塊緊排」
+ *        = 「乙：有兩塊以上就維持遠的距離」),由共用元件自己數(各頁不寫、不選)。守:tutorial-page.tsx 有 `headingContentOf` /
  *        `useHeadingContent`,`ExampleSection` 呼叫 `useHeadingContent`;區塊模式的 gap 與設計規格頁小標的下方距離都是「預設 loose +
  *        data-[heading-content=one] 時 tight」;anatomy-utils.tsx 的 `H3` / `Desc` 都呼叫 `useHeadingContent`、用 `SPEC_HEADING_GAP`,
- *        不自己寫 loose(值只在 tutorial-page.tsx)。數法本身(幾塊、隔多遠算並列)由 section-gap-invariant 的「標題區 → 內容」各列量像素。
+ *        不自己寫 loose(值只在 tutorial-page.tsx);「隔多遠才算兩塊」的門檻 `HEADING_BLOCK_MIN_GAP_PX` 等於 layoutSpace.css 的 md
+ *        `--layout-space-tight`(版面間距刻度最小的一格),而且 `headingContentOf` 真的拿它來比(常數存在 ≠ 有被用)。
+ *        數法本身(幾塊、隔多遠算兩塊)由 section-gap-invariant 的「標題區 → 內容」各列量像素。
  *
  * 教學頁的範圍:全部 *.principles.stories.tsx(R1–R11、R13),加上 tokens/** 與 patterns/** 裡 import 共用元件的 *.stories.tsx(R2–R6、R10、R11、R13);
  * 其餘 Tokens / Patterns 文件頁只收「自抄教學框小元件」、手寫 <h2> / <section>(R2)與手刻段落清單(R12)。
@@ -858,11 +861,19 @@ export function checkHelper(text) {
 }
 
 export const ANATOMY_UTILS = 'packages/design-system/src/stories-helpers/anatomy/anatomy-utils.tsx'
+export const LAYOUT_SPACE_CSS = 'packages/design-system/src/tokens/layoutSpace/layoutSpace.css'
+const BLOCK_MIN_GAP = 'HEADING_BLOCK_MIN_GAP_PX'
+
+/** layoutSpace.css 第一個 `:root` 區塊(md,預設密度)的 `--layout-space-tight`,單位 px;讀不到回 null */
+export function mdLayoutSpaceTight(cssText) {
+  const m = /:root\s*\{[^}]*?--layout-space-tight:\s*([\d.]+)px/.exec(cssText ?? '')
+  return m ? Number(m[1]) : null
+}
 const HEADING_ONE_GAP = 'data-[heading-content=one]:gap-[var(--layout-space-tight)]'
 const HEADING_ONE_MB = 'data-[heading-content=one]:mb-[var(--layout-space-tight)]'
 
 /** (R14) 標題區 → 內容:共用元件自己數幾塊(一塊 tight / 兩塊以上 loose);值只在 tutorial-page.tsx */
-export function checkHeadingProximity(helperText, anatomyText) {
+export function checkHeadingProximity(helperText, anatomyText, layoutCssText) {
   const out = []
   const r14 = (file, message) => out.push({ rule: 'R14', file, line: 1, message })
   const sf = ts.createSourceFile(HELPER, helperText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -887,6 +898,16 @@ export function checkHeadingProximity(helperText, anatomyText) {
   if (!(specGap.includes('mb-[var(--layout-space-loose)]') && specGap.includes(HEADING_ONE_MB))) r14(HELPER, `設計規格頁小標的下方距離不是「預設 loose + ${HEADING_ONE_MB}」(現為「${specGap.join(' ')}」)`)
   const esFn = sf.statements.find((st) => ts.isFunctionDeclaration(st) && st.name?.text === 'ExampleSection')
   if (!esFn || !/\buseHeadingContent\(/.test(esFn.getText(sf)) || !/\bSECTION_BLOCK_GAP\b/.test(esFn.getText(sf))) r14(HELPER, 'ExampleSection 沒有呼叫 useHeadingContent / 沒用 SECTION_BLOCK_GAP —— 標題區 → 內容不再看底下幾塊')
+  // 「隔多遠才算兩塊」的門檻:值 = layoutSpace.css 的 md tight;headingContentOf 真的拿它來比(user 2026-11-12「多塊緊排」= 乙)
+  const mdTight = layoutCssText == null ? null : mdLayoutSpaceTight(layoutCssText)
+  const minGapDecl = decls.get(BLOCK_MIN_GAP)
+  const minGap = minGapDecl && ts.isNumericLiteral(minGapDecl) ? Number(minGapDecl.text) : null
+  if (mdTight === null) r14(LAYOUT_SPACE_CSS, '讀不到 layoutSpace.css 的 md `--layout-space-tight`(第一個 :root 區塊)—— 沒辦法核對「兩塊」的門檻,不讀成通過')
+  if (minGap === null) r14(HELPER, `共用元件沒有數字常數 ${BLOCK_MIN_GAP} —— 好幾個示範塊彼此隔多遠才算兩塊,門檻只寫在 tutorial-page.tsx(user 2026-11-12:有兩塊以上就維持遠的距離)`)
+  else if (mdTight !== null && minGap !== mdTight) r14(HELPER, `${BLOCK_MIN_GAP} = ${minGap},但 layoutSpace.css 的 md --layout-space-tight = ${mdTight} —— 門檻是版面間距刻度最小的一格,兩邊要同一個值`)
+  const hcFn = sf.statements.find((st) => ts.isFunctionDeclaration(st) && st.name?.text === 'headingContentOf')
+  const hcBody = hcFn?.body ? hcFn.body.getText(sf) : ''
+  if (!new RegExp(`\\b${BLOCK_MIN_GAP}\\b`).test(hcBody)) r14(HELPER, `headingContentOf 沒有用 ${BLOCK_MIN_GAP} 判斷 —— 好幾個示範塊彼此只隔 tight 會被算成一塊(標題變近),違反 user 2026-11-12「多塊緊排」= 乙`)
   if (anatomyText === null) { r14(ANATOMY_UTILS, '讀不到 anatomy-utils.tsx(設計規格頁的 H3 / Desc)'); return out }
   const af = ts.createSourceFile(ANATOMY_UTILS, anatomyText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const comp = (name) => {
@@ -929,7 +950,8 @@ export function scanTree(root) {
     const helperText = readFileSync(helperPath, 'utf8')
     hits.push(...checkHelper(helperText))
     const anatomyPath = join(root, ANATOMY_UTILS)
-    hits.push(...checkHeadingProximity(helperText, existsSync(anatomyPath) ? readFileSync(anatomyPath, 'utf8') : null))
+    const layoutCssPath = join(root, LAYOUT_SPACE_CSS)
+    hits.push(...checkHeadingProximity(helperText, existsSync(anatomyPath) ? readFileSync(anatomyPath, 'utf8') : null, existsSync(layoutCssPath) ? readFileSync(layoutCssPath, 'utf8') : null))
   } else hits.push({ rule: 'R8', file: HELPER, line: 1, message: '共用教學頁元件不存在' })
   return { hits, scanned: { principles: principles.length, patternPages: patternPages.length, files: all.length } }
 }
@@ -1292,13 +1314,27 @@ export function runSelftest(root = SCRIPT_ROOT) {
   // R14(2026-11-11):標題區 → 內容由共用元件數幾塊 —— 現況綠;拿掉「一塊 → tight」/ 不再呼叫判斷 / H3 自己寫 loose 各紅;
   // 本規則上線前的共用元件(be2f1324,標題區 → 內容一律 loose)紅
   const anatomy = readFileSync(join(root, ANATOMY_UTILS), 'utf8')
-  const r14 = (h, a = anatomy) => checkHeadingProximity(h, a).map((x) => x.message)
+  const layoutCss = readFileSync(join(root, LAYOUT_SPACE_CSS), 'utf8')
+  const r14 = (h, a = anatomy, c = layoutCss) => checkHeadingProximity(h, a, c).map((x) => x.message)
   expect(r14(helper).length === 0, `現況 tutorial-page.tsx + anatomy-utils.tsx R14 0 筆(實得 ${JSON.stringify(r14(helper))})`)
   expect(r14(helper.replace(` ${HEADING_ONE_GAP}'`, "'")).some((m) => m.includes('ExampleSection 區塊模式')), '區塊模式拿掉 data-[heading-content=one] → R14')
   expect(r14(helper.replace(` ${HEADING_ONE_MB}'`, "'")).some((m) => m.includes('設計規格頁小標')), '設計規格頁小標拿掉 data-[heading-content=one] → R14')
   expect(r14(helper.replace('useHeadingContent(ref, (el) => (paragraph ? null : sectionContent(el)))', '')).some((m) => m.includes('ExampleSection 沒有呼叫')), 'ExampleSection 不再呼叫 useHeadingContent → R14')
   expect(r14(helper, anatomy.replace('paragraph ? SPEC_HEADING_GAP_PARAGRAPH : SPEC_HEADING_GAP', "paragraph ? SPEC_HEADING_GAP_PARAGRAPH : 'mb-[var(--layout-space-loose)]'")).some((m) => m.includes('H3 沒用 SPEC_HEADING_GAP')), 'H3 改回自己寫 mb loose → R14')
   expect(r14(helper, null).some((m) => m.includes('讀不到 anatomy-utils')), '讀不到 anatomy-utils.tsx → R14(不讀成通過)')
+  // 「兩塊」的門檻(2026-11-12 多塊緊排 = 乙):現況 = md tight;改值 / 改 token / 不再用它 / 讀不到 token 各紅
+  const mdTight = mdLayoutSpaceTight(layoutCss)
+  expect(mdTight !== null && mdTight > 0, `讀得到 layoutSpace.css 的 md tight(實得 ${mdTight})`)
+  const minGapLine = `const ${BLOCK_MIN_GAP} = ${mdTight}\n`
+  expect(helper.includes(minGapLine), `現況 tutorial-page.tsx 有「${minGapLine.trim()}」(對照組要改的那一行真的存在)`)
+  expect(r14(helper.replace(minGapLine, `const ${BLOCK_MIN_GAP} = ${mdTight + 4}\n`)).some((m) => m.includes('兩邊要同一個值')), '門檻常數改成別的值 → R14')
+  expect(r14(helper, anatomy, layoutCss.replace(/(:root\s*\{[^}]*?--layout-space-tight:\s*)[\d.]+px/, '$18px')).some((m) => m.includes('兩邊要同一個值')), 'layoutSpace.css 的 md tight 改值、常數沒跟 → R14')
+  expect(r14(helper.replace(minGapLine, '')).some((m) => m.includes(`沒有數字常數 ${BLOCK_MIN_GAP}`)), '拿掉門檻常數 → R14')
+  const useLine = `blocks >= 2 ? ${BLOCK_MIN_GAP} : loose`
+  expect(helper.includes(useLine), `現況 headingContentOf 有「${useLine}」(對照組要改的那一行真的存在)`)
+  expect(r14(helper.replace(useLine, 'loose')).some((m) => m.includes(`headingContentOf 沒有用 ${BLOCK_MIN_GAP}`)), 'headingContentOf 改回只比 loose(2026-11-11 那版)→ R14')
+  expect(r14(helper, anatomy, null).some((m) => m.includes('讀不到 layoutSpace.css')), '讀不到 layoutSpace.css → R14(不讀成通過)')
+  expect(r14(helper, anatomy, ':root { --layout-space-loose: 16px; }').some((m) => m.includes('讀不到 layoutSpace.css')), 'layoutSpace.css 裡沒有 md tight → R14(不讀成通過)')
   const baseR14 = r14(baseHelper.toString('utf8'))
   expect(baseR14.some((m) => m.includes('headingContentOf')) && baseR14.some((m) => m.includes('ExampleSection 沒有呼叫')), `be2f1324 的 tutorial-page.tsx(標題區 → 內容一律 loose)→ R14(實得 ${baseR14.length} 筆)`)
   return { ok, fails }
