@@ -99,7 +99,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 - **`prefers-reduced-motion: reduce`**:smooth 一律改瞬間。
 - **只捲這個容器**(`scrollTo`),不用 `scrollIntoView`(後者會連帶捲動頁面與其他可捲動的祖先)。祖先在做縮放動畫(Dialog / FileViewer 進場)時,量到的寬度先換回版面像素再算。
 - **消費者宣告**:Chip `[data-slot="chip"]` + `data-state=on`;Tabs `[role="tab"]` + `aria-selected=true`;FileViewer 縮圖列 `[data-thumb-index]` + `aria-current=true`。`reserveArrowWidth` 與同一排 `buildFadeMask` 傳的值相同。
-- **閘**:`scripts/overflow-reveal-selected-invariant.mjs`(`npm run test:overflow-reveal-selected`)—— 五排 × 點半露的項目 / 方向鍵 / ⌄ 選單 / 縮放,剛動到的那一項中心在容器中心 ±2px(兩端夾住另判)且完整可讀;對照組:每種輸入前一刻拿掉 primitive 的作用必紅,修前建置點擊 / 方向鍵 / 縮放必紅。
+- **閘**:`scripts/overflow-reveal-selected-invariant.mjs`(`npm run test:overflow-reveal-selected`)—— 五排 × 點半露的項目 / 方向鍵 / ⌄ 選單 / 縮放,剛動到的那一項中心在容器中心 ±2px(兩端夾住另判)且完整可讀;對照組:每種輸入前一刻拿掉 primitive 的作用必紅,修前建置點擊 / 方向鍵 / 縮放必紅。**幾何不靠字型**(2026-11-12):量完項目位置後,溢出不到中間的項目就由閘自己把可視寬切到中間那一項再量(log 標「自備幾何」)—— 沒有中日韓字型的機器上整排塞得進外框時,不會變成空過或儀器失效;對照組兩面(整排塞得下 / 只切到最後一項:自備幾何關必紅、開必綠)。
 
 **世界級對照**(2026-11-11 研究,37 套;MASTER-TODO 11-11 研究條):預設置中的 8 套全是行動端 —— Android `TabLayout`([`TabLayout.java` `calculateScrollXForTab`](https://github.com/material-components/material-components-android/blob/master/lib/java/com/google/android/material/tabs/TabLayout.java))、Compose M2 / M3、Flutter、Vant、Ant Design Mobile、TDesign Mobile、Ionic;桌面網頁 17 套預設「剛好露出」(MUI [`Tabs.js` `scrollSelectedIntoView`](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Tabs/Tabs.js)、Carbon、VS Code…),其中 Arco、TDesign 桌面、Naive UI、Vuetify、rc-tabs 有置中開關。這份對照回報 user 之後,user 的回覆是上面那句「…都先B」。
 
