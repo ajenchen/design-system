@@ -1464,7 +1464,10 @@ jobs:
     # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。
     # 原 job 三次 CI 實測 24.6(108a736f)/ 24.1(ac05777d)/ 25.3(4f692d17,撞上限被取消)分;本 job 只跑側欄鍵盤一支,
     # 那支在原 job 裡實測 491 / 517 / 464 秒。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
-    name: Verify browser(sidebar menu keyboard)
+    # 2026-11-13 按預算加欄位開啟外框閘的**對照組**(判定在 verify-browser-field-edges;本機 202 秒,CI 估約 4.5 分):
+    # 本 job 原本約 13 分(建置 + 安裝約 4.5 分 + 側欄鍵盤約 8.5 分)→ 估約 17.5 分 / 上限 25。放這裡是因為它是 25 分 job 裡餘裕最大的一個,
+    # 不是因為主題相同(同 toast-viewport-placement 放 verify-browser-tree-navigation 的先例:不往沒有餘裕的 job 疊)。
+    name: Verify browser(sidebar menu keyboard + field open border control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1499,6 +1502,15 @@ jobs:
           # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
           # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
           npm run test:sidebar-menu-keyboard
+
+      - name: Field open border control group (browser)
+        run: |
+          # 欄位開啟外框閘的**對照組**(判定 `npm run test:field-open-border` 在 verify-browser-field-edges;按預算放這裡,見本 job 檔頭)。
+          # 在真建置上跑四種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+          # (a) 開著的框改回 hover 色 → 開著的列全紅;(b) 記號 data-field-open 一出現就拿掉(= 元件漏接記號)→ 焦點不在欄位裡的開著列紅、
+          # 靠 focus-within 的照綠;(c) 外框改認通用的 data-state="open" / 裡面任何開著的東西 → 「外面包一層」與「欄位裡的小按鈕」的列紅;
+          # (d) 併排欄位組裡開著的那格不再浮到鄰居上面 → 像素列紅、computed 列綠。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
+          node scripts/field-open-border-invariant.mjs --selftest
 
   verify-browser-agent:
     # 2026-09-10 拆自 verify-browser-interaction(它加了 docs 競態閘、虛擬游標 F 段、示範閘 S12 / S13 之後 13.1 分鐘被 15 分鐘預算取消)。
@@ -1824,7 +1836,9 @@ jobs:
     # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 14.5 / p90 14.9 / 最大 15.1 分(上限 15),
     # 289bce76 那次撞 15 分被取消(job 115665117169)。兩支全 story 掃描各自變慢(原因記在待辦總帳 G10):欄位左緣 09-29 約 300 秒 → p90 363 秒、
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
-    name: Verify browser(field edges + combobox single path)
+    # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
+    # 它的對照組(本機 202 秒,CI 估約 4.5 分)疊進來會到約 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1876,6 +1890,17 @@ jobs:
           # 儲存格的 defaultOpen/onOpenChange 失效,零訊號。靜態字串比對做不到,必須真的用
           # coarse pointer 開瀏覽器。對照組把浮層拔掉、塞回原生 <select>,這支必須紅。
           npm run test:combobox-single-path
+
+      - name: Field open border (browser)
+        run: |
+          # 欄位自己的浮層開著時,外框畫出來的顏色 = 它聚焦時的顏色(一般 --primary、驗證錯誤 --error),而且只認欄位自己的浮層
+          #(field.spec.md「Field state machine」表;2026-11-12 AI 建議、user 採納,原話「我覺得可以照你建議」)。
+          # 量的是四邊 computed 框色(併排欄位組另量四邊中點像素),期望色從頁面上的 token 取:19 種欄位 × 滑鼠點開 / 鍵盤打開
+          #(Select / Combobox / PeoplePicker / DatePicker / 日期區間 / TimePicker 的一般與驗證錯誤)各量開著時滑鼠在空白處 / 欄位上 / 浮層裡、
+          # 關掉後回到原色;表格格內無框款兩格;併排欄位組中間那格;夾具三格「外面包一層浮層把欄位當觸發點」(外面開著不變色、自己開著才變)
+          # 與 FileViewer 縮放欄位裡的小按鈕(開選單外框不變)。「併排時滑過鄰居共用那條線」只印數字不判紅(還沒有規定)。
+          # 這裡只跑判定;對照組(四種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
+          npm run test:field-open-border
 
   verify-browser-footer-gutter:
     # 2026-10-14 拆自 verify-browser-field-edges(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。

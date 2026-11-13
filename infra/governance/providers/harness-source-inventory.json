@@ -561,6 +561,10 @@
             "timeoutMs": 360000
           },
           {
+            "path": "scripts/test-field-open-border-invariant.mjs",
+            "timeoutMs": 720000
+          },
+          {
             "path": "scripts/test-form-validation-contract-invariant.mjs",
             "timeoutMs": 1200000
           },
@@ -580,6 +584,7 @@
           "scripts/test-data-table-link-cell-invariant.mjs",
           "scripts/test-data-table-row-under-pointer-invariant.mjs",
           "scripts/test-dialog-coexist-scroll-lock-invariant.mjs",
+          "scripts/test-field-open-border-invariant.mjs",
           "scripts/test-form-validation-contract-invariant.mjs",
           "scripts/test-hover-color-pair-invariant.mjs",
           "scripts/test-layer-order-invariant.mjs",

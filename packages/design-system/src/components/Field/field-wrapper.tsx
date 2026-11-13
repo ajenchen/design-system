@@ -49,7 +49,7 @@ installReadonlyPointerFocusGuard()
 export type FieldChromeHost =
   /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly 邊框只認**自己**或**裡面的文字框**的鍵盤焦點
    * (`focus-visible:` + `has-[:is(input,textarea):focus-visible]`,都排除 `data-pointer-focus`);裡面其他自己會畫框的東西(連結、頭像)
-   * 聚焦時外框不亮 —— 一個 tab stop 一個指示器。overlay trigger 開啟時維持 hover 框(`data-[state=open]`)。 */
+   * 聚焦時外框不亮 —— 一個 tab stop 一個指示器。欄位自己的浮層開著時維持**聚焦**的框(`data-[field-open]`,見下方 error:false / error:true 兩條)。 */
   | 'wrapper'
   /** 宿主本身就是可聚焦控件(`<textarea>`):readonly 邊框用 `focus-visible:`(排除 `data-pointer-focus`),無 overlay 開啟態。 */
   | 'control'
@@ -66,13 +66,17 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
       variant: 'default' as const,
       className: ['bg-surface border border-border', 'hover:border-border-hover'],
     },
+    // 開啟中(`data-field-open`,欄位外框自己掛的記號)= 維持**聚焦**的框:欄位 + 它自己打開的浮層 = 同一個欄位(field.spec.md「Field state machine」表)。
+    // 焦點移進浮層時 focus-within 不成立,少了這條框色就取決於焦點落在哪(改前實測:可打字的 Select 藍、不可打字的灰;可打字的 DatePicker 滑鼠點開藍、
+    // 按 ↓ 打開灰,不可打字的都是灰)。2026-11-12 AI 建議、user 採納(世界級對照與出處在 field.spec.md 同一段)。
+    // 認 `data-field-open`、不認 Radix 通用的 `data-state="open"`(2026-11-13;理由與「誰掛記號」住 `lib/composite-field-focus.ts` 檔頭最後一段)。
+    // 帶 `!`:開著又滑過時不被 `hover:border-border-hover` 蓋回灰框。按鈕類觸發不適用,照舊「開著 = 自己的 hover」(inline-action.spec.md)。
+    // 一般與錯誤各有自己的開啟規則,分開放在各自那條(2026-09-25 起就這樣分:當時實測 TimePicker,開啟規則放共用條會把 error 欄位的紅框換掉)。
     // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
     // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
     // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」)。Field 家族的焦點指示統一 = 邊框轉色;編輯態不分開著關著、不分滑鼠鍵盤(唯讀只認鍵盤,見下方 readonly 條);
     // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
-    // 開啟中(data-state=open)= 維持自己的 hover 框(inline-action.spec.md「互動狀態」表 overlay 開啟那一列:同 host hover;field.spec.md「Field state machine」表)。
-    // 放在 error:false 這條、不放上面的共用條:error 欄位的 hover 是 error-hover,共用條的 border-hover 會把紅框換成灰框(2026-09-25 實測 TimePicker)。
-    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
     // 純顯示只拿掉左邊:左內距與左邊框歸 0 → 值的第一個可見元素齊控件左緣 = 標籤左緣(C1 甲,user 2026-10-21);
     // 高度、上下內距與上下 1px 透明邊、右側(帶箭頭的純顯示的右邊距、截斷省略號、依內容寬)都不動。
     { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border-y border-r border-transparent !pl-0' },
@@ -94,8 +98,8 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
     },
     { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
     // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
-    // error × 開啟中 = error 自己的 hover 框 `data-[state=open]:border-error-hover`(同 error:false 那條的開啟規則;default 與 naked 共用本條)
-    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[state=open]:border-error-hover focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+    // error × 開啟中 = 維持 error 的聚焦框 `data-[field-open]:!border-error`(同 error:false 那條的開啟規則,錯誤勝過聚焦;default 與 naked 共用本條)
+    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[field-open]:!border-error focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
   ]
 }
 
@@ -188,9 +192,9 @@ export const fieldWrapperStyles = cva(
     },
     // mode x variant 交叉:visual chrome 由 compoundVariants 決定
     //
-    // Overlay trigger active state(canonical 2026-05-02):當 Field 是 Popover/DropdownMenu/
-    // Combobox trigger 用 asChild,Radix 自動 set `data-state="open"` on trigger root → trigger
-    // 視覺維持 hover 樣式直到浮層關閉(對齊 inline-action.spec.md「狀態極簡派」)。
+    // 欄位自己的浮層開著(2026-11-12;記號 2026-11-13):欄位把 `data-field-open` 寫在外框宿主上
+    // (`lib/composite-field-focus.ts` `fieldOpenProps`)→ 外框維持**聚焦**的樣子直到浮層關閉(欄位 + 它的浮層 = 同一個欄位;
+    // field.spec.md「Field state machine」表)。按鈕類觸發才是「開著 = 自己的 hover」(inline-action.spec.md)。
     compoundVariants: [
       // default 外框 × mode / error 全部來自 FIELD_DEFAULT_CHROME_COMPOUNDS(單行/多行/複合三宿主同一份;
       // 原本逐條寫在此處的 edit/view/readonly/disabled/error 字串與其 rationale 註解已上移到該常數)
@@ -225,13 +229,13 @@ export const fieldWrapperStyles = cva(
           'hover:border-border-hover',
           // v13.3 SSOT canonical:focus-within !important(同 default + bare;
           // 2026-07-04 Q1:focus 藍移到 error:false compound,error:true 走共用 error compound)
-          // 2026-09-25:開啟中的 border-hover 同樣移到 error:false compound(error 開啟中走共用 error compound 的 error-hover)
+          // 2026-09-25:開啟中的框同樣在 error:false compound(error 開啟中走共用 error compound);2026-11-12 起開啟中 = 聚焦的框
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
       // @focus-suppress C — naked wrapper 自己聚焦(DataTable 儲存格裡的 Select / DatePicker 觸發器);承擔者:同一行 focus-within:!border-primary
-      // 開啟中 = 自己的 hover 框(同 default 的 error:false 條註解;field.spec.md「Field state machine」表)
-      { mode: 'edit', variant: 'naked', error: false, className: 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
+      // 開啟中 = 維持聚焦的框(同 default 的 error:false 條註解;field.spec.md「Field state machine」表)
+      { mode: 'edit', variant: 'naked', error: false, className: 'data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
         //   Q1 root invariant?:cell-as-input view 視覺位置 = `cell.items-{X}` × `Field.height`

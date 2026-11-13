@@ -400,13 +400,9 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | 純 action 按鈕（submit / cancel / 頁面導覽）| 跟在欄位後面的按鈕 / 浮層·面板的 footer / toolbar | Field 是資料輸入容器，不放頁面級 action |
 | 巢狀 Field | ❌ 不支援 | Field 不支援巢狀，多欄位用 FieldGroup |
 
----
-
 ## Anatomy stories
 
 對應 anatomy story:`Overview` + `Inspector`(元件檢閱器——切 orientation / size / mode / required / invalid 即時 render)+ `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior` + `Accessibility`。
-
----
 
 ## Field state machine SSOT(v13.3)
 
@@ -415,20 +411,23 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | State | Token | CSS |
 |---|---|---|
 | rest | `--border` | `border-border` |
-| hover(無 focus)| `--border-hover` | `hover:border-border-hover` |
-| **focus(無 error)** | `--primary` | **`focus-within:!border-primary`**(error:false compound;`!important` 勝 data-state)|
+| hover(無 focus、自己的浮層沒開)| `--border-hover` | `hover:border-border-hover` |
+| **focus(無 error)** | `--primary` | **`focus-within:!border-primary`**(error:false compound)|
 | focus + hover | `--primary` | `focus-within:hover:!border-primary`(M11 AND case)|
-| open(無 focus,無 error)| `--border-hover` | `data-[state=open]:border-border-hover`(error:false compound)|
+| **自己的浮層開著(無 error)**:焦點留在欄位裡或已搬進浮層都算;滑過也不變 | `--primary`(= 聚焦的框)| `data-[field-open]:!border-primary`(error:false compound,default 與 naked 各一條)|
 | **error(edit 全程,含聚焦)** | `--error` | `border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error`(error:true compound)|
-| error × open(無 focus)| `--error-hover` | `data-[state=open]:border-error-hover`(error:true compound)|
+| error × 自己的浮層開著(滑過也不變)| `--error`(不是 `--error-hover`)| `data-[field-open]:!border-error`(error:true compound,default 與 naked 共用)|
 
-**open = 維持自己的 hover 框**(`patterns/element-anatomy/inline-action.spec.md`「互動狀態」表 overlay 開啟那一列:同 host hover),所以依 error 分流;2026-09-25 前寫在共用 compound,error 欄位開面板時紅框被換成灰框。
+**欄位自己的浮層開著 = 維持聚焦的框**(本節是這條規則的唯一出處;其他規格與程式註解只指過來,不重述):
+- **規則與優先序**:欄位 + 它自己打開的浮層(選單 / 月曆 / 時間面板)= 同一個欄位,所以浮層開著時外框維持聚焦的樣子,不看焦點留在欄位裡還是已搬進浮層。優先序:錯誤 > 自己的浮層開著 = 聚焦 > 滑過 > 預設 —— 錯誤欄位開著仍是 `--error` 紅框;開著又滑過仍是聚焦的框(兩條都帶 `!`,不被 `hover:` 蓋回去)。只有 wrapper 型宿主有這條,而且只在編輯模式(`<textarea>` 自己是宿主,沒有浮層)。**來源**:規則是 AI 建議、user 2026-11-12 採納(逐字句首「我覺得可以照你建議」;全句後半談的是工作方式,不是這條規則)。2026-11-12 前本表寫「open = 維持自己的 hover 框」(開著是滑過的灰;錯誤欄位是 `--error-hover`)—— 2026-11-12 查核那一條查無 user 原話,而且框色取決於焦點落在哪(改前實測:不可打字的 Select 開著是灰、可打字的日期欄位按 ↓ 打開由藍變灰),已退役。同一個想法早已管「離開欄位才算 blur」(`../../lib/composite-field-focus.ts` 檔頭)。**併排欄位組**:成員自己的浮層開著時,跟滑過 / 聚焦一樣浮到鄰居上面(不然聚焦的框被相鄰那格的邊框蓋掉一邊;這一條是 AI 推導),疊放規則住 `../FieldControlGroup/field-control-group.spec.md`「States」。
+- **記號**:外框只認欄位自己掛的 `data-field-open`(屬性存在 = 開著)。唯一寫入者 = `../../lib/composite-field-focus.ts` 的 `fieldOpenProps`;每個欄位的外框宿主自己展開 `fieldOpenProps(open)`,而且寫在 consumer 傳進來的 props 之後(Select / Combobox(PeoplePicker 走這兩支)/ DatePicker / 日期區間 / TimePicker,共 5 處)—— 外面傳同名屬性蓋不掉,記號也不會落到不是欄位的觸發點上。**不認 Radix 通用的 `data-state="open"`**:那個屬性任何一層 Trigger 都會寫,外面的浮層把欄位元件當觸發點時,Radix Slot 會把外面那層的值蓋到欄位外框上 —— 2026-11-13 拿「認 `data-state`」的寫法實測 84 格:外面的浮層開著 → 欄位假藍 35 / 35;外面包了一層 → 欄位自己開著卻是灰 36 / 42(同檔檔頭最後一段);改認記號之後同一組重量,兩項都是 0(0 / 35、0 / 42)。這組數字來自一次性探針(不在 repo);同一件事的常駐檢查是瀏覽器閘 `field-open-border-invariant.mjs` 的 X 列。記號這個做法是 AI 的工程判斷(2026-11-13),不是 user 的決定。**關掉之後**:記號消失,框色回到純 focus 機制 —— 選完選項 Radix `onCloseAutoFocus` 把焦點還給欄位 → `focus-within` → 藍;點外面離開 → 焦點移外 → 灰。
+- **邊界(只認欄位自己的主浮層;這幾條的寫法是 AI 推導)**:(1) 欄位裡的小按鈕開的選單不算(檔案檢視器縮放那顆,`../FileViewer/file-viewer.tsx` —— 那是按鈕的浮層,欄位不寫記號);(2) 包在欄位外面、把欄位當觸發點的浮層不算(Tooltip / Popover / DropdownMenu / Coachmark 導覽提示 —— 它們寫不到記號)。這樣包不影響框色,但另有與框色無關的副作用(2026-11-13 實測):Popover / Coachmark / Dialog / DropdownMenu 包純輸入欄時,裡面的 `<input>` 變成 `type=button` 並多出 `aria-haspopup` / `aria-expanded`;DatePicker / TimePicker 外框的 `aria-expanded` 被外面的值蓋掉 —— 屬這些浮層「觸發點該是什麼」的問題,不歸本表;DS 內沒有這種用法(唯一一筆 Tooltip 包 Input 是 `../Tooltip/tooltip.principles.stories.tsx` 的 ❌ 反例示範);(3) 欄位另外掛出去的小浮層(Combobox「+N」浮出清單)現況也不算:記號只跟主浮層的 open 走 —— 而「離開欄位才算 blur」那一半把這張卡算成同一個欄位(`../../lib/composite-field-focus.ts` 的 `extra`),兩半認的範圍不同。照同一個原則,焦點在卡裡時人還在這個欄位,外框應該維持聚焦的框;現況沒有(2026-11-13 實測,這次改動前後相同:滑到「+N」卡開著 → 外框是滑過的灰;焦點搬進卡裡按 Tag 的 × → 外框是靜止的框)—— 已知缺口,待補(AI 推導)。按鈕類觸發不歸本表,照舊「開著 = 自己的 hover」:`../../patterns/element-anatomy/inline-action.spec.md`「Overlay trigger canonical」、`../Button/button.spec.md`「狀態疊加(開啟中 / pressed / aria-disabled)」。
+- **世界級對照**(原始碼 2026-11-12 開檔核對;2026-11-13 連結釘到固定 commit,逐檔與核對時存的副本位元組相同;看的是下拉選擇類開著時聚焦樣子還在不在):MUI Select 選單開著時不把 blur 往上傳,`focused` 狀態不被清掉(`if (!open && onBlur) {`,[SelectInput.js#L642-L643](https://github.com/mui/material-ui/blob/e2683473c5d0e1982ba90a7f093373a18859031a/packages/mui-material/src/Select/SelectInput.js#L642-L643));MUI X 日期 / 時間選擇器面板開著時直接把欄位設成 focused(`focused: pickerContext.open ? true : undefined`,[useFieldInternalPropsWithDefaults.ts#L63](https://github.com/mui/mui-x/blob/e6febb3da510f52bffe6c742c3c8bc692b381f79/packages/x-date-pickers/src/internals/hooks/useField/useFieldInternalPropsWithDefaults.ts#L63))—— 焦點已在月曆裡、欄位仍是聚焦的樣子,與本規則同一種做法。Ant Design Select 的框色認元件自己寫的 `-focused` class,`-open` 只把已選值調淡、不改框([select-input.ts#L48-L49](https://github.com/ant-design/ant-design/blob/b975f70f2e5101d638ce32662bde7f6eb2c9bf81/components/select/style/select-input.ts#L48-L49)、[#L333-L338](https://github.com/ant-design/ant-design/blob/b975f70f2e5101d638ce32662bde7f6eb2c9bf81/components/select/style/select-input.ts#L333-L338))。Carbon ComboBox 的聚焦外框線認元件自己寫的 class,選單開著時還在(指到選項時線由 2px 變 1px,[_combo-box.scss#L53-L63](https://github.com/carbon-design-system/carbon/blob/93583caf0925da6a08aac7c705beaae5001b79d7/packages/styles/scss/components/combo-box/_combo-box.scss#L53-L63);class 由 `isFocused` 狀態寫,[ComboBox.tsx#L893](https://github.com/carbon-design-system/carbon/blob/9bfa9e5aa8f888a0be2da9e88ab554fa9f1328a3/packages/react/src/components/ComboBox/ComboBox.tsx#L893))。Fluent UI v9 Combobox 的聚焦樣子掛在 `:focus-within`([useComboboxStyles.styles.ts#L70-L71](https://github.com/microsoft/fluentui/blob/6d02793e21251c1aecc33429ae2f9a8ed0e6469b/packages/react-components/react-combobox/library/src/components/Combobox/useComboboxStyles.styles.ts#L70-L71)),選單開著時焦點留在輸入框所以一直成立(選項用 active-descendant 追蹤,[useCombobox.tsx#L48](https://github.com/microsoft/fluentui/blob/42b30d8d0fa98f47ee39ca4736634c068631714c/packages/react-components/react-combobox/library/src/components/Combobox/useCombobox.tsx#L48))。Atlassian Select 的聚焦樣式由 `isFocused` 狀態決定,焦點落到選單清單時送回輸入框(<https://bitbucket.org/atlassian/atlassian-frontend-mirror/raw/6202f488beebf1140ad5557f61d8d5e1b08d81c3/design-system/react-select/src/components/control.tsx> 122–125 行、<https://bitbucket.org/atlassian/atlassian-frontend-mirror/raw/01dc0fa605306aa4b97e1138597265710fcfffaa/design-system/react-select/src/select.tsx> 2028–2030 行)。已查到相反的一處:Fluent 的 DatePicker 打開時把焦點送進月曆(`// When the popup is opened, focus should go to the calendar.`,[useDatePicker.tsx#L449-L455](https://github.com/microsoft/fluentui/blob/d2375b2452d9b8882ed63d4f4e91d8f537379e27/packages/react-components/react-datepicker-compat/library/src/components/DatePicker/useDatePicker.tsx#L449-L455)),月曆不在欄位裡,欄位的 `:focus-within` 不再成立(讀原始碼推得,沒有實機量)—— 本規則不分欄位種類,日期欄位開著一樣維持。其餘幾家的日期欄位在焦點進到月曆之後聚焦樣子還在不在,沒有查到定論,不列入對照。
+- **待 user 決定(AI 不自決,現況照實記)**:併排欄位組裡某一格開著(或鍵盤聚焦)時,滑鼠滑到它**右邊**那一格,兩格共用的那條線是右邊那格滑過的灰,開著那格變成三邊藍、一邊灰(2026-11-13 實測;兩格同在 z-3 時 DOM 順序較後的在上,鍵盤聚焦時本來就這樣)—— 要不要讓聚焦 / 開著壓過鄰居的滑過,未定。世界級在這題不一致,所以是真取捨:Ant Design 併排元件把滑過、聚焦、按下放在同一層(`hoverEffects` 全部 `zIndex: 3`,[compact-item.ts#L30-L47](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L47);本 DS 現況同它);Bootstrap input-group 只把聚焦的那一格抬高、滑過不抬(`// Bring the "active" form control to the top of surrounding elements`,[_input-group.scss#L49-L53](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53));Polaris Connected 也只有聚焦那一格最高(`--pc-connected-focused: 30`,[Connected.module.css#L3-L5](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L3-L5)、[#L32-L35](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L32-L35))。
 
 **Error × focus 疊加 canonical(2026-07-05 記為 user 拍板照 Mantine,來源不明:登記簿查無原話)**:錯誤欄位聚焦時**視覺完全不變**(紅框同色同寬,無加深/加粗/ring/暈)。依據:DS 聚焦主機制 =「邊框換 primary 基準色、無第二訊號」,同款機制的 Mantine(focus 僅 border 換 primary-filled、outline none,錯誤時 border 維持 error,[Input.module.css#L208-L215](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components/Input/Input.module.css#L208-L215))在此題同樣選擇不變;保紅又加訊號的三家(MUI 粗 [OutlinedInput.js#L63-L65](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/OutlinedInput/OutlinedInput.js#L63-L65) / Ant 暈 [variants.ts#L99-L105](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/style/variants.ts#L99-L105) / Bootstrap 暈 [v5.3.8 mixins/_forms.scss#L24-L76](https://github.com/twbs/bootstrap/blob/v5.3.8/scss/mixins/_forms.scss#L24-L76))前提是其一般聚焦本來就有該第二訊號可染紅,DS 無此前提。**已知代價(documented tradeoff,非 bug)**:無游標的觸發器(Select / DatePicker / TimePicker)error 聚焦時無視覺聚焦指示(文字框靠游標);Mantine 同款弱點。未來若升級全 DS 聚焦語言(一般態加第二訊號),本題應同步重議(錯誤態染紅該訊號,對齊 MUI/Ant/Bootstrap 結構)。D4 finding「error+focus 零 focus delta」據此結案為 user-拍板 intentional。
 
-副作用(自動達成「選後藍 / 取消灰」:選完焦點還在欄位上就是藍、點外面離開就回灰):選 option → Radix `onCloseAutoFocus` return focus → focus-within fires → 藍 / 點外取消 → focus 移外 → 灰。純 focus 機制無需 transient class。
-
-**反模式 ❌**:per-control `open && 'border-primary'`(Combobox/Select/PeoplePicker)/ `data-[state=open]:border-primary` — 已 v13.3 全 retire。hook `check_field_family_invariants.sh` A.3(原 check_field_state_token_consume)write-time 攔。
+**反模式 ❌**:各元件自己寫 `open && 'border-primary'`(Combobox / Select / PeoplePicker,v13.3 已全 retire)/ 在欄位外框上認 `data-[state=open]` 來換框色 / 在 `field-wrapper.tsx` 以外用 `data-[field-open]` 換框色 / 在 `../../lib/composite-field-focus.ts` 以外手寫這個記號 —— 開著的框只有 `field-wrapper.tsx` 這一份、只認 `data-field-open`,記號只有一個寫入者(上方「記號」)。hook `check_field_family_invariants.sh` A.3(原 check_field_state_token_consume)write-time 攔,攔哪幾種寫法以 hook 本身為準。
 
 ---
 
@@ -447,11 +446,11 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | **L5 Position(v14,2026-05-06 revert v12)** | naked compoundVariant flow | Field 留 layout flow,**不**用 `!absolute`(v12 absolute 跟 autoRowHeight 不相容)。視覺接受 cell `border-r grid` + Field border 2px 雙線;cell border-r divider 永遠保留(對齊 L4 Invariant divider-owner / editor-owner 分離)|
 | **L6 Cell trigger indicator(v16,2026-07-08 user 拍板 A 案〔UD-J24〕)** | naked-view branch + `showDisplayEndIcon?: boolean` opt-in(**default off,production 不再傳**)| **view 態零恆顯型別 icon** — editable affordance 統一 = L4 hover outline。Benchmark(Ant editable-cells 純文字+hover border [table/demo/edit-cell.tsx#L11-L23](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/demo/edit-cell.tsx#L11-L23) / MUI X singleSelect view 純文字 https://mui.com/x/react-data-grid/editing/ / AG Grid 無內建 indicator https://www.ag-grid.com/react-data-grid/cell-editing/ / Atlaskit v2.0.0 移除 hover-pencil 後 9 版未回歸 https://github.com/pioug/atlassian-frontend-mirror/tree/main/design-system/inline-edit / Notion / Airtable click-to-edit)view 態皆無恆顯 icon;唯一反例 Google Sheets Chip/Arrow 為 spreadsheet 域可選檔位。prop 保留為 spreadsheet-flavored 消費端 opt-in 逃生門:傳 true → `<ItemSuffix>` 渲型別 icon(Select/Combobox/PeoplePicker → ChevronDown / DatePicker → Calendar / TimePicker → Clock / **LinkInput 例外 = wrapper 無型別 icon;可編輯時另有 `viewEditAction` 畫的編輯入口**(Button text xs 鉛筆,滑過 / 鍵盤焦點才出現,是 action 不是型別 icon;inline-action 實例表「檢視態滑過才出現的動作」)。cell-registry 現況:6 picker 站不傳;url 站傳 `isEditable === true`(取 wrapper chrome 對齊 edit Input),可編輯時再傳 `viewEditAction`(鉛筆由 LinkInput 自己畫,表格只給出現時機)。edit 態 chevron 照舊(edit-trigger 通道,不受此 prop 管)。**值內容 vs affordance 分層(2026-07-08 user Q2 拍板)**:值內容(`selectedItemRenderer` 輸出 / avatar / type icon 等語意呈現)歸 value renderer,view 態照常渲染,恆顯**不**違反本條;本條管的是 affordance(chevron / pencil / outline)。前身 v15 恆顯制(2026-05-10/06-26 拍板)由本輪 benchmark 重判推翻。詳 `.claude/planning/cell-indicator-ssot-rfc.md`(六家實查 SSOT)。|
 
-**前身 retire**:v4-v8 `outline-2` 平行 state(已下沉 L3)/ v9 border-only(focus 跟 open specificity tie)/ per-control `open && 'border-primary'`(v13.3 retire)/ `nakedCell{Hover,Focus,Open}Ring` 三 const / `nakedCell{Prefix,Suffix}Slot`(下沉 L1)/ **v12 `!absolute -inset-px` seamless grid**(2026-05-06 revert — autoRowHeight 不相容)/ **DataTable parallel `getEditIndicator`**(2026-05-09 D-path retire — 由 Field naked-display 透過 `showDisplayEndIcon` opt-in 自渲 ItemSuffix,跨元件 SSOT 統一)。
+**前身 retire**:v4-v8 `outline-2` 平行 state(已下沉 L3)/ v9 border-only(focus 跟 open specificity tie)/ per-control `open && 'border-primary'`(v13.3 retire)/ 開著 = 滑過的灰框 `data-[state=open]:border-border-hover`(2026-11-12 retire;現行 = 開著維持聚焦的框、認 `data-field-open`,見上方 SSOT)/ `nakedCell{Hover,Focus,Open}Ring` 三 const / `nakedCell{Prefix,Suffix}Slot`(下沉 L1)/ **v12 `!absolute -inset-px` seamless grid**(2026-05-06 revert — autoRowHeight 不相容)/ **DataTable parallel `getEditIndicator`**(2026-05-09 D-path retire — 由 Field naked-display 透過 `showDisplayEndIcon` opt-in 自渲 ItemSuffix,跨元件 SSOT 統一)。
 
-**反模式 ❌**:naked 自寫 `outline-*` / `box-shadow inset` state ring(用 L3) / hardcode `<span h-[1lh]>` slot(用 L1)/ hardcode `items-center`(用 L2)/ per-control `open && 'border-primary'`(用 L3 SSOT)。
+**反模式 ❌**:naked 自寫 `outline-*` / `box-shadow inset` state ring(用 L3) / hardcode `<span h-[1lh]>` slot(用 L1)/ hardcode `items-center`(用 L2)/ per-control `open && 'border-primary'` 或自己認 `data-[state=open]` 換框色(用 L3 SSOT;開著的框見上方「欄位自己的浮層開著」)。
 
-**機械防漂移**:hooks `check_field_family_invariants.sh`(A.1 naked row-mode propagation / A.3 Field state ring SSOT,原 standalone hooks 已 folded)+ `check_pattern_invariants.sh`(C.2 inline-action canonical gap / C.4 row slot handcraft)write-time 攔 + `/design-system-audit` 對應 audit dim。
+**機械防漂移**:hooks `check_field_family_invariants.sh`(A.1 naked row-mode propagation / A.3 Field state ring SSOT,原 standalone hooks 已 folded)+ `check_pattern_invariants.sh`(C.2 inline-action canonical gap / C.4 row slot handcraft)write-time 攔 + `/design-system-audit` 對應 audit dim;「開著的框」另有瀏覽器閘 `field-open-border-invariant.mjs`(`npm run test:field-open-border`,量畫出來的四邊框色,已接進 CI)。
 
 ## 相關
 
@@ -469,7 +468,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - Tab — focus 移進內部 control(Input / Select / DatePicker 等)
 - Esc 取消編輯等行為由 control 本身或放置它的 host(如 DataTable cell)實作,**不在 Field**
 
-**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色**(1px `focus-within:!border-primary`,error 態維持紅),**不畫**全域 2px 外描邊 —— 可打字時焦點在內部 input(插入點控件),關閉的觸發器是 wrapper 自己聚焦時亦同(`fieldWrapperStyles` 以 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態長相同樣是 1px 邊框轉主色(唯讀的透明邊框轉成主色,不另畫外框),但**只在鍵盤聚焦時畫、滑鼠點不變**(2026-11-11 user「確認 polaris真的就是這樣的話那就照你建議」;落地與來源見 `field-controls.spec.md`「Focus 行為」readonly 段)。owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「唯讀的 Field 控件」列。Field 不搶焦點,focus 由內部 control 自管。
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色**(1px `focus-within:!border-primary`,error 態維持紅),**不畫**全域 2px 外描邊 —— 可打字時焦點在內部 input(插入點控件),關閉的觸發器是 wrapper 自己聚焦時亦同(`fieldWrapperStyles` 以 `focus-visible:outline-none` 抑制,@focus-suppress C);欄位自己的浮層開著時維持同一個指示,不看焦點在欄位還是浮層裡(上方「Field state machine SSOT」)。唯讀態長相同樣是 1px 邊框轉主色(唯讀的透明邊框轉成主色,不另畫外框),但**只在鍵盤聚焦時畫、滑鼠點不變**(2026-11-11 user「確認 polaris真的就是這樣的話那就照你建議」;落地與來源見 `field-controls.spec.md`「Focus 行為」readonly 段)。owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「唯讀的 Field 控件」列。Field 不搶焦點,focus 由內部 control 自管。
 
 **SR 識別路徑**(由既有 aria 接線達成,見「FieldContext」與「驗證與 aria 屬性」段):focus 進 control 時 SR 可得完整資訊——label(`htmlFor`/`id` 連結)、required(control 的 `aria-required`)、invalid(`aria-invalid`)、description(`aria-describedby`)、error(`aria-errormessage`;`<FieldError role="alert">` 另在錯誤出現時即時播報)。required 星號本身 `aria-hidden`,SR 資訊來自 `aria-required` 非 `*` 字元。
 
@@ -479,15 +478,22 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `combobox.spec.md`
 - `data-table.spec.md`
+- `date-picker.spec.md`
 - `description-list.spec.md`
 - `element-anatomy.spec.md`
 - `field-control-group.spec.md`
 - `field-controls.spec.md`
 - `form-validation.spec.md`
+- `inline-action.spec.md`
 - `inline-edit.spec.md`
 - `input.spec.md`
 - `link-input.spec.md`
+- `people-picker.spec.md`
 - `radio-group.spec.md`
+- `select-menu.spec.md`
+- `select.spec.md`
 - `steps-state-visuals.spec.md`
 - `switch.spec.md`
+- `time-picker.spec.md`

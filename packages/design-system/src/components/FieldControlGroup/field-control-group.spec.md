@@ -66,6 +66,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 3. **Z-index 提升** for active control(避免被鄰接 border 蓋)
    - default `z-index: 2`
    - hover / focus / focus-within `z-index: 3`(Ant z-3,Bootstrap z-5;我們對齊 Ant)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L46)、[來源](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53))
+   - 成員自己的浮層開著(成員外框帶 `data-field-open`)`z-index: 3` —— 本 DS 自己的一條(2026-11-12 加;AI 推導,依據是本 DS 的欄位規則,不是引自上面兩家):浮層開著時焦點常已搬進浮層、`focus-within` 不成立,但那一格仍維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」),不抬高就會被 `-ml-px` 疊上來的鄰居蓋掉一邊
    - disabled `z-index: 0`
 4. **Border radius 規則**:
    - 第一個子:右側 radii = 0(`rounded-r-none`)
@@ -136,8 +137,11 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 | default | 各 child 自身 border | 2 |
 | hover(子)| 該 child border-hover | 3 |
 | focus / focus-within(子)| 該 child focus ring | 3 |
+| 自己的浮層開著(子,`data-field-open`)| 該 child 維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」,這裡只管疊放)| 3 |
 | disabled(子)| 該 child disabled style + **FCG-local override `border-[var(--border-opaque)]`**(K12,2026-05-04) | 0 |
-| error(子)| 該 child border-error | 2(預設層;聚焦該 child 時才升 3 蓋過鄰接 border)|
+| error(子)| 該 child border-error | 2(預設層;滑過 / 聚焦 / 自己的浮層開著時升 3 蓋過鄰接 border)|
+
+**同一層誰在上(現況)**:滑過、聚焦、自己的浮層開著都是 z-3;相鄰兩格同時在 z-3 時,DOM 順序較後的那一格在上(CSS 的疊放規則)。2026-11-13 量到:某一格開著(或鍵盤聚焦)、滑鼠滑到它**右邊**那一格時,兩格都是 z-3、兩格共用的那條線畫的是右邊那格滑過的灰;滑到左邊那一格則不受影響。要不要讓聚焦 / 開著壓過鄰居的滑過是待 user 決定的題目,登記在 `../Field/field.spec.md`「Field state machine SSOT」的「待 user 決定」,本檔不自定。
 
 **Disabled border integrity canonical(K12,2026-05-04)**:全域 disabled = `border-transparent`(讓 standalone field 視覺輕量),但**FCG context 下,disabled child 強制 `border-[var(--border-opaque)]`** — 確保:(a) FCG 整體外圈 border 健在,(b) inner divider 健在(不會因兩相鄰 disabled cells 都 transparent 而消失)。bg-disabled 仍區分狀態,border 維護群組視覺整合性。對齊 [Bootstrap input-group](https://getbootstrap.com/docs/5.3/forms/input-group/) / [Ant Space.Compact](https://ant.design/components/space#spacecompact) disabled idiom。
 

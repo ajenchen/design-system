@@ -39,7 +39,7 @@
 | `<CollapsiblePrimitive.Trigger asChild>` | `false`(default) |
 | 純 onClick handler / drag handle / dismiss X | `false`(default) |
 
-落實同源:`fieldWrapperStyles data-[state=open]:border-border-hover` 對 Combobox/DatePicker overlay trigger 仍正確(這些只用於 overlay 包覆)。Button 變體的 `data-[state=open]` 規則目前**未 prop 化**(latent — Button 從未被當 `Collapsible.Trigger` asChild 包覆,故無 active bug);若未來出現 Button 包覆 Collapsible 場景,同 prop 化處理。
+適用範圍:本節的「開著 = host hover」只管**按鈕類觸發**(inline action / Button)。**欄位(Field 家族)不適用** —— 欄位自己的浮層開著時維持聚焦的框,唯一出處 `components/Field/field.spec.md`「Field state machine SSOT」(2026-11-12 前這一句把本節延伸到欄位外框,已退役;退役紀錄在該檔)。Button 變體的 `data-[state=open]` 規則目前**未 prop 化**(latent — Button 從未被當 `Collapsible.Trigger` asChild 包覆,故無 active bug);若未來出現 Button 包覆 Collapsible 場景,同 prop 化處理。
 
 ### Icon 色彩（按 host 分兩類,2026-04-21 D6 矛盾解）
 

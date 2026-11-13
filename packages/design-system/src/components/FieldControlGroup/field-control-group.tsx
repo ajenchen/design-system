@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
  * - 子 controls 保留自身 border + radius;不 strip
  * - 鄰接子用負 margin 重疊 border(Bootstrap 也用此手法 但用 z-index 確保 focus 在最上層)
  * - first child 只留左 radii / last child 只留右 radii / middle 全 0 radii
- * - z-index:default 2 / hover|focus|focus-within 3 / disabled 0
+ * - z-index:default 2 / hover|focus|focus-within|自己的浮層開著(data-field-open)3 / disabled 0
  * - Container `display: inline-flex`(Ant default)/ `block` prop → `display: flex; width: 100%`
  *
  * **Size**(FCG 不擁有 size API；不傳遞 size 給 children,無 Context Provider / 無 cloneElement;見 spec「Size」段):
@@ -74,7 +74,7 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
         //   [&>*]:relative — 子套 relative 才能 z-index 生效
         //   [&>*]:z-[2] — default z 2(Ant 同值)
         //   [&>*+*]:-ml-px — 鄰接子 margin-left -1px 重疊 border
-        //   hover/focus/focus-within → z-3(active border 在最上層,Bootstrap 用 z-5,Ant 用 z-3 我們對齊 Ant)
+        //   hover/focus/focus-within/自己的浮層開著 → z-3(active border 在最上層,Bootstrap 用 z-5,Ant 用 z-3 我們對齊 Ant)
         //   first/middle/last radii:對齊 Ant compactItemBorderRadius L67-92
         // ── Children 自管 width(W-A,Ant idiom);Group 自身僅控制 border/radius/z-index 接合機制
         className={cn(
@@ -84,7 +84,9 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
           '[&>*]:relative [&>*]:z-[2]',
           // 2026-09-07 刪 `[&>*:focus]:z-[3]` —— `:focus` 是 `:focus-within` 的子集(元素自己聚焦時
       // 它必然也 focus-within),同一行的 `[&>*:focus-within]:z-[3]` 已完全涵蓋,純贅字。
-      '[&>*:hover]:z-[3] [&>*:focus-within]:z-[3]',
+      // 2026-11-12 加「開著 = z-3」(2026-11-13 改認 `[&>*[data-field-open]]`):成員自己的浮層開著時焦點常在浮層裡(focus-within 不成立),
+      // 但它仍維持聚焦的藍框(field.spec.md「Field state machine」表)→ 一樣要浮到鄰居上面,否則藍框被 -ml-px 的鄰居蓋掉一邊。
+      '[&>*:hover]:z-[3] [&>*:focus-within]:z-[3] [&>*[data-field-open]]:z-[3]',
           '[&>*[disabled]]:z-0 [&>*:has([disabled])]:z-0',
           // border overlap
           '[&>*+*]:-ml-px',
@@ -123,7 +125,7 @@ export const fieldControlGroupMeta = {
   family: 'self-contained',
   variants: {},
   sizes: {},  // self-contained wrapper;children 尺寸自管
-  states: ['default', 'children-hover', 'children-focus', 'children-disabled'],
+  states: ['default', 'children-hover', 'children-focus', 'children-open', 'children-disabled'],
   tokens: {
     bg: [],  // structural wrapper has no own bg
     fg: [],

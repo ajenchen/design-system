@@ -1105,11 +1105,11 @@ Overlay primitive → SurfaceBody 中間 wrapper 必 `flex flex-col h-full`,斷�
 
 `variant="naked"` consumer 內 wrapper 必 import + apply `nakedCellRowModeAlign` SSOT。Hook `check_field_family_invariants.sh`(A.1 naked row-mode propagation,原 check_naked_row_mode_propagation.sh folded 已合入)同源。
 
-## 37. Field state machine「focus dominates everything」(M19 v13.3)
+## 37. Field state machine「focus dominates everything — 除 error」(M19 v13.3)
 
-**Type**: Absolute / **Canonical**: `field-wrapper.tsx` 三 compoundVariant SSOT / **Home**: spec.md state machine 段
+**Type**: Absolute / **Canonical**: `field-wrapper.tsx` 三 compoundVariant SSOT / **Home**: `field.spec.md`「Field state machine SSOT」段(每一態的框色、「欄位自己的浮層開著 = 維持聚焦的框」與它的邊界只寫在那裡,本 dim 不重述)
 
-禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。Hook `check_field_family_invariants.sh`(A.3 Field state ring SSOT,原 check_field_state_token_consume.sh folded 已合入)同源,本 dim batch verify Field family + outliers。
+禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。2026-11-13 起另一條(AI 工程判斷):禁在欄位外框上認 `data-[state=open]` 換框色 —— 欄位自己的浮層開著時的框只認欄位自己掛的 `data-field-open`(唯一寫入者 `lib/composite-field-focus.ts` 的 `fieldOpenProps`),規則、邊界與出處都在上面 Home 那一段;按鈕類觸發(「開著 = 自己的 hover」,`inline-action.spec.md`)不歸本 dim,不得當成欄位判。Hook `check_field_family_invariants.sh`(A.3 Field state ring SSOT,原 check_field_state_token_consume.sh folded 已合入)同源,本 dim batch verify Field family + outliers。
 
 ## 38. Inline-action gap canonical
 

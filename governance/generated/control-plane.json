@@ -27,12 +27,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:95d93eb7e1b96281e7f884570540a73bf995070b3474a81a2d04e8db231e0530",
+      "hash": "sha256:e39ee7946d9227422693b8d74905022da201ad4a2d0e7c2826582fa2f6613f2e",
       "id": "audit-rubric",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md",
-      "size": 86045,
+      "size": 86619,
       "type": "file"
     },
     {
@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:7995dce1f6c8783cc0ba7b86bdffc20bc420a527c95d7275b84de0c3cdccf028",
+      "hash": "sha256:bc1dbb1b3cb776347945f320ff1d5df8efa3be2177302375273af3018cc02a3f",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -155,7 +155,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:a06c31d305e579cdb258fcb0f469b4a7653ac8843b2e23bcb5e6232ca64c8004",
+      "hash": "sha256:53375e2a0c755878780139b24e2bb3e94e8c72159c115c8ac13a1b8231b0fa12",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -177,7 +177,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:52ce48b44e3cba04dc4d6c6b8d94920867b8bd5a173bb908c14ca7b74d73709f",
+      "hash": "sha256:4aa8ab1b07fa0cab5fc78a6305ef8253ffdd762a978f330555e1dc3c2f82b0d8",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1008,7 +1008,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3114e6cbe21e0ffe32316207579cdb1d3c64e5ad61a71b88012faa89dc187767",
+      "hash": "sha256:4700df0a1aaa1fd5cce5dca2b8f2cda39bf0524404137233052dbf56084687b7",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:f673316bc9446f29610f50b69a6a760de5726733441d4135d6d0e4c05d5316bd",
+      "hash": "sha256:22a7d682f0c5579adc4d9da813ed9bc1f1fc9f15ec6216fce8c3c51cb0268f66",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1790,7 +1790,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:06006e9dde43a388d57eaecf1c4b0e28c6a0fc3f8693679a854209d176cbdae7",
+      "hash": "sha256:488db4fc4a739d6b33de55cabb507efb4def88eed2ce1f090f45b3a622e956f8",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1834,7 +1834,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:f20b363bd154ea6e9938a2acf21253eb1a02fde52f61eeffc70b5bcdcb6d3299",
+      "hash": "sha256:2ba47daa37335c086b226b606091282c4b24080ced48b0f35f37848aac8ceccb",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1897,12 +1897,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a8550cb9fc9cd1466607651bc3e6bfc07f16568d7b233cb3c62a1370438aba23",
+      "hash": "sha256:ef341bea82937d26c7256137536e597b2be28a544cf32216ecd4979e4f9b79c1",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 38890,
+      "size": 39073,
       "type": "file"
     },
     {
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:268d7788f1557d548d993b66855bdc3a416a75ed8d33962d53702dc68bf44d69",
+      "hash": "sha256:d447b0e34a63393ca8c82c3ba0367f36c01692c407bde55cbea4e53761ef5599",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 32059,
+      "size": 32137,
       "type": "file"
     },
     {
@@ -2577,7 +2577,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:45bfcdb1ff01e28ad6377f4a95f2e885b65f831c40740cfc4bf280a06daa16fd",
+      "hash": "sha256:430fa5e577ae6713065d08246c22147aa2b99431078c1cfa759e1c14047c4922",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3084,8 +3084,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 726,
-      "hash": "sha256:df33dcda2f70950001e876b6ceb2794df70baf02e76effc71ff22ee9aa03dbd8",
+      "files": 730,
+      "hash": "sha256:2c5dc8532526f0bd3724c571ba093379866756d9056ed058739ed1c6e7fb2ada",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3465,10 +3465,10 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:886c3432d364c0bff65caa75f8bbcafc0c4eb22b773db5a8e04016eb93c2afab",
+          "expectedTargetDigest": "sha256:8b18c13d9e12dec225bb08b0009d52fca5fe8b1081b68444246a13507acde218",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:3c29c909fd184d7872f8bd8963ded664d616ae424c9064e3dd322748a37a7ddd",
-          "targetDigest": "sha256:886c3432d364c0bff65caa75f8bbcafc0c4eb22b773db5a8e04016eb93c2afab"
+          "sourceDigest": "sha256:a6ab4f50b211284295284dec32c511338d429c783afbfff63ece2a718a442c2c",
+          "targetDigest": "sha256:8b18c13d9e12dec225bb08b0009d52fca5fe8b1081b68444246a13507acde218"
         },
         {
           "expectedTargetDigest": "sha256:aa92ec8c02d08e0de289622ca641acea0621186e6508c8b7bf9e415d1ba32456",
@@ -3688,10 +3688,10 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:da6b1fa3dbaf1e71ffc4ebd5f60c348d881f297c7312609b48575eb1ba0d64fe",
+          "expectedTargetDigest": "sha256:8394256e8e89b4ed11b90a787c3308985aaab9ac341bfc386e7d40b833fe19c4",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:3c29c909fd184d7872f8bd8963ded664d616ae424c9064e3dd322748a37a7ddd",
-          "targetDigest": "sha256:da6b1fa3dbaf1e71ffc4ebd5f60c348d881f297c7312609b48575eb1ba0d64fe"
+          "sourceDigest": "sha256:a6ab4f50b211284295284dec32c511338d429c783afbfff63ece2a718a442c2c",
+          "targetDigest": "sha256:8394256e8e89b4ed11b90a787c3308985aaab9ac341bfc386e7d40b833fe19c4"
         },
         {
           "expectedTargetDigest": "sha256:ea09df77193adf7cf92d5ac5d4472b1abd9d2e18f216b560de779c7cecf7e7a3",

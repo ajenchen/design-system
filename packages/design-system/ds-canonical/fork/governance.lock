@@ -727,7 +727,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "087e4078f0fab1fb9415ae5a2bead03c91e4375429f798436609372c7a5f20ca",
+      "sha256": "9b9e39b0d65990c45406b399b4fb9bcd7e867b8a1d9e87e772041175064be80d",
       "source": "check_field_family_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

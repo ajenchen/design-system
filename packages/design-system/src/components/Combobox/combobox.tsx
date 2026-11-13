@@ -19,6 +19,7 @@ import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFi
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── constants ───────────────────────────────────────────────────────────────
@@ -668,10 +669,12 @@ function CustomCombobox({
         // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md「Control area:Inline vs Block」:「control 第一行內容的中線」都錨在 field-height/2)
         wrap && hasTags && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
-        // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
+        // 統一處理 — 自己的浮層開著(data-field-open)= focus = 藍;2026-07-04 Q1:error 亦收進 error variant。
         className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }}
       data-field-mode="edit" data-error={error ? '' : undefined}
+      // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 consumer 的 data-* 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+      {...fieldOpenProps(open)}
       // 搜尋框握著焦點時按欄位上的零件,焦點不離開搜尋框(見上方 keepSearchFocus)
       onMouseDown={keepSearchFocus}
       // WAI-ARIA APG combobox 鍵盤開啟語意 — 對齊 sibling Select(select.tsx#CustomSelect 的 onKeyDown)。

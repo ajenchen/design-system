@@ -131,7 +131,7 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 |---|---|---|
 | **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 01:06 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧？？？」 |
 | **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx#fieldDefaultChromeCompounds`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
-| **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`) | **2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」;這是**編輯態**的觸發條件 —— 唯讀只認鍵盤,見下一列);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
+| **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`)。**欄位自己的浮層開著時**(焦點可能已搬進浮層)外框維持同一個指示 —— 規則、記號與邊界只寫在 `components/Field/field.spec.md`「Field state machine SSOT」,本列不重述 | **浮層開著那一句**:2026-11-12 AI 建議、user 採納(逐字句首「我覺得可以照你建議」),來源與世界級對照在 `field.spec.md` 同一段。**其餘**:**2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」;這是**編輯態**的觸發條件 —— 唯讀只認鍵盤,見下一列);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
 
 | **唯讀的 Field 控件**(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 Checkbox・Switch・RadioGroup / 唯讀觸發器 / NumberInput 唯讀值框 —— 可 Tab、不可編輯) | **不畫外框**;指示 = **邊框轉主色 1px**(長相與可編輯的同一個欄位一樣),**只在鍵盤聚焦時畫 —— 滑鼠點不變**(點標籤、點過再按 Shift、Tab 進來後再點一下,都算滑鼠;點過之後真的按了鍵,照「什麼時候畫(真焦點)」那列回來)。焦點落在欄位裡**自己會畫框的東西**(LinkInput 的連結、PeoplePicker 的頭像)時由它自己的全域外描邊承擔,欄位邊框不亮(一個 tab stop 一個指示器,本節下方) | **長相**:user 2026-09-10 18:46 原話「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？對吧？」。**什麼時候畫**:user 2026-11-11 原話「確認 polaris真的就是這樣的話那就照你建議」—— AI 建議的是 Shopify Polaris 的做法,查證成立:現行 `s-text-field` 官方範例(https://shopify.dev/docs/api/app-home/latest/web-components/forms/text-field 「Store URL」)唯讀滑鼠點 0 變化、Tab 才出藍環,同頁可編輯欄位滑鼠點會亮(兩輪實機,藍色像素 0 / 201 / 204);它 shadow root 裡有唯讀專屬規則 `.input-wrapper.read-only:has(input:focus, textarea:focus) { box-shadow: none; }`,鍵盤另掛 `keyboard-focus` class。這與多數世界級不同(MUI `InputBase` 任何聚焦都 `setFocused(true)`,https://github.com/mui/material-ui/blob/dbf007c3406c7d7352089377cf620ceca6fee666/packages/mui-material/src/InputBase/InputBase.js#L410-L423;Carbon `&:focus, &:active` 一律畫,https://github.com/carbon-design-system/carbon/blob/80f17733a57230ed2958a78d68e2c9e800660e1f/packages/styles/scss/components/text-input/_text-input.scss#L72-L76),是 user 看過對照後的選擇。標準面:WCAG 2.4.7 只要求鍵盤焦點可見 ——「Any keyboard operable user interface has a mode of operation where the keyboard focus indicator is visible.」,Understanding 寫滑鼠時「While not normatively required, authors may consider still providing an explicit focus indicator for these cases.」(https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html)。**歷程**:`ring-*` idiom 於 0cad81e8 退役時沒有補替代品 → 唯讀一度**零指示**;2026-09-10 上午先補成全域外描邊,下午依上面那句改成邊框轉色,觸發條件順帶寫成 `focus-within`(滑鼠鍵盤都亮 —— **AI 推導,不是 user 原話**);2026-11-11 依上面那句改成只認鍵盤,同時修掉 LinkInput / PeoplePicker 唯讀時鍵盤一個 tab stop 兩個指示器(連結 / 頭像外描邊 + 欄位邊框)。**不在此列**:DataTable 試算表模式的格游標(滑鼠點唯讀格照樣移游標,`components/DataTable/data-table.spec.md`「試算表模式(`spreadsheetMode`):點格、焦點框、區間色」,user 2026-09-26 同意);view 純顯示、InlineEdit `editable=false` 本來就不可聚焦。**落地**:`field-wrapper.tsx` readonly compound —— wrapper `focus-visible:not-data-pointer-focus:!border-primary`(自己是 tab stop)+ `has-[:is(input,textarea):focus-visible:not([data-pointer-focus])]:!border-primary`(裡面是唯讀文字框;只認文字框,連結 / 頭像不算)+ `focus-visible:outline-none`(@focus-suppress C);control(`<textarea>`)`focus-visible:not-data-pointer-focus:!border-primary`。唯讀文字框滑鼠點瀏覽器也判 `:focus-visible`(Chromium `selector_checker.cc` `is_text_input`、Firefox `nsFocusManager.cpp`,不看 readonly),這一個差異由 `lib/pointer-focus-guard.ts` `installReadonlyPointerFocusGuard` 補(document 層、元件端零接線)。閘 `scripts/readonly-focus-pointer-invariant.mjs` |
 
@@ -316,6 +316,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 規則一及其唯一例外、不外擴的理由 | **AI 依上列一手來源歸納**,非 user 決定 |
 | 「日期格 hover 不搬、不抹鍵盤焦點;預覽框與鍵盤框可分離並存」 | **user 2026-09-24 原話是問句**:「為何出現鍵盤焦點之後,再用滑鼠hover在日期上,按照我們其他元件搶焦點的邏輯的話,鍵盤焦點不是應該要消失嗎?你仔細研究我說的是否正確,並確保我們整個設計有一致的設計語言,並確保有追根究底」—— 問句 ≠ 拍板(M36(a));**AI 依規則一「兩類怎麼分」與六家一手來源裁定**(MUI X / react-day-picker / flatpickr / Polaris / W3C APG / React Aria 的日曆格 hover 路徑零 `.focus()` / `.blur()`;Ant v5 沒有格層級鍵盤游標),行為不改,補本檔四處與 `datepicker-range-preview.mjs` 互搶段斷言 |
 | A / B / C / E 四類的切法、六步判斷程序、B 類的機械判別(標籤名 + `contenteditable`) | **AI 歸納**(2026-09-07 逐站分類、2026-09-09 依 user 拍板改寫),user 拍板的只有「都畫框、例外是插入點控件、要可具體判別」 |
+| 「欄位自己的浮層開著時,外框維持聚焦的指示」(規則二「Field 家族控件本身」列的指標句) | **AI 建議、user 2026-11-12 採納**,逐字句首:「我覺得可以照你建議」。規則本體與世界級對照住 `components/Field/field.spec.md`「Field state machine SSOT」,本檔只指過去;邊界的寫法與併排欄位組抬高是 **AI 推導**,「外框只認欄位自己掛的記號」這個做法是 **AI 2026-11-13 的工程判斷**,都不是 user 決定(同一段逐條標明) |
 
 ---
 
@@ -392,7 +393,7 @@ Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx#
 ### 一個承擔者只能服務一個 tab stop
 
 判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
-`combobox.tsx:666` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+`combobox.tsx:667` 那種自己畫的情況沒問題(一個元素一個 tab stop),
 但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
 邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
 
@@ -412,7 +413,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 
 ### C 類為什麼是「從自己往上」而不是「往上」
 
-同一次對照又撞到第二面牆:`combobox.tsx:666`、`time-picker.tsx:382` 這兩行,
+同一次對照又撞到第二面牆:`combobox.tsx:667`、`time-picker.tsx:382` 這兩行,
 **元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。
