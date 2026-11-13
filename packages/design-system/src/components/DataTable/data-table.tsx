@@ -4172,11 +4172,9 @@ function DataTableInner<TData>(
           'group-has-[:focus-visible:not([data-pointer-focus])]:w-auto group-has-[:focus-visible:not([data-pointer-focus])]:ml-2 group-has-[:focus-visible:not([data-pointer-focus])]:overflow-visible group-has-[:focus-visible:not([data-pointer-focus])]:opacity-100',
           // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
-          // 沒有滑過能力的裝置(觸控)恆顯示(2026-11-12,PR #172 r4 審查):排序改兩態之後「取消排序」只剩 ⌄ 與排序面板兩個入口,
-          // 滑過才出現的 ⌄ 在觸控上永遠出不來 → 沒有排序面板的表關不掉排序。鍵盤那一條上面已有(focus-visible),這裡補觸控那一條;
-          // 有滑過能力的裝置長相不變。【AI 推導】—— 是否連桌機也讓已排序欄的 ⌄ 恆顯示,列給 user。
-          // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
-          '[@media(hover:none)]:w-auto [@media(hover:none)]:ml-2 [@media(hover:none)]:overflow-visible [@media(hover:none)]:opacity-100',
+          // 沒有滑過能力的裝置(觸控)不另外處理,跟桌機同一套 —— user 2026-09-26 對「手機上滑過才出現的按鈕」已決「先維持」、不客製
+          // (governance/planning/2026-09-25-interaction-and-hover-remediation.md 的 L11 那一列,含原話)。2026-11-12 AI 曾在這裡加過
+          // 「不能滑過的裝置 ⌄ 恆顯示」(c78b35e1),做的正是當時沒被選的選項,2026-11-14 收回。觸控上取消排序走排序面板。
         )}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
