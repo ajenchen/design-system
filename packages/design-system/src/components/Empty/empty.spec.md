@@ -157,6 +157,7 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 | 元件 | 消費方式 | Padding 落點 |
 |---|---|---|
 | DataTable | 外層 `<div className="flex-1 flex items-center justify-center py-12">` 包 `<Empty description={emptyState} />`(有框置中) | wrapper div(非 Empty className) |
+| AgentPanel 新對話(DS 元件本身沒有空狀態容器,包層住在範例輔助檔 `stories-helpers/scene/agent-demo.tsx` 的 `DemoConversation`) | 外層 `<div className="flex min-h-0 flex-1 items-center justify-center …">` 包 `<Empty icon={<AgentLogo state="attract" size={48} />} title description />`(有框置中;在包層的內距框裡置中) | wrapper div(非 Empty className):內距跟有訊息時的對話區同一組 —— 左右 `--layout-space-loose` / 上 `--layout-space-tight` / 下 `--layout-space-bottom`(2026-11-13 起;之前包層沒有內距)。【AI 推導 2026-11-13:面板算有框、內距跟對話區同一組 —— 出處與推導住 `../AgentPanel/agent-panel.spec.md`「附:空狀態」】 |
 | SelectMenu | **不再消費 Empty**(2026-09-08):選單訊息列走 `MenuItem message`,由 `CommandEmpty` own(`../SelectMenu/select-menu.spec.md`「Empty state」);spinner-only loading 走 `CommandLoading` 訊息列(列圖示尺寸轉圈) | —(無 Empty) |
 | Select / Combobox / PeoplePicker | 透過 SelectMenu → 同上,不消費 Empty | — |
 
@@ -196,6 +197,7 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `carousel.spec.md`
 - `circular-progress.spec.md`
 - `file-upload.spec.md`

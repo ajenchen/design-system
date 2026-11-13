@@ -155,7 +155,7 @@ const InspectorView = () => {
               <div className="border border-dashed border-primary-hover rounded px-2 py-6 mb-2">
                 <p className="text-body font-medium text-foreground">AgentConversation</p>
                 <p className="text-footnote text-fg-muted mt-1 font-mono">
-                  flex-1 · ScrollArea · 內距 16 · 輪距 40 · 底距 48 · role=&quot;log&quot;
+                  flex-1 · ScrollArea · 內距 左右 16 / 上 12 · 輪距 40 · 底距 48 · role=&quot;log&quot;
                 </p>
               </div>
               <div className="border border-dashed border-primary-hover rounded px-2 py-1">
@@ -186,7 +186,7 @@ const InspectorView = () => {
             <section>
               <p className="font-mono text-fg-muted mb-2">LAYOUT</p>
               <ul className="flex flex-col gap-1">
-                <li><span className="font-mono">訊息區內距</span> · 16(--layout-space-loose)</li>
+                <li><span className="font-mono">訊息區內距</span> · 左右 16(--layout-space-loose)、上 12(--layout-space-tight)</li>
                 <li><span className="font-mono">輪距</span> · 40 = 8 + 24(工具列 xs)+ 8</li>
                 <li><span className="font-mono">訊息區底距</span> · 48(--layout-space-bottom)</li>
                 <li><span className="font-mono">我方氣泡</span> · 內距 8/12 · 寬 ≤ 85% · 靠右</li>

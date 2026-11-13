@@ -207,8 +207,8 @@ export function GroupBlock({
       <div className="pt-2">
         <ConjunctionLabel index={index} conjunction={rootConjunction} onChange={onChangeRootConjunction} labels={labels} />
       </div>
-      {/* Group container 灰底 — `bg-muted`(`--muted` neutral-2,user 2026-05-09 拍板 Q3 A)。對齊 color.spec.md L651-654 「table header / tab / code block / skeleton」靜態低重要 surface semantic */}
-      <div className="flex-1 min-w-0 rounded-md bg-muted p-2 flex flex-col gap-2">
+      {/* Group container 灰底 — `bg-muted`(`--muted` neutral-2,user 2026-05-09 拍板 Q3 A)。對齊 color.spec.md L651-654 「table header / tab / code block / skeleton」靜態低重要 surface semantic。data-panel-filter-group = 給閘定位這個框用(同 data-panel-add-row 的寫法),不影響畫面;框的間距規格在 data-table.spec.md L4「巢狀群組的間距」 */}
+      <div className="flex-1 min-w-0 rounded-md bg-muted p-2 flex flex-col gap-2" data-panel-filter-group="">
         {group.children.map((cond, cIdx) => (
           <FilterRow
             key={cond.id}

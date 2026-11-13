@@ -132,6 +132,7 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 - **比例**:預設 16:9(`mediaRatio` prop 預設 `16/9`),由 `AspectRatio` 鎖長寬比 — 同一段 tour 各步驟維持一致比例,consumer 不需自己算高度。需要時 consumer 可傳 `mediaRatio`(如 `4/3` 產品截圖 / `1/1` 方圖 / `3/4` 直式)覆寫
 - **背景**:預設 `bg-muted`(當內容是 illustration 或透明 PNG 時有底色)
 - **邊緣**:圓角切齊靠外殼裁切(見「與 Popover 的關係」)——media 不自帶圓角
+- **位置**【AI 推導 2026-11-13;畫面沒有改,只把原本沒寫的寫下來】:Media 是外殼的一個分區,跟 Header / Body / Footer 同層(見「Anatomy」),分區與分區直接相接、中間不留距離 —— 左右貼外殼內緣;上緣:沒有 Header 時貼外殼頂,有 Header 時貼 Header 底下那條分隔線;下緣直接接 Body(圖 → 內文標題的距離 = PopoverBody 自己的上內距)。Media 不是 Body 裡的內容,所以不套「標頭 → 第一個內容」那張表(SSOT:`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(1):結構分區 = 元件規格的 Anatomy 明列為跟 Header / Body 同層的一格)。由 `scripts/overlay-story-contract-invariant.mjs` 的 R17(上緣)/ R18(左右)機械檢查(有 / 沒有 Header 的兩則展示 × 一般 / 大密度量像素)
 - **支援內容**:image / video / SVG illustration / animated GIF / Lottie
 - **禁止**:不放互動元件(按鈕 / 輸入框)——media 純視覺說明,互動一律走 footer
 

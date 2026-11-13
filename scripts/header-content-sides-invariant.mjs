@@ -37,7 +37,12 @@
  *            且不等於視窗高)或被 min-height 撐住 —— 不再默默當撐滿套 48;期望值見 bottomWant(capped / pinned = 與頂部同值,規則 4「沒寫到的三種容器」)。
  *            【AI 推導】fill / hug / capped / pinned 這組分類是閘作者把規則 4 Note 落成量法的判準,規格沒逐字寫。
  *     期望值的 loose / tight / bottom 從容器(標頭之後那塊)computed `--layout-space-*` 讀(浮層鎖 md 照它讀到的算);頁面根 loose md = lg → 儀器失效。
- *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;容器種類(classifyBox)各形狀一列 + 對照組;(b)SIDES 與 CASES 一一對應。
+ *     捲動位置(2026-11-13,與原閘同一步:pageKit.scrollBody / scrollOffset):量之前先把標頭之後那塊裡捲動過的容器捲回頂端,捲完讀回第一個內容所在各層的
+ *            捲動位置,不是 0 → 儀器失效。本檔的「頂」(標頭底 → 第一個內容頂,規則 4「與頂部同值」拿它當期望值)跟原閘是同一個量、同一個前提:
+ *            修前把視窗高換成 600,對話區「第一則是我方氣泡」那格的頂量到 −53 / −73(對話進頁自動捲到底)—— 那一格容器是 fill、期望值用 48 不用頂,所以沒有紅;
+ *            換成不擋頁面、被上限卡住在捲的容器(capped),同一個數字就會變成「底應 −53」去指控產品。左右與底是結構內距(加總 padding / border / margin),不受捲動位置影響。
+ *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;沒捲在最上面 / 沒讀到捲動位置判儀器失效;容器種類(classifyBox)各形狀一列 + 對照組;(b)SIDES 與 CASES 一一對應。
+ *            真的造出溢出、在瀏覽器裡驗「不先捲 → 儀器失效 / 先捲到頂 → 綠」的對照住原閘的 --selftest (c)(同一組 pageKit 函式)。
  *   --static=<dir> 指定建置(對照組用);指定時不跑新鮮度守衛。
  */
 import path from 'node:path'
@@ -84,6 +89,11 @@ export const SIDES = {
   'datatable-filter-panel': { last: 'element', box: 'hug', pattern: 'AB' },
   'fileitem-upload-manager': { last: 'element', box: 'hug', pattern: 'C' },
   'popover-list-region': { last: 'unbounded', box: 'hug', pattern: 'C' },
+  // AgentPanel 對話區(2026-11-13):登記值 = 修後建置實跑量到的(不是照計畫預期填的)—— 面板高度撐滿、最後一個是代理訊息的工具列鈕 / 代理文字 / 空狀態說明字,
+  // 左右由對話區(或空白頁的包層)給。空白頁的內容在包層裡置中:左右 / 底量的是包層的結構內距,置中多出來的空白不算(本檔量法),頂見原閘 centered。
+  'agentpanel-chat-user-first': { last: 'element', box: 'fill', pattern: 'AB' },
+  'agentpanel-chat-agent-first': { last: 'element', box: 'fill', pattern: 'AB' },
+  'agentpanel-new-conversation': { last: 'element', box: 'fill', pattern: 'AB' },
 }
 
 /**
@@ -133,6 +143,9 @@ export function judge(rows) {
     const where = `${r.id} @${r.density}`
     if (r.err) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} ${r.err}`); continue }
     if (!(r.loose > 0) || !(r.tight > 0) || !(r.bottomToken > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-loose / tight / bottom`); continue }
+    // 捲動位置(2026-11-13,同原閘):「頂」只在第一個內容所在的每一層捲動區都捲在最上面時才量得到。沒讀到 / 不是 0 → 儀器失效,這一格不再往下判
+    if (!Number.isFinite(r.scrolled)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒讀到第一個內容所在捲動區的捲動位置(量的時候有沒有捲在最上面不知道)`); continue }
+    if (r.scrolled > TOL) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 第一個內容所在的捲動區沒有捲在最上面(量的當下捲動位置 ${r.scrolled}px,這時量到的頂 ${r.top}px 不能用)—— 規則 4「與頂部同值」拿頂當期望值;這是量測沒對好,不是產品的問題`); continue }
     if (![r.left, r.right, r.bottom, r.top].every(Number.isFinite) || !ROLES.includes(r.last) || !r.box || !r.pattern) {
       failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒量到左 / 右 / 底 / 頂、角色或容器種類(左 ${r.left} / 右 ${r.right} / 底 ${r.bottom} / 頂 ${r.top} / 最後 ${r.last} / 容器 ${r.box}:內容加高 ${FOLLOW_STEP}px 容器長 ${r.grow})`)
       continue
@@ -166,7 +179,7 @@ function selftest() {
   // 頂距預設 = 規則 2 對盤點登記的第一個東西的值(原閘綠的狀態)
   const row = (id, density, over = {}) => {
     const s = SIDES[id] ?? { last: 'element', box: 'hug', pattern: 'AB' }
-    const r = { id, density, declared: s, last: s.last, box: s.box, pattern: s.pattern, ...T[density], rowLeft: 0, rowRight: 0, lastDesc: 'x', ...over }
+    const r = { id, density, declared: s, last: s.last, box: s.box, pattern: s.pattern, ...T[density], rowLeft: 0, rowRight: 0, lastDesc: 'x', scrolled: 0, ...over }
     const t = { loose: r.loose, tight: r.tight, bottom: r.bottomToken }
     const top = 'top' in over ? over.top : expectedGap(firstOf(id), t)
     return { left: r.loose, right: r.loose, ...r, top, bottom: 'bottom' in over ? over.bottom : bottomWant({ ...r, top }, t).want }
@@ -207,10 +220,19 @@ function selftest() {
   const locked = [row('popover-inspector', 'md'), row('popover-inspector', 'lg', { ...T.md, rootLoose: 24 })]
   expect(judge(locked).length === 0, `浮層鎖 md 應綠,實得 ${JSON.stringify(judge(locked))}`)
   // 與頂部同值 = 閘的量法取同一處量到的頂(上下對稱;頂本身對不對由原閘的規則 2 判):頂 0 → 收尾 0 綠;頂 0 收尾 12 紅
-  // (只驗判定函式的對稱性;不代表任何「頂 0」的元件已定案 —— 決策卡無分隔線標頭在原閘 NOT_COVERED,待元件規格)
+  // (只驗判定函式的對稱性;不代表任何「頂 0」的元件走這支閘 —— 決策卡無分隔線標頭的量法不同(從標頭內容的底量,layoutSpace.spec.md 規則 2
+  //  「適用範圍與量法三點」(2)),在原閘 NOT_COVERED、由 agent-decision-card-validation-invariant.mjs 的 G 系列守)
   expect(judge([row('surface-body', 'md', { top: 0, bottom: 0 })]).length === 0, '貼內容的容器頂 0 收尾 0 應綠(上下對稱)')
   expect(judge([row('surface-body', 'md', { top: 0, bottom: 12 })]).some((s) => s.includes('與頂部同值(頂 0)')), '貼內容的容器頂 0 收尾 12 應紅')
   expect(judge([row('x', 'md', { top: NaN })]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '頂沒量到應判儀器失效(與頂部同值無從比)')
+  // 捲動位置(2026-11-13):第一個內容所在的捲動區沒捲在最上面時量到的頂不能用 → 儀器失效,而且不得有任何一行拿那個頂去指控產品。
+  // 形狀 = 不擋頁面、被上限卡住在捲的容器(capped),頂被捲成 −53(修前視窗高 600 時對話區量到的數字):沒有這條守衛會紅「底 = 12px,應 -53」
+  const cappedShape = { declared: { last: 'element', box: 'capped', pattern: 'AB' }, box: 'capped' }
+  const scrolledCapped = judge([row('surface-body', 'md', { ...cappedShape, top: -53, bottom: 12, scrolled: 65 })])
+  expect(scrolledCapped.length === 1 && scrolledCapped[0].includes(INSTRUMENT_FAIL_MARKER) && scrolledCapped[0].includes('沒有捲在最上面'), `沒捲在最上面應只判儀器失效、不指控產品,實得 ${JSON.stringify(scrolledCapped)}`)
+  expect(judge([row('surface-body', 'md', { ...cappedShape, top: 12, bottom: 12, scrolled: 0 })]).length === 0, '同一格捲回頂端(讀回 0、頂 12、底 12)應綠')
+  const noScrollRead = judge([row('surface-body', 'md', { scrolled: undefined })])
+  expect(noScrollRead.length === 1 && noScrollRead[0].includes(INSTRUMENT_FAIL_MARKER) && noScrollRead[0].includes('沒讀到'), `沒讀到捲動位置應判儀器失效(不准默默當成 0),實得 ${JSON.stringify(noScrollRead)}`)
   // 規則 4「沒寫到的三種容器」(layoutSpace.spec.md,2026-11-11【AI 推導】):被 max-height 卡住在捲 / 高度寫死 / 被 min-height 撐住,
   // 不擋頁面、高度不是視窗 / 版面欄給的 → 與頂部同值。兩面:收尾 = 頂 → 綠;收尾給 48(當成撐滿)→ 紅,訊息指名這一條。
   // 登記要寫成 capped / pinned 本身(不得登記成 hug 蒙混:容器種類與登記不符照樣紅)。2026-11-11 前這三種一律紅「待規格」。
@@ -254,13 +276,17 @@ function selftest() {
   return ok
 }
 
-/** 頁面函式(依賴 window.__layoutKit = 原閘 pageKit):量標頭之後那塊的左 / 右 / 底結構內距、最後 / 第一個東西的特徵、容器種類、pattern。 */
-export const probeSides = ({ header, headerText = null, nth = 0, followStep }) => {
+/**
+ * 頁面函式(依賴 window.__layoutKit = 原閘 pageKit):量標頭之後那塊的左 / 右 / 底結構內距、最後 / 第一個東西的特徵、容器種類、pattern。
+ * scroll = 'top'(預設):先把那一塊裡捲動過的容器捲回頂端再找東西、量位置(同原閘 probeFirst);'keep' 只給對照用的腳本(不捲)。量完讀回 scrolled(judge 要求是 0)。
+ */
+export const probeSides = ({ header, headerText = null, nth = 0, followStep, scroll = 'top' }) => {
   const K = window.__layoutKit
   const h = K.findHeader(header, headerText, nth)
   if (!h) return { err: `找不到標頭 ${header}${headerText ? `(含「${headerText}」)` : ''}` }
   const body = K.findBody(h)
   if (!body) return { err: '標頭之後沒有內容' }
+  const scrolledBefore = scroll === 'keep' ? null : K.scrollBody(body, scroll)
   const things = K.collectThings(body)
   if (!things.length) return { err: '標頭之後找不到看得見的內容' }
   const round = (x) => Math.round(x * 10) / 10
@@ -418,20 +444,25 @@ export const probeSides = ({ header, headerText = null, nth = 0, followStep }) =
   }
   const v = (name) => parseFloat(getComputedStyle(body).getPropertyValue(name))
   return {
+    // 捲完讀回:第一個內容往上到那一塊的每一層,量的當下捲在哪(top 是在這個狀態下量的)
+    scrolled: round(K.scrollOffset(first.el, body).top), scrolledBefore: scrolledBefore === null ? null : round(scrolledBefore),
     left: round(L.v), right: round(R.v), bottom: round(e - bottomOf(last)), top: round(top),
     leftDesc: desc(L.t.el), rightDesc: desc(R.t.el), lastDesc: desc(last.el), owner: owner ? desc(owner) : null,
-    lastF: last.f, firstF: first.f, pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
+    // 角色判法要的「外框撐不撐滿容器內容寬」(原閘 pageKit.fillsWidth;有框但沒撐滿 → element,2026-11-13)
+    lastF: { ...last.f, fillsWidth: K.fillsWidth(last.el, body).fills }, firstF: { ...first.f, fillsWidth: K.fillsWidth(first.el, body).fills },
+    pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
     modal, scrolls, capped, free: round(free), pinned, grow: round(grow),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
     rootLoose: parseFloat(getComputedStyle(document.querySelector('#storybook-root') ?? document.documentElement).getPropertyValue('--layout-space-loose')),
   }
 }
 
-async function measureCase(page, origin, c, density) {
+/** 開到盤點那一處再量(一格的完整量法;對照用的腳本可以換視窗高度後呼叫同一支,scroll: 'keep' = 不先捲回頂端)。 */
+export async function measureCase(page, origin, c, density, { scroll = 'top' } = {}) {
   const opened = await openCase(page, origin, c, density)
   if (opened) return opened
   await installPageKit(page)
-  const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, followStep: FOLLOW_STEP })
+  const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, followStep: FOLLOW_STEP, scroll })
   if (r.err) return r
   const { lastF, firstF, ...rest } = r
   return { ...rest, box: classifyBox(rest), last: classifyFirst(lastF), first: classifyFirst(firstF) }

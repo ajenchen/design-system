@@ -471,6 +471,10 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 - 第 1 row conjunction 是靜態 `Where` label(`px-[var(--field-px)]` 對齊下方 Field value 起點 = 12px)
 - field 未選 → operator + value picker disabled;同 group 共用 conjunction(第 2 條 row 是唯一可改的 And/Or Select,改動連動整 group;第 3 條起唯讀顯示當前 conjunction — A6 canonical)
+- **巢狀群組的間距**(`mode="nested"`;2026-11-13 補寫,畫面沒有改:數值都是既有程式的值,歸到哪一條規則是【AI 推導 2026-11-13】;下面三點由 `scripts/data-table-filter-group-spacing-invariant.mjs` 機械檢查,一般 / 大密度量像素):
+  - 面板標題列 → 第一個群組 = SurfaceBody 的上內距 `--layout-space-tight`(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2:群組在面板這一層是一個個並列的 element,不是 bounded region —— 高度跟著內容走、寬是扣掉左邊 Where / And / Or 標籤後剩下的寬、可以直排好幾個、後面還跟著一排按鈕)。跟 flat 模式是同一行程式、同一個值;群組刪光、只剩「加入篩選器」那一排按鈕時也不變。
+  - 群組框(`bg-muted` 圓角框,`data-table-filter-group.tsx` 的 `GroupBlock`):四邊內距 8、框內列距 8(條件 ↔ 條件、最後一條 → 「加入巢狀篩選」);框外左邊 Where / And / Or 標籤的上內距 8,跟框的上內距同值,所以標籤外框的頂跟框內第一條條件的頂齊平【AI 推導 2026-11-13:這是量到的現況,原始碼沒寫為什麼是 8;排法是頂對齊,不是垂直置中】。這幾個 8 是元件內部固定值,不跟密度(`layoutSpace.spec.md`「該用 token(縮放)vs 刻意固定」表右欄「元件自身刻意固定」)。
+  - 群組 ↔ 群組 = SurfaceBody 的塊距 `--layout-space-tight`(`../../patterns/element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」公式 1:有底色、有圓角的獨立框之間必留間距)。
 - **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空且 `maxConditions` 尚有容量 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);`maxConditions=0` 不 auto-add。user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add，尊重已明確執行的清空意圖
 - **CTA 位置**:緊貼最後一條 row(**廢 SurfaceFooter**),條件與「加入」屬同一語境;root-level「加篩選 / 加入篩選器」用 `tertiary`(輕量但有邊界,符合 root-CTA 重量),group 內「加入巢狀篩選」才用 `text`(更輕,inline 於 group 內)
 - **Trash / 刪除**:row 是 form-control row → text Button(non Inline Action,違 item-anatomy canonical)

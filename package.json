@@ -52,6 +52,7 @@
     "test:overlay-nested-dismiss": "node scripts/overlay-nested-dismiss-invariant.mjs && node scripts/overlay-nested-dismiss-invariant.mjs --selftest",
     "test:data-table-click-outside": "node scripts/data-table-click-outside-invariant.mjs && node scripts/data-table-click-outside-invariant.mjs --selftest",
     "test:data-table-panel-reset-clear": "node scripts/data-table-panel-reset-clear-invariant.mjs && node scripts/data-table-panel-reset-clear-invariant.mjs --selftest",
+    "test:data-table-filter-group-spacing": "node scripts/data-table-filter-group-spacing-invariant.mjs && node scripts/data-table-filter-group-spacing-invariant.mjs --selftest",
     "test:tree-view-keyboard-route": "node scripts/tree-view-keyboard-route-invariant.mjs && node scripts/tree-view-keyboard-route-invariant.mjs --selftest",
     "test:range-preview": "node scripts/test-range-preview.mjs",
     "test:app-shell-layout-model": "node scripts/test-app-shell-layout-model.mjs && node scripts/test-app-shell-layout-model.mjs --selftest",

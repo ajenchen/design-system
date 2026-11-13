@@ -1446,6 +1446,11 @@ jobs:
           # 左右 = loose(誰給內距從 DOM 判 pattern AB / C,C 的列必貼齊容器)、底依最後一個東西的角色 + 容器會不會擋頁 / 撐滿(bounded loose / unbounded 0 / element 48 或與頂同值)。
           # 同一份盤點(上一支的 CASES)md / lg 量像素;selftest 判定表每一邊各有該紅 / 該綠 / 儀器失效。
           npm run test:header-content-sides
+          # 巢狀篩選群組的間距(2026-11-13;data-table.spec.md「巢狀群組的間距」—— 現況已符合、畫面沒有改,補規格句與閘;歸到哪條規則是 AI 推導,user 沒有逐字講過):
+          # 面板標題列 → 第一個灰底群組 = tight、群組框四邊內距 / 框內列距 = 8(不跟密度)、框外標籤頂對齊第一條條件、群組 ↔ 群組 = tight;md / lg 量像素。
+          # --selftest:判定表 + 現況必綠 + 頁面上六種拆法(內距 12 / 列距 12 / 第一個群組下推 4 / 標籤上內距歸零 / 第二個群組下推 4 / 內距跟密度走)各自紅在負責的那一段。
+          # 本機實測:判定 2 秒 + --selftest 12 秒。
+          npm run test:data-table-filter-group-spacing
           # 表單範例放進卡片(2026-11-10 FORM-EXAMPLE-CARD 甲;user 10-21「Q5可以基於你的建議」、10-28「頁面上的卡片照你建議」):Field 表單驗證 ×2、
           # Rating 包在 Field 內、Select 隨 form 送出 —— 送出鈕往上找卡片、卡片內上 / 左 / 下 = loose(md / lg 量像素)。修前 main 8eb473c7 建置 4 處都沒有卡片(紅)。
           npm run test:form-example-card

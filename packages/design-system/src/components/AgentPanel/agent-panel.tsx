@@ -1015,10 +1015,10 @@ const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProp
           role="log"
           aria-live="polite"
           className={cn(
-            // 輪距 40 = 8 + 24(工具列)+ 8;懸停工具列絕對定位於輪距內,出現不推擠。
+            // 輪距 40 = 8 + 24(工具列)+ 8;懸停工具列絕對定位於輪距內,出現不推擠。頂部 = --layout-space-tight:標頭 → 第一則訊息,訊息 = element(layoutSpace.spec.md 規則 2【AI 推導 2026-11-13】;之前頂部跟左右一樣是 loose,2026-09-02 入庫值);左右 loose —— 上 / 左右 / 下三個值與 DialogBody / SheetBody 同一組。
             // 底部 = --layout-space-bottom 48:捲到最底時,最後內容(常駐工具列)→ 輸入盒至少 48(user 2026-09-02 23:14
             // 「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」;agent-panel.spec.md「3. AgentConversation」)。
-            'flex flex-col gap-10 p-[var(--layout-space-loose)] pb-[var(--layout-space-bottom)]',
+            'flex flex-col gap-10 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]',
             className,
           )}
           {...props}

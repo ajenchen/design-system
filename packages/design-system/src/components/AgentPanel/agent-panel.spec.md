@@ -195,7 +195,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 3. AgentConversation(訊息卷軸區)
 
-- ScrollArea(跨 OS 一致捲軸;Dialog body 同法)包 `flex-1`;內距 16(--layout-space-loose);**輪距 40**(我方↔代理)=
+- ScrollArea(跨 OS 一致捲軸;Dialog body 同法)包 `flex-1`;內距照 `../../tokens/layoutSpace/layoutSpace.spec.md`(間距規則的 SSOT)【AI 推導 2026-11-13】:左右 `--layout-space-loose`(規則 1 / 6)、上 `--layout-space-tight`(規則 2:標頭 → 第一則訊息,訊息 = element;一般密度 12 / 大密度 16。2026-11-13 前上內距跟左右一樣是 loose 16 / 24 —— 那是 2026-09-02 隨本規格入庫的值,檔頭來源只總括寫「間距皆節點實測」,這一個值有沒有對到設計稿查無)、下見下一條;**輪距 40**(我方↔代理)=
   8+24(工具列 xs 高)+8,懸停工具列絕對定位於輪距內,出現不推擠。
 - **底部內距 = `--layout-space-bottom` 48**:捲到最底時,最後內容(常駐工具列)→ 輸入盒至少 48(user 2026-09-02 23:14
   「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」)。
@@ -296,7 +296,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 ### 附:空狀態
 
 - 問候區圖示位=`<AgentLogo state="attract" size={48}>`(招喚態邀請開始);
-  其餘照既有 Empty 元件(icon slot)。
+  其餘照既有 Empty 元件(icon slot)。位置與內距【AI 推導 2026-11-13】:空狀態放在 Anatomy 中間那一格(沒有訊息時取代 AgentConversation),包層內距跟對話區同一組 —— 左右 `--layout-space-loose` / 上 `--layout-space-tight` / 下 `--layout-space-bottom`(依據同「3. AgentConversation」頭兩條;內容置中時上內距怎麼算的 SSOT = `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3));Empty 在內距框裡垂直置中(`../Empty/empty.spec.md`「垂直定位」有框那一列:面板有標題列與邊線,算有框),上下內距不一樣,所以比那一格的正中高一點。DS 元件本身沒有空狀態容器,這個包層目前住在範例輔助檔 `stories-helpers/scene/agent-demo.tsx` 的 `DemoConversation`。
 
 ## AgentLogo(標誌;附屬資產)→ `agent-panel-logo.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
@@ -444,6 +444,7 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 - `agent-panel-fab.spec.md`
 - `agent-panel-logo.spec.md`
 - `app-shell.spec.md`
+- `empty.spec.md`
 - `motion.spec.md`
 - `overflow-indicator.spec.md`
 - `toast.spec.md`

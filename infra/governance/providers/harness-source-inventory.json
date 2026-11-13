@@ -621,6 +621,7 @@
           "scripts/test-agent-decision-card-validation-invariant.mjs",
           "scripts/test-agent-logo-continuity-invariant.mjs",
           "scripts/test-data-table-column-divider-invariant.mjs",
+          "scripts/test-data-table-filter-group-spacing-invariant.mjs",
           "scripts/test-data-table-hover-exclusivity-invariant.mjs",
           "scripts/test-data-table-multi-sort-invariant.mjs",
           "scripts/test-data-table-pinned-resize-invariant.mjs",

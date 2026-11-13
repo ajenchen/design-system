@@ -52,7 +52,7 @@ owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 任何元件(list / table / code block / image / form section / chart / sidebar)都套同邏輯。例:
 - Page body 直接放 Table → Table = bounded region(該層展示主角 + 有 borders)
 - Cmd+K menu list → list = unbounded region(主角 + 無 chrome,自帶 py)
-- InfoPanel 內 DescriptionList → element(只是一塊,不主導)
+- InfoPanel 內 DescriptionList → element(只是一塊,不主導);對話訊息流(AgentPanel 的 AgentConversation)裡的每一則訊息同理 → element【AI 推導 2026-11-13】:照上面三題判,三題都不是 region —— 單一則訊息不占該層的主要空間(高度跟著內容走,該層由 N 則一起排)、是一塊局部內容不是畫布、是 N 則裡的一則不是該層的展示主角;代理訊息全寬、沒有氣泡,我方訊息是有底色的氣泡、寬最多 85%,兩種都一樣(兩種訊息的長相見 `../../components/AgentPanel/agent-panel.spec.md`「4. AgentMessage」);「有沒有視覺邊界」是先判成 region 之後才問的題(下方「心智模型」Step 1),不能拿底色反推它是 bounded region
 - Field 內 Textarea → 不獨立分類(Field 整體才是該層的 element)
 
 ### Region 數量 invariant(2026-04-30 codified)
@@ -108,7 +108,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 | **unbounded region**(自帶 py 的 list / nav stack)| **0**(讓 list 自帶 py 撐 spacing) |
 | **element**(input / button / alert) | `tight` |
 
-本規則由 `scripts/header-first-gap-invariant.mjs` 機械檢查:全 DS 盤點出「chrome 標頭底下由範例自己給頂部內距」的每一處,從 DOM 判第一個東西的角色,md / lg 量「標頭底 → 第一個內容頂」比對上表。
+本規則由 `scripts/header-first-gap-invariant.mjs` 機械檢查:全 DS 盤點出「chrome 標頭底下由範例自己給頂部內距」的每一處,從 DOM 判第一個東西的角色,md / lg 量「標頭底 → 第一個內容頂」比對上表。 **適用範圍與量法三點**(都是 AI 依本檔與下面點名的規格的既有句子推的,user 沒有逐字講過):(1)【AI 推導 2026-11-13】上表管的是**標頭 → 標頭底下第一個內容**這一段:通常是 body 裡的第一個內容,由 body 的頂部內距給;consumer 放在 body 外、自帶左右內距的一列也算(例:`../../patterns/overlay-surface/overlay-surface.spec.md`「When list 上方有 search / banner」的 search 列,自帶 `pt-tight` = 上表 element 那一列的值)—— 這一段照上表,元件規格不另訂(規則 4 Note 對 Dialog / Sheet body 底部 48 的說法是「第 1 列的實作,不是元件特例」,頂部同理)。跟 body 並列、貼齊外殼的**結構分區**不是標頭底下的內容,不套上表:分區與分區直接相接(0),誰接誰看元件規格的 Anatomy。結構分區 = 元件規格的 Anatomy 明列為跟 Header / Body 同層的一格(例:Coachmark 的 Media 區;FileViewer 的 Viewport —— `../../components/FileViewer/file-viewer.spec.md`「Anatomy」分區決策的叫法,工具列底下那一格);consumer 自己把一塊內容貼齊外殼放在標頭下(例:滿版的有框表格)不會因此變成結構分區,仍照上表。(2)【AI 推導 2026-11-13】**標頭的分隔線被元件規格明文拿掉時**(例:AgentDecisionCard),標頭與內容之間沒有看得見的邊界,眼睛只看到一段距離 → 這一段只由一層給(同規則 4「同一段距離只由一層給」;但這裡給的那一層是標頭,不是那一句後半寫的「容器給內距」—— 標頭的下內距本來就在,body 再給一次就重複),現行做法是標頭自己的下內距給、body 頂部歸零;量法改成從「標頭內容的底」量到「第一個內容頂」= 上表的值 ——「標頭內容的底」= 標頭裡最低的那個內容的外框底(正常情況下 = 標頭外框底扣掉它自己的下內距);「內容」只算畫面上看得見的東西【AI 推導 2026-11-13】—— 有自己的字的元素、圖示 / 圖片、有看得見的框線 / 跟外層不同的底色 / 陰影的塊;外框看不見的包層(含框線與底色都透明的圖示按鈕)不算它自己的外框,往裡找看得見的東西;只有字、沒有框的元素取內容框的底(它自己的下內距是空白,不是內容);絕對定位的裝飾不算;量的時候指標移開(滑過時按鈕有底色,外框就看得見了);逐項判法住 `scripts/header-first-gap-invariant.mjs` 的頁面量具(決策卡那支閘用的是同一份);例:沒有小標的 AgentDecisionCard,× 鈕的外框是透明的、比題目那一行低 3.5 / 5.5px(一般 / 大密度),看不到、不算 —— 最低的內容是題目那一行,量到 12 / 16;把 × 的外框算進去會量成 8.5 / 10.5(這幾個數字是量到的現況)。帶分頁的標頭不算這一點:標頭自己不畫線、改由分頁列畫(`../../patterns/header-canonical/header-canonical.spec.md`「withTabs 連動」Rule W1),線還看得見,照一般情況量。這一點只講標頭這一側;footer 那一側照規則 3 段末「不適用」那句。(3)【AI 推導 2026-11-13】**內容在高度撐滿的容器裡置中時**(例:空狀態),上表的值寫成容器的上內距,內容在內距框裡置中;置中多出來的空白不算在這一段裡(`scripts/header-content-sides-invariant.mjs` 量左右與底是同一個量法:只算內距,撐滿的包層多出來的空白不算)。
 
 ### 規則 3:元素間 gap(**只看親疏,role 無關**)
 
@@ -369,7 +369,10 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-decision-card.spec.md`
+- `agent-panel.spec.md`
 - `app-shell.spec.md`
+- `coachmark.spec.md`
 - `data-table.spec.md`
 - `description-list.spec.md`
 - `empty.spec.md`

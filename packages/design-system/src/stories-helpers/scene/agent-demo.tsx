@@ -228,13 +228,13 @@ export function decisionReceipt(questions: AgentDecisionQuestion[], answers: Rec
 }
 
 /**
- * 一則範例的對話內容:空的(新對話)= 招喚態標誌 + Empty(「新對話(空狀態)」範例同一套);
- * 有訊息就照順序畫,代理訊息有 `copyText` 才帶工具列。
+ * 一則範例的對話內容:空的(新對話)= 招喚態標誌 + Empty(「新對話(空狀態)」範例同一套),包層內距跟有訊息時的對話區(AgentConversation)同一組 ——
+ * 左右 loose / 上 tight / 下 bottom,Empty 在內距框裡置中(agent-panel.spec.md「附:空狀態」);有訊息就照順序畫,代理訊息有 `copyText` 才帶工具列。
  */
 export function DemoConversation({ messages }: { messages: DemoMessage[] }) {
   if (messages.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
         <Empty
           icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
           title="開始第一個對話"
