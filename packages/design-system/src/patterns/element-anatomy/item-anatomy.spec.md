@@ -725,7 +725,7 @@ List-as-region 設 `--item-px: var(--layout-space-loose)`(見 `../overlay-surfac
 
 ### Token: `--item-icon-size` / `--item-avatar-size`(2026-05-22 codify)
 
-**Local token family(per `--item-*` prefix 既有 family,e.g., `--item-prefix-slot` / `--item-gap-label-desc-<mode>[-lg]`)**。
+**Local token family(per `--item-*` prefix 既有 family,e.g., `--item-prefix-slot` / `--item-gap-label-desc-<mode>[-lg]`)**。這兩顆照 `../../tokens/token-system.spec.md`「命名」的定義是**元件內變數**、不是登記在分類表的 token(與 Sidebar 的 `--sidebar-rail-icon-slot` 同一類:只由 SidebarProvider 在自己的外層元素上設值、只有 Sidebar 讀,不在 `:root` 宣告,`../../tokens/token-registry.json` 沒有這兩顆);本段標題沿用 2026-05-22 的叫法(2026-11-13 AI 查證後補的指向)。
 
 由 row primitive(目前 SidebarProvider)透過 inline style 注入,**JS const → CSS var mirror**:
 
@@ -1182,5 +1182,6 @@ Selection control(Dropdown / Menu / List / SegmentedControl / Chip)的 item 視�
 - `tabs.spec.md`
 - `time-picker.spec.md`
 - `toast.spec.md`
+- `token-system.spec.md`
 - `tree-view.spec.md`
 - `typography.spec.md`

@@ -818,7 +818,7 @@
       "spec": "components/Sidebar/sidebar.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "側欄寬、最小寬、收合寬、選單圖示尺寸:拿掉側欄就沒有意義 → 側欄的值(版面外框、標頭讀它們是為了排側欄的位置)。產品不可覆寫,設定走 AppShell 參數 widthRange / defaultWidth —— token 只是產品沒設時的預設值(user 2026-11-10 拍板 token 第 4 題甲;sidebar.spec.md「consumer 可覆寫」那句同批改成「用參數設定」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第五批 2026-11-11 已搬到 components/Sidebar/sidebar.css,名字與值不變;新檔由對外彙總檔 styles/tokens.css 匯入(2026-05-26 產品拿不到側欄寬的事故)"
+      "why": "側欄寬、收合寬:拿掉側欄就沒有意義 → 側欄的值(版面外框、標頭讀它們是為了排側欄的位置)。2026-11-13 前這一列管 4 顆,另外兩顆已退場(AI 依 token-system.spec.md 第 0 題做的工程收斂;user 沒有決定過這個改法,只問過一句,原話見 token-system.spec.md):最小寬 --sidebar-width-min 只有 AppShell 在讀、不隨密度變 → 收回 components/AppShell/app-shell.tsx 的常數 PANEL_WIDTH_MIN_DEFAULT(畫面零差異);選單圖示欄 --sidebar-menu-icon-size 改成 SidebarProvider 外層設的元件內變數(收合寬公式的輸入,不在 :root 宣告、不登記;sidebar.spec.md「尺寸規範」)—— 收合寬因此改跟 size 走,畫面有差異,見 sidebar.spec.md。產品不可覆寫,設定走 AppShell 參數 widthRange / defaultWidth —— token 只是產品沒設時的預設值(user 2026-11-10 拍板 token 第 4 題甲;sidebar.spec.md「consumer 可覆寫」那句同批改成「用參數設定」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第五批 2026-11-11 已搬到 components/Sidebar/sidebar.css,名字與值不變;新檔由對外彙總檔 styles/tokens.css 匯入(2026-05-26 產品拿不到側欄寬的事故)"
     },
     {
       "match": "--table-row-",

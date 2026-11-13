@@ -77,6 +77,8 @@
 
   /* 側欄 4 顆 --sidebar-width / --sidebar-width-min / --sidebar-width-icon / --sidebar-menu-icon-size
      2026-11-11 搬到 components/Sidebar/sidebar.css(主人 = Sidebar;token「2甲」第五批)。
+     其中兩顆 2026-11-13 退場(AI 的工程修正):--sidebar-width-min → components/AppShell/app-shell.tsx 的常數 PANEL_WIDTH_MIN_DEFAULT;
+     --sidebar-menu-icon-size → SidebarProvider 外層設的元件內變數(不是 token)。現行剩 --sidebar-width、--sidebar-width-icon。
      2026-05-26 那次「產品拿不到側欄寬、版面跑掉」的事故(當時宣告在 DS repo 的 src/globals.css、沒進對外彙總檔)
      記在新檔檔頭;新檔由 styles/tokens.css 匯入,token-creation-invariant C6 在 CI 擋漏匯入。 */
 
@@ -85,7 +87,7 @@
      拖拉上下限(360 / 640)同理**不設 token**:值只有 JS 的 clamp 邏輯會用,CSS 這邊沒有任何消費者。
      2026-09-21 orphan-token 稽核抓到 —— 原本宣告了 --agent-panel-width-min / -max 卻沒人讀,
      而真正生效的是 agent-panel.tsx 的 PANEL_WIDTH_MIN / PANEL_WIDTH_MAX,同值兩個住所必然漂移(M17)。
-     單一住所對齊既有前例:AppShell 的 ASIDE_WIDTH_DEFAULT / MAX 也只住在 app-shell.tsx(Right panel 最小寬讀 --sidebar-width-min)。 */
+     單一住所對齊既有前例:AppShell 的 ASIDE_WIDTH_DEFAULT / MAX 也只住在 app-shell.tsx(Right panel 最小寬預設 = 同檔的 PANEL_WIDTH_MIN_DEFAULT;2026-11-13 前讀 token --sidebar-width-min)。 */
 
   /* Tree Indent — TreeView + DataTable nested rows(SSOT,2026-05-04)
      公式:chevronSize + gap-2 = 16+8(sm/md)/ 20+8(lg)
@@ -137,7 +139,8 @@
    (data-density / data-ui-size / data-layout-space),它的輸入跟著變、它自己不會重算 —— 實測整頁 md、區塊 data-density="lg",
    單行高的多行盒量到 32px,同區塊單行 Input 是 36px(本檔 :root 段「Field control vertical padding」)。
    所以公式只寫這一份,宣告在 :root 與每個可能換密度的元素上,每一層都用自己的輸入重算。
-   元件的值也照這個做法:側欄收合細列寬 --sidebar-width-icon 住 components/Sidebar/sidebar.css 的同名段(2026-11-11 搬走)。
+   元件的值也照這個做法:側欄收合細列寬 --sidebar-width-icon 住 components/Sidebar/sidebar.css 的同名段(2026-11-11 搬走;
+   它另一個輸入是側欄的 size,所以那一段還多在 SidebarProvider 外層重算一次)。
    閘:scripts/test-density-subtree-token-parity.mjs(區塊裡每一顆 token = 整頁直接設成那個密度的值,瀏覽器實算)。 */
 :root,
 [data-density],

@@ -346,12 +346,19 @@ const SidebarProvider = React.forwardRef<
     // 供 SidebarMenuButton collapsed pl 公式消費,讓所有 prefix 中心(icon/avatar)鎖回
     // rail center = --sidebar-width-icon/2(per user mental model:rail anchor =
     // GlobalHeader toggle geometry,sidebar 收合所有元素 cx 對齊此 rail center)。
-    // Rail anchor 不隨 Sidebar size 變,只隨密度變(--sidebar-menu-icon-size md 1rem / lg 1.25rem,住 sidebar.css)。
+    //
+    // 2026-11-13 細列寬的圖示欄(元件內變數,不是 token;sidebar.spec.md「尺寸規範」):
+    //   `--sidebar-rail-icon-slot` ← ICON_SIZE[size] —— 細列寬 = 2 × loose + 這個 size 畫出來的圖示寬,
+    //   隨密度(loose)與 size(圖示)各自變;公式住 sidebar.css「衍生值」段,在這個外層(data-sidebar="wrapper")上重算。
+    //   寫 ICON_SIZE[size] 而不是 var(--item-icon-size):開了 uniformPrefix 且圖示與頭像混用時,下方 class 會把
+    //   --item-icon-size 改成前綴欄寬(sm 20、md / lg 24),細列寬不跟著它變(那是既有行為,item-anatomy.spec.md 的收合置中公式)。
+    //   2026-05-26 到這次之前圖示欄誤跟密度走(舊名 --sidebar-menu-icon-size),size 與密度不同檔時圖示收合前後差 2px。
     const wrapperStyle = React.useMemo<React.CSSProperties>(
       () =>
         ({
           "--item-icon-size": `${ICON_SIZE[size]}px`,
           "--item-avatar-size": `${AVATAR_SIZE.inline[size]}px`,
+          "--sidebar-rail-icon-slot": `${ICON_SIZE[size]}px`,
           ...(uniformPrefix ? { "--mixed-prefix-slot": slotValue } : {}),
           ...style,
         } as React.CSSProperties),
@@ -363,6 +370,8 @@ const SidebarProvider = React.forwardRef<
        <SidebarInternalsContext.Provider value={internals}>
         <RowSizeProvider value={size}>
           <div
+            // 樣式檔靠這個屬性在外層重算收合細列寬(sidebar.css「衍生值」段);放在 {...props} 之前,寫法同其他部位的 data-sidebar="<部位>"
+            data-sidebar="wrapper"
             style={wrapperStyle}
             className={cn(
               "group/sidebar-wrapper flex min-h-svh w-full",
@@ -411,7 +420,7 @@ type SidebarProps = React.ComponentProps<"div"> & {
   contentType?: string
   /**
    * 在 AppShell 裡:這種內容類型的最小 / 初始 / 最大寬(px)。**Menu 的最大寬 DS 沒有既有值,產品必給**(「版面規則」§1);
-   * 沒給時開發階段警告,並用 `--sidebar-width-min` / `--sidebar-width` / 最大 = 初始(不能拖寬)。不在 AppShell 裡時不用(單獨使用不拖寬)。
+   * 沒給時開發階段警告,並用 DS 預設最小寬 240(AppShell 的常數)/ `--sidebar-width` / 最大 = 初始(不能拖寬)。不在 AppShell 裡時不用(單獨使用不拖寬)。
    */
   widthRange?: PanelWidthRange
   /** 在 AppShell 裡:產品自存的寬度紀錄(重新整理後還原;只在這種內容類型還沒有紀錄時使用)。 */
@@ -772,9 +781,9 @@ const SidebarHeader = React.forwardRef<
       tabsSlot={tabsSlot}
       data-sidebar="header"
       className={cn(
-        // 2026-05-21 v14 — rail-derived collapsed padding,full SSOT cascade(per user directive
-        // 「avatar尺寸、menu item padding、menu icon尺寸任一變動都要正確連動」+ codex Layer B
-        // 比稿共識):
+        // 2026-05-21 v14 — rail-derived collapsed padding,full SSOT cascade(原註解把這句標成 user 的話,查無逐字原話、只能當轉述:
+        // avatar 尺寸、menu item padding、menu icon 尺寸任一變動都要正確連動 —— 它最早出現在 commit 96995f6d 的這段註解,
+        // 該 commit 訊息列的 5 句 user 原話、同 commit 的規格與待辦帳本都沒有這一句,2026-11-13 查;+ codex Layer B 比稿共識):
         //
         // 公式 derivation(rail-centered geometric identity):
         //   avatar.cx = pl + avatar/2 = (sidebar-width-icon - avatar)/2 + avatar/2 = sidebar-width-icon/2
@@ -785,17 +794,18 @@ const SidebarHeader = React.forwardRef<
         //
         // SSOT 連動鏈:
         //   --layout-space-loose (density token) ─┐
-        //   --sidebar-menu-icon-size              ├→ --sidebar-width-icon (calc;sidebar.css「衍生值」段,每個換密度的元素上重算)
-        //                                          └→ 公式自動跟 ✓
+        //   --sidebar-rail-icon-slot              ├→ --sidebar-width-icon (calc;sidebar.css「衍生值」段,每個換密度的元素與 SidebarProvider 外層上重算)
+        //   (元件內變數 = ICON_SIZE[size],        └→ 公式自動跟 ✓
+        //    SidebarProvider 外層設;2026-11-13 前是跟密度走的 --sidebar-menu-icon-size)
         //   --chrome-header-avatar-size (header-canonical.css local token):公式 var 引用,
         //                                JS 端透過 WorkspaceBrand RowSizeProvider value="md"
         //                                + AVATAR_SIZE.inline.md spec-coupled 共識 sync。
         //
-        // Collapsed pl 幾何值(rail-centered,--sidebar-width-icon = 2*loose + menu-icon):
-        //   md density: (48-24)/2 = 12  ·  lg density: (68-24)/2 = 22
-        //   (lg width = 2×24+20 = 68,非 stale 64;avatar-size = 24 both densities)
-        // 註:已撤回的 v13 `loose-4` 近似在 lg 給 20,與新 rail-幾何精確值 22 不同 —
-        //     v14 以 SSOT chain 公式取代該近似,md 兩者恰好都是 12。
+        // Collapsed pl 幾何值(rail-centered,--sidebar-width-icon = 2*loose + 這個 size 畫出來的圖示寬;avatar-size = 24 不分密度):
+        //   size sm / md:一般密度 (48-24)/2 = 12  ·  大密度 (64-24)/2 = 20
+        //   size lg:     一般密度 (52-24)/2 = 14  ·  大密度 (68-24)/2 = 22
+        // 註:已撤回的 v13 `loose-4` 近似在大密度給 20、一般密度給 12 —— size sm / md 時與現在的幾何值恰好相同,size lg 時不同;
+        //     v14 以 SSOT chain 公式取代該近似。
         "group-data-[collapsible=icon]:!pl-[calc((var(--sidebar-width-icon)-var(--chrome-header-avatar-size))/2)]",
         "group-data-[collapsible=icon]:!pr-0",
         "transition-[padding] duration-200 ease-linear motion-reduce:duration-0",
@@ -1515,7 +1525,7 @@ const sidebarMenuButtonVariants = cva(
     // 細列時右內距歸零(同 SidebarHeader 的 `group-data-[collapsible=icon]:!pr-0`):右側已沒有任何東西(字 sr-only、動作 / 徽章 display:none)。
     // 內容層由 SidebarContent 的 `fillX` 鎖在細列寬,這一行管的是列鈕**自己**:有列尾動作的列,右內距是預留給動作的
     // (上方 inline paddingRight = loose + 動作寬 + gap-2,或 `group-has-[…menu-action]:pr-8`),細列時動作收掉了、預留還在;
-    // border-box 的寬不會小於左右內距之和,左側置中公式的 pl 加上它比細列寬(標準密度 16 + 40 = 56 > 看得到的 47、寬鬆 74 > 67)
+    // border-box 的寬不會小於左右內距之和,左側置中公式的 pl 加上它比細列寬(size md:標準密度 16 + 40 = 56 > 看得到的 47、寬鬆 24 + 48 = 72 > 63)
     // → 列鈕被撐寬,Tooltip 離細列不是 8px、焦點框右邊被裁(`scripts/sidebar-standalone-collapse-invariant.mjs` 量)。
     // `!` 蓋過 inline paddingRight 與 `group-has-[…menu-action]:pr-8`。
     "group-data-[collapsible=icon]:!pr-0",

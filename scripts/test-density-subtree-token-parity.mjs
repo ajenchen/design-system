@@ -12,7 +12,9 @@
  *   `uiSize.css`「鎖回一般密度」段寫著「md-lock subtree 必須與 root md 逐 token 相等」,
  *   但守它的 `token-creation-invariant.mjs` C5 只看「有大密度覆寫的名字有沒有出現在回復段」—— 那是代理,不是性質本身(M37)。
  *   實測兩種它看不到的缺口:
- *   (1) `--sidebar-menu-icon-size` 有大密度覆寫、回復段沒有它(C5 已知名單裡登記著);
+ *   (1) 有大密度覆寫、回復段沒有它的名字(當時是側欄的 `--sidebar-menu-icon-size`,C5 已知名單裡登記著;
+ *       那一顆 2026-11-13 退場 —— 細列寬的圖示欄改由 SidebarProvider 外層設元件內變數 `--sidebar-rail-icon-slot`,不再跟密度走。
+ *       對照組改成「把一個跟密度走的圖示欄加回來、不加回復」,重現同一種缺口);
  *   (2) 用 var() 組出來、只宣告在 `:root` 的值(例:`--sidebar-width-icon`)—— 瀏覽器在「宣告它的那個元素」上就把 var()
  *       代換掉,子孫繼承代換後的結果(W3C CSS Custom Properties Level 1:custom property 的 Computed value =
  *       「specified value with variables substituted」,https://www.w3.org/TR/css-variables-1/#defining-variables ;
@@ -170,7 +172,7 @@ export async function checkParity(page, css) {
     const e = await readTokens(page, css, c.expected, names)
     for (const n of names) if (!same(a[n], e[n])) failures.push({ case: c, name: n, actual: a[n], expected: e[n] })
     if (c.actual.html === 'data-density="lg"' && c.actual.block === 'data-density="md"') {
-      combo = { menuIcon: a['--sidebar-menu-icon-size'], rail: a['--sidebar-width-icon'], expectedRail: e['--sidebar-width-icon'] }
+      combo = { rail: a['--sidebar-width-icon'], expectedRail: e['--sidebar-width-icon'] }
     }
   }
   return { failures, combo, nameCount: names.length }
@@ -192,7 +194,11 @@ function report({ failures, combo, nameCount }) {
   }
   const stillBad = new Set(failures.map((f) => f.name))
   for (const k of KNOWN) if (!stillBad.has(k)) { console.log(`✗ 已知名單裡的 ${k} 已經不違規了 —— 從 KNOWN 刪掉(名單只能變短)`); fail++ }
-  if (combo) console.log(`\n大密度頁面裡鎖回一般密度的區塊:--sidebar-menu-icon-size = ${show(combo.menuIcon)}、側欄收合寬 --sidebar-width-icon = ${show(combo.rail)}(整頁 md = ${show(combo.expectedRail)})`)
+  // 這一行是給人看的摘要:任一欄讀不到(名字退場 / 改名)就是這支閘自己過期了,不得印成 undefined 或當掉(2026-11-13 圖示欄那一顆退場時實際當掉過)
+  if (combo) {
+    if (!combo.rail || !combo.expectedRail) throw new Error('摘要讀不到 --sidebar-width-icon(名字不在對外彙總檔裡了?先修這支閘)—— INSTRUMENT-FAIL')
+    console.log(`\n大密度頁面裡鎖回一般密度的區塊:側欄收合寬 --sidebar-width-icon = ${show(combo.rail)}(整頁 md = ${show(combo.expectedRail)})`)
+  }
   console.log(`比對 ${nameCount} 顆 token × ${densityCases().length} 種組合`)
   console.log(fail ? `✗ ${fail} 項不相等` : '✓ 局部密度 = 整頁該密度,逐 token 相等')
   return fail
@@ -208,13 +214,17 @@ async function selftest(page) {
   }
   const cases = [
     ['現況', null, new Map()],
-    // 側欄 4 顆 2026-11-11 搬到 components/Sidebar/sidebar.css(token「2甲」第五批):回復段與衍生值段都跟著搬,
-    // 注入點跟著住處走 —— 衍生值這一種因此分兩個檔各注入一次(側欄在 sidebar.css、多行輸入框內距留在 uiSize.css),各自要被指名
-    ['拿掉 --sidebar-menu-icon-size 的回復', '--sidebar-menu-icon-size', mutate(SIDEBAR, '拿掉回復', /(\[data-density="md"\][^{]*\{[\s\S]*?)--sidebar-menu-icon-size:[^;]*;/, '$1')],
+    // 側欄 4 顆 2026-11-11 搬到 components/Sidebar/sidebar.css(token「2甲」第五批):衍生值段跟著搬,
+    // 注入點跟著住處走 —— 衍生值這一種因此分兩個檔各注入一次(側欄在 sidebar.css、多行輸入框內距留在 uiSize.css),各自要被指名。
+    // 2026-11-13 側欄的圖示欄 `--sidebar-menu-icon-size` 退場(連同它的大密度覆寫與回復段),原本的「拿掉它的回復」沒有東西可拿 →
+    // 改成把同一種缺口造回來:在 sidebar.css 尾端加一段「圖示欄跟密度走」的大密度覆寫、不加回復 ——
+    // 大密度頁面裡鎖回一般密度的區塊會沿用 20px,細列寬算成 2×16+20 = 52 而不是整頁一般密度的 48 → 必紅且指名細列寬。
+    ['側欄的圖示欄加回大密度覆寫、不加回復(2026-11-11 前那種缺口)', '--sidebar-width-icon', mutate(SIDEBAR, '加回大密度覆寫', /\s*$/, '\n[data-ui-size="lg"],\n[data-density="lg"]:not([data-ui-size]) { --sidebar-rail-icon-slot: 1.25rem; }\n')],
     // R7-01:便捷屬性那一半拿掉 :not(…) → 回到「權重相同、後寫的贏」→ 同元素雙屬性 / 整頁解耦時一般密度永遠勝 → 必紅
     ['同元素雙屬性:控制項軸拿掉 :not([data-ui-size])', '--field-height-md', mutate(UI_SIZE, '拿掉 :not', /\[data-density="(lg|md)"\]:not\(\[data-ui-size\]\)/g, '[data-density="$1"]')],
     ['同元素雙屬性:版面間距軸拿掉 :not([data-layout-space])', '--layout-space-loose', mutate(join(DS, 'tokens/layoutSpace/layoutSpace.css'), '拿掉 :not', /\[data-density="(lg|md)"\]:not\(\[data-layout-space\]\)/g, '[data-density="$1"]')],
-    ['衍生值只宣告在 :root(不在區塊上重算)', '--sidebar-width-icon', mutate(SIDEBAR, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
+    // 側欄的衍生值段 2026-11-13 起多一個選擇器 [data-sidebar="wrapper"](SidebarProvider 外層依 size 重算);這裡拿掉的是「換密度的元素」那三個
+    ['衍生值只宣告在 :root(不在區塊上重算)', '--sidebar-width-icon', mutate(SIDEBAR, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\],\s*\[data-sidebar="wrapper"\]\s*\{/, ':root, [data-sidebar="wrapper"] {')],
     ['衍生值只宣告在 :root —— 多行輸入框內距那組也要被指名', '--field-control-py-md', mutate(UI_SIZE, '只留 :root', /:root,\s*\[data-density\],\s*\[data-ui-size\],\s*\[data-layout-space\]\s*\{/, ':root {')],
     // 列高 2026-11-11 搬到 data-table.css(token「2甲」第四批):注入點跟著住處走,否則 mutate 找不到而 INSTRUMENT-FAIL
     ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(DATA_TABLE, '拿掉 table-row 回復', /(\[data-density="md"\][^{]*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],

@@ -124,9 +124,9 @@ SidebarProvider              ← 全域 context（open 狀態、cookie、快捷�
 **Row size 跟 density 的差別**：
 - **Size variant**（sm/md/lg）是 **consumer 的風格選擇**，決定 sidebar 整體 row 大小
 - **Density**（md/lg）是**全域 UI 設定**,影響所有 `--field-height-*` tokens 的實際值
-- 兩者**獨立**:size="md" 在 density="md" 下是 32px row、在 density="lg" 下自動變 36px row
+- 兩者**獨立**:size="md" 在 density="md" 下是 32px row、在 density="lg" 下自動變 36px row。收成細列時兩者各管一半:細列寬 = 2 × `--layout-space-loose`(跟 density)+ 這個 size 畫出來的圖示寬(sm / md 16、lg 20),四格數字見下方「尺寸規範」
 
-**Chrome header 不跟 size 變**：`SidebarHeader` 固定用 `var(--chrome-header-height)`,只跟 **density** 連動,不跟 `size` prop 變——因為 header 是結構槽位,不是 row。**SidebarFooter 修正(2026-06-12 doc-to-code)**:footer 實作自 2026-04-14 起為 content-based(`flex flex-col py-2`,sidebar.tsx SidebarFooter,行為同 SidebarGroup),**非** fixed-h——單行高度由下方內容紀律保證,非結構鎖。
+**Chrome header 的高度不跟 size 變**：`SidebarHeader` 固定用 `var(--chrome-header-height)`,高度只跟 **density** 連動,不跟 `size` prop 變——因為 header 是結構槽位,不是 row(收成細列時標頭的水平位置跟細列寬走,細列寬隨 `size` 變,見下方「尺寸規範」;2026-11-13 AI 補的限定)。**SidebarFooter 修正(2026-06-12 doc-to-code)**:footer 實作自 2026-04-14 起為 content-based(`flex flex-col py-2`,sidebar.tsx SidebarFooter,行為同 SidebarGroup),**非** fixed-h——單行高度由下方內容紀律保證,非結構鎖。
 
 **SidebarFooter 屬「列式 footer」(2026-09-17 codify)**:配方(`border-t` + `py-2` + **左右內距 0**)與判準的 owner 在
 `../../patterns/overlay-surface/overlay-surface.spec.md`「底部區域:按鈕列 vs 列式」—— 底部內容需要**鋪滿容器兩側**時用這個配方,
@@ -240,7 +240,7 @@ Settings 不在 sidebar，從 footer 的 avatar / user menu 觸發 modal 或快�
 
 ### 不隨 item size variant 變
 
-`SidebarMenuButton` 的 `size="sm/md/lg"` 是 **row 層級的選擇**（consumer 決定內容列的尺寸），跟 chrome 無關。Header 只跟 **density**（全域設定）綁定。
+`SidebarMenuButton` 的 `size="sm/md/lg"` 是 **row 層級的選擇**（consumer 決定內容列的尺寸），跟 chrome 的高度無關。Header 的高度只跟 **density**（全域設定）綁定(收成細列時標頭的水平位置跟細列寬走、細列寬隨 `size` 變,見「尺寸規範」)。
 
 ### Chrome 內容的約束
 
@@ -679,15 +679,19 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 ## 尺寸規範
 
-元件 scope 的 design token(側欄的值;宣告住 `sidebar.css`,2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來、名字與值不變,由對外彙總檔 `styles/tokens.css` 匯入;分類見 `../../tokens/token-registry.json`)。**寬度由 AppShell 參數 `widthRange` / `defaultWidth` 設定;token 只是產品沒設時的預設值,不開放產品覆寫**(產品也不讀這 4 顆)。來源:user 2026-11-10 對「產品要自己設的值(例如側欄寬):每家都是做成元件參數」回「想補充一下，我也覺得這種方向才是對的吧？？？」(問句,逐字);同日決策頁正式選 token 第 4 題「4甲」(要設定的值只走元件參數,側欄 4 顆不開放產品覆寫)。原句「元件 scope 的 design token，consumer 可覆寫」同日改成本句:
+元件 scope 的 design token(側欄的值;宣告住 `sidebar.css`,2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來、名字與值不變,由對外彙總檔 `styles/tokens.css` 匯入;分類見 `../../tokens/token-registry.json`)。**寬度由 AppShell 參數 `widthRange` / `defaultWidth` 設定;token 只是產品沒設時的預設值,不開放產品覆寫**(產品也不讀這幾顆)。來源:user 2026-11-10 對「產品要自己設的值(例如側欄寬):每家都是做成元件參數」回「想補充一下，我也覺得這種方向才是對的吧？？？」(問句,逐字);同日決策頁正式選 token 第 4 題「4甲」(要設定的值只走元件參數,側欄 4 顆不開放產品覆寫 —— 「4 顆」是當天的數量)。原句「元件 scope 的 design token，consumer 可覆寫」同日改成本句。**2026-11-13 起現行剩 2 顆**(AI 的工程修正;`--sidebar-width`、`--sidebar-width-icon`):最小寬 `--sidebar-width-min` 收回 AppShell 的常數、圖示欄 `--sidebar-menu-icon-size` 退場改成元件內變數,兩顆的去處與理由見表下「2026-11-13 兩顆退場」:
 
 | Token | 預設值 | 用途 |
 |-------|--------|------|
-| `--sidebar-width` | `15rem` (240px) | 產品沒設時 Menu 的初始寬;`--sidebar-width-min`(240px)= 產品沒設時 Menu 與 Right panel 的最小寬。user 2026-05-21 原話(commit `e58576a6`):「--sidebar-width: 15rem = 240px,然後--sidebar-width-min就先設成240px吧,讓drag resize有一個最小寬度,aside應該也要一起參照」。2026-10-14 起產品設的最小 / 初始 / 最大為準,DS 不再硬夾(`../AppShell/app-shell.spec.md`「版面規則」§1)|
-| `--sidebar-width-icon` | `calc(2 * var(--layout-space-loose) + var(--sidebar-menu-icon-size))` | icon 模式寬度(2026-05-21 v3 撤回 `3rem` hardcode,改 geometry formula 保證 icon center x = loose + icon/2 在展開/收合一致;**md = 2×16+16 = 48 / lg = 2×24+20 = 68**,跟 chrome-header-height 解耦)。換了密度的區塊裡也照區塊的密度算:大密度頁面裡鎖回一般密度的區塊 = 48、一般密度頁面裡局部放大的區塊 = 68(公式住 `sidebar.css`「衍生值」段,在每個換密度的元素上重算;2026-11-11 前只寫在 `:root`,區塊裡會沿用整頁的值。閘 `scripts/test-density-subtree-token-parity.mjs`)|
-| `--sidebar-menu-icon-size` | `1rem` (16px) | 收合細列寬公式裡的圖示欄(對齊 ICON_SIZE.sm/md = 16);大密度覆寫 `1.25rem`(20px),鎖回一般密度的區塊回到 `1rem`。只有 `--sidebar-width-icon` 讀它 —— 畫出來的選單圖示大小由 Sidebar 的 `size` 決定(ICON_SIZE),不讀這顆 |
+| `--sidebar-width` | `15rem` (240px) | 產品沒設時 Menu 的初始寬。產品沒設時 Menu 與 Right panel 的最小寬也是 240,住 `../AppShell/app-shell.tsx` 的常數 `PANEL_WIDTH_MIN_DEFAULT`(2026-11-13 前是 token `--sidebar-width-min`)。user 2026-05-21 原話(commit `e58576a6`):「--sidebar-width: 15rem = 240px,然後--sidebar-width-min就先設成240px吧,讓drag resize有一個最小寬度,aside應該也要一起參照」。2026-10-14 起產品設的最小 / 初始 / 最大為準,DS 不再硬夾(`../AppShell/app-shell.spec.md`「版面規則」§1)|
+| `--sidebar-width-icon` | `calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-rail-icon-slot, 1rem))`(第二項 = 圖示欄,元件內變數,見表下) | icon 模式寬度(2026-05-21 v3 撤回 `3rem` hardcode,改 geometry formula 保證 icon center x = loose + icon/2 在展開/收合一致,跟 chrome-header-height 解耦;這條保證適用於圖示列、沒開 `uniformPrefix` 混用 —— 頭像列與開了 `uniformPrefix` 的圖示 / 頭像混用列收合時移到細列中線,展開與收合的中心不同,見 `../../patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-icon-size` / `--item-avatar-size`」;AI 2026-11-13 補的範圍,同日實量相符(混用列 28 → 24、頭像列 28 → 24))。**圖示欄 = 這個 Sidebar 畫出來的圖示寬**(`ICON_SIZE[size]`:sm / md 16、lg 20),所以細列寬隨密度(loose,看版面間距那一軸)與 `size`(圖示)各自變:**一般密度 × sm / md = 2×16+16 = 48、一般密度 × lg = 2×16+20 = 52、大密度 × sm / md = 2×24+16 = 64、大密度 × lg = 2×24+20 = 68**。換了密度的區塊裡也照區塊的密度算:大密度頁面裡鎖回一般密度的區塊 = 48、一般密度頁面裡局部放大的區塊 = 64(size sm / md)。公式住 `sidebar.css`「衍生值」段,在每個換密度的元素與 `SidebarProvider` 外層(`data-sidebar="wrapper"`)上重算(2026-11-11 前只寫在 `:root`,區塊裡會沿用整頁的值。閘 `scripts/test-density-subtree-token-parity.mjs`)。「展開 / 收合圖示中心一致」與上面四格數字由 `scripts/sidebar-standalone-collapse-invariant.mjs` 的 R8 在真頁面上量(真按開關;兩種密度 × size md / lg、區塊密度、AppShell 共十二格;其中 R8d 直接讀本列「一般 / 大密度 × … = …」這四個數字,改這句的寫法要同步那支閘的讀法)|
 
-**用 rem**：跟隨 root font-size，支援 accessibility 等比例縮放。**不用 layoutSpace / uiSize 推導**：sidebar width 是容器維度，不是間距或元件內高度，語意不同；耦合會讓寬度跟間距連動。**15rem** = 240,user 2026-05-21 原話定的(逐字見上表 `--sidebar-width` 那列,commit `e58576a6`);浮層與並排共用同一份寬度紀錄,沒有浮層專用寬(2026-10-14 前的 `--sidebar-width-mobile` 18rem 隨 768 抽屜退場)。`--sidebar-width-icon` 用 geometry formula(2026-05-21 v3)`calc(2*loose + icon-size)` 保證 collapse/expand icon center x 一致。
+**2026-11-13 兩顆退場**(AI 照本節的幾何保證與 `../../tokens/token-system.spec.md` 第 0 題做的工程修正,user 沒有決定過這個改法(只問過一句,原話見 `../../tokens/token-system.spec.md`「搬家與收回的紀錄」)):
+
+- **圖示欄不再是 token**。2026-05-21 的原設計(commit `651e373c`)是圖示欄預設 16,Sidebar `size="lg"` 時由產品自己覆寫成 20(該 commit 的註解:「Sidebar 用 size=lg(罕見)時 consumer override `--sidebar-menu-icon-size: 1.25rem`(20px)」),大密度的細列寬寫的是「lg: 2×24 + 16 = 64」。2026-05-26 搬檔(commit `3d79e867`)把「`size="lg"` 的覆寫」掛到密度選擇器底下,從那天起圖示欄跟著**密度**變、畫出來的圖示卻跟著 **size** 變(上方「Row size 跟 density 的差別」:兩者獨立)—— 兩者不同檔的兩格(大密度 × sm / md 算成 68、一般密度 × lg 算成 48),圖示在收合前後各跳 2px,違反上表「展開/收合一致」;2026-07-14 的稽核(commit `9b7234bd`)又把本表的 64 改成 68 去對齊程式。這次:大密度 × sm / md 那一格改回原設計的 64;`size="lg"` 那一半當時(2026-05-21)是由產品自己覆寫,這次改成 `SidebarProvider` 自動帶入(一般密度 × lg 的 52 是這次改成的,原設計沒有寫過 52)—— 圖示欄由 `SidebarProvider` 外層設成元件內變數 `--sidebar-rail-icon-slot`(= `ICON_SIZE[size]`),公式在外層重算,`SidebarProvider` 以外用備用值 `1rem`。它**不是 token**:不在 `:root` 宣告、不登記分類表,產品不讀不寫(只有 Sidebar 自己讀、又不隨密度或主題切換的值不開全系統的名字)。舊名 `--sidebar-menu-icon-size` 已不存在。
+- **最小寬收回 AppShell 常數**。`--sidebar-width-min` 只有 AppShell 在讀、固定 240、不隨密度變、產品不讀 → 改成 `../AppShell/app-shell.tsx` 的 `PANEL_WIDTH_MIN_DEFAULT`(同一個 240,畫面零差異);Menu 與 Right panel 仍讀同一個值。
+
+**用 rem**：跟隨 root font-size，支援 accessibility 等比例縮放。**不用 layoutSpace / uiSize 推導**：sidebar width 是容器維度，不是間距或元件內高度，語意不同；耦合會讓寬度跟間距連動。**15rem** = 240,user 2026-05-21 原話定的(逐字見上表 `--sidebar-width` 那列,commit `e58576a6`);浮層與並排共用同一份寬度紀錄,沒有浮層專用寬(2026-10-14 前的 `--sidebar-width-mobile` 18rem 隨 768 抽屜退場)。`--sidebar-width-icon` 用 geometry formula(2026-05-21 v3)`calc(2*loose + 畫出來的圖示寬)` 保證 collapse/expand icon center x 一致。
 
 ---
 

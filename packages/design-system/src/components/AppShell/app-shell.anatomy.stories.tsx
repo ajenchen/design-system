@@ -147,6 +147,12 @@ interface LayoutRuleArgs {
   agentMax: number
   /** Menu 有細列(`collapsible="icon"`)。 */
   rail: boolean
+  /**
+   * Menu 的列高檔位(`<SidebarProvider size>`;sidebar.spec.md「Size」)。`lg` 的選單圖示是 20(md 16)→ 細列寬多 4:
+   * 標準密度 52、寬鬆密度 68(sidebar.spec.md「尺寸規範」)。DS 目前只有這一則同時是 size=lg 又能收成細列,
+   * 機械閘用 `&args=menuSize:lg` 量「收合前後圖示中心不動」與 AppShell 量到的細列寬。
+   */
+  menuSize: 'md' | 'lg'
   menuOpen: boolean
   rightOpen: boolean
   agentOpen: boolean
@@ -258,8 +264,11 @@ function LayoutRuleDemo(raw: LayoutRuleArgs) {
     agent: { min: n(raw.agentMin), initial: n(raw.agentInitial), max: n(raw.agentMax) },
   }
   const [asideOpen, setAsideOpen] = React.useState(String(raw.rightOpen) !== 'false')
+  // URL args 帶進來的是字串:只認 lg,其餘一律 md(SidebarProvider 的預設)
+  const menuSize = String(raw.menuSize) === 'lg' ? 'lg' : 'md'
   return (
-    <SidebarProvider defaultOpen={String(raw.menuOpen) !== 'false'}>
+    // SidebarProvider 包在 AppShell 外面:細列寬在這一層依 size 算好,AppShell 的量值探針才量得到(app-shell.spec.md「版面規則」§6)
+    <SidebarProvider size={menuSize} defaultOpen={String(raw.menuOpen) !== 'false'}>
       <AppShell
         layout="primary-sidebar"
         mainMinWidth={args.mainMinWidth}
@@ -314,9 +323,14 @@ export const StateBehavior: StoryObj<LayoutRuleArgs> = {
     agentInitial: 400,
     agentMax: 700,
     rail: true,
+    menuSize: 'md',
     menuOpen: true,
     rightOpen: true,
     agentOpen: true,
+  },
+  // menuSize 只有兩檔:控制面板給單選;URL 用 `&args=menuSize:lg`(LayoutRuleDemo 裡另有一層「只認 lg,其餘當 md」)
+  argTypes: {
+    menuSize: { control: 'inline-radio', options: ['md', 'lg'] },
   },
   render: (args) => <LayoutRuleDemo {...args} />,
 }
@@ -365,10 +379,10 @@ export const SizeMatrix: Story = {
           <h2 className="text-h4">各區寬度設定(依內容類型:最小 / 初始 / 最大)</h2>
           <ul className="space-y-2 list-disc pl-5">
             <li>Main:只有最小寬,AppShell 的 <code>mainMinWidth</code> 必填(DS 不替產品挑);填滿其他並排面板沒用到的空間</li>
-            <li>Menu:產品沒設時最小 / 初始 240(<code>--sidebar-width-min</code> / <code>--sidebar-width</code>);最大寬產品必給</li>
+            <li>Menu:產品沒設時最小 / 初始 240(初始 = <code>--sidebar-width</code>;最小與 Right panel 共用同一個內建的 240);最大寬產品必給</li>
             <li>Right panel:產品沒設時 240 / 320 / 640(<code>AppShellAside</code> <code>widthRange</code>)</li>
             <li>AI agent:產品沒設時 360 / 400 / 640(<code>AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX</code>)</li>
-            <li>Menu 細列:<code>--sidebar-width-icon</code>(標準密度 48 / 寬鬆密度 68),不能拖</li>
+            <li>Menu 細列:<code>--sidebar-width-icon</code>(標準密度 48 / 寬鬆密度 64;側欄 <code>size="lg"</code> 的圖示大 4px,各多 4),不能拖</li>
           </ul>
         </section>
         <section className="flex flex-col gap-[var(--layout-space-tight)]">

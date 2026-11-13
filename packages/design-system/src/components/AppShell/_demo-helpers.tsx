@@ -134,7 +134,7 @@ export const UserFooter = () => (
 
 /**
  * Acme 示範產品給 Menu 的寬度設定(app-shell.spec.md「版面規則」§1:Menu 的最大寬 DS 沒有既有值,產品必給)。
- * 最小 / 初始 = DS 預設 240(`--sidebar-width-min` / `--sidebar-width`,user 2026-05-21 定);最大 320 = 示範產品自己的值
+ * 最小 / 初始 = DS 預設 240(最小 = AppShell 的常數 `PANEL_WIDTH_MIN_DEFAULT`、初始 = `--sidebar-width`,user 2026-05-21 定);最大 320 = 示範產品自己的值
  * (多留 80px 給較長的專案名稱;示範用,不是 DS 規則)。
  */
 export const ACME_MENU_WIDTH: PanelWidthRange = { min: 240, initial: 240, max: 320 }

@@ -1467,6 +1467,9 @@ jobs:
     # 2026-11-13 按預算加欄位開啟外框閘的**對照組**(判定在 verify-browser-field-edges;本機 202 秒,CI 估約 4.5 分):
     # 本 job 原本約 13 分(建置 + 安裝約 4.5 分 + 側欄鍵盤約 8.5 分)→ 估約 17.5 分 / 上限 25。放這裡是因為它是 25 分 job 裡餘裕最大的一個,
     # 不是因為主題相同(同 toast-viewport-placement 放 verify-browser-tree-navigation 的先例:不往沒有餘裕的 job 疊)。
+    # 2026-11-13 側欄收合閘加「收合前後圖示中心不動」R8(十二格 + 五種破法 + 判定表;由 test:sidebar-menu-keyboard 帶著跑,沒有新增步驟):
+    # 同一份建置、同一台機器實量,這一串約 440 → 517 秒(+77 秒);2026-11-05 CI 實測的 491 / 517 / 464 秒約是本機舊值的 1.12 倍,
+    # 估 CI 多約 1.4 分 → 本 job 估約 18.9 分 / 上限 25(估計值,合併後回頭看實際時間)。
     name: Verify browser(sidebar menu keyboard + field open border control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
