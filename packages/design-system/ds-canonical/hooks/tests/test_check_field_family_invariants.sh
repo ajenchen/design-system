@@ -269,9 +269,10 @@ const chip = cva(['border border-border', 'hover:border-border-hover data-[state
 "
 expect_exit "A.3.3 該放:非欄位元件 data-[state=open]:border-border-hover" 0
 
-# 該放 5. 讀記號做外框以外的事(field-control-group.tsx 原文:開著的成員浮到鄰居上面)
+# 該放 5. 讀記號做外框以外的事(field-control-group.tsx 原文:聚焦 / 開著的成員浮到鄰居上面,而且壓過鄰居的滑過)
 run_hook "/r/packages/design-system/src/components/FieldControlGroup/field-control-group.tsx" "
-      '[&>*:hover]:z-[3] [&>*:focus-within]:z-[3] [&>*[data-field-open]]:z-[3]',
+      '[&>*:hover]:z-[3] [&>*:focus-within]:z-[4] [&>*[data-field-open]]:z-[4]',
+      '[&>*:focus-within:hover]:z-[4] [&>*[data-field-open]:hover]:z-[4]',
 "
 expect_exit "A.3.3 該放:FieldControlGroup 讀記號排 z-index" 0
 

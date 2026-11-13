@@ -23,7 +23,7 @@
  *   **不收的**:用 display 揭示的(hidden → inline-flex,不佔位)—— 2026-10-21 實測把 DataTable 表頭 ⌄ 改成 has-[:focus-visible] 之後,
  *   Tab 從排序區移到 ⌄ 那一下群組裡一時沒有 :focus-visible → ⌄ 變 display:none → 焦點掉到 <body>;display 揭示只能用 focus-within
  *  (代價與待辦見 data-table.tsx 表頭 ⌄ 註解)。Field 家族的 `focus-within:!border-primary`(邊框轉色就是焦點指示器本身,滑鼠點進去也亮是設計)
- *   與 FieldControlGroup 的 `[&>*:focus-within]:z-[3]`(疊層順序)不是揭示,也不收。
+ *   與 FieldControlGroup 的 `[&>*:focus-within]:z-[4]`(疊層順序)不是揭示,也不收。
  *   例外清單 FOCUS_WITHIN_REVEAL_EXCEPTIONS 只收寫得出理由、而且要 owner 決定的;**每一筆都必須真的命中**(不命中 = 例外過期,紅),
  *   成對的兩筆因此只能一起改。
  *   儀器對照(M32):每次執行先拿一組已知該抓 / 不該抓的 class 字串跑同一個正規式,答錯 = INSTRUMENT-FAIL(exit 2),不讀成通過。
@@ -150,7 +150,8 @@ function revealSelfCheck(re = FOCUS_WITHIN_REVEAL) {
     "focus-visible:opacity-100",
     "hidden group-hover:inline-flex group-focus-within:inline-flex", // DataTable 表頭 ⌄(display 揭示,刻意不收)
     "focus-within:!border-primary focus-within:hover:!border-primary", // Field 邊框轉色
-    "[&>*:hover]:z-[3] [&>*:focus-within]:z-[3]", // FieldControlGroup 疊層
+    "[&>*:hover]:z-[3] [&>*:focus-within]:z-[4] [&>*[data-field-open]]:z-[4]", // FieldControlGroup 疊層(field-control-group.tsx 原文)
+    "[&>*:focus-within:hover]:z-[4] [&>*[data-field-open]:hover]:z-[4]", // 同上:聚焦 / 開著又被滑過
     "focus-within:opacity-1000",
   ]
   const problems = []

@@ -11,29 +11,57 @@
  *          O1 開著、滑鼠在空白處 / O2 開著、滑鼠停在欄位上 / O3 開著、滑鼠停在浮層裡 → 四邊 = 期望色;
  *          C1 關掉並離開欄位 → 四邊回到開之前靜止時的顏色。
  *        N 表格格內(無框款)Select / DatePicker:點進編輯(浮層跟著開)→ O1–O3 同上;關掉後格子上不留那個顏色的框。
- *        G 併排欄位組中間那一格開著、滑鼠在空白處:四邊 computed = --primary,而且四邊中點**像素**也是(沒被鄰居蓋住)。
- *          「開著時滑過左 / 右鄰居,共用那條線是什麼顏色」只印數字、不判紅(那一題待 user 決定,目前沒有規定)。
+ *        G 併排欄位組中間那一格,兩組各量一遍:story「篩選列」(欄位 / 欄位 / 欄位,期望色 --primary)與夾具「欄位 / 欄位[驗證錯誤] / 欄位」
+ *          (期望色 --error:驗證錯誤的成員聚焦 / 開著時四邊紅、鄰居被滑過時共用那條線仍是紅)。每一組分兩段量:
+ *          鍵盤聚焦、沒開(K1–K6):K1 滑鼠在空白處 → 四邊 computed 與四邊中點**像素** = 期望色(沒被鄰居蓋住);滑鼠停在左、右鄰居上各量兩列 ——
+ *            兩格共用的那條線的像素 = 期望色(K2 左 / K4 右);同一刻中間那格 computed z-index = 4、被滑過的鄰居 = 3(K3 左 / K5 右);
+ *            K6 滑鼠停在中間那格**自己**上面 → 它的 z-index 仍是 4(守 field-control-group.spec.md States 表「同一格又被滑過仍是 4」)。
+ *          滑鼠點開(G1–G7):G1 開著、滑鼠在空白處 → 四邊 computed = 期望色;G2 同一刻四邊中點像素也是(沒被鄰居蓋住);
+ *            G3–G6 = 開著時滑鼠停在左、右鄰居上,量法同 K2–K5;G7 = 開著時滑鼠停在它自己上面,量法同 K6。
+ *          規則「聚焦或自己的浮層開著的那一格壓過鄰居的滑過」住 field-control-group.spec.md「States」(AI 建議、user 2026-11-13 採納,
+ *          原話「你問我的問題，照你建議」);2026-11-13 前滑過鄰居的列只印數字、不判紅(那時還沒有規定)。量像素前先確認滑鼠真的在鄰居上、
+ *          不在中間那格上,並等兩格的框色都停下來(鄰居滑過的框色有過渡);開頭先確認三格真的相鄰、各重疊 1px(共用一條線)。
+ *          驗證錯誤那一組的限制:錯誤欄位靜止時 computed 就是 --error,所以它的 computed(K1 的前半、G1)分不出有沒有聚焦 / 開著;
+ *          分得出的是像素列與層級列(沒抬高時右邊那條線被右鄰居蓋住 —— 破法 (d) 下 K1 / G2 紅的就是這一邊)。
  *        X 外面包一層浮層、直接把欄位當觸發點(夾具:導覽提示 × Select、Popover × 日期區間、Tooltip × TimePicker):
  *          X1 外面那層開著、欄位自己沒開 → 外框 = 開之前靜止時的顏色(不是 --primary);X2 同一個欄位自己的浮層開著 → --primary。
  *        Z 欄位裡的小按鈕開選單(FileViewer 縮放):選單開著 → 外框 = 開之前的顏色。
  *        每次量色前先等版面靜止(settleAfterInteraction),再等四邊顏色連 3 幀同值、宿主沒有進行中的過渡(transition-colors 含 border-color)。
- *   紅: 沒有這條規則的建置(c55c3786:開著 = hover 灰框 / error-hover;2026-11-13 實跑 192 列裡 83 列紅)→ 開著而焦點不在欄位裡的 O 列(夾具的驗證錯誤三種欄位除外:
- *        夾具是這次的原始碼配舊 CSS,只有滑鼠停在欄位上那一列 O2 紅)、表格格內兩格、G 的 computed 與像素列、夾具的 X2 列紅;焦點留在欄位裡的格(靠 focus-within)與 K0 / C1 / X1 / Z 綠。
- *        `--selftest` 在真建置上跑四種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
- *        (a) css:開著的框改回 hover 色(--border-hover / --error-hover)→ 全部 O 列、G 的 computed 與像素、X2 紅;K0 / C1 / X1 / Z 綠。
+ *   紅: 沒有「開著 = 聚焦的框」的建置(c55c3786:開著 = hover 灰框 / error-hover;2026-11-13 實跑,當時這支閘 192 列、其中 83 列紅)→ 開著而焦點不在欄位裡的 O 列
+ *        (夾具的驗證錯誤三種欄位除外:夾具是這次的原始碼配舊 CSS,只有滑鼠停在欄位上那一列 O2 紅)、表格格內兩格、G 的 computed 與像素列、夾具的 X2 列紅;
+ *        焦點留在欄位裡的格(靠 focus-within)與 K0 / C1 / X1 / Z 綠。
+ *        沒有「聚焦 / 開著壓過滑過」的建置(2026-11-13 改之前:滑過、聚焦、開著的 z-index 同是 3)→ story 那一組照規則推得:滑過右鄰居的像素列(K4 / G5)、
+ *        四列層級(K3 / K5 / G4 / G6)與停在自己上面的兩列(K6 / G7)紅;滑過左鄰居的像素列(K2 / G3)與 K1、G1、G2 綠 —— 同值時 DOM 順序較後的在上,
+ *        中間那格本來就蓋得住左邊。與破法 (e) 是同一張表。夾具那一組在改前的建置上量到的**不是**改前的行為:夾具 = 這次的原始碼配那份建置的 CSS,
+ *        這次的 class(聚焦 / 開著 z-index 4)在舊 CSS 裡沒有規則 → 聚焦 / 開著完全不抬高(停在預設的 2,比改前的 3 還低)→ 與破法 (d) 同一張表
+ *        (只有 G1 與 C1 綠),只能當「沒抬高會紅」的旁證,不能當「改前長這樣」的證據。
+ *        `--selftest` 在真建置上跑六種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+ *        (a) css:開著的框改回 hover 色(--border-hover / --error-hover)→ 全部 O 列、G1 / G2、滑過鄰居的像素列 G3 / G5(中間那格還在最上面,但它的框已不是
+ *            期望色)、X2 紅;K0 / C1 / X1 / Z、G 的層級列 G4 / G6 / G7、鍵盤聚焦那一段 K1–K6(沒開,破法碰不到)綠。
  *        (b) mark:記號一出現就拿掉(= 元件漏接記號)→ 開著而焦點不在欄位裡的 O 列紅(錯誤欄位只有滑鼠停在欄位上那一列紅 —— 靜止時本來就是 --error);
  *            焦點留在欄位裡的格(可搜尋的 Select、欄位內搜尋、滑鼠點開的可打字 DatePicker)靠 focus-within 照樣是期望色 → 綠。
+ *            G 開著那一段:story 那一組 G1–G7 全紅(記號沒了 → 不是聚焦色、也不再抬高);驗證錯誤那一組 G1 綠(靜止時本來就是 --error)、
+ *            G2–G7 紅(不再抬高 → 被鄰居蓋住、層級不是 4)。兩組的鍵盤聚焦那一段 K1–K6 綠。
  *        (c) reach:外框改認通用的 data-state="open" / 裡面任何開著的東西 → X1(導覽提示、Popover)與 Z 紅;Tooltip 的 X1(值是 instant-open)、
  *            全部 X2 與對照的欄位格綠。
- *        (d) stack:併排欄位組裡開著的那格不再浮到鄰居上面 → G 的像素列紅、computed 列綠(證明像素列量的是「有沒有被蓋住」)。
+ *        (d) stack:併排欄位組裡**聚焦或開著**的那格不再浮到鄰居上面(z-index 壓到 2)→ K1–K6 與 G2–G7 紅、G1(computed)綠(證明像素列量的是
+ *            「有沒有被蓋住」,不是框自己的顏色)。K1 / G2 紅的是右邊那條線:同在 2 時 DOM 順序較後的右鄰居蓋上來。
+ *            2026-11-13 審查前這一種只壓「開著」的那格,碰不到鍵盤聚焦 → K1 / K2 在任何破法與改前建置下都沒紅過;所以擴成聚焦也壓。
+ *        (e) tie:併排欄位組裡聚焦 / 開著的那格壓回跟滑過同一層(z-index 3 = 2026-11-13 改之前的行為)→ 滑過右鄰居的像素列 K4 / G5、四列層級
+ *            K3 / K5 / G4 / G6、停在自己上面的 K6 / G7 紅;滑過左鄰居的像素列 K2 / G3、K1、G1、G2 綠 —— 證明滑過右鄰居的像素列量的是
+ *            「聚焦 / 開著有沒有壓過滑過」,不是 (d) 的「有沒有浮到鄰居上面」;層級列則兩邊都紅(破法動的就是那個數字)。
+ *        (f) self:只把「聚焦 / 開著又被滑過」的那格壓回 3 → 只有 K6 / G7 紅,其餘列全綠 —— 證明 K6 / G7 量的是「停在自己上面仍是 4」,
+ *            不是 (d)(e) 的事(滑鼠在鄰居上或空白處時,中間那格沒被滑過,這個破法碰不到)。聚焦那一半(K6)= field-control-group.tsx 少了第一條
+ *            補的規則時的實際樣子;開著那一半(G7)在現行樣式表順序下不補也是 4,第二條補的規則是不靠排序的保險,單獨拿掉它這支閘不會紅。
+ *        (d)(e)(f) 只跑併排欄位組那一段(兩組都跑),而且都動到鍵盤聚焦那一段 → 那一段另有一列「還原」。
  *        找不到欄位 / 浮層沒開 / 滑鼠不在該在的地方 / 顏色一直在變 / 實際量的列數 ≠ 排定的列數 = INSTRUMENT-FAIL(exit 2),不當成通過也不當成紅。
  *   綠: 有這條規則的建置全部相符;重複跑同一份建置結果相同(每一格重新開頁、等的是值穩定不是固定毫秒,機器慢只會等久一點 ——
  *        `--cpu-throttle=6` 把頁面 CPU 放慢 6 倍重跑,列數與結果必須與不放慢時相同)。
  *   node scripts/field-open-border-invariant.mjs [--build=<storybook 建置目錄>] [--selftest] [--cpu-throttle=<倍數>]
  *
- * 夾具(scripts/test-fixtures/field-open-border/fixture.tsx,由 lib/storybook-css-fixture.mjs 打包):X 三格與「驗證錯誤 × 可搜尋的 Select /
- * 可打字的 DatePicker / 日期區間」三種欄位 —— 前者不該寫成 story、後者展示頁湊不出來(理由寫在夾具檔頭)。夾具列量到的是
- * 「這次 checkout 的元件原始碼 + 指定建置的 CSS」;其餘各列量的是指定建置裡的 story。
+ * 夾具(scripts/test-fixtures/field-open-border/fixture.tsx,由 lib/storybook-css-fixture.mjs 打包):X 三格、「驗證錯誤 × 可搜尋的 Select /
+ * 可打字的 DatePicker / 日期區間」三種欄位、併排欄位組「欄位 / 欄位[驗證錯誤] / 欄位」一組 —— 第一種不該寫成 story、後兩種展示頁湊不出來
+ * (理由寫在夾具檔頭)。夾具列量到的是「這次 checkout 的元件原始碼 + 指定建置的 CSS」;其餘各列量的是指定建置裡的 story。
  */
 import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -94,7 +122,15 @@ const NAKED = [
   { kind: '表格格內 Select(無框款)', col: 'category' },
   { kind: '表格格內 DatePicker(無框款)', col: 'releaseDate' },
 ]
-const GROUP_STORY = story('fieldcontrolgroup-展示--filter-row')
+/**
+ * 併排欄位組要量的兩組(都是「可編輯欄位 / 可編輯欄位 / 可編輯欄位」,量中間那一格):
+ * story「篩選列」(一般欄位,期望色 --primary)與夾具裡中間那格驗證錯誤的一組(期望色 --error;為什麼是夾具寫在夾具檔頭)。
+ * scope = 找欄位組的範圍;error = 中間那格是不是驗證錯誤(盤點值,開頁後對 DOM 核一次)。
+ */
+const GROUPS = [
+  { title: 'G 併排欄位組中間那一格(Select)', target: { story: story('fieldcontrolgroup-展示--filter-row') }, scope: '#storybook-root', error: false },
+  { title: 'G 併排欄位組中間那一格(Select · 驗證錯誤;夾具)', target: { fixture: 'group-error-mid' }, scope: '[data-fob-cell="group-error-mid"]', error: true },
+]
 /** reachRed:外面那層開著時,欄位外框上的 data-state 會不會是 "open"(Tooltip 寫的是 instant-open,破法 (c) 選不到它) */
 const WRAPPED = [
   { kind: '導覽提示 × Select', cell: 'wrap-coachmark-select', reachRed: true },
@@ -116,20 +152,46 @@ const instrument = (name, detail) => { instrumentFail = true; console.log(`✗ $
 
 /**
  * 每一列在各種跑法下該紅還是該綠。family:
- *   open    開著的欄位該是期望色的列(O1–O3、表格格內、併排的 computed、X2)
- *   pixel   併排欄位組四邊中點的像素
+ *   open    開著的欄位該是期望色的列(O1–O3、表格格內、併排的 computed G1、X2)
+ *   pixel   併排欄位組開著時四邊中點的像素(G2)
  *   foreign 不該變色的列(X1 外面那層開著、Z 欄位裡的小按鈕開選單)
  *   closed  沒開浮層的列(K0、C1)/ restore 破法拿掉之後當場重量
+ *   併排欄位組另外四種(when = 'focus' 鍵盤聚焦沒開 | 'open' 自己的浮層開著):
+ *   kbase   鍵盤聚焦、滑鼠在空白處:四邊 computed + 四邊中點像素(K1;when 固定是 'focus')
+ *   nbpx    滑鼠停在鄰居上,兩格共用那條線的像素(K2 / K4 / G3 / G5;side = 'left' | 'right')
+ *   layer   同一刻的層級:中間那格 z-index 4、被滑過的鄰居 3(K3 / K5 / G4 / G6;side 同上)
+ *   selfz   滑鼠停在中間那格自己上面時,它的 z-index 4(K6 / G7)
  * 表的來源(不是猜的,field-wrapper.tsx fieldDefaultChromeCompounds 的 class):一般欄位沒有記號時只剩 `focus-within:!border-primary` →
  * 焦點在欄位裡才是 --primary;錯誤欄位靜止就是 `border-error`、`hover:border-error-hover`、`focus-within:!border-error` →
- * 沒有記號時只有「滑鼠停在欄位上而且焦點不在欄位裡」才不是 --error。
+ * 沒有記號時只有「滑鼠停在欄位上而且焦點不在欄位裡」才不是 --error。像素(pixel)不看這個:沒有記號、焦點又不在欄位裡 → 不抬高 →
+ * 右邊那條線被右鄰居蓋住,錯誤欄位也一樣(框是紅的,但畫不出完整四邊)。
+ * 併排欄位組四種的來源(field-control-group.tsx 的 z-index 那幾條 + CSS「同值時 DOM 順序較後的在上」;與期望色是 --primary 還是 --error 無關):
+ *   stack 聚焦 / 開著壓到 2 → 滑鼠在空白處時右鄰居(同在 2、DOM 較後)蓋住右邊那條線;被滑過的鄰居(3)蓋住共用線;層級不是 4 → 四種全紅。
+ *   tie   聚焦 / 開著壓回 3 → 滑鼠在空白處時仍高過鄰居的 2 → kbase 綠;與被滑過的鄰居同值:右鄰居(DOM 較後)蓋住共用線 → 右像素紅;
+ *         左鄰居蓋不住 → 左像素綠;層級(4 變 3)兩邊都紅;停在自己上面也是 3 → selfz 紅。
+ *   self  只有「聚焦 / 開著又被滑過」壓回 3 → selfz 紅;其餘三種量的時候中間那格沒被滑過 → 綠。
+ *   css / mark 只動「開著」的那格,鍵盤聚焦那一段(when = 'focus')一律綠。開著那一段:
+ *   css   框色改掉、層級沒動 → 像素紅、層級與 selfz 綠;mark 記號沒了(焦點又不在欄位裡)→ 不抬高 → 都紅(停在自己上面只剩滑過的 3)。
  */
-function expectOf(mode, family, { m, error = false, reachRed = false } = {}) {
+const GROUP_FAMILIES = new Set(['kbase', 'nbpx', 'layer', 'selfz'])
+function expectOf(mode, family, { m, error = false, reachRed = false, side, when } = {}) {
   if (mode === 'real' || family === 'closed' || family === 'restore') return 'green'
   if (family === 'foreign') return mode === 'reach' && reachRed ? 'red' : 'green'
+  if (GROUP_FAMILIES.has(family)) {
+    if ((family === 'nbpx' || family === 'layer') && side !== 'left' && side !== 'right') throw new TypeError(`expectOf:${family} 要給 side(left / right),實得 ${side}`)
+    if (when !== 'focus' && when !== 'open') throw new TypeError(`expectOf:${family} 要給 when(focus / open),實得 ${when}`)
+    if (family === 'kbase' && when !== 'focus') throw new TypeError('expectOf:kbase 只有鍵盤聚焦那一段(when = focus)')
+    if (mode === 'stack') return 'red'
+    if (mode === 'tie') return family === 'kbase' || (family === 'nbpx' && side === 'left') ? 'green' : 'red'
+    if (mode === 'self') return family === 'selfz' ? 'red' : 'green'
+    if (when === 'focus') return 'green'
+    if (mode === 'css') return family === 'nbpx' ? 'red' : 'green'
+    if (mode === 'mark') return m.fw ? 'green' : 'red'
+    return 'green'
+  }
   if (family !== 'open' && family !== 'pixel') throw new TypeError(`expectOf:未知的 family ${family}`)
   if (mode === 'css' || (mode === 'stack' && family === 'pixel')) return 'red'
-  if (mode === 'mark') return (error ? (m.fw || !m.hover) : m.fw) ? 'green' : 'red'
+  if (mode === 'mark') return (family === 'pixel' ? m.fw : error ? (m.fw || !m.hover) : m.fw) ? 'green' : 'red'
   return 'green'
 }
 const check = (mode, name, pass, detail, expect) => {
@@ -247,21 +309,28 @@ const installBreakInPage = (mode) => {
       const on = h.getAttribute('data-state') === 'open' || !!h.querySelector('[data-state="open"], [aria-expanded="true"]')
       if (on) force(h, 'var(--primary)'); else release(h)
     })
-  } else if (mode === 'stack') {
-    // (d) 併排欄位組裡開著的那格不再浮到鄰居上面
+  } else if (mode === 'stack' || mode === 'tie' || mode === 'self') {
+    // 併排欄位組的三種破法都用樣式表:聚焦不會改任何屬性,MutationObserver 追不到。元件的 z-index 那幾條 utility 都不帶 !important,
+    // 所以這裡帶了就一定贏(上面說的「贏不了」只發生在對方是分層而且也帶 !important 的宣告)。
+    // (d) stack:聚焦或開著的那格不再浮到鄰居上面(壓到跟靜止的鄰居同一層 2)。2026-11-13 審查前只壓「開著」的那格(行內樣式),碰不到鍵盤聚焦
+    // (e) tie:聚焦 / 開著的那格壓回跟滑過同一層(z-index 3 = 2026-11-13 改之前的行為)
+    // (f) self:只有「聚焦 / 開著又被滑過」的那格壓回 3(聚焦那一半 = 少了第一條補的規則的樣子:滑過那條排在聚焦那條後面,會蓋回 3;開著那一半不補也是 4)
+    const MEMBER = '[data-field-control-group] > :is(:focus-within, [data-field-open])'
+    const rule = { stack: `${MEMBER} { z-index: 2 !important; }`, tie: `${MEMBER} { z-index: 3 !important; }`, self: `${MEMBER}:hover { z-index: 3 !important; }` }[mode]
     filter = ['data-field-open']
-    apply = () => document.querySelectorAll('[data-field-control-group] > *').forEach((k) => {
-      if (k.hasAttribute('data-field-open')) { k.style.setProperty('z-index', '2', 'important'); k.setAttribute('data-fob-forced-z', '') }
-      else if (k.hasAttribute('data-fob-forced-z')) { k.style.removeProperty('z-index'); k.removeAttribute('data-fob-forced-z') }
-    })
+    apply = () => {}
+    const style = document.createElement('style')
+    style.id = 'fob-break-style'
+    style.textContent = rule
+    document.head.appendChild(style)
   } else throw new Error(`未知的破法 ${mode}`)
   const observer = new MutationObserver(apply)
   observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: filter })
   apply()
   window.__fobBreakStop = () => {
     observer.disconnect()
+    document.getElementById('fob-break-style')?.remove()
     hosts().forEach(release)
-    document.querySelectorAll('[data-fob-forced-z]').forEach((k) => { k.style.removeProperty('z-index'); k.removeAttribute('data-fob-forced-z') })
     // 記號:只還給現在真的開著的(拿掉之後浮層若已關,React 不會再寫它,也就不該還)
     document.querySelectorAll('[data-fob-stripped]').forEach((h) => { h.removeAttribute('data-fob-stripped'); h.setAttribute('data-field-open', '') })
     return true
@@ -472,16 +541,20 @@ async function runNaked(cell, mode) {
 const px = (png, x, y) => { if (x < 0 || y < 0 || x >= png.width || y >= png.height) return null; const i = (png.width * y + x) << 2; return [png.data[i], png.data[i + 1], png.data[i + 2]] }
 const near = (a, b) => !!a && !!b && Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2])) <= 2
 const rgb = (c) => (c ? `rgb(${c[0]},${c[1]},${c[2]})` : '(畫面外)')
-/** 四邊中點的像素(各往垂直方向多看前後 1px:邊框那一格一定在這 3 格裡),與 --primary 色塊的像素比 */
-async function edgePixels() {
-  const box = await page.evaluate((hostSel) => {
+/**
+ * 四邊中點的像素(各往垂直方向多看前後 1px:邊框那一格一定在這 3 格裡),與期望色那顆 token 畫出來的色塊像素比。
+ * token = '--primary'(一般欄位)| '--error'(驗證錯誤的欄位)。
+ */
+async function edgePixels(token) {
+  if (token !== '--primary' && token !== '--error') throw new TypeError(`edgePixels:token 只能是 --primary / --error,實得 ${token}`)
+  const box = await page.evaluate(({ hostSel, token }) => {
     const r = document.querySelector(hostSel).getBoundingClientRect()
     const s = document.createElement('div')
     s.id = 'fob-swatch'
-    s.style.cssText = 'position:fixed;left:0;bottom:0;width:12px;height:12px;z-index:2147483647;pointer-events:none;background:var(--primary)'
+    s.style.cssText = `position:fixed;left:0;bottom:0;width:12px;height:12px;z-index:2147483647;pointer-events:none;background:var(${token})`
     document.body.appendChild(s)
     return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, vh: innerHeight }
-  }, HOST)
+  }, { hostSel: HOST, token })
   const png = PNG.sync.read(await page.screenshot())
   await page.evaluate(() => document.getElementById('fob-swatch')?.remove())
   const want = px(png, 6, box.vh - 6)
@@ -489,6 +562,7 @@ async function edgePixels() {
   const mx = Math.round((box.left + box.right) / 2), my = Math.round((box.top + box.bottom) / 2)
   const side = (label, at, scan) => ({ label, at, pixel: px(png, at[0], at[1]), hit: scan.some(([x, y]) => near(px(png, x, y), want)) })
   return {
+    token,
     want,
     sides: [
       side('上', [mx, T], [[mx, T - 1], [mx, T], [mx, T + 1]]),
@@ -498,23 +572,123 @@ async function edgePixels() {
     ],
   }
 }
-const showPixels = (p) => `--primary 色塊 ${rgb(p.want)};${p.sides.map((s) => `${s.label}(${s.at}) ${rgb(s.pixel)}${s.hit ? '' : ' ✗'}`).join(' / ')}`
-async function runGroup(mode) {
-  const name = 'G 併排欄位組中間那一格(Select)· 滑鼠點開'
-  planned += rowsOf(mode, 3)
+const showPixels = (p) => `${p.token} 色塊 ${rgb(p.want)};${p.sides.map((s) => `${s.label}(${s.at}) ${rgb(s.pixel)}${s.hit ? '' : ' ✗'}`).join(' / ')}`
+/** 鄰居在 edgePixels().sides(上 / 右 / 下 / 左)裡對應的那一邊 = 兩格共用的那條線 */
+const NEIGHBOURS = [
+  { side: 'left', label: '左', edge: 3 },
+  { side: 'right', label: '右', edge: 1 },
+]
+const neighbourSel = (side) => `[data-fob-neighbour="${side}"]`
+/** 要停滑鼠的那一刻才算鄰居的中心點(不沿用開頁時算的:中途點欄位會先把它捲到畫面中央,頁面若捲了,舊座標就不準) */
+const centreOf = (sel) => page.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } }, sel)
+/**
+ * 滑鼠停在併排欄位組某一邊的鄰居上:先確認滑鼠真的在鄰居上、不在中間那格上,等兩格的框色都停下來(鄰居滑過的框色有過渡),
+ * 再量四邊中點的像素(與 expected 那顆 token 的色塊比)與兩格的層級。
+ */
+async function neighbourMoment(nb, expected) {
+  const at = await centreOf(neighbourSel(nb.side))
+  await page.mouse.move(at.x, at.y)
+  const m = await measure(`滑鼠停在${nb.label}鄰居上`)
+  const n = await page.evaluate(measureInPage, neighbourSel(nb.side))
+  if (n.error) throw new InstrumentError(`${nb.label}鄰居:${n.error}`)
+  if (!n.hover || m.hover) throw new InstrumentError(`滑鼠應該停在${nb.label}鄰居上、不在中間那格上,實際${nb.label}鄰居 :hover=${n.hover}、中間那格 :hover=${m.hover}`)
+  const p = await edgePixels(expected.name)
+  return { m, n, p, shared: p.sides[nb.edge] }
+}
+/** 「這一刻真的是要量的那個狀態」:when = 'focus'(鍵盤聚焦、沒開)| 'open'(自己的浮層開著);不是 → 儀器失效 */
+async function assertGroupState(id, when, m) {
+  if (when === 'focus' && (!m.fw || m.mark)) throw new InstrumentError(`${id}:要量的是「鍵盤聚焦、沒開」,實際焦點在欄位裡=${m.fw}、記號=${m.mark}`)
+  if (when === 'open') {
+    const ev = await evidence()
+    if (!ev.own || !ev.expanded) throw new InstrumentError(`${id}:要量的是「自己的浮層開著」,實際 aria-expanded=${ev.expanded}、欄位自己的浮層 ${ev.own} 個`)
+  }
+}
+/**
+ * 滑鼠依序停在左、右鄰居上,各判兩列:兩格共用那條線的像素 = 期望色;同一刻中間那格 z-index 4、被滑過的鄰居 3。
+ * ids = 四列的編號(左像素 / 左層級 / 右像素 / 右層級)。
+ */
+async function neighbourRows(mode, name, ids, when, expected) {
+  for (const [i, nb] of NEIGHBOURS.entries()) {
+    const t = await neighbourMoment(nb, expected)
+    await assertGroupState(ids[i * 2], when, t.m)
+    const ctx = { m: t.m, side: nb.side, when }
+    check(mode, `${name} | ${ids[i * 2]} 滑鼠停在${nb.label}鄰居上 → 兩格共用的${nb.label}邊那條線像素 = ${expected.name}`, t.shared.hit,
+      `共用線(${t.shared.at})${rgb(t.shared.pixel)},${expected.name} 色塊 ${rgb(t.p.want)};中間那格 ${show(t.m)}`, expectOf(mode, 'nbpx', ctx))
+    check(mode, `${name} | ${ids[i * 2 + 1]} 同一刻的層級 → 中間那格 z-index 4、${nb.label}鄰居 3`, t.m.z === '4' && t.n.z === '3',
+      `中間那格 z-index=${t.m.z}、${nb.label}鄰居 z-index=${t.n.z}`, expectOf(mode, 'layer', ctx))
+  }
+}
+/**
+ * 滑鼠停在中間那格自己上面 → 它的 z-index 仍是 4(K6 / G7;States 表「同一格又被滑過仍是 4」)。K6(聚焦)靠 field-control-group.tsx 第一條補的規則:
+ * 少了它,滑過那條(3)在樣式表裡排在聚焦那條後面,會把這一格蓋回 3。G7(開著)在現行樣式表順序下不補也是 4,第二條補的規則是保險。結束時滑鼠停在中間那格上。
+ */
+async function selfHoverRow(mode, name, id, when) {
+  await hoverOwn(id)
+  const m = await measure(id)
+  if (!m.hover) throw new InstrumentError(`${id}:滑鼠移到中間那格上,它卻不在 :hover`)
+  await assertGroupState(id, when, m)
+  check(mode, `${name} | ${id} 滑鼠停在中間那格自己上面 → 它的 z-index 仍是 4`, m.z === '4', `中間那格 z-index=${m.z};${show(m)}`, expectOf(mode, 'selfz', { m, when }))
+}
+/**
+ * 「還原」列:破法拿掉之後當場重量兩刻 —— 滑鼠還停在中間那格自己上面 → z-index 4;再停到右鄰居上 → 四邊 computed 與像素 = 期望色、
+ * 中間那格 4 / 右鄰居 3。
+ */
+async function groupRestore(mode, name, expected) {
+  await stopBreak()
+  const self = await measure('還原(滑鼠停在中間那格上)')
+  if (!self.hover) throw new InstrumentError(`還原:滑鼠應該還停在中間那格上,實際 :hover=${self.hover}`)
+  const right = NEIGHBOURS.find((nb) => nb.side === 'right')
+  const r = await neighbourMoment(right, expected)
+  check(mode, `${name} | 還原(破法拿掉、當場重量)→ 滑鼠停在自己上面 z-index 4;停在右鄰居上四邊 computed 與像素 ${expected.name}、中間那格 z-index 4 / 右鄰居 3`,
+    self.z === '4' && all4(r.m, expected.color) && r.p.sides.every((s) => s.hit) && r.m.z === '4' && r.n.z === '3',
+    `停在自己上面 z-index=${self.z};停在右鄰居上 ${show(r.m)} z-index=${r.m.z}、右鄰居 z-index=${r.n.z};${showPixels(r.p)}`, expectOf(mode, 'restore'))
+}
+/** 動到「鍵盤聚焦、沒開」那一段的破法(其餘破法只動開著的那格)—— 這幾種在那一段多一列「還原」 */
+const KEYBOARD_BREAKS = new Set(['stack', 'tie', 'self'])
+/** 併排欄位組一組要量幾列:K1–K6 + G1–G7 + C1 = 14;對照組跑法多一列開著那一段的「還原」;動到鍵盤聚焦那一段的破法再多一列 */
+const groupRows = (mode) => 14 + (mode === 'real' ? 0 : 1) + (KEYBOARD_BREAKS.has(mode) ? 1 : 0)
+async function runGroup(group, mode) {
+  const kName = `${group.title}· 鍵盤聚焦(沒開)`
+  const name = `${group.title}· 滑鼠點開`
+  planned += groupRows(mode)
   try {
-    await openTarget({ story: GROUP_STORY }, `[data-field-control-group] > ${HOST_EDIT}`, mode)
-    const members = await page.evaluate((HOST_EDIT) => {
-      const kids = [...document.querySelector('[data-field-control-group]').children]
-      if (kids.length < 3 || !kids[1].matches(HOST_EDIT)) return null
+    const groupSel = `${group.scope} [data-field-control-group]`
+    await openTarget(group.target, `${groupSel} > ${HOST_EDIT}`, mode)
+    const found = await page.evaluate(({ groupSel, HOST_EDIT }) => {
+      const kids = [...document.querySelector(groupSel).children]
+      if (kids.length < 3 || !kids.slice(0, 3).every((k) => k.matches(HOST_EDIT))) return { ok: false, why: '併排欄位組的前三個成員不是「可編輯欄位 / 可編輯欄位 / 可編輯欄位」' }
+      kids[0].setAttribute('data-fob-neighbour', 'left')
       kids[1].setAttribute('data-fob-host', '')
-      const centre = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } }
-      return { left: centre(kids[0]), right: centre(kids[2]) }
-    }, HOST_EDIT)
-    if (!members) throw new InstrumentError('併排欄位組的成員不是「欄位 / 欄位 / 欄位」三格,或中間那格不是可編輯欄位')
+      kids[2].setAttribute('data-fob-neighbour', 'right')
+      kids[1].scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
+      const [a, b, c] = kids.slice(0, 3).map((k) => k.getBoundingClientRect())
+      // 「共用一條線」的前提:三格在同一列,相鄰兩格各重疊 1px(-ml-px)
+      const adjacent = Math.abs(a.top - b.top) < 0.5 && Math.abs(b.top - c.top) < 0.5 && Math.abs(a.right - b.left - 1) < 0.5 && Math.abs(b.right - c.left - 1) < 0.5
+      if (!adjacent) return { ok: false, why: `三格沒有相鄰重疊 1px(左 ${a.left}–${a.right}、中 ${b.left}–${b.right}、右 ${c.left}–${c.right};上緣 ${a.top} / ${b.top} / ${c.top})` }
+      return { ok: true, errors: kids.slice(0, 3).map((k) => k.hasAttribute('data-error')) }
+    }, { groupSel, HOST_EDIT })
+    if (!found.ok) throw new InstrumentError(found.why)
+    if (found.errors[0] || found.errors[2] || found.errors[1] !== group.error) throw new InstrumentError(`三格的驗證錯誤狀態是 ${found.errors.join(' / ')},盤點是 false / ${group.error} / false(story 或夾具改了?)`)
     const z = await rest('開之前')
     await readTokens()
-    const expected = { name: '--primary', color: tokens['--primary'] }
+    const expected = group.error ? { name: '--error', color: tokens['--error'] } : { name: '--primary', color: tokens['--primary'] }
+    if (!group.error && colorsOf(z).includes(tokens['--primary'])) throw new InstrumentError(`開之前靜止時就已經是 --primary(${show(z)}),這一格分不出聚焦 / 開著`)
+
+    // ── 鍵盤聚焦、沒開(K1–K6)──
+    await tabInto('K1')
+    const k = await measure('K1')
+    if (!k.fw || k.mark || k.hover) throw new InstrumentError(`K1:Tab 進來之後焦點在欄位裡=${k.fw}、記號=${k.mark}、滑鼠在欄位上=${k.hover}`)
+    const kp = await edgePixels(expected.name)
+    check(mode, `${kName} | K1 滑鼠在空白處 → 四邊 computed 與四邊中點的像素 ${expected.name}(沒被鄰居蓋住)`, all4(k, expected.color) && kp.sides.every((s) => s.hit), `${show(k)} z-index=${k.z};${showPixels(kp)}`, expectOf(mode, 'kbase', { m: k, when: 'focus' }))
+    await neighbourRows(mode, kName, ['K2', 'K3', 'K4', 'K5'], 'focus', expected)
+    await selfHoverRow(mode, kName, 'K6', 'focus')
+    if (KEYBOARD_BREAKS.has(mode)) {
+      await groupRestore(mode, kName, expected)
+      await page.evaluate(installBreakInPage, mode) // 開著那一段也要在破法底下量
+    }
+    await rest('鍵盤那一段之後') // 焦點離開欄位、滑鼠回到空白處,再開始滑鼠點開那一段
+
+    // ── 滑鼠點開(G1–G7)──
     await clickOwn('滑鼠點開')
     await settle('打開之後')
     const ev = await evidence()
@@ -522,23 +696,12 @@ async function runGroup(mode) {
     await parkPointer(page)
     const m = await measure('G1')
     if (m.hover) throw new InstrumentError('G1:滑鼠已停到空白處,欄位卻還在 :hover')
-    check(mode, `${name} | G1 開著、滑鼠在空白處 → 四邊 computed --primary`, all4(m, expected.color), `${show(m)} z-index=${m.z}`, expectOf(mode, 'open', { m }))
-    const p = await edgePixels()
-    check(mode, `${name} | G2 同一刻四邊中點的像素 = --primary(沒被鄰居蓋住)`, p.sides.every((s) => s.hit), showPixels(p), expectOf(mode, 'pixel', { m }))
-    if (mode !== 'real') {
-      await stopBreak()
-      const r = await measure('還原')
-      const rp = await edgePixels()
-      check(mode, `${name} | 還原(破法拿掉、同一刻重量)→ computed 與像素都是 --primary`, all4(r, expected.color) && rp.sides.every((s) => s.hit), `${show(r)};${showPixels(rp)}`, expectOf(mode, 'restore'))
-    } else {
-      // 只記錄、不判紅:開著時滑過鄰居,共用那條線畫出來是什麼顏色(這一題還沒有規定)
-      for (const [which, at, idx] of [['右', members.right, 1], ['左', members.left, 3]]) {
-        await page.mouse.move(at.x, at.y)
-        const n = await measure(`滑過${which}鄰居`)
-        const np = await edgePixels()
-        console.log(`· 紀錄(不判紅)${name} | 開著、滑鼠停在${which}邊鄰居上:共用的${which}邊那條線像素 ${rgb(np.sides[idx].pixel)}(--primary 色塊 ${rgb(np.want)});中間那格 computed ${show(n)} z-index=${n.z}`)
-      }
-    }
+    check(mode, `${name} | G1 開著、滑鼠在空白處 → 四邊 computed ${expected.name}`, all4(m, expected.color), `${show(m)} z-index=${m.z}`, expectOf(mode, 'open', { m, error: group.error }))
+    const p = await edgePixels(expected.name)
+    check(mode, `${name} | G2 同一刻四邊中點的像素 = ${expected.name}(沒被鄰居蓋住)`, p.sides.every((s) => s.hit), showPixels(p), expectOf(mode, 'pixel', { m }))
+    await neighbourRows(mode, name, ['G3', 'G4', 'G5', 'G6'], 'open', expected)
+    await selfHoverRow(mode, name, 'G7', 'open')
+    if (mode !== 'real') await groupRestore(mode, name, expected)
     await closeOwn('關掉')
     const c = await rest('關掉之後')
     check(mode, `${name} | C1 關掉並離開欄位 → 四邊回到開之前(${nameOf(colorsOf(z)[0])})`, sameAs(c, colorsOf(z)), show(c), expectOf(mode, 'closed'))
@@ -644,11 +807,15 @@ const MODE_TITLE = {
   css: '(a) css:開著的框改回 hover 色',
   mark: '(b) mark:記號一出現就拿掉(元件漏接記號)',
   reach: '(c) reach:外框改認通用的 data-state="open" / 裡面任何開著的東西',
-  stack: '(d) stack:併排欄位組裡開著的那格不再浮到鄰居上面',
+  stack: '(d) stack:併排欄位組裡聚焦或開著的那格不再浮到鄰居上面(z-index 壓到 2)',
+  tie: '(e) tie:併排欄位組裡聚焦 / 開著的那格壓回跟滑過同一層(z-index 3 = 2026-11-13 改之前的行為)',
+  self: '(f) self:併排欄位組裡只有「聚焦 / 開著又被滑過」的那格壓回 3(停在自己上面不再是 4)',
 }
+const BREAK_MODES = Object.keys(MODE_TITLE)
 async function runMode(mode) {
   if (mode !== 'real') console.log(`\n── 破法 ${MODE_TITLE[mode]} ──`)
-  if (mode === 'stack') { await runGroup(mode); return }
+  // (d)(e)(f) 只動併排欄位組的 z-index,別的格不受影響 → 只跑那一段(兩組都跑)
+  if (KEYBOARD_BREAKS.has(mode)) { for (const group of GROUPS) await runGroup(group, mode); return }
   if (mode === 'reach') {
     for (const w of WRAPPED) await runWrapped(w, mode)
     await runInner(mode)
@@ -657,14 +824,14 @@ async function runMode(mode) {
   }
   for (const field of FIELDS) for (const opener of ['mouse', 'keyboard']) await runField(field, opener, mode)
   for (const cell of NAKED) await runNaked(cell, mode)
-  await runGroup(mode)
+  for (const group of GROUPS) await runGroup(group, mode)
   for (const w of WRAPPED) await runWrapped(w, mode)
   await runInner(mode)
 }
 
 try {
   if (buildArg) console.log(`建置:${STATIC}(--build 指定;story 的列量這份建置,夾具的列 = 這次 checkout 的元件原始碼 + 這份建置的 CSS)`)
-  for (const mode of SELFTEST ? ['css', 'mark', 'reach', 'stack'] : ['real']) await runMode(mode)
+  for (const mode of SELFTEST ? BREAK_MODES : ['real']) await runMode(mode)
 } catch (error) {
   instrument('執行', String(error?.message ?? error).slice(0, 300))
 }
@@ -675,7 +842,7 @@ const missing = [...new Set([...server.notFound, ...fixture.notFound])]
 if (missing.length) console.log(`同源 404:${missing.join(', ')}`)
 if (!instrumentFail && judged !== planned) instrument('列數', `排定 ${planned} 列,實際量了 ${judged} 列 —— 有格子沒量到`)
 if (!instrumentFail && SELFTEST) {
-  for (const mode of ['css', 'mark', 'reach', 'stack']) {
+  for (const mode of BREAK_MODES) {
     const t = seen[mode]
     if (!t || t.redWant === 0 || t.greenWant === 0) instrument(`破法 ${mode}`, `這個破法沒有同時量到「該紅」與「該綠」的列(該紅 ${t?.redWant ?? 0}、該綠 ${t?.greenWant ?? 0})—— 對照組沒有兩面`)
   }
@@ -683,7 +850,7 @@ if (!instrumentFail && SELFTEST) {
 const took = `耗時 ${Math.round((Date.now() - STARTED_AT) / 1000)} 秒`
 if (instrumentFail) { console.log(`✗ ${INSTRUMENT_FAIL_MARKER}:有量不到的項目(見上),不當成通過(${took})`); process.exit(2) }
 if (SELFTEST) {
-  const line = ['css', 'mark', 'reach', 'stack'].map((mode) => `${mode} 該紅 ${seen[mode].red}/${seen[mode].redWant}、該綠 ${seen[mode].green}/${seen[mode].greenWant}`).join(';')
+  const line = BREAK_MODES.map((mode) => `${mode} 該紅 ${seen[mode].red}/${seen[mode].redWant}、該綠 ${seen[mode].green}/${seen[mode].greenWant}`).join(';')
   console.log(failCount === 0 ? `✓ field-open-border-invariant --selftest:${judged} 列全部照表(${line};${took})` : `✗ field-open-border-invariant --selftest:${failCount} 列不照表(${line};${took})—— 這支閘量的不是它宣稱的東西`)
 } else {
   console.log(failCount === 0 ? `✓ field-open-border-invariant:${judged} 列全部相符(${took})` : `✗ field-open-border-invariant:${judged} 列裡 ${failCount} 列不符(${took})`)

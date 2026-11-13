@@ -1470,6 +1470,8 @@ jobs:
     # 2026-11-13 側欄收合閘加「收合前後圖示中心不動」R8(十二格 + 五種破法 + 判定表;由 test:sidebar-menu-keyboard 帶著跑,沒有新增步驟):
     # 同一份建置、同一台機器實量,這一串約 440 → 517 秒(+77 秒);2026-11-05 CI 實測的 491 / 517 / 464 秒約是本機舊值的 1.12 倍,
     # 估 CI 多約 1.4 分 → 本 job 估約 18.9 分 / 上限 25(估計值,合併後回頭看實際時間)。
+    # 2026-11-13 欄位開啟外框閘的對照組多量一組併排欄位組(驗證錯誤的成員)與兩種破法(四種 → 六種):本機 202 → 239 秒,
+    # 估 CI 多約 0.8 分 → 本 job 估約 19.7 分 / 上限 25(估計值)。
     name: Verify browser(sidebar menu keyboard + field open border control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1509,10 +1511,13 @@ jobs:
       - name: Field open border control group (browser)
         run: |
           # 欄位開啟外框閘的**對照組**(判定 `npm run test:field-open-border` 在 verify-browser-field-edges;按預算放這裡,見本 job 檔頭)。
-          # 在真建置上跑四種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+          # 在真建置上跑六種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
           # (a) 開著的框改回 hover 色 → 開著的列全紅;(b) 記號 data-field-open 一出現就拿掉(= 元件漏接記號)→ 焦點不在欄位裡的開著列紅、
           # 靠 focus-within 的照綠;(c) 外框改認通用的 data-state="open" / 裡面任何開著的東西 → 「外面包一層」與「欄位裡的小按鈕」的列紅;
-          # (d) 併排欄位組裡開著的那格不再浮到鄰居上面 → 像素列紅、computed 列綠。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
+          # (d) 併排欄位組裡聚焦或開著的那格不再浮到鄰居上面(z-index 壓到 2)→ 鍵盤聚焦與開著兩段的像素列、層級列、停在自己上面的列都紅,
+          # 只有開著的 computed 列綠;(e) 併排欄位組裡聚焦 / 開著的那格壓回跟滑過同一層(2026-11-13 改之前的行為)→ 滑過右鄰居的像素列、
+          # 層級列、停在自己上面的列紅,滑過左鄰居的像素列綠;(f) 只把「聚焦 / 開著又被滑過」的那格壓回 3
+          #(聚焦那一半 = 少了 field-control-group.tsx 第一條補的規則時的樣子)→ 只有停在自己上面的列紅。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
           node scripts/field-open-border-invariant.mjs --selftest
 
   verify-browser-agent:
@@ -1840,7 +1845,7 @@ jobs:
     # 289bce76 那次撞 15 分被取消(job 115665117169)。兩支全 story 掃描各自變慢(原因記在待辦總帳 G10):欄位左緣 09-29 約 300 秒 → p90 363 秒、
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
     # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
-    # 它的對照組(本機 202 秒,CI 估約 4.5 分)疊進來會到約 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    # 它的對照組(本機 239 秒,CI 估約 5.3 分;2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
     name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -1901,8 +1906,11 @@ jobs:
           # 量的是四邊 computed 框色(併排欄位組另量四邊中點像素),期望色從頁面上的 token 取:19 種欄位 × 滑鼠點開 / 鍵盤打開
           #(Select / Combobox / PeoplePicker / DatePicker / 日期區間 / TimePicker 的一般與驗證錯誤)各量開著時滑鼠在空白處 / 欄位上 / 浮層裡、
           # 關掉後回到原色;表格格內無框款兩格;併排欄位組中間那格;夾具三格「外面包一層浮層把欄位當觸發點」(外面開著不變色、自己開著才變)
-          # 與 FileViewer 縮放欄位裡的小按鈕(開選單外框不變)。「併排時滑過鄰居共用那條線」只印數字不判紅(還沒有規定)。
-          # 這裡只跑判定;對照組(四種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
+          # 與 FileViewer 縮放欄位裡的小按鈕(開選單外框不變)。併排欄位組量兩組(story「篩選列」期望色 --primary;夾具
+          #「欄位 / 欄位[驗證錯誤] / 欄位」期望色 --error):中間那格鍵盤聚焦 / 滑鼠點開時,滑鼠停在左、右鄰居上 → 兩格共用那條線的像素
+          # = 它的框色,而且中間那格 z-index 4、被滑過的鄰居 3;滑鼠停在中間那格自己上面 → 仍是 4(field-control-group.spec.md「States」;
+          # 2026-11-13 AI 建議、user 採納,原話「你問我的問題，照你建議」)。
+          # 這裡只跑判定;對照組(六種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
           npm run test:field-open-border
 
   verify-browser-footer-gutter:

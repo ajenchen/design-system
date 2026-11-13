@@ -65,8 +65,9 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 2. **鄰接子負 margin 重疊 border**:`> * + * { margin-left: -1px }`(border 寬度疊在一起 = 視覺 1 條線)
 3. **Z-index 提升** for active control(避免被鄰接 border 蓋)
    - default `z-index: 2`
-   - hover / focus / focus-within `z-index: 3`(Ant z-3,Bootstrap z-5;我們對齊 Ant)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L46)、[來源](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53))
-   - 成員自己的浮層開著(成員外框帶 `data-field-open`)`z-index: 3` —— 本 DS 自己的一條(2026-11-12 加;AI 推導,依據是本 DS 的欄位規則,不是引自上面兩家):浮層開著時焦點常已搬進浮層、`focus-within` 不成立,但那一格仍維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」),不抬高就會被 `-ml-px` 疊上來的鄰居蓋掉一邊
+   - hover `z-index: 3`(default 2 / hover 3 與 Ant 同值)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L46))
+   - focus / focus-within `z-index: 4` —— 比滑過高一層(2026-11-13 起;改前與滑過同在 3)。只把聚焦那一格抬到最高是 Bootstrap 的做法(聚焦 `z-index: 5`、滑過不抬)([來源](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53));誰在上、為什麼、來源見「States」的「聚焦 / 開著壓過滑過」
+   - 成員自己的浮層開著(成員外框帶 `data-field-open`)`z-index: 4`(與聚焦同一層)—— 本 DS 自己的一條(2026-11-12 加;AI 推導,依據是本 DS 的欄位規則,不是引自上面兩家):浮層開著時焦點常已搬進浮層、`focus-within` 不成立,但那一格仍維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」),不抬高就會被 `-ml-px` 疊上來的鄰居蓋掉一邊
    - disabled `z-index: 0`
 4. **Border radius 規則**:
    - 第一個子:右側 radii = 0(`rounded-r-none`)
@@ -136,12 +137,18 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 |--|--|--|
 | default | 各 child 自身 border | 2 |
 | hover(子)| 該 child border-hover | 3 |
-| focus / focus-within(子)| 該 child focus ring | 3 |
-| 自己的浮層開著(子,`data-field-open`)| 該 child 維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」,這裡只管疊放)| 3 |
+| focus / focus-within(子)| 該 child focus ring | 4(同一格又被滑過仍是 4)|
+| 自己的浮層開著(子,`data-field-open`)| 該 child 維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」,這裡只管疊放)| 4(同一格又被滑過仍是 4)|
 | disabled(子)| 該 child disabled style + **FCG-local override `border-[var(--border-opaque)]`**(K12,2026-05-04) | 0 |
-| error(子)| 該 child border-error | 2(預設層;滑過 / 聚焦 / 自己的浮層開著時升 3 蓋過鄰接 border)|
+| error(子)| 該 child border-error | 2(預設層;滑過升 3、聚焦 / 自己的浮層開著升 4,蓋過鄰接 border)|
 
-**同一層誰在上(現況)**:滑過、聚焦、自己的浮層開著都是 z-3;相鄰兩格同時在 z-3 時,DOM 順序較後的那一格在上(CSS 的疊放規則)。2026-11-13 量到:某一格開著(或鍵盤聚焦)、滑鼠滑到它**右邊**那一格時,兩格都是 z-3、兩格共用的那條線畫的是右邊那格滑過的灰;滑到左邊那一格則不受影響。要不要讓聚焦 / 開著壓過鄰居的滑過是待 user 決定的題目,登記在 `../Field/field.spec.md`「Field state machine SSOT」的「待 user 決定」,本檔不自定。
+**聚焦 / 開著壓過滑過(已定,2026-11-13)**:聚焦或自己的浮層開著的那一格 z-index 是 4,比滑過的 3 高一層 —— 那一格的框永遠四邊完整;滑鼠滑到它左邊或右邊的鄰居時,兩格共用的那條線仍是它的框色,不是鄰居滑過的灰。滑鼠點進去與鍵盤聚焦同一條規則。框是什麼顏色不歸本檔(一般欄位聚焦 / 開著 = `--primary`、驗證錯誤 = `--error`,住 `../Field/field.spec.md`「Field state machine SSOT」),本檔只管誰疊在上面。
+- **為什麼**:相鄰兩格共用一條 1px 的線,那條線只畫得出一格的顏色。聚焦 / 開著 = 正在操作的那一格,滑過只是指標路過,所以前者在上 —— 與 `../Field/field.spec.md`「Field state machine SSOT」框色優先序裡「自己的浮層開著 = 聚焦 > 滑過」這一段同方向。那個優先序最前面的「錯誤」在疊放上**不另外抬高**(上表:驗證錯誤的成員在預設層,滑過、聚焦、開著時才跟別的成員一樣升)—— 聚焦那格旁邊是錯誤格時,兩格共用那條線畫的是聚焦那格的框色,錯誤格少一邊紅(2026-11-13 審查實量)。
+- **來源**:AI 建議甲、user 2026-11-13 採納,原話「你問我的問題，照你建議」(當時成品頁唯一一題就是這題)。
+- **世界級對照**(三家不一致;連結沿用 `../Field/field.spec.md` 同一題):Bootstrap input-group 只把聚焦的那一格抬高、滑過不抬([_input-group.scss#L49-L53](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53));Polaris Connected 也只有聚焦那一格最高(`--pc-connected-focused: 30`,[Connected.module.css#L3-L5](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L3-L5)、[#L32-L35](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L32-L35);那一版成員之間用 `margin-left: var(--p-space-100)` 留間距、不共用一條線,[#L18-L20](https://github.com/Shopify/polaris-react-archive/blob/a8ceec19306b62a0c0a5033efc633232da59ff9e/polaris-react/src/components/Connected/Connected.module.css#L18-L20),所以只取它的層級順序,共用線的直接對照是 Bootstrap)—— 本規則與這兩家同向。Ant Design 併排元件把滑過、聚焦、按下放在同一層(`hoverEffects` 全部 `zIndex: 3`,[compact-item.ts#L30-L47](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L47))—— 本 DS 2026-11-13 前同它。DS 內近親:SegmentedControl 也是鍵盤聚焦那一格最高(`../SegmentedControl/segmented-control.tsx`:滑過 `z-[5]` < 選中 `z-10` < `focus-visible:z-20`)。
+- **改前的現況(歷史,2026-11-13 前)**:滑過、聚焦、自己的浮層開著的 z-index 同是 3,同值時 DOM 順序較後的那一格在上 —— 某一格聚焦或開著時滑鼠滑到它**右邊**那一格,共用的那條線畫的是右邊那格滑過的灰(聚焦那格三邊藍、一邊灰);滑到左邊那一格不受影響。
+- **按鈕成員也認焦點(AI 2026-11-13 的工程判斷,不在 user 那句話涵蓋的範圍)**:「聚焦」認的是焦點在不在那一格裡(`:focus-within`),不分看不看得到聚焦外觀 —— 所以按鈕成員被滑鼠點過、焦點還留在上面時也算聚焦(層級 4)。後果(2026-11-13 審查實量;按鈕在左、欄位在右,DS 範例與產品都沒有這種排法):這時滑鼠再滑到它右邊的欄位,兩格共用那條線畫的是按鈕的邊,不是欄位滑過的灰 —— 預設款按鈕:欄位上 / 右 / 下 `rgb(191,191,191)`、左 `rgb(217,217,217)`;主要款按鈕:左 `rgb(0,101,234)`;同一頁換回改前的疊放,那條線是 `rgb(191,191,191)`(欄位四邊同色)。按鈕在右的排法(story「搜尋與提交」)改前改後畫出來的相同。對照:Bootstrap input-group 的按鈕同樣認 `:focus`、不分看不看得到(`> .input-group-btn { … &:focus { z-index: 5; } }`,[_input-group.scss#L58-L65](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L58-L65))。
+- **實作註記**:「同一格又聚焦(或開著)又被滑過」另有兩條規則把它留在 4 —— 滑過、聚焦、開著三條單一狀態的規則權重相同,樣式表裡滑過那條排在聚焦那條後面,「聚焦又被滑過」不補會被蓋回 3(`field-control-group.tsx` 註解);「開著又被滑過」在現行樣式表順序下不補也是 4,那一條是不靠排序的保險。瀏覽器閘 `scripts/field-open-border-invariant.mjs` 併排欄位組那一段對兩組各量一遍(story「篩選列」期望色 `--primary`;夾具「欄位 / 欄位[驗證錯誤] / 欄位」期望色 `--error`),各列量的事:K1 / G2 量「四邊完整」(滑鼠在空白處,四邊中點的像素);K2–K5 / G3–G6 量「聚焦 / 開著壓過滑過」(中間那格鍵盤聚焦 / 滑鼠點開時滑鼠停在左、右鄰居上 → 共用那條線的像素 = 它的框色、中間那格 4 / 鄰居 3);K6 / G7 量「停在自己上面仍是 4」(K6 = 聚焦,靠第一條補的規則;G7 = 開著,守上表那一格)。
 
 **Disabled border integrity canonical(K12,2026-05-04)**:全域 disabled = `border-transparent`(讓 standalone field 視覺輕量),但**FCG context 下,disabled child 強制 `border-[var(--border-opaque)]`** — 確保:(a) FCG 整體外圈 border 健在,(b) inner divider 健在(不會因兩相鄰 disabled cells 都 transparent 而消失)。bg-disabled 仍區分狀態,border 維護群組視覺整合性。對齊 [Bootstrap input-group](https://getbootstrap.com/docs/5.3/forms/input-group/) / [Ant Space.Compact](https://ant.design/components/space#spacecompact) disabled idiom。
 
@@ -200,3 +207,4 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 ## 變更紀錄
 
 - 2026-05-04 v1:Initial。基於 Ant compact-item.ts source verify 訂機制。Filter / Sort 對齊 Ant W-A 子自管 width([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L58))。
+- 2026-11-13:聚焦 / 自己的浮層開著的 z-index 由 3 改 4,滑過留在 3(AI 建議甲、user 同日採納;規則、原話與對照見「States」的「聚焦 / 開著壓過滑過」)。
