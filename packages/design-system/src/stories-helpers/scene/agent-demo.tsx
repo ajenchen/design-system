@@ -228,13 +228,17 @@ export function decisionReceipt(questions: AgentDecisionQuestion[], answers: Rec
 }
 
 /**
- * 一則範例的對話內容:空的(新對話)= 招喚態標誌 + Empty(「新對話(空狀態)」範例同一套),包層內距跟有訊息時的對話區(AgentConversation)同一組 ——
- * 左右 loose / 上 tight / 下 bottom,Empty 在內距框裡置中(agent-panel.spec.md「附:空狀態」);有訊息就照順序畫,代理訊息有 `copyText` 才帶工具列。
+ * 一則範例的對話內容:空的(新對話)= 招喚態標誌 + Empty(「新對話(空狀態)」範例同一套),在標頭與輸入框之間的可用範圍正中 ——
+ * 包層上下不給內距(垂直置中的狀態不是從上往下排到底的內容,不套規則 2 / 4 的上下距離;user 2026-11-14 在 A5 成品頁的留言 ②
+ * 「這種 result 或是 empty 就不是撐滿高度的元素，且當初定位就是把它放在正中間」),左右留 loose:只在面板很窄、說明很長時擋住字貼邊
+ * (empty.spec.md「文字不限寬」:行寬由容器 padding 控制;現況字到面板邊 86,看不出差別 ——【AI 推導 2026-11-14】)。
+ * 【更正 2026-11-14】2026-11-13(A5)包層補過上 tight / 下 bottom,空狀態因此往上 18 / 16px,已拿掉。agent-panel.spec.md「附:空狀態」。
+ * 有訊息就照順序畫,代理訊息有 `copyText` 才帶工具列。
  */
 export function DemoConversation({ messages }: { messages: DemoMessage[] }) {
   if (messages.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+      <div className="flex min-h-0 flex-1 items-center justify-center px-[var(--layout-space-loose)]">
         <Empty
           icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
           title="開始第一個對話"

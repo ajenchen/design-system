@@ -1015,10 +1015,10 @@ const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProp
           role="log"
           aria-live="polite"
           className={cn(
-            // 輪距 40 = 8 + 24(工具列)+ 8;懸停工具列絕對定位於輪距內,出現不推擠。頂部 = --layout-space-tight:標頭 → 第一則訊息,訊息 = element(layoutSpace.spec.md 規則 2【AI 推導 2026-11-13】;之前頂部跟左右一樣是 loose,2026-09-02 入庫值);左右 loose —— 上 / 左右 / 下三個值與 DialogBody / SheetBody 同一組。
+            // 輪距 40 = 8 + 24(工具列)+ 8;懸停工具列絕對定位於輪距內,出現不推擠。頂部與左右 = --layout-space-loose:第一則是我方氣泡(有底色、外框完整 = bounded region)時標頭 → 它 = loose,上與左右對稱(layoutSpace.spec.md 規則 2 表;user 2026-11-14 在 A5 成品頁的留言 ①「主因為第一個元素是有完整的形狀邊界的，改成16之後其上左右才會在視覺上對稱」);代理先開口也是同一個值(容器只有一個上內距,不知道第一則是誰【AI 推導 2026-11-14】)。【更正 2026-11-14】2026-11-13(A5)把頂部改成 tight,已改回。
             // 底部 = --layout-space-bottom 48:捲到最底時,最後內容(常駐工具列)→ 輸入盒至少 48(user 2026-09-02 23:14
             // 「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」;agent-panel.spec.md「3. AgentConversation」)。
-            'flex flex-col gap-10 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]',
+            'flex flex-col gap-10 p-[var(--layout-space-loose)] pb-[var(--layout-space-bottom)]',
             className,
           )}
           {...props}

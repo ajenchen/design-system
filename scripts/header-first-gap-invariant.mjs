@@ -5,12 +5,16 @@
  *         bounded region(有框的表格 / 卡 / 面板)= loose、unbounded region(自帶 py 的清單 / nav)= 0、element(標題 / 文字 / 欄位 / 按鈕 / 工具列)= tight。
  *         CASES = 全 DS 盤點(2026-11-10,c2fc683d 建置逐則掃 1079 則 story 的每個 chrome 標頭,另 grep 浮層 body / AppShellAside 的第一個子元素)
  *         出的「標頭底下由範例或元件給頂部內距」的每一處;
- *         md 與 lg 兩種密度各量一次。2026-11-13 補 AgentPanel 對話區三處(第一則是我方氣泡 / 代理文字、新對話空白頁;
- *         layoutSpace.spec.md 規則 2「適用範圍與量法三點」【AI 推導 2026-11-13】)。量法與本閘不同、另有閘守的(決策卡無分隔線標頭、
+ *         md 與 lg 兩種密度各量一次。2026-11-13 補 AgentPanel 對話區三處(第一則是我方氣泡 / 代理文字、新對話空白頁)。
+ *         2026-11-14 照 user 在 A5 成品頁的兩則留言改回(A70):第一則是我方氣泡 = 有底色、外框完整的塊 = bounded region → loose(留言 ①;
+ *         規則 2 表第 1 列);第一則是代理文字 = element,但對話區只有一個上內距值 → 例外 loose(CASES 的 topException,【AI 推導 2026-11-14】);
+ *         新對話空白頁 = 在可用範圍正中,不套規則 2 / 4 的上下距離(留言 ②;CASES 的 centered)。量法與本閘不同、另有閘守的(決策卡無分隔線標頭、
  *         Coachmark 媒體區、DataTable 巢狀篩選群組)、版面分區(FileViewer 工具列 → Viewport(檢視區)、Alert placement="fixed" 頁首橫條)、
  *         Sidebar 自己的 nav(清單的 py 在 SidebarGroup 包層上)不在 CASES,理由逐條見下方 NOT_COVERED。
  *   紅: 任一處「標頭底 → 第一個內容頂」與該角色的期望值差 > 0.5px → 指名 case / 密度 / 角色 / 數字並 exit 1;
  *       從 DOM 判出的角色 ≠ 盤點時登記的角色 → 紅(範例換了第一個東西,要重新照規則 2 推一次,不准默默沿用舊頂距)。
+ *       登記 topException 的格(目前只有對話區「代理文字在前」一格):頂距期望值改用例外寫的 token,紅燈訊息附例外的理由;角色仍照登記比對。
+ *       登記 centered 的格(目前只有新對話空白頁):不比規則 2 的值,改比「標頭底 → 內容頂」與「內容底 → 下一塊頂」差 > 0.5px → 紅(不在可用範圍正中)。
  *       量的當下第一個內容所在的捲動區沒有捲在最上面(捲回頂端後讀回的捲動位置不是 0)→ 儀器失效,那一格不再往下判 —— 不拿被捲走的距離指控產品(見量法)。
  *       歷史紅燈(c2fc683d 建置實測):Sidebar「混合內容」資料夾 → 檔案表格、檔案 → 版本紀錄表格,第一個是有框的 DataTable
  *       (bounded),頂距卻是 tight(md 12 / lg 16)—— 抄旁邊 TableSection(第一個是區段標題 = element = tight)沒照角色重推。
@@ -29,33 +33,30 @@
  *         (有框 / 底色 / 陰影、有自己的字、控件、或清單 / 表格語意;絕對定位的裝飾與捲軸不算)。頂邊:有框的東西、清單、控件量外框;
  *         只有字的包層量內容框(包層的上內距是間距不是內容)。角色判法(classifyFirst,純函式,selftest 逐列驗):
  *           · DataTable 外殼(`[data-data-table-outer]`)、或有框(≥ 3 邊框線 / 跟外層不同的底色 / 陰影)且不是單一欄位控件、不是控件 / 縮圖
- *             (按鈕 / 連結 / 勾選 / 進度條 / role=img)、不是 Alert、而且**外框撐滿容器內容寬** → bounded;
- *           · 有框但外框沒撐滿容器內容寬(左右有不是內距 / 框線 / 外距給的空白 > 1px,例:寬最多 85% 的我方訊息氣泡)→ element
- *             (2026-11-13;layoutSpace.spec.md「元件角色」那張表:region「寬度撐滿」對 element「寬高自然」;有沒有底色是先判成 region 之後才問的題
- *             (同檔「心智模型」Step 1)。【AI 推導 2026-11-13】「撐不撐滿寬」只是「占不占該層主要空間」的近似,兩個方向都會判錯 ——
- *             紅了、或新增下面這幾種格時,一律照規格「判斷 3 題」人工重判,把人判的角色寫進 CASES,不照閘判出來的角色填:
- *               (a) 會被判成 element 的另外幾種形狀:並排的幾張卡、置中的定寬卡(max-width + 左右 auto 外距,即使它是該層唯一的主角)、
- *                   主欄的卡旁邊有側欄、撐滿寬的卡但容器有傳統捲軸佔位(容器內容寬少掉捲軸那一條);
- *               (b) 反方向,會被判成 bounded 的:撐滿寬、有框、但只是 N 則之一的塊(例:對話裡的決策回執)排第一個時。這時閘會紅
- *                   「角色與盤點不符」—— 要照規格三題人工重判(規格「元件角色」的例子:對話訊息流裡的每一則訊息 = element),不是直接把頂距改成 loose。
- *               (a)(b) 的形狀 2026-11-13 審查用本檔的頁面量具在合成頁面上逐一量過;目前盤點的格都沒有踩到);
- *             有框卻沒量到撐不撐滿 → 判不出角色 = 儀器失效;
+ *             (按鈕 / 連結 / 勾選 / 進度條 / role=img)、不是 Alert → bounded。有完整外框就是 bounded,不看寬(例:寬最多 85% 的我方訊息氣泡)——
+ *             layoutSpace.spec.md「region 子分類」表 bounded =「有視覺邊界:底色 / 邊框」、規則 2 表 bounded → loose;理由見 user 2026-11-14 在 A5 成品頁的
+ *             留言 ①(第一個元素有完整的形狀邊界,上與左右才會對稱;逐字住 layoutSpace.spec.md「元件角色」那段的例子)。
+ *             【更正 2026-11-14】2026-11-13(A5)在這裡加過一支「有框但外框沒撐滿容器內容寬 → element」,把有底色的我方氣泡判成 element、
+ *             頂距因此改成 tight;user 在 A5 成品頁的留言 ① 說原本比較美觀(陳述)、問理由是否成立(問句),AI 評估同意、改回 16 / 24,那一支連同量寬的 pageKit.fillsWidth / structuralInset 一起拿掉;
  *           · role = list / listbox / menu / tree / navigation 或 ul / ol / nav、沒有框、而且自帶上內距(第一列不貼清單頂)→ unbounded;
  *           · 其他(標題、文字、欄位、按鈕、工具列、沒自帶 py 的純文字清單)→ element。
  *         期望值的 loose / tight 從第一個內容的外層 computed `--layout-space-*` 讀(部分浮層刻意鎖 md,照它自己讀到的算);
  *         另要求頁面根(#storybook-root)的 loose md ≠ lg —— 兩密度讀到同值 = 密度沒套上 = 儀器失效(不讀成通過)。
  *         只看得到外框的東西才算:沒框的按鈕 / 連結往裡找圖示或字(負邊距撐出列外的透明按鈕框不是看得見的內容)。
- *         置中的格(CASES `centered: true`,例:新對話空白頁的空狀態在撐滿的包層裡置中):頂距改量**結構內距** —— 從第一個內容往上到容器內緣,
- *         每一層的 padding + border + margin 加總(置中多出來的空白不算;與姊妹閘量左右 / 底同一個量法,layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)),
- *         另要求內容真的在內距框裡置中(內距框內上方空白 = 下方空白,差 ≤ 0.5px)—— 不置中了就不是這個量法管的格,紅,重推。
+ *         置中的格(CASES `centered: true`,例:新對話空白頁的空狀態在撐滿的包層裡垂直置中):不套規則 2 / 4 的上下距離,量的是
+ *         「在可用範圍正中」本身 —— 標頭底 → 第一個內容頂(gap)與最後一個內容底 → 標頭那一塊之後的下一塊頂(after,例:輸入框頂)兩段相等(差 ≤ 0.5px)。
+ *         依據:user 2026-11-14 在 A5 成品頁的留言 ②(垂直置中的狀態不是從上往下排到底的內容,不需要表示「內容結束了」的 bottom;
+ *         empty.spec.md「垂直定位」有框 → 垂直置中);layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)。
+ *         【更正 2026-11-14】2026-11-13(A5)這裡量的是包層的結構上內距 = tight、底由姊妹閘期望 48,把空狀態往上推了 18 / 16px;留言 ② 問垂直置中的狀態為何還要 bottom(問句),AI 評估同意,改量置中本身。
  *         `--selftest`:(a) 判定表 —— 表格外層改 tight 必紅、標題在前卻用 loose 必紅、清單不貼標頭必紅、角色與盤點不符必紅、
- *         對話區頂距打回 loose(修前建置實測 16 / 24:735eb800 建置,以及把本次兩行改動還原後重建的 9faad029 畫面,兩份都跑過、新增的 6 格全紅)必紅、
- *         氣泡被判成 bounded 必紅、空白頁包層沒有上內距(修前實測 0)必紅、
- *         置中不成立必紅、沒量到 / 距離 NaN / 置中量不到 / 密度沒套上 / 沒捲在最上面 / 沒讀到捲動位置判儀器失效、修後形狀必綠;(b) classifyFirst 逐列;
+ *         對話區「我方氣泡在前」頂距是 tight(A5 建置 da15b933 實測 12 / 16)必紅、氣泡被判成 element(A5 的角色判法)必紅、
+ *         「代理文字在前」(例外 loose)頂距是 tight 必紅且訊息附例外理由、例外只准登記一格且要寫理由、
+ *         空白頁不在可用範圍正中(A5 建置以本閘視窗 1280×900 實測 標頭底 → 空狀態頂 308.5 / 300.5、空狀態底 → 輸入框頂 344.5 / 332.5)必紅、
+ *         沒量到 / 距離 NaN / 置中的下一段量不到 / 密度沒套上 / 沒捲在最上面 / 沒讀到捲動位置判儀器失效、修後形狀必綠;(b) classifyFirst 逐列;
  *         (c) 對話溢出對照(真建置、真瀏覽器;(a)(b) 先過才跑;沒有建置 / 起不了瀏覽器照共用政策印缺前置 / 略過標記):對話區兩格 × 兩密度,
  *         把視窗高縮到對話內容真的比捲動區高(從 300 往下試,量到捲得動才算數;都造不出溢出 = 對照組不成立 = selftest 失敗 —— 不靠範例現在剛好多長),
  *         同一頁量兩次:不先捲(把對話捲到底,= 進頁自動捲到底的那個狀態)→ 必須判成儀器失效「對話沒有捲在最上面」而且沒有任何一行指控產品;
- *         先捲到頂 → 讀回捲動位置 0、距離 = tight、綠。
+ *         先捲到頂 → 讀回捲動位置 0、距離 = 該格的期望值(wantGap:我方氣泡在前 = loose、代理文字在前 = 例外 loose)、綠。
  *         `--static=<dir>` 指定建置(例:拿 c2fc683d 建置證明 Sidebar 那兩處會紅);指定時不跑新鮮度守衛。
  *   姊妹閘: header-content-sides-invariant.mjs 量同一份 CASES 的左 / 右 / 底(規則 1 / 6 / 4);盤點(CASES / NOT_COVERED)、導航(openCase)、
  *         頁面端量具(pageKit)、角色判法(classifyFirst)只住本檔,兩支 import 同一份。新增一處 = 本檔 CASES + 姊妹閘 SIDES(它的 selftest 驗一一對應)。
@@ -81,7 +82,10 @@ const AGENT_PANEL_HEADER = '[data-agent-panel-mode] header'
  * 盤點出的每一處。header = 標頭選擇器(+ headerText:標頭文字須包含;+ nth);waitFor = 這個狀態的內容本身;
  * steps = 量之前要點到的狀態(click = 樹列 / 按鈕的可見文字,或 clickSelector),點完等 waitFor 那個元素出現;
  * role = 盤點時照規則 2 判的角色;src = 給頂部內距的那一行(repo 相對路徑,也是新鮮度守衛的來源清單)。
- * centered = 內容在撐滿的容器裡置中的格:頂距量容器的結構上內距、另驗內容真的在內距框裡置中(量法見檔頭)。
+ * centered = 內容在撐滿的容器裡垂直置中的格:不比規則 2 的值,改驗「標頭底 → 內容頂」=「內容底 → 下一塊頂」(在可用範圍正中;量法見檔頭);
+ *   nextBlock = 那個「下一塊」在訊息裡的稱呼(例:輸入框)。
+ * topException = { want: 'loose' | 'tight', why }:頂距不照角色查規則 2 表、改用這個 token 的格(理由寫在 why,紅燈訊息會印出來);角色仍照 role 比對。
+ *   只准登記真的「容器只有一個值、不知道第一個是誰」的格(目前只有對話區「代理文字在前」一格,selftest 鎖數量)。
  * scroller = 第一個內容所在的捲動區在訊息裡怎麼稱呼(沒捲在最上面時點名用;沒寫 = 「第一個內容所在的捲動區」)。寫了這一欄的格 = 進頁會自己捲動的格
  * (目前只有對話區兩格:一進頁自動捲到底),--selftest (c) 拿它們造溢出做對照;量之前捲回頂端、捲完讀回這一步每一格都做,不看這一欄。
  * tableName =主區只有一張表、不放區段標題的那幾處:表格的讀屏名稱(aria-label)必須是這個字串 —— 看得見的標題拿掉後,名字只剩這裡
@@ -121,54 +125,55 @@ export const CASES = [
   { id: 'datatable-filter-panel', story: `${C}datatable-展示--filter-panel-empty`, header: SURFACE_HEADER, waitFor: '[data-slot="surface-body"] button', role: 'element', src: `${DS}components/DataTable/data-table-filter-panel.tsx:394`, label: 'DataTable 篩選面板 → 第一列條件' },
   { id: 'fileitem-upload-manager', story: `${C}fileitem-展示--upload-manager-surface`, header: SURFACE_HEADER, waitFor: '[data-slot="surface-body"] img', role: 'element', src: `${DS}patterns/overlay-surface/overlay-surface.tsx:195`, label: 'FileItem 上傳管理面板 → 第一個檔案列' },
   { id: 'popover-list-region', story: `${C}popover-展示--open-snapshot`, header: SURFACE_HEADER, waitFor: '[role="listbox"]', role: 'unbounded', src: `${DS}components/Popover/popover.stories.tsx:71`, label: 'Popover 清單即區域 → 選項清單(body 撤內距、清單自帶 py)' },
-  // ── AgentPanel 對話區(2026-11-13;layoutSpace.spec.md 規則 2「適用範圍與量法三點」、角色例子「對話訊息流」,皆【AI 推導 2026-11-13】,user 沒有逐字講過)
-  // 對話區 = 標頭底下的 body(底已是 48 = 規則 4 第 1 列),每一則訊息 = element → 頂 tight;第一則是誰(我方氣泡 / 代理文字)頂距都不變。
+  // ── AgentPanel 對話區(2026-11-13 A5 加;2026-11-14 A70 照 user 在 A5 成品頁的兩則留言改回)
+  // 對話區 = 標頭底下的 body(底已是 48 = 規則 4 第 1 列)。上內距只有一個值(agent-panel.tsx#AgentConversation),容器不知道第一則是誰:
+  //   · 第一則是我方氣泡 = 有底色、外框完整的塊 = bounded region → loose(規則 2 表第 1 列;user 2026-11-14 在 A5 成品頁的留言 ①)
+  //   · 第一則是代理文字(沒有底色)照角色是 element,但同一個上內距 → 例外 loose(topException;layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1),【AI 推導 2026-11-14】)
+  //   【更正 2026-11-14】2026-11-13(A5)兩格都登記 element、期望 tight,是 A5 把氣泡判成 element 的結果;user 留言 ① 說原本比較美觀(陳述)、問理由是否成立(問句),AI 評估同意、改回 16 / 24。
   // 不用「任務助理」那則:代理標誌的動畫不會停,openCase 等動畫跑完會 10 秒逾時。
   // 對話區一進頁會自動捲到底(agent-panel.tsx#AgentConversation):內容比捲動區高時第一則訊息被捲到標頭後面 → 量之前捲回頂端、捲完讀回(檔頭量法;scroller 見上方欄位說明)。
-  { id: 'agentpanel-chat-user-first', story: `${C}agentpanel-展示--multiple-replies`, header: AGENT_PANEL_HEADER, waitFor: '[role="log"] > *', role: 'element', scroller: '對話', src: `${DS}components/AgentPanel/agent-panel.tsx#AgentConversation`, label: 'AgentPanel 對話區 → 第一則是我方氣泡(有底色、寬最多 85%、沒撐滿寬 = element)' },
-  { id: 'agentpanel-chat-agent-first', story: `${C}agentpanel-展示--decision-summary-in-flow`, header: AGENT_PANEL_HEADER, waitFor: '[role="log"] > *', role: 'element', scroller: '對話', src: `${DS}components/AgentPanel/agent-panel.tsx#AgentConversation`, label: 'AgentPanel 對話區 → 第一則是代理文字' },
-  // 新對話空白頁:空狀態在撐滿的包層裡置中 → 頂距量包層的結構上內距(centered,量法見檔頭);等的是包層裡的招喚態標誌本身(不認文案)
-  { id: 'agentpanel-new-conversation', story: `${C}agentpanel-展示--new-conversation`, header: AGENT_PANEL_HEADER, waitFor: `${AGENT_PANEL_HEADER} + div svg[role="img"]`, role: 'element', centered: true, src: `${DS}stories-helpers/scene/agent-demo.tsx#DemoConversation`, label: 'AgentPanel 新對話空白頁 → 空狀態(在包層的內距框裡置中;頂 = 包層上內距)' },
+  { id: 'agentpanel-chat-user-first', story: `${C}agentpanel-展示--multiple-replies`, header: AGENT_PANEL_HEADER, waitFor: '[role="log"] > *', role: 'bounded', scroller: '對話', src: `${DS}components/AgentPanel/agent-panel.tsx#AgentConversation`, label: 'AgentPanel 對話區 → 第一則是我方氣泡(有底色、外框完整 = bounded region → loose;user 2026-11-14 在 A5 成品頁的留言 ①)' },
+  { id: 'agentpanel-chat-agent-first', story: `${C}agentpanel-展示--decision-summary-in-flow`, header: AGENT_PANEL_HEADER, waitFor: '[role="log"] > *', role: 'element', topException: { want: 'loose', why: '對話區只有一個上內距值(agent-panel.tsx#AgentConversation),容器不知道第一則是誰 —— 第一則是我方氣泡時照規則 2 表 = loose,代理先開口也是同一個值(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1)「容器只有一個上內距、標頭底下第一個東西隨內容換的」【AI 推導 2026-11-14】)' }, scroller: '對話', src: `${DS}components/AgentPanel/agent-panel.tsx#AgentConversation`, label: 'AgentPanel 對話區 → 第一則是代理文字(element;例外:頂 = 對話區唯一的上內距 loose)' },
+  // 新對話空白頁:空狀態在撐滿的包層裡垂直置中 → 不套規則 2 / 4 的上下,驗「在可用範圍正中」(centered,量法見檔頭;user 2026-11-14 在 A5 成品頁的留言 ②);
+  // 等的是包層裡的招喚態標誌本身(不認文案)
+  { id: 'agentpanel-new-conversation', story: `${C}agentpanel-展示--new-conversation`, header: AGENT_PANEL_HEADER, waitFor: `${AGENT_PANEL_HEADER} + div svg[role="img"]`, role: 'element', centered: true, nextBlock: '輸入框', src: `${DS}stories-helpers/scene/agent-demo.tsx#DemoConversation`, label: 'AgentPanel 新對話空白頁 → 空狀態(在可用範圍正中:標頭底 → 空狀態頂 = 空狀態底 → 輸入框頂)' },
 ]
 
 /** 盤點到但不在 CASES 的(報告與檔頭的同一份理由;改動時兩邊一起看)。 */
 export const NOT_COVERED = [
   ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-decision-card.spec.md「8. AgentDecisionCard(決策卡)」第二條,繼承 Popover surface 那一條)', '量法與本閘不同:標題列的分隔線被元件規格拿掉 → 這一段只由標頭的下內距給、body 頂部歸零,要從「標頭內容的底」(標頭裡最低的那個內容的外框底)量到第一張選項卡頂 = tight(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(2)【AI 推導 2026-11-13】);本閘量的是標頭外框底 → 內容(這裡恆 0)。由 agent-decision-card-validation-invariant.mjs 的 G 系列守'],
   ['Coachmark 標頭 → 媒體區 0', '結構分區:媒體區與標頭 / body / footer 並列、貼齊外殼,不是 body 裡的內容,不套規則 2 的表(同上 (1);coachmark.spec.md「Media 區規則」位置那一條)。由 overlay-story-contract-invariant.mjs R17(上緣)/ R18(左右)守'],
-  ['DataTable 巢狀篩選面板 標題列 → 第一個灰底群組', '群組在面板這一層是 element(data-table.spec.md「巢狀群組的間距」),頂距與平鋪模式同一行程式給(本檔 datatable-filter-panel 那一格已守);巢狀那則的頂距與群組框內的固定 8 由 data-table-filter-group-spacing-invariant.mjs 守'],
+  ['DataTable 巢狀篩選面板 標題列 → 第一個灰底群組', '第一個是有底色、外框完整的群組框 = bounded → loose(data-table.spec.md「巢狀群組的間距」;2026-11-14 照 user 在 A5 成品頁的留言 ① 的原則改 ——【更正 2026-11-14】之前寫成 element → tight);面板 body 的上內距照「第一個東西是什麼」給(群組框 → loose、條件列 / 按鈕列 → tight),平鋪那一格本檔 datatable-filter-panel 守;巢狀那則(群組在前 loose / 平鋪條件列在前 tight / 群組清光只剩按鈕列 tight;收尾與頂部同值 —— 規則 4 第 4 列,借姊妹閘的 probeSides 量)與群組框內的固定 8 由 data-table-filter-group-spacing-invariant.mjs 守 —— 群組框左邊還有 Where / Or 標籤,不另登記進 CASES(姊妹閘的 SIDES 要一一對應,量左右那一套不必為這一格重做)'],
   ['FileViewer 工具列 → Viewport(檢視區)', '結構分區(Viewport 貼齊外殼、圖置中),不是標頭底下的內容,不套規則 2 的表(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1))'],
   ['Alert placement="fixed"', 'alert.spec.md:154「頂部全域警告,無圓角無邊框,橫跨頁面寬度」= 頁首橫條,不是內容'],
   ['Sidebar 標頭 → nav', 'unbounded = 0 成立(SidebarContent 頂 = 標頭底),但清單的 py 在 SidebarGroup 包層(p-2)上、不在清單元素上,DOM 判法分不出;Sidebar 規格自管'],
 ]
 
 /**
- * 純函式:第一個(或姊妹閘的最後一個)內容的特徵 → 角色。f = { dataTable, border(邊數), ownBg, shadow, role, tag, fieldControl, control, selfPad, fillsWidth }。
+ * 純函式:第一個(或姊妹閘的最後一個)內容的特徵 → 角色。f = { dataTable, border(邊數), ownBg, shadow, role, tag, fieldControl, control, selfPad }。
  * control = 按鈕 / 連結 / 勾選 / 進度條這類控件(規則 2 表「element(input / button / alert)」、規則 4 表「element(欄位 / 文字 / 按鈕)」):
  * 有框有底色也是 element,不是 bounded region(2026-11-11 姊妹閘量「最後一個東西」時加 —— 最後一個常是按鈕 / 進度條)。
- * fillsWidth = 外框有沒有撐滿容器內容寬(頁面端 pageKit.fillsWidth 量的布林值;2026-11-13 加):有框但沒撐滿 → element
- * (layoutSpace.spec.md「元件角色」那張表:region「寬度撐滿」對 element「寬高自然」—— 有沒有底色是先判成 region 之後才問的第二題(同檔「心智模型」Step 1);
- * 例:寬最多 85% 的我方訊息氣泡。這是「占不占該層主要空間」的近似【AI 推導 2026-11-13】,兩個方向會判錯的形狀見檔頭量法)。有框卻沒有這個量值 → null(判不出角色,
- * judge 當儀器失效;不准默默當成撐滿)。DataTable 外殼不看這一項(表格外殼就是 bounded)。
+ * 有框(不是控件 / 欄位 / Alert)= bounded,不看寬(例:寬最多 85% 的我方訊息氣泡 —— 外框完整,上與左右才對稱;user 2026-11-14 在 A5 成品頁的留言 ①)。
+ * 【更正 2026-11-14】2026-11-13(A5)加過的 fillsWidth(有框但外框沒撐滿容器內容寬 → element)拿掉:它把氣泡判成 element、頂距改 tight;留言 ① 說原本比較美觀(陳述)、問理由是否成立(問句),AI 評估同意、改回 16 / 24。
  */
 export function classifyFirst(f) {
   if (f.dataTable) return 'bounded'
   const framed = f.border >= 3 || f.ownBg || f.shadow
-  if (framed && !f.fieldControl && !f.control && !/^(alert|status)$/.test(f.role ?? '')) {
-    if (typeof f.fillsWidth !== 'boolean') return null
-    return f.fillsWidth ? 'bounded' : 'element'
-  }
+  if (framed && !f.fieldControl && !f.control && !/^(alert|status)$/.test(f.role ?? '')) return 'bounded'
   const listy = /^(list|listbox|menu|tree|navigation)$/.test(f.role ?? '') || /^(ul|ol|nav)$/.test(f.tag)
   if (!framed && listy && f.selfPad) return 'unbounded'
   return 'element'
 }
 
 export const expectedGap = (role, { loose, tight }) => (role === 'bounded' ? loose : role === 'unbounded' ? 0 : tight)
+/** 一格的頂距期望值(judge 與 --selftest (c) 共用,同一個住所):登記了 topException 的格用例外寫的 token,其餘照角色查規則 2 表。 */
+export const wantGap = (r) => (r.topException ? r[r.topException.want] : expectedGap(r.role, r))
 const RULE = { bounded: 'bounded region → loose', unbounded: 'unbounded region → 0', element: 'element → tight' }
 
 /**
- * 純函式:[{ id, density, declared, role, gap, loose, tight, first, scrolled, scroller }] → 不符合的訊息清單(呼叫端與 selftest 共用)。
+ * 純函式:[{ id, density, declared, role, gap, loose, tight, first, scrolled, scroller, topException }] → 不符合的訊息清單(呼叫端與 selftest 共用)。
  * scrolled = 量的當下第一個內容所在各層捲動區的捲動位置(捲回頂端後讀回;必須是 0);scroller = 那個捲動區在訊息裡的稱呼(CASES)。
- * 置中的格(centered: true)另帶 above / below(內距框內第一個內容上方、最後一個內容下方的空白);gap = 容器的結構上內距。
+ * 置中的格(centered: true)另帶 after(最後一個內容底 → 標頭那一塊之後的下一塊頂)與 afterWhat(下一塊的描述);gap = 標頭底 → 第一個內容頂。
  */
 export function judge(rows) {
   const failures = []
@@ -176,19 +181,21 @@ export function judge(rows) {
     const where = `${r.id} @${r.density}`
     if (r.err) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} ${r.err}`); continue }
     if (!(r.loose > 0) || !(r.tight > 0)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 讀不到 --layout-space-loose / tight`); continue }
-    if (!Number.isFinite(r.gap) || !r.role) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒量到標頭 → 第一個內容${Number.isFinite(r.gap) ? `(第一個內容 ${r.first ?? '?'} 有框,卻沒量到它撐不撐滿寬 —— 判不出角色)` : ''}`); continue }
-    if (r.centered && !(Number.isFinite(r.above) && Number.isFinite(r.below))) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 置中的格沒量到內距框內上 / 下的空白(上 ${r.above} / 下 ${r.below})`); continue }
+    if (!Number.isFinite(r.gap) || !r.role) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒量到標頭 → 第一個內容${Number.isFinite(r.gap) ? `(第一個內容 ${r.first ?? '?'} 判不出角色)` : ''}`); continue }
+    if (r.centered && !Number.isFinite(r.after)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 置中的格沒量到「最後一個內容底 → 下一塊頂」(${r.after};下一塊 = ${r.afterWhat ?? '找不到'})—— 在不在可用範圍正中無從比`); continue }
     // 捲動位置(2026-11-13):頂距只在第一個內容所在的每一層捲動區都捲在最上面時才量得到(檔頭量法)。沒讀到 / 不是 0 → 儀器失效,這一格不再往下判 ——
     // 被捲走時量到的距離(審查實測 −53 / −73)不是產品的頂距,不拿去指控產品,也不讀成通過
     if (!Number.isFinite(r.scrolled)) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 沒讀到第一個內容所在捲動區的捲動位置(量的時候有沒有捲在最上面不知道)`); continue }
     if (r.scrolled > TOL) { failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} ${r.scroller ?? '第一個內容所在的捲動區'}沒有捲在最上面(量的當下捲動位置 ${r.scrolled}px,這時量到的「標頭底 → 第一個內容頂」${r.gap}px 不能用)—— 頂距要捲到頂端才量得到;這是量測沒對好,不是產品的問題`); continue }
     if (r.role !== r.declared) failures.push(`${where} 第一個內容的角色 = ${r.role}(${r.first ?? '?'}),盤點登記的是 ${r.declared} —— 第一個東西換了,照規則 2 重推頂距並更新 CASES`)
-    const want = expectedGap(r.role, r)
     if (r.centered) {
-      // 置中的格:量的是容器的結構上內距(置中多出來的空白不算);內容不在內距框裡置中 = 不是這個量法管的格
-      if (Math.abs(r.gap - want) > TOL) failures.push(`${where} 置中的內容:容器的上內距 = ${r.gap}px,應 ${want}(規則 2:${RULE[r.role]};內容在撐滿的容器裡置中時,規則值寫成容器的上內距 —— layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3);第一個內容 = ${r.first ?? '?'})`)
-      if (Math.abs(r.above - r.below) > TOL) failures.push(`${where} 登記為置中,但內容不在內距框裡置中:上方空白 ${r.above}px、下方空白 ${r.below}px(差 > ${TOL})—— 內容換了排法,照規則 2 重推頂距並更新 CASES(拿掉 centered)`)
-    } else if (Math.abs(r.gap - want) > TOL) failures.push(`${where} 標頭底 → 第一個內容頂 = ${r.gap}px,應 ${want}(規則 2:${RULE[r.role]};第一個內容 = ${r.first ?? '?'})`)
+      // 置中的格(user 2026-11-14 在 A5 成品頁的留言 ②):垂直置中的狀態不套規則 2 / 4 的上下距離,量「在可用範圍正中」本身 —— 上下兩段相等
+      if (Math.abs(r.gap - r.after) > TOL) failures.push(`${where} 登記為在可用範圍正中,但 標頭底 → 內容頂 = ${r.gap}px、內容底 → ${r.afterWhat ?? '下一塊'}頂 = ${r.after}px(差 ${Math.round((r.gap - r.after) * 10) / 10},> ${TOL})—— 垂直置中的狀態不套規則 2 / 4 的上下距離(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3));包層又給了上 / 下內距,或內容換了排法(不再置中就照規則 2 重推並拿掉 centered)`)
+    } else {
+      const want = wantGap(r)
+      const why = r.topException ? `例外:${r.topException.why}` : `規則 2:${RULE[r.role]}`
+      if (Math.abs(r.gap - want) > TOL) failures.push(`${where} 標頭底 → 第一個內容頂 = ${r.gap}px,應 ${want}(${why};第一個內容 = ${r.first ?? '?'})`)
+    }
     // 主區只有一張表、不放區段標題的頁(app-shell.spec.md「Main 內塞什麼」):表格的讀屏名稱是那個標題唯一剩下的地方 —— 拿掉不能沒人知道
     if (r.tableName && !(r.tableNameGot ?? []).includes(r.tableName)) failures.push(`${where} 主區表格的讀屏名稱(aria-label)= ${JSON.stringify(r.tableNameGot ?? [])},應含「${r.tableName}」—— 主區不放區段標題後,表格的名字只剩 aria-label`)
   }
@@ -204,10 +211,11 @@ function selftest() {
   let ok = true
   const expect = (cond, msg) => { if (!cond) { console.error(`✗ selftest:${msg}`); ok = false } }
   const T = { md: { loose: 16, tight: 12 }, lg: { loose: 24, tight: 16 } }
-  const row = (id, declared, role, density, gap) => ({ id, density, declared, role, gap, ...T[density], first: 'x', scrolled: 0 })
-  // 置中的格:量測另帶內距框內上 / 下的空白(修後 = 兩邊相等)
-  const centeredRow = (id, density, gap, above = 296.5, below = above) => ({ ...row(id, 'element', 'element', density, gap), centered: true, above, below })
-  const good = CASES.flatMap((c) => DENSITIES.map((d) => (c.centered ? centeredRow(c.id, d, expectedGap(c.role, T[d])) : row(c.id, c.role, c.role, d, expectedGap(c.role, T[d])))))
+  // 一格量測;topException 照 probeCase 的做法從 CASES 帶進來(量測列本來就帶著它)
+  const row = (id, declared, role, density, gap) => ({ id, density, declared, role, gap, ...T[density], first: 'x', scrolled: 0, topException: CASES.find((c) => c.id === id)?.topException })
+  // 置中的格:量測另帶「最後一個內容底 → 下一塊頂」(after;修後 = gap,在可用範圍正中)
+  const centeredRow = (id, density, gap, after = gap) => ({ ...row(id, 'element', 'element', density, gap), centered: true, after, afterWhat: '輸入框' })
+  const good = CASES.flatMap((c) => DENSITIES.map((d) => (c.centered ? centeredRow(c.id, d, 326.5) :row(c.id, c.role, c.role, d, wantGap({ ...c, ...T[d] })))))
   expect(judge(good).length === 0, `修後形狀應綠,實得 ${JSON.stringify(judge(good))}`)
   expect(new Set(CASES.map((c) => c.id)).size === CASES.length, 'CASES id 不得重複')
   // 「透明」的判定表(2026-11-14):透明度 0 的各種寫法都算透明;結尾剛好是 0 的不透明色、滑過時的淡底色(透明度 0.02)不算
@@ -216,34 +224,47 @@ function selftest() {
   const SOLID = ['rgb(255, 255, 0)', 'rgba(0, 0, 0, 0.02)', 'oklch(0 0 0 / 0.02)', 'color(srgb 0 0 0 / 0.5)', 'oklch(0.5 0.1 0)']
   expect(CLEAR.every((c) => transparent(c)), `透明度 0 的寫法應全判透明,沒判到:${JSON.stringify(CLEAR.filter((c) => !transparent(c)))}`)
   expect(!SOLID.some((c) => transparent(c)), `看得見的顏色不得判成透明,誤判:${JSON.stringify(SOLID.filter((c) => transparent(c)))}`)
-  // AgentPanel 對話區(2026-11-13):修前建置實測頂距是 loose(md 16 / lg 24)—— 兩格 × 兩密度都必紅,訊息指名 element → tight
-  const CONVERSATION = ['agentpanel-chat-user-first', 'agentpanel-chat-agent-first']
-  expect(CONVERSATION.every((id) => CASES.find((c) => c.id === id)?.role === 'element'), `對話區 ${CONVERSATION.join(' / ')} 應登記 element`)
-  const topLoose = judge(CONVERSATION.flatMap((id) => [row(id, 'element', 'element', 'md', 16), row(id, 'element', 'element', 'lg', 24)]))
-  expect(topLoose.length === 4 && topLoose.every((s) => s.includes('element → tight')), `對話區頂距打回 loose 應 2 格 × 2 密度都紅,實得 ${JSON.stringify(topLoose)}`)
+  // AgentPanel 對話區(2026-11-14 A70,照 user 在 A5 成品頁的留言 ①):A5 建置(da15b933)實測兩格頂距都是 tight(md 12 / lg 16)——
+  // 兩格 × 兩密度都必紅:我方氣泡在前 → 訊息指名「bounded region → loose」;代理文字在前 → 例外 loose,訊息附例外的理由
+  const USER_FIRST = 'agentpanel-chat-user-first', AGENT_FIRST = 'agentpanel-chat-agent-first'
+  const CONVERSATION = [USER_FIRST, AGENT_FIRST]
+  const caseOf = (id) => CASES.find((c) => c.id === id)
+  expect(caseOf(USER_FIRST)?.role === 'bounded', `${USER_FIRST} 應登記 bounded(有底色、外框完整的我方氣泡;留言 ①)`)
+  expect(caseOf(AGENT_FIRST)?.role === 'element' && caseOf(AGENT_FIRST)?.topException?.want === 'loose' && (caseOf(AGENT_FIRST)?.topException?.why ?? '').length > 10, `${AGENT_FIRST} 應登記 element + 例外 loose(附理由)`)
+  const exceptions = CASES.filter((c) => c.topException)
+  expect(exceptions.length === 1 && exceptions[0].id === AGENT_FIRST && exceptions.every((c) => /^(loose|tight)$/.test(c.topException.want)), `例外(topException)只准對話區「代理文字在前」一格,實得 ${exceptions.map((c) => c.id).join(', ')}(新增例外要在這裡補對照與理由)`)
+  const a5Tight = judge(CONVERSATION.flatMap((id) => [row(id, caseOf(id).role, caseOf(id).role, 'md', 12), row(id, caseOf(id).role, caseOf(id).role, 'lg', 16)]))
+  expect(a5Tight.length === 4 && a5Tight.filter((s) => s.startsWith(USER_FIRST) && s.includes('bounded region → loose')).length === 2
+    && a5Tight.filter((s) => s.startsWith(AGENT_FIRST) && s.includes('例外:對話區只有一個上內距值')).length === 2, `對話區頂距是 tight(A5 建置實測)應 2 格 × 2 密度都紅、各自指名規則 / 例外,實得 ${JSON.stringify(a5Tight)}`)
+  expect(judge(CONVERSATION.flatMap((id) => [row(id, caseOf(id).role, caseOf(id).role, 'md', 16), row(id, caseOf(id).role, caseOf(id).role, 'lg', 24)])).length === 0, '對話區頂距 loose(16 / 24)兩格 × 兩密度應綠')
+  // A5 的角色判法(氣泡沒撐滿寬 → element)量出來的形狀:角色 element —— 登記是 bounded,必紅(頂距照 element 算對了也一樣紅)
+  const a5Role = judge([row(USER_FIRST, 'bounded', 'element', 'md', 12), row(USER_FIRST, 'bounded', 'element', 'lg', 16)])
+  expect(DENSITIES.every((d) => a5Role.some((s) => s.startsWith(`${USER_FIRST} @${d}`) && s.includes('盤點登記的是 bounded'))), `氣泡被判成 element 應兩密度都紅,實得 ${JSON.stringify(a5Role)}`)
+  // 例外不遮角色:代理文字那格判出 bounded(例:第一則換成有框的回執)→ 照樣紅「角色與盤點不符」
+  expect(judge([row(AGENT_FIRST, 'element', 'bounded', 'md', 16)]).some((s) => s.includes('盤點登記的是 element')), '例外那格的角色換了應紅(例外只管頂距,不管角色)')
   // 對話沒捲在最上面(2026-11-13 審查實測:視窗高 600 時進頁自動捲到底,scrollTop 65 / 89、量到 −53 / −73)→ 儀器失效、點名「對話沒有捲在最上面」,
-  // 而且不得有任何一行拿 −53 / −73 指控產品;同一格捲回頂端(讀回 0、12 / 16)→ 綠;沒讀到捲動位置 → 儀器失效(不准默默當成 0)
-  expect(CONVERSATION.every((id) => CASES.find((c) => c.id === id)?.scroller === '對話') && CASES.filter((c) => c.scroller).length === CONVERSATION.length, `登記 scroller 的應只有對話區 ${CONVERSATION.join(' / ')}(--selftest (c) 拿它們造溢出)`)
-  const stuckAtBottom = judge([{ ...row('agentpanel-chat-user-first', 'element', 'element', 'md', -53), scrolled: 65, scroller: '對話' }, { ...row('agentpanel-chat-user-first', 'element', 'element', 'lg', -73), scrolled: 89, scroller: '對話' }])
+  // 而且不得有任何一行拿 −53 / −73 指控產品;同一格捲回頂端(讀回 0、16 / 24)→ 綠;沒讀到捲動位置 → 儀器失效(不准默默當成 0)
+  expect(CONVERSATION.every((id) => caseOf(id)?.scroller === '對話') && CASES.filter((c) => c.scroller).length === CONVERSATION.length, `登記 scroller 的應只有對話區 ${CONVERSATION.join(' / ')}(--selftest (c) 拿它們造溢出)`)
+  const stuckAtBottom = judge([{ ...row(USER_FIRST, 'bounded', 'bounded', 'md', -53), scrolled: 65, scroller: '對話' }, { ...row(USER_FIRST, 'bounded', 'bounded', 'lg', -73), scrolled: 89, scroller: '對話' }])
   expect(stuckAtBottom.length === 2 && stuckAtBottom.every((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('對話沒有捲在最上面')), `對話沒捲在最上面應兩密度都判儀器失效、不指控產品,實得 ${JSON.stringify(stuckAtBottom)}`)
-  expect(judge([{ ...row('agentpanel-chat-user-first', 'element', 'element', 'md', 12), scroller: '對話' }, { ...row('agentpanel-chat-user-first', 'element', 'element', 'lg', 16), scroller: '對話' }]).length === 0, '對話捲回頂端(讀回 0)、12 / 16 應綠')
+  expect(judge([{ ...row(USER_FIRST, 'bounded', 'bounded', 'md', 16), scroller: '對話' }, { ...row(USER_FIRST, 'bounded', 'bounded', 'lg', 24), scroller: '對話' }]).length === 0, '對話捲回頂端(讀回 0)、16 / 24 應綠')
   const otherScroller = judge([{ ...row('popover-list-region', 'unbounded', 'unbounded', 'md', -40), scrolled: 40 }])
   expect(otherScroller.length === 1 && otherScroller[0].includes(INSTRUMENT_FAIL_MARKER) && otherScroller[0].includes('第一個內容所在的捲動區沒有捲在最上面'), `沒登記 scroller 的格被捲動也應判儀器失效,實得 ${JSON.stringify(otherScroller)}`)
-  const noScrollRead = judge([{ ...row('agentpanel-chat-user-first', 'element', 'element', 'md', 12), scrolled: undefined }])
+  const noScrollRead = judge([{ ...row(USER_FIRST, 'bounded', 'bounded', 'md', 16), scrolled: undefined }])
   expect(noScrollRead.length === 1 && noScrollRead[0].includes(INSTRUMENT_FAIL_MARKER) && noScrollRead[0].includes('沒讀到'), `沒讀到捲動位置應判儀器失效,實得 ${JSON.stringify(noScrollRead)}`)
-  // 氣泡被判成 bounded(2026-11-13 前的角色判法:有底色就是 bounded)—— 登記是 element,必紅(即使 16 / 24 照 bounded 算是對的)
-  const bubbleBounded = judge([row('agentpanel-chat-user-first', 'element', 'bounded', 'md', 16), row('agentpanel-chat-user-first', 'element', 'bounded', 'lg', 24)])
-  expect(bubbleBounded.length === 2 && bubbleBounded.every((s) => s.includes('盤點登記的是 element')), `氣泡被判成 bounded 應兩密度都紅,實得 ${JSON.stringify(bubbleBounded)}`)
-  // 新對話空白頁(置中的格):修前包層沒有上內距(實測 0)必紅;內距對但不置中(內容貼頂)必紅;置中的量值缺 → 儀器失效;登記必須是 centered
+  // 新對話空白頁(置中的格,留言 ②):A5 建置(da15b933)以本閘的視窗(1280×900)實測,包層上 tight / 下 48 → 標頭底 → 空狀態頂 308.5 / 300.5、
+  // 空狀態底 → 輸入框頂 344.5 / 332.5,兩密度都必紅(不是儀器失效);修後在可用範圍正中(326.5 / 326.5、316.5 / 316.5)綠;內容貼頂必紅;
+  // 下一段量不到 / 缺 → 儀器失效;登記必須是 centered
   const EMPTY = 'agentpanel-new-conversation'
-  expect(CASES.find((c) => c.id === EMPTY)?.centered === true && CASES.filter((c) => c.centered).length === 1, `置中的格目前只有 ${EMPTY} 一處(新增置中的格要在這裡補對照)`)
-  const noPad = judge([centeredRow(EMPTY, 'md', 0, 326.5), centeredRow(EMPTY, 'lg', 0, 316.5)])
-  expect(noPad.length === 2 && noPad.every((s) => s.includes('容器的上內距 = 0px') && s.includes('element → tight')), `空白頁包層沒有上內距應兩密度都紅,實得 ${JSON.stringify(noPad)}`)
-  const notCentered = judge([centeredRow(EMPTY, 'md', 12, 0, 593)])
-  expect(notCentered.length === 1 && notCentered[0].includes('不在內距框裡置中') && !notCentered[0].includes(INSTRUMENT_FAIL_MARKER), `登記置中但內容貼頂應紅(不是儀器失效),實得 ${JSON.stringify(notCentered)}`)
-  expect(judge([centeredRow(EMPTY, 'md', 12, NaN, 296.5)]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('置中')), '置中的格上方空白沒量到應判儀器失效')
-  expect(judge([{ ...row(EMPTY, 'element', 'element', 'md', 12), centered: true }]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '置中的格缺 above / below 應判儀器失效(不准默默當成一般格)')
-  // 有框卻沒量到撐不撐滿寬 → classifyFirst 回 null → 判不出角色 = 儀器失效
+  expect(caseOf(EMPTY)?.centered === true && CASES.filter((c) => c.centered).length === 1, `置中的格目前只有 ${EMPTY} 一處(新增置中的格要在這裡補對照)`)
+  const a5Empty = judge([centeredRow(EMPTY, 'md', 308.5, 344.5), centeredRow(EMPTY, 'lg', 300.5, 332.5)])
+  expect(a5Empty.length === 2 && a5Empty.every((s) => s.includes('在可用範圍正中') && !s.includes(INSTRUMENT_FAIL_MARKER)) && a5Empty.some((s) => s.includes('差 -36')) && a5Empty.some((s) => s.includes('差 -32')),`空白頁不在可用範圍正中(A5 建置實測)應兩密度都紅,實得 ${JSON.stringify(a5Empty)}`)
+  expect(judge([centeredRow(EMPTY, 'md', 326.5), centeredRow(EMPTY, 'lg', 316.5)]).length === 0, '空白頁在可用範圍正中(上下相等)應綠')
+  const stuckTop = judge([centeredRow(EMPTY, 'md', 0, 653)])
+  expect(stuckTop.length === 1 && stuckTop[0].includes('在可用範圍正中') && !stuckTop[0].includes(INSTRUMENT_FAIL_MARKER), `登記置中但內容貼頂應紅(不是儀器失效),實得 ${JSON.stringify(stuckTop)}`)
+  expect(judge([centeredRow(EMPTY, 'md', 326.5, NaN)]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('置中')), '置中的格「內容底 → 下一塊頂」沒量到應判儀器失效')
+  expect(judge([{ ...row(EMPTY, 'element', 'element', 'md', 326.5), centered: true }]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '置中的格缺 after 應判儀器失效(不准默默當成一般格)')
+  // 角色沒量到(量測列缺 role)→ 儀器失效
   expect(judge([row('x', 'element', null, 'md', 12)]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER) && s.includes('判不出角色')), '角色判不出來應判儀器失效')
   // 主區表格的讀屏名稱(2026-11-11 r3 審查:拿掉區段標題後,AppShell Insights / 範本兩張表的 aria-label 被拿掉不會有任何紅燈)
   const named = CASES.filter((c) => c.tableName)
@@ -273,17 +294,13 @@ function selftest() {
   expect(judge(locked).length === 0, `浮層鎖 md 應綠,實得 ${JSON.stringify(judge(locked))}`)
   expect(judge([{ ...locked[0] }, { ...locked[1], rootLoose: 16 }]).some((s) => s.includes('密度沒套上')), '頁面根兩密度同值應判儀器失效')
   // classifyFirst 逐列
-  const base = { dataTable: false, border: 0, ownBg: false, shadow: false, role: null, tag: 'div', fieldControl: false, control: false, selfPad: false, fillsWidth: true }
+  const base = { dataTable: false, border: 0, ownBg: false, shadow: false, role: null, tag: 'div', fieldControl: false, control: false, selfPad: false }
   const cls = [
-    // 2026-11-13:有框但沒撐滿容器內容寬 → element;撐滿 → bounded(不變);有框卻沒有這個量值 → null(儀器失效,不准默默當成撐滿)
-    [{ ...base, ownBg: true, fillsWidth: false }, 'element', '有底色、沒撐滿寬的我方訊息氣泡'],
-    [{ ...base, border: 4, ownBg: true, shadow: true, fillsWidth: false }, 'element', '有框有底色有陰影、但沒撐滿寬的卡'],
-    [{ ...base, ownBg: true, fillsWidth: true }, 'bounded', '有底色、撐滿寬的面板(不變)'],
-    [{ ...base, ownBg: true, fillsWidth: undefined }, null, '有底色、卻沒量到撐不撐滿寬(判不出角色)'],
-    [{ ...base, dataTable: true, fillsWidth: false }, 'bounded', 'DataTable 外殼不看撐不撐滿寬'],
-    [{ ...base, tag: 'button', border: 4, ownBg: true, control: true, fillsWidth: false }, 'element', '有框有底色、沒撐滿寬的按鈕(控件那一條先成立)'],
-    [{ ...base, tag: 'p', fillsWidth: false }, 'element', '沒框的文字不看撐不撐滿寬'],
-    [{ ...base, role: 'listbox', selfPad: true, fillsWidth: false }, 'unbounded', '自帶 py 的無框清單不看撐不撐滿寬'],
+    // 2026-11-14(A70):有完整外框就是 bounded,不看寬 —— 寬最多 85% 的我方氣泡、DataTable 巢狀篩選的灰底群組框(左邊還有 Where 標籤)都是(留言 ①)。
+    // 【更正 2026-11-14】2026-11-13(A5)這裡判成 element(看「撐不撐滿寬」),那一支拿掉;多帶一個 fillsWidth: false 的舊欄位也不改判
+    [{ ...base, ownBg: true }, 'bounded', '有底色、寬最多 85% 的我方訊息氣泡(外框完整)'],
+    [{ ...base, ownBg: true, fillsWidth: false }, 'bounded', '帶著 A5 舊欄位 fillsWidth: false 的氣泡(欄位已不看)'],
+    [{ ...base, ownBg: true, border: 0 }, 'bounded', '灰底圓角的篩選群組框(bg-muted,沒有框線)'],
     [{ ...base, tag: 'button', border: 4, ownBg: true, control: true }, 'element', '有框有底色的按鈕(規則 4 表「element(欄位 / 文字 / 按鈕)」)'],
     [{ ...base, role: 'progressbar', ownBg: true, control: true }, 'element', '進度條(有底色的細條)'],
     [{ ...base, role: 'img', ownBg: true, control: true }, 'element', '有底色的頭像 / 縮圖(role=img)'],
@@ -414,29 +431,11 @@ export const pageKit = () => {
     visit(root)
     return things
   }
-  // 結構內距(某一邊):從 el 往上到 body(含 body 自己的內距與框線),每一層的 padding + border + margin 加總;el 自己只算 margin
-  // (它的框線 / 內距是它自己的)。auto 外距不算(置中的版心寬不是內距;computed 會回算出來的 px,要看 computedStyleMap)。
-  // 姊妹閘量左右 / 底、本閘量「撐不撐滿寬」與置中格的頂,都是這一個量法。
-  const cssNum = (el, p) => parseFloat(getComputedStyle(el)[p]) || 0
-  const sideCap = (s) => s[0].toUpperCase() + s.slice(1)
-  const marginOf = (el, side) => { let auto = false; try { auto = String(el.computedStyleMap().get(`margin-${side}`)) === 'auto' } catch { auto = false } return auto ? 0 : cssNum(el, `margin${sideCap(side)}`) }
-  const structuralInset = (el, body, side) => {
-    let sum = cssNum(body, `padding${sideCap(side)}`) + cssNum(body, `border${sideCap(side)}Width`)
-    for (let n = el; n && n !== body; n = n.parentElement) {
-      if (getComputedStyle(n).display === 'contents') continue
-      sum += marginOf(n, side) + (n === el ? 0 : cssNum(n, `padding${sideCap(side)}`) + cssNum(n, `border${sideCap(side)}Width`))
-    }
-    return sum
-  }
-  // 外框撐滿容器內容寬嗎:左右兩邊「不是內距 / 框線 / 外距給的空白」加起來 ≤ 1px = 撐滿(classifyFirst 的 fillsWidth)。
-  // 回 { fills, slack };body 自己就是那個東西 → 撐滿。
-  const fillsWidth = (el, body) => {
-    if (el === body) return { fills: true, slack: 0 }
-    const r = el.getBoundingClientRect(), b = body.getBoundingClientRect()
-    const slack = (r.left - b.left - structuralInset(el, body, 'left')) + (b.right - r.right - structuralInset(el, body, 'right'))
-    return { fills: slack <= 1, slack: Math.round(slack * 10) / 10 }
-  }
-  return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, bottomOf, scrollBody, scrollOffset, findHeader, findBody, collectThings, structuralInset, fillsWidth }
+  // 【更正 2026-11-14】2026-11-13(A5)在這裡加過 structuralInset / fillsWidth(量「外框撐不撐滿容器內容寬」與置中格的結構上內距);
+  // 角色判法回到「有框就是 bounded」、置中格改量「在可用範圍正中」之後兩支都沒人用,拿掉(姊妹閘量左右 / 底用它自己的 insetOfBox)。
+  // 標頭那一塊之後的下一塊(置中的格量「內容底 → 下一塊頂」用,例:新對話空白頁 → 輸入框):同層下一個看得見的兄弟,沒有回 null
+  const nextBlock = (body) => { let s = body.nextElementSibling; while (s && !vis(s)) s = s.nextElementSibling; return s }
+  return { vis, transparent, effBg, LIST_ROLE, feat, isThing, boxedOf, topOf, bottomOf, scrollBody, scrollOffset, findHeader, findBody, collectThings, nextBlock }
 }
 
 /** 把 pageKit 裝進目前頁面(window.__layoutKit);每次換頁後、量之前呼叫。 */
@@ -462,22 +461,18 @@ export const probeFirst = ({ header, headerText = null, nth = 0, scroll = 'top' 
   const v = (name) => parseFloat(getComputedStyle(host).getPropertyValue(name))
   const round = (x) => Math.round(x * 10) / 10
   const cls = (pick.el.getAttribute('class') ?? '').split(/\s+/).slice(0, 4).join(' ')
-  const fill = K.fillsWidth(pick.el, body)
-  const f = { ...pick.f, fillsWidth: fill.fills, widthSlack: fill.slack }
-  // 置中的格用(CASES centered):容器的結構上 / 下內距,與內距框內第一個內容上方、最後一個內容下方的空白(置中 = 兩者相等)
-  const num = (el, p) => parseFloat(getComputedStyle(el)[p]) || 0
+  const f = pick.f
+  // 置中的格用(CASES centered,量法見檔頭):最後一個內容(底最低的,同 topOf 的判法量底邊)→ 標頭那一塊之後的下一塊頂
   const bottomOf = (t) => K.bottomOf(t.el, t.f)
   const last = things.reduce((a, t) => (bottomOf(t) > bottomOf(a) + 0.5 ? t : a))
-  const b = body.getBoundingClientRect()
-  // 只有字的包層量的是內容框(topOf / bottomOf)→ 它自己的內距 / 框線也算在結構內距裡,兩邊才對得上
-  const own = (t, side) => (K.boxedOf(t.f) ? 0 : num(t.el, `padding${side}`) + num(t.el, `border${side}Width`))
-  const topInset = K.structuralInset(pick.el, body, 'top') + own(pick, 'Top'), bottomInset = K.structuralInset(last.el, body, 'bottom') + own(last, 'Bottom')
+  const next = K.nextBlock(body)
+  const nextCls = next ? (next.getAttribute('class') ?? '').split(/\s+/).slice(0, 3).join(' ') : ''
   // 捲完讀回:第一個內容往上到那一塊的每一層,量的當下捲在哪(scrolled)、內容比捲動區高出多少(scrollOverflow,只供列印與對照組的前提)
   const at = K.scrollOffset(pick.el, body)
   return {
     scrolled: round(at.top), scrollOverflow: round(at.overflow), scrolledBefore: scrolledBefore === null ? null : round(scrolledBefore),
-    topInset: round(topInset), bottomInset: round(bottomInset),
-    above: round(pick.top - (b.top + topInset)), below: round((b.bottom - bottomInset) - bottomOf(last)),
+    after: next ? round(next.getBoundingClientRect().top - bottomOf(last)) : NaN,
+    afterWhat: next ? `<${next.tagName.toLowerCase()}${nextCls ? ` class="${nextCls}…"` : ''}>` : null,
     gap: round(pick.top - h.getBoundingClientRect().bottom), f,
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'),
     rootLoose: parseFloat(getComputedStyle(document.querySelector('#storybook-root') ?? document.documentElement).getPropertyValue('--layout-space-loose')),
@@ -519,9 +514,9 @@ async function probeCase(page, c, { scroll = 'top' } = {}) {
   if (r.err) return r
   // 主區不放區段標題的那幾處:表格的名字只剩 aria-label(看得見的標題拿掉了)—— 量畫面上那張表格的讀屏名稱本身,不靠 waitFor 猜
   const tableNameGot = c.tableName ? await page.evaluate((sel) => [...document.querySelectorAll(sel)].map((t) => t.getAttribute('aria-label') ?? '').filter(Boolean), c.waitFor) : undefined
-  // 置中的格:頂距 = 容器的結構上內距(置中多出來的空白不算);看得見的距離(標頭底 → 第一個內容頂)另存 visualGap 只供列印
-  const top = c.centered ? { centered: true, gap: r.topInset, visualGap: r.gap } : {}
-  return { ...r, ...top, role: classifyFirst(r.f), tableName: c.tableName, tableNameGot, scroller: c.scroller }
+  // 置中的格:judge 比「標頭底 → 內容頂」(gap)與「內容底 → 下一塊頂」(after);下一塊的稱呼優先用 CASES 寫的(例:輸入框),沒寫用 DOM 描述
+  const centered = c.centered ? { centered: true, afterWhat: c.nextBlock ?? r.afterWhat } : {}
+  return { ...r, ...centered, role: classifyFirst(r.f), tableName: c.tableName, tableNameGot, scroller: c.scroller, topException: c.topException }
 }
 
 /** 開到盤點那一處再量(一格的完整量法;對照用的腳本可以換視窗高度後呼叫同一支)。 */
@@ -538,7 +533,7 @@ const OVERFLOW_HEIGHTS = [300, 240, 200, 160]
 /**
  * --selftest (c):對話溢出對照(真建置、真瀏覽器)。對 CASES 裡登記 scroller 的每一格 × 兩密度:視窗縮矮到對話內容真的比捲動區高,同一頁量兩次 ——
  *   不先捲(把對話捲到底 = 進頁自動捲到底的那個狀態)→ 必須判成儀器失效、點名「對話沒有捲在最上面」,而且沒有任何一行指控產品;
- *   先捲到頂(正式量法)→ 讀回捲動位置 0、距離 = tight、綠。
+ *   先捲到頂(正式量法)→ 讀回捲動位置 0、距離 = 該格的期望值(wantGap)、綠。
  * 前提自己量:捲到底之後讀回的捲動位置 > 0 才算造出溢出;試完每個高度都造不出 → 對照組不成立 → 回 false(不靠範例現在剛好多長)。
  * 輸出不印儀器失效的機讀標記(lib/gate-selftest-meta.mjs 看到標記就判這次自測儀器失效);真的開不起來才印。
  */
@@ -567,11 +562,11 @@ async function selftestOverflow() {
           `${where} 視窗高 ${height}、${c.scroller}停在捲動位置 ${stuck.scrolled}(量到 ${stuck.gap}px)應只判成儀器失效「${c.scroller}沒有捲在最上面」、不指控產品,實得 ${plain(stuckFailures)}`)
         const atTop = { id: c.id, density, declared: c.role, ...(await probeCase(page, c)) }
         const topFailures = judge([atTop])
-        expect(atTop.scrolled === 0 && Math.abs(atTop.gap - atTop.tight) <= TOL && topFailures.length === 0,
-          `${where} 視窗高 ${height}、先捲到頂應讀回 0、距離 = tight ${atTop.tight}、綠,實得 讀回 ${atTop.scrolled}、距離 ${atTop.gap}、${plain(topFailures)}`)
+        expect(atTop.scrolled === 0 && Math.abs(atTop.gap - wantGap(atTop)) <= TOL && topFailures.length === 0,
+          `${where} 視窗高 ${height}、先捲到頂應讀回 0、距離 = 期望值 ${wantGap(atTop)}、綠,實得 讀回 ${atTop.scrolled}、距離 ${atTop.gap}、${plain(topFailures)}`)
         console.log(`  (c) ${where}  視窗高 ${height}:${c.scroller}內容比捲動區高 ${stuck.scrollOverflow}px(進頁時捲動位置 ${stuck.scrolledBefore})`
           + `\n        不先捲(停在捲動位置 ${stuck.scrolled}):量到 ${stuck.gap}px → 判成儀器失效「${c.scroller}沒有捲在最上面」${stuckFailures.every((s) => s.includes(INSTRUMENT_FAIL_MARKER)) ? '、沒有指控產品' : '(另有指控產品的訊息 ✗)'}`
-          + `\n        先捲到頂(從 ${atTop.scrolledBefore} 捲回、讀回 ${atTop.scrolled}):量到 ${atTop.gap}px(tight ${atTop.tight})→ ${topFailures.length ? '紅 ✗' : '綠'}`)
+          + `\n        先捲到頂(從 ${atTop.scrolledBefore} 捲回、讀回 ${atTop.scrolled}):量到 ${atTop.gap}px(期望 ${wantGap(atTop)})→ ${topFailures.length ? '紅 ✗' : '綠'}`)
         shown = true
         break
       }
@@ -609,10 +604,10 @@ if (isMain) {
   try {
     const rows = await measure()
     if (rows === null) process.exit(0) // launchBrowserOrSkip 已印 SKIPPED-ENV / INSTRUMENT-FAIL 判定
-    for (const r of rows) console.log(`  ${r.id.padEnd(30)} ${r.density}  ${(r.role ?? '-').padEnd(9)} 距離 ${r.gap ?? '-'}  (loose ${r.loose ?? '-'} / tight ${r.tight ?? '-'})  ${r.first ?? r.err ?? ''}${r.centered ? `  〔置中:距離 = 容器上內距;內距框內上方空白 ${r.above} / 下方空白 ${r.below};標頭底 → 內容頂 ${r.visualGap}〕` : ''}${r.scrolledBefore > 0 ? `  〔量之前把${r.scroller ?? '捲動區'}從捲動位置 ${r.scrolledBefore} 捲回頂端,讀回 ${r.scrolled}〕` : ''}`)
+    for (const r of rows) console.log(`  ${r.id.padEnd(30)} ${r.density}  ${(r.role ?? '-').padEnd(9)} 距離 ${r.gap ?? '-'}  (loose ${r.loose ?? '-'} / tight ${r.tight ?? '-'})  ${r.first ?? r.err ?? ''}${r.centered ? `  〔置中:標頭底 → 內容頂 ${r.gap} / 內容底 → ${r.afterWhat ?? '下一塊'}頂 ${r.after}(相等 = 在可用範圍正中)〕` : ''}${r.topException ? `  〔例外:期望 ${r.topException.want}〕` : ''}${r.scrolledBefore > 0 ? `  〔量之前把${r.scroller ?? '捲動區'}從捲動位置 ${r.scrolledBefore} 捲回頂端,讀回 ${r.scrolled}〕` : ''}`)
     const failures = judge(rows)
     if (failures.length) { console.error('❌ header-first-gap FAIL:\n  ' + failures.join('\n  ')); process.exit(1) }
-    console.log(`✅ header-first-gap PASS(${CASES.length} 處 × md / lg:標頭 → 第一個東西依角色 = bounded loose / unbounded 0 / element tight;不在 CASES 的 ${NOT_COVERED.length} 類理由見 NOT_COVERED)`)
+    console.log(`✅ header-first-gap PASS(${CASES.length} 處 × md / lg:標頭 → 第一個東西依角色 = bounded loose / unbounded 0 / element tight;例外 ${CASES.filter((c) => c.topException).length} 格照登記的 token、置中 ${CASES.filter((c) => c.centered).length} 格在可用範圍正中;不在 CASES 的 ${NOT_COVERED.length} 類理由見 NOT_COVERED)`)
   } catch (error) {
     if (error instanceof StoryRenderInstrumentError) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:${error.message}`); process.exit(1) }
     throw error

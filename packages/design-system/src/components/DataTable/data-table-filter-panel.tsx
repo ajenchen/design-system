@@ -390,8 +390,8 @@ function DataTableFilterPanelInner<TData>({
 
       {/* Body — flat / nested 條件;空條件 → 直接顯 + 加篩選 CTA(對齊 Notion / Airtable / Linear inline 派,
           無條件時不需要 Empty 元件大區塊,單顆 CTA 引導即可。SurfaceFooter 整層拔除,
-          + Add filter / + 加篩選器 inline 緊貼最後一條 row,讓 user 感受到「條件」與「加入」屬同一語境)*/}
-      <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
+          + Add filter / + 加篩選器 inline 緊貼最後一條 row,讓 user 感受到「條件」與「加入」屬同一語境)。上內距照「標題列底下第一個東西是什麼」給(layoutSpace.spec.md 規則 2 表;只由 body 這一層給,群組框不加外距):第一個是灰底群組框(有底色、外框完整 = bounded region)→ loose,上與左右對稱(user 2026-11-14 在 A5 成品頁的留言 ① 的原則,套到這裡是【AI 推導 2026-11-14】);第一個是條件列(平鋪)或群組清光只剩按鈕列 → SurfaceBody 預設的 tight。下內距跟上內距同值:最後一個是「加入篩選器」那一排按鈕(element),面板不擋頁面、高度貼著內容 → layoutSpace.spec.md 規則 4 表第 4 列「與頂部同值(上下對稱)」,所以群組在前時上下都是 loose(py)。data-table.spec.md L4「巢狀群組的間距」;【更正 2026-11-14】之前兩種都是 tight*/}
+      <SurfaceBody className={cn('flex flex-col gap-[var(--layout-space-tight)]', nestedTree && nestedTree.children.length > 0 && 'py-[var(--layout-space-loose)]')}>
         {flatTree && flatTree.children.map((cond, idx) => (
           <FilterRow
             key={cond.id}

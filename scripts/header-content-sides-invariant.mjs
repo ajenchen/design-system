@@ -10,12 +10,16 @@
  *           頂距本身對不對是規則 2 的事,由原閘判)。容器被 max-height 卡住而在捲動、高度寫死、被 min-height 撐住(規則 4 表沒逐字寫的三種)
  *           → 依規則 4「沒寫到的三種容器」(Note 的理由推導,【AI 推導】):不擋頁面、高度不是視窗 / 版面欄給的 = 與頂部同值。
  *           2026-11-11 前這三種一律紅「待規格」。
+ *           原閘登記 centered 的格(內容在撐滿的容器裡垂直置中,目前只有 AgentPanel 新對話空白頁):不套規則 4 的底 —— 垂直置中的狀態不是從上往下排到底的內容,
+ *           不需要表示「內容結束了」的 bottom(user 2026-11-14 在 A5 成品頁的留言 ②);上下在不在可用範圍正中由原閘判。左右照舊 = loose。
+ *           【更正 2026-11-14】2026-11-13(A5)這一格期望底 = bottom 48(包層補了 pb-bottom),把空狀態往上推了 18 / 16px;留言 ② 問垂直置中的狀態為何還要 bottom(問句),AI 評估同意,改成不比底。
  *         盤點 = 原閘的 CASES(同一份,import;不在盤點裡的理由同原閘 NOT_COVERED),本檔只補每處的 SIDES 登記
  *         (最後一個東西的角色、容器種類、左右 pattern)。
  *   為何新增姊妹閘、不擴原閘(二擇一):原閘的名字與契約(規則 2 頂部)已被 ci.yml 註解、layoutSpace.spec.md、Sidebar / AppShell story 註解指名;
  *         左右與底的判準跟頂不同(規則 1 / 6 看誰給內距、規則 4 看最後一個東西 + 容器會不會擋頁 / 撐滿),拆開後紅燈直接指名是哪一條規則。
  *         盤點(CASES)、導航(openCase)、頁面端量具(pageKit)、角色判法(classifyFirst)全部從原閘 import —— 判法只有一個住所(M17),
- *         新增一處只改原閘 CASES + 本檔 SIDES(selftest 驗兩邊一一對應)。
+ *         新增一處只改原閘 CASES + 本檔 SIDES(selftest 驗兩邊一一對應)。probeSides / classifyBox / bottomWant 另有一個使用者:
+ *         data-table-filter-group-spacing-invariant.mjs 的 B(2026-11-14,巢狀篩選面板的收尾 = 與頂部同值)—— 改這三支時那支的 --selftest 也要跑。
  *   紅: 任一處任一邊與期望值差 > 0.5px → 指名 case / 密度 / 邊 / 數字 / 規則並 exit 1;
  *       DOM 判出的最後一個東西角色、容器種類、左右 pattern ≠ 登記 → 紅(範例換了內容或結構,照規則重推並更新 SIDES)。
  *   綠: 每一處左 / 右 / 底都等於規則值,md / lg 兩種密度。等元素本身出現、動畫跑完才量(openCase,不睡固定時間);重複跑恆等。
@@ -41,7 +45,8 @@
  *            捲動位置,不是 0 → 儀器失效。本檔的「頂」(標頭底 → 第一個內容頂,規則 4「與頂部同值」拿它當期望值)跟原閘是同一個量、同一個前提:
  *            修前把視窗高換成 600,對話區「第一則是我方氣泡」那格的頂量到 −53 / −73(對話進頁自動捲到底)—— 那一格容器是 fill、期望值用 48 不用頂,所以沒有紅;
  *            換成不擋頁面、被上限卡住在捲的容器(capped),同一個數字就會變成「底應 −53」去指控產品。左右與底是結構內距(加總 padding / border / margin),不受捲動位置影響。
- *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;沒捲在最上面 / 沒讀到捲動位置判儀器失效;容器種類(classifyBox)各形狀一列 + 對照組;(b)SIDES 與 CASES 一一對應。
+ *   --selftest:(a)判定表 —— 左 / 右 / 底各有該紅、該綠、儀器失效;沒捲在最上面 / 沒讀到捲動位置判儀器失效;容器種類(classifyBox)各形狀一列 + 對照組;
+ *            置中的格不比底(底 0 / 48 都不在本閘紅、左右照舊紅;對照組拿掉 centered = A5 的判法,修後的底 0 必紅「應 48」);(b)SIDES 與 CASES 一一對應。
  *            真的造出溢出、在瀏覽器裡驗「不先捲 → 儀器失效 / 先捲到頂 → 綠」的對照住原閘的 --selftest (c)(同一組 pageKit 函式)。
  *   --static=<dir> 指定建置(對照組用);指定時不跑新鮮度守衛。
  */
@@ -90,7 +95,8 @@ export const SIDES = {
   'fileitem-upload-manager': { last: 'element', box: 'hug', pattern: 'C' },
   'popover-list-region': { last: 'unbounded', box: 'hug', pattern: 'C' },
   // AgentPanel 對話區(2026-11-13):登記值 = 修後建置實跑量到的(不是照計畫預期填的)—— 面板高度撐滿、最後一個是代理訊息的工具列鈕 / 代理文字 / 空狀態說明字,
-  // 左右由對話區(或空白頁的包層)給。空白頁的內容在包層裡置中:左右 / 底量的是包層的結構內距,置中多出來的空白不算(本檔量法),頂見原閘 centered。
+  // 左右由對話區(或空白頁的包層)給。空白頁的內容在包層裡垂直置中:左右量的是包層的結構內距(= loose);底不套規則 4(原閘 centered,
+  // user 2026-11-14 在 A5 成品頁的留言 ②),上下由原閘驗「在可用範圍正中」。
   'agentpanel-chat-user-first': { last: 'element', box: 'fill', pattern: 'AB' },
   'agentpanel-chat-agent-first': { last: 'element', box: 'fill', pattern: 'AB' },
   'agentpanel-new-conversation': { last: 'element', box: 'fill', pattern: 'AB' },
@@ -102,8 +108,10 @@ export const SIDES = {
  * box = 'capped'(被 max-height 卡住而在捲動)/ 'pinned'(高度寫死或被 min-height 撐住)—— 規則 4 表沒逐字寫,照 Note 寫下的理由判
  * (layoutSpace.spec.md 規則 4「沒寫到的三種容器」【AI 推導】):48 只給擋住頁面(modal,classifyBox 先判成 fill)或高度由視窗 / 版面欄決定的容器;
  * 這兩種的高度是元件上的固定值或上下限、不擋頁面 → 與 Popover 同一邊 = 第 4 列,與頂部同值。2026-11-11 前 want = NaN,由 judge 紅「待規格」。
+ * centered(原閘 CASES 登記的置中格)→ want = null:不套規則 4 的底(user 2026-11-14 在 A5 成品頁的留言 ②;上下在不在可用範圍正中由原閘判),judge 不比底。
  */
-export function bottomWant({ last, box, top }, t) {
+export function bottomWant({ last, box, top, centered }, t) {
+  if (centered) return { want: null, rule: '置中的格不套規則 4 的底(垂直置中的狀態不需要表示「內容結束了」的 bottom;上下由 header-first-gap 驗在可用範圍正中)' }
   if (last === 'bounded') return { want: t.loose, rule: '規則 4:bounded region → 容器底 = loose' }
   if (last === 'unbounded') return { want: 0, rule: '規則 4:unbounded region → 容器底 = 0(清單自帶 py)' }
   if (box === 'fill') return { want: t.bottom, rule: '規則 4:element → 容器底,容器擋住頁面或撐滿 = bottom' }
@@ -159,6 +167,7 @@ export function judge(rows) {
     if (Math.abs(r.right - t.loose) > TOL) failures.push(`${where} 右 = ${r.right}px,應 ${t.loose}(規則 1 / 6:內容左右 = loose;最右的內容 = ${r.rightDesc ?? '?'})`)
     if (r.pattern === 'C' && (Math.abs(r.rowLeft ?? NaN) > TOL || Math.abs(r.rowRight ?? NaN) > TOL)) failures.push(`${where} 每列自帶內距(pattern C),列本身離容器 左 ${r.rowLeft} / 右 ${r.rowRight}px,應 0(規則 1 C:列貼齊容器,hover 底色才貼邊)`)
     const { want, rule } = bottomWant(r, t)
+    if (want === null) continue // 置中的格:不比底(bottomWant 的 centered;上下由原閘驗)
     if (!Number.isFinite(want)) failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 底的期望值算不出來(${rule})`)
     else if (Math.abs(r.bottom - want) > TOL) failures.push(`${where} 底 = ${r.bottom}px,應 ${want}(${rule};最後一個東西 = ${r.lastDesc ?? '?'}${r.pinned ? `;${r.pinned}` : ''})`)
   }
@@ -177,12 +186,13 @@ function selftest() {
   const firstOf = (id) => CASES.find((c) => c.id === id)?.role ?? 'element'
   // 一格量測:預設 = 照登記、照該格自己讀到的 token 算出的期望值;over 蓋掉要測的欄位
   // 頂距預設 = 規則 2 對盤點登記的第一個東西的值(原閘綠的狀態)
+  // centered 照 measureCase 的做法從原閘 CASES 帶進來;置中的格底不比(want = null),預設給修後實量的 0
   const row = (id, density, over = {}) => {
     const s = SIDES[id] ?? { last: 'element', box: 'hug', pattern: 'AB' }
-    const r = { id, density, declared: s, last: s.last, box: s.box, pattern: s.pattern, ...T[density], rowLeft: 0, rowRight: 0, lastDesc: 'x', scrolled: 0, ...over }
+    const r = { id, density, declared: s, last: s.last, box: s.box, pattern: s.pattern, ...T[density], rowLeft: 0, rowRight: 0, lastDesc: 'x', scrolled: 0, centered: CASES.find((c) => c.id === id)?.centered, ...over }
     const t = { loose: r.loose, tight: r.tight, bottom: r.bottomToken }
     const top = 'top' in over ? over.top : expectedGap(firstOf(id), t)
-    return { left: r.loose, right: r.loose, ...r, top, bottom: 'bottom' in over ? over.bottom : bottomWant({ ...r, top }, t).want }
+    return { left: r.loose, right: r.loose, ...r, top, bottom: 'bottom' in over ? over.bottom : (bottomWant({ ...r, top }, t).want ?? 0) }
   }
   // (b) 登記 parity
   const caseIds = CASES.map((c) => c.id)
@@ -209,6 +219,16 @@ function selftest() {
   expect(judge([row('surface-body', 'md', { bottom: 48 })]).some((s) => s.includes('與頂部同值')), '貼內容的浮層收尾給 48 應紅(規則 4 第 4 列)')
   expect(judge([row('popover-list-region', 'md', { bottom: 8 })]).some((s) => s.includes('unbounded region → 容器底 = 0')), '清單收尾多了內距應紅(規則 4 第 3 列)')
   expect(judge([row('x', 'md', { bottom: NaN })]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '底沒量到應判儀器失效')
+  // 置中的格(原閘 centered;user 2026-11-14 在 A5 成品頁的留言 ②):底不套規則 4 —— 修後實量 0 綠;A5 建置的 48 也不在本閘紅(上下由原閘驗在可用範圍正中);
+  // 左右照舊(改 tight 必紅);底沒量到照樣儀器失效。對照組:拿掉 centered(= A5 的判法:撐滿 → 第 1 列 48)→ 修後的底 0 必紅「應 48」,證明這一支真的在起作用
+  const CENTERED = CASES.filter((c) => c.centered).map((c) => c.id)
+  expect(CENTERED.length === 1 && CENTERED[0] === 'agentpanel-new-conversation', `置中的格應只有新對話空白頁一格(與原閘同一份登記),實得 ${CENTERED.join(', ')}`)
+  expect(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 0 }))).length === 0, `置中的格底 0 應綠,實得 ${JSON.stringify(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 0 }))))}`)
+  expect(judge(DENSITIES.map((d) => row(CENTERED[0], d, { bottom: 48 }))).length === 0, '置中的格底 48 不在本閘紅(上下由原閘驗在可用範圍正中)')
+  expect(judge([row(CENTERED[0], 'md', { left: 12 })]).some((s) => s.includes('左 = 12px')), '置中的格左右仍照規則 1 / 6:左改 tight 應紅')
+  expect(judge([row(CENTERED[0], 'md', { bottom: NaN })]).some((s) => s.includes(INSTRUMENT_FAIL_MARKER)), '置中的格底沒量到仍判儀器失效')
+  const asA5 = judge([row(CENTERED[0], 'md', { centered: false, bottom: 0 })])
+  expect(asA5.some((s) => s.includes('底 = 0px,應 48')), `拿掉 centered(A5 的判法)時修後的底 0 應紅「應 48」,實得 ${JSON.stringify(asA5)}`)
   // 登記不符:最後一個東西換了角色 / 容器種類換了 → 紅(即使距離照新角色算是對的)
   expect(judge([row('sidebar-mixed-ios', 'md', { last: 'element', bottom: 48 })]).some((s) => s.includes('登記的是 bounded')), '最後一個東西角色與登記不符應紅')
   expect(judge([row('surface-body', 'md', { box: 'fill', bottom: 48 })]).some((s) => s.includes('容器種類 = fill')), '容器種類與登記不符應紅')
@@ -448,8 +468,8 @@ export const probeSides = ({ header, headerText = null, nth = 0, followStep, scr
     scrolled: round(K.scrollOffset(first.el, body).top), scrolledBefore: scrolledBefore === null ? null : round(scrolledBefore),
     left: round(L.v), right: round(R.v), bottom: round(e - bottomOf(last)), top: round(top),
     leftDesc: desc(L.t.el), rightDesc: desc(R.t.el), lastDesc: desc(last.el), owner: owner ? desc(owner) : null,
-    // 角色判法要的「外框撐不撐滿容器內容寬」(原閘 pageKit.fillsWidth;有框但沒撐滿 → element,2026-11-13)
-    lastF: { ...last.f, fillsWidth: K.fillsWidth(last.el, body).fills }, firstF: { ...first.f, fillsWidth: K.fillsWidth(first.el, body).fills },
+    // 角色由原閘 classifyFirst 判(有框就是 bounded,不看寬 ——【更正 2026-11-14】2026-11-13 這裡多帶的「撐不撐滿寬」隨原閘拿掉)
+    lastF: last.f, firstF: first.f,
     pattern, rowLeft: round(rowLeft), rowRight: round(rowRight),
     modal, scrolls, capped, free: round(free), pinned, grow: round(grow),
     loose: v('--layout-space-loose'), tight: v('--layout-space-tight'), bottomToken: v('--layout-space-bottom'),
@@ -465,7 +485,7 @@ export async function measureCase(page, origin, c, density, { scroll = 'top' } =
   const r = await page.evaluate(probeSides, { header: c.header, headerText: c.headerText ?? null, nth: c.nth ?? 0, followStep: FOLLOW_STEP, scroll })
   if (r.err) return r
   const { lastF, firstF, ...rest } = r
-  return { ...rest, box: classifyBox(rest), last: classifyFirst(lastF), first: classifyFirst(firstF) }
+  return { ...rest, box: classifyBox(rest), last: classifyFirst(lastF), first: classifyFirst(firstF), centered: c.centered }
 }
 
 async function measure() {
@@ -487,7 +507,7 @@ if (isMain) {
   try {
     const rows = await measure()
     if (rows === null) process.exit(0) // launchBrowserOrSkip 已印 SKIPPED-ENV / INSTRUMENT-FAIL 判定
-    for (const r of rows) console.log(`  ${r.id.padEnd(28)} ${r.density}  左 ${String(r.left ?? '-').padEnd(4)} 右 ${String(r.right ?? '-').padEnd(4)} 底 ${String(r.bottom ?? '-').padEnd(4)} 最後 ${(r.last ?? '-').padEnd(9)} ${(r.box ?? '-').padEnd(4)} 長 ${String(r.grow ?? '-').padEnd(3)} ${(r.pattern ?? '-').padEnd(2)} (loose ${r.loose ?? '-'} / tight ${r.tight ?? '-'} / bottom ${r.bottomToken ?? '-'})  ${r.lastDesc ?? r.err ?? ''}`)
+    for (const r of rows) console.log(`  ${r.id.padEnd(28)} ${r.density}  左 ${String(r.left ?? '-').padEnd(4)} 右 ${String(r.right ?? '-').padEnd(4)} 底 ${String(r.bottom ?? '-').padEnd(4)} 最後 ${(r.last ?? '-').padEnd(9)} ${(r.box ?? '-').padEnd(4)} 長 ${String(r.grow ?? '-').padEnd(3)} ${(r.pattern ?? '-').padEnd(2)} (loose ${r.loose ?? '-'} / tight ${r.tight ?? '-'} / bottom ${r.bottomToken ?? '-'})  ${r.lastDesc ?? r.err ?? ''}${r.centered ? '  〔置中的格:底不比(上下由 header-first-gap 驗在可用範圍正中)〕' : ''}`)
     const failures = judge(rows)
     if (failures.length) { console.error('❌ header-content-sides FAIL:\n  ' + failures.join('\n  ')); process.exit(1) }
     console.log(`✅ header-content-sides PASS(${CASES.length} 處 × md / lg:左右 = loose(規則 1 / 6)、底依最後一個東西與容器(規則 4);頂見 header-first-gap;不在盤點的 ${NOT_COVERED.length} 類理由見原閘 NOT_COVERED)`)
