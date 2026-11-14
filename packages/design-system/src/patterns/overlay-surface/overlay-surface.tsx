@@ -256,7 +256,7 @@ SurfaceEyebrow.displayName = 'SurfaceEyebrow'
  */
 export interface SurfaceHeaderProps {
   /**
-   * 右側操作區(標題列操作:上一筆 / 下一筆、複製連結、重置、更多 ⋮ …)。只傳按鈕:排序與 variant 照 `action-bar.spec.md` 二、三節
+   * 右側操作區(標題列操作:上一筆 / 下一筆、複製連結、恢復預設、更多 ⋮ …)。只傳按鈕:排序與 variant 照 `action-bar.spec.md` 二、三節
    * (預設 `variant="text"`,無外框鈕不撐高標題列;有外框的允許,標題列自然長高)。
    * 與 `dismiss` 都有時,SurfaceHeader 自動在兩者之間放分隔線(`action-bar.spec.md`「五、分隔線規則」第 3 條,兩側各 12 =「分隔線幾何」);
    * **禁**在 children 自刻右側操作區或分隔線(閘 `scripts/overlay-header-actions-invariant.mjs`)。

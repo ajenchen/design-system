@@ -1186,9 +1186,10 @@ jobs:
           # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
           # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 兩格都跑(不寫條件式)。
           npm run test:data-table-click-outside
-          # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」):
-          # 恢復預設看資料(值 ≠ defaultSorting / defaultValue)、清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕不掉 body、polite 播報。
-          # 不需要 storybook;判定本機約 8 秒、--selftest(基準 + 16 個根因突變,含兩個修前寫法)約 2 分 → 兩格都跑(同上一支,不寫條件式)。
+          # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」),
+          # 欄位顯示面板的「恢復預設」2026-11-15 併入同一條:恢復預設看資料(值 ≠ defaultSorting / defaultValue / defaultVisibility)、清除全部在加條件那一排靠最右(量 rect)、
+          # clearable 開關、按下後焦點給加條件鈕(欄位顯示面板沒有 → 標題列 ×)不掉 body、polite 播報;另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15)。不需要 storybook;
+          # --selftest = 基準 + 根因突變(含修前寫法;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字)。本機 2026-11-15 主跑 + --selftest 合計約 4.6 分 → 兩格都跑(同上一支,不寫條件式)。
           npm run test:data-table-panel-reset-clear
         env:
           SHARD: ${{ matrix.shard }}
@@ -1456,7 +1457,10 @@ jobs:
           # 區塊 ↔ 區塊(2026-11-06 user #18):一條分隔線的位置、上下各 loose —— 不畫線 = loose × 2(FileViewer 資訊面板 說明 → 檔案資訊),
           # 畫 Separator = 線兩側各 loose;表單欄位 → 表單按鈕列 8 處;標題區 → 內容(一塊 tight / 兩塊以上 loose)四種標題區 × 兩種判定、「幾塊怎麼數」每條路一列。md / lg 量像素。
           # selftest:判定表(修前實測必紅、每一列標題區餵相反判定的距離必紅)+ 在頁面上把四種標題區的標記翻面必紅、數字正好是另一個 token(這一段要建置)。
-          # 2026-11-14(A7 ⑤)本機:主跑 8 → 16 秒、selftest 不到 1 → 2 秒;標題區的量法與全站盤點(verify-browser-doc-headings)共用 scripts/lib/doc-heading-zones.mjs。
+          # 後來才顯示(heading-reveal,2026-11-15):四列真頁藏起來 → 顯示要回到 loose、不得出現 ResizeObserver loop;另加五列夾具(直接打包 DS 原始碼、不經 storybook):
+          # 巢狀 2(分得出產品「下一格才寫」還是「觀察者回呼裡直接寫」)、排版容器裡晚顯示 2(ExampleSection / H3)、兩段式 1(重判後觀察範圍要跟著數法換路)。
+          # 夾具上的產品錯判 = 產品紅(exit 1),夾具沒排好 / 讀不到標記 = 儀器失效(exit 2)。主跑開 2 次瀏覽器;selftest 開 9 次(破法清單以腳本為準)。
+          # 本機:2026-11-14(A7 ⑤)主跑 8 → 16 秒;2026-11-15 npm run test:section-gap 合計 138 秒(主跑 22 秒,其餘多是幾個突變各等一次 10 秒的判定標記上限)。標題區的量法與全站盤點(verify-browser-doc-headings)共用 scripts/lib/doc-heading-zones.mjs。
           npm run test:section-gap
           # 標頭 → 第一個東西(layoutSpace 規則 2,2026-11-10 user 問「四周的距離是正確的？」):依第一個東西的角色 bounded = loose / unbounded = 0 / element = tight,
           # 全 DS 盤點出的每一處 md / lg 量像素、角色從 DOM 判。修前 c2fc683d 建置 Sidebar 混合內容資料夾 / 檔案兩張表格外層是 tight(紅);selftest 判定表 + 角色判法逐列。

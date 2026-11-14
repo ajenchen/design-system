@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-11T16:47:43.215Z",
-    "stories": 1081,
+    "generatedAt": "2026-11-14T23:25:36.141Z",
+    "stories": 1082,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -300,6 +300,7 @@
       "design-system-components-datatable-展示--cell-errors-fixed-row-override",
       "design-system-components-datatable-展示--column-reorder",
       "design-system-components-datatable-展示--column-resize",
+      "design-system-components-datatable-展示--column-visibility-panel-states",
       "design-system-components-datatable-展示--container-height",
       "design-system-components-datatable-展示--empty-state",
       "design-system-components-datatable-展示--filter-panel-empty",
@@ -1086,8 +1087,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "962ff1af5f24ceb3e1d905c32dff907947e3b79723bd2118109ebc535c90c04d",
-    "fingerprints": 730
+    "storyIdsSha256": "d84750d9ada3ef0942745d336739dca41e4c61390328e32a19d534b722bf171a",
+    "fingerprints": 731
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1295,6 +1296,7 @@
     "design-system-components-datatable-展示--cell-errors|color-contrast": 1,
     "design-system-components-datatable-展示--column-reorder|color-contrast": 3,
     "design-system-components-datatable-展示--column-resize|color-contrast": 2,
+    "design-system-components-datatable-展示--column-visibility-panel-states|color-contrast": 3,
     "design-system-components-datatable-展示--container-height|color-contrast": 4,
     "design-system-components-datatable-展示--empty-state|color-contrast": 1,
     "design-system-components-datatable-展示--filter-panel-labels-and-limit|color-contrast": 2,
@@ -1605,11 +1607,11 @@
     "design-system-components-sidebar-設計原則--group-header-rules|color-contrast": 12,
     "design-system-components-sidebar-設計原則--icon-mode-rules|color-contrast": 7,
     "design-system-components-sidebar-設計原則--settings-scenario|color-contrast": 8,
-    "design-system-components-sidebar-設計規格--chrome-tokens|color-contrast": 10,
+    "design-system-components-sidebar-設計規格--chrome-tokens|color-contrast": 12,
     "design-system-components-sidebar-設計規格--color-matrix|color-contrast": 7,
     "design-system-components-sidebar-設計規格--overview|color-contrast": 8,
     "design-system-components-sidebar-設計規格--size-matrix|color-contrast": 16,
-    "design-system-components-sidebar-設計規格--state-behavior|color-contrast": 17,
+    "design-system-components-sidebar-設計規格--state-behavior|color-contrast": 18,
     "design-system-components-sidebar-設計規格--variant-matrix|color-contrast": 9,
     "design-system-components-skeleton-設計原則--duration-rule|color-contrast": 5,
     "design-system-components-skeleton-設計原則--shape-match-rule|color-contrast": 5,

@@ -9,7 +9,8 @@
 //   標題區 = 說明頁(設計原則頁、展示頁、設計規格頁)內容區裡的小標題 + 它的說明。三種共用元件畫它:
 //   · ExampleSection(`[data-example-section]`;TutorialRule 是它加 `data-tutorial-rule`)—— stories-helpers/examples/tutorial-page.tsx
 //   · 設計規格頁的 H3(`[data-spec-heading]`)/ Desc(`[data-spec-desc]`)—— stories-helpers/anatomy/anatomy-utils.tsx
-//   產品在標題區最後一個元素上標 `data-heading-content="one|many"`(tutorial-page.tsx `useHeadingContent`,每次 render 後的 layout effect 重判),
+//   產品在標題區最後一個元素上標 `data-heading-content="one|many"`(tutorial-page.tsx `useHeadingContent`,每次 render 後的 layout effect 重判;
+//   2026-11-15 起內容「看不到 ↔ 看得到」時也重判 —— 本檔 revealHeadingZones 量這一條),
 //   間距 class 依它切換:one(底下只有一塊)= tight、many(兩塊以上)= loose;段落模式(底下是一段文字 / 清單)不標、一律 tight。
 //   「幾塊怎麼數」只寫在產品(tutorial-page.tsx `headingContentOf`,【AI 推導】的數法)—— **本檔不抄數法**,只讀產品標的結果、量像素。
 //
@@ -137,6 +138,93 @@ export async function rejudgeHeadingZones(page, { label, capMs = DOC_HEADING_RER
   const errorPage = await page.evaluate(() => (document.body?.classList.contains('sb-show-errordisplay') ? (document.getElementById('error-message')?.textContent ?? '').trim().slice(0, 200) || '(無訊息)' : null))
   if (errorPage !== null) throw instrument(page, label, `重畫之後 Storybook 顯示錯誤頁:${errorPage}`)
   return page.evaluate(listHeadingZonesInPage, { selector: HEADING_ZONE_SELECTOR })
+}
+
+/** 頁面上「ResizeObserver loop」錯誤的收集處(installResizeLoopRecorder 裝、readResizeLoopErrors 讀)。 */
+const RESIZE_LOOP_KEY = '__docHeadingResizeLoopErrors'
+
+/**
+ * **開頁之前**裝(之後每一份文件第一支腳本之前執行):用 window 的 error 事件收集訊息含「ResizeObserver loop」的那幾則
+ * (瀏覽器在觀察者回呼裡改了版面、這一格送不出通知時發的)。2026-11-15 A11:產品的標題判定改成也看「看不到 ↔ 看得到」之後,
+ * 「後來才顯示」那幾列要證明它沒有引發這個錯誤。
+ * @param {object} page Playwright 的 Page
+ */
+export async function installResizeLoopRecorder(page) {
+  await page.addInitScript(recordResizeLoop, RESIZE_LOOP_KEY)
+}
+
+/**
+ * 同一個收集器,**現在**裝在這一份文件上(不是開頁前)。給「不經導覽、用 setContent 換內容」的頁面用(lib/ds-source-harness.mjs mountHarness):
+ * 2026-11-15 fix-1 實測(section-gap 巢狀夾具、產品改成回呼裡直接寫):只靠開頁前裝的那一份,掛上之後陣列還在、loop 卻一則都收不到(0 則);
+ * 掛上之後再用這一支裝一次 → 收到 1 則。= 陣列在、監聽沒了,讀起來永遠 0 則(M37:沒觀察到 ≠ 沒發生)。
+ * 為什麼監聽會沒了【推測,未查 Playwright 原始碼】:setContent 用 document.open 換內容,HTML 規格的 document open steps 會清掉 window 上的事件監聽。
+ * @param {object} page Playwright 的 Page(harness 已掛好)
+ */
+export async function installResizeLoopRecorderInPage(page) {
+  await page.evaluate(recordResizeLoop, RESIZE_LOOP_KEY)
+}
+
+/** 頁面函式(序列化傳入):收集訊息含「ResizeObserver loop」的 error 事件;陣列已在就沿用(再掛一次監聽)。 */
+function recordResizeLoop(key) {
+  let list = window[key]
+  if (!Array.isArray(list)) {
+    list = []
+    Object.defineProperty(window, key, { value: list, enumerable: false })
+  }
+  window.addEventListener('error', (e) => { const m = String(e?.message ?? ''); if (/ResizeObserver loop/i.test(m)) list.push(m) })
+}
+
+/** 讀這一份文件到目前為止收到的「ResizeObserver loop」錯誤;沒裝收集器 = `null`(呼叫端判儀器失效,不讀成 0 則)。 */
+export const readResizeLoopErrors = (page) => page.evaluate((key) => (Array.isArray(window[key]) ? [...window[key]] : null), RESIZE_LOOP_KEY)
+
+/**
+ * 收集器的對照組:在頁面上造一個「回呼裡把自己變高 1px」的觀察者(必然引發 ResizeObserver loop),等收集器收到第一則再拆掉。
+ * 回傳收到的則數;capMs 內一則都沒收到 = 0(呼叫端判:收集器是瞎的,「沒有引發錯誤」那幾格是零證據)。
+ * @param {object} page
+ * @param {{ capMs?: number }} [options]
+ */
+export async function provokeResizeLoop(page, { capMs = DOC_HEADING_RERENDER_CAP_MS } = {}) {
+  await page.evaluate(() => {
+    const box = document.createElement('div')
+    box.style.height = '1px'
+    document.body.append(box)
+    const ro = new ResizeObserver(() => { box.style.height = `${box.offsetHeight + 1}px` })
+    ro.observe(box)
+    window.__docHeadingProvokeStop = () => { ro.disconnect(); box.remove() }
+  })
+  await page.waitForFunction((key) => (window[key]?.length ?? 0) > 0, RESIZE_LOOP_KEY, { timeout: capMs, polling: 'raf' }).catch(() => {})
+  await page.evaluate(() => window.__docHeadingProvokeStop?.())
+  return (await readResizeLoopErrors(page))?.length ?? 0
+}
+
+/**
+ * 「後來才顯示出來的內容」(2026-11-15 A11;產品 tutorial-page.tsx `useHeadingContent` 第 2 點):
+ * 1. 藏:`#storybook-root` 設 display:none → 請產品重判一次(rejudgeHeadingZones)—— 這時內容量起來全是 0,模擬「內容掛上去的時候
+ *    在看不到的容器裡」;回傳這一刻的標題區(hidden)。
+ * 2. 顯示:拿掉 display:none → 等 `#storybook-root` 本身量得到高度 → 等版面靜止 → 列出標題區(shown)。**這一步不再請產品重判** ——
+ *    顯示之後的判定只能來自產品自己(修前產品只在 render 後判,判定會停在藏著時那一個)。
+ * 等不到任一步 = 丟 StoryRenderInstrumentError(儀器失效,不是產品裁決)。
+ * @param {object} page Playwright 的 Page(story 已用 openStory 開好)
+ * @param {{ label: string, capMs?: number, settleFrames?: number }} options
+ * @returns {Promise<{ hidden: object[], shown: object[] }>}
+ */
+export async function revealHeadingZones(page, { label, capMs = DOC_HEADING_RERENDER_CAP_MS, settleFrames = DOC_HEADING_SETTLE_FRAMES } = {}) {
+  const hid = await page.evaluate(() => {
+    const root = document.getElementById('storybook-root')
+    if (!root) return false
+    root.style.setProperty('display', 'none')
+    return true
+  })
+  if (!hid) throw instrument(page, label, '頁面上找不到 #storybook-root —— 藏不起來,量不到「後來才顯示」')
+  const hidden = await rejudgeHeadingZones(page, { label, capMs, settleFrames })
+  await page.evaluate(() => document.getElementById('storybook-root')?.style.removeProperty('display'))
+  const shownOk = await page.waitForFunction(() => (document.getElementById('storybook-root')?.getBoundingClientRect().height ?? 0) > 0, null, { timeout: capMs, polling: 'raf' })
+    .then(() => true, () => false)
+  if (!shownOk) throw instrument(page, label, `拿掉 display:none 之後 ${capMs / 1000} 秒內 #storybook-root 仍量不到高度`)
+  const settle = await settleAfterInteraction(page, { frames: settleFrames })
+  if (!settle.ok) throw instrument(page, label, `顯示之後版面等不到連續 ${settleFrames} 格靜止(等了 ${settle.framesWaited} 格)`)
+  const shown = await page.evaluate(listHeadingZonesInPage, { selector: HEADING_ZONE_SELECTOR })
+  return { hidden, shown }
 }
 
 /**

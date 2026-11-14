@@ -209,6 +209,7 @@ export type {
 } from './components/Combobox/index'
 export {
   DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,
+  DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS,
   DataTable,
   DataTableColumnVisibilityPanel,
   DataTableFilterPanel,
@@ -229,6 +230,7 @@ export type {
   DataTablePaginationOptions,
   DataTableProps,
   DataTableSelection,
+  DataTableSortManagerLabels,
   DataTableSortManagerProps,
   FilterCondition,
   FilterGroup,

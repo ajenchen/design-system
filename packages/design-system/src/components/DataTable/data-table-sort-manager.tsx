@@ -16,6 +16,15 @@ import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/p
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { getColumnId, getColumnLabel } from './lib/column-meta'
 import { usePanelBulkAction } from './lib/panel-bulk-action'
+import {
+  DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS,
+  resolveDataTableSortManagerLabels,
+  type DataTableSortManagerLabels,
+} from './lib/sort-cycle'
+
+// 面板上的字:預設值與型別住 lib/sort-cycle.ts(排序字串只有那一份),從這裡出口(同篩選面板出口 DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS)
+export { DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS }
+export type { DataTableSortManagerLabels }
 
 /**
  * DataTableSortManager — Notion-style 多欄排序管理 panel
@@ -30,6 +39,10 @@ import { usePanelBulkAction } from './lib/panel-bulk-action'
  * 跟 cell click sort 共享 state — single source-of-truth across cell + panel。
  *
  * Reorder:DnD(useSortable + GripVertical handle,見下方 SortRow)——原 MVP ↑/↓ button 已退役。
+ *
+ * 字:面板自己的字(標題、按鈕、讀屏名稱、方向選項、播報句)都經 `labels`(2026-11-15 前寫死),預設值
+ * `DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS` = 寫死時的字。不經 `labels` 的兩種:欄名(consumer 的 ColumnDef)、
+ * 拖曳把手的讀屏說明與拖曳中播報(全 DS 共用 `lib/drag-announcements.ts`)。規格:data-table.spec.md「Multi-sort header」列的字串那一句。
  */
 
 interface SortColumn {
@@ -57,6 +70,11 @@ export interface DataTableSortManagerProps<TData> extends Omit<React.HTMLAttribu
   clearable?: boolean
   /** × 按下時的通知(選填)。× 恆渲染、關閉由 PopoverClose 內建 —— 面板必須放在 `<Popover>` 裡 */
   onClose?: () => void
+  /**
+   * 面板上的字(標題、按鈕、讀屏名稱、方向選項、播報句),只給要換的那幾個,其餘用 `DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS`
+   * (同篩選面板的 `labels`;2026-11-15 前全部寫死)。欄位名稱來自 `columns` 的 header,不在這裡。
+   */
+  labels?: Partial<DataTableSortManagerLabels>
   className?: string
 }
 
@@ -76,11 +94,6 @@ function extractColumns<TData>(columns: ColumnDef<TData, any>[]): SortColumn[] {
   return out
 }
 
-const DIRECTION_OPTIONS: SelectOption[] = [
-  { value: 'asc', label: '升冪' },
-  { value: 'desc', label: '降冪' },
-]
-
 function DataTableSortManagerInner<TData>({
   columns,
   sorting,
@@ -88,10 +101,16 @@ function DataTableSortManagerInner<TData>({
   defaultSorting,
   clearable = true,
   onClose,
+  labels: labelsOverride,
   className,
   ...props
 }: DataTableSortManagerProps<TData>, ref: React.ForwardedRef<HTMLDivElement>) {
   const sortableColumns = React.useMemo(() => extractColumns(columns), [columns])
+  const labels = React.useMemo(() => resolveDataTableSortManagerLabels(labelsOverride), [labelsOverride])
+  const directionOptions: SelectOption[] = React.useMemo(
+    () => [{ value: 'asc', label: labels.ascending }, { value: 'desc', label: labels.descending }],
+    [labels],
+  )
   // 整批動作(恢復預設 / 清除全部)按下後:焦點交給「加排序」(停用時給 ×)、polite 播報結果(lib/panel-bulk-action.tsx)
   const addRef = React.useRef<HTMLButtonElement>(null)
   const dismissRef = React.useRef<HTMLButtonElement>(null)
@@ -170,10 +189,10 @@ function DataTableSortManagerInner<TData>({
           onClose 只是通知 —— 所以面板必須放在 Popover 裡(2026-11-10 前沒傳 onClose 就沒有 ×,n7 第七節 3)。 */}
       <SurfaceHeader
         className={COMPACT_HEADER_SLOT}
-        actions={showReset ? <Button variant="text" size="sm" iconOnly startIcon={RotateCcw} aria-label="恢復預設" onClick={(e) => { if (defaultSorting) bulk.run(e, defaultSorting, '已恢復預設排序') }} /> : undefined}
-        dismiss={<PopoverClose asChild><Button ref={dismissRef} data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} /></PopoverClose>}
+        actions={showReset ? <Button variant="text" size="sm" iconOnly startIcon={RotateCcw} aria-label={labels.resetToDefault} onClick={(e) => { if (defaultSorting) bulk.run(e, defaultSorting, labels.resetToDefaultDone) }} /> : undefined}
+        dismiss={<PopoverClose asChild><Button ref={dismissRef} data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={labels.close} onClick={onClose} /></PopoverClose>}
       >
-        <PopoverTitle>排序</PopoverTitle>
+        <PopoverTitle>{labels.title}</PopoverTitle>
       </SurfaceHeader>
 
       {/* Body — 條件 list + inline 加排序 CTA(對齊 filter panel canonical Q3+Q6,2026-05-04)
@@ -190,7 +209,9 @@ function DataTableSortManagerInner<TData>({
                   <SortRow
                     key={sort.id}
                     sort={sort}
+                    labels={labels}
                     optionsForRow={optionsForRow}
+                    directionOptions={directionOptions}
                     onChangeId={(v) => updateAt(index, { id: v })}
                     onChangeDir={(v) => updateAt(index, { desc: v === 'desc' })}
                     onRemove={() => removeAt(index)}
@@ -213,10 +234,10 @@ function DataTableSortManagerInner<TData>({
             onClick={addSort}
             disabled={sorting.length >= sortableColumns.length}
           >
-            加排序
+            {labels.addSort}
           </Button>
           {showClearAll ? (
-            <Button variant="tertiary" size="sm" onClick={(e) => bulk.run(e, [], '已清除全部排序')}>清除全部</Button>
+            <Button variant="tertiary" size="sm" onClick={(e) => bulk.run(e, [], labels.clearAllDone)}>{labels.clearAll}</Button>
           ) : null}
         </div>
         {bulk.liveRegion}
@@ -232,10 +253,12 @@ export const DataTableSortManager = React.forwardRef(DataTableSortManagerInner) 
 
 // SortRow:DnD-enabled row。GripVertical 為 drag listener handle(對齊 Notion / Airtable 拖曳 idiom)。
 function SortRow({
-  sort, optionsForRow, onChangeId, onChangeDir, onRemove,
+  sort, labels, optionsForRow, directionOptions, onChangeId, onChangeDir, onRemove,
 }: {
   sort: { id: string; desc: boolean }
+  labels: DataTableSortManagerLabels
   optionsForRow: SelectOption[]
+  directionOptions: SelectOption[]
   onChangeId: (v: string) => void
   onChangeDir: (v: string) => void
   onRemove: () => void
@@ -254,19 +277,19 @@ function SortRow({
       <ItemInlineActionButton
         icon={GripVertical}
         size="sm"
-        aria-label="拖曳重排"
+        aria-label={labels.dragToReorder}
         className={dragHandleCursorClass}
         {...forwardDragActivatorAttributes(attributes)}
         {...listeners}
       />
       <div className="flex-1 min-w-0">
-        <Select size="sm" aria-label="排序欄位" options={optionsForRow} value={sort.id} onChange={onChangeId} />
+        <Select size="sm" aria-label={labels.fieldAriaLabel} options={optionsForRow} value={sort.id} onChange={onChangeId} />
       </div>
       <div className="w-32 shrink-0">
-        <Select size="sm" aria-label="排序方向" options={DIRECTION_OPTIONS} value={sort.desc ? 'desc' : 'asc'} onChange={onChangeDir} />
+        <Select size="sm" aria-label={labels.directionAriaLabel} options={directionOptions} value={sort.desc ? 'desc' : 'asc'} onChange={onChangeDir} />
       </div>
       {/* Trash 用 text Button(Q4 對齊 filter panel)— form-control row 必 Field 同高 */}
-      <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={onRemove} />
+      <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label={labels.deleteCondition} onClick={onRemove} />
     </div>
   )
 }

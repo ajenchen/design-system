@@ -1,6 +1,6 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { SectionTitle, SectionDescription, SPEC_HEADING_GAP, SPEC_HEADING_GAP_PARAGRAPH, specHeadingContent, useHeadingContent } from '../examples/tutorial-page'
+import { SectionTitle, SectionDescription, SPEC_HEADING_GAP, SPEC_HEADING_GAP_PARAGRAPH, specHeadingContent, specHeadingWatched, useHeadingContent } from '../examples/tutorial-page'
 
 /**
  * Shared helper components for all `*.anatomy.stories.tsx` files.
@@ -26,7 +26,7 @@ import { SectionTitle, SectionDescription, SPEC_HEADING_GAP, SPEC_HEADING_GAP_PA
 export const H3 = ({ children, paragraph }: { children: React.ReactNode; paragraph?: boolean }) => {
   const ref = React.useRef<HTMLHeadingElement>(null)
   // 緊接著自己的說明 → 標題區的尾巴是說明,幾塊由說明判;段落一律 tight,不判
-  useHeadingContent(ref, (el) => (paragraph || el.nextElementSibling?.hasAttribute('data-spec-desc') ? null : specHeadingContent(el)))
+  useHeadingContent(ref, (el) => (paragraph || el.nextElementSibling?.hasAttribute('data-spec-desc') ? null : specHeadingContent(el)), specHeadingWatched)
   return (
     <SectionTitle
       ref={ref}
@@ -44,7 +44,7 @@ export const H3 = ({ children, paragraph }: { children: React.ReactNode; paragra
 
 export const Desc = ({ children }: { children: React.ReactNode }) => {
   const ref = React.useRef<HTMLParagraphElement>(null)
-  useHeadingContent(ref, (el) => (el.previousElementSibling?.getAttribute('data-spec-heading') === 'paragraph' ? null : specHeadingContent(el)))
+  useHeadingContent(ref, (el) => (el.previousElementSibling?.getAttribute('data-spec-heading') === 'paragraph' ? null : specHeadingContent(el)), specHeadingWatched)
   return (
     <SectionDescription
       ref={ref}

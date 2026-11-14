@@ -1275,6 +1275,9 @@ export const VirtualScroll: Story = {
    - Alert variant="neutral"(資訊性 hint,非 info hue) */
 // Issue 3(2026-05-10):VisibilityRow inline helper retired — 移到
 // `<DataTableColumnVisibilityPanel>` primitive 內部(SSOT)。
+/** 商品後台(選取 + 批次操作)與 Roadmap 兩則展示的產品預設欄位 = 全部顯示(寫法同 visibility:沒寫 = 顯示)。
+ *  隱藏任何一欄後欄位顯示面板的標題列出現「恢復預設」,按下回到全部顯示(2026-11-15 前靠 `resettable`,畫面相同)。 */
+const PRODUCT_DEFAULT_ALL_VISIBLE: Record<string, boolean> = {}
 
 export const WithBulkActions: Story = {
   name: '選取 + 批次操作',
@@ -1372,8 +1375,8 @@ export const WithBulkActions: Story = {
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72 p-0">
               {/* Issue 3(2026-05-10):從 inline 149-line panel 改用 SSOT primitive
-                  `<DataTableColumnVisibilityPanel>`(全 feature flag opt-in:search +
-                  reset + DnD reorder + lock)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
+                  `<DataTableColumnVisibilityPanel>`(search + 恢復預設(給 defaultVisibility 才有)+
+                  DnD reorder + lock)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
               <DataTableColumnVisibilityPanel
                 columns={baseColumns.map((c) => ({
                   id: ((c as any).accessorKey ?? (c as any).id) as string,
@@ -1385,7 +1388,7 @@ export const WithBulkActions: Story = {
                 onColumnOrderChange={setColumnOrder}
                 lockedIds={['sku']}
                 searchable
-                resettable
+                defaultVisibility={PRODUCT_DEFAULT_ALL_VISIBLE}
               />
             </PopoverContent>
           </Popover>
@@ -1887,6 +1890,39 @@ export const SortPanelStates: Story = {
         </ExampleSection>
         <ExampleSection title="不提供清除全部" className={SORT_SECTION_WIDTH} description="產品決定不給一鍵清除(clearable={false}):每一列的刪除鈕照舊可以逐條拿掉。">
           <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={noClear} onSortingChange={setNoClear} clearable={false} /></Popover>
+        </ExampleSection>
+      </ExampleStack>
+    )
+  },
+}
+
+/* ── 欄位顯示面板 — 各種狀態(2026-11-15)──
+ * 「恢復預設」= 回到產品設定的預設可見欄(defaultVisibility,與目前不同才出現、不傳就沒有),跟排序 / 篩選面板同一條。
+ * 規格:data-table.spec.md L4「Header 恢復預設 / 清除全部」;閘 scripts/data-table-panel-reset-clear-invariant.mjs。
+ */
+const ISSUE_VISIBILITY_COLUMNS = ISSUE_SORT_COLUMNS.map((c) => ({ id: c.accessorKey, label: typeof c.header === 'string' ? c.header : c.accessorKey }))
+/** Jira 專案管理員為議題清單設的預設欄位:「更新時間」預設不顯示(寫法同 visibility:沒寫 = 顯示) */
+const ISSUE_DEFAULT_VISIBILITY: Record<string, boolean> = { updatedAt: false }
+
+export const ColumnVisibilityPanelStates: Story = {
+  name: '欄位顯示面板 — 各種狀態',
+  render: function Render() {
+    const [changed, setChanged] = React.useState<Record<string, boolean>>({ updatedAt: true, dueDate: false })
+    const [same, setSame] = React.useState<Record<string, boolean>>({ updatedAt: false })
+    const [noDefault, setNoDefault] = React.useState<Record<string, boolean>>({ dueDate: false, updatedAt: false })
+    return (
+      <ExampleStack>
+        <ExampleSection
+          title="產品設了預設欄位"
+          description="Jira 專案管理員設的議題清單預設不顯示「更新時間」;這次打開了「更新時間」、收起了「到期日」。標題列出現「恢復預設」,按下回到管理員設的那一份(「更新時間」收起、「到期日」顯示),不是全部顯示。"
+        >
+          <Popover><DataTableColumnVisibilityPanel className="w-72" columns={ISSUE_VISIBILITY_COLUMNS} visibility={changed} onVisibilityChange={setChanged} defaultVisibility={ISSUE_DEFAULT_VISIBILITY} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="跟預設一樣" description="同一份預設、這次沒有改過:按下去不會改變任何東西,所以標題列沒有「恢復預設」。">
+          <Popover><DataTableColumnVisibilityPanel className="w-72" columns={ISSUE_VISIBILITY_COLUMNS} visibility={same} onVisibilityChange={setSame} defaultVisibility={ISSUE_DEFAULT_VISIBILITY} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="沒有預設欄位" description="產品沒有設預設欄位(不傳 defaultVisibility):收起了「到期日」「更新時間」,標題列也沒有「恢復預設」;底部「顯示全部」照舊可以一次打開。">
+          <Popover><DataTableColumnVisibilityPanel className="w-72" columns={ISSUE_VISIBILITY_COLUMNS} visibility={noDefault} onVisibilityChange={setNoDefault} /></Popover>
         </ExampleSection>
       </ExampleStack>
     )
@@ -2459,7 +2495,7 @@ export const RoadmapAllInOne: Story = {
                 columnOrder={columnOrder.length > 0 ? columnOrder : columns.map((c) => ((c as any).accessorKey ?? (c as any).id) as string)}
                 onColumnOrderChange={setColumnOrder}
                 searchable
-                resettable
+                defaultVisibility={PRODUCT_DEFAULT_ALL_VISIBLE}
               />
             </PopoverContent>
           </Popover>

@@ -75,36 +75,56 @@ export const dsSourceDir = (root) => resolve(root, 'packages/design-system/src')
  * @param {{ root: string, harness: string, harnessName: string, mutate?: (path: string, src: string) => string }} options
  *   harness 的 import 以 DS 原始碼目錄為 resolveDir:寫 `@/design-system/components/...` 或 `./components/...` 都可以。
  * @returns {Promise<string>} 打包好的 IIFE 原始碼
+ * @throws {InstrumentError} 打包不起來 = 儀器失效(不是產品裁決):突變函式丟的錯(例:`replaceOnce` 錨點命中 0 次)原樣丟回 ——
+ *   InstrumentError 仍是 InstrumentError,各閘接住後印 INSTRUMENT-FAIL、照該閘檔頭寫的結束碼結束;其他打包錯誤(語法錯、解析不到模組)
+ *   包成 InstrumentError,訊息取第一行。2026-11-15 前突變錯在 esbuild 外掛裡被包成一般的 `Build failed`,呼叫端認不出來 →
+ *   未捕捉例外、exit 1、沒有標記(審查 A 第 1、2 輪)。
  */
 export async function bundleDsHarness({ root, harness, harnessName, mutate }) {
   const srcDir = dsSourceDir(root)
-  const result = await build({
-    stdin: { contents: harness, loader: 'tsx', resolveDir: srcDir, sourcefile: harnessName },
-    bundle: true,
-    write: false,
-    format: 'iife',
-    platform: 'browser',
-    jsx: 'automatic',
-    absWorkingDir: root,
-    tsconfig: resolve(root, 'packages/design-system/tsconfig.json'),
-    nodePaths: [resolve(REPO_ROOT, 'node_modules')],
-    logLevel: 'silent',
-    define: { 'process.env.NODE_ENV': '"production"' },
-    loader: { '.css': 'empty', '.woff': 'empty', '.woff2': 'empty', '.svg': 'dataurl', '.png': 'dataurl' },
-    plugins: [{
-      name: 'ds-source-under-test',
-      setup(b) {
-        // 只接 DS 原始碼(node_modules 走 esbuild 預設);突變在這裡套,錨點找不到由呼叫端的 replaceOnce 丟儀器失效
-        b.onLoad({ filter: /\.(tsx|ts)$/ }, (args) => {
-          if (!args.path.startsWith(srcDir + sep) || args.path.includes(`${sep}node_modules${sep}`)) return null
-          const src = readFileSync(args.path, 'utf8')
-          return { contents: mutate ? mutate(args.path, src) : src, loader: args.path.endsWith('.tsx') ? 'tsx' : 'ts', resolveDir: dirname(args.path) }
-        })
-      },
-    }],
-  })
+  /** 外掛裡突變函式丟的第一個錯(esbuild 只會給我們包過的 Build failed,這裡留原本那一個) */
+  let mutateError = null
+  let result
+  try {
+    result = await build({
+      stdin: { contents: harness, loader: 'tsx', resolveDir: srcDir, sourcefile: harnessName },
+      bundle: true,
+      write: false,
+      format: 'iife',
+      platform: 'browser',
+      jsx: 'automatic',
+      absWorkingDir: root,
+      tsconfig: resolve(root, 'packages/design-system/tsconfig.json'),
+      nodePaths: [resolve(REPO_ROOT, 'node_modules')],
+      logLevel: 'silent',
+      define: { 'process.env.NODE_ENV': '"production"' },
+      loader: { '.css': 'empty', '.woff': 'empty', '.woff2': 'empty', '.svg': 'dataurl', '.png': 'dataurl' },
+      plugins: [{
+        name: 'ds-source-under-test',
+        setup(b) {
+          // 只接 DS 原始碼(node_modules 走 esbuild 預設);突變在這裡套。錨點找不到時 replaceOnce 丟的 InstrumentError 先記下來,
+          // 打包失敗後由下面的 catch 原樣丟回(不靠 esbuild 的錯誤訊息字串辨認)
+          b.onLoad({ filter: /\.(tsx|ts)$/ }, (args) => {
+            if (!args.path.startsWith(srcDir + sep) || args.path.includes(`${sep}node_modules${sep}`)) return null
+            const src = readFileSync(args.path, 'utf8')
+            let contents = src
+            if (mutate) {
+              try { contents = mutate(args.path, src) } catch (error) { mutateError ??= error; throw error }
+            }
+            return { contents, loader: args.path.endsWith('.tsx') ? 'tsx' : 'ts', resolveDir: dirname(args.path) }
+          })
+        },
+      }],
+    })
+  } catch (error) {
+    if (mutateError instanceof InstrumentError) throw mutateError
+    if (mutateError) throw new InstrumentError(`${harnessName}:突變套用時出錯:${firstLine(mutateError)}`)
+    throw new InstrumentError(`${harnessName}:harness 打包不起來:${error?.errors?.[0]?.text ?? firstLine(error)}`)
+  }
   return result.outputFiles[0].text
 }
+
+const firstLine = (error) => String(error?.message ?? error).split('\n')[0]
 
 export class InstrumentError extends Error {}
 

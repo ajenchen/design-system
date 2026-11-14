@@ -3,7 +3,7 @@
  *
  * **Scope:Internal-only — DataTable 自用,非 public API**(同 `column-meta.ts`:lib/ 資料夾 = internal helper,
  * 不進 root barrel)。表頭點擊、表頭 Enter / Space(含 Shift)、表頭 ⌄ 選單三項、順位數字、讀屏描述、播報都從這裡取,
- * 不各寫一份(M17)。排序怎麼變只有 `nextSorting` 一支 —— 呼叫端把「使用者做了什麼」(`SortAction`)交給它,不自己判斷。
+ * 不各寫一份(M17);排序面板的字也住這裡(`DataTableSortManagerLabels`,由 `../data-table-sort-manager.tsx` 再出口成公開 API)。排序怎麼變只有 `nextSorting` 一支 —— 呼叫端把「使用者做了什麼」(`SortAction`)交給它,不自己判斷。
  *
  * 規則(user 2026-11-11 定案;原話逐字住 `../data-table.spec.md`「Multi-sort header」列,這裡只寫規則):
  *   - 循環兩態:點已排序的欄只在升冪 ↔ 降冪之間切,點表頭永遠不會變成「沒排序」;第一下一律升冪、不分欄型。
@@ -73,8 +73,11 @@ export function columnMenuShowsSortDirection(sorting: SortingState, columnId: st
 
 /**
  * 排序相關的介面字串(選單項、讀屏描述、播報句)集中在這裡,同 `../data-table-filter-labels.ts` 的 labels 形狀
- * (介面 + 預設值;要帶參數的句子寫成函式)。DataTable 目前沒有 `labels` prop,先由元件直接用預設值 —— 要開放覆寫時接這一份,
- * 不在各處另寫字串。字眼只用 DS 既有的「排序 / 升冪 / 降冪 / 取消排序」(user 2026-10-30「1. 就用ds的字眼就好」)。
+ * (介面 + 預設值;要帶參數的句子寫成函式)。這一份是**表頭**的(⌄ 選單、順位描述、播報):DataTable 目前沒有 `labels` prop,
+ * 先由元件直接用預設值 —— 要開放覆寫時接這一份,不在各處另寫字串。排序**面板**的字在下面 `DataTableSortManagerLabels`(已開放)。
+ * 字眼只用 DS 既有的「排序 / 升冪 / 降冪 / 取消排序」(user 2026-10-30「1. 就用ds的字眼就好」)。
+ * 整組播報句(`announceSorted` / `announceRemoved` / `announceSummary*` / `announceOthersCleared` / `announceRemaining` / `announceNone`)與句型
+ * 「這一欄發生了什麼 + 結果」都是【AI 推導 2026-11-15】,user 沒有逐字定過,後三句是後來補的(出處見 data-table.spec.md「Multi-sort header」列)。
  */
 export interface DataTableSortLabels {
   /** ⌄ 選單項 */
@@ -114,6 +117,66 @@ export const DATA_TABLE_SORT_DEFAULT_LABELS: DataTableSortLabels = {
   announceSummaryEntry: (priority, column, direction) => `${priority} ${column} ${direction}`,
   announceRemaining: (column, direction) => `目前依 ${column} ${direction}排序`,
   announceNone: '目前沒有排序',
+}
+
+/**
+ * 排序面板(`../data-table-sort-manager.tsx` `DataTableSortManager`)上的字 —— 2026-11-15 起產品可經面板的 `labels` 換字(A11)。
+ * 形狀照抄篩選面板(`../data-table-filter-labels.ts`):介面 + 預設值 + `resolve…Labels` 淺合併;面板收 `labels?: Partial<…>`,
+ * 由面板檔再出口預設值與型別(本檔是 lib/ = internal,不進 root barrel)。鍵名沿用篩選面板同義的那幾個
+ * (`title` / `resetToDefault` / `resetToDefaultDone` / `clearAll` / `clearAllDone` / `close` / `fieldAriaLabel` / `deleteCondition`),
+ * 面板自己才有的照同一個造字法(`addFilter` → `addSort`、`operatorAriaLabel` → `directionAriaLabel`)。
+ * 預設值 = 開放之前寫死在面板裡的字,一字未改;「升冪 / 降冪」與上面表頭那一份是同一個詞,只寫一次。
+ * 不在這裡:欄位名稱(consumer 的 `ColumnDef`,同篩選面板);拖曳把手的讀屏操作說明與拖曳時的播報句(全 DS 共用的
+ * `../../../lib/drag-announcements.ts`,那一份還沒有換字管道)。
+ */
+export interface DataTableSortManagerLabels {
+  /** 標題列的標題 */
+  title: string
+  /** 標題列「恢復預設」圖示鈕的 aria-label */
+  resetToDefault: string
+  /** 「恢復預設」按下後的 polite 播報 */
+  resetToDefaultDone: string
+  /** 「加排序」那一排最右的「清除全部」 */
+  clearAll: string
+  /** 「清除全部」按下後的 polite 播報 */
+  clearAllDone: string
+  /** 標題列 × 的 aria-label */
+  close: string
+  /** 「加排序」按鈕 */
+  addSort: string
+  /** 每一列:欄位下拉的 aria-label */
+  fieldAriaLabel: string
+  /** 每一列:方向下拉的 aria-label */
+  directionAriaLabel: string
+  /** 方向下拉的兩個選項 */
+  ascending: string
+  descending: string
+  /** 每一列:刪除鈕的 aria-label */
+  deleteCondition: string
+  /** 每一列:拖曳把手的 aria-label */
+  dragToReorder: string
+}
+
+// code-quality-allow: dead-export — public i18n defaults, re-exported by panel(同 data-table-filter-labels.ts)。
+export const DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS: DataTableSortManagerLabels = {
+  title: '排序',
+  resetToDefault: '恢復預設',
+  resetToDefaultDone: '已恢復預設排序',
+  clearAll: '清除全部',
+  clearAllDone: '已清除全部排序',
+  close: '關閉',
+  addSort: '加排序',
+  fieldAriaLabel: '排序欄位',
+  directionAriaLabel: '排序方向',
+  ascending: DATA_TABLE_SORT_DEFAULT_LABELS.ascending,
+  descending: DATA_TABLE_SORT_DEFAULT_LABELS.descending,
+  deleteCondition: '刪除',
+  dragToReorder: '拖曳重排',
+}
+
+/** 面板的 `labels`(只給要換的那幾個)與預設值淺合併 —— 同篩選面板 `resolveDataTableFilterPanelLabels`(這一份沒有巢狀 map)。 */
+export function resolveDataTableSortManagerLabels(overrides?: Partial<DataTableSortManagerLabels>): DataTableSortManagerLabels {
+  return { ...DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS, ...overrides }
 }
 
 /** 數字最多顯示到 9,第 10 個以後一律「9+」(Badge `max` 的「max+」寫法,`../../Badge/badge.tsx`)。 */

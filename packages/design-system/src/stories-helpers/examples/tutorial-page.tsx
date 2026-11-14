@@ -225,6 +225,9 @@ function isLayoutWrapper(el: Element): boolean {
   return LAYOUT_WRAPPER_TAGS.has(el.tagName) && Array.from(el.attributes).every((a) => LAYOUT_WRAPPER_ATTRS.has(a.name))
 }
 
+/** `headingContentOf` 往「只負責排版的容器」裡走的層數上限(防呆);`descentWatched` 照同一個上限走,觀察範圍才涵蓋得到數到的那幾層(見 `descentWatched`:觀察的比數到的多)。 */
+const HEADING_DESCENT_MAX_DEPTH = 12
+
 /** 一段說明文字(沒有邊界的 `<p>`):它在說明旁邊那一塊,自己不算一塊。 */
 function isProse(el: Element): boolean {
   return el.tagName === 'P' && !hasVisualBoundary(el)
@@ -245,7 +248,7 @@ function isProse(el: Element): boolean {
 export function headingContentOf(nodes: Element[], loose: number): HeadingContent {
   let run = nodes
   // 每多一層只往一個子節點裡走;深度上限只是防呆(實際頁面 3 層內就分出來)
-  for (let depth = 0; depth < 12; depth++) {
+  for (let depth = 0; depth < HEADING_DESCENT_MAX_DEPTH; depth++) {
     if (run.length === 0) return 'one'
     if (run.length >= 2) {
       const blockNodes = run.filter((node) => !isProse(node))
@@ -262,22 +265,139 @@ export function headingContentOf(nodes: Element[], loose: number): HeadingConten
   return 'one'
 }
 
+/** 判一次、寫回標記(判定沒變不寫)。`useHeadingContent` 的 layout effect 與「看不到 ↔ 看得到」重判共用這一支;`nodes` = `collect` 的回傳。 */
+function writeHeadingContent<T extends HTMLElement>(el: T, nodes: Element[] | 'many' | null) {
+  const loose = parseFloat(getComputedStyle(el).getPropertyValue('--layout-space-loose'))
+  const value = nodes === null ? null : nodes === 'many' ? 'many' : headingContentOf(nodes, loose)
+  if (value === null) el.removeAttribute('data-heading-content')
+  else if (el.getAttribute('data-heading-content') !== value) el.setAttribute('data-heading-content', value)
+}
+
+/** 有框(寬、高都大於 0)= 看得到;display:none 或在 display:none 的容器裡 = 0 × 0。 */
+const hasBox = (width: number, height: number) => width > 0 && height > 0
+
+/**
+ * 會畫出框的子節點:跳過 style / script / template、display:contents 換成它自己的子節點 —— **display:none 的也算**
+ * (它現在看不到,之後可能顯示;`inFlowChildren` 不算它,這裡要算,才觀察得到它出現)。
+ */
+function boxChildren(el: Element): Element[] {
+  const out: Element[] = []
+  for (const child of Array.from(el.children)) {
+    if (child.tagName === 'STYLE' || child.tagName === 'SCRIPT' || child.tagName === 'TEMPLATE') continue
+    if (getComputedStyle(child).display === 'contents') out.push(...boxChildren(child))
+    else out.push(child)
+  }
+  return out
+}
+
+/**
+ * `headingContentOf` 第 1 步往「只負責排版的容器」裡數的那幾層:每一層那個容器的子節點(含目前 display:none 的)。
+ * `useHeadingContent` 連它們一起觀察 —— 內容在這種容器**裡面**從看不到變看得到時,容器自己的框不會跨過 0(它還有別的子節點),
+ * 只觀察標題區之後那幾個節點本身就不會重判(2026-11-15 審查 A 第 2 輪)。往裡走的條件與層數上限跟 `headingContentOf` 相同,
+ * 所以加上 `watch` 的節點之後,觀察範圍涵蓋判定會量到的節點,另外也觀察 display:none / 絕對定位的節點(`ExampleSection` 的 `watch` 還含標題區本身)
+ * —— 多觀察只會多重判幾次、不影響判定。已知沒涵蓋到的一個邊【AI 推導 2026-11-15,讀程式得出、未量】:設計規格頁小標之後夾著一個 display:none 的
+ * 小標時,`specHeadingWatched` 在它那裡停、`specHeadingContent` 跳過它往下數。`nodes` = `collect` 的回傳(`'many'` / `null` 不往裡數,也不往裡看)。
+ */
+function descentWatched(nodes: Element[] | 'many' | null): Element[] {
+  const out: Element[] = []
+  if (!Array.isArray(nodes)) return out
+  let run = nodes
+  for (let depth = 0; depth < HEADING_DESCENT_MAX_DEPTH && run.length === 1; depth++) {
+    const only = run[0]
+    if (hasVisualBoundary(only) || !isLayoutWrapper(only)) break
+    out.push(...boxChildren(only))
+    run = inFlowChildren(only)
+  }
+  return out
+}
+
+type HeadingWatcher = { observer: ResizeObserver; boxed: Map<Element, boolean>; frame: number }
+
+/** 觀察範圍 = `watch` 的節點 + `descentWatched`;不在範圍裡的不再觀察,新加的記下它現在看不看得到(之後跨過 0 才重判)。 */
+function observeHeadingContent<T extends HTMLElement>(w: HeadingWatcher, el: T, watch: (el: T) => Element[], nodes: Element[] | 'many' | null) {
+  const next = new Set([...watch(el), ...descentWatched(nodes)])
+  for (const node of Array.from(w.boxed.keys())) if (!next.has(node)) { w.observer.unobserve(node); w.boxed.delete(node) }
+  for (const node of next) {
+    if (w.boxed.has(node)) continue
+    const rect = node.getBoundingClientRect()
+    w.boxed.set(node, hasBox(rect.width, rect.height))
+    w.observer.observe(node)
+  }
+}
+
 /**
  * 在標題區最後一個元素(`ExampleSection` 的根 / `H3` / `Desc`)上標 `data-heading-content="one|many"`,間距 class 依它切換。
  * `collect` 回傳標題區之後的內容節點;回傳 `'many'` = 結構上就是並列(`ExampleSection` 直接放兩個以上子節點:它們由區段的 gap
  * 一起排開,本來就是並列);回傳 `null` = 不判(沒有內容 / 標題區後面緊接著說明),維持預設 loose。
- * 每次 render 後(layout effect,畫面畫出來之前)重判;不掛 ResizeObserver —— 改屬性會改版面,觀察者會自己再被觸發。
+ * 什麼時候判:
+ * 1. 每次 render 後(layout effect,畫面畫出來之前)。
+ * 2. 2026-11-15(A11)起另加:觀察的節點任一個**從看不到變看得到、或從看得到變看不到**(從寬或高為 0 變成寬高都大於 0,或反過來)
+ *    時重判一次。觀察的節點 = `watch` 回傳的(標題區之後的內容節點,含目前 display:none 的;`ExampleSection` 的還含標題區本身)+ `descentWatched`(判定往「只負責排版的
+ *    容器」裡數到的那幾層的子節點,同日審查 A 第 2 輪補:只看前者時,排版容器裡面的內容後來才顯示不會重判 —— section-gap 的
+ *    heading-reveal-in-wrapper 夾具列);比判定量到的多,見 `descentWatched`。重判之後觀察範圍跟著數法換路(下方 rAF 回呼;section-gap 夾具列 heading-reveal-staged-es)。修前只有第 1 點:內容原本在 display:none 的容器裡(收起來的分頁、摺疊區塊),
+ *    判的時候量到的全是 0 → 判成一塊,之後容器打開、共用元件本身沒有重畫,就一直停在那個錯的判定(scripts/section-gap-invariant.mjs
+ *    的 heading-reveal 列量的就是這個:先藏起來請產品判一次、再顯示,看距離有沒有回到該有的值)。
+ *    做法是 ResizeObserver,三個選擇與理由:
+ *    · **不會引發「ResizeObserver loop」錯誤**:觀察者的回呼裡不寫標記、只排一個 requestAnimationFrame,下一格再判、再寫。
+ *      量過的(2026-11-15 fix-1,scripts/section-gap-invariant.mjs 的巢狀夾具兩列):外層區段裡放一個藏起來會翻面的內層區段,
+ *      回呼裡直接寫 → 顯示時瀏覽器發「ResizeObserver loop」(外層先掛、內層後掛,或同時掛,各 1–2 則);下一格才寫 → 0 則。
+ *      現有說明頁沒有這種幾何(頁面上模擬直接寫跑 59 則有巢狀標題區的 story,0 則),所以由夾具守,不靠那四列真頁。
+ *      【AI 推導,未量】其他「內容高度跟著間距變」的版面同理;代價:內容出現的那一格先畫舊距離,下一格改正。
+ *    · **只看「0 ↔ 有」,不是每次大小變都重判**:示範裡有動畫或可拖拉調整的元件時,大小每一格都在變;判定與量到的距離只在
+ *      看不到時失準,所以只在跨過 0 的時候重判。密度切換那件事(Storybook 把密度寫到 <html> 晚於第 1 點)不靠這裡:
+ *      「兩塊」的門檻是固定值(`HEADING_BLOCK_MIN_GAP_PX`),判定本來就不跟密度變。
+ *    · **不用 IntersectionObserver**:它看的是有沒有進到視窗 —— 內容在畫面外被打開時要捲到那裡才判(使用者正看著的時候跳一下),
+ *      而且它只在「跟視窗有沒有交集」改變時回報,一直待在視窗裡、大小從 0 變有的元素不一定回報。
+ *    不觀察標題區所在的元素本身(`ExampleSection` 的根:間距一改它的高度就變);寫回只改標題區 → 內容那一段距離,自己觀察的節點只會被推動
+ *    —— 但巢狀時,外層正在觀察的那個容器會被內層的寫回撐高,這就是上面那一點要排到下一格的原因。
  */
-export function useHeadingContent<T extends HTMLElement>(ref: React.RefObject<T>, collect: (el: T) => Element[] | 'many' | null) {
+export function useHeadingContent<T extends HTMLElement>(
+  ref: React.RefObject<T>,
+  collect: (el: T) => Element[] | 'many' | null,
+  watch: (el: T) => Element[],
+) {
+  const collectRef = React.useRef(collect)
+  const watchRef = React.useRef(watch)
+  const watcher = React.useRef<HeadingWatcher | null>(null)
   React.useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
+    collectRef.current = collect
+    watchRef.current = watch
     const nodes = collect(el)
-    const loose = parseFloat(getComputedStyle(el).getPropertyValue('--layout-space-loose'))
-    const value = nodes === null ? null : nodes === 'many' ? 'many' : headingContentOf(nodes, loose)
-    if (value === null) el.removeAttribute('data-heading-content')
-    else if (el.getAttribute('data-heading-content') !== value) el.setAttribute('data-heading-content', value)
+    writeHeadingContent(el, nodes)
+    if (typeof ResizeObserver === 'undefined') return
+    if (!watcher.current) {
+      const observer = new ResizeObserver((entries) => {
+        const w = watcher.current
+        if (!w) return
+        let crossed = false
+        for (const entry of entries) {
+          const size = entry.borderBoxSize?.[0]
+          const now = size ? hasBox(size.inlineSize, size.blockSize) : hasBox(entry.contentRect.width, entry.contentRect.height)
+          if (w.boxed.get(entry.target) !== now) { w.boxed.set(entry.target, now); crossed = true }
+        }
+        if (!crossed || w.frame) return
+        // 回呼裡不改版面(見上方「不會引發 ResizeObserver loop」):下一格再判、再寫
+        w.frame = requestAnimationFrame(() => {
+          w.frame = 0
+          const current = ref.current
+          if (!current) return
+          // 重判後判定可能改走另一條路(例:排版容器從看不到變看得到,這下才往它裡面數)→ 觀察範圍跟著更新,不等下一次 render
+          // (scripts/section-gap-invariant.mjs 夾具列 heading-reveal-staged-es 守:少了這一步,那個容器裡之後才出現的內容不會重判、停在 tight)
+          const nodes = collectRef.current(current)
+          writeHeadingContent(current, nodes)
+          observeHeadingContent(w, current, watchRef.current, nodes)
+        })
+      })
+      watcher.current = { observer, boxed: new Map(), frame: 0 }
+    }
+    observeHeadingContent(watcher.current, el, watch, nodes)
   })
+  React.useLayoutEffect(() => () => {
+    if (watcher.current) { watcher.current.observer.disconnect(); cancelAnimationFrame(watcher.current.frame) }
+    watcher.current = null
+  }, [])
 }
 
 /**
@@ -294,6 +414,22 @@ export function specHeadingContent(el: HTMLElement): Element[] | null {
     run.push(s)
   }
   return run.length ? run : null
+}
+
+/**
+ * 設計規格頁 `H3` / `Desc` 要觀察「看不到 ↔ 看得到」的節點(`useHeadingContent` 的 `watch`):自己之後、下一個小標之前的兄弟節點,
+ * **含目前 display:none 的**(之後可能顯示)。不含自己 —— 寫回改的是自己的下方 margin。
+ */
+export function specHeadingWatched(el: HTMLElement): Element[] {
+  const parent = el.parentElement
+  if (!parent) return []
+  const siblings = boxChildren(parent)
+  const out: Element[] = []
+  for (const s of siblings.slice(siblings.indexOf(el) + 1)) {
+    if (s.hasAttribute('data-spec-heading')) break
+    out.push(s)
+  }
+  return out
 }
 
 /**
@@ -333,6 +469,9 @@ const sectionContent = (el: HTMLElement): Element[] | 'many' | null => {
   return kids.length === 0 ? null : kids.length >= 2 ? 'many' : kids
 }
 
+/** `ExampleSection` 要觀察「看不到 ↔ 看得到」的節點:根的每個子節點(標題區 + 內容,含目前 display:none 的)。不含根自己 —— 寫回改的是根的 gap。 */
+const sectionWatched = (el: HTMLElement): Element[] => boxChildren(el)
+
 /**
  * 範例區段(2026-10-27,user 2026-10-21 A4;2026-11-11 標題區 → 內容看幾塊):標題 ↔ 說明 2px;(標題 + 說明)→ 內容:
  * 段落 tight、區塊底下只有一塊 tight、兩塊以上 loose;跟著密度走。
@@ -341,7 +480,7 @@ const sectionContent = (el: HTMLElement): Element[] | 'many' | null => {
  */
 export function ExampleSection({ title, description, paragraph, className, children, ...rest }: ExampleSectionProps) {
   const ref = React.useRef<HTMLDivElement>(null)
-  useHeadingContent(ref, (el) => (paragraph ? null : sectionContent(el)))
+  useHeadingContent(ref, (el) => (paragraph ? null : sectionContent(el)), sectionWatched)
   return (
     <div
       ref={ref}

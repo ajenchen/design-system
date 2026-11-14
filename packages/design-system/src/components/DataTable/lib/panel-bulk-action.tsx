@@ -1,7 +1,7 @@
-// @internal — DataTable 排序面板 / 篩選面板的「整批動作」(標題列「恢復預設」、加條件那一排的「清除全部」)共用的兩件事:
+// @internal — DataTable 排序面板 / 篩選面板 / 欄位顯示面板的「整批動作」(標題列「恢復預設」、加條件那一排的「清除全部」)共用的兩件事:
 //   1. 按下後**焦點不掉到 body**:這兩顆按鈕按下去就讓自己消失(值 = 預設 / 值 = 空 → 不再出現),握著焦點時(鍵盤按、或 Chrome 滑鼠按下給了焦點)
 //      焦點會被瀏覽器重設到 `<body>`(WHATWG focus fixup)。改交給同一個面板裡還在的那顆:加條件那一顆(「加排序」/「加篩選」)可按就給它,
-//      否則給標題列的 ×(恆渲染)。【AI 推導】依 DS 既有「焦點不可因 DOM unmount 掉到 body」(`ds-canonical/references/keyboard-model-canonical.md`
+//      否則給標題列的 ×(恆渲染;欄位顯示面板沒有加條件鈕 → 直接給 ×,2026-11-15)。【AI 推導】依 DS 既有「焦點不可因 DOM unmount 掉到 body」(`ds-canonical/references/keyboard-model-canonical.md`
 //      「按了之後自己變停用」節列的六份 spec)+ W3C APG「focus is set on another element that provides logical work flow」(同檔 dialog 那段引文);
 //      選「加條件」是因為兩個動作之後的下一步都是「重新加條件」。只有焦點真的掉了(activeElement 是 body / null)才搬,使用者已帶走焦點就不搶
 //      (React Aria FocusScope「Only restore focus if we've lost focus to the body」,同檔引文)。

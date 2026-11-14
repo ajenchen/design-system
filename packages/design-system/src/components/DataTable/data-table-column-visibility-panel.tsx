@@ -10,7 +10,8 @@
  *   - Locked 欄位(`lockedIds`)— 顯 Lock icon,不可 toggle / 不可 drag
  *   - 可選 search filter(`searchable`,跨欄位 label match)
  *   - 可選 column drag reorder(`onColumnOrderChange` 傳 → 啟 DnD)
- *   - 可選 reset 按鈕(`resettable: boolean` opt-in,header 區 RotateCcw;點擊 `onVisibilityChange({})` 還原全顯示,無獨立 onReset prop)
+ *   - 「恢復預設」(標題列 RotateCcw):回到產品給的 `defaultVisibility`,目前與它不同才出現、不傳就沒有 —— 同排序 / 篩選面板
+ *     (data-table.spec.md L4「Header 恢復預設 / 清除全部」;2026-11-15 前是 `resettable` 開關 + 有隱藏欄才出現、按下 = 全部顯示)
  *   - Bidirectional bulk toggle(footer button:全可見 → 全部隱藏 / 任一隱藏 → 顯示全部)
  *
  * **Why 抽 primitive**(per Issue 3 Rule-of-3):RoadmapAllInOne + WithBulkActions + 未來 product
@@ -34,6 +35,7 @@ import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, Keyboa
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { dragSourceStyle, forwardDragActivatorAttributes, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
+import { usePanelBulkAction } from './lib/panel-bulk-action'
 
 interface ColumnVisibilityPanelColumn {
   /** Column id(stable identifier;對齊 DataTable column.id / accessorKey)*/
@@ -57,10 +59,22 @@ export interface DataTableColumnVisibilityPanelProps extends React.HTMLAttribute
   lockedIds?: string[]
   /** 是否啟搜尋 input(預設 false)*/
   searchable?: boolean
-  /** 是否顯 reset button(任一欄隱藏才顯,onClick 清空 visibility map)*/
-  resettable?: boolean
+  /**
+   * 產品設定的預設可見欄(例:專案管理員設的預設欄位、使用者存過的檢視;寫法同 `visibility`)。目前的可見欄與它不同時,
+   * 標題列出現「恢復預設」,按下回到這一份;一樣時不出現。不傳 = 這個產品沒有預設 → 不出現「恢復預設」。
+   * 「一樣」= 面板列出的每一欄顯示 / 隱藏都相同(沒寫 = 顯示,`{}` 與 `{ a: true }` 一樣)。
+   * 同排序面板 `defaultSorting`、篩選面板 `defaultValue`(data-table.spec.md L4「Header 恢復預設 / 清除全部」)。
+   * 2026-11-15 取代 `resettable`(另外開才有、有隱藏欄就出現、按下 = 全部顯示 —— 不是產品的預設);不留別名,
+   * 舊寫法 `resettable` 不是 div 的屬性,型別層直接報錯(M23(f):讓型別把每個 consumer 逼出來改)。
+   */
+  defaultVisibility?: Record<string, boolean>
   // Issue 3 post-codex audit(2026-05-10):`onClose` prop retired — Radix `PopoverClose asChild`
   // 已自帶 popover dismiss,沒 concrete consumer 需 callback。Future 若需要再加。
+}
+
+/** 兩份可見欄相同 = 面板列出的每一欄顯示 / 隱藏都一樣(沒寫 = 顯示,同 `visibility` 的讀法;含鎖定欄 —— 按下去會改到它就算不一樣) */
+function isVisibilityEqual(ids: readonly string[], a: Record<string, boolean>, b: Record<string, boolean>): boolean {
+  return ids.every((id) => (a[id] !== false) === (b[id] !== false))
 }
 
 export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, DataTableColumnVisibilityPanelProps>(({
@@ -71,11 +85,23 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
   onColumnOrderChange,
   lockedIds = [],
   searchable = false,
-  resettable = false,
+  defaultVisibility,
   className,
   ...props
 }, ref) => {
   const [search, setSearch] = React.useState('')
+  const columnIds = React.useMemo(() => columns.map((c) => c.id), [columns])
+  // 「恢復預設」按下後:焦點交給標題列的 ×、polite 播報結果(lib/panel-bulk-action.tsx,三個面板共用)。
+  // 焦點順位照 lib 既有的「加條件鈕 → ×」:這個面板沒有加條件鈕,所以直接給 ×(PopoverHeader 內建、恆渲染)。【AI 推導 2026-11-15】
+  const headerRef = React.useRef<HTMLDivElement>(null)
+  const bulk = usePanelBulkAction({
+    value: visibility,
+    isEqual: (a, b) => isVisibilityEqual(columnIds, a, b),
+    onChange: onVisibilityChange,
+    focusTargets: () => [headerRef.current?.querySelector<HTMLElement>('button[data-dismiss]')],
+  })
+  // 出現條件 = 按下去會改變東西(資料驅動,不另開開關;同排序 / 篩選面板 —— M23(f))
+  const showReset = defaultVisibility !== undefined && !isVisibilityEqual(columnIds, visibility, defaultVisibility)
   const lockedSet = React.useMemo(() => new Set(lockedIds), [lockedIds])
   const dndEnabled = !!(columnOrder && onColumnOrderChange)
 
@@ -97,14 +123,11 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
 
   const togglableIds = columns.map((c) => c.id).filter((id) => !lockedSet.has(id))
   const allVisible = togglableIds.every((id) => visibility[id] !== false)
-  const anyHidden = togglableIds.some((id) => visibility[id] === false)
 
   const handleToggle = (id: string) => {
     const visible = visibility[id] !== false
     onVisibilityChange({ ...visibility, [id]: !visible })
   }
-
-  const handleReset = () => onVisibilityChange({})
 
   const handleBulkToggle = () => {
     if (allVisible) {
@@ -162,13 +185,15 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     // 鍵盤搬欄位(Space 提起、方向鍵移、Esc 取消)時按 Esc 只取消拖曳、面板不關(2026-10-01;lib/drag-announcements.ts useDragAccessibility.escapeLayer)
     <div ref={ref} className={cn('flex flex-col h-full min-h-0 w-full', className)} {...props} {...drag.escapeLayer}>
       {/* 右側「恢復預設 │ ×」走 PopoverHeader 的右側按鈕位(× 與分隔線由 SurfaceHeader 放,兩側各 12;overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
-          2026-11-10 前自刻在 children(hideClose + 外層 gap-1)→ 分隔線兩側只有 8。 */}
+          2026-11-10 前自刻在 children(hideClose + 外層 gap-1)→ 分隔線兩側只有 8。
+          「恢復預設」= 目前 ≠ 產品給的 defaultVisibility 才出現,按下回到那一份(2026-11-15 前:resettable 開關 + 有隱藏欄才出現、按下 = 全部顯示)。 */}
       <PopoverHeader
-        actions={resettable && anyHidden ? (
+        ref={headerRef}
+        actions={showReset ? (
           <Button
             variant="text" size="sm" iconOnly startIcon={RotateCcw}
             aria-label="恢復預設"
-            onClick={handleReset}
+            onClick={(e) => { if (defaultVisibility) bulk.run(e, defaultVisibility, '已恢復預設欄位顯示') }}
           />
         ) : undefined}
       >
@@ -230,6 +255,8 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
           {allVisible ? '全部隱藏' : '顯示全部'}
         </Button>
       </PopoverFooter>
+      {/* 恆渲染的 polite 區域(sr-only = 不佔版面):「恢復預設」的結果播報 */}
+      {bulk.liveRegion}
     </div>
   )
 })

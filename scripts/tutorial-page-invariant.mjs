@@ -1320,7 +1320,10 @@ export function runSelftest(root = SCRIPT_ROOT) {
   expect(r14(helper).length === 0, `現況 tutorial-page.tsx + anatomy-utils.tsx R14 0 筆(實得 ${JSON.stringify(r14(helper))})`)
   expect(r14(helper.replace(` ${HEADING_ONE_GAP}'`, "'")).some((m) => m.includes('ExampleSection 區塊模式')), '區塊模式拿掉 data-[heading-content=one] → R14')
   expect(r14(helper.replace(` ${HEADING_ONE_MB}'`, "'")).some((m) => m.includes('設計規格頁小標')), '設計規格頁小標拿掉 data-[heading-content=one] → R14')
-  expect(r14(helper.replace('useHeadingContent(ref, (el) => (paragraph ? null : sectionContent(el)))', '')).some((m) => m.includes('ExampleSection 沒有呼叫')), 'ExampleSection 不再呼叫 useHeadingContent → R14')
+  // 2026-11-15(A11)useHeadingContent 多一個必填的 watch(看不到 ↔ 看得到時重判),要拿掉的那一段跟著改;先確認那一段真的在(對照組的前提)
+  const esCall = 'useHeadingContent(ref, (el) => (paragraph ? null : sectionContent(el)), sectionWatched)'
+  expect(helper.includes(esCall), `現況 tutorial-page.tsx 有「${esCall}」(對照組要拿掉的那一段真的存在)`)
+  expect(r14(helper.replace(esCall, '')).some((m) => m.includes('ExampleSection 沒有呼叫')), 'ExampleSection 不再呼叫 useHeadingContent → R14')
   expect(r14(helper, anatomy.replace('paragraph ? SPEC_HEADING_GAP_PARAGRAPH : SPEC_HEADING_GAP', "paragraph ? SPEC_HEADING_GAP_PARAGRAPH : 'mb-[var(--layout-space-loose)]'")).some((m) => m.includes('H3 沒用 SPEC_HEADING_GAP')), 'H3 改回自己寫 mb loose → R14')
   expect(r14(helper, null).some((m) => m.includes('讀不到 anatomy-utils')), '讀不到 anatomy-utils.tsx → R14(不讀成通過)')
   // 「兩塊」的門檻(2026-11-12 多塊緊排 = 乙):現況 = md tight;改值 / 改 token / 不再用它 / 讀不到 token 各紅

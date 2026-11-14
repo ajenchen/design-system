@@ -236,7 +236,7 @@ export const HeaderActions: Story = {
         <SurfaceHeader dismiss={xBtn}><h2 data-header-part="title" className={caseTitleClass()}><TruncatedText display="block">邀請成員加入專案</TruncatedText></h2></SurfaceHeader>
       </ActionsCase>
       <ActionsCase name="surface-compact-actions-dismiss" expect="actions,dismiss" compact>
-        <SurfaceHeader className={COMPACT_HEADER_SLOT} actions={<Button variant="text" iconOnly size="sm" startIcon={RotateCcw} aria-label="重置" />} dismiss={xBtn}><h2 data-header-part="title" className={caseTitleClass(true)}><TruncatedText display="block">看板篩選</TruncatedText></h2></SurfaceHeader>
+        <SurfaceHeader className={COMPACT_HEADER_SLOT} actions={<Button variant="text" iconOnly size="sm" startIcon={RotateCcw} aria-label="恢復預設" />} dismiss={xBtn}><h2 data-header-part="title" className={caseTitleClass(true)}><TruncatedText display="block">看板篩選</TruncatedText></h2></SurfaceHeader>
       </ActionsCase>
       <ActionsCase name="dialog-header" expect="actions,dismiss">
         <Dialog><DialogHeader actions={<>{prev}{next}</>}><DialogTitle>WM-142 結帳流程改版</DialogTitle></DialogHeader></Dialog>
@@ -245,7 +245,7 @@ export const HeaderActions: Story = {
         <Sheet><SheetHeader actions={<Button variant="text" iconOnly size="sm" startIcon={MoreVertical} aria-label="更多操作" />}><SheetTitle>修復付款流程 bug</SheetTitle></SheetHeader></Sheet>
       </ActionsCase>
       <ActionsCase name="popover-header" expect="actions,dismiss" compact>
-        <Popover><PopoverHeader actions={<Button variant="text" iconOnly size="sm" startIcon={RotateCcw} aria-label="重置" />}><PopoverTitle>看板篩選</PopoverTitle></PopoverHeader></Popover>
+        <Popover><PopoverHeader actions={<Button variant="text" iconOnly size="sm" startIcon={RotateCcw} aria-label="恢復預設" />}><PopoverTitle>看板篩選</PopoverTitle></PopoverHeader></Popover>
       </ActionsCase>
     </div>
   ),

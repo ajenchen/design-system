@@ -12,10 +12,18 @@
  *        播報 = 「這一欄發生了什麼」+「結果」(拿掉 / 換方向 / 加入 / 取代全部各一格)。
  *        另驗呼叫端(data-table.tsx)四個入口(點擊、Enter / Space、Shift 版、⌄ 三項)都只呼叫 `nextSorting` 一支,
  *        而且交給它與交給播報的「之前」是同一個值、`additive` 由 Shift + 表 / 欄允許多重排序算出(M32:值是誰算的)。
+ *        **排序面板的字**(2026-11-15 A11;data-table.spec.md「Multi-sort header」列的字串那一句):`DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS`
+ *        = 開放之前寫死在面板裡的 13 個字(一字未改 = 畫面不變)、升冪 / 降冪與表頭那一份同值;`resolveDataTableSortManagerLabels`
+ *        不給 = 預設、只給一個鍵只換那一個、給全部全換(形狀同篩選面板 `labels`);面板(data-table-sort-manager.tsx)收
+ *        `labels?: Partial<DataTableSortManagerLabels>`、把它交給 resolve、13 個鍵每個都有被讀,而且原始碼的字串 / JSX 文字裡
+ *        **沒有任何寫死的中文**(註解不算;唯一例外 `'排序條件'` 是交給全 DS 共用拖曳播報的名詞,那一份還沒有換字管道)。
  *   紅: 判定表任一格與純函式輸出不符即 exit 1(判定表列的是**期望值**,不是抄輸出);
  *        `--selftest` 換上兩份修前的行為當對照組,判定表對每一份都必須抓到 ≥ 4 格不符,抓不到 = 判定表沒在驗這條規則 → exit 1:
  *        (1) 2026-11-03 → 11-11 的三態版(升冪 → 降冪 → 清除、一般點擊清掉其他欄、⌄「取消排序」清掉全部;5db512f2 的 sort-cycle.ts 原樣搬進來);
  *        (2) 2026-11-03 以前的 TanStack v8.21.3 `toggleSorting`(add / toggle / replace / remove 分支原樣搬進來)。
+ *        面板的字另有六個對照組(每一個都必須至少紅一格):resolve 不理 labels / resolve 不墊預設值 / 預設值改一個字 /
+ *        面板把「加排序」寫回死字 / 面板不把 labels 交給 resolve / 拖曳把手的讀屏名稱寫回死字。
+ *        `--manager-src=<檔>` 改讀另一份面板原始碼(拿 2026-11-15 前那份來跑,面板那幾格必須紅)。
  *   綠: 全部相符時綠;純函式無時鐘、無隨機、無 DOM,重複跑結果恆等。
  *
  * 規格來源:user 2026-11-11 R16 定案(「循環:兩態」;已排序的欄一般點擊 = Shift+點擊;⌄ 選單「取消排序」只拿掉這一欄),
@@ -26,10 +34,13 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 import * as real from '../packages/design-system/src/components/DataTable/lib/sort-cycle.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SELFTEST = process.argv.includes('--selftest')
+const MANAGER_PATH = 'packages/design-system/src/components/DataTable/data-table-sort-manager.tsx'
+const managerSrcArg = process.argv.find((a) => a.startsWith('--manager-src='))?.slice('--manager-src='.length)
 
 // ── 對照組 (1):2026-11-03 → 11-11 的三態版(5db512f2 lib/sort-cycle.ts)──────────────────────────────
 const legacyTriState = (() => {
@@ -254,6 +265,80 @@ function runTables(impl, { quiet = false } = {}) {
   return fail
 }
 
+// ── 判定表 6:排序面板的字(2026-11-15 A11:面板收 `labels`,形狀照抄篩選面板)──────────────────────────────
+// 期望值 = 開放之前寫死在 data-table-sort-manager.tsx 的字(9d3c4736:80-81 方向選項、:173-176 標題列、:216-219 加排序那一排、
+// :257 / :263 / :266 / :269 每一列的讀屏名稱),一字未改 = 不傳 labels 時畫面與讀屏都不變。
+const SORT_MANAGER_LABELS_BEFORE = {
+  title: '排序', resetToDefault: '恢復預設', resetToDefaultDone: '已恢復預設排序', clearAll: '清除全部', clearAllDone: '已清除全部排序',
+  close: '關閉', addSort: '加排序', fieldAriaLabel: '排序欄位', directionAriaLabel: '排序方向', ascending: '升冪', descending: '降冪',
+  deleteCondition: '刪除', dragToReorder: '拖曳重排',
+}
+const SORT_MANAGER_LABELS_ENGLISH = {
+  title: 'Sort', resetToDefault: 'Reset to default', resetToDefaultDone: 'Sorting reset to default', clearAll: 'Clear all', clearAllDone: 'All sorting cleared',
+  close: 'Close', addSort: 'Add sort', fieldAriaLabel: 'Sort field', directionAriaLabel: 'Sort direction', ascending: 'Ascending', descending: 'Descending',
+  deleteCondition: 'Delete', dragToReorder: 'Drag to reorder',
+}
+/** 面板原始碼裡唯一准許的中文字串:交給全 DS 共用拖曳播報(lib/drag-announcements.ts)的名詞,那一份還沒有換字管道(spec 同句寫明)。 */
+const MANAGER_CJK_ALLOWED = new Set(['排序條件'])
+const CJK = /[㐀-鿿豈-﫿]/
+
+/** 面板原始碼裡(註解以外)每一段字串 / 模板字串 / JSX 文字中含中文的,排除准許清單;回傳 [{ text, line }] */
+function hardCodedCjk(src) {
+  const sf = ts.createSourceFile('data-table-sort-manager.tsx', src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const hits = []
+  const add = (node, text) => {
+    const t = String(text).trim()
+    if (t && CJK.test(t) && !MANAGER_CJK_ALLOWED.has(t)) hits.push({ text: t, line: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1 })
+  }
+  const visit = (node) => {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isJsxText(node)) add(node, node.text)
+    else if (ts.isTemplateExpression(node)) { add(node, node.head.text); for (const span of node.templateSpans) add(span, span.literal.text) }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return hits
+}
+
+/** 跑面板的字;回傳不符的格數。impl = sort-cycle 模組(或對照組換過的版本),managerSrc = 面板原始碼字串 */
+function checkManagerLabels(impl, managerSrc, { quiet = false } = {}) {
+  let fail = 0
+  const row = (name, ok, detail = '') => {
+    if (!ok) { fail++; console.log(`✗ 面板字 ${name}${detail ? ` | ${detail}` : ''}`) } else if (!quiet) console.log(`✓ 面板字 ${name}`)
+  }
+  const keys = Object.keys(SORT_MANAGER_LABELS_BEFORE)
+  const defaults = impl.DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS ?? {}
+  const sameKeys = JSON.stringify(Object.keys(defaults).sort()) === JSON.stringify([...keys].sort())
+  const changed = keys.filter((k) => defaults[k] !== SORT_MANAGER_LABELS_BEFORE[k])
+  row(`預設值 = 開放前寫死的 ${keys.length} 個字(鍵一樣、字一樣)`, sameKeys && changed.length === 0, `鍵 ${JSON.stringify(Object.keys(defaults))};不一樣的 ${JSON.stringify(changed.map((k) => `${k}=${defaults[k]}`))}`)
+  row('升冪 / 降冪與表頭那一份(DATA_TABLE_SORT_DEFAULT_LABELS)同一個值', defaults.ascending === impl.DATA_TABLE_SORT_DEFAULT_LABELS?.ascending && defaults.descending === impl.DATA_TABLE_SORT_DEFAULT_LABELS?.descending)
+  const resolve = impl.resolveDataTableSortManagerLabels
+  if (typeof resolve !== 'function') row('有 resolveDataTableSortManagerLabels', false, '沒有這支 —— 面板的字沒有合併入口')
+  else {
+    const none = resolve(undefined)
+    row('不給 labels → 全部是預設值', keys.every((k) => none[k] === defaults[k]) && none !== defaults, none === defaults ? '回傳的是預設值物件本身(呼叫端改它會改到預設值)' : JSON.stringify(none))
+    const partial = resolve({ title: SORT_MANAGER_LABELS_ENGLISH.title })
+    const partialWrong = keys.filter((k) => partial[k] !== (k === 'title' ? SORT_MANAGER_LABELS_ENGLISH.title : defaults[k]))
+    row('只給一個鍵 → 只換那一個、其餘照預設(Partial 合併)', partialWrong.length === 0, `不對的鍵 ${JSON.stringify(partialWrong)}`)
+    const full = resolve(SORT_MANAGER_LABELS_ENGLISH)
+    const fullWrong = keys.filter((k) => full[k] !== SORT_MANAGER_LABELS_ENGLISH[k])
+    row('給全部 → 全部換掉', fullWrong.length === 0, `沒換掉的鍵 ${JSON.stringify(fullWrong)}`)
+    row('合併之後預設值本身沒被改到', defaults.title === SORT_MANAGER_LABELS_BEFORE.title)
+  }
+  // 呼叫端:面板真的從 labels 取字(M37:預設值對了不等於面板用的是它;值由誰算 —— M32)
+  row('面板收 `labels?: Partial<DataTableSortManagerLabels>`', /\blabels\?: Partial<DataTableSortManagerLabels>/.test(managerSrc))
+  row('面板把 consumer 給的 labels 交給 resolveDataTableSortManagerLabels', /labels: labelsOverride,/.test(managerSrc) && /resolveDataTableSortManagerLabels\(labelsOverride\)/.test(managerSrc))
+  // 這裡只查「鍵有被讀」,不查字畫在哪(對調兩個讀屏名稱照樣綠 —— 審查 A 第 2 輪);每個字畫在對的元素 / 屬性上由
+  // scripts/data-table-panel-reset-clear-invariant.mjs 的 sort-labels-* 列在瀏覽器裡量(突變 sort-labels-swap-aria 必紅)
+  const unread = keys.filter((k) => !new RegExp(`\\blabels\\.${k}\\b`).test(managerSrc))
+  row(`面板讀了全部 ${keys.length} 個鍵(沒讀 = 那個字還寫死在別處或沒畫出來)`, unread.length === 0, `沒讀的鍵 ${JSON.stringify(unread)}`)
+  const cjk = hardCodedCjk(managerSrc)
+  row('面板原始碼(註解以外)沒有寫死的中文', cjk.length === 0, cjk.slice(0, 6).map((h) => `:${h.line}「${h.text}」`).join('、'))
+  row('預設值與型別由面板出口(進 root barrel,同篩選面板)', /export \{ DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS \}/.test(managerSrc) && /export type \{ DataTableSortManagerLabels \}/.test(managerSrc))
+  return fail
+}
+
+const readManagerSrc = () => readFileSync(managerSrcArg ?? join(ROOT, MANAGER_PATH), 'utf8')
+
 if (SELFTEST) {
   // 對照組:兩份修前行為在判定表上都必須大量不符(各 ≥ 4 格);全綠 = 判定表沒在驗規則
   let ok = true
@@ -263,10 +348,31 @@ if (SELFTEST) {
     console.log(caught >= 4 ? `✅ 對照組 ${name}:被判定表抓到 ${caught} 格不符(≥ 4)` : `✗ 對照組 ${name}:只被抓到 ${caught} 格(< 4),判定表沒在驗這條規則`)
     if (caught < 4) ok = false
   }
+  // 面板的字:現況必綠(前提),六個破法各至少紅一格;破法套不上(要換的那段字不在)= 對照組不成立,也算失敗
+  const managerSrc = readManagerSrc()
+  const base = checkManagerLabels(real, managerSrc, { quiet: true })
+  console.log(base === 0 ? '✅ 面板的字:現況全綠(對照組的前提)' : `✗ 面板的字:現況就有 ${base} 格不符,對照組的紅燈無法歸因`)
+  if (base !== 0) ok = false
+  const swap = (from, to) => (managerSrc.includes(from) ? managerSrc.replace(from, to) : null)
+  const controls = [
+    ['resolve 不理 consumer 給的 labels', { ...real, resolveDataTableSortManagerLabels: () => ({ ...real.DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS }) }, managerSrc],
+    ['resolve 不墊預設值(只回 consumer 給的)', { ...real, resolveDataTableSortManagerLabels: (overrides) => ({ ...overrides }) }, managerSrc],
+    ['預設值改了一個字(「加排序」→「新增排序」)', { ...real, DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS: { ...real.DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS, addSort: '新增排序' } }, managerSrc],
+    ['面板把「加排序」寫回死字', real, swap('{labels.addSort}', '加排序')],
+    ['面板不把 labels 交給 resolve', real, swap('resolveDataTableSortManagerLabels(labelsOverride)', 'resolveDataTableSortManagerLabels()')],
+    ['拖曳把手的讀屏名稱寫回死字', real, swap('aria-label={labels.dragToReorder}', 'aria-label="拖曳重排"')],
+  ]
+  for (const [name, impl, src] of controls) {
+    if (src === null) { console.log(`✗ 面板字對照組「${name}」:要改的那段原始碼不在了,對照組不成立`); ok = false; continue }
+    const caught = checkManagerLabels(impl, src, { quiet: true })
+    console.log(caught >= 1 ? `✅ 面板字對照組「${name}」:紅 ${caught} 格` : `✗ 面板字對照組「${name}」:0 格紅 —— 這一格的綠燈是零證據`)
+    if (caught < 1) ok = false
+  }
   process.exit(ok ? 0 : 1)
 }
 
 let fail = runTables(real)
+fail += checkManagerLabels(real, readManagerSrc())
 
 // ── 呼叫端真的消費這支判定、值由誰算(M37 / M32:判定表測的若是平行實作,或呼叫端交的值另外推,等於沒測)──
 // `--src=<檔>`:改讀另一份 data-table.tsx(對照組用:拿修前那份來跑,呼叫端這段必須紅)
