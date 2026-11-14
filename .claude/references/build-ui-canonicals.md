@@ -55,7 +55,7 @@
 |------|---------|---------|
 | 單列 row:prefix(icon/avatar) + content + suffix(action) | `patterns/element-anatomy/item-anatomy.*` — `<MenuItem>` canonical + slot components | 任何「列表項目」元件(Menu/Tree/Sidebar/TableRow/StepItem/FileItem...) |
 | 浮層容器的 Header + Body + Footer(border-b/t + padding token) | `patterns/overlay-surface/` — `SurfaceHeader/Body/Footer` | Dialog / Popover / Drawer / Sheet / 任何 elevation-200 浮層的結構化 sub-components |
-| **固定高度 chrome header(toolbar / page top bar / panel 標題列,border-b + px-loose + 高度 token)** | `patterns/header-canonical/` — `<ChromeHeader>`(`withTabs` / `leadingRail` / `lockDensity`)+ `header-canonical.spec.md` 設計契約 + `Patterns/Header Anatomy` story | Sidebar header / FileViewer Toolbar+InfoPanel / AppShell `header` slot / 未來 Drawer top bar |
+| **固定高度 chrome header(toolbar / page top bar / panel 標題列,border-b + px-loose + 高度 token)** | `patterns/header-canonical/` — `<ChromeHeader>`(`withTabs` / `tabsSlot` / `leadingRail`;沒有密度參數,要鎖密度鎖整塊)+ `header-canonical.spec.md` 設計契約 + `Patterns/Header Anatomy` story | Sidebar header / FileViewer Toolbar+InfoPanel / AppShell `header` slot / 未來 Drawer top bar |
 | **垂直居中 icon + title + description(+ action)** | `components/Empty/` — `<Empty>` 元件 | **「告訴使用者狀態」的 surface**:空資料 / 拖放邀請(FileUpload)/ 錯誤 / 首次引導 / 無權限 / 載入佔位(非 Skeleton)|
 | 橫向操作按鈕列（gap-2 分組）| `patterns/action-bar/` | Toolbar、page header actions、form footer buttons |
 | 水平溢出處理(捲動/收合,**隱藏捲軸+ fade-mask** UX)| `patterns/horizontal-overflow/` | Tabs / ChipGroup / 未來 Steps 的溢出(刻意隱藏 scrollbar) |

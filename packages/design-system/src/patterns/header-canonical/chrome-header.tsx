@@ -42,11 +42,12 @@ export const HEADER_TABS_SLOT_WRAPPER_CLASS =
  * ── API(per M31 codex 比稿 Step 5 — narrow API,避免 M21 prop variant 風險)──
  * withTabs?: boolean(預設 false)
  *   true → 移除自身 border-b,delegate paint 給 TabsList(per W1「Header semantic owner / TabsList paint owner in withTabs state」)
- * lockDensity?: 'inherit' | 'lg'(預設 'inherit')
- *   'inherit' → 跟 page density(html[data-density] 自動)
- *   'lg' → 強制 lg(viewer-fullscreen-chrome escape hatch,FileViewer 永遠 lg-equivalent design intent)
  *
  * 不開:density?: 'md' | 'lg' 自由 prop。M21 違反 — 任意 density 等於 cva-on-pattern。
+ * 密度一律跟所在那一塊(html[data-density] 或外層區塊的屬性),本元件不在自己身上寫任何密度屬性。
+ * 原 lockDensity 參數 2026-11-14 移除(AI 建議;user 沒說過要拿掉):它只在標題列上設 data-density="lg",
+ * 下面內容沒跟著鎖 → 一般密度頁面標題字比內容字往右 8px;要鎖就鎖整塊(density.spec.md「Canonical 情境 3 — 局部覆蓋」,
+ * Anti-patterns「把 density/layout-space lock 設在 header primitive」;閘 scripts/overlay-density-lock-invariant.mjs L3)。
  */
 export interface ChromeHeaderProps
   extends React.HTMLAttributes<HTMLElement> {
@@ -73,13 +74,6 @@ export interface ChromeHeaderProps
    */
   tabsSlot?: React.ReactNode
   /**
-   * 是否鎖死 lg density(viewer-fullscreen chrome 用)。
-   * 'inherit'(預設)→ 跟 page density
-   * 'lg' → 強制 chrome-header-height lg(56)
-   * 對應 patterns/header-canonical/header-canonical.spec.md Layer 3 API
-   */
-  lockDensity?: 'inherit' | 'lg'
-  /**
    * Leading rail slot(2026-05-21 ship per AppShell primary-header globalHeader 用例,
    * codex M31 Layer C 建議 codify into ChromeHeader API):
    * 固定寬度 = `var(--sidebar-width-icon)` 的左邊容器,內 `justify-center` 排列。
@@ -100,7 +94,7 @@ export interface ChromeHeaderProps
 
 export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
   (
-    { className, withTabs, tabsSlot, lockDensity = 'inherit', leadingRail, children, ...props },
+    { className, withTabs, tabsSlot, leadingRail, children, ...props },
     ref,
   ) => {
     const hasTabs = tabsSlot != null || withTabs === true
@@ -113,7 +107,6 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
       return (
         <header
           ref={ref}
-          data-density={lockDensity === 'lg' ? 'lg' : undefined}
           className={cn('flex flex-col shrink-0', className)}
           {...props}
         >
@@ -148,7 +141,6 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
       return (
         <header
           ref={ref}
-          data-density={lockDensity === 'lg' ? 'lg' : undefined}
           className={cn(
             'flex items-center shrink-0',
             'h-[var(--chrome-header-height)]',
@@ -176,7 +168,6 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
     return (
       <header
         ref={ref}
-        data-density={lockDensity === 'lg' ? 'lg' : undefined}
         className={cn(
           'flex items-center gap-2 shrink-0',
           'h-[var(--chrome-header-height)]',

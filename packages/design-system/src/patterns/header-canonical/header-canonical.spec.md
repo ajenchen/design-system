@@ -265,18 +265,18 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 <ChromeHeader
   withTabs?: boolean              // false (default) | true → auto-suppress border + delegate to TabsList
   tabsSlot?: ReactNode            // Tabs row(column mode + W1-W6 lockstep,2026-05-18 ship)
-  lockDensity?: 'inherit' | 'lg'  // 'inherit' (default)。'lg' = 在 header 上設 data-density=lg;⚠️ 2026-06-15:density lock 應設在 surface 根而非 header(header 鎖、body 沒鎖 → 左緣不對齊,FileViewer 圖二教訓)→ 現無 consumer 使用,保留僅為 API 相容。見 density.spec.md 消費者清單 + anti-pattern
+  // lockDensity 已移除(2026-11-14,AI 建議;user 沒說過要拿掉)。理由:它只在標題列上設 data-density="lg",只鎖標題列會跟下面內容左緣不對齊(一般密度頁面差 8px,FileViewer 圖二教訓)→ 要鎖密度就鎖整塊(density.spec.md Anti-patterns「把 density/layout-space lock 設在 header primitive」)
   leadingRail?: ReactNode         // 2026-05-21 ship per AppShell primary-header globalHeader:固定 width=sidebar-width-icon 的左 rail,內 justify-center 排列(toggle/logo 跟 sidebar 收合 icon center x 對齊)。
 >
   {children}
 </ChromeHeader>
 ```
 
-**不開**:`density?: 'md'|'lg'` 自由 prop(M21 違反 — 任意 density 等於 cva-on-pattern,該由 density context 決定)。`lockDensity="lg"` 原為 fullscreen viewer escape hatch,但 **2026-06-15 起無 consumer 使用**；FileViewer 已改為全 surface 繼承 page density。density lock 一律設在 **surface 根**而非 header primitive(見 `density.spec.md` anti-pattern)，其餘 consumer 走 `inherit`。`ChromeHeader` 的抽取依據是 Sidebar 與 FileViewer 曾重複擁有同一份 header contract；目前兩者皆直接消費此 primitive，實作位置見 `sidebar.tsx` / `file-viewer.tsx`，歷史 signature 留在 git history 而非 spec。
+**不開**:`density?: 'md'|'lg'` 自由 prop(M21 違反 — 任意 density 等於 cva-on-pattern,該由 density context 決定)。原本的 `lockDensity="lg"`(fullscreen viewer escape hatch)**已移除(2026-11-14,AI 建議;user 沒說過要拿掉)**——理由:只鎖標題列會跟內容左緣不對齊,要鎖密度就鎖整塊(`density.spec.md` Anti-patterns「把 density/layout-space lock 設在 header primitive」;做法見同檔「Canonical 情境 3 — 局部覆蓋」)。2026-06-15 FileViewer 改為全 surface 繼承 page density 後就沒有 consumer。ChromeHeader 一律跟所在那一塊的密度,標題列元件上不准直接寫 `data-density` / `data-ui-size` / `data-layout-space`(閘 `scripts/overlay-density-lock-invariant.mjs` L3)。`ChromeHeader` 的抽取依據是 Sidebar 與 FileViewer 曾重複擁有同一份 header contract；目前兩者皆直接消費此 primitive，實作位置見 `sidebar.tsx` / `file-viewer.tsx`，歷史 signature 留在 git history 而非 spec。
 
 ### 空 children / action state 契約(rendering contract)
 
-**空 children**:`ChromeHeaderProps extends React.HTMLAttributes<HTMLElement>`,故 `children` 型別上 optional;但**實作恆渲染固定高度 row**(single-row `h-[var(--chrome-header-height)]` + `border-b`,`chrome-header.tsx:167-183`;`tabsSlot` 模式 row 1 亦恆渲染,`:113-122`)。因此:
+**空 children**:`ChromeHeaderProps extends React.HTMLAttributes<HTMLElement>`,故 `children` 型別上 optional;但**實作恆渲染固定高度 row**(single-row `h-[var(--chrome-header-height)]` + `border-b`,`chrome-header.tsx#ChromeHeader` 最後一個 return(註解「Single-row」那段);`tabsSlot` 模式 row 1 亦恆渲染(同一個元件裡註解「Row 1」那段))。因此:
 
 - **沒有 title / actions 時不要渲染 ChromeHeader**——空 children 只會留一條固定高度 + border 的空白 chrome row(`tabsSlot` 模式更明顯:tabs 上方多整行空白標題列)。consumer 條件渲染,有內容才掛 header,而非傳空殼。
 - **只有 tabs、無獨立標題列**的場景 → 用 standalone `<Tabs size="lg">`(tab 高 = chrome-header-height,見「選哪個 header」表 C 列),**不要**空 children + `tabsSlot` 硬撐。

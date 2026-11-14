@@ -30,7 +30,7 @@
 | `action-bar/` | **組合指南 pattern**(`action-bar.spec.md` — toolbar / action row 的 role 系統 + 排列公式;**無 `.tsx`**,屬 guidance 非 runtime 件 — 對齊世界級「pattern = 組合指南」)| 任何有按鈕列的頁面,用 Button / ButtonGroup / ButtonDivider 依此指南組合 |
 | `horizontal-overflow/` | `useOverflowItems` hook + fade-mask 樣式 | Tabs / ChipGroup |
 | `overlay-surface/` | `SurfaceHeader/Body/Footer` sub-components + padding SSOT | Dialog / Popover / Sheet |
-| `header-canonical/` | `<ChromeHeader>` primitive(withTabs / lockDensity 窄 API)+ cross-family canonical SSOT(chrome + overlay 兩家族 W1-W6 lockstep:border auto-suppress / token equality / tabs size 對應 / flush stack / md future tier / sm default)| Sidebar / FileViewer Toolbar / FileViewer InfoPanel(ChromeHeader 直接消費);Dialog / Sheet / Popover(SurfaceHeader 走 cross-family canonical)|
+| `header-canonical/` | `<ChromeHeader>` primitive(withTabs / tabsSlot / leadingRail 窄 API;不開密度參數,密度跟所在那一塊)+ cross-family canonical SSOT(chrome + overlay 兩家族 W1-W6 lockstep:border auto-suppress / token equality / tabs size 對應 / flush stack / md future tier / sm default)| Sidebar / FileViewer Toolbar / FileViewer InfoPanel(ChromeHeader 直接消費);Dialog / Sheet / Popover(SurfaceHeader 走 cross-family canonical)|
 
 > **note**:i18n 已 relocate 到 `packages/design-system/src/lib/i18n/`(2026-05-01)— patterns/ 純化只收 visual primitive,non-visual cross-cutting 改去 `lib/`(對齊 Material `@mui/material/locale` / Ant ConfigProvider 共識)。詳 `packages/design-system/src/lib/README.md`。
 

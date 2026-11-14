@@ -148,7 +148,7 @@ document.documentElement.setAttribute('data-layout-space', 'md')
 
 - ❌ 元件同時設 `data-density` + `data-ui-size` 表達「兩軸同檔」(重複;要解耦就只寫兩個單軸屬性)。真的同時出現時以單軸屬性為準(「同一個元素帶兩種屬性」),不是未定義
 - ❌ **用 `data-density` master switch 鎖浮層**(連 ui-size 一起鎖 → 內部控件 / 選單 item 對不上觸發點)。只鎖該元件真正消費的 dial(見情境 1 表)
-- ❌ **把 density/layout-space lock 設在 header primitive(ChromeHeader / SurfaceHeader)而非 surface 根**——header 鎖、body 沒鎖 → 左緣不對齊(FileViewer 圖二 bug)。lock 一律放 surface 根容器
+- ❌ **把 density/layout-space lock 設在 header primitive(ChromeHeader / SurfaceHeader)而非 surface 根**——header 鎖、body 沒鎖 → 左緣不對齊(FileViewer 圖二 bug)。lock 一律放 surface 根容器(頁面上的一塊見情境 3;浮層要不要鎖、鎖在哪見情境 1)。ChromeHeader 原本專做這件事的 `lockDensity` 參數 2026-11-14 移除(AI 建議;user 沒說過要拿掉);閘 `scripts/overlay-density-lock-invariant.mjs` L3 擋標題列元件(含把屬性轉交給它的 DialogHeader / SidebarHeader 等)上直接寫 `data-density` / `data-ui-size` / `data-layout-space`
 - ❌ 為了追求表面一致性硬把 Dialog button 綁 lg ui-size(犧牲 header 高度 / strapline 彈性)
 - ❌ **鎖 Dialog 的 layout-space**(2026-06-16 定論)—— 本 spec 開頭維度表「Layout Space」列寫明 layout-space 就管「dialog body padding」,鎖 Dialog = 令自家 dial 對它點名要管的對象失效 = 自相矛盾。modal 寬鬆需求在 lg 階自然滿足(md 已是 16),不靠鎖。Popover/Coachmark 鎖 md 是另一回事(空間效率、消費 layout-space token、且為非阻斷錨定浮層)
 

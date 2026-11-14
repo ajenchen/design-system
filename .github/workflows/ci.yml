@@ -112,8 +112,8 @@ jobs:
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
           # 浮層密度寫法(2026-11-11 稽核 R7-07):前身 overlay-density-lock-placement.mjs(retired,已改名為下面這支)沒有任何執行面呼叫(孤兒閘),
-          # 檔名也對不上可達性棘輪。浮層內容不准寫 data-density、版面間距只有 Popover 能鎖且只鎖 md、header 不鎖、
-          # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 8 條必紅、4 條必綠。
+          # 檔名也對不上可達性棘輪。浮層內容不准寫 data-density、版面間距只有 Popover 能鎖且只鎖 md、標題列元件(含轉交屬性給它的)不准寫密度屬性、
+          # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 該紅的全紅、該綠的全綠(條數以閘印的為準)。
           node scripts/overlay-density-lock-invariant.mjs --selftest
           node scripts/overlay-density-lock-invariant.mjs
           # 對外彙總檔 styles/tokens.css 檔頭寫「自動產生、禁止手改」,產生器檔頭也寫「--check 在 CI 跑」—— 2026-11-11 盤點兩者都不是真的:
