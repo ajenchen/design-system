@@ -143,7 +143,7 @@ export const CASES = [
 export const NOT_COVERED = [
   ['AgentDecisionCard 標題列無分隔線、body 上下無內距(agent-decision-card.spec.md「8. AgentDecisionCard(決策卡)」第二條,繼承 Popover surface 那一條)', '量法與本閘不同:標題列的分隔線被元件規格拿掉 → 這一段只由標頭的下內距給、body 頂部歸零,要從「標頭內容的底」(標頭裡最低的那個內容的外框底)量到第一張選項卡頂 = tight(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(2)【AI 推導 2026-11-13】);本閘量的是標頭外框底 → 內容(這裡恆 0)。由 agent-decision-card-validation-invariant.mjs 的 G 系列守'],
   ['Coachmark 標頭 → 媒體區 0', '結構分區:媒體區與標頭 / body / footer 並列、貼齊外殼,不是 body 裡的內容,不套規則 2 的表(同上 (1);coachmark.spec.md「Media 區規則」位置那一條)。由 overlay-story-contract-invariant.mjs R17(上緣)/ R18(左右)守'],
-  ['DataTable 巢狀篩選面板 標題列 → 第一個灰底群組', '第一個是有底色、外框完整的群組框 = bounded → loose(data-table.spec.md「巢狀群組的間距」;2026-11-14 照 user 在 A5 成品頁的留言 ① 的原則改 ——【更正 2026-11-14】之前寫成 element → tight);面板 body 的上內距照「第一個東西是什麼」給(群組框 → loose、條件列 / 按鈕列 → tight),平鋪那一格本檔 datatable-filter-panel 守;巢狀那則(群組在前 loose / 平鋪條件列在前 tight / 群組清光只剩按鈕列 tight;收尾與頂部同值 —— 規則 4 第 4 列,借姊妹閘的 probeSides 量)與群組框內的固定 8 由 data-table-filter-group-spacing-invariant.mjs 守 —— 群組框左邊還有 Where / Or 標籤,不另登記進 CASES(姊妹閘的 SIDES 要一一對應,量左右那一套不必為這一格重做)'],
+  ['DataTable 巢狀篩選面板 標題列 → 第一個灰底群組', '標題列底下是一串群組 = layoutSpace.spec.md 規則 2 表「一串同樣的條目」→ 頂 = 筆與筆之間的距離 = 群組 ↔ 群組 = tight(data-table.spec.md「巢狀群組的間距」;user 2026-11-14 下午在對話裡說篩選條件第一個距頂應對齊條件之間的距離(問句,AI 評估同意))。第一個東西是整串、不是第一個群組框,所以本檔 classifyFirst 把群組框「單看」判成 bounded 的那一格不決定這裡的頂。【更正 2026-11-14】A70 照留言 ① 把群組框當 bounded → loose,A72 改回 tight。平鋪那一格本檔 datatable-filter-panel 守;巢狀那則(標題列 → 群組 tight、三個面板 —— 巢狀 / 平鋪 / 排序 —— 每一筆上下一樣長的韻律 K、群組清光只剩按鈕列 tight、收尾與頂部同值 —— 規則 4 第 4 列,借姊妹閘的 probeSides 量)與群組框內的固定 8 由 data-table-filter-group-spacing-invariant.mjs 守 —— 群組框左邊還有 Where / Or 標籤,不另登記進 CASES(姊妹閘的 SIDES 要一一對應,量左右那一套不必為這一格重做)'],
   ['FileViewer 工具列 → Viewport(檢視區)', '結構分區(Viewport 貼齊外殼、圖置中),不是標頭底下的內容,不套規則 2 的表(layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1))'],
   ['Alert placement="fixed"', 'alert.spec.md:154「頂部全域警告,無圓角無邊框,橫跨頁面寬度」= 頁首橫條,不是內容'],
   ['Sidebar 標頭 → nav', 'unbounded = 0 成立(SidebarContent 頂 = 標頭底),但清單的 py 在 SidebarGroup 包層(p-2)上、不在清單元素上,DOM 判法分不出;Sidebar 規格自管'],
@@ -296,7 +296,8 @@ function selftest() {
   // classifyFirst 逐列
   const base = { dataTable: false, border: 0, ownBg: false, shadow: false, role: null, tag: 'div', fieldControl: false, control: false, selfPad: false }
   const cls = [
-    // 2026-11-14(A70):有完整外框就是 bounded,不看寬 —— 寬最多 85% 的我方氣泡、DataTable 巢狀篩選的灰底群組框(左邊還有 Where 標籤)都是(留言 ①)。
+    // 2026-11-14(A70):有完整外框就是 bounded,不看寬 —— 寬最多 85% 的我方氣泡、DataTable 巢狀篩選的灰底群組框「單看」(左邊還有 Where 標籤)都是(留言 ①)。
+    // 但巢狀篩選面板的頂不看這個分類:標題列底下是一串群組 → 規則 2 表「一串同樣的條目」= 筆距 tight(A72,見 NOT_COVERED 那一格;【更正 2026-11-14】A70 曾拿這一列定頂距)。
     // 【更正 2026-11-14】2026-11-13(A5)這裡判成 element(看「撐不撐滿寬」),那一支拿掉;多帶一個 fillsWidth: false 的舊欄位也不改判
     [{ ...base, ownBg: true }, 'bounded', '有底色、寬最多 85% 的我方訊息氣泡(外框完整)'],
     [{ ...base, ownBg: true, fillsWidth: false }, 'bounded', '帶著 A5 舊欄位 fillsWidth: false 的氣泡(欄位已不看)'],

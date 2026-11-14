@@ -472,9 +472,9 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 - 第 1 row conjunction 是靜態 `Where` label(`px-[var(--field-px)]` 對齊下方 Field value 起點 = 12px)
 - field 未選 → operator + value picker disabled;同 group 共用 conjunction(第 2 條 row 是唯一可改的 And/Or Select,改動連動整 group;第 3 條起唯讀顯示當前 conjunction — A6 canonical)
-- **巢狀群組的間距**(`mode="nested"`;2026-11-13 補寫;第一點 2026-11-14 改了值、畫面有變,另兩點的數值都是既有程式的值;歸到哪一條規則是【AI 推導】;下面三點由 `scripts/data-table-filter-group-spacing-invariant.mjs` 機械檢查,一般 / 大密度量像素):
-  - 面板標題列 → 標題列底下第一個東西 = SurfaceBody 的上內距,照第一個東西是什麼給(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2 表;只由 body 這一層給,群組框不加外距 —— 同檔規則 4「同一段距離只由一層給」):**第一個是灰底群組框 → `--layout-space-loose`**(一般密度 16 / 大密度 24;群組框有底色、外框完整 = bounded region,上與左右對稱 —— 同檔「元件角色」那段 user 2026-11-14 在 A5 成品頁的留言 ① 的原則,套到這裡是【AI 推導 2026-11-14】);**第一個是條件列(`mode="flat"`)或群組清光、只剩「加入篩選器」那一排按鈕 → `--layout-space-tight`**(element)。型別上巢狀模式的根層只放群組(`filter-tree.ts` 的 `FilterTreeNested`),條件列在前就是平鋪模式。**最後一排(「加入篩選器」那一排按鈕)→ 面板底 = SurfaceBody 的下內距 = 與上內距同值**(同檔規則 4 表第 4 列:element → 容器底,面板不擋頁面、高度貼著內容 = 與頂部同值,上下對稱):群組在前 → 上下都是 `loose`;平鋪 / 群組清光 → 上下都是 `tight`。【更正 2026-11-14】2026-11-13(A5)這裡寫成「群組在面板這一層是一個個並列的 element,不是 bounded region」→ `tight`,那一句拿掉;改之前巢狀面板上下內距都是 12 / 16。
-  - 群組框(`bg-muted` 圓角框,`data-table-filter-group.tsx` 的 `GroupBlock`):四邊內距 8、框內列距 8(條件 ↔ 條件、最後一條 → 「加入巢狀篩選」);框外左邊 Where / And / Or 標籤的上內距 8,跟框的上內距同值,所以標籤外框的頂跟框內第一條條件的頂齊平【AI 推導 2026-11-13:這是量到的現況,原始碼沒寫為什麼是 8;排法是頂對齊,不是垂直置中】。這幾個 8 是元件內部固定值,不跟密度(`layoutSpace.spec.md`「該用 token(縮放)vs 刻意固定」表右欄「元件自身刻意固定」)。
+- **巢狀群組的間距**(`mode="nested"`;2026-11-13 補寫;第一點 2026-11-14 兩度改值(A70 改 loose、A72 改回 tight),最後的畫面 = A70 之前,另兩點的數值都是既有程式的值;歸到哪一條規則是【AI 推導】;下面三點由 `scripts/data-table-filter-group-spacing-invariant.mjs` 機械檢查,一般 / 大密度量像素):
+  - 面板標題列 → 標題列底下第一個東西 = SurfaceBody 的上內距 = **`--layout-space-tight`**(一般密度 12 / 大密度 16),平鋪、巢狀、群組清光三種都一樣:條件列 / 群組是一串同樣的條目(`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2 表「一串同樣的條目」:頂 = 筆與筆之間的距離 = 第三點的 `tight`;群組框有底色也照這一列、不照 bounded);只剩「加入篩選器」那一排按鈕 = element → `tight`,同值。型別上巢狀模式的根層只放群組(`filter-tree.ts` 的 `FilterTreeNested`),條件列在前就是平鋪模式。**最後一排(「加入篩選器」那一排按鈕)→ 面板底 = SurfaceBody 的下內距 = 與上內距同值**(同檔規則 4 表第 4 列:element → 容器底,面板不擋頁面、高度貼著內容 = 與頂部同值);最後一筆 → 那一排也是 `tight` —— 每一筆上下的空間一樣。只由 body 這一層給,群組框不加外距(同檔規則 4「同一段距離只由一層給」)。依據:2026-11-14 下午 user 在對話裡說篩選條件第一個距頂應該對齊條件之間的距離(逐字見 layoutSpace 規則 2 表下那一段;問句,AI 評估同意)。【更正 2026-11-14】A70(a3f7c7fd)照同檔「元件角色」那段留言 ① 的原則把群組框當 bounded region,群組在前時上下改成 `loose`(16 / 24),那一句拿掉、改回 `tight`;A70 之前(A5)的理由「群組是並列的 element」也不再用。
+  - 群組框(`bg-muted` 圓角框,`data-table-filter-group.tsx` 的 `GroupBlock`):四邊內距 8、框內列距 8(條件 ↔ 條件、最後一條 → 「加入巢狀篩選」)—— 框裡四段(框頂到第一條、條件之間、最後一條到「加入巢狀篩選」、那一排到框底)都是 8,上下一樣【AI 推導 2026-11-14:對應 user 那句「不管是巢狀和非巢狀都是類似的概念？」;8 是元件內部固定值,不屬 layoutSpace 規則 2「一串同樣的條目」那一列(那一列要求筆距是版面間距)】;框外左邊 Where / And / Or 標籤的上內距 8,跟框的上內距同值,所以標籤外框的頂跟框內第一條條件的頂齊平【AI 推導 2026-11-13:這是量到的現況,原始碼沒寫為什麼是 8;排法是頂對齊,不是垂直置中】。這幾個 8 是元件內部固定值,不跟密度(`layoutSpace.spec.md`「該用 token(縮放)vs 刻意固定」表右欄「元件自身刻意固定」)。
   - 群組 ↔ 群組 = SurfaceBody 的塊距 `--layout-space-tight`(`../../patterns/element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」公式 1:有底色、有圓角的獨立框之間必留間距)。
 - **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空且 `maxConditions` 尚有容量 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);`maxConditions=0` 不 auto-add。user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add，尊重已明確執行的清空意圖
 - **CTA 位置**:緊貼最後一條 row(**廢 SurfaceFooter**),條件與「加入」屬同一語境;root-level「加篩選 / 加入篩選器」用 `tertiary`(輕量但有邊界,符合 root-CTA 重量),group 內「加入巢狀篩選」才用 `text`(更輕,inline 於 group 內)
@@ -718,6 +718,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 - `description-list.spec.md`
 - `field.spec.md`
 - `filter-operators.spec.md`
+- `layoutSpace.spec.md`
 - `link-input.spec.md`
 - `opacity.spec.md`
 - `pagination.spec.md`
