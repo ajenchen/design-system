@@ -108,7 +108,7 @@ export function buildFadeMask({
  * 使用 useCallback 並以 scrollRef 為 dependency,確保消費者可以安全把回傳函式
  * 傳給 `<OverflowScrollArrow onClick>`。
  */
-/** 箭頭翻頁發在捲動容器上的事件:使用者自己捲的(useRevealSelected 據此不在尺寸改變時搶回位置)。 */
+/** 箭頭翻頁發在捲動容器上的事件:使用者自己捲的(useRevealSelected 據此不在尺寸改變時搶回位置)。閘 overflow-reveal-selected 的揭露探針也認這個名字(對照組 mute-user-scroll,以及 U1 / U2 確認使用者的捲動訊號有送到的那一步);改名要一起改閘。 */
 const OVERFLOW_USER_SCROLL_EVENT = 'ds-overflow-user-scroll'
 
 export function useScrollByPage<T extends HTMLElement>(

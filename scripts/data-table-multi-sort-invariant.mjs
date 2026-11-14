@@ -18,18 +18,26 @@
  *          多重排序狀態(3 欄、11 欄 9+、lg 尺寸)跑 axe(wcag2a / wcag2aa,同 a11y 閘 `scripts/audit-a11y.mjs`),違規不比同一則 story 沒排序時多
  *          —— 全 DS 像素 / a11y 閘只拍 story 初始狀態,而沒有任何 story 一開始就多重排序,這個狀態只有本閘看得到;
  *        S 與排序面板雙向同步:表頭改 → 面板列序與方向相同;面板改方向 / 刪除 → 表頭跟著變;只從面板加排序時列把手不可拖;
- *        U 不受控的表格(內部 state)同一套行為。
+ *        U 不受控的表格(內部 state)同一套行為;
+ *        D 桌機(有滑過能力的環境)靜止時 ⌄ 欄位選單收起(2026-11-14 加,A7 ⑥):設計規格「功能特性」第一張表點 Price 排序、指標移開、版面靜止後,
+ *          D1 每個沒排序的表頭 ⌄ 外層寬 0 而且透明;D2 已排序的那一欄也一樣 —— data-table.spec.md「Multi-sort header」列
+ *          「桌機維持現況:已排序欄的 ⌄ 仍是滑過才出現」(user 2026-11-12 逐字「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,
+ *          那一頁「排序取消」題的建議選項是「甲：維持現況」)。「⌄ 收著沒」的量法只有一份:lib/data-table-column-menu-state.mjs
+ *          (modifier-click-focus-invariant.mjs 用同一份)。觸控不另外處理(同一列「觸控」句:user 2026-09-26「先維持」),本閘沒有觸控格。
  *   紅: --selftest 在頁面注入各組破法(丟掉 Shift 的點擊與按鍵 / 數字藏起來 / 間距改 4px / 數字換字級與顏色 / 數字搬到箭頭左邊 /
  *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 藏起「取消排序」/ 只在多重排序時藏起「取消排序」/
  *        選單補回「這一欄目前已經是的那個方向」/ ⌄ 拿出 Tab 順序(tabindex=-1)/
- *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法),各組必紅,對照列必綠;
+ *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法 /
+ *        只讓已排序的欄 ⌄ 恆顯示(chevron-sorted-always = 成品頁沒被選的「乙」→ D2 紅、D1 是對照列必綠)/
+ *        每一欄 ⌄ 都恆顯示(chevron-always → D1、D2 都紅)),各組必紅,對照列必綠;
  *        **規則本身的對照組 = 修前的建置**(`--build=<那份建置>`):R16 之前(5db512f2,三態 + 一般點擊清掉其他欄 + 選單「取消排序」清掉全部)
  *        的建置跑本閘,P / M / K / A / U 的規則列必紅(2026-11-11 實測數字寫在 commit,不抄進這裡);判定另由判定表
  *        `scripts/test-data-table-sort-cycle.mjs --selftest` 以同一份修前行為當對照組。
  *        更早:108a736f 的建置(2026-11-04)紅在多重排序藏箭頭、數字 / 人員欄第一下降冪、沒有播報區、只從面板加排序時列把手可拖;
  *        8eb473c7(2026-11-10)紅在多重排序時 ⌄ 沒有取消排序;2e1f2e27 紅在選單兩個方向永遠都列。
  *        其餘本機實測數字(判定列數、--selftest 應紅 / 對照列數、秒數)寫在交付時的 log,不抄進這裡(抄了就會過期 —— 11-03 這裡曾寫 148,實為 147)。
- *   綠: 修好的建置全綠;找不到表頭 / 排序區 / 面板 / 選單項等量不到的情況以 INSTRUMENT-FAIL 紅,不當成通過。
+ *   綠: 修好的建置全綠;找不到表頭 / 排序區 / 面板 / 選單項等量不到的情況以 INSTRUMENT-FAIL 紅,不當成通過
+ *        (D 段另有:`(hover: hover)` 不成立 = 量的不是有滑過能力的環境、點完 Price 之後已排序的欄不是剛好一個、沒排序的欄少於兩個、任一欄找不到 ⌄)。
  *        **怎麼確認不是抽籤**:每一列判的是離散狀態(aria-sort、畫出來的順位數字、選單項有幾個、有沒有某個元素)或靜態版面量測
  *        (getBoundingClientRect 的位置 / 寬高,不是時間),一律在開 story 等到元素本身出現、每一步之後 settleAfterInteraction 等版面靜止
  *        才讀 —— 沒有任何幀時間 / 延遲 / 尾端統計。版面量測的容差 0.5–0.75px,破法造成的差最小 2px(間距 4px vs 2px),兩者不重疊。
@@ -53,6 +61,7 @@ import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction, waitForFocusStable, parkPointer, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { columnMenuStatesInPage, isColumnMenuCollapsed, describeColumnMenu } from './lib/data-table-column-menu-state.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -106,6 +115,8 @@ async function open(url, breaks = []) {
 
 // ── --selftest 的破法(每種只打一組;其餘照常量)────────────────────────────────────────────
 const SORT_BUTTON = '[role="columnheader"] [role="button"]'
+/** ⌄ 外層展開時的四個屬性(data-table.tsx `[data-col-menu]` 的 `group-hover:` 那一行),D 段兩種破法共用 */
+const CHEVRON_REVEALED_CSS = 'width:auto!important;margin-left:8px!important;overflow:visible!important;opacity:1!important'
 async function injectBreak(kind) {
   const css = {
     'number-hidden': '[data-sort-priority]{display:none!important}',
@@ -118,6 +129,9 @@ async function injectBreak(kind) {
     'menu-cancel-hidden': '[role="menuitem"]:has(svg.lucide-x){display:none!important}',
     'menu-current-dir-shown': '',
     'num-role-img': '',
+    // D 段:⌄ 外層被撐開(= 展開時那四個屬性)。sorted-always 只打已排序的欄(成品頁沒被選的「乙:正在排序的欄,⌄ 一直顯示」);always 每一欄都打
+    'chevron-sorted-always': `[role="columnheader"]:is([aria-sort="ascending"],[aria-sort="descending"]) > [data-col-menu]{${CHEVRON_REVEALED_CSS}}`,
+    'chevron-always': `[data-col-menu]{${CHEVRON_REVEALED_CSS}}`,
   }[kind]
   if (css) { await page.addStyleTag({ content: css }); return }
   await page.evaluate(([kind, sel]) => {
@@ -671,6 +685,35 @@ if (await open(FEATURES, ['shift-dropped'])) {
   check('U', '不受控 / 再點 Product(降冪)→ 升冪,不會變成沒排序(兩態)', r4.state === 'price↑1 name↑2', `實得「${r4.state}」`)
 }
 
+// ═══ D 桌機(有滑過能力的環境):靜止時 ⌄ 欄位選單收起,已排序的欄也一樣 ═══════════════════════════════════
+// 依據:data-table.spec.md「Multi-sort header」列「桌機維持現況:已排序欄的 ⌄ 仍是滑過才出現」(user 2026-11-12 選了成品頁的「甲：維持現況」,原話見檔頭)。
+// 「收著沒」的判定 = lib/data-table-column-menu-state.mjs 的 isColumnMenuCollapsed(寬 0 而且透明)。先用合成讀數證明兩個條件各自有用
+//(不開瀏覽器;兩種模式都跑、都必須綠 —— 判定壞了,下面兩格的綠燈就不算數):
+for (const [name, state, want] of [
+  ['寬 0 而且透明 → 收起', { found: true, width: 0, opacity: '0' }, true],
+  ['寬 16、不透明(展開的樣子)→ 不算收起', { found: true, width: 16, opacity: '1' }, false],
+  ['寬 0 但不透明(裁切掉了、東西照樣露出來)→ 不算收起', { found: true, width: 0, opacity: '1' }, false],
+  ['透明但寬 16(看不到卻佔著位置)→ 不算收起', { found: true, width: 16, opacity: '0' }, false],
+  ['找不到 ⌄ → 不算收起(呼叫端另判儀器失效)', { found: false }, false],
+]) check('D', `判定表:${name}`, isColumnMenuCollapsed(state) === want, `實得 ${isColumnMenuCollapsed(state)}`, { control: true })
+for (const breaks of SELFTEST ? [['chevron-sorted-always'], ['chevron-always']] : [[]]) {
+  if (!(await open(FEATURES, breaks))) continue
+  // 地板:這一段保證的是「有滑過能力的環境」。不成立 = 量的不是桌機(例:瀏覽器被設成觸控模擬)→ 儀器失效,不讀成通過
+  if (!(await page.evaluate(() => matchMedia('(hover: hover)').matches))) { instrument('D 桌機環境', '(hover: hover) 不成立 —— 量的不是有滑過能力的環境'); continue }
+  // 一般點擊第一張表的 Price(act 會把指標停到中性位置、等版面靜止);焦點留在排序區上,但那是滑鼠點出來的(data-pointer-focus),不算鍵盤焦點
+  if (!(await act('click', 'price'))) { instrument('D 前置', '點 Price 排序區沒有成功(找不到排序區,或點完版面沒有靜止)'); continue }
+  const states = await page.evaluate(columnMenuStatesInPage)
+  const sorted = states.filter((m) => m.sort === 'ascending' || m.sort === 'descending')
+  const unsorted = states.filter((m) => !sorted.includes(m))
+  if (states.some((m) => !m.found) || sorted.length !== 1 || unsorted.length < 2) {
+    instrument('D ⌄', `表頭 ${states.length} 個 / 已排序 ${sorted.length} 個(應剛好 1 個)/ 沒排序 ${unsorted.length} 個(應 ≥ 2)/ 找不到 ⌄ 的 ${states.filter((m) => !m.found).length} 個`)
+    continue
+  }
+  const open_ = (list) => list.filter((m) => !isColumnMenuCollapsed(m)).map(describeColumnMenu).join(';')
+  check('D', `沒排序的欄靜止時 ⌄ 收起(${unsorted.length} 欄,寬 0 而且透明)`, unsorted.every(isColumnMenuCollapsed), open_(unsorted) ? `沒收起:${open_(unsorted)}` : '', { control: !breaks.includes('chevron-always') })
+  check('D', `已排序的欄(${sorted[0].column})靜止時 ⌄ 也收起(user 2026-11-12 選「甲：維持現況」)`, sorted.every(isColumnMenuCollapsed), sorted.map(describeColumnMenu).join(';'))
+}
+
 await browser.close()
 if (server.notFound.length) console.error('同源 404:', [...new Set(server.notFound)].join(', '))
 await server.stop()
@@ -678,5 +721,5 @@ if (instrumentFail) {
   console.error(`\n✗ data-table-multi-sort:${INSTRUMENT_FAIL_MARKER} —— 有量測沒有真的量到${SELFTEST ? '(對照組沒有真的跑,不得讀成「如預期紅」)' : ''}`)
   process.exit(2)
 }
-console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 P / N / G / M / A / S / U 如預期變紅、對照列仍綠(儀器有效)' : '多重排序:狀態轉移、數字與 9+、長相、⌄ 選單、讀屏、與排序面板雙向同步、不受控表格,全通過'}`)
+console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 P / N / G / M / A / S / U / D 如預期變紅、對照列仍綠(儀器有效)' : '多重排序:狀態轉移、數字與 9+、長相、⌄ 選單、讀屏、與排序面板雙向同步、不受控表格、桌機靜止時 ⌄ 收起(含已排序的欄),全通過'}`)
 process.exit(failCount ? 1 : 0)

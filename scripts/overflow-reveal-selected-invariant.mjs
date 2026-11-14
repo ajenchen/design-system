@@ -6,13 +6,39 @@
  *         (滑鼠點半露的項目、方向鍵、⌄ 選單選取、縮放視窗 / 容器變窄)之後,使用者剛動到的那一項
  *         (點的 / 鍵盤焦點 / 選單選的 / 上一次揭露的)完整可讀(不在淡出區、不被箭頭蓋住),而且中心在捲動容器可視寬中心 ±2px;
  *         只有「置中需要捲到 < 0 或 > 最大捲動量」時才接受夾在那一端(另判:項目要落在那一端的半邊、仍完整可讀)。
- *         每次輸入等捲動容器的 scrollLeft 連續靜止若干影格再量(不用固定睡眠)。
+ *         「什麼時候量」看因果、不數影格(2026-11-14 換掉「scrollLeft 連續 12 格不變」—— 那在 headless 下就是固定約 0.2 秒,
+ *         而「捲過不搶回」這種格的正確結果是**沒有捲**,拿一段時間沒看到捲動當「沒捲」正是 M37 第八種形狀):
+ *         開頁前裝「揭露探針」記下產品對捲動容器的每一次 scrollTo(產品只透過它捲,horizontal-overflow.spec.md「只捲這個容器」);
+ *         每次動作之後 (a) 等我們自己掛在同一個捲動容器上的觀察器 / 監聽也收到這次觸發(選中屬性 / 新項目、容器尺寸、鍵盤焦點)
+ *         → (b) 再過一個影格(產品的揭露在同一批觀察器回呼 / 同一次事件派發裡**同步**呼叫 scrollTo,這時一定呼叫完了)
+ *         → (c) 這段時間產品沒呼叫 = 它決定不捲,立刻量 → (d) 有呼叫就等 scrollLeft 到它最後一次傳的位置(目標讀產品自己傳的值,
+ *         閘不重寫公式;量到的對不對仍由 judge 判)→ (e) 那次呼叫真的會動到位置,再等一個比動作前新的 scrollend(smooth 的 scrollend 比位置晚到)
+ *         → 等遮罩 / 箭頭 / ⌄ 跟上捲動位置、連續兩次讀值之間沒有新的尺寸通知或產品呼叫。
+ *         夾具那一段(A7 ②,2026-11-14;量的是夾具頁 scripts/test-fixtures/overflow-reveal/fixture.tsx,不是 story:每一項寬度寫死、
+ *         元件行為是這次 checkout 的原始碼)五排 × 六種格,共 28 格:M1 掛載時選在中間 → 置中;M2 掛載時選最後一項 → 夾在終點、完整可讀;
+ *         N 新出現的已選項目(同一次狀態更新就是選中)→ 置中;U1 滾輪捲過 → 容器變窄 → 位置不動(不搶回);U2 箭頭翻頁捲過 → 同 U1(只有三排有箭頭);
+ *         U3 捲過之後再選一項 → 容器變窄 → 照樣置中。這幾格守的是規格觸發表裡【AI 推導】的那幾句(規格自己標的;user 2026-11-11 定的只有
+ *         「都先B」= 一律置中、兩端夾住),不是 user 的決定 —— user 之後若對「捲過不搶回」有不同答案,U1 / U2 的期望要翻面。
  *   紅: 任一格(元件 × 輸入 × 步驟)中心偏離 > 2px 且不是合法夾住(off-center)/ 項目被淡出或箭頭遮住(unreadable)
- *       → 指名哪一排、哪種輸入、哪一項、偏多少並 exit 1。
- *       拿掉 primitive 的呼叫(selftest:每種輸入動作前一刻把捲動容器的 scrollTo 換成空函式 = useRevealSelected 不作用)→ 每一排每種輸入都必須紅;
+ *       → 指名哪一排、哪種輸入、哪一項、偏多少並 exit 1。夾具格:M1 / N / U3 沒置中、M2 沒夾在終點、U1 / U2 位置被拉回(產品有呼叫 scrollTo)→ exit 1。
+ *       拿掉 primitive 的呼叫(selftest:每種輸入動作前一刻讓揭露探針把產品對捲動容器的 scrollTo 吞掉 = useRevealSelected 不作用)→ 每一排每種輸入都必須紅;
  *       2026-11-11 修前建置(`--selftest --control-static=<修前建置>`)直接點半露的 Chip / Tab、Tabs scroll 方向鍵、縮放視窗必紅。
- *       零格量測 / 某種輸入一格「非夾住」的量測都沒有 / 點擊找不到半露的項目 / 選單找不到觸發鈕 / 捲動等不到靜止 = 儀器失效(INSTRUMENT-FAIL,exit 1),不當綠燈。
- *   綠: 現況建置全部格子置中或合法夾住且完整可讀;同一份 storybook-static 重複跑結果恆等(輸入順序固定、等靜止用影格)。
+ *       夾具三種破法(selftest;每一格被哪一種打紅、其餘破法下必須綠,比的是「紅的集合 = 期望」,破法打到 0 次 = 對照組不成立):
+ *       swallow(吞掉 scrollTo)→ 只紅 M1 / M2 / N / U3;no-childlist(產品觀察器不看 childList = 1df095f1 之前)→ 只紅 N;
+ *       mute-user-scroll(滾輪 / 箭頭翻頁訊號到不了產品 = 1df095f1 之前沒有旗標)→ 只紅 U1 / U2。
+ *       「觸發晚到」兩面(selftest):第 30 個影格才按新增 —— 舊判準(連續 12 格不動,與排點擊寫在同一次頁面函式)回來時項目數必須還沒變,
+ *       新判準回來時多 1 項而且新項目置中;缺一面就紅。
+ *       產品要求的位置整體少 40px、照常捲到位(selftest 對照組 bias;2026-11-14 審查 A 的 b05)→ Chip menu 四種輸入都必須紅,
+ *       而且結論必須是產品紅(exit 1),不是儀器失效 —— 「量到了而且錯」不得被說成「沒量到」。
+ *       經符號連結叫自己、給不存在的建置(selftest)→ 必須以缺建置標記 + 結束碼 2 結束(「是不是被直接執行」比真實路徑,lib/direct-run.mjs)。
+ *       零格量測 / 某種輸入一格「非夾住」的量測都沒有(數的是沒被兩端夾住的格 = needsCentring,不看量到的對不對)/ 點擊找不到半露的項目 /
+ *       選單找不到觸發鈕 / 動作沒有造成預期的觸發 /
+ *       產品要求的位置上限內沒到 / 到位卻等不到 scrollend / 遮罩箭頭 ⌄ 沒跟上捲動位置 / 夾具打包失敗 / 夾具幾何分不出「捲對了」與「沒捲」/
+ *       使用者的捲動沒發生(沒有 scroll、等不到 scrollend、捲不到 24px、wheel / 箭頭翻頁訊號沒送到這一排)/ 位置變了但產品沒呼叫 /
+ *       需要置中的夾具格全部 0 次 scrollTo(產品換了捲動方式)= 儀器失效(印 INSTRUMENT-FAIL、exit 2),不當綠燈、也不指控產品。
+ *       結論的先後(純函式 overflowRunVerdict,主跑與 selftest 判定表共用):量到任何一格產品紅 → exit 1,儀器地板沒過的條目照印、不帶機讀標記;
+ *       沒有產品紅才看地板 → exit 2。(中途丟出的儀器失效 —— story 開不起來、探針等不到 —— 照舊直接 exit 2,那時什麼都還沒判。)
+ *   綠: 現況建置全部格子置中或合法夾住且完整可讀、夾具 28 格全綠;同一份 storybook-static 重複跑結果恆等(輸入順序固定、等的是觸發與產品要求的位置,不數影格)。
  *   量法: 判定抽成純函式 `judge`(幾何 → 結果)與 `maskObstruction`(遮罩字串 → 兩側被淡出的寬度),selftest 判定表兩面;
  *         遮擋寬度從捲動容器實際的 mask-image 讀(不抄 primitive 的常數),箭頭用真實按鈕的 getBoundingClientRect。
  *   幾何不靠字型(2026-11-12): 展示 story 的外框是寫死的寬度,項目多寬卻看這台機器有什麼字型 —— CI runner 沒有中文字型,
@@ -29,8 +55,12 @@
  *         `resizePlan` 切不出來就回 null(不再退而回一個只能夾住的寬度)。天然排版下縮放切不出來 → 這一排改用自備幾何整圈重量;
  *         還是切不出來 = 儀器失效。selftest 多一面:「整排塞得下、自備幾何開、拿掉 primitive」Tabs 兩排每種輸入都必須紅(runner 上沒紅的那個幾何)。
  *
- * Run: node scripts/overflow-reveal-selected-invariant.mjs [--static=<dir>] [--selftest [--control-static=<修前建置>]]
+ * Run: node scripts/overflow-reveal-selected-invariant.mjs [--static=<dir>] [--dump=<檔>] [--selftest [--control-static=<修前建置>]]
+ *      --dump:主跑把每一格寫成 JSON —— story 那一段「排 / 輸入 / 步驟 / 項目 / 判定 / 偏移」、夾具那一段「排 / 格 / 判定 / 偏移 / 產品呼叫次數」
+ *      (工程比對用:換量法前後、本機對 CI)。
+ * 結束碼:0 綠 / 1 紅 / 2 儀器失效(一律同時印 INSTRUMENT-FAIL 標記;lib/gate-selftest-meta.mjs 看標記不看結束碼)。
  */
+import { writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -38,6 +68,8 @@ import {
   StoryRenderInstrumentError,
 } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { isDirectRun, missingBuildViaSymlinkControl } from './lib/direct-run.mjs'
+import { FixtureInstrumentError, startStorybookCssFixture } from './lib/storybook-css-fixture.mjs'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const ARGS = process.argv.slice(2)
@@ -46,12 +78,17 @@ const STATIC = path.resolve(arg('--static') ?? path.join(REPO, 'storybook-static
 const CONTROL_STATIC = arg('--control-static') ? path.resolve(arg('--control-static')) : null
 const SOURCES = [
   'packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx',
+  'packages/design-system/src/hooks/use-overflow-items.ts',
   'packages/design-system/src/components/Chip/chip.tsx',
   'packages/design-system/src/components/Tabs/tabs.tsx',
   'packages/design-system/src/components/FileViewer/file-viewer.tsx',
   'packages/design-system/src/components/Chip/chip.principles.stories.tsx',
   'packages/design-system/src/components/Tabs/tabs.stories.tsx',
   'packages/design-system/src/components/FileViewer/file-viewer.stories.tsx',
+  // 夾具那一段另外用到的元件:夾具量到的是「這次 checkout 的元件原始碼 + 那一份建置的 CSS」,元件比建置新 = 兩半對不上
+  'packages/design-system/src/components/Button/button.tsx',
+  'packages/design-system/src/components/Tooltip',
+  'packages/design-system/src/components/DropdownMenu',
 ]
 // 中心偏離容許值 = horizontal-overflow.spec.md「閘」句的「容器中心 ±2px」(唯一一份規範數字)。原名 TOLERANCE 與
 // switch-thumb-ring-invariant.mjs 的 TOLERANCE = 8 撞名被 named-constant-drift 抓到 —— 那支的 8 是截圖每通道色差(/255),
@@ -70,16 +107,24 @@ const CLAMP_MARGIN_PX = 8
 const RESIZE_MIN_DELTA_PX = 16
 // 自備幾何挑寬度時「右側半露的是哪一項」不能卡在邊界上:改寬度的實際結果容許 ±1px(setVisibleWidth),邊界多留這麼多才不會換人
 const PICK_STABILITY_PX = 2
+// 揭露探針的上限(只是「等不到」的天花板,綠的路徑都是條件成立就回;design-horizontal-scroll.md 5.4):
+// 動作之後等觸發送達;觸發送達之後等產品要求的位置 / scrollend / 遮罩箭頭跟上
+const REVEAL_TRIGGER_CAP_MS = 5000
+const REVEAL_ARRIVE_CAP_MS = 6000
+// selftest 對照組 bias:產品要求的揭露位置整體少這麼多(審查 A 2026-11-14 b05 用的 40)。要遠大於 CENTER_TOLERANCE_PX 與
+// CLAMP_MARGIN_PX,偏完的格才一定判 off-center / unreadable,不會落回容差內
+const REVEAL_BIAS_PX = 40
 
 // ── 受測的五排 ─────────────────────────────────────────────────────────────
 // scroller = 頁面上第幾個 [data-overflow-scroller];item = 項目選擇器(修前建置也認得,對照組才量得到);
-// menu = ⌄ 觸發鈕 aria-label 開頭(沒有 = 這一排沒有選單);keyTarget = 方向鍵之後要揭露的是誰(焦點 / aria-current)
+// menu = ⌄ 觸發鈕 aria-label 開頭(沒有 = 這一排沒有選單);keyTarget = 方向鍵之後要揭露的是誰(焦點 / aria-current);
+// attr = 選中寫在項目的哪個屬性(= 產品 useRevealSelected 的 selectedAttribute;揭露探針的觀察器看它);arrows = 這一排有左右箭頭
 export const STRIPS = Object.freeze([
-  { key: 'chip-scroll', label: 'Chip layout="scroll"', story: 'design-system-components-chip-設計原則--layout-rule', scroller: 0, item: 'button[data-state]', menu: null, keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 400 },
-  { key: 'chip-menu', label: 'Chip layout="menu"', story: 'design-system-components-chip-設計原則--layout-rule', scroller: 1, item: 'button[data-state]', menu: '選項選單', keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 400 },
-  { key: 'tabs-scroll', label: 'Tabs overflow="scroll"', story: 'design-system-components-tabs-展示--overflow-scroll', scroller: 0, item: '[role="tab"]', menu: null, keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 300 },
-  { key: 'tabs-menu', label: 'Tabs overflow="menu"', story: 'design-system-components-tabs-展示--overflow-menu', scroller: 0, item: '[role="tab"]', menu: '頁籤選單', keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 300 },
-  { key: 'filmstrip', label: 'FileViewer 縮圖列', story: 'design-system-components-fileviewer-展示--event-photos-collection', scroller: 0, item: '[data-thumb-index]', menu: null, keyTarget: 'current', viewport: { width: 390, height: 800 }, narrowTo: 330, open: '檢視活動相集' },
+  { key: 'chip-scroll', label: 'Chip layout="scroll"', story: 'design-system-components-chip-設計原則--layout-rule', scroller: 0, item: 'button[data-state]', attr: 'data-state', arrows: true, menu: null, keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 400 },
+  { key: 'chip-menu', label: 'Chip layout="menu"', story: 'design-system-components-chip-設計原則--layout-rule', scroller: 1, item: 'button[data-state]', attr: 'data-state', arrows: false, menu: '選項選單', keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 400 },
+  { key: 'tabs-scroll', label: 'Tabs overflow="scroll"', story: 'design-system-components-tabs-展示--overflow-scroll', scroller: 0, item: '[role="tab"]', attr: 'aria-selected', arrows: true, menu: null, keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 300 },
+  { key: 'tabs-menu', label: 'Tabs overflow="menu"', story: 'design-system-components-tabs-展示--overflow-menu', scroller: 0, item: '[role="tab"]', attr: 'aria-selected', arrows: false, menu: '頁籤選單', keyTarget: 'focus', viewport: { width: 1280, height: 900 }, narrowTo: 300 },
+  { key: 'filmstrip', label: 'FileViewer 縮圖列', story: 'design-system-components-fileviewer-展示--event-photos-collection', scroller: 0, item: '[data-thumb-index]', attr: 'aria-current', arrows: true, menu: null, keyTarget: 'current', viewport: { width: 390, height: 800 }, narrowTo: 330, open: '檢視活動相集' },
 ])
 export const INPUTS = Object.freeze(['click', 'keys', 'menu', 'resize'])
 
@@ -209,6 +254,40 @@ export function judge(g, where = '') {
   return { ok: true, how, offset, text: `${where}:${how} ${offset}px` }
 }
 
+// ── 純函式:這一格算不算「需要置中」的量測(儀器地板數的就是它)──────────────────────
+// = 沒被兩端夾住(judge 的 how 是 centered 或 off-center),**不看 ok**:地板要回答的是「置中這條有沒有被量到」,不是「量到的對不對」。
+// 2026-11-14 審查 A:原本數「判成 centered 而且 ok」的格 —— 產品把揭露位置整體算錯時,需要置中的格全部變成 off-center,
+// 這個數字歸零、整支以儀器失效結束,同一次量到的產品紅一行都沒印(量到了而且錯,被說成沒量到;M37:拿結果當幾何的代理)。
+export const needsCentring = (res) => res.how === 'centered' || res.how === 'off-center'
+
+// ── 純函式:產品要求的位置到了沒 ─────────────────────────────────────────────
+// left = 產品最後一次傳給 scrollTo 的值(瀏覽器會夾在 0..最大);差 < 1px 算到。
+// **這一份原始碼同時送進頁面**(揭露探針的 d 步,evalWith 序列化傳入)—— 判定表與頁面端是同一段文字,不得引用外部變數。
+export function revealArrived({ scrollLeft, max, left }) {
+  const target = Math.min(Math.max(0, max), Math.max(0, Number(left)))
+  return Math.abs(scrollLeft - target) < 1
+}
+
+// ── 純函式:遮罩 / 箭頭 / ⌄ 跟上目前的捲動位置了沒 ──────────────────────────────
+// judge 的「完整可讀」讀容器上的遮罩與箭頭,它們是 React 收到 scroll / 尺寸通知之後重畫才更新的 —— 量之前要等它們跟上。
+// 門檻與 hooks/use-overflow-items.ts useScrollEdges 同一組(可捲 = scrollWidth > clientWidth + 1;起點 = scrollLeft ≤ 0;
+// 終點 = scrollLeft ≥ 最大 − 1);在這裡只當「等待條件」,對不上只會變成儀器失效(等不到),不會變假綠。
+// s = edgeStateInPage 的回傳;strip.arrows = 這一排有左右箭頭。另看「產品最後一次要求的位置到了沒」(吞掉 scrollTo 的對照組不看)。
+export function edgesConsistent(s, { arrows = false } = {}) {
+  const o = maskObstruction(s.mask, s.width)
+  if (o.unparsed) return { ok: false, why: `讀不懂遮罩 ${s.mask}` }
+  const canScroll = s.maxScroll > 1
+  const wantLeft = canScroll && s.scrollLeft > 0
+  const wantRight = canScroll && s.scrollLeft < s.maxScroll - 1
+  const problems = []
+  if ((o.left > 0) !== wantLeft) problems.push(`左側淡出 ${o.left}px,捲動位置 ${s.scrollLeft} 應${wantLeft ? '有' : '無'}`)
+  if ((o.right > 0) !== wantRight) problems.push(`右側淡出 ${o.right}px,捲動位置 ${s.scrollLeft} / 最大 ${s.maxScroll} 應${wantRight ? '有' : '無'}`)
+  if (arrows && (s.arrows.left !== wantLeft || s.arrows.right !== wantRight)) problems.push(`箭頭 左${s.arrows.left ? '有' : '無'} / 右${s.arrows.right ? '有' : '無'},應 左${wantLeft ? '有' : '無'} / 右${wantRight ? '有' : '無'}`)
+  if (s.menu !== null && s.menu !== canScroll) problems.push(`⌄ ${s.menu ? '有' : '無'},可捲 ${canScroll ? '是' : '否'}`)
+  if (s.lastLeft !== null && !s.swallow && !revealArrived({ scrollLeft: s.scrollLeft, max: s.maxScroll, left: s.lastLeft })) problems.push(`產品要求捲到 ${s.lastLeft},目前 ${s.scrollLeft}`)
+  return { ok: problems.length === 0, why: problems.join('、') }
+}
+
 // ── 頁面端:量指定項目(以原始碼序列化傳進頁面:不得引用外部變數)────────────
 const measureInPage = ([scIndex, itemSel, targetIndex]) => {
   const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
@@ -222,7 +301,8 @@ const measureInPage = ([scIndex, itemSel, targetIndex]) => {
   const arrows = [...(sc.parentElement?.querySelectorAll('[data-overflow-arrow] button') ?? [])].map((b) => b.getBoundingClientRect())
   const arrowOverlap = arrows.some((a) => Math.min(a.right, r.right) - Math.max(a.left, r.left) > 0.5 && Math.min(a.bottom, r.bottom) - Math.max(a.top, r.top) > 0.5)
   return {
-    label: (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 24),
+    // aria-label 優先(縮圖列的縮圖:圖片版沒有文字、檔案圖示版的文字只有副檔名;Chip / Tab 沒有 aria-label,照舊讀文字)
+    label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24),
     left, right: left + r.width, width: sc.clientWidth, scrollLeft: sc.scrollLeft, maxScroll: sc.scrollWidth - sc.clientWidth,
     mask: sc.style.maskImage || sc.style.webkitMaskImage || getComputedStyle(sc).maskImage || 'none',
     arrowOverlap,
@@ -242,7 +322,8 @@ const listInPage = ([scIndex, itemSel]) => {
 }
 
 // 把捲動容器的可視寬往 targetW 推一步:改它父層(flex 外殼)的寬度,差多少補多少。
-// ⌄ 觸發鈕只在有溢出時才渲染,出現 / 消失會吃掉一段寬度 → 呼叫端等靜止後再量、沒到位就再推一步。
+// ⌄ 觸發鈕只在有溢出時才渲染,出現 / 消失會吃掉一段寬度 → 呼叫端等遮罩 / ⌄ 跟上之後再量、沒到位就再推一步。
+// 回傳推之前 / 推完當下的寬度(讀 getBoundingClientRect 會強制排版:寬度真的變了,我們的 ResizeObserver 才會收到通知)
 const nudgeScrollerWidthInPage = ([scIndex, targetW]) => {
   const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
   const host = sc?.parentElement
@@ -252,38 +333,364 @@ const nudgeScrollerWidthInPage = ([scIndex, targetW]) => {
   host.style.maxWidth = 'none'
   host.style.flex = '0 0 auto' // 父層若是橫向 flex,寫死的寬度會被壓縮 / 撐開 → 鎖住
   host.style.width = `${Math.max(1, Math.round(hostW + (targetW - now)))}px`
-  return { from: now }
+  return { from: now, to: sc.getBoundingClientRect().width }
 }
 const scrollerWidthInPage = (scIndex) => document.querySelectorAll('[data-overflow-scroller]')[scIndex]?.getBoundingClientRect().width ?? null
 
-// 等捲動容器 scrollLeft 連續 frames 格不變(smooth 捲動跑完);上限內等不到 = 儀器失效
-const waitScrollStill = ([scIndex, frames, capMs]) => new Promise((resolve) => {
+// ── 揭露探針(頁面端;story 那一段與夾具那一段共用同一份)─────────────────────────────
+// (1) 開頁前裝一次(page.addInitScript,整個分頁之後每一份文件都有):記下產品對捲動容器的每一次 scrollTo。
+//     產品只透過 scroller.scrollTo 捲(horizontal-overflow.spec.md「只捲這個容器(scrollTo),不用 scrollIntoView」),
+//     所以「產品要求捲到哪」直接讀它傳的 left,閘不重寫 computeRevealScrollLeft 的公式。
+//     moves = 呼叫當下這一次會不會真的動到位置(判要不要等 scrollend 用;不看 scroll 事件 —— 瀏覽器把位置夾回範圍也會發 scroll、但沒有 scrollend)。
+//     sabotage(對照組;網址參數 revealSabotage 或之後由閘直接改 window.__revealProbe.sabotage):
+//       'swallow' = 產品對捲動容器的 scrollTo 變成不做事(= 拿掉 primitive 的作用;取代 2026-11-14 前的「換成空函式」,效果相同);
+//       'bias' = 產品照常呼叫、也真的捲到它要求的位置,只是要求的位置整體少 probe.bias px(= 揭露公式算錯;閘在動作前一刻寫入)。
+//         在「記錄」之前改:探針記到的、閘等到的都是算錯之後的位置 —— 跟真的公式錯一模一樣;
+//       'no-childlist' / 'mute-user-scroll' 只能在掛載前決定(觀察器與監聽是掛載時建立的)→ 只走網址參數(夾具那一段用)。
+//     sabotageHits = 破法實際打到幾次(打到 0 次 = 產品換了機制、破法不成立 → selftest 明確失敗,不默默當成「對照組綠」)。
+//     userSignals = 送到捲動容器的「使用者自己捲」訊號數(滾輪 / 觸控 / 箭頭翻頁事件)。這個計數**先於**破法登記在 window 的捕獲階段,
+//       所以破法擋掉的訊號照樣算到 —— U1 / U2 用它證明「這台機器真的送出了使用者的捲動」;沒送到 = 儀器失效,不指控產品。
+const installRevealProbeInPage = () => {
+  if (window.__revealProbe) return
+  const sabotage = new URLSearchParams(window.location.search).get('revealSabotage') || ''
+  const probe = { sabotage, calls: [], sabotageHits: 0, userSignals: 0, bias: 0 }
+  window.__revealProbe = probe
+  const nativeScrollTo = Element.prototype.scrollTo
+  Element.prototype.scrollTo = function (...args) {
+    if (this instanceof Element && this.hasAttribute('data-overflow-scroller')) {
+      const objectForm = Boolean(args[0] && typeof args[0] === 'object')
+      const o = objectForm ? args[0] : { left: args[0] }
+      let left = Number(o.left)
+      if (probe.sabotage === 'bias' && Number.isFinite(left)) {
+        left -= probe.bias
+        probe.sabotageHits += 1
+        args = objectForm ? [{ ...args[0], left }] : [left, args.length > 1 ? args[1] : this.scrollTop]
+      }
+      const max = Math.max(0, this.scrollWidth - this.clientWidth)
+      probe.calls.push({ el: this, left, moves: Math.abs(this.scrollLeft - Math.min(max, Math.max(0, left))) >= 1 })
+      if (probe.sabotage === 'swallow') { probe.sabotageHits += 1; return undefined }
+    }
+    return nativeScrollTo.apply(this, args)
+  }
+  // 產品認的「使用者自己捲」訊號(horizontal-overflow.tsx useRevealSelected 的 wheel / touchstart / 箭頭翻頁事件監聽)。
+  // 'ds-overflow-user-scroll' 是產品沒有 export 的事件名(OVERFLOW_USER_SCROLL_EVENT),這裡是第二個出現的地方:
+  // 產品改名時 userSignals 收不到 → U2 判儀器失效;mute-user-scroll 也打不到 → selftest 的 U2「該紅沒紅」—— 會自己報出來,改這裡。
+  const USER_SIGNALS = ['wheel', 'touchstart', 'ds-overflow-user-scroll']
+  const inScroller = (e) => e.target instanceof Element && Boolean(e.target.closest('[data-overflow-scroller]'))
+  for (const type of USER_SIGNALS) window.addEventListener(type, (e) => { if (inScroller(e)) probe.userSignals += 1 }, { capture: true, passive: true })
+  if (sabotage === 'no-childlist') {
+    // 只打 useRevealSelected 的那一個觀察器:它同時帶 childList + attributeOldValue + attributeFilter(產品 mo.observe);
+    // useScrollEdges 的那一個沒有 attributes、揭露探針自己的那一個沒有 attributeOldValue —— 兩個都不受影響
+    const nativeObserve = MutationObserver.prototype.observe
+    MutationObserver.prototype.observe = function (target, options) {
+      const reveal = Boolean(options && options.childList && options.attributeOldValue && Array.isArray(options.attributeFilter))
+      if (reveal) probe.sabotageHits += 1
+      return nativeObserve.call(this, target, reveal ? { ...options, childList: false } : options)
+    }
+  }
+  if (sabotage === 'mute-user-scroll') {
+    // 訊號送不到產品(window 捕獲階段就停掉,產品掛在捲動容器上的監聽收不到);只擋傳遞、不取消預設行為 —— 滾輪照樣會捲
+    for (const type of USER_SIGNALS) window.addEventListener(type, (e) => { if (inScroller(e)) { probe.sabotageHits += 1; e.stopImmediatePropagation() } }, { capture: true })
+  }
+}
+
+// (2) 捲動容器出現之後,在它身上掛我們自己的觀察器與監聽(同一份文件只掛一次)。
+//     產品的觀察器早在掛載時就建好;觀察器回呼在同一次畫面更新 / 同一個微任務檢查點全部送完、同一個元素上的事件監聽在同一次派發裡跑完 ——
+//     所以「我們的也收到了」再過一個影格,產品對這次觸發該呼叫的 scrollTo 一定都呼叫完了,不管兩邊誰先建立。
+const armScrollerInPage = ([scIndex, attrName]) => {
   const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
-  if (!sc) return resolve({ ok: false, reason: 'no-scroller' })
-  const t0 = performance.now(); let last = sc.scrollLeft; let still = 0
+  if (!sc || !window.__revealProbe) return null
+  if (!sc.__revealArm) {
+    const arm = { resize: 0, mutation: 0, focus: 0, scroll: 0, seq: 0, lastScroll: 0, lastEnd: 0 }
+    sc.__revealArm = arm
+    new ResizeObserver(() => { arm.resize += 1 }).observe(sc)
+    new MutationObserver((records) => { arm.mutation += records.length }).observe(sc, { attributes: true, attributeFilter: [attrName], subtree: true, childList: true })
+    sc.addEventListener('focusin', () => { arm.focus += 1 })
+    sc.addEventListener('scroll', () => { arm.scroll += 1; arm.seq += 1; arm.lastScroll = arm.seq })
+    sc.addEventListener('scrollend', () => { arm.seq += 1; arm.lastEnd = arm.seq })
+  }
+  return true
+}
+
+// (3) 動作前的快照:各計數 + 產品對**這個**容器已經呼叫幾次
+const revealMarkInPage = (scIndex) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  const arm = sc?.__revealArm
+  if (!arm || !window.__revealProbe) return null
+  const { resize, mutation, focus, scroll, lastScroll, lastEnd } = arm
+  return { resize, mutation, focus, scroll, lastScroll, lastEnd, calls: window.__revealProbe.calls.filter((c) => c.el === sc).length, signals: window.__revealProbe.userSignals }
+}
+const UNARMED_MARK = Object.freeze({ resize: 0, mutation: 0, focus: 0, scroll: 0, lastScroll: 0, lastEnd: 0, calls: 0, signals: 0 })
+
+// (4) 動作後:a 觸發送達(kinds 任一的計數比快照大)→ b 再過一個影格 → c 這段時間產品對這個容器沒呼叫 → 立刻回(它決定不捲);
+//     吞掉 scrollTo 的對照組有呼叫就回(不等位置)→ d 等 scrollLeft 到產品最後一次要求的位置(arrived = revealArrived,序列化傳入)
+//     → e drain 而且有任何一次呼叫真的會動到位置 → 等一個比**動作前快照**新的 scrollend(瞬間捲動的 scrollend 可能在開始等之前就到了,基準取動作之前)。
+//     掛載那一次 drain = false:產品的瞬間捲動發生在我們掛監聽之前,它的 scrollend 收不到。
+const awaitRevealInPage = ([scIndex, mark, kinds, triggerCapMs, arriveCapMs, drain], arrived) => new Promise((resolve) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  const arm = sc?.__revealArm
+  const probe = window.__revealProbe
+  if (!arm || !probe) return resolve({ ok: false, why: 'unarmed' })
+  const t0 = performance.now()
+  let fencedAt = null
   const tick = () => {
-    const cur = sc.scrollLeft
-    if (cur === last) still += 1; else { still = 0; last = cur }
-    if (still >= frames) return resolve({ ok: true })
-    if (performance.now() - t0 > capMs) return resolve({ ok: false, reason: 'not-still' })
+    const seen = kinds.some((k) => arm[k] > mark[k])
+    if (!seen) {
+      if (performance.now() - t0 > triggerCapMs) return resolve({ ok: false, why: 'no-trigger' })
+      return requestAnimationFrame(tick)
+    }
+    if (fencedAt === null) { fencedAt = performance.now(); return requestAnimationFrame(tick) }
+    const calls = probe.calls.filter((c) => c.el === sc).slice(mark.calls)
+    const moved = calls.some((c) => c.moves)
+    if (calls.length === 0 || probe.sabotage === 'swallow') return resolve({ ok: true, calls: calls.length, moved })
+    const last = calls[calls.length - 1]
+    const max = sc.scrollWidth - sc.clientWidth
+    const there = arrived({ scrollLeft: sc.scrollLeft, max, left: last.left })
+    const drained = !drain || !moved || arm.lastEnd > mark.lastEnd
+    if (there && drained) return resolve({ ok: true, calls: calls.length, moved, target: last.left })
+    if (performance.now() - fencedAt > arriveCapMs) return resolve({ ok: false, why: there ? 'no-scrollend' : 'not-arrived', target: last.left, scrollLeft: sc.scrollLeft, max, calls: calls.length })
     requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
 })
 
-// selftest 注入:拿掉 primitive 的作用 —— 捲動容器的 scrollTo 變成空函式(useRevealSelected 只透過它捲)
-const neutralizeRevealInPage = () => {
-  if (window.__revealNeutralized) return
-  window.__revealNeutralized = true
-  const orig = Element.prototype.scrollTo
-  Element.prototype.scrollTo = function (...a) { if (this.hasAttribute && this.hasAttribute('data-overflow-scroller')) return undefined; return orig.apply(this, a) }
+// (5) 等遮罩 / 箭頭 / ⌄ 跟上:每次讀一份狀態(edgesConsistent 在 Node 判),中間隔整整一次畫面更新(兩個 rAF)
+const edgeStateInPage = ([scIndex, menuLabel, sinceCalls]) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  const probe = window.__revealProbe
+  if (!sc || !probe) return null
+  const host = sc.parentElement
+  const calls = probe.calls.filter((c) => c.el === sc)
+  return {
+    scrollLeft: sc.scrollLeft, maxScroll: sc.scrollWidth - sc.clientWidth, width: sc.clientWidth,
+    mask: sc.style.maskImage || sc.style.webkitMaskImage || getComputedStyle(sc).maskImage || 'none',
+    arrows: { left: Boolean(host?.querySelector('[data-overflow-arrow="left"]')), right: Boolean(host?.querySelector('[data-overflow-arrow="right"]')) },
+    menu: menuLabel ? Boolean(host?.querySelector(`button[aria-label^="${menuLabel}"]`)) : null,
+    calls: calls.length, lastLeft: calls.length > sinceCalls ? calls[calls.length - 1].left : null,
+    swallow: probe.sabotage === 'swallow', resize: sc.__revealArm?.resize ?? null,
+  }
+}
+const nextPaintInPage = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))
+
+// 歸零:直接設 scrollLeft = 0(不是產品的 scrollTo,探針不記);真的動了就等它的 scrollend(免得晚到的那一個騙過後面的等待)
+const zeroScrollInPage = ([scIndex, sinceEnd, capMs]) => new Promise((resolve) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  const arm = sc?.__revealArm
+  if (!arm) return resolve({ ok: false, why: 'unarmed' })
+  const from = sc.scrollLeft
+  sc.scrollLeft = 0
+  if (Math.abs(from - sc.scrollLeft) < 0.5) return resolve({ ok: true, moved: false })
+  const t0 = performance.now()
+  const tick = () => {
+    if (arm.lastEnd > sinceEnd) return resolve({ ok: true, moved: true })
+    if (performance.now() - t0 > capMs) return resolve({ ok: false, why: 'no-scrollend', from })
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+})
+
+// (6) 檢視器進場(縮放 95% → 100%)期間量到的座標是縮放過的:等捲動容器的祖先上所有有限長度的動畫播完
+const awaitScrollerAnimationsInPage = ([scIndex, capMs]) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  if (!sc) return Promise.resolve({ ok: false, why: 'no-scroller' })
+  const running = document.getAnimations().filter((a) => {
+    const end = a.effect?.getComputedTiming?.().endTime
+    const target = a.effect?.target
+    return Number.isFinite(end) && target instanceof Element && target.contains(sc) && a.playState !== 'finished'
+  })
+  const cap = new Promise((resolve) => setTimeout(() => resolve('cap'), capMs))
+  return Promise.race([Promise.all(running.map((a) => a.finished.catch(() => null))).then(() => 'done'), cap])
+    .then((how) => ({ ok: how === 'done', count: running.length }))
+}
+
+// (7) 使用者的捲動(滾輪 / 箭頭翻頁)沒有產品呼叫可讀:等這一排在快照之後有 scroll,而且最後一個 scroll 之後有 scrollend。
+//     動作之前先用 awaitScrollQuietInPage 確認「之前每一段捲動都收到了 scrollend」,所以這裡不會被上一步晚到的 scrollend 騙。
+const awaitUserScrollInPage = ([scIndex, mark, capMs]) => new Promise((resolve) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  const arm = sc?.__revealArm
+  const probe = window.__revealProbe
+  if (!arm || !probe) return resolve({ ok: false, why: 'unarmed' })
+  const t0 = performance.now()
+  const tick = () => {
+    const signals = probe.userSignals - mark.signals
+    if (arm.scroll > mark.scroll && arm.lastEnd > arm.lastScroll) return resolve({ ok: true, scrolls: arm.scroll - mark.scroll, signals, scrollLeft: sc.scrollLeft })
+    if (performance.now() - t0 > capMs) return resolve({ ok: false, why: arm.scroll > mark.scroll ? 'no-scrollend' : 'no-scroll', signals })
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+})
+const awaitScrollQuietInPage = ([scIndex, capMs]) => new Promise((resolve) => {
+  const arm = document.querySelectorAll('[data-overflow-scroller]')[scIndex]?.__revealArm
+  if (!arm) return resolve({ ok: false, why: 'unarmed' })
+  const t0 = performance.now()
+  const tick = () => {
+    if (arm.lastEnd >= arm.lastScroll) return resolve({ ok: true })
+    if (performance.now() - t0 > capMs) return resolve({ ok: false, why: 'no-scrollend' })
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+})
+
+// 夾具:項目數與哪幾項是選中
+const itemStatesInPage = ([scIndex, itemSel, attr, on]) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  if (!sc) return null
+  const items = [...sc.querySelectorAll(itemSel)]
+  return { count: items.length, selected: items.flatMap((el, i) => (el.getAttribute(attr) === on ? [i] : [])) }
+}
+const scrollerBoxInPage = (scIndex) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  if (!sc) return null
+  const r = sc.getBoundingClientRect()
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2, width: sc.clientWidth, scrollLeft: sc.scrollLeft, maxScroll: sc.scrollWidth - sc.clientWidth }
+}
+// 夾具 Tabs / Chip 的外框變窄 by px(縮圖列改視窗寬);回傳改之前的外框寬
+const shrinkBoxInPage = (by) => {
+  const box = document.getElementById('box')
+  if (!box) return null
+  const from = box.getBoundingClientRect().width
+  box.style.width = `${from - by}px`
+  return from
+}
+// U3 的候選:每一項的內容座標、寬、離可視寬中心多遠、選中沒、有沒有一個點得到它本身的點(被箭頭蓋住的點不算)
+const reselectCandidatesInPage = ([scIndex, itemSel, attr, on]) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  if (!sc) return null
+  const s = sc.getBoundingClientRect()
+  const mid = s.left + s.width / 2
+  return [...sc.querySelectorAll(itemSel)].map((el, i) => {
+    const r = el.getBoundingClientRect()
+    const y = (r.top + r.bottom) / 2
+    const lo = Math.max(r.left, s.left) + 1
+    const hi = Math.min(r.right, s.right) - 1
+    let hit = null
+    const c = (r.left + r.right) / 2
+    for (let d = 0; lo <= hi && d <= (hi - lo); d += 2) {
+      for (const x of d === 0 ? [c] : [c - d, c + d]) {
+        if (x < lo || x > hi) continue
+        const at = document.elementFromPoint(x, y)
+        if (at && (at === el || el.contains(at))) { hit = { x, y }; break }
+      }
+      if (hit) break
+    }
+    return { i, selected: el.getAttribute(attr) === on, centre: r.left + r.width / 2 - s.left - sc.clientLeft + sc.scrollLeft, width: r.width, fromCentre: c - mid, hit }
+  })
+}
+// 第 atFrame 個影格才點 selector(「觸發晚到」新判準那一面:快照在排這一下之前取,新判準等的是觸發本身,兩次呼叫之間隔多久都不影響)
+const scheduleClickAtFrameInPage = ([selector, atFrame]) => {
+  const el = document.querySelector(selector)
+  if (!el) return false
+  let n = 0
+  const tick = () => { n += 1; if (n >= atFrame) el.click(); else requestAnimationFrame(tick) }
+  requestAnimationFrame(tick)
+  return true
+}
+// **只當「觸發晚到」對照用**:2026-11-14 之前的判準(scrollLeft 連續 stillFrames 格不變就算捲完),原 waitScrollStill 逐字搬來改名。
+// 「第 clickAtFrame 格才按 #add」與這個判準寫在**同一次頁面函式、同一條 rAF 鏈**上,先後只由影格數決定 ——
+// 分成兩次 page.evaluate 的話,兩次之間只要隔超過 clickAtFrame − stillFrames 格(CI 忙時做得到),舊判準就會等到那一下 → 對照組假紅(plan 第一節第 4 點)。
+// 舊判準回來的那一格當場量 measureIndex 那一項(measure = measureInPage,序列化傳入),看它會被判成什麼。
+const legacyStillFramesInPage = ([scIndex, itemSel, stillFrames, capMs, clickAtFrame, measureIndex], measure) => new Promise((resolve) => {
+  const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
+  const add = document.getElementById('add')
+  if (!sc || !add) return resolve({ ok: false, why: 'missing' })
+  const count = () => sc.querySelectorAll(itemSel).length
+  const itemsAtStart = count()
+  const t0 = performance.now()
+  let frame = 0
+  let last = sc.scrollLeft
+  let still = 0
+  let done = false
+  const tick = () => {
+    frame += 1
+    if (frame === clickAtFrame) add.click()
+    if (!done) {
+      const cur = sc.scrollLeft
+      if (cur === last) still += 1; else { still = 0; last = cur }
+      if (still >= stillFrames) { done = true; resolve({ ok: true, frame, itemsAtStart, itemsWhenReturned: count(), g: measure([scIndex, itemSel, measureIndex]) }) }
+      else if (performance.now() - t0 > capMs) { done = true; resolve({ ok: false, why: 'not-still' }) }
+    }
+    if (frame < clickAtFrame || !done) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+})
+
+// 把頁面函式連同它要用的純函式一起送進頁面(同 lib/launch-browser.mjs settleImagesAndFrames 以 toString 組字串的寫法):
+// 純函式只有一份原始碼,判定表與頁面端共用。fn 與 helpers 都不得引用外部變數。
+const evalWith = (page, fn, arg, ...helpers) => page.evaluate(`(${fn.toString()})(${JSON.stringify(arg)}${helpers.map((h) => `, ${h.toString()}`).join('')})`)
+
+// 揭露探針回「沒等到」時的人話(主跑與 selftest 共用)
+export function explainRevealWait(r, kinds) {
+  if (!r) return '量測沒有回傳(頁面換掉了?)'
+  if (r.why === 'unarmed') return '捲動容器沒有掛上量測(頁面換掉了,或探針沒在開頁前裝上)'
+  if (r.why === 'no-trigger') return `動作沒有造成預期的觸發(等的是 ${kinds.join(' / ')}:選中屬性沒變、容器寬度沒變,或焦點沒移到項目上)`
+  if (r.why === 'not-arrived') return `產品要求捲到 ${r.target}(最大 ${r.max}),上限內沒有到(停在 ${r.scrollLeft})`
+  if (r.why === 'no-scrollend') return `產品要求的位置 ${r.target} 到了,但等不到 scrollend`
+  return `沒等到(${JSON.stringify(r)})`
 }
 
 class Instrument extends StoryRenderInstrumentError {}
 const fail = (storyId, reason) => new Instrument({ storyId, kind: 'dom-not-settled', reason })
 
+// 兩次讀到的狀態之間沒有新的尺寸通知、產品呼叫、捲動位置或寬度改變(⌄ 出現 / 消失會讓容器再變一次寬、產品再揭露一次)
+const sameEdgeState = (a, b) => a.resize === b.resize && a.calls === b.calls && a.scrollLeft === b.scrollLeft && a.width === b.width && a.maxScroll === b.maxScroll
+
+// ── 揭露探針的 Node 端(story 那一段與夾具那一段共用;一排一份)──────────────────────────
+// failWith(reason) → 這一排的儀器失效例外。每個動作的固定寫法:mark = markOf() → 動作 → awaitReveal(mark, 觸發種類) → settleEdges(mark.calls)。
+function revealSync(page, strip, failWith) {
+  const markOf = async (what) => {
+    const m = await page.evaluate(revealMarkInPage, strip.scroller)
+    if (!m) throw failWith(`${what}:捲動容器沒有掛上量測(頁面換掉了,或探針沒在開頁前裝上)`)
+    return m
+  }
+  const awaitReveal = async (mark, kinds, what, { drain = true } = {}) => {
+    const r = await evalWith(page, awaitRevealInPage, [strip.scroller, mark, kinds, REVEAL_TRIGGER_CAP_MS, REVEAL_ARRIVE_CAP_MS, drain], revealArrived)
+    if (!r?.ok) throw failWith(`${what}:${explainRevealWait(r, kinds)}`)
+    return r
+  }
+  // 遮罩 / 箭頭 / ⌄ 跟上目前的捲動位置,而且連續兩次讀值(中間隔整整一次畫面更新)之間沒有新的尺寸通知或產品呼叫
+  const settleEdges = async (sinceCalls, what) => {
+    const t0 = Date.now()
+    let prev = null
+    for (;;) {
+      const s = await page.evaluate(edgeStateInPage, [strip.scroller, strip.menu, sinceCalls])
+      if (!s) throw failWith(`${what}:捲動容器不見了`)
+      const e = edgesConsistent(s, strip)
+      if (e.ok && prev && sameEdgeState(prev, s)) return s
+      if (Date.now() - t0 > REVEAL_ARRIVE_CAP_MS) throw failWith(`${what}之後遮罩 / 箭頭 / ⌄ 沒有跟上捲動位置(上限 ${REVEAL_ARRIVE_CAP_MS}ms;${e.ok ? '一直有新的尺寸通知或產品呼叫' : e.why})`)
+      prev = e.ok ? s : null
+      await page.evaluate(nextPaintInPage)
+    }
+  }
+  // 開頁之後:掛觀察器 → 掛載圍欄(我們的 ResizeObserver 第一次回呼 + 一個影格 + 掛載那次呼叫到位;不收 scrollend)→ 祖先的進場動畫播完 → 遮罩跟上
+  const arm = async (what) => {
+    if (!(await page.evaluate(armScrollerInPage, [strip.scroller, strip.attr]))) throw failWith(`${what}:找不到捲動容器,或揭露探針沒在開頁前裝上`)
+    await awaitReveal(UNARMED_MARK, ['resize'], `${what}(掛載)`, { drain: false })
+    const anim = await page.evaluate(awaitScrollerAnimationsInPage, [strip.scroller, REVEAL_ARRIVE_CAP_MS])
+    if (!anim?.ok) throw failWith(`${what}:捲動容器祖先上的進場動畫(${anim?.count ?? '?'} 個)上限內沒有播完`)
+    await settleEdges(0, what)
+  }
+  // 歸零:設 scrollLeft = 0,真的動了就等它的 scrollend,再等遮罩跟上
+  const zero = async (what) => {
+    const m = await markOf(what)
+    const z = await page.evaluate(zeroScrollInPage, [strip.scroller, m.lastEnd, REVEAL_ARRIVE_CAP_MS])
+    if (!z?.ok) throw failWith(`${what}:${z?.why === 'no-scrollend' ? `把 scrollLeft 從 ${z.from} 歸零之後等不到 scrollend` : '捲動容器沒有掛上量測'}`)
+    await settleEdges(m.calls, what)
+  }
+  // 把可視寬往 targetW 推一步:推完當場讀寬度(讀它會強制排版)—— 真的變了才有尺寸觸發可等;回傳推完之後的可視寬
+  const nudgeTo = async (targetW, what) => {
+    const m = await markOf(what)
+    const r = await page.evaluate(nudgeScrollerWidthInPage, [strip.scroller, targetW])
+    if (!r) throw failWith(`${what}:找不到捲動容器或它的父層`)
+    if (Math.abs(r.to - r.from) >= 0.5) await awaitReveal(m, ['resize'], what)
+    await settleEdges(m.calls, what)
+    return page.evaluate(scrollerWidthInPage, strip.scroller)
+  }
+  return { markOf, awaitReveal, settleEdges, arm, zero, nudgeTo }
+}
+
 // ── 主量測 ─────────────────────────────────────────────────────────────────
-// neutralize:'none' | 'before-action'(每種輸入動作前一刻注入)。回傳 { cells, totals, selfCuts }
+// neutralize:'none' | 'before-action'(每種輸入動作前一刻注入 swallow)| 'bias'(同一個時點注入 bias)。回傳 { cells, totals, selfCuts }
+// totals.nonClamped[輸入] = 那種輸入「需要置中」的格數(needsCentring:沒被兩端夾住,不看綠不綠)
 // 每一排先照天然排版量;天然排版下「縮放」切不出「改完仍然置中」的寬度(剛點的那一項太靠端點)→ 這一排改用自備幾何(forced)重量,
 // 點擊 / 縮放那一圈已經記的格子收回,後面的方向鍵 / 選單也用同一個幾何。
 // 以下四個只給 selftest 的對照組用:
@@ -301,9 +708,11 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
   const runs = (input) => inputs.includes(input)
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+    await page.addInitScript(installRevealProbeInPage)
     for (const strip of STRIPS) {
       if (only && !only.includes(strip.key)) continue
       const url = `${server.origin}/iframe.html?id=${encodeURIComponent(strip.story)}&viewMode=story`
+      const sync = revealSync(page, strip, (reason) => fail(strip.story, `${strip.label} ${reason}`))
       let forced = false // 這一排改用自備幾何(天然排版有溢出、但縮放量不到「需要置中」的格子時由點擊 / 縮放那一圈設起來)
       const open = async () => {
         await page.setViewportSize(strip.viewport)
@@ -314,8 +723,8 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
           await page.waitForSelector(strip.item, { state: 'visible' })
         }
         await page.waitForSelector(`[data-overflow-scroller] ${strip.item}`, { state: 'attached' })
-        await still('載入')
-        await zero('歸零')
+        await sync.arm('載入')
+        await sync.zero('歸零')
         if (starve) {
           const list = await page.evaluate(listInPage, [strip.scroller, strip.item])
           const last = list[list.length - 1]
@@ -330,28 +739,23 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
         if (!selfCuts.some((c) => c.strip === strip.key)) selfCuts.push({ strip: strip.key, label: strip.label, width: got, forced })
         return { cut: true, plan }
       }
-      const zero = async (what) => {
-        await page.evaluate((i) => { const sc = document.querySelectorAll('[data-overflow-scroller]')[i]; sc.scrollLeft = 0 }, strip.scroller)
-        await still(what)
-      }
       // 把可視寬調到 targetW(±1px;最多推 4 步)再歸零。回傳實得的寬度
       const setVisibleWidth = async (targetW, what) => {
         let got = null
         for (let k = 0; k < 4; k += 1) {
-          if (!(await page.evaluate(nudgeScrollerWidthInPage, [strip.scroller, targetW]))) throw fail(strip.story, `${strip.label} ${what}:找不到捲動容器或它的父層`)
-          await still(what)
-          got = await page.evaluate(scrollerWidthInPage, strip.scroller)
+          got = await sync.nudgeTo(targetW, what)
           if (Math.abs(got - targetW) <= 1) break
         }
         if (Math.abs(got - targetW) > 1) throw fail(strip.story, `${strip.label} ${what}:可視寬調不到 ${targetW}px(停在 ${got}px)`)
-        await zero(`${what}後歸零`)
+        await sync.zero(`${what}後歸零`)
         return Math.round(got)
       }
-      const still = async (what) => {
-        const r = await page.evaluate(waitScrollStill, [strip.scroller, 12, 6000])
-        if (!r.ok) throw fail(strip.story, `${strip.label} ${what}之後捲動容器${r.reason === 'no-scroller' ? '不見了' : '在上限內沒有靜止'}`)
+      // 拿掉 primitive 的作用(selftest 對照組):揭露探針從這一刻起把產品對捲動容器的 scrollTo 吞掉;換頁就恢復(探針每份文件重裝)。
+      // neutralize = 'bias':同一個時點改成「產品要求的位置整體少 REVEAL_BIAS_PX」(照常呼叫、照常捲到位,只是位置算錯)
+      const before = async () => {
+        if (neutralize === 'before-action') await page.evaluate(() => { window.__revealProbe.sabotage = 'swallow' })
+        if (neutralize === 'bias') await page.evaluate((px) => { window.__revealProbe.sabotage = 'bias'; window.__revealProbe.bias = px }, REVEAL_BIAS_PX)
       }
-      const before = async () => { if (neutralize === 'before-action') await page.evaluate(neutralizeRevealInPage) }
       const record = async (input, step, targetIndex) => {
         const g = await page.evaluate(measureInPage, [strip.scroller, strip.item, targetIndex])
         if (!g) throw fail(strip.story, `${strip.label} ${input} 量不到第 ${targetIndex + 1} 項`)
@@ -360,7 +764,7 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
         const res = judge({ ...g, obstruction }, `${strip.label} × ${input}${step ? ` ${step}` : ''}「${g.label}」`)
         cells.push({ strip: strip.key, input, step, label: g.label, ...res })
         totals.cells += 1
-        if (res.how === 'centered' && res.ok) totals.nonClamped[input] += 1
+        if (needsCentring(res)) totals.nonClamped[input] += 1
         return res
       }
       // 1. 滑鼠點右側「沒有完整可讀」的項目(伸進右側淡出 / 箭頭區或被容器切掉,而且有點得到的可見部分 —— 使用者真的點得到的那一顆)
@@ -387,17 +791,23 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
           }, [strip.scroller, strip.item, WIDEST_OBSTRUCTION_PX])
           if (!hitPick) throw fail(strip.story, `${strip.label} 歸零後找不到右側沒有完整可讀、又點得到的項目(這一排沒有溢出?)`)
           const clickedIndex = hitPick.i
+          const clickMark = await sync.markOf('點擊')
           await before()
           await page.mouse.click(hitPick.x, hitPick.y)
-          await still('點擊')
+          await sync.awaitReveal(clickMark, ['mutation'], '點擊')
+          await sync.settleEdges(clickMark.calls, '點擊')
           await record('click', '', clickedIndex)
           if (!runs('resize')) break
 
-          const w0 = await page.evaluate((i) => document.querySelectorAll('[data-overflow-scroller]')[i].clientWidth, strip.scroller)
+          const clientWidthOf = () => page.evaluate((i) => document.querySelectorAll('[data-overflow-scroller]')[i].clientWidth, strip.scroller)
+          const w0 = await clientWidthOf()
+          const resizeMark = await sync.markOf('縮放視窗')
           await before()
           await page.setViewportSize({ width: strip.narrowTo, height: strip.viewport.height })
-          await still('縮放視窗')
-          let w1 = await page.evaluate((i) => document.querySelectorAll('[data-overflow-scroller]')[i].clientWidth, strip.scroller)
+          // 縮完當場讀一次寬度(讀它會強制排版):容器真的變了才有尺寸觸發可等;沒變 = 視窗碰不到容器,下面走改容器寬的退路
+          if (Math.abs((await clientWidthOf()) - w0) >= 0.5) await sync.awaitReveal(resizeMark, ['resize'], '縮放視窗')
+          await sync.settleEdges(resizeMark.calls, '縮放視窗')
+          let w1 = await clientWidthOf()
           let how = `視窗 ${strip.viewport.width} → ${strip.narrowTo}`
           if (Math.abs(w1 - w0) < RESIZE_MIN_DELTA_PX) {
             // 展示 story 的外框寫死寬度(或已經是自備幾何),視窗縮放碰不到捲動容器 → 直接改捲動容器的可視寬(同一個觸發:容器尺寸改變)。
@@ -422,9 +832,7 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
               throw fail(strip.story, `${strip.label} 縮放:外框寫死寬度,剛點的第 ${clickedIndex + 1} 項(中心 ${geo.itemCentre.toFixed(1)}、寬 ${geo.itemWidth.toFixed(1)}px,整排 ${geo.content}px)在可視寬 ${geo.width}px 下切不出「改完仍然置中、不是夾在端點」的寬度${planned}`)
             }
             for (let k = 0; k < 4 && Math.abs(w1 - plan.width) > 1; k += 1) {
-              await page.evaluate(nudgeScrollerWidthInPage, [strip.scroller, plan.width])
-              await still('改容器寬度')
-              w1 = Math.round(await page.evaluate(scrollerWidthInPage, strip.scroller))
+              w1 = Math.round(await sync.nudgeTo(plan.width, '改容器寬度'))
             }
             if (Math.abs(w1 - plan.width) > 1) throw fail(strip.story, `${strip.label} 縮放:可視寬調不到 ${plan.width}px(停在 ${w1}px)`)
             how = `外框寫死寬度 → 可視寬 ${plan.width > w0 ? '放寬' : '縮'}到 ${plan.width}px(改寬度前 scrollLeft ${geo.scrollLeft.toFixed(1)})`
@@ -447,13 +855,20 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
           sc.parentElement.insertBefore(a, sc)
         }, [strip.scroller])
         await page.focus('#__reveal_probe')
+        const tabMark = await sync.markOf('Tab 進入這一排')
         await page.keyboard.press('Tab')
+        await sync.awaitReveal(tabMark, ['focus'], 'Tab 進入這一排')
+        await sync.settleEdges(tabMark.calls, 'Tab 進入這一排')
       }
       const steps = Math.min(total - 1, 6)
+      // 方向鍵之後的觸發:焦點移到下一項(Chip / Tabs 的漫遊焦點;Tabs 自動啟用另有選中改變)/ 縮圖列的 aria-current 換人
+      const keyKinds = strip.keyTarget === 'focus' ? ['focus', 'mutation'] : ['mutation']
       for (let k = 0; k < steps; k += 1) {
+        const keyMark = await sync.markOf(`方向鍵第 ${k + 1} 下`)
         await before()
         await page.keyboard.press('ArrowRight')
-        await still(`方向鍵第 ${k + 1} 下`)
+        await sync.awaitReveal(keyMark, keyKinds, `方向鍵第 ${k + 1} 下`)
+        await sync.settleEdges(keyMark.calls, `方向鍵第 ${k + 1} 下`)
         const ti = await page.evaluate(([scIndex, itemSel, mode]) => {
           const sc = document.querySelectorAll('[data-overflow-scroller]')[scIndex]
           const items = [...sc.querySelectorAll(itemSel)]
@@ -476,10 +891,12 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
           await trigger.click()
           const option = page.locator('[role="menu"] [role^="menuitem"]', { hasText: list[ti].label }).first()
           await option.waitFor({ state: 'visible', timeout: 5000 })
+          const menuMark = await sync.markOf('選單選取')
           await before()
           await option.click()
           await page.locator('[role="menu"]').waitFor({ state: 'detached', timeout: 5000 }).catch(() => {})
-          await still('選單選取')
+          await sync.awaitReveal(menuMark, ['mutation'], '選單選取')
+          await sync.settleEdges(menuMark.calls, '選單選取')
           await record('menu', which === 'last' ? '(最後一項)' : '(第一個沒有完整可讀的項目)', ti)
         }
       }
@@ -490,11 +907,373 @@ async function scanBuild(staticDir, { fresh = true, neutralize = 'none', log = c
   return { cells, totals, selfCuts }
 }
 
+// --dump 的格式:每一格只留「排 / 輸入 / 步驟 / 項目 / 判定 / 偏移」(換量法前後、本機對 CI 逐格比對用)
+const dumpCells = (cells) => cells.map((c) => ({ strip: c.strip, input: c.input, step: c.step, label: c.label, ok: c.ok, how: c.how, kind: c.kind ?? null, offset: c.offset }))
+
 export function instrumentProblems(totals) {
   const problems = []
   if (totals.cells === 0) problems.push('一格都沒量到')
   for (const input of INPUTS) if (!totals.nonClamped[input]) problems.push(`輸入「${input}」沒有任何一格「需要置中」的量測(全是夾住或沒量到 —— 置中這條從沒被驗過)`)
   return problems
+}
+
+/**
+ * 純函式:主跑的結論(主跑與 selftest 判定表共用)。量到的產品紅先判 —— 任何一格紅(off-center / unreadable / 夾具 ✗)= exit 1,
+ * 儀器地板沒過的條目照印、但不帶機讀標記(這一次的結論是「量到了而且錯」,不是「沒量到」);沒有產品紅才看地板 → exit 2。
+ * @param {{ bad: unknown[], floor: string[] }} run  bad = 紅的格;floor = instrumentProblems + fixtureInstrumentProblems
+ * @returns {{ exit: 0|1|2, kind: 'pass'|'product'|'instrument' }}
+ */
+export function overflowRunVerdict({ bad, floor }) {
+  if (bad.length) return { exit: 1, kind: 'product' }
+  if (floor.length) return { exit: 2, kind: 'instrument' }
+  return { exit: 0, kind: 'pass' }
+}
+
+// ══ 夾具那一段(A7 ②,2026-11-14)════════════════════════════════════════════════
+// 守的是 horizontal-overflow.spec.md「選到就露出來」觸發表裡 2026-11-12 補的三句 + 掛載那一次 —— 那張表整張是【AI 推導】(規格自己標的;
+// user 2026-11-11 定的只有「都先B」= 一律置中、兩端夾住),所以這一段的期望也是【AI 推導】,不是 user 的決定。
+// 量的是夾具頁(scripts/test-fixtures/overflow-reveal/fixture.tsx),不是 story:每一項寬度寫死、元件行為是這次 checkout 的原始碼。
+const FIXTURE_SOURCE = 'scripts/test-fixtures/overflow-reveal/fixture.tsx'
+const REVEAL_FIXTURE_ITEMS = 12
+const REVEAL_FIXTURE_MID = 5 // 一開始選在第 6 項(中間)
+const REVEAL_FIXTURE_LAST = REVEAL_FIXTURE_ITEMS - 1
+// 「容器變窄」一律變窄(最大捲動量只會變大,瀏覽器不會把位置夾回 —— 夾回有 scroll 事件、沒有 scrollend)
+const REVEAL_SHRINK_PX = 32
+const REVEAL_WHEEL_DELTA_PX = 150
+// 「位置沒動」的容許值(捲過不搶回)
+const HELD_TOLERANCE_PX = 1
+// 使用者的捲動至少要捲開這麼多,「捲過」才算真的發生(滾輪在這台機器上沒把這一排捲開 = 儀器失效)
+const USER_SCROLL_MIN_PX = 24
+// 「觸發晚到」對照:第幾個影格才觸發、舊判準要連續幾格不動(原 waitScrollStill 的 12)
+const LATE_TRIGGER_FRAME = 30
+const LEGACY_STILL_FRAMES = 12
+
+export const FIXTURE_STRIPS = Object.freeze([
+  { key: 'tabs-scroll', label: 'Tabs overflow="scroll"', scroller: 0, item: '[role="tab"]', attr: 'aria-selected', on: 'true', arrows: true, menu: null, viewport: { width: 1280, height: 900 } },
+  { key: 'tabs-menu', label: 'Tabs overflow="menu"', scroller: 0, item: '[role="tab"]', attr: 'aria-selected', on: 'true', arrows: false, menu: '頁籤選單', viewport: { width: 1280, height: 900 } },
+  { key: 'chip-scroll', label: 'Chip layout="scroll"', scroller: 0, item: 'button[data-state]', attr: 'data-state', on: 'on', arrows: true, menu: null, viewport: { width: 1280, height: 900 } },
+  { key: 'chip-menu', label: 'Chip layout="menu"', scroller: 0, item: 'button[data-state]', attr: 'data-state', on: 'on', arrows: false, menu: '選項選單', viewport: { width: 1280, height: 900 } },
+  { key: 'filmstrip', label: 'FileViewer 縮圖列', scroller: 0, item: '[data-thumb-index]', attr: 'aria-current', on: 'true', arrows: true, menu: null, viewport: { width: 390, height: 800 }, open: true },
+])
+// 每一格守規格的哪一句、會被哪一種破法打紅(其餘破法下必須綠;同 data-table-multi-sort-invariant.mjs 的 hitBy 寫法)
+export const FIXTURE_CELLS = Object.freeze({
+  M1: { name: '掛載那次置中(一開始選在中間)', spec: '容器尺寸改變(含掛載後第一次排版)→ 還沒有揭露過就揭露唯一的選中項', hitBy: ['swallow'] },
+  M2: { name: '掛載那次夾在終點(一開始選最後一項)', spec: '同上 + 置中會超出範圍時夾住、項目落在那一端的半邊仍完整可讀', hitBy: ['swallow'] },
+  N: { name: '新出現的已選項目', spec: '新加進來的項目一掛上去就是選中也算(childList)', hitBy: ['swallow', 'no-childlist'] },
+  U1: { name: '滾輪捲過 → 容器變窄不搶回', spec: '上一次揭露之後使用者自己捲過(滾輪)→ 尺寸改變不捲', hitBy: ['mute-user-scroll'] },
+  U2: { name: '箭頭翻頁 → 容器變窄不搶回', spec: '上一次揭露之後使用者自己捲過(箭頭翻頁)→ 尺寸改變不捲', hitBy: ['mute-user-scroll'] },
+  U3: { name: '捲過之後再選一項 → 容器變窄照樣置中', spec: '「上一次揭露之後」—— 每次揭露把「捲過」歸零', hitBy: ['swallow'] },
+})
+export const FIXTURE_SABOTAGES = Object.freeze({
+  swallow: '產品對捲動容器的 scrollTo 不做事(= 拿掉 primitive)',
+  'no-childlist': '產品揭露用的 MutationObserver 不看 childList(= 1df095f1 之前)',
+  'mute-user-scroll': '滾輪 / 觸控 / 箭頭翻頁的訊號到不了產品(= 1df095f1 之前沒有「捲過」旗標)',
+})
+// 主跑:每一排開兩次頁 —— 選在中間(M1 → N → U1 → U3 → U2)、選最後一項(M2)
+export const FIXTURE_MAIN_RUNS = Object.freeze([
+  { sabotage: '', selected: REVEAL_FIXTURE_MID, flow: 'full' },
+  { sabotage: '', selected: REVEAL_FIXTURE_LAST, flow: 'mount-only' },
+])
+
+/** 純函式:一趟夾具在一排上要量哪幾格(依序)。flow:full / no-user-scroll(吞掉 scrollTo 時捲過不搶回沒東西可驗)/ mount-only */
+export function fixturePlan(strip, { selected, flow }) {
+  if (flow === 'mount-only') return [selected === REVEAL_FIXTURE_LAST ? 'M2' : 'M1']
+  if (flow === 'no-user-scroll') return ['M1', 'N', 'U3']
+  return ['M1', 'N', 'U1', 'U3', ...(strip.arrows ? ['U2'] : [])]
+}
+/** 純函式:一組趟數該量的「排 | 格」清單 */
+export const plannedFixtureKeys = (runs) => runs.flatMap((run) => FIXTURE_STRIPS.flatMap((strip) => fixturePlan(strip, run).map((cell) => `${strip.key}|${cell}`)))
+
+/**
+ * 純函式:夾具的幾何能不能分辨「捲對了」與「沒捲」。g = measureInPage 的回傳(left / right 相對可視區,scrollLeft、maxScroll、width)。
+ * centered:這一項在目前可視寬下置中不會夾到端點(centringWindow:沒捲時它的中心也離容器中心 ≥ CLAMP_MARGIN_PX、而且在右半邊)。
+ * clamped-end:最後一項置中所需的位置超出終點 ≥ CLAMP_MARGIN_PX(否則「夾在終點」與「置中」是同一個判定)。不成立 = 儀器失效(夾具的幾何跑掉了)。
+ */
+export function fixtureGeometry(g, want) {
+  const itemWidth = g.right - g.left
+  const itemCentre = (g.left + g.right) / 2 + g.scrollLeft
+  const content = g.maxScroll + g.width
+  if (want === 'centered') {
+    const win = centringWindow({ itemWidth, itemCentre, content })
+    if (win && g.width >= win.lo && g.width <= win.hi) return { ok: true }
+    return { ok: false, why: `這一項(內容座標中心 ${itemCentre.toFixed(1)}、寬 ${itemWidth.toFixed(1)}px,整排 ${content}px)在可視寬 ${g.width}px 下置中會夾到端點或放不下(可分辨的可視寬 ${win ? `${win.lo}..${win.hi}` : '不存在'})` }
+  }
+  const beyond = itemCentre - g.width / 2 - g.maxScroll
+  if (beyond >= CLAMP_MARGIN_PX) return { ok: true }
+  return { ok: false, why: `最後一項置中所需的位置只超出終點 ${beyond.toFixed(1)}px(< ${CLAMP_MARGIN_PX}),「夾在終點」與「置中」分不出來` }
+}
+
+/** 純函式:M1 / M2 / N / U3 的判定(judge 的結果 → 這一格綠不綠)。M2 要夾在終點,其餘要置中 */
+export function judgeFixtureCell(cell, res, note = '') {
+  const want = cell === 'M2' ? 'clamped-end' : 'centered'
+  if (res.ok && res.how === want) return { ok: true, kind: want, offset: res.offset, text: res.text }
+  const why = res.ok ? `${res.text}(這一格應該是 ${want === 'centered' ? '置中' : '夾在終點'})` : res.text
+  return { ok: false, kind: res.kind ?? res.how, offset: res.offset, text: `${why}${note ? `;${note}` : ''}` }
+}
+
+/**
+ * 純函式:捲過不搶回(U1 / U2)。before = 使用者捲完停下的 scrollLeft;after = 容器變窄、產品決定完之後的 scrollLeft;
+ * calls = 這一步產品對捲動容器呼叫 scrollTo 幾次;anchorOffset = 上一次揭露的那一項離容器中心多遠。
+ * 回 ok:true(沒搶回)/ ok:false(搶回了 = 紅)/ kind 'instrument'(分不出來或不能算到產品頭上 = 儀器失效)。
+ */
+export function judgeHeld({ before, after, calls, anchorOffset }, where = '') {
+  const moved = Math.abs(after - before) > HELD_TOLERANCE_PX
+  const offset = anchorOffset
+  if (!moved) {
+    if (Math.abs(anchorOffset) >= CLAMP_MARGIN_PX) return { ok: true, kind: 'held', offset, text: `${where}:位置沒動(${before} → ${after}),上次揭露的項目離中心 ${anchorOffset}px` }
+    return { ok: null, kind: 'instrument', offset, text: `${where}:使用者捲到的位置剛好讓上次揭露的項目落在中心附近(偏 ${anchorOffset}px < ${CLAMP_MARGIN_PX}),「沒搶回」與「搶回了」分不出來` }
+  }
+  if (calls >= 1) return { ok: false, kind: 'grabbed-back', offset, text: `${where}:使用者捲到 scrollLeft ${before},容器變窄後變成 ${after}(產品呼叫 scrollTo ${calls} 次;上次揭露的項目偏移 ${anchorOffset}px)—— 搶回了使用者的捲動位置` }
+  return { ok: null, kind: 'instrument', offset, text: `${where}:位置變了(${before} → ${after})但產品沒有呼叫 scrollTo —— 是使用者的捲動還沒停,或瀏覽器把位置夾回,不能算到產品頭上` }
+}
+
+/** 純函式:U3 點哪一項 —— 沒選中、點得到,而且「變窄之後的可視寬」下置中不會夾到端點的項目裡,離可視寬中心最近的那一個。沒有 → null */
+export function pickReselect(candidates, { width, content }) {
+  const after = width - REVEAL_SHRINK_PX
+  const usable = (candidates ?? []).filter((c) => {
+    if (c.selected || !c.hit) return false
+    const win = centringWindow({ itemWidth: c.width, itemCentre: c.centre, content })
+    return Boolean(win) && after >= win.lo && after <= win.hi
+  })
+  return usable.length ? usable.reduce((best, c) => (Math.abs(c.fromCentre) < Math.abs(best.fromCentre) ? c : best)) : null
+}
+
+/** 純函式:一種破法實跑的結果對期望 —— 回傳不符的說明(空陣列 = 紅的集合正好等於期望的集合、該量的都量了、沒有多量) */
+export function compareFixtureControl(sabotage, planned, cells) {
+  const problems = []
+  const got = new Map(cells.map((c) => [`${c.strip}|${c.cell}`, c]))
+  for (const key of planned) {
+    const c = got.get(key)
+    if (!c) { problems.push(`${key} 沒量到`); continue }
+    const wantRed = FIXTURE_CELLS[c.cell].hitBy.includes(sabotage)
+    if (wantRed && c.ok) problems.push(`${key} 應紅、實綠(${c.text})`)
+    if (!wantRed && !c.ok) problems.push(`${key} 應綠、實紅(${c.text})`)
+  }
+  for (const key of got.keys()) if (!planned.includes(key)) problems.push(`${key} 不在這一趟的計畫裡卻量了`)
+  return problems
+}
+
+/** 純函式:夾具那一段的儀器地板 —— 格數對得上計畫;需要置中的正向格裡至少一格記到產品的 scrollTo(全部「位置對了卻一次呼叫都沒有」= 產品換了捲動方式,探針讀不到) */
+export function fixtureInstrumentProblems(cells, plannedCount) {
+  const problems = []
+  if (cells.length !== plannedCount) problems.push(`夾具那一段該量 ${plannedCount} 格,量到 ${cells.length} 格`)
+  const positive = cells.filter((c) => ['M1', 'N', 'U3'].includes(c.cell) && c.ok)
+  if (positive.length && positive.every((c) => !c.calls)) problems.push('需要置中的正向格全部「位置對了卻一次 scrollTo 都沒記到」—— 產品換了捲動的方式(不再走 scrollTo),揭露探針讀不到,閘要改')
+  return problems
+}
+
+// ── 夾具:開一排 ───────────────────────────────────────────────────────────────
+async function openFixtureStrip(page, fixture, strip, run) {
+  const tag = run.sabotage ? `(破法 ${run.sabotage})` : ''
+  const failWith = (reason) => new Instrument({ storyId: `夾具 ${strip.key}`, kind: 'dom-not-settled', reason: `夾具 ${strip.label}${tag} ${reason}` })
+  const sync = revealSync(page, strip, failWith)
+  const url = `${fixture.url}?strip=${strip.key}&count=${REVEAL_FIXTURE_ITEMS}&selected=${run.selected}${run.sabotage ? `&revealSabotage=${encodeURIComponent(run.sabotage)}` : ''}`
+  await page.setViewportSize(strip.viewport)
+  await page.mouse.move(1, 1)
+  await openStory(page, url, { waitFor: strip.open ? '#open' : '[data-overflow-scroller]', settleFrames: 10, notFound: fixture.notFound, label: `夾具 ${strip.key}` })
+  if (strip.open) {
+    await page.click('#open')
+    await page.waitForSelector(`[data-overflow-scroller] ${strip.item}`, { state: 'visible' })
+  }
+  await page.waitForSelector(`[data-overflow-scroller] ${strip.item}`, { state: 'attached' })
+  await sync.arm('掛載')
+  return { sync, failWith, tag }
+}
+
+// ── 夾具:一排一趟(M1 / M2 → N → U1 → U3 → U2,依 fixturePlan)────────────────────────
+async function fixtureStripRun(page, fixture, strip, run) {
+  const plan = fixturePlan(strip, run)
+  const { sync, failWith, tag } = await openFixtureStrip(page, fixture, strip, run)
+  const cells = []
+  const states = () => page.evaluate(itemStatesInPage, [strip.scroller, strip.item, strip.attr, strip.on])
+  const measure = async (index, cell) => {
+    const g = await page.evaluate(measureInPage, [strip.scroller, strip.item, index])
+    if (!g) throw failWith(`${cell}:量不到第 ${index + 1} 項`)
+    const obstruction = maskObstruction(g.mask, g.width)
+    if (obstruction.unparsed) throw failWith(`${cell}:讀不懂遮罩 ${g.mask}`)
+    const where = `夾具 ${strip.label}${tag} × ${cell} ${FIXTURE_CELLS[cell].name}「${g.label}」`
+    return { g, where, res: judge({ ...g, obstruction }, where) }
+  }
+  const expectGeometry = (g, want, where) => {
+    const geo = fixtureGeometry(g, want)
+    if (!geo.ok) throw failWith(`${where}:幾何不成立 —— ${geo.why}`)
+  }
+  const push = (cell, verdict, calls) => cells.push({ strip: strip.key, cell, calls, ...verdict })
+  const quiet = async (what) => {
+    const q = await page.evaluate(awaitScrollQuietInPage, [strip.scroller, REVEAL_ARRIVE_CAP_MS])
+    if (!q?.ok) throw failWith(`${what}:上一段捲動等不到 scrollend`)
+  }
+  // 容器變窄 REVEAL_SHRINK_PX(Tabs / Chip 改外框寬,縮圖列改視窗寬)→ 等產品決定 → 回 { s(變窄之後的狀態), calls(這一步產品呼叫幾次) }
+  const shrink = async (what) => {
+    const m = await sync.markOf(what)
+    const w0 = (await page.evaluate(scrollerBoxInPage, strip.scroller)).width
+    if (strip.open) {
+      const v = page.viewportSize()
+      await page.setViewportSize({ width: v.width - REVEAL_SHRINK_PX, height: v.height })
+    } else if ((await page.evaluate(shrinkBoxInPage, REVEAL_SHRINK_PX)) === null) throw failWith(`${what}:夾具沒有 #box`)
+    const w1 = (await page.evaluate(scrollerBoxInPage, strip.scroller)).width
+    if (w0 - w1 < RESIZE_MIN_DELTA_PX) throw failWith(`${what}:捲動容器只變窄 ${w0 - w1}px(< ${RESIZE_MIN_DELTA_PX})`)
+    await sync.awaitReveal(m, ['resize'], what)
+    const s = await sync.settleEdges(m.calls, what)
+    return { s, calls: s.calls - m.calls }
+  }
+  // 使用者自己捲(act = 滾輪或按箭頭)→ 等捲動停 → 回停下的 scrollLeft。訊號沒送到 / 沒捲 / 等不到 scrollend / 捲不到 USER_SCROLL_MIN_PX = 儀器失效
+  const userScroll = async (what, act) => {
+    await quiet(`${what}之前`)
+    const m = await sync.markOf(what)
+    const from = (await page.evaluate(scrollerBoxInPage, strip.scroller)).scrollLeft
+    await act()
+    const w = await page.evaluate(awaitUserScrollInPage, [strip.scroller, m, REVEAL_ARRIVE_CAP_MS])
+    await page.mouse.move(1, 1)
+    if (!w?.ok) throw failWith(`${what}:${w?.why === 'no-scroll' ? `這一排沒有任何 scroll 事件(使用者捲動訊號送到 ${w?.signals ?? 0} 次)—— 這台機器的${what}沒有捲這一排` : '捲了,但等不到 scrollend'}`)
+    if (!(w.signals >= 1)) throw failWith(`${what}:捲動發生了,但「使用者自己捲」的訊號(wheel / 箭頭翻頁事件)一次都沒送到這一排 —— 產品無從知道是使用者捲的,這一格不能算到產品頭上`)
+    const s = await sync.settleEdges(m.calls, what)
+    if (Math.abs(s.scrollLeft - from) < USER_SCROLL_MIN_PX) throw failWith(`${what}:只捲了 ${Math.abs(s.scrollLeft - from).toFixed(1)}px(< ${USER_SCROLL_MIN_PX}),「捲過」沒有真的發生`)
+    return { before: s.scrollLeft, scrollEvents: w.scrolls }
+  }
+  // 捲過之後容器變窄 → 判搶回了沒。scrollEvents = 使用者那一下捲動發了幾個 scroll 事件(1 = 瞬間;多個 = 有動畫,例:Linux 的滾輪)只記錄、不判
+  const held = async (cell, anchorIndex, user, what) => {
+    const { s, calls } = await shrink(what)
+    const { where, res } = await measure(anchorIndex, cell)
+    const v = judgeHeld({ before: user.before, after: s.scrollLeft, calls, anchorOffset: res.offset }, where)
+    if (v.kind === 'instrument') throw failWith(v.text)
+    push(cell, { ...v, scrollEvents: user.scrollEvents }, calls)
+  }
+  // 收尾:記下這一頁破法實際打到幾次(selftest 用:打到 0 次 = 破法不成立)
+  const finish = async () => {
+    const hits = await page.evaluate(() => window.__revealProbe?.sabotageHits ?? null)
+    for (const c of cells) c.sabotageHits = hits
+    return cells
+  }
+
+  // M1 / M2:掛載那一次(不歸零)。這一排到目前為止產品對它的呼叫全算(掛載那次在我們掛監聽之前)
+  {
+    const cell = plan[0]
+    const { g, where, res } = await measure(run.selected, cell)
+    expectGeometry(g, cell === 'M2' ? 'clamped-end' : 'centered', where)
+    const calls = (await sync.markOf(cell)).calls
+    push(cell, judgeFixtureCell(cell, res, `產品到目前為止呼叫 scrollTo ${calls} 次`), calls)
+  }
+  if (plan.length === 1) return finish()
+
+  // N:新出現的已選項目 —— 插在目前這一項後面、同一次狀態更新就是選中
+  const anchorN = run.selected + 1
+  {
+    const before = await states()
+    const m = await sync.markOf('新增一項')
+    if (strip.open) {
+      if (!(await page.evaluate(() => { const f = window.__overflowRevealFixture; if (!f) return false; f.addAfterCurrent(); return true }))) throw failWith('N:夾具沒有掛出 window.__overflowRevealFixture.addAfterCurrent')
+    } else {
+      if (!(await page.$('#add'))) throw failWith('N:找不到新增鈕 #add')
+      await page.click('#add')
+      await page.mouse.move(1, 1)
+    }
+    const r = await sync.awaitReveal(m, ['mutation'], '新增一項')
+    const s = await sync.settleEdges(m.calls, '新增一項')
+    const after = await states()
+    if (!before || !after || after.count !== before.count + 1 || !after.selected.includes(anchorN)) {
+      throw failWith(`N:新增之後項目數 ${before?.count} → ${after?.count}、選中的是第 ${(after?.selected ?? []).map((i) => i + 1).join(' / ') || '(無)'} 項 —— 動作沒有造成要量的狀態(應多 1 項、第 ${anchorN + 1} 項選中)`)
+    }
+    const { g, where, res } = await measure(anchorN, 'N')
+    expectGeometry(g, 'centered', where)
+    const calls = s.calls - m.calls
+    // 紅的時候講得出是哪一種(審查第 11 條 (1)):0 次 = 新項目沒有被揭露;有呼叫但要求的就是目前位置 = 捲去的是舊的那一個(剛被取消的那一項);
+    // 有呼叫而且要求的是別的位置,位置卻沒到 = 呼叫沒生效
+    const note = calls === 0 ? '產品這一步 0 次 scrollTo —— 新項目沒有被揭露'
+      : r.moved ? `產品這一步呼叫 scrollTo ${calls} 次、要求捲到別的位置,但新項目沒有置中 —— 呼叫沒有生效`
+        : `產品這一步呼叫 scrollTo ${calls} 次,但要求的就是目前的位置 —— 捲去的是舊的那一個(剛被取消的那一項),不是新項目`
+    push('N', judgeFixtureCell('N', res, note), calls)
+  }
+
+  // U1:滾輪捲過 → 容器變窄 → 不搶回(上一次揭露的 = N 的新項目)
+  if (plan.includes('U1')) {
+    const box = await page.evaluate(scrollerBoxInPage, strip.scroller)
+    const user = await userScroll('滾輪', async () => {
+      await page.mouse.move(box.x, box.y)
+      await page.mouse.wheel(-REVEAL_WHEEL_DELTA_PX, 0)
+    })
+    await held('U1', anchorN, user, '滾輪之後容器變窄')
+  }
+
+  // U3:再選一項 → 容器變窄 → 照樣置中(每次揭露把「捲過」歸零)
+  let anchorU3 = null
+  {
+    const box = await page.evaluate(scrollerBoxInPage, strip.scroller)
+    const candidates = await page.evaluate(reselectCandidatesInPage, [strip.scroller, strip.item, strip.attr, strip.on])
+    const pick = pickReselect(candidates, { width: box.width, content: box.maxScroll + box.width })
+    if (!pick) throw failWith(`U3:找不到「沒選中、點得到、變窄之後置中不會夾到端點」的項目(可視寬 ${box.width}px)`)
+    anchorU3 = pick.i
+    const m = await sync.markOf('再選一項')
+    await page.mouse.click(pick.hit.x, pick.hit.y)
+    await sync.awaitReveal(m, ['mutation'], '再選一項')
+    await page.mouse.move(1, 1)
+    await sync.settleEdges(m.calls, '再選一項')
+    const st = await states()
+    if (!st?.selected.includes(pick.i)) throw failWith(`U3:點了第 ${pick.i + 1} 項之後它沒有變成選中 —— 動作沒有造成要量的狀態`)
+    const { s } = await shrink('再選一項之後容器變窄')
+    const { g, where, res } = await measure(pick.i, 'U3')
+    expectGeometry(g, 'centered', where)
+    push('U3', judgeFixtureCell('U3', res), s.calls - m.calls)
+  }
+
+  // U2:按箭頭翻頁 → 容器變窄 → 不搶回(上一次揭露的 = U3 選的那一項)。挑離端點比較遠的那一邊
+  if (plan.includes('U2')) {
+    const box = await page.evaluate(scrollerBoxInPage, strip.scroller)
+    const dir = box.scrollLeft > box.maxScroll / 2 ? 'left' : 'right'
+    const arrow = page.locator(`[data-overflow-arrow="${dir}"] button`).first()
+    if (await arrow.count() === 0) throw failWith(`U2:找不到「${dir === 'left' ? '向左' : '向右'}」那一邊的箭頭(scrollLeft ${box.scrollLeft} / 最大 ${box.maxScroll})`)
+    const user = await userScroll('按箭頭翻頁', () => arrow.click())
+    await held('U2', anchorU3, user, '箭頭翻頁之後容器變窄')
+  }
+  return finish()
+}
+
+// ── 夾具:「觸發晚到」兩面(selftest)—— 第 LATE_TRIGGER_FRAME 個影格才按「複製目前檢視」────────────────
+// 舊判準(scrollLeft 連續 LEGACY_STILL_FRAMES 格不變)回來的時候觸發還沒發生(項目數還是原本的)= 它沒等到、會量早;
+// 新判準(等觸發送達)回來的時候項目數多 1,新項目那一格綠。兩面缺一 → selftest 失敗。
+async function lateTriggerControl(page, fixture) {
+  const strip = FIXTURE_STRIPS.find((s) => s.key === 'tabs-scroll')
+  const run = { sabotage: '', selected: REVEAL_FIXTURE_MID, flow: 'full' }
+  const target = REVEAL_FIXTURE_MID + 1
+  // 舊判準那一面:排點擊與起舊判準在同一次頁面函式裡(plan 第一節第 4 點)
+  const legacySide = await openFixtureStrip(page, fixture, strip, run)
+  const legacy = await evalWith(page, legacyStillFramesInPage, [strip.scroller, strip.item, LEGACY_STILL_FRAMES, REVEAL_ARRIVE_CAP_MS, LATE_TRIGGER_FRAME, target], measureInPage)
+  if (!legacy?.ok || !legacy.g) throw legacySide.failWith(`觸發晚到(舊判準):${legacy?.why === 'missing' ? '找不到捲動容器或 #add' : '舊判準在上限內沒有回來'}`)
+  const legacyCell = judgeFixtureCell('N', judge({ ...legacy.g, obstruction: maskObstruction(legacy.g.mask, legacy.g.width) }, `舊判準回來的那一格「${legacy.g.label}」`))
+  // 新判準那一面:快照 → 排第 LATE_TRIGGER_FRAME 格才點 → 等觸發送達(兩次呼叫之間隔多久都不影響:快照在排之前)
+  const { sync, failWith } = await openFixtureStrip(page, fixture, strip, run)
+  const itemsBefore = (await page.evaluate(itemStatesInPage, [strip.scroller, strip.item, strip.attr, strip.on]))?.count
+  const m = await sync.markOf('觸發晚到')
+  if (!(await page.evaluate(scheduleClickAtFrameInPage, ['#add', LATE_TRIGGER_FRAME]))) throw failWith('觸發晚到(新判準):找不到 #add')
+  await sync.awaitReveal(m, ['mutation'], '觸發晚到(新判準)')
+  const itemsWhenReturned = (await page.evaluate(itemStatesInPage, [strip.scroller, strip.item, strip.attr, strip.on]))?.count
+  await sync.settleEdges(m.calls, '觸發晚到(新判準)')
+  const g = await page.evaluate(measureInPage, [strip.scroller, strip.item, target])
+  if (!g) throw failWith(`觸發晚到(新判準):量不到第 ${target + 1} 項`)
+  const freshCell = judgeFixtureCell('N', judge({ ...g, obstruction: maskObstruction(g.mask, g.width) }, `新判準回來的那一格「${g.label}」`))
+  return {
+    legacy: { frame: legacy.frame, itemsAtStart: legacy.itemsAtStart, itemsWhenReturned: legacy.itemsWhenReturned, cell: legacyCell },
+    fresh: { itemsBefore, itemsWhenReturned, cell: freshCell },
+  }
+}
+
+// ── 夾具:整段(一個瀏覽器、夾具只打包一次)──────────────────────────────────────────
+// export 只給工程比對用(例:單獨跑一種破法、把每一格的訊息全部印出來看);閘自己的主跑與 --selftest 都從本檔呼叫
+export async function scanFixture(staticDir, { runs = FIXTURE_MAIN_RUNS, lateTrigger = false } = {}) {
+  const fixture = await startStorybookCssFixture(staticDir, { source: FIXTURE_SOURCE, label: '選到就露出來夾具', title: '選到就露出來夾具' })
+  const browser = await launchBrowserOrSkip({}, { cleanup: () => fixture.stop() })
+  const out = { runs: [], late: null }
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+    await page.addInitScript(installRevealProbeInPage)
+    for (const run of runs) {
+      const cells = []
+      for (const strip of FIXTURE_STRIPS) cells.push(...(await fixtureStripRun(page, fixture, strip, run)))
+      out.runs.push({ run, cells, planned: plannedFixtureKeys([run]) })
+    }
+    if (lateTrigger) out.late = await lateTriggerControl(page, fixture)
+  } finally { await browser.close(); await fixture.stop() }
+  return out
 }
 
 // ── selftest ───────────────────────────────────────────────────────────────
@@ -518,6 +1297,23 @@ async function selftest() {
   check(JSON.stringify(M('linear-gradient(to right, rgba(0, 0, 0, 0) 0px, rgb(0, 0, 0) 16px, rgb(0, 0, 0) calc(100% - 16px), rgba(0, 0, 0, 0) 100%)')) === JSON.stringify({ left: 16, right: 16 }), '遮罩:瀏覽器序列化成 rgb / rgba 也認得')
   check(JSON.stringify(M('none')) === JSON.stringify({ left: 0, right: 0 }), '遮罩:沒有遮罩 → 0 / 0')
   check(M('linear-gradient(to right, red, blue)').unparsed === true, '遮罩:讀不懂的形狀 → unparsed(呼叫端當儀器失效)')
+  // 揭露探針:「產品要求的位置到了沒」(同一段原始碼也送進頁面)
+  check(!revealArrived({ scrollLeft: 399, max: 712, left: 400 }), '到位:要求 400、目前 399 → 還沒到')
+  check(revealArrived({ scrollLeft: 233, max: 712, left: 233.00003 }), '到位:要求 233.00003(檢視器進場縮放換算出來的值)、目前 233 → 到了')
+  check(revealArrived({ scrollLeft: 712, max: 712, left: 900 }) && revealArrived({ scrollLeft: 0, max: 712, left: -40 }), '到位:要求超出範圍(900 / −40)→ 夾在 0..最大之後比(瀏覽器也是這樣夾)')
+  check(!revealArrived({ scrollLeft: 0, max: 712, left: 1.5 }) && revealArrived({ scrollLeft: 0.5, max: 712, left: 1.4 }), '到位:差 1.5 還沒到、差 0.9 到了(門檻 < 1px)')
+  // 揭露探針:「遮罩 / 箭頭 / ⌄ 跟上捲動位置了沒」
+  const scrollMask = { start: 'linear-gradient(to right, black 0, black calc(100% - 48px), transparent calc(100% - 32px), transparent 100%)', both: 'linear-gradient(to right, transparent 0, transparent 32px, black 48px, black calc(100% - 48px), transparent calc(100% - 32px), transparent 100%)' }
+  const E = (o) => ({ scrollLeft: 0, maxScroll: 300, width: 260, mask: scrollMask.start, arrows: { left: false, right: true }, menu: null, calls: 1, lastLeft: null, swallow: false, resize: 1, ...o })
+  check(edgesConsistent(E({}), { arrows: true }).ok, '跟上:在起點、右側淡出 + 右箭頭 → 一致')
+  check(!edgesConsistent(E({ scrollLeft: 50 }), { arrows: true }).ok, '跟上:捲到 50 但遮罩 / 箭頭還是起點的樣子(React 還沒重畫)→ 還沒跟上')
+  check(edgesConsistent(E({ scrollLeft: 50, mask: scrollMask.both, arrows: { left: true, right: true } }), { arrows: true }).ok, '跟上:捲到中段、兩側淡出 + 兩個箭頭 → 一致')
+  check(!edgesConsistent(E({ scrollLeft: 50, mask: scrollMask.both, arrows: { left: false, right: true } }), { arrows: true }).ok && edgesConsistent(E({ scrollLeft: 50, mask: scrollMask.both, arrows: { left: false, right: true } }), { arrows: false }).ok, '跟上:左箭頭還沒出現 → 有箭頭的排還沒跟上;沒有箭頭的排不看箭頭')
+  check(edgesConsistent(E({ maxScroll: 0, mask: 'none', arrows: { left: false, right: false }, menu: false }), { arrows: true }).ok && !edgesConsistent(E({ maxScroll: 0, mask: 'none', menu: true }), {}).ok, '跟上:不可捲 → 沒有遮罩、沒有 ⌄ 才一致(⌄ 還在 = 還沒跟上)')
+  check(!edgesConsistent(E({ lastLeft: 40 }), { arrows: true }).ok && edgesConsistent(E({ lastLeft: 40, swallow: true }), { arrows: true }).ok, '跟上:產品要求捲到 40 還沒到 → 還沒跟上;吞掉 scrollTo 的對照組不等位置')
+  check(!edgesConsistent(E({ mask: 'linear-gradient(to right, red, blue)' }), {}).ok, '跟上:讀不懂遮罩 → 不算跟上(等到上限 = 儀器失效,不是綠)')
+  check(/動作沒有造成預期的觸發/.test(explainRevealWait({ why: 'no-trigger' }, ['resize'])) && /上限內沒有到/.test(explainRevealWait({ why: 'not-arrived', target: 400, max: 712, scrollLeft: 120 }, ['mutation'])) && /等不到 scrollend/.test(explainRevealWait({ why: 'no-scrollend', target: 400 }, ['mutation'])),
+    '揭露探針沒等到的三種原因各有人話(觸發沒送達 / 位置沒到 / 等不到 scrollend)')
   // 幾何夠不夠驗(overflowPlan):L(右緣陣列, 可視寬) 造一排等寬 40、間距 8 的項目
   const L = (n, scW, w = 40, gap = 8) => Array.from({ length: n }, (_, i) => ({ left: i * (w + gap), right: i * (w + gap) + w, scW }))
   check(overflowPlan(L(8, 200)).enough === true, '幾何:8 項、可視寬 200(第 5 項被切)→ 夠,照天然排版量')
@@ -570,6 +1366,45 @@ async function selftest() {
   check([L(8, 400), L(8, 372), L(4, 1000, 120), L(3, 400, 100)].every((l) => overflowPlan(cutAt(l, overflowPlan(l).target)).enough === true), '幾何:照回傳的可視寬切完再問一次 → 都夠(回傳值自己滿足自己的條件)')
   check(instrumentProblems({ cells: 0, nonClamped: { click: 0, keys: 0, menu: 0, resize: 0 } }).length === 5, '儀器失效:零格 + 四種輸入都沒有置中量測 → 五條')
   check(instrumentProblems({ cells: 20, nonClamped: { click: 3, keys: 9, menu: 2, resize: 4 } }).length === 0, '儀器失效:四種輸入都有置中量測 → 不報')
+  // 「需要置中」數的是幾何(沒被兩端夾住),不是結果:置中成功、偏離(紅)、在淡出區但沒被夾住(紅)都算;夾住的不算
+  check(needsCentring(judge(G({}))) && needsCentring(judge(G({ left: 103, right: 163 }))) && needsCentring(judge(G({ left: 190, right: 250, scrollLeft: 120 })))
+    && !needsCentring(judge(G({ left: 10, right: 70, scrollLeft: 0, obstruction: { left: 0, right: 48 } }))) && !needsCentring(judge(G({ left: 190, right: 250, scrollLeft: 300, obstruction: { left: 48, right: 0 } }))),
+  '需要置中的格:置中 / 偏離 3px(紅)/ 落在淡出區沒被夾住(紅)→ 算;起點夾住 / 終點夾住 → 不算(審查 A:偏離的格以前不算,產品算錯位置時地板歸零、被說成沒量到)')
+  check(overflowRunVerdict({ bad: [1], floor: ['x'] }).exit === 1 && overflowRunVerdict({ bad: [1], floor: [] }).exit === 1
+    && overflowRunVerdict({ bad: [], floor: ['x'] }).exit === 2 && overflowRunVerdict({ bad: [], floor: [] }).exit === 0,
+  '結論先後:有產品紅 → 1(不論地板);沒有產品紅、地板沒過 → 2;都沒有 → 0')
+  // 夾具那一段的純函式
+  const perCell = (keys) => Object.keys(FIXTURE_CELLS).map((c) => `${c} ${keys.filter((k) => k.endsWith(`|${c}`)).length}`).join('、')
+  const mainKeys = plannedFixtureKeys(FIXTURE_MAIN_RUNS)
+  check(mainKeys.length === 28 && perCell(mainKeys) === 'M1 5、M2 5、N 5、U1 5、U2 3、U3 5', `夾具計畫:主跑 ${mainKeys.length} 格(${perCell(mainKeys)};U2 只有三排有箭頭)`)
+  const H = (o) => judgeHeld({ before: 250, after: 250, calls: 0, anchorOffset: 166, ...o })
+  check(H({}).ok === true && H({}).kind === 'held', '捲過不搶回:位置沒動、上次揭露的項目離中心 166px → 綠')
+  check(H({ after: 251 }).ok === true && H({ after: 251.5, calls: 1 }).ok === false, '捲過不搶回:差 1px 算沒動、差 1.5px 算動了(產品有呼叫 → 紅)')
+  check(H({ anchorOffset: 8 }).ok === true && H({ anchorOffset: -7.9 }).kind === 'instrument', '捲過不搶回:上次揭露的項目偏 8px 分得開、偏 7.9px 分不開(「沒搶回」與「搶回了」同一個樣子 → 儀器失效)')
+  check(H({ after: 400, calls: 1 }).kind === 'grabbed-back' && H({ after: 400, calls: 1 }).text.includes('搶回'), '捲過不搶回:位置變了而且產品呼叫 scrollTo → 紅(搶回),訊息講出捲到哪、變成哪、呼叫幾次')
+  check(H({ after: 400, calls: 0 }).kind === 'instrument', '捲過不搶回:位置變了但產品沒呼叫 → 儀器失效(使用者的捲動還沒停 / 瀏覽器夾回,不算到產品頭上)')
+  const FG = (o) => ({ left: 128, right: 200, width: 328, scrollLeft: 232, maxScroll: 712, ...o })
+  check(fixtureGeometry(FG({}), 'centered').ok && !fixtureGeometry(FG({ left: 20, right: 92, scrollLeft: 0 }), 'centered').ok, '夾具幾何:中間那一項置中不會夾住 → 成立;靠起點的那一項(中心 56)置中會夾在起點 → 不成立(儀器失效)')
+  check(fixtureGeometry(FG({ left: 256, right: 328, scrollLeft: 712 }), 'clamped-end').ok && !fixtureGeometry(FG({ left: 132, right: 204, scrollLeft: 712 }), 'clamped-end').ok, '夾具幾何:最後一項置中超出終點 128px → 成立;只超出 4px(「夾住」與「置中」分不出來)→ 不成立')
+  const RES = { ok: true, how: 'centered', offset: 0, text: 'x' }
+  check(judgeFixtureCell('M1', RES).ok && !judgeFixtureCell('M2', RES).ok && judgeFixtureCell('M2', { ...RES, how: 'clamped-end' }).ok && !judgeFixtureCell('N', { ok: false, how: 'off-center', kind: 'off-center', offset: 72, text: 'y' }).ok,
+    '夾具判定:M1 / N / U3 要置中、M2 要夾在終點(置中的 M2 也算紅);偏離 → 紅')
+  const cand = (i, o) => ({ i, selected: false, centre: 300, width: 72, fromCentre: 40, hit: { x: 1, y: 1 }, ...o })
+  const picked = pickReselect([cand(0, { selected: true, fromCentre: 0 }), cand(1, { hit: null, fromCentre: 1 }), cand(2, { centre: 60, fromCentre: 2 }), cand(3, { fromCentre: -30 }), cand(4, { fromCentre: 10 })], { width: 328, content: 1040 })
+  check(picked?.i === 4 && pickReselect([cand(0, { selected: true }), cand(1, { centre: 60 })], { width: 328, content: 1040 }) === null, 'U3 挑項目:跳過已選中、點不到、變窄之後置中會夾住的,取離中心最近的(第 5 項);都不行 → null(儀器失效)')
+  const ctl = [{ strip: 'tabs-scroll', cell: 'M1', ok: true, text: '' }, { strip: 'tabs-scroll', cell: 'N', ok: false, text: '' }]
+  const ctlKeys = ['tabs-scroll|M1', 'tabs-scroll|N']
+  check(compareFixtureControl('no-childlist', ctlKeys, ctl).length === 0
+    && compareFixtureControl('no-childlist', ctlKeys, [ctl[0], { ...ctl[1], ok: true }]).length === 1
+    && compareFixtureControl('no-childlist', ctlKeys, [{ ...ctl[0], ok: false }, ctl[1]]).length === 1
+    && compareFixtureControl('no-childlist', ctlKeys, [ctl[0]]).length === 1
+    && compareFixtureControl('no-childlist', ['tabs-scroll|M1'], ctl).length === 1,
+    '破法比對:紅的集合 = 期望 → 不報;該紅沒紅 / 不該紅卻紅 / 少量一格 / 多量一格 → 各指出 1 處')
+  check(fixtureInstrumentProblems([{ cell: 'M1', ok: true, calls: 1 }], 2).length === 1 && fixtureInstrumentProblems([{ cell: 'M1', ok: true, calls: 0 }, { cell: 'N', ok: true, calls: 0 }], 2).length === 1 && fixtureInstrumentProblems([{ cell: 'M1', ok: true, calls: 0 }, { cell: 'N', ok: true, calls: 1 }], 2).length === 0,
+    '夾具儀器地板:格數對不上 → 報;正向格全部 0 次 scrollTo(產品換了捲動方式)→ 報;有一格記到 → 不報')
+  // 經符號連結叫自己、給不存在的建置 → 必須真的跑(缺建置標記 + 結束碼 2);審查 A 2026-11-14 的 s01(只比字串時 0 行、exit 0)
+  const link = missingBuildViaSymlinkControl(import.meta.url)
+  check(link.ok, link.ok ? `對照組(${link.line})` : link.line)
   // 真建置
   requireStorybookBuild(path.join(STATIC, 'index.json'))
   requireFreshStorybookBuild(STATIC, SOURCES)
@@ -604,6 +1439,56 @@ async function selftest() {
   const fitRed = new Set(fitBroken.cells.filter((c) => !c.ok).map((c) => `${c.strip}|${c.input}`))
   const fitMissed = fitWant.filter((k) => !fitRed.has(k))
   check(fitMissed.length === 0, `對照組(整排塞得下、自備幾何開、拿掉 primitive 呼叫):Tabs 兩排 ${fitWant.length} 個「排 × 輸入」應紅,${fitWant.length - fitMissed.length} 個紅${fitMissed.length ? `(沒紅:${fitMissed.join(', ')})` : ''}`)
+  // 對照組 bias(審查 A 2026-11-14 的 b05):產品照常呼叫、也真的捲到它要求的位置,只是位置整體少 REVEAL_BIAS_PX ——
+  // 「量到了而且錯」:四種輸入都要有紅、紅的都是 off-center / unreadable;儀器地板必須認得這些格是「需要置中」的量測(0 條),
+  // 結論必須是產品紅(結束碼 1),不是儀器失效。Chip menu 一排就有四種輸入。
+  // 另一面:舊數法(只數「判成 centered 而且 ok」)在同一組結果上必須至少漏掉一種輸入 —— 證明這一組分得出新舊數法(把 needsCentring 改回去,這一格會紅)
+  const biased = await scanBuild(STATIC, { ...quiet, only: ['chip-menu'], neutralize: 'bias' })
+  const biasRed = biased.cells.filter((c) => !c.ok)
+  const biasFloor = instrumentProblems(biased.totals)
+  const biasVerdict = overflowRunVerdict({ bad: biasRed, floor: biasFloor })
+  const biasRedInputs = INPUTS.filter((i) => biasRed.some((c) => c.input === i))
+  const biasKinds = [...new Set(biasRed.map((c) => c.kind))]
+  const oldFloorGaps = INPUTS.filter((i) => !biased.cells.some((c) => c.input === i && c.how === 'centered' && c.ok))
+  check(biasVerdict.exit === 1 && biasFloor.length === 0 && biasRedInputs.length === INPUTS.length && biasKinds.every((k) => k === 'off-center' || k === 'unreadable') && oldFloorGaps.length > 0,
+    `對照組(產品要求的位置整體少 ${REVEAL_BIAS_PX}px、照常捲到位):Chip menu ${biased.cells.length} 格裡 ${biasRed.length} 格紅(${biasKinds.join(' / ') || '無'};有紅的輸入 ${biasRedInputs.join('、') || '無'}),`
+    + `結論 = ${biasVerdict.kind === 'product' ? '產品紅' : biasVerdict.kind === 'instrument' ? '儀器失效' : '綠'}、結束碼 ${biasVerdict.exit};地板 ${biasFloor.length} 條${biasFloor.length ? `(${biasFloor.join(';')})` : ''};`
+    + `舊數法在這一組會把 ${oldFloorGaps.join('、') || '(沒有)'} 判成「置中從沒被驗過」`)
+  if (biasRed.length) console.log(`    例 ${biasRed[0].text}`)
+
+  // 夾具那一段:現況 28 格全綠 → 三種破法的矩陣(每一格被哪一種打紅、其餘破法下必須綠)→「觸發晚到」兩面。一個瀏覽器、夾具只打包一次
+  const fixtureRuns = [
+    ...FIXTURE_MAIN_RUNS,
+    { sabotage: 'swallow', selected: REVEAL_FIXTURE_MID, flow: 'no-user-scroll' },
+    { sabotage: 'swallow', selected: REVEAL_FIXTURE_LAST, flow: 'mount-only' },
+    { sabotage: 'no-childlist', selected: REVEAL_FIXTURE_MID, flow: 'full' },
+    { sabotage: 'mute-user-scroll', selected: REVEAL_FIXTURE_MID, flow: 'full' },
+  ]
+  const fx = await scanFixture(STATIC, { runs: fixtureRuns, lateTrigger: true })
+  const fxGroup = (sabotage) => {
+    const runs = fx.runs.filter((r) => r.run.sabotage === sabotage)
+    return { cells: runs.flatMap((r) => r.cells), planned: runs.flatMap((r) => r.planned) }
+  }
+  const tally = (cells) => Object.keys(FIXTURE_CELLS).map((c) => [c, cells.filter((x) => x.cell === c)]).filter(([, xs]) => xs.length)
+    .map(([c, xs]) => `${c} ${xs.filter((x) => !x.ok).length}/${xs.length} 紅`).join('、')
+  const fxClean = fxGroup('')
+  const cleanProblems = [...compareFixtureControl('', fxClean.planned, fxClean.cells), ...fixtureInstrumentProblems(fxClean.cells, fxClean.planned.length)]
+  check(cleanProblems.length === 0, `夾具現況:${fxClean.cells.length} 格全綠(${tally(fxClean.cells)})${cleanProblems.length ? `;不符:${cleanProblems.join(' / ')}` : ''}`)
+  for (const sabotage of Object.keys(FIXTURE_SABOTAGES)) {
+    const g = fxGroup(sabotage)
+    const problems = compareFixtureControl(sabotage, g.planned, g.cells)
+    const unhit = [...new Set(g.cells.filter((c) => !(c.sabotageHits >= 1)).map((c) => c.strip))]
+    const redCells = g.cells.filter((c) => !c.ok)
+    check(problems.length === 0 && unhit.length === 0 && g.cells.length > 0,
+      `對照組「${sabotage}」${FIXTURE_SABOTAGES[sabotage]}:紅 = 期望(${tally(g.cells)};紅只出現在 ${Object.keys(FIXTURE_CELLS).filter((c) => FIXTURE_CELLS[c].hitBy.includes(sabotage)).join(' / ')})`
+      + `${problems.length ? `;不符:${problems.join(' / ')}` : ''}${unhit.length ? `;破法在 ${unhit.join(' / ')} 打到 0 次(產品換了機制,這個破法不成立)` : ''}`)
+    if (redCells.length) console.log(`    例 ${redCells[0].text}`)
+  }
+  const late = fx.late
+  check(late.legacy.itemsWhenReturned === late.legacy.itemsAtStart,
+    `觸發晚到(第 ${LATE_TRIGGER_FRAME} 個影格才按「複製目前檢視」)· 舊判準(連續 ${LEGACY_STILL_FRAMES} 格不動):第 ${late.legacy.frame} 格就回來,那時項目數 ${late.legacy.itemsWhenReturned}(原本 ${late.legacy.itemsAtStart},觸發還沒發生)—— 它沒等到;那一刻量會判成${late.legacy.cell.ok ? '綠' : `紅(${late.legacy.cell.text})`}`)
+  check(late.fresh.itemsWhenReturned === late.fresh.itemsBefore + 1 && late.fresh.cell.ok,
+    `觸發晚到 · 新判準(等觸發送達):回來時項目數 ${late.fresh.itemsBefore} → ${late.fresh.itemsWhenReturned}、新項目${late.fresh.cell.ok ? '置中' : `沒置中(${late.fresh.cell.text})`}`)
   if (CONTROL_STATIC) {
     const before = await scanBuild(CONTROL_STATIC, { fresh: false, log: () => {} })
     const r = new Set(before.cells.filter((c) => !c.ok).map((c) => `${c.strip}|${c.input}`))
@@ -616,8 +1501,8 @@ async function selftest() {
   return ok
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-if (isMain) {
+// 比真實路徑(lib/direct-run.mjs):經符號連結叫的時候只比字串會什麼都不跑、exit 0
+if (isDirectRun(import.meta.url)) {
   try {
     if (ARGS.includes('--selftest')) {
       const ok = await selftest()
@@ -626,17 +1511,34 @@ if (isMain) {
     }
     const result = await scanBuild(STATIC)
     if (result === null) process.exit(0) // launchBrowserOrSkip 已印 SKIPPED-ENV / BROWSER-REQUIRED 判定
-    const problems = instrumentProblems(result.totals)
-    if (problems.length) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:${problems.join(';')} —— 儀器失效,不當綠燈`); process.exit(1) }
-    const bad = result.cells.filter((c) => !c.ok)
-    if (bad.length) {
-      console.error(`❌ overflow-reveal-selected FAIL(${bad.length} / ${result.cells.length} 格):\n  ${bad.map((c) => c.text).join('\n  ')}`)
-      process.exit(1)
+    const fx = await scanFixture(STATIC)
+    const fxCells = fx.runs.flatMap((r) => r.cells)
+    for (const strip of FIXTURE_STRIPS) console.log(`  夾具 ${strip.label}:${fxCells.filter((c) => c.strip === strip.key).map((c) => `${c.cell}${c.ok ? '✓' : '✗'}`).join(' ')}`)
+    if (arg('--dump')) writeFileSync(path.resolve(arg('--dump')), `${JSON.stringify({ story: dumpCells(result.cells), fixture: fxCells.map((c) => ({ strip: c.strip, cell: c.cell, ok: c.ok, kind: c.kind, offset: c.offset ?? null, calls: c.calls, scrollEvents: c.scrollEvents ?? null })) }, null, 1)}\n`)
+    const floor = [...instrumentProblems(result.totals), ...fixtureInstrumentProblems(fxCells, plannedFixtureKeys(FIXTURE_MAIN_RUNS).length)]
+    const bad = [...result.cells, ...fxCells].filter((c) => !c.ok)
+    const verdict = overflowRunVerdict({ bad, floor })
+    if (verdict.kind === 'product') {
+      console.error(`❌ overflow-reveal-selected FAIL(${bad.length} / ${result.cells.length + fxCells.length} 格):\n  ${bad.map((c) => c.text).join('\n  ')}`)
+      if (floor.length) console.error(`  另外,儀器地板有 ${floor.length} 條沒過(這一次的結論是上面量到的產品紅,不是沒量到):${floor.join(';')}`)
+      process.exit(verdict.exit)
+    }
+    if (verdict.kind === 'instrument') {
+      console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:${floor.join(';')} —— 儀器失效,不當綠燈`)
+      console.error('✗ overflow-reveal-selected:儀器失效 —— 這次沒有量完(exit 2;不是產品裁決,也不算通過)')
+      process.exit(verdict.exit)
     }
     const n = result.totals.nonClamped
-    console.log(`✅ overflow-reveal-selected PASS(${result.cells.length} 格:${STRIPS.length} 排 × 點擊 / 方向鍵 / 選單 / 縮放;需要置中的 點擊 ${n.click}、方向鍵 ${n.keys}、選單 ${n.menu}、縮放 ${n.resize} 格全在中心 ±${CENTER_TOLERANCE_PX}px,其餘合法夾住且完整可讀${result.selfCuts.length ? `;${result.selfCuts.map((c) => c.label).join('、')} 用自備幾何量` : ''})`)
+    console.log(`✅ overflow-reveal-selected PASS(${result.cells.length} 格:${STRIPS.length} 排 × 點擊 / 方向鍵 / 選單 / 縮放;需要置中的 點擊 ${n.click}、方向鍵 ${n.keys}、選單 ${n.menu}、縮放 ${n.resize} 格全在中心 ±${CENTER_TOLERANCE_PX}px,其餘合法夾住且完整可讀${result.selfCuts.length ? `;${result.selfCuts.map((c) => c.label).join('、')} 用自備幾何量` : ''}`
+      + `;夾具 ${fxCells.length} 格:掛載置中 / 掛載夾在終點 / 新出現的已選項目置中 / 滾輪與箭頭翻頁捲過不搶回 / 捲過後再選一項照樣置中)`)
   } catch (error) {
-    if (error instanceof StoryRenderInstrumentError) { console.error(`✗ ${error.message}`); process.exit(1) }
+    // 沒量到(story 開不起來、夾具打包失敗、揭露探針等不到)→ 儀器失效:印標記、exit 2(不是產品裁決,也不算通過)
+    if (error instanceof StoryRenderInstrumentError || error instanceof FixtureInstrumentError) {
+      const message = String(error.message)
+      console.error(`✗ ${message.includes(INSTRUMENT_FAIL_MARKER) ? '' : `${INSTRUMENT_FAIL_MARKER} `}${message}`)
+      console.error('✗ overflow-reveal-selected:儀器失效 —— 這次沒有量完(exit 2;不是產品裁決,也不算通過)')
+      process.exit(2)
+    }
     throw error
   }
 }

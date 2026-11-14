@@ -236,7 +236,7 @@ function isProse(el: Element): boolean {
  * 1. 只有一個節點:有視覺邊界(邊框 / 底色 / 陰影),或不是只負責排版的容器(一個元件的根、`<p>`、`<table>`、`<dl>`、`<label>` …)
  *    = 一塊(`one`);是只負責排版的容器 → 往裡看它的子節點,回到這一步。看到底都沒有子節點(一張圖、一個空容器)= `one`。
  * 2. 有兩個以上節點,先扣掉說明文字(`isProse`),看剩幾塊:
- *    - 剩兩塊以上,彼此至少隔一格版面間距(`HEADING_BLOCK_MIN_GAP_PX`)→ `many`;隔得更近 = 元件的微距(一列按鈕、一排 chip)= `one`
+ *    - 剩兩塊以上,**扣掉說明文字之後的那幾塊**彼此至少隔一格版面間距(`HEADING_BLOCK_MIN_GAP_PX`)→ `many`(說明文字離它們多近不算);隔得更近 = 元件的微距(一列按鈕、一排 chip)= `one`
  *    - 只剩一塊(一則示範 + 說明它的文字)→ `one`
  *    - 全是說明文字:段落之間隔 ≥ loose → 並列的好幾段 = `many`;比 loose 近 = 同一段話 = `one`(`loose` 由呼叫端從被量的元素讀)
  * 所以:一張表 / 一張圖 / 一份清單 / 一個元件 / 一列按鈕 / 一則示範 + 一段說明 = 一塊;
@@ -248,9 +248,12 @@ export function headingContentOf(nodes: Element[], loose: number): HeadingConten
   for (let depth = 0; depth < 12; depth++) {
     if (run.length === 0) return 'one'
     if (run.length >= 2) {
-      const blocks = run.filter((node) => !isProse(node)).length
+      const blockNodes = run.filter((node) => !isProse(node))
+      const blocks = blockNodes.length
       if (blocks === 1) return 'one'
-      return minGapBetween(run) >= (blocks >= 2 ? HEADING_BLOCK_MIN_GAP_PX : loose) - 0.5 ? 'many' : 'one'
+      // 剩兩塊以上:只量塊與塊之間(說明文字不算一塊,它離旁邊那一塊多近都不影響 —— layoutSpace.spec.md「幾塊怎麼數」第 2 步的「彼此」);
+      // 全是說明文字:量段落之間
+      return minGapBetween(blocks >= 2 ? blockNodes : run) >= (blocks >= 2 ? HEADING_BLOCK_MIN_GAP_PX : loose) - 0.5 ? 'many' : 'one'
     }
     const only = run[0]
     if (hasVisualBoundary(only) || !isLayoutWrapper(only)) return 'one'

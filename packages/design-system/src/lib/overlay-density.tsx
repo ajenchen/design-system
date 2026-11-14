@@ -152,8 +152,9 @@ const sameAttrs = (a: OverlayDensityAttrs, b: OverlayDensityAttrs) =>
  * 什麼時候讀(2026-11-12 修,原本是每次重繪都跑、沒有依賴陣列的 layout effect):
  * - 浮層關著時一次都不讀 —— Radix 的 Content 關著不掛 DOM,ref 不會被呼叫。表格每一格的 TruncatedText 都包著 Tooltip,
  *   原本每一格每次重繪都往外爬完整條祖先鏈,頁面根節點帶 data-density 時每一格掛上去還多一次同步重繪。
- * - 根元素掛上去的那一刻讀一次(ref 在 commit 的 layout 階段被呼叫,這裡的 setState 跟 layout effect 一樣在畫面畫出來
- *   之前同步重繪 → 第一次畫出來就是對的檔位,不會先閃一下整頁密度)。
+ * - 根元素掛上去的那一刻讀(ref 在 commit 的 layout 階段被呼叫,這裡的 setState 跟 layout effect 一樣在畫面畫出來
+ *   之前同步重繪 → 第一次畫出來就是對的檔位,不會先閃一下整頁密度)。開著的期間 Radix 的浮層內容每次重繪都重掛 ref
+ *   (@radix-ui/react-popper 把轉進來的 ref 跟一個每次都是新的函式合在一起),所以每次重繪會再讀一次;值沒變不重繪。
  * - 開著的期間,文件裡任何元素的三個密度屬性變了就重讀(MutationObserver 只在開著時掛、關了就拆;值沒變不重繪)——
  *   區塊密度在浮層開著時被改,浮層跟著變,不會停在舊值。
  * 要鎖某一軸的浮層(Popover 的版面間距鎖 md)在自己的根元素上把那一軸寫在這組屬性**之後**,覆蓋掉讀到的值。

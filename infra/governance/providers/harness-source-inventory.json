@@ -582,8 +582,10 @@
           "scripts/test-agent-decision-card-option-press-invariant.mjs",
           "scripts/test-color-scheme-invariant.mjs",
           "scripts/test-data-table-link-cell-invariant.mjs",
+          "scripts/test-data-table-row-estimate-density-invariant.mjs",
           "scripts/test-data-table-row-under-pointer-invariant.mjs",
           "scripts/test-dialog-coexist-scroll-lock-invariant.mjs",
+          "scripts/test-doc-heading-inventory-invariant.mjs",
           "scripts/test-field-open-border-invariant.mjs",
           "scripts/test-form-validation-contract-invariant.mjs",
           "scripts/test-hover-color-pair-invariant.mjs",
@@ -604,8 +606,16 @@
             "timeoutMs": 420000
           },
           {
+            "path": "scripts/test-data-table-multi-sort-invariant.mjs",
+            "timeoutMs": 420000
+          },
+          {
             "path": "scripts/test-field-text-left-edge-invariant.mjs",
             "timeoutMs": 900000
+          },
+          {
+            "path": "scripts/test-overflow-reveal-selected-invariant.mjs",
+            "timeoutMs": 420000
           },
           {
             "path": "scripts/test-overlay-footer-gutter-invariant.mjs",

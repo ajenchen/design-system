@@ -82,7 +82,8 @@
  *        data-[heading-content=one] 時 tight」;anatomy-utils.tsx 的 `H3` / `Desc` 都呼叫 `useHeadingContent`、用 `SPEC_HEADING_GAP`,
  *        不自己寫 loose(值只在 tutorial-page.tsx);「隔多遠才算兩塊」的門檻 `HEADING_BLOCK_MIN_GAP_PX` 等於 layoutSpace.css 的 md
  *        `--layout-space-tight`(版面間距刻度最小的一格),而且 `headingContentOf` 真的拿它來比(常數存在 ≠ 有被用)。
- *        數法本身(幾塊、隔多遠算兩塊)由 section-gap-invariant 的「標題區 → 內容」各列量像素。
+ *        數法本身(幾塊、隔多遠算兩塊)由 section-gap-invariant 的「標題區 → 內容」各列量像素;全站每一個標題區(兩種密度判定相同、
+ *        首次 = 重判、判定 → 距離)由 doc-heading-inventory-invariant 逐則 story 量(2026-11-14 A7 ⑤)。
  *
  * 教學頁的範圍:全部 *.principles.stories.tsx(R1–R11、R13),加上 tokens/** 與 patterns/** 裡 import 共用元件的 *.stories.tsx(R2–R6、R10、R11、R13);
  * 其餘 Tokens / Patterns 文件頁只收「自抄教學框小元件」、手寫 <h2> / <section>(R2)與手刻段落清單(R12)。
