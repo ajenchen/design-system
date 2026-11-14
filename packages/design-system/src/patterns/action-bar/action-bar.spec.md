@@ -277,7 +277,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 **孤立檢查（結果導向的自我驗證）**：任何一顆按鈕若左右兩側都有線，代表其中一條沒有真正的理由 —— 回頭逐條檢查理由，刪掉對不上的那條。
 
-**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：Dialog 標題列（`dialog.tsx#DialogHeader`）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
+**落點歸屬（誰放這條線）**：由 DS 元件自動放，consumer 零自刻。已落地：浮層標題列（SurfaceHeader 右側按鈕位 —— Dialog / Sheet / Popover / DataTable 狀態面板共用，`../overlay-surface/overlay-surface.spec.md`「SurfaceHeader」）、Notice 家族（`notice.tsx`，Alert / Toast 共用同一基座因此行為一致）、ButtonGroup（`ButtonDivider`）。Consumer 自刻是「漏放 / 幾何漂移」的根因。
 
 **切換按鈕**：`text` + `pressed` toggle——依預設（未啟用）狀態決定位置與分隔線；切為啟用（`pressed=true`）時不移動、不調整分隔線（啟用態不是 variant，見三節）。
 
@@ -287,7 +287,7 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 **唯一實作 = `<ButtonDivider />`**(`components/Button/button-group.tsx`)。consumer 與 DS 元件都不得手寫高度,也不再用 `<Separator>` 畫 action region 群組線 —— 兩套機制是 2026-08-07 之前長度四散(13/16/24px)的根因。
 
-- **長度**(垂直軸唯一定義):**線長 = 所在那一列「最高元件」的高度 − `--action-divider-inset`(8px),不短於 `--action-divider-min`(16px),垂直置中**。基準是最高元件而非容器,故同列每條線必然等長(不參差),換尺寸階時自動跟著走:xs 24→16 / sm 28→20 / md 32→24 / lg 密度 36→28,比值 0.67–0.78。inset 8px 是我們尺寸階唯一可行值(世界級「撐滿再減」的兩家各減 16px,但最小控件 32px;套到我們 24px 的 xs 階只剩 8px,比 Button 圖示 16px 還矮一半)。min 16px 不是新常數,是**本公式在最小控件階的取值**(`--field-height-xs` 24px − 8px),故地板永不覆寫公式,只在「容器宣稱高度比自身內容還矮」時(如 `ItemSuffix` 的 `h-[1lh]`=21px 卻裝 24px 控件)修回誠實值;`--field-height-xs` 不隨 density 縮放,min 在任何密度成立。Token SSOT = `tokens/uiSize/uiSize.css`。
+- **長度**(垂直軸唯一定義):**線長 = 所在那一列「最高元件」的高度 − 內縮 8px,不短於地板 16px,垂直置中**。基準是最高元件而非容器,故同列每條線必然等長(不參差),換尺寸階時自動跟著走:xs 24→16 / sm 28→20 / md 32→24 / lg 密度 36→28,比值 0.67–0.78。inset 8px 是我們尺寸階唯一可行值(世界級「撐滿再減」的兩家各減 16px,但最小控件 32px;套到我們 24px 的 xs 階只剩 8px,比 Button 圖示 16px 還矮一半)。min 16px 不是新常數,是**本公式在最小控件階的取值**(`--field-height-xs` 24px − 8px),故地板永不覆寫公式,只在「容器宣稱高度比自身內容還矮」時(如 `ItemSuffix` 的 `h-[1lh]`=21px 卻裝 24px 控件)修回誠實值;`--field-height-xs` 不隨 density 縮放,min 在任何密度成立。**數值只住 `components/Button/button-group.tsx`**:內縮寫在 ButtonDivider 內層的元件內變數 `--divider-inset`,地板寫成 `calc(var(--field-height-xs) - var(--divider-inset))`;只有這條線自己讀、不隨密度切換,所以不開全系統的 token(`tokens/token-system.spec.md` 判斷流程第 0 題;2026-11-11 user 拍板 token 第 3 題「3全收」從 `uiSize.css` 收回,算式不變)。閘:`scripts/test-action-divider-placement.mjs`(寫法與值)、`scripts/measure-action-dividers.mjs`(像素)。
 - **前提**:必須住在**自動高度的 cluster** 內。直接置於固定高度容器(48/56px chrome header)時基準會退化成容器高 —— CSS 無法在容器有明確高度時看見「最高手足」。
 - **水平間距** = 自身兩端各 4px 於 `gap-2` 容器 → 兩側各 8+4 = 12px 對稱。
 - **世界級對照**(長度):做過真工具列的四家全部矮於控件,無一等高 —— VS Code 固定 16px(`height:16px`,同檔 `.codicon` 亦 16px,https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/actionbar/actionbar.css)/ Primer `ActionBar.VerticalDivider` 固定 20px + `margin-top: calc((控件高 − 20px)/2)` 置中(https://github.com/primer/react/blob/main/packages/react/src/ActionBar/ActionBar.module.css)/ Fluent `ToolbarDivider` 因 Toolbar `alignItems:center` 落在 `minHeight: 20px` 地板(https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-divider/library/src/components/Divider/useDividerStyles.styles.ts)/ JetBrains `ActionToolbarImpl` 以最高按鈕反推(maxButtonHeight − 5px)。等長於控件的先例(Ant `Space.Compact` / Chakra `Group attached` / SLDS button-group / Atlassian split button)全屬**控件內部接縫**——線就是控件自己的邊框,與群組分隔線是不同問題。語意依據:Fluent「block dividers → strict distinction;inset → imply closer relationships」+ Material「full width 分隔不相關大區塊,inset 分隔區塊內相關內容」;工具列的兩個 action 群是同列近親 → 屬 inset 定義域。
@@ -490,6 +490,8 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 - `coachmark.spec.md`
 - `data-table.spec.md`
 - `file-viewer.spec.md`
+- `header-canonical.spec.md`
+- `overlay-surface.spec.md`
 - `popover.spec.md`
 - `separator.spec.md`
 - `steps.spec.md`

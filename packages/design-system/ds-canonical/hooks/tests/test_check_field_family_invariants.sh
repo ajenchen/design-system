@@ -4,7 +4,16 @@
 # Coverage(每 sub-rule pass + block 各 1 case):
 #   A.1 naked row-mode propagation:pass / block / allowlist
 #   A.2 FieldControlGroup wrapper child:pass / block / allowlist
-#   A.3 Field state ring SSOT:pass / 3 block(shadow inset / outline / per-control open)
+#   A.3.1 / A.3.2 Field state ring:shadow inset block / outline block(含 data-[field-open] 變體)/ textarea SSOT skip
+#   A.3.3 欄位開著的框只有一個住所(2026-11-13 改寫)兩面對照:
+#       該擋 7 = 元件自己 open && 'border-primary'(含 !)/ field-wrapper.tsx 改回 data-[state=open] 的兩條原文 /
+#                Field 家族元件 data-[state=open]:(!)border-*(含中間夾變體)/ 住所以外 data-[field-open]:border-*
+#       該放 7 = field-wrapper.tsx 現在的寫法 / Button 與 inline action 的 data-[state=open] /
+#                非欄位元件 data-[state=open]:border-border-hover / FieldControlGroup 讀記號排 z-index / 純註解行 / escape
+#   A.3.4 data-field-open 記號手寫(2026-11-13 新增)兩面對照:
+#       該擋 4 = JSX 屬性 / 物件 key / 裸屬性 / setAttribute
+#       該放 6 = fieldOpenProps / 唯一寫入者自己 / 說明文字裡的字面 / 讀選擇器 / story skip / escape
+#       + A.3.3 與 A.3.4 同時踩 → 一次 exit 2、兩段訊息都在
 #   A.4 disabled placeholder color:pass / 1 stderr-warn(exit 0)/ allowlist
 #   A.6 空值顯示 SSOT(2026-07-08 半形 hyphen):非 owner import EMPTY_DISPLAY block /
 #       owner skip / 全形 em dash block / 半形 pass / allowlist
@@ -170,17 +179,198 @@ const cls = "focus-within:outline-primary"
 '
 expect_exit "A.3.2 outline state ring → BLOCK" 2 "outline"
 
-# 10. open && border-primary → BLOCK
-run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
-const cls = open && 'border-primary'
-"
-expect_exit "A.3.3 per-control open=blue → BLOCK" 2 "open=blue"
+# 9b. 同一條,把變體換成欄位「自己的浮層開著」的記號(2026-11-13 起與 hover / focus-within 同列)→ BLOCK
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" '
+const cls = "data-[field-open]:outline-primary"
+'
+expect_exit "A.3.2b data-[field-open] 的 outline ring → BLOCK" 2 "outline"
 
-# 11. SSOT host skip(textarea.tsx)→ pass
+# 10. SSOT host skip(textarea.tsx;A.3.1 / A.3.2)→ pass
 run_hook "/r/packages/design-system/src/components/Textarea/textarea.tsx" '
 const cls = "hover:shadow-[inset_0_0_0_1px_red]"
 '
-expect_exit "A.3.4 textarea SSOT skip → pass" 0
+expect_exit "A.3.1 textarea SSOT skip → pass" 0
+
+echo ""
+echo "=== A.3.3 欄位開著的框只有一個住所(2026-11-13 改寫)==="
+# 規則:欄位自己的浮層開著 = 外框維持聚焦的框;樣式只住 field-wrapper.tsx、只認欄位自己寫的 data-[field-open]。
+# 兩面對照 —— 該擋:改回舊寫法的各種形狀;該放:現在的寫法、按鈕類觸發(開著 = 自己的 hover)、讀記號做外框以外的事。
+A33="欄位開著的框只有一個住所"
+
+# 該擋 1. 元件自己用 open 狀態換框色(改寫前就有的擋法)
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+const cls = open && 'border-primary'
+"
+expect_exit "A.3.3 該擋:元件自己 open && 'border-primary'" 2 "元件自己用 open 狀態換框色"
+
+# 該擋 2. 同一件事帶 !(新規則的框色是 !border-primary,改回各元件自己寫時最可能的形狀)
+run_hook "/r/packages/design-system/src/components/Combobox/combobox.tsx" "
+const cls = cn(base, isOpen && '!border-primary')
+"
+expect_exit "A.3.3 該擋:元件自己 isOpen && '!border-primary'" 2 "元件自己用 open 狀態換框色"
+
+# 該擋 3. 改回舊寫法 —— field-wrapper.tsx 一般欄位那一條(c55c3786 的原文:開著 = hover 框)
+run_hook "/r/packages/design-system/src/components/Field/field-wrapper.tsx" "
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[state=open]:border-border-hover focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
+"
+expect_exit "A.3.3 該擋:field-wrapper.tsx 改回 data-[state=open]:border-border-hover" 2 "用 Radix 通用的"
+
+# 該擋 4. 改回舊寫法 —— field-wrapper.tsx 錯誤欄位那一條(c55c3786 的原文:開著 = error-hover 框)
+run_hook "/r/packages/design-system/src/components/Field/field-wrapper.tsx" "
+    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[state=open]:border-error-hover focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+"
+expect_exit "A.3.3 該擋:field-wrapper.tsx 改回 data-[state=open]:border-error-hover" 2 "用 Radix 通用的"
+
+# 該擋 5. 畫欄位外框的元件自己用通用 data-state 換成聚焦的框(顏色對、訊號錯:外面的浮層也會寫到 data-state)
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
+const cls = cn(fieldWrapperStyles({ mode: 'edit', size, error }), 'data-[state=open]:!border-primary')
+"
+expect_exit "A.3.3 該擋:Field 家族元件 data-[state=open]:!border-primary" 2 "用 Radix 通用的"
+
+# 該擋 6. 同上,中間再夾一個變體
+run_hook "/r/packages/design-system/src/components/TimePicker/time-picker.tsx" "
+import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
+const cls = cn(fieldWrapperStyles({ mode: 'edit', size, error }), 'data-[state=open]:hover:border-border-hover')
+"
+expect_exit "A.3.3 該擋:Field 家族元件 data-[state=open]:hover:border-*" 2 "用 Radix 通用的"
+
+# 該擋 7. 認對了記號,但樣式寫在住所以外
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+const cls = 'data-[field-open]:!border-primary'
+"
+expect_exit "A.3.3 該擋:field-wrapper.tsx 以外 data-[field-open]:!border-primary" 2 "在 field-wrapper.tsx 以外用"
+
+# 該放 1. field-wrapper.tsx 現在的寫法(一般 / 錯誤 / 無框款三條原文)
+run_hook "/r/packages/design-system/src/components/Field/field-wrapper.tsx" "
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover data-[field-open]:!border-error focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+      { mode: 'edit', variant: 'naked', error: false, className: 'data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
+"
+expect_exit "A.3.3 該放:field-wrapper.tsx 現在的 data-[field-open] 寫法" 0
+
+# 該放 2. 按鈕類觸發:開著 = 自己的 hover(button.tsx 原文三行;不是欄位外框)
+run_hook "/r/packages/design-system/src/components/Button/button.tsx" "
+          'data-[state=open]:text-primary-hover data-[state=open]:border-primary-hover',
+          'data-[state=open]:text-error-hover data-[state=open]:border-error-hover',
+          'aria-pressed:data-[state=open]:bg-primary-subtle aria-pressed:data-[state=open]:border-transparent aria-pressed:data-[state=open]:text-primary-hover',
+"
+expect_exit "A.3.3 該放:Button 的 data-[state=open]:border-*(開著 = 自己的 hover)" 0
+
+# 該放 3. inline action 開著(item-anatomy.tsx 原文)
+run_hook "/r/packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx" '
+        overlayTrigger && "data-[state=open]:text-fg-secondary",
+'
+expect_exit "A.3.3 該放:inline action 的 data-[state=open]" 0
+
+# 該放 4. 不畫欄位外框的按鈕類元件,自己的 hover 剛好是 border-border-hover(token 名字相同不代表它是欄位)
+run_hook "/r/packages/design-system/src/components/Chip/chip.tsx" "
+const chip = cva(['border border-border', 'hover:border-border-hover data-[state=open]:border-border-hover'])
+"
+expect_exit "A.3.3 該放:非欄位元件 data-[state=open]:border-border-hover" 0
+
+# 該放 5. 讀記號做外框以外的事(field-control-group.tsx 原文:聚焦 / 開著的成員浮到鄰居上面,而且壓過鄰居的滑過)
+run_hook "/r/packages/design-system/src/components/FieldControlGroup/field-control-group.tsx" "
+      '[&>*:hover]:z-[3] [&>*:focus-within]:z-[4] [&>*[data-field-open]]:z-[4]',
+      '[&>*:focus-within:hover]:z-[4] [&>*[data-field-open]:hover]:z-[4]',
+"
+expect_exit "A.3.3 該放:FieldControlGroup 讀記號排 z-index" 0
+
+# 該放 6. 純註解行引用舊 pattern(retire 註解;2026-06-11 deep-audit R2 的回歸防護)
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+          // 2026-05-06 v13.3 SSOT retire:per-control \`open && 'border-primary'\` / \`data-[state=open]:border-border-hover\` 移除
+"
+expect_exit "A.3.3 該放:純註解行引用舊 pattern" 0
+
+# 該放 7. escape
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+const cls = open && 'border-primary' // @field-state-ring-allow: 遷移中的相容層,下一版移除
+"
+expect_exit "A.3.3 該放:@field-state-ring-allow" 0
+
+echo ""
+echo "=== A.3.4 data-field-open 記號只有 lib/composite-field-focus.ts 會寫(2026-11-13)==="
+A34="data-field-open 記號手寫"
+
+# 該擋 1. 元件手寫 JSX 屬性(日期區間外框把 fieldOpenProps 換回手寫)
+run_hook "/r/packages/design-system/src/components/DatePicker/date-picker.tsx" "
+            {...props}
+            data-field-open={open ? '' : undefined}
+"
+expect_exit "A.3.4 該擋:元件手寫 data-field-open={…}" 2 "$A34"
+
+# 該擋 2. 手寫成物件 key 再展開
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+const triggerProps = { 'data-field-open': open ? '' : undefined }
+"
+expect_exit "A.3.4 該擋:手寫物件 key 'data-field-open'" 2 "$A34"
+
+# 該擋 3. 產品程式用裸屬性把 DS 欄位的框釘成開著的樣子
+run_hook "/r/apps/crm/src/components/DealFilterField.tsx" '
+  return <div className={frame} data-field-open>
+'
+expect_exit "A.3.4 該擋:裸屬性 data-field-open" 2 "$A34"
+
+# 該擋 4. 命令式寫入(不在 components/ 底下也擋:記號的寫入者只有一個)
+run_hook "/r/packages/design-system/src/patterns/filter-bar/filter-bar.tsx" "
+  frameRef.current?.setAttribute('data-field-open', '')
+"
+expect_exit "A.3.4 該擋:setAttribute('data-field-open')" 2 "$A34"
+
+# 該放 1. 經 fieldOpenProps(date-picker.tsx 日期區間外框現在的寫法)
+run_hook "/r/packages/design-system/src/components/DatePicker/date-picker.tsx" "
+            {...props}
+            {...fieldOpenProps(open)}
+"
+expect_exit "A.3.4 該放:{...fieldOpenProps(open)}" 0
+
+# 該放 2. 唯一寫入者自己(lib/composite-field-focus.ts 原文)
+run_hook "/r/packages/design-system/src/lib/composite-field-focus.ts" "
+export const FIELD_OPEN_ATTR = 'data-field-open'
+export function fieldOpenProps(open: boolean | undefined): { 'data-field-open': '' | undefined } {
+  return { [FIELD_OPEN_ATTR]: open ? '' : undefined } as { 'data-field-open': '' | undefined }
+}
+"
+expect_exit "A.3.4 該放:lib/composite-field-focus.ts(唯一寫入者)" 0
+
+# 該放 3. 說明文字裡的字面(date-picker.tsx JSX 註解續行原文 —— 不是純註解行,不會被剝離)
+run_hook "/r/packages/design-system/src/components/DatePicker/date-picker.tsx" '
+            (外框「開著 = 聚焦的框」不靠 data-state,認欄位自己的 `data-field-open`,見 fieldFocus.trigger。) */}
+'
+expect_exit "A.3.4 該放:說明文字裡的字面" 0
+
+# 該放 4. 讀記號(選擇器)
+run_hook "/r/packages/design-system/src/components/DataTable/data-table.tsx" "
+  const openField = cell.querySelector('[data-field-open]')
+"
+expect_exit "A.3.4 該放:讀 [data-field-open]" 0
+
+# 該放 5. story 把靜態狀態釘出來(story / test 不在 A.3 範圍)
+run_hook "/r/packages/design-system/src/components/Select/select.principles.stories.tsx" '
+  <div className={frame} data-field-open="" />
+'
+expect_exit "A.3.4 該放:story skip" 0
+
+# 該放 6. escape
+run_hook "/r/packages/design-system/src/components/Select/select.tsx" "
+const triggerProps = { 'data-field-open': '' } // @field-state-ring-allow: 視覺回歸 fixture
+"
+expect_exit "A.3.4 該放:@field-state-ring-allow" 0
+
+# 同一次寫入同時踩 A.3.3 與 A.3.4 → 一次 exit 2,兩段訊息都在
+run_hook "/r/packages/design-system/src/components/Field/field-wrapper.tsx" "
+const cls = 'data-[state=open]:border-border-hover'
+const frame = <div className={cls} data-field-open={open ? '' : undefined} />
+"
+if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+  && echo "$STDERR_TEXT" | grep -qF "$A33" && echo "$STDERR_TEXT" | grep -qF "$A34"; then
+  echo "  PASS  A.3.3 + A.3.4 同時踩 → 兩段訊息都在"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  A.3.3 + A.3.4 同時踩 (expected exit 2 + 兩段訊息, got exit $EXIT)"
+  echo "$STDERR_TEXT" | sed 's/^/    /'
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - A.3.3 + A.3.4 同時踩"
+fi
 
 echo ""
 echo "=== A.4 disabled placeholder color ==="

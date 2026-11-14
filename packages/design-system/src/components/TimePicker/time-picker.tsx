@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
-import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
+import { useCompositeFieldBlur, fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { X, Clock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -381,7 +381,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             className={cn(
               fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
               'text-left cursor-pointer',
-              // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:58)
+              // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx#fieldDefaultChromeCompounds)
               'focus-visible:outline-none',
               className,
             )}
@@ -391,6 +391,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             // 表單欄位名稱掛在可聚焦的觸發欄位(規則 8 以 name 定位、聚焦)
             // 轉型:div 的型別沒有 name(規則 8 = form-validation.spec.md;68d7860d 加,2026-10-14 複查)
             {...(name ? ({ name } as unknown as React.HTMLAttributes<HTMLDivElement>) : null)}
+            // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 `{...props}` 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+            {...fieldOpenProps(open)}
             onKeyDown={(e) => {
               if (disabled) return
               // consumer 先跑(getInputProps 的 Esc 回復:只在這一下歸它時,lib/overlay-escape.ts),擋了預設就不走元件的

@@ -111,7 +111,7 @@ export const Inspector: InspectorStory = {
   },
   // 2026-07-14 dim-26 修:原 mount-only defaultValue — Controls 切 selected 不生效,且
   // layout=menu 違反 chip.spec.md「menu 模式需要 controlled ChipGroup」
-  // (chip.tsx:298 runtime warn)。改 controlled inner(repo anatomy 慣例 useState Inner)+
+  // (chip.tsx#MenuChipGroup 的 toggleFromMenu runtime warn)。改 controlled inner(repo anatomy 慣例 useState Inner)+
   // key remount 讓 Controls 切換 type / selected 即時反映。
   render: (args) => <InspectorControlled key={`${args.type}-${args.selected}`} {...args} />,
 }

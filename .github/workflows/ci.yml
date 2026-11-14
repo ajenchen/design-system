@@ -90,9 +90,17 @@ jobs:
           # 那條規則當時只是一句給人看的話,沒有機械防線。這支就是那道防線。
           npm run test:decided-clause-downgrade
           npm run test:button-variants
+          # 按鈕群組分隔線的結構契約(2026-11-11 接上):token「3全收」把 inset 收回成 ButtonDivider 的元件內變數後,
+          # overlay-header-actions-invariant.mjs 量線長改用規格值 8px、並指名「元件那一份由這支鎖住 = 0.5rem」——
+          # 但這支原本只在夜間 harness 跑(非必過)、也沒有對照組。--selftest 在記憶體裡注入五種違規各自必紅。純靜態,約 1 秒。
+          node scripts/test-action-divider-placement.mjs
+          node scripts/test-action-divider-placement.mjs --selftest
           # Token 建立不變式(2026-09-11;user:「為何你他媽又不照規範來建立 token?要講幾次?」)。
-          # T1 前綴不得跨 family(錨:--overlay-viewport-inset 借用了顏色 token --overlay 的前綴)、
-          # T2 這次新增的 token 必須登記進所屬 family 的 spec(錨:同一顆 token 加了 CSS 卻沒加 spec)。
+          # 2026-11-11 擴成拿分類表 packages/design-system/src/tokens/token-registry.json 驗(user 2026-11-10 拍板 token「1甲」):
+          # C1 有登記 / C2 新名字自己一列 + 理由 / C3 宣告檔 = 住處 / C4 新名字在規格裡 / C5 密度覆寫有回復且同檔 /
+          # C6 元件樣式檔有進對外彙總檔 styles/tokens.css 或被程式匯入(原本只有本機收工提醒 check_orphan_ds_css.sh,
+          #    2026-05-26 側欄寬事故的那一種)/ C7 產品與設計系統誰可以讀 / C9 新名字不是只有主人自己讀。拿不到 origin/main 一律紅。
+          # --selftest 每一條各自注入違規、確認紅的是它(每條也有一筆該綠的)。
           # 寫成 deterministic script 而不是 Claude 專屬 hook —— provider 專屬的 hook 換一個 agent 或在 CI 裡就沒人擋。
           # 同名數值常數不得在不同檔案有不同值(2026-09-12)。2026-09-12 實際踩過:出殼門檻
           # SHELL_ENGAGE_VIEWPORT_MS 在元件是 60、在閘是 120(改元件時沒改另一份),
@@ -103,11 +111,23 @@ jobs:
           node scripts/named-constant-drift-invariant.mjs
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
+          # 浮層密度寫法(2026-11-11 稽核 R7-07):前身 overlay-density-lock-placement.mjs(retired,已改名為下面這支)沒有任何執行面呼叫(孤兒閘),
+          # 檔名也對不上可達性棘輪。浮層內容不准寫 data-density、版面間距只有 Popover 能鎖且只鎖 md、標題列元件(含轉交屬性給它的)不准寫密度屬性、
+          # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 該紅的全紅、該綠的全綠(條數以閘印的為準)。
+          node scripts/overlay-density-lock-invariant.mjs --selftest
+          node scripts/overlay-density-lock-invariant.mjs
+          # 對外彙總檔 styles/tokens.css 檔頭寫「自動產生、禁止手改」,產生器檔頭也寫「--check 在 CI 跑」—— 2026-11-11 盤點兩者都不是真的:
+          # 沒有任何 workflow / npm script 呼叫它,彙總檔被手加兩行(Tabs / Sidebar)、產生器輸出與提交的檔不同,零訊號。
+          # 上面 C6 只管「元件樣式檔有進彙總檔或被程式匯入」,不管彙總檔是不是產生器的輸出(重跑會不會改樣式載入順序)。
+          # --selftest 在記憶體裡造三種漂移各自必紅、兩種一致必綠。純靜態,約 1 秒。
+          node scripts/gen-figma-make-artifacts.mjs --check
+          node scripts/gen-figma-make-artifacts.mjs --selftest
           # 色相色票(2026-09-26 接進 PR 檢查;原本只在夜間 harness):名實一致 / 完整性 / token 存在 / 實心字對比,
           # 加 I5 色階順序「號碼 = 離所在底色多遠」(淺色越大越深、深色越大越亮,每種底都成立)。
           # meta-test 含兩組對照:把某色相偷換成別的色相 → I1 紅;深色 step-2 退回往純黑退的舊公式 → I5 紅。
           npm run test:categorical-color
-          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX):
+          # CSS / JS 雙生 token(`--stack-gap` ↔ STACK_GAP_PX、`--avatar-stack-overlap` ↔ AVATAR_STACK_OVERLAP_PX;
+          # 2026-11-11 加 `--tree-indent-*` ↔ INDENT_STEP、`--tag-height-*` ↔ TAG_HEIGHT_PX):
           # 2026-09-26 抽 token 時同一個值仍要在 JS 算遮罩幾何,兩份會漂 —— 這支讓「只改一邊」當場紅(含 selftest 對照組)。
           npm run test:token-twin
           # Rating 的尺寸解析(Field 內跟 Field、Field 外 xs、prop 最優先):2026-07-29 改 useResolvedFieldSize 優先序後,
@@ -146,6 +166,12 @@ jobs:
           # 錨例 2026-09-25:Calendar 非當月格靜止 bg-muted、滑過借透明底的 --neutral-hover,兩個主題都反向(026d5788 修)。
           # 對照組以 026d5788 之前的逐字原文為主角,必須指名 bg-muted 紅;已知待拍板的命中登記在 scripts/hover-own-pair-baseline.json。
           npm run test:hover-own-pair
+          # 滑過才出現的東西(2026-11-14 接進 PR 檢查;原本只在夜間 harness):登記處各有「初始隱藏 + 滑過揭示 + 鍵盤揭示」、鍵盤揭示不用 focus-within,
+          # 加一條全 DS:非 story 原始碼不得出現「不能滑過的裝置」的媒體條件 (hover: none)(含 any-hover、Tailwind 的 [@media(hover:none)]:、否定寫法)——
+          # user 2026-09-26 對「手機上滑過才出現的按鈕」已決「先維持」、不替觸控另外客製(governance/planning/2026-09-25-interaction-and-hover-remediation.md 的 L11 那一列);
+          # AI 加過兩次都收回(2026-08-05 PeoplePicker、2026-11-12 表頭 ⌄ c78b35e1 → 1859b728)。註解與 .spec.md 裡提到不算。
+          # 每次執行先跑對照組(假原始碼字串 + 把 c78b35e1 那一行塞進真檔的記憶體副本),答錯 = 儀器失效 exit 2。純靜態,不到 1 秒。
+          node scripts/test-hover-revealed-affordances.mjs
           # 開合動畫 SSOT(2026-10-07,待辦總帳 T6 / T7 / T8):data-state 開合動畫只住在 tokens/motion(overlayMotion / surfaceMotion /
           # disclosureMotion)、一律包在 motion-safe:(`motion-reduce:animate-none` 的權重輸給 data-[state=…],減少動態從沒生效)、
           # 關閉保持最後一格(不靠 Radix Presence 的執行期補丁)、DS 不重宣告 tw-animate-css 同名動畫(舊 base.css 150ms 被蓋掉)、
@@ -175,6 +201,11 @@ jobs:
           # 設計原則頁與設計規格頁兩個檔。跨檔逐字相同的頂層宣告(6 行以上)鎖在 scripts/story-helper-duplication-baseline.json,
           # 只准減少;要共用就放進 stories-helpers/。對照組 = 那次的真實抄本 + 合成正反例。純靜態,約 1 秒。
           npm run test:story-helper-duplication
+          # 範例人員照片只走照片名冊(2026-11-11,user「此外avatar的部分是否可以盡量都用真實圖片？…希望除了 avatar 本身元件與範例之外的範例可以美觀一點」):
+          # stories-helpers/data/people.ts 一人一張臉;網址 /<px≤1000>?img=<n>(本機替身的形狀)、不合格的臉不得用、同一支檔不同人不共用臉、
+          # 不准再手寫 ?u= 網址;範本(apps/template/src + ds-canonical/templates)不帶照片網址;Avatar/** 自己的照片示範暫時略過
+          # (要不要一起換待 user 決定,尚未定案)。對照組 = selftest 合成正反例(紅的必須是指名的那一條)。純靜態,約 1 秒。
+          npm run test:demo-people-roster
           # owner 文件說的與程式一致(2026-10-21,r1b others 家族):color.spec 的 bg-muted / bg-secondary 消費者登記簿(以 檔案#宣告 登記、
           # 宣告真的用了 token、用了就要登記)、lib/README 每個模組的公開 / @internal 與 root barrel 一致、Button loading 不再被說成「自動 disabled」、
           # 元件原始碼只用三階字重(font-semibold 只給文件外框)、story 裡每個 <Steps> 有名字。修前的樹五條全紅(46 / 14 / 4 / 2 / 19)。純靜態,約 2 秒。
@@ -717,9 +748,10 @@ jobs:
           # 另量 transform: scale() 祖先下操作欄寬 / 填滿高度 / 多區列高不變。對照組(--selftest)先證明會紅;7777b61c 實測紅 31 項。
           # 本機 63 秒 + 對照組約 40 秒(CI 約本機 1.2–1.4 倍 → 約 2.5 分);本 job 拆出可搜尋選單焦點閘之後約 11 分 / 上限 25。
           npm run test:data-table-header-scroll-sync
-          # 多重排序表頭「箭頭 + 順位數字」+ Shift+點擊(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列):
-          # 判定表(純函式 lib/sort-cycle.ts,幾毫秒;--selftest 以 TanStack 修前分支當對照組)+ 真瀏覽器(狀態轉移、9+、長相、⌄ 選單、讀屏、
-          # 與排序面板雙向同步、不受控表格;--selftest 注入 13 種破法)。跟上面兩支同屬表頭,放這個 job:本機判定 40 秒 + 對照組 71 秒(負載 25–30;CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          # 多重排序表頭「箭頭 + 順位數字」+ Shift+點擊(2026-11-03;user 2026-10-30 規格 + 2026-11-11 R16 兩態 / 選單定案,data-table.spec.md「Multi-sort header」列):
+          # 判定表(純函式 lib/sort-cycle.ts `nextSorting`,幾毫秒;--selftest 以 R16 前的三態版與 TanStack 修前分支兩份當對照組)+ 真瀏覽器(狀態轉移、9+、長相、
+          # ⌄ 選單、⌄ 在 Tab 順序裡、讀屏、與排序面板雙向同步、不受控表格;--selftest 注入的破法種類列在閘檔頭)。跟上面兩支同屬表頭,放這個 job:本機判定 40 秒 + 對照組 71 秒(負載 25–30;CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          # 2026-11-14(A7 ⑥)加 D 兩格:桌機靜止時 ⌄ 欄位選單收起 —— 沒排序的欄、已排序的欄都一樣(data-table.spec.md 同一列「桌機維持現況」);--selftest 多兩種破法(只讓已排序的欄恆顯示 / 每一欄都恆顯示)。多開 3 次 story,本機整支改前 132 秒 / 改後 134 秒。
           npm run test:data-table-sort-cycle
           npm run test:data-table-multi-sort
           # 各欄型的排序比法(2026-11-05,待辦 3f;data-table.spec.md「七、Column Type」排序表):判定表真的用 TanStack 排(≤ 10 / > 10 列同序、
@@ -728,6 +760,12 @@ jobs:
           # Shift+點擊之後不畫焦點框(2026-11-05,待辦 3f G-16;focus-canonical.md「什麼時候畫(真焦點)」):排序區 / 列勾選框 / 表格根節點的指標情境不畫、
           # 鍵盤對照必畫;--selftest 隨時拿掉 data-pointer-focus(= 修前)必紅。同屬表頭 / Shift+點擊,放這個 job。
           npm run test:modifier-click-focus
+          # 虛擬捲動的列高估計跟著區塊密度(2026-11-14,A7 ③;稽核 R7-03 / 第四批審查第 7 條;data-table.spec.md「二、高度模式」的列高估計句 ——
+          # 規則是【AI 推導】,user 沒有逐字講過;產品 2026-11-12 c78b35e1 已修,這支是補量測):「大量資料」那則(10,000 列)掛載後在 #storybook-root
+          # 只寫 data-ui-size、才加 data-density、以及整頁密度切換(對照),虛擬高度那一層的總高 = 列數 × 畫出來的列高;修前前兩種停在 400,144(應 480,000)。
+          # --selftest:判定表 + 現況四格必綠 + 載入前讓訂了密度屬性的觀察器收不到 data-ui-size(只紅 C)/ 收不到 html 以外的 data-density(只紅 D)
+          # + 假建置走儀器失效出口。同屬 DataTable,放這個 job:主跑起 1 次瀏覽器載入 3 次、--selftest 起 4 次瀏覽器載入 12 次(其中 3 次是假建置的無預覽頁);本機主跑 3 秒 + 對照組 9 秒(機器另有負載)。
+          npm run test:data-table-row-estimate-density
           # dpr2 的內容延遲不在 CI 斷言(零殼 / 擷取 / 空白仍斷言):共享 2 vCPU runner 在 dpr2 是 raster 成本決定延遲,幀距正常 16ms 卻
           # p95 72 / 最長 100(8277f858);本機 2× 節流對照 main p95 83 / 117 vs 本分支 0 / 17、4× 235 / 268 vs 132 / 148 ——
           # 本分支嚴格優於 main,runner 的數字是機器不是表格。延遲在 dpr1 斷言(runner 上穩定 0);dpr2 的回歸對照用本機節流跑 main vs 分支(AD62)。
@@ -1148,6 +1186,10 @@ jobs:
           # 本表的游標與區間都要清掉(修前只認「任何一張表的外框」,兩種都留著);點頁面空白與 Shift+點本表是對照列。不需要 storybook;
           # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 兩格都跑(不寫條件式)。
           npm run test:data-table-click-outside
+          # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」):
+          # 恢復預設看資料(值 ≠ defaultSorting / defaultValue)、清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕不掉 body、polite 播報。
+          # 不需要 storybook;判定本機約 8 秒、--selftest(基準 + 16 個根因突變,含兩個修前寫法)約 2 分 → 兩格都跑(同上一支,不寫條件式)。
+          npm run test:data-table-panel-reset-clear
         env:
           SHARD: ${{ matrix.shard }}
 
@@ -1163,6 +1205,7 @@ jobs:
     # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 21.1 / p90 22.6 / 最大 23.2 分(上限 25,p90 佔 90%)。
     # 逐支計時(job log 時間戳,289bce76 / 21e25346 / 38346602 / a91dfe7c 四次)前半(AgentPanel 到共用承擔者焦點)合計 473–660 秒、
     # 後半(Tag 內距到改到元件的視覺稽核)528–666 秒 —— 後半搬到 verify-browser-field-dialog-steps,兩邊各約 13 分。
+    # 2026-11-12:水平溢出閘(test:overflow-reveal-selected,2026-11-11 加)移到 verify-browser-layout —— 9126e95b 那次它在本 job 第 16 分 55 秒才開始跑;2026-11-14 再搬到 verify-browser-horizontal-overflow。
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
     env:
@@ -1229,6 +1272,7 @@ jobs:
           # DatePicker.Range 停留預覽框(2026-09-23 user 拍板):逐格量 td::after 的 1.5px 邊、兩端半圓、停留日無單格圈、
           # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
           npm run test:datepicker-range-preview
+          # 水平溢出「選到就露出來」(test:overflow-reveal-selected)2026-11-12 移到 verify-browser-layout;2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
           # useFormValidation 契約(2026-10-01 待辦總帳 N65 / N67):hook 原始碼 + 同名欄位的幾張表單、沒有 <form> 的 footer 送出區,
           # 真鍵盤 / 滑鼠 / 觸控逐條走 form-validation.spec.md 規則 1 / 2 / 4 / 5 / 6 / 7 / 8(錯誤會清掉、Escape 回原值、焦點只在被送出的
           # 那張表裡找、錯誤長出來不會把這一下 click 推離送出 / 重設鈕、原生拖曳之後「按著」不會卡住);不需要 storybook。
@@ -1255,6 +1299,8 @@ jobs:
     # 2026-11-04 納入 Alert / Toast 4 則(含 Alert 固定位置那則)後本機約 73–77 秒(主跑 15–17 + selftest 58–60)。
     # 2026-11-05 側欄鍵盤拆到 verify-browser-sidebar-keyboard:本 job 三次 CI 實測 24.6 / 24.1 / 25.3 分(上限 25,PR #169 4f692d17 那次
     # 撞上限被取消 = 沒有裁決),其中 test:sidebar-menu-keyboard 一支就 491 / 517 / 464 秒(約三分之一)。
+    # 2026-11-12 版面間距 / 密度 / 浮層標題區十支拆到 verify-browser-layout:本 job 在 PR #172 9126e95b 跑到 25 分上限被取消(= 沒有裁決;
+    # 視覺稽核才跑到 104 個場景的第 50 個),前一次綠是 21.6 分。逐支計時(job log 時間戳)被搬走的十支合計 515 秒,留下的約 750 秒 + 視覺稽核。
     name: Verify browser(field, dialog and steps gates + changed-component visual audit)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1291,14 +1337,7 @@ jobs:
           # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
           npm run test:tag-field-inset
           # 側欄鍵盤(test:sidebar-menu-keyboard)2026-11-05 移到 verify-browser-sidebar-keyboard(見該 job 檔頭)。
-          # 列上的小圖形中線 = 第一行文字中線(2026-10-27,user 抓側欄「所有專案」右邊的 + 偏上):SidebarGroupAction / 收合箭頭量 sm / md / lg,
-          # 加 Switch 帶標籤、示範列的列尾動作與列首轉圈、Slider 原則頁的開關狀態矩陣、DropdownMenu 元件檢閱器的快捷鍵後綴、
-          # SidebarMenuAction / 列尾 inlineActions / DateGrid 上下月箭頭,以及 Alert / Toast(共用底座 Notice)多行時的前置狀態圖示、
-          # 動作鈕、分隔線、×(2026-11-04;Toast 按觸發鈕打開真的 sonner),標準與寬鬆兩種密度。
-          # --selftest 把群組動作打回舊寫法(absolute top:8px)必指名 GroupAction 紅;每個被量的控件下推 3px 必全紅、且每處位移正好 3px
-          # (轉圈先停在四分之一圈 —— 位移若加在旋轉中的子元素上量到 3·cos θ,第一版因此一半機率不紅);
-          # Notice 打回置中(外框 items-center、槽不再一行高)必讓每則多行通知的每一處紅、其他不受牽連。
-          npm run test:row-suffix-first-line
+          # 版面間距 / 密度 / 浮層標題區十支(test:row-suffix-first-line、test:overlay-header-title-area、test:overlay-header-actions、test:density-subtree-parity、test:overlay-density-follows-trigger、test:section-gap、test:header-first-gap、test:header-content-sides、test:form-example-card、test:sidebar-main-follows-selection)2026-11-12 移到 verify-browser-layout(見該 job 檔頭)。
           # 「story 真的渲染完成」的共用實作 openStory(scripts/lib/launch-browser.mjs)的兩面對照(2026-09-25):
           # 同一天四支閘各自長出一份「等 story 畫完」(M17 平行實作),收斂成一支之後,原本散在各閘 selftest 裡驗等待本身的
           # 對照組搬到這裡 —— 不存在的 id / 被擋的 story 檔 / 渲染不完 / play 沒跑完 / 空畫面 / 頁面例外 / 永遠不靜止必判儀器失效,
@@ -1346,11 +1385,160 @@ jobs:
         env:
           VISUAL_AUDIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
 
+  verify-browser-layout:
+    # 2026-11-12 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 / 2026-11-05 的拆法)。
+    # 原 job 在 PR #172 9126e95b 跑到 25 分上限被取消(前一次綠 21.6 分;第四批加了浮層密度閘、密度組合,視覺稽核的場景數也到 104)。
+    # 本 job = 「版面間距 / 密度 / 浮層標題區」主題的十支(原 job 逐支計時合計 515 秒)。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
+    # 2026-11-12 曾從 verify-browser-interaction 搬來水平溢出閘(那支在原 job 第 16 分 55 秒才開始跑);2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
+    # 2026-11-14 A7 ①④:浮層密度閘 4 → 28 格,本機主跑 + --selftest 合計 11 → 68 秒;⑤ section-gap 主跑 8 → 16 秒、--selftest 不到 1 → 2 秒。
+    # 1859b728 那一輪本 job 19 分 45 秒(上限 25;含後來搬走的水平溢出閘)。
+    name: Verify browser(layout spacing and density gates)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Layout spacing and density invariants (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 列上的小圖形中線 = 第一行文字中線(2026-10-27,user 抓側欄「所有專案」右邊的 + 偏上):SidebarGroupAction / 收合箭頭量 sm / md / lg,
+          # 加 Switch 帶標籤、示範列的列尾動作與列首轉圈、Slider 原則頁的開關狀態矩陣、DropdownMenu 元件檢閱器的快捷鍵後綴、
+          # SidebarMenuAction / 列尾 inlineActions / DateGrid 上下月箭頭,以及 Alert / Toast(共用底座 Notice)多行時的前置狀態圖示、
+          # 動作鈕、分隔線、×(2026-11-04;Toast 按觸發鈕打開真的 sonner),標準與寬鬆兩種密度。
+          # --selftest 把群組動作打回舊寫法(absolute top:8px)必指名 GroupAction 紅;每個被量的控件下推 3px 必全紅、且每處位移正好 3px
+          # (轉圈先停在四分之一圈 —— 位移若加在旋轉中的子元素上量到 3·cos θ,第一版因此一半機率不紅);
+          # Notice 打回置中(外框 items-center、槽不再一行高)必讓每則多行通知的每一處紅、其他不受牽連。
+          npm run test:row-suffix-first-line
+          # 浮層標題區(overlay-surface.spec.md「SurfaceHeader」標題區,2026-11-10):× 固定頂部、佔位 = 標題一行高,小標 / 說明出現與否都不移動;
+          # 小標 12 / 500 / fg-secondary、一行、距標題 2px。量決策卡(有 / 無小標)與 overlay-surface test-only 夾具(Modal / 非 modal 各組),標準與寬鬆。
+          # --selftest:判定表吃修前實測(小標距題目 0、OV-ga02 修前 × +11.5)必紅;打回置中 / 小標下距歸零 / × 下移 3px 各自指名紅。
+          npm run test:overlay-header-title-area
+          # 浮層標題列右側按鈕位(overlay-surface.spec.md「SurfaceHeader」右側按鈕位,2026-11-10):consumer 只傳按鈕(actions)與 ×(dismiss),
+          # 分隔線由 SurfaceHeader 自動放、兩側各 12;靜態掃 children 不得自刻分隔線 / hideClose 後自塞 ×。修前紅:欄位顯示面板 8 / 8、4 處自刻。
+          # --selftest:判定表、靜態假原始碼、拿掉分隔線兩側 4px / 藏掉分隔線 / 整列靠上 各自指名紅。
+          npm run test:overlay-header-actions
+          # 局部換密度 = 整頁該密度,逐 token 相等(2026-11-11):`uiSize.css` 寫著「md-lock subtree 必須與 root md 逐 token 相等」,
+          # 但 token-creation-invariant C5 只看名字有沒有出現在回復段 —— 用 var() 組出來、只寫在 :root 的值(側欄收合寬)
+          # 它看不到,實測大密度頁面裡鎖回一般密度的區塊收合寬仍是 68 而不是 48。這支在瀏覽器裡實算 32 種組合(含同元素雙屬性 / 整頁解耦 / 兩層巢狀,稽核 R7-01 / R7-10)× 全部 token;
+          # 純 CSS 計算、不需要 storybook 建置。--selftest 注入的缺陷各自必紅、現況必綠(注入清單見腳本 selftest(),這裡不寫數字 —— 會隨住處搬家增加)。
+          npm run test:density-subtree-parity
+          node scripts/test-density-subtree-token-parity.mjs --selftest
+          # 小浮層密度跟觸發點(user 2026-11-11 決策頁「浮層密度」答「跟按鈕」,density.spec.md「浮層跟觸發點」;2026-11-14 A7 ①④ 由 4 格擴成 28 格):七種浮層
+          # (Popover 版 Select 在 uiSize story;下拉選單 / 子選單 / HoverCard / Tooltip / 日期區間 / 日期單日在閘自己的夾具頁)× 整頁一般 / 大 × 一般 / 大密度區塊,每格每條分開判:
+          # 控制項大小 = 那一區的 token(Select、下拉另比觸發點高,子選單另比主選單列高);版面間距鎖 md 的 16、不鎖的跟那一區(哪一種量哪個元素是 AI 依規格那張表落成的格子)。修前一般頁裡的大密度區塊 32 / 28(稽核 R7-02)。
+          # --selftest:判定表 + 五種破法(拿掉控制項檔位 / 鎖不見 / 屬性不見 / 不該鎖的被鎖 / 子選單搬到 body)各比「紅的集合 = 期望」+ token 讀不到與假建置必判儀器失效(exit 2)。
+          # 本機(2026-11-14)主跑 4 → 22 秒、--selftest 7 → 46 秒;CI 約本機 1.2–1.4 倍 → 這一步多約 70–80 秒。
+          npm run test:overlay-density-follows-trigger
+          node scripts/overlay-density-follows-trigger-invariant.mjs --selftest
+          # 區塊 ↔ 區塊(2026-11-06 user #18):一條分隔線的位置、上下各 loose —— 不畫線 = loose × 2(FileViewer 資訊面板 說明 → 檔案資訊),
+          # 畫 Separator = 線兩側各 loose;表單欄位 → 表單按鈕列 8 處;標題區 → 內容(一塊 tight / 兩塊以上 loose)四種標題區 × 兩種判定、「幾塊怎麼數」每條路一列。md / lg 量像素。
+          # selftest:判定表(修前實測必紅、每一列標題區餵相反判定的距離必紅)+ 在頁面上把四種標題區的標記翻面必紅、數字正好是另一個 token(這一段要建置)。
+          # 2026-11-14(A7 ⑤)本機:主跑 8 → 16 秒、selftest 不到 1 → 2 秒;標題區的量法與全站盤點(verify-browser-doc-headings)共用 scripts/lib/doc-heading-zones.mjs。
+          npm run test:section-gap
+          # 標頭 → 第一個東西(layoutSpace 規則 2,2026-11-10 user 問「四周的距離是正確的？」):依第一個東西的角色 bounded = loose / unbounded = 0 / element = tight,
+          # 全 DS 盤點出的每一處 md / lg 量像素、角色從 DOM 判。修前 c2fc683d 建置 Sidebar 混合內容資料夾 / 檔案兩張表格外層是 tight(紅);selftest 判定表 + 角色判法逐列。
+          npm run test:header-first-gap
+          # 標頭下內容的左 / 右 / 底(layoutSpace 規則 1 / 6 / 4,2026-11-11 user「其他有漂移的地方也應該自動修一修吧？」):頂邊由上一支管,這支量另外三邊 ——
+          # 左右 = loose(誰給內距從 DOM 判 pattern AB / C,C 的列必貼齊容器)、底依最後一個東西的角色 + 容器會不會擋頁 / 撐滿(bounded loose / unbounded 0 / element 48 或與頂同值)。
+          # 同一份盤點(上一支的 CASES)md / lg 量像素;selftest 判定表每一邊各有該紅 / 該綠 / 儀器失效。
+          npm run test:header-content-sides
+          # 巢狀篩選群組的間距與篩選 / 排序面板的韻律(data-table.spec.md「巢狀群組的間距」、layoutSpace 規則 2 表「一串同樣的條目」;2026-11-13 補規格句與閘;2026-11-14 A70 改 loose、同日下午 user 問篩選條件第一個距頂是不是應該對齊條件之間的距離(問句,AI 評估同意;A72)改回 tight;歸到哪條規則是 AI 推導):
+          # 巢狀 / 平鋪 / 群組清光的標題列 → 第一個東西 = tight、K 韻律(巢狀 / 平鋪 / 排序面板:頂 = 筆 ↔ 筆 = 最後一筆 → 加一筆那排 = 那排 → 底 = tight)、巢狀面板收尾 = 與頂部同值(規則 4 第 4 列)、群組框四邊內距 / 框內列距 = 8(不跟密度)、框外標籤頂對齊第一條條件、群組 ↔ 群組 = tight;md / lg 量像素。
+          # --selftest:判定表 + 現況必綠 + 頁面上十四種拆法(含 A70 的樣子、最後一個群組 → 加一筆那排下推 4、平鋪第二條下推 4、排序上內距 loose),每一種的紅燈集合必須正好等於登記的那一組。
+          # 本機實測:判定 4 秒 + --selftest 50 秒(2026-11-14 加 K 段與排序面板後)。
+          npm run test:data-table-filter-group-spacing
+          # 表單範例放進卡片(2026-11-10 FORM-EXAMPLE-CARD 甲;user 10-21「Q5可以基於你的建議」、10-28「頁面上的卡片照你建議」):Field 表單驗證 ×2、
+          # Rating 包在 Field 內、Select 隨 form 送出 —— 送出鈕往上找卡片、卡片內上 / 左 / 下 = loose(md / lg 量像素)。修前 main 8eb473c7 建置 4 處都沒有卡片(紅)。
+          npm run test:form-example-card
+          # Sidebar 展示主區跟著選到的項目走(2026-11-06 user #56 甲):資料夾 → 檔案清單 DataTable、檔案 → 版本紀錄、專案 → 議題、主導覽 → 範本 DashboardPage 做法(不放 DescriptionList);
+          # 主區只有一張表格 → 標頭下不放區段標題(2026-11-11 user 留言;app-shell.spec.md「Main 內塞什麼」)。
+          # 「混合內容」實際點樹 frontend → backend → README.md → Dashboard。修前 main 8eb473c7 建置五則都是同一份 Sprint 摘要(紅);修前 411fcc49 建置表格上方有區段標題(紅)。
+          npm run test:sidebar-main-follows-selection
+
+  verify-browser-horizontal-overflow:
+    # 2026-11-14 拆自 verify-browser-layout(A7 ②;照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-11-05 / 2026-11-12 的拆法)。
+    # 水平溢出「選到就露出來」閘在 A7 ② 加了夾具那一段(28 格 + 三種破法 + 「觸發晚到」兩面),而 verify-browser-layout 在 1859b728 那一輪已到 19 分 45 秒 / 上限 25。
+    # 本機實測(同一台機器、同一份建置):`npm run test:overflow-reveal-selected` 146 秒(改前同內容 158 秒:換掉「連續 12 格不動」之後每一步不再固定等,
+    # 抵掉夾具多開的頁),CI 未實測。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
+    # 首跑要看:Linux runner 上滾輪與 scrollend 的行為只在 macOS 量過 —— 量不到會以儀器失效(INSTRUMENT-FAIL、exit 2)結束,不會假綠、也不會指控產品。
+    name: Verify browser(horizontal overflow reveal-selected gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Horizontal overflow reveal-selected invariant (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # 水平溢出「選到就露出來」(2026-11-11 user「都先B」;horizontal-overflow.spec.md):
+          # story 那一段 —— Chip scroll / menu、Tabs scroll / menu、FileViewer 縮圖列 × 點半露的項目 / 方向鍵 / ⌄ 選單 / 縮放,
+          # 剛動到的那一項中心在容器中心 ±2px(兩端夾住另判)且完整可讀;--selftest 每種輸入前一刻吞掉 hook 的 scrollTo,17 個「排 × 輸入」必紅。
+          # 2026-11-12 幾何不靠字型:runner 沒有中日韓字型時閘自己把可視寬切到中間那一項再量(log 標「自備幾何」);--selftest 兩面對照。
+          # 夾具那一段(2026-11-14,A7 ②;守的是規格觸發表裡【AI 推導】的三句,不是 user 的決定):五排 × 掛載選在中間 / 掛載選最後一項 /
+          # 新出現的已選項目 / 滾輪捲過不搶回 / 箭頭翻頁捲過不搶回 / 捲過後再選一項,共 28 格;--selftest 三種破法(swallow / no-childlist /
+          # mute-user-scroll)各自「紅的集合 = 期望」,另加「觸發晚到」兩面(舊的連續 12 格判準量早、新判準等得到)。
+          # 什麼時候量:等觸發送達 → 再一個影格 → 讀 hook 自己傳給 scrollTo 的位置等到位(會動的再等 scrollend)→ 遮罩 / 箭頭跟上;不數影格。
+          npm run test:overflow-reveal-selected
+
   verify-browser-sidebar-keyboard:
     # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。
     # 原 job 三次 CI 實測 24.6(108a736f)/ 24.1(ac05777d)/ 25.3(4f692d17,撞上限被取消)分;本 job 只跑側欄鍵盤一支,
     # 那支在原 job 裡實測 491 / 517 / 464 秒。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
-    name: Verify browser(sidebar menu keyboard)
+    # 2026-11-13 按預算加欄位開啟外框閘的**對照組**(判定在 verify-browser-field-edges;本機 202 秒,CI 估約 4.5 分):
+    # 本 job 原本約 13 分(建置 + 安裝約 4.5 分 + 側欄鍵盤約 8.5 分)→ 估約 17.5 分 / 上限 25。放這裡是因為它是 25 分 job 裡餘裕最大的一個,
+    # 不是因為主題相同(同 toast-viewport-placement 放 verify-browser-tree-navigation 的先例:不往沒有餘裕的 job 疊)。
+    # 2026-11-13 側欄收合閘加「收合前後圖示中心不動」R8(十二格 + 五種破法 + 判定表;由 test:sidebar-menu-keyboard 帶著跑,沒有新增步驟):
+    # 同一份建置、同一台機器實量,這一串約 440 → 517 秒(+77 秒);2026-11-05 CI 實測的 491 / 517 / 464 秒約是本機舊值的 1.12 倍,
+    # 估 CI 多約 1.4 分 → 本 job 估約 18.9 分 / 上限 25(估計值,合併後回頭看實際時間)。
+    # 2026-11-13 欄位開啟外框閘的對照組多量一組併排欄位組(驗證錯誤的成員)與兩種破法(四種 → 六種):本機 202 → 239 秒,
+    # 估 CI 多約 0.8 分 → 本 job 估約 19.7 分 / 上限 25(估計值)。
+    name: Verify browser(sidebar menu keyboard + field open border control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1385,6 +1573,18 @@ jobs:
           # 一串 SidebarMenu = 一個 Tab 停靠點(2026-09-25 待辦總帳 B9 路線乙;「混合內容」範例由 19 站變 6 站):
           # ↑↓ 換項、→ 進列上動作鈕、← 回列、Tab 一下離開,捲動區不是停靠點。真按鍵;--selftest 造回「每項一站、沒有方向鍵」必紅。
           npm run test:sidebar-menu-keyboard
+
+      - name: Field open border control group (browser)
+        run: |
+          # 欄位開啟外框閘的**對照組**(判定 `npm run test:field-open-border` 在 verify-browser-field-edges;按預算放這裡,見本 job 檔頭)。
+          # 在真建置上跑六種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+          # (a) 開著的框改回 hover 色 → 開著的列全紅;(b) 記號 data-field-open 一出現就拿掉(= 元件漏接記號)→ 焦點不在欄位裡的開著列紅、
+          # 靠 focus-within 的照綠;(c) 外框改認通用的 data-state="open" / 裡面任何開著的東西 → 「外面包一層」與「欄位裡的小按鈕」的列紅;
+          # (d) 併排欄位組裡聚焦或開著的那格不再浮到鄰居上面(z-index 壓到 2)→ 鍵盤聚焦與開著兩段的像素列、層級列、停在自己上面的列都紅,
+          # 只有開著的 computed 列綠;(e) 併排欄位組裡聚焦 / 開著的那格壓回跟滑過同一層(2026-11-13 改之前的行為)→ 滑過右鄰居的像素列、
+          # 層級列、停在自己上面的列紅,滑過左鄰居的像素列綠;(f) 只把「聚焦 / 開著又被滑過」的那格壓回 3
+          #(聚焦那一半 = 少了 field-control-group.tsx 第一條補的規則時的樣子)→ 只有停在自己上面的列紅。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
+          node scripts/field-open-border-invariant.mjs --selftest
 
   verify-browser-agent:
     # 2026-09-10 拆自 verify-browser-interaction(它加了 docs 競態閘、虛擬游標 F 段、示範閘 S12 / S13 之後 13.1 分鐘被 15 分鐘預算取消)。
@@ -1443,6 +1643,7 @@ jobs:
   verify-browser-cursor:
     # 2026-10-14 拆自 verify-browser-agent(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
     # Storybook 層的兩支(docs 生命週期競態、Devmode addon 視覺驗證)與虛擬游標模態;逐支計時合計 327–391 秒,估約 9 分。
+    # 2026-11-11 加唯讀欄位焦點閘(本機約 105 秒,CI 估 2.5 分)→ 估約 11.5 分,上限 15 不動。
     name: Verify browser(docs race + virtual cursor + devmode)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -1483,6 +1684,11 @@ jobs:
           # 對照組驗鍵盤移回已選項必須有框、純鍵盤開啟立刻有框;F 段(2026-09-10):在文字輸入框裡打字不算鍵盤搬游標。
           # 對照組(--selftest,把游標列釘回舊行為)按預算放在 verify-browser-control-groups。
           npm run test:virtual-cursor-modality
+          # 唯讀欄位滑鼠點不變、鍵盤進來才出 1px 主色邊框(2026-11-11 user「確認 polaris真的就是這樣的話那就照你建議」;focus-canonical.md
+          # 規則二「唯讀的 Field 控件」列):16 個唯讀欄位 × 滑鼠點 / 點過按 Shift / Tab 後再點 / 點標籤(不變)+ Tab / 點過按鍵(恰好一個指示器)
+          # + 同頁可編輯欄位滑鼠點仍亮。--selftest 兩種破法:還原舊 CSS(P 全紅)、拿掉 data-pointer-focus guard(文字框 P1 與全部 P2–P4 紅,
+          # div 型 P1 / K / E 照綠)。同屬「什麼時候畫焦點」,放這個 job:本機現況 35 秒 + 對照組約 70 秒(CI 約本機 1.2–1.4 倍 → 約 2.5 分)。
+          npm run test:readonly-focus-pointer
           # DS Devmode addon 的視覺驗證(定位層 / 小距離紅線 / 緊湊標籤 / 兄弟距離,6 案例,本機 12 秒):
           # 2026-09-27 gate-reachability 把 package.json 從執行面拿掉(N33)後它成了孤兒 —— 只有 `npm run devmode:test` 提到它、
           # 從沒有 workflow 跑過。本機實跑全綠才接上(不是把紅燈接進 CI)。
@@ -1533,6 +1739,51 @@ jobs:
       - name: Demo focus sweep —— 示範 = 滑鼠使用者,沒用鍵盤就不該留著鍵盤焦點框(browser,全 story)
         run: |
           npm run test:story-demo-focus
+
+  verify-browser-doc-headings:
+    # 2026-11-14 新增(A7 ⑤;第四批審查第 13 條「加一支盤點」)。說明頁每一個標題區「底下幾塊」的判定 —— 全部 story 逐則開、不抽樣:
+    # A1 兩種密度判得一樣(layoutSpace.spec.md 規則 3「標題區 → 內容」的固定門檻)、A2 頁面第一次畫出來時的判定 = 版面穩定後產品自己再判一次(【AI 推導】)、
+    # A3 判定 → 距離(Pagination 設計規格三則與 tutorial-page.tsx 的數法同一批修好後計入紅綠,閘檔內 GAP_CHECK_COUNTS = true)。量法:每則開 md 取首次標記 →
+    # 標記打亂、送 Storybook forceReRender、等產品自己寫回 → 再量;有標題區的再開 lg。全 story 掃描等級(同 sweeps:avatar 7.3 分、選項列前緣 ≥ 9 分;
+    # 這一支是一趟半再加重畫),自己一個 job、上限沿用掃描型的 25(1859b728 那一輪 sweeps 整個 job 20 分 21 秒,疊不進去)。本機(並行 4 個瀏覽器)主跑 216–300 秒
+    # (同一台機器另有負載,A3 計入前後量級相同)+ --selftest 8 秒,CI 未實測;首跑若太久:先調 --concurrency(閘的參數,預設 4),再不夠才考慮 lg 那一趟不重開頁
+    # (設計者提過、沒驗)。準備步驟與 verify-browser-sweeps 逐字相同(ci-workflow-scope 斷言)。
+    name: Verify browser(doc heading inventory sweep)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Doc heading inventory sweep —— 說明頁標題區兩種密度判定相同、首次 = 重判、判定 → 距離(browser,全 story)
+        run: |
+          npx --no-install playwright install chromium
+          # 量具與 section-gap 的標題列共用 scripts/lib/doc-heading-zones.mjs。--selftest:判定表 + Avatar 設計原則「使用指引」上三種破法
+          # (α 一般密度 tight 改 8px → A1 + A2 lg 紅、並印「只比首次標記看不到」;β 首次量完才改 → A2 紅、A1 綠;γ 內容下推 4px → A3 每格正好多 4)
+          # + channel 換空函式 / 不存在的 story / 假建置三種必須判成儀器失效(INSTRUMENT-FAIL、exit 2)。
+          npm run test:doc-heading-inventory
 
   verify-browser-overlay-rows:
     # 2026-09-20 拆出來的第十個 job。sweeps 一個 job 序列跑兩支全 1034 支 story 的掃描,
@@ -1704,7 +1955,9 @@ jobs:
     # 2026-10-14(待辦總帳 G10;照主題拆平行 job、不調高上限):最近 15 次 CI p50 14.5 / p90 14.9 / 最大 15.1 分(上限 15),
     # 289bce76 那次撞 15 分被取消(job 115665117169)。兩支全 story 掃描各自變慢(原因記在待辦總帳 G10):欄位左緣 09-29 約 300 秒 → p90 363 秒、
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
-    name: Verify browser(field edges + combobox single path)
+    # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
+    # 它的對照組(本機 239 秒,CI 估約 5.3 分;2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
@@ -1756,6 +2009,20 @@ jobs:
           # 儲存格的 defaultOpen/onOpenChange 失效,零訊號。靜態字串比對做不到,必須真的用
           # coarse pointer 開瀏覽器。對照組把浮層拔掉、塞回原生 <select>,這支必須紅。
           npm run test:combobox-single-path
+
+      - name: Field open border (browser)
+        run: |
+          # 欄位自己的浮層開著時,外框畫出來的顏色 = 它聚焦時的顏色(一般 --primary、驗證錯誤 --error),而且只認欄位自己的浮層
+          #(field.spec.md「Field state machine」表;2026-11-12 AI 建議、user 採納,原話「我覺得可以照你建議」)。
+          # 量的是四邊 computed 框色(併排欄位組另量四邊中點像素),期望色從頁面上的 token 取:19 種欄位 × 滑鼠點開 / 鍵盤打開
+          #(Select / Combobox / PeoplePicker / DatePicker / 日期區間 / TimePicker 的一般與驗證錯誤)各量開著時滑鼠在空白處 / 欄位上 / 浮層裡、
+          # 關掉後回到原色;表格格內無框款兩格;併排欄位組中間那格;夾具三格「外面包一層浮層把欄位當觸發點」(外面開著不變色、自己開著才變)
+          # 與 FileViewer 縮放欄位裡的小按鈕(開選單外框不變)。併排欄位組量兩組(story「篩選列」期望色 --primary;夾具
+          #「欄位 / 欄位[驗證錯誤] / 欄位」期望色 --error):中間那格鍵盤聚焦 / 滑鼠點開時,滑鼠停在左、右鄰居上 → 兩格共用那條線的像素
+          # = 它的框色,而且中間那格 z-index 4、被滑過的鄰居 3;滑鼠停在中間那格自己上面 → 仍是 4(field-control-group.spec.md「States」;
+          # 2026-11-13 AI 建議、user 採納,原話「你問我的問題，照你建議」)。
+          # 這裡只跑判定;對照組(六種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
+          npm run test:field-open-border
 
   verify-browser-footer-gutter:
     # 2026-10-14 拆自 verify-browser-field-edges(待辦總帳 G10;照主題拆平行 job、不調高上限,上限沿用原 job 的 15)。
@@ -1809,7 +2076,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -1824,6 +2091,7 @@ jobs:
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
           BROWSER_SWEEPS: ${{ needs.verify-browser-sweeps.result }}
+          BROWSER_DOC_HEADINGS: ${{ needs.verify-browser-doc-headings.result }}
           BROWSER_SELECT_ALL: ${{ needs.verify-browser-select-all.result }}
           BROWSER_FIELD_EDGES: ${{ needs.verify-browser-field-edges.result }}
           BROWSER_OVERLAY_ROWS: ${{ needs.verify-browser-overlay-rows.result }}
@@ -1836,12 +2104,14 @@ jobs:
           BROWSER_FOOTER_GUTTER: ${{ needs.verify-browser-footer-gutter.result }}
           BROWSER_NESTED_DISMISS: ${{ needs.verify-browser-nested-dismiss.result }}
           BROWSER_SIDEBAR_KEYBOARD: ${{ needs.verify-browser-sidebar-keyboard.result }}
+          BROWSER_LAYOUT: ${{ needs.verify-browser-layout.result }}
+          BROWSER_HORIZONTAL_OVERFLOW: ${{ needs.verify-browser-horizontal-overflow.result }}
           HOOKS_LINUX: ${{ needs.hooks-linux.result }}
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

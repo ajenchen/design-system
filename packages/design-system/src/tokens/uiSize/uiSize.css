@@ -1,20 +1,22 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   Component Size — Semantic Tokens
+   UI Size — 跨元件共用的尺寸刻度
    ═══════════════════════════════════════════════════════════════════════
 
-   元件高度的語義 token。rem 單位，尊重使用者瀏覽器字體設定（WCAG）。
-   透過 data-density 切換 md / lg 模式。
+   rem 單位,尊重使用者瀏覽器字體設定(WCAG)。透過 data-density / data-ui-size 切換 md / lg;
+   有大密度覆寫的值,下方「鎖回一般密度」段必須有它(token-creation-invariant C5);
+   用 var() 組出來的值住最下方「衍生值」段,在每個換密度的元素上重算(test-density-subtree-token-parity)。
 
-   ┌─ Field Height ────────────────────────────────────────────────────┐
-   │  Button、Input、Checkbox/Radio SelectionItem 等互動元件      │
-   │  xs 固定不隨 density 縮放（密集 UI、Button xs）                   │
-   │  sm / md / lg 隨 density 響應                                    │
-   └─────────────────────────────────────────────────────────────────┘
-
-   ┌─ Table Row ───────────────────────────────────────────────────────┐
-   │  DataTable 行高                                                  │
-   │  sm / md / lg 三種尺寸，density 切換統一 +0.5rem (+8px)          │
-   └─────────────────────────────────────────────────────────────────┘
+   每一顆屬於哪一類、主人是誰、住處在哪 → tokens/token-registry.json(唯一一份;本檔頭不重列)。
+   本檔只裝共用刻度:
+   ┌─ 共用刻度(住這裡) ────────────────────────────────────────────────┐
+   │  控制項高度 --field-height-* / 上下內距 --field-control-py-* /       │
+   │  左右內距 --field-px、堆疊間距 --stack-gap、樹狀縮排 --tree-indent-*、│
+   │  外框標頭高 --chrome-header-height                                   │
+   └───────────────────────────────────────────────────────────────────┘
+   原本寄住在這裡的 14 顆元件的值,依 user 2026-11-10 token「2甲」2026-11-11 全部搬到主人資料夾
+   (分頁高 → Tabs/tabs.css、標籤高 → Tag/tag.css、頭像重疊量 → Avatar/avatar.css、表格列高 → DataTable/data-table.css、
+   側欄 4 顆 → Sidebar/sidebar.css);「3全收」的 6 顆(表格面板寬、分隔線、選單最大高)已收回成元件的值。
+   新增值前先過 token-system.spec.md 判斷流程三題;元件的值不要放進來(token-system.spec.md 規則 1:住主人資料夾)。
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -22,37 +24,25 @@
   --field-height-xs: 1.5rem;    /* 24px — 固定，不隨 density 縮放 */
   --field-height-sm: 1.75rem;   /* 28px */
   --field-height-md: 2rem;      /* 32px */
-  --menu-max-height: 18.75rem;  /* 300px — CommandList / SelectMenu 清單捲動上限(2026-09-08 從 command.tsx 的 fallback 字面值升格為 token;select.spec.md「大量選項」引用它) */
   --field-height-lg: 2.25rem;   /* 36px */
+  /* 清單型浮層的捲動上限(300px)**不設 token**(2026-11-11 token「3全收」收回):只有 CommandList 在讀、不隨密度切換,
+     值住 Command/command.tsx,理由住 command.spec.md「邊界案例」。 */
 
   /* Field control vertical padding — 讓「單行的多行控件」與同 size 單行 Input 等高 SSOT。
      公式 = (field-height − 1lh)/2 − 1px:`1lh` 在使用端解析成該元素自己的行高(text-body 21px /
      text-body-lg 24px),`−1px` 補 border-box 內的上下各 1px 邊框——少了它三個 size 都會高 2px。
-     density 自動連動(引用 --field-height-*,lg density 覆寫後公式仍成立)。
+     density 連動:公式用 var() 引用 --field-height-*,所以住最下方「衍生值」段,在每個換密度的元素上用該處的
+     --field-height-* 重算(2026-11-11 前只寫在 :root —— 整頁換密度成立,區塊換密度時卻沿用整頁的值:
+     實測整頁 md、區塊 data-density="lg",單行高的多行盒(行高 21px、上下 1px 框)量到 32px,同區塊單行 Input 是 36px)。
      消費者:Textarea edit base + fieldViewGeometry 多行 view(兩者相等 = InlineEdit 多行零跳契約,
      由 scripts/inline-edit-view-geometry-invariant.mjs 機械鎖)。
      DataTable cell 不消費此 token,自有 --table-cell-py 公式——但 2026-09-04 起**兩式同型、都帶 -1px**:
      原註解寫「cell 的 padding 載體無邊框」所以不需要減,那是錯的(載體無邊框 ≠ 內容無邊框);
      cell 內的內容載體同樣是 view × naked,自帶 1px 透明上下框,自動行高下那 2px 會進總高。 */
-  --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - 1px);
-  --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);
-  --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - 1px);
 
-  /* Action-region 群組分隔線幾何 — 線長 = 該列最高元件 − inset,不短於 min,垂直置中。
-     基準是「該列最高元件」而非容器:同一列的每條線因此必然等長(不參差),換一個尺寸階的控件
-     時線自動跟著走,比值維持 0.67–0.78,落在世界級 action bar 帶內(VS Code 0.73 /
-     Primer ActionBar 0.63 / JetBrains 0.77–0.86)。
-     inset 取 8px 是我們尺寸階唯一可行值:世界級「撐滿再減」的兩家(MUI variant="middle"、
-     Primer SegmentedControl)各減 16px,但他們最小控件 32px;套到我們 24px 的 xs 階只剩 8px,
-     比 Button 圖示(16px)還矮一半。
-     min 不是新常數,它就是本公式在最小控件階的取值(--field-height-xs 24px − inset 8px = 16px),
-     所以地板永遠不覆寫公式,只在「容器宣稱的高度比它自己的內容還矮」時把結果修回誠實值。
-     --field-height-xs 明文不隨 density 縮放,故 min 在任何密度都成立;16px 同時等於 Button 的
-     圖示尺寸(button.tsx#iconSize),與 VS Code 工具列分隔線同值(actionbar.css height:16px,同檔
-     .codicon 亦 16px)。
-     消費者:ButtonDivider(唯一實作點)。由 scripts/test-action-divider-placement.mjs 機械鎖。 */
-  --action-divider-inset: 0.5rem; /* 8px — 兩端各 4px */
-  --action-divider-min: calc(var(--field-height-xs) - var(--action-divider-inset)); /* 16px */
+  /* 按鈕群組分隔線的內縮(8px)與地板(16px)**不設 token**(2026-11-11 token「3全收」收回):只有 ButtonDivider 在讀、
+     不隨密度切換,值住 Button/button-group.tsx(元件內變數;算式「地板 = --field-height-xs − 內縮」不變)。
+     幾何與世界級對照住 patterns/action-bar/action-bar.spec.md「分隔線幾何」。 */
 
   /* Stack gap — 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(2026-09-26 抽 token,M17:同值散在 6 處字面值)。
      消費者:全域焦點框往外畫的間隙(styles/base.css `:focus-visible` outline-offset)、頭像堆疊挖空的縫與狀態圓點 /
@@ -60,37 +50,18 @@
      JS 雙生:tokens/uiSize/stack-gap.ts `STACK_GAP_PX`(遮罩幾何與 outline 內距要用數字算),由
      scripts/token-twin-invariant.mjs 機械鎖住兩邊相等。設計理由住 avatar.spec.md「頭像堆疊(疊在一起時)」段。 */
   --stack-gap: 2px;
-  /* Avatar stack overlap — 頭像堆疊第 2 顆起往左疊的量(2026-09-26 抽 token:此前 `-ml-0.5` 字面值散在
-     people-picker-helpers.ts / people-picker.tsx,與 avatar.tsx 常數各寫一份)。JS 雙生:avatar.tsx `AVATAR_STACK_OVERLAP_PX`
-     (量寬要用數字算),同樣由 scripts/token-twin-invariant.mjs 鎖住。消費者:avatar.tsx 挖空遮罩與項目位移、
-     PeoplePicker 編輯態的標籤 wrapper。 */
-  --avatar-stack-overlap: 2px;
+  /* 頭像重疊量 --avatar-stack-overlap 2026-11-11 搬到 components/Avatar/avatar.css(主人 = Avatar;token「2甲」第三批) */
 
   /* Field horizontal padding — 固定 12px(不隨 size/density);form-context field 左右內距 SSOT。
      跟 --table-cell-px(cell-context)同 -px 慣例;Input/Select/Combobox/DatePicker/TimePicker/Textarea
      + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */
   --field-px: 0.75rem;          /* 12px */
 
-  /* Tag 盒高 — Tag 自身尺寸的唯一住所(2026-09-15 收斂:原本寫在 tag.tsx cva h-5/h-6、tag.tsx metrics 20/24、
-     combobox.tsx 三處 20/24、field-wrapper.tsx 內距 calc 的 1.25rem/1.5rem —— 四處各一份就是漂移的根)。
-     消費者:tag.tsx cva(h-tag-sm/md/lg,經下方 @theme inline 的 --spacing-tag-* bridge)、field-wrapper.tsx fieldTagInsetX/Y(四邊等距公式)。
-     JS 側對應常數 = tag.tsx `TAG_HEIGHT_PX`(閘 tag-field-vertical-inset I7 量實際高度對齊兩者)。lg = md alias。 */
-  --tag-height-sm: 1.25rem;     /* 20px */
-  --tag-height-md: 1.5rem;      /* 24px */
-  --tag-height-lg: 1.5rem;      /* 24px — md alias */
+  /* 標籤高 --tag-height-* 2026-11-11 搬到 components/Tag/tag.css(主人 = Tag;token「2甲」第二批) */
 
-  /* Table Row Height — DataTable */
-  --table-row-sm: 2rem;         /* 32px */
-  --table-row-md: 2.5rem;       /* 40px */
-  --table-row-lg: 3rem;         /* 48px */
+  /* 表格列高 --table-row-* 2026-11-11 搬到 components/DataTable/data-table.css(主人 = DataTable;token「2甲」第四批) */
 
-  /* Tab Height — Tabs
-     獨立於 field-height 與 table-row：tabs 是 navigation container，
-     需要比 form control 更大的呼吸感。數值目前與 table-row 對齊，
-     但概念獨立，不用 var() alias — 未來任何一方調整都不牽動另一方。 */
-  --tab-height-sm: 2rem;        /* 32px — ★ 預設(2026-05-17 從 md 改),overlay / chrome / dense */
-  --tab-height-md: 2.5rem;      /* 40px — future tier(無 recommended use case,2026-05-17 從 default 降級) */
-  --tab-height-lg: 3rem;        /* 48px — 獨立 tabs 取代 chrome header(= --chrome-header-height) */
+  /* 分頁高 --tab-height-* 2026-11-11 搬到 components/Tabs/tabs.css(主人 = Tabs;token「2甲」第一批) */
 
   /* Chrome Header Height — Sidebar / FileViewer Toolbar+InfoPanel / app top bar / page header
      + Overlay family chrome (Dialog/Sheet/Popover/Coachmark header+footer via overlay-surface SurfaceHeader/SurfaceFooter)
@@ -104,25 +75,19 @@
      不寫成 calc() 公式因為 lg 無法完美遵守(54 → 56 為了 8px grid 取整),hardcode 比假公式誠實。 */
   --chrome-header-height: 3rem; /* 48px */
 
-  /* Sidebar / Layout primitive sizing(2026-05-26 ship 進 published per consumer SSOT gap):
-     原本 declared in DS repo `src/globals.css`,沒進 npm-published tokens aggregator
-     → consumer install DS + import `@qijenchen/design-system/styles/tokens` 拿不到
-     → AppShell + Sidebar gap div 用 `var(--sidebar-width)` undefined → 解析 0px → flex 跑版
-     對齊 docs:`components/Sidebar/sidebar.spec.md`「尺寸規範」token table(段名不用行號:原本的 L613-614 已過期,r1b OTH-02)
-     Why uiSize.css:layout primitive widths 是 ui sizing semantic 範疇(對齊 --field-height / --chrome-header)
-     */
-  --sidebar-width: 15rem;          /* 240px:產品沒設時 Menu 的初始寬(user 2026-05-21) */
-  --sidebar-width-min: 240px;      /* 產品沒設時 Menu 與 Right panel 的最小寬(2026-05-21 起 Right panel 也參照這個最小寬 —— user 要求 aside 一起參照,轉述;那段對話紀錄已不存在、登記簿查無原話);2026-10-14 起不再硬夾 —— app-shell.spec.md「版面規則」§1 */
-  /* --sidebar-width-mobile(18rem 手機抽屜寬)2026-10-14 退場:Menu 浮層與並排共用同一份寬度紀錄(「版面規則」§7、§9) */
-  --sidebar-menu-icon-size: 1rem;   /* 16px sm/md row(per ICON_SIZE.sm/md);size=lg 罕見 case 下方 override 1.25rem(20px) */
-  --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
+  /* 側欄 4 顆 --sidebar-width / --sidebar-width-min / --sidebar-width-icon / --sidebar-menu-icon-size
+     2026-11-11 搬到 components/Sidebar/sidebar.css(主人 = Sidebar;token「2甲」第五批)。
+     其中兩顆 2026-11-13 退場(AI 的工程修正):--sidebar-width-min → components/AppShell/app-shell.tsx 的常數 PANEL_WIDTH_MIN_DEFAULT;
+     --sidebar-menu-icon-size → SidebarProvider 外層設的元件內變數(不是 token)。現行剩 --sidebar-width、--sidebar-width-icon。
+     2026-05-26 那次「產品拿不到側欄寬、版面跑掉」的事故(當時宣告在 DS repo 的 src/globals.css、沒進對外彙總檔)
+     記在新檔檔頭;新檔由 styles/tokens.css 匯入,token-creation-invariant C6 在 CI 擋漏匯入。 */
 
   /* AgentPanel 面板寬**不設 token**(2026-10-15 退役 --agent-panel-width 25rem):預設 360 / 400 / 640 只住
      agent-panel.tsx 的 AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX —— 那個 token 執行期從沒有讀取者,元件一直用 JS 常數 400(r1b 複驗 F8,M17)。
      拖拉上下限(360 / 640)同理**不設 token**:值只有 JS 的 clamp 邏輯會用,CSS 這邊沒有任何消費者。
      2026-09-21 orphan-token 稽核抓到 —— 原本宣告了 --agent-panel-width-min / -max 卻沒人讀,
      而真正生效的是 agent-panel.tsx 的 PANEL_WIDTH_MIN / PANEL_WIDTH_MAX,同值兩個住所必然漂移(M17)。
-     單一住所對齊既有前例:AppShell 的 ASIDE_WIDTH_DEFAULT / MAX 也只住在 app-shell.tsx(Right panel 最小寬讀 --sidebar-width-min)。 */
+     單一住所對齊既有前例:AppShell 的 ASIDE_WIDTH_DEFAULT / MAX 也只住在 app-shell.tsx(Right panel 最小寬預設 = 同檔的 PANEL_WIDTH_MIN_DEFAULT;2026-11-13 前讀 token --sidebar-width-min)。 */
 
   /* Tree Indent — TreeView + DataTable nested rows(SSOT,2026-05-04)
      公式:chevronSize + gap-2 = 16+8(sm/md)/ 20+8(lg)
@@ -131,52 +96,31 @@
   --tree-indent-md: 1.5rem;     /* 24px */
   --tree-indent-lg: 1.75rem;    /* 28px */
 
-  /* DataTable Panel Widths — Sort manager / Filter panel cells(SSOT,2026-05-23 deep-audit Phase A.4 Decision 2 codify:user 同意照 AI 建議做、並要求最 SSOT 最簡潔(轉述;那段對話紀錄已不存在、登記簿查無原話))
-     Consumer:data-table-sort-manager.tsx / data-table-filter-group.tsx(FilterRow;2026-07-14 拆檔自 filter-panel)
-     不 density-scale(panels 是 floating layout,不該跟密度走)
-     Naming aligned to family `--<component>-<part>-<size>`(per --field-height-* / --table-row-* / --tab-height-* precedent)*/
-  --data-table-sort-panel-width: 30rem;       /* 480px — sort manager root container width */
-  --data-table-filter-field-width: 10rem;     /* 160px — filter cell column selector(flat + nested 同 width) */
-  --data-table-filter-op-width: 7.5rem;       /* 120px — filter cell operator selector(when value cell exists) */
+  /* 表格排序面板寬、篩選列的欄位 / 條件下拉寬**不設 token**(2026-11-11 token「3全收」收回):各自只有一個檔在讀、
+     不隨密度切換,值住 DataTable/data-table-sort-manager.tsx 與 data-table-filter-group.tsx(token-system.spec.md 判斷流程第 0 題)。 */
 }
 
+/* 同一個元素同時帶 data-density 與 data-ui-size 時只看明寫的 data-ui-size(便捷屬性那一半加 :not([data-ui-size]));
+   2026-11-11 前兩者權重相同、靠後寫的贏 → 只要其中一個是 md 就永遠 md 勝,規格示範的「單獨切控制項大小」在
+   html 已帶 data-density="md" 的頁面上完全沒作用(稽核 R7-01)。規則住 density.spec.md「同一個元素帶兩種屬性」。 */
 [data-ui-size="lg"],
-[data-density="lg"] {
-  /* Sidebar lg override(per src/globals.css 原 declaration:size=lg 罕見 case)*/
-  --sidebar-menu-icon-size: 1.25rem; /* 20px(lg)*/
-
+[data-density="lg"]:not([data-ui-size]) {
   --field-height-sm: 2rem;      /* 32px */
   --field-height-md: 2.25rem;   /* 36px */
   --field-height-lg: 2.5rem;    /* 40px */
 
-  --table-row-sm: 2.5rem;       /* 40px */
-  --table-row-md: 3rem;         /* 48px */
-  --table-row-lg: 3.5rem;       /* 56px */
-
-  --tab-height-sm: 2.5rem;      /* 40px */
-  --tab-height-md: 3rem;        /* 48px */
-  --tab-height-lg: 3.5rem;      /* 56px */
-
   --chrome-header-height: 3.5rem; /* 56px(lg density) */
 }
 
-/* 2026-04-22:md reset selector — 當祖先層級(e.g. html[data-density="lg"])已 cascading
-   lg overrides 下來,subtree 元件(Popover / DropdownMenu / Tooltip 等)宣告 `data-density="md"`
-   或 `data-ui-size="md"` 時必須能 reset 回 md default,否則 Portal 逃逸 + cascading
-   會讓 lock md 失效(Meta-Pattern M3 Portal subtree context drift 類)。 */
+/* 鎖回一般密度(2026-04-22 起):祖先(例:html[data-density="lg"])的大密度值已經繼承下來時,
+   某一塊宣告 `data-density="md"` 或 `data-ui-size="md"` 必須能回到 :root 的值(大密度頁面裡的一般密度區塊靠這一段)。
+   2026-06-15 起 Popover / DropdownMenu / Tooltip 都不在根元素寫 data-density="md"(density.spec.md 情境 1),
+   原註解「subtree 元件(Popover / DropdownMenu / Tooltip 等)宣告 data-density="md"」已不成立(稽核 R7-06)。 */
 [data-ui-size="md"],
-[data-density="md"] {
+[data-density="md"]:not([data-ui-size]) {
   --field-height-sm: 1.75rem;   /* 28px — md default */
   --field-height-md: 2rem;      /* 32px — md default */
   --field-height-lg: 2.25rem;   /* 36px — md default */
-
-  --table-row-sm: 2rem;         /* 32px */
-  --table-row-md: 2.5rem;       /* 40px */
-  --table-row-lg: 3rem;         /* 48px */
-
-  --tab-height-sm: 2rem;        /* 32px */
-  --tab-height-md: 2.5rem;      /* 40px */
-  --tab-height-lg: 3rem;        /* 48px */
 
   /* 2026-07-16 dim 52 補洞:lg block(上方)有 override --chrome-header-height 3.5rem,
      md-reset 原漏重設 → lg 祖先下 subtree lock md 時 chrome header 仍 56px,破 W3
@@ -188,23 +132,37 @@
   --tree-indent-lg: 1.75rem;    /* 28px — md default */
 }
 
+/* ── 衍生值:在每個換密度的元素上重算(2026-11-11)──
+   用 var() 由別的 token 組出來的值,瀏覽器在「宣告它的那個元素」上就把 var() 代換掉,子孫繼承的是代換後的結果
+   (W3C CSS Custom Properties Level 1:custom property 的 Computed value =「specified value with variables substituted」,
+   https://www.w3.org/TR/css-variables-1/#defining-variables)。只寫在 :root 的話,區塊換了密度
+   (data-density / data-ui-size / data-layout-space),它的輸入跟著變、它自己不會重算 —— 實測整頁 md、區塊 data-density="lg",
+   單行高的多行盒量到 32px,同區塊單行 Input 是 36px(本檔 :root 段「Field control vertical padding」)。
+   所以公式只寫這一份,宣告在 :root 與每個可能換密度的元素上,每一層都用自己的輸入重算。
+   元件的值也照這個做法:側欄收合細列寬 --sidebar-width-icon 住 components/Sidebar/sidebar.css 的同名段(2026-11-11 搬走;
+   它另一個輸入是側欄的 size,所以那一段還多在 SidebarProvider 外層重算一次)。
+   閘:scripts/test-density-subtree-token-parity.mjs(區塊裡每一顆 token = 整頁直接設成那個密度的值,瀏覽器實算)。 */
+:root,
+[data-density],
+[data-ui-size],
+[data-layout-space] {
+  /* 多行輸入框上下內距(公式與理由在 :root 段「Field control vertical padding」) */
+  --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - 1px);
+  --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);
+  --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - 1px);
+}
+
 
 /* ── Tailwind Theme Bridge ──
-   橋接成 spacing utility，讓 h-field-md / h-table-row-lg 等 class 可用 */
+   橋接成 spacing utility，讓 h-field-md / h-tree-indent-md 等 class 可用 */
 @theme inline {
   --spacing-field-xs:    var(--field-height-xs);
   --spacing-field-sm:    var(--field-height-sm);
   --spacing-field-md:    var(--field-height-md);
   --spacing-field-lg:    var(--field-height-lg);
-  --spacing-table-row-sm: var(--table-row-sm);
-  --spacing-table-row-md: var(--table-row-md);
-  --spacing-table-row-lg: var(--table-row-lg);
-  --spacing-tag-sm: var(--tag-height-sm);   /* h-tag-sm(規則 3 utility bridge,同 h-field-* / h-tab-*)*/
-  --spacing-tag-md: var(--tag-height-md);
-  --spacing-tag-lg: var(--tag-height-lg);
-  --spacing-tab-sm: var(--tab-height-sm);
-  --spacing-tab-md: var(--tab-height-md);
-  --spacing-tab-lg: var(--tab-height-lg);
+  /* h-table-row-* 的轉接名跟著本尊住 components/DataTable/data-table.css */
+  /* h-tag-* 的轉接名跟著本尊住 components/Tag/tag.css */
+  /* h-tab-* 的轉接名跟著本尊住 components/Tabs/tabs.css */
   --spacing-tree-indent-sm: var(--tree-indent-sm);
   --spacing-tree-indent-md: var(--tree-indent-md);
   --spacing-tree-indent-lg: var(--tree-indent-lg);

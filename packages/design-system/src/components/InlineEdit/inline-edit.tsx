@@ -419,7 +419,7 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :398 的 `[&:has(button:focus-visible)]:border-primary`)
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:404 的 `[&:has(button:focus-visible)]:border-primary`)
               className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
             />
           )}

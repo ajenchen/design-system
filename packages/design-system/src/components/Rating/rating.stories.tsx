@@ -86,14 +86,15 @@ function ServiceRatingForm() {
     onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
   })
   return (
-    <form onSubmit={form.handleSubmit} className="w-80" aria-label="為這次服務評分">
+    // 表單放進卡片(同 field.stories.tsx「表單驗證」兩張):按鈕下方 = 卡片自己的底內距(layoutSpace.spec.md 規則 4)
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-lg p-[var(--layout-space-loose)]" aria-label="為這次服務評分">
       <Field required invalid={!!form.errors.rating} mode={submitted ? 'readonly' : 'edit'}>
         <FieldLabel>整體滿意度</FieldLabel>
         <Rating {...form.getInputProps('rating')} />
         <FieldError>{form.errors.rating}</FieldError>
       </Field>
-      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      {/* 欄位 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」,同 field.stories.tsx「表單驗證」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         <Button type="submit" variant="primary">送出評分</Button>
       </ButtonGroup>
     </form>

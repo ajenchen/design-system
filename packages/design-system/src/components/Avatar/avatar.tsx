@@ -126,7 +126,7 @@ function useDocumentTheme(): string | null {
 // (ui-development.md「符號級 @internal 排除」)。未來 Avatar.Group 會把這段收進元件(overflow-indicator.spec.md)。
 /**
  * @internal
- * 第 2 項起往左疊的量。CSS 雙生:`tokens/uiSize/uiSize.css` `--avatar-stack-overlap`(class 字串裡用它;
+ * 第 2 項起往左疊的量。CSS 雙生:`components/Avatar/avatar.css` `--avatar-stack-overlap`(2026-11-11 從 uiSize.css 搬來;class 字串裡用它;
  * 這個數字給量寬與遮罩幾何用),兩邊相等由 scripts/token-twin-invariant.mjs 鎖住。
  */
 export const AVATAR_STACK_OVERLAP_PX = 2

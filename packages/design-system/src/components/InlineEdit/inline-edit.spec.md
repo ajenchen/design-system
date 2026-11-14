@@ -136,7 +136,7 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 
 ## 常見誤解
 
-- **「view 態 hover 該加邊框」** → 錯。hover = 背景 tint（`bg-neutral-hover`）;邊框是 edit 態語言。
+- **「view 態 hover 該加邊框」** → 錯。本元件檢視態滑過 = 背景 tint（`bg-neutral-hover`）,設計如此(上方「互動模型」表);Atlassian inline-edit 讀取態同做法(邊框透明、滑過換底色 `color.background.neutral.subtle.hovered`,[read-view.tsx#L56-L62](https://github.com/pioug/atlassian-frontend-mirror/blob/4f81d05437195b5ee2ee383eeedfbe60d8c56bd9/design-system/inline-edit/src/internal/read-view.tsx#L56-L62))。DataTable 可編輯格檢視態滑過用外框(`../Field/field.spec.md` L4),兩者意思相同 —— 都是「這裡可以改值」,各元件照自己的規格表現。〔2026-11-10 改寫:舊句「邊框是 edit 態語言」與 L4(表格格在檢視態用外框)相反,已拿掉;user 同日原話「因為我覺得 inline edit 一點都不怪，當初定義的設計就是這樣」〕
 - **「edit 態要自己刻 input chrome」** → 錯。edit 態 = 真正的 Field 控件(預設 `<Input>`),完全回歸 field-controls edit canonical,不重刻。
 - **「大標題 inline edit 要自己做 focus/commit/esc」** → 錯。用 InlineEdit,生命週期(commit/cancel/Esc/focus 返回)由 primitive 統一處理。
 
@@ -173,7 +173,7 @@ InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動�
 
 ## 禁止事項
 
-- ❌ view 態 hover 用邊框——用 `bg-neutral-hover` 背景 tint（邊框是 edit 態語言）
+- ❌ view 態 hover 用邊框——用 `bg-neutral-hover` 背景 tint(本元件檢視態滑過用底色;DataTable 可編輯格用外框,意思同為「可以改值」,見「常見誤解」第 1 條)
 - ❌ edit 態手刻 input chrome——用 Field 控件（預設 `<Input>`)
 - ❌ 用 InlineEdit 包 DataTable 密集可編輯格——用 naked cell
 - ❌ 空值顯示唯讀展示的半形 `-` dash——InlineEdit 是可編輯欄位,空值 = placeholder 或空白

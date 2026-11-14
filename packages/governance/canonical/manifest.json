@@ -1595,6 +1595,12 @@
       "required": true
     },
     {
+      "id": "release-github-release-removal-notes",
+      "ownerRepo": "design-system",
+      "path": "scripts/lib/root-exports-release-notes.mjs",
+      "required": true
+    },
+    {
       "id": "release-remote-tag-guard",
       "ownerRepo": "design-system",
       "path": "scripts/release-remote-tag.mjs",

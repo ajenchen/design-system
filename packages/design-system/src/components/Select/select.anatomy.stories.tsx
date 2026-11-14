@@ -48,11 +48,12 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     error:    { bg: '--surface',     text: '--foreground',  border: '--error',        icon: '--fg-muted' },
     disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent',    icon: '--fg-disabled' },
   },
-  // readonly wrapper 為靜態 bg-readonly(field-wrapper.tsx 無 hover/focus 樣式;mode prop 勝 disabled)
+  // readonly wrapper 為 bg-readonly、無 hover;focus 欄 = **鍵盤**聚焦 → 透明邊框轉主色(field-wrapper.tsx readonly compound;
+  // 滑鼠點不變,2026-11-11 field-controls.spec.md「Focus 行為」readonly 段;2026-09-10 起就該是主色,本表原寫透明已過時)。mode prop 勝 disabled
   readonly: {
     default:  { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
     hover:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
-    focus:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
+    focus:    { bg: '--bg-readonly', text: '--foreground',  border: '--primary',   icon: '—' },
     error:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
     disabled: { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
   },

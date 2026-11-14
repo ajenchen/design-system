@@ -686,6 +686,7 @@ export type {
 //   - components/FileItem:fileItemRingCutoutStyle
 //   - components/LinkInput:LINK_INPUT_EDIT_ENTRY_ATTR
 //   - components/LinkInput:LinkInputViewEditAction
+//   - components/LinkInput:isLinkInputValueLinkable
 //   - components/Sheet:handleSheetOpenAutoFocus
 //   - components/Toast:ToastSurface
 //   - components/Toast:ToastSurfaceProps
@@ -703,6 +704,7 @@ export type {
 //   - lib/composite-field-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/ime-composition.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/overlay-density.tsx(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-description.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-escape.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-focus-return.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)

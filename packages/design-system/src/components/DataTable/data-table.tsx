@@ -50,12 +50,13 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier, DRAG_ACTIVATION_DISTANCE_PX, createStepToNeighborCoordinateGetter } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { isLinkInputValueLinkable } from '@/design-system/components/LinkInput/link-input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
-import { sortingAfterHeaderActivate, sortingFromColumnMenu, columnMenuShowsCancelSort, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement } from './lib/sort-cycle'
+import { nextSorting, columnMenuShowsCancelSort, columnMenuShowsSortDirection, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement, DATA_TABLE_SORT_DEFAULT_LABELS, type SortAction } from './lib/sort-cycle'
 import { sortingFnForColumnType } from './lib/column-sorting'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
@@ -350,7 +351,7 @@ export interface DataTablePaginationOptions {
 //   - string / number / currency:cell click → inline edit
 //   - date / time / select / multiSelect / person / multiPerson:cell click → 進 edit mode
 //   - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
-//   - url:read = LinkInput view(連結只有網址文字寬)+ 滑過 / 聚焦出現的 Pencil;點網址文字開連結,點格的其他地方或 Pencil 進 edit
+//   - url:read = LinkInput view(連結盒子只有網址文字寬,點擊範圍延伸到整格)+ 滑過 / 聚焦出現的 Pencil;格裡 Pencil 以外開連結,Pencil 進 edit
 //
 // Cell id format: `${rowId}__${columnId}`(編輯狀態 keying)
 // Commit: blur OR Enter OR overlay close → 呼叫 onCellCommit
@@ -1663,17 +1664,17 @@ function DataTableInner<TData>(
   //   此 pre-process 把 meta 值 copy 到 root size/minSize/maxSize,確保 TanStack column
   //   resize state 正常運作。**Back-compat**:consumer 寫 root `size` 仍 work(meta.width 沒設則
   //   不覆蓋 root)。新 code 一律用 meta.width。
-  // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表)。
+  // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表);select / multiSelect 帶 `meta.options`(照選項順序)。
   const dsProcessedColumns = React.useMemo<ColumnDef<TData>[]>(() => {
     return columns.map((c) => {
-      const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number; type?: ColumnType } | undefined
+      const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number; type?: ColumnType; options?: ReadonlyArray<{ value: unknown }> } | undefined
       if (!meta) return c
       const cAny = c as { size?: number; minSize?: number; maxSize?: number; sortingFn?: unknown }
       const updates: { size?: number; minSize?: number; maxSize?: number; sortingFn?: SortingFn<TData> } = {}
       if (meta.width !== undefined && cAny.size === undefined) updates.size = meta.width
       if (meta.minWidth !== undefined && cAny.minSize === undefined) updates.minSize = meta.minWidth
       if (meta.maxWidth !== undefined && cAny.maxSize === undefined) updates.maxSize = meta.maxWidth
-      if (meta.type !== undefined && cAny.sortingFn === undefined) updates.sortingFn = sortingFnForColumnType<TData>(meta.type)
+      if (meta.type !== undefined && cAny.sortingFn === undefined) updates.sortingFn = sortingFnForColumnType<TData>(meta.type, meta.options)
       return Object.keys(updates).length > 0 ? ({ ...c, ...updates } as ColumnDef<TData>) : c
     })
   }, [columns])
@@ -1782,15 +1783,18 @@ function DataTableInner<TData>(
     columnResizeMode: 'onChange',
   })
 
-  // ── 表頭排序(2026-11-03,user 2026-10-30 多重排序規格;判定的唯一住所 = lib/sort-cycle.ts)──────────────
-  // 表頭點擊、表頭鍵盤、⌄ 欄位選單都經這一支:以**表格此刻的排序**(受控時 = consumer 的 state,也就是排序面板寫的那一份)算出下一個,
+  // ── 表頭排序(2026-11-03 立,2026-11-11 user R16 定案改寫;判定的唯一住所 = lib/sort-cycle.ts `nextSorting`)──────────────
+  // 表頭點擊、表頭 Enter / Space(含 Shift)、⌄ 欄位選單三項都經這一支,呼叫端只說「使用者對哪一欄做了什麼」(`SortAction`),
+  // 不自己判斷:以**表格此刻的排序**(受控時 = consumer 的 state,也就是排序面板寫的那一份)算出下一個,
   // 用**值**(不是 updater)交給 TanStack → 上面的 onSortingChange:內部 state 與 consumer 拿到同一個值,不會各自從舊值推出兩個答案。
-  // 修前走 TanStack 內建 `getToggleSortingHandler`:一般點擊多重排序的最後一欄不清掉其他欄、數字 / 人員欄第一下是降冪(實測見 sort-cycle.ts 檔頭)。
+  // 播報拿的「之前」就是交給 `nextSorting` 的同一個值(不另外推)。
+  // 修前走 TanStack 內建 `getToggleSortingHandler`:一般點擊多重排序的最後一欄不清掉其他欄、數字 / 人員欄第一下是降冪(見 sort-cycle.ts 檔頭)。
   const [sortAnnouncement, setSortAnnouncement] = React.useState('')
-  const applyHeaderSorting = React.useCallback((compute: (current: SortingState) => SortingState) => {
-    const next = compute(table.getState().sorting ?? [])
+  const applyHeaderSorting = React.useCallback((columnId: string, action: SortAction) => {
+    const previous = table.getState().sorting ?? []
+    const next = nextSorting(previous, columnId, action)
     table.setSorting(next)
-    setSortAnnouncement(sortChangeAnnouncement(next, (id) => {
+    setSortAnnouncement(sortChangeAnnouncement(previous, next, columnId, (id) => {
       const column = table.getColumn(id)
       return column ? columnAccessibleName(column) : id
     }))
@@ -2010,8 +2014,14 @@ function DataTableInner<TData>(
     //
     // **只在 size / 密度真的變了才讀**(2026-09-10 自己踩到、用 trace 抓出來):第一版寫成沒有依賴
     // 陣列的 layout effect,於是每次 render 都跑一次 getComputedStyle —— 捲動中每一幀都在強迫重算樣式,
-    // `getPropertyValue` 自時間衝到 80ms(5.4%),把前面省下來的成本吃掉一半。密度是祖先上的
-    // `data-density` 屬性,用 MutationObserver 盯那一個屬性即可,零輪詢。
+    // `getPropertyValue` 自時間衝到 80ms(5.4%),把前面省下來的成本吃掉一半。密度是祖先上的屬性,
+    // 用 MutationObserver 盯屬性即可,零輪詢。
+    //
+    // **盯哪些屬性(2026-11-12 修,f90c767a 雙寫法的同族)**:列高 token 屬於控制項大小軸,區塊可以只寫
+    // `data-ui-size`(勝過同元素的 data-density;density.spec.md「同一個元素帶兩種屬性」),所以兩個都要盯;
+    // 原本只盯最近一個帶 data-density 的祖先 —— 區塊只寫 data-ui-size、或之後才在更近的祖先加上屬性,列高 token
+    // 變了估計值卻停在舊的。改成盯整份文件這兩個屬性,但只有「變動的元素包著這張表」才重讀(浮層開關也會寫
+    // data-ui-size,那些不在表的祖先鏈上,不觸發)。
     const read = () => {
       const raw = getComputedStyle(el).getPropertyValue(`--table-row-${size}`).trim()
       const px = raw.endsWith('rem')
@@ -2020,9 +2030,10 @@ function DataTableInner<TData>(
       if (Number.isFinite(px) && px > 0) setTokenEstimate((prev) => (prev === px ? prev : px))
     }
     read()
-    const densityHost = el.closest<HTMLElement>('[data-density]') ?? document.documentElement
-    const mo = new MutationObserver(read)
-    mo.observe(densityHost, { attributes: true, attributeFilter: ['data-density'] })
+    const mo = new MutationObserver((records) => {
+      if (records.some((r) => r.target instanceof Node && r.target.contains(el))) read()
+    })
+    mo.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['data-density', 'data-ui-size'] })
     return () => mo.disconnect()
   }, [estimateRowHeight, size])
   const resolvedEstimate = estimateRowHeight ?? tokenEstimate ?? estimateFallback
@@ -3424,16 +3435,22 @@ function DataTableInner<TData>(
     //   DataTable cellEl 不再 render parallel indicator — SSOT 對齊 Field family。
     //   詳 `.claude/planning/cell-indicator-ssot-rfc.md` Step 9。
     // Cell click → 進 edit mode(boolean 不需 — 勾選框自己切換)。
-    // url(2026-10-13 user 拍板乙「照你建議做到完美並自行驗證到完美」,待辦總帳 Q3f):跟其他可編輯格一樣 —— 滑過出淺框、
-    // 點格進編輯;只有點**網址文字**開連結(連結自己的行為,不進編輯)。與 LinkInput 09-26「點網址文字 = 開連結;
-    // 點外框裡其他地方 = 進編輯」同一句(link-input.spec.md「Link 狀態」)。07-14 寫進規格的「url 排除點格編輯與滑過淺框」撤回。
+    // url(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條):有連結的網址格,格裡鉛筆以外
+    // 點了開連結(LinkInput 的延伸連結鋪滿整格,瀏覽器照常開),鉛筆 = 滑鼠唯一的編輯入口 → 它**不是**「點格即編輯」的格:點格不進編輯。
+    // 空值 / 不是網址 = 沒有連結可開,照其他可編輯格(點格進編輯)。判斷與 LinkInput 畫不畫連結同一支。
+    // 10-13 – 11-06 是「只有點網址文字開連結、其他地方進編輯」(待辦總帳 Q3f 乙)。
     const cellSpreadsheetId = `${cellRowId}:${cellColId}`
     const isSelectedCell = spreadsheetMode && selectedCellId === cellSpreadsheetId
-    // 「點格即編輯」的格:滑過淺框、手形游標都只跟著這一種(滑過樣式不因下方點擊改動而變)。
-    const cellClickEntersEdit = cellEditable && colType !== 'boolean'
-    // 這一下點擊是不是落在格裡「自有行為」的東西上、或只是選字(連結格):是的話不進編輯 ——
-    // 點網址文字 = 開連結(瀏覽器照常);按在空白處拖過網址文字再放開 = 選字,不算點一下(link-input.spec.md「Link 狀態」;
-    // 判準同 LinkInput 外框,全 DS 共用 lib/pointer-press.ts,不另寫一份)。鉛筆自己 stopPropagation,到不了這裡。
+    const urlCellOpensLink = colType === 'url' && isLinkInputValueLinkable(cell.getValue())
+    const cellClickEntersEdit = cellEditable && colType !== 'boolean' && !urlCellOpensLink
+    // 滑過外框(L4,field.spec.md)= 「這格可以編輯」,跟著**能不能編輯**走,不跟點擊結果走(2026-11-10 user「表格跟輸入框難道不應該是類似的邏輯嗎？
+    // hover連結表格難道不應該出現更深顏色的框嗎？…這樣不是跟輸入框一致？」):可編輯的網址格有連結時點了開連結,但照樣出外框
+    // —— 同 LinkInput 編輯模式的連結狀態,外框滑過變深、框裡點了開連結。不能編輯的格不出(同唯讀 LinkInput);boolean 是勾選框自己切換,不出。
+    // 手形游標仍只跟「點格即編輯」(有連結的格手形由延伸連結自己給)。
+    const cellShowsEditableHover = cellEditable && colType !== 'boolean' && !isEditingThisCell
+    // 這一下點擊是不是落在格裡「自有行為」的東西上、或只是選字(網址格):是的話不進編輯 —— 有連結的網址格本來就不是點格即編輯的格
+    // (上方),這裡管的是沒有連結、畫成一般文字的值(例:不是網址的字):按著拖過字再放開 = 選字,不算點一下
+    //(判準全 DS 共用 lib/pointer-press.ts,不另寫一份)。鉛筆自己 stopPropagation,到不了這裡。
     const clickIsForCellContent = (e: React.MouseEvent<HTMLElement>): boolean => {
       if (colType !== 'url') return false
       const target = e.target
@@ -3630,7 +3647,8 @@ function DataTableInner<TData>(
           // Field naked edit border 仍 own(per Field SSOT)— 編輯時 Field 自帶 border 1px,
           // 跟 cell 4 邊 inset divider 視覺相疊(同 pixel)= 1 line visual,不雙線。
           inlineEdit && 'dtCellGrid',
-          onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell view hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
+          onEditableCellClick && 'cursor-pointer',
+          cellShowsEditableHover && nakedCellEditableDisplayHover,  // editable cell view hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical;可編輯就出,含有連結的網址格)
           // a11y(2026-07-14 dim-10 修):非 spreadsheet inlineEdit cell 可 Tab 聚焦(見下方
           // tabIndex/onKeyDown)— focus-visible ring 對齊本檔 expand button / sortable header canonical。
           cellIsTabStop && 'focus-visible:focus-ring-inset',
@@ -4014,24 +4032,25 @@ function DataTableInner<TData>(
     // 對齊只作用在儲存格內容,表頭一律靠左,所以這裡刻意不算 `align` —— 留著一個沒人用的變數
     // 會讓下一個人以為表頭還吃對齊。儲存格那側仍照常讀(見 `renderBodyRows` 的 cell 分支)。
     // Sort UI(Phase A.1):header cell 兩區結構
-    //   左區(label + indicator slot):click → toggle sort 三態(asc → desc → none)
-    //   右區:reserve future ⌄ menu(filter / hide / pin 等;hover 才出,A.x 加)
+    //   左區(label + indicator slot):點擊 / Enter / Space → 排序(兩態:已排序的欄只在升冪 ↔ 降冪之間切,點不回沒排序;lib/sort-cycle.ts)
+    //   右區:⌄ 欄位選單(排序 / 篩選 / 隱藏 / 自動調整寬度;滑過或鍵盤焦點才展開,一直在 Tab 順序裡)
     // Indicator inline collapse:已套才顯;未套不顯(任何混雜組合不推 — 對齊 AG Grid / Notion)
     const canSort = header.column.getCanSort()
     const sortDir = header.column.getIsSorted() // false | 'asc' | 'desc'
     // 多重排序(≥2 欄)時每個被排序的欄顯示「箭頭 + 順位數字」(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
     // 2026-05-04 的 K7 在多重排序時把箭頭與「取消排序」藏起來,理由是「沒有順位編號的箭頭是片段資訊」—— 有了順位數字,箭頭恢復;
-    // ⌄ 選單的「取消排序」在多重排序時仍不顯示:按了要拿掉這一欄還是清掉全部,要 user 決定(lib/sort-cycle.ts `columnMenuShowsCancelSort`)。
+    // ⌄ 選單的「取消排序」在多重排序時也顯示,按了只拿掉這一欄、後面順位往前補(lib/sort-cycle.ts `columnMenuShowsCancelSort` / `nextSorting` 的 `remove`)。
     // 只有一欄排序時不顯示數字(`sortPriorityLabel` 回 null);0 欄自然不顯示(canSort && sortDir 短路)。
     const sortingState = table.getState().sorting ?? []
     const priorityLabel = canSort && sortDir ? sortPriorityLabel(sortingState, header.column.id) : null
     const priorityDescription = canSort && sortDir ? sortPriorityDescription(sortingState, header.column.id) : null
     const priorityDescriptionId = priorityDescription ? `${columnHeaderDomId(headerIdBase, header.column.id)}-sort-priority` : undefined
     const SortIcon = sortDir === 'asc' ? ArrowUp : ArrowDown // 未套不渲染;套用後二擇一
-    // Shift+點擊 / Shift+Enter / Shift+Space = 多重排序(這張表允許、這一欄也允許時);判定在 lib/sort-cycle.ts
+    // 點擊 / Enter / Space 與 Shift+點擊 / Shift+Enter / Shift+Space 同一支;Shift 只在「這張表允許、這一欄也允許多重排序」時算數,
+    // 且只對**沒排序的欄**有差別(加到最後 vs 取代全部);已排序的欄兩者都只翻方向。判定在 lib/sort-cycle.ts `nextSorting`
     const activateSort = (shiftKey: boolean) => {
       const additive = shiftKey && enableMultiSort && header.column.getCanMultiSort()
-      applyHeaderSorting((current) => sortingAfterHeaderActivate(current, header.column.id, additive))
+      applyHeaderSorting(header.column.id, { kind: 'activate', additive })
     }
     return (
       <div
@@ -4067,7 +4086,8 @@ function DataTableInner<TData>(
         )}
         style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
       >
-        {/* 左區:label + sort indicator(整區 click → 升冪 → 降冪 → 清除,並清掉其他欄;Shift+click 只動這一欄、加進多重排序,enableMultiSort 啟用時) */}
+        {/* 左區:label + sort indicator(整區點擊:沒排序的欄 → 只剩這一欄、升冪;已排序的欄 → 只翻這一欄的方向,其他欄不動;
+            Shift+點擊沒排序的欄 → 加到多重排序最後,enableMultiSort 啟用時。取消只走 ⌄ 選單「取消排序」或排序面板) */}
         <div
           role={canSort ? 'button' : undefined}
           tabIndex={canSort ? 0 : undefined}
@@ -4084,7 +4104,10 @@ function DataTableInner<TData>(
           className={cn(
             // 焦點框 = 全域 `:focus-visible` 外描邊(往外,理由見下方 `canSort && 'rounded-md'` 那段 2026-09-10 註解);這裡不能留 outline-none ——
             // 那會把這個 tab stop 的框整個吃掉(H2a 同款)。2026-10-21 前這句寫「由 canSort 那行的 focus-ring-inset 負責」,與下方「改回往外」矛盾(r1b DT-02)。
-            'flex items-center min-w-0 flex-1 gap-1',
+            // label ↔ 排序指示 8px(`gap-2`)= label ↔ 後綴 slot 的全 DS 間距(tabs.spec.md「單個 Trigger 內部」label ─gap-2─ suffix、
+            // button.spec.md icon ↔ label 實際 8px、item-anatomy.spec.md「suffix 獨立後綴 gap 8px」);2026-11-12 前是 4px(`gap-1`),
+            // 那是 2026-05-22 搬遷時帶進來的值,沒有規格或決策依據(SSOT = data-table.spec.md「Multi-sort header」列)。
+            'flex items-center min-w-0 flex-1 gap-2',
             // 這一層**不再跟著欄位 align 走**(見外層說明):表頭一律靠左。
             // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
             // hover 字色瞬間切換,不寫 transition-colors(tokens/motion/motion.spec.md「hover 回饋不做過渡」;2026-09-26 由底色延伸到字色,待辦總帳 L9 / N4(3))。
@@ -4106,10 +4129,10 @@ function DataTableInner<TData>(
             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
           </TruncatedText>
           {canSort && sortDir && (
-            // 排序指示 = 箭頭 + (多重排序時)順位數字,一個單位、同進同出,佔原本單一箭頭的位置(label 之後、gap-1);
+            // 排序指示 = 箭頭 + (多重排序時)順位數字,一個單位、同進同出,佔原本單一箭頭的位置(label 之後、gap-2 = 8px);
             // 寬高由「箭頭 + 數字」決定(2026-11-03;user 2026-10-30 規格,data-table.spec.md「Multi-sort header」列)。
             // 箭頭 ↔ 數字 2px(`gap-0.5`)= user 2026-10-30 視覺偏好(「不用給我看2px和4px的差異,我自己早就看過了,我認為視覺上2px比較好看,主要是不確定合理性」)
-            // + AI 合理性查證(data-table.spec.md 同一列):元件內間距由該列自管;2px 比 label ↔ 指示的 4px(gap-1)近一級,數字跟著箭頭成組、不跟 label 成組 ——
+            // + AI 合理性查證(data-table.spec.md 同一列):元件內間距由該列自管;2px 比 label ↔ 指示的 8px(gap-2)更近,數字跟著箭頭成組、不跟 label 成組 ——
             // 依 tokens/layoutSpace/layoutSpace.spec.md 規則 3「gap 只看親疏不看 role」的親疏原理(Gestalt proximity)類推(同範疇的間距該規則交給元件 spec 自管)。
             <span data-sort-indicator="" className="inline-flex items-center gap-0.5 shrink-0">
               {/* 2026-05-18 改 per user 拍板:DataTable sort 跟 row size 變(轉述)+「做完」approval:
@@ -4149,6 +4172,9 @@ function DataTableInner<TData>(
           'group-has-[:focus-visible:not([data-pointer-focus])]:w-auto group-has-[:focus-visible:not([data-pointer-focus])]:ml-2 group-has-[:focus-visible:not([data-pointer-focus])]:overflow-visible group-has-[:focus-visible:not([data-pointer-focus])]:opacity-100',
           // @layout-space-magic-ok: 排序區 ↔ ⌄ 8px(inline-action.spec.md:92「**間距**:`gap-2`(8px)」;ml-2 = 同一個 8px,只在展開時給)
           'has-[[data-state=open]]:w-auto has-[[data-state=open]]:ml-2 has-[[data-state=open]]:overflow-visible has-[[data-state=open]]:opacity-100',
+          // 沒有滑過能力的裝置(觸控)不另外處理,跟桌機同一套 —— user 2026-09-26 對「手機上滑過才出現的按鈕」已決「先維持」、不客製
+          // (governance/planning/2026-09-25-interaction-and-hover-remediation.md 的 L11 那一列,含原話)。2026-11-12 AI 曾在這裡加過
+          // 「不能滑過的裝置 ⌄ 恆顯示」(c78b35e1),做的正是當時沒被選的選項,2026-11-14 收回。觸控上取消排序走排序面板。
         )}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -4162,11 +4188,14 @@ function DataTableInner<TData>(
             <DropdownMenuContent align="end">
               {canSort && (
                 <>
-                  {/* 三項的結果住 lib/sort-cycle.ts `sortingFromColumnMenu`:升冪 / 降冪 = 一般點擊同一種(清掉其他欄、只用這一欄);
-                      取消排序只在只有這一欄排序時出現(`columnMenuShowsCancelSort`;多重排序時按了的結果要 user 決定,見上方 priorityLabel 註解)。 */}
-                  <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'asc'))}>升冪排序</DropdownMenuItem>
-                  <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, 'desc'))}>降冪排序</DropdownMenuItem>
-                  {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting((current) => sortingFromColumnMenu(current, header.column.id, null))}>取消排序</DropdownMenuItem>}
+                  {/* 三項的結果都經 lib/sort-cycle.ts `nextSorting`(與表頭點擊同一支):
+                      升冪 / 降冪只列這一欄目前不是的那個方向(`columnMenuShowsSortDirection`;選了沒變化的不列,多重排序也看這一欄自己;
+                      user 2026-11-10 PR #172 留言 + AG Grid / MUI X 同做法,出處在該函式)→ 已排序的欄只剩相反方向一項,點了只翻這一欄;
+                      沒排序的欄兩項都列,點了取代全部(同一般點擊)。
+                      取消排序 = 這一欄在排序裡就出現(`columnMenuShowsCancelSort`),按了只拿掉這一欄、後面順位往前補(user 2026-11-11 R16 定案)。 */}
+                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'asc') && <DropdownMenuItem startIcon={ArrowUp} onClick={() => applyHeaderSorting(header.column.id, { kind: 'set', direction: 'asc' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.sortAscending}</DropdownMenuItem>}
+                  {columnMenuShowsSortDirection(sortingState, header.column.id, 'desc') && <DropdownMenuItem startIcon={ArrowDown} onClick={() => applyHeaderSorting(header.column.id, { kind: 'set', direction: 'desc' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.sortDescending}</DropdownMenuItem>}
+                  {columnMenuShowsCancelSort(sortingState, header.column.id) && <DropdownMenuItem startIcon={XIcon} onClick={() => applyHeaderSorting(header.column.id, { kind: 'remove' })}>{DATA_TABLE_SORT_DEFAULT_LABELS.cancelSort}</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                 </>
               )}
@@ -4897,7 +4926,7 @@ function DataTableInner<TData>(
       className={cn(
         dataTableVariants({ bordered }), isFillHeight && 'flex flex-col',
         hasCellCursor
-          // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx:379
+          // @focus-suppress A — 試算表模式有格游標:焦點框畫在被指到的那一格,根節點不另畫(兩者不同時出現);承擔者:data-table-interaction-layer.tsx#CELL_RING_STYLES.selected
           ? 'focus-visible:outline-none'
           // `not-data-pointer-focus`(3f G-16):上方 2026-05-12 user 抓到的「按 shift…table 外圈…藍色邊框」2026-11-05 仍重現 ——
           // 點選取格空白處焦點落在這裡,再 Shift+點就出框(「觸發條件已經不存在」只量了點勾選框)。
@@ -5204,9 +5233,11 @@ function DataTableInner<TData>(
       {/* Slice D Step 1B(2026-05-10):Interaction Layer singleton(`.claude/planning/datatable-spreadsheet-rfc.md`)。
           Default disabled — backward-compat。Enable 後 hover/editor/selected/range 由 layer 統一畫,
           per Contract 8 「one geometry owner, two paint owners」。
-          Step 1C-fix(2026-05-10):wire Contract 15 cellClickEntersEdit predicate 過濾 readonly /
+          Step 1C-fix(2026-05-10):wire Contract 15 hover predicate 過濾 readonly /
           boolean cells(per RFC + user 拍板 USER #15:checkbox / url 格不上滑過底色(轉述);url 那一半 2026-10-13 由 user 拍板乙推翻,
-          連結格滑過出淺框、點格進編輯,只有網址文字開連結 —— 待辦總帳 Q3f)。
+          待辦總帳 Q3f)。現況(url 格):2026-11-06 起格裡鉛筆以外點了開連結(有連結時);2026-11-10 起可編輯的格滑過出淺框
+          (含有連結的),predicate 改名 `cellShowsEditableHover`、只看能不能編輯 —— 見 data-table.spec.md
+          「Navigate-valued cell 通用類別」第 1 條。
           Step 4(2026-05-10):wire spreadsheetMode select / range cells。 */}
       <DataTableInteractionLayer
         enabled={experimentalSpreadsheetOverlay || spreadsheetMode}
@@ -5335,7 +5366,8 @@ function DataTableInner<TData>(
         //     RangeOuterRing / rangeCellIds prop 已 retire)
         // 2026-09-26:格游標框只在焦點在格線區裡時畫(`gridHasFocus`);收起時位置仍在 selectedCellId,回來原格重現
         selectedCellId={spreadsheetMode && gridHasFocus ? selectedCellId : null}
-        cellClickEntersEdit={(cellId) => {
+        cellShowsEditableHover={(cellId) => {
+          // 與格上的 `cellShowsEditableHover` 同一條規則:滑過外框 = 這格可以編輯(2026-11-10 user「…這樣不是跟輸入框一致？」)
           // 2026-05-10 codex review red light fix(per dual-track verify):
           //   1. cellId parse 用 lastIndexOf(':')(row id 可含 colon)
           //   2. type allowlist(未知 type default false,non-editable types blocked)
@@ -5349,9 +5381,9 @@ function DataTableInner<TData>(
           const meta = (colDef?.columnDef as any)?.meta as Record<string, any> | undefined
           if (!meta) return false
           // Allowlist editable types(per Contract 15;未知 / boolean / readonly default false)。
-          // url 2026-10-13 加入(user 拍板乙,待辦總帳 Q3f):滑過出淺框,跟其他可編輯格同一套 —— 這張表與格上的點擊規則(cellClickEntersEdit)同步。
-          const EDITABLE_CLICK_TYPES = ['string', 'number', 'currency', 'date', 'time', 'select', 'multiSelect', 'person', 'multiPerson', 'combobox', 'url']
-          if (!EDITABLE_CLICK_TYPES.includes(meta.type)) return false
+          // url:可編輯就出,有沒有連結都一樣(2026-11-10;10-13 – 11-10 有連結的網址格不出,當時把外框當成「點了會進編輯」)。
+          const EDITABLE_HOVER_TYPES = ['string', 'number', 'currency', 'date', 'time', 'select', 'multiSelect', 'person', 'multiPerson', 'combobox', 'url']
+          if (!EDITABLE_HOVER_TYPES.includes(meta.type)) return false
           // Row-level editable(row) function support(canonical per `isCellEditable` L720)
           // 2026-05-13:canEditCell helper consolidation(per V4)
           const row = table.getRowModel().rowsById[rowId]

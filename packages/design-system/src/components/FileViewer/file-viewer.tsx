@@ -39,6 +39,7 @@ import {
 import { ARROW_BUTTON_WIDTH,
   useScrollEdges,
   useScrollByPage,
+  useRevealSelected,
   buildFadeMask,
   OverflowScrollArrow,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
@@ -516,11 +517,12 @@ const InfoPanel = React.memo(function InfoPanel({
           底部 = bottom 48:資訊面板最後是一般元素(layoutSpace.spec.md「檔案資訊」DescriptionList = element),
           FileViewer 會擋住頁面而且高度撐滿 → 規則 4 第 1 列(user 2026-10-28「這個沒問題」)。最後一個 DescriptionList 列
           不自帶下內距(description-list.tsx `last:pb-0`),這段距離只由這一層給。
-          gap 對齊 v6 規則 3「跨範疇 parallel = loose」(說明 vs 檔案資訊兩個獨立 functional sections,
-          屬「跨範疇 + 不相關」)— 從 gap-4 寫死改為 token-aware loose。 */}
+          說明 ↔ 檔案資訊 = 區塊 ↔ 區塊:一條隱形分隔線的位置,上下各 loose(合計 loose × 2;layoutSpace.spec.md 規則 3「組 ↔ 組」,
+          user 2026-11-06 #18「照你建議」= 乙)。區塊感夠(兩塊各有標題)→ 不畫線;只有 loose 時「檔案資訊」標題離上一塊(16)
+          比離自己的清單還近,看起來黏在上面那塊。 */}
       <ScrollArea className="flex-1 min-h-0">
         <div className={cn(
-          'flex flex-col gap-[var(--layout-space-loose)]',
+          'flex flex-col gap-[calc(var(--layout-space-loose)*2)]',
           'px-[var(--layout-space-loose)]',
           'pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]',
         )}>
@@ -587,13 +589,13 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
   const scrollByPage = useScrollByPage(scrollRef)
   const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: ARROW_BUTTON_WIDTH })  // 2026-07-04:消 SSOT 硬寫(spec 禁止重新定義 ARROW_BUTTON_WIDTH)
 
-  // 切換當前檔案時,自動 scroll 讓 active thumb 可見
-  React.useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const active = el.querySelector<HTMLButtonElement>(`[data-thumb-index="${activeIndex}"]`)
-    active?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-  }, [activeIndex, scrollRef])
+  // 目前那張(aria-current)置中:切換檔案(點縮圖 / ← → / 程式改 index)、Tab 鍵焦點、縮放視窗 —— 同一個 primitive
+  //(horizontal-overflow.spec.md「選到就露出來」,對齊 B;2026-11-11 前這裡自己寫一份 scrollIntoView,只看 activeIndex)
+  useRevealSelected(scrollRef, {
+    itemSelector: '[data-thumb-index]',
+    selectedAttribute: { name: 'aria-current', value: 'true' },
+    reserveArrowWidth: ARROW_BUTTON_WIDTH,
+  })
 
   return (
     <div

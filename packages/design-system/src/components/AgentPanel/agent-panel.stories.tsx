@@ -37,6 +37,7 @@ import { Select, type SelectOption } from '@/design-system/components/Select/sel
 import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
+import { demoPersonData } from '@/design-system/stories-helpers/scene/person-card'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 import { useAgentDemo, decisionReceipt, DemoConversation, type DemoMessage, type DemoSession } from '@/design-system/stories-helpers/scene/agent-demo'
 import { ORDER_ROWS, orderColumns } from '@/design-system/stories-helpers/data/order-table'
@@ -336,7 +337,7 @@ const THREE_QUESTIONS: AgentDecisionQuestion[] = [
   },
 ]
 
-/** 決策卡:送出或跳過(= 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
+/** 決策卡:送出或按標題列 ×(跳過 = 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
 function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuestion[]; intro: string }) {
   const demo = useAgentDemo({ ...demoScene('c2', { messages: [{ role: 'agent', content: intro }] }) })
   const [asking, setAsking] = React.useState(true)
@@ -360,7 +361,8 @@ function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuest
   )
 }
 
-/** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格、跳過 / 下一題;送出或跳過後卡片收起,答案記成決策回執。 */
+/** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格;第一題 footer 只有下一題,第二題起多一顆上一題;
+ *  跳過只在標題列 ×(滑上去提示「跳過全部，用建議繼續」);送出或跳過後卡片收起,答案記成決策回執。 */
 export const DecisionCardOpen: Story = {
   name: '決策卡三題步進',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
@@ -399,7 +401,7 @@ export const DecisionCardSingle: Story = {
   render: () => <DecisionCardScene questions={[THREE_QUESTIONS[0]]} intro="只剩語氣沒定,選一個就能繼續。" />,
 }
 
-/** 選填題(`optional`):不答也能前進(送出值是空字串)。三題各示範一種:
+/** 選填題(`optional`):不答也能前進(送出值是空字串);題目後由元件接「(選填)」(題目文字本身不寫,agent-decision-card.spec.md Header 條)。三題各示範一種:
  *  1. 單選、預選建議解 —— 一打開就有選取,footer 左側的「清除選取」一打開就在(OpenSnapshot:M15 不留只有點了才看得到的狀態);
  *     按了清掉答案、鈕消失,再選又出現;
  *  2. 單選、不預選(署名 = 稱謂類,產題守則 8 例外)—— 沒選時沒有鈕,選了之後才出現;
@@ -438,7 +440,8 @@ const OPTIONAL_QUESTIONS: AgentDecisionQuestion[] = [
   },
 ]
 
-/** 決策卡選填題(OpenSnapshot):第 1 題預選建議解,footer 左側「清除選取」一打開就在;規則見 agent-decision-card.spec.md「步進」。 */
+/** 決策卡選填題(OpenSnapshot):每題題目後都有「(選填)」(必答題的對照看「決策卡三題步進」);第 1 題預選建議解,footer 左側「清除選取」一打開就在;
+ *  規則見 agent-decision-card.spec.md Header 條與「步進」。 */
 export const DecisionCardOptional: Story = {
   name: '決策卡選填題',
   render: () => (
@@ -453,15 +456,15 @@ export const DecisionCardOptional: Story = {
  *  錯誤訊息放在最後一張選項卡之後、焦點移到第一個出錯的控件。play 依序走兩種錯:
  *  1. 第 1 題選「其他」卻沒填字就按「下一題」→「請輸入其他選項」;填好再按就前進,第 2 題用預選的建議解;
  *  2. 第 3 題(複選)一項都沒勾就按「送出」→「請至少選擇一個選項」,停在這個畫面。
- *  規則見 agent-decision-card.spec.md「步進」(錯誤訊息的距離與文案【待確認】,寫在同一段)。 */
+ *  規則見 agent-decision-card.spec.md「步進」(錯誤訊息距最後一張卡 = 卡間距 8、三句文案照 DS 既有句型,依據寫在同一段)。 */
 export const DecisionCardErrors: Story = {
   name: '決策卡錯誤狀態',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
   play: async ({ canvasElement }) => {
     const { expect, userEvent, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
-    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 含「跳過」鈕的 role="group"(第 1 題標題列 × 與 footer 各一顆「跳過」,取第一顆)
-    const card = () => within(canvas.getAllByRole('button', { name: '跳過' })[0].closest('[role="group"]') as HTMLElement)
+    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「跳過全部，用建議繼續」,整張卡唯一一顆)所在的 role="group"
+    const card = () => within(canvas.getByRole('button', { name: '跳過全部，用建議繼續' }).closest('[role="group"]') as HTMLElement)
     const otherInput = () => card().getByRole('textbox', { name: '其他(自由輸入)' })
     // 第 1 題:按下「其他」輸入格 = 選中「其他」;文字留空就按「下一題」
     await userEvent.click(otherInput())
@@ -723,7 +726,9 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'done', label: '完成' },
 ]
 const statusLabel = (status: TaskStatus) => STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status
-const PEOPLE: PersonData[] = [{ name: 'Betty Wu' }, { name: 'Alan Chen' }, { name: 'Ada Chen' }]
+// 照片走照片名冊(同一個人全 DS 同一張臉);已選值也要傳這裡的物件,字串只會顯示縮寫(person-display.tsx toPersonData)
+const PEOPLE: PersonData[] = [demoPersonData('Betty Wu', 48), demoPersonData('Alan Chen', 48), demoPersonData('Ada Chen', 48)]
+const personByName = (name: string) => PEOPLE.find((p) => p.name === name) ?? null
 const personName = (p: PersonValue) => (typeof p === 'string' ? p : p.name)
 /** 目前登入的人 ——「我的任務」= 指派給她的任務。 */
 const CURRENT_USER = 'Betty Wu'
@@ -907,7 +912,7 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
             </Field>
             <Field>
               <FieldLabel>指派人</FieldLabel>
-              <PeoplePicker aria-label="指派人" value={form.values.assignee || null} people={PEOPLE} onChange={(v) => setFieldValue('assignee', v[0] ? personName(v[0]) : '')} />
+              <PeoplePicker aria-label="指派人" value={personByName(form.values.assignee)} people={PEOPLE} onChange={(v) => setFieldValue('assignee', v[0] ? personName(v[0]) : '')} />
             </Field>
             <Field>
               <FieldLabel>狀態</FieldLabel>

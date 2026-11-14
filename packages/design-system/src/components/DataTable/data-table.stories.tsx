@@ -6,6 +6,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown, Copy } from 'lucide-react'
 import { DataTable, type DataTableSelection } from './data-table'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { PerfDebugOverlay } from './perf-debug-overlay'
 import { DataTableSortManager } from './data-table-sort-manager'
 import { DataTableColumnVisibilityPanel } from './data-table-column-visibility-panel'
@@ -46,12 +47,12 @@ import { productCatalog } from '@/design-system/stories-helpers/data/product-cat
 import { orderColumns, ORDER_ROWS } from '@/design-system/stories-helpers/data/order-table'
 
 const SELLERS: PersonData[] = [
-  { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/128?u=alice', description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
-  { name: 'Bob Christopher Chen', avatarUrl: 'https://i.pravatar.cc/128?u=bob', description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', id: 'BCC002', employeeNumber: 'EMP-1002', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
-  { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/128?u=carol', description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', id: 'CL003', employeeNumber: 'EMP-1003', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
-  { name: 'Alexander Hamilton Zhang', avatarUrl: 'https://i.pravatar.cc/128?u=alex', description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'AHZ004', employeeNumber: 'EMP-1004', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
-  { name: 'David Wu', avatarUrl: 'https://i.pravatar.cc/128?u=david', description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', id: 'DW005', employeeNumber: 'EMP-1005', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
-  { name: 'Elizabeth Montgomery Johnson', avatarUrl: 'https://i.pravatar.cc/128?u=elizabeth', description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', id: 'EMJ006', employeeNumber: 'EMP-1006', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
+  { name: 'Alice Wonderland Wang', avatarUrl: demoPersonPhoto('Alice Wonderland Wang', 128), description: 'Sales｜Tokyo｜EMP-1001', status: 'online', statusMessage: '出差中,週四回。緊急請聯絡 @bob 代理。', id: 'AWW001', employeeNumber: 'EMP-1001', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'JST (GMT+9)' }] },
+  { name: 'Bob Christopher Chen', avatarUrl: demoPersonPhoto('Bob Christopher Chen', 128), description: 'Sales｜Taipei｜EMP-1002', status: 'busy', statusMessage: '會議中,訊息我會儘快回。', id: 'BCC002', employeeNumber: 'EMP-1002', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'TST (GMT+8)' }] },
+  { name: 'Carol Liu', avatarUrl: demoPersonPhoto('Carol Liu', 128), description: 'Sales｜Singapore｜EMP-1003', status: 'online', statusMessage: '今日彈性工作。', id: 'CL003', employeeNumber: 'EMP-1003', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'SGT (GMT+8)' }] },
+  { name: 'Alexander Hamilton Zhang', avatarUrl: demoPersonPhoto('Alexander Hamilton Zhang', 128), description: 'Sales｜Shanghai｜EMP-1004', status: 'away', statusMessage: '已離開辦公室,週一回。', id: 'AHZ004', employeeNumber: 'EMP-1004', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'CST (GMT+8)' }] },
+  { name: 'David Wu', avatarUrl: demoPersonPhoto('David Wu', 128), description: 'Sales｜Hong Kong｜EMP-1005', status: 'online', statusMessage: '可線上協助。', id: 'DW005', employeeNumber: 'EMP-1005', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'HKT (GMT+8)' }] },
+  { name: 'Elizabeth Montgomery Johnson', avatarUrl: demoPersonPhoto('Elizabeth Montgomery Johnson', 128), description: 'Sales｜Sydney｜EMP-1006', status: 'offline', statusMessage: '已下線,明早 9:00 上線。', id: 'EMJ006', employeeNumber: 'EMP-1006', fields: [{ label: '部門', value: 'Sales / APAC' }, { label: '時區', value: 'AEST (GMT+10)' }] },
 ]
 
 interface Product {
@@ -701,7 +702,7 @@ const TAG_OPTIONS = [
 // Email / Phone / Department / Location 透過 `fields` array opt-in。
 const SAMPLE_PEOPLE: PersonData[] = [
   {
-    name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice', description: 'Design',
+    name: 'Alice Chen', avatarUrl: demoPersonPhoto('Alice Chen', 48), description: 'Design',
     id: 'AC001', employeeNumber: 'EMP-1001',
     status: 'online', statusMessage: '本週設計評審,週四前 standup 移到 4pm',
     fields: [
@@ -712,7 +713,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/48?u=bob', description: 'Engineering',
+    name: 'Bob Lin', avatarUrl: demoPersonPhoto('Bob Lin', 48), description: 'Engineering',
     id: 'BL002', employeeNumber: 'EMP-1002',
     status: 'busy', statusMessage: 'Code review 中,訊息我會晚點回',
     fields: [
@@ -723,7 +724,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Charlie Wu', avatarUrl: 'https://i.pravatar.cc/48?u=charlie', description: 'Product',
+    name: 'Charlie Wu', avatarUrl: demoPersonPhoto('Charlie Wu', 48), description: 'Product',
     id: 'CWU003', employeeNumber: 'EMP-1003',
     status: 'online', statusMessage: '今日 OKR 規劃日,可線上協助',
     fields: [
@@ -734,7 +735,7 @@ const SAMPLE_PEOPLE: PersonData[] = [
     ],
   },
   {
-    name: 'Diana Huang', avatarUrl: 'https://i.pravatar.cc/48?u=diana', description: 'Marketing',
+    name: 'Diana Huang', avatarUrl: demoPersonPhoto('Diana Huang', 48), description: 'Marketing',
     id: 'DH004', employeeNumber: 'EMP-1004',
     status: 'away', statusMessage: '客戶會議中,週四上午回辦公室',
     fields: [
@@ -827,7 +828,7 @@ export const InlineEdit: Story = {
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           所有資料型別都能就地編輯:文字、數字、金額、日期、時間、單/多選、人員、人員列表、開關、連結。
           SKU 是唯讀的;PRD-004 的供應商網址由採購部維護、不能在這裡改,整格點了開連結;
-          開關欄位直接點即可切換;連結欄位點網址文字開連結,點格的其他地方跟其他欄位一樣進編輯;
+          開關欄位直接點即可切換;連結欄位滑過跟其他可編輯欄位一樣出淺框,格裡鉛筆以外點了開連結,按鉛筆才編輯;
           其他點一下進編輯,Enter 或失焦存檔,Esc 取消。
         </p>
         <DataTable
@@ -858,11 +859,11 @@ export const InlineEdit: Story = {
 //
 // 驗證點:
 //   - hover editable cell → 1px overlay 邊框 var(--border-hover)
-//   - sku(readonly)/ inStock(boolean)→ 不出現 hover overlay(Contract 15);url 2026-10-13 起跟其他可編輯格一樣出 hover overlay
-//     (user 拍板乙,待辦總帳 Q3f:點網址文字開連結,點格的其他地方照點格規則)
+//   - sku(readonly)/ inStock(boolean)/ PRD-004 的 url(不能編輯)→ 不出現 hover overlay(Contract 15);能編輯的 url 跟其他可編輯格一樣出
+//     (overlay = 這格可以編輯,2026-11-10 user「…這樣不是跟輸入框一致？」;點了做什麼看 data-table.spec.md navigate-valued 第 1 條)
 //   - click 1 → cell selected(DS 焦點框 `focus-ring-inset` 2px `--ring` 往內,`CELL_RING_STYLES.selected`);
 //     唯讀 / 開關空白處 / 連結空白處同樣會選取(2026-09-26);有格游標時表格外圈不畫框
-//   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;連結格 click 2 進編輯、
+//   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變;唯讀 / 開關不進;有連結的連結格 click 2 開連結(鉛筆進編輯)、
 //     Enter / F2 把焦點放進格裡的連結(Tab 到鉛筆,F2 / Esc 回格導覽);開關格 Enter / F2 把焦點放到勾選框)
 //   - Shift+click → range(起點格保留焦點框 + 內 cells `--primary-subtle` bg;列被滑過時區間格維持原色)
 //   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,hover overlay outline
@@ -893,7 +894,7 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           試算表式操作:點任何格都會選取(藍框移過去),可編輯的格第二次點才進編輯。Shift+點另一格選範圍,
           方向鍵移動。Hover 可編輯的 cell 會出現淺邊框提示;唯讀 / 開關欄位沒有 hover 提示
-          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位點網址文字開連結,點格的其他地方跟其他格一樣;
+          (這兩種格子點第二次也不進編輯:開關直接點勾選框切換)。連結欄位滑過一樣出淺框,第一下選格,選中後點格裡鉛筆以外開連結,按鉛筆才編輯;
           PRD-004 的供應商網址由採購部維護、不能在這裡改:第一下選格,選中後點格裡任何地方開連結。
           格游標停在連結或開關格時按 Enter / F2,焦點進到格裡的連結或勾選框;再按 F2 或 Esc 回到格導覽。
         </p>
@@ -1353,11 +1354,11 @@ export const WithBulkActions: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
             <PopoverContent align="end" className="w-auto p-0">
+              {/* 這個後台沒有存預設排序 → 不傳 defaultSorting(標題列不出現「恢復預設」);「清除全部」在加排序那一排最右(clearable 預設開) */}
               <DataTableSortManager
                 columns={baseColumns}
                 sorting={sorting}
                 onSortingChange={setSorting}
-                onReset={() => setSorting([])}
                 onClose={() => setSortOpen(false)}
               />
             </PopoverContent>
@@ -1640,6 +1641,9 @@ const FILTER_CHILD_PICKER_COLUMNS = [
 const FILTER_PANEL_ENGLISH_LABELS: Partial<DataTableFilterPanelLabels> = {
   title: 'Filters',
   resetToDefault: 'Reset to default',
+  resetToDefaultDone: 'Default filters restored',
+  clearAll: 'Clear all',
+  clearAllDone: 'All filters cleared',
   close: 'Close',
   where: 'Where',
   and: 'And',
@@ -1715,18 +1719,20 @@ const FILTER_PANEL_ENGLISH_LABELS: Partial<DataTableFilterPanelLabels> = {
 }
 
 /* ── 進階篩選 — 空狀態 ── */
+// 本段與下方兩則把面板放在 `<Popover>` 根裡(不開浮層):面板標題列的 × 恆渲染、關閉走 PopoverClose,要有 Popover 才能渲染(data-table-filter-panel.tsx)。
+// 2026-11-10 前這幾格沒傳 onClose 就沒有 ×,跟產品裡的面板長相不同(n7 第七節 3、M23(f))。
 export const FilterPanelEmpty: Story = {
   name: '進階篩選 — 空狀態',
   render: () => {
     const [value, setValue] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
     return (
       <div className="w-full max-w-[680px]">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS]}
           value={value}
           onChange={setValue}
 
-        />
+        /></Popover>
       </div>
     )
   },
@@ -1815,28 +1821,72 @@ export const FilterPanelStates: Story = {
     return (
       <ExampleStack>
         <ExampleSection title="已填條件" className={FILTER_SECTION_WIDTH}>
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} /></Popover>
         </ExampleSection>
 
         <ExampleSection title="巢狀群組" className={FILTER_SECTION_WIDTH}>
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} /></Popover>
         </ExampleSection>
 
         <ExampleSection title="相對時間" className={FILTER_SECTION_WIDTH} description="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
-          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} />
+          <Popover><DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} /></Popover>
         </ExampleSection>
 
-        <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
-          <DataTableFilterPanel
+        <ExampleSection title="已改動" className={FILTER_SECTION_WIDTH} description="商品後台存的預設篩選是「類別 = Electronics」,這次改成 Furniture:標題列出現「恢復預設」,按下回到存的那一份;加篩選那一排最右的「清除全部」則是清掉全部條件。">
+          <Popover><DataTableFilterPanel
             columns={[...FILTER_COLUMNS]}
             value={modified}
             defaultValue={modifiedInitial}
             onChange={setModified}
-          />
+          /></Popover>
         </ExampleSection>
 
         <ExampleSection title="長標籤溢出" className={FILTER_SECTION_WIDTH} description="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
-          <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
+          <Popover><DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} /></Popover>
+        </ExampleSection>
+      </ExampleStack>
+    )
+  },
+}
+
+/* ── 排序面板 — 各種狀態(2026-11-11)──
+ * 「恢復預設」與「清除全部」是兩件事(user 2026-11-11):前者回到產品存的排序(defaultSorting,與目前不同才出現),後者清掉全部排序(clearable,預設開、有排序才出現)。
+ * 規格:data-table.spec.md L4「Header 恢復預設 / 清除全部」;閘 scripts/data-table-panel-reset-clear-invariant.mjs。
+ */
+type SavedFilterIssue = { key: string; summary: string; priority: string; status: string; dueDate: string; updatedAt: string }
+const issueCol = createColumnHelper<SavedFilterIssue>()
+const ISSUE_SORT_COLUMNS = [
+  issueCol.accessor('key', { header: '鍵值' }),
+  issueCol.accessor('summary', { header: '摘要' }),
+  issueCol.accessor('priority', { header: '優先級' }),
+  issueCol.accessor('status', { header: '狀態' }),
+  issueCol.accessor('dueDate', { header: '到期日' }),
+  issueCol.accessor('updatedAt', { header: '更新時間' }),
+]
+/** Jira 篩選器「我的未解決問題」存檔時的排序:優先級 降冪 → 到期日 升冪 */
+const SAVED_FILTER_SORTING: SortingState = [{ id: 'priority', desc: true }, { id: 'dueDate', desc: false }]
+const SORT_SECTION_WIDTH = 'w-full max-w-[480px]'
+
+export const SortPanelStates: Story = {
+  name: '排序面板 — 各種狀態',
+  render: function Render() {
+    const [saved, setSaved] = React.useState<SortingState>([{ id: 'updatedAt', desc: true }, { id: 'priority', desc: true }])
+    const [plain, setPlain] = React.useState<SortingState>([{ id: 'dueDate', desc: false }])
+    const [noClear, setNoClear] = React.useState<SortingState>([{ id: 'priority', desc: true }])
+    return (
+      <ExampleStack>
+        <ExampleSection
+          title="產品存了預設排序"
+          className={SORT_SECTION_WIDTH}
+          description="Jira 篩選器「我的未解決問題」存檔時排的是 優先級 降冪 → 到期日 升冪,這次改成先看最近更新的。標題列的「恢復預設」回到存檔那一份;「清除全部」是不排序。"
+        >
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={saved} onSortingChange={setSaved} defaultSorting={SAVED_FILTER_SORTING} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="沒有預設排序" className={SORT_SECTION_WIDTH} description="產品沒有存排序(不傳 defaultSorting):標題列沒有「恢復預設」,只剩加排序那一排最右的「清除全部」。">
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={plain} onSortingChange={setPlain} /></Popover>
+        </ExampleSection>
+        <ExampleSection title="不提供清除全部" className={SORT_SECTION_WIDTH} description="產品決定不給一鍵清除(clearable={false}):每一列的刪除鈕照舊可以逐條拿掉。">
+          <Popover><DataTableSortManager columns={ISSUE_SORT_COLUMNS} sorting={noClear} onSortingChange={setNoClear} clearable={false} /></Popover>
         </ExampleSection>
       </ExampleStack>
     )
@@ -1891,60 +1941,60 @@ const FilterPanelLabelsAndLimitHarness = () => {
   return (
     <ExampleStack>
       <ExampleSection data-testid="filter-label-child-pickers" title="English child-picker labels">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_CHILD_PICKER_COLUMNS]}
           value={childPickerLabels}
           onChange={setChildPickerLabels}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-flat" title="English labels + flat cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={flat}
           onChange={setFlat}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-nested-condition" title="Nested condition cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedCondition}
           onChange={setNestedCondition}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-nested-group" title="Nested group cap">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={nestedGroup}
           onChange={setNestedGroup}
           maxConditions={2}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-mount-zero" title="Initial mount at zero capacity">
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={mountCapZero}
           onChange={setMountCapZero}
           maxConditions={0}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
 
       <ExampleSection data-testid="filter-limit-prefill" title="Prefill at capacity">
         <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-[var(--layout-space-tight)]">
           Prefill consumed: {prefillConsumed ? 'yes' : 'no'}
         </p>
-        <DataTableFilterPanel
+        <Popover><DataTableFilterPanel
           columns={[...FILTER_COLUMNS_ENGLISH]}
           value={prefillValue}
           onChange={setPrefillValue}
@@ -1955,7 +2005,7 @@ const FilterPanelLabelsAndLimitHarness = () => {
           }}
           maxConditions={1}
           labels={FILTER_PANEL_ENGLISH_LABELS}
-        />
+        /></Popover>
       </ExampleSection>
     </ExampleStack>
   )
@@ -2379,11 +2429,11 @@ export const RoadmapAllInOne: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
             <PopoverContent align="end" className="w-auto p-0">
+              {/* 沒有存預設排序 → 不傳 defaultSorting;「清除全部」在加排序那一排最右 */}
               <DataTableSortManager
                 columns={columns}
                 sorting={sorting}
                 onSortingChange={setSorting}
-                onReset={() => setSorting([])}
                 onClose={() => setSortOpen(false)}
               />
             </PopoverContent>
@@ -2604,4 +2654,47 @@ export const WithPagination: Story = {
       </ExampleStack>
     </div>
   ),
+}
+
+// ── 三個狀態面板的標題列右側按鈕位(測試;閘 scripts/overlay-header-actions-invariant.mjs)──
+// 面板放在 Popover 根(不開浮層)裡、照產品用法傳 onClose,並給一份與目前不同的預設(defaultSorting / defaultValue),讓「恢復預設 + 分隔線 + ×」三者都在;
+// 欄位顯示面板的標題列 = PopoverHeader + actions,與 overlay-surface「標題列右側按鈕位(測試)」的 popover-header 那格同一條路徑,不在這裡重複
+//(它的 footer 一展開就讓 overlay-footer-gutter 閘假紅:列是無 role 的 div、閘認不得,改回 body 左緣比 —— 已記 found.md)。
+// 規則 = overlay-surface.spec.md「SurfaceHeader」右側按鈕位(分隔線由 SurfaceHeader 放,兩側各 12)。
+export const HeaderActionsFixture: Story = {
+  name: '面板標題列右側按鈕位',
+  tags: ['test-only'],
+  render: function Render() {
+    const [sorting, setSorting] = React.useState<SortingState>([{ id: 'name', desc: false }])
+    const [tree, setTree] = React.useState<FilterTree>(() => ({
+      mode: 'flat', conjunction: 'and',
+      children: [{ kind: 'cond', id: 'c1', field: 'name', op: 'contains', value: 'phone' }],
+    }))
+    const shell = 'overflow-hidden rounded-lg border border-border bg-surface-raised'
+    return (
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <div data-case="sort" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
+          <Popover>
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} defaultSorting={[{ id: 'updatedAt', desc: true }]} onClose={() => {}} />
+          </Popover>
+        </div>
+        <div data-case="filter" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
+          <Popover>
+            <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={tree} onChange={setTree} defaultValue={createEmptyFilterTree('flat')} onClose={() => {}} />
+          </Popover>
+        </div>
+        {/* 沒傳 onClose:× 照樣在(M23(f);2026-11-10 前以 onClose 有無當 × 的渲染閘,這兩格少了分隔線與 ×) */}
+        <div data-case="sort-no-onclose" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>
+          <Popover>
+            <DataTableSortManager columns={[...FILTER_COLUMNS]} sorting={sorting} onSortingChange={setSorting} defaultSorting={[{ id: 'updatedAt', desc: true }]} />
+          </Popover>
+        </div>
+        <div data-case="filter-no-onclose" data-expect="actions,dismiss" className={`w-[640px] ${shell}`}>
+          <Popover>
+            <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={tree} onChange={setTree} defaultValue={createEmptyFilterTree('flat')} />
+          </Popover>
+        </div>
+      </div>
+    )
+  },
 }

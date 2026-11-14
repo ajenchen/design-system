@@ -106,7 +106,7 @@ esac
 
 # ── Contract (d) field-px token(2026-06-27;round-2 對抗驗證 2026-06-27 補洞)──────
 # Scope:消費 --field-px 的 field controls(form 水平內距 SSOT)。12px 已 tokenize → production
-#       code 禁 hardcode `0.75rem`(inline override)或裸 `px-3`/`pr-3`(uiSize.css:29
+#       code 禁 hardcode `0.75rem`(inline override)或裸 `px-3`/`pr-3`(uiSize.css `--field-px` 那段註解
 #       「取代散落的 px-3 / inline 0.75rem」canonical;M34 hook 廣度對齊 spec wording)。
 #       PeoplePicker 補進 scope(round-1 漏:其 form-context inject `!px-[var(--field-px)]`)。
 # 豁免(避免 false-positive):

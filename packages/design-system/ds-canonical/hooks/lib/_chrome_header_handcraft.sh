@@ -113,7 +113,7 @@ if [ "$HANDCRAFT_RESULT" = 'HIT' ]; then
   printf '   偵測到自刻 `h-[var(--chrome-header-height)] ... border-b border-divider`\n' >&2
   printf '\n  SSOT: patterns/header-canonical/header-canonical.spec.md Layer 3\n' >&2
   printf '  修方向: import { ChromeHeader } from "@/design-system/patterns/header-canonical/chrome-header"\n' >&2
-  printf '          替換 <div className="..."> → <ChromeHeader withTabs? leadingRail? lockDensity?>\n' >&2
+  printf '          替換 <div className="..."> → <ChromeHeader withTabs? tabsSlot? leadingRail?>(沒有密度參數;要鎖密度鎖整塊)\n' >&2
   printf '  Escape: 檔頭加 // @chrome-header-handcraft-allow: <rationale>\n' >&2
   exit 2
 fi

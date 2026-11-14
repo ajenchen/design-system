@@ -2,7 +2,7 @@
 // code-quality-allow: file-size — foundational composite(DatePicker single + Range + showTime + format/ISO helpers + TimePickerSidePanel sub-components),拆 sub-file 會 (a) 增 cross-file context binding 複雜度 (b) M21 過度抽象(每 helper 1 consumer)。等 inline filter UI 真接入第 2 consumer 再拆。
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
-import { useCompositeFieldBlur } from '@/design-system/lib/composite-field-focus'
+import { useCompositeFieldBlur, fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
@@ -610,8 +610,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       <Popover open={open} onOpenChange={setOpen}>
         {/* 截斷 tooltip:恆 wrap(truncated-text.spec.md always-wrap),未截斷或 popover 開啟時
             open={false} 靜默。TooltipTrigger 放最內側(緊貼 div):PopoverTrigger 注入的
-            data-state(Field open 邊框樣式依賴)在 TooltipTrigger 內以 triggerProps 後 spread
-            勝出;反序會被 tooltip 的 data-state 蓋掉。 */}
+            data-state 在 TooltipTrigger 內以 triggerProps 後 spread 勝出;反序會被 tooltip 的 data-state 蓋掉。
+            (外框「開著 = 聚焦的框」不靠 data-state,認欄位自己的 `data-field-open`,見下方外框上的 fieldOpenProps。) */}
         <Tooltip open={triggerTooltipActive ? undefined : false}>
           <PopoverTrigger asChild type={undefined} ref={fieldTriggerRef} {...fieldFocus.trigger}>
             <TooltipTrigger asChild>
@@ -639,7 +639,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 className={cn(
                   fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
                   'text-left cursor-pointer',
-                  // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary(field-wrapper.tsx:58)
+                  // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds)
                   'focus-visible:outline-none',
                   className,
                 )}
@@ -649,6 +649,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 // 表單欄位名稱掛在可聚焦的那一個(規則 8 以 name 定位、聚焦):不可打字時是這個觸發欄位(tabIndex 0)
                 // 轉型:div 的型別沒有 name(規則 8 = form-validation.spec.md;68d7860d 加,2026-10-14 複查)
                 {...(!typeable && name ? ({ name } as unknown as React.HTMLAttributes<HTMLDivElement>) : null)}
+                // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 `{...props}` 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+                {...fieldOpenProps(open)}
                 // Radix PopoverTrigger 只 compose onClick(onOpenToggle),`<div>` trigger 無
                 // native Enter/Space→click → 自建 onKeyDown 開 popover(對齊 select.tsx desktop
                 // trigger canonical:Enter/Space → 開;Esc → 關)。typeable 模式不攔 — 內層
@@ -1170,7 +1172,6 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
             data-field-mode="edit"
             data-error={error ? '' : undefined}
-            data-state={open ? 'open' : 'closed'}
             className={cn(
               fieldWrapperStyles({ mode: 'edit', width, size, error }),
               // 外框本身就是點擊目標(下方 onMouseDown),點了會開面板 → 手形(hit-area-canonical.md 一-3);
@@ -1196,6 +1197,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
               openWithActive(which)
             }}
             {...props}
+            // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 `{...props}` 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+            {...fieldOpenProps(open)}
           >
             {/* 兩端截斷 tooltip:恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md
                 always-wrap);TooltipTrigger asChild 只合併 handler / data-state 到 button,
@@ -1212,7 +1215,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:67);起訖兩顆靠下方主色底線區分(見下一行)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
@@ -1241,7 +1244,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:67);起訖兩顆靠下方主色底線區分(見下一行)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab

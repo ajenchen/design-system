@@ -619,7 +619,7 @@ export const SliderWithLiveNumberInput: Story = {
       <div className="max-w-sm">
         <Field>
           <FieldLabel>縮放比例</FieldLabel>
-          {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:140 規則 5) */}
+          {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:175 規則 5) */}
           <div className="flex items-center gap-2 w-full">
             <div className="flex-1 min-w-0">
               <Slider
@@ -674,7 +674,8 @@ function UpdateProjectSettingsForm() {
     },
   })
   return (
-    <form onSubmit={form.handleSubmit} className="w-80" aria-label="專案設定">
+    // 表單放進卡片(四邊 loose,同 Checkbox 設計原則的卡片):按鈕下方 = 卡片自己的底內距,不貼邊也不另訂(layoutSpace.spec.md 規則 4「最後一個東西 → 容器底邊」;依 user 2026-10-21 09:25 同意的 Q5 建議「表單放進看得見的容器」,原話逐字「Q5可以基於你的建議」)
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-lg p-[var(--layout-space-loose)]" aria-label="專案設定">
       <FieldGroup>
         <Field required invalid={!!form.errors.name}>
           <FieldLabel>專案名稱</FieldLabel>
@@ -688,8 +689,9 @@ function UpdateProjectSettingsForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      {/* 欄位 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」:一條隱形分隔線的位置,上下各 loose;user 2026-11-10 PR #172 留言指這顆鈕)。
+          規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事 */}
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         {/* 送出中 = 忙碌(焦點留著、擋重送);存檔後因 pristine 停用 —— 兩種都不把焦點丟到 body(button.tsx 可聚焦的停用,待辦總帳 N69) */}
         <Button type="submit" variant="primary" loading={form.isSubmitting} disabled={form.submitDisabled}>儲存變更</Button>
       </ButtonGroup>
@@ -708,7 +710,8 @@ function CreateProjectForm() {
     onSubmit: () => { toast({ variant: 'success', title: '專案已建立' }) }, // 送出成功 → Toast(同上方更新表單;新建不重設基準,consumer 要清空自己 reset())
   })
   return (
-    <form onSubmit={form.handleSubmit} className="w-80" aria-label="建立專案">
+    // 表單放進卡片:同上方更新表單
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-lg p-[var(--layout-space-loose)]" aria-label="建立專案">
       <FieldGroup>
         <Field required invalid={!!form.errors.name}>
           <FieldLabel>專案名稱</FieldLabel>
@@ -721,8 +724,8 @@ function CreateProjectForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      {/* 欄位 → 表單按鈕列 = loose × 2(同上方更新表單;layoutSpace.spec.md 規則 3「組 ↔ 組」) */}
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         <Button type="submit" variant="primary" loading={form.isSubmitting}>建立專案</Button>
       </ButtonGroup>
     </form>

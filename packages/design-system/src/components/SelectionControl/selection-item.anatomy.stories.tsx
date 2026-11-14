@@ -9,7 +9,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Mail, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -258,7 +258,7 @@ function SelectionInspector() {
                 />
               }
               icon={prefix === 'icon' ? Shield : undefined}
-              avatar={prefix === 'avatar' ? { alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen' }) } : undefined}
+              avatar={prefix === 'avatar' ? { src: demoPersonPhoto('Ada Chen', 64), alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128) }) } : undefined}
               label="Admin 層級操作"
               description={hasDesc ? '僅限 workspace owner 啟用此權限範圍' : undefined}
               disabled={disabled}
@@ -417,7 +417,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked aria-label="選取 Ada Chen（單行）" />}
-                avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?u=ada-chen' }) }}
+                avatar={{ src: demoPersonPhoto('Ada Chen', 48), alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128) }) }}
                 label="Ada Chen"
               />
             </div>
@@ -429,7 +429,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked aria-label="選取 Ada Chen（含職稱）" />}
-                avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: 'https://i.pravatar.cc/96?u=ada-chen' }) }}
+                avatar={{ src: demoPersonPhoto('Ada Chen', 64), alt: 'Ada Chen', color: 'indigo', hoverCard: samplePersonCard({ name: 'Ada Chen', avatarSrc: demoPersonPhoto('Ada Chen', 128) }) }}
                 label="Ada Chen"
                 description="Design Engineer · Frontend team"
               />

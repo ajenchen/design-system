@@ -414,8 +414,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
-        selectAllLabel={selectAllLabel}
-        deselectAllLabel={deselectAllLabel}
+        // `selectAllLabel` / `deselectAllLabel` 不傳:那是多選 footer「全選」鈕的字,單選沒有這顆鈕、Select 也不收這兩個 prop ——
+        // 2026-11-13 前照傳,落進 Select 的 rest 被展開到觸發欄位的 div 上,React 各報一則「不認得的 prop」(下方 `rest as any` 讓型別檢查看不到)
         loading={loading}
         optionsLoading={optionsLoading}
         filterOption={filterOption}

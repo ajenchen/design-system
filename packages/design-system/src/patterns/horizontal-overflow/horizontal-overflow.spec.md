@@ -78,6 +78,31 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 
 > **元件保證行為:auto-Tooltip**——`OverflowScrollArrow` 與 `OverflowMenuTriggerButton` 都是 `iconOnly` + string `aria-label` + 非 `asChild`,因此都會觸發 Button 內建的 auto-Tooltip wrap(`button.tsx` iconOnly auto-Tooltip wrap)。亦即 hover 時 arrow / trigger 會自動冒出對應 `aria-label` 的 tooltip(「向左捲動」/「向右捲動」/「頁籤選單(共 N 個)」),共享全域 `Tooltip` 的 delay 與 warm-up。`DropdownMenuTrigger asChild` 仍正常運作:Radix 的 `asChild` 由 Trigger 自身消費(套到 `OverflowMenuTriggerButton` 的 forwardRef),不會傳成 Button 的 `asChild` prop,所以 tooltip wrap 與 trigger 接管互不衝突。
 
+### 選到就露出來(`useRevealSelected`)
+
+`useRevealSelected(scrollRef, { itemSelector, selectedAttribute, reserveArrowWidth })` —— 水平溢出那一排「使用者剛動到的那一項」一律**置中**,兩端到底時**夾住**(不留空白)。這是本 module 唯一的揭露 primitive,消費者不得自己寫 `scrollIntoView` / `scrollLeft`。
+
+**對齊方式 B(一律置中)的出處**:user 2026-11-11(逐字)「Chip 的問題確保有找到root cause，並修 root cause，然後我覺得 B比較好吧？」、「「我建議 A。你還是想要 B 也完全可以，根因的修法三種都一樣。」都先B」。(A = 剛好露出 + 可讀邊距,是 AI 當時的建議;user 選 B。)
+
+**根因**(2026-11-11 研究,MASTER-TODO 11-11):捲動原本只寫在 Chip / Tabs 的 ⌄ 選單處理程式(requestAnimationFrame + `scrollIntoView`);直接點擊走 Radix Toggle / Tabs Trigger,沒有捲動;鍵盤只靠瀏覽器的 focus 捲動,而 Chromium 對水平「部分可見」的項目不捲 —— Tabs scroll 模式方向鍵選中的分頁可以整顆落在箭頭 + 淡出底下(可讀 0)。本 module 當時沒有「選到就露出來」的 primitive 與契約,縮圖列另寫一份。現在三個消費者都只呼叫這一支。
+
+下表是**【AI 推導】**的觸發規則(user 2026-11-11 定的只有「都先B」= 一律置中、兩端夾住;什麼時候捲由 AI 依「選到就露出來」與 M37 推導,未經 user 逐條確認):
+
+| 觸發 | 判定方式 | 動畫 |
+|---|---|---|
+| **選中狀態改變**(滑鼠點、鍵盤 Space / Enter、Tabs 方向鍵自動啟用、⌄ 選單選取、consumer 程式改 value;**新加進來的項目一掛上去就是選中**也算,2026-11-12 補) | 看項目上的選中屬性(`selectedAttribute`)與新加入節點(childList),不看事件來源。一次只有一項變成選中 → 揭露它;沒有項目變成選中、只有一項被取消(多選 Chip 點掉)→ 揭露被點掉的那一項;一次多項變成選中(批次)→ 不捲 | smooth |
+| **鍵盤焦點移到項目上**(`:focus-visible`;Chip 方向鍵只移焦點、Tab 進入整組、Tabs 手動啟用) | 滑鼠點擊帶來的焦點不算(那一下由上一列處理) | smooth |
+| **容器尺寸改變**(含掛載後第一次排版) | 揭露上一次揭露的項目;還沒有就揭露唯一的選中項;多選且沒動過 → 不捲;**上一次揭露之後使用者自己捲過 → 不捲**(2026-11-12 補:不搶回使用者的捲動位置;「自己捲過」= 上一次揭露之後有使用者的捲動輸入:滾輪、觸控、在捲軸 / 容器空白處按下、箭頭翻頁;不看 scroll 事件,因為容器變窄時瀏覽器把位置夾回範圍內也會發 scroll 事件) | 無 |
+
+- **置中與夾住**:目標捲動量 = 項目中心 − 可視寬 / 2,夾在 `[0, scrollWidth − clientWidth]`。夾住時項目落在靠那一端的半邊,該端沒有箭頭與淡出,因此仍完整可讀。
+- **遮擋**:置中時項目兩側各留出 `reserveArrowWidth + FADE_WIDTH`(scroll 模式 48px、menu 模式 16px)以外的空間就完整可讀;項目比「可視寬 − 兩側遮擋」還寬時改把開頭對齊左側可讀邊(【AI 推導】邊界保護:置中會兩頭都被切,對齊開頭至少讀得到標籤開頭;DS 內目前沒有這麼寬的項目)。
+- **`prefers-reduced-motion: reduce`**:smooth 一律改瞬間。
+- **只捲這個容器**(`scrollTo`),不用 `scrollIntoView`(後者會連帶捲動頁面與其他可捲動的祖先)。祖先在做縮放動畫(Dialog / FileViewer 進場)時,量到的寬度先換回版面像素再算。
+- **消費者宣告**:Chip `[data-slot="chip"]` + `data-state=on`;Tabs `[role="tab"]` + `aria-selected=true`;FileViewer 縮圖列 `[data-thumb-index]` + `aria-current=true`。`reserveArrowWidth` 與同一排 `buildFadeMask` 傳的值相同。
+- **閘**:`scripts/overflow-reveal-selected-invariant.mjs`(`npm run test:overflow-reveal-selected`)—— 五排 × 點半露的項目 / 方向鍵 / ⌄ 選單 / 縮放,剛動到的那一項中心在容器中心 ±2px(兩端夾住另判)且完整可讀;對照組:每種輸入前一刻拿掉 primitive 的作用必紅,修前建置點擊 / 方向鍵 / 縮放必紅。**幾何不靠字型**(2026-11-12):量完項目位置後,溢出不到中間的項目就由閘自己把可視寬切到中間那一項再量(log 標「自備幾何」)—— 沒有中日韓字型的機器上整排塞得進外框時,不會變成空過或儀器失效;對照組兩面(整排塞得下 / 只切到最後一項:自備幾何關必紅、開必綠)。**上表三句與掛載那一次**(2026-11-14;守的是上表【AI 推導】的觸發規則,不是 user 的決定):閘自己的夾具頁(`scripts/test-fixtures/overflow-reveal/fixture.tsx`,不是 story;每一項寬度寫死,幾何不看字型)五排 × 掛載時選在中間 → 置中 / 掛載時選最後一項 → 夾在終點且完整可讀 / 新出現的已選項目 → 置中 / 滾輪捲過再把容器變窄 → 不搶回 / 箭頭翻頁捲過再變窄 → 不搶回(三排有箭頭)/ 捲過之後再選一項再變窄 → 照樣置中,共 28 格;對照組三種破法各自只紅該紅的格 —— `swallow`(這支 hook 對捲動容器的 `scrollTo` 不做事)紅掛載 / 新項目 / 再選一項,`no-childlist`(揭露用的觀察器不看新加入的節點 = 2026-11-12 補之前)只紅新項目,`mute-user-scroll`(滾輪 / 箭頭翻頁的訊號到不了這支 hook = 2026-11-12 補「捲過」之前)只紅兩種不搶回。**什麼時候量**(2026-11-14):不數影格 —— 等閘自己掛在同一個捲動容器上的觀察器也收到這次觸發、再過一個影格,讀這支 hook 實際傳給 `scrollTo` 的位置,等 `scrollLeft` 到那裡(真的會動到位置的再等 `scrollend`)、遮罩 / 箭頭 / ⌄ 跟上才量;hook 沒呼叫 `scrollTo` = 它決定不捲,立刻量。對照組「觸發晚到」(第 30 個影格才觸發):舊的「連續 12 格不動」回來時觸發還沒發生(會量早),新判準等得到。量不到(觸發沒送達、要求的位置上限內沒到、等不到 `scrollend`、使用者的捲動沒有真的發生)= 儀器失效(exit 2),不判產品。
+
+**世界級對照**(2026-11-11 研究,37 套;MASTER-TODO 11-11 研究條):預設置中的 8 套全是行動端 —— Android `TabLayout`([`TabLayout.java` `calculateScrollXForTab`](https://github.com/material-components/material-components-android/blob/master/lib/java/com/google/android/material/tabs/TabLayout.java))、Compose M2 / M3、Flutter、Vant、Ant Design Mobile、TDesign Mobile、Ionic;桌面網頁 17 套預設「剛好露出」(MUI [`Tabs.js` `scrollSelectedIntoView`](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Tabs/Tabs.js)、Carbon、VS Code…),其中 Arco、TDesign 桌面、Naive UI、Vuetify、rc-tabs 有置中開關。這份對照回報 user 之後,user 的回覆是上面那句「…都先B」。
+
 ### Hook re-export
 
 為了消費者只 import 一處,本 module re-export `useScrollEdges` / `useOverflowIndices` from `hooks/use-overflow-items.ts`。
@@ -183,6 +208,7 @@ return (
 ❌ **禁止** 用 item 自身的視覺語言(chip shape、tab underline、segmented border 等)渲染 overflow trigger。trigger 永遠是 text button。
 ❌ **禁止** 重新定義 `FADE_WIDTH` / `ARROW_BUTTON_WIDTH` / `SCROLL_PAGE_RATIO`。有調整需求來改這裡一處,全系統同步。
 ❌ **禁止** 在元件內部另寫 `buildFadeMask`——用本 module 的版本。
+❌ **禁止** 在消費者裡自己寫 `scrollIntoView` / `scrollLeft` 去揭露選中項,或只在某一個輸入路徑(例如選單處理程式)裡捲 —— 用 `useRevealSelected`,它看選中狀態,所有輸入同一條(2026-11-11 根因正是「只寫在選單處理程式裡」)。
 
 ---
 
@@ -190,7 +216,8 @@ return (
 
 - `components/Tabs/tabs.tsx` — `overflow="scroll" | "menu"`
 - `components/Chip/chip.tsx` — `layout="scroll" | "menu"`
-- `components/FileViewer/file-viewer.tsx` — Filmstrip(直接組裝 `useScrollEdges` / `useScrollByPage` / `buildFadeMask` / `OverflowScrollArrow`)
+- `components/FileViewer/file-viewer.tsx` — Filmstrip(直接組裝 `useScrollEdges` / `useScrollByPage` / `useRevealSelected` / `buildFadeMask` / `OverflowScrollArrow`)
+- 三個消費者的 scroll / menu 模式都呼叫 `useRevealSelected`(「選到就露出來」)
 
 **Non-consumers**(2026-05-10 retire from「未來」清單 — prior prediction stale,spec 已明文不消費):
 - ~~`components/Steps/steps.tsx`~~ — `steps.spec.md`「水平模式無 content」「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+「Orientation」段「步驟 ≤ 5、重視「進度條」感、水平空間充足」→ 設計上不 overflow(指標用段名:原本的 `:347` / `L358` 已指到別處,r1b OTH-02 同族)

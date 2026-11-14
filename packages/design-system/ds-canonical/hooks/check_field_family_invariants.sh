@@ -4,7 +4,8 @@
 # Merges PreToolUse hooks(原各檔已 retire,合併入此)— 共 6 條 sub-rules:
 #   A.1 naked row-mode propagation(原 check_naked_row_mode_propagation,P0 BLOCKER)
 #   A.2 FieldControlGroup wrapper direct child(原 check_field_control_group_direct_child,P1 WARN)
-#   A.3 Field state ring SSOT(原 check_field_state_token_consume 3 sub-rules,P0 BLOCKER)
+#   A.3 Field state ring SSOT(原 check_field_state_token_consume,P0 BLOCKER;4 sub-rules ——
+#       A.3.3「欄位開著的框」於 2026-11-13 改寫、A.3.4「data-field-open 記號」同日新增)
 #   A.4 disabled placeholder color(原 check_disabled_placeholder_color,P1 context)
 #   A.5 _Group child fieldCtx.id 隔離(2026-05-31 折入,M4 AR34 regression detector,P0 BLOCKER)
 #   A.6 空值顯示 SSOT(2026-07-08 user 拍板半形 hyphen,P0 BLOCKER)
@@ -195,7 +196,9 @@ EOF
     ;;
 esac
 
-# ── A.3 Field state ring SSOT(P0 BLOCKER,3 sub-rules)─────────────────────────
+# ── A.3 Field state ring SSOT(P0 BLOCKER,4 sub-rules)─────────────────────────
+# A.3.1 / A.3.2:components/ 實作檔(SSOT 宿主 / story / test skip)。
+#   `data-[field-open]` = 2026-11-13 起欄位「自己的浮層開著」的記號,與 hover / focus-within / data-[state=open] 同列。
 case "$FILE_PATH" in
   *components/*.tsx)
     case "$FILE_PATH" in
@@ -203,7 +206,7 @@ case "$FILE_PATH" in
       *)
         if ! grep -q '@field-state-ring-allow' <<<"$NEW_CONTENT"; then
           # A.3.1 舊 box-shadow inset
-          if echo "$NEW_CONTENT" | grep -E "(hover|focus-within|data-\[state=open\]):shadow-\[inset" >/dev/null; then
+          if echo "$NEW_CONTENT" | grep -E "(hover|focus-within|data-\[state=open\]|data-\[field-open\]):shadow-\[inset" >/dev/null; then
             cat >&2 <<'EOF'
 
 ┄┄┄ A.3.1 check_field_family_invariants — Field state ring shadow inset BLOCKER ┄┄┄
@@ -215,7 +218,7 @@ EOF
             record_worst 2
           fi
           # A.3.2 自寫 outline state ring
-          if echo "$NEW_CONTENT" | grep -E "(hover|focus-within|focus-visible|data-\[state=open\]):outline-(border|primary)" >/dev/null; then
+          if echo "$NEW_CONTENT" | grep -E "(hover|focus-within|focus-visible|data-\[state=open\]|data-\[field-open\]):outline-(border|primary)" >/dev/null; then
             cat >&2 <<'EOF'
 
 ┄┄┄ A.3.2 check_field_family_invariants — Field state ring outline BLOCKER ┄┄┄
@@ -226,32 +229,149 @@ EOF
 EOF
             record_worst 2
           fi
-          # A.3.3 per-control open=blue override(v13.5)
-          # 2026-06-11 deep-audit R2(n=38)精準化(M7 broad-vs-narrow 3-column):
-          #   Spec wording:v13.3 禁「open 時 per-control 把 border 轉 primary(藍)」。
-          #   Hook regex(舊):substring 無 boundary + 不分註解行。
-          #   Gap:誤命中 (a) `data-[state=open]:border-primary-hover` canonical(button.tsx:99,109
-          #     overlay trigger 維持 hover 樣式,-hover/-active 是合法 token 後綴);(b) v13.3 retire
-          #     註解內引用舊 pattern 文字(`9935caf9:packages/design-system/src/components/Combobox/combobox.tsx:725` / `9935caf9:packages/design-system/src/components/Select/select.tsx:594`,當時位置)。
-          #   修:純註解行剝離 + border-primary 加字尾 boundary([^-a-zA-Z]|$)。
-          #   DS-wide counter-example scan 2026-06-11:新 regex 全 components/ 0 hit(真違規 shape
-          #   `open && 'border-primary'` / `data-[state=open]:border-primary` 結尾 仍 BLOCK,fixture 驗證)。
-          A33_CONTENT=$(echo "$NEW_CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*)')
-          if echo "$A33_CONTENT" | grep -E "(open|isOpen) +&& +.{0,40}('border-primary'|\"border-primary\")" >/dev/null \
-             || echo "$A33_CONTENT" | grep -E "data-\[state=open\]:border-primary([^-a-zA-Z]|$)" >/dev/null; then
-            cat >&2 <<'EOF'
+        fi
+        ;;
+    esac
+    ;;
+esac
 
-┄┄┄ A.3.3 check_field_family_invariants — per-control open=blue BLOCKER ┄┄┄
+# ── A.3.3 / A.3.4 欄位「自己的浮層開著」的框(2026-11-13 改寫)─────────────────────────
+# 規則(AI 建議、user 2026-11-12 採納,原話「我覺得可以照你建議」):欄位 + 它自己打開的浮層 = 同一個欄位 →
+#   浮層開著時外框維持「聚焦」的框(一般 border-primary;錯誤欄位維持 border-error);只認欄位自己的浮層;
+#   按鈕類觸發照舊「開著 = 自己的 hover」。
+#   user 採納的是上面這條規則;「用欄位自己寫的記號 data-field-open 來認」是 2026-11-13 的 AI 工程判斷(實作手段),不是 user 的決定。
+# 住所(2026-11-13 工作副本當時位置):
+#   樣式 = components/Field/field-wrapper.tsx 三條 compound(:79 一般、:102 錯誤、:238 無框款),只認 `data-[field-open]`;
+#   記號 = lib/composite-field-focus.ts `FIELD_OPEN_ATTR`(:47-48「唯一寫入者 = 本模組的 fieldOpenProps」)/ `fieldOpenProps`(:50-53;各欄位外框自己展開,寫在 consumer 的 props 之後);
+#   外框為什麼不認 Radix 通用的 data-state="open" = 同檔檔頭最後一段(:36-45);
+#   規格 = components/Field/field.spec.md「Field state machine」;按鈕類 = patterns/element-anatomy/inline-action.spec.md「互動狀態」表。
+# 改寫前(2026-06-11 版)本段只擋「開著 = 藍」(`open && 'border-primary'`、結尾是 `data-[state=open]:border-primary`),
+#   而且 field-wrapper.tsx 整檔不檢查 —— 當時的規定是 `data-[state=open]:border-border-hover`(開著 = hover 框)。
+#   照新規則,那個寫法正是要擋的「改回舊寫法」,舊版對它零訊號。
+# M7 broad-vs-narrow 3-column:
+#   規則用語                               | 本段 regex                                                        | Gap
+#   開著的框只住 field-wrapper.tsx          | A.3.3a 各元件 `open && 'border-primary'`(含 `!`)                  | 只認 border-primary 一色(原本就有的擋法,不擴)
+#   只認欄位自己的記號、不認通用 data-state  | A.3.3b 畫欄位外框的檔 × `data-[state=open]:…border-*`              | aria-expanded 等其他通用訊號未列(現況 0 筆)
+#                                          |        (含 `!`、中間再夾變體、`[&[data-state=open]]:` 寫法)        |
+#   開著的框只住 field-wrapper.tsx          | A.3.3c field-wrapper.tsx 以外 × `data-[field-open]:…border-*`      | 讀記號做外框以外的事不擋(FieldControlGroup 的 z-index)
+#   記號只有 composite-field-focus.ts 會寫  | A.3.4 手寫屬性 / 物件 key / setAttribute / dataset                 | 字面出現在註解、選擇器(讀)不擋
+# 「畫欄位外框的檔」= 路徑是 field-wrapper.tsx / textarea.tsx,或內容(去掉純註解行)消費 Field 外框
+#   (fieldWrapperStyles / fieldDefaultChromeCompounds / FIELD_DEFAULT_CHROME_COMPOUNDS / fieldChromeStyles)
+#   或掛著欄位自己的浮層(useCompositeFieldBlur / fieldOpenProps)。按鈕類觸發不在內:button.tsx 的
+#   `data-[state=open]:border-primary-hover` / `border-error-hover` 是「開著 = 自己的 hover」,照舊放行
+#   (所以不能對全部元件擋 `data-[state=open]:border-`,也不能用 token 名字分 —— 兩邊都會用到 `-hover` 結尾的框色)。
+# A.3.3a 與「結尾是 data-[state=open]:border-primary」維持原範圍(components/ 實作檔、SSOT 宿主除外);
+#   A.3.3b / A.3.3c / A.3.4 不限 components/(patterns/、lib/、產品程式都可能手刻欄位),story / test skip。
+# 沿革 2026-06-11 deep-audit R2(n=38):當時的 regex 是 substring、無 boundary、不分註解行 → 誤命中
+#   (a) `data-[state=open]:border-primary-hover`(button.tsx,按鈕類觸發;-hover / -active 是合法 token 後綴)、
+#   (b) retire 註解裡引用的舊 pattern 文字(`9935caf9:packages/design-system/src/components/Combobox/combobox.tsx:725` /
+#       `9935caf9:packages/design-system/src/components/Select/select.tsx:594`,當時位置)。
+#   修:純註解行剝離 + border-primary 加字尾 boundary `([^-a-zA-Z]|$)`;兩者 2026-11-13 改寫時都保留。
+# 全庫反例掃描 2026-11-13:工作副本 492 個 .ts / .tsx 逐檔以整檔寫入重放 → 全部 exit 0、A.3 命中 0 筆
+#   (改寫前的版本對同一批檔逐檔結果相同)。真實檔兩面對照 10 筆:field-wrapper.tsx 在 git HEAD 的內容、
+#   date-picker.tsx 把 fieldOpenProps 換回手寫、select.tsx 加回 data-[state=open]:border-border-hover → 該擋 3 筆都擋;
+#   五個檔現在的內容 + button.tsx / item-anatomy.tsx → 該放 7 筆都放。同一份對照餵給改寫前的版本 → 該擋的 3 筆全放行。
+case "$FILE_PATH" in
+  *.stories.tsx|*.test.*|*.spec.tsx) ;; # story / test skip(同 A.3.1 / A.3.2)
+  *)
+    if ! grep -q '@field-state-ring-allow' <<<"$NEW_CONTENT"; then
+      # 純註解行剝離(2026-06-11 deep-audit R2:retire 註解會引用舊 pattern 文字)
+      A33_CODE=$(printf '%s\n' "$NEW_CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*)')
+      # 同一個 class 裡,變體之後到 utility 之前的那一段:不跨空白與引號,允許中間再夾變體與 `!`
+      A33_CHAIN="[^[:space:]\"'\`]*:!?"
 
-[P0] per-control `open && 'border-primary'` / `data-[state=open]:border-primary` — v13.3 canonical「focus dominates everything」禁。
-修法:刪 override。Radix Popover open 時 trigger 通常 focused → focus-within fires → 藍(自然 Ant 風)。改 Field default SSOT 須 spec 補 rationale。
+      A33_PER_CONTROL=0 # 原本就有的擋法的範圍
+      case "$FILE_PATH" in
+        */field-wrapper.tsx|*/textarea.tsx) ;;
+        *components/*.tsx) A33_PER_CONTROL=1 ;;
+      esac
+
+      A33_FIELD_FRAME=0 # 這個檔在畫欄位外框
+      case "$FILE_PATH" in
+        */field-wrapper.tsx|*/textarea.tsx) A33_FIELD_FRAME=1 ;;
+        *)
+          A33_MERGED_CODE=$(printf '%s\n' "$MERGED_CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*)')
+          if grep -qE 'fieldWrapperStyles|fieldDefaultChromeCompounds|FIELD_DEFAULT_CHROME_COMPOUNDS|fieldChromeStyles|useCompositeFieldBlur|fieldOpenProps' <<<"$A33_MERGED_CODE"; then
+            A33_FIELD_FRAME=1
+          fi
+          ;;
+      esac
+
+      A33_WHY=""
+      # A.3.3a 各元件自己用 open 狀態換框色
+      if [ "$A33_PER_CONTROL" = 1 ] \
+         && grep -qE "(open|isOpen) +&& +.{0,40}[\"']!?border-primary[\"']" <<<"$A33_CODE"; then
+        A33_WHY="${A33_WHY}
+  - 元件自己用 open 狀態換框色(\`open && 'border-primary'\` 這類)"
+      fi
+      # A.3.3b 用通用的 data-state 決定欄位外框色
+      if { [ "$A33_PER_CONTROL" = 1 ] \
+           && grep -qE "data-\[state=open\]:border-primary([^-a-zA-Z]|$)" <<<"$A33_CODE"; } \
+         || { [ "$A33_FIELD_FRAME" = 1 ] \
+           && grep -qE "(data-\[state=open\]|\[data-state=[\"']?open[\"']?\])${A33_CHAIN}border-" <<<"$A33_CODE"; }; then
+        A33_WHY="${A33_WHY}
+  - 用 Radix 通用的 \`data-[state=open]\` 決定欄位外框色(\`data-[state=open]:border-*\`,含帶 \`!\` 的寫法)"
+      fi
+      # A.3.3c 在住所以外用記號換框色
+      case "$FILE_PATH" in
+        */field-wrapper.tsx) ;;
+        *)
+          if grep -qE "(data-\[field-open\]|\[data-field-open\])${A33_CHAIN}border-" <<<"$A33_CODE"; then
+            A33_WHY="${A33_WHY}
+  - 在 field-wrapper.tsx 以外用 \`data-[field-open]\` 換框色"
+          fi
+          ;;
+      esac
+      if [ -n "$A33_WHY" ]; then
+        cat >&2 <<EOF
+
+┄┄┄ A.3.3 check_field_family_invariants — 欄位開著的框只有一個住所 BLOCKER ┄┄┄
+
+[P0] ${FILE_PATH}
+欄位自己的浮層(選單 / 日曆 / 時間面板)開著時,外框維持「聚焦」的框:一般欄位 border-primary、錯誤欄位維持 border-error。
+這條樣式只住在 components/Field/field-wrapper.tsx,而且只認欄位自己寫的記號 \`data-[field-open]\`。
+這次寫入踩到:${A33_WHY}
+
+修法:
+  1. 各元件不要自己寫開著的框色:外框用 fieldWrapperStyles(...),開著的框由它帶。
+  2. 欄位外框不認 Radix 通用的 \`data-[state=open]\`:那個屬性任何一層 Trigger 都會寫,外面的浮層把欄位當觸發點時
+     會蓋到欄位外框上(lib/composite-field-focus.ts 檔頭最後一段)。要改開著的框 → 改 field-wrapper.tsx 的 \`data-[field-open]\` 那幾條。
+  3. 按鈕類觸發(Button / inline action)不適用本條,照舊「開著 = 自己的 hover」(inline-action.spec.md「互動狀態」表)。
+規則:components/Field/field.spec.md「Field state machine」;記號:lib/composite-field-focus.ts(FIELD_OPEN_ATTR / fieldOpenProps)。
+例外:行尾 \`// @field-state-ring-allow: <reason>\`
+
+EOF
+        record_worst 2
+      fi
+
+      # A.3.4 `data-field-open` 記號只有 lib/composite-field-focus.ts 會寫
+      #   擋「寫」的形狀:JSX 屬性(`data-field-open=…`、裸屬性)、物件 key(`'data-field-open': …` / `[FIELD_OPEN_ATTR]: …`)、
+      #   setAttribute / toggleAttribute、dataset.fieldOpen =。「讀」不擋:`[data-field-open]` 選擇器、註解與說明文字裡的字面。
+      case "$FILE_PATH" in
+        */lib/composite-field-focus.ts) ;; # 唯一寫入者
+        *)
+          if grep -qE "(^|[^][a-zA-Z0-9_-])data-field-open[[:space:]]*=|^[[:space:]]*data-field-open[[:space:]]*$|<[A-Za-z][^<>]*[[:space:]]data-field-open([[:space:]/>]|$)|[\"']data-field-open[\"'][[:space:]]*\]?[[:space:]]*:|\[[[:space:]]*FIELD_OPEN_ATTR[[:space:]]*\][[:space:]]*:|(set|toggle)Attribute\([[:space:]]*([\"']data-field-open[\"']|FIELD_OPEN_ATTR)|dataset\.fieldOpen[[:space:]]*=([^=]|$)" <<<"$A33_CODE"; then
+            cat >&2 <<EOF
+
+┄┄┄ A.3.4 check_field_family_invariants — data-field-open 記號手寫 BLOCKER ┄┄┄
+
+[P0] ${FILE_PATH}
+偵測到手寫 \`data-field-open\`(JSX 屬性 / 物件 key / setAttribute / dataset)。
+這個記號代表「這個欄位自己的浮層開著」,外框靠它維持聚焦的框;唯一寫入者是 lib/composite-field-focus.ts 的 \`fieldOpenProps\`。
+
+修法:
+  1. 觸發欄位就是外框(PopoverTrigger asChild):把 useCompositeFieldBlur({ …, open }) 回傳的 \`trigger\` 展開上去,記號已經在裡面。
+  2. 外框不是 PopoverTrigger(日期區間是 PopoverAnchor):在 \`{...props}\` 之後展開 \`{...fieldOpenProps(open)}\`。
+  3. 產品程式不要替 DS 的欄位寫這個記號:欄位元件自己會寫。
+規則:components/Field/field.spec.md「Field state machine」;記號:lib/composite-field-focus.ts(FIELD_OPEN_ATTR / fieldOpenProps)。
+例外:行尾 \`// @field-state-ring-allow: <reason>\`
 
 EOF
             record_worst 2
           fi
-        fi
-        ;;
-    esac
+          ;;
+      esac
+    fi
     ;;
 esac
 

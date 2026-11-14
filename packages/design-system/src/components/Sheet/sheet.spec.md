@@ -76,7 +76,7 @@ Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter`
 
 > **跨家族 SSOT pointer**:SheetHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs 的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sheet 特有 close X canonical。
 
-永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `sheet.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。
+永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `sheet.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。 標題列操作放 `<SheetHeader actions={…}>`(與 × 之間的分隔線由 SurfaceHeader 放,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位)。
 
 **唯一例外 = DS 內部基建的 AppShell Menu 左側浮層**(`side="left"`,不是消費者 Sheet):它是導覽清單,浮層照並排的樣子、不加 ×(並排時本來就沒有 ×;user 2026-10-21 以問句提出這個推論,AI 實測 DS 4 個元件 7 組對照浮層與並排的 × 有無一致,user 2026-10-27 選甲確認),**不放 `SheetHeader`**,明確的關閉手段是點浮層外(遮罩)、Esc、⌘B / Ctrl+B(`../AppShell/app-shell.spec.md`「版面規則」§9;開關鈕被浮層蓋住)。無障礙名稱只給讀屏器的 `SheetTitle`。**禁止**用 `<SheetHeader className="sr-only">` 湊數:× 被裁成看不見卻仍在 Tab 順序,第一個 Tab 停在看不見的鈕上(2026-10-15 r1b 複驗 N2,`../Sidebar/sidebar.tsx` SidebarOverlay)。
 
@@ -128,7 +128,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 
 ## A11y 預設
 
-**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(畫面上的副標還沒定義,先不要用;`SheetDescription` 只留給讀屏器的說明)(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
+**ARIA / Pattern**:繼承 Radix `dialog` primitive a11y 預設(role / aria-* / 鍵盤導覽)。**說明綁定**同 `../Dialog/dialog.spec.md`「A11y 預設」說明綁定:有 `<SheetDescription>` 才寫 `aria-describedby`,沒有就不寫(畫面上的說明何時用、長什麼樣照 `../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」標題區)(`../../lib/overlay-description.ts`;2026-10-20 前沒寫說明的側板指向不存在的 id,獨立驗證 OV-15)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/dialog#accessibility)。
 
 **Keyboard 行為**:
 

@@ -260,9 +260,12 @@ function buildTable(m) {
       const l = L(shell({ W: 1600, rail: 48, open: RA }))
       return expect([['上限', [l.caps.right, l.caps.agent], [426, 526]], ['細列 + 上限 + Main', 48 + l.caps.right + l.caps.agent + 600, 1600], ['細列在版面上', l.railInLayout, true]])
     }],
-    ['D9', 'D:24', '細列 68(寬鬆密度)→ Right 416、AI agent 516', () => {
-      const l = L(shell({ W: 1600, rail: 68, open: RA }))
-      return expect([['上限', [l.caps.right, l.caps.agent], [416, 516]]])
+    // 2026-11-13:細列寬改成四格(sidebar.spec.md「尺寸規範」:一般密度 48、一般密度 × 側欄 size lg 52、大密度 64、大密度 × size lg 68;密度的叫法照 density.spec.md)。
+    // D:24 核准的是規則(細列像 Main 最小寬一樣先扣),這裡的數字是把細列寬代進同一條規則算出來的:
+    // 68 那一格原本只標密度、沒標 size,現在是大密度 × size lg;大密度預設(size sm / md)是 64 → 另補一格,一般密度 × size lg 的 52 也補。
+    ['D9', 'D:24', '細列寬代入同一條規則(1600、Menu 關閉):68(大密度 × 側欄 size lg)→ Right 416、AI agent 516;64(大密度)→ 418 / 518;52(一般密度 × size lg)→ 424 / 524', () => {
+      const caps = (rail) => { const l = L(shell({ W: 1600, rail, open: RA })); return [l.caps.right, l.caps.agent] }
+      return expect([['細列 68 的上限', caps(68), [416, 516]], ['細列 64 的上限', caps(64), [418, 518]], ['細列 52 的上限', caps(52), [424, 524]]])
     }],
     ['D10', 'D:24', '連帶關閉的合計加細列:1100 → 600+48+300+300 = 1248 > 1100 關閉;1230 → 1248 > 1230 也關閉(不加細列的話不關,AI agent 會變浮層蓋住 Right)', () => {
       const a = act(shell({ W: 1100, cfg: CFG2, rail: 48, open: { agent: true } }), { type: 'request-right', contentType: 'detail' })
@@ -376,11 +379,11 @@ function buildTable(m) {
     }],
 
     // ══ 性質(逐格窮舉,不抽樣、不隨機)══
-    ['P1', 'U:33、D:24', '每一種開啟組合 × 視窗 600–2800(每 10px)× 細列 0 / 48 / 68:不捲動時 細列 + 上限合計 + Main 最小 + 留給 Main 的 = 視窗寬,而且只有全部到最大寬時才有留給 Main 的;要捲動時上限 = 最小寬、Main = 最小寬', () => {
+    ['P1', 'U:33、D:24', '每一種開啟組合 × 視窗 600–2800(每 10px)× 細列 0 / 48 / 52 / 64 / 68(沒有細列 + sidebar.spec.md「尺寸規範」的四格):不捲動時 細列 + 上限合計 + Main 最小 + 留給 Main 的 = 視窗寬,而且只有全部到最大寬時才有留給 Main 的;要捲動時上限 = 最小寬、Main = 最小寬', () => {
       const combos = [ALL, RA, { menu: true, agent: true }, { menu: true, right: true }, { agent: true }, { right: true }, { menu: true }]
       let n = 0
       const bad = []
-      for (const open of combos) for (const rail of [0, 48, 68]) for (let W = 600; W <= 2800; W += 10) {
+      for (const open of combos) for (const rail of [0, 48, 52, 64, 68]) for (let W = 600; W <= 2800; W += 10) {
         const l = L(shell({ W, rail, open }))
         const ids = ['menu', 'right', 'agent'].filter((id) => l.display[id] === 'side-by-side')
         const capSum = ids.reduce((a, id) => a + l.caps[id], 0)
@@ -442,6 +445,8 @@ const MUTANTS = [
   ['連帶關閉用 Right 舊內容的最小寬', 'rightMinWidth: rightMin,', "rightMinWidth: currentWidthRange(state, 'right').min,", ['A3']],
   ['拿掉「已是浮層就維持」', "else display.menu = menuOverlayActive ? 'overlay' : 'hidden'", "else display.menu = 'hidden'", ['U14', 'D13', 'D15']],
   ['排 Right、AI agent 前不先扣細列', 'let reserved = mainMinWidth + railWidth', 'let reserved = mainMinWidth', ['D12']],
+  // 2026-11-13 補:D8 / D9(細列寬代進可拉上限)原本沒有任何改壞版指名 —— D9 多了 64 / 52 兩格之後,先證明這幾格會紅
+  ['算可拉上限時不扣細列', 'let remaining = availableWidth - mainMinWidth - railWidthInLayout', 'let remaining = availableWidth - mainMinWidth', ['D8', 'D9', 'P1']],
   ['aria-expanded 跟開關紀錄走(暫藏也算展開)', "return display === 'side-by-side' || display === 'overlay'", "return display !== 'closed'", ['A10']],
   ['被版面收掉時焦點不移', "return 'main' // K7:沿用既有後備", 'return null', ['A9']],
   ['並排時從 AI agent 導向 Main 也收起', "return deriveLayout(state).display.agent === 'overlay' ? { ...state, open: { ...state.open, agent: false } } : state", 'return { ...state, open: { ...state.open, agent: false } }', ['D6']],

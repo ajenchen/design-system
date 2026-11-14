@@ -11,7 +11,8 @@
  *   (本檔不算任何版面數字,只量寬度、轉交動作、把結果交給面板 —— 判定表 `scripts/test-app-shell-layout-model.mjs` 檢查這件事)
  * - 面板登記契約:`./app-shell-context.ts`(三個面板怎麼交出設定、拿回顯示方式)
  * - 拖寬把手:`patterns/resize-handle`(Right panel 左緣;Menu 與 AI agent 的把手在各自元件裡)
- * - 細列寬 `--sidebar-width-icon`、浮層另一側留白 `--layout-space-viewport-inset`、Menu 預設寬 `--sidebar-width-min` / `--sidebar-width`:量實際寬,不寫死
+ * - 細列寬 `--sidebar-width-icon`、浮層另一側留白 `--layout-space-viewport-inset`、Menu 預設初始寬 `--sidebar-width`:量實際寬,不寫死
+ *   (Menu 與 Right panel 沒設時的最小寬是本檔常數 `PANEL_WIDTH_MIN_DEFAULT` = 240,不是 token)
  * - Header:`patterns/header-canonical` ChromeHeader;Aside body:ScrollArea
  *
  * 對齊 Mantine AppShell compound API + Ant Layout slot 模式(per spec.md frontmatter cite)。
@@ -108,7 +109,7 @@ export interface AppShellAsideProps {
    * 沒呼叫 = 內容自己變的(U:11,不連帶關閉任何面板)。
    */
   contentType?: string
-  /** 這種內容類型的最小 / 初始 / 最大寬(px);省略 = DS 預設 240 / 320 / 640(240 = `--sidebar-width-min`)。 */
+  /** 這種內容類型的最小 / 初始 / 最大寬(px);省略 = DS 預設 240 / 320 / 640(240 與 Menu 沒設時的最小寬是同一個常數)。 */
   widthRange?: PanelWidthRange
   /** 產品自存的寬度紀錄(重新整理後還原);只在這種內容類型還沒有紀錄時使用。DS 不存寬度(§7)。 */
   defaultWidth?: number
@@ -153,7 +154,13 @@ function useAppShell(): AppShellContextValue {
 
 // ── 預設值(產品沒設時;「版面規則」§1)──────────────────────────────────────────
 
-/** Right panel 預設初始 / 最大寬(沿用 2026-10-14 前的 ASIDE_WIDTH_DEFAULT / MAX;最小寬預設 = `--sidebar-width-min`,量實際值)。 */
+/**
+ * Menu 與 Right panel 沒設時共用的最小寬(px)。2026-05-21 起兩者參照同一個 240(來源與原話見 `../Sidebar/sidebar.spec.md`「尺寸規範」)。
+ * 2026-11-13 前是 token `--sidebar-width-min`(由下方探針量實際值):只有本檔在讀、不隨密度變、產品不讀,
+ * 不符合開 token 的條件(`../../tokens/token-system.spec.md` 第 0 題)→ 收回成常數,與 ASIDE_WIDTH_* 放在一起(同一個 240,畫面零差異)。
+ */
+const PANEL_WIDTH_MIN_DEFAULT = 240
+/** Right panel 預設初始 / 最大寬(沿用 2026-10-14 前的 ASIDE_WIDTH_DEFAULT / MAX;最小寬預設 = 上面的 PANEL_WIDTH_MIN_DEFAULT)。 */
 const ASIDE_WIDTH_DEFAULT = 320
 const ASIDE_WIDTH_MAX = 640
 const PANEL_RESIZE_KEY_STEP = 16
@@ -161,24 +168,22 @@ const DEFAULT_CONTENT_TYPE = 'default'
 /** 還沒登記的面板在模型裡的佔位設定(開關一定是關,不參與任何計算)。 */
 const PLACEHOLDER_RANGE: PanelWidthRange = { min: 1, initial: 1, max: 1 }
 
-// ── 量 token 的實際寬(細列 / 浮層留白 / Menu 預設寬)──────────────────────────────
+// ── 量 token 的實際寬(細列 / 浮層留白 / Menu 預設初始寬)────────────────────────────
 
 interface TokenWidths {
   rail: number
   edgeGap: number
-  sidebarMin: number
   sidebarInitial: number
 }
 
 const TOKEN_PROBES: ReadonlyArray<[keyof TokenWidths, string]> = [
   ['rail', 'var(--sidebar-width-icon)'],
   ['edgeGap', 'var(--layout-space-viewport-inset)'],
-  ['sidebarMin', 'var(--sidebar-width-min)'],
   ['sidebarInitial', 'var(--sidebar-width)'],
 ]
 
 /** 量之前的猜測值(token 的預設值;第一格畫面之前就會被實測值取代)。 */
-const TOKEN_GUESS: TokenWidths = { rail: 48, edgeGap: 48, sidebarMin: 240, sidebarInitial: 240 }
+const TOKEN_GUESS: TokenWidths = { rail: 48, edgeGap: 48, sidebarInitial: 240 }
 
 // ── Skip-to-main link(a11y WCAG 2.4.1)───────────────────────────────────────
 
@@ -402,7 +407,7 @@ function useAppShellLayoutEngine(options: {
       if (entries.some((e) => e.target !== root)) measureTokens()
     })
     ro.observe(root)
-    // token 隨密度變(細列 md 48 / lg 68):探針的尺寸一變就重量
+    // token 隨密度變,細列寬還隨側欄的 size 變(48 / 52 / 64 / 68,sidebar.spec.md「尺寸規範」):探針的尺寸一變就重量
     if (probe) for (const el of Array.from(probe.children)) ro.observe(el)
     return () => ro.disconnect()
   }, [dispatch])
@@ -540,7 +545,7 @@ function useAppShellLayoutEngine(options: {
     },
     dismissMenuOverlay: () => dispatch({ type: 'dismiss-menu-overlay' }),
     railWidth: tokens.rail,
-    menuDefaultRange: { min: tokens.sidebarMin, initial: tokens.sidebarInitial, max: tokens.sidebarInitial },
+    menuDefaultRange: { min: PANEL_WIDTH_MIN_DEFAULT, initial: tokens.sidebarInitial, max: tokens.sidebarInitial },
   }), [dispatch, tokens])
 
   const requestAside = React.useCallback((contentType?: string) => {
@@ -775,9 +780,8 @@ AppShell.displayName = 'AppShell'
 const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
   ({ title, contentType = DEFAULT_CONTENT_TYPE, widthRange, defaultWidth, onWidthCommit, children, className }, ref) => {
     const { setAsideOpen } = useAppShell()
-    const registry = React.useContext(AppShellRegistryContext)
     const range = widthRange ?? {
-      min: registry?.menuDefaultRange.min ?? TOKEN_GUESS.sidebarMin,
+      min: PANEL_WIDTH_MIN_DEFAULT,
       initial: ASIDE_WIDTH_DEFAULT,
       max: ASIDE_WIDTH_MAX,
     }

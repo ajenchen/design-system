@@ -11,7 +11,7 @@ import {
   HOVER_CARD_SURFACE_CLASS,
 } from '@/design-system/components/HoverCard/hover-card'
 import { TutorialPage, TutorialSection, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 // 規則的內容是一段示範,子節點照順序以 tight 排
 const TutorialRule = createTutorialRule()
@@ -217,7 +217,7 @@ export const DelayFeel: Story = {
             <HoverCardContent className={HOVER_CARD_SURFACE_CLASS}>
               {/* 句子叫讀者「請找她確認」→ 名片要是在線的(共用樣本預設是「離開 / 休假中,週一回來」,跟句子自相矛盾;tokens 審查第 11 則);
                   在線訊息沿用名錄 SAMPLE_PEOPLE 既有的同一句,不另寫 */}
-              {samplePersonCard({ name: '陳美惠', subtitle: 'Design｜MEIHUI｜2048731', id: 'MEIHUI', employeeNumber: '2048731', status: 'online', statusMessage: '在座位上,可以直接找我' })}
+              {samplePersonCard({ name: '陳美惠', avatarSrc: demoPersonPhoto('陳美惠', 128), subtitle: 'Design｜MEIHUI｜2048731', id: 'MEIHUI', employeeNumber: '2048731', status: 'online', statusMessage: '在座位上,可以直接找我' })}
             </HoverCardContent>
           </HoverCard>
           確認,她負責這一季的設計系統整合。

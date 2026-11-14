@@ -403,7 +403,7 @@ export const OverflowMatrix: Story = {
 
       <div>
         <H3>overflow="menu" — 全部 tab 一直可見 + ⌄ navigator dropdown(列全部 tab 快速跳轉)</H3>
-        <Desc>Tabs 超出容器時,右側出現 ⌄ navigator(OverflowMenuTriggerButton),點開 DropdownMenu 列出全部 tab 供快速跳轉;底層仍是真實捲動容器(全 trigger 可見可捲),點選後該 tab scrollIntoView 至視圖中央。適合 tab 數量較多、需快速跳轉到任一 tab 的場景。</Desc>
+        <Desc>Tabs 超出容器時,右側出現 ⌄ navigator(OverflowMenuTriggerButton),點開 DropdownMenu 列出全部 tab 供快速跳轉;底層仍是真實捲動容器(全 trigger 可見可捲);不論從選單選、直接點或方向鍵,選中的 tab 都捲到視圖中央(兩端到底時夾住)。適合 tab 數量較多、需快速跳轉到任一 tab 的場景。</Desc>
         {/* 2026-05-18 fix(user 抓 overflow demo 沒秀真實溢出):max-w-md (448px) 太寬
             8 個短 Chinese tab 加總 < 448 不觸發 overflow。改 280px 強制觸發 + 視覺可見。*/}
         <div className="border border-border rounded-lg p-4 max-w-[280px]">

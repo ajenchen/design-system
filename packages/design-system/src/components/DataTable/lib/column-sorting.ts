@@ -20,8 +20,13 @@
  *     (https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/columns/dataTypeService.ts#L499-L512)。
  *   - multiPerson:照格上由左到右的順序逐人比名字,前面都一樣時人少的在前;空陣列最小。**AI 推導**(單人規則的延伸 + AG Grid 照顯示內容比),
  *     推導寫在 spec 該列。
- *   - select / multiSelect:**照什麼排待 user 決定**(選項順序 / 畫面上的字 / 原始值,世界級不一致,見 needs-user sort-focus-1);
- *     決定前同修前 —— select 照原始值(`alphanumeric`,即自動判斷看得到字串時的那支),multiSelect 照原始值逐項接起來的字串(修前 `basic` 對陣列就是這樣比)。
+ *   - select / multiSelect:照**選項順序**(欄的 `meta.options` 陣列順序,= 下拉選單裡的順序;狀態欄 未開始 → 進行中 → 受阻 → 完成 → 取消)。
+ *     **AI 依規格推導、不是 user 拍板**:DS 欄型本來就對齊 Notion / Airtable(`../column-types.ts` 的 `type` 欄註解「對齊 Notion / Airtable / Linear:每 property 強制有 type」),
+ *     兩家一手出處都是照選項順序 —— Airtable「Single and multiple select fields are sorted according to the order of the options in the field's
+ *     customization menu」(https://support.airtable.com/articles/8716174546-sorting-records-in-airtable-views)、Notion「For Select and Multi-select
+ *     properties, you get to define what sorting order means.」(https://www.notion.com/help/views-filters-and-sorts);選項順序 consumer 控制得了,
+ *     程式值(修前:受阻 → 取消 → 完成 → 進行中 → 未開始)使用者看不到。不在選項裡的值排在所有選項之後、彼此照原始值文字比;
+ *     沒給 `options` = 全部都「不在選項裡」= 照原始值(同修前)。multiSelect 照格上順序逐項比選項位置,前面都相同時項目少的在前;空陣列最小。
  *
  * 空值:`undefined` 由 TanStack 的 `sortUndefined`(預設 1 = 升冪排最後)先處理,本檔碰不到;`null` / 空字串 / 空陣列在本檔當最小
  * (與修前文字欄 `toString(null) === ''` 排最前一致)。兩者不一致是 TanStack 預設,本輪不改(記在 sort-focus 研究筆記)。
@@ -97,21 +102,45 @@ function compareDates(a: unknown, b: unknown): number {
   return ta === tb ? 0 : ta > tb ? 1 : -1
 }
 
-/** multiSelect 決定前同修前:原始值陣列接成字串(`String(['a','b']) === 'a,b'`)再照 basic 比 */
-function compareRawList(a: unknown, b: unknown): number {
-  const sa = Array.isArray(a) ? String(a) : ''
-  const sb = Array.isArray(b) ? String(b) : ''
-  return compareBasic(sa, sb)
+/** 選項的排序鍵 = 值在 `options` 裡的位置;不在裡面 = `options.length`(排在所有選項之後) */
+export function optionRank(options: ReadonlyArray<{ value: unknown }> | undefined, value: unknown): number {
+  const i = options ? options.findIndex((o) => o.value === value) : -1
+  return i < 0 ? (options?.length ?? 0) : i
 }
 
-/** 某欄型兩個儲存格值的比較(升冪方向;降冪由 TanStack 反轉)。回負數 = a 在前。 */
-export function compareColumnValues(type: ColumnType, a: unknown, b: unknown): number {
+/** select:空值最小;其餘照選項位置,同位置(都不在選項裡)照原始值文字比 */
+function compareOption(options: ReadonlyArray<{ value: unknown }> | undefined, a: unknown, b: unknown): number {
+  const aEmpty = a === null || a === undefined || a === ''
+  const bEmpty = b === null || b === undefined || b === ''
+  if (aEmpty || bEmpty) return aEmpty === bEmpty ? 0 : aEmpty ? -1 : 1
+  const d = optionRank(options, a) - optionRank(options, b)
+  return d !== 0 ? d : compareAlphanumeric(a, b)
+}
+
+/** multiSelect:依格上順序逐項比選項位置;前面都相同時項目少的在前;不是陣列 = 空 */
+function compareOptionLists(options: ReadonlyArray<{ value: unknown }> | undefined, a: unknown, b: unknown): number {
+  const la = Array.isArray(a) ? a : []
+  const lb = Array.isArray(b) ? b : []
+  const n = Math.min(la.length, lb.length)
+  for (let i = 0; i < n; i += 1) {
+    const c = compareOption(options, la[i], lb[i])
+    if (c !== 0) return c
+  }
+  return la.length - lb.length
+}
+
+/**
+ * 某欄型兩個儲存格值的比較(升冪方向;降冪由 TanStack 反轉)。回負數 = a 在前。
+ * @param options select / multiSelect 欄的 `meta.options`(其他型別不看)
+ */
+export function compareColumnValues(type: ColumnType, a: unknown, b: unknown, options?: ReadonlyArray<{ value: unknown }>): number {
   switch (type) {
     case 'string':
     case 'url':
     case 'time':
-    case 'select':
       return compareAlphanumeric(a, b)
+    case 'select':
+      return compareOption(options, a, b)
     case 'number':
     case 'currency':
     case 'boolean':
@@ -123,12 +152,12 @@ export function compareColumnValues(type: ColumnType, a: unknown, b: unknown): n
     case 'multiPerson':
       return compareNameLists(multiPersonSortKey(a), multiPersonSortKey(b))
     case 'multiSelect':
-      return compareRawList(a, b)
+      return compareOptionLists(options, a, b)
   }
 }
 
-/** 給 data-table.tsx 前處理用:某欄型的 TanStack `sortingFn` */
-export function sortingFnForColumnType<TData extends RowData>(type: ColumnType): SortingFn<TData> {
+/** 給 data-table.tsx 前處理用:某欄型的 TanStack `sortingFn`(select / multiSelect 帶該欄 `meta.options`) */
+export function sortingFnForColumnType<TData extends RowData>(type: ColumnType, options?: ReadonlyArray<{ value: unknown }>): SortingFn<TData> {
   return (rowA: Row<TData>, rowB: Row<TData>, columnId: string) =>
-    compareColumnValues(type, rowA.getValue(columnId), rowB.getValue(columnId))
+    compareColumnValues(type, rowA.getValue(columnId), rowB.getValue(columnId), options)
 }

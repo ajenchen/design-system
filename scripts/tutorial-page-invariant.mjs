@@ -21,7 +21,8 @@
  *
  * SSOT:packages/design-system/src/stories-helpers/examples/tutorial-page.tsx(元件與 ② 的出處);
  *       packages/design-system/ds-canonical/skills/story-writing/references/category-templates.md「教學框的間距與標題」(規範文字);
- *       packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 3(指標:這一級只用在 Storybook 文件頁 —— 教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊;不用在產品頁)。
+ *       packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 3「組 ↔ 組」(指標:文件頁 —— 教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊 —— 的這一級只由共用元件給;
+ *       2026-11-06 起同一級也用在產品畫面的區塊 ↔ 區塊,那一面由 scripts/section-gap-invariant.mjs 量)。
  *
  * 為什麼要有這支(2026-10-14):研究時 66 個設計原則頁 + Action Bar 教學框各自抄一份 Rule / Section,段落標題至少 6 種長相、
  * 段落之間的間距有 16 / 32 / 33 三種(gap + 下方 margin 疊加、或分隔線 + 內距)—— 同一個值散在 60 個檔,只要有一頁照舊寫,② 就漂回去。
@@ -51,7 +52,12 @@
  *        需要它的範例上 —— 規則的範例區 = createTutorialRule({ examplesClassName }),規則外的表格 / 示範塊 = 自己容器的 class;
  *        段落文字跟著頁寬走(與其餘頁相同)。
  *   (R6) createTutorialRule(…) 只能在 module 層呼叫(寫在 render 裡會每次重建元件;story-rules.md「元件一律定義在 module 層」)。
- *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則 / 範例堆疊間距。
+ *   (R7) 「loose × 2」(calc(var(--layout-space-loose) * 2))在 story 檔與 stories-helpers 只准寫在 tutorial-page.tsx;寫在別處 = 手寫段落 / 規則 / 範例堆疊間距。
+ *        元件 / pattern 原始碼(非 story、非 stories-helpers)不在 R7 範圍:產品畫面的區塊 ↔ 區塊本來就是這一級(layoutSpace 規則 3「組 ↔ 組」,user 2026-11-06 #18)。
+ *        唯一放行(2026-11-11):範例裡的**表單按鈕列** —— `<ButtonGroup>`,或子層只有 `<Button>` 的容器 —— 自己 className(字面字串)上的
+ *        `mt-[calc(var(--layout-space-loose)*2)]`。依據 layoutSpace.spec.md 規則 3「表單欄位 → 跟在後面的表單按鈕列 = loose × 2」(user 2026-11-10
+ *        PR #172 決策頁留言);那是範例畫面本身(consumer 照抄的產品寫法),不是教學頁的段落間距,值由 section-gap-invariant 表單 8 列量像素在守。
+ *        其他形狀(gap / 帶前綴 / 容器混了非按鈕 / className 不是字面字串 / 包的是 ButtonGroup 而非按鈕)照紅。
  *   (R8) tutorial-page.tsx 本身仍是 ②:塊距 = calc(var(--layout-space-loose)*2)、不出現 --layout-space-bottom、
  *        段落標題 <h2> = text-h3 + font-semibold + border-divider、規則標題 <h3> = text-h6 + font-semibold;
  *        (2026-10-20)頁根有 text-body、使用指引三段段名 = 何時用 / 何時不用 / 和相近元件怎麼選、沒有 noteTone、
@@ -68,6 +74,16 @@
  *   (R12) Tokens / Patterns 文件頁(tokens/** 與 patterns/** 的 *.stories.tsx,不論有沒有 import 共用元件):story 裡疊了 ≥ 2 塊以標題
  *        (h1–h6,或大寫小字 / text-h* / 半粗體的一行字)開頭的區塊 = 手刻的段落 → 改用 TutorialPage + TutorialSection(T7 甲);
  *        這些頁手寫 <h2> / <section> 也由 R2 收(chrome / 浮層標題槽 *Header 裡的 <h2> 是範例的產品標題,不算)。
+ *   (R14) 標題區 → 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」;user 2026-11-11「我覺得主要取決於那個標題和說明是否是
+ *        完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？…」+ 決策頁「說明頁:甲」):
+ *        底下只有一塊 → tight、兩塊以上 → loose(好幾個示範塊彼此只隔 tight 也算兩塊以上 —— user 2026-11-12 第四批成品頁「多塊緊排」
+ *        = 「乙：有兩塊以上就維持遠的距離」),由共用元件自己數(各頁不寫、不選)。守:tutorial-page.tsx 有 `headingContentOf` /
+ *        `useHeadingContent`,`ExampleSection` 呼叫 `useHeadingContent`;區塊模式的 gap 與設計規格頁小標的下方距離都是「預設 loose +
+ *        data-[heading-content=one] 時 tight」;anatomy-utils.tsx 的 `H3` / `Desc` 都呼叫 `useHeadingContent`、用 `SPEC_HEADING_GAP`,
+ *        不自己寫 loose(值只在 tutorial-page.tsx);「隔多遠才算兩塊」的門檻 `HEADING_BLOCK_MIN_GAP_PX` 等於 layoutSpace.css 的 md
+ *        `--layout-space-tight`(版面間距刻度最小的一格),而且 `headingContentOf` 真的拿它來比(常數存在 ≠ 有被用)。
+ *        數法本身(幾塊、隔多遠算兩塊)由 section-gap-invariant 的「標題區 → 內容」各列量像素;全站每一個標題區(兩種密度判定相同、
+ *        首次 = 重判、判定 → 距離)由 doc-heading-inventory-invariant 逐則 story 量(2026-11-14 A7 ⑤)。
  *
  * 教學頁的範圍:全部 *.principles.stories.tsx(R1–R11、R13),加上 tokens/** 與 patterns/** 裡 import 共用元件的 *.stories.tsx(R2–R6、R10、R11、R13);
  * 其餘 Tokens / Patterns 文件頁只收「自抄教學框小元件」、手寫 <h2> / <section>(R2)與手刻段落清單(R12)。
@@ -749,11 +765,53 @@ export function checkTutorialFile(file, text) {
   return hits
 }
 
-/** (R7) loose × 2 只准在共用元件裡 */
+/** (R7) 表單按鈕列的上外距 —— 放行的只有這一個 class 本體,不帶 variant 前綴 */
+const FORM_ACTION_TOP = 'mt-[calc(var(--layout-space-loose)*2)]'
+/** 表單按鈕列 = <ButtonGroup>,或子層(去掉空白與空的 {})只有 <Button> 的容器 */
+function isFormActionRow(sf, el) {
+  if (tagName(sf, el) === 'ButtonGroup') return true
+  if (!ts.isJsxElement(el)) return false
+  const kids = el.children.filter((c) => !(ts.isJsxText(c) && !c.text.trim()) && !(ts.isJsxExpression(c) && !c.expression))
+  return kids.length > 0 && kids.every((c) => isJsx(c) && tagName(sf, c) === 'Button')
+}
+/** 放行範圍:表單按鈕列的 className 是字面字串,且裡面每個含 loose × 2 的 class 都正好是 FORM_ACTION_TOP */
+function formActionRanges(file, text) {
+  if (!file.endsWith('.tsx')) return []
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const ranges = []
+  const walk = (n) => {
+    if (isJsx(n) && isFormActionRow(sf, n)) {
+      const a = attrs(n).find((p) => ts.isJsxAttribute(p) && p.name.getText() === 'className')
+      if (a?.initializer && ts.isStringLiteral(a.initializer)) {
+        const hot = a.initializer.text.split(/\s+/).filter((t) => LOOSE_TIMES_TWO.test(t))
+        if (hot.length && hot.every((t) => t === FORM_ACTION_TOP)) ranges.push([a.initializer.getStart(sf), a.initializer.end])
+      }
+    }
+    ts.forEachChild(n, walk)
+  }
+  walk(sf)
+  return ranges
+}
+
+/** (R7) loose × 2 只准在共用元件裡(唯一放行:表單按鈕列的上外距,見檔頭 R7) */
 export function checkLooseTimesTwo(file, text) {
   if (file === HELPER) return []
+  if (!/\.stories\.tsx$/.test(file) && !file.includes('/stories-helpers/')) return [] // 產品原始碼:區塊 ↔ 區塊(section-gap-invariant 量)
+  if (!LOOSE_TIMES_TWO.test(text)) return []
+  const allowed = formActionRanges(file, text)
+  const lineStarts = [0]
+  for (let i = 0; i < text.length; i++) if (text[i] === '\n') lineStarts.push(i + 1)
+  const lineAt = (pos) => { let lo = 0; let hi = lineStarts.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (lineStarts[mid] <= pos) lo = mid; else hi = mid - 1 } return lo + 1 }
   const out = []
-  text.split('\n').forEach((l, i) => { if (LOOSE_TIMES_TWO.test(l)) out.push({ rule: 'R7', file, line: i + 1, message: '「loose × 2」寫在共用元件以外 = 手寫段落 / 規則 / 範例堆疊間距 —— 改用 TutorialPage / TutorialSection / ExampleStack(stories-helpers/examples/tutorial-page.tsx)' }) })
+  const seen = new Set()
+  const re = new RegExp(LOOSE_TIMES_TWO.source, 'g')
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    if (allowed.some(([s, e]) => m.index >= s && m.index < e)) continue
+    const line = lineAt(m.index)
+    if (seen.has(line)) continue
+    seen.add(line)
+    out.push({ rule: 'R7', file, line, message: '「loose × 2」寫在共用元件以外 = 手寫段落 / 規則 / 範例堆疊間距 —— 改用 TutorialPage / TutorialSection / ExampleStack(stories-helpers/examples/tutorial-page.tsx);唯一放行的是範例裡表單按鈕列(<ButtonGroup> 或只包 <Button> 的容器)字面 className 上的 mt-[calc(var(--layout-space-loose)*2)](layoutSpace.spec.md 規則 3,user 2026-11-10)' })
+  }
   return out
 }
 
@@ -803,6 +861,72 @@ export function checkHelper(text) {
   return out
 }
 
+export const ANATOMY_UTILS = 'packages/design-system/src/stories-helpers/anatomy/anatomy-utils.tsx'
+export const LAYOUT_SPACE_CSS = 'packages/design-system/src/tokens/layoutSpace/layoutSpace.css'
+const BLOCK_MIN_GAP = 'HEADING_BLOCK_MIN_GAP_PX'
+
+/** layoutSpace.css 第一個 `:root` 區塊(md,預設密度)的 `--layout-space-tight`,單位 px;讀不到回 null */
+export function mdLayoutSpaceTight(cssText) {
+  const m = /:root\s*\{[^}]*?--layout-space-tight:\s*([\d.]+)px/.exec(cssText ?? '')
+  return m ? Number(m[1]) : null
+}
+const HEADING_ONE_GAP = 'data-[heading-content=one]:gap-[var(--layout-space-tight)]'
+const HEADING_ONE_MB = 'data-[heading-content=one]:mb-[var(--layout-space-tight)]'
+
+/** (R14) 標題區 → 內容:共用元件自己數幾塊(一塊 tight / 兩塊以上 loose);值只在 tutorial-page.tsx */
+export function checkHeadingProximity(helperText, anatomyText, layoutCssText) {
+  const out = []
+  const r14 = (file, message) => out.push({ rule: 'R14', file, line: 1, message })
+  const sf = ts.createSourceFile(HELPER, helperText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const decls = new Map()
+  const exported = new Set()
+  const v = (n) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) decls.set(n.name.text, unwrap(n.initializer))
+    ts.forEachChild(n, v)
+  }
+  v(sf)
+  for (const st of sf.statements) {
+    const isExp = st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+    if (!isExp) continue
+    if (ts.isFunctionDeclaration(st) && st.name) exported.add(st.name.text)
+    if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name)) exported.add(d.name.text)
+  }
+  for (const name of ['headingContentOf', 'useHeadingContent', 'specHeadingContent', 'SPEC_HEADING_GAP']) if (!exported.has(name)) r14(HELPER, `共用元件沒有 export ${name} —— 標題區 → 內容的判斷與值只住在 tutorial-page.tsx(layoutSpace.spec.md 規則 3「標題區 → 內容」)`)
+  const strOf = (name) => { const d = decls.get(name); return d && (ts.isStringLiteral(d) || ts.isNoSubstitutionTemplateLiteral(d)) ? d.text : '' }
+  const blockGap = strOf('SECTION_BLOCK_GAP').split(/\s+/)
+  if (!(blockGap.includes('gap-[var(--layout-space-loose)]') && blockGap.includes(HEADING_ONE_GAP))) r14(HELPER, `ExampleSection 區塊模式的間距不是「預設 loose + ${HEADING_ONE_GAP}」(現為「${blockGap.join(' ')}」)—— 只有一塊時要 tight(user 2026-11-11)`)
+  const specGap = strOf('SPEC_HEADING_GAP').split(/\s+/)
+  if (!(specGap.includes('mb-[var(--layout-space-loose)]') && specGap.includes(HEADING_ONE_MB))) r14(HELPER, `設計規格頁小標的下方距離不是「預設 loose + ${HEADING_ONE_MB}」(現為「${specGap.join(' ')}」)`)
+  const esFn = sf.statements.find((st) => ts.isFunctionDeclaration(st) && st.name?.text === 'ExampleSection')
+  if (!esFn || !/\buseHeadingContent\(/.test(esFn.getText(sf)) || !/\bSECTION_BLOCK_GAP\b/.test(esFn.getText(sf))) r14(HELPER, 'ExampleSection 沒有呼叫 useHeadingContent / 沒用 SECTION_BLOCK_GAP —— 標題區 → 內容不再看底下幾塊')
+  // 「隔多遠才算兩塊」的門檻:值 = layoutSpace.css 的 md tight;headingContentOf 真的拿它來比(user 2026-11-12「多塊緊排」= 乙)
+  const mdTight = layoutCssText == null ? null : mdLayoutSpaceTight(layoutCssText)
+  const minGapDecl = decls.get(BLOCK_MIN_GAP)
+  const minGap = minGapDecl && ts.isNumericLiteral(minGapDecl) ? Number(minGapDecl.text) : null
+  if (mdTight === null) r14(LAYOUT_SPACE_CSS, '讀不到 layoutSpace.css 的 md `--layout-space-tight`(第一個 :root 區塊)—— 沒辦法核對「兩塊」的門檻,不讀成通過')
+  if (minGap === null) r14(HELPER, `共用元件沒有數字常數 ${BLOCK_MIN_GAP} —— 好幾個示範塊彼此隔多遠才算兩塊,門檻只寫在 tutorial-page.tsx(user 2026-11-12:有兩塊以上就維持遠的距離)`)
+  else if (mdTight !== null && minGap !== mdTight) r14(HELPER, `${BLOCK_MIN_GAP} = ${minGap},但 layoutSpace.css 的 md --layout-space-tight = ${mdTight} —— 門檻是版面間距刻度最小的一格,兩邊要同一個值`)
+  const hcFn = sf.statements.find((st) => ts.isFunctionDeclaration(st) && st.name?.text === 'headingContentOf')
+  const hcBody = hcFn?.body ? hcFn.body.getText(sf) : ''
+  if (!new RegExp(`\\b${BLOCK_MIN_GAP}\\b`).test(hcBody)) r14(HELPER, `headingContentOf 沒有用 ${BLOCK_MIN_GAP} 判斷 —— 好幾個示範塊彼此只隔 tight 會被算成一塊(標題變近),違反 user 2026-11-12「多塊緊排」= 乙`)
+  if (anatomyText === null) { r14(ANATOMY_UTILS, '讀不到 anatomy-utils.tsx(設計規格頁的 H3 / Desc)'); return out }
+  const af = ts.createSourceFile(ANATOMY_UTILS, anatomyText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const comp = (name) => {
+    let found = null
+    const w = (n) => { if (!found && ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === name) found = n; if (!found) ts.forEachChild(n, w) }
+    w(af)
+    return found ? found.getText(af) : ''
+  }
+  for (const name of ['H3', 'Desc']) {
+    const text = comp(name)
+    if (!text) { r14(ANATOMY_UTILS, `anatomy-utils.tsx 沒有 ${name}`); continue }
+    if (!/\buseHeadingContent\(/.test(text)) r14(ANATOMY_UTILS, `${name} 沒有呼叫 useHeadingContent —— 設計規格頁的小標不再看底下幾塊`)
+    if (!/\bSPEC_HEADING_GAP\b/.test(text)) r14(ANATOMY_UTILS, `${name} 沒用 SPEC_HEADING_GAP(值只在 tutorial-page.tsx)`)
+    if (/mb-\[var\(--layout-space-loose\)\]/.test(text)) r14(ANATOMY_UTILS, `${name} 自己寫了 mb-[var(--layout-space-loose)] —— 標題區 → 內容的值只在 tutorial-page.tsx(SPEC_HEADING_GAP)`)
+  }
+  return out
+}
+
 function walkFiles(dir, acc = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
@@ -823,8 +947,13 @@ export function scanTree(root) {
   for (const f of [...principles, ...patternPages]) hits.push(...checkTutorialFile(f, readFileSync(join(root, f), 'utf8')))
   for (const f of all.filter((x) => /\.(tsx?|css)$/.test(x))) hits.push(...checkLooseTimesTwo(f, readFileSync(join(root, f), 'utf8')))
   const helperPath = join(root, HELPER)
-  if (existsSync(helperPath)) hits.push(...checkHelper(readFileSync(helperPath, 'utf8')))
-  else hits.push({ rule: 'R8', file: HELPER, line: 1, message: '共用教學頁元件不存在' })
+  if (existsSync(helperPath)) {
+    const helperText = readFileSync(helperPath, 'utf8')
+    hits.push(...checkHelper(helperText))
+    const anatomyPath = join(root, ANATOMY_UTILS)
+    const layoutCssPath = join(root, LAYOUT_SPACE_CSS)
+    hits.push(...checkHeadingProximity(helperText, existsSync(anatomyPath) ? readFileSync(anatomyPath, 'utf8') : null, existsSync(layoutCssPath) ? readFileSync(layoutCssPath, 'utf8') : null))
+  } else hits.push({ rule: 'R8', file: HELPER, line: 1, message: '共用教學頁元件不存在' })
   return { hits, scanned: { principles: principles.length, patternPages: patternPages.length, files: all.length } }
 }
 
@@ -1148,6 +1277,31 @@ export function runSelftest(root = SCRIPT_ROOT) {
   expect(checkHelper(helper.replace('gap-[calc(var(--layout-space-loose)*2)]', 'gap-[var(--layout-space-bottom)]')).filter((h) => h.rule === 'R8').length === 2, '塊距改成 --layout-space-bottom → R8 兩筆(值不對 + 借 bottom)')
   expect(checkHelper(helper.replace('text-h3 font-semibold', 'text-h5 font-semibold')).length === 1, '段落標題改回 text-h5 → R8')
   expect(checkLooseTimesTwo(HELPER, helper).length === 0, 'loose × 2 寫在共用元件裡 → 不算(那是它唯一的住所)')
+  const LT2 = 'className="gap-[calc(var(--layout-space-loose)*2)]"'
+  expect(checkLooseTimesTwo(`${SRC}/components/FileViewer/file-viewer.tsx`, LT2).length === 0, '產品元件原始碼的區塊 ↔ 區塊 → 不算(layoutSpace 規則 3「組 ↔ 組」)')
+  expect(checkLooseTimesTwo(`${SRC}/components/FileViewer/file-viewer.stories.tsx`, LT2).length === 1, 'story 檔手寫 loose × 2 → R7 仍紅')
+  expect(checkLooseTimesTwo(`${SRC}/stories-helpers/examples/other-helper.tsx`, LT2).length === 1, 'stories-helpers 其他檔手寫 loose × 2 → R7 仍紅')
+  // R7 唯一放行:表單按鈕列的上外距(layoutSpace 規則 3「表單欄位 → 表單按鈕列 = loose × 2」,user 2026-11-10)—— 兩面都要成立
+  const STORY = `${SRC}/components/Demo/demo.stories.tsx`
+  const MT2 = 'mt-[calc(var(--layout-space-loose)*2)]'
+  const r7 = (t) => checkLooseTimesTwo(STORY, t).map((h) => h.line)
+  expect(r7(`<form>\n  <Field />\n  <ButtonGroup className="${MT2}">\n    <Button>儲存</Button>\n  </ButtonGroup>\n</form>\n`).length === 0, 'R7 放行:<ButtonGroup> 表單按鈕列的 mt loose × 2')
+  expect(r7(`<div>\n  <Switch />\n  <div className="${MT2}">\n    {/* 註解 */}\n    <Button>送出</Button>\n  </div>\n</div>\n`).length === 0, 'R7 放行:只包 <Button> 的容器的 mt loose × 2')
+  expect(r7(`<ButtonGroup className="gap-[calc(var(--layout-space-loose)*2)]">\n  <Button>儲存</Button>\n</ButtonGroup>\n`).join() === '1', 'R7 紅:ButtonGroup 上寫的是 gap(不是表單按鈕列上外距)')
+  expect(r7(`<ButtonGroup className="md:${MT2}">\n  <Button>儲存</Button>\n</ButtonGroup>\n`).join() === '1', 'R7 紅:帶 variant 前綴')
+  expect(r7(`<ButtonGroup className={cn('${MT2}', extra)}>\n  <Button>儲存</Button>\n</ButtonGroup>\n`).join() === '1', 'R7 紅:className 不是字面字串(閘讀不到全部 class)')
+  expect(r7(`<div className="${MT2}">\n  <Button>送出</Button>\n  <p>說明</p>\n</div>\n`).join() === '1', 'R7 紅:容器混了非按鈕')
+  expect(r7(`<section className="${MT2}">\n  <ButtonGroup><Button>儲存</Button></ButtonGroup>\n</section>\n`).join() === '1', 'R7 紅:包的是 ButtonGroup 而非按鈕(上外距應寫在按鈕列自己)')
+  expect(r7(`<div className="${MT2}" />\n`).join() === '1', 'R7 紅:空容器')
+  expect(r7(`<div className="gap-[calc(var(--layout-space-loose)*2)]">\n  <p>規則</p>\n  <ButtonGroup className="${MT2}"><Button>儲存</Button></ButtonGroup>\n</div>\n`).join() === '1', 'R7:同檔放行與紅並存 → 只紅段落那一處')
+  // 真檔兩面:現況 Checkbox 設計原則頁(❌ Switch 同意的「只包 Button 的 div」+ ButtonGroup)0 筆;把按鈕容器塞進一段說明 → 該行紅
+  const cbFile = `${SRC}/components/Checkbox/checkbox.principles.stories.tsx`
+  const cb = readFileSync(join(root, cbFile), 'utf8')
+  const cbDiv = `<div className="${MT2}">`
+  expect(cb.includes(cbDiv) && checkLooseTimesTwo(cbFile, cb).length === 0, `真檔 ${cbFile.split('/').pop()} 現況 R7 0 筆`)
+  const cbBad = cb.replace(cbDiv, `${cbDiv}\n                <p>說明</p>`)
+  const cbWant = cbBad.split('\n').findIndex((l) => l.includes(cbDiv)) + 1
+  expect(checkLooseTimesTwo(cbFile, cbBad).map((h) => h.line).join() === String(cbWant), `真檔 ${cbFile.split('/').pop()} 按鈕容器混進說明 → R7 :${cbWant}`)
   // R8(2026-10-20):頁根字級 / 三段段名 / noteTone / Children.count —— 現況綠、各注入一種舊形狀紅、be2f1324 的原檔紅
   const r8 = (t) => checkHelper(t).filter((h) => h.rule === 'R8').map((h) => h.message)
   expect(r8(helper.replace("const PAGE_TEXT = 'text-body'", "const PAGE_TEXT = ''")).some((m) => m.includes('text-body')), '頁根拿掉 text-body → R8')
@@ -1158,6 +1312,32 @@ export function runSelftest(root = SCRIPT_ROOT) {
   if (gitBlobId(baseHelper) !== BASE_HELPER.blob) throw new InstrumentError(`對照組 fixture ${BASE_HELPER.fixture} 不是 be2f1324 的原檔`)
   const baseR8 = r8(baseHelper.toString('utf8'))
   for (const k of ['text-body', '段名', 'noteTone', 'toArray']) expect(baseR8.some((m) => m.includes(k)), `be2f1324 的 tutorial-page.tsx → R8「${k}」(實得 ${baseR8.length} 筆)`)
+  // R14(2026-11-11):標題區 → 內容由共用元件數幾塊 —— 現況綠;拿掉「一塊 → tight」/ 不再呼叫判斷 / H3 自己寫 loose 各紅;
+  // 本規則上線前的共用元件(be2f1324,標題區 → 內容一律 loose)紅
+  const anatomy = readFileSync(join(root, ANATOMY_UTILS), 'utf8')
+  const layoutCss = readFileSync(join(root, LAYOUT_SPACE_CSS), 'utf8')
+  const r14 = (h, a = anatomy, c = layoutCss) => checkHeadingProximity(h, a, c).map((x) => x.message)
+  expect(r14(helper).length === 0, `現況 tutorial-page.tsx + anatomy-utils.tsx R14 0 筆(實得 ${JSON.stringify(r14(helper))})`)
+  expect(r14(helper.replace(` ${HEADING_ONE_GAP}'`, "'")).some((m) => m.includes('ExampleSection 區塊模式')), '區塊模式拿掉 data-[heading-content=one] → R14')
+  expect(r14(helper.replace(` ${HEADING_ONE_MB}'`, "'")).some((m) => m.includes('設計規格頁小標')), '設計規格頁小標拿掉 data-[heading-content=one] → R14')
+  expect(r14(helper.replace('useHeadingContent(ref, (el) => (paragraph ? null : sectionContent(el)))', '')).some((m) => m.includes('ExampleSection 沒有呼叫')), 'ExampleSection 不再呼叫 useHeadingContent → R14')
+  expect(r14(helper, anatomy.replace('paragraph ? SPEC_HEADING_GAP_PARAGRAPH : SPEC_HEADING_GAP', "paragraph ? SPEC_HEADING_GAP_PARAGRAPH : 'mb-[var(--layout-space-loose)]'")).some((m) => m.includes('H3 沒用 SPEC_HEADING_GAP')), 'H3 改回自己寫 mb loose → R14')
+  expect(r14(helper, null).some((m) => m.includes('讀不到 anatomy-utils')), '讀不到 anatomy-utils.tsx → R14(不讀成通過)')
+  // 「兩塊」的門檻(2026-11-12 多塊緊排 = 乙):現況 = md tight;改值 / 改 token / 不再用它 / 讀不到 token 各紅
+  const mdTight = mdLayoutSpaceTight(layoutCss)
+  expect(mdTight !== null && mdTight > 0, `讀得到 layoutSpace.css 的 md tight(實得 ${mdTight})`)
+  const minGapLine = `const ${BLOCK_MIN_GAP} = ${mdTight}\n`
+  expect(helper.includes(minGapLine), `現況 tutorial-page.tsx 有「${minGapLine.trim()}」(對照組要改的那一行真的存在)`)
+  expect(r14(helper.replace(minGapLine, `const ${BLOCK_MIN_GAP} = ${mdTight + 4}\n`)).some((m) => m.includes('兩邊要同一個值')), '門檻常數改成別的值 → R14')
+  expect(r14(helper, anatomy, layoutCss.replace(/(:root\s*\{[^}]*?--layout-space-tight:\s*)[\d.]+px/, '$18px')).some((m) => m.includes('兩邊要同一個值')), 'layoutSpace.css 的 md tight 改值、常數沒跟 → R14')
+  expect(r14(helper.replace(minGapLine, '')).some((m) => m.includes(`沒有數字常數 ${BLOCK_MIN_GAP}`)), '拿掉門檻常數 → R14')
+  const useLine = `blocks >= 2 ? ${BLOCK_MIN_GAP} : loose`
+  expect(helper.includes(useLine), `現況 headingContentOf 有「${useLine}」(對照組要改的那一行真的存在)`)
+  expect(r14(helper.replace(useLine, 'loose')).some((m) => m.includes(`headingContentOf 沒有用 ${BLOCK_MIN_GAP}`)), 'headingContentOf 改回只比 loose(2026-11-11 那版)→ R14')
+  expect(r14(helper, anatomy, null).some((m) => m.includes('讀不到 layoutSpace.css')), '讀不到 layoutSpace.css → R14(不讀成通過)')
+  expect(r14(helper, anatomy, ':root { --layout-space-loose: 16px; }').some((m) => m.includes('讀不到 layoutSpace.css')), 'layoutSpace.css 裡沒有 md tight → R14(不讀成通過)')
+  const baseR14 = r14(baseHelper.toString('utf8'))
+  expect(baseR14.some((m) => m.includes('headingContentOf')) && baseR14.some((m) => m.includes('ExampleSection 沒有呼叫')), `be2f1324 的 tutorial-page.tsx(標題區 → 內容一律 loose)→ R14(實得 ${baseR14.length} 筆)`)
   return { ok, fails }
 }
 

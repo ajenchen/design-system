@@ -62,7 +62,7 @@ export const MetadataFields: Story = {
   name: '詳情欄位就地編輯',
   render: () => (
     <div className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
-      {/* 標題 → 欄位 = loose(標題是整組欄位的標題,欄位之間 loose,它到欄位也是 loose:layoutSpace.spec.md 規則 3「標題(+ 說明)→ 它底下的並列內容」);
+      {/* 標題 → 欄位 = loose(標題是整組欄位的標題,欄位之間 loose,它到欄位也是 loose:layoutSpace.spec.md 規則 3「標題區 → 內容」:兩塊以上 = loose);
           同一張表的水平欄位共用 FieldGroup 的 label 寬(field.spec.md「同一表單的多個 horizontal Field 必經 FieldGroup horizontalLabelWidth」) */}
       <h2 className="mb-[var(--layout-space-loose)] text-h6 font-medium text-foreground">詳細資訊</h2>
       <FieldGroup horizontalLabelWidth="128px">

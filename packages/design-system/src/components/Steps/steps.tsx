@@ -65,7 +65,7 @@ const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CO
 // 是白 8% 半透明,底下那層環色透上來 —— 實測深色間隙 #58A5FF(應為頁面底 #0A0A0A),整顆看起來是一個大藍圓,
 // 淺色卻是「圓 + 白色間隙 + 外環」,兩主題長得不一樣。
 // outline-offset 那一圈本來就是透明的,露出的是**真正的背景**(不論放在頁面、卡片還是對話框上),
-// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:51-53 `:focus-visible` 的
+// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:52-54 `:focus-visible` 的
 // outline 2px + offset 2px),粗細與間隙逐字相同。outline 與 box-shadow 一樣不佔排版,連接線幾何不動。
 const RING_GAP_PX = STACK_GAP_PX // 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(tokens/uiSize/stack-gap.ts)
 const RING_WIDTH_PX = 2
@@ -575,7 +575,7 @@ function VerticalLayout({
       </StepItemHeader>
       {showContent && (
         // 步驟標題區 → 內容 = loose(md 16 / lg 24):標題 + 說明是這一步整組內容的標題,不是第一個內容的小標
-        //(user 2026-10-21 A4 甲;layoutSpace.spec.md「親疏 3 級」跨範疇 parallel 那一列的「標題(+ 說明)→ 它底下的並列內容」→ 規則 3 loose)。
+        //(user 2026-10-21 A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:一步的內容是一張表單的好幾個欄位 = 兩塊以上 → loose)。
         // 已發布版寫死 mt-3(md、lg 都 12);閘 steps-content-follows-current (3)
         <div className="flex items-start gap-3 mt-[var(--layout-space-loose)]">
           <div className="shrink-0" style={{ width: indicatorBox }} />

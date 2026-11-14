@@ -52,19 +52,20 @@ benchmark:
 ## API skeleton(對齊 Mantine compound API)([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/app-shell.mdx#L64-L70))
 
 ```tsx
-<AppShell
-  layout="primary-sidebar" | "primary-header"   // 預設 primary-sidebar
-  // sidebar 開合 state 走 Sidebar SSOT 既有 SidebarProvider(消費既有 ⌘B / Ctrl+B,本 AppShell 不重發明)
-  mainMinWidth={600}    // 必填:Main 只有最小寬(「版面規則」§1)
-  asideOpen={open}      onAsideOpenChange={setOpen}      // ⌘. / Ctrl+. toggle (本 AppShell own)
-  sidebar={<Sidebar collapsible="icon" widthRange={{ min: 240, initial: 240, max: 320 }}>...</Sidebar>}   // Menu;SSOT in components/Sidebar/sidebar.spec.md
-  header={<ChromeHeader>...</ChromeHeader>}     // SSOT in patterns/header-canonical/header-canonical.spec.md
-  aside={<AppShellAside title="Detail" contentType="issue-detail" widthRange={{ min: 250, initial: 320, max: 500 }}>...</AppShellAside>}   // Right panel
-  agent={<AgentPanelDock>{({ close }) => <AgentPanel onClose={close}>...</AgentPanel>}</AgentPanelDock>}   // AI agent;SSOT in components/AgentPanel/agent-panel.spec.md
-  portalContainer={canvas}   // 選填:AppShell 不撐滿視窗(放在帶 transform 的畫布裡)時,Menu 浮層傳送到這裡;省略 = document.body
->
-  {children}    {/* <main> landmark, padding=0,內容遵循 layoutSpace 6 條規則 */}
-</AppShell>
+<SidebarProvider>   {/* 包在 <AppShell> 外面(「版面規則」§6;這個要求是 2026-11-13 AI 由程式推導補寫的):sidebar 開合 state 與側欄 size 都住 Sidebar SSOT 既有的這一層(消費既有 ⌘B / Ctrl+B,本 AppShell 不重發明) */}
+  <AppShell
+    layout="primary-sidebar" | "primary-header"   // 預設 primary-sidebar
+    mainMinWidth={600}    // 必填:Main 只有最小寬(「版面規則」§1)
+    asideOpen={open}      onAsideOpenChange={setOpen}      // ⌘. / Ctrl+. toggle (本 AppShell own)
+    sidebar={<Sidebar collapsible="icon" widthRange={{ min: 240, initial: 240, max: 320 }}>...</Sidebar>}   // Menu;SSOT in components/Sidebar/sidebar.spec.md
+    header={<ChromeHeader>...</ChromeHeader>}     // SSOT in patterns/header-canonical/header-canonical.spec.md
+    aside={<AppShellAside title="Detail" contentType="issue-detail" widthRange={{ min: 250, initial: 320, max: 500 }}>...</AppShellAside>}   // Right panel
+    agent={<AgentPanelDock>{({ close }) => <AgentPanel onClose={close}>...</AgentPanel>}</AgentPanelDock>}   // AI agent;SSOT in components/AgentPanel/agent-panel.spec.md
+    portalContainer={canvas}   // 選填:AppShell 不撐滿視窗(放在帶 transform 的畫布裡)時,Menu 浮層傳送到這裡;省略 = document.body
+  >
+    {children}    {/* <main> landmark, padding=0,內容遵循 layoutSpace 6 條規則 */}
+  </AppShell>
+</SidebarProvider>
 ```
 
 Sub-component:`<AppShellAside title={...} contentType={...} widthRange={{ min, initial, max }} defaultWidth? onWidthCommit?>` —— 寬度 = 這種內容類型的最小 / 初始 / 最大(「版面規則」§1;同一 `contentType` 的不同資料共用設定與寬度紀錄)。**title prop required**(= `<aside aria-label>`)。2026-10-14 前的 `width: number | { md, xl }` 依視窗挑寬與 240 / 640 硬夾隨「版面規則」退場(破壞性)。Menu(`<Sidebar widthRange contentType>`)與 AI agent(`<AgentPanel widthRange contentType>`)的寬度設定同一形狀、同一個名字 `widthRange`(不叫 `width`:AgentPanel 的 `width` 早已是「受控寬度紀錄」);`defaultWidth` / `onWidthCommit` = 產品自存紀錄的還原與接收(§7)。`mainMinWidth`、`contentType`、`widthRange`、`agent` slot、`requestAside`、`navigateFromAgent` 是 2026-10-14 為落地「版面規則」新增的 API(AI 建議的形狀,工程決定)。
@@ -215,7 +216,7 @@ function CustomAside() {
 - 三值皆正數、最小 ≤ 初始 ≤ 最大;同一內容類型的不同資料共用設定(U:6);不合法時開發階段報錯(AI 推導)。DS 不再硬夾任何寬度,產品設的值為準。
 - Main 最小寬由產品給(U:5 只寫「始終保留最小寬度」,沒寫值誰給 → AI 建議:必填、DS 不替產品挑預設;user 兩個例子都用 600,U:13、U:35)。
 - 「視窗寬度」= 視窗內可供 App 排版的寬度(U:7)= AppShell 根節點**看得到**的寬(ResizeObserver 量,不量 `window`;不含水平捲出去的部分,U:27)—— 量法是 AI 推導。
-- 產品沒設時的 DS 預設(沿用既有值,AI 建議):AI agent 360 / 400 / 640(`AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`)、Right panel 240 / 320 / 640(最小 = `--sidebar-width-min` 的實際值,與 Menu 同一顆;初始 / 最大 = `app-shell.tsx` `ASIDE_WIDTH_DEFAULT / MAX`)、Menu 最小 240 / 初始 240(`--sidebar-width-min` / `--sidebar-width`,出處見 `../Sidebar/sidebar.spec.md`「尺寸規範」);Menu 最大 DS 沒有既有值 → 產品必給。
+- 產品沒設時的 DS 預設(沿用既有值,AI 建議):AI agent 360 / 400 / 640(`AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`)、Right panel 240 / 320 / 640(最小 = `app-shell.tsx` 的常數 `PANEL_WIDTH_MIN_DEFAULT`,與 Menu 同一個;初始 / 最大 = `app-shell.tsx` `ASIDE_WIDTH_DEFAULT / MAX`)、Menu 最小 240 / 初始 240(`PANEL_WIDTH_MIN_DEFAULT` / `--sidebar-width`,出處見 `../Sidebar/sidebar.spec.md`「尺寸規範」);Menu 最大 DS 沒有既有值 → 產品必給。最小寬 2026-11-13 前是 token `--sidebar-width-min`(同一個 240):只有 AppShell 在讀、不隨密度變,不符合開 token 的條件(`../../tokens/token-system.spec.md` 第 0 題)→ 收回成常數,畫面零差異(AI 依第 0 題做的工程收斂)。
 
 ### 2. 開關紀錄、顯示方式、寬度紀錄分開管
 
@@ -259,9 +260,9 @@ function CustomAside() {
 
 有細列 = 消費者選 `collapsible="icon"`(`../Sidebar/sidebar.spec.md`「Collapsible」);沒選 = 細列寬 0,以下全部退回 U 原文。以下是 AI 建議、D:24 核准(依 user U:82 的問句方向):
 - 有細列時,Menu 最少看得到的就是細列,再窄也不消失(U:27 只寫水平捲動,沒有「窄就拿掉」)。
-- 可拉上限與水平捲動判斷:Menu **並排**時展開的 Menu 取代細列的位置,細列不另扣(扣的是 Menu 最小寬)→ U:35-50 的數字一個都不變;Menu **關閉 / 暫藏 / 浮層**時,細列像 Main 最小寬一樣先扣。例:1600、Menu 關閉、細列 48 → Right 上限 426、AI agent 526(48 + 426 + 526 + 600 = 1600);細列 68 → 416 / 516。
+- 可拉上限與水平捲動判斷:Menu **並排**時展開的 Menu 取代細列的位置,細列不另扣(扣的是 Menu 最小寬)→ U:35-50 的數字一個都不變;Menu **關閉 / 暫藏 / 浮層**時,細列像 Main 最小寬一樣先扣。例:1600、Menu 關閉、細列 48 → Right 上限 426、AI agent 526(48 + 426 + 526 + 600 = 1600);細列 68(大密度 × 側欄 size lg)→ 416 / 516;細列 64(大密度 × 側欄 size sm / md)→ 418 / 518(64 那一格是 2026-11-13 補的:規則一個字沒動,只是大密度預設的細列寬由 68 改回 64 —— 見本節「細列寬來自 token 公式」那一條 —— 所以多代一個值;數字由版面模型實跑)。
 - 排 Right 與 AI agent、第 4 點的合計:**不論 Menu 此刻是否並排,細列一律先扣**(D:24「「要求 Right panel 時關閉 AI agent」的合計都要扣細列」;Menu 排在最後、之後可能被暫藏而只剩細列,所以排前兩者時 Menu 最少就佔細列 —— 這不是「另扣」,Menu 並排時是展開的 Menu 取代細列)。只在 Menu 沒並排時才扣的話,要求 Right 之後 AI agent 會變成蓋住 Right 的浮層(AI 推導,判定表 D17、P2)。
-- 細列寬來自 token 公式 `--sidebar-width-icon`(md 48 / lg 68,`../Sidebar/sidebar.spec.md`「尺寸規範」),不能拖、不是面板;程式量實際寬,不寫死 48。有細列時暫藏與關閉長得一樣(都只剩細列),差別只在放得下時暫藏的會自己回來(U:26)、關閉的不會(U:11)。
+- 細列寬來自 token 公式 `--sidebar-width-icon`(一般密度 48 / 大密度 64;側欄 `size="lg"` 時各多 4 = 52 / 68,`../Sidebar/sidebar.spec.md`「尺寸規範」),不能拖、不是面板;程式量實際寬,不寫死 48。側欄的 size 是在 `SidebarProvider` 那一層算進細列寬的,所以 **`SidebarProvider` 要包在 `<AppShell>` 外面**(本元件每一則範例都是這樣包;`<Sidebar>` 與標頭的開關鈕都要讀它的 context,實務上也只能這樣包)—— 包在裡面的話 AppShell 量不到 size 那一份,`size="lg"` 時版面會少算 4px(AI 由程式推導,2026-11-13;同日實量:`size="lg"` 時 `SidebarProvider` 外面讀到的細列寬是 48 / 64、裡面是 52 / 68)。「AppShell 自己量到的細列寬 = 側欄收合後的實際寬」由 `scripts/sidebar-standalone-collapse-invariant.mjs` 的 R8c 在「狀態行為」那一則上量(兩種密度 × size md / lg)。有細列時暫藏與關閉長得一樣(都只剩細列),差別只在放得下時暫藏的會自己回來(U:26)、關閉的不會(U:11)。
 - 世界級同一個算法(細列是收起來的 Menu、展開時不是「細列 + 展開寬」):Carbon UI Shell 收起讓出 48px、展開改讓 256px(<https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/ui-shell/content/_content.scss>);Material `ModalWideNavigationRail` 展開成浮層時「Keep this rail even when expanded so that screen layout doesn't change」(<https://github.com/androidx/androidx/blob/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WideNavigationRail.kt>)([來源](https://github.com/androidx/androidx/blob/7c22902f7b511e1f475ee4389824090fe417cd75/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WideNavigationRail.kt#L767)、[來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/ui-shell/content/_content.scss#L28-L32))。
 
 ### 7. 寬度紀錄與實際顯示
@@ -320,7 +321,7 @@ Main 與已決定並排面板的最小寬(+ 細列)合計超過視窗寬 → 各
 | 1280、三個都開、AI agent 紀錄 600 | Menu 暫藏;Right 290、AI agent 390;Main 600 | AI 推導(A8) |
 | 1100、三個都開、AI agent 紀錄 600 | Menu 並排 220、Right 275、AI agent 浮層 600、Main 605 | AI 推導(A2) |
 | 1280、三個都開,把 Right 換成最小 400 的內容 | 1350 > 1280 → 關 AI agent;Menu 回並排;Right 440;換回原內容 AI agent 也不回來 | AI 推導(A3、U18) |
-| 1600、Menu 關閉、細列 48 / 68 | Right 上限 426 / 416、AI agent 526 / 516 | D:24(D8、D9) |
+| 1600、Menu 關閉、細列 48 / 64 / 68(68 = 大密度 × 側欄 size lg) | Right 上限 426 / 418 / 416、AI agent 526 / 518 / 516 | D:24(D8、D9;64 那一格 2026-11-13 補,規則不變、多代一個細列寬) |
 | 1230、細列 48、最小 600 / 300 / 300,要求 Right | 600 + 48 + 300 + 300 = 1248 > 1230 → 關閉 AI agent | D:24(D10) |
 | 1300、Right 與 AI agent 開、Menu 關閉,按 Menu 開關 | 直接出左側浮層;再按 → 暫藏;放到 1400 → 並排 | D:25、D:26(D13、D14) |
 | 320 浮層 272 時拖(有位移),再放到 2200 | 紀錄 272;並排時夾到最近的合法寬 300 | AI 照 D:19 + U:70-71 推(A5) |
@@ -343,12 +344,14 @@ Main 與已決定並排面板的最小寬(+ 細列)合計超過視窗寬 → 各
 
 **`<main>` landmark + padding=0**。AppShell.Main 是空殼 layout primitive,**不發明任何內距規則**。
 
-Main 內塞什麼(table / field / card / page header / list)的 layout + spacing → **完全遵循 `layoutSpace.spec.md` 既有 6 條規則 + 親疏 3 級**:
+Main 內塞什麼(table / field / card / page header / list)由產品決定 —— DS 不定義 dashboard 的卡片 / 內容框架,也不規定一定用 `DescriptionList`(user 2026-11-06 原話:「dashboard總覽沒用card只是因為card的內容很彈性，我們不想定義來框架住消費者，也沒有要強迫消費者一定要使用description list,甚至其實dashboard 沒有消費者的客製化反而無法有效利用版面」);DS 只管它們的 layout + spacing → **完全遵循 `layoutSpace.spec.md` 既有 6 條規則 + 親疏 3 級**:
 - 規則 1:水平 padding(3 patterns 並存 — bounded surface 自帶 / 純 layout 父層管 / list item 自帶)
 - 規則 2:頂部(Header → 第一個元素的 gap)
 - 規則 3:元素間 gap(只看親疏)
 - 規則 4:底部(Main 高度撐滿 → 最後是一般元素時底部 `bottom` 48;有框區塊 `loose`、無框清單 0)
 - 規則 6:Chrome 表面水平 padding 統一 `loose`
+
+**主區只有一塊內容時,不在主區重複放標題與說明**:頁面標頭(`PageHeader` / ChromeHeader 的標題)已經說明這頁是什麼時,主區不再放區段標題 + 說明,內容直接接在標頭下 —— 例:整頁一張 DataTable → 標頭 → 表格 `loose`(規則 2 bounded region)、左右 `loose`(規則 1)、表格 → 主區底 `loose`(規則 4 第 2 列),表格用 `aria-label` 命名。出處:user 2026-11-11 在 Insights 頁(當時表格上方有區段標題 + 一句說明)留言(逐字):「標題距離上方標頭和描述距離下方表格的距離都是一樣的？按照layout space設計原則都是tight? 此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」。主區有兩塊以上並列內容時,各塊才有自己的標題(用來分出哪塊是哪塊;塊與塊之間照 `layoutSpace.spec.md` 規則 3「組 ↔ 組」)【AI 推導】。範例:AppShell `_demo-helpers.tsx` InsightsView、Sidebar 展示的主區、範本 `apps/template/src/App.tsx` DashboardPage(= `ds-canonical/templates/dashboard-app.tsx`);閘 `scripts/header-first-gap-invariant.mjs`(這幾處登記的第一個內容 = bounded,主區若又放回標題,角色變 element → 紅)+ `scripts/sidebar-main-follows-selection-invariant.mjs`(Sidebar 展示每一步主區都不得有區段標題)。
 
 **禁止**:AppShell.Main 強制 padding(會跟內部 DataTable / naked list 衝突 + 違反規則 1B「純 layout primitive 無邊界 → 父層管」)。
 
@@ -425,7 +428,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 | 用途 | Consume token / SSOT |
 |---|---|
-| Menu / Right panel / AI agent 寬度 | 依內容類型的最小 / 初始 / 最大(「版面規則」§1;產品沒設時 Menu 預設 `--sidebar-width-min` / `--sidebar-width`,`sidebar.spec.md`)|
+| Menu / Right panel / AI agent 寬度 | 依內容類型的最小 / 初始 / 最大(「版面規則」§1;產品沒設時 Menu 預設最小 = `app-shell.tsx` 的常數 `PANEL_WIDTH_MIN_DEFAULT`(240)、初始 = `--sidebar-width`,`sidebar.spec.md`)|
 | Menu 細列寬 | `--sidebar-width-icon`(`sidebar.spec.md`「尺寸規範」)|
 | 浮層另一側留白 | `--layout-space-viewport-inset`(`tokens/layoutSpace/layoutSpace.spec.md`)|
 | Header height | `--chrome-header-height`(`tokens/uiSize/uiSize.spec.md`)|
@@ -445,6 +448,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 - ❌ 禁:`header={<header>...</header>}`(應傳 `<ChromeHeader>` 或消費 `header-canonical` 派生 header;同上 — Pattern 9 同攔 header raw-element,TS 型別層不強制)
 - ❌ 禁:AppShell.Main 自加 padding(違反 layoutSpace 規則 1B)
 - ❌ 禁:AppShell 的 Menu 用 `collapsible="none"`(「版面規則」§12)
+- ✅ 必:`<SidebarProvider>` 包在 `<AppShell>` 外面(側欄 size 那一份細列寬在這一層算;包在裡面時 `size="lg"` 的版面少算 4px —— 「版面規則」§6「細列寬來自 token 公式」那一條。2026-11-13 AI 由程式推導新加的要求;執行期沒有警告,只有閘的 R8c 在 DS 自己的範例上守)
 - ✅ 應:各區最小寬照「版面規則」§8 消費者指引設定(Main 最小寬 + 細列 + 每種 Right 內容最小寬 ≤ 產品要支援的最窄 desktop 版面寬),讓水平捲軸在 desktop 幾乎不出現
 - ❌ 禁:AppShellAside header 加第二行 / actions(header = 單行 title + close X,API typed `title: string` 結構鎖;說明文字歸 aside body — 2026-06-12 fork-drift 防線)
 - ✅ 必:`layout` mode 在 product 啟動時固定,**不在 runtime 切換**(切換 = product 角色變動 = 應該重 mount app)
@@ -483,6 +487,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 - `agent-panel.spec.md`
 - `dialog.spec.md`
 - `header-canonical.spec.md`
+- `layoutSpace.spec.md`
 - `resize-handle.spec.md`
 - `sheet.spec.md`
 - `sidebar.spec.md`

@@ -7,9 +7,10 @@
  *              對照組才量得到);
  *         (2) 步驟的 header(`li[data-state]` 的第一個子元素,含其子樹、不含內容區)沒有 `aria-expanded` / `aria-controls`——
  *             header 是「跳到那一步」,不是開合鈕(2026-09-30 退役「可同時打開多步」模式;2026-07-05 `7e69aad7` 加的 ARIA 一併拿掉)。
- *         (3) 步驟標題區 → 內容 = `--layout-space-loose`(A4 甲;layoutSpace.spec.md「親疏 3 級」「標題(+ 說明)→ 它底下的並列內容」);
+ *         (3) 步驟標題區 → 內容 = `--layout-space-loose`(A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:一步的內容是表單的好幾個欄位 = 兩塊以上);
  *         (4) 展開內容的那一步 → 下一步 = `--layout-space-bottom`,最後一步 = 0(A3 甲);
- *         (5) 內容區裡跟在內容後面的按鈕列,上方 = `--layout-space-loose`(ssot A-S4);
+ *         (5) 內容區裡跟在內容後面的按鈕列,上方 = `--layout-space-loose` × 2(Steps 的內容區都是一步一張表單:表單欄位 → 表單按鈕列 =
+ *             layoutSpace.spec.md 規則 3「組 ↔ 組」;user 2026-11-10 PR #172 留言,取代 ssot A-S4 的 loose);
  *         (6) 長成按鈕(`role="button"`)的 header 點了,目前那一步必須移過去(F7 甲:純追蹤的步驟條用 `readOnly`)。
  *         (3)–(5) 量盒邊到盒邊(getBoundingClientRect)跟內容區上解析出來的 token 比,md 與 lg 各量一次(量法細節見檔內 measureInPage)。
  *         載入後先量一次;第一輪依序點每個當下可點的 header(`role="button"`,點之前現場再確認一次);按一次目前那一步內容區裡的
@@ -84,11 +85,11 @@ export function judge(snapshot, label = '') {
       }
       if (it.hasContent && it.buttonGap !== null && it.buttonGap !== undefined) {
         if (it.loose === null || it.loose === undefined) violations.push({ kind: 'button-gap', where, text: `${where}:內容區上讀不到 --layout-space-loose(量具讀不到 token)` })
-        else if (Math.abs(it.buttonGap - it.loose) > 0.6) violations.push({ kind: 'button-gap', where, text: `${where}:按鈕列上方 ${it.buttonGap}px ≠ loose ${it.loose}px(ssot A-S4:按鈕跟在內容後面時上方 = loose)` })
+        else if (Math.abs(it.buttonGap - it.loose * 2) > 0.6) violations.push({ kind: 'button-gap', where, text: `${where}:按鈕列上方 ${it.buttonGap}px ≠ loose × 2 = ${it.loose * 2}px(layoutSpace.spec.md 規則 3「組 ↔ 組」:表單欄位 → 表單按鈕列;user 2026-11-10 PR #172 留言)` })
       }
       if (it.hasContent && it.headerToContent !== null && it.headerToContent !== undefined) {
         if (it.loose === null || it.loose === undefined) violations.push({ kind: 'header-content-gap', where, text: `${where}:內容區上讀不到 --layout-space-loose(量具讀不到 token)` })
-        else if (Math.abs(it.headerToContent - it.loose) > 0.6) violations.push({ kind: 'header-content-gap', where, text: `${where}:標題區 → 內容 ${it.headerToContent}px ≠ loose ${it.loose}px(layoutSpace.spec.md「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose)` })
+        else if (Math.abs(it.headerToContent - it.loose) > 0.6) violations.push({ kind: 'header-content-gap', where, text: `${where}:標題區 → 內容 ${it.headerToContent}px ≠ loose ${it.loose}px(layoutSpace.spec.md 規則 3「標題區 → 內容」:表單的好幾個欄位 = 兩塊以上 → loose)` })
       }
     })
   })
@@ -343,8 +344,10 @@ async function selftest() {
   check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, stepGap: 24, bottom: 48, isLast: false })] }] })) === 'step-gap', '判定表:展開那一步 → 下一步 24(已發布版 pb-6)≠ bottom 48 → step-gap')
   check(judge({ lists: [{ items: [item({ current: true, hasContent: true, stepGap: 0, bottom: 48, isLast: true })] }] }).length === 0, '判定表:最後一步內容區底 → li 底 0 → 綠')
   check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, stepGap: 48, bottom: 48, isLast: true })] }] })) === 'step-gap', '判定表:最後一步也給 48(放進 Dialog 會疊成 96)→ step-gap')
-  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 24, loose: 24 })] }] }).length === 0, '判定表:lg 按鈕列上方 24 = loose 24 → 綠')
-  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 48, loose: 16 })] }] })) === 'button-gap', '判定表:按鈕列上方 48(PR 前一版 mt-bottom)≠ loose 16 → button-gap')
+  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 48, loose: 24 })] }] }).length === 0, '判定表:lg 按鈕列上方 48 = loose 24 × 2 → 綠')
+  check(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 32, loose: 16 })] }] }).length === 0, '判定表:md 按鈕列上方 32 = loose 16 × 2 → 綠')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 24, loose: 24 })] }] })) === 'button-gap', '判定表:lg 按鈕列上方 24(2e1f2e27 以前只有一份 loose)≠ 48 → button-gap')
+  check(kinds(judge({ lists: [{ items: [item({ current: true, hasContent: true, buttonGap: 48, loose: 16 })] }] })) === 'button-gap', '判定表:md 按鈕列上方 48(PR 前一版 mt-bottom)≠ 32 → button-gap')
   check(deadHeader({ lists: [{ items: [item({ current: true }), item()] }] }, 0, 0) === null, 'dead-header:點了之後被點的那一步是目前那一步 → 綠')
   check(deadHeader({ lists: [{ items: [item({ current: true }), item()] }] }, 0, 1)?.kind === 'dead-header', 'dead-header:點了第 2 步,目前那一步還在第 1 步(只給 value、沒接 onValueChange)→ dead-header')
   // importsSteps 兩面
@@ -430,7 +433,7 @@ async function selftest() {
       })
       injected5 += n5
       caught5 += judge(await page.evaluate(measureInPage)).filter((v) => v.kind === 'step-gap').length
-      // 注入 (6):內容區的按鈕列上外距寫成 48px(PR 前一版 mt-bottom)→ 有按鈕列的必須抓到 button-gap
+      // 注入 (6):內容區的按鈕列上外距縮回一份 loose(2e1f2e27 以前的值;此處是 lg,= 24 ≠ 48)→ 有按鈕列的必須抓到 button-gap
       const n6 = await page.evaluate(() => {
         let n = 0
         for (const content of document.querySelectorAll('ol[data-orientation][data-size] > li[data-state][aria-current="step"] > :nth-child(2):not([data-steps-connector])')) {
@@ -439,7 +442,7 @@ async function selftest() {
           if (!box || box.children.length < 2) continue
           const last = box.lastElementChild
           if (!last.querySelector('button') || last.previousElementSibling.querySelector('button')) continue
-          last.style.marginTop = '48px'; n += 1
+          last.style.marginTop = 'var(--layout-space-loose)'; n += 1
         }
         return n
       })
@@ -453,7 +456,7 @@ async function selftest() {
     check(moved2 > 0 && caught2 === moved2, `注入內容放錯步(${contentStories.length} 則有內容區的 story 全部):${moved2} 處注入、${caught2} 處抓到`)
     check(injected4 > 0 && caught4 >= injected4, `注入 lg 標題區 → 內容寫死 12px(${contentStories.length} 則有內容區的 story 全部):${injected4} 處注入、${caught4} 處抓到`)
     check(injected5 > 0 && caught5 >= injected5, `注入展開那一步 → 下一步 24px / 最後一步 48px(${contentStories.length} 則有內容區的 story 全部):${injected5} 處注入、${caught5} 處抓到`)
-    check(injected6 > 0 && caught6 >= injected6, `注入按鈕列上方 48px(有按鈕列的內容區):${injected6} 處注入、${caught6} 處抓到`)
+    check(injected6 > 0 && caught6 >= injected6, `注入按鈕列上方縮回一份 loose(有按鈕列的內容區):${injected6} 處注入、${caught6} 處抓到`)
   } finally { await browser.close(); await server.stop() }
   // 注入 (3):點 header 之後 aria-current 移走、舊內容留在原本那一步(「內容沒跟著目前那一步走」的回歸)—— 跑一次完整掃描,
   // 只掃有內容區的 story。這一種只有「點 header 讓有內容區的步驟條換步」時才會發作,所以它同時證明掃描真的走到了那條路

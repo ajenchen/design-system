@@ -23,6 +23,7 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
@@ -910,7 +911,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
           !isTextDisplay && value && !searchable && tagPadding[size],
           // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
-          // state machine `data-[state=open]:border-border-hover`(灰深)處理 open。
+          // state machine 處理 open:自己的浮層開著(`data-field-open`)= 維持聚焦的框(2026-11-12 起;field-wrapper.tsx)。
           // 2026-07-04 Q1:error border 同樣收進 fieldWrapperStyles error variant(error 勝 focus 色)。
           // D2(2026-07-13):`relative` = hidden input mirror 的 absolute 定位容器
           // (fieldWrapperStyles base 無 relative;對齊 NativeSelect tag 分支同款顯式加法)。
@@ -920,6 +921,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         style={styleProp || !isTextDisplay ? { ...styleProp, ...(!isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined) } : undefined}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
+        // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 `{...rest}` 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+        {...fieldOpenProps(open)}
         // 觸發欄位內的搜尋框握著焦點時,按欄位上的其他東西(清除 ×、選中值疊字、空白處、箭頭)焦點不離開搜尋框,click 照常動作
         // (2026-09-30;判準共用 lib/pointer-press.ts,Combobox 觸發區同一支;規則 select-menu.spec.md「A11y 預設」Focus 段的焦點表)
         onMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, searchable ? inputRef.current : null)}
@@ -973,8 +976,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     return (
       // 截斷 tooltip:恆 wrap(truncated-text.spec.md always-wrap),未截斷或選單開啟時 open={false}
       // 靜默。TooltipTrigger 放 SelectMenu 的 PopoverTrigger asChild 內側(緊貼 trigger div):
-      // PopoverTrigger 注入的 data-state(Field open 邊框樣式依賴)在 TooltipTrigger 內以
-      // triggerProps 後 spread 勝出;反序會被 tooltip 的 data-state 蓋掉。Tooltip root / Content
+      // PopoverTrigger 注入的 data-state 在 TooltipTrigger 內以
+      // triggerProps 後 spread 勝出;反序會被 tooltip 的 data-state 蓋掉(外框「開著 = 聚焦的框」認 data-field-open,不靠它)。Tooltip root / Content
       // 都不產 DOM(Content portal),SelectMenu children 結構與佈局不變。
       <Tooltip open={triggerTooltipActive ? undefined : false}>
         <SelectMenu

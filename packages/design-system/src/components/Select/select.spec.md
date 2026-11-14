@@ -321,7 +321,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 - **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列,不是「沒有選項」。SSOT `select-menu.spec.md`「Empty state」「Suggestions」
 - **disabled 選項**:`option.disabled` forward 至 menu item——不可點選,鍵盤導覽自動跳過(cmdk `aria-disabled` 行為)
-- **大量選項**:選單固定最大高度內捲動(`--menu-max-height` 預設 300px),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
+- **大量選項**:選單固定最大高度內捲動(300px,值與理由住 `../Command/command.spec.md`「邊界案例」清單捲動上限),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
 - **空值**:無選擇時顯 placeholder;「無選擇是有效狀態」場景開 `clearable`(見「Clearable」)
 
 ---
@@ -366,7 +366,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - 字母鍵(searchable,焦點在觸發點本身、選單關著:Tab 進來、Esc 收起、選完 / 清空之後)— 打開選單,這個字進搜尋框;輸入法第一鍵同樣(2026-10-07 待辦總帳 K3,規則住 `../SelectMenu/select-menu.spec.md`「A11y 預設」Keyboard 段)
 - Backspace(clearable,關鍵字空白;不可搜尋時清單關著)— 清掉值,同按清除 ×(見上方「Clearable」)
 
-**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件;滑鼠點選項與 `Enter` 相同,收起前焦點不離開它,`../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它;按 Tab 收起時焦點直接走到下一格,不回觸發器)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
+**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類 —— 該列標明是 2026-09-10 AI 依一致性推導,不是 user 拍板;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**選單開著時**維持同一個聚焦的框,不看焦點在哪:可搜尋時焦點在欄位內的搜尋輸入框(插入點控件;滑鼠點選項與 `Enter` 相同,收起前焦點不離開它,`../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段),不可搜尋時焦點搬進浮層 —— 兩種都由「欄位自己的浮層開著 = 維持聚焦的框」承擔(唯一出處 `../Field/field.spec.md`「Field state machine SSOT」;2026-11-12 AI 建議、user 採納。本句 2026-11-12 前寫「不分開著關著」且只描述可搜尋的情形 —— 那是 AI 推導,當時不可搜尋的 Select 開著其實是滑過的灰框,已更正);**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它;按 Tab 收起時焦點直接走到下一格,不回觸發器)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。**唯讀**觸發器長相同樣是邊框轉主色,但只在鍵盤聚焦時畫、滑鼠點不變(2026-11-11;`../Field/field-controls.spec.md`「Focus 行為」readonly 段,閘 `readonly-focus-pointer-invariant.mjs`)。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
@@ -376,7 +376,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 - `checkbox.spec.md`
 - `combobox.spec.md`
+- `command.spec.md`
 - `people-picker.spec.md`
 - `radio-group.spec.md`
 - `select-menu.spec.md`
-- `uiSize.spec.md`

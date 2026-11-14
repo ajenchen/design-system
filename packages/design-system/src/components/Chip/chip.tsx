@@ -13,11 +13,15 @@ import {
 import {
   useScrollEdges,
   useScrollByPage,
+  useRevealSelected,
   buildFadeMask,
   ARROW_BUTTON_WIDTH,
   OverflowScrollArrow,
   OverflowMenuTriggerButton,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
+
+// 「選到就露出來」(horizontal-overflow.spec.md):Chip 的項目與選中屬性。scroll / menu 兩模式共用,只差兩側箭頭預留寬。
+const CHIP_REVEAL = { itemSelector: '[data-slot="chip"]', selectedAttribute: { name: 'data-state', value: 'on' } } as const
 
 /**
  * Chip — Material Design Chips(filter + assist 兩分支)
@@ -146,6 +150,9 @@ const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
         ref={ref}
         className={cn(chipVariants(), className)}
         {...(props as React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>)}
+        // 「選到就露出來」認項目的記號(scroll / menu 模式的 useRevealSelected itemSelector;horizontal-overflow.spec.md)。
+        // 寫在 props 展開**之後**:consumer 傳同名 data-slot 不得蓋掉它,否則置中靜默失效(2026-11-12 審查)。
+        data-slot="chip"
       >
         {inner}
       </ToggleGroupPrimitive.Item>
@@ -211,6 +218,7 @@ const ScrollChipGroup = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const scrollByPage = useScrollByPage(scrollRef)
+  useRevealSelected(scrollRef, { ...CHIP_REVEAL, reserveArrowWidth: ARROW_BUTTON_WIDTH })
   const maskImage = buildFadeMask({
     canScroll,
     atStart,
@@ -247,7 +255,8 @@ ScrollChipGroup.displayName = 'ScrollChipGroup'
 // ── MenuChipGroup ────────────────────────────────────────────────────────────
 // Show-all navigator pattern (Chrome tab dropdown / VS Code editor tabs):
 //   - Menu 永遠顯示全部 chips,每個都用 DropdownMenuCheckboxItem + checked 反映 selection
-//   - 點 menu item = toggle selection + scrollIntoView,把該 chip 捲到中央
+//   - 點 menu item = toggle selection;捲到中央由 useRevealSelected 看選中狀態做(直接點 chip / 方向鍵同一條,
+//     2026-11-11 前捲動只寫在這裡的選單處理程式 → 直接點同一個 chip 不捲,user 回報的不一致)
 //   - 不用動態 overflow 計算,menu 內容穩定
 //
 // Menu trigger 使用 canonical `<OverflowMenuTriggerButton>`(= Button text sm iconOnly
@@ -259,29 +268,9 @@ ScrollChipGroup.displayName = 'ScrollChipGroup'
 // 已按 `horizontal-overflow.spec.md` 的 canonical 規則改回 text button。
 //
 // Fade mask 仍保留(reserveArrowWidth: 0),軟化內容硬邊。
-
-// ── getElementRef(Radix Slot idiom)──────────────────────────────────────────
-// 讀取 child element 既有 ref 而不觸發 React dev deprecation warning:
-// React ≤18 ref 在 element.ref;React 19 起移到 element.props.ref,錯誤側讀取會 fire warning
-// (以 getter 上的 isReactWarning 標記)。抄 Radix UI Slot 的偵測法:
-// https://github.com/radix-ui/primitives/blob/main/packages/react/slot/src/slot.tsx(getElementRef)
-// react-compose-refs 僅為 transitive dep(非 package.json 直接依賴),不直接 import — 最小 local 實作。
-function getElementRef(element: React.ReactElement): React.Ref<HTMLElement> | undefined {
-  // React <=18 dev:props.ref 掛 isReactWarning getter → 真 ref 在 element.ref
-  let getter = Object.getOwnPropertyDescriptor(element.props, 'ref')?.get
-  let mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
-  if (mayWarn) return (element as unknown as { ref?: React.Ref<HTMLElement> }).ref
-  // React 19 dev:element.ref 掛 isReactWarning getter → 真 ref 在 props.ref
-  getter = Object.getOwnPropertyDescriptor(element, 'ref')?.get
-  mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
-  if (mayWarn) return (element.props as { ref?: React.Ref<HTMLElement> }).ref
-  // production:兩處擇一
-  return (
-    (element.props as { ref?: React.Ref<HTMLElement> }).ref ??
-    (element as unknown as { ref?: React.Ref<HTMLElement> }).ref ??
-    undefined
-  )
-}
+//
+// 2026-11-11:原本的 local ref map + cloneElement 合併 ref(+ getElementRef)只為了選單選取後找 chip 去 scrollIntoView;
+// 揭露搬進 horizontal-overflow 的 useRevealSelected(看項目上的選中屬性)之後不需要找元素,children 原樣渲染,consumer 的 ref 也不再被包一層。
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const MenuChipGroup = React.forwardRef<
@@ -289,21 +278,8 @@ const MenuChipGroup = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>
 >(({ className, children, ...props }, ref) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
-
-  // Local ref map — 追蹤每個 chip 的 DOM 元素供 scrollIntoView 使用。
-  // 不用 useOverflowIndices 因為 menu 永遠顯示全部, 不需要動態 overflow 計算。
-  // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
-  const itemRefs = React.useRef<Map<number, HTMLElement>>(new Map())
-  // 2026-05-16 audit codex Round 6:capture rAF + cancel on unmount(defensive hygiene)
-  const scrollRafIdRef = React.useRef<number>(0)
-  React.useEffect(() => () => { if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current) }, [])
-  const registerItem = React.useCallback(
-    (index: number) => (el: HTMLElement | null) => {
-      if (el) itemRefs.current.set(index, el)
-      else itemRefs.current.delete(index)
-    },
-    []
-  )
+  // 不用 useOverflowIndices:menu 永遠顯示全部,不需要動態 overflow 計算。
+  useRevealSelected(scrollRef, { ...CHIP_REVEAL, reserveArrowWidth: 0 })
 
   const menuMaskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: 0 })
 
@@ -331,7 +307,7 @@ const MenuChipGroup = React.forwardRef<
 
   // code-quality-allow: long-function — multi / single / none selection mode each has 事務性 branch,拆 fn 會跨 fn 傳 chipValue/index/groupOnValueChange state 反而難讀
   const toggleFromMenu = React.useCallback(
-    (chipValue: string, index: number) => {
+    (chipValue: string) => {
       if (!groupOnValueChange) {
         if (import.meta.env?.DEV) {
           console.warn(
@@ -349,32 +325,10 @@ const MenuChipGroup = React.forwardRef<
       } else {
         ;(groupOnValueChange as (v: string) => void)(chipValue)
       }
-      // scrollIntoView: 讓剛選中的 chip 出現在視圖中央
-      if (scrollRafIdRef.current) cancelAnimationFrame(scrollRafIdRef.current)
-      scrollRafIdRef.current = requestAnimationFrame(() => {
-        scrollRafIdRef.current = 0
-        itemRefs.current.get(index)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-      })
+      // 不在這裡捲:選中狀態一改,useRevealSelected 就把這顆 chip 置中(與直接點、方向鍵同一條)
     },
     [groupType, groupValue, groupOnValueChange]
   )
-
-  // 2026-07-05 fix(deep-audit A.1b):原 cloneElement 直接以 registerItem 覆寫 child ref,
-  // consumer 傳給 Chip 的自有 ref 在 menu layout 會被靜默取代。改 compose — 同時餵
-  // registerItem(scrollIntoView 用)與 child 原 ref(對齊 Radix compose-refs idiom)。
-  const enhancedItems = items.map((child, i) => {
-    const childRef = getElementRef(child)
-    return React.cloneElement(
-      child as React.ReactElement<{ ref?: React.Ref<HTMLElement> }>,
-      {
-        ref: (el: HTMLElement | null) => {
-          registerItem(i)(el)
-          if (typeof childRef === 'function') childRef(el)
-          else if (childRef) (childRef as React.MutableRefObject<HTMLElement | null>).current = el
-        },
-      }
-    )
-  })
 
   return (
     <div className="flex items-center gap-2">
@@ -388,7 +342,7 @@ const MenuChipGroup = React.forwardRef<
           className={cn('flex flex-nowrap gap-2 w-fit', className)}
           {...props}
         >
-          {enhancedItems}
+          {children}
         </ToggleGroupPrimitive.Root>
       </div>
       {canScroll && (
@@ -399,7 +353,7 @@ const MenuChipGroup = React.forwardRef<
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {items.map((chip, index) => {
+            {items.map((chip) => {
               const chipProps = chip.props as { value?: string; children?: React.ReactNode; disabled?: boolean }
               const chipValue = chipProps.value
               if (typeof chipValue !== 'string') return null
@@ -408,7 +362,7 @@ const MenuChipGroup = React.forwardRef<
                   key={chipValue}
                   checked={isSelected(chipValue)}
                   disabled={chipProps.disabled}
-                  onCheckedChange={() => toggleFromMenu(chipValue, index)}
+                  onCheckedChange={() => toggleFromMenu(chipValue)}
                 >
                   {chipProps.children}
                 </DropdownMenuCheckboxItem>

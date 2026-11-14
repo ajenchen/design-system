@@ -112,7 +112,7 @@ export const DocumentLoading: Story = {
   name: '文件載入',
   render: () => (
     // 標題區(標題 + 作者列)→ 內文 = loose:標題是整份文件的標題,不是第一段的小標(user 2026-10-21 A4 甲;
-    // layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose);段與段並列 = loose。
+    // layoutSpace.spec.md 規則 3「標題區 → 內容」:兩段以上並列 = loose);段與段並列 = loose。
     // 標題 → 作者列 = tight(同一個標題區,沿用)。2026-10-27 前整個標題區 → 內文也是 tight(註解寫「functional 鏈」)。
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
       <div className="flex flex-col gap-[var(--layout-space-tight)]">

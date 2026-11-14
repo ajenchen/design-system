@@ -38,7 +38,7 @@ export const ImportSmoke: Story = {
   name: 'DS 公開 API import smoke',
   tags: ['test-only'],
   render: () => (
-    // 標題 → 第一塊內容、內容之間 = loose,跟著密度走(DS `layoutSpace.spec.md` 規則 3:標題(+ 說明)→ 它底下的並列內容)
+    // 標題 → 第一塊內容、內容之間 = loose,跟著密度走(DS `layoutSpace.spec.md` 規則 3「標題區 → 內容」:兩塊以上並列 = loose)
     // @layout-space-magic-ok: 只剩外框內距 p-6 —— portal 入口 dev artifact(import smoke + export dump)的除錯外框,非 consumer 產品 layout(2026-10-27 複查)
     <div className="p-6 space-y-[var(--layout-space-loose)]" data-testid="all-ds-import-smoke">
       <h1 className="text-h3">DS Public API — Import Smoke</h1>

@@ -83,7 +83,7 @@ export const UsageGuidance: Story = {
           >
             {/* 同意條款、訂閱行銷是兩件不相干的事,各是一個單一勾選框(checkbox.spec.md「單一同意」),不包成同一組;
                 兩個之間 = 規則 3 parallel = loose(layoutSpace.spec.md「跨範疇 + parallel」;2026-10-27 Q6 甲)。
-                勾選框 → 按鈕 = loose(按鈕跟在內容後,上方一律 loose)。 */}
+                勾選框 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」:表單欄位 → 跟在後面的表單按鈕列,同 Field 展示「表單驗證」)。 */}
             <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
               <div className="flex flex-col gap-[var(--layout-space-loose)]">
                 <Checkbox
@@ -98,7 +98,7 @@ export const UsageGuidance: Story = {
                   onCheckedChange={(v) => setNotif(v ? 'checked' : 'unchecked')}
                 />
               </div>
-              <ButtonGroup className="mt-[var(--layout-space-loose)]">
+              <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
                 <Button variant="primary" onClick={() => { setSavedConsent({ agree, notif }); toast({ variant: 'success', title: '設定已儲存' }) }}>儲存</Button>
                 <Button variant="tertiary" onClick={() => { setAgree(savedConsent.agree); setNotif(savedConsent.notif) }}>取消</Button>
               </ButtonGroup>
@@ -126,7 +126,8 @@ export const UsageGuidance: Story = {
           >
             <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
               <Switch label="我同意服務條款" />
-              <div className="mt-[var(--layout-space-loose)]">
+              {/* 錯在用 Switch,不在間距:欄位 → 送出鈕照樣是 loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」) */}
+              <div className="mt-[calc(var(--layout-space-loose)*2)]">
                 <Button variant="primary" onClick={() => toast({ variant: 'success', title: '已送出' })}>送出</Button>
               </div>
             </div>

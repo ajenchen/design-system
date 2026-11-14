@@ -20,9 +20,10 @@ import { cn } from '@/lib/utils'
  *
  * **Behavior canonical**(verified Ant compact-item.ts L21-58):
  * - 子 controls 保留自身 border + radius;不 strip
- * - 鄰接子用負 margin 重疊 border(Bootstrap 也用此手法 但用 z-index 確保 focus 在最上層)
+ * - 鄰接子用負 margin 重疊 border(Bootstrap 也用此手法,並用 z-index 確保 focus 在最上層;本元件 2026-11-13 起同向,見下方 z-index 那一條)
  * - first child 只留左 radii / last child 只留右 radii / middle 全 0 radii
- * - z-index:default 2 / hover|focus|focus-within 3 / disabled 0
+ * - z-index:default 2 / hover 3(到這裡與 Ant 同值)/ focus-within|自己的浮層開著(data-field-open)4(比滑過高一層,2026-11-13 起;
+ *   Ant 沒有這一層 —— 規則與來源住 field-control-group.spec.md「States」)/ disabled 0
  * - Container `display: inline-flex`(Ant default)/ `block` prop → `display: flex; width: 100%`
  *
  * **Size**(FCG 不擁有 size API；不傳遞 size 給 children,無 Context Provider / 無 cloneElement;見 spec「Size」段):
@@ -74,7 +75,8 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
         //   [&>*]:relative — 子套 relative 才能 z-index 生效
         //   [&>*]:z-[2] — default z 2(Ant 同值)
         //   [&>*+*]:-ml-px — 鄰接子 margin-left -1px 重疊 border
-        //   hover/focus/focus-within → z-3(active border 在最上層,Bootstrap 用 z-5,Ant 用 z-3 我們對齊 Ant)
+        //   滑過 → z 3(Ant 同值)。聚焦 / 自己的浮層開著 → z 4,比滑過高一層 —— 這一層**不是** Ant 的(Ant 把滑過、聚焦、按下放同一層 3);
+        //   只把聚焦那一格抬到最高的是 Bootstrap input-group 與 Polaris Connected(連結與規則住 field-control-group.spec.md「States」)
         //   first/middle/last radii:對齊 Ant compactItemBorderRadius L67-92
         // ── Children 自管 width(W-A,Ant idiom);Group 自身僅控制 border/radius/z-index 接合機制
         className={cn(
@@ -83,8 +85,16 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
           // z-index baseline + active layer
           '[&>*]:relative [&>*]:z-[2]',
           // 2026-09-07 刪 `[&>*:focus]:z-[3]` —— `:focus` 是 `:focus-within` 的子集(元素自己聚焦時
-      // 它必然也 focus-within),同一行的 `[&>*:focus-within]:z-[3]` 已完全涵蓋,純贅字。
-      '[&>*:hover]:z-[3] [&>*:focus-within]:z-[3]',
+          // 它必然也 focus-within),下面 focus-within 那一條已完全涵蓋,純贅字。
+          // 2026-11-12 加「開著」(2026-11-13 改認 `[&>*[data-field-open]]`):成員自己的浮層開著時焦點常在浮層裡(focus-within 不成立),
+          // 但它仍維持聚焦的藍框(field.spec.md「Field state machine」表)→ 一樣要浮到鄰居上面,否則藍框被 -ml-px 的鄰居蓋掉一邊。
+          // 2026-11-13 聚焦 / 開著由 3 改 4、滑過留在 3(AI 建議、user 2026-11-13 採納;規則、原話與三家對照住 field-control-group.spec.md「States」)。
+          // 改前三種同在 3,同層時 DOM 順序較後的在上 → 某一格聚焦 / 開著時滑過它右邊那格,兩格共用的那條線變成右邊那格滑過的灰。
+          '[&>*:hover]:z-[3] [&>*:focus-within]:z-[4] [&>*[data-field-open]]:z-[4]',
+          // 同一格「聚焦(或開著)又被滑過」:上一行三條的權重相同,誰贏看樣式表裡誰排後面,而 Tailwind 把任意變體照選擇器字母序排
+          // (聚焦那條 → 滑過那條 → 開著那條;2026-11-13 拿 repo 裝的 tailwindcss 4.2.2 編這幾個 class 實看)—— 只寫上一行的話,
+          // 聚焦又被滑過的那一格會被滑過那條蓋回 3。下面兩條多帶一個條件、權重較高,不看排序。
+          '[&>*:focus-within:hover]:z-[4] [&>*[data-field-open]:hover]:z-[4]',
           '[&>*[disabled]]:z-0 [&>*:has([disabled])]:z-0',
           // border overlap
           '[&>*+*]:-ml-px',
@@ -123,7 +133,7 @@ export const fieldControlGroupMeta = {
   family: 'self-contained',
   variants: {},
   sizes: {},  // self-contained wrapper;children 尺寸自管
-  states: ['default', 'children-hover', 'children-focus', 'children-disabled'],
+  states: ['default', 'children-hover', 'children-focus', 'children-open', 'children-disabled'],
   tokens: {
     bg: [],  // structural wrapper has no own bg
     fg: [],

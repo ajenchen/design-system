@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-05T19:59:35.017Z",
-    "stories": 1075,
+    "generatedAt": "2026-11-11T16:47:43.215Z",
+    "stories": 1081,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -305,6 +305,7 @@
       "design-system-components-datatable-展示--filter-panel-empty",
       "design-system-components-datatable-展示--filter-panel-labels-and-limit",
       "design-system-components-datatable-展示--filter-panel-states",
+      "design-system-components-datatable-展示--header-actions-fixture",
       "design-system-components-datatable-展示--inline-edit",
       "design-system-components-datatable-展示--inline-edit-with-spreadsheet-overlay",
       "design-system-components-datatable-展示--nested-rows",
@@ -322,6 +323,7 @@
       "design-system-components-datatable-展示--selection-disabled-rows",
       "design-system-components-datatable-展示--selection-keyboard-and-shift",
       "design-system-components-datatable-展示--selection-single-mode",
+      "design-system-components-datatable-展示--sort-panel-states",
       "design-system-components-datatable-展示--spreadsheet-cursor-contract",
       "design-system-components-datatable-展示--virtual-scroll",
       "design-system-components-datatable-展示--with-bulk-actions",
@@ -1013,6 +1015,9 @@
       "design-system-internal-patterns-horizontal-overflow--scroll-mode",
       "design-system-internal-patterns-overlay-surface--body-scroll",
       "design-system-internal-patterns-overlay-surface--body-scroll-keyboard",
+      "design-system-internal-patterns-overlay-surface--header-actions",
+      "design-system-internal-patterns-overlay-surface--header-title-area",
+      "design-system-internal-patterns-overlay-surface--header-title-tooltip",
       "design-system-internal-patterns-overlay-surface--three-part-structure",
       "design-system-internal-selectioncontrol-展示--notification-preferences",
       "design-system-internal-selectioncontrol-展示--plan-picker",
@@ -1078,10 +1083,11 @@
       "design-system-tokens-typography--font-weight",
       "design-system-tokens-typography--line-height",
       "design-system-tokens-typography--type-scale",
-      "design-system-tokens-uisize--overview"
+      "design-system-tokens-uisize--overview",
+      "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "dfc5862e7417d032723d263cfc023a3c553ffd1fcd114ee1335a5457359d7691",
-    "fingerprints": 727
+    "storyIdsSha256": "962ff1af5f24ceb3e1d905c32dff907947e3b79723bd2118109ebc535c90c04d",
+    "fingerprints": 730
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1123,6 +1129,7 @@
     "design-system-components-appshell-設計原則--composition-rules|color-contrast": 9,
     "design-system-components-appshell-設計原則--usage-guidance|color-contrast": 1,
     "design-system-components-appshell-設計規格--layout-mode-diagram|color-contrast": 10,
+    "design-system-components-appshell-設計規格--overview|color-contrast": 1,
     "design-system-components-appshell-設計規格--size-matrix|color-contrast": 2,
     "design-system-components-appshell-設計規格--state-behavior|color-contrast": 1,
     "design-system-components-aspectratio-展示--product-photo-4-x-3|color-contrast": 5,
@@ -1304,6 +1311,7 @@
     "design-system-components-datatable-展示--selection-disabled-rows|color-contrast": 1,
     "design-system-components-datatable-展示--selection-keyboard-and-shift|color-contrast": 6,
     "design-system-components-datatable-展示--selection-single-mode|color-contrast": 3,
+    "design-system-components-datatable-展示--sort-panel-states|color-contrast": 3,
     "design-system-components-datatable-展示--spreadsheet-cursor-contract|scrollable-region-focusable": 1,
     "design-system-components-datatable-展示--with-pagination|color-contrast": 1,
     "design-system-components-datatable-設計原則--column-type-rule|color-contrast": 12,
@@ -1810,6 +1818,7 @@
     "design-system-tokens-radius--overview|color-contrast": 1,
     "design-system-tokens-typography--font-weight|color-contrast": 3,
     "design-system-tokens-typography--type-scale|color-contrast": 10,
-    "design-system-tokens-uisize--overview|color-contrast": 8
+    "design-system-tokens-uisize--overview|color-contrast": 8,
+    "design-system-tokens-uisize--product-alignment|color-contrast": 41
   }
 }

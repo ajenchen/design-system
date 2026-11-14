@@ -82,8 +82,12 @@ export interface ButtonDividerProps extends React.HTMLAttributes<HTMLDivElement>
  * ButtonDivider — action region 群組分隔線
  *
  * **幾何 SSOT** → `patterns/action-bar/action-bar.spec.md`「分隔線幾何」：
- * 線長 = 所在那一列**最高元件**的高度 − `--action-divider-inset`（8px），不短於
- * `--action-divider-min`（16px），垂直置中。
+ * 線長 = 所在那一列**最高元件**的高度 − 內縮 8px，不短於地板 16px，垂直置中。
+ * 地板不是另一個常數：它是同一條公式在最小控制項（`--field-height-xs` 24px）的取值。
+ *
+ * **數值只住這裡**：內縮 8px 寫在內層的元件內變數 `--divider-inset`（只有這條線自己讀、不隨密度切換，
+ * 所以不開全系統的 token —— `tokens/token-system.spec.md` 判斷流程第 0 題；2026-11-11 token「3全收」
+ * 從 uiSize.css 收回）。同一個值要在長度與地板兩處同步，所以用元件內變數而不是各寫一次字面值。
  *
  * 兩層構造是必要的而非包裝：外層 `self-stretch` 取「該列最高元件」當基準——同一列的每條線
  * 因此必然等長、不會參差；內層畫線並套 inset 與地板，置中由外層 `items-center` 負責，所以
@@ -124,10 +128,10 @@ const ButtonDivider = React.forwardRef<HTMLDivElement, ButtonDividerProps>(
       >
         <div
           className={cn(
-            'bg-divider',
+            'bg-divider [--divider-inset:0.5rem]', // 8px,兩端各 4px
             isVertical
-              ? 'w-px h-[calc(100%-var(--action-divider-inset))] min-h-[var(--action-divider-min)]'
-              : 'h-px w-[calc(100%-var(--action-divider-inset))] min-w-[var(--action-divider-min)]',
+              ? 'w-px h-[calc(100%-var(--divider-inset))] min-h-[calc(var(--field-height-xs)-var(--divider-inset))]'
+              : 'h-px w-[calc(100%-var(--divider-inset))] min-w-[calc(var(--field-height-xs)-var(--divider-inset))]',
           )}
         />
       </div>

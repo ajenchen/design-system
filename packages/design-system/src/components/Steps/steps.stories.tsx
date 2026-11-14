@@ -43,13 +43,14 @@ interface SignUpDraft { name: string; email: string; phone: string; username: st
 const EMPTY_SIGN_UP: SignUpDraft = { name: '', email: '', phone: '', username: '', password: '' }
 const requiredText = (label: string) => (v: unknown) => (String(v ?? '').trim() ? undefined : `${label}必填`)
 
-/** 一步的表單:欄位 + 這一步的那一顆鈕(預設精靈的「下一步 / 送出」、非線性範例的「儲存 / 發布活動」)。間距:欄位之間由 FieldGroup 擁有(loose);按鈕上方 = loose(layoutSpace.spec.md 規則 3:按鈕跟它上方的欄位
- *  是並列的兩塊;user 2026-10-20「Q2 我認為可以基於你的建議」)。按鈕下方不在這裡給:展開這一步的 li 給到下一步 bottom 48、最後一步交給外層容器(steps.tsx StepItem)。 */
+/** 一步的表單:欄位 + 這一步的那一顆鈕(預設精靈的「下一步 / 送出」、非線性範例的「儲存 / 發布活動」)。間距:欄位之間由 FieldGroup 擁有(loose);
+ *  按鈕上方 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」:表單欄位 → 跟在後面的表單按鈕列;user 2026-11-10 PR #172 留言,
+ *  取代 2026-10-20「Q2 我認為可以基於你的建議」定的 loose)。按鈕下方不在這裡給:展開這一步的 li 給到下一步 bottom 48、最後一步交給外層容器(steps.tsx StepItem)。 */
 function StepForm({ label, submitLabel, onSubmit, children }: { label: string; submitLabel: string; onSubmit: (e?: React.FormEvent) => void; children: React.ReactNode }) {
   return (
     <form onSubmit={onSubmit} aria-label={label}>
       {children}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         <Button type="submit" variant="primary">{submitLabel}</Button>
       </ButtonGroup>
     </form>

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { MOTION_DELAY_PLAIN_MS } from "@/design-system/tokens/motion/motion"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
 
 // 2026-05-18 ship per user 拍板 #3A:Tooltip Provider 預設 delayDuration 對齊 motion token SSOT。
 // Radix 預設 700ms 偏保守(MUI 預設 100ms、Atlassian 300ms、Material Components Web 500ms),DS 統一用(來源:https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Tooltip/Tooltip.js#L247 https://cdn.jsdelivr.net/npm/@atlaskit/tooltip@24.4.3/dist/es2019/tooltip.js https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-tooltip/constants.ts#L42-L43)
@@ -97,12 +98,15 @@ const Tooltip = ({
 
   return (
     <FocusScrollGuardContext.Provider value={guardRef}>
-      <TooltipPrimitive.Root
-        delayDuration={delayDuration}
-        open={open}
-        onOpenChange={handleOpenChange}
-        {...props}
-      />
+      {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」) */}
+      <OverlayAnchorScope family="tooltip">
+        <TooltipPrimitive.Root
+          delayDuration={delayDuration}
+          open={open}
+          onOpenChange={handleOpenChange}
+          {...props}
+        />
+      </OverlayAnchorScope>
     </FocusScrollGuardContext.Provider>
   )
 }
@@ -113,9 +117,10 @@ const TooltipTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 >(({ onFocus, onBlur, ...props }, ref) => {
   const guardRef = React.useContext(FocusScrollGuardContext)
+  const composedRef = useRegisterOverlayNode("tooltip", "trigger", ref)
   return (
     <TooltipPrimitive.Trigger
-      ref={ref}
+      ref={composedRef}
       {...props}
       onFocus={(event) => {
         onFocus?.(event)
@@ -141,6 +146,10 @@ const TooltipContent = React.forwardRef<
   // 空內容不掛浮層:children 為 null / undefined / false / 空字串時不渲染帶 padding 的空
   // role="tooltip" 殼(見 spec「邊界狀態」)。Tooltip 是資訊補救機制,無補充內容即不出現,
   // trigger 由 TooltipTrigger 原樣保留。
+  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx)。hook 依 React 規則寫在提早 return 之前,但它關著時一次都不讀 DOM:
+  // 只在內容根元素真的掛上去(= Tooltip 打開)那一刻讀一次,開著的期間才盯密度屬性。表格每一格的 TruncatedText 都包著
+  // Tooltip,關著時的成本 = 兩個 useState + 兩個 useCallback + 一個 no-op effect(2026-11-12 修;原本每格每次重繪都爬祖先鏈)。
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("tooltip", ref)
   const isEmptyContent =
     children == null ||
     children === false ||
@@ -151,15 +160,16 @@ const TooltipContent = React.forwardRef<
   // 消費 OVERLAY_COLLISION_PADDING overlay 家族 canonical(與 Popover 一致;HoverCard 特例 12 補 rounding)避免 viewport edge clipping
   <TooltipPrimitive.Portal>
     <TooltipPrimitive.Content
-      ref={ref}
+      ref={contentRef}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       // 錨點失去版面(被 display:none 藏起來 / 卸載 / 回收)時不畫:否則 Radix 拿 0×0 量測值把它定位到視窗左上角
       // (0, sideOffset),關閉動畫還會讓它在那裡閃一下(2026-09-16 user 回報);詳 overlay-geometry.ts
       hideWhenDetached={hideWhenDetached}
-      // Density:繼承 page density(2026-06-15 canonical)。Tooltip padding 寫死 px-3 py-2、內容 text-body,
-      // 不消費任何 density / layout-space token → 鎖 density 對它是 inert(原 data-density="md" 是 409b91da
-      // a11y 批次「對齊 Popover」順手加,非設計決策)→ 移除,讓全浮層行為一致(全繼承 page)。
+      // Density:不鎖,跟觸發點那一區(2026-11-11 user「浮層密度:跟按鈕」,在那之前是跟整頁)。Tooltip padding 寫死 px-3 py-2、
+      // 內容 text-body,目前不消費任何 density / layout-space token(原 data-density="md" 是 409b91da a11y 批次「對齊 Popover」順手加,
+      // 2026-06-15 移除);仍照小浮層同一條規則蓋上觸發點的檔位,以後內容消費密度 token 時不必再補。
+      {...regionDensity}
       className={cn(
         // **刻意不設 `pointer-events: none`**(2026-09-04 撤回同日的錯誤改動;同日這檔翻了三次「加 → 改 → 撤」,
         // 所以由機械閘守著:`scripts/agent-fab-hit-area-invariant.mjs` H6 量開著的 tooltip 本體與 Radix popper

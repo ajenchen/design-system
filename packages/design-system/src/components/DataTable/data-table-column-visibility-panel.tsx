@@ -23,12 +23,11 @@
  */
 
 import * as React from 'react'
-import { Eye, EyeOff, Lock, GripVertical, Search, RotateCcw, X as XIcon } from 'lucide-react'
+import { Eye, EyeOff, Lock, GripVertical, Search, RotateCcw } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
-import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { Input } from '@/design-system/components/Input/input'
 import { type DragOutcome, useDragAccessibility } from '@/design-system/lib/drag-announcements'
-import { PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
+import { PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle } from '@/design-system/components/Popover/popover'
 import { ItemPrefix, ItemLabel, ItemInlineActionButton, ROW_PADDING_BY_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { cn } from '@/lib/utils'
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from '@dnd-kit/core'
@@ -162,23 +161,18 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     //   寬度仍由 consumer 的 `<PopoverContent w-72>` 提供(panel root w-full 撐滿)。
     // 鍵盤搬欄位(Space 提起、方向鍵移、Esc 取消)時按 Esc 只取消拖曳、面板不關(2026-10-01;lib/drag-announcements.ts useDragAccessibility.escapeLayer)
     <div ref={ref} className={cn('flex flex-col h-full min-h-0 w-full', className)} {...props} {...drag.escapeLayer}>
-      <PopoverHeader hideClose>
-        <div className="flex items-center gap-1 w-full min-w-0">
-          <PopoverTitle className="flex-1">欄位顯示</PopoverTitle>
-          {resettable && anyHidden && (
-            <>
-              <Button
-                variant="text" size="sm" iconOnly startIcon={RotateCcw}
-                aria-label="恢復預設"
-                onClick={handleReset}
-              />
-              <ButtonDivider />
-            </>
-          )}
-          <PopoverClose asChild>
-            <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
-          </PopoverClose>
-        </div>
+      {/* 右側「恢復預設 │ ×」走 PopoverHeader 的右側按鈕位(× 與分隔線由 SurfaceHeader 放,兩側各 12;overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
+          2026-11-10 前自刻在 children(hideClose + 外層 gap-1)→ 分隔線兩側只有 8。 */}
+      <PopoverHeader
+        actions={resettable && anyHidden ? (
+          <Button
+            variant="text" size="sm" iconOnly startIcon={RotateCcw}
+            aria-label="恢復預設"
+            onClick={handleReset}
+          />
+        ) : undefined}
+      >
+        <PopoverTitle>欄位顯示</PopoverTitle>
       </PopoverHeader>
       {searchable && (
         <div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">

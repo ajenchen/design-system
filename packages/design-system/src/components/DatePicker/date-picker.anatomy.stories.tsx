@@ -409,7 +409,7 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Mode × State 色彩對照" description="edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 和 disabled 各只有一種視覺狀態。色塊即時渲染，切 dark mode 自動更新。">
+    <ExampleSection title="Mode × State 色彩對照" description="edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 只有靜止這一種外觀(用鍵盤 Tab 進來時邊框轉主色,同 edit 的 focus;滑鼠點不變),disabled 只有一種。色塊即時渲染，切 dark mode 自動更新。">
       <div className="flex flex-col gap-8">
 
         {/* Edit mode states */}
@@ -706,7 +706,7 @@ export const CalendarTokens = {
           <div className="flex gap-8 items-start">
             {/* 真的 DatePicker 浮層(play 點開,同展示頁「浮層展開狀態」那幾則),不手刻浮層外殼(稽核 L058;overlay-surface 外殼屬 Popover);
                 下方留出浮層落點的畫布空間 */}
-            {/* @layout-space-magic-ok: 展開快照在欄位下方保留 360px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:176 判準) */}
+            {/* @layout-space-magic-ok: 展開快照在欄位下方保留 360px 畫布高度,讓開著的月曆落在 story 畫布內(畫布留白,不是元素間距;layoutSpace.spec.md:211 判準) */}
             <div className="flex flex-col gap-2 w-[300px] pb-[360px]">
               <span className="text-caption font-medium text-fg-secondary">實際渲染</span>
               <DatePicker value={deadline} onChange={setDeadline} aria-label="專案截止日" />

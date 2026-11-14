@@ -11,7 +11,7 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 // Avatar is now passed as AvatarData (data object), rendered internally by MenuItem
 
 const meta: Meta = {
@@ -367,7 +367,7 @@ const InspectorInner = () => {
                 <MenuItem role="presentation"
                   size={size}
                   startIcon={hasIcon ? Mail : undefined}
-                  avatar={hasAvatar ? { alt: "Alice", color: "indigo" as const, hoverCard: aliceCard() } : undefined}
+                  avatar={hasAvatar ? { src: demoPersonPhoto('Alice Chen', 64), alt: "Alice", color: "indigo" as const, hoverCard: aliceCard(demoPersonPhoto('Alice Chen', 128)) } : undefined}
                   description={hasDesc ? '每日摘要信件到信箱' : undefined}
                   checkbox={isMulti}
                   checked={isMulti ? selected : undefined}
@@ -709,10 +709,10 @@ export const SizeMatrix = {
                   <MenuItem role="presentation" size={sz} startIcon={Mail} description="每日摘要信件">
                     電子郵件通知
                   </MenuItem>
-                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice", color: "indigo" as const, hoverCard: aliceCard("https://i.pravatar.cc/48?u=alice-chen") }}>
+                  <MenuItem role="presentation" size={sz} avatar={{ src: demoPersonPhoto('Alice Chen', 48), alt: "Alice", color: "indigo" as const, hoverCard: aliceCard(demoPersonPhoto('Alice Chen', 128)) }}>
                     Alice Chen
                   </MenuItem>
-                  <MenuItem role="presentation" size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "magenta" as const, hoverCard: bobWangCard("https://i.pravatar.cc/48?u=bob-wang") }} description="工程部門">
+                  <MenuItem role="presentation" size={sz} avatar={{ src: demoPersonPhoto('Bob Wang', 48), alt: "Bob", color: "magenta" as const, hoverCard: bobWangCard(demoPersonPhoto('Bob Wang', 128)) }} description="工程部門">
                     Bob Wang
                   </MenuItem>
                   <MenuItem role="presentation" size={sz} checkbox checked={true} startIcon={Bell}>

@@ -17,13 +17,9 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `--field-height-sm` | 1.75rem (28px) | 2rem (32px) |
 | `--field-height-md` | 2rem (32px) | 2.25rem (36px) |
 | `--field-height-lg` | 2.25rem (36px) | 2.5rem (40px) |
-| `--menu-max-height` | 18.75rem (300px) | 18.75rem (300px) — 固定 |
 
-**`--menu-max-height`(2026-09-11 補登記)**:清單型浮層的捲動上限 —— CommandList / SelectMenu 的內容超過它就在
-清單內部捲動。2026-09-08 從 `command.tsx` 的 fallback 字面值升格為 token;消費者 `command.tsx`,
-`select.spec.md`「大量選項」段引用它。**不隨 density 變**(它是「一次看幾筆」的閱讀上限,不是控制項尺寸)。
-與 Dialog 的高度上限是兩套獨立機制:Dialog 吃 `min(100svh - inset*2, maxHeight)`,兩邊互不引用
-(CommandDialog 同時被兩者夾住,見 `dialog.spec.md`「高度」段)。
+清單型浮層的捲動上限(300px)**不是 token**:2026-11-11 user 拍板 token 第 3 題「3全收」,收回成 Command 自己的值,
+值與理由住 `../../components/Command/command.spec.md`「邊界案例」清單捲動上限。
 
 ### Field-height family 清單與共享 default（SSOT）
 
@@ -109,7 +105,7 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 |-------|-----|------|
 | `--field-px` | 0.75rem (12px) | form-context field 左右內距 SSOT;固定不隨 size / density |
 
-**Tag 盒高(2026-09-15 新增,唯一住所)**:`--tag-height-sm` = 1.25rem(20px)、`--tag-height-md` = 1.5rem(24px)、`--tag-height-lg` = 1.5rem(24px,md alias)。utility bridge:`h-tag-sm` / `h-tag-md` / `h-tag-lg`(`@theme inline` 的 `--spacing-tag-sm` / `--spacing-tag-md` / `--spacing-tag-lg`,規則 3;Tag cva 消費)。消費者:`Tag` cva 的 `h-tag-sm` / `h-tag-md` / `h-tag-lg`(經上述 bridge)、`Field/field-wrapper.tsx` 的 `fieldTagInsetX/Y`(四邊等距公式 `(field-height − 2px − tag-height)/2`)。JS 側對應 `tag.tsx` `TAG_HEIGHT_PX`,閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際高度對齊兩者。收斂前 Tag 高度散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc),那正是漂移的根(M17)。
+**Tag 盒高**:標籤高 `--tag-height-*` 是 Tag 自己的值(元件的值),2026-11-11 搬到 `components/Tag/tag.css`(user 2026-11-10 token「2甲」第二批;名字與值都沒變)。每一檔的值、Tailwind `h-tag-*` 寫法、讀者與程式對照常數 → `components/Tag/tag.spec.md`「尺寸」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
 
 **消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
 
@@ -142,17 +138,35 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 | `--stack-gap` | 2px | 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值:全域焦點框往外畫的間隙(`styles/base.css` `:focus-visible` outline-offset)、頭像堆疊 / 狀態圓點 / 計數徽章 / 移除 × 的挖空縫(`avatar.tsx`)、上傳列進度條與焦點框之間的縫(`file-item.tsx`)、步驟條外圈與圓之間的縫(`steps.tsx`)。抽 token 前是 6 處字面值 |
 | `--avatar-stack-overlap` | 2px | 頭像堆疊第 2 顆起往左疊的量(`avatar.tsx` 遮罩幾何與項目位移、PeoplePicker 編輯態標籤 wrapper `-ml-[var(--avatar-stack-overlap)]`)。抽 token 前 `-ml-0.5` 字面值散在兩處、常數另一份 |
 
-**命名原則**:兩者都是跨元件的幾何值,住 uiSize(與 `--field-px` 同「跨元件共享值才進 token」判準);不帶元件名的 `--stack-gap` 因為它不屬於任何一個元件。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
+**分類**:`--stack-gap` 是共用刻度(不屬於任何一個元件,所以不帶元件名);`--avatar-stack-overlap` 是頭像的值(選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量),宣告住 `components/Avatar/avatar.css`(2026-11-11 從 `tokens/uiSize/uiSize.css` 搬去,user 2026-11-10 token「2甲」第三批;名字與值不變),值與用法仍登記在上表(分類表該列 `spec` 指本檔)。要不要開 token 的門檻只住 `../token-system.spec.md` 判斷流程第 0 題,本檔不重述。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
+
+## Field Control Vertical Padding 與 Tree Indent(2026-11-11 補進規格)
+
+這兩組在 `uiSize.css` 宣告已久,規格一直沒寫(分類表 `known.missingSpec` 登記過),這次因為開放產品讀來對齊而補上。
+
+| Token | 值 | 用法 |
+|-------|-----|------|
+| `--field-control-py-sm` / `--field-control-py-md` / `--field-control-py-lg` | `calc((var(--field-height-*) - 1lh) / 2 - 1px)` | 讓「只有一行的多行盒」跟同 size 單行 Input 等高的上下內距。`1lh` 在使用端解析成那個元素自己的行高,`- 1px` 補 border-box 裡上下各 1px 的框。跟著 `--field-height-*` 隨密度變;公式住 `uiSize.css`「衍生值」段,在每個換密度的元素上重算(閘 `scripts/test-density-subtree-token-parity.mjs`)。讀者:Textarea 編輯態、多行 view(`Field/field-wrapper.tsx`;兩者相等 = InlineEdit 多行零跳,閘 `scripts/inline-edit-view-geometry-invariant.mjs`)、AgentPanel 輸入盒 |
+| `--tree-indent-sm` / `--tree-indent-md` / `--tree-indent-lg` | 1.5rem(24px)/ 1.5rem(24px)/ 1.75rem(28px) | 每一層巢狀往右縮的量 = 展開箭頭 + 箭頭與文字的間距(16 + 8 / 20 + 8)。級距跟元件 `size` 走、不隨密度變。讀者:DataTable 巢狀列縮排(`data-table.tsx`);TreeView 用同值的程式常數 `tree-view.tsx` `INDENT_STEP`,由 `scripts/token-twin-invariant.mjs` 鎖住兩邊相等 |
+
+## 產品對齊用(讀來對齊、不可覆寫)
+
+本檔的共用刻度 —— 控制項高度 `--field-height-*`(4 顆)、上下內距 `--field-control-py-*`(3 顆)、左右內距 `--field-px`、堆疊間距 `--stack-gap`、樹狀縮排 `--tree-indent-*`(3 顆),共 12 顆,加上外框標頭高 `--chrome-header-height`(見下方「Chrome Header Height」)—— 產品可以**讀**來讓自己排的東西跟 DS 元件對齊:同高、文字起點在同一條線、跟著同一份密度切換。產品**不覆寫**(要換尺寸用元件的 `size` 參數),也**不拿來自己刻輸入框**(要輸入框就用 `Input` / `Select`)。依據:user 2026-11-10 token 第 5 題「5甲」。誰可以讀,唯一一份資料是 `../token-registry.json` 各列 `product`;原本寄住本檔的 14 顆元件的值 2026-11-11 已全部搬到主人資料夾,不在這 12 顆裡(標籤高、頭像重疊量產品不讀;表格列高產品可讀與否看 `components/DataTable/data-table.spec.md` 與分類表那一列)。
+
+範例(產品的權限條件面板:自己排的條件文字「這個角色是」接在 DS `Select` 旁邊;讀 `--field-height-sm` 當最小高度、內容垂直置中,才會跟 `size="sm"` 的選單同高,換密度兩邊一起變):
+
+```tsx
+<span className="flex min-h-[var(--field-height-sm)] items-center text-body">這個角色是</span>
+<Select size="sm" … />
+```
+
+自己排的文字要跟輸入框裡的文字起點對齊時,同理讀 `--field-px` 當左右內距。
+
+展示頁:Storybook `Design System/Tokens/UiSize`「產品對齊用的共用尺寸」(一般與大密度並排,量得到兩邊同高)。
 
 ## Table Row
 
-DataTable 行高。density 切換統一 +0.5rem (+8px)。
-
-| Token | md density | lg density |
-|-------|-----------|-----------|
-| `--table-row-sm` | 2rem (32px) | 2.5rem (40px) |
-| `--table-row-md` | 2.5rem (40px) | 3rem (48px) |
-| `--table-row-lg` | 3rem (48px) | 3.5rem (56px) |
+表格列高 `--table-row-*` 是 DataTable 自己的值(元件的值),2026-11-11 搬到 `components/DataTable/data-table.css`(user 2026-11-10 token「2甲」第四批;名字與每一檔密度的值都沒變)。每一檔的值、Tailwind `h-table-row-*` 寫法、產品可讀來對齊的範圍 → `components/DataTable/data-table.spec.md`「一、Table Size」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
 
 ---
 
@@ -229,15 +243,7 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 
 ## Tab Height
 
-Tabs 導覽容器的高度。獨立於 field-height 和 table-row——tabs 是 navigation container，需要比 form control 更大的呼吸感。數值目前與 table-row 對齊，但概念獨立，未來任何一方調整都不牽動另一方。
-
-| Token | md | lg | 消費者 |
-|-------|----|----|--------|
-| `--tab-height-sm` | 32px | 40px | **預設**(2026-05-17 從 md 改,per `header-canonical.spec.md` Rule W6)— overlay / chrome / dense toolbar tabs |
-| `--tab-height-md` | 40px | 48px | future tier(無 recommended use case,2026-05-17 從預設降級) |
-| `--tab-height-lg` | 48px | 56px | Page-level hero tabs(獨立 tabs 取代 chrome header,值 = `--chrome-header-height`) |
-
-Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
+分頁高 `--tab-height-*` 是 Tabs 自己的值(元件的值),2026-11-11 搬到 `components/Tabs/tabs.css`(user 2026-11-10 token「2甲」第一批;名字與每一檔密度的值都沒變)。每一檔的值、為什麼獨立於 `--field-height-*` 與 `--table-row-*`、Tailwind `h-tab-*` 寫法 → `components/Tabs/tabs.spec.md`「Size」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
 
 ## Chrome Header Height
 
@@ -257,6 +263,8 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 |---------|-------------|
 | `<header className="h-16">`(64px 硬寫) | `<header className="h-[var(--chrome-header-height)]">` |
 | Sidebar 48、top bar 56、page header 64(跨元件不一致) | 全部 `--chrome-header-height`(md=48 / lg=56),density 自動聯動 |
+
+**產品可讀(對齊用)、不可覆寫**:DS 沒有「頁首」元件,產品的頁首是自己排的,照上表右欄讀這顆才會跟側欄頂部同高;產品不改它的值。分類表該列 `product: "read"`。來源:本段 2026-04-21 的 canonical 本來就給了產品寫法;2026-11-10 token 決策頁(AI 寫給 user 的題目)第 5 題附註寫明「照本段登記成產品可讀、要改成不給讀說一聲即可」,user 當天的回覆沒有提到標頭高 —— 視為未推翻(AI 推導,不是 user 拍板)。
 
 ### 為什麼 48 跟 56 是「同一個 token 不同密度」不是不一致
 
@@ -286,8 +294,8 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Q: 這個 chrome header 的 title 有可能多行 /             │
-│    有 subtitle / 有 description 嗎?                        │
+│ Q: 這個 chrome header 會不會附小標 / 說明?              │
+│    (標題本身單行截斷)                                      │
 └──────────────┬──────────────────────────────────────────────┘
                │
       ┌────────┴────────┐
@@ -315,7 +323,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 | Pattern | CSS | 語義宣告 | 適用場景 |
 |---------|-----|---------|---------|
 | **Fixed-height**(剛性)| `h-[var(--chrome-header-height)]` + `items-center` | 「content 永遠單行固定結構,不會 grow」 | Sidebar / FileViewer toolbar / FileViewer InfoPanel / app top bar / page header |
-| **Padding-based**(彈性)| `py-[var(--layout-space-tight)]` + unbounded slot trick | 「content 可以 grow — title 多行 / subtitle / description」 | Dialog / Sheet / Popover / Coachmark header + footer |
+| **Padding-based**(彈性)| `py-[var(--layout-space-tight)]` + unbounded slot trick | 「content 可以 grow — 小標 / 說明」 | Dialog / Sheet / Popover / Coachmark header + footer |
 
 **兩個 pattern 在單行 content 下視覺等效都是 48/56,但語義不同 — 選錯違反元件設計意圖**。
 
@@ -365,7 +373,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 #### 新元件 chrome 建立 checklist
 
 建新 surface with chrome header 前必過:
-1. ☐ 跑 decision tree:title 會 grow 嗎?(有 multi-line / subtitle / description 可能性?)
+1. ☐ 跑 decision tree:header 會 grow 嗎?(會不會附小標 / 說明?)
 2. ☐ 選 pattern:fixed-h OR padding-based
 3. ☐ 若 fixed-h:用 `h-[var(--chrome-header-height)]` + items-center,不自訂高度
 4. ☐ 若 padding-based + overlay family:直接用 SurfaceHeader / SurfaceFooter primitive(繼承 v5 trick)
@@ -469,11 +477,10 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ## Tailwind Bridge
 
-透過 `@theme inline` 橋接到 Tailwind spacing：
+透過 `@theme inline` 橋接到 Tailwind spacing(元件的值的轉接名跟著本尊住主人的樣式檔,例:`h-table-row-*` 在 `components/DataTable/data-table.css`、`h-tag-*` 在 `components/Tag/tag.css`、`h-tab-*` 在 `components/Tabs/tabs.css`):
 
 ```tsx
 <div className="h-field-md" />       /* = var(--field-height-md) */
-<div className="h-table-row-md" />   /* = var(--table-row-md) */
 ```
 
 ## 模式切換

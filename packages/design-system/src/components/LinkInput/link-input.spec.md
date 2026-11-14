@@ -51,15 +51,15 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 有合法 URL 且未在編輯中時：
 - value 以 `text-primary` 藍色顯示，hover 加底線，點擊開啟連結
-- **連結盒子 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行(所有模式;由連結自己保證,`link-input.tsx` `renderLinkAnchor` 的 `inline-block max-w-full align-top`,不靠外層排版;2026-10-13 前是 `block`,待辦總帳 Q3a)。**點擊範圍分兩種地方**(2026-11-06 原地改寫,依據 user 2026-11-06 原話「照①乙②b」,回覆決策頁 n8;user 10-29 原則原話「…框內非按鈕或是連結的地方到底點擊後該觸發什麼 我認為應該是最常被用的功能 然後link input類的東西應該是開啟連結」):
-  - **② 不能編輯的地方 = 整個框點了都開連結**(b):readonly、沒有編輯入口的 view(沒傳 `viewEditAction`)、DataTable 不能編輯的網址格 —— 框裡沒有第二個動作,最常用的「開連結」拿整個框(外殼含內距與邊框;裸 view 是那一行;表格是整格)。滑過整框就出網址底線 + 手形:**滑過有變化的範圍 = 點擊範圍**(`../../../ds-canonical/references/hit-area-canonical.md`「懸停回饋 ≡ 命中區」)。做法 = 延伸連結:連結自己的 `::before` 鋪滿最近的定位祖先(`renderLinkAnchor` 的 `stretch` + `data-link-stretch`;框是 `relative`,表格由 `linkHitAreaFromHost` 交給格;用 ::before 讓文字那一層照樹的順序畫在上面,不另開 z 值),所以中鍵 / Ctrl+點 / 右鍵選單都是真的連結(Bootstrap `.stretched-link` 同一招,它用 ::after:https://github.com/twbs/bootstrap/blob/v5.3.3/scss/helpers/_stretched-link.scss#L1-L15)。表格試算表模式第一下仍只選格(`../DataTable/data-table.spec.md`「Navigate-valued cell 通用類別」第 1 條)
-  - **① 能編輯的地方**(編輯模式的連結狀態、DataTable 可編輯的網址格)**本 PR 維持**:點網址文字開連結、框裡其他地方 = 按 Pencil(下一條)。**① 已定案為乙(user 2026-11-06「照①乙②b」:框內 Pencil 以外都開連結),下一個 PR 落地**
-- 右側 Pencil inline action 觸發編輯模式
-- **點外框裡其他地方 = 按 Pencil**(user 2026-09-26 原話「網址欄的部分你再好好研究Jira等世界級的設計是怎麼做的，確保沒有分歧才照你建議做。」;研究結論:查到的一手來源沒有一家從空白處開連結)：內距、1px 邊框、文字與 Pencil 之間、文字右側的空白，點下去都進入編輯並聚焦輸入框。外框滑過變色是 Field 家族共用外觀(`../Field/field-wrapper.tsx` `hover:border-border-hover`)，變色的地方點下去就要有反應(`../../../ds-canonical/references/hit-area-canonical.md`「看到亮起來卻點不到」)。外框用文字游標(`FIELD_TEXT_ENTRY_CURSOR`，同 `../Input/input.spec.md`「點外框 = 點輸入處」)；連結維持手形、Pencil 維持 `cursor-pointer`([來源](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js))
-- 按在空白處、拖過網址文字再放開(選字)不算點一下，不進入編輯
-- 點擊 value 是開啟連結，不是編輯——這是 LinkInput 與 Input 的核心互動差異。能編輯的地方(①)「value」指網址文字本身，不含外框裡的空白;不能編輯的地方(②b)整個框都是 value
+- **連結盒子 = 網址文字本身**：連結只有文字那麼寬，太長時縮到欄寬並截斷；不撐滿整行(所有模式;由連結自己保證,`link-input.tsx` `renderLinkAnchor` 的 `inline-block max-w-full align-top`,不靠外層排版;2026-10-13 前是 `block`,待辦總帳 Q3a)。**點擊範圍 = 框裡 Pencil 以外全部**(2026-11-06 原地改寫,依據 user 2026-11-06 原話「照①乙②b」,回覆決策頁 n8;user 10-29 原則原話「…框內非按鈕或是連結的地方到底點擊後該觸發什麼 我認為應該是最常被用的功能 然後link input類的東西應該是開啟連結」):
+  - **能不能編輯都一樣**:框裡不是按鈕的地方(網址文字、右側空白、內距)點了都開連結 —— 編輯模式的連結狀態(外殼含看得見的 1px 邊框)、readonly、view(有沒有 `viewEditAction` 都一樣;裸 view 是那一行)、DataTable 網址格(整格)。滑過整框就出網址底線 + 手形:**滑過有變化的範圍 = 點擊範圍**(`../../../ds-canonical/references/hit-area-canonical.md`「懸停回饋 ≡ 命中區」);編輯模式外框滑過變深是 Field 家族共用外觀,照留(變色的地方都點得開);DataTable 網址格同一條:**能編輯**的格滑過出淺框(`../Field/field.spec.md` L4,意思 = 這格可以編輯),**不能編輯**的不出(同 readonly)(2026-11-10 user「表格跟輸入框難道不應該是類似的邏輯嗎？…這樣不是跟輸入框一致？」;11-06 – 11-10 表格有連結的格一律不出)。做法 = 延伸連結:連結自己的 `::before` 鋪滿最近的定位祖先(`renderLinkAnchor` 的 `stretch` + `data-link-stretch`;框是 `relative`,表格由 `linkHitAreaFromHost` 交給格;用 ::before 讓文字那一層照樹的順序畫在上面,不另開 z 值),所以中鍵 / Ctrl+點 / 右鍵選單都是真的連結(Bootstrap `.stretched-link` 同一招,它用 ::after:https://github.com/twbs/bootstrap/blob/v5.3.3/scss/helpers/_stretched-link.scss#L1-L15)。表格試算表模式沒選中的格第一下仍只選格(`../DataTable/data-table.spec.md`「Navigate-valued cell 通用類別」第 1 條)
+  - **能編輯的地方,Pencil = 滑鼠唯一的編輯入口**(下一條);鍵盤照「A11y 預設」段,不變
+  - **沒有合法網址就沒有連結可開**:編輯模式空值 / 不合法 = 直接是輸入框(「Input 狀態」),點框 = 打字;DataTable 可編輯的網址格空值 / 不是網址 = 照其他可編輯格(滑過淺框、點格進編輯);readonly / view 的空值與一般文字沒有反應。同一條 user 原則推得:框裡沒有連結時,最常用的就是填網址【AI 推導】
+- 右側 Pencil inline action 觸發編輯模式,是能編輯的地方唯一的滑鼠編輯入口(畫在延伸區上面)。演進:2026-09-26 – 11-06 是「點外框裡其他地方 = 按 Pencil」(user 2026-09-26 原話「網址欄的部分你再好好研究Jira等世界級的設計是怎麼做的，確保沒有分歧才照你建議做。」後 AI 照研究做;那份研究的「一手來源沒有一家從空白處開連結」說得太滿,11-03 n8 研究更正),11-06 改成上一條
+- 在框裡按下後拖動 = 拖連結(瀏覽器原生),不開連結、不進編輯
+- 點擊 value 是開啟連結，不是編輯——這是 LinkInput 與 Input 的核心互動差異;「value」= 框裡 Pencil 以外的地方
 
-**世界級對照**：
+**世界級對照**(點網址文字開連結;框裡空白處各家做法不同,本 DS 照上方 user 原則給開連結):
 - Atlassian inline-edit 的讀取態：點到連結照連結原本的行為，點讀取區其他地方進入編輯 —— [`read-view.js#L27-L37`](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/dist/es2019/internal/read-view.js)「If a link is clicked in the read view, default action should be taken」，非連結的點擊 `onEditRequested()`；點擊入口只到滑過範圍為止([`CHANGELOG.md` 4.5.5](https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@16.4.5/CHANGELOG.md)「fix inline-edit component edit mode triggering when clicking outside hover width」)
 - Notion URL 屬性：點網址開啟、不進入編輯，編輯另有滑過才出現的按鈕 —— [2021-09-08 release note](https://www.notion.com/releases/2021-09-08)「Clicking the URL opens that page in your web browser, rather than selecting the property for editing. And there's a new Edit URL button that appears when you hover over the property with your cursor.」
 - Salesforce Lightning Design System 記錄詳情：`<a>` 只包住值的文字，編輯是另一顆鉛筆鈕(`Edit: ${label}`)—— [`record-detail/index.jsx#L64-L96`](https://github.com/salesforce-ux/design-system/blob/cb91709d48074a8422a968fecda298a8bc715749/ui/components/form-element/record-detail/index.jsx#L64-L96)
@@ -110,6 +110,7 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 
 與其他 Field 一致：
 - readonly：顯示藍色連結（可點擊），無 Pencil action
+- **readonly 的焦點**(2026-11-11):連結是這個欄位唯一的 tab stop —— 鍵盤聚焦 = 連結自己的全域 2px 外描邊(下方「Focus」),**欄位邊框不亮**(一個 tab stop 一個指示器;修前 `focus-within` 讓連結外描邊 + 欄位邊框兩個同時出現);滑鼠點連結兩者都不畫(唯讀欄位滑鼠點不變,規則 `../Field/field-controls.spec.md`「Focus 行為」readonly 段)
 - **值不是網址時(readonly / view,含 DataTable 連結格)畫成一般文字、不給連結**(2026-10-13,待辦總帳 Q3e;2026-10-21 F2 乙):判準與編輯模式同一支 `toWebUrl`(本檔「驗證」:http(s) 開頭,或看起來像網址就補 `https://` —— 例:`www.acme.com` 畫成連結、`href` = `https://www.acme.com`),`javascript:`、`data:`、`mailto:` 等別的協定與信箱永遠不會變成 `href`。**唯一另外放行的是站內路徑**(以 `/` 開頭、解析後仍在同一個網站,例:`/projects/8821/tasks/4821`):它解析後就是本站的 http(s),修前就畫成連結,`AgentPanel` 網址登記示範的任務標題欄靠它開對話框;`//host`、`/\host` 這類會被瀏覽器正規化成別的網站的寫法不算。編輯模式不收站內路徑(只收網頁網址;上方「不適用場景」站內路由請用 Input)。DataTable 存檔時的驗證仍由 consumer 做(`../DataTable/data-table.spec.md` cellErrors),表格不另加
 - disabled：連結灰化，不可點擊。**顯示的字與 readonly 同一份**(合法網址顯示主機名、其他值顯示原字串;停用只換顏色,有值不能畫成「-」—— M24):`link-input.tsx` `linkDisplayText` 一支給連結、一般文字、停用三處用(2026-10-21,r1b fields F2:修前停用另寫一份,`mailto:` / `tel:` / `javascript:` / `data:` 在停用時畫成「-」、`ftp:` 只剩主機名;閘 `scripts/link-input-url-display-invariant.mjs` 判定表「停用時字與唯讀不同」必紅)
 
@@ -118,9 +119,9 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 ## 禁止事項
 
 - ❌ 不在 link 狀態下讓點擊 value 進入編輯——點擊連結必須開啟連結
-- ❌ 不讓連結盒子撐滿整行(要整框可點用延伸連結,盒子仍是文字寬);能編輯的地方(①,本 PR)文字右邊的空白點下去不開網頁
-- ❌ 不在不能編輯的地方(②b)留下「滑過沒變化卻點得開」或「滑過有底線卻點不開」的區塊——底線 + 手形的範圍 = 點擊範圍
-- ❌ 不讓 link 狀態外框裡的空白處滑過變色、點下去卻沒有反應——空白處 = Pencil
+- ❌ 不讓連結盒子撐滿整行(整框可點用延伸連結,盒子仍是文字寬)
+- ❌ 不在網址框裡留下「滑過沒變化卻點得開」或「滑過有底線卻點不開」的區塊——底線 + 手形的範圍 = 點擊範圍(Pencil 除外)
+- ❌ 不讓 link 狀態外框裡滑過會變色的地方點下去沒有反應——Pencil 以外都是連結
 - ❌ 不在打字過程中即時驗證格式——等 blur
 - ❌ 不放行別的協定(`javascript:` / `data:` / `mailto:` …)——只有網頁網址(含補上 `https://` 的網址樣字)才是合法值
 
@@ -150,7 +151,7 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 - 字母鍵 — 輸入
 - Enter — 提交(見「驗證」3:合法 → 連結狀態、焦點給鉛筆;無效 / 清空 → 留在輸入框)
 - Esc — 取消編輯,回復原值,不觸發驗證,焦點給鉛筆(見「驗證」4:浮層裡第一下只取消、第二下才關浮層)
-- Link 狀態:Tab 依序停在連結(Enter 開啟)與 Pencil(Enter / Space 進入編輯並聚焦輸入框)。「點外框空白處 = 按 Pencil」是滑鼠的捷徑,外框本身不是 tab stop,鍵盤走 Pencil
+- Link 狀態:Tab 依序停在連結(Enter 開啟)與 Pencil(Enter / Space 進入編輯並聚焦輸入框)。外框本身不是 tab stop(滑鼠點框 = 開連結,鍵盤走連結本身);編輯走 Pencil
 
 **Focus**:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的 `focus-within:!border-primary` 提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。連結(link / readonly / view 狀態,含 DataTable 連結格)與 Pencil 鍵盤聚焦時畫 DS 焦點框(全域外描邊,往外 2px),**四邊都要畫得出來**:包著連結的外殼不得用 `overflow` 裁切 —— 上方「單行 truncate」由連結自己(`inline-block max-w-full truncate` + `TruncatedText`)做,外殼只給 `min-w-0`(`link-input.tsx` `LINK_HOST_CLASS`;`../../../ds-canonical/references/focus-canonical.md`「問題二」→「正當障礙」:截斷 wrapper 不是正當障礙,修 wrapper、不改內描邊)。2026-10-21 前三處外殼寫 `truncate`,框只剩右邊一條 2px(r1b DT-01;閘 `scripts/data-table-link-cell-invariant.mjs` L8)。
 

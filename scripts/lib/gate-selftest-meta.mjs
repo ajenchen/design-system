@@ -109,6 +109,19 @@ export function classifyGateRun({ status, text }, { browserRequired = isBrowserR
 }
 
 /**
+ * `--selftest` 成功時的一行輸出(2026-11-14,A7 ⑤;plan 第二節第 2 點):這一行若含任何會被上面 classifyGateRun 讀成標記的字樣
+ * (儀器失效 / 必需瀏覽器 / 缺建置 / 起不了環境)就**丟例外、不印** —— 成功的對照組常常是「故意造出儀器失效並被認出來」,
+ * 原樣印出那則訊息會讓 meta-test 把整個 selftest 讀成儀器失效或略過。判準直接呼叫 classifyGateRun(必需瀏覽器的 lane 視角),
+ * 不另抄一份字樣清單:認標記的規則只住在本檔。例外訊息只說會被讀成哪一種、不重印字樣本身。
+ * @param {string} line
+ */
+export function printSelftestLine(line) {
+  const { verdict } = classifyGateRun({ status: 0, text: String(line) }, { browserRequired: true })
+  if (verdict !== 'pass') throw new Error(`selftest 的正常輸出不得含機讀標記字樣(這一行會被 meta-test 讀成「${verdict}」;字樣本身不印)`)
+  console.log(line)
+}
+
+/**
  * @param {string} gate 閘的檔名(相對 repo 根,例如 `scripts/button-variant-invariant.mjs`)
  * @param {{ baseArgs?: string[], selftestArgs?: string[] }} [options] 現況 / 對照組各自的參數
  * @returns {never} 直接 process.exit

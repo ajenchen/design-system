@@ -348,7 +348,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
 
           {/* Fields section:status defined 才有 border-t separator;無 status section 時去除 border-t(因 ScrollArea 起點已有上方 border-t,不重疊) */}
           <div className={cn('px-4 py-3', status && 'border-t border-divider')}>
-            {/* 欄位值加 break-words:兩欄並排、每欄約 136px(320 − 左右內距 32 − 欄距 16,除以 2)。description-list.spec.md:177 直式的兩條規則同時要守 ——
+            {/* 欄位值加 break-words:兩欄並排、每欄約 136px(320 − 左右內距 32 − 欄距 16,除以 2)。description-list.spec.md:179 直式的兩條規則同時要守 ——
                 自然流文字依字詞換行(「Engineering / Platform」在空白處斷),沒有空白的長字串(email / URL)由 consumer 讓它能斷、不畫進右邊那一欄。
                 ProfileCard 的欄位值兩種都有,所以用 break-words(overflow-wrap: break-word:一個字放不下才在字中斷,同 item-anatomy.tsx / tooltip.tsx / inline-edit.tsx);
                 break-all 會讓多字值從字中間斷(「Engineering / Platfor」+「m」)。2026-10-20 前沒加 → 設計規格頁的 ada.chen@example.com 疊在「團隊」那欄上。

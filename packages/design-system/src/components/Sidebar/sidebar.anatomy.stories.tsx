@@ -23,6 +23,7 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 import { H3, Desc, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計規格',
@@ -131,7 +132,7 @@ const SidebarPreview = ({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <button type="button">
-                    <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+                    <ItemAvatar src={demoPersonPhoto('Alan Chen', 48)} alt="Alan Chen" color="blue" />
                     <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
                   </button>
                 </SidebarMenuButton>
@@ -603,7 +604,7 @@ export const StateBehavior: Story = {
         <div className="flex flex-col gap-3">
           <span className="text-caption font-medium text-fg-secondary">三種收合模式</span>
           <SectionDescription>
-            <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 68) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
+            <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 64;<code>size="lg"</code> 的圖示大 4px,各多 4) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
           </SectionDescription>
           <div className="flex flex-wrap gap-6">
             <CollapseModeFrame label='collapsible="icon" · expanded' collapsible="icon" open />
@@ -617,7 +618,7 @@ export const StateBehavior: Story = {
           <span className="text-caption font-medium text-fg-secondary">用 Cmd/Ctrl+B 或 SidebarTrigger 展開與收合</span>
           <SectionDescription>
             SidebarProvider 內建 Cmd+B (Mac) / Ctrl+B (Win) 全域快捷鍵,同時 SidebarTrigger iconOnly Button 作為視覺 toggle。open state 寫入 cookie(7 天);跨 session 還原需 consumer 讀 cookie 後傳 defaultOpen(詳 spec「持久化與快捷鍵」)。
-            點下方的 SidebarTrigger 或按 Cmd/Ctrl+B,sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 68),再按一次展開。
+            點下方的 SidebarTrigger 或按 Cmd/Ctrl+B,sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 64),再按一次展開。
           </SectionDescription>
           <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
             <SidebarProvider style={{ minHeight: 'auto', height: '100%' }}>
@@ -648,7 +649,7 @@ export const StateBehavior: Story = {
                 <div className="flex-1 flex flex-col">
                   {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
                       與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
-                      「Chrome header 不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
+                      「Chrome header 的高度不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
                   <ChromeHeader className="bg-surface">
                     <SidebarTrigger />
                     <span className="text-body-lg font-medium">Dashboard</span>
@@ -693,6 +694,9 @@ export const ChromeTokens: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Sidebar 寬度 tokens</H3>
+        <Desc>
+          產品沒設時的預設值,兩顆。產品沒設時 Menu 與 Right panel 的最小寬 240 不是 token,是 AppShell 內建的預設值(產品用 <code>widthRange</code> 設自己的最小 / 初始 / 最大);收合寬公式裡的圖示寬由 <code>SidebarProvider</code> 依 <code>size</code> 自己帶入,產品不用設定。
+        </Desc>
         <table className="min-w-full text-left border-collapse">
           <thead>
             <tr>
@@ -708,19 +712,9 @@ export const ChromeTokens: Story = {
               <Td>產品沒設時 Menu 的初始寬(Menu 浮層與並排共用同一份寬度紀錄,沒有浮層專用寬)</Td>
             </tr>
             <tr>
-              <Td><TkVal token="--sidebar-width-min" value="240px" /></Td>
-              <Td mono>240px</Td>
-              <Td>產品沒設時 Menu 與 Right panel 的最小寬(2026-10-14 起產品設的最小 / 初始 / 最大為準,DS 不再硬夾)</Td>
-            </tr>
-            <tr>
               <Td><TkVal token="--sidebar-width-icon" value="calc(2 × loose + icon)" /></Td>
               <Td mono>calc()</Td>
-              <Td>icon 收合模式寬度(= 左右各一個 loose + 圖示寬:md 2×16+16 = 48 / lg 2×24+20 = 68,展開與收合時圖示中心 x 不動)</Td>
-            </tr>
-            <tr>
-              <Td><TkVal token="--sidebar-menu-icon-size" value="1rem (16px)" /></Td>
-              <Td mono>1rem</Td>
-              <Td>menu icon 大小(sm / md 16px;size = lg 的列另外覆寫成 20px)</Td>
+              <Td>icon 收合模式寬度(= 左右各一個 loose + 這個 Sidebar 畫出來的圖示寬:標準密度 2×16+16 = 48 / 寬鬆密度 2×24+16 = 64;<code>size="lg"</code> 的圖示是 20,各多 4 = 52 / 68。展開與收合時圖示中心 x 不動;換了密度的區塊裡照區塊的密度算)</Td>
             </tr>
           </tbody>
         </table>

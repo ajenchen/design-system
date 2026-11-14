@@ -110,10 +110,10 @@ fi
 # 允許:horizontal-overflow pattern(有 scrollbar-none / fade-mask 特殊 UX)/
 #      use-overflow-items hook consumers(Tabs/ChipGroup hiding scroll)
 # 2026-06-11 deep-audit R2(n=29):豁免 regex 補認 [scrollbar-width:none] arbitrary 語法 —
-# Tabs(tabs.tsx:211,307)/ Chip(chip.tsx:173,298)hidden-scrollbar 實寫
+# Tabs(tabs.tsx#ScrollTabsList / tabs.tsx#MenuTabsList)/ Chip(chip.tsx#ScrollChipGroup / chip.tsx#MenuChipGroup)hidden-scrollbar 實寫
 # `overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`,與 FileViewer 的
 # `scrollbar-none` utility 同語意;舊 regex 只認後者 → 豁免失效噪音 warn。
-# 同輪補:剝離純註解行(grep -n 輸出 `N:content` 前綴)— Tabs tabs.tsx:126,173,176,239 等
+# 同輪補:剝離純註解行(grep -n 輸出 `N:content` 前綴)— Tabs tabs.tsx#TabsListProps 的 overflow 說明、Scroll / Menu 模式段落註解等
 # rationale 註解提及 overflow-x-auto 屬說明文字,非 className 用法,不構成跨 OS scrollbar drift。
 OVERFLOW_PATTERN='\boverflow-(auto|scroll|x-auto|x-scroll|y-auto|y-scroll)\b'
 # 2026-06-11 R2 Phase B(codex b3 抓縫):hidden-scrollbar 豁免限水平(overflow-x;canonical =

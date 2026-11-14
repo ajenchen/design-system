@@ -141,6 +141,8 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 
 Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個只供 heading 的距離 tier；確切 token 由本元件 source 擁有。
 
+與 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題區 → 內容」同一個答案(2026-11-11):heading 底下只有這一份 DescriptionList = 只描述一塊 → tight;本段的「等於 item 間距」是同一件事從清單內部看的說法,不是另一條規則。
+
 **Heading typography 建議**:`text-h6 font-medium text-foreground`(語義標題用 h3 + text-h6 —— 14px,與 item label 同大,字重是唯一的強調;`../../tokens/typography/typography.spec.md`「同尺寸但不同角色的選法」14px 列),不放大 / 換色。
 
 **常見誤解**:(1)「DL label 視覺像 FieldLabel 就拿來排表單」— `dl` 無 `<label for>` 對 input 的綁定,編輯場景一律 Field(見禁止事項第 1 條);(2)「section heading 是 DL 內建 prop」— heading 是 consumer pattern(DL 無 heading prop),需要分組時 consumer 自包並遵守上方 gap 規則。
@@ -216,4 +218,5 @@ DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant
 - `data-table.spec.md`
 - `field.spec.md`
 - `item-anatomy.spec.md`
+- `layoutSpace.spec.md`
 - `profile-card.spec.md`

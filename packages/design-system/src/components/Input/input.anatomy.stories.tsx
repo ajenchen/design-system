@@ -412,7 +412,7 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Mode × State 色彩對照" description="edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 和 disabled 各只有一種視覺狀態。色塊即時渲染，切 dark mode 自動更新。">
+    <ExampleSection title="Mode × State 色彩對照" description="edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 只有靜止這一種外觀(用鍵盤 Tab 進來時邊框轉主色,同 edit 的 focus;滑鼠點不變),disabled 只有一種。色塊即時渲染，切 dark mode 自動更新。">
       <div className="flex flex-col gap-8">
 
         {/* Edit mode states */}

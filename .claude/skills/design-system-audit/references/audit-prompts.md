@@ -1105,11 +1105,11 @@ Overlay primitive → SurfaceBody 中間 wrapper 必 `flex flex-col h-full`,斷�
 
 `variant="naked"` consumer 內 wrapper 必 import + apply `nakedCellRowModeAlign` SSOT。Hook `check_field_family_invariants.sh`(A.1 naked row-mode propagation,原 check_naked_row_mode_propagation.sh folded 已合入)同源。
 
-## 37. Field state machine「focus dominates everything」(M19 v13.3)
+## 37. Field state machine「focus dominates everything — 除 error」(M19 v13.3)
 
-**Type**: Absolute / **Canonical**: `field-wrapper.tsx` 三 compoundVariant SSOT / **Home**: spec.md state machine 段
+**Type**: Absolute / **Canonical**: `field-wrapper.tsx` 三 compoundVariant SSOT / **Home**: `field.spec.md`「Field state machine SSOT」段(每一態的框色、「欄位自己的浮層開著 = 維持聚焦的框」與它的邊界只寫在那裡,本 dim 不重述)
 
-禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。Hook `check_field_family_invariants.sh`(A.3 Field state ring SSOT,原 check_field_state_token_consume.sh folded 已合入)同源,本 dim batch verify Field family + outliers。
+禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。2026-11-13 起另一條(AI 工程判斷):禁在欄位外框上認 `data-[state=open]` 換框色 —— 欄位自己的浮層開著時的框只認欄位自己掛的 `data-field-open`(唯一寫入者 `lib/composite-field-focus.ts` 的 `fieldOpenProps`),規則、邊界與出處都在上面 Home 那一段;按鈕類觸發(「開著 = 自己的 hover」,`inline-action.spec.md`)不歸本 dim,不得當成欄位判。Hook `check_field_family_invariants.sh`(A.3 Field state ring SSOT,原 check_field_state_token_consume.sh folded 已合入)同源,本 dim batch verify Field family + outliers。
 
 ## 38. Inline-action gap canonical
 
@@ -1238,7 +1238,7 @@ Coverage requirement(NO-SAMPLE STRICT):全 `packages/design-system/src/component
 For each header tsx:
 1. **W1** — grep `<Tabs` / `<TabsList` inside header — 若有 → require `withTabs` prop on header element。手寫 `border-b-0` / `border-b-transparent` 同步 flag
 2. **W2** — Tabs padding 必 reference `var(--layout-space-loose)`,不可硬寫 `px-N` 或別的 token
-3. **W3** — open tokens/uiSize / tokens/layoutSpace spec.md verify `--tab-height-lg === --chrome-header-height`(計算公式對等;不等 = token drift)
+3. **W3** — open components/Tabs/tabs.spec.md + tokens/uiSize/uiSize.spec.md verify `--tab-height-lg === --chrome-header-height`(兩顆住處以 tokens/token-registry.json 為準;計算公式對等;不等 = token drift)
 4. **W4** — grep `-mt-px` / `-mb-px` / `-mt-N` 在 header + tabs flush stack region = violation
 5. **W5** — grep `<Tabs ... size="md"` in chrome header usage = violation(default sm)
 6. **W6** — grep `defaultVariants:\s*\{\s*size:\s*['"]md['"]` in `tabs.tsx` cva = violation

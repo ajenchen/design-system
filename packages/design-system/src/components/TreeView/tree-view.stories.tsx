@@ -146,7 +146,7 @@ const validateTaiwanId = (v: unknown) => {
  *    overlay-surface.spec.md「Body overflow canonical」)。
  *  - 標題 ↔ 說明 = `--item-gap-label-desc-reading-lg`(2px,同 DialogTitle / DialogDescription,dialog.spec.md「Header 可成長」;
  *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 第一個欄位 = loose(標題 + 說明是這一頁整組欄位的標題,
- *    不是第一個欄位的小標:user 2026-10-21 A4 甲;layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose)
+ *    不是第一個欄位的小標:user 2026-10-21 A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:兩塊以上 = loose)
  *  - 標題字級同 DialogTitle(dialog.tsx `text-body-lg font-medium`) */
 function OnboardingPage({ title, description, children, onSubmit, onBack, submitLabel = '下一步', submitting }: {
   title: string; description: string; children: React.ReactNode; onSubmit: (e?: React.FormEvent) => void

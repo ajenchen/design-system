@@ -7,7 +7,7 @@ import { Badge } from '@/design-system/components/Badge/badge'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Plus } from 'lucide-react'
 import { TutorialPage, TutorialSection, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Radius',
@@ -75,8 +75,9 @@ export const Overview: Story = {
           {/* 人員頭像滑過一律出名片(登記簿 B21「我說所有」;avatar.spec.md「ALL person avatars,無例外」) */}
           <Avatar
             size={32}
+            src={SAMPLE_PEOPLE.alice.avatarSrc}
             alt="Alice Chen"
-            hoverCard={samplePersonCard({ name: 'Alice Chen', subtitle: 'Design｜ALICEC｜1031406', id: 'ALICEC', employeeNumber: '1031406' })}
+            hoverCard={samplePersonCard(SAMPLE_PEOPLE.alice)}
           />
           <Badge variant="critical" count={3} />
           <Switch defaultChecked aria-label="接收通知" />

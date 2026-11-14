@@ -81,7 +81,8 @@ const textareaVariants = cva(
     compoundVariants: [
       // default 外框 × mode / error 全部來自 field-wrapper.tsx fieldDefaultChromeCompounds('control')
       // (單行 wrapper / 多行 Textarea / 複合輸入盒三宿主同一份;host='control' = textarea 自身可聚焦,
-      // readonly 的焦點指示同編輯態 = 自身邊框轉主色(focus-visible:!border-primary)、無 data-state 開啟態;Phase D 整併完成 2026-09-02)
+      // readonly 的焦點指示長相同編輯態 = 自身邊框轉主色,但只在鍵盤聚焦時畫(focus-visible:not-data-pointer-focus:!border-primary;
+      // 唯讀 textarea 滑鼠點瀏覽器也判 :focus-visible,由 lib/pointer-focus-guard.ts 補掛 data-pointer-focus,2026-11-11)、沒有自己的浮層,不會有 data-field-open;Phase D 整併完成 2026-09-02)
       ...fieldDefaultChromeCompounds('control'),
       // disabled 文字色為 Textarea 專屬追加(外框由共用 compounds 提供)
       { mode: 'disabled', variant: 'default', className: 'text-fg-disabled' },
@@ -315,7 +316,7 @@ export const textareaMeta = {
   //   text input 無 'active'(按下)視覺態(Material/Polaris/Carbon TextArea 共識)。
   //   'focus-visible' 泛指 focus 態:default chrome 實為 focus-within(滑鼠+鍵盤皆亮),naked chrome
   //   naked chrome 寫 focus-visible: 只因宿主是控件自己(textarea 滑鼠點擊也 match :focus-visible,與 default 等價);
-  //   readonly 有值態同編輯態 = 邊框轉主色 1px(見上方 compoundVariants)。
+  //   readonly 有值態的焦點長相同編輯態 = 邊框轉主色 1px,但只在鍵盤聚焦時畫、滑鼠點不變(見上方 compoundVariants;2026-11-11)。
   states: ['default', 'hover', 'focus-visible', 'readonly', 'disabled', 'error'],
   tokens: {
     bg: ['bg-disabled', 'bg-readonly', 'bg-surface'], // 2026-07-04 補:readonly×default cva 實際消費(spec「Readonly 特例」主打 token)

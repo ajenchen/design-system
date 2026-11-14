@@ -325,8 +325,9 @@ for (const c of lgFonts.cells) {
 // → row 塌成內容高度(non-editable 33 / editable 44,而非 token 40)。I1-I4 只驗 display↔edit **一致性**
 // (兩態同塌 → 0 delta → 假綠,抓不到「絕對高度崩」)。I7 驗「fixed row 絕對高度 == token 值」補此洞。
 // root cause 另有 write-time hook `check_dynamic_tailwind_class.sh` 攔動態 class;I7 = runtime 防線第二層。
-// 用 Inspector(設計規格,fixed-height 非 autoRowHeight)@ sm/md/lg 三尺寸;預設密度 token(uiSize.css)。
-const ROW_TOKEN = { sm: 32, md: 40, lg: 48 }  // 預設密度 --table-row-{size}(uiSize.css:33-35)
+// 用 Inspector(設計規格,fixed-height 非 autoRowHeight)@ sm/md/lg 三尺寸;預設密度 token。
+// 值的住處:components/DataTable/data-table.css 的 :root 段(2026-11-11 從 uiSize.css 搬來;不寫行號,行號會漂)。
+const ROW_TOKEN = { sm: 32, md: 40, lg: 48 }  // 預設密度 --table-row-{size}(data-table.css :root 段)
 for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
   await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:${size};pinnedLeft:false`, '[role="row"][data-row-index="0"]')
   const rowH = await page.evaluate(() => {
@@ -1507,9 +1508,8 @@ const assertPinnedHeaderStable = async (storyName, side, label) => {
     record('I20', `${label}:排序後 center 每欄 header 的 left 與 width 全部不動`,
       worstDelta(base.heads, sorted.heads) <= 0.5 && Math.abs(base.centerHeadLeft - sorted.centerHeadLeft) <= 0.5,
       `worst head Δ ${worstDelta(base.heads, sorted.heads).toFixed(2)}(列會重排所以不比 cell 的內容,但欄位 rect 仍由 header 決定)`)
-    // 還原排序(asc → desc → none 三態,再點兩次),避免殘留狀態影響同 story 的後續量測
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 等排序三態切換的重畫
-    await page.mouse.click(s.x, s.y); await page.waitForTimeout(150) // 同上
+    // 不還原排序:2026-11-11 起表頭排序是兩態(升冪 ↔ 降冪),再點也回不到「沒排序」(修前這裡點兩下走完三態);
+    // 本函式之後沒有同一則 story 的量測 —— 下一次呼叫由 loadStory 重新開 story,排序狀態從頭開始。
   } else {
     record('I20', `${label}:第一個釘選欄可排序(否則排序那半沒測到)`, false, 'sort zone 找不到')
   }
@@ -1768,7 +1768,7 @@ if (!urlDisplay) {
 /* ── I25:巢狀列展開箭頭 = ItemPrefix + ItemInlineActionButton 的幾何(一-04)──
  * 根 invariant:同目的行內圖示按鈕與 prefix 槽必消費 item-anatomy primitive:按鈕盒 = `ICON_SIZE[size]`
  * (item-anatomy.tsx:67-71,md 16)、hover 底色 overlay = `INLINE_ACTION_HOVER_BG_SIZE[size]`(:128-132,md 18)
- * 且置中於按鈕;槽寬 + `mr-2` 必與 `--tree-indent-{size}`(uiSize.css:108-110)同源,子列的箭頭 / 文字
+ * 且置中於按鈕;槽寬 + `mr-2` 必與 `--tree-indent-{size}`(uiSize.css 的 `--tree-indent-sm/md/lg`)同源,子列的箭頭 / 文字
  * 因此每深一層剛好位移一個 indent。修前是手刻 `w-4 h-4 mr-2` 的 button,三個常數與 token 分家。
  * 唯一的像素證據是 2026-08-01 的 curated baseline(早於修正、非 required check)。這裡對 `nested-rows`
  * (md)量按鈕 rect、真 hover 後 overlay 的 rect 與 computed 底色、相鄰兩層的箭頭 / 文字左緣差、以及

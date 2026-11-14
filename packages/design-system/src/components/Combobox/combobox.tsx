@@ -19,6 +19,7 @@ import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFi
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── constants ───────────────────────────────────────────────────────────────
@@ -662,16 +663,18 @@ function CustomCombobox({
       // 跟 DatePicker(:608)/ TimePicker(:378)一致 —— 否則同一顆控件會有兩個焦點指示。
       // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
-      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:67)
+      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx#fieldDefaultChromeCompounds)
       className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
         // 換行幾何只在有 Tag 時成立(view / 唯讀兩條路徑同一個判斷):空值 /「不限」時照單行欄位置中 ——
         // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md「Control area:Inline vs Block」:「control 第一行內容的中線」都錨在 field-height/2)
         wrap && hasTags && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
-        // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
+        // 統一處理 — 自己的浮層開著(data-field-open)= focus = 藍;2026-07-04 Q1:error 亦收進 error variant。
         className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }}
       data-field-mode="edit" data-error={error ? '' : undefined}
+      // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 consumer 的 data-* 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+      {...fieldOpenProps(open)}
       // 搜尋框握著焦點時按欄位上的零件,焦點不離開搜尋框(見上方 keepSearchFocus)
       onMouseDown={keepSearchFocus}
       // WAI-ARIA APG combobox 鍵盤開啟語意 — 對齊 sibling Select(select.tsx#CustomSelect 的 onKeyDown)。
@@ -961,7 +964,7 @@ const Combobox = React.forwardRef<HTMLDivElement, ComboboxProps>(
     // 那會變成第二套規格,正是這次要消滅的東西。**不拿觸控尺寸建議當依據**:先前這裡寫的
     // 「過 WCAG 2.2 AA(24×24)」已於 2026-09-24 撤回(本 DS 以滑鼠精度為前提,見
     // ds-canonical/references/hit-area-canonical.md「本 DS 不採納觸控尺寸建議」);
-    // 同時把 24 門檻的出處從 overlay-surface.spec.md:431(該段 2026-09-27 起住 overlay-chrome-sizing.spec.md「為什麼用負 margin 而非 fixed wrapper / size="xs"」)改指真正的 owner(上一行)。
+    // 同時把 24 門檻的出處從 overlay-surface.spec.md 的舊段落(只記檔名不記行號:那份規格常改、行號會漂;該段 2026-09-27 起住 overlay-chrome-sizing.spec.md「為什麼用負 margin 而非 fixed wrapper / size="xs"」)改指真正的 owner(上一行)。
     return <CustomCombobox {...props} size={size} __triggerRef={ref} />
   }
 )

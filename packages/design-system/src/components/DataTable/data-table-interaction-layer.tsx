@@ -13,7 +13,7 @@
  *
  * Slice D Step 1A scope:
  *   - getCellRect(cellId)geometry source(per Contract 8)
- *   - HoverCellRect 1 layer 先做(Contract 8 / Contract 15 cellClickEntersEdit predicate)
+ *   - HoverCellRect 1 layer 先做(Contract 8 / Contract 15 hover predicate;2026-11-10 起名 cellShowsEditableHover)
  *   - 默認 disabled via `experimentalSpreadsheetOverlay` flag,不破現有 outline
  *   - 後續 Step 1B/C/D 漸進切換 + 拆 outline
  */
@@ -35,8 +35,12 @@ interface DataTableInteractionLayerProps {
   /** Container ref;geometry source(getCellRect 由此 query cell DOM)。layer root 本身是
    *  position:fixed inset:0 viewport-anchor(見 render),非 container-origin absolute */
   containerRef: React.RefObject<HTMLDivElement | null>
-  /** Per Contract 15:`cellClickEntersEdit` predicate;hover overlay 顯示與否 */
-  cellClickEntersEdit?: (cellId: CellId) => boolean
+  /**
+   * Per Contract 15:hover overlay 顯示與否 = 這格**可以編輯**(field.spec.md L4;data-table.tsx 格上的 `cellShowsEditableHover` 同一條)。
+   * 2026-11-10 前叫 `cellClickEntersEdit`,把「點了會進編輯」當成外框的意思 —— 有連結的可編輯網址格點了開連結、卻也可以編輯,兩者在這裡分開
+   *(user 2026-11-10「…這樣不是跟輸入框一致？」)。
+   */
+  cellShowsEditableHover?: (cellId: CellId) => boolean
   /**
    * Active editor cell id。null = 無 active editor。
    * 已接線(Slice D Step 5 完成,2026-07-14 docblock 對齊):activeEditorEnabled +
@@ -238,7 +242,7 @@ function useHoveredCell(
 export function DataTableInteractionLayer({
   enabled,
   containerRef,
-  cellClickEntersEdit,
+  cellShowsEditableHover,
   activeEditorCellId,
   activeEditorEnabled = false,
   activeEditorRender,
@@ -253,7 +257,7 @@ export function DataTableInteractionLayer({
   const isEditingHovered = activeEditorCellId != null && activeEditorCellId === hoveredCellId
   const isSelectedHovered = selectedCellId != null && selectedCellId === hoveredCellId
   const shouldShowHover = enabled && hoveredCellId != null && !isEditingHovered && !isSelectedHovered
-    && (cellClickEntersEdit ? cellClickEntersEdit(hoveredCellId) : true)
+    && (cellShowsEditableHover ? cellShowsEditableHover(hoveredCellId) : true)
 
   // Issue 6 viewport clip(2026-05-10):每個 overlay rect 都跟最近 panel(left/center/right body)
   // intersect。Cell scroll 出 panel viewport(H scroll / pinned 範圍)→ rect null → 不 render;
@@ -361,7 +365,7 @@ function toRelRect(cellRect: CellRect, clipRect: CellRect): CellRect {
 // 在 primitive 內 kind → semantic token mapping)。
 //
 // 兩種 kind 的畫法不同源,刻意分開:
-//   - hover:1px `--border-hover` 提示「點了會進編輯」,不是焦點指示,由本檔寫值。
+//   - hover:1px `--border-hover` 提示「這格可以編輯」(點下去做什麼由格的內容決定,有連結 = 開連結),不是焦點指示,由本檔寫值。
 //   - selected:**格游標就是焦點指示**,一律消費 DS 焦點框 `focus-ring-inset`(2px `--ring`、往內 2px),
 //     值只住 `styles/base.css` 的 `@utility focus-ring-inset`,這裡只掛 class 不寫值
 //     (`ds-canonical/references/focus-canonical.md`「框怎麼畫」只准三種幾何;R21 第 5 題 (b) 的 AI 建議「格子框用 DS 焦點框」,09-26 user 未另提 → AI 判讀照建議做)。

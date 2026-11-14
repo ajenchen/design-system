@@ -1,33 +1,58 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: DataTable 表頭的多重排序(data-table.spec.md「Multi-sort header」列;user 2026-10-30 規格)在真的瀏覽器裡成立 ——
+ *   保證: DataTable 表頭的多重排序(data-table.spec.md「Multi-sort header」列;user 2026-10-30 規格 + 2026-11-11 R16 定案)在真的瀏覽器裡成立 ——
  *        P 狀態轉移:真點擊 / Shift+點擊 / Enter / Shift+Enter / Space / Shift+Space 的每一步,表頭讀出來的排序(aria-sort + 畫出來的順位數字)
- *          = 判定表寫的那個(一般點擊清掉其他欄、Shift 只動這一欄、清除後往前補、數字欄第一下升冪);
+ *          = 判定表寫的那個(兩態:點已排序的欄只在升冪 ↔ 降冪之間切、點不回沒排序;已排序的欄一般點擊 = Shift+點擊 = 只翻這一欄,
+ *          多重排序第 1 / 中間 / 最後一欄各點一次,其他欄與順位不動;沒排序的欄一般點擊取代全部、Shift 加到最後;數字欄第一下升冪);
  *        N 數字:只有一欄排序不顯示數字、≥2 欄每個被排序的欄都有、第 10 個以後「9+」、箭頭與數字同進同出;
  *        G 長相(md 專案排程 + 設計規格「元件檢閱器」sm / lg 兩種尺寸):數字在箭頭右側、間距 2px、字級 / 行高 / 字重 = 表頭字、顏色 = 箭頭
- *          (靜止與滑過都相等)、垂直置中、指示佔原本單一箭頭的位置(label 之後 4px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
- *        M ⌄ 選單:多重排序時**沒有**「取消排序」(按了拿掉這一欄還是清掉全部待 user 決定,決定前同修前)、只有一欄排序時有且按了 = 沒有排序;
- *          「降冪排序」只用這一欄;
- *        A 讀屏:順位走 aria-describedby(「排序順位 N」,9+ 時照實說)、數字 aria-hidden、播報區在表格根節點外、播報句子;
+ *          (靜止與滑過都相等)、垂直置中、指示佔原本單一箭頭的位置(label 之後 8px;只有一欄排序時指示 = 一個箭頭寬)、指示高 = 表頭字行高、表頭高度不變;
+ *        M ⌄ 選單:多重排序時也有「取消排序」、按了**只拿掉這一欄**、後面順位往前補(第 1 欄與中間欄各按一次);已排序的欄只列相反方向一項、
+ *          按了只翻這一欄;沒排序的欄兩項都列、按了取代全部;只有一欄排序時按「取消排序」= 沒有排序(lib/sort-cycle.ts `nextSorting`,
+ *          「升冪 / 降冪排序」出不出 `columnMenuShowsSortDirection`,user 2026-11-10 PR #172 留言);
+ *        K 鍵盤:在排序區按 Tab 下一站就是這一欄的 ⌄(在 Tab 順序裡、聚焦時展開),Enter 打開選單、方向鍵選「取消排序」、Enter 執行 →
+ *          只拿掉這一欄,選單關掉後焦點回到 ⌄;
+ *        A 讀屏:順位走 aria-describedby(「排序順位 N」,9+ 時照實說)、數字 aria-hidden、播報區在表格根節點外、播報句子
+ *          (「這一欄發生了什麼」+「結果」,表頭與選單每一種動作各驗);
  *          多重排序狀態(3 欄、11 欄 9+、lg 尺寸)跑 axe(wcag2a / wcag2aa,同 a11y 閘 `scripts/audit-a11y.mjs`),違規不比同一則 story 沒排序時多
  *          —— 全 DS 像素 / a11y 閘只拍 story 初始狀態,而沒有任何 story 一開始就多重排序,這個狀態只有本閘看得到;
  *        S 與排序面板雙向同步:表頭改 → 面板列序與方向相同;面板改方向 / 刪除 → 表頭跟著變;只從面板加排序時列把手不可拖;
- *        U 不受控的表格(內部 state)同一套行為。
+ *        U 不受控的表格(內部 state)同一套行為;
+ *        D 桌機(有滑過能力的環境)靜止時 ⌄ 欄位選單收起(2026-11-14 加,A7 ⑥):設計規格「功能特性」第一張表點 Price 排序、指標移開、版面靜止後,
+ *          D1 每個沒排序的表頭 ⌄ 外層寬 0 而且透明;D2 已排序的那一欄也一樣 —— data-table.spec.md「Multi-sort header」列
+ *          「桌機維持現況:已排序欄的 ⌄ 仍是滑過才出現」(user 2026-11-12 逐字「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,
+ *          那一頁「排序取消」題的建議選項是「甲：維持現況」)。「⌄ 收著沒」的量法只有一份:lib/data-table-column-menu-state.mjs
+ *          (modifier-click-focus-invariant.mjs 用同一份)。觸控不另外處理(同一列「觸控」句:user 2026-09-26「先維持」),本閘沒有觸控格。
  *   紅: --selftest 在頁面注入各組破法(丟掉 Shift 的點擊與按鍵 / 數字藏起來 / 間距改 4px / 數字換字級與顏色 / 數字搬到箭頭左邊 /
- *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 只有一欄時藏起「取消排序」/ 多重排序時塞進「取消排序」/
- *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法),各組必紅,對照列必綠;
- *        108a736f 的建置跑(`--build=<那份建置>`,2026-11-04 實測):紅 43 項(P 13 / N 10 / A 9 / G 3 / M 2 / S 3 / U 3;多重排序藏箭頭、一般點擊最後一欄
- *        不清掉其他欄、數字 / 人員欄第一下降冪、沒有播報區、只從面板加排序時列把手可拖),G 與 11 欄 axe 量不到箭頭 / 9+ → INSTRUMENT-FAIL(exit 2);
- *        「多重排序時 ⌄ 沒有取消排序」在 108a736f 也綠 —— 這條本來就是「同修前」。
+ *        指示往右推 / 數字撐高表頭 / 拿掉 aria-describedby 與 aria-hidden / 播報區清空 / 藏起「取消排序」/ 只在多重排序時藏起「取消排序」/
+ *        選單補回「這一欄目前已經是的那個方向」/ ⌄ 拿出 Tab 順序(tabindex=-1)/
+ *        「9+」改寫成數字 / 數字變成沒有名字的圖(axe role-img-alt);sm、lg 各再跑一種長相破法 /
+ *        只讓已排序的欄 ⌄ 恆顯示(chevron-sorted-always = 成品頁沒被選的「乙」→ D2 紅、D1 是對照列必綠)/
+ *        每一欄 ⌄ 都恆顯示(chevron-always → D1、D2 都紅)),各組必紅,對照列必綠;
+ *        **規則本身的對照組 = 修前的建置**(`--build=<那份建置>`):R16 之前(5db512f2,三態 + 一般點擊清掉其他欄 + 選單「取消排序」清掉全部)
+ *        的建置跑本閘,P / M / K / A / U 的規則列必紅(2026-11-11 實測數字寫在 commit,不抄進這裡);判定另由判定表
+ *        `scripts/test-data-table-sort-cycle.mjs --selftest` 以同一份修前行為當對照組。
+ *        更早:108a736f 的建置(2026-11-04)紅在多重排序藏箭頭、數字 / 人員欄第一下降冪、沒有播報區、只從面板加排序時列把手可拖;
+ *        8eb473c7(2026-11-10)紅在多重排序時 ⌄ 沒有取消排序;2e1f2e27 紅在選單兩個方向永遠都列。
  *        其餘本機實測數字(判定列數、--selftest 應紅 / 對照列數、秒數)寫在交付時的 log,不抄進這裡(抄了就會過期 —— 11-03 這裡曾寫 148,實為 147)。
- *   綠: 修好的建置全綠;找不到表頭 / 排序區 / 面板 / 選單項等量不到的情況以 INSTRUMENT-FAIL 紅,不當成通過。
+ *   綠: 修好的建置全綠;找不到表頭 / 排序區 / 面板 / 選單項等量不到的情況以 INSTRUMENT-FAIL 紅,不當成通過
+ *        (D 段另有:`(hover: hover)` 不成立 = 量的不是有滑過能力的環境、點完 Price 之後已排序的欄不是剛好一個、沒排序的欄少於兩個、任一欄找不到 ⌄)。
+ *        **怎麼確認不是抽籤**:每一列判的是離散狀態(aria-sort、畫出來的順位數字、選單項有幾個、有沒有某個元素)或靜態版面量測
+ *        (getBoundingClientRect 的位置 / 寬高,不是時間),一律在開 story 等到元素本身出現、每一步之後 settleAfterInteraction 等版面靜止
+ *        才讀 —— 沒有任何幀時間 / 延遲 / 尾端統計。版面量測的容差 0.5–0.75px,破法造成的差最小 2px(間距 4px vs 2px),兩者不重疊。
+ *        2026-11-11 同一份建置連跑兩次,輸出(含每一個量到的數字)逐字相同。
+ *        (本段原本就在;2026-11-11 前 gate-control-group 只讀 @gate-contract 起 2000 字,f40a2db1 補長「保證」「紅」後這一行落到第 2077 字被判成「缺綠」——
+ *        那是量具截斷,已改讀到註解結束。)
  * ─────
- * 規格(user 2026-10-30 15:26 / 17:08 / 17:09(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列):
+ * 點擊 / 選單規則(user 2026-11-11 R16 定案;原話逐字住 data-table.spec.md「Multi-sort header」列):「循環:兩態」;已排序的欄一般點擊 = Shift+點擊;
+ *   ⌄ 選單「取消排序」只拿掉這一欄、已排序的欄只列相反方向、沒排序的欄選方向取代全部。
+ * 長相規格(user 2026-10-30 15:26 / 17:08 / 17:09(台灣時間)對話;規範與原話住 data-table.spec.md「Multi-sort header」列):
  *   「有被排序的 column 才會秀出‘箭頭+數字’,數字最多 9+,」「數字字體與column標頭字體一樣但顏色與箭頭一樣,」
  *   「數字在箭頭右邊且距離箭頭 2px?我不確定距離2px好還是距離4px,目前比較偏向2px,」
  *   (17:09:「不用給我看2px和4px的差異,我自己早就看過了,我認為視覺上2px比較好看,主要是不確定合理性」—— 2px = user 視覺偏好 + AI 合理性查證,查證在該列)「然後箭頭與數字同進同出,」
- *   「佔位和排版的方式與以前只有一個箭頭時類似,」「若只有單一 sort沒有多重sort則不顯示數字,」;4 點追問「1. 就用ds的字眼就好」「2. a」「3. 對」「4. 不要限制欄數,超過一律9+」。
+ *   「佔位和排版的方式與以前只有一個箭頭時類似,」「若只有單一 sort沒有多重sort則不顯示數字,」;4 點追問「1. 就用ds的字眼就好」「4. 不要限制欄數,超過一律9+」
+ *   (同次的「2. a」「3. 對」講的是三態循環與一般點擊清掉其他欄,已由 2026-11-11 R16 定案取代)。
  * 判定的純函式另有判定表 `scripts/test-data-table-sort-cycle.mjs`(本閘驗的是「頁面真的照它排」,M37:呼叫端與判定兩邊都要測)。
  * 開 story 一律經 lib/launch-browser.mjs 的 openStory(開不起來 = 儀器失效,exit 2);每一步之後 settleAfterInteraction(不用固定睡眠)。
  *   node scripts/data-table-multi-sort-invariant.mjs [--build=<storybook 建置目錄>] [--selftest]
@@ -36,6 +61,7 @@ import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowserOrSkip, openStory, StoryRenderInstrumentError, requireStorybookBuild, requireFreshStorybookBuild, settleAfterInteraction, waitForFocusStable, parkPointer, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { columnMenuStatesInPage, isColumnMenuCollapsed, describeColumnMenu } from './lib/data-table-column-menu-state.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -89,6 +115,8 @@ async function open(url, breaks = []) {
 
 // ── --selftest 的破法(每種只打一組;其餘照常量)────────────────────────────────────────────
 const SORT_BUTTON = '[role="columnheader"] [role="button"]'
+/** ⌄ 外層展開時的四個屬性(data-table.tsx `[data-col-menu]` 的 `group-hover:` 那一行),D 段兩種破法共用 */
+const CHEVRON_REVEALED_CSS = 'width:auto!important;margin-left:8px!important;overflow:visible!important;opacity:1!important'
 async function injectBreak(kind) {
   const css = {
     'number-hidden': '[data-sort-priority]{display:none!important}',
@@ -99,7 +127,11 @@ async function injectBreak(kind) {
     'height-grow': '[data-sort-priority]{line-height:44px!important}',
     'number-offset': '[data-sort-priority]{position:relative!important;top:3px!important}',
     'menu-cancel-hidden': '[role="menuitem"]:has(svg.lucide-x){display:none!important}',
+    'menu-current-dir-shown': '',
     'num-role-img': '',
+    // D 段:⌄ 外層被撐開(= 展開時那四個屬性)。sorted-always 只打已排序的欄(成品頁沒被選的「乙:正在排序的欄,⌄ 一直顯示」);always 每一欄都打
+    'chevron-sorted-always': `[role="columnheader"]:is([aria-sort="ascending"],[aria-sort="descending"]) > [data-col-menu]{${CHEVRON_REVEALED_CSS}}`,
+    'chevron-always': `[data-col-menu]{${CHEVRON_REVEALED_CSS}}`,
   }[kind]
   if (css) { await page.addStyleTag({ content: css }); return }
   await page.evaluate(([kind, sel]) => {
@@ -131,16 +163,39 @@ async function injectBreak(kind) {
       }
       new MutationObserver(add).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-sort'] })
     }
-    if (kind === 'menu-cancel-shown') {
-      // 多重排序時 ⌄ 選單打開就塞一個「取消排序」(= 沒照「多重排序時不出,待 user 決定」)
-      const add = () => {
+    if (kind === 'menu-cancel-multi-hidden') {
+      // 多重排序時 ⌄ 選單把「取消排序」藏起來(= 修前 K7 的行為;只有一欄排序時照常)
+      const hide = () => {
         const sortedCount = document.querySelectorAll('[role="columnheader"][aria-sort="ascending"], [role="columnheader"][aria-sort="descending"]').length
+        if (sortedCount < 2) return
+        for (const m of document.querySelectorAll('[role="menu"] [role="menuitem"]')) if ((m.textContent || '').trim() === '取消排序' && m.style.display !== 'none') m.style.display = 'none'
+      }
+      new MutationObserver(hide).observe(document.body, { subtree: true, childList: true })
+    }
+    if (kind === 'menu-current-dir-shown') {
+      // ⌄ 選單把「這一欄目前已經是的那個方向」也列出來(= 2e1f2e27 以前:升冪 / 降冪兩項永遠都在):選單裡只有其中一項時,複製它補上另一項
+      const pairs = [['升冪排序', '降冪排序'], ['降冪排序', '升冪排序']]
+      const add = () => {
         for (const menu of document.querySelectorAll('[role="menu"]')) {
-          if (sortedCount < 2 || [...menu.querySelectorAll('[role="menuitem"]')].some((m) => (m.textContent || '').trim() === '取消排序')) continue
-          const item = document.createElement('div'); item.setAttribute('role', 'menuitem'); item.textContent = '取消排序'; menu.appendChild(item)
+          const items = [...menu.querySelectorAll('[role="menuitem"]')]
+          const find = (t) => items.find((m) => (m.textContent || '').trim() === t)
+          for (const [have, missing] of pairs) {
+            const src = find(have)
+            if (!src || find(missing)) continue
+            const clone = src.cloneNode(true)
+            const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT)
+            for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.nodeValue.includes(have)) n.nodeValue = n.nodeValue.replace(have, missing)
+            src.after(clone)
+          }
         }
       }
       new MutationObserver(add).observe(document.body, { subtree: true, childList: true })
+    }
+    if (kind === 'menu-trigger-untabbable') {
+      // ⌄ 拿出 Tab 順序(= 收起時改用 display:none / tabindex=-1 的寫法):Tab 從排序區會跳到下一欄,鍵盤摸不到「取消排序」
+      const drop = () => { for (const b of document.querySelectorAll('[data-col-menu] button')) if (b.getAttribute('tabindex') !== '-1') b.setAttribute('tabindex', '-1') }
+      drop()
+      new MutationObserver(drop).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['tabindex'] })
     }
     if (kind === 'num-role-img') {
       // 數字從讀屏裡露出來、而且變成沒有名字的圖(axe role-img-alt;只有多重排序時有數字,沒排序的基準不受影響)
@@ -209,45 +264,47 @@ async function act(kind, col) {
 // ═══ P 狀態轉移(受控表格:專案排程範例,與排序面板共用 state)═══════════════════════════════════
 const P_STEPS = [
   // [動作, 欄, 期望, 說明, 破法(丟掉 Shift)下仍得到同一個結果 = 對照列]
+  // 破法丟掉 Shift(Shift 的點擊與按鍵整個收不到):第一個 Shift 步驟之前的列不受影響;之後狀態偏掉(如預期紅),
+  // 第 13、14、18 步例外 —— 一般點擊 / Enter 沒排序的欄 = 取代全部,破法下前一步的狀態不同也得到同一個結果,當對照列
   ['click', 'title', 'title↑', '一般點擊 / 沒有排序 → 升冪', true],
   ['click', 'title', 'title↓', '一般點擊 / 升冪 → 降冪', true],
-  ['click', 'title', '', '一般點擊 / 降冪 → 清除', true],
-  ['click', 'progress', 'progress↑', '一般點擊 / 數字欄第一下升冪(修前降冪)', true],
-  ['click', 'owner', 'owner↑', '一般點擊 / 換欄 → 只剩新的那欄;人員欄第一下升冪(修前降冪)', true],
+  ['click', 'title', 'title↑', '一般點擊 / 降冪 → 升冪(兩態:點不回沒排序;R16 前這一步變成沒排序)', true],
+  ['click', 'progress', 'progress↑', '一般點擊 / 沒排序的數字欄 → 取代全部、第一下升冪', true],
+  ['click', 'owner', 'owner↑', '一般點擊 / 換欄 → 只剩新的那欄;人員欄第一下升冪', true],
   ['shift', 'status', 'owner↑1 status↑2', 'Shift+點擊 / 加第二欄 → 接在最後、升冪、兩欄都出數字'],
   ['shift', 'priority', 'owner↑1 status↑2 priority↑3', 'Shift+點擊 / 加第三欄'],
-  ['shift', 'status', 'owner↑1 status↓2 priority↑3', 'Shift+點擊 / 排序中的欄 升冪 → 降冪、順位不動'],
-  ['shift', 'status', 'owner↑1 priority↑2', 'Shift+點擊 / 降冪 → 清除、後面往前補'],
-  ['click', 'priority', 'priority↓', '一般點擊 / 多重排序的最後一欄 → 清掉其他欄(修前留著)'],
-  ['shift', 'title', 'priority↓1 title↑2', 'Shift+點擊 / 再加一欄'],
-  ['click', 'priority', '', '一般點擊 / 多重排序裡降冪的欄 → 下一步是清除 → 全清(修前變升冪)'],
-  // 破法下第 12 步之後是「優先級↓」,Enter 標題(沒在排序)同樣得到「只剩標題、升冪」—— 兩種情況都綠,當對照列
-  ['Enter', 'title', 'title↑', 'Enter = 點擊', true],
-  ['Shift+Enter', 'status', 'title↑1 status↑2', 'Shift+Enter = Shift+點擊(加入)'],
-  ['Shift+Space', 'status', 'title↑1 status↓2', 'Shift+Space = Shift+點擊(升冪 → 降冪)'],
-  ['Space', 'status', '', 'Space = 點擊(降冪 → 清除、清掉其他欄)'],
-  ['Shift+Space', 'title', 'title↑', 'Shift+Space / 沒有排序 → 加入(只有一欄,不顯示數字)'],
+  ['shift', 'status', 'owner↑1 status↓2 priority↑3', 'Shift+點擊 / 中間欄 升冪 → 降冪、順位不動'],
+  ['shift', 'status', 'owner↑1 status↑2 priority↑3', 'Shift+點擊 / 中間欄 降冪 → 升冪,不會被點掉(R16 前這一步拿掉狀態)'],
+  ['click', 'priority', 'owner↑1 status↑2 priority↓3', '一般點擊 / 多重排序最後一欄 → 只翻這一欄,其他欄與順位不動(R16 前清掉其他欄)'],
+  ['click', 'owner', 'owner↓1 status↑2 priority↓3', '一般點擊 / 多重排序第 1 欄 → 只翻這一欄'],
+  ['click', 'status', 'owner↓1 status↓2 priority↓3', '一般點擊 / 多重排序中間欄 → 只翻這一欄'],
+  ['click', 'title', 'title↑', '一般點擊 / 沒排序的欄 → 取代全部(其他欄清掉)', true],
+  ['Enter', 'title', 'title↓', 'Enter = 點擊(已排序 → 只翻方向)', true],
+  ['Shift+Enter', 'status', 'title↓1 status↑2', 'Shift+Enter = Shift+點擊(沒排序 → 加到最後)'],
+  ['Shift+Space', 'status', 'title↓1 status↓2', 'Shift+Space = Shift+點擊(已排序 → 只翻方向)'],
+  ['Space', 'status', 'title↓1 status↑2', 'Space = 點擊(已排序 → 只翻這一欄,其他欄留著)'],
+  ['Enter', 'priority', 'priority↑', 'Enter = 點擊(沒排序 → 取代全部)', true],
+  ['Shift+Space', 'title', 'priority↑1 title↑2', 'Shift+Space / 沒排序 → 加到最後'],
 ]
 const P_ANNOUNCE = {
-  // 第幾步之後播報區該是哪一句(lib/sort-cycle.ts sortChangeAnnouncement)
-  1: '已依 標題 升冪排序',
-  3: '已取消排序',
-  6: '排序:1 負責人 升冪,2 狀態 升冪',
-  9: '排序:1 負責人 升冪,2 優先級 升冪',
+  // 第幾步之後播報區該是哪一句(lib/sort-cycle.ts sortChangeAnnouncement)+ 破法(丟掉 Shift)下是否仍是同一句(= 對照列)
+  1: ['已依 標題 升冪排序', true],
+  5: ['已依 負責人 升冪排序,其他欄的排序已清除', true],
+  6: ['已依 狀態 升冪排序,共 2 欄排序:1 負責人 升冪,2 狀態 升冪', false],
+  10: ['已依 優先級 降冪排序,共 3 欄排序:1 負責人 升冪,2 狀態 升冪,3 優先級 降冪', false],
+  13: ['已依 標題 升冪排序,其他欄的排序已清除', true],
 }
 if (await open(ROADMAP, ['shift-dropped'])) {
-  // 破法丟掉 Shift:第一個 Shift 步驟之前的列不受影響;之後的狀態偏掉(如預期紅),第 13 步例外(見該列註解)
-  const firstShift = P_STEPS.findIndex(([, , , , ctl]) => !ctl)
   for (const [i, [kind, col, want, note, ctl = false]] of P_STEPS.entries()) {
     if (!(await act(kind, col))) break
     const r = await readHeaders()
-    const control = ctl
-    check('P', `第 ${i + 1} 步 ${kind} ${col}:${note} → 「${want || '(無)'}」`, r.state === want, `實得「${r.state || '(無)'}」`, { control })
+    check('P', `第 ${i + 1} 步 ${kind} ${col}:${note} → 「${want || '(無)'}」`, r.state === want, `實得「${r.state || '(無)'}」`, { control: ctl })
     check('N', `第 ${i + 1} 步 箭頭與數字同進同出(箭頭 ⇔ 有方向;數字 ⇔ ≥2 欄排序)`, r.outOfSync.length === 0, r.outOfSync.join(';'), { control: true })
     if (P_ANNOUNCE[i + 1]) {
+      const [want, control] = P_ANNOUNCE[i + 1]
       const text = await page.evaluate(() => document.querySelector('[data-sort-live-region]')?.textContent ?? null)
       if (text === null && !buildArg) { instrument('A 播報區', '找不到 [data-sort-live-region]'); continue }
-      check('A', `第 ${i + 1} 步之後 播報「${P_ANNOUNCE[i + 1]}」`, text === P_ANNOUNCE[i + 1], `實得「${text}」`, { control: i < firstShift })
+      check('A', `第 ${i + 1} 步之後 播報「${want}」`, text === want, `實得「${text}」`, { control })
     }
   }
 }
@@ -295,6 +352,8 @@ const geo = (col, hover = false) => page.evaluate(([col]) => {
   }
 }, [col, hover])
 const near = (a, b, tol) => a != null && b != null && Math.abs(a - b) <= tol
+/** label ↔ 排序指示的間距(px)= data-table.tsx 排序區的 `gap-2`;SSOT = data-table.spec.md「Multi-sort header」列 */
+const LABEL_INDICATOR_GAP = 8
 
 /** 每一列 `hitBy` = 會讓它紅的破法;--selftest 下不在 hitBy 的破法 → 對照列(必須綠) */
 const gcheck = (breaks, hitBy, name, pass, detail) => check('G', name, pass, detail, { control: !hitBy.some((b) => breaks.includes(b)) })
@@ -324,7 +383,7 @@ async function geometryChecks(tag, breaks, target = G_ROADMAP) {
     if (off.length) { instrument(`G ${tag} 尺寸`, `量到的不是要量的尺寸:${off.join(';')}`); return }
   }
   gcheck(breaks, ['number-in-single'], `${tag} 只有一欄排序:指示 = 一個箭頭(寬 ${single.arrow.w}px),沒有數字`, near(single.indicator.w, single.arrow.w, 0.5) && single.num === null, `指示寬 ${single.indicator.w} 數字 ${JSON.stringify(single.num)}`)
-  gcheck(breaks, ['slot-shift'], `${tag} 只有一欄排序:箭頭在 label 盒之後 4px(同修前)`, near(single.indicator.l - (single.label?.r ?? NaN), 4, 0.5), `${(single.indicator.l - (single.label?.r ?? NaN)).toFixed(2)}px`)
+  gcheck(breaks, ['slot-shift'], `${tag} 只有一欄排序:箭頭在 label 盒之後 8px`, near(single.indicator.l - (single.label?.r ?? NaN), LABEL_INDICATOR_GAP, 0.5), `${(single.indicator.l - (single.label?.r ?? NaN)).toFixed(2)}px`)
   const rs = await readHeaders()
   gcheck(breaks, ['number-in-single'], `${tag} 只有一欄排序:同進同出(沒有數字)`, rs.outOfSync.length === 0, rs.outOfSync.join(';'))
   if (breaks.includes('number-in-single')) return
@@ -340,7 +399,7 @@ async function geometryChecks(tag, breaks, target = G_ROADMAP) {
     gcheck(breaks, ['number-style', 'height-grow'], `${tag} ${name} 數字字級 / 行高 / 字重 / 字族 = 表頭字`, sameType, `數字 ${JSON.stringify(g.numFont)} 表頭字 ${JSON.stringify(g.labelFont)}`)
     gcheck(breaks, ['number-style'], `${tag} ${name} 數字顏色 = 箭頭顏色(靜止)`, g.numFont.color === g.arrowColor, `數字 ${g.numFont.color} 箭頭 ${g.arrowColor}`)
     gcheck(breaks, ['number-offset'], `${tag} ${name} 數字與箭頭垂直置中對齊(±0.75px)`, near(g.num.cy, g.arrow.cy, 0.75), `數字中線 ${g.num.cy.toFixed(2)} 箭頭中線 ${g.arrow.cy.toFixed(2)}`)
-    gcheck(breaks, ['slot-shift'], `${tag} ${name} 指示佔原本箭頭的位置:label 盒之後 4px`, near(g.indicator.l - (g.label?.r ?? NaN), 4, 0.5), `label 盒右緣 → 指示左緣 ${(g.indicator.l - (g.label?.r ?? NaN)).toFixed(2)}px`)
+    gcheck(breaks, ['slot-shift'], `${tag} ${name} 指示佔原本箭頭的位置:label 盒之後 8px`, near(g.indicator.l - (g.label?.r ?? NaN), LABEL_INDICATOR_GAP, 0.5), `label 盒右緣 → 指示左緣 ${(g.indicator.l - (g.label?.r ?? NaN)).toFixed(2)}px`)
     gcheck(breaks, ['gap-4'], `${tag} ${name} 指示寬 = 箭頭 + 2 + 數字`, near(g.indicator.w, g.arrow.w + 2 + g.num.w, 0.6), `指示 ${g.indicator.w.toFixed(2)} 箭頭 ${g.arrow.w} 數字 ${g.num.w.toFixed(2)}`)
     gcheck(breaks, ['height-grow', 'number-style'], `${tag} ${name} 指示高 = 表頭字的行高(數字沒有把指示撐得比 label 高)`, near(g.indicator.h, g.label?.h, 0.5), `指示 ${g.indicator.h.toFixed(2)} label ${g.label?.h}`)
   }
@@ -375,10 +434,29 @@ async function openColumnMenu(col, name) {
   await trigger.first().click(); await settle()
   return true
 }
-for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-shown'], ['aria-stripped', 'live-silent']] : [[]]) {
+/** 選單裡「升冪排序」「降冪排序」各有幾項(lib/sort-cycle.ts `columnMenuShowsSortDirection`:只列這一欄目前不是的那個方向) */
+const menuDirections = async () => ({
+  asc: await page.getByRole('menuitem', { name: '升冪排序' }).count(),
+  desc: await page.getByRole('menuitem', { name: '降冪排序' }).count(),
+})
+const liveText = () => page.evaluate(() => document.querySelector('[data-sort-live-region]')?.textContent ?? null)
+/** 按選單項(看得到才按,看不到就關選單);回傳有沒有按到 */
+async function pickMenuItem(name) {
+  const item = page.getByRole('menuitem', { name, exact: true })
+  const visible = (await item.count()) >= 1 && (await item.first().isVisible())
+  if (visible) await item.first().click()
+  else await page.keyboard.press('Escape')
+  await parkPointer(page); await settle()
+  return visible
+}
+/** 標題 / 狀態 / 優先級三欄都升冪(一般點擊標題,再 Shift+點擊另外兩欄) */
+const setupThree = async () => { await act('click', 'title'); await act('shift', 'status'); await act('shift', 'priority') }
+for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-multi-hidden'], ['menu-current-dir-shown'], ['aria-stripped', 'live-silent']] : [[]]) {
   if (!(await open(ROADMAP, breaks))) continue
-  const hideBreak = breaks.includes('menu-cancel-hidden'); const showBreak = breaks.includes('menu-cancel-shown'); const ariaBreak = breaks.includes('aria-stripped')
-  await act('click', 'title'); await act('shift', 'status'); await act('shift', 'priority')
+  const hideBreak = breaks.includes('menu-cancel-hidden'); const multiHideBreak = breaks.includes('menu-cancel-multi-hidden'); const ariaBreak = breaks.includes('aria-stripped')
+  const dirBreak = breaks.includes('menu-current-dir-shown'); const liveBreak = breaks.includes('live-silent')
+  const cancelGone = hideBreak || multiHideBreak // 多重排序時看不到「取消排序」的兩種破法
+  await setupThree()
   // A:順位描述、數字 aria-hidden、名字不含數字、播報區在根節點外
   const a11y = await page.evaluate(() => {
     const out = {}
@@ -396,38 +474,104 @@ for (const breaks of SELFTEST ? [['menu-cancel-hidden'], ['menu-cancel-shown'], 
   const nameOk = (await page.getByRole('button', { name: '狀態', exact: true }).count()) >= 1
   check('A', '排序區的名字仍是欄標題「狀態」(數字與描述不進名字)', nameOk, '', { control: !ariaBreak })
   check('A', '播報區在表格根節點外、role=status、polite', !!a11y.live && !a11y.live.inTable && a11y.live.role === 'status' && a11y.live.politeness === 'polite', JSON.stringify(a11y.live), { control: true })
-  check('A', '播報區唸出整串排序', a11y.live?.text === '排序:1 標題 升冪,2 狀態 升冪,3 優先級 升冪', `實得「${a11y.live?.text}」`, { control: !breaks.includes('live-silent') })
-  // M:多重排序時 ⌄ 沒有「取消排序」—— 按了要拿掉這一欄還是清掉全部,規格沒寫、DS 前例與世界級相反,待 user 決定;決定前同修前(spec「Multi-sort header」列)
+  check('A', 'Shift 加第三欄後播報「已依 優先級 升冪排序,共 3 欄排序:…」(這一欄 + 整串結果)', a11y.live?.text === '已依 優先級 升冪排序,共 3 欄排序:1 標題 升冪,2 狀態 升冪,3 優先級 升冪', `實得「${a11y.live?.text}」`, { control: !liveBreak })
+  // ── 情境 1(接上面的三欄):中間欄「狀態」的選單 —— 已排序的欄只列相反方向、按了只翻這一欄;再按「取消排序」只拿掉這一欄 ──
   if (await openColumnMenu('status', '狀態')) {
-    const cancel = page.getByRole('menuitem', { name: '取消排序' })
-    const asc = page.getByRole('menuitem', { name: '升冪排序' })
-    check('M', '多重排序時 ⌄ 選單有「升冪排序」', (await asc.count()) === 1, '', { control: true })
+    const d = await menuDirections()
+    // 「狀態」此刻升冪 → 不列「升冪排序」(選了沒變化)、列「降冪排序」(user 2026-11-10 PR #172 留言;2e1f2e27 建置兩項都列 → 紅)
+    check('M', '多重排序、中間欄「狀態」升冪 → 選單只列相反方向:沒有「升冪排序」、有「降冪排序」', d.asc === 0 && d.desc === 1, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: !dirBreak })
+    const cancel = page.getByRole('menuitem', { name: '取消排序', exact: true })
     const has = (await cancel.count()) >= 1 && (await cancel.first().isVisible())
-    check('M', '多重排序時 ⌄ 選單沒有「取消排序」(按了的結果待 user 決定,決定前同修前)', !has, '', { control: !showBreak })
-    await page.keyboard.press('Escape'); await parkPointer(page); await settle()
+    check('M', '多重排序時 ⌄ 選單有「取消排序」', has, '', { control: !cancelGone })
+    const clicked = await pickMenuItem('降冪排序')
+    const r = await readHeaders()
+    check('M', '中間欄按「降冪排序」→ 只翻這一欄,其他欄與順位不動(R16 前:只剩這一欄)', clicked && r.state === 'title↑1 status↓2 priority↑3', `實得「${r.state || '(無)'}」`, { control: true })
+    const t = await liveText()
+    check('A', '選單翻方向後播報「已依 狀態 降冪排序,共 3 欄排序:…」', t === '已依 狀態 降冪排序,共 3 欄排序:1 標題 升冪,2 狀態 降冪,3 優先級 升冪', `實得「${t}」`, { control: !liveBreak })
   }
-  if (!hideBreak && !showBreak) {
-    if (await openColumnMenu('priority', '優先級')) {
-      await page.getByRole('menuitem', { name: '降冪排序' }).click(); await parkPointer(page); await settle()
-      const r = await readHeaders()
-      check('M', '多重排序的最後一欄按「降冪排序」→ 只用這一欄(修前其他欄留著)', r.state === 'priority↓', `實得「${r.state}」`, { control: true })
-      const d = await page.evaluate(() => document.querySelector('[role="columnheader"][data-column-id="priority"] [role="button"]')?.hasAttribute('aria-describedby'))
-      check('A', '回到只有一欄排序 → 沒有順位描述', d === false, `aria-describedby 存在=${d}`, { control: true })
+  if (await openColumnMenu('status', '狀態')) {
+    const d = await menuDirections()
+    check('M', '多重排序、中間欄「狀態」降冪(其他欄仍升冪)→ 只列「升冪排序」', d.asc === 1 && d.desc === 0, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: !dirBreak })
+    const clicked = await pickMenuItem('取消排序')
+    const r = await readHeaders()
+    check('M', '中間欄按「取消排序」→ 只拿掉這一欄、優先級往前補成 2(R16 前:清掉全部)', clicked && r.state === 'title↑1 priority↑2', clicked ? `實得「${r.state || '(無)'}」` : '選單裡看不到「取消排序」', { control: !cancelGone })
+    if (clicked) {
+      const t = await liveText()
+      check('A', '取消後播報「已取消 狀態 的排序,共 2 欄排序:…」', t === '已取消 狀態 的排序,共 2 欄排序:1 標題 升冪,2 優先級 升冪', `實得「${t}」`, { control: !liveBreak })
     }
-  } else {
-    await act('click', 'priority') // 一般點擊多重排序裡升冪的優先級 → 只剩「priority↓」,跟上面選單那條同一個起點
   }
-  // M:只有一欄排序時 ⌄ 有「取消排序」,按了 = 沒有排序(同修前)
-  if (await openColumnMenu('priority', '優先級')) {
-    const cancel = page.getByRole('menuitem', { name: '取消排序' })
-    const has = (await cancel.count()) === 1 && (await cancel.isVisible())
-    check('M', '只有一欄排序時 ⌄ 選單有「取消排序」', has, '', { control: !hideBreak })
-    if (has) {
-      await cancel.click(); await parkPointer(page); await settle()
+  // ── 情境 2:三欄,第 1 欄「標題」按「取消排序」→ 後面兩欄往前補 ──
+  if (await open(ROADMAP, breaks)) {
+    await setupThree()
+    if (await openColumnMenu('title', '標題')) {
+      const clicked = await pickMenuItem('取消排序')
       const r = await readHeaders()
-      check('M', '只有一欄排序時按「取消排序」→ 沒有排序', r.state === '', `實得「${r.state || '(無)'}」`, { control: true })
-    } else { await page.keyboard.press('Escape'); await settle() }
+      check('M', '第 1 欄按「取消排序」→ 只拿掉這一欄、狀態 / 優先級往前補成 1 / 2', clicked && r.state === 'status↑1 priority↑2', clicked ? `實得「${r.state || '(無)'}」` : '選單裡看不到「取消排序」', { control: !cancelGone })
+    }
   }
+  // ── 情境 3:三欄,沒排序的「負責人」選方向 → 取代全部;只剩一欄時取消 → 沒有排序;沒排序的「標題」兩項都列 ──
+  if (await open(ROADMAP, breaks)) {
+    await setupThree()
+    if (await openColumnMenu('owner', '負責人')) {
+      const d = await menuDirections()
+      const cancelCount = await page.getByRole('menuitem', { name: '取消排序', exact: true }).count()
+      check('M', '沒排序的欄「負責人」→ 升冪 / 降冪兩項都列、沒有「取消排序」', d.asc === 1 && d.desc === 1 && cancelCount === 0, `升冪 ${d.asc} / 降冪 ${d.desc} / 取消 ${cancelCount}`, { control: true })
+      const clicked = await pickMenuItem('降冪排序')
+      const r = await readHeaders()
+      check('M', '沒排序的欄按「降冪排序」→ 取代全部,只剩這一欄', clicked && r.state === 'owner↓', `實得「${r.state || '(無)'}」`, { control: true })
+      const desc = await page.evaluate(() => document.querySelector('[role="columnheader"][data-column-id="owner"] [role="button"]')?.hasAttribute('aria-describedby'))
+      check('A', '回到只有一欄排序 → 沒有順位描述', desc === false, `aria-describedby 存在=${desc}`, { control: true })
+      const t = await liveText()
+      check('A', '取代全部後播報「已依 負責人 降冪排序,其他欄的排序已清除」', t === '已依 負責人 降冪排序,其他欄的排序已清除', `實得「${t}」`, { control: !liveBreak })
+    }
+    if (await openColumnMenu('owner', '負責人')) {
+      const d = await menuDirections()
+      check('M', '只有一欄排序、「負責人」降冪 → 只列「升冪排序」', d.asc === 1 && d.desc === 0, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: !dirBreak })
+      const clicked = await pickMenuItem('取消排序')
+      const r = await readHeaders()
+      check('M', '只有一欄排序時按「取消排序」→ 沒有排序', clicked && r.state === '', clicked ? `實得「${r.state || '(無)'}」` : '選單裡看不到「取消排序」', { control: !hideBreak })
+      if (clicked) {
+        const t = await liveText()
+        check('A', '取消唯一一欄後播報「已取消 負責人 的排序,目前沒有排序」', t === '已取消 負責人 的排序,目前沒有排序', `實得「${t}」`, { control: !liveBreak })
+      }
+    }
+    // 沒排序的欄 → 兩項都列(破法只補缺的那一項,這裡兩項本來就在 → 對照列)
+    if (await openColumnMenu('title', '標題')) {
+      const d = await menuDirections()
+      check('M', '「標題」沒排序 → ⌄ 選單「升冪排序」「降冪排序」兩項都在', d.asc === 1 && d.desc === 1, `升冪 ${d.asc} 項 / 降冪 ${d.desc} 項`, { control: true })
+      await page.keyboard.press('Escape'); await parkPointer(page); await settle()
+    }
+  }
+}
+
+// ═══ K 鍵盤:⌄ 在 Tab 順序裡;鍵盤也拿得到「取消排序」(兩態之後,點擊循環裡沒有取消,鍵盤使用者只能走這裡)═══════════
+for (const breaks of SELFTEST ? [['menu-trigger-untabbable']] : [[]]) {
+  const tabBreak = breaks.includes('menu-trigger-untabbable')
+  if (!(await open(ROADMAP, breaks))) continue
+  await setupThree()
+  await sortButton('status').focus(); await waitForFocusStable(page, { frames: 4, capMs: 3000 })
+  await page.keyboard.press('Tab'); await waitForFocusStable(page, { frames: 4, capMs: 3000 }); await settle()
+  const f = await page.evaluate(() => {
+    const a = document.activeElement; const r = a?.getBoundingClientRect()
+    return { label: a?.getAttribute('aria-label') ?? null, w: r ? r.width : 0, inStatus: !!a?.closest('[role="columnheader"][data-column-id="status"]') }
+  })
+  check('K', '「狀態」排序區按 Tab → 下一站是「狀態 欄位選單」(⌄ 在 Tab 順序裡、聚焦時展開)', f.label === '狀態 欄位選單' && f.inStatus && f.w > 0, JSON.stringify(f), { control: !tabBreak })
+  if (f.label !== '狀態 欄位選單') continue
+  await page.keyboard.press('Enter'); await settle()
+  const menuOpen = await page.getByRole('menu').count()
+  let found = false
+  for (let i = 0; i < 8 && menuOpen; i++) {
+    const cur = await page.evaluate(() => (document.activeElement?.getAttribute('role') === 'menuitem' ? (document.activeElement.textContent || '').trim() : null))
+    if (cur === '取消排序') { found = true; break }
+    await page.keyboard.press('ArrowDown'); await settle()
+  }
+  check('K', 'Enter 打開選單、方向鍵走得到「取消排序」', menuOpen >= 1 && found, `選單 ${menuOpen} 個 / 找到=${found}`, { control: !tabBreak })
+  if (!found) { await page.keyboard.press('Escape'); await settle(); continue }
+  await page.keyboard.press('Enter'); await settle()
+  const r = await readHeaders()
+  check('K', '鍵盤按「取消排序」→ 只拿掉「狀態」:標題 1 / 優先級 2', r.state === 'title↑1 priority↑2', `實得「${r.state || '(無)'}」`, { control: !tabBreak })
+  const back = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null)
+  check('K', '選單關掉後焦點回到「狀態 欄位選單」', back === '狀態 欄位選單', `焦點在「${back}」`, { control: !tabBreak })
 }
 
 // ═══ A axe:多重排序狀態(3 欄、11 欄 9+、lg 尺寸)═══════════════════════════════════════════
@@ -535,7 +679,39 @@ if (await open(FEATURES, ['shift-dropped'])) {
   check('U', '不受控 / Shift+點擊 Product → 「price↑1 name↑2」', r2.state === 'price↑1 name↑2', `實得「${r2.state}」`)
   await act('click', 'name')
   const r3 = await readHeaders()
-  check('U', '不受控 / 一般點擊 Product(升冪)→ 清掉其他欄、Product 降冪', r3.state === 'name↓', `實得「${r3.state}」`)
+  check('U', '不受控 / 一般點擊已排序的 Product(升冪)→ 只翻這一欄、Price 留著(R16 前清掉其他欄)', r3.state === 'price↑1 name↓2', `實得「${r3.state}」`)
+  await act('click', 'name')
+  const r4 = await readHeaders()
+  check('U', '不受控 / 再點 Product(降冪)→ 升冪,不會變成沒排序(兩態)', r4.state === 'price↑1 name↑2', `實得「${r4.state}」`)
+}
+
+// ═══ D 桌機(有滑過能力的環境):靜止時 ⌄ 欄位選單收起,已排序的欄也一樣 ═══════════════════════════════════
+// 依據:data-table.spec.md「Multi-sort header」列「桌機維持現況:已排序欄的 ⌄ 仍是滑過才出現」(user 2026-11-12 選了成品頁的「甲：維持現況」,原話見檔頭)。
+// 「收著沒」的判定 = lib/data-table-column-menu-state.mjs 的 isColumnMenuCollapsed(寬 0 而且透明)。先用合成讀數證明兩個條件各自有用
+//(不開瀏覽器;兩種模式都跑、都必須綠 —— 判定壞了,下面兩格的綠燈就不算數):
+for (const [name, state, want] of [
+  ['寬 0 而且透明 → 收起', { found: true, width: 0, opacity: '0' }, true],
+  ['寬 16、不透明(展開的樣子)→ 不算收起', { found: true, width: 16, opacity: '1' }, false],
+  ['寬 0 但不透明(裁切掉了、東西照樣露出來)→ 不算收起', { found: true, width: 0, opacity: '1' }, false],
+  ['透明但寬 16(看不到卻佔著位置)→ 不算收起', { found: true, width: 16, opacity: '0' }, false],
+  ['找不到 ⌄ → 不算收起(呼叫端另判儀器失效)', { found: false }, false],
+]) check('D', `判定表:${name}`, isColumnMenuCollapsed(state) === want, `實得 ${isColumnMenuCollapsed(state)}`, { control: true })
+for (const breaks of SELFTEST ? [['chevron-sorted-always'], ['chevron-always']] : [[]]) {
+  if (!(await open(FEATURES, breaks))) continue
+  // 地板:這一段保證的是「有滑過能力的環境」。不成立 = 量的不是桌機(例:瀏覽器被設成觸控模擬)→ 儀器失效,不讀成通過
+  if (!(await page.evaluate(() => matchMedia('(hover: hover)').matches))) { instrument('D 桌機環境', '(hover: hover) 不成立 —— 量的不是有滑過能力的環境'); continue }
+  // 一般點擊第一張表的 Price(act 會把指標停到中性位置、等版面靜止);焦點留在排序區上,但那是滑鼠點出來的(data-pointer-focus),不算鍵盤焦點
+  if (!(await act('click', 'price'))) { instrument('D 前置', '點 Price 排序區沒有成功(找不到排序區,或點完版面沒有靜止)'); continue }
+  const states = await page.evaluate(columnMenuStatesInPage)
+  const sorted = states.filter((m) => m.sort === 'ascending' || m.sort === 'descending')
+  const unsorted = states.filter((m) => !sorted.includes(m))
+  if (states.some((m) => !m.found) || sorted.length !== 1 || unsorted.length < 2) {
+    instrument('D ⌄', `表頭 ${states.length} 個 / 已排序 ${sorted.length} 個(應剛好 1 個)/ 沒排序 ${unsorted.length} 個(應 ≥ 2)/ 找不到 ⌄ 的 ${states.filter((m) => !m.found).length} 個`)
+    continue
+  }
+  const open_ = (list) => list.filter((m) => !isColumnMenuCollapsed(m)).map(describeColumnMenu).join(';')
+  check('D', `沒排序的欄靜止時 ⌄ 收起(${unsorted.length} 欄,寬 0 而且透明)`, unsorted.every(isColumnMenuCollapsed), open_(unsorted) ? `沒收起:${open_(unsorted)}` : '', { control: !breaks.includes('chevron-always') })
+  check('D', `已排序的欄(${sorted[0].column})靜止時 ⌄ 也收起(user 2026-11-12 選「甲：維持現況」)`, sorted.every(isColumnMenuCollapsed), sorted.map(describeColumnMenu).join(';'))
 }
 
 await browser.close()
@@ -545,5 +721,5 @@ if (instrumentFail) {
   console.error(`\n✗ data-table-multi-sort:${INSTRUMENT_FAIL_MARKER} —— 有量測沒有真的量到${SELFTEST ? '(對照組沒有真的跑,不得讀成「如預期紅」)' : ''}`)
   process.exit(2)
 }
-console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 P / N / G / M / A / S / U 如預期變紅、對照列仍綠(儀器有效)' : '多重排序:狀態轉移、數字與 9+、長相、⌄ 選單、讀屏、與排序面板雙向同步、不受控表格,全通過'}`)
+console.log(failCount ? `\n✗ ${failCount} 項未通過` : `\n✓ ${SELFTEST ? '對照組:各組破法注入後 P / N / G / M / A / S / U / D 如預期變紅、對照列仍綠(儀器有效)' : '多重排序:狀態轉移、數字與 9+、長相、⌄ 選單、讀屏、與排序面板雙向同步、不受控表格、桌機靜止時 ⌄ 收起(含已排序的欄),全通過'}`)
 process.exit(failCount ? 1 : 0)

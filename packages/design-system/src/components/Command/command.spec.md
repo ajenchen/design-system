@@ -115,6 +115,7 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 - **實作 —— 有可選項時保持一列反白**(2026-09-30):沒有反白時 `Enter` 沒有東西可選。cmdk 自己有「反白列卸載 → 選第一項」的修補(<https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L321-L333>),但它的排程以槽號當 Map 的 key(<https://github.com/dip/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/cmdk/src/index.tsx#L1046-L1058>),同一次 commit 卸載好幾列時只剩最後一列的檢查會跑 —— 清單在 cmdk 外面過濾(搜尋字在觸發欄位)或遠端換一批結果時,反白列不是最後卸載的那一列就沒人補(實測:Select 打「日」後 0 列反白、`Enter` 沒反應)。Command 根的 observer 補:沒有反白而有可選項 → 放回第一項(`moveCursorToFirstOption`,代發 cmdk 自己的 `Home` 鍵,選第一項並捲進可視範圍;代發的鍵不記成「鍵盤搬了游標」,`../../hooks/use-input-modality.ts` `dispatchRelayedKey`)。
 - **Loading**:Command 本身非 async surface。async option fetch 由 consumer(SelectMenu / Cmd+K palette)在外層處理,指示**只有一處**(2026-09-09 user 拍板;2026-09-08 的 `<CommandInput loading>` 搜尋列轉圈已退役、prop 已移除):在 `<CommandEmpty>` slot 內放 `<CommandLoading label="載入選項中" />`(`command.tsx` `CommandLoading`)= 與「沒有結果」同一種 `MenuItem message` 訊息列,前綴槽放列圖示尺寸轉圈(`ICON_SIZE[size]`:sm/md 16、lg 20)+ 可見文字,`role="status"` 直接播報,**不經 Empty**;只在清單裡沒有任何可顯示的選項時才看得到。搜尋列仍可打字、不轉圈(SSOT select-menu.spec.md「Loading」)。
 - **Empty(no results)**:依 `../SelectMenu/select-menu.spec.md:209`「一律走 MenuItem 的列幾何」(「Empty state」段:訊息列的長相、高度、圖示與 `Empty` 元件的取捨都住那一段)。實作:`<CommandEmpty>` 在過濾後 0 筆時渲(`command.tsx#CommandEmpty`),`MenuGroup`(`py-2`)包一列 `<MenuItem message>`,字串 children 自動包成訊息列;舊 `minRows` / `getMenuListMinHeight` 已退役。0 筆的讀屏播報由 `CommandEmptyStatus`(sr-only `role="status"` live region)負責,CommandDialog / SelectMenu 都渲一份。
+- **清單捲動上限 300px**:CommandList / SelectMenu 的內容超過 18.75rem(300px)就在清單內部捲動(`command.tsx` `CommandList` 的 `max-h-[18.75rem]`)。**不隨 density 變**(它是「一次看幾筆」的閱讀上限,不是控制項尺寸)。與 Dialog 的高度上限是兩套獨立機制:Dialog 吃 `min(100svh - inset*2, maxHeight)`,兩邊互不引用(CommandDialog 同時被兩者夾住,見 `../Dialog/dialog.spec.md`「最大高度(上限)」段)。來歷:2026-09-08 從 `command.tsx` 的 fallback 字面值升成全系統 token;2026-11-11 user 拍板 token 第 3 題「3全收」收回成本元件自己的值 —— 只有 `CommandList` 在讀、不隨密度切換、產品 0 處讀取,照 `../../tokens/token-system.spec.md` 判斷流程第 0 題不開 token。`../Select/select.spec.md`「大量選項」引用本條。
 - **Dark mode / density**:全數經 MenuItem / CommandInput 的 token 連動(空狀態、載入列也是 MenuItem);Command 自身只剩 cmdk 反白的長相:滑鼠搬的反白 `data-[selected=true]:bg-neutral-hover`、鍵盤搬的反白 `data-[selected=true]:focus-ring-inset`(反白來歷 `useCursorMover`;focus-canonical 規則一「兩類元件」+ 規則二;項目上沒有 `hover:` 樣式,鍵盤搬走反白後滑鼠停留列的底色一起消失),以及選中底色釘住(item-anatomy「選中 × 互動疊加」)。尺寸(sm / md / lg)由 Command root 的 `size` 進 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態同一個值。
 
 ---
@@ -185,3 +186,9 @@ cmdk 是 headless 函式庫,原本就讓 app 直接消費 primitive —— 但�
 - `../DropdownMenu/dropdown-menu.spec.md` — 不需搜尋的操作選單
 - `../Dialog/dialog.spec.md` — Command Palette 的浮層容器(`CommandDialog` 內部 wrap Radix Dialog)
 - cmdk library — 底層搜尋與鍵盤導覽實作
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `select.spec.md`

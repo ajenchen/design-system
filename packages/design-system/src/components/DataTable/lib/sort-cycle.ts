@@ -1,46 +1,51 @@
 /**
- * sort-cycle — 表頭排序的唯一判定(純函式;2026-11-03,user 2026-10-30 15:26 / 17:08 / 17:09(台灣時間)在對話裡給的規格)。
+ * sort-cycle — 表頭排序的唯一判定(純函式;2026-11-03 立,2026-11-11 依 user R16 定案改寫)。
  *
  * **Scope:Internal-only — DataTable 自用,非 public API**(同 `column-meta.ts`:lib/ 資料夾 = internal helper,
- * 不進 root barrel)。表頭點擊、表頭鍵盤、表頭 ⌄ 選單、順位數字、讀屏宣告都從這裡取,不各寫一份(M17)。
+ * 不進 root barrel)。表頭點擊、表頭 Enter / Space(含 Shift)、表頭 ⌄ 選單三項、順位數字、讀屏描述、播報都從這裡取,
+ * 不各寫一份(M17)。排序怎麼變只有 `nextSorting` 一支 —— 呼叫端把「使用者做了什麼」(`SortAction`)交給它,不自己判斷。
  *
- * 為什麼不用 TanStack 內建的 `getToggleSortingHandler`(修前用它;v8.21.3 `RowSorting.ts` toggleSorting):
- *   - 一般點擊「多重排序裡的最後一欄」走它的 `toggle` 分支 → **只改這一欄、其他欄留著**(實測 108a736f:
- *     標題↑ 狀態↑ 優先級↑ → 點優先級 → 三欄都還在、優先級變↓),違反 user 規格「一般點擊 = 清掉其他欄」。
- *   - 一般點擊「多重排序裡不是最後、目前是降冪」的欄走 `replace` 分支 → 變成**升冪**(它的 nextDesc 在下一步是「清除」時取 false),
- *     違反「從目前方向切下一個(降冪 → 清除)」。
- *   - 第一下的方向看**第一列的值是不是字串**(`getAutoSortDir`,v8.21.3 `RowSorting.ts:335-345`:字串 → 升冪,其他一律降冪):
- *     數字 / 金額 / 勾選 / 人員 / 多人 / 多選欄、值是 Date 物件的欄,以及第一列剛好是空值的欄(連字串欄也算)第一下都是**降冪**,
- *     同一欄的方向會跟著資料變(實測 108a736f:進度% / 負責人第一下 ↓)。這條從沒寫進任何 DS 文件;DS 文件一直寫的是 asc → desc → none
- *     (`../data-table.anatomy.stories.tsx` 說明頁 2026-04-18 起「點擊 header 切換 asc / desc / none 三態」、2026-04-29 f8cec708
- *     「Tri-state 保留(asc → desc → none)」、`../data-table.tsx` 表頭註解「click → toggle sort 三態(asc → desc → none)」),
- *     也就是 user 給的循環「加入並升冪 → 降冪 → 清除」。世界級在這點不一致 —— AG Grid v33 `sortService.ts:13`
- *     `DEFAULT_SORTING_ORDER = ['asc', 'desc', null]`、MUI X v7 `dataGridPropsDefaultValues.ts:60` `sortingOrder: ['asc', 'desc', null]`、
- *     Polaris v13 DataTable `defaultSortDirection = 'ascending'`(`DataTable.tsx:978`)升冪先;Polaris v13 IndexTable 預設
- *     `defaultSortDirection = 'descending'`(`IndexTable.tsx:149`);TanStack 依型別 —— 所以依據是 DS 文件與 user 的循環,不是世界級:
- *     第一下一律升冪、不分欄型(spec「Multi-sort header」列)。
- *
- * 規格(user 2026-10-30 在對話裡給的規格與 4 點回覆;下列引號內是原話逐字;規範與主要原話住
- * `../data-table.spec.md`「Multi-sort header」列):
- *   - 循環 = 升冪 → 降冪 → 清除(「1. 就用ds的字眼就好」)
- *   - Shift+點擊:這一欄不在排序裡 → 加到最後、升冪;在排序裡 → 照循環走下一步,順位不動;下一步是清除 → 拿掉,後面的順位往前補(「3. 對」)
- *   - 一般點擊:清掉其他欄,這一欄從目前方向切下一個(「然後不加shift的click則按照目前的邏輯,只要直接點了就會清空所有排序並以目前所點擊的column作為排序依據」
- *     —— 「目前的邏輯」接著講的是清掉其他欄,沒有講方向;「2. a」= AI 10-30 選項 (a)「從它目前的方向切到下一個…AG Grid 是這樣」)
- *   - 只有一欄排序時不顯示數字;第 10 個以後一律「9+」、不限欄數(「4. 不要限制欄數,超過一律9+」)
- * Shift+點擊在排序中的欄**順位不動**是 AI 推導(user 規格沒寫;世界級不一致:AG Grid 會把它移到最後、MUI X 原地替換,見 spec 該列的對照):
- * 理由 = 與排序面板(`../data-table-sort-manager.tsx` `updateAt`:改方向原地替換)同一個動作同一個結果。
- * ⌄ 選單的「取消排序」在多重排序時**不顯示**(同修前):按了要拿掉這一欄還是清掉全部,規格沒寫、DS 前例與世界級相反,要 user 決定
- * (`columnMenuShowsCancelSort`)。
+ * 規則(user 2026-11-11 定案;原話逐字住 `../data-table.spec.md`「Multi-sort header」列,這裡只寫規則):
+ *   - 循環兩態:點已排序的欄只在升冪 ↔ 降冪之間切,點表頭永遠不會變成「沒排序」;第一下一律升冪、不分欄型。
+ *   - 已排序的欄:一般點擊 = Shift+點擊 = 只翻這一欄的方向,其他欄與順位不動(Shift 只是「加進多重排序」的捷徑)。
+ *   - 沒排序的欄:一般點擊 = 取代全部(只剩這一欄、升冪);Shift+點擊 = 加到多重排序最後、升冪。
+ *   - ⌄ 選單「取消排序」:只拿掉這一欄,後面的順位往前補(多重排序也出)。
+ *   - ⌄ 選單升冪 / 降冪:已排序的欄只列相反方向那一項,點了只翻這一欄;沒排序的欄兩項都列,點了取代全部(同一般點擊)。
+ *   - 取消排序只能走明確的 UI(⌄ 選單「取消排序」、排序面板),不在點擊循環裡。
+ * 修前(2026-11-03 → 11-11):循環三態(升冪 → 降冪 → 清除)、一般點擊清掉其他欄、⌄「取消排序」清掉全部。
+ * 為什麼不用 TanStack 內建的 `getToggleSortingHandler`(2026-11-03 前用它;v8.21.3 `RowSorting.ts` toggleSorting):
+ *   它的一般點擊看「這一欄是不是多重排序的最後一欄」決定清不清其他欄,第一下方向看第一列的值是不是字串(`getAutoSortDir`,
+ *   數字 / 人員 / 日期物件欄第一下降冪),兩者都不是本 DS 的規則;判定表的對照組保留那段修前行為(`scripts/test-data-table-sort-cycle.mjs`)。
  */
 import type { SortingState } from '@tanstack/react-table'
 
 export type SortDirection = 'asc' | 'desc'
 
-/** 循環的下一步(升冪 → 降冪 → 清除 → 升冪)。`false` = 沒排序。 */
-export function nextSortDirection(current: SortDirection | false): SortDirection | false {
-  if (current === false) return 'asc'
-  if (current === 'asc') return 'desc'
-  return false
+/**
+ * 使用者對一欄做的排序動作 —— 表頭與選單的每一個入口都換算成其中一種,交給 `nextSorting`:
+ *   - `activate`:點表頭排序區 / 在排序區按 Enter 或 Space;`additive` = 有按 Shift **且**這張表、這一欄允許多重排序
+ *   - `set`:⌄ 選單「升冪排序」/「降冪排序」
+ *   - `remove`:⌄ 選單「取消排序」
+ */
+export type SortAction =
+  | { kind: 'activate'; additive: boolean }
+  | { kind: 'set'; direction: SortDirection }
+  | { kind: 'remove' }
+
+/**
+ * 排序變化的唯一判定。只看「這一欄在不在排序裡」與動作,不看它排第幾、不看其他欄:
+ *   在排序裡 → `activate` 翻方向、`set` 換成指定方向、`remove` 拿掉(後面往前補),都**原地**改,其他欄與順位不動;
+ *   不在排序裡 → `activate` 加 Shift 接到最後、其餘(一般點擊、選單升 / 降冪)取代全部;第一下一律升冪;`remove` 不變。
+ */
+export function nextSorting(sorting: SortingState, columnId: string, action: SortAction): SortingState {
+  const index = sorting.findIndex((s) => s.id === columnId)
+  if (action.kind === 'remove') return index < 0 ? sorting : sorting.filter((_, i) => i !== index)
+  if (index >= 0) {
+    const desc = action.kind === 'set' ? action.direction === 'desc' : !sorting[index].desc
+    return sorting.map((s, i) => (i === index ? { ...s, desc } : s))
+  }
+  const entry = { id: columnId, desc: action.kind === 'set' && action.direction === 'desc' }
+  return action.kind === 'activate' && action.additive ? [...sorting, entry] : [entry]
 }
 
 const directionOf = (sorting: SortingState, columnId: string): SortDirection | false => {
@@ -48,41 +53,67 @@ const directionOf = (sorting: SortingState, columnId: string): SortDirection | f
   return entry ? (entry.desc ? 'desc' : 'asc') : false
 }
 
-/**
- * 點表頭(或在表頭的排序區按 Enter / Space)之後的排序。
- * @param additive Shift+點擊 / Shift+Enter / Shift+Space(且這張表允許多重排序)
- */
-export function sortingAfterHeaderActivate(sorting: SortingState, columnId: string, additive: boolean): SortingState {
-  const next = nextSortDirection(directionOf(sorting, columnId))
-  if (!additive) return next === false ? [] : [{ id: columnId, desc: next === 'desc' }]
-  const index = sorting.findIndex((s) => s.id === columnId)
-  if (index < 0) return [...sorting, { id: columnId, desc: false }]
-  if (next === false) return sorting.filter((_, i) => i !== index)
-  return sorting.map((s, i) => (i === index ? { ...s, desc: next === 'desc' } : s))
-}
-
-/**
- * 表頭 ⌄ 欄位選單的三個排序項。
- *   升冪排序 / 降冪排序 = 一般點擊的同一種動作(不按 Shift):清掉其他欄、只用這一欄這個方向(AG Grid v33 選單 `setSortForColumn(column, 'asc', false)`、
- *   MUI X v7 選單 `sortColumn(field, 'asc')` 同樣清掉其他欄)。
- *   取消排序(`null`)= 拿掉這一欄;選單只在 `columnMenuShowsCancelSort` 為真(只有這一欄在排序)時出這一項,所以實際結果恆為「沒有排序」。
- * 修前「升冪 / 降冪」走 TanStack `toggleSorting(desc, false)`,這一欄剛好是多重排序的最後一欄時只改它、其他欄留著,
- * 不是最後一欄時清掉其他欄 —— 同一個選單項,結果看順位而定。
- */
-export function sortingFromColumnMenu(sorting: SortingState, columnId: string, direction: SortDirection | null): SortingState {
-  if (direction === null) return sorting.filter((s) => s.id !== columnId)
-  return [{ id: columnId, desc: direction === 'desc' }]
-}
-
-/**
- * ⌄ 選單要不要出「取消排序」:這一欄在排序裡,而且**只有這一欄**在排序。
- * 多重排序時不出(同 2026-05-04 K7 起的行為):K7 藏它的理由(沒有順位數字的箭頭是片段資訊)已經消失,但按了要「只拿掉這一欄」
- * (DS 排序面板的刪除鈕、Shift+點擊的清除)還是「清掉全部」(AG Grid v33 選單 `sortUnSort` → `setSortForColumn(column, null, false)`;
- * MUI X v7 選單 Unsort → `sortColumn(field, null)` → `sortModel = []`)規格沒寫、DS 前例與世界級相反 → 要 user 決定,決定前維持修前
- * (data-table.spec.md「Multi-sort header」列)。
- */
+/** ⌄ 選單要不要出「取消排序」:這一欄在排序裡就出(多重排序也出)。按了只拿掉這一欄(`nextSorting` 的 `remove`)。 */
 export function columnMenuShowsCancelSort(sorting: SortingState, columnId: string): boolean {
-  return sorting.length === 1 && sorting[0].id === columnId
+  return sorting.some((s) => s.id === columnId)
+}
+
+/**
+ * ⌄ 選單要不要出「升冪排序」(`'asc'`)/「降冪排序」(`'desc'`):這一欄**目前就是**這個方向 → 不出(選了沒有任何變化),其餘都出。
+ * 看的是**這一欄自己**的方向,不看它在多重排序裡排第幾、也不看其他欄。已排序的欄因此只剩「相反方向」一項。
+ * 來源:user 2026-11-10 PR #172 決策頁留言(問句,逐字)「應該要把當前的排序的選項拿掉吧？因為選了沒意義啊」;AI 查證世界級一致後照做:
+ * AG Grid 欄位選單 `if (!(isAscending && isDefaultSort)) result.push('sortAscending')`、`if (!(isDescending && isDefaultSort)) result.push('sortDescending')`
+ * (https://github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-enterprise/src/menu/columnMenuFactory.ts#L137-L160)、
+ * MUI X `sortDirection !== 'asc'` / `sortDirection !== 'desc'` 才渲染該項
+ * (https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/menu/columnMenu/menuItems/GridColumnMenuSortItem.tsx#L56-L73)。
+ */
+export function columnMenuShowsSortDirection(sorting: SortingState, columnId: string, direction: SortDirection): boolean {
+  return directionOf(sorting, columnId) !== direction
+}
+
+/**
+ * 排序相關的介面字串(選單項、讀屏描述、播報句)集中在這裡,同 `../data-table-filter-labels.ts` 的 labels 形狀
+ * (介面 + 預設值;要帶參數的句子寫成函式)。DataTable 目前沒有 `labels` prop,先由元件直接用預設值 —— 要開放覆寫時接這一份,
+ * 不在各處另寫字串。字眼只用 DS 既有的「排序 / 升冪 / 降冪 / 取消排序」(user 2026-10-30「1. 就用ds的字眼就好」)。
+ */
+export interface DataTableSortLabels {
+  /** ⌄ 選單項 */
+  sortAscending: string
+  sortDescending: string
+  cancelSort: string
+  /** 方向的名字(播報句用) */
+  ascending: string
+  descending: string
+  /** 排序區的 `aria-describedby`:「排序順位 N」 */
+  priorityDescription: (priority: number) => string
+  /** 播報:這一欄現在的方向(「已依 截止日 降冪排序」) */
+  announceSorted: (column: string, direction: string) => string
+  /** 播報:拿掉了這一欄(「已取消 狀態 的排序」) */
+  announceRemoved: (column: string) => string
+  /** 播報:一般點擊沒排序的欄、把其他欄換掉時補的一句 */
+  announceOthersCleared: string
+  /** 播報:結果還剩幾欄時的整串(「共 3 欄排序:1 標題 升冪,2 截止日 降冪,3 狀態 升冪」) */
+  announceSummary: (count: number, entries: string) => string
+  announceSummaryEntry: (priority: number, column: string, direction: string) => string
+  /** 播報:拿掉之後只剩一欄 / 一欄都沒有 */
+  announceRemaining: (column: string, direction: string) => string
+  announceNone: string
+}
+
+export const DATA_TABLE_SORT_DEFAULT_LABELS: DataTableSortLabels = {
+  sortAscending: '升冪排序',
+  sortDescending: '降冪排序',
+  cancelSort: '取消排序',
+  ascending: '升冪',
+  descending: '降冪',
+  priorityDescription: (priority) => `排序順位 ${priority}`,
+  announceSorted: (column, direction) => `已依 ${column} ${direction}排序`,
+  announceRemoved: (column) => `已取消 ${column} 的排序`,
+  announceOthersCleared: '其他欄的排序已清除',
+  announceSummary: (count, entries) => `共 ${count} 欄排序:${entries}`,
+  announceSummaryEntry: (priority, column, direction) => `${priority} ${column} ${direction}`,
+  announceRemaining: (column, direction) => `目前依 ${column} ${direction}排序`,
+  announceNone: '目前沒有排序',
 }
 
 /** 數字最多顯示到 9,第 10 個以後一律「9+」(Badge `max` 的「max+」寫法,`../../Badge/badge.tsx`)。 */
@@ -103,19 +134,37 @@ export function sortPriorityLabel(sorting: SortingState, columnId: string): stri
 }
 
 /** 讀屏的順位描述(掛在排序區的 `aria-describedby`):畫面上是「9+」時這裡照實說第幾 —— 讀屏沒有寬度限制。 */
-export function sortPriorityDescription(sorting: SortingState, columnId: string): string | null {
+export function sortPriorityDescription(sorting: SortingState, columnId: string, labels: DataTableSortLabels = DATA_TABLE_SORT_DEFAULT_LABELS): string | null {
   const priority = sortPriority(sorting, columnId)
-  return priority === null ? null : `排序順位 ${priority}`
+  return priority === null ? null : labels.priorityDescription(priority)
 }
 
 /**
- * 從表頭改排序後播報的一句話(polite;焦點留在排序區上,`aria-sort` 掛在外層欄頭,讀屏不會自己唸出變化)。
- * 句型只用 DS 既有字眼(排序 / 升冪 / 降冪 / 取消排序);多重排序時照順位全部唸 ——
- * 加進第 N 欄時,使用者聽得到前面幾欄還在(Adrian Roselli 的多欄排序實驗同一個做法,見 spec「Multi-sort header」列)。
+ * 從表頭 / ⌄ 選單改排序後播報的一句話(polite;焦點留在排序區或回到 ⌄ 上,`aria-sort` 掛在外層欄頭,讀屏不會自己唸出變化)。
+ * 句子 = 「這一欄發生了什麼」+「結果」:
+ *   - 這一欄被拿掉 → 「已取消 X 的排序」,接著說剩下的(兩欄以上照順位全唸 / 一欄 / 沒有排序);
+ *   - 這一欄在結果裡 → 「已依 X 升冪 / 降冪排序」;結果兩欄以上再照順位全唸;一般點擊沒排序的欄把其他欄換掉時補「其他欄的排序已清除」。
+ * 多重排序時照順位全唸,讓使用者聽得到其他欄還在、排第幾(Adrian Roselli 的多欄排序實驗同一個做法,見 spec「Multi-sort header」列)。
+ * `previous` 由呼叫端傳「這次動作之前」的排序(與交給 `nextSorting` 的是同一個值),不在這裡另外推。
  */
-export function sortChangeAnnouncement(sorting: SortingState, labelOf: (columnId: string) => string): string {
-  if (sorting.length === 0) return '已取消排序'
-  const dir = (s: SortingState[number]) => (s.desc ? '降冪' : '升冪')
-  if (sorting.length === 1) return `已依 ${labelOf(sorting[0].id)} ${dir(sorting[0])}排序`
-  return `排序:${sorting.map((s, i) => `${i + 1} ${labelOf(s.id)} ${dir(s)}`).join(',')}`
+export function sortChangeAnnouncement(
+  previous: SortingState,
+  next: SortingState,
+  columnId: string,
+  labelOf: (columnId: string) => string,
+  labels: DataTableSortLabels = DATA_TABLE_SORT_DEFAULT_LABELS,
+): string {
+  const dir = (s: SortingState[number]) => (s.desc ? labels.descending : labels.ascending)
+  const summary = () => labels.announceSummary(next.length, next.map((s, i) => labels.announceSummaryEntry(i + 1, labelOf(s.id), dir(s))).join(','))
+  const entry = next.find((s) => s.id === columnId)
+  if (!entry) {
+    const removed = labels.announceRemoved(labelOf(columnId))
+    if (next.length === 0) return `${removed},${labels.announceNone}`
+    if (next.length === 1) return `${removed},${labels.announceRemaining(labelOf(next[0].id), dir(next[0]))}`
+    return `${removed},${summary()}`
+  }
+  const sorted = labels.announceSorted(labelOf(columnId), dir(entry))
+  if (next.length >= 2) return `${sorted},${summary()}`
+  const othersCleared = previous.some((s) => s.id !== columnId)
+  return othersCleared ? `${sorted},${labels.announceOthersCleared}` : sorted
 }

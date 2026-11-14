@@ -1,0 +1,49 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Tabs — 分頁高(元件的值;主人 = Tabs)
+   ═══════════════════════════════════════════════════════════════════════
+
+   分類、主人、住處、誰可以讀 → tokens/token-registry.json「--tab-height-」那一列(唯一一份;本檔不重述)。
+   2026-11-11 從 tokens/uiSize/uiSize.css 搬來(user 2026-11-10 token「2甲」,第二階段第一批試搬):
+   名字、每一檔密度的值都沒變;產品經對外彙總檔 styles/tokens.css 拿到,不用改任何一行。
+
+   獨立於 --field-height-* 與 --table-row-*:分頁是導覽容器,需要比表單控制項多一點呼吸感。
+   數值目前與表格列高對齊,但概念獨立,不用 var() 互指 —— 任何一方調整都不牽動另一方(tabs.spec.md「尺寸」)。
+   lg 與共用刻度 --chrome-header-height(住 uiSize.css)三個段落都必須像素相等(header-canonical.spec.md W3;
+   閘 ds-canonical/hooks/lib/_tab_lg_chrome_header_equal.sh 從分類表讀兩邊的住處再比)。
+
+   ── 三段的順序不能動;同一個元素上明寫的單軸屬性勝過 data-density ──
+   `:root` 與 `[data-ui-size="lg"]` 權重相同(各一個偽類 / 屬性選擇器)。密度標記放在 <html> 上時,
+   兩條規則命中同一個元素,靠「後寫的贏」—— 所以預設值、大密度覆寫、鎖回一般密度三段必須同一個檔、照這個順序。
+   便捷屬性那一半寫成 `[data-density="…"]:not([data-ui-size])`:同一個元素同時帶兩種屬性時只看明寫的 data-ui-size
+   (理由與規則住 density/density.spec.md「同一個元素帶兩種屬性」,uiSize.css 同名段落同寫法)。
+   (token-creation-invariant C5 管「同一個檔」;順序與雙屬性由 test-density-subtree-token-parity 在瀏覽器實算守住。)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --tab-height-sm: 2rem;        /* 32px — ★ 預設(2026-05-17 從 md 改),overlay / chrome / dense */
+  --tab-height-md: 2.5rem;      /* 40px — future tier(無 recommended use case,2026-05-17 從 default 降級) */
+  --tab-height-lg: 3rem;        /* 48px — 獨立 tabs 取代 chrome header(= --chrome-header-height) */
+}
+
+[data-ui-size="lg"],
+[data-density="lg"]:not([data-ui-size]) {
+  --tab-height-sm: 2.5rem;      /* 40px */
+  --tab-height-md: 3rem;        /* 48px */
+  --tab-height-lg: 3.5rem;      /* 56px */
+}
+
+/* 鎖回一般密度:祖先是大密度、這一塊宣告 data-density="md" / data-ui-size="md" 時回到 :root 的值
+   (浮層經 Portal 掛到 body 之外時一樣要能鎖回;uiSize.css 同名段落的理由)。 */
+[data-ui-size="md"],
+[data-density="md"]:not([data-ui-size]) {
+  --tab-height-sm: 2rem;        /* 32px */
+  --tab-height-md: 2.5rem;      /* 40px */
+  --tab-height-lg: 3rem;        /* 48px */
+}
+
+/* Tailwind 轉接名:讓 h-tab-sm / h-tab-md / h-tab-lg 這類樣式類別可用(跟著本尊住;轉接名本身不登記) */
+@theme inline {
+  --spacing-tab-sm: var(--tab-height-sm);
+  --spacing-tab-md: var(--tab-height-md);
+  --spacing-tab-lg: var(--tab-height-lg);
+}

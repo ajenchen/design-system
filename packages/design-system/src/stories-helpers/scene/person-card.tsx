@@ -1,5 +1,18 @@
 import { fn } from '@storybook/test'
 import { buildPersonProfileCard, type PersonData } from '@/design-system/components/PeoplePicker/person-display'
+import { demoPersonPhoto, type DemoPersonName } from '../data/people'
+
+// 照片名冊住 data/people.ts(純資料);對外一律從這支匯入(同一個人全 DS 同一張臉,user 2026-11-11)
+export { DEMO_PERSON_PHOTO, DEMO_FACE_UNUSABLE, demoPersonPhoto, type DemoPersonName } from '../data/people'
+
+/**
+ * 名冊裡的人轉成 DS 人員物件(PersonData)—— 給 DataTable 人員欄 / PeoplePicker 已選值 / AgentPanel 表單這類吃 PersonValue 的地方。
+ * 字串型人員值只會顯示縮寫(person-display.tsx `toPersonData`),要顯示照片就傳這個物件。
+ * px = 顯示尺寸 ×2;`extra` 補部門 / 狀態等欄位(照片欄位不得覆寫 —— 同一個人同一張臉)。
+ */
+export function demoPersonData(name: DemoPersonName, px = 96, extra: Omit<Partial<PersonData>, 'name' | 'avatarUrl'> = {}): PersonData {
+  return { ...extra, name, avatarUrl: demoPersonPhoto(name, px) }
+}
 
 export interface SamplePerson {
   name: string
@@ -23,7 +36,7 @@ export interface SamplePerson {
 export const SAMPLE_PEOPLE = {
   ada: {
     name: 'Ada Chen',
-    avatarSrc: 'https://i.pravatar.cc/80?u=ada-chen',
+    avatarSrc: demoPersonPhoto('Ada Chen', 128),
     subtitle: 'Design｜ADACHEN｜1048217',
     id: 'ADACHEN',
     employeeNumber: '1048217',
@@ -32,7 +45,7 @@ export const SAMPLE_PEOPLE = {
   },
   alice: {
     name: 'Alice Chen',
-    avatarSrc: 'https://i.pravatar.cc/128?u=alice',
+    avatarSrc: demoPersonPhoto('Alice Chen', 128),
     subtitle: 'Design｜ALICEC｜1031406',
     id: 'ALICEC',
     employeeNumber: '1031406',
@@ -41,17 +54,18 @@ export const SAMPLE_PEOPLE = {
   },
   bob: {
     name: 'Bob Lin',
-    avatarSrc: 'https://i.pravatar.cc/128?u=bob',
+    avatarSrc: demoPersonPhoto('Bob Lin', 128),
     subtitle: 'Engineering｜BOBLIN｜1027734',
     id: 'BOBLIN',
     employeeNumber: '1027734',
     status: 'busy',
     statusMessage: '會議中,15:00 後回覆',
   },
-  // ↓ Avatar 頁(展示 / 設計原則)用到的成員:照片沿用各頁原本的那一張,補上各自的部門 / ID / 員工編號與成對的狀態(2026-10-28,OV-pe6)
+  // ↓ Avatar 頁(展示 / 設計原則)用到的成員:補上各自的部門 / ID / 員工編號與成對的狀態(2026-10-28,OV-pe6);
+  //   照片 2026-11-11 起走照片名冊(之前各自 `?u=` 雜湊,Bob Wang 是女性臉、Dave Lin 是蓋眼的女性臉)
   bobWang: {
     name: 'Bob Wang',
-    avatarSrc: 'https://i.pravatar.cc/80?u=bob-wang',
+    avatarSrc: demoPersonPhoto('Bob Wang', 128),
     subtitle: 'Engineering｜BOBWANG｜1035518',
     id: 'BOBWANG',
     employeeNumber: '1035518',
@@ -60,7 +74,7 @@ export const SAMPLE_PEOPLE = {
   },
   carol: {
     name: 'Carol Lee',
-    avatarSrc: 'https://i.pravatar.cc/80?u=carol-lee',
+    avatarSrc: demoPersonPhoto('Carol Lee', 128),
     subtitle: 'Design｜CAROLL｜1039952',
     id: 'CAROLL',
     employeeNumber: '1039952',
@@ -69,7 +83,7 @@ export const SAMPLE_PEOPLE = {
   },
   dave: {
     name: 'Dave Lin',
-    avatarSrc: 'https://i.pravatar.cc/80?u=dave-lin',
+    avatarSrc: demoPersonPhoto('Dave Lin', 128),
     subtitle: 'Product｜DAVEL｜1042210',
     id: 'DAVEL',
     employeeNumber: '1042210',
@@ -78,7 +92,7 @@ export const SAMPLE_PEOPLE = {
   },
   alex: {
     name: 'Alex Wang',
-    avatarSrc: 'https://i.pravatar.cc/80?u=alex-wang',
+    avatarSrc: demoPersonPhoto('Alex Wang', 128),
     subtitle: 'Engineering｜ALEXW｜1036625',
     id: 'ALEXW',
     employeeNumber: '1036625',
@@ -87,7 +101,7 @@ export const SAMPLE_PEOPLE = {
   },
   ben: {
     name: 'Ben Liu',
-    avatarSrc: 'https://i.pravatar.cc/80?u=ben-liu',
+    avatarSrc: demoPersonPhoto('Ben Liu', 128),
     subtitle: 'Product｜BENLIU｜1041187',
     id: 'BENLIU',
     employeeNumber: '1041187',
@@ -96,7 +110,7 @@ export const SAMPLE_PEOPLE = {
   },
   bella: {
     name: 'Bella Wu',
-    avatarSrc: 'https://i.pravatar.cc/80?u=bella-wu',
+    avatarSrc: demoPersonPhoto('Bella Wu', 128),
     subtitle: 'Marketing｜BELLAW｜1029903',
     id: 'BELLAW',
     employeeNumber: '1029903',

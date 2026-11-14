@@ -46,7 +46,8 @@
      元件端**不需要也不應該**再寫一次(抄一遍 = H1c 那類贅碼);
      要改成往內畫的才加 `focus-ring-inset`(見下方 @utility)。
      `:not([data-pointer-focus])`(2026-11-05,3f G-16):按著修飾鍵點下去也是滑鼠點,不畫框 —— Chromium 把單獨的 Shift
-     算成鍵盤操作,點過的按鈕再按 Shift 就出框;`lib/pointer-focus-guard.ts` 只在 DS 自己定義了「修飾鍵+點擊」的控件上掛這個屬性,
+     算成鍵盤操作,點過的按鈕再按 Shift 就出框;`lib/pointer-focus-guard.ts` 只在兩種地方掛這個屬性:DS 自己定義了「修飾鍵+點擊」的控件,
+     以及唯讀欄位裡滑鼠給的焦點(2026-11-11,唯讀滑鼠點不畫;那裡的指示是欄位邊框,這條外描邊本來就被壓掉)。
      其餘元素永遠不帶它,行為與瀏覽器完全相同。用 focus-ring-inset 的元素寫 `focus-visible:not-data-pointer-focus:focus-ring-inset`。 */
   :focus-visible:not([data-pointer-focus]) {
     outline: 2px solid var(--ring);

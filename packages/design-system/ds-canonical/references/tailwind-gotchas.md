@@ -12,10 +12,10 @@ Canonical `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwi
 
 ```tsx
 // ❌ 錯(v4 失效)
-<div className="w-[--sidebar-width] min-w-[--sidebar-width-min]" />
+<div className="w-[--sidebar-width] min-w-[--sidebar-width-icon]" />
 
 // ✅ 對
-<div className="w-[var(--sidebar-width)] min-w-[var(--sidebar-width-min)]" />
+<div className="w-[var(--sidebar-width)] min-w-[var(--sidebar-width-icon)]" />
 ```
 
 **自我檢查**:若 CSS var 相關寬高看起來怪怪的,先 `grep '\[--[a-z]'` 在 src 裡找有沒有漏網的 shorthand 語法。

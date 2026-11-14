@@ -8,7 +8,9 @@
  *       給了 `--notes=<發布說明檔>`(GitHub Release / PR 說明存成文字檔)時,登記的名字有任何一個沒出現在那份說明裡 → 指名並 exit 1
  *       (發版前驗「這一版的說明草稿」;發版後、刪舊段之前驗「那一版實際發出去的說明」)。清單還留著舊 tag 時,沒給 --notes 只會叫你先驗,
  *       不會說「登記已隨說明發出去」—— 那句話只有在 --notes 驗過全部收錄之後才印(M37:不拿「JSON 裡有登記」當「發布說明有寫」)。
- *       `--selftest` 用兩棵合成小樹真的跑同一支比對(四種紅各一面、登記齊全的綠一面、發布說明漏寫 / 收錄 / 沒驗各一面)。
+ *       `--selftest` 用兩棵合成小樹真的跑同一支比對(四種紅各一面、登記齊全的綠一面、發布說明漏寫 / 收錄 / 沒驗各一面),
+ *       外加發版端說明段(lib/root-exports-release-notes.mjs,release-github-release.mjs 建 Release 時寫進說明)的判定表,
+ *       與「用 v0.1.0-beta.148 的真實登記走發版端同一條路徑重算」—— 全部收錄綠、拿掉一行紅且只指名那一個。
  *   綠: 拿掉的全部寫明;新增的出口只列出、不擋。
  *   儀器失效(exit 2): 找不到上一次發布的 tag、讀不到那個 tag 的 index.ts、任一邊算出 0 個出口 —— 不讀成通過。
  *
@@ -27,11 +29,15 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
+// 發布說明判定(namesMissingFromNotes)與 Release 說明產生器住同一支 lib —— 發版端(release-github-release.mjs)
+// 寫說明、驗說明用的就是這裡 --notes 判定的同一支函式,不是平行實作。
+import { InstrumentError, namesMissingFromNotes, REGISTRY_PATH as REGISTRY, removedExportsNotesSection, rootExportsRemovalNotes } from './lib/root-exports-release-notes.mjs'
+import { releaseCreateArgs, releaseRemovalNotes } from './release-github-release.mjs'
+
+export { InstrumentError, namesMissingFromNotes }
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const INDEX = 'packages/design-system/src/index.ts'
-const REGISTRY = 'scripts/root-exports-removals.json'
-export class InstrumentError extends Error {}
 
 /** 一棵樹的 root 出口:Map<名字, 'value' | 'type'>(index.ts 取絕對路徑) */
 export function rootExports(indexAbs) {
@@ -57,13 +63,6 @@ export function rootExports(indexAbs) {
 }
 
 /** 純函式:比對 + 對登記清單。released / current = Map<名字, kind>;entries = [{ name, kind, reason }] */
-/** 發布說明裡沒出現的登記名字(整個識別字比對,不比子字串);notesText 空白 = 儀器失效 */
-export function namesMissingFromNotes(entries, notesText) {
-  if (typeof notesText !== 'string' || !notesText.trim()) throw new InstrumentError('--notes 給的發布說明是空的 —— 沒驗到不是通過')
-  const esc = (n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return entries.filter((e) => e?.name && !new RegExp(`(?<![\\w$])${esc(e.name)}(?![\\w$])`).test(notesText)).map((e) => e.name)
-}
-
 export function compareExports(released, current, registry, tag, notesText = null) {
   const problems = []
   const removed = []
@@ -193,7 +192,48 @@ function selftest() {
     let emptyNotes = false
     try { compareExports(R, C, full, T, '  \n') } catch (e) { emptyNotes = e instanceof InstrumentError }
     expect(emptyNotes, '儀器失效:--notes 給了空白說明不得當成通過')
+
+    // ── 發版端產生的說明段(lib/root-exports-release-notes.mjs)—— 判定表 ──
+    const section = removedExportsNotesSection(full.releases[T], 'v9.9.8')
+    expect(section.includes('`useNarrow`(執行期):桌機為主') && section.includes('`Expansion`(只有型別):隨 expansion') && section.includes('跟 v9.9.8 比'), `說明段:名字 + 種類 + 理由逐筆寫出,實得 ${JSON.stringify(section)}`)
+    expect(namesMissingFromNotes(full.releases[T], section).length === 0 && compareExports(R, C, full, T, section).problems.length === 0, '綠:產生的說明段餵給 --notes 判定 = 全部收錄')
+    const droppedSection = section.split('\n').filter((l) => !l.startsWith('- `fromStar`')).join('\n')
+    const droppedProblems = compareExports(R, C, full, T, droppedSection).problems
+    expect(droppedProblems.length === 1 && droppedProblems[0].includes('fromStar') && !droppedProblems[0].includes('useNarrow'), `紅:說明段少一行 → 指名那一個,實得 ${JSON.stringify(droppedProblems)}`)
+    const oldSection = removedExportsNotesSection(oldTag.releases['v9.9.8'], 'v9.9.7')
+    const publishedCheck = compareExports(R, C, oldTag, T, `${oldSection}\n\n${section}`).problems.filter((p) => p.includes('releases["v9.9.8"]'))
+    expect(publishedCheck.length === 1 && publishedCheck[0].includes('已確認'), `綠:下一次發布後驗「那一版實際發出去的說明」(兩版段落接在一起)= 已確認全部收錄,實得 ${JSON.stringify(publishedCheck)}`)
+    expect(removedExportsNotesSection([], 'v9.9.8') === '', '沒有拿掉任何出口 → 不寫段落')
+    for (const [label, bad] of [['沒有 name', [{ kind: 'value', reason: 'x' }]], ['kind 寫錯', [{ name: 'a', kind: 'values', reason: 'x' }]], ['理由空白', [{ name: 'a', kind: 'type', reason: ' ' }]]]) {
+      let threw = false
+      try { removedExportsNotesSection(bad, 'v9.9.8') } catch (e) { threw = e instanceof InstrumentError }
+      expect(threw, `儀器失效:登記${label}時寫不出完整段落,不得回空字串當「沒有要寫的」`)
+    }
+    let noGit = false
+    try { rootExportsRemovalNotes({ gitHead: 'HEAD', tag: 'v9.9.9', git: () => ({ status: 128, stdout: '', stderr: 'fatal: No names found' }) }) } catch (e) { noGit = e instanceof InstrumentError }
+    expect(noGit, '儀器失效:找不到上一次發布的 tag 不得當成「沒有登記」')
   } finally { rmSync(before, { recursive: true, force: true }); rmSync(after, { recursive: true, force: true }) }
+
+  // ── 呼叫端真的用它:用發版端 main() 走的同一條路徑(releaseRemovalNotes → releaseCreateArgs),
+  //    重算 beta.148 那一次「本來該寫進說明」的段落 —— 真實登記資料(tag 上的 commit,永久不變)──
+  const ANCHOR = 'v0.1.0-beta.148'
+  const anchorHead = spawnSync('git', ['rev-parse', `${ANCHOR}^{commit}`], { cwd: ROOT, encoding: 'utf8' })
+  if (anchorHead.status !== 0) { fails.push(`儀器失效:讀不到 ${ANCHOR} 的 commit(簽出要 fetch-depth: 0 帶 tag)—— 沒驗到不是通過`); return fails }
+  try {
+    const gitHead = anchorHead.stdout.trim()
+    const real = releaseRemovalNotes(gitHead, ANCHOR)
+    expect(real.previousTag === 'v0.1.0-beta.147' && real.entries.length === 27, `真實資料:${ANCHOR} 之前一次發布是 v0.1.0-beta.147、登記 27 筆,實得 ${real.previousTag} / ${real.entries.length}`)
+    expect(namesMissingFromNotes(real.entries, real.section).length === 0, '真實資料:發版端產生的段落 27 個名字全部收錄')
+    const args = releaseCreateArgs({ tag: ANCHOR, repository: 'ajenchen/design-system', gitHead }, real.section)
+    expect(args.includes('--generate-notes') && args[args.indexOf('--notes') + 1] === real.section, '呼叫端:建 Release 的參數把同一段當 --notes(接在自動產生的說明前面)')
+    expect(!releaseCreateArgs({ tag: ANCHOR, repository: 'ajenchen/design-system', gitHead }, '').includes('--notes'), '沒有要寫的段落 → 不帶 --notes')
+    const others = (name) => real.entries.filter((e) => e.name !== name).some((e) => e.reason.includes(name))
+    const victim = real.entries.map((e) => e.name).find((n) => !others(n))
+    const missing = namesMissingFromNotes(real.entries, real.section.split('\n').filter((l) => !l.startsWith(`- \`${victim}\``)).join('\n'))
+    expect(Boolean(victim) && missing.length === 1 && missing[0] === victim, `對照組(真實資料):拿掉「${victim}」那一行 → 只指名它,實得 ${JSON.stringify(missing)}`)
+  } catch (e) {
+    fails.push(`${e instanceof InstrumentError ? '儀器失效' : '例外'}:真實資料那一段跑不完 —— ${e.message}`)
+  }
   return fails
 }
 
@@ -202,7 +242,7 @@ function main() {
   if (args.includes('--selftest')) {
     const fails = selftest()
     if (fails.length) { console.error(`✗ root-exports selftest:\n  ${fails.join('\n  ')}`); process.exit(1) }
-    console.log('✓ root-exports selftest:量法分得出值 / 型別 / export * / export type 類別;四種紅各一面、登記齊全綠、新增不擋;發布說明漏寫 / 收錄 / 沒驗 / 空白各一面')
+    console.log('✓ root-exports selftest:量法分得出值 / 型別 / export * / export type 類別;四種紅各一面、登記齊全綠、新增不擋;發布說明漏寫 / 收錄 / 沒驗 / 空白各一面;發版端說明段判定表 + beta.148 真實登記重算(全收錄綠、少一行指名)')
     return
   }
   const tagArg = args.find((a) => a.startsWith('--tag='))?.slice('--tag='.length) ?? null

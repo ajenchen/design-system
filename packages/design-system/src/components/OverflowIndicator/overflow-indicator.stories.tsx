@@ -4,7 +4,7 @@ import { OverflowIndicator } from './overflow-indicator'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 /** Person avatar hover canonical helper — 對齊 avatar.spec.md DS-wide rule:
  *  person avatar 必 hover → ProfileCard,必含 status / statusMessage / fields / actions / onViewMore
@@ -74,15 +74,15 @@ export const ComboboxTagOverflow: Story = {
    Story 2:Avatar 人員 stack +N(shape="circle")
    ═══════════════════════════════════════════════════════════════════════════ */
 
-// 真實人像(2026-07-08 sweep):固定 u= key 保 determinism;中文名用拼音 key,跨 story 同人同照
+// 真實人像走照片名冊(stories-helpers/data/people.ts,2026-11-11):同一個人全 DS 同一張臉
 // (對齊 hover-card.stories / selection-item.stories 同名人物)
 const reviewers = [
-  { name: 'Ada Chen', color: 'indigo' as const, avatarUrl: 'https://i.pravatar.cc/48?u=ada-chen' },
-  { name: '張美真', color: 'magenta' as const, avatarUrl: 'https://i.pravatar.cc/48?u=zhang-meizhen' },
-  { name: '林伯彥', color: 'green' as const, avatarUrl: 'https://i.pravatar.cc/48?u=lin-boyan' },
-  { name: '黃怡君', color: 'turquoise' as const, avatarUrl: 'https://i.pravatar.cc/48?u=huang-yijun' },
-  { name: '王文彬', color: 'purple' as const, avatarUrl: 'https://i.pravatar.cc/48?u=wang-wenbin' },
-  { name: '李思妤', color: 'yellow' as const, avatarUrl: 'https://i.pravatar.cc/48?u=li-siyu' },
+  { name: 'Ada Chen', color: 'indigo' as const, avatarUrl: demoPersonPhoto('Ada Chen', 48) },
+  { name: '張美真', color: 'magenta' as const, avatarUrl: demoPersonPhoto('張美真', 48) },
+  { name: '林伯彥', color: 'green' as const, avatarUrl: demoPersonPhoto('林伯彥', 48) },
+  { name: '黃怡君', color: 'turquoise' as const, avatarUrl: demoPersonPhoto('黃怡君', 48) },
+  { name: '王文彬', color: 'purple' as const, avatarUrl: demoPersonPhoto('王文彬', 48) },
+  { name: '李思妤', color: 'yellow' as const, avatarUrl: demoPersonPhoto('李思妤', 48) },
 ]
 
 export const AvatarStackOverflow: Story = {
@@ -139,26 +139,26 @@ const rows = [
   {
     title: '登入頁改版',
     assignees: [
-      { name: 'Ada Chen', color: 'indigo' as const, avatarUrl: 'https://i.pravatar.cc/48?u=ada-chen' },
-      { name: '張美真', color: 'magenta' as const, avatarUrl: 'https://i.pravatar.cc/48?u=zhang-meizhen' },
+      { name: 'Ada Chen', color: 'indigo' as const, avatarUrl: demoPersonPhoto('Ada Chen', 48) },
+      { name: '張美真', color: 'magenta' as const, avatarUrl: demoPersonPhoto('張美真', 48) },
     ],
   },
   {
     title: 'Stripe 金流串接',
     assignees: [
-      { name: '林伯彥', color: 'green' as const, avatarUrl: 'https://i.pravatar.cc/48?u=lin-boyan' },
-      { name: '黃怡君', color: 'turquoise' as const, avatarUrl: 'https://i.pravatar.cc/48?u=huang-yijun' },
-      { name: '王文彬', color: 'purple' as const, avatarUrl: 'https://i.pravatar.cc/48?u=wang-wenbin' },
-      { name: '李思妤', color: 'yellow' as const, avatarUrl: 'https://i.pravatar.cc/48?u=li-siyu' },
-      { name: '吳冠霆', color: 'red' as const, avatarUrl: 'https://i.pravatar.cc/48?u=wu-guanting' },
+      { name: '林伯彥', color: 'green' as const, avatarUrl: demoPersonPhoto('林伯彥', 48) },
+      { name: '黃怡君', color: 'turquoise' as const, avatarUrl: demoPersonPhoto('黃怡君', 48) },
+      { name: '王文彬', color: 'purple' as const, avatarUrl: demoPersonPhoto('王文彬', 48) },
+      { name: '李思妤', color: 'yellow' as const, avatarUrl: demoPersonPhoto('李思妤', 48) },
+      { name: '吳冠霆', color: 'red' as const, avatarUrl: demoPersonPhoto('吳冠霆', 48) },
     ],
   },
   {
     title: '行銷活動著陸頁',
     assignees: [
-      { name: '蔡佳芸', color: 'blue' as const, avatarUrl: 'https://i.pravatar.cc/48?u=tsai-chiayun' },
-      { name: '陳俊宇', color: 'purple' as const, avatarUrl: 'https://i.pravatar.cc/48?u=chen-chunyu' },
-      { name: '周思涵', color: 'magenta' as const, avatarUrl: 'https://i.pravatar.cc/48?u=chou-szuhan' },
+      { name: '蔡佳芸', color: 'blue' as const, avatarUrl: demoPersonPhoto('蔡佳芸', 48) },
+      { name: '陳俊宇', color: 'purple' as const, avatarUrl: demoPersonPhoto('陳俊宇', 48) },
+      { name: '周思涵', color: 'magenta' as const, avatarUrl: demoPersonPhoto('周思涵', 48) },
     ],
   },
 ]

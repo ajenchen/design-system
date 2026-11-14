@@ -16,8 +16,9 @@ import * as React from 'react'
  *      供消費端動態計算哪些 items 塞不下、渲染對應的 menu items。
  *
  *      ⚠️ **目前 0 consumer（reserved primitive）**：DS 內現有 menu 模式實作（Tabs / Chip）走的是
- *      「**show-all navigator**」派 — dropdown 永遠列**全部** items（不需動態 overflow 計算），各自用
- *      local registerItem，**刻意不用** `useOverflowIndices`（見 tabs.tsx:256 / chip.tsx:219 註解）。
+ *      「**show-all navigator**」派 — dropdown 永遠列**全部** items（不需動態 overflow 計算），**刻意不用**
+ *      `useOverflowIndices`（見 tabs.tsx `MenuTabsList` / chip.tsx `MenuChipGroup` 註解）；選中項置中由
+ *      horizontal-overflow 的 `useRevealSelected` 負責（2026-11-11 前各自用 local registerItem + scrollIntoView）。
  *      本 hook 保留給未來真正需要「collapse-overflow：只把塞不下的收進選單」的 consumer。
  *      **roving tabindex / a11y 語意由 consumer 的渲染方式決定**（hook 只回傳 indices，不操作
  *      DOM / tabindex），非 hook 本身保證。
@@ -160,12 +161,9 @@ export interface UseOverflowIndicesResult<C extends HTMLElement> {
  * const { containerRef, registerItem, overflowIndices, hasOverflow, getItemAt } =
  *   useOverflowIndices<HTMLDivElement>({ reserveTriggerWidth: 0 })
  *
- * const handleMenuSelect = (value: string, index: number) => {
- *   onValueChange?.(value)
- *   requestAnimationFrame(() => {
- *     getItemAt(index)?.scrollIntoView({ behavior: 'smooth', inline: 'center' })
- *   })
- * }
+ * // 選中項置中不在這裡寫:同一個捲動容器掛 horizontal-overflow 的 useRevealSelected(看選中屬性,
+ * // 點擊 / 鍵盤 / 選單同一條;horizontal-overflow.spec.md「選到就露出來」)
+ * const handleMenuSelect = (value: string) => onValueChange?.(value)
  *
  * return (
  *   <div className="flex items-center">

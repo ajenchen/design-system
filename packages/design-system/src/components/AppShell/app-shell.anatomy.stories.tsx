@@ -8,7 +8,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import * as React from 'react'
 import { AppShell, AppShellAside, useAppShell, type PanelDisplay, type PanelWidthRange } from './app-shell'
-import { AcmeSidebar, PageHeader, InsightsView } from './_demo-helpers'
+import { AcmeSidebar, PageHeader, InsightsView, ISSUES, ISSUE_DETAIL_WIDTH, IssueDetail } from './_demo-helpers'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { SidebarProvider, SidebarTrigger } from '@/design-system/components/Sidebar/sidebar'
 import { Button } from '@/design-system/components/Button/button'
@@ -40,12 +40,12 @@ const meta: Meta<typeof AppShell> = {
 export default meta
 type Story = StoryObj<typeof AppShell>
 
-/** 訂單詳情這種內容的寬度(示範產品的值;規則 app-shell.spec.md「版面規則」§1)。 */
-const ORDER_DETAIL_WIDTH: PanelWidthRange = { min: 280, initial: 320, max: 480 }
+/** 右欄示範的那一筆 = 主區 Insights 表格的第一筆(ENG-1042;兩邊讀同一份 ISSUES,`_demo-helpers.tsx`)。 */
+const OVERVIEW_ISSUE = ISSUES[0]
 
 // Slot 結構 + landmark role 對照(使用 baseline AcmeSidebar / PageHeader 完整 production-grade)。
 // Main 放真實頁面內容(Insights 頁,與展示頁同一份),原本畫在 Main 裡的說明搬到 docs(稽核 L117);
-// 右欄的 key / value 用 DescriptionList(稽核 M085:原本手刻四列 flex justify-between)。
+// 右欄 = 同一張表其中一筆的議題詳情(展示頁同一份 IssueDetail;key / value 用 DescriptionList,稽核 M085)。
 export const Overview: Story = {
   name: '元件總覽',
   parameters: {
@@ -66,17 +66,11 @@ export const Overview: Story = {
           sidebar={<AcmeSidebar />}
           header={<PageHeader title="Dashboard" />}
           aside={
-            <AppShellAside title="訂單詳情" contentType="order-detail" widthRange={ORDER_DETAIL_WIDTH}>
-              {/* 面板內容自帶留白,示範 aside slot 不強制內距、由內容自管;key / value = DescriptionList(同展示頁議題詳情)。
-                  底部 = bottom 48:右欄撐滿、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列) */}
-              <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-                <DescriptionList orientation="horizontal" divided>
-                  <DescriptionItem label="訂單編號">#SO-20481</DescriptionItem>
-                  <DescriptionItem label="客戶">陳怡君</DescriptionItem>
-                  <DescriptionItem label="付款狀態">已付款</DescriptionItem>
-                  <DescriptionItem label="金額">NT$ 12,800</DescriptionItem>
-                </DescriptionList>
-              </div>
+            // Right panel = 主區那張 Sprint 42 議題表其中一筆(ENG-1042)的詳情,與展示頁同一份 IssueDetail(_demo-helpers)。
+            // 2026-11-11 前這裡是另一件事的「訂單詳情」(#SO-20481),主區卻是議題表 —— 兩件事對不上(第三批審查,真實情境 mindset #4)。
+            // 面板內容自帶留白(aside slot 不強制內距);底部 = bottom 48:右欄撐滿、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列)
+            <AppShellAside title={OVERVIEW_ISSUE.id} contentType="issue-detail" widthRange={ISSUE_DETAIL_WIDTH}>
+              <IssueDetail issue={OVERVIEW_ISSUE} />
             </AppShellAside>
           }
           asideOpen={asideOpen}
@@ -93,13 +87,13 @@ export const Overview: Story = {
 export const LayoutModeDiagram: Story = {
   name: '兩種布局模式對照圖',
   render: () => (
-    // 間距(A4,layoutSpace.spec.md 規則 3):標題 → 它底下的並列內容 = loose(md 16 / lg 24);兩個有標題的區段上下疊 = loose × 2
-    // (ExampleStack,Q2 ①:區段標題離上一段比離自己的圖遠);
+    // 間距(layoutSpace.spec.md 規則 3「標題區 → 內容」):「兩 mode 對照」底下兩段並列 = loose;每個 h3 底下只有一塊
+    // (一張對照圖 + 它的說明)= tight(2026-11-11);兩個有標題的區段上下疊 = loose × 2(ExampleStack,Q2 ①:區段標題離上一段比離自己的圖遠);
     // 對照圖 ↔ 它下面那句說明 = tight(說明替緊鄰的圖命名,規則 3「labeling」)。原本寫死 space-y-6 / space-y-2(24 / 8,不跟密度)
     <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] flex flex-col gap-[var(--layout-space-loose)] text-body">
       <h2 className="text-h4">兩 mode 對照</h2>
         <ExampleStack>
-        <section className="flex flex-col gap-[var(--layout-space-loose)]">
+        <section className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-h5">primary-sidebar(header 是當前頁的 local toolbar)</h3>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <div className="flex gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
@@ -114,7 +108,7 @@ export const LayoutModeDiagram: Story = {
             <p className="text-fg-muted">Header scope = <strong>local toolbar</strong>(當前頁 actions / breadcrumb / page-level filter)。Workspace 多寡無關,Notion / Linear 多 workspace 也用 primary-sidebar。</p>
           </div>
         </section>
-        <section className="flex flex-col gap-[var(--layout-space-loose)]">
+        <section className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-h5">primary-header(多一條跨頁的 global header)</h3>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <div className="flex flex-col gap-px bg-divider border border-divider rounded overflow-hidden text-caption">
@@ -153,6 +147,12 @@ interface LayoutRuleArgs {
   agentMax: number
   /** Menu 有細列(`collapsible="icon"`)。 */
   rail: boolean
+  /**
+   * Menu 的列高檔位(`<SidebarProvider size>`;sidebar.spec.md「Size」)。`lg` 的選單圖示是 20(md 16)→ 細列寬多 4:
+   * 標準密度 52、寬鬆密度 68(sidebar.spec.md「尺寸規範」)。DS 目前只有這一則同時是 size=lg 又能收成細列,
+   * 機械閘用 `&args=menuSize:lg` 量「收合前後圖示中心不動」與 AppShell 量到的細列寬。
+   */
+  menuSize: 'md' | 'lg'
   menuOpen: boolean
   rightOpen: boolean
   agentOpen: boolean
@@ -196,7 +196,8 @@ function CompleteSprintAction() {
 
 /**
  * Main 裡的即時讀數:各區此刻的顯示方式(`useAppShell().display`)+ 頁面動作。
- * 讀數清單 → 跟在後面的按鈕 = loose(按鈕跟在內容後,上方一律 loose;最後一個 DescriptionList 列不自帶下內距,這段只由 space-y 給);
+ * 讀數清單 → 跟在後面的頁面動作鈕 = loose(layoutSpace.spec.md 規則 3;這裡不是表單 —— 表單欄位 → 表單按鈕列才是「組 ↔ 組」loose × 2;
+ * 最後一個 DescriptionList 列不自帶下內距,這段只由 space-y 給);
  * 按鈕 → Main 底 = bottom 48(整頁 Main 撐滿、最後是一般元素,layoutSpace.spec.md 規則 4 第 1 列)。
  */
 function LayoutReadout() {
@@ -263,8 +264,11 @@ function LayoutRuleDemo(raw: LayoutRuleArgs) {
     agent: { min: n(raw.agentMin), initial: n(raw.agentInitial), max: n(raw.agentMax) },
   }
   const [asideOpen, setAsideOpen] = React.useState(String(raw.rightOpen) !== 'false')
+  // URL args 帶進來的是字串:只認 lg,其餘一律 md(SidebarProvider 的預設)
+  const menuSize = String(raw.menuSize) === 'lg' ? 'lg' : 'md'
   return (
-    <SidebarProvider defaultOpen={String(raw.menuOpen) !== 'false'}>
+    // SidebarProvider 包在 AppShell 外面:細列寬在這一層依 size 算好,AppShell 的量值探針才量得到(app-shell.spec.md「版面規則」§6)
+    <SidebarProvider size={menuSize} defaultOpen={String(raw.menuOpen) !== 'false'}>
       <AppShell
         layout="primary-sidebar"
         mainMinWidth={args.mainMinWidth}
@@ -319,9 +323,14 @@ export const StateBehavior: StoryObj<LayoutRuleArgs> = {
     agentInitial: 400,
     agentMax: 700,
     rail: true,
+    menuSize: 'md',
     menuOpen: true,
     rightOpen: true,
     agentOpen: true,
+  },
+  // menuSize 只有兩檔:控制面板給單選;URL 用 `&args=menuSize:lg`(LayoutRuleDemo 裡另有一層「只認 lg,其餘當 md」)
+  argTypes: {
+    menuSize: { control: 'inline-radio', options: ['md', 'lg'] },
   },
   render: (args) => <LayoutRuleDemo {...args} />,
 }
@@ -370,10 +379,10 @@ export const SizeMatrix: Story = {
           <h2 className="text-h4">各區寬度設定(依內容類型:最小 / 初始 / 最大)</h2>
           <ul className="space-y-2 list-disc pl-5">
             <li>Main:只有最小寬,AppShell 的 <code>mainMinWidth</code> 必填(DS 不替產品挑);填滿其他並排面板沒用到的空間</li>
-            <li>Menu:產品沒設時最小 / 初始 240(<code>--sidebar-width-min</code> / <code>--sidebar-width</code>);最大寬產品必給</li>
+            <li>Menu:產品沒設時最小 / 初始 240(初始 = <code>--sidebar-width</code>;最小與 Right panel 共用同一個內建的 240);最大寬產品必給</li>
             <li>Right panel:產品沒設時 240 / 320 / 640(<code>AppShellAside</code> <code>widthRange</code>)</li>
             <li>AI agent:產品沒設時 360 / 400 / 640(<code>AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX</code>)</li>
-            <li>Menu 細列:<code>--sidebar-width-icon</code>(標準密度 48 / 寬鬆密度 68),不能拖</li>
+            <li>Menu 細列:<code>--sidebar-width-icon</code>(標準密度 48 / 寬鬆密度 64;側欄 <code>size="lg"</code> 的圖示大 4px,各多 4),不能拖</li>
           </ul>
         </section>
         <section className="flex flex-col gap-[var(--layout-space-tight)]">

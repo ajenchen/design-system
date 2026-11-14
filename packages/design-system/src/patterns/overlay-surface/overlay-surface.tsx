@@ -1,7 +1,7 @@
 import * as React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'; import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text' // 同一行:別處以行號引用本檔(見檔尾註)
 // W2 tabsSlot wrapper 契約 SSOT 在 header-canonical(跨家族 W-rule owner);SurfaceHeader 消費同一 const 不 hardcode。
-import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-canonical/chrome-header'
+import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-canonical/chrome-header'; import { ButtonDivider } from '@/design-system/components/Button/button-group' // 同一行(見檔尾註)
 
 /**
  * @internal — DS-internal primitive(2026-05-23 per `packages/design-system/ds-canonical/rules/ui-development.md` Public vs Internal canonical)。
@@ -67,7 +67,7 @@ import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-
 // 負 my 公式:(slot - native) / 2,density-aware:
 //   Dialog md: (24 - 28) / 2 = -2px;  lg: (24 - 32) / 2 = -4px
 //   Popover md: (21 - 28) / 2 = -3.5px(sub-pixel,可接受)
-const CHROME_UNBOUNDED_SLOT = '[&_[data-unbounded]]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
+const CHROME_UNBOUNDED_SLOT = '[&_[data-unbounded]:not([data-slot=surface-header-actions]_*)]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]' // 右側操作區裡的改由整區縮位(見檔尾 ACTIONS_GROUP_SLOT)
 
 /**
  * 輕量浮層 header 的 slot override —— **SSOT,禁各自 inline**(2026-06-16 收斂)。
@@ -108,7 +108,7 @@ export interface SurfaceHeaderProps
 export const SurfaceHeader = React.forwardRef<
   HTMLDivElement,
   SurfaceHeaderProps
->(({ className, withTabs, tabsSlot, children, ...props }, ref) => {
+>(({ className, withTabs, tabsSlot, children, actions, dismiss, ...props }, ref) => {
   // tabsSlot 提供 → 自動 withTabs(consumer 不需手動兩個 prop)
   const hasTabs = tabsSlot != null || withTabs === true
 
@@ -129,7 +129,7 @@ export const SurfaceHeader = React.forwardRef<
             CHROME_UNBOUNDED_SLOT, DISMISS_FIRST_LINE,
           )}
         >
-          {children}
+          {surfaceHeaderRow(children, actions, dismiss)}
         </div>
         {/* Row 2:tabsSlot wrapper — TabsList 全 dialog 寬 + 內 px-loose padding inset triggers
             2026-05-18 v3 fix(user verbatim approval「你確定這樣是世界級的設計且符合我們一致的設計
@@ -172,7 +172,7 @@ export const SurfaceHeader = React.forwardRef<
       )}
       {...props}
     >
-      {children}
+      {surfaceHeaderRow(children, actions, dismiss)}
     </div>
   )
 })
@@ -227,3 +227,69 @@ SurfaceFooter.displayName = 'SurfaceFooter'
 // Primer Dialog `.HeaderInner { display: flex }` 不置中、關閉鈕是固定高度 → 靠上(https://github.com/primer/react/blob/main/packages/react/src/Dialog/Dialog.module.css)。
 // 只管直接放在標題區的 ×;DialogHeader 的 actions 群組在 dialog.tsx 同樣靠上。
 const DISMISS_FIRST_LINE = '[&>[data-dismiss]]:self-start'
+
+/**
+ * 標題區小標(eyebrow):放在標題正上方、同一欄。字樣 / 間距 / 行數 / 與說明不並用 → overlay-surface.spec.md「SurfaceHeader」標題區。
+ * 一行:超出截斷,截斷時滑過出全文(tooltip.spec.md「截斷文字 → tooltip」,同 DialogTitle 的 TruncatedText display="block")。
+ * 與標題的距離由小標自己帶(mb),同 DialogDescription 由說明自己帶 mt —— 標題元件不必知道上下有沒有東西。
+ * × 不因小標而移動:× 的佔位是標題一行高、靠上(CHROME_UNBOUNDED_SLOT + DISMISS_FIRST_LINE),小標只把左欄撐高。
+ */
+export const SurfaceEyebrow = React.forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement>
+>(({ className, children, ...props }, ref) => (
+  <span
+    ref={ref}
+    data-slot="surface-eyebrow"
+    className={cn('block mb-[var(--item-gap-eyebrow-title)] text-caption font-medium text-fg-secondary', className)}
+    {...props}
+  >
+    <TruncatedText display="block">{children}</TruncatedText>
+  </span>
+))
+SurfaceEyebrow.displayName = 'SurfaceEyebrow'
+
+
+/**
+ * 標題列右側按鈕位(2026-11-10;規則住 overlay-surface.spec.md「SurfaceHeader」右側按鈕位,本處不重述)。
+ * 與上方 SurfaceHeaderProps 是同一個介面(TS 介面合併)—— 寫在檔尾是為了不讓別處引用的行號位移。
+ */
+export interface SurfaceHeaderProps {
+  /**
+   * 右側操作區(標題列操作:上一筆 / 下一筆、複製連結、重置、更多 ⋮ …)。只傳按鈕:排序與 variant 照 `action-bar.spec.md` 二、三節
+   * (預設 `variant="text"`,無外框鈕不撐高標題列;有外框的允許,標題列自然長高)。
+   * 與 `dismiss` 都有時,SurfaceHeader 自動在兩者之間放分隔線(`action-bar.spec.md`「五、分隔線規則」第 3 條,兩側各 12 =「分隔線幾何」);
+   * **禁**在 children 自刻右側操作區或分隔線(閘 `scripts/overlay-header-actions-invariant.mjs`)。
+   */
+  actions?: React.ReactNode
+  /**
+   * 關閉 / 跳過 ×(永遠最右)。綁哪個 Radix Close 由各元件給(DialogHeader / SheetHeader / PopoverHeader 已內建),放在哪由 SurfaceHeader 決定。
+   */
+  dismiss?: React.ReactNode
+}
+
+// 右側按鈕位的排法(SurfaceHeader 兩個分支共用):左欄 flex-1 min-w-0,右側〔操作〕〔分隔線〕〔×〕。
+// 都沒傳 → children 原樣(既有 consumer 自己排的寫法不受影響);只有 × → × 直接是標題列的子節點(靠上那條規則 DISMISS_FIRST_LINE 認它)。
+// 操作區靠上(self-start):同 ×,群組對齊標題第一行;單行標題時位置不變(原 dialog.tsx#DialogHeader 的同一段,2026-11-10 搬下來共用)。
+// 右側操作區的縮位(2026-11-10,n7 第七節 2):縮位從「每顆無外框鈕」移到「整個操作區」—— 區內按鈕回到原生高(sm 28 / 寬鬆 32),
+// 區整體佔位縮回標題行高(公式同 CHROME_UNBOUNDED_SLOT,× 與操作的位置、標題列高度都不變)。理由:分隔線長 = 同列最高元件 − 8,
+// 基準要在「自動高度的操作區」裡才成立(action-bar.spec.md「分隔線幾何」前提);每顆鈕各自縮成 24 時,區高 24 → 線 16(Popover 21 → 13 → 地板 16),
+// 比常駐標題列(AI 面板 / FileViewer,同樣 sm 鈕)的 20 短。區裡有外框按鈕時不縮(有外框的不縮,標題列自然長高 —— overlay-chrome-sizing.spec.md「Bounded」列)。
+const ACTIONS_GROUP_SLOT = '[&:not(:has(button:not([data-unbounded])))]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
+
+function surfaceHeaderRow(children: React.ReactNode, actions: React.ReactNode, dismiss: React.ReactNode) {
+  if (actions == null && dismiss == null) return children
+  return (
+    <>
+      <div className="flex-1 min-w-0">{children}</div>
+      {actions != null ? (
+        // @layout-space-magic-ok: gap-2 = packages/design-system/src/patterns/action-bar/action-bar.spec.md:292「自身兩端各 4px 於 `gap-2` 容器」(分隔線兩側 12px 對稱)
+        <div data-slot="surface-header-actions" className={cn('flex items-center gap-2 shrink-0 self-start', ACTIONS_GROUP_SLOT)}>
+          {actions}
+          {dismiss != null && <ButtonDivider />}
+          {dismiss}
+        </div>
+      ) : dismiss}
+    </>
+  )
+}

@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: 提交的對外彙總檔 styles/tokens.css 逐字等於產生器從現在的樹算出來的內容 —— 檔頭寫「自動產生、禁止手改」這句話是真的
+ *   紅: 手加 / 手刪一行 @import、或新增一個宣告 :root / @theme 的元件樣式檔卻沒重跑產生器 → --check 印 DRIFT 並 exit 1;
+ *       --selftest 在記憶體裡造這幾種漂移(拿掉 tabs.css 那行、假裝 agent-panel.css 沒被元件程式匯入、多一個沒被匯入的新元件樣式檔)各自必紅
+ *   綠: 樹與提交的檔一致時必綠;純讀檔比字串,不開瀏覽器、不量時間,重跑結果不變
+ *
  * gen-figma-make-artifacts.mjs — Phase 4.5 Consumer DX
  *
  * Generates SSOT-derived consumer artifacts that auto-sync with token CSS files:
@@ -12,8 +18,13 @@
  * SSOT propagation contract (per CLAUDE.md 2026-05-23 SSOT auto-sync canonical):
  *   • Source of truth: packages/design-system/src/tokens/** (all CSS files)
  *   • Derived artifact: src/styles/tokens.css (this script generates)
- *   • CI guard: `--check` mode runs in release.yml audit gates + ci.yml
+ *   • CI guard: `--check` + `--selftest` run in ci.yml verify-static(2026-11-11 才真的接上 —— 這行原本寫
+ *     「runs in release.yml audit gates + ci.yml」,但兩個 workflow 與 package.json 都沒有呼叫它;期間彙總檔被手改兩次、
+ *     產生器輸出與提交的檔不同也沒有任何閘紅。M37「閘存在 = 檔案存在」)
  *   • Drift detection: regenerate to memory, diff with committed file, exit 1 if differ
+ *   • 元件程式自己 import 的樣式檔(例:components/AgentPanel/agent-panel.css 由 agent-panel.tsx import)不進彙總檔:
+ *     它隨元件模組載入;再進彙總檔 = 同一份樣式載入兩次、而且改變樣式載入順序。判準與 token-creation-invariant C6 同一條
+ *     (元件樣式檔要嘛進彙總檔、要嘛被設計系統程式匯入),掃描範圍沿用它的 isScannable(stories / 測試不算)。
  *
  * Adding a new token category (e.g. `tokens/animation/animation.css`):
  *   1. Author the new token CSS file as usual
@@ -27,9 +38,10 @@
  */
 
 import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, mkdirSync } from 'node:fs'
-import { join, relative, dirname } from 'node:path'
+import { join, relative, dirname, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+import { isScannable } from './token-creation-invariant.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..')
@@ -41,6 +53,7 @@ const OUTPUT_DIR = join(DS_SRC, 'styles')
 const OUTPUT_FILE = join(OUTPUT_DIR, 'tokens.css')
 
 const CHECK_MODE = process.argv.includes('--check')
+const SELFTEST_MODE = process.argv.includes('--selftest')
 
 /** Recursively find all .css files under TOKENS_DIR. */
 function findTokenCssFiles(dir) {
@@ -116,7 +129,21 @@ function findExtraCssFiles(dir) {
   return out
 }
 
-function generate() {
+/** 設計系統程式(.ts / .tsx,stories / 測試不算 —— 範圍同 token-creation-invariant 的 isScannable)自己 import 的樣式檔絕對路徑。 */
+function findCodeImportedCss(dir = DS_SRC, out = new Set()) {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry)
+    const s = statSync(full)
+    if (s.isDirectory()) { if (entry !== 'node_modules') findCodeImportedCss(full, out); continue }
+    if (!/\.(ts|tsx)$/.test(entry) || !isScannable(relative(REPO_ROOT, full).split(sep).join('/'))) continue
+    for (const m of readFileSync(full, 'utf8').matchAll(/^\s*import\s+['"](\.{1,2}\/[^'"]+\.css)['"]/gm)) out.add(join(dirname(full), m[1]))
+  }
+  return out
+}
+
+const defaultExtraCandidates = () => [...findExtraCssFiles(PATTERNS_DIR), ...findExtraCssFiles(COMPONENTS_DIR)]
+
+function generate({ extraCandidates = defaultExtraCandidates(), codeImported = findCodeImportedCss() } = {}) {
   const files = sortCanonical(findTokenCssFiles(TOKENS_DIR))
 
   // Within color/, primitives.css must come before semantic.css
@@ -132,11 +159,11 @@ function generate() {
     ordered.push(...catFiles)
   }
 
-  // Scan patterns/ + components/ for CSS containing token/runtime declarations
-  const extras = [
-    ...findExtraCssFiles(PATTERNS_DIR),
-    ...findExtraCssFiles(COMPONENTS_DIR),
-  ].sort((a, b) => compareUtf8Bytes(relative(DS_SRC, a), relative(DS_SRC, b)))
+  // Scan patterns/ + components/ for CSS containing token/runtime declarations;
+  // 元件程式自己 import 的(元件內部樣式,隨元件模組載入)不收 —— 見檔頭。
+  const extras = extraCandidates
+    .filter((f) => !codeImported.has(f))
+    .sort((a, b) => compareUtf8Bytes(relative(DS_SRC, a), relative(DS_SRC, b)))
 
   const header = `/* ═══════════════════════════════════════════════════════════════════════
    @qijenchen/design-system — Consolidated Token Stylesheet
@@ -201,7 +228,43 @@ function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 }
 
+/**
+ * 對照組:同一個比對(產生器輸出 === 提交的檔)在記憶體裡造漂移,各自必紅;現況與「新檔被元件程式匯入」必綠。
+ * 注入沒改到東西(例:tabs.css 那行已不在、agent-panel.css 不再被匯入)= 對照組本身過期 → INSTRUMENT-FAIL,不當通過。
+ */
+function selftest() {
+  if (!existsSync(OUTPUT_FILE)) { console.error('✗ INSTRUMENT-FAIL 提交的彙總檔不存在'); return false }
+  const committed = readFileSync(OUTPUT_FILE, 'utf8')
+  const candidates = defaultExtraCandidates()
+  const codeImported = findCodeImportedCss()
+  const AGENT = join(COMPONENTS_DIR, 'AgentPanel/agent-panel.css')
+  const FIXTURE = join(COMPONENTS_DIR, 'FixtureNew/fixture-new.css')
+  const TABS_LINE = "@import './../components/Tabs/tabs.css';\n"
+  const pre = [
+    [committed.includes(TABS_LINE), `提交的檔裡找不到「${TABS_LINE.trim()}」`],
+    [candidates.includes(AGENT) && codeImported.has(AGENT), 'agent-panel.css 不再是「宣告 :root / @keyframes 且被元件程式匯入」的檔'],
+  ]
+  for (const [ok, why] of pre) if (!ok) { console.error(`✗ INSTRUMENT-FAIL 對照組的注入點過期:${why}(先修對照組)`); return false }
+  const cases = [
+    ['現況:產生器輸出 = 提交的檔', generate({ extraCandidates: candidates, codeImported }), committed, true],
+    ['提交的檔被手刪一行(tabs.css)', generate({ extraCandidates: candidates, codeImported }), committed.replace(TABS_LINE, ''), false],
+    ['agent-panel.css 假裝沒被元件程式匯入 → 產生器會收它、提交的檔沒有', generate({ extraCandidates: candidates, codeImported: new Set([...codeImported].filter((f) => f !== AGENT)) }), committed, false],
+    ['新的元件樣式檔宣告 :root、沒被元件程式匯入、也沒重跑產生器', generate({ extraCandidates: [...candidates, FIXTURE], codeImported }), committed, false],
+    ['同一個新檔被元件程式匯入 → 不進彙總檔', generate({ extraCandidates: [...candidates, FIXTURE], codeImported: new Set([...codeImported, FIXTURE]) }), committed, true],
+  ]
+  let ok = true
+  for (const [label, generated, existing, expectInSync] of cases) {
+    const inSync = generated === existing
+    const pass = inSync === expectInSync
+    if (!pass) ok = false
+    console.log(`${pass ? '✓' : '✗'} ${expectInSync ? '該綠' : '該紅'}:${label}(實得${inSync ? '一致' : ' DRIFT'})`)
+  }
+  console.log(ok ? '✓ 對照組:漂移各自會紅、一致時綠(儀器有效)' : '✗ 對照組有一條沒照預期 —— 儀器無效')
+  return ok
+}
+
 function main() {
+  if (SELFTEST_MODE) process.exit(selftest() ? 0 : 1)
   const generated = generate()
 
   if (CHECK_MODE) {

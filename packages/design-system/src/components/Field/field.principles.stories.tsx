@@ -220,9 +220,9 @@ function NotForFormActionsDemo() {
               <Input value={draft.desc} onChange={(e) => setDraft((d) => ({ ...d, desc: e.target.value }))} />
             </Field>
           </FieldGroup>
-          {/* 最後一個欄位 → 跟在後面的動作鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46 回 Q2、10-21 09:25 回 Q5:可以基於 AI 的建議(同則訊息另問 Step 標題區間距與內容底部間距,不在這一格));鈕與鈕之間由 ButtonGroup 擁有。
+          {/* 最後一個欄位 → 跟在後面的表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」;user 2026-11-10 PR #172 留言,取代 10-20 Q2 / 10-21 Q5 定的 loose);鈕與鈕之間由 ButtonGroup 擁有。
               表單底這一列沒有標題 → 靠左、primary 最左(action-bar.spec.md:109 / :121;2026-10-20 XF-01:原本 align="end" 靠右) */}
-          <ButtonGroup className="mt-[var(--layout-space-loose)]">
+          <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
             <Button variant="primary" onClick={() => { setSaved(draft); toast({ variant: 'success', title: '專案已儲存' }) }}>儲存</Button>
             <Button variant="tertiary" onClick={() => setDraft(saved)}>取消</Button>
           </ButtonGroup>

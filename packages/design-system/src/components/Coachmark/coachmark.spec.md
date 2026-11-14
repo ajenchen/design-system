@@ -132,6 +132,7 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 - **比例**:預設 16:9(`mediaRatio` prop 預設 `16/9`),由 `AspectRatio` 鎖長寬比 — 同一段 tour 各步驟維持一致比例,consumer 不需自己算高度。需要時 consumer 可傳 `mediaRatio`(如 `4/3` 產品截圖 / `1/1` 方圖 / `3/4` 直式)覆寫
 - **背景**:預設 `bg-muted`(當內容是 illustration 或透明 PNG 時有底色)
 - **邊緣**:圓角切齊靠外殼裁切(見「與 Popover 的關係」)——media 不自帶圓角
+- **位置**【AI 推導 2026-11-13;畫面沒有改,只把原本沒寫的寫下來】:Media 是外殼的一個分區,跟 Header / Body / Footer 同層(見「Anatomy」),分區與分區直接相接、中間不留距離 —— 左右貼外殼內緣;上緣:沒有 Header 時貼外殼頂,有 Header 時貼 Header 底下那條分隔線;下緣直接接 Body(圖 → 內文標題的距離 = PopoverBody 自己的上內距)。Media 不是 Body 裡的內容,所以不套「標頭 → 第一個內容」那張表(SSOT:`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(1):結構分區 = 元件規格的 Anatomy 明列為跟 Header / Body 同層的一格)。由 `scripts/overlay-story-contract-invariant.mjs` 的 R17(上緣)/ R18(左右)機械檢查(有 / 沒有 Header 的兩則展示 × 一般 / 大密度量像素)
 - **支援內容**:image / video / SVG illustration / animated GIF / Lottie
 - **禁止**:不放互動元件(按鈕 / 輸入框)——media 純視覺說明,互動一律走 footer
 
@@ -165,7 +166,7 @@ const steps = [
 上一步(可選)→ 略過(可選)→ 下一步 / 完成。
 
 **對齊與順序的 owner 都不在本檔**(三份,依序):
-1. **對齊**:依 `../../patterns/overlay-surface/overlay-surface.spec.md:237`「單側時用」(「底部區域:按鈕列 vs 列式」表的「排版」列:`SurfaceFooter` 是 `justify-end`,單側有內容時 `justify-between`,先例就是本元件左側的步驟計數;`PopoverFooter` 是它的純轉發)。實作:單步卡(沒有計數)也靠右 —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」。
+1. **對齊**:依 `../../patterns/overlay-surface/overlay-surface.spec.md:243`「單側時用」(「底部區域:按鈕列 vs 列式」表的「排版」列:`SurfaceFooter` 是 `justify-end`,單側有內容時 `justify-between`,先例就是本元件左側的步驟計數;`PopoverFooter` 是它的純轉發)。實作:單步卡(沒有計數)也靠右 —— `coachmark.tsx` 用 `<span aria-hidden />` 佔住左側、維持 `justify-between`。Dialog 頁腳同一條:`../Dialog/dialog.spec.md`「Footer 按鈕」(`justify-end`)與「禁止事項」。
 2. **順序 = 全局排序**:`../../patterns/action-bar/action-bar.spec.md`「全局排序」(`primary > secondary > tertiary > text`;**靠右對齊時 primary 在最右**、靠左對齊時 primary 在最左)。本 footer 靠右 → 推進鍵(primary)在最右,上一步 / 略過(tertiary)在它左邊。
 3. **頁面裡的步驟列不套本段**:頁面裡跟著內容、沒有標題的一排「上一步 / 下一步」走 `action-bar.spec.md`「對齊方向的決定」(沒有標題 → 靠左)+ 同一條全局排序(靠左 → primary「下一步」在最左);放在頁面置底 footer 的(TreeView 步驟導覽右半邊,2026-10-20 user「Q1照建議」)照 `SurfaceFooter` 靠右、primary 在最右 —— 那是第 1 點同一個 owner,不是引本段。本段的結果(primary 在最右)來自「浮層頁腳靠右」,不是步驟流程的通則,別處不得引本段當依據(AI 查證,2026-10-20:TreeView 步驟引導的註解引本段當依據、排成靠左的「上一步 | 下一步」,與全局排序相反 —— 本段原本只寫 Coachmark 自己的語意理由、沒有指回 owner,是被錯引的原因;盤查由 user 2026-10-20 的提問觸發:「我們應該也有定義何時primary放右何時放左吧？為何沒注意？為何會漂移？我們有SSOT吧？」)。
 
@@ -219,7 +220,7 @@ const steps = [
 
 ## 邊界狀態
 
-disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 header py-tight 精簡;ui-size / 控件大小繼承 page density),SSOT 見 `tokens/density/density.spec.md` L47;empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
+disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 header py-tight 精簡;ui-size / 控件大小跟觸發點那一區),SSOT 見 `tokens/density/density.spec.md` 情境 1「浮層跟觸發點」;empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
 
 - **步數 > 5**:元件不機械限制 — `step.total` 照實顯示(如「6 of 8」);≤ 5 是設計建議(見 Multi-step Tour),超過應改靜態 onboarding 頁
 - **無 `image`**:整個 Media 區不渲染(非 skeleton 佔位,見「Props 結構」)

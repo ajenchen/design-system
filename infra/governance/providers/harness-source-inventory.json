@@ -346,6 +346,7 @@
         "scripts/test-data-table-range-hover.mjs",
         "scripts/test-data-table-sort-cycle.mjs",
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
+        "scripts/test-density-subtree-token-parity.mjs",
         "scripts/test-design-system-codemod.mjs",
         "scripts/test-deterministic-vite-output.mjs",
         "scripts/test-devmode-geometry-invariant.mjs",
@@ -427,6 +428,7 @@
           "scripts/test-header-tabs-slot-invariants.mjs",
           "scripts/test-menu-message-row-invariant.mjs",
           "scripts/test-pagination-narrow-ladder-invariant.mjs",
+          "scripts/test-sidebar-handle-scrollbar-hit-invariant.mjs",
           "scripts/test-switch-thumb-ring-invariant.mjs"
         ]
       },
@@ -457,6 +459,7 @@
           "scripts/test-avatar-anchor-box-invariant.mjs",
           "scripts/test-data-table-column-sorting-invariant.mjs",
           "scripts/test-focus-indicator-invariants.mjs",
+          "scripts/test-form-example-card-invariant.mjs",
           "scripts/test-open-close-motion-invariant.mjs",
           "scripts/test-overlay-detached-anchor-invariant.mjs",
           "scripts/test-overlay-list-as-region-invariant.mjs",
@@ -496,6 +499,8 @@
           "scripts/test-data-table-header-scroll-sync.mjs",
           "scripts/test-field-view-typography-invariant.mjs",
           "scripts/test-modifier-click-focus-invariant.mjs",
+          "scripts/test-overlay-header-actions-invariant.mjs",
+          "scripts/test-overlay-header-title-area-invariant.mjs",
           "scripts/test-overlay-shortcut-scope-invariant.mjs",
           "scripts/test-row-suffix-first-line-invariant.mjs",
           "scripts/test-searchable-menu-focus-invariant.mjs",
@@ -536,6 +541,7 @@
           "scripts/test-dialog-height-invariant.mjs",
           "scripts/test-radio-group-tab-stop-invariant.mjs",
           "scripts/test-select-all-footer-invariant.mjs",
+          "scripts/test-sidebar-main-follows-selection-invariant.mjs",
           "scripts/test-sidebar-menu-keyboard-invariant.mjs",
           "scripts/test-sidebar-standalone-collapse-invariant.mjs",
           "scripts/test-tree-view-keyboard-route-invariant.mjs",
@@ -555,6 +561,10 @@
             "timeoutMs": 360000
           },
           {
+            "path": "scripts/test-field-open-border-invariant.mjs",
+            "timeoutMs": 720000
+          },
+          {
             "path": "scripts/test-form-validation-contract-invariant.mjs",
             "timeoutMs": 1200000
           },
@@ -572,8 +582,11 @@
           "scripts/test-agent-decision-card-option-press-invariant.mjs",
           "scripts/test-color-scheme-invariant.mjs",
           "scripts/test-data-table-link-cell-invariant.mjs",
+          "scripts/test-data-table-row-estimate-density-invariant.mjs",
           "scripts/test-data-table-row-under-pointer-invariant.mjs",
           "scripts/test-dialog-coexist-scroll-lock-invariant.mjs",
+          "scripts/test-doc-heading-inventory-invariant.mjs",
+          "scripts/test-field-open-border-invariant.mjs",
           "scripts/test-form-validation-contract-invariant.mjs",
           "scripts/test-hover-color-pair-invariant.mjs",
           "scripts/test-layer-order-invariant.mjs",
@@ -593,8 +606,16 @@
             "timeoutMs": 420000
           },
           {
+            "path": "scripts/test-data-table-multi-sort-invariant.mjs",
+            "timeoutMs": 420000
+          },
+          {
             "path": "scripts/test-field-text-left-edge-invariant.mjs",
             "timeoutMs": 900000
+          },
+          {
+            "path": "scripts/test-overflow-reveal-selected-invariant.mjs",
+            "timeoutMs": 420000
           },
           {
             "path": "scripts/test-overlay-footer-gutter-invariant.mjs",
@@ -610,12 +631,19 @@
           "scripts/test-agent-decision-card-validation-invariant.mjs",
           "scripts/test-agent-logo-continuity-invariant.mjs",
           "scripts/test-data-table-column-divider-invariant.mjs",
+          "scripts/test-data-table-filter-group-spacing-invariant.mjs",
           "scripts/test-data-table-hover-exclusivity-invariant.mjs",
           "scripts/test-data-table-multi-sort-invariant.mjs",
           "scripts/test-data-table-pinned-resize-invariant.mjs",
           "scripts/test-dialog-coexistence-invariant.mjs",
           "scripts/test-field-text-left-edge-invariant.mjs",
+          "scripts/test-header-content-sides-invariant.mjs",
+          "scripts/test-header-first-gap-invariant.mjs",
+          "scripts/test-overflow-reveal-selected-invariant.mjs",
+          "scripts/test-overlay-density-follows-trigger-invariant.mjs",
           "scripts/test-overlay-footer-gutter-invariant.mjs",
+          "scripts/test-readonly-focus-pointer-invariant.mjs",
+          "scripts/test-section-gap-invariant.mjs",
           "scripts/test-select-tab-leave-invariant.mjs",
           "scripts/test-story-demo-focus-invariant.mjs"
         ]
@@ -693,8 +721,10 @@
           "scripts/test-composite-role-keyboard-invariant.mjs",
           "scripts/test-consumer-source-harness.mjs",
           "scripts/test-data-table-click-outside-invariant.mjs",
+          "scripts/test-data-table-panel-reset-clear-invariant.mjs",
           "scripts/test-data-table-row-cache-deps-invariant.mjs",
           "scripts/test-data-table-tree-view-doc-invariant.mjs",
+          "scripts/test-demo-people-roster-invariant.mjs",
           "scripts/test-drag-announcement-invariant.mjs",
           "scripts/test-dropdown-menu-keyboard-invariant.mjs",
           "scripts/test-exemption-expiry-invariant.mjs",
@@ -721,6 +751,7 @@
           "scripts/test-motion-ssot-invariant.mjs",
           "scripts/test-named-constant-drift-invariant.mjs",
           "scripts/test-naming-structure-invariant.mjs",
+          "scripts/test-overlay-density-lock-invariant.mjs",
           "scripts/test-overlay-nested-dismiss-invariant.mjs",
           "scripts/test-owner-claims-invariant.mjs",
           "scripts/test-produce-hook-enforced-evidence.mjs",

@@ -4,7 +4,6 @@ import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
-import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction, ItemSuffix, type ItemSuffixHoverGroup } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Button } from '@/design-system/components/Button/button'
@@ -73,15 +72,17 @@ function formatHostname(url: string): string {
 // 2026-10-13 前是 `block`:block 盒子撐滿外層,文字右邊看起來空白的那一段點下去會開網頁 —— 09-26 只把編輯模式那一支的外層
 // 改成 flex 修掉,唯讀 / 檢視模式與表格連結格(用檢視模式)仍是整行連結。改這一處,全部模式一起好。
 // 不用 `w-fit`:block + w-fit 會讓靠右 / 置中的連結欄文字跑到左邊(實測靠右時文字左緣 1546 → 1480)。
-// **不能編輯的地方整個框都開連結**(`stretch`;2026-11-06 user「照①乙②b」,link-input.spec.md「Link 狀態」②b):
-// 唯讀、沒有編輯入口的檢視、DataTable 不能編輯的網址格 —— 框裡沒有第二個動作,最常用的「開連結」拿整個框。
+// **框裡 Pencil 以外整個框都開連結**(`stretch`;2026-11-06 user「照①乙②b」,link-input.spec.md「Link 狀態」):
+// 能不能編輯都一樣 —— 框裡不是按鈕的地方,最常用的「開連結」拿整個框;能編輯的地方 Pencil 是滑鼠唯一的編輯入口(它自己 `relative`,照樹的順序畫在延伸區上面)。
 // 做法 = 延伸連結(連結自己的 `::before` 鋪滿最近的定位祖先;Bootstrap `.stretched-link` 同一招(它用 ::after):
 // https://github.com/twbs/bootstrap/blob/v5.3.3/scss/helpers/_stretched-link.scss#L1-L15),所以中鍵 / Ctrl+點 / 右鍵選單都是真的連結,
 // 而且滑過整框就是滑過連結:底線 + 手形跟點擊範圍同一塊(hit-area-canonical「懸停回饋 ≡ 命中區」)。
 // 盒子本身仍是文字寬(L1 量的那一個)。用 `::before` 不用 `::after`:文字那一層也設 `relative`(`[&>*]:relative`)後,
 // 兩者同在定位層、照樹的順序畫 —— ::before 在前、文字在上,截斷提示仍抓得到滑過,不必另開 z 值(疊放順序表,layer-order 閘)。
 // `data-link-stretch`:宿主要暫時收起延伸區時用(DataTable 試算表沒選中的格第一下只選格,見 data-table.css)。
-function renderLinkAnchor(value: string, label?: string, stretch = false) {
+// `coverBorder`:框的 1px 邊框看得見、滑過會變深(編輯模式)時,延伸區多蓋那 1px(`-inset-px`,框沒有 overflow 裁切)——
+// 變色的地方都點得開;其他模式的邊框透明、滑過不變,只蓋到內距。
+function renderLinkAnchor(value: string, label?: string, stretch = false, coverBorder = false) {
   const displayText = linkDisplayText(value, label)
   return (
     <a
@@ -92,7 +93,8 @@ function renderLinkAnchor(value: string, label?: string, stretch = false) {
       data-link-stretch={stretch ? '' : undefined}
       className={cn(
         'inline-block max-w-full align-top truncate min-w-0 text-primary hover:text-primary-hover hover:underline',
-        stretch && "before:absolute before:inset-0 before:content-[''] [&>*]:relative",
+        stretch && "before:absolute before:content-[''] [&>*]:relative",
+        stretch && (coverBorder ? 'before:-inset-px' : 'before:inset-0'),
       )}
     >
       {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
@@ -130,6 +132,15 @@ function renderLinkValue(value: string, label?: string, stretch = false) {
 /** 能安全點的值(網頁網址或站內路徑;見上方 renderLinkValue) */
 function isLinkable(value: string): boolean {
   return toWebUrl(value) != null || isSameSitePath(value)
+}
+
+/**
+ * @internal — 這個值在檢視 / 唯讀時會不會畫成連結(與 `renderLinkValue` 同一支判斷)。DataTable 用它分網址格:
+ * 有連結 = 格裡 Pencil 以外都開連結,不是「點格即編輯」的格;空值 / 不是網址 = 沒有連結可開,照其他可編輯格點格進編輯
+ * (link-input.spec.md「Link 狀態」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條)。
+ */
+export function isLinkInputValueLinkable(value: unknown): boolean {
+  return typeof value === 'string' && value !== '' && isLinkable(value)
 }
 
 /**
@@ -212,9 +223,9 @@ export interface LinkInputProps
    */
   viewEditAction?: LinkInputViewEditAction
   /**
-   * @internal — 不能編輯時「整個框點了開連結」的範圍交給宿主(2026-11-06,user「照①乙②b」):預設延伸範圍 = LinkInput
+   * @internal — 「框裡 Pencil 以外點了開連結」的範圍交給宿主(2026-11-06,user「照①乙②b」):預設延伸範圍 = LinkInput
    * 自己的框(外殼 / 檢視那一行);設 true 時改成最近的定位祖先,宿主自己負責 `position: relative`。
-   * 目前只有 DataTable 不能編輯的網址格傳(延伸到整格;格本來就是 `relative`)。
+   * 目前只有 DataTable 網址格傳(能不能編輯都延伸到整格;格本來就是 `relative`)。
    */
   linkHitAreaFromHost?: boolean
 }
@@ -320,18 +331,18 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         // 字體 → 跟其他 Field view 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
         // 外層不裁:截斷由裡面的連結 / TruncatedText 自己做(見 LINK_HOST_CLASS)
-        // 沒有編輯入口 → 整行開連結(②b,見 renderLinkAnchor);`relative` = 延伸範圍到這一行為止(宿主接手時拿掉,延伸到宿主)
+        // 沒有編輯入口 → 整行開連結(見 renderLinkAnchor);`relative` = 延伸範圍到這一行為止(宿主接手時拿掉,延伸到宿主)
         return <span className={cn(fieldDisplayTextClass(size), 'block', LINK_HOST_CLASS, !linkHitAreaFromHost && 'relative')}>{renderLinkValue(value, label, true)}</span>
       }
       return (
         <div
-          // 沒有編輯入口(`viewEditAction`)時整個外殼開連結(②b);有編輯入口 = 能編輯的地方,維持只有網址文字(①,下一個 PR 改)
-          className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), !viewEditAction && !linkHitAreaFromHost && 'relative', className)}
+          // 整個外殼開連結(Pencil 以外,能不能編輯都一樣;見 renderLinkAnchor);`relative` = 延伸範圍到外殼為止(宿主接手時拿掉,延伸到宿主)
+          className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), !linkHitAreaFromHost && 'relative', className)}
           data-field-mode="view"
         >
           <span className={cn('flex-1', LINK_HOST_CLASS)}>
             {value
-              ? renderLinkValue(value, label, !viewEditAction)
+              ? renderLinkValue(value, label, true)
               : <span className={cn('block truncate', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
             }
           </span>
@@ -340,7 +351,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
               {...{ [LINK_INPUT_EDIT_ENTRY_ATTR]: '' }}
               hoverReveal={viewEditAction.revealGroup != null}
               hoverGroup={viewEditAction.revealGroup}
-              className="[&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]"
+              // `relative`:Pencil 畫在連結延伸區上面(照樹的順序),點得到 = 滑鼠唯一的編輯入口
+              className="relative [&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)]"
             >
               <Button
                 variant="text"
@@ -367,24 +379,6 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         focusRafIdRef.current = 0
         inputRef.current?.focus()
       })
-    }
-
-    // 連結狀態:外框裡「不是連結、不是鉛筆」的地方點下去 = 按鉛筆(user 2026-09-26「確保沒有分歧才照你建議做」,
-    // 研究後照做;規則與出處 link-input.spec.md「Link 狀態」)。
-    // 外框滑過會變色(Field 家族 hover:border-border-hover),變色的地方點下去就要有反應 ——
-    // hit-area-canonical.md 要防的「看到亮起來卻點不到」。連結與鉛筆照它們自己的行為走:
-    // 判斷用全 DS 共用的「容器裡自有行為的東西」判準(lib/pointer-press.ts;Field 外框、cmdk 選單同一份),不另寫一份。
-    // 用 click 不用 mousedown:與鉛筆同一個觸發時機;按下後拖出外框才放開,click 落在外框之外的共同祖先,不會觸發這裡。
-    // 拖曳選字不是點一下:按在空白處、拖過網址文字、在外框裡放開,瀏覽器仍會在外框上發 click;
-    // 此時直接看「外框裡有沒有被選起來的文字」,有就不進編輯(量的就是要保護的那件事,不拿移動距離當代理)。
-    const handleLinkChromeClick = (event: React.MouseEvent<HTMLDivElement>) => {
-      const chrome = event.currentTarget
-      const target = event.target
-      if (!(target instanceof Element)) return
-      if (isOwnPointerTarget(chrome, target)) return
-      const selection = window.getSelection()
-      if (selection && !selection.isCollapsed && selection.anchorNode && chrome.contains(selection.anchorNode)) return
-      handleEdit()
     }
 
     /** 結算草稿(blur / Enter 共用):空白 = 清值;合法 = 提交;不合法 = 紅框、留在輸入框。回傳是否離開了編輯態。 */
@@ -450,7 +444,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       const displayText = value ? linkDisplayText(value, label) : null
       return (
         <div
-          // readonly:整個外殼開連結(②b,見 renderLinkAnchor;`relative` = 延伸範圍到外殼為止)
+          // readonly:整個外殼開連結(見 renderLinkAnchor;`relative` = 延伸範圍到外殼為止)
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), resolvedMode === 'readonly' && !linkHitAreaFromHost && 'relative', className)}
           data-field-mode={resolvedMode}
           // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
@@ -477,18 +471,17 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         <div
           // 2026-07-05 D4:link 顯示分支同樣接 error(errorProp / fieldCtx.invalid)紅框,
           // 否則 <Field invalid> 下 link state 完全無 error 呈現
-          // 外框用文字游標:點空白處進入的是打字(field-controls.spec.md「游標指引」input → cursor-text;同 Input 外框)。
-          // 連結(瀏覽器預設手形)與鉛筆(cursor-pointer)各自覆寫。
-          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }), FIELD_TEXT_ENTRY_CURSOR, className)}
+          // 框裡 Pencil 以外都開連結(2026-11-06 user「照①乙②b」,link-input.spec.md「Link 狀態」):連結延伸鋪滿外框(含看得見的 1px 邊框,
+          // 見 renderLinkAnchor `coverBorder`),游標 = 連結的手形;Pencil(ItemInlineAction 自己 `relative`)畫在上面 = 滑鼠唯一的編輯入口。
+          // 2026-09-26 – 11-06 這裡是「外框空白處 = 按 Pencil」(文字游標 + onClick 進編輯)。外框滑過變深是 Field 家族共用外觀,照留(變色的地方點得開)。
+          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }), 'relative', className)}
           data-field-mode="edit"
           data-error={error ? '' : undefined}
-          onClick={handleLinkChromeClick}
         >
-          {/* 連結的寬度 = 文字本身、太長時縮到欄寬截斷 —— 由連結自己保證(renderLinkAnchor 的 inline-block + max-w-full),
-              所有模式同一句(2026-10-13 起;此前只有這一支靠外層 flex 縮回文字寬,唯讀 / 檢視仍撐滿整行)。
-              文字右邊看起來空白的那一段屬於外框,點下去進入編輯,不是開網頁。flex 外層保留:讓截斷吃得到外框扣掉鉛筆後的寬度。 */}
+          {/* 連結盒子 = 文字本身、太長時縮到欄寬截斷 —— 由連結自己保證(renderLinkAnchor 的 inline-block + max-w-full),所有模式同一句;
+              點擊範圍另由延伸區鋪滿外框。flex 外層保留:讓截斷吃得到外框扣掉鉛筆後的寬度。 */}
           <span className="flex-1 min-w-0 flex">
-            {value && renderLinkAnchor(value, label)}
+            {value && renderLinkAnchor(value, label, true, true)}
           </span>
           <ItemInlineAction
             ref={pencilRef}

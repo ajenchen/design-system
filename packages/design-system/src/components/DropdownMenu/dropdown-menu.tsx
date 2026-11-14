@@ -14,6 +14,7 @@ import {
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } from "@/design-system/lib/overlay-density"
 import { markPointerGrab, useCursorMover } from '@/design-system/hooks/use-input-modality'
 // 鍵盤接線(開關狀態 / Tab 離開 / 子選單 Esc)住在 dropdown-menu-keyboard.ts —— 本檔只留視覺層(2026-09-26 拆檔,見該檔檔頭)
 import {
@@ -133,12 +134,15 @@ const DropdownMenu = ({
   return (
     <DropdownMenuModalOpenContext.Provider value={modal && resolvedOpen}>
       <DropdownMenuKeyboardProvider keyboard={keyboard} level={level}>
-        <DropdownMenuPrimitive.Root
-          open={resolvedOpen}
-          onOpenChange={handleOpenChange}
-          modal={modal}
-          {...props}
-        />
+        {/* 觸發點登記處:Content 從觸發點那一區讀密度(lib/overlay-density.tsx;density.spec.md「浮層跟觸發點」) */}
+        <OverlayAnchorScope family="dropdown-menu">
+          <DropdownMenuPrimitive.Root
+            open={resolvedOpen}
+            onOpenChange={handleOpenChange}
+            modal={modal}
+            {...props}
+          />
+        </OverlayAnchorScope>
       </DropdownMenuKeyboardProvider>
     </DropdownMenuModalOpenContext.Provider>
   )
@@ -151,7 +155,9 @@ const DropdownMenuTrigger = React.forwardRef<
 >(({ className, tabIndex, ...props }, ref) => {
   const modalOpen = React.useContext(DropdownMenuModalOpenContext)
   // 記下觸發點:選單開著按 Tab 時從它算下一站(B11;dropdown-menu-keyboard.ts)
-  const setRef = useMenuTriggerRef(ref)
+  const setMenuTriggerRef = useMenuTriggerRef(ref)
+  // 同一個節點也登記成密度來源(lib/overlay-density.tsx)
+  const setRef = useRegisterOverlayNode("dropdown-menu", "trigger", setMenuTriggerRef)
   return (
     <DropdownMenuPrimitive.Trigger
       ref={setRef}
@@ -200,6 +206,8 @@ const DropdownMenuGroup = React.forwardRef<
 ))
 DropdownMenuGroup.displayName = 'DropdownMenuGroup'
 
+// 不得拿來包 DropdownMenuSubContent:子選單刻意不經 Portal、留在父選單裡,才吃得到父選單那一層的密度屬性
+// (density.spec.md「浮層跟觸發點」表「子選單」列);包了就會逃到 body、拿整頁密度。DS 與 WM 目前沒有使用處(2026-11-12 git grep 0 筆)。
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
 // ── Sub ──
@@ -243,19 +251,21 @@ const DropdownMenuContent = React.forwardRef<
 >(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, onKeyDown, onCloseAutoFocus, ...props }, ref) => {
   // 記下根內容(觸發點是透明錨點時靠它的 id 找開啟者)+ 開著按 Tab(B11)+ Tab 離開時不自動還焦點(dropdown-menu-keyboard.ts)
   const menuKeyboard = useMenuContentKeyboard(ref, onKeyDown, onCloseAutoFocus)
+  // 觸發點那一區的兩軸檔位(lib/overlay-density.tsx;內容根元素掛上去才讀、關著不讀)
+  const { attrs: regionDensity, ref: contentRef } = useTriggerRegionDensity("dropdown-menu", menuKeyboard.ref)
   return (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
-      ref={menuKeyboard.ref}
+      ref={contentRef}
+      {...regionDensity}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       // 錨點失去版面時不畫(同 Tooltip;詳 tokens/elevation/overlay-geometry.ts)
       hideWhenDetached={hideWhenDetached}
       align={align}
-      // Density:繼承 page density(2026-06-15 canonical)。menu item 高度 = field-height-{size},而
-      // field-height 隨 density 變(md 28/32/36 → lg 32/36/40)→ 鎖 data-density="md" 會把選單釘在 md-scale,
-      // lg page 上對不上 lg 觸發點。原 data-density 是 409b91da a11y 批次順手加(對齊 Popover),非設計
-      // 決策 → 移除,item 隨 page density 與觸發點一致(tier 仍由 size prop 決定)。
+      // Density:不鎖,跟觸發點那一區(上方 regionDensity;2026-11-11 user「浮層密度:跟按鈕」,在那之前是跟整頁)。
+      // menu item 高度 = field-height-{size},而 field-height 隨 density 變(md 28/32/36 → lg 32/36/40)→ 鎖 data-density="md"
+      // 會把選單釘在 md-scale,對不上 lg 觸發點(2026-06-15 移除 409b91da a11y 批次順手加的 data-density)。tier 仍由 size prop 決定。
       // Focus return on close:除了 Tab 離開(B11)之外不 override `onCloseAutoFocus` — 用 Radix 內建 default
       // (close 時 focus 還 trigger;outside-interaction 例外由 Radix `hasInteractedOutsideRef` 自管;
       // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」,https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/menubar/menu-and-menubar-pattern.html#L153)。

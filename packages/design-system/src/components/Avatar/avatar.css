@@ -1,0 +1,21 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Avatar — 頭像堆疊往左疊的量(元件的值;主人 = Avatar)
+   ═══════════════════════════════════════════════════════════════════════
+
+   分類、主人、住處、誰可以讀 → tokens/token-registry.json「--avatar-stack-overlap」那一列(唯一一份;本檔不重述)。
+   2026-11-11 從 tokens/uiSize/uiSize.css 搬來(user 2026-11-10 token「2甲」,計畫上的第三批):
+   名字與值都沒變;產品經對外彙總檔 styles/tokens.css 拿到,不用改任何一行。
+   設計理由(為什麼疊 2px、為什麼挖空不畫外圈)只住 avatar.spec.md「頭像堆疊(疊在一起時)」段。
+
+   讀者:PeoplePicker 編輯態多人標籤 wrapper 與 +N(-ml-[var(--avatar-stack-overlap)],people-picker-helpers.ts /
+   people-picker.tsx)。程式對照常數 = avatar.tsx AVATAR_STACK_OVERLAP_PX(遮罩幾何與量寬要用數字算);
+   兩邊相等由 scripts/token-twin-invariant.mjs 靜態鎖住(住處從分類表讀)。
+
+   ── 只有預設值一段 ──
+   重疊量不隨密度切換,所以沒有大密度覆寫與鎖回一般密度段;哪天要加,三段必須同檔、照
+   「預設 → 大密度覆寫 → 鎖回一般密度」的順序(token-creation-invariant C5;做法同 components/Tabs/tabs.css)。
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --avatar-stack-overlap: 2px;
+}

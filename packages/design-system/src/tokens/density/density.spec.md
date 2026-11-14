@@ -31,7 +31,16 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 - **md**(預設):資訊密集的桌面 UI / form-heavy 頁面
 - **lg**:元件高度與版面間距都放大一階(例:欄位高 md 32 → lg 36)
 
-`data-density` 內部等同同時設 `data-ui-size` + `data-layout-space` 相同 tier。CSS selectors 同時監聽 `[data-density="lg"], [data-ui-size="lg"]` 等(見 `uiSize.css` + `layoutSpace.css`)。
+`data-density` 內部等同同時設 `data-ui-size` + `data-layout-space` 相同 tier。CSS selectors 同時監聽 `[data-ui-size="lg"], [data-density="lg"]:not([data-ui-size])` 等(見 `uiSize.css` + `layoutSpace.css`)。**兩檔的兩組叫法(2026-11-13 補記)**:規格與樣式檔把 md / lg 叫「一般密度 / 大密度」,Storybook 工具列叫「標準（md）/ 寬鬆（lg）」(`packages/storybook-config/preview.tsx` 的 `density` 工具列),範例說明文字跟著工具列寫「標準密度 / 寬鬆密度」—— 兩組是同一件事。
+
+### 同一個元素帶兩種屬性
+
+**明寫的單軸屬性勝過 `data-density`**:同一個元素同時帶 `data-density="X"` 與 `data-ui-size="Y"`(或 `data-layout-space="Y"`)時,那一軸取 Y,另一軸取 X。往外找的順序是逐層由內往外:最近一層有寫那一軸(單軸屬性或 `data-density`)的就是答案。
+
+- **為什麼**:`data-density` 是兩軸的便捷開關(本節開頭);單軸屬性是更明確的意圖。2026-11-11 前兩者權重相同、靠後寫的贏,結果只要其中一個是 md 就永遠 md 勝 —— html 已帶 `data-density="md"` 的頁面(`index.html`、Storybook)上,情境 2「單獨切 ui-size」完全沒有作用(稽核 R7-01:控制項高實量 32,應為 36)。
+- **寫法**:便捷屬性那一半寫成 `[data-density="…"]:not([data-ui-size])`(版面間距那一軸是 `:not([data-layout-space])`),全部有密度段的檔同一寫法:`uiSize.css`、`layoutSpace.css`、`Tabs/tabs.css`、`DataTable/data-table.css`(`Sidebar/sidebar.css` 2026-11-13 起沒有密度段:唯一有密度覆寫的那一顆圖示欄退場,收合寬只剩下方「衍生值」那種寫法)。
+- **JS 端同一條規則**:要在程式裡算「某個元素在哪一檔」時(例:浮層讀觸發點那一區,見「浮層跟觸發點」),用同一個解析順序,不另訂。
+- **閘**:`scripts/test-density-subtree-token-parity.mjs` 的同元素雙屬性、整頁解耦、兩層巢狀三類組合(期望值由同檔 `resolveTiers()` 依本節規則算)。
 
 ## 解耦用法(canonical 情境)
 
@@ -39,19 +48,36 @@ Density 由**兩個獨立維度**構成,並配合一個 convenience attribute �
 
 ### Canonical 情境 1 — Overlay 的 layout-space tier(2026-06-15 重訂)
 
-**核心原則**:浮層(Portal overlay)**預設全繼承 page density**;只鎖「**有設計理由 + 該元件真的消費到**」的那個 dial,**禁用 `data-density` master switch 鎖浮層**(它連 ui-size 一起鎖 → 內部控件 / 選單 item 對不上觸發點)。**ui-size 永遠跟 page** —— 浮層只決定「版面間距 tier」(layout-space),控件大小交給 page。
+**核心原則**:浮層(Portal overlay)**預設不鎖**,密度從哪裡來分兩種(見下方「浮層跟觸發點」);只鎖「**有設計理由 + 該元件真的消費到**」的那個 dial,**禁用 `data-density` master switch 鎖浮層**(它連 ui-size 一起鎖 → 內部控件 / 選單 item 對不上觸發點)。**ui-size 永遠不鎖** —— 浮層只決定「版面間距 tier」(layout-space),控件大小交給密度來源。
 
-| 浮層 | 鎖 | 理由 |
-|------|----|------|
-| Dialog | **不鎖(繼承 page)** | layout-space 在本 spec 開頭維度表的「Layout Space」列就寫明管「dialog body padding」,鎖死 = override 自家 dial 自相矛盾;modal 寬鬆需求在 lg 階自然滿足(md 已是 16);button 不撐高由 ui-size 繼承解決。 |
-| Popover / Coachmark | `data-layout-space="md"` | 輕量浮層 → header py-tight 保持精簡;ui-size 跟 page 讓內部 field 控件對齊觸發點。Coachmark 建在 Popover 上自動繼承 |
-| Tooltip / DropdownMenu | 不鎖(繼承 page) | 不消費任何 layout-space token(Tooltip padding 寫死 px-3 py-2;Dropdown 是 RowSize + py-2);鎖 ui-size 會把選單 item(field-height-{size})釘在 md-scale → 對不上 lg 觸發點 |
-| Sheet | 不鎖(繼承 page) | 側板,螢幕變小時常駐側板會 responsive 變 Sheet;若 Sheet 鎖 tier 而側板繼承 page → 切換瞬間跳 mode,不一致 |
-| FileViewer | 不鎖(繼承 page) | 全螢幕 chrome 殼。原 `lockDensity="lg"` 只鎖在兩個 ChromeHeader、沒鎖 body → header(px-loose@lg=24)與 body(px-loose@page=16)左緣不對齊;移除 → 全 surface 同密度 |
+#### 浮層跟觸發點(2026-11-11 user 定案)
 
-**Tier alignment**:每個 overlay 宣告自己的 layout-space tier → header 高度隨之(Dialog lg → title 24 + py-tight 16×2 = 56;Popover md → 45)。「對齊 `--chrome-header-height`」是**同 tier 內**成立(Popover 45 ≠ Dialog 56 ≠ chrome 48 本就允許,各宣告各 tier),非跨 page 強制。詳 `patterns/header-canonical/header-canonical.spec.md` A 家族。
+**小浮層跟觸發它的那一區;蓋住整頁的浮層跟整頁。** user 2026-11-11 決策頁「浮層密度」答「跟按鈕」—— 選項原文「跟打開它的按鈕所在的區塊」「對話框、側拉面板這種蓋住整頁的，維持跟整頁。」(【AI 建議、user 選】)。
 
-**為何不鎖 ui-size**:field-height token 隨 density 變(md 28/32/36 → lg 32/36/40);鎖 ui-size=md 會把浮層內控件 / 選單 item 釘死 md-scale,lg page 上對不上 lg 觸發點。decouple = 只鎖版面間距、控件跟 page —— 間距刻度與控件尺寸本來就是兩把尺。
+- **為什麼**:浮層經 Portal 掛到 body,CSS 繼承鏈從 html 起算(M3),拿到的是整頁密度。實測一般密度頁面裡的大密度區塊,sm 下拉按鈕 32 高、打開的選項列 28;反方向 28 / 32(稽核 R7-02)—— 正是本節「對不上觸發點」要避免的事。
+- **做法(全 DS 一支)**:`lib/overlay-density.tsx`。各小浮層的 Root 開登記處(`OverlayAnchorScope family=…`)、Trigger / Anchor 把節點登記進來、Content 用 `useTriggerRegionDensity(family, ref)` 從錨點(沒有就觸發點)往外讀兩軸檔位(解析順序 = 上方「同一個元素帶兩種屬性」),當 `data-ui-size` / `data-layout-space` 蓋到 Portal 內容的根元素上;要鎖某一軸的浮層把那一軸寫在後面覆蓋。往外找不到任何宣告時不寫(= 整頁 `:root`)。
+  - **登記處一種浮層一個**(Popover / DropdownMenu / HoverCard / Tooltip 各自一個 context,跟 Radix 每一種 primitive 各用自己的 context scope 同一個身分):浮層互相包的時候(DatePicker 單日是 `<Popover><Tooltip><PopoverTrigger>`),Trigger 只登記到同一種浮層的 Root,不會被包在中間的另一種接走。
+  - **什麼時候讀**:浮層關著不讀(內容根元素沒掛上就不碰 DOM);根元素掛上去那一刻讀(畫面畫出來之前);開著的期間,浮層內容每重畫一次會再讀一次(Radix 的浮層內容每次重畫都換一個新的 ref 函式,根元素的 ref 跟著重掛),文件裡任何元素的 `data-density` / `data-ui-size` / `data-layout-space` 變了也會重讀 —— 讀到的值沒變就不重畫;區塊密度在浮層開著時被改,浮層跟著變。
+  - **錨點是 `virtualRef` 時**(Radix 不畫錨點元素,例:Calendar 示範的 `<PopoverAnchor virtualRef>`):讀 `virtualRef.current` 指到的元素;它是只有量測方法的物件時讀它的 `contextElement`;兩者都不是元素 → 改讀觸發點;連觸發點都沒有 → 不寫(= 整頁)。
+  - **【AI 推導】**上面三條是實作邊界的工程答案,不是 user 逐字決定;user 定的只有「跟按鈕」與「蓋住整頁的跟整頁」。
+- **世界級**:React Spectrum 的浮層在 Portal 裡再包一層 Provider([Overlay.tsx#L59](https://github.com/adobe/react-spectrum/blob/main/packages/@react-spectrum/overlays/src/Overlay.tsx#L59)),那一層的 scale(medium / large)沒指定時沿用最近一層上層 Provider —— 觸發點所在那一區([Provider.tsx#L57](https://github.com/adobe/react-spectrum/blob/main/packages/@react-spectrum/provider/src/Provider.tsx#L57):`scale = prevContext ? prevContext.scale : autoScale`)。
+- **閘**:`scripts/overlay-density-follows-trigger-invariant.mjs`(瀏覽器實量:七種浮層 × 整頁一般 / 大 × 一般 / 大密度區塊 = 28 格,每一格的每一條分開判;期望值當場在那一區的元素上量 token)。Popover 版的 sm 下拉在 uiSize「產品對齊用的共用尺寸」story 上量:選項列高 = 那一區的 `--field-height-sm` = 觸發點高,Popover 版面間距仍 16。其餘六種在閘自己的夾具頁量(`scripts/test-fixtures/overlay-density-regions/fixture.tsx`;DS 沒有「密度和整頁不同的區塊裡放這幾種浮層」的 story):下拉選單的列高 = 那一區的 `--field-height-md` = 觸發鈕高;子選單的列高 = 那一區的 `--field-height-md` = 主選單列高;HoverCard 裡人員卡的動作鈕高 = 那一區的 `--field-height-sm`;Tooltip 內容裡 `--field-height-sm` 的計算值 = 那一區的值(Tooltip 沒有會跟密度變的像素,量的是 token 計算值);日期區間(只有錨點)與日期單日的日期格高、寬 = 那一區的 `--field-height-sm`。版面間距:日期區間跟 Select 一樣仍 16(鎖);下拉選單、HoverCard、Tooltip 內容的 `--layout-space-loose` = 那一區的值(不鎖;下拉選單、Tooltip 的元件本身不消費這顆 token;HoverCard 的內容由使用端放,DS 範例在 HoverCardContent 上用 `p-[var(--layout-space-loose)]`(HoverCard 的展示與設計原則兩份 story),所以這一條保的是使用端照範例寫時看得到的內距;夾具裡的人員卡不消費這顆 token —— 三種量的都是 token 計算值)。對照組(`--selftest`,每一種都比「紅的集合 = 期望的集合」):`ui-size-gone` 拿掉內容根元素的控制項檔位 → 每一種「區塊 ≠ 整頁」的 2 格紅、其餘綠;版面間距三種就地破法 —— `lock-gone`(鎖不見、留下讀到的值)、`attr-gone`(屬性整個不見)、`forced-md`(不該鎖的被硬寫 md)—— 各自只紅該紅的 2 格;`sub-reparent` 把子選單的包層搬到 body → 只有子選單「區塊 ≠ 整頁」的 2 格紅;token 讀不到、沒有那一則 story 的建置必須判成儀器失效(結束碼 2),不讀成紅或綠。「整頁一般 / 一般密度區塊」那一格對版面間距沒有鑑別力(鎖著、跟區塊、跟整頁都是 16),只當對照。**【AI 推導】**每一種浮層量哪個元素、對哪一顆 token,是照下表逐列落成的格子,不是 user 逐字決定。
+
+| 浮層 | 密度來源 | 鎖 | 理由 |
+|------|---------|----|------|
+| Popover(含 Select / Combobox / SelectMenu / DatePicker / TimePicker / Coachmark / DataTable 排序·篩選·欄位面板 / AgentPanel 歷史) | 觸發點那一區 | `data-layout-space="md"` | 輕量浮層 → header py-tight 保持精簡(只鎖間距,控制項大小跟觸發點 → 內部 field 控件對齊觸發點)。建在 Popover 上的元件自動繼承這一列 |
+| DropdownMenu(含子選單) | 觸發點那一區 | 不鎖 | 不消費 layout-space token(RowSize + py-2);選單 item = field-height-{size},鎖 ui-size 會對不上觸發點。子選單不經 Portal、長在主選單裡,跟主選單同檔 |
+| HoverCard | 觸發點那一區 | 不鎖 | 照本節預設「不鎖」(稽核 R7-04 甲:兩份規格說法打架,主規格的預設是繼承;`overlay-chrome-sizing.spec.md` 已改正) |
+| Tooltip | 觸發點那一區 | 不鎖 | 目前不消費任何 density / layout-space token(px-3 py-2 寫死);照小浮層同一條規則蓋上檔位,以後內容消費密度 token 時不必再補 |
+| Dialog | **整頁** | 不鎖 | 蓋住整頁。layout-space 在本 spec 開頭維度表的「Layout Space」列就寫明管「dialog body padding」,鎖死 = override 自家 dial 自相矛盾;modal 寬鬆需求在 lg 階自然滿足(md 已是 16);button 不撐高由 ui-size 繼承解決。 |
+| Sheet | **整頁** | 不鎖 | 蓋住整頁的側板;螢幕變小時常駐側板會 responsive 變 Sheet,若 Sheet 鎖 tier 而側板繼承 page → 切換瞬間跳 mode,不一致 |
+| FileViewer | **整頁** | 不鎖 | 全螢幕 chrome 殼。原 `lockDensity="lg"` 只鎖在兩個 ChromeHeader、沒鎖 body → header(px-loose@lg=24)與 body(px-loose@page=16)左緣不對齊;移除 → 全 surface 同密度 |
+
+**Tier alignment**:每個 overlay 的 layout-space tier 決定 header 高度(Dialog lg → title 24 + py-tight 16×2 = 56;Popover 鎖 md → 12 + 21 + 12 = 45,外加 1px 底線)。「對齊 `--chrome-header-height`」是**同 tier 內**成立(Popover 45 ≠ Dialog 56 ≠ chrome 48 本就允許,各宣告各 tier),非跨 page 強制。詳 `patterns/header-canonical/header-canonical.spec.md` A 家族。
+
+**標頭高各跟哪一軸**(稽核 R7-09 第 (2) 項;寫明,不再是未定義):外框標頭 `--chrome-header-height`(48 / 56)是**控制項大小這一軸**的共用刻度(宣告在 `uiSize.css`,跟 `data-ui-size` 走;它要容納同一軸的 md 按鈕,所以跟控制項一起變);浮層標頭 = 標題行高 + 2 × `--layout-space-tight`,是**版面間距這一軸**。兩軸不同檔時(例:`data-ui-size="lg"` + `data-layout-space="md"`)外框標頭 56、浮層標頭 45 —— 各照各的軸算,這是設計,不是誤差。
+
+**為何不鎖 ui-size**:field-height token 隨 density 變(md 28/32/36 → lg 32/36/40);鎖 ui-size=md 會把浮層內控件 / 選單 item 釘死 md-scale,對不上 lg 觸發點。decouple = 只鎖版面間距、控件跟密度來源 —— 間距刻度與控件尺寸本來就是兩把尺。
 
 ### Canonical 情境 2 — 單獨切 ui-size
 
@@ -71,6 +97,11 @@ document.documentElement.setAttribute('data-ui-size', 'lg')
   {/* 這個 region layout 寬鬆,control 跟外層 page 走 */}
 </div>
 ```
+
+**保證:區塊裡每一顆 token = 整頁直接設成那個密度的值**(逐 token 相等;兩個方向都算 —— 大密度頁面裡鎖回一般密度、一般密度頁面裡局部放大)。兩種寫法會破這條,`tokens/uiSize/uiSize.css` 各有一段處理:
+- 有大密度覆寫的值,「鎖回一般密度」段要有它(閘 `token-creation-invariant.mjs` C5);
+- 用 `var()` 由別的 token 組出來的值(例:側欄收合寬 `--sidebar-width-icon`)不能只寫在 `:root` —— 瀏覽器在宣告它的元素上就把 `var()` 代換掉,子孫繼承代換後的結果([W3C CSS Custom Properties Level 1](https://www.w3.org/TR/css-variables-1/#defining-variables):Computed value =「specified value with variables substituted」),區塊換密度時它不會重算。所以這類值住「衍生值」段,宣告在 `:root` 與每個換密度的元素上(側欄收合寬另一個輸入是側欄的 `size`,所以它還多在 `SidebarProvider` 外層重算一次 —— `../../components/Sidebar/sidebar.spec.md`「尺寸規範」)。
+閘 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算 32 種組合(單一屬性區塊、同元素雙屬性、整頁解耦、兩個單軸屬性 = 便捷屬性、兩層巢狀)× 對外彙總檔的全部 token。
 
 ## 動態切換
 
@@ -93,30 +124,31 @@ document.documentElement.setAttribute('data-layout-space', 'md')
    - 是 → 用 `data-density="X"`(convenience)
    - 否(想解耦) → 明示 `data-layout-space="X"` + / 或 `data-ui-size="Y"`
 
-3. **Portal 逃逸 subtree?**(Dialog / Popover / Sheet / DropdownMenu / Tooltip)
-   - density 設在 `html` root 時,CSS cascade 會傳到 portal 出去的內容(portal 掛 body,仍在 html 底下)→ **浮層繼承 page density 正常,不需自設**。
-   - 只有 density 設在「中層 div」時 portal 才逃逸該 subtree(M3 邊界)。
+3. **Portal 逃逸 subtree?**(Dialog / Popover / Sheet / DropdownMenu / Tooltip / HoverCard)
+   - density 設在 `html` root 時,CSS cascade 會傳到 portal 出去的內容(portal 掛 body,仍在 html 底下)。
+   - density 設在「中層 div」(區塊)時 portal 逃逸該 subtree(M3 邊界)→ **小浮層用 `lib/overlay-density.tsx` 把觸發點那一區的檔位蓋回內容根元素**(情境 1「浮層跟觸發點」);蓋住整頁的浮層刻意跟整頁,不接。新做小浮層必接這支,不另寫一份。
    - **鎖浮層 density/layout-space = 刻意覆蓋成某 tier,需設計理由(見情境 1 表)**,非 Portal 必要;且只鎖該元件真正消費的 dial。
 
 ## 消費者清單
 
 | 元件 | attribute 設置 | 用法理由 |
 |------|---------------|---------|
-| Dialog | **無(繼承 page,2026-06-16)** | layout-space 定義即管 dialog body padding → 鎖 = override 自家 dial 自相矛盾;header 隨 page md=48 / lg=56 |
-| Sheet | 無(繼承 page) | 側板;responsive 會跟常駐側板互換,不能跳 mode |
-| Popover / Coachmark | `data-layout-space="md"`(2026-06-15) | 輕量;header py-tight 精簡;ui-size 繼承 page → 內部控件對齊觸發點。Coachmark 建在 Popover 上自動繼承 |
-| DropdownMenu | 無(繼承 page,2026-06-15) | 不消費 layout-space token;鎖 ui-size 會讓 menu item(field-height-{size})對不上觸發點 |
-| Tooltip | 無(繼承 page,2026-06-15) | 不消費任何 density/layout-space token,鎖 = inert |
-| FileViewer | 無(繼承 page,2026-06-15) | 全螢幕 chrome 殼;原 lockDensity 只鎖 header 造成左緣不對齊 → 移除 |
-| Sidebar | 無(繼承 page) | inline chrome(非 Portal 逃逸),跟隨 page density;size="md" 在 density="lg" 下自動變 36px row(見 sidebar.spec.md)|
+| Dialog | **無(跟整頁,2026-06-16)** | layout-space 定義即管 dialog body padding → 鎖 = override 自家 dial 自相矛盾;header 隨 page md=48 / lg=56 |
+| Sheet | 無(跟整頁) | 側板;responsive 會跟常駐側板互換,不能跳 mode |
+| Popover / Coachmark | `data-layout-space="md"`(2026-06-15)+ 觸發點那一區的 `data-ui-size`(2026-11-11) | 輕量;header py-tight 精簡;控制項大小跟觸發點 → 內部控件對齊觸發點。Coachmark 建在 Popover 上自動繼承 |
+| DropdownMenu | 觸發點那一區的兩軸(2026-11-11) | 不消費 layout-space token;鎖 ui-size 會讓 menu item(field-height-{size})對不上觸發點 |
+| HoverCard | 觸發點那一區的兩軸(2026-11-11) | 不鎖(R7-04 甲) |
+| Tooltip | 觸發點那一區的兩軸(2026-11-11) | 目前不消費任何 density/layout-space token |
+| FileViewer | 無(跟整頁,2026-06-15) | 全螢幕 chrome 殼;原 lockDensity 只鎖 header 造成左緣不對齊 → 移除 |
+| Sidebar | 無(繼承所在位置) | inline chrome(非 Portal 逃逸),跟隨所在那一區;size="md" 在 density="lg" 下自動變 36px row(見 sidebar.spec.md)|
 
-**邊界:page density=lg 下的 Portal overlay**——Tooltip / DropdownMenu 繼承 page → lg page 上隨 page 放大,選單 item 對齊 lg 觸發點。Popover / Coachmark 鎖 layout-space=md(header 精簡)但 ui-size 仍繼承 lg(內部控件放大)。Dialog 繼承 page(不鎖)→ md 16 / lg 24 padding 隨 page。皆透過 `[data-layout-space="md|lg"]` reset selector(layoutSpace.css L21/L31)在任意 page density 上正確解析。
+**邊界:Portal overlay 在任意密度組合下**——小浮層的檔位來自觸發點那一區(整頁 lg、區塊 md 時就是 md,反之亦然);Popover / Coachmark 再把 layout-space 鎖回 md(header 精簡),控制項大小照觸發點。Dialog / Sheet / FileViewer 跟整頁(不鎖)→ md 16 / lg 24 padding 隨 page。皆透過 `layoutSpace.css` / `uiSize.css`「鎖回一般密度」段的 `[data-layout-space="md"]` / `[data-ui-size="md"]` 選擇器與大密度段在任意 page density 上正確解析(行號會位移,一律寫宣告名)。
 
 ## Anti-patterns(禁止)
 
-- ❌ 元件同時設 `data-density` + `data-ui-size`(重複,以後者為準但混亂)
+- ❌ 元件同時設 `data-density` + `data-ui-size` 表達「兩軸同檔」(重複;要解耦就只寫兩個單軸屬性)。真的同時出現時以單軸屬性為準(「同一個元素帶兩種屬性」),不是未定義
 - ❌ **用 `data-density` master switch 鎖浮層**(連 ui-size 一起鎖 → 內部控件 / 選單 item 對不上觸發點)。只鎖該元件真正消費的 dial(見情境 1 表)
-- ❌ **把 density/layout-space lock 設在 header primitive(ChromeHeader / SurfaceHeader)而非 surface 根**——header 鎖、body 沒鎖 → 左緣不對齊(FileViewer 圖二 bug)。lock 一律放 surface 根容器
+- ❌ **把 density/layout-space lock 設在 header primitive(ChromeHeader / SurfaceHeader)而非 surface 根**——header 鎖、body 沒鎖 → 左緣不對齊(FileViewer 圖二 bug)。lock 一律放 surface 根容器(頁面上的一塊見情境 3;浮層要不要鎖、鎖在哪見情境 1)。ChromeHeader 原本專做這件事的 `lockDensity` 參數 2026-11-14 移除(AI 建議;user 沒說過要拿掉);閘 `scripts/overlay-density-lock-invariant.mjs` L3 擋標題列元件(含把屬性轉交給它的 DialogHeader / SidebarHeader 等)上直接寫 `data-density` / `data-ui-size` / `data-layout-space`
 - ❌ 為了追求表面一致性硬把 Dialog button 綁 lg ui-size(犧牲 header 高度 / strapline 彈性)
 - ❌ **鎖 Dialog 的 layout-space**(2026-06-16 定論)—— 本 spec 開頭維度表「Layout Space」列寫明 layout-space 就管「dialog body padding」,鎖 Dialog = 令自家 dial 對它點名要管的對象失效 = 自相矛盾。modal 寬鬆需求在 lg 階自然滿足(md 已是 16),不靠鎖。Popover/Coachmark 鎖 md 是另一回事(空間效率、消費 layout-space token、且為非阻斷錨定浮層)
 
@@ -128,3 +160,4 @@ document.documentElement.setAttribute('data-layout-space', 'md')
 - `dropdown-menu.spec.md`
 - `file-viewer.spec.md`
 - `header-canonical.spec.md`
+- `overlay-chrome-sizing.spec.md`

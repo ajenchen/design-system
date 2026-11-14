@@ -37,7 +37,7 @@ export const Overview: Story = {
         <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
           <li>子 controls 保留自身 border + radius(不 strip)</li>
           <li>鄰接子用 <code>margin-left: -1px</code> 重疊 border → 視覺 1 條線</li>
-          <li>z-index:default 2 / hover/focus 3 / disabled 0</li>
+          <li>z-index:default 2 / hover 3 / focus・自己的浮層開著 4 / disabled 0</li>
           <li>first child 右 radii=0;middle 全 radii=0;last child 左 radii=0</li>
         </ul>
       </ExampleSection>
@@ -90,7 +90,7 @@ export const StateBehavior: Story = {
         </FieldControlGroup>
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-2">cell error(其中一 child invalid → border-error;聚焦該 child 時才提升到 z-3 蓋過鄰接 border)</p>
+        <p className="text-caption text-fg-muted mb-2">cell error(其中一格驗證錯誤 → 紅框。這個範例的錯誤格在最後一格,平常就畫得出完整四邊;錯誤格在中間時,平常右邊那條線是鄰居的,滑過或聚焦它才四邊完整)</p>
         <FieldControlGroup block>
           <Select className="!w-[120px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
           <Input className="flex-1" defaultValue="無線滑鼠" error aria-label="篩選值" />

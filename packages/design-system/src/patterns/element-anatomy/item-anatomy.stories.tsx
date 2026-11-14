@@ -12,15 +12,15 @@ import { SelectionItem } from '@/design-system/components/SelectionControl/selec
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 /** Person avatar hover canonical helper — avatar.spec.md DS-wide rule:
  *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含)
- *  真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)*/
-const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
+ *  真實人像走照片名冊(stories-helpers/data/people.ts,2026-11-11):頭像與名片同一張臉 */
+const avatarSrc = (name: DemoPersonName, px = 96) => demoPersonPhoto(name, px)
 // 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
-const personHover = (name: string, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
+const personHover = (name: DemoPersonName, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
 import { Button } from '@/design-system/components/Button/button'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -555,7 +555,7 @@ const InspectorInner = () => {
                 <MenuItem role="presentation"
                   size={size}
                   startIcon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
-                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
+                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") } : undefined}
                   description={hasDescription ? descText : undefined}
                   tag={effectiveHasSuffix ? <Tag size={size} color="blue">Pro</Tag> : undefined}
                   labelMaxLines={propLabelClamp}
@@ -571,7 +571,7 @@ const InspectorInner = () => {
                   size={size}
                   control={<Checkbox size={size} checked={true} aria-label={labelText} />}
                   icon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
-                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
+                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") } : undefined}
                   label={labelText}
                   description={hasDescription ? descText : undefined}
                   labelMaxLines={propLabelClamp}
@@ -584,7 +584,7 @@ const InspectorInner = () => {
                 <ListItemPreview
                   size={size}
                   startIcon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
-                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
+                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") } : undefined}
                   label={labelText}
                   description={hasDescription ? descText : undefined}
                   suffix={effectiveHasSuffix ? <ChevronRight size={spec.iconPx} className="text-fg-muted" /> : undefined}

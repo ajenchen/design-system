@@ -1,8 +1,7 @@
 /* Header canonical pattern local tokens(per DataTable data-table.css 既有 local-token pattern):
    ─────────────────────────────────────────────────────────
-   Token 加入 rationale(per CLAUDE.md governance principle):
-     SSOT canonical value + 多 consumer 需 sync 即可加 local token,
-     不必硬卡 Rule of 3(清既有重複 vs spec canonical 給程式表達 是兩件事)。
+   要不要開 token 的門檻只住 tokens/token-system.spec.md 判斷流程第 0 題(本檔不重述);
+   這顆的分類(標頭樣式自己的值)、住處、產品可不可讀 → tokens/token-registry.json。
 
    --chrome-header-avatar-size:
      Chrome header brand mark avatar canonical(per `header-canonical.spec.md` 4.5

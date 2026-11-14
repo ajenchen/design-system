@@ -8,7 +8,6 @@ import { Button } from '@/design-system/components/Button/button'
 import type { SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
-import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import type { ColumnType } from './column-types'
 import { getColumnId, getColumnLabel, getColumnMeta } from './lib/column-meta'
 import {
@@ -36,6 +35,7 @@ import {
   resolveDataTableFilterPanelLabels,
   type DataTableFilterPanelLabels,
 } from './data-table-filter-labels'
+import { usePanelBulkAction } from './lib/panel-bulk-action'
 
 // Re-export public API from filter-tree(consumer 既有 import path 不變)
 export {
@@ -154,11 +154,13 @@ export interface DataTableFilterPanelProps<TData> extends Omit<React.HTMLAttribu
   /** state 變更 callback */
   onChange: (next: FilterTree) => void
   /**
-   * 管理員 set-as-default 的 baseline(refresh icon 顯示判定用)。
-   * 當 `value` ≠ `defaultValue`(deep equal)→ panel header 顯示 refresh icon,
-   * click → reset 回 defaultValue。對齊 sort 邏輯(相同 modified-from-default UX)。
+   * 產品存的預設篩選(管理員設的預設、使用者存過的檢視)。
+   * 當 `value` ≠ `defaultValue`(deep equal)→ 標題列出現「恢復預設」,按下回到 defaultValue;不傳 = 不出現。
+   * 排序面板同一條(`defaultSorting`,data-table.spec.md L4「Header 恢復預設 / 清除全部」)。
    */
   defaultValue?: FilterTree
+  /** 「加篩選」那一排最右要不要提供「清除全部」(預設 `true`)。提供時有條件列才出現,按下清掉全部條件。 */
+  clearable?: boolean
   /** Cell ⌄ menu「Filter by this」帶入的 column id(自動 add 一條 condition) */
   prefilledColumnId?: string
   onPrefillConsumed?: () => void
@@ -170,6 +172,7 @@ export interface DataTableFilterPanelProps<TData> extends Omit<React.HTMLAttribu
   maxConditions?: number
   /** Panel chrome/operator/value-picker labels. Nested maps are deep-merged with defaults. */
   labels?: Partial<DataTableFilterPanelLabels>
+  /** × 按下時的通知(選填)。× 恆渲染、關閉由 PopoverClose 內建 —— 面板必須放在 `<Popover>` 裡 */
   onClose?: () => void
   className?: string
 }
@@ -182,6 +185,7 @@ function DataTableFilterPanelInner<TData>({
   value,
   onChange,
   defaultValue,
+  clearable = true,
   prefilledColumnId,
   onPrefillConsumed,
   maxConditions,
@@ -190,6 +194,18 @@ function DataTableFilterPanelInner<TData>({
   className,
   ...props
 }: DataTableFilterPanelProps<TData>, ref: React.ForwardedRef<HTMLDivElement>): React.ReactElement {
+  // 整批動作(恢復預設 / 清除全部)按下後:焦點交給「加篩選」(停用時給 ×)、polite 播報結果(lib/panel-bulk-action.tsx)
+  const addRef = React.useRef<HTMLButtonElement>(null)
+  const dismissRef = React.useRef<HTMLButtonElement>(null)
+  const bulk = usePanelBulkAction({
+    value,
+    isEqual: isFilterTreeEqual,
+    onChange,
+    focusTargets: () => [addRef.current, dismissRef.current],
+  })
+  // 出現條件 = 按下去會改變東西(資料驅動,不看 callback 有無;M23(f))
+  const showReset = defaultValue !== undefined && !isFilterTreeEqual(value, defaultValue)
+  const showClearAll = clearable && value.children.length > 0
   const filterableColumns = React.useMemo(() => extractColumns(columns), [columns])
   const fieldOptions: SelectOption[] = React.useMemo(
     () => filterableColumns.map((c) => ({ value: c.id, label: c.label })),
@@ -361,30 +377,20 @@ function DataTableFilterPanelInner<TData>({
       {...props}
     >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
-      <SurfaceHeader className={COMPACT_HEADER_SLOT}>
-        <PopoverTitle className="flex-1">{labels.title}</PopoverTitle>
-        {/* Refresh icon — 只在 value ≠ defaultValue 時顯示(對齊 sort modified-from-default UX)
-            含 ButtonDivider 對齊「欄位顯示」+「排序」chrome corner action canonical(2026-05-04) */}
-        {defaultValue && !isFilterTreeEqual(value, defaultValue) && (
-          <>
-            <Button
-              variant="text" size="sm" iconOnly startIcon={RotateCcw}
-              aria-label={labels.resetToDefault}
-              onClick={() => onChange(defaultValue)}
-            />
-            {onClose && <ButtonDivider />}
-          </>
-        )}
-        {onClose && (
-          <PopoverClose asChild>
-            <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={labels.close} onClick={onClose} />
-          </PopoverClose>
-        )}
+      {/* 右側「恢復預設 │ ×」走 SurfaceHeader 的右側按鈕位(分隔線由 SurfaceHeader 放,overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
+          × 恆渲染(data-table.spec.md L4「Header 恢復預設 / 清除全部」;M23(f) 禁以 callback 有無當渲染閘),關閉由 PopoverClose 內建,
+          onClose 只是通知 —— 所以面板必須放在 Popover 裡(2026-11-10 前沒傳 onClose 就沒有 ×,n7 第七節 3)。 */}
+      <SurfaceHeader
+        className={COMPACT_HEADER_SLOT}
+        actions={showReset ? <Button variant="text" size="sm" iconOnly startIcon={RotateCcw} aria-label={labels.resetToDefault} onClick={(e) => { if (defaultValue) bulk.run(e, defaultValue, labels.resetToDefaultDone) }} /> : undefined}
+        dismiss={<PopoverClose asChild><Button ref={dismissRef} data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={labels.close} onClick={onClose} /></PopoverClose>}
+      >
+        <PopoverTitle>{labels.title}</PopoverTitle>
       </SurfaceHeader>
 
       {/* Body — flat / nested 條件;空條件 → 直接顯 + 加篩選 CTA(對齊 Notion / Airtable / Linear inline 派,
           無條件時不需要 Empty 元件大區塊,單顆 CTA 引導即可。SurfaceFooter 整層拔除,
-          + Add filter / + 加篩選器 inline 緊貼最後一條 row,讓 user 感受到「條件」與「加入」屬同一語境)*/}
+          + Add filter / + 加篩選器 inline 緊貼最後一條 row,讓 user 感受到「條件」與「加入」屬同一語境)。上下內距 = SurfaceBody 預設的 tight,平鋪 / 巢狀 / 群組清光都一樣:條件列與群組是一串同樣的條目 → 頂 = 筆與筆之間的距離 = 下面的塊距 tight(layoutSpace.spec.md 規則 2 表「一串同樣的條目」;群組框有底色也照這一列);只剩「加入篩選器」那一排 = element → tight;底 = 規則 4 表第 4 列與頂同值。只由 body 這一層給,群組框不加外距。data-table.spec.md L4「巢狀群組的間距」;【更正 2026-11-14】A70 曾在群組在前時改成 loose(py),user 同日下午問篩選條件第一個距頂是不是應該對齊條件之間的距離(問句;layoutSpace.spec.md 規則 2「一串同樣的條目」有原話),AI 評估同意,改回*/}
       <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
         {flatTree && flatTree.children.map((cond, idx) => (
           <FilterRow
@@ -427,16 +433,22 @@ function DataTableFilterPanelInner<TData>({
 
         {/* Inline CTA(2026-05-04 A1)— root-level「加篩選」用 tertiary(視覺輕量但有邊界,
             符合 root-CTA 視覺重量);nested 內「加入巢狀篩選」走 text variant(更輕,在 group 內 inline)
-            不放 SurfaceFooter:條件與「加入」屬同一語義群,中間插 footer 切斷敘事 */}
-        <div>
+            不放 SurfaceFooter:條件與「加入」屬同一語義群,中間插 footer 切斷敘事。
+            同一排最右「清除全部」(2026-11-11,同排序面板):tertiary variant(user 2026-11-12 「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」);沒有條件列時不出現(初次掛載自動加的那一列空條件也算一列 —— 同一句原話採用的建議選項「有任何一列就出現」);按下 = 回到空的篩選(保留 flat / nested,mode 掛載後鎖死) */}
+        <div className="flex items-center justify-between gap-2" data-panel-add-row="">
           <Button
+            ref={addRef}
             variant="tertiary" size="sm" startIcon={Plus}
             onClick={value.mode === 'flat' ? addFlatCondition : addGroup}
             disabled={!canAddCondition}
           >
             {value.mode === 'nested' ? labels.addGroup : labels.addFilter}
           </Button>
+          {showClearAll ? (
+            <Button variant="tertiary" size="sm" onClick={(e) => bulk.run(e, value.mode === 'flat' ? createEmptyFilterTree('flat') : createEmptyFilterTree('nested'), labels.clearAllDone)}>{labels.clearAll}</Button>
+          ) : null}
         </div>
+        {bulk.liveRegion}
       </SurfaceBody>
     </div>
   )
