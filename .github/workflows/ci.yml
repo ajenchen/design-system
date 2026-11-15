@@ -1092,6 +1092,11 @@ jobs:
           # 讓 H5 面對 bug 當時的真實形狀(實測會精準抓到 展示--with-tabs-in-header)。
           node scripts/dialog-height-invariant.mjs --selftest-h5
           node scripts/dialog-height-invariant.mjs
+          # Dialog 寬度檔位(2026-11-15 A18;dialog.spec.md「寬度檔位」):1440 寬四檔 400 / 480 / 640 / 960、數字與舊名 maxWidth、
+          # 700 / 375 寬往內縮、600×700 的 portalContainer 舞台裡寬高以舞台算且四邊至少 48。夾具從原始碼打包(約 1 分鐘)。
+          # 先對照組(檔位表改壞 / 寬改回 100vw / 高改回 100svh 各自必紅)再判定。
+          node scripts/dialog-width-invariant.mjs --selftest
+          node scripts/dialog-width-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
           # Switch hover 時白色圓浮出一圈灰邊)。根因是 spec 要求 thumb 邊框「與 OFF track 同色」,

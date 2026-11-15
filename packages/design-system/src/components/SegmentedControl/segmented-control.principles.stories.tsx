@@ -41,7 +41,7 @@ function ReportPeriodDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button variant="tertiary">設定報表週期</Button></DialogTrigger>
-      <DialogContent height="hug">
+      <DialogContent height="hug" width="sm">
         <DialogHeader><DialogTitle>報表週期</DialogTitle></DialogHeader>
         <DialogBody>
           <SegmentedControl value={range} onValueChange={(v) => v && setRange(v)} width="fill" aria-label="報表週期">

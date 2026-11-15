@@ -30,7 +30,7 @@
 - [DataTable](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DataTable
 - [DatePicker](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DatePicker
 - [DescriptionList](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DescriptionList
-- [Dialog](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Dialog
+- [Dialog](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg/xl — src:components/Dialog
 - [DropdownMenu](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DropdownMenu
 - [Empty](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Empty
 - [Field](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Field

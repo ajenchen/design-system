@@ -179,8 +179,8 @@ function CompleteSprintAction() {
         {/* 單獨一顆、旁邊沒有負面選項 → tertiary(story-rules「單獨的按鈕一律 tertiary」;稽核 M027) */}
         <Button size="sm" variant="tertiary">結束 Sprint 42</Button>
       </DialogTrigger>
-      {/* 確認框:開啟到關閉內容高度不變 → hug;寬度取確認框那一檔 400(dialog.spec.md「高度軸」「maxWidth」) */}
-      <DialogContent maxWidth={400} height="hug">
+      {/* 確認框:開啟到關閉內容高度不變 → hug;只有一件事(一句確認)→ sm(dialog.spec.md「高度軸」「寬度檔位」) */}
+      <DialogContent width="sm" height="hug">
         <DialogHeader>
           <DialogTitle>結束 Sprint 42?</DialogTitle>
         </DialogHeader>

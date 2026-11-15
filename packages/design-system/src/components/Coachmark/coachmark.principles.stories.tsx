@@ -255,7 +255,7 @@ export const UsageGuidance: Story = {
               {/* secondary + danger:點下去還有一層確認(button.spec.md「danger prop — 語意意圖」);確認框裡的「永久刪除」才是 primary + danger */}
               <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth="440px">
+            <DialogContent height="hug" width="sm">
               <DialogHeader><DialogTitle>是否永久刪除專案</DialogTitle></DialogHeader>
               <DialogBody><p className="text-body">此動作無法復原,所有相關任務、評論、附件都會一併刪除。</p></DialogBody>
               <DialogFooter>

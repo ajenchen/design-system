@@ -145,6 +145,12 @@ Source(AI 讀此看官方範例): src/components/DescriptionList/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Dialog/
 
+### Sizes
+- **sm**: 寬度檔位 400px —— 只有一件事:一兩句話(確認、刪除確認、告知、離開不儲存)或一個控制項(改名輸入框、一個選單)
+- **md**: 寬度檔位 480px ★ 預設 —— 幾件事疊成一欄:多欄位表單、說明加欄位、成員清單;不確定時用它
+- **lg**: 寬度檔位 640px —— 有一件東西本身就寬:表格、拖放上傳區、圖片預覽;只有文字時不用
+- **xl**: 寬度檔位 960px —— 兩欄並排(主內容 + 資訊欄)或 lg 放不下的表格;建議上限
+
 ## DropdownMenu(family 1)
 
 Storybook: https://ajenchen-design-system.netlify.app

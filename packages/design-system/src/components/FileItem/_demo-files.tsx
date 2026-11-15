@@ -56,7 +56,7 @@ function ErrorWithLog({ text, file }: { text: string; file: string }) {
         View log
       </a>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent height="hug">
+        <DialogContent height="hug" width="sm">
           <DialogHeader>
             <DialogTitle>上傳紀錄 · {file}</DialogTitle>
           </DialogHeader>

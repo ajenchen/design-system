@@ -421,7 +421,7 @@ function Shell({ title, children, footer }) {
     <div>
       <button type="button" data-open onClick={() => setOpen(true)}>開啟 {title}</button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="scene-dialog" height="hug" maxWidth={720}>
+        <DialogContent id="scene-dialog" height="hug" width={720}>
           <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
           <DialogBody>{children}</DialogBody>
           {footer ? <DialogFooter>{footer}</DialogFooter> : null}
@@ -543,7 +543,7 @@ function MenuScene() {
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="scene-dialog" height="hug" maxWidth={440}>
+        <DialogContent id="scene-dialog" height="hug" width={440}>
           <DialogHeader><DialogTitle>重新命名</DialogTitle></DialogHeader>
           <DialogBody><label>名稱<input defaultValue="發布公告草稿" /></label></DialogBody>
         </DialogContent>
@@ -703,7 +703,7 @@ function ModalExitScene() {
     <div style={{ display: 'flex', gap: 12, padding: 16 }}>
       <Dialog open={dlg} onOpenChange={setDlg}>
         <DialogTrigger asChild><Button data-exit-trigger="dialog">新增成員</Button></DialogTrigger>
-        <DialogContent data-exit-probe="dialog" height="hug" maxWidth={440}>
+        <DialogContent data-exit-probe="dialog" height="hug" width={440}>
           <DialogHeader><DialogTitle>新增成員</DialogTitle></DialogHeader>
           <DialogBody><label>Email<input defaultValue="ada@acme.com" /></label></DialogBody>
         </DialogContent>
@@ -719,7 +719,7 @@ function ModalExitScene() {
       <button type="button">之後二</button>
       <Dialog open={save} onOpenChange={setSave}>
         <DialogTrigger asChild><Button data-exit-trigger="save">重新命名</Button></DialogTrigger>
-        <DialogContent data-exit-probe="save" height="hug" maxWidth={440}>
+        <DialogContent data-exit-probe="save" height="hug" width={440}>
           <DialogHeader><DialogTitle>重新命名</DialogTitle></DialogHeader>
           <DialogBody><Button data-exit-save onClick={() => setTimeout(() => setSave(false), 50)}>儲存</Button></DialogBody>
         </DialogContent>

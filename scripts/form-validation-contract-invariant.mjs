@@ -460,7 +460,7 @@ function DialogForm() {
     <section aria-label="對話框表單" data-submits={submits} data-submit-clicks={clicks}>
       <button type="button" data-open-dialog onClick={() => setOpen(true)}>開啟設定</button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="form-dialog" height="hug" maxWidth={480}>
+        <DialogContent id="form-dialog" height="hug" width={480}>
           <DialogHeader><DialogTitle>專案設定</DialogTitle></DialogHeader>
           <DialogBody>
             <form aria-label="對話框設定" onSubmit={form.handleSubmit}>

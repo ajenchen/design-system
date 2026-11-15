@@ -996,7 +996,7 @@ const STATIC_MUTANTS = [
   // S1:Toast「有標題與描述」2026-10-20 前的右欄 —— 整組設 dark、沒宣告字色(欄標在淺色頁白字白底);OverflowIndicator 那一種同時會紅 S2,另由頁面 R1 量
   ['S1', 'packages/design-system/src/__selftest__/toast-columns-before.tsx', 'const a = <ExampleGroup data-theme="dark"><span className="text-caption text-fg-secondary font-medium">dark mode</span></ExampleGroup>'],
   ['S2', 'packages/design-system/src/__selftest__/trigger-showcase-before.tsx', 'const b = <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-[var(--layout-space-loose)]"><div>Ada Chen</div></HoverCardContent>'],
-  ['S3', 'packages/design-system/src/__selftest__/dialog-before.tsx', 'const c = <DialogContent autoHeight maxWidth={480}><div /></DialogContent>'],
+  ['S3', 'packages/design-system/src/__selftest__/dialog-before.tsx', 'const c = <DialogContent autoHeight width={480}><div /></DialogContent>'],
   ['S4', 'packages/design-system/src/__selftest__/popover-principles-before.tsx', 'const d = <Button variant="tertiary">檔案操作 ▾</Button>'],
   ['S5', 'packages/design-system/src/__selftest__/combobox-before.spec.md', '由浮層 `PopoverContent` 的 `onEscapeKeyDown` 經同一支模組的 `withImeSafeEscape` 擋掉'],
   ['S6', 'packages/design-system/src/__selftest__/dialog-stories-before.tsx', 'const e = <Button variant="tertiary">開啟成員列表(大 item:avatar+desc)</Button>'],

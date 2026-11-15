@@ -72,7 +72,7 @@ export function ConfirmAction({
     <>
       {children(() => setOpen(true))}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent height="hug" maxWidth={480}>
+        <DialogContent height="hug" width="sm">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>

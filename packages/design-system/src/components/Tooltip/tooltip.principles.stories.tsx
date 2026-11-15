@@ -65,7 +65,7 @@ export const UsageGuidance: Story = {
               </TooltipTrigger>
               <TooltipContent>此動作會永久刪除所有資料且無法復原</TooltipContent>
             </Tooltip>
-            <DialogContent>
+            <DialogContent width="sm">
               <DialogHeader>
                 <DialogTitle>是否永久刪除帳號</DialogTitle>
               </DialogHeader>

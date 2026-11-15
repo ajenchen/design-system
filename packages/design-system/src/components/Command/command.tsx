@@ -379,6 +379,7 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
   // lib/overlay-focus-return.ts 還,指標挑選不畫鍵盤框),本檔那份 RememberFocusOrigin 收掉,不留第二份。
   return (
     <Dialog {...props}>
+      {/* 寬 = 預設 md(搜尋列 + 清單疊成一欄;dialog.spec.md「寬度檔位」)。2026-11-15 前吃舊預設 512 */}
       <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" height="hug">
         <DialogTitle className="sr-only">{title}</DialogTitle>
         {/* data-dialog-body:讓 DialogContent 的 onOpenAutoFocus 把焦點放進搜尋列(它只認 [data-dialog-body] 內的

@@ -28,7 +28,10 @@ import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescript
  * `--chrome-header-height` 48/56)。詳 dialog.spec.md「Density」節。
  *
  * ── Viewport Inset ──
- * Modal 與 viewport 四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見下方 DIALOG_INSET_VAR)。
+ * Modal 與所在區塊(視窗,或 portalContainer 舞台)四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見下方 DIALOG_INSET_VAR)。
+ *
+ * ── 寬度 ──
+ * `width` = 檔位 sm 400 / md 480(預設)/ lg 640 / xl 960,或數字 px;都是最大寬,受上面的 inset 夾住、沒有下限。舊名 maxWidth 留一版(@deprecated)。
  *
  * ── 高度行為 ──
  * 預設：height 填滿 viewport（扣除 inset），body 捲動。防止動態內容跳動。
@@ -62,6 +65,17 @@ const DialogClose = DialogPrimitive.Close
 // Modal 與 viewport 四邊的最小間距。2026-09-11 從 `--layout-space-bottom`(語意 = 結論留白)拆成同 family 的另一個 role token:
 // 兩者值都是 48px,但語意不同,耦合在一起會讓「調結論留白」意外改掉全站 Dialog 的高度與最大寬度(見 token 註解)。
 const DIALOG_INSET_VAR = 'var(--layout-space-viewport-inset)'
+// 寬度檔位(2026-11-15 A18;user 2026-11-11「對話框寬:訂檔位」,定義與用途 → dialog.spec.md「寬度檔位」)。值 = 寬螢幕時的寬,也是上限。
+// 檔位表**只住這裡**與 spec 那張表(元件級常數,同 Toast 360、AgentPanel 400 / 640;不開全域 token)。DS 自己的元件、範例只寫檔名。
+// 閘:scripts/dialog-width-invariant.mjs(1440 寬量到這四個值;--selftest 把表改壞必紅)。
+const DIALOG_WIDTH_TIERS = { sm: 400, md: 480, lg: 640, xl: 960 } as const
+type DialogWidthTier = keyof typeof DIALOG_WIDTH_TIERS
+// 所在區塊(containing block)的寬 / 高:沒傳 portalContainer → 視窗;傳了 → 那個帶 transform 的舞台(fixed 以它為準)。
+// 2026-11-15 前寫 100vw / 100svh,外框的 w-full 卻以所在區塊算 —— 放進比視窗窄或矮的並存舞台時四邊少於 48、超出的部分被舞台裁掉
+// (dialog.spec.md「Viewport Inset」;閘 dialog-width-invariant W3 實量,--selftest 改回 100vw / 100svh 必紅)。
+// 高另取 min(100svh, …):保留行動裝置網址列那道安全帽(下方 availableH 註解);沒傳 portalContainer 時兩者等值,畫面不變。
+const DIALOG_BLOCK_WIDTH = '100%'
+const DIALOG_BLOCK_HEIGHT = 'min(100svh, 100%)'
 // 並存捲動鎖的「沒有 shards」:同一個參照,預設路徑的 effect 設回它時 React 會 bail out,不多一次 render。
 const NO_SCROLL_SHARDS: Array<{ current: Element }> = []
 
@@ -87,7 +101,23 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 // bg/rounded/shadow + onOpenAutoFocus),恆渲染 {children}(consumer body,通常 Header+Body+Footer
 // 多節點)→ <Content asChild> Radix Slot React.Children.only crash。children 保留(consumer body)。
 interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'asChild'> {
-  /** 最大寬度。預設 512px。傳 number 視為 px。 */
+  /**
+   * 寬度 —— 檔位名或數字(px),兩種都是**最大寬**:實際寬 = min(此值, 所在區塊寬 − 2 × `--layout-space-viewport-inset`),
+   * 視窗(或 `portalContainer` 舞台)窄了就往內縮、四邊至少 48,沒有下限。預設 `'md'`。
+   *
+   * - `'sm'` 400:只有一件事 —— 一兩句話(確認、刪除確認、告知、離開不儲存),或一個控制項(改名輸入框、一個選單)。
+   * - `'md'` 480(預設):幾件事疊成一欄 —— 多欄位表單、說明加欄位、成員清單。不確定時用它。
+   * - `'lg'` 640:有一件東西本身就寬 —— 表格、拖放上傳區、圖片預覽。只有文字時不用。
+   * - `'xl'` 960:兩欄並排(主內容 + 資訊欄),或 lg 放不下的表格;這是建議上限。
+   * - 數字(px):檔位不適用的產品特例,不設上限、不擋;比 xl 還大的內容先考慮改成頁面或側板。DS 自己的元件與範例只寫檔位名。
+   *
+   * 內容不得橫向捲動,放不下往上一檔。選檔規則與世界級出處:`dialog.spec.md`「寬度檔位」。
+   */
+  width?: DialogWidthTier | number
+  /**
+   * @deprecated 改用 `width`(檔位名或數字)。保留一個版本:number 視為 px、string 原樣當 CSS 寬,畫面不變;
+   * 與 `width` 同時傳時 `width` 勝(開發模式 warn)。
+   */
   maxWidth?: string | number
   /**
    * 高度軸 —— **只決定「怎麼長」,不決定「多高」**(多高由 `maxHeight` 管,兩者正交)。
@@ -106,11 +136,11 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
    */
   height?: 'fill' | 'hug'
   /**
-   * 最大高度 —— **只能選更矮的上限**。預設上限 = 視窗可用高度(`100svh - inset*2`);
-   * 傳值時取 `min(視窗可用高度, 此值)`,傳再大也不會超過視窗。傳 number 視為 px。
+   * 最大高度 —— **只能選更矮的上限**。預設上限 = 所在區塊的可用高度(`min(100svh, 所在區塊高) - inset*2`;沒傳 `portalContainer` 時就是視窗);
+   * 傳值時取 `min(可用高度, 此值)`,傳再大也不會超過所在區塊。傳 number 視為 px。
    *
-   * 形狀照 `DropdownMenu` 的 `maxHeight`(同樣是 min(視窗剩餘, 自訂));型別照本元件自己的 `maxWidth`
-   * (`string | number`)—— 高度更需要 string,才寫得出 `60svh` / `calc(100svh - 120px)`。
+   * 形狀照 `DropdownMenu` 的 `maxHeight`(同樣是 min(視窗剩餘, 自訂));型別照 DS 上下限的寫法
+   * (`string | number`,props-naming.md「尺寸參數」)—— 高度更需要 string,才寫得出 `60svh` / `calc(100svh - 120px)`。
    */
   maxHeight?: string | number
   /**
@@ -143,7 +173,7 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+>(({ className, width, maxWidth, height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
   const persistentElementsCtx = React.useContext(DialogCoexistContext)
   const persistentElements = persistentElementsProp ?? persistentElementsCtx
   const modal = React.useContext(DialogModalContext) && !persistentElementsProp
@@ -226,8 +256,20 @@ const DialogContent = React.forwardRef<
   // `svh`(small viewport height)不是 `vh`:行動裝置的網址列收合時 `100vh` 會大於實際可視高度,
   // 對話框底部(通常是主要動作鈕)會被切掉。DS 其他填滿視窗的外框已經是這個選擇
   // (`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`),Dialog 跟上。桌機兩者等值。
-  const availableH = `calc(100svh - ${insetCalc})`
-  const maxWidthCss = typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth
+  // 2026-11-15 起再與所在區塊高取小(DIALOG_BLOCK_HEIGHT):傳 portalContainer 時上限以舞台算。
+  const availableH = `calc(${DIALOG_BLOCK_HEIGHT} - ${insetCalc})`
+  // 寬:width(檔位名或 px)> 舊名 maxWidth(@deprecated,照舊當寬:number = px、string 原樣)> 預設 md。新名勝舊名(props-naming.md「尺寸參數」第 5 條)。
+  if (process.env.NODE_ENV !== 'production' && width != null && maxWidth != null) {
+    console.warn('[DialogContent] `width` 與 `maxWidth` 同時傳了;`maxWidth` 已 deprecated,這次以 `width` 為準。')
+  }
+  const tierPx = typeof width === 'string' ? DIALOG_WIDTH_TIERS[width] : undefined
+  if (process.env.NODE_ENV !== 'production' && typeof width === 'string' && tierPx === undefined) {
+    console.warn(`[DialogContent] 不認得的寬度檔位 \`${width}\`(只有 sm / md / lg / xl,或傳數字 px);這次以 md 為準。`)
+  }
+  const widthCss = typeof width === 'number' ? `${width}px`
+    : width != null ? `${tierPx ?? DIALOG_WIDTH_TIERS.md}px`
+    : maxWidth != null ? (typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth)
+    : `${DIALOG_WIDTH_TIERS.md}px`
   const maxHeightCss = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
   // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」。
   // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗。
@@ -328,7 +370,8 @@ const DialogContent = React.forwardRef<
       )}
       style={{
         boxShadow: 'var(--elevation-200)',
-        maxWidth: `min(${maxWidthCss}, calc(100vw - ${insetCalc}))`,
+        // 兩種寫法都是最大寬,只受所在區塊四邊的 inset 夾住、沒有下限(dialog.spec.md「寬度檔位」)
+        maxWidth: `min(${widthCss}, calc(${DIALOG_BLOCK_WIDTH} - ${insetCalc}))`,
         ...heightStyle,
         ...style,
       }}
@@ -505,8 +548,13 @@ export const dialogMeta = {
   variants: {
 
   },
+  // 寬度檔位(2026-11-15 A18):key 對齊 dialog.spec.md frontmatter `sizes`(scripts/compile-stories.mjs 比對 key);
+  // 數值只住上方 DIALOG_WIDTH_TIERS 與 spec 檔位表,這裡不再寫一份(寬度檔沒有控件的高度 / 圖示 / 字級三欄)。
   sizes: {
-
+    sm: {},
+    md: {},
+    lg: {},
+    xl: {},
   },
   // 2026-07-04 audit 對齊:容器無 hover/active/disabled 態(spec「狀態處理的職責邊界」明文;對齊 popover meta 已修 pattern)
   states: ['default'],

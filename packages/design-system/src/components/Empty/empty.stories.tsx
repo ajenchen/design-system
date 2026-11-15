@@ -122,7 +122,8 @@ function SprintBacklog() {
         }
       />
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent height="hug">
+        {/* 只有一個欄位(任務名稱)→ sm(dialog.spec.md「寬度檔位」) */}
+        <DialogContent height="hug" width="sm">
           <DialogHeader>
             <DialogTitle>建立任務</DialogTitle>
           </DialogHeader>

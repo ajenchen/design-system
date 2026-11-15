@@ -134,7 +134,8 @@ function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitL
   }
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent height="hug">
+      {/* 只有一個欄位 → sm(dialog.spec.md「寬度檔位」) */}
+      <DialogContent height="hug" width="sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -165,7 +166,7 @@ function ConfirmDeleteDialog({ open, onOpenChange, title, confirmLabel = '刪除
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent height="hug">
+      <DialogContent height="hug" width="sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

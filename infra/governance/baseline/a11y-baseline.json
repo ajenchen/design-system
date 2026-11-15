@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-15T05:37:33.131Z",
-    "stories": 1082,
+    "generatedAt": "2026-11-15T15:43:17.383Z",
+    "stories": 1084,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -388,9 +388,11 @@
       "design-system-components-descriptionlist-設計規格--state-behavior",
       "design-system-components-dialog-展示--default",
       "design-system-components-dialog-展示--destructive",
+      "design-system-components-dialog-展示--extra-large-two-column",
       "design-system-components-dialog-展示--focus-trap-control-no-dialog",
       "design-system-components-dialog-展示--focus-trap-with-concurrent-overlay",
       "design-system-components-dialog-展示--header-actions",
+      "design-system-components-dialog-展示--large-with-table",
       "design-system-components-dialog-展示--list-body",
       "design-system-components-dialog-展示--long-content",
       "design-system-components-dialog-展示--open-snapshot",
@@ -1087,7 +1089,7 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "d84750d9ada3ef0942745d336739dca41e4c61390328e32a19d534b722bf171a",
+    "storyIdsSha256": "02ffcc3c632f31727572e08b867b7c6d18a17794d91cbb10bdaaf6c13c3efb59",
     "fingerprints": 731
   },
   "fingerprints": {

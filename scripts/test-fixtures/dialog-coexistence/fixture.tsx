@@ -29,7 +29,7 @@ function Fixture() {
         <Button id="coexist-background-btn" variant="primary" onClick={() => setOpen(true)}>開啟</Button>
         {stage && (
           <Dialog open={open} onOpenChange={setOpen} persistentElements={keep}>
-            <DialogContent maxWidth={480} height="hug" portalContainer={stage}>
+            <DialogContent width={480} height="hug" portalContainer={stage}>
               <DialogHeader>
                 <DialogTitle>任務 #4821</DialogTitle>
                 <DialogDescription>並存契約夾具</DialogDescription>

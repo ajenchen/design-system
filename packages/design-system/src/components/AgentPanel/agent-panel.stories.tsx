@@ -904,7 +904,8 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
   React.useEffect(() => () => onDirtyChange(false), [onDirtyChange])
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }} persistentElements={persistentElements}>
-      <DialogContent maxWidth={480} height="hug" portalContainer={portalContainer} aria-describedby={undefined} onCloseAutoFocus={onCloseAutoFocus}>
+      {/* 寬 = 預設 md:四個欄位疊成一欄(dialog.spec.md「寬度檔位」) */}
+      <DialogContent height="hug" portalContainer={portalContainer} aria-describedby={undefined} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader
           actions={task && onDelete
             ? <Button id="demo-task-delete" variant="text" danger iconOnly size="sm" startIcon={Trash2} aria-label="刪除任務" onClick={onDelete} />
@@ -961,7 +962,7 @@ function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {
 }) {
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent maxWidth={400} height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
+      <DialogContent width="sm" height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>確定要刪除這個任務?</DialogTitle>
         </DialogHeader>
@@ -989,7 +990,7 @@ function ConfirmLeaveDialog({ task, onStay, onLeave, portalContainer }: {
 }) {
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onStay() }}>
-      <DialogContent maxWidth={400} height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
+      <DialogContent width="sm" height="hug" portalContainer={portalContainer} aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>要放棄未儲存的修改?</DialogTitle>
         </DialogHeader>

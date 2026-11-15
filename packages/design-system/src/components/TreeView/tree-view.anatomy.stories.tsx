@@ -508,7 +508,7 @@ function StateBehaviorDemo() {
           </TreeView>
         </div>
         <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-          <DialogContent height="hug">
+          <DialogContent height="hug" width="sm">
             {renaming && <RenameMemberForm key={renaming.id} member={renaming} onSave={saveRename} />}
           </DialogContent>
         </Dialog>

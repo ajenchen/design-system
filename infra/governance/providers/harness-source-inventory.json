@@ -637,6 +637,7 @@
           "scripts/test-data-table-multi-sort-invariant.mjs",
           "scripts/test-data-table-pinned-resize-invariant.mjs",
           "scripts/test-dialog-coexistence-invariant.mjs",
+          "scripts/test-dialog-width-invariant.mjs",
           "scripts/test-field-text-left-edge-invariant.mjs",
           "scripts/test-header-content-sides-invariant.mjs",
           "scripts/test-header-first-gap-invariant.mjs",

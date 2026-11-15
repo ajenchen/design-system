@@ -25,7 +25,7 @@ function DeleteWorkspaceButton() {
       <DialogTrigger asChild>
         <Button variant='secondary' danger>永久刪除工作區</Button>
       </DialogTrigger>
-      <DialogContent height='hug'>
+      <DialogContent height='hug' width='sm'>
         <DialogHeader>
           <DialogTitle>永久刪除工作區?</DialogTitle>
         </DialogHeader>

@@ -248,6 +248,7 @@
     "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs",
     "peer:evidence-pack": "node scripts/build-peer-evidence-pack.mjs",
     "test:dialog-height": "node scripts/dialog-height-invariant.mjs",
+    "test:dialog-width": "node scripts/dialog-width-invariant.mjs && node scripts/dialog-width-invariant.mjs --selftest",
     "test:token-creation": "node scripts/token-creation-invariant.mjs",
     "test:categorical-color": "node scripts/categorical-color-invariants.mjs && node scripts/test-categorical-color-invariants.mjs",
     "test:token-twin": "node scripts/test-token-twin-invariant.mjs",

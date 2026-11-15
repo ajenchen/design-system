@@ -49,7 +49,7 @@ export const Overview: Story = {
               {[
                 ['height', "'fill' | 'hug'", "'fill'", "'hug'=隨內容長高 / 'fill'=填滿可用高度(body 捲動);判準:開啟期間內容高度會不會變(舊名 autoHeight 已停用)"],
                 ['maxHeight', 'string | number', '—', '只能選更矮的上限:min(視窗可用高度, 此值)'],
-                ['maxWidth', 'string | number', "'512px'", 'Content 最大寬度(傳 number 視為 px,亦可傳 CSS 值如 32rem),受 viewport inset 限制'],
+                ['width', "'sm' | 'md' | 'lg' | 'xl' | number", "'md'", '寬度檔位或數字(px),兩種都是最大寬:實際寬 = min(此值, 所在區塊寬 − 96),沒有下限。檔位見「尺寸對照表」;數字只給檔位不適用的產品特例(舊名 maxWidth 已停用,保留一個版本、畫面不變)'],
                 ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作(上一筆 / 下一筆 / ⋮ 更多);DS 自動在 actions 與關閉 × 之間放分隔線,防誤觸關閉'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -67,33 +67,35 @@ export const SizeMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-10">
       <div>
-        <H3>四種常見 maxWidth tier</H3>
+        <H3>寬度檔位</H3>
         <Desc>
-          Dialog 沒有 <code>size</code> prop(跟 Button / Input 的 sm/md/lg 不同)——由 <code>maxWidth</code>(px number)
-          直接控制。選擇 tier 依內容量:confirmation → 400;form → 480;complex form → 560;rich form /
-          dashboard → 720。Viewport 小於 maxWidth 時自動收到 inset 內(48px 四邊留白)。
+          <code>width</code> 收四個檔名或數字(px),預設 <code>md</code>。數字是寬螢幕時的寬,也是上限;寬度不隨密度變,內距隨密度變(md 16 / lg 24),所以內容寬列兩組。
+          怎麼選:一件 → sm;多件疊成一欄 → md;有一件很寬 → lg;兩欄 → xl。內容不得橫向捲動,放不下往上一檔。
+          開起來的樣子:<StoryLink kind="Design System/Components/Dialog/展示" name="大檔位:對話框裡放表格">大檔位</StoryLink>、
+          <StoryLink kind="Design System/Components/Dialog/展示" name="超大檔位:兩欄記錄詳情">超大檔位</StoryLink>。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
             <thead>
               <tr>
-                <Th>maxWidth</Th>
-                <Th>使用場景</Th>
-                <Th>content 範例</Th>
+                <Th>檔位</Th>
+                <Th>寬</Th>
+                <Th>內容寬(md / lg 密度)</Th>
+                <Th>放什麼</Th>
               </tr>
             </thead>
             <tbody>
-              <tr><Td mono>400</Td><Td>Confirmation / alert</Td><Td>「確定要刪除?」/「儲存變更?」</Td></tr>
-              <tr><Td mono>480</Td><Td>Simple form</Td><Td>建立專案、改密碼、邀請成員(1-3 fields)</Td></tr>
-              <tr><Td mono>512 ★ default</Td><Td>Medium form</Td><Td>通用表單 4-6 fields</Td></tr>
-              <tr><Td mono>560</Td><Td>Detailed form</Td><Td>建立完整 issue、商品資訊</Td></tr>
-              <tr><Td mono>720</Td><Td>Rich form / dashboard preview</Td><Td>多欄位表單、嵌入 data preview</Td></tr>
+              <tr><Td mono>sm</Td><Td mono>400</Td><Td mono>368 / 352</Td><Td>只有一件事:一兩句話(確認、刪除確認、告知、離開不儲存),或一個控制項(改名輸入框、一個選單)</Td></tr>
+              <tr><Td mono>md ★ 預設</Td><Td mono>480</Td><Td mono>448 / 432</Td><Td>幾件事疊成一欄:多欄位表單、說明加欄位、成員清單。不確定時用它</Td></tr>
+              <tr><Td mono>lg</Td><Td mono>640</Td><Td mono>608 / 592</Td><Td>有一件東西本身就寬:表格、拖放上傳區、圖片預覽。只有文字時不用</Td></tr>
+              <tr><Td mono>xl</Td><Td mono>960</Td><Td mono>928 / 912</Td><Td>兩欄並排(主內容 + 資訊欄)或 lg 放不下的表格。建議上限</Td></tr>
             </tbody>
           </table>
         </div>
         <p className="text-footnote text-fg-muted">
-          Dialog 在 viewport 小於 <code>maxWidth + 96px</code> 時自動縮到 inset 內——48px 四邊 viewport padding
-          是硬上限(token: <code>--layout-space-viewport-inset</code>);實際渲染寬度 = min(viewport − 96px, maxWidth)。
+          實際寬 = min(檔位或數字, 所在區塊寬 − 96px):四邊各留 <code>--layout-space-viewport-inset</code>(48px),沒有下限。
+          所在區塊平常是視窗;傳 <code>portalContainer</code> 時是那個舞台。各檔開始內縮的寬:sm 496 / md 576 / lg 736 / xl 1056。
+          產品自填數字不設上限,但先用檔位;比 xl 還大的內容先考慮改成頁面或側板。規則與出處住 dialog.spec.md「寬度檔位」。
         </p>
       </div>
     </div>

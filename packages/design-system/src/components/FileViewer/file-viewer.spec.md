@@ -19,7 +19,7 @@ benchmark:
 
 FileViewer 是**可延伸的網頁檔案預覽殼層(modal fullscreen)**——負責 overlay / toolbar / 鍵盤 / filmstrip / 詳細資訊面板一切 chrome,檔案本體由 **renderer registry** 按 file type 決定誰渲染。MVP 內建 `ImageRenderer` + `FallbackRenderer`,未來可透過 `registerFileRenderer()` 擴充 PDF / Video / Code 等 renderer 而不動 shell。
 
-**實作基礎**:自建 composite——直接消費 Radix `DialogPrimitive` 而非 DS 的 `<Dialog>` wrapper。原因:FileViewer 需要 edge-to-edge fullscreen(無 viewport inset / 無 rounded-lg / 無 maxWidth),這些全要覆寫 `<Dialog>` 預設。直接消費 Radix primitive 讓 shell 擁有完整 layout 控制權,同時保有 Radix focus trap(FocusScope)/ Esc / modal 隔離(`hideOthers` 對背景兄弟樹加 `aria-hidden`;Radix `react-dialog@1.1.x` 不輸出 `aria-modal` 屬性)的結構優勢。內部消費 DS 元件:`<Button>` / `<Input>` / `<Empty>` / `<Separator>` / `<AspectRatio>` / `<Textarea>` / `<Field>`+`<FieldLabel>` / `<DescriptionList>` / `<ScrollArea>` / `<DropdownMenu>` / `<ChromeHeader>` / `ItemInlineActionButton` + `patterns/horizontal-overflow`。
+**實作基礎**:自建 composite——直接消費 Radix `DialogPrimitive` 而非 DS 的 `<Dialog>` wrapper。原因:FileViewer 需要 edge-to-edge fullscreen(無 viewport inset / 無 rounded-lg / 無寬度檔位上限),這些全要覆寫 `<Dialog>` 預設。直接消費 Radix primitive 讓 shell 擁有完整 layout 控制權,同時保有 Radix focus trap(FocusScope)/ Esc / modal 隔離(`hideOthers` 對背景兄弟樹加 `aria-hidden`;Radix `react-dialog@1.1.x` 不輸出 `aria-modal` 屬性)的結構優勢。內部消費 DS 元件:`<Button>` / `<Input>` / `<Empty>` / `<Separator>` / `<AspectRatio>` / `<Textarea>` / `<Field>`+`<FieldLabel>` / `<DescriptionList>` / `<ScrollArea>` / `<DropdownMenu>` / `<ChromeHeader>` / `ItemInlineActionButton` + `patterns/horizontal-overflow`。
 
 **Layout Family**:**非上述 family — composite / multi-region**(Toolbar + Viewport + 可選 InfoPanel + 可選 Filmstrip)。見下「Layout Family Rationale」段。
 
@@ -47,7 +47,7 @@ Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(ful
 
 | 偏離點 | Canonical | 本元件做法 | 理由 |
 |--------|-----------|-----------|------|
-| Overlay 浮層 | 一般 modal 用 `<Dialog>` | 直接消費 `DialogPrimitive.Root/Content` | 需要 edge-to-edge fullscreen,Dialog 的 inset / rounded-lg / maxWidth 全要覆寫;直接用 Radix primitive 避免對抗 wrapper |
+| Overlay 浮層 | 一般 modal 用 `<Dialog>` | 直接消費 `DialogPrimitive.Root/Content` | 需要 edge-to-edge fullscreen,Dialog 的 inset / rounded-lg / 寬度檔位上限全要覆寫;直接用 Radix primitive 避免對抗 wrapper |
 | Theme 鎖定 | 一般元件繼承頁面 theme | Content 內包 `data-theme="dark"` subtree | Viewer chrome 需暗色氛圍讓圖片 / media 顯色正確(對齊 Tooltip pattern——`data-theme="dark"` subtree 是 DS 已有的 canonical 手法) |
 | Anatomy 5-story | 完整 5 件套(Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior) | 保留全部 5 件套;Inspector 以多 toggle 並列方式展示(showFilmstrip × readOnly × allowDownload × filesCount) | FileViewer 決策維度 `mode × files count × readOnly × allowDownload × showFilmstrip` 雖超過一般單維 Inspector 範圍,仍值得提供 live 可切換預覽;多 toggle 並列讓 reviewer 一次看到「配置 → 結果」關係,StateBehavior 再補場景矩陣 |
 | Layout Family | 聲明 1/2/3/4 家族 | 聲明「非 family — composite」 | 見上「Layout Family Rationale」段 |
