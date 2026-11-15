@@ -81,6 +81,8 @@ paths:
 **4 名關閉 / 移除 callback**(詳 `packages/design-system/ds-canonical/references/props-naming.md`):
 `onClose` / `onDismiss` / `onRemove` / `onClear` 各有語意不合併。
 
+**尺寸參數**(2026-11-15 user「尺寸:甲」):寬怎麼長一律 `width`(`'fill'` 撐滿 / `'hug'` 跟內容 / 數字 px),高同理;上下限 `minWidth` / `maxWidth` / `minHeight` / `maxHeight`;`size` 只當檔位。禁 `fullWidth` / `block` / `autoWidth` 這類同義名。詳 `packages/design-system/ds-canonical/references/props-naming.md`「尺寸參數」(唯一住處),閘 `scripts/sizing-props-invariant.mjs`。
+
 **Badge 命名按放置**:`badge`(inline)/ `overlayBadge`(疊視覺重心 iconOnly)/ `badgeCount`(Avatar count)/ `status`(presence dot — Avatar / ProfileCard / PeoplePicker;另有 lifecycle value-set 用於 FileItem / FileUpload / ProgressBar,詳 `props-naming.md`)。
 
 **Icon canonical**:Overflow `MoreVertical` / Breadcrumb ellipsis `MoreHorizontal` / Close `X` / 成功 `Check` / 警告 `TriangleAlert` / 資訊 `Info`。

@@ -175,7 +175,7 @@ export const InlineTableCell: Story = {
       title="配額使用率(DataTable inline)"
       description="Table cell 內顯示配額使用率(4px 細線不搶走主要欄位的閱讀重量)。value affix 讓使用者快速讀數字。"
     >
-      <DataTable columns={quotaColumns} data={quotaRows} getRowId={(r) => r.name} height="auto" />
+      <DataTable columns={quotaColumns} data={quotaRows} getRowId={(r) => r.name} maxHeight="none" />
     </ExampleSection>
   ),
 }

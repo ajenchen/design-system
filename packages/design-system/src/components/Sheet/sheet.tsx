@@ -119,6 +119,13 @@ interface SheetContentProps
    * 消費者:AppShell 的 Menu 浮層(`<AppShell portalContainer>` 一路帶到這裡;2026-10-15 r1b 複驗 F10)。
    */
   portalContainer?: HTMLElement | null
+  /**
+   * 側板寬(px;2026-11-15,`ds-canonical/references/props-naming.md`「尺寸參數」= user「尺寸:甲」)。不傳 = 預設
+   * 視窗 75%、640px 以上最寬 28rem(`w-3/4 sm:max-w-md`,畫面不變)。傳了 = 這個寬,但仍不超過畫布的 75%
+   * (與預設同一條「旁邊永遠留得出點得到的遮罩」)。只作用在 `side="right"` / `"left"`(上 / 下側板的寬恆是整條)。
+   * 2026-11-15 前只能用 `className="sm:max-w-lg"` 改(沒有型別;className 仍可用,但改寬走這個參數)。
+   */
+  width?: number
 }
 
 // AutoFocus canonical(對齊 Dialog / Material / Polaris)— 見 dialog.tsx handleOpenAutoFocus 註解
@@ -140,7 +147,10 @@ export const handleSheetOpenAutoFocus = (e: Event) => {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, portalContainer, ...props }, ref) => {
+>(({ side = "right", className, style, width, children, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, portalContainer, ...props }, ref) => {
+  // width={數字}(左 / 右側板):寬 = min(指定, 75%),並拿掉預設 class 的 sm:max-w-md 上限(inline style 勝過 class;consumer 的 style 最後展開,仍可蓋)
+  const widthStyle: React.CSSProperties | undefined =
+    width != null && (side === "right" || side === "left") ? { width: `min(${width}px, 75%)`, maxWidth: "none" } : undefined
   // 關閉後焦點還給開啟者(2026-10-01 預設,待辦總帳 OE29;同 DialogContent):受控 `open`、沒有 SheetTrigger 開的側板,Radix 沒有東西可還。
   // 內容掛上時記下開啟者,關閉時找不到 Radix 觸發點就由全 DS 一支 lib/overlay-focus-return.ts 還;consumer 自己接了的(Sidebar 的 Menu 浮層)照舊先跑、擋了預設就不接。
   const modal = React.useContext(SheetModalContext)
@@ -183,6 +193,7 @@ const SheetContent = React.forwardRef<
         onCloseAutoFocus={exitFocus.onCloseAutoFocus}
         // Sheet 不自設 density,繼承 page 層級的 `html[data-density]`(2026-04-21 canonical 定案)
         className={cn(sheetVariants({ side }), className)}
+        style={widthStyle ? { ...widthStyle, ...style } : style}
         {...descriptionPresence.descriptionPresenceProps}
         {...props}
         // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層且在這一層裡面 → 留給控件;其餘照舊關閉

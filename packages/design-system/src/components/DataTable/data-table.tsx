@@ -118,6 +118,16 @@ function measureFillHeightSlot(outer: HTMLElement): { height: number } | null {
   return { height: Math.max(0, height - rowGap * siblings) }
 }
 
+// ── 高度上限(`maxHeight`)→ 內部 CSS 上限字串 ─────────────────────────────────────
+// 對外參數 `maxHeight`(2026-11-15「尺寸:甲」;舊名 `height`)。內部一整串判斷吃的是 2026-11-15 前 `height` 的字串語言
+//('auto' = 沒有上限、'100%' / '100vh' / 'fill' = 父層格子、其餘 CSS 長度 = 固定上限),這裡把新參數翻成同一種字串,
+// 兩個名字走完全相同的路徑(畫面零差異)。數字 = px;CSS 的 'none'(沒有上限)對應舊的 'auto'。
+function maxHeightToCss(maxHeight: number | string | undefined): string | undefined {
+  if (maxHeight === undefined) return undefined
+  if (typeof maxHeight === 'number') return `${maxHeight}px`
+  return maxHeight === 'none' ? 'auto' : maxHeight
+}
+
 // ── Variants ─────────────────────────────────────────────────────────────────
 
 // outer border = `border-divider`(同 row divider 色)— T-junction connectivity 設計原則:
@@ -143,10 +153,24 @@ export interface DataTableProps<TData>
   size?: TableSize
   autoRowHeight?: boolean
   /**
-   * 容器高度。預設 '400px'(body 內捲動);'auto' = 自然高度(hug rows);'100%' = fill parent。
-   * L5 分頁(2026-07-06):啟用 `pagination` 且未顯式傳 height 時預設改 'auto' —— 分頁的
-   * 導覽通道是頁碼,再疊 body 內捲動 = 雙重導覽(一頁 20 筆只露 10 筆);對齊 Ant Table
-   * 無預設高度罩、`scroll.y` 顯式選配的慣例。顯式傳 height 照舊尊重(分頁 + 頁內捲動可並用)。
+   * 高度上限。表格**永遠跟著資料長高**(資料少 = 內容高度),超過上限才在表身內捲動(表頭固定、資料多時啟用虛擬捲動)。
+   * - 數字 = px(`maxHeight={400}`);也收 CSS 長度字串(`"30rem"`)。固定長度管的是**表身**(資料列捲動區)的上限,表頭另計
+   *   (2026-11-15 量:`maxHeight={300}` 50 筆 → 整張表 342 = 表頭 40 + 表身 300 + 上下外框 2;與舊名 `height="300px"` 同一條路徑)。
+   * - `"100%"`(或 `"100vh"`)= 整張表的上限是父層給的格子:量父層內容盒、扣掉同一流向裡的工具列 / 分頁列,表身拿扣掉表頭後的剩餘
+   *   (data-table.spec.md「二、高度模式」)。
+   * - `"none"` = 沒有上限,整張表跟著頁面一起捲(少量資料的嵌入式表格)。
+   * - 不傳:沒開分頁 = `400`;開了分頁 = `"none"`(L5 分頁 2026-07-06:頁碼是唯一導覽通道,再疊表身內捲動 = 雙重導覽;
+   *   對齊 Ant Table 無預設高度罩、`scroll.y` 顯式選配的慣例)。明寫的值一律尊重(分頁 + 頁內捲動可並用)。
+   *
+   * 2026-11-15 前這個參數叫 `height`,但它從來就是上限、不是高度(資料少時表格比它矮)—— 【AI 推導 2026-11-15】把「尺寸:甲」(上下限叫 minWidth / maxWidth,
+   * 高度同理)套到這個參數(user 原話沒有點名 DataTable)改成 `maxHeight`,舊名留一個版本。
+   * 注意:數字只管**表身**(表頭另計);`"100%"` 才是整張表的上限(data-table.spec.md「二、高度模式」)。
+   */
+  maxHeight?: number | string
+  /**
+   * @deprecated 2026-11-15 起改用 `maxHeight`(它一直都是上限,不是高度)。保留一個版本,行為與畫面不變:
+   * `height="auto"` = `maxHeight="none"`、`height="400px"` = `maxHeight={400}`、`height="100%"` = `maxHeight="100%"`;
+   * 同時傳時以 `maxHeight` 為準。
    */
   height?: string
   overscan?: number
@@ -1285,7 +1309,7 @@ function RowDragHandle({ disabled, anyDragActive, hoverRowIndex }: { disabled: b
   //   (c) source row drag button 在 drag 中應 dimmed visual — `isDragging` 加 `opacity-disabled`。
   // dnd-kit 在拖曳中會送 `aria-pressed="true"`(`@dnd-kit/core` core.esm.js:3436:
   //   `'aria-pressed': isDragging && role === defaultRole ? true : undefined`),
-  // 而本 DS 的 Button 把 `aria-pressed` 當成 **toggle 按下**(button.tsx:194 起
+  // 而本 DS 的 Button 把 `aria-pressed` 當成 **toggle 按下**(button.tsx:195 起
   // `aria-pressed:bg-primary-subtle / text-primary / border-transparent`,2026-05-21 e58576a6
   // 為 Radix overlay trigger 加的 fallback)。**拖曳把手不是 toggle**,語意與視覺都不該套那組。
   // 用 CSS 反壓會連 `:active` 一起蓋掉(違反 user 2026-09-06「其餘不變,然後壓著那顆鈕的時候狀態應該是active吧？」),
@@ -1481,7 +1505,7 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 function DataTableInner<TData>(
   {
-    columns, data, size = 'md', autoRowHeight = false, height: heightProp,
+    columns, data, size = 'md', autoRowHeight = false, maxHeight: maxHeightProp, height: heightProp,
     overscan = 5, emptyState, enableHover = true, bordered,
     estimateRowHeight, tableOptions, rowActions, cellErrors,
     pinnedLeftColumns, pinnedRightColumns, inlineEdit = false,
@@ -1506,10 +1530,12 @@ function DataTableInner<TData>(
   }: DataTableProps<TData>,
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
-  // L5 分頁 × height 預設(2026-07-06):未顯式傳 height 時 —— 分頁 = 'auto' 自然高度
+  // L5 分頁 × 高度上限預設(2026-07-06):未顯式傳時 —— 分頁 = 'auto' 自然高度
   // (頁碼是唯一導覽通道,不疊 body 內捲動;Ant Table 無預設高度罩慣例),
-  // 未分頁 = 既有 '400px' 預設不變。顯式傳 height 一律尊重(prop docblock 有完整規則)。
-  const height = heightProp ?? (pagination ? 'auto' : '400px')
+  // 未分頁 = 既有 '400px' 預設不變。顯式傳一律尊重(prop docblock 有完整規則)。
+  // 下面的 `height` 是內部的 CSS 上限字串('auto' = 沒有上限),沿用舊名以免動到下游一整串判斷;
+  // 對外參數 2026-11-15 起叫 `maxHeight`(「尺寸:甲」),舊名 `height` 經 heightProp 照舊收。
+  const height = maxHeightToCss(maxHeightProp) ?? heightProp ?? (pagination ? 'auto' : '400px')
   // ── L4 Inline edit state ──
   // editingCellId: `${rowId}__${columnId}` 標識當前進 edit mode 的 cell;null = 無
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)

@@ -299,8 +299,17 @@ const Command = React.forwardRef<
      * SelectMenu/select-menu-keyboard.ts `useActiveDescendant`)。本 Command 自己的搜尋框與清單不必接,已自動寫好。
      */
     onActiveOptionChange?: (active: CommandActiveOption | undefined) => void
+    /**
+     * 列的左右內距對齊誰(2026-11-15;決策頁 r9「照既有原則直接做」:清單列的左右內距改成元件參數 —— 「要設定的值走元件參數」4甲):
+     * - 不傳 / `'field'` = 對齊欄位的字(`--field-px`,12px;裸選單、下拉 —— 選項的字跟觸發欄位的字落在同一條線);
+     * - `'surface'` = 對齊浮層標題與內文(`--layout-space-loose`;清單放在有標題列的 Dialog / Popover 內文裡 = List-as-region)。
+     * 內部寫的是列的內距變數 `--item-px`(owner `patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」);
+     * 2026-11-15 前要 consumer 自己在 Command 上寫 `style={{ '--item-px': 'var(--layout-space-loose)' }}`(沒有型別)。
+     * `'field'` 會明寫回 `--field-px`(外層若設成 surface,巢在裡面的這一份照樣對齊欄位)。
+     */
+    gutter?: 'field' | 'surface'
   }
->(({ className, size, children, onKeyDown, onMouseDown, onActiveOptionChange, ...props }, ref) => {
+>(({ className, size, gutter, style, children, onKeyDown, onMouseDown, onActiveOptionChange, ...props }, ref) => {
   // 列上可聚焦東西的鍵盤路(B9,見上方 routeCommandRowKeys 段):根節點要拿來掛 observer
   const rootRef = React.useRef<HTMLDivElement | null>(null)
   const setRootRef = React.useCallback(
@@ -341,6 +350,8 @@ const Command = React.forwardRef<
           // 2026-09-10 實測:殼的框今天畫不出來(PopoverContent overflow-hidden 把 +2px 整條裁掉,
           // 逐像素 0),但 computed style 確實有 outline —— 殼一旦被放進不裁切的宿主就會現形,先抑制掉。
           className={cn("flex h-full w-full flex-col overflow-hidden text-foreground outline-none", className)}
+          // gutter → 列的內距變數(整棵子樹的列一起換;item-anatomy.spec.md「Token: --item-px」客製方式)。consumer 的 style 最後展開,仍可蓋
+          style={gutter ? { '--item-px': gutter === 'surface' ? 'var(--layout-space-loose)' : 'var(--field-px)', ...style } as React.CSSProperties : style}
           {...props}
         >
           {children}

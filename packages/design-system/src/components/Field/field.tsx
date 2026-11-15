@@ -38,8 +38,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/compone
  * 調整時自動連動，不需 JS 測量。
  *
  * ── Horizontal mode 的 label 寬度 ───────────────────────────────────────
- * 透過 labelWidth prop → --field-label-width CSS variable，可以是任何
- * CSS length（"120px"、"10rem"、"30%" 等）。預設 "auto" 由 label 內容撐開。
+ * 透過 labelWidth prop(單一 Field)或 FieldGroup 的同名 labelWidth(整組)→ --field-label-width
+ * CSS variable。數字 = px,也可以是任何 CSS length（"10rem"、"30%" 等）。預設 "auto" 由 label 內容撐開。
  *
  * ── Required 星號 ──────────────────────────────────────────────────────
  * Field 的 required prop 會透過 context 傳給 FieldLabel 自動渲染 *，
@@ -136,10 +136,10 @@ export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   disabled?: boolean
   invalid?: boolean
   /**
-   * Horizontal mode 的 label 欄寬度。支援任何 CSS length 值（"120px"、"10rem"、"30%"...）。
-   * 預設 'auto' 由 label 內容撐開。
+   * Horizontal mode 的 label 欄寬度。數字 = px(與全 DS 的長度參數同一套,2026-11-15「尺寸:甲」);
+   * 也收任何 CSS length 字串（"10rem"、"30%"...——比例寬只能用字串）。預設 'auto' 由 label 內容撐開。
    */
-  labelWidth?: string
+  labelWidth?: number | string
   /**
    * Control area 佈局模型(逃生艙)。
    *
@@ -157,7 +157,7 @@ export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
 // 同一畫面多個 horizontal Field,label 寬度應統一對齊 → FieldGroup 提供 SSOT。
 // 下面 Field 組件自動 consume,consumer 可用 Field 的 labelWidth prop 覆寫單行。
 interface FieldGroupContextValue {
-  horizontalLabelWidth?: string
+  labelWidth?: number | string
 }
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const FieldGroupContext = React.createContext<FieldGroupContextValue>({})
@@ -188,9 +188,10 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
     const descriptionId = `${id}-description`
     const errorId = `${id}-error`
 
-    // FieldGroup cascade:group 的 horizontalLabelWidth 是 fallback,單行 labelWidth 覆寫
+    // FieldGroup cascade:group 的 labelWidth 是 fallback,單行 labelWidth 覆寫;數字 = px
     const groupCtx = React.useContext(FieldGroupContext)
-    const effectiveLabelWidth = labelWidth ?? groupCtx.horizontalLabelWidth
+    const labelWidthValue = labelWidth ?? groupCtx.labelWidth
+    const effectiveLabelWidth = typeof labelWidthValue === 'number' ? `${labelWidthValue}px` : labelWidthValue
 
     // mode=disabled 與 disabled prop 任一為 true 即視為 disabled
     const disabled = disabledProp || mode === 'disabled'
@@ -521,16 +522,16 @@ FieldError.displayName = 'FieldError'
 
 export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * 同一 group 內所有 horizontal Field 共用的 label 欄寬度。
+   * 同一 group 內所有 horizontal Field 共用的 label 欄寬度 —— 跟單一 Field 的 `labelWidth` **同一個名字、同一種值**
+   *(2026-11-15「尺寸:甲」:同一個值不再有兩個名字)。數字 = px;也收任何 CSS length 字串(`"10rem"` / `"30%"` 等)。
+   * 預設不指定——每個 Field 自動以 label 內容撐開(容易歪七扭八)。
    *
-   * 支援任何 CSS length(`"140px"` / `"10rem"` / `"30%"` 等)。預設不指定——
-   * 每個 Field 自動以 label 內容撐開(容易歪七扭八)。
-   *
-   * 用途:讓
-   * setting list 一律 label 固定寬、control 右對齊,列與列整齊對齊。
+   * 用途:讓 setting list 一律 label 固定寬、control 右對齊,列與列整齊對齊。
    *
    * 單一 Field 可以用自己的 `labelWidth` prop 覆寫 cascade 值。
    */
+  labelWidth?: number | string
+  /** @deprecated 2026-11-15 起改用 `labelWidth`(與單一 Field 同名;「尺寸:甲」)。保留一個版本,行為與畫面不變;同時傳時以 `labelWidth` 為準。 */
   horizontalLabelWidth?: string
 }
 
@@ -551,10 +552,12 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 // md density 下新舊值都是 16px,所以 33 個用法裡 32 個視覺零變化;lg 下從凍結的 16px 變成 24px,
 // 也就是開始履行 density 的承諾。
 const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
-  ({ className, horizontalLabelWidth, ...props }, ref) => {
+  ({ className, labelWidth: labelWidthProp, horizontalLabelWidth, ...props }, ref) => {
+    // 舊名 horizontalLabelWidth(deprecated)只在沒傳 labelWidth 時生效
+    const labelWidth = labelWidthProp ?? horizontalLabelWidth
     const groupCtxValue = React.useMemo(
-      () => ({ horizontalLabelWidth }),
-      [horizontalLabelWidth],
+      () => ({ labelWidth }),
+      [labelWidth],
     )
     return (
       <FieldGroupContext.Provider value={groupCtxValue}>

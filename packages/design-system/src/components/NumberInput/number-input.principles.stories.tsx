@@ -117,7 +117,7 @@ export const AlignmentRule: Story = {
           note="表格中同欄的數字需要對齊小數點/個位數,右對齊讓使用者一眼比較大小。由 DataTable 的 column meta type=number / currency 自動套用,不需要手動設對齊"
         >
           <div className="w-full max-w-lg">
-            <DataTable columns={columns} data={data} height="auto" />
+            <DataTable columns={columns} data={data} maxHeight="none" />
           </div>
           <ExampleCaption>↑ price 和 stock 欄自動右對齊,小數點縱向對齊</ExampleCaption>
         </TutorialRule>

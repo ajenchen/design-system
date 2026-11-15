@@ -153,7 +153,7 @@ for (const b of bad) {
 }
 if (bad.length && !SELFTEST) {
   console.log('\n修法見 overlay-surface.spec.md「List-as-region in overlay body」第 2 條:')
-  console.log('在**清單容器**設一次 `--item-px: var(--layout-space-loose)`(整棵子樹的 row 一起換)。')
+  console.log('在**清單容器**設一次:`<Command gutter="surface">`(= `--item-px: var(--layout-space-loose)`,整棵子樹的 row 一起換;不是 Command 的容器照舊寫這顆變數)。')
   console.log('禁止寫在單列的 className:CommandItem 是兩層,className 落在外層 wrapper,')
   console.log('會跟內層 MenuItem 的內距相加(2026-09-17:16+12=28px)。')
   console.log('token owner:patterns/element-anatomy/item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。')

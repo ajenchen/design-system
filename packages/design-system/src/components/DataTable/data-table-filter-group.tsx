@@ -139,7 +139,7 @@ export function FilterRow({
       {/* **#9 fix(2026-05-04 v4)**:Field controls trigger `w-full` override 外 className,改用 Tailwind `!`
           important 強制 override(`!w-[10rem]` / `!w-[7.5rem]`),value 用 `!flex-1 !min-w-0`。
           Select 元件本身沒 destructure `style` prop 所以 inline style flex-basis 行不通,只能用 className。 */}
-      <FieldControlGroup block className="flex-1 min-w-0">
+      <FieldControlGroup width="fill" className="flex-1 min-w-0">
         {/* 欄位下拉 10rem(160px)、條件下拉 7.5rem(120px):flat 與 nested 同寬,值只住這兩行
             (2026-11-11 token「3全收」:原本的兩顆 token 只有這裡在讀,收回成元件自己的值;rem 跟著使用者字級設定縮放) */}
         <Select

@@ -63,7 +63,7 @@ export const Overview: Story = {
         <div>
           <H3>Anatomy</H3>
           <Desc>DataTable 基於 TanStack Table,透過 <code>meta.type</code> column type 系統自動套用對應 Field Control 的 view 態渲染 cell。底層用 <code>&lt;div&gt;</code> + ARIA role(不用語義 <code>&lt;table&gt;</code>)——虛擬捲動需要絕對定位 row,frozen column 需要獨立 scroll 區域,table 的佈局模型兩者都不支援。</Desc>
-          <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
+          <DataTable columns={columns} data={SAMPLE_DATA} maxHeight="none" />
         </div>
 
         <div>
@@ -93,7 +93,7 @@ interface InspectorArgs {
   pinnedLeft: boolean
   pinnedRight: boolean
   inlineEdit: boolean
-  height: 'auto' | '300px'
+  maxHeight: 'none' | 300
 }
 
 export const Inspector: Story = {
@@ -102,7 +102,7 @@ export const Inspector: Story = {
     docs: {
       description: {
         story:
-          '右側 Controls 切 DataTable props 即時 render,取代 Figma inspect。調整 `size` 看 row height tier 差異;`pinnedLeft` / `pinnedRight` 切換 frozen column 切出三區域(left / center / right);`height` 切換 auto 與固定高度(固定高度限制容器並可捲動;資料多於 30 筆才啟用虛擬捲動,本例 5 筆不觸發)。',
+          '右側 Controls 切 DataTable props 即時 render,取代 Figma inspect。調整 `size` 看 row height tier 差異;`pinnedLeft` / `pinnedRight` 切換 frozen column 切出三區域(left / center / right);`maxHeight` 切換「沒有上限」與固定上限(超過上限才在表身內捲動;資料多於 30 筆才啟用虛擬捲動,本例 5 筆不觸發)。',
       },
     },
   },
@@ -112,7 +112,7 @@ export const Inspector: Story = {
     pinnedLeft: true,
     pinnedRight: false,
     inlineEdit: false,
-    height: 'auto',
+    maxHeight: 'none',
   },
   argTypes: {
     size: {
@@ -125,14 +125,14 @@ export const Inspector: Story = {
     pinnedLeft: { control: 'boolean', description: 'Pin 產品名稱欄到左側,橫向捲動時保持可見' },
     pinnedRight: { control: 'boolean', description: 'Pin 上架日期欄到右側' },
     inlineEdit: { control: 'boolean', description: 'inline edit 視覺:cell 間加垂直分隔線(dtCellGrid)。view 態零恆顯 chevron(2026-07-08 A 案,editable affordance = hover outline);edit 態才有控件 chrome' },
-    height: {
+    maxHeight: {
       control: 'select',
-      options: ['auto', '300px'],
-      description: 'auto=全渲染 / 固定值=限制容器高度並捲動;資料多於 30 筆(VIRTUAL_THRESHOLD)才啟用 TanStack Virtual,本例 5 筆不觸發',
+      options: ['none', 300],
+      description: 'none=沒有上限、全渲染 / 數字=高度上限(px),超過才在表身內捲動;資料多於 30 筆(VIRTUAL_THRESHOLD)才啟用 TanStack Virtual,本例 5 筆不觸發',
     },
   },
   render: (args) => {
-    const { size, bordered, pinnedLeft, pinnedRight, inlineEdit, height } = args as InspectorArgs
+    const { size, bordered, pinnedLeft, pinnedRight, inlineEdit, maxHeight } = args as InspectorArgs
     const col = createColumnHelper<Product>()
     const columns = [
       col.accessor('name', { header: 'Product', meta: { type: 'string', width: 200 } }),
@@ -149,7 +149,7 @@ export const Inspector: Story = {
         size={size}
         bordered={bordered}
         inlineEdit={inlineEdit}
-        height={height}
+        maxHeight={maxHeight}
         pinnedLeftColumns={pinnedLeft ? ['name'] : undefined}
         pinnedRightColumns={pinnedRight ? ['launchDate'] : undefined}
       />
@@ -175,7 +175,7 @@ export const ColumnTypes: Story = {
         <div>
           <H3>meta.type 系統</H3>
           <Desc>每個 column 透過 <code>meta.type</code> 宣告資料類型,DataTable 自動選擇對應 Field Control 的 <code>mode="view"</code> 渲染——消費者不需要手寫 cell。</Desc>
-          <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
+          <DataTable columns={columns} data={SAMPLE_DATA} maxHeight="none" />
         </div>
 
         <div>
@@ -231,7 +231,7 @@ export const RowHeightMatrix: Story = {
             {(['sm', 'md', 'lg'] as const).map(size => (
               <div key={size}>
                 <div className="text-caption text-fg-muted mb-2 font-mono">size="{size}"</div>
-                <DataTable size={size} columns={columns} data={SAMPLE_DATA.slice(0, 3)} height="auto" />
+                <DataTable size={size} columns={columns} data={SAMPLE_DATA.slice(0, 3)} maxHeight="none" />
               </div>
             ))}
           </div>
@@ -256,7 +256,7 @@ export const AlignmentRule: Story = {
         <div>
           <H3>Column type 提供對齊預設(column-types.ts 定義),consumer 可用 meta.align 覆寫</H3>
           <Desc>數字靠右方便縱向比較位數(個位、小數點上下對齊);文字靠左方便閱讀;boolean 靠左跟其他文字欄一致,維持掃視時的左緣節奏。Consumer 通常不需要設 <code>align</code>——column type 已給預設;需要時仍可用 <code>meta.align</code> 在 column 層級覆寫。</Desc>
-          <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
+          <DataTable columns={columns} data={SAMPLE_DATA} maxHeight="none" />
         </div>
 
         <div>
@@ -303,16 +303,16 @@ export const Features: Story = {
         <div>
           <H3>排序(enableSorting)</H3>
           <Desc>Column 的 <code>enableSorting: true</code> 啟用排序。點擊沒排序的欄 header = 只用這一欄排序(第一下升冪,其他欄的排序清掉);點已排序的欄只在升冪 / 降冪之間切換,其他欄的排序與順位不動,點不回「沒排序」。標題後顯示向上 / 向下箭頭(ArrowUp / ArrowDown)指示目前排序方向。Shift+點擊沒排序的欄把它加到多重排序最後,被排序的欄在箭頭右側多一個順位數字(第 10 個以後「9+」)。取消某一欄的排序用欄位選單(⌄)的「取消排序」,只拿掉這一欄,後面的順位往前補。</Desc>
-          <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
+          <DataTable columns={columns} data={SAMPLE_DATA} maxHeight="none" />
         </div>
 
         <div>
-          <H3>虛擬捲動(height 啟用)</H3>
-          <Desc>傳 <code>height</code> 固定高度時自動啟用 TanStack Virtual——只渲染可見 rows。500 筆資料僅渲染 ~20 rows,效能不受資料量影響。</Desc>
+          <H3>虛擬捲動(maxHeight 啟用)</H3>
+          <Desc>傳 <code>maxHeight</code> 固定上限、資料又超過 30 筆時自動啟用 TanStack Virtual——只渲染可見 rows。500 筆資料僅渲染 ~20 rows,效能不受資料量影響。</Desc>
           <div className="border border-border rounded-md">
-            <DataTable columns={columns} data={virtualData} height="400px" />
+            <DataTable columns={columns} data={virtualData} maxHeight={400} />
           </div>
-          <p className="text-footnote text-fg-muted mt-3">height="auto" 渲染全部 rows(適合 &lt; 50 筆);數字 height 啟用虛擬(適合 &gt; 100 筆)</p>
+          <p className="text-footnote text-fg-muted mt-3">maxHeight="none" 渲染全部 rows(只有幾筆、跟著頁面捲);數字 maxHeight 而且資料超過 30 筆才啟用虛擬(data-table.spec.md「虛擬捲動什麼時候啟用」)</p>
         </div>
       </div>
     )
@@ -458,7 +458,7 @@ export const EmptyState: Story = {
       <div>
         <H3>無資料時消費 Empty primitive</H3>
         <Desc>DataTable 的 empty state 走共用 <code>Empty</code> 元件——保持跟其他空狀態(SelectMenu、Combobox、Page section)視覺一致。未傳 <code>emptyState</code> 時顯示下方的標準 fallback;正式產品應傳 <code>emptyState</code> 以業務語言說明「缺什麼資料 + 下一步」,避免抽象的「沒有資料」(對齊 Empty 文案準則)。</Desc>
-        <DataTable columns={columns} data={[]} height="auto" />
+        <DataTable columns={columns} data={[]} maxHeight="none" />
       </div>
     )
   },
@@ -489,11 +489,11 @@ export const BorderedProp: Story = {
           <div className="flex flex-col gap-6">
             <div>
               <div className="text-caption text-fg-muted mb-2 font-mono">bordered=&#123;true&#125;(預設)</div>
-              <DataTable columns={columns} data={SAMPLE_DATA.slice(0, 3)} height="auto" />
+              <DataTable columns={columns} data={SAMPLE_DATA.slice(0, 3)} maxHeight="none" />
             </div>
             <div>
               <div className="text-caption text-fg-muted mb-2 font-mono">bordered=&#123;false&#125;</div>
-              <DataTable bordered={false} columns={columns} data={SAMPLE_DATA.slice(0, 3)} height="auto" />
+              <DataTable bordered={false} columns={columns} data={SAMPLE_DATA.slice(0, 3)} maxHeight="none" />
             </div>
           </div>
         </div>

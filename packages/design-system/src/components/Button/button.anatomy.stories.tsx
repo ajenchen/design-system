@@ -227,7 +227,7 @@ export const Overview = {
                 ['overlayBadge', 'ReactNode', '—', '角標疊於 icon 右上（僅 iconOnly=true；對齊 Material BadgedBox）'],
                 ['iconOnly', 'boolean', 'false', '正方形模式，需搭配 aria-label'],
                 ['loading', 'boolean', 'false', 'CircularProgress(indeterminate)+ 可聚焦的停用(aria-busy + aria-disabled,擋掉觸發、焦點留著)'],
-                ['fullWidth', 'boolean', 'false', '撐滿父容器'],
+                ['width', "'hug' | 'fill'", "'hug'", '寬度模式:跟內容 / 撐滿父容器(直排按鈕群組自動 fill;舊名 fullWidth 已停用)'],
                 ['dismiss', 'boolean', 'false', 'X close 視覺弱化（強制 variant=text + iconOnly=true）'],
                 ['asChild', 'boolean', 'false', '透過 Radix Slot 套用至子元件'],
               ].map(([p, t, d, desc]) => (

@@ -101,8 +101,8 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
    * 理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 —— 先把可用高度穩定下來,
    * 讓 body 自己捲,外框就不動了。
    *
-   * 軸名與值照 DS 既有的寬度軸(`field-types.ts` 的 `FieldWidth = 'fill' | 'hug'`,2026-07-08 拍板),
-   * 不另造詞彙。
+   * 軸名與值照 DS 既有的寬度軸(`field-types.ts` 的 `SizingMode = 'fill' | 'hug'`,2026-07-08 拍板;
+   * 全 DS 規則 `ds-canonical/references/props-naming.md`「尺寸參數」),不另造詞彙。
    */
   height?: 'fill' | 'hug'
   /**

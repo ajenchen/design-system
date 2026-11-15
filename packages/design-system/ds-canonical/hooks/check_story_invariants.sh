@@ -1145,7 +1145,7 @@ rule_component_in_render() {
 # 我沒有特別要求為何要使用 secondary?root cause 是什麼?我們的 ds 的設計原則寫得不夠清楚嗎?」)
 # 原則本身寫得很清楚(`button.spec.md`「Variant 控制視覺強調等級」表):
 #   secondary = **正面與負面選項並存**時代表正面那個(儲存草稿 vs 放棄);
-#   tertiary  = 最常用的非主要按鈕,也是 cva 的預設(button.tsx:217)。
+#   tertiary  = 最常用的非主要按鈕,也是 cva 的預設(button.tsx:218)。
 # 不清楚的不是規則,是**沒有任何東西在守**:當天全 DS 掃出 story 內 54 處 `variant="secondary"`,
 # 扣掉 Button 自家的 variant 展示 22 處,其餘 30 處**一處都沒有並存的負面選項**(機械驗過無 danger 兄弟),
 # 全是單獨的觸發鈕 / 輔助動作,照表都該是 tertiary。同日一次改完。

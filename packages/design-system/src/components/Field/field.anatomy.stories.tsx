@@ -67,7 +67,7 @@ export const Overview: Story = {
             <tbody>
               {[
                 ['orientation', "'vertical' | 'horizontal'", "'vertical'", 'label 位置:上方 / 左方'],
-                ['labelWidth', 'string', "'auto'", 'horizontal 模式 label 寬度'],
+                ['labelWidth', 'number | string', "'auto'", 'horizontal 模式 label 寬度(數字 = px;FieldGroup 用同名 labelWidth 統一整組)'],
                 ['required', 'boolean', 'false', '顯示 * 星號 + context.required'],
                 ['invalid', 'boolean', 'false', 'error 狀態 + context.invalid(觸發 aria-invalid)'],
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
@@ -225,7 +225,7 @@ export const OrientationMatrix: Story = {
         <H3>Horizontal — label 在控件左方</H3>
         <Desc>Settings / 詳情頁場景。label 寬度(labelWidth,預設 auto 由內容撐開)對齊縱向軸,節省垂直空間。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-2xl">
-          <FieldGroup horizontalLabelWidth="120px">
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required>
               <FieldLabel>電子郵件</FieldLabel>
               <Input type="email" defaultValue="user@example.com" />
@@ -350,7 +350,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>組合:Required + Horizontal + Size=md(settings 典型場景)</H3>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-2xl">
-          <FieldGroup horizontalLabelWidth="120px">
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required size="md">
               <FieldLabel>姓名</FieldLabel>
               <Input defaultValue="Ada Chen" />
@@ -505,8 +505,8 @@ export const FieldGroupBehavior: Story = {
           </div>
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">horizontal orientation</div>
-            {/* horizontalLabelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup horizontalLabelWidth cascade」硬規則)*/}
-            <FieldGroup horizontalLabelWidth="120px">
+            {/* labelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup labelWidth cascade」硬規則)*/}
+            <FieldGroup labelWidth={120}>
               <Field orientation="horizontal" required>
                 <FieldLabel>姓名</FieldLabel>
                 <Input placeholder="請輸入姓名" />

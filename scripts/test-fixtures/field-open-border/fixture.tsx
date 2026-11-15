@@ -143,9 +143,9 @@ function Fixture() {
       />
       {/* (三) 併排欄位組:欄位 / 欄位[驗證錯誤] / 欄位。放最後一列,不動上面六格的位置;成員必須是欄位組的直接子元素(不包 wrapper) */}
       <Cell name="group-error-mid" title="篩選列(中間「篩選條件」那一格驗證錯誤)" wide>
-        <FieldControlGroup block>
-          <Select aria-label="篩選欄位" className="!w-[160px] flex-shrink-0" options={filterFields} value={filterField} onChange={setFilterField} />
-          <Select aria-label="篩選條件" className="!w-[120px] flex-shrink-0" error options={filterOperators} value={filterOperator} onChange={setFilterOperator} />
+        <FieldControlGroup width="fill">
+          <Select aria-label="篩選欄位" width={160} className="flex-shrink-0" options={filterFields} value={filterField} onChange={setFilterField} />
+          <Select aria-label="篩選條件" width={120} className="flex-shrink-0" error options={filterOperators} value={filterOperator} onChange={setFilterOperator} />
           <Input aria-label="篩選值" className="!flex-1 !min-w-0" defaultValue="無線滑鼠" />
         </FieldControlGroup>
       </Cell>

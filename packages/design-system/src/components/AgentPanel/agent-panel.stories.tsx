@@ -639,7 +639,7 @@ export const Fab: Story = {
             <DataTable
               columns={orderColumns}
               data={ORDER_ROWS}
-              height="100%"
+              maxHeight="100%"
               pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
               getRowId={(row) => row.id}
             />
@@ -854,7 +854,7 @@ function TaskListView({ tab, tasks, onOpen, onCreate }: {
         <Button id="demo-new-task" variant="primary" size="sm" startIcon={Plus} onClick={onCreate}>新增任務</Button>
       </DataToolbar>
       <div className="mx-[var(--layout-space-loose)] mb-[var(--layout-space-loose)] min-h-0 flex-1" onClickCapture={interceptInternalLink}>
-        <DataTable columns={columns} data={rows} height="100%" getRowId={(t) => t.id} aria-label={tab.label} />
+        <DataTable columns={columns} data={rows} maxHeight="100%" getRowId={(t) => t.id} aria-label={tab.label} />
       </div>
     </div>
   )

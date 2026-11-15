@@ -260,6 +260,7 @@
     "test:form-example-card": "node scripts/form-example-card-invariant.mjs && node scripts/form-example-card-invariant.mjs --selftest",
     "test:sidebar-main-follows-selection": "node scripts/sidebar-main-follows-selection-invariant.mjs && node scripts/sidebar-main-follows-selection-invariant.mjs --selftest",
     "test:sidebar-label-matches-header": "node scripts/sidebar-label-matches-header-invariant.mjs && node scripts/sidebar-label-matches-header-invariant.mjs --selftest",
+    "test:sizing-props": "node scripts/sizing-props-invariant.mjs && node scripts/sizing-props-invariant.mjs --selftest",
     "test:steps-connector-geometry": "node scripts/steps-connector-geometry-invariant.mjs && node scripts/steps-connector-geometry-invariant.mjs --selftest",
     "test:steps-content-follows-current": "node scripts/steps-content-follows-current-invariant.mjs && node scripts/steps-content-follows-current-invariant.mjs --selftest",
     "test:overflow-reveal-selected": "node scripts/overflow-reveal-selected-invariant.mjs && node scripts/overflow-reveal-selected-invariant.mjs --selftest",

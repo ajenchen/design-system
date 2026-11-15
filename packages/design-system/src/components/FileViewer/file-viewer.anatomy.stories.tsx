@@ -442,7 +442,7 @@ export const Inspector: Story = {
                 </tr>
                 <tr>
                   <Td>ZoomInput 寬</Td>
-                  <Td mono>autoWidth(field-sizing:content,隨 % 文字寬;chevron 為 endSlot)</Td>
+                  <Td mono>width="hug"(field-sizing:content,隨 % 文字寬;chevron 為 endSlot)</Td>
                 </tr>
                 <tr>
                   <Td>Prev/Next arrow Button size</Td>
@@ -668,7 +668,7 @@ export const SizeMatrix: Story = {
               </tr>
               <tr>
                 <Td>ZoomInput 寬</Td>
-                <Td mono>autoWidth(field-sizing:content)</Td>
+                <Td mono>width="hug"(field-sizing:content)</Td>
                 <Td>Figma zoom 80 / Google Slides 72</Td>
                 <Td>隨 % 文字寬自適應,chevron 為 endSlot inline action</Td>
               </tr>

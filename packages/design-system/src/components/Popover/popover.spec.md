@@ -143,6 +143,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 - **實作 —— 極長內容**:PopoverContent 設 `max-h-[var(--radix-popover-content-available-height)]`(popover.tsx#PopoverContent),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 的 flex chain 規則見 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
 - **Viewport 邊緣**:`collisionPadding = 8` 自動推開(見「Viewport 邊距 canonical」)。
+- **寬度(`width`,2026-11-15)**:不傳 = 18rem(`w-72`,畫面不變);**數字 = px 固定寬,夾在視窗內**(`min(…, 100vw − 2rem)`,`../../tokens/elevation/overlay-geometry.ts` `OVERLAY_VIEWPORT_MAX_WIDTH`,與表格三個工具面板同一份);**`"hug"` = 跟內容**(裡面的面板自己決定寬:`DataTableSortManager` / `DataTableFilterPanel`,以及指定了 `width` 的 `DataTableColumnVisibilityPanel` —— `../DataTable/data-table.spec.md`「工具面板的寬度」)。名字與值域照 user「尺寸:甲」(`../../../ds-canonical/references/props-naming.md`「尺寸參數」);依據是決策頁 r9「照既有原則直接做」的「Sheet、Popover 加寬度參數」(「要設定的值走元件參數」4甲 推得出來;**預選、user 未逐字選**,user 只回了 7 題、沒有提出異議)。2026-11-15 前只能寫 `className="w-80"` / `"w-auto"`(沒有型別;className 仍可用)。閘 `scripts/data-table-panel-reset-clear-invariant.mjs` (6)。
 - **嵌套 Popover**:禁止(見「禁止事項」)。
 - **Dark mode**:殼走 semantic token 自動 adapt(見 `color.spec.md`)。
 - **Density**:layout-space 鎖 `md`(header / footer padding 精簡);ui-size 跟觸發點那一區(見「定位」段;Trigger 與 Anchor 都登記,區間 DatePicker 只用 Anchor 也照樣讀得到)。
@@ -172,7 +173,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 ## Inspector
 
-`Inspector` 提供互動 Controls 即時切換 PopoverContent 六個關鍵維度:`side` / `align`(12 種定位組合)、`sideOffset`(與 trigger 距離)、`width`(w-72 / w-80 / w-96)、`showHeader` / `showFooter`(chrome 結構開關)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop(對齊 `sheet.spec.md`「Inspector」canonical)。`PlacementMatrix` 另以靜態 12-cell side × align 矩陣一眼呈現所有定位組合;Header / Body / Footer padding 屬 `overlay-surface` SSOT,由 `ColorMatrix` 的 token 表 + 該 pattern spec 覆蓋。
+`Inspector` 提供互動 Controls 即時切換 PopoverContent 六個關鍵維度:`side` / `align`(12 種定位組合)、`sideOffset`(與 trigger 距離)、`width`(288 / 320 / 384 —— 2026-11-15 起是 PopoverContent 真的 `width` prop,之前是 story 自己的 className 字串)、`showHeader` / `showFooter`(chrome 結構開關)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop(對齊 `sheet.spec.md`「Inspector」canonical)。`PlacementMatrix` 另以靜態 12-cell side × align 矩陣一眼呈現所有定位組合;Header / Body / Footer padding 屬 `overlay-surface` SSOT,由 `ColorMatrix` 的 token 表 + 該 pattern spec 覆蓋。
 
 對應 anatomy story:保留 `Overview` + `Inspector` + 元件特有 `PlacementMatrix`(12-cell side × align 矩陣) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`(open / close / animation) + `Accessibility`。
 

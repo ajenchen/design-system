@@ -51,9 +51,15 @@ benchmark:
 
 ```ts
 interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
-  block?: boolean             // 對齊 Ant Space.Compact `block`,默 false=inline-flex([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L78))
+  width?: 'hug' | 'fill'      // 預設 'hug' = inline-flex;'fill' = flex w-full(撐滿 parent)
+  /** @deprecated 改用 width="fill" */
+  block?: boolean             // 2026-11-15 前的名字,借自 Ant Space.Compact `block`([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L78))
 }
 ```
+
+**改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……舊名字保留一個版本,畫面不變。」):
+撐滿原本叫 `block`(外部 Ant 的名字蓋過了 DS 自己的 `fill` / `hug`,audit-r7 INV-06 / M23),改成全 DS 共用的 `width="fill"`;`block` 保留一個版本(`@deprecated`,同時傳以 `width` 為準),同一組 class,畫面不變。
+命名規則住 `ds-canonical/references/props-naming.md`「尺寸參數」。
 
 **子元件支援 list**(對齊 Ant Space.Compact 限定 list 策略,verified)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L64-L74)):
 - ✅ Input / NumberInput / Select / Combobox / DatePicker / DatePickerRange / Button
@@ -73,17 +79,17 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
    - 第一個子:右側 radii = 0(`rounded-r-none`)
    - 中間子:全 radii = 0(`rounded-none`)
    - 最後一個:左側 radii = 0(`rounded-l-none`)
-5. **Container display**:default `inline-flex` / `block` prop → `flex w-full`
+5. **Container display**:default `inline-flex`(`width="hug"`)/ `width="fill"` → `flex w-full`
 6. **Items align**:`items-stretch`(同高)
 
 ## Width 配置 canonical(W-A,對齊 Ant)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/demo/compact.tsx#L23-L24))
 
 **子 controls 自管 width**:
-- Fixed:`<Select className="!w-[140px]">`
+- Fixed:`<Select width={140}>`(欄位自己的寬度軸收數字 = px,`../Field/field-controls.spec.md`「寬度軸(width: fill / hug)」;2026-11-15 前沒有這條管道,只能寫 `className="!w-[140px]"` 硬蓋)
 - Flex:`<Input className="flex-1">`
 - 混合 OK(filter row 典型:fixed + fixed + flex)
 
-**禁止**:不開 `Cell` wrapper —— 子 control 直接用 className 控寬即可;多包一層會讓 wrapper 變成接合選擇器(`[&>*]`)命中的直接子元素,圓角與框線接合就破了(見「Loading / Empty / 驗證」的「子必 direct child」)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L84-L88))。
+**禁止**:不開 `Cell` wrapper —— 子 control 直接用自己的 `width` / `className="flex-1"` 控寬即可;多包一層會讓 wrapper 變成接合選擇器(`[&>*]`)命中的直接子元素,圓角與框線接合就破了(見「Loading / Empty / 驗證」的「子必 direct child」)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L84-L88))。
 
 ## Size
 
@@ -94,7 +100,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 <Field size="lg">
   <FieldLabel>電話</FieldLabel>
   <FieldControlGroup>  {/* 各 child 自動繼承外層 Field context size */}
-    <Select className="!w-[80px]" options={codes} />
+    <Select width={80} options={codes} />
     <Input className="flex-1" />
   </FieldControlGroup>
 </Field>
@@ -103,7 +109,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 **Standalone 逐一設尺寸**:**逐一給每個 child 設 `size`**。
 ```tsx
 <FieldControlGroup>
-  <Select size="md" className="!w-[120px]" options={fields} />
+  <Select size="md" width={120} options={fields} />
   <Input size="md" className="flex-1" />
 </FieldControlGroup>
 ```
@@ -122,14 +128,16 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 - ❌ 包 Field 進 FieldControlGroup(雙層 wrapper 無意義 + label/error 處理混亂)
 - ❌ 不同 size 的 children 混用(視覺高度不一致)
 - ❌ 一個 child 設 disabled / 一個設 readonly 等不同 mode(語意一體應一致)
-- ❌ 開 Cell wrapper(多一層會讓 wrapper 變成接合選擇器的直接子元素而破圓角;子 className 控 width 即可)
+- ❌ 開 Cell wrapper(多一層會讓 wrapper 變成接合選擇器的直接子元素而破圓角;子 control 自己的 `width` 控寬即可)
 - ❌ Vertical 堆疊用 FieldControlGroup(用 FieldGroup;本元件僅 horizontal)
 - ❌ **包 `<div>` / `<span>` wrapper 在 FieldControlGroup direct children 外**(2026-05-04 #2 真實 bug):
   CSS `[&>*]` 直接子選擇器命中 wrapper(無 border/radius)→ inner Field control 保留 left/right radii → **圓角破圖**。
   修法:Field control 必為 direct child;若需 className 給 inner Field control,透過 component prop forward
   (e.g. FilterValuePicker 的 `className` prop 直接 forward 給 inner Input/Select),不另開 wrapper div。
 - ❌ Field controls trigger 內部 `w-full` 無法被外加 `className="w-[Xpx]"` override(同 cn() 後 specificity 順序)
-  →  必用 `!w-[Xpx]` (Tailwind important) OR 外加 `flex-shrink-0` + 設容器 grid-cols。
+  →  固定寬一律用欄位自己的 `width={X}`(數字 = px;2026-11-15 起)。2026-11-15 前只能用 `!w-[Xpx]`(Tailwind important)硬蓋 ——
+  新程式不再這樣寫;例外:DataTable 篩選列的欄位 / 條件下拉刻意用 rem(`!w-[10rem]` / `!w-[7.5rem]`,跟著使用者字級縮放,`../DataTable/data-table-filter-group.tsx` 註解),
+  `width` 數字只收 px,所以那兩格照舊。
 
 ## States
 

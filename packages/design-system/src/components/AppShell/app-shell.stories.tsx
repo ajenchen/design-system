@@ -130,7 +130,7 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
               pressed={isFilterTreeActive(filterTree)}
             />
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-auto p-0">
+          <PopoverContent align="end" width="hug" className="p-0">
             <DataTableFilterPanel
               columns={ISSUE_COLUMNS as any}
               value={filterTree}
@@ -151,7 +151,7 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
               pressed={sorting.length > 0}
             />
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-auto p-0">
+          <PopoverContent align="end" width="hug" className="p-0">
             <DataTableSortManager
               columns={ISSUE_COLUMNS as any}
               sorting={sorting}
@@ -168,7 +168,7 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
         <DataTable
           columns={ISSUE_COLUMNS as any}
           data={filtered}
-          height="100%"
+          maxHeight="100%"
           bordered
           rowActions={(row: Issue) => (
             <Button

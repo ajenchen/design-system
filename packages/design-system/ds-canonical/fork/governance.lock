@@ -687,7 +687,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "14e21430f00346766caf37ba25334f05d80c8bbb1acf731f22e9dc7fb9ab6eb8",
+      "sha256": "b595e91ad03b88d0c793e91a609c41f7b24bbbe5519aa05d93d3c01c0d547a4f",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

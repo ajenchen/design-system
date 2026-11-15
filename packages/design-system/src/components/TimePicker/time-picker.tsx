@@ -4,10 +4,12 @@ import { useCompositeFieldBlur, fieldOpenProps } from '@/design-system/lib/compo
 import { X, Clock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import {
   readonlyTabStopProps,
   fieldWrapperStyles,
+  fieldWidthVariant,
+  fieldWidthStyle,
   bareInputStyles,
   fieldDisplayTextClass,
   keepFieldFocusBeforeUnmount,
@@ -123,6 +125,9 @@ export interface TimePickerProps
   name?: string
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮 / 數字 = 固定寬(px,窄容器裡不超出容器);chrome 與互動不變。
+   *  與 DatePicker 同一條(2026-11-15「尺寸:甲」補齊)。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  width?: FieldWidth
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   /** ISO time string("HH:mm" 或 "HH:mm:ss") */
@@ -173,6 +178,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       value,
       onChange,
       placeholder,
+      width,
       className,
       disabled: disabledProp,
       clearable = false,
@@ -292,7 +298,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         <div
           ref={ref}
           {...props}
-          className={cn(fieldWrapperStyles({ mode: 'view', variant, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: 'view', variant, size, width: fieldWidthVariant(width) }), className)}
+          style={fieldWidthStyle(width, props.style)}
           data-field-mode="view"
         >
           {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md「十一、Cell 單行截斷原則」view 態元件自管 truncation) */}
@@ -315,12 +322,13 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           // 2026-07-16 DA3 fix:非-edit 分支補 ref 轉發(forwardRef<HTMLDivElement> 原本只有 edit
           // 與 bare-span view 接 ref,readonly/disabled 及 endIcon-view div 靜默丟失 — 同 view props 漏接)。
           ref={ref}
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size, width: fieldWidthVariant(width) }), className)}
           data-field-mode={resolvedMode}
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           // 唯讀 = 可 Tab、不可開(field-controls.spec.md「Focus 行為」readonly 那段)
           {...readonlyTabStopProps(resolvedMode, 'combobox', { ariaLabel: (props as { 'aria-label'?: string })['aria-label'], labelledBy: fieldCtx?.labelId })}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
+          style={fieldWidthStyle(width, props.style)}
         >
           <span
             className={cn(
@@ -379,7 +387,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             data-field-mode="edit"
             data-error={error ? '' : undefined}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
+              fieldWrapperStyles({ mode: 'edit', variant: variant, size, error, width: fieldWidthVariant(width) }),
               'text-left cursor-pointer',
               // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx#fieldDefaultChromeCompounds)
               'focus-visible:outline-none',
@@ -388,6 +396,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             // consumer 的 data-* 等先 spread;元件自己的 handler 列在後面、在 handler 內先呼叫 consumer 的
             // (2026-10-01 前 `{...props}` 在後 → `useFormValidation` getInputProps 帶來的 onKeyDown 整支蓋掉元件的,鍵盤打不開面板)
             {...props}
+            style={fieldWidthStyle(width, props.style)}
             // 表單欄位名稱掛在可聚焦的觸發欄位(規則 8 以 name 定位、聚焦)
             // 轉型:div 的型別沒有 name(規則 8 = form-validation.spec.md;68d7860d 加,2026-10-14 複查)
             {...(name ? ({ name } as unknown as React.HTMLAttributes<HTMLDivElement>) : null)}

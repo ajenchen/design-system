@@ -167,7 +167,7 @@ export const WrapRule: Story = {
         >
           {/* 表格寬 = 窄欄位(DataTable 預設各欄均分剩餘寬度;max-w-sm 讓 Categories 欄放不下三個 Tag → 看得到 +N) */}
           <div className="w-full max-w-sm">
-            <DataTable columns={WRAP_COLUMNS} data={WRAP_ROWS} getRowId={(r) => r.name} height="auto" />
+            <DataTable columns={WRAP_COLUMNS} data={WRAP_ROWS} getRowId={(r) => r.name} maxHeight="none" />
           </div>
           <ExampleCaption>↑ 每列同高,放不下的 Tag 收成 +N</ExampleCaption>
         </TutorialRule>

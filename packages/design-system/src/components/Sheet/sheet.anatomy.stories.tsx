@@ -28,13 +28,14 @@ type Story = StoryObj
  * 內容唯讀 → footer 不放「儲存」;「標記為已解決」按下 = 跳 Toast 再關閉,「關閉」= SheetClose。
  * 畫面上不放副標(SheetDescription 還沒定義,sheet.spec.md「A11y 預設」)。
  */
-function TaskDetailSheet({ widthClass, showFooter = true }: { widthClass?: string; showFooter?: boolean }) {
+// width = SheetContent 真的 `width` prop(px;2026-11-15 起,之前這裡收 className 字串 sm:max-w-sm / sm:max-w-lg)
+function TaskDetailSheet({ width, showFooter = true }: { width?: number; showFooter?: boolean }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="tertiary">開啟任務詳情</Button>
       </SheetTrigger>
-      <SheetContent side="right" className={widthClass}>
+      <SheetContent side="right" width={width}>
         <SheetHeader>
           <SheetTitle>修復付款流程 bug</SheetTitle>
         </SheetHeader>
@@ -91,7 +92,7 @@ export const Overview: Story = {
 // ── Inspector ─────────────────────────────────────────────────────────────
 
 interface InspectorArgs {
-  width: 'default' | 'sm' | 'lg'
+  width: 'default' | 384 | 512
   showFooter: boolean
 }
 
@@ -112,16 +113,14 @@ export const Inspector: Story = {
   argTypes: {
     width: {
       control: 'radio',
-      options: ['default', 'sm', 'lg'],
-      description: 'default=w-3/4 + sm:max-w-md / sm=max-w-sm / lg=max-w-lg',
+      options: ['default', 384, 512],
+      description: 'SheetContent `width`(px,不超過畫布 75%)。default = 不傳(視窗 75%、640px 以上最寬 28rem)/ 384 / 512',
     },
     showFooter: { control: 'boolean', description: '顯示 SheetFooter(含「關閉 / 標記為已解決」)' },
   },
   render: (args) => {
     const { width, showFooter } = args as InspectorArgs
-    const widthClass =
-      width === 'sm' ? 'sm:max-w-sm' : width === 'lg' ? 'sm:max-w-lg' : ''
-    return <TaskDetailSheet widthClass={widthClass} showFooter={showFooter} />
+    return <TaskDetailSheet width={width === 'default' ? undefined : width} showFooter={showFooter} />
   },
 }
 

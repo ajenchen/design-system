@@ -59,7 +59,7 @@ function OrderSearch() {
         columns={orderColumns}
         data={rows}
         getRowId={(r) => r.id}
-        height="auto"
+        maxHeight="none"
         emptyState={
           <Empty
             icon={SearchX}
@@ -112,7 +112,7 @@ function SprintBacklog() {
         columns={TASK_COLUMNS}
         data={tasks}
         getRowId={(r) => r.id}
-        height="auto"
+        maxHeight="none"
         emptyState={
           <Empty
             icon={Inbox}

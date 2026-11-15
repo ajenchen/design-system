@@ -42,9 +42,9 @@ export const Overview: Story = {
         </ul>
       </ExampleSection>
       <ExampleSection title="範例">
-        <FieldControlGroup block>
-          <Select className="!w-[120px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
-          <Select className="!w-[100px]" options={OPS} defaultValue="contains" aria-label="篩選運算子" />
+        <FieldControlGroup width="fill">
+          <Select width={120} options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+          <Select width={100} options={OPS} defaultValue="contains" aria-label="篩選運算子" />
           <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
       </ExampleSection>
@@ -60,8 +60,8 @@ export const SizeMatrix: Story = {
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
           <p className="text-caption text-fg-muted mb-2">children size="{size}"（group 無 size prop）</p>
-          <FieldControlGroup block>
-            <Select size={size} className="!w-[120px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+          <FieldControlGroup width="fill">
+            <Select size={size} width={120} options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
             <Input size={size} className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
           </FieldControlGroup>
         </div>
@@ -77,22 +77,22 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-6 w-[420px]">
       <div>
         <p className="text-caption text-fg-muted mb-2">default</p>
-        <FieldControlGroup block>
-          <Select className="!w-[120px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+        <FieldControlGroup width="fill">
+          <Select width={120} options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
           <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
       </div>
       <div>
         <p className="text-caption text-fg-muted mb-2">disabled(整 group children 各自 disabled)</p>
-        <FieldControlGroup block>
-          <Select className="!w-[120px]" options={FIELDS} defaultValue="name" disabled aria-label="篩選欄位" />
+        <FieldControlGroup width="fill">
+          <Select width={120} options={FIELDS} defaultValue="name" disabled aria-label="篩選欄位" />
           <Input className="flex-1" defaultValue="無線滑鼠" disabled aria-label="篩選值" />
         </FieldControlGroup>
       </div>
       <div>
         <p className="text-caption text-fg-muted mb-2">cell error(其中一格驗證錯誤 → 紅框。這個範例的錯誤格在最後一格,平常就畫得出完整四邊;錯誤格在中間時,平常右邊那條線是鄰居的,滑過或聚焦它才四邊完整)</p>
-        <FieldControlGroup block>
-          <Select className="!w-[120px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+        <FieldControlGroup width="fill">
+          <Select width={120} options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
           <Input className="flex-1" defaultValue="無線滑鼠" error aria-label="篩選值" />
         </FieldControlGroup>
       </div>
@@ -108,9 +108,9 @@ export const Accessibility: Story = {
       <p className="text-body">
         Container 不加 ARIA role(透明 wrapper);children 各自 aria-label。Tab 鍵在 children 之間正常移動,no focus trap。
       </p>
-      <FieldControlGroup block>
-        <Select className="!w-[120px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
-        <Select className="!w-[100px]" options={OPS} defaultValue="contains" aria-label="篩選運算子" />
+      <FieldControlGroup width="fill">
+        <Select width={120} options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+        <Select width={100} options={OPS} defaultValue="contains" aria-label="篩選運算子" />
         <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
       </FieldControlGroup>
     </div>

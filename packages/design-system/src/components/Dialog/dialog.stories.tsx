@@ -121,7 +121,7 @@ function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index:
     // (item-anatomy.spec.md「選中 × 互動疊加」表;overlay-surface.spec.md「不適用」那條:成員名單這種展示列,走 Family 2 手組)
     <div
       role="listitem"
-      // @layout-space-magic-ok: 頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1015);列上下 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
+      // @layout-space-magic-ok: 頭像 ↔ 姓名 12px = 大頭像列表的 prefix ↔ content(item-anatomy.spec.md:1019);列上下 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d))
       className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)]"
     >
       {/* 名片走全 DS 同一支建構器(buildPersonProfileCard,經 stories-helpers/scene/person-card.tsx):副標 = 列上的「職稱｜ID｜員工編號」,
@@ -382,11 +382,11 @@ function TagPickerDialog() {
               menu-item.spec.md「何時用 / 何時不用」禁止裸用 MenuItem(會失去鍵盤與焦點管理),而且 MenuItem 帶
               `role="option"`,外層若是 `role="list"` 是壞掉的無障礙父子關係(option 的合法父層是 listbox)。
               Command 自帶方向鍵導覽與 role="listbox",CommandGroup 自帶 py-2 = menu group 的 8px 呼吸。
-              列的水平內距在 **Command 根**設一次 `--item-px: var(--layout-space-loose)`(16px),
+              列的水平內距在 **Command 根**設一次:`gutter="surface"`(= `--item-px: var(--layout-space-loose)`,16px;2026-11-15 前手寫 style),
               整份清單一起換 → 列的最前緣對齊 dialog header / footer。禁止寫在單列 className:
               CommandItem 是兩層,會跟內層相加(2026-09-17 實測 16+12=28px)。
               token owner: item-anatomy.spec.md「Token: --item-px」(預設 var(--field-px) 12px)。 */}
-          <Command label="標籤選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
+          <Command label="標籤選項" gutter="surface">
             <CommandList>
               <CommandGroup>
                 {TAG_OPTIONS.map((t) => (

@@ -83,7 +83,17 @@ export type WithFieldVariantInternal<C> = C extends (props: infer P) => infer R
 //     https://www.radix-ui.com/primitives/docs/components/select
 //
 // SSOT:fieldWrapperStyles `width` variant(field-wrapper.tsx)+ field-controls.spec.md「寬度軸」。
-export type FieldWidth = 'fill' | 'hug'
+//
+// 2026-11-15 尺寸參數收成一套(user 2026-11-11 回覆「尺寸:甲」;甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、
+// "hug"(跟內容)或數字;高度同理;上下限叫 minWidth / maxWidth;大小檔位叫 size。輸入框、下拉需要固定寬時也用 width 填數字。
+// 舊名字保留一個版本,畫面不變。」):欄位家族的 width 多收數字 = 固定寬(px)。全 DS 的規則住
+// `ds-canonical/references/props-naming.md`「尺寸參數」(唯一住處),這裡只放型別。
+
+/** 寬 / 高的模式詞:`fill` 撐滿容器、`hug` 跟內容。全 DS 的「撐滿 / 跟內容」只准用這兩個字(props-naming.md「尺寸參數」)。 */
+export type SizingMode = 'fill' | 'hug'
+
+/** 欄位家族的寬度:模式詞,或數字 = 固定寬(px;窄容器裡仍不超出容器)。數字的落地住 field-wrapper.tsx `fieldWidthVariant` / `fieldWidthStyle`。 */
+export type FieldWidth = SizingMode | number
 
 // ── Menu Empty-state Min Height(已退役,2026-09-08 user 拍板)────────────────────────────
 // 舊的「空狀態最小高度 = 欄位高度 × minRows + 16px」公式(2026-04-10 加,只寫「視覺一致」)已移除:

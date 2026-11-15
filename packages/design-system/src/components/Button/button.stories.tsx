@@ -62,9 +62,10 @@ const meta: Meta<typeof Button> = {
       control: 'boolean',
       description: '停用按鈕。不代表載入中，若需傳達載入請同時設定 `loading`。',
     },
-    fullWidth: {
-      control: 'boolean',
-      description: '加上 `w-full`，撐滿父容器。垂直排列按鈕群組時使用。',
+    width: {
+      control: 'inline-radio',
+      options: ['hug', 'fill'],
+      description: '寬度模式:hug(預設)跟內容 / fill 撐滿父容器。垂直排列的按鈕群組會自動 fill。舊名 `fullWidth` 已停用、保留一個版本。',
     },
     asChild: {
       control: false,
@@ -343,9 +344,9 @@ export const FullWidth: Story = {
   name: '全寬',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <Button variant="primary" fullWidth onClick={done('已送出訂單')}>確認送出</Button>
-      <Button variant="tertiary" fullWidth>取消</Button>
-      <Button variant="primary" danger fullWidth startIcon={Trash2} onClick={done('已永久刪除訂單 #4210')}>永久刪除</Button>
+      <Button variant="primary" width="fill" onClick={done('已送出訂單')}>確認送出</Button>
+      <Button variant="tertiary" width="fill">取消</Button>
+      <Button variant="primary" danger width="fill" startIcon={Trash2} onClick={done('已永久刪除訂單 #4210')}>永久刪除</Button>
     </div>
   ),
 }

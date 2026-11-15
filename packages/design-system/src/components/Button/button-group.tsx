@@ -6,7 +6,7 @@ import { ButtonGroupContext } from './button'
  * ButtonGroup — 按鈕群組容器
  *
  * 負責群組內的間距（gap 8px）與對齊方式。
- * 垂直排列時透過 ButtonGroupContext 讓所有直接子 Button 自動套用 fullWidth，
+ * 垂直排列時透過 ButtonGroupContext 讓所有直接子 Button 自動套用 width="fill"(撐滿),
  * 無需 cloneElement — 符合 shadcn 的 Context 慣例。(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/toggle-group.tsx#L10-L59)
  *
  * @example
@@ -22,7 +22,7 @@ import { ButtonGroupContext } from './button'
  *   <Button variant="primary">確認</Button>
  * </ButtonGroup>
  *
- * // 垂直排列（fullWidth 自動套用）
+ * // 垂直排列（width="fill" 自動套用）
  * <ButtonGroup orientation="vertical">
  *   <Button variant="primary">確認</Button>
  *   <Button variant="tertiary">取消</Button>
@@ -35,9 +35,10 @@ interface ButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   align?: 'start' | 'center' | 'end'
 }
 
-// Module-level 常數(2026-04-22 D3 perf audit):provider value 為 2 狀態 boolean,hoist 避免 render 重建
-const BUTTON_GROUP_CTX_VERTICAL = { fullWidth: true } as const
-const BUTTON_GROUP_CTX_HORIZONTAL = { fullWidth: false } as const
+// Module-level 常數(2026-04-22 D3 perf audit):provider value 為 2 狀態,hoist 避免 render 重建
+//(2026-11-15「尺寸:甲」:context 由 fullWidth 布林改成寬度模式詞,直排 = fill、橫排 = hug,行為不變)
+const BUTTON_GROUP_CTX_VERTICAL = { width: 'fill' } as const
+const BUTTON_GROUP_CTX_HORIZONTAL = { width: 'hug' } as const
 
 const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(
   ({ orientation = 'horizontal', align = 'start', className, children, ...props }, ref) => {

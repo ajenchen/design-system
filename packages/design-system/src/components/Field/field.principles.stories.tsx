@@ -98,8 +98,8 @@ export const UsageGuidance: Story = {
           note={<>「查看使用者資料」「訂單明細」這類純展示場景不該用 Field + readonly mode——DescriptionList 的 <code>dl / dt / dd</code> HTML 語義更適合唯讀屬性列表,a11y 也更清楚</>}
         >
           <div className="max-w-sm">
-            {/* horizontalLabelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup horizontalLabelWidth cascade」)*/}
-            <FieldGroup horizontalLabelWidth="120px">
+            {/* labelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup labelWidth cascade」)*/}
+            <FieldGroup labelWidth={120}>
               <Field orientation="horizontal">
                 <FieldLabel>Email</FieldLabel>
                 <Input mode="readonly" defaultValue="user@example.com" />
@@ -157,8 +157,8 @@ export const OrientationRule: Story = {
         note="已知屬性的修改介面(account settings、使用者偏好)。label + control 並排節省垂直空間,讓多個設定一目了然。label 固定寬度對齊縱向軸"
       >
         <div className="max-w-xl">
-          {/* horizontalLabelWidth:同表單 label 等寬 → 控件起點對齊(2026-06-10 user 抓本 story 違反自家 canonical)*/}
-          <FieldGroup horizontalLabelWidth="120px">
+          {/* labelWidth:同表單 label 等寬 → 控件起點對齊(2026-06-10 user 抓本 story 違反自家 canonical)*/}
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required>
               <FieldLabel>電子郵件</FieldLabel>
               <Input type="email" defaultValue="user@example.com" />

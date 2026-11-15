@@ -10,7 +10,7 @@ import { CircularProgress } from '@/design-system/components/CircularProgress/ci
 import { cn } from '@/lib/utils'
 import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -169,7 +169,7 @@ export interface ComboboxProps {
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
   /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮:value 寬 + slot 元素寬 + gap +
-   *  field 內 padding;chrome 與互動不變。場景 = detail pane inline metadata。
+   *  field 內 padding / 數字 = 固定寬(px,窄容器裡不超出容器);chrome 與互動不變。
    *  SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
   width?: FieldWidth
   error?: boolean
@@ -382,11 +382,11 @@ function ReadonlyMultiSelect({
     }
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), hasTags && tagPadding[sz],
+        className={cn(fieldWrapperStyles({ mode: 'view', variant, width: fieldWidthVariant(width), size: sz }), hasTags && tagPadding[sz],
           // wrap 幾何跟 edit / readonly / disabled 全 mode 一致(2026-09-15 補漏):items-start + 同一個內距公式 + 高度放開,
           // 否則 view 態 wrap 的 tag 會被固定的 h-field-* 裁掉;第一行 y 仍 = 單行 y(field.spec.md:147 中線錨在 field-height/2)。
           hasTags && wrap && cn('items-start', tagPaddingY[sz]), className)}
-        style={hasTags ? { paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) } : undefined}
+        style={fieldWidthStyle(width, hasTags ? { paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) } : undefined)}
         data-field-mode="view"
       >
         {hasTags ? (
@@ -406,7 +406,7 @@ function ReadonlyMultiSelect({
 
   return (
     <div
-      className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), hasTags && tagPadding[sz],
+      className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), hasTags && tagPadding[sz],
         // 欄位外框就是 Tag 列的容器(ComboboxTagStack bare):TAG_ROW_CONTAINER_CLASS(`relative` =「+N」量尺的定位容器、
         // `isolate` = Tag 的疊放值只在這一列裡比;OverflowTagList 檔頭)。換行時不經 OverflowTagList 的單行路徑,沒有疊放值也沒有量尺
         hasTags && !wrap && TAG_ROW_CONTAINER_CLASS,
@@ -421,7 +421,7 @@ function ReadonlyMultiSelect({
         //(2026-09-29 全站掃出);停用的欄位整塊都是禁止符號(field-controls.spec.md「游標指引」disabled → cursor-not-allowed)
         resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed',
         className)}
-      style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
+      style={fieldWidthStyle(width, { gap: GAP, paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) })} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined} {...readonlyStop}>
       {hasTags ? (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
@@ -664,14 +664,14 @@ function CustomCombobox({
       // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
       // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx#fieldDefaultChromeCompounds)
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }), 'focus-visible:outline-none', hasTags && tagPadding[size], 'relative cursor-pointer',
         // 換行幾何只在有 Tag 時成立(view / 唯讀兩條路徑同一個判斷):空值 /「不限」時照單行欄位置中 ——
         // 修前空值的提示字頂在上內距,比單行偏上 1.5px(md;field.spec.md「Control area:Inline vs Block」:「control 第一行內容的中線」都錨在 field-height/2)
         wrap && hasTags && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — 自己的浮層開著(data-field-open)= focus = 藍;2026-07-04 Q1:error 亦收進 error variant。
         className)}
-      style={{ paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) }}
+      style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)', ...(wrap && hasTags ? { height: 'auto' } : undefined) })}
       data-field-mode="edit" data-error={error ? '' : undefined}
       // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 consumer 的 data-* 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
       {...fieldOpenProps(open)}

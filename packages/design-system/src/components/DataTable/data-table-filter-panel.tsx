@@ -36,6 +36,7 @@ import {
   type DataTableFilterPanelLabels,
 } from './data-table-filter-labels'
 import { usePanelBulkAction } from './lib/panel-bulk-action'
+import { panelWidthStyle, useWarnBelowPanelFloor, type DataTablePanelWidthProps, type PanelWidthFloor } from './lib/panel-width'
 
 // Re-export public API from filter-tree(consumer 既有 import path 不變)
 export {
@@ -141,9 +142,24 @@ const normalizeMaxConditions = (maxConditions: number | undefined): number => {
   return Math.max(0, Math.floor(maxConditions))
 }
 
+// ── 寬度(2026-11-15,lib/panel-width.ts)────────────────────────────────
+
+/**
+ * 巢狀模式比平面多的群組外框寬(= 預設 760 − 640;外層連接詞 + 間距 + 群組框內距約 104,取同預設的 120)。
+ * 產品傳的 `width` 是平面寬,巢狀自動加這一段(research-r5 選項 B 的子選項「甲」,AI 傾向、user「處理方式照你建議」)。
+ */
+const FILTER_NESTED_EXTRA_PX = 120
+/**
+ * 篩選面板的下限(【AI 推導 2026-11-15】由列的組成推出,research-r5 選項 B 第 4 點):連接詞 5rem(80)+ 間距 8 + 欄位 10rem(160)
+ * + 條件 7.5rem(120)+ 值欄至少 7.5rem(120,同一列最窄的下拉 = 條件)+ 間距 8 + 垃圾桶 28 + 左右內距 2×16 − 2(三格共用邊框)
+ * = 554px → 取 35rem(560)。實測 30rem 時值欄只剩 20px、24rem 時條件下拉被垃圾桶蓋住(research-r5 probe)。預設 640 / 760 不受影響。
+ */
+const FILTER_PANEL_FLOOR_FLAT: PanelWidthFloor = { rem: 35 }
+const FILTER_PANEL_FLOOR_NESTED: PanelWidthFloor = { rem: 35, px: FILTER_NESTED_EXTRA_PX }
+
 // ── Component Props ─────────────────────────────────────────────────────
 
-export interface DataTableFilterPanelProps<TData> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
+export interface DataTableFilterPanelProps<TData> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'>, DataTablePanelWidthProps {
   // 2026-07-18 決策17:移除獨立 `mode` prop(單一真相源 = `value.mode` discriminant)——
   //   舊設計 mode + value.mode 兩來源型別允許矛盾(mode='nested' 配 flat value → CTA 錯文案 + 死操作);
   //   無外部消費者傳 mode(grep 0),全由 value.mode 推導。對齊 MUI X GridFilterModel / AG Grid 單一 model。
@@ -191,9 +207,15 @@ function DataTableFilterPanelInner<TData>({
   maxConditions,
   labels: labelsOverride,
   onClose,
+  width,
+  minWidth,
+  maxWidth,
   className,
+  style,
   ...props
 }: DataTableFilterPanelProps<TData>, ref: React.ForwardedRef<HTMLDivElement>): React.ReactElement {
+  const widthFloor = value.mode === 'nested' ? FILTER_PANEL_FLOOR_NESTED : FILTER_PANEL_FLOOR_FLAT
+  useWarnBelowPanelFloor('DataTableFilterPanel', width == null ? undefined : width + (value.mode === 'nested' ? FILTER_NESTED_EXTRA_PX : 0), widthFloor)
   // 整批動作(恢復預設 / 清除全部)按下後:焦點交給「加篩選」(停用時給 ×)、polite 播報結果(lib/panel-bulk-action.tsx)
   const addRef = React.useRef<HTMLButtonElement>(null)
   const dismissRef = React.useRef<HTMLButtonElement>(null)
@@ -365,6 +387,8 @@ function DataTableFilterPanelInner<TData>({
     //   詳 overlay-surface.spec.md「Viewport-aware scroll chain invariant」段
     // K11 v2 fix(2026-05-04):flex item 預設 min-h:auto 讓 content 撐 height,h-full 失效。
     // 必加 `min-h-0` 才能讓 panel 在 PopoverContent max-h cap 下正確 shrink + body scroll。
+    // 產品要改寬走 `width` / `minWidth` / `maxWidth`(lib/panel-width.ts;2026-11-15):`width` 是平面寬、巢狀自動 + 120px,
+    // 下限 35rem(巢狀 + 120px)、視窗夾限恆在(同下面預設 class 的 calc(100vw-2rem),OVERLAY_VIEWPORT_MAX_WIDTH 一份)。
     <div
       ref={ref}
       className={cn(
@@ -374,6 +398,7 @@ function DataTableFilterPanelInner<TData>({
           : 'w-[min(640px,calc(100vw-2rem))]',
         className,
       )}
+      style={{ ...panelWidthStyle({ width, minWidth, maxWidth }, widthFloor, value.mode === 'nested' ? `${FILTER_NESTED_EXTRA_PX}px` : undefined), ...style }}
       {...props}
     >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}

@@ -60,4 +60,4 @@ Hook `check_ssot_consultation.sh` retired;**2026-07-07 以 `check_ssot_header_de
 - 自寫 `<button aria-label="Close"><X /></button>` 作 dismiss(應用 `ItemInlineAction`)
 - 自寫 Row `<div><Icon /><span>label</span><Button /></div>`(應用 `<MenuItem>` + slot)
 - 自訂 Input `variant="custom-name"` 未先 grep 既有 variant 值
-- 在 Toolbar 用 `<input className="bg-transparent border-0 ...">`(應用 `<Input size="sm" autoWidth>` 標準 default variant;`variant="bare"` 已於 2026-07-09 退役,不再使用)
+- 在 Toolbar 用 `<input className="bg-transparent border-0 ...">`(應用 `<Input size="sm" width="hug">` 標準 default variant;2026-11-15 前寫 `autoWidth`,已停用;`variant="bare"` 已於 2026-07-09 退役,不再使用)

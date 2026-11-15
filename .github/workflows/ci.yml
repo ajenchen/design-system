@@ -313,6 +313,10 @@ jobs:
           # 非 anatomy 的序號名、literal Markdown / 反引號(棘輪 content-quality-backtick-baseline.json 只准往下)、
           # Autodocs 缺說明、anatomy 顯示名漂移、兩個 CSF 共用 title 等。對照組在 scripts/test-audit-content-quality.mjs。純靜態,約 3 秒。
           npm run test:content-quality
+          # 尺寸參數只有一套名字(2026-11-15,user 2026-11-11「尺寸:甲」;規則 ds-canonical/references/props-naming.md「尺寸參數」):
+          # 撐滿 / 跟內容只叫 width="fill" / "hug"、size 只當檔位、欄位家族不漏原生 width / height、DS 自己不用已停用的舊名。
+          # 2026-11-11 稽核時「撐滿」有 3 個名字、「跟內容」4 種寫法 —— 沒有閘,各元件就各自照外部某一家取名。純靜態,對照組在 --selftest。
+          npm run test:sizing-props
 
       - name: Cloud portability gates (provider config survivability)
         run: |
@@ -1189,7 +1193,8 @@ jobs:
           # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」),
           # 欄位顯示面板的「恢復預設」2026-11-15 併入同一條:恢復預設看資料(值 ≠ defaultSorting / defaultValue / defaultVisibility + defaultColumnOrder —— 欄位顯示面板連順序一起比、一起還原)、
           # 清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕(欄位顯示面板沒有 → 標題列 ×)不掉 body、polite 播報;
-          # 欄位顯示面板的固定零件(搜尋框、拖曳把手不靠參數,2026-11-15);另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15)。不需要 storybook;
+          # 欄位顯示面板的固定零件(搜尋框、拖曳把手不靠參數,2026-11-15);另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15);
+          # 三個面板的寬度參數(width / minWidth / maxWidth、下限、375px 視窗夾限)與 PopoverContent width(2026-11-15 A19,腳本檔頭 (6))。不需要 storybook;
           # 對照組照最上面那支的做法分片(--shard,腳本檔頭;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字):每一格 = 基準(一趟完整判定 = 主跑,所以主跑兩格都跑)
           # + 一半根因突變(含修前寫法),覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed;不分片的完整動態覆蓋由本機 npm run test:data-table-panel-reset-clear 與 meta-test 跑)。
           # 2026-11-15 前兩格各跑「主跑 + 完整 --selftest」,本 job 兩格 CI 實測 16.1 / 16.9 分(上限 25)。本機 2026-11-15 重量(負載均值約 7):

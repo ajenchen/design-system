@@ -322,7 +322,7 @@ export const ColumnResize: Story = {
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
-            height="auto"
+            maxHeight="none"
             enableColumnResize
           />
         </ExampleSection>
@@ -330,7 +330,7 @@ export const ColumnResize: Story = {
           <DataTable
             columns={columnsWithPrice}
             data={sampleData}
-            height="auto"
+            maxHeight="none"
             pinnedLeftColumns={['sku', 'name']}
             enableColumnResize
           />
@@ -383,7 +383,7 @@ export const ColumnReorder: Story = {
         <DataTable
           columns={lockedCols}
           data={sampleData}
-          height="auto"
+          maxHeight="none"
           tableOptions={{ state: { columnOrder } }}
           enableColumnReorder
           onColumnReorder={handleColumnReorder}
@@ -425,7 +425,7 @@ export const RowAutoHeightInlineEdit: Story = {
     return (
       <div className="max-w-5xl">
         <DataTable
-          columns={cols} data={list} height="auto" autoRowHeight inlineEdit
+          columns={cols} data={list} maxHeight="none" autoRowHeight inlineEdit
           onCellCommit={(rowId, col, val) => {
             setList((prev) => prev.map((r) => r.sku === rowId ? { ...r, [col]: val as never } : r))
           }}
@@ -443,10 +443,10 @@ export const RowAutoHeightModes: Story = {
   render: () => (
     <ExampleStack>
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
-        <DataTable columns={baseColumns} data={sampleData} height="auto" />
+        <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
       </ExampleSection>
       <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
-        <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
+        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" autoRowHeight />
       </ExampleSection>
     </ExampleStack>
   ),
@@ -471,10 +471,10 @@ export const RowAutoHeight: Story = {
     return (
     <ExampleStack>
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
-        <DataTable columns={baseColumns} data={sampleData} height="auto" />
+        <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
       </ExampleSection>
       <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
-        <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
+        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" autoRowHeight />
       </ExampleSection>
       {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
           另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
@@ -485,7 +485,7 @@ export const RowAutoHeight: Story = {
         <DataTable
           columns={columnsWithNote}
           data={dataWithNotes}
-          height="auto"
+          maxHeight="none"
           autoRowHeight
           pinnedLeftColumns={['sku']}
           rowActions={() => (
@@ -504,7 +504,7 @@ export const RowAutoHeight: Story = {
         <DataTable
           columns={columnsWithNote}
           data={virtualNotes}
-          height="360px"
+          maxHeight={360}
           autoRowHeight
           pinnedLeftColumns={['sku']}
           rowActions={() => (
@@ -567,7 +567,7 @@ export const EmptyState: Story = {
   },
 }
 
-/* ── Container 高度模式 — height prop(table 容器約束) ── */
+/* ── Container 高度模式 — maxHeight prop(表格高度上限;2026-11-15 前叫 height) ── */
 // Bordered showcase retired — anatomy.BorderedProp 已 canonical 涵蓋(prop table + 何時用 false 的 rationale + 對照),showcase 純重複
 export const ContainerHeight: Story = {
   name: '容器高度',
@@ -575,19 +575,19 @@ export const ContainerHeight: Story = {
     const manyRows = React.useMemo(() => generateLargeData(50), [])
     return (
       <ExampleStack>
-        <ExampleSection title="無約束" description={<>height="auto"，table 高度完全取決於內容，不出現捲軸</>}>
-          <DataTable columns={baseColumns} data={sampleData} height="auto" />
+        <ExampleSection title="無約束" description={<>maxHeight="none"，table 高度完全取決於內容，不出現捲軸</>}>
+          <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
         </ExampleSection>
 
-        <ExampleSection title="有約束" description={<>height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
+        <ExampleSection title="有約束" description={<>maxHeight 給 300(px)，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
           <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
             <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
               <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">3 筆資料</p>
-              <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="300px" />
+              <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} maxHeight={300} />
             </div>
             <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
               <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">50 筆資料</p>
-              <DataTable columns={baseColumns} data={manyRows} height="300px" />
+              <DataTable columns={baseColumns} data={manyRows} maxHeight={300} />
             </div>
           </div>
         </ExampleSection>
@@ -611,7 +611,7 @@ export const RowActions: Story = {
             <DataTable
               columns={baseColumns}
               data={inline.rows}
-              height="auto"
+              maxHeight="none"
               getRowId={(row) => row.sku}
               rowActions={(row) => <>{inline.editButton(row)}{inline.deleteButton(row)}</>}
             />
@@ -620,7 +620,7 @@ export const RowActions: Story = {
             <DataTable
               columns={baseColumns}
               data={more.rows}
-              height="auto"
+              maxHeight="none"
               getRowId={(row) => row.sku}
               rowActions={(row) => <>{more.editButton(row)}{more.moreMenu(row)}</>}
             />
@@ -650,7 +650,7 @@ export const PinnedColumns: Story = {
               <DataTable
                 columns={columnsWithPrice}
                 data={few.rows}
-                height="auto"
+                maxHeight="none"
                 pinnedLeftColumns={['sku']}
                 rowActions={(row) => <>{few.editButton(row)}{few.moreMenu(row)}</>}
               />
@@ -661,7 +661,7 @@ export const PinnedColumns: Story = {
               <DataTable
                 columns={columnsWithPrice}
                 data={many.rows}
-                height="300px"
+                maxHeight={300}
                 pinnedLeftColumns={['sku']}
                 rowActions={(row) => <>{many.editButton(row)}{many.moreMenu(row)}</>}
               />
@@ -834,7 +834,7 @@ export const InlineEdit: Story = {
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
           tableOptions={{ getRowId: (row) => row.sku }}
           getRowId={(row) => row.sku}
@@ -901,7 +901,7 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
           experimentalSpreadsheetOverlay
           spreadsheetMode
@@ -945,7 +945,7 @@ export const SpreadsheetCursorContract: Story = {
         <DataTable
           columns={columns}
           data={rows}
-          height="240px"
+          maxHeight={240}
           inlineEdit
           experimentalSpreadsheetOverlay
           spreadsheetMode
@@ -1012,7 +1012,7 @@ export const CellErrors: Story = {
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
           autoRowHeight
           getRowId={(row) => row.sku}
@@ -1067,7 +1067,7 @@ export const CellErrorsFixedRowOverride: Story = {
         <DataTable
           columns={editableColumns}
           data={data}
-          height="auto"
+          maxHeight="none"
           inlineEdit
           getRowId={(row) => row.sku}
           tableOptions={{ getRowId: (row) => row.sku }}
@@ -1148,7 +1148,7 @@ export const NestedRows: Story = {
         <DataTable
           columns={NESTED_COLUMNS}
           data={NESTED_DATA}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.id}
           selectable
           tableOptions={{
@@ -1176,7 +1176,7 @@ export const NestedRowsExpanderHoverState: Story = {
         <DataTable
           columns={NESTED_COLUMNS}
           data={NESTED_DATA}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.id}
           tableOptions={{
             getSubRows: (row: TaskRow) => row.children,
@@ -1232,7 +1232,7 @@ export const NestedRowsWithDrag: Story = {
         <DataTable
           columns={NESTED_COLUMNS}
           data={list}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.id}
           enableRowDrag
           onRowReorder={handleReorder}
@@ -1257,7 +1257,7 @@ export const VirtualScroll: Story = {
       <DataTable
         columns={columnsWithPrice}
         data={largeData}
-        height="500px"
+        maxHeight={500}
         overscan={10}
       />
     )
@@ -1271,7 +1271,7 @@ export const VirtualScroll: Story = {
    排版設計準則(本 showcase):
    - Toolbar:左 search input / 右 ops 群(Gmail / Linear / Notion idiom)
    - 各 chrome 元件 self-pad px-loose;table mx-loose 對齊 chrome 內容左右邊界
-   - bordered=true(height="100%" 為垂直滾動 trigger,per spec)
+   - bordered=true(maxHeight="100%" 為垂直滾動 trigger,per spec)
    - Alert variant="neutral"(資訊性 hint,非 info hue) */
 // Issue 3(2026-05-10):VisibilityRow inline helper retired — 移到
 // `<DataTableColumnVisibilityPanel>` primitive 內部(SSOT)。
@@ -1340,7 +1340,7 @@ export const WithBulkActions: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
               <DataTableFilterPanel
                 columns={baseColumns}
                 value={filterTree}
@@ -1357,7 +1357,7 @@ export const WithBulkActions: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
               {/* 這個後台沒有存預設排序 → 不傳 defaultSorting(標題列不出現「恢復預設」);「清除全部」在加排序那一排最右(clearable 預設開) */}
               <DataTableSortManager
                 columns={baseColumns}
@@ -1374,7 +1374,7 @@ export const WithBulkActions: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-0">
+            <PopoverContent align="end" className="p-0">
               {/* Issue 3(2026-05-10):從 inline 149-line panel 改用 SSOT primitive
                   `<DataTableColumnVisibilityPanel>`(搜尋 + DnD reorder 是固定零件、恆在;恢復預設給 defaultVisibility 才有;
                   columnOrder / onColumnOrderChange 必填)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
@@ -1403,7 +1403,7 @@ export const WithBulkActions: Story = {
           <DataTable
             columns={baseColumns}
             data={filteredData}
-            height="100%"
+            maxHeight="100%"
             selectable
             selection={selection}
             onSelectionChange={setSelection}
@@ -1518,7 +1518,7 @@ export const SelectionKeyboardAndShift: Story = {
         <DataTable
           columns={baseColumns}
           data={data}
-          height="400px"
+          maxHeight={400}
           selectable
           selection={selection}
           onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
@@ -1544,7 +1544,7 @@ export const SelectionSingleMode: Story = {
         <DataTable
           columns={baseColumns}
           data={sampleData}
-          height="auto"
+          maxHeight="none"
           selectable="single"
           selection={selection}
           onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
@@ -1568,7 +1568,7 @@ export const SelectionDisabledRows: Story = {
         <DataTable
           columns={baseColumns}
           data={sampleData}
-          height="auto"
+          maxHeight="none"
           selectable
           selection={selection}
           onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
@@ -2195,7 +2195,7 @@ export const RowDragInteractive: Story = {
         <DataTable
           columns={columnsWithPrice}
           data={list}
-          height="auto"
+          maxHeight="none"
           getRowId={(row) => row.sku}
           pinnedLeftColumns={['sku']}
           pinnedRightColumns={['updatedAt']}
@@ -2244,7 +2244,7 @@ export const RowDragWithVirtualization: Story = {
         <DataTable
           columns={baseColumns}
           data={list}
-          height="500px"
+          maxHeight={500}
           getRowId={(row) => row.sku}
           enableRowDrag
           onRowReorder={handleReorder}
@@ -2496,7 +2496,7 @@ export const RoadmapAllInOne: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
               <DataTableFilterPanel
                 columns={columns}
                 value={filterTree}
@@ -2509,7 +2509,7 @@ export const RoadmapAllInOne: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" pressed={sorting.length > 0} />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto p-0">
+            <PopoverContent align="end" width="hug" className="p-0">
               {/* 沒有存預設排序 → 不傳 defaultSorting;「清除全部」在加排序那一排最右 */}
               <DataTableSortManager
                 columns={columns}
@@ -2523,7 +2523,7 @@ export const RoadmapAllInOne: Story = {
             <PopoverTrigger asChild>
               <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-0">
+            <PopoverContent align="end" className="p-0">
               {/* Issue 3(2026-05-10)+ F1 fix(2026-05-10):primitive
                   `<DataTableColumnVisibilityPanel>` + columnOrder/onColumnOrderChange wired
                   →  panel 內啟 drag handle(per user 抓:為什麼還會有偏移?為什麼沒 drag?(轉述))。
@@ -2552,7 +2552,7 @@ export const RoadmapAllInOne: Story = {
           <DataTable
             columns={columns}
             data={filteredData}
-            height="100%"
+            maxHeight="100%"
             inlineEdit
             selectable
             selection={selection}
@@ -2701,7 +2701,7 @@ export const RoadmapPerfBudget: Story = {
         <DataTable
           columns={columns}
           data={data}
-          height="600px"
+          maxHeight={600}
           inlineEdit
           getRowId={(row) => row.id}
           onCellCommit={handleCommit}

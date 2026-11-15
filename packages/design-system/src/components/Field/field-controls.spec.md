@@ -203,7 +203,7 @@ Field wrapper 透過 context 注入的 key 是 `invalid`(**非 `error`**;field.t
 
 ---
 
-## 寬度軸(width: fill / hug)— 正交軸(2026-07-08 user 拍板)
+## 寬度軸(width: fill / hug)— 正交軸(2026-07-08 user 拍板;2026-11-15 加數字 = 固定寬)
 
 Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交:
 
@@ -211,10 +211,19 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 |-------|------|--------|
 | `fill`(default)| `w-full` 填滿容器 — 原行為,零回歸 | form 表單直欄(欄位左緣對齊)、DataTable cell |
 | `hug` | `w-fit max-w-full` 依內容收縮 | detail pane inline metadata(狀態/優先級/負責人 點擊即編輯)、toolbar 內 field |
+| 數字(px)| 固定寬:行內 `width: Npx` + `max-w-full`(cva `fixed`,窄容器裡仍不超出容器) | 工具列 / 篩選列 / 併排欄位組(FieldControlGroup)裡「要固定寬」的那一格,例如國碼下拉 88、篩選欄位 160 |
 
 **定義(user verbatim)**:hug 寬 = value 寬 + 其中各元素寬 + 彼此間距 + field 內部 padding —— **框線、互動、樣式全部不變,只有寬度變**(就是一般 field 把寬度改 hug)。`max-w-full` 保證窄容器不溢出(`min-w-0` + truncate 照常)。
 
-- 鋪線範圍:`fieldWrapperStyles` cva 軸(SSOT)+ Select / Combobox / DatePicker / PeoplePicker 轉發 `width?: FieldWidth`(型別 `Field/field-types.ts`)
+**數字 = 固定寬**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「輸入框、下拉需要固定寬時也用 width 填數字。」):2026-11-15 前欄位要固定寬沒有任何有型別的管道,
+DS 自己的範例只好寫 `className="!w-[140px]"`(帶 `!` 才蓋得過 `w-full`),產品照抄還會被 consumer 檢查擋。數字一律是 px(與 DataTable 欄寬 `meta.width`、AgentPanel `width` 同一種單位);
+consumer 明寫的 `style.width` 仍勝過它。全 DS 尺寸參數的命名規則住 `ds-canonical/references/props-naming.md`「尺寸參數」。
+
+- 鋪線範圍:`fieldWrapperStyles` cva 軸(SSOT,`fill` / `hug` / `fixed`)+ `fieldWidthVariant` / `fieldWidthStyle`(`field-wrapper.tsx`,所有收 `FieldWidth` 的控件一律經這兩支)
+  + Select / Combobox / DatePicker / DatePicker.Range / PeoplePicker / TimePicker 轉發 `width?: FieldWidth`(型別 `Field/field-types.ts`);
+  Input 收 `FieldWidth`(`hug` = 舊名 `autoWidth` 的 field-sizing 做法,`autoWidth` 保留一個版本);NumberInput / LinkInput 收 `'fill' | 數字`
+  (依內容寬會隨輸入跳動、目前沒有情境,不開【AI 推導 2026-11-15;TimePicker 補 `width` 同為 AI 判斷,user 原話沒有點名這三個元件】)。Input / NumberInput / LinkInput 的 HTML 原生 `width` / `height` 已從型別拿掉 ——
+  `<input type="text">` 的這兩個屬性沒有作用,留著 = 寫了不報錯也不生效(audit-r7 INV-02)。Textarea 不在這條軸上(多行輸入一律撐滿)。
 - **何時不用**:form 直欄(fill 對齊)、DataTable cell(naked 已 `!h-full` 滿格,cell 寬由 column 管)
 - **欄位內搜尋讓位不改欄寬**(2026-10-07,待辦總帳 K4):可搜尋欄位打開時,值裡用文字畫的部分(只選「不限」、PeoplePicker 多人只選 1 位的名字)讓位給欄位內搜尋框,
   它原本的寬留在搜尋框那一格 —— hug 欄位打開前後、打的字沒超過那段值之前欄寬不變(規則 `../SelectMenu/select-menu-unrestricted.spec.md`「欄位顯示」、

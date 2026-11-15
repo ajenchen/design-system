@@ -50,7 +50,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TutorialRule title="❌ 多個欄位上下排列:用 FieldGroup">
           {/* 真的錯誤示範(稽核 M086):姓名與 Email 是兩個獨立欄位,硬接成一組 */}
-          <FieldControlGroup block>
+          <FieldControlGroup width="fill">
             <Input className="flex-1" placeholder="姓名" aria-label="姓名" />
             <Input className="flex-1" placeholder="Email" aria-label="Email" />
           </FieldControlGroup>
@@ -90,8 +90,8 @@ export const SizeRule: Story = {
       <TutorialRule title="繼承 Field 尺寸 — 包進 Field 當控件">
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
-          <FieldControlGroup block>
-            <Select className="!w-[88px]" options={CODES} defaultValue="+886" aria-label="國碼" />
+          <FieldControlGroup width="fill">
+            <Select width={88} options={CODES} defaultValue="+886" aria-label="國碼" />
             <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
           </FieldControlGroup>
         </Field>
@@ -99,10 +99,10 @@ export const SizeRule: Story = {
       </TutorialRule>
 
       <TutorialRule title="單獨使用時逐一設尺寸 — 篩選列">
-        <FieldControlGroup block>
+        <FieldControlGroup width="fill">
           {/* 逐一設尺寸:每個控件明寫 size(稽核 L032) */}
-          <Select size="sm" className="!w-[140px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
-          <Select size="sm" className="!w-[120px]" options={OPS} defaultValue="contains" aria-label="篩選運算子" />
+          <Select size="sm" width={140} options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+          <Select size="sm" width={120} options={OPS} defaultValue="contains" aria-label="篩選運算子" />
           <Input size="sm" className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
       </TutorialRule>

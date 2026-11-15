@@ -434,7 +434,9 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 
 ### 垂直排列
 
-所有按鈕撐滿容器寬度（`fullWidth`）。**最希望被點擊的按鈕放最上方**——視覺動線由上往下。
+所有按鈕撐滿容器寬度（`width="fill"`;直排的 `<ButtonGroup orientation="vertical">` 自動套用,按鈕上明寫的 `width` 勝過群組）。**最希望被點擊的按鈕放最上方**——視覺動線由上往下。
+
+**寬度參數**(2026-11-15,user 2026-11-11 決策頁「尺寸:甲」):Button 的寬度模式叫 `width`,`'hug'`(預設,跟內容)/ `'fill'`(撐滿父容器)。舊名布林 `fullWidth` 保留一個版本(`@deprecated`,`fullWidth` = `width="fill"`,畫面不變;同時傳以 `width` 為準;直排群組裡 `fullWidth={false}` 照舊撐滿,與改名前相同)。Button 不收數字寬 —— 按鈕寬度交給內容或版面【AI 推導 2026-11-15:哪個元件收哪些值是 AI 依「每個元件能填的值不完全一樣」這條代價決定的,user 原話沒有點名 Button】(全 DS 規則 `ds-canonical/references/props-naming.md`「尺寸參數」)。
 
 ---
 

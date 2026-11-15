@@ -180,7 +180,7 @@ function DashboardPage() {
     // 四邊都是 loose:chrome header → 有框的 DataTable = bounded region(DS `layoutSpace.spec.md` 規則 2)、
     // 左右 = 規則 1、最後是有框的 DataTable → 容器底 = 規則 4「bounded region → 容器底」
     <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
-      <DataTable columns={PENDING_ORDER_COLUMNS} data={PENDING_ORDERS} height="auto" aria-label="今日待處理訂單" />
+      <DataTable columns={PENDING_ORDER_COLUMNS} data={PENDING_ORDERS} maxHeight="none" aria-label="今日待處理訂單" />
     </div>
   )
 }

@@ -125,10 +125,10 @@ BulkActionBar 是 plain block(無 positioning 邏輯),consumer 用 flex column �
 
 | Use case | DataTable 設定 | Inline composition 結果 |
 |---|---|---|
-| 1️⃣ Page 中一段 | `height="auto"` | BulkActionBar 自然接在 table 下方 ✓ |
-| 2️⃣ Container fill(dialog body 等)| `height="100%"` | flex column,table flex-1,BulkActionBar 接尾 ✓ |
-| 3️⃣ Viewport-fill app | `height="100%"` 配 flex-1 | table 自動讓位 ✓ |
-| 4️⃣ 長 page scroll(BulkActionBar 不可 scroll 走)| auto | consumer **自行套** `<div className="sticky bottom-0">` 或 `fixed bottom-0` wrapper |
+| 1️⃣ Page 中一段 | `maxHeight="none"` | BulkActionBar 自然接在 table 下方 ✓ |
+| 2️⃣ Container fill(dialog body 等)| `maxHeight="100%"` | flex column,table flex-1,BulkActionBar 接尾 ✓ |
+| 3️⃣ Viewport-fill app | `maxHeight="100%"` 配 flex-1 | table 自動讓位 ✓ |
+| 4️⃣ 長 page scroll(BulkActionBar 不可 scroll 走)| `maxHeight="none"` | consumer **自行套** `<div className="sticky bottom-0">` 或 `fixed bottom-0` wrapper |
 
 case 4 比較少見,consumer 知道自己 layout 時自加 wrapper 即可,DS primitive 不該替消費者決定 positioning。
 

@@ -67,7 +67,7 @@ import { useExitStartFocusReturn, useTriggerlessFocusReturn, radixTriggerOf } fr
  * ── 實作基礎 ──
  * 自建 composite,消費 DS primitives:
  *   - Radix DialogPrimitive(焦點 trap / Esc / modal 隔離靠 hideOthers aria-hidden — react-dialog@1.1.x 不輸出 aria-modal,保有 shadcn 結構優勢)
- *   - `<Empty>` / `<Button>` / `<Input size="sm" autoWidth>`(ZoomInput,default variant)/ `<AspectRatio>` / `<Textarea>` / `<DropdownMenu>`
+ *   - `<Empty>` / `<Button>` / `<Input size="sm" width="hug">`(ZoomInput,default variant)/ `<AspectRatio>` / `<Textarea>` / `<DropdownMenu>`
  *   - `patterns/horizontal-overflow`(filmstrip 溢出捲動)
  * 不用 DS 的 `<Dialog>` wrapper:因為 FileViewer 需要 edge-to-edge fullscreen
  * (無 viewport inset / 無 rounded-lg / 無 maxWidth),Dialog 的這些預設都要覆寫。
@@ -187,13 +187,13 @@ interface ZoomInputProps {
 }
 
 /**
- * ZoomInput — [−] [% input(default variant + autoWidth)with ⌄ menu trigger] [+]
+ * ZoomInput — [−] [% input(default variant + width="hug")with ⌄ menu trigger] [+]
  *
  * 世界級對照:Figma zoom control / Adobe Acrobat / Google Slides zoom。
  *
  * ── 消費 DS primitive ──
  *   - `<Button>` iconOnly size="sm" 作 ±按鈕
- *   - `<Input size="sm" autoWidth>` 作 %輸入(Toolbar inline editing canonical;autoWidth 隨文字寬)
+ *   - `<Input size="sm" width="hug">` 作 %輸入(Toolbar inline editing canonical;跟內容寬 = 隨文字寬;2026-11-15 前寫 autoWidth)
  *   - Input `endSlot` escape hatch 包 `<DropdownMenuTrigger asChild>` + chevron 觸發 DropdownMenu
  *   - `<DropdownMenu>` 作 preset + fit 選單(取代原先 Popover + 手刻 button list)
  *
@@ -241,12 +241,12 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
           — 靠 Radix asChild + ItemInlineActionButton:視覺是 Input + endAction,行為是 chevron-as-trigger
           — 完全對齊 user 2026-04-21「應該只有inline aciton 可以觸發選單才對,然後選單要按原則對齊inline action」 */}
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-        {/* maxLength 限縮(2026-07-09 user 要求:找合理最大值避免無限輸入(轉述)):autoWidth 下輸入框寬度隨字數長,
+        {/* maxLength 限縮(2026-07-09 user 要求:找合理最大值避免無限輸入(轉述)):跟內容寬(width="hug")下輸入框寬度隨字數長,
             無上限則可無限打字撐爆 toolbar。max 合法值「400%」= 4 字(對齊 ZOOM_PRESETS / ImageRenderer MAX_SCALE 400;
             commitDraft 另 clamp 10–400),留 1 字編輯緩衝 → maxLength={5}。 */}
         <Input
           size="sm"
-          autoWidth
+          width="hug"
           maxLength={5}
           aria-label={labels.zoomInput}
           value={draft}
@@ -279,7 +279,7 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
         <DropdownMenuContent
           align="end"
           sideOffset={OVERLAY_SIDE_OFFSET}  // 2026-07-04:M17 — elevation.spec「primitive default 必 import 該 const」
-          // minWidth 對齊 trigger(Input autoWidth),menu 寬度 fit-content 更貼近觸發點視覺中心
+          // minWidth 對齊 trigger(Input width="hug"),menu 寬度 fit-content 更貼近觸發點視覺中心
           className="min-w-[9rem] w-auto bg-surface-raised text-foreground border-divider"
           data-theme="dark"
         >

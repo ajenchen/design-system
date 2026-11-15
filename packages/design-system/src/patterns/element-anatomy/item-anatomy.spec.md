@@ -711,8 +711,12 @@ Canonical 對齊模式判斷:`MenuItem` 的 `isBlockAlign = avatarPx > 24 && !!d
 `components/DataTable/data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel` 的搜尋框(12px)與 `components/DataTable/data-table-column-visibility-panel.tsx#VisibilityRow` 的列(16px)
 就是並存的。直接吃會變成「調列就把欄位一起拉走」。獨立 named token 才表達得出來。
 
-**客製方式**:在**清單容器**設一次(inline style),整棵子樹的 row 一起換 ——
-List-as-region 設 `--item-px: var(--layout-space-loose)`(見 `../overlay-surface/overlay-surface.spec.md`)。
+**客製方式**:在**清單容器**設一次,整棵子樹的 row 一起換 ——
+List-as-region 用 `Command` 的 **`gutter="surface"`**(= 在 Command 根寫 `--item-px: var(--layout-space-loose)`,見 `../overlay-surface/overlay-surface.spec.md`);
+預設 / `gutter="field"` = `--field-px`。2026-11-15 起改走元件參數(決策頁 r9「照既有原則直接做」:清單列的左右內距改成元件參數 =
+「要設定的值走元件參數」4甲;那一項 user 沒有逐字選,屬預選、user 未提出異議),之前 consumer 要自己寫 inline style。
+這顆變數本身仍由 DS 內部寫(`token-registry.json` 的分類維持產品只讀 —— audit-r7 P13 建議的「加參數、分類表維持 read」那一條);
+產品要換列的內距走 `gutter`,不直接寫變數。
 **禁止寫在單列的 `className`**:`CommandItem` 等兩層結構會讓它落在外層 wrapper 與本層相加
 (2026-09-17 實測 16+12=28px,標題 17px / 勾選框 29px)。機械閘 `scripts/overlay-list-as-region-invariant.mjs`。
 

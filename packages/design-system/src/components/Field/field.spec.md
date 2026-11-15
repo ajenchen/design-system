@@ -119,9 +119,9 @@ Label 在左、control + description + error 在右欄垂直堆疊。Label 與 c
 
 適用：寬螢幕 form、設定頁裡跟其他欄位並列的控件(一列一個開關的設定列不用 Field,用自帶標題的 Switch,見 `../Switch/switch.spec.md`「設定列 vs 水平 Field」)。
 
-Horizontal 模式下 label 的欄寬由 `labelWidth` prop 控制（任何 CSS length 值），預設 `auto` 由 label 內容撐開。內部用 CSS variable `--field-label-width` 傳給 grid template column。
+Horizontal 模式下 label 的欄寬由 `labelWidth` prop 控制(數字 = px;也收任何 CSS length 字串,比例寬如 `"30%"` 只能用字串),預設 `auto` 由 label 內容撐開。內部用 CSS variable `--field-label-width` 傳給 grid template column。數字 = px 是全 DS 長度參數的同一條規則(`ds-canonical/references/props-naming.md`「尺寸參數」)。
 
-**硬規則(2026-06-10 codify,user 確認)**:同一表單的多個 horizontal Field **必經 `FieldGroup horizontalLabelWidth` 統一 label 寬**(單行 `labelWidth` 覆寫)——禁各自 `auto` 造成控件起點不對齊(錨例:field.principles 原違反自家 idiom,圖示控件參差)。機制詳下方「FieldGroup horizontalLabelWidth cascade」段。
+**硬規則(2026-06-10 codify,user 確認)**:同一表單的多個 horizontal Field **必經 `FieldGroup labelWidth` 統一 label 寬**(單行 `labelWidth` 覆寫)——禁各自 `auto` 造成控件起點不對齊(錨例:field.principles 原違反自家 idiom,圖示控件參差)。機制詳下方「FieldGroup labelWidth cascade」段。
 
 ---
 
@@ -268,9 +268,9 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:438-454`)
-- **游標一般箭頭**(`cursor-default`,`field.tsx:447`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
-- **disabled 時整顆不渲染**(`field.tsx:438`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:439-455`)
+- **游標一般箭頭**(`cursor-default`,`field.tsx:448`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:439`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
 - 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
@@ -289,7 +289,7 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 ## FieldGroup — 多 Field 垂直堆疊
 
 ```tsx
-<FieldGroup horizontalLabelWidth="120px">
+<FieldGroup labelWidth={120}>
   <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
   <Field><FieldLabel>Email</FieldLabel><Input /></Field>
   <Field orientation="horizontal">
@@ -320,13 +320,18 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
 **影響**:md 下新舊值都是 16px(33 個用法裡 32 個視覺零變化),lg 下從凍結的 16px 變成 24px。
 
-### FieldGroup `horizontalLabelWidth` cascade(2026-04-20)
+### FieldGroup `labelWidth` cascade(2026-04-20;2026-11-15 前叫 `horizontalLabelWidth`)
 
 同一畫面 / 同一 FieldGroup 內多個 horizontal Field **必須共用 label 欄寬度**。若每個 Field 各自傳 `labelWidth`(或省略 → 內容撐開),label 寬度會參差不齊,Switch / Input 的左邊緣不對齊,視覺上每一行「歪七扭八」。
 
 表單的 label 欄固定寬，讓每列 control 從同一條線開始，使列與列形成可掃描的欄位格網；label 長度不得逐列改變 control 起點。
 
-`FieldGroup horizontalLabelWidth` 透過 React Context cascade 到所有子 Field(含 `vertical` 模式的 Field 不受影響——vertical 無 label 欄概念)。單一 Field 仍可用自己的 `labelWidth` prop 覆寫 group 預設(罕見 — 通常 group 預設就是 canonical)。
+`FieldGroup labelWidth` 透過 React Context cascade 到所有子 Field(含 `vertical` 模式的 Field 不受影響——vertical 無 label 欄概念)。單一 Field 仍可用自己的 `labelWidth` prop 覆寫 group 預設(罕見 — 通常 group 預設就是 canonical)。
+
+**同一個值只有一個名字**(2026-11-15,user 2026-11-11 決策頁「尺寸:甲」):群組層與單一 Field 層管的是同一個值(水平排版時的 label 欄寬),
+原本群組層叫 `horizontalLabelWidth`、單一 Field 叫 `labelWidth` = 一個值兩個名字。群組層改名 `labelWidth`,型別一併收數字(px);
+舊名 `horizontalLabelWidth` 保留一個版本(`@deprecated`,同時傳以 `labelWidth` 為準),行為與畫面不變。【AI 推導 2026-11-15:把這一對收成同名是「尺寸:甲」的落地,
+user 原話沒有點名這個參數;依據是盤點 audit-r7 INV-14 列在甲案遷移清單裡】
 
 ---
 

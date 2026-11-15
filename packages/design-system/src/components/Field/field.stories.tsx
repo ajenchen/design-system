@@ -152,7 +152,7 @@ export const Horizontal: Story = {
   name: '水平',
   render: () => (
     <div className="max-w-2xl">
-      <FieldGroup horizontalLabelWidth="120px">
+      <FieldGroup labelWidth={120}>
         <Field orientation="horizontal" required>
           <FieldLabel>姓名</FieldLabel>
           <Input placeholder="請輸入姓名" />
@@ -272,7 +272,7 @@ export const MixedControlAlignment: Story = {
       </ExampleSection>
 
       <ExampleSection title="Horizontal Field：label 與任何 control 都對齊中線">
-        <FieldGroup horizontalLabelWidth="120px">
+        <FieldGroup labelWidth={120}>
           <Field orientation="horizontal">
             <FieldLabel>姓名</FieldLabel>
             <Input placeholder="請輸入姓名" />
@@ -342,7 +342,7 @@ export const SegmentedControlInField: Story = {
 
       <ExampleSection title="Horizontal：label 與 SegmentedControl 中線對齊" description={<>水平排列時,分段控制器跟其他控件(輸入框、勾選框、開關)一樣維持相同的行高節奏,
           標籤的第一行會對齊控件的垂直中線。</>}>
-        <FieldGroup horizontalLabelWidth="120px">
+        <FieldGroup labelWidth={120}>
           <Field orientation="horizontal">
             <FieldLabel>名稱</FieldLabel>
             <Input placeholder="如:Q3 行銷看板" />
@@ -420,7 +420,7 @@ export const BlockControlRadioGroup: Story = {
       <ExampleSection title="Inline + Block 並排:FieldGroup 韻律不斷" description={<>同一組欄位裡混用單行控件(輸入框)和多行控件(單選群組)時,每個欄位標籤的
           第一行中線都落在同一條視覺基準上——姓名輸入框的中線、性別第一個選項(男性)的中線、Email 輸入框的中線。
           這就是整套欄位一致的行高節奏。</>}>
-        <FieldGroup horizontalLabelWidth="120px">
+        <FieldGroup labelWidth={120}>
           <Field orientation="horizontal" required>
             <FieldLabel>姓名</FieldLabel>
             <Input placeholder="請輸入姓名" />
@@ -456,7 +456,7 @@ export const ButtonAsControl: Story = {
         <ExampleSection title="Upload Button 作為附件欄位的 control" description={<>Button 是「承載 file value 的輸入介面」——點擊開檔案選擇器,結果寫回 field。
             Button 高度與 <code>field-height</code> 共用同一組 token,放進 inline control area 自然對齊
             Input 中線,horizontal label 公式也直接套用,不需要任何特例。</>}>
-          <FieldGroup horizontalLabelWidth="120px">
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required>
               <FieldLabel>專案名稱</FieldLabel>
               <Input placeholder="如:Q2 行銷活動" />
@@ -588,7 +588,7 @@ export const SliderAlignsWithOtherFields: Story = {
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
           <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">size = {size}</div>
-          <FieldGroup horizontalLabelWidth="96px">
+          <FieldGroup labelWidth={96}>
             <Field orientation="horizontal">
               <FieldLabel>姓名</FieldLabel>
               <Input size={size} placeholder="請輸入姓名" />

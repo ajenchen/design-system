@@ -1,10 +1,11 @@
 // @internal — DS-internal 單元(Field 家族 chrome 基底,consumer 用 Field/Input 等 wrapper 不直用);不隨 index.ts re-export 進 npm public surface。
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import type { HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react'
+import type { CSSProperties, HTMLAttributes, MouseEvent as ReactMouseEvent } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { isOwnPointerTarget } from '@/design-system/lib/pointer-press'
 import { installReadonlyPointerFocusGuard } from '@/design-system/lib/pointer-focus-guard'
+import type { FieldWidth, SizingMode } from './field-types'
 
 // 唯讀欄位「滑鼠點不畫焦點、鍵盤進來才畫」的判斷(lib/pointer-focus-guard.ts 檔尾)—— 所有 Field 控件都載入本檔,在這裡裝一次,元件端零接線。
 installReadonlyPointerFocusGuard()
@@ -175,9 +176,12 @@ export const fieldWrapperStyles = cva(
       // Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`
       //   https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/select.tsx
       //   Radix Select Trigger intrinsic sizing https://www.radix-ui.com/primitives/docs/components/select
+      // fixed(2026-11-15,「尺寸:甲」):`width` 傳數字 = 固定寬,寬度由行內 `width: Npx` 給(本檔 fieldWidthVariant / fieldWidthStyle),
+      //   這裡只留 `max-w-full` —— 窄容器裡不超出容器(與 hug 同一條保證)。
       width: {
         fill: 'w-full',
         hug: 'w-fit max-w-full',
+        fixed: 'max-w-full',
       },
       // error(2026-07-04 Q1 拍板,SSOT 集中):原散在各控件的 error border classes 因
       // focus-within:!border-primary(!important)被蓋 = dead code(聚焦永遠藍)。
@@ -274,6 +278,24 @@ export const fieldWrapperStyles = cva(
     },
   }
 )
+
+/**
+ * 寬度值(`FieldWidth`)→ 外框 cva 的 `width` 軸值:數字走 `fixed`(cva 只留 `max-w-full`,寬度由 `fieldWidthStyle` 的行內
+ * `width: Npx` 給);模式詞原樣交給 cva。所有收 `FieldWidth` 的控件一律經這兩支,不各自判斷數字(2026-11-15「尺寸:甲」)。
+ */
+export function fieldWidthVariant(width: FieldWidth | null | undefined): SizingMode | 'fixed' | undefined {
+  if (typeof width === 'number') return 'fixed'
+  return width ?? undefined
+}
+
+/**
+ * 數字寬的行內樣式;與元件自己 / consumer 的 `style` 合併 —— 後者放後面,明寫的 style 照舊勝出。不是數字 → 原樣回傳 `style`
+ *(沒有 style 就是 undefined,DOM 不多一個空的 style 屬性)。
+ */
+export function fieldWidthStyle(width: FieldWidth | null | undefined, style?: CSSProperties): CSSProperties | undefined {
+  if (typeof width !== 'number') return style
+  return { width, ...style }
+}
 
 // ── Bare Input Styles ───────────────────────────────────────────────────────
 

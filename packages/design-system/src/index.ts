@@ -317,6 +317,7 @@ export type {
   FieldVariant,
   FieldWidth,
   FormFieldInputProps,
+  SizingMode,
   UseFormValidationOptions,
   UseFormValidationReturn,
 } from './components/Field/index'

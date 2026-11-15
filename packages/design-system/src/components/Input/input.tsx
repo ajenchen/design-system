@@ -3,8 +3,8 @@ import * as React from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, focusFieldInputFromChrome, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { ItemInlineAction, ItemPrefix, type InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -14,8 +14,11 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+// 原生 `width` / `height` 拿掉(2026-11-15「尺寸:甲」):`<input type="text">` 的 HTML width / height 屬性沒有任何作用
+//(只有 type=image 才有),留著 = `<Input width="hug">` 型別檢查會過、畫面卻毫無反應(audit-r7 INV-02 型別探針 + 瀏覽器實測
+// width=240 仍 153px)。寬度改走 DS 的寬度軸 `width?: FieldWidth`(下方);高度由 `size` 決定。
 export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'width' | 'height'>,
     Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant' | 'width'> {
   /** Field mode */
   mode?: FieldMode
@@ -52,19 +55,20 @@ export interface InputProps
    */
   loading?: boolean
   /**
-   * Auto-width:Input 寬度 = 內容寬(value / placeholder 文字寬)+ startIcon + endAction + padding。
-   * 使用 CSS `field-sizing: content`(Chrome 123+ / Safari 17.4+;Firefox 還在實驗)。
-   *
-   * **使用情境**:
-   * - Inline edit(VS Code setting row / Figma property toolbar number input)
-   * - ZoomInput(FileViewer 縮放比例:輸入「100%」自動縮到三位數寬)
-   * - Tag / Chip 內 inline rename
-   *
-   * **不要用在**:表單 Field(Field 需要欄寬對齊,不該隨值跳動)
-   *
-   * **fallback**:不支援 `field-sizing` 的瀏覽器會退化為 `w-auto`(wrapper 縮到 content 尺寸,
-   * input 為 min-w-0,依 content/placeholder 撐寬)。UX 上稍不一致但不致斷;若必須精準對齊所有瀏覽器,
-   * consumer 可自行傳 `style={{ width: ... }}` 顯式寬度,不走 auto。
+   * 寬度軸(與 Select / Combobox / DatePicker 同一個 `width`,field-controls.spec.md「寬度軸」):
+   * - `'fill'`(預設)— 撐滿容器
+   * - `'hug'` — 跟內容:寬度 = 內容寬(value / placeholder 文字寬)+ startIcon + endAction + padding。
+   *   使用 CSS `field-sizing: content`(Chrome 123+ / Safari 17.4+;Firefox 還在實驗)。
+   *   **使用情境**:Inline edit(VS Code setting row / Figma property toolbar number input)、ZoomInput(FileViewer
+   *   縮放比例:輸入「100%」自動縮到三位數寬)、Tag / Chip 內 inline rename。**不要用在**表單 Field(欄寬要對齊,不該隨值跳動)。
+   *   **fallback**:不支援 `field-sizing` 的瀏覽器退化為 `w-auto`(外框縮到內容尺寸,input 為 min-w-0,依 content/placeholder 撐寬)。
+   * - 數字 — 固定寬(px;窄容器裡不超出容器)。工具列裡的搜尋框、篩選列的條件欄這類「要固定寬」的地方用它,
+   *   不要再用 `className="!w-[…]"` 硬蓋。
+   */
+  width?: FieldWidth
+  /**
+   * @deprecated 2026-11-15 起改用 `width="hug"`(「尺寸:甲」:撐滿 / 跟內容全 DS 只用 `width`)。保留一個版本,行為與畫面不變;
+   * 同時傳 `width` 時以 `width` 為準。
    */
   autoWidth?: boolean
 }
@@ -83,6 +87,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       endAction,
       endSlot,
       loading = false,
+      width: widthProp,
       autoWidth = false,
       className,
       disabled: disabledProp,
@@ -96,6 +101,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    // 寬度軸:`width` 優先;舊名 `autoWidth`(deprecated)= `width="hug"`。
+    const width: FieldWidth = widthProp ?? (autoWidth ? 'hug' : 'fill')
+    const hug = width === 'hug'
     // ── FieldContext 自動讀取(在 <Field> 內時,invalid / disabled / mode / chrome 由 context 接管) ──
     const fieldCtx = useFieldContext()
     // 2026-05-31 #11/#12:size + disabled 從 Field context cascade(對齊 NumberInput number-input.tsx#NumberInput
@@ -164,10 +172,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       return (
         <div
           className={cn(
-            fieldWrapperStyles({ mode: spanMode, variant: variant, size }),
-            autoWidth && 'inline-flex w-auto',
+            // hug 沿用 2026-11-15 前 autoWidth 的同一組 class(畫面不變);數字走 fixed + 行內寬
+            fieldWrapperStyles({ mode: spanMode, variant: variant, size, width: hug ? undefined : fieldWidthVariant(width) }),
+            hug && 'inline-flex w-auto',
             className,
           )}
+          style={fieldWidthStyle(width)}
           data-field-mode={spanMode}
         >
           {StartIcon && (
@@ -202,15 +212,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div
         className={cn(
-          fieldWrapperStyles({ mode: resolvedMode, variant: variant, size, error: resolvedError }),
+          fieldWrapperStyles({ mode: resolvedMode, variant: variant, size, error: resolvedError, width: hug ? undefined : fieldWidthVariant(width) }),
           // 整個外框都是輸入處:文字游標 + 點內距 / 邊框 / 前置圖示就聚焦 input(待辦總帳 N53③;
           // 規則 owner field-controls.spec.md「點擊與游標原則」;共用實作 field-wrapper.tsx focusFieldInputFromChrome)。
           // 停用不掛:停用的外框自己是 cursor-not-allowed(field-wrapper disabled compound),而且不接受焦點。
           resolvedMode !== 'disabled' && FIELD_TEXT_ENTRY_CURSOR,
-          // autoWidth:wrapper 縮到 inline-flex + w-auto,讓寬度由 startIcon + input(field-sizing: content)+ endAction 自然累加
-          autoWidth && 'inline-flex w-auto',
+          // hug(舊名 autoWidth):wrapper 縮到 inline-flex + w-auto,讓寬度由 startIcon + input(field-sizing: content)+ endAction 自然累加
+          hug && 'inline-flex w-auto',
           className,
         )}
+        style={fieldWidthStyle(width)}
         onMouseDown={focusFieldInputFromChrome}
         data-field-mode={resolvedMode}
         data-error={isEditable && resolvedError ? '' : undefined}
@@ -239,9 +250,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             bareInputStyles,
             resolvedMode === 'disabled' && 'text-fg-disabled placeholder:text-fg-disabled cursor-not-allowed',
-            // autoWidth:input 本身 field-sizing:content(Chrome 123+ / Safari 17.4+),寬度跟 value 文字寬。
+            // hug(舊名 autoWidth):input 本身 field-sizing:content(Chrome 123+ / Safari 17.4+),寬度跟 value 文字寬。
             // w-auto 關掉預設 w-full;min-w-0 讓 flex shrink 不卡住。
-            autoWidth && '[field-sizing:content] w-auto min-w-0',
+            hug && '[field-sizing:content] w-auto min-w-0',
           )}
           {...props}
           // 置於 {...props} 後:寫回 resolved SSOT(controlled 時 useControllable 內部為 no-op)再轉發 consumer onChange。

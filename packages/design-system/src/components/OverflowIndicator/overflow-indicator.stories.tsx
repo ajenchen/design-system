@@ -216,7 +216,7 @@ export const TableRowAssignees: Story = {
   name: 'DataTable 人員欄位',
   render: () => (
     <div className="max-w-2xl">
-      <DataTable columns={assigneeColumns} data={rows} getRowId={(r) => r.title} height="auto" />
+      <DataTable columns={assigneeColumns} data={rows} getRowId={(r) => r.title} maxHeight="none" />
     </div>
   ),
 }

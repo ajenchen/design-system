@@ -65,7 +65,7 @@ export const TaskListLoading: Story = {
   name: '任務列表載入',
   render: () => (
     <div aria-busy="true" className="max-w-2xl">
-      <DataTable columns={taskLoadingColumns} data={TASK_LOADING_ROWS} getRowId={(r) => r.id} height="auto" />
+      <DataTable columns={taskLoadingColumns} data={TASK_LOADING_ROWS} getRowId={(r) => r.id} maxHeight="none" />
     </div>
   ),
 }
@@ -103,7 +103,7 @@ export const TableRowLoading: Story = {
   name: '表格列載入',
   render: () => (
     <div aria-busy="true" className="max-w-3xl">
-      <DataTable columns={loadingColumns} data={LOADING_ROWS} getRowId={(r) => r.id} height="auto" />
+      <DataTable columns={loadingColumns} data={LOADING_ROWS} getRowId={(r) => r.id} maxHeight="none" />
     </div>
   ),
 }

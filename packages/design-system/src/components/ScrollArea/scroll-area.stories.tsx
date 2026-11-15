@@ -73,7 +73,7 @@ const NOTION_NAV = [
 
 // ── DataTable columns ─────────────────────────────────────────────────────────
 // 消費真 <DataTable>(per data-table.spec.md「簡單展示也用 DataTable」:不維護第二個靜態 Table 元件)。
-// ScrollArea 包 height="auto" DataTable = scroll-area.spec.md「Orientation」段 canonical 組合:
+// ScrollArea 包 maxHeight="none" DataTable = scroll-area.spec.md「Orientation」段 canonical 組合:
 // 捲動完全由 ScrollArea own(DataTable 無高度約束 + min-w-max 不啟內部捲軸)。
 
 interface PullRequest {
@@ -153,7 +153,7 @@ export const VerticalIssueList: Story = {
       </p>
       {/* 議題清單直接用 DataTable(稽核 M090:原本每一列都是手刻 div + 手刻狀態圓點);捲動由外層 ScrollArea 擁有 */}
       <ScrollArea className="h-[320px] border border-border rounded-lg">
-        <DataTable columns={ISSUE_COLUMNS} data={LINEAR_ISSUES} getRowId={(issue) => issue.id} height="auto" bordered={false} />
+        <DataTable columns={ISSUE_COLUMNS} data={LINEAR_ISSUES} getRowId={(issue) => issue.id} maxHeight="none" bordered={false} />
       </ScrollArea>
     </div>
   ),
@@ -209,7 +209,7 @@ export const HorizontalProductTable: Story = {
       </p>
       <ScrollArea className="border border-border rounded-lg">
         <div className="min-w-max">
-          <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} height="auto" bordered={false} />
+          <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
@@ -228,7 +228,7 @@ export const BothDirections: Story = {
       </p>
       <ScrollArea className="h-[280px] border border-border rounded-lg">
         <div className="min-w-max">
-          <DataTable columns={PR_COLUMNS} data={PULL_REQUESTS} getRowId={(pr) => pr.id} height="auto" bordered={false} />
+          <DataTable columns={PR_COLUMNS} data={PULL_REQUESTS} getRowId={(pr) => pr.id} maxHeight="none" bordered={false} />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>

@@ -295,7 +295,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「List-as-region in overl
 - **走範疇判**(在規則 3 之前):
   - bundled?**是**(`button-group.spec` + `overlay-surface.spec` 都自帶 button arrangement canonical = `gap-2`/8px)
   - → 同範疇 / bundled 第一級,**layoutSpace 一般規則跳過**
-- **答**:`gap-2`(8)— 由 `button-group.tsx:51` / `overlay-surface.tsx` SurfaceFooter 自帶 canonical own
+- **答**:`gap-2`(8)— 由 `button-group.tsx:52` / `overlay-surface.tsx` SurfaceFooter 自帶 canonical own
 
 **注意**:規則 5「橫排並列」**只**適用 input fields,不套 button group(button spacing 屬 bundled-family canonical own,不走 layoutSpace 一般 rule)。
 

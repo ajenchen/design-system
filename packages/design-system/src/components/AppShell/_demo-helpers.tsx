@@ -374,7 +374,7 @@ const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
 export function ActiveSprintView() {
   return (
     <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
-      <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} height="auto" aria-label="Sprint 42 還沒完成的議題" />
+      <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} maxHeight="none" aria-label="Sprint 42 還沒完成的議題" />
     </div>
   )
 }

@@ -240,14 +240,14 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 [−]  [ % input  ⌄ ]  [+]
  │         │         │
  │         │         └─ Button iconOnly Plus(zoom in 到下一個 preset)
- │         └─ Input size="sm" autoWidth(field-sizing:content 隨 value 文字寬)
+ │         └─ Input size="sm" width="hug"(field-sizing:content 隨 value 文字寬)
  │            + text-center + tabular-nums;endSlot = ChevronDown(觸發 DropdownMenu)
  └─ Button iconOnly Minus(zoom out 到上一個 preset)
 ```
 
 **消費 DS primitive**:
 - `<Button>` iconOnly size="sm" 作 ± 按鈕(Minus / Plus icon,disabled 於邊界)
-- `<Input size="sm" autoWidth>` 作 % 輸入(autoWidth 隨輸入文字寬;Toolbar inline editing canonical)
+- `<Input size="sm" width="hug">` 作 % 輸入(跟內容寬 = 隨輸入文字寬;Toolbar inline editing canonical;2026-11-15 前寫 `autoWidth`)
 - Input `endSlot` escape hatch 包 `<DropdownMenuTrigger asChild>` + `<ItemInlineActionButton icon={ChevronDown}>` 作 chevron(非宣告式 `endAction`——chevron 同時是 DropdownMenu trigger,需 asChild 把 trigger 行為掛到 inline action)
 - `<DropdownMenu>` 作 preset + fit 選單(取代先前 `<Popover>` + 手刻 button list)
 

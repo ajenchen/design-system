@@ -66,7 +66,7 @@ export const ReadOnlyProductRating: Story = {
   name: '商品列表平均分',
   render: () => (
     <div className="w-[420px]">
-      <DataTable columns={productRatingColumns} data={productRatings} getRowId={(r) => r.name} height="auto" />
+      <DataTable columns={productRatingColumns} data={productRatings} getRowId={(r) => r.name} maxHeight="none" />
     </div>
   ),
 }

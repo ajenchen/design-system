@@ -16,6 +16,7 @@ import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/p
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { getColumnId, getColumnLabel } from './lib/column-meta'
 import { usePanelBulkAction } from './lib/panel-bulk-action'
+import { panelWidthStyle, useWarnBelowPanelFloor, type DataTablePanelWidthProps, type PanelWidthFloor } from './lib/panel-width'
 import {
   DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS,
   resolveDataTableSortManagerLabels,
@@ -53,7 +54,7 @@ interface SortColumn {
 
 // `Omit<…, 'onReset'>` 刻意保留:2026-11-11 拿掉的 `onReset` 若還有人傳,型別層直接報錯 ——
 // 不 Omit 的話它會被當成 HTML 的表單 reset 事件收下、默默灑到 div 上,永遠不會觸發(M23(f):讓型別把每個 consumer 逼出來改)。
-export interface DataTableSortManagerProps<TData> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onReset'> {
+export interface DataTableSortManagerProps<TData> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onReset'>, DataTablePanelWidthProps {
   /** 可排序欄位來源(讀 columnDef.header / id);會自動排除 enableSorting=false */
   columns: ColumnDef<TData, any>[]
   /** 當前排序 state(TanStack SortingState) */
@@ -77,6 +78,13 @@ export interface DataTableSortManagerProps<TData> extends Omit<React.HTMLAttribu
   labels?: Partial<DataTableSortManagerLabels>
   className?: string
 }
+
+/**
+ * 排序面板的下限(2026-11-15,【AI 推導】由列的組成推出 —— research-r5 選項 B 第 4 點的同一個算法):
+ * 拖曳把手 24 + 間距 8 + 欄位下拉至少 10rem(160,同篩選面板的欄位下拉:同一份欄名)+ 間距 8 + 方向下拉 8rem(128)+ 間距 8
+ * + 垃圾桶 28 + 左右內距 2×16 = 396px → 取 25rem(400)。預設 30rem 不受影響。
+ */
+const SORT_PANEL_FLOOR: PanelWidthFloor = { rem: 25 }
 
 /** 兩份排序相同 = 欄位、方向、順位都一樣 */
 function isSortingEqual(a: SortingState, b: SortingState): boolean {
@@ -102,9 +110,14 @@ function DataTableSortManagerInner<TData>({
   clearable = true,
   onClose,
   labels: labelsOverride,
+  width,
+  minWidth,
+  maxWidth,
   className,
+  style,
   ...props
 }: DataTableSortManagerProps<TData>, ref: React.ForwardedRef<HTMLDivElement>) {
+  useWarnBelowPanelFloor('DataTableSortManager', width, SORT_PANEL_FLOOR)
   const sortableColumns = React.useMemo(() => extractColumns(columns), [columns])
   const labels = React.useMemo(() => resolveDataTableSortManagerLabels(labelsOverride), [labelsOverride])
   const directionOptions: SelectOption[] = React.useMemo(
@@ -171,11 +184,14 @@ function DataTableSortManagerInner<TData>({
 
   // K11 fix(2026-05-04): viewport-aware scroll chain invariant — 詳 overlay-surface.spec.md
   // 面板寬 30rem(480px):只有這個面板在用、不隨密度切換 → 元件自己的值,不開 token
-  // (token-system.spec.md 判斷流程第 0 題;2026-11-11 token「3全收」從 uiSize.css 收回)。rem 讓它跟著使用者字級設定縮放
+  // (token-system.spec.md 判斷流程第 0 題;2026-11-11 token「3全收」從 uiSize.css 收回)。rem 讓它跟著使用者字級設定縮放。
+  // 產品要改寬走 `width` / `minWidth` / `maxWidth`(lib/panel-width.ts;2026-11-15):下限 25rem、視窗夾限恆在
+  // (2026-11-15 前沒有視窗夾限:375px 寬時面板 480、右緣到 490,標題列的 × 跑出畫面 —— research-r5 實測)。
   return (
     <div
       ref={ref}
       className={cn('flex flex-col h-full min-h-0 w-[30rem]', className)}
+      style={{ ...panelWidthStyle({ width, minWidth, maxWidth }, SORT_PANEL_FLOOR), ...style }}
       {...props}
       // 鍵盤搬排序條件(Space 提起、方向鍵移、Esc 取消)時按 Esc 只取消拖曳、面板不關(2026-10-01;修前一下少兩層,實測):
       // 拖曳中宣告 Esc 層 + 把這一下標成拖曳獨占(lib/drag-announcements.ts useDragAccessibility.escapeLayer;drag-canonical.md invariant 8)

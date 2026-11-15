@@ -52,10 +52,11 @@ export const PhoneNumber: Story = {
       <div className="w-[360px]">
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
-          {/* `!w-[]` important override Select 內 trigger w-full;w-120px 容「+886」+ phone icon + chevron */}
-          <FieldControlGroup block>
+          {/* 固定寬走 Select 自己的 width(數字 = px;2026-11-15 前要用 `!w-[]` 硬蓋 trigger 的 w-full);120px 容「+886」+ phone icon + chevron */}
+          <FieldControlGroup width="fill">
             <Select
-              className="!w-[120px] flex-shrink-0"
+              width={120}
+              className="flex-shrink-0"
               options={COUNTRY_CODES}
               value={code}
               onChange={setCode}
@@ -85,9 +86,10 @@ export const CurrencyAmount: Story = {
       <div className="w-[320px]">
         <Field>
           <FieldLabel>採購金額</FieldLabel>
-          <FieldControlGroup block>
+          <FieldControlGroup width="fill">
             <Select
-              className="!w-[88px] flex-shrink-0"
+              width={88}
+              className="flex-shrink-0"
               options={CURRENCIES}
               value={currency}
               onChange={setCurrency}
@@ -136,9 +138,9 @@ export const FilterRow: Story = {
     return (
       <div className="w-[640px]">
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">DataTable 進階篩選 row 是 FieldControlGroup 的典型 consumer。</p>
-        <FieldControlGroup block>
-          <Select aria-label="篩選欄位" className="!w-[160px] flex-shrink-0" options={FILTER_FIELDS} value={field} onChange={setField} />
-          <Select aria-label="篩選條件" className="!w-[120px] flex-shrink-0" options={STRING_OPS} value={op} onChange={setOp} />
+        <FieldControlGroup width="fill">
+          <Select aria-label="篩選欄位" width={160} className="flex-shrink-0" options={FILTER_FIELDS} value={field} onChange={setField} />
+          <Select aria-label="篩選條件" width={120} className="flex-shrink-0" options={STRING_OPS} value={op} onChange={setOp} />
           <Input className="!flex-1 !min-w-0" value={value} onChange={(e) => setValue(e.target.value)} placeholder="輸入值..." />
         </FieldControlGroup>
       </div>

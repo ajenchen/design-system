@@ -25,6 +25,12 @@
  *            放在這支而不是 data-table-multi-sort(那支量 storybook 建置的 story,要傳自訂字得新增 story = 動 a11y 語料)或
  *            test-data-table-sort-cycle(純 node、沒有瀏覽器,只能查鍵有出現 —— 審查 A 第 2 輪把欄位 / 方向兩個讀屏名稱對調,它照樣全綠):
  *            這支已經直接打包 DataTableSortManager 原始碼,而且 selftest 要求每一條契約列都被某個突變弄紅過。
+ *        (6) 寬度(2026-11-15 A19;data-table.spec.md「工具面板的寬度」,user 2026-11-11 逐字「此外，所有data table的工具面板應該都要具備可以被
+ *            消費者調整寬度的能力對吧？處理方式照你建議…」+「尺寸:甲」):三個面板的 `width` / `minWidth` / `maxWidth`(px)量面板根元素的
+ *            getBoundingClientRect 寬 ± 0.5 —— 不傳 = 預設寬不變(排序 30rem / 篩選 640、巢狀 760 / 欄位顯示撐滿外層 18rem);width 照給;
+ *            比下限窄 → 照下限(排序 25rem / 篩選 35rem / 欄位顯示 15.5rem),而且在下限寬裡沒有元素凸出面板右緣;maxWidth 壓得下、minWidth 撐得開;
+ *            篩選巢狀 = width + 120。375px 寬時外層浮層、面板、× 全在視窗內、寬 ≤ 視窗 − 2rem(+ 邊框)。PopoverContent `width`:數字照給、
+ *            375px 夾在視窗內;`"hug"` = 跟裡面的面板一樣寬(本閘的外層浮層 2026-11-15 起就用它,取代 className="w-auto")。
  *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(MUTANTS,含修前寫法:排序面板以 onReset 有無當「重置」渲染閘、
  *        兩個面板都沒有「清除全部」、欄位顯示面板以 resettable 開關 + 有隱藏欄當渲染閘、按下 = 全部顯示、只比也只還原顯示不管順序、
  *        按下不還原順序、搜尋要另外開才有、拖曳要另外開才有、拖曳在 consumer 的 columnOrder 上找位置、沒寫到的欄不列出來),
@@ -79,6 +85,8 @@ const SORT = 'components/DataTable/data-table-sort-manager.tsx'
 const FILTER = 'components/DataTable/data-table-filter-panel.tsx'
 const HOOK = 'components/DataTable/lib/panel-bulk-action.tsx'
 const VIS = 'components/DataTable/data-table-column-visibility-panel.tsx'
+const WIDTH_LIB = 'components/DataTable/lib/panel-width.ts'
+const POPOVER = 'components/Popover/popover.tsx'
 const VIS_RESET = /const showReset = hasDefault && !isPanelResetStateEqual\(columnIds, current, defaults\)/
 const VIS_RUN = /bulk\.run\(e, defaults, '已恢復預設欄位顯示'\)/
 const VIS_HAS_DEFAULT = /const hasDefault = defaultVisibility !== undefined \|\| defaultColumnOrder !== undefined/
@@ -399,13 +407,105 @@ const MUTANTS = [
     expectRed: ['sort-clear-edit-silences', 'filter-clear-edit-silences', 'vis-reset-edit-silences'],
     apply: (src) => replaceOnce(src, /const message = notice && isEqual\(value, notice\.after\) \? notice\.text : ''/, "const message = notice ? notice.text : ''"),
   },
+  // ── 寬度(6,2026-11-15 A19)──
+  {
+    id: 'width-param-ignored',
+    what: '三個面板共用的寬度算式不理產品給的 width(畫成預設寬)',
+    file: WIDTH_LIB,
+    expectRed: ['sort-w-param', 'sort-w-floor', 'sort-w-max', 'filter-w-param', 'filter-w-nested-param', 'filter-w-floor', 'filter-w-max', 'vis-w-param', 'vis-w-floor', 'vis-w-max'],
+    apply: (src) => replaceOnce(src, /if \(width != null\) style\.width = /, 'if (false) style.width = '),
+  },
+  {
+    id: 'width-no-floor',
+    what: '沒有下限(產品給多窄就畫多窄,列被擠壞)',
+    file: WIDTH_LIB,
+    expectRed: ['sort-w-floor', 'sort-w-floor-fits', 'filter-w-floor', 'filter-w-floor-fits', 'vis-w-floor', 'vis-w-floor-fits'],
+    apply: (src) => replaceOnce(src, /const base = floorCss\(floor\)/, "const base = '0px'"),
+  },
+  {
+    id: 'width-no-viewport-clamp',
+    what: '沒有視窗夾限(修前排序面板的病:375px 寬時面板 480、× 出畫面;篩選面板的下限也不再讓位給視窗)',
+    file: WIDTH_LIB,
+    expectRed: ['sort-w-375', 'filter-w-375', 'vis-w-375'],
+    apply: (src) => replaceOnce(src, /const vp = OVERLAY_VIEWPORT_MAX_WIDTH/, "const vp = '100000px'"),
+  },
+  {
+    id: 'width-max-ignored',
+    what: '不理產品給的 maxWidth',
+    file: WIDTH_LIB,
+    expectRed: ['sort-w-max', 'filter-w-max', 'vis-w-max'],
+    apply: (src) => replaceOnce(src, /maxWidth: maxWidth != null \? `min\(\$\{maxWidth\}px, \$\{vp\}\)` : vp,/, 'maxWidth: vp,'),
+  },
+  {
+    id: 'width-min-ignored',
+    what: '不理產品給的 minWidth(下限拉不高)',
+    file: WIDTH_LIB,
+    expectRed: ['sort-w-min', 'filter-w-min', 'vis-w-min'],
+    apply: (src) => replaceOnce(src, /minWidth: `min\(\$\{minWidth != null \? `max\(\$\{base\}, \$\{minWidth\}px\)` : base\}, \$\{vp\}\)`,/, 'minWidth: `min(${base}, ${vp})`,'),
+  },
+  {
+    id: 'width-default-is-floor',
+    what: '不傳 width 時把下限當寬寫上去(預設寬變了 = 畫面變了)',
+    file: WIDTH_LIB,
+    expectRed: ['sort-w-default', 'filter-w-default', 'filter-w-nested-default', 'vis-w-default'],
+    apply: (src) => replaceOnce(src, /\n {2}return style\n/, '\n  if (width == null) style.width = base\n  return style\n'),
+  },
+  {
+    id: 'filter-nested-no-extra',
+    what: '篩選面板巢狀模式不加群組外框的差額(width 直接當巢狀寬)',
+    file: FILTER,
+    expectRed: ['filter-w-nested-param'],
+    apply: (src) => replaceOnce(src, /, value\.mode === 'nested' \? `\$\{FILTER_NESTED_EXTRA_PX\}px` : undefined\), \.\.\.style \}\}/, ', undefined), ...style }}'),
+  },
+  {
+    id: 'sort-pre-fix-width',
+    what: '排序面板修前:寬寫死 30rem、沒有寬度參數也沒有視窗夾限',
+    file: SORT,
+    expectRed: ['sort-w-param', 'sort-w-floor', 'sort-w-max', 'sort-w-min', 'sort-w-375'],
+    apply: (src) => replaceOnce(src, /style=\{\{ \.\.\.panelWidthStyle\(\{ width, minWidth, maxWidth \}, SORT_PANEL_FLOOR\), \.\.\.style \}\}/, 'style={style}'),
+  },
+  {
+    id: 'filter-pre-fix-width',
+    what: '篩選面板修前:只有預設 class 的 640 / 760(有視窗夾限),沒有寬度參數',
+    file: FILTER,
+    expectRed: ['filter-w-param', 'filter-w-nested-param', 'filter-w-floor', 'filter-w-max', 'filter-w-min'],
+    apply: (src) => replaceOnce(src, /style=\{\{ \.\.\.panelWidthStyle\(\{ width, minWidth, maxWidth \}, widthFloor, .*?, \.\.\.style \}\}/, 'style={style}'),
+  },
+  {
+    id: 'vis-pre-fix-width',
+    what: '欄位顯示面板修前:只能撐滿外層,沒有寬度參數',
+    file: VIS,
+    expectRed: ['vis-w-param', 'vis-w-floor', 'vis-w-max', 'vis-w-min'],
+    apply: (src) => replaceOnce(src, /style=\{\{ \.\.\.panelWidthStyle\(\{ width, minWidth, maxWidth \}, VISIBILITY_PANEL_FLOOR\), \.\.\.style \}\}/, 'style={style}'),
+  },
+  {
+    id: 'popover-width-ignored',
+    what: 'PopoverContent 不理 width 數字(修前:只能寫 className)',
+    file: POPOVER,
+    expectRed: ['popover-w-px'],
+    apply: (src) => replaceOnce(src, /style=\{typeof width === "number" \? \{ width: `\$\{width\}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, \.\.\.style \} : style\}/, 'style={style}'),
+  },
+  {
+    id: 'popover-width-no-clamp',
+    what: 'PopoverContent width 數字沒有視窗夾限',
+    file: POPOVER,
+    expectRed: ['popover-w-375'],
+    apply: (src) => replaceOnce(src, /maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, \.\.\.style/, '...style'),
+  },
+  {
+    id: 'popover-hug-ignored',
+    what: 'PopoverContent width="hug" 不作用(停在預設 18rem,面板被外層裁掉)',
+    file: POPOVER,
+    expectRed: ['popover-w-hug'],
+    apply: (src) => replaceOnce(src, /width === "hug" && "w-auto",/, 'false,'),
+  },
 ]
 
 const HARNESS = `
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
-import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
+import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle, PopoverBody, PopoverFooter } from '@/design-system/components/Popover/popover'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTableSortManager, DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS } from '@/design-system/components/DataTable/data-table-sort-manager'
 import { DataTableFilterPanel } from '@/design-system/components/DataTable/data-table-filter-panel'
@@ -424,6 +524,7 @@ const FILTER_COLS = [
 const SAVED_FILTER = { mode: 'flat', conjunction: 'and', children: [{ kind: 'cond', id: 'c1', field: 'category', op: 'is', value: ['Electronics'] }] }
 const MODIFIED_FILTER = { mode: 'flat', conjunction: 'and', children: [{ kind: 'cond', id: 'c1', field: 'category', op: 'is', value: ['Furniture'] }] }
 const EMPTY_FILTER = { mode: 'flat', conjunction: 'and', children: [] }
+const NESTED_FILTER = { mode: 'nested', conjunction: 'and', children: [{ kind: 'group', id: 'g1', conjunction: 'or', children: [{ kind: 'cond', id: 'c2', field: 'category', op: 'is', value: ['Electronics'] }] }] }
 const VIS_COLS = [
   { id: 'key', label: '鍵值' },
   { id: 'summary', label: '摘要' },
@@ -482,6 +583,28 @@ const SCENES = {
   'vis-order-empty': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, locked: ['key'], order: [] },
   // consumer 的 columnOrder 只寫到兩欄(其餘照 columns 接在後面,照樣列出來)
   'vis-order-partial': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, order: ['key', 'summary'] },
+  // ── 寬度(6,2026-11-15 A19):w = 面板的寬度參數(數字 = px);pop = 外層 PopoverContent 的 width(不寫 = 'hug')──
+  'sort-w-default': { panel: 'sort', value: [{ id: 'dueDate', desc: false }] },
+  'sort-w-param':   { panel: 'sort', value: [{ id: 'dueDate', desc: false }], w: { width: 600 } },
+  'sort-w-floor':   { panel: 'sort', value: [{ id: 'dueDate', desc: false }], w: { width: 200 } },
+  'sort-w-max':     { panel: 'sort', value: [{ id: 'dueDate', desc: false }], w: { width: 700, maxWidth: 560 } },
+  'sort-w-min':     { panel: 'sort', value: [{ id: 'dueDate', desc: false }], w: { minWidth: 560 } },
+  'filter-w-default':        { panel: 'filter', value: MODIFIED_FILTER },
+  'filter-w-nested-default': { panel: 'filter', value: NESTED_FILTER },
+  'filter-w-param':          { panel: 'filter', value: MODIFIED_FILTER, w: { width: 720 } },
+  'filter-w-nested-param':   { panel: 'filter', value: NESTED_FILTER, w: { width: 720 } },
+  'filter-w-floor':          { panel: 'filter', value: MODIFIED_FILTER, w: { width: 300 } },
+  'filter-w-max':            { panel: 'filter', value: MODIFIED_FILTER, w: { width: 800, maxWidth: 700 } },
+  'filter-w-min':            { panel: 'filter', value: MODIFIED_FILTER, w: { minWidth: 700 } },
+  'vis-w-default': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS },
+  'vis-w-param':   { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, w: { width: 360 } },
+  'vis-w-floor':   { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, w: { width: 120 } },
+  'vis-w-max':     { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, w: { width: 400, maxWidth: 320 } },
+  'vis-w-min':     { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, w: { minWidth: 320 } },
+  'vis-w-wide':    { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, w: { width: 480 } },
+  // 外層 PopoverContent 的 width 數字(裡面放一般的標題 / 內文 / 底部,不是表格面板)
+  'pop-w-px':   { panel: 'plain', pop: 420 },
+  'pop-w-wide': { panel: 'plain', pop: 900 },
 }
 
 function Panel({ scene }) {
@@ -491,11 +614,20 @@ function Panel({ scene }) {
   const [order, setOrder] = React.useState(s.order ?? (s.cols || VIS_COLS).map((c) => c.id))
   window.__value = () => JSON.stringify(value)
   window.__order = () => JSON.stringify(order)
-  const extra = s.clearable === false ? { clearable: false } : {}
+  const extra = { ...(s.clearable === false ? { clearable: false } : {}), ...(s.w || {}) }
+  if (s.panel === 'plain') {
+    return (
+      <>
+        <PopoverHeader><PopoverTitle>欄位說明</PopoverTitle></PopoverHeader>
+        <PopoverBody><p>「到期日」是這張工單最晚要交付的日期,過期會在列表標紅。</p></PopoverBody>
+        <PopoverFooter><Button size="sm">知道了</Button></PopoverFooter>
+      </>
+    )
+  }
   if (s.panel === 'vis') {
     const deprecated = s.searchable !== undefined ? { searchable: s.searchable } : {}
     return <DataTableColumnVisibilityPanel className="w-72" columns={s.cols || VIS_COLS} visibility={value} onVisibilityChange={setValue}
-      columnOrder={order} onColumnOrderChange={setOrder} defaultVisibility={s.def} defaultColumnOrder={s.defOrder} lockedIds={s.locked} {...deprecated} />
+      columnOrder={order} onColumnOrderChange={setOrder} defaultVisibility={s.def} defaultColumnOrder={s.defOrder} lockedIds={s.locked} {...deprecated} {...(s.w || {})} />
   }
   if (s.panel === 'sort') return <DataTableSortManager columns={SORT_COLS} sorting={value} onSortingChange={setValue} defaultSorting={s.def} labels={s.labels} {...extra} />
   return <DataTableFilterPanel columns={FILTER_COLS} value={value} onChange={setValue} defaultValue={s.def} maxConditions={s.maxConditions} {...extra} />
@@ -504,16 +636,56 @@ function Panel({ scene }) {
 function App() {
   const [scene, setScene] = React.useState({ name: 'sort-modified', key: 0 })
   window.__setScene = (name) => setScene((s) => ({ name, key: s.key + 1 }))
+  // 外層浮層跟內容(width="hug",2026-11-15 前寫 className="w-auto");寬度場景可給數字(pop)
+  const pop = SCENES[scene.name].pop ?? 'hug'
   return (
     <TooltipProvider>
       <main data-scene={scene.name + ':' + scene.key} style={{ padding: 24 }}>
         <Popover key={scene.key} defaultOpen>
           <PopoverTrigger asChild><Button variant="secondary">開啟面板</Button></PopoverTrigger>
-          <PopoverContent id="scene-host" align="start" className="w-auto p-0"><Panel scene={scene.name} /></PopoverContent>
+          <PopoverContent id="scene-host" align="start" width={pop} className="p-0"><Panel scene={scene.name} /></PopoverContent>
         </Popover>
       </main>
     </TooltipProvider>
   )
+}
+/**
+ * 寬度量測(6):外層浮層 / 面板根元素 / 標題列 × 的左右緣與寬;fits = 面板裡每一個看得到的元素右緣離面板右緣多少(> 0 = 有東西凸出去,
+ * 量 getBoundingClientRect —— 捲動容器不會把凸出去的盒子量小,M32)。視窗寬取 clientWidth(扣掉捲軸)。
+ */
+window.__probeWidth = () => {
+  const host = document.getElementById('scene-host')
+  if (!host) return null
+  const r2 = (n) => Math.round(n * 100) / 100
+  const box = (el) => { if (!el) return null; const b = el.getBoundingClientRect(); return { left: r2(b.left), right: r2(b.right), width: r2(b.width) } }
+  const panel = host.firstElementChild
+  const pb = panel.getBoundingClientRect()
+  let stickOut = 0
+  for (const el of panel.querySelectorAll('*')) {
+    const b = el.getBoundingClientRect()
+    if (b.width < 2 || b.height < 2) continue
+    stickOut = Math.max(stickOut, b.right - pb.right)
+  }
+  // 「會長的那一格」(下限就是為了守住它的最窄可用寬;按結構找,不靠字):欄位顯示 = 第一列的欄名(ItemLabel);
+  // 排序 / 篩選 = 第一列(含兩個以上下拉的最小容器):兩個下拉 = 排序(第一個 = 欄位下拉)、三個 = 篩選(第三個 = 值欄)
+  const label = host.querySelector('span[data-sidebar="menu-label"]')
+  let flexCell = label ? label.getBoundingClientRect().width : null
+  if (flexCell == null) {
+    const first = host.querySelector('[role="combobox"]')
+    let row = first
+    while (row && row !== host && row.querySelectorAll('[role="combobox"]').length < 2) row = row.parentElement
+    const combos = row && row !== host ? [...row.querySelectorAll('[role="combobox"]')] : []
+    const cell = combos.length === 2 ? combos[0] : combos.length >= 3 ? combos[2] : null
+    flexCell = cell ? cell.getBoundingClientRect().width : null
+  }
+  return {
+    vw: document.documentElement.clientWidth,
+    rootPx: parseFloat(getComputedStyle(document.documentElement).fontSize),
+    host: box(host), panel: box(panel),
+    dismiss: box(host.querySelector('[data-slot="surface-header"] button[data-dismiss]')),
+    stickOut: r2(stickOut),
+    flexCell: flexCell == null ? null : r2(flexCell),
+  }
 }
 window.__probe = () => {
   const host = document.getElementById('scene-host')
@@ -886,6 +1058,73 @@ async function runChecks(page) {
   ] }
   const gotDefault = { title: pd.title, reset: pd.reset, close: pd.close, add: pd.add, clear: pd.clear, rows: pd.rows }
   check('sort-labels-defaults', 'contract', '排序面板不傳 labels:每個位置 = DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS 的同一個鍵', JSON.stringify(gotDefault) === JSON.stringify(wantDefault), { got: gotDefault, want: wantDefault })
+
+  // ── 寬度(6,2026-11-15 A19):width / minWidth / maxWidth + 下限 + 視窗夾限;預設寬不變;PopoverContent width ──
+  const widthScene = async (name) => {
+    await scene(name)
+    const p = await page.evaluate(() => window.__probeWidth())
+    if (!p || !p.host || !p.panel) throw new InstrumentError(`寬度場景 ${name}:量不到外層浮層 / 面板根元素`)
+    return p
+  }
+  const near = (a, b) => Math.abs(a - b) <= TOL
+  // [場景, 契約列, 說明, 期望寬(根字級 px → px)];rem 的值跟著根字級算(預設 30rem / 下限 25rem 等都是 rem)
+  const WIDTH_ROWS = [
+    ['sort-w-default', '排序面板不傳寬度參數 → 預設 30rem(畫面不變)', (px) => 30 * px],
+    ['sort-w-param', '排序面板 width={600} → 600', () => 600],
+    ['sort-w-floor', '排序面板 width={200}(比下限窄)→ 照下限 25rem', (px) => 25 * px],
+    ['sort-w-max', '排序面板 width={700} maxWidth={560} → 560', () => 560],
+    ['sort-w-min', '排序面板只傳 minWidth={560} → 560(下限往上拉,預設 30rem 被撐開)', () => 560],
+    ['filter-w-default', '篩選面板(平面)不傳寬度參數 → 預設 640(畫面不變)', () => 640],
+    ['filter-w-nested-default', '篩選面板(巢狀)不傳寬度參數 → 預設 760(畫面不變)', () => 760],
+    ['filter-w-param', '篩選面板(平面)width={720} → 720', () => 720],
+    ['filter-w-nested-param', '篩選面板(巢狀)width={720} → 720 + 群組外框差額 120 = 840', () => 840],
+    ['filter-w-floor', '篩選面板 width={300}(比下限窄)→ 照下限 35rem', (px) => 35 * px],
+    ['filter-w-max', '篩選面板 width={800} maxWidth={700} → 700', () => 700],
+    ['filter-w-min', '篩選面板只傳 minWidth={700} → 700', () => 700],
+    ['vis-w-default', '欄位顯示面板不傳寬度參數 → 撐滿外層給的 w-72(18rem,畫面不變)', (px) => 18 * px],
+    ['vis-w-param', '欄位顯示面板 width={360} → 360', () => 360],
+    ['vis-w-floor', '欄位顯示面板 width={120}(比下限窄)→ 照下限 15.5rem', (px) => 15.5 * px],
+    ['vis-w-max', '欄位顯示面板 width={400} maxWidth={320} → 320', () => 320],
+    ['vis-w-min', '欄位顯示面板只傳 minWidth={320} → 320(外層給的 18rem 被撐開)', () => 320],
+  ]
+  for (const [id, title, want] of WIDTH_ROWS) {
+    const p = await widthScene(id)
+    const w = want(p.rootPx)
+    check(id, 'contract', title, near(p.panel.width, w), { want: w, panel: p.panel.width, rootPx: p.rootPx })
+    if (id.endsWith('-floor')) {
+      // 下限的算式(各元件常數旁)= 固定零件 + 會長的那一格的最窄可用寬:排序的欄位下拉 / 欄位顯示的欄名 ≥ 10rem(同篩選面板的欄位下拉)、篩選的值欄 ≥ 7.5rem(同條件下拉)。
+      // 只量「有沒有東西凸出去」不夠:排序列在 200px 時按鈕會被壓扁、欄位下拉縮到 0,卻沒有任何盒子越過面板右緣(2026-11-15 selftest 抓到)
+      const cellMin = (id.startsWith('filter') ? 7.5 : 10) * p.rootPx
+      const panelName = id.startsWith('sort') ? '排序面板' : id.startsWith('filter') ? '篩選面板' : '欄位顯示面板'
+      const cellName = id.startsWith('sort') ? '欄位下拉' : id.startsWith('filter') ? '值欄' : '欄名'
+      // 場景給的就有一列:找不到那一格 = 量具的結構定位對不到元件(不是產品裁決)
+      if (p.flexCell == null) throw new InstrumentError(`寬度場景 ${id}:找不到${panelName}第一列的${cellName}`)
+      check(`${id}-fits`, 'contract', `${panelName}在下限寬裡:${cellName} ≥ ${cellMin}(最窄可用寬,-1 容差)、沒有任何元素凸出面板右緣(> ${TOL})—— 列沒被擠壞 = 下限算得對`,
+        p.flexCell != null && p.flexCell >= cellMin - 1 && p.stickOut <= TOL, { flexCell: p.flexCell, cellMin, stickOut: p.stickOut, panel: p.panel.width })
+    }
+    if (id === 'sort-w-param') {
+      check('popover-w-hug', 'contract', 'PopoverContent width="hug" → 外層跟裡面的面板一樣寬(+ 左右各 1px 邊框)', near(p.host.width, p.panel.width + 2), { host: p.host.width, panel: p.panel.width })
+    }
+  }
+  const pxScene = await widthScene('pop-w-px')
+  check('popover-w-px', 'contract', 'PopoverContent width={420} → 外層 420', near(pxScene.host.width, 420), { host: pxScene.host.width })
+  // 375px 寬(手機):外層浮層、面板、標題列 × 全在視窗內,寬不超過「視窗 − 2rem」(+ 外層左右邊框)
+  await page.setViewportSize({ width: 375, height: 800 })
+  try {
+    for (const [sc, id, title] of [
+      ['sort-w-default', 'sort-w-375', '375px 寬:排序面板(預設 30rem)整個在視窗內、× 看得到(修前右緣到 490)'],
+      ['filter-w-nested-default', 'filter-w-375', '375px 寬:篩選面板(巢狀,下限 35rem + 120px)整個在視窗內 —— 下限讓位給視窗夾限'],
+      ['vis-w-wide', 'vis-w-375', '375px 寬:欄位顯示面板 width={480} 整個在視窗內'],
+      ['pop-w-wide', 'popover-w-375', '375px 寬:PopoverContent width={900} 整個在視窗內'],
+    ]) {
+      const p = await widthScene(sc)
+      const inside = (b) => !b || (b.left >= -TOL && b.right <= p.vw + TOL)
+      const ok = inside(p.host) && inside(p.panel) && inside(p.dismiss) && p.host.width <= p.vw - 2 * p.rootPx + 2 + TOL
+      check(id, 'contract', title, ok, { vw: p.vw, host: p.host, panel: p.panel, dismiss: p.dismiss })
+    }
+  } finally {
+    await page.setViewportSize(VIEWPORT)
+  }
   return checks
 }
 
@@ -925,10 +1164,10 @@ try {
     report(result)
     const red = redIds(result.checks)
     if (red.length) {
-      console.log(`\n✗ 面板「恢復預設 / 清除全部」:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md L4「Header 恢復預設 / 清除全部」`)
+      console.log(`\n✗ 面板「恢復預設 / 清除全部」與寬度:${red.length} 條不符(${red.join(' / ')})—— SSOT data-table.spec.md L4「Header 恢復預設 / 清除全部」、「工具面板的寬度」`)
       process.exitCode = 1
     } else {
-      console.log(`\n✓ 面板「恢復預設 / 清除全部」:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
+      console.log(`\n✓ 面板「恢復預設 / 清除全部」與寬度:${result.checks.length} 條全綠(含 ${result.checks.filter((c) => c.kind === 'control').length} 條對照)`)
     }
   } else {
     const baseline = await runVariant(page, '現行原始碼(selftest 基準 = 一趟完整判定,必須全綠)', null)

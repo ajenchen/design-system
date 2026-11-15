@@ -39,12 +39,12 @@ const PreviewList = ({ count = 20 }: { count?: number }) => (
 )
 
 // 寬欄位商品表 — 水平捲動 demo 內容,消費真 DataTable(per data-table.spec.md「簡單展示也用 DataTable」;
-// 對齊展示頁 HorizontalProductTable 同模式)。height="auto" + min-w-max:DataTable 無高度約束、不啟內部捲軸,
+// 對齊展示頁 HorizontalProductTable 同模式)。maxHeight="none" + min-w-max:DataTable 無高度約束、不啟內部捲軸,
 // 捲動完全由外層 ScrollArea own。資料與欄位 = stories-helpers 共用的那一份。
 
 const WideTable = () => (
   <div className="min-w-max">
-    <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} height="auto" bordered={false} />
+    <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
   </div>
 )
 

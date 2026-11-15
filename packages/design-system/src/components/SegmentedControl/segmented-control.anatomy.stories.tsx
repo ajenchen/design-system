@@ -59,7 +59,7 @@ export const Overview: Story = {
                 ['  value / defaultValue', 'string', '必填', '當前 value(Radix ToggleGroup type="single"),必須落在可選 item 上'],
                 ['  onValueChange', '(value: string) => void', '—', '切換 callback'],
                 ['  size', "'xs' | 'sm' | 'md' | 'lg'", "'md'", '對齊 --field-height-*(跟 Button / Input 同,field-height family 共享 default md)'],
-                ['  fullWidth', 'boolean', 'false', 'hug content(false)vs 撐滿父容器並等分(true)'],
+                ['  width', "'hug' | 'fill'", "'hug'", 'hug 跟內容 vs fill 撐滿父容器並等分(舊名 fullWidth 已停用)'],
                 ['  iconOnly', 'boolean', 'false', 'group-level:全部 icon-only(必須整組一致,不可混搭)'],
                 ['  disabled', 'boolean', 'false', '整個 SegmentedControl 停用'],
                 ['SegmentedControlItem', '', '', ''],
@@ -82,12 +82,12 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切 SegmentedControl props 即時 render,取代 Figma inspect。改 `value` 看選中狀態、切 `size` 對照 field-height tier、切 `fullWidth` 看 hug vs 等分。' } },
+    docs: { description: { story: '右側 Controls 切 SegmentedControl props 即時 render,取代 Figma inspect。改 `value` 看選中狀態、切 `size` 對照 field-height tier、切 `width` 看 hug vs 等分。' } },
   },
   args: {
     size: 'md',
     value: 'board',
-    fullWidth: false,
+    width: 'hug',
     iconOnly: false,
     disabled: false,
   },
@@ -98,7 +98,7 @@ export const Inspector: Story = {
       options: ['list', 'board', 'calendar'],
       description: '當前選中的 item value',
     },
-    fullWidth: { control: 'boolean', description: 'false=hug content / true=撐滿父容器等分' },
+    width: { control: 'inline-radio', options: ['hug', 'fill'], description: 'hug=跟內容 / fill=撐滿父容器等分' },
     iconOnly: { control: 'boolean', description: 'group-level:全部 icon-only(必須整組一致)' },
     disabled: { control: 'boolean' },
   },
@@ -211,11 +211,11 @@ export const StateBehavior: Story = {
 }
 
 export const FullWidthMatrix: Story = {
-  name: 'fullWidth 行為',
+  name: '寬度模式',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <H3>fullWidth = false(預設,hug content)</H3>
+        <H3>width = hug(預設,跟內容)</H3>
         <Desc>寬度由 item 總寬決定,items 各自照內容寬度排列。Toolbar 場景 / 跟 Button 並排時使用。</Desc>
         <div className="flex items-center gap-4 border border-dashed border-divider rounded-md p-4">
           <SegmentedControl iconOnly defaultValue="list">
@@ -228,18 +228,18 @@ export const FullWidthMatrix: Story = {
       </div>
 
       <div>
-        <H3>fullWidth = true(撐滿父容器 + 等分)</H3>
+        <H3>width = fill(撐滿父容器 + 等分)</H3>
         <Desc>所有 item 等分父容器寬度。小容器 / 狹窄上下文(Dialog、Sheet、Field row)使用。</Desc>
         <div className="flex flex-col gap-3 max-w-md">
           <div className="border border-dashed border-divider rounded-md p-4">
-            <SegmentedControl defaultValue="day" fullWidth>
+            <SegmentedControl defaultValue="day" width="fill">
               <SegmentedControlItem value="day">日</SegmentedControlItem>
               <SegmentedControlItem value="week">週</SegmentedControlItem>
               <SegmentedControlItem value="month">月</SegmentedControlItem>
             </SegmentedControl>
           </div>
           <div className="w-[280px] border border-dashed border-divider rounded-md p-4">
-            <SegmentedControl defaultValue="day" fullWidth>
+            <SegmentedControl defaultValue="day" width="fill">
               <SegmentedControlItem value="day">日</SegmentedControlItem>
               <SegmentedControlItem value="week">週</SegmentedControlItem>
               <SegmentedControlItem value="month">月</SegmentedControlItem>

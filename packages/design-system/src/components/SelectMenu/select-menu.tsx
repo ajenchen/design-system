@@ -178,7 +178,11 @@ export interface SelectMenuProps {
   size?: SizeKey
   /** 對齊方式 */
   align?: 'start' | 'end'
-  /** 最小寬度（px），預設跟隨觸發元件 */
+  /**
+   * 最小寬度（px）。不傳 = `max(觸發元件寬度, 15rem)`(窄觸發元件時吃 15rem 地板)。
+   * 注意:傳入的值**整個取代**這個預設(不是跟觸發元件寬取大)—— 傳得比觸發元件窄,選單就比觸發元件窄
+   *(2026-11-15 audit-r7 INV-11 修 JSDoc;行為照舊,要不要改成「只能拉高」記在尺寸參數規則的待辦)。
+   */
   minWidth?: number
 
   /** 受控 open 狀態 */

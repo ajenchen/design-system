@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { SurfaceHeader, SurfaceBody, SurfaceFooter, COMPACT_HEADER_SLOT, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { Button } from "@/design-system/components/Button/button"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED, OVERLAY_VIEWPORT_MAX_WIDTH } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 import { withOverlayEscape } from "@/design-system/lib/overlay-escape"
 import { useExitStartFocusReturn } from "@/design-system/lib/overlay-focus-return"
@@ -106,10 +106,20 @@ interface PopoverTitleContextValue {
 
 const PopoverTitleContext = React.createContext<PopoverTitleContextValue | null>(null)
 
+interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> {
+  /**
+   * 浮層寬(2026-11-15;`ds-canonical/references/props-naming.md`「尺寸參數」= user「尺寸:甲」)。不傳 = 預設 18rem(`w-72`,畫面不變)。
+   * - 數字 = px 固定寬,夾在視窗內(`OVERLAY_VIEWPORT_MAX_WIDTH`,左右各留 1rem)—— 視窗再窄也不超出畫面;
+   * - `'hug'` = 跟內容(裡面的面板自己決定寬,例:表格三個工具面板 `DataTableSortManager` / `DataTableFilterPanel` / 指定了 `width` 的 `DataTableColumnVisibilityPanel`)。
+   * 2026-11-15 前只能用 `className="w-80"` / `"w-auto"` 改(沒有型別;className 仍可用,但改寬走這個參數)。
+   */
+  width?: number | 'hug'
+}
+
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onCloseAutoFocus, onInteractOutside, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+  PopoverContentProps
+>(({ className, style, width, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, onCloseAutoFocus, onInteractOutside, onEscapeKeyDown, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
   const titleId = React.useId()
   const [hasTitle, setHasTitle] = React.useState(false)
   const titleContext = React.useMemo<PopoverTitleContextValue>(
@@ -182,8 +192,12 @@ const PopoverContent = React.forwardRef<
             "data-[state=closed]:fade-out-0 not-data-[state=closed]:fade-in-0 data-[state=closed]:zoom-out-95 not-data-[state=closed]:zoom-in-95",
             "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             "origin-[var(--radix-popover-content-transform-origin)]",
+            // width="hug":排在預設 w-72 之後、consumer className 之前(tailwind-merge 取後者;consumer 自己的 w-* 仍可蓋)
+            width === "hug" && "w-auto",
             className
           )}
+          // width={數字}:inline style 勝過 class 的預設 w-72;夾限與表格工具面板同一份(OVERLAY_VIEWPORT_MAX_WIDTH)。consumer 的 style 最後展開,仍可蓋
+          style={typeof width === "number" ? { width: `${width}px`, maxWidth: OVERLAY_VIEWPORT_MAX_WIDTH, ...style } : style}
           {...props}
           // 這一下 Esc 由誰處理(全 DS 一支,判準與出處住 lib/overlay-escape.ts withOverlayEscape):輸入法組字中不關;焦點所在控件宣告了自己還有一層
           // 且在這一層裡面(面板裡改過的欄位 / 鍵盤拖曳中的條件)→ 留給控件、不關;控件在外面(可打字的 DatePicker 欄位 + 它自己的日曆)→ 照舊關這一層

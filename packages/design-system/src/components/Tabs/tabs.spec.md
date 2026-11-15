@@ -181,7 +181,7 @@ menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator
 
 ## 寬度行為
 
-**Trigger 寬度永遠由內容決定（hug content）**——Tabs 沒有 `fullWidth` / 等分模式。
+**Trigger 寬度永遠由內容決定（hug content）**——Tabs 沒有 `width="fill"` / 等分模式。
 
 Tabs 是 **navigation anchor**，不是 compact control：
 - 它在視覺階層上是 section header 等級，用「文字流」的節奏左對齊排列，trigger 間以 `--layout-space-loose` 分隔，接近閱讀動線
@@ -263,7 +263,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 - ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加;user 抓到截圖裡同一組 tabs 圖示混用)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon
 - ❌ `endIcon` 不得放動詞性 icon（Download、Trash2）——tab 是視圖切換，不是觸發動作
 - ❌ Dialog / Sidebar header 內不得同時有 header `border-b` 和 TabsList `border-b`——會出現雙線
-- ❌ 不得把 trigger 改成等分 / fullWidth——等寬互斥切換是 SegmentedControl 的身份特徵，Tabs 是 navigation anchor，兩者不同層級。需要等寬改用 SegmentedControl
+- ❌ 不得把 trigger 改成等分 / 撐滿——等寬互斥切換是 SegmentedControl 的身份特徵，Tabs 是 navigation anchor，兩者不同層級。需要等寬改用 SegmentedControl
 - ❌ Trigger 不得使用 `border-b-2` 實作 selected underline——會與 TabsList 的 `border-b` 形成上下雙線;selected underline 必須與 TabsList border 同層渲染(見 `tabs.tsx`)
 - ❌ 不得自行改寫 Radix Tabs 的 `role` / `aria-*` 屬性
 

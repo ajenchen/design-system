@@ -9,6 +9,7 @@
 //
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import type { SizingMode } from '@/design-system/components/Field/field-types'
 
 /**
  * FieldControlGroup — 多個 Field controls 視覺接合成一個 input frame
@@ -24,7 +25,8 @@ import { cn } from '@/lib/utils'
  * - first child 只留左 radii / last child 只留右 radii / middle 全 0 radii
  * - z-index:default 2 / hover 3(到這裡與 Ant 同值)/ focus-within|自己的浮層開著(data-field-open)4(比滑過高一層,2026-11-13 起;
  *   Ant 沒有這一層 —— 規則與來源住 field-control-group.spec.md「States」)/ disabled 0
- * - Container `display: inline-flex`(Ant default)/ `block` prop → `display: flex; width: 100%`
+ * - Container `display: inline-flex`(Ant default)/ `width="fill"` → `display: flex; width: 100%`
+ *   (2026-11-15 前叫 `block`,名字借自 Ant Space.Compact;「尺寸:甲」起全 DS 的撐滿只叫 `width="fill"`,`block` 留一個版本)
  *
  * **Size**(FCG 不擁有 size API；不傳遞 size 給 children,無 Context Provider / 無 cloneElement;見 spec「Size」段):
  * - children 尺寸完全由 child 自己決定;FCG 只負責 border-collapse 接合(border / radius / z-index)
@@ -32,15 +34,16 @@ import { cn } from '@/lib/utils'
  * - Mode B:standalone 用,逐一給每個 child 設 `size`
  *
  * **Width 配置**(Ant Space.Compact W-A canonical):
- * - 子 controls 自管 width(`className="w-[140px]"` / `style={{width:120}}` / `flex-1` etc.)
+ * - 子 controls 自管寬度:固定寬用欄位自己的 `width={數字}`(2026-11-15「尺寸:甲」;不要再寫 `className="!w-[…]"` 硬蓋)、
+ *   吃剩下的空間用 `flex-1`
  * - FieldControlGroup 不另開 Cell wrapper(避免 indirection,符合 Ant idiom)
  *
  * **使用範例**:
  * ```tsx
  * // Filter row: 2 fixed select + 1 flex value
  * <FieldControlGroup>
- *   <Select className="!w-[140px]" options={fields} />
- *   <Select className="!w-[120px]" options={ops} />
+ *   <Select width={140} options={fields} />
+ *   <Select width={120} options={ops} />
  *   <Input className="flex-1" placeholder="輸入值..." />
  * </FieldControlGroup>
  *
@@ -48,7 +51,7 @@ import { cn } from '@/lib/utils'
  * <Field>
  *   <FieldLabel>電話</FieldLabel>
  *   <FieldControlGroup>
- *     <Select className="!w-[80px]" options={codes} />
+ *     <Select width={80} options={codes} />
  *     <Input className="flex-1" />
  *   </FieldControlGroup>
  * </Field>
@@ -62,12 +65,19 @@ import { cn } from '@/lib/utils'
  */
 
 export interface FieldControlGroupProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Block 模式:width 100% 撐滿 parent(對齊 Ant Space.Compact `block` prop) */
+  /**
+   * 寬度模式:`'hug'`(預設)跟內容(`inline-flex`)/ `'fill'` 撐滿 parent(`flex w-full`)。
+   * 全 DS 的「撐滿 / 跟內容」只用 `width`(`ds-canonical/references/props-naming.md`「尺寸參數」;user 2026-11-11「尺寸:甲」)。
+   */
+  width?: SizingMode
+  /** @deprecated 2026-11-15 起改用 `width="fill"`(「尺寸:甲」;舊名借自 Ant Space.Compact)。保留一個版本,行為與畫面不變;同時傳 `width` 時以 `width` 為準。 */
   block?: boolean
 }
 
 const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProps>(
-  ({ block = false, className, children, ...props }, ref) => {
+  ({ width: widthProp, block = false, className, children, ...props }, ref) => {
+    // 寬度模式:`width` 優先;舊名 `block`(deprecated)= `width="fill"`。
+    const width: SizingMode = widthProp ?? (block ? 'fill' : 'hug')
     return (
       <div
         ref={ref}
@@ -80,7 +90,7 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
         //   first/middle/last radii:對齊 Ant compactItemBorderRadius L67-92
         // ── Children 自管 width(W-A,Ant idiom);Group 自身僅控制 border/radius/z-index 接合機制
         className={cn(
-          block ? 'flex w-full' : 'inline-flex',
+          width === 'fill' ? 'flex w-full' : 'inline-flex',
           'items-stretch',
           // z-index baseline + active layer
           '[&>*]:relative [&>*]:z-[2]',

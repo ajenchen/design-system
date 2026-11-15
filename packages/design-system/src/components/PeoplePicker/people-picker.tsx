@@ -6,7 +6,7 @@ import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { useFieldSurface, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant } from '@/design-system/components/Field/field-context'
@@ -72,8 +72,8 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   mode?: FieldMode
   /** Field chrome variant(對齊 Select / Combobox)*/
   variant?: FieldVariant
-  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮(value 寬 + slot 寬 + gap + 內 padding);
-   *  chrome 與互動不變。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮(value 寬 + slot 寬 + gap + 內 padding)/ 數字 = 固定寬(px,
+   *  窄容器裡不超出容器);chrome 與互動不變。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
   width?: FieldWidth
   size?: 'sm' | 'md' | 'lg'
   /** 當前已選的人(單選 PersonValue,多選 PersonValue[])*/
@@ -278,7 +278,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         : (cachedTagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]') ?? null)
       // 可用寬 = 頭像堆疊被分配到的寬,不隨畫了幾顆變(與檢視態 person-display.tsx 同一支 `measureStackAvailablePx`)——
       // 修前量這一格自己的 clientWidth:依內容寬(`width="hug"`)時這一格跟著內容縮,少畫一顆 → 變窄 → 再少一顆,
-      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:215 依內容寬 = 值的寬 + 各元素寬)。
+      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:216 依內容寬 = 值的寬 + 各元素寬)。
       // 這一格的內容寬扣掉它自己的 padding(單行 Tag 列帶焦點框留位內距,combobox.tsx `tagRowFocusRoomClass`)。
       // 欄位內搜尋框(`searchIn='trigger'`)的位先扣掉:頭像不擠到搜尋框身上,打的字看得見(與 Combobox 的 DOM 量測同一支量尺,
       // combobox.tsx `findInlineSearchMirror`;規則 combobox.spec.md「欄位內搜尋框的寬度」)。沒有欄位內搜尋框 → 0,公式不變
@@ -340,10 +340,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-07-17 Dim 9 修:D-path view root 補 ref / aria-label / {...rest} 轉發(原只套 className,
         // 遺失 root props;對齊 readonly/disabled 分支與 spec root props 契約)。
         ref={ref}
-        className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, width, size }), className)}
+        className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, width: fieldWidthVariant(width), size }), className)}
         data-field-mode="view"
         aria-label={ariaLabel}
         {...rest}
+        style={fieldWidthStyle(width, rest.style)}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
           {isEmpty
@@ -364,11 +365,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     return (
       <div
         ref={ref}
-        className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, width, size }), className)}
+        className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, width: fieldWidthVariant(width), size }), className)}
         data-field-mode={resolvedMode}
         aria-disabled={resolvedMode === 'disabled' ? true : undefined}
         aria-label={ariaLabel}
         {...rest}
+        style={fieldWidthStyle(width, rest.style)}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {/* 2026-07-14 deep-audit 修:disabled 傳入 → 抑制 Avatar ProfileCard hoverCard + avatar dim

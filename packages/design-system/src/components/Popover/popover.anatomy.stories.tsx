@@ -22,13 +22,14 @@ const TYPE_OPTIONS = ['待處理', '進行中', '已完成'] as const
  * 清除 = 全部取消勾選、套用 = 收起浮層(2026-10-28 前兩顆都沒有作用;登記簿 A16「一堆按鈕都無法正常反應」)。
  */
 function TypeFilterPopover({
-  defaultOpen = false, side, align, sideOffset, className, showHeader = true, showFooter = true,
+  defaultOpen = false, side, align, sideOffset, width, showHeader = true, showFooter = true,
 }: {
   defaultOpen?: boolean
   side?: 'top' | 'right' | 'bottom' | 'left'
   align?: 'start' | 'center' | 'end'
   sideOffset?: number
-  className?: string
+  /** PopoverContent 的 `width`(2026-11-15 起是真的 prop;之前這裡收 className 字串 w-72 / w-80 / w-96) */
+  width?: number
   showHeader?: boolean
   showFooter?: boolean
 }) {
@@ -40,7 +41,7 @@ function TypeFilterPopover({
       <PopoverTrigger asChild>
         <Button variant="tertiary">篩選設定</Button>
       </PopoverTrigger>
-      <PopoverContent side={side} align={align} sideOffset={sideOffset} className={className}>
+      <PopoverContent side={side} align={align} sideOffset={sideOffset} width={width}>
         {showHeader && (
           <PopoverHeader><PopoverTitle>依類型篩選</PopoverTitle></PopoverHeader>
         )}
@@ -103,7 +104,7 @@ interface InspectorArgs {
   side: 'top' | 'right' | 'bottom' | 'left'
   align: 'start' | 'center' | 'end'
   sideOffset: number
-  width: 'w-72' | 'w-80' | 'w-96'
+  width: 288 | 320 | 384
   showHeader: boolean
   showFooter: boolean
 }
@@ -122,7 +123,7 @@ export const Inspector: Story = {
     side: 'bottom',
     align: 'center',
     sideOffset: 8,
-    width: 'w-72',
+    width: 288,
     showHeader: true,
     showFooter: true,
   },
@@ -143,8 +144,8 @@ export const Inspector: Story = {
     },
     width: {
       control: 'radio',
-      options: ['w-72', 'w-80', 'w-96'],
-      description: 'w-72★default(簡短設定)/ w-96(內容複雜)',
+      options: [288, 320, 384],
+      description: 'PopoverContent `width`(px,夾在視窗內;不傳 = 18rem = 288)。288★default(簡短設定)/ 384(內容複雜);跟內容寬用 `width="hug"`',
     },
     showHeader: { control: 'boolean', description: '顯示 PopoverHeader(含右上 X 關閉)' },
     showFooter: { control: 'boolean', description: '顯示 PopoverFooter(含 CTA 按鈕)' },
@@ -153,7 +154,7 @@ export const Inspector: Story = {
     const { side, align, sideOffset, width, showHeader, showFooter } = args as InspectorArgs
     return (
       <div className="flex items-center justify-center py-20">
-        <TypeFilterPopover defaultOpen side={side} align={align} sideOffset={sideOffset} className={width} showHeader={showHeader} showFooter={showFooter} />
+        <TypeFilterPopover defaultOpen side={side} align={align} sideOffset={sideOffset} width={width} showHeader={showHeader} showFooter={showFooter} />
       </div>
     )
   },

@@ -132,13 +132,13 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 
 | Variant | 原則 | 適用場景 | 世界級對照 |
 |---------|------|---------|-----------|
-| `'default'`(預設) | 完整 field chrome(背景 + 常態 border + hover/focus 回饋)——明確邀請輸入 | 表單 / Field 內嵌 / 標準 edit UI / toolbar 內小尺寸輸入(如 FileViewer zoom,搭 `size="sm" autoWidth`) | [Material Input](https://github.com/material-components/material-web/blob/main/docs/components/text-field.md) / [Ant Input](https://github.com/ant-design/ant-design/blob/master/components/input/index.en-US.md) default |
+| `'default'`(預設) | 完整 field chrome(背景 + 常態 border + hover/focus 回饋)——明確邀請輸入 | 表單 / Field 內嵌 / 標準 edit UI / toolbar 內小尺寸輸入(如 FileViewer zoom,搭 `size="sm" width="hug"`) | [Material Input](https://github.com/material-components/material-web/blob/main/docs/components/text-field.md) / [Ant Input](https://github.com/ant-design/ant-design/blob/master/components/input/index.en-US.md) default |
 
 **透傳**:在 `<Field variant="default">` 內自動繼承 context variant,per-prop override(code:`useResolvedFieldVariant`)。
 
 > **內部 variant `naked`(@internal,非公開)**：`FieldVariant` 型別含第二值 `'naked'`,但**不是公開 Input variant**——單獨使用無視覺邊界,**不可 standalone**。naked = 剝除 chrome(無 padding / bg / rounded),但 **edit 態仍由自身 border-based state machine 渲染 border + focus 藍框**（field-wrapper.tsx edit×naked compound = cell-as-input state machine;非「完全無 border」、亦非「host cell 自管」）；正被 `FieldSurfaceContext='table-cell'` 取代。consumer 只用 `default`。對齊 public-vs-internal canonical（`ui-development.md`：能直接被使用且用在合理地方才公開）。
 
-> **`bare` variant 退役(2026-07-09,user 拍板)**:原「透明外殼、hover/focus 才顯 border」variant,宣稱用途 = toolbar inline editing,但全 repo(DS + apps + stories)**零真實 JSX 消費者**——FileViewer zoom 實為 `<Input size="sm" autoWidth>`(default variant),非 bare;唯一出現處是一個 ❌ 反例 story + 過時註解。toolbar 小輸入用 `default`(對齊「邊框給互動元素、輸入框就該有邊框」原則),cell-as-input 用 `naked` → `bare` 純冗餘,移除。Benchmark:[Ant Input](https://github.com/ant-design/ant-design/blob/master/components/input/index.en-US.md) 有 `variant="borderless"`(概念合法),但 [Material M3](https://github.com/material-components/material-web/blob/main/docs/components/text-field.md) 只有 filled/outlined、無無邊框變體;我們無真實消費場景 → 不留純預留 variant。詳 `field-types.ts` FieldVariant note。
+> **`bare` variant 退役(2026-07-09,user 拍板)**:原「透明外殼、hover/focus 才顯 border」variant,宣稱用途 = toolbar inline editing,但全 repo(DS + apps + stories)**零真實 JSX 消費者**——FileViewer zoom 實為 `<Input size="sm" autoWidth>`(default variant),非 bare(2026-11-15 起寫 `width="hug"`);唯一出現處是一個 ❌ 反例 story + 過時註解。toolbar 小輸入用 `default`(對齊「邊框給互動元素、輸入框就該有邊框」原則),cell-as-input 用 `naked` → `bare` 純冗餘,移除。Benchmark:[Ant Input](https://github.com/ant-design/ant-design/blob/master/components/input/index.en-US.md) 有 `variant="borderless"`(概念合法),但 [Material M3](https://github.com/material-components/material-web/blob/main/docs/components/text-field.md) 只有 filled/outlined、無無邊框變體;我們無真實消費場景 → 不留純預留 variant。詳 `field-types.ts` FieldVariant note。
 
 ---
 
@@ -153,14 +153,19 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 
 ---
 
-## Auto-width(AR46,2026-04-21)
+## 寬度(`width`;Auto-width AR46,2026-04-21)
 
-`autoWidth` prop:Input 寬度自動等於「內容寬(value / placeholder)+ startIcon + endAction + padding」,基於 CSS `field-sizing: content`(Chrome 123+ / Safari 17.4+)。
+`width` prop(與 Select / Combobox / DatePicker 同一個寬度軸,`../Field/field-controls.spec.md`「寬度軸(width: fill / hug)」):
 
 | 屬性 | 行為 |
 |------|------|
-| `autoWidth={false}`(預設)| 走 Field canonical(w-full 或 Field wrapper 規則),寬度固定、跟欄位對齊 |
-| `autoWidth={true}` | wrapper 改 `inline-flex w-auto`;input 改 `field-sizing:content w-auto min-w-0`,寬度隨 value 文字變化 |
+| `width="fill"`(預設)| 走 Field canonical(w-full 或 Field wrapper 規則),寬度固定、跟欄位對齊 |
+| `width="hug"` | 跟內容寬:寬度自動等於「內容寬(value / placeholder)+ startIcon + endAction + padding」,基於 CSS `field-sizing: content`(Chrome 123+ / Safari 17.4+)。wrapper 改 `inline-flex w-auto`;input 改 `field-sizing:content w-auto min-w-0`,寬度隨 value 文字變化 |
+| `width={數字}` | 固定寬(px;`max-w-full`,窄容器裡不超出容器)—— 工具列搜尋框、篩選列條件欄這類「要固定寬」的地方,不再寫 `className="!w-[…]"` |
+
+**改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……輸入框、下拉需要固定寬時也用 width 填數字。舊名字保留一個版本,畫面不變。」):
+原本的 `autoWidth` 就是 `width="hug"`(同一組 class,畫面不變),保留一個版本(`@deprecated`;同時傳以 `width` 為準)。
+同時拿掉型別上的 HTML 原生 `width` / `height`:`<input type="text">` 的這兩個屬性沒有作用,2026-11-15 前 `<Input width="hug">` 型別會過、畫面毫無反應(audit-r7 INV-02 型別探針 + 瀏覽器實測 width=240 仍 153px)。
 
 **使用情境**:
 - **Inline edit**:FileViewer `ZoomInput`(輸入「100%」縮到三位數寬)、工具列上的數值輸入、設定清單裡每列右側的小輸入框
@@ -171,7 +176,7 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 
 **禁止**:
 - ❌ **表單 Field 內**——Field 欄位必須遵守共享欄寬；內容驅動寬度會破壞 grid alignment contract
-- ❌ **放在主表單欄位區**——主表單需要穩定的 column sizing；`autoWidth` 只適用 toolbar / page-body inline 場景，使用 `variant="default"`（`bare` 已退役）
+- ❌ **放在主表單欄位區**——主表單需要穩定的 column sizing；`width="hug"` 只適用 toolbar / page-body inline 場景，使用 `variant="default"`（`bare` 已退役）
 
 Auto-size 只服務 inline editing：view 與 edit 共用內容寬度，避免進入編輯態時欄位突然撐滿整列。
 

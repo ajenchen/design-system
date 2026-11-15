@@ -236,7 +236,10 @@ interface DropdownMenuContentProps
   // children 保留(合法渲染於固定 wrapper 內)。
   extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>, 'asChild'> {
   size?: SizeKey
-  /** 最小寬度（px），預設 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板 */
+  /**
+   * 最小寬度（px），預設 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板。
+   * 注意:傳入的值**整個取代**這個預設(不是跟觸發元件寬取大),傳得比觸發元件窄,選單就比觸發元件窄(2026-11-15 補明文,行為照舊)。
+   */
   minWidth?: number
   /**
    * 最大高度（px）——**可選更低上限**。預設已 viewport-adaptive(夾到 trigger→視窗碰撞邊界的剩餘高度、

@@ -60,7 +60,7 @@ Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑�
 
 ## Inspector
 
-`Inspector` 提供互動 Controls 即時切換 SheetContent 兩個關鍵維度:`width`(default / sm / lg 寬度覆寫)、`showFooter`(是否顯示底部 CTA 列);`side` 固定 `right`(消費者 API 只有右側,見「定位」)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop。
+`Inspector` 提供互動 Controls 即時切換 SheetContent 兩個關鍵維度:`width`(default / 384 / 512 —— 2026-11-15 起是 SheetContent 真的 `width` prop,見「API 補充」;之前是 story 自己的 className 覆寫)、`showFooter`(是否顯示底部 CTA 列);`side` 固定 `right`(消費者 API 只有右側,見「定位」)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop。
 
 對應 anatomy story:`Overview` + `Inspector` + 元件特有 `SideMatrix`(消費者只用 `right`) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`。
 
@@ -125,6 +125,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 ## API 補充
 
 - **`portalContainer`**(`SheetContent`;2026-10-15):Portal 目的地,預設 document.body。與 `DialogContent` 同名同義(`../Dialog/dialog.spec.md`「`portalContainer`」):放在比視窗小、帶 transform 的容器(模擬瀏覽器畫布、嵌入式預覽)時傳那個容器,`fixed` 定位以它為準,側板與遮罩不跑出容器。DS 內的消費者 = AppShell 的 Menu 左側浮層(`<AppShell portalContainer>` 一路帶到這裡)。
+- **`width`**(`SheetContent`;2026-11-15):側板寬(px),只作用在 `side="right"` / `"left"`。不傳 = 預設 `w-3/4 sm:max-w-md`(視窗 75%、640px 以上最寬 28rem,畫面不變);傳了 = `min(width, 75%)` —— 寬照給,但仍不超過畫布的 75%(與預設同一條:旁邊永遠留一段點得到的遮罩;`portalContainer` 時以那個容器為準)。名字與值域照 user「尺寸:甲」(`../../../ds-canonical/references/props-naming.md`「尺寸參數」);依據是決策頁 r9「照既有原則直接做」的「Sheet、Popover 加寬度參數」(**預選、user 未逐字選**,user 只回了 7 題、沒有提出異議)。2026-11-15 前只能寫 `className="sm:max-w-lg"`(沒有型別;className 仍可用)。
 
 ## A11y 預設
 

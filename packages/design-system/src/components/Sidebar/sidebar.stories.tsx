@@ -260,7 +260,7 @@ const FOLDER_FILES: Record<string, FileRow[]> = {
 function MainTable<T>({ label, columns, data }: { label: string; columns: DataTableProps<T>['columns']; data: T[] }) {
   return (
     <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
-      <DataTable columns={columns} data={data} height="auto" aria-label={label} />
+      <DataTable columns={columns} data={data} maxHeight="none" aria-label={label} />
     </div>
   )
 }

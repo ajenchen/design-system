@@ -612,7 +612,7 @@ export const InDataTable: Story = {
     return (
       <div>
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">multiSelect 欄位自動用多個 Tag 渲染</p>
-        <DataTable columns={columns} data={data} height="auto" />
+        <DataTable columns={columns} data={data} maxHeight="none" />
       </div>
     )
   },

@@ -2,8 +2,8 @@ import * as React from 'react'
 import { Pencil } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, fieldDisplayTextClass, FIELD_TEXT_ENTRY_CURSOR, focusFieldInputFromChrome } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction, ItemSuffix, type ItemSuffixHoverGroup } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Button } from '@/design-system/components/Button/button'
@@ -189,9 +189,15 @@ export interface LinkInputProps
   // `defaultValue` 一併 Omit(2026-07-05 deep-audit A.1b):spec.md「controlled-only,不支援
   // defaultValue」宣稱的型別面機械封鎖 — 原本仍在型別 surface 且經 {...props} spread 到已
   // controlled 的 input(React dev warning)。
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange'>,
+  // 原生 `width` / `height` 一併 Omit(2026-11-15「尺寸:甲」;理由同 input.tsx InputProps 上方註解):寫了不報錯也不生效。
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange' | 'width' | 'height'>,
     Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant' | 'width'> {
   mode?: FieldMode
+  /**
+   * 寬度軸(field-controls.spec.md「寬度軸」):`'fill'`(預設)撐滿容器 / 數字 = 固定寬(px;窄容器裡不超出容器)。
+   * 套在有外框的那幾態(編輯 / 唯讀 / 停用,以及 `showDisplayEndIcon` 的檢視外殼);純文字的檢視態沒有外框,寬度跟著文字。
+   */
+  width?: Exclude<FieldWidth, 'hug'>
   /**
    * Visual chrome(2026-05-05 Phase B3)。對齊 FieldContext.variant 透傳。
    * - `'default'`(預設)— Field wrapper 完整 chrome(form / Field 內嵌)。
@@ -241,6 +247,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       value,
       onChange,
       placeholder = 'https://',
+      width,
       className,
       disabled: disabledProp,
       label,
@@ -337,7 +344,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       return (
         <div
           // 整個外殼開連結(Pencil 以外,能不能編輯都一樣;見 renderLinkAnchor);`relative` = 延伸範圍到外殼為止(宿主接手時拿掉,延伸到宿主)
-          className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), !linkHitAreaFromHost && 'relative', className)}
+          className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size, width: fieldWidthVariant(width) }), !linkHitAreaFromHost && 'relative', className)}
+          style={fieldWidthStyle(width)}
           data-field-mode="view"
         >
           <span className={cn('flex-1', LINK_HOST_CLASS)}>
@@ -445,7 +453,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       return (
         <div
           // readonly:整個外殼開連結(見 renderLinkAnchor;`relative` = 延伸範圍到外殼為止)
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), resolvedMode === 'readonly' && !linkHitAreaFromHost && 'relative', className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size, width: fieldWidthVariant(width) }), resolvedMode === 'readonly' && !linkHitAreaFromHost && 'relative', className)}
+          style={fieldWidthStyle(width)}
           data-field-mode={resolvedMode}
           // 2026-09-29 a11y(待辦總帳 OE21):disabled 的純展示殼明告 inactive(對齊 FieldLabel 2026-06-10 同修),
           // 否則 axe 把灰化連結文字當一般文字誤報 color-contrast(modes / 色彩對照 / 尺寸對照三則 story)
@@ -474,7 +483,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           // 框裡 Pencil 以外都開連結(2026-11-06 user「照①乙②b」,link-input.spec.md「Link 狀態」):連結延伸鋪滿外框(含看得見的 1px 邊框,
           // 見 renderLinkAnchor `coverBorder`),游標 = 連結的手形;Pencil(ItemInlineAction 自己 `relative`)畫在上面 = 滑鼠唯一的編輯入口。
           // 2026-09-26 – 11-06 這裡是「外框空白處 = 按 Pencil」(文字游標 + onClick 進編輯)。外框滑過變深是 Field 家族共用外觀,照留(變色的地方點得開)。
-          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }), 'relative', className)}
+          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error, width: fieldWidthVariant(width) }), 'relative', className)}
+          style={fieldWidthStyle(width)}
           data-field-mode="edit"
           data-error={error ? '' : undefined}
         >
@@ -496,12 +506,13 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     return (
       <div
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }),
+          fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error, width: fieldWidthVariant(width) }),
           // 打字狀態的整個外框都是輸入處:文字游標 + 點內距 / 邊框就聚焦 input(同 Input / NumberInput;待辦總帳 N53③,
           // input.spec.md 已寫三者同一條;共用實作 field-wrapper.tsx focusFieldInputFromChrome)
           FIELD_TEXT_ENTRY_CURSOR,
           className,
         )}
+        style={fieldWidthStyle(width)}
         onMouseDown={focusFieldInputFromChrome}
         data-field-mode="edit"
         data-error={error ? '' : undefined}

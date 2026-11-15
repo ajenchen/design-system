@@ -41,6 +41,13 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { dragSourceStyle, forwardDragActivatorAttributes, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { usePanelBulkAction } from './lib/panel-bulk-action'
+import { panelWidthStyle, useWarnBelowPanelFloor, type DataTablePanelWidthProps, type PanelWidthFloor } from './lib/panel-width'
+
+/**
+ * 欄位顯示面板的下限(【AI 推導 2026-11-15】由列的組成推出,同排序 / 篩選面板):左右內距 2×16 + 把手位 16 + 間距 2×8
+ * + 欄名至少 10rem(160,同篩選面板的欄位下拉:同一份欄名)+ 眼睛鈕 24 = 248px → 15.5rem。預設(撐滿外層 w-72 = 288)不受影響。
+ */
+const VISIBILITY_PANEL_FLOOR: PanelWidthFloor = { rem: 15.5 }
 
 interface ColumnVisibilityPanelColumn {
   /** Column id(stable identifier;對齊 DataTable column.id / accessorKey)*/
@@ -49,7 +56,7 @@ interface ColumnVisibilityPanelColumn {
   label: string
 }
 
-export interface DataTableColumnVisibilityPanelProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface DataTableColumnVisibilityPanelProps extends React.HTMLAttributes<HTMLDivElement>, DataTablePanelWidthProps {
   /** 全部可 toggle 欄位(consumer 已過濾掉 system cols 如 __select__)*/
   columns: ColumnVisibilityPanelColumn[]
   /** 受控 visibility map(`true` / undefined = visible / `false` = hidden)*/
@@ -165,9 +172,14 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
   searchable: deprecatedSearchable,
   defaultVisibility,
   defaultColumnOrder,
+  width,
+  minWidth,
+  maxWidth,
   className,
+  style,
   ...props
 }, ref) => {
+  useWarnBelowPanelFloor('DataTableColumnVisibilityPanel', width, VISIBILITY_PANEL_FLOOR)
   const [search, setSearch] = React.useState('')
   const columnIds = React.useMemo(() => columns.map((c) => c.id), [columns])
   const columnIdSet = React.useMemo(() => new Set(columnIds), [columnIds])
@@ -265,9 +277,16 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     //   overlay-surface canonical shape —— root `<div flex flex-col h-full min-h-0>`(M25 viewport-aware
     //   scroll chain)+ viewport-adaptive `PopoverBody`(取代原 fixed `ScrollArea max-h-72`)。三個
     //   DataTable state-panel 收斂成同一形狀,body 隨視窗高度自適應(高螢幕多欄不再硬卡 288px)。
-    //   寬度仍由 consumer 的 `<PopoverContent w-72>` 提供(panel root w-full 撐滿)。
+    //   預設寬仍由 consumer 的 `<PopoverContent w-72>` 提供(panel root w-full 撐滿,畫面不變);產品要指定寬走 `width`
+    //   (外層 PopoverContent 改 `width="hug"`,同排序 / 篩選面板)+ `minWidth` / `maxWidth`,下限 15.5rem、視窗夾限恆在(lib/panel-width.ts;2026-11-15)。
     // 鍵盤搬欄位(Space 提起、方向鍵移、Esc 取消)時按 Esc 只取消拖曳、面板不關(2026-10-01;lib/drag-announcements.ts useDragAccessibility.escapeLayer)
-    <div ref={ref} className={cn('flex flex-col h-full min-h-0 w-full', className)} {...props} {...drag.escapeLayer}>
+    <div
+      ref={ref}
+      className={cn('flex flex-col h-full min-h-0 w-full', className)}
+      style={{ ...panelWidthStyle({ width, minWidth, maxWidth }, VISIBILITY_PANEL_FLOOR), ...style }}
+      {...props}
+      {...drag.escapeLayer}
+    >
       {/* 右側「恢復預設 │ ×」走 PopoverHeader 的右側按鈕位(× 與分隔線由 SurfaceHeader 放,兩側各 12;overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
           2026-11-10 前自刻在 children(hideClose + 外層 gap-1)→ 分隔線兩側只有 8。
           「恢復預設」= 目前(顯示 / 隱藏 + 順序)≠ 產品給的預設才出現,按下回到那一份(2026-11-15 前:resettable 開關 + 有隱藏欄才出現、按下 = 全部顯示)。 */}

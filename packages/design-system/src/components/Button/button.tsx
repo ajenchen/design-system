@@ -7,6 +7,7 @@ import { CircularProgress } from '@/design-system/components/CircularProgress/ci
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useResolvedFieldSize } from '@/design-system/components/Field/field-context'
+import type { SizingMode } from '@/design-system/components/Field/field-types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 /**
@@ -316,12 +317,12 @@ const buttonVariants = cva(
 )
 
 // ── ButtonGroup Context ──────────────────────────────────────────────────────
-// ButtonGroup 提供此 context;Button 讀取它注入 fullWidth。
+// ButtonGroup 提供此 context;Button 讀取它注入寬度模式(直排 = fill)。
 // Context 放本檔(不放 button-group.tsx)以避免循環 import。
 interface ButtonGroupContextValue {
-  fullWidth?: boolean
+  width?: SizingMode
 }
-/** @internal — ButtonGroup↔Button 私有 context(fullWidth 注入);consumer 不直接 import,經 <ButtonGroup> 消費。root barrel 排除(subpath 仍可 wrap 後用)。 */
+/** @internal — ButtonGroup↔Button 私有 context(寬度模式注入);consumer 不直接 import,經 <ButtonGroup> 消費。root barrel 排除(subpath 仍可 wrap 後用)。 */
 const ButtonGroupContext = React.createContext<ButtonGroupContextValue>({})
 
 type InternalVariant = VariantProps<typeof buttonVariants>['variant']
@@ -409,7 +410,14 @@ export interface ButtonProps
    * 2026-10-01 前走原生 `disabled`:按下送出的那一刻按鈕變停用,焦點被瀏覽器丟到 `<body>`(待辦總帳 N69)。
    */
   loading?: boolean
-  /** 撐滿父容器寬度 */
+  /**
+   * 寬度模式:`'hug'`(預設)跟內容 / `'fill'` 撐滿父容器。直排的 `<ButtonGroup>` 裡沒傳時自動 `'fill'`;明寫的 `width` 勝過群組。
+   * 全 DS 的「撐滿 / 跟內容」只用這一個名字(`ds-canonical/references/props-naming.md`「尺寸參數」;user 2026-11-11「尺寸:甲」)。
+   */
+  width?: SizingMode
+  /**
+   * @deprecated 2026-11-15 起改用 `width="fill"`(「尺寸:甲」)。保留一個版本,行為與畫面不變;同時傳 `width` 時以 `width` 為準。
+   */
   fullWidth?: boolean
 }
 
@@ -488,6 +496,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       iconOnly = false,
       dismiss = false,
       loading = false,
+      width,
       fullWidth = false,
       pressed,
       pressedTone, // 2026-06-05 fix(deep-audit P0):原漏 destructure → 落入 ...props 噴到 DOM + 永遠用 cva default
@@ -550,9 +559,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       )
     }
 
-    // ButtonGroup context：vertical group 自動注入 fullWidth
+    // 寬度模式:明寫的 `width` 優先 → 舊名 `fullWidth`(deprecated)→ ButtonGroup context(直排注入 fill)→ 預設 hug。
+    // 舊名 `fullWidth={false}` 在直排群組裡照舊撐滿(2026-11-15 前的行為:群組勝過 fullWidth=false),所以 false 不算明寫。
     const groupCtx = React.useContext(ButtonGroupContext)
-    const resolvedFullWidth = fullWidth || !!groupCtx.fullWidth
+    const resolvedWidth: SizingMode = width ?? (fullWidth ? 'fill' : groupCtx.width ?? 'hug')
 
     // 可聚焦的停用(見檔頭 PRESERVED_WHILE_DISABLED 段):此刻是否握有焦點 —— 只有「握著時被停用」才改用可聚焦停用,
     // 焦點離開那一刻換回原生 disabled(事件在 blur 當下更新,下一次 render 就是原生 disabled)。
@@ -644,7 +654,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       dismiss && 'text-fg-muted hover:text-fg-secondary',
       // aria-disabled 的 dismiss hover 釘在 fg-muted(button.spec.md「狀態疊加」表 aria-disabled 列);可聚焦的停用不是那個長相(見上方 ownVariantClasses)
       dismiss && !focusableDisabled && 'aria-disabled:hover:text-fg-muted',
-      resolvedFullWidth && 'w-full',
+      resolvedWidth === 'fill' && 'w-full',
     )
 
     // 2026-07-05 D4 修:asChild 原 silently drop loading/disabled 語意(無 aria-busy/aria-disabled/
