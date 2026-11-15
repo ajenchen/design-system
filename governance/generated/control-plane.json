@@ -1834,7 +1834,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4b7fdf3e00d8a0fcef39d76e4ca1cf6a945c4b2cf136f8da97b0f235aa9ee89c",
+      "hash": "sha256:b990b7d80faa300d64d2c3556bb6357777e35fdf465f6cefc96e5ee10b276323",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1897,7 +1897,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:cdb50813a1dddf0ac7f6f888961608f32f169ff57fce0450fbdb2c8635023cae",
+      "hash": "sha256:6cb987f20ed4660c6c97d0e5c9c29a664378dc579d99c38143f5fc47ce90ba5d",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2577,7 +2577,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8c07d49e80a6a173b50829163ec4105e6d8a0cc9c17a32796267dc8d68c36f2f",
+      "hash": "sha256:aefbf4b2ddaa2cecb980f8890e7b925b6060e4e575e6d8dd36eb4b00cac1b94d",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
