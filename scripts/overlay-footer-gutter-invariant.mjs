@@ -15,6 +15,8 @@
  *
  * 量的是**像素**(content-box 左緣),不是 class 字串(M32)。全 story 掃,不抽樣。
  * 對照組 `--selftest`:把每個 footer 的左內距多推 7px,這支必須紅;抓到 = exit 0,沒抓到 = exit 1。
+ * 「無角色列」那條參照(body 撤掉 padding、列是一般 div 自帶 gutter,例:欄位顯示面板;2026-11-15 CI 假紅 16px 後補)
+ * 另有自己的對照組:`--selftest --story=<那一則> --expect-ref=無角色列` —— 推歪後抓到的每一筆都必須是用這種參照量的。
  *
  * **順帶擋一件事:story 整則渲不出來**。這支本來就要逐一開啟全部 story,所以順手檢查有沒有 story 掉進
  * Storybook 的錯誤畫面(`.sb-show-errordisplay`)。為什麼放這裡而不是新開一支:專門做這件事的
@@ -64,6 +66,10 @@ const SURVEY = process.argv.includes('--survey')
 const LANES = Number(arg('lanes', '4'))
 // --selftest-crash 沒給 --limit 時取前 3 則:第 1 則驗 B(缺檔)、其餘驗 A(拋錯),不需要全掃
 const LIMIT = Number(arg('limit', SELFTEST_CRASH ? '3' : '0'))
+// --story=<id>:只掃這一則;--expect-ref=<參照種類>:--selftest 時抓到的每一筆都必須是用這種參照量的
+//(2026-11-15:「無角色列」那條路要有自己的對照組 —— 一般 --selftest 抓到第一筆就收工,不保證走過它)
+const ONLY_STORY = arg('story', '')
+const EXPECT_REF = arg('expect-ref', '')
 const TOLERANCE_PX = 1
 // 開 story 後要求版面連續靜止幾個影格才量 footer 左緣(量的是幾何,要等排版與進場動畫跑完)
 const SETTLE_FRAMES = 10
@@ -75,6 +81,11 @@ const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 
 const index = readServedStorybookIndex(server)
 let stories = Object.values(index.entries || index.stories).filter((e) => e.type !== 'docs').map((e) => ({ id: e.id, name: e.name }))
 if (LIMIT) stories = stories.slice(0, LIMIT)
+if (ONLY_STORY) {
+  stories = stories.filter((s) => s.id === ONLY_STORY)
+  // 清單裡沒有這一則 = 什麼都沒量(改名 / 刪掉),不是通過
+  if (!stories.length) { console.error(`✗ --story=${ONLY_STORY} 不在這份建置的 story 清單裡 —— 對照組沒有對象`); process.exit(1) }
+}
 
 /**
  * openStory 丟出的 StoryRenderInstrumentError → 本閘的兩類之一(**唯一的分界**;--selftest-crash 兩面都打在這裡)。
@@ -150,7 +161,22 @@ const PROBE = () => {
     // 列排在 body 前面:list-as-region 的浮層會把 body 的 chrome padding 撤掉(px-0)、改由列自己帶 gutter
     //(`overlay-surface.spec.md`「List-as-region in overlay body」)。那種殼裡「內容左緣」是列定義的,
     // 拿 body 的 content-box 去比會差一整個 gutter(2026-09-18 實測 Popover 展示差 16px = 假紅)。
+    // 同一種 list-as-region,但列沒有 ARIA 角色(例:欄位顯示面板的勾選列是一般 div、自帶 px-loose;
+    // 2026-11-15 CI 第一次在頁面上直接看到它,body 撤掉 padding 後被拿 body 外框當左緣,差 16px = 假紅):
+    // body 自己左內距是 0 時,往下找第一個可見、滿寬、自己帶左內距的後代 —— 那就是列的 gutter。
+    // 「滿寬」跟 body 比,不跟殼比:面板直接畫在說明頁上(不包 PopoverContent)時,往上找到的「殼」是頁面容器,遠比面板寬。
+    const bodyGutter = (b) => {
+      if (parseFloat(getComputedStyle(b).paddingLeft || '0') > 0) return null
+      const bw = b.getBoundingClientRect().width
+      for (const el of b.querySelectorAll('*')) {
+        if (!visible(el) || el.getBoundingClientRect().width < bw * 0.6) continue
+        if (parseFloat(getComputedStyle(el).paddingLeft || '0') > 0) return el
+      }
+      return null
+    }
+    const gutterRow = !wideRows.length && body ? bodyGutter(body) : null
     if (wideRows.length) { refKind = '列'; refLeft = contentLeft(wideRows[0], true) }
+    else if (gutterRow) { refKind = '無角色列'; refLeft = contentLeft(gutterRow) }
     else if (body) { refKind = 'body'; refLeft = contentLeft(body) }
     else if (cell) { refKind = '日曆格'; refLeft = cell.getBoundingClientRect().left }
     else if (header) { refKind = 'header'; refLeft = contentLeft(header) }
@@ -384,6 +410,12 @@ if (reportInstrumentFailures()) process.exit(1)
 if (SELFTEST) {
   const ok = bad.length > 0
   console.log(ok ? `✓ selftest:把 footer 左內距推 7px 之後,這支抓到 ${bad.length} 筆 —— 量具會紅` : '✗ selftest:推歪了卻沒抓到 —— 量具無效')
+  if (ok && EXPECT_REF) {
+    const kinds = [...new Set(bad.map((b) => b.細節 && b.細節.refKind))]
+    const refOk = kinds.length === 1 && kinds[0] === EXPECT_REF
+    console.log(refOk ? `✓ selftest:抓到的每一筆都是用「${EXPECT_REF}」量的` : `✗ selftest:要驗的是「${EXPECT_REF}」那條路,實際抓到的是 ${JSON.stringify(kinds)} —— 對照組沒走到要驗的路`)
+    process.exit(refOk ? 0 : 1)
+  }
   process.exit(ok ? 0 : 1)
 }
 // 空綠地板:一個 footer 都沒量到 = 這支什麼都沒驗(M32)
