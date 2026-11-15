@@ -260,7 +260,7 @@ export const Overview = {
                 ['suggestions', 'ComboboxOption[]', '—', '遠端搜尋(filterOption=false)、關鍵字空時的建議清單;DS 自動包成標題「建議」的群組(suggestionsLabel 可覆寫);沒建議時提示列 searchHintText'],
                 ['searchable', 'boolean', 'false', '開啟搜尋；搜尋框位置由 searchIn 決定'],
                 ['searchIn', "'menu' | 'trigger'", "'menu'", 'menu = 浮層內搜尋框（勾選後關鍵字保留）；trigger = 欄位內搜尋框（恆在，空值也能直接打字；每勾一項清空關鍵字）'],
-                ['placeholder', 'string', '—', '無值時的提示文字（searchIn=\'trigger\' 時由欄位內搜尋框顯示）；未傳時 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號）'],
+                ['placeholder', 'string', '—', '無值時的提示文字（searchIn=\'trigger\' 時由欄位內搜尋框顯示）；預設「選擇…」（全形省略號）'],
                 ['disabled', 'boolean', 'false', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

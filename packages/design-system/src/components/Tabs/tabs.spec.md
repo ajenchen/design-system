@@ -134,7 +134,7 @@ Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-densi
 | Size | md density | lg density | 字體 | 何時用 | 世界級對照 |
 |------|-----------|-----------|------|--------|-----------|
 | `sm` ★ cva default(2026-05-17 從 md 改 sm)| 32 | 40 | `text-body` (14) | **預設 use case**:所有 header 內 tabs(overlay header / chrome header / Dialog / Sidebar / dense toolbar)| Ant Design verbatim:「**small size could be used in Modal**」(`ant.design/components/tabs`)|
-| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留相容階梯，不作新用例預設 |
+| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留這一檔、不作新用例預設(去留【待決 2026-11-16】,見 `../../patterns/header-canonical/header-canonical.spec.md` Rule W5) |
 | `lg` | 48 | 56 | `text-body-lg` (16) | **獨立 tabs 直接取代 chrome header 用**(tab 高度 = `--chrome-header-height` 像素相等,48/56)— page-level workspace 主導覽 | Ant verbatim:「**Large size tabs are usually used in page header**」(`ant.design/components/tabs`)|
 
 **Token alignment + size 階梯 rationale SSOT**:`--tab-height-lg` (48/56) = `--chrome-header-height` (48/56) 像素相等(2026-11-15 起直接寫成 `var(--chrome-header-height)`,一個住處)+ md future tier + sm default 遷移 — **完整 cross-family canonical 詳** `patterns/header-canonical/header-canonical.spec.md` W3/W5/W6(per Rule-of-3 SSOT 集中此處,本元件 spec.md 不重複論述,只列上表 size table)。
@@ -190,7 +190,7 @@ Tabs 是 **navigation anchor**，不是 compact control：
 
 **Triggers 之間 gap**：使用 `--layout-space-loose`（md density 16px / lg density 24px），與其他「pattern 層級的鬆散留白」共用同一 token。Tabs 的 gap 不是裝飾性空白，而是告訴使用者「每個 tab 是獨立的視圖入口」的視覺分隔。
 
-**TabsList 容器寬度(2026-06-12 user 拍板,解 L58 spec≠code)**:**跨滿父容器**(none 模式 `w-full`;scroll/menu 模式 inner list `min-w-full` 保留溢出成長)——底線連成整條、右端達內容區邊緣,與「跨父容器寬度、與 header border 對齊」的角色定義一致(對齊 Ant nav `left:0;right:0` 底線 / Primer UnderlineNav;shadcn 預設是 pill 式,另有 `line` 變體但 TabsList 仍是 `w-fit` 不跨滿,不適用)。Trigger 本身仍 hug content(上段不變)。**左右邊距 ownership**:TabsList **不自加水平 padding**——邊距由容器的 `--layout-space-loose` gutter 提供(standalone = 父容器 padding;withTabs = 繼承 header padding,W2 lockstep),故 tab 左緣永遠對齊兄弟內容左緣([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tabs.tsx#L28-L33))。
+**TabsList 容器寬度(2026-06-12 user 拍板,解 L58 spec≠code)**:**跨滿父容器**(none 模式 `w-full`;scroll/menu 模式 inner list `min-w-full` 保留溢出成長)——底線連成整條、右端達內容區邊緣,與「跨父容器寬度、與 header border 對齊」的角色定義一致(對齊 Ant nav `left:0;right:0` 底線 / Primer UnderlineNav;shadcn 預設是 pill 式,另有 `line` 變體但 TabsList 仍是 `w-fit` 不跨滿,不適用)。Trigger 本身仍 hug content(上段不變)。**左右邊距 ownership**:TabsList **不自加水平 padding**——邊距由容器的 `--layout-space-loose` gutter 提供(standalone = 父容器 padding;經 header tabsSlot = 繼承 header padding,W2 lockstep),故 tab 左緣永遠對齊兄弟內容左緣([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/tabs.tsx#L28-L33))。
 
 **TabsContent 與 TabsList 間距(2026-06-12 user 拍板)**:`--layout-space-tight`(md 12px,density 連動),**內建於 TabsContent**(`mt-[var(--layout-space-tight)]`,className 可覆寫;full-height 佈局用 `mt-0`)。依 `layoutSpace.spec`「親疏 3 級」第一級(同 bundle,元件 spec own)+ 規則 3「直接功能依賴 = tight」精神;**不**取 Ant 的固定 16px(M23 自家 token 優先)。內容本身的排版歸 item-anatomy / 各內容元件管,本條只管 list↔content gap([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L1133))。
 
@@ -204,7 +204,7 @@ TabsList 底部有 1px gray border（`border-divider`，neutral-4），selected 
 
 **原則**：selected 底線必須覆蓋並延伸 TabsList 的 gray border，避免疊線。實作手法（pseudo-element 定位）見 `.tsx`。
 
-**色 token = `--divider`(neutral-4)而非 `--border`(neutral-5)**(2026-05-18 改 per user verbatim「我認為應該把 tabs 的下底線統一改成是 divider 色吧?」+「做」approval):跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider` 同色——chrome separator 一致,withTabs scenario 下 underline = chrome separator,色不同會視覺斷裂;selected trigger 2px primary indicator overlay 1px divider 對比仍清楚;對齊 `color.spec.md`「T-junction connectivity 原則」(tabs underline 跟 header separator T 字交接)。在 Dialog / Sidebar header 內特別重要——header 的 `border-b` 和 Tabs 的 `border-b` 必須感知為同一條水平線。
+**色 token = `--divider`(neutral-4)而非 `--border`(neutral-5)**(2026-05-18 改 per user verbatim「我認為應該把 tabs 的下底線統一改成是 divider 色吧?」+「做」approval):跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider` 同色——chrome separator 一致,tabs 進 header(tabsSlot)時 underline = chrome separator,色不同會視覺斷裂;selected trigger 2px primary indicator overlay 1px divider 對比仍清楚;對齊 `color.spec.md`「T-junction connectivity 原則」(tabs underline 跟 header separator T 字交接)。在 Dialog / Sidebar header 內特別重要——header 的 `border-b` 和 Tabs 的 `border-b` 必須感知為同一條水平線。
 
 ---
 
@@ -216,7 +216,7 @@ Tabs 常與容器 header 的底邊 border 合併——**視覺上只有一條線
 
 **世界級對照**:GitHub Primer、Ant Tabs 與 Mantine Tabs 都讓 tabs family 擁有自身 separator；Material UI 的替代模式由 parent 擁有 separator。此 DS 採前者，因為 separator 與 active indicator 是同一個 TabsList 狀態邊界；`ChromeHeader` 因此在含 Tabs 時讓出該邊界，避免雙 owner。外部對照只作輔證，內部 authority 見 `header-canonical.spec.md` W1([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tabs/style/index.ts#L417-L431)、[來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/packages/@mantine/core/src/components/Tabs/Tabs.module.css#L161-L171)、[來源](https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/tabs/demos/basic/BasicTabs.tsx#L46)、[來源](https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/internal/components/UnderlineTabbedInterface.module.css#L14))。
 
-**Auto-suppress 機制(Phase 2 production code 提案)**:header primitive 加 `withTabs?: boolean` prop → true 時自動移除自身 `border-b`,免 consumer 手動忘記(分隔線只能有一個 owner,見上段)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
+**Auto-suppress 機制**:header primitive 的 `tabsSlot` prop —— 給了就自動移除 header 自身 `border-b`,改由 TabsList 畫線,免 consumer 手動忘記(分隔線只能有一個 owner,見上段);Tabs 不得寫進 header 的 children(原 `withTabs` 布林 2026-11-16 移除)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
 
 Size 建議:overlay / chrome header 內用 `sm`(32/40)— 對應 close X 也是 sm,視覺一致;**獨立取代 chrome header** 的 page-level workspace tabs 用 `lg`(48/56,= chrome-header-height)。
 

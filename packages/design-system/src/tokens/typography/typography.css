@@ -112,7 +112,7 @@
 
 
 /* ── Letter-spacing semantic utility(對齊 single semantic value per role 哲學)──
-   `tracking-shortcut`:鍵盤快捷鍵 hint(Command / DropdownMenuShortcut 等)。
+   `tracking-shortcut`:鍵盤快捷鍵 hint(CommandShortcut / DropdownMenuItem `shortcut` 後綴等)。
    禁 raw `tracking-(tight|wide|wider|widest|tighter)` per typography.spec.md「禁止事項」與「Letter-spacing(role-specific only)」兩段
    + utility-registry.json block list。新增 role 需新 token + 新 @utility。 */
 @utility tracking-shortcut { letter-spacing: var(--tracking-shortcut); }

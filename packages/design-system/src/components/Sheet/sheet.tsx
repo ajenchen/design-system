@@ -207,9 +207,9 @@ const SheetContent = React.forwardRef<
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 // ── SheetHeader:SurfaceHeader + Close X(對齊 DialogHeader canonical)──────────
-// 2026-05-18 audit gap fix:type 對齊 SurfaceHeaderProps,withTabs / tabsSlot expose
-// 給 consumer(per header-canonical.spec.md W1 跨 6 consumer 同契約)。Spread 早 forward
-// 過去,只是 TS type 沒 expose 導致 consumer 不能 type-safe 用 `<SheetHeader withTabs>`。
+// 2026-05-18 audit gap fix:type 對齊 SurfaceHeaderProps,tabsSlot expose
+// 給 consumer(per header-canonical.spec.md W1 跨 6 consumer 同契約),可以 type-safe 寫
+// `<SheetHeader tabsSlot={<TabsList>…</TabsList>}>`。
 // 關閉鈕的讀屏名稱:I18nProvider 的 `sheet.close` → DS 預設「關閉」(lib/i18n/README.md「Fallback chain」;user F1 預設中文、WM 要能傳英文)
 function SheetCloseButton() {
   const { t } = useI18n()

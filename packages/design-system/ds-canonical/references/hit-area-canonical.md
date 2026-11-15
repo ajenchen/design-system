@@ -240,7 +240,7 @@ rdg 該 cell 變 active、Glide 直接選列。
 | # | 目標 | 可視形狀 | 命中區 | 關係 | 判定 |
 |---|---|---|---|---|---|
 | 1 | `ItemInlineActionButton`(Tag dismiss / Field endAction / TreeItem / Menu / DropdownMenu / DataTable 巢狀 chevron / 各 panel 列 / **Sidebar 列鈕與群組鈕**全走它)| 懸停底色 18 / 18 / 22(`item-anatomy.tsx:128-132`)| 同一塊 —— 底色 span **刻意沒有** `pointer-events-none`,溢出的 1px 自己接住點擊再冒泡到 button(`item-anatomy.tsx:730`)| 相等 | ✅ **2026-09-24 依 user 裁示修正並實測**:側欄列鈕量到 按鈕盒 16×16 / 懸停底色 18×18 / 圖示 16×16;底色邊緣**內** 1px 四面探針全打到它自己,邊緣**外** 2px 四面分別打到列鈕與列文字(沒有隱形帶)。修前命中 16.75×16.75,右緣與下緣各短約 1.25px |
-| 2 | `Button iconOnly`(Pagination 上下頁等)| 整個 button 盒(底色填滿)| 同一個盒 —— `aspect-square p-0`(`button.tsx:375` `ICON_ONLY_BASE`,`:536` 套用)| 相等 | ✅ |
+| 2 | `Button iconOnly`(Pagination 上下頁等)| 整個 button 盒(底色填滿)| 同一個盒 —— `aspect-square p-0`(`button.tsx:372` `ICON_ONLY_BASE`,`:536` 套用)| 相等 | ✅ |
 | 3 | `AgentFabDock` 主鈕(家 40 / 貼邊 28)| button 的 border box(圓角也在 button 上)| 同一個盒,並有機械閘逐點驗(`agent-panel.spec.md`「遮擋與貼邊」段 :457-504,`scripts/agent-fab-hit-area-invariant.mjs` H1/H4/H5)| 相等 | ✅ 本規則的原點 |
 | 4 | `Slider` thumb | `h-4 w-4 rounded-full`(`slider.tsx:166`)| 同一個盒,無外擴 | 相等 | ✅ |
 | 5 | `FileItem` 整列主動作 | 整列 | 整列;透明覆蓋 button 是 `pointer-events-none`,只收鍵盤(`file-item.tsx#keyboardPrimaryAction`,理由在 `file-item.spec.md`「Row primary action 鍵盤可達且不 nested-interactive」條 :423)| 相等 | ✅ |

@@ -111,7 +111,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -687,7 +687,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "b595e91ad03b88d0c793e91a609c41f7b24bbbe5519aa05d93d3c01c0d547a4f",
+      "sha256": "e07b5bd1ab3c84b5a30c0d0a15da808c018ebd98a032f6b8ee22c99399a3bc4c",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -759,7 +759,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "05cc5e8f48dd5428fcb5d6dd5b8c9524b54b130854b769924155636a89cd78a6",
+      "sha256": "fa89c8ae5937e990260ef7572ac95a96ab570515877c54f088f70dba41cba185",
       "source": "check_opacity_token_usage.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -1055,7 +1055,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": "skills/product-ui-audit/references/audit-checks.md",
       "classification": null,
       "destination": null
@@ -1295,7 +1295,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": "skills/product-ui-audit/references/audit-checks.md",
       "classification": null,
       "destination": null
@@ -1455,7 +1455,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
+      "sha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1575,7 +1575,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": null,
       "classification": null,
       "destination": null

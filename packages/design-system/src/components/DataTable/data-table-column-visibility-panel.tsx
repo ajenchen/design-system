@@ -8,7 +8,7 @@
  * **固定零件**(恆渲染,不靠傳不傳某個參數決定 —— M23(f);data-table.spec.md L4「欄位顯示面板的固定零件」,2026-11-15)
  * (對齊 Linear / Airtable / Notion / Material X-DataGrid 的 columnVisibility panel idiom):
  *   - 標題列:「恢復預設」(RotateCcw)+ ×
- *   - 搜尋(跨欄位 label match)—— 2026-11-15 前要另外傳 `searchable` 才有;`searchable` 已棄用、傳了不作用
+ *   - 搜尋(跨欄位 label match)—— 2026-11-15 前要另外傳 `searchable` 才有;`searchable` 已移除
  *   - 可拖曳排序的欄位列 + Eye / EyeOff 切換;Locked 欄位(`lockedIds`)顯 Lock icon,不可 toggle / 不可 drag
  *     —— 2026-11-15 前要傳 `columnOrder` + `onColumnOrderChange` 才有拖曳;兩個現在必填(順序怎麼存只有產品能做,沒有內建 fallback)
  *   - 底部 bidirectional bulk toggle(全可見 → 全部隱藏 / 任一隱藏 → 顯示全部)
@@ -76,12 +76,8 @@ export interface DataTableColumnVisibilityPanelProps extends React.HTMLAttribute
   onColumnOrderChange: (next: string[]) => void
   /** Locked column ids(顯 Lock icon,不可 toggle / 不可 drag;哪幾欄鎖是資料,不傳 = 沒有鎖定欄)*/
   lockedIds?: string[]
-  /**
-   * @deprecated 2026-11-15 起搜尋框是固定零件、恆顯示,這個參數不作用(傳 `false` 也照樣有搜尋框),新寫法不要傳。
-   * 只留在型別裡讓既有寫法(`searchable`)升級不壞。原因:搜尋是這個面板設計的一部分、不是 consumer 選配 —— 選配讓範例漏接、
-   * 同一個元件在不同頁面長得不一樣(M23(f);data-table.spec.md L4「欄位顯示面板的固定零件」)。
-   */
-  searchable?: boolean
+  // 搜尋框是固定零件、恆顯示(data-table.spec.md L4「欄位顯示面板的固定零件」;M23(f))。2026-11-15 前要另外傳 `searchable` 才有;
+  // 那個參數已移除、不留別名(0.x 相容政策,props-naming.md「相容政策」)—— 舊寫法 `searchable` 不是 div 的屬性,型別層直接報錯。
   /**
    * 產品設定的預設可見欄(例:專案管理員設的預設欄位、使用者存過的檢視;寫法同 `visibility`)。目前與預設不同時,
    * 標題列出現「恢復預設」,按下回到這一份(連順序一起回到 `defaultColumnOrder`);一樣時不出現。
@@ -168,8 +164,6 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
   columnOrder,
   onColumnOrderChange,
   lockedIds = [],
-  // 已棄用、不作用(搜尋框恆顯示);在這裡接住,免得被 `...props` 灑到 div 上
-  searchable: deprecatedSearchable,
   defaultVisibility,
   defaultColumnOrder,
   width,

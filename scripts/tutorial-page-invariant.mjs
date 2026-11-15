@@ -649,7 +649,7 @@ export function checkTutorialFile(file, text) {
         if (own.length) hits.push(hit('R5', file, sf, n, `TutorialPage 帶間距 ${own.join(' ')} —— 頁裡的間距由共用元件擁有`))
         // (R5) 字級 / 字色也由共用元件擁有(2026-10-20 T2:TutorialPage 自己就是 text-body)
         const typo = classInfo(n).tokens.filter((t) => /^text-/.test(utilityBase(t)))
-        if (typo.length) hits.push(hit('R5', file, sf, n, `TutorialPage 自帶字級 / 字色 ${typo.map((t) => `\`${t}\``).join(' ')} —— 內文字級由共用元件擁有(text-body,typography.spec.md:39)`))
+        if (typo.length) hits.push(hit('R5', file, sf, n, `TutorialPage 自帶字級 / 字色 ${typo.map((t) => `\`${t}\``).join(' ')} —— 內文字級由共用元件擁有(text-body,typography.spec.md:44)`))
         // (R13) 頁根不收 className / style / 展開(2026-11-05 BA-tutorial-width):整頁寬度由共用元件擁有,各頁不自訂;
         // 寬度寫成什麼形狀都一樣(字面值、cn(…)、style、{...props}),讀得到讀不到都不放行
         const pageOwn = attrs(n).filter((p) => ts.isJsxSpreadAttribute(p) || (ts.isJsxAttribute(p) && ['className', 'style'].includes(p.name.getText())))
@@ -686,7 +686,7 @@ export function checkTutorialFile(file, text) {
           if (stack) { hits.push(hit('R4', file, sf, c, `<${tag}> 裡的 <${ct}>${via} 在 :${lineOf(sf, stack)} 疊了 ≥ 2 塊以手寫標題開頭的區塊 = 手刻的規則(間距由那個容器手寫)—— 每則改成 TutorialRule;左右並排比較用多欄 grid`)); continue }
           // (R4,2026-10-20 T8)「標題樣式的一行字」當標題(span / p 加半粗體、大寫小字):同樣是手刻的規則 / 段落外框
           const labelLead = leadingHeadingOrLabel(sf, resolved, ctx)
-          if (labelLead) { hits.push(hit('R4', file, sf, c, `<${tag}> 裡的 <${ct}>${via} 以標題樣式的一行字 <${labelLead}> 開頭 = 手刻的段落 / 規則外框 —— 改用 TutorialSection / TutorialRule(標題一律 h1–h6,typography.spec.md:43)`)); continue }
+          if (labelLead) { hits.push(hit('R4', file, sf, c, `<${tag}> 裡的 <${ct}>${via} 以標題樣式的一行字 <${labelLead}> 開頭 = 手刻的段落 / 規則外框 —— 改用 TutorialSection / TutorialRule(標題一律 h1–h6,typography.spec.md:49)`)); continue }
           const labelStack = stackedLabelBlocks(sf, resolved, ctx)
           if (labelStack) hits.push(hit('R4', file, sf, c, `<${tag}> 裡的 <${ct}>${via} 在 :${lineOf(sf, labelStack)} 疊了 ≥ 2 塊以標題樣式的一行字開頭的區塊 = 手刻的規則 —— 每則改成 TutorialRule`))
         }
@@ -850,7 +850,7 @@ export function checkHelper(text) {
   const pageFn = sf.statements.find((st) => ts.isFunctionDeclaration(st) && st.name?.text === 'TutorialPage')
   const pageRoot = pageFn ? fnRoot(pageFn) : null
   const pageUses = pageRoot && pageRoot.getText(sf).includes('PAGE_TEXT')
-  if (!(pageText && ts.isStringLiteral(pageText) && pageText.text.split(/\s+/).includes('text-body') && pageUses)) out.push({ rule: 'R8', file: HELPER, line: 1, message: 'TutorialPage 的根節點沒有內文字級 text-body(PAGE_TEXT)—— 頁裡沒寫字級的段落 / 清單會落到瀏覽器預設 16px(typography.spec.md:13 / :39;2026-10-20 T2)' })
+  if (!(pageText && ts.isStringLiteral(pageText) && pageText.text.split(/\s+/).includes('text-body') && pageUses)) out.push({ rule: 'R8', file: HELPER, line: 1, message: 'TutorialPage 的根節點沒有內文字級 text-body(PAGE_TEXT)—— 頁裡沒寫字級的段落 / 清單會落到瀏覽器預設 16px(typography.spec.md:14 / :39;2026-10-20 T2)' })
   const titles = decls.get('USAGE_SECTION_TITLES')
   const got = {}
   if (titles && ts.isObjectLiteralExpression(titles)) for (const pr of titles.properties) if (ts.isPropertyAssignment(pr) && ts.isStringLiteral(unwrap(pr.initializer))) got[pr.name.getText(sf)] = unwrap(pr.initializer).text

@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { OverflowIndicator } from './overflow-indicator'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Avatar, AVATAR_STACK_CLASS, AVATAR_STACK_ITEM_CLASS, avatarStackItemStyle } from '@/design-system/components/Avatar/avatar'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 /** Person avatar hover canonical helper — 對齊 avatar.spec.md DS-wide rule:
@@ -168,7 +167,7 @@ const rows = [
 
 type AssigneeRow = (typeof rows)[number]
 
-const assigneeColumns: ColumnDef<AssigneeRow>[] = [
+const assigneeColumns: DataTableColumnDef<AssigneeRow>[] = [
   {
     id: 'title',
     header: '任務',

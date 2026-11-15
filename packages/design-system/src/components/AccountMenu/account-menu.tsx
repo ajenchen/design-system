@@ -138,7 +138,7 @@ export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>
             ref={ref}
             type="button"
             aria-label={triggerAriaLabel}
-            className="flex size-6 shrink-0 items-center justify-center self-center rounded-full /* 2026-09-07 刪:與 DropdownMenuTrigger 自帶的 dropdown-menu.tsx:123 逐字相同, 經 Radix Slot(asChild,:128)併到同一顆按鈕上 = 同一份宣告掛兩次 */"
+            className="flex size-6 shrink-0 items-center justify-center self-center rounded-full /* 2026-09-07 刪:與 DropdownMenuTrigger 自帶的 dropdown-menu.tsx:121 逐字相同, 經 Radix Slot(asChild,:128)併到同一顆按鈕上 = 同一份宣告掛兩次 */"
           >
             {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸);
                 常數與 CSS --chrome-header-avatar-size 由 token-twin-invariant 鎖相等(2026-11-15 前是字面值 24 + 註解) */}

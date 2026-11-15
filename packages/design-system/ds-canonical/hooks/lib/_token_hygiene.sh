@@ -67,7 +67,7 @@ _SHADCN_LIST=$(jq -er '
 SHADCN_PATTERN="\\b(${_SHADCN_LIST})\\b"
 SHADCN_HITS=$(grep -m 5 -nE "$SHADCN_PATTERN" "$FILE_PATH" 2>/dev/null)
 if [ -n "$SHADCN_HITS" ]; then
-  VIOLATIONS="${VIOLATIONS}\n⚠️ shadcn compat alias found (必須遷移為 direct token):\n${SHADCN_HITS}\n  映射: bg-popover→bg-surface-raised / text-popover-foreground→text-foreground / text-muted-foreground→text-fg-muted / bg-accent→bg-neutral-hover / text-accent-foreground→text-foreground / bg-destructive→bg-error / bg-background→bg-canvas / bg-card→bg-surface / text-card-foreground→text-foreground / border-input→border-border / text-primary-foreground→text-white /（其餘 registry alias → 對應 semantic token,見 tokens/color/semantic.css）"
+  VIOLATIONS="${VIOLATIONS}\n⚠️ shadcn compat alias found (必須遷移為 direct token):\n${SHADCN_HITS}\n  映射: bg-popover→bg-surface-raised / text-popover-foreground→text-foreground / text-muted-foreground→text-fg-muted / bg-accent→bg-neutral-hover / text-accent-foreground→text-foreground / bg-destructive→bg-error / bg-background→bg-canvas / bg-card→bg-surface / text-card-foreground→text-foreground / border-input→border-border / text-primary-foreground→text-on-emphasis(實心底上的字,color.spec.md;不是 text-white)/（其餘 registry alias → 依用途查 color.spec.md 的用途表,見 tokens/color/semantic.css）"
 fi
 
 # ── Check 2: Tailwind v4 [--foo] shorthand (silent fail) ─────────────────────
@@ -83,10 +83,10 @@ fi
 # ── Check 3: Hardcoded Tailwind shadow ────────────────────────────────────────
 # shadow-sm/md/lg/xl/2xl 是 Tailwind 預設,繞過 elevation token 系統——禁止.
 # 允許:shadow-none / shadow-[var(--elevation-N)] N∈{100,200} / shadow-[calc(...)]
-SHADOW_PATTERN='\bshadow-(sm|md|lg|xl|2xl|inner)\b'
+SHADOW_PATTERN='\bshadow-(2xs|xs|sm|md|lg|xl|2xl|inner)\b'
 SHADOW_HITS=$(grep -m 5 -nE "$SHADOW_PATTERN" "$FILE_PATH" 2>/dev/null)
 if [ -n "$SHADOW_HITS" ]; then
-  VIOLATIONS="${VIOLATIONS}\n⚠️ Tailwind default shadow found (禁用,必須用 elevation token):\n${SHADOW_HITS}\n  修法:shadow-sm→shadow-[var(--elevation-100)] / shadow-md→shadow-[var(--elevation-200)] / shadow-lg→shadow-[var(--elevation-200)](2026-05-31 修:elevation-300 不存在,最高 tier 是 200)"
+  VIOLATIONS="${VIOLATIONS}\n⚠️ Tailwind default shadow found (禁用,必須用 elevation token):\n${SHADOW_HITS}\n  修法:不照 Tailwind 尺寸換名字,依用途選(elevation.spec.md「層級」):頁面內容層 → shadow-[var(--elevation-100)];浮層 → shadow-[var(--elevation-200)](配 bg-surface-raised)"
 fi
 
 # ── Check 4: primitive color name used as Tailwind utility (silent fail) ─────
@@ -97,10 +97,11 @@ fi
 # `bg-[var(--color-neutral-3)]`(Tag categorical 色常用)。
 # 歷史 bug:2026-04-22 FileItem compact static bg 用 `bg-neutral-3` 完全沒底色,
 # user 對照 Badge low 可見才發現;spec layer + 本 hook 同步修。
-PRIMITIVE_PATTERN='\b(bg|text|border|ring|fill|stroke|shadow|outline|decoration|divide|placeholder|caret|accent)-(neutral|blue|red|green|yellow|orange|purple|pink|cyan|teal|indigo|violet|deep-orange)-[0-9]+\b'
+# 色相 ⊇ tokens/color/primitives.css 的色相(scripts/token-allowlist-invariant.mjs 逐色相驗;2026-11-15 補 amber / lime / magenta / turquoise)
+PRIMITIVE_PATTERN='\b(bg|text|border|ring|fill|stroke|shadow|outline|decoration|divide|placeholder|caret|accent)-(neutral|blue|red|green|yellow|orange|purple|pink|cyan|teal|indigo|violet|deep-orange|amber|lime|magenta|turquoise)-[0-9]+\b'
 PRIMITIVE_HITS=$(grep -m 5 -nE "$PRIMITIVE_PATTERN" "$FILE_PATH" 2>/dev/null)
 if [ -n "$PRIMITIVE_HITS" ]; then
-  VIOLATIONS="${VIOLATIONS}\n⚠️ Primitive color name used as Tailwind utility (silent fail):\n${PRIMITIVE_HITS}\n  修法:改用 semantic utility(bg-secondary / bg-muted / bg-surface / text-fg-muted 等)或 arbitrary value(bg-[var(--color-neutral-3)] 給 Tag categorical 色用)。理由:primitive token 沒經 @theme inline 橋接,bg-neutral-3 等會 silent 失效。"
+  VIOLATIONS="${VIOLATIONS}\n⚠️ Primitive color name used as Tailwind utility (silent fail):\n${PRIMITIVE_HITS}\n  修法:依用途選語意色(color.spec.md 的用途表:表面分層 / 文字層級 / muted vs secondary 等),例 bg-secondary / bg-muted / bg-surface / text-fg-muted。不要改成 bg-[var(--color-…)] 讀原料 —— 那同樣越過語意層(color.spec.md「禁止事項」;只有 Tag / Avatar / Calendar 的類別色例外)。理由:primitive token 沒經 @theme inline 橋接,bg-neutral-3 等會 silent 失效。"
 fi
 
 # ── Check 5: native overflow-{auto,scroll} without ScrollArea ─────────────────

@@ -212,7 +212,7 @@ Settings 不在 sidebar，從 footer 的 avatar / user menu 觸發 modal 或快�
 
 `SidebarHeader` 的高度 = `var(--chrome-header-height)`，**不是寫死**，也**不是完全 content-based**(SidebarFooter 為 content-based,見上方 2026-06-12 修正)。這個 token：
 
-> **跨家族 SSOT pointer**:本元件 SidebarHeader 屬 **Chrome header(Fixed-h)家族**;border / padding / dismiss size / withTabs(tabs 進 header 時 border auto-suppress + tabs size 對應 + flush stack)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sidebar 特有的高度 + token rationale。
+> **跨家族 SSOT pointer**:本元件 SidebarHeader 屬 **Chrome header(Fixed-h)家族**;border / padding / dismiss size / tabsSlot(tabs 經 tabsSlot 進 header 時 border auto-suppress + tabs size 對應 + flush stack)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sidebar 特有的高度 + token rationale。
 
 - md density: `3rem`（48px）
 - lg density: `3.5rem`（56px）

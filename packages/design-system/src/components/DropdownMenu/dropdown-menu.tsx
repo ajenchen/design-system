@@ -10,7 +10,7 @@ import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETAC
 import {
   RowSizeProvider,
   useRowSize,
-  ICON_SIZE as ROW_ICON_SIZE,
+  ICON_SIZE,
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
@@ -70,8 +70,6 @@ const floatingLayerClass = [
 
 // ── Size:統一用 RowSizeContext(item-layout module),消除本地 SizeContext 漂移 ──
 type SizeKey = RowSize
-// Re-export for backward compat(內部命名)
-const ICON_SIZE = ROW_ICON_SIZE
 
 // ── Shared item classes on Radix primitive ──
 // Highlight(hover + keyboard nav): 用 Radix `data-[highlighted]` canonical(見 docblock)
@@ -366,8 +364,7 @@ interface DropdownMenuItemProps
   badge?: React.ReactNode
   /** 後綴指示型 icon（LucideIcon），fg-muted */
   endIcon?: LucideIcon
-  /** 鍵盤快捷鍵提示(canonical)——渲染進 MenuItem `endContent` 正規後綴 slot。
-   *  替代方案是 `<DropdownMenuShortcut>` child(composition escape-hatch);**同 item 勿混用**。 */
+  /** 鍵盤快捷鍵提示 —— 渲染進 MenuItem `endContent` 正規後綴 slot(唯一的快捷鍵 API;shadcn 式 `<DropdownMenuShortcut>` child 2026-11-15 移除)。 */
   shortcut?: string
   /** 單選選中（bg-neutral-selected，持續選中狀態）*/
   selected?: boolean
@@ -622,24 +619,6 @@ const DropdownMenuRadioItem = React.forwardRef<
 })
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
 
-// ── Shortcut（鍵盤快捷鍵提示 child;escape-hatch,不靠右）──
-// **Canonical 是 `<DropdownMenuItem shortcut="⌘C">`** prop —— 走 MenuItem `endContent` 正規後綴 slot
-// (跟 badge / endIcon 同槽、gap/對齊一致,真正靠右對齊列尾)。本 child 是 **composition
-// escape-hatch**(相容 shadcn DropdownMenuShortcut idiom = `ml-auto` span,source:
-// https://ui.shadcn.com/docs/components/dropdown-menu;npm published API 不砍)。⚠️ 在
-// DropdownMenuItem 內 children 會進 MenuItem ItemContent 的 label `<span>`(inline context,
-// 非 flex row),故 `ml-auto` **不生效、不會靠右**——只會 inline 附加在 label 文字尾;`ml-auto`
-// 僅在 consumer 自組 flex row 時生效。要靠右一律用 canonical `shortcut` prop。**同一 item
-// 只用一種,勿混用**(見 spec.md「快捷鍵提示 API」+ 禁止事項)。
-// 字體樣式統一:text-caption + tracking-shortcut + fg-muted(對齊 prop 後綴 + CommandShortcut);位置不等價。
-const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
-  <span
-    className={cn('ml-auto text-caption text-fg-muted tracking-shortcut', className)}
-    {...props}
-  />
-)
-DropdownMenuShortcut.displayName = 'DropdownMenuShortcut'
-
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const dropdownMenuMeta = {
@@ -677,7 +656,6 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuShortcut,
   floatingLayerClass,
 }
 export type { SizeKey, DropdownMenuItemProps }

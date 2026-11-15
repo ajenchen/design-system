@@ -11,7 +11,7 @@
 
 **核心特徵**:沒有 visual surface(不 render UI),但 ≥ 2 個 DS 元件 import 它使用。
 
-**公開與否**:lib 沒有 subpath export,進 root barrel 的就是 npm 公開 API。只給 DS 元件內部用的模組在檔頭 JSDoc 標 `@internal`,`scripts/gen-design-system-barrel.mjs` 就不放進 root(2026-10-07 起;規則 `ds-canonical/rules/ui-development.md`「Root barrel front-door 排除」)。每個模組公開與否寫在下表 Module 欄;實際排除清單由產生器寫在 `index.ts` 的排除註解,不在這裡另抄一份。**已發布過的公開模組改成 `@internal` = 公開 API 移除(破壞相容)**,不在一般修正裡順手做(r1b OTH-07);真要做,就在該模組那一列寫明「公開 API 移除」、從哪個 commit 起、最近一次發布出口了哪些符號、WM / template 用到幾處,並寫進發布說明。`scripts/owner-claims-invariant.mjs` C2 拿最近一次發布(release tag)的 root barrel 比:發布時公開、現在不公開、那一列又沒寫明 → 紅。現有兩例:`roving-list-keyboard.ts`、`focus-after-trigger.ts`(下表)。
+**公開與否**:lib 沒有 subpath export,進 root barrel 的就是 npm 公開 API。只給 DS 元件內部用的模組在檔頭 JSDoc 標 `@internal`,`scripts/gen-design-system-barrel.mjs` 就不放進 root(2026-10-07 起;規則 `ds-canonical/rules/ui-development.md`「Root barrel front-door 排除」)。每個模組公開與否寫在下表 Module 欄;實際排除清單由產生器寫在 `index.ts` 的排除註解,不在這裡另抄一份。**已發布過的公開模組改成 `@internal` = 公開 API 移除(破壞性變更;照 `../../ds-canonical/references/props-naming.md`「相容政策」不留舊名,登記進發布說明)**,不在一般修正裡順手做(r1b OTH-07);真要做,就在該模組那一列寫明「公開 API 移除」、從哪個 commit 起、最近一次發布出口了哪些符號、WM / template 用到幾處,並寫進發布說明。`scripts/owner-claims-invariant.mjs` C2 拿最近一次發布(release tag)的 root barrel 比:發布時公開、現在不公開、那一列又沒寫明 → 紅。現有兩例:`roving-list-keyboard.ts`、`focus-after-trigger.ts`(下表)。
 
 ---
 

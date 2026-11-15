@@ -24,8 +24,7 @@ import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
-import type { ColumnDef } from '@tanstack/react-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { ExternalLink, Plus, Search, Trash2 } from 'lucide-react'
 import { LinkInput } from '@/design-system/components/LinkInput/link-input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
@@ -828,7 +827,7 @@ function TaskListView({ tab, tasks, onOpen, onCreate }: {
     const q = search.trim().toLowerCase()
     return q ? scoped.filter((t) => t.title.toLowerCase().includes(q) || String(t.num).includes(q)) : scoped
   }, [tab, tasks, search])
-  const columns = React.useMemo<ColumnDef<Task>[]>(() => [
+  const columns = React.useMemo<DataTableColumnDef<Task>[]>(() => [
     { accessorKey: 'num', header: 'ID', cell: ({ row }) => `#${row.original.num}` },
     {
       accessorKey: 'title',

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Proposed-state tests for header-canonical W1 withTabs enforcement.
+# Proposed-state tests for header-canonical W1 tabsSlot enforcement(Tabs 進 header 只准走該 header 自己的 tabsSlot).
 
 set -u
 
@@ -103,6 +103,7 @@ expect_integrity() {
 echo "=== check_header_with_tabs_border proposed-state tests ==="
 
 IN_SCOPE="/repo/packages/design-system/src/components/Foo/foo.tsx"
+NEEDLE="HEADER + TABS TABSSLOT BLOCKER"
 
 run_hook "/repo/src/foo.tsx" '<ChromeHeader><Tabs /></ChromeHeader>' Write missing
 expect_pass_silent "1. out-of-scope path skips"
@@ -116,53 +117,53 @@ expect_pass_silent "3. proposed content without header skips"
 run_hook "$IN_SCOPE" '<ChromeHeader />' Edit
 expect_pass_silent "4. proposed Edit header without Tabs skips"
 
-run_hook "$IN_SCOPE" '<ChromeHeader withTabs><TabsList /></ChromeHeader>' MultiEdit
-expect_pass_silent "5. proposed MultiEdit compliant header+Tabs is silent"
+run_hook "$IN_SCOPE" '<ChromeHeader tabsSlot={<TabsList><TabsTrigger value="all">全部</TabsTrigger></TabsList>}>我的工作</ChromeHeader>' MultiEdit
+expect_pass_silent "5. proposed MultiEdit Tabs in own tabsSlot is silent"
 
 run_hook "$IN_SCOPE" '<ChromeHeader><TabsList /></ChromeHeader>' Edit
-expect_block "6. proposed Edit missing withTabs blocks" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "6. proposed Edit TabsList in children blocks" "$NEEDLE"
 
-run_hook "$IN_SCOPE" '// @header-withtabs-allow: special case
+run_hook "$IN_SCOPE" '// @header-tabs-slot-allow: special case
 <ChromeHeader><TabsList /></ChromeHeader>'
 expect_pass_silent "7. proposed escape marker is silent"
 
 run_hook "$IN_SCOPE" '
 <>
-  <ChromeHeader withTabs><TabsList /></ChromeHeader>
+  <ChromeHeader tabsSlot={<TabsList />} />
   <SurfaceHeader><TabsList /></SurfaceHeader>
 </>'
-expect_block "8. compliant instance cannot hide a violating header instance" "1 個未宣告 true withTabs"
+expect_block "8. compliant instance cannot hide a violating header instance" "1 個把 Tabs 放在 tabsSlot 以外"
 
 run_hook "$IN_SCOPE" '' Write deleted
 expect_pass_silent "9. trusted deletion has no post-write violation"
 
-run_hook "$IN_SCOPE" '<ChromeHeader withTabs><Tabs /></ChromeHeader>' Edit missing
+run_hook "$IN_SCOPE" '<ChromeHeader tabsSlot={<TabsList />} />' Edit missing
 expect_integrity "10. runner marker without state is integrity failure" "trusted proposed write state 缺失或 malformed"
 
-run_hook "$IN_SCOPE" '<ChromeHeader withTabs><Tabs /></ChromeHeader>' Edit malformed
+run_hook "$IN_SCOPE" '<ChromeHeader tabsSlot={<TabsList />} />' Edit malformed
 expect_integrity "11. malformed state is integrity failure" "trusted proposed write state 缺失或 malformed"
 
-run_hook "$IN_SCOPE" '<ChromeHeader withTabs><Tabs /></ChromeHeader>' Edit mismatch
+run_hook "$IN_SCOPE" '<ChromeHeader tabsSlot={<TabsList />} />' Edit mismatch
 expect_integrity "12. state path mismatch is integrity failure" "與 hook target 不相符"
 
 run_without_trust "$IN_SCOPE"
 expect_integrity "13. governed mutation without runner trust is integrity failure" "缺少 runner-v1 proposed state"
 
 run_hook "$IN_SCOPE" '
-const withTabs = false
+const tabsSlot = <TabsList />
 export const Example = () => <ChromeHeader><TabsList /></ChromeHeader>'
-expect_block "14. variable-name withTabs decoy cannot bypass" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "14. variable-name tabsSlot decoy cannot bypass" "$NEEDLE"
 
 run_hook "$IN_SCOPE" '
-// withTabs =
+// tabsSlot =
 export const Example = () => <ChromeHeader><TabsList /></ChromeHeader>'
-expect_block "15. comment withTabs decoy cannot bypass" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "15. comment tabsSlot decoy cannot bypass" "$NEEDLE"
 
-run_hook "$IN_SCOPE" '<ChromeHeader withTabs={false}><TabsList /></ChromeHeader>'
-expect_block "16. explicit withTabs false blocks" "HEADER + TABS WITHTABS BLOCKER"
+run_hook "$IN_SCOPE" '<ChromeHeader withTabs><TabsList /></ChromeHeader>'
+expect_block "16. removed withTabs boolean no longer exempts Tabs in children" "$NEEDLE"
 
-run_hook "$IN_SCOPE" '<ChromeHeader withTabs={true}><TabsList /></ChromeHeader>'
-expect_pass_silent "17. explicit withTabs true is compliant"
+run_hook "$IN_SCOPE" '<DialogHeader tabsSlot={<TabsList><TabsTrigger value="general">一般</TabsTrigger></TabsList>}><DialogTitle>專案設定</DialogTitle></DialogHeader>'
+expect_pass_silent "17. DialogHeader with title children + Tabs in tabsSlot is compliant"
 
 run_hook "$IN_SCOPE" '
 <>
@@ -174,43 +175,49 @@ expect_pass_silent "18. unrelated sibling Header/Tabs ambiguity stays silent"
 run_hook "$IN_SCOPE" '<ChromeHeader><TabsList />' Edit
 expect_integrity "19. malformed proposed TSX is integrity failure" "parser unavailable or proposed content malformed"
 
-run_hook "$IN_SCOPE" '// @header-withtabs-allow:
+run_hook "$IN_SCOPE" '// @header-tabs-slot-allow:
 <ChromeHeader><TabsList /></ChromeHeader>'
-expect_block "20. empty escape rationale cannot bypass" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "20. empty escape rationale cannot bypass" "$NEEDLE"
 
 run_hook "$IN_SCOPE" 'const ready = true
-// @header-withtabs-allow: too late
+// @header-tabs-slot-allow: too late
 export const Example = () => <ChromeHeader><TabsList /></ChromeHeader>'
-expect_block "21. non-leading escape cannot bypass" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "21. non-leading escape cannot bypass" "$NEEDLE"
 
-run_hook "$IN_SCOPE" 'const decoy = `// @header-withtabs-allow: template decoy`
+run_hook "$IN_SCOPE" 'const decoy = `// @header-tabs-slot-allow: template decoy`
 export const Example = () => <ChromeHeader><TabsList /></ChromeHeader>'
-expect_block "22. template escape decoy cannot bypass" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "22. template escape decoy cannot bypass" "$NEEDLE"
 
-run_hook "$IN_SCOPE" '/* // @header-withtabs-allow: block decoy */
+run_hook "$IN_SCOPE" '/* // @header-tabs-slot-allow: block decoy */
 export const Example = () => <ChromeHeader><TabsList /></ChromeHeader>'
-expect_block "23. block-comment escape decoy cannot bypass" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "23. block-comment escape decoy cannot bypass" "$NEEDLE"
 
 run_hook "$IN_SCOPE" '<Header><TabsList /></Header>'
-expect_block "24. bare Header is governed" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "24. bare Header is governed" "$NEEDLE"
 
 run_hook "$IN_SCOPE" '<UI.Header><UI.TabsList /></UI.Header>'
-expect_block "25. namespaced UI.Header is governed" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "25. namespaced UI.Header is governed" "$NEEDLE"
 
 run_hook "$IN_SCOPE" '
 <SurfaceHeader>
-  <Header withTabs><TabsList /></Header>
+  <Header tabsSlot={<TabsList />} />
 </SurfaceHeader>'
-expect_pass_silent "26. outer Header does not consume nested Header Tabs"
+expect_pass_silent "26. outer Header does not consume nested Header tabsSlot"
 
 run_hook "$IN_SCOPE" '
-<SurfaceHeader withTabs>
+<SurfaceHeader tabsSlot={<TabsList />}>
   <Header><TabsList /></Header>
 </SurfaceHeader>'
-expect_block "27. nested Header is independently enforced" "HEADER + TABS WITHTABS BLOCKER"
+expect_block "27. nested Header is independently enforced" "$NEEDLE"
 
-run_hook "$IN_SCOPE" '<ChromeHeader withTabs withTabs={false}><TabsList /></ChromeHeader>'
-expect_block "28. duplicate conflicting withTabs props cannot bypass" "HEADER + TABS WITHTABS BLOCKER"
+run_hook "$IN_SCOPE" '<ChromeHeader children={<TabsList />} />'
+expect_block "28. Tabs passed through children= attribute cannot bypass" "$NEEDLE"
+
+run_hook "$IN_SCOPE" '<ChromeHeader><div tabsSlot={<TabsList />} /></ChromeHeader>'
+expect_block "29. tabsSlot on a non-header child element is not the header slot" "$NEEDLE"
+
+run_hook "$IN_SCOPE" '<ChromeHeader tabsSlot={<TabsList />}><TabsList /></ChromeHeader>'
+expect_block "30. own tabsSlot does not excuse a second TabsList in children" "$NEEDLE"
 
 echo
 echo "Passed: $PASS / $((PASS + FAIL))"

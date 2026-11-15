@@ -31,11 +31,11 @@ import { DescriptionPresenceContext, useDescriptionPresence, useRegisterDescript
  * Modal 與所在區塊(視窗,或 portalContainer 舞台)四邊保持 layout-space-viewport-inset (48px) 最小間距(2026-09-11 從 layout-space-bottom 拆出,見下方 DIALOG_INSET_VAR)。
  *
  * ── 寬度 ──
- * `width` = 檔位 sm 400 / md 480(預設)/ lg 640 / xl 960,或數字 px;都是最大寬,受上面的 inset 夾住、沒有下限。舊名 maxWidth 留一版(@deprecated)。
+ * `width` = 檔位 sm 400 / md 480(預設)/ lg 640 / xl 960,或數字 px;都是最大寬,受上面的 inset 夾住、沒有下限。
  *
  * ── 高度行為 ──
  * 預設：height 填滿 viewport（扣除 inset），body 捲動。防止動態內容跳動。
- * height="hug"：高度隨內容，超過 viewport 時 max-height 安全帽(舊名 autoHeight 已停用,見 dialog.spec.md「高度軸」)。
+ * height="hug"：高度隨內容，超過 viewport 時 max-height 安全帽(見 dialog.spec.md「高度軸」)。
  */
 
 // 並存設定**一次到位**:在 Root 傳 `persistentElements`,Root 自動走 `modal={false}`,
@@ -115,11 +115,6 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
    */
   width?: DialogWidthTier | number
   /**
-   * @deprecated 改用 `width`(檔位名或數字)。保留一個版本:number 視為 px、string 原樣當 CSS 寬,畫面不變;
-   * 與 `width` 同時傳時 `width` 勝(開發模式 warn)。
-   */
-  maxWidth?: string | number
-  /**
    * 高度軸 —— **只決定「怎麼長」,不決定「多高」**(多高由 `maxHeight` 管,兩者正交)。
    *
    * - `'fill'`(預設):填滿可用高度。內容多寡不改變外框幾何。
@@ -143,10 +138,6 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
    * (`string | number`,props-naming.md「尺寸參數」)—— 高度更需要 string,才寫得出 `60svh` / `calc(100svh - 120px)`。
    */
   maxHeight?: string | number
-  /**
-   * @deprecated 改用 `height="hug"`。兩者同時傳時 `height` 勝(dev 會 warn)。
-   */
-  autoHeight?: boolean
   /**
    * **並存區域**(opt-in,中性契約)。傳入之後,這個 Dialog 開著時**這些節點仍然可用**,
    * 其餘一切被抑制(原生 `inert`,不支援時退回 `aria-hidden`)。不傳 = 行為與過去完全相同。
@@ -173,7 +164,7 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, width, maxWidth, height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+>(({ className, width, height = 'fill', maxHeight, persistentElements: persistentElementsProp, portalContainer, children, style, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
   const persistentElementsCtx = React.useContext(DialogCoexistContext)
   const persistentElements = persistentElementsProp ?? persistentElementsCtx
   const modal = React.useContext(DialogModalContext) && !persistentElementsProp
@@ -258,30 +249,20 @@ const DialogContent = React.forwardRef<
   // (`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`),Dialog 跟上。桌機兩者等值。
   // 2026-11-15 起再與所在區塊高取小(DIALOG_BLOCK_HEIGHT):傳 portalContainer 時上限以舞台算。
   const availableH = `calc(${DIALOG_BLOCK_HEIGHT} - ${insetCalc})`
-  // 寬:width(檔位名或 px)> 舊名 maxWidth(@deprecated,照舊當寬:number = px、string 原樣)> 預設 md。新名勝舊名(props-naming.md「尺寸參數」第 5 條)。
-  if (process.env.NODE_ENV !== 'production' && width != null && maxWidth != null) {
-    console.warn('[DialogContent] `width` 與 `maxWidth` 同時傳了;`maxWidth` 已 deprecated,這次以 `width` 為準。')
-  }
+  // 寬:width(檔位名或 px)> 預設 md。
   const tierPx = typeof width === 'string' ? DIALOG_WIDTH_TIERS[width] : undefined
   if (process.env.NODE_ENV !== 'production' && typeof width === 'string' && tierPx === undefined) {
     console.warn(`[DialogContent] 不認得的寬度檔位 \`${width}\`(只有 sm / md / lg / xl,或傳數字 px);這次以 md 為準。`)
   }
-  const widthCss = typeof width === 'number' ? `${width}px`
-    : width != null ? `${tierPx ?? DIALOG_WIDTH_TIERS.md}px`
-    : maxWidth != null ? (typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth)
-    : `${DIALOG_WIDTH_TIERS.md}px`
+  const widthCss = typeof width === 'number' ? `${width}px` : `${tierPx ?? DIALOG_WIDTH_TIERS.md}px`
   const maxHeightCss = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
   // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」。
   // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗。
   const heightCap = maxHeightCss ? `min(${availableH}, ${maxHeightCss})` : availableH
 
-  const resolvedHeight: 'fill' | 'hug' = height ?? (autoHeight ? 'hug' : 'fill')
-  if (process.env.NODE_ENV !== 'production' && height != null && autoHeight != null) {
-    console.warn('[DialogContent] `height` 與 `autoHeight` 同時傳了;`autoHeight` 已 deprecated,這次以 `height` 為準。')
-  }
   // fill 同時寫 height 與 maxHeight 不是冗餘:(a) 讓「兩種模式回報同一個上限」可被機械驗證;
   // (b) 擋住下方 `...style` 的逃生口 —— consumer 蓋掉 `height` 時 `maxHeight` 仍然生效。
-  const heightStyle: React.CSSProperties = resolvedHeight === 'hug'
+  const heightStyle: React.CSSProperties = height === 'hug'
     ? { maxHeight: heightCap }
     : { height: heightCap, maxHeight: heightCap }
 
@@ -351,7 +332,7 @@ const DialogContent = React.forwardRef<
         persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
                            : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
         // `overflow-hidden min-h-0` 是 overlay-surface primitive 明文要求的父層契約
-        // (`overlay-surface.tsx:183-185` 逐字:「parent(PopoverContent / HoverCardContent /
+        // (`overlay-surface.tsx:173-175` 逐字:「parent(PopoverContent / HoverCardContent /
         // Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」)。Popover/HoverCard 一直有,
         // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
         // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
@@ -405,9 +386,8 @@ DialogContent.displayName = DialogPrimitive.Content.displayName
 // DialogHeader: SurfaceHeader + Close 按鈕(Dialog 特有)
 // Close 靠右由「第一 child flex-1 grow」達成(justify-between 已移除,見 return 註解);Close 用 Radix DialogPrimitive.Close 包裝。
 // 2026-05-18 audit gap fix:type 用 SurfaceHeaderProps 對齊 — DialogHeader 是 SurfaceHeader
-// 薄包裝,withTabs / tabsSlot props 透過 spread 已 forward,但 TS type 沒 expose
-// 導致 consumer 不能用 `<DialogHeader withTabs>` 而只能寫 `as any` 繞。Type lift 修
-// per header-canonical.spec.md W1 跨 6 consumer 同契約。
+// 薄包裝,tabsSlot 透過 spread forward,型別也從 SurfaceHeaderProps 繼承,consumer 可以 type-safe 寫
+// `<DialogHeader tabsSlot={<TabsList>…</TabsList>}>`(per header-canonical.spec.md W1 跨 6 consumer 同契約)。
 export interface DialogHeaderProps extends Omit<SurfaceHeaderProps, 'dismiss'> {
   /**
    * Header 級操作 cluster(2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)。

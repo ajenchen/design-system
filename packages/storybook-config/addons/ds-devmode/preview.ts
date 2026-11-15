@@ -126,12 +126,6 @@ const buildPseudoStylesheet = (): void => {
 
 const applyForceState = (state: ForceState) => {
   if (!pinnedEl || !(pinnedEl instanceof HTMLElement)) return
-  // Cleanup legacy inline-style approach(backward compat)
-  if (pinnedEl.dataset.dsDevmodePrevStyle !== undefined) {
-    pinnedEl.style.cssText = pinnedEl.dataset.dsDevmodePrevStyle
-    delete pinnedEl.dataset.dsDevmodePrevStyle
-  }
-  pinnedEl.removeAttribute('data-ds-devmode-forced')
   if (state === 'none') {
     pinnedEl.removeAttribute(PSEUDO_STATE_ATTR)
     return

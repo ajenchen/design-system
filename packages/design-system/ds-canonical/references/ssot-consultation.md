@@ -17,7 +17,7 @@ AGENTS.md `# SSOT 消費 canonical` 的詳表 + 反例。主章留核心 + point
 | **按鈕排列 / 群組 / 分隔**| `patterns/action-bar/action-bar.spec.md` |
 | **Header 高度 / chrome padding**| `tokens/uiSize/uiSize.spec.md`(`--chrome-header-height`)+ `tokens/layoutSpace/layoutSpace.spec.md` |
 | **Chrome header 選型**(fixed-h vs padding-based)| `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」— decision tree + 8 家世界級對照 + checklist |
-| **Header 跨家族視覺契約**(border / padding / withTabs / dismiss size 連動)| `patterns/header-canonical/header-canonical.spec.md` — SSOT for chrome + overlay header 兩家族;含 withTabs 6 lockstep rules(W1 border auto-suppress / W2 padding align / W3 tabs size 對應 / W4 flush stack / W5 md future tier / W6 default sm)|
+| **Header 跨家族視覺契約**(border / padding / tabsSlot / dismiss size 連動)| `patterns/header-canonical/header-canonical.spec.md` — SSOT for chrome + overlay header 兩家族;含 tabsSlot 6 lockstep rules(W1 border auto-suppress / W2 padding align / W3 tabs size 對應 / W4 flush stack / W5 md future tier / W6 default sm)|
 | **Overlay chrome dismiss / unbounded button**| `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical v5」 |
 | **Overlay title size**(modal 16 vs non-modal 14)| `patterns/overlay-surface/overlay-surface.spec.md`「Overlay title typography canonical」 |
 | **Form field gap**| `components/Field/field.spec.md` + 看關係 → `tokens/layoutSpace/layoutSpace.spec.md`「規則 3:元素間 gap(只看親疏,role 無關)」 |
@@ -60,4 +60,4 @@ Hook `check_ssot_consultation.sh` retired;**2026-07-07 以 `check_ssot_header_de
 - 自寫 `<button aria-label="Close"><X /></button>` 作 dismiss(應用 `ItemInlineAction`)
 - 自寫 Row `<div><Icon /><span>label</span><Button /></div>`(應用 `<MenuItem>` + slot)
 - 自訂 Input `variant="custom-name"` 未先 grep 既有 variant 值
-- 在 Toolbar 用 `<input className="bg-transparent border-0 ...">`(應用 `<Input size="sm" width="hug">` 標準 default variant;2026-11-15 前寫 `autoWidth`,已停用;`variant="bare"` 已於 2026-07-09 退役,不再使用)
+- 在 Toolbar 用 `<input className="bg-transparent border-0 ...">`(應用 `<Input size="sm" width="hug">` 標準 default variant;2026-11-15 前寫 `autoWidth`,已移除;`variant="bare"` 已於 2026-07-09 退役,不再使用)

@@ -11,8 +11,9 @@ set -uo pipefail
 # 檢的 block category:
 #   - opacity:opacity-{5..95} numeric tier(原 logic,保留)
 #   - typography:text-{xs..9xl} / font-{thin|light|semibold|black} / leading-{N} numeric / tracking-{wide..widest|tighter|tight}
-#   - radius:rounded-{xl|2xl|3xl} / rounded(unscoped)/ rounded-[...] arbitrary(例外 rounded-[inherit])
-#   - elevation:shadow-{sm|md|lg|xl|2xl|inner} / shadow(unscoped)
+#   - radius:Tailwind 預設刻度裡不在四檔(sm / md / lg / full)的名字(xs / xl / 2xl / 3xl / 4xl)/ rounded(unscoped)/ rounded-[...] arbitrary(例外 rounded-[inherit])
+#   - elevation:shadow-{2xs|xs|sm|md|lg|xl|2xl|inner} / shadow(unscoped)
+#   (各類「Tailwind 預設名字 ⊆ allow ∪ block」由 scripts/token-allowlist-invariant.mjs 在 CI 逐名驗)
 #   - shadcn alias:bg-popover / text-muted-foreground / bg-accent 等
 #   - primitive 色名:bg-neutral-N / text-blue-N 等(越過 semantic 層)
 #
@@ -287,16 +288,13 @@ EOF_HEAD
   cat >&2 <<'EOF_BODY'
 
    SSOT:node_modules/@qijenchen/design-system/src/tokens/utility-registry.json(block list per category)
-   修法 quick map:
-     text-xs..9xl  → text-h1..h6 / text-body / text-caption / text-helper / text-label
-     font-thin/...black → font-normal / font-medium / font-bold
-     leading-{N}   → leading-compact / leading-normal
-     tracking-*    → tracking-shortcut(or codify role-specific semantic utility)
-     rounded-xl..  → rounded-xs..rounded-lg / rounded-full
-     rounded-[..]  → rounded-xs..lg 語意 utility(rounded-[inherit] 唯一例外,registry allow)
-     shadow-sm..   → shadow-[var(--elevation-100)] / shadow-[var(--elevation-200)]
-     bg-popover .. → direct semantic token(--surface-raised / --fg-muted / --error 等)
-     bg-neutral-N  → semantic utility(bg-surface 等)或 bg-[var(--color-neutral-N)]
+   修法:不要照 Tailwind 名字換一個名字 —— 先判斷「這個元素是哪一種東西」,再查那一類規格的用途表選檔
+   (2026-11-15 user:「所有要用 token的地方在用的時候本來就要動腦想怎樣才符合ds的SSOT」):
+     字級 / 字重 / 行高 / 字距 → tokens/typography/typography.spec.md「Token 表」「line-height 覆蓋」(字重只有 normal / medium / bold)
+     圓角 → tokens/radius/radius.spec.md「四檔」(sm 2px 只給短邊 ≤ 10px;一般元件 md;浮層外殼 lg;膠囊 full)
+     透明度 → tokens/opacity/opacity.spec.md(只負責停用;多層元件換色)
+     陰影 → tokens/elevation/elevation.spec.md「層級」(頁面內容層 100 / 浮層 200)
+     shadcn 別名 / 原料色 → tokens/color/color.spec.md 依用途選語意色(原料 var() 只有 Tag / Avatar / Calendar 例外)
 
    詳 utility-registry.json `_meta.spec_sources` + M23「DS 內既有 canonical 優先」。
    Per-line escape:行尾註解 `@token-registry-ok: <rationale>`(audit 可追)。

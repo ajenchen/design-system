@@ -164,7 +164,7 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 | `width={數字}` | 固定寬(px;`max-w-full`,窄容器裡不超出容器)—— 工具列搜尋框、篩選列條件欄這類「要固定寬」的地方,不再寫 `className="!w-[…]"` |
 
 **改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……輸入框、下拉需要固定寬時也用 width 填數字。舊名字保留一個版本,畫面不變。」):
-原本的 `autoWidth` 就是 `width="hug"`(同一組 class,畫面不變),保留一個版本(`@deprecated`;同時傳以 `width` 為準)。
+原本的 `autoWidth` 就是 `width="hug"`(同一組 class)。「舊名字保留一個版本」那一句已被 user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」取代(0.x 相容政策 = `../../../ds-canonical/references/props-naming.md`「相容政策」):`autoWidth` 已移除、不留舊名。
 同時拿掉型別上的 HTML 原生 `width` / `height`:`<input type="text">` 的這兩個屬性沒有作用,2026-11-15 前 `<Input width="hug">` 型別會過、畫面毫無反應(audit-r7 INV-02 型別探針 + 瀏覽器實測 width=240 仍 153px)。
 
 **使用情境**:

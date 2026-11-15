@@ -144,13 +144,13 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 
 ## 寬度模式(width)
 
-`width` prop（`'hug' | 'fill'`，預設 `'hug'`；2026-11-15 前是布林 `fullWidth`,保留一個版本）：
+`width` prop（`'hug' | 'fill'`，預設 `'hug'`；2026-11-15 前是布林 `fullWidth`,已移除）：
 
 - **`'hug'`（跟內容）★default**：SegmentedControl 寬度由 item 總寬決定，items 各自照內容寬度排列
 - **`'fill'`（撐滿）**：SegmentedControl 撐滿父容器，所有 item 等分該寬度。寬度模式與 size 正交——只影響寬度分配，高度仍由 `size` 決定（xs 撐滿仍是 24px 固定）
 
 **改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……舊名字保留一個版本,畫面不變。」):
-`fullWidth={true}` = `width="fill"`、`fullWidth={false}` = `width="hug"`,同一組 class(根 `w-full` / `w-fit`、item `flex-1 min-w-0`),畫面不變;舊名 `@deprecated`,同時傳以 `width` 為準。
+`fullWidth={true}` = `width="fill"`、`fullWidth={false}` = `width="hug"`,同一組 class(根 `w-full` / `w-fit`、item `flex-1 min-w-0`)。「舊名字保留一個版本」那一句已被 user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」取代(0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」):`fullWidth` 已移除、不留舊名。
 撐滿時 items **等分**是本元件 fill 的一部分(不是另一個參數)。全 DS 命名規則住 `ds-canonical/references/props-naming.md`「尺寸參數」。
 
 > **不論寬度模式為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵：同一選擇組的 segments 應共享一種寬度邏輯，否則視覺重量會被 label 長度誤導。

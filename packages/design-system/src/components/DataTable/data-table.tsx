@@ -31,6 +31,8 @@ import {
   getPaginationRowModel,
   flexRender,
   type ColumnDef,
+  type AccessorColumnDef,
+  type DisplayColumnDef,
   type SortingFn,
   type SortingState,
   type TableOptions,
@@ -119,9 +121,9 @@ function measureFillHeightSlot(outer: HTMLElement): { height: number } | null {
 }
 
 // ── 高度上限(`maxHeight`)→ 內部 CSS 上限字串 ─────────────────────────────────────
-// 對外參數 `maxHeight`(2026-11-15「尺寸:甲」;舊名 `height`)。內部一整串判斷吃的是 2026-11-15 前 `height` 的字串語言
-//('auto' = 沒有上限、'100%' / '100vh' / 'fill' = 父層格子、其餘 CSS 長度 = 固定上限),這裡把新參數翻成同一種字串,
-// 兩個名字走完全相同的路徑(畫面零差異)。數字 = px;CSS 的 'none'(沒有上限)對應舊的 'auto'。
+// 對外參數 `maxHeight`(2026-11-15「尺寸:甲」)。內部一整串判斷吃的是一種 CSS 上限字串
+//('auto' = 沒有上限、'100%' / '100vh' / 'fill' = 父層格子、其餘 CSS 長度 = 固定上限),這裡把參數翻成那種字串。
+// 數字 = px;CSS 的 'none'(沒有上限)對應內部的 'auto'。
 function maxHeightToCss(maxHeight: number | string | undefined): string | undefined {
   if (maxHeight === undefined) return undefined
   if (typeof maxHeight === 'number') return `${maxHeight}px`
@@ -144,18 +146,29 @@ const dataTableVariants = cva('bg-surface rounded-md overflow-hidden', {
 
 type TableSize = 'sm' | 'md' | 'lg'
 
+/**
+ * DataTable 的欄定義 = TanStack `ColumnDef` 去掉欄位群組(`{ header, columns: [...] }` 巢狀)。
+ * 欄位群組(多層表頭)還沒有實作:表頭只渲染最上層、又被葉欄位 id 濾光 → 整條空白表頭、跟資料對不上
+ * (`data-table-known-defects.spec.md` 缺陷 D),所以型別上直接不收。欄陣列請標成 `DataTableColumnDef<Row>[]`;
+ * 標成 TanStack 的 `ColumnDef<Row>[]` 會被擋 —— 那一型包含群組。`columnHelper.accessor()` / `.display()` 的回傳值直接可用,
+ * `columnHelper.group()` 不行。
+ */
+// any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 同下方 DataTableProps.columns
+export type DataTableColumnDef<TData, TValue = any> =
+  (DisplayColumnDef<TData, TValue> | AccessorColumnDef<TData, TValue>) & { columns?: never }
+
 export interface DataTableProps<TData>
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
     VariantProps<typeof dataTableVariants> {
-  // any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 對齊本 module 既有 escape 紀律
-  columns: ColumnDef<TData, any>[]
+  /** 欄定義(不收欄位群組 —— 見 `DataTableColumnDef`) */
+  columns: DataTableColumnDef<TData>[]
   data: TData[]
   size?: TableSize
   autoRowHeight?: boolean
   /**
    * 高度上限。表格**永遠跟著資料長高**(資料少 = 內容高度),超過上限才在表身內捲動(表頭固定、資料多時啟用虛擬捲動)。
    * - 數字 = px(`maxHeight={400}`);也收 CSS 長度字串(`"30rem"`)。固定長度管的是**表身**(資料列捲動區)的上限,表頭另計
-   *   (2026-11-15 量:`maxHeight={300}` 50 筆 → 整張表 342 = 表頭 40 + 表身 300 + 上下外框 2;與舊名 `height="300px"` 同一條路徑)。
+   *   (2026-11-15 量:`maxHeight={300}` 50 筆 → 整張表 342 = 表頭 40 + 表身 300 + 上下外框 2)。
    * - `"100%"`(或 `"100vh"`)= 整張表的上限是父層給的格子:量父層內容盒、扣掉同一流向裡的工具列 / 分頁列,表身拿扣掉表頭後的剩餘
    *   (data-table.spec.md「二、高度模式」)。
    * - `"none"` = 沒有上限,整張表跟著頁面一起捲(少量資料的嵌入式表格)。
@@ -163,16 +176,10 @@ export interface DataTableProps<TData>
    *   對齊 Ant Table 無預設高度罩、`scroll.y` 顯式選配的慣例)。明寫的值一律尊重(分頁 + 頁內捲動可並用)。
    *
    * 2026-11-15 前這個參數叫 `height`,但它從來就是上限、不是高度(資料少時表格比它矮)—— 【AI 推導 2026-11-15】把「尺寸:甲」(上下限叫 minWidth / maxWidth,
-   * 高度同理)套到這個參數(user 原話沒有點名 DataTable)改成 `maxHeight`,舊名留一個版本。
+   * 高度同理)套到這個參數(user 原話沒有點名 DataTable)改成 `maxHeight`;舊名 `height` 已移除、不留舊名(0.x 相容政策)。
    * 注意:數字只管**表身**(表頭另計);`"100%"` 才是整張表的上限(data-table.spec.md「二、高度模式」)。
    */
   maxHeight?: number | string
-  /**
-   * @deprecated 2026-11-15 起改用 `maxHeight`(它一直都是上限,不是高度)。保留一個版本,行為與畫面不變:
-   * `height="auto"` = `maxHeight="none"`、`height="400px"` = `maxHeight={400}`、`height="100%"` = `maxHeight="100%"`;
-   * 同時傳時以 `maxHeight` 為準。
-   */
-  height?: string
   overscan?: number
   emptyState?: React.ReactNode
   enableHover?: boolean
@@ -202,7 +209,7 @@ export interface DataTableProps<TData>
   inlineEdit?: boolean
   /**
    * Slice D Step 1B(2026-05-10):啟用 spreadsheet-grade interaction overlay。
-   * Default false(backward-compat)。Enable 後 hover/editor/selected/range 由
+   * 預設 false(實驗中的功能,要用的頁面自己開 —— 名字的 experimental 前綴就是這個意思【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。Enable 後 hover/editor/selected/range 由
    * `DataTableInteractionLayer` overlay 統一畫,per `.claude/planning/datatable-spreadsheet-rfc.md`。
    * 現況:hover ring + selection ring + active editor host 三個 sub-layer
    * (詳 `data-table-interaction-layer.tsx` 檔頭)。
@@ -210,7 +217,7 @@ export interface DataTableProps<TData>
   experimentalSpreadsheetOverlay?: boolean
   /**
    * Slice D Step 3.2(2026-05-10):啟用 ActiveEditorController portal Field。
-   * Default false(backward-compat)。
+   * 預設 false(實驗中的功能,同上【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。
    * Enable 後 active edit cell 不 render Field inline,改 portal 進 overlay layer
    * (per RFC Contract 8 「one geometry, two paint owners」)。
    * 當前 scaffold:prop 已收,functional portal logic Step 3.3 實作。
@@ -239,10 +246,14 @@ export interface DataTableProps<TData>
   spreadsheetMode?: boolean
 
   // ── L2 Selection(see data-table.spec.md「L2 選取」)──
-  /** 已選列(controlled)。傳 string[] = include shorthand;傳 DataTableSelection 支援反向選取(all + excluded) */
-  selection?: string[] | DataTableSelection
-  /** 預設選取(uncontrolled);同上接受 string[] 或 DataTableSelection */
-  defaultSelection?: string[] | DataTableSelection
+  /**
+   * 已選列(controlled):`{ mode: 'include', ids }` 或反向選取 `{ mode: 'all', excluded }`。
+   * 型別與 `onSelectionChange` 送出的同一個(受控值進出同形 —— 收到什麼就原樣傳回來);
+   * 存在 state 裡傳,不要每次 render 現做新物件(身分每次變 = 依賴 selection 的快取每次失效)。
+   */
+  selection?: DataTableSelection
+  /** 預設選取(uncontrolled);同上 */
+  defaultSelection?: DataTableSelection
   /** Selection 變更 callback(emit DataTableSelection union;include / all 兩模型) */
   onSelectionChange?: (next: DataTableSelection) => void
   /** 是否啟用 selection / 模式;true 等同 'multi' */
@@ -314,7 +325,7 @@ export interface DataTableProps<TData>
    * - `false`(default): 所有 data columns 全 flex-grow:1 均分剩餘寬度。
    *
    * **二選一 canonical**(對齊 Notion / Airtable / Linear product UI 共識)— 不支援 per-column
-   * mixed,簡單明確。Min width 預設 80px,consumer 透過 `columnDef.minSize` override。
+   * mixed,簡單明確。Min width 預設 80px,consumer 透過欄定義的 `meta.minWidth` override。
    */
   enableColumnResize?: boolean
   /**
@@ -427,15 +438,6 @@ export type DataTableSelection =
   | { mode: 'include'; ids: string[] }
   | { mode: 'all'; excluded: string[] }
 
-// 正規化:string[] shorthand → { mode:'include' }(向後相容既有 consumer 傳 ID 陣列)
-function normalizeSelection(
-  input: string[] | DataTableSelection | undefined,
-): DataTableSelection | undefined {
-  if (input === undefined) return undefined
-  if (Array.isArray(input)) return { mode: 'include', ids: input }
-  return input
-}
-
 // union-aware「把 ids 設成 willSelect 狀態」純函式(對任意 toggle 順序封閉)
 function applySelectIds(
   sel: DataTableSelection,
@@ -485,7 +487,7 @@ const HEADER_PANEL = 'bg-muted'
 //   - maxSize 一律 forward 為 maxWidth(防 flex 無限擴張)
 //
 // 預設 min width = `MIN_COLUMN_WIDTH`(80px;對齊 Polaris IndexTable / AG Grid 範圍下限),consumer
-// 可透過 `columnDef.minSize` override。
+// 可透過欄定義的 `meta.minWidth` override(下方 columnSizeStyle 讀的就是它)。
 export const MIN_COLUMN_WIDTH = 80
 
 // `distributeColumnWidths` 已抽成獨立純模組(`./column-widths`)—— 它是「每欄多寬」的唯一決定者,
@@ -1505,7 +1507,7 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 function DataTableInner<TData>(
   {
-    columns, data, size = 'md', autoRowHeight = false, maxHeight: maxHeightProp, height: heightProp,
+    columns, data, size = 'md', autoRowHeight = false, maxHeight: maxHeightProp,
     overscan = 5, emptyState, enableHover = true, bordered,
     estimateRowHeight, tableOptions, rowActions, cellErrors,
     pinnedLeftColumns, pinnedRightColumns, inlineEdit = false,
@@ -1533,9 +1535,8 @@ function DataTableInner<TData>(
   // L5 分頁 × 高度上限預設(2026-07-06):未顯式傳時 —— 分頁 = 'auto' 自然高度
   // (頁碼是唯一導覽通道,不疊 body 內捲動;Ant Table 無預設高度罩慣例),
   // 未分頁 = 既有 '400px' 預設不變。顯式傳一律尊重(prop docblock 有完整規則)。
-  // 下面的 `height` 是內部的 CSS 上限字串('auto' = 沒有上限),沿用舊名以免動到下游一整串判斷;
-  // 對外參數 2026-11-15 起叫 `maxHeight`(「尺寸:甲」),舊名 `height` 經 heightProp 照舊收。
-  const height = maxHeightToCss(maxHeightProp) ?? heightProp ?? (pagination ? 'auto' : '400px')
+  // 下面的 `height` 是內部的 CSS 上限字串('auto' = 沒有上限),下游一整串判斷都吃它;對外參數叫 `maxHeight`(「尺寸:甲」)。
+  const height = maxHeightToCss(maxHeightProp) ?? (pagination ? 'auto' : '400px')
   // ── L4 Inline edit state ──
   // editingCellId: `${rowId}__${columnId}` 標識當前進 edit mode 的 cell;null = 無
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
@@ -1667,13 +1668,12 @@ function DataTableInner<TData>(
   // ── L2 Selection state ──
   const enabled = selectable !== false
   const mode = selectable === 'single' ? 'single' : 'multi'
-  // 2026-09-08(捲動卡頓根因之一,Codex R6 第 2 步時抓到):`normalizeSelection(selectionProp)` 每次 render 都生新物件,
-  // controlled 模式下 `selection` 身分每步都變 → toggleRow / 列元素快取 / 一切依賴 selection 的 memo 每步失效 →
-  // 整張表每個滾輪刻度重繪。只在 prop 身分變時重算。
-  const normalizedSelectionProp = React.useMemo(() => normalizeSelection(selectionProp), [selectionProp])
+  // 受控值直接用 consumer 傳進來的物件,不在這裡另做新物件(2026-09-08 捲動卡頓根因之一,Codex R6 第 2 步時抓到:
+  // 當時把 string[] 簡寫正規化成新物件,controlled 模式下 `selection` 身分每步都變 → toggleRow / 列元素快取 /
+  // 一切依賴 selection 的 memo 每步失效 → 整張表每個滾輪刻度重繪。2026-11-16 簡寫移除後不再需要正規化)。
   const [selection, setSelection] = useControllable<DataTableSelection>({
-    value: normalizedSelectionProp,
-    defaultValue: normalizeSelection(defaultSelection) ?? { mode: 'include', ids: [] },
+    value: selectionProp,
+    defaultValue: defaultSelection ?? { mode: 'include', ids: [] },
     onChange: onSelectionChange,
   })
   // Shift-click anchor:存最後一次「單擊」的 row id,shift-click 時做區間選
@@ -1688,18 +1688,21 @@ function DataTableInner<TData>(
   // **2026-05-06 v14.3 DS canonical width API**:consumer 寫 `meta.width` / `meta.minWidth` /
   //   `meta.maxWidth`(DS-internal naming,避開跟 `size: 'sm'|'md'|'lg'` density 命名衝突)。
   //   此 pre-process 把 meta 值 copy 到 root size/minSize/maxSize,確保 TanStack column
-  //   resize state 正常運作。**Back-compat**:consumer 寫 root `size` 仍 work(meta.width 沒設則
-  //   不覆蓋 root)。新 code 一律用 meta.width。
+  //   resize state 正常運作。**meta 一律勝出**(2026-11-16):寫了 meta.width / minWidth / maxWidth 就蓋掉同一欄的
+  //   TanStack root `size` / `minSize` / `maxSize` —— 欄寬的公開寫法只有 meta 這一套;舊的「root 有寫就以 root 為準」
+  //   理由只有相容,已移除(props-naming.md「相容政策」;登記 scripts/breaking-changes.json)。型別上不擋 root size:
+  //   TanStack 的 ColumnDef 每一型都宣告 `size?: number`,用 Omit / never 擋會讓每個型別標成 ColumnDef 的欄陣列
+  //   (含 columnHelper 產出的)全部編譯失敗,不管有沒有寫 size。
   // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表);select / multiSelect 帶 `meta.options`(照選項順序)。
   const dsProcessedColumns = React.useMemo<ColumnDef<TData>[]>(() => {
     return columns.map((c) => {
       const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number; type?: ColumnType; options?: ReadonlyArray<{ value: unknown }> } | undefined
       if (!meta) return c
-      const cAny = c as { size?: number; minSize?: number; maxSize?: number; sortingFn?: unknown }
+      const cAny = c as { sortingFn?: unknown }
       const updates: { size?: number; minSize?: number; maxSize?: number; sortingFn?: SortingFn<TData> } = {}
-      if (meta.width !== undefined && cAny.size === undefined) updates.size = meta.width
-      if (meta.minWidth !== undefined && cAny.minSize === undefined) updates.minSize = meta.minWidth
-      if (meta.maxWidth !== undefined && cAny.maxSize === undefined) updates.maxSize = meta.maxWidth
+      if (meta.width !== undefined) updates.size = meta.width
+      if (meta.minWidth !== undefined) updates.minSize = meta.minWidth
+      if (meta.maxWidth !== undefined) updates.maxSize = meta.maxWidth
       if (meta.type !== undefined && cAny.sortingFn === undefined) updates.sortingFn = sortingFnForColumnType<TData>(meta.type, meta.options)
       return Object.keys(updates).length > 0 ? ({ ...c, ...updates } as ColumnDef<TData>) : c
     })
@@ -2943,15 +2946,16 @@ function DataTableInner<TData>(
   ) : null
 
 
-  /* ── 缺陷 D:欄位群組(巢狀 `columns`)明確不支援,開發期直接講出來 ────────────────────
+  /* ── 缺陷 D:欄位群組(巢狀 `columns`)明確不支援 ─────────────────────────────────────────
    * TanStack 的 `ColumnDef` 允許 `{ header, columns: [...] }` 的群組寫法,但我們的表頭只渲染
    * 最上層、而且會被葉欄位的 id 濾光 —— 結果是一整條空白表頭、跟下面的資料完全對不上。
    * 這不是「壞掉」而是「沒實作」:多層表頭要處理跨欄合併、與釘選 / 拖寬 / 虛擬捲動的交互,
-   * 是一個功能不是一個修補。**在做出來之前,誠實擋在開發期比默默畫錯好。**
+   * 是一個功能不是一個修補。**在做出來之前,誠實擋下比默默畫錯好。**
    *
-   * 為什麼不用型別擋:`columns` prop 目前是 `ColumnDef<TData, any>[]`,收窄型別會讓所有把欄位
-   * 宣告成 `ColumnDef<Row>[]` 的既有 consumer(含 work-management)編譯失敗 —— 那是真的副作用。
-   * 執行期只在開發環境印訊息,production 不進 bundle,對誰都不會有影響。
+   * 兩道:(1) 型別 —— `columns` 是 `DataTableColumnDef<TData>[]`,欄位群組編譯不過(2026-11-16 起;
+   * 之前只在執行期擋,不用型別擋的理由是「收窄會讓把欄位標成 `ColumnDef<Row>[]` 的 consumer 編譯失敗」,
+   * 那只是相容理由,props-naming.md「相容政策」);(2) 開發期執行期 —— 給繞過型別的寫法(`as never` / `any`
+   * 轉型,WM 的 DataTable 呼叫點都這樣寫)。production 不進 bundle。
    */
   React.useEffect(() => {
     if (process.env.NODE_ENV === 'production') return
@@ -3687,7 +3691,7 @@ function DataTableInner<TData>(
           ...(isEditingThisCell && !experimentalActiveEditorController ? {} : cellPadding),
           // Slice D Step 2(2026-05-10):flag 開時 set CSS variable 抑制 Field naked hover outline,
           // 讓 overlay layer 接管 hover ring paint(per RFC Contract 8 「one geometry owner, two paint owners」)。
-          // Backward-compat:flag 關時 unset → field-wrapper default `var(--border-hover)`(既有行為)。
+          // flag 關時不設 → field-wrapper 預設 `var(--border-hover)`(沒有 overlay 接手時,格子自己畫滑過外框)。
           // 名字 2026-11-15 前叫 --cell-hover-outline-color(開頭對不到主人;data-table.spec.md「儲存格滑過外框色」,稽核 P16)
           ...(experimentalSpreadsheetOverlay && { '--table-cell-hover-outline-color': 'transparent' } as React.CSSProperties),
         }}
@@ -3708,7 +3712,7 @@ function DataTableInner<TData>(
       >
         {/* Issue 9 cell error(2026-05-10):有 error → cell 內外結構切 flex-col,
             上 row 渲既有 nested + content,下 row 渲 error message `text-body text-error`。
-            無 error 時走原 flex-row(backward-compat 0 layout shift)。 */}
+            無 error 時走原 flex-row(沒有錯誤就不多一層,版面 0 位移)。 */}
         {hasCellError ? (
           <span className="flex flex-col self-stretch w-full min-w-0 gap-1">
             <span className="flex flex-1 min-w-0">
@@ -4145,7 +4149,7 @@ function DataTableInner<TData>(
             // 只認 `[data-col-menu]`,不寫泛用的 `~ *:hover`:欄寬把手也是後面的兄弟,指到它時排序區不該亮(2026-09-25 實測)。
             // `:where()` 讓特異性維持 (0,1,0);`[@media(hover:hover)]` 對齊上一行 `hover:` 的媒體條件。值與 `hover:` 同一個,改一邊必須同步改另一邊。
             canSort && '[@media(hover:hover)]:[&:where(:has(~[data-col-menu]:hover))]:text-foreground',
-            // 2026-07-04:rounded-sm → rounded-md(radius.spec.md 設計哲學(4)rounded-sm 保留未使用,4px 一律 rounded-md)
+            // 2026-07-04:當時與 md 同值的 rounded-sm → rounded-md(一般元件 = md 4px,radius.spec.md「四檔」)
             // 2026-09-10:焦點框改回往外(= 不寫)。原本的內描邊是 2026-07-14 憑「對齊本檔其他站點」加的,沒有量過。
             // 實測(column-resize / AppShell 兩個 story、五個欄位):上 9 / 下 10 / 左 9–12 / 右 7(右邊那 7px 是排序箭頭),
             // 四周最小 7px ≥ 4 → 依 focus-canonical「問題二」預設往外。水平捲動時把表頭捲到一半不算「設計上貼邊」(v3 判準)。
@@ -5258,7 +5262,7 @@ function DataTableInner<TData>(
         {scrollbarTroughs}
       </div>
       {/* Slice D Step 1B(2026-05-10):Interaction Layer singleton(`.claude/planning/datatable-spreadsheet-rfc.md`)。
-          Default disabled — backward-compat。Enable 後 hover/editor/selected/range 由 layer 統一畫,
+          預設關(實驗中的功能,experimentalSpreadsheetOverlay【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。Enable 後 hover/editor/selected/range 由 layer 統一畫,
           per Contract 8 「one geometry owner, two paint owners」。
           Step 1C-fix(2026-05-10):wire Contract 15 hover predicate 過濾 readonly /
           boolean cells(per RFC + user 拍板 USER #15:checkbox / url 格不上滑過底色(轉述);url 那一半 2026-10-13 由 user 拍板乙推翻,

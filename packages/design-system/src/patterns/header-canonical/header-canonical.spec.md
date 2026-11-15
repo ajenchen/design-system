@@ -55,7 +55,7 @@ benchmark:
 
 - **Token**:`border-b border-divider`(1px / `--divider`,`semantic.css`;`--divider-color` 這個名字從不存在,2026-07-10 hunt 判 STALE、2026-09-29 改正)
 - **Default**:有 border(分區效果)
-- **Auto-suppress when withTabs**:見下「withTabs 連動」段
+- **Auto-suppress when tabsSlot**:見下「tabsSlot 連動」段
 
 ### 2. Horizontal padding
 
@@ -122,17 +122,17 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 ---
 
-## withTabs 連動(本 SSOT 最核心契約)
+## tabsSlot 連動(本 SSOT 最核心契約)
 
-當 header 內含 Tabs(`<Tabs>` 子元件)時,**6 條 lockstep 規則**:
+當 header 帶 Tabs 時,**6 條 lockstep 規則**。Tabs 進 header 只有一條路:`tabsSlot`(ChromeHeader / SurfaceHeader,以及繼承它們的 SidebarHeader / DialogHeader / SheetHeader);把 `<Tabs>` / `<TabsList>` 寫進 header 的 children 由 hook `_header_with_tabs_border.sh` 擋。原本另有 `withTabs` 布林(只抑制 border-b、Tabs 由 consumer 自己排),它寫下的理由只有相容,DS 與 WM 都沒有單獨用它 —— 2026-11-16 移除(`../../../ds-canonical/references/props-naming.md`「相容政策」;登記在 `scripts/breaking-changes.json`)。
 
 ### Rule W1:Border ownership = semantic vs paint 拆分
 
 **規則**:**Header 是 semantic owner**(「這 surface 需要 bottom border 分區」是 header 的概念決定),**Paint owner 隨 state 變**:
-- `withTabs={false}` → header 自畫(`border-b border-divider`)
-- `withTabs={true}` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)
+- 沒給 `tabsSlot` → header 自畫(`border-b border-divider`)
+- 給了 `tabsSlot` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)
 
-**這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = withTabs 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:187-189`),paint owner 不在 tabs 會讓 underline 失去 base line。
+**這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = 有 tabsSlot 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:187-189`),paint owner 不在 tabs 會讓 underline 失去 base line。
 
 **世界級對照**:
 - GitHub Primer PageHeader verbatim:「`hasBorder` defaults true,**but border NOT rendered if Navigation child contains UnderlineNav**;UnderlineNav itself provides bottom border」(`primer.style/components/page-header/react`)
@@ -187,7 +187,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - ❌ 把 `<Tabs>` 放在 `<DialogContent>` 外(Radix TabsList ↔ TabsContent 必同 Tabs root)
 - ❌ 在 TabsList 上加 `className="px-*"`(會與 wrapper padding 疊加)
 - ❌ 在 TabsContent 上加 padding(會跟 DialogBody canonical px-loose pt-tight pb-bottom 重複)
-- ❌ Backward-compat `withTabs={true}` 無 tabsSlot 場景:header 自己抑制 border-b,但 consumer 需自管 Tabs row layout — 不推薦(除非從 layout template 來)
+- ❌ 把 `<TabsList>` 寫進 header 的 children(不走 `tabsSlot`):header 照樣自畫 border-b,跟 TabsList 自己的 border-b 疊成雙線;hook `_header_with_tabs_border.sh` 擋
 
 **Verify**:write-time 由 `chrome_header_dispatcher.sh` 經 lib helper(`_tab_lg_chrome_header_equal.sh` + `_header_with_tabs_border.sh`,2026-05-31 升 exit 2 BLOCK)把關;pixel-quantified visual probe 走 `/visual-audit --scope=changed`(無專屬 runtime-verify script)。
 
@@ -222,7 +222,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - 獨立 chrome-replacement tabs → tabs lg(W3 已 cover)
 - 中間階梯(md=40)無清楚場景 — 多家世界級 DS(Material / MUI / Primer / Polaris)只有 1 個 default size(無 sm/md/lg 階梯)= sweet spot 只需 2 tier <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
-**Conservative path**:token 不刪(避免 breaking change 與 stories 維護成本);spec 明寫 future tier。
+**Conservative path**:token 不刪;spec 明寫 future tier。【待決 2026-11-16】原本寫的理由是「避免 breaking change 與 stories 維護成本」—— 前半是相容,0.x 下不成立(`../../../ds-canonical/references/props-naming.md`「相容政策」),後半不是設計理由。沒有 use case 的 md 這一檔(Tabs `size="md"` + `--tab-height-md`)要留還是拿掉,由 user 決定;拿掉的話 Tabs 的設計規格(尺寸表、檢閱器的 size 選項)與設計原則「尺寸選擇」少了 md 這一檔,其餘畫面不變(DS 範例沒有任何一處用 md 當實際分頁)。
 
 ### Rule W6:Default tabs size 為 sm(已 land)
 
@@ -257,14 +257,14 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 ### Layer 3 — Primitive consumption(已 land;下列為原 Phase 2 提案內容,現況見段末)
 
-- A 家族:`SurfaceHeader` 已是 primitive(`overlay-surface.tsx:62-119`)— add `withTabs?: boolean` prop auto-suppress border
+- A 家族:`SurfaceHeader` 已是 primitive(`overlay-surface.tsx#SurfaceHeader`)— 加 `tabsSlot` prop(column mode + 撤自身 border-b)
 - B 家族:**新建 `ChromeHeader` primitive**(`patterns/header-canonical/chrome-header.tsx`)— Sidebar / FileViewer / InfoPanel 全 migrate
 
 **ChromeHeader API(per M31 codex 比稿 Step 5 — 比 v1 更窄,避免 M21 prop variant 風險)**:
 ```tsx
 <ChromeHeader
-  withTabs?: boolean              // false (default) | true → auto-suppress border + delegate to TabsList
-  tabsSlot?: ReactNode            // Tabs row(column mode + W1-W6 lockstep,2026-05-18 ship)
+  tabsSlot?: ReactNode            // Tabs row(column mode + W1-W6 lockstep,2026-05-18 ship);給了就撤自身 border-b、由 TabsList 畫線
+  // withTabs 已移除(2026-11-16):只抑制 border-b 的布林,理由只有相容(props-naming.md「相容政策」)
   // lockDensity 已移除(2026-11-14,AI 建議;user 沒說過要拿掉)。理由:它只在標題列上設 data-density="lg",只鎖標題列會跟下面內容左緣不對齊(一般密度頁面差 8px,FileViewer 圖二教訓)→ 要鎖密度就鎖整塊(density.spec.md Anti-patterns「把 density/layout-space lock 設在 header primitive」)
   leadingRail?: ReactNode         // 2026-05-21 ship per AppShell primary-header globalHeader:固定 width=sidebar-width-icon 的左 rail,內 justify-center 排列(toggle/logo 跟 sidebar 收合 icon center x 對齊)。
 >
@@ -288,7 +288,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 `chrome_header_dispatcher.sh` 依序 dispatch **4 個 lib helper**(完整清單 SSOT = dispatcher 本身,避免 spec drift):
 
 - `lib/_app_shell_primary_header_consistency.sh`(2026-05-31 exit 2 BLOCK)— primary-header layout 必傳 `globalHeader` prop,缺則 BLOCKER
-- `lib/_header_with_tabs_border.sh`(2026-05-31 exit 2 BLOCK)— grep tsx 若 header 元件含 `<Tabs>` child 但未走 `withTabs` API → BLOCKER
+- `lib/_header_with_tabs_border.sh`(2026-05-31 exit 2 BLOCK;2026-11-16 改成 tabsSlot 語意)— TypeScript 語法樹逐一看 header 元件(`ChromeHeader` / `SurfaceHeader` / `*Header`),把 `<Tabs>` / `<TabsList>` / `<TabsTrigger>` 放在 `tabsSlot` 以外的地方(children 等)→ BLOCKER,修法「改用 tabsSlot」
 - `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 exit 2 BLOCK,W3 pointer)— 從分類表 `tokens/token-registry.json` 讀兩顆的住處(現況 `tabs.css` / `uiSize.css`),分頁 lg 寫成 `var(--chrome-header-height)` 一行時相等由構造保證(2026-11-15 起的寫法);寫回字面值時 parse 後 assert `--tab-height-lg` 像素等於 `--chrome-header-height`,任一方獨自改 → BLOCKER
 - `lib/_chrome_header_handcraft.sh`(WARN,Phase 3 才升 P0)— grep 是否仍有 hardcoded `h-[var(--chrome-header-height)] border-b` 自刻 chrome header(該消費 ChromeHeader primitive)
 - （以上皆 lib helper,經 `chrome_header_dispatcher.sh` 統一 dispatch;無 standalone `check_*.sh` 檔。前 3 個 SSOT-canonical deterministic helper exit 2 傳播真 block;`_chrome_header_handcraft` 維持 warn）

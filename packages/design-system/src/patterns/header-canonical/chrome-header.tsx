@@ -40,8 +40,9 @@ export const HEADER_TABS_SLOT_WRAPPER_CLASS =
  * - spec refs: patterns/header-canonical/header-canonical.spec.md(L23-30 家族區分 / W1 border / W3 tabs size / Layer 3 ChromeHeader API)
  *
  * ── API(per M31 codex 比稿 Step 5 — narrow API,避免 M21 prop variant 風險)──
- * withTabs?: boolean(預設 false)
- *   true → 移除自身 border-b,delegate paint 給 TabsList(per W1「Header semantic owner / TabsList paint owner in withTabs state」)
+ * tabsSlot?: ReactNode
+ *   給了 → column mode,自身不畫 border-b,delegate paint 給 TabsList(per W1「Header semantic owner / TabsList paint owner」);
+ *   沒給 → 自畫 border-b。Tabs 進 header 只有這一條路(原 `withTabs` 布林 2026-11-16 移除,見 header-canonical.spec.md「tabsSlot 連動」)。
  *
  * 不開:density?: 'md' | 'lg' 自由 prop。M21 違反 — 任意 density 等於 cva-on-pattern。
  * 密度一律跟所在那一塊(html[data-density] 或外層區塊的屬性),本元件不在自己身上寫任何密度屬性。
@@ -51,13 +52,6 @@ export const HEADER_TABS_SLOT_WRAPPER_CLASS =
  */
 export interface ChromeHeaderProps
   extends React.HTMLAttributes<HTMLElement> {
-  /**
-   * 是否內含 Tabs。
-   * true(無 tabsSlot)→ 移除自身 border-b,consumer 自畫。
-   * 若提供 tabsSlot,自動 column mode + auto suppress border。
-   * 對應 patterns/header-canonical/header-canonical.spec.md W1
-   */
-  withTabs?: boolean
   /**
    * Tabs row slot(2026-05-18 加 per W2/W4 真實能用 + user-mandated fix)。
    * 提供時 ChromeHeader 自動 column 結構:
@@ -70,7 +64,7 @@ export interface ChromeHeaderProps
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 放 ChromeHeader 之外。
    * Standalone Tabs(無 chrome header)該直接用 `<TabsList>` 不需 wrapper。
    *
-   * 提供 tabsSlot 自動 withTabs=true,不需另傳 prop。
+   * 給了 tabsSlot,header 自身就不畫 border-b(W1:線由 TabsList 畫);Tabs 不得放進 children(hook `_header_with_tabs_border.sh` 擋)。
    */
   tabsSlot?: React.ReactNode
   /**
@@ -94,11 +88,9 @@ export interface ChromeHeaderProps
 
 export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
   (
-    { className, withTabs, tabsSlot, leadingRail, children, ...props },
+    { className, tabsSlot, leadingRail, children, ...props },
     ref,
   ) => {
-    const hasTabs = tabsSlot != null || withTabs === true
-
     // Column mode(tabsSlot 提供時)— per W2 + W4
     // 2026-05-20:`<div>` → `<header>`(HTML5 sectional content 允許 multiple `<header>`,
     // page-level / sectional 都 a11y safe;統一 element contract 消除「何時用 header / 何時用 div」
@@ -144,7 +136,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
           className={cn(
             'flex items-center shrink-0',
             'h-[var(--chrome-header-height)]',
-            !hasTabs && 'border-b border-divider',
+            'border-b border-divider',
             className,
           )}
           {...props}
@@ -164,7 +156,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
       )
     }
 
-    // Single-row(預設 + withTabs=true 但無 tabsSlot 的 backward compat)
+    // Single-row(預設):沒有 tabsSlot = 沒有 tabs,header 自畫 border-b(W1)
     return (
       <header
         ref={ref}
@@ -172,8 +164,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
           'flex items-center gap-2 shrink-0',
           'h-[var(--chrome-header-height)]',
           'px-[var(--layout-space-loose)]',
-          // W1:無 tabs 自畫 border;withTabs=true(無 tabsSlot)consumer 自畫
-          !hasTabs && 'border-b border-divider',
+          'border-b border-divider',
           className,
         )}
         {...props}

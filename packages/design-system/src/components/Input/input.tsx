@@ -66,11 +66,6 @@ export interface InputProps
    *   不要再用 `className="!w-[…]"` 硬蓋。
    */
   width?: FieldWidth
-  /**
-   * @deprecated 2026-11-15 起改用 `width="hug"`(「尺寸:甲」:撐滿 / 跟內容全 DS 只用 `width`)。保留一個版本,行為與畫面不變;
-   * 同時傳 `width` 時以 `width` 為準。
-   */
-  autoWidth?: boolean
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -87,8 +82,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       endAction,
       endSlot,
       loading = false,
-      width: widthProp,
-      autoWidth = false,
+      width = 'fill',
       className,
       disabled: disabledProp,
       readOnly,
@@ -101,8 +95,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    // 寬度軸:`width` 優先;舊名 `autoWidth`(deprecated)= `width="hug"`。
-    const width: FieldWidth = widthProp ?? (autoWidth ? 'hug' : 'fill')
     const hug = width === 'hug'
     // ── FieldContext 自動讀取(在 <Field> 內時,invalid / disabled / mode / chrome 由 context 接管) ──
     const fieldCtx = useFieldContext()
@@ -172,7 +164,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       return (
         <div
           className={cn(
-            // hug 沿用 2026-11-15 前 autoWidth 的同一組 class(畫面不變);數字走 fixed + 行內寬
+            // hug:外框縮到內容寬(inline-flex w-auto);數字走 fixed + 行內寬
             fieldWrapperStyles({ mode: spanMode, variant: variant, size, width: hug ? undefined : fieldWidthVariant(width) }),
             hug && 'inline-flex w-auto',
             className,
@@ -217,7 +209,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           // 規則 owner field-controls.spec.md「點擊與游標原則」;共用實作 field-wrapper.tsx focusFieldInputFromChrome)。
           // 停用不掛:停用的外框自己是 cursor-not-allowed(field-wrapper disabled compound),而且不接受焦點。
           resolvedMode !== 'disabled' && FIELD_TEXT_ENTRY_CURSOR,
-          // hug(舊名 autoWidth):wrapper 縮到 inline-flex + w-auto,讓寬度由 startIcon + input(field-sizing: content)+ endAction 自然累加
+          // hug:wrapper 縮到 inline-flex + w-auto,讓寬度由 startIcon + input(field-sizing: content)+ endAction 自然累加
           hug && 'inline-flex w-auto',
           className,
         )}
@@ -250,7 +242,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             bareInputStyles,
             resolvedMode === 'disabled' && 'text-fg-disabled placeholder:text-fg-disabled cursor-not-allowed',
-            // hug(舊名 autoWidth):input 本身 field-sizing:content(Chrome 123+ / Safari 17.4+),寬度跟 value 文字寬。
+            // hug:input 本身 field-sizing:content(Chrome 123+ / Safari 17.4+),寬度跟 value 文字寬。
             // w-auto 關掉預設 w-full;min-w-0 讓 flex shrink 不卡住。
             hug && '[field-sizing:content] w-auto min-w-0',
           )}

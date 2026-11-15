@@ -1,14 +1,13 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule — 商品列表平均分:唯讀元件放進 DataTable 自訂儲存格(同 ProgressBar「DataTable 儲存格內進度」)
 // @story-baseline: packages/design-system/src/components/Field/field.stories.tsx#FormValidation — 包在 Field 內:CreateProjectForm 同款 useFormValidation 建立表單
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { useState } from 'react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { Field, FieldLabel, FieldError, useFormValidation } from '@/design-system/components/Field/field'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
 const meta: Meta<typeof Rating> = {
@@ -45,7 +44,7 @@ const productRatings: ProductRatingRow[] = [
   { name: 'UNIQLO 輕量羽絨外套', rating: 4.2, count: 592 },
 ]
 
-const productRatingColumns: ColumnDef<ProductRatingRow>[] = [
+const productRatingColumns: DataTableColumnDef<ProductRatingRow>[] = [
   { accessorKey: 'name', header: '商品', meta: { width: 240 } },
   {
     id: 'rating',

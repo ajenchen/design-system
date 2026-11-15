@@ -49,7 +49,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
-        "sha256": "f22e0be346e6c3ac422f835347b28456aa7dc81c06d5b497b166d570c07fdf69",
+        "sha256": "8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",
           "packages/design-system/ds-canonical/hooks/lib/_chrome_header_handcraft.sh",
@@ -574,6 +574,10 @@
             "timeoutMs": 660000
           },
           {
+            "path": "scripts/test-radius-usage-invariant.mjs",
+            "timeoutMs": 600000
+          },
+          {
             "path": "scripts/test-searchable-field-keys-invariant.mjs",
             "timeoutMs": 780000
           }
@@ -591,6 +595,7 @@
           "scripts/test-form-validation-contract-invariant.mjs",
           "scripts/test-hover-color-pair-invariant.mjs",
           "scripts/test-layer-order-invariant.mjs",
+          "scripts/test-radius-usage-invariant.mjs",
           "scripts/test-searchable-field-keys-invariant.mjs",
           "scripts/test-toast-viewport-placement-invariant.mjs"
         ]
@@ -724,6 +729,7 @@
           "scripts/test-checkbox-group-handcraft-invariant.mjs",
           "scripts/test-closed-git-foreign-owner-invariant.mjs",
           "scripts/test-code-pointer-liveness-invariant.mjs",
+          "scripts/test-compat-policy-invariant.mjs",
           "scripts/test-composite-role-keyboard-invariant.mjs",
           "scripts/test-consumer-source-harness.mjs",
           "scripts/test-data-table-click-outside-invariant.mjs",
@@ -784,6 +790,7 @@
           "scripts/test-sync-memory.mjs",
           "scripts/test-sync-plugin-aliases.mjs",
           "scripts/test-sync-template-canonical-app.mjs",
+          "scripts/test-token-allowlist-invariant.mjs",
           "scripts/test-token-creation-invariant.mjs",
           "scripts/test-token-twin-invariant.mjs",
           "scripts/test-tutorial-page-invariant.mjs",

@@ -421,7 +421,7 @@
       "dims": [
         52
       ],
-      "note": "2026-05-17 ship(Header canonical W1 border ownership):header 含 Tabs 必標 withTabs prop 讓 paint delegate;違反 = 雙線 BLOCKER。對應 patterns/header-canonical/header-canonical.spec.md W1 + GitHub Primer PageHeader auto-suppress 模式"
+      "note": "2026-05-17 ship(Header canonical W1 border ownership):header 帶 Tabs 一律經 tabsSlot 傳入、讓 paint delegate 給 TabsList(2026-11-16 起;原 withTabs 布林已移除);Tabs 寫進 header children = 雙線 BLOCKER。對應 patterns/header-canonical/header-canonical.spec.md W1 + GitHub Primer PageHeader auto-suppress 模式"
     },
     "chrome_header_handcraft": {
       "dims": [

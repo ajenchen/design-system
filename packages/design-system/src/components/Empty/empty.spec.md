@@ -175,7 +175,7 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 
 - **無 ColorMatrix**:Empty 自身不帶任何色彩,bg transparent,text color 全部走 semantic token(`text-foreground` title / `text-fg-secondary` description-with-title / `text-fg-muted` 孤身 description / `text-fg-disabled` disabled context)。Avatar icon 的色彩由 consumer 透過 `<Avatar color="...">` 決定,非 Empty 層級 variant。
 - **無 SizeMatrix**:Empty 無 `size` prop,垂直 padding 由 consumer 容器決定(Table `py-12` / Page `py-16`),固定間距不隨 density 變(展示性元件,見本 spec「間距」段)。
-- **無 StateBehavior**:Empty 是非互動展示元件,無 hover / focus / active / selected 互動狀態。CTA button 的互動狀態屬 Button 層級,不屬 Empty。**唯一例外是 disabled context state**(`disabled?: boolean` prop):非互動狀態,但元件支援——disabled 時 title / description 轉 `text-fg-disabled`、icon glyph 轉 fg-disabled(供 FileUpload disabled 等情境消費),不影響既有 consumer(預設 false)。
+- **無 StateBehavior**:Empty 是非互動展示元件,無 hover / focus / active / selected 互動狀態。CTA button 的互動狀態屬 Button 層級,不屬 Empty。**唯一例外是 disabled context state**(`disabled?: boolean` prop):非互動狀態,但元件支援——disabled 時 title / description 轉 `text-fg-disabled`、icon glyph 轉 fg-disabled(供 FileUpload disabled 等情境消費),預設 false —— 停用是外層容器傳進來的情境狀態,Empty 自己沒有理由預設停用【AI 推導 2026-11-16:原文只寫了相容,這句是讀用法推出來的】。
 
 **Inspector**:提供互動切換式 Inspector(右側 Controls 面板切換 icon / title / description / action),讓 consumer 即時查看 Empty 在不同 slot 組合下的呈現——slot 組合(description only → full)是 Empty 唯一的關鍵決策。
 

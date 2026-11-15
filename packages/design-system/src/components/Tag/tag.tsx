@@ -81,16 +81,14 @@ export interface TagProps
   onRemove?: () => void
   /** remove 按鈕的 aria-label 目標名(a11y)。children 為非字串 ReactNode 時建議傳,否則 SR 讀不出移除哪個 tag。預設取 string children。對齊 FileUpload `removeAriaLabel`(同「移除集合項目」場景 + DS `<動作>AriaLabel` 命名慣例)。 */
   removeAriaLabel?: string
-  /** @deprecated 2026-07-17 改名為 `removeAriaLabel`(對齊 FileUpload + onRemove callback 語意;dismiss 保留給 Alert/Notice/Toast「通知被忽略」)。舊名過渡一版後移除。 */
-  dismissLabel?: string
   /** 深底模式（step-6 背景 + on-emphasis 配對前景;亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark,green 白字例外） */
   solid?: boolean
   /**
    * 2026-05-15 Q3 真 SSOT fix(per user 指出同空間兩判斷點、要求不要冰山一角):
    * Tag 寬度由 parent constrain,不套預設 max-w-40(160px)。用於 cell-as-input narrow cell
    * (< 160px)時 Tag fit cell 寬度 + truncate ellipsis,而非 160px 後被 cell `overflow-hidden`
-   * 硬切。對齊「同 cell width → 同 overflow 判斷」SSOT。Default false 保 backward compat
-   * (wrap layout / pill rail 等仍受 160px 保護)。
+   * 硬切。對齊「同 cell width → 同 overflow 判斷」SSOT。預設 false:wrap layout / pill rail 這類
+   * 寬度不由格子決定的地方,單顆 Tag 最寬 160px(太長的標籤不撐開整排)。
    */
   unbounded?: boolean
 }
@@ -151,7 +149,7 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
 }
 
 function TagInner(
-  { className, color, size, icon: Icon, avatar, onRemove, removeAriaLabel, dismissLabel, solid, unbounded = false, children, style, ...props }: TagProps,
+  { className, color, size, icon: Icon, avatar, onRemove, removeAriaLabel, solid, unbounded = false, children, style, ...props }: TagProps,
   forwardedRef: React.ForwardedRef<HTMLDivElement>,
 ) {
   const solidClass = solid ? SOLID_CLASSES[color ?? 'neutral'] : undefined
@@ -238,7 +236,7 @@ function TagInner(
           往內由宿主 Tag 承擔,Avatar 本身維持預設往外(「同一個底層元件被另一個元件放進貼邊的位置」) */}
       {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full [&_*:focus-visible]:focus-ring-inset">{avatar}</span>}
       <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
-      {onRemove && <TagDismiss onRemove={onRemove} label={removeAriaLabel ?? dismissLabel ?? label} solid={solid} color={color ?? 'neutral'} />}
+      {onRemove && <TagDismiss onRemove={onRemove} label={removeAriaLabel ?? label} solid={solid} color={color ?? 'neutral'} />}
     </div>
   )
 

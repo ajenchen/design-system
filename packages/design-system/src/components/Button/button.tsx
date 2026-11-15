@@ -339,10 +339,7 @@ export interface ButtonProps
    * Button 不會主動補 tooltip — 否則會破壞 Slot 單 child 規則。
    */
   asChild?: boolean
-  /**
-   * 按鈕視覺強調等級。
-   * `destructive` / `ghost` 為 shadcn 內部 compat，請勿在應用程式碼中直接使用。
-   */
+  /** 按鈕視覺強調等級。 */
   variant?: 'primary' | 'secondary' | 'tertiary' | 'text' | 'link'
   /** 套用危險色（紅色）。僅 primary / secondary / text 支援（tertiary / link 不支援，見 spec 禁止事項）。 */
   danger?: boolean
@@ -415,10 +412,6 @@ export interface ButtonProps
    * 全 DS 的「撐滿 / 跟內容」只用這一個名字(`ds-canonical/references/props-naming.md`「尺寸參數」;user 2026-11-11「尺寸:甲」)。
    */
   width?: SizingMode
-  /**
-   * @deprecated 2026-11-15 起改用 `width="fill"`(「尺寸:甲」)。保留一個版本,行為與畫面不變;同時傳 `width` 時以 `width` 為準。
-   */
-  fullWidth?: boolean
 }
 
 // IconOnly 用 padding-free + aspect-square + flex-center 的 Polaris/Atlassian idiom
@@ -497,7 +490,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       dismiss = false,
       loading = false,
       width,
-      fullWidth = false,
       pressed,
       pressedTone, // 2026-06-05 fix(deep-audit P0):原漏 destructure → 落入 ...props 噴到 DOM + 永遠用 cva default
       children,
@@ -534,8 +526,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       )
     }
 
-    // shadcn compat:AlertDialog、Toast 等元件內部會傳入這些 alias,
-    // 在此靜默轉換,不暴露到型別或自動完成。
     // dismiss=true 強制 variant=text(dismiss canonical);override 其他 variant 傳入。
     // 2026-06-06 預設 emphasis 改低(對齊世界級:MUI 預設 text / Ant 預設 default / Polaris 低 emphasis —
     // 預設 primary CTA 是 outlier)。labeled 無 variant → `tertiary`(中性外框,清楚可點性,再按重要程度升 primary);
@@ -543,11 +533,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // Material 3「icon-only = no fill」)。**CTA 必 explicit `variant="primary"`**(不靠預設)。dismiss 仍強制 text。
     const resolvedVariant: InternalVariant =
       dismiss ? 'text' :
-      (variantProp as string) === 'destructive' ? 'primary' :
-      (variantProp as string) === 'ghost'        ? 'text'    :
-      (variantProp as InternalVariant) ?? (iconOnly ? 'text' : 'tertiary')
+      variantProp ?? (iconOnly ? 'text' : 'tertiary')
 
-    const resolvedDanger = dangerProp || (variantProp as string) === 'destructive'
+    const resolvedDanger = !!dangerProp
 
     // Dev-mode warning:danger 僅 primary / secondary / text 有 compoundVariant。
     // tertiary / link + danger 無匹配 compound → **靜默渲染成一般 tertiary / link**(灰、無紅色
@@ -559,10 +547,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       )
     }
 
-    // 寬度模式:明寫的 `width` 優先 → 舊名 `fullWidth`(deprecated)→ ButtonGroup context(直排注入 fill)→ 預設 hug。
-    // 舊名 `fullWidth={false}` 在直排群組裡照舊撐滿(2026-11-15 前的行為:群組勝過 fullWidth=false),所以 false 不算明寫。
+    // 寬度模式:明寫的 `width` 優先 → ButtonGroup context(直排注入 fill)→ 預設 hug。
     const groupCtx = React.useContext(ButtonGroupContext)
-    const resolvedWidth: SizingMode = width ?? (fullWidth ? 'fill' : groupCtx.width ?? 'hug')
+    const resolvedWidth: SizingMode = width ?? groupCtx.width ?? 'hug'
 
     // 可聚焦的停用(見檔頭 PRESERVED_WHILE_DISABLED 段):此刻是否握有焦點 —— 只有「握著時被停用」才改用可聚焦停用,
     // 焦點離開那一刻換回原生 disabled(事件在 blur 當下更新,下一次 render 就是原生 disabled)。

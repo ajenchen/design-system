@@ -1,5 +1,4 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @placeholder-vocabulary-allow: 2026-07-04 Q4 完成 field-controls.spec.md 共享 contract b — emptyPlaceholder forward 已移除,emptyText 直達 Combobox → SelectMenu emptyText(search-empty 真住所);placeholder 為 trigger empty SSOT。
 // @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.
 import * as React from 'react'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
@@ -20,7 +19,6 @@ import {
   measureStackAvailablePx,
   type StackChromeCache,
   AVATAR_STACK_AVATAR_PX,
-  AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
 import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
 
@@ -33,16 +31,14 @@ const Combobox = ComboboxPublic as WithFieldVariantInternal<typeof ComboboxPubli
 // Pure helpers extracted to sibling for file-size budget(2026-05-18,P1 ≤ 500 lines)。
 // 不消費 component closure 的純 constant / 純 mapping function 全部搬走,主檔保留 SSOT-bearing
 // render logic(消費 Combobox / Select / state 等 closure 的部分)。
-// SSOT primitive re-export(backward-compat 對外 import 路徑保持 `./people-picker`)。
+// (2026-11-15 前這裡把兩支 helper 再出口到 `./people-picker`、因此進了 root 出口;那是內部實作,已拿掉,0.x 不留舊出口。)
 import {
-  PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS,
   getPeoplePickerTagWrapperClass,
   personToSelectOption,
   findPerson,
 } from './people-picker-helpers'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
-export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 
 // ── PeoplePicker ────────────────────────────────────────────────────────────
 // **2026-05-07 v15.6 SSOT 重構 v2**:
@@ -139,7 +135,7 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   pillWrap?: boolean
   /**
    * 搜尋型態(2026-05-12 規則 3 ship,3-mode SSOT 對齊 A1-A5 spec):
-   * - `'menu'`(default,backward-compat)— 浮層內搜尋(panel-top search)
+   * - `'menu'`(預設,與 Combobox 的預設一致)— 浮層內搜尋(panel-top search)
    * - `'trigger'`(multi 模式 opt-in)— inline 搜尋(浮層開時 name 拿掉,avatar 後接 input cursor,
    *   類 Combobox inline-trigger idiom)
    * Single mode 永遠 inline-trigger(wrap Select searchable 直接走 inline),此 prop multi 才有意義。
@@ -154,7 +150,8 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   clearable?: boolean
   /**
    * View 態是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 PersonDisplay,backward compat)。
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 PersonDisplay;預設值的理由待 user 定,
+   *   見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
    * 與 edit (Select / Combobox wrapped) 同 DOM 結構,消除 Layer-B padding mismatch。
    */
@@ -289,7 +286,6 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         availablePx: available,
         total: selectedNames.length,
         avatarPx: AVATAR_STACK_AVATAR_PX[size],
-        overflowChipPx: AVATAR_STACK_OVERFLOW_CHIP_PX[size],
       })
       setStackVisibleCount(visible)
     }
@@ -309,7 +305,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   }, [ref])
 
   // ── mode='view' ────────────────────────────────────────────────────────
-  // Default(showDisplayEndIcon=false):裸 PersonDisplay / MultiPersonDisplay — backward compat。
+  // Default(showDisplayEndIcon=false):裸 PersonDisplay / MultiPersonDisplay(預設值的理由待 user 定,見 prop docblock)。
   // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix ChevronDown,
   // 與 edit (Select / Combobox wrapped) 同 DOM 結構消除 cell view↔edit 像素偏移。
   if (resolvedMode === 'view') {
@@ -471,8 +467,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         searchPlaceholder={searchPlaceholder}
         searchAriaLabel={searchAriaLabel}
         // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty hint('請選擇人員')
-        // — semantic clean separation。2026-07-04 Q4 拍板完成 1-cycle 承諾:emptyPlaceholder forward
-        // 移除,emptyText 改傳 Combobox → SelectMenu emptyText(search-empty 真住所,菜單空狀態)。
+        // — semantic clean separation。2026-07-04 Q4 拍板:emptyPlaceholder forward 移除,
+        // emptyText 改傳 Combobox → SelectMenu emptyText(search-empty 真住所,菜單空狀態)。
         placeholder={placeholder}
         emptyText={emptyText}
         wrap={pillWrap}
@@ -546,7 +542,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       clearable={clearable}
       searchPlaceholder={searchPlaceholder}
       searchAriaLabel={searchAriaLabel}
-      // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(僅 backward-compat forward 1 cycle)
+      // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(轉給 Combobox → SelectMenu)
       placeholder={placeholder}
       emptyText={emptyText}
       wrap={false}

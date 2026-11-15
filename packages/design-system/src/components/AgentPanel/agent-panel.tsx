@@ -784,7 +784,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 aria-expanded={historyOpen}
                 className={cn(
                   'flex min-w-0 max-w-full cursor-pointer items-center gap-2 p-0 text-left',
-                  // 4px 一律 rounded-md(radius.spec.md「rounded-sm 保留未使用」;2026-11-15 前寫 rounded-sm,同為 4px,稽核 P11)
+                  // 一般元件 = rounded-md 4px(radius.spec.md「四檔」;2026-11-15 前寫成當時與 md 同值的 rounded-sm,稽核 P11)
                   'rounded-md',
                 )}
               >
@@ -1184,7 +1184,7 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
             // **四周最小 8px**,往外只需要 4px。那個 collapsible 的外框確實從標題底邊 0px 開始,但它是**兄弟節點**
             //(不裁任何東西)而且背景全透明,裡面第一個真的畫出線的元素在 8px 外 —— 依 focus-canonical「問題二」
             // 的「正當障礙」定義(會碰撞的鄰居或會切掉框的邊界),透明的兄弟盒不是障礙。
-            // 4px 一律 rounded-md(radius.spec.md「rounded-sm 保留未使用」;2026-11-15 前寫 rounded-sm,同為 4px,稽核 P11)
+            // 一般元件 = rounded-md 4px(radius.spec.md「四檔」;2026-11-15 前寫成當時與 md 同值的 rounded-sm,稽核 P11)
             'rounded-md',
           )}
         >

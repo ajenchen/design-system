@@ -766,8 +766,8 @@ SidebarInput.displayName = "SidebarInput"
 // 會隨 density 變大。Chrome 如果不跟著放大,lg density 下 padding 會被擠壓。
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & { withTabs?: boolean; tabsSlot?: React.ReactNode }
->(({ className, withTabs, tabsSlot, ...props }, ref) => {
+  React.ComponentProps<"div"> & { tabsSlot?: React.ReactNode }
+>(({ className, tabsSlot, ...props }, ref) => {
   return (
     // 2026-05-21 v9 — restore main behavior(per user「不應該調整原本的樣式,只有說收起來的時候
     // 要調整 header logo 的位置使其與其下 icon 水平置中」):
@@ -778,7 +778,6 @@ const SidebarHeader = React.forwardRef<
     // 完全 match main 行為(v7 leadingRail / v8 -ml-1 surgical 全撤回)。
     <ChromeHeader
       ref={ref}
-      withTabs={withTabs}
       tabsSlot={tabsSlot}
       data-sidebar="header"
       className={cn(

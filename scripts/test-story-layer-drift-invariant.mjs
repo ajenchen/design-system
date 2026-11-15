@@ -7,7 +7,7 @@
  *       字級集合讀成空的)selftest 必須自己回 false;在重建後的 Rating 原文裡把送出鈕改回「給分前停用」必須在那一行紅;
  *       真檔突變:skeleton.principles 拿掉 `@story-counter-example` → 那一行紅;同一段連標記搬進展示層 → 仍紅;
  *       description-list 展示的 h3 標題改回 div → (c) 在那一行紅(規格層真檔 time-picker.anatomy 照樣 0 筆);
- *       spec 出處行(typography.spec.md:43、sidebar.spec.md:264、story-rules.md「三層定位」:15-17 /「Technical probe visibility」等)被改掉、
+ *       spec 出處行(typography.spec.md:49、sidebar.spec.md:264、story-rules.md「三層定位」:15-17 /「Technical probe visibility」等)被改掉、
  *       ci.yml 出現 --write-baseline、CI 不再呼叫 test:story-layer-drift → 紅;
  *       「基準不得比 base 寬」以 HEAD 那棵樹的真資料走:多記一筆 / 替新檔預留 → 紅,反例標記多 → 只列 review;--base 打錯 → 儀器失效;
  *       基準裡出現「還沒輪到的九個資料夾」以外的漂移數字(反例標記 / 逃生口放行除外)→ 紅;任一個 story 標記引用的 `*.spec.md:N` 指到不存在的檔或

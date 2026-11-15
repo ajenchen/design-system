@@ -22,7 +22,6 @@ import {
   isFilterTreeActive,
   isFilterTreeEqual,
   evaluateTree,
-  dataTableFilterMatch,
   type Conjunction,
   type FilterCondition,
   type FilterGroup,
@@ -38,12 +37,11 @@ import {
 import { usePanelBulkAction } from './lib/panel-bulk-action'
 import { panelWidthStyle, useWarnBelowPanelFloor, type DataTablePanelWidthProps, type PanelWidthFloor } from './lib/panel-width'
 
-// Re-export public API from filter-tree(consumer 既有 import path 不變)
+// Re-export public API from filter-tree(篩選樹的公開函式從篩選面板這支出口)
 export {
   createEmptyFilterTree,
   isFilterTreeActive,
   evaluateTree,
-  dataTableFilterMatch,
 }
 export type { Conjunction, FilterCondition, FilterGroup, FilterTree, FilterTreeFlat, FilterTreeNested }
 export { DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS }

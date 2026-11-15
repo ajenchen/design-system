@@ -26,7 +26,7 @@ import type { SizingMode } from '@/design-system/components/Field/field-types'
  * - z-index:default 2 / hover 3(到這裡與 Ant 同值)/ focus-within|自己的浮層開著(data-field-open)4(比滑過高一層,2026-11-13 起;
  *   Ant 沒有這一層 —— 規則與來源住 field-control-group.spec.md「States」)/ disabled 0
  * - Container `display: inline-flex`(Ant default)/ `width="fill"` → `display: flex; width: 100%`
- *   (2026-11-15 前叫 `block`,名字借自 Ant Space.Compact;「尺寸:甲」起全 DS 的撐滿只叫 `width="fill"`,`block` 留一個版本)
+ *   (2026-11-15 前叫 `block`,名字借自 Ant Space.Compact;「尺寸:甲」起全 DS 的撐滿只叫 `width="fill"`,`block` 已移除)
  *
  * **Size**(FCG 不擁有 size API；不傳遞 size 給 children,無 Context Provider / 無 cloneElement;見 spec「Size」段):
  * - children 尺寸完全由 child 自己決定;FCG 只負責 border-collapse 接合(border / radius / z-index)
@@ -70,14 +70,10 @@ export interface FieldControlGroupProps extends React.HTMLAttributes<HTMLDivElem
    * 全 DS 的「撐滿 / 跟內容」只用 `width`(`ds-canonical/references/props-naming.md`「尺寸參數」;user 2026-11-11「尺寸:甲」)。
    */
   width?: SizingMode
-  /** @deprecated 2026-11-15 起改用 `width="fill"`(「尺寸:甲」;舊名借自 Ant Space.Compact)。保留一個版本,行為與畫面不變;同時傳 `width` 時以 `width` 為準。 */
-  block?: boolean
 }
 
 const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProps>(
-  ({ width: widthProp, block = false, className, children, ...props }, ref) => {
-    // 寬度模式:`width` 優先;舊名 `block`(deprecated)= `width="fill"`。
-    const width: SizingMode = widthProp ?? (block ? 'fill' : 'hug')
+  ({ width = 'hug', className, children, ...props }, ref) => {
     return (
       <div
         ref={ref}

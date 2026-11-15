@@ -156,7 +156,8 @@ export interface TimePickerProps
   endIcon?: LucideIcon | null
   /**
    * View 態是否渲 endIcon + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 span,backward compat)。
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 span;預設值的理由待 user 定,
+   *   見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 也走 fieldWrapperStyles(naked variant)+ ItemSuffix Clock,
    * 與 edit 同 DOM 結構,消除 Layer-B padding mismatch。
    */
@@ -280,7 +281,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     }
 
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 TimePickerDisplay sub-component(retired)。
-    //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Clock icon — backward compat 裸 span。
+    //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Clock icon —— 裸 span(預設值的理由待 user 定,見 prop docblock)。
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Clock,
     //   與 edit 同結構消除 cell view↔edit 像素偏移(Layer-B padding mismatch)。
     if (resolvedMode === 'view') {

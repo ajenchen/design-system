@@ -125,6 +125,8 @@ Token `--font-sans` stack = `Roboto, -apple-system, BlinkMacSystemFont, "Segoe U
 - `@qijenchen/design-system/src/...`(internal source path,未來 SSOT 結構改會壞)
 - `@qijenchen/design-system/dist/...`(internal build artifact,未來 build pipeline 改會壞)
 
+**版本與相容**:目前是 0.x 預發布版(semver 2.0.0 第 4 條:「Major version zero (0.y.z) is for initial development. Anything MAY change at any time. The public API SHOULD NOT be considered stable.」)。改名 / 移除**不留舊名、不標 `@deprecated`**;每一版的破壞性變更逐筆登記在 DS repo(參數 / 行為:`scripts/breaking-changes.json`;root 出口:`scripts/root-exports-removals.json`),寫進該版 GitHub Release 說明的「破壞性變更」段 —— **升版前先讀那一段,照「改用」那一欄改**(root 出口那一段發版流程自動寫入並驗收;參數 / 行為那一段的自動寫入還沒接,見規則檔)。規則住 `ds-canonical/references/props-naming.md`「相容政策」。
+
 ---
 
 ## Compatibility matrix

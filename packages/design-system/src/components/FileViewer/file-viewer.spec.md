@@ -99,7 +99,7 @@ Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(ful
 ```
 
 **分區決策**:
-- **Toolbar 高度 = `--chrome-header-height`**(隨 page density:md=48 / lg=56)——與 InfoPanel header 同高,視覺對齊;**code 已消費 `<ChromeHeader>` primitive**(Toolbar + InfoPanel header,皆 `<ChromeHeader>` **繼承 page density**,2026-06-15 移除 lockDensity),高度由 primitive 內部套 `h-[var(--chrome-header-height)]`(`chrome-header.tsx`),tsx 不硬寫 height className。**跨家族 SSOT pointer**:FileViewer Toolbar + InfoPanel header 屬 **Chrome header(Fixed-h)家族**,border / padding / dismiss size / withTabs 跨家族契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。FileViewer **不鎖 density**(全 surface 繼承 page;原 `lockDensity="lg"` 只鎖兩個 header、沒鎖 body → header(px-loose@lg=24)與 body(px-loose@page=16)左緣不對齊 = 圖二 bug,已移除,見 `density.spec.md` 消費者清單)。
+- **Toolbar 高度 = `--chrome-header-height`**(隨 page density:md=48 / lg=56)——與 InfoPanel header 同高,視覺對齊;**code 已消費 `<ChromeHeader>` primitive**(Toolbar + InfoPanel header,皆 `<ChromeHeader>` **繼承 page density**,2026-06-15 移除 lockDensity),高度由 primitive 內部套 `h-[var(--chrome-header-height)]`(`chrome-header.tsx`),tsx 不硬寫 height className。**跨家族 SSOT pointer**:FileViewer Toolbar + InfoPanel header 屬 **Chrome header(Fixed-h)家族**,border / padding / dismiss size / tabsSlot 跨家族契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。FileViewer **不鎖 density**(全 surface 繼承 page;原 `lockDensity="lg"` 只鎖兩個 header、沒鎖 body → header(px-loose@lg=24)與 body(px-loose@page=16)左緣不對齊 = 圖二 bug,已移除,見 `density.spec.md` 消費者清單)。
 - **Viewport `flex-1`**——填滿剩餘空間;InfoPanel 透過 `w-80 shrink-0` 從右側切出,不吃 viewport 自然寬
 - **Filmstrip 固定 h-24**——預留 thumb 64 + padding;只在 `showFilmstrip && files.length > 1` 時顯示
 - **Prev/Next arrows 絕對定位**——避免 layout shift,只在 `files.length > 1` 渲染

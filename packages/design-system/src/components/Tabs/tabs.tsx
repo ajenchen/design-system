@@ -195,7 +195,7 @@ Tabs.displayName = 'Tabs'
 // 2026-05-18 改 border-border → border-divider(per user verbatim「我認為應該把 tabs 的
 // 下底線統一改成是 divider 色吧?」+「做」approval):
 // - 跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider`(neutral-4)同色
-// - withTabs scenario 下 tabs underline = chrome separator,跟 dialog 其他 separator 視覺一致
+// - tabs 進 header(tabsSlot)時 tabs underline = chrome separator,跟 dialog 其他 separator 視覺一致
 // - Selected trigger 2px primary 仍 overlay underlying divider(對比 primary >> divider 不弱)
 // - 對齊 `color.spec.md`「T-junction connectivity 原則」段 outer-vs-divider 判準(Dialog 結構,T-junction 思路適用)
 const TABS_LIST_BASE = [

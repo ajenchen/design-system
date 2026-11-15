@@ -1,4 +1,4 @@
-import type { ColumnDef } from '@tanstack/react-table'
+import type { DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging(meta.type / prefix)
 
 /**
@@ -16,7 +16,7 @@ export const ORDER_ROWS: OrderRow[] = Array.from({ length: 128 }, (_, i) => ({
   placedAt: `2026-0${(i % 6) + 1}-${String((i % 27) + 1).padStart(2, '0')}`,
 }))
 
-export const orderColumns: ColumnDef<OrderRow>[] = [
+export const orderColumns: DataTableColumnDef<OrderRow>[] = [
   { accessorKey: 'orderNo', header: '訂單編號' },
   { accessorKey: 'customer', header: '客戶' },
   { accessorKey: 'amount', header: '金額', meta: { type: 'currency', prefix: '$' } },

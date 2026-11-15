@@ -162,7 +162,7 @@ export interface SelectProps
   onOpenChange?: (open: boolean) => void
   /**
    * View mode 顯 picker intrinsic end icon(2026-05-08 D path Phase 1)。
-   * 預設 false:`mode="view"` 純展示 bare span(向後相容)。
+   * 預設 false:`mode="view"` 純展示 bare span(預設值的理由待 user 定,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
    * Field naked-view + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
@@ -350,7 +350,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
             // + codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
             // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
             // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
-            // 對齊 `person-display.tsx:150` 既有 DS canonical:outer flex container + inner truncate 真實 box。
+            // 對齊 `person-display.tsx:149` 既有 DS canonical:outer flex container + inner truncate 真實 box。
             // DS-wide grep 29 個 truncate 都遵此 pattern,只本處違反 — 修齊。
             // 2026-10-13:疊在搜尋框那一格(不是整段):有起始圖示時名字從輸入處開始,不再壓在圖示上。
             <span
@@ -432,7 +432,7 @@ function ReadonlyDisplay({
   const emptyText = placeholder ?? emptyDisplay
 
   // mode='view':2 path(2026-05-08 D path Phase 1 Select canary)
-  //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(原行為,backward compat)
+  //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(預設值的理由待 user 定,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)
   //      對齊原 SelectDisplay sub-component(retired)。readonly / disabled 仍走下方 fieldWrapperStyles。
   //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-view wrapper +
   //      ChevronDown ItemSuffix。SSOT canonical 跟 readonly/edit/disabled mode 同 DOM 結構。
@@ -454,7 +454,7 @@ function ReadonlyDisplay({
           </span>
         )
       }
-      // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:206 同型修;
+      // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:198 同型修;
       // display='tag' 路徑由 Tag 內建 useTruncated 自管,text 路徑原本裸 truncate = gap)
       if (isTextDisplay) return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
       const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined

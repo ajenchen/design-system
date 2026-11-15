@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "4da5985da6fee6c358ffccdd16dcc162365a68633ecf1298bfbf5d46f63ed89d",
+    "forkCorpusLockSha256": "94720ae64609de74323f2eb9c9525f564995154244ef1918dbe506e105d69744",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "0b5c37ec27205e3b3f6d1a2cad9e3a0226ae39bd960f5ebb3ec65b7476ca1db5",
@@ -53,13 +53,13 @@
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
         "hookSha256": "e74f55b6fe1e3fb6643cd82e0613fa5ca49c781b14c57a6ccf606998f3ba5ff4",
-        "skillsSha256": "1470de24565bda3dd7b544832125a5cbad557f95e6c810944bc59cdf10bc4d2b",
+        "skillsSha256": "68809033b95ad2381ee02b86a7a2dfaee992ddcf0b4603042b32dbf92026f4fd",
         "treeDigests": {}
       },
       "codex": {
         "instructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
         "hookSha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
-        "skillsSha256": "ea45435cdc65eb729cf0711b775e71bd6d1ca6f06cd620967db48fba3ff5d2e7",
+        "skillsSha256": "193c3cb444552e2cdea626e8a9827db31d4499c051e167c9a7cce8309b516875",
         "treeDigests": {}
       },
       "generic": {
@@ -73,8 +73,8 @@
       "claude": "e74f55b6fe1e3fb6643cd82e0613fa5ca49c781b14c57a6ccf606998f3ba5ff4"
     },
     "governanceCheckSha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
-    "utilityRegistrySha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
-    "sharedSkillsSha256": "2e99c03dfa9f5dd8a9a3f66508d4f4b691a7fd079bb97a864901c40a61584f62",
+    "utilityRegistrySha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
+    "sharedSkillsSha256": "79a05f0607e49f097bdefea230a9b60664b8ed379d4f2a4c2f87aec7d4f03d63",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",

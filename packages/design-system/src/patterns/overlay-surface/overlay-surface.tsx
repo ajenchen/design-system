@@ -82,14 +82,6 @@ export const COMPACT_HEADER_SLOT = '[--surface-chrome-slot-h:calc(var(--font-bod
 export interface SurfaceHeaderProps
   extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * 是否內含 Tabs。
-   * true(無 tabsSlot)→ 移除自身 border-b。
-   * 若提供 tabsSlot,自動 column mode + auto suppress border(不需手動傳 withTabs=true)。
-   * 對齊 patterns/header-canonical/header-canonical.spec.md W1
-   * 「Header semantic owner / TabsList paint owner in withTabs state」。
-   */
-  withTabs?: boolean
-  /**
    * Tabs row slot(2026-05-18 加 per header-canonical.spec.md W2/W4 真實能用 + user-mandated fix)。
    * 提供時 SurfaceHeader 自動 column 結構:
    *   row 1 = children(title + actions/dismiss,px-loose py-tight)
@@ -101,7 +93,8 @@ export interface SurfaceHeaderProps
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 仍放 DialogBody 內。
    * `<Tabs>` root 必須 wrap 整 DialogContent(Radix TabsList ↔ TabsContent 同 root 連動)。
    *
-   * 提供 tabsSlot 自動 withTabs=true,不需另傳 prop。
+   * 給了 tabsSlot,header 自身就不畫 border-b(header-canonical.spec.md W1「Header semantic owner / TabsList paint owner」);
+   * Tabs 進 header 只有這一條路,不得放進 children(原 `withTabs` 布林 2026-11-16 移除,見 header-canonical.spec.md「tabsSlot 連動」)。
    */
   tabsSlot?: React.ReactNode
 }
@@ -109,10 +102,7 @@ export interface SurfaceHeaderProps
 export const SurfaceHeader = React.forwardRef<
   HTMLDivElement,
   SurfaceHeaderProps
->(({ className, withTabs, tabsSlot, children, actions, dismiss, ...props }, ref) => {
-  // tabsSlot 提供 → 自動 withTabs(consumer 不需手動兩個 prop)
-  const hasTabs = tabsSlot != null || withTabs === true
-
+>(({ className, tabsSlot, children, actions, dismiss, ...props }, ref) => {
   // Column mode(tabsSlot 提供時)— 對應 header-canonical.spec.md W2 + W4
   if (tabsSlot != null) {
     return (
@@ -159,14 +149,14 @@ export const SurfaceHeader = React.forwardRef<
   // → header = 24 + py-tight 12×2 = 48 chrome-header-height ✓ 穩定無需 min-h
   // Popover 等輕量 chrome 走 COMPACT_HEADER_SLOT(slot = calc(--font-body-size×1.5)=21 = title line-box,無 min-h / 無 py override)：max(21 title, 21 slot) + py-tight 12×2 = 45（見上方 L57）
   //
-  // withTabs=true(無 tabsSlot,backward compat):移除 border-b,consumer 自畫
+  // 沒有 tabsSlot = 沒有 tabs,header 自畫 border-b(W1)
   return (
     <div
       ref={ref}
       data-slot="surface-header"
       className={cn(
         'flex items-center gap-2 shrink-0',
-        !hasTabs && 'border-b border-divider',
+        'border-b border-divider',
         'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
         CHROME_UNBOUNDED_SLOT, DISMISS_FIRST_LINE,
         className,
@@ -186,7 +176,7 @@ export const SurfaceBody = React.forwardRef<
   // 2026-05-04 viewport-aware scroll canonical:
   //   parent(PopoverContent / HoverCardContent / Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden
   //   header / footer shrink-0;Body flex-1 min-h-0 overflow-y-auto → 視窗太小時 body 內 scroll
-  //   非 flex-col parent 內 flex-1/min-h-0 no-op,backward compat
+  //   非 flex-col parent 內 flex-1/min-h-0 不起作用(放在任何容器都安全)【AI 推導 2026-11-16:讀 CSS 行為推出來的說法,原註解只寫了相容】
   <div
     ref={ref}
     data-slot="surface-body"
@@ -270,7 +260,7 @@ export interface SurfaceHeaderProps {
 }
 
 // 右側按鈕位的排法(SurfaceHeader 兩個分支共用):左欄 flex-1 min-w-0,右側〔操作〕〔分隔線〕〔×〕。
-// 都沒傳 → children 原樣(既有 consumer 自己排的寫法不受影響);只有 × → × 直接是標題列的子節點(靠上那條規則 DISMISS_FIRST_LINE 認它)。
+// 都沒傳 → children 原樣(沒有右側按鈕位要排,標題列的內容就是 consumer 給的 children);只有 × → × 直接是標題列的子節點(靠上那條規則 DISMISS_FIRST_LINE 認它)。
 // 操作區靠上(self-start):同 ×,群組對齊標題第一行;單行標題時位置不變(原 dialog.tsx#DialogHeader 的同一段,2026-11-10 搬下來共用)。
 // 右側操作區的縮位(2026-11-10,n7 第七節 2):縮位從「每顆無外框鈕」移到「整個操作區」—— 區內按鈕回到原生高(sm 28 / 寬鬆 32),
 // 區整體佔位縮回標題行高(公式同 CHROME_UNBOUNDED_SLOT,× 與操作的位置、標題列高度都不變)。理由:分隔線長 = 同列最高元件 − 8,

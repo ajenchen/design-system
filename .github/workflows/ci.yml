@@ -214,6 +214,17 @@ jobs:
           # 被拿掉時 C2 量不到。比「上一次發布的 tag 的 index.ts 出口全集 vs 現在」(TypeScript 展開 export * / export type),
           # 拿掉的名字必須登記在 scripts/root-exports-removals.json(= 發布說明「破壞性變更」的來源)。修前(沒有登記)紅 27 筆。純靜態,約 5 秒。
           npm run test:root-exports
+          # 相容政策(2026-11-15,user:「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;規則 ds-canonical/references/props-naming.md「相容政策」,
+          # 版本判斷 scripts/lib/compat-policy.mjs):0.x / 預發布版 DS 原始碼不得有 @deprecated、不得拿「向後相容 / 保留一版」當理由;
+          # 跟上一次發布的 tag 比,*Props / *Labels 拿掉的成員都要登記在 scripts/breaking-changes.json(= 發布說明「破壞性變更 → 參數」的來源)。
+          # 修前的樹:NC1 14 筆 @deprecated、NC2 77 行。對照組在 --selftest(含 beta.148 真實原始碼)。純靜態 + git 讀 tag,約 5 秒。
+          npm run test:compat-policy
+          # token 允許集合單一來源(2026-11-15,user:「確保ssot 難道不是我們的 token 變成只有sm(2px),md(4px),lg(8px)和full,然後其他不准用？」):
+          # 每一類的允許集合只住該類規格框起來的那一段(scripts/lib/token-allow-sets.mjs 讀)—— utility-registry(hook 讀的)、fork 副本、CSS 宣告必須與它一致;
+          # Tailwind 預設刻度裡不在允許集合的名字,用 hook 同一份比對引擎(從 check_opacity_token_usage.sh 抽出的 Python)跑,必須被擋。
+          # 修前(HEAD 35508c15 的 registry):T1 rounded-xs 放行、T3 rounded-4xl / shadow-2xs / shadow-xs / leading-tight 等 9 個沒擋、T5 magenta / turquoise 等 14 個色相沒擋。
+          # 對照組在 --selftest(十種破法各自指名紅、框不見 = 儀器失效)。純讀檔 + python3,約 5 秒。
+          npm run test:token-allowlist
           # 範本本體 apps/template/src/App.tsx ↔ 隨 npm 出貨的副本 ds-canonical/templates/dashboard-app.tsx 逐字相同(2026-11-04 接線):
           # receiver 每次發版 `cp 副本 → App.tsx`,副本落後就把範本改動靜默蓋回舊版;--check 2026-06-07 就寫好,卻沒有任何執行面呼叫,
           # 副本從 08-02 漂移兩個多月沒人看見。meta-test 在拋棄式小樹裡證明副本弄壞一行會紅。純靜態,約 1 秒。
@@ -1808,6 +1819,15 @@ jobs:
           # (α 一般密度 tight 改 8px → A1 + A2 lg 紅、並印「只比首次標記看不到」;β 首次量完才改 → A2 紅、A1 綠;γ 內容下推 4px → A3 每格正好多 4)
           # + channel 換空函式 / 不存在的 story / 假建置三種必須判成儀器失效(INSTRUMENT-FAIL、exit 2)。
           npm run test:doc-heading-inventory
+
+      - name: Radius usage sweep —— 每一則 story 的每個有圓角的元素照 radius.spec.md「四檔」的用途(browser,全 story)
+        run: |
+          # 2026-11-15(user:「本來在該使用什麼圓角的時候不就要動腦想看到底怎樣用才符合ds規範嗎？」):規則只讀 radius.spec.md「四檔」表的
+          # 值 / 機器判定兩欄,量計算後的像素:2px 只給短邊 ≤ 10px、帶 --elevation-200 的浮層外殼 8px(含 role=tooltip 的外殼 4px)、
+          # 8px 只給外殼與四角重合的裁切層、值不在刻度上一律紅;例外 / 待 user 看過的現況違規登記在 scripts/radius-usage-exceptions.json(過期也紅)。
+          # 同一份建置,Chromium 上一步已裝。本機(並行 4 個瀏覽器)全 1084 則約 2 分;--selftest:判定表 + 真建置三種破法(按鈕 8px / 浮層 4px / 40px 方塊 2px)。
+          # 放在這個 job:同是全 story 掃描等級;CI 未實測,首跑若太久先調 --concurrency。
+          npm run test:radius-usage
 
   verify-browser-overlay-rows:
     # 2026-09-20 拆出來的第十個 job。sweeps 一個 job 序列跑兩支全 1034 支 story 的掃描,

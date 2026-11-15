@@ -27,16 +27,19 @@ FILE_HEAD3=$(sed -n '1,3p' "$FILE_PATH")
 
 # ── Contract (b) Placeholder vocabulary ───────────────────────────────────────
 # Scope: 所有 packages/design-system/src/components/*.tsx
+# 2026-11-15:Combobox 的舊名 `emptyPlaceholder` 已移除(0.x 不留舊名,props-naming.md「相容政策」)。
+#   原本只擋「把 emptyText forward 成 emptyPlaceholder」;舊名移除後,程式行(註解除外)出現 `emptyPlaceholder` 這個名字就是寫回已移除的 API。
 case "$FILE_PATH" in
   */packages/design-system/src/components/*.tsx)
     if ! grep -qE '//[[:space:]]*@placeholder-vocabulary-allow:' <<<"$FILE_HEAD3"; then
-      HITS=$(grep -nE 'emptyPlaceholder=\{(emptyText|searchEmpty|noResults|notFound)' "$FILE_PATH" 2>/dev/null)
+      HITS=$(grep -nE '(^|[^A-Za-z0-9_])emptyPlaceholder([^A-Za-z0-9_]|$)' "$FILE_PATH" 2>/dev/null \
+        | grep -vE '^[0-9]+:[[:space:]]*(//|\*|/\*|\{/\*)')
       if [ -n "$HITS" ]; then
         VIOLATIONS="${VIOLATIONS}
 [contract (b) placeholder vocabulary]:
 ${HITS}
-  → 違反 field-controls.spec.md「共享 contract (b)」:不可 silent 把 emptyText forward 成 emptyPlaceholder(trigger-empty)。
-  Fix:wrapper 加 \`placeholder\` prop(trigger empty SSOT)+ \`emptyText\` 僅傳 SelectMenu noResultsText。
+  → 違反 field-controls.spec.md「共享 contract (b)」:\`emptyPlaceholder\` 已移除(2026-11-15),trigger empty 只叫 \`placeholder\`;不可把 emptyText(search-empty)接到 trigger-empty。
+  Fix:用 \`placeholder\` prop(trigger empty SSOT)+ \`emptyText\` 僅傳 SelectMenu noResultsText。
   Allow:檔首加 \`// @placeholder-vocabulary-allow: <reason>\`。"
       fi
     fi

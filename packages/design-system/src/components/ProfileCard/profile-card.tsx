@@ -213,9 +213,8 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     // **Dedup canonical(2026-05-07 v15.8 fix Bug E)**:consumer 的 `fields` array 若含
     // label 撞 default(eg. 「ID」「員工編號」),consumer 值 win — defaults 那一行
     // 跳過(否則 same label 連 render 兩次,如 default placeholder `-` + consumer 真值)。
-    // 這是遷移期 forgiving 行為:DEV warn 提示應改用 `defaultFieldValues`,但 production
-    // 不破壞既有 consumer。對齊 React `key` 唯一性 + 人員卡「一 label
-    // 一 row idiom。
+    // 理由:人員卡「一 label 一 row」+ React `key` 唯一性。預設欄位的值正規寫法是 `defaultFieldValues`,
+    // 撞名時 DEV warn 指出來(那一筆應該搬去 defaultFieldValues);2026-11-16 起訊息不再稱它「舊寫法 / 遷移期」。
     // 文案:prop → I18nProvider 的 `profile-card` 那一組 → DS 預設中文(同 ProfileCardDefaultActions;lib/i18n/README.md「Fallback chain」)
     const { t } = useI18n()
     const pick = (override: string | undefined, key: string, fallback: string) => override ?? t('profile-card', key, fallback)
@@ -245,14 +244,14 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
       return fields && fields.length > 0 ? [...defaults, ...fields] : defaults
     }, [defaultFieldValues, fields, idLabel, employeeNumberLabel])
 
-    // Dev warn:consumer 透過 `fields` 傳 default key label(legacy pattern)→ 應改 `defaultFieldValues`
+    // Dev warn:consumer 透過 `fields` 傳了跟預設欄位同名的 label → 指出來(預設欄位的值走 `defaultFieldValues`)
     if (process.env.NODE_ENV !== 'production' && fields) {
-      const legacyEntry = fields.find((f) => f.label === idLabel || f.label === employeeNumberLabel)
-      if (legacyEntry) {
+      const duplicateEntry = fields.find((f) => f.label === idLabel || f.label === employeeNumberLabel)
+      if (duplicateEntry) {
         console.warn(
-          `[ProfileCard] "${name}":legacy pattern — fields[].label="${legacyEntry.label}" ` +
-          `is a default field. Migrate to defaultFieldValues={{ id, employeeNumber }} prop ` +
-          `to align with NAMECARD_DEFAULT_FIELD_KEYS canonical.`,
+          `[ProfileCard] "${name}":fields[].label="${duplicateEntry.label}" duplicates a default field ` +
+          `(it replaces the default row). Pass default field values via defaultFieldValues={{ id, employeeNumber }} ` +
+          `(NAMECARD_DEFAULT_FIELD_KEYS).`,
         )
       }
     }

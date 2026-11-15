@@ -143,7 +143,7 @@ export const Overview = {
             {MODES.map((m) => (
               <div key={m} className="flex items-center gap-4">
                 <div className="w-64 shrink-0">
-                  {/* view + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:129),
+                  {/* view + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:121),
                       demo 要展示有值狀態故傳 value;edit / disabled 用 defaultValue 保持 uncontrolled */}
                   {(m === 'view' || m === 'readonly') ? (
                     <Input mode={m} value="Wireless Bluetooth Headphones" size="md" aria-label={`商品名稱（${m} 模式）`} />
@@ -182,7 +182,7 @@ export const Overview = {
                 ['endAction', 'InlineActionConfig', '—', '右側 inline action（宣告式 API），僅 edit 模式渲染；loading=true 或傳 endSlot 時被覆蓋'],
                 ['endSlot', 'ReactNode', '—', '右側自訂 slot（escape hatch，如 DropdownMenuTrigger）；與 endAction 互斥，同時傳會優先'],
                 ['loading', 'boolean', 'false', 'async 驗證中：endAction slot 自動塞 CircularProgress + aria-busy，input 仍可編輯'],
-                ['width', "'fill' | 'hug' | number", "'fill'", 'fill 撐滿 / hug 寬度隨內容（field-sizing:content；用於 inline edit，禁用於表單 Field）/ 數字 = 固定寬 px；舊名 autoWidth（= hug）已停用'],
+                ['width', "'fill' | 'hug' | number", "'fill'", 'fill 撐滿 / hug 寬度隨內容（field-sizing:content；用於 inline edit，禁用於表單 Field）/ 數字 = 固定寬 px'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

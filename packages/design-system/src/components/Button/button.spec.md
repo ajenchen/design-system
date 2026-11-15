@@ -436,7 +436,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 
 所有按鈕撐滿容器寬度（`width="fill"`;直排的 `<ButtonGroup orientation="vertical">` 自動套用,按鈕上明寫的 `width` 勝過群組）。**最希望被點擊的按鈕放最上方**——視覺動線由上往下。
 
-**寬度參數**(2026-11-15,user 2026-11-11 決策頁「尺寸:甲」):Button 的寬度模式叫 `width`,`'hug'`(預設,跟內容)/ `'fill'`(撐滿父容器)。舊名布林 `fullWidth` 保留一個版本(`@deprecated`,`fullWidth` = `width="fill"`,畫面不變;同時傳以 `width` 為準;直排群組裡 `fullWidth={false}` 照舊撐滿,與改名前相同)。Button 不收數字寬 —— 按鈕寬度交給內容或版面【AI 推導 2026-11-15:哪個元件收哪些值是 AI 依「每個元件能填的值不完全一樣」這條代價決定的,user 原話沒有點名 Button】(全 DS 規則 `ds-canonical/references/props-naming.md`「尺寸參數」)。
+**寬度參數**(2026-11-15,user 2026-11-11 決策頁「尺寸:甲」):Button 的寬度模式叫 `width`,`'hug'`(預設,跟內容)/ `'fill'`(撐滿父容器);直排的 `<ButtonGroup>` 裡沒傳時自動 `'fill'`。2026-11-15 前叫布林 `fullWidth`(`fullWidth` = `width="fill"`),已移除、不留舊名(0.x 相容政策,`ds-canonical/references/props-naming.md`「相容政策」)。Button 不收數字寬 —— 按鈕寬度交給內容或版面【AI 推導 2026-11-15:哪個元件收哪些值是 AI 依「每個元件能填的值不完全一樣」這條代價決定的,user 原話沒有點名 Button】(全 DS 規則 `ds-canonical/references/props-naming.md`「尺寸參數」)。
 
 ---
 
@@ -449,7 +449,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 - ❌ 不得引用 `lucide-react` 以外的 icon
 - ❌ `startIcon` 不得放超過一個
 - ❌ `link` variant 不得嵌入段落文字——用 HTML `<a>` 代替
-- ❌ 不得直接使用 `variant="destructive"` 或 `variant="ghost"`——shadcn 內部 alias，僅供框架元件使用([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/button.tsx#L12-L18))
+- ❌ 沒有 `variant="destructive"` / `variant="ghost"`(shadcn 的名字,[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/button.tsx#L12-L18)):危險操作用 `danger`(搭 primary / secondary / text),低強調用 `variant="text"`。2026-11-15 前這兩個值會在執行期被靜默轉成 primary + danger / text,已移除(0.x 相容政策,`ds-canonical/references/props-naming.md`「相容政策」)
 - ❌ `danger` 僅支援 `primary`、`secondary`、`text`——`tertiary` + danger 無對應 compoundVariant,會靜默渲染成一般 tertiary（灰、無紅色 danger 視覺,並非等同 secondary),`link` + danger 語義矛盾（連結暗示導覽，非破壞）
 - ❌ `pressed` 不得用於多選一——應使用 Segmented Control
 - ❌ `pressed` 不得套用於 `primary` / `link`——主要操作不應 toggle、link 語意為導覽

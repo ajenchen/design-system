@@ -38,7 +38,7 @@ paths:
 
 ## 建立 UI 前必讀
 
-**先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius}/*.spec.md`)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
+**先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius|opacity|motion}/*.spec.md`;**選 token 先判斷元素是哪一種東西,再查該類用途表**,不照 Tailwind 名字猜 —— 例:圓角看 `radius.spec.md`「四檔」,`rounded-sm` 在本系統是 2px、只給短邊 ≤ 10px 的指示,`scripts/radius-usage-invariant.mjs` 在建置好的 Storybook 上逐元素量)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
 
 **既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `packages/design-system/ds-canonical/references/build-ui-canonicals.md`。
 
@@ -59,9 +59,9 @@ paths:
 
 1. **CSS variable 必 `var()` 包覆** — `w-[var(--foo)]` 而非 `w-[--foo]`(v4 silent 失效)
 2. **自訂 utility 必在 `lib/utils.ts` 註冊 group** — 否則 tailwind-merge 誤判 strip
-3. **禁 `shadow-sm/md/lg` / `text-xs/sm/base` / 硬寫色值** — 用 `shadow-[var(--elevation-N)]` (N ∈ {100,200},+`-hover` 變體) / `text-body`
-4. **禁 shadcn compat alias**(`bg-popover` / `text-muted-foreground` / `bg-accent` 等)— 用 direct token
-5. **禁 primitive 色名作 utility**(`bg-neutral-3` / `text-blue-6`)— 用 semantic utility 或 `bg-[var(--color-blue-6)]`
+3. **禁 `shadow-sm/md/lg` / `text-xs/sm/base` / 硬寫色值** — 依用途選:頁面內容層 `shadow-[var(--elevation-100)]`、浮層 `shadow-[var(--elevation-200)]`(`elevation.spec.md`「層級」);字級照 `typography.spec.md`「Token 表」的用途欄
+4. **禁 shadcn compat alias**(`bg-popover` / `text-muted-foreground` / `bg-accent` 等)— 依用途查 `color.spec.md` 用途表選語意色
+5. **禁 primitive 色名作 utility**(`bg-neutral-3` / `text-blue-6`)— 依用途選語意色;也不要換成 `bg-[var(--color-blue-6)]` 讀原料(`color.spec.md`「禁止事項」;只有 Tag / Avatar / Calendar 的類別色例外)
 
 ## Token 命名 4 條硬規則
 
@@ -82,6 +82,8 @@ paths:
 `onClose` / `onDismiss` / `onRemove` / `onClear` 各有語意不合併。
 
 **尺寸參數**(2026-11-15 user「尺寸:甲」):寬怎麼長一律 `width`(`'fill'` 撐滿 / `'hug'` 跟內容 / 數字 px),高同理;上下限 `minWidth` / `maxWidth` / `minHeight` / `maxHeight`;`size` 只當檔位。禁 `fullWidth` / `block` / `autoWidth` 這類同義名。詳 `packages/design-system/ds-canonical/references/props-naming.md`「尺寸參數」(唯一住處),閘 `scripts/sizing-props-invariant.mjs`。
+
+**改名 / 移除(相容政策,2026-11-15 user)**:0.x / 預發布版**不留舊名** —— 不標 `@deprecated`、不在內部把舊名轉成新名、不寫「向後相容」當理由;同一版把 DS 自己的程式、範例、規格改完,舊名 → 新寫法登記 `scripts/breaking-changes.json`(root 出口 → `scripts/root-exports-removals.json`)= 發布說明「破壞性變更」。詳 `packages/design-system/ds-canonical/references/props-naming.md`「相容政策」(唯一住處),版本判斷 `scripts/lib/compat-policy.mjs`,閘 `scripts/compat-policy-invariant.mjs`。
 
 **Badge 命名按放置**:`badge`(inline)/ `overlayBadge`(疊視覺重心 iconOnly)/ `badgeCount`(Avatar count)/ `status`(presence dot — Avatar / ProfileCard / PeoplePicker;另有 lifecycle value-set 用於 FileItem / FileUpload / ProgressBar,詳 `props-naming.md`)。
 

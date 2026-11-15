@@ -24,8 +24,8 @@ import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/to
  * @internal
  * circle 形狀每個尺寸的直徑(px)。高與最小寬直接讀這裡(inline style),不再另寫一份 `h-5 / h-6` class
  * (2026-09-27 前是 class 與數字各一份,M17)。circle 接在頭像堆疊尾端時,挖空的幾何 = 左邊那顆頭像的直徑;
- * 堆疊契約是「同尺寸」(avatar.spec.md「頭像堆疊」),所以取自己的直徑。PeoplePicker 量寬用的 +N 寬也從這裡來
- *(`avatar-stack-overflow.ts` AVATAR_STACK_OVERFLOW_CHIP_PX 直接指向本常數)。
+ * 堆疊契約是「同尺寸」(avatar.spec.md「頭像堆疊」),所以取自己的直徑。PeoplePicker 量寬的公式(`avatar-stack-overflow.ts`)
+ * 把 +N 圓當成跟頭像同尺寸的一格,不另讀寬度。
  */
 export const OVERFLOW_INDICATOR_CIRCLE_PX: Record<'sm' | 'md' | 'lg', number> = { sm: 20, md: 24, lg: 24 }
 

@@ -1223,7 +1223,7 @@ Deep mode 每 core story 跑現有 `theme-density` 4-cell(light/dark × density-
 
 對齊 GitHub Primer header + Ant Design Layout.Header + Material v1 AppBar 共識。Per chrome / overlay header tsx 跑 6 invariants:
 
-- **W1**:含 `<Tabs>` child 必有 `withTabs` prop(border 自動 suppress;手寫 `border-b-0` = 違反)
+- **W1**:Tabs 一律經 `tabsSlot` 進 header(border 自動 suppress;`<Tabs>` / `<TabsList>` 寫進 header children、手寫 `border-b-0` = 違反)
 - **W2**:tabs padding 必 = header padding(`px-[var(--layout-space-loose)]`),不可獨立 padding 值
 - **W3**:`--tab-height-lg` 必 == `--chrome-header-height`(md/lg 對等,token 公式 cross-check)
 - **W4**:header + tabs flush stack 必無 negative margin(`-mt-px` / `-mb-px` = 違反)
@@ -1236,7 +1236,7 @@ Your job: audit Header W1-W6 canonical invariants DS-wide.
 Coverage requirement(NO-SAMPLE STRICT):全 `packages/design-system/src/components/*/<X>.tsx` + `packages/design-system/src/patterns/chrome-header/**` + overlay surface header usage。
 
 For each header tsx:
-1. **W1** — grep `<Tabs` / `<TabsList` inside header — 若有 → require `withTabs` prop on header element。手寫 `border-b-0` / `border-b-transparent` 同步 flag
+1. **W1** — grep `<Tabs` / `<TabsList` inside header children — 若有 → 改用 header 的 `tabsSlot`。手寫 `border-b-0` / `border-b-transparent` 同步 flag
 2. **W2** — Tabs padding 必 reference `var(--layout-space-loose)`,不可硬寫 `px-N` 或別的 token
 3. **W3** — open components/Tabs/tabs.spec.md + tokens/uiSize/uiSize.spec.md verify `--tab-height-lg === --chrome-header-height`(兩顆住處以 tokens/token-registry.json 為準;計算公式對等;不等 = token drift)
 4. **W4** — grep `-mt-px` / `-mb-px` / `-mt-N` 在 header + tabs flush stack region = violation

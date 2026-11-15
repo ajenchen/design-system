@@ -140,7 +140,7 @@ export function demoPersonActions(name: string) {
  *
  * 2026-10-20 前同一段 ProfileCard 手抄在 5 支 story(item-anatomy 展示、Menu 展示、OverflowIndicator 展示 / 設計規格、Avatar 設計原則),
  * 每份都有同樣三個問題(M17:一份 bug 抄五次):
- * - 用 `fields` 傳兩個預設欄位(ProfileCard 的舊寫法,dev 會警告;預設欄名改成中文「員工編號」後會變成兩列重複);
+ * - 用 `fields` 傳兩個預設欄位(預設欄位的值該走 `defaultFieldValues`,dev 會警告;預設欄名改成中文「員工編號」後會變成兩列重複);
  * - 副標寫員工編號 EMP-1001、欄位卻是 1234567(同一張卡兩個員工編號);
  * - 狀態「線上」配狀態訊息「Out of Office: Back on Monday!」(自相矛盾;獨立驗證 OV-V01 同族)。
  * 這裡定一次:狀態「離開」配休假訊息(可傳別的狀態,狀態與訊息要成對)、預設欄位走 PersonData 的 id / employeeNumber、預設動作接 demoPersonActions。

@@ -216,7 +216,8 @@ export interface LinkInputProps
   label?: string
   /**
    * View 態是否包 Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 anchor,backward compat)。
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 anchor;預設值的理由待 user 定,
+   *   見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)包覆 anchor,
    * 與 cell edit (`<Input naked>`) 同 DOM 結構,消除 Layer-B padding mismatch。
    * **本元件沒有型別 icon**(edit 無 endIcon,UrlCell 用 plain Input edit)→ 這個開關只給 wrapper;
@@ -323,7 +324,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // ── mode='view' ─────────────────────────────────────────────────────
     // 純展示:無 input chrome / 無 hover affordance;編輯入口只有宿主給 `viewEditAction` 時才有(下方)。
     // 取代既有 LinkInputDisplay sub-component(2026-05-05 Phase B3 retire)。
-    // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor — backward compat;左側 0 與 contract (d)
+    // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor(預設值的理由待 user 定,見 prop docblock);左側 0 與 contract (d)
     // (view×default 左側歸 0、值齊標籤)結果相同,只少 h-field 高度,見 link-input.spec.md
     // 「View 模式幾何(不包 wrapper)」。
     // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper 包覆 anchor,

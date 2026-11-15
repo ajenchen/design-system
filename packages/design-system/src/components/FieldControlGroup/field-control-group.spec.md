@@ -52,13 +52,11 @@ benchmark:
 ```ts
 interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
   width?: 'hug' | 'fill'      // 預設 'hug' = inline-flex;'fill' = flex w-full(撐滿 parent)
-  /** @deprecated 改用 width="fill" */
-  block?: boolean             // 2026-11-15 前的名字,借自 Ant Space.Compact `block`([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L78))
 }
 ```
 
 **改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……舊名字保留一個版本,畫面不變。」):
-撐滿原本叫 `block`(外部 Ant 的名字蓋過了 DS 自己的 `fill` / `hug`,audit-r7 INV-06 / M23),改成全 DS 共用的 `width="fill"`;`block` 保留一個版本(`@deprecated`,同時傳以 `width` 為準),同一組 class,畫面不變。
+撐滿原本叫 `block`(借自 Ant Space.Compact `block`,[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L78);外部的名字蓋過了 DS 自己的 `fill` / `hug`,audit-r7 INV-06 / M23),改成全 DS 共用的 `width="fill"`,同一組 class。「舊名字保留一個版本」那一句已被 user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」取代(0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」):`block` 已移除、不留舊名。
 命名規則住 `ds-canonical/references/props-naming.md`「尺寸參數」。
 
 **子元件支援 list**(對齊 Ant Space.Compact 限定 list 策略,verified)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L64-L74)):

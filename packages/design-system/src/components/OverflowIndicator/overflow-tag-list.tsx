@@ -275,7 +275,7 @@ export interface OverflowTagListProps {
   /**
    * 2026-05-14 I4 fix(per codex M31 verdict + user 抓到 display overflow 有 avatar、edit 沒有):
    * Optional renderer for hidden items in `+N` overflow popover。Default fallback = `<Tag>{label}</Tag>`
-   * (純文字 chip,backward-compat)。Consumer pass 此 prop 讓 hidden items 顯示同 avatar 視覺
+   * (純文字 chip,一般選項只有文字標籤)。Consumer pass 此 prop 讓 hidden items 顯示同 avatar 視覺
    * (對齊 view path MultiPersonDisplay overflow popover Tag avatar SSOT)。
    * 第二個參數 = 這一項的移除(與 `renderTag` 的 Tag 同一條移除路徑,見 CustomCombobox `handleRemove`)。
    */
@@ -302,7 +302,7 @@ export interface OverflowTagListProps {
   overflowWrapperClassName?: string
   /**
    * Overflow indicator(+N)形狀(2026-05-12 Round 7 fix,user 抓 PeoplePicker stack +N 該圓形):
-   * - `'tag'`(default,backward-compat)— 矩形 chip(對齊 Combobox 文字 tag)
+   * - `'tag'`(預設)— 矩形 chip(跟它旁邊的文字 tag 同形狀;對齊 Combobox 文字 tag)
    * - `'circle'`(opt-in for avatar stack consumers)— 圓形 avatar-shape +N:跟它旁邊的圓形頭像同形狀,讀起來是「還有 N 個人」而不是一顆標籤
    * PeoplePicker stack mode pass `'circle'`,Combobox 文字 tag 自走 `'tag'`。
    */

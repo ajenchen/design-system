@@ -49,7 +49,9 @@
  *      `### N. \`key\` — …` ↔ 各列 `retain`,三方一致(保留分類原本住兩處、腳本另內建一份,`--brand` 因此被當孤兒)。
  *   C10 產品可讀的名字不得悄悄消失(2026-11-15):對照基準(與 main 的分岔點、HEAD),分類表登記產品可讀(product 不是 no)的
  *      名字、或指向這種名字的 Tailwind 轉接名,在基準有宣告、工作樹不再宣告 → 紅;除非它登記在分類表 `retired`
- *      (user 原話逐字、日期、標 deprecated 的版本、刪掉的版本,兩版不同 = 先保留一版的路)。基準沒有分類表時用工作樹的。
+ *      (user 原話逐字、日期;改名加 renamedTo 且新名字要有宣告)。基準沒有分類表時用工作樹的。
+ *      要不要「先保留一版」讀相容政策 scripts/lib/compat-policy.mjs(2026-11-15 user:「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」):
+ *      0.x / 預發布版同一版刪、不要求版本欄;1.0 以後的正式版 deprecatedIn / removedIn 必填且不同。讀不到政策 = 紅。
  *      user 原話(2026-11-15):「沒人用只是因為現在你的視角看不到消費者，但這個 token 真的是沒有意義的存在？」
  *   C11 用詞(2026-11-15):顏色的稱呼只在 `tokens/color/color.spec.md`「用詞」定義;那一段「不用的說法」行裡反引號的字
  *      (主題色 / 主操作色 / brand swap …)在設計系統原始碼與規格(`packages/design-system/src`、`packages/design-system/ds-canonical`,
@@ -68,8 +70,13 @@ import { join, dirname, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import ts from 'typescript'
+import { compatPolicyFor, readCompatPolicy, POLICY_DOC } from './lib/compat-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
+/** C10 的相容政策(唯一判斷住 scripts/lib/compat-policy.mjs);讀不到回 error,由 C10 判紅 */
+function loadCompatPolicy() {
+  try { return { compatPolicy: readCompatPolicy(REPO), compatPolicyError: null } } catch (e) { return { compatPolicy: null, compatPolicyError: String(e.message) } }
+}
 export const DS_ROOT = 'packages/design-system/src'
 export const REGISTRY_PATH = `${DS_ROOT}/tokens/token-registry.json`
 const AGGREGATOR = 'styles/tokens.css'
@@ -696,15 +703,23 @@ export function runChecks(ctx) {
   }
   ratchet(P.C9, 'unread', unread, known.unread, ctx.mainRegistry?.known?.unread, ctx.mainRegistry, (n) => `${n} 沒有任何執行期讀者(設計系統、apps/ 都沒有;轉接名自己那一行不算)${ownRow(n)?.class === 'shared' ? '、也不是一組級距 / 狀態裡有人讀的組員' : ''} —— 退場(刪宣告與分類表那一列),或產品端真的在讀就登記 known.productExternal(丙)`)
 
-  // C10 產品可讀的名字不得悄悄消失(2026-11-15)。產品不只本 repo 的 apps/ 與 WM:設計系統裡看不到讀者 ≠ 沒有讀者。
+  // C10 產品可讀的名字不得悄悄消失(2026-11-15)。產品不只本 repo 的 apps/ 與 WM:要不要退場由 user 決定。
   // 對照每個基準(與 main 的分岔點、HEAD):基準有宣告(整頁生效的宣告或 Tailwind 轉接名)、分類表登記產品可讀,
-  // 工作樹不再宣告 → 紅;登記在分類表 retired(user 原話 + 兩個版本)的放行。基準沒有分類表 → 用工作樹的分類表查 product。
+  // 工作樹不再宣告 → 紅;登記在分類表 retired(user 原話)的放行。基準沒有分類表 → 用工作樹的分類表查 product。
+  // 要不要「先保留一版」由相容政策決定(scripts/lib/compat-policy.mjs,讀 packages/design-system/package.json 的版本;
+  // 規則文字 props-naming.md「相容政策」):0.x / 預發布版同一版刪,不要求 deprecatedIn / removedIn;1.0 以後兩個版本必填且不同。
+  // 讀不到政策 = 紅(不得當成某一種政策放行)。
+  const policy = ctx.compatPolicy
+  if (!policy || (policy.mode !== 'no-compat' && policy.mode !== 'alias-one-release')) P.C10.push(`讀不到相容政策(${ctx.compatPolicyError ?? '沒有傳入'})—— 不知道退場要不要先保留一版,不是放行(${POLICY_DOC})`)
   const retiredOk = new Set()
   if (reg?.retired !== undefined && !Array.isArray(reg.retired)) P.C10.push('分類表 retired 必須是陣列')
   for (const e of Array.isArray(reg?.retired) ? reg.retired : []) {
-    const missing = ['name', 'quote', 'quoteDate', 'deprecatedIn', 'removedIn'].filter((k) => typeof e?.[k] !== 'string' || !e[k].trim())
-    if (missing.length) { P.C10.push(`retired 有一筆缺欄位(${missing.join(' / ')}):${JSON.stringify(e?.name ?? e)} —— 要 user 原話(逐字)、日期、標 deprecated 的版本、刪掉的版本`); continue }
-    if (e.deprecatedIn.trim() === e.removedIn.trim()) { P.C10.push(`retired ${e.name}:deprecatedIn 與 removedIn 是同一版 —— 先保留一版標 deprecated,下一版才刪`); continue }
+    const required = ['name', 'quote', 'quoteDate', ...(policy?.keepOldNames ? ['deprecatedIn', 'removedIn'] : [])]
+    const missing = required.filter((k) => typeof e?.[k] !== 'string' || !e[k].trim())
+    if (missing.length) { P.C10.push(`retired 有一筆缺欄位(${missing.join(' / ')}):${JSON.stringify(e?.name ?? e)} —— 要 user 原話(逐字)與日期${policy?.keepOldNames ? '、標 deprecated 的版本、刪掉的版本(1.0 以後的正式版先保留一版)' : ''}`); continue }
+    if (policy?.keepOldNames && e.deprecatedIn.trim() === e.removedIn.trim()) { P.C10.push(`retired ${e.name}:deprecatedIn 與 removedIn 是同一版 —— ${policy.version} 是正式版,相容政策要先保留一版標 deprecated,下一版才刪(${POLICY_DOC})`); continue }
+    if (e.renamedTo !== undefined && (typeof e.renamedTo !== 'string' || !e.renamedTo.trim())) { P.C10.push(`retired ${e.name}:renamedTo 是空的 —— 改名要寫新名字,刪除就不寫這一欄`); continue }
+    if (typeof e.renamedTo === 'string' && !m.allDecls.has(e.renamedTo.trim())) { P.C10.push(`retired ${e.name}:登記改名成 ${e.renamedTo},但工作樹沒有宣告 ${e.renamedTo} —— 新名字要同一版加上`); continue }
     retiredOk.add(e.name)
   }
   const goneReported = new Set()
@@ -726,7 +741,7 @@ export function runChecks(ctx) {
       const row = rowOf(target)
       if (!real(row) || row.product === 'no') continue
       goneReported.add(n)
-      P.C10.push(`${n}${alias ? `(${target} 的 Tailwind 轉接名)` : ''} 在基準「${base.label}」有宣告、分類表登記產品可讀(${row.match} 列 product: ${row.product}),工作樹不再宣告 —— 產品可讀的名字不以「設計系統 / WM 看不到讀者」為由刪;要退場由 user 決定,在分類表 retired 登記原話與版本(orphan-tokens.spec.md「退場流程」)`)
+      P.C10.push(`${n}${alias ? `(${target} 的 Tailwind 轉接名)` : ''} 在基準「${base.label}」有宣告、分類表登記產品可讀(${row.match} 列 product: ${row.product}),工作樹不再宣告 —— 產品可讀的名字要不要退場由 user 決定,在分類表 retired 登記原話(改名加 renamedTo;版本欄看相容政策),並登記發布說明(orphan-tokens.spec.md「退場流程」)`)
     }
   }
 
@@ -793,7 +808,7 @@ const LABEL = {
   C6: 'C6 樣式檔有進對外彙總檔或被程式匯入',
   C7: 'C7 誰可以讀(產品 / 設計系統讀原料 / 元件的值主人規格點名 ↔ 分類表)',
   C9: 'C9 不該有全系統的名字:只有主人自己在讀又不切換(含甲:唯一讀者只在程式裡量值)/ 只當同檔公式的中間值卻沒寫明(乙)/ 沒有任何讀者(丙;寫了保留類別 retain 的不算)',
-  C10: 'C10 產品可讀的名字(含它的 Tailwind 轉接名)不得悄悄消失:不再宣告就要在分類表 retired 登記 user 原話與版本',
+  C10: 'C10 產品可讀的名字(含它的 Tailwind 轉接名)不得悄悄消失:不再宣告就要在分類表 retired 登記 user 原話(版本欄看相容政策)',
   C11: 'C11 用詞:品牌色 / 互動色 / 主題不混用(清單住 color.spec.md「用詞」)',
 }
 
@@ -812,7 +827,8 @@ function main() {
     process.exit(1)
   }
   const termFiles = readTermFiles()
-  const { problems, info } = runChecks({ files, registry, mainNames: base.mainNames, mainRegistry: base.mainRegistry, readSpec: readSpecFromDisk, bases: bc.bases, termFiles })
+  const { compatPolicy, compatPolicyError } = loadCompatPolicy()
+  const { problems, info } = runChecks({ files, registry, mainNames: base.mainNames, mainRegistry: base.mainRegistry, readSpec: readSpecFromDisk, bases: bc.bases, termFiles, compatPolicy, compatPolicyError })
   if (process.argv.includes('--inventory')) {
     for (const [n, why] of [...info.need].sort()) {
       const h = lookup(registry?.rows ?? [], n)
@@ -828,7 +844,7 @@ function main() {
     for (const p of list) console.log(`    ${p}`)
     fail += list.length
   }
-  console.log(`\n基準 ${base.ref}${base.mainRegistry === undefined ? '(main 上還沒有分類表 —— 已知名單從這一版開始只能變短)' : ''};C10 對照 ${bc.bases.map((b) => `${b.label}${b.registry ? '' : '(沒有分類表,用工作樹的)'}`).join(' / ')};C11 掃了 ${termFiles.size} 個檔`)
+  console.log(`\n基準 ${base.ref}${base.mainRegistry === undefined ? '(main 上還沒有分類表 —— 已知名單從這一版開始只能變短)' : ''};C10 對照 ${bc.bases.map((b) => `${b.label}${b.registry ? '' : '(沒有分類表,用工作樹的)'}`).join(' / ')};C10 相容政策 ${compatPolicy ? `${compatPolicy.mode}(${compatPolicy.version})` : '讀不到'};C11 掃了 ${termFiles.size} 個檔`)
   console.log(`需要登記的名字 ${info.need.size} 個 / 分類表 ${registry?.rows?.length ?? 0} 列 / 已知缺規格 ${info.missingSpec.length} / 已知缺回復 ${info.missingRestore.length} / 掃了 ${files.size} 個檔`)
   console.log(fail ? `✗ ${fail} 項未通過` : '✓ Token 建立不變式:全通過')
   process.exit(fail ? 1 : 0)
@@ -849,7 +865,10 @@ function selftest() {
   // C10 的基準 = 工作樹本身(現況比自己 → 0 個消失);C11 掃現況的設計系統原始碼與規格
   const termFiles = readTermFiles()
   const selfBase = [{ label: '對照基準(工作樹本身)', files, registry }]
-  const run = (over) => runChecks({ files, registry, mainNames, mainRegistry: registry, readSpec: readSpecFromDisk, bases: selfBase, termFiles, ...over })
+  // 相容政策:每一格明確傳入固定政策 —— 預設 compatPolicyFor('0.1.0-beta.148')(0.x),C10 的正式版格另外傳 compatPolicyFor('1.0.0');
+  // 不讀 repo 現在的版本(版號一變,標成「0.x」的格子不能跟著變意思;M37)。讀 repo 的那條路由迴圈後「量具」一格單獨證明。
+  const fixedBetaPolicy = compatPolicyFor('0.1.0-beta.148')
+  const run = (over) => runChecks({ files, registry, mainNames, mainRegistry: registry, readSpec: readSpecFromDisk, bases: selfBase, termFiles, compatPolicy: fixedBetaPolicy, compatPolicyError: null, ...over })
   const BTN = `${DS_ROOT}/components/Button/fixture-raw.tsx`
   const cases = [
     // C1
@@ -990,7 +1009,12 @@ function selftest() {
       const dropDecl = (path, ...names) => withFiles({ [path]: names.reduce((t, n) => drop(t, path, line(n)), files.get(path)) })
       const noBrand = dropDecl(SEM, '--brand')
       const noBrandBoth = dropDecl(SEM, '--brand', '--color-brand')
-      const entry = (name, o = {}) => ({ name, quote: '(對照組用的假原話)', quoteDate: '2026-11-15', deprecatedIn: '0.1.0-beta.900', removedIn: '0.1.0-beta.901', ...o })
+      const entry = (name, o = {}) => ({ name, quote: '(對照組用的假原話)', quoteDate: '2026-11-15', ...o })
+      const versions = { deprecatedIn: '1.0.0', removedIn: '1.1.0' }
+      const stable = compatPolicyFor('1.0.0')
+      // 改名:--brand 刪掉、同一版加上新名字 --brand-renamed(只看 C10;新名字沒登記分類表的 C1 / C2 不在這幾格判)
+      const renamedFiles = new Map(noBrandBoth)
+      renamedFiles.set(SEM, `${noBrandBoth.get(SEM)}\n:root { --brand-renamed: #df3232; }\n`)
       const withRetired = (list) => { const r = clone(registry); r.retired = list; return r }
       const regEdit = (fn) => { const r = clone(registry); fn(r); return r }
       const ORPHAN = `${DS_ROOT}/tokens/orphan-tokens.spec.md`
@@ -1003,9 +1027,16 @@ function selftest() {
         ['C10', true, '--spacing-tree-indent-md', '刪掉樹狀縮排的轉接名(本尊 --tree-indent-* 產品可讀)', () => run({ files: dropDecl(UI, '--spacing-tree-indent-md') })],
         ['C10', true, '--radius-sm', '刪掉產品可讀的圓角刻度(@theme 裡直接給值的那種)', () => run({ files: dropDecl(RAD, '--radius-sm') })],
         ['C10', false, '--motion-duration-surface', '刪掉 product: no 的動畫時長(產品不讀,刪是設計系統內部的事)', () => run({ files: dropDecl(MO, '--motion-duration-surface') })],
-        ['C10', false, '--brand', '同樣刪掉兩顆,但分類表 retired 登記了原話與兩個版本', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand'), entry('--color-brand')]) })],
+        // 相容政策(scripts/lib/compat-policy.mjs):0.x 同一版刪、不要求版本欄;1.0 以後兩個版本必填且不同
+        ['C10', false, '--brand', '0.x:同樣刪掉兩顆,分類表 retired 登記了原話(不要求版本欄,同一版刪)', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand'), entry('--color-brand')]) })],
+        ['C10', false, '--brand', '0.x:寫了 deprecatedIn = removedIn(同一版刪)也綠 —— 2026-11-15 前這格是紅', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', { deprecatedIn: '0.1.0-beta.149', removedIn: '0.1.0-beta.149' }), entry('--color-brand')]) })],
         ['C10', true, '--brand', 'retired 那一筆沒有 user 原話', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', { quote: ' ' }), entry('--color-brand')]) })],
-        ['C10', true, '--brand', 'retired 那一筆 deprecatedIn = removedIn(沒有先保留一版)', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', { removedIn: '0.1.0-beta.900' }), entry('--color-brand')]) })],
+        ['C10', true, '--brand', '1.0 正式版政策:retired 沒寫兩個版本 → 紅(政策真的被讀到)', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand'), entry('--color-brand', versions)]), compatPolicy: stable })],
+        ['C10', true, '--brand', '1.0 正式版政策:deprecatedIn = removedIn(沒有先保留一版)→ 紅', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', { deprecatedIn: '1.0.0', removedIn: '1.0.0' }), entry('--color-brand', versions)]), compatPolicy: stable })],
+        ['C10', false, '--brand', '1.0 正式版政策:兩個版本不同 → 綠', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', versions), entry('--color-brand', versions)]), compatPolicy: stable })],
+        ['C10', true, '相容政策', '讀不到相容政策 → 紅(不得當成某一種政策放行)', () => run({ compatPolicy: null, compatPolicyError: '對照組:沒有版本號' })],
+        ['C10', true, '--brand', '改名:renamedTo 指向工作樹沒有宣告的名字 → 紅', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', { renamedTo: '--brand-renamed' }), entry('--color-brand')]) })],
+        ['C10', false, '--brand', '改名:renamedTo 指向同一版加上的新名字 → 綠', () => run({ files: renamedFiles, registry: withRetired([entry('--brand', { renamedTo: '--brand-renamed' }), entry('--color-brand')]) })],
         // C1:保留類別 規格 ↔ 分類表 ↔ 各列 retain
         ['C1', true, 'type-scale', '分類表 retention 拿掉一類、規格還寫著', () => run({ registry: regEdit((r) => { r.retention.categories = r.retention.categories.filter((c) => c.key !== 'type-scale') }) })],
         ['C1', true, 'reservation', '規格拿掉一類的標題、分類表還有', () => run({ readSpec: (p) => (p.endsWith(ORPHAN) ? drop(readSpecFromDisk(p), ORPHAN, /^### 9\. `reservation` — [^\n]*\n/m) : readSpecFromDisk(p)) })],
@@ -1036,6 +1067,15 @@ function selftest() {
     const hits = problems[check].filter((p) => p.includes(name))
     const pass = expectRed ? hits.length > 0 : hits.length === 0
     console.log(`${pass ? '✓' : '✗'} ${check} ${expectRed ? '該紅' : '該綠'}:${label}(${name})${pass ? '' : ` —— 實得 ${problems[check].join(' / ') || '沒有問題'}`}`)
+    if (!pass) ok = false
+  }
+  // 量具:正式掃描(main)用的 loadCompatPolicy() 讀得到 repo 的版本,判出來的政策 = package.json 版本號直接判的。
+  // 用途只有證明讀版本那條路沒壞;不斷言 repo 是哪一版(版號改成 1.0.0 這一格照樣綠)。
+  {
+    const live = loadCompatPolicy()
+    const pkgVersion = JSON.parse(readFileSync(join(REPO, 'packages/design-system/package.json'), 'utf8')).version
+    const pass = live.compatPolicy !== null && live.compatPolicy.version === pkgVersion && live.compatPolicy.mode === compatPolicyFor(pkgVersion).mode
+    console.log(`${pass ? '✓' : '✗'} 量具:正式掃描讀到的相容政策 = package.json 的 ${pkgVersion} 判出來的${pass ? `(${live.compatPolicy.mode})` : ` —— 實得 ${live.compatPolicy ? `${live.compatPolicy.version} / ${live.compatPolicy.mode}` : live.compatPolicyError}`}`)
     if (!pass) ok = false
   }
   for (const k of Object.keys(LABEL)) {

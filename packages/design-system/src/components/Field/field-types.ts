@@ -35,7 +35,7 @@ export type FieldMode = 'edit' | 'view' | 'readonly' | 'disabled'
 // **`bare` 退役紀錄(2026-07-09)**:原「透明外殼、hover/focus 才顯 border」variant,2026-05-05 加入時
 //   宣稱用途 = toolbar inline editing(FileViewer zoom / config toolbar)。實測全 repo(DS + apps + stories)
 //   `variant="bare"` **零真實 JSX 消費者**:唯一出現處是一個 ❌ 反例 story + 過時註解(含錯誤宣稱 FileViewer
-//   縮放用 bare — 實為 `<Input size="sm" autoWidth>` default variant)。其目標場景已被 default(toolbar,
+//   縮放用 bare — 實為 default variant 的跟內容寬小輸入框;今天的寫法是 `<Input size="sm" width="hug">`,`autoWidth` 2026-11-15 已移除)。其目標場景已被 default(toolbar,
 //   對齊「邊框給互動元素、輸入框就該有邊框」原則)與 naked(cell-as-input)覆蓋 → 純冗餘,移除。
 //   ⚠️ 注意:被大量 import 的 `bareInputStyles` 常數(field-wrapper.tsx)是**內層 <input> 的重置樣式**
 //   (透明底 / 無 border / 繼承字體),與本 variant 同名但不同物,**保留不動**(8 個控件共用)。
@@ -86,7 +86,7 @@ export type WithFieldVariantInternal<C> = C extends (props: infer P) => infer R
 //
 // 2026-11-15 尺寸參數收成一套(user 2026-11-11 回覆「尺寸:甲」;甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、
 // "hug"(跟內容)或數字;高度同理;上下限叫 minWidth / maxWidth;大小檔位叫 size。輸入框、下拉需要固定寬時也用 width 填數字。
-// 舊名字保留一個版本,畫面不變。」):欄位家族的 width 多收數字 = 固定寬(px)。全 DS 的規則住
+// 舊名字保留一個版本,畫面不變。」;其中「舊名字保留一個版本」已被 user 2026-11-15 原話取代 —— 0.x 不留舊名,見 props-naming.md「相容政策」):欄位家族的 width 多收數字 = 固定寬(px)。全 DS 的規則住
 // `ds-canonical/references/props-naming.md`「尺寸參數」(唯一住處),這裡只放型別。
 
 /** 寬 / 高的模式詞:`fill` 撐滿容器、`hug` 跟內容。全 DS 的「撐滿 / 跟內容」只准用這兩個字(props-naming.md「尺寸參數」)。 */

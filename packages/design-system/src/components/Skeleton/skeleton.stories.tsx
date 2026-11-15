@@ -1,9 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { Skeleton } from './skeleton'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
 /**
@@ -54,7 +53,7 @@ interface TaskLoadingRow {
 
 const TASK_LOADING_ROWS: TaskLoadingRow[] = Array.from({ length: 5 }, (_, i) => ({ id: `task-loading-${i + 1}` }))
 
-const taskLoadingColumns: ColumnDef<TaskLoadingRow>[] = [
+const taskLoadingColumns: DataTableColumnDef<TaskLoadingRow>[] = [
   { id: 'key', header: '編號', meta: { width: 110 }, cell: () => <Skeleton className="h-4 w-16" /> },
   { id: 'title', header: '標題', meta: { width: 280 }, cell: () => <Skeleton className="h-4 w-56" /> },
   { id: 'status', header: '狀態', meta: { width: 120 }, cell: () => <Skeleton className="h-6 w-16 rounded-full" /> },
@@ -81,7 +80,7 @@ interface LoadingRow {
 
 const LOADING_ROWS: LoadingRow[] = Array.from({ length: 4 }, (_, i) => ({ id: `loading-${i + 1}` }))
 
-const loadingColumns: ColumnDef<LoadingRow>[] = [
+const loadingColumns: DataTableColumnDef<LoadingRow>[] = [
   { id: 'txn', header: '交易編號', meta: { width: 160 }, cell: () => <Skeleton className="h-4 w-28" /> },
   { id: 'amount', header: '金額', meta: { width: 110, align: 'right' }, cell: () => <Skeleton className="h-4 w-16" /> },
   {

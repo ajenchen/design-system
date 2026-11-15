@@ -15,8 +15,8 @@
  *            **順序**(2026-11-15 B12,【AI 推導】):順序也算進預設 —— 只改順序也出現;
  *            按下順序回到 `defaultColumnOrder`(面板那幾欄;面板沒列的 id 如選取欄留在原位),沒傳 = `columns` 定義順序、鎖定欄排最前;
  *            只傳 `defaultColumnOrder` = 預設全部顯示;兩個預設都不傳 = 不出現。
- *        (4b) 欄位顯示面板的**固定零件**(2026-11-15,data-table.spec.md L4「欄位顯示面板的固定零件」;M23(f)):搜尋框恆在(不傳 `searchable`
- *            也在、傳 `searchable={false}` 也在 —— 它已棄用、不作用);每一個沒鎖的欄位列都有拖曳把手,鎖定欄沒有把手、有鎖頭;
+ *        (4b) 欄位顯示面板的**固定零件**(2026-11-15,data-table.spec.md L4「欄位顯示面板的固定零件」;M23(f)):搜尋框恆在(2026-11-15 前的開關
+ *            參數 `searchable` 已移除,0.x 不留舊名);每一個沒鎖的欄位列都有拖曳把手,鎖定欄沒有把手、有鎖頭;
  *            consumer 的 `columnOrder` 從 `[]` 開始也拖得動(順序改了)、沒寫到的面板欄照 `columns` 接在後面照樣列出來(順序必填之後的配套,【AI 推導】)。
  *            2026-11-15 前「沒接順序 = 只比顯示」「只給 columnOrder 沒給 onColumnOrderChange」兩列已拿掉:兩個參數必填,那種接法型別層不再允許。
  *        (5) 排序面板 `labels`(2026-11-15 A11 開放;data-table.spec.md「Multi-sort header」列的字串那一句):傳一整份自訂字,每個字畫在
@@ -282,17 +282,10 @@ const MUTANTS = [
   // ── 固定零件(4b,2026-11-15):把搜尋 / 拖曳改回選配 → 紅 ──
   {
     id: 'vis-search-opt-in',
-    what: '欄位顯示面板修前:搜尋框要另外傳 searchable 才有(預設關;harness 照新寫法不傳 → 沒有搜尋框)',
+    what: '欄位顯示面板修前:搜尋框要另外傳 searchable 才有(預設關;harness 不傳 → 沒有搜尋框)',
     file: VIS,
-    expectRed: ['vis-search-shown', 'vis-search-ignores-deprecated'],
-    apply: (src) => replaceOnce(src, VIS_SEARCH_BLOCK, '{deprecatedSearchable && ($&)}'),
-  },
-  {
-    id: 'vis-search-honors-false',
-    what: '欄位顯示面板預設有搜尋框、但 searchable={false} 還是關得掉(棄用參數仍作用)',
-    file: VIS,
-    expectRed: ['vis-search-ignores-deprecated'],
-    apply: (src) => replaceOnce(src, VIS_SEARCH_BLOCK, '{deprecatedSearchable !== false && ($&)}'),
+    expectRed: ['vis-search-shown'],
+    apply: (src) => replaceOnce(src, VIS_SEARCH_BLOCK, '{false && ($&)}'),
   },
   {
     id: 'vis-drag-opt-in',
@@ -577,8 +570,6 @@ const SCENES = {
   // 拖過,但兩個預設都沒傳
   'vis-order-nodefault': { panel: 'vis', value: {}, locked: ['key'], order: VIS_DRAGGED_ORDER },
   // ── 固定零件(4b,2026-11-15)──
-  // 還傳著已棄用的 searchable={false}(搜尋框照樣在);其餘與預設相同
-  'vis-searchable-false': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, locked: ['key'], searchable: false },
   // consumer 的 columnOrder 從 TanStack 的初始值 [] 開始(照 columns 列出、拖得動)
   'vis-order-empty': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, locked: ['key'], order: [] },
   // consumer 的 columnOrder 只寫到兩欄(其餘照 columns 接在後面,照樣列出來)
@@ -625,9 +616,8 @@ function Panel({ scene }) {
     )
   }
   if (s.panel === 'vis') {
-    const deprecated = s.searchable !== undefined ? { searchable: s.searchable } : {}
     return <DataTableColumnVisibilityPanel className="w-72" columns={s.cols || VIS_COLS} visibility={value} onVisibilityChange={setValue}
-      columnOrder={order} onColumnOrderChange={setOrder} defaultVisibility={s.def} defaultColumnOrder={s.defOrder} lockedIds={s.locked} {...deprecated} {...(s.w || {})} />
+      columnOrder={order} onColumnOrderChange={setOrder} defaultVisibility={s.def} defaultColumnOrder={s.defOrder} lockedIds={s.locked} {...(s.w || {})} />
   }
   if (s.panel === 'sort') return <DataTableSortManager columns={SORT_COLS} sorting={value} onSortingChange={setValue} defaultSorting={s.def} labels={s.labels} {...extra} />
   return <DataTableFilterPanel columns={FILTER_COLS} value={value} onChange={setValue} defaultValue={s.def} maxConditions={s.maxConditions} {...extra} />
@@ -951,9 +941,7 @@ async function runChecks(page) {
   check('vis-row-handles', 'contract', `欄位顯示面板:每一個沒鎖的欄位列都有拖曳把手(鍵值鎖定 → ${VIS_IDS.length - 1} 列)`,
     unlocked.length === VIS_IDS.length - 1 && unlocked.every((r) => r.handle), { rows: orderOnly.rows })
   check('vis-locked-no-handle', 'contract', '欄位顯示面板:鎖定欄沒有拖曳把手、有鎖頭', locked.length === 1 && locked.every((r) => !r.handle && r.lock), { rows: orderOnly.rows })
-  check('vis-search-shown', 'contract', '欄位顯示面板:搜尋框恆在(不傳 searchable)', visModified.search && orderOnly.search, { modified: visModified.search, orderOnly: orderOnly.search })
-  const searchableFalse = await scene('vis-searchable-false')
-  check('vis-search-ignores-deprecated', 'contract', '欄位顯示面板:還傳著已棄用的 searchable={false} → 搜尋框照樣在(參數不作用)', searchableFalse.search, { search: searchableFalse.search })
+  check('vis-search-shown', 'contract', '欄位顯示面板:搜尋框恆在(沒有開關參數)', visModified.search && orderOnly.search, { modified: visModified.search, orderOnly: orderOnly.search })
   const orderPartial = await scene('vis-order-partial')
   check('vis-order-partial-listed', 'contract', `欄位顯示面板:consumer 的 columnOrder 只寫到 2 欄 → 面板照樣列出全部 ${VIS_IDS.length} 欄(沒寫到的照 columns 接在後面)`,
     orderPartial.rows.length === VIS_IDS.length, { rows: orderPartial.rows.map((r) => r.label) })

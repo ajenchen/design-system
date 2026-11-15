@@ -1,7 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
@@ -16,7 +15,7 @@ import { DescriptionList, DescriptionItem } from '@/design-system/components/Des
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Command, CommandList, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 
@@ -553,7 +552,7 @@ const IMPORT_PREVIEW_ROWS: ImportPreviewRow[] = [
 ]
 // 欄位型別 string:純文字格走 DataTable 的單行截斷(data-table.spec.md「Cell 單行截斷原則」);每欄給保留寬(meta.width,同 data-table.stories 的 Product 欄),
 // 合計 576 放得進 lg 的內容寬(md 密度 608、lg 密度 592)—— 選檔規則「內容不得橫向捲動」(dialog.spec.md「寬度檔位」);多出來的寬由欄自己長滿
-const IMPORT_PREVIEW_COLUMNS: ColumnDef<ImportPreviewRow>[] = [
+const IMPORT_PREVIEW_COLUMNS: DataTableColumnDef<ImportPreviewRow>[] = [
   { accessorKey: 'title', header: '標題', meta: { type: 'string', width: 232 } },
   { accessorKey: 'assignee', header: '指派人', meta: { type: 'string', width: 128 } },
   { accessorKey: 'status', header: '狀態', meta: { type: 'string', width: 96 } },
@@ -672,6 +671,7 @@ function TaskDetailTwoColumnDialog() {
               <div className="min-w-0 flex-1">
                 <Input aria-label="留言" placeholder="寫下留言,按送出" value={draft} onChange={(e) => setDraft(e.target.value)} />
               </div>
+              {/* @submit-intent: composer — 這是留言輸入盒,不是建立表單;沒寫字時送出沒有東西可送,停用與 AgentPanel 對話輸入同一種做法 */}
               <Button variant="primary" disabled={!draft.trim()} onClick={send}>送出</Button>
             </DialogFooter>
           </div>

@@ -59,7 +59,7 @@ export const Overview: Story = {
                 ['  value / defaultValue', 'string', '必填', '當前 value(Radix ToggleGroup type="single"),必須落在可選 item 上'],
                 ['  onValueChange', '(value: string) => void', '—', '切換 callback'],
                 ['  size', "'xs' | 'sm' | 'md' | 'lg'", "'md'", '對齊 --field-height-*(跟 Button / Input 同,field-height family 共享 default md)'],
-                ['  width', "'hug' | 'fill'", "'hug'", 'hug 跟內容 vs fill 撐滿父容器並等分(舊名 fullWidth 已停用)'],
+                ['  width', "'hug' | 'fill'", "'hug'", 'hug 跟內容 vs fill 撐滿父容器並等分'],
                 ['  iconOnly', 'boolean', 'false', 'group-level:全部 icon-only(必須整組一致,不可混搭)'],
                 ['  disabled', 'boolean', 'false', '整個 SegmentedControl 停用'],
                 ['SegmentedControlItem', '', '', ''],

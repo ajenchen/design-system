@@ -40,7 +40,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 ### SurfaceHeader
 - 根節點帶 `data-slot="surface-header"`(column mode 與單列 mode 兩個分支都帶)
-- `border-b border-divider`(上下分隔;**例外**:`withTabs` / `tabsSlot` 時撤 border-b,由 tabs underline 接管 paint,`tabsSlot` 並自動切 column mode — 契約 SSOT 見 `patterns/header-canonical/header-canonical.spec.md` W1 / W2)
+- `border-b border-divider`(上下分隔;**例外**:給了 `tabsSlot` 時撤 border-b,由 tabs underline 接管 paint,並自動切 column mode — 契約 SSOT 見 `patterns/header-canonical/header-canonical.spec.md` W1 / W2)
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - `flex items-center gap-2 shrink-0`(不被 flex-grow 壓縮)
 - **標題區(浮層標題區的唯一住所;Dialog / Sheet / Popover / 決策卡各自的規格只指回這裡)**:左欄由上而下 =〔小標〕〔標題〕〔說明〕,右側 =〔操作〕〔分隔線〕〔×〕(× 永遠最右;排法見下方「右側按鈕位」)。**小標、說明預設都不出現,兩者不同時用**;都需要時說明寫進內文。
@@ -53,7 +53,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
-- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:186 恆套)矛盾。consumer 依浮層類型:
+- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 不起作用,放在任何容器都安全)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:186 恆套)矛盾。consumer 依浮層類型:
 - **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScrollKeyboard` story(test-only)的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
   - **Dialog / Sheet**:consumer **不直接 wrap SurfaceBody**——走 ScrollArea canonical(下節),padding 搬到 ScrollArea viewport 內層 div
@@ -197,7 +197,7 @@ search 列放 body 外(不跟清單捲),自帶 `px-loose pt-tight`、下方不�
 不要另外用表單控制項(`CheckboxGroup` + 裸 `Checkbox`)自組。
 
 - **為什麼**:同一個「從清單裡挑」的互動,不該因為容器是下拉選單還是浮層就長得不一樣。
-  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:383`),DataTable 的欄位顯示面板也已經是
+  `DropdownMenu` 已經是選單列(`dropdown-menu.tsx:380`),DataTable 的欄位顯示面板也已經是
   (`data-table-column-visibility-panel.tsx#DataTableColumnVisibilityPanel`)—— 篩選面板原本是唯一的例外,是漂移不是設計。
 - **點一下就生效、還是要按 CTA 才 commit,不影響本條**:那是上一段「更高層設計判斷」在決定容器,
   跟列用什麼元件是兩個獨立的軸。

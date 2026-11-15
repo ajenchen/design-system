@@ -530,8 +530,6 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
    * 單一 Field 可以用自己的 `labelWidth` prop 覆寫 cascade 值。
    */
   labelWidth?: number | string
-  /** @deprecated 2026-11-15 起改用 `labelWidth`(與單一 Field 同名;「尺寸:甲」)。保留一個版本,行為與畫面不變;同時傳時以 `labelWidth` 為準。 */
-  horizontalLabelWidth?: string
 }
 
 // 欄位垂直間距 = `--layout-space-loose`,**不開放 per-instance 選檔**(2026-09-12 user 拍板)。
@@ -551,9 +549,7 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 // md density 下新舊值都是 16px,所以 33 個用法裡 32 個視覺零變化;lg 下從凍結的 16px 變成 24px,
 // 也就是開始履行 density 的承諾。
 const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
-  ({ className, labelWidth: labelWidthProp, horizontalLabelWidth, ...props }, ref) => {
-    // 舊名 horizontalLabelWidth(deprecated)只在沒傳 labelWidth 時生效
-    const labelWidth = labelWidthProp ?? horizontalLabelWidth
+  ({ className, labelWidth, ...props }, ref) => {
     const groupCtxValue = React.useMemo(
       () => ({ labelWidth }),
       [labelWidth],

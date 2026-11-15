@@ -117,6 +117,21 @@ F7=$(make_fixture "packages/design-system/src/components/Qux/qux.tsx" 'export co
 run_hook "$F7"
 expect_violation "7. contract (b) emptyPlaceholder={noResults} → violation" "contract (b) placeholder vocabulary"
 
+# 8. Contract (b) 2026-11-15:已移除的舊名寫回 props 型別 → violation(不論接的是什麼值)
+F8=$(make_fixture "packages/design-system/src/components/Combobox/combobox.tsx" 'export interface ComboboxProps {
+  placeholder?: string
+  emptyPlaceholder?: string
+}')
+run_hook "$F8"
+expect_violation "8. contract (b) 舊名 emptyPlaceholder?: string 寫回 → violation" "contract (b) placeholder vocabulary"
+
+# 9. Contract (b) 對照:註解裡提到舊名(改名紀錄)→ silent;placeholder 本身 → silent
+F9=$(make_fixture "packages/design-system/src/components/Combobox/combobox.tsx" '/** 無值時的提示文字(2026-11-15 前另有舊名 `emptyPlaceholder`,已移除) */
+// 舊名 emptyPlaceholder 已移除
+export const Combobox = ({ placeholder = "選擇…" }) => <span>{placeholder}</span>;')
+run_hook "$F9"
+expect_pass_silent "9. contract (b) 註解提到舊名 + placeholder → silent"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

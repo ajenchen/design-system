@@ -905,7 +905,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 </div>
 ```
 
-自己寫的元件優先用具體的 disabled 色彩（如 `text-fg-disabled`、`bg-[var(--bg-disabled)]`）。`opacity-disabled` 僅作為逃生艙，適用於無法逐一替換內部顏色的場景（第三方元件、複雜多層結構如 Switch）。
+自己寫的元件何時換色、何時整塊套 `opacity-disabled`,唯一住處是 `../opacity/opacity.spec.md`「何時用 opacity vs token swap」(多層結構換色;結構簡單、子元素多的整塊套透明度,例 Avatar、Switch thumb、Rating);這裡只補第三方元件這一種場景。
 
 ## shadcn Compat Aliases(已清除,2026-04-18)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/app/globals.css#L101-L118))
 

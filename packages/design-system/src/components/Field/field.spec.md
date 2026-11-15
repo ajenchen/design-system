@@ -330,7 +330,7 @@ Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
 
 **同一個值只有一個名字**(2026-11-15,user 2026-11-11 決策頁「尺寸:甲」):群組層與單一 Field 層管的是同一個值(水平排版時的 label 欄寬),
 原本群組層叫 `horizontalLabelWidth`、單一 Field 叫 `labelWidth` = 一個值兩個名字。群組層改名 `labelWidth`,型別一併收數字(px);
-舊名 `horizontalLabelWidth` 保留一個版本(`@deprecated`,同時傳以 `labelWidth` 為準),行為與畫面不變。【AI 推導 2026-11-15:把這一對收成同名是「尺寸:甲」的落地,
+舊名 `horizontalLabelWidth` 已移除、不留舊名(user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」)。【AI 推導 2026-11-15:把這一對收成同名是「尺寸:甲」的落地,
 user 原話沒有點名這個參數;依據是盤點 audit-r7 INV-14 列在甲案遷移清單裡】
 
 ---

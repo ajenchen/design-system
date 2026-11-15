@@ -11,7 +11,7 @@
 # 4 lib helpers:
 #   _chrome_header_handcraft.sh        — Layer 3 consumption enforcement(自刻 chrome header className)
 #   _app_shell_primary_header_consistency.sh — primary-header layout 必傳 globalHeader prop
-#   _header_with_tabs_border.sh        — Header + Tabs 必標 withTabs prop(border auto-suppress)
+#   _header_with_tabs_border.sh        — Header 帶 Tabs 一律走 tabsSlot(寫進 children = 雙線,擋)
 #   _tab_lg_chrome_header_equal.sh     — `--tab-height-lg` 必等 `--chrome-header-height` token
 #
 # Each helper:reads stdin INPUT,jq-parses tool_input.file_path,scope-filters。
@@ -45,7 +45,7 @@ CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/chrome-header-dispatch.XXXXXX") || {
 trap 'rm -rf "$CAPTURE_DIR"' EXIT
 HELPER_INDEX=0
 
-# Blocking helpers(SSOT canonical deterministic:primary-header / withTabs border /
+# Blocking helpers(SSOT canonical deterministic:primary-header / tabsSlot border /
 # token pixel equal / chrome-header handcraft)。
 for helper in \
   "$LIB_DIR/_app_shell_primary_header_consistency.sh" \

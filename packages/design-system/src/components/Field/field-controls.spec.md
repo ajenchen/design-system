@@ -221,7 +221,7 @@ consumer 明寫的 `style.width` 仍勝過它。全 DS 尺寸參數的命名規�
 
 - 鋪線範圍:`fieldWrapperStyles` cva 軸(SSOT,`fill` / `hug` / `fixed`)+ `fieldWidthVariant` / `fieldWidthStyle`(`field-wrapper.tsx`,所有收 `FieldWidth` 的控件一律經這兩支)
   + Select / Combobox / DatePicker / DatePicker.Range / PeoplePicker / TimePicker 轉發 `width?: FieldWidth`(型別 `Field/field-types.ts`);
-  Input 收 `FieldWidth`(`hug` = 舊名 `autoWidth` 的 field-sizing 做法,`autoWidth` 保留一個版本);NumberInput / LinkInput 收 `'fill' | 數字`
+  Input 收 `FieldWidth`(`hug` = field-sizing 做法;2026-11-15 前叫 `autoWidth`,已移除);NumberInput / LinkInput 收 `'fill' | 數字`
   (依內容寬會隨輸入跳動、目前沒有情境,不開【AI 推導 2026-11-15;TimePicker 補 `width` 同為 AI 判斷,user 原話沒有點名這三個元件】)。Input / NumberInput / LinkInput 的 HTML 原生 `width` / `height` 已從型別拿掉 ——
   `<input type="text">` 的這兩個屬性沒有作用,留著 = 寫了不報錯也不生效(audit-r7 INV-02)。Textarea 不在這條軸上(多行輸入一律撐滿)。
 - **何時不用**:form 直欄(fill 對齊)、DataTable cell(naked 已 `!h-full` 滿格,cell 寬由 column 管)
@@ -364,7 +364,7 @@ View 的消費者:
 - **InlineEdit view 態**:委派 `<Control mode="view">` 取格式化,幾何由 InlineEdit 外包的 `fieldViewGeometry` 給(見上方「InlineEdit ≠ mode ≠ variant」(a))
 - **Field readonly 模式**:內部使用相同的格式化邏輯
 
-**LinkInput / PeoplePicker 預設 view 路徑不包 wrapper**(code 為準,2026-07-16 明文;左緣跟包 wrapper 的純顯示一樣齊標籤,2026-10-21 起不再是例外):LinkInput `mode="view"` 預設(`showDisplayEndIcon=false`)= 裸 span/anchor(`fieldDisplayTextClass` + truncate),**不消費** `fieldWrapperStyles` / `fieldViewGeometry` —— view 值是可點擊連結,inline 嵌入取 flush 呈現(backward compat);`showDisplayEndIcon=true` opt-in 才包 `fieldWrapperStyles(view × resolvedVariant)` 取 cell view↔edit 像素對齊。PeoplePicker 預設 view 同模式(裸 `PersonDisplay`/`MultiPersonDisplay`)。詳 `link-input.tsx` / `people-picker.tsx` docblock。
+**LinkInput / PeoplePicker 預設 view 路徑不包 wrapper**(code 為準,2026-07-16 明文;左緣跟包 wrapper 的純顯示一樣齊標籤,2026-10-21 起不再是例外):LinkInput `mode="view"` 預設(`showDisplayEndIcon=false`)= 裸 span/anchor(`fieldDisplayTextClass` + truncate),**不消費** `fieldWrapperStyles` / `fieldViewGeometry` —— view 值是可點擊連結,inline 嵌入取 flush 呈現(【待決 2026-11-15】這個預設值原本寫下的理由只有相容,0.x 不成立;`showDisplayEndIcon` 這一族(Select / Combobox / DatePicker / TimePicker / LinkInput / PeoplePicker)預設 false 要不要改由 user 定);`showDisplayEndIcon=true` opt-in 才包 `fieldWrapperStyles(view × resolvedVariant)` 取 cell view↔edit 像素對齊。PeoplePicker 預設 view 同模式(裸 `PersonDisplay`/`MultiPersonDisplay`)。詳 `link-input.tsx` / `people-picker.tsx` docblock。
 
 ### null / undefined 值(2026-07-08 user 拍板 — 半形 hyphen + editable × surface 分流)
 
@@ -422,7 +422,7 @@ col.accessor('status', {
 - `searchPlaceholder` — search input hint(例「搜尋人員…」)— 下拉裡的搜尋框還沒打字時的提示
 - `emptyText`/`noResultsText` — filtered menu 無結果(例「沒有人員」)— 篩完一筆都不剩時清單位置顯示的文案
 
-**禁**:wrapper 把 `emptyText`(search-empty)silent forward 成 `emptyPlaceholder`(trigger-empty);**Combobox `emptyPlaceholder` deprecated**,保留 1 cycle fallback,future `placeholder` 唯一 trigger source。Hook `check_field_controls_contracts.sh` (contract b) 機械強制。
+**禁**:wrapper 把 `emptyText`(search-empty)接到 trigger-empty。trigger empty 只有 `placeholder` 一個名字(Combobox 預設「選擇…」);舊名 `emptyPlaceholder` 2026-11-15 移除、不留舊名(0.x 相容政策 = `../../../ds-canonical/references/props-naming.md`「相容政策」)。升版對照:`emptyPlaceholder="…"` → `placeholder="…"`。Hook `check_field_controls_contracts.sh` (contract b) 擋 `emptyPlaceholder` 這個名字寫回 DS 元件程式。
 
 **(c) Cell surface metrics**:Field family 在 cell 內**禁** hardcode padding(`tagAreaPaddingLeftPx={isEmpty ? undefined : 8}` 反 pattern)。改 **`FieldSurface` context**(`'form' | 'toolbar' | 'table-cell'`):`useFieldSurface()` 取值,`<FieldSurfaceProvider surface="table-cell">` 自動套於 `cell-registry.resolveCellComponent`。Consumer 用 `surface === 'table-cell'` 顯式 query(取代 `variant === 'naked'` heuristic)。**risk mitigation**:`avatar.left = cell.left + computed(--table-cell-px)`,禁再加 magic 8px(double-count)。**Token scope**:`--table-cell-px/py` 是 DataTable-scoped metric(CSS 定義在 `data-table.css`,Field naked variant 是 DataTable cell substrate sub-component 故 cross-path reference 不算真 cross-component)，因此**不**升 `tokens/layoutSpace/` canonical。Hook `check_field_controls_contracts.sh` (contract c) 機械強制。
 

@@ -4,16 +4,16 @@
  *   保證: DialogContent 的寬度照 `components/Dialog/dialog.spec.md`「寬度檔位」走(2026-11-15 A18;user 2026-11-11「對話框寬:訂檔位」,
  *         定義 = AI 建議、user 2026-11-15「其他的部分照你建議我沒有意見」採納):
  *         四檔 sm 400 / md 480(預設)/ lg 640 / xl 960 都是**最大寬**,實際寬 = min(檔位或數字, 所在區塊寬 − 2 × 48),沒有下限;
- *         數字寬不設上限(不被 xl 夾住);舊名 maxWidth 照舊當寬、與 width 同時傳時 width 勝;
+ *         數字寬不設上限(不被 xl 夾住)(舊名 maxWidth 2026-11-15 移除,0.x 不留舊名;它的三格一起拿掉);
  *         所在區塊平常是視窗,傳 portalContainer 時是那個舞台 —— 寬與高都以它算(「Viewport Inset」)。
  *         量的是夾具裡真的渲染出來的外框(offsetWidth / offsetHeight 與 getBoundingClientRect 對舞台的四邊距離),不是讀 class 或常數(M32)。
- *         W1 視窗 1440×900:四檔 = 400 / 480 / 640 / 960;不傳 = 480;width={720} = 720、width={1200} = 1200;舊名 maxWidth={720} / "720px" = 720;
- *            width="lg" 加 maxWidth={900} = 640;height="fill" 高 = 900 − 96。
+ *         W1 視窗 1440×900:四檔 = 400 / 480 / 640 / 960;不傳 = 480;width={720} = 720、width={1200} = 1200;
+ *            height="fill" 高 = 900 − 96。
  *         W2 視窗 700×900:lg、xl、width={1200} 都是 604,md 照 480;視窗 375×800:sm、xl 都是 279(沒有下限)。
  *         W3 視窗 1440×900、600×700 的 portalContainer 舞台:lg、xl 都是 504,md 照 480;四邊離舞台至少 48;height="fill" 高 = 700 − 96 = 604。
  *   紅: 任一格量到的寬 / 高 / 四邊距離不符(寬高容差 1px,四邊下限容差 0.5px)。
  *       `--selftest` 在同一份夾具的打包檔上做三種破法,各自必須讓指定的格紅、而且破法真的套上了(改寫數 = 1):
- *       (a) tiers  檔位表 lg 640 → 600                         → W1-lg / W1-both 紅
+ *       (a) tiers  檔位表 lg 640 → 600                         → W1-lg 紅
  *       (b) vw     所在區塊寬改回 100vw(2026-11-15 前的寫法)    → W3-lg / W3-xl / W3-fill 紅(舞台裡撐到 600、四邊 0)
  *       (c) svh    所在區塊高改回 100svh(2026-11-15 前的寫法)   → W3-fill 紅(高 804 > 舞台 700)
  *       任一種沒改寫到 / 改寫了卻沒紅 = 儀器失效,exit 1。
@@ -47,9 +47,6 @@ const CASES = [
   { id: 'W1-default', vp: DESKTOP, q: {}, what: '不傳 width = md 480', expect: { width: TIER.md, insets: true } },
   { id: 'W1-number', vp: DESKTOP, q: { w: '720' }, what: 'width={720} = 720', expect: { width: 720, insets: true } },
   { id: 'W1-number-over-xl', vp: DESKTOP, q: { w: '1200' }, what: 'width={1200} = 1200(自訂寬不被 xl 夾住)', expect: { width: 1200, insets: true } },
-  { id: 'W1-legacy-number', vp: DESKTOP, q: { mw: '720' }, what: '舊名 maxWidth={720} 照舊當寬 = 720', expect: { width: 720, insets: true } },
-  { id: 'W1-legacy-string', vp: DESKTOP, q: { mw: '720px' }, what: '舊名 maxWidth="720px" 照舊當寬 = 720', expect: { width: 720, insets: true } },
-  { id: 'W1-both', vp: DESKTOP, q: { w: 'lg', mw: '900' }, what: 'width="lg" + maxWidth={900} → width 勝 = 640', expect: { width: TIER.lg, insets: true } },
   { id: 'W1-fill', vp: DESKTOP, q: { w: 'md', h: 'fill' }, what: 'height="fill" 高 = 視窗 900 − 96', expect: { width: TIER.md, height: DESKTOP[1] - 2 * INSET, insets: true } },
   { id: 'W2-lg', vp: [700, 900], q: { w: 'lg' }, what: '700 寬 lg = 700 − 96 = 604', expect: { width: 604, insets: true } },
   { id: 'W2-xl', vp: [700, 900], q: { w: 'xl' }, what: '700 寬 xl = 604', expect: { width: 604, insets: true } },
@@ -65,7 +62,7 @@ const CASES = [
 
 /** 對照組:同一份夾具打包檔上的三種破法(regex 打在 dialog.tsx 的常數上;改寫數必須正好 1) */
 const MUTATIONS = [
-  { name: 'tiers', what: '檔位表 lg 640 → 600', re: /(DIALOG_WIDTH_TIERS\d*\s*=\s*\{[^}]*\blg:\s*)640\b/g, to: '$1600', mustFail: ['W1-lg', 'W1-both'] },
+  { name: 'tiers', what: '檔位表 lg 640 → 600', re: /(DIALOG_WIDTH_TIERS\d*\s*=\s*\{[^}]*\blg:\s*)640\b/g, to: '$1600', mustFail: ['W1-lg'] },
   { name: 'vw', what: '所在區塊寬改回 100vw', re: /(DIALOG_BLOCK_WIDTH\d*\s*=\s*)"100%"/g, to: '$1"100vw"', mustFail: ['W3-lg', 'W3-xl', 'W3-fill'] },
   { name: 'svh', what: '所在區塊高改回 100svh', re: /(DIALOG_BLOCK_HEIGHT\d*\s*=\s*)"min\(100svh, 100%\)"/g, to: '$1"100svh"', mustFail: ['W3-fill'] },
 ]

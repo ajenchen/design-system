@@ -225,7 +225,7 @@ function runStatic(files, { quiet = false } = {}) {
           walkLabels(attrs.get('fields'))
         }
         // S3 DialogContent autoHeight
-        if (tag === 'DialogContent' && attrs.has('autoHeight')) add('S3', `${where} <DialogContent autoHeight> —— 已停用,改 height="hug"(dialog.spec.md「高度軸」;OV-09)`)
+        if (tag === 'DialogContent' && attrs.has('autoHeight')) add('S3', `${where} <DialogContent autoHeight> —— 已移除(2026-11-15,0.x 不留舊名),改 height="hug"(dialog.spec.md「高度軸」;OV-09)`)
         // S6 / S7 按鈕的字
         if (tag === 'Button') {
           buttons++
@@ -268,7 +268,7 @@ function runStatic(files, { quiet = false } = {}) {
     src.split('\n').forEach((l, i) => {
       if (!/\bautoHeight\b/.test(l)) return
       const prose = /\.md$/.test(rel) || /^\s*(?:\*|\/\/|\{?\/\*)/.test(l) || /\.stories\.tsx$/.test(rel)
-      if (prose && !/height="hug"|deprecated|已停用|停用/.test(l)) add('S3', `${rel}:${i + 1} 把 autoHeight 寫成現行用法 —— 已停用,同一句寫 height="hug" 或「已停用」(dialog.spec.md「高度軸」;OV-09 同族)`)
+      if (prose && !/height="hug"|已移除|移除|已停用|停用/.test(l)) add('S3', `${rel}:${i + 1} 把 autoHeight 寫成現行用法 —— 已移除,同一句寫 height="hug" 或「已移除」(dialog.spec.md「高度軸」;OV-09 同族)`)
     })
   }
   // S7 同族:文字裡把這個動作叫做「顯示欄位」(引號裡的名稱)只能是歷史句(覆核 2026-10-21:popover 原則頁註解)
@@ -409,7 +409,7 @@ function runStatic(files, { quiet = false } = {}) {
 const ROWS = {
   S1: '換了主題(data-theme)的元素重新宣告字色(alert.tsx「data-theme 必須搭配 text-foreground」、M3;OV-02 / OV-03)',
   S2: 'HoverCardContent 的外殼只消費 HOVER_CARD_SURFACE_CLASS / HOVER_CARD_TOOLTIP_SURFACE_CLASS(OV-06 / OV-V03 / OV-02;M17)',
-  S3: '沒有 <DialogContent autoHeight>(已停用的 API;DS 原始碼與閘夾具都不准用,OV-09)',
+  S3: '沒有 <DialogContent autoHeight>(已移除的 API;DS 原始碼與閘夾具都不准用,OV-09)',
   S4: '按鈕不用文字符號(▾ ☰ …)當圖示(OV-12)',
   S5: '退役的名稱只以歷史出現(同一行寫出接班者,或寫成歷史句;OV-04 / OV-11)',
   S6: '觸發鈕的字是使用者會按的動作,不是實作註記 / variant 名 / 佔位(OV-14 / OV-08)',

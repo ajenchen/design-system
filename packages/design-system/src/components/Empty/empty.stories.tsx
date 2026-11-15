@@ -1,11 +1,10 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { SearchX, Lock, Inbox, Search, X } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldError, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/design-system/components/Dialog/dialog'
@@ -79,7 +78,7 @@ export const SearchNoResults: Story = {
 
 /* ── 空清單:這個 Sprint 還沒有任務,建立任務 → 表格出現第一筆 ───────────────── */
 type SprintTask = { id: string; title: string; status: string }
-const TASK_COLUMNS: ColumnDef<SprintTask>[] = [
+const TASK_COLUMNS: DataTableColumnDef<SprintTask>[] = [
   { accessorKey: 'title', header: '任務' },
   { accessorKey: 'status', header: '狀態' },
 ]

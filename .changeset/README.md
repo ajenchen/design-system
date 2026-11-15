@@ -21,6 +21,8 @@ Changesets 時，它最後也必交回同一個 five-step release orchestrator�
 
 ## Codemod for breaking change
 
+破壞性變更怎麼處理(留不留舊名、要不要標 @deprecated、發布說明怎麼寫)的唯一住處是 `packages/design-system/ds-canonical/references/props-naming.md`「相容政策」(0.x / 預發布版不留舊名,改由 `scripts/breaking-changes.json` 逐筆寫進發布說明);本段只講 1.0 以後的 codemod 工具,不另訂規則。
+
 Major version bump 必伴隨 codemod(per roadmap Phase 4 deliverable):
 - `packages/design-system/codemods/v1-to-v2/` etc.
 - jscodeshift-based migration script

@@ -41,8 +41,8 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  * 規則說明 = `text-caption` + `text-fg-muted`(字級同一段規範;字色 = color.spec.md「文字 / Icon 層級」caption 列 ——
  * 2026-10-20 前各頁可選 `noteTone`,7 頁選了 fg-secondary,同一層說明兩種字色,已收成一種)。
  *
- * 內文(2026-10-20):頁根擁有字級 `text-body`(typography.spec.md:13 font-size 那一列「token 決定，不可繞過」、
- * typography.spec.md:39 text-body「主要內文基準」)—— 之前頁裡沒寫字級的段落 / 清單一律落到瀏覽器預設 16px,比 14px 的規則標題還大。
+ * 內文(2026-10-20):頁根擁有字級 `text-body`(typography.spec.md:14 font-size 那一列「token 決定，不可繞過」、
+ * typography.spec.md:44 text-body「主要內文基準」)—— 之前頁裡沒寫字級的段落 / 清單一律落到瀏覽器預設 16px,比 14px 的規則標題還大。
  * 頁裡的說明元件、清單、連結也只住在這裡 / example-captions.tsx(`ExampleCaption` / `TutorialList` / `StoryLink`),各頁不再自抄。
  *
  * 「使用指引」(UsageGuidance)固定三段(2026-10-20 user「你提的問題可以都照你建議」核准 T4 甲):
@@ -65,7 +65,7 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
 /** 規則之間 = 段落之間 = loose × 2(user 2026-10-07 拍板 ②)。全 repo 只有這一處寫這個值。 */
 const BLOCK_STACK = 'flex flex-col gap-[calc(var(--layout-space-loose)*2)]'
 
-/** 頁根的內文字級:typography.spec.md:39 text-body =「主要內文基準」。只寫在這裡。 */
+/** 頁根的內文字級:typography.spec.md:44 text-body =「主要內文基準」。只寫在這裡。 */
 const PAGE_TEXT = 'text-body'
 
 export interface TutorialPageProps {

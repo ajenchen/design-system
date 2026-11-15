@@ -6,21 +6,25 @@ Elevation 定義陰影層級，區分內容層（Card）和浮層（Modal/Popove
 
 兩個層級對應兩種「浮起高度」，用 CSS 變數實現，light / dark mode 自動切換。
 
-**不要用 Tailwind 的 `shadow-*`**，改用 CSS 變數：
+**不要用 Tailwind 的 `shadow-*`**(`shadow-sm` / `shadow-md` …),改用下表的 token,寫成 `shadow-[var(--elevation-N)]`(`../utility-registry.json` 的 `elevation.allow` 就是這四種寫法):
 
 ```tsx
-<div style={{ boxShadow: 'var(--elevation-100)' }} />
-<div style={{ boxShadow: 'var(--elevation-200)' }} />
+<div className="shadow-[var(--elevation-100)]" />
+<div className="shadow-[var(--elevation-200)]" />
 ```
 
 ## 層級
 
+下表的 token 欄是允許清單的來源:閘 `scripts/token-allowlist-invariant.mjs` 驗 `elevation.allow` 逐字等於「每一個 token 寫成 `shadow-[var(token)]`」,並驗 Tailwind 預設的 `shadow-*` 名字全部被擋。
+
+<!-- elevation-scale:start -->
 | Token | 用途 | 對應元件 |
 |-------|------|----------|
 | `--elevation-100` | 頁面內容層，靜止 | Card 類內容容器(DS 尚無 Card 元件;現行唯一 DS consumer = Slider thumb hover 陰影,per `slider.spec.md` 互動 canonical) |
 | `--elevation-100-hover` | 頁面內容層，hover / 拖拽 lift | —(目前無 DS 內建 consumer;預留給 consumer 的可拖拽 / hover-lift card,如 board card drag) |
 | `--elevation-200` | 浮層，靜止 | Modal、popover、dropdown、overlay drawer |
 | `--elevation-200-hover` | 浮層，hover | —(同上,預留) |
+<!-- elevation-scale:end -->
 
 elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為靜止 token 的「抬升一階」變體:元素被 hover / 拖起時切換,幾何(offset / blur)不變、只加深陰影 alpha(`tokens/color/primitives.css` 定義,light / dark 各一組)。
 
@@ -33,11 +37,11 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 ```tsx
 // ✅ 正確
-<div className="bg-surface rounded-md" style={{ boxShadow: 'var(--elevation-100)' }} />
-<div className="bg-surface-raised rounded-lg" style={{ boxShadow: 'var(--elevation-200)' }} />
+<div className="bg-surface rounded-md shadow-[var(--elevation-100)]" />
+<div className="bg-surface-raised rounded-lg shadow-[var(--elevation-200)]" />
 
 // ❌ 錯誤——浮層用了半透明 bg-surface
-<div className="bg-surface rounded-lg" style={{ boxShadow: 'var(--elevation-200)' }} />
+<div className="bg-surface rounded-lg shadow-[var(--elevation-200)]" />
 ```
 
 ## 浮層間距（sideOffset）
@@ -65,7 +69,7 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 |------|-------|-----|
 | 背景 | `bg-surface-raised` | 不透明，避免底層透出 |
 | 陰影 | `--elevation-200` | 浮層陰影 |
-| 圓角 | `rounded-lg` | 8px |
+| 圓角 | `rounded-lg` | 8px(**Tooltip 例外 = `rounded-md` 4px**,圓角的唯一住處 `../radius/radius.spec.md`「四檔」;閘 `scripts/radius-usage-invariant.mjs` 照那張表量)|
 | 邊框 | `border border-border` | 1px |
 | sideOffset | 8px | 與觸發元件的間距 |
 

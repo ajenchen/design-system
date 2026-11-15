@@ -24,11 +24,7 @@ Canonical `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwi
 
 ## 圓角對應表
 
-| Utility class   | 值                         |
-|----------------|---------------------------|
-| `rounded-md`   | 4px(--radius-md)    |
-| `rounded-lg`   | 8px(--radius-lg)    |
-| `rounded-full` | 9999px(--radius-full)|
+四檔與用途的唯一住處是 `packages/design-system/src/tokens/radius/radius.spec.md`「四檔」(這裡只記技術陷阱):**本系統的 `rounded-sm` 是 2px**,Tailwind 預設的 `rounded-sm` 是 4px —— 照 Tailwind 習慣寫會靜默拿到 2px;`rounded-xs` / `rounded-xl` 等 Tailwind 預設名字不在刻度上,Tailwind 照樣產生,值不歸設計系統管(utility-registry 擋)。
 
 ---
 

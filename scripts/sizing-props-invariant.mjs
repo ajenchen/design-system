@@ -3,9 +3,10 @@
  * @gate-contract
  *   保證: 尺寸參數只有一套名字(`ds-canonical/references/props-naming.md`「尺寸參數」,user 2026-11-11「尺寸:甲」)——
  *         撐滿 / 跟內容只叫 `width="fill"` / `width="hug"`,`size` 只當檔位,欄位家族不漏 HTML 原生 width / height,
- *         DS 自己不再用已停用的舊名。
- *   紅: R1 公開元件的 *Props 新增撐滿 / 跟內容的同義名(fullWidth / block / autoWidth …),或既有舊名沒標 @deprecated;
- *       R2 DS 自己的 JSX(元件 / 範例 / 模板 / 閘夾具)用已停用的舊名(<Button fullWidth> / <FieldControlGroup block> /
+ *         已移除的舊名不回來(相容政策 props-naming.md「相容政策」;判斷讀 scripts/lib/compat-policy.mjs)。
+ *   紅: R1 公開元件的 *Props 出現撐滿 / 跟內容的同義名(fullWidth / block / autoWidth …)或已移除的舊名(REMOVED_PROP_NAMES)——
+ *          0.x / 預發布版標了 @deprecated 也紅(不留舊名);1.0 以後的正式版才准同義名標 @deprecated 留一個版本;
+ *       R2 DS 自己的 JSX(元件 / 範例 / 模板 / 閘夾具,沒有例外)用已移除的舊名(<Button fullWidth> / <FieldControlGroup block> /
  *          <Input autoWidth> / <FieldGroup horizontalLabelWidth> / <DataTable height> / <DialogContent maxWidth>);
  *       R3 *Props 的 `size` 收數字或任意字串(= 拿 size 當長度),不在正方形媒體例外清單;
  *       R4 *Props 繼承 InputHTMLAttributes 卻沒把原生 `width` / `height` Omit 掉;
@@ -29,6 +30,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import ts from 'typescript'
 import { isDirectRun } from './lib/direct-run.mjs'
+import { compatPolicyFor, readCompatPolicy, POLICY_DOC } from './lib/compat-policy.mjs'
 
 const ROOT = process.cwd()
 
@@ -39,10 +41,11 @@ export const SIZING_MODE_ALIASES = new Set([
 ])
 
 /**
- * 已停用、保留一個版本的舊名(`Props名.prop名` → 新名)。只有這幾個准許出現在 *Props 裡,而且必須標 @deprecated。
- * 下一個版本移除舊名時,連同這裡一起刪 —— 清單只准變短。
+ * 已移除的舊名(`Props名.prop名` → 新寫法;2026-11-15 移除,不留舊名 —— 相容政策)。這是**禁用清單**:
+ * 出現在 *Props 裡一律紅(不論有沒有標 @deprecated),訊息帶新寫法。清單只准變長(移除的名字不回來)。
+ * 不是 SIZING_MODE_ALIASES 的名字(horizontalLabelWidth / DataTable height / DialogContent maxWidth)要靠這張表才擋得到。
  */
-export const DEPRECATED_ALIASES = new Map([
+export const REMOVED_PROP_NAMES = new Map([
   ['ButtonProps.fullWidth', 'width="fill"'],
   ['SegmentedControlProps.fullWidth', 'width="fill"'],
   ['FieldControlGroupProps.block', 'width="fill"'],
@@ -54,7 +57,7 @@ export const DEPRECATED_ALIASES = new Map([
 ])
 
 /** R2:DS 自己的 JSX 不得再用的舊寫法(元件名 → 屬性名 → 新寫法)。DialogContent autoHeight 歸 overlay-story-contract S3。 */
-export const DEPRECATED_JSX = [
+export const REMOVED_JSX = [
   { tag: /^(Button|CarouselNext|CarouselPrevious|SidebarTrigger|SegmentedControl)$/, attr: 'fullWidth', fix: 'width="fill"' },
   { tag: /^FieldControlGroup$/, attr: 'block', fix: 'width="fill"' },
   { tag: /^(Input|SidebarInput)$/, attr: 'autoWidth', fix: 'width="hug"' },
@@ -62,12 +65,7 @@ export const DEPRECATED_JSX = [
   { tag: /^DataTable$/, attr: 'height', fix: 'maxHeight(height="auto" → maxHeight="none"、"400px" → {400}、"100%" → "100%")' },
   { tag: /^DialogContent$/, attr: 'maxWidth', fix: 'width(DS 自己只寫檔名 sm / md / lg / xl,照 dialog.spec.md「寬度檔位」選檔;閘夾具才寫數字)' },
 ]
-
-/**
- * R2 的例外:**量舊名相容路徑本身**的閘夾具(檔名逐一列,清單只准變短;舊名移除時連同這裡一起刪)。
- * dialog-width 夾具要證明「舊名 maxWidth 照舊當寬、與 width 同時傳時 width 勝」—— 不寫舊名就量不到。
- */
-export const R2_LEGACY_PATH_FIXTURES = new Set(['scripts/test-fixtures/dialog-width/fixture.tsx'])
+// (2026-11-15 前這裡有一張 R2 例外清單,放行「量舊名相容路徑」的 dialog-width 夾具;舊名移除後相容路徑不存在,例外一起拿掉。)
 /** R5:DialogContent 的寬度檔名(dialog.tsx DIALOG_WIDTH_TIERS 的 key;數值不在這裡,只認名字)。 */
 export const DIALOG_WIDTH_TIER_NAMES = new Set(['sm', 'md', 'lg', 'xl'])
 /** R5 不管的路徑:閘夾具量的是行為,寬度寫原數字(不跟著檔位表變,免得動到點擊座標)。 */
@@ -101,6 +99,13 @@ function walk(dir, acc, accept) {
   return acc
 }
 
+/** repo 現在的相容政策(scripts/lib/compat-policy.mjs;讀不到就丟例外 → 呼叫端判儀器失效,不放行)。一次讀、之後重用。 */
+let policyCache = null
+function currentPolicy() {
+  if (!policyCache) policyCache = readCompatPolicy(ROOT)
+  return policyCache
+}
+
 const isPropsSource = (name) => /\.tsx?$/.test(name) && !/\.(stories|test|spec)\.tsx?$/.test(name) && !name.startsWith('_') && !name.endsWith('.d.ts')
 
 function parse(path, text) {
@@ -110,8 +115,11 @@ const lineOf = (sf, node) => sf.getLineAndCharacterOfPosition(node.getStart(sf))
 const hasDeprecatedTag = (node) => ts.getJSDocTags(node).some((t) => t.tagName.getText() === 'deprecated')
 const memberName = (m) => (m.name && (ts.isIdentifier(m.name) || ts.isStringLiteral(m.name)) ? m.name.text : null)
 
-/** R1 / R3 / R4:掃一個檔案裡的 *Props 宣告。 */
-export function checkPropsSource(path, text) {
+/**
+ * R1 / R3 / R4:掃一個檔案裡的 *Props 宣告。
+ * policy = scripts/lib/compat-policy.mjs 的結果(預設讀 repo 現在的版本);R1 依它判「同義名標 @deprecated 准不准留一版」。
+ */
+export function checkPropsSource(path, text, policy = currentPolicy()) {
   const hits = []
   const sf = parse(path, text)
   const visit = (node) => {
@@ -140,12 +148,18 @@ export function checkPropsSource(path, text) {
         const name = memberName(m)
         if (!name) continue
         const key = `${propsName}.${name}`
-        // R1:撐滿 / 跟內容的同義名
-        if (SIZING_MODE_ALIASES.has(name) || DEPRECATED_ALIASES.has(key)) {
-          if (!DEPRECATED_ALIASES.has(key)) {
-            hits.push({ rule: 'R1', path, line: lineOf(sf, m), found: key, fix: '撐滿 / 跟內容只准用 width="fill" / width="hug"(props-naming.md「尺寸參數」第 1 條);不得新增同義名' })
-          } else if (!hasDeprecatedTag(m)) {
-            hits.push({ rule: 'R1', path, line: lineOf(sf, m), found: key, fix: `舊名必須標 @deprecated(改用 ${DEPRECATED_ALIASES.get(key)});保留一個版本、行為不變` })
+        // R1:撐滿 / 跟內容的同義名,與已移除的舊名
+        if (SIZING_MODE_ALIASES.has(name) || REMOVED_PROP_NAMES.has(key)) {
+          // 只有 1.0 以後的正式版(policy.keepOldNames)才准「標 @deprecated 留一個版本」;0.x / 預發布版一律紅
+          const keptOneRelease = policy.keepOldNames && hasDeprecatedTag(m)
+          if (!keptOneRelease) {
+            const replacement = REMOVED_PROP_NAMES.get(key)
+            hits.push({
+              rule: 'R1', path, line: lineOf(sf, m), found: `${key}${hasDeprecatedTag(m) ? '(標了 @deprecated)' : ''}`,
+              fix: replacement
+                ? `已移除的舊名,改 ${replacement};${policy.version} 的相容政策 = ${policy.mode}(${POLICY_DOC}):不留舊名、不標 @deprecated 轉接`
+                : `撐滿 / 跟內容只准用 width="fill" / width="hug"(props-naming.md「尺寸參數」第 1 條);不得新增同義名${hasDeprecatedTag(m) ? `(${policy.version} 是 ${policy.mode},標 @deprecated 也不放行)` : ''}`,
+            })
           }
         }
         // R3:size 只當檔位
@@ -189,16 +203,14 @@ export function checkJsxSource(path, text) {
   if (!path.endsWith('.tsx')) return hits
   const sf = parse(path, text)
   const r5Exempt = path.startsWith(R5_EXEMPT_PREFIX) || !path.startsWith(R5_SCOPE_PREFIX)
-  const r2Exempt = R2_LEGACY_PATH_FIXTURES.has(path)
   const visit = (node) => {
     if (ts.isJsxAttribute(node)) {
       const attr = node.name.getText(sf)
       const el = node.parent.parent
       const tag = el.tagName ? el.tagName.getText(sf) : ''
-      for (const rule of DEPRECATED_JSX) {
-        // 例外只放 <DialogContent maxWidth> 這一個舊名(那支夾具量的就是它),同檔別的舊名照紅
-        if (rule.attr === attr && rule.tag.test(tag) && !(r2Exempt && tag === 'DialogContent' && attr === 'maxWidth')) {
-          hits.push({ rule: 'R2', path, line: lineOf(sf, node), found: `<${tag} ${node.getText(sf).replace(/\s+/g, ' ').slice(0, 60)}>`, fix: `已停用的舊名,改 ${rule.fix}(props-naming.md「尺寸參數」第 5 條:DS 自己的程式、範例、規格不得再用舊名)` })
+      for (const rule of REMOVED_JSX) {
+        if (rule.attr === attr && rule.tag.test(tag)) {
+          hits.push({ rule: 'R2', path, line: lineOf(sf, node), found: `<${tag} ${node.getText(sf).replace(/\s+/g, ' ').slice(0, 60)}>`, fix: `已移除的舊名,改 ${rule.fix}(props-naming.md「相容政策」:DS 自己的程式、範例、模板、閘夾具同一版改完)` })
         }
       }
       if (!r5Exempt && tag === 'DialogContent' && attr === 'width' && !dialogWidthIsTierName(node.initializer)) {
@@ -236,16 +248,33 @@ function selftest() {
   const expect = (cond, msg) => { if (!cond) problems.push(msg) }
   const rules = (hits) => hits.map((h) => h.rule).sort().join(',')
 
-  // R1:新元件加 fullWidth(沒在舊名清單)→ 紅
-  expect(rules(checkPropsSource('x/card.tsx', 'export interface CardProps { fullWidth?: boolean }')) === 'R1', 'R1:新元件的 fullWidth 應紅')
+  // 相容政策(scripts/lib/compat-policy.mjs):每一格明確傳入固定政策 —— 0.x 用 compatPolicyFor('0.1.0-beta.148'),
+  // 1.0 用 compatPolicyFor('1.0.0'),不讀 repo 現在的版本(版號一變,格子的意思不能跟著變;M37:「現在的版本」不是這一格要測的政策)。
+  const beta = compatPolicyFor('0.1.0-beta.148')
+  const stable = compatPolicyFor('1.0.0')
+  // 唯一一格讀 repo:用途是證明正式掃描(checkPropsSource 不傳 policy)走的是共用的讀版本路徑、讀得到 —— 不斷言 repo 是哪一版,
+  // 改成 1.0.0 照樣綠。
+  const pkgVersion = JSON.parse(readFileSync(join(ROOT, 'packages/design-system/package.json'), 'utf8')).version
+  expect(currentPolicy().version === pkgVersion && currentPolicy().mode === compatPolicyFor(pkgVersion).mode, `相容政策:正式掃描讀到的版本 ${currentPolicy().version} / ${currentPolicy().mode} 應等於 package.json 的 ${pkgVersion} 判出來的政策`)
+  // R1:新元件加 fullWidth → 紅
+  expect(rules(checkPropsSource('x/card.tsx', 'export interface CardProps { fullWidth?: boolean }', beta)) === 'R1', 'R1:新元件的 fullWidth 應紅')
   // R1:block 也是同義名
-  expect(rules(checkPropsSource('x/toolbar.tsx', 'interface ToolbarProps { block?: boolean }')) === 'R1', 'R1:新元件的 block 應紅')
-  // R1:清單內的舊名但沒標 @deprecated → 紅
-  expect(rules(checkPropsSource('x/button.tsx', 'export interface ButtonProps { fullWidth?: boolean }')) === 'R1', 'R1:舊名沒標 @deprecated 應紅')
-  // R1 合規:清單內的舊名 + @deprecated → 綠;新名 width → 綠
-  expect(checkPropsSource('x/button.tsx', 'export interface ButtonProps {\n  width?: SizingMode\n  /** @deprecated 改用 width="fill" */\n  fullWidth?: boolean\n}').length === 0, 'R1:清單內舊名標了 @deprecated 不應紅')
+  expect(rules(checkPropsSource('x/toolbar.tsx', 'interface ToolbarProps { block?: boolean }', beta)) === 'R1', 'R1:新元件的 block 應紅')
+  // R1:已移除的舊名加回來 → 紅(沒標 @deprecated)
+  expect(rules(checkPropsSource('x/button.tsx', 'export interface ButtonProps { fullWidth?: boolean }', beta)) === 'R1', 'R1:已移除的舊名加回來應紅')
+  // R1:0.x 下「舊名 + @deprecated + 內部轉新名」這條 2026-11-15 前的路 → 紅(2026-11-15 前這格是綠)
+  const deprecatedAlias = 'export interface ButtonProps {\n  width?: SizingMode\n  /** @deprecated 改用 width="fill" */\n  fullWidth?: boolean\n}'
+  expect(rules(checkPropsSource('x/button.tsx', deprecatedAlias, beta)) === 'R1', 'R1:0.x 下舊名標了 @deprecated 也應紅(不留舊名)')
+  // R1 對照:同一段原始碼在 1.0 正式版政策下 → 綠(留一個版本)—— 證明 R1 讀的是相容政策,不是寫死
+  expect(checkPropsSource('x/button.tsx', deprecatedAlias, stable).length === 0, 'R1:1.0 正式版政策下同義名標了 @deprecated 不應紅')
+  expect(rules(checkPropsSource('x/button.tsx', 'export interface ButtonProps { fullWidth?: boolean }', stable)) === 'R1', 'R1:1.0 正式版政策下沒標 @deprecated 仍應紅')
+  // R1:不是同義名、但在移除清單上的舊名(horizontalLabelWidth / DataTable height)加回來 → 紅
+  expect(rules(checkPropsSource('x/field.tsx', 'export interface FieldGroupProps { labelWidth?: number | string\n  horizontalLabelWidth?: string }', beta)) === 'R1', 'R1:FieldGroupProps.horizontalLabelWidth 加回來應紅')
+  expect(rules(checkPropsSource('x/data-table.tsx', 'export interface DataTableProps<TData> { maxHeight?: number | string\n  height?: string }', beta)) === 'R1', 'R1:DataTableProps.height 加回來應紅')
+  // R1 合規:新名 width → 綠
+  expect(checkPropsSource('x/button.tsx', 'export interface ButtonProps {\n  width?: SizingMode\n}', beta).length === 0, 'R1:只有新名 width 不應紅')
   // 不是 *Props 的型別不管(內部 context、常數表)
-  expect(checkPropsSource('x/item.tsx', 'interface RowCtx { block?: boolean }\nconst t = { block: { sm: 32 } }').length === 0, 'R1:非 *Props 不應紅')
+  expect(checkPropsSource('x/item.tsx', 'interface RowCtx { block?: boolean }\nconst t = { block: { sm: 32 } }', beta).length === 0, 'R1:非 *Props 不應紅')
   // R2:舊寫法 JSX → 紅;新寫法 → 綠
   expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <Button fullWidth>送出</Button>')) === 'R2', 'R2:<Button fullWidth> 應紅')
   expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <FieldControlGroup block><Input /></FieldControlGroup>')) === 'R2', 'R2:<FieldControlGroup block> 應紅')
@@ -253,17 +282,17 @@ function selftest() {
   expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <FieldGroup horizontalLabelWidth="120px" />')) === 'R2', 'R2:<FieldGroup horizontalLabelWidth> 應紅')
   expect(checkJsxSource('x/a.stories.tsx', 'const a = <><Button width="fill" /><DataTable maxHeight="none" /><DialogContent height="hug" /><svg height="16" /><img height={40} /></>').length === 0, 'R2:新寫法與 svg / img / DialogContent 的 height 不應紅')
   // R3:size 收數字 → 紅;檔位 → 綠;例外清單 → 綠
-  expect(rules(checkPropsSource('x/chip.tsx', 'export interface ChipProps { size?: number }')) === 'R3', 'R3:size: number 應紅')
-  expect(rules(checkPropsSource('x/chip.tsx', "export interface ChipProps { size?: 'sm' | 'md' | string }")) === 'R3', 'R3:size 收任意字串應紅')
-  expect(checkPropsSource('x/chip.tsx', "export interface ChipProps { size?: 'sm' | 'md' | 'lg'; pageSize?: number }").length === 0, 'R3:檔位與複合字 pageSize 不應紅')
-  expect(checkPropsSource('x/avatar.tsx', "export interface AvatarProps { size?: number | 'fill' }").length === 0, 'R3:Avatar 例外不應紅')
+  expect(rules(checkPropsSource('x/chip.tsx', 'export interface ChipProps { size?: number }', beta)) === 'R3', 'R3:size: number 應紅')
+  expect(rules(checkPropsSource('x/chip.tsx', "export interface ChipProps { size?: 'sm' | 'md' | string }", beta)) === 'R3', 'R3:size 收任意字串應紅')
+  expect(checkPropsSource('x/chip.tsx', "export interface ChipProps { size?: 'sm' | 'md' | 'lg'; pageSize?: number }", beta).length === 0, 'R3:檔位與複合字 pageSize 不應紅')
+  expect(checkPropsSource('x/avatar.tsx', "export interface AvatarProps { size?: number | 'fill' }", beta).length === 0, 'R3:Avatar 例外不應紅')
   // R4:繼承 InputHTMLAttributes 沒 Omit width / height → 紅;Omit 了 → 綠
-  expect(rules(checkPropsSource('x/input.tsx', "export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {}")) === 'R4', 'R4:沒 Omit 原生 width / height 應紅')
-  expect(rules(checkPropsSource('x/input.tsx', 'export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}')) === 'R4', 'R4:直接繼承也應紅')
-  expect(checkPropsSource('x/input.tsx', "export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'width' | 'height'> {}").length === 0, 'R4:Omit 了 width / height 不應紅')
-  // R1 / R2:Dialog 的舊名 maxWidth(2026-11-15 A18)—— 型別沒標 @deprecated 紅、標了綠;JSX 用舊名紅
-  expect(rules(checkPropsSource('x/dialog.tsx', 'interface DialogContentProps { width?: DialogWidthTier | number\n  maxWidth?: string | number }')) === 'R1', 'R1:DialogContentProps.maxWidth 沒標 @deprecated 應紅')
-  expect(checkPropsSource('x/dialog.tsx', 'interface DialogContentProps {\n  width?: DialogWidthTier | number\n  /** @deprecated 改用 width */\n  maxWidth?: string | number\n}').length === 0, 'R1:DialogContentProps.maxWidth 標了 @deprecated 不應紅')
+  expect(rules(checkPropsSource('x/input.tsx', "export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {}", beta)) === 'R4', 'R4:沒 Omit 原生 width / height 應紅')
+  expect(rules(checkPropsSource('x/input.tsx', 'export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}', beta)) === 'R4', 'R4:直接繼承也應紅')
+  expect(checkPropsSource('x/input.tsx', "export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'width' | 'height'> {}", beta).length === 0, 'R4:Omit 了 width / height 不應紅')
+  // R1 / R2:Dialog 的舊名 maxWidth(2026-11-15 A18 改名、同日移除)—— 型別加回來紅(標不標 @deprecated 都紅);JSX 用舊名紅
+  expect(rules(checkPropsSource('x/dialog.tsx', 'interface DialogContentProps { width?: DialogWidthTier | number\n  maxWidth?: string | number }', beta)) === 'R1', 'R1:DialogContentProps.maxWidth 加回來應紅')
+  expect(rules(checkPropsSource('x/dialog.tsx', 'interface DialogContentProps {\n  width?: DialogWidthTier | number\n  /** @deprecated 改用 width */\n  maxWidth?: string | number\n}', beta)) === 'R1', 'R1:DialogContentProps.maxWidth 標了 @deprecated 在 0.x 也應紅')
   expect(rules(checkJsxSource('packages/design-system/src/x/a.stories.tsx', 'const a = <DialogContent height="hug" maxWidth={480}><div /></DialogContent>')) === 'R2', 'R2:<DialogContent maxWidth> 應紅')
   // R5:DS 自己的 DialogContent width 只寫檔名;數字 / 含數字的運算式 / 不是檔名的字串紅,閘夾具不紅,變數交給型別
   expect(rules(checkJsxSource('packages/design-system/src/x/a.stories.tsx', 'const a = <DialogContent width={720} />')) === 'R5', 'R5:DS 範例 <DialogContent width={720}> 應紅')
@@ -272,17 +301,17 @@ function selftest() {
   expect(checkJsxSource('packages/design-system/src/x/a.stories.tsx', 'const a = <><DialogContent width="lg" /><DialogContent width={\'xl\'} /><DialogContent width={wide ? "xl" : "md"} /><DialogContent width={tier} /><Select width={160} /><SheetContent width={480} /></>').length === 0, 'R5:檔名、檔名運算式、變數、其他元件的數字寬不應紅')
   expect(checkJsxSource('scripts/test-fixtures/x/fixture.tsx', 'const a = <DialogContent width={720} />').length === 0, 'R5:閘夾具寫數字不應紅')
   expect(checkJsxSource('apps/acme/src/page.tsx', 'const a = <DialogContent width={1160} />').length === 0, 'R5:產品(apps/)自填數字寬不應紅')
-  // R2 例外只認清單上那一支量舊名相容路徑的夾具;別的夾具寫舊名照紅
-  expect(checkJsxSource('scripts/test-fixtures/dialog-width/fixture.tsx', 'const a = <DialogContent width={w} maxWidth={mw} />').length === 0, 'R2:量舊名相容路徑的 dialog-width 夾具不應紅')
+  // R2 沒有例外了(2026-11-15 前放行 dialog-width 夾具量舊名相容路徑;相容路徑已移除):任何夾具寫舊名都紅
+  expect(rules(checkJsxSource('scripts/test-fixtures/dialog-width/fixture.tsx', 'const a = <DialogContent width={w} maxWidth={mw} />')) === 'R2', 'R2:dialog-width 夾具寫 <DialogContent maxWidth> 也應紅(例外已拿掉)')
   expect(rules(checkJsxSource('scripts/test-fixtures/other/fixture.tsx', 'const a = <DialogContent maxWidth={480} />')) === 'R2', 'R2:其他夾具寫 <DialogContent maxWidth> 應紅')
-  expect(rules(checkJsxSource('scripts/test-fixtures/dialog-width/fixture.tsx', 'const a = <Button fullWidth>送出</Button>')) === 'R2', 'R2:例外夾具裡別的舊名照紅')
+  expect(checkJsxSource('scripts/test-fixtures/dialog-width/fixture.tsx', 'const a = <DialogContent width={w} height={h} />').length === 0, 'R2:夾具只用新名不應紅')
 
   if (problems.length) {
     console.error(`✗ sizing-props selftest:${problems.length} 格不符`)
     for (const p of problems) console.error(`   - ${p}`)
     process.exit(1)
   }
-  console.log('✓ sizing-props selftest:R1 新同義名 / 舊名缺 @deprecated(含 DialogContent maxWidth)、R2 舊寫法 JSX(含 <DialogContent maxWidth>)、R3 size 當長度、R4 漏原生 width / height、R5 DS 的 DialogContent width 寫數字 各自會紅;合規寫法、非 *Props、svg / img 的 height、正方形媒體例外、閘夾具的數字寬不誤報')
+  console.log('✓ sizing-props selftest:R1 新同義名 / 已移除的舊名加回來(0.x 標了 @deprecated 也紅;同一段在 1.0 正式版政策下綠 = 讀的是相容政策)、R2 舊寫法 JSX(含 <DialogContent maxWidth>,夾具沒有例外)、R3 size 當長度、R4 漏原生 width / height、R5 DS 的 DialogContent width 寫數字 各自會紅;合規寫法、非 *Props、svg / img 的 height、正方形媒體例外、閘夾具的數字寬不誤報')
 }
 
 // 被 import 時(例:拿檢查函式對舊版原始碼做對照)只匯出函式、不跑;判準唯一實作 lib/direct-run.mjs(經符號連結叫也認得)
@@ -302,5 +331,5 @@ if (!isDirectRun(import.meta.url)) {
     console.error('   SSOT:packages/design-system/ds-canonical/references/props-naming.md「尺寸參數」')
     process.exit(1)
   }
-  console.log(`✓ sizing-props-invariant:R1–R5 0 筆(*Props 掃 ${propsFiles} 檔、JSX 掃 ${jsxFiles} 檔;舊名清單 ${DEPRECATED_ALIASES.size} 個,全部標 @deprecated)`)
+  console.log(`✓ sizing-props-invariant:R1–R5 0 筆(*Props 掃 ${propsFiles} 檔、JSX 掃 ${jsxFiles} 檔;已移除的舊名 ${REMOVED_PROP_NAMES.size} 個都沒回來;相容政策 ${currentPolicy().mode}(${currentPolicy().version}))`)
 }

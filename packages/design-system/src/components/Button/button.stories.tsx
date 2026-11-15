@@ -26,7 +26,7 @@ const meta: Meta<typeof Button> = {
     variant: {
       control: 'select',
       options: ['primary', 'secondary', 'tertiary', 'text', 'link'],
-      description: '視覺強調等級。`destructive` / `ghost` 為 shadcn 內部 compat alias，應用層請勿直接使用。',
+      description: '視覺強調等級。危險操作另用 `danger`。',
     },
     danger: {
       control: 'boolean',
@@ -65,7 +65,7 @@ const meta: Meta<typeof Button> = {
     width: {
       control: 'inline-radio',
       options: ['hug', 'fill'],
-      description: '寬度模式:hug(預設)跟內容 / fill 撐滿父容器。垂直排列的按鈕群組會自動 fill。舊名 `fullWidth` 已停用、保留一個版本。',
+      description: '寬度模式:hug(預設)跟內容 / fill 撐滿父容器。垂直排列的按鈕群組會自動 fill。',
     },
     asChild: {
       control: false,

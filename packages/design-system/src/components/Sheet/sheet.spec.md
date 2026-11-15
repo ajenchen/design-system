@@ -74,7 +74,7 @@ Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter`
 
 ## 關閉按鈕
 
-> **跨家族 SSOT pointer**:SheetHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs 的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sheet 特有 close X canonical。
+> **跨家族 SSOT pointer**:SheetHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / tabsSlot 的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Sheet 特有 close X canonical。
 
 永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `sheet.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。 標題列操作放 `<SheetHeader actions={…}>`(與 × 之間的分隔線由 SurfaceHeader 放,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位)。
 

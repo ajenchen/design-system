@@ -472,7 +472,7 @@ export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-star
 // outline color 改用 `var(--table-cell-hover-outline-color, var(--border-hover))`,
 // allow DataTable cell host(spreadsheet overlay enabled 時)set 成 transparent
 // 抑制 outline,讓 overlay layer 接管 hover ring paint(per RFC Contract 8 「one geometry owner, two paint owners」)。
-// Backward-compat:flag 關時 default `--border-hover`,既有行為不變。
+// flag 關時沒有 overlay 接手 → 格子自己畫滑過外框(預設 `--border-hover`)。
 // 這顆是 DataTable 的值(2026-11-15 前叫 --cell-hover-outline-color;說明住 data-table.spec.md「儲存格滑過外框色」,稽核 P16)。
 export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hover:outline-offset-[-1px] hover:outline-[var(--table-cell-hover-outline-color,var(--border-hover))]'
 

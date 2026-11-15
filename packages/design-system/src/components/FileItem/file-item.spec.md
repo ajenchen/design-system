@@ -391,7 +391,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 
 世界級 DS 的幾何鐵律:**同一 flex 列的互動元素必須有統一 box 尺寸**,gap token 才能如實呈現。
 
-**Backward compat**:consumer 若沒傳 `onDownload` / `onRetry`,status icon 永遠保持 passive(不響應 hover)——既有使用者無感。
+**沒有動作就不給可點的樣子**:consumer 沒傳 `onDownload` / `onRetry` 時,status icon 保持 passive(不響應 hover)—— 按下去沒有事會發生,就不該看起來能按。
 
 **為什麼值得這麼做**:
 - passive 階段清楚告知使用者檔案狀態(✓ / ✗ 顏色強訊號)

@@ -47,9 +47,9 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['height', "'fill' | 'hug'", "'fill'", "'hug'=隨內容長高 / 'fill'=填滿可用高度(body 捲動);判準:開啟期間內容高度會不會變(舊名 autoHeight 已停用)"],
+                ['height', "'fill' | 'hug'", "'fill'", "'hug'=隨內容長高 / 'fill'=填滿可用高度(body 捲動);判準:開啟期間內容高度會不會變"],
                 ['maxHeight', 'string | number', '—', '只能選更矮的上限:min(視窗可用高度, 此值)'],
-                ['width', "'sm' | 'md' | 'lg' | 'xl' | number", "'md'", '寬度檔位或數字(px),兩種都是最大寬:實際寬 = min(此值, 所在區塊寬 − 96),沒有下限。檔位見「尺寸對照表」;數字只給檔位不適用的產品特例(舊名 maxWidth 已停用,保留一個版本、畫面不變)'],
+                ['width', "'sm' | 'md' | 'lg' | 'xl' | number", "'md'", '寬度檔位或數字(px),兩種都是最大寬:實際寬 = min(此值, 所在區塊寬 − 96),沒有下限。檔位見「尺寸對照表」;數字只給檔位不適用的產品特例'],
                 ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作(上一筆 / 下一筆 / ⋮ 更多);DS 自動在 actions 與關閉 × 之間放分隔線,防誤觸關閉'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

@@ -113,20 +113,20 @@ benchmark:
 先看分類表那一列的 `product`:
 
 **(一)產品可讀(`product` 是 `read` / `read-write`)的名字,與它的 Tailwind 轉接名**:
-1. **不得**以「設計系統、範例、WM 裡看不到讀者」為由刪 —— 產品不只 WM,看不到 ≠ 沒有。
-2. 要退場由 user 決定;分類表 `retired` 登記一筆:`name`、`quote`(user 原話,逐字)、`quoteDate`、`deprecatedIn`(標 deprecated、名字仍在的那一版)、`removedIn`(真正刪掉的那一版,不得等於 `deprecatedIn`)。先保留一版並在主人規格標 deprecated,下一版才刪。
-3. 閘 `scripts/token-creation-invariant.mjs` C10:對照基準(與 main 的分岔點、HEAD),產品可讀的名字在工作樹不再宣告、又不在 `retired` → 紅。
+1. **要不要退場由 user 決定**(改的是對外的 token 組,屬產品 / UI SSOT)。「設計系統與已知產品(本 repo `apps/`、WM)都沒有讀者」可以列為提案理由之一,但 AI 不得只憑它自己刪 —— 還要說得出這個名字為什麼沒有意義(用途寫不出、與別的名字同值重複……)。
+2. 分類表 `retired` 登記一筆:`name`、`quote`(user 原話,逐字)、`quoteDate`;改名另寫 `renamedTo`(新名字)。這是**授權紀錄**,不是相容:**0.x / 預發布版同一版直接刪**,不留舊名、不標 deprecated(相容政策 `../../ds-canonical/references/props-naming.md`「相容政策」,版本判斷 `scripts/lib/compat-policy.mjs`);1.0 以後的正式版才多寫 `deprecatedIn`(標 deprecated、名字仍在的那一版)與 `removedIn`(真正刪掉的那一版,不得等於 `deprecatedIn`),先保留一版。刪掉的名字(與它的 Tailwind 轉接名、改名的新名字)同一版登記進發布說明「破壞性變更」(`scripts/breaking-changes.json`,kind `token`)。
+3. 閘 `scripts/token-creation-invariant.mjs` C10:對照基準(與 main 的分岔點、HEAD),產品可讀的名字在工作樹不再宣告、又不在 `retired` → 紅;`retired` 缺 user 原話 / 日期 → 紅;1.0 以後的正式版缺兩個版本或兩版相同 → 紅。
 
 **(二)產品不讀(`product: no`)的名字**:`audit-orphan-tokens.mjs` 跑完跨 5 消費機制 verify 仍 0 consumer + 不落任何保留類別 → 才算真 retire 候選。走 retire flow:
 1. **Grep DS-wide** `*.spec.md` 看是否文件 cite 該 token 名(可能是「設計師未來會用」承諾)
 2. **Git blame** declare 提交 — 提交訊息 / PR 描述是否說明用途
 3. 兩 step 都無 → safe retire,從 `tokens/**/*.css` 刪宣告 + 加 git commit message cite 本 spec
 
-只有以下全部成立才 retire(原參考檔「Retire criteria 真實 strict」):真實 0 consumer + 不是產品可讀 + 不落任何保留類別(產品層預留 / 深色配對 / 色階完整……)。
+(二)只有以下全部成立才 retire(原參考檔「Retire criteria 真實 strict」):真實 0 consumer + 不是產品可讀 + 不落任何保留類別(產品層預留 / 深色配對 / 色階完整……)。產品可讀的名字不走(二),走(一)。
 
 ## 邊界案例
 
-- **Audit 間 token 重獲消費者(0 → N)**:audit 為每次執行的即時 snapshot(無跨次狀態),token 重獲消費後自動退出 retire 候選;無 deprecation period 機制(產品可讀的名字例外,見「退場流程」(一))
+- **Audit 間 token 重獲消費者(0 → N)**:audit 為每次執行的即時 snapshot(無跨次狀態),token 重獲消費後自動退出 retire 候選;0.x 沒有 deprecation period(相容政策);1.0 以後產品可讀的名字先保留一版(見「退場流程」(一))
 - **新 structural-keep token**:不在 baseline → `--check` fail,需 `--update` 顯式 justify(防 regex 過寬 silent absorb;baseline 縮減不 fail)— baseline SSOT `scripts/audit-orphan-tokens.baseline.json`
 - **Dark-mode token mirror 驗證**:非本 audit scope — script 只驗「消費存在性」,不驗 light / dark 配對完整性
 

@@ -27,9 +27,9 @@
  *             判法與 check_layout_space_magic_numbers.sh 同一套:utility-registry 的 micro 幾何分類器(直接呼叫 hooks/lib/_micro_geometry.sh)、
  *             分隔線與 `@layout-space-magic-ok:` 照舊放行;
  *         (c) 用 <div> / <p> 做標題(標題字級 + 加粗字重、只有文字、沒被截斷,而且後面接著它要當標題的區塊;不論排成幾行),
- *             typography.spec.md:43「視覺標題 ≠ 語義標題(一律用 h1–h6)」;
+ *             typography.spec.md:49「視覺標題 ≠ 語義標題(一律用 h1–h6)」;
  *         (d) DS 字級 token 裡沒有的 text-* 字級 class —— 允許集合從 typography.css 的 @utility 讀,Tailwind 預設字級從 tailwindcss/theme.css 讀;
- *             2026-10-20 起另收:設計原則層寫死的任意字級 text-[Npx|rem|em](typography.spec.md:13「font-size 由 text-{role} token 決定,
+ *             2026-10-20 起另收:設計原則層寫死的任意字級 text-[Npx|rem|em](typography.spec.md:14「font-size 由 text-{role} token 決定,
  *             不可繞過」;2026-10-21 起展示層也收(r1b TV-05:TreeView「拖曳重排」的移動紀錄寫死 11px,本條原本看不到);
  *             設計規格層的量測藍圖與 Inspector 表格另屬他題,不收)與 DS 顏色家族裡不存在的顏色 class(例 text-fg-primary:字幹是 DS 顏色家族、全名卻不是
  *             任何 @theme --color-*,不產生 CSS,畫面靜默落回繼承色)—— 顏色集合從 tokens 的 @theme 讀,不寫死清單。
@@ -208,12 +208,12 @@ export const RULES = Object.freeze({
   },
   'div-heading': {
     label: '(c) 用 div / p 做標題',
-    owner: 'packages/design-system/src/tokens/typography/typography.spec.md:43「視覺標題 ≠ 語義標題(一律用 h1–h6)」',
+    owner: 'packages/design-system/src/tokens/typography/typography.spec.md:49「視覺標題 ≠ 語義標題(一律用 h1–h6)」',
     fix: '改用 <h1>–<h6>,字級與字重 class 照舊(它若其實是列的名稱 / chrome 的文字,就用 span 或對應的 DS 元件,不是標題)',
   },
   'unknown-typography': {
     label: '(d) DS 沒有的字級 / 顏色 class',
-    owner: 'packages/design-system/src/tokens/typography/typography.css(@utility text-*)+ typography.spec.md:13(不可繞過 text-{role})+ tokens 的 @theme --color-*',
+    owner: 'packages/design-system/src/tokens/typography/typography.css(@utility text-*)+ typography.spec.md:14(不可繞過 text-{role})+ tokens 的 @theme --color-*',
     fix: null, // 由載入的字級集合動態產生(不手寫清單)
   },
 })

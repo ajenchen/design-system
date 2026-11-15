@@ -1,4 +1,4 @@
-// @anatomy-exempt: Header Anatomy pattern story — 涵蓋 2 家族:B chrome(ChromeHeader,single-row / withTabs)+ A overlay(SurfaceHeader)。
+// @anatomy-exempt: Header Anatomy pattern story — 涵蓋 2 家族:B chrome(ChromeHeader,single-row / tabsSlot)+ A overlay(SurfaceHeader)。
 // （leadingRail slot 因專搭 sidebar,canonical demo 在 AppShell primary-header,不在此孤立展示。）
 // 內部 title 用 flex 排列是 header content 結構,非 list row,不走 item-anatomy MenuItem。
 //
@@ -201,7 +201,7 @@ WithTabs.parameters = {
 }
 WithTabs.storyName = '含分頁列'
 
-/* withTabs × overflow(scroll / menu)— header 分頁列在窄容器的溢出模式。
+/* tabsSlot × overflow(scroll / menu)— header 分頁列在窄容器的溢出模式。
    對標專案管理工具的專案設定頁:細分頁多到單行放不下(概覽/待辦清單/衝刺/看板/報表/版本/元件/權限/通知)。
    Panel 限寬 420px + 9 個分頁強制觸發溢出;W2 契約(triggers 內縮 px-loose 對齊 header
    content row)三種 overflow 模式同享,border 隨溢出內容延展(min-w-full,header-canonical.spec.md Rule W2)。
@@ -253,14 +253,14 @@ function ProjectSettingsHeader({ overflow }: { overflow: 'scroll' | 'menu' }) {
   )
 }
 
-// withTabs + overflow="scroll":窄 header 的分頁列單行橫向捲動(fade mask + 左右 arrow)
+// tabsSlot + overflow="scroll":窄 header 的分頁列單行橫向捲動(fade mask + 左右 arrow)
 export const WithTabsOverflowScroll = () => <ProjectSettingsHeader overflow="scroll" />
 WithTabsOverflowScroll.storyName = '含分頁列 — 溢出水平捲動'
 WithTabsOverflowScroll.parameters = {
   docs: { description: { story: '分頁多到一列放不下時,分頁列單行橫向捲動,兩端淡出並出現捲動鈕。' } },
 }
 
-// withTabs + overflow="menu":窄 header 的分頁列 + 右側 ⌄ 導覽選單(show-all navigator)
+// tabsSlot + overflow="menu":窄 header 的分頁列 + 右側 ⌄ 導覽選單(show-all navigator)
 export const WithTabsOverflowMenu = () => <ProjectSettingsHeader overflow="menu" />
 WithTabsOverflowMenu.parameters = {
   docs: { description: { story: '分頁多到一列放不下時,分頁列右側出現 ⌄ 選單,列出全部分頁,點了就切過去。' } },

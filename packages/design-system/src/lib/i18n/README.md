@@ -1,6 +1,6 @@
 # DS i18n(Route B infrastructure)
 
-**Status**: shipped 2026-04-24(additive,backward compatible);2026-10-27 起由套件 root 出口(`I18nProvider` / `useI18n` / `I18nLabels` / `I18nProviderProps` / `I18nHookResult`)—— 之前 root barrel 產生器只讀 lib/ 底下一層的 `.ts`,consumer import 不到
+**Status**: shipped 2026-04-24(只新增、可選用:沒包 provider 時各元件照 prop 與預設文字);2026-10-27 起由套件 root 出口(`I18nProvider` / `useI18n` / `I18nLabels` / `I18nProviderProps` / `I18nHookResult`)—— 之前 root barrel 產生器只讀 lib/ 底下一層的 `.ts`,consumer import 不到
 
 ## 什麼
 

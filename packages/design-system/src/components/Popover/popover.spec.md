@@ -58,7 +58,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 
 **Dismiss 預設**(與 Dialog 一致):Popover **預設 dismissible** —— 點擊 trigger 外 / 按 Esc / 焦點被移到 content 樹之外(滑鼠點到別處、程式把焦點移走),三者任一皆關閉。由 Radix 內建 `onPointerDownOutside` / `onFocusOutside` / `onEscapeKeyDown` 行為提供,consumer 無需額外 wire。**鍵盤 Tab 不是離開的路**:面板裡按 Tab / Shift+Tab 在面板內繞圈、走不到 content 樹之外(見「A11y 預設」;2026-09-25 更正,原句「focus 離開 content 樹」被讀成 Tab 可以走出去,與實測不符)。如需強制 modal(必須按 Close 才能關),傳 `modal={true}` 並在 Header 放 Close 按鈕;但這是例外,不是預設——Popover 的本質是「使用者可以忽略、繼續主流程」。
 
-> **跨家族 SSOT pointer**:PopoverHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs(tabs 進 PopoverHeader 時 border auto-suppress + tabs size sm)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Popover 特有 close X v5 unbounded canonical。
+> **跨家族 SSOT pointer**:PopoverHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / tabsSlot(tabs 進 header 時 border auto-suppress + tabs size sm)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Popover 特有 close X v5 unbounded canonical。
 
 **Close X 按鈕(2026-04-22 v5 unbounded canonical)**:所有 `PopoverHeader` 內建右上 X 按鈕,`<Button data-dismiss iconOnly dismiss size="sm" />` native sm(28 md / 32 lg)。透過 SurfaceHeader 的 v5 CSS rule 自動套負 margin 讓 layout 佔位;PopoverHeader 走 `COMPACT_HEADER_SLOT`(= calc(--font-body-size×1.5) = 21 = title line-box,衍生)→ 佔位 21(輕量 chrome,見 `popover.tsx` docblock),非 Dialog 的 24。`hideClose` prop 可讓 composition 元件(如 Coachmark)選擇隱藏。詳 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。 標題列操作放 `<PopoverHeader actions={…}>`(與 × 之間的分隔線由 SurfaceHeader 放,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位)。
 

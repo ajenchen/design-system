@@ -208,7 +208,7 @@ function isTitleLeftFrame(root) {
  */
 export const SLOT_OWNERS = {
   // 批次操作緊接在「已選 N 項」與分隔線後、由左往右排(bulk-action-bar.tsx 的 actions 容器 `flex … flex-1`;spec「結構」圖)
-  'BulkActionBar.actions': { align: 'start', titled: false, cite: 'components/BulkActionBar/bulk-action-bar.tsx:172-173(actions 容器 flex-1,接在計數與分隔線後)+ bulk-action-bar.spec.md「結構」' },
+  'BulkActionBar.actions': { align: 'start', titled: false, cite: 'components/BulkActionBar/bulk-action-bar.tsx:170-171(actions 容器 flex-1,接在計數與分隔線後)+ bulk-action-bar.spec.md「結構」' },
   // 標題在左、header 操作在右上(Close X 左側)
   'DialogHeader.actions': { align: 'end', titled: true, cite: 'components/Dialog/dialog.spec.md:223「Header actions slot」' },
   // 右側操作區(對齊第一行、靠右)

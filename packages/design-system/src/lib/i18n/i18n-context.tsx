@@ -8,8 +8,8 @@ import * as React from 'react'
  * FileViewer labels / etc)+ `// i18n-allow` marker。
  *
  * Route B(本 module)= opt-in context provider,consumer 傳 labels catalog 一次性
- * 注入全 DS,個別 prop 不需每個 call site 傳。**完全 backward compatible** — 沒
- * 包 provider 不影響既有 prop-based 行為。
+ * 注入全 DS,個別 prop 不需每個 call site 傳。**可選用** — 沒
+ * 包 provider 時各元件照 prop 與預設文字(Fallback chain 見下)。
  *
  * ── Fallback chain(每個 label resolution)──
  *   1. Consumer 傳的 prop(e.g. `<Notice dismissAriaLabel="X" />`)

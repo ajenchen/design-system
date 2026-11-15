@@ -123,7 +123,7 @@ Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間�
 會 → `fill`;不會 → `hug`。理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 ——
 先把可用高度穩定下來、讓 body 自己捲,外框就不動了。**現在預期不會變、但未來會加入異步 section 的,選 `fill`。**
 
-實作:`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。**DS 內部(元件、story、閘的夾具)已沒有用法**(2026-10-20 把 30 處用法遷完 —— 27 處在 DS 原始碼(CommandDialog、AgentPanel 改名 / 刪除對話框、各頁 story)、3 處在閘的夾具;獨立驗證 OV-09:設計原則頁還在教舊名);這個 prop 留著,既有 consumer 才不會壞。閘 `scripts/overlay-story-contract-invariant.mjs` S3(DS 原始碼與閘夾具裡任何 `<DialogContent autoHeight>` 都紅)。
+舊名 `autoHeight?: boolean`(等同 `height="hug"`)2026-09 停用、2026-11-15 移除,不留舊名(user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」)。升版對照:`autoHeight` → `height="hug"`、`autoHeight={cond}` → `height={cond ? 'hug' : 'fill'}`。DS 內部 2026-10-20 已遷完 30 處用法(27 處在 DS 原始碼、3 處在閘的夾具);閘 `scripts/overlay-story-contract-invariant.mjs` S3 擋文件與範例把它寫回來(型別已不收)。
 
 **世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`,[_dialog.scss#L39-L44](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/dialog/internal/_dialog.scss#L39-L44))、
 Atlassian(`if (!input) return 'auto'`)、Polaris(只宣告 `max-height`)、Carbon(size 綁 48/72/84/96% 上限)、
@@ -173,7 +173,7 @@ DS 自己的元件、範例、規格只寫檔位名,不寫數字(閘 `scripts/si
 
 **不提供 `"fill"`(撐滿)與 `"hug"`(跟內容)**【AI 推導 2026-11-15】:撐滿與上面 user 那句「螢幕太大時仍想要確保其寬度不會大到內容變得難以閱讀」相反,邊到邊看檔案已有 FileViewer(`../FileViewer/file-viewer.spec.md`);跟內容的外框會隨內容左右跳,與 `height` 預設 `fill` 是同一個理由(「高度軸」)。
 
-**舊名 `maxWidth`(`@deprecated`,保留一個版本)**:2026-11-15 前寬度參數叫 `maxWidth`(預設 512px,沒有寫過理由),但它的行為就是「寬」(外框 `w-full` + 這個上限),名字與行為不符(props-naming.md「尺寸參數」第 3 條)。現在 number 視為 px、string 原樣當 CSS 寬,畫面不變;與 `width` 同時傳時 `width` 勝、開發模式 warn(同條第 5 條「新名勝舊名」)。DS 內不得再用(閘 `sizing-props-invariant.mjs` R1 / R2)。**預設 512 → 480**:吃預設的對話框(DS 內含 `CommandDialog`)窄 32px;明寫寬度的產品畫面不變。
+**舊名 `maxWidth`(已移除)**:2026-11-15 前寬度參數叫 `maxWidth`(預設 512px,沒有寫過理由),但它的行為就是「寬」(外框 `w-full` + 這個上限),名字與行為不符(props-naming.md「尺寸參數」第 3 條)。改名後不留舊名(同條第 5 條,0.x 相容政策)。升版對照:`maxWidth={N}`(number)→ `width={N}`,或照下方選檔規則換成檔名;`maxWidth="…"`(CSS 字串)沒有對應,改成數字或檔名。閘 `sizing-props-invariant.mjs` R1 / R2 擋舊名寫回 DS。**預設 512 → 480**:吃預設的對話框(DS 內含 `CommandDialog`)窄 32px;明寫寬度的產品畫面不變。
 
 **不加文字行寬上限**:user 2026-11-15 撤回「大對話框連續文字限寬」(逐字):「我覺得這句很怪，在沒有完整配套之下，你確定這個不是在畫蛇添足？？我認為這麼大的modal其中的內容要如何排版就是消費者基於layout space的原則去進行調整吧？…那為何還要多這條規則？確定真的沒有雞婆？？？」—— Dialog 不管框內文字的行寬;大檔、超大檔與自訂寬裡怎麼排,由消費者依 `../../tokens/layoutSpace/layoutSpace.spec.md` 的規則處理。
 
@@ -195,7 +195,7 @@ DS 自己的元件、範例、規格只寫檔位名,不寫數字(閘 `scripts/si
 ## 父層契約
 
 **父層契約(2026-09-12 補,原本漏了)**:DialogContent 必須是 `flex flex-col` + `max-h` + **`overflow-hidden min-h-0`**。
-這不是新規定 —— `patterns/overlay-surface/overlay-surface.tsx:183-185` 逐字寫著「parent(PopoverContent /
+這不是新規定 —— `patterns/overlay-surface/overlay-surface.tsx:173-175` 逐字寫著「parent(PopoverContent /
 HoverCardContent / Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」,Popover 與 HoverCard 一直有,
 **Dialog 與 Sheet 漏了**(user 2026-09-12 截圖:視窗變矮時 dialog body 內容直接畫到圓角容器外面)。
 
@@ -210,7 +210,7 @@ Radix Tabs Root 是裸 `display: block` + `min-height: auto`,夾在中間時整�
 
 ## 關閉按鈕
 
-> **跨家族 SSOT pointer**:DialogHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs(tabs 進 header 時 border auto-suppress)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Dialog 特有 close X size + chrome-unbounded rationale。
+> **跨家族 SSOT pointer**:DialogHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / tabsSlot(tabs 經 tabsSlot 進 header 時 border auto-suppress)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Dialog 特有 close X size + chrome-unbounded rationale。
 
 永遠存在於 DialogHeader 右側。使用 `<Button data-dismiss iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`(讀屏名稱可經 `I18nProvider` 的 `dialog.close` 換字,`../../lib/i18n/README.md`「Fallback chain」),不可移除——使用者永遠需要明確的關閉手段。
 

@@ -64,14 +64,11 @@ DropdownMenu                    ← Radix Root，管理開關狀態
       DropdownMenuSubContent    ← 子選單浮層
     DropdownMenuLabel           ← 群組標題（不可互動）
     DropdownMenuSeparator       ← 明確分隔線（consumer 手動放置）
-    DropdownMenuShortcut        ← 鍵盤快捷鍵提示 child(composition escape-hatch;canonical 用 item `shortcut` prop)
 ```
 
-**快捷鍵提示 API（兩條,擇一不混用）**：
-- **Canonical:`<DropdownMenuItem shortcut="⌘C">`** prop —— 渲染進 MenuItem `endContent` 正規後綴 slot(跟 badge / endIcon 同槽,gap / 對齊一致)。**標準場景一律用 prop。**
-- **Escape-hatch:`<DropdownMenuShortcut>` child** —— 保留以相容 shadcn DropdownMenuShortcut idiom(source:https://ui.shadcn.com/docs/components/dropdown-menu 的 `DropdownMenuShortcut` = `ml-auto` span,npm published API)。⚠️ 本 DS 的 MenuItem 把 children 塞進 ItemContent 的 label `<span>`(非 flex row),故 child 上的 `ml-auto` **不會靠右**——⌘N 只會 inline 附加在 label 文字尾端。要真正靠右對齊列尾的後綴,一律用上方 canonical `shortcut` prop。
-- 兩者**字體樣式統一**(`text-caption` + `tracking-shortcut` + `fg-muted`,與 CommandShortcut 一致),但**位置不等價**(prop 靠右對齊列尾;child inline 附加在 label 尾);**同一 item 只用一種**(見「禁止事項」)。
-- 為何不砍 child 只留 prop:`DropdownMenuShortcut` 是 npm published API(對齊 shadcn,fork repo 可能用),硬砍 = breaking;故保留為 escape-hatch,prop 為 canonical preferred。
+**快捷鍵提示 API(只有一條)**：`<DropdownMenuItem shortcut="⌘C">` prop —— 渲染進 MenuItem `endContent` 正規後綴 slot(跟 badge / endIcon 同槽,gap / 對齊一致,靠右對齊列尾;字體 `text-caption` + `tracking-shortcut` + `fg-muted`,與 CommandShortcut 一致)。
+
+**`DropdownMenuShortcut` 已移除(2026-11-15)**:它是相容 shadcn 的 child(shadcn 的 `DropdownMenuShortcut` = `ml-auto` span,source:https://ui.shadcn.com/docs/components/dropdown-menu),在本 DS 的 MenuItem 裡進的是 label `<span>`(非 flex row)、`ml-auto` 不生效 —— 只會 inline 附加在 label 尾、不靠右,跟 prop 位置不等價。2026-11-15 前保留它的唯一理由是它已在 npm 發布、拿掉算破壞性變更;0.x 不做向後相容(user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;政策 `../../../ds-canonical/references/props-naming.md`「相容政策」),所以拿掉。升版對照:`<DropdownMenuItem>新增<DropdownMenuShortcut>⌘N</DropdownMenuShortcut></DropdownMenuItem>` → `<DropdownMenuItem shortcut="⌘N">新增</DropdownMenuItem>`。
 
 ### DropdownMenuGroup 的自動分隔
 
@@ -123,7 +120,7 @@ CheckboxItem 和 RadioItem 雖然涉及「選擇」，但它們控制的是**即
 
 - prefix：由 `DropdownMenuItem` 的 `startIcon` prop 傳入，經 MenuItem 內部的 prefix 對齊容器（消費 item-anatomy 的 `itemPrefixAlignVariants`，`h-[1lh]` 對齊第一行 label）渲染。icon 跟 label 同色（foreground）
 - label：文字內容，`flex-1`
-- suffix：canonical 走 item prop（`shortcut` / `badge` / `endIcon` → MenuItem `endContent` 正規 slot，真正靠右對齊列尾）；`DropdownMenuShortcut` child 僅相容用 escape-hatch（inline 附加在 label 尾、**不靠右**,見「快捷鍵提示 API」段）。指示型 icon 用 `fg-muted`
+- suffix：走 item prop（`shortcut` / `badge` / `endIcon` → MenuItem `endContent` 正規 slot，真正靠右對齊列尾;見「快捷鍵提示 API」段）。指示型 icon 用 `fg-muted`
 
 padding 公式：`py = (field-height - 1lh) / 2`，單行時總高度等於同 size 的 Button / Input。
 
@@ -215,7 +212,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 - ❌ disabled item 不可有 hover 效果
 - ❌ Label 不可被點擊或取得焦點
 - ❌ 不要手動在 SubTrigger 內加 ChevronRight——元件自動渲染
-- ❌ 不要在同一 item 混用 `shortcut` prop 與 `<DropdownMenuShortcut>` child(兩條後綴 API 擇一;canonical 用 prop)——同一個 item 只用一種後綴
+- ❌ 不要把快捷鍵寫成 children 裡的 `<span>`(shadcn 的 `DropdownMenuShortcut` 寫法;會 inline 接在 label 尾、不靠右)—— 一律用 `shortcut` prop
 
 ---
 

@@ -271,7 +271,8 @@ const InspectorInner = () => {
               <div className="flex items-center justify-center overflow-hidden"
                 style={{
                   width: 72, height: 72,
-                  borderRadius: shape === 'circle' ? '50%' : '4px',
+                  // 圓角照 radius.spec.md「四檔」:圓形 = full、方形 = md(原寫 50% / 4px,72×72 正方形上畫出來相同)
+                  borderRadius: shape === 'circle' ? 'var(--radius-full)' : 'var(--radius-md)',
                   background: Z.container.bg,
                   border: `2px dashed ${Z.container.border}`,
                 }}>

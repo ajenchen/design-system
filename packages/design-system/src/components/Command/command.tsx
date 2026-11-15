@@ -463,7 +463,7 @@ const CommandList = React.forwardRef<
       conflicting code(修前): 本 ScrollArea 固定 max-h-300 無 flex-1 → 在夾住的 SelectMenu PopoverContent
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
-        `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。
+        `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 不起作用(放在任何容器都安全【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。
       清單捲動上限 18.75rem(300px):值只住這一行(command.spec.md「邊界案例」清單捲動上限;只有 CommandList 在讀、
         不隨密度切換 → 不開 token,2026-11-11 token「3全收」從 uiSize.css 收回)。 */
   <ScrollArea className="flex-1 min-h-0 max-h-[18.75rem]">

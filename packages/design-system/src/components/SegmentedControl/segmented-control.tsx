@@ -26,7 +26,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  *   md   h-field-md（32/36）★ 預設（跟 Button / Input / 所有 field-height 系列一致）
  *   lg   h-field-lg（36/40）
  *
- * ── width(寬度模式;2026-11-15 前叫 fullWidth,舊名留一個版本)──
+ * ── width(寬度模式;2026-11-15 前叫 fullWidth,已移除)──
  *   'hug'  ★ 預設，item 寬度由內容決定（hug content）
  *   'fill' SegmentedControl 撐滿父容器寬度，所有 item 等分
  *
@@ -81,8 +81,6 @@ export interface SegmentedControlProps
    * 全 DS 的「撐滿 / 跟內容」只用 `width`(`ds-canonical/references/props-naming.md`「尺寸參數」;user 2026-11-11「尺寸:甲」)。
    */
   width?: SizingMode
-  /** @deprecated 2026-11-15 起改用 `width="fill"`(「尺寸:甲」)。保留一個版本,行為與畫面不變;同時傳 `width` 時以 `width` 為準。 */
-  fullWidth?: boolean
   iconOnly?: boolean
   value?: string
   defaultValue?: string
@@ -97,8 +95,7 @@ const SegmentedControl = React.forwardRef<
     {
       className,
       size: sizeProp,
-      width: widthProp,
-      fullWidth = false,
+      width = 'hug',
       iconOnly = false,
       disabled,
       children,
@@ -112,8 +109,6 @@ const SegmentedControl = React.forwardRef<
     // Field 內自動讀 size + disabled,跟 Button 同機制(SSOT resolver hook)
     const resolvedSize = useResolvedFieldSize<SegmentedControlSize>(sizeProp, 'md')  // SSOT:統一 size resolution(原散落 ?? fieldCtx?.size ?? 'md')
     const resolvedDisabled = useResolvedFieldDisabled(disabled)
-    // 寬度模式:`width` 優先;舊名 `fullWidth`(deprecated)= `width="fill"`。
-    const width: SizingMode = widthProp ?? (fullWidth ? 'fill' : 'hug')
 
     // 2026-07-04:恆 controlled mirror(見下方 onValueChange 註解)— uncontrolled consumer 的
     // defaultValue 收進 internal state,Radix 永遠拿 controlled value → deselect 空值可攔。

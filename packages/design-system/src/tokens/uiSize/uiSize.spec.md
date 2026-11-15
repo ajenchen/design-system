@@ -248,7 +248,7 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 
 應用程式 chrome 區域(Sidebar header、app top bar、主內容 page header)共用的高度語義。Authority 定義在 DS package `packages/design-system/src/tokens/uiSize/uiSize.css`，確保 package consumer 不需重複宣告。這是跨佈局層級 token；本節擁有其語意與 consumer 清單，source 擁有確切宣告。
 
-**Cross-family canonical SSOT pointer**:chrome + overlay 兩 header 家族的完整視覺契約(border / padding / withTabs lockstep / size 對應 / Token equality enforcement)詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify token 本身定義 + consumer 清單。
+**Cross-family canonical SSOT pointer**:chrome + overlay 兩 header 家族的完整視覺契約(border / padding / tabsSlot lockstep / size 對應 / Token equality enforcement)詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify token 本身定義 + consumer 清單。
 
 | Token | md | lg | 消費者 |
 |-------|----|----|--------|

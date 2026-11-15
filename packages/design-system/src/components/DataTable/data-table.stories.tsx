@@ -3,9 +3,9 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
+import { createColumnHelper } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown, Copy } from 'lucide-react'
-import { DataTable, type DataTableSelection } from './data-table'
+import { DataTable, type DataTableColumnDef, type DataTableSelection } from './data-table'
 import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { PerfDebugOverlay } from './perf-debug-overlay'
 import { DataTableSortManager } from './data-table-sort-manager'
@@ -359,7 +359,7 @@ export const ColumnReorder: Story = {
     const lockedCols = columnsWithPrice.map((c) => {
       const ak = (c as { accessorKey?: string }).accessorKey
       return ak === 'sku' ? { ...c, meta: { ...(c.meta ?? {}), locked: true } } : c
-    }) as ColumnDef<Product>[]
+    }) as DataTableColumnDef<Product>[]
     const handleColumnReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
       setColumnOrder((prev) => {
         const next = prev.filter((id) => id !== sourceId)
@@ -411,7 +411,7 @@ export const RowAutoHeightInlineEdit: Story = {
           : 'Standard delivery.',
       }))
     )
-    const cols: ColumnDef<Product & { note: string }>[] = [
+    const cols: DataTableColumnDef<Product & { note: string }>[] = [
       { accessorKey: 'sku', header: 'SKU', meta: { type: 'string', width: 100 } },
       { accessorKey: 'name', header: 'Product', meta: { type: 'string', editable: true, width: 240 } },
       { accessorKey: 'category', header: 'Category', meta: { type: 'select', editable: true, width: 160, options: [
@@ -1507,7 +1507,7 @@ export const WithBulkActions: Story = {
 export const SelectionKeyboardAndShift: Story = {
   name: '範圍選取與鍵盤',
   render: () => {
-    const [selection, setSelection] = React.useState<string[]>([])
+    const [selection, setSelection] = React.useState<DataTableSelection>({ mode: 'include', ids: [] })
     const data = generateLargeData(15)
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
@@ -1522,7 +1522,7 @@ export const SelectionKeyboardAndShift: Story = {
           maxHeight={400}
           selectable
           selection={selection}
-          onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
+          onSelectionChange={setSelection}
           getRowId={(row) => row.sku}
         />
       </div>
@@ -1534,7 +1534,7 @@ export const SelectionKeyboardAndShift: Story = {
 export const SelectionSingleMode: Story = {
   name: '單選模式',
   render: () => {
-    const [selection, setSelection] = React.useState<string[]>([])
+    const [selection, setSelection] = React.useState<DataTableSelection>({ mode: 'include', ids: [] })
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
@@ -1548,7 +1548,7 @@ export const SelectionSingleMode: Story = {
           maxHeight="none"
           selectable="single"
           selection={selection}
-          onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
+          onSelectionChange={setSelection}
           getRowId={(row) => row.sku}
         />
       </div>
@@ -1560,7 +1560,7 @@ export const SelectionSingleMode: Story = {
 export const SelectionDisabledRows: Story = {
   name: '不可選取的列',
   render: () => {
-    const [selection, setSelection] = React.useState<string[]>([])
+    const [selection, setSelection] = React.useState<DataTableSelection>({ mode: 'include', ids: [] })
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
@@ -1572,7 +1572,7 @@ export const SelectionDisabledRows: Story = {
           maxHeight="none"
           selectable
           selection={selection}
-          onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
+          onSelectionChange={setSelection}
           getRowId={(row) => row.sku}
           isRowSelectable={(row) => row.stock !== 'Out of stock'}
         />
@@ -2409,6 +2409,9 @@ export const RoadmapAllInOne: Story = {
     const columns = useRoadmapColumns()
     const [search, setSearch] = React.useState('')
     const [selection, setSelection] = React.useState<string[]>([])
+    // DataTable 收 DataTableSelection(跟 onSelectionChange 同型);這張表只用 include(沒有「選取全部 N 筆」),
+    // ids 存在 state 給 BulkActionBar 用,傳給表格的物件用 useMemo 固定身分(每次 render 現做新物件 = 列快取每次失效)
+    const tableSelection = React.useMemo<DataTableSelection>(() => ({ mode: 'include', ids: selection }), [selection])
     const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [filterTree, setFilterTree] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
@@ -2556,7 +2559,7 @@ export const RoadmapAllInOne: Story = {
             maxHeight="100%"
             inlineEdit
             selectable
-            selection={selection}
+            selection={tableSelection}
             onSelectionChange={(s) => setSelection(s.mode === 'include' ? s.ids : [])}
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}

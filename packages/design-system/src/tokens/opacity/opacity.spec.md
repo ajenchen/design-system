@@ -6,9 +6,14 @@ Opacity 定義元件停用狀態的透明度，確保全系統 disabled 視覺�
 
 ## Token
 
+下表 utility 欄是允許清單的來源(閘 `scripts/token-allowlist-invariant.mjs` 驗 `../utility-registry.json` 的 `opacity.allow` 逐字相等)。
+
+<!-- opacity-scale:start -->
 | Token | 值 | Tailwind utility | 用途 |
 |-------|-----|-----------------|------|
 | `--opacity-disabled` | 0.45 | `opacity-disabled` | 所有元件的 disabled 狀態 |
+| —(不是 token)| 0 / 1 | `opacity-0` / `opacity-100` | 顯示 / 隱藏切換(淡入淡出的兩端、hover 才出現的動作鈕),**不是透明度角色**:只有全透明與不透明兩端,沒有「半透明」的中間值 |
+<!-- opacity-scale:end -->
 
 ## 使用規則
 
@@ -60,7 +65,7 @@ Tailwind 提供 `opacity-{5/10/20/30/40/50/60/70/80/90/95}` 百分比 ladder,但
 
 ## 消費者
 
-直接套用 `opacity-disabled` 的元件（grep 驗證 2026-07-16;Textarea 已全面 token-swap 化移除）：Avatar（Field disabled context self-dim）、Button（`aria-disabled` 分支）、MenuItem、Rating（disabled / loading 整塊）、Steps、Switch、DataTable（drag source 半透 + 整表 refresh loading reuse，經 `lib/drag-visual.ts`）、PersonDisplay（disabled 整塊,`person-display.tsx:139`）。
+直接套用 `opacity-disabled` 的元件（grep 驗證 2026-07-16;Textarea 已全面 token-swap 化移除）：Avatar（Field disabled context self-dim）、Button（`aria-disabled` 分支）、MenuItem、Rating（disabled / loading 整塊）、Steps、Switch、DataTable（drag source 半透 + 整表 refresh loading reuse，經 `lib/drag-visual.ts`）、PersonDisplay（disabled 整塊,`person-display.tsx:138`）。
 
 非消費者（曾誤列）：Slider / Sidebar 走灰階 token swap；Chip 無 opacity 用例；Field wrapper blanket 已移除（Avatar self-dim 取代，見 field-wrapper.tsx 註解）。
 

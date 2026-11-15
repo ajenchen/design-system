@@ -217,7 +217,6 @@ export {
   DataTableSortManager,
   MIN_COLUMN_WIDTH,
   createEmptyFilterTree,
-  dataTableFilterMatch,
   dataTableVariants,
   distributeColumnWidths,
   evaluateTree,
@@ -225,6 +224,7 @@ export {
 } from './components/DataTable/index'
 export type {
   Conjunction,
+  DataTableColumnDef,
   DataTableColumnVisibilityPanelProps,
   DataTableFilterPanelLabels,
   DataTableFilterPanelProps,
@@ -285,7 +285,6 @@ export {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -387,12 +386,10 @@ export type {
 } from './components/Pagination/index'
 export {
   MultiPersonDisplay,
-  PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS,
   PeoplePicker,
   PersonAvatarTag,
   PersonDisplay,
   buildPersonProfileCard,
-  getPeoplePickerTagWrapperClass,
   resolvePerson,
 } from './components/PeoplePicker/index'
 export type {

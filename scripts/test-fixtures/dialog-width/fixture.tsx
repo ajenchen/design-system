@@ -2,11 +2,11 @@
 // 由 scripts/lib/storybook-css-fixture.mjs 用 esbuild 從原始碼打包、配同一份 storybook 建置的 CSS 在本機靜態頁開,
 // 量到的是「這次 checkout 的 dialog.tsx + 那份建置的樣式」。
 //
-// 為什麼不是 story:要量的是任意寬度參數 × 任意舞台尺寸的幾何(檔位、數字、舊名、兩個同時傳、600 寬的 portalContainer 舞台),
-// 寫成 story 等於拿「同時傳 width 與 maxWidth」「寫數字寬」這些 DS 規格叫人不要做的寫法當範例(dialog.spec.md「寬度檔位」)。
+// 為什麼不是 story:要量的是任意寬度參數 × 任意舞台尺寸的幾何(檔位、數字、600 寬的 portalContainer 舞台),
+// 寫成 story 等於拿「寫數字寬」這種 DS 規格叫人不要做的寫法當範例(dialog.spec.md「寬度檔位」)。
+// (2026-11-15 前另量舊名 maxWidth 的相容路徑;舊名已移除,0.x 不留舊名。)
 // 一次只掛一個對話框,參數走網址:
 //   ?w=sm|md|lg|xl|<px>    DialogContent width(不給 = 不傳,吃預設)
-//   ?mw=<px>|<CSS 長度>      DialogContent maxWidth(已停用的舊名)
 //   ?h=fill|hug            DialogContent height(預設 hug)
 //   ?stage=<寬>x<高>         有給 = 傳 portalContainer 給一個帶 transform 的舞台(左 120、上 80 的位置),量「以所在區塊計算」
 // 夾具自己的版面用行內樣式:這個檔不在 Tailwind 的 @source 範圍裡,寫 class 不會產生樣式;DS 元件的樣式來自元件本身。
@@ -19,7 +19,6 @@ type DialogWidth = ComponentProps<typeof DialogContent>['width']
 const params = new URLSearchParams(window.location.search)
 const lengthParam = (raw: string | null) => (raw == null ? undefined : /^\d+$/.test(raw) ? Number(raw) : raw)
 const width = lengthParam(params.get('w')) as DialogWidth
-const maxWidth = lengthParam(params.get('mw'))
 const height = params.get('h') === 'fill' ? 'fill' : 'hug'
 const stageParam = params.get('stage')
 const [stageW, stageH] = stageParam ? stageParam.split('x').map(Number) : [0, 0]
@@ -29,7 +28,7 @@ const STAGE_OFFSET = { left: 120, top: 80 }
 function TestDialog({ container }: { container?: HTMLElement }) {
   return (
     <Dialog open>
-      <DialogContent id="dw-dialog" width={width} maxWidth={maxWidth} height={height} portalContainer={container} aria-describedby={undefined}>
+      <DialogContent id="dw-dialog" width={width} height={height} portalContainer={container} aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>匯入預覽</DialogTitle>
         </DialogHeader>

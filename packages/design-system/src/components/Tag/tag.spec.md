@@ -224,7 +224,7 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 | `avatar` | `ReactNode` | 左側 avatar。與 icon 互斥 |
 | `onRemove` | `() => void` | 可移除——Tag 自動渲染 remove 按鈕並控制尺寸與互動樣式(從集合移除 item) |
 | `removeAriaLabel` | `string` | remove 按鈕 aria-label 的目標名(對齊 FileUpload `removeAriaLabel` 同場景 + `<動作>AriaLabel` 命名慣例)。**children 為非字串 ReactNode 時必傳**,否則 SR 只讀得出泛稱「移除」、辨識不出移除哪個 Tag;children 為字串時預設取 children |
-| ~~`dismissLabel`~~ | `string` | **@deprecated 2026-07-17 → `removeAriaLabel`**(dismiss 保留給 Alert/Notice/Toast「通知被忽略」;過渡一版仍可用) |
+| ~~`dismissLabel`~~ | — | **已移除**(2026-07-17 改名 `removeAriaLabel`,2026-11-15 拿掉舊名;dismiss 保留給 Alert/Notice/Toast「通知被忽略」)。升版對照:`dismissLabel="…"` → `removeAriaLabel="…"` |
 | `solid` | `boolean` | 深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字），預設 false |
 | `unbounded` | `boolean` | 預設 false = 寬度 cap 160px;true = 寬度交給 parent constrain（cell-as-input narrow cell 場景），詳「邊界案例」 |
 
@@ -276,7 +276,7 @@ Tag 是**純顯示 indicator**(Family 3 indicator variant,見「與 Button 的�
 Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 ARIA 行為:
 
 - **靜態 Tag**(無 `onRemove`):render 為 `<div data-tag-root>`(無 role、`inline-flex`,SR 等價於無語意 generic container,視覺上為 inline-level 跟隨 inline flow)。若 Tag 表達狀態語意(「進行中」「已逾期」),consumer 應在父 region 用 `aria-label` 或視覺 prefix(icon)讓 SR 理解 context
-- **Removable Tag**(`onRemove` 存在):inline X close 走 `<ItemInlineActionButton icon={X} size="md" aria-label="移除 {name}" />`(item-anatomy SSOT 的原生 `<button>`,非 `Button` 元件)— 對齊 inline-action canonical(`patterns/element-anatomy/inline-action.spec.md`)。**名稱來源**:`removeAriaLabel` prop 優先(舊名 `dismissLabel` deprecated 仍支援),否則取字串 children;**若 children 是非字串 ReactNode(如 avatar + 排版節點)且未傳 `removeAriaLabel`,aria-label 會退化成泛稱「移除」**——多個 Tag 並排時 SR 無法區分移除哪一個,故非字串 children 必傳 `removeAriaLabel`
+- **Removable Tag**(`onRemove` 存在):inline X close 走 `<ItemInlineActionButton icon={X} size="md" aria-label="移除 {name}" />`(item-anatomy SSOT 的原生 `<button>`,非 `Button` 元件)— 對齊 inline-action canonical(`patterns/element-anatomy/inline-action.spec.md`)。**名稱來源**:`removeAriaLabel` prop 優先,否則取字串 children;**若 children 是非字串 ReactNode(如 avatar + 排版節點)且未傳 `removeAriaLabel`,aria-label 會退化成泛稱「移除」**——多個 Tag 並排時 SR 無法區分移除哪一個,故非字串 children 必傳 `removeAriaLabel`
 - **Keyboard**:靜態 Tag 不取得 focus(無互動);**例外:截斷時條件性 `tabIndex=0`**(2026-07-06 拍板)——全文 tooltip 需鍵盤可達,APG Tooltip pattern 原文「popup 在元素收到鍵盤焦點或 hover 時顯示」= trigger 可 focus 是 W3C 官方前提;Radix Tooltip focus-open 自動生效,未截斷不入 tab 序。dismissible 的 X 走原生 button 鍵盤(Tab → focus → Enter/Space → dismiss)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27))
 - **Color-only 語意警告**:Tag 用色相區分狀態時必有文字 label 或 prefix icon(色盲 user 友好);對齊 WCAG 1.4.1「不僅靠顏色傳達」
 - **驗證**:Storybook a11y addon panel 0 critical violation;WCAG AA contrast ≥ 4.5:1(text)/ 3:1(icon)
