@@ -1246,7 +1246,7 @@ jobs:
           # Esc 依形態、焦點後備,加上舊閘保留的浮層遮罩 / 宿主不可操作 / 把手外側命中 / 層級 40 < 45 < 50;
           # 2026-10-14 審查補 S14–S22(點 Menu 浮層外收回、滑鼠點進再 Esc 焦點回入口鈕、寬 0 Menu 不可聚焦、浮層上面的層可操作、
           # 要求的 Right 捲到看得到、Menu 兩份共用狀態、從 AI agent 導向 Main);2026-10-15 / 10-20 r1b 複驗補 S23–S28(Menu 浮層底色 / 第一個 Tab / 名稱、
-          # 一下 Esc 收回、primary-header 細列不跳、三顆把手名稱與 aria-controls、模擬網址列不 inert、殼 = 模擬瀏覽器畫布、換到 Insights 收起詳情)。
+          # 一下 Esc 收回、primary-header 細列不跳、三顆把手名稱與 aria-controls、模擬網址列不 inert、殼 = 模擬瀏覽器畫布、換到 Active sprint(2026-11-15 前叫 Insights)收起詳情)。
           # --selftest:9 個改壞的模型 + 21 種頁面破壞各自必紅(本機合計約 2 分 20 秒,含非 selftest 那一趟)。
           npm run test:app-shell-layout
           # 選單鍵盤(2026-09-25 待辦總帳 B10 / B11):子選單 Esc 一次只關一層、焦點回上一層那一項;選單開著按 Tab 收起全部、
@@ -1390,6 +1390,7 @@ jobs:
     # 2026-11-12 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 / 2026-11-05 的拆法)。
     # 原 job 在 PR #172 9126e95b 跑到 25 分上限被取消(前一次綠 21.6 分;第四批加了浮層密度閘、密度組合,視覺稽核的場景數也到 104)。
     # 本 job = 「版面間距 / 密度 / 浮層標題區」主題的十支(原 job 逐支計時合計 515 秒)。準備步驟與原 job 逐字相同(ci-workflow-scope 斷言)。
+    # 2026-11-15 加第十一支 test:sidebar-label-matches-header(A15;與 test:sidebar-main-follows-selection 同一批 story,本機實測時間見那一步的註解)。
     # 2026-11-12 曾從 verify-browser-interaction 搬來水平溢出閘(那支在原 job 第 16 分 55 秒才開始跑);2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
     # 2026-11-14 A7 ①④:浮層密度閘 4 → 28 格,本機主跑 + --selftest 合計 11 → 68 秒;⑤ section-gap 主跑 8 → 16 秒、--selftest 不到 1 → 2 秒。
     # 1859b728 那一輪本 job 19 分 45 秒(上限 25;含後來搬走的水平溢出閘)。
@@ -1479,8 +1480,13 @@ jobs:
           npm run test:form-example-card
           # Sidebar 展示主區跟著選到的項目走(2026-11-06 user #56 甲):資料夾 → 檔案清單 DataTable、檔案 → 版本紀錄、專案 → 議題、主導覽 → 範本 DashboardPage 做法(不放 DescriptionList);
           # 主區只有一張表格 → 標頭下不放區段標題(2026-11-11 user 留言;app-shell.spec.md「Main 內塞什麼」)。
-          # 「混合內容」實際點樹 frontend → backend → README.md → Dashboard。修前 main 8eb473c7 建置五則都是同一份 Sprint 摘要(紅);修前 411fcc49 建置表格上方有區段標題(紅)。
+          # 「混合內容」實際點樹 frontend → backend → README.md → Due soon(2026-11-15 前叫 Dashboard)。修前 main 8eb473c7 建置五則都是同一份 Sprint 摘要(紅);修前 411fcc49 建置表格上方有區段標題(紅)。
           npm run test:sidebar-main-follows-selection
+          # 側欄選中項的字 = 頁面標頭的字(sidebar.spec.md「選中項的字 = 那一頁標頭的字」;user 2026-11-11 問句「第二題要確保sidebar menu item 的文案跟標頭是一樣的吧？」):
+          # 有側欄的 story 從建置的 index.json 推(不手列),每則進頁 + 點過側欄每一個看得到的項目之後,同一個 SidebarProvider 裡的選中項與標頭比字;
+          # 詳細頁(標頭的麵包屑前一層 = 選中項、末位 = 標頭)跳過【AI 推導 2026-11-15】。修前 06aaca03 建置:AppShell 元件總覽、Sidebar 狀態行為點了別項標頭仍寫死「Dashboard」(紅)。
+          # --selftest:判定表 + 盤點 + 夾具頁八種畫面 + 真建置把標頭改字 / 塞麵包屑(兩面)。本機(2026-11-15)主跑 + --selftest 合計 16 秒(40 則 story、93 個畫面);CI 未實測。
+          npm run test:sidebar-label-matches-header
 
   verify-browser-horizontal-overflow:
     # 2026-11-14 拆自 verify-browser-layout(A7 ②;照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-11-05 / 2026-11-12 的拆法)。

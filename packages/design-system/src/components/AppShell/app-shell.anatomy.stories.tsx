@@ -8,7 +8,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import * as React from 'react'
 import { AppShell, AppShellAside, useAppShell, type PanelDisplay, type PanelWidthRange } from './app-shell'
-import { AcmeSidebar, PageHeader, InsightsView, ISSUES, ISSUE_DETAIL_WIDTH, IssueDetail } from './_demo-helpers'
+import { AcmeSidebar, PageHeader, ActiveSprintView, ISSUES, ISSUE_DETAIL_WIDTH, IssueDetail, navLabel } from './_demo-helpers'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { SidebarProvider, SidebarTrigger } from '@/design-system/components/Sidebar/sidebar'
 import { Button } from '@/design-system/components/Button/button'
@@ -40,11 +40,13 @@ const meta: Meta<typeof AppShell> = {
 export default meta
 type Story = StoryObj<typeof AppShell>
 
-/** 右欄示範的那一筆 = 主區 Insights 表格的第一筆(ENG-1042;兩邊讀同一份 ISSUES,`_demo-helpers.tsx`)。 */
+/** 右欄示範的那一筆 = 主區 Active sprint 表格的第一筆(ENG-1042;兩邊讀同一份 ISSUES,`_demo-helpers.tsx`)。 */
 const OVERVIEW_ISSUE = ISSUES[0]
 
 // Slot 結構 + landmark role 對照(使用 baseline AcmeSidebar / PageHeader 完整 production-grade)。
-// Main 放真實頁面內容(Insights 頁,與展示頁同一份),原本畫在 Main 裡的說明搬到 docs(稽核 L117);
+// Main 放真實頁面內容(Active sprint 頁,與展示頁同一份),原本畫在 Main 裡的說明搬到 docs(稽核 L117);
+// 側欄選中 Active sprint、標頭讀同一份字(navLabel;sidebar.spec.md「選中項的字 = 那一頁標頭的字」)——
+// 2026-11-15 前側欄選中 Dashboard、標頭寫死「Dashboard」、主區卻是 Insights 那張表,點別的項目標頭也不跟著換;
 // 右欄 = 同一張表其中一筆的議題詳情(展示頁同一份 IssueDetail;key / value 用 DescriptionList,稽核 M085)。
 export const Overview: Story = {
   name: '元件總覽',
@@ -56,7 +58,7 @@ export const Overview: Story = {
     },
   },
   render: () => {
-    const [activeId, setActiveId] = React.useState<string>('dashboard')
+    const [activeId, setActiveId] = React.useState<string>('active-sprint')
     const [asideOpen, setAsideOpen] = React.useState(true)
     return (
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
@@ -64,7 +66,7 @@ export const Overview: Story = {
           layout="primary-sidebar"
           mainMinWidth={600}
           sidebar={<AcmeSidebar />}
-          header={<PageHeader title="Dashboard" />}
+          header={<PageHeader title={navLabel(activeId)} />}
           aside={
             // Right panel = 主區那張 Sprint 42 議題表其中一筆(ENG-1042)的詳情,與展示頁同一份 IssueDetail(_demo-helpers)。
             // 2026-11-11 前這裡是另一件事的「訂單詳情」(#SO-20481),主區卻是議題表 —— 兩件事對不上(第三批審查,真實情境 mindset #4)。
@@ -76,7 +78,7 @@ export const Overview: Story = {
           asideOpen={asideOpen}
           onAsideOpenChange={setAsideOpen}
         >
-          <InsightsView />
+          <ActiveSprintView />
         </AppShell>
       </SidebarProvider>
     )

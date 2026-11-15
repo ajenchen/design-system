@@ -10,7 +10,7 @@ import {
   Calendar,
   Settings,
   Users,
-  BarChart3,
+  IterationCw,
   LayoutDashboard,
   User,
   LogOut,
@@ -55,15 +55,22 @@ import {
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 
 // ── MAIN_NAV(對齊 sidebar.stories.tsx baseline)────────────────────────
+// 側欄項目的字 = 那一頁標頭的字(同字):PageHeader 的 title 一律讀這裡的 label(`navLabel`),連 AI agent 回覆裡指向那一頁的連結字也讀同一份
+// (`../Sidebar/sidebar.spec.md`「選中項的字 = 那一頁標頭的字」;閘 `scripts/sidebar-label-matches-header-invariant.mjs`)。
+// 2026-11-15 前第四項是「Insights」(id insights、長條圖圖示):那一頁主區只剩「Sprint 42 還沒完成的議題」一張表(2026-11-11 拿掉區段標題與燃盡摘要),
+// 「Insights」說不出那張表 → 改「Active sprint」(id、網址、圖示一起換)【AI 推導 2026-11-15:選字】。
 
 export const MAIN_NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'team', label: 'Team', icon: Users },
-  { id: 'insights', label: 'Insights', icon: BarChart3 },
+  { id: 'active-sprint', label: 'Active sprint', icon: IterationCw },
   { id: 'calendar', label: 'Calendar', icon: Calendar },
   { id: 'settings', label: 'Settings', icon: Settings },
 ] as const
+
+/** 側欄選中項 → 頁面標頭的字(同一份文字來源;找不到 = 空字串,閘會把「側欄字 ≠ 標頭字」判紅) */
+export const navLabel = (id: string): string => MAIN_NAV.find((n) => n.id === id)?.label ?? ''
 
 // ── 專案(可收合群組;「版面規則」示範頁用)────────────────────────────
 /** Acme 的進行中專案(側欄的「專案」區段;示範資料)。 */
@@ -352,7 +359,8 @@ const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
 ]
 
 /**
- * Insights 頁(Sprint 42 還沒完成的議題):展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
+ * Active sprint 頁(Sprint 42 還沒完成的議題;2026-11-15 前叫 Insights 頁 / InsightsView,改名理由見上方 MAIN_NAV):
+ * 展示頁「四區版面」從 AI agent 連結導過來的目標頁,設計規格「元件總覽」的 Main 也放這一頁
  * —— 兩處同一份真實頁面內容(稽核 L117:總覽的 Main 原本是一段說明文字,說明搬到 docs)。
  * 內容 = 還沒完成的議題 DataTable 一張,直接接在頁面標頭下,同 Sidebar 展示 / 範本 DashboardPage 的做法。
  * 2026-11-10 前主區只有一份 DescriptionList(Sprint / 已完成 / 燃盡進度 / P0 未處理):user 2026-11-10 PR #172 留言(逐字)
@@ -361,9 +369,9 @@ const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
  * 「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」——
  * 主區只有一塊內容,標頭已說明這頁是什麼,不再重複放標題與說明(app-shell.spec.md「Main 內塞什麼」);原標題改當表格的讀屏名稱(aria-label)。
  * 間距照 layoutSpace.spec.md「Page 情境」:標頭 → 有框的 DataTable = bounded region = loose(規則 2)、左右 loose(規則 1)、
- * 最後是有框的 DataTable → 底 loose(規則 4 第 2 列)—— 四邊同為 loose。閘 `scripts/header-first-gap-invariant.mjs` appshell-insights。
+ * 最後是有框的 DataTable → 底 loose(規則 4 第 2 列)—— 四邊同為 loose。閘 `scripts/header-first-gap-invariant.mjs` appshell-active-sprint。
  */
-export function InsightsView() {
+export function ActiveSprintView() {
   return (
     <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
       <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} height="auto" aria-label="Sprint 42 還沒完成的議題" />

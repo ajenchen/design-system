@@ -22,7 +22,7 @@ import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { H3, Desc, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
+import { MAIN_NAV, navLabel } from '@/design-system/stories-helpers/data/sidebar-nav'
 import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
@@ -57,7 +57,7 @@ const Swatch = ({ value }: { value: string }) => (
 /** 縮小的 demo sidebar preview (inside padded story)。`withGroups`:多畫兩個帶標題的群組(列尾 + 與收合箭頭),尺寸對照表用 */
 const SidebarPreview = ({
   size = 'md',
-  activeId = 'dashboard',
+  activeId = MAIN_NAV[0].id,
   width = 240,
   withGroups = false,
 }: {
@@ -277,7 +277,8 @@ export const Overview: Story = {
 
 interface InspectorArgs {
   size: 'sm' | 'md' | 'lg'
-  activeId: 'dashboard' | 'inbox' | 'team' | 'notifications' | 'settings'
+  /** 主導覽的 id(選項從 MAIN_NAV 讀,不另寫一份) */
+  activeId: (typeof MAIN_NAV)[number]['id']
   width: number
 }
 
@@ -293,7 +294,7 @@ export const Inspector: Story = {
   },
   args: {
     size: 'md',
-    activeId: 'dashboard',
+    activeId: MAIN_NAV[0].id,
     width: 240,
   },
   argTypes: {
@@ -304,7 +305,7 @@ export const Inspector: Story = {
     },
     activeId: {
       control: 'radio',
-      options: ['dashboard', 'inbox', 'team', 'notifications', 'settings'],
+      options: MAIN_NAV.map((item) => item.id),
       description: '當前 active item(router-driven 時從 URL 算出)',
     },
     width: {
@@ -492,12 +493,16 @@ export const ColorMatrix: Story = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** 狀態行為的靜態格:真的 SidebarProvider + Sidebar(作法同本檔 SidebarPreview 與下方「展開與收合」那格),開關狀態固定在 `open`。
- *  品牌 = chrome header 標準寫法(raw Avatar 24 + text-body-lg font-medium,sidebar.spec.md「Header — brand」);收成細列時名稱隱藏、Avatar 置中。 */
-const CollapseModeFrame = ({ label, collapsible, open }: { label: string; collapsible: 'icon' | 'offcanvas'; open: boolean }) => (
+ *  品牌 = chrome header 標準寫法(raw Avatar 24 + text-body-lg font-medium,sidebar.spec.md「Header — brand」);收成細列時名稱隱藏、Avatar 置中。
+ *  標頭的字 = 側欄選中項的字(sidebar.spec.md「選中項的字 = 那一頁標頭的字」):選中狀態由這一格自己管、標頭讀 `navLabel`,
+ *  點別的項目標頭跟著換(2026-11-15 前標頭寫死「Dashboard」,點了 Inbox 側欄亮 Inbox、標頭還是 Dashboard)。 */
+function CollapseModeFrame({ label, collapsible, open }: { label: string; collapsible: 'icon' | 'offcanvas'; open: boolean }) {
+  const [activeId, setActiveId] = React.useState<string>(MAIN_NAV[0].id)
+  return (
   <div className="flex flex-col gap-2 items-start">
     <Label>{label}</Label>
     <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 420, height: 220 }}>
-      <SidebarProvider defaultOpen={open} defaultActiveId="dashboard" style={{ minHeight: 'auto', height: '100%' }}>
+      <SidebarProvider defaultOpen={open} activeId={activeId} onActiveChange={setActiveId} style={{ minHeight: 'auto', height: '100%' }}>
         <div className="flex w-full h-full">
           <Sidebar side="left" collapsible={collapsible}>
             <SidebarHeader>
@@ -524,14 +529,61 @@ const CollapseModeFrame = ({ label, collapsible, open }: { label: string; collap
           </Sidebar>
           <div className="flex-1 flex flex-col min-w-0">
             <ChromeHeader className="bg-surface">
-              <span className="text-body-lg font-medium">Dashboard</span>
+              <span className="text-body-lg font-medium">{navLabel(activeId)}</span>
             </ChromeHeader>
           </div>
         </div>
       </SidebarProvider>
     </div>
   </div>
-)
+  )
+}
+
+/** 狀態行為「展開與收合」那一格:開關按 SidebarTrigger 或 ⌘B。標頭的字 = 側欄選中項的字(同上一格;2026-11-15 前沒有選中項、標頭寫死「Dashboard」,
+ *  側欄改成「Due soon」之後那個字已不是側欄上的任何一項 → 這一格也照同一份資料:預設選第一項、標頭讀 `navLabel`)。 */
+function LiveToggleFrame() {
+  const [activeId, setActiveId] = React.useState<string>(MAIN_NAV[0].id)
+  return (
+    <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
+      <SidebarProvider activeId={activeId} onActiveChange={setActiveId} style={{ minHeight: 'auto', height: '100%' }}>
+        <div className="flex w-full h-full">
+          <Sidebar side="left" collapsible="icon">
+            <SidebarHeader>
+              <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
+                <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
+                <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
+              </div>
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {MAIN_NAV.filter((item) => item.id !== 'notifications').map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton id={item.id} startIcon={item.icon}>
+                          {item.label}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+          <div className="flex-1 flex flex-col">
+            {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
+                與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
+                「Chrome header 的高度不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
+            <ChromeHeader className="bg-surface">
+              <SidebarTrigger />
+              <span className="text-body-lg font-medium">{navLabel(activeId)}</span>
+            </ChromeHeader>
+          </div>
+        </div>
+      </SidebarProvider>
+    </div>
+  )
+}
 
 // 2026-05-17 ship per audit Dim 45 strict re-run — cva variant matrix codify
 // SidebarMenuButton cva 有 variant: { default, meta } 兩個值,本 story 展示 default vs meta 區別
@@ -620,44 +672,7 @@ export const StateBehavior: Story = {
             SidebarProvider 內建 Cmd+B (Mac) / Ctrl+B (Win) 全域快捷鍵,同時 SidebarTrigger iconOnly Button 作為視覺 toggle。open state 寫入 cookie(7 天);跨 session 還原需 consumer 讀 cookie 後傳 defaultOpen(詳 spec「持久化與快捷鍵」)。
             點下方的 SidebarTrigger 或按 Cmd/Ctrl+B,sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 64),再按一次展開。
           </SectionDescription>
-          <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
-            <SidebarProvider style={{ minHeight: 'auto', height: '100%' }}>
-              <div className="flex w-full h-full">
-                <Sidebar side="left" collapsible="icon">
-                  <SidebarHeader>
-                    <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
-                      <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
-                      <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
-                    </div>
-                  </SidebarHeader>
-                  <SidebarContent>
-                    <SidebarGroup>
-                      <SidebarGroupContent>
-                        <SidebarMenu>
-                          {MAIN_NAV.filter((item) => item.id !== 'notifications').map((item) => (
-                            <SidebarMenuItem key={item.id}>
-                              <SidebarMenuButton id={item.id} startIcon={item.icon}>
-                                {item.label}
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          ))}
-                        </SidebarMenu>
-                      </SidebarGroupContent>
-                    </SidebarGroup>
-                  </SidebarContent>
-                </Sidebar>
-                <div className="flex-1 flex flex-col">
-                  {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
-                      與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
-                      「Chrome header 的高度不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
-                  <ChromeHeader className="bg-surface">
-                    <SidebarTrigger />
-                    <span className="text-body-lg font-medium">Dashboard</span>
-                  </ChromeHeader>
-                </div>
-              </div>
-            </SidebarProvider>
-          </div>
+          <LiveToggleFrame />
         </div>
 
         {/* Icon mode — tooltip for item labels */}

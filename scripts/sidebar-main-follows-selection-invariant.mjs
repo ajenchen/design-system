@@ -6,11 +6,13 @@
  *         · 檔案 → 這個檔案的版本紀錄(DataTable,欄位 版本 / 說明 / 修改者 / 時間,撐滿主區、不放 DescriptionList;user 2026-11-10 PR #172 留言
  *           「我的意思是不想要看到description list類型的主內容，我建議改成table之類的」;2e1f2e27 以前是 max-w-2xl 的屬性清單 → 該步紅);
  *           專案 → 這個專案的議題(DataTable);每一步的表格都要撐滿主區(只扣頁面左右內距);
- *         · Dashboard 等主導覽 → 同範本 DashboardPage 的做法(「今日待處理」DataTable 一張),主區不放 DescriptionList
- *           (user 同日原話「也沒有要強迫消費者一定要使用description list」)。
+ *         · Due soon 等主導覽 → 同範本 DashboardPage 的做法(「今日待處理」DataTable 一張),主區不放 DescriptionList
+ *           (user 同日原話「也沒有要強迫消費者一定要使用description list」)。2026-11-15 前這一項叫 Dashboard(整合那則叫 Home):
+ *           區段標題拿掉後標頭說不出那張表 → 側欄與標頭一起改字(sidebar.spec.md「選中項的字 = 那一頁標頭的字」;
+ *           兩邊同字由 sidebar-label-matches-header-invariant.mjs 全 DS 守,本閘只照登記的 h1 比)。
  *         · 每一步主區都只有一張表格 → 標頭下不再放區段標題(h2–h6 / role=heading),表格直接接在標頭下(app-shell.spec.md「Main 內塞什麼」;
  *           user 2026-11-11 留言「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」)。
- *         「混合內容」實際點樹:frontend(預設)→ backend → README.md → Dashboard,每一步都驗標題與主區。
+ *         「混合內容」實際點樹:frontend(預設)→ backend → README.md → Due soon,每一步都驗標題與主區。
  *   紅: 任一步主區的標題 / 表格名稱 / 欄名 / 列數 / 有無 DescriptionList / 有無區段標題與期望不符 → 指名 story / 步驟並 exit 1。
  *       歷史紅燈(修前 main 8eb473c7 建置):五則主區都是同一份 Sprint 摘要 DescriptionList,沒有表格,選 frontend 也一樣。
  *       修前 411fcc49 建置:Dashboard / 專案 / 整合那幾步表格上方有區段標題 h2(今日待處理議題 / 進行中的議題)→ 紅。
@@ -32,16 +34,18 @@ const PENDING = { table: '今日待處理議題', headers: ['議題', '標題', 
 const FILES = ['名稱', '最後修改', '修改者']
 
 /** 每一步:click = 樹上 / 導覽要點的文字(null = 預設);expect = 期望的主區。 */
+/** 主導覽第一項的字(stories-helpers/data/sidebar-nav.ts MAIN_NAV[0].label;側欄與標頭同一份) */
+const DUE_SOON = 'Due soon'
 export const CASES = [
-  { story: 'icon-collapse', steps: [{ click: null, h1: 'Dashboard', ...PENDING }] },
+  { story: 'icon-collapse', steps: [{ click: null, h1: DUE_SOON, ...PENDING }] },
   { story: 'group-action', steps: [{ click: null, h1: '結帳流程改版', table: '進行中的議題', headers: PENDING.headers, rows: 3, dl: false }] },
-  { story: 'offcanvas', steps: [{ click: null, h1: 'Dashboard', ...PENDING }] },
-  { story: 'integration-sidebar', steps: [{ click: null, h1: 'Home', ...PENDING }] },
+  { story: 'offcanvas', steps: [{ click: null, h1: DUE_SOON, ...PENDING }] },
+  { story: 'integration-sidebar', steps: [{ click: null, h1: DUE_SOON, ...PENDING }] },
   { story: 'mixed-content', steps: [
     { click: null, h1: 'frontend', table: 'frontend 裡的檔案', headers: FILES, rows: 4, dl: false },
     { click: 'backend', h1: 'backend', table: 'backend 裡的檔案', headers: FILES, rows: 3, dl: false },
     { click: 'README.md', h1: 'README.md', table: 'README.md 的版本紀錄', headers: ['版本', '說明', '修改者', '時間'], rows: 6, dl: false, fileView: true },
-    { click: 'Dashboard', h1: 'Dashboard', ...PENDING },
+    { click: DUE_SOON, h1: DUE_SOON, ...PENDING },
   ] },
 ]
 

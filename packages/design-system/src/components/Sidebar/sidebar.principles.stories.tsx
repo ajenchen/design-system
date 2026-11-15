@@ -132,9 +132,9 @@ export const ContentTypeChoice: Story = {
 
       <TutorialRule
         title="✅ 設計好的 app 主導覽 → SidebarMenu"
-        note="Dashboard / Inbox / Team / Settings——designer 定義好的固定項目,永遠是這 5 個,用 SidebarMenu。"
+        note={`${MAIN_NAV.map((item) => item.label).join(' / ')}——designer 定義好的固定項目,永遠是這 ${MAIN_NAV.length} 個,用 SidebarMenu。`}
       >
-        <MiniSidebar activeId="dashboard">
+        <MiniSidebar activeId={MAIN_NAV[0].id}>
           <SidebarHeader>
             {/* Chrome header canonical:raw <Avatar size={24}> per header-canonical.spec.md:57-72 + text-body-lg per chrome typography */}
             {/* @layout-space-magic-ok: 品牌 Avatar ↔ 名稱 8px —— 規格沒寫 8 這個值(layoutSpace.spec.md「刻意固定值 OK」表只把這類列為 micro / 控件內部間距,sidebar.spec.md「Chrome 內的 text element」只定字級),不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}

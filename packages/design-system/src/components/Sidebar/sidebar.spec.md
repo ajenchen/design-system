@@ -512,6 +512,18 @@ variant=meta 把這三件事做成結構性保證:樣式自動退、selection �
 
 **Router integration**:production 用法通常是 controlled mode——從 URL 算 `activeId`,`onActiveChange` 呼叫 router.push。uncontrolled mode 主要是 demo / Storybook 用。
 
+### 選中項的字 = 那一頁標頭的字
+
+**規則**:側欄選中項的字 = 那一頁頁面標頭(`PageHeader` / ChromeHeader 的標題)的字,**同字**。兩邊讀同一份資料(例:story 範例的 `MAIN_NAV` 的 `label`,標頭用 `navLabel(activeId)`),不各寫一次。**詳細頁除外**【AI 推導 2026-11-15】:打開某一筆資料的詳細頁時,側欄亮的是上一層(例:側欄亮「Active sprint」)、標頭是那筆資料的名字(例:「ENG-1042」),兩邊本來就不同字;回上一層的路由麵包屑接手,末位 = 標頭(`../Breadcrumb/breadcrumb.spec.md`「Title-breadcrumb-end 同步 canonical」)。
+
+**出處**:user 2026-11-11 回第三批成品頁「主區標題」那題(甲 改標頭與側欄的字,讓標頭說得出下面那張表 / 乙 把標題放回去)的原話是問句:「第二題要確保sidebar menu item 的文案跟標頭是一樣的吧？」—— user 沒有逐字說「甲」。**AI 讀法**:走甲,而且側欄項目的字跟標頭是同一份文字;乙與 user 同日在 Insights 圖的留言「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」相反,不走。「一樣」照字面 = 同字;沒有寫「側欄可以用縮短的字」(user 沒有這樣說)。
+
+**和主區的關係**:主區只有一塊內容、不放區段標題時(`../AppShell/app-shell.spec.md`「Main 內塞什麼」),標頭的字要說得出那塊內容;說不出時改標頭,側欄跟著同一份字,不把區段標題放回去。
+
+**世界級對照**:Windows App 的 NavigationView 說標頭「Its purpose is to hold the page title of the selected navigation category.」,官方範例程式直接拿選中項的內容當標頭:`NavView.Header = ((NavigationViewItem)NavView.SelectedItem)?.Content?.ToString();`(<https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/navigationview>「Header」段與導覽範例)。GOV.UK 寫內文連結:「Consider using the title of the page the link goes to as your link text.」(<https://guidance.publishing.service.gov.uk/writing-to-gov-uk-standards/writing-guidelines/add-links/>)。不同的做法:USWDS 側欄導覽「Keep the navigation links short. They can be shorter derivatives of page titles themselves.」(<https://designsystem.digital.gov/components/side-navigation/>)—— 允許縮短,本 DS 不採(user 說的是「一樣」)。
+
+**閘**:`scripts/sidebar-label-matches-header-invariant.mjs` —— 範例裡每一則有側欄的 story,進頁時與點過側欄每一個看得到的項目之後,只要同一個 `SidebarProvider` 裡同時有選中項與頁面標頭,就比兩邊的字。詳細頁的判法【AI 推導 2026-11-15】:標頭裡有麵包屑,麵包屑前面某一層的字 = 側欄選中項的字,而且末位 = 標頭的字 → 跳過;沒有這樣的麵包屑就當同一層比。
+
 ---
 
 ## SidebarGroup 收合（`collapsible` prop）
@@ -790,6 +802,7 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 - `account-menu.spec.md`
 - `agent-panel.spec.md`
 - `app-shell.spec.md`
+- `breadcrumb.spec.md`
 - `density.spec.md`
 - `header-canonical.spec.md`
 - `scroll-area.spec.md`

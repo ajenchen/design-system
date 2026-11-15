@@ -18,7 +18,9 @@
 //   1. 替換 NAV array(新 product 的真實導覽項)
 //   2. 替換 WorkspaceBrand 內 workspace 名 / Avatar 顏色
 //   3. 替換 DashboardPage 為真實業務內容(用 DS 元件組:DataTable / Chart 等)與自己的資料來源;
-//      主區只有一塊內容時,標頭標題就說明了這頁是什麼,不在主區另放標題與說明(DS `app-shell.spec.md`「Main 內塞什麼」)
+//      主區只有一塊內容時,標頭標題就說明了這頁是什麼,不在主區另放標題與說明(DS `app-shell.spec.md`「Main 內塞什麼」)——
+//      所以那一頁的導覽字(NAV 的 label)要說得出主區那塊內容;標頭讀同一份 label,側欄項目的字 = 標頭的字
+//      (DS `sidebar.spec.md`「選中項的字 = 那一頁標頭的字」)
 //   4. 頁面有主要動作時,放進 PageHeader 的 rightSlot(只放在用得到的那一頁,按鈕要接上真實行為)
 //   5. 替換版面寬度設定(MAIN_MIN_WIDTH / MENU_WIDTH)為產品的值:AppShell 的 Main 最小寬必填、Menu 的最大寬產品必給
 //      (DS `app-shell.spec.md`「版面規則」§1;§8 消費者指引:Main 最小寬 + 細列寬 + 每種 Right 內容最小寬 ≤ 要支援的最窄 desktop 版面寬,
@@ -51,11 +53,13 @@ import {
   DataTable,
   type DataTableProps,
 } from '@qijenchen/design-system'
-import { LayoutDashboard, Users, Settings, FileText, BarChart3, User, LogOut } from 'lucide-react'
+import { Truck, Users, Settings, FileText, BarChart3, User, LogOut } from 'lucide-react'
 
 // 範本整份畫面用同一種語言 —— 跟 DS 預設文案一致用中文(DS 元件內建的提示、讀屏名稱預設就是中文)
+// 第一項 = 範本的首頁(DashboardPage):主區只有「已付款、還沒出貨」的訂單表,導覽字與標頭字都是「待出貨訂單」
+// (2026-11-15 前是「總覽」—— 主區的區段標題 2026-11-11 拿掉後,「總覽」說不出下面那張表)
 const NAV = [
-  { id: 'dashboard', label: '總覽', icon: LayoutDashboard },
+  { id: 'to-ship', label: '待出貨訂單', icon: Truck },
   { id: 'customers', label: '客戶', icon: Users },
   { id: 'orders', label: '訂單', icon: FileText },
   { id: 'reports', label: '報表', icon: BarChart3 },
@@ -182,7 +186,8 @@ function DashboardPage() {
 }
 
 export default function App() {
-  const [activeId, setActiveId] = useState<string>('dashboard')
+  const [activeId, setActiveId] = useState<string>(NAV[0].id)
+  // 標頭的字 = 側欄選中項的字:兩邊讀同一個 NAV 項目的 label,不另寫一份
   const current = NAV.find((n) => n.id === activeId) ?? NAV[0]
   // TooltipProvider self-wrap(Storybook story render 跳過 main.tsx → App 必自帶 TooltipProvider context)
   return (

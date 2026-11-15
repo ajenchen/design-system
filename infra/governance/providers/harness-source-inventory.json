@@ -541,6 +541,7 @@
           "scripts/test-dialog-height-invariant.mjs",
           "scripts/test-radio-group-tab-stop-invariant.mjs",
           "scripts/test-select-all-footer-invariant.mjs",
+          "scripts/test-sidebar-label-matches-header-invariant.mjs",
           "scripts/test-sidebar-main-follows-selection-invariant.mjs",
           "scripts/test-sidebar-menu-keyboard-invariant.mjs",
           "scripts/test-sidebar-standalone-collapse-invariant.mjs",

@@ -208,6 +208,8 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 
 **禁止**:breadcrumb 末位用 `BreadcrumbLink`(parent path)+ title 才顯示 current page = breadcrumb 末位 ≠ title 內容 = 違反「禁止事項」段「最後一項不可是 `BreadcrumbLink`,必須用 `BreadcrumbPage`」+ 違反 world-class consensus。
 
+**同族**:側欄選中項 ↔ 頁面標頭也是同字,規則與例外住 `../Sidebar/sidebar.spec.md`「選中項的字 = 那一頁標頭的字」,本段不重述。
+
 ---
 
 ## 邊界案例

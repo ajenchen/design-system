@@ -3,8 +3,8 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
-  LayoutDashboard, Inbox, Users, Settings, Folder, FileText, Plus, MoreVertical,
-  User, LogOut, StarOff,
+  Folder, FileText, Plus, MoreVertical,
+  User, LogOut, Settings, StarOff,
 } from 'lucide-react'
 import {
   SidebarProvider,
@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from './sidebar'
-import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
+import { MAIN_NAV, navLabel } from '@/design-system/stories-helpers/data/sidebar-nav'
 import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
 import { ItemAvatar, ItemLabel, ItemInlineAction, ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
@@ -129,9 +129,11 @@ const UserFooter = () => (
  * 自畫 bg-surface;Element canonical:ChromeHeader 內部用 `<header>`)。
  * Trigger 是唯一的 sidebar 切換入口。
  * 主區放真實頁面內容(D6 甲,user 10-21「D6 照你建議」:不做手刻指標卡、不亂造元件),而且**跟著選到的項目走**
- * (2026-11-06 #56 甲):資料夾 → 裡面的檔案清單;檔案 → 這個檔案的版本紀錄(2026-11-10 PR #172 留言起;原本是屬性清單);專案 → 這個專案的議題;Dashboard 等主導覽 →
+ * (2026-11-06 #56 甲):資料夾 → 裡面的檔案清單;檔案 → 這個檔案的版本紀錄(2026-11-10 PR #172 留言起;原本是屬性清單);專案 → 這個專案的議題;Due soon 等主導覽 →
  * 同範本 DashboardPage 的做法(DS 元件組成的真實內容:「今日待處理」DataTable;apps/template/src/App.tsx)。
  * 每一頁主區都只有一張表格、標頭標題已說明這頁是什麼,所以不在主區重複放區段標題與說明(app-shell.spec.md「Main 內塞什麼」,user 2026-11-11)。
+ * 標頭的字 = 側欄選中項的字(sidebar.spec.md「選中項的字 = 那一頁標頭的字」):`title` 一律從側欄那份資料讀(MAIN_NAV 的 `navLabel`、樹 / 收藏 / 專案的 label),
+ * 不另寫字面值 —— 2026-11-15 前每一則都留著 `?? 'Dashboard'` 之類的第二份字。
  * dashboard 放什麼由產品決定,DS 不定義卡片 / 內容框架(app-shell.spec.md「Main 內塞什麼」),所以這裡不做成像 DS 規定的版型。
  * 每則的說明寫在 parameters.docs.description.story(story-rules「整頁情境」:畫布不放便條)。
  */
@@ -253,7 +255,7 @@ const FOLDER_FILES: Record<string, FileRow[]> = {
  * 「此外我覺得其實大部分的情境根本不用在主內容區又放上標題和描述，因為通常的情境是標頭的標題就可以完整表示這個頁面要幹嘛了吧」)。
  * 表格的讀屏名稱用 aria-label(原本的區段標題文字)。間距照 layoutSpace.spec.md「Page 情境」:標頭 → 有框的 DataTable = bounded region
  * = loose(規則 2)、左右 loose(規則 1)、表格 → 底 loose(規則 4 第 2 列)—— 四邊同為 loose。閘 `scripts/header-first-gap-invariant.mjs`。
- * 2026-11-11 前 Dashboard / 專案兩處是 TableSection(區段標題 + 說明 + 表格,頂部 tight);資料夾 / 檔案兩處早就是表格直接接標頭。
+ * 2026-11-11 前 Dashboard(現名 Due soon)/ 專案兩處是 TableSection(區段標題 + 說明 + 表格,頂部 tight);資料夾 / 檔案兩處早就是表格直接接標頭。
  */
 function MainTable<T>({ label, columns, data }: { label: string; columns: DataTableProps<T>['columns']; data: T[] }) {
   return (
@@ -263,7 +265,12 @@ function MainTable<T>({ label, columns, data }: { label: string; columns: DataTa
   )
 }
 
-/** Dashboard 等主導覽:同範本 DashboardPage 的做法 —— 一張 DataTable,不做 DS 規定的 dashboard 版型。 */
+/**
+ * Due soon 等主導覽:同範本 DashboardPage 的做法 —— 一張 DataTable,不做 DS 規定的 dashboard 版型。
+ * 2026-11-15 前這一頁的標頭是「Dashboard」:區段標題拿掉後(2026-11-11),標頭說不出下面是「今天到期或快到期的議題」→
+ * 側欄項目與標頭一起改成「Due soon」(同一份字,MAIN_NAV)【AI 推導 2026-11-15:要改字、改成哪個字都是 AI 的讀法與選字;
+ * user 2026-11-11 回第三批頁的原話是問句「第二題要確保sidebar menu item 的文案跟標頭是一樣的吧？」】。
+ */
 const PendingIssuesView = () => <MainTable label="今日待處理議題" columns={ISSUE_COLUMNS} data={PENDING_ISSUES} />
 
 /** 專案 → 這個專案進行中的議題(標頭標題就是專案名)。 */
@@ -318,7 +325,7 @@ export const IconCollapse: Story = {
   name: '完整佈局',
   parameters: { docs: { description: { story: '扁平主導覽用 `SidebarMenu`,每項必須有 icon。點左上角 **SidebarTrigger**(灰框按鈕)或按 ⌘B 切換收合;收合後變 icon rail,滑過顯示 tooltip。' } } },
   render: () => {
-    const [activeId, setActiveId] = React.useState<string>('dashboard')
+    const [activeId, setActiveId] = React.useState<string>(MAIN_NAV[0].id)
 
     return (
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
@@ -350,7 +357,7 @@ export const IconCollapse: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}>
+        <PageContent title={navLabel(activeId)}>
           <PendingIssuesView />
         </PageContent>
       </SidebarProvider>
@@ -444,7 +451,7 @@ export const GroupAction: Story = {
             <UserFooter />
           </SidebarFooter>
         </Sidebar>
-        <PageContent title={projects.find((p) => p.id === activeId)?.label ?? MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}>
+        <PageContent title={projects.find((p) => p.id === activeId)?.label ?? navLabel(activeId)}>
           {currentProject ? <ProjectIssuesView project={currentProject.label} /> : <PendingIssuesView />}
         </PageContent>
       </SidebarProvider>
@@ -598,7 +605,7 @@ export const MixedContent: Story = {
 
             {/* Favorites:扁平清單 + hover-reveal inline actions。
                 每個 item 傳 `id` 就自動參與整個 sidebar 的 single-selection——
-                選 alpha 會自動 deselect Dashboard / TreeView 的選項,反之亦然。 */}
+                選 alpha 會自動 deselect Due soon / TreeView 的選項,反之亦然。 */}
             <SidebarGroup className="group-data-[collapsible=icon]:hidden">
               <SidebarGroupLabel>Favorites</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -640,7 +647,7 @@ export const MixedContent: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? treeLabel(activeId) ?? favorites.find((x) => x.id === activeId)?.label ?? ''}>
+        <PageContent title={(isInMainNav ? navLabel(activeId) : treeLabel(activeId) ?? favorites.find((x) => x.id === activeId)?.label) ?? ''}>
           {isInMainNav ? <PendingIssuesView />
             : currentFavorite ? <ProjectIssuesView project={currentFavorite.label} />
             : <ProjectTreeView id={activeId} />}
@@ -657,7 +664,7 @@ export const Offcanvas: Story = {
   name: '抽屜收合（離畫面外）',
   parameters: { docs: { description: { story: 'Offcanvas 模式:收合時整個 sidebar 滑出畫面。重新展開的唯一方法是點左上角 **SidebarTrigger** 或按 ⌘B。' } } },
   render: () => {
-    const [activeId, setActiveId] = React.useState<string>('dashboard')
+    const [activeId, setActiveId] = React.useState<string>(MAIN_NAV[0].id)
 
     return (
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId}>
@@ -685,7 +692,7 @@ export const Offcanvas: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Dashboard'}>
+        <PageContent title={navLabel(activeId)}>
           <PendingIssuesView />
         </PageContent>
       </SidebarProvider>
@@ -699,15 +706,12 @@ export const IntegrationSidebar: Story = {
   name: '混合前綴',
   parameters: { docs: { description: { story: '開啟 `uniformPrefix` 後,icon 導覽項與帶 logo 的整合項會對齊到同一條左緣,讓文字起點一致(如 Notion / Raycast / Linear 的整合區)。預設關閉。' } } },
   render: () => {
-    const [activeId, setActiveId] = React.useState<string>('home')
-
     // Linear / Raycast 風格:主導覽是 lucide icon,integration 是 brand logo,
-    // 兩者語意等價(都是「導覽目的地」),用 uniformPrefix 讓 label 齊左
-    const NAV_ITEMS = [
-      { id: 'home', label: 'Home', icon: LayoutDashboard },
-      { id: 'inbox-2', label: 'Inbox', icon: Inbox },
-      { id: 'team-2', label: 'Team', icon: Users },
-    ] as const
+    // 兩者語意等價(都是「導覽目的地」),用 uniformPrefix 讓 label 齊左。
+    // 主導覽取 MAIN_NAV 前三項(同一份字;2026-11-15 前這裡另寫一份 Home / Inbox / Team,
+    // 「Home」標頭下是「今天到期或快到期的議題」那張表、說不出那張表 → 跟其他則一樣用「Due soon」)
+    const NAV_ITEMS = MAIN_NAV.slice(0, 3)
+    const [activeId, setActiveId] = React.useState<string>(NAV_ITEMS[0].id)
 
     const INTEGRATIONS = [
       { id: 'github', label: 'GitHub', color: 'neutral' as const },
@@ -759,7 +763,7 @@ export const IntegrationSidebar: Story = {
           </SidebarFooter>
         </Sidebar>
 
-        <PageContent title={[...NAV_ITEMS, ...INTEGRATIONS].find((n) => n.id === activeId)?.label ?? 'Home'}>
+        <PageContent title={[...NAV_ITEMS, ...INTEGRATIONS].find((n) => n.id === activeId)?.label ?? ''}>
           <PendingIssuesView />
         </PageContent>
       </SidebarProvider>
