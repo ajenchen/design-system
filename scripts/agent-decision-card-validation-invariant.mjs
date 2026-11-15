@@ -226,7 +226,7 @@ const readCard = (page) => page.evaluate(({ CARD, CONTROL, OTHER_INPUT }) => {
   const rect = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, bottom: r.bottom } }
   const cards = [...document.querySelectorAll(CARD)]
   // 卡片根 = 往上第一個含 footer 的 role="group"(複選題的 CheckboxGroup 也是 role="group",但不含 footer);
-  // 2026-11-11 前用「含 aria-label="跳過" 的鈕」認,× 改名「跳過全部，用建議繼續」後改認結構,不綁文案
+  // 2026-11-11 前用「含 aria-label="跳過" 的鈕」認,× 改名「跳過全部，用建議繼續」後改認結構,不綁文案(2026-11-15 × 再改名「取消」,本閘不受影響)
   const root = cards[0] && (() => { let el = cards[0].parentElement; while (el && !(el.getAttribute('role') === 'group' && el.querySelector('[data-slot="surface-footer"]'))) el = el.parentElement; return el })()
   if (!root) return null
   const stepEl = [...root.querySelectorAll('span')].find((s) => /^\s*\d+ \/ \d+\s*$/.test(s.textContent))

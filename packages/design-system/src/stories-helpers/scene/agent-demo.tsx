@@ -26,7 +26,8 @@ import { toast } from '@/design-system/components/Toast/toast'
  *   「+」開新的空對話(送出第一則之前不進歷史、標題是「新對話」)。
  * - 工具列:複製 = 那則回覆的文字放進剪貼簿 + Toast「已複製到剪貼簿」;讚 / 倒讚 = Toast「已送出回饋」
  *   (`components/Toast/toast.spec.md`「何時用」:操作結果短暫回饋 —— 已複製到剪貼簿、訊息已送出)。
- * - 決策卡:送出或跳過(= 用預設繼續)→ 卡片收起,答案以決策回執(`AgentDecisionSummary`)記進對話。
+ * - 決策卡:送出 → 卡片收起,答案以決策回執(`AgentDecisionSummary`)記進對話;取消(標題列 × / Esc)→ 卡片收起,
+ *   對話記一行取消的回執、沒有任何答案(`decisionCancelReceipt`;代理停下等下一則訊息,範例不接代理回覆)。
  *
  * 範例要 Toast 時,story root 掛一個 `<Toaster />`(toast.spec.md:每個獨立 story root 一個)。
  */
@@ -213,7 +214,16 @@ export function toolbarActions(text: string) {
   }
 }
 
-/** 決策卡送出 / 跳過後記進對話的那一則(代理訊息 + 決策回執) */
+/**
+ * 決策卡取消後記進對話的那一則:一行字,沒有回執表(沒有任何答案可列)。
+ * 字【AI 推導 2026-11-15】:同送出那一則的句型(「已按你的選擇繼續:」),講清楚兩件事 —— 取消了、什麼答案都沒送(預選的建議也沒有)。
+ * 代理停下等使用者,所以後面不接代理回覆;接 AI 的產品端交給 AI 的是 `agentDecisionCancelMessage`(agent-decision-card.spec.md「接 AI 的產品端」)。
+ */
+export function decisionCancelReceipt(): DemoMessage {
+  return { role: 'agent', content: '已取消,沒有送出任何答案。' }
+}
+
+/** 決策卡送出後記進對話的那一則(代理訊息 + 決策回執) */
 export function decisionReceipt(questions: AgentDecisionQuestion[], answers: Record<string, string>): DemoMessage {
   return {
     role: 'agent',

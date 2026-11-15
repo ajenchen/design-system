@@ -36,6 +36,7 @@ export {
   AgentPromptInput,
   AgentThinking,
   AgentToolbar,
+  agentDecisionCancelMessage,
 } from './components/AgentPanel/index'
 export type {
   AgentAttachment,

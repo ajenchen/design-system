@@ -24,6 +24,9 @@
  *   註: 2026-10-01 新增(待辦總帳 N68 / N69 / N70 / N82 / N83 / N84 / OE29 / OE30)。form-validation-contract-invariant.mjs 的 R4-dialog 只用一個
  *        素的 `<input>` 走過規則 4 的分層;本閘把**每一個**自己宣告了 Esc 層的 DS 控件各放進浮層走一遍 —— 第一輪只量 hook 層,LinkInput 把
  *        Esc 困在對話框裡(自己看 raw defaultPrevented、守門留給它的那一下永遠不處理)就是從這個缺口漏過去的(獨立驗證抓到)。
+ *        2026-11-15 起 AgentDecisionCard 的卡片根也宣告一層(焦點在卡裡按 Esc = 取消):它只出現在 AgentPanel 裡,分層走的是面板的分區判定
+ *        (`useEscapeRegion`)而不是 Dialog 守門,所以那一列住 `scripts/agent-decision-card-clear-invariant.mjs`(O29 / O29b / O29p / O29t,
+ *        並排 / 浮層 / 提示開著各走一遍「一次少一層」),不在本閘重量。
  *
  * ── 判定表(契約列;每列「層數 + 1」下關閉、焦點從不落 body)──
  *   E-link-edit        Dialog 裡的 LinkInput 按鉛筆進編輯 → Esc 取消編輯(焦點給鉛筆)→ 再 1–2 下關(鉛筆的 Tooltip 若開著算一層)

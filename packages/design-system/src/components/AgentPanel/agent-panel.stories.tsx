@@ -39,7 +39,7 @@ import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { demoPersonData } from '@/design-system/stories-helpers/scene/person-card'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
-import { useAgentDemo, decisionReceipt, DemoConversation, type DemoMessage, type DemoSession } from '@/design-system/stories-helpers/scene/agent-demo'
+import { useAgentDemo, decisionReceipt, decisionCancelReceipt, DemoConversation, type DemoMessage, type DemoSession } from '@/design-system/stories-helpers/scene/agent-demo'
 import { ORDER_ROWS, orderColumns } from '@/design-system/stories-helpers/data/order-table'
 import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
@@ -337,13 +337,18 @@ const THREE_QUESTIONS: AgentDecisionQuestion[] = [
   },
 ]
 
-/** 決策卡:送出或按標題列 ×(跳過 = 用預設繼續)→ 卡片收起、答案以決策回執記進對話。 */
+/** 決策卡:送出 → 卡片收起、答案以決策回執記進對話;取消(標題列 × / 焦點在卡裡按 Esc)→ 卡片收起、對話記一行取消、沒有任何答案,
+ *  焦點回輸入框(代理停下等下一則訊息;接 AI 的產品端在這裡把 `agentDecisionCancelMessage` 交給 AI,範例沒有接 AI)。 */
 function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuestion[]; intro: string }) {
   const demo = useAgentDemo({ ...demoScene('c2', { messages: [{ role: 'agent', content: intro }] }) })
   const [asking, setAsking] = React.useState(true)
   const answer = (answers: Record<string, string>) => {
     setAsking(false)
     demo.addMessages([decisionReceipt(questions, answers)])
+  }
+  const cancel = () => {
+    setAsking(false)
+    demo.addMessages([decisionCancelReceipt()])
   }
   return (
     <PanelFrame>
@@ -353,7 +358,7 @@ function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuest
           <DemoConversation messages={demo.messages} />
           <div className="relative">
             <AgentPromptInput {...demo.prompt} />
-            {asking && <AgentDecisionCard questions={questions} onSubmit={answer} onSkip={answer} />}
+            {asking && <AgentDecisionCard questions={questions} onSubmit={answer} onCancel={cancel} />}
           </div>
         </AgentPanel>
       )}
@@ -362,7 +367,7 @@ function DecisionCardScene({ questions, intro }: { questions: AgentDecisionQuest
 }
 
 /** 決策卡一開始就開著:三題步進 ——「1 / 3」小標、灰底選項卡、「其他」卡常駐輸入格;第一題 footer 只有下一題,第二題起多一顆上一題;
- *  跳過只在標題列 ×(滑上去提示「跳過全部，用建議繼續」);送出或跳過後卡片收起,答案記成決策回執。 */
+ *  標題列 × = 取消(滑上去提示「取消」;焦點在卡裡按 Esc 同一個動作):卡片收起、對話記一行取消、不送任何答案;送出後卡片收起,答案記成決策回執。 */
 export const DecisionCardOpen: Story = {
   name: '決策卡三題步進',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
@@ -463,8 +468,8 @@ export const DecisionCardErrors: Story = {
   play: async ({ canvasElement }) => {
     const { expect, userEvent, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
-    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「跳過全部，用建議繼續」,整張卡唯一一顆)所在的 role="group"
-    const card = () => within(canvas.getByRole('button', { name: '跳過全部，用建議繼續' }).closest('[role="group"]') as HTMLElement)
+    // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「取消」,整張卡唯一一顆)所在的 role="group"
+    const card = () => within(canvas.getByRole('button', { name: '取消' }).closest('[role="group"]') as HTMLElement)
     const otherInput = () => card().getByRole('textbox', { name: '其他(自由輸入)' })
     // 第 1 題:按下「其他」輸入格 = 選中「其他」;文字留空就按「下一題」
     await userEvent.click(otherInput())
@@ -506,7 +511,9 @@ export const DecisionCardNoDefault: Story = {
   ),
 }
 
-/** 決策回執:拍板後在對話流中的靜態紀錄。 */
+/** 決策回執:決策卡收起後在對話流中的靜態紀錄,兩種都在(M15:不留只有點了才看得到的狀態)——
+ *  送出 = 「已按你的選擇繼續:」+ 每題答案;取消(標題列 × / Esc)= 一行「已取消,沒有送出任何答案。」,沒有答案表,代理停下等你的下一則訊息。
+ *  情境:先答了語氣與發布時間,代理接著問封面圖,這一次按了取消。 */
 export const DecisionSummaryInFlow: Story = {
   name: '決策回執',
   render: function DecisionSummaryInFlowStory() {
@@ -529,6 +536,8 @@ export const DecisionSummaryInFlow: Story = {
               </>
             ),
           },
+          { role: 'agent', content: '公告排在今晚 20:00 用正式版發出。還差封面圖,需要你決定用哪一張。' },
+          decisionCancelReceipt(),
         ],
       }),
     })

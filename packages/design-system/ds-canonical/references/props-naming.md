@@ -10,6 +10,7 @@ Canonical `packages/design-system/ds-canonical/rules/ui-development.md`「元件
 |----------|------|---------|-----------|
 | `onClose` | **關閉 overlay session** — 浮層關閉回背景 | Dialog / Sheet / Popover / FileViewer / HoverCard | React Aria `onClose` / Material `DialogProps.onClose` |
 | `onDismiss` | **通知被忽略** — 暫時訊息被關,不影響流程 | Alert / Notice / Toast / Coachmark | Polaris `Toast.onDismiss` / iOS `dismiss()` |
+| `onCancel` | **放棄、不提交** — 不交出任何值(預選的也不算),流程停在這裡等使用者 | AgentDecisionCard(2026-11-15 由 `onSkip(answers)` 改名)/ Field 就地編輯 / DataTable 格編輯器 | Ant Design Modal `onCancel` / React Spectrum AlertDialog `onCancel` |
 | `onRemove` | **從集合移除 item** — parent collection 狀態變化 | PeoplePicker / Combobox multi-select tag / Tag(in list) | Material `Chip.onDelete` / React Aria `onRemove` |
 | `onClear` | **欄位內容清空** — value 設 empty,元件不關 | Input / Select / Combobox / DatePicker clear | Ant `allowClear` + `onClear` / Polaris `clearButton` |
 | `onClearSelection` | **清空多選集合** — 取消所有勾選項(非清欄位內容)| BulkActionBar | Polaris `ResourceList` bulk clear / Material DataGrid `onRowSelectionModelChange([])` |

@@ -1043,7 +1043,7 @@ const STATIC_CLEAN = [
   ['packages/design-system/src/__selftest__/clean-ime.ts', '// 2026-10-01 上午曾在這裡放 `withImeSafeEscape`(浮層的 `onEscapeKeyDown`:組字中的 Esc 不關那一層)。同日下午「這一下 Esc 由誰處理」'],
   ['packages/design-system/src/__selftest__/clean-focus-return.ts', ' * 2026-09-30 之前的五份:Command `returnFocusAfterCommandClose`(SelectMenu / AgentPanel 歷史 / CommandDialog)、Sidebar 窄版抽屜、\n * AppShell 窄版側欄、DatePicker 區間、AgentPanel 入口鈕右鍵選單各寫一份「記開啟者 + 關閉時還」,判準各不相同'],
   // S9:一支檔住兩支元件,文案物件只屬於其中一支(agent-panel.tsx 的形狀):另一支沒有文案物件,它的讀屏名稱不算「決策卡寫死」
-  ['packages/design-system/src/__selftest__/clean-multi-component.tsx', "export interface AgentDecisionCardLabels { skip?: string }\nconst DEFAULT_LABELS: AgentDecisionCardLabels = { skip: '跳過' }\nfunction AgentDecisionCard({ labels }: { labels?: AgentDecisionCardLabels }) { const l = { ...DEFAULT_LABELS, ...labels }; return <Button aria-label={l.skip} /> }\nfunction AgentPanelHeader() { return <Button aria-label=\"新對話\" /> }"],
+  ['packages/design-system/src/__selftest__/clean-multi-component.tsx', "export interface AgentDecisionCardLabels { cancel?: string }\nconst DEFAULT_LABELS: AgentDecisionCardLabels = { cancel: '取消' }\nfunction AgentDecisionCard({ labels }: { labels?: AgentDecisionCardLabels }) { const l = { ...DEFAULT_LABELS, ...labels }; return <Button aria-label={l.cancel} /> }\nfunction AgentPanelHeader() { return <Button aria-label=\"新對話\" /> }"],
 ]
 
 // ─── 主程式 ──────────────────────────────────────────────────────────────────

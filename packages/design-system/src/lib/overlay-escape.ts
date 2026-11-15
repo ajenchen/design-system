@@ -36,7 +36,8 @@
  *   - **浮層守門** `withOverlayEscape`:Popover / Dialog / Sheet 的內容元件、FileViewer(直接用 Radix Dialog)。2026-10-01 取代 `ime-composition.ts` 的
  *     `withImeSafeEscape`(組字中的 `Esc` 不關那一層 —— 這條併進來,不另留一支)。
  *   - **控件宣告** `escapeLayerProps` + `isEscapeForControl`:`useFormValidation`(欄位改過)、`Field/field-edit-keys.ts`(就地編輯中)、LinkInput、
- *     DatePicker 可打字欄位(草稿 ≠ 顯示值)、DataTable 表格根(格游標 / 列選取,`self`)、Calendar 格內事件方塊、拖曳中(`lib/drag-announcements.ts`)。
+ *     DatePicker 可打字欄位(草稿 ≠ 顯示值)、DataTable 表格根(格游標 / 列選取,`self`)、Calendar 格內事件方塊、拖曳中(`lib/drag-announcements.ts`)、
+ *     AgentDecisionCard 卡片根(卡片本身是一層:焦點在卡裡按 Esc = 取消,2026-11-15;它只認「最近的那一層就是卡片本身」,卡裡的控件若自帶一層先給控件)。
  *     只需 `isEscapeForControl`、不掛標記(彈出層本身就是 Radix 的一層):Select / Combobox / DatePicker / TimePicker 的觸發欄位。
  *   - **分區判定** `useEscapeRegion`:AgentPanel(焦點在面板內、面板內沒有浮層 → **並排**時 `Esc` 什麼都不關、**浮層**時關閉面板本身;
  *     兩種都不跨區碰 Main 的 modal;`agent-panel.spec.md`「Esc 與關閉語意」,2026-10-14 依形態分開)。2026-10-01 從 agent-panel.tsx 的

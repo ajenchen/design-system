@@ -24,7 +24,8 @@
  *   附件列=Tag md 單列 + 超寬 +N(OverflowTagList,與 Combobox 多選同一份量測);送出/停止=Button primary xs。
  * - 決策卡:SurfaceHeader(compact)+SurfaceFooter(overlay-surface);選項=灰底卡(--secondary、
  *   rounded-md、內距 8/12、整卡可點)包 RadioGroup md(Popover all-sm 律之拍板豁免;footer 鈕 sm 守律);
- *   一題一問步進(上一題 / 下一題 / 送出;跳過只在標題列 ×);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay;
+ *   一題一問步進(上一題 / 下一題 / 送出);標題列 × 與焦點在卡裡按 Esc = 取消(不送答案;卡片算一層,overlay-escape);
+ *   N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay;
  *   選填單選題有選取時 footer 左側「清除選取」(選取類浮層 footer 順序,overlay-surface.spec.md;Select clearable 的有值才出現 / 焦點交回)。
  * - 改名/刪除:Dialog(header md+X;body Field+Input;footer md 鈕;刪除=primary+danger;
  *   form-validation:儲存 dirty 規則、空名 blur 顯錯;Esc=Dialog 取消)。
@@ -82,7 +83,7 @@ import {
   CommandList,
 } from '@/design-system/components/Command/command'
 import { captureFocusOrigin, returnFocusToOpener } from '@/design-system/lib/overlay-focus-return'
-import { useEscapeRegion } from '@/design-system/lib/overlay-escape'
+import { ESCAPE_LAYER_ATTR, escapeLayerProps, isEscapeForControl, useEscapeRegion } from '@/design-system/lib/overlay-escape'
 import { isOwnPointerTarget, keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { cancelAfterPress, isPointerPressed, retainPressTracking, runAfterPress } from '@/design-system/lib/press-settle'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
@@ -257,10 +258,43 @@ function measureTokenWidth(host: HTMLElement, cssWidth: string): number {
 
 /**
  * 面板裡的對話輸入框(AgentPromptInput 的 textarea)—— 由 AgentPanel 提供、AgentPromptInput 登記,AgentDecisionCard 收起時讀它。
- * 決策卡「完全覆蓋輸入區」(agent-decision-card.spec.md 第一條),送出 / 按 × 之後卡片卸載,握著焦點的那顆鈕跟著不見 ——
+ * 決策卡「完全覆蓋輸入區」(agent-decision-card.spec.md 第一條),送出 / 取消之後卡片卸載,握著焦點的那顆鈕跟著不見 ——
  * 焦點不可因 DOM unmount 掉到 body(keyboard-model-canonical.md),交給卡片底下露出來的這個輸入框(落點見 AgentDecisionCard 的收起效果)。
+ * `pendingFocus`(2026-11-15,A16 ④):consumer 在卡片顯示時不畫輸入框、卡片收起後才畫 —— 卸載那一刻還沒有輸入框可交,
+ * 記下「欠一次焦點」,輸入框一登記就接手(`claimPendingComposerFocus`);焦點在那之前已經被使用者帶去別處就作廢(只接沒有人要的焦點)。
  */
-const AgentComposerContext = React.createContext<React.MutableRefObject<HTMLTextAreaElement | null> | null>(null)
+interface AgentComposerHandle {
+  input: React.MutableRefObject<HTMLTextAreaElement | null>
+  pendingFocus: React.MutableRefObject<boolean>
+}
+const AgentComposerContext = React.createContext<AgentComposerHandle | null>(null)
+
+/**
+ * 決策卡卸載那一刻(版面效果收尾,DOM 還在)把焦點交給面板的對話輸入框 —— 只在焦點此刻在卡片裡時接手(同 keepFieldFocusBeforeUnmount「不在就不動」)。
+ * 輸入框已登記 → 直接交(`keepFieldFocusBeforeUnmount`,同「上一題」「清除選取」);還沒登記 → 記下欠一次,等它登記。
+ * 欠的那一次在下一次焦點移動時作廢:使用者在輸入框出現前自己點了別處,輸入框後來出現時不搶。
+ */
+function handOffFocusToComposer(leaving: HTMLElement | null, composer: AgentComposerHandle | null) {
+  if (!leaving || !composer) return
+  const input = composer.input.current
+  if (input) {
+    keepFieldFocusBeforeUnmount(leaving, input)
+    return
+  }
+  const doc = leaving.ownerDocument
+  const active = doc.activeElement
+  if (!active || !leaving.contains(active)) return
+  composer.pendingFocus.current = true
+  doc.addEventListener('focusin', () => { composer.pendingFocus.current = false }, { once: true, capture: true })
+}
+
+/** 輸入框登記時接手欠的那一次焦點:焦點此刻仍在 body(卡片卸載後沒有人接手)才聚焦;已經在別處就不搶。 */
+function claimPendingComposerFocus(node: HTMLTextAreaElement, composer: AgentComposerHandle) {
+  if (!composer.pendingFocus.current) return
+  composer.pendingFocus.current = false
+  const doc = node.ownerDocument
+  if (!doc.activeElement || doc.activeElement === doc.body) node.focus({ preventScroll: true })
+}
 
 // code-quality-allow: long-function — 容器 = 兩種形態(AppShell 裡 / 單獨使用)× 兩種顯示(並排 / 浮層)的單一實作;拆開會讓遮罩、抑制、Esc、把手的啟用條件各寫兩份
 const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
@@ -288,6 +322,8 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     const dock = React.useContext(AgentPanelDockContext)
     const rootRef = React.useRef<HTMLDivElement | null>(null)
     const composerRef = React.useRef<HTMLTextAreaElement | null>(null)
+    const composerPendingFocus = React.useRef(false)
+    const composer = React.useMemo<AgentComposerHandle>(() => ({ input: composerRef, pendingFocus: composerPendingFocus }), [])
     // 把手以 aria-controls 指向面板本身(W3C APG Window Splitter;resize-handle.spec.md API `ariaControls`);consumer 給了 id 就用它的(來源:https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/windowsplitter/windowsplitter-pattern.html#L95)
     const autoId = React.useId()
     const panelId = props.id ?? autoId
@@ -518,7 +554,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
               onDraggingChange={resize.onDraggingChange}
             />
           )}
-          <AgentComposerContext.Provider value={composerRef}>{children}</AgentComposerContext.Provider>
+          <AgentComposerContext.Provider value={composer}>{children}</AgentComposerContext.Provider>
         </div>
       </>
     )
@@ -1325,14 +1361,17 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
     }
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
     // 登記給面板(AgentComposerContext):決策卡收起時把焦點交給這裡。只在登記的就是自己時才清,不清掉別的輸入框的登記。
+    // 卡片收起時還沒有輸入框(consumer 卡片顯示時不畫輸入框)→ 面板記著欠一次焦點,這裡一登記就接手(claimPendingComposerFocus)。
     const composer = React.useContext(AgentComposerContext)
     const setTextarea = React.useCallback(
       (node: HTMLTextAreaElement | null) => {
         const previous = textareaRef.current
         textareaRef.current = node
         if (!composer) return
-        if (node) composer.current = node
-        else if (composer.current === previous) composer.current = null
+        if (node) {
+          composer.input.current = node
+          claimPendingComposerFocus(node, composer)
+        } else if (composer.input.current === previous) composer.input.current = null
       },
       [composer],
     )
@@ -1463,18 +1502,22 @@ export interface AgentDecisionCardProps
    */
   onSubmit: (answers: Record<string, string>) => void
   /**
-   * 跳過=採預設值繼續(header × 的行為;× 是唯一的跳過入口,2026-11-11 起 footer 沒有跳過鈕、沒有 Esc / 外點關閉);回傳目前預設/已選值。
-   * 必填:× 恆渲染,沒傳時按了沒反應,使用者除了答完沒有任何離開的路(2026-11-11 r3 審查;同上 M23(f))。
+   * 取消 = 使用者不回答這張卡:**不帶任何答案**(預選的建議也不算使用者選的),代理停下、等使用者下一則訊息。
+   * 觸發:標題列 ×、焦點在卡片裡按 Esc(卡片算一層,agent-decision-card.spec.md「關閉」條);沒有外點關閉。
+   * 接 AI 的產品端:收到這個回呼時,把 `agentDecisionCancelMessage(questions)` 當作這次提問的結果交給 AI,不要自己補答案(同檔「接 AI 的產品端」)。
+   * 必填:× 恆渲染、卡片沒有內建的取消行為,沒傳 = 按了沒反應、使用者除了答完沒有離開的路(M23(f);agent-panel-fixed-anatomy-invariant 守)。
+   * 2026-11-15 前叫 `onSkip(answers)`、把預選 / 已選的值當答案交出去(= 用建議繼續)—— 語意變了,不留舊名當別名
+   * (留著 = 舊寫法照舊「拿建議繼續」);傳 `onSkip` 在型別層就會報錯(不是 props 裡的名字)。
    */
-  onSkip: (answers: Record<string, string>) => void
+  onCancel: () => void
   /** 卡上自帶的文字(Partial 傳入、與 DS 預設合併 —— 同 Coachmark / FileViewer `labels`);DS 預設中文,英文由 consumer 傳。 */
   labels?: Partial<AgentDecisionCardLabels>
 }
 
 /** 決策卡自帶的文字(全部可覆寫)。 */
 export interface AgentDecisionCardLabels {
-  /** header × 的名字(aria-label;icon-only Button 自動帶出同字 tooltip):跳過全部 = 用預設 / 已選值繼續 */
-  skip: string
+  /** 標題列 × 的名字(aria-label;icon-only Button 自動帶出同字 tooltip):取消 = 不回答、不送任何答案(2026-11-15 前鍵名 `skip`) */
+  cancel: string
   /** 第二題起 footer 的回頭鈕 */
   previous: string
   /** 推進到下一題 */
@@ -1507,6 +1550,9 @@ const RECOMMENDED_SUFFIX = '(建議)'
 const MULTI_JOIN = '\n'
 /**
  * DS 預設文字(中文;lib/i18n/README.md「Fallback chain」3)—— consumer 經 `labels` 覆寫(同 Coachmark `DEFAULT_LABELS`)。
+ * - `cancel`:「取消」—— × 的意思是取消(user 2026-11-11 問句「我覺得我們的x其實才是取消和esc之類的吧？」,AI 同意照做),
+ *   字用 DS 既有「放棄、不提交」的說法(對話框 footer 的「取消」鈕,例:本家族 stories 的任務 / 刪除確認對話框);
+ *   回呼名 `onCancel` 同 `Field/field-edit-keys.ts` 與 DataTable 格編輯器(Esc = 放棄編輯、不提交)。2026-11-11 到 11-15 是「跳過全部，用建議繼續」。
  * - `clearSelection`:同 Select 單選一鍵清空的「清除選取」(select.tsx)與 BulkActionBar `clear` —— 清掉選了的那一個,全 DS 一種說法。
  * - `optionalSuffix`:選填題題目後加「(選填)」、必答題不變(user 2026-11-10 在決策頁選「標示:甲」);寫法照 DS 既有 ——
  *   標籤文字直接接「(選填)」、同字級同色(accordion.stories「專案識別碼(選填)」的 FieldLabel、people-picker.stories「代理人(選填)」),
@@ -1519,7 +1565,7 @@ const MULTI_JOIN = '\n'
  */
 // i18n-allow: DS 預設文案(中文);consumer 經 `labels` 覆寫
 const DEFAULT_DECISION_LABELS: AgentDecisionCardLabels = {
-  skip: '跳過全部，用建議繼續',
+  cancel: '取消',
   previous: '上一題',
   next: '下一題',
   submit: '送出',
@@ -1597,7 +1643,7 @@ const OPTION_CHECKBOX_HOVER =
   'group-hover/agent-option:border-border-hover data-[state=checked]:group-hover/agent-option:bg-primary-hover data-[state=checked]:group-hover/agent-option:border-primary-hover'
 
 const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProps>(
-  ({ questions, onSubmit, onSkip, labels: labelsOverride, className, ...props }, ref) => {
+  ({ questions, onSubmit, onCancel, labels: labelsOverride, className, onKeyDown, ...props }, ref) => {
     const labels = { ...DEFAULT_DECISION_LABELS, ...labelsOverride }
     const titleId = React.useId()
     const otherInputId = React.useId()
@@ -1667,7 +1713,21 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         return { ...prev, [question.id]: [...set].join(MULTI_JOIN) }
       })
     }
-    const skip = () => onSkip(resolvedAnswers())
+    // 取消(標題列 × / Esc):不帶任何答案 —— 預選的建議只有按「下一題 / 送出」才算使用者的答案(agent-decision-card.spec.md「關閉」條、產題守則 8 / 11)。
+    // 2026-11-15 前這裡是 `onSkip(resolvedAnswers())`:把預選 / 已選的值當答案交出去,三題的卡停在第 1 題按 ×,連沒看到的第 2 題也算「你選的」。
+    const cancel = () => onCancel()
+    // Esc = 取消(keyboard-model-canonical.md「`Esc` 一次只關最內層」:卡片是代理被擋住時才出現、答完就收的暫時層,算一層;
+    // 焦點在卡片裡才算 —— 卡片根宣告 `data-escape-layer`,面板的分區判定 / 外層浮層守門把這一下留給卡片)。
+    // 只認「最近的那一層就是卡片本身」:卡片裡若日後放進自帶 Esc 層的控件,這一下歸它(一次只少一層)。
+    // 組字中的 Esc 是取消選字,不是取消卡片(lib/ime-composition.ts);Radix 已用掉的那一下(滑過 × 的提示正開著)不取消。
+    const onCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDown?.(event)
+      if (event.key !== 'Escape' || isImeComposing(event)) return
+      if (!(event.target instanceof Element) || event.target.closest(`[${ESCAPE_LAYER_ATTR}]`) !== rootRef.current) return
+      if (!isEscapeForControl(event)) return
+      event.preventDefault()
+      cancel()
+    }
     // 「上一題」從第 2 題回第 1 題:第 1 題沒有上一題,按下去的那顆鈕跟著卸載 —— 焦點不可掉到 body
     // (`ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」)。焦點在它身上才接手(同 keepFieldFocusBeforeUnmount
     // 「不在就不動」),交給第 1 題的選項入口:單選 = 已選的那個圓、沒選 = 第一個(APG radio Tab 進群組的落點,同「清除選取」後的落點),複選 = 第一個方框。
@@ -1687,17 +1747,18 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       }
       setStep((s) => Math.max(0, s - 1))
     }
-    // 卡片收起(送出 / 按 × 之後 consumer 卸載它):握著焦點的那顆鈕跟著不見,焦點不可掉到 body
+    // 卡片收起(送出 / 取消之後 consumer 卸載它):握著焦點的那顆鈕跟著不見,焦點不可掉到 body
     // (`ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」;W3C APG dialog:按的元素不在了
     // →「focus is set on another element that provides logical work flow」,原文與出處同檔 Dialog 那一段)。
     // 落點 = 面板的對話輸入框(AgentComposerContext,由 AgentPromptInput 登記)【AI 推導】:卡片本來就蓋在它上面,收起後露出來的就是它,
-    // 使用者下一步是看代理怎麼接、或自己再打一句。焦點在卡片裡才接手(同 keepFieldFocusBeforeUnmount「不在就不動」);
+    // 使用者下一步是看代理怎麼接、或自己再打一句(取消之後代理停下,下一步一定是使用者打字)。焦點在卡片裡才接手(同 keepFieldFocusBeforeUnmount「不在就不動」);
     // 用版面效果的收尾:React 卸載時先跑它、再把 DOM 拿掉,這一刻卡片還在、還看得到焦點在不在裡面。
     // consumer 送出後不卸載卡片(例如換成讀取中)就不會跑,焦點照舊留在原處。2026-11-11 前送出 / × 之後焦點落在 body(r3 實測)。
+    // 輸入框比卡片晚出現(consumer 卡片顯示時不畫輸入框)→ 記下欠一次,輸入框一登記就接手(handOffFocusToComposer;2026-11-15 前這條掉到 body)。
     const rootRef = React.useRef<HTMLDivElement | null>(null)
     const composer = React.useContext(AgentComposerContext)
     React.useLayoutEffect(
-      () => () => keepFieldFocusBeforeUnmount(rootRef.current, composer?.current),
+      () => () => handOffFocusToComposer(rootRef.current, composer),
       [composer],
     )
 
@@ -1815,6 +1876,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         }}
         role="group"
         aria-labelledby={titleId}
+        // 卡片本身是一層 Esc(焦點在卡片裡才算;見上方 onCardKeyDown)
+        {...escapeLayerProps(true)}
+        onKeyDown={onCardKeyDown}
         className={cn(
           // 繼承 Popover surface:rounded-lg/border/elevation-200;改寫:無下圓角、貼底。
           'absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden',
@@ -1825,10 +1889,10 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         )}
         {...props}
       >
-        {/* 標題列:N>1 時小標「n / N」(SurfaceEyebrow:字樣與距題目 2px 照 overlay-surface.spec.md「SurfaceHeader」)+ 題目 + ×(跳過全部 = 唯一的跳過入口,名字 / tooltip「跳過全部，用建議繼續」;固定頂部、佔位 = 題目一行高);改寫:header 下無分隔線。 */}
+        {/* 標題列:N>1 時小標「n / N」(SurfaceEyebrow:字樣與距題目 2px 照 overlay-surface.spec.md「SurfaceHeader」)+ 題目 + ×(取消 = 不送答案,名字 / tooltip「取消」;另一個入口是 Esc;固定頂部、佔位 = 題目一行高);改寫:header 下無分隔線。 */}
         <SurfaceHeader
           className={cn(COMPACT_HEADER_SLOT, 'items-start justify-between border-b-0')}
-          dismiss={<Button dismiss size="sm" startIcon={XIcon} aria-label={labels.skip} onClick={skip} />}
+          dismiss={<Button dismiss size="sm" startIcon={XIcon} aria-label={labels.cancel} onClick={cancel} />}
         >
           <div className="flex min-w-0 flex-col">
             {total > 1 && (
@@ -1948,8 +2012,8 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
             主鈕靠右、每一題同一個位置;左側 = 操作選取的「清除選取」(選填單選題有選取時才有;選取類浮層 footer 順序:左操作選取、右提交,
             overlay-surface.spec.md;排法照 Coachmark footer 的 justify-between + 右側一組,沒有清除鈕時左邊留空 span,右側鈕的位置不因它出現 / 消失而動)。
             鈕 sm 守 Popover all-sm 律;清除與上一題同為 tertiary(同 SelectMenu 多選 footer 的全選 / 取消全選);無上分隔線。
-            跳過只在標題列 ×(user 2026-11-11「跳過:甲」;甲 = 拿掉下方的「跳過」、只留右上角 ×,agent-decision-card.spec.md「關閉」條);
-            2026-11-10 前第一題左鈕是「跳過」,與 × 同一行為。 */}
+            footer 沒有跳過 / 取消鈕(user 2026-11-11「跳過:甲」;甲 = 拿掉下方的「跳過」、只留右上角 ×,agent-decision-card.spec.md「關閉」條);
+            × 的意思 2026-11-15 起是取消(不送答案)。2026-11-10 前第一題左鈕是「跳過」,與 × 同一行為。 */}
         <SurfaceFooter className="justify-between border-t-0">
           {showClear ? (
             <Button variant="tertiary" size="sm" onClick={clearSelection}>
@@ -1980,6 +2044,28 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
   },
 )
 AgentDecisionCard.displayName = 'AgentDecisionCard'
+
+/**
+ * 使用者取消決策卡(`onCancel`)時,交給 AI 的固定訊號(2026-11-15,A16 ⑥;規則住 agent-decision-card.spec.md「接 AI 的產品端」)。
+ * 意思只有三件:使用者取消了、沒有任何答案(預選的建議也不算)、不要自行假設 —— 停下來等使用者的下一則訊息。
+ * 產品端在 `onCancel` 裡把它當成這次提問的結果交回 AI,並真的停止這一輪(例:Claude Agent SDK 的 `canUseTool` 對 AskUserQuestion 回
+ * deny + 這段訊號 + interrupt(Python `PermissionResultDeny(message=…, interrupt=True)`)—— 只回 deny + message 不保證停,官方文件:
+ * 「Claude sees this message and may adjust its approach.」https://code.claude.com/docs/en/agent-sdk/user-input.md;
+ * interrupt「Whether to interrupt the current execution」https://code.claude.com/docs/en/agent-sdk/python.md);
+ * 別家模型同理,當作工具結果文字交回。**不要**把預選的建議填成答案送回去(那是 2026-11-15 前 × 的做法;user 2026-11-11 問句「點擊跳過表示全部都沒選吧？」,AI 同意照做)。
+ * 文字用英文、不跟介面語系走:這段是給模型讀的訊號,不是畫面文字(畫面上的字走 `labels`);固定一份,產品端不必各寫各的。
+ * 會列出被取消的題目,讓模型知道是哪幾題沒有答案。
+ */
+export function agentDecisionCancelMessage(questions: Pick<AgentDecisionQuestion, 'label'>[]): string {
+  // i18n-allow: 給 AI 的固定訊號(不是畫面文字,不跟介面語系)
+  const lines = [
+    'The user cancelled these questions without answering. No option was chosen, including any suggested or preselected one.',
+    'Do not assume answers or proceed on your own judgment. Stop here and wait for the user\'s next message.',
+    'Cancelled questions:',
+    ...questions.map((q) => `- ${q.label}`),
+  ]
+  return lines.join('\n')
+}
 
 /* ────────────────────────────────────────────────────────────────────────────
  * 9. AgentDecisionSummary(決策回執)

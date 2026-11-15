@@ -6,23 +6,33 @@
  *         出現 / 消失前後:右側的鈕(上一題、下一題|送出)與 footer、決策卡上緣的位置不變;
  *         左緣 = 題目標題左緣(overlay-surface.spec.md「要對齊誰」:只有 SurfaceHeader 時對齊標題)、垂直中線 = 右側主鈕;
  *         長相 = 同一列的「上一題」(同為 tertiary sm:高、字級、字重、顏色、底色、左右內距、圓角;第 2 題量,第 1 題右側只剩主鈕)。
- *         footer 組成與跳過(user 2026-11-11「跳過:甲」,agent-decision-card.spec.md「關閉」條):footer 沒有「跳過」——
+ *         footer 組成(user 2026-11-11「跳過:甲」前半,agent-decision-card.spec.md「關閉」條):footer 沒有「跳過」——
  *         第 1 題右側只有「下一題」(O22 選填 / O26 必答)、只有一題的卡只有「送出」(O26)、第 2 題起「上一題 / 下一題」(O23);
- *         跳過只在標題列 ×:名字 = 「跳過全部，用建議繼續」(O24)、滑上去的 tooltip 同字(O25)、按了卡收起並記下決策回執(O28);
+ *         × = 取消(2026-11-15,A16;user 問句「我覺得我們的x其實才是取消和esc之類的吧？」,AI 同意照做):名字 =「取消」(O24)、
+ *         滑上去的 tooltip 同字(O25)、按了卡收起、對話是取消那一行、**沒有**「已按你的選擇繼續」(O28 三題卡停在第 1 題且「其他」打了字;
+ *         O28s 只有一題、預選了建議的卡 —— 預選的建議不被當成答案送出);
+ *         Esc = 取消(卡片算一層,keyboard-model-canonical.md「`Esc` 一次只關最內層」):焦點在卡裡按 Esc → 同 ×(O29)、焦點回輸入框(O29f)、
+ *         並排時第二下 Esc 面板不動(O29b)、浮層時第一下只取消卡片、第二下才關面板(O29p)、組字中的 Esc 不取消而「其他」輸入格的 Esc 取消(O29c)、
+ *         滑過 × 的提示開著時第一下只關提示、第二下才取消(O29t);
+ *         輸入框比卡片晚出現(卡片收起時輸入框還沒登記):登記那一刻接手焦點(O30)、使用者先把焦點帶去別處就不搶(O30b)。
+ *         O30 的「晚登記」用 React 自己掛在輸入框上的登記回呼(DOM 節點的 fiber.ref = AgentPromptInput 的 setTextarea)先撤銷、
+ *         卡片收起後再呼叫一次 —— 走的是 DS 自己的登記路徑,不新增 story(會動視覺基準);讀不到回呼 = 儀器失效(exit 2),不當通過。
  *         第 2 題用鍵盤按「上一題」回第 1 題(那顆鈕跟著卸載)→ 焦點在第 1 題已選的圓,不掉到 body(O27);goBack 的另外兩條路
  *         (2026-11-11 r3 審查補):第 1 題沒選 → 焦點在第一個圓(O27b)、選了「其他」打字 → 焦點在「其他」的圓、字還在(O27c)。
  *         複選題那條路(第 1 題是複選)沒有任何 story 的第 1 題是複選,量不到;不為此新增 story(會動視覺基準),列待補。
- *         卡收起之後焦點(agent-decision-card.spec.md「收起後的焦點」):鍵盤按「送出」(O14f)、滑鼠按 ×(O28f)→ 卡卸載,
- *         焦點在面板的對話輸入框,不在 body;2026-11-11 前兩條都落在 body(r3 實量)。--selftest ⑱ 卸載後 blur → O14f / O28f 紅。
- *         --selftest ⑬–⑰ 各補回一種(footer 又出現跳過 / × 改回「跳過」/ tooltip 換字 / 回第 1 題焦點掉到 body / 按 × 沒反應);
- *         2026-11-11 前的建置(第 1 題 footer 有「跳過」、× 名字「跳過」)→ O22 / O24 / O25 / O26 / O27 紅。
+ *         卡收起之後焦點(agent-decision-card.spec.md「收起後的焦點」):鍵盤按「送出」(O14f)、滑鼠按 ×(O28f)、鍵盤 Esc(O29f)→ 卡卸載,
+ *         焦點在面板的對話輸入框,不在 body;2026-11-11 前送出 / × 都落在 body(r3 實量)。--selftest ⑱ 卸載後 blur → O14f / O28f / O29f 紅。
+ *         --selftest ⑬–⑰ 各補回一種(footer 又出現跳過 / × 改回舊名 / tooltip 換字 / 回第 1 題焦點掉到 body / 按 × 沒反應);
+ *         ⑲–㉓ 是取消那一組(Esc 沒反應 / × 又把建議當答案送出 / Esc 一下少兩層 / 輸入框晚出現沒接手 / 組字中的 Esc 取消了卡片)。
+ *         2026-11-11 前的建置(第 1 題 footer 有「跳過」、× 名字「跳過」)→ O22 / O24 / O25 / O26 / O27 紅;
+ *         2026-11-15 前的建置(× =「跳過全部，用建議繼續」、按了交出建議、沒有 Esc)→ O24 / O25 / O28 / O28s / O29 起一串紅。
  *         選填題沒選按「下一題 / 送出」照常前進、沒有錯誤訊息 —— 只用鍵盤也一樣:清掉之後只用 Tab 走到「下一題」按 Enter(O10)、
  *         複選題不勾只用 Tab 走到「送出」(O14),途中經過「其他」輸入格不改選取;必答題 Tab 經過也不把建議解換掉(O18)。
  *         讀屏:必答單選題的 radiogroup aria-required="true",選填單選題不是(field.spec.md「SR 識別路徑」)。
  *         選填題題目後有「(選填)」,卡片 / radiogroup / 複選群組的名字也以它結尾;必答題沒有(O19–O21;user 2026-11-10 選「標示:甲」,
  *         agent-decision-card.spec.md Header 條)。--selftest ⑪ 拿掉選填題的字 → O19 紅、⑫ 必答題也加 → O20 紅;214fc699 的建置 → O19 / O21 紅。
  *         量的是 getBoundingClientRect、getComputedStyle、document.activeElement、aria-checked、aria-required、input.value,不讀 class(M37)。
- *   紅: --selftest 逐一補回十八種病(每種開一次新頁;⑪⑫ 見上方「(選填)」那段,⑬–⑰ 見「footer 組成與跳過」那段,⑱ 見「卡收起之後焦點」):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
+ *   紅: --selftest 逐一補回二十三種病(每種開一次新頁;⑪⑫ 見上方「(選填)」那段,⑬–⑰ 見「footer 組成」那段,⑱ 見「卡收起之後焦點」,⑲–㉓ 見「× = 取消」那段):① 鈕不出現 ② 鈕出現時右側鈕被推動 ③ 按了焦點掉到 body
  *       ④ 必答題也出現 ⑤ 清除後「其他」的字還在 ⑥ 鈕的長相跟「上一題」不同 ⑦ 鍵盤走到「清除選取」的路上選取被換掉
  *       ⑧ 必答題的 radiogroup 沒有 aria-required ⑨ 選填題的 radiogroup 也標 aria-required ⑩ Tab 聚焦「其他」輸入格就選中「其他」
  *       —— 各自必須被指名紅
@@ -65,13 +75,17 @@ const REQUIRED_STORY = 'design-system-components-agentpanel-展示--decision-car
 const SINGLE_STORY = 'design-system-components-agentpanel-展示--decision-card-single'
 const SELFTEST = process.argv.includes('--selftest')
 const CARD = '[class~="group/agent-option"]'
-// 按鈕文字 = agent-panel.tsx DEFAULT_DECISION_LABELS 的 DS 預設(clearSelection / skip / previous / next / submit);DS 預設換字時兩邊一起改
+// 按鈕文字 = agent-panel.tsx DEFAULT_DECISION_LABELS 的 DS 預設(clearSelection / cancel / previous / next / submit);DS 預設換字時兩邊一起改
 const CLEAR = '清除選取'
 const NAV = ['上一題']
 const PRIMARY = ['下一題', '送出']
-// 標題列 × 的名字(= labels.skip;user 2026-11-11「跳過:甲」);footer 不得再出現的舊鈕字樣
-const DISMISS = '跳過全部，用建議繼續'
+// 標題列 × 的名字(= labels.cancel;2026-11-15 A16);footer 不得再出現的舊鈕字樣;× 的舊名(2026-11-11 到 11-15)
+const DISMISS = '取消'
 const OLD_SKIP = '跳過'
+const OLD_DISMISS = '跳過全部，用建議繼續'
+// 範例(stories-helpers/scene/agent-demo.tsx)記進對話的兩種回執開頭:送出 = decisionReceipt、取消 = decisionCancelReceipt;改字時兩邊一起改
+const SUBMIT_RECEIPT = '已按你的選擇繼續'
+const CANCEL_RECEIPT = '已取消,沒有送出任何答案'
 // 選填題題目後的標記 = DEFAULT_DECISION_LABELS.optionalSuffix 的 DS 預設(user 換字時兩邊一起改)
 const OPTIONAL_SUFFIX = '(選填)'
 
@@ -80,6 +94,8 @@ requireFreshStorybookBuild(STATIC, [
   'packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx',
   'packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx',
   'packages/design-system/src/components/Field/field-wrapper.tsx',
+  'packages/design-system/src/stories-helpers/scene/agent-demo.tsx',
+  'packages/design-system/src/lib/overlay-escape.ts',
 ])
 
 const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
@@ -92,6 +108,8 @@ const FIND_CLEAR = `(() => [...document.querySelectorAll('button')].filter((b) =
 /** 注入的病要從安裝那一刻就成立:鈕可能在注入前就已經渲染(第 1 題預選,一打開鈕就在)—— 只靠 MutationObserver 等「之後的變動」會漏掉
  *  已經在畫面上的那顆,對照組就假綠(第一版 ① 就是這樣沒抓到)。所以每段都先跑一次、再觀察之後的變動。 */
 const SICK = (fn, opts = '{ subtree: true, childList: true, attributes: true }') => `(() => { const f = ${fn}; f(); new MutationObserver(f).observe(document.documentElement, ${opts}) })()`
+/** 頁面層認卡片根(對照組注入用):含 footer 的 role="group"(複選題的 CheckboxGroup 也是 group,但不含 footer)。JS 字串字面值,直接嵌進注入碼。 */
+const CARD_ROOT_SEL = JSON.stringify('[role="group"]:has([data-slot="surface-footer"])')
 /** 對照組(只在 --selftest):每種病一段頁面層注入,不改元件原始碼 —— 量具抓不到它們,就抓不到它們回來。 */
 const FAULTS = {
   hidden: {
@@ -167,14 +185,14 @@ const FAULTS = {
   dismissName: {
     scope: 'required',
     expect: ['O24'],
-    what: '⑭ 標題列 × 的名字改回「跳過」',
-    script: SICK(`() => { for (const b of document.querySelectorAll('[data-slot="surface-header"] button')) if (b.getAttribute('aria-label') !== '${OLD_SKIP}') b.setAttribute('aria-label', '${OLD_SKIP}') }`),
+    what: '⑭ 標題列 × 的名字改回「跳過全部，用建議繼續」(= 2026-11-15 前)',
+    script: SICK(`() => { for (const b of document.querySelectorAll('[data-slot="surface-header"] button')) if (b.getAttribute('aria-label') !== '${OLD_DISMISS}') b.setAttribute('aria-label', '${OLD_DISMISS}') }`),
   },
   tooltipText: {
     scope: 'required',
     expect: ['O25'],
     what: '⑮ 滑到 × 的 tooltip 字跟名字不同',
-    script: SICK(`() => { for (const t of document.querySelectorAll('[role="tooltip"]')) if (t.textContent !== '${OLD_SKIP}') t.textContent = '${OLD_SKIP}' }`, '{ subtree: true, childList: true, characterData: true }'),
+    script: SICK(`() => { for (const t of document.querySelectorAll('[role="tooltip"]')) if (t.textContent !== '${OLD_DISMISS}') t.textContent = '${OLD_DISMISS}' }`, '{ subtree: true, childList: true, characterData: true }'),
   },
   backFocusLost: {
     scope: 'both',
@@ -185,14 +203,48 @@ const FAULTS = {
   dismissDead: {
     scope: 'required',
     expect: ['O28'],
-    what: '⑰ 按標題列 × 沒反應(跳過的唯一入口失效)',
+    what: '⑰ 按標題列 × 沒反應(滑鼠取消的入口失效)',
     script: `document.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[data-slot="surface-header"] button')) e.stopPropagation() }, true)`,
   },
   collapseFocusLost: {
-    scope: 'both',
-    expect: ['O14f', 'O28f'],
-    what: '⑱ 卡收起(送出 / ×)之後焦點掉到 body(= 2026-11-11 前)',
-    script: `document.addEventListener('click', (e) => { const b = e.target instanceof Element && e.target.closest('button'); if (b && (b.textContent.trim() === '送出' || b.closest('[data-slot="surface-header"]'))) setTimeout(() => document.activeElement && document.activeElement.blur(), 0) }, true)`,
+    scope: 'all',
+    expect: ['O14f', 'O28f', 'O29f'],
+    what: '⑱ 卡收起(送出 / × / Esc)之後焦點掉到 body(= 2026-11-11 前)',
+    script: `(() => { const blurSoon = () => setTimeout(() => document.activeElement && document.activeElement.blur(), 0);`
+      + ` document.addEventListener('click', (e) => { const b = e.target instanceof Element && e.target.closest('button'); if (b && (b.textContent.trim() === '送出' || b.closest('[data-slot="surface-header"]'))) blurSoon() }, true);`
+      + ` document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && e.target instanceof Element && e.target.closest(${CARD_ROOT_SEL})) blurSoon() }, true) })()`,
+  },
+  // ⑲–㉓:× = 取消(2026-11-15 A16)—— 不送答案、Esc 是同一個動作、一次只少一層、焦點回輸入框(含輸入框晚出現)
+  escDead: {
+    scope: 'cancel',
+    expect: ['O29', 'O29p'],
+    what: '⑲ 焦點在卡裡按 Esc 沒反應(= 2026-11-15 前「無 Esc」;浮層時這一下沒人認領、面板反而被關)',
+    script: `document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && e.target instanceof Element && e.target.closest(${CARD_ROOT_SEL})) e.stopPropagation() }, true)`,
+  },
+  cancelSubmits: {
+    scope: 'all',
+    expect: ['O28', 'O28s'],
+    what: '⑳ 按 × 又把預選的建議當答案送出(= 2026-11-15 前的「跳過全部，用建議繼續」:× 走的是送出那條路)',
+    script: `document.addEventListener('click', (e) => { const x = e.target instanceof Element && e.target.closest('[data-slot="surface-header"] button'); const root = x && x.closest(${CARD_ROOT_SEL}); if (!root) return; e.stopPropagation(); e.preventDefault(); const p = [...root.querySelectorAll('[data-slot="surface-footer"] button')].find((b) => ['下一題', '送出'].includes(b.textContent.trim())); if (p) p.click() }, true)`,
+  },
+  escTwoLayers: {
+    scope: 'cancel',
+    expect: ['O29p'],
+    what: '㉑ 浮層時一下 Esc 少兩層(取消卡片的同一下也把面板關了)',
+    script: `document.addEventListener('keydown', (e) => { if (e.key !== 'Escape' || !(e.target instanceof Element) || !e.target.closest(${CARD_ROOT_SEL})) return; setTimeout(() => { const b = document.querySelector('button[aria-label="關閉面板"]'); if (b) b.click() }, 30) }, true)`,
+  },
+  lateComposerLost: {
+    scope: 'cancel',
+    expect: ['O30'],
+    what: '㉒ 輸入框比卡片晚出現時焦點留在 body(= 2026-11-15 前:卸載那一刻沒有輸入框可交就算了)',
+    // 只擋「卡片已不在、焦點在 body 時對輸入框的聚焦」= 晚登記那一次接手;卸載當下(卡片還在)的交接不受影響,O14f / O28f / O29f 照綠
+    script: `(() => { const orig = HTMLElement.prototype.focus; HTMLElement.prototype.focus = function (...a) { if (this.matches && this.matches('textarea[aria-label="訊息"]') && !document.querySelector('${CARD}') && (!document.activeElement || document.activeElement === document.body)) return; return orig.apply(this, a) } })()`,
+  },
+  imeCancels: {
+    scope: 'cancel',
+    expect: ['O29c'],
+    what: '㉓ 輸入法組字中的 Esc 也把卡片取消了(那一下是在取消選字)',
+    script: `document.addEventListener('keydown', (e) => { if (e.key !== 'Escape' || !e.isComposing || !(e.target instanceof Element)) return; const root = e.target.closest(${CARD_ROOT_SEL}); const x = root && root.querySelector('[data-slot="surface-header"] button'); if (x) x.click() }, true)`,
   },
 }
 /** 面板的對話輸入框(AgentPromptInput 的 textarea,aria-label = DS 預設「訊息」;改字時兩邊一起改)—— 決策卡收起後的焦點落點 */
@@ -202,6 +254,15 @@ const readFocus = (page) => page.evaluate((sel) => {
   const a = document.activeElement
   return { isBody: !a || a === document.body, onComposer: !!a && a.matches(sel), tag: a?.tagName ?? null, name: a?.getAttribute('aria-label') ?? a?.textContent?.trim().slice(0, 20) ?? null }
 }, COMPOSER)
+
+/** 對話裡有沒有兩種回執(範例的取消那一行 / 送出的決策回執開頭)—— 讀畫面上的字,不讀 class */
+const readReceipts = (page) => page.evaluate(({ C, S }) => {
+  const log = document.querySelector('[role="log"]')
+  const text = log ? log.textContent : ''
+  return { cancel: text.includes(C), submit: text.includes(S) }
+}, { C: CANCEL_RECEIPT, S: SUBMIT_RECEIPT })
+/** 面板本身看不看得到(role="complementary";浮層時第二下 Esc 才關它) */
+const panelVisible = (page) => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); return !!p && p.checkVisibility() })
 
 const flushOn = (page) => page.evaluate(() => new Promise((r) => setTimeout(() => setTimeout(r, 0), 0)))
 /** 等有限次的動畫 / 過渡跑完再量(按鈕有 transition-colors;卡片進場有淡入下滑)—— 量到過渡中間值是已知陷阱。上限 3 秒。 */
@@ -503,7 +564,7 @@ async function runRequired(fault) {
     pass: [s.titleText, s.cardName, s.groupName].every((t) => typeof t === 'string' && t.length > 0 && !t.includes(OPTIONAL_SUFFIX)),
     detail: JSON.stringify({ title: s.titleText, card: s.cardName, group: s.groupName }) })
   if (fault === 'suffixOnRequired') return results
-  // footer 組成與跳過(user 2026-11-11「跳過:甲」):第 1 題右側只有「下一題」;標題列 × 的名字 =「跳過全部，用建議繼續」
+  // footer 組成(user 2026-11-11「跳過:甲」前半):第 1 題右側只有「下一題」;標題列 × 的名字 =「取消」(2026-11-15 A16)
   const right1 = s.buttons.filter((b) => b.text !== CLEAR).map((b) => b.text)
   results.push({ id: 'O24', label: `標題列 × 的名字(aria-label)=「${DISMISS}」`, pass: s.dismiss?.name === DISMISS,
     detail: JSON.stringify(s.dismiss) })
@@ -558,18 +619,20 @@ async function runRequired(fault) {
   } else results.push({ id: 'O27c', label: '第 1 題選「其他」、按「上一題」回來 → 焦點在「其他」的圓', pass: false, detail: `前置不成立:O27 之後不在第 1 題(${s?.step})` })
   if (fault === 'backFocusLost') return results
 
-  // ── 按標題列 ×(跳過的唯一入口)→ 卡收起、對話多一則決策回執(DecisionCardScene 的 onSkip 與 onSubmit 同一個收尾) ──
+  // ── 按標題列 ×(取消)→ 卡收起、對話是取消那一行,**沒有**決策回執(DecisionCardScene:onCancel → 取消那一行、onSubmit → 「已按你的選擇繼續」)──
+  // 這時停在第 1 題、第 1 題選了「其他」並打了字(O27c 留下的)、第 2 題還有預選的建議 —— 2026-11-15 前按 × 會把這些全部當答案送出
   if (!s?.dismiss) {
-    results.push({ id: 'O28', label: '按標題列 × → 卡收起、記下決策回執', pass: false, detail: '前置不成立:讀不到標題列 ×' })
+    results.push({ id: 'O28', label: '按標題列 × → 卡收起、取消、不送答案', pass: false, detail: '前置不成立:讀不到標題列 ×' })
   } else {
-    const receiptBefore = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
+    const before = await readReceipts(page)
     await clickCenter(s.dismiss.rect)
     await settleAfterInteraction(page, { frames: 5 })
     const after = await readCard(page)
-    const receipt = await page.evaluate(() => document.body.textContent.includes('已按你的選擇繼續'))
+    const r = await readReceipts(page)
     const focusAfter = await readFocus(page)
-    results.push({ id: 'O28', label: '按標題列 ×(跳過全部)→ 卡收起、對話多一則決策回執', pass: !receiptBefore && after === null && receipt,
-      detail: `按之前已有回執 ${receiptBefore};按之後卡${after ? '還在' : '收起'}、回執 ${receipt ? '有' : '沒有'};焦點 ${JSON.stringify(focusAfter)}` })
+    results.push({ id: 'O28', label: `按標題列 ×(取消)→ 卡收起、對話多一行「${CANCEL_RECEIPT}」、沒有「${SUBMIT_RECEIPT}」(打了字的「其他」與第 2 題的建議都沒被送出)`,
+      pass: !before.cancel && !before.submit && after === null && r.cancel && !r.submit,
+      detail: `按之前 取消 ${before.cancel} / 送出 ${before.submit};按之後卡${after ? '還在' : '收起'}、取消那一行 ${r.cancel ? '有' : '沒有'}、送出回執 ${r.submit ? '有' : '沒有'};焦點 ${JSON.stringify(focusAfter)}` })
     // 卡收起後焦點(agent-decision-card.spec.md「收起後的焦點」,落點 = 面板的對話輸入框【AI 推導】;2026-11-11 r3 實量修前 = body)。
     // 滑鼠按 × 時 Chrome 在 mousedown 就把焦點給了 ×(焦點在卡片裡),卡卸載後交給輸入框;--selftest ⑱ 卸載後 blur → 本條與 O14f 紅。
     if (after === null) {
@@ -603,14 +666,154 @@ async function runRequired(fault) {
   return results
 }
 
+/** 焦點放到卡片第一個選項控件上(鍵盤會停的那一站;只 focus,不點) */
+const focusFirstControl = (page) => page.evaluate(() => {
+  const c = document.querySelector('[class~="group/agent-option"] [role="radio"], [class~="group/agent-option"] [role="checkbox"]')
+  if (c) c.focus()
+  return !!c && document.activeElement === c
+})
+/** 輸入框的登記回呼(React 掛在 textarea 上的 ref = AgentPromptInput 的 setTextarea):O30 用它模擬「輸入框比卡片晚登記」。 */
+const takeComposerRegistration = (page) => page.evaluate((sel) => {
+  const ta = document.querySelector(sel)
+  const key = ta && Object.keys(ta).find((k) => k.startsWith('__reactFiber$'))
+  const ref = key && ta[key]?.ref
+  if (typeof ref !== 'function') return false
+  window.__composerRegistration = { ref, node: ta }
+  ref(null)
+  return true
+}, COMPOSER)
+const replayComposerRegistration = (page) => page.evaluate(() => {
+  const r = window.__composerRegistration
+  if (!r) return false
+  r.ref(r.node)
+  return true
+})
+
+/** × = 取消(2026-11-15 A16):不送答案、Esc 是同一個動作、一次只少一層、焦點回輸入框(含輸入框晚出現)。 */
+async function runCancel(fault) {
+  const results = []
+  const record = (id, label, pass, detail = '') => results.push({ id, label, pass, detail })
+
+  // ── O28s:只有一題、預選了建議的卡按 × → 預選的建議不被當成答案送出 ──
+  await open(SINGLE_STORY, fault)
+  let s = await readCard(page)
+  if (!s || s.step !== '(單題)' || s.controls[0]?.checked !== 'true' || !s.dismiss) throw new Error(`單題卡應一打開就預選建議解、有標題列 ×(讀到 ${s?.step}、${JSON.stringify(s?.controls.map((c) => c.checked))})`)
+  await clickCenter(s.dismiss.rect)
+  await settleAfterInteraction(page, { frames: 5 })
+  let after = await readCard(page)
+  let r = await readReceipts(page)
+  record('O28s', `只有一題、預選了建議的卡按 × → 卡收起、對話是「${CANCEL_RECEIPT}」、沒有「${SUBMIT_RECEIPT}」(預選的建議不算使用者的答案)`,
+    after === null && r.cancel && !r.submit, `卡${after ? '還在' : '收起'};取消那一行 ${r.cancel ? '有' : '沒有'}、送出回執 ${r.submit ? '有' : '沒有'}`)
+
+  // ── O29 / O29f / O29b:焦點在卡裡(第 1 題的圓)按 Esc = 取消;焦點回輸入框;並排時第二下 Esc 面板不動 ──
+  await open(REQUIRED_STORY, fault)
+  if (!(await focusFirstControl(page))) throw new Error('三題卡第 1 題的圓聚焦不到')
+  await press('Escape')
+  await settleAfterInteraction(page, { frames: 5 })
+  after = await readCard(page)
+  r = await readReceipts(page)
+  const f1 = await readFocus(page)
+  record('O29', `焦點在卡裡按 Esc → 同按 ×:卡收起、對話是「${CANCEL_RECEIPT}」、沒有「${SUBMIT_RECEIPT}」`,
+    after === null && r.cancel && !r.submit, `卡${after ? `還在(${after.step})` : '收起'};取消那一行 ${r.cancel ? '有' : '沒有'}、送出回執 ${r.submit ? '有' : '沒有'}`)
+  if (after === null) {
+    record('O29f', `Esc 取消之後焦點在對話輸入框(${COMPOSER}),不在 body`, f1.onComposer && !f1.isBody, JSON.stringify(f1))
+    await press('Escape')
+    await settleAfterInteraction(page, { frames: 5 })
+    const f2 = await readFocus(page)
+    const shown = await panelVisible(page)
+    record('O29b', '並排時取消之後再按一次 Esc:面板還在、焦點還在輸入框(並排的面板是常駐 app UI,Esc 不關它;一次只少一層)',
+      shown && f2.onComposer, JSON.stringify({ panelVisible: shown, focus: f2 }))
+  } else {
+    record('O29f', 'Esc 取消之後焦點在對話輸入框', false, '前置不成立:Esc 之後卡還在')
+    record('O29b', '並排時取消之後再按 Esc 面板不動', false, '前置不成立:Esc 之後卡還在')
+  }
+
+  // ── O29c:「其他」輸入格裡,組字中的 Esc 不取消(那一下是取消選字);一般的 Esc 取消(沒有表單引擎的輸入格沒有自己的一層)──
+  await open(REQUIRED_STORY, fault)
+  await page.focus('input[aria-label="其他(自由輸入)"]')
+  await page.evaluate(() => document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true, isComposing: true })))
+  await flushOn(page)
+  const composingKept = (await readCard(page)) !== null
+  await press('Escape')
+  await settleAfterInteraction(page, { frames: 5 })
+  after = await readCard(page)
+  r = await readReceipts(page)
+  record('O29c', '「其他」輸入格:組字中的 Esc 不取消卡片;一般的 Esc 取消(卡收起、取消那一行)',
+    composingKept && after === null && r.cancel && !r.submit, JSON.stringify({ composingKept, closedByPlainEsc: after === null, receipts: r }))
+
+  // ── O29t:滑過 × 浮出的提示開著時,第一下 Esc 只關提示、卡還在;第二下才取消 ──
+  await open(REQUIRED_STORY, fault)
+  s = await readCard(page)
+  await page.mouse.move(s.dismiss.rect.x + 1, s.dismiss.rect.y + 1)
+  await page.mouse.move(s.dismiss.rect.x + s.dismiss.rect.w / 2, s.dismiss.rect.y + s.dismiss.rect.h / 2)
+  const tipShown = await page.waitForSelector('[role="tooltip"]', { state: 'attached', timeout: 5_000 }).then(() => true).catch(() => false)
+  await focusFirstControl(page)
+  await press('Escape')
+  const tipAfter1 = await page.evaluate(() => !!document.querySelector('[role="tooltip"]'))
+  const cardAfter1 = (await readCard(page)) !== null
+  await press('Escape')
+  await settleAfterInteraction(page, { frames: 5 })
+  const cardAfter2 = (await readCard(page)) !== null
+  r = await readReceipts(page)
+  await page.mouse.move(0, 0)
+  record('O29t', '滑過 × 的提示開著:第一下 Esc 只關提示(卡還在),第二下才取消(一次只少一層)',
+    tipShown && !tipAfter1 && cardAfter1 && !cardAfter2 && r.cancel && !r.submit, JSON.stringify({ tipShown, tipAfter1, cardAfter1, cardAfter2, receipts: r }))
+
+  // ── O30 / O30b:輸入框比卡片晚登記(先撤銷登記 → Esc 取消 → 再登記)→ 登記那一刻接手焦點;使用者先把焦點帶走就不搶 ──
+  for (const [id, label, moveAway] of [
+    ['O30', '輸入框比卡片晚出現:卡片收起時沒有輸入框可交(焦點暫在 body),輸入框一登記焦點就到它', false],
+    ['O30b', '輸入框比卡片晚出現、但使用者在那之前自己把焦點帶到別處(標題列「新對話」)→ 輸入框登記時不搶', true],
+  ]) {
+    await open(REQUIRED_STORY, fault)
+    if (!(await takeComposerRegistration(page))) throw new Error('讀不到輸入框的登記回呼(textarea 的 React fiber.ref)—— 量不到「晚登記」')
+    await focusFirstControl(page)
+    await press('Escape')
+    await settleAfterInteraction(page, { frames: 5 })
+    const closed = (await readCard(page)) === null
+    const mid = await readFocus(page)
+    if (moveAway) await page.evaluate(() => document.querySelector('button[aria-label="新對話"]')?.focus())
+    const awayName = moveAway ? (await readFocus(page)).name : null
+    await replayComposerRegistration(page)
+    await flushOn(page)
+    const end = await readFocus(page)
+    const pass = moveAway
+      ? closed && mid.isBody && awayName === '新對話' && end.name === '新對話'
+      : closed && mid.isBody && end.onComposer
+    record(id, label, pass, JSON.stringify({ closed, 登記前焦點: mid, 帶走到: awayName, 登記後焦點: end }))
+  }
+
+  // ── O29p:浮層形態(窄到放不下並排)—— 第一下 Esc 只取消卡片、面板還開著;第二下才關面板 ──
+  await page.setViewportSize({ width: 340, height: 900 })
+  try {
+    await open(REQUIRED_STORY, fault)
+    if (!(await focusFirstControl(page))) throw new Error('浮層形態下第 1 題的圓聚焦不到')
+    await press('Escape')
+    await settleAfterInteraction(page, { frames: 5 })
+    const cardAfter = (await readCard(page)) !== null
+    const shown1 = await panelVisible(page)
+    r = await readReceipts(page)
+    await press('Escape')
+    await settleAfterInteraction(page, { frames: 5 })
+    await settleTransitions(page)
+    const shown2 = await panelVisible(page)
+    record('O29p', '浮層形態:第一下 Esc 只取消卡片(面板還開著、對話是取消那一行),第二下才關面板(一次只少一層)',
+      !cardAfter && shown1 && r.cancel && !r.submit && !shown2, JSON.stringify({ cardAfter, panelAfterFirst: shown1, receipts: r, panelAfterSecond: shown2 }))
+  } finally {
+    await page.setViewportSize({ width: 1280, height: 900 })
+  }
+  return results
+}
+
 const runs = SELFTEST ? Object.keys(FAULTS) : [null]
 const report = []
 for (const fault of runs) {
   try {
     const results = []
-    const scope = fault === 'required' ? 'required' : (FAULTS[fault]?.scope ?? (fault ? 'optional' : 'both'))
-    if (scope !== 'required') results.push(...await runOptional(fault))
-    if (scope !== 'optional') results.push(...await runRequired(fault))
+    // scope:optional / required / both(前兩支)/ cancel(只跑取消那一組)/ all(三支);沒有對照組 = 三支全跑
+    const scope = fault === 'required' ? 'required' : (FAULTS[fault]?.scope ?? (fault ? 'optional' : 'all'))
+    if (['optional', 'both', 'all'].includes(scope)) results.push(...await runOptional(fault))
+    if (['required', 'both', 'all'].includes(scope)) results.push(...await runRequired(fault))
+    if (['cancel', 'all'].includes(scope)) results.push(...await runCancel(fault))
     report.push({ fault, results })
   } catch (error) {
     const msg = error instanceof StoryRenderInstrumentError ? error.message : (error?.message ?? String(error))

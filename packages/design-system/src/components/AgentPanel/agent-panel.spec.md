@@ -259,12 +259,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 8. AgentDecisionCard(決策卡)→ `agent-decision-card.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
-決策卡的外觀(繼承 Popover surface 配方 + SurfaceFooter)/ 選項卡與滑過 / 步進與跳過 / 產題守則 14 條,整段住在 `./agent-decision-card.spec.md`;本檔只留這個指標。
+決策卡的外觀(繼承 Popover surface 配方 + SurfaceFooter)/ 選項卡與滑過 / 步進與取消(× / Esc = 取消、不送答案)/ 產題守則 14 條 / 接 AI 的產品端,整段住在 `./agent-decision-card.spec.md`;本檔只留這個指標。
 
 ### 9. AgentDecisionSummary(決策回執)
 
 - 決策完成後在對話流中的靜態回執:`border-border rounded-md`;問題=fg-secondary、
-  答案=foreground。無互動。
+  答案=foreground。無互動。只用在**送出**;決策卡**取消**時沒有答案可列,對話只記一行取消(`./agent-decision-card.spec.md`「接 AI 的產品端」第 3 點;
+  展示頁「決策回執」兩種都畫,2026-11-15)。
 
 ### 附:歷史浮層(消費現成,不新增公開元件)
 
@@ -373,6 +374,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 浮層 | 在面板內,裡面沒有任何浮層 | **關閉面板**(= ×:開關紀錄變關;對話、草稿、閱讀位置保留,見「關閉不等於卸載」;決策卡關掉 ≠ 回答,重開時還在);焦點回入口鈕 | — |
 | 浮層 | 底下壓著有網址的 modal、焦點在面板 | 關閉面板,modal 留著(與點遮罩的 a 案同一個結果) | 交給露出來的 modal |
 | 浮層 | 輸入法組字中 | 只取消組字,什麼都不關(`../../lib/ime-composition.ts`) | 照上列 |
+| 任一 | 焦點在決策卡裡(2026-11-15;**先於上面兩列「裡面沒有任何浮層」**—— 卡片自己算一層) | **取消決策卡**(= 卡片的 ×:不送答案,`./agent-decision-card.spec.md`「關閉」條);焦點回對話輸入框,面板不動。來源:AI 依 user 2026-11-11 問句「我覺得我們的x其實才是取消和esc之類的吧？」落地【AI 推導 2026-11-15】,不在上方「決定來源」那次核准裡 | 照上列(焦點已在輸入框) |
 | 任一 | 焦點在面板裡改過、還沒存的欄位 | 欄位自己那一層先(`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」;宣告了卻沒認領的那一下照常往下關,不困住使用者) | 照上列 |
 | 任一 | 焦點在面板外(Menu / Main / Dialog)且那裡開著浮層 | 關該區自己的浮層,不跨區碰面板(作用域封閉在焦點所在區) | — |
 
@@ -399,7 +401,8 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 
 - ❌ 手刻 chrome header / 浮層殼 / row 結構(必消費 ChromeHeader / overlay-surface /
   MenuItem 家族)。
-- ❌ AgentDecisionCard 加 Esc / 外點關閉(阻擋語意)。
+- ❌ AgentDecisionCard 加外點關閉(卡片不是浮層,點對話區是在讀不是取消;Esc 2026-11-15 起 = 取消,見 `./agent-decision-card.spec.md`「關閉」條。
+  2026-11-15 前本條是「加 Esc / 外點關閉(阻擋語意)」—— × 當時是「用建議繼續」,Esc 沒有對應的動作;× 改成取消後,Esc 照鍵盤總則算同一個動作)。
 - ❌ 標誌動畫另立第三種本體語言(蓄勢=招喚態同款;「變淡」已於 2026-09-02 收斂棄用)。
 - ❌ 附件在氣泡內用 Tag 或 FileItem(送出後=Chip assist 視覺;輸入中才是 Tag)。
 - ❌ 思考塊微光套到已完成步驟(僅標題+最新一行)。
