@@ -1187,10 +1187,14 @@ jobs:
           # 判定 + --selftest 一個根因突變,本機合計約 30 秒 → 兩格都跑(不寫條件式)。
           npm run test:data-table-click-outside
           # DataTable 排序 / 篩選面板的「恢復預設 / 清除全部」(2026-11-11;user 同日「重置與清除所有就是完全不同的意思，所以本來就要有兩個入口吧？」),
-          # 欄位顯示面板的「恢復預設」2026-11-15 併入同一條:恢復預設看資料(值 ≠ defaultSorting / defaultValue / defaultVisibility)、清除全部在加條件那一排靠最右(量 rect)、
-          # clearable 開關、按下後焦點給加條件鈕(欄位顯示面板沒有 → 標題列 ×)不掉 body、polite 播報;另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15)。不需要 storybook;
-          # --selftest = 基準 + 根因突變(含修前寫法;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字)。本機 2026-11-15 主跑 + --selftest 合計約 4.6 分 → 兩格都跑(同上一支,不寫條件式)。
-          npm run test:data-table-panel-reset-clear
+          # 欄位顯示面板的「恢復預設」2026-11-15 併入同一條:恢復預設看資料(值 ≠ defaultSorting / defaultValue / defaultVisibility + defaultColumnOrder —— 欄位顯示面板連順序一起比、一起還原)、
+          # 清除全部在加條件那一排靠最右(量 rect)、clearable 開關、按下後焦點給加條件鈕(欄位顯示面板沒有 → 標題列 ×)不掉 body、polite 播報;
+          # 欄位顯示面板的固定零件(搜尋框、拖曳把手不靠參數,2026-11-15);另驗排序面板 labels 每個字畫在對的元素 / 屬性(2026-11-15)。不需要 storybook;
+          # 對照組照最上面那支的做法分片(--shard,腳本檔頭;清單與個數以腳本的 MUTANTS 為準,這裡不寫數字):每一格 = 基準(一趟完整判定 = 主跑,所以主跑兩格都跑)
+          # + 一半根因突變(含修前寫法),覆蓋率由腳本靜態驗(每條契約列都在某個突變的 expectRed;不分片的完整動態覆蓋由本機 npm run test:data-table-panel-reset-clear 與 meta-test 跑)。
+          # 2026-11-15 前兩格各跑「主跑 + 完整 --selftest」,本 job 兩格 CI 實測 16.1 / 16.9 分(上限 25)。本機 2026-11-15 重量(負載均值約 7):
+          # 不分片 --selftest(基準 + 全部突變)578 秒;兩片同時跑 --shard=0/2 307 秒、--shard=1/2 288 秒 → 每格這支閘的時間約剩一半(改前每格還多一趟主跑)。
+          node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard="$SHARD"
         env:
           SHARD: ${{ matrix.shard }}
 

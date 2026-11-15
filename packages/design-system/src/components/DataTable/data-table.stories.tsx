@@ -1276,7 +1276,8 @@ export const VirtualScroll: Story = {
 // Issue 3(2026-05-10):VisibilityRow inline helper retired — 移到
 // `<DataTableColumnVisibilityPanel>` primitive 內部(SSOT)。
 /** 商品後台(選取 + 批次操作)與 Roadmap 兩則展示的產品預設欄位 = 全部顯示(寫法同 visibility:沒寫 = 顯示)。
- *  隱藏任何一欄後欄位顯示面板的標題列出現「恢復預設」,按下回到全部顯示(2026-11-15 前靠 `resettable`,畫面相同)。 */
+ *  隱藏任何一欄、或拖過欄位順序後,欄位顯示面板的標題列出現「恢復預設」,按下回到全部顯示、順序回到欄位定義的順序
+ *  (沒傳 defaultColumnOrder = columns 順序;2026-11-15 前靠 `resettable`、只還原顯示)。 */
 const PRODUCT_DEFAULT_ALL_VISIBLE: Record<string, boolean> = {}
 
 export const WithBulkActions: Story = {
@@ -1375,8 +1376,8 @@ export const WithBulkActions: Story = {
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72 p-0">
               {/* Issue 3(2026-05-10):從 inline 149-line panel 改用 SSOT primitive
-                  `<DataTableColumnVisibilityPanel>`(search + 恢復預設(給 defaultVisibility 才有)+
-                  DnD reorder + lock)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
+                  `<DataTableColumnVisibilityPanel>`(搜尋 + DnD reorder 是固定零件、恆在;恢復預設給 defaultVisibility 才有;
+                  columnOrder / onColumnOrderChange 必填)。SKU 永遠鎖在第一位 = `lockedIds=['sku']`。 */}
               <DataTableColumnVisibilityPanel
                 columns={baseColumns.map((c) => ({
                   id: ((c as any).accessorKey ?? (c as any).id) as string,
@@ -1387,7 +1388,6 @@ export const WithBulkActions: Story = {
                 columnOrder={columnOrder}
                 onColumnOrderChange={setColumnOrder}
                 lockedIds={['sku']}
-                searchable
                 defaultVisibility={PRODUCT_DEFAULT_ALL_VISIBLE}
               />
             </PopoverContent>
@@ -1897,32 +1897,77 @@ export const SortPanelStates: Story = {
 }
 
 /* ── 欄位顯示面板 — 各種狀態(2026-11-15)──
- * 「恢復預設」= 回到產品設定的預設可見欄(defaultVisibility,與目前不同才出現、不傳就沒有),跟排序 / 篩選面板同一條。
+ * 「恢復預設」= 還原這個面板改得動的全部:顯示 / 隱藏回到 defaultVisibility、順序回到 defaultColumnOrder(沒傳 = columns 定義順序,
+ * 鎖定欄排最前);與目前不同才出現、兩個預設都不傳就沒有,跟排序 / 篩選面板同一條。搜尋框與拖曳把手是面板的固定零件
+ * (2026-11-15 起恆在、不靠參數;user 同日留言問句:「為何這個範例沒有搜尋框也沒有 drag?我們本來的元件不是有嗎？」、
+ * 「“是我寫範例時漏接了”為何可以漏接？這幾個面板不都是有很多地方是固定設計的「元件」嗎」);三個狀態都接必填的
+ * columnOrder + onColumnOrderChange,與產品工具列那則同一組 lockedIds。
  * 規格:data-table.spec.md L4「Header 恢復預設 / 清除全部」;閘 scripts/data-table-panel-reset-clear-invariant.mjs。
  */
 const ISSUE_VISIBILITY_COLUMNS = ISSUE_SORT_COLUMNS.map((c) => ({ id: c.accessorKey, label: typeof c.header === 'string' ? c.header : c.accessorKey }))
+/** 欄位定義順序 = 這個專案的預設順序(不傳 defaultColumnOrder 時「恢復預設」回到這個順序) */
+const ISSUE_COLUMN_IDS = ISSUE_VISIBILITY_COLUMNS.map((c) => c.id)
+/** 「鍵值」永遠在第一欄、不能收起也不能拖(同產品工具列那則的 SKU) */
+const ISSUE_LOCKED_COLUMNS = ['key']
 /** Jira 專案管理員為議題清單設的預設欄位:「更新時間」預設不顯示(寫法同 visibility:沒寫 = 顯示) */
 const ISSUE_DEFAULT_VISIBILITY: Record<string, boolean> = { updatedAt: false }
 
 export const ColumnVisibilityPanelStates: Story = {
   name: '欄位顯示面板 — 各種狀態',
   render: function Render() {
-    const [changed, setChanged] = React.useState<Record<string, boolean>>({ updatedAt: true, dueDate: false })
+    const [changed, setChanged] = React.useState<Record<string, boolean>>({ updatedAt: true, priority: false })
+    // 「到期日」被拖到「摘要」前面
+    const [changedOrder, setChangedOrder] = React.useState<string[]>(['key', 'dueDate', 'summary', 'priority', 'status', 'updatedAt'])
     const [same, setSame] = React.useState<Record<string, boolean>>({ updatedAt: false })
+    const [sameOrder, setSameOrder] = React.useState<string[]>(ISSUE_COLUMN_IDS)
     const [noDefault, setNoDefault] = React.useState<Record<string, boolean>>({ dueDate: false, updatedAt: false })
+    // 「狀態」被拖到「摘要」前面
+    const [noDefaultOrder, setNoDefaultOrder] = React.useState<string[]>(['key', 'status', 'summary', 'priority', 'dueDate', 'updatedAt'])
     return (
       <ExampleStack>
         <ExampleSection
           title="產品設了預設欄位"
-          description="Jira 專案管理員設的議題清單預設不顯示「更新時間」;這次打開了「更新時間」、收起了「到期日」。標題列出現「恢復預設」,按下回到管理員設的那一份(「更新時間」收起、「到期日」顯示),不是全部顯示。"
+          description="Jira 專案管理員設的議題清單預設不顯示「更新時間」、欄位照原本的排法;這次打開了「更新時間」、收起了「優先級」,還把「到期日」拖到「摘要」前面。標題列出現「恢復預設」,按下連順序一起回到管理員設的那一份:「更新時間」收起、「優先級」顯示、「到期日」回到「狀態」後面 —— 不是全部顯示,也不會只回顯示、留下拖過的順序。"
         >
-          <Popover><DataTableColumnVisibilityPanel className="w-72" columns={ISSUE_VISIBILITY_COLUMNS} visibility={changed} onVisibilityChange={setChanged} defaultVisibility={ISSUE_DEFAULT_VISIBILITY} /></Popover>
+          <Popover>
+            <DataTableColumnVisibilityPanel
+              className="w-72"
+              columns={ISSUE_VISIBILITY_COLUMNS}
+              visibility={changed}
+              onVisibilityChange={setChanged}
+              columnOrder={changedOrder}
+              onColumnOrderChange={setChangedOrder}
+              lockedIds={ISSUE_LOCKED_COLUMNS}
+              defaultVisibility={ISSUE_DEFAULT_VISIBILITY}
+            />
+          </Popover>
         </ExampleSection>
-        <ExampleSection title="跟預設一樣" description="同一份預設、這次沒有改過:按下去不會改變任何東西,所以標題列沒有「恢復預設」。">
-          <Popover><DataTableColumnVisibilityPanel className="w-72" columns={ISSUE_VISIBILITY_COLUMNS} visibility={same} onVisibilityChange={setSame} defaultVisibility={ISSUE_DEFAULT_VISIBILITY} /></Popover>
+        <ExampleSection title="跟預設一樣" description="同一份預設、這次顯示和順序都沒有改過:按下去不會改變任何東西,所以標題列沒有「恢復預設」。拖一欄或切一欄,它就會出現。">
+          <Popover>
+            <DataTableColumnVisibilityPanel
+              className="w-72"
+              columns={ISSUE_VISIBILITY_COLUMNS}
+              visibility={same}
+              onVisibilityChange={setSame}
+              columnOrder={sameOrder}
+              onColumnOrderChange={setSameOrder}
+              lockedIds={ISSUE_LOCKED_COLUMNS}
+              defaultVisibility={ISSUE_DEFAULT_VISIBILITY}
+            />
+          </Popover>
         </ExampleSection>
-        <ExampleSection title="沒有預設欄位" description="產品沒有設預設欄位(不傳 defaultVisibility):收起了「到期日」「更新時間」,標題列也沒有「恢復預設」;底部「顯示全部」照舊可以一次打開。">
-          <Popover><DataTableColumnVisibilityPanel className="w-72" columns={ISSUE_VISIBILITY_COLUMNS} visibility={noDefault} onVisibilityChange={setNoDefault} /></Popover>
+        <ExampleSection title="沒有預設欄位" description="產品沒有設預設欄位(不傳 defaultVisibility,也不傳 defaultColumnOrder):收起了「到期日」「更新時間」、把「狀態」拖到「摘要」前面,標題列也沒有「恢復預設」;底部「顯示全部」照舊可以一次打開。">
+          <Popover>
+            <DataTableColumnVisibilityPanel
+              className="w-72"
+              columns={ISSUE_VISIBILITY_COLUMNS}
+              visibility={noDefault}
+              onVisibilityChange={setNoDefault}
+              columnOrder={noDefaultOrder}
+              onColumnOrderChange={setNoDefaultOrder}
+              lockedIds={ISSUE_LOCKED_COLUMNS}
+            />
+          </Popover>
         </ExampleSection>
       </ExampleStack>
     )
@@ -2494,7 +2539,6 @@ export const RoadmapAllInOne: Story = {
                 onVisibilityChange={setColumnVisibility}
                 columnOrder={columnOrder.length > 0 ? columnOrder : columns.map((c) => ((c as any).accessorKey ?? (c as any).id) as string)}
                 onColumnOrderChange={setColumnOrder}
-                searchable
                 defaultVisibility={PRODUCT_DEFAULT_ALL_VISIBLE}
               />
             </PopoverContent>

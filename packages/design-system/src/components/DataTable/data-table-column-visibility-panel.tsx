@@ -5,19 +5,24 @@
  * 從 WithBulkActions story L868+(149 lines)+ RoadmapAllInOne(L1796+,53 lines)抽出 SSOT
  * primitive。Roadmap demo 跟 WithBulkActions 都用此 panel 開啟「欄位顯示」popover。
  *
- * **Feature SSOT**(對齊 Linear / Airtable / Notion / Material X-DataGrid 的 columnVisibility panel idiom):
- *   - 列出所有 togglable 欄位 + Eye / EyeOff 切換
- *   - Locked 欄位(`lockedIds`)— 顯 Lock icon,不可 toggle / 不可 drag
- *   - 可選 search filter(`searchable`,跨欄位 label match)
- *   - 可選 column drag reorder(`onColumnOrderChange` 傳 → 啟 DnD)
- *   - 「恢復預設」(標題列 RotateCcw):回到產品給的 `defaultVisibility`,目前與它不同才出現、不傳就沒有 —— 同排序 / 篩選面板
- *     (data-table.spec.md L4「Header 恢復預設 / 清除全部」;2026-11-15 前是 `resettable` 開關 + 有隱藏欄才出現、按下 = 全部顯示)
- *   - Bidirectional bulk toggle(footer button:全可見 → 全部隱藏 / 任一隱藏 → 顯示全部)
+ * **固定零件**(恆渲染,不靠傳不傳某個參數決定 —— M23(f);data-table.spec.md L4「欄位顯示面板的固定零件」,2026-11-15)
+ * (對齊 Linear / Airtable / Notion / Material X-DataGrid 的 columnVisibility panel idiom):
+ *   - 標題列:「恢復預設」(RotateCcw)+ ×
+ *   - 搜尋(跨欄位 label match)—— 2026-11-15 前要另外傳 `searchable` 才有;`searchable` 已棄用、傳了不作用
+ *   - 可拖曳排序的欄位列 + Eye / EyeOff 切換;Locked 欄位(`lockedIds`)顯 Lock icon,不可 toggle / 不可 drag
+ *     —— 2026-11-15 前要傳 `columnOrder` + `onColumnOrderChange` 才有拖曳;兩個現在必填(順序怎麼存只有產品能做,沒有內建 fallback)
+ *   - 底部 bidirectional bulk toggle(全可見 → 全部隱藏 / 任一隱藏 → 顯示全部)
+ * 「恢復預設」:還原這個面板改得動的全部 —— 顯示 / 隱藏回到 `defaultVisibility`、順序回到 `defaultColumnOrder`(沒傳 = `columns`
+ *   定義順序、鎖定欄排最前);兩個預設至少傳一個、目前與它不同才出現,都不傳就沒有 —— 同排序 / 篩選面板
+ *   (data-table.spec.md L4「Header 恢復預設 / 清除全部」;2026-11-15 前是 `resettable` 開關 + 有隱藏欄才出現、按下 = 全部顯示;
+ *   連順序一起還原是【AI 推導 2026-11-15】,起因 user 同日成品頁留言(問句))
  *
  * **Why 抽 primitive**(per Issue 3 Rule-of-3):RoadmapAllInOne + WithBulkActions + 未來 product
  * UI 至少 3 處消費同 panel。重複 hand-craft → 設計語言 drift(已抓到:Roadmap 版無 search /
- * 無 drag / 無 reset,WithBulkActions 版有,語意不一致)。Primitive 把所有 feature 集中,
- * consumer opt-in via props 確保 SSOT。
+ * 無 drag / 無 reset,WithBulkActions 版有,語意不一致)。Primitive 把所有 feature 集中;2026-11-15 起零件也不再讓
+ * consumer opt-in —— opt-in 正是範例漏掉搜尋 / 拖曳的同一種漂移。user 同日問句(逐字):
+ * 「“是我寫範例時漏接了”為何可以漏接？這幾個面板不都是有很多地方是固定設計的「元件」嗎」
+
  *
  * **對齊**:Linear column-visibility-panel pattern / Material X-DataGrid `<GridColumnsPanel>`
  * / Airtable Field-config drawer。
@@ -51,23 +56,42 @@ export interface DataTableColumnVisibilityPanelProps extends React.HTMLAttribute
   visibility: Record<string, boolean>
   /** Visibility 變更 callback */
   onVisibilityChange: (next: Record<string, boolean>) => void
-  /** 受控 column order(若提供啟 DnD reorder) */
-  columnOrder?: string[]
-  /** Order 變更 callback;若提供 → 啟用 drag handle / DnD reorder */
-  onColumnOrderChange?: (next: string[]) => void
-  /** Locked column ids(顯 Lock icon,不可 toggle / 不可 drag)*/
+  /**
+   * 受控欄位順序(完整的,可含面板沒列的 id,例:選取欄;寫法同 TanStack `columnOrder`)。它沒寫到的面板欄照 `columns` 順序接在後面,
+   * `[]` = 照 `columns` 順序(同 TanStack:columnOrder 沒列的欄排在後面)。順序也算進「恢復預設」。
+   * 必填:拖曳排序是這個面板的固定零件(data-table.spec.md L4「欄位顯示面板的固定零件」;2026-11-15 前選填,不傳就沒有拖曳)。
+   */
+  columnOrder: string[]
+  /**
+   * 順序變更 callback(拖曳、「恢復預設」都經它;只換面板列出的那幾欄的位置,面板沒列的 id —— 例:選取欄 —— 留在原位)。
+   * 必填:順序要怎麼存(跟表格共用一份 state、存進使用者的檢視)只有產品能做,元件沒有內建 fallback(M23(f))。
+   */
+  onColumnOrderChange: (next: string[]) => void
+  /** Locked column ids(顯 Lock icon,不可 toggle / 不可 drag;哪幾欄鎖是資料,不傳 = 沒有鎖定欄)*/
   lockedIds?: string[]
-  /** 是否啟搜尋 input(預設 false)*/
+  /**
+   * @deprecated 2026-11-15 起搜尋框是固定零件、恆顯示,這個參數不作用(傳 `false` 也照樣有搜尋框),新寫法不要傳。
+   * 只留在型別裡讓既有寫法(`searchable`)升級不壞。原因:搜尋是這個面板設計的一部分、不是 consumer 選配 —— 選配讓範例漏接、
+   * 同一個元件在不同頁面長得不一樣(M23(f);data-table.spec.md L4「欄位顯示面板的固定零件」)。
+   */
   searchable?: boolean
   /**
-   * 產品設定的預設可見欄(例:專案管理員設的預設欄位、使用者存過的檢視;寫法同 `visibility`)。目前的可見欄與它不同時,
-   * 標題列出現「恢復預設」,按下回到這一份;一樣時不出現。不傳 = 這個產品沒有預設 → 不出現「恢復預設」。
-   * 「一樣」= 面板列出的每一欄顯示 / 隱藏都相同(沒寫 = 顯示,`{}` 與 `{ a: true }` 一樣)。
+   * 產品設定的預設可見欄(例:專案管理員設的預設欄位、使用者存過的檢視;寫法同 `visibility`)。目前與預設不同時,
+   * 標題列出現「恢復預設」,按下回到這一份(連順序一起回到 `defaultColumnOrder`);一樣時不出現。
+   * 只傳 `defaultColumnOrder`、不傳這個 = 預設全部顯示;兩個都不傳 = 這個產品沒有預設 → 不出現「恢復預設」。
+   * 「一樣」= 面板列出的每一欄顯示 / 隱藏都相同(沒寫 = 顯示,`{}` 與 `{ a: true }` 一樣),順序也相同。
    * 同排序面板 `defaultSorting`、篩選面板 `defaultValue`(data-table.spec.md L4「Header 恢復預設 / 清除全部」)。
    * 2026-11-15 取代 `resettable`(另外開才有、有隱藏欄就出現、按下 = 全部顯示 —— 不是產品的預設);不留別名,
    * 舊寫法 `resettable` 不是 div 的屬性,型別層直接報錯(M23(f):讓型別把每個 consumer 逼出來改)。
    */
   defaultVisibility?: Record<string, boolean>
+  /**
+   * 產品設定的預設欄位順序(寫法同 `columnOrder`)。目前的順序與它不同 → 出現「恢復預設」,按下順序回到這一份。
+   * 面板沒列的 id 略過、它沒寫到的欄照 `columns` 順序接在後面。
+   * 不傳 = `columns` 的定義順序(鎖定欄排最前)—— 同 AG Grid `resetColumnState` 回到欄位定義。
+   * 不另設「不還原順序」開關(data-table.spec.md L4,【AI 推導 2026-11-15】)。
+   */
+  defaultColumnOrder?: string[]
   // Issue 3 post-codex audit(2026-05-10):`onClose` prop retired — Radix `PopoverClose asChild`
   // 已自帶 popover dismiss,沒 concrete consumer 需 callback。Future 若需要再加。
 }
@@ -77,6 +101,59 @@ function isVisibilityEqual(ids: readonly string[], a: Record<string, boolean>, b
   return ids.every((id) => (a[id] !== false) === (b[id] !== false))
 }
 
+/**
+ * 「恢復預設」管的那一份 = 這個面板讓人改得動的全部:顯示 / 隱藏 + 順序(面板列出的那幾欄由上到下)。
+ * 【AI 推導 2026-11-15】data-table.spec.md L4。
+ */
+interface PanelResetState {
+  visibility: Record<string, boolean>
+  order: readonly string[]
+}
+
+function isOrderEqual(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id, i) => id === b[i])
+}
+
+/**
+ * 完整順序 = consumer 的 `columnOrder`(去重)+ 它沒寫到的面板欄照 `columns` 順序接在後面 —— 同 TanStack(columnOrder 沒列的欄排在後面),
+ * `[]` = 照 `columns`。拖曳與「恢復預設」都在這一份上搬,所以從 `[]` 開始也拖得動。
+ * 2026-11-15 前直接用 `columnOrder`:`[]` 時拖曳找不到位置 → 拖了沒反應;沒寫到的面板欄不列出來 → 收不起也拖不動。
+ * 拖曳改成必填之後 consumer 很容易從 TanStack 的初始值 `[]` 開始,所以一起修(【AI 推導 2026-11-15】)。
+ */
+function resolveFullOrder(columnOrder: readonly string[], columnIds: readonly string[]): string[] {
+  const listed = [...new Set(columnOrder)]
+  const seen = new Set(listed)
+  return [...listed, ...columnIds.filter((id) => !seen.has(id))]
+}
+
+function isPanelResetStateEqual(ids: readonly string[], a: PanelResetState, b: PanelResetState): boolean {
+  return isVisibilityEqual(ids, a.visibility, b.visibility) && isOrderEqual(a.order, b.order)
+}
+
+/**
+ * 預設順序(面板列出的那幾欄):產品給了 `defaultColumnOrder` 就照它(面板沒列的 id 略過、它沒寫到的欄照 `columns` 順序接在後面);
+ * 沒給 = `columns` 的定義順序,鎖定欄排最前(同 AG Grid resetColumnState 回到欄位定義)。
+ */
+function resolveDefaultColumnOrder(columnIds: readonly string[], locked: ReadonlySet<string>, defaultColumnOrder: readonly string[] | undefined): string[] {
+  if (defaultColumnOrder) {
+    const listed = new Set(columnIds)
+    const head = [...new Set(defaultColumnOrder)].filter((id) => listed.has(id))
+    const placed = new Set(head)
+    return [...head, ...columnIds.filter((id) => !placed.has(id))]
+  }
+  return [...columnIds.filter((id) => locked.has(id)), ...columnIds.filter((id) => !locked.has(id))]
+}
+
+/**
+ * 把完整順序裡面板那幾欄的位置依序換成 `panelOrder`,面板沒列的 id(例:選取欄)留在原位 —— 同拖曳
+ * (`handleDragEnd` 也是在完整順序上搬);完整順序少了的面板欄接在最後(`resolveFullOrder` 已補齊,這裡只是防呆)。
+ */
+function applyPanelOrder(fullOrder: readonly string[], panelOrder: readonly string[], panelIds: ReadonlySet<string>): string[] {
+  const queue = [...panelOrder]
+  const next = fullOrder.flatMap((id) => (panelIds.has(id) ? (queue.length > 0 ? [queue.shift()!] : []) : [id]))
+  return [...next, ...queue]
+}
+
 export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, DataTableColumnVisibilityPanelProps>(({
   columns,
   visibility,
@@ -84,35 +161,42 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
   columnOrder,
   onColumnOrderChange,
   lockedIds = [],
-  searchable = false,
+  // 已棄用、不作用(搜尋框恆顯示);在這裡接住,免得被 `...props` 灑到 div 上
+  searchable: deprecatedSearchable,
   defaultVisibility,
+  defaultColumnOrder,
   className,
   ...props
 }, ref) => {
   const [search, setSearch] = React.useState('')
   const columnIds = React.useMemo(() => columns.map((c) => c.id), [columns])
+  const columnIdSet = React.useMemo(() => new Set(columnIds), [columnIds])
+  const lockedSet = React.useMemo(() => new Set(lockedIds), [lockedIds])
+
+  // 完整順序(含面板沒列的 id;consumer 沒寫到的面板欄照 columns 接後面)與面板列出的那幾欄由上到下
+  const fullOrder = React.useMemo(() => resolveFullOrder(columnOrder, columnIds), [columnOrder, columnIds])
+  const orderedIds = React.useMemo(() => fullOrder.filter((id) => columnIdSet.has(id)), [fullOrder, columnIdSet])
+
+  // 「恢復預設」= 還原這個面板讓人改得動的全部:顯示 / 隱藏 + 順序(拖曳是固定零件,順序恆算)。【AI 推導 2026-11-15】data-table.spec.md L4
+  const defaultOrder = React.useMemo(() => resolveDefaultColumnOrder(columnIds, lockedSet, defaultColumnOrder), [columnIds, lockedSet, defaultColumnOrder])
+  const current: PanelResetState = { visibility, order: orderedIds }
+  // 沒傳 defaultVisibility = 預設全部顯示(沿用「沒寫 = 顯示」)
+  const defaults: PanelResetState = { visibility: defaultVisibility ?? {}, order: defaultOrder }
   // 「恢復預設」按下後:焦點交給標題列的 ×、polite 播報結果(lib/panel-bulk-action.tsx,三個面板共用)。
   // 焦點順位照 lib 既有的「加條件鈕 → ×」:這個面板沒有加條件鈕,所以直接給 ×(PopoverHeader 內建、恆渲染)。【AI 推導 2026-11-15】
   const headerRef = React.useRef<HTMLDivElement>(null)
-  const bulk = usePanelBulkAction({
-    value: visibility,
-    isEqual: (a, b) => isVisibilityEqual(columnIds, a, b),
-    onChange: onVisibilityChange,
+  const bulk = usePanelBulkAction<PanelResetState>({
+    value: current,
+    isEqual: (a, b) => isPanelResetStateEqual(columnIds, a, b),
+    onChange: (next) => {
+      onVisibilityChange(next.visibility)
+      onColumnOrderChange(applyPanelOrder(fullOrder, next.order, columnIdSet))
+    },
     focusTargets: () => [headerRef.current?.querySelector<HTMLElement>('button[data-dismiss]')],
   })
-  // 出現條件 = 按下去會改變東西(資料驅動,不另開開關;同排序 / 篩選面板 —— M23(f))
-  const showReset = defaultVisibility !== undefined && !isVisibilityEqual(columnIds, visibility, defaultVisibility)
-  const lockedSet = React.useMemo(() => new Set(lockedIds), [lockedIds])
-  const dndEnabled = !!(columnOrder && onColumnOrderChange)
-
-  // 計算 visible order:用 columnOrder 排,fallback columns 順序。
-  const orderedIds = React.useMemo(() => {
-    if (columnOrder && columnOrder.length > 0) {
-      const colSet = new Set(columns.map((c) => c.id))
-      return columnOrder.filter((id) => colSet.has(id))
-    }
-    return columns.map((c) => c.id)
-  }, [columnOrder, columns])
+  // 出現條件 = 產品給了預設(顯示或順序至少一份)+ 按下去會改變東西(資料驅動,不另開開關;同排序 / 篩選面板 —— M23(f))
+  const hasDefault = defaultVisibility !== undefined || defaultColumnOrder !== undefined
+  const showReset = hasDefault && !isPanelResetStateEqual(columnIds, current, defaults)
 
   const filteredEntries = React.useMemo(() => {
     return orderedIds
@@ -155,19 +239,19 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
 
   const handleDragEnd = (e: DragEndEvent) => {
     outcomeRef.current = null
-    if (!dndEnabled) return
     const { active, over } = e
     if (!over || active.id === over.id) return
-    const oldIdx = columnOrder!.indexOf(active.id as string)
-    const newIdx = columnOrder!.indexOf(over.id as string)
+    // 在完整順序上搬(consumer 從 `[]` 開始、或 columnOrder 沒寫到某幾欄也拖得動)
+    const oldIdx = fullOrder.indexOf(active.id as string)
+    const newIdx = fullOrder.indexOf(over.id as string)
     if (oldIdx < 0 || newIdx < 0) return
     // Locked id 不可被 reorder 動到
-    if (lockedSet.has(columnOrder![oldIdx]) || lockedSet.has(columnOrder![newIdx])) return
-    const next = [...columnOrder!]
+    if (lockedSet.has(fullOrder[oldIdx]) || lockedSet.has(fullOrder[newIdx])) return
+    const next = [...fullOrder]
     const [m] = next.splice(oldIdx, 1)
     next.splice(newIdx, 0, m)
     outcomeRef.current = { kind: '欄位', label: String(active.id) }
-    onColumnOrderChange!(next)
+    onColumnOrderChange(next)
   }
 
   // 2026-07-18 決策16 錯誤史(明記以免再犯):原本這個 panel 是 Fragment + fixed `ScrollArea max-h-72`,
@@ -186,68 +270,53 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     <div ref={ref} className={cn('flex flex-col h-full min-h-0 w-full', className)} {...props} {...drag.escapeLayer}>
       {/* 右側「恢復預設 │ ×」走 PopoverHeader 的右側按鈕位(× 與分隔線由 SurfaceHeader 放,兩側各 12;overlay-surface.spec.md「SurfaceHeader」右側按鈕位)。
           2026-11-10 前自刻在 children(hideClose + 外層 gap-1)→ 分隔線兩側只有 8。
-          「恢復預設」= 目前 ≠ 產品給的 defaultVisibility 才出現,按下回到那一份(2026-11-15 前:resettable 開關 + 有隱藏欄才出現、按下 = 全部顯示)。 */}
+          「恢復預設」= 目前(顯示 / 隱藏 + 順序)≠ 產品給的預設才出現,按下回到那一份(2026-11-15 前:resettable 開關 + 有隱藏欄才出現、按下 = 全部顯示)。 */}
       <PopoverHeader
         ref={headerRef}
         actions={showReset ? (
           <Button
             variant="text" size="sm" iconOnly startIcon={RotateCcw}
             aria-label="恢復預設"
-            onClick={(e) => { if (defaultVisibility) bulk.run(e, defaultVisibility, '已恢復預設欄位顯示') }}
+            onClick={(e) => bulk.run(e, defaults, '已恢復預設欄位顯示')}
           />
         ) : undefined}
       >
         <PopoverTitle>欄位顯示</PopoverTitle>
       </PopoverHeader>
-      {searchable && (
-        <div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">
-          <Input
-            size="md"
-            placeholder="搜尋欄位…"
-            aria-label="搜尋欄位"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            startIcon={Search}
-          />
-        </div>
-      )}
+      {/* 搜尋框:固定零件、恆顯示(2026-11-15 前要傳 searchable 才有 —— M23(f);data-table.spec.md L4「欄位顯示面板的固定零件」) */}
+      <div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">
+        <Input
+          size="md"
+          placeholder="搜尋欄位…"
+          aria-label="搜尋欄位"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          startIcon={Search}
+        />
+      </div>
       {/* viewport-adaptive body(List-as-region idiom:PopoverBody !px-0 !py-0 撤 chrome padding,
-          內層 py-2 給垂直呼吸、row 自帶 px-loose 水平 padding)。取代原 fixed ScrollArea max-h-72。 */}
+          內層 py-2 給垂直呼吸、row 自帶 px-loose 水平 padding)。取代原 fixed ScrollArea max-h-72。
+          拖曳排序:固定零件、恆可用(鎖定欄除外;2026-11-15 前要傳 columnOrder + onColumnOrderChange 才有)。 */}
       <PopoverBody className="!px-0 !py-0">
         <div className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
-          {dndEnabled ? (
-            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={drag.accessibility}>
-              {drag.liveRegion}
-              <SortableContext
-                items={filteredEntries.map((e) => e.id).filter((id) => !lockedSet.has(id))}
-                strategy={verticalListSortingStrategy}
-              >
-                {filteredEntries.map(({ id, label }) => (
-                  <VisibilityRow
-                    key={id}
-                    id={id}
-                    label={label}
-                    visible={visibility[id] !== false}
-                    locked={lockedSet.has(id)}
-                    draggable
-                    onToggle={() => handleToggle(id)}
-                  />
-                ))}
-              </SortableContext>
-            </DndContext>
-          ) : (
-            filteredEntries.map(({ id, label }) => (
-              <VisibilityRow
-                key={id}
-                id={id}
-                label={label}
-                visible={visibility[id] !== false}
-                locked={lockedSet.has(id)}
-                draggable={false}
-                onToggle={() => handleToggle(id)}
-              />
-            ))
-          )}
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={drag.accessibility}>
+            {drag.liveRegion}
+            <SortableContext
+              items={filteredEntries.map((e) => e.id).filter((id) => !lockedSet.has(id))}
+              strategy={verticalListSortingStrategy}
+            >
+              {filteredEntries.map(({ id, label }) => (
+                <VisibilityRow
+                  key={id}
+                  id={id}
+                  label={label}
+                  visible={visibility[id] !== false}
+                  locked={lockedSet.has(id)}
+                  onToggle={() => handleToggle(id)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
       </PopoverBody>
       <PopoverFooter className="justify-start">
@@ -262,26 +331,23 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
 })
 DataTableColumnVisibilityPanel.displayName = 'DataTableColumnVisibilityPanel'
 
-// VisibilityRow:single column row。Draggable mode → GripVertical handle / static mode → 無 handle。
+// VisibilityRow:single column row。GripVertical handle 恆在(固定零件);鎖定欄 → Lock icon、不可拖。
 function VisibilityRow({
-  id, label, visible, locked, draggable, onToggle,
+  id, label, visible, locked, onToggle,
 }: {
   id: string
   label: string
   visible: boolean
   locked: boolean
-  draggable: boolean
   onToggle: () => void
 }) {
-  // Conditional hooks 不行 — 永遠呼 useSortable,只是 disabled 時 listeners no-op
-  const sortable = useSortable({ id, disabled: locked || !draggable })
+  // Conditional hooks 不行 — 永遠呼 useSortable,鎖定欄 disabled(listeners no-op)
+  const sortable = useSortable({ id, disabled: locked })
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable
-  const style: React.CSSProperties = draggable
-    ? { transform: CSS.Transform.toString(transform), transition, ...dragSourceStyle(isDragging) }
-    : {}
+  const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, ...dragSourceStyle(isDragging) }
   return (
     <div
-      ref={draggable ? setNodeRef : undefined}
+      ref={setNodeRef}
       style={style}
       className={cn(
         'flex items-start gap-2 w-full px-[var(--layout-space-loose)]',
@@ -292,7 +358,7 @@ function VisibilityRow({
         {/* 2026-05-18 改 per user「做完」approval:14 → 16 對齊 uiSize.spec.md Icon Tier */}
         {locked ? (
           <Lock size={16} className="text-fg-muted" aria-hidden />
-        ) : draggable ? (
+        ) : (
           <ItemInlineActionButton
             icon={GripVertical}
             size="md"
@@ -301,7 +367,7 @@ function VisibilityRow({
             {...forwardDragActivatorAttributes(attributes)}
             {...listeners}
           />
-        ) : null}
+        )}
       </ItemPrefix>
       <ItemLabel className={locked ? 'text-fg-disabled' : undefined}>{label}</ItemLabel>
       <ItemInlineActionButton

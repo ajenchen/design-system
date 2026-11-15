@@ -12,6 +12,13 @@
  *        (4) 欄位顯示面板(`DataTableColumnVisibilityPanel`,2026-11-15 併入同一條)的「恢復預設」:目前 ≠ `defaultVisibility` 才出現
  *            (比對看面板列出的每一欄顯示 / 隱藏,沒寫 = 顯示 —— 只差在預設沒寫到的欄也算不同)、一樣 / 不傳都不出現;按下 → 值 = 預設(不是全部顯示);它沒有加條件鈕 → 焦點落在標題列 ×;
  *            播報「已恢復預設欄位顯示」,再切任何一欄就清空。
+ *            **順序**(2026-11-15 B12,【AI 推導】):順序也算進預設 —— 只改順序也出現;
+ *            按下順序回到 `defaultColumnOrder`(面板那幾欄;面板沒列的 id 如選取欄留在原位),沒傳 = `columns` 定義順序、鎖定欄排最前;
+ *            只傳 `defaultColumnOrder` = 預設全部顯示;兩個預設都不傳 = 不出現。
+ *        (4b) 欄位顯示面板的**固定零件**(2026-11-15,data-table.spec.md L4「欄位顯示面板的固定零件」;M23(f)):搜尋框恆在(不傳 `searchable`
+ *            也在、傳 `searchable={false}` 也在 —— 它已棄用、不作用);每一個沒鎖的欄位列都有拖曳把手,鎖定欄沒有把手、有鎖頭;
+ *            consumer 的 `columnOrder` 從 `[]` 開始也拖得動(順序改了)、沒寫到的面板欄照 `columns` 接在後面照樣列出來(順序必填之後的配套,【AI 推導】)。
+ *            2026-11-15 前「沒接順序 = 只比顯示」「只給 columnOrder 沒給 onColumnOrderChange」兩列已拿掉:兩個參數必填,那種接法型別層不再允許。
  *        (5) 排序面板 `labels`(2026-11-15 A11 開放;data-table.spec.md「Multi-sort header」列的字串那一句):傳一整份自訂字,每個字畫在
  *            **對的元素 / 屬性**上 —— 標題、RotateCcw 鈕與 × 的讀屏名稱、加排序 / 清除全部的字、每一列拖曳把手 / 欄位下拉 / 方向下拉 / Trash 鈕的
  *            讀屏名稱、方向下拉顯示的升冪 / 降冪、兩句播報;不傳 = 每個位置是出口的預設值。位置按結構找(圖示、順序、data-*),不靠字。
@@ -19,18 +26,22 @@
  *            test-data-table-sort-cycle(純 node、沒有瀏覽器,只能查鍵有出現 —— 審查 A 第 2 輪把欄位 / 方向兩個讀屏名稱對調,它照樣全綠):
  *            這支已經直接打包 DataTableSortManager 原始碼,而且 selftest 要求每一條契約列都被某個突變弄紅過。
  *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個根因突變(MUTANTS,含修前寫法:排序面板以 onReset 有無當「重置」渲染閘、
- *        兩個面板都沒有「清除全部」、欄位顯示面板以 resettable 開關 + 有隱藏欄當渲染閘、按下 = 全部顯示),每個突變必須**剛好**紅它負責的那幾列,
- *        而且每一條契約列都被某個突變弄紅過。
+ *        兩個面板都沒有「清除全部」、欄位顯示面板以 resettable 開關 + 有隱藏欄當渲染閘、按下 = 全部顯示、只比也只還原顯示不管順序、
+ *        按下不還原順序、搜尋要另外開才有、拖曳要另外開才有、拖曳在 consumer 的 columnOrder 上找位置、沒寫到的欄不列出來),
+ *        每個突變必須**剛好**紅它負責的那幾列,而且每一條契約列都被某個突變弄紅過(`--shard` 時改成靜態驗:每條契約列都在某個突變的 expectRed)。
  *   綠: 現行原始碼每列都量到且符合;對照列(× 恆在、polite 區域恆在)在現行原始碼與每個突變上都綠。harness 打包 / 載不起來、selftest 的
  *        突變錨點對不到(共用 lib/ds-source-harness.mjs 的 bundleDsHarness 把它原樣丟回成 InstrumentError —— 2026-11-15 前會變成未捕捉的
  *        esbuild 錯誤、exit 1、沒有標記;selftest 開頭有一格對照)、等不到元素 = 儀器失效(INSTRUMENT-FAIL,exit 2),不讀成通過(M37:沒量到 ≠ 沒發生)。
  *        按鈕該出現卻不在 = 那一列判紅(那是產品裁決,不是量具壞了)。
  *   註: 2026-11-11 新增(user 2026-11-11 PR #172:排序面板加「清除全部」開關、放加排序那一排最右;「重置」與「清除所有」是兩個入口、重置由消費端決定)。
  *       2026-11-15 加欄位顯示面板(第四批成品頁「下一批直接做」;照同一條規則落地,【AI 推導】)。
+ *       同日加順序(起因 user 成品頁 B12 留言,是問句,逐字見 data-table.spec.md L4;連順序還原、不加「不還原順序」開關 = 【AI 推導 2026-11-15】)。
+ *       同日加固定零件 (4b)(user 問句,逐字:「“是我寫範例時漏接了”為何可以漏接？這幾個面板不都是有很多地方是固定設計的「元件」嗎」)。
  *
  * 用法:
  *   node scripts/data-table-panel-reset-clear-invariant.mjs              判定(現行原始碼)
  *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest   對照組(全部單一根因突變;基準 = 一趟完整判定)
+ *   node scripts/data-table-panel-reset-clear-invariant.mjs --selftest --shard=<k>/<n>   只跑第 k 片突變(CI matrix 平行;基準照跑、覆蓋率靜態驗)
  *   node scripts/data-table-panel-reset-clear-invariant.mjs --root=<dir> 改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
 import { INSTRUMENT_FAIL_MARKER, launchBrowserOrSkip } from './lib/launch-browser.mjs'
@@ -48,14 +59,53 @@ import {
 } from './lib/ds-source-harness.mjs'
 
 const SELFTEST = process.argv.includes('--selftest')
+/**
+ * `--shard=<k>/<n>`(selftest):只跑 MUTANTS 裡索引 % n === k 的那一片(基準照跑 = 每一片都是一趟完整判定)。CI 把對照組拆成 n 片平行跑
+ * (ci.yml verify-browser-nested-dismiss 的 matrix;同 overlay-nested-dismiss-invariant.mjs 的寫法):各片各自驗「每個突變剛好紅它的 expectRed」;
+ * 覆蓋率改成靜態驗 —— 每一條契約列都必須出現在某個突變的 expectRed。不給 = 一片跑全部(本機 `npm run test:data-table-panel-reset-clear`、meta-test)。
+ */
+const SHARD = (() => {
+  const raw = process.argv.find((a) => a.startsWith('--shard='))?.slice('--shard='.length)
+  if (raw == null) return null
+  const m = /^(\d+)\/(\d+)$/.exec(raw)
+  const k = m ? Number(m[1]) : NaN
+  const n = m ? Number(m[2]) : NaN
+  if (!m || !(n >= 1) || !(k >= 0 && k < n)) { console.error(`✗ --shard=${raw} 寫法不對(要 <k>/<n>,0 ≤ k < n)`); process.exit(2) }
+  return { k, n }
+})()
 const SOURCE_ROOT = resolveSourceRoot()
 const TOL = 0.5
 const SORT = 'components/DataTable/data-table-sort-manager.tsx'
 const FILTER = 'components/DataTable/data-table-filter-panel.tsx'
 const HOOK = 'components/DataTable/lib/panel-bulk-action.tsx'
 const VIS = 'components/DataTable/data-table-column-visibility-panel.tsx'
-const VIS_RESET = /const showReset = defaultVisibility !== undefined && !isVisibilityEqual\(columnIds, visibility, defaultVisibility\)/
-const VIS_RUN = /bulk\.run\(e, defaultVisibility, '已恢復預設欄位顯示'\)/
+const VIS_RESET = /const showReset = hasDefault && !isPanelResetStateEqual\(columnIds, current, defaults\)/
+const VIS_RUN = /bulk\.run\(e, defaults, '已恢復預設欄位顯示'\)/
+const VIS_HAS_DEFAULT = /const hasDefault = defaultVisibility !== undefined \|\| defaultColumnOrder !== undefined/
+const VIS_ORDER_APPLY = /onColumnOrderChange\(applyPanelOrder\(fullOrder, next\.order, columnIdSet\)\)/
+const VIS_ORDER_MERGE = /applyPanelOrder\(fullOrder, next\.order, columnIdSet\)/
+const VIS_ORDER_COMPARE = /return isVisibilityEqual\(ids, a\.visibility, b\.visibility\) && isOrderEqual\(a\.order, b\.order\)/
+/** 固定零件(4b):搜尋框那一塊 / 拖曳把手 / 鎖定欄分支 / 完整順序 / 拖曳在哪一份順序上找位置 */
+const VIS_SEARCH_BLOCK = /<div className="shrink-0 px-\[var\(--layout-space-loose\)\] pt-\[var\(--layout-space-tight\)\]">[\s\S]*?<\/div>/
+const VIS_GRIP = /<ItemInlineActionButton\s+icon=\{GripVertical\}[\s\S]*?\/>/
+const VIS_LOCK_BRANCH = /\{locked \? \(/
+const VIS_FULL_ORDER_RETURN = /return \[\.\.\.listed, \.\.\.columnIds\.filter\(\(id\) => !seen\.has\(id\)\)\]/
+const VIS_DRAG_INDEX = /const oldIdx = fullOrder\.indexOf\(active\.id as string\)\s+const newIdx = fullOrder\.indexOf\(over\.id as string\)/
+const VIS_LOCK_FIRST = /return \[\.\.\.columnIds\.filter\(\(id\) => locked\.has\(id\)\), \.\.\.columnIds\.filter\(\(id\) => !locked\.has\(id\)\)\]/
+const VIS_EXPLICIT_ORDER = /if \(defaultColumnOrder\) \{/
+/**
+ * 欄位顯示面板的順序場景(2026-11-15 B12):面板列出的那幾欄 / 產品存的預設順序 / 面板沒列的系統欄(選取欄,只在 consumer 的 columnOrder 裡)。
+ * 同一份值內插進 harness,node 端判定與 harness 場景不會各寫一份。
+ */
+const VIS_IDS = ['key', 'summary', 'status', 'dueDate', 'updatedAt']
+/** 產品存的預設順序:「到期日」排在「摘要」後面(與定義順序不同,才分得出「照 defaultColumnOrder」與「照 columns」) */
+const VIS_SAVED_ORDER = ['key', 'summary', 'dueDate', 'status', 'updatedAt']
+/** 使用者把「到期日」拖到「摘要」前面(鍵值鎖在第一位) */
+const VIS_DRAGGED_ORDER = ['key', 'dueDate', 'summary', 'status', 'updatedAt']
+const VIS_SYSTEM_COL = '__select__'
+/** 欄位定義把「鍵值」寫在第二個、但它是鎖定欄 → 沒傳 defaultColumnOrder 時預設順序把它排最前 */
+const VIS_IDS_KEY_SECOND = ['summary', 'key', 'status', 'dueDate', 'updatedAt']
+const VIS_LOCKED_FIRST_ORDER = ['key', 'summary', 'status', 'dueDate', 'updatedAt']
 const VIS_FOCUS = /focusTargets: \(\) => \[headerRef\.current\?\.querySelector<HTMLElement>\('button\[data-dismiss\]'\)\]/
 const VIS_EQUAL = /return ids\.every\(\(id\) => \(a\[id\] !== false\) === \(b\[id\] !== false\)\)/
 const SORT_RESET = /const showReset = defaultSorting !== undefined && !isSortingEqual\(sorting, defaultSorting\)/
@@ -176,29 +226,129 @@ const MUTANTS = [
     id: 'vis-pre-fix-reset',
     what: '欄位顯示面板修前:「恢復預設」要另外開 resettable 才有、有隱藏欄才出現(harness 照新 API 不傳 resettable → 永遠不出現)',
     file: VIS,
-    expectRed: ['vis-reset-shown', 'vis-reset-shown-unlisted', 'vis-reset-click-value', 'vis-reset-click-focus', 'vis-reset-click-announce', 'vis-reset-edit-silences'],
+    // 永遠不出現 → 順序場景裡「該出現」與「按下去」的列也全紅(按鈕該在卻不在 = 產品紅);「不該出現」的列照綠
+    expectRed: ['vis-reset-shown', 'vis-reset-shown-unlisted', 'vis-reset-click-value', 'vis-reset-click-focus', 'vis-reset-click-announce', 'vis-reset-edit-silences',
+      'vis-order-only-shown', 'vis-order-columns-click-order', 'vis-order-click-value', 'vis-order-click-order', 'vis-order-keeps-others', 'vis-order-click-focus', 'vis-order-click-announce',
+      'vis-order-locked-first', 'vis-order-default-only-shown', 'vis-order-default-only-click'],
     apply: (src) => replaceOnce(src, VIS_RESET, 'const showReset = Boolean((props as { resettable?: unknown }).resettable) && columnIds.some((id) => visibility[id] === false)'),
   },
   {
     id: 'vis-reset-default-keys-only',
     what: '欄位顯示面板「恢復預設」的出現條件只比預設寫到的那幾欄(預設沒寫的欄被收起也不出現;共用 hook 的比對不動)',
     file: VIS,
-    expectRed: ['vis-reset-shown-unlisted'],
-    apply: (src) => replaceOnce(src, VIS_RESET, 'const showReset = defaultVisibility !== undefined && !isVisibilityEqual(Object.keys(defaultVisibility), visibility, defaultVisibility)'),
+    // 只傳 defaultColumnOrder 的場景:預設顯示 = {}(全部顯示)→ 寫到的欄 = 0 欄 → 收起「到期日」也不出現
+    expectRed: ['vis-reset-shown-unlisted', 'vis-order-default-only-shown', 'vis-order-default-only-click'],
+    apply: (src) => replaceOnce(src, VIS_RESET, 'const showReset = hasDefault && !isPanelResetStateEqual(Object.keys(defaults.visibility), current, defaults)'),
   },
   {
     id: 'vis-reset-when-hidden',
-    what: '欄位顯示面板有隱藏欄就出「恢復預設」(修前的出現條件,不比對預設)',
+    what: '欄位顯示面板有隱藏欄就出「恢復預設」(修前的出現條件,不比對預設、不看順序)',
     file: VIS,
-    expectRed: ['vis-reset-hidden-equal', 'vis-reset-hidden-nodefault', 'vis-reset-click-focus'],
+    // 順序場景:預設本來就收起「更新時間」→ 按下後按鈕還在、焦點留在它身上
+    expectRed: ['vis-reset-hidden-equal', 'vis-reset-hidden-nodefault', 'vis-reset-click-focus', 'vis-order-click-focus'],
     apply: (src) => replaceOnce(src, VIS_RESET, 'const showReset = columnIds.some((id) => visibility[id] === false)'),
   },
   {
     id: 'vis-reset-shows-all',
-    what: '欄位顯示面板「恢復預設」按下 = 全部顯示(修前的動作 onVisibilityChange({}))',
+    what: '欄位顯示面板「恢復預設」按下 = 全部顯示、順序不動(修前的動作 onVisibilityChange({}))',
     file: VIS,
-    expectRed: ['vis-reset-click-value', 'vis-reset-click-focus'],
-    apply: (src) => replaceOnce(src, VIS_RUN, "bulk.run(e, {}, '已恢復預設欄位顯示')"),
+    // 播報列綠:這次動作的結果就是「全部顯示 + 目前的順序」,hook 的「值仍等於這次動作的結果」成立 —— 那是這個突變自己的結果
+    expectRed: ['vis-reset-click-value', 'vis-reset-click-focus', 'vis-order-columns-click-order', 'vis-order-click-value', 'vis-order-click-order', 'vis-order-click-focus', 'vis-order-locked-first'],
+    apply: (src) => replaceOnce(src, VIS_RUN, "bulk.run(e, { visibility: {}, order: orderedIds }, '已恢復預設欄位顯示')"),
+  },
+  {
+    id: 'vis-reset-keeps-order',
+    what: '欄位顯示面板「恢復預設」按下只還原顯示、不還原順序(B12 根因:不呼叫 onColumnOrderChange)',
+    file: VIS,
+    // 順序沒回去 → 按鈕還在(焦點留在它身上)、值 ≠ 這次動作的結果(不播報);選取欄本來就在原位 → keeps-others 綠
+    expectRed: ['vis-order-columns-click-order', 'vis-order-click-order', 'vis-order-click-focus', 'vis-order-click-announce', 'vis-order-locked-first'],
+    apply: (src) => replaceOnce(src, VIS_ORDER_APPLY, 'void columnIdSet'),
+  },
+  {
+    id: 'vis-reset-ignores-order',
+    what: '欄位顯示面板「恢復預設」只比也只還原顯示、不管順序(2026-11-15 B12 前的寫法)',
+    file: VIS,
+    expectRed: ['vis-order-only-shown', 'vis-order-columns-click-order', 'vis-order-click-order', 'vis-order-locked-first'],
+    apply: (src) => replaceOnce(replaceOnce(src, VIS_ORDER_COMPARE, 'return isVisibilityEqual(ids, a.visibility, b.visibility)'), VIS_ORDER_APPLY, 'void columnIdSet'),
+  },
+  // ── 固定零件(4b,2026-11-15):把搜尋 / 拖曳改回選配 → 紅 ──
+  {
+    id: 'vis-search-opt-in',
+    what: '欄位顯示面板修前:搜尋框要另外傳 searchable 才有(預設關;harness 照新寫法不傳 → 沒有搜尋框)',
+    file: VIS,
+    expectRed: ['vis-search-shown', 'vis-search-ignores-deprecated'],
+    apply: (src) => replaceOnce(src, VIS_SEARCH_BLOCK, '{deprecatedSearchable && ($&)}'),
+  },
+  {
+    id: 'vis-search-honors-false',
+    what: '欄位顯示面板預設有搜尋框、但 searchable={false} 還是關得掉(棄用參數仍作用)',
+    file: VIS,
+    expectRed: ['vis-search-ignores-deprecated'],
+    apply: (src) => replaceOnce(src, VIS_SEARCH_BLOCK, '{deprecatedSearchable !== false && ($&)}'),
+  },
+  {
+    id: 'vis-drag-opt-in',
+    what: '欄位顯示面板修前:拖曳把手要另外開才有(修前的開關是「傳了 columnOrder + onColumnOrderChange」;兩個現在必填、harness 一定傳,所以這裡以「沒開」重現同一個形狀)',
+    file: VIS,
+    // 沒有把手 → [] 場景也拖不動(把手該在卻不在 = 產品紅)
+    expectRed: ['vis-row-handles', 'vis-order-empty-drag'],
+    apply: (src) => replaceOnce(src, VIS_GRIP, '<>{false ? ($&) : null}</>'),
+  },
+  {
+    id: 'vis-locked-draggable',
+    what: '欄位顯示面板鎖定欄也畫拖曳把手(沒有鎖頭)',
+    file: VIS,
+    expectRed: ['vis-locked-no-handle'],
+    apply: (src) => replaceOnce(src, VIS_LOCK_BRANCH, '{false ? ('),
+  },
+  {
+    id: 'vis-drag-raw-order',
+    what: '欄位顯示面板修前:拖曳在 consumer 的 columnOrder 上找位置(從 [] 開始 → 找不到 → 拖了沒反應)',
+    file: VIS,
+    expectRed: ['vis-order-empty-drag'],
+    apply: (src) => replaceOnce(src, VIS_DRAG_INDEX, 'const oldIdx = columnOrder.indexOf(active.id as string)\n    const newIdx = columnOrder.indexOf(over.id as string)'),
+  },
+  {
+    id: 'vis-order-drops-unlisted',
+    what: '欄位顯示面板修前:consumer 的 columnOrder 沒寫到的面板欄不列出來(只有 [] 時才照 columns)',
+    file: VIS,
+    expectRed: ['vis-order-partial-listed'],
+    apply: (src) => replaceOnce(src, VIS_FULL_ORDER_RETURN, 'return columnOrder.length > 0 ? listed : [...columnIds]'),
+  },
+  {
+    id: 'vis-default-order-ignores-lock',
+    what: '欄位顯示面板沒傳 defaultColumnOrder 時預設順序照 columns 原樣(鎖定欄沒有排最前)',
+    file: VIS,
+    expectRed: ['vis-order-locked-first'],
+    apply: (src) => replaceOnce(src, VIS_LOCK_FIRST, 'return [...columnIds]'),
+  },
+  {
+    id: 'vis-default-order-ignores-explicit',
+    what: '欄位顯示面板傳了 defaultColumnOrder 也照 columns 排',
+    file: VIS,
+    expectRed: ['vis-order-click-order', 'vis-order-default-only-click'],
+    apply: (src) => replaceOnce(src, VIS_EXPLICIT_ORDER, 'if (defaultColumnOrder && false) {'),
+  },
+  {
+    id: 'vis-has-default-visibility-only',
+    what: '欄位顯示面板只認 defaultVisibility 當「有預設」(只傳 defaultColumnOrder 不出現)',
+    file: VIS,
+    expectRed: ['vis-order-default-only-shown', 'vis-order-default-only-click'],
+    apply: (src) => replaceOnce(src, VIS_HAS_DEFAULT, 'const hasDefault = defaultVisibility !== undefined'),
+  },
+  {
+    id: 'vis-reset-without-default',
+    what: '欄位顯示面板兩個預設都沒傳也拿「全部顯示 + columns 順序」當預設(不傳 = 不出現沒守住)',
+    file: VIS,
+    expectRed: ['vis-reset-hidden-nodefault', 'vis-order-nodefault-hidden'],
+    apply: (src) => replaceOnce(src, VIS_HAS_DEFAULT, 'const hasDefault = true'),
+  },
+  {
+    id: 'vis-reset-drops-others',
+    what: '欄位顯示面板「恢復預設」把面板那幾欄的順序直接交出去(consumer columnOrder 裡面板沒列的選取欄被丟掉)',
+    file: VIS,
+    expectRed: ['vis-order-keeps-others'],
+    apply: (src) => replaceOnce(src, VIS_ORDER_MERGE, '[...next.order]'),
   },
   {
     id: 'vis-strict-equal',
@@ -211,21 +361,21 @@ const MUTANTS = [
     id: 'vis-no-focus-target',
     what: '欄位顯示面板沒告訴共用 hook 焦點給誰(按下後焦點掉到 body)',
     file: VIS,
-    expectRed: ['vis-reset-click-focus'],
+    expectRed: ['vis-reset-click-focus', 'vis-order-click-focus'],
     apply: (src) => replaceOnce(src, VIS_FOCUS, 'focusTargets: () => []'),
   },
   {
     id: 'hook-no-focus',
     what: '整批動作後不交焦點(修前:按鈕卸載、焦點掉到 body)',
     file: HOOK,
-    expectRed: ['sort-reset-click-focus', 'sort-clear-click-focus', 'sort-clear-cap-focus', 'filter-reset-click-focus', 'filter-clear-click-focus', 'vis-reset-click-focus'],
+    expectRed: ['sort-reset-click-focus', 'sort-clear-click-focus', 'sort-clear-cap-focus', 'filter-reset-click-focus', 'filter-clear-click-focus', 'vis-reset-click-focus', 'vis-order-click-focus'],
     apply: (src) => replaceOnce(src, /el\.focus\(\{ preventScroll: true \}\)/, 'void el'),
   },
   {
     id: 'hook-no-announce',
     what: '整批動作後不播報',
     file: HOOK,
-    expectRed: ['sort-reset-click-announce', 'sort-clear-click-announce', 'filter-reset-click-announce', 'filter-clear-click-announce', 'vis-reset-click-announce', 'sort-labels-reset-announce', 'sort-labels-clear-announce'],
+    expectRed: ['sort-reset-click-announce', 'sort-clear-click-announce', 'filter-reset-click-announce', 'filter-clear-click-announce', 'vis-reset-click-announce', 'vis-order-click-announce', 'sort-labels-reset-announce', 'sort-labels-clear-announce'],
     apply: (src) => replaceOnce(src, /const message = notice && isEqual\(value, notice\.after\) \? notice\.text : ''/, "const message = notice ? '' : ''"),
   },
   {
@@ -283,6 +433,11 @@ const VIS_COLS = [
 ]
 // 產品預設:「更新時間」不顯示(沒寫 = 顯示)
 const SAVED_VIS = { updatedAt: false }
+// 欄位定義把「鍵值」寫在第二個(它是鎖定欄)
+const VIS_COLS_KEY_SECOND = ${JSON.stringify(VIS_IDS_KEY_SECOND)}.map((id) => VIS_COLS.find((c) => c.id === id))
+const VIS_SAVED_ORDER = ${JSON.stringify(VIS_SAVED_ORDER)}
+const VIS_DRAGGED_ORDER = ${JSON.stringify(VIS_DRAGGED_ORDER)}
+const VIS_SYSTEM_COL = ${JSON.stringify(VIS_SYSTEM_COL)}
 
 const SCENES = {
   'sort-modified':  { panel: 'sort', value: [{ id: 'updatedAt', desc: true }], def: SAVED_SORT },
@@ -308,14 +463,40 @@ const SCENES = {
   'vis-equal':     { panel: 'vis', value: { key: true, updatedAt: false }, def: SAVED_VIS },
   // 收起了幾欄、但產品沒給預設
   'vis-nodefault': { panel: 'vis', value: { dueDate: false, updatedAt: false } },
+  // ── 順序(2026-11-15 B12):order = consumer 的 columnOrder(沒寫 = columns 定義順序;onColumnOrderChange 一律接上 —— 兩個必填)──
+  // 顯示與預設相同,只把「到期日」拖到「摘要」前面;沒傳 defaultColumnOrder → 預設 = columns 定義順序
+  'vis-order-only':    { panel: 'vis', value: { updatedAt: false }, def: SAVED_VIS, locked: ['key'], order: VIS_DRAGGED_ORDER },
+  // 顯示與順序都改過、產品存了 defaultColumnOrder;consumer 的 columnOrder 最前面還有一個面板沒列的選取欄
+  'vis-order-default': { panel: 'vis', value: { updatedAt: true, dueDate: false }, def: SAVED_VIS, defOrder: [VIS_SYSTEM_COL, ...VIS_SAVED_ORDER], locked: ['key'],
+    order: [VIS_SYSTEM_COL, 'key', 'updatedAt', 'summary', 'status', 'dueDate'] },
+  // 欄位定義把鎖定欄寫在第二個;顯示與預設相同、順序被拖過
+  'vis-order-locked':  { panel: 'vis', cols: VIS_COLS_KEY_SECOND, value: { updatedAt: false }, def: SAVED_VIS, locked: ['key'], order: VIS_DRAGGED_ORDER },
+  // 只傳 defaultColumnOrder(不傳 defaultVisibility = 預設全部顯示):順序與預設相同、收起了「到期日」
+  'vis-order-default-only': { panel: 'vis', value: { dueDate: false }, defOrder: VIS_SAVED_ORDER, locked: ['key'], order: VIS_SAVED_ORDER },
+  // 拖過,但兩個預設都沒傳
+  'vis-order-nodefault': { panel: 'vis', value: {}, locked: ['key'], order: VIS_DRAGGED_ORDER },
+  // ── 固定零件(4b,2026-11-15)──
+  // 還傳著已棄用的 searchable={false}(搜尋框照樣在);其餘與預設相同
+  'vis-searchable-false': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, locked: ['key'], searchable: false },
+  // consumer 的 columnOrder 從 TanStack 的初始值 [] 開始(照 columns 列出、拖得動)
+  'vis-order-empty': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, locked: ['key'], order: [] },
+  // consumer 的 columnOrder 只寫到兩欄(其餘照 columns 接在後面,照樣列出來)
+  'vis-order-partial': { panel: 'vis', value: SAVED_VIS, def: SAVED_VIS, order: ['key', 'summary'] },
 }
 
 function Panel({ scene }) {
   const s = SCENES[scene]
   const [value, setValue] = React.useState(s.value)
+  // 欄位顯示面板:columnOrder + onColumnOrderChange 必填 → 一律接上(場景沒寫 = columns 定義順序)
+  const [order, setOrder] = React.useState(s.order ?? (s.cols || VIS_COLS).map((c) => c.id))
   window.__value = () => JSON.stringify(value)
+  window.__order = () => JSON.stringify(order)
   const extra = s.clearable === false ? { clearable: false } : {}
-  if (s.panel === 'vis') return <DataTableColumnVisibilityPanel className="w-72" columns={VIS_COLS} visibility={value} onVisibilityChange={setValue} defaultVisibility={s.def} />
+  if (s.panel === 'vis') {
+    const deprecated = s.searchable !== undefined ? { searchable: s.searchable } : {}
+    return <DataTableColumnVisibilityPanel className="w-72" columns={s.cols || VIS_COLS} visibility={value} onVisibilityChange={setValue}
+      columnOrder={order} onColumnOrderChange={setOrder} defaultVisibility={s.def} defaultColumnOrder={s.defOrder} lockedIds={s.locked} {...deprecated} />
+  }
   if (s.panel === 'sort') return <DataTableSortManager columns={SORT_COLS} sorting={value} onSortingChange={setValue} defaultSorting={s.def} labels={s.labels} {...extra} />
   return <DataTableFilterPanel columns={FILTER_COLS} value={value} onChange={setValue} defaultValue={s.def} maxConditions={s.maxConditions} {...extra} />
 }
@@ -367,7 +548,38 @@ window.__probe = () => {
     liveRole: live ? live.getAttribute('role') + '/' + live.getAttribute('aria-live') : null,
     focus: active === document.body || !active ? 'body' : active === add ? 'add' : active === dismiss ? 'dismiss' : active === clear ? 'clear' : active === reset ? 'reset' : (active.getAttribute('aria-label') || active.textContent || active.tagName).trim().slice(0, 20),
     value: window.__value ? window.__value() : null,
+    // 欄位顯示面板:consumer 的 columnOrder、搜尋框在不在、每一列(由上到下)鎖了沒 / 有沒有拖曳把手 / 有沒有鎖頭
+    order: window.__order ? window.__order() : null,
+    search: Boolean(host.querySelector('input[aria-label="搜尋欄位"]')),
+    rows: visRows().map((r) => ({ label: r.label, locked: r.locked, handle: Boolean(r.handle), lock: r.lock })),
   }
+}
+/**
+ * 欄位顯示面板的每一列:從每一顆「隱藏此欄 / 顯示此欄」往上找,找到「只含這一顆」的最外層 = 那一列(按結構找,不靠 class)。
+ * 鎖定欄 = 那顆鈕停用(元件:disabled={locked})。
+ */
+const VIS_TOGGLE = 'button[aria-label="隱藏此欄"], button[aria-label="顯示此欄"]'
+function visRows() {
+  const host = document.getElementById('scene-host')
+  if (!host) return []
+  return [...host.querySelectorAll(VIS_TOGGLE)].map((b) => {
+    let row = b
+    while (row.parentElement && row.parentElement !== host && row.parentElement.querySelectorAll(VIS_TOGGLE).length === 1) row = row.parentElement
+    return {
+      row,
+      label: (row.textContent || '').trim(),
+      locked: b.disabled,
+      handle: row.querySelector('[aria-label="拖曳重排"]'),
+      lock: [...row.querySelectorAll('svg')].some((s) => String(s.getAttribute('class') || '').includes('lucide-lock')),
+    }
+  })
+}
+/** 第一個沒鎖的欄位列的拖曳把手中心與列高(拖曳用);那一列沒有把手 = null(由呼叫端判紅) */
+window.__visHandleBox = () => {
+  const first = visRows().find((r) => !r.locked)
+  if (!first || !first.handle) return null
+  const h = first.handle.getBoundingClientRect()
+  return { x: h.left + h.width / 2, y: h.top + h.height / 2, rowHeight: first.row.getBoundingClientRect().height, label: first.label }
 }
 /** 把要按的那一顆標上 data-press-target(node 端再聚焦 + Enter);不在 = false */
 window.__mark = (kind) => {
@@ -556,6 +768,78 @@ async function runChecks(page) {
   check('vis-reset-edit-silences', 'contract', '欄位顯示面板:恢復預設之後再切一欄 → 那句播報清空(下一次才唸得出來)',
     pressedVis && afterVisEdit && afterVisEdit.value !== V.saved && afterVisEdit.live === '', { pressed: pressedVis, after: afterVisEdit && { value: afterVisEdit.value, live: afterVisEdit.live } })
 
+  // ── 欄位顯示面板的順序(2026-11-15 B12):面板接了順序時「恢復預設」連順序一起還原 ──
+  const panelOnly = (json) => (json ? JSON.stringify(JSON.parse(json).filter((id) => VIS_IDS.includes(id))) : null)
+  const want = (ids) => JSON.stringify(ids)
+  const orderOnly = await scene('vis-order-only')
+  check('vis-order-only-shown', 'contract', '欄位顯示面板:顯示與預設相同、只拖過順序 → 標題列出現「恢復預設」', orderOnly.reset, orderOnly)
+  // ── 固定零件(4b,2026-11-15):搜尋框 / 拖曳把手不靠參數 ──
+  const unlocked = orderOnly.rows.filter((r) => !r.locked)
+  const locked = orderOnly.rows.filter((r) => r.locked)
+  check('vis-row-handles', 'contract', `欄位顯示面板:每一個沒鎖的欄位列都有拖曳把手(鍵值鎖定 → ${VIS_IDS.length - 1} 列)`,
+    unlocked.length === VIS_IDS.length - 1 && unlocked.every((r) => r.handle), { rows: orderOnly.rows })
+  check('vis-locked-no-handle', 'contract', '欄位顯示面板:鎖定欄沒有拖曳把手、有鎖頭', locked.length === 1 && locked.every((r) => !r.handle && r.lock), { rows: orderOnly.rows })
+  check('vis-search-shown', 'contract', '欄位顯示面板:搜尋框恆在(不傳 searchable)', visModified.search && orderOnly.search, { modified: visModified.search, orderOnly: orderOnly.search })
+  const searchableFalse = await scene('vis-searchable-false')
+  check('vis-search-ignores-deprecated', 'contract', '欄位顯示面板:還傳著已棄用的 searchable={false} → 搜尋框照樣在(參數不作用)', searchableFalse.search, { search: searchableFalse.search })
+  const orderPartial = await scene('vis-order-partial')
+  check('vis-order-partial-listed', 'contract', `欄位顯示面板:consumer 的 columnOrder 只寫到 2 欄 → 面板照樣列出全部 ${VIS_IDS.length} 欄(沒寫到的照 columns 接在後面)`,
+    orderPartial.rows.length === VIS_IDS.length, { rows: orderPartial.rows.map((r) => r.label) })
+  await scene('vis-order-empty')
+  const box = await page.evaluate(() => window.__visHandleBox())
+  if (box) {
+    // 指標拖曳:按下 → 移過門檻 → 移到下一列的位置 → 放開(同 drag-runtime-contract.mjs 的步法;每一步之間的短暫等待是讓 dnd-kit 感測器處理事件的互動節拍)
+    await page.mouse.move(box.x, box.y)
+    await page.mouse.down()
+    for (const dy of [3, 10, 20, Math.round(box.rowHeight * 1.2)]) {
+      await page.mouse.move(box.x, box.y + dy, { steps: 3 })
+      await page.waitForTimeout(70)
+    }
+    await page.mouse.up()
+    await d.settle()
+  }
+  const afterEmptyDrag = await probe()
+  const emptyOrder = afterEmptyDrag.order ? JSON.parse(afterEmptyDrag.order) : []
+  const emptyPanelOrder = emptyOrder.filter((id) => VIS_IDS.includes(id))
+  check('vis-order-empty-drag', 'contract', '欄位顯示面板:consumer 的 columnOrder 從 [] 開始 → 拖第一個沒鎖的欄往下一列 → 順序改了(五欄都在、與 columns 順序不同)',
+    Boolean(box) && emptyPanelOrder.length === VIS_IDS.length && JSON.stringify(emptyPanelOrder) !== JSON.stringify(VIS_IDS),
+    { handle: Boolean(box), order: afterEmptyDrag.order })
+  const orderNoDefault = await scene('vis-order-nodefault')
+  check('vis-order-nodefault-hidden', 'contract', '欄位顯示面板(拖過):兩個預設都沒傳 → 不出現「恢復預設」', !orderNoDefault.reset, orderNoDefault)
+  const orderDefaultOnly = await scene('vis-order-default-only')
+  check('vis-order-default-only-shown', 'contract', '欄位顯示面板:只傳 defaultColumnOrder(預設全部顯示)、收起了一欄 → 標題列出現「恢復預設」', orderDefaultOnly.reset, orderDefaultOnly)
+
+  await scene('vis-order-only')
+  const pressedOrderOnly = await pressKey(resetBtn)
+  const afterOrderOnly = await probe()
+  check('vis-order-columns-click-order', 'contract', '欄位顯示面板:沒傳 defaultColumnOrder → 按「恢復預設」順序回到 columns 定義順序', pressedOrderOnly && afterOrderOnly.order === want(VIS_IDS),
+    { pressed: pressedOrderOnly, order: afterOrderOnly.order, want: VIS_IDS })
+
+  await scene('vis-order-default')
+  const pressedOrder = await pressKey(resetBtn)
+  const afterOrder = await probe()
+  const savedFull = [VIS_SYSTEM_COL, ...VIS_SAVED_ORDER]
+  check('vis-order-click-value', 'contract', '欄位顯示面板(顯示與順序都改過):按「恢復預設」→ 顯示 = defaultVisibility', pressedOrder && afterOrder.value === V.saved, { pressed: pressedOrder, value: afterOrder.value })
+  check('vis-order-click-order', 'contract', '欄位顯示面板(顯示與順序都改過):按「恢復預設」→ 面板那幾欄的順序 = defaultColumnOrder', pressedOrder && panelOnly(afterOrder.order) === want(VIS_SAVED_ORDER),
+    { pressed: pressedOrder, order: afterOrder.order, want: VIS_SAVED_ORDER })
+  const orderAfter = afterOrder.order ? JSON.parse(afterOrder.order) : []
+  check('vis-order-keeps-others', 'contract', `欄位顯示面板:按「恢復預設」→ consumer columnOrder 裡面板沒列的 ${VIS_SYSTEM_COL} 留在原位(第一個、只有一個)`,
+    pressedOrder && orderAfter[0] === VIS_SYSTEM_COL && orderAfter.filter((id) => id === VIS_SYSTEM_COL).length === 1, { pressed: pressedOrder, order: afterOrder.order, want: savedFull })
+  check('vis-order-click-focus', 'contract', '欄位顯示面板(顯示與順序都改過):按「恢復預設」→ 焦點落在標題列 ×(按鈕隨順序一起回到預設而消失)', pressedOrder && afterOrder.focus === 'dismiss', { pressed: pressedOrder, focus: afterOrder.focus })
+  check('vis-order-click-announce', 'contract', `欄位顯示面板(顯示與順序都改過):按「恢復預設」→ polite 區域唸「${V.reset}」`, pressedOrder && afterOrder.live === V.reset, { pressed: pressedOrder, live: afterOrder.live })
+
+  await scene('vis-order-locked')
+  const pressedLocked = await pressKey(resetBtn)
+  const afterLocked = await probe()
+  check('vis-order-locked-first', 'contract', '欄位顯示面板:欄位定義把鎖定欄寫在第二個、沒傳 defaultColumnOrder → 按「恢復預設」鎖定欄排最前、其餘照 columns 順序',
+    pressedLocked && afterLocked.order === want(VIS_LOCKED_FIRST_ORDER), { pressed: pressedLocked, order: afterLocked.order, want: VIS_LOCKED_FIRST_ORDER })
+
+  await scene('vis-order-default-only')
+  const pressedDefaultOnly = await pressKey(resetBtn)
+  const afterDefaultOnly = await probe()
+  check('vis-order-default-only-click', 'contract', '欄位顯示面板:只傳 defaultColumnOrder → 按「恢復預設」全部顯示、順序 = defaultColumnOrder',
+    pressedDefaultOnly && afterDefaultOnly.value === '{}' && afterDefaultOnly.order === want(VIS_SAVED_ORDER), { pressed: pressedDefaultOnly, value: afterDefaultOnly.value, order: afterDefaultOnly.order })
+
   // ── 排序面板 labels(2026-11-15 審查 A 第 2 輪):每個字在對的元素 / 屬性上(位置按結構找,見 harness sortLabelParts)──
   const L = SORT_LABELS_EN
   const probeLabels = async (name) => {
@@ -665,7 +949,9 @@ try {
     }
     const contractIds = baseline.checks.filter((c) => c.kind === 'contract').map((c) => c.id)
     const covered = new Set()
-    for (const m of MUTANTS) {
+    const RUN = MUTANTS.filter((m, i) => !SHARD || i % SHARD.n === SHARD.k)
+    if (!RUN.length) throw new InstrumentError(`這一片沒有任何突變可跑(--shard=${SHARD.k}/${SHARD.n})—— 不得讀成通過`)
+    for (const m of RUN) {
       const result = await runVariant(page, `突變 ${m.id}:${m.what}`, mutantFor(SOURCE_ROOT, m.file, m.apply))
       report(result)
       const red = redIds(result.checks)
@@ -675,17 +961,22 @@ try {
       if (JSON.stringify(red) !== JSON.stringify(want)) problems.push(`${m.id}:紅的是 [${red.join(', ')}],應剛好是 [${want.join(', ')}]`)
       for (const id of red) covered.add(id)
     }
+    // 靜態覆蓋:每一條契約列都要有突變宣告會讓它紅(分片時各片只看得到自己那幾個突變,動態覆蓋要所有片合起來才完整)
     const claimed = new Set(MUTANTS.flatMap((m) => m.expectRed))
+    const unclaimed = contractIds.filter((id) => !claimed.has(id))
+    if (unclaimed.length) problems.push(`契約列 ${unclaimed.join(' / ')} 不在任何突變的 expectRed —— 它的綠燈是零證據`)
     const phantom = [...claimed].filter((id) => !contractIds.includes(id))
     if (phantom.length) problems.push(`突變的 expectRed 寫了不是契約列的 ${phantom.join(' / ')}`)
     const uncovered = contractIds.filter((id) => !covered.has(id))
-    if (uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
+    if (!SHARD && uncovered.length) problems.push(`契約列 ${uncovered.join(' / ')} 沒有任何突變能讓它紅 —— 它的綠燈是零證據`)
     if (problems.length) {
       console.log('\n✗ selftest:量具不可信 ——')
       for (const p of problems) console.log(`  - ${p}`)
       process.exitCode = 1
     } else {
-      console.log(`\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
+      console.log(SHARD
+        ? `\n✓ selftest 第 ${SHARD.k + 1} / ${SHARD.n} 片:${RUN.length} 個根因突變各自剛好紅了該紅的列,對照列全程綠(全部 ${MUTANTS.length} 個突變的 expectRed 涵蓋契約 ${contractIds.length} 條;其餘片在 CI 同一個 matrix 的另一格跑)`
+        : `\n✓ selftest:${MUTANTS.length} 個根因突變各自剛好紅了該紅的列(契約 ${contractIds.length} 條全被覆蓋),對照列全程綠 —— 量具會紅`)
     }
   }
 } catch (error) {

@@ -664,6 +664,10 @@
             "timeoutMs": 240000
           },
           {
+            "path": "scripts/test-data-table-panel-reset-clear-invariant.mjs",
+            "timeoutMs": 600000
+          },
+          {
             "path": "scripts/test-governance-build-graph.mjs",
             "timeoutMs": 900000
           },
@@ -676,7 +680,7 @@
             "timeoutMs": 420000
           }
         ],
-        "totalTimeoutMs": 1800000,
+        "totalTimeoutMs": 2400000,
         "members": [
           "scripts/test-action-row-order-invariant.mjs",
           "scripts/test-agent-logo-brand-scale-invariant.mjs",

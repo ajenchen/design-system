@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-14T23:25:36.141Z",
+    "generatedAt": "2026-11-15T05:37:33.131Z",
     "stories": 1082,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
@@ -1296,7 +1296,7 @@
     "design-system-components-datatable-展示--cell-errors|color-contrast": 1,
     "design-system-components-datatable-展示--column-reorder|color-contrast": 3,
     "design-system-components-datatable-展示--column-resize|color-contrast": 2,
-    "design-system-components-datatable-展示--column-visibility-panel-states|color-contrast": 3,
+    "design-system-components-datatable-展示--column-visibility-panel-states|color-contrast": 6,
     "design-system-components-datatable-展示--container-height|color-contrast": 4,
     "design-system-components-datatable-展示--empty-state|color-contrast": 1,
     "design-system-components-datatable-展示--filter-panel-labels-and-limit|color-contrast": 2,
