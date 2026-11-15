@@ -784,7 +784,8 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 aria-expanded={historyOpen}
                 className={cn(
                   'flex min-w-0 max-w-full cursor-pointer items-center gap-2 p-0 text-left',
-                  'rounded-sm ',
+                  // 4px 一律 rounded-md(radius.spec.md「rounded-sm 保留未使用」;2026-11-15 前寫 rounded-sm,同為 4px,稽核 P11)
+                  'rounded-md',
                 )}
               >
                 {/* 單行截斷 → 截斷時才顯 tooltip 補全(tooltip.spec.md:32;引擎 truncated-text.spec.md),
@@ -1183,7 +1184,8 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
             // **四周最小 8px**,往外只需要 4px。那個 collapsible 的外框確實從標題底邊 0px 開始,但它是**兄弟節點**
             //(不裁任何東西)而且背景全透明,裡面第一個真的畫出線的元素在 8px 外 —— 依 focus-canonical「問題二」
             // 的「正當障礙」定義(會碰撞的鄰居或會切掉框的邊界),透明的兄弟盒不是障礙。
-            'rounded-sm',
+            // 4px 一律 rounded-md(radius.spec.md「rounded-sm 保留未使用」;2026-11-15 前寫 rounded-sm,同為 4px,稽核 P11)
+            'rounded-md',
           )}
         >
           <span className={cn(thinking && 'agent-shimmer')}>
@@ -1321,7 +1323,7 @@ function PromptAttachmentRow({
     // 鍵盤停在 Tag / +N 時焦點框下緣被切掉(列底沒有內距)—— focus-canonical.md「框怎麼畫」:預設往外、四邊完整(SH-clip)。
     // 同 Combobox 單行 Tag 列的 `tagRowOverflowClass`(combobox.tsx:同一份 OverflowTagList、同一個理由;`clip` 不建捲動容器,
     // 不可改成 overflow-x-hidden —— 單軸 hidden 會把另一軸算成 auto)。
-    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:243「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
+    // @layout-space-magic-ok: Tag 相互間距 4、距內緣 4 = 本元件規格寫的值 —— agent-panel.spec.md:245「相互間距 4、距內緣 4」(「7. AgentPromptInput(複合輸入盒)」附件列那一行)
     <div ref={rowRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex items-center gap-1 overflow-x-clip px-1 pt-1')}>
       <OverflowTagList
         items={items}

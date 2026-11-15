@@ -609,7 +609,7 @@ export const StateBehavior = {
       </div>
 
       <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Disabled — 品牌色移除，統一 neutral（含 danger）</span>
+        <span className="text-caption font-medium text-fg-secondary">Disabled — 互動色 / 危險色移除，統一 neutral（含 danger）</span>
         <div className="flex flex-wrap gap-3">
           {VARIANTS.map((v) => (
             <div key={v} className="flex flex-col items-center gap-1">
@@ -808,7 +808,7 @@ export const Accessibility = {
     <div className="max-w-3xl text-body text-fg-secondary">
       {/* 標題 → 一段文字 = tight(純文字的內容之間是 tight,A4;原本寫死 mb-2 = 8、不跟密度) */}
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  語意與鍵盤  :預設渲染原生 button 元素,自動帶有按鈕角色、Enter / 空白鍵觸發、Tab 聚焦等瀏覽器原生無障礙行為,無需額外設定。icon-only 按鈕請傳 aria-label 描述用途。\n\n  焦點外框  :鍵盤聚焦時(focus-visible)顯示一圈外框,讓鍵盤使用者看得到目前焦點落在哪顆按鈕;滑鼠點擊不會觸發這圈外框,避免視覺雜訊。\n\n  停用狀態  :disabled 時品牌 / 狀態色完全移除、統一回到 neutral 停用色,原生 disabled 屬性讓輔助技術讀出「已停用」;loading 不是原生停用:可聚焦的停用(aria-disabled + data-disabled-focusable)+ aria-busy 告知處理中,焦點留在鈕上。\n\n  驗證  :Storybook a11y 面板應 0 項嚴重違規;全程鍵盤可操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"無障礙設計摘要:\n\n  語意與鍵盤  :預設渲染原生 button 元素,自動帶有按鈕角色、Enter / 空白鍵觸發、Tab 聚焦等瀏覽器原生無障礙行為,無需額外設定。icon-only 按鈕請傳 aria-label 描述用途。\n\n  焦點外框  :鍵盤聚焦時(focus-visible)顯示一圈外框,讓鍵盤使用者看得到目前焦點落在哪顆按鈕;滑鼠點擊不會觸發這圈外框,避免視覺雜訊。\n\n  停用狀態  :disabled 時互動色 / 狀態色完全移除、統一回到 neutral 停用色,原生 disabled 屬性讓輔助技術讀出「已停用」;loading 不是原生停用:可聚焦的停用(aria-disabled + data-disabled-focusable)+ aria-busy 告知處理中,焦點留在鈕上。\n\n  驗證  :Storybook a11y 面板應 0 項嚴重違規;全程鍵盤可操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

@@ -85,7 +85,7 @@ benchmark:
 
 **程式表達**(local pattern token,對齊 `data-table.css` 既有 local-token 先例):
 - CSS:`--chrome-header-avatar-size: 1.5rem`(`header-canonical.css`)— 供 SidebarHeader 收合對齊公式消費
-- JS 端:consumer hardcode `<Avatar size={24}>` + inline comment cite token name(per Avatar API `size: number | 'fill'` 不接 CSS var)
+- JS 端:設計系統內部讀程式對照常數 `CHROME_HEADER_AVATAR_PX = 24`(`chrome-header-avatar.ts`,`@internal`、不經 pattern index 對外匯出;Avatar API `size: number | 'fill'` 不接 CSS var)。CSS 值與這個常數由 `scripts/token-twin-invariant.mjs` 機器鎖住相等(2026-11-15 起;之前 AccountMenu 與範例各寫字面值 24、只靠註解同步 —— 稽核 P03)。產品端(含 `apps/template`)仍寫字面值 `size={24}`:要給產品一個名字讀,是對外 API 命名,待 user 決定
 
 **Consumer rule**:
 - 在 chrome header 內放 avatar → **必用 raw `<Avatar size={24}>`**,**禁用 `<ItemAvatar>`**(會誤啟動 row anatomy lookup)
@@ -93,7 +93,7 @@ benchmark:
 - WorkspaceBrand demo 即此 pattern 的 reference implementation(`components/AppShell/_demo-helpers.tsx:WorkspaceBrand`)
 - **帳號入口(account entry)同規則**:primary-header globalHeader 右側的個人設定 avatar 也用 raw `<Avatar size={24}>`(reference:`components/AccountMenu/account-menu.tsx`,2026-07-30 F9 升 public 元件;demo wrapper 在 `_demo-helpers.tsx`)。放置 / 開帳號選單 / 邊距對稱 canonical 見 `../../components/AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段。
 
-**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `<Avatar size={24}>` JS literal(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處)+ `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
+**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `CHROME_HEADER_AVATAR_PX`(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處讀它;前兩者相等由 `scripts/token-twin-invariant.mjs` 擋)+ 產品範本 `apps/template` 的字面值 `size={24}` + `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
 
 ### 5. Title typography
 
@@ -201,9 +201,9 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 | **B. Chrome header(Fixed-h)** | `sm`(32/40)| chrome 內 buttons 全部 sm(real grep:`Sidebar / FileViewer toolbar / InfoPanel` 所有 buttons size=sm),tabs 跟齊 |
 | **C. Standalone(tabs 取代 chrome header)** | `lg`(48/56)| Tabs 直接取代 header 用,**tab 高 = chrome-header-height 像素相等**(48/56)— Ant verbatim「Large size tabs are usually used in page header」 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
-**Token alignment 強連動**:`--tab-height-lg` md=48 / lg=56 與 `--chrome-header-height` md=48 / lg=56 **像素完全相等**(`--chrome-header-height` 是共用刻度,住 `tokens/uiSize/uiSize.css`;`--tab-height-lg` 是 Tabs 的值,2026-11-11 起住 `components/Tabs/tabs.css`;兩顆住處的唯一登記在 `tokens/token-registry.json`;`globals.css` 只是 aggregator,不定義此 token)— 這是「lg tabs 取代 chrome header」的 SSOT linkage 鐵證。**禁止任何一方獨自調整**(動 chrome-header-height 必同步 tab-height-lg,反之同)。
+**Token alignment 強連動**:`--tab-height-lg` md=48 / lg=56 與 `--chrome-header-height` md=48 / lg=56 **像素完全相等**(`--chrome-header-height` 是共用刻度,住 `tokens/uiSize/uiSize.css`;`--tab-height-lg` 是 Tabs 的值,2026-11-11 起住 `components/Tabs/tabs.css`;兩顆住處的唯一登記在 `tokens/token-registry.json`;`globals.css` 只是 aggregator,不定義此 token)— 這是「lg tabs 取代 chrome header」的 SSOT linkage 鐵證。
 
-**Enforcement = assert,不 CSS alias**(per M31 codex 比稿 Step 5):`tabs.css` 的 `--tab-height-*` 有 `data-ui-size="md"` reset selector(component-size scope),`--chrome-header-height` 是 layout/density token(app-chrome scope)— alias 會把兩個不同 scope 綁死。**機制**:保留 duplicated literals + `chrome_header_dispatcher.sh` → `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 升 exit 2 BLOCK;2026-11-11 改成從分類表讀兩顆的住處,改任一邊的住處或分類表都會觸發)parse CSS 提取 md/lg 值 assert equality → 任一方獨自改 = BLOCKER。
+**Enforcement = CSS alias,一個住處**(2026-11-15 改;稽核 P04 / B6;【AI 推導 2026-11-15】依 `tokens/token-system.spec.md` 規則 2「同一個值只有一個住處」做的工程修正,user 沒有逐字決定過這一改,值逐格不變):`components/Tabs/tabs.css`「衍生值」段寫一行 `--tab-height-lg: var(--chrome-header-height)`,宣告在 `:root` 與每個換密度的元素上(`[data-density]` / `[data-ui-size]` / `[data-layout-space]`),每一層用該處的標頭高重算 —— 改標頭高,lg 分頁自動跟著,不再有「只改一邊」這回事。**舊做法與它的理由**:2026-05-17 起是「保留兩份字面值 + hook assert 相等」,理由是「`--tab-height-*` 是 component-size scope、`--chrome-header-height` 是 app-chrome scope,alias 會把兩個不同 scope 綁死」;但兩顆的三段選擇器(`:root` / `[data-ui-size="lg"], [data-density="lg"]:not([data-ui-size])` / 對應的 md 鎖回段)**完全相同**,切換時機本來就一樣,這個理由跟程式對不上(稽核 B6);相等也只靠寫檔當下的 hook 守,CI 不檢查真實檔案。**機制**:`chrome_header_dispatcher.sh` → `lib/_tab_lg_chrome_header_equal.sh` 認得這一行 alias(相等由構造保證,只再驗標頭高三段完整);有人寫回字面值時照舊逐段比對、不等就擋;區塊換密度時的實際值由 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器實算。
 
 ### Rule W4:Tabs row 與 header content row 為 flush stack(無 negative margin)
 
@@ -242,7 +242,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - `--chrome-header-height`(`uiSize.css`:`:root` 預設、大密度覆寫、鎖回一般密度三段)— B 家族 tsx 直接消費(chrome-header.tsx);A 家族不直接消費,靠 padding 算式對齊(24 + 2×tight = 48;等式由 overlay-surface.tsx anatomy 註解 + `lib/_tab_lg_chrome_header_equal.sh` W3 assert 守)
 - `--layout-space-loose`(兩家族 px)/ `--layout-space-tight`(僅 A 家族 py;B 家族 fixed-height 無 py)
 - `--divider`(semantic.css:333;兩家族經 `border-divider` utility 消費)
-- `--tab-height-sm` / `--tab-height-lg`(`components/Tabs/tabs.css`:預設 + 大密度覆寫 + 鎖回一般密度三段)
+- `--tab-height-sm`(`components/Tabs/tabs.css`:預設 + 大密度覆寫 + 鎖回一般密度三段)/ `--tab-height-lg`(同檔「衍生值」段 `var(--chrome-header-height)`,2026-11-15 起)
 - `--field-height-sm`(button sm 透過 button family 連動)
 
 ### Layer 2 — Spec pointer
@@ -257,7 +257,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 ### Layer 3 — Primitive consumption(已 land;下列為原 Phase 2 提案內容,現況見段末)
 
-- A 家族:`SurfaceHeader` 已是 primitive(`overlay-surface.tsx:62-118`)— add `withTabs?: boolean` prop auto-suppress border
+- A 家族:`SurfaceHeader` 已是 primitive(`overlay-surface.tsx:62-119`)— add `withTabs?: boolean` prop auto-suppress border
 - B 家族:**新建 `ChromeHeader` primitive**(`patterns/header-canonical/chrome-header.tsx`)— Sidebar / FileViewer / InfoPanel 全 migrate
 
 **ChromeHeader API(per M31 codex 比稿 Step 5 — 比 v1 更窄,避免 M21 prop variant 風險)**:
@@ -289,7 +289,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 
 - `lib/_app_shell_primary_header_consistency.sh`(2026-05-31 exit 2 BLOCK)— primary-header layout 必傳 `globalHeader` prop,缺則 BLOCKER
 - `lib/_header_with_tabs_border.sh`(2026-05-31 exit 2 BLOCK)— grep tsx 若 header 元件含 `<Tabs>` child 但未走 `withTabs` API → BLOCKER
-- `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 exit 2 BLOCK,W3 pointer)— 從分類表 `tokens/token-registry.json` 讀兩顆的住處(現況 `tabs.css` / `uiSize.css`),parse 後 assert `--tab-height-lg` 像素等於 `--chrome-header-height`,任一方獨自改 → BLOCKER
+- `lib/_tab_lg_chrome_header_equal.sh`(2026-05-31 exit 2 BLOCK,W3 pointer)— 從分類表 `tokens/token-registry.json` 讀兩顆的住處(現況 `tabs.css` / `uiSize.css`),分頁 lg 寫成 `var(--chrome-header-height)` 一行時相等由構造保證(2026-11-15 起的寫法);寫回字面值時 parse 後 assert `--tab-height-lg` 像素等於 `--chrome-header-height`,任一方獨自改 → BLOCKER
 - `lib/_chrome_header_handcraft.sh`(WARN,Phase 3 才升 P0)— grep 是否仍有 hardcoded `h-[var(--chrome-header-height)] border-b` 自刻 chrome header(該消費 ChromeHeader primitive)
 - （以上皆 lib helper,經 `chrome_header_dispatcher.sh` 統一 dispatch;無 standalone `check_*.sh` 檔。前 3 個 SSOT-canonical deterministic helper exit 2 傳播真 block;`_chrome_header_handcraft` 維持 warn）
 

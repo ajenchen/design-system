@@ -47,7 +47,8 @@ const tagVariants = cva(
       },
       size: {
         // 高度走 utility bridge h-tag-*(= --tag-height-*,本資料夾 tag.css @theme inline;token-system.spec.md 規則 3,
-        // 同 Field 的 h-field-* / Tabs 的 h-tab-* idiom)。Tag 盒高唯一住所 = 該 token;JS 側 = TAG_HEIGHT_PX。
+        // 同 Field 的 h-field-* idiom;分類表登記 product: no,轉接名只給 DS 內部這裡用,規則見 token-system.spec.md「擺放」)。
+        // Tag 盒高唯一住所 = 該 token;JS 側 = TAG_HEIGHT_PX。
         sm: "h-tag-sm px-1 text-caption font-medium",
         md: "h-tag-md px-1 text-body font-normal",
         lg: "h-tag-lg px-1 text-body font-normal",
@@ -131,10 +132,11 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
       onClick={(e) => { e.stopPropagation(); onRemove() }}
       data-collection-remove
       aria-label={label ? `移除 ${label}` : '移除'}
-      style={solidColors ? ({ '--dismiss-hover': solidColors.hover, '--dismiss-active': solidColors.active } as React.CSSProperties) : undefined}
+      // 元件內變數用主人開頭(2026-11-15 前叫 --dismiss-hover / --dismiss-active,沒有主人開頭;稽核 P20)
+      style={solidColors ? ({ '--tag-dismiss-hover': solidColors.hover, '--tag-dismiss-active': solidColors.active } as React.CSSProperties) : undefined}
       hoverBgClassName={
         solidColors
-          ? 'group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
+          ? 'group-hover/action:bg-[var(--tag-dismiss-hover)] group-active/action:bg-[var(--tag-dismiss-active)]'
           : undefined
       }
       // 焦點框往內:Tag 是貼邊宿主 —— root `overflow-hidden`(:196)+ 1px 邊框(:30)+ h-6 / h-5(:42-44)
@@ -216,15 +218,16 @@ function TagInner(
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):
-      // 用 CSS var `--combobox-tag-area-inline-size`(由 `../OverflowIndicator/overflow-tag-list.tsx` `useOverflowCount` 寫在容器上)取代
+      // 用 CSS var `--tag-max-inline-size`(Tag 的值,說明住 tag.spec.md;由 `../OverflowIndicator/overflow-tag-list.tsx`
+      // `useOverflowCount` 與 Combobox 換行搜尋寫在容器上;2026-11-15 前叫 --combobox-tag-area-inline-size,稽核 P17)取代
       // `min(100%, 10rem)` cyclic percentage。CSS Sizing 3 §5.2.1:percentage 在 indefinite containing
       // block 退化為 initial value → Round 4 的 100% 沒 enforce。改 explicit px 值(JS measured)避此 trap。
       // unbounded=true:cap = inject 寬(回 cell-as-input narrow cell 原 behavior)
       // default:cap = min(inject 寬, 160px)— 兩 cap 取小。fallback(無 var,Form context 等)= 100% / 10rem。
       style={{
         maxWidth: unbounded
-          ? 'var(--combobox-tag-area-inline-size, 100%)'
-          : 'min(var(--combobox-tag-area-inline-size, 10rem), 10rem)',
+          ? 'var(--tag-max-inline-size, 100%)'
+          : 'min(var(--tag-max-inline-size, 10rem), 10rem)',
         ...style,
       }}
       {...props}

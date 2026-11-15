@@ -69,7 +69,7 @@ Canonical `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwi
 | 類別 | 為什麼禁止 | 改用 |
 |------|----------|------|
 | `shadow-sm/md/lg/xl/2xl` | 繞過 elevation token 系統,沒跟 dark mode 調整聯動 | 用 `shadow-[var(--elevation-N)]` 其中 N ∈ `{100, 200}`(+`-hover` 變體;per elevation.spec.md tier;2026-05-31 修:無 300)|
-| 硬寫色值 `#xxx`, `rgb(...)`, `bg-red-500` | 繞過 semantic token,dark mode / brand swap 會斷 | 對應 semantic token |
+| 硬寫色值 `#xxx`, `rgb(...)`, `bg-red-500` | 繞過 semantic token,換主題 / 互動色換色會斷 | 對應 semantic token |
 | Tailwind 預設 typography `text-xs/sm/base/lg` | 我們有自己的 `text-caption/body/body-lg/h1/h2` 系統 | 用我們的 typography token |
 | 硬寫 px 值 `w-[48px]` 當有 token | 失去 token 關聯,改值時零散處要一起改 | 對應 token 或 calc() |
 

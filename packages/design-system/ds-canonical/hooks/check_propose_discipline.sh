@@ -35,6 +35,111 @@ if [ -z "$AI_REPLY_TEXT" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PAT
 fi
 
 [ -z "$AI_REPLY_TEXT" ] && exit 0
+
+# ── 中途文字(2026-11-15):這一輪做事中途插的文字,user 一樣看得到 ──
+# 下面的規則只看最後一則回覆(last_assistant_message);中途的 text 區塊從來沒被檢查過,於是中途一路寫英文進度句。
+# user 原話(2026-11-15):「為何你他媽又一直回覆我英文？到底要我教你幾次？以及若是沒必要讓我知道的垃圾訊息，你評估真的是垃圾，那就不用讓我看到吧？而不是把垃圾訊息轉成我看不懂的英文然後全部吐出來吧？」
+# 做法:從 transcript 取「最後一則真正的 user 訊息之後」的 assistant text 區塊(真正的 user 訊息 = role user 且內容不是
+# tool_result,同 stop_self_audit.sh 的 LAST_USER_LINE),排除最後一則回覆本身(它由下面的規則管),逐段(空行分段)判斷:
+# 剝掉程式碼區塊 / 行內程式碼 / 路徑 / 網址 / 雜湊後,英文詞 ≥ 6 且英文詞 × 2 > 漢字數 → 擋(exit 2)。
+# 中途文字通常一兩句,所以門檻比最後一則(≥ 30 個英文詞)低。transcript 讀不到 → 照舊只檢查最後一則,不因讀不到就擋。
+# 最後一則回覆從 stdin 傳(可能很長,不放在命令列參數)。單一段落要英文原文時,那一段寫 `@plain-chinese-skip: 理由`。
+MID_PY=''
+IFS= read -r -d '' MID_PY <<'MID_PY_SOURCE' || true
+import json, re, sys
+path = sys.argv[1]
+final = sys.stdin.read().strip()
+try:
+    with open(path, encoding='utf-8') as handle:
+        raw_lines = handle.read().splitlines()
+except (OSError, UnicodeDecodeError):
+    print(json.dumps({'ok': False}))
+    sys.exit(0)
+def message_of(record):
+    msg = record.get('message')
+    return msg if isinstance(msg, dict) else {}
+def role_of(record):
+    return message_of(record).get('role') or record.get('role')
+def content_of(record):
+    msg = message_of(record)
+    return msg['content'] if 'content' in msg else record.get('content')
+records, last_user = [], -1
+for line in raw_lines:
+    try:
+        record = json.loads(line)
+    except ValueError:
+        continue
+    if not isinstance(record, dict):
+        continue
+    records.append(record)
+    if role_of(record) == 'user':
+        content = content_of(record)
+        if isinstance(content, list) and any(isinstance(item, dict) and item.get('type') == 'tool_result' for item in content):
+            continue
+        last_user = len(records) - 1
+if last_user < 0:
+    print(json.dumps({'ok': False}))
+    sys.exit(0)
+blocks = []
+for record in records[last_user + 1:]:
+    if role_of(record) != 'assistant':
+        continue
+    content = content_of(record)
+    if isinstance(content, str):
+        blocks.append(content)
+    elif isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict) and item.get('type') == 'text' and isinstance(item.get('text'), str):
+                blocks.append(item['text'])
+if final:
+    blocks = [b for b in blocks if b.strip() and b.strip() not in final]
+else:
+    blocks = blocks[:-1]
+EXEMPT = re.compile(r'(cva|Radix|Polaris|Material|Atlassian|Carbon|Ant|Apple|MUI|TanStack|shadcn|Recharts|cmdk|dnd-kit|TypeScript|JavaScript|API|UI|UX|Jira|Stripe|Notion|Figma|Linear|GitHub|Gmail|Dropbox|Slack|Spotify|Discord|Storybook|Tailwind|ARIA|WCAG|FAQ|HSL|CSS|HTML|DOM|DS|PR|CI|URL|JSON|SDK|OK|Netlify|Claude|Codex|npm|git)', re.I)
+EXT = re.compile(r'[\w.-]+\.(?:tsx?|jsx?|mjs|cjs|json|md|sh|css|ya?ml|py|txt|log|html|png)')
+HEX = re.compile(r'[0-9a-f]{7,40}')
+def counts(segment):
+    body = re.sub(r'`[^`\n]*`', ' ', segment)
+    kept = []
+    for token in body.split():
+        if '/' in token or '\\' in token or token.startswith(('http://', 'https://')):
+            continue
+        bare = token.strip('()[]{}<>,.;:!?"\'「」『』,。;:!?、')
+        if EXT.fullmatch(bare) or HEX.fullmatch(bare):
+            continue
+        kept.append(token)
+    plain = ' '.join(kept)
+    han = len(re.findall(r'[㐀-䶿一-鿿]', plain))
+    english = [w for w in re.findall(r'[A-Za-z][A-Za-z_-]+', plain) if not EXEMPT.fullmatch(w)]
+    return han, len(english)
+flagged = []
+for block in blocks:
+    body = re.sub(r'```.*?```', '\n\n', block, flags=re.S)
+    for segment in re.split(r'\n[ \t]*\n', body):
+        if not segment.strip() or re.search(r'@plain-chinese-skip:\s*[^\s>]', segment):
+            continue
+        han, english = counts(segment)
+        if english >= 6 and english * 2 > han:
+            flagged.append(' '.join(segment.split())[:60])
+print(json.dumps({'ok': True, 'count': len(flagged), 'flagged': flagged[:5]}, ensure_ascii=False))
+MID_PY_SOURCE
+if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  LAST_MSG=$(jq -r '.last_assistant_message // ""' <<<"$INPUT" 2>/dev/null)
+  MID_ANALYSIS=$(printf '%s' "$LAST_MSG" | python3 -c "$MID_PY" "$TRANSCRIPT_PATH" 2>/dev/null) || {
+    printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: mid-turn plain-chinese analysis failed\n' >&2
+    exit 70
+  }
+  if [ "$(jq -r '.ok' <<<"$MID_ANALYSIS" 2>/dev/null)" = "true" ] && [ "$(jq -r '.count' <<<"$MID_ANALYSIS" 2>/dev/null)" -gt 0 ]; then
+    {
+      echo "🚨 PLAIN-CHINESE BLOCKER(中途文字,feedback_propose_discipline Sub-rule 1):這一輪做事中途寫出來的文字有 $(jq -r '.count' <<<"$MID_ANALYSIS") 段以英文為主 —— 中途的字 user 一樣看得到:"
+      jq -r '.flagged[]' <<<"$MID_ANALYSIS" | sed 's/^/    • /'
+      echo "  中途只寫 user 需要知道的(發現的問題、要 user 決定的、做完的結果),一律繁體中文;沒有必要讓 user 知道的進度句就不要寫,不是翻成英文寫出來。"
+      echo "  user 原話(2026-11-15):「為何你他媽又一直回覆我英文？到底要我教你幾次？以及若是沒必要讓我知道的垃圾訊息，你評估真的是垃圾，那就不用讓我看到吧？而不是把垃圾訊息轉成我看不懂的英文然後全部吐出來吧？」"
+    } >&2
+    exit 2
+  fi
+fi
+
 # 極罕見的逃生口(例:user 明確要求一段英文原文):reply 內寫明理由
 grep -qE '@plain-chinese-skip:[[:space:]]*[^[:space:]>]' <<<"$AI_REPLY_TEXT" && exit 0
 

@@ -211,8 +211,9 @@ const covers = (member, file) => (member.endsWith('/') ? file.startsWith(member)
 export const CONTAINED_LOCAL = {
   'var(--avatar-stack-z)': 'D',
   'var(--avatar-stack-z-focus)': 'D',
-  'var(--tag-stack-z)': 'D',
-  'var(--tag-stack-z-focus)': 'D',
+  // OverflowTagList 的元件內變數(2026-11-15 前叫 --tag-stack-z / -focus,借了 Tag 的開頭;稽核 P20)
+  'var(--overflow-tag-stack-z)': 'D',
+  'var(--overflow-tag-stack-z-focus)': 'D',
   'ring.zIndex': '有界:components/DataTable/data-table-interaction-layer.tsx `CellRingStyle` 表只有 1 / 2(數字本身也登記在第 1 列)',
 }
 /** D 量的變數名(`var(--x)` → `--x`) */

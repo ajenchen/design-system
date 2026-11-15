@@ -2920,7 +2920,7 @@ function DataTableInner<TData>(
    * (b) 面板是捲動盒(即使 `overflow:hidden` 也是),絕對定位子元素屬於可捲內容 → 往下捲 150px
    *     軌道就跟著跑掉 150px。
    * 搬到外層之後兩個成因同時消失:外層不裁切,`bottom:0` 就是三個面板底緣(含 border);
-   * 外層不捲動,軌道就不會飄。位置用 `--dt-left-w` / `--dt-right-w`,跟邊界線同一組變數、
+   * 外層不捲動,軌道就不會飄。位置用 `--table-pinned-left-w` / `--table-pinned-right-w`,跟邊界線同一組變數、
    * 跟面板寬同一個 state,不可能對不齊。
    */
   const scrollbarTroughs = hScrollbarGutter > 0 ? (
@@ -2929,14 +2929,14 @@ function DataTableInner<TData>(
         <div
           aria-hidden
           className="pointer-events-none absolute bottom-0 left-0 overflow-x-scroll dtScrollbarTrough"
-          style={{ width: 'var(--dt-left-w)', height: hScrollbarGutter }}
+          style={{ width: 'var(--table-pinned-left-w)', height: hScrollbarGutter }}
         />
       )}
       {hasRight && (
         <div
           aria-hidden
           className="pointer-events-none absolute bottom-0 right-0 overflow-x-scroll dtScrollbarTrough"
-          style={{ width: 'var(--dt-right-w)', height: hScrollbarGutter }}
+          style={{ width: 'var(--table-pinned-right-w)', height: hScrollbarGutter }}
         />
       )}
     </>
@@ -3688,7 +3688,8 @@ function DataTableInner<TData>(
           // Slice D Step 2(2026-05-10):flag 開時 set CSS variable 抑制 Field naked hover outline,
           // 讓 overlay layer 接管 hover ring paint(per RFC Contract 8 「one geometry owner, two paint owners」)。
           // Backward-compat:flag 關時 unset → field-wrapper default `var(--border-hover)`(既有行為)。
-          ...(experimentalSpreadsheetOverlay && { '--cell-hover-outline-color': 'transparent' } as React.CSSProperties),
+          // 名字 2026-11-15 前叫 --cell-hover-outline-color(開頭對不到主人;data-table.spec.md「儲存格滑過外框色」,稽核 P16)
+          ...(experimentalSpreadsheetOverlay && { '--table-cell-hover-outline-color': 'transparent' } as React.CSSProperties),
         }}
         onClick={spreadsheetMode ? onSpreadsheetCellClick : onEditableCellClick}
         // a11y(2026-07-14 dim-10 修):非 spreadsheet 的 inlineEdit cell 原本只有 onClick —
@@ -5119,7 +5120,7 @@ function DataTableInner<TData>(
           面板底部那條等同水平捲軸高的透明 border 在 padding box 之外,線無論怎麼負向延伸都畫不出來
           (前一版用 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 是假宣稱:版面盒延伸了,像素沒有)。
           這一層不裁切也不捲動,高度就是三個面板的 border-box 高,線因此真的頂天立地。
-          位置由 `--dt-left-w` / `--dt-right-w` 給,跟面板寬同一個 state,不可能對不齊。 */}
+          位置由 `--table-pinned-left-w` / `--table-pinned-right-w` 給,跟面板寬同一個 state,不可能對不齊。 */}
       <div
         ref={bodyRef}
         className={cn(
@@ -5139,8 +5140,8 @@ function DataTableInner<TData>(
           hasRight && 'dtRightBoundary',
         )}
         style={{
-          ...(hasLeft ? { ['--dt-left-w' as string]: `${leftWidth}px` } : {}),
-          ...(hasRight ? { ['--dt-right-w' as string]: `${rightWidth}px` } : {}),
+          ...(hasLeft ? { ['--table-pinned-left-w' as string]: `${leftWidth}px` } : {}),
+          ...(hasRight ? { ['--table-pinned-right-w' as string]: `${rightWidth}px` } : {}),
         }}
       >
         {hasLeft && (

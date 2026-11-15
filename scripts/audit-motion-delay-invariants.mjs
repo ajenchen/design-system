@@ -2,7 +2,7 @@
 /**
  * Motion hover-delay invariants(2026-06-11,user verbatim「確保有SSOT且未來不會再偏移」)
  *
- * SSOT 鏈:tokens/motion/motion.spec.md(canonical)→ motion.css(CSS 值)→ motion.ts(JS mirror)
+ * SSOT 鏈:tokens/motion/motion.spec.md(canonical)→ motion.ts(值的唯一住處;2026-11-15 前 motion.css 另有一份 CSS 鏡像)
  * → consumer(tooltip / hover-card / avatar / overflow-indicator)。
  *
  * 歷史 drift(本 script 的存在理由):
@@ -11,7 +11,7 @@
  *
  * R1 production code 禁 numeric literal delay(必走 MOTION_DELAY_*_MS;escape: @motion-delay-allow)
  * R2 tier freeze:已 codify 的 consumer tier 凍結(改 tier = 必先改 motion.spec 對照表 + 本表,diff 可見)
- * R3 cross-home 同值:motion.ts(JS)與 motion.css(CSS)三值必一致
+ * R3 單一住處:motion.ts 三個常數都在;motion.css 不得再宣告 --motion-delay-*(2026-11-15 前是「JS 與 CSS 三值一致」)
  *
  * Exit 1 on violation(deterministic audit / protected CI gate)。
  */
@@ -55,20 +55,16 @@ for (const [rel, needles] of TIER_FREEZE) {
   }
 }
 
-// ── R3:JS mirror 與 CSS 同值 ──
+// ── R3:單一住處(2026-11-15 改;原本是「JS mirror 與 CSS 同值」)──
+// 三個值只住 motion.ts。motion.css 那份 --motion-delay-* 鏡像執行期沒有任何 CSS 讀者(Radix 只吃數字)、產品不讀,
+// 2026-11-15 退場(稽核 P09;orphan-tokens.spec.md 原 §8 同日撤掉)。這裡守兩件事:常數三個都在、CSS 沒有再長出第二份。
 const ts = readFileSync(join(DS, 'tokens/motion/motion.ts'), 'utf-8')
-const css = readFileSync(join(DS, 'tokens/motion/motion.css'), 'utf-8')
-const pairs = [
-  ['MOTION_DELAY_PLAIN_MS', '--motion-delay-plain'],
-  ['MOTION_DELAY_RICH_MS', '--motion-delay-rich'],
-  ['MOTION_DELAY_CLOSE_MS', '--motion-delay-close'],
-]
-for (const [jsName, cssName] of pairs) {
-  const jsVal = ts.match(new RegExp(`${jsName}\\s*=\\s*(\\d+)`))?.[1]
-  const cssVal = css.match(new RegExp(`${cssName.replace(/[-]/g, '\\-')}:\\s*(\\d+)ms`))?.[1]
-  if (!jsVal || !cssVal || jsVal !== cssVal) {
-    fails.push(`R3 ${jsName}(${jsVal})≠ ${cssName}(${cssVal})— JS mirror 與 CSS 必同值`)
-  }
+const css = readFileSync(join(DS, 'tokens/motion/motion.css'), 'utf-8').replace(/\/\*[\s\S]*?\*\//g, ' ')
+for (const jsName of ['MOTION_DELAY_PLAIN_MS', 'MOTION_DELAY_RICH_MS', 'MOTION_DELAY_CLOSE_MS']) {
+  if (!new RegExp(`export\\s+const\\s+${jsName}\\s*=\\s*\\d+`).test(ts)) fails.push(`R3 tokens/motion/motion.ts 讀不到 ${jsName}(值的唯一住處被改名或刪了)`)
+}
+for (const m of css.matchAll(/(--motion-delay-[\w-]*)\s*:/g)) {
+  fails.push(`R3 tokens/motion/motion.css 宣告了 ${m[1]} —— 延遲三檔只住 motion.ts,CSS 第二份沒有讀者、只會漂移(稽核 P09)`)
 }
 
 if (fails.length) {
@@ -77,4 +73,4 @@ if (fails.length) {
   console.error('\nSSOT:tokens/motion/motion.spec.md「適用對照表」;修法見各行指引。')
   process.exit(1)
 }
-console.log('✅ Motion hover-delay invariants:R1 無 literal / R2 tier freeze 4 consumer PASS / R3 JS-CSS 同值')
+console.log('✅ Motion hover-delay invariants:R1 無 literal / R2 tier freeze 4 consumer PASS / R3 單一住處(motion.ts,CSS 無鏡像)')

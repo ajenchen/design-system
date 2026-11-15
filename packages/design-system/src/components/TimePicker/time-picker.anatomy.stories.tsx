@@ -39,7 +39,7 @@ function LiveTimePicker({ value: initial, ...rest }: React.ComponentProps<typeof
 // 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
 // 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
 const Swatch = ({ value }: { value: string }) => (
-  <span className="inline-block w-3 h-3 rounded-sm border border-black/10 align-middle mr-1.5" style={{ backgroundColor: `var(${value})` }} />
+  <span className="inline-block w-3 h-3 rounded-md border border-black/10 align-middle mr-1.5" style={{ backgroundColor: `var(${value})` }} />
 )
 
 export const Overview: Story = {

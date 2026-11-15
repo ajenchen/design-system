@@ -245,6 +245,8 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 | 鍵盤焦點 | 某一項裡有東西拿到鍵盤焦點時,整項升到最上層 —— 全域外描邊往外畫,左半圈不被上一顆蓋住(`ds-canonical/references/focus-canonical.md` 判準表「疊層/徽章不算鄰居」→ 往外) |
 | 名片 | 重疊那 2px 屬於上面那顆(滑過開上面那顆的 ProfileCard);挖空不改變任何一顆的觸發範圍 |
 
+**重疊量 token `--avatar-stack-overlap`**(頭像的值,2px):第 2 顆起往左疊的量。讀者:`avatar.tsx` 遮罩幾何與項目位移(讀程式對照常數 `AVATAR_STACK_OVERLAP_PX`)、PeoplePicker 編輯態標籤 wrapper `-ml-[var(--avatar-stack-overlap)]`。抽 token 前 `-ml-0.5` 字面值散在兩處、常數另一份(2026-09-27,M17)。宣告住本資料夾 `avatar.css`(2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,user 2026-11-10 token「2甲」第三批;名字與值不變)。CSS 值與 `AVATAR_STACK_OVERLAP_PX` 由 `scripts/token-twin-invariant.mjs` 機械鎖住相等(只改一邊 CI 會紅)。值與用法 2026-11-15 前登記在 `../../tokens/uiSize/uiSize.spec.md`(共用資料夾),依 `../../tokens/token-system.spec.md` 規則 1「規格 = 主人資料夾裡的規格」搬來本段(稽核 P15)。挖空的縫 `--stack-gap` 是共用刻度,住 `uiSize.spec.md`「Stack Gap」。
+
 **為什麼挖空、不畫外圈**(2026-09-26 採用,紀錄見待辦總帳 L3 與「其餘建議」條):
 
 - 舊做法(2026-04-02 起)每顆加 2px 外圈、圈色寫死 `--surface`。外圈只擋得住「圈」的那一段,擋不住重疊處:上面那顆的半透明底色直接疊在下面那顆上,透出下面那顆(2026-09-26 AI 實測,重疊處與「把下面那顆藏起來」相比:淺色灰疊灰差 9–10、深色差 17(0–255 通道差);示範 story 的 `+N` 疊在受控單色照片上差 170–215)。

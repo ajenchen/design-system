@@ -206,7 +206,7 @@ Variant 控制**視覺強調等級**（visual weight），不決定語意意圖�
   - Ant 的對應是 `ghost`:底 `token.ghostBg`(透明)、字 `token.colorPrimary`;Ant 的 `default` 才是中性框中性字
     (`token.defaultColor` / `token.defaultBorderColor` / `token.defaultBg`,
     <https://github.com/ant-design/ant-design/blob/master/components/button/style/variant.ts>)—— 中性那組是本元件的 `tertiary`,不是 `secondary`。
-  - Bootstrap `button-outline-variant` 把 `--bs-btn-color` 與 `--bs-btn-border-color` 都設成同一顆主題色、底維持透明
+  - Bootstrap `button-outline-variant` 把 `--bs-btn-color` 與 `--bs-btn-border-color` 都設成同一個變體色(mixin 參數 `$color`)、底維持透明
     (<https://github.com/twbs/bootstrap/blob/main/scss/mixins/_buttons.scss>),是最直白的同款。
 
   **注意**:同一段 `tertiary` 那行原寫的「Polaris `tertiary`」對不上 —— Polaris 的 tertiary 沒有框也沒有底(`.variantTertiary` 不設 box-shadow,沿用 `.Button` 的 `--pc-button-box-shadow: transparent`、`--pc-button-bg: transparent`),本元件 tertiary 是中性框中性字;Polaris 有框的中性鈕是 `secondary`(`--p-shadow-button` + `--p-color-bg-fill`)。tertiary 那行應改成「Polaris `secondary`」或拿掉 Polaris([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152))。
@@ -319,14 +319,14 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 - 防止表單重複送出、避免使用者因延遲而重複點擊
 - `disabled` 本身**不代表**正在載入；若需傳達載入中，應同時設定 `loading`。**握著焦點的那一刻被停用 → 不轉原生 `disabled`**(2026-10-01;確認頁 F9 ②『按鈕忙碌 / 被停用時焦點留在原處』;user 2026-10-21 回「照你建議，但是這裡我看不懂你在講什麼，但你之前丟給我的deploy preview，我認為看起來沒有大礙」):改 `aria-disabled` + `data-disabled-focusable`、擋掉觸發、長相與原生停用相同,焦點留在原鈕,焦點離開後才回原生 disabled(Tab 序與今天相同)。規則、根因(HTML focus fixup)、七家出處與機制住 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」,本檔只放指標
-- disabled 時品牌 / 狀態色完全移除，統一回到 neutral——避免「可用但弱化」的視覺誤導
+- disabled 時互動色 / 狀態色完全移除，統一回到 neutral——避免「可用但弱化」的視覺誤導
 - danger 在 disabled 時同樣消失，呈現與非 danger 版本相同的外觀
 - `pressed` + disabled 並存:**disabled 視覺優先**——pressed 底色被 disabled token 取代(state > emphasis,同 M24 precedence;`aria-pressed` 語意仍保留)
 - 常見誤解:「disabled 時 badge 還能傳達待辦數」——badge 不應與 disabled / loading 並存(使用者無法互動,計數成誤導;規則同 loading 段)
 
 ### loading
 
-顯示 `CircularProgress`(indeterminate),設定 `aria-busy`,**可聚焦的停用**:`aria-disabled` + `data-disabled-focusable`、擋掉 click 與表單隱含送出、焦點留著、Tab 走得到(2026-10-01,確認頁 F9 ②,user 回覆同上「disabled」段;2026-10-01 前走原生 `disabled`,按下送出那一刻焦點被瀏覽器丟到 `<body>`,待辦總帳 N69)。長相與原生停用相同 —— 靜止、滑過、按住都是(灰底、禁止符號游標;`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,`button.tsx` 在這個狀態拿掉 `aria-disabled:` 開頭的那一整組 class),**不是**下方「狀態疊加」表 `aria-disabled` 列那套不透明度 + 滑過釘在品牌色的長相(2026-10-07 修:前一版滑過時仍套品牌色,閘 `scripts/escape-and-focus-contract-invariant.mjs` F-look)。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」。disabled + loading 並存時視覺同樣是 disabled neutral token 為底,spinner 照常渲染(`text-current` 繼承 disabled 文字色)。
+顯示 `CircularProgress`(indeterminate),設定 `aria-busy`,**可聚焦的停用**:`aria-disabled` + `data-disabled-focusable`、擋掉 click 與表單隱含送出、焦點留著、Tab 走得到(2026-10-01,確認頁 F9 ②,user 回覆同上「disabled」段;2026-10-01 前走原生 `disabled`,按下送出那一刻焦點被瀏覽器丟到 `<body>`,待辦總帳 N69)。長相與原生停用相同 —— 靜止、滑過、按住都是(灰底、禁止符號游標;`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,`button.tsx` 在這個狀態拿掉 `aria-disabled:` 開頭的那一整組 class),**不是**下方「狀態疊加」表 `aria-disabled` 列那套不透明度 + 滑過釘在原本填色的長相(2026-10-07 修:前一版滑過時仍套原本的填色,閘 `scripts/escape-and-focus-contract-invariant.mjs` F-look)。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」。disabled + loading 並存時視覺同樣是 disabled neutral token 為底,spinner 照常渲染(`text-current` 繼承 disabled 文字色)。
 
 **CircularProgress 永遠在左側(`startIcon` 位置)**,方向與行動發起一致:
 - 有 `startIcon` → icon 換成 CircularProgress(同位置替換)
@@ -405,9 +405,9 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 
 **實際應用**:`SurfaceHeader` 內建 CSS rule(SSOT 在 `overlay-surface.tsx` `CHROME_UNBOUNDED_SLOT`,此處僅引述不重述完整公式;`SurfaceFooter` 不套此 rule):
 ```css
-[&_[data-unbounded]]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]
+[&_[data-unbounded]]:my-[calc((var(--surface-chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]
 ```
-→ slot 高度由 `--chrome-slot-h` 參數化(default 衍生 `calc(var(--font-body-lg-size)*1.5)`=24;Popover-tier override = `COMPACT_HEADER_SLOT` 衍生 21;皆 title 字級改自動跟)
+→ slot 高度由 `--surface-chrome-slot-h` 參數化(default 衍生 `calc(var(--font-body-lg-size)*1.5)`=24;Popover-tier override = `COMPACT_HEADER_SLOT` 衍生 21;皆 title 字級改自動跟)
 → default(md): my=-2px / lg: my=-4px
 → 效果:Button native size 不變(sm 28/32,命中區亦同 —— 命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把原文的「touch target」正名為命中區),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
 

@@ -315,7 +315,10 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
       </div>
       {/* viewport-adaptive body(List-as-region idiom:PopoverBody !px-0 !py-0 撤 chrome padding,
           內層 py-2 給垂直呼吸、row 自帶 px-loose 水平 padding)。取代原 fixed ScrollArea max-h-72。
-          拖曳排序:固定零件、恆可用(鎖定欄除外;2026-11-15 前要傳 columnOrder + onColumnOrderChange 才有)。 */}
+          拖曳排序:固定零件、恆可用(鎖定欄除外;2026-11-15 前要傳 columnOrder + onColumnOrderChange 才有)。
+          --item-prefix-slot = 16px(item-anatomy 的跨元件設定點,分類表登記;稽核 P14):每一列的前綴是 16px 的拖曳把手
+          或鎖頭圖示(VisibilityRow),槽寬固定 16 讓兩種前綴的字起點同一條線。不呼叫 getUniformPrefixSlotStyle:
+          那支算的是「圖示與頭像混排」時的頭像槽(AVATAR_SIZE.inline 20 / 24 / 24),這裡沒有頭像。 */}
       <PopoverBody className="!px-0 !py-0">
         <div className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
           <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={drag.accessibility}>

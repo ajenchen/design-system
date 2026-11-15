@@ -626,7 +626,7 @@ function controlIdleSearchJoinsWrap() {
       if (!cell || !area || getComputedStyle(area).flexWrap !== 'wrap') continue
       if (cell.style.flex !== '1 1 auto') cell.style.flex = '1 1 auto'
       if (cell.style.marginLeft !== '0px') cell.style.marginLeft = '0px'
-      if (area.style.getPropertyValue('--combobox-tag-area-inline-size')) area.style.removeProperty('--combobox-tag-area-inline-size')
+      if (area.style.getPropertyValue('--tag-max-inline-size')) area.style.removeProperty('--tag-max-inline-size')
     }
   }
   new MutationObserver(fix).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['style'] })

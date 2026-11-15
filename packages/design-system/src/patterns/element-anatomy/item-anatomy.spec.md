@@ -742,7 +742,7 @@ List-as-region 用 `Command` 的 **`gutter="surface"`**(= 在 Command 根寫 `--
 
 **Sync invariant**:CSS var 必鏡像 JS const。SidebarProvider re-render → CSS var 更新 → consumer formula 自動 cascade。
 
-**uniformPrefix mixing override**:當 `:has([data-prefix-type=icon]):has([data-prefix-type=avatar])` 觸發,`--item-icon-size` 被 cascade override 成 `var(--mixed-prefix-slot)`(24),因 ItemPrefix wrapper 被撐到 slot 寬,effective prefix width = slot 非 icon glyph。用 Tailwind `!` important 修飾子蓋過 inline style specificity。
+**uniformPrefix mixing override**:當 `:has([data-prefix-type=icon]):has([data-prefix-type=avatar])` 觸發,`--item-icon-size` 被 cascade override 成 `var(--item-mixed-prefix-slot)`(24),因 ItemPrefix wrapper 被撐到 slot 寬,effective prefix width = slot 非 icon glyph。用 Tailwind `!` important 修飾子蓋過 inline style specificity。
 
 ### asChild pattern 的責任——用 helper 元件免除全部負擔
 
@@ -821,9 +821,10 @@ Label x 位置受 prefix 尺寸影響(icon 16 vs avatar 24,差 8px)。**對齊�
 
 - `<ItemIcon>` 渲染的 `<ItemPrefix>` 自動帶 `data-prefix-type="icon"`
 - `<ItemAvatar>` 渲染的 `<ItemPrefix>` 自動帶 `data-prefix-type="avatar"`
-- Row-primitive 頂層容器(`SidebarProvider` 的 wrapper div)**只在 `uniformPrefix={true}`(opt-in,預設 `false`)時**於 inline style 注入 `--mixed-prefix-slot` 候選值(= `AVATAR_SIZE.inline[size]`,20/24/24 @ sm/md/lg;`sidebar.tsx` wrapperStyle 三元式,不 opt-in 完全不注入)
-- 同一個 wrapper 用 Tailwind variant `has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--mixed-prefix-slot)]` 條件化把候選值賦給 `--item-prefix-slot`
+- Row-primitive 頂層容器(`SidebarProvider` 的 wrapper div)**只在 `uniformPrefix={true}`(opt-in,預設 `false`)時**於 inline style 注入 `--item-mixed-prefix-slot` 候選值(= `AVATAR_SIZE.inline[size]`,20/24/24 @ sm/md/lg;`sidebar.tsx` wrapperStyle 三元式,不 opt-in 完全不注入)
+- 同一個 wrapper 用 Tailwind variant `has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--item-mixed-prefix-slot)]` 條件化把候選值賦給 `--item-prefix-slot`
 - `<ItemPrefix>` 讀取 `--item-prefix-slot`(預設 `auto`,有值則套槽 + center),自動套用
+- **`--item-prefix-slot` 是跨元件的設定點**,登記在分類表 `../../tokens/token-registry.json`(本 pattern 的值,產品不直接寫名字,要設定就呼叫公開 helper `getUniformPrefixSlotStyle`)。寫它的有三處:公開 helper(頭像槽 20 / 24 / 24)、SidebarProvider 混排時的 `:has()`、`../../components/DataTable/data-table-column-visibility-panel.tsx`(固定 16px = 拖曳把手 / 鎖頭的寬)。2026-11-15 前沒登記:每個讀寫的資料夾自己也有宣告,token 閘看不到跨資料夾傳值(稽核 P14,閘 C1 同日補上)。候選值變數 `--item-mixed-prefix-slot` 是本規格的合約變數、只有注入它的那一層讀,不登記;2026-11-15 前叫 `--mixed-prefix-slot`,改成本 pattern 的開頭(`../../tokens/token-system.spec.md`「命名」,稽核 P20)。
 
 **單一類型時**:沒有任何一個後代有 `data-prefix-type=avatar`(或反過來),`:has()` 不命中,`--item-prefix-slot` 維持 `auto`,prefix 縮到自然寬度。**完全沒有 ghost spacing**。
 
@@ -838,8 +839,8 @@ Label x 位置受 prefix 尺寸影響(icon 16 vs avatar 24,差 8px)。**對齊�
 ```tsx
 const slotStyle = getUniformPrefixSlotStyle(size)
 <div
-  style={{ "--mixed-prefix-slot": slotStyle["--item-prefix-slot"], ...style }}
-  className="has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--mixed-prefix-slot)]"
+  style={{ "--item-mixed-prefix-slot": slotStyle["--item-prefix-slot"], ...style }}
+  className="has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--item-mixed-prefix-slot)]"
 >
   {children}
 </div>

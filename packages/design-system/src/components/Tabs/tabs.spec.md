@@ -129,7 +129,7 @@ Tabs trigger = **item-layout 橫向變體 + Button 高度系統**。對標 item-
 
 ## Size
 
-Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-density` 自動縮放。這三顆是 Tabs 自己的值,宣告住 `components/Tabs/tabs.css`(預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變);Tailwind 寫法 `h-tab-sm` / `h-tab-md` / `h-tab-lg`(轉接名同檔)。產品不讀不覆寫(分類表 `tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
+Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-density` 自動縮放。這三顆是 Tabs 自己的值,宣告住 `components/Tabs/tabs.css`(sm / md:預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變。lg:同檔「衍生值」段一行 `var(--chrome-header-height)`,2026-11-15 起,值不變 —— 見下方「Token alignment」)。元件程式直接讀 `var(--tab-height-*)`;沒有 Tailwind 轉接名(`h-tab-*` 2026-11-15 刪除:分頁高產品不讀,轉接名卻會隨對外彙總檔發給產品 —— 刪掉是收回不該開的口;規則住 `tokens/token-system.spec.md`「擺放」)。產品不讀不覆寫(分類表 `tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
 
 | Size | md density | lg density | 字體 | 何時用 | 世界級對照 |
 |------|-----------|-----------|------|--------|-----------|
@@ -137,7 +137,7 @@ Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-densi
 | `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留相容階梯，不作新用例預設 |
 | `lg` | 48 | 56 | `text-body-lg` (16) | **獨立 tabs 直接取代 chrome header 用**(tab 高度 = `--chrome-header-height` 像素相等,48/56)— page-level workspace 主導覽 | Ant verbatim:「**Large size tabs are usually used in page header**」(`ant.design/components/tabs`)|
 
-**Token alignment + size 階梯 rationale SSOT**:`--tab-height-lg` (48/56) = `--chrome-header-height` (48/56) 像素相等 + md future tier + sm default 遷移 — **完整 cross-family canonical 詳** `patterns/header-canonical/header-canonical.spec.md` W3/W5/W6(per Rule-of-3 SSOT 集中此處,本元件 spec.md 不重複論述,只列上表 size table)。
+**Token alignment + size 階梯 rationale SSOT**:`--tab-height-lg` (48/56) = `--chrome-header-height` (48/56) 像素相等(2026-11-15 起直接寫成 `var(--chrome-header-height)`,一個住處)+ md future tier + sm default 遷移 — **完整 cross-family canonical 詳** `patterns/header-canonical/header-canonical.spec.md` W3/W5/W6(per Rule-of-3 SSOT 集中此處,本元件 spec.md 不重複論述,只列上表 size table)。
 
 ### 為什麼 Tabs 不複用 `--field-height-*`
 

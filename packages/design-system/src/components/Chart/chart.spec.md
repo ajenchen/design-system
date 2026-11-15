@@ -103,7 +103,7 @@ const config = {
 | `--chart-4` | `yellow-7` | `yellow-6` | 第四類別（yellow-7 在 light mode 提升對 white bg 的對比） |
 | `--chart-5` | `deep-orange-6` | `deep-orange-6` | 第五類別 |
 
-**為什麼固定到 primitive 而非 semantic token**：避免未來 brand swap（primary 改色）時 chart-1 跟著漂移——data viz 的色彩意義是「類別」,不應被品牌色變動污染。
+**為什麼固定到 primitive 而非 semantic token**：避免未來互動色換色（`--primary` 改色）時 chart-1 跟著漂移——data viz 的色彩意義是「類別」,不應被互動色變動污染。
 
 **超過 5 類別時**：不應再加 `--chart-6+`,改用 grouping（「其他」分類）或切換 visualization（pie → bar / stacked）。5 色是人類短期記憶上限，超過即難區分。
 
@@ -157,6 +157,7 @@ const config = {
 - **Loading(資料抓取中)**:本 wrapper 無內建 loading state——與空資料同模式,由 consumer 外層處理
 - **Tooltip / Legend 無 payload**:不渲染(return null),不留空殼
 - **ChartConfig 項目缺 `color` / `theme`**:不注入該 key 的 `--color-{key}` variable(`ChartStyle` 過濾)
+- **系列名跟原料色同名**(2026-11-15):`--color-{key}` 這個寫法照 shadcn 的慣例保留(產品寫 `var(--color-desktop)`,改名會破壞相容),但原料色的名字也是 `--color-*`。真的會出事的只有兩種(稽核 P19 反查):(1)系列名剛好是原料色名(例 `blue-6`、`neutral-4`),而圖表裡又有直接讀原料色的東西(分類色的標籤 / 頭像 / 月曆事件);(2)系列名取 `white` / `black`,而圖表裡又有帶 `data-theme` 的子元素 —— 語意色在那裡重算時會讀到被換掉的值。語意色與 `bg-*` / `text-*` 這類 class 不受影響(產出的 CSS 讀的是 `var(--success)` 這種語意名,`--color-*` 轉接名執行期不存在)。`ChartContainer` 在開發期對這兩種系列名印警告(`console.warn`,只在非 production;不改任何行為),請換一個系列名。【AI 推導 2026-11-15:稽核把「保留慣例 + 擋同名」與「改成 --chart-series-<key>」列為待決,user 沒有回覆這一題;選了不破壞相容、畫面不變的保留慣例,而且只警告不報錯】
 - **單一資料點 / 大資料量**:由 Recharts engine 處理,本 wrapper 無額外行為;大資料量的取樣 / 聚合屬 consumer 職責。**RTL 不支援**，全域 owner 見 `packages/design-system/README.md#compatibility-matrix`。
 
 ---

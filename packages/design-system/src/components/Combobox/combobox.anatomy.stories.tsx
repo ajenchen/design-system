@@ -549,7 +549,7 @@ export const ColorMatrix = {
           {/* Tag colors in disabled mode */}
           <div className="flex flex-col gap-3">
             <span className="text-caption font-medium text-fg-secondary">disabled 模式的 Tag 色彩</span>
-            <Desc>disabled 時 Tag 使用 bg-disabled (neutral-2) + text-fg-disabled (neutral-6)，品牌色完全移除。</Desc>
+            <Desc>disabled 時 Tag 使用 bg-disabled (neutral-2) + text-fg-disabled (neutral-6)，原本的顏色完全移除。</Desc>
             <div className="flex items-center gap-4">
               <div className="flex flex-col gap-1 items-start">
                 <span className="text-[11px] text-fg-secondary">正常 Tag</span>

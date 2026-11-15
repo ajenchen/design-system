@@ -8,7 +8,10 @@
     "spec:現在說明它的那份規格。product:no 不可讀 / read 可讀來對齊不可覆寫 / read-write 可讀也可覆寫。dsReaders:設計系統裡誰可以讀(\"any\" 或資料夾)。",
     "known:只能變短的已知名單。missingSpec = 在登記的規格裡完全找不到(萬用寫法涵蓋也算找得到);missingRestore = 有大密度覆寫卻沒有回復;",
     "dsRawColorReads = 設計系統元件直接讀原料、不在 dsReaders;productReads / productWrites = 本 repo apps/ 讀了不開放的名字 / 覆寫了不開放覆寫的名字;",
-    "productExternal = 設計系統 CI 看不到的產品 repo,只登記不機器檢查。"
+    "productExternal = 設計系統 CI 看不到的產品 repo,只登記不機器檢查(閘 C9 丙把這裡的名字算成有人讀);",
+    "unread = 閘 C9(丙)2026-11-15 補上時就已存在、沒有任何執行期讀者的共用刻度(設計系統、apps/、WM 都沒有;只在 stories 或完全沒人用)—— 去留待決,只能變短。",
+    "retain(列的欄位):設計系統自己不讀、仍要保留的名字寫保留類別的鍵(例:--brand = reservation);閘 C9(丙)不把它當沒人讀。retention:保留類別的唯一機器清單 —— key 對到 orphan-tokens.spec.md 每類標題裡的反引號字(閘 C1 兩邊比),pattern 是按名字歸類的規則(null = 成員由列的 retain 指名);scripts/audit-orphan-tokens.mjs 直接讀這裡,不另存一份。類別的理由只住 orphan-tokens.spec.md。",
+    "retired:產品可讀(product 不是 no)的名字與它的 Tailwind 轉接名退場的登記 —— 每筆 name / quote(user 原話,逐字)/ quoteDate / deprecatedIn(標 deprecated、名字仍在的版本)/ removedIn(刪掉的版本,不同於 deprecatedIn)。閘 C10 對照基準(與 main 的分岔點、HEAD):產品可讀的名字在工作樹不再宣告、又不在這裡 → 紅。流程住 orphan-tokens.spec.md「退場流程」(2026-11-15)。"
   ],
   "rows": [
     {
@@ -91,7 +94,8 @@
       "spec": "tokens/color/color.spec.md",
       "product": "read",
       "dsReaders": "any",
-      "why": "語意色:用途名字包著原料色、隨明暗主題切換;拿掉任何一個元件都還有意義 → 共用刻度。產品可讀(現況,token-mapping 不動組)"
+      "retain": "reservation",
+      "why": "品牌識別色:固定 #DF3232,亮 / 暗兩主題相同、不隨主題切換(color.spec.md「Identity — 品牌」;跟互動色 --primary 是兩顆,用詞見同檔「用詞」)。設計系統自己不讀,預留給產品層消費 —— 保留理由只住 orphan-tokens.spec.md「產品層預留」類(retain = reservation)。產品可讀(現況,token-mapping 不動組)"
     },
     {
       "match": "--canvas",
@@ -696,7 +700,7 @@
       "spec": "tokens/motion/motion.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "動畫時長、緩動、延遲刻度,共用刻度。產品不讀:現行規定整個 motion/ 不開放(舊 README Consumer scope 表),產品 0 處讀取,維持"
+      "why": "動畫時長、緩動刻度,共用刻度。產品不讀:現行規定整個 motion/ 不開放(舊 README Consumer scope 表),產品 0 處讀取,維持。2026-11-15 這一組退場 7 顆沒有讀者的名字(延遲三檔 → motion.ts 常數;滑入距離 / 縮放 → 各浮層幾何 class;swell / settle / shimmer → AgentPanel 自己的值;稽核 P07–P10),現行 5 顆都有 CSS 讀者"
     },
     {
       "match": "--layout-space-",
@@ -854,15 +858,15 @@
       "why": "儲存格上下內距(依表格尺寸切換):表格的值(輸入框、多行輸入讀它來在儲存格裡對齊)。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
     },
     {
-      "match": "--cell-hover-outline-color",
+      "match": "--table-cell-hover-outline-color",
       "class": "component",
       "owner": "DataTable",
       "home": "components/DataTable/data-table.tsx",
       "target": "components/DataTable/data-table.tsx",
-      "spec": "components/Field/field.spec.md",
+      "spec": "components/DataTable/data-table.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "儲存格滑過外框色,表格在執行期設定、輸入框讀它。說明現在住輸入框規格(field.spec.md)。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
+      "why": "儲存格滑過外框色,表格在執行期設定(試算表覆蓋層開著時設 transparent)、輸入框讀它(沒設 = --border-hover)。2026-11-15 前叫 --cell-hover-outline-color、說明住 field.spec.md:開頭對不到主人、規格不在主人那裡 → 改名、說明搬到 data-table.spec.md「儲存格滑過外框色」,值與行為不變(稽核 P16)。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
     },
     {
       "match": "--tab-height-",
@@ -873,7 +877,7 @@
       "spec": "components/Tabs/tabs.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "分頁高,隨密度切換:拿掉分頁就沒有意義 → 分頁的值。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第一批(試搬)2026-11-11 已搬到 components/Tabs/tabs.css,名字與值不變"
+      "why": "分頁高,隨密度切換:拿掉分頁就沒有意義 → 分頁的值。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第一批(試搬)2026-11-11 已搬到 components/Tabs/tabs.css,名字與值不變。2026-11-15:lg 改寫成同檔衍生值段的 var(--chrome-header-height)(依定義等於外框標頭高,兩份字面值改一份;值逐格不變,稽核 P04);h-tab-* 轉接名刪除:分頁高產品不讀,轉接名卻會隨對外彙總檔發給產品(收回不該開的口,稽核 P05)"
     },
     {
       "match": "--tag-height-",
@@ -892,10 +896,10 @@
       "owner": "Avatar",
       "home": "components/Avatar/avatar.css",
       "target": "components/Avatar/avatar.css",
-      "spec": "tokens/uiSize/uiSize.spec.md",
+      "spec": "components/Avatar/avatar.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "頭像堆疊往左疊的量:選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量 → 頭像的值(設計理由只住 avatar.spec.md)。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。產品覆寫一處見 known.productExternal(user 2026-11-10 token 第 6 題甲,但「先不要動wm」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第三批 2026-11-11 已搬到 components/Avatar/avatar.css,名字與值不變。spec 仍指 uiSize.spec.md 那張表(值與用法登記在那裡;avatar.spec.md 只寫設計理由、沒寫這顆 token 的名字)"
+      "why": "頭像堆疊往左疊的量:選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量 → 頭像的值。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名。產品覆寫一處見 known.productExternal(user 2026-11-10 token 第 6 題甲,但「先不要動wm」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第三批 2026-11-11 已搬到 components/Avatar/avatar.css,名字與值不變。值與用法 2026-11-15 從 uiSize.spec.md 搬到 avatar.spec.md「頭像堆疊(疊在一起時)」段,spec 改指它(規則 1;稽核 P15)"
     },
     {
       "match": "--chrome-header-avatar-size",
@@ -909,18 +913,29 @@
       "why": "標頭裡頭像的尺寸,標頭樣式自己的值(側欄讀它對齊收合時的 logo)。跟共用刻度 --chrome-header-height 開頭相同、主人不同,各寫完整名字一列。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
     },
     {
-      "match": "--combobox-tag-area-inline-size",
+      "match": "--tag-max-inline-size",
       "class": "component",
-      "owner": "Combobox",
+      "owner": "Tag",
       "home": [
         "components/Combobox/combobox.tsx",
         "components/OverflowIndicator/overflow-tag-list.tsx"
       ],
-      "target": "components/Combobox/combobox.tsx",
-      "spec": "components/Combobox/combobox.spec.md",
+      "target": null,
+      "spec": "components/Tag/tag.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "下拉多選的標籤區寬度,執行期由程式設定、標籤讀它決定截斷寬。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
+      "why": "Tag 的寬度上限:Tag 讀它(沒設 = 160px 或 unbounded 時 100%),裝 Tag 的那一列在執行期寫(標籤列量出的可用寬、Combobox 換行搜尋時 100%)—— home 是兩個寫入端(執行期才有值,沒有預設宣告)。拿掉 Tag 就沒有意義 → Tag 的值。2026-11-15 前叫 --combobox-tag-area-inline-size、主人登記 Combobox、規格完全沒寫(known.missingSpec)→ 改名、主人改 Tag、說明補進 tag.spec.md「尺寸」,值與行為不變(稽核 P17;【AI 推導 2026-11-15】主人選 Tag 而非標籤列,理由見 tag.spec.md)。user 2026-11-10 拍板 token 第 4 題甲:元件的值產品不讀不覆寫,除非主人規格點名"
+    },
+    {
+      "match": "--item-prefix-slot",
+      "class": "component",
+      "owner": "element-anatomy",
+      "home": "patterns/element-anatomy/item-anatomy.tsx",
+      "target": "patterns/element-anatomy/item-anatomy.tsx",
+      "spec": "patterns/element-anatomy/item-anatomy.spec.md",
+      "product": "no",
+      "dsReaders": "any",
+      "why": "清單列前綴槽寬(ItemPrefix 讀,沒設 = auto):跨元件的設定點 —— item-anatomy 的公開 helper getUniformPrefixSlotStyle 寫(頭像槽 20 / 24 / 24)、Sidebar 混排圖示與頭像時用 :has() 寫、DataTable 欄位顯示面板寫 16px(拖曳把手 / 鎖頭的寬)。拿掉 item-anatomy 就沒有意義 → item-anatomy 的值。2026-11-15 前沒有登記:每個讀寫的資料夾自己也有宣告,閘 C1 看不到跨資料夾傳值(稽核 P14 / P23 第 4 個盲點,C1 同日補上)。產品不直接寫名字,要設定就呼叫公開 helper(user 2026-11-10 token 第 4 題選甲;甲案的意思轉述為「產品要設定元件的值走元件參數、不覆寫 token」—— 這是 AI 寫在選項文件裡的寫法,不是 user 原話,見 token-system.spec.md「誰可以讀」第一條;【AI 推導 2026-11-15】product 填 no、把 helper 當參數)"
     },
     {
       "match": "--tw-",
@@ -950,7 +965,6 @@
       "--black-a65",
       "--color-black",
       "--color-white",
-      "--combobox-tag-area-inline-size",
       "--font-body-lg-size",
       "--font-body-size",
       "--font-caption-size",
@@ -975,6 +989,7 @@
       "--white-a85"
     ],
     "missingRestore": [],
+    "unread": [],
     "dsRawColorReads": [
       "components/AgentPanel/agent-panel.css|--color-neutral-6",
       "styles/base.css|--color-neutral-5"
@@ -1005,5 +1020,22 @@
         "decision": "原料不給產品讀(token 第 1 題甲);改用語意色要動 WM,「先不要動wm」→ 待 user 要求時改"
       }
     ]
-  }
+  },
+  "retention": {
+    "spec": "tokens/orphan-tokens.spec.md",
+    "categories": [
+      { "key": "palette", "pattern": "^--color-(amber|blue|red|green|deep-orange|indigo|lime|orange|purple|yellow)-\\d+$" },
+      { "key": "specialty-palette", "pattern": "^--color-(magenta|turquoise)-\\d+$" },
+      { "key": "mask-alpha", "pattern": "^--(black|white)-a\\d+$" },
+      { "key": "chart", "pattern": "^--color-chart-\\d+$" },
+      { "key": "state-variants", "pattern": "^--(amber|blue|red|green|deep-orange|indigo|lime|orange|purple|yellow|magenta|turquoise)-(hover|active|focus|subtle|emphasis|disabled|text)$" },
+      { "key": "neutral-palette", "pattern": "^--color-neutral-\\d+(-opaque)?$" },
+      { "key": "sop-semantic", "pattern": "^--(primary|error|success|warning|info)-(active|hover|text|subtle|emphasis|foreground|focus)$" },
+      { "key": "reservation", "pattern": null },
+      { "key": "tailwind-bridge", "pattern": "^--color-(status-(online|busy|away|offline)|inverse-neutral-(hover|active))$" },
+      { "key": "type-scale", "pattern": "^--font-h[1-6]-size$" },
+      { "key": "elevation-dark-pair", "pattern": "^--elevation-\\d+-hover$" }
+    ]
+  },
+  "retired": []
 }

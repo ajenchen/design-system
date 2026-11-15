@@ -13,13 +13,9 @@
 //   5. JS literal mirror(token name 在 .tsx 內以 string literal 出現,e.g. getComputedStyle 讀)
 //
 // Structural-keep categories(per user directive 永久保留,不視為 retire 候選):
-//   - Palette tier 完整 1-10 色階(amber/blue/...etc.)— Material-style 完整色階
-//   - Magenta / Turquoise palette(專用色,Tag/Avatar variant 消費)
-//   - Mask alpha(black-aN / white-aN)— overlay / scrim 用
-//   - Chart reserved(chart-1..5)— DataViz 預留
-//   - State variants 完整集(hue-hover/active/focus)— 8-tier emphasis 預留
-//   - Neutral palette + neutral-N-opaque tier — opacity composition 預留
-//   - SOP 5-piece semantic 完整集(primary-text / error-text / 等)— consistency invariant
+//   2026-11-15 起類別清單只住分類表 token-registry.json 的 `retention`(本檔讀它,不再內建);
+//   每一類的理由住 tokens/orphan-tokens.spec.md(色階完整 / 專用色 / 遮罩透明度 / 圖表預留 / 狀態變體 /
+//   中性色 / 語意五件套 / 產品層預留 / Tailwind 轉接名 / 字級完整 / 陰影深色配對)。
 //
 // Output: 純結構性 token + 真 retire 候選(comprehensive scan 後若仍 0 consumer)。
 //
@@ -115,24 +111,43 @@ for (const decl of declared.keys()) {
 // 3. Classify orphans
 const orphans = [...declared.keys()].filter(d => !consumed.has(d)).sort()
 
-// Structural-keep classifier
-const cat = { palette: [], magentaTurquoise: [], maskAlpha: [], chartReserved: [], stateReserved: [], neutralPalette: [], sopSemantic: [], jsLiteralMirror: [], real: [] }
-const PALETTE_HUES = '(amber|blue|red|green|deep-orange|indigo|lime|orange|purple|yellow)' // 10 真色相(magenta|turquoise 歸下方專用 rule);2026-07-16 修:原模板列 brown|grey|pink|teal|cyan 5 幽靈色相(不存在,曾害 Coachmark 用 cyan-6 silent 壞)
-const PALETTE_FULL = new RegExp(`^--color-${PALETTE_HUES}-\\d+$`)
-const PALETTE_STATE = new RegExp(`^--${PALETTE_HUES.replace(')', '|magenta|turquoise)')}-(hover|active|focus|subtle|emphasis|disabled|text)$`)
-const SOP_SEMANTIC = /^--(primary|error|success|warning|info)-(active|hover|text|subtle|emphasis|foreground|focus)$/
-const SOP_MOTION_DELAY = /^--motion-delay-(plain|rich|close)$/
-
+// Structural-keep classifier —— 2026-11-15 起讀分類表,不內建第二份
+// 保留類別的唯一機器清單 = packages/design-system/src/tokens/token-registry.json 的 `retention.categories`
+// (key + 按名字歸類的 pattern;pattern 為 null 的類別由分類表那一列的 `retain` 指名,例:--brand = reservation);
+// 每一類的理由只住 tokens/orphan-tokens.spec.md(標題裡的反引號字 = key,閘 token-creation-invariant C1 比對兩邊)。
+// 歸類順序 = categories 陣列順序(第一個吻合的類別勝)。
+// 2026-11-15 拿掉 jsLiteralMirror 一類(原 `--motion-delay-*` CSS 鏡像):那三顆退場、值只住 tokens/motion/motion.ts,
+// orphan-tokens.spec.md §8 同日撤掉(與 token-system.spec.md 第 0 題「禁止『之後可能有人用』就先開」矛盾;稽核 P09)。
+// 收編原 ds-canonical/references/structural-token-retention.md 的同日,保留分類從本檔的 7 條 regex 搬進分類表(M17:同一份規則只住一處)。
+const REGISTRY_PATH = path.join(ROOT, 'packages/design-system/src/tokens/token-registry.json')
+let registry
+try {
+  registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'))
+} catch (e) {
+  console.error(`❌ INSTRUMENT-FAIL 讀不到分類表 ${path.relative(ROOT, REGISTRY_PATH)}:${String(e.message).split('\n')[0]}`)
+  process.exit(1)
+}
+const CATEGORIES = Array.isArray(registry?.retention?.categories) ? registry.retention.categories : null
+if (!CATEGORIES || !CATEGORIES.length || CATEGORIES.some((c) => typeof c?.key !== 'string' || !(c.pattern === null || typeof c.pattern === 'string'))) {
+  console.error('❌ INSTRUMENT-FAIL 分類表沒有合法的 retention.categories(每一類要有 key,pattern 是字串或 null)—— 保留分類讀不到就不能判誰是真孤兒')
+  process.exit(1)
+}
+const rules = CATEGORIES.map((c) => ({ key: c.key, re: c.pattern ? new RegExp(c.pattern) : null }))
+const isPrefixRow = (r) => r.match.endsWith('-') || r.match.endsWith('_')
+/** 分類表最長吻合那一列的 retain(token-creation-invariant 的 lookup 同一個判準) */
+function retainOf(name) {
+  let best = null
+  for (const r of registry.rows ?? []) {
+    if (typeof r?.match !== 'string') continue
+    if (!(isPrefixRow(r) ? name.startsWith(r.match) : name === r.match)) continue
+    if (!best || r.match.length > best.match.length) best = r
+  }
+  return best?.retain ?? null
+}
+const cat = Object.fromEntries([...rules.map((r) => [r.key, []]), ['real', []]])
 for (const o of orphans) {
-  if (PALETTE_FULL.test(o)) cat.palette.push(o)
-  else if (/^--color-(magenta|turquoise)-\d+$/.test(o)) cat.magentaTurquoise.push(o)
-  else if (/^--(black|white)-a\d+$/.test(o)) cat.maskAlpha.push(o)
-  else if (/^--color-chart-\d+$/.test(o)) cat.chartReserved.push(o)
-  else if (PALETTE_STATE.test(o)) cat.stateReserved.push(o)
-  else if (/^--color-neutral-\d+(-opaque)?$/.test(o)) cat.neutralPalette.push(o)
-  else if (SOP_SEMANTIC.test(o)) cat.sopSemantic.push(o)
-  else if (SOP_MOTION_DELAY.test(o)) cat.jsLiteralMirror.push(o)
-  else cat.real.push(o)
+  const hit = rules.find((r) => (r.re ? r.re.test(o) : false) || retainOf(o) === r.key)
+  cat[hit ? hit.key : 'real'].push(o)
 }
 
 // 3.5 Structural-keep baseline(讓 gate 有意義 — 詳 file header「Gate 邏輯」段)
@@ -188,17 +203,10 @@ console.log(`Declared:               ${declared.size}`)
 console.log(`Consumed(comprehensive):${consumed.size}`)
 console.log(`Orphans(grep-detect):   ${orphans.length}`)
 console.log('')
-console.log('━━━ Structural-keep classification(永久保留)━━━')
-console.log(`  Palette tier 完整 1-10 色階:           ${cat.palette.length}`)
-console.log(`  Magenta/Turquoise palette:              ${cat.magentaTurquoise.length}`)
-console.log(`  Mask alpha(black-aN / white-aN):       ${cat.maskAlpha.length}`)
-console.log(`  Chart reserved(chart-1..5):            ${cat.chartReserved.length}`)
-console.log(`  State variants(hue-hover/active):      ${cat.stateReserved.length}`)
-console.log(`  Neutral palette(neutral-N / opaque):   ${cat.neutralPalette.length}`)
-console.log(`  SOP 5-piece semantic 完整集:            ${cat.sopSemantic.length}`)
-console.log(`  JS literal mirror(hover-delay-N):      ${cat.jsLiteralMirror.length}`)
-const structuralTotal = cat.palette.length + cat.magentaTurquoise.length + cat.maskAlpha.length + cat.chartReserved.length + cat.stateReserved.length + cat.neutralPalette.length + cat.sopSemantic.length + cat.jsLiteralMirror.length
-console.log(`  小計:                                   ${structuralTotal}`)
+console.log('━━━ Structural-keep classification(永久保留;類別讀自分類表 retention,理由住 orphan-tokens.spec.md)━━━')
+for (const r of rules) console.log(`  ${r.key.padEnd(22)}${cat[r.key].length}`)
+const structuralTotal = rules.reduce((n, r) => n + cat[r.key].length, 0)
+console.log(`  小計:                 ${structuralTotal}`)
 console.log('')
 console.log(`━━━ 真 retire 候選:${cat.real.length}個 ━━━`)
 if (cat.real.length === 0) {

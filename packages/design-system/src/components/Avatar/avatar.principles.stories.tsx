@@ -65,7 +65,7 @@ export const UsageGuidance: Story = {
           title="❌ src 壞掉又沒 name → 空 avatar(不可辨識)"
           note="Avatar 的核心是識別身份,沒 name 又沒 src 等於失去意義。必須至少有 name"
         >
-          {/* @story-counter-example: 反例本身 —— 沒有名字的頭像(avatar.spec.md:309「alt 必傳 canonical」),沒有人可以接名片 */}
+          {/* @story-counter-example: 反例本身 —— 沒有名字的頭像(avatar.spec.md:311「alt 必傳 canonical」),沒有人可以接名片 */}
           <Avatar alt="" size={40} src="https://invalid-url.example/fail.jpg" />
           <ExampleCaption warn>↑ 空 avatar → 使用者不知道是誰</ExampleCaption>
         </TutorialRule>

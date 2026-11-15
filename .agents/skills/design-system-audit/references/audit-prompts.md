@@ -188,7 +188,7 @@ End: `N .tsx files checked, M violations.` Under 400 words. Don't fix.
 
 **Type**: Absolute
 **Canonical source**: `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」 → 禁止清單 (hex / rgb / shadow-md/sm / raw px 等)
-**Rationale home**: N/A — tokens bypass breaks dark mode / density / brand-swap
+**Rationale home**: N/A — tokens bypass breaks dark mode / density / 互動色換色
 
 ```
 Your job: grep packages/design-system/src/components/*.tsx for hardcoded color values, pixel values, or magic numbers that should use tokens.

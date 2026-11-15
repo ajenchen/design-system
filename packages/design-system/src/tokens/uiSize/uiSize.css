@@ -127,9 +127,8 @@
      像素相等恆等式(md-lock subtree 必須與 root md 逐 token 相等)。值 = :root md default。 */
   --chrome-header-height: 3rem; /* 48px — md default */
 
-  --tree-indent-sm: 1.5rem;     /* 24px — md default */
-  --tree-indent-md: 1.5rem;     /* 24px — md default */
-  --tree-indent-lg: 1.75rem;    /* 28px — md default */
+  /* 樹狀縮排 --tree-indent-* 不隨密度變,只宣告在 :root(2026-11-15 刪掉這裡的同值重寫:它沒有大密度覆寫可以回復,
+     重寫一次只會讓它看起來像會切換;稽核 P18) */
 }
 
 /* ── 衍生值:在每個換密度的元素上重算(2026-11-11)──
@@ -154,7 +153,9 @@
 
 
 /* ── Tailwind Theme Bridge ──
-   橋接成 spacing utility，讓 h-field-md / h-tree-indent-md 等 class 可用 */
+   橋接成 spacing utility，讓 h-field-md(欄位高)/ pl-tree-indent-md(樹狀每層縮排)等 class 可用
+   (哪些值開轉接名的規則住 token-system.spec.md「擺放」:產品可讀的共用刻度整組開;
+   設計系統裡看不到讀者不是刪它們的理由 —— 產品可讀的名字退場走 orphan-tokens.spec.md「退場流程」) */
 @theme inline {
   --spacing-field-xs:    var(--field-height-xs);
   --spacing-field-sm:    var(--field-height-sm);
@@ -162,7 +163,6 @@
   --spacing-field-lg:    var(--field-height-lg);
   /* h-table-row-* 的轉接名跟著本尊住 components/DataTable/data-table.css */
   /* h-tag-* 的轉接名跟著本尊住 components/Tag/tag.css */
-  /* h-tab-* 的轉接名跟著本尊住 components/Tabs/tabs.css */
   --spacing-tree-indent-sm: var(--tree-indent-sm);
   --spacing-tree-indent-md: var(--tree-indent-md);
   --spacing-tree-indent-lg: var(--tree-indent-lg);

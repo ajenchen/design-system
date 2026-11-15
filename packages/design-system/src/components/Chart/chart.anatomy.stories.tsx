@@ -235,7 +235,7 @@ export const CategoryTokens: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>--chart-1..5（5 色類別 token）</H3>
-        <Desc>圖表類別配色專用變數,用的是固定底層色（不隨品牌主色變動），避免改品牌色時影響圖表的類別色彩意義。超過 5 類別時應把小類別合併成「其他」,或改用其他圖表類型。</Desc>
+        <Desc>圖表類別配色專用變數,用的是固定底層色（不隨互動色變動），避免互動色換色時影響圖表的類別色彩意義。超過 5 類別時應把小類別合併成「其他」,或改用其他圖表類型。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Token</Th><Th>Light mode</Th><Th>Dark mode</Th><Th>建議</Th></tr></thead>

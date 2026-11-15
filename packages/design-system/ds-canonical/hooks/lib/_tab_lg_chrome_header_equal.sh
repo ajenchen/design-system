@@ -2,7 +2,10 @@
 set -uo pipefail
 # Header canonical W3 Token alignment enforcement(per header-canonical.spec.md W3):
 #   --tab-height-lg(分頁的值)與 --chrome-header-height(共用刻度)三個段落(:root / 大密度 / 鎖回一般密度)必像素相等。
-#   兩 token scope 不同,不該 CSS alias(綁死兩個不同 scope)— 改用 assert: parse 兩邊住處的 md/lg 值對等。
+#   2026-11-15 起 canonical 寫法是 tabs.css「衍生值」段的一行 `--tab-height-lg: var(--chrome-header-height);`
+#   (同一個值只有一個住處,token-system.spec.md 規則 2;稽核 P04 / B6 —— 舊理由「兩顆 scope 不同不該 alias」與程式對不上:
+#   兩顆的三段選擇器完全相同)。認得這個寫法 → 相等由構造保證,只再驗標頭高那一邊的三段完整;
+#   寫回字面值(舊佈局)→ 照舊逐段比對兩邊的值。
 #
 # 兩顆各住哪個檔 = 分類表 packages/design-system/src/tokens/token-registry.json 的 home(最長吻合的那一列),
 # 本檔不寫死任何住處(2026-11-11 token 遷移第二階段第一批:分頁高從 tokens/uiSize/uiSize.css 搬到
@@ -11,7 +14,8 @@ set -uo pipefail
 # PreToolUse(Edit / Write)hook —— 編輯「任一顆的住處」、分類表本身,或 `src/globals.css` 時 assert 兩值仍相等。
 # 動一方未同步 = BLOCKER(exit 2);讀不到 / 住處不明 / 宣告不完整 = GOVERNANCE_INTEGRITY(exit 70,fail closed)。
 #
-# 對齊 M31 codex 比稿 Step 5「保留 duplicated literals + audit hook assert equality」decision。
+# 歷史:2026-05-17 M31 codex 比稿 Step 5 定「保留 duplicated literals + audit hook assert equality」;
+# 2026-11-15 改成 var() 單一住處(理由見檔頭;header-canonical.spec.md W3 同步改寫)。
 
 source "$(dirname "$0")/../_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -279,8 +283,17 @@ code_of() {
 # 這裡用 `|| exit $?` 把它的 exit code 原樣傳出(bash 3.2 的子行程不繼承 errexit,不能只靠 set -e)。
 TAB_CODE=$(code_of "$TAB_REL") || exit $?
 CHROME_CODE=$(code_of "$CHROME_REL") || exit $?
-TAB_OUT=$(extract_values "$TAB_CODE" 'tab-height-lg') || exit $?
 CHROME_OUT=$(extract_values "$CHROME_CODE" 'chrome-header-height') || exit $?
+
+# 2026-11-15 canonical 寫法:分頁高住處裡 --tab-height-lg 只宣告一次、而且就是 var(--chrome-header-height)
+# → 兩顆相等由構造保證(不會有第二份字面值可漂)。宣告次數不是 1、或那一行不是這個寫法 → 走下方舊的逐段比對
+# (它會以「extraction 不完整」fail closed,或在字面值不等時擋)。
+TAB_DECL_COUNT=$(printf '%s\n' "$TAB_CODE" | grep -cE -e '--tab-height-lg[[:space:]]*:' || true)
+if [ "$TAB_DECL_COUNT" = '1' ] \
+  && printf '%s\n' "$TAB_CODE" | grep -qE -e '^[[:space:]]*--tab-height-lg[[:space:]]*:[[:space:]]*var\(--chrome-header-height\)[[:space:]]*;'; then
+  exit 0
+fi
+TAB_OUT=$(extract_values "$TAB_CODE" 'tab-height-lg') || exit $?
 # 值只會是嚴格的十進位數字(上面已驗),以換行切開安全
 TAB_VALUES=($TAB_OUT)
 CHROME_VALUES=($CHROME_OUT)

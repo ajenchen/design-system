@@ -230,7 +230,7 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 
 | Role | Token | 色值（light） | 說明 |
 |------|-------|--------------|------|
-| Filled star | `var(--warning)` | yellow-6 | 本 DS 評分語意的固定黃色，不隨品牌 primary 色變動；可以點的填色星與唯讀精簡版那一顆星同色 |
+| Filled star | `var(--warning)` | yellow-6 | 本 DS 評分語意的固定黃色，不隨互動色 primary 變動；可以點的填色星與唯讀精簡版那一顆星同色 |
 | Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的星;借 `--divider` semantic alias(neutral-4,2026-05-09 記為 user 拍板,來源不明:登記簿查無原話),與分隔線同級的 muted-fill。只出現在可以點的評分(唯讀精簡版沒有空星) |
 | 唯讀數值 | `text-foreground` | `--color-neutral-9` | 精簡版的數值(取一位小數),`tabular-nums` |
 | 唯讀評論數 | `text-fg-secondary` | `--color-neutral-8` | 精簡版括號內的評論數,千分位 |
@@ -245,7 +245,7 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 
 ### 為什麼用 `--warning`（黃色）而不用 `--primary`
 
-黃星是本 DS 的評分語意 canonical。使用者在同一產品內應以相同色相辨識評分，換成品牌 primary 色（藍、綠、紫）會讓評分與一般選取狀態混淆。
+黃星是本 DS 的評分語意 canonical。使用者在同一產品內應以相同色相辨識評分，換成互動色 primary（藍、綠、紫）會讓評分與一般選取狀態混淆。
 
 `--warning` 在本系統指向 yellow-6，與 Rating **共用色相但語境不同**——evaluation convention color，非 status color。這是 documented 例外（見 `color.spec.md`），不是每個元件都能這樣共用。
 

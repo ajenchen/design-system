@@ -1,6 +1,6 @@
 # AgentLogo 設計原則(AgentPanel 家族附屬資產;獨立 SSOT)
 
-> **本 spec 是 AgentPanel 家族標誌的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentLogo(標誌;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);內容零改動,只加本檔頭與檔尾指標)。品牌色階常數 `AGENT_BRAND`、家族 Token(`--motion-easing-swell` / `--motion-easing-settle`)與動畫總表仍住 `./agent-panel.spec.md`;程式碼對應 `agent-panel-logo.tsx`,機械閘 `scripts/agent-logo-continuity-invariant.mjs` / `scripts/agent-logo-brand-scale-invariant.mjs`。
+> **本 spec 是 AgentPanel 家族標誌的獨立 SSOT**(2026-09-27 從 `agent-panel.spec.md`「AgentLogo(標誌;附屬資產)」節整段抽出,避免單一 spec 過長(674 行 > 500 硬上限,待辦總帳 N19);內容零改動,只加本檔頭與檔尾指標)。品牌色階常數 `AGENT_BRAND`、動畫的值(循環「起 / 收」兩條曲線 = `agent-panel-logo.tsx` 的 `SWELL` / `SETTLE`;2026-11-15 前叫 `--motion-easing-swell` / `--motion-easing-settle` 兩顆 token,已收回元件)與動畫總表仍住 `./agent-panel.spec.md`「動畫的值」;程式碼對應 `agent-panel-logo.tsx`,機械閘 `scripts/agent-logo-continuity-invariant.mjs` / `scripts/agent-logo-brand-scale-invariant.mjs`。
 >
 > **Layout Family**:同 `agent-panel.spec.md`(self-contained 容器家族);標誌是 SVG 資產,無 row / pill / field anatomy,本檔不另立 family。
 

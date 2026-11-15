@@ -401,7 +401,8 @@
    (前一版 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 是假宣稱:版面盒延伸了、像素沒有,
    而當時的 I13b 比的是 `getComputedStyle(::after).height`,量到的是版面不是畫面,所以假綠)。
    外層不裁切也不捲動,高度就是三個面板的 border-box 高,線因此真的從頂到底。
-   `--dt-left-w` / `--dt-right-w` 由 tsx 寫上,與釘選面板寬同一個 state,線與面板邊緣必然同一像素。 */
+   `--table-pinned-left-w` / `--table-pinned-right-w` 由 tsx 寫上,與釘選面板寬同一個 state,線與面板邊緣必然同一像素。
+   (元件內變數用主人開頭 --table-;2026-11-15 前叫 --dt-left-w / --dt-right-w,稽核 P20 反查。) */
 .dtLeftBoundary,
 .dtRightBoundary {
   position: relative;
@@ -413,7 +414,7 @@
   top: 0;
   bottom: 0;
   /* 佔左側面板的最後一個像素(等同原本掛在面板上的 `right: 0`)。 */
-  left: calc(var(--dt-left-w, 0px) - 1px);
+  left: calc(var(--table-pinned-left-w, 0px) - 1px);
   width: 1px;
   background: var(--divider);
   pointer-events: none;
@@ -426,7 +427,7 @@
   top: 0;
   bottom: 0;
   /* 佔右側面板的第一個像素(等同原本掛在面板上的 `left: 0`)。 */
-  right: calc(var(--dt-right-w, 0px) - 1px);
+  right: calc(var(--table-pinned-right-w, 0px) - 1px);
   width: 1px;
   background: var(--divider);
   pointer-events: none;

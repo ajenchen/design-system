@@ -15,6 +15,8 @@
  *   C1 有登記:整頁生效的名字(`:root` / 密度 / 主題 / Tailwind `@theme` 段)恰好對到分類表一列(最長吻合;對不到或兩列一樣長都算錯);
  *      被「宣告它的資料夾以外」讀到的名字也要登記;Tailwind 轉接名(`@theme` 裡 `--x: var(--y)`)不登記,只驗它指向的本尊有登記;
  *      分類表每一列欄位合法、沒有對不到任何名字的死列。
+ *      2026-11-15 補(稽核 P23 第 4 個盲點):同一個名字在 ≥2 個資料夾有宣告(轉接名不算)、設計系統又有人讀 = 跨元件傳值,
+ *      也要登記 —— 每個讀者資料夾自己也有宣告時,「資料夾以外被讀」那條看不到(錨:--item-prefix-slot)。
  *   C2 新名字逐顆登記、要有理由:相對 main 新增、需要登記的名字,分類表必須有它完整名字的一列,`why` 不可空;
  *      類別是共用刻度的,要寫出它屬於哪一組既有刻度(`scale`)或第二個讀者(`secondReader`,那個檔必須真的讀它)。
  *   C3 宣告的檔案 = 登記的住處:整頁生效的宣告只准出現在該列 `home`;`home` 列的每個檔都真的宣告了它(住處不准過期)。
@@ -34,6 +36,24 @@
  *   C9 只有主人自己在讀、又不切換的值,不該有全系統的名字。第一階段只對相對 main 新增的名字開;2026-11-11 第三階段
  *      收完 6 顆之後全面打開:「元件的值」不分新舊全查(主人 = 該列 home 與 target 的資料夾),其他類別仍只查新名字
  *      (既有的原料 / 共用刻度以「一組」為單位判,不逐顆問)。
+ *      2026-11-15 補三條(稽核 P23 第 1–3 個盲點,每條在 --selftest 都有該紅 / 該綠):
+ *        「會不會切換」改成連 var() 衍生的也算(衍生值段選擇器沒有 `=`,舊版當成 :root);
+ *        (甲)讀者全在同一個非主人資料夾、而且只在程式裡量值(沒有 var() 讀取)→ 收成那個讀者的常數(錨:--sidebar-width-min);
+ *        (乙)只被同檔別的名字的 var() 公式讀 = 中間值,分類表 why 要寫「中間值」(有密度段的也查;錨:--sidebar-menu-icon-size);
+ *        (丙)沒有任何執行期讀者(轉接名自己那一行不算、字串拼出的開頭吻合算讀、known.productExternal 算讀):元件的值直接紅;
+ *            共用刻度照 token-system.spec.md「一組」窄讀法,最後一段是級距 / 狀態而且同組有人讀才放行;
+ *            閘補上當下已存在的列在 known.unread,只能變短(錨:--motion-easing-swell)。
+ *            分類表該列寫了保留類別 `retain` 的不算沒人讀(錨:--brand = reservation,產品層預留;2026-11-15 曾被這條
+ *            當成孤兒誤刪,user 沒說過要刪,同日還原)。
+ *   C1(保留類別,2026-11-15):分類表 `retention` 的每一類 key ↔ `retention.spec`(tokens/orphan-tokens.spec.md)每類標題
+ *      `### N. \`key\` — …` ↔ 各列 `retain`,三方一致(保留分類原本住兩處、腳本另內建一份,`--brand` 因此被當孤兒)。
+ *   C10 產品可讀的名字不得悄悄消失(2026-11-15):對照基準(與 main 的分岔點、HEAD),分類表登記產品可讀(product 不是 no)的
+ *      名字、或指向這種名字的 Tailwind 轉接名,在基準有宣告、工作樹不再宣告 → 紅;除非它登記在分類表 `retired`
+ *      (user 原話逐字、日期、標 deprecated 的版本、刪掉的版本,兩版不同 = 先保留一版的路)。基準沒有分類表時用工作樹的。
+ *      user 原話(2026-11-15):「沒人用只是因為現在你的視角看不到消費者，但這個 token 真的是沒有意義的存在？」
+ *   C11 用詞(2026-11-15):顏色的稱呼只在 `tokens/color/color.spec.md`「用詞」定義;那一段「不用的說法」行裡反引號的字
+ *      (主題色 / 主操作色 / brand swap …)在設計系統原始碼與規格(`packages/design-system/src`、`packages/design-system/ds-canonical`,
+ *      退役封存除外)出現就紅 —— 清單只讀那一行,本檔不另存一份;讀不到清單也紅。
  * 三件跨條的事:拿不到 main → **紅**(INSTRUMENT-FAIL,不是跳過);讀者一律去掉註解(程式檔用 TypeScript 語法樹只取字串);
  * 已知名單「只能變短」= 比 main 的那份多一筆就紅、修好了還留著也紅。
  *
@@ -104,6 +124,63 @@ export function resolveBaseRef() {
   return null
 }
 
+// ── C10 / C11 的輸入(2026-11-15)────────────────────────────────────────────
+/** C11 掃的檔:設計系統原始碼與規格(原始碼、範例、規格、hook、參考檔);退役封存與 node_modules 不算。 */
+const TERM_ROOTS = [DS_ROOT, 'packages/design-system/ds-canonical']
+const TERM_EXT = /\.(md|css|tsx?|mjs|cjs|js|json|sh|ya?ml|txt)$/
+const TERM_SKIP_DIR = new Set(['node_modules', 'retired', 'dist'])
+export function readTermFiles() {
+  const out = new Map()
+  const go = (dir) => {
+    for (const n of readdirSync(join(REPO, dir))) {
+      if (n.startsWith('.') || TERM_SKIP_DIR.has(n)) continue
+      const p = `${dir}/${n}`
+      if (statSync(join(REPO, p)).isDirectory()) go(p)
+      else if (TERM_EXT.test(n)) out.set(p, readFileSync(join(REPO, p), 'utf8'))
+    }
+  }
+  for (const r of TERM_ROOTS) go(r)
+  return out
+}
+/** 用詞的唯一住處 = color.spec.md「用詞」段;「不用的說法」那一行反引號裡的字就是清單(C11 只讀這一行)。 */
+export const TERM_SPEC = `${DS_ROOT}/tokens/color/color.spec.md`
+const TERM_SECTION = /^## 用詞\s*$/
+export function termBanned(specText) {
+  if (typeof specText !== 'string') return []
+  let inSection = false
+  for (const line of specText.split('\n')) {
+    if (/^## /.test(line)) inSection = TERM_SECTION.test(line)
+    if (inSection && line.startsWith('**不用的說法**')) return [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]).filter((w) => w.trim())
+  }
+  return []
+}
+/** orphan-tokens.spec.md 每一類標題 `### N. \`key\` — …` 的 key(C1 保留類別三方一致) */
+export function retentionSpecKeys(specText) {
+  if (typeof specText !== 'string') return null
+  return new Set([...specText.matchAll(/^###\s+\d+\.\s+`([a-z][a-z0-9-]*)`/gm)].map((m) => m[1]))
+}
+/** C10 的對照基準:與 main 的分岔點 + HEAD(同一個 commit 只算一次)。每個基準帶它自己的分類表(沒有就 null)。 */
+export function baseContexts(mainRef) {
+  const refs = []
+  try { refs.push({ ref: git(['merge-base', 'HEAD', mainRef], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim(), label: `與 ${mainRef} 的分岔點` }) } catch (e) {
+    return { error: `算不出 HEAD 與 ${mainRef} 的分岔點(簽出要 fetch-depth: 0):${String(e.stderr ?? e.message).split('\n')[0].slice(0, 120)}` }
+  }
+  refs.push({ ref: 'HEAD', label: 'HEAD' })
+  const out = [], seen = new Set()
+  for (const { ref, label } of refs) {
+    let sha
+    try { sha = git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim() } catch { return { error: `讀不到 ${label}(${ref})` } }
+    if (seen.has(sha)) continue
+    seen.add(sha)
+    let registry = null
+    try { registry = JSON.parse(git(['show', `${sha}:${REGISTRY_PATH}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })) } catch (e) {
+      if (!/does not exist|exists on disk, but not in/.test(String(e.stderr ?? e.message))) return { error: `讀不到 ${label} 的分類表:${String(e.message).split('\n')[0].slice(0, 120)}` }
+    }
+    try { out.push({ label: `${label} ${sha.slice(0, 8)}`, files: readFilesAt(sha), registry }) } catch (e) { return { error: `讀不到 ${label} 的檔案:${String(e.message).split('\n')[0].slice(0, 120)}` } }
+  }
+  return { bases: out }
+}
+
 // ── 解析 ─────────────────────────────────────────────────────────────────
 const NAME = '--[A-Za-z0-9_-]+'
 // 尾端可帶 `:not([data-ui-size])` / `:not([data-layout-space])`:便捷屬性那一半讓明寫的單軸屬性勝出(density.spec.md「同一個元素帶兩種屬性」)
@@ -146,14 +223,14 @@ function scanCss(text) {
       const line = lineAt(start + seg.indexOf(m[1]))
       if (b.scope === 'theme-tw') {
         const alias = value.match(new RegExp(`^var\\(\\s*(${NAME})\\s*\\)$`))
-        decls.push(alias ? { name: m[1], kind: 'alias', aliasOf: alias[1], line } : { name: m[1], kind: 'global', block: 'root', tw: true, line })
-      } else if (b.scope === 'global') decls.push({ name: m[1], kind: 'global', block: b.block, line })
-      else decls.push({ name: m[1], kind: 'local', line })
+        decls.push(alias ? { name: m[1], kind: 'alias', aliasOf: alias[1], line } : { name: m[1], kind: 'global', block: 'root', tw: true, line, value })
+      } else if (b.scope === 'global') decls.push({ name: m[1], kind: 'global', block: b.block, line, value })
+      else decls.push({ name: m[1], kind: 'local', line, value })
     }
     if (c === '}') stack.pop()
     start = i + 1
   }
-  return { decls, reads, utilities, words: new Set(), imports: cssImports(src) }
+  return { decls, reads, utilities, words: new Set(), imports: cssImports(src), prefixReads: [] }
 }
 function cssImports(src) {
   return [...src.matchAll(/@import\s+(?:url\()?\s*['"]([^'"]+\.css)['"]/g)].map((m) => m[1])
@@ -162,10 +239,14 @@ function cssImports(src) {
 /** 程式檔:用 TypeScript 語法樹只取字串(註解自然被排除),在字串裡找讀取 / 宣告 / class 名。 */
 function scanCode(text, path) {
   const sf = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
-  const decls = [], reads = [], words = new Set(), imports = []
+  const decls = [], reads = [], words = new Set(), imports = [], prefixReads = []
   const lineOf = (node) => sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
   const up = (n) => { let p = n.parent; while (p && (ts.isAsExpression(p) || ts.isParenthesizedExpression(p) || ts.isSatisfiesExpression?.(p))) { n = p; p = p.parent } return { node: n, parent: p } }
   const onLiteral = (node, t) => {
+    // 字串拼出來的名字只拿得到開頭(`var(--table-row-${size})`、`'--table-row-' + size`):不算任何一個名字的讀者,
+    // 但記下開頭 —— C9(丙)判「沒有任何讀者」時,開頭吻合的名字算有人讀(2026-11-15)
+    for (const m of t.matchAll(new RegExp(`var\\(\\s*(${NAME})`, 'g'))) if (/[-_]$/.test(m[1])) prefixReads.push(m[1])
+    if (new RegExp(`^${NAME}$`).test(t) && /[-_]$/.test(t)) prefixReads.push(t)
     if (new RegExp(`^${NAME}$`).test(t)) {
       if (/[-_]$/.test(t)) return // `'--table-row-' + size`:字串拼出來的名字只拿得到開頭
       const { node: self, parent } = up(node)
@@ -195,7 +276,7 @@ function scanCode(text, path) {
     ts.forEachChild(node, visit)
   }
   visit(sf)
-  return { decls, reads, utilities: new Map(), words, imports }
+  return { decls, reads, utilities: new Map(), words, imports, prefixReads }
 }
 
 // ── 模型 ─────────────────────────────────────────────────────────────────
@@ -225,6 +306,9 @@ export function buildModel(files) {
   const entries = []
   for (const [path, text] of files) entries.push({ path, folder: folderOf(path), isDs: path.startsWith(`${DS_ROOT}/`), ...parse(path, text) })
   const globalDecls = new Map(), aliases = new Map(), declFolders = new Map(), allDecls = new Map()
+  // 宣告它的資料夾,不算 Tailwind 轉接名(`@theme` 的 `--color-border: var(--border)`):C1 跨元件傳值的判準用(2026-11-15)
+  const valueDeclFolders = new Map()
+  const prefixReads = [] // { prefix, path, folder, isDs }
   const push = (map, k, v) => { if (!map.has(k)) map.set(k, []); map.get(k).push(v) }
   const utilToNames = new Map()
   for (const e of entries) {
@@ -236,7 +320,9 @@ export function buildModel(files) {
       if (d.kind === 'global') push(globalDecls, d.name, at)
       if (!declFolders.has(d.name)) declFolders.set(d.name, new Set())
       declFolders.get(d.name).add(e.folder)
+      if (d.kind !== 'alias') { if (!valueDeclFolders.has(d.name)) valueDeclFolders.set(d.name, new Set()); valueDeclFolders.get(d.name).add(e.folder) }
     }
+    for (const p of e.prefixReads ?? []) prefixReads.push({ prefix: p, path: e.path, folder: e.folder, isDs: e.isDs })
     for (const [u, names] of e.utilities) for (const n of names) push(utilToNames, u, n)
   }
   // @theme 名字(轉接名與 @theme 裡直接給值的)對應的 class
@@ -254,7 +340,10 @@ export function buildModel(files) {
     for (const w of e.words) for (const n of utilToNames.get(w) ?? []) reads.push({ name: resolve(n), raw: n, path: e.path, folder: e.folder, isDs: e.isDs, line: 0, how: `class ${w}` })
   }
   const names = new Set([...allDecls.keys(), ...reads.filter((r) => r.isDs).map((r) => r.name)])
-  return { entries, globalDecls, aliases, declFolders, allDecls, reads, resolve, names }
+  // 轉接名自己那一行的 var():`@theme inline { --color-brand: var(--brand) }` 不是 --brand 的執行期讀者(沒人用 bg-brand 就不產生任何 CSS)
+  const aliasLines = new Set([...aliases.values()].map((a) => `${a.path}\0${a.line}\0${a.aliasOf}`))
+  const aliasSelfRead = (r) => r.how === 'var' && aliasLines.has(`${r.path}\0${r.line}\0${r.raw}`)
+  return { entries, globalDecls, aliases, declFolders, valueDeclFolders, allDecls, reads, resolve, names, prefixReads, aliasSelfRead }
 }
 
 // ── 分類表 ───────────────────────────────────────────────────────────────
@@ -291,13 +380,15 @@ export function specCovers(spec, name) {
  * @returns {{ problems: Record<string,string[]>, info: object }}
  */
 export function runChecks(ctx) {
-  const P = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [], C7: [], C9: [] }
+  const P = { C1: [], C2: [], C3: [], C4: [], C5: [], C6: [], C7: [], C9: [], C10: [], C11: [] }
   const reg = ctx.registry
   const rows = Array.isArray(reg?.rows) ? reg.rows : []
   const known = reg?.known ?? {}
   const m = buildModel(ctx.files)
   const look = (n) => lookup(rows, n)
   const real = (r) => r && r.class !== 'ignore'
+  const specCache = new Map()
+  const specText = (p) => { if (!specCache.has(p)) specCache.set(p, ctx.readSpec(`${DS_ROOT}/${p}`)); return specCache.get(p) }
 
   // C1-0 分類表本身
   if (!Array.isArray(reg?.rows)) P.C1.push(`分類表 ${REGISTRY_PATH} 讀不到或沒有 rows`)
@@ -318,6 +409,33 @@ export function runChecks(ctx) {
     if (!(r.dsReaders === 'any' || Array.isArray(r.dsReaders))) P.C1.push(`${r.match}:dsReaders 必須是 "any" 或資料夾陣列`)
   }
 
+  // C1(保留類別,2026-11-15):分類表 retention ↔ orphan-tokens.spec.md 每類標題的 key ↔ 各列 retain,三方一致。
+  // 保留分類原本住兩處(orphan-tokens.spec.md 與 ds-canonical/references/structural-token-retention.md)、腳本另內建一份 regex,
+  // --brand 只列在其中一處 → 被當成孤兒誤刪。現在機器清單只住分類表,理由只住規格,這裡比兩邊的 key。
+  const retention = reg?.retention
+  const catKeys = new Set()
+  if (!retention || typeof retention.spec !== 'string' || !Array.isArray(retention.categories) || !retention.categories.length) {
+    P.C1.push('分類表沒有合法的 retention(spec 路徑 + 非空 categories 陣列)—— 保留類別的機器清單只住這裡')
+  } else {
+    for (const c of retention.categories) {
+      if (typeof c?.key !== 'string' || !/^[a-z][a-z0-9-]*$/.test(c.key)) { P.C1.push(`retention 有一類的 key 不合法:${JSON.stringify(c?.key)}`); continue }
+      if (catKeys.has(c.key)) P.C1.push(`retention 有兩類 key 相同(${c.key})`)
+      catKeys.add(c.key)
+      if (!(c.pattern === null || typeof c.pattern === 'string')) P.C1.push(`retention ${c.key}:pattern 必須是字串(按名字歸類)或 null(成員由列的 retain 指名)`)
+      else if (c.pattern) { try { new RegExp(c.pattern) } catch { P.C1.push(`retention ${c.key}:pattern 不是合法的正規式`) } }
+    }
+    const specKeys = retentionSpecKeys(specText(retention.spec))
+    if (specKeys == null) P.C1.push(`保留類別的規格 ${retention.spec} 讀不到`)
+    else {
+      for (const k of catKeys) if (!specKeys.has(k)) P.C1.push(`retention 的 ${k} 在 ${retention.spec} 沒有對應的一類(標題寫成「### N. \`${k}\` — …」並寫理由)`)
+      for (const k of specKeys) if (!catKeys.has(k)) P.C1.push(`${retention.spec} 有一類 \`${k}\`,分類表 retention 沒有 —— 規格與分類表兩邊要一致`)
+    }
+  }
+  for (const r of rows) {
+    if (r?.retain === undefined) continue
+    if (typeof r.retain !== 'string' || !catKeys.has(r.retain)) P.C1.push(`${r.match}:retain「${r.retain}」不是分類表 retention 的任何一類`)
+  }
+
   // 需要登記的名字
   const need = new Map() // name → 原因
   for (const n of m.globalDecls.keys()) need.set(n, '整頁生效的宣告')
@@ -325,6 +443,12 @@ export function runChecks(ctx) {
     if (!r.isDs || m.aliases.has(r.raw) || m.globalDecls.has(r.name)) continue
     const df = m.declFolders.get(r.name)
     if (!df || !df.has(r.folder)) need.set(r.name, need.get(r.name) ?? `在宣告它的資料夾以外被讀(${r.folder})`)
+  }
+  // C1(跨元件傳值,2026-11-15 稽核 P23 第 4 個盲點):每個讀者資料夾自己也有宣告時,上面那條看不到 ——
+  // 同一個名字在 ≥2 個資料夾有宣告(轉接名不算)、設計系統又有人讀,就是跨元件傳值,要登記(錨:--item-prefix-slot)
+  for (const [n, fs] of m.valueDeclFolders) {
+    if (fs.size < 2 || need.has(n)) continue
+    if (m.reads.some((r) => r.isDs && r.name === n)) need.set(n, `宣告在 ${fs.size} 個資料夾(${[...fs].sort().join(' / ')})、設計系統有人讀 —— 跨元件傳值`)
   }
   for (const [n, why] of need) {
     const hit = look(n)
@@ -395,8 +519,6 @@ export function runChecks(ctx) {
   }
 
   // C4
-  const specCache = new Map()
-  const specText = (p) => { if (!specCache.has(p)) specCache.set(p, ctx.readSpec(`${DS_ROOT}/${p}`)); return specCache.get(p) }
   const missingSpec = []
   for (const n of need.keys()) {
     const r = ownRow(n)
@@ -493,20 +615,141 @@ export function runChecks(ctx) {
   // 仍是那組刻度的一員,不逐顆問「只有誰在讀」。
   // 「主人」= 該列 home 與 target 所在的資料夾:寄住在共用檔(home = tokens/uiSize)、只有主人元件(target 那個資料夾)
   // 在讀的,一樣算只有主人在讀 —— 第三階段收回的 6 顆正是這種(只看 home 會把主人元件當成「別人」而放行)。
+  //
+  // 「會不會切換」(2026-11-15 補):有密度 / 主題段的算;只有 :root 一段、但值是用 var() 由會切換的名字組出來的也算
+  // (衍生值段 `:root, [data-density], … { --tab-height-lg: var(--chrome-header-height) }` 選擇器裡沒有 `=`,
+  // 會被當成一般 :root 段 —— 不補這條,依定義跟著標頭高切換的 lg 分頁高會被誤判成「不切換」)。
+  const switchMemo = new Map()
+  const switches = (n, depth = 0) => {
+    if (switchMemo.has(n)) return switchMemo.get(n)
+    const list = m.globalDecls.get(n) ?? []
+    let s = list.some((d) => d.block !== 'root')
+    if (!s && depth < 8) s = list.some((d) => [...String(d.value ?? '').matchAll(new RegExp(`var\\(\\s*(${NAME})`, 'g'))].some((x) => x[1] !== n && switches(x[1], depth + 1)))
+    switchMemo.set(n, s)
+    return s
+  }
+  // 執行期讀者:轉接名自己那一行不算;字串拼出來的開頭(`var(--table-row-${size})`)吻合的算(C9 丙用)
+  const realReads = (n) => m.reads.filter((x) => x.name === n && !m.aliasSelfRead(x))
+  const prefixRead = (n) => m.prefixReads.some((p) => n.startsWith(p.prefix))
   for (const [n, list] of m.globalDecls) {
     const r = ownRow(n)
     if (!real(r)) continue
     const fresh = isNew(n)
     if (!fresh && r.class !== 'component') continue
-    if (list.some((d) => d.block !== 'root')) continue
+    if (switches(n)) continue
     const ownerFolders = new Set([...homesOf(r), ...targetsOf(r)].map(folderOf))
-    const readerFolders = new Set(m.reads.filter((x) => x.name === n).map((x) => x.folder))
+    const reads = m.reads.filter((x) => x.name === n)
+    const readerFolders = new Set(reads.map((x) => x.folder))
     if (![...readerFolders].some((f) => !ownerFolders.has(f))) {
       P.C9.push(`${n}${fresh ? ' 是新名字,' : ' '}只有 ${[...readerFolders].join(' / ') || '(沒有人)'} 在讀(主人:${[...ownerFolders].join(' / ')})、也不隨密度或主題切換 —— 寫成元件自己的常數,不開全系統的名字`)
+      continue
+    }
+    // (甲)2026-11-15(稽核 P23 第 1 個盲點,照反查更正收窄):讀者全在同一個「非主人」資料夾,而且那裡只在程式裡量它的值
+    // (字串寫名字、getPropertyValue 這類,沒有任何 var() 讀取)→ 它其實是那個讀者自己的常數,只是借主人的名字寄放。
+    // 錨:--sidebar-width-min(只有 AppShell 用 JS 量值探針讀,2026-11-13 收成 AppShell 的常數)。
+    // 讀者用 var() 讀、或讀者不只一個資料夾 → 第 0 題 (c) 成立,放行。
+    if (readerFolders.size === 1 && !ownerFolders.has([...readerFolders][0]) && reads.every((x) => x.how === 'quoted')) {
+      P.C9.push(`${n} 唯一的讀者 ${[...readerFolders][0]} 只在程式裡量它的值(沒有任何 var() 讀取)、也不隨密度或主題切換 —— 收成那個讀者自己的常數(甲)`)
+    }
+  }
+  // (乙)2026-11-15(稽核 P23 第 2 個盲點):只被同一個檔裡別的名字的 var() 公式讀 = 公式的中間值。名字不寫明它是輸入,
+  // 讀者會以為它決定了別的東西(錨:--sidebar-menu-icon-size 叫「選單圖示尺寸」,其實只是收合寬公式的一格,畫出來的圖示不讀它)。
+  // 要求分類表該列 why 寫出「中間值」;共用刻度與元件的值都查(有密度段的也查 —— 舊版 C9 一律跳過的正是這種)。
+  const formulaReader = (x, n) => {
+    if (x.how !== 'var' || !x.path.endsWith('.css')) return false
+    const declsHere = (m.allDecls.get(n) ?? []).some((d) => d.path === x.path)
+    if (!declsHere) return false
+    const e = m.entries.find((en) => en.path === x.path)
+    return (e?.decls ?? []).some((d) => d.kind !== 'alias' && d.name !== n && d.line === x.line && new RegExp(`var\\(\\s*${esc(n)}\\s*[,)]`).test(String(d.value ?? '')))
+  }
+  for (const n of need.keys()) {
+    const r = ownRow(n)
+    if (!real(r) || r.class === 'raw' || !m.globalDecls.has(n)) continue
+    const reads = realReads(n)
+    if (!reads.length || prefixRead(n)) continue
+    if (reads.every((x) => formulaReader(x, n)) && !/中間值/.test(r.why ?? '')) {
+      P.C9.push(`${n} 只被同檔的 var() 公式讀(${[...new Set(reads.map((x) => `${dsRel(x.path)}:${x.line}`))].join(' / ')})—— 它是公式的中間值:名字或分類表該列 why 要寫明「中間值」(乙)`)
+    }
+  }
+  // (丙)2026-11-15(稽核 P23 第 3 個盲點):既有名字沒有任何執行期讀者(轉接名自己那一行不算、字串拼出的開頭吻合算讀)。
+  // 元件的值:零讀者就紅。共用刻度:照 token-system.spec.md「一組」的窄讀法 —— 名字最後一段是級距或狀態
+  // (xs / sm / md / lg / 數字 / hover / active / …)、而且同一組有別的名字被讀,算組員放行;否則紅。
+  // 原料不查(以一組為單位,色階整組保留)。設計系統以外的產品 repo 看不到 → 登記在 known.productExternal 的名字算有人讀。
+  const external = new Set((known.productExternal ?? []).flatMap((x) => String(x?.name ?? '').split('/').map((s) => s.trim())).filter(Boolean))
+  const GROUP_STEP = /^(?:xs|sm|md|lg|xl|2xl|\d+|hover|active|focus|subtle|emphasis|disabled|text|foreground)$/
+  const readBy = (n) => realReads(n).length > 0 || prefixRead(n) || external.has(n)
+  // 既有的零讀者共用刻度(閘補上這條時就已存在的)列在 known.unread,只能變短;新長出來的直接紅。
+  // 分類表該列寫了保留類別 retain 的不算(2026-11-15:--brand 是產品層預留,設計系統本來就不讀;理由住 orphan-tokens.spec.md)。
+  const reportedC9 = new Set(P.C9.map((p) => p.split(' ')[0]))
+  const unread = []
+  for (const n of need.keys()) {
+    const r = ownRow(n)
+    // 產品可讀的名字不進(丙)(2026-11-15 審查):設計系統裡看不到讀者 ≠ 沒有讀者,零讀者不是退場理由(orphan-tokens.spec.md「退場流程」(一)、C10)
+    if (!real(r) || r.class === 'raw' || r.retain || (r.product && r.product !== 'no') || !m.globalDecls.has(n) || readBy(n) || reportedC9.has(n)) continue
+    if (r.class === 'shared') {
+      const cut = n.lastIndexOf('-')
+      const step = n.slice(cut + 1), stem = n.slice(0, cut)
+      const siblingRead = [...need.keys()].some((x) => x !== n && (x === stem || x.startsWith(`${stem}-`)) && readBy(x))
+      if (GROUP_STEP.test(step) && siblingRead) continue
+    }
+    unread.push(n)
+  }
+  ratchet(P.C9, 'unread', unread, known.unread, ctx.mainRegistry?.known?.unread, ctx.mainRegistry, (n) => `${n} 沒有任何執行期讀者(設計系統、apps/ 都沒有;轉接名自己那一行不算)${ownRow(n)?.class === 'shared' ? '、也不是一組級距 / 狀態裡有人讀的組員' : ''} —— 退場(刪宣告與分類表那一列),或產品端真的在讀就登記 known.productExternal(丙)`)
+
+  // C10 產品可讀的名字不得悄悄消失(2026-11-15)。產品不只本 repo 的 apps/ 與 WM:設計系統裡看不到讀者 ≠ 沒有讀者。
+  // 對照每個基準(與 main 的分岔點、HEAD):基準有宣告(整頁生效的宣告或 Tailwind 轉接名)、分類表登記產品可讀,
+  // 工作樹不再宣告 → 紅;登記在分類表 retired(user 原話 + 兩個版本)的放行。基準沒有分類表 → 用工作樹的分類表查 product。
+  const retiredOk = new Set()
+  if (reg?.retired !== undefined && !Array.isArray(reg.retired)) P.C10.push('分類表 retired 必須是陣列')
+  for (const e of Array.isArray(reg?.retired) ? reg.retired : []) {
+    const missing = ['name', 'quote', 'quoteDate', 'deprecatedIn', 'removedIn'].filter((k) => typeof e?.[k] !== 'string' || !e[k].trim())
+    if (missing.length) { P.C10.push(`retired 有一筆缺欄位(${missing.join(' / ')}):${JSON.stringify(e?.name ?? e)} —— 要 user 原話(逐字)、日期、標 deprecated 的版本、刪掉的版本`); continue }
+    if (e.deprecatedIn.trim() === e.removedIn.trim()) { P.C10.push(`retired ${e.name}:deprecatedIn 與 removedIn 是同一版 —— 先保留一版標 deprecated,下一版才刪`); continue }
+    retiredOk.add(e.name)
+  }
+  const goneReported = new Set()
+  for (const base of ctx.bases ?? []) {
+    const bm = buildModel(base.files)
+    // 查「產品可讀嗎」:每一份拿得到的分類表(這個基準、其他基準、工作樹)都查,任一份說產品可讀就算可讀(取最保守)。
+    // 2026-11-15 審查:只用工作樹的分類表時,把名字連同分類表那一列一起刪(或改成 product: no)就會被放行。
+    // 剩下的洞:所有基準都沒有分類表、工作樹又刪了那一列 —— 只發生在分類表第一次進 main 的這個 PR;本機跑時 HEAD 有分類表擋得住。
+    const allRowSets = [base.registry?.rows, ...(ctx.bases ?? []).map((b) => b.registry?.rows), rows].filter(Array.isArray)
+    const rowOf = (n) => {
+      const hits = allRowSets.map((rs) => lookup(rs, n)).filter((h) => h.length === 1).map((h) => h[0])
+      return hits.find((h) => real(h) && h.product !== 'no') ?? hits[0] ?? null
+    }
+    for (const [n, list] of bm.allDecls) {
+      if (m.allDecls.has(n) || retiredOk.has(n) || goneReported.has(n)) continue
+      const alias = list.some((d) => d.kind === 'alias')
+      if (!alias && !list.some((d) => d.kind === 'global')) continue
+      const target = alias ? bm.resolve(n) : n
+      const row = rowOf(target)
+      if (!real(row) || row.product === 'no') continue
+      goneReported.add(n)
+      P.C10.push(`${n}${alias ? `(${target} 的 Tailwind 轉接名)` : ''} 在基準「${base.label}」有宣告、分類表登記產品可讀(${row.match} 列 product: ${row.product}),工作樹不再宣告 —— 產品可讀的名字不以「設計系統 / WM 看不到讀者」為由刪;要退場由 user 決定,在分類表 retired 登記原話與版本(orphan-tokens.spec.md「退場流程」)`)
     }
   }
 
-  return { problems: P, info: { need, model: m, missingSpec, missingRestore: [...new Set(missingRestore)], productReads: [...new Set(productRead)], productWrites: [...new Set(productWrite)], dsRawColorReads: [...new Set(dsRaw)] } }
+  // C11 用詞(2026-11-15):清單只讀 color.spec.md「用詞」段「不用的說法」那一行;那一段本身是唯一可以寫出這些字的地方。
+  if (ctx.termFiles) {
+    const specT = ctx.termFiles.get(TERM_SPEC) ?? ctx.readSpec(TERM_SPEC)
+    const banned = termBanned(specT)
+    if (!banned.length) P.C11.push(`讀不到 ${dsRel(TERM_SPEC)}「用詞」段「不用的說法」那一行的反引號字 —— 沒有清單就不能判(INSTRUMENT,不是放行)`)
+    for (const [p, text] of ctx.termFiles) {
+      let inTerm = false
+      text.split('\n').forEach((line, i) => {
+        if (p === TERM_SPEC && /^## /.test(line)) inTerm = TERM_SECTION.test(line)
+        if (inTerm) return
+        // 「…」裡是別人的原話(user 原話、外部文件引文),一律逐字(M36(a)),不算 DS 自己的用詞(2026-11-15 審查)
+        const low = line.replace(/「[^」]*」/g, ' ').toLowerCase()
+        for (const w of banned) {
+          if (low.includes(w.toLowerCase())) P.C11.push(`${p}:${i + 1} 用了「${w}」—— 品牌色(--brand)、互動色(--primary)、主題(亮 / 暗)是三件事,照 ${dsRel(TERM_SPEC)}「用詞」改寫`)
+        }
+      })
+    }
+  }
+
+  return { problems: P, info: { need, model: m, missingSpec, missingRestore: [...new Set(missingRestore)], productReads: [...new Set(productRead)], productWrites: [...new Set(productWrite)], dsRawColorReads: [...new Set(dsRaw)], unread } }
 }
 
 /** 已知名單:現況違規 ⊆ 名單;名單裡的都還是違規(修好就刪);main 有分類表時,名單不得比 main 多。 */
@@ -542,14 +785,16 @@ function mainContext() {
 }
 
 const LABEL = {
-  C1: 'C1 有登記(整頁生效 / 跨資料夾被讀的名字恰好對到一列;轉接名指向已登記本尊;表本身合法)',
+  C1: 'C1 有登記(整頁生效 / 跨資料夾被讀 / 跨元件傳值的名字恰好對到一列;轉接名指向已登記本尊;表本身合法;保留類別 規格 ↔ 分類表 ↔ 各列 retain 一致)',
   C2: 'C2 新名字有自己的一列與理由',
   C3: 'C3 宣告的檔案 = 登記的住處',
   C4: 'C4 新名字完整出現在登記的規格裡;既有缺漏只能變短',
   C5: 'C5 大密度覆寫有回復、覆寫與預設同檔',
   C6: 'C6 樣式檔有進對外彙總檔或被程式匯入',
   C7: 'C7 誰可以讀(產品 / 設計系統讀原料 / 元件的值主人規格點名 ↔ 分類表)',
-  C9: 'C9 只有主人自己在讀、又不切換的值不開全系統的名字(元件的值全查;其他類別查新名字)',
+  C9: 'C9 不該有全系統的名字:只有主人自己在讀又不切換(含甲:唯一讀者只在程式裡量值)/ 只當同檔公式的中間值卻沒寫明(乙)/ 沒有任何讀者(丙;寫了保留類別 retain 的不算)',
+  C10: 'C10 產品可讀的名字(含它的 Tailwind 轉接名)不得悄悄消失:不再宣告就要在分類表 retired 登記 user 原話與版本',
+  C11: 'C11 用詞:品牌色 / 互動色 / 主題不混用(清單住 color.spec.md「用詞」)',
 }
 
 function main() {
@@ -561,7 +806,13 @@ function main() {
     console.log(`✗ INSTRUMENT-FAIL 拿不到 main 的 token 清單:${base.error} —— 不是跳過,是紅(「新增」沒有基準就無從判定)`)
     process.exit(1)
   }
-  const { problems, info } = runChecks({ files, registry, mainNames: base.mainNames, mainRegistry: base.mainRegistry, readSpec: readSpecFromDisk })
+  const bc = baseContexts(base.ref)
+  if (bc.error) {
+    console.log(`✗ INSTRUMENT-FAIL C10 的對照基準:${bc.error} —— 不是跳過,是紅(沒有基準就看不到哪些名字消失)`)
+    process.exit(1)
+  }
+  const termFiles = readTermFiles()
+  const { problems, info } = runChecks({ files, registry, mainNames: base.mainNames, mainRegistry: base.mainRegistry, readSpec: readSpecFromDisk, bases: bc.bases, termFiles })
   if (process.argv.includes('--inventory')) {
     for (const [n, why] of [...info.need].sort()) {
       const h = lookup(registry?.rows ?? [], n)
@@ -577,7 +828,7 @@ function main() {
     for (const p of list) console.log(`    ${p}`)
     fail += list.length
   }
-  console.log(`\n基準 ${base.ref}${base.mainRegistry === undefined ? '(main 上還沒有分類表 —— 已知名單從這一版開始只能變短)' : ''}`)
+  console.log(`\n基準 ${base.ref}${base.mainRegistry === undefined ? '(main 上還沒有分類表 —— 已知名單從這一版開始只能變短)' : ''};C10 對照 ${bc.bases.map((b) => `${b.label}${b.registry ? '' : '(沒有分類表,用工作樹的)'}`).join(' / ')};C11 掃了 ${termFiles.size} 個檔`)
   console.log(`需要登記的名字 ${info.need.size} 個 / 分類表 ${registry?.rows?.length ?? 0} 列 / 已知缺規格 ${info.missingSpec.length} / 已知缺回復 ${info.missingRestore.length} / 掃了 ${files.size} 個檔`)
   console.log(fail ? `✗ ${fail} 項未通過` : '✓ Token 建立不變式:全通過')
   process.exit(fail ? 1 : 0)
@@ -595,7 +846,10 @@ function selftest() {
   const addRows = (...rows) => { const r = clone(registry); r.rows.push(...rows); return r }
   const appendRoot = (decl) => withFiles({ [UI]: `${files.get(UI)}\n:root { ${decl} }\n` })
   const row = (o) => ({ class: 'component', owner: 'Fixture', home: 'tokens/uiSize/uiSize.css', spec: 'tokens/uiSize/uiSize.spec.md', product: 'no', dsReaders: 'any', why: '對照組', ...o })
-  const run = (over) => runChecks({ files, registry, mainNames, mainRegistry: registry, readSpec: readSpecFromDisk, ...over })
+  // C10 的基準 = 工作樹本身(現況比自己 → 0 個消失);C11 掃現況的設計系統原始碼與規格
+  const termFiles = readTermFiles()
+  const selfBase = [{ label: '對照基準(工作樹本身)', files, registry }]
+  const run = (over) => runChecks({ files, registry, mainNames, mainRegistry: registry, readSpec: readSpecFromDisk, bases: selfBase, termFiles, ...over })
   const BTN = `${DS_ROOT}/components/Button/fixture-raw.tsx`
   const cases = [
     // C1
@@ -673,14 +927,102 @@ function selftest() {
       const owner = `${DS_ROOT}/components/FixtureOwner/owner.tsx`
       const parked = { [UI]: `${files.get(UI)}\n:root { --fixture-parked-width: 30rem; }\n`, [owner]: "export const c = 'w-[var(--fixture-parked-width)]'\n" }
       const reg = addRows(row({ match: '--fixture-parked-width', owner: 'FixtureOwner', target: 'components/FixtureOwner/owner.tsx' }))
-      const scale = { [UI]: `${files.get(UI)}\n:root { --fixture-scale-step: 1px; }\n` }
-      const regScale = addRows(row({ match: '--fixture-scale-step', class: 'shared', owner: 'uiSize', scale: '--field-height-' }))
+      // 一組級距:sm 有元件在讀、lg 暫時沒人讀(2026-11-15 起「一組」採窄讀法:最後一段是級距 / 狀態、同組有人讀才算組員)
+      const scale = { [UI]: `${files.get(UI)}\n:root { --fixture-scale-sm: 1px; --fixture-scale-lg: 2px; }\n`, [`${DS_ROOT}/components/FixtureUser/user.tsx`]: "export const c = 'h-[var(--fixture-scale-sm)]'\n" }
+      const regScale = addRows(row({ match: '--fixture-scale-', class: 'shared', owner: 'uiSize', scale: '--field-height-' }))
       const onMain = (extra, r) => { const f = withFiles(extra); return run({ files: f, registry: r, mainNames: buildModel(f).names }) }
       return [
         ['C9', true, '--fixture-parked-width', '既有的元件的值寄住在共用檔、只有主人元件(target 的資料夾)在讀 —— 第三階段收回的 6 顆就是這種', () => onMain(parked, reg)],
         ['C9', false, '--fixture-parked-width', '同一顆有第二個元件在讀', () => onMain({ ...parked, [`${DS_ROOT}/components/FixtureOther/other.tsx`]: "export const d = 'w-[var(--fixture-parked-width)]'\n" }, reg)],
-        ['C9', false, '--fixture-scale-step', '既有的共用刻度成員沒人讀 —— 以一組為單位判,不逐顆問', () => onMain(scale, regScale)],
-        ['C9', true, '--fixture-scale-step', '同一顆共用刻度若是新名字,照樣要有主人以外的讀者(第一階段的範圍不縮)', () => run({ files: withFiles(scale), registry: regScale })],
+        ['C9', false, '--fixture-scale-lg', '既有的共用刻度級距沒人讀、同組有人讀 —— 以一組為單位判,不逐顆問', () => onMain(scale, regScale)],
+        ['C9', true, '--fixture-scale-lg', '同一顆共用刻度若是新名字,照樣要有主人以外的讀者(第一階段的範圍不縮)', () => run({ files: withFiles(scale), registry: regScale })],
+      ]
+    })(),
+    // ── 2026-11-15 稽核 P23:閘的四個盲點各補一條,每條都有該紅與該綠 ──
+    ...(() => {
+      const onMain = (extra, r) => { const f = withFiles(extra); return run({ files: f, registry: r, mainNames: buildModel(f).names }) }
+      const FX = (dir, name) => `${DS_ROOT}/components/${dir}/${name}`
+      // (甲)唯一讀者在非主人資料夾、只在程式裡量值(錨 --sidebar-width-min 被 AppShell 的 JS 量值探針讀)
+      const jsMin = { [FX('FixtureHost', 'host.css')]: ':root { --fixture-js-min: 240px; }\n' }
+      const regJs = addRows(row({ match: '--fixture-js-min', owner: 'FixtureHost', home: 'components/FixtureHost/host.css', target: 'components/FixtureHost/host.css', spec: 'components/Sidebar/sidebar.spec.md' }))
+      const jsReader = { [FX('FixtureProbe', 'probe.tsx')]: "export const w = (el: Element) => getComputedStyle(el).getPropertyValue('--fixture-js-min')\n" }
+      const cssReader = { [FX('FixtureProbe', 'probe.tsx')]: "export const c = 'min-w-[var(--fixture-js-min)]'\n" }
+      // (乙)只當同檔公式的輸入(會切換,舊版 C9 一律跳過)
+      const slotCss = (why) => ({
+        css: { [FX('FixtureRail', 'rail.css')]: ':root { --fixture-rail-in: 16px; --fixture-rail-out: calc(2 * 8px + var(--fixture-rail-in)); }\n[data-density="lg"] { --fixture-rail-in: 20px; }\n[data-density="md"] { --fixture-rail-in: 16px; }\n',
+          [FX('FixtureRail', 'rail.tsx')]: "import './rail.css'\nexport const c = 'w-[var(--fixture-rail-out)]'\n" },
+        reg: addRows(
+          row({ match: '--fixture-rail-in', owner: 'FixtureRail', home: 'components/FixtureRail/rail.css', target: 'components/FixtureRail/rail.css', why }),
+          row({ match: '--fixture-rail-out', owner: 'FixtureRail', home: 'components/FixtureRail/rail.css', target: 'components/FixtureRail/rail.css', why: '收合寬' })),
+      })
+      const slotBad = slotCss('選單圖示尺寸'), slotOk = slotCss('收合寬公式的中間值(圖示欄),畫出來的圖示不讀它')
+      // (丙)沒有任何讀者
+      const orphan = { [UI]: `${files.get(UI)}\n:root { --fixture-orphan-thing: 4px; }\n` }
+      const regOrphan = addRows(row({ match: '--fixture-orphan-thing', class: 'shared', owner: 'uiSize', scale: '--field-height-' }))
+      const compSwitch = { [FX('FixtureComp', 'comp.css')]: ':root { --fixture-comp-h: 2rem; }\n[data-density="lg"] { --fixture-comp-h: 2.5rem; }\n[data-density="md"] { --fixture-comp-h: 2rem; }\n' }
+      const regComp = addRows(row({ match: '--fixture-comp-h', owner: 'FixtureComp', home: 'components/FixtureComp/comp.css', target: 'components/FixtureComp/comp.css' }))
+      const alias = { [UI]: `${files.get(UI)}\n:root { --fixture-alias-only: 4px; }\n@theme inline { --spacing-fixture-alias-only: var(--fixture-alias-only); }\n` }
+      const regAlias = addRows(row({ match: '--fixture-alias-only', class: 'shared', owner: 'uiSize', scale: '--field-height-' }))
+      // 跨元件傳值(每個讀者資料夾自己也有宣告;錨 --item-prefix-slot)
+      const pass = { [FX('FixtureA', 'a.tsx')]: "export const s = { '--fixture-pass': '16px' }\nexport const c = 'min-w-[var(--fixture-pass,auto)]'\n", [FX('FixtureB', 'b.tsx')]: "export const t = { '--fixture-pass': '20px' }\n" }
+      return [
+        ['C9', true, '--fixture-js-min', '(甲)唯一讀者在非主人資料夾、只用 getPropertyValue 量值', () => onMain({ ...jsMin, ...jsReader }, regJs)],
+        ['C9', false, '--fixture-js-min', '(甲)對照:同一個讀者改用 var() 讀 → 第 0 題 (c) 成立', () => onMain({ ...jsMin, ...cssReader }, regJs)],
+        ['C9', true, '--fixture-rail-in', '(乙)只被同檔公式讀、why 沒寫明是中間值(會切換也要查)', () => onMain(slotBad.css, slotBad.reg)],
+        ['C9', false, '--fixture-rail-in', '(乙)對照:why 寫明「中間值」', () => onMain(slotOk.css, slotOk.reg)],
+        ['C9', true, '--fixture-orphan-thing', '(丙)既有共用刻度沒有任何讀者、也不是有人讀的一組級距', () => onMain(orphan, regOrphan)],
+        ['C9', true, '--fixture-alias-only', '(丙)唯一的「讀者」是它自己的 Tailwind 轉接名那一行(沒有人用那個 class)', () => onMain(alias, regAlias)],
+        ['C9', false, '--fixture-alias-only', '(丙)對照:有元件用了那個 class', () => onMain({ ...alias, [FX('FixtureUser', 'user.tsx')]: "export const c = 'h-fixture-alias-only'\n" }, regAlias)],
+        ['C9', true, '--fixture-comp-h', '(丙)會切換的元件的值沒有任何讀者(舊版 C9 一律跳過有密度段的)', () => onMain(compSwitch, regComp)],
+        ['C9', false, '--fixture-comp-h', '(丙)對照:字串拼出的開頭 var(--fixture-comp-${size}) 吻合 → 算有人讀', () => onMain({ ...compSwitch, [FX('FixtureComp', 'comp.tsx')]: "import './comp.css'\nexport const h = (size: string) => `h-[var(--fixture-comp-${size})]`\n" }, regComp)],
+        ['C1', true, '--fixture-pass', '跨元件傳值:兩個資料夾各自宣告、其中一個讀 → 要登記', () => run({ files: withFiles(pass) })],
+        ['C1', false, '--fixture-pass', '對照:兩個資料夾各自宣告、沒有人讀 → 不是 token', () => run({ files: withFiles({ ...pass, [FX('FixtureA', 'a.tsx')]: "export const s = { '--fixture-pass': '16px' }\n" }) })],
+      ]
+    })(),
+    // ── 2026-11-15:--brand 誤刪的防線(保留類別三方一致 / retain 不算沒人讀 / 產品可讀的名字不得悄悄消失)與用詞 ──
+    ...(() => {
+      const SEM = `${DS_ROOT}/tokens/color/semantic.css`
+      const MO = `${DS_ROOT}/tokens/motion/motion.css`
+      const RAD = `${DS_ROOT}/tokens/radius/radius.css`
+      // 注入點找不到就丟例外(對照組本身失效,不得默默變成「沒改到東西」的假綠)
+      const drop = (text, path, re) => { const out = text.replace(re, ''); if (out === text) throw new Error(`對照組注入失敗:${path} 找不到 ${re}`); return out }
+      const line = (name) => new RegExp(`^[ \\t]*${name}:[^\\n]*\\n`, 'm')
+      const dropDecl = (path, ...names) => withFiles({ [path]: names.reduce((t, n) => drop(t, path, line(n)), files.get(path)) })
+      const noBrand = dropDecl(SEM, '--brand')
+      const noBrandBoth = dropDecl(SEM, '--brand', '--color-brand')
+      const entry = (name, o = {}) => ({ name, quote: '(對照組用的假原話)', quoteDate: '2026-11-15', deprecatedIn: '0.1.0-beta.900', removedIn: '0.1.0-beta.901', ...o })
+      const withRetired = (list) => { const r = clone(registry); r.retired = list; return r }
+      const regEdit = (fn) => { const r = clone(registry); fn(r); return r }
+      const ORPHAN = `${DS_ROOT}/tokens/orphan-tokens.spec.md`
+      const withTerm = (extra) => { const t = new Map(termFiles); for (const [k, v] of Object.entries(extra)) t.set(k, v); return t }
+      return [
+        // C10:產品可讀的名字(含轉接名)不得悄悄消失
+        ['C10', true, '--brand', '刪掉產品可讀的 --brand(設計系統沒有讀者也一樣)', () => run({ files: noBrand })],
+        ['C10', true, '--brand', '刪 --brand 時連分類表那一列一起改成 product: no → 基準的分類表仍說產品可讀,照樣紅(2026-11-15 審查)', () => run({ files: noBrand, registry: regEdit((r) => { r.rows.find((x) => x.match === '--brand').product = 'no' }) })],
+        ['C10', true, '--color-brand', '刪掉指向產品可讀本尊的 Tailwind 轉接名(bg-brand)', () => run({ files: dropDecl(SEM, '--color-brand') })],
+        ['C10', true, '--spacing-tree-indent-md', '刪掉樹狀縮排的轉接名(本尊 --tree-indent-* 產品可讀)', () => run({ files: dropDecl(UI, '--spacing-tree-indent-md') })],
+        ['C10', true, '--radius-sm', '刪掉產品可讀的圓角刻度(@theme 裡直接給值的那種)', () => run({ files: dropDecl(RAD, '--radius-sm') })],
+        ['C10', false, '--motion-duration-surface', '刪掉 product: no 的動畫時長(產品不讀,刪是設計系統內部的事)', () => run({ files: dropDecl(MO, '--motion-duration-surface') })],
+        ['C10', false, '--brand', '同樣刪掉兩顆,但分類表 retired 登記了原話與兩個版本', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand'), entry('--color-brand')]) })],
+        ['C10', true, '--brand', 'retired 那一筆沒有 user 原話', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', { quote: ' ' }), entry('--color-brand')]) })],
+        ['C10', true, '--brand', 'retired 那一筆 deprecatedIn = removedIn(沒有先保留一版)', () => run({ files: noBrandBoth, registry: withRetired([entry('--brand', { removedIn: '0.1.0-beta.900' }), entry('--color-brand')]) })],
+        // C1:保留類別 規格 ↔ 分類表 ↔ 各列 retain
+        ['C1', true, 'type-scale', '分類表 retention 拿掉一類、規格還寫著', () => run({ registry: regEdit((r) => { r.retention.categories = r.retention.categories.filter((c) => c.key !== 'type-scale') }) })],
+        ['C1', true, 'reservation', '規格拿掉一類的標題、分類表還有', () => run({ readSpec: (p) => (p.endsWith(ORPHAN) ? drop(readSpecFromDisk(p), ORPHAN, /^### 9\. `reservation` — [^\n]*\n/m) : readSpecFromDisk(p)) })],
+        ['C1', true, '--brand', '列的 retain 指到不存在的類別', () => run({ registry: regEdit((r) => { r.rows.find((x) => x.match === '--brand').retain = 'no-such-category' }) })],
+        ['C1', false, 'reservation', '現況:規格每類標題 ↔ 分類表 retention 一致', () => run({})],
+        // C9(丙):retain 寫明保留類別的不算沒人讀
+        ['C9', false, '--brand', '拿掉 --brand 的 retain → 仍不報:產品可讀的名字不進(丙),看不到讀者不是退場理由', () => run({ registry: regEdit((r) => { delete r.rows.find((x) => x.match === '--brand').retain }) })],
+        ['C9', true, '--brand', '把 --brand 改成 product: no 又拿掉 retain → 設計系統沒有任何讀者(丙)', () => run({ registry: regEdit((r) => { const b = r.rows.find((x) => x.match === '--brand'); delete b.retain; b.product = 'no' }) })],
+        ['C9', false, '--brand', '現況:--brand 寫了 retain = reservation(產品層預留)', () => run({})],
+        // C11:用詞
+        ['C11', true, '主操作色', '範例裡寫「品牌主操作色」', () => run({ termFiles: withTerm({ [`${DS_ROOT}/components/FixtureTerm/fixture.stories.tsx`]: "export const note = '這顆是品牌主操作色'\n" }) })],
+        ['C11', true, 'brand swap', '規格英文寫 Brand Swap(大小寫不同也算)', () => run({ termFiles: withTerm({ [`${DS_ROOT}/components/FixtureTerm/fixture.spec.md`]: 'Avoid Brand Swap drift.\n' }) })],
+        ['C11', true, '不用的說法', '用詞段少了「不用的說法」那一行 → 讀不到清單(INSTRUMENT,不是放行)', () => run({ termFiles: withTerm({ [TERM_SPEC]: drop(termFiles.get(TERM_SPEC), TERM_SPEC, /^\*\*不用的說法\*\*[^\n]*\n/m) }) })],
+        ['C11', false, 'FixtureTerm/ok.md', '正確用法:「品牌色 --brand 固定不隨主題;互動色換色」', () => run({ termFiles: withTerm({ [`${DS_ROOT}/components/FixtureTerm/ok.md`]: '品牌色 --brand 固定、不隨主題切換;按鈕那顆藍是互動色,互動色換色時圖表不受影響。\n' }) })],
+        ['C11', false, 'color.spec.md', '現況:color.spec.md「用詞」段本身列出這些字 → 不算', () => run({})],
+        ['C11', false, 'FixtureTerm/quote.md', '逐字引文:「…」裡的 user 原話含「主題色」→ 不算(M36(a) 引文一律逐字)', () => run({ termFiles: withTerm({ [`${DS_ROOT}/components/FixtureTerm/quote.md`]: 'user 原話:「所以主操作色就是主題色的意思嗎？」\n' }) })],
+        ['C11', true, 'FixtureTerm/mixed.md', '引號外自己寫「主題色」→ 紅(引號只豁免引文本身)', () => run({ termFiles: withTerm({ [`${DS_ROOT}/components/FixtureTerm/mixed.md`]: 'user 說「好」,所以這顆主題色要換。\n' }) })],
       ]
     })(),
   ]

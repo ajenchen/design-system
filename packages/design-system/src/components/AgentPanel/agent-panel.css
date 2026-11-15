@@ -3,7 +3,8 @@
  *
  * 參數=shadcn shimmer 逐字(ui.shadcn.com/docs/utils/shimmer,2026-09-02 實開頁複核):
  * 帶寬 calc(3ch + 40px)、斜 20°(=linear-gradient 110deg)、
- * var(--motion-duration-shimmer, 2s) linear infinite。
+ * 一輪 2s linear infinite。2s 是 AgentPanel 自己的值,只住這裡(2026-11-15 前讀共用名字 --motion-duration-shimmer,
+ * 它只有這一個讀者、不切換 → 依 token-system.spec.md 第 0 題收回,值不變;稽核 P10)。
  * 色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯零新色;semantic.css fg-muted 映射)。
  * 亮帶左→右掃過(拍板);prefers-reduced-motion 自停回靜態。
  */
@@ -22,7 +23,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: agent-shimmer var(--motion-duration-shimmer, 2s) linear infinite;
+  animation: agent-shimmer 2s linear infinite;
 }
 
 @keyframes agent-shimmer {

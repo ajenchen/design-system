@@ -50,7 +50,7 @@ import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-
 
 // Chrome-slot layout trick(2026-04-22 v5,2026-05-04 重思 parameterize):
 // **所有 unbounded control**(Button with `data-unbounded="true"` — Button 自動在 variant="text" 或 dismiss
-// 時標記)的 **native size 不變**(sm: 28 md / 32 lg),但 **layout 佔位** via 負 `my` 縮成 `--chrome-slot-h`。
+// 時標記)的 **native size 不變**(sm: 28 md / 32 lg),但 **layout 佔位** via 負 `my` 縮成 `--surface-chrome-slot-h`。
 //
 // **Slot height = header title 的 line-height**(讓 button 不 dominate,title 自然撐 header)
 //   - Default 衍生自 title typography:`calc(var(--font-body-lg-size)*1.5)` = 16×1.5 = 24(Dialog/Sheet title = text-body-lg)。
@@ -67,7 +67,7 @@ import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-
 // 負 my 公式:(slot - native) / 2,density-aware:
 //   Dialog md: (24 - 28) / 2 = -2px;  lg: (24 - 32) / 2 = -4px
 //   Popover md: (21 - 28) / 2 = -3.5px(sub-pixel,可接受)
-const CHROME_UNBOUNDED_SLOT = '[&_[data-unbounded]:not([data-slot=surface-header-actions]_*)]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]' // 右側操作區裡的改由整區縮位(見檔尾 ACTIONS_GROUP_SLOT)
+const CHROME_UNBOUNDED_SLOT = '[&_[data-unbounded]:not([data-slot=surface-header-actions]_*)]:my-[calc((var(--surface-chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]' // 右側操作區裡的改由整區縮位(見檔尾 ACTIONS_GROUP_SLOT)
 
 /**
  * 輕量浮層 header 的 slot override —— **SSOT,禁各自 inline**(2026-06-16 收斂)。
@@ -75,8 +75,9 @@ const CHROME_UNBOUNDED_SLOT = '[&_[data-unbounded]:not([data-slot=surface-header
  * 衍生自 title typography → title 字級改,slot 自動跟(取代舊各自寫死的 1.25rem / 20 巧合值)。
  * 消費者(同設計邏輯,皆 raw SurfaceHeader + PopoverTitle):PopoverHeader / DataTable sort·filter panel /
  * FileItem upload-manager。Default slot(Dialog/Sheet,title = text-body-lg)= 24,在 CHROME_UNBOUNDED_SLOT fallback。
+ * 元件內變數 `--surface-chrome-slot-h` 用本 pattern 的開頭(2026-11-15 前叫 --chrome-slot-h,像共用刻度 --chrome-header-* 那一族;稽核 P20)。
  */
-export const COMPACT_HEADER_SLOT = '[--chrome-slot-h:calc(var(--font-body-size)*1.5)]'
+export const COMPACT_HEADER_SLOT = '[--surface-chrome-slot-h:calc(var(--font-body-size)*1.5)]'
 
 export interface SurfaceHeaderProps
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -275,7 +276,7 @@ export interface SurfaceHeaderProps {
 // 區整體佔位縮回標題行高(公式同 CHROME_UNBOUNDED_SLOT,× 與操作的位置、標題列高度都不變)。理由:分隔線長 = 同列最高元件 − 8,
 // 基準要在「自動高度的操作區」裡才成立(action-bar.spec.md「分隔線幾何」前提);每顆鈕各自縮成 24 時,區高 24 → 線 16(Popover 21 → 13 → 地板 16),
 // 比常駐標題列(AI 面板 / FileViewer,同樣 sm 鈕)的 20 短。區裡有外框按鈕時不縮(有外框的不縮,標題列自然長高 —— overlay-chrome-sizing.spec.md「Bounded」列)。
-const ACTIONS_GROUP_SLOT = '[&:not(:has(button:not([data-unbounded])))]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
+const ACTIONS_GROUP_SLOT = '[&:not(:has(button:not([data-unbounded])))]:my-[calc((var(--surface-chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
 
 function surfaceHeaderRow(children: React.ReactNode, actions: React.ReactNode, dismiss: React.ReactNode) {
   if (actions == null && dismiss == null) return children

@@ -17,6 +17,8 @@
 
 CSS 定義了 `--radius-sm`(目前 = 4px,與 md 同值),但**不在元件中使用**。保留給未來「介於 md 和 xs 之間」的需求(如更密集的 UI 模式)。所有 4px 圓角一律用 `rounded-md`。
 
+2026-11-15 照實補記:這之前設計系統裡有 6 處違反上一句、寫了 `rounded-sm` —— AgentPanel 兩處(`agent-panel.tsx`)與 3 個範例檔(BulkActionBar 範例兩處、Pagination 範例、TimePicker 結構頁),同日改成 `rounded-md`(同為 4px,畫面不變)。`--radius-sm` 這個名字本身還在:分類表 `--radius-` 那一列登記產品可讀(`product: read`),設計系統裡沒有讀者不代表產品沒有,去留要 user 決定(退場走 `../orphan-tokens.spec.md`「退場流程」)。
+
 
 ## 使用規則
 

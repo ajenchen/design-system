@@ -359,7 +359,8 @@ const SidebarProvider = React.forwardRef<
           "--item-icon-size": `${ICON_SIZE[size]}px`,
           "--item-avatar-size": `${AVATAR_SIZE.inline[size]}px`,
           "--sidebar-rail-icon-slot": `${ICON_SIZE[size]}px`,
-          ...(uniformPrefix ? { "--mixed-prefix-slot": slotValue } : {}),
+          // --item-mixed-prefix-slot:item-anatomy 規格寫的合約變數,用 pattern 開頭(token-system.spec.md「命名」;2026-11-15 前叫 --mixed-prefix-slot,稽核 P20)
+          ...(uniformPrefix ? { "--item-mixed-prefix-slot": slotValue } : {}),
           ...style,
         } as React.CSSProperties),
       [size, uniformPrefix, slotValue, style]
@@ -380,7 +381,7 @@ const SidebarProvider = React.forwardRef<
               // 過 wrapperStyle inline,讓 collapsed pl 公式知道「ItemPrefix wrapper 被撐到
               // 24,effective prefix width = 24 非 16」)。
               uniformPrefix &&
-                "has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--mixed-prefix-slot)] has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:![--item-icon-size:var(--mixed-prefix-slot)]",
+                "has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:[--item-prefix-slot:var(--item-mixed-prefix-slot)] has-[[data-prefix-type=icon]]:has-[[data-prefix-type=avatar]]:![--item-icon-size:var(--item-mixed-prefix-slot)]",
               className
             )}
             ref={ref}
@@ -1895,11 +1896,12 @@ const SidebarMenuSkeleton = React.forwardRef<
         />
       )}
       <Skeleton
-        className="h-4 max-w-[var(--skeleton-width)] flex-1"
+        className="h-4 max-w-[var(--sidebar-skeleton-width)] flex-1"
         data-sidebar="menu-skeleton-text"
         style={
           {
-            "--skeleton-width": width,
+            // 元件內變數用主人開頭(2026-11-15 前叫 --skeleton-width,像 Skeleton 元件的值;稽核 P20)
+            "--sidebar-skeleton-width": width,
           } as React.CSSProperties
         }
       />

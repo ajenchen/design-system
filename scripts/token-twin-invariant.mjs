@@ -4,7 +4,9 @@
  *   保證: 有 JS 雙生的 CSS token,兩邊的值逐對相等 —— `--stack-gap` ↔ `STACK_GAP_PX`(tokens/uiSize/stack-gap.ts)、
  *         `--avatar-stack-overlap` ↔ `AVATAR_STACK_OVERLAP_PX`(components/Avatar/avatar.tsx)、
  *         `--tree-indent-{sm,md,lg}` ↔ `INDENT_STEP`(components/TreeView/tree-view.tsx)、
- *         `--tag-height-{sm,md,lg}` ↔ `TAG_HEIGHT_PX`(components/Tag/tag.tsx)—— 後兩組 2026-11-11 加(token 分類落地計畫檢查 8)。
+ *         `--tag-height-{sm,md,lg}` ↔ `TAG_HEIGHT_PX`(components/Tag/tag.tsx)—— 後兩組 2026-11-11 加(token 分類落地計畫檢查 8)、
+ *         `--chrome-header-avatar-size` ↔ `CHROME_HEADER_AVATAR_PX`(patterns/header-canonical/chrome-header-avatar.ts,2026-11-15);
+ *         另有同檔 CSS 對 CSS 一組(`--color-white` / `--color-black` 在 tokens/color/primitives.css 的兩份,2026-11-15)。
  *   紅: 任一對值不相等 → 印出那一對、兩邊的值與檔案,exit 1;CSS 端**每一個**宣告(預設值與密度段的重設)都要等於程式常數,
  *       任一處不等就紅;任一邊讀不到(檔案不在、宣告被改名、分類表查不到住處)也是紅(儀器失效不當通過)。
  *   綠: 每一對兩邊都讀得到且相等。純靜態讀檔,結果不隨時間 / 機器變。
@@ -19,8 +21,15 @@
  * 與 `ds-canonical/hooks/lib/_tab_lg_chrome_header_equal.sh` 同一個來源),搬家只改分類表一列。
  * (2026-11-11 第 2、3 批 —— 標籤高 → components/Tag/tag.css、頭像重疊量 → components/Avatar/avatar.css —— 搬完,
  * 只改了分類表兩列,這支一行沒動。)
- * 只比第一個宣告(`:root`)也是同一次補的:`--tree-indent-*` 在 `:root` 與「鎖回一般密度」段各宣告一次,
- * 程式常數不分密度,所以每一個宣告都必須等於它。
+ * 只比第一個宣告(`:root`)也是同一次補的:當時 `--tree-indent-*` 在 `:root` 與「鎖回一般密度」段各宣告一次,
+ * 程式常數不分密度,所以每一個宣告都必須等於它(2026-11-15 鎖回段那份同值重寫已刪,稽核 P18;「每一個都比」的規則照留)。
+ *
+ * 2026-11-15 加兩種(稽核 P03 / P21):
+ *   - `--chrome-header-avatar-size` ↔ `CHROME_HEADER_AVATAR_PX`(patterns/header-canonical/chrome-header-avatar.ts):
+ *     標頭裡 24px 頭像的 JS 尺寸(AccountMenu、範例)與收合標頭公式讀的 CSS 值,原本只靠註解維持相等。
+ *   - CSS 對 CSS(`cssTwins`):同一個值在同一個檔寫兩份、程式結構上又拆不掉的(`--color-white` / `--color-black`:
+ *     `:root` 一份給 var() 讀者,`@theme inline` 一份給 Tailwind 的 bg-white / text-black —— inline 會把值直接寫進 class,
+ *     改成 var() 或不加 inline 都會改變 class 的解析方式),兩份字串必須一字不差。
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -44,7 +53,36 @@ export const TWIN_PAIRS = [
   { cssVars: { sm: '--tree-indent-sm', md: '--tree-indent-md', lg: '--tree-indent-lg' }, ts: 'packages/design-system/src/components/TreeView/tree-view.tsx', tsConst: 'INDENT_STEP' },
   // 標籤盒高:原本只有瀏覽器閘 tag-field-vertical-inset I7 拿寫死的 20/24 量畫面,CSS 與程式常數兩邊沒有靜態鎖
   { cssVars: { sm: '--tag-height-sm', md: '--tag-height-md', lg: '--tag-height-lg' }, ts: 'packages/design-system/src/components/Tag/tag.tsx', tsConst: 'TAG_HEIGHT_PX' },
+  // 標頭頭像(2026-11-15,稽核 P03):收合標頭的左內距公式讀 CSS 值,AccountMenu / 範例畫 24px 頭像讀程式常數
+  { cssVar: '--chrome-header-avatar-size', ts: 'packages/design-system/src/patterns/header-canonical/chrome-header-avatar.ts', tsConst: 'CHROME_HEADER_AVATAR_PX' },
 ]
+
+/**
+ * CSS 對 CSS 雙生(2026-11-15,稽核 P21):同一個檔裡同一個名字的每一個宣告(去掉註解後)字串必須一字不差,
+ * 而且至少 `min` 份 —— 少於這個數 = 寫法改了(例:改成不加 inline 的 @theme 只剩一份),這一組的登記要跟著重看,先紅。
+ */
+export const CSS_TWINS = [
+  { css: 'packages/design-system/src/tokens/color/primitives.css', cssVar: '--color-white', min: 2 },
+  { css: 'packages/design-system/src/tokens/color/primitives.css', cssVar: '--color-black', min: 2 },
+]
+/** 讀 CSS 裡某名字每一個宣告的值字串(去掉註解、壓空白),照出現順序。 */
+export function readCssValuesAll(text, cssVar) {
+  const src = text.replace(/\/\*[\s\S]*?\*\//g, ' ')
+  const re = new RegExp(`(?<![\\w-])${cssVar.replace(/[-]/g, '\\-')}\\s*:\\s*([^;{}]+);`, 'g')
+  return [...src.matchAll(re)].map((m) => m[1].trim().replace(/\s+/g, ' '))
+}
+/** 判定 CSS 對 CSS(純函式):讀不到 / 份數不足 = 儀器失效,也列進 problems。 */
+export function judgeCssTwins(twins, readText) {
+  const problems = []
+  for (const t of twins) {
+    const text = readText(t.css)
+    const vals = text == null ? [] : readCssValuesAll(text, t.cssVar)
+    if (vals.length < t.min) { problems.push(`INSTRUMENT-FAIL ${t.css} 的 ${t.cssVar} 只讀到 ${vals.length} 份(登記至少 ${t.min} 份)—— 檔案不在、改名,或寫法改了(這一組的登記要跟著重看)`); continue }
+    const distinct = [...new Set(vals)]
+    if (distinct.length > 1) problems.push(`${t.cssVar} 在 ${t.css} 的 ${vals.length} 份宣告不一致:${distinct.join(' ≠ ')} —— 同一個值的幾份要一起改`)
+  }
+  return { ok: problems.length === 0, problems }
+}
 
 /**
  * 每一對的 CSS 住處 = 分類表裡該名字最長吻合那一列的 home(必須恰好一列、home 是單一路徑)。
@@ -158,7 +196,24 @@ function selftest() {
     ['分類表讀不到 → css = null', withCssHomes([pairs[0]], 'not json')[0].css === null],
     ['css = null 時 judge 必紅(不當通過)', !judge([{ ...pairs[0], css: null }], (f) => good[f] ?? null).ok],
   ]
+  // CSS 對 CSS(2026-11-15,稽核 P21)
+  const twinCss = ':root { --fixture-white: oklch(1 0 0); }\n@theme inline {\n  --fixture-white: oklch(1 0 0);\n}\n'
+  const cssTwins = [{ css: 'w.css', cssVar: '--fixture-white', min: 2 }]
+  const cssTwinCases = [
+    ['CSS 對 CSS:兩份一字不差 → 綠', { 'w.css': twinCss }, true],
+    ['CSS 對 CSS:兩份只差空白 → 綠', { 'w.css': twinCss.replace('oklch(1 0 0); }', 'oklch(1  0 0); }') }, true],
+    ['注入:CSS 對 CSS 其中一份改值 → 紅', { 'w.css': twinCss.replace('  --fixture-white: oklch(1 0 0);', '  --fixture-white: oklch(0.99 0 0);') }, false],
+    ['注入:CSS 對 CSS 只剩一份(寫法改了)→ 紅(儀器失效)', { 'w.css': ':root { --fixture-white: oklch(1 0 0); }\n' }, false],
+    ['注入:CSS 對 CSS 第二份藏在註解裡 → 紅(註解不算宣告)', { 'w.css': ':root { --fixture-white: oklch(1 0 0); }\n/* --fixture-white: oklch(1 0 0); */\n' }, false],
+    ['注入:CSS 對 CSS 檔案不在 → 紅', {}, false],
+  ]
   let ok = true
+  for (const [name, files, expectGreen] of cssTwinCases) {
+    const r = judgeCssTwins(cssTwins, (f) => files[f] ?? null)
+    const pass = r.ok === expectGreen
+    console.log(`${pass ? '✓' : '✗'} selftest ${name}${pass ? '' : ` —— 實得 ${r.ok ? '綠' : '紅'}:${r.problems.join(' / ')}`}`)
+    if (!pass) ok = false
+  }
   for (const [name, pass] of homeCases) {
     console.log(`${pass ? '✓' : '✗'} selftest 住處:${name}`)
     if (!pass) ok = false
@@ -184,7 +239,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   const read = (f) => { try { return readFileSync(resolve(ROOT, f), 'utf8') } catch { return null } }
   const pairs = withCssHomes(TWIN_PAIRS, read(REGISTRY_PATH) ?? '')
   const r = judge(pairs, read)
+  const rc = judgeCssTwins(CSS_TWINS, read)
   for (const p of pairs) console.log(`  ${p.cssVar ?? Object.values(p.cssVars).join(' / ')}(${p.css ?? '分類表查不到住處'})↔ ${p.tsConst}`)
-  if (!r.ok) { for (const m of r.problems) console.error(`✗ token-twin | ${m}`); process.exit(1) }
-  console.log(`✅ token-twin PASS(${TWIN_PAIRS.length} 對 CSS / JS 雙生 token 相等)`)
+  for (const t of CSS_TWINS) console.log(`  ${t.cssVar}(${t.css})每一份宣告 ↔ 彼此`)
+  const problems = [...r.problems, ...rc.problems]
+  if (problems.length) { for (const m of problems) console.error(`✗ token-twin | ${m}`); process.exit(1) }
+  console.log(`✅ token-twin PASS(${TWIN_PAIRS.length} 對 CSS / JS 雙生 token 相等;${CSS_TWINS.length} 組同檔 CSS 雙份一字不差)`)
 }

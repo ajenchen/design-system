@@ -38,8 +38,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/compone
  * 調整時自動連動，不需 JS 測量。
  *
  * ── Horizontal mode 的 label 寬度 ───────────────────────────────────────
- * 透過 labelWidth prop(單一 Field)或 FieldGroup 的同名 labelWidth(整組)→ --field-label-width
- * CSS variable。數字 = px,也可以是任何 CSS length（"10rem"、"30%" 等）。預設 "auto" 由 label 內容撐開。
+ * 透過 labelWidth prop(單一 Field)或 FieldGroup 的同名 labelWidth(整組)→ 直接寫進 grid 的第一欄
+ * (2026-11-15 前經 CSS variable --field-label-width 轉一手)。數字 = px,也可以是任何 CSS length（"10rem"、"30%" 等）。預設 "auto" 由 label 內容撐開。
  *
  * ── Required 星號 ──────────────────────────────────────────────────────
  * Field 的 required prop 會透過 context 傳給 FieldLabel 自動渲染 *，
@@ -287,10 +287,9 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
             ref={ref}
             className={cn('grid gap-x-3 items-start', className)}
             style={{
-              gridTemplateColumns: 'var(--field-label-width, auto) minmax(0, 1fr)',
-              ...(effectiveLabelWidth !== undefined
-                ? ({ ['--field-label-width' as string]: effectiveLabelWidth } as React.CSSProperties)
-                : undefined),
+              // label 欄寬直接寫進欄定義(2026-11-15 前經元件內變數 --field-label-width 轉一手:那個名字的開頭
+              // 跟共用刻度 --field-* 同一族,看起來像全系統的值;它只在這個元素上設、只在這個元素上讀,稽核 P20)
+              gridTemplateColumns: `${effectiveLabelWidth ?? 'auto'} minmax(0, 1fr)`,
               ...style,
             }}
             data-field-orientation="horizontal"

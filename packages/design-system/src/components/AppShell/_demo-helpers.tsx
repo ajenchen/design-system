@@ -32,6 +32,7 @@ import {
 } from '@/design-system/components/Sidebar/sidebar'
 import { useAppShell, type PanelWidthRange } from '@/design-system/components/AppShell/app-shell'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
+import { CHROME_HEADER_AVATAR_PX } from '@/design-system/patterns/header-canonical/chrome-header-avatar'
 import {
   ItemAvatar,
   ItemContent,
@@ -95,15 +96,15 @@ export const ACME_PROJECTS = [
 //   - Chrome header 沒有 sm/md/lg row size 概念,無 lookup 需求,用 raw Avatar 才語義正確
 //   - 父 `<div flex items-center>` 已 provide 縱向對齊,ItemPrefix wrapper(`h-[1lh]`)冗餘
 //
-// SSOT 鎖定:`<Avatar size={24}>` 對應 `--chrome-header-avatar-size: 1.5rem` token
-// (`header-canonical.css`)+ `header-canonical.spec.md` 4.5 canonical「24px raw Avatar」。
-// 公式端透過 var() 連動;JS 端透過 spec authority + comment cite 連動。改 24 → 同步 token + 此 hardcode。
+// SSOT 鎖定:頭像尺寸讀 CHROME_HEADER_AVATAR_PX(patterns/header-canonical/chrome-header-avatar.ts),
+// 它與 `--chrome-header-avatar-size: 1.5rem` token(`header-canonical.css`)由 scripts/token-twin-invariant.mjs 鎖住相等
+// (2026-11-15 前是字面值 24 + 註解同步,稽核 P03);canonical 見 `header-canonical.spec.md` 4.5「24px raw Avatar」。
 export const WorkspaceBrand = () => (
   <div className="flex items-center gap-2 min-w-0">
-    {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical; sync with `--chrome-header-avatar-size` */}
+    {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical */}
     {/* Workspace brand = 組織識別(非人)→ 首字 letter mark;2026-07-08 人像真實化 sweep 刻意保留,
         真實人像僅套用於 person avatar(組織用人臉照片會誤導身份) */}
-    <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
+    <Avatar size={CHROME_HEADER_AVATAR_PX} shape="square" color="blue" solid alt="Acme Inc" />
     <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
   </div>
 )
@@ -453,7 +454,7 @@ export function IssueDetail({ issue }: { issue: Issue | null }) {
             labelTruncate={false}
             labelClassName="font-medium text-foreground"
           />
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:232)(layoutSpace.spec.md:117 同範疇 spec-own) */}
+          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:234)(layoutSpace.spec.md:117 同範疇 spec-own) */}
           <div className="flex flex-wrap gap-1">
             <Tag size="sm" color={STATUS_COLOR[issue.status]}>{issue.status}</Tag>
             <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>

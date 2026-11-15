@@ -9,8 +9,9 @@ import { OverlayAnchorScope, useRegisterOverlayNode, useTriggerRegionDensity } f
 
 // 2026-05-18 ship per user 拍板 #3A:Tooltip Provider 預設 delayDuration 對齊 motion token SSOT。
 // Radix 預設 700ms 偏保守(MUI 預設 100ms、Atlassian 300ms、Material Components Web 500ms),DS 統一用(來源:https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Tooltip/Tooltip.js#L247 https://cdn.jsdelivr.net/npm/@atlaskit/tooltip@24.4.3/dist/es2019/tooltip.js https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-tooltip/constants.ts#L42-L43)
-// `--motion-delay-plain` (500ms,JS mirror `MOTION_DELAY_PLAIN_MS`)。Consumer 仍可 per-instance override。
-// 2026-05-21 D5 Phase B codex 抓 comment 200 vs token 500 drift → 註解 500ms 對齊 motion.css#--motion-delay-plain SSOT。
+// plain 檔 500ms = `MOTION_DELAY_PLAIN_MS`(tokens/motion/motion.ts,值的唯一住處;規格名 `--motion-delay-plain`,
+// 2026-11-15 起 CSS 宣告退場 —— 它從沒有 CSS 讀者)。Consumer 仍可 per-instance override。
+// 2026-05-21 D5 Phase B codex 抓 comment 200 vs token 500 drift → 註解 500ms 對齊 motion SSOT。
 const TooltipProvider = ({ delayDuration = MOTION_DELAY_PLAIN_MS, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => (
   <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />
 )

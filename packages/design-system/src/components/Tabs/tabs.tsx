@@ -41,9 +41,9 @@ import {
  *   切 value 用 SegmentedControl；切路由用 navigation。
  *
  * ── Size ──
- *   sm   h-tab-sm（32/40），★ 預設(2026-05-17 從 md 改),overlay / chrome / dense
- *   md   h-tab-md（40/48），future tier 無 recommended use case
- *   lg   h-tab-lg（48/56），page-level hero / 獨立 tabs 取代 chrome header
+ *   sm   --tab-height-sm（32/40），★ 預設(2026-05-17 從 md 改),overlay / chrome / dense
+ *   md   --tab-height-md（40/48），future tier 無 recommended use case
+ *   lg   --tab-height-lg（48/56 = --chrome-header-height),page-level hero / 獨立 tabs 取代 chrome header
  *
  * ── 寬度行為 ──
  *   Trigger 寬度永遠由內容決定（hug content）。

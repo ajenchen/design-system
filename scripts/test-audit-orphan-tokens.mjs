@@ -33,6 +33,24 @@ try {
   writeFileSync(target, orig)
 }
 
+// 2b) 2026-11-15:保留分類改讀分類表 token-registry.json 的 retention(腳本不再內建)。
+//     證明它真的讀那份:拿掉分類表的 palette 一類 → 原本歸在色階完整的孤兒變成真孤兒 → 必 FAIL → 還原。
+//     (腳本若還偷偷內建一份 regex,這一步會照樣 PASS —— 那就是第二份住處沒拆掉)
+const registryPath = path.join(ROOT, 'packages/design-system/src/tokens/token-registry.json')
+const registryOrig = readFileSync(registryPath, 'utf8')
+try {
+  const reg = JSON.parse(registryOrig)
+  const before = reg.retention.categories.length
+  reg.retention.categories = reg.retention.categories.filter((c) => c.key !== 'palette')
+  if (reg.retention.categories.length !== before - 1) { console.error('✗ 分類表找不到 palette 這一類(對照組本身失效)'); ok = false }
+  writeFileSync(registryPath, JSON.stringify(reg, null, 2) + '\n')
+  const code = run()
+  if (code === 0) { console.error('✗ 拿掉分類表的 palette 一類後 gate 未 FAIL(腳本沒有讀分類表,或另有內建分類)'); ok = false }
+  else console.log('✓ 拿掉分類表的一類 → 被抓(exit ' + code + ';保留分類確實讀自分類表)')
+} finally {
+  writeFileSync(registryPath, registryOrig)
+}
+
 // 3) 還原後必 PASS
 if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log('✓ 還原後 gate PASS(exit 0)')

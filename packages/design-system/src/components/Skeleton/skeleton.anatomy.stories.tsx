@@ -12,7 +12,7 @@ import { H3, Desc } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 /**
  * Skeleton 是極簡 animation primitive——單一 div + pulse animation,
  * **刻意沒有 size / color / variant**。形狀 / 尺寸完全由 consumer 的 className
- * (Tailwind utilities)決定。底色固定用 `bg-muted`,深淺模式由主題色自動切換。
+ * (Tailwind utilities)決定。底色固定用 `bg-muted`,換主題(亮 / 暗)時自動跟著切換。
  *
  * 因此本 spec 只有 Overview + 常見形狀 + 設計原則 + 無障礙四個 story,沒有 SizeMatrix /
  * ColorMatrix / StateMatrix——這些概念對 Skeleton 不適用。

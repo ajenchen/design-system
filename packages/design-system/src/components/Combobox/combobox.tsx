@@ -107,7 +107,7 @@ function ComboboxTagStack({
     <OverflowTagList items={items} size={tagSize} wrap={wrap}
       // 2026-05-18 7B' fix(per user 拍板「執行」+ Codex Round 3 共識)— 移除 `unbounded`,Tag 回預設
       // `max-w-40` cap(160px)+ 內建 `[data-tag-text] truncate min-w-0` 自帶 ellipsis。原 unbounded 是
-      // 「cell-as-input narrow cell < 160px」設計(`tag.tsx:85-90`),但 generic Combobox tag display
+      // 「cell-as-input narrow cell < 160px」設計(`tag.tsx:86-91`),但 generic Combobox tag display
       // 應走 Tag canonical cap-with-ellipsis(per `data-table.spec.md`「十一、Cell 單行截斷原則」「Tag 文字內部 truncate;
       // multiSelect 動態 +N」+ `data-table.spec.md`「禁止事項」「Tag 不可被外層 overflow-hidden 裁掉邊框」)。
       // Trade-off:長 tag 觸發 +N 提前(160 + gap + overflowW > available 較 quick)— acceptable per user。
@@ -730,14 +730,14 @@ function CustomCombobox({
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板決策 6 選 a + codex M31 Step 5 verdict 引的是當時 combobox.tsx 第 648 行):
           CustomCombobox edit non-wrap tagArea 對齊當時 view + readonly + native edit 已 ship 的 overflow-hidden fix(M10 當時四條一起對齊)。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。現況:native edit 2026-09-18 隨原生觸控路徑移除,剩三條共用檔頭 tagRowOverflowClass。 */}
-      {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
+      {/* TAG_ROW_CONTAINER_CLASS(`relative isolate`):標籤 wrapper 的疊放順序(`--overflow-tag-stack-z`,頭像堆疊用)只在這一列裡比,不跟頁面上其他層比 ——
           與 avatar.tsx AVATAR_STACK_CLASS(檢視態的堆疊列)同一件事,編輯態這裡就是那一列(2026-09-26 補,M17;2026-10-14 四個 Tag 列容器收成同一個常數) */}
       <div ref={tagAreaRef} className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : cn(tagRowOverflowClass, tagRowFocusRoomClass))}
         // consumer 指定的左內距(PeoplePicker stack)照樣成立:單行時再加上焦點框那 4px,內容起點不變。
         // 換行 × 欄位內搜尋:Tag 寬上限變數設成 100%(這一列的寬)—— Tag 本來就會縮到一列寬,但換列判斷用的是縮之前的寬(上限 160px),
         // 一顆比一列寬的 Tag 會讓後面那個基準寬 0 的閒著搜尋框照樣被擠到下一列(r-F3 缺陷 E:每人一顆標籤撐滿一列的窄欄位)。版面結果不變,只有換列判斷看到真的寬
         style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx != null && !wrap ? `calc(${tagAreaPaddingLeftPx}px + var(--stack-gap) + 2px)` : tagAreaPaddingLeftPx,
-          ...(wrap && inlineSearch ? { '--combobox-tag-area-inline-size': '100%' } as React.CSSProperties : undefined) }}>
+          ...(wrap && inlineSearch ? { '--tag-max-inline-size': '100%' } as React.CSSProperties : undefined) }}>
         {/* 有 Tag / 只選「不限」(純文字,同 placeholder 的盒與字級,只是不套灰)/ 空(placeholder)。
             三選一的第一個條件就是上面那個 `hasTags`,與欄位內距**同一個判斷式**。*/}
         {hasTags ? (

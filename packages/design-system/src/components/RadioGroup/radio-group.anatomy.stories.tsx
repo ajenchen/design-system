@@ -151,7 +151,7 @@ Radio 必須在 RadioGroup 內使用（互斥選擇語意）。</>}>
               {[
                 ['value', 'string', '(required)', 'RadioGroup 內的唯一值'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '控件尺寸（sm/md = 16px, lg = 20px）'],
-                ['disabled', 'boolean', 'false', '不可互動，移除品牌色'],
+                ['disabled', 'boolean', 'false', '不可互動，移除互動色'],
                 ['label', 'ReactNode', '—', '選項 label；傳入時自動以 SelectionItem 包裝'],
                 ['description', 'ReactNode', '—', '次要說明文字（須與 label 搭配）'],
                 ['readOnly', 'boolean', 'false', '鎖互動、保留 checked 視覺(standalone 整組 readonly 由 RadioGroup mode="readonly" 傳遞;Field 內整組改渲染灰框 + 選中項 label)'],
@@ -172,7 +172,7 @@ Radio 必須在 RadioGroup 內使用（互斥選擇語意）。</>}>
             <tbody>
               {[
                 ['形狀', 'rounded-md（方）', 'rounded-full（圓）'],
-                ['指示器', 'Check icon（白色）', 'Filled dot（品牌色）'],
+                ['指示器', 'Check icon（白色）', 'Filled dot（互動色）'],
                 ['語意', '獨立 toggle（多選）', '互斥選擇（單選）'],
                 ['容器', '可獨立使用', '必須在 RadioGroup 內'],
               ].map(([label, cb, radio]) => (
@@ -361,7 +361,7 @@ export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
     <ExampleSection title="Checked × State 色彩對照" description={<>橫向看同一 checked 狀態的 state 變化，縱向比較 unchecked 和 checked 的設計邏輯。
-Radio 與 Checkbox 的關鍵差異：checked 時底色維持 surface，指示器用品牌色 dot（Checkbox 則是底色變 primary、指示器用白色 check）。</>}>
+Radio 與 Checkbox 的關鍵差異：checked 時底色維持 surface，指示器用互動色 dot（Checkbox 則是底色變 primary、指示器用白色 check）。</>}>
       <div className="flex flex-col gap-8">
         <div className="overflow-x-auto">
           <table className="border-collapse">

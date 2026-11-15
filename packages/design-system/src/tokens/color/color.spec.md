@@ -210,6 +210,18 @@ Semantic token 按**載體類型**分成四個 family,**family 之間的 token �
 
 Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.md`「Icon 色彩原則」——核心規則:icon 代表內容/類別 → 與 label 同色;icon 純指示方向 → `fg-muted`;disabled 統一 `fg-disabled`。本檔不重述(Rule-of-3 pointer)。
 
+## 用詞
+
+| 說法(顏色的稱呼只在這一段定義,其他規格、註解、範例照這裡寫;「互動色」這個稱呼與下面的不用清單是 AI 依本檔「Action — Primary」第一句訂的【AI 推導 2026-11-15】) | 指的是 | 要點 |
+|---|---|---|
+| **品牌色** | `--brand` | 識別色,固定 #DF3232,亮 / 暗兩主題相同(見下方「Identity — 品牌」)。不是按鈕、連結那顆藍 |
+| **互動色** | `--primary`(含 `-hover` / `-active` / `-subtle` / `-text`) | 互動入口的顏色,代表「使用者可以執行的操作」(見下方「Action — Primary」第一句) |
+| **主題** | 亮 / 暗(`data-theme="light"` / `"dark"`) | 換主題 = 語意色換成那個主題的值;有些值兩主題本來就相同(例:`--on-emphasis`、`--on-emphasis-dark` 只寫在 ② 段),`--brand` 則是刻意固定的識別色 |
+
+**不用的說法**(閘逐字讀這一行反引號裡的字):`主題色` `主操作色` `品牌主色` `品牌藍` `品牌 primary` `品牌語義色` `品牌色移除` `移除品牌色` `品牌色完全移除` `保留品牌色` `釘在品牌色` `品牌 / 狀態色` `次要品牌操作` `brand swap` `brand-swap` `brand 改色` `隨 brand` —— 這些字把品牌色、互動色、主題三件事混成一個。要說「把按鈕那顆藍換掉」寫「互動色換色」;要說「亮暗切換」寫「換主題」;「停用時拿掉顏色」寫明拿掉的是哪一顆(互動色 / 危險色 / 原本的填色)。
+
+**為什麼有這段**:2026-11-15 前 `semantic.css` 把 `--primary` 那段標成「品牌主操作色」、註解寫「brand 改色」「隨 brand 走」「brand swap」,範例與規格也有十幾處把互動色叫成品牌色 —— 同一個字指兩顆不同的值,違反命名三重檢驗第 (3) 題(同一個字串在別處已有不同語義,`AGENTS.md`「命名與語言一致性」)。user 2026-11-15 原話:「而且按照 ds 品牌色和主題色是相同的東西嗎？ 你確定？」、「所以主操作色就是主題色的意思嗎？然後就是primary的意思？」。**機械**:`scripts/token-creation-invariant.mjs` C11 掃設計系統的原始碼與規格(`packages/design-system/src`、`packages/design-system/ds-canonical`),出現上面「不用的說法」就紅;本段是唯一可以寫出這些字的地方。
+
 ## 語義色
 
 ### Action — Primary
@@ -255,7 +267,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 <Progress className="bg-primary" value={60} />
 ```
 
-**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(執行面 = 配對測試 `scripts/test-status-color-invariant.mjs` 直呼它,登記在 `infra/governance/providers/harness-source-inventory.json` 的 gate-meta 家族、由夜間 `governance-harnesses.yml` 帶跑;舊句寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役,PR lane 目前不直呼 —— 2026-09-27 對帳改寫),回潮 `--primary` 即 fail。2026-06-05 把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + brand-swap 安全)—— 當時 commit `96f75ac1` 記載 user 在選項題選了『改用 --info(對齊 token 字典)』(選項由 AI 提供);那段對話紀錄已不存在、登記簿查無原話,來源以該 commit 記載為準。
+**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(執行面 = 配對測試 `scripts/test-status-color-invariant.mjs` 直呼它,登記在 `infra/governance/providers/harness-source-inventory.json` 的 gate-meta 家族、由夜間 `governance-harnesses.yml` 帶跑;舊句寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役,PR lane 目前不直呼 —— 2026-09-27 對帳改寫),回潮 `--primary` 即 fail。2026-06-05 把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + 互動色換色時不受牽連)—— 當時 commit `96f75ac1` 記載 user 在選項題選了『改用 --info(對齊 token 字典)』(選項由 AI 提供);那段對話紀錄已不存在、登記簿查無原話,來源以該 commit 記載為準。
 
 每個語義色的 bridge 同時產出 `bg-xxx`、`text-xxx`、`border-xxx` 三組 utility，視場景選用。
 
@@ -622,7 +634,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 在 `primitives.css` 定義 base-6 值（只需指定 L、C、H），相對公式自動推導 1-10 階。如已存在則跳過。
 
 ```css
---color-turquoise-6: oklch(0.64 0.09 196);  /* light 真值(primitives.css:183);dark 另於 dark 區塊定義 */
+--color-turquoise-6: oklch(0.64 0.09 196);  /* light 真值(primitives.css:184);dark 另於 dark 區塊定義 */
 /* 1-5 / 7-10 自動由公式推導 */
 ```
 
@@ -882,7 +894,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 |-------|------|
 | `--overlay` | dialog backdrop 遮罩 |
 | `--tooltip` | tooltip 深色底（不透明）|
-| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免 brand swap 污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 是 `l × 0.82`,比 step-6 **暗**,舊註解「較淡、提升可讀度」是反的 —— 實測卡片底上藍 2.92、紫 2.20、深橘 2.75,低於圖形 3:1(WCAG 1.4.11);step-6 為 4.51 / 3.45 / 4.39,綠 7.56、黃 11.68。黃在淺色用 step-7 是為了白底對比,深色 step-6 已夠亮。這組數字只住這裡,`semantic.css` 與 `chart.spec.md` 只指回來)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。Brand swap 不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
+| `--chart-1` ~ `--chart-5` | 5 色類別標記（Chart 元件 data viz 用；固定到 primitive 而非 semantic — 避免互動色換色污染 data viz 色義；兩主題都 step-6、淺色的 yellow 用 step-7 提對比(2026-09-26 深色由 step-5 改 step-6:深色 step-5 是 `l × 0.82`,比 step-6 **暗**,舊註解「較淡、提升可讀度」是反的 —— 實測卡片底上藍 2.92、紫 2.20、深橘 2.75,低於圖形 3:1(WCAG 1.4.11);step-6 為 4.51 / 3.45 / 4.39,綠 7.56、黃 11.68。黃在淺色用 step-7 是為了白底對比,深色 step-6 已夠亮。這組數字只住這裡,`semantic.css` 與 `chart.spec.md` 只指回來)）。**Numbered naming = industry canonical**(Material Data Viz palette / Polaris ChartPalette / Carbon Charts colors-N / IBM data-viz / D3 schemeCategory10)— categorical color 本質無 inherent priority,只能 by-index;**1→5 順序 ≠ priority**,只是 consumer 取色 idx convention。色相選擇 rationale:blue(冷靜入門)→ purple(分類二)→ green(成長 / 正面)→ yellow(警戒對比)→ deep-orange(暖色平衡)。互動色換色不影響 data viz(`--chart-*` 直連 primitive,跳過 `--primary` 等 semantic 中間層)。<!-- @benchmark-cited: Material Data Viz https://m3.material.io/styles/color/the-color-system/color-roles + Polaris https://polaris.shopify.com/tokens/color + Carbon https://carbondesignsystem.com/data-visualization/color-palettes/ + D3 https://d3js.org/d3-scale-chromatic/categorical --> |
 | `opacity-disabled` | disabled 元件整體透明度（0.45），用於無法改寫內部色彩的第三方元件 |
 
 `opacity-disabled` 適用場景：包裝第三方元件（如圖表、地圖）的 disabled 狀態，無法逐一替換內部顏色時，直接對容器套用透明度：
@@ -956,7 +968,7 @@ CSS 變數在定義元素上解析。`:root` 的 `--foreground: var(--color-neut
 ```
 
 ## 結構性保留 token canonical
-SSOT → `ds-canonical/references/structural-token-retention.md`(canonical owner,不指產生檢視;6 類保留 + sub-agent triple-verify 流程)
+SSOT → `../orphan-tokens.spec.md`(保留 / 退場分類的唯一住處,2026-11-15 收編原 `ds-canonical/references/structural-token-retention.md` 的 6 類;`--brand` 屬「產品層預留」類)
 
 ---
 
@@ -974,6 +986,7 @@ SSOT → `ds-canonical/references/structural-token-retention.md`(canonical owner
 - `file-upload.spec.md`
 - `notice.spec.md`
 - `opacity.spec.md`
+- `orphan-tokens.spec.md`
 - `progress-bar.spec.md`
 - `separator.spec.md`
 - `skeleton.spec.md`

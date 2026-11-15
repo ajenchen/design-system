@@ -37,7 +37,8 @@
 [data-density="lg"]:not([data-layout-space]) {
   --layout-space-loose:  24px;
   --layout-space-tight:  16px;
-  --layout-space-bottom: 48px; /* intentionally fixed — same in md and lg density (see spec) */
+  /* --layout-space-bottom / --layout-space-viewport-inset 不隨密度變,只宣告在 :root(2026-11-15 刪掉這裡與下方鎖回段的
+     同值重寫:同值重寫一次只會讓它看起來像會切換,也讓 token 閘以為它會切換而不檢查;稽核 P18) */
 }
 
 /* 2026-04-22:md reset selector — subtree 宣告 `data-density="md"` / `data-layout-space="md"`
@@ -47,5 +48,4 @@
 [data-density="md"]:not([data-layout-space]) {
   --layout-space-loose:  16px;
   --layout-space-tight:  12px;
-  --layout-space-bottom: 48px;
 }

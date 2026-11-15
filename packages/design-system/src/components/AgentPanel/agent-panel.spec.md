@@ -24,13 +24,15 @@ traits:
 - **Layout Family**:self-contained 容器家族(面板=容器;各子元件按其節聲明消費對應 anatomy)。
 - **版面**:右欄固定寬 + chrome header + 卷軸訊息區 + 底部複合輸入(定案出處:上方提案規格 v4 六畫面)。
 
-## Token(本家族新增 3 個)
+## 動畫的值(本家族自己的值;2026-09-02 立時是 3 個共用 token,2026-11-15 收回元件)
 
-| Token | 值 | 家 | 出處 |
+| 值 | 用途 | 現在住哪 | 出處 |
 |---|---|---|---|
-| `--motion-easing-swell` | cubic-bezier(0.4,0.14,0.3,1) | motion.css (C) 循環動態 | 循環「起」;Carbon expressive 參考([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L171-L172)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L83)) |
-| `--motion-easing-settle` | cubic-bezier(0.2,0,0.38,0.9) | motion.css (C) 循環動態 | 循環「收」;Carbon productive 參考 |
-| `--motion-duration-shimmer` | 2s | motion.css (C) 循環動態 | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
+| cubic-bezier(0.4,0.14,0.3,1) | 循環「起」(標誌吸氣) | `agent-panel-logo.tsx` 的 `SWELL` | Carbon expressive 參考([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L171-L172)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L83)) |
+| cubic-bezier(0.2,0,0.38,0.9) | 循環「收」(標誌呼氣) | `agent-panel-logo.tsx` 的 `SETTLE` | Carbon productive 參考 |
+| 2s | 思考中文字微光一輪 | `agent-panel.css` `.agent-shimmer` | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
+
+**為什麼收回元件**:三顆原本叫 `--motion-easing-swell` / `--motion-easing-settle` / `--motion-duration-shimmer`、住共用的 `tokens/motion/motion.css`,但只有本家族在用 —— 前兩顆甚至沒有任何讀者(標誌的 SVG 動畫是 SMIL,讀不到 CSS 變數,實際生效的一直是 `SWELL` / `SETTLE` 字串),第三顆唯一讀者是微光那一行。照 `../../tokens/token-system.spec.md` 第 0 題「只有一個元件在用、又不切換的值不開全系統的名字」收回,值都不變(稽核 P07 / P10)。微光週期 2s 靠名字開頭 `--motion-duration-` 算動畫時長那一組的組員,是「一組」寬讀法的漏洞;規格改採窄讀法(同一用途的級距才算組員)。【AI 推導 2026-11-15:窄讀法是 AI 的選擇,user 沒有回覆稽核 P10 那一題】
 
 面板寬**沒有 CSS token**:預設 360 / 400 / 640 只住 `agent-panel.tsx` `AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`(與 `../AppShell/app-shell.spec.md`「版面規則」§1 同一份;400 = 稿全六畫面 rightSider 實測)。
 `--agent-panel-width`(2026-09-02 立)**2026-10-15 退役**:執行期從來沒有任何讀取者(元件一直用 JS 常數 400),同一個值兩個住所(M17;r1b 複驗 F8)——
@@ -221,7 +223,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。
 - 微光:**僅文字**(標題字+正在寫入的最新一行);shadcn shimmer 參數(帶寬 3ch+40px、斜 20°([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L93)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L109)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L29))、
-  `--motion-duration-shimmer` linear);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
+  一輪 2s linear,值住 `agent-panel.css`);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
   reduced-motion 自停。**完成步驟靜態、色 `text-fg-secondary`**(次要層級,非 muted)。
 - 開合=Radix Collapsible + `disclosureMotion`(`tokens/motion/disclosure-motion.ts`,與 TreeView / Accordion 同一份):`--motion-duration-disclosure` 200ms、ease-out;收起後保持高度 0 直到卸載;減少動態不播。
 - A11y:標題=button + `aria-expanded`;內文不另設 aria-live(容器已是 live region)。
@@ -320,7 +322,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 |---|---|---|
 | 面板開合 | 淡入+右滑 | `--motion-duration-surface` 250ms |
 | 浮層遮罩(AI agent 為浮層時)| 淡入,與面板同相 | `--motion-duration-surface` 250ms;減動作停 |
-| 訊息/決策卡/送出↔停止 進場 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
+| 訊息/決策卡/送出↔停止 進場 | 淡入(+ 8px 位移,值由元件的 tw-animate-css 幾何 class 帶;原寫的 `--motion-enter-distance` 從沒被讀過、2026-11-15 退場) | `--motion-duration-overlay` 150ms |
 | 非最後一則的工具列(懸停/聚焦才出現) | 瞬間出現(滑過造成的變化不做過渡) | 0 |
 | 思考塊開合 | Radix Collapsible + disclosureMotion | `--motion-duration-disclosure` 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |

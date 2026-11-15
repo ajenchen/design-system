@@ -85,7 +85,7 @@ Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過�
 
 ## 邊界狀態
 
-- **看不出藏著資訊**:tooltip 要滑過停 0.5 秒(`--motion-delay-plain`)才出現、滑開就收,使用者不知道那裡藏著東西——必要資訊不可只靠 tooltip 承載〔UD-U1021-27〕(見「何時不用」「禁止事項」)
+- **看不出藏著資訊**:tooltip 要滑過停 0.5 秒(plain 檔 `MOTION_DELAY_PLAIN_MS`,`tokens/motion/motion.spec.md`)才出現、滑開就收,使用者不知道那裡藏著東西——必要資訊不可只靠 tooltip 承載〔UD-U1021-27〕(見「何時不用」「禁止事項」)
 - **長文字**:超過 max-width 280px 自動換行、完整呈現不截斷(見「最大寬度」「內容完整性」)
 - **貼近 viewport 邊**:Radix 自動翻邊 + `collisionPadding` 8px 呼吸距離(見「Edge collision」)
 - **空內容**:`TooltipContent` 的 `children` 為 `null` / `undefined` / `false` / 空字串時**不掛浮層**——不渲染帶 padding 的空 `role="tooltip"` 殼,trigger 原樣保留。Tooltip 是資訊補救機制(見「何時用」),沒有補充內容就不該出現。實作於 `tooltip.tsx` 的 `TooltipContent` 以空值 guard 提早 return null 落地

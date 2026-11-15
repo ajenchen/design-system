@@ -131,14 +131,13 @@ field-wrapper / Textarea / Select+Combobox,Menu 漏掉。
 (`components/Button/button.spec.md`「padding 跟著 role」),建本 token 的 commit 已明文排除 Chip
 (「pill 內距 ≠ field 內距,不同概念」);它們只共用 `--field-height-*`,不共用水平內距。
 
-## Stack Gap 與 Avatar Stack Overlap(2026-09-27 抽 token,M17)
+## Stack Gap(2026-09-27 抽 token,M17;同日抽的頭像重疊量 2026-11-15 起說明住 Avatar 規格)
 
 | Token | 值 | 用法 |
 |-------|-----|------|
 | `--stack-gap` | 2px | 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值:全域焦點框往外畫的間隙(`styles/base.css` `:focus-visible` outline-offset)、頭像堆疊 / 狀態圓點 / 計數徽章 / 移除 × 的挖空縫(`avatar.tsx`)、上傳列進度條與焦點框之間的縫(`file-item.tsx`)、步驟條外圈與圓之間的縫(`steps.tsx`)。抽 token 前是 6 處字面值 |
-| `--avatar-stack-overlap` | 2px | 頭像堆疊第 2 顆起往左疊的量(`avatar.tsx` 遮罩幾何與項目位移、PeoplePicker 編輯態標籤 wrapper `-ml-[var(--avatar-stack-overlap)]`)。抽 token 前 `-ml-0.5` 字面值散在兩處、常數另一份 |
 
-**分類**:`--stack-gap` 是共用刻度(不屬於任何一個元件,所以不帶元件名);`--avatar-stack-overlap` 是頭像的值(選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量),宣告住 `components/Avatar/avatar.css`(2026-11-11 從 `tokens/uiSize/uiSize.css` 搬去,user 2026-11-10 token「2甲」第三批;名字與值不變),值與用法仍登記在上表(分類表該列 `spec` 指本檔)。要不要開 token 的門檻只住 `../token-system.spec.md` 判斷流程第 0 題,本檔不重述。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
+**分類**:`--stack-gap` 是共用刻度(不屬於任何一個元件,所以不帶元件名)。頭像重疊量是頭像的值(選人元件讀它是為了把頭像疊起來,沒有頭像就沒有重疊量),值、用法、住處都在 `../../components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段(2026-11-15 從本表搬去,稽核 P15;分類表該列 `spec` 同日改指那份)。要不要開 token 的門檻只住 `../token-system.spec.md` 判斷流程第 0 題,本檔不重述。**JS 雙生**:遮罩與 outline 內距要用數字算,所以各有一份 JS 常數(`tokens/uiSize/stack-gap.ts` `STACK_GAP_PX`、`avatar.tsx` `AVATAR_STACK_OVERLAP_PX`),由 `scripts/token-twin-invariant.mjs` 機械鎖住兩邊相等(只改一邊 CI 會紅)。**設計理由**(縫為何 2px、為何挖空不畫外圈)只住 `components/Avatar/avatar.spec.md`「頭像堆疊(疊在一起時)」段,本檔不重述。
 
 ## Field Control Vertical Padding 與 Tree Indent(2026-11-11 補進規格)
 
@@ -243,7 +242,7 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 
 ## Tab Height
 
-分頁高 `--tab-height-*` 是 Tabs 自己的值(元件的值),2026-11-11 搬到 `components/Tabs/tabs.css`(user 2026-11-10 token「2甲」第一批;名字與每一檔密度的值都沒變)。每一檔的值、為什麼獨立於 `--field-height-*` 與 `--table-row-*`、Tailwind `h-tab-*` 寫法 → `components/Tabs/tabs.spec.md`「Size」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
+分頁高 `--tab-height-*` 是 Tabs 自己的值(元件的值),2026-11-11 搬到 `components/Tabs/tabs.css`(user 2026-11-10 token「2甲」第一批;名字與每一檔密度的值都沒變)。每一檔的值、為什麼獨立於 `--field-height-*` 與 `--table-row-*`、lg 為什麼寫成 `var(--chrome-header-height)` → `components/Tabs/tabs.spec.md`「Size」;分類與住處 → `tokens/token-registry.json`。本檔不再重述。
 
 ## Chrome Header Height
 
@@ -265,6 +264,8 @@ Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 
 | Sidebar 48、top bar 56、page header 64(跨元件不一致) | 全部 `--chrome-header-height`(md=48 / lg=56),density 自動聯動 |
 
 **產品可讀(對齊用)、不可覆寫**:DS 沒有「頁首」元件,產品的頁首是自己排的,照上表右欄讀這顆才會跟側欄頂部同高;產品不改它的值。分類表該列 `product: "read"`。來源:本段 2026-04-21 的 canonical 本來就給了產品寫法;2026-11-10 token 決策頁(AI 寫給 user 的題目)第 5 題附註寫明「照本段登記成產品可讀、要改成不給讀說一聲即可」,user 當天的回覆沒有提到標頭高 —— 視為未推翻(AI 推導,不是 user 拍板)。
+
+**跟哪一軸切換(照現行程式記錄,不是新規定)**:外框標頭高跟**控制項大小這一軸**走 —— 切換它的是 `data-ui-size`,以及兩軸便捷開關 `data-density`(同一個元素同時帶 `data-ui-size` 時只看 `data-ui-size`);**版面間距那一軸 `data-layout-space` 不切換它**(`uiSize.css` 大密度段與鎖回一般密度段的選擇器)。lg 分頁高 `--tab-height-lg` 寫成 `var(--chrome-header-height)`(`components/Tabs/tabs.css`「衍生值」段),所以跟著同一軸。浮層標頭(`patterns/overlay-surface` 的 SurfaceHeader)不讀這顆,高度 = 最高的子元素 + 上下各一個 `--layout-space-tight`(`overlay-surface.tsx` 檔頭「Padding-based sizing」),上下內距跟**版面間距那一軸**走 —— 兩軸同檔時兩者相等(48 / 56),兩軸不同檔時不相等。兩種標頭要不要統一到同一軸,是還沒有人定過的題目(稽核 R7-09 第 (2) 點);本段只記現況、不改值。【AI 推導 2026-11-15:照現行程式行為寫下,user 沒有決定過哪一軸】
 
 ### 為什麼 48 跟 56 是「同一個 token 不同密度」不是不一致
 
@@ -477,7 +478,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ## Tailwind Bridge
 
-透過 `@theme inline` 橋接到 Tailwind spacing(元件的值的轉接名跟著本尊住主人的樣式檔,例:`h-table-row-*` 在 `components/DataTable/data-table.css`、`h-tag-*` 在 `components/Tag/tag.css`、`h-tab-*` 在 `components/Tabs/tabs.css`):
+透過 `@theme inline` 橋接到 Tailwind spacing(元件的值的轉接名跟著本尊住主人的樣式檔,例:`h-table-row-*` 在 `components/DataTable/data-table.css`、`h-tag-*` 在 `components/Tag/tag.css`)。本檔共用刻度有轉接名的是 `h-field-*` 與 `h-tree-indent-*`(產品可讀,整組開)。哪些值開轉接名的規則住 `tokens/token-system.spec.md`「擺放」;分頁高 `h-tab-*` 2026-11-15 刪除(分頁高是 Tabs 自己的值、產品不讀,轉接名不該對外開,見 `components/Tabs/tabs.spec.md`「Size」):
 
 ```tsx
 <div className="h-field-md" />       /* = var(--field-height-md) */

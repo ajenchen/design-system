@@ -71,6 +71,8 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 
 **列高 token**(DataTable 自己的值):宣告住 `data-table.css`(預設 / 大密度覆寫 / 鎖回一般密度三段同檔;2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,值不變),Tailwind 寫法 `h-table-row-sm` / `h-table-row-md` / `h-table-row-lg`(轉接名同檔)。大密度三檔統一 +0.5rem(+8px)。產品可不可以讀:本規格只在「Inline create row」那一段點名(列高 3 顆 + 儲存格左右內距,讀來對齊、不可覆寫);其餘表格的值產品不讀(分類表 `../../tokens/token-registry.json`;user 2026-11-10 token 第 4 題甲)。
 
+**儲存格滑過外框色 `--table-cell-hover-outline-color`**(DataTable 自己的值,沒有預設宣告):可編輯儲存格的滑過外框由 Field 畫(`../Field/field-wrapper.tsx` `nakedCellEditableDisplayHover`,讀 `var(--table-cell-hover-outline-color, var(--border-hover))`;沒設 = 一般的滑過深框)。只有一種情況表格會設它:`experimentalSpreadsheetOverlay` 開著時,儲存格本身設成 `transparent`,把滑過框交給試算表模式的覆蓋層畫(`data-table.tsx`;2026-05-10 Slice D「one geometry owner, two paint owners」)。拿掉表格這顆值就沒有意義 → 表格的值,產品不讀不寫。2026-11-15 前叫 `--cell-hover-outline-color`、說明寫在 `../Field/field.spec.md`:名字開頭對不到任何主人、規格又不在主人那裡(`../../tokens/token-system.spec.md` 規則 1),改名並把說明搬來這裡,值與行為不變(稽核 P16)。
+
 | Token | md density | lg density |
 |-------|-----------|-----------|
 | `--table-row-sm` | 2rem (32px) | 2.5rem (40px) |
@@ -105,7 +107,7 @@ Table 分三層:
     (c) 順帶消掉一個一個元素只有一個 `::after` 的碰撞:左右 header panel 同時掛凍結邊界線 `.dtPanelBoundaryRight/Left::after`,若下分隔線也用 `::after`,兩條規則會合併成 `left:0 right:0 top:0 bottom:0 width:1px height:1px` = 角落一個 1×1 的點,**兩條線同時消失**(2026-09-04 user 回報「為何pin住的欄位header最右邊的分隔線消失了？」與表頭下方分隔線沒延伸到底(轉述)的共同根因,由 7a8a2c3a 引入、同日修正)。
   機械閘 `I13` 因此必須**取像素**且必須**涵蓋捲動後的狀態**:第一版 I13 比的是 `getComputedStyle(::after).height` 與 border-box 高,兩個真 bug 都從這個盲點溜過去(見不變條件 (8))。
 - **Body viewport**:含 left / center / right 三區;center-body 是唯一的水平 scroll container、也是垂直 scroll container(`overflow-y-auto`),left / right body 不自行捲動(`overflow-hidden`;`scrollTop` 由 center 的 `onScroll` 同步兩側,而任何非 center 區被瀏覽器自己捲動(焦點捲動等)都先導回 center、再由 center 校準三區 —— **雙向收斂、真相源仍只有 center**,見缺陷 C;AR44:V scroll 移進 region 自身,讓水平捲軸落在可視視窗底部,不必捲到內容底才看到)
-- **Left / Right 區**:寬度 = 該區欄寬總和,**算出來的不是量出來的**(見不變條件 (9)),不吃水平捲動;frozen 邊界線是 **1px 偽元素**(`width:1px background:var(--divider)`,不佔 box model、不被 Windows 懸浮捲軸蓋 — 2026-05-12 自 `border-divider` 改制的理由保留),分兩段畫、**宿主不同**:表頭段在 header panel 上(`.dtPanelBoundaryRight/Left::after`,panel 高就是 40,`bottom:0` 即到底);列區段在**列區外層**上(`.dtLeftBoundary::before` / `.dtRightBoundary::after`,位置由 `--dt-left-w` / `--dt-right-w` 給,與面板寬同一個數字)。**列區段不能畫在釘選面板上**:面板自己是 `overflow:hidden`,而 `overflow` 的裁切邊是 **padding box**,面板底部那條等同水平捲軸高的透明 border 在它外面 —— 線無論怎麼負向延伸都畫不出來(2026-09-04 一度用 `bottom: calc(-1 * var(--dt-hscroll-gutter))`,版面盒延伸了、像素沒有,是假宣稱)。外層不裁切也不捲動,兩段相接即為視覺整欄高度、頂天立地。**畫線機制統一鐵律(2026-08-20 user 拍板)**:全表 1px 線(欄間短線 / 凍結邊界 / 外框)一律「元素/border」機制,**禁用陰影畫線** — 非整數縮放與 Retina 下瀏覽器對陰影與背景色盒的柵格化取整不同,會讓同規格的線出現 1 vs 2 實體像素的粗細分家(2026-08-20 user 報修錨例);**Center 區**:flex-1,水平 overflow 自行處理
+- **Left / Right 區**:寬度 = 該區欄寬總和,**算出來的不是量出來的**(見不變條件 (9)),不吃水平捲動;frozen 邊界線是 **1px 偽元素**(`width:1px background:var(--divider)`,不佔 box model、不被 Windows 懸浮捲軸蓋 — 2026-05-12 自 `border-divider` 改制的理由保留),分兩段畫、**宿主不同**:表頭段在 header panel 上(`.dtPanelBoundaryRight/Left::after`,panel 高就是 40,`bottom:0` 即到底);列區段在**列區外層**上(`.dtLeftBoundary::before` / `.dtRightBoundary::after`,位置由 `--table-pinned-left-w` / `--table-pinned-right-w` 給,與面板寬同一個數字)。**列區段不能畫在釘選面板上**:面板自己是 `overflow:hidden`,而 `overflow` 的裁切邊是 **padding box**,面板底部那條等同水平捲軸高的透明 border 在它外面 —— 線無論怎麼負向延伸都畫不出來(2026-09-04 一度用 `bottom: calc(-1 * var(--dt-hscroll-gutter))`,版面盒延伸了、像素沒有,是假宣稱)。外層不裁切也不捲動,兩段相接即為視覺整欄高度、頂天立地。**畫線機制統一鐵律(2026-08-20 user 拍板)**:全表 1px 線(欄間短線 / 凍結邊界 / 外框)一律「元素/border」機制,**禁用陰影畫線** — 非整數縮放與 Retina 下瀏覽器對陰影與背景色盒的柵格化取整不同,會讓同規格的線出現 1 vs 2 實體像素的粗細分家(2026-08-20 user 報修錨例);**Center 區**:flex-1,水平 overflow 自行處理
 
 完整 class / overflow 規則見 `data-table.tsx`。
 
@@ -529,7 +531,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 **點擊後的編輯內容 consumer 自組**(常被客製,不 canonical 化、不加 DS API):TanStack headless 無此 feature(https://tanstack.com/table/v8/docs/guide/custom-features)、AG Grid 無內建(官方 blog 教 pinned row DIY:https://blog.ag-grid.com/add-new-rows-using-a-pinned-row-at-the-top-of-the-grid/)。**可定義的只有尚未點擊的 idle 列**,幾何全消費既有 token(零新值):
 
-**主人規格點名・產品可讀**(讀來對齊、不可覆寫):`--table-row-sm` / `--table-row-md` / `--table-row-lg`(列高 3 顆)、`--table-cell-px`(儲存格左右內距)。產品自組的「+ 新增」列讀這 4 顆,才會跟上方資料列同高、同一條左緣。表格其他的值(`--table-cell-py`、`--cell-hover-outline-color` 等)產品不讀。依據:user 2026-11-10 token 第 4 題「4甲」(拿來對齊的值要主人規格點名才可讀,第一批只有這 4 顆);本段標題「user 拍板」那一條(2026-07-08)登記簿查無逐字原話,4甲 是目前可引的依據。分類表 `../../tokens/token-registry.json` 該列 `product: "read"` 與本段一致,閘 `scripts/token-creation-invariant.mjs` C7 比對兩邊。
+**主人規格點名・產品可讀**(讀來對齊、不可覆寫):`--table-row-sm` / `--table-row-md` / `--table-row-lg`(列高 3 顆)、`--table-cell-px`(儲存格左右內距)。產品自組的「+ 新增」列讀這 4 顆,才會跟上方資料列同高、同一條左緣。表格其他的值(`--table-cell-py`、`--table-cell-hover-outline-color` 等)產品不讀。依據:user 2026-11-10 token 第 4 題「4甲」(拿來對齊的值要主人規格點名才可讀,第一批只有這 4 顆);本段標題「user 拍板」那一條(2026-07-08)登記簿查無逐字原話,4甲 是目前可引的依據。分類表 `../../tokens/token-registry.json` 該列 `product: "read"` 與本段一致,閘 `scripts/token-creation-invariant.mjs` C7 比對兩邊。
 
 - **高度** = `h-table-row-{size}`(與 data row 精確同高 — 上方「三 region row 精確同高」延伸到此列)
 - **左 padding** = `--table-cell-px`,「+ icon + 文字」對齊**第一資料欄**內容起點(啟 selection / drag 系統欄時同樣對齊第一資料欄,新增列的文字才會跟上方資料同一條左緣)

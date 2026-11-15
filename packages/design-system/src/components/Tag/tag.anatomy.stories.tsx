@@ -348,7 +348,7 @@ const InspectorInner = () => {
             <PropRow labelTone="secondary" label="高度" dot={Z.dim.text}><TkVal token={size === 'sm' ? 'h-5' : 'h-6'} value={s.height} /></PropRow>
             <PropRow labelTone="secondary" label="Tag 內距" dot={Z.pad.text}><TkVal token={s.tagPx} value={`${s.tagPxVal}px`} /></PropRow>
             <PropRow labelTone="secondary" label="Text 內距" dot={Z.textPx.text}><TkVal token={s.textPx} value={`${s.textPxVal}px`} /></PropRow>
-            <PropRow labelTone="secondary" label="Max Width"><TkVal token="min(var(--combobox-tag-area-inline-size, 10rem), 10rem)" value="預設 cap 160px（Combobox 窄格可注入更小有效上限）" /></PropRow>
+            <PropRow labelTone="secondary" label="Max Width"><TkVal token="min(var(--tag-max-inline-size, 10rem), 10rem)" value="預設 cap 160px（Combobox 窄格可注入更小有效上限）" /></PropRow>
             <PropRow labelTone="secondary" label="Icon 尺寸" dot={Z.icon.text}>16px（統一不分 size）</PropRow>
             {withDismiss && <PropRow labelTone="secondary" label="Dismiss" dot={Z.dismiss.text}>16px icon · 18px hover 背景</PropRow>}
           </div>

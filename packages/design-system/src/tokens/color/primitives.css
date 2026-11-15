@@ -12,17 +12,18 @@
    └─────────────────────────────────────────────────────────────────────┘
    ┌─ Layer 1 ─ Primitive Colors ────────────────────────────────────────┐
    │  --color-{hue}-{1~10}                                               │
-   │  只需管理 -6（品牌基底色），其餘由 CSS relative color 自動推導       │
+   │  只需管理 -6（色相基底色），其餘由 CSS relative color 自動推導       │
    │  更換色調：只改 H 值。更換亮度：只改 L 值。                          │
    │                                                                     │
    │  Hues: neutral, blue, deep-orange, orange, amber, yellow,           │
    │        lime, green, turquoise, indigo, purple, magenta, red         │
    └─────────────────────────────────────────────────────────────────────┘
 
-   使用方式：
-   - 直接引用：var(--color-blue-6)
-   - 在 semantic.css 中建立語意別名後，透過 var(--color-primary) 使用
-   - 禁止在元件中直接硬寫色票，一律透過 CSS 變數引用
+   使用方式(2026-11-15 改寫;舊版寫「直接引用 var(--color-blue-6)」,跟原則相反 —— 稽核 P22):
+   - 原料只給 semantic.css 引用:語意色那一層包著它,元件與產品讀語意色(例 var(--primary)),不直接讀這裡的色票。
+   - 例外(哪些資料夾可以直接讀原料)與每一顆的分類只住 tokens/token-registry.json
+     (token-system.spec.md 規則 3「分類表只有一份」,本檔不重述)。
+   - 禁止在元件中直接硬寫色值,一律透過 CSS 變數引用。
 
    Scale 推導規則（相對公式，確保任何 base-6 亮度都能產生單調色階）：
    較亮方向: L = l + (1 − l) × F   F: 1=0.90  2=0.75  3=0.58  4=0.40  5=0.20
@@ -251,7 +252,11 @@
 }
 
 /* Tailwind bridge for absolute anchors.
-   Keep the bridge in the primitive color SSOT so text-white/bg-white ship to consumers. */
+   Keep the bridge in the primitive color SSOT so text-white/bg-white ship to consumers.
+   這兩行跟上方 :root 段同值寫兩份,結構上拆不掉:@theme inline 裡寫 var(--color-white) 會指回自己(循環),
+   改成不加 inline 的 @theme 會讓 bg-white 改成執行期讀 var(--color-white)(圖表等元件會在子樹設 --color-<key>,
+   系列名剛好叫 white 時就被蓋掉 —— 稽核 P19 反查第 (2) 種)。所以保留兩份、由
+   scripts/token-twin-invariant.mjs 的 CSS 對 CSS 那一組鎖住兩份一字不差(2026-11-15,稽核 P21)。 */
 @theme inline {
   --color-white: oklch(1 0 0);
   --color-black: oklch(0 0 0);

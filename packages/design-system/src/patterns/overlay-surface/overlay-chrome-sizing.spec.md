@@ -97,11 +97,11 @@ Overlay family 的 header title typography 依「modal vs non-modal」分級,**�
 
 **設計 insight(本檔既有記載;2026-09-27 查無對話原文可引,依 M36(a) 標為來源不明,不得當 user 拍板引用)**:header 的 padding-based sizing 在 **unbounded button**(text variant / dismiss,無 bg/border)場景視覺 padding 過大;在 **bounded button** 則剛好。解法 = **保持 button native size 不變(命中區 / 視覺 render 都是 sm 原尺寸),但 layout 佔位縮到 title line-box(24,衍生自 --font-body-lg-size×1.5)** via 負 margin。
 
-**Canonical**:button native size **保留 sm**(命中區 / 視覺 render 不動);**unbounded 的靠 CSS 負 my 把 layout 佔位縮到 `--chrome-slot-h`** ≤ title line-height,讓 title 主導 chrome 高度。
+**Canonical**:button native size **保留 sm**(命中區 / 視覺 render 不動);**unbounded 的靠 CSS 負 my 把 layout 佔位縮到 `--surface-chrome-slot-h`** ≤ title line-height,讓 title 主導 chrome 高度。
 
 | Button 類型 | 判定(button.tsx L426-427)| Trick 套用 | Layout 佔位 | Dialog/Sheet header (slot 24)| Popover header (slot 21)|
 |--|--|--|--|--|--|
-| **Unbounded** | `variant === 'text'` OR `dismiss` → `data-unbounded="true"` | ✓ 套負 my | = `var(--chrome-slot-h)` | max(24, 24) + py-tight = **48** | max(21, 21) + py-tight = **45** |
+| **Unbounded** | `variant === 'text'` OR `dismiss` → `data-unbounded="true"` | ✓ 套負 my | = `var(--surface-chrome-slot-h)` | max(24, 24) + py-tight = **48** | max(21, 21) + py-tight = **45** |
 | **Bounded** | `primary` / `tertiary` / `outline` 等(有 bg/border) | ✗ 不套 | = native sm (28 md / 32 lg) | max(24, 28) + py-tight = **52**(自然長)| max(21, 28) + py-tight = **52**(自然長)|
 
 **為什麼差別**:Unbounded 沒視覺邊界 → native 28 是純 hit-target padding,縮 layout 不損視覺;Bounded 的 bg/border 就是內容,縮會切掉 → 必須讓 chrome 自然長高,**這是設計宣告「此 chrome 有重要 action,視覺重量該配得上」**。
@@ -114,7 +114,7 @@ const unboundedAttr = resolvedVariant === 'text' || dismiss ? { 'data-unbounded'
 
 // overlay-surface.tsx ── slot 透過 CSS var 參數化(2026-05-04 v3;2026-06-16 default 改衍生)
 const CHROME_UNBOUNDED_SLOT =
-  '[&_[data-unbounded]]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
+  '[&_[data-unbounded]]:my-[calc((var(--surface-chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]'
 
 // SurfaceHeader default → slot 衍生自 title typography = calc(--font-body-lg-size × 1.5) = 24
 //   (2026-06-16:從寫死 field-height-xs 改衍生 → title 字級改了 slot 自動跟、不靠巧合;M17 SSOT;

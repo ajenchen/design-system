@@ -264,7 +264,7 @@ export const VisualTokenRule: Story = {
 
       <TutorialRule
         title="❌ 禁止硬寫色值繞過 token"
-        note="bg-primary / text-fg-disabled / ring-primary 等全部來自 DS semantic token。dark mode / brand swap 會自動聯動,若改用 bg-blue-500 / text-gray-400 會在 dark mode 顯示錯誤顏色。"
+        note="bg-primary / text-fg-disabled / ring-primary 等全部來自 DS semantic token。換主題 / 互動色換色都會自動聯動,若改用 bg-blue-500 / text-gray-400 會在 dark mode 顯示錯誤顏色。"
       >
         <ExampleCaption warn>
           ❌ bg-blue-500(硬色) → ✅ bg-primary(semantic)<br />

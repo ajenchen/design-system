@@ -469,11 +469,12 @@ export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-star
 // Color `--border-hover` 對齊 Field default hover state token。
 //
 // **2026-05-10 Slice D Step 2 — Cell host CSS variable suppression**:
-// outline color 改用 `var(--cell-hover-outline-color, var(--border-hover))`,
-// allow DataTable cell host(spreadsheet overlay enabled 時)set `--cell-hover-outline-color: transparent`
+// outline color 改用 `var(--table-cell-hover-outline-color, var(--border-hover))`,
+// allow DataTable cell host(spreadsheet overlay enabled 時)set 成 transparent
 // 抑制 outline,讓 overlay layer 接管 hover ring paint(per RFC Contract 8 「one geometry owner, two paint owners」)。
 // Backward-compat:flag 關時 default `--border-hover`,既有行為不變。
-export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hover:outline-offset-[-1px] hover:outline-[var(--cell-hover-outline-color,var(--border-hover))]'
+// 這顆是 DataTable 的值(2026-11-15 前叫 --cell-hover-outline-color;說明住 data-table.spec.md「儲存格滑過外框色」,稽核 P16)。
+export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hover:outline-offset-[-1px] hover:outline-[var(--table-cell-hover-outline-color,var(--border-hover))]'
 
 // ── Cell-as-input Edge Slot SSOT(2026-05-05 v8 — retire 平行 SSOT,改 L1 消費)───
 //

@@ -480,7 +480,7 @@ export const StateBehavior = {
 
         {/* Disabled */}
         <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">Disabled — 品牌色移除，統一 neutral</span>
+          <span className="text-caption font-medium text-fg-secondary">Disabled — 互動色移除，統一 neutral</span>
           <div className="flex flex-wrap gap-6">
             {[
               { label: 'unchecked', checked: false },

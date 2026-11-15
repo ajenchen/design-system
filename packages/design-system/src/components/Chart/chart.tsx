@@ -1,6 +1,7 @@
 import * as React from 'react'
 import * as RechartsPrimitive from 'recharts'
 import { cn } from '@/lib/utils'
+import { CATEGORICAL_HUES } from '@/design-system/tokens/categorical-color'
 
 /**
  * Chart — shadcn-style wrapper over Recharts + 本 DS token(來源:https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/chart.tsx#L366-L373)
@@ -42,6 +43,13 @@ function useChart() {
   return ctx
 }
 
+// ── 系列名撞原料色(2026-11-15,稽核 P19 與反查更正)──────────────────────────
+// ChartStyle 在容器上注入 `--color-<key>`(shadcn 慣例,保留不改 —— 產品寫 var(--color-desktop)),原料色也叫 `--color-*`。
+// 真的會出事的只有兩種:系列名是原料色名(圖表裡直接讀原料色的分類色被換掉),或是 white / black(帶 data-theme 的
+// 子元素重算語意色時讀到被換掉的值)。兩種都是「系列名 = 原料色名」,在開發期警告,不改任何行為(chart.spec.md「邊界案例」)。
+// 原料色名的色相清單消費 CATEGORICAL_HUES(加上 neutral 與 white / black),不另寫一份。
+const RAW_COLOR_KEY = new RegExp(`^(?:white|black|(?:neutral|${CATEGORICAL_HUES.join('|')})-\\d+(?:-opaque)?)$`)
+
 // ── ChartContainer ─────────────────────────────────────────────────────────
 
 interface ChartContainerProps extends React.ComponentProps<'div'> {
@@ -55,6 +63,17 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
     const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
     // Memoize provider value(2026-04-22 D3 perf audit):避免 render 重建 wrapper object
     const ctxValue = React.useMemo(() => ({ config }), [config])
+    // 開發期:系列名撞原料色名就警告(見上方 RAW_COLOR_KEY;只印訊息,不改行為)
+    React.useEffect(() => {
+      if (process.env.NODE_ENV === 'production') return
+      const hits = Object.keys(config).filter((key) => RAW_COLOR_KEY.test(key))
+      if (hits.length) {
+        console.warn(
+          `[Chart] 系列名 ${hits.map((k) => `「${k}」`).join('、')} 跟原料色同名:圖表容器會把 --color-${hits[0]} 換成系列色,` +
+            '圖表裡直接讀原料色的東西(分類色)與帶 data-theme 的子元素重算的語意色會跟著變。請換一個系列名(chart.spec.md「邊界案例」)。',
+        )
+      }
+    }, [config])
 
     return (
       <ChartContext.Provider value={ctxValue}>

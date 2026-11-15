@@ -91,7 +91,7 @@
  *   DatePicker 收起日曆不還焦點給輸入框 → F-date-return;Button 握著焦點時仍轉原生 disabled → F-pagination / F-look;改名「儲存」空白時停用 → F-rename
  *   DataTable 游標的有效性不看欄是否可見 → E-datatable-hidden-col;守門不驗收(沒人認領也不重新派)→ E-unchained;
  *   DatePicker 草稿乾淨時也替 consumer 認領 → E-unchained;Combobox 不把「+N」卡算進欄位 → B-overflow;
- *   可聚焦的停用保留 aria-disabled 那一組長相(2026-10-07 前的寫法:滑過變品牌色)→ F-look
+ *   可聚焦的停用保留 aria-disabled 那一組長相(2026-10-07 前的寫法:滑過變回原本的填色)→ F-look
  *
  * 用法:
  *   node scripts/escape-and-focus-contract-invariant.mjs                  判定(現行原始碼)
@@ -370,7 +370,7 @@ const MUTANTS = [
   },
   {
     id: 'button-focusable-keeps-aria-disabled-look',
-    what: '可聚焦的停用保留 aria-disabled 那一組長相(滑過 / 按住釘在品牌色;2026-10-07 前的寫法)',
+    what: '可聚焦的停用保留 aria-disabled 那一組長相(滑過 / 按住釘在原本的填色;2026-10-07 前的寫法)',
     file: 'components/Button/button.tsx',
     expectRed: ['F-look'],
     apply: (src) => replaceOnce(src, /focusableDisabled \? withoutAriaDisabledLook\(ownVariantClasses\) : ownVariantClasses,/, 'ownVariantClasses,'),
@@ -1359,7 +1359,7 @@ async function runChecks(page) {
   await page.evaluate(() => { delete document.documentElement.dataset.theme })
   await styleTag.evaluate((el) => el.remove())
   await d.settle()
-  check('F-look', 'contract', '可聚焦的停用(忙碌鈕 primary / secondary / tertiary / text / link / 三種 danger;存檔後握著焦點的送出鈕)與原生停用逐項同色 —— 靜止 / 滑過 / 按住 × 淺深兩色,背景 / 字 / 四邊框 / 不透明度 / 游標;忙碌鈕確實是可聚焦的停用(修前滑過變品牌色)',
+  check('F-look', 'contract', '可聚焦的停用(忙碌鈕 primary / secondary / tertiary / text / link / 三種 danger;存檔後握著焦點的送出鈕)與原生停用逐項同色 —— 靜止 / 滑過 / 按住 × 淺深兩色,背景 / 字 / 四邊框 / 不透明度 / 游標;忙碌鈕確實是可聚焦的停用(修前滑過變回原本的填色)',
     lookDiffs.length === 0 && lookFacts.every(Boolean) && heldFacts.focusable && heldFacts.focused, { diffs: lookDiffs.slice(0, 12), diffCount: lookDiffs.length, notFocusable: lookFacts.filter((f) => !f).length, heldFacts })
 
   // ── F-rename(AgentPanel 改名對話框走 useFormValidation)──

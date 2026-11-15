@@ -76,13 +76,13 @@ const HANDCRAFT_SCOPE = [
 const GEOMETRY_REQUIRED = [
   // 外層取「該列最高元件」當基準。少了它,長度就不再跟控件走。
   { pattern: /'flex shrink-0 self-stretch'/, label: '外層 flex shrink-0 self-stretch(取該列基準 + 防壓縮)' },
-  // 內層套 inset 與地板,兩者都讀元件內變數 --divider-inset(值只寫一次,見第 (5) 條),不得各自寫死 px;
+  // 內層套 inset 與地板,兩者都讀元件內變數 --button-divider-inset(值只寫一次,見第 (5) 條),不得各自寫死 px;
   // 地板 = 同一條公式在最小控制項的取值(--field-height-xs − inset),不是另一個常數。
   // (2026-11-11 token「3全收」:inset / 地板原本是 uiSize.css 的兩顆 token,只有 ButtonDivider 在讀,收回成元件自己的值;算式不變。)
-  { pattern: /h-\[calc\(100%-var\(--divider-inset\)\)\]/, label: '內層垂直線 inset 讀元件內變數' },
-  { pattern: /min-h-\[calc\(var\(--field-height-xs\)-var\(--divider-inset\)\)\]/, label: '內層垂直線地板 = --field-height-xs − inset' },
-  { pattern: /w-\[calc\(100%-var\(--divider-inset\)\)\]/, label: '內層水平線 inset 讀元件內變數' },
-  { pattern: /min-w-\[calc\(var\(--field-height-xs\)-var\(--divider-inset\)\)\]/, label: '內層水平線地板 = --field-height-xs − inset' },
+  { pattern: /h-\[calc\(100%-var\(--button-divider-inset\)\)\]/, label: '內層垂直線 inset 讀元件內變數' },
+  { pattern: /min-h-\[calc\(var\(--field-height-xs\)-var\(--button-divider-inset\)\)\]/, label: '內層垂直線地板 = --field-height-xs − inset' },
+  { pattern: /w-\[calc\(100%-var\(--button-divider-inset\)\)\]/, label: '內層水平線 inset 讀元件內變數' },
+  { pattern: /min-w-\[calc\(var\(--field-height-xs\)-var\(--button-divider-inset\)\)\]/, label: '內層水平線地板 = --field-height-xs − inset' },
   // 置中必須由外層負責:單層 self-stretch + min-height 會把線釘在行首,地板一生效就歪。
   { pattern: /items-center/, label: '垂直線由外層 items-center 置中' },
 ]
@@ -126,19 +126,19 @@ export function checkDividerContract(read) {
     }
   }
   if (/self-stretch[^']*\bmy-1\b|\bh-full\b/.test(dividerSource)) {
-    fail('button-group.tsx: ButtonDivider 用了 h-full 或把 margin 當內縮 —— 內縮必須落在內層並讀 --divider-inset')
+    fail('button-group.tsx: ButtonDivider 用了 h-full 或把 margin 當內縮 —— 內縮必須落在內層並讀 --button-divider-inset')
   }
 
   // ── (5) inset 只寫一次、值 = 8px;地板由公式推導,不得退化成兩個孤立常數 ──────────
   // 2026-11-11 前讀 uiSize.css 的兩顆分隔線 token;收回後值住 button-group.tsx 本身。
-  const insetDecls = [...dividerSource.matchAll(/\[--divider-inset:([^\]]+)\]/g)].map((m) => m[1])
+  const insetDecls = [...dividerSource.matchAll(/\[--button-divider-inset:([^\]]+)\]/g)].map((m) => m[1])
   if (insetDecls.length !== 1) {
-    fail(`button-group.tsx: 元件內變數 --divider-inset 必須恰好宣告一次(現在 ${insetDecls.length} 次)—— 兩次以上 = 同一個值兩個住所,會漂移`)
+    fail(`button-group.tsx: 元件內變數 --button-divider-inset 必須恰好宣告一次(現在 ${insetDecls.length} 次)—— 兩次以上 = 同一個值兩個住所,會漂移`)
   } else if (insetDecls[0] !== '0.5rem') {
-    fail(`button-group.tsx: --divider-inset 是 ${insetDecls[0]},規格是 0.5rem(8px,action-bar.spec.md「分隔線幾何」)`)
+    fail(`button-group.tsx: --button-divider-inset 是 ${insetDecls[0]},規格是 0.5rem(8px,action-bar.spec.md「分隔線幾何」)`)
   }
-  if (/(?:min-h|min-w)-\[(?!calc\(var\(--field-height-xs\)-var\(--divider-inset\)\))[^\]]*\]/.test(dividerSource)) {
-    fail('button-group.tsx: 分隔線地板必須由 calc(--field-height-xs − --divider-inset) 推導 —— 寫死常數會讓地板脫離公式,變成可獨立漂移的第二個值')
+  if (/(?:min-h|min-w)-\[(?!calc\(var\(--field-height-xs\)-var\(--button-divider-inset\)\))[^\]]*\]/.test(dividerSource)) {
+    fail('button-group.tsx: 分隔線地板必須由 calc(--field-height-xs − --button-divider-inset) 推導 —— 寫死常數會讓地板脫離公式,變成可獨立漂移的第二個值')
   }
 
   for (const rel of HANDCRAFT_SCOPE) {
@@ -162,9 +162,9 @@ function selftest() {
   }
   const cases = [
     ['現行原始碼', readDisk, null],
-    ['inset 改成 0.75rem', inject(BUTTON_GROUP, '[--divider-inset:0.5rem]', '[--divider-inset:0.75rem]'), '0.75rem'],
-    ['inset 宣告兩次', inject(BUTTON_GROUP, "'bg-divider [--divider-inset:0.5rem]'", "'bg-divider [--divider-inset:0.5rem] [--divider-inset:0.5rem]'"), '恰好宣告一次'],
-    ['垂直線地板寫死 16px', inject(BUTTON_GROUP, 'min-h-[calc(var(--field-height-xs)-var(--divider-inset))]', 'min-h-[16px]'), '地板必須由'],
+    ['inset 改成 0.75rem', inject(BUTTON_GROUP, '[--button-divider-inset:0.5rem]', '[--button-divider-inset:0.75rem]'), '0.75rem'],
+    ['inset 宣告兩次', inject(BUTTON_GROUP, "'bg-divider [--button-divider-inset:0.5rem]'", "'bg-divider [--button-divider-inset:0.5rem] [--button-divider-inset:0.5rem]'"), '恰好宣告一次'],
+    ['垂直線地板寫死 16px', inject(BUTTON_GROUP, 'min-h-[calc(var(--field-height-xs)-var(--button-divider-inset))]', 'min-h-[16px]'), '地板必須由'],
     ['Notice 拿掉「有其他操作才畫」的條件', inject(NOTICE, /endContent\s*!=\s*null\s*&&\s*showDismiss\s*&&\s*<ButtonDivider/, 'showDismiss && <ButtonDivider'), '有其他操作才畫'],
     ['Alert 自己再放一條', inject(ALERT, /(return\s*\(?\s*)/, '$1<><ButtonDivider />'), ALERT],
   ]

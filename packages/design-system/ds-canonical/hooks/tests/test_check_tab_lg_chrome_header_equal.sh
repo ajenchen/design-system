@@ -278,6 +278,31 @@ expect_pass_silent "25. 兩顆同住一檔的舊佈局 → 安靜"
 run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$(both_content 3 3.5 3 3 3.5 2.5)"
 expect_block "26. 兩顆同住一檔的舊佈局漂移 → 擋" "md-reset: --tab-height-lg=3 rem ≠ --chrome-header-height=2.5 rem"
 
+# ── 2026-11-15 canonical 寫法:tabs.css 衍生值段一行 var(--chrome-header-height)(稽核 P04 / B6)──
+printf '%s\n' "$CURRENT_REGISTRY" >"$REGISTRY_JSON"
+chrome_content 3 3.5 3 >"$UISIZE_CSS"
+ALIAS_TAB=$(printf '%s\n' \
+  ':root {' \
+  '  --tab-height-sm: 2rem;' \
+  '}' \
+  ':root,' \
+  '[data-density],' \
+  '[data-ui-size],' \
+  '[data-layout-space] {' \
+  '  --tab-height-lg: var(--chrome-header-height);' \
+  '}')
+printf '%s\n' "$ALIAS_TAB" >"$TABS_CSS"
+run_hook "$TABS_CSS" Edit "$TMPROOT" yes "$TABS_REL" "$ALIAS_TAB"
+expect_pass_silent "27. 分頁 lg 寫成 var(--chrome-header-height) 一行 → 安靜(相等由構造保證)"
+run_hook "$UISIZE_CSS" Edit "$TMPROOT" yes "$UISIZE_REL" "$(chrome_content 3 4 3)"
+expect_pass_silent "28. alias 寫法下改標頭高的值 → 分頁 lg 自動跟著,安靜"
+run_hook "$TABS_CSS" Edit "$TMPROOT" yes "$TABS_REL" "${ALIAS_TAB/var(--chrome-header-height)/var(--field-height-lg)}"
+expect_integrity "29. 對照組:lg 指向別的名字 → 不認 alias、走舊比對 → integrity failure" "extraction 不完整、重複或 scope/order"
+run_hook "$TABS_CSS" Edit "$TMPROOT" yes "$TABS_REL" "$(printf '%s\n%s\n' "$ALIAS_TAB" '[data-ui-size="lg"] { --tab-height-lg: 4rem; }')"
+expect_integrity "30. 對照組:alias 之外又偷寫一份字面值 → 不認 alias → integrity failure" "extraction 不完整、重複或 scope/order"
+run_hook "$UISIZE_CSS" Edit "$TMPROOT" yes "$UISIZE_REL" "${CLEAN_CHROME/  --chrome-header-height: 3.5rem;/}"
+expect_integrity "31. 對照組:alias 寫法下標頭高少一段 → integrity failure(仍驗標頭高三段完整)" "extraction 不完整、重複或 scope/order"
+
 echo
 echo "Passed: $PASS / $((PASS + FAIL))"
 if [ "$FAIL" -gt 0 ]; then

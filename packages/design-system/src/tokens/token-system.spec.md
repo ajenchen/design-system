@@ -50,14 +50,14 @@
 
 答 (a) 的人要寫得出「第二個讀者是誰」,或「它屬於哪一組既有刻度」;寫不出來就還不是共用(分類表該列的 `secondReader` / `scale`,閘 C2 強制)。
 同一個元件裡多處要同步,用元件自己的常數就夠;跨兩個以上元件才開 token(舊版寫「≥ 2 處」,2026-11-11 收緊成「元件」)。只有展示頁用到的值放 `stories-helpers/`,不開 token(錨:工具列搜尋框下限 160px → `stories-helpers/scene/data-toolbar.tsx`)。
-**禁止以「省工」「之後再開」「先寫死試試」為由拒絕開 token**;同理也禁止「之後可能有人用」就先開 —— 現行已出過「同值兩個住所必然漂移」而把 token 退回程式的事(`uiSize/uiSize.css` AgentPanel 面板寬那段註解)。
+**禁止以「省工」「之後再開」「先寫死試試」為由拒絕開 token**;同理也禁止「之後可能有人用」就先開 —— 現行已出過「同值兩個住所必然漂移」而把 token 退回程式的事(`uiSize/uiSize.css` AgentPanel 面板寬那段註解)。這一句管的是**開新名字**;已經開放給產品讀的名字不拿它當刪除理由 —— 設計系統與 WM 看不到讀者 ≠ 沒有讀者,退場另走 `orphan-tokens.spec.md`「退場流程」(2026-11-15 `--brand` 曾被拿這句誤刪,同日還原;【AI 推導 2026-11-15】)。
 
 **第 1 題:它上面有沒有一層有用途的名字包著它、元件通常透過那層取值?** → 有:**原料**。
 
 **第 2 題:要改它,該問誰?** → 拿掉某一個元件它就沒意義:**元件的值**(主人 = 那個元件);否則:**共用刻度**。
 
 讓答案唯一的兩個補充規定:
-- **以「一組」為單位判,不逐顆判。** 同一個名字開頭的各個級距算一組(字級一組、圓角一組、語意色一組、動畫時長一組……)。一組裡某一顆目前只有一個元件在用(例:`--radius-xs` 只有圖表在用),它仍然是那組刻度的一員。
+- **以「一組」為單位判,不逐顆判。** 同一個名字開頭的各個級距算一組(字級一組、圓角一組、語意色一組、動畫時長一組……)。一組裡某一顆目前只有一個元件在用(例:`--radius-xs` 只有圖表在用),它仍然是那組刻度的一員。**「一組」只指同一用途、彼此只差級距或狀態的一串名字**(`sm` / `md` / `lg`、`100` / `200`、`hover` / `active` / `subtle` / `text`);名字開頭相同、用途卻只屬於某一個元件的,不算組員,照第 0 題自己判(錨:`--motion-duration-shimmer` 開頭是動畫時長,用途卻只有 AgentPanel 的「思考中」文字微光,2026-11-15 收回 AgentPanel)。【AI 推導 2026-11-15:稽核 P10 把「一組」的寬讀法 / 窄讀法列為待決,user 沒有回覆這一題;這裡採窄讀法 —— 它只讓靠開頭搭便車的單一元件值出組,其他名字的歸類不變】閘 C9(丙)照這一句判沒有讀者的共用刻度算不算組員(最後一段是級距 / 狀態、而且同組有人讀才算)。
 - **「現在有幾個元件在讀」不決定它是誰的。** 讀者數只用在第 0 題(要不要開名字),不用在第 2 題 —— 讀者數會隨程式改動而變,「要改它該問誰」不會因為多一個讀者而變。例:`--chrome-header-height` 執行期只有標頭元件在讀,但 `uiSize/uiSize.spec.md`「Chrome Header Height」段寫明它是側欄頂部、全域頂部列、產品頁首共用的高度 → 共用刻度。
 
 ---
@@ -93,7 +93,12 @@
 - **原料、共用刻度**:`tokens/<類別>/`。陰影(`--elevation-*`)住 `color/primitives.css`:它跟顏色共用同一段 `[data-theme="dark"]` 切換,放同一個區塊改主題設定一處全聯動;拆出去就有兩處主題觸發點,容易「改 a 壞 b」。拆分條件是「陰影需要獨立的明暗切換」(例:高對比模式不變色但加重陰影),目前不成立。對齊:Atlassian 的 shadow 與 color 同在一份主題檔(atlassian-light.js `--ds-shadow-raised` 與 `--ds-text-subtlest` 同檔,[來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-light.js));Polaris `shadow` 與 `color` 同住 `themes/base/`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/shadow.ts#L41))。
 - **元件的值**:主人元件資料夾的樣式檔。預設、覆寫、回復三段一起搬(規則 1)。
 - **用 `var()` 由別的 token 組出來、輸入會隨密度變的值**:公式只寫一份,宣告在 `:root` 與每個換密度的元素上(`uiSize/uiSize.css`「衍生值」段),不只寫在 `:root` —— 否則區塊換密度時它沿用整頁的值(`density/density.spec.md`「局部覆蓋」的保證;閘 `scripts/test-density-subtree-token-parity.mjs`)。主人在自己根元素上重算的也算數(`--table-cell-py` 在 DataTable 根元素的 `data-table-size` 上重算)。
-- **給 Tailwind class 用的轉接名**(例:`h-tab-md` 背後的 `--spacing-tab-md: var(--tab-height-md)`)跟著本尊走;轉接名本身不登記,只檢查它指向的本尊有登記(閘 C1)。
+- **給 Tailwind class 用的轉接名**(例:`h-table-row-md` 背後的 `--spacing-table-row-md: var(--table-row-md)`)跟著本尊走;轉接名本身不登記,只檢查它指向的本尊有登記(閘 C1)。**哪些值開轉接名**(2026-11-15 寫下,稽核 N24):
+  - 只為**產品可讀**(分類表 `product` 是 `read` / `read-write`)的值開,**整組開**,不挑單顆:共用刻度(例:`h-field-*`、`h-tree-indent-*`),以及主人規格點名產品可讀的元件的值(例:`h-table-row-*`)。
+  - `product: no` 的值**不開**轉接名:轉接名寫在 `@theme inline`,會隨對外彙總檔 `styles/tokens.css` 發給產品,產品的 Tailwind 照樣產得出那個 class,等於把不開放的值開成對外寫法(閘 C7 只看本 repo `apps/`,擋不到外部產品)。2026-11-15 刪了分頁高 `h-tab-*`(稽核 P05)。現況還有一組不合這條:標籤高 `h-tag-*`(`product: no`,只有 Tag 自己的 cva 在用)—— 去留要 user 決定,本條不自動刪。
+  - **產品可讀的值與它的轉接名,不得以「設計系統 / WM 裡看不到讀者」為由刪。** 產品不只 WM,看不到 ≠ 沒有;這類名字是對外合約,退場走 `orphan-tokens.spec.md`「退場流程」(user 原話 + 先保留一版標 deprecated),閘 C10 擋悄悄消失(2026-11-15 樹狀縮排 `h-tree-indent-*` 曾被這樣刪掉,同日還原)。
+  - **新增**對外 class 名(例:替 `--layout-space-*` 開 `p-layout-space-loose` 這類寫法)是對外 API 命名,要 user 決定,而且先過命名三重檢驗;本條不自動補。
+  【AI 推導 2026-11-15:照稽核 N24 建議的方向寫下,user 沒有逐字決定過這一條;依據是本檔「誰可以讀」表(元件的值預設產品不讀)與分類表 `product` 欄。目前只拿來刪 `product: no` 的分頁高轉接名,沒有新增任何 class】
 - 新的元件樣式檔一定要進對外彙總檔 `styles/tokens.css`(`node scripts/gen-figma-make-artifacts.mjs` 自動掃;被元件程式匯入的不收)或被元件程式匯入,否則安裝套件的產品拿不到值(2026-05-26 側欄寬事故;閘 C6)。彙總檔不手改:CI 跑產生器的 `--check`,提交的檔不等於產生器輸出就紅(2026-11-11 接上)。
 
 ---
@@ -103,7 +108,7 @@
 - **名字開頭對到哪個主人,以分類表為準,不靠字面猜**(例:`--field-` 是共用刻度;`--table-row-` 的主人是表格;`--tab-` 的主人是分頁)。同開頭、不同主人的(`--chrome-header-height` 共用刻度、`--chrome-header-avatar-size` 標頭樣式自己的值)各寫完整名字一列,不再新增這種情況。
 - 原料(都是現有寫法):`--color-<色名>-<階>[-opaque]`、`--color-black`、`--color-white`、`--black-a<透明度>`、`--white-a<透明度>`、`--_<私有中介值>`。
 - 共用刻度:`--<用途或刻度名>-<屬性>[-<級距>]`。語意色沿用 Atlassian 流派不帶 `--color-` 前綴(`--primary-hover`,[來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-light.js));底色深度一組(`--canvas` / `--surface*` / `--overlay` / `--tooltip`)與互動狀態成對一組(`--bg-<state>` 配 `--fg-<state>`)是兩個家族,即使值相同也不合併(Polaris `color-bg` vs `color-bg-surface-disabled`,[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/color.ts#L258-L286))。
-- 元件的值:`--<主人>-<屬性>[-<級距>]`。**元件內變數**不是 token、不登記進分類表:只在主人自己的元素上設值(inline style 或主人自己的 class;不在 `:root` / 密度 / 主題 / `@theme` 段宣告)、只有主人自己讀的變數,名字照樣用主人開頭(例:Sidebar 的 `--sidebar-rail-icon-slot`;合約寫在 pattern 規格、由 row primitive 注入的用那個 pattern 的開頭,例 `--item-icon-size`,見 `../patterns/element-anatomy/item-anatomy.spec.md`)。判準與閘同一條:`scripts/token-creation-invariant.mjs:15-16` 的 C1(整頁生效、或被宣告它的資料夾以外讀到的名字才要登記)與 `:34-36` 的 C9(只有主人自己在讀、又不切換的值不開全系統的名字)。(2026-11-13 AI 工程判斷:把閘早就在執行的判準補成文字;「名字用主人開頭」是同日一起寫下的命名慣例,閘不檢查名字)
+- 元件的值:`--<主人>-<屬性>[-<級距>]`。**元件內變數**不是 token、不登記進分類表:只在主人自己的元素上設值(inline style 或主人自己的 class;不在 `:root` / 密度 / 主題 / `@theme` 段宣告)、只有主人自己讀的變數,名字照樣用主人開頭(例:Sidebar 的 `--sidebar-rail-icon-slot`;合約寫在 pattern 規格、由 row primitive 注入的用那個 pattern 的開頭,例 `--item-icon-size`,見 `../patterns/element-anatomy/item-anatomy.spec.md`)。判準與閘同一條:`scripts/token-creation-invariant.mjs:15-16` 的 C1(整頁生效、或被宣告它的資料夾以外讀到的名字才要登記)與 `:36-38` 的 C9(只有主人自己在讀、又不切換的值不開全系統的名字)。(2026-11-13 AI 工程判斷:把閘早就在執行的判準補成文字;「名字用主人開頭」是同日一起寫下的命名慣例,閘不檢查名字)
 - **級距字尾**統一 `xs / sm / md / lg`(陰影例外用 `100 / 200` 數字階,同 Polaris `shadow-100`,[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/shadow.ts#L41-L45))。**禁**自創 `tiny` / `small` / `regular` / `large`。
 - **Tailwind 轉接不改名**:提供 class 的 token 必經 `@theme inline` 或 `@utility`,class 名 = token 名去掉 `--` 加必要的 class 前綴(`bg-` / `text-` / `h-`);**禁**在轉接裡改名(`--font-body-size` 不可橋成 `text-paragraph`)或改值(`--spacing-field-md: 32px` = 漂移),必用 `var()` 指回本尊:
 
@@ -121,7 +126,7 @@
 
 ## 新增 / 搬家 / 退場時要做的事
 
-1. **分類表**:新名字加一列完整名字(`why` 必填;共用刻度寫 `scale` 或 `secondReader`);搬家改 `home`;退場刪那一列。
+1. **分類表**:新名字加一列完整名字(`why` 必填;共用刻度寫 `scale` 或 `secondReader`);搬家改 `home`;退場刪那一列。**產品可讀**(`product` 不是 `no`)的名字與它的 Tailwind 轉接名退場,另要在分類表 `retired` 登記 user 原話與版本(先保留一版標 deprecated,下一版才刪;閘 C10),流程住 `orphan-tokens.spec.md`「退場流程」。設計系統自己不讀、仍要保留的(例:產品層預留的 `--brand`),該列 `retain` 寫保留類別(類別只住 `orphan-tokens.spec.md`)。
 2. **規格**:主人的規格寫這顆值是多少、為什麼(新名字必須完整出現在該列 `spec` 那份規格,閘 C4)。
 3. **樣式檔**:預設與切換段同檔;新的元件樣式檔跑 `node scripts/gen-figma-make-artifacts.mjs` 進彙總檔。
 4. **Tailwind 轉接**:要 class 就補 `@theme inline` / `@utility`。
@@ -135,12 +140,12 @@
 
 ## 機器擋得住什麼、擋不住什麼
 
-閘 `scripts/token-creation-invariant.mjs`(檢查清單在檔頭,不在這裡重述)擋得住:放錯地方、沒登記、新名字靠開頭混過去、規格沒寫、密度覆寫漏回復、樣式檔沒進彙總檔、產品或元件讀了不該讀的。已知的舊缺漏(規格找不到的名字、元件直接讀原料的地方、漏回復)列在分類表 `known.*`,**只能變短**。
+閘 `scripts/token-creation-invariant.mjs`(檢查清單在檔頭,不在這裡重述)擋得住:放錯地方、沒登記、新名字靠開頭混過去、規格沒寫、密度覆寫漏回復、樣式檔沒進彙總檔、產品或元件讀了不該讀的、產品可讀的名字沒登記退場就消失(C10,2026-11-15)、顏色用詞混用(C11,2026-11-15;用詞住 `color/color.spec.md`「用詞」)。已知的舊缺漏(規格找不到的名字、元件直接讀原料的地方、漏回復)列在分類表 `known.*`,**只能變短**。
 C5 只看「名字有沒有出現在回復段」;「區塊裡的值真的等於整頁該密度」由 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算(用 `var()` 組出來的值 C5 看不到)。
 
 擋不住、靠審查的人看分類表那一句 `why`:
 - **這顆值的主人是誰、該歸哪一類** —— 設計判斷。機器只確認「有登記、登記不互相打架」。
-- **該不該開這顆 token**(兩個值現在相等是巧合還是必須同步) —— 閘只抓得到最明顯的一種:只有主人自己在讀、又不切換(C9;「元件的值」不分新舊全查,主人 = 分類表該列 `home` 與 `target` 的資料夾;其他類別只查新名字,既有的原料 / 共用刻度以一組為單位判)。兩個元件各讀一次、其實不必同步的值,閘看不出來。
+- **該不該開這顆 token**(兩個值現在相等是巧合還是必須同步) —— 閘只抓得到幾種明顯的:只有主人自己在讀、又不切換(C9;「元件的值」不分新舊全查,主人 = 分類表該列 `home` 與 `target` 的資料夾;其他類別只查新名字,既有的原料 / 共用刻度以一組為單位判);2026-11-15 起再加三種(稽核 P23):唯一的讀者在別的資料夾、只在程式裡量它的值(C9 甲);只被同檔公式當輸入、分類表沒寫明是中間值(C9 乙);沒有任何執行期讀者,而且不是一組級距 / 狀態裡有人讀的組員(C9 丙,既有的列在 `known.unread`、只能變短;分類表該列寫了保留類別 `retain` 的不算 —— 例:產品層預留的 `--brand`);另外每個讀者資料夾自己也有宣告的跨元件傳值,C1 同日也看得到了。兩個元件各讀一次、其實不必同步的值,閘仍看不出來。
 - **元件程式裡寫死一個本來該用共用刻度的數字**、字串拼出來的名字(`var(--color-${hue}-1)`) —— 閘看不到。
 - **設計系統以外的產品 repo** —— 同一條檢查要由產品 repo 自己跑。
 
@@ -188,4 +193,8 @@ C5 只看「名字有沒有出現在回復段」;「區塊裡的值真的等於�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `command.spec.md`
+- `header-canonical.spec.md`
+- `motion.spec.md`
+- `orphan-tokens.spec.md`
