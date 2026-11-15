@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: 全 DS 範例(story / stories-helpers / _demo 檔)裡的人員照片只走照片名冊 stories-helpers/data/people.ts:網址形狀固定為 /<px≤1000>?img=<n>、名冊不引用不合格的臉、同一支檔裡不同人不共用臉、範例只用名冊裡有的名字;consumer 範本(apps/template/src 與其 canonical 副本 ds-canonical/templates)不帶第三方照片網址
+ *   保證: 全 DS 範例(story / stories-helpers / _demo 檔,含 Avatar 元件自己的頁)裡的人員照片只走照片名冊 stories-helpers/data/people.ts:網址形狀固定為 /<px≤1000>?img=<n>、名冊不引用不合格的臉、同一支檔裡不同人不共用臉、範例只用名冊裡有的名字;consumer 範本(apps/template/src 與其 canonical 副本 ds-canonical/templates)不帶第三方照片網址
  *   紅: 名冊把任一人改成 DEMO_FACE_UNUSABLE 裡的臉、任一 story 寫回 `https://i.pravatar.cc/48?u=…` 字串、同一支檔放兩個同臉的人、或 demoPersonPhoto 傳名冊沒有的名字 → 本閘指名檔案與人名並紅(selftest 逐條合成驗)
  *   綠: 現行樹(名冊 + 全部遷移後的範例)必須綠;selftest 另以合成的合規名冊與合規 story 驗「該放行的會放行」,不靠關鍵字猜
  *
@@ -13,8 +13,10 @@
  *
  * ── 範圍 ──
  *
- * - 掃 packages/design-system/src 下的 *.stories.tsx、stories-helpers/**、元件資料夾裡的 _demo-* 檔。
- * - components/Avatar/** 整個略過:那是 Avatar 元件自己的照片示範,要不要一起換由 user 決定(本閘不替 user 做這個決定)。
+ * - 掃 packages/design-system/src 下的 *.stories.tsx、stories-helpers/**、元件資料夾裡的 _demo-* 檔(含 components/Avatar/**)。
+ *   Avatar 元件自己的頁 2026-11-15 前整個略過(要不要一起換由 user 決定);user 2026-11-11 回覆第三批成品頁原話「第一題照你建議」
+ *  = 採 AI 建議的甲(選項文字「Avatar 自己的頁面也改用名冊照片」)之後納入,沒有任何路徑豁免。Avatar 頁示範「圖片載入失敗」
+ *   的網址(RFC 保留網域 / 同源 404)不是 i.pravatar.cc,本閘本來就不管。
  * - 檔案縮圖不是人員頭像(NON_PERSON_FILES):照樣檢查網址形狀與不合格的臉,但不要求對得到名冊。
  * - 「同一支檔」= 該檔自己用到的名字 + 它 import 的 _demo-* 畫面檔用到的名字(同一個畫面);名冊檔本身(person-card / people)不算畫面。
  *   已知看不到的(靜態判法的界線,照實寫):名字從別的資料模組或變數組出來的(非字串字面值、非 SAMPLE_PEOPLE、非 _demo-* 匯入)。
@@ -39,10 +41,6 @@ const TEMPLATES = ['apps/template/src', 'packages/design-system/ds-canonical/tem
 const MAX_IMG = 70
 const MAX_PX = 1000
 
-/** 整個略過的路徑前綴(理由逐字寫在這裡)。 */
-const EXEMPT_PREFIXES = Object.freeze({
-  [`${SRC}/components/Avatar/`]: 'Avatar 元件自己的照片示範;寫死的照片要不要換由 user 決定(2026-11-11 回報 needsUser)',
-})
 /** 檔案縮圖(不是人員頭像):只查網址形狀與不合格的臉。 */
 const NON_PERSON_FILES = Object.freeze({
   [`${SRC}/components/FileItem/file-item.anatomy.stories.tsx`]: '「photo.jpg」檔案縮圖,不是人員頭像',
@@ -129,7 +127,6 @@ export function check({ rosterSource, cardSource, files, template = [] }) {
   const ownNames = new Map()
   for (const f of files) {
     if (f.path === ROSTER) continue
-    if (Object.keys(EXEMPT_PREFIXES).some((p) => f.path.startsWith(p))) continue
     const nonPerson = Object.hasOwn(NON_PERSON_FILES, f.path)
     for (const url of f.source.match(URL_RE) ?? []) {
       if (nonPerson) checkUrlShape(url, roster, f.path, violations)
@@ -193,6 +190,7 @@ function selftest() {
   const card = `export const SAMPLE_PEOPLE = {\n  ada: {\n    name: 'Ada Chen',\n  },\n}\n`
   const story = (path, source) => ({ path: `${SRC}/components/X/${path}`, source })
   const A = `${SRC}/components/X/a.stories.tsx`
+  const AV = `${SRC}/components/Avatar/avatar.stories.tsx`
   const FI = Object.keys(NON_PERSON_FILES)[0]
   // 第三欄:0 = 必須 0 筆;字串 = 必須有一筆「以這個檔名開頭、含這句規則」的違規(紅的是指名的那一條,不是別條剛好紅 —— r3 審查 M37)
   const cases = [
@@ -204,10 +202,14 @@ function selftest() {
     ['畫面檔(_demo-*)與 import 它的 story 同臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('_demo-helpers.tsx', "demoPersonData('林雅婷', 48)"), story('a.stories.tsx', "import { X } from './_demo-helpers'\ndemoPersonPhoto('Julia Shen', 48)")] }, [A, '「Julia Shen」與「林雅婷」同一張臉 img=44']],
     ['名冊沒有的名字 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('Nobody Here', 48)")] }, [A, '「Nobody Here」不在照片名冊']],
     ['尺寸超過 1000 → 紅', { rosterSource: rosterOk, cardSource: card, files: [story('a.stories.tsx', "demoPersonPhoto('Ada Chen', 1200)")] }, [A, '「Ada Chen」尺寸 1200 超出 1–1000']],
-    ['Avatar/** 寫死的照片 → 略過(綠)', { rosterSource: rosterOk, cardSource: card, files: [{ path: `${SRC}/components/Avatar/avatar.stories.tsx`, source: "src: 'https://i.pravatar.cc/80?u=alice-chen'" }] }, 0],
-    ['檔案縮圖用合格臉 → 綠', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/112?img=3'" }] }, 0],
+    // Avatar 元件自己的頁 2026-11-15 起不再豁免(A14;出處見檔頭「範圍」):寫死照片照樣紅;圖片失敗的示範網址不是 pravatar,照樣綠
+    ['Avatar/** 寫死的照片 → 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: AV, source: "src: 'https://i.pravatar.cc/80?u=alice-chen'" }] }, [AV, '手寫照片網址 https://i.pravatar.cc/80?u=alice-chen']],
+    ['Avatar/** 寫死 ?img= 照片(形狀合規也不行)→ 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: AV, source: "src: 'https://i.pravatar.cc/80?img=32'" }] }, [AV, '手寫照片網址 https://i.pravatar.cc/80?img=32']],
+    ['Avatar/** 走名冊 + 圖片失敗示範(RFC 保留網域 / 同源 404)→ 綠', { rosterSource: rosterOk, cardSource: card, files: [{ path: AV, source: "src={demoPersonPhoto('Ada Chen', 80)}; src=\"https://invalid.local/x.jpg\"; src='/__avatar-fallback-missing__.jpg'; SAMPLE_PEOPLE.ada" }] }, 0],
+    ['Avatar/** 同一支檔兩人同臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: AV, source: "demoPersonPhoto('林雅婷', 48); demoPersonPhoto('Julia Shen', 48)" }] }, [AV, '「林雅婷」與「Julia Shen」同一張臉 img=44']],
+    ['檔案縮圖用合格臉 → 綠', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/112?img=13'" }] }, 0],
     ['檔案縮圖用不合格的臉 → 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/112?img=24'" }] }, [FI, 'img=24 是不合格的臉']],
-    ['檔案縮圖網址形狀錯(/128/128)→ 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/128/128?img=3'" }] }, [FI, '照片網址形狀不對']],
+    ['檔案縮圖網址形狀錯(/128/128)→ 紅', { rosterSource: rosterOk, cardSource: card, files: [{ path: FI, source: "thumbnailSrc: 'https://i.pravatar.cc/128/128?img=13'" }] }, [FI, '照片網址形狀不對']],
     ['consumer 範本帶照片網址 → 紅', { rosterSource: rosterOk, cardSource: card, files: [], template: [{ path: `${TEMPLATES[0]}/App.tsx`, source: "src: 'https://i.pravatar.cc/48?img=5'" }] }, [`${TEMPLATES[0]}/App.tsx`, 'consumer 範本不放第三方照片網址']],
     ['canonical 範本副本(ds-canonical/templates)帶照片網址 → 紅', { rosterSource: rosterOk, cardSource: card, files: [], template: [{ path: `${TEMPLATES[1]}/dashboard-app.tsx`, source: "src: 'https://i.pravatar.cc/48?img=5'" }] }, [`${TEMPLATES[1]}/dashboard-app.tsx`, 'consumer 範本不放第三方照片網址']],
     ['名錄成員不在名冊 → 紅', { rosterSource: rosterOk, cardSource: card.replace('Ada Chen', 'Ghost Person'), files: [] }, [CARD, 'SAMPLE_PEOPLE.ada「Ghost Person」不在照片名冊']],

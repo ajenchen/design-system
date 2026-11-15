@@ -70,7 +70,8 @@ function NotificationSettings() {
  * - description = 「職稱｜員編｜工號」(full-width 「｜」separator;世界級成員卡以職稱辨識工作身份)
  */
 const MEMBER_ROLES = ['Design', 'Engineering', 'Product', 'Research'] as const
-// 照片走照片名冊(stories-helpers/data/people.ts):30 人同一支檔,30 張臉互不重複(閘 demo-people-roster-invariant)
+// 照片走照片名冊(stories-helpers/data/people.ts):29 人同一支檔,29 張臉互不重複(閘 demo-people-roster-invariant)。
+// 2026-11-15 前 30 人;名冊重篩後合格的臉只剩 29 張,拿掉 Peggy Qin(理由見 people.ts DEMO_FACE_UNUSABLE 檔頭)
 const MEMBERS: { name: DemoPersonName; empId: string; empNum: string }[] = [
   { name: 'Alan Chen', empId: 'D-0042', empNum: 'EMP-1001' },
   { name: 'Betty Wu', empId: 'E-0183', empNum: 'EMP-1002' },
@@ -87,7 +88,6 @@ const MEMBERS: { name: DemoPersonName; empId: string; empNum: string }[] = [
   { name: 'Mark Tseng', empId: 'E-0154', empNum: 'EMP-1013' },
   { name: 'Nina Pan', empId: 'D-0031', empNum: 'EMP-1014' },
   { name: 'Oscar Lo', empId: 'E-0249', empNum: 'EMP-1015' },
-  { name: 'Peggy Qin', empId: 'M-0067', empNum: 'EMP-1016' },
   { name: 'Ray Tang', empId: 'D-0192', empNum: 'EMP-1017' },
   { name: 'Sophia Fei', empId: 'E-0115', empNum: 'EMP-1018' },
   { name: 'Tom Liang', empId: 'D-0234', empNum: 'EMP-1019' },

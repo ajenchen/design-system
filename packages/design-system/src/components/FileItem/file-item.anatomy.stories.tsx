@@ -35,7 +35,7 @@ export const Overview: Story = {
             name="beach-photo.jpg"
             description="4.8 MB"
             mode="rich"
-            thumbnailSrc="https://i.pravatar.cc/112?img=3"
+            thumbnailSrc="https://i.pravatar.cc/112?img=13"
           />
         </div>
       </div>
@@ -80,7 +80,7 @@ export const Inspector: Story = {
     status: 'uploading',
     progress: 60,
     description: '2.4 MB · 上傳中',
-    thumbnailSrc: 'https://i.pravatar.cc/112?img=3',
+    thumbnailSrc: 'https://i.pravatar.cc/112?img=13',
   },
   argTypes: {
     name: { control: 'text' },
@@ -193,7 +193,7 @@ export const ModeMatrix: Story = {
         <Desc>掃描模式(text-body 14px + leading-compact 1.3;兩 mode 統一 scanning),資訊容量較高。適合圖片 / 文件 / 需要縮圖的場景。</Desc>
         <div className="flex flex-col gap-2 max-w-lg">
           <FileItem name="Q1-report.pdf" description="2.4 MB · 已上傳" mode="rich" />
-          <FileItem name="photo.jpg" description="4.8 MB" mode="rich" thumbnailSrc="https://i.pravatar.cc/112?img=3" />
+          <FileItem name="photo.jpg" description="4.8 MB" mode="rich" thumbnailSrc="https://i.pravatar.cc/112?img=13" />
           <FileItem name="contract.pdf" description="1.2 MB · 上傳中 45%" status="uploading" progress={45} mode="rich" />
         </div>
       </div>

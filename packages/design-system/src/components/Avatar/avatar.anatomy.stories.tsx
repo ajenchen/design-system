@@ -16,13 +16,14 @@ import {
   type CategoricalColor,
   type CategoricalHue,
 } from '@/design-system/tokens/categorical-color'
-import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleSection, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { TkVal, PropRow } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 // 量測頁的人員頭像也帶名片(avatar.spec.md「Avatar HoverCard 原則」適用範圍無例外;登記簿 B21「我說所有」):名片讀共用名錄,
-// 名片裡的頭像用觸發點同一張圖(或同樣沒有圖)。實體頭像(icon / 組織)照 avatar.spec.md:78 不接;沒有任何身分資料的頭像
+// 名片裡的頭像與觸發點是同一張臉(或同樣沒有圖)。實體頭像(icon / 組織)照 avatar.spec.md:78 不接;沒有任何身分資料的頭像
 // (Fallback chain 最後一列「無 src 無 alt」)沒有人可以接名片,維持原樣。2026-10-28 前本頁人員頭像都沒接名片(稽核 MO-L002)。
+// 照片一律走照片名冊(stories-helpers/data/people.ts;觸發點網址取顯示尺寸 ×2,名片用名錄自己那一份);2026-11-15 前本頁寫死 `?u=` 照片(A14)。
 const { ada, alice, bob, carol } = SAMPLE_PEOPLE
 
 const meta: Meta = {
@@ -111,7 +112,7 @@ export const Overview = {
       <ExampleSection title="三種內容模式" description="按優先順序決定顯示內容：src → icon → alt 首字。都沒有時顯示預設 User icon。">
         <div className="flex gap-8">
           {([
-            { mode: 'Image', desc: '有 src → 圖片填滿容器', el: <Avatar size={48} src="https://i.pravatar.cc/96?u=overview" alt={alice.name} hoverCard={samplePersonCard({ ...alice, avatarSrc: 'https://i.pravatar.cc/96?u=overview' })} /> },
+            { mode: 'Image', desc: '有 src → 圖片填滿容器', el: <Avatar size={48} src={demoPersonPhoto('Alice Chen', 96)} alt={alice.name} hoverCard={samplePersonCard(alice)} /> },
             { mode: 'Icon', desc: '有 icon → Icon 在底色背景', el: <Avatar size={48} icon={Building2} color="blue" /> },
             { mode: 'Text', desc: '有 alt → 首字大寫', el: <Avatar size={48} alt={bob.name} color="purple" hoverCard={samplePersonCard({ ...bob, avatarSrc: undefined })} /> },
           ] as const).map(({ mode, desc, el }) => (
@@ -133,7 +134,7 @@ export const Overview = {
         <div className="flex gap-8">
           <div className="flex flex-col items-center gap-2">
             {/* circle = 人物 → 真實人像(2026-07-08 demo 人像真實化);square = 實體 → icon */}
-            <Avatar size={40} src="https://i.pravatar.cc/80?u=alice-chen" alt={alice.name} shape="circle" hoverCard={samplePersonCard({ ...alice, avatarSrc: 'https://i.pravatar.cc/80?u=alice-chen' })} />
+            <Avatar size={40} src={demoPersonPhoto('Alice Chen', 80)} alt={alice.name} shape="circle" hoverCard={samplePersonCard(alice)} />
             <span className="text-[11px] font-mono text-fg-muted">circle（預設）</span>
             <span className="text-[10px] text-fg-muted">rounded-full</span>
           </div>
@@ -198,7 +199,7 @@ const InspectorInner = () => {
 
   const renderAvatar = () => {
     switch (mode) {
-      case 'image': return <Avatar size={size} shape={shape} src="https://i.pravatar.cc/96?u=inspector" alt={ada.name} hoverCard={samplePersonCard({ ...ada, avatarSrc: 'https://i.pravatar.cc/96?u=inspector' })} />
+      case 'image': return <Avatar size={size} shape={shape} src={demoPersonPhoto('Ada Chen', size * 2)} alt={ada.name} hoverCard={samplePersonCard(ada)} />
       case 'icon': return <Avatar size={size} shape={shape} icon={Folder} color={color} solid={solid} />
       case 'text': return <Avatar size={size} shape={shape} alt={alice.name} color={color} solid={solid} hoverCard={samplePersonCard({ ...alice, avatarSrc: undefined })} />
     }
@@ -552,7 +553,7 @@ export const SizeMatrix = {
                 <Td>Image</Td>
                 {PRESET_SIZES.map((s) => (
                   <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} src={`https://i.pravatar.cc/${s * 2}?u=size-matrix`} alt={ada.name} hoverCard={samplePersonCard({ ...ada, avatarSrc: 'https://i.pravatar.cc/80?u=size-matrix' })} />
+                    <Avatar size={s} src={demoPersonPhoto('Ada Chen', s * 2)} alt={ada.name} hoverCard={samplePersonCard(ada)} />
                   </td>
                 ))}
               </tr>
@@ -625,7 +626,7 @@ export const StateBehavior = {
           <tbody>
             <tr>
               <Td mono>src 載入成功</Td>
-              <td className="p-3 border-b border-divider"><Avatar size={32} src="https://i.pravatar.cc/64?u=state-ok" alt={alice.name} hoverCard={samplePersonCard({ ...alice, avatarSrc: 'https://i.pravatar.cc/64?u=state-ok' })} /></td>
+              <td className="p-3 border-b border-divider"><Avatar size={32} src={demoPersonPhoto('Alice Chen', 64)} alt={alice.name} hoverCard={samplePersonCard(alice)} /></td>
               <Td>{'有 src + 載入成功 → 圖片'}</Td>
             </tr>
             <tr>
@@ -656,7 +657,7 @@ export const StateBehavior = {
         {(['online', 'away', 'busy', 'offline'] as const).map(s => (
           <div key={s} className="flex flex-col items-center gap-2">
             {/* 名片的狀態跟頭像右下角的點同一個值,狀態訊息跟著狀態換(線上不寫休假) */}
-            <Avatar size={40} src="https://i.pravatar.cc/80?u=ada-chen" alt={ada.name} status={s} hoverCard={samplePersonCard({ ...ada, status: s, statusMessage: PRESENCE_MESSAGE[s] })} />
+            <Avatar size={40} src={demoPersonPhoto('Ada Chen', 80)} alt={ada.name} status={s} hoverCard={samplePersonCard({ ...ada, status: s, statusMessage: PRESENCE_MESSAGE[s] })} />
             <span className="text-[11px] font-mono text-fg-muted">{s}</span>
           </div>
         ))}

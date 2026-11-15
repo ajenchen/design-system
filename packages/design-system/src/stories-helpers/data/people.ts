@@ -9,12 +9,14 @@
  * 1. 網址一律 `https://i.pravatar.cc/<px>?img=<n>` —— px 只能一段數字且 ≤ 1000(取顯示尺寸 ×2),瀏覽器閘的本機替身
  *    (`scripts/lib/launch-browser.mjs` pravatarRoute)才接得上;不得省參數、不得亂數或時間(story-determinism)。
  * 2. 同一個人全 DS 同一張臉(名字 → 編號只有這一張表);同一支 story 檔裡不同人不共用臉。
- *    跨檔可以共用(可用的臉比名字少):例 Dialog 成員清單 30 人各一張,其中有些臉在別支檔是另一個人。
+ *    跨檔可以共用(可用的臉比名字少):例 Dialog 成員清單 29 人各一張,其中有些臉在別支檔是另一個人。
  * 3. 臉要在 24–32px 也認得出來:正面或四分之三側臉、看得到眼睛、單一成人、沒被杯子 / 手 / 帽子 / 墨鏡遮住、不是重度藝術處理;
  *    臉的性別觀感配名字(名字性別不明確的 Alex / Jamie / Yuki 依原頁用法)。不合格的臉列在 `DEMO_FACE_UNUSABLE`,名冊不得引用。
  * 4. 字串型人員值只會顯示縮寫(PeoplePicker/person-display.tsx `toPersonData`)—— 要顯示照片就傳人員物件(`demoPersonData`)。
  *
- * Avatar 元件自己的頁(components/Avatar/**)寫死的照片示範不歸本名冊管;它們經 SAMPLE_PEOPLE 拿到的名片照片仍走本名冊。
+ * Avatar 元件自己的頁(components/Avatar/**)也走本名冊(2026-11-15 起;之前寫死 `?u=` 照片、不歸本名冊管):user 2026-11-11
+ * 回覆第三批成品頁原話「第一題照你建議」= 採 AI 建議的甲(選項文字「Avatar 自己的頁面也改用名冊照片」)。示範「圖片載入失敗 → 縮寫 / 圖示」
+ * 的那幾顆照舊用載不到的網址(RFC 保留網域 / 同源 404)或不給照片,那是在示範失敗,不是人員照片。
  */
 export const DEMO_PERSON_PHOTO = {
   // ── 高曝光(目前登入者與名錄常客):各給最清楚的彩色正面臉 ──
@@ -40,13 +42,13 @@ export const DEMO_PERSON_PHOTO = {
   'Bob Christopher Chen': 68,
   'Carol Liu': 34,
   'Alexander Hamilton Zhang': 69,
-  'David Wu': 3,
+  'David Wu': 18,
   'Elizabeth Montgomery Johnson': 16,
   'Charlie Wu': 60,
   'Diana Huang': 43,
   // ── PeoplePicker ──
   'Eric Tsai': 12,
-  'Fiona Lee': 27,
+  'Fiona Lee': 47,
   'Carol Wu': 19,
   'David Lee': 17,
   'Emma Yang': 5,
@@ -69,21 +71,20 @@ export const DEMO_PERSON_PHOTO = {
   陳美惠: 21,
   // ── ProfileCard 長姓名換行 ──
   'Alexander Benjamin Christopher Davidson-Williams III': 17,
-  // ── Dialog 成員清單(30 人同一支檔:30 張臉互不重複) ──
+  // ── Dialog 成員清單(29 人同一支檔:29 張臉互不重複) ──
   'Charlie Lee': 63,
   'Diana Kim': 43,
   'Ethan Park': 12,
-  'Fiona Lin': 9,
+  'Fiona Lin': 32,
   'George Ho': 60,
   'Hana Yu': 47,
-  'Ivan Sun': 3,
+  'Ivan Sun': 8,
   'Julia Shen': 44,
   'Kevin Hsu': 54,
   'Lydia Cao': 36,
   'Mark Tseng': 66,
-  'Nina Pan': 27,
+  'Nina Pan': 26,
   'Oscar Lo': 68,
-  'Peggy Qin': 28,
   'Ray Tang': 69,
   'Sophia Fei': 19,
   'Tom Liang': 70,
@@ -104,15 +105,20 @@ export const DEMO_PERSON_PHOTO = {
 export type DemoPersonName = keyof typeof DEMO_PERSON_PHOTO
 
 /**
- * 不得用的臉(pravatar `?img=1..70` 逐張看過,2026-11-11):24–32px 認不出人、或不適合當商務範例的人像。
- * 名冊引用其中任何一張,閘就紅。理由逐字寫在這裡,換臉前先看這張表。
+ * 不得用的臉(pravatar `?img=1..70` 逐張看過,2026-11-11;2026-11-15 依規則 3 重篩,每張看 128 / 32px,拿不準的加看 24 / 300px):
+ * 24–32px 認不出人、或不適合當商務範例的人像。名冊引用其中任何一張,閘就紅。理由逐字寫在這裡,換臉前先看這張表。
+ * 2026-11-15 新增 3 / 9 / 27 / 28 的理由是 AI 看圖判讀【AI 推導 2026-11-15】。28 列入後合格的臉剛好 29 張:dialog.stories.tsx 成員清單
+ * 原本 30 人(同檔不得撞臉),同日拿掉用 28 的 Peggy Qin、改 29 人 —— 清單長度只是「長到要捲」,29 / 30 沒有差別,而 user 要的是
+ *「盡量都用真實圖片」(2026-11-11),比讓其中一人改顯示縮寫更貼近【AI 推導 2026-11-15】。
  */
 export const DEMO_FACE_UNUSABLE = {
   1: '兩人同框',
   2: '幼兒',
+  3: '半張臉被煙霧蓋住、裸上身(重度藝術處理)',
   4: '兒童',
   6: '誇張鬼臉',
   7: '黑白、戴帽低頭,臉被遮',
+  9: '頭髮蓋住一眼 + 拳頭抵下巴(黑白)',
   10: '墨鏡 + 雙手捧臉',
   11: '墨鏡',
   14: '墨鏡 + 棒球帽',
@@ -120,6 +126,8 @@ export const DEMO_FACE_UNUSABLE = {
   20: '側臉低頭,看不到眼睛',
   22: '喬裝眼鏡加假鬍子',
   24: '杯子遮住下半臉',
+  27: '低頭垂眼,看不到眼睛',
+  28: '手指遮住嘴與下巴',
   29: '草帽遮住一眼',
   30: '大笑閉眼',
   31: '飛行員墨鏡',
