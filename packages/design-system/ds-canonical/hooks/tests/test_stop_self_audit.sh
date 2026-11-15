@@ -562,5 +562,32 @@ expect_trigger_warning "Test 26: 120 筆基線 mean 6 / σ 2 → 動態門檻 10
 run_threshold_case "state-sparse" "$(printf '%s\n' "$HIGH_BASELINE" | head -n 99)"
 expect_trigger_warning "Test 27: 樣本只有 99 筆 → 仍用共識下限 5" 1 "門檻 5"
 
+# Tests 28-32: Mechanism 8b —— 引原話當限制理由卻沒寫原題(M36(a) / Sub-rule 8,2026-11-15)。
+# 28 與 29 只差一行「原題:」= 對照組:紅燈只可能來自 8b。30-32 是三種必須放行的形狀。
+QUOTE_EVENT='我查到你 10-21 的原話：「bulkactionbar原本就是正確正常的，你他媽不要給我改壞喔」…這次對那頁的改動要撤回'
+T28=$(self_lock_transcript 'ok' "$QUOTE_EVENT")
+run_test "Test 28: 引原話 + 拿它撤回 + 沒寫原題(11-15 事件原文)→ block" 1 "$T28"
+T29=$(self_lock_transcript 'ok' "$(printf '%s\n原題:B1 問留言框送出鈕要不要靠左,BulkActionBar 只是對照圖。' "$QUOTE_EVENT")")
+run_test "Test 29: 同段補「原題:」一行 → no block" 0 "$T29"
+T30=$(self_lock_transcript 'ok' '你 10-21 說「照原則就是要靠左啊」,所以留言框送出鈕改成靠左。')
+run_test "Test 30: 只引原話、不拿來限制 → no block" 0 "$T30"
+T31=$(self_lock_transcript 'ok' '說明頁小標這次先擱置,不改。')
+run_test "Test 31: 有限制但沒引原話 → no block" 0 "$T31"
+T32=$(self_lock_transcript 'ok' '你說「不准用表情符號」,所以這次全部換成文字。')
+run_test "Test 32: 限制字只在引號裡(那是原話內容,不是我拿來擋)→ no block" 0 "$T32"
+# Tests 33-35(2026-11-15 審查 must-fix:第一版不分舊原話與本輪 user 剛說的話、前綴只要有「原話」就算 → 正常回覆被誤擋)。
+quote_turn_transcript() {
+  # $1 = 本輪 user 訊息;$2 = assistant reply
+  printf '%s\n%s\n' \
+    "$(jq -nc --arg t "$1" '{message:{role:"user",content:[{type:"text",text:$t}]}}')" \
+    "$(jq -nc --arg t "$2" '{message:{role:"assistant",content:[{type:"text",text:$t}]}}')"
+}
+T33=$(quote_turn_transcript '你 10-21 的原話：「bulkactionbar原本就是正確正常的，你他媽不要給我改壞喔」我指的是元件本身' "$QUOTE_EVENT")
+run_test "Test 33: 引號內容出自本輪 user 訊息(在回答 user 剛貼的話)→ no block" 0 "$T33"
+T34=$(self_lock_transcript 'ok' '規格原話「footer 左緣要對齊上方內容」,所以這次不改產品、只修量具。')
+run_test "Test 34: 不帶日期的「原話」(規格原文)→ no block" 0 "$T34"
+T35=$(self_lock_transcript 'ok' 'user 11-11 原話「先維持」,所以這項擱置。')
+run_test "Test 35: 帶日期的舊原話 + 擱置 + 沒寫原題(user 前綴)→ block" 1 "$T35"
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

@@ -470,6 +470,59 @@ if [ -n "$LAST_ASSISTANT" ]; then
   fi
 fi
 
+# ── Mechanism 8b: 引原話當限制理由卻沒寫原題(M36(a) + feedback_propose_discipline.md Sub-rule 8,2026-11-15)──
+# 錨例:「我查到你 10-21 的原話：「…不要給我改壞喔」…這次對那頁的改動要撤回」—— 那句原話回答的是 B1 留言框
+# 送出鈕那題,BulkActionBar 只是對照圖;拿摘要當範圍、沒核原題就撤回。判式刻意窄,三條件全中才擋:
+#   (1) 引了 user 的**舊**原話:「 前 30 bytes 內同時有日期(MM-DD)與 原話 / 你 / user —— 規則只管「把舊話拿來當這次依據」,
+#       所以不帶日期的(例「規格原話「…」」)不算;引號內容若出自本輪 user 訊息(在回答 user 剛說的話)也不算(2026-11-15 審查:
+#       第一版只認「原話 / user / 你說」前綴,這個 session 的 8 種正常回覆會被誤擋);
+#   (2) 同句(引號外)或下一句出現 不動 / 不改 / 撤回 / 擱置 / 不准 / 不得 / 一律不 / 改回原樣;
+#   (3) 整段沒有「原題:」。只引不限制、限制但沒引原話,一律放行。
+# 用 LC_ALL=C + 字面子字串(index/substr):hook 在 C locale 跑,多位元組字元放進 [^」] 會被切成單一位元組而失準。
+QUOTE_LIMIT_RE='不動|不改|撤回|擱置|不准|不得|一律不|改回原樣'
+QUOTE_CUR_USER=""
+if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+  QUOTE_CUR_USER=$(sed -n "${LAST_USER_LINE}p" "$TRANSCRIPT_PATH" 2>/dev/null | \
+    jq -r '.message.content as $c | if ($c|type)=="string" then $c else ($c[]?.text // empty) end' 2>/dev/null)
+fi
+if [ -n "$LAST_ASSISTANT" ] \
+  && LC_ALL=C grep -qF '「' <<< "$LAST_ASSISTANT" \
+  && LC_ALL=C grep -qE "$QUOTE_LIMIT_RE" <<< "$LAST_ASSISTANT" \
+  && ! LC_ALL=C grep -qE '原題(:|：)' <<< "$LAST_ASSISTANT" \
+  && CUR_USER="$QUOTE_CUR_USER" LC_ALL=C awk -v R="$QUOTE_LIMIT_RE" '
+    function strip(t,   a, b, out) {
+      out = ""
+      while ((a = index(t, "「")) > 0) {
+        b = index(substr(t, a + 3), "」"); out = out substr(t, 1, a - 1)
+        if (b == 0) return out
+        t = substr(t, a + b + 5)
+      }
+      return out t
+    }
+    function seg(t) { gsub(/。|！|？|!|\?|\n/, "\n", t); return t }
+    BEGIN { RS = "\001" }
+    { s = s $0 }
+    END {
+      pos = 1
+      while ((rel = index(substr(s, pos), "「")) > 0) {
+        qs = pos + rel - 1; qe = index(substr(s, qs + 3), "」")
+        if (qe == 0) exit 1
+        qe = qs + qe + 2; st = (qs > 30) ? qs - 30 : 1
+        pre = substr(s, st, qs - st); q = substr(s, qs + 3, qe - qs - 3); U = ENVIRON["CUR_USER"]
+        if (pre ~ /[0-9][0-9]?-[0-9][0-9]?/ && pre ~ /原話|你|user/ && (U == "" || q == "" || index(U, q) == 0)) {
+          hs = (qs > 600) ? qs - 600 : 1
+          nh = split(seg(strip(substr(s, hs, qs - hs))), h, "\n")
+          na = split(seg(strip(substr(s, qe + 3, 600))), a, "\n")
+          if ((h[nh] a[1]) ~ R || (na > 1 && a[2] ~ R)) exit 0
+        }
+        pos = qe + 3
+      }
+      exit 1
+    }' <<< "$LAST_ASSISTANT"; then
+  CRITICAL_QUOTE_SCOPE=1
+  WARNINGS="${WARNINGS}\n  • 引原話當限制理由(M36a / Sub-rule 8):你拿 user 原話去擋 / 撤回 / 擱置,卻沒寫它回答的那一題。"
+fi
+
 # ── Mechanism 9: 問句必正面回答(2026-08-09 user directive)────────────────
 # SSOT = governance/memory/feedback_propose_discipline.md Sub-rule 3。
 # user 以「好不好 / 行不行 / 可以嗎 / 對吧 / 不是更 X 嗎」結尾 = 要一個裁決,
@@ -786,6 +839,18 @@ if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; the
       "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本 turn 有工具被擋,而你在 reply 裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。禁指路 '!':它與 Bash 同沙箱,同一道牆必再擋,等於把死路交給 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
       "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現)。")
     emit_governance_block "$REASON"
+  fi
+fi
+
+# ── BLOCKER for Mechanism 8b 引原話當限制理由卻沒寫原題(2026-11-15)── 升級邏輯同 M10。
+if [ "${CRITICAL_QUOTE_SCOPE:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
+  QUOTE_HASH=$(printf '%s' "${LAST_ASSISTANT: -200}" | governance_hash_prefix)
+  LAST_BLOCKED_QUOTE_FILE="$STATE_DIR/.last-blocked-quote-scope.txt"
+  LAST_BLOCKED_QUOTE=""
+  [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_QUOTE_FILE" ] && LAST_BLOCKED_QUOTE=$(cat "$LAST_BLOCKED_QUOTE_FILE" 2>/dev/null || echo "")
+  if [ "$QUOTE_HASH" != "$LAST_BLOCKED_QUOTE" ]; then
+    [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$QUOTE_HASH" > "$LAST_BLOCKED_QUOTE_FILE" 2>/dev/null || true; }
+    emit_governance_block "🚨 QUOTE-SCOPE BLOCKER(M36a / feedback_propose_discipline.md Sub-rule 8):你拿 user 原話當不動 / 撤回 / 擱置的理由,補一行「原題:<那句原話回答的是哪一題>」,範圍只取字面最窄讀法(「不要改壞 X」≠「不要改 X」),原題撐不住這個限制就照規格做。"
   fi
 fi
 
