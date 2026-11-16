@@ -196,7 +196,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-audit-coverage-metadata | `generated/governance/audit-coverage-matrix.json` | `sha256:34e9b0e53bc8831f6096a9e5367e73ee6bab99600a9e22a70a35b68770f03a51` |
 | governance-authority-setup-cli | `scripts/setup-authority-governance.mjs` | `sha256:78ad76b31b334fc4b1f32b3e31e0ac9dc324dbd1b03674afb7445452c61ff44d` |
 | governance-authority-setup-tests | `infra/governance/test/authority-setup.test.mjs` | `sha256:154dc6d80fafb6df6c689fb8fdee0b9c65a51625658e3da14ac2708ea89d163f` |
-| governance-baseline-authority | `infra/governance/baseline/` | `sha256:844ae98e122812bd03fe38f1f9256e4723ef0c8d08f5cf4da3aba7bafc2eeec7` |
+| governance-baseline-authority | `infra/governance/baseline/` | `sha256:837f9e5d73ef11e7a2529b5b0d03f1829861336dc2fb6c7a1ce34e4256065e15` |
 | governance-build-graph-definition | `scripts/governance-build-graph.json` | `sha256:20eb26b7d6a3718d970362382fcacdeb2df400e7aaf5fa3b5415fd2116d8457c` |
 | governance-build-graph-runner | `scripts/governance-build-graph.mjs` | `sha256:2fd156f12bf7069462cc53ca47d6bd2280d867432d98864546937449991c816b` |
 | governance-build-graph-schema | `scripts/schemas/governance-build-graph.schema.json` | `sha256:ea1104ef5d4fb9a8741ef352b95c79703db33db7fe561453d41caa649c7fdc58` |
@@ -204,7 +204,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:359a7796f09ba1851a7497730151890948c2c1be6137f9f374b76558fd5742dc` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:4fc2281193aa61415a3e6c8b2f3eade45a2534960c4f3cfaa5b5da969ab70733` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:275e824d6c04d2b1830fbd9db2c7c728352a2f2ed786159c0f07bd7f5b15488b` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:42bebb0fed1818090560cb53077720f7c3594da5340a11c6c8696a12b6f83eb4` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:b02e2d60984b90773dca59f3f3777c9d04949006361d5c2ca232eda66c4e5185` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:906747cec87d2ec1b9b63c125ca2fc03bb68e3c6a7abd14147698671528bfb0d` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:ee94362513e8c84d74cfa96997783b45a6a005c150d7303a7b42e7f484346d14` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:4e4a393cfd0a2c275288108c788819e57deb5ad85e0a67d9e87dc19fcca0c046` |
@@ -289,8 +289,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | protected-root-classification-tests | `scripts/test-governance-protected-roots.mjs` | `sha256:6a76e573034c9149e27a27cf168a657e41e5fbf54332ab7bbf748847b74ca67f` |
 | protected-root-classification-validator | `scripts/lib/governance-protected-roots.mjs` | `sha256:11e7703b07e4783573dc8b71c2a1822641241cd777b104afdb4a45cc88caaf52` |
 | provider-adapter-generator | `scripts/gen-codex-adapter.mjs` | `sha256:76f12bdc624558f3c246a5560f0b8a15f09b52f6ea9dc64b7016a8351736507e` |
-| provider-cli-toolchain-authority | `infra/governance/providers/provider-cli-toolchain.json` | `sha256:6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc` |
-| provider-cli-toolchain-exact-lock | `infra/governance/providers/provider-cli-toolchain.package-lock.json` | `sha256:fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f` |
+| provider-cli-toolchain-authority | `infra/governance/providers/provider-cli-toolchain.json` | `sha256:5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170` |
+| provider-cli-toolchain-exact-lock | `infra/governance/providers/provider-cli-toolchain.package-lock.json` | `sha256:d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb` |
 | provider-cli-toolchain-schema | `infra/governance/schemas/provider-cli-toolchain.schema.json` | `sha256:7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d` |
 | provider-compatibility-library | `infra/governance/lib/provider-compatibility.mjs` | `sha256:4d1440596b95ed2c4ed147d36c1154d137a957d67d8a96387a4a27718655bdbd` |
 | provider-compatibility-matrix | `infra/governance/providers/compatibility-matrix.json` | `sha256:4552b777411d2fc4c9efb4e4b586c62aed01e750285f810da244863f9f23af08` |
@@ -316,12 +316,12 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-role-surface-policy | `infra/governance/providers/role-surface-policy.json` | `sha256:a7fb9daf5864b59d904419d0ffc9788a2719adb92bd64288cd4bf6a8256168ca` |
 | provider-role-surface-policy-library | `infra/governance/lib/role-surface-policy.mjs` | `sha256:a55f2a7176dca32a3999238d5237b3d99efe54fddde132711a878c0e99fbd30b` |
 | provider-role-surface-policy-schema | `infra/governance/schemas/role-surface-policy.schema.json` | `sha256:f4fa7100e7022ba005d54b22baca96359e481a081417035ed38b6f01a2a49113` |
-| provider-runtime-conformance-profile | `infra/governance/providers/runtime-conformance.json` | `sha256:0ff744cf86c1c358d41023e5ea9895b297265be151900fab8a9e4a152d2f7ed1` |
+| provider-runtime-conformance-profile | `infra/governance/providers/runtime-conformance.json` | `sha256:9e316ae9b6be58fca79823b7a31a9d53e9395af8c827f56e37c86d8fa3f80152` |
 | provider-runtime-conformance-profile-schema | `infra/governance/schemas/runtime-conformance-profile.schema.json` | `sha256:2808c2ba9484e51cf958317e878930362cc9bba1fa9026d3fe203bb193e3f358` |
 | provider-runtime-validator-artifact | `generated/governance/provider-runtime-validator.mjs` | `sha256:02d6e678b37ed1eca58f1fd0d324d4ff06bea26ac9c3ef77097474707cdd321d` |
 | provider-skill-semantics | `scripts/provider-skill-semantics.json` | `sha256:0c523421407ab9a038209dff436d4deffc37ad552be59888cb2a2b1ffbed7b9e` |
 | provider-skill-semantics-schema | `scripts/schemas/provider-skill-semantics.schema.json` | `sha256:2dfe1530e6eb161de83fd6113524f31d69d56a122218c803403c3bbd4c59e7c5` |
-| provider-surface-certifications | `infra/governance/providers/certifications.json` | `sha256:a2135baeff2a13dc4a55bdae0dac6de80a2f978b2823b663590c8d01d577e07f` |
+| provider-surface-certifications | `infra/governance/providers/certifications.json` | `sha256:6d874cd92667d6abab7bcd9983da2332682b55d3948eef9077f8a1eaede02e30` |
 | provider-surface-certifications-schema | `infra/governance/schemas/provider-surface-certification.schema.json` | `sha256:df9ac150ce24dd2f3f23171ca9083352c41003a796d85d17669ae055f9488e6e` |
 | provider-surface-tests | `infra/governance/test/provider-surface.test.mjs` | `sha256:e3d28003037fee192e1317e146071b11df0e800edc0a7c1f3871bc83dfb867dc` |
 | release-bom-builder | `scripts/build-release-bom.mjs` | `sha256:6afcf5f6fd917403e6340885c5f9600c42ee8099de6e473cbecd43ee2a79d48d` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:d6cfeb789341b650294802d768cabe24e12ff1705f5720dbf5d83dd4cf304f31` |
+| repository-automation-corpus | `scripts` | `sha256:122f327d03a5b7242c3a0ef990bb41525fddd20de5a807b3dfc0d1bee3b90fa8` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

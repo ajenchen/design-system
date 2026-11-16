@@ -73,6 +73,12 @@ const PROVIDER_RUNTIME_PROCESS_TREE_PARENT = resolve(
 )
 const PROFILE_PATH = runtimeConformancePaths.defaultProfilePath
 const CERTIFICATIONS_PATH = resolve(GOVERNANCE_ROOT, 'providers/certifications.json')
+// Mock CLIs report the version the canonical toolchain locks; a literal copy of it turned the
+// version-probe tests red on every security upgrade even though the runner was correct.
+const LOCKED_TOOL_VERSIONS = Object.fromEntries(
+  JSON.parse(readFileSync(resolve(GOVERNANCE_ROOT, 'providers/provider-cli-toolchain.json'), 'utf8'))
+    .tools.map(tool => [tool.providerId, tool.version]),
+)
 const IDENTITY = {
   gitHead: '1'.repeat(40),
   gitTree: '2'.repeat(40),
@@ -143,7 +149,7 @@ function successMockRunner(overrides = {}) {
     if (metadata.driver === 'version') {
       assert.equal(command, process.execPath)
       assert.equal(args[0], resolve(REPO_ROOT, `node_modules/.bin/${metadata.provider === 'claude' ? 'claude' : 'codex'}`))
-      const version = metadata.provider === 'claude' ? '2.1.215' : '0.144.6'
+      const version = metadata.provider === 'claude' ? LOCKED_TOOL_VERSIONS['claude-code'] : LOCKED_TOOL_VERSIONS.codex
       return {
         exitCode: 0,
         stdout: `${metadata.provider}-cli ${version}\n`,

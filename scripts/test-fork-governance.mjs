@@ -10,7 +10,7 @@
 //
 // 用法:node scripts/test-fork-governance.mjs   (CI / preflight 跑;非 0 = fail)
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, copyFileSync, readdirSync, lstatSync, readlinkSync, symlinkSync, cpSync, mkdtempSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, copyFileSync, readdirSync, lstatSync, readlinkSync, symlinkSync, cpSync, mkdtempSync, renameSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -30,6 +30,20 @@ import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const FORK_HOOKS = join(ROOT, 'packages/design-system/ds-canonical/fork/hooks')
 const CANONICAL_UTILITY_REGISTRY = join(ROOT, 'packages/design-system/src/tokens/utility-registry.json')
+// 已安裝套件裡 hook 會讀的發布檔,放在跟 npm 包一樣的相對路徑(package.json files 含 src/**/*.{tsx,ts,css} 與 src/**/*.json;
+// `npm pack --dry-run` 列得到 src/tokens/layoutSpace/layoutSpace.css)。少放一份 = 夾具比真的 consumer 弱:
+// 2026-11-09 packaging canary 就是夾具沒放 layoutSpace.css,check_layout_space_magic_numbers.sh 讀幻覺 token 白名單時
+// 兩處都找不到 → exit 70,乾淨樣本被當成違規(真的 consumer 裝得到這份檔,hook 沒錯)。
+const SHIPPED_TOKEN_FILES = Object.freeze([
+  'src/tokens/utility-registry.json',
+  'src/tokens/layoutSpace/layoutSpace.css',
+])
+function installShippedTokenFiles(installedDsRoot) {
+  for (const relative of SHIPPED_TOKEN_FILES) {
+    mkdirSync(dirname(join(installedDsRoot, relative)), { recursive: true })
+    copyFileSync(join(ROOT, 'packages/design-system', relative), join(installedDsRoot, relative))
+  }
+}
 const CANONICAL_STORY_REGISTRY = join(
   ROOT,
   'packages/design-system/ds-canonical/references/story-baseline-registry.json',
@@ -55,13 +69,12 @@ function buildFixture() {
   if (existsSync(FIX)) rmSync(FIX, { recursive: true, force: true })
   mkdirSync(join(FIX, 'apps/demo/src'), { recursive: true })
   const dsSpecDir = join(FIX, 'node_modules/@qijenchen/design-system/src')
-  mkdirSync(join(dsSpecDir, 'tokens'), { recursive: true })
   mkdirSync(join(dsSpecDir, 'components/CircularProgress'), { recursive: true })
   mkdirSync(join(FIX_CORPUS, 'references'), { recursive: true })
   // Direct hook probes receive an explicit mini corpus matching the authenticated runtime snapshot.
   // The installed package copy is only consumer application material; governance must never treat
   // that mutable dependency view as the authority or rediscover this repository through git.
-  copyFileSync(CANONICAL_UTILITY_REGISTRY, join(dsSpecDir, 'tokens/utility-registry.json'))
+  installShippedTokenFiles(dirname(dsSpecDir))
   copyFileSync(CANONICAL_UTILITY_REGISTRY, join(FIX_CORPUS, 'references/utility-registry.json'))
   copyFileSync(CANONICAL_STORY_REGISTRY, join(FIX_CORPUS, 'references/story-baseline-registry.json'))
   writeFileSync(join(dsSpecDir, 'components/CircularProgress/circular-progress.spec.md'), '# CircularProgress\nsize 預設 24\n')
@@ -103,6 +116,11 @@ const CASES = [
   { hook: 'check_layout_space_magic_numbers.sh', tool: 'Write', enforce: true,
     violation: 'export const X=()=><div className="gap-13 mt-7">x</div>',
     clean: 'export const X=()=><div className="gap-[var(--layout-space-tight)]">x</div>' },
+  // 幻覺 token 在 consumer 端:白名單讀已安裝套件的 layoutSpace.css。乾淨樣本用只有那份 css 才宣告的 viewport-inset,
+  // 證明放行是因為真的讀到了已安裝的檔(不是寫死的 loose / tight 清單);髒樣本是 2026-07-08 WM 錨例的 distant。
+  { hook: 'check_layout_space_magic_numbers.sh', tool: 'Write', enforce: true,
+    violation: 'export const X=()=><div className="gap-[var(--layout-space-distant)]">x</div>',
+    clean: 'export const X=()=><div className="p-[var(--layout-space-viewport-inset)]">x</div>' },
   { hook: 'check_opacity_token_usage.sh', tool: 'Write', enforce: true,
     violation: 'export const X=()=><div className="bg-[#ff0000] text-[14px] shadow-md">x</div>',
     clean: 'export const X=()=><div className="bg-surface text-body">x</div>' },
@@ -139,6 +157,26 @@ for (const c of CASES) {
     else verdict = `✅ enforce (violation→exit ${v.exit}/stderr / clean→pass)`
   }
   results.push(`  ${c.hook}: ${verdict}`)
+}
+
+// 對照組:上面的乾淨樣本放行,必須是因為讀到了已安裝套件的 layoutSpace.css。拿掉那份檔,
+// 同一個乾淨樣本就得 fail-closed(exit 70 + 點名 layoutSpace.css),不准默默放行。
+{
+  const installedCss = join(FIX, 'node_modules/@qijenchen/design-system/src/tokens/layoutSpace/layoutSpace.css')
+  const parked = `${installedCss}.parked`
+  renameSync(installedCss, parked)
+  let control
+  try {
+    control = runHook('check_layout_space_magic_numbers.sh', 'Write', A, 'export const X=()=><div className="gap-[var(--layout-space-tight)]">x</div>')
+  } finally {
+    renameSync(parked, installedCss)
+  }
+  if (control.exit === 70 && control.stderr.includes('layoutSpace.css')) {
+    results.push('  check_layout_space_magic_numbers.sh(對照組:已安裝套件缺 layoutSpace.css): ✅ fail-closed exit 70')
+  } else {
+    results.push(`  check_layout_space_magic_numbers.sh(對照組:已安裝套件缺 layoutSpace.css): ❌ 沒有 fail-closed(exit=${control.exit}, stderr=${JSON.stringify(control.stderr.trim())})`)
+    fail++
+  }
 }
 
 // block_prototype_imports reads the post-edit file from disk. Prove the shipped fork hook covers
@@ -192,11 +230,7 @@ function buildFullFixture() {
   for (const h of readdirSync(TPL_LAUNCHERS).filter((f) => f.endsWith('.sh') || f.endsWith('.mjs'))) copyFileSync(join(TPL_LAUNCHERS, h), join(FULL, 'governance/bin', h))
   // npm fork corpus(hooks + manifest + provider/common instruction artifacts)
   cpSync(join(ROOT, 'packages/design-system/ds-canonical/fork'), npmFork, { recursive: true })
-  mkdirSync(join(FULL, 'node_modules/@qijenchen/design-system/src/tokens'), { recursive: true })
-  copyFileSync(
-    join(ROOT, 'packages/design-system/src/tokens/utility-registry.json'),
-    join(FULL, 'node_modules/@qijenchen/design-system/src/tokens/utility-registry.json'),
-  )
+  installShippedTokenFiles(join(FULL, 'node_modules/@qijenchen/design-system'))
   // Day-0 committed bootstrap + immutable governance lock. SessionStart 只驗證，絕不建立它們。
   copyFileSync(join(ROOT, 'template/ds-product-template/AGENTS.md'), join(FULL, 'AGENTS.md'))
   mkdirSync(join(FULL, 'governance'), { recursive: true })
@@ -405,11 +439,7 @@ function buildSkelFixture(withOptOut) {
   // Refresh now authenticates the complete installed corpus before its first write. Copy the exact
   // packed layout so this fixture cannot accidentally test a weaker, hand-picked subset.
   cpSync(join(ROOT, 'packages/design-system/ds-canonical/fork'), npmFork, { recursive: true })
-  mkdirSync(join(installedDsRoot, 'src/tokens'), { recursive: true })
-  copyFileSync(
-    join(ROOT, 'packages/design-system/src/tokens/utility-registry.json'),
-    join(installedDsRoot, 'src/tokens/utility-registry.json'),
-  )
+  installShippedTokenFiles(installedDsRoot)
   // 既有 fork settings:user 自有「非治理」hook + 一個「舊版 launcher 註冊」(模擬 pre-update,測去重)
   writeFileSync(join(SKEL, '.claude/settings.json'), JSON.stringify({
     defaultMode: 'auto',

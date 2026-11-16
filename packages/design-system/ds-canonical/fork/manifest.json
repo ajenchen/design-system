@@ -659,7 +659,7 @@
         "id": "claude-local-product-v1",
         "provider": "claude-code",
         "runtimeKind": "claude-code-cli",
-        "providerVersion": "2.1.215",
+        "providerVersion": "2.1.316",
         "adapterVersion": "governance-protocol-1",
         "surface": "local",
         "repositoryRole": "product-consumer",
@@ -671,7 +671,7 @@
             "platform": "darwin",
             "arch": "arm64",
             "executionEnvironment": "native",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "no-space",
             "status": "not-certified",
             "limitations": [
@@ -684,7 +684,7 @@
             "platform": "darwin",
             "arch": "arm64",
             "executionEnvironment": "native",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
@@ -697,7 +697,7 @@
             "platform": "linux",
             "arch": "x64",
             "executionEnvironment": "native",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "no-space",
             "status": "not-certified",
             "limitations": [
@@ -710,7 +710,7 @@
             "platform": "linux",
             "arch": "x64",
             "executionEnvironment": "native",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
@@ -723,7 +723,7 @@
             "platform": "linux",
             "arch": "x64",
             "executionEnvironment": "wsl2",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "no-space",
             "status": "not-certified",
             "limitations": [
@@ -736,7 +736,7 @@
             "platform": "linux",
             "arch": "x64",
             "executionEnvironment": "wsl2",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
@@ -749,7 +749,7 @@
             "platform": "linux",
             "arch": "x64",
             "executionEnvironment": "devcontainer",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "no-space",
             "status": "not-certified",
             "limitations": [
@@ -762,7 +762,7 @@
             "platform": "linux",
             "arch": "x64",
             "executionEnvironment": "devcontainer",
-            "distributionVersion": "2.1.215",
+            "distributionVersion": "2.1.316",
             "pathClass": "contains-space",
             "status": "not-certified",
             "limitations": [
@@ -1118,7 +1118,7 @@
         ]
       }
     ],
-    "projectionDigest": "074b86eb93cded1325f444e0c0d688d7626a116f8563741e0a5538581e4ff2e2"
+    "projectionDigest": "07a0eab9eba69c4aac6efa18fcee91354ba3bb4014146af0c845592d981040d9"
   },
   "launchers": [
     "approval-evidence.mjs",
