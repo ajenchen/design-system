@@ -35,7 +35,6 @@
 import fs from 'node:fs'; import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser, openStory, StoryRenderInstrumentError, requireFreshStorybookBuild } from './lib/launch-browser.mjs'
-import { dtVisibleBand } from './lib/data-table-visible-band.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
@@ -89,9 +88,11 @@ try {
       waitFor: '[data-datatable-hscroll]', settleFrames: SETTLE_FRAMES, notFound: server.notFound,
       navigationTimeoutMs: 90000, timeoutMs: 60000,
     })
-    // 中央區**看得見的那一塊**的中心(2026-11-05 Q2b 起表身面板是整份內容、比可視範圍大得多;共用函式兩代結構同一個答案)
-    const point = await page.evaluate(dtVisibleBand, 0).then((b) => (b ? { x: b.cx, y: b.cy } : null))
-    if (!point) throw new GestureInstrumentError('找不到捲動盒,量不到可視列帶')
+    const point = await page.evaluate(() => {
+      const cc = document.querySelector('[data-datatable-panel="center"]') || document.querySelector('[data-datatable-hscroll]')
+      const b = cc.getBoundingClientRect()
+      return { x: Math.round(b.left + b.width / 2), y: Math.round(b.top + b.height / 2) }
+    })
     // 手勢被 CDP 拒絕 = 這一組沒捲 → 儀器失效(不得讓「沒捲」量出「最多一列亮」)
     const gesture = (params) => cdp.send('Input.synthesizeScrollGesture', params).catch((error) => {
       throw new GestureInstrumentError(`合成捲動手勢被拒絕(y=${params.yDistance} speed=${params.speed}):${String(error?.message || error).split('\n')[0]}`)

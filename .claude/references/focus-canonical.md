@@ -356,7 +356,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 **共同前提**:四類都要指得出**承擔者是誰**(file:line)。指不出來就是要畫,沒有第五類。
 **指標怎麼寫(2026-11-11)**:別檔的承擔者一律寫**宣告名** `檔名.tsx#宣告名`(物件裡的一項寫 `檔名.tsx#宣告名.鍵`),
-不准寫行號;`檔名.tsx:行號` 只准指同一個檔。原因是一次真實事故:data-table.tsx 的 A 類標記寫了跨檔行號(指的是 214fc699 data-table-interaction-layer.tsx:379 那一行),
+不准寫行號;`檔名.tsx:行號` 只准指同一個檔。原因是一次真實事故:data-table.tsx 的 A 類標記寫「承擔者:data-table-interaction-layer.tsx:379」,
 4bc1b6e9 在對方檔案上方加了 4 行註解,承擔者 `CELL_RING_STYLES.selected` 一字未改、只被推到 383 行,閘卻在**另一個檔**紅 ——
 行號只在寫下的那一刻剛好等於承擔者(M37 代理)。同次盤點 8 個行號指標有 4 個已過期,其中 3 個因為同檔另有證據而從沒被驗過。
 `scripts/focus-suppression-registry.mjs` 現在:跨檔寫行號 → 紅;標記裡寫出來的**每一個**指標(含旁白)都要指得到、而且指到的程式
