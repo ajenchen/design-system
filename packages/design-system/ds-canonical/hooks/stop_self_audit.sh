@@ -549,7 +549,8 @@ fi
 # SSOT = meta-patterns M36(b)/(b') + governance/memory/reference_auto_mode_sandbox_boundaries.md(第三節分類器、第六節對照表)。
 #
 # 為什麼要機械化:這條規則 2026-08-08 就立了、2026-08-11 連環五鎖逐層拆完、2026-08-28 還特別
-# 寫下「**禁**指路 `!`(與 Bash 同沙箱必再擋)或推 user 終端機」—— 然後 2026-09-19 又犯:
+# 寫下「**禁**指路 `!`(與 Bash 同沙箱必再擋)或推 user 終端機」(2026-11-16 更正:官方 sandboxing 文件說
+# v2.1.260 起一般 session 的 `!` 在沙箱外,背景 session 才仍在沙箱內;見 M36(b')(4))—— 然後 2026-09-19 又犯:
 # `git branch -D` 被 classifier 擋下,沒走等價的 `git update-ref -d`(plumbing,只寫 .git 可寫區),
 # 直接寫「你要清的話在終端機打 `! git branch -D ...` 就行」,而且是 user 反問才發現。
 # M36(a) 有 Mechanism 8 把關,M36(b) 一直是**零機械強制** —— 所以它才會重犯。
@@ -836,7 +837,7 @@ if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; the
   if [ "$LOCK_HASH" != "$LAST_BLOCKED_LOCK" ]; then
     [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$LOCK_HASH" > "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || true; }
     REASON=$(printf '%s' \
-      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本 turn 有工具被擋,而你在 reply 裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。禁指路 '!':它與 Bash 同沙箱,同一道牆必再擋,等於把死路交給 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
+      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本 turn 有工具被擋,而你在 reply 裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
       "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現)。")
     emit_governance_block "$REASON"
   fi

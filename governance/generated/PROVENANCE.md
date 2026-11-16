@@ -25,11 +25,11 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:d8fd86ab8f42728766165539ec370f27f614d3a5a649cdc26e417a1272a70346` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:ce02f265c7309c97d6c6e4d724aed1da1d24bea51c904b725b5c11eed9b6a556` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:87cbff0b877067b44196008cde0ee61c423dc8f512eaa34ce0ea0f5883a9c9cd` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:4e5220c40d17d7ebd6e4be4264ed1654ae5ac24b2bee6a6ed656100ff5abf8ce` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:4612523ead1fcbbf2de388f54e41117c8295119e7b42834b2e402e027c2eeea5` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:6b0683a52f0f731bd1fafc1a83b02382da68ded27435a180603b40194e089282` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:57632e25f953b28d88243c0ddcf1d6ee0c53cfdbd78a3130f8a21d0368c5bdb5` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:4bc3eb5c63ed9c1147b5bde23c2fec8e13a6028242f6e273dc71a2f38f045ae6` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:7f0c57816b6a1bcdadd7faecd8a2293b6822a2ce6bc7f6113e34cf5930e3ed67` |
@@ -305,7 +305,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-schema | `packages/governance/canonical/schemas/provider-lifecycle.schema.json` | `sha256:807e126ffac67694193029f19b94e1b8d3e97282e70372b65bdd094a0604c2de` |
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:beb2a852c5371133b4f37e80fa69eb6719e21fc7c9153bd6feab726af44c4008` |
-| provider-neutral-memory | `governance/memory` | `sha256:502b7234010c709c0410a672c861ca085cea1c2a13c3486de538ab36d022d6c3` |
+| provider-neutral-memory | `governance/memory` | `sha256:358853c7afc54d9d5be39e0fce63347f05b015e166c3ee32fe352f934024fb0f` |
 | provider-neutral-planning-ledger | `governance/planning` | `sha256:901b953468adb2742fc5105cae9c88fd95f2934f789ef1179121e911658a4c56` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f` |
