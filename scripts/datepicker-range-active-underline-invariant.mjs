@@ -7,10 +7,15 @@
  *        而且長日期照樣截斷:文字比按鈕長時 span 的 scrollWidth > clientWidth、`text-overflow: ellipsis`、水平方向有裁切,
  *        按鈕右緣到下一個元素(中間箭頭 / 右側日曆圖示)之間那條縫**零墨點**(字沒有溢出去)。
  *        量的是像素:截圖裡底線所在範圍(文字寬 × 按鈕頂到外框內側下緣,外框邊線不算),逐列數「主色像素佔文字寬一半以上」的列數 ÷ 像素比。
+ *        另有**跨邊列**(`-cross`,鍵盤那一組每個尺寸 × 起訖都有):把底線往下推(inline text-underline-offset,0.5px 一步)到「同一塊畫面套上
+ *        雙軸裁切探針就變細」的第一個位置 = 底線正好跨過行盒下緣,在那個位置也必須畫出 2px —— 底線落在行盒裡還是行盒外由平台字型決定,
+ *        跨邊列讓「不准雙軸裁切」在任何字型下都考得到。
  *   紅: 任一列不符 → 逐列點名(尺寸 / 端點 / 出現方式 / 像素比,畫出幾 px)exit 1。`--selftest` 在 DS 原始碼上造四個單一根因突變(MUTANTS),
  *        每個突變必須**剛好**紅它負責的那幾列,契約列每一條都要被某個突變弄紅過:span 改回雙軸裁切(A50 修前)/ 按鈕改回雙軸裁切
- *        → 14px 字級(sm / md)的底線列紅、lg 不紅;span 水平不裁 → 截斷列紅;`decoration-2` 改 `decoration-1` → 全部底線列紅。
- *        `--root=<修改前的整棵原始碼>` = 天然對照組(2108fdc8 基準樹:sm / md 底線畫出 1px → 紅;lg 2px、截斷列 → 綠)。
+ *        → 全部跨邊列 + 自然位置裡「基準那一趟套雙軸裁切探針就變細」的列紅(由實量幾何推,見 clipShouldRed;不得是空集合);
+ *        span 水平不裁 → 截斷列紅;`decoration-2` 改 `decoration-1` → 全部底線列紅。
+ *        `--root=<修改前的整棵原始碼>` = 天然對照組(2108fdc8 基準樹,macOS 字型:sm / md 自然列 + 全部跨邊列共 36 列畫出 1px → 紅;
+ *        帶 `--underline-shift=-1` 模擬 Linux CI 的底線位置:只剩跨邊列 16 列紅 —— 自然位置在 Linux 上本來就看不到這個病)。
  *   綠: 現行原始碼每列都量到且符合;對照列在現行原始碼與每個突變上都綠:還沒聚焦、面板沒開時同一塊範圍裡主色列數 = 0(數到的是底線、
  *        不是外框邊線或別的東西);鍵盤聚焦時同一支量具量外框下緣那條 1px 邊線 = 1px(主色辨認是活的,0 列不會是顏色認錯)。
  *        harness 載不起來 / 焦點沒落到該落的那一顆 / 面板沒開 / 等不到靜止 = 儀器失效(INSTRUMENT-FAIL,exit 1),不得讀成通過(M37)。
@@ -21,12 +26,17 @@
  *        按鈕本身不裁(`overflow-visible` 蓋掉 bareInputStyles 的 truncate)。修前實量(md、range-picker story):按鈕高 21px、
  *        底線畫在按鈕頂下 20.3–22.3px,只剩 1 列;只放開 span 仍 1 列,span 與按鈕都放開才 2 列。
  *        CI:`npm run test:datepicker-range-preview` 會接著跑 `npm run test:datepicker-range-active-underline`(現況 + --selftest)。
+ *        **2026-11-17 第一版在 CI 紅過一次(5172161a)**:兩個雙軸裁切突變寫死「sm / md 該紅、lg 不紅」—— 那是 macOS 字型的幾何;
+ *        Linux CI 的字型把 md 底線放在第 19–20 列(按鈕下緣第 21 列),整條在行盒裡,雙軸裁切也裁不到 → 突變紅 0 列、selftest 判量具不可信。
+ *        「該紅」寫死成平台上碰巧成立的觀察 = M37 的代理。改成:自然列的「該紅」由基準那一趟實量推(套探針會不會變細),
+ *        並加上一定裁得到的跨邊列;兩種幾何都在本機驗過(預設 = macOS;`--underline-shift=-1` 重現 CI 實量的列號)。
  *
  * 用法:
  *   node scripts/datepicker-range-active-underline-invariant.mjs                判定(現行原始碼)
  *   node scripts/datepicker-range-active-underline-invariant.mjs --selftest     對照組(全部單一根因突變)
  *   node scripts/datepicker-range-active-underline-invariant.mjs --root=<dir>   改量另一棵原始碼(例:修改前的基準樹)
  *   node scripts/datepicker-range-active-underline-invariant.mjs --shot=<dir>   另存 md 起始端鍵盤聚焦時的欄位畫面(像素比 2,淺色;前後圖用;不影響判定)
+ *   node scripts/datepicker-range-active-underline-invariant.mjs --underline-shift=<px>  模擬別種字型的底線位置(整條上 / 下移;驗證量具用,CI 不帶)
  */
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -47,6 +57,12 @@ import {
 
 const SELFTEST = process.argv.includes('--selftest')
 const SHOT_DIR = process.argv.find((a) => a.startsWith('--shot='))?.slice('--shot='.length)
+/**
+ * 模擬字型幾何(只給驗證量具用,CI 不帶):把每一顆起訖按鈕的 text-underline-offset 加上這個值(px,可為負),
+ * 讓底線整條往上 / 往下移 —— 例:macOS 上帶 `--underline-shift=-1` = Linux CI 實量的位置(md 底線在第 19–20 列、整條在行盒裡)。
+ */
+const EMU_SHIFT_PX = Number(process.argv.find((a) => a.startsWith('--underline-shift='))?.slice('--underline-shift='.length) ?? 0)
+if (!Number.isFinite(EMU_SHIFT_PX)) throw new Error('--underline-shift 必須是數字(px)')
 const SOURCE_ROOT = resolveSourceRoot()
 
 /** 規格值:date-picker.spec.md「Active-end 機制」視覺指示的 `decoration-2` */
@@ -58,6 +74,9 @@ const COLOR_TOLERANCE = 40
 const ROW_COVERAGE = 0.5
 /** 「墨點」:亮度低於此值(白底上的字;外框邊線不在量的範圍裡) */
 const INK_LUMA = 200
+/** 跨邊列:底線往下推的步距與上限(px)—— 找「行盒一裁就變細」的位置;推到上限還裁不到 = 儀器失效 */
+const CROSS_STEP_PX = 0.5
+const CROSS_MAX_PX = 8
 
 const CASES = [
   { id: 'sm', size: 'sm', width: 360 },
@@ -80,17 +99,25 @@ const replaceBoth = (src, pattern, replacement) => {
 }
 
 const isUnderlineRow = (row) => row.kind === 'underline'
+/**
+ * 雙軸裁切的突變該紅哪幾列 —— **由實量幾何推,不由平台猜**(2026-11-17 CI 教訓,見檔頭「註」):
+ *   · 跨邊列(`-cross`,每個尺寸 × 起訖兩端都有):底線被推到正好跨過行盒下緣,任何平台、任何字型都一定被雙軸裁切裁到 → 一律該紅;
+ *     這一組永遠存在,對照組不會變成空集合。
+ *   · 自然位置的列:只有基準那一趟「同一塊畫面套上雙軸裁切就變細」(crossesNatural)的才該紅 ——
+ *     macOS 字型下 sm / md 的底線有一半在行盒外(紅),Linux CI 字型下整條在行盒裡(不紅)。
+ */
+const clipShouldRed = (row) => isUnderlineRow(row) && (row.cross || row.crossesNatural)
 const MUTANTS = [
   {
     id: 'span-clips-both-axes',
     what: '文字 span 改回 `block truncate`(雙軸 overflow:hidden,A50 修前)',
-    redWhen: (row) => isUnderlineRow(row) && row.size !== 'lg',
+    redWhen: clipShouldRed,
     apply: (src) => replaceOnce(src, SPAN_CLASS_ANCHOR, "const RANGE_END_TEXT_CLASS = 'block truncate'"),
   },
   {
     id: 'button-clips-both-axes',
     what: '起訖按鈕改回 `truncate`(雙軸 overflow:hidden,A50 修前)',
-    redWhen: (row) => isUnderlineRow(row) && row.size !== 'lg',
+    redWhen: clipShouldRed,
     apply: (src) => replaceBoth(src, BUTTON_OVERFLOW_ANCHOR, "'truncate text-left cursor-pointer focus-visible:outline-none'"),
   },
   {
@@ -164,6 +191,19 @@ const GEOMETRY = ({ caseId, end, placeholder }) => {
 }
 
 /**
+ * 頁面端:改這一顆按鈕的底線位移(相對它本來的 computed 值,單位 px),並可套上「雙軸裁切」探針(按鈕與文字 span 都 inline overflow:hidden
+ * = 修前 `truncate` 的裁法)。本來的位移第一次讀到時記在 data-base-underline-offset,之後一律相對它算。
+ */
+const STYLE_BUTTON = ({ caseId, end, placeholder, extraPx, clip }) => {
+  const btn = document.querySelector(`[data-case="${caseId}"] button[aria-label="${placeholder[end === 'start' ? 0 : 1]}"]`)
+  if (!btn) return false
+  if (btn.dataset.baseUnderlineOffset === undefined) btn.dataset.baseUnderlineOffset = String(parseFloat(getComputedStyle(btn).textUnderlineOffset))
+  btn.style.textUnderlineOffset = `${Number(btn.dataset.baseUnderlineOffset) + extraPx}px`
+  for (const el of [btn, btn.querySelector('span')]) el.style.overflow = clip ? 'hidden' : ''
+  return true
+}
+
+/**
  * 截圖數「主色列」:文字寬 × [y0, y1) 範圍裡,主色像素佔文字寬一半以上的列。回傳 { rows(裝置像素列 y), thickness(CSS px) }。
  * 預設範圍 = 底線會出現的地方:按鈕頂 → 外框內側下緣(外框邊線不算 —— 聚焦時它也是主色)。
  */
@@ -218,6 +258,21 @@ async function runOnce(dpr, mutate) {
         return g
       }
       const tag = (id) => `d${dpr}-${id}`
+      const styleButton = async (caseId, end, { extraPx = 0, clip = false } = {}) => {
+        const ok = await page.evaluate(STYLE_BUTTON, { caseId, end, placeholder: PLACEHOLDER, extraPx: EMU_SHIFT_PX + extraPx, clip })
+        if (!ok) throw new InstrumentError(`${caseId}:找不到 ${end} 端按鈕`)
+        // 只改了 inline 的底線位移與 overflow(都不吃轉場),等兩個影格讓新樣式畫上去即可;截圖本身也會再取一個新影格
+        await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+      }
+      // 模擬字型幾何:整條底線先移到指定位置(沒帶 --underline-shift = 0,不動)
+      for (const c of CASES) for (const end of ENDS) await styleButton(c.id, end)
+      /** 同一塊畫面套上雙軸裁切探針量一次,量完拿掉 —— 回傳裁切後畫出幾 px */
+      const clippedThickness = async (caseId, end, extraPx) => {
+        await styleButton(caseId, end, { extraPx, clip: true })
+        const t = (await countUnderline(page, await geo(caseId, end), dpr)).thickness
+        await styleButton(caseId, end, { extraPx })
+        return t
+      }
       for (const c of CASES) {
         // 對照:還沒聚焦、面板沒開 —— 同一塊範圍裡沒有底線列(數到的是底線,不是外框邊線)
         await parkPointer(page)
@@ -236,8 +291,21 @@ async function runOnce(dpr, mutate) {
           // 對照:同一支量具量外框下緣那條邊線(聚焦時轉主色、1px)—— 主色辨認是活的,底線列數 0 不會是顏色認錯
           const border = await countUnderline(page, g, dpr, { y0: g.wrapInnerBottom, y1: g.wrap.bottom })
           checks.push({ id: tag(`C-${c.id}-${end}-border-seen`), kind: 'control', pass: border.thickness === 1, detail: `聚焦時外框下緣主色 ${border.thickness}px(應 1)` })
-          checks.push({ id: tag(`U-${c.id}-${end}-keyboard`), kind: 'underline', size: c.size, pass: u.thickness === SPEC_THICKNESS_PX,
-            detail: `畫出 ${u.thickness}px(裝置像素列 ${JSON.stringify(u.rows)};樣式值 ${g.styleThickness}、${g.decorationLine};按鈕下緣在範圍內第 ${((g.button.bottom - u.clipTop) * dpr).toFixed(1)} 列)` })
+          const naturalClipped = await clippedThickness(c.id, end, 0)
+          checks.push({ id: tag(`U-${c.id}-${end}-keyboard`), kind: 'underline', size: c.size, crossesNatural: naturalClipped < SPEC_THICKNESS_PX, pass: u.thickness === SPEC_THICKNESS_PX,
+            detail: `畫出 ${u.thickness}px(裝置像素列 ${JSON.stringify(u.rows)};樣式值 ${g.styleThickness}、${g.decorationLine};套雙軸裁切會剩 ${naturalClipped}px)` })
+          // 跨邊列:底線往下推到「套雙軸裁切就變細」的第一個位置(跨過行盒下緣)—— 不論平台字型把底線放在哪,這一列都考得到「不准雙軸裁切」
+          let extra = 0
+          let crossClipped = naturalClipped
+          while (crossClipped >= SPEC_THICKNESS_PX && extra <= CROSS_MAX_PX) { extra += CROSS_STEP_PX; crossClipped = await clippedThickness(c.id, end, extra) }
+          if (extra > CROSS_MAX_PX) throw new InstrumentError(`${c.id}:${end} 端底線往下推 ${CROSS_MAX_PX}px 仍裁不到 —— 造不出跨過行盒下緣的情境`)
+          await styleButton(c.id, end, { extraPx: extra })
+          const gx = await geo(c.id, end)
+          if (!gx.focused) throw new InstrumentError(`${c.id}:推底線之後焦點不在 ${end} 端`)
+          const ux = await countUnderline(page, gx, dpr)
+          checks.push({ id: tag(`U-${c.id}-${end}-cross`), kind: 'underline', size: c.size, cross: true, pass: ux.thickness === SPEC_THICKNESS_PX,
+            detail: `底線下推 ${extra}px 跨過行盒下緣:畫出 ${ux.thickness}px(裝置像素列 ${JSON.stringify(ux.rows)};同位置套雙軸裁切會剩 ${crossClipped}px)` })
+          await styleButton(c.id, end)
           if (SHOT_DIR && dpr === 2 && c.id === 'md' && end === 'start') {
             mkdirSync(SHOT_DIR, { recursive: true })
             const file = resolve(SHOT_DIR, 'datepicker-range-active-underline.png')
@@ -256,8 +324,9 @@ async function runOnce(dpr, mutate) {
             const g = await geo(c.id, end)
             if (g.activeEnd !== 'true') throw new InstrumentError(`${c.id}:點 ${end} 端之後面板沒開在這一端(data-active-end=${g.activeEnd})`)
             const u = await countUnderline(page, g, dpr)
-            checks.push({ id: tag(`U-${c.id}-${end}-open`), kind: 'underline', size: c.size, pass: u.thickness === SPEC_THICKNESS_PX,
-              detail: `畫出 ${u.thickness}px(裝置像素列 ${JSON.stringify(u.rows)};樣式值 ${g.styleThickness})` })
+            const naturalClipped = await clippedThickness(c.id, end, 0)
+            checks.push({ id: tag(`U-${c.id}-${end}-open`), kind: 'underline', size: c.size, crossesNatural: naturalClipped < SPEC_THICKNESS_PX, pass: u.thickness === SPEC_THICKNESS_PX,
+              detail: `畫出 ${u.thickness}px(裝置像素列 ${JSON.stringify(u.rows)};樣式值 ${g.styleThickness};套雙軸裁切會剩 ${naturalClipped}px)` })
             await d.press('Escape')
           }
         }
@@ -320,6 +389,9 @@ try {
     const problems = []
     if (redIds(baseline.checks).length) problems.push(`現行原始碼本身就紅(${redIds(baseline.checks).join(' / ')}),突變的紅燈無法歸因`)
     const contract = baseline.checks.filter((c) => c.kind !== 'control')
+    const naturalCross = contract.filter((c) => c.crossesNatural).map((c) => c.id)
+    console.log(`\n  這台機器的字型幾何:自然位置的底線列裡,套雙軸裁切會變細的 ${naturalCross.length} 列${naturalCross.length ? `(${naturalCross.join(' / ')})` : '(沒有 —— 底線整條在行盒裡,只靠跨邊列考雙軸裁切)'};跨邊列 ${contract.filter((c) => c.cross).length} 列`)
+    if (!contract.some(clipShouldRed)) problems.push('雙軸裁切突變的「該紅」集合是空的 —— 對照組沒有作用')
     const covered = new Set()
     for (const m of MUTANTS) {
       let result
