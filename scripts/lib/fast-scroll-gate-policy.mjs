@@ -136,6 +136,15 @@ export const RATIO_ALPHA = 0.05
  *     其餘灰區直接以現有趟數終判:分得開照樣紅,分不開不指控,並印出比值、p 與每趟數字。
  *   · 估不準的上界:估完才出現慢趟(全快的跑法下一輪兩趟都慢),那一輪最多多花約 82 秒,之後預估值跟著變大、不再開;
  *     歷史上會走到這裡的只有那 4 組所在的 job,最壞 18.2 分。74 份 log 裡「這一趟儀器沒跑起來,重試」出現 0 次。
+ * **2026-11-16 依新的 job 長度重估**(覆核二 SF-R3;上面那段的 84 秒是 A/A 之前的 job):A/A 第三份建置(每種跑法 +3 趟)、`--trace` 追蹤趟
+ * (只留 pinned,+2 趟)、規則 G-P 的開跑前判定(pinned,3 次開頁)都**不記帳**,但吃同一份 25 分。2026-11-15 兩份像素 job log 的時間戳:
+ * 30 個比值趟仍是雙峰(14 趟 5.4–7.8 秒、16 趟 35.2–37.3 秒;96b63b68 那一跑 17.5 分)。不拆時期望 ≈ 19.7 分、加的 14 趟全落慢峰 ≈ 24.2 分,
+ * 超過計畫的 22 分拆 job 線 → pinned 那一步拆成自己的 job `verify-browser-datatable-pinned`(帳本 key 含 GITHUB_JOB,兩個 job 各自一份 60 秒)。
+ * 拆完:像素 job(gesture / mouse 共用帳本)期望 ≈ 14.3 分,閘的趟全落慢峰再用滿 60 秒 ≈ 19.4 分;pinned job 期望 ≈ 7.9 分、最壞 ≈ 12.5 分。
+ * 60 秒不變:兩個 job 的最壞情況都在 22 分線以下;一輪加量(最慢那趟 × 2 份)在慢峰時約 72–75 秒 > 60 秒 —— 仍然只有全快的跑法開得了輪,
+ * 上面「代價照實說」那一條照舊成立(A/A 不進加量,見 `extraRoundPlan`)。
+ * **同日 A25 覆核二修補**:pinned 的追蹤改成計分(持續空白,`checkerboardDecision`),2 趟 → 9 趟(三份 × 3 輪,不記帳、不加量)。pinned job 重估:
+ * 期望 ≈ 11.8 分、最壞(全落慢峰、追蹤開銷每趟 10 秒)≈ 17.2 分 + 60 秒 ≈ 18.2 分,仍在 22 分線以下(ci.yml 該 job 檔頭)。
  */
 export const MAX_EXTRA_ROUNDS = 2
 export const EXTRA_ROUNDS_JOB_BUDGET_MS = 60_000
@@ -145,6 +154,21 @@ export function estimateRoundMs(tripMs, buildCount) {
   const t = (tripMs ?? []).filter((v) => Number.isFinite(v) && v >= 0)
   if (!t.length || !(buildCount > 0)) return NaN
   return Math.max(...t) * buildCount
+}
+
+/**
+ * 灰區加量那一輪**量哪幾份建置、估多久**(2026-11-16 A28 覆核 MF4;【AI 推導 2026-11-16】)。
+ * A/A 那份(`isAA(label)` 為真)只用首輪(`--runs` 那幾輪),**不進加量**:加量是為了分開 branch 對 ref 的灰區,
+ * 多量 A/A 不會讓那個判定分得更開,只會把一輪從 2 份變 3 份、讓同一份 60 秒預算少開一輪(一趟 11 秒時 22 → 33 秒,2 輪變 1 輪)——
+ * 那等於 A/A 改了 branch 對 ref 的終判(分不開 → 不指控的比例變高)。估一輪也只看要量的那幾份的趟(A/A 那份某一趟剛好慢,
+ * 不得讓加量少開)。有沒有 A/A,這裡回的 `run` 與 `estRoundMs` 都一樣 —— 判定表「有 A/A 時加量輪數與沒有時相同」守這一條。
+ * @param {{ labels: string[], isAA: (label:string)=>boolean, trips: {label:string, ms:number}[] }} p
+ * @returns {{ run: string[], estRoundMs: number }}
+ */
+export function extraRoundPlan({ labels, isAA, trips }) {
+  const run = labels.filter((l) => !isAA(l))
+  const ms = (trips ?? []).filter((t) => run.includes(t.label)).map((t) => t.ms)
+  return { run, estRoundMs: estimateRoundMs(ms, run.length) }
 }
 
 /**
@@ -339,6 +363,241 @@ export function refRatioDecision(mineVals, refVals, { limit = BLANK_RATIO_LIMIT,
  * 5.96× 的項目也被印成 1.25–1.5× 灰區)。只看 lib 的判定結果,不在閘裡另推一次。
  */
 export const ratioZoneText = (d) => (d.overCapButNoisy ? `超過 ${RATIO_HARD_CAP}× 但兩邊重疊` : `灰區 ${BLANK_RATIO_LIMIT}–${RATIO_HARD_CAP}×`)
+
+/**
+ * **中央區最長連續空白:比值 + 白幀張數地板,參考是不是 0 都走同一條式子**
+ * (2026-11-16 A25 覆核 MF3 → 覆核二 MF-R1 / SF-R2;門檻與式子【AI 推導 2026-11-16】)。
+ *
+ * 修前兩條路(覆核二 MF-R1):參考中位數 0 → 「分支 > 2 個呈現幀距才紅」;參考 > 0 → 比值(超過 1.5× 不看分布直接紅)。合起來看,
+ * 分支的紅線是參考中位數 r 的函數:T(0) = 2 個幀距、T(r) = 1.5r —— r 不到 4/3 個幀距時 T(r) < T(0),**參考多一張白幀,同一個分支反而紅**;
+ * 同一份資料 ref = 0/0/150、ref~aa = 0/150/150、分支 150/300/300(CI 幀距 150ms)判綠,兩份標籤互換就判紅,而兩份是同一份程式碼。
+ * 尺度又用「平均」幀距,一張白幀停留的卻是**那一格**的幀距(覆核二 SF-R2:2026-11-15 兩份 CI job log 30 趟裡 6 趟單一呈現幀距 > 2 × 該趟平均,
+ * 例 237 / 88.3ms)—— CI 上一張白幀就可能越線。
+ *
+ * 現在每一趟另取「最長連續白幀張數」(`longestBlankRun(r.g.blankSeries)`:連續幾張呈現幀有空白帶,不管每張停多久),
+ *   紅 ⇔ (a) 比值規則判紅 —— 參考中位數 > 0:同一個 `refRatioDecision` + `combineWithAA`(空白不放寬);參考中位數 = 0:比值無限大,分支有空白即算;
+ *       **且** (b) 分支中位張數 − 參考張數 > `ZERO_REF_BLANK_FRAMES`。
+ *   參考張數 = 參考那幾趟的中位張數;A/A 那份(`<ref>~aa`)有量到時取兩份中**較多**的那份 —— MF1「兩份都紅才紅」用在地板上:兩份是同一份程式碼,
+ *   分支沒有比其中一份多出 N 張以上,就分不出是分支還是這一跑的量化抽籤(只看 ref 的地板在 ref 0/0/0、ref~aa 0/1/1、分支 0/3/3 時照樣被標籤互換翻轉)。
+ *   A/A 那份量不到、或兩份參考的捲動機制不同 → 只看 ref(照原判定)。參考中位數 0、A/A 那份也 0 → (b) 就是「分支中位張數 > 2」=
+ *   修前參考為 0 的判準,單位由「毫秒 ÷ 平均幀距」換成張數。
+ * 性質(判定表守):(1)參考變差(任一趟毫秒與張數都不減)不得由綠變紅;(2)量化資料(毫秒 = 張數 × 固定幀距)、兩份參考中位張數 ≤ 5 時,
+ *   ref / ref~aa 標籤互換不翻轉 —— 地板成立 ⇒ 分支 ≥ 較多那份 + 3 張 ⇒ 對兩份的比值都 > 1.5,空白 fail-cap 不看 A/A,兩種標法都紅;
+ *   中位 ≥ 6 張時比值可能落在灰區,`combineWithAA` 的對稱只在 A/A 不乾淨時成立(那是 CI 900ms 以上的長白,照實列為邊界,不在本條保證內);
+ *   (3)一張白幀落在最長那一格(停 237ms)→ 1 張 → 過。
+ * N = 2:修前參考為 0 那一支已經用的「2 張白幀以內是 CI 截圖(約 6 幀/秒)的量化抖動」,延伸到參考很小的那一段;沒有 CI 分支逐趟資料校準過,
+ *   推送後由 `--json` 的逐趟數字回頭驗。代價照實:本機 60 幀/秒下 ≤ 2 張(≤ 33ms)的差一律不紅;參考 1 張時分支 3 張(3×)也不紅;
+ *   **已知盲點(本項照實保留):張數不看每張停多久 —— 一張白幀停很久只算 1 張,所以這一項防不住持續空白**。整片白而且畫面不變時截圖串流
+ *   不重送相同的幀,持續的白在這裡就是「1 張停很久」,跟 CI 截圖慢的「1 張停在長格上」分不開(「一張白幀落在最長那一格 → 過」這個要求的直接代價)。
+ *   改成「停留時間 ÷ 同一趟正常畫面的間隔」也分不開(2026-11-16 試算,【AI 推導 2026-11-16】):一張白幀落在最長那一格,單位結構上 ≥ 1
+ *   (CI 30 趟上界 1.77–3.79、本機同碼 mouse / pinned 1.21–2.78),而最終(Q2b)建置本機 pinned 分支 127 / 205 / 267ms 的單位中位只比兩份參考多 0.997
+ *   (最長那格多半是開跑前的靜止段;正常畫面本來就會停 125–436ms)。
+ *   **持續空白改由另一個與截圖節奏無關的量具判**:pinned 步驟(帶 `--trace`)的 CDP 追蹤 checkerboard 次數(`checkerboardDecision`,下方)。
+ *   參考為 0 時另有絕對門檻(`--assert-max-blank-ms`)。
+ * 比值判紅、但分支或參考沒有白幀序列 → 'no-scale'(判不了幾張;呼叫端以「儀器失效」紅,不當過)。
+ *
+ * `mine` / `ref` / `aa` = 各趟 `{ ms: 最長連續空白毫秒, run: 最長連續白幀張數, gap?: 平均呈現幀距(只供訊息) }`;`aa` = null 表示沒有 A/A 那份;
+ * `aaBlockedWhy` = A/A 兩份機制不同等量不到的理由。回傳 `refRatioDecision` / `combineWithAA` 的欄位,加 `floor`(各中位張數、較多那份、超出幾張),
+ * verdict 另有 'fail-zero-ref'(參考 0 且超出地板)、'within-floor'(比值判紅但沒超出地板 → 過,帶 `ratioVerdict`)、'no-scale'、'no-ref'(參考沒資料)、'na'。
+ */
+export const ZERO_REF_BLANK_FRAMES = 2
+/** 一趟的最長連續白幀張數:`blankSeries`(每張呈現幀的空白帶比例)裡連續 > 0 的最長段;不是陣列 → NaN(沒量到,不當 0)。 */
+export function longestBlankRun(series) {
+  if (!Array.isArray(series)) return NaN
+  let run = 0, best = 0
+  for (const v of series) { if (v > 0) { run++; if (run > best) best = run } else run = 0 }
+  return best
+}
+export function blankDecision({ mine, ref, aa = null, aaBlockedWhy = null, canAddMore = false, frames = ZERO_REF_BLANK_FRAMES } = {}) {
+  const msOf = (xs) => (xs ?? []).map((t) => t.ms)
+  const runOf = (xs) => { const r = (xs ?? []).map((t) => t.run); return r.length && r.every(Number.isFinite) ? median(r) : NaN }
+  const mineMs = msOf(mine), refMs = msOf(ref).filter(Number.isFinite)
+  if (!mineMs.length || !mineMs.every(Number.isFinite)) return { verdict: 'na' }
+  if (!refMs.length) return { verdict: 'no-ref', refMedian: NaN, refVals: refMs, mineVals: mineMs }
+  const aaUsable = Array.isArray(aa) && aa.length > 0 && !aaBlockedWhy
+  const aaRes = aa == null ? null
+    : aaBlockedWhy ? { available: false, ratio: NaN, a: NaN, clean: null, forward: null, reverse: null, n: { ref: refMs.length, aa: aa.length }, why: aaBlockedWhy }
+      : aaNoise(refMs, msOf(aa), { capNeedsNoiseSupport: false })
+  const refMedian = median(refMs), mineMedian = median(mineMs)
+  const d = refMedian > 0
+    ? combineWithAA(refRatioDecision(mineMs, refMs, { canAddMore, capNeedsNoiseSupport: false }), aaRes, { mineVals: mineMs, capNeedsNoiseSupport: false })
+    : { verdict: mineMedian > 0 ? 'fail-zero-ref' : 'pass', ratio: mineMedian > 0 ? Infinity : NaN, p: NaN, n: { mine: mineMs.length, ref: refMs.length }, mineMedian, refMedian, aa: aaRes, r1dVerdict: null }
+  const runsOf = (xs) => (xs ?? []).map((t) => t.run)
+  const floor = { frames, mineRun: runOf(mine), refRun: runOf(ref), aaRun: aaUsable ? runOf(aa) : NaN, mineRuns: runsOf(mine), refRuns: runsOf(ref), aaRuns: aaUsable ? runsOf(aa) : [] }
+  floor.baseRun = Number.isFinite(floor.aaRun) ? Math.max(floor.refRun, floor.aaRun) : floor.refRun
+  floor.excess = floor.mineRun - floor.baseRun
+  const out = { ...d, mineVals: mineMs, refVals: refMs, floor }
+  if (!(d.verdict.startsWith('fail') || d.verdict === 'needs-more')) return out
+  if (!Number.isFinite(floor.excess)) return { ...out, verdict: 'no-scale', ratioVerdict: d.verdict }
+  if (floor.excess > frames) return out
+  return { ...out, verdict: 'within-floor', ratioVerdict: d.verdict }
+}
+
+/**
+ * **持續空白:CDP 追蹤的 checkerboard 次數**(2026-11-16 A25 覆核二修補;量具選擇、門檻與式子【AI 推導 2026-11-16】)。
+ *
+ * 為什麼要另一個量具:上面的白幀張數只數「連續幾張」,整片白而且不變時截圖串流不重送,持續的白只算 1 張(本項的已知盲點,見 `blankDecision`)。
+ * checkerboard = 合成器畫到還沒光柵好的圖塊時,cc 記的 `TileBasedLayerImpl::AppendQuads checkerboard`(每張合成幀、每個缺圖塊的層記一次;
+ * lib/cdp-trace-summary.mjs `counts.checkerboard`)。它記的是合成器實際畫出的每一幀,**不靠截圖串流的節奏**:白得久、白得多層,次數就多。
+ *
+ * 式子與空白同一條(`blankDecision` 原樣重用 —— 每趟的比值值與地板單位都是那一趟的次數,兩條路不會各自漂):
+ *   紅 ⇔ 比值規則判紅(同一個 `refRatioDecision` + `combineWithAA`;使用者看得到的白,不放寬:`capNeedsNoiseSupport: false`;參考中位 0 = 比值無限大)
+ *       **且** 分支中位次數 − max(ref 中位, ref~aa 中位) > `CHECKERBOARD_FLOOR`(A/A 那份量不到 / 機制不同 → 只看 ref)。
+ *   單調、標籤互換不翻轉、參考 0 與參考很小走同一條式子 —— 性質與白幀張數地板相同(同一支函式),判定表另以次數重驗。
+ * 量具:只在 pinned 步驟、帶 `--trace` 與 `--ref` 時判(閘 `traceJudged`);三份建置(含 A/A 那份)各量 `--runs` 趟**另跑的**追蹤趟(Tracing 有開銷,
+ *   不與量空白 / 長工 / 幀距的那幾趟混在一起)。追蹤資料缺(某一份一趟可用的都沒有)→ 呼叫端以「儀器失效」紅,不當 0。
+ * 為什麼數「次數」不數「次數 ÷ 合成幀」:持續 T 毫秒的白在 60 幀/秒下就是 T / 16.7 次(與截圖節奏無關),次數直接是「白了多久、幾層」;
+ *   除以合成幀會把「這一份少畫了幾幀」混進來(Q2b 本機 66–68 幀對參考 76–88 幀,除了之後 Q2b 的比值反而被放大),那是幀距那一項的事。
+ *   同碼資料上兩者的分離度相近(Q2b 超出量 ÷ 同碼最大超出量:次數 25 / 10 = 2.5、比例 0.439 / 0.160 = 2.7),比值規則在同碼上誤判紅的分法
+ *   次數合計 29 種、比例 51 種(下方 5 跑)。
+ *
+ * **`CHECKERBOARD_FLOOR = 15` 的資料與選法**(【AI 推導 2026-11-16】;本機 headless 軟體光柵、CI 同參數 `--runs=3 --tick-ms=64`,A25 覆核二修補報告):
+ *   同碼置換 —— 每一跑的同碼追蹤趟分成 分支 3 / 參考 3 / A/A 3(1,680 種分法;只有 6 趟時 分支 3 / 參考 3 的 20 種、沒有 A/A),地板拿掉時
+ *   比值規則判紅的分法裡「分支中位 − max(參考, A/A)」的最大值 = 不誤紅的最小地板:
+ *     推 1 建置對 1ac039c9(兩容器、轉發)兩跑:紅 0 / 1,680、6 / 1,680,最大超出 – / 3;
+ *     最終(Q2b)建置自比(單一捲動盒、原生)兩跑:紅 0 / 1,680、22 / 1,680,最大超出 – / **10**(次數 29–56);
+ *     最終那一跑的 main / main~aa(中央欄原生)6 趟:紅 1 / 20,最大超出 6。
+ *   → 最小地板 10;邊際 +5(觀測最大值的一半:10 只出現在 5 跑裡的 1 跑,其餘 2–6,5 跑的最大值低估母體)→ 15。另一側:最終(Q2b)建置對 1ac039c9
+ *   本機 3 對 3 超出 25(分支 41 / 44 / 39,main 10 / 21 / 14,main~aa 16 / 12 / 18),歷來單趟追蹤 19 → 47、17 → 37、13 → 38、12 → 37(超出 20–28),
+ *   15 離兩邊各 5 / 10。**同碼資料不夠**:本機 5 跑 42 趟、CI 0 趟;CI 的軟體光柵更慢,次數與散布的量級都可能不同 ——
+ *   推 1 上 CI 後用 `--json` 的 traceTrips(每跑三份各 3 趟)重算同一套置換再核,地板跟著資料改,不准為了讓某一個 PR 綠而調。
+ *
+ * `mine` / `ref` / `aa` = 各趟次數(數字陣列);`aa` = null 表示沒有 A/A 那份。回傳與 `blankDecision` 同形(`floor.mineRun` 等欄位是次數的中位數)。
+ */
+export function checkerboardDecision({ mine, ref, aa = null, aaBlockedWhy = null, floor = CHECKERBOARD_FLOOR } = {}) {
+  const trips = (xs) => (xs == null ? null : xs.map((c) => ({ ms: c, run: c })))
+  return blankDecision({ mine: trips(mine), ref: trips(ref), aa: trips(aa), aaBlockedWhy, canAddMore: false, frames: floor })
+}
+export const CHECKERBOARD_FLOOR = 15
+
+/**
+ * **A/A 對照:同一份參考建置量兩次,量出這一跑比值自己的散布**(2026-11-16,A28;【AI 推導 2026-11-16】)。
+ *
+ * 為什麼:比值門檻 1.25 底下的雜訊從來沒有在同一個 job 裡量過 —— 歷來「零執行期改動也紅」的實例(74ac03eb mouse 長工 1.32×、
+ * 8dc9faa7 gesture 幀距 1.80×、1ef86547 釘選區 1.38×)都是事後才知道是雜訊。閘有 `--ref` 時自動多量一份 `<ref>~aa`
+ * (同一個目錄、獨立的靜態伺服器與凍結快照、三份輪轉),每一項比值同時算 A/A。
+ *
+ * **R1d 的判定式不動**(同一個 `refRatioDecision`、同一份門檻、同樣的趟數、同樣的加量輪數);A/A 只當修正子(`combineWithAA`),但**最終判定不是零代價**
+ * (2026-11-16 覆核二 SF-R4):A/A 不乾淨時要兩份參考都紅才紅,換到的是另一個工作點 —— 同碼誤紅少、真回歸漏抓也多(對數常態模擬,長工 / 幀距
+ * 雜訊 sd(ln) 0.2 時 1.5× 回歸偵測率 62.1% → 51.2%、同碼誤紅 2.9% → 1.1%),代價表在 data-table-scroll-performance.spec.md「比值閘的 A/A 修正子」節。
+ *   · A/A 乾淨 ⇔ `|ln(m(ref~aa) / m(ref))| < AA_NOISE_SHARE · ln(1.25)`(= 0.1116,A/A 比值 0.894–1.118)**且** `refRatioDecision`
+ *     對 A/A 兩個方向(ref~aa 對 ref、ref 對 ref~aa)都不是 fail。取絕對值:參考自己快或慢都代表這一跑量不準。
+ *   · branch 判 fail 而 A/A 乾淨 → 照紅。
+ *   · A/A 不乾淨 → 分支對 `ref~aa` 也跑一次**同一個** `refRatioDecision`:**兩份參考都判 fail 才紅**,有一份沒判 fail → `aa-noisy`
+ *     (不指控、照印兩個比值 / p / 每趟數字 / A/A 值)。兩份是同一份程式碼,分支只要沒有比其中一份確實慢,就分不出是分支還是這一跑量不準。
+ *     (2026-11-16 覆核 MF1 改:第一版寫成 `ln(m(branch)/m(ref)) − |ln A/A| > ln 1.25` —— 取絕對值之後,「這一跑 ref 偏慢、ref~aa 偏快」時
+ *     分支比兩份都慢而且完全分開仍判 `aa-noisy`,把同一組數字的 ref 與 ref~aa 標籤互換卻判紅;同一份證據只因標籤互換就翻轉。
+ *     「兩份都 fail」對標籤互換對稱。)
+ *   · **不放寬的那一項,A/A 也不放寬**(覆核 MF2):`capBasis === 'no-noise-allowance'`(中央區最長連續空白超過硬上限 —— 那一項的規則是
+ *     「超過上限不看分布」)原樣照紅。A/A 是分布的量測,不看分布的規則就不看它。(白幀張數地板另以兩份參考裡較多的那份為準,
+ *     只管「多出 ≤ N 張」那段量化範圍,超過地板之後照這一條;見 `blankDecision`,覆核二 MF-R1。)
+ *   · branch 判 pass / within-noise / needs-more → 照原判定(A/A 照印)。A/A 量不到(那份建置一趟可用的都沒有、或兩份參考的捲動機制不同)
+ *     → 照原判定,並印「A/A 量不到」—— 沒量到不得當成乾淨,也不得當成不乾淨而放行(M37 第八種形狀)。
+ *   · **`aa-noisy` 是終判,不加量**(覆核 MF4):加量只由 R1d 自己的 `needs-more` 觸發,而且加量輪只量 branch 與 ref(`extraRoundPlan`)。
+ *     第一版讓 `aa-noisy` 也回 `needs-more`、加量輪三份都重跑 —— 等於 A/A 改了 branch 對 ref 的加量次數,還會先吃掉整個 job 共用的預算。
+ * `AA_NOISE_SHARE = 0.5` 沿用 2026-10-07 g9 草稿的值(A/A 用掉門檻一半以上 = 這一跑分不出 1.25×)。
+ * 為什麼 `aa-noisy` 不紅:與 `within-noise` 同一條路(差距落在跑間雜訊內,照實印出,不指控);而這裡的雜訊是**同一跑實際量到**的。
+ */
+export const AA_SUFFIX = '~aa'
+export const AA_NOISE_SHARE = 0.5
+export const AA_CLEAN_LOG = AA_NOISE_SHARE * Math.log(BLANK_RATIO_LIMIT)
+
+/**
+ * A/A 這一對的偏差與乾淨判定。`refVals` / `aaVals` = 同一份建置兩個獨立伺服器的各趟值。
+ * @returns {{ available: boolean, ratio: number, a: number, clean: boolean|null, forward: string|null, reverse: string|null, n: {ref:number, aa:number}, why: string }}
+ */
+export function aaNoise(refVals, aaVals, { capNeedsNoiseSupport, limit = BLANK_RATIO_LIMIT } = {}) {
+  if (typeof capNeedsNoiseSupport !== 'boolean') throw new TypeError('aaNoise:capNeedsNoiseSupport 必須明講 true / false(與 refRatioDecision 同一個判定式)')
+  const ref = refVals.filter(Number.isFinite), aa = aaVals.filter(Number.isFinite)
+  const n = { ref: ref.length, aa: aa.length }
+  const mr = ref.length ? median(ref) : NaN, ma = aa.length ? median(aa) : NaN
+  if (!ref.length || !aa.length || !(mr > 0) || !(ma > 0)) {
+    return { available: false, ratio: NaN, a: NaN, clean: null, forward: null, reverse: null, n, why: !ref.length || !aa.length ? '有一邊沒有可用的趟' : '中位數為 0,沒有比值' }
+  }
+  const ratio = ma / mr
+  const a = Math.abs(Math.log(ratio))
+  const forward = refRatioDecision(aa, ref, { limit, canAddMore: false, capNeedsNoiseSupport }).verdict
+  const reverse = refRatioDecision(ref, aa, { limit, canAddMore: false, capNeedsNoiseSupport }).verdict
+  const sizeOk = a < AA_NOISE_SHARE * Math.log(limit)
+  const clean = sizeOk && !forward.startsWith('fail') && !reverse.startsWith('fail')
+  const why = clean ? '乾淨' : !sizeOk ? `|ln A/A| = ${a.toFixed(3)} ≥ ${(AA_NOISE_SHARE * Math.log(limit)).toFixed(4)}(A/A 用掉門檻一半以上)` : `同一份建置自己比就判 ${forward.startsWith('fail') ? forward : reverse}`
+  return { available: true, ratio, a, clean, forward, reverse, n, why, refVals: ref, aaVals: aa }
+}
+
+/**
+ * branch 的 R1d 判定 + A/A 修正子 → 最終判定(見上方長註解)。`d` = `refRatioDecision` 的回傳;`aa` = `aaNoise` 的回傳(可為 null)。
+ * `mineVals` / `capNeedsNoiseSupport` = 算 `d` 時的同一組(A/A 不乾淨時拿去跟 `ref~aa` 再判一次;缺了就丟 TypeError,不默默照舊公式)。
+ * 回傳 `d` 的拷貝,多帶 `aa` 與 `r1dVerdict`;A/A 不乾淨時另帶 `vsAA`(分支對 ref~aa 的判定)。改判時 verdict 變 'aa-noisy'(帶 `aaNoisy: true`);
+ * 兩份都判紅時照原 verdict 並帶 `beyondAA: true`。**不回 'needs-more'**(加量只由 R1d 自己觸發,見上方 MF4)。
+ */
+export function combineWithAA(d, aa, { mineVals, capNeedsNoiseSupport, limit = BLANK_RATIO_LIMIT } = {}) {
+  const out = { ...d, aa: aa ?? null, r1dVerdict: d.verdict }
+  if (!d.verdict.startsWith('fail')) return out
+  if (d.capBasis === 'no-noise-allowance') return out
+  if (!aa || !aa.available || aa.clean) return out
+  if (!Array.isArray(mineVals) || typeof capNeedsNoiseSupport !== 'boolean') throw new TypeError('combineWithAA:A/A 不乾淨時要拿分支各趟(mineVals)與同一個 capNeedsNoiseSupport 對 ref~aa 再判一次,兩者必須給')
+  const vsAA = refRatioDecision(mineVals, aa.aaVals, { limit, canAddMore: false, capNeedsNoiseSupport })
+  if (vsAA.verdict.startsWith('fail')) return { ...out, beyondAA: true, vsAA }
+  return { ...out, verdict: 'aa-noisy', aaNoisy: true, vsAA }
+}
+
+/**
+ * A/A 兩份(ref 與 ref~aa)這一跑的實際捲動機制必須相同,A/A 才量得到「同一件事量兩次」的散布(2026-11-16 覆核 SF2)。
+ * 規則 G-P 會把參考的指標移到中央欄;若只移了 ref、ref~aa 還在釘選欄(或反過來),A/A 比的是「原生 vs 轉發」,幾乎必定不乾淨,
+ * 然後 `aa-noisy` 就會蓋掉真退步。`refSet` / `aaSet` = 兩份各趟的機制集合(true 原生 / false 轉發 / null 讀不到)。
+ * @returns {{ same: boolean, ref: boolean|null, aa: boolean|null }}
+ */
+export function aaMechanismCheck(refSet, aaSet) {
+  const one = (xs) => (xs.length === 1 && typeof xs[0] === 'boolean' ? xs[0] : null)
+  const ref = one(refSet), aa = one(aaSet)
+  return { same: ref !== null && ref === aa, ref, aa }
+}
+
+/**
+ * **規則 G-P:釘選欄步驟只比同一種捲動機制**(2026-11-16,A25;【AI 推導 2026-11-16】)。
+ *
+ * 為什麼:2026-11-05 Q2b 版的閘把 pinned 模式改成 CDP 真滾輪、指標停在左釘選欄;參考(兩容器的 main)在這條路上是**元件轉發**
+ * (`makeBindPinnedPanel` 在主執行緒寫 scrollTop),受測(Q2b)是**瀏覽器原生捲動**。閘只對空白那項印「機制不同不比」,卻照比幀距與長工 ——
+ * 11-06 擋下 Q2b 的「pinned 幀距 1.26×」比的就是「原生 vs 轉發」(本機 Tracing:原生捲動讓合成器多畫 2.67 倍的幀,在 2 vCPU runner 上
+ * 截圖搶不到 CPU)。這一條讓分子分母走同一種機制;門檻 1.25、灰區、1.5 上限、統計、加量規則一個都不動,比的仍是同一個使用者動作
+ * (滾輪)在兩份建置裡的結果。main 合入 Q2b 之後兩邊都是原生,規則自動不再改任何東西。
+ *
+ * `pinnedMechanismPlan(refNative, mineNative)`:開跑前依兩邊的結構(釘選面板在不在共用捲動盒裡)決定參考的指標停在哪。
+ *   參考轉發、受測原生 → 參考(含 A/A 那份)指標改到中央欄量原生捲動(同一段滾輪序列與刻度),三項都比;
+ *   參考原生、受測轉發 → 長工照比,空白與幀距不比(這一側沒有可對的同機制路徑);兩邊相同 → 照舊;讀不到 → 指標不動,由 `pinnedComparable` 逐趟判。
+ * `gpPointerLabels(plan, { ref, aa })`:G-P 要把指標移到中央欄的那幾份 —— 參考**與** A/A 那份一起移(覆核 SF2:只移參考時 A/A 比的是
+ *   「原生 vs 轉發」,`aaMechanismCheck` 會判 A/A 量不到;這支把「一起移」變成判定表守得到的一行)。
+ * `pinnedComparable(checkKey, refSet, mineSet)`:兩邊各趟實際機制的集合(true = 原生、false = 轉發、null = 讀不到)。
+ *   兩邊都只有一個值而且相同 → 比(`why: 'same'`);否則長工合計照比,空白、幀距與 checkerboard 次數不比,`why` 說為什麼:
+ *     'ref-native-mine-forwarding' = 參考原生、受測轉發(例:退回 Q2b 的 PR)—— 這一側本來就沒有同機制路徑,印 `mechanism-differs`,不當通過也不當失敗;
+ *     'gp-missed' = 參考轉發、受測原生 —— 這正是 G-P 該把參考指標移到中央欄的情況,卻還是量到轉發(開跑前判定讀不到 / 沒套上)。
+ *       同機制那條路沒量到 → 呼叫端以「儀器失效」紅(覆核 SF1:原本默默印 ↷,空白與幀距兩項整個沒比,M37 第八種形狀);
+ *     'unreadable' = 讀不到 / 同一份建置各趟不一致 —— 同樣是沒量到,同樣以「儀器失效」紅。
+ */
+export function pinnedMechanismPlan(refNative, mineNative) {
+  if (typeof refNative !== 'boolean' || typeof mineNative !== 'boolean') return { refPointer: 'pinned', why: 'unknown' }
+  if (!refNative && mineNative) return { refPointer: 'center', why: 'ref-forwarding-mine-native' }
+  if (refNative && !mineNative) return { refPointer: 'pinned', why: 'ref-native-mine-forwarding' }
+  return { refPointer: 'pinned', why: 'same' }
+}
+export const gpPointerLabels = (plan, { ref, aa }) => (plan?.refPointer === 'center' ? [ref, aa].filter(Boolean) : [])
+export function pinnedComparable(checkKey, refSet, mineSet) {
+  const one = (xs) => (xs.length === 1 && typeof xs[0] === 'boolean' ? xs[0] : null)
+  const ref = one(refSet), mine = one(mineSet)
+  if (ref !== null && ref === mine) return { compare: true, ref, mine, why: 'same' }
+  const why = ref === true && mine === false ? 'ref-native-mine-forwarding' : ref === false && mine === true ? 'gp-missed' : 'unreadable'
+  return { compare: checkKey === 'longSum', ref, mine, why }
+}
+
+/**
+ * 三份以上建置的輪轉順序(拉丁方):第 i 輪從第 i mod n 份開始。兩份時維持舊的 ABBA(奇數輪照順序、偶數輪反過來),
+ * 與 A/A 之前逐位元相同。
+ */
+export function roundOrderOf(list, i) {
+  if (list.length <= 2) return i % 2 === 1 ? list : [...list].reverse()
+  const k = ((i % list.length) + list.length) % list.length
+  return [...list.slice(k), ...list.slice(0, k)]
+}
 
 /**
  * **「畫面推進的幀」才算捲動的一格 —— 不是「合成器送出的每一幀」**(2026-10-14,PR #169 `R1a`)。

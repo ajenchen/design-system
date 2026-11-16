@@ -450,6 +450,9 @@ jobs:
           # 裡,而這裡是直接呼叫 .mjs → 單測從來沒在 CI 跑過。
           node scripts/test-distribute-column-widths.mjs
           node scripts/test-fast-scroll-gate-policy.mjs
+          # CDP Tracing 摘要 lib 的判定表 + 三個突變對照組(2026-11-16,A25):快速捲動閘 --trace 與感知閘送幀缺口診斷都靠它歸因,
+          # 算錯 = 紅的當下指錯執行緒;沒人呼叫它就是沒寫(M32 第二問)。
+          node scripts/test-cdp-trace-summary.mjs --selftest
           node scripts/data-table-invariants.mjs
           # 表頭欄間線一致性(2026-09-24,理由寫在 verify-static 的「Registered test scripts」那一段)。
           npm run test:datatable-column-divider
@@ -460,7 +463,8 @@ jobs:
           # 停手後列殼 ≤ 1000ms 補齊。門檻是本機校準的回歸線(修前 main 684–1055ms、修後 18–34ms,留 10 倍以上機器差),不是業界標準。
           # 上面這趟 selftest 內含第三階對照組(強制隱藏列內容)每次都驗(M32):不另跑第二趟 —— 2026-09-15 曾另跑一趟
           # `--selftest-force-ink`,把這個 job 從 20 分推到 25 分逾時被砍;改成同一趟裡多一次 runOnce(約 30 秒)。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
+          # 對照組(gesture --selftest)2026-11-16 搬到 verify-browser-datatable-dpr2(A28:比值步驟多了 A/A 第三份建置與追蹤趟,
+          # 本 job 的時間預算要讓給它們;selftest 不需要參考建置,dpr2 job 有自己的 storybook 與 chromium,照樣每次都跑)。
           # 這台 runner 不節流就是「慢機器」:R17 判準在這裡整片白 1,301 / 1,210ms(7aad1396),自適應判準 v8 降到 64 / 103ms(d7553067)。
           # 不在 CI 疊 CPU 節流:CDP 節流在 2 vCPU 的共享 runner 上不是線性的(d7553067 同一 job:不節流 64 / 103ms,--cpu-throttle=4 卻 1,769 / 1,585ms;
           # 本機 4× 是 167 / 167ms),數字不能跨機器搬。2× / 4× / 6× 節流當本機重現與壓力工具(AD56 / AD62),不當 CI 閘。
@@ -505,7 +509,8 @@ jobs:
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
             --assert-max-blank-frames=0 \
-            --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+            --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600 \
+            --json=tmp/datatable-fast-scroll/gesture.json
           # 「**畫得動的機器**不准出骨架」(2026-09-11)。骨架是「真的畫不完」時的過渡手段,不是正常捲動該看到的東西;
           # 沒有這條斷言之前,一個把「要不要出殼」判準訂成**只看位移**的版本可以全綠出貨 —— 而在 user 的真實 Chrome 上,
           # 一次普通滾輪(1000px)就把整個視窗 14 列全變骨架,同一台機器的 main 是 0 骨架。
@@ -528,23 +533,13 @@ jobs:
           # 這裡用相對閘鎖住改善不回頭;**絕對零空白仍只對 gesture 宣稱**(真實路徑在極端甩動下尚未到零,不假裝已達成)。
           node scripts/data-table-fast-scroll.mjs --mode=mouse --runs=3 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
-            --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
-          # **釘選區的滾輪路徑**(2026-09-29,待辦總帳 OE7;09-06 覆核指出 `grep -c "mode=pinned" ci.yml` = 0,零覆蓋):
-          # 滑鼠停在左釘選欄(ID / 選取框)上捲時,事件落在 `overflow-hidden` 的釘選面板,由元件自己的非 passive 滾輪監聽
-          # 轉發到中央捲動區(data-table.tsx makeBindPinnedPanel)—— gesture / mouse 都對準中央區,走不到這條路。
-          # 閘住兩件事:(1) 轉發還在 —— 腳本在 pinned 模式刻意不補 scrollTop,沒動就指名「轉發沒到中央區」紅;
-          # (2) 轉發路徑的主執行緒長工合計與幀距不比 main 差(--ref=main 比值,判準與 mouse 同一份 lib)。
-          # 空白類斷言**不掛**在這個模式:它跟 wheel 一樣由 JS 在主執行緒寫 scrollTop,結構上不會有合成器超前,
-          # 掛上去是一道永遠不紅的空閘(腳本對 wheel / pinned 都有守衛,給了就紅)。
-          # 本機(M32 四問):弄壞 → selftest 三個偵測器 + 第三階強制隱藏都紅;誰呼叫 → 本 job;時序 → 判中位數 + 比值,
-          # 與 mouse 同一套;機器慢 → 比值把兩個 build 在同一跑之內量,慢一起慢。成本:1 趟 5 秒、selftest 14 秒,約 +1 分鐘。
-          node scripts/data-table-fast-scroll.mjs --mode=pinned --selftest
-          # --tick-ms=64(2026-09-29 首跑 297b22be 抓到):預設 16ms × 40 刻 = 0.65 秒手勢,CI runner 的 screencast 約 6 fps,
-          # 一趟只收到 8–9 張呈現幀,低於「呈現幀 < 10 = 儀器失效作廢」的地板,三趟全作廢 → 假紅(本機同一份程式 19 幀綠)。
-          # 刻度放慢到 64ms(同一段 18000px、2.5 秒,像人轉滾輪的節奏)讓取樣窗夠長;兩個 build 同參數,比值仍公平。
-          node scripts/data-table-fast-scroll.mjs --mode=pinned --runs=3 --tick-ms=64 \
-            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
-            --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+            --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600 \
+            --json=tmp/datatable-fast-scroll/mouse.json
+          # 釘選區的滾輪路徑(pinned 比值閘)2026-11-16 拆到 verify-browser-datatable-pinned(A25 覆核二 SF-R3,時間重估寫在該 job 檔頭)。
+          # 2026-11-16(A28 / A25):上面兩個比值步驟都帶 --ref=main → 閘自動多量一份 main~aa(同一份參考建置、獨立伺服器,A/A 對照);
+          # --json 存每趟原始資料 + A/A 欄 + runner 指紋(可經 --inject-runs 原樣重算判定),證據由本 job 末的 datatable-fast-scroll artifact 保存。
+          # CDP 追蹤(--trace)只留在 pinned 那一步(那一步起計分:持續空白的 checkerboard 次數,見該步驟);gesture / mouse 的追蹤只是診斷,
+          # 每一步多 2 趟(CI 一趟 6 或 36 秒),時間讓給 A/A(覆核二 SF-R3)。
           # 指標底下那一列的 hover / hover 反應延遲 / 預掛緩衝自適應 三支(CI 逐支計時合計 5.4 分)與
           # 感知 / 把手 / 釘選 resize / dpr1 感知迴圈那一段(10 分)2026-09-15 搬到 verify-browser-datatable-perception:
           # 本 job 拆前 24 分鐘貼著 25 分鐘上限(8b1137c7 就是被砍掉的那次),只搬感知段之後仍 21 分,再搬三支 hover 類的閘
@@ -552,6 +547,128 @@ jobs:
           # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
           # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
           node scripts/data-table-row-cache-deps-invariant.mjs
+
+      - name: Preserve DataTable fast-scroll evidence
+        # 2026-11-16(A25 / A28):比值紅的當下要看得到每趟數字、A/A 欄與各執行緒成本 —— 這個 job 原本一個 artifact 都沒有,
+        # 11-06 擋下 Q2b 的那一跑只剩 log。
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: datatable-fast-scroll
+          path: tmp/datatable-fast-scroll/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  verify-browser-datatable-pinned:
+    # 2026-11-16 拆自 verify-browser-datatable(A25 覆核二 SF-R3)。三個比值步驟都多量 A/A 第三份建置之後,pinned 這一步另有 2 趟不計分追蹤
+    # (--trace 只留這一步)與規則 G-P 的開跑前判定(3 次開頁)。用 2026-11-15 兩份像素 job log 的時間戳重估(30 個比值趟仍是雙峰:
+    # 14 趟 5.4–7.8 秒、16 趟 35.2–37.3 秒;96b63b68 那一跑 17.5 分、其中 selftest 兩支 188 秒):
+    #   不拆 —— 期望 ≈ 19.7 分;加的 14 趟(A/A 9 + 追蹤 2 + 開跑前判定 3)全落慢峰 ≈ 24.2 分;計畫的「p90 18.6 + 新增趟數 × 中位趟時 35.2 秒 × 1.3」≈ 26.3 分
+    #   —— 超過 22 分的拆 job 線(25 分上限留 3 分)。
+    #   拆 pinned —— 像素 job 期望 ≈ 14.3 分、閘的趟全慢 + 60 秒加量 ≈ 19.4 分(計畫式 ≈ 17.8);本 job 期望 ≈ 7.9 分、最壞 ≈ 12.5 分(計畫式 ≈ 13.4)。
+    # 拆 pinned 而不是三步全搬:三步全搬的新 job 最壞 ≈ 23.5 分,同樣越線;pinned 是多出最多工作的那一步(追蹤 + 開跑前判定)。
+    # 沿用原 job 的 25 分上限(不是調高)。加量帳本的 key 含 GITHUB_JOB → 本 job 自己一份 60 秒預算(lib EXTRA_ROUNDS_JOB_BUDGET_MS)。
+    # 2026-11-16 A25 覆核二修補:追蹤改成**計分**(持續空白 = checkerboard 次數,lib checkerboardDecision),2 趟 → 9 趟(三份建置含 A/A × 3 輪)。
+    # 本機實測一趟追蹤比一趟量測多 ≈ 4.6 秒(同一支閘 pinned 191 秒 vs 改前 104 秒,多 7 趟追蹤);CI 按每趟追蹤開銷 10 秒估:
+    # 期望 ≈ 7.9 + 7 × (平均趟時 22.4 + 10) 秒 ≈ 11.8 分;最壞(準備 156 秒 + 量測 9 + 追蹤 9 + 開跑前判定 3 全落慢峰 37.3 秒 + 追蹤開銷 9 × 10 秒)
+    # ≈ 17.2 分,再加 60 秒加量 ≈ 18.2 分 —— 仍在 22 分的拆 job 線以下。都是估算,推送後讀實際時長回頭驗。
+    name: Verify browser(DataTable pinned wheel ratio gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # 必需瀏覽器的 lane:起不了 Chromium = 紅,不准印 SKIPPED-ENV 當略過(scripts/lib/launch-browser.mjs;ci-workflow-scope 斷言)
+    env:
+      GOVERNANCE_BROWSER_REQUIRED: '1'
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # 參考建置要 `git rev-parse origin/main`;閘的「兩邊有沒有執行期差異」也讀 git
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      # 參考建置(main):與 verify-browser-datatable 同名步驟同一段(為什麼要比 main、lock 相同時共用 node_modules 的理由寫在那裡);
+      # 兩個 job 各建一份、平行跑。
+      - name: Build the reference (main) Storybook the blank ratio compares against
+        run: |
+          set -euo pipefail
+          REF_SHA="$(git rev-parse origin/main)"
+          echo "reference = $REF_SHA"
+          git worktree add tmp/ref-src "$REF_SHA"
+          # 2026-09-23:同一份 lock ⇒ 同一棵樹。參考樹的 lock 與候選相同時,直接共用候選已驗證安裝的 node_modules
+          #(symlink),不再第二次安裝與稽核 —— 否則「比 main」這個 job 就綁死在「main 裝得起來」上:供應鏈閘在
+          # main 上紅(上游 npm 發版讓釘死的字串失效)時,連修它的 PR 都因為這一步過不了(#153 第一輪),
+          # 而 main 只能經 PR 修 —— 結構性自鎖。lock 不同(候選改了相依)才照舊走受管的 bootstrap 重裝參考樹,
+          # 不用裸 `npm ci`:scripts/audit-workflow-security.mjs 對裸 npm ci 判 WF-LIFECYCLE / WF-SIGNATURE-AUDIT /
+          # WF-VULNERABILITY-AUDIT,那一行曾讓「Verify authority candidate without credentials」在每支 PR 都紅(#126 / #127)。
+          if cmp -s package-lock.json tmp/ref-src/package-lock.json; then
+            echo "reference lock == candidate lock → 共用已驗證的 node_modules"
+            ln -s "$PWD/node_modules" tmp/ref-src/node_modules
+          else
+            # 2026-09-29(ad442603 首跑):lock 不同時原本跑**參考樹自己的** bootstrap —— 候選一改相依(本 PR 加 eslint / react-remove-scroll),
+            # 就落到 main 上那份不認得 09-28 新通報形狀的舊 bootstrap,整個 job 死在安裝(與上面 2026-09-23 那條同一種自鎖,只是換一個分支)。
+            # 改用**候選(HEAD)的**治理程式對參考樹安裝(`--root=`),弱點稽核走 report-render-only-reference:參考樹是無憑證、
+            # 用完即丟的渲染容器(只為建一份 Storybook 給比值當分母),與 visual-regression.yml 重拍歷史參考樹同一套政策與理由;
+            # 完整性(lock 精確安裝 / 簽章 / attestation)照舊擋。
+            echo "reference lock != candidate lock → 用候選的治理程式對參考樹安裝(弱點只報告)"
+            node "$GITHUB_WORKSPACE/scripts/setup-authority-governance.mjs" --dependencies-only --root=tmp/ref-src --vulnerability-policy=report-render-only-reference
+          fi
+          (cd tmp/ref-src && npm run build:lib && npm run build-storybook)
+          mv tmp/ref-src/storybook-static tmp/ref-storybook
+          # 先解開 symlink 再移除 worktree:不讓任何遞迴刪除有機會跟著連結走到候選的 node_modules
+          [ -L tmp/ref-src/node_modules ] && rm tmp/ref-src/node_modules
+          git worktree remove --force tmp/ref-src
+
+      - name: DataTable pinned wheel ratio gate (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # **釘選區的滾輪路徑**(2026-09-29,待辦總帳 OE7;09-06 覆核指出 `grep -c "mode=pinned" ci.yml` = 0,零覆蓋):
+          # 滑鼠停在左釘選欄(ID / 選取框)上用滾輪捲 —— gesture / mouse 都對準中央區,走不到這條路。閘住兩件事:
+          # (1) 釘選欄上的滾輪必須捲得動表格:兩容器結構靠元件轉發(data-table.tsx makeBindPinnedPanel,非 passive 滾輪監聽寫中央區 scrollTop),
+          #     單一捲動盒結構是瀏覽器原生捲動;腳本在 pinned 模式不補 scrollTop,沒動就紅,訊息印這一趟量到的是哪一種結構(不寫死其中一種)。
+          # (2) 這條路徑的空白、主執行緒長工合計與幀距不比 main 差(--ref=main 比值,判準與 mouse 同一份 lib);參考與受測的捲動機制不同時
+          #     依規則 G-P 只比同一種機制(data-table-scroll-performance.spec.md)。
+          # 輸入:2026-11-16(A25 推 1)起是 CDP 真滾輪(與 mouse 同一條輸入管線;2026-11-05 f2ecd9e1 首次,隨 Q2b 退回,這次先單獨上),
+          # 原生捲動那條路合成器會超前,空白偵測對它有效(腳本的空閘守衛只剩 wheel)。2026-09-29 那一版是頁內合成事件、JS 寫 scrollTop,
+          # 結構上不會有空白,所以當時不掛空白斷言;2026-11-16(覆核 MF3)補 --assert-max-blank-ms=600(與 mouse 同一個值)。
+          # 空白一律走「比值 + 白幀張數地板」(lib blankDecision,覆核二 MF-R1:參考是不是 0 同一條式子);參考為 0 時另判這個絕對門檻。
+          # 本機(M32 四問):弄壞 → selftest(在 verify-browser-datatable-dpr2)三個偵測器 + 第三階強制隱藏都紅;誰呼叫 → 本 job;
+          # 時序 → 判中位數 + 比值;機器慢 → 比值把三份建置在同一跑之內交錯量,慢一起慢。成本見本 job 檔頭。
+          # --tick-ms=64(2026-09-29 首跑 297b22be 抓到):預設 16ms × 40 刻 = 0.65 秒手勢,CI runner 的 screencast 約 6 fps,
+          # 一趟只收到 8–9 張呈現幀,低於「呈現幀 < 10 = 儀器失效作廢」的地板,三趟全作廢 → 假紅(本機同一份程式 19 幀綠)。
+          # 刻度放慢到 64ms(同一段 18000px、2.5 秒,像人轉滾輪的節奏)讓取樣窗夠長;兩個 build 同參數,比值仍公平。
+          # --trace(2026-11-16 A25 覆核二修補起**計分**):三份建置(含 A/A 那份)各 3 趟另跑的 CDP Tracing(與量測趟分開:Tracing 有開銷),
+          # 每趟的 checkerboard 次數(合成器畫到還沒光柵好的圖塊)判「持續空白」—— 白幀張數地板數不到整片白而且不變(截圖串流不重送,
+          # 持續的白只算 1 張),這一項補它(lib checkerboardDecision:比值 + 次數地板,與空白同一條式子)。追蹤資料缺 → 儀器失效紅。
+          # **拿掉 --trace = 這一項整個不判**(scripts/test-fast-scroll-gate-policy.mjs 檢查這一行)。並排表(各執行緒忙碌 / 合成幀 / quad / LayerTree)照舊印進 log。
+          node scripts/data-table-fast-scroll.mjs --mode=pinned --runs=3 --tick-ms=64 \
+            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
+            --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600 \
+            --json=tmp/datatable-fast-scroll/pinned.json --trace=tmp/datatable-fast-scroll/trace-pinned
+
+      - name: Preserve DataTable pinned fast-scroll evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          # 與 verify-browser-datatable 的 datatable-fast-scroll 不同名(同名第二個上傳會失敗或互蓋)
+          name: datatable-fast-scroll-pinned
+          path: tmp/datatable-fast-scroll/
+          if-no-files-found: ignore
+          retention-days: 14
 
   verify-browser-datatable-perception:
     # 2026-09-15 拆自 verify-browser-datatable:感知 / 把手 / 釘選 resize / dpr1 感知迴圈這一段在 CI 逐支計時佔 10 分鐘,
@@ -646,7 +763,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: datatable-scroll-perception
+          # 2026-11-16 改名:與 verify-browser-datatable-handles 的 artifact 同名會撞(第二個上傳失敗或互蓋)
+          name: datatable-scroll-perception-controls
           path: |
             tmp/datatable-content-*/
             tmp/datatable-handle-*/
@@ -805,7 +923,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: datatable-scroll-perception
+          # 2026-11-16 改名(同上;本 job 的是 dpr1 感知迴圈,每次嘗試各存在 <out>/attempt-N/、attempts.json,送幀缺口紅時另有 diagnostic/ 追蹤診斷)
+          name: datatable-scroll-perception-dpr1
           path: |
             tmp/datatable-content-*/
             tmp/datatable-handle-*/
@@ -863,6 +982,14 @@ jobs:
           done
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --assert=on --latency-assert=off --out=tmp/datatable-content-bursts-2
           node scripts/data-table-scroll-perception.mjs --dpr=2 --peak=4500 --profile=bursts --input=wheel --assert=on --latency-assert=off --out=tmp/datatable-content-wheel-2
+
+      - name: DataTable fast-scroll detector controls (browser)
+        # 2026-11-16 從 verify-browser-datatable 搬來(A28):那個 job 的三個比值步驟多了 A/A 第三份建置與追蹤趟,時間預算讓給它們。
+        # 對照組本身不需要參考建置;內容與檔頭說明不變(gesture:靜態頁 0 空白 / 關掉兩層機制必紅 / 第三階強制隱藏每次都驗;
+        # pinned:三個偵測器 + 第三階)。2026-10-07 g9 草稿估這兩支合計約 107 秒。
+        run: |
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
+          node scripts/data-table-fast-scroll.mjs --mode=pinned --selftest
 
       - name: Preserve DataTable dpr2 perception evidence
         if: always()
@@ -2126,13 +2253,14 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-pinned, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-searchable-fields, verify-browser-tree-navigation, verify-browser-interaction, verify-browser-overlay, verify-browser-agent, verify-browser-sweeps, verify-browser-doc-headings, verify-browser-select-all, verify-browser-field-edges, verify-browser-overlay-rows, verify-browser-datatable-handles, verify-browser-control-groups, verify-browser-searchable-menu-focus, verify-browser-field-dialog-steps, verify-browser-cursor, verify-browser-escape-focus-control, verify-browser-footer-gutter, verify-browser-nested-dismiss, verify-browser-sidebar-keyboard, verify-browser-layout, verify-browser-horizontal-overflow, hooks-linux, governance-control-plane, container-closed-git]
     if: always()
     steps:
       - name: Every verify job must have succeeded
         env:
           STATIC: ${{ needs.verify-static.result }}
           BROWSER_DT: ${{ needs.verify-browser-datatable.result }}
+          BROWSER_DT_PINNED: ${{ needs.verify-browser-datatable-pinned.result }}
           BROWSER_DT3: ${{ needs.verify-browser-datatable-perception.result }}
           BROWSER_DT2: ${{ needs.verify-browser-datatable-dpr2.result }}
           BROWSER_SEARCH_FIELDS: ${{ needs.verify-browser-searchable-fields.result }}
@@ -2160,8 +2288,8 @@ jobs:
           GOV_CONTROL_PLANE: ${{ needs.governance-control-plane.result }}
           CONTAINER_CLOSED_GIT: ${{ needs.container-closed-git.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-pinned=$BROWSER_DT_PINNED verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-searchable-fields=$BROWSER_SEARCH_FIELDS verify-browser-tree-navigation=$BROWSER_TREE_NAV verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT verify-browser-sweeps=$BROWSER_SWEEPS verify-browser-doc-headings=$BROWSER_DOC_HEADINGS verify-browser-select-all=$BROWSER_SELECT_ALL verify-browser-field-edges=$BROWSER_FIELD_EDGES verify-browser-overlay-rows=$BROWSER_OVERLAY_ROWS verify-browser-datatable-handles=$BROWSER_DT_HANDLES verify-browser-control-groups=$BROWSER_CONTROL_GROUPS verify-browser-searchable-menu-focus=$BROWSER_SEARCH_MENU_FOCUS verify-browser-field-dialog-steps=$BROWSER_FIELD_DIALOG_STEPS verify-browser-cursor=$BROWSER_CURSOR verify-browser-escape-focus-control=$BROWSER_ESCAPE_FOCUS_CONTROL verify-browser-footer-gutter=$BROWSER_FOOTER_GUTTER verify-browser-nested-dismiss=$BROWSER_NESTED_DISMISS verify-browser-sidebar-keyboard=$BROWSER_SIDEBAR_KEYBOARD verify-browser-layout=$BROWSER_LAYOUT verify-browser-horizontal-overflow=$BROWSER_HORIZONTAL_OVERFLOW hooks-linux=$HOOKS_LINUX governance-control-plane=$GOV_CONTROL_PLANE container-closed-git=$CONTAINER_CLOSED_GIT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT_PINNED" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_SEARCH_FIELDS" = success ] && [ "$BROWSER_TREE_NAV" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ] && [ "$BROWSER_SWEEPS" = success ] && [ "$BROWSER_DOC_HEADINGS" = success ] && [ "$BROWSER_SELECT_ALL" = success ] && [ "$BROWSER_FIELD_EDGES" = success ] && [ "$BROWSER_OVERLAY_ROWS" = success ] && [ "$BROWSER_DT_HANDLES" = success ] && [ "$BROWSER_CONTROL_GROUPS" = success ] && [ "$BROWSER_SEARCH_MENU_FOCUS" = success ] && [ "$BROWSER_FIELD_DIALOG_STEPS" = success ] && [ "$BROWSER_CURSOR" = success ] && [ "$BROWSER_ESCAPE_FOCUS_CONTROL" = success ] && [ "$BROWSER_FOOTER_GUTTER" = success ] && [ "$BROWSER_NESTED_DISMISS" = success ] && [ "$BROWSER_SIDEBAR_KEYBOARD" = success ] && [ "$BROWSER_LAYOUT" = success ] && [ "$BROWSER_HORIZONTAL_OVERFLOW" = success ] && [ "$HOOKS_LINUX" = success ] && [ "$GOV_CONTROL_PLANE" = success ] && [ "$CONTAINER_CLOSED_GIT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

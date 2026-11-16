@@ -9,13 +9,13 @@
  *   node scripts/test-fast-scroll-gate-policy.mjs
  */
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { countCallSites } from './lib/gate-reachability.mjs'
 import { attributeLongFrames, chunkKey, compareAttribution, cpuInLongFrames, invokerKey, licenseHint, longTaskCoverage } from './lib/long-frame-attribution.mjs'
-import { classifyRun, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, refRatioDecision, ratioZoneText, mannWhitneyGreaterP, logWelchGreater, studentTUpperP, advanceGapStats, median, BLANK_RATIO_LIMIT, RATIO_HARD_CAP, RATIO_ALPHA, MAX_EXTRA_ROUNDS, EXTRA_ROUNDS_JOB_BUDGET_MS, nextExtraRound, estimateRoundMs, readExtraLedger, chargeExtraLedger, MIN_PRESENTED_FRAMES } from './lib/fast-scroll-gate-policy.mjs'
+import { classifyRun, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, refRatioDecision, ratioZoneText, mannWhitneyGreaterP, logWelchGreater, studentTUpperP, advanceGapStats, median, BLANK_RATIO_LIMIT, RATIO_HARD_CAP, RATIO_ALPHA, MAX_EXTRA_ROUNDS, EXTRA_ROUNDS_JOB_BUDGET_MS, nextExtraRound, estimateRoundMs, readExtraLedger, chargeExtraLedger, MIN_PRESENTED_FRAMES, aaNoise, combineWithAA, roundOrderOf, pinnedMechanismPlan, pinnedComparable, AA_NOISE_SHARE, extraRoundPlan, blankDecision, longestBlankRun, ZERO_REF_BLANK_FRAMES, aaMechanismCheck, gpPointerLabels, checkerboardDecision, CHECKERBOARD_FLOOR } from './lib/fast-scroll-gate-policy.mjs'
 
 const gateSrc0 = readFileSync(new URL('./data-table-fast-scroll.mjs', import.meta.url), 'utf8')
 const LIMIT = 400 // CI 的 --assert-max-blank-ms
@@ -280,18 +280,28 @@ for (const [name, mine, ref, canAddMore, want, opt] of DECISION_CASES) {
       console.log(`${okr ? '✓' : '✗'} 對數 Welch t|${name}:t ${got.t.toFixed(4)}(參考 ${want.t})、df ${got.df.toFixed(4)}(參考 ${want.df})、p ${got.p.toFixed(4)}(參考 ${want.p}),容差 1e-3`)
     }
   }
-  // 常數之間的關係與加量預算。預算是**整個 job** 共用的(三種跑法三次呼叫一起扣),要放得進「最慢的成功 job」離上限剩下的時間 ——
-  // 上限直接讀 ci.yml 裡呼叫這支閘的那個 job(有人調低上限,這條就紅)。23.6 分 = e6c88132(job 115285931534),
-  // DataTable 像素 job 74 份 log 的時間戳、成功 33 次裡最長(中位數 15.3、p90 18.6)。
-  const SLOWEST_SUCCESS_MS = 23.6 * 60_000
+  // 常數之間的關係與加量預算。預算是**整個 job** 共用的(同一個 job 裡的幾次呼叫一起扣),要放得進「那個 job 最慢的情況」離上限剩下的時間 ——
+  // 上限直接讀 ci.yml 裡呼叫這支閘(帶 --ref 的比值步驟)的那幾個 job(有人調低上限,這條就紅)。
+  //   · verify-browser-datatable(gesture / mouse):23.6 分 = e6c88132(job 115285931534),DataTable 像素 job 74 份 log 的時間戳、成功 33 次裡最長
+  //     (中位數 15.3、p90 18.6)。那是 A/A 之前、pinned 與兩支 selftest 都還在這個 job 的時候 —— 拆出 pinned 之後只會更短,保守沿用。
+  //   · verify-browser-datatable-pinned(2026-11-16 拆出,覆核二 SF-R3):還沒有 CI 實測,用 2026-11-15 兩份像素 job log 的時間戳估的最壞值
+  //     (2026-11-16 A25 覆核二修補,追蹤改計分 2 → 9 趟:準備 156 秒 + 量測 9 + 追蹤 9 + 開跑前判定 3 全落慢峰 37.3 秒 + 追蹤開銷 9 × 10 秒
+  //     ≈ 17.2 分;改前 11.5 分;ci.yml 該 job 檔頭)。推送後換成實測。
+  const SLOWEST_MS = { 'verify-browser-datatable': 23.6 * 60_000, 'verify-browser-datatable-pinned': 17.2 * 60_000 }
   const ciYml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
-  const jobBlock = ciYml.split(/\n {2}(?=[a-z0-9-]+:\n)/).find((b) => b.startsWith('verify-browser-datatable:\n')) ?? ''
-  const timeoutMin = Number(/\n {4}timeout-minutes: (\d+)/.exec(jobBlock)?.[1])
-  const callsGate = /data-table-fast-scroll\.mjs --mode=pinned --runs=3/.test(jobBlock)
+  const jobBlockOf = (id) => ciYml.split(/\n {2}(?=[a-z0-9-]+:\n)/).find((b) => b.startsWith(`${id}:\n`)) ?? ''
+  const budgetRows = Object.entries(SLOWEST_MS).map(([id, slowest]) => {
+    const block = jobBlockOf(id)
+    const timeoutMin = Number(/\n {4}timeout-minutes: (\d+)/.exec(block)?.[1])
+    const callsGate = /data-table-fast-scroll\.mjs --mode=(?:gesture|mouse|pinned) --runs=3[^\n]*\\\n\s+--ref=main/.test(block)
+    return { id, slowest, timeoutMin, callsGate, ok: callsGate && Number.isFinite(timeoutMin) && slowest + EXTRA_ROUNDS_JOB_BUDGET_MS <= timeoutMin * 60_000 }
+  })
+  // 反過來:ci.yml 裡每一個呼叫比值步驟的 job 都要在上面那張表裡(新拆的 job 漏了估算就紅)
+  const callers = ciYml.split(/\n {2}(?=[a-z0-9-]+:\n)/).filter((b) => /data-table-fast-scroll\.mjs --mode=(?:gesture|mouse|pinned) --runs=3[^\n]*\\\n\s+--ref=main/.test(b)).map((b) => b.split(':\n')[0])
   const consts = RATIO_HARD_CAP > BLANK_RATIO_LIMIT && RATIO_ALPHA <= 0.05 && MAX_EXTRA_ROUNDS >= 1 && EXTRA_ROUNDS_JOB_BUDGET_MS > 0
-    && callsGate && Number.isFinite(timeoutMin) && SLOWEST_SUCCESS_MS + EXTRA_ROUNDS_JOB_BUDGET_MS <= timeoutMin * 60_000
+    && budgetRows.every((r) => r.ok) && callers.length === budgetRows.length && callers.every((c) => c in SLOWEST_MS)
   if (!consts) fail++
-  console.log(`${consts ? '✓' : '✗'} 常數:${BLANK_RATIO_LIMIT} < 硬上限 ${RATIO_HARD_CAP}、α = ${RATIO_ALPHA}、加量 ≤ ${MAX_EXTRA_ROUNDS} 輪;整個 job 加量預算 ${EXTRA_ROUNDS_JOB_BUDGET_MS / 1000} 秒 + 最慢的成功 job 23.6 分 ≤ ci.yml verify-browser-datatable 上限 ${timeoutMin} 分(該 job ${callsGate ? '有' : '沒有'}呼叫這支閘)`)
+  console.log(`${consts ? '✓' : '✗'} 常數:${BLANK_RATIO_LIMIT} < 硬上限 ${RATIO_HARD_CAP}、α = ${RATIO_ALPHA}、加量 ≤ ${MAX_EXTRA_ROUNDS} 輪;每個 job 加量預算 ${EXTRA_ROUNDS_JOB_BUDGET_MS / 1000} 秒 + 該 job 最慢 ≤ 上限:${budgetRows.map((r) => `${r.id} ${(r.slowest / 60_000).toFixed(1)} 分 + ${EXTRA_ROUNDS_JOB_BUDGET_MS / 1000} 秒 ≤ ${r.timeoutMin} 分(${r.callsGate ? '有' : '沒有'}呼叫比值步驟)`).join(';')};ci.yml 呼叫比值步驟的 job:${callers.join('、') || '無'}`)
 }
 // ── 灰區加量:要不要再量一輪(2026-10-14 覆核;lib nextExtraRound / estimateRoundMs / 帳本)─────────────────────
 // 覆核抓到:原本這段迴圈寫在閘裡,第一輪不看預算、預算每次呼叫各算一份,而且把整段拿掉這支測試照樣全綠(M32)。
@@ -509,13 +519,42 @@ else console.log(`✓ 可達性:閘真的消費 classifyRun(${callSites} 個呼�
   const ok = decisionSites >= 1 && confirmSites >= 1 && advanceSites >= 1 && picksAdvance
   if (!ok) fail++
   console.log(`${ok ? '✓' : '✗'} 可達性:refRatioDecision ${decisionSites} 個、ratioDecisions ${confirmSites} 個、advanceGapStats ${advanceSites} 個呼叫點;幀距取畫面推進 ${picksAdvance ? '是' : '否'}`)
-  // 灰區加量:閘真的問 nextExtraRound、真的用 estimateRoundMs 估、真的讀寫共用帳本(覆核:整段拿掉原本照樣全綠)
-  const extraSites = Object.fromEntries(['nextExtraRound', 'estimateRoundMs', 'readExtraLedger', 'chargeExtraLedger'].map((n) => [n, countCallSites(gateSrc, n)]))
+  // 灰區加量:閘真的問 nextExtraRound、真的用 extraRoundPlan 估與挑份數、真的讀寫共用帳本(覆核:整段拿掉原本照樣全綠)
+  const extraSites = Object.fromEntries(['nextExtraRound', 'extraRoundPlan', 'readExtraLedger', 'chargeExtraLedger'].map((n) => [n, countCallSites(gateSrc, n)]))
   // 帳本在 CI 上真的是整個 job 共用的那一份:預設路徑取 $RUNNER_TEMP(拿掉就退回每次呼叫各算一份,上面的序列對照組就是那個後果)
   const jobWide = /const EXTRA_LEDGER = arg\('extra-budget-file', process\.env\.RUNNER_TEMP \? join\(process\.env\.RUNNER_TEMP, /.test(gateSrc)
-  const extraOk = Object.values(extraSites).every((c) => c >= 1) && jobWide
+  // 加量輪真的只量 extraRoundPlan 挑的那幾份(覆核 MF4:原本 `roundOrder(i)` 三份都重跑),而且加量只看 R1d 自己的 needs-more
+  const runsPlan = /for \(const s of roundOrderOf\(served\.filter\(\(x\) => plan\.run\.includes\(x\.build\.label\)\), i\)\) await measureOne/.test(gateSrc)
+  const pendingR1d = /const pending = decisions\.filter\(\(x\) => x\.decision\.verdict === 'needs-more'\)/.test(gateSrc)
+  const extraOk = Object.values(extraSites).every((c) => c >= 1) && jobWide && runsPlan && pendingR1d
   if (!extraOk) fail++
-  console.log(`${extraOk ? '✓' : '✗'} 可達性:灰區加量 ${Object.entries(extraSites).map(([n, c]) => `${n} ${c} 個`).join('、')}呼叫點;帳本預設在 $RUNNER_TEMP ${jobWide ? '是' : '否'}`)
+  console.log(`${extraOk ? '✓' : '✗'} 可達性:灰區加量 ${Object.entries(extraSites).map(([n, c]) => `${n} ${c} 個`).join('、')}呼叫點;帳本預設在 $RUNNER_TEMP ${jobWide ? '是' : '否'};加量輪只量 plan.run ${runsPlan ? '是' : '否'};待決只認 needs-more ${pendingR1d ? '是' : '否'}`)
+}
+
+// 持續空白(checkerboard 次數)的實測資料:本機 pinned、CI 同參數(--runs=3 --tick-ms=64 --trace),2026-11-16 A25 覆核二修補報告的校準跑(`--json` 的 traceTrips)。
+// 判定表、同碼置換與呼叫端行為格共用這一份(下方「持續空白」兩段)。
+const CB = {
+  // [名稱, 分支, 參考, A/A 那份, 期望]
+  q2b: [
+    ['最終(Q2b)建置對 1ac039c9,pinned 3 對 3(G-P:參考與 A/A 在中央欄原生;同一跑白幀張數地板判過)', [41, 44, 39], [10, 21, 14], [16, 12, 18], 'fail-cap'],
+    ['歷來單趟追蹤(A25 實作報告:main 19 → 分支 47)', [47], [19], null, 'fail-cap'],
+  ],
+  // 同碼置換裡比值規則判紅、而且超出量最大的那一種分法(地板 15 必須擋下)
+  same: [
+    ['推 1 建置對 1ac039c9 第二跑(兩容器、轉發;超出 3)', [19, 20, 18], [15, 17, 15], [17, 16, 12]],
+    ['最終建置自比第二跑(單一捲動盒、原生;超出 10 = 5 跑裡最大)', [45, 37, 52], [31, 35, 36], [29, 35, 38]],
+    ['最終那一跑 main / main~aa(中央欄原生,6 趟沒有 A/A;超出 6)', [21, 16, 18], [10, 14, 12], null],
+  ],
+  // 每一跑的同碼追蹤趟(置換用)
+  pools: [
+    ['推 1 對 1ac039c9 第一跑', [14, 18, 14, 15, 8, 15, 16, 13, 15]],
+    ['推 1 對 1ac039c9 第二跑', [15, 19, 20, 18, 17, 15, 17, 16, 12]],
+    ['最終建置自比第一跑', [47, 40, 33, 41, 56, 45, 45, 43, 42]],
+    ['最終建置自比第二跑', [45, 31, 37, 52, 35, 29, 36, 35, 38]],
+    ['最終那一跑 main / main~aa', [10, 21, 14, 16, 12, 18]],
+  ],
+  // 呼叫端行為格的同碼那一格:[名稱, 分支, 參考, A/A 那份]
+  behaviorSame: ['推 1 建置對 1ac039c9 第一跑', [16, 13, 15], [14, 18, 14], [15, 8, 15]],
 }
 
 // ── 呼叫端的**行為**(2026-09-21)────────────────────────────────────────────
@@ -566,7 +605,11 @@ else console.log(`✓ 可達性:閘真的消費 classifyRun(${callSites} 個呼�
   }
   // ── 對參考的比值判定:呼叫端的行為(2026-10-14)────────────────────────────────────
   // 用「中央區最長連續空白」那一條(不受「零執行期差異就跳過」影響,判定結果與 git 狀態無關)。注入模式不能加量,灰區直接終判。
-  const blankRun = (build, ms) => ({ build, mode: 'mouse', g: { ...usableG, blankLongestMs: ms, blankFrames: 1, blankMaxBands: 1 }, frames: usableFrames, scrolled: GESTURE_PX, errors: [] })
+  // 白幀序列(lib longestBlankRun 讀它算「最長連續白幀張數」):前後各墊 2 張沒有空白的幀,中間連續 `run` 張有空白
+  const seriesOf = (run) => [0, 0, ...Array.from({ length: run }, () => 0.5), 0, 0]
+  // 這幾格驗的是**比值那條路**的訊息:白幀張數取「毫秒 ÷ 10」(合成),讓有意義的倍數差也有 ≥ 3 張的張數差,不被白幀張數地板擋下;
+  // 地板自己的格在下方「參考為 0 / 白幀張數地板」那一段(覆核二 MF-R1)。
+  const blankRun = (build, ms) => ({ build, mode: 'mouse', g: { ...usableG, blankLongestMs: ms, blankFrames: 1, blankMaxBands: 1, blankSeries: seriesOf(Math.round(ms / 10)) }, frames: usableFrames, scrolled: GESTURE_PX, errors: [] })
   const ratioRuns = (branch, main) => [...branch.map((ms) => blankRun('branch', ms)), ...main.map((ms) => blankRun('main', ms))]
   const RATIO_ARGS = ['--ref=main', '--assert-max-blank-ms=600']
   const ratioCases = [
@@ -618,7 +661,661 @@ else console.log(`✓ 可達性:閘真的消費 classifyRun(${callSites} 個呼�
     if (!ok) fail++
     console.log(`${ok ? '✓' : '✗'} 行為:捲動欄看不到捲動 → 紅(exit ${rb.status});看得到 → 綠(exit ${rs.status})`)
   }
+  // ── A/A 修正子:呼叫端的行為(2026-11-16,A28)────────────────────────────────────────────
+  // 同一份參考建置量兩次(`main~aa`)。用空白那一條(不受「零執行期差異就跳過」影響)。三格:A/A 乾淨 → 照紅;A/A 不乾淨而且分支超出量
+  // 沒大過它 → 不指控、而且要印出來;A/A 那份一趟可用的都沒有 → 照原判定紅、印「A/A 量不到」(沒量到不得當乾淨也不得當放行理由)。
+  {
+    const aaRuns = (branch, main, aa, aaG = null) => [...ratioRuns(branch, main), ...aa.map((ms) => ({ ...blankRun('main~aa', ms), ...(aaG ? { g: { ...aaG, blankLongestMs: ms, blankSeries: seriesOf(Math.round(ms / 10)) } } : {}) }))]
+    const AA_ARGS = ['--ref=main', '--assert-max-blank-ms=600', '--mode=mouse']
+    const aaCases = [
+      ['1.36× 分得開 + A/A 乾淨(0.99×)→ 紅,訊息附 A/A 欄', aaRuns([110, 108, 177], [84, 69, 81], [83, 70, 80]),
+        (r) => r.status === 1 && /分支確實比較慢/.test(r.out) && /A\/A\(main~aa ÷ main\)0\.99×、乾淨/.test(r.out) && /A\/A 欄/.test(r.out), 'A/A 乾淨時 branch 判定不變'],
+      ['1.36× 分得開 + A/A 不乾淨(同一份參考自己就差 1.36×)→ 綠,明說不指控與兩個比值', aaRuns([110, 108, 177], [84, 69, 81], [110, 108, 177]),
+        (r) => r.status === 0 && /這一跑 A\/A 不乾淨/.test(r.out) && /\*\*不指控\*\*/.test(r.out) && /對 main 判 fail-separated/.test(r.out) && /對 main~aa 判 pass/.test(r.out), 'A/A 不乾淨且分支沒比其中一份參考確實慢時不得指控,也不得沒印就放行'],
+      ['1.36× 分得開 + A/A 那份全部作廢 → 照紅,印「A/A 量不到」', aaRuns([110, 108, 177], [84, 69, 81], [83, 70, 80], starvedG),
+        (r) => r.status === 1 && /分支確實比較慢/.test(r.out) && /A\/A 量不到/.test(r.out), '沒量到 ≠ 乾淨,也 ≠ 放行'],
+      // 覆核 MF1(/tmp/claude-501/rv/aa-dir.mjs 第一組):分支比兩份參考都慢而且完全分開,A/A 不乾淨(0.80×)也照紅,訊息講「兩份參考都判紅」
+      ['MF1|分支 128/130/132、main 98/100/102、main~aa 78/80/82(A/A 0.80× 不乾淨)→ 紅,分支對兩份參考都判紅', aaRuns([128, 130, 132], [98, 100, 102], [78, 80, 82]),
+        (r) => r.status === 1 && /分支對兩份參考都判紅/.test(r.out) && !/\*\*不指控\*\*/.test(r.out), 'A/A 不乾淨不得讓「比兩份參考都慢」的分支過'],
+      // 覆核 MF2(/tmp/claude-501/rv/aa-blank.mjs 第一組):空白超過硬上限不看分布 —— A/A 不乾淨也照紅。數字 × 10(320 ms 對 200ms):
+      // 原樣 32 / 21ms 在本機 60 幀/秒下只差 1 張白幀,現在由白幀張數地板判綠(覆核二 MF-R1);這一格要驗的是「超過地板之後,A/A 不放寬」
+      ['MF2|空白 1.57×(分支 320/330/340、main 200/210/220,白幀多 6 張以上)+ A/A 1.29× 不乾淨 → 紅,理由是使用者看得到的空白', aaRuns([320, 330, 340], [200, 210, 220], [260, 270, 280]),
+        (r) => r.status === 1 && /超過硬上限,而且這一項是使用者看得到的空白/.test(r.out) && !/\*\*不指控\*\*/.test(r.out), '空白不放寬:A/A 也不得放寬'],
+    ]
+    for (const [name, runs, want, why] of aaCases) {
+      const r = runGate(runs, AA_ARGS)
+      if (want(r)) console.log(`✓ 行為:A/A|${name}`)
+      else { console.log(`✗ 行為:A/A|${name} —— ${why}\n   exit=${r.status}\n${r.out.split('\n').filter(Boolean).slice(-8).map((l) => '   ' + l).join('\n')}`); fail++ }
+    }
+  }
+  // ── 規則 G-P:pinned 只比同一種捲動機制(2026-11-16)── 呼叫端行為。幀距那條(需要「有執行期差異」→ 用不是 git ref 的參考名)。
+  {
+    const pinRun = (build, ms, native, pointer = 'pinned') => ({ build, mode: 'pinned', g: { ...usableG, advanceGapMean: ms }, frames: usableFrames, scrolled: GESTURE_PX, errors: [], setup: { pinnedInScroller: native }, pinnedPointer: pointer })
+    const GP_ARGS = [`--ref=${NOGIT_REF}`, '--assert-max-frame-gap-ms=100000', '--mode=pinned', '--aa=off']
+    const gpCases = [
+      // 覆核 SF1:參考轉發、受測原生正是 G-P 該把參考指標移到中央欄的情況;量到的仍是轉發 = 同機制那條路沒量到 → 以「儀器失效」紅,
+      // 不指控分支(11-06 那種「原生 vs 轉發」比較不再發生),也不默默印 ↷ 放行
+      ['參考轉發(指標在釘選欄)、受測原生,1.6× 完全分開 → G-P 沒套上 = 儀器失效,紅;不指控分支',
+        [...[290, 300, 310].map((v) => pinRun('branch', v, true)), ...[180, 186, 190].map((v) => pinRun(NOGIT_REF, v, false))],
+        (r) => r.status === 1 && /\*\*儀器失效\*\*:參考「main 對照\(不是 git ref\)」的釘選欄滾輪實際是元件轉發/.test(r.out) && /規則 G-P 應該把參考的指標移到中央欄/.test(r.out) && !/分支確實比較慢/.test(r.out) && !/秩檢定分得開/.test(r.out)],
+      ['參考原生、受測轉發(退回 Q2b 的 PR)→ 這一側沒有同機制路徑,印 mechanism-differs、綠',
+        [...[290, 300, 310].map((v) => pinRun('branch', v, false)), ...[180, 186, 190].map((v) => pinRun(NOGIT_REF, v, true))],
+        (r) => r.status === 0 && /機制不同不比\(規則 G-P:參考原生、受測轉發/.test(r.out) && !/儀器失效/.test(r.out)],
+      ['機制讀不到(setup 缺)→ 儀器失效,紅',
+        [...[290, 300, 310].map((v) => ({ ...pinRun('branch', v, true), setup: null })), ...[180, 186, 190].map((v) => pinRun(NOGIT_REF, v, false, 'center'))],
+        (r) => r.status === 1 && /\*\*儀器失效\*\*/.test(r.out) && /機制讀不到 \/ 同一份建置各趟不一致/.test(r.out)],
+      ['G-P 已把參考指標移到中央欄(兩邊都原生),1.6× 完全分開 → 紅(換分母不是放寬)',
+        [...[290, 300, 310].map((v) => pinRun('branch', v, true)), ...[180, 186, 190].map((v) => pinRun(NOGIT_REF, v, false, 'center'))],
+        (r) => r.status === 1 && /branch\/pinned:畫面推進的幀距平均中位數/.test(r.out) && /秩檢定分得開/.test(r.out)],
+      ['G-P 下同機制 1.26× 完全分開(a72ee7bf 那三趟)→ 紅',
+        [...[229, 221, 229].map((v) => pinRun('branch', v, true)), ...[186, 182, 166].map((v) => pinRun(NOGIT_REF, v, false, 'center'))],
+        (r) => r.status === 1 && /分支確實比較慢/.test(r.out)],
+    ]
+    for (const [name, runs, want] of gpCases) {
+      const r = runGate(runs, GP_ARGS)
+      if (want(r)) console.log(`✓ 行為:G-P|${name}`)
+      else { console.log(`✗ 行為:G-P|${name}\n   exit=${r.status}\n${r.out.split('\n').filter(Boolean).slice(-8).map((l) => '   ' + l).join('\n')}`); fail++ }
+    }
+    // 覆核 SF2:G-P 只移了參考、A/A 那份還在釘選欄(轉發)→ A/A 比的是「原生 vs 轉發」。A/A 那份的數字故意與分支相同(若被當成 A/A,
+    // 會「不乾淨」而把 1.6× 的分支判成不指控);機制不同必須判「A/A 量不到」,分支照紅
+    {
+      const AA = `${NOGIT_REF}~aa`
+      const runs = [...[290, 300, 310].map((v) => pinRun('branch', v, true)), ...[180, 186, 190].map((v) => pinRun(NOGIT_REF, v, false, 'center')), ...[290, 300, 310].map((v) => pinRun(AA, v, false, 'pinned'))]
+      const r = runGate(runs, GP_ARGS.filter((a) => a !== '--aa=off'))
+      const ok = r.status === 1 && /A\/A 量不到\(兩份參考的捲動機制不同/.test(r.out) && /秩檢定分得開/.test(r.out) && !/\*\*不指控\*\*/.test(r.out)
+      if (!ok) { fail++; console.log(`✗ 行為:G-P|A/A 那份機制與參考不同 → A/A 量不到、分支照紅\n   exit=${r.status}\n${r.out.split('\n').filter(Boolean).slice(-8).map((l) => '   ' + l).join('\n')}`) }
+      else console.log('✓ 行為:G-P|A/A 那份機制與參考不同(參考中央原生、A/A 釘選轉發)→ A/A 量不到、分支照紅(覆核 SF2)')
+    }
+  }
+  // ── 參考的空白是 0 / 白幀張數地板(覆核 MF3 → 覆核二 MF-R1 / SF-R2;lib blankDecision)── 呼叫端行為。
+  // 修前(MF3 之前)參考 0 這條路只印「退回絕對門檻」就 continue:參考 0、分支 4000–6000ms 也 exit 0(/tmp/claude-501/rv/inj-mouse.log)。
+  // 覆核二:參考是不是 0 走同一條式子 —— 比值判紅 **且** 分支比參考(A/A 那份有量到時取兩份較多的)多出 > 2 張連續白幀才紅。
+  {
+    const zr = (build, ms, run, gap = 16.7) => ({ build, mode: 'mouse', g: { ...usableG, blankLongestMs: ms, blankFrames: ms ? Math.max(1, run ?? 1) : 0, blankMaxBands: ms ? 8 : 0, presentedGapMean: gap, ...(run == null ? {} : { blankSeries: seriesOf(run) }) }, frames: usableFrames, scrolled: GESTURE_PX, errors: [] })
+    const zrRuns = (branch, main, aa = []) => [...branch.map(([ms, run, gap]) => zr('branch', ms, run, gap)), ...main.map(([ms, run, gap]) => zr('main', ms, run, gap)), ...aa.map(([ms, run, gap]) => zr('main~aa', ms, run, gap))]
+    const Z0 = [[0, 0], [0, 0], [0, 0]]
+    const ZR_ARGS = ['--ref=main', '--assert-max-blank-ms=600', '--mode=mouse', '--aa=off']
+    const ZR_AA_ARGS = ['--ref=main', '--assert-max-blank-ms=600', '--mode=mouse']
+    const zrCases = [
+      ['參考 0 / 分支 150–170ms、最長連續白幀 3 張 → 紅,講「這一跑是 0」與多出的張數', zrRuns([[150, 3], [160, 3], [170, 3]], Z0), ZR_ARGS,
+        (r) => r.status === 1 && /參考「main\/mouse」這一跑是 0 —— 最長連續白幀中位 分支 3 張、參考 0 張,多 3 張 > 2 張/.test(r.out)],
+      ['參考 0 / 分支 0 → 綠,講「兩邊都沒有空白」,絕對門檻照判', zrRuns(Z0, Z0), ZR_ARGS,
+        (r) => r.status === 0 && /兩邊都沒有空白/.test(r.out) && /改判絕對門檻 600ms/.test(r.out)],
+      ['參考 0 / 分支 2 張白幀(40ms)→ 綠(多 2 張,沒超過)', zrRuns([[40, 2], [40, 2], [40, 2]], Z0), ZR_ARGS,
+        (r) => r.status === 0 && /多 2 張,沒超過 2 張/.test(r.out)],
+      // 覆核二 SF-R2:2026-11-15 CI 96b63b68 gesture main#1 / branch#1 / main#3 的單一呈現幀距 237 / 248 / 226ms(該趟平均 88.3 / 84.7 / 84.0)——
+      // 一張白幀剛好停在那一格,修前的「毫秒 > 2 × 平均幀距」判紅;張數 = 1 → 綠
+      ['覆核二 SF-R2|參考 0 / 分支一張白幀停在最長那一格(237 / 248 / 226ms,平均幀距 88 / 85 / 84)→ 綠', zrRuns([[237, 1, 88.3], [248, 1, 84.7], [226, 1, 84.0]], Z0), ZR_ARGS,
+        (r) => r.status === 0 && /分支 1 張、參考 0 張,多 1 張,沒超過 2 張/.test(r.out)],
+      ['參考 0 / 分支有空白卻沒有白幀序列 → 以儀器失效紅(不當通過)', zrRuns([[150, null], [160, null], [170, null]], Z0), ZR_ARGS,
+        (r) => r.status === 1 && /\*\*儀器失效\*\*\(判不了/.test(r.out)],
+      ['參考 0 / 分支 4000–6000ms、每趟只有 1 張白幀(畫面停在白幀上)→ 地板過,絕對門檻 600ms 紅', zrRuns([[4000, 1], [5000, 1], [6000, 1]], Z0), ZR_ARGS,
+        (r) => r.status === 1 && /沒超過 2 張/.test(r.out) && /中央區最長連續空白\(絕對門檻\)中位數 5000ms > 600ms/.test(r.out)],
+      ['參考 0 / 分支 4000–6000ms、30 張白幀(審查 inj-mouse 那組)→ 紅,地板與絕對門檻 600ms 都紅', zrRuns([[4000, 30], [5000, 30], [6000, 30]], Z0), ZR_ARGS,
+        (r) => r.status === 1 && /多 30 張 > 2 張/.test(r.out) && /中央區最長連續空白\(絕對門檻\)中位數 5000ms > 600ms/.test(r.out)],
+      // 地板以兩份參考較多的為準(MF1「兩份都紅才紅」用在地板上):參考 0、A/A 那份 1 張、分支 3 張 → 只多 2 張 → 綠;拿掉 A/A 那份同一組 → 紅(上面第一格)
+      ['參考 0、A/A 那份 1 張、分支 3 張 → 綠(地板以兩份參考較多的那份為準)', zrRuns([[150, 3], [160, 3], [170, 3]], Z0, [[20, 1], [20, 1], [20, 1]]), ZR_AA_ARGS,
+        (r) => r.status === 0 && /取兩份較多的 1\),多 2 張,沒超過 2 張/.test(r.out)],
+      ['參考 1 張(150ms)/ 分支 4 張(600ms)→ 紅:比值 4× 超過上限,而且多 3 張', zrRuns([[600, 4], [600, 4], [600, 4]], [[150, 1], [150, 1], [150, 1]]), ZR_ARGS,
+        (r) => r.status === 1 && /超過硬上限,而且這一項是使用者看得到的空白/.test(r.out) && /多 3 張 > 2 張\(白幀張數地板\)/.test(r.out)],
+      ['參考 1 張(150ms)/ 分支 3 張(450ms)→ 綠:比值 3× 判紅,但只多 2 張(與參考 0 / 分支 2 張同一條線)', zrRuns([[450, 3], [450, 3], [450, 3]], [[150, 1], [150, 1], [150, 1]]), ZR_ARGS,
+        (r) => r.status === 0 && /判 fail-cap\(3\.00×\),但最長連續白幀中位 分支 3 張、參考 1 張,多 2 張,沒超過 2 張 —— 在截圖量化的抖動範圍內,不指控/.test(r.out)],
+      ['沒有 --ref:--assert-max-blank-ms=600、分支 700–900ms → 紅(修前沒有參考的那條路一行都沒判)', zrRuns([[700, 5], [800, 5], [900, 5]], []), ['--assert-max-blank-ms=600', '--mode=mouse'],
+        (r) => r.status === 1 && /branch\/mouse:中央區最長連續空白中位數 800ms > 600ms/.test(r.out)],
+      ['沒有 --ref:分支 100–130ms → 綠', zrRuns([[100, 2], [120, 2], [130, 2]], []), ['--assert-max-blank-ms=600', '--mode=mouse'],
+        (r) => r.status === 0 && /branch\/mouse:中央區最長連續空白中位數 120ms ≤ 600ms/.test(r.out)],
+    ]
+    for (const [name, runs, args, want] of zrCases) {
+      const r = runGate(runs, args)
+      if (want(r)) console.log(`✓ 行為:空白地板|${name}`)
+      else { console.log(`✗ 行為:空白地板|${name}\n   exit=${r.status}\n${r.out.split('\n').filter(Boolean).slice(-8).map((l) => '   ' + l).join('\n')}`); fail++ }
+    }
+  }
+  // ── 持續空白(追蹤 checkerboard 次數;2026-11-16 A25 覆核二修補;lib checkerboardDecision)── 呼叫端行為。
+  // 注入物件 { results, traceTrips }(與 --json 同形)。量測趟的空白取「已知盲點」那一列的形狀(白幀張數地板判過),追蹤趟次數取本機實測(出處見 CB)。
+  {
+    const pinBlank = (build, ms, run, native, pointer = 'pinned') => ({ build, mode: 'pinned', g: { ...usableG, blankLongestMs: ms, blankFrames: run, blankMaxBands: 8, blankSeries: seriesOf(run) }, frames: usableFrames, scrolled: GESTURE_PX, errors: [], setup: { pinnedInScroller: native }, pinnedPointer: pointer })
+    const tr = (build, counts, native, pointer = 'pinned', extra = {}) => counts.map((c, k) => ({ build, mode: 'pinned', i: k + 1, checkerboard: c, drawFrame: 80, scrolled: 18000, pinnedPointer: pointer, setup: { pinnedInScroller: native }, error: null, ...extra }))
+    // Q2b 形狀:分支原生(釘選面板在共用捲動盒裡),參考與 A/A 那份由 G-P 移到中央欄(原生)
+    const q2bResults = [
+      ...[[127, 2], [205, 2], [267, 3]].map(([ms, run]) => pinBlank('branch', ms, run, true)),
+      ...[[22, 1], [33, 2], [22, 1]].map(([ms, run]) => pinBlank('main', ms, run, false, 'center')),
+      ...[[32, 2], [37, 2], [17, 1]].map(([ms, run]) => pinBlank('main~aa', ms, run, false, 'center')),
+    ]
+    const [, q2bMine, q2bRef, q2bAA] = CB.q2b[0]
+    const q2bTrace = [...tr('branch', q2bMine, true), ...tr('main', q2bRef, false, 'center'), ...tr('main~aa', q2bAA, false, 'center')]
+    // 推 1 同碼形狀:三份都是兩容器(轉發),指標都在釘選欄
+    const [, sameMine, sameRef, sameAA] = CB.behaviorSame
+    const sameResults = [
+      ...[[23, 1], [31, 2], [20, 1]].map(([ms, run]) => pinBlank('branch', ms, run, false)),
+      ...[[34, 2], [28, 1], [36, 2]].map(([ms, run]) => pinBlank('main', ms, run, false)),
+      ...[[30, 2], [25, 1], [33, 2]].map(([ms, run]) => pinBlank('main~aa', ms, run, false)),
+    ]
+    const sameTrace = [...tr('branch', sameMine, false), ...tr('main', sameRef, false), ...tr('main~aa', sameAA, false)]
+    // --trace 的值在注入模式只當「這一步判持續空白」的開關(不建目錄;不含斜線,因為 runGate 拿參數拼檔名)
+    const TR_ARGS = ['--ref=main', '--assert-max-blank-ms=600', '--mode=pinned', '--trace=unused-in-inject-mode']
+    const cbLine = /branch\/pinned:持續空白\(追蹤 checkerboard 次數\)/
+    const cbCases = [
+      [`同碼(${CB.behaviorSame[0]})→ 綠`, { results: sameResults, traceTrips: sameTrace }, TR_ARGS,
+        (r) => r.status === 0 && new RegExp(`✓ ${cbLine.source}`).test(r.out)],
+      [`Q2b 量級(${CB.q2b[0][0]})→ 紅;同一跑的白幀張數地板判過(它的已知盲點),紅的是這一項`, { results: q2bResults, traceTrips: q2bTrace }, TR_ARGS,
+        (r) => r.status === 1 && new RegExp(`✗ ${cbLine.source}`).test(r.out) && /checkerboard 次數地板/.test(r.out) && /✓ branch\/pinned:中央區最長連續空白中位數 205ms,比值規則對參考「main\/pinned」的 22ms 判 fail-cap/.test(r.out)],
+      // 對照組(這一項拿掉 = 不帶 --trace):同一組資料只剩白幀張數地板,判綠 —— 證明擋住 Q2b 量級的是這一項,不是別的
+      ['對照組|同一組 Q2b 資料不帶 --trace(這一項不判)→ 綠:只靠白幀張數擋不住', { results: q2bResults, traceTrips: q2bTrace }, TR_ARGS.filter((a) => !a.startsWith('--trace=')),
+        (r) => r.status === 0 && !cbLine.test(r.out)],
+      ['帶 --trace 但沒有任何追蹤資料 → 儀器失效,紅(沒量到不當 0)', { results: q2bResults }, TR_ARGS,
+        (r) => r.status === 1 && /✗ main\/pinned:持續空白\(追蹤 checkerboard 次數\)——\*\*儀器失效\*\*:參考「main」0 趟追蹤一趟可用的都沒有\(這一跑沒有任何追蹤資料/.test(r.out)],
+      ['受測那份的追蹤全部沒量到(追蹤摘要拿不到)→ 儀器失效,紅', { results: q2bResults, traceTrips: [...tr('branch', [NaN, NaN, NaN], true, 'pinned', { error: '儀器拿不到:trace 是空的' }), ...tr('main', q2bRef, false, 'center'), ...tr('main~aa', q2bAA, false, 'center')] }, TR_ARGS,
+        (r) => r.status === 1 && /✗ branch\/pinned:持續空白\(追蹤 checkerboard 次數\)——\*\*儀器失效\*\*:受測「branch」3 趟追蹤一趟可用的都沒有/.test(r.out) && /追蹤 #1 沒量到\(儀器拿不到:trace 是空的\)/.test(r.out)],
+      ['追蹤趟的機制與 G-P 不符(參考那份還在釘選欄轉發、受測原生)→ 儀器失效,紅', { results: q2bResults, traceTrips: [...tr('branch', q2bMine, true), ...tr('main', q2bRef, false, 'pinned'), ...tr('main~aa', q2bAA, false, 'center')] }, TR_ARGS,
+        (r) => r.status === 1 && /✗ branch\/pinned:持續空白\(追蹤 checkerboard 次數\)——\*\*儀器失效\*\*:追蹤趟的釘選欄滾輪/.test(r.out)],
+    ]
+    for (const [name, payload, args, want] of cbCases) {
+      const r = runGate(payload, args)
+      if (want(r)) console.log(`✓ 行為:持續空白|${name}`)
+      else { console.log(`✗ 行為:持續空白|${name}\n   exit=${r.status}\n${r.out.split('\n').filter(Boolean).slice(-8).map((l) => '   ' + l).join('\n')}`); fail++ }
+    }
+  }
   rmSync(tmp, { recursive: true, force: true })
+}
+
+// ── 規則 G-P 的判定表(2026-11-16,lib pinnedMechanismPlan / pinnedComparable)──
+{
+  const plans = [
+    ['參考轉發、受測原生(Q2b 分支對還沒合 Q2b 的 main)→ 參考指標改中央欄', pinnedMechanismPlan(false, true).refPointer, 'center'],
+    ['兩邊轉發(現在的 HEAD)→ 照舊', pinnedMechanismPlan(false, false).refPointer, 'pinned'],
+    ['兩邊原生(main 合入 Q2b 之後)→ 照舊,規則自動失效', pinnedMechanismPlan(true, true).refPointer, 'pinned'],
+    ['參考原生、受測轉發(退回 Q2b 的 PR)→ 指標不動', pinnedMechanismPlan(true, false).why, 'ref-native-mine-forwarding'],
+    ['讀不到 → 指標不動(不猜)', pinnedMechanismPlan(null, true).why, 'unknown'],
+  ]
+  const cmp = [
+    ['同機制(兩邊原生)→ 幀距比', pinnedComparable('frameGap', [true], [true]).compare, true],
+    ['G-P 生效後(參考中央 = 原生)→ 空白比', pinnedComparable('blank', [true], [true]).compare, true],
+    ['參考原生、受測轉發 → 幀距不比', pinnedComparable('frameGap', [true], [false]).compare, false],
+    ['參考原生、受測轉發 → 空白不比', pinnedComparable('blank', [true], [false]).compare, false],
+    ['參考原生、受測轉發 → 長工照比', pinnedComparable('longSum', [true], [false]).compare, true],
+    ['同一份建置各趟機制不一致 → 幀距不比(讀不清楚不比)', pinnedComparable('frameGap', [true, false], [true]).compare, false],
+    ['機制讀不到(null)→ 幀距不比', pinnedComparable('frameGap', [null], [true]).compare, false],
+    // 覆核 SF1:不比的理由要分清楚 —— 只有「參考原生、受測轉發」是這一側本來沒有同機制路徑;其餘是該量的沒量到(呼叫端以儀器失效紅)
+    ['參考原生、受測轉發 → why = ref-native-mine-forwarding(照印、不判)', pinnedComparable('frameGap', [true], [false]).why, 'ref-native-mine-forwarding'],
+    ['參考轉發、受測原生(G-P 該移指標卻量到轉發)→ why = gp-missed', pinnedComparable('blank', [false], [true]).why, 'gp-missed'],
+    ['機制讀不到 → why = unreadable', pinnedComparable('frameGap', [null], [true]).why, 'unreadable'],
+    ['各趟不一致 → why = unreadable', pinnedComparable('frameGap', [true, false], [true]).why, 'unreadable'],
+    ['同機制 → why = same', pinnedComparable('frameGap', [false], [false]).why, 'same'],
+    // 覆核 SF2:G-P 移指標要參考與 A/A 那份一起移;A/A 兩份機制不同 → A/A 量不到
+    ['G-P 生效 → 參考與 A/A 那份一起移到中央欄', gpPointerLabels({ refPointer: 'center' }, { ref: 'main', aa: 'main~aa' }).join(','), 'main,main~aa'],
+    ['G-P 生效、沒有 A/A(--aa=off)→ 只移參考', gpPointerLabels({ refPointer: 'center' }, { ref: 'main', aa: '' }).join(','), 'main'],
+    ['G-P 沒生效 → 誰都不移', gpPointerLabels({ refPointer: 'pinned' }, { ref: 'main', aa: 'main~aa' }).join(','), ''],
+    ['A/A 兩份同機制(都原生)→ 同', aaMechanismCheck([true], [true]).same, true],
+    ['A/A 參考原生、A/A 那份轉發 → 不同', aaMechanismCheck([true], [false]).same, false],
+    ['A/A 那份機制讀不到 → 不同(不當同)', aaMechanismCheck([true], [null]).same, false],
+  ]
+  for (const [name, got, want] of [...plans, ...cmp]) { const ok = got === want; if (!ok) fail++; console.log(`${ok ? '✓' : '✗'} G-P|${name} → ${got}(期望 ${want})`) }
+  // 門檻 / 統計不動:G-P 只決定比不比,能比的那幾項判定式與沒有 G-P 時同一個 refRatioDecision(1.26× 完全分開 → 照紅)
+  const d = refRatioDecision([229, 221, 229], [186, 182, 166], { capNeedsNoiseSupport: true })
+  const gpSites = Object.fromEntries(['pinnedComparable', 'pinnedMechanismPlan', 'gpPointerLabels', 'aaMechanismCheck'].map((n) => [n, countCallSites(gateSrc0, n)]))
+  const ok = d.verdict === 'fail-separated' && Object.values(gpSites).every((c) => c >= 1)
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} G-P|同機制 1.26× 完全分開仍判 ${d.verdict};閘呼叫點 ${Object.entries(gpSites).map(([n, c]) => `${n} ${c}`).join('、')}`)
+}
+
+// ── 中央區最長連續空白:比值 + 白幀張數地板(覆核 MF3 → 覆核二 MF-R1 / SF-R2;lib blankDecision;【AI 推導 2026-11-16】)──────────────
+// 每趟 { ms: 最長連續空白毫秒, run: 最長連續白幀張數, gap: 平均呈現幀距 }。紅 ⇔ 比值規則判紅(參考 0 = 比值無限大)且 分支中位張數 − 參考張數 > 2
+// (參考張數:A/A 那份有量到時取兩份較多的)。`blankDecisionOld` = 本次修補前的式子(參考 > 0 只看比值、參考 0 → 毫秒 > 2 × 平均幀距),
+// 只當對照組:下面的判定表與性質在它身上必須抓得到覆核二指出的那幾種錯(M32「儀器要先有對照組」),突變「改回舊式子」用的也是它的原始碼。
+function blankDecisionOld({ mine, ref, aa = null, aaBlockedWhy = null, canAddMore = false, frames = ZERO_REF_BLANK_FRAMES } = {}) {
+  const mineMs = (mine ?? []).map((t) => t.ms), refMs = (ref ?? []).map((t) => t.ms).filter(Number.isFinite)
+  if (!mineMs.length || !mineMs.every(Number.isFinite)) return { verdict: 'na' }
+  if (!refMs.length) return { verdict: 'no-ref' }
+  const refMedian = median(refMs), mineMedian = median(mineMs)
+  if (refMedian > 0) {
+    const aaRes = aa == null ? null : aaBlockedWhy ? { available: false } : aaNoise(refMs, aa.map((t) => t.ms), { capNeedsNoiseSupport: false })
+    return combineWithAA(refRatioDecision(mineMs, refMs, { canAddMore, capNeedsNoiseSupport: false }), aaRes, { mineVals: mineMs, capNeedsNoiseSupport: false })
+  }
+  if (mineMedian === 0) return { verdict: 'pass' }
+  const gaps = (mine ?? []).map((t) => t.gap).filter((v) => Number.isFinite(v) && v > 0)
+  if (!gaps.length) return { verdict: 'no-scale' }
+  return { verdict: mineMedian > frames * median(gaps) ? 'fail-zero-ref' : 'within-floor' }
+}
+const T = (ms, run, gap = 150) => ({ ms, run, gap })
+const Q = (runs, gap = 150) => runs.map((r) => T(r * gap, r, gap)) // 量化資料:毫秒 = 張數 × 幀距
+// [名稱, 分支, 參考, A/A 那份(null = 沒有), 期望, 其他參數]
+const BLANK_TABLE = [
+  // 覆核二 MF-R1 反例(覆核二報告實測):同一份資料,標籤互換不得翻轉;參考變差不得由綠變紅(CI 幀距 150ms)
+  ['MF-R1|分支 150/300/300、ref 0/0/150、ref~aa 0/150/150 → 綠(多 1 張)', Q([1, 2, 2]), Q([0, 0, 1]), Q([0, 1, 1]), 'within-floor'],
+  ['MF-R1|同一組標籤互換(ref 0/150/150、ref~aa 0/0/150)→ 綠(修前 fail-cap 2.00×)', Q([1, 2, 2]), Q([0, 1, 1]), Q([0, 0, 1]), 'within-floor'],
+  ['MF-R1 單調鏈|參考 0/0/0 → 綠', Q([1, 2, 2]), Q([0, 0, 0]), null, 'within-floor'],
+  ['MF-R1 單調鏈|參考 0/0/150 → 綠', Q([1, 2, 2]), Q([0, 0, 1]), null, 'within-floor'],
+  ['MF-R1 單調鏈|參考 0/150/150 → 綠(修前參考變差反而 fail-cap)', Q([1, 2, 2]), Q([0, 1, 1]), null, 'within-floor'],
+  ['MF-R1 單調鏈|參考 150/150/150 → 綠', Q([1, 2, 2]), Q([1, 1, 1]), null, 'within-floor'],
+  ['MF-R1 單調鏈|參考 150/150/300 → 綠', Q([1, 2, 2]), Q([1, 1, 2]), null, 'within-floor'],
+  ['MF-R1 本機量級|分支 17/33/33、參考 0/17/17(幀距 16.7)→ 綠(修前 fail-cap 1.94×)', Q([1, 2, 2], 16.7), Q([0, 1, 1], 16.7), null, 'within-floor'],
+  // 覆核二 SF-R2:一張白幀落在最長那一格 → 1 張 → 過(CI 96b63b68 的單一呈現幀距 237 / 248 / 226ms,該趟平均 88.3 / 84.7 / 84.0)
+  ['SF-R2|參考 0 / 分支一張白幀停在 237 / 248 / 226ms 那一格(平均幀距 88 / 85 / 84)→ 綠(修前 > 2 × 平均 → 紅)', [T(237, 1, 88.3), T(248, 1, 84.7), T(226, 1, 84.0)], Q([0, 0, 0]), null, 'within-floor'],
+  // 邊界兩面(參考 0 時就是修前「> 2 張」那一條)
+  ['參考 0 / 分支 0 → 綠(兩邊都沒有空白)', Q([0, 0, 0]), Q([0, 0, 0]), null, 'pass'],
+  ['參考 0 / 分支 2 張 → 綠(剛好 2 張,超過才紅)', Q([2, 2, 2]), Q([0, 0, 0]), null, 'within-floor'],
+  ['參考 0 / 分支 3 張 → 紅', Q([3, 3, 3]), Q([0, 0, 0]), null, 'fail-zero-ref'],
+  ['參考 1 張 / 分支 3 張(3×)→ 綠(只多 2 張,與參考 0 / 分支 2 張同一條線)', Q([3, 3, 3]), Q([1, 1, 1]), null, 'within-floor'],
+  ['參考 1 張 / 分支 4 張(4×)→ 紅(超過上限且多 3 張)', Q([4, 4, 4]), Q([1, 1, 1]), null, 'fail-cap'],
+  ['參考 2 張 / 分支 10 張(本機 33 → 167ms)→ 紅', Q([10, 10, 10], 16.7), Q([2, 2, 2], 16.7), null, 'fail-cap'],
+  // 灰區:比值 1.25–1.5 分得開才紅,地板照樣要過
+  ['灰區|參考 10 張 / 分支 14 張(1.4×,3 對 3 完全分開,多 4 張)→ 紅', Q([14, 14, 14], 16.7), Q([10, 10, 10], 16.7), null, 'fail-separated'],
+  ['灰區|參考 6 張 / 分支 8 張(1.33×,完全分開,只多 2 張)→ 綠', Q([8, 8, 8], 16.7), Q([6, 6, 6], 16.7), null, 'within-floor'],
+  // 地板以兩份參考較多的為準(MF1「兩份都紅才紅」用在地板上);A/A 量不到 / 機制不同 → 只看 ref
+  ['A/A 地板|參考 0、A/A 那份 1 張、分支 3 張 → 綠(多 2 張)', Q([3, 3, 3]), Q([0, 0, 0]), Q([1, 1, 1]), 'within-floor'],
+  ['A/A 地板|同一組沒有 A/A 那份 → 紅', Q([3, 3, 3]), Q([0, 0, 0]), null, 'fail-zero-ref'],
+  ['A/A 地板|A/A 那份機制與參考不同(量不到)→ 只看 ref → 紅', Q([3, 3, 3]), Q([0, 0, 0]), Q([1, 1, 1]), 'fail-zero-ref', { aaBlockedWhy: '兩份參考的捲動機制不同' }],
+  ['A/A 地板|A/A 那份一趟可用的都沒有 → 只看 ref → 紅', Q([3, 3, 3]), Q([0, 0, 0]), [], 'fail-zero-ref'],
+  // 沒量到不當過
+  ['參考 0 / 分支有空白卻沒有白幀序列 → no-scale(呼叫端以儀器失效紅)', [T(450, NaN), T(450, NaN), T(450, NaN)], Q([0, 0, 0]), null, 'no-scale'],
+  ['參考 1 張但參考沒有白幀序列、比值 4× → no-scale', Q([4, 4, 4]), [T(150, NaN), T(150, NaN), T(150, NaN)], null, 'no-scale'],
+  ['比值過(1.08×)→ 不需要張數(沒有序列也過)', [T(110, NaN), T(115, NaN), T(105, NaN)], [T(100, NaN), T(104, NaN), T(98, NaN)], null, 'pass'],
+  ['參考沒有資料 → no-ref(呼叫端改判絕對門檻)', Q([3, 3, 3]), [], null, 'no-ref'],
+  // 張數不看每張停多久:畫面停在一張白幀上 4–6 秒 → 地板過(由絕對門檻 600ms 擋,呼叫端格驗)
+  ['參考 0 / 分支每趟 1 張白幀但停 4000–6000ms → 地板過(絕對門檻另判)', [T(4000, 1), T(5000, 1), T(6000, 1)], Q([0, 0, 0]), null, 'within-floor'],
+  // 本項的已知盲點,照實鎖住現況(覆核二修補時本機最終建置 pinned 實測形狀):參考不是 0、分支單一張白幀停 127 / 205ms → 白幀張數地板過。
+  // 「一張白幀落在最長那一格 → 過」的直接代價;持續空白由下方「持續空白(checkerboard 次數)」那一項擋(同一個 Q2b 形狀在那裡判紅,
+  // 呼叫端行為格「Q2b 量級」同時鎖住兩件事:本項判過、那一項判紅)。要改判準時這一列跟著改,不准默默變綠變紅(規格「中央區最長連續空白」節)
+  ['已知盲點|參考 22 / 33 / 22ms(最長連續 1 / 2 / 1 張)、分支 127 / 205 / 267ms(最長連續 2 / 2 / 3 張;127 與 205 是另一段單一張白幀停那麼久)、A/A 2 / 2 / 1 張 → 過(9.29× 但只多 0 張)', [T(127, 2, 42.5), T(205, 2, 54.3), T(267, 3, 49.1)], [T(22, 1, 34.5), T(33, 2, 39.7), T(22, 1, 42.1)], [T(32, 2, 37.3), T(37, 2, 40.3), T(17, 1, 36.1)], 'within-floor'],
+]
+const bfFinal = ([, mine, ref, aa, , opt], decide = blankDecision) => decide({ mine, ref, aa, ...(opt ?? {}) }).verdict
+for (const row of BLANK_TABLE) { const got = bfFinal(row); const ok = got === row[4]; if (!ok) fail++; console.log(`${ok ? '✓' : '✗'} 空白地板|${row[0]} → ${got}(期望 ${row[4]})`) }
+// 最長連續白幀張數(lib longestBlankRun):[名稱, blankSeries, 期望]
+const RUN_TABLE = [
+  ['4 張白幀但各自分開 → 最長連續 1 張(不是總數 4)', [0, 0.2, 0, 0.3, 0, 0.1, 0, 0.4], 1],
+  ['連續 3 張 → 3', [0, 0.2, 0.3, 0.1, 0], 3],
+  ['結尾連續 2 張 → 2', [0, 0, 1, 1], 2],
+  ['沒有白幀 → 0', [0, 0, 0], 0],
+  ['沒有序列 → NaN(沒量到,不當 0)', null, NaN],
+]
+for (const [name, series, want] of RUN_TABLE) { const got = longestBlankRun(series); const ok = Object.is(got, want); if (!ok) fail++; console.log(`${ok ? '✓' : '✗'} 白幀張數|${name} → ${got}(期望 ${want})`) }
+{
+  // 性質(覆核二 MF-R1):量化資料(毫秒 = 張數 × 150ms)、參考與 A/A 那份每趟 0–5 張、分支每趟 0–8 張,窮舉每一組(各取 3 趟的多重集合):
+  //   (1)參考單調:參考任一趟多 1 張(毫秒跟著多)不得由綠變紅;(2)ref / ref~aa 標籤互換紅不紅不翻轉。
+  // 參考中位 ≥ 6 張時比值會落進灰區,`combineWithAA` 的對稱只在 A/A 不乾淨時成立 —— 那一段不在保證內(規格照實列為邊界),所以窮舉到 5。
+  // 對照組:同一個窮舉在修補前的式子(blankDecisionOld)上必須抓到違反,否則這個量具是空的。
+  const props = (decide, { G = 150, K = 5, KM = 8 } = {}) => {
+    const sets = (k) => { const o = []; for (let a = 0; a <= k; a++) for (let b = a; b <= k; b++) for (let c = b; c <= k; c++) o.push([a, b, c]); return o }
+    const S = sets(K), SM = sets(KM), at = new Map(S.map((x, i) => [x.join(','), i]))
+    const trip = (run) => ({ ms: run * G, run, gap: G })
+    let n = 0, swap = 0, mono = 0, exSwap = null, exMono = null
+    for (const m of SM) {
+      const mt = m.map(trip)
+      const R = S.map((r) => S.map((a) => decide({ mine: mt, ref: r.map(trip), aa: a.map(trip) }).verdict.startsWith('fail')))
+      for (let i = 0; i < S.length; i++) for (let j = 0; j < S.length; j++) {
+        n++
+        if (R[i][j] !== R[j][i]) { swap++; exSwap ??= `分支 ${m} / ref ${S[i]} / ref~aa ${S[j]}` }
+        if (!R[i][j]) for (let t = 0; t < 3; t++) {
+          if (S[i][t] >= K) continue
+          const worse = [...S[i]]; worse[t]++; worse.sort((x, y) => x - y)
+          if (R[at.get(worse.join(','))][j]) { mono++; exMono ??= `分支 ${m} / ref ${S[i]} → ${worse} / ref~aa ${S[j]}` }
+        }
+      }
+    }
+    return { n, swap, mono, exSwap, exMono }
+  }
+  const pn = props(blankDecision), po = props(blankDecisionOld)
+  const ok = pn.swap === 0 && pn.mono === 0 && pn.n > 500_000 && po.swap > 0 && po.mono > 0
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 空白地板|窮舉 ${pn.n} 組量化資料:標籤互換翻轉 ${pn.swap}${pn.exSwap ? `(例 ${pn.exSwap})` : ''}、參考變差由綠變紅 ${pn.mono}${pn.exMono ? `(例 ${pn.exMono})` : ''}(都必須 0);對照組(修補前的式子)翻轉 ${po.swap}(例 ${po.exSwap})、由綠變紅 ${po.mono}(例 ${po.exMono})(都必須 > 0)`)
+  // 參考單調,非量化資料:每張停多久各自不同(0.5–3 倍幀距),參考任一趟多 1–3 張、毫秒跟著多 —— 3000 組不得由綠變紅
+  let seed = 20261118
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 }
+  let monoJ = 0
+  for (let k = 0; k < 3000; k++) {
+    const jt = (run) => ({ run, ms: run * 150 * (0.5 + rnd() * 2.5), gap: 150 })
+    const mk = (hi) => Array.from({ length: 3 }, () => jt(Math.floor(rnd() * (hi + 1))))
+    const mine = mk(12), ref = mk(8), aa = k % 3 ? mk(8) : null
+    const i = Math.floor(rnd() * 3), add = 1 + Math.floor(rnd() * 3)
+    const worse = ref.map((t, x) => (x === i ? { run: t.run + add, ms: t.ms + add * 150 * (0.5 + rnd() * 2.5), gap: 150 } : t))
+    if (!blankDecision({ mine, ref, aa }).verdict.startsWith('fail') && blankDecision({ mine, ref: worse, aa }).verdict.startsWith('fail')) monoJ++
+  }
+  const okJ = monoJ === 0
+  if (!okJ) fail++
+  console.log(`${okJ ? '✓' : '✗'} 空白地板|非量化資料 3000 組:參考變差由綠變紅 ${monoJ} 組(必須 0)`)
+  // 同碼置換(覆核二報告的同碼置換那一套,加上白幀張數):推 1 拆分驗證那一跑(推 1 建置 + 45d5543d 兩份,本機)每種跑法 9 趟 [毫秒, 張數, 平均幀距],
+  // 分成 分支 3 / 參考 3 / A/A 3 的 1680 種分法(數字取自那一跑的 --json)。修補前的式子 mouse 判紅 83 / 1680(覆核二實測)。
+  const SAME = {
+    mouse: [[33.8, 2, 57.7], [215.7, 3, 57.4], [33.4, 2, 44.4], [34.9, 2, 40.5], [40.1, 2, 60.1], [53.8, 3, 44.5], [50.4, 3, 46.6], [49.9, 3, 48.3], [18.3, 1, 42.5]],
+    pinned: [[70.6, 1, 38.5], [31.4, 2, 45.8], [22.6, 1, 42.2], [35.6, 2, 38.9], [44.1, 2, 41.9], [33.5, 1, 44.4], [32.9, 2, 38.3], [33.1, 1, 37.0], [17.2, 1, 46.3]],
+  }
+  const combos = (arr, k, start = 0, acc = [], out = []) => { if (acc.length === k) { out.push([...acc]); return out } for (let i = start; i < arr.length; i++) { acc.push(i); combos(arr, k, i + 1, acc, out); acc.pop() } return out }
+  const sameRed = (rows, decide, withAA) => {
+    const tr = rows.map(([ms, run, gap]) => ({ ms, run, gap })), idx = tr.map((_, i) => i)
+    let red = 0, n = 0
+    for (const b of combos(idx, 3)) { const rest = idx.filter((i) => !b.includes(i)); for (const r of combos(rest, 3)) {
+      const a = rest.filter((i) => !r.includes(i)); n++
+      if (decide({ mine: b.map((i) => tr[i]), ref: r.map((i) => tr[i]), aa: withAA ? a.map((i) => tr[i]) : null }).verdict.startsWith('fail')) red++
+    } }
+    return { red, n }
+  }
+  const sm = Object.fromEntries(Object.entries(SAME).map(([mode, rows]) => [mode, { neu: sameRed(rows, blankDecision, false), neuAA: sameRed(rows, blankDecision, true), old: sameRed(rows, blankDecisionOld, false) }]))
+  const okS = Object.values(sm).every((x) => x.neu.red === 0 && x.neuAA.red === 0 && x.neu.n === 1680) && sm.mouse.old.red > 0
+  if (!okS) fail++
+  console.log(`${okS ? '✓' : '✗'} 空白地板|同碼置換 1680 種分法:${Object.entries(sm).map(([mode, x]) => `${mode} 新式子 ${x.neu.red}(含 A/A ${x.neuAA.red})、修補前 ${x.old.red}`).join(';')}(新式子必須 0;修補前 mouse 必須 > 0 = 量具看得到誤紅)`)
+}
+{
+  // 可達性:閘的空白真的走 blankDecision、每趟張數真的由 blankSeries 算;比值判不了時真的退回絕對門檻;參考為 0 時另判絕對門檻;沒有參考時真的判空白絕對門檻
+  const bSites = countCallSites(gateSrc0, 'blankDecision')
+  const fromSeries = /run: longestBlankRun\(r\.g\?\.blankSeries\)/.test(gateSrc0)
+  const fallback = /const fb = ABSOLUTE_FALLBACK\[check\.key\]\?\.\(\)/.test(gateSrc0) && /gateGroup\(k, rs, fb\.limitRaw, fb\.name, fb\.ceiling, fb\.pick\)/.test(gateSrc0)
+  const zeroAbs = (gateSrc0.match(/absoluteFallback\('0ms', true\)/g) ?? []).length >= 2
+  const noRefBlank = /else gate\(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR\.blank,/.test(gateSrc0)
+  const ok = bSites >= 1 && fromSeries && fallback && zeroAbs && noRefBlank && ZERO_REF_BLANK_FRAMES >= 1
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 可達性:blankDecision ${bSites} 個呼叫點;張數由 blankSeries 算 ${fromSeries ? '是' : '否'};比值判不了時退回絕對門檻 ${fallback ? '是' : '否'};參考為 0 時另判絕對門檻 ${zeroAbs ? '是' : '否'};沒有 --ref 時判空白絕對門檻 ${noRefBlank ? '是' : '否'}`)
+  // ci.yml 的 pinned 步驟要真的給空白的絕對門檻(覆核 MF3:修前沒給,log 印「(未設)」)
+  const ciYml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
+  const pinnedStep = /node scripts\/data-table-fast-scroll\.mjs --mode=pinned --runs=3[^\n]*\\\n(?:[^\n]*\\\n)*[^\n]*/.exec(ciYml)?.[0] ?? ''
+  const okCi = /--assert-max-blank-ms=\d+/.test(pinnedStep)
+  if (!okCi) fail++
+  console.log(`${okCi ? '✓' : '✗'} ci.yml|pinned 步驟有 --assert-max-blank-ms(${okCi ? '有' : '沒有'})`)
+  // 覆核二 SF-R3:pinned 步驟在自己的 job(verify-browser-datatable-pinned),--trace 只留在它身上(gesture / mouse 的追蹤只是診斷)——
+  // job 時間的估算以這兩件事為前提,哪一件被改回去,時間估算就不再成立
+  const pinnedJob = ciYml.slice(ciYml.indexOf('\n  verify-browser-datatable-pinned:\n'), ciYml.indexOf('\n  verify-browser-datatable-perception:\n'))
+  const traces = ciYml.match(/--trace=\S+/g) ?? []
+  const okSplit = pinnedJob.length > 100 && pinnedJob.includes(pinnedStep) && traces.length === 1 && pinnedStep.includes(traces[0])
+  if (!okSplit) fail++
+  console.log(`${okSplit ? '✓' : '✗'} ci.yml|pinned 比值步驟在 verify-browser-datatable-pinned ${pinnedJob.includes(pinnedStep) && pinnedStep ? '是' : '否'};--trace 只出現 ${traces.length} 次而且在 pinned 步驟(覆核二 SF-R3)`)
+}
+
+// ── 持續空白:追蹤 checkerboard 次數(2026-11-16 A25 覆核二修補;lib checkerboardDecision;【AI 推導 2026-11-16】)──────────────
+// 白幀張數(上一段)數不到「整片白而且不變」—— 截圖串流不重送,持續的白只算 1 張(上面「已知盲點」那一列)。這一項改數 CDP 追蹤裡合成器畫到
+// 還沒光柵好的圖塊的次數(不靠截圖節奏)。式子與空白同一支(blankDecision 原樣重用,次數當比值值也當地板單位):
+//   紅 ⇔ 比值規則判紅 且 分支中位 − max(ref 中位, ref~aa 中位) > CHECKERBOARD_FLOOR。
+// 每趟次數取自本機 pinned 實測(`--json` 的 traceTrips;本機 headless 軟體光柵、CI 同參數 --runs=3 --tick-ms=64,出處見各列)。
+// [名稱, 分支, 參考, A/A 那份(null = 沒有), 期望, 其他參數]
+const F = CHECKERBOARD_FLOOR
+const CB_TABLE = [
+  ...CB.q2b.map(([tag, mine, ref, aa, want]) => [`Q2b 量級|${tag}`, mine, ref, aa, want]),
+  ...CB.same.map(([tag, mine, ref, aa]) => [`同碼|${tag}(置換裡超出量最大的那一種分法)→ 過`, mine, ref, aa, 'within-floor']),
+  // 邊界兩面(地板判準是「超過 F 次才紅」)
+  [`參考 0 / 分支 ${F} 次 → 過(剛好 ${F} 次,超過才紅)`, [F, F, F], [0, 0, 0], null, 'within-floor'],
+  [`參考 0 / 分支 ${F + 1} 次 → 紅`, [F + 1, F + 1, F + 1], [0, 0, 0], null, 'fail-zero-ref'],
+  [`參考 ${2 * F} / 分支 ${3 * F} 次(1.5× 剛好不超過上限、完全分開,多 ${F})→ 過`, [3 * F, 3 * F, 3 * F], [2 * F, 2 * F, 2 * F], null, 'within-floor'],
+  [`參考 ${F} / 分支 ${2 * F + 1} 次(超過上限、多 ${F + 1})→ 紅`, [2 * F + 1, 2 * F + 1, 2 * F + 1], [F, F, F], null, 'fail-cap'],
+  ['兩邊相同 → 過(比值 1.00×)', [12, 15, 18], [12, 15, 18], null, 'pass'],
+  // 地板以兩份參考較多的為準;A/A 量不到 / 機制不同 → 只看 ref
+  [`A/A 地板|參考 ${F}、A/A 那份 ${2 * F}、分支 ${3 * F} → 過(對 ref 多 ${2 * F},對較多那份只多 ${F})`, [3 * F, 3 * F, 3 * F], [F, F, F], [2 * F, 2 * F, 2 * F], 'within-floor'],
+  [`A/A 地板|同一組 A/A 那份機制與參考不同(量不到)→ 只看 ref → 紅`, [3 * F, 3 * F, 3 * F], [F, F, F], [2 * F, 2 * F, 2 * F], 'fail-cap', { aaBlockedWhy: '兩份參考的捲動機制不同' }],
+  [`A/A 地板|同一組沒有 A/A 那份 → 紅`, [3 * F, 3 * F, 3 * F], [F, F, F], null, 'fail-cap'],
+  ['參考沒有資料 → no-ref(呼叫端以儀器失效紅)', [40, 40, 40], [], null, 'no-ref'],
+]
+const cbFinal = ([, mine, ref, aa, , opt], decide = checkerboardDecision) => decide({ mine, ref, aa, ...(opt ?? {}) }).verdict
+for (const row of CB_TABLE) { const got = cbFinal(row); const ok = got === row[4]; if (!ok) fail++; console.log(`${ok ? '✓' : '✗'} 持續空白|${row[0]} → ${got}(期望 ${row[4]})`) }
+{
+  // 同碼置換(地板的由來,重算給人看):每一跑的同碼追蹤趟,分成 分支 3 / 參考 3 / A/A 3 的 1,680 種分法(只有 6 趟時 分支 3 / 參考 3 的 20 種、沒有 A/A)。
+  // 地板 F 時必須 0 種紅;地板拿掉(-∞)時比值規則判紅的分法照實印出 —— 量具看得到誤紅(對照組),地板才有意義。
+  const combos = (n, k, s = 0, acc = [], out = []) => { if (acc.length === k) { out.push([...acc]); return out } for (let i = s; i < n; i++) { acc.push(i); combos(n, k, i + 1, acc, out); acc.pop() } return out }
+  const perm = (v, floor) => {
+    let n = 0, red = 0, worst = -Infinity
+    const idx = v.map((_, i) => i)
+    const splits = v.length >= 9
+      ? combos(9, 3).flatMap((b) => { const rest = idx.slice(0, 9).filter((i) => !b.includes(i)); return combos(6, 3).map((c) => { const r = c.map((x) => rest[x]); return [b, r, rest.filter((i) => !r.includes(i))] }) })
+      : combos(v.length, 3).map((b) => [b, idx.filter((i) => !b.includes(i)), null])
+    for (const [b, r, a] of splits) {
+      n++
+      const d = checkerboardDecision({ mine: b.map((i) => v[i]), ref: r.map((i) => v[i]), aa: a ? a.map((i) => v[i]) : null, floor })
+      if (d.verdict.startsWith('fail')) { red++; worst = Math.max(worst, d.floor.excess) }
+    }
+    return { n, red, worst }
+  }
+  const rows = CB.pools.map(([tag, v]) => ({ tag, v, at: perm(v, F), none: perm(v, -Infinity) }))
+  const okP = rows.every((x) => x.at.red === 0) && rows.some((x) => x.none.red > 0) && Math.max(...rows.map((x) => x.none.worst)) <= F
+  if (!okP) fail++
+  console.log(`${okP ? '✓' : '✗'} 持續空白|同碼置換(地板 ${F}):${rows.map((x) => `${x.tag} ${x.v.length} 趟 ${x.at.red}/${x.at.n} 紅(拿掉地板 ${x.none.red} 紅${x.none.red ? `、超出量最大 ${x.none.worst}` : ''})`).join(';')}(地板時必須全 0;拿掉地板時至少一跑 > 0 = 量具看得到誤紅;超出量最大值不得超過地板)`)
+  // 性質(與白幀張數地板同一套,次數版):參考單調、ref / ref~aa 標籤互換不翻轉。保證範圍:兩份參考中位 ≤ 2F —— 地板一過,分支 ≥ 較多那份 + F + 1
+  // ⇒ 對兩份的比值都 > 1.5,fail-cap 不看 A/A,兩種標法都紅;參考中位 > 2F 時比值可能落進 1.25–1.5 灰區,A/A 修正子的對稱只在 A/A 不乾淨時成立
+  // (與空白「中位 ≥ 6 張」同一個邊界;Q2b 合進 main 之後兩邊都在 40 次上下 —— 那一段照實列為邊界,推送後用 CI 的 A/A 資料再核)。
+  // 對照組:「地板只看 ref」的版本在同一批資料上必須抓得到翻轉。
+  let seed = 20261116
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 }
+  const refOnlyFloor = (p) => checkerboardDecision({ ...p, aa: null }) // 對照組:不看 A/A 那份(只看 ref)
+  let swap = 0, mono = 0, swapCtl = 0, n = 0
+  for (let k = 0; k < 20000; k++) {
+    const mk = (lo, hi) => Array.from({ length: 3 }, () => lo + Math.floor(rnd() * (hi - lo + 1)))
+    const ref = mk(0, 2 * F), aa = mk(0, 2 * F)
+    if (median(ref) > 2 * F || median(aa) > 2 * F) continue
+    const mine = mk(0, 5 * F); n++
+    const red = (r, a, decide = checkerboardDecision) => decide({ mine, ref: r, aa: a }).verdict.startsWith('fail')
+    if (red(ref, aa) !== red(aa, ref)) swap++
+    if (red(ref, aa, refOnlyFloor) !== red(aa, ref, refOnlyFloor)) swapCtl++
+    const i = Math.floor(rnd() * 3), worse = [...ref]; worse[i] += 1 + Math.floor(rnd() * 3)
+    if (!red(ref, aa) && red(worse, aa)) mono++
+  }
+  const okQ = swap === 0 && mono === 0 && swapCtl > 0 && n > 10_000
+  if (!okQ) fail++
+  console.log(`${okQ ? '✓' : '✗'} 持續空白|隨機 ${n} 組(兩份參考中位 ≤ ${2 * F}):標籤互換翻轉 ${swap}、參考變差由綠變紅 ${mono}(都必須 0);對照組「地板只看 ref」翻轉 ${swapCtl}(必須 > 0)`)
+}
+{
+  // 可達性:閘的持續空白真的走 checkerboardDecision(經 ratioDecision)、真的呼叫 traceGate、計分追蹤趟真的寫進 traceTrips;ci.yml 的 pinned 步驟要帶 --trace
+  //(這一項只在帶 --trace 的步驟判 —— 拿掉 --trace = 這一項整個不判,所以 ci.yml 那一行是這一項的開關)
+  const sites = countCallSites(gateSrc0, 'checkerboardDecision')
+  const called = /\n {2}if \(REF_LABEL\) traceGate\(\)\n/.test(gateSrc0)
+  const pushes = /traceTrips\.push\(\{ build: build\.label, mode, i, checkerboard:/.test(gateSrc0)
+  const ciYml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
+  const pinnedStep = /node scripts\/data-table-fast-scroll\.mjs --mode=pinned --runs=3[^\n]*\\\n(?:[^\n]*\\\n)*[^\n]*/.exec(ciYml)?.[0] ?? ''
+  const okCi = /--trace=\S+/.test(pinnedStep) && /--ref=main/.test(pinnedStep)
+  const ok = sites >= 1 && called && pushes && okCi && F >= 1
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 可達性:checkerboardDecision ${sites} 個呼叫點;traceGate 有呼叫 ${called ? '是' : '否'};計分追蹤趟寫進 traceTrips ${pushes ? '是' : '否'};ci.yml pinned 步驟帶 --trace 與 --ref ${okCi ? '是' : '否'}`)
+}
+
+// ── 灰區加量要量哪幾份(覆核 MF4;lib extraRoundPlan)── 有沒有 A/A,加量輪數與一輪的預估都一樣 ──
+{
+  const isAA = (l) => l === 'main~aa'
+  const noAA = (l) => l === '(沒有 A/A)'
+  const trips = [{ label: 'main', ms: 8100 }, { label: 'branch', ms: 7900 }, { label: 'main~aa', ms: 39_500 }] // A/A 那份剛好有一趟等頭像 39.5 秒
+  const withAA = extraRoundPlan({ labels: ['main', 'branch', 'main~aa'], isAA, trips })
+  const without = extraRoundPlan({ labels: ['main', 'branch'], isAA: noAA, trips: trips.filter((t) => t.label !== 'main~aa') })
+  const XR = [
+    ['有 A/A:加量輪只量 main、branch', withAA.run.join(','), 'main,branch'],
+    ['有 A/A:一輪預估 = 最慢那趟(只看要量的兩份)8.1 秒 × 2 = 16.2 秒(A/A 那趟 39.5 秒不算)', withAA.estRoundMs, 16_200],
+    ['沒有 A/A:同樣 16.2 秒', without.estRoundMs, 16_200],
+    ['只有 A/A 那份有趟 → 估不出(NaN,不開輪)', Number.isNaN(extraRoundPlan({ labels: ['main', 'branch', 'main~aa'], isAA, trips: [{ label: 'main~aa', ms: 5000 }] }).estRoundMs), true],
+  ]
+  for (const [name, got, want] of XR) { const ok = got === want; if (!ok) fail++; console.log(`${ok ? '✓' : '✗'} 加量份數|${name} → ${got}(期望 ${want})`) }
+  // 序列:同一個 job、三種跑法都落灰區(R1d 自己的 needs-more)、共用帳本 —— 有 A/A 與沒有 A/A 加量的輪數逐輪相同
+  const simulate = (plan) => {
+    let text = null; const steps = []
+    for (const mode of ['gesture', 'mouse', 'pinned']) {
+      for (let extra = 1; ; extra++) {
+        const ledger = readExtraLedger(text, 'K')
+        const nx = nextExtraRound({ extra, pendingCount: 1, anyFail: false, spentMs: ledger.spentMs, estRoundMs: plan.estRoundMs })
+        if (!nx.go) { steps.push(`${mode} 停(${nx.why})`); break }
+        text = JSON.stringify(chargeExtraLedger(ledger, mode, plan.estRoundMs)); steps.push(`${mode} +${plan.run.length} 份`)
+      }
+    }
+    return steps.join(' → ')
+  }
+  const sWith = simulate(withAA), sWithout = simulate(without)
+  // 對照組:修前的做法(三份都重跑、估一輪用 3 份與 A/A 那趟)→ 輪數變少
+  const sOld = simulate({ run: ['main', 'branch', 'main~aa'], estRoundMs: estimateRoundMs(trips.map((t) => t.ms), 3) })
+  const ok = sWith === sWithout && sOld !== sWith
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 加量份數|有 A/A:${sWith};沒有 A/A:${sWithout}(必須相同);修前做法:${sOld}(必須不同)`)
+  // A/A 修正子不產生 needs-more:3000 組隨機,最終判定是 needs-more ⇔ R1d 自己判 needs-more
+  let seed = 20261117
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 }
+  let mismatch = 0, nm = 0
+  for (let k = 0; k < 3000; k++) {
+    const mk = () => Array.from({ length: 1 + Math.floor(rnd() * 5) }, () => +(1 + rnd() * 399).toFixed(1))
+    const mine = mk(); const ref = mk(); const aa = mk()
+    for (const cap of [true, false]) {
+      const d = refRatioDecision(mine, ref, { canAddMore: true, capNeedsNoiseSupport: cap })
+      const f = combineWithAA(d, aaNoise(ref, aa, { capNeedsNoiseSupport: cap }), { mineVals: mine, capNeedsNoiseSupport: cap })
+      if (d.verdict === 'needs-more') nm++
+      if ((f.verdict === 'needs-more') !== (d.verdict === 'needs-more')) mismatch++
+    }
+  }
+  const ok2 = mismatch === 0 && nm > 100
+  if (!ok2) fail++
+  console.log(`${ok2 ? '✓' : '✗'} 加量份數|A/A 修正子不產生、也不吃掉 needs-more(3000 組 × 兩種 capNeedsNoiseSupport,不一致 ${mismatch} 組;R1d 待決 ${nm} 組)`)
+}
+
+// ── A/A 修正子的判定表(2026-11-16,A28;lib aaNoise / combineWithAA)──────────────────────────────────────
+// 前三列是真實 CI 數字(逐列註明 commit);**A/A 欄是構造的**(當時閘還沒有 A/A):74ac03eb 相對 4f692d17 零個執行期檔案改動
+// (52ec0b6a commit message),分支三趟本來就是同一份程式碼的另一份樣本,拿來當 `main~aa`;8dc9faa7 是 Q2b 退回後那一跑
+// (分支與 main 差在與捲動無關的排序 / 規格 commit),同樣拿分支三趟當同碼樣本。daae06da 的乾淨 A/A 是合成的(main 三趟 ±7%)。
+// 其餘是合成列,各自守一個突變(見下方 MUTANTS)。覆核 MF1 / MF2 的反例(`/tmp/claude-501/rv/aa-dir.mjs`、`aa-blank.mjs`)原樣列進來,
+// 並補對稱列(同一組數字把 main 與 main~aa 對調,判定不得翻轉)。[名稱, branch, ref, ref~aa, capNeedsNoiseSupport, canAddMore, 期望最終判定]
+const AA_TABLE = [
+  ['74ac03eb mouse 長工合計 1.32× 完全分開;同碼 A/A 1.32× → 分支對 main~aa 1.00× 過 → 不指控', [1747, 1466, 1206], [1060, 1111, 1181], [1747, 1466, 1206], true, false, 'aa-noisy'],
+  ['8dc9faa7 gesture 幀距 1.80×(對數 t p = 0.050);同碼 A/A 1.80× → 分支對 main~aa 1.00× 過 → 不指控', [188, 148, 117], [82, 129, 74], [188, 148, 117], true, false, 'aa-noisy'],
+  ['daae06da mouse 幀距 1.29× 完全分開 + 乾淨 A/A(0.98×)→ 照紅', [163.5, 182.1, 190.4], [127.5, 157.8, 141.2], [131.9, 150.6, 139.0], true, false, 'fail-separated'],
+  ['合成 2× 回歸 + A/A 1.15(不乾淨)→ 分支對 main~aa 也 1.74× 分得開,兩份都紅 → 照紅', [200, 210, 195], [100, 104, 98], [115, 118, 112], true, false, 'fail-cap'],
+  // 覆核 MF1:第一版把這一列寫成「A/A 方向相反也算不乾淨 → 1.32× 不指控」—— 分支對 main~aa 是 1466 / 890 = 1.65×、三趟完全分開,
+  // 分支比兩份參考都慢。公式取 |ln A/A| 之後「這一跑參考偏慢」反而讓分支更容易過。改成「兩份都紅才紅」後照紅。
+  ['A/A 方向相反(main~aa 比 main 快 0.80×)→ 不乾淨;但分支對 main~aa 1.65× 完全分開,兩份都紅 → 照紅', [1747, 1466, 1206], [1060, 1111, 1181], [850, 890, 900], true, false, 'fail-separated'],
+  ['對稱列:同一組數字把 main 與 main~aa 對調(main 850 / 890 / 900、main~aa 1060 / 1111 / 1181)→ 照紅(標籤互換不翻轉)', [1747, 1466, 1206], [850, 890, 900], [1060, 1111, 1181], true, false, 'fail-cap'],
+  ['main~aa 比 main 慢(1.26×)而分支沒慢過 main~aa(1.09×)→ 不指控', [1747, 1466, 1206], [1060, 1111, 1181], [1300, 1350, 1400], true, false, 'aa-noisy'],
+  ['main~aa 比 main 快(0.84×)但有一趟離群 140,分支對 main~aa 分不開 → 不指控(偏差取絕對值:快也是量不準)', [130, 131, 132], [100, 101, 102], [80, 85, 140], true, false, 'aa-noisy'],
+  ['審查反例 aa-dir 1:分支 128 / 130 / 132、main 98 / 100 / 102、main~aa 78 / 80 / 82(A/A 0.80×)→ 對 main 1.30× 分得開、對 main~aa 1.63× → 照紅', [128, 130, 132], [98, 100, 102], [78, 80, 82], true, false, 'fail-separated'],
+  ['審查反例 aa-dir 2(aa-dir 1 的標籤互換)→ 照紅', [128, 130, 132], [78, 80, 82], [98, 100, 102], true, false, 'fail-cap'],
+  ['審查反例 aa-dir 3:長工形狀 分支 180、main 124、main~aa 100(1.45× / 1.80×)→ 照紅', [178, 180, 182], [122, 124, 126], [98, 100, 102], true, false, 'fail-separated'],
+  ['A/A 中位數 1.01×(一趟離群 2400)→ 乾淨,1.32× 照紅(A/A 取中位數,不取平均)', [1747, 1466, 1206], [1060, 1111, 1181], [1050, 1120, 2400], true, false, 'fail-separated'],
+  ['A/A 1.15×(用掉門檻一半以上)→ 不乾淨;分支對 main~aa 1.15× 過 → 不指控', [1747, 1466, 1206], [1060, 1111, 1181], [1220, 1278, 1300], true, false, 'aa-noisy'],
+  ['分支 1.08× → 過,A/A 不乾淨也不改變', [110, 115, 105], [100, 104, 98], [150, 160, 155], true, false, 'pass'],
+  ['A/A 那份沒有可用的趟 → 照 R1d 紅(沒量到不當乾淨也不當放行)', [1747, 1466, 1206], [1060, 1111, 1181], [], true, false, 'fail-separated'],
+  // 覆核 MF4:第一版這一列期望 needs-more(A/A 不乾淨也能加量)—— 加量只由 R1d 自己的 needs-more 觸發,aa-noisy 是終判
+  ['不乾淨 A/A + 還能加量 → 仍是 aa-noisy(加量只由 R1d 自己的 needs-more 觸發,A/A 不吃加量預算)', [1747, 1466, 1206], [1060, 1111, 1181], [1747, 1466, 1206], true, true, 'aa-noisy'],
+  ['空白(不放寬那一項)3.1× + A/A 1.15 → 照紅', [300, 310, 320], [100, 105, 110], [115, 121, 126], false, false, 'fail-cap'],
+  // 覆核 MF2(/tmp/claude-501/rv/aa-blank.mjs):空白超過上限不看分布,A/A 也不得放寬(1.5–2× 這一段第一版沒人守)
+  ['審查反例 aa-blank 1:空白 main 20 / 21 / 22、分支 32 / 33 / 34(1.57×,不放寬)+ A/A 1.29× 不乾淨 → 照紅', [32, 33, 34], [20, 21, 22], [26, 27, 28], false, false, 'fail-cap'],
+  ['審查反例 aa-blank 2:空白分支 40 / 41 / 42(1.95×)+ A/A 1.57× 不乾淨 → 照紅', [40, 41, 42], [20, 21, 22], [32, 33, 34], false, false, 'fail-cap'],
+  ['對照:同一組數字換成長工合計(放寬那一類)→ 分支對 main~aa 1.22× 過 → 不指控(只有空白不放寬)', [32, 33, 34], [20, 21, 22], [26, 27, 28], true, false, 'aa-noisy'],
+]
+const aaFinal = ([, mine, ref, aa, cap, canAddMore]) => combineWithAA(refRatioDecision(mine, ref, { canAddMore, capNeedsNoiseSupport: cap }), aaNoise(ref, aa, { capNeedsNoiseSupport: cap }), { mineVals: mine, capNeedsNoiseSupport: cap }).verdict
+for (const row of AA_TABLE) {
+  const got = aaFinal(row)
+  const ok = got === row[6]
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} A/A 判定|${row[0]} → ${got}(期望 ${row[6]})`)
+}
+{
+  // branch 對 ref 的判定逐位元不變:A/A 乾淨(或量不到)時,最終判定 = R1d 判定。固定種子 3000 組。
+  let seed = 20261116
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 }
+  let changed = 0, cleanSeen = 0
+  for (let k = 0; k < 3000; k++) {
+    const mk = () => Array.from({ length: 1 + Math.floor(rnd() * 5) }, () => +(1 + rnd() * 399).toFixed(1))
+    const mine = mk(); const ref = mk()
+    const aa = ref.map((v) => +(v * (0.97 + rnd() * 0.06)).toFixed(1)) // 乾淨:每趟 ±3%
+    for (const cap of [true, false]) {
+      const d = refRatioDecision(mine, ref, { canAddMore: false, capNeedsNoiseSupport: cap })
+      const n = aaNoise(ref, aa, { capNeedsNoiseSupport: cap })
+      if (n.clean) cleanSeen++
+      if (n.clean && combineWithAA(d, n, { mineVals: mine, capNeedsNoiseSupport: cap }).verdict !== d.verdict) changed++
+      if (combineWithAA(d, null, { mineVals: mine, capNeedsNoiseSupport: cap }).verdict !== d.verdict) changed++
+    }
+  }
+  const ok = changed === 0 && cleanSeen > 1000
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} A/A 判定|A/A 乾淨或量不到時與 R1d 逐位元相同(3000 組 × 兩種 capNeedsNoiseSupport,不同 ${changed} 組;乾淨 A/A ${cleanSeen} 組)`)
+  // A/A 只會讓紅變不紅(不會讓不紅變紅);而且標籤互換對稱:同一組 (branch, x, y),「ref = x、ref~aa = y」與「ref = y、ref~aa = x」
+  // 在 A/A 不乾淨時最終是不是紅必須相同(覆核 MF1:第一版同一份證據只因標籤互換就翻轉)。對稱只檢查 A/A 會當修正子的那一類
+  // (capNeedsNoiseSupport: true);空白超過上限不看分布(覆核 MF2),那一條以 ref 為準、A/A 不參與,本來就不對稱,不在此列。
+  let extraRed = 0, swapFlip = 0, unclean = 0
+  for (let k = 0; k < 3000; k++) {
+    const mk = () => Array.from({ length: 1 + Math.floor(rnd() * 5) }, () => +(1 + rnd() * 399).toFixed(1))
+    const mine = mk(); const ref = mk(); const aa = mk()
+    const cap = k % 2 === 0
+    const final = (r, a) => combineWithAA(refRatioDecision(mine, r, { canAddMore: false, capNeedsNoiseSupport: cap }), aaNoise(r, a, { capNeedsNoiseSupport: cap }), { mineVals: mine, capNeedsNoiseSupport: cap }).verdict
+    const d = refRatioDecision(mine, ref, { canAddMore: false, capNeedsNoiseSupport: cap })
+    const f1 = final(ref, aa), f2 = final(aa, ref)
+    if (!d.verdict.startsWith('fail') && f1.startsWith('fail')) extraRed++
+    const n = aaNoise(ref, aa, { capNeedsNoiseSupport: cap })
+    if (cap && n.available && !n.clean) { unclean++; if (f1.startsWith('fail') !== f2.startsWith('fail')) swapFlip++ }
+  }
+  const ok2 = extraRed === 0 && swapFlip === 0 && unclean > 500
+  if (!ok2) fail++
+  console.log(`${ok2 ? '✓' : '✗'} A/A 判定|A/A 不會讓原本不紅的變紅(3000 組隨機 A/A,多紅 ${extraRed} 組);A/A 不乾淨時 main 與 main~aa 標籤互換、紅不紅不翻轉(長工合計 / 幀距那一類不乾淨 ${unclean} 組,翻轉 ${swapFlip} 組)`)
+  // 拉丁方輪轉:三份時每一份在每個位置各出現一次;兩份時與舊的 ABBA 逐位元相同
+  const L = ['main', 'branch', 'main~aa']
+  const pos = L.map((b) => [1, 2, 3].map((i) => roundOrderOf(L, i).indexOf(b)).sort().join(''))
+  const abba = [1, 2, 3, 4].map((i) => roundOrderOf(['a', 'b'], i).join('')).join(',')
+  const okL = pos.every((p) => p === '012') && abba === 'ab,ba,ab,ba'
+  if (!okL) fail++
+  console.log(`${okL ? '✓' : '✗'} A/A 輪轉|三份三輪每份在每個位置各一次(${pos.join(' / ')});兩份 ${abba}`)
+}
+// ── 突變測試(M32「弄壞會紅」):把 lib 的 A/A、參考為 0、G-P、加量份數那幾行各改壞一處,對應的判定表必須至少一列不符 ──
+// 突變版寫到固定路徑(node_modules/.cache,與 test-gen-design-system-barrel 同一個做法:被啟動的檔路徑必須能被 harness 來源清單靜態審查),
+// 檔尾附一段讀判定表、印每張表結果的程式;未突變的原樣也跑一次,證明這個量具本身量得到「全部相符」。
+{
+  const libSrc = readFileSync(new URL('./lib/fast-scroll-gate-policy.mjs', import.meta.url), 'utf8')
+  const MUTANT_FILE = join(import.meta.dirname, '..', 'node_modules', '.cache', 'fast-scroll-aa-mutant.mjs')
+  // G-P / A/A 機制 / 加量份數的小表:[種類, 引數, 期望](輸出一律轉成字串比)
+  const GP_MUT = [
+    ['cmp', ['blank', [false], [true]], 'false/gp-missed'],
+    ['cmp', ['frameGap', [true], [false]], 'false/ref-native-mine-forwarding'],
+    ['cmp', ['frameGap', [null], [true]], 'false/unreadable'],
+    ['cmp', ['frameGap', [true], [true]], 'true/same'],
+    ['ptr', [{ refPointer: 'center' }, { ref: 'main', aa: 'main~aa' }], 'main,main~aa'],
+    ['aam', [[true], [false]], 'false'],
+    ['aam', [[true], [true]], 'true'],
+  ]
+  const XR_MUT = [
+    [['main', 'branch', 'main~aa'], 'main~aa', [{ label: 'main', ms: 8100 }, { label: 'branch', ms: 7900 }, { label: 'main~aa', ms: 39_500 }], 'main,branch|16200'],
+  ]
+  const FOOTER = `\nimport { readFileSync as __mutRead } from 'node:fs'\n{\n  const t = JSON.parse(__mutRead(process.argv[2], 'utf8'))\n  const out = {\n    aa: t.aa.map(([, mine, ref, aa, cap, canAddMore]) => combineWithAA(refRatioDecision(mine, ref, { canAddMore, capNeedsNoiseSupport: cap }), aaNoise(ref, aa, { capNeedsNoiseSupport: cap }), { mineVals: mine, capNeedsNoiseSupport: cap, canAddMore }).verdict),\n    bf: t.bf.map(([, mine, ref, aa, , opt]) => blankDecision({ mine, ref, aa, ...(opt ?? {}) }).verdict),\n    lr: t.lr.map(([, series]) => String(longestBlankRun(series))),\n    gp: t.gp.map(([kind, a]) => kind === 'cmp' ? (({ compare, why }) => compare + '/' + why)(pinnedComparable(...a)) : kind === 'ptr' ? gpPointerLabels(...a).join(',') : String(aaMechanismCheck(...a).same)),\n    xr: t.xr.map(([labels, aaLabel, trips]) => (({ run, estRoundMs }) => run.join(',') + '|' + estRoundMs)(extraRoundPlan({ labels, isAA: (l) => l === aaLabel, trips }))),\n    cb: t.cb.map(([, mine, ref, aa, , opt]) => checkerboardDecision({ mine, ref, aa, ...(opt ?? {}) }).verdict),\n  }\n  process.stdout.write(JSON.stringify(out))\n}\n`
+  // JSON 沒有 NaN:白幀張數「沒量到」的 NaN 寫成 null,突變版讀回來是 null —— 對 blankDecision 等價(都不是有限數)
+  const tables = { aa: AA_TABLE, bf: BLANK_TABLE, lr: RUN_TABLE, gp: GP_MUT, xr: XR_MUT, cb: CB_TABLE }
+  const want = { aa: AA_TABLE.map((r) => r[6]), bf: BLANK_TABLE.map((r) => r[4]), lr: RUN_TABLE.map((r) => String(r[2])), gp: GP_MUT.map((r) => r[2]), xr: XR_MUT.map((r) => r[3]), cb: CB_TABLE.map((r) => r[4]) }
+  const label = { aa: AA_TABLE.map((r) => r[0]), bf: BLANK_TABLE.map((r) => r[0]), lr: RUN_TABLE.map((r) => r[0]), gp: GP_MUT.map((r) => `${r[0]} ${JSON.stringify(r[1])}`), xr: XR_MUT.map(() => '加量份數'), cb: CB_TABLE.map((r) => r[0]) }
+  const MUTANTS = [
+    // [名稱, 突變, 必須紅的那張表(null = 原樣、全部都必須相符)]
+    ['原樣(量具對照:必須全部相符)', (s) => s, null],
+    ['A/A|拿掉 A/A(不乾淨也照紅)', (s) => s.replace('  if (!aa || !aa.available || aa.clean) return out\n', '  return out\n'), 'aa'],
+    ['A/A|偏差改帶號(不取絕對值)', (s) => s.replace('const a = Math.abs(Math.log(ratio))', 'const a = Math.log(ratio)'), 'aa'],
+    ['A/A|不取中位數(改平均)', (s) => s.replace('const mr = ref.length ? median(ref) : NaN, ma = aa.length ? median(aa) : NaN', 'const mr = ref.length ? ref.reduce((x, y) => x + y, 0) / ref.length : NaN, ma = aa.length ? aa.reduce((x, y) => x + y, 0) / aa.length : NaN'), 'aa'],
+    // 突變值用 join 拼(不寫成「常數 = 值」的字面,named-constant-drift 才不會把突變當成第二份常數)
+    ['A/A|½ 改成 1(A/A 用掉整個門檻才算不乾淨)', (s) => s.replace(`export const AA_NOISE_SHARE = ${AA_NOISE_SHARE}`, ['export', 'const', 'AA_NOISE_SHARE', '=', 2 * AA_NOISE_SHARE].join(' ')), 'aa'],
+    ['MF1|只對 ref 比(改回第一版 e − |ln A/A| > ln 1.25)', (s) => s.replace("  const vsAA = refRatioDecision(mineVals, aa.aaVals, { limit, canAddMore: false, capNeedsNoiseSupport })\n  if (vsAA.verdict.startsWith('fail')) return { ...out, beyondAA: true, vsAA }", '  const vsAA = null\n  if (Math.log(d.mineMedian / d.refMedian) - aa.a > Math.log(limit)) return { ...out, beyondAA: true, vsAA }'), 'aa'],
+    ['MF2|不放寬的那一項也讓 A/A 放寬(拿掉 capBasis 檢查)', (s) => s.replace("  if (d.capBasis === 'no-noise-allowance') return out\n", ''), 'aa'],
+    ['MF4|aa-noisy 能加量時改回 needs-more', (s) => s.replace('export function combineWithAA(d, aa, { mineVals, capNeedsNoiseSupport, limit = BLANK_RATIO_LIMIT } = {}) {', 'export function combineWithAA(d, aa, { mineVals, capNeedsNoiseSupport, limit = BLANK_RATIO_LIMIT, canAddMore = false } = {}) {').replace("  return { ...out, verdict: 'aa-noisy', aaNoisy: true, vsAA }", "  return { ...out, verdict: canAddMore ? 'needs-more' : 'aa-noisy', aaNoisy: true, vsAA }"), 'aa'],
+    ['MF4|加量輪三份都重跑(A/A 那份也進加量)', (s) => s.replace('  const run = labels.filter((l) => !isAA(l))', '  const run = labels'), 'xr'],
+    // 覆核二 MF-R1 / SF-R2(白幀張數地板):改回舊式子(參考 > 0 只看比值、參考 0 → 毫秒 > 2 × 平均幀距)= 上方 blankDecisionOld 的原始碼原樣換進去
+    ['MF-R1|改回舊式子(修補前那一版)', (s) => s.replace(/export function blankDecision\([\s\S]*?\n\}\n/, `export ${blankDecisionOld.toString().replace('function blankDecisionOld(', 'function blankDecision(')}\n`), 'bf'],
+    ['MF-R1|拿掉地板(比值判紅就紅)', (s) => s.replace('  if (floor.excess > frames) return out\n', '  return out\n'), 'bf'],
+    ['MF-R1|地板只看 ref(不看 A/A 那份)', (s) => s.replace('  floor.baseRun = Number.isFinite(floor.aaRun) ? Math.max(floor.refRun, floor.aaRun) : floor.refRun', '  floor.baseRun = floor.refRun'), 'bf'],
+    ['MF-R1|地板 2 張改成 3 張', (s) => s.replace(`export const ZERO_REF_BLANK_FRAMES = ${ZERO_REF_BLANK_FRAMES}`, ['export', 'const', 'ZERO_REF_BLANK_FRAMES', '=', ZERO_REF_BLANK_FRAMES + 1].join(' ')), 'bf'],
+    ['MF-R1|沒有白幀序列當成過(沒量到 → 放行)', (s) => s.replace("  if (!Number.isFinite(floor.excess)) return { ...out, verdict: 'no-scale', ratioVerdict: d.verdict }", "  if (!Number.isFinite(floor.excess)) return { ...out, verdict: 'within-floor', ratioVerdict: d.verdict }"), 'bf'],
+    ['SF-R2|最長連續改成總白幀數', (s) => s.replace('  for (const v of series) { if (v > 0) { run++; if (run > best) best = run } else run = 0 }', '  for (const v of series) { if (v > 0) { run++; if (run > best) best = run } }'), 'lr'],
+    ['SF1|G-P 沒套上當成「這一側沒有同機制路徑」', (s) => s.replace("ref === false && mine === true ? 'gp-missed'", "ref === false && mine === true ? 'ref-native-mine-forwarding'"), 'gp'],
+    ['SF2|G-P 只移參考、A/A 那份不移', (s) => s.replace('[ref, aa].filter(Boolean)', '[ref].filter(Boolean)'), 'gp'],
+    ['SF2|A/A 兩份機制不比', (s) => s.replace('  return { same: ref !== null && ref === aa, ref, aa }', '  return { same: true, ref, aa }'), 'gp'],
+    // 持續空白(checkerboard 次數,A25 覆核二修補):地板放大到擋不住 Q2b、次數不進地板、A/A 那份不傳 —— 各讓 cb 表紅
+    ['持續空白|地板放大 10 倍', (s) => s.replace(`export const CHECKERBOARD_FLOOR = ${CHECKERBOARD_FLOOR}`, ['export', 'const', 'CHECKERBOARD_FLOOR', '=', CHECKERBOARD_FLOOR * 10].join(' ')), 'cb'],
+    ['持續空白|次數不進地板(地板單位恆 0)', (s) => s.replace('xs.map((c) => ({ ms: c, run: c }))', 'xs.map((c) => ({ ms: c, run: 0 }))'), 'cb'],
+    ['持續空白|A/A 那份不傳(地板只看 ref)', (s) => s.replace('aa: trips(aa), aaBlockedWhy', 'aa: null, aaBlockedWhy'), 'cb'],
+  ]
+  const rowsFile = join(mkdtempSync(join(tmpdir(), 'fast-scroll-aa-table-')), 'rows.json')
+  writeFileSync(rowsFile, JSON.stringify(tables))
+  mkdirSync(dirname(MUTANT_FILE), { recursive: true })
+  for (const [name, mutate, mustBreak] of MUTANTS) {
+    const src = mutate(libSrc)
+    if (mustBreak && src === libSrc) { console.log(`✗ 突變|${name}:突變沒套上(找不到要改的那一行)—— 這個突變測試是空的`); fail++; continue }
+    writeFileSync(MUTANT_FILE, src + FOOTER)
+    const r = spawnSync(process.execPath, ['--', MUTANT_FILE, rowsFile], { encoding: 'utf8' })
+    let got = null
+    try { got = JSON.parse(r.stdout) } catch { /* 下面判 */ }
+    if (!got || typeof got !== 'object') { console.log(`✗ 突變|${name}:突變版跑不起來(exit ${r.status})${(r.stderr || '').split('\n')[0]}`); fail++; continue }
+    const wrongOf = (k) => want[k].map((w, i) => [label[k][i], w, got[k]?.[i]]).filter(([, w, g]) => w !== g)
+    const wrong = mustBreak ? wrongOf(mustBreak) : Object.keys(want).flatMap(wrongOf)
+    const ok = mustBreak ? wrong.length > 0 : wrong.length === 0
+    if (!ok) fail++
+    console.log(`${ok ? '✓' : '✗'} 突變|${name} → ${mustBreak ? `${mustBreak} 表` : '全部表'} ${wrong.length} 列不符${wrong.length ? `(例:${wrong[0][0]} 期望 ${wrong[0][1]} 得 ${wrong[0][2]})` : ''}${mustBreak ? '(必須 ≥ 1)' : '(必須 0)'}`)
+  }
+  rmSync(MUTANT_FILE, { force: true })
+}
+{
+  // 可達性:閘真的用 lib 的 A/A(呼叫點不含 import)
+  const sites = Object.fromEntries(['aaNoise', 'combineWithAA', 'roundOrderOf'].map((n) => [n, countCallSites(gateSrc0, n)]))
+  const addsAA = /BUILDS\.push\(\{ label: AA_LABEL, dir: refBuild\.dir, aa: true \}\)/.test(gateSrc0)
+  const ok = Object.values(sites).every((c) => c >= 1) && addsAA
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 可達性:A/A ${Object.entries(sites).map(([n, c]) => `${n} ${c} 個`).join('、')}呼叫點;有 --ref 時自動加 A/A 那份建置 ${addsAA ? '是' : '否'}`)
 }
 
 console.log(fail ? `\n✗ ${fail} 項判定不符` : '\n✓ 判定政策對照組全過:該紅的紅、該綠的綠(含呼叫端行為)')
