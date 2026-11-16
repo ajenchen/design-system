@@ -1447,7 +1447,7 @@
     {
       "schemaVersion": 1,
       "file": "references/ds-removed-names.json",
-      "sha256": "34f3ab9833b2537c1d4d8592a3902f1d94a977318851a5da7249800633224817",
+      "sha256": "34f52adca37e01213656bb253328b7e86dcc40080f6b1342f48f5120ef7078a0",
       "source": "packages/design-system/ds-changes.json",
       "classification": null,
       "destination": null

@@ -307,7 +307,7 @@
       "since": "0.1.0-beta.149",
       "id": "0.1.0-beta.149/AgentDecisionCardProps.onSkip",
       "to": "onCancel",
-      "do": "onSkip(answers) 改成必填的 onCancel(),不帶參數:取消 = 不回答、不送任何答案(舊的 onSkip 會把預選值當答案交出去)。處理函式要改成不收答案。",
+      "do": "onSkip(answers) 改成必填的 onCancel(),不帶參數:標題列 × 與焦點在卡片裡按 Esc 都是取消 = 不回答、不送任何答案(舊的 onSkip 會把預選值當答案交出去)。處理函式改成不收答案;接 AI 的產品端在這裡把 agentDecisionCancelMessage(questions) 當作這次提問的結果交給 AI,不要自己補答案。",
       "spec": "src/components/AgentPanel/agent-decision-card.spec.md「取消」"
     },
     {
@@ -367,7 +367,7 @@
       "since": "0.1.0-beta.149",
       "id": "0.1.0-beta.149/DataTableColumnVisibilityPanelProps.resettable",
       "to": null,
-      "do": "resettable 刪除。改傳 defaultVisibility / defaultColumnOrder(產品存的那一份預設),跟它不同時面板才出現「恢復預設」。",
+      "do": "resettable 刪除。改傳 defaultVisibility / defaultColumnOrder(產品存的那一份預設),跟它不同時面板才出現「恢復預設」;兩個都不傳就沒有這顆。按下會把顯示 / 隱藏與順序一起還原成那一份(沒傳 defaultColumnOrder = columns 的順序、鎖定欄在最前),不再是「全部顯示」。",
       "spec": "src/components/DataTable/data-table.spec.md「Header 恢復預設 / 清除全部」"
     },
     {
