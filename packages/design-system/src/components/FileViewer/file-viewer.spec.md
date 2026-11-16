@@ -291,7 +291,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 - **選到就露出來**:目前那張(`aria-current`)置中 —— 切換檔案(點縮圖、← →、程式改 index)、Tab 鍵焦點移到縮圖、視窗縮放都觸發,兩端到底時夾住;用 `horizontal-overflow` 的 `useRevealSelected`(契約與 user 選 B 的原話見 `horizontal-overflow.spec.md`「選到就露出來」)。2026-11-11 前這裡自己寫一份 `scrollIntoView`,只看 `activeIndex`:縮放視窗後目前那張不會回到中央(修前建置實測,閘 `overflow-reveal-selected` 的對照組),Tab 鍵焦點移到半露的縮圖也只靠瀏覽器(Chromium 對水平部分可見的項目 focus 不捲)
 - **消費 `horizontal-overflow` pattern**:隱藏 native scrollbar + fade-mask + scroll arrows(canScroll 時)
 - **Thumb 內容**:image 用 `<img object-cover>`;非 image 用 FileText icon + ext label
-- **A11y**:整個 strip `role="group"` + `aria-label`,每個 thumb `<button>` + `aria-current`(當前)。**非 `tablist`**——filmstrip 是「選圖導航」非「切換 N 個 tabpanel」,lightbox 單一 viewport 不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving)。對齊 APG grouped-carousel(https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)+ PhotoSwipe / codeaccessible.com lightbox 共識(2026-06-01 M26 source-verified)
+- **A11y**:整個 strip `role="group"` + `aria-label`,每個 thumb `<button>` + `aria-current`(當前)。**非 `tablist`**——filmstrip 是「選圖導航」非「切換 N 個 tabpanel」,lightbox 單一 viewport 不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving)。對齊 APG grouped-carousel(https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)(2026-06-01 另查兩家 lightbox 也同此做法,當時沒留一手網址,2026-11-16 不再列名)
 
 ---
 

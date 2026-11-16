@@ -53,9 +53,9 @@ Source(AI 讀此看官方範例): src/components/Badge/
 
 ### Variants
 - **critical**: 最高優先級通知 — 錯誤計數 / 緊急徽章（例:未讀通知紅點）
-- **high**: 高優先級通知 — 主要計數（Slack 訊息計數 / GitHub PR review badge）
-- **medium**: 中優先級提示 — 次級計數（Linear issue count / Notion sidebar indicator）
-- **low**: 低強度指示 — 使用者切 tab 才看（Slack sidebar 靜默標記 / VS Code tab modified dot）
+- **high**: 高優先級通知 — 主要計數（訊息未讀數 / 待審 PR 數）
+- **medium**: 中優先級提示 — 次級計數（議題數 / 側欄頁面上的提示點）
+- **low**: 低強度指示 — 使用者切 tab 才看（側欄靜默標記 / 分頁「已修改」小點）
 
 ## Breadcrumb(family composite)
 

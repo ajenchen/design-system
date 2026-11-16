@@ -190,9 +190,8 @@ Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與�
 
 世界級對照:
 - **Material UI**:`maxItems=8` declarative auto-collapse(`maxItems = 8`,https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Breadcrumbs/Breadcrumbs.js#L90;no per-item width rule)
-- **Polaris**:點 ⋯ DropdownMenu 展開
 - **Atlassian**:中段 ⋯ + dropdown(@atlaskit/breadcrumbs 17.8.6 新版在 `platform_dst_breadcrumbs-refresh` 旗標下,⋯ 用 `DropdownMenu`,https://cdn.jsdelivr.net/npm/@atlaskit/breadcrumbs@17.8.6/dist/es2019/components/internal/ellipsis-popup.js)
-- **GitHub / Notion / Linear / Apple Finder**:auto truncate 中段
+- 原列的另外五家(點 ⋯ 展開 / 中段自動截斷)沒有一手來源,2026-11-16 撤回
 - Per-item width(flex-shrink hierarchy)無世界級 source 可考(**unverified**)— 本 DS 自有設計,依據詳上方「為何 flex-shrink hierarchy 不用 fixed max-width」
 
 ## Title-breadcrumb-end 同步 canonical(2026-05-10 新增)

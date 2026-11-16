@@ -100,11 +100,7 @@ Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editabl
 | DS | Loading input 做法 | 流派 |
 |----|-------------------|------|
 | Ant Input.Search | **input 仍 editable**,搜尋鈕轉圈;Enter 送出另鎖([Search.tsx#L167-L172](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L167-L172)、[#L229](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L229)) | editable |
-| Material TextField | readonly + suffix adornment loader | readonly |
-| Polaris TextField | readonly + helpText 提示 | readonly |
-| Carbon TextInput | readonly + inline Loading | readonly |
-| Atlassian TextField | disabled | disabled(少數派) |
-| Apple HIG UITextField | visual overlay only,不阻礙輸入 | editable |
+| (原列的另外五家) | 讀取中改唯讀 / 停用 / 只疊視覺不阻礙輸入 —— 都沒有一手來源,2026-11-16 撤回 | — |
 
 **本 DS 採 editable 派**(同 Ant Input.Search,出處見上表)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/input/Search.tsx#L167-L172)):
 - **UX 理由**:debounce 搜尋場景,user 邊打邊看建議,凍結一格會卡節奏;async validation 若第一次失敗,user 該能立即改,不是等 spinner 完才能動
@@ -256,7 +252,7 @@ consumer 明寫的 `style.width` 仍勝過它。全 DS 尺寸參數的命名規�
 - **WCAG**:2.4.7 只要求**鍵盤**焦點可見 ——「Any keyboard operable user interface has a mode of operation where the keyboard focus indicator is visible.」;Understanding 對滑鼠:「While not normatively required, authors may consider still providing an explicit focus indicator for these cases.」(https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html)。鍵盤 Tab 時的 1px 主色邊框保留,所以合規。
 - **閘**:`scripts/readonly-focus-pointer-invariant.mjs`(16 個唯讀欄位 × 滑鼠點 / 點標籤 / 點過按 Shift / Tab 後再點 / Tab / 點過按鍵,+ 同頁可編輯欄位滑鼠點仍亮;對照組:還原舊 CSS、拿掉 guard)。
 
-> **訂正歷程**:(1) 2026-09-10:原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。(2) 同日上午先補成全域外描邊,user 指出「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？對吧？」—— 長相改成邊框轉色;觸發條件順帶寫成 `focus-within`(滑鼠鍵盤都亮)並在本段寫「勿宣稱僅鍵盤」—— 那是 **AI 推導,不是 user 原話**(user 那句問的是長相)。理由當時寫「唯讀欄位一樣要能 Tab 聚焦(選取、複製值),焦點指示若跟可編輯態長得不同,使用者會以為那是另一種狀態」—— 長相這一半仍成立。(3) 2026-11-11:user 問「field readonly 之類的元件其被滑鼠點擊時，我們的ds是會出現藍色框的嗎？ 根據世界級的設計在滑鼠點擊時是否可以不用有任何樣式變化？」,看過 MUI / Carbon / Polaris / Spectrum 2 實機對照後回「確認 polaris真的就是這樣的話那就照你建議」→ 觸發條件改為只認鍵盤(本段)。同時訂正本段開頭原寫的「瀏覽器規範」(實為非規範性建議)與「滑鼠也亮是因為文字輸入框的啟發式」(div 型宿主滑鼠也亮其實是 `focus-within`,不是瀏覽器)。
+> **訂正歷程**:(1) 2026-09-10:原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。(2) 同日上午先補成全域外描邊,user 指出「為何不是模擬 field control focus 的樣式？field control focus應該是 1px的 border？對吧？」—— 長相改成邊框轉色;觸發條件順帶寫成 `focus-within`(滑鼠鍵盤都亮)並在本段寫「勿宣稱僅鍵盤」—— 那是 **AI 推導,不是 user 原話**(user 那句問的是長相)。理由當時寫「唯讀欄位一樣要能 Tab 聚焦(選取、複製值),焦點指示若跟可編輯態長得不同,使用者會以為那是另一種狀態」—— 長相這一半仍成立。(3) 2026-11-11:user 問「field readonly 之類的元件其被滑鼠點擊時，我們的ds是會出現藍色框的嗎？ 根據世界級的設計在滑鼠點擊時是否可以不用有任何樣式變化？」,看過四家設計系統的實機對照(來源見 `ds-canonical/references/focus-canonical.md` 規則二「唯讀的 Field 控件」列)後回「確認 polaris真的就是這樣的話那就照你建議」→ 觸發條件改為只認鍵盤(本段)。同時訂正本段開頭原寫的「瀏覽器規範」(實為非規範性建議)與「滑鼠也亮是因為文字輸入框的啟發式」(div 型宿主滑鼠也亮其實是 `focus-within`,不是瀏覽器)。
 
 ---
 
@@ -301,7 +297,7 @@ Select / Combobox 的 ChevronDown、DatePicker 的 Calendar、TimePicker 的 Clo
 
 - edit:`fg-muted`;**readonly:不顯示 indicator**;**disabled:`fg-disabled`**(對齊上方 Icon 色彩原則)
 - 不可互動(`pointer-events-none`)——下拉由 select 元素本身觸發
-- **Cell(naked variant)**:**view 態零恆顯 indicator(2026-07-08 user 拍板〔UD-J24〕A 案,推翻 2026-05-10 的 indicator = editable affordance)** —— editable affordance 統一 = hover outline(field.spec.md L4)。Benchmark product-table 域(Ant editable-cells:平時透明框、滑過才出框,[table/demo/edit-cell.tsx#L11-L23](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/demo/edit-cell.tsx#L11-L23);MUI X singleSelect / AG Grid / Atlaskit inline-edit(v2.0.0 移除 hover-pencil 後 9 版未回歸)出處見 field.spec.md L6 列)view 態皆純值零 icon;恆顯派僅 Google Sheets Chip/Arrow(spreadsheet 域可選檔位:「Display Style」可選 Chip / Arrow / Plain text,[Google 說明](https://support.google.com/docs/answer/186103?hl=en))。`showDisplayEndIcon` prop 保留為 opt-in 逃生門(spreadsheet-flavored 消費端);cell-registry 6 個 picker 站不再傳、url 站傳 `isEditable === true`(LinkInput 例外 = wrapper 無型別 icon,取 display↔edit 像素對齊;可編輯時另由 `viewEditAction` 畫滑過才出現的「編輯連結」Button text xs —— 那是 action 不是 indicator,見 field.spec.md「naked」核心句的唯一例外)。edit 態 indicator 照舊(本節上方 form 規則);opt-in 時 (opt-in 時保留)(同表單邏輯)
+- **Cell(naked variant)**:**view 態零恆顯 indicator(2026-07-08 user 拍板〔UD-J24〕A 案,推翻 2026-05-10 的 indicator = editable affordance)** —— editable affordance 統一 = hover outline(field.spec.md L4)。Benchmark product-table 域(Ant editable-cells:平時透明框、滑過才出框,[table/demo/edit-cell.tsx#L11-L23](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/table/demo/edit-cell.tsx#L11-L23);另外三家資料表 / 行內編輯元件的逐家說法與出處見 field.spec.md L6 列)view 態皆純值零 icon;恆顯派僅 Google Sheets Chip/Arrow(spreadsheet 域可選檔位:「Display Style」可選 Chip / Arrow / Plain text,[Google 說明](https://support.google.com/docs/answer/186103?hl=en))。`showDisplayEndIcon` prop 保留為 opt-in 逃生門(spreadsheet-flavored 消費端);cell-registry 6 個 picker 站不再傳、url 站傳 `isEditable === true`(LinkInput 例外 = wrapper 無型別 icon,取 display↔edit 像素對齊;可編輯時另由 `viewEditAction` 畫滑過才出現的「編輯連結」Button text xs —— 那是 action 不是 indicator,見 field.spec.md「naked」核心句的唯一例外)。edit 態 indicator 照舊(本節上方 form 規則);opt-in 時 (opt-in 時保留)(同表單邏輯)
 - locked(readonly/disabled)wrapper 並設 `aria-disabled`(disabled 時)——styled-disabled 非原生元素需明告 AT inactive,亦使 axe 正確套用 WCAG 1.4.3 inactive-UI 豁免
 - clearable 有值時：clear X 在左，ChevronDown 在右
 - **右側元素(clear / chevron / calendar / clock)右緣水平內距 = `--field-px`(12px,SSOT `tokens/uiSize/uiSize.css`),edit / readonly / disabled / view 全 mode 一致**(跟 Input 一致)。**tag 模式特例**:左側內距用四邊等距公式 `(field-height − 2px − tag-height)/2`(sm 3 / md 3 / lg 5;SSOT `field-wrapper.tsx` `fieldTagInsetX`,2026-09-15 修正:舊註記「≈8px」與舊 calc 都沒扣邊框)貼齊 tags、會吃掉右緣,故 tag 容器(含 readonly/disabled)**必 re-assert `paddingRight: var(--field-px)`** 對齊 edit;漏接 = chevron 右緣偏移 bug(2026-06-27 修 Select:354 / Combobox ReadonlyMultiSelect)
@@ -378,7 +374,7 @@ View 的消費者:
 | 不可編輯 — table cell(readonly cell)| `surface==='table-cell'` 且 `isEditable===false` | **半形 `-`** | 同上;非可編欄位視同唯讀資料 |
 | **可編輯** — table cell view 靜止態 | `surface==='table-cell'` 且 `isEditable===true` 且 mode='view' | **全空白 `''`** | 可編輯格空著就是空著(MUI X 同:值為 null 時 `valueToRender?.toString()` 得 undefined、格子不放字,[GridCell.tsx#L322](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-data-grid/src/components/cell/GridCell.tsx#L322)、[#L644-L647](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-data-grid/src/components/cell/GridCell.tsx#L644-L647));表格密集時「-」海 = 視覺噪音。空 editable cell 的 affordance = hover outline(field.spec.md L4),非佔位符 |
 | **可編輯** — form / panel edit 輸入框 | mode='edit' 且非 table cell | **native placeholder** | 標準表單輸入提示;「hover 才顯 placeholder」十路查證零家採用,**禁** |
-| **可編輯** — table cell edit / focus | `surface==='table-cell'` 且 mode='edit' | **全空白**(DataTable cell 不接 placeholder)| 對齊 Notion / Airtable cell 編輯裸輸入 |
+| **可編輯** — table cell edit / focus | `surface==='table-cell'` 且 mode='edit' | **全空白**(DataTable cell 不接 placeholder)| 與上一列「可編輯格空著就是空著」同一條:編輯中的格子也不放提示字(原寫的兩家產品對照沒有一手來源,2026-11-16 撤回)|
 
 收斂式:`surface==='table-cell' && isEditable ? '' : '-'`(可編輯 form edit 走 native placeholder,不經此 hook)。`isEditable` 由 DataTable cell registry 經 `FieldSurfaceEditableProvider` boolean context 注入(standalone / form 無此 context → 預設 false → `-`)。
 

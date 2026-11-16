@@ -7,20 +7,16 @@ variants:
     world-class: ["VS Code Activity Bar primary item(https://github.com/microsoft/vscode-docs/blob/7b97a834f5fd6d0a616fa64e3f6dd379367dd68f/api/ux-guidelines/activity-bar.md#L12)"]
   meta:
     when: "Section 底部命令 row(「Show more」「載入更多」「+ 新增專案」);font-normal + fg-muted,不參與 selection"
-    world-class: ["Linear 'Show N more'", "Notion 'Show N more'", "Slack 'Show more'", "Gmail Labels 'More'"]
 sizes:
   sm:
     px: 28
     when: "次導覽 / 設定頁分類 / 緊湊空間;對齊 field-height-sm"
-    world-class: ["VS Code Settings sidebar(28)", "Atlassian secondary nav compact"]
   md:
     px: 32
     when: "預設 — 應用程式主導覽 row;對齊 TreeView / MenuItem 同 size 視覺無縫"
-    world-class: ["Linear sidebar default", "Notion sidebar default", "Figma left panel"]
   lg:
     px: 36
     when: "重要主導覽(horizontal headroom 大)、icon-prominent workspace switcher"
-    world-class: ["Slack workspace sidebar large", "Discord server list large"]
 traits:
   - hasVariants
   - hasSizes
@@ -155,7 +151,7 @@ Sidebar 有兩種正交的內容形態，consumer 嚴格擇一或混用：
 
 ### 為什麼只有 1 層
 
-**sidebar 主選單不用語意階層**(主選單是少數固定目的地,扁平才一眼掃得完、icon 模式也才收得起來)。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。Notion 的 sidebar 有巢狀,但那是**頁面(user data)的樹**、不是選單階層:Notion 說明頁逐字 "you can nest pages inside other pages with no limit" / "You can open up each toggle in your sidebar to reveal pages nested inside other pages"(https://www.notion.com/help/navigate-with-the-sidebar)—— 正是「階層 = TreeView(user data)」那一邊的例子,不是反例(2026-09-29 更正:先前把 Notion 列在「沒有階層」那一組是憑印象)。shadcn 的 `SidebarMenuSub` 是 demo 便利 API，本 design system 完全不 export，避免誤用。
+**sidebar 主選單不用語意階層**(主選單是少數固定目的地,扁平才一眼掃得完、icon 模式也才收得起來)。凡有階層都是 TreeView（user data）或 SidebarGroup（純視覺分段）。Notion 的 sidebar 有巢狀,但那是**頁面(user data)的樹**、不是選單階層:Notion 說明頁逐字 "you can nest pages inside other pages with no limit" / "You can open up each toggle in your sidebar to reveal pages nested inside other pages"(https://www.notion.com/help/navigate-with-the-sidebar)—— 正是「階層 = TreeView(user data)」那一邊的例子,不是反例(2026-09-29 更正:先前把 Notion 列在「沒有階層」那一組是憑印象)。shadcn 的 `SidebarMenuSub` 是 demo 便利 API([sidebar.tsx#L640](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sidebar.tsx#L640))，本 design system 完全不 export，避免誤用。
 
 ### 「Projects > A / B」這類
 

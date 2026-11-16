@@ -121,8 +121,7 @@ Empty 是 **non-interactive layout primitive**——本身無 ARIA role(讓 cons
 
 世界級對照:
 - **Polaris** `<EmptyState>`:heading 固定渲染成 `<Text variant="headingMd" as="p">`(段落,不是可選 level 的標題),元件本身沒有 `aria-labelledby`([EmptyState.tsx#L120-L125](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/EmptyState/EmptyState.tsx#L120-L125))
-- **Material** `<NoOptions>`(Autocomplete 內):容器自帶 `role="listbox"` + `aria-live="polite"` 通知無結果
-- **Carbon** `<EmptyState>`:無自帶 ARIA,文檔指引 consumer 在父容器設 `aria-describedby`
+- 原列的另外兩家(自帶 live region / 交給父容器)沒有一手來源,2026-11-16 撤回
 
 Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initial-empty 的語境，強加單一 role 會與外層 live-region / describedby contract 衝突。
 

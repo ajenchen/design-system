@@ -340,8 +340,7 @@ Chromium 單一行程、1280×900;「現行建置」= repo 的 `storybook-static
   不抵銷的話日期格會落在 12 + 4 = 16,而 chevron 貼著 12,四邊對稱就破了。
   這 4px **從來沒有人決定過**(2026-09-18 查 git 全史:原規格只說「四邊對稱 12px」),是 `border-separate` 的副作用。
   - **同 repo 早有正確先例**:`Carousel` 用每張投影片的 `pl-4` 當間距,容器就用 `-ml-4` 抵掉(`../Carousel/carousel.tsx:202`)。
-  - **上游也不外溢**:`react-day-picker` 自己是 `border-collapse: collapse`,其 457 行 `style.css` 裡 `border-spacing` 出現 **0 次**;
-    IBM Carbon 的日曆第一格貼齊容器內距(2026-09-18 實測)。
+  - **上游也不外溢**:`react-day-picker` 自己是 `border-collapse: collapse`,其 457 行 `style.css` 裡 `border-spacing` 出現 **0 次**。
   - **範圍軌道在列的頭尾要夾住**:range 的 `-2px` bridge 是用來跨過格間 4px 縫接鄰格,
     但列的第一格左邊、最後一格右邊沒有鄰格,不夾就會溢出內距(實測 2px)。
     夾在 `month_grid`(`[&_tr>td:first-child]:before:!left-0` / `last-child`)—— 實測 react-day-picker

@@ -147,6 +147,12 @@
       "required": true
     },
     {
+      "id": "canonical-hook-benchmark-citation-helper",
+      "ownerRepo": "design-system",
+      "path": "packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs",
+      "required": true
+    },
+    {
       "id": "canonical-hook-registration-output-contract-helper",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs",

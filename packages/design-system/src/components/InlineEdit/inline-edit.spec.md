@@ -168,8 +168,8 @@ InlineEdit 不含 async loading state。若 commit 需要 async 儲存,consumer 
 
 **Focus 管理(分流)**:進 edit 態自動 focus 控件（`autoFocus`);**鍵盤結算**(Enter commit / Esc cancel)後焦點送回 view 按鈕 + focus-visible 藍框(焦點不遺失);**滑鼠 blur 結算刻意不回焦**——回純 view 不搶焦(理由見「退出 edit 態(focus 分流)」段)。
 
-## shadcn passthrough 例外說明
-InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動態生成的 edit 控件),遵循 shadcn 結構 idiom(forwardRef + displayName)但**無 `...props` spread**:外層 div 只是對齊盒、非 consumer 可預期的互動 surface(spread 目標不明——view 按鈕?edit 控件?),DOM 級屬性應透過 `renderEdit` / `renderRead` 下傳給真正的控件;`ref` / `className` 附著於外層對齊盒。`asChild` 不支援(composite 非 Slot-compat,Slot 慣例見 https://www.radix-ui.com/primitives/docs/utilities/slot)。
+## Props passthrough 例外說明(稽核 dim 9)
+InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動態生成的 edit 控件),遵循 DS 元件的結構慣例(forwardRef + displayName)但**無 `...props` spread**:外層 div 只是對齊盒、非 consumer 可預期的互動 surface(spread 目標不明——view 按鈕?edit 控件?),DOM 級屬性應透過 `renderEdit` / `renderRead` 下傳給真正的控件;`ref` / `className` 附著於外層對齊盒。`asChild` 不支援(composite 非 Slot-compat,Slot 慣例見 https://www.radix-ui.com/primitives/docs/utilities/slot)。
 
 ## 禁止事項
 

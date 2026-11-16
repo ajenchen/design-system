@@ -186,6 +186,37 @@ expect_pass_silent "21. Linear vs Non-linear / Gestalt proximity → silent"
 run_hook_write "$SPEC" $'# Foo\n\nLinear 的 sidebar 也這樣收合。'
 expect_warn "22. 產品 Linear 無來源 → BLOCK" "缺 inline citation"
 
+# ── A29(2026-11-16):判定改由 lib/benchmark-citation.mjs 共用(全樹檢查 scripts/benchmark-citation-invariant.mjs 讀同一支)──
+
+# 23. partial:段裡一家有來源、另一家沒有 → 擋(perl 版段落層級放行)
+run_hook_write "$SPEC" $'# Foo\n\nPolaris(https://polaris.shopify.com/components/feedback-indicators/banner)與 Carbon 都把關閉鈕放右上。'
+expect_warn "23. partial(一家有來源、另一家沒有)→ BLOCK" "partial"
+
+# 24. partial 的另一面:兩家各有自己的來源 → 放行
+run_hook_write "$SPEC" $'# Foo\n\nPolaris(https://polaris.shopify.com/components/feedback-indicators/banner)與 Carbon(https://carbondesignsystem.com/components/notification/usage/)都把關閉鈕放右上。'
+expect_pass_silent "24. 兩家各有自己的來源 → silent"
+
+# 25. 別家的網址不算這一家的來源
+run_hook_write "$SPEC" $'# Foo\n\nCarbon 也把關閉鈕放右上(https://polaris.shopify.com/components/feedback-indicators/banner)。'
+expect_warn "25. 只有別家的網址 → BLOCK" "Carbon"
+
+# 26. tsx 網址裡的 :// 不是註解開頭(範例資料不誤擋)
+run_hook_write "$TSX" $'<a href="https://support.example.com/tickets/88213">Zendesk 客訴 #88213</a>'
+expect_pass_silent "26. tsx href 網址後的範例文字 → silent"
+
+# 27. 套件路徑來源(unpkg.com/@scope/…)算數
+run_hook_write "$SPEC" $'# Foo\n\nAtlassian Modal 寬度:unpkg.com/@atlaskit/modal-dialog@17.2.5/dist/es2019/internal/width.js'
+expect_pass_silent "27. unpkg.com/@atlaskit/… → silent"
+
+# 28. 共用判定 lib/benchmark-citation.mjs 不在 → fail-closed(不得靜默放行)
+ISOLATED=$(mktemp -d)
+if [ -z "$ISOLATED" ] || [ ! -d "$ISOLATED" ]; then echo "FATAL: mktemp -d failed"; exit 1; fi
+cp "$HOOK" "$ISOLATED/check_benchmark_citation.sh"
+SAVED_HOOK="$HOOK"; HOOK="$ISOLATED/check_benchmark_citation.sh"
+run_hook_write "$SPEC" $'# Foo\n\n本 DS 自己的規則。'
+HOOK="$SAVED_HOOK"; rm -rf "$ISOLATED"
+expect_warn "28. 共用判定不在 → fail-closed BLOCK" "fail-closed"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

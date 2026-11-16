@@ -212,7 +212,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 - ❌ disabled item 不可有 hover 效果
 - ❌ Label 不可被點擊或取得焦點
 - ❌ 不要手動在 SubTrigger 內加 ChevronRight——元件自動渲染
-- ❌ 不要把快捷鍵寫成 children 裡的 `<span>`(shadcn 的 `DropdownMenuShortcut` 寫法;會 inline 接在 label 尾、不靠右)—— 一律用 `shortcut` prop
+- ❌ 不要把快捷鍵寫成 children 裡的 `<span>`(舊的 `<DropdownMenuShortcut>` 子元素寫法,2026-11-15 已移除;在本 DS 的 MenuItem 裡會 inline 接在 label 尾、不靠右)—— 一律用 `shortcut` prop
 
 ---
 

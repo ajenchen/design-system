@@ -126,8 +126,8 @@ Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間�
 舊名 `autoHeight?: boolean`(等同 `height="hug"`)2026-09 停用、2026-11-15 移除,不留舊名(user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」)。升版對照:`autoHeight` → `height="hug"`、`autoHeight={cond}` → `height={cond ? 'hug' : 'fill'}`。DS 內部 2026-10-20 已遷完 30 處用法(27 處在 DS 原始碼、3 處在閘的夾具);閘 `scripts/overlay-story-contract-invariant.mjs` S3 擋文件與範例把它寫回來(型別已不收)。
 
 **世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`,[_dialog.scss#L39-L44](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/dialog/internal/_dialog.scss#L39-L44))、
-Atlassian(`if (!input) return 'auto'`)、Polaris(只宣告 `max-height`)、Carbon(size 綁 48/72/84/96% 上限)、
-Ant Design(不宣告高度)—— 五家第一方原始碼**預設都是「隨內容 + 視窗為上限」**。
+Atlassian(`if (!input) return 'auto'`,[dialog-height.js#L1-L3](https://unpkg.com/@atlaskit/modal-dialog@17.2.5/dist/es2019/internal/components/dialog-height.js))、Polaris(只宣告 `max-height: calc(100vh - …)`,[Dialog.module.css#L37](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Modal/components/Dialog/Dialog.module.css#L37))、Carbon(size 綁 48/72/84/96% 上限,[_modal.scss#L104](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/modal/_modal.scss#L104) 與 #L208 / #L236 / #L259)、
+Ant Design(不宣告高度,超出時由外層 `-wrap` 的 `overflow: 'auto'` 捲動,[style/index.ts#L174-L177](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/modal/style/index.ts#L174-L177))—— 五家第一方原始碼**預設都是「隨內容」**,Material / Polaris / Carbon 另以視窗為上限(2026-11-16 逐家重讀原始碼後更正:原句寫五家都以視窗為上限,Atlassian 那一行只回 `auto`、Ant 是捲外層)。
 本 DS 預設選 `fill` 是刻意偏離:DS 的主場景是內容會變的產品 dialog,穩定外框優先;
 需要世界級預設行為的場景顯式傳 `height="hug"`。
 

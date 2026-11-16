@@ -10,11 +10,11 @@ sizes:
   md:
     px: 32
     when: "預設 — Form + 設定面板 + DataTable cell inline edit;對齊 field-height-md(md density)"
-    world-class: ["Material Slider default", "Polaris RangeSlider", "Ant Slider"]
+    world-class: ["Material Slider default", "Ant Slider"]
   lg:
     px: 36
     when: "Marketing hero 互動 / 高 touch 區;對齊 field-height-lg(md density)"
-    world-class: ["Apple HIG slider touch zone"]
+    world-class: []
 traits:
   - hasSizes
   - hasInteractiveStates

@@ -679,7 +679,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_chrome_header_avatar_canonical.sh",
-      "sha256": "9415aad9a40931d36f42bd004b26f160f19f488a2f512fb899f9a0641acf0b06",
+      "sha256": "327d01557e4002c49a57e3c93549707d254bca7fccf8608007d560429b869303",
       "source": "check_chrome_header_avatar_canonical.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

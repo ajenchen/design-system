@@ -1,7 +1,7 @@
 # Advanced Filter 設計原則(Operator × ColumnType × ValueShape SSOT,v3)
 
 > **狀態**:已落地 — registry 寫成 `filter-operators.ts`,`filter-tree.ts` + filter panel 家族消費(`data-table-filter-panel.tsx`;row/picker 直接消費點在 2026-07-14 拆檔子模組 `data-table-filter-group.tsx` / `data-table-filter-value-picker.tsx`)(原 draft 兩個升級條件皆已達成,2026-06-11 對齊)。
-> **M8 benchmark**:對照 ClickUp(CU)/ Airtable(AT,[篩選條件說明](https://support.airtable.com/docs/filtering-records-using-conditions))/ Notion(NT,[資料庫查詢篩選 API](https://developers.notion.com/reference/post-database-query-filter))三家(ClickUp 當時未留一手網址)。**v3 加 datetime / includeTime + 砍 number.between(同 field 兩筆 condition 即可組出區間)**。
+> **M8 benchmark**:對照 Airtable(AT,[篩選條件說明](https://support.airtable.com/docs/filtering-records-using-conditions))/ Notion(NT,[資料庫查詢篩選 API](https://developers.notion.com/reference/post-database-query-filter))兩家(當時另一家第三方對照沒留一手網址,2026-11-16 從對照中撤回;下文的 CU 欄是當時的紀錄,不當作證據)。**v3 加 datetime / includeTime + 砍 number.between(同 field 兩筆 condition 即可組出區間)**。
 > **設計路線**:**同欄多條件 + `is` 多值** 為 baseline,合理 + 不衝突 + 真實用的擴充採納。
 > **檔位**:暫放 DataTable/,若決定抽 `patterns/advanced-filter/` 再搬。
 

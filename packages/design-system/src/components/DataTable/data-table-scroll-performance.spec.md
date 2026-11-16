@@ -94,7 +94,7 @@ A4 有餘裕時機制必須真的動(沒餘裕的機器明白標為不適用,不
 真實呈現幀量測(`scripts/data-table-fast-scroll.mjs --mode=gesture`,CDP screencast + 合成手勢)抓到 **main 與分支都有**的白:滾輪一甩
 (每秒 6,000–12,000px)時,每側只預掛 5 列 = 200px 緩衝,而把整窗 27 列有錢的儲存格重畫一次要 100ms 以上,合成器一幀就把視窗推到
 還沒掛任何列的區域,連續 17 幀(約 280ms)中央整片白、左右釘選面板停在舊位置。修法對齊 AG Grid `cellRendererParams.deferRender`(https://www.ag-grid.com/javascript-data-grid/component-cell-renderer/)
-(捲動中先顯示 skeleton cell,停捲後補 renderer)與 MUI X server-side lazy loading 的 skeleton rows:
+(捲動中先顯示 skeleton cell,停捲後補 renderer)與 MUI X server-side lazy loading 的 skeleton rows(「adds skeleton rows to match the total row count」,https://mui.com/x/react-data-grid/server-side-data/lazy-loading/):
 - **判準(自適應機器畫列能力,2026-09-10)**:只看**捲動造成的 commit**(初次載入、換頁、靜止時資料變動照舊全畫)。
   跟得上的機器完全走原路:一般速度直接畫真列、零骨架。「跟不上」看真正的症狀 —— 兩次畫圖之間視窗移動的距離超過預掛緩衝
   (overscan 列 × 列高;只拿 scrollTop 真的變了的畫圖當樣本;這一次的位移 > 2 倍緩衝(≈ 一個視窗)就立刻進入、平滑值 < 0.5 才退出),不看畫圖成本(CI 機器每次畫圖都超過 20ms 卻在 4,500px/s 跟得上,用成本判會

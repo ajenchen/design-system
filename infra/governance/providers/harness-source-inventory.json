@@ -40,6 +40,14 @@
         ]
       },
       {
+        "path": "packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs",
+        "sha256": "547f52ea4855bed32247925d7ac3168d601e205581ef7f61fe90fc3b97a14ba4",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/check_benchmark_citation.sh",
+          "packages/design-system/ds-canonical/hooks/tests/test_check_benchmark_citation.sh"
+        ]
+      },
+      {
         "path": "packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs",
         "sha256": "7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65",
         "consumers": [
@@ -711,6 +719,7 @@
           "scripts/test-audit-spec-deadlinks.mjs",
           "scripts/test-audit-story-quality.mjs",
           "scripts/test-audit-workflow-security.mjs",
+          "scripts/test-benchmark-citation-invariant.mjs",
           "scripts/test-button-variant-invariant.mjs",
           "scripts/test-calc-self-audit-baseline.mjs",
           "scripts/test-categorical-color-invariants.mjs",

@@ -329,6 +329,11 @@ jobs:
           # 撐滿 / 跟內容只叫 width="fill" / "hug"、size 只當檔位、欄位家族不漏原生 width / height、DS 自己不用已停用的舊名。
           # 2026-11-11 稽核時「撐滿」有 3 個名字、「跟內容」4 種寫法 —— 沒有閘,各元件就各自照外部某一家取名。純靜態,對照組在 --selftest。
           npm run test:sizing-props
+          # 世界級對照要附一手來源(M22)的全樹檢查(2026-11-16 A29):寫入當下的 check_benchmark_citation.sh 只看這次寫進去的字,
+          # 舊段從沒被機器檢查過;這裡整檔掃 packages/design-system/src 的 *.spec.md 與 *.tsx,判定讀 hook 同一支
+          # (packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs),逐家比對(一家有來源、另一家沒有也紅)。元件規格零證據債;
+          # 其他規格與 tsx 走棘輪 scripts/benchmark-citation-baseline.json(只准變少)。純靜態,對照組在 --selftest(判定表同時跑 hook)。
+          npm run test:benchmark-citation
 
       - name: Cloud portability gates (provider config survivability)
         run: |

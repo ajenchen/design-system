@@ -49,7 +49,7 @@
  *       `@story-counter-example` 綁的兩句 canonical 原文(story-rules.md:17 三層定位、category-templates.md:168 do/don't 只住 principles)
  *       任一句不見了 → 儀器失效;helper 的 `<div 標題字級 加粗>{title}</div>{children}` → (c) 紅(後面接 `{note}` 文字 → 0 筆)。
  *   綠細則: 命中數不高於基準時綠(數字變少允許,會提示收緊基準);乾淨的合成檔(用 token、h1–h6、hook 送出狀態、合法註記、
- *        側欄 chrome 的 workspace brand span(sidebar.spec.md:264)、列裡的名稱 + 說明、截斷的列標籤、批次操作鈕)0 筆;
+ *        側欄 chrome 的 workspace brand span(sidebar.spec.md:260)、列裡的名稱 + 說明、截斷的列標籤、批次操作鈕)0 筆;
  *        test-only story(與只被它用到的模組層小元件)裡的同一段漂移 0 筆;設計規格層的寫死間距 0 筆;
  *        設計原則層四條漂移各自帶合法 `@story-counter-example:`(正上方或同一行)0 筆;
  *        重建後的 Rating 展示檔 (a)(c)(d) 0 筆、(b) 最多只剩與 field.stories.tsx CreateProjectForm 逐字相同的那一行表單底列(待拍板,見待辦總帳);
@@ -118,7 +118,7 @@
 //           後面只接說明文字、又不是區段開頭的是「名稱 + 說明」(item-anatomy 的 label / description:人名 + 職稱、
 //           商品名 + 價格),不是標題。
 //       不收 <span>:span 是行內文字槽 —— chrome 的 workspace brand / user name 明文用 span + text-body-lg font-medium
-//       (sidebar.spec.md:264),列裡的成員名、欄位標籤也是 span;<strong> 是強調語意,同樣不在範圍
+//       (sidebar.spec.md:260),列裡的成員名、欄位標籤也是 span;<strong> 是強調語意,同樣不在範圍
 //       (2026-10-01 收斂:第一版連 div / span 的列標籤與 chrome brand 都當標題,擋到 DS 自己的 canonical)。
 //       <p> 2026-10-06 起收:段落語意的 p 不會同時是「標題字級 + 加粗 + 只有文字 + 後面接著它命名的區塊」,四個條件都成立的
 //       p 就是畫成標題的段落(審查實例:field-control-group.principles 的「FieldGroup(垂直堆疊)」卡片標題);全樹實測只多 1 筆,當場修。
@@ -1194,7 +1194,7 @@ export const SYNTHETIC_COUNTER_EXPECTED = [
 /**
  * 乾淨的寫法:token 間距、h3 標題、hook 送出狀態、合法 @submit-intent、micro 行內群、逃生口、分隔線、靜態停用示範;
  * 另有 (c)(d) 的邊界反例:12px 標籤加粗(不是標題級字級)、有子元素(含跨行的)、顏色 / 對齊 / 帶 variant 前綴的 DS 字級;
- * 以及第一版誤擋的 DS 寫法:側欄 chrome 的 workspace brand(sidebar.stories.tsx WorkspaceBrand;sidebar.spec.md:264
+ * 以及第一版誤擋的 DS 寫法:側欄 chrome 的 workspace brand(sidebar.stories.tsx WorkspaceBrand;sidebar.spec.md:260
  * 明文 chrome 文字用 `text-body-lg font-medium`)、列裡的「名稱 + 說明」、截斷的列標籤後接元件、批次操作鈕「沒選東西時停用」。
  */
 export const SYNTHETIC_CLEAN_SOURCE = [

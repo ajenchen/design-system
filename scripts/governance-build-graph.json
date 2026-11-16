@@ -190,6 +190,7 @@
         "infra/governance/providers/harness-source-inventory.json",
         "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
         "packages/design-system/ds-canonical/hooks/lib/audit-report-validator.mjs",
+        "packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs",
         "packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs",
         "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
         "packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs",

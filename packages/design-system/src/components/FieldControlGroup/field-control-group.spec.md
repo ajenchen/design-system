@@ -201,7 +201,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 | **[Chakra Group](https://www.chakra-ui.com/docs/components/group)** | `attached` prop primitive | `attached`+`grow` props | per-child | Input + Addon/Element(InputGroup 已 deprecated v3)|
 | **[Mantine `Button.Group`](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152)** | `Button.Group` + `Button.GroupSection` | 子按鈕直接相鄰接合(不可再包一層)| — | 只限 Button(非按鈕內容用 GroupSection)|
 
-4 家都有接合 idiom,但 Mantine 只限按鈕 → 我們的實作對齊同時涵蓋 form control 的 Ant + Bootstrap 主軸([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152))。
+4 家都有接合 idiom,但 Mantine 只限按鈕 → 我們的實作對齊同時涵蓋 form control 的 Ant(Space.Compact 支援 Button / Input / Select / DatePicker …,[Space.Compact](https://ant.design/components/space#spacecompact))+ Bootstrap(input-group 收 input / custom select / button,[input-group](https://getbootstrap.com/docs/5.3/forms/input-group/))主軸([來源](https://github.com/mantinedev/mantine/blob/82fb128c43f9927c1370a2732cd5aa9e6663ca11/apps/mantine.dev/src/pages/core/button.mdx#L129-L152))。
 
 ## 相關
 

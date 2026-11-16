@@ -63,7 +63,7 @@ type Story = StoryObj
  */
 // @canonical-pattern: chrome-header-brand
 // Consumer 抄此 pattern 用於 SidebarHeader 內 brand。raw <Avatar size={24}>(chrome header 非 row context)。
-// Per header-canonical.spec.md:57-72 + sidebar.spec.md:241-247。
+// Per header-canonical.spec.md:57-72 + sidebar.spec.md:237-243。
 const WorkspaceBrand = () => (
   // @layout-space-magic-ok: WorkspaceBrand:Avatar ↔ 工作區名稱 8px —— 規格沒寫 8 這個值(layoutSpace.spec.md「刻意固定值 OK」表只把這類列為 micro / 控件內部間距,sidebar.spec.md「Chrome 內的 text element」只定字級),不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
   <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">

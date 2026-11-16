@@ -275,7 +275,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         : (cachedTagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]') ?? null)
       // 可用寬 = 頭像堆疊被分配到的寬,不隨畫了幾顆變(與檢視態 person-display.tsx 同一支 `measureStackAvailablePx`)——
       // 修前量這一格自己的 clientWidth:依內容寬(`width="hug"`)時這一格跟著內容縮,少畫一顆 → 變窄 → 再少一顆,
-      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:216 依內容寬 = 值的寬 + 各元素寬)。
+      // 2 人只剩「+2」、6 人只畫 4 顆(r-F3 缺陷 K;field-controls.spec.md:212 依內容寬 = 值的寬 + 各元素寬)。
       // 這一格的內容寬扣掉它自己的 padding(單行 Tag 列帶焦點框留位內距,combobox.tsx `tagRowFocusRoomClass`)。
       // 欄位內搜尋框(`searchIn='trigger'`)的位先扣掉:頭像不擠到搜尋框身上,打的字看得見(與 Combobox 的 DOM 量測同一支量尺,
       // combobox.tsx `findInlineSearchMirror`;規則 combobox.spec.md「欄位內搜尋框的寬度」)。沒有欄位內搜尋框 → 0,公式不變

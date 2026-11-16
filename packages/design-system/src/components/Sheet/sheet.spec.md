@@ -7,6 +7,7 @@ traits:
   - isOverlay
 benchmark:
   - Radix Dialog primitive (shadcn Sheet base): github.com/radix-ui/primitives/tree/main/packages/react/dialog
+  - shadcn Sheet(import `Dialog as SheetPrimitive`): github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/sheet.tsx#L6
   - MUI Drawer: github.com/mui/material-ui/tree/master/packages/mui-material/src/Drawer
   - Ant Design Drawer: github.com/ant-design/ant-design/tree/master/components/drawer
   - Polaris Sheet: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Sheet

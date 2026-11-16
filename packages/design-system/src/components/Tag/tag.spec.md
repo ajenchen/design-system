@@ -7,7 +7,7 @@ family: 3
 variants:
   neutral:
     when: "通用分類、草稿、無特定語義"([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
-    world-class: ["Polaris Tag default", "Atlassian Tag standard", "Ant Tag default"]
+    world-class: ["Atlassian Tag standard", "Ant Tag default"]
   blue:
     when: "categorical 色相（--color-blue-*）— 分類 / 標記，常用於資訊類"
     world-class: ["Ant Tag color=blue"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))

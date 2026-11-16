@@ -153,8 +153,8 @@ const form = useFormValidation({
 | **Apple HIG** rating indicators | — | — | "A rating indicator doesn't display partial symbols; it rounds the value to display complete symbols only."(範圍:只有 macOS,原文 "Not supported in iOS, iPadOS, tvOS, visionOS, or watchOS.") | [rating-indicators](https://developer.apple.com/design/human-interface-guidelines/rating-indicators) |
 
 **對照結論**:
-- 規則一:可以點的只有整顆 = SAP / UI5 / Spectrum CSS 的做法;MUI / Ant / Chakra / Fluent 預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`(https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L387);Apple macOS 顯示也只畫整顆、四捨五入。
-- 規則二:唯讀精簡版 = Fluent `RatingDisplay` 的 `compact` + `count`(Fluent 另拆一個元件;本 DS 不拆,用 `readOnly` 分開「能不能點」)。**但 Fluent 的 `compact` 是選項(預設 false),MUI / Ant 的唯讀是同一個元件加 `readOnly` / `disabled`** —— 把精簡版定為唯讀的**唯一**呈現是 user 的決定,不是世界級共識,照實記錄。
+- 規則一:可以點的只有整顆 = 上表「半顆:不能」那三列的做法;上表「可自己打開」的四列預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`(https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L387);Apple macOS 顯示也只畫整顆、四捨五入(「doesn't display partial symbols; it rounds the value to display complete symbols only」,[rating-indicators](https://developer.apple.com/design/human-interface-guidelines/rating-indicators))。
+- 規則二:唯讀精簡版 = Fluent `RatingDisplay` 的 `compact` + `count`([RatingDisplay.types.ts#L21-L29](https://github.com/microsoft/fluentui/blob/a51547435d0a5c4a0fb15c2996c3d3efea5b49dd/packages/react-components/react-rating/library/src/components/RatingDisplay/RatingDisplay.types.ts#L21-L29);Fluent 另拆一個元件;本 DS 不拆,用 `readOnly` 分開「能不能點」)。**但 Fluent 的 `compact` 是選項(預設 false),MUI / Ant 的唯讀是同一個元件加 `readOnly` / `disabled`**(Ant「disabled \| If read only, unable to interact」,[index.en-US.md#L41](https://github.com/ant-design/ant-design/blob/4a39f54842eade4e565ab336ef6097cd7e723cdd/components/rate/index.en-US.md#L41)) —— 把精簡版定為唯讀的**唯一**呈現是 user 的決定,不是世界級共識,照實記錄。
 
 ---
 

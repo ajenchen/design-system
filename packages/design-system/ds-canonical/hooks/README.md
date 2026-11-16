@@ -26,7 +26,7 @@
 | `check_canonical_propagation.sh` | canonical 改動(spec / token / primitive)時 consumer propagation 檢查 |
 | `check_pattern_invariants.sh` | pattern 層 invariant(overlay-surface / item-anatomy / action-bar / 等) |
 | `check_naming_and_abstraction.sh` | M21 prop variant test + M27 prop name conflict + naming 三 test |
-| `check_benchmark_citation.sh` | M22 benchmark claim inline cite verify；component specs 禁止未驗證／檔級 escape，維持 zero evidence debt |
+| `check_benchmark_citation.sh` | M22 benchmark claim inline cite verify(逐家比對:段裡每個被提到的名稱都要有自己的來源)；component specs 禁止未驗證／檔級 escape，維持 zero evidence debt。只看這次寫入的字;全樹在 CI 由 `scripts/benchmark-citation-invariant.mjs` 檢查,兩邊讀同一支 `lib/benchmark-citation.mjs` |
 | `check_wrapper_primitive_schema_drift.sh` | M30 wrapper schema 必 extends primitive |
 | `check_field_family_invariants.sh` | Field family layout / state machine 統一 |
 | `check_datatable_invariants.sh` | DataTable canonical(virtualizer / column-types / autoRow / overflow) |
@@ -89,6 +89,8 @@ Claude 每個 prompt（包含 `Hi`）都在送出前顯示 `TRANSCRIPT_SIZE_OR_T
 | `lib/provider-marker-regex.mjs` | 驗證 provider registry marker array 並輸出 escaped ERE |
 | `lib/audit-report-validator.mjs` | audit report matrix / prompt / 決策證據的固定資料運算 |
 | `lib/tsx-governance-analysis.mjs` | 從 consumer project 解析 pinned TypeScript，執行三個 TSX AST governance analyzer |
+| `lib/benchmark-citation.mjs` | M22 世界級對照來源判定的唯一實作(關鍵字 / 網域 / 逐家比對 / 段落切法 / tsx 只看註解與 note= / md 跳過程式碼框);`check_benchmark_citation.sh` 與 `scripts/benchmark-citation-invariant.mjs` 共用 |
+| `lib/benchmark-citation-sources.json` | 上一列讀的名稱 / 網域資料表(2026-11-05 K8 盤點的名稱對網域表) |
 | `tests/registration-output-contracts.mjs` | registration output contract 的固定測試程式 |
 
 Node helper 必須是本 canonical tree 內可盤點、可雜湊的 committed `.mjs`，shell 只能用 `node -- <exact-static-path> ...` 傳資料。禁止 `node -e`、`node -p`、`--eval`、`--print`、stdin / heredoc JavaScript；provider view 一律由 canonical source 生成。

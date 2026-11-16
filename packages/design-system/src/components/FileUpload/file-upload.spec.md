@@ -29,9 +29,8 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 
 **世界級對照**:
 - Ant Design `Upload.Dragger` — pattern source(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/demo/drag.tsx#L6-L44)
-- Polaris `DropZone` — 3 態視覺慣例
 - drag API 走瀏覽器原生 DragEvent(dragenter / dragover / drop)([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/demo/drag.tsx#L6-L44))
-- 本元件取各家最乾淨的 pattern(Dragger 結構 + DropZone 3 態 + 原生 input fallback)
+- 本元件取 Dragger 結構 + 原生 input fallback;拖放區的視覺狀態見下方「四狀態視覺」(DS 自訂;原列的另一家三態對照沒有一手來源,2026-11-16 撤回)
 
 ---
 
@@ -60,7 +59,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 | `idle`(預設) | 使用者未互動 | dashed `border-border`（**元件邊框 `--border`,非 `--divider` 分隔線**）+ surface 底 |
 | `hover` = `drag-over`（**統一,純 border-driven,對齊 Ant Dragger `colorPrimaryHover`**(https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/upload/style/dragger.ts#L43-L49))| 游標懸停 / 拖檔進入 | **`border-drop-target-border`**（DS「可放下的區域」配對,= `--primary-hover`,2026-09-03 起與 `AgentFabDock` 停靠帶共用同一組 token;只變邊框）+ 底維持 surface（不變 bg）。state 信號靠邊框,非底色;兩態同視覺 |
 | `loading`（**deferred**）| `loading` prop 為 true | **Deferred:其唯一用途(無清單單檔/頭像替換)場景未定義,showcase 僅呈現 3-state(idle/drag-over/disabled);prop 在 tsx 保留供未來。** 行為:CircularProgress 取代內容;`cursor-progress`(不加 `pointer-events-none`,互動由 isBlocked guard 擋);aria-busy=true。有清單的 flow 進度一律走 FileItem 自身的 progress bar（uploading status）—— FileUpload 內建 list 仍 `surface=form`(dropzone 非獨立浮層 upload manager,見 file-item.spec.md「upload-manager 浮層面板 composition」)|
-| `disabled` | `disabled` prop 為 true | **語意 token(非 opacity — dashed outline surface 走 DS outline-disabled 慣例,3/4 世界級 Ant/Polaris/Carbon 用 token)**:`bg-disabled` 底 + 邊框不變色 + 文字/icon → `fg-disabled`(由 `<Empty disabled>` 控,icon-circle 維持 muted)+ `cursor-not-allowed`(移除 `pointer-events-none` 後生效)|
+| `disabled` | `disabled` prop 為 true | **語意 token(非 opacity — dashed outline surface 走 DS outline-disabled 慣例)**:`bg-disabled` 底 + 邊框不變色 + 文字/icon → `fg-disabled`(由 `<Empty disabled>` 控,icon-circle 維持 muted)+ `cursor-not-allowed`(移除 `pointer-events-none` 後生效)|
 
 **邊框變色瞬間切換、不過渡**(2026-09-26 待辦總帳 L9「全部瞬間」延伸到外框,user:「確定這樣才是一致設計語言就做」;同一次滑過底色瞬間、外框卻 0.15 秒 = 兩套手感;SSOT = `../../tokens/motion/motion.spec.md`「hover 回饋不做過渡」;2026-09-26 前是 `transition-colors` 0.15 秒)。
 
