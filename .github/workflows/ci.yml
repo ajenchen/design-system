@@ -1697,6 +1697,12 @@ jobs:
           # 什麼時候量:等觸發送達 → 再一個影格 → 讀 hook 自己傳給 scrollTo 的位置等到位(會動的再等 scrollend)→ 遮罩 / 箭頭跟上;不數影格。
           npm run test:overflow-reveal-selected
 
+      - name: DatePicker range active-end underline (browser)
+        run: |
+          # 日期區間作用端主色底線畫滿 2px(date-picker.spec.md:193;A50)+ --selftest(該紅列由實量幾何推、跨邊列任何字型都裁得到)。
+          # 2026-11-17 從 verify-browser-interaction 搬來:那支 job 41622d91 撞 25 分上限被取消(d23df592 已 22.9 分),本 job 約 8.5 分 / 上限 25。
+          npm run test:datepicker-range-active-underline
+
   verify-browser-sidebar-keyboard:
     # 2026-11-05 拆自 verify-browser-field-dialog-steps(照主題拆平行 job、不調高上限,上限沿用原 job 的 25;同 2026-10-14 待辦總帳 G10 的拆法)。
     # 原 job 三次 CI 實測 24.6(108a736f)/ 24.1(ac05777d)/ 25.3(4f692d17,撞上限被取消)分;本 job 只跑側欄鍵盤一支,
