@@ -3,14 +3,18 @@
   "structural": [
     {
       "key": "agentpanel-new-conversation-centered",
-      "stories": ["design-system-components-agentpanel-展示--new-conversation"],
+      "stories": [
+        "design-system-components-agentpanel-展示--new-conversation"
+      ],
       "container": "div.flex-1.items-center.justify-center",
       "reason": "新對話空白頁:空狀態在撐滿的包層裡垂直置中,不套規則 2 / 4 的上下距離(上下在不在可用範圍正中由 header-first-gap 的 centered 格驗)",
       "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)(user 2026-11-14 在 A5 成品頁的留言 ②)"
     },
     {
       "key": "fileviewer-viewport-row",
-      "stories": ["*"],
+      "stories": [
+        "*"
+      ],
       "container": "[role=dialog] > [data-theme=\"dark\"] > div.flex-1.min-h-0.flex",
       "reason": "FileViewer 工具列底下那一列是結構分區(Viewport 貼齊外殼、圖置中,右邊可接資訊面板),不是標頭底下的 body 內容;資訊面板本身是 data-layout-body,照常量。這是 FileViewer 自己的結構、與從哪一則打開無關(FileItem / Chip 點開的同一個檢視器也是),所以 stories 不限、選擇器指 FileViewer 的殼(對話框 > 鎖深色的那一層 > 這一列)",
       "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1);file-viewer.spec.md「Anatomy」;header-first-gap-invariant.mjs NOT_COVERED「FileViewer 工具列 → Viewport」"
@@ -19,7 +23,9 @@
   "exceptions": [
     {
       "key": "agent-conversation-end-48",
-      "stories": ["design-system-components-agentpanel-*"],
+      "stories": [
+        "design-system-components-agentpanel-*"
+      ],
       "container": "[role=\"log\"]",
       "want": "bottom",
       "reason": "AgentPanel 對話區底部恆 48、不看最後一則是誰(不宣告 data-layout-body,不讓容器自判);設計規格「狀態行為」那則面板貼內容,照規則 4 第 4 列會是與頂部同值,所以要登記",
@@ -30,25 +36,29 @@
   "triggers": [
     {
       "key": "agentpanel-unsaved-guard-covered",
-      "stories": ["design-system-components-agentpanel-展示--unsaved-changes-guard"],
+      "stories": [
+        "design-system-components-agentpanel-展示--unsaved-changes-guard"
+      ],
       "trigger": "*",
       "reason": "這則一開頁就有對話框(未儲存變更的確認)擋住整頁,底下的觸發點點不到;開著的兩個對話框在初始那一輪已量"
     },
     {
       "key": "appshell-toolbar-covered",
-      "stories": ["design-system-components-appshell-展示--menu-overlay", "design-system-components-appshell-展示--four-regions", "design-system-components-appshell-展示--agent-overlay"],
+      "stories": [
+        "design-system-components-appshell-展示--menu-overlay",
+        "design-system-components-appshell-展示--four-regions",
+        "design-system-components-appshell-展示--agent-overlay"
+      ],
       "trigger": "*",
       "reason": "這三則一開頁 Menu / AI agent 浮層就開著、蓋住主區工具列,「篩選」「排序」點不到(同一個工具列在 primary-sidebar 等則照常點開量到)"
     },
     {
-      "key": "combobox-opens-on-input",
-      "stories": ["design-system-components-combobox-展示--size-alignment", "design-system-components-field-展示--inline-search-yield-width-contract"],
-      "trigger": "商品",
-      "reason": "可搜尋的 Combobox 點欄位本身不開浮層(輸入才開),沒有新的 role=dialog 可量;同一種浮層在 filter-panel 等則點開量到"
-    },
-    {
       "key": "datepicker-range-already-open",
-      "stories": ["design-system-components-datepicker-展示--range-popover-open", "design-system-components-datepicker-展示--show-time-range-popover-open", "design-system-components-datepicker-展示--range-preview-*"],
+      "stories": [
+        "design-system-components-datepicker-展示--range-popover-open",
+        "design-system-components-datepicker-展示--show-time-range-popover-open",
+        "design-system-components-datepicker-展示--range-preview-*"
+      ],
       "trigger": "date",
       "reason": "區間日期的浮層一開頁就開著(初始那一輪已量),點另一端只是把焦點移到另一個日期,不會再開新的 role=dialog"
     }
