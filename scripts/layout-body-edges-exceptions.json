@@ -26,19 +26,7 @@
       "source": "agent-panel.spec.md「3. AgentConversation」(user 2026-09-02 原話只講常駐工具列在最後;「不看最後一則是誰」是【AI 推導 2026-11-14】)"
     }
   ],
-  "pending": [
-    {
-      "key": "fileitem-upload-manager-compact-end",
-      "stories": ["design-system-components-fileitem-展示--upload-manager-compact-surface"],
-      "container": "[data-slot=\"surface-body\"]",
-      "measured": { "md": 20, "lg": 24 },
-      "want": { "md": 12, "lg": 16 },
-      "visualChange": "上傳管理面板(精簡列)最後一列是兩行(錯誤說明)時,說明字底 → 面板底 20 / 24 → 12 / 16(與頂部同值)",
-      "reason": "最後一列的圖示靠上、錯誤說明字在下多出一行,容器給的是上下各 tight/2 的對稱內距,量到的收尾比頂多 8;照規則 4 第 4 列要動 FileItem 精簡列的上下內距或對齊,畫面會變,要 user 看過",
-      "owner": "packages/design-system/src/components/FileItem/file-item.spec.md",
-      "source": "A102 全站實量(2026-11-17,修前 2108fdc8 與修後建置同值)"
-    }
-  ],
+  "pending": [],
   "triggers": [
     {
       "key": "agentpanel-unsaved-guard-covered",
@@ -63,12 +51,6 @@
       "stories": ["design-system-components-datepicker-展示--range-popover-open", "design-system-components-datepicker-展示--show-time-range-popover-open", "design-system-components-datepicker-展示--range-preview-*"],
       "trigger": "date",
       "reason": "區間日期的浮層一開頁就開著(初始那一輪已量),點另一端只是把焦點移到另一個日期,不會再開新的 role=dialog"
-    },
-    {
-      "key": "datatable-filter-panel-states-lg-combobox",
-      "stories": ["design-system-components-datatable-展示--filter-panel-states"],
-      "trigger": "類別",
-      "reason": "大密度時點篩選值欄位不開選單(一般密度會開、量到);2108fdc8 修前建置同樣不開,不是本案造成 —— 另案查 Combobox 在這則大密度的點擊(A102 報告列為待辦)"
     }
   ]
 }

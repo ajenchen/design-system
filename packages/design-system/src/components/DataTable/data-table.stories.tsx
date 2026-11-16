@@ -110,7 +110,7 @@ const FILTER_SECTION_WIDTH = 'w-full max-w-[680px]'
 // 做法照 DS 既有範例:表單對話框 = dialog.stories.tsx「表單」(useFormValidation、送出跳 Toast);
 // 刪除先確認:對話框裡最後那一下才是 primary + danger(button.spec.md 強調等級表);「⋯」= 真的打開選單、列出收進去的動作;
 // 匯出 / 下載 = 跳通知。用到通知的 story 自己掛 <Toaster />(toast.spec.md:每個獨立 story root 一個)。
-function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitLabel, initialValue = '', onSubmit }: {
+function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitLabel, initialValue = '', intent = 'create', onSubmit }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -118,11 +118,15 @@ function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitL
   placeholder?: string
   submitLabel: string
   initialValue?: string
+  /** 新增 = create;編輯既有那一筆 = update(沒改就停用,form-validation.spec.md「Submit Button 狀態」第二列) */
+  intent?: 'create' | 'update'
   onSubmit: (value: string) => void
 }) {
-  // 需要填的只有這一欄 → 空白時送出鈕停用(form-validation.spec.md「Submit Button 狀態」第三列;hook 的 soleRequiredField 算)
+  // 需要填的只有這一欄 → 空白時送出鈕停用(form-validation.spec.md「Submit Button 狀態」第三列;hook 的 soleRequiredField 算);
+  // 編輯(intent: 'update')另加「沒改停用」,兩者並用
   const form = useFormValidation({
     initialValues: { value: initialValue },
+    intent,
     soleRequiredField: 'value',
     validate: { value: (v) => (String(v).trim() ? undefined : `${label}必填`) },
     onSubmit: (values) => {
@@ -217,6 +221,7 @@ function useProductRowActions(initial: Product[]) {
         label="商品名稱"
         submitLabel="儲存"
         initialValue={editing?.name ?? ''}
+        intent="update"
         onSubmit={(name) => {
           const sku = editing?.sku
           setRows((rs) => rs.map((r) => (r.sku === sku ? { ...r, name } : r)))

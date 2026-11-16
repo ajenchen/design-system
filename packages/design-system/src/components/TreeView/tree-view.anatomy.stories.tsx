@@ -412,8 +412,12 @@ interface TeamMember { id: string; label: string }
 
 /** 改名對話框的表單:每次打開以那一列現在的名字起算(key = 成員 id,換人就重建)。寫法同 Dialog 展示「表單」:useFormValidation、沒有 <form>、送出成功 Toast 再關 */
 function RenameMemberForm({ member, onSave }: { member: TeamMember; onSave: (label: string) => void }) {
+  // 「儲存」何時停用(form-validation.spec.md「Submit Button 狀態」):改名是更新 → 沒改停用(intent: 'update');
+  // 需要填的只有名稱 → 空白時也停用(第三列,hook 的 soleRequiredField 算)
   const form = useFormValidation({
     initialValues: { name: member.label },
+    intent: 'update',
+    soleRequiredField: 'name',
     validate: { name: (v) => (String(v ?? '').trim() ? undefined : '名稱必填') },
     onSubmit: (values) => onSave(String(values.name).trim()),
   })
@@ -433,7 +437,7 @@ function RenameMemberForm({ member, onSave }: { member: TeamMember; onSave: (lab
         <DialogClose asChild>
           <Button variant="tertiary">取消</Button>
         </DialogClose>
-        <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
+        <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
       </DialogFooter>
     </>
   )

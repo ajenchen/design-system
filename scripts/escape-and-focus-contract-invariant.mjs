@@ -8,7 +8,7 @@
  *        表單接線到得了 Combobox(name / Esc 層 / 焦點);開啟彈出層不算離開欄位(必填錯誤不會先長出來);
  *        沒有觸發點、從選單項開的對話框關閉後焦點回選單的觸發鈕;移除集合裡的一項後焦點接給下一顆 ×;
  *        就地編輯按 Enter 提交後不會把編輯重開;AgentPanel 輸入盒按附件 × 焦點不離開 textarea;按到底而自己停用的按鈕握著焦點;
- *        可打字日期欄位收起日曆後焦點回輸入框;AgentPanel 改名對話框照表單可執行層(Esc 兩層、取消不落空、空白可按並報錯);
+ *        可打字日期欄位收起日曆後焦點回輸入框;AgentPanel 改名對話框照表單可執行層(Esc 兩層、取消不落空、「儲存」沒改 / 空白停用、有字可按 —— 2026-11-17 起照「Submit Button 狀態」第二 + 第三列);
  *        宣告了 Esc 層卻沒有處理的那一下不會困住使用者(consumer 蓋掉 getInputProps 的 onKeyDown、DataTable 游標的欄被隱藏);
  *        試算表 DataTable 連結格 / 開關格的格內模式(Enter 進到格裡的連結 / 勾選框)也是一層:先回格導覽、再清游標、才關浮層(2026-10-13);
  *        Combobox「+N」浮出清單也算同一個欄位;可聚焦的停用(忙碌 / 握著焦點時被停用)滑過、按住都與原生停用同色(2026-10-07,後三列用同一棵樹編出的 DS 樣式)。
@@ -51,7 +51,7 @@
  *   C-composer-keyboard 焦點在第一顆附件 × 上按 Enter → 移除後焦點在下一顆 ×
  *   F-date-return      Dialog 裡可打字的 DatePicker 用 ↓ 開日曆(焦點進日曆)→ Esc 收起後焦點回輸入框、對話框不關(修前掉到 body)
  *   F-pagination       分頁鍵盤按「下一頁」到最後一頁 → 焦點留在那顆箭頭上(aria-disabled;修前掉到 body)
- *   F-rename           AgentPanel 改名對話框:Esc 先回復名稱再關;清空後直接按「取消」這一下沒落空;清空時「儲存」可按、按了才報錯並移焦點
+ *   F-rename           AgentPanel 改名對話框:Esc 先回復名稱再關;清空後直接按「取消」這一下沒落空;「儲存」打開沒改 / 清空時停用、打上新名字可按並改名
  *   E-datatable-hidden-col Dialog 裡試算表 DataTable:點「數量」格(格游標)→ 隱藏「數量」欄 → ↓ 重新放上游標(不懸空)→ Esc 清游標 → 第 2 下關
  *                      (2026-10-07 獨立驗證抓到:欄被隱藏後根節點仍宣告 Esc 層、handler 卻在 curColIdx < 0 提早 return,五下都關不掉)
  *   E-datatable-cell-widget Dialog 裡試算表 DataTable(SKU / 連結 / 完成三欄):方向鍵把格游標移到連結格 / 開關格 → Enter 焦點進到格裡的
@@ -88,7 +88,7 @@
  *   FileViewer 自己記開啟者(不經 useTriggerlessFocusReturn,2026-10-20 前的寫法)→ F-menu-fileviewer;FileUpload 不以被點的 × 為基準 → F-remove
  *   結算 Enter 不 preventDefault → F-enter-commit;LinkInput Enter 一律 blur → F-link-enter-stay
  *   輸入盒外框不留焦點 → C-composer-mouse;輸入盒不接力 → C-composer-keyboard
- *   DatePicker 收起日曆不還焦點給輸入框 → F-date-return;Button 握著焦點時仍轉原生 disabled → F-pagination / F-look;改名「儲存」空白時停用 → F-rename
+ *   DatePicker 收起日曆不還焦點給輸入框 → F-date-return;Button 握著焦點時仍轉原生 disabled → F-pagination / F-look;改名「儲存」空白仍可按 / 有字也按不了 → F-rename
  *   DataTable 游標的有效性不看欄是否可見 → E-datatable-hidden-col;守門不驗收(沒人認領也不重新派)→ E-unchained;
  *   DatePicker 草稿乾淨時也替 consumer 認領 → E-unchained;Combobox 不把「+N」卡算進欄位 → B-overflow;
  *   可聚焦的停用保留 aria-disabled 那一組長相(2026-10-07 前的寫法:滑過變回原本的填色)→ F-look
@@ -294,12 +294,21 @@ const MUTANTS = [
     expectRed: ['F-look', 'F-pagination'],
     apply: (src) => replaceOnce(src, /const focusableDisabled = !asChild && \(loading \|\| \(!!disabled && holdsFocus\)\)/, 'const focusableDisabled = !asChild && !!loading'),
   },
+  // 2026-11-17 起改名對話框照 form-validation.spec.md「Submit Button 狀態」第三列(需要填的欄位只有一個 → 空白時停用)+ 第二列(更新:沒改停用)。
+  // 兩面各一個突變:空白卻可按(2026-10-01 → 11-17 的行為)、有字也按不了(soleRequiredField 指錯欄位 → 永遠當成空白)。
   {
-    id: 'rename-save-disabled-when-empty',
-    what: '改名對話框名稱空白時「儲存」一併停用(2026-10-01 前的第二份規則)',
+    id: 'rename-save-enabled-when-empty',
+    what: '改名對話框名稱空白時「儲存」仍可按(不看 soleRequiredField = 2026-10-01 → 11-17 的行為)',
     file: 'components/AgentPanel/agent-panel.tsx',
     expectRed: ['F-rename'],
-    apply: (src) => replaceOnce(src, /disabled=\{form\.submitDisabled\} loading=\{form\.isSubmitting\} onClick=\{\(\) => void form\.handleSubmit\(\)\}>\n            儲存/, "disabled={form.submitDisabled || !String(form.values.title).trim()} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>\n            儲存"),
+    apply: (src) => replaceOnce(src, /\n    soleRequiredField: 'title',/, ''),
+  },
+  {
+    id: 'rename-save-disabled-when-filled',
+    what: '改名對話框有字也按不了(soleRequiredField 指到不存在的欄位 → 一律當成空白)',
+    file: 'components/AgentPanel/agent-panel.tsx',
+    expectRed: ['F-rename'],
+    apply: (src) => replaceOnce(src, /soleRequiredField: 'title',/, "soleRequiredField: 'name',"),
   },
   {
     id: 'composer-no-keep-focus',
@@ -1390,15 +1399,21 @@ async function runChecks(page) {
   await page.click(renameFooter('取消')); await d.settle(); await d.focusStable()
   const cancelled = await snap('rename')
   const cancelOk = !cancelled.renameOpen && cancelled.calls === 0 && cancelled.title === '發布公告草稿'
-  // (c) 清空後「儲存」可按(不是原生停用),按了才報「名稱不可空白」並把焦點移到名稱欄位
+  // (c)「儲存」何時可按(form-validation.spec.md「Submit Button 狀態」第二列更新 + 第三列需要填的欄位只有一個;2026-11-17 起):
+  //     打開沒改 → 停用;清空 → 停用、焦點在欄位裡不報錯;打上新名字 → 可按,按了改名並關閉(兩面:空白停用、有字可按)
   await openRename()
+  const pristine = await snap('rename')
   await d.clearFocused()
   const emptied = await snap('rename')
-  await page.click(renameFooter('儲存'), { force: true }); await d.settle(); await d.focusStable()
+  await d.type('季度回顧')
+  const filled = await snap('rename')
+  // 按不了(突變:有字也停用)就不按 —— Playwright 會一直等它變可按到逾時;不按 = 對話框還開著、沒改名,這一格照樣紅
+  if (filled.saveNativeDisabled === false) { await page.click(renameFooter('儲存')); await d.settle(); await d.focusStable() }
   const saved = await snap('rename')
-  const saveOk = emptied.error === null && emptied.saveNativeDisabled === false && saved.renameOpen && saved.error === '名稱不可空白' && saved.active.startsWith('INPUT') && saved.calls === 0
-  check('F-rename', 'contract', 'AgentPanel 改名對話框:改過名稱第一下 Esc 回復、第二下才關;清空後直接用滑鼠按「取消」→ 關(這一下沒落空);清空時焦點在欄位裡不報錯、「儲存」可按,按了才報「名稱不可空白」並把焦點移回欄位',
-    escOk && cancelOk && saveOk, { typed, steps, cancelled, emptied, saved })
+  const saveOk = pristine.saveNativeDisabled === true && emptied.error === null && emptied.saveNativeDisabled === true
+    && filled.saveNativeDisabled === false && !saved.renameOpen && saved.calls === 1 && saved.title === '季度回顧'
+  check('F-rename', 'contract', 'AgentPanel 改名對話框:改過名稱第一下 Esc 回復、第二下才關;清空後直接用滑鼠按「取消」→ 關(這一下沒落空);「儲存」打開沒改停用、清空停用(焦點在欄位裡不報錯)、打上新名字可按,按了改名並關閉',
+    escOk && cancelOk && saveOk, { typed, steps, cancelled, pristine, emptied, filled, saved })
 
   return out
 }

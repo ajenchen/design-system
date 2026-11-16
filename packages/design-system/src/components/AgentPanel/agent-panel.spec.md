@@ -290,8 +290,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   **Enter / Space 在行內動作上 = 啟動該動作**,不是選列——cmdk 的 Enter=選列由 Command 根統一擋掉(`../Command/command.spec.md`「A11y」;2026-09-02 實測補時本元件另寫了一份,2026-09-26 收回 Command,待辦總帳〇節「按鍵規則合併」);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
 - 改名=Dialog(`height="hug"` 隨內容、`width="sm"`(只有一件事 = 一個改名輸入框,`../Dialog/dialog.spec.md`「寬度檔位」;2026-11-15 前寫死 440);Field「名稱」+Input 預填全選、`required`;
   **驗證走 `useFormValidation`**(2026-10-01,待辦總帳 N70;`../Field/form-validation.spec.md` 更新類):沒改停用、改了亮、還原再停;焦點在欄位裡不報錯(規則 1)、
-  清空後直接按「取消」那一下不會被長出來的錯誤推走(規則 2 延後);**空白時「儲存」可按**,按了才顯示 FieldError「名稱不可空白」並把焦點移到欄位(規則 7 / 8;
-  原「空白時停用」查無 user 原話且與 hook 的 submitDisabled 衝突,AI 推導改寫);Enter=儲存;**Esc 分兩層**:改過名稱第一下 Esc 回復、第二下才關
+  清空後直接按「取消」那一下不會被長出來的錯誤推走(規則 2 延後);**空白時「儲存」停用**(`../Field/form-validation.spec.md`「Submit Button 狀態」第三列:
+  需要填的欄位只有名稱、唯一擋住的是空白 → hook 的 `soleRequiredField: 'title'` 算,與更新類的「沒改停用」並用;2026-11-17 起。2026-10-01 → 11-17 是「空白可按、
+  按了才報錯」—— 當時的理由是原「空白時停用」查無 user 原話,現在第三列有 user 2026-11-17 原話可依);Enter=儲存(空白時報 FieldError「名稱不可空白」、焦點留在欄位);**Esc 分兩層**:改過名稱第一下 Esc 回復、第二下才關
   (`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」),沒改直接關);
   刪除=Dialog 危險樣式(`primary + danger`,同 hug / `width="sm"`:一句確認)。
   **刪當前對話契約**(consumer 實作,spec 定義):切到最近一則;全空→空狀態(NewConversation)。
@@ -424,8 +425,8 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 - `hasVariants=false`:家族各元件無視覺 variant 軸(結構分支如 Chip assist 屬 Chip 元件)。
 - `hasSizes=false`:面板寬/列高/鈕尺寸全由消費的 primitive/token 決定,無獨立 size 軸。
 - Field 家族空值/驗證:AgentPromptInput 只有一個要填的欄位,照 `../Field/form-validation.spec.md`「Submit Button 狀態」第三列(需要填的欄位只有一個)—— 空白時送出鈕不可按(2026-11-17 起規則住該處,本條只是套用;剛送出而變空的那一刻送出鈕握著焦點 → 不轉原生 disabled、焦點留在原鈕,
-  `../Button/button.tsx` 可聚焦的停用);改名 Dialog 走 form-validation 更新類規則(未異動停用/dirty 亮/還原再停;空白可按、按了報錯並移焦點 ——
-  2026-10-01 前這裡寫「空白時一併停用,避免可按卻無反應」,查無 user 原話,且 hook 下按了會報錯移焦點,前提不成立,見上方「改名」條)。
+  `../Button/button.tsx` 可聚焦的停用);改名 Dialog 走 form-validation 更新類規則(未異動停用/dirty 亮/還原再停)+ 第三列(需要填的欄位只有一個:空白時停用,
+  `soleRequiredField`;2026-11-17 起,見上方「改名」條)。
 
 ## Loading / 無障礙預設
 

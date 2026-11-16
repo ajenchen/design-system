@@ -380,6 +380,7 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 - `dialog.spec.md`
 - `empty.spec.md`
 - `field.spec.md`
+- `file-item.spec.md`
 - `overlay-chrome-sizing.spec.md`
 - `overlay-surface.spec.md`
 - `pagination.spec.md`

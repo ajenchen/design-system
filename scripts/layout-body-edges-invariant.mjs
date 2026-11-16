@@ -20,7 +20,9 @@
  *           (c) chrome 標頭(<header> / SurfaceHeader)的下一塊(header-first-gap 的 pageKit.findBody)—— consumer 自己寫內距的容器;
  *               下一塊本身是字(p / span / 標題 …)、裡面還有別的標頭(版面外層)、或它之後同層還有 (a)(b) 的容器(那一塊是搜尋列之類的 chrome)不算。
  *         容器裡又有容器 = 版面外層,不判(判裡面那個)。
- *   判法(全部從既有的閘 import,判法只有一個住所 —— M17):頁面量具 = header-first-gap-invariant.mjs 的 pageKit;
+ *   觸發點按它「自己的表面」(lib/launch-browser.mjs ownSurfacePosition),不按正中央 —— 正中央可能是欄位裡的 Tag 移除鈕(A103)。
+ *   判法(全部從既有的閘 import,判法只有一個住所 —— M17):頁面量具 = header-first-gap-invariant.mjs 的 pageKit(只多一條:絕對定位的
+ *         role=progressbar 算內容,pageKit 其餘絕對定位照舊當裝飾略過 —— FileItem 精簡列的進度條疊在列的下內距裡,A104);
  *         最後一個東西的角色 = classifyFirst(有框 → bounded、無框清單自帶 py → unbounded、其餘 element);容器種類 = header-content-sides 的 classifyBox
  *         (modal / 撐滿 / 貼內容 / 被上限卡住 / 高度寫死);期望值 = 同檔 bottomWant。本檔多三件事:
  *         ① 元件根部的邊緣標記 data-layout-region="bounded|unbounded" 優先於 DOM 判法(Sidebar 的 py 在群組那一層,DOM 分不出;舊閘 NOT_COVERED),
@@ -51,6 +53,8 @@
  *         β 注入一行 CSS 讓容器不再自判(底一律 bottom)→ 同一格紅;另 SurfaceBody 三段範例(hug)紅「與頂部同值」;
  *         ε 一般按鈕 / 選單項目打開的對話框(Empty「建立任務」、DataTable 列動作「編輯」與「更多操作 → 刪除」)量得到;
  *         同一則不點(triggers:false)就量不到;
+ *         ζ 觸發點按「自己的表面」(DataTable 篩選面板大密度「類別 篩選值」正中央是 Tag 移除鈕)全打得開,對照組按正中央 → 打不開(A103);
+ *         η 絕對定位的進度條算最後一個內容(FileItem 上傳管理面板精簡列:底 = 頂),對照組藏起進度條 → 量到說明字、紅(A104);
  *         標記造假兩種(Sidebar 群組改標 bounded、表格外框改標 unbounded)→ 標記檢查紅。
  *   分片(--shard=i/n,i 從 0 起;CI 兩格 0/2、1/2):story id 依字碼穩定排序後取模。每片照常判(量測、標記、0 個容器 / 0 則 story = 儀器失效);
  *         例外帳「只准變少」與 --selftest 只在第 0 片做(--selftest 帶非 0 片直接略過、印出來);過期:整筆對到的 story 都在這一片的由這一片判,
@@ -65,7 +69,7 @@ import { fileURLToPath } from 'node:url'
 import { readServedStorybookIndex, startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { isDirectRun } from './lib/direct-run.mjs'
 import {
-  INSTRUMENT_FAIL_MARKER, launchBrowser, launchBrowserOrSkip, openStory, requireFreshStorybookBuild, requireStorybookBuild, StoryRenderInstrumentError,
+  INSTRUMENT_FAIL_MARKER, launchBrowser, launchBrowserOrSkip, openStory, ownSurfacePosition, requireFreshStorybookBuild, requireStorybookBuild, StoryRenderInstrumentError,
 } from './lib/launch-browser.mjs'
 import { classifyFirst, installPageKit } from './header-first-gap-invariant.mjs'
 import { bottomWant, classifyBox, FOLLOW_STEP } from './header-content-sides-invariant.mjs'
@@ -105,6 +109,11 @@ const CLICK_STORIES = [
   ['design-system-components-empty-展示--no-tasks', ['建立任務']],
   ['design-system-components-datatable-展示--row-actions', ['編輯', '更多操作 → 刪除']],
 ]
+/** --selftest ζ:觸發點正中央是欄位裡另一個有自己行為的東西(大密度第一個「類別 篩選值」正中央是 Tag 的移除鈕;A103) */
+const OWN_SURFACE_STORY = 'design-system-components-datatable-展示--filter-panel-states'
+const OWN_SURFACE_TRIGGER = '類別'
+/** --selftest η:最後一個內容是絕對定位的進度條(FileItem 精簡列;A104) */
+const PROGRESS_STORY = 'design-system-components-fileitem-展示--upload-manager-compact-surface'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 頁面端(被 toString 送進頁面,不得引用外層變數;量具一律用 window.__layoutKit = header-first-gap 的 pageKit)
@@ -238,7 +247,7 @@ export const probeContainer = ({ k, followStep, exSel }) => {
   // 邊緣標記:最後一個東西本身或它往上到容器之間(不含容器)的第一個 data-layout-region → 角色照標記、量那一層的外框
   let region = null
   for (let n = last.el; n && n !== body; n = n.parentElement) if (n.hasAttribute('data-layout-region')) { region = n; break }
-  const lastF = last.f
+  let lastF = last.f
   if (region) last = { el: region, f: K.feat(region), boxed: true }
   const top = h ? topOf(first) - h.getBoundingClientRect().bottom : topOf(first) - (body.getBoundingClientRect().top + num(body, 'borderTopWidth'))
   const flexy = (n) => !!n && /flex|grid/.test(getComputedStyle(n).display)
@@ -266,6 +275,21 @@ export const probeContainer = ({ k, followStep, exSel }) => {
         && !/(absolute|fixed)/.test(cs.position) && edge(A, 'bottom') === 0 && !flexy(A.parentElement)
       if (collapse) pend = Math.max(pend, mar(A, 'bottom'))
       else { e += pend + edge(A, 'bottom'); pend = mar(A, 'bottom') }
+    }
+    // 絕對定位的進度條是內容(2026-11-17 A104):pageKit 的 collectThings 把絕對定位一律當裝飾 / 捲軸 / 浮出的提示略過,但 FileItem 精簡列的
+    // 進度條就是絕對定位(疊在列的下內距裡,file-item.tsx compactBarInset)—— 它在流裡時 pageKit 自己就把它判成內容(header-first-gap 的
+    // classifyFirst 表「進度條(有底色的細條)→ element」)。略過它,上傳管理面板最後一列量到的是錯誤說明字 → 面板底 20 / 24,
+    // 實際最後一個看得見的是進度條 → 面板底 12 / 16(file-item.spec.md「upload-manager 浮層面板 composition」bar → 邊緣)。
+    // 只補 role=progressbar(有語意的內容,輔助技術會唸),其餘絕對定位照舊略過。e 是容器的內容終點(從流裡最後一個走上來算的,
+    // 與誰是最後一個無關),所以底 = e − 進度條底;進度條要比流裡最後一個低、又不超出 e 才換。
+    if (!region) {
+      for (const pb of body.querySelectorAll('[role=progressbar]')) {
+        if (!K.vis(pb)) continue
+        let abs = false
+        for (let n = pb; n && n !== body; n = n.parentElement) if (/(absolute|fixed)/.test(getComputedStyle(n).position)) { abs = true; break }
+        const b = pb.getBoundingClientRect().bottom
+        if (abs && b > bottomOf(last) + 0.5 && b <= e + 0.5) { last = { el: pb, f: K.feat(pb), boxed: true }; lastF = last.f }
+      }
     }
   }
   if (!scroller && boxEl !== body && scrolling(boxEl)) { scrolls = true; scroller = boxEl }
@@ -599,8 +623,14 @@ async function measureRound(page, extra, exSel) {
 /**
  * 一則 story × 一種密度:開頁量一次,再對每個觸發點「重開 → 先把現有容器打標記 → 點 → 等新的 role=dialog → 只量新出現的」。
  * triggers: false 只給 --selftest δ(證明點開這一步必要)。beforeMeasure(page) 只給 --selftest 注入破法。
+ * 觸發點按「它自己的表面」(lib/launch-browser.mjs ownSurfacePosition,2026-11-17 A103):正中央可能落在欄位裡另一個有自己行為的東西上 ——
+ * DataTable「進階篩選 — 各種狀態」大密度第一個「類別 篩選值」欄位窄到 186px,正中央 x 499 正好是 Tag「移除 Electronics」(489..505),
+ * 按下去是把那個標籤拿掉、不是打開選單,於是被記成「點了不開」(一般密度欄位 206px、正中央 501 剛好在 × 右邊,沒事)。
+ * 產品與範例都對(按 × 本來就是移除);錯的是量具按的位置 —— 同 overlay-footer-gutter / select-all-footer 閘 2026-10-01 改用這支的理由。
+ * 找不到自己的表面(被浮層蓋住:例外檔 triggers 的 *-covered)照舊按(按不到 → 記成點了不開,由例外檔登記)。
+ * clickAt: 'center' 與 explore: false 只給 --selftest ζ(對照組:按正中央就打不開;不跑一般按鈕那一輪)。
  */
-export async function measureStory(page, origin, notFound, id, density, { exSel, triggers = true, beforeMeasure = null } = {}) {
+export async function measureStory(page, origin, notFound, id, density, { exSel, triggers = true, beforeMeasure = null, clickAt = 'own', explore = true } = {}) {
   const rows = [], regions = [], triggerMisses = []
   await openAt(page, origin, notFound, id, density)
   if (beforeMeasure) await beforeMeasure(page)
@@ -622,8 +652,10 @@ export async function measureStory(page, origin, notFound, id, density, { exSel,
     const dialogs = () => [...document.querySelectorAll('[role=dialog], [role=alertdialog]')].filter((d) => !d.hasAttribute('data-lbe-seen') && d.getBoundingClientRect().height > 2).length
     await page.evaluate(() => { for (const d of document.querySelectorAll('[role=dialog], [role=alertdialog]')) d.setAttribute('data-lbe-seen', '') })
     const trig = page.locator('[data-lbe-trigger]').first()
-    try { await trig.click({ timeout: 3000 }) } catch {
-      try { await trig.click({ timeout: 3000, force: true }) } catch { await page.evaluate(() => document.querySelector('[data-lbe-trigger]')?.focus()); await page.keyboard.press('Enter') }
+    const at = clickAt === 'own' ? await ownSurfacePosition(await trig.elementHandle()) : { ok: false }
+    const position = at.ok ? at.position : undefined
+    try { await trig.click({ timeout: 3000, position }) } catch {
+      try { await trig.click({ timeout: 3000, force: true, position }) } catch { await page.evaluate(() => document.querySelector('[data-lbe-trigger]')?.focus()); await page.keyboard.press('Enter') }
     }
     try { await page.waitForFunction(dialogs, null, { timeout: 5000 }) } catch { triggerMisses.push({ id, density, trigger: label }); continue }
     await page.mouse.move(0, 0)
@@ -634,6 +666,7 @@ export async function measureStory(page, origin, notFound, id, density, { exSel,
     rows.push(...got.rows); regions.push(...got.regions)
   }
   // 一般按鈕 / 選單項目打開的浮層(2026-11-17 A102 審查 MF1:Empty「建立任務」、TreeView「重新命名」、DataTable 列動作 —— 只點 aria-haspopup="dialog" 時量不到、也不報)
+  if (!explore) return { rows, regions, triggerMisses }
   const opened = await exploreClicks(page, origin, notFound, id, density, { exSel, beforeMeasure, pristine: labels.length === 0 })
   rows.push(...opened.rows); regions.push(...opened.regions); triggerMisses.push(...opened.triggerMisses)
   return { rows, regions, triggerMisses }
@@ -933,7 +966,7 @@ async function runScan(firstBrowser, server, exSel, shard = { i: 0, n: 1 }, ex =
         if (!others.length || x.stories.includes('*') || new Set(hit.map((id) => shardOf.get(id))).size < 2) continue
         staleChecked.add(x.key)
         if (seen.has(x.key)) continue
-        // 兩種密度都要補(有的登記只在大密度發生,例:datatable-filter-panel-states-lg-combobox)
+        // 兩種密度都要補(有的登記只在大密度發生,例:2026-11-17 A103 修掉前的 datatable-filter-panel-states-lg-combobox)
         search: for (const id of [...others].sort()) for (const density of DENSITIES) {
           try {
             const got = await measureStory(w.page, server.origin, server.notFound, id, density, { exSel })
@@ -1164,6 +1197,29 @@ async function selftestBrowser(browser, server, ex) {
       const leaked = none.rows.filter((r) => r.declared === 'fill')
       if (seen.length !== want.length || leaked.length) problems.push(`ε ${story}:應點開量到 ${JSON.stringify(want)}、不點量不到;實得點開 ${JSON.stringify(seen)}、不點 ${leaked.length} 個`)
       else out(`  ✓ ε ${story}:點「${want.join('」「')}」打開的對話框量到;不點 → 量不到(只點 aria-haspopup="dialog" 的版本就是這樣漏掉)`)
+    }
+    // ζ(A103):觸發點正中央是欄位裡的 Tag 移除鈕 —— 按自己的表面打得開;對照組按正中央 → 點了不開(修前的量法)
+    {
+      const own = await measureStory(page, server.origin, server.notFound, OWN_SURFACE_STORY, 'lg', { exSel, explore: false })
+      const center = await measureStory(page, server.origin, server.notFound, OWN_SURFACE_STORY, 'lg', { exSel, explore: false, clickAt: 'center' })
+      // 同一則、同一密度,只差按的位置:正中央至少一個打不開(對照組會紅)、自己的表面全打得開(Combobox 的選單沒有 body 容器,量到 0 列是正常的,看的是有沒有打開)
+      const miss = (got) => got.triggerMisses.filter((m) => (m.trigger ?? '').includes(OWN_SURFACE_TRIGGER))
+      if (miss(own).length || !miss(center).length) problems.push(`ζ @lg:按自己的表面應每個「${OWN_SURFACE_TRIGGER}」都打得開、按正中央至少一個打不開;實得 自己的表面 ${miss(own).length} 個打不開、正中央 ${miss(center).length} 個打不開`)
+      else out(`  ✓ ζ @lg:「${OWN_SURFACE_TRIGGER}」按自己的表面全打得開;按正中央 ${miss(center).length} 個打不開(正中央是 Tag 的移除鈕)`)
+    }
+    // η(A104):絕對定位的進度條算最後一個內容 —— 上傳管理面板(精簡列)底 = 與頂部同值;對照組把進度條藏起來 → 量到說明字、紅
+    for (const density of DENSITIES) {
+      const pick = (got) => got.rows.filter((r) => /data-slot=surface-body/.test(r.containerDesc ?? ''))
+      const now = pick(await measureStory(page, server.origin, server.notFound, PROGRESS_STORY, density, { exSel, triggers: false }))
+      const nowRed = now.flatMap((r) => [...judgeRow(r, ex).failures, ...judgeRow(r, ex).instrument])
+      const hidden = pick(await measureStory(page, server.origin, server.notFound, PROGRESS_STORY, density, {
+        exSel, triggers: false, beforeMeasure: (p) => p.addStyleTag({ content: '[data-slot="surface-body"] [role=progressbar]{display:none!important}' }),
+      }))
+      const hRed = hidden.flatMap((r) => judgeRow(r, ex).failures)
+      const want = T[density].tight
+      if (!(now.length === 1 && /progressbar/.test(now[0].lastDesc ?? '') && Math.abs(now[0].bottom - want) <= TOL && !nowRed.length && hidden.length === 1 && hidden[0].bottom > want + TOL && hRed.some((s) => s.includes('與頂部同值')))) {
+        problems.push(`η @${density}:上傳管理面板(精簡列)應量到進度條、底 ${want}、綠;藏起進度條應紅「與頂部同值」;實得 ${JSON.stringify(now.map((r) => ({ bottom: r.bottom, last: r.lastDesc })))} ${JSON.stringify(nowRed)} / 藏起 ${JSON.stringify(hidden.map((r) => r.bottom))} ${JSON.stringify(hRed)}`)
+      } else out(`  ✓ η @${density}:上傳管理面板(精簡列)最後是絕對定位的進度條 → 底 ${now[0].bottom} = 頂;藏起進度條 → 量到說明字、底 ${hidden[0].bottom}、紅「與頂部同值」`)
     }
     // 標記造假:Sidebar 群組改標 bounded、表格外框改標 unbounded → 標記檢查紅
     const fake = await measureStory(page, server.origin, server.notFound, SIDEBAR_STORY, 'md', {

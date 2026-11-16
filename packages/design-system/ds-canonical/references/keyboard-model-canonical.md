@@ -599,7 +599,7 @@ Microsoft 與 VS Code 都有,我們沒有。這會是產品層決策,不在本�
 | `DialogContent` / `SheetContent` 預設記開啟者、沒有觸發點就還;開啟者住在選單裡 → 還給選單的觸發鈕 | W3C dialog 關閉後焦點、React Aria FocusScope、Radix 只還 Trigger 的根因(待辦總帳 OE29) | **AI 推導**(DS 層預設行為改變,影響所有 consumer 的受控對話框) |
 | AgentPanel 輸入盒:textarea 握著焦點時按附件 × / + / 送出 / 停止焦點不動;鍵盤移除接力 → 下一顆 × → 前一顆 → textarea;移除接力三份收成 `lib/collection-removal-focus.ts` | combobox.spec.md 既有接力規則 + rc-select / MUI 擋 mousedown 的既有出處(待辦總帳 OE30) | **AI 推導**;「+ / 送出 / 停止也算同一個控件的零件」是同根延伸 |
 | 可打字的 DatePicker 收起日曆後焦點回輸入框(鍵盤路線;修前掉到 body) | 2026-10-01 重建這一批時實測(基準樹同樣掉到 body)+ 本節「沒有觸發點時一律還」 | **AI 推導**(同 Range 既有做法,待辦總帳 N86) |
-| AgentPanel 改名對話框清空名稱時「儲存」可按、按了報錯並移焦點(原「空白時一併停用」撤) | form-validation.spec.md「沒有 API 可以違反」+ 規則 1 讓停用鈕變成「讓使用者猜為什麼按不了」;原句查無 user 原話(待辦總帳 N70) | **AI 推導**(現況違反 spec 就照 spec) |
+| AgentPanel 改名對話框:打開沒改、清空名稱時「儲存」都停用,有字才可按;空白按 Enter 照舊報「名稱不可空白」、焦點留在欄位(2026-10-01 → 11-17 曾是「空白可按、按了報錯」,已由下欄兩列取代) | form-validation.spec.md「Submit Button 狀態」第二列(更新語意:沒改停用)+ 第三列(需要填的欄位只有一個:空白停用;出處與 user 原話見該列,B13 / B13c) | **規格落地**(兩列並用照 `use-form-validation.ts` 的組合;Enter 沿用既有行為,規格未另訂) |
 | 「宣告 ≠ 處理」:守門留住的那一下派送完沒有控件認領 → 重新派、照常關(不困住);可聚焦的停用滑過 / 按住也與原生停用同色;浮層表單送出成功先跳 Toast 再關、建立表單打開時回空白 | 2026-10-07 獨立驗證抓到的三個缺陷(DataTable 欄被隱藏後 Esc 關不掉對話框、consumer 蓋掉 `onKeyDown` 同樣關不掉;忙碌鈕滑過變回原本的填色;浮層表單送出成功沒有提示)+ WCAG 2.1.2 No Keyboard Trap;Toast 那一條的出處同上方「送出成功一律用 Toast」列 | **AI 推導**(待辦總帳 N64 / N68 / N69);Toast 本身是 user 2026-10-01 的裁示,「先跳再關、打開時 reset」是 AI 的落地 |
 | 收起動畫不延後焦點歸還(關閉的那一刻就還、淡出中 inert、卸載時不再搬) | 2026-10-21 r1b fields 獨立複驗 N1:T11(2026-10-13)讓 Popover 收起動畫真的會播之後,Esc 後 150ms 內按 Tab 被吃掉;main 沒有收起動畫,這幾格本來是對的 | **工程修正**(回到 main 的焦點結果,只改時機;還給誰沒變) |
 

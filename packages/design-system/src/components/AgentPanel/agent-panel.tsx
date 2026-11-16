@@ -927,12 +927,15 @@ function AgentRenameDialog({
   // 走 form-validation 可執行層(2026-10-01,待辦總帳 N70;規格 agent-panel.spec.md「改名」):規則 1(焦點在欄位裡不報錯)/ 2(離開才驗,指標按著時延到
   // 按壓完成 —— 清空後直接按「取消」不再被長出來的錯誤推走,N67 同根)/ 4(Esc 回復,放在 Dialog 裡第一下只回復、第二下才關,N68)/ 7 / 8(按「儲存」才
   // 報「名稱不可空白」並把焦點移到欄位)。2026-10-01 前這裡自己寫 touched / onBlur / `disabled={!dirty || empty}`:焦點還在欄位裡清空就當場報錯(違規則 1)、
-  // 清空直接按取消那一下落空(實測取消鈕上緣 150.8 → 204.8)、Esc 一下關整個對話框。「空白時儲存停用」沒有 user 原話,且與 hook 的 submitDisabled
-  //(只看 pristine / 送出中)衝突 —— 再加 `|| empty` 就是第二份規則(M17 / M30);規則 1 下空白錯誤在聚焦時看不到,停用鈕就變成規格自己點名的
-  // 「讓使用者猜為什麼按不了」。改成可按、按了報錯並移焦點。
+  // 清空直接按取消那一下落空(實測取消鈕上緣 150.8 → 204.8)、Esc 一下關整個對話框。
+  // 「儲存」何時停用照 form-validation.spec.md「Submit Button 狀態」:改名是更新(第二列:沒改就停用,intent: 'update'),而且需要填的欄位
+  // 只有名稱、唯一擋住送出的是它空白(第三列,user 2026-11-17 原話見該段「依據」)→ 空白時也停用,由 hook 的 soleRequiredField 算,不在這裡手寫
+  // `|| !title.trim()`(2026-10-01 拿掉手寫那一份的理由仍成立:第二份規則 M17 / M30)。
+  // Enter 照舊走 handleSubmit:空白時報「名稱不可空白」、焦點留在欄位。
   const form = useFormValidation({
     initialValues: { title: conversation.title },
     intent: 'update',
+    soleRequiredField: 'title',
     validate: { title: (v) => (String(v).trim() ? undefined : '名稱不可空白') }, // i18n-allow: DS 預設文案
     onSubmit: ({ title }) => {
       const trimmed = String(title).trim()
