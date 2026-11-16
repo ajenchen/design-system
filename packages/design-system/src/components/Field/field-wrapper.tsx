@@ -535,7 +535,8 @@ export const EMPTY_DISPLAY = '-'
  * 2026-05-14 I2 fix(per field-controls.spec.md contract (e) view typography canonical):
  * Field family view path bare-span helper — `sm/md → text-body` / `lg → text-body-lg`,
  * 跨 9 元件 view 視覺尺寸統一(user 抓 LinkInput 字體跟其他 Field 不一致 = SSOT 違反)。
- * Consumer:LinkInput / Select / Combobox / DatePicker / TimePicker non-D-path bare-span 套此 class。
+ * Consumer:LinkInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker non-D-path bare-span 套此 class
+ *(PeoplePicker 2026-11-17 補上,A100;六個元件 × showDisplayEndIcon 兩值的像素閘 scripts/field-view-font-size-invariant.mjs)。
  */
 export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>
   size === 'lg' ? 'text-body-lg' : 'text-body'

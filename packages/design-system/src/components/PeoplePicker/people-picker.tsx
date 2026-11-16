@@ -5,7 +5,7 @@ import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { useFieldSurface, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant } from '@/design-system/components/Field/field-context'
@@ -319,8 +319,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // block 會把 MultiPersonDisplay 的 inline-flex root 放進文字基線行盒,字型下伸空間(~6.5px)
       // 把頭像串推向行盒頂 → DataTable cell 內視覺偏上 6.4px。flex 容器無行盒語意;
       // 單人(flex root)/空值(span)子項幾何不變(2026-08-20 線上注入實證 7.5/7.5 置中)。
+      // 字級:root 套 `fieldDisplayTextClass(size)`(sm/md→text-body、lg→text-body-lg),field-controls.spec.md「(e) View typography
+      // canonical」—— 修前這條路沒有任何字級 class,名字與空值符號吃外層字級(Field 裡 = 16px),同一顆控件 showDisplayEndIcon=true
+      // 那條(fieldWrapperStyles 的 size 字級)是 14px(2026-11-17 A100;閘 scripts/field-view-font-size-invariant.mjs)。
+      // 表格格子本來就帶同一個 class(data-table.tsx 格子的 fieldDisplayTextClass),格內字級不變。
       return (
-        <div ref={ref} className={cn('flex w-full min-w-0', className)} aria-label={ariaLabel} {...rest}>
+        <div ref={ref} className={cn('flex w-full min-w-0', fieldDisplayTextClass(size), className)} aria-label={ariaLabel} {...rest}>
           {isEmpty
             ? <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             : isMulti

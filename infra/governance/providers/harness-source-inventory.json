@@ -753,6 +753,7 @@
           "scripts/test-dropdown-menu-keyboard-invariant.mjs",
           "scripts/test-exemption-expiry-invariant.mjs",
           "scripts/test-field-label-binding-invariant.mjs",
+          "scripts/test-field-view-font-size-invariant.mjs",
           "scripts/test-focus-geometry-invariant.mjs",
           "scripts/test-gate-control-group-invariant.mjs",
           "scripts/test-gate-reachability-invariant.mjs",
