@@ -373,6 +373,8 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 |-------|------|
 | `--brand` | 品牌色，固定色 #DF3232，兩主題相同 |
 
+產品不寫 `--brand`;要換品牌色由設計系統新增一組值(`../token-system.spec.md`「誰可以讀」主題甲)。
+
 ### Primitive 色票與 Tag / Avatar 的消費
 
 Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）直接消費 primitive token。消費端自行決定色彩用途。

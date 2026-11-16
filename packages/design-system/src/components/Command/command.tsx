@@ -350,7 +350,7 @@ const Command = React.forwardRef<
           // 2026-09-10 實測:殼的框今天畫不出來(PopoverContent overflow-hidden 把 +2px 整條裁掉,
           // 逐像素 0),但 computed style 確實有 outline —— 殼一旦被放進不裁切的宿主就會現形,先抑制掉。
           className={cn("flex h-full w-full flex-col overflow-hidden text-foreground outline-none", className)}
-          // gutter → 列的內距變數(整棵子樹的列一起換;item-anatomy.spec.md「Token: --item-px」客製方式)。consumer 的 style 最後展開,仍可蓋
+          // gutter → 列的內距變數(整棵子樹的列一起換;item-anatomy.spec.md「Token: --item-px」客製方式)。consumer 的 style 最後展開(一般樣式照常;用 style 寫 --item-px 等於寫 token,產品不做,換列內距用 gutter —— 依據主題甲,範圍的讀法見 token-system.spec.md「誰可以讀」AI 推導 ①)
           style={gutter ? { '--item-px': gutter === 'surface' ? 'var(--layout-space-loose)' : 'var(--field-px)', ...style } as React.CSSProperties : style}
           {...props}
         >

@@ -112,7 +112,7 @@ benchmark:
 
 先看分類表那一列的 `product`:
 
-**(一)產品可讀(`product` 是 `read` / `read-write`)的名字,與它的 Tailwind 轉接名**:
+**(一)產品可讀(`product` 是 `read`)的名字,與它的 Tailwind 轉接名**:
 1. **要不要退場由 user 決定**(改的是對外的 token 組,屬產品 / UI SSOT)。「設計系統與已知產品(本 repo `apps/`、WM)都沒有讀者」可以列為提案理由之一,但 AI 不得只憑它自己刪 —— 還要說得出這個名字為什麼沒有意義(用途寫不出、與別的名字同值重複……)。
 2. 分類表 `retired` 登記一筆:`name`、`quote`(user 原話,逐字)、`quoteDate`;改名另寫 `renamedTo`(新名字)。這是**授權紀錄**,不是相容:**0.x / 預發布版同一版直接刪**,不留舊名、不標 deprecated(相容政策 `../../ds-canonical/references/props-naming.md`「相容政策」,版本判斷 `scripts/lib/compat-policy.mjs`);1.0 以後的正式版才多寫 `deprecatedIn`(標 deprecated、名字仍在的那一版)與 `removedIn`(真正刪掉的那一版,不得等於 `deprecatedIn`),先保留一版。刪掉的名字(與它的 Tailwind 轉接名、改名的新名字)同一版寫進變更帳本(`../../ds-changes.json`,surface `token`;GitHub Release「破壞性變更」由它產生)。
 3. 閘 `scripts/token-creation-invariant.mjs` C10:對照基準(與 main 的分岔點、HEAD),產品可讀的名字在工作樹不再宣告、又不在 `retired` → 紅;`retired` 缺 user 原話 / 日期 → 紅;1.0 以後的正式版缺兩個版本或兩版相同 → 紅。

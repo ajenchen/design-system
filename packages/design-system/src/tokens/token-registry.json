@@ -4,12 +4,13 @@
     "閘:scripts/token-creation-invariant.mjs(CI verify-static 必跑)。搬一顆 token 就改一列(home);名字退場就刪一列。",
     "match:結尾是 - 或 _ 的是「名字開頭」,其餘是完整名字;一個名字取最長且吻合的那一列。新名字一定要有自己完整名字的一列。",
     "class:raw 原料 / shared 共用刻度 / component 元件的值 / ignore 不是設計數值(第三方或 Tailwind 內部)。",
-    "home:現在宣告它的檔(相對 packages/design-system/src);target:目標住處(主人的資料夾;閘 C9 拿 home 與 target 的資料夾當「主人」)。閘 C3 驗 target:元件的值必須在 components/<owner> 或 patterns/<owner>,原料 / 共用刻度不搬家、target = home。",
-    "spec:現在說明它的那份規格。product:no 不可讀 / read 可讀來對齊不可覆寫 / read-write 可讀也可覆寫。dsReaders:設計系統裡誰可以讀(\"any\" 或資料夾)。",
+    "home:現在宣告它的檔(相對 packages/design-system/src);target:目標住處(主人的資料夾;閘 C9 拿 home 與 target 的資料夾當「主人」)。閘 C3 驗 target:元件的值必須在 components/<owner> 或 patterns/<owner>,原料 / 共用刻度不搬家、target = home。閘 C3 也驗元件的值的 home(2026-11-16):不在主人資料夾的只放行搬家中(target 在主人資料夾)與執行期寫值(home 全是寫它的程式檔、沒有 CSS 宣告;寫它的每一個設計系統執行期檔都要列在 home)。",
+    "spec:現在說明它的那份規格。product:no 不可讀 / read 可讀來對齊。產品不寫任何 token,沒有「可覆寫」這個值(依據主題甲;範圍讀成「任何」是 AI 推導 ①,見 token-system.spec.md「誰可以讀」)。dsReaders:設計系統裡誰可以讀(\"any\" 或資料夾)。",
     "known:只能變短的已知名單。missingSpec = 在登記的規格裡完全找不到(萬用寫法涵蓋也算找得到);missingRestore = 有大密度覆寫卻沒有回復;",
-    "dsRawColorReads = 設計系統元件直接讀原料、不在 dsReaders;productReads / productWrites = 本 repo apps/ 讀了不開放的名字 / 覆寫了不開放覆寫的名字;",
+    "dsRawColorReads = 設計系統元件直接讀原料、不在 dsReaders;productReads / productWrites = 本 repo apps/ 讀了不開放的名字 / 寫了任何登記的名字;",
     "productExternal = 設計系統 CI 看不到的產品 repo,只登記不機器檢查(閘 C9 丙把這裡的名字算成有人讀);",
     "unread = 閘 C9(丙)2026-11-15 補上時就已存在、沒有任何執行期讀者的共用刻度(設計系統、apps/、WM 都沒有;只在 stories 或完全沒人用)—— 去留待決,只能變短。",
+    "fallbackCopies = 同一顆登記的 token 在兩個以上的設計系統執行期檔寫了後備值 var(--x, 預設)(token-system.spec.md 規則 2;閘 C3);2026-11-16 補這條時已存在的副本列在這裡,單位是 `名字|檔`(同 productWrites;同一個名字在新的檔多一份也會紅),只能變短。",
     "retain(列的欄位):設計系統自己不讀、仍要保留的名字寫保留類別的鍵(例:--brand = reservation);閘 C9(丙)不把它當沒人讀。retention:保留類別的唯一機器清單 —— key 對到 orphan-tokens.spec.md 每類標題裡的反引號字(閘 C1 兩邊比),pattern 是按名字歸類的規則(null = 成員由列的 retain 指名);scripts/audit-orphan-tokens.mjs 直接讀這裡,不另存一份。類別的理由只住 orphan-tokens.spec.md。",
     "retired:產品可讀(product 不是 no)的名字與它的 Tailwind 轉接名退場的登記(user 授權紀錄,不是相容)—— 每筆 name / quote(user 原話,逐字)/ quoteDate,改名另寫 renamedTo。要不要先保留一版看相容政策(唯一住處 ds-canonical/references/props-naming.md「相容政策」,版本判斷 scripts/lib/compat-policy.mjs):0.x / 預發布版同一版刪、不要求版本欄;1.0 以後另要 deprecatedIn(標 deprecated、名字仍在的版本)/ removedIn(刪掉的版本,不同於 deprecatedIn)。閘 C10 對照基準(與 main 的分岔點、HEAD):產品可讀的名字在工作樹不再宣告、又不在這裡 → 紅。流程住 orphan-tokens.spec.md「退場流程」(2026-11-15)。"
   ],
@@ -745,7 +746,7 @@
       "spec": "patterns/element-anatomy/item-anatomy.spec.md",
       "product": "read",
       "dsReaders": "any",
-      "why": "清單項目左右內距的「旋鈕」:沒有預設宣告,讀的地方自帶預設值,外層改寫它就能一起調(日期格、日期選擇、選單項目、下拉選單、樹狀清單都讀)。拿掉任何一個元件都還有意義 → 共用刻度"
+      "why": "清單項目左右內距:沒有預設宣告,讀的地方各自帶後備值 var(--field-px)(同一個值好幾份,每一份逐檔登記在 known.fallbackCopies,待修);設計系統內部改寫它(`Command` 的 `gutter`),產品不寫 —— 要換列內距用 `gutter`(item-anatomy.spec.md「Token: `--item-px`」)。產品不寫的依據是主題甲加上 AI 推導 ①(甲原文沒有限定範圍,讀成所有 token 都不寫;它不在 5甲 的 12 顆裡,見 token-system.spec.md「誰可以讀」)。日期格、日期選擇、選單項目、下拉選單、樹狀清單都讀,拿掉任何一個元件都還有意義 → 共用刻度"
     },
     {
       "match": "--field-height-",
@@ -822,7 +823,7 @@
       "spec": "components/Sidebar/sidebar.spec.md",
       "product": "no",
       "dsReaders": "any",
-      "why": "側欄寬、收合寬:拿掉側欄就沒有意義 → 側欄的值(版面外框、標頭讀它們是為了排側欄的位置)。2026-11-13 前這一列管 4 顆,另外兩顆已退場(AI 依 token-system.spec.md 第 0 題做的工程收斂;user 沒有決定過這個改法,只問過一句,原話見 token-system.spec.md):最小寬 --sidebar-width-min 只有 AppShell 在讀、不隨密度變 → 收回 components/AppShell/app-shell.tsx 的常數 PANEL_WIDTH_MIN_DEFAULT(畫面零差異);選單圖示欄 --sidebar-menu-icon-size 改成 SidebarProvider 外層設的元件內變數(收合寬公式的輸入,不在 :root 宣告、不登記;sidebar.spec.md「尺寸規範」)—— 收合寬因此改跟 size 走,畫面有差異,見 sidebar.spec.md。產品不可覆寫,設定走 AppShell 參數 widthRange / defaultWidth —— token 只是產品沒設時的預設值(user 2026-11-10 拍板 token 第 4 題甲;sidebar.spec.md「consumer 可覆寫」那句同批改成「用參數設定」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第五批 2026-11-11 已搬到 components/Sidebar/sidebar.css,名字與值不變;新檔由對外彙總檔 styles/tokens.css 匯入(2026-05-26 產品拿不到側欄寬的事故)"
+      "why": "側欄寬、收合寬:拿掉側欄就沒有意義 → 側欄的值(版面外框、標頭讀它們是為了排側欄的位置)。2026-11-13 前這一列管 4 顆,另外兩顆已退場(AI 依 token-system.spec.md 第 0 題做的工程收斂;user 沒有決定過這個改法,只問過一句,原話見 token-system.spec.md):最小寬 --sidebar-width-min 只有 AppShell 在讀、不隨密度變 → 收回 components/AppShell/app-shell.tsx 的常數 PANEL_WIDTH_MIN_DEFAULT(畫面零差異);選單圖示欄 --sidebar-menu-icon-size 改成 SidebarProvider 外層設的元件內變數(收合寬公式的輸入,不在 :root 宣告、不登記;sidebar.spec.md「尺寸規範」)—— 收合寬因此改跟 size 走,畫面有差異,見 sidebar.spec.md。產品不寫(直接依據是 4甲,見本句最後;主題甲的範圍讀法見 token-system.spec.md「誰可以讀」AI 推導 ①);Sidebar 放在 AppShell 裡時寬度走 Sidebar 的 widthRange(initial = 預設寬;defaultWidth 是產品自存的寬度紀錄),token 只是產品沒設時的預設值;單獨使用的 Sidebar 沒有寬度參數(user 2026-11-10 拍板 token 第 4 題甲;sidebar.spec.md「consumer 可覆寫」那句同批改成「用參數設定」)。user 2026-11-10 拍板 token 第 2 題甲:第二階段搬到主人資料夾(分五批,每批畫面零差異),第五批 2026-11-11 已搬到 components/Sidebar/sidebar.css,名字與值不變;新檔由對外彙總檔 styles/tokens.css 匯入(2026-05-26 產品拿不到側欄寬的事故)"
     },
     {
       "match": "--table-row-",
@@ -996,6 +997,13 @@
     ],
     "productReads": [],
     "productWrites": [],
+    "fallbackCopies": [
+      "--item-px|components/DateGrid/date-grid.tsx",
+      "--item-px|components/DatePicker/date-picker.tsx",
+      "--item-px|components/Menu/menu-item.tsx",
+      "--item-px|components/SelectMenu/select-menu.tsx",
+      "--item-px|components/TreeView/tree-view.tsx"
+    ],
     "productExternal": [
       {
         "repo": "work-management",

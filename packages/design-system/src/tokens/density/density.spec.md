@@ -98,10 +98,13 @@ document.documentElement.setAttribute('data-ui-size', 'lg')
 </div>
 ```
 
-**保證:區塊裡每一顆 token = 整頁直接設成那個密度的值**(逐 token 相等;兩個方向都算 —— 大密度頁面裡鎖回一般密度、一般密度頁面裡局部放大)。兩種寫法會破這條,`tokens/uiSize/uiSize.css` 各有一段處理:
+**保證:區塊裡每一顆 token = 整頁直接設成那個密度的值**(逐 token 相等;兩個方向都算 —— 大密度頁面裡鎖回一般密度、一般密度頁面裡局部放大)。兩種寫法會破這條,宣告 token 的樣式檔各自處理(有密度段的檔案清單見上方「同一個元素帶兩種屬性」的「寫法」;衍生值段的例子見下面第二條):
 - 有大密度覆寫的值,「鎖回一般密度」段要有它(閘 `token-creation-invariant.mjs` C5);
-- 用 `var()` 由別的 token 組出來的值(例:側欄收合寬 `--sidebar-width-icon`)不能只寫在 `:root` —— 瀏覽器在宣告它的元素上就把 `var()` 代換掉,子孫繼承代換後的結果([W3C CSS Custom Properties Level 1](https://www.w3.org/TR/css-variables-1/#defining-variables):Computed value =「specified value with variables substituted」),區塊換密度時它不會重算。所以這類值住「衍生值」段,宣告在 `:root` 與每個換密度的元素上(側欄收合寬另一個輸入是側欄的 `size`,所以它還多在 `SidebarProvider` 外層重算一次 —— `../../components/Sidebar/sidebar.spec.md`「尺寸規範」)。
-閘 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算 32 種組合(單一屬性區塊、同元素雙屬性、整頁解耦、兩個單軸屬性 = 便捷屬性、兩層巢狀)× 對外彙總檔的全部 token。
+- 用 `var()` 由別的 token 組出來的值(例:側欄收合寬 `--sidebar-width-icon`)不能只寫在 `:root` —— 瀏覽器在宣告它的元素上就把 `var()` 代換掉,子孫繼承代換後的結果([W3C CSS Custom Properties Level 1](https://www.w3.org/TR/css-variables-1/#defining-variables):Computed value =「specified value with variables substituted」),區塊換密度時它不會重算。所以這類值住各檔自己的「衍生值」段(例:`../uiSize/uiSize.css`、`../../components/Sidebar/sidebar.css`),宣告在 `:root` 與每個換密度的元素上(側欄收合寬另一個輸入是側欄的 `size`,所以它還多在 `SidebarProvider` 外層重算一次 —— `../../components/Sidebar/sidebar.spec.md`「尺寸規範」)。
+
+**保證到哪裡**【AI 推導 2026-11-16】:「每一顆 token」指樣式檔裡宣告的值(對外彙總檔 `styles/tokens.css` 展開後的全部宣告,加上分類表住處是 `.css` 的檔)。不在這條保證裡的:(1) 執行期量出來、寫進 inline style 的值(例:`--tag-max-inline-size`)—— 它跟著量的當下;(2) 元件內變數(例:Sidebar 的 `--sidebar-rail-icon-slot`)—— 它跟著元件參數,不跟密度;(3) 元件畫出來的幾何 —— 有些元件另有自己的閘(例:浮層 `scripts/overlay-density-follows-trigger-invariant.mjs`、側欄收合 `scripts/sidebar-standalone-collapse-invariant.mjs`)。程式裡的對照常數不跟密度走,但 `../token-system.spec.md` 規則 2 只准它用在不隨密度切換的值,所以不會破這條。
+
+閘 `scripts/test-density-subtree-token-parity.mjs` 在瀏覽器裡實算 32 種組合(單一屬性區塊、同元素雙屬性、整頁解耦、兩個單軸屬性 = 便捷屬性、兩層巢狀)× 上面範圍內的全部 token。
 
 ## 動態切換
 

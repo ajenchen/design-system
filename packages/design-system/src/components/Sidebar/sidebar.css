@@ -17,9 +17,9 @@
      兩者不同檔的兩格,圖示在收合前後會跳 2px。現在圖示欄 = 畫出來的圖示寬,由 SidebarProvider 外層設元件內變數
      --sidebar-rail-icon-slot(不是 token:不在 :root 宣告、不登記、產品不讀不寫),見下方「衍生值」段。
 
-   ── 產品要設定寬度用參數,不覆寫這幾顆 ──
-   user 2026-11-10 token「4甲」:要設定的值只走元件參數(Menu 用 AppShell 的 widthRange / defaultWidth),
-   這幾顆(當時 4 顆,現在 2 顆)只是產品沒設時的預設值,產品不可覆寫。
+   ── 產品不寫這兩顆 ──
+   設定寬度走參數(放在 AppShell 裡用 Sidebar 的 widthRange;單獨使用沒有寬度參數),
+   見 tokens/token-system.spec.md「誰可以讀」與 sidebar.spec.md「尺寸規範」。
 
    ── 本檔必須在對外彙總檔裡(2026-05-26 事故)──
    側欄寬原本宣告在 DS repo 的 src/globals.css,沒進套件的對外彙總檔 → 安裝套件的產品拿不到 --sidebar-width →

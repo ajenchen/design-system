@@ -22,7 +22,7 @@
 
 ## 誰可以讀
 
-看 `token-registry.json` 該列的 `product`(產品:不可讀 / 可讀來對齊 / 可讀也可覆寫)與 `dsReaders`(設計系統哪些資料夾可以讀)。各類別的預設值與理由在 `token-system.spec.md`「誰可以讀」。產品要**設定**元件尺寸走元件參數,不覆寫 token。
+看 `token-registry.json` 該列的 `product`(產品:不可讀 / 可讀來對齊)與 `dsReaders`(設計系統哪些資料夾可以讀)。各類別的預設值與理由在 `token-system.spec.md`「誰可以讀」。產品不寫任何 token;要**設定**元件尺寸走元件參數。
 
 ## 這裡**不收**(反例)
 

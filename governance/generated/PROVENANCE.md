@@ -27,8 +27,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:ce02f265c7309c97d6c6e4d724aed1da1d24bea51c904b725b5c11eed9b6a556` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:87cbff0b877067b44196008cde0ee61c423dc8f512eaa34ce0ea0f5883a9c9cd` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:4e5220c40d17d7ebd6e4be4264ed1654ae5ac24b2bee6a6ed656100ff5abf8ce` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:57632e25f953b28d88243c0ddcf1d6ee0c53cfdbd78a3130f8a21d0368c5bdb5` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:a961fbeeebfd5197da6d4baef7bf1915b52867389a95d7465862c3256e1c08f8` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:c08176a14276ae76f363ecd09113bb53a20c18726d61e1b5a527ebda23a08d44` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:4bc3eb5c63ed9c1147b5bde23c2fec8e13a6028242f6e273dc71a2f38f045ae6` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
@@ -347,7 +347,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:e04c0a05f96406b662762d9e443d89394f26743d7d022dd92183c4f3acc3f05e` |
+| repository-automation-corpus | `scripts` | `sha256:74059445ea1f4a868212d5063d51a4a351035809806b47c24960b9ceea09e88f` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

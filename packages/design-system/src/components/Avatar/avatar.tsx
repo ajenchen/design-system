@@ -344,7 +344,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     const isTableScrolling = useTableIsScrolling()
     // 2026-05-13 R3.5(per codex Q3 verdict + user 拍「想盡辦法 auto-handle prereq」):
     // Avatar self-dim when in disabled Field wrapper context(取代既有 wrapper opacity-disabled blanket
-    // 逃生艙 — color.spec.md:741 specific-disabled-color canonical)。
+    // 逃生艙 — color.spec.md:743 specific-disabled-color canonical)。
     // Scope:`useResolvedFieldDisabled()`(= fieldCtx.disabled,涵蓋 <Field disabled> 與 <Field mode="disabled">),標準 Field
     // 家族 wrapper disabled 時才 dim;**沒包在 Field wrapper 內的 standalone Avatar**(ProfileCard / FileItem /
     // HoverCard / Dialog 等 display 場景)**不變淡** —— 那些場景沒有「停用的欄位」可以跟【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】。對齊 avatar.spec.md「Avatar 在 disabled

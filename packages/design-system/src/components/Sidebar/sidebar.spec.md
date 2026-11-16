@@ -691,7 +691,7 @@ Consumer 只要加 `collapsible` 與群組識別 `value`(必填):
 
 ## 尺寸規範
 
-元件 scope 的 design token(側欄的值;宣告住 `sidebar.css`,2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來、名字與值不變,由對外彙總檔 `styles/tokens.css` 匯入;分類見 `../../tokens/token-registry.json`)。**寬度由 AppShell 參數 `widthRange` / `defaultWidth` 設定;token 只是產品沒設時的預設值,不開放產品覆寫**(產品也不讀這幾顆)。來源:user 2026-11-10 對「產品要自己設的值(例如側欄寬):每家都是做成元件參數」回「想補充一下，我也覺得這種方向才是對的吧？？？」(問句,逐字);同日決策頁正式選 token 第 4 題「4甲」(要設定的值只走元件參數,側欄 4 顆不開放產品覆寫 —— 「4 顆」是當天的數量)。原句「元件 scope 的 design token，consumer 可覆寫」同日改成本句。**2026-11-13 起現行剩 2 顆**(AI 的工程修正;`--sidebar-width`、`--sidebar-width-icon`):最小寬 `--sidebar-width-min` 收回 AppShell 的常數、圖示欄 `--sidebar-menu-icon-size` 退場改成元件內變數,兩顆的去處與理由見表下「2026-11-13 兩顆退場」:
+元件 scope 的 design token(側欄的值;宣告住 `sidebar.css`,2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來、名字與值不變,由對外彙總檔 `styles/tokens.css` 匯入;分類見 `../../tokens/token-registry.json`)。**放在 AppShell 裡時,寬度由 Sidebar 的 `widthRange` 設定(`initial` = 預設寬;`defaultWidth` 是產品自存的使用者寬度紀錄,不是預設寬);單獨使用沒有寬度參數。token 只是產品沒設時的預設值,產品不寫**(產品也不讀這幾顆;產品不寫的直接依據是下面的 4甲,主題甲的範圍讀法見 `../../tokens/token-system.spec.md`「誰可以讀」AI 推導 ①;2026-11-16 更正,原寫「由 AppShell 參數 `widthRange` / `defaultWidth` 設定」)。來源:user 2026-11-10 對「產品要自己設的值(例如側欄寬):每家都是做成元件參數」回「想補充一下，我也覺得這種方向才是對的吧？？？」(問句,逐字);同日決策頁正式選 token 第 4 題「4甲」(要設定的值只走元件參數,側欄 4 顆不開放產品覆寫 —— 「4 顆」是當天的數量)。原句「元件 scope 的 design token，consumer 可覆寫」同日改成本句。**2026-11-13 起現行剩 2 顆**(AI 的工程修正;`--sidebar-width`、`--sidebar-width-icon`):最小寬 `--sidebar-width-min` 收回 AppShell 的常數、圖示欄 `--sidebar-menu-icon-size` 退場改成元件內變數,兩顆的去處與理由見表下「2026-11-13 兩顆退場」:
 
 | Token | 預設值 | 用途 |
 |-------|--------|------|

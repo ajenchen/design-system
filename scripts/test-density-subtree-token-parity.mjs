@@ -5,7 +5,10 @@
  *        = 整頁直接設成那個密度時的值(逐 token 相等)。兩個方向都驗:大密度頁面裡鎖回一般密度、一般密度頁面裡局部放大。
  *   紅: 任一組合裡任一顆 token 跟「整頁該密度」的值不同 → 指名 token、組合、兩邊的值,exit 1。
  *   綠: 32 種組合(densityCases() 的 A–E 五類:單一屬性區塊 12、同元素雙屬性 8、整頁解耦 4、兩個單軸屬性 = 便捷屬性 2、
- *       兩層巢狀 6)× 對外彙總檔宣告的全部 token 都相等。期望值的解析規則 = resolveTiers()(density.spec.md「同一個元素帶兩種屬性」)。
+ *       兩層巢狀 6)× 量測範圍宣告的全部 token 都相等。期望值的解析規則 = resolveTiers()(density.spec.md「同一個元素帶兩種屬性」)。
+ *       量測範圍 = 對外彙總檔展開 ∪ 分類表(token-registry.json)住處是 .css、彙總檔沒展開到的檔(measuredCss();2026-11-16 補:
+ *       只被元件程式匯入的樣式檔依規則不進彙總檔,原本完全量不到 —— density.spec.md「局部覆蓋」的「保證到哪裡」)。
+ *       分類表讀不到、或列出的 .css 住處不存在 → INSTRUMENT-FAIL(exit 1,不得當通過)。
  *   註: 純 CSS 計算,不開 storybook、不量時間;機器快慢不影響結果。
  *
  * 為什麼要有這支(2026-11-11):
@@ -24,12 +27,14 @@
  *
  * 跑法:
  *   node scripts/test-density-subtree-token-parity.mjs              現況(要綠)
- *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:注入的缺陷(清單見 selftest())各自必紅且指名(衍生值那一種在側欄 sidebar.css 與多行輸入框 uiSize.css 各注入一次、各自指名;含「在主人根元素上量」那條),現況必綠
+ *   node scripts/test-density-subtree-token-parity.mjs --selftest   對照組:注入的缺陷(清單見 selftest())各自必紅且指名(衍生值那一種在側欄 sidebar.css 與多行輸入框 uiSize.css 各注入一次、各自指名;含「在主人根元素上量」那條;
+ *                                                                    含「只被程式匯入、不進彙總檔的住處」那條與「分類表列了不存在的住處 = 儀器失效」),現況必綠
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowserOrSkip } from './lib/launch-browser.mjs'
+import { DS_ROOT, REGISTRY_PATH } from './token-creation-invariant.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DS = join(REPO, 'packages/design-system/src')
@@ -56,6 +61,39 @@ export function bundleCss(entry, overrides = new Map(), seen = new Set()) {
   const text = overrides.get(entry) ?? readFileSync(entry, 'utf8')
   return text.replace(/@import\s+(?:url\()?\s*['"]([^'"]+)['"]\s*\)?\s*;/g, (_, spec) =>
     spec.startsWith('.') ? bundleCss(resolve(dirname(entry), spec), overrides, seen) : '')
+}
+
+/** 分類表(唯一一份 token 分類;住處欄位 home)。讀不到 = 儀器失效,丟例外由呼叫端判 INSTRUMENT-FAIL。 */
+export function readRegistry() {
+  try { return JSON.parse(readFileSync(join(REPO, REGISTRY_PATH), 'utf8')) } catch (e) {
+    throw new Error(`分類表 ${REGISTRY_PATH} 讀不到(${String(e?.message ?? e).split('\n')[0]})—— 量測範圍無從決定,INSTRUMENT-FAIL`)
+  }
+}
+
+/** 分類表裡住處是 .css 的檔(絕對路徑,去重)。 */
+export function registryCssHomes(registry) {
+  if (!Array.isArray(registry?.rows)) throw new Error(`分類表 ${REGISTRY_PATH} 沒有 rows —— INSTRUMENT-FAIL`)
+  const out = new Set()
+  for (const r of registry.rows) {
+    for (const h of r?.home == null ? [] : Array.isArray(r.home) ? r.home : [r.home]) if (typeof h === 'string' && h.endsWith('.css')) out.add(join(REPO, DS_ROOT, h))
+  }
+  return [...out].sort()
+}
+
+/**
+ * 量測範圍(2026-11-16):對外彙總檔展開,再接上分類表住處是 .css、彙總檔沒展開到的檔(共用同一個 seen,不重複)。
+ * 只被元件程式匯入的樣式檔依產生器規則不進彙總檔(token-system.spec.md「擺放」最後一條;閘 C6「進彙總檔或被程式匯入」),
+ * 只量彙總檔就看不到它們。列出的檔不存在(對照組 overrides 給的除外)→ 丟例外(INSTRUMENT-FAIL)。
+ */
+export function measuredCss(overrides = new Map(), registry = readRegistry()) {
+  const seen = new Set()
+  let css = bundleCss(AGGREGATOR, overrides, seen)
+  for (const h of registryCssHomes(registry)) {
+    if (seen.has(h)) continue
+    if (!overrides.has(h) && !existsSync(h)) throw new Error(`分類表登記的住處 ${h.slice(REPO.length + 1)} 不存在 —— INSTRUMENT-FAIL`)
+    css += `\n${bundleCss(h, overrides, seen)}`
+  }
+  return css
 }
 
 /** 宣告過的 token 名(去掉註解;`@theme` 裡的 Tailwind 轉接名不是執行期變數,不算)。 */
@@ -212,6 +250,13 @@ async function selftest(page) {
     if (next === base) throw new Error(`對照組「${label}」的注入沒有改到 ${file}(寫法變了,先修對照組)—— INSTRUMENT-FAIL`)
     return new Map([[file, next]])
   }
+  const importedOnly = (() => {
+    const rel = 'components/FixtureImported/fixture-imported.css'
+    const registry = readRegistry()
+    registry.rows.push({ match: '--fixture-imported-h', class: 'component', owner: 'FixtureImported', home: rel, target: rel, spec: 'components/FixtureImported/fixture.spec.md', product: 'no', dsReaders: 'any', why: '對照組' })
+    const overrides = new Map([[join(DS, rel), ':root { --fixture-imported-h: 1rem; }\n[data-ui-size="lg"],\n[data-density="lg"]:not([data-ui-size]) { --fixture-imported-h: 2rem; }\n']])
+    return { overrides, registry }
+  })()
   const cases = [
     ['現況', null, new Map()],
     // 側欄 4 顆 2026-11-11 搬到 components/Sidebar/sidebar.css(token「2甲」第五批):衍生值段跟著搬,
@@ -230,14 +275,27 @@ async function selftest(page) {
     ['拿掉 --table-row-sm 的回復', '--table-row-sm', mutate(DATA_TABLE, '拿掉 table-row 回復', /(\[data-density="md"\][^{]*\{[\s\S]*?)--table-row-sm:[^;]*;/, '$1')],
     // 「在主人根元素上量」不是恆綠:表格根元素不再重算 → 繼承整頁的值 → 必紅
     ['表格根元素不再重算 --table-cell-py', '--table-cell-py', mutate(DATA_TABLE, '表格只留 :root', /:root,\s*\[data-table-size="md"\]\s*\{/, ':root {')],
+    // 2026-11-16 量測範圍 = 彙總檔 ∪ 分類表 .css 住處:造一個只被元件程式匯入(不進彙總檔)的樣式檔,登記成住處,
+    // 有大密度覆寫、沒有回復 → 大密度頁面裡鎖回一般密度的區塊沿用 2rem ≠ 整頁一般密度的 1rem → 必紅且指名。只量彙總檔時這一格看不到。
+    ['只被程式匯入的元件樣式檔(不進彙總檔)登記成住處、有大密度覆寫沒回復', '--fixture-imported-h', importedOnly.overrides, importedOnly.registry],
   ]
   let ok = true
-  for (const [label, name, overrides] of cases) {
-    const css = bundleCss(AGGREGATOR, overrides)
+  for (const [label, name, overrides, registry] of cases) {
+    const css = measuredCss(overrides, registry ?? readRegistry())
     const { failures } = await checkParity(page, css)
     const real = failures.filter((f) => !KNOWN.has(f.name))
     const pass = name == null ? real.length === 0 : real.some((f) => f.name === name)
     console.log(`${pass ? '✓' : '✗'} ${name == null ? '該綠' : '該紅'}:${label}${name ? `(要指名 ${name})` : ''} —— 實得 ${real.length} 筆不相等${real.length ? `:${[...new Set(real.map((f) => f.name))].join(' / ')}` : ''}`)
+    if (!pass) ok = false
+  }
+  // 量具(2026-11-16):分類表列了不存在的 .css 住處 → 丟例外(INSTRUMENT-FAIL),不得默默少量一個檔
+  {
+    const registry = readRegistry()
+    registry.rows.push({ match: '--fixture-missing', class: 'component', owner: 'FixtureMissing', home: 'components/FixtureMissing/missing.css', spec: 'components/FixtureMissing/x.spec.md', product: 'no', dsReaders: 'any', why: '對照組' })
+    let threw = null
+    try { measuredCss(new Map(), registry) } catch (e) { threw = String(e?.message ?? e) }
+    const pass = threw != null && threw.includes('components/FixtureMissing/missing.css')
+    console.log(`${pass ? '✓' : '✗'} 該紅(儀器失效):分類表登記的 .css 住處不存在 —— ${threw ?? '沒有丟例外'}`)
     if (!pass) ok = false
   }
   console.log(ok ? '✓ 對照組:注入的缺陷各自紅且指名、現況綠(儀器有效)' : '✗ 對照組有一條沒照預期 —— 儀器無效')
@@ -250,7 +308,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   let code = 0
   try {
     if (process.argv.includes('--selftest')) code = (await selftest(page)) ? 0 : 1
-    else code = report(await checkParity(page, bundleCss(AGGREGATOR))) ? 1 : 0
+    else code = report(await checkParity(page, measuredCss())) ? 1 : 0
   } catch (e) {
     console.error(`✗ INSTRUMENT-FAIL ${String(e?.message ?? e).split('\n')[0]}`)
     code = 1

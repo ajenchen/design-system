@@ -44,7 +44,7 @@ paths:
 
 ## UI 開發 4 條核心
 
-必重用既有 `components/` / 必用 design tokens(禁硬寫色/字/間距/圓角)/ 建新 UI 前查 pattern / 用 `cn()`(`@/lib/utils`)合併 Tailwind class。
+必重用既有 `components/` / 必用 design tokens(屬於既有刻度的色 / 字 / 間距 / 圓角禁硬寫;該不該開新 token 照 `packages/design-system/src/tokens/token-system.spec.md` 判斷流程第 0 題 —— 不開的值寫在元件自己的檔裡,不是常識值就加一行註解寫為什麼【AI 推導 2026-11-16:原句只寫「禁硬寫色/字/間距/圓角」,跟第 0 題(三個都不是就不開 token)矛盾,改成一致;來源是 2026-11-11 決策頁「照既有原則直接做」清單裡把互相矛盾的規則改成一致那一項 —— 那一項是 AI 寫的,user 沒有回應,不算 user 決定】)/ 建新 UI 前查 pattern / 用 `cn()`(`@/lib/utils`)合併 Tailwind class。
 
 深度規則 → `packages/design-system/ds-canonical/references/ui-dev-rules.md`(slot 幾何 / Padding source / Icon size 3 層)。
 
