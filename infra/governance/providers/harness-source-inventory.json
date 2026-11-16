@@ -353,6 +353,7 @@
         "scripts/test-cloud-portability-invariants.mjs",
         "scripts/test-consumer-pr-merge-evidence.mjs",
         "scripts/test-data-table-column-sorting.mjs",
+        "scripts/test-data-table-editing-rows.mjs",
         "scripts/test-data-table-range-hover.mjs",
         "scripts/test-data-table-sort-cycle.mjs",
         "scripts/test-deep-audit-evidence-schema-parity.mjs",

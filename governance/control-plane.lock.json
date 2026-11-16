@@ -10,7 +10,7 @@
   "contractDigest": "sha256:6f63c4b98da5ea84c426d714819e8628160ad12bade78d4cdf1f7f791f99420d",
   "files": [
     {
-      "hash": "sha256:b3ef0522bb1893561df43bf40e894278591934233169f60b5e6e5826b85dbd1a",
+      "hash": "sha256:bf5b4a1ae8fafa899664b56a03b86002750ef91461980f2056da0cb4199ec5a3",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:db7466ba058d65e33b3de4d0a35c09c81a7ab38cd0412fcb749d377d514303bc",
+      "hash": "sha256:96ee259f8668694c4c1e33c5012b3b106e2b8b5932c52f9f3d83a6011967a96e",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140199,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:e9bd1062e6e38102ee28a34085cf0357adaf1b16d76b5e5f1a8ca4f0babc31b3",
+  "inputDigest": "sha256:5be4fb360e7cc0070a68689537ba2424667f4221d6b41f9689d227e9a80665f5",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:0128874dcd281f6a5490772568a000e9c22c78ef3612996f6606fa0c953ac6c5",
+  "snapshotDigest": "sha256:9646927dced13dc1d8d3957b0a735889f6b19ba3d01264d8b42b7c6db63fafa3",
   "sources": [
     {
       "hash": "sha256:2c0e1fa5342aea91edf94d03338b9c0a3708a4e12d02b43646b6e886f2bd64f0",
@@ -1529,7 +1529,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:d0fe19ac89267208e8c0f0441cd0957ba79cbbf48faba8d4fb915be02fd99233",
+      "hash": "sha256:6f14c9a51babf8b39dfca20c8bae969d8a59aff42c5bdb08d31a6f1178bde7b4",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2135,7 +2135,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:1405ecde90eceac21540915070dd13fd5855e5e48ae21de8f3ec4f858f644368",
+      "hash": "sha256:ecbf70549e647df9827a44f0c1a234414e525983b48dbd6f6c356dc903fbd298",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2311,7 +2311,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:4e4a393cfd0a2c275288108c788819e57deb5ad85e0a67d9e87dc19fcca0c046",
+      "hash": "sha256:17ce6e37d3de50ee1ff7749d11cf283d96a9fc4162528471a9c81b20f41ca814",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2355,7 +2355,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:49bbb110fd213695ad1d2312ba49b8d17382905d8620d75c7fb21f666f2172a8",
+      "hash": "sha256:ac2135c48cf61de24f282a68689597de06eded2d2441f5b04f4283fc270b8659",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2418,12 +2418,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:e909d236726d7b8b1e5872aa9a986256a89d34886e0ee09bc5149e52e1309d0c",
+      "hash": "sha256:49f281579dcf2d84eb8e42e85e24ae7e23dc70ecd26806661d186b0f1fb1b5fd",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 40731,
+      "size": 40783,
       "type": "file"
     },
     {
@@ -3098,7 +3098,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4552b777411d2fc4c9efb4e4b586c62aed01e750285f810da244863f9f23af08",
+      "hash": "sha256:a27ec00f21ce9cf1faea7c670eed72080da1c94ad0a11f51c5a3fdbed6215433",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3605,8 +3605,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 765,
-      "hash": "sha256:122f327d03a5b7242c3a0ef990bb41525fddd20de5a807b3dfc0d1bee3b90fa8",
+      "files": 766,
+      "hash": "sha256:bbe505a23e7656f92ca60df7eff61c6924ce919b423b060e3126510492a5ad08",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

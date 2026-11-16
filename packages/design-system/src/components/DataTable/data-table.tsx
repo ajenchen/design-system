@@ -59,6 +59,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
 import { nextSorting, columnMenuShowsCancelSort, columnMenuShowsSortDirection, sortPriorityLabel, sortPriorityDescription, sortChangeAnnouncement, DATA_TABLE_SORT_DEFAULT_LABELS, type SortAction } from './lib/sort-cycle'
+import { cellEditId, editingRowIndexesOf } from './lib/editing-rows'
 import { sortingFnForColumnType } from './lib/column-sorting'
 import { resolveCellComponent, CELL_EDIT_ENTRY_ATTR, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
@@ -395,7 +396,7 @@ export interface DataTablePaginationOptions {
 // World-class source(@benchmark-unverified):AG Grid cellRendererSelector / Material X-Grid
 // `valueGetter + renderCell` / Notion property type registry。
 
-const cellEditId = (rowId: string, colId: string) => `${rowId}__${colId}`
+// 格鍵與它的反函式(「哪幾列正在編輯」)住在 lib/editing-rows.ts(2026-11-16 A25 覆核 SF10:反函式要有判定表守著)
 
 /** 欄的可讀名(欄標題字串;標題不是字串時用欄 id)—— 格內編輯器的 accessible name、表頭欄位選單的名字共用這一支。 */
 const columnAccessibleName = (column: { id: string; columnDef: { header?: unknown } }): string =>
@@ -2364,15 +2365,27 @@ function DataTableInner<TData>(
   // (多代理審查 P2:只有 aheadRows 變、範圍沒變的 render 會拿到上一輪的索引)。
   const aheadRowsNow = shellRef.current.aheadRows
   const aheadDirNow = shellRef.current.aheadDir
+  // **編輯中的那一列永遠在虛擬範圍裡**(2026-11-05 審查 D2 提出、2026-11-16 A25 拆出先上):編輯框住在格子裡,列被捲出範圍 →
+  // 虛擬化把它卸載 → 一般 inlineEdit 打到一半的草稿沒提交也沒提示就丟了(草稿只在格子自己的元件狀態裡)、覆蓋層編輯器焦點掉到 body。
+  // 編輯中只要不是使用者自己結束編輯,列就留著(畫在它原本的位置,捲出視窗看不到,捲回來編輯框、焦點與草稿都還在)。
+  // 找編輯列用 `cellEditId` 的**反函式**精確比(lib/editing-rows.ts `editingRowIndexesOf`,判定表 scripts/test-data-table-editing-rows.mjs):
+  // 前綴 `${row.id}__` 之後剩下的必須正好是一個欄 id —— 只比前綴是「同一列」的代理(列 id 本身含 `__`、又是另一列 id 的前綴時會配錯,M37)。
+  const editingRowIndexes = React.useMemo(() => {
+    if (editingCellId == null || !useVirtual) return [] as number[]
+    return editingRowIndexesOf(editingCellId, rows.map((r) => r.id), table.getAllLeafColumns().map((c) => c.id))
+  }, [editingCellId, rows, useVirtual, table])
   const shellRangeExtractor = React.useMemo(() => (range: { startIndex: number; endIndex: number; overscan: number; count: number }) => {
     const base = Math.max(0, range.startIndex - range.overscan)
     const end = Math.min(range.count - 1, range.endIndex + range.overscan)
     const from = aheadDirNow < 0 ? Math.max(0, base - aheadRowsNow) : base
     const to = aheadDirNow > 0 ? Math.min(range.count - 1, end + aheadRowsNow) : end
     const out: number[] = []
+    // 編輯列在範圍前 / 後就補在前 / 後(TanStack 要求索引遞增)
+    for (const i of editingRowIndexes) if (i < from && i < range.count) out.push(i)
     for (let i = from; i <= to; i++) out.push(i)
+    for (const i of editingRowIndexes) if (i > to && i < range.count) out.push(i)
     return out
-  }, [aheadRowsNow, aheadDirNow])
+  }, [aheadRowsNow, aheadDirNow, editingRowIndexes])
   React.useLayoutEffect(() => {
     const S = shellRef.current
     const cost = (typeof performance !== 'undefined' ? performance.now() : 0) - S.renderStart

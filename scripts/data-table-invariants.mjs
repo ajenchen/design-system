@@ -2700,6 +2700,58 @@ for (const [label, r, c, kind] of [
   }
 }
 
+// ── I39:編輯中的列捲走再捲回,編輯框 / 焦點 / 草稿都還在(2026-11-05 審查 D2 立;2026-11-16 A25 拆出「捲走」這一半先上)──────
+// 列被捲出虛擬範圍就被卸載 → 一般 inlineEdit 打到一半的草稿沒提交也沒提示就丟了、覆蓋層編輯器焦點掉到 body(兩容器結構就有,
+// 2026-11-16 瀏覽器實測:roadmap 一般 inlineEdit 捲到底再捲回值回到原值)。修法:編輯中的列永遠在虛擬範圍裡(data-table.tsx `editingRowIndexes`)。
+// 用程式捲到底再捲回量,跟平台鍵位無關(Linux CI 一樣量得到)。「覆蓋層編輯中按 End / PageDown 表格不捲」那一半跟單一捲動盒一起上(Q2b)。
+{
+  const prevView = page.viewportSize()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const edState = (rootSel) => page.evaluate((rootSel) => {
+    const root = document.querySelector(rootSel)
+    const sc = root.querySelector('[data-datatable-hscroll]') ?? root.querySelector('[data-datatable-panel="center"]')
+    const a = document.activeElement
+    const ed = a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && root.contains(a) ? a : null
+    return { active: a === document.body ? 'BODY' : a?.tagName ?? 'none', editing: !!ed, value: ed ? ed.value : null, scrollTop: sc.scrollTop, scrollMax: sc.scrollHeight - sc.clientHeight }
+  }, rootSel)
+  const scrollTo = async (rootSel, y) => { await page.evaluate(([rootSel, y]) => { const root = document.querySelector(rootSel); const sc = root.querySelector('[data-datatable-hscroll]') ?? root.querySelector('[data-datatable-panel="center"]'); sc.scrollTop = y }, [rootSel, y]); await settleAfterInteraction(page, { frames: 10 }) }
+  for (const [label, storyId, enter, rootSel] of [
+    ['覆蓋層編輯器(試算表)', 'spreadsheet-cursor-contract', 'double', '[role="grid"][data-data-table-outer]'],
+    ['一般 inlineEdit', 'roadmap-all-in-one', 'single', '[data-data-table-outer]'],
+  ]) {
+    await loadStory(`${BASE}/iframe.html?id=design-system-components-datatable-展示--${storyId}&viewMode=story`, '[data-cell-id]')
+    // 第 2 列第一個點下去會出文字輸入框的格
+    const cells = await page.evaluate((rootSel) => [...document.querySelector(rootSel).querySelectorAll('[data-datatable-panel="center"] [role="row"]')].slice(1, 2)
+      .flatMap((r) => [...r.querySelectorAll('[data-cell-id]')].map((c) => { const b = c.getBoundingClientRect(); return { id: c.getAttribute('data-cell-id'), x: b.left + Math.min(b.width / 2, 60), y: b.top + b.height / 2 } }))
+      .filter((c) => c.x > 0 && c.x < 1200), rootSel)
+    let found = null
+    for (const c of cells) {
+      await page.mouse.click(c.x, c.y)
+      if (enter === 'double') { await settleAfterInteraction(page, { frames: 4 }); await page.mouse.click(c.x, c.y) }
+      await settleAfterInteraction(page, { frames: 6 })
+      const ok = await page.evaluate(() => { const a = document.activeElement; return !!a && a.tagName === 'INPUT' && (a.type === 'text' || a.type === '') })
+      if (ok) { found = c; break }
+      await page.keyboard.press('Escape')
+      await settleAfterInteraction(page, { frames: 4 })
+    }
+    if (!found) { record('I39', `${label}:找得到可輸入文字的格(否則以下斷言空轉)`, false, `候選 ${cells.length} 格都沒有文字輸入框`); continue }
+    await page.keyboard.type('ZZ')
+    await settleAfterInteraction(page, { frames: 4 })
+    const s0 = await edState(rootSel)
+    record('I39', `${label}:前置 —— 編輯中、草稿以 ZZ 結尾(格 ${found.id})`, s0.editing && /ZZ$/.test(s0.value ?? ''), JSON.stringify(s0))
+    const before = await edState(rootSel)
+    if (before.scrollMax < 200) { record('I39', `${label}:表格真的捲得動(scrollMax ${before.scrollMax})`, false, '捲不動 = 捲走那一半是空轉'); continue }
+    await scrollTo(rootSel, before.scrollMax)
+    const far = await edState(rootSel)
+    await scrollTo(rootSel, before.scrollTop)
+    const back = await edState(rootSel)
+    record('I39', `${label}:編輯中表格被捲到底(${far.scrollTop})再捲回來 —— 編輯框沒被卸載、焦點與草稿都還在`,
+      far.scrollTop > before.scrollTop + 100 && far.editing && back.editing && /ZZ$/.test(back.value ?? ''), `捲到底 ${JSON.stringify(far)} / 捲回 ${JSON.stringify(back)}`)
+    await page.keyboard.press('Escape')
+  }
+  await page.setViewportSize(prevView)
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

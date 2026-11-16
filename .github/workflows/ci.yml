@@ -449,6 +449,9 @@ jobs:
           # 只靠下面的瀏覽器斷言等於零證據。2026-09-04 抓到:它被串在 `npm run test:datatable-invariants`
           # 裡,而這裡是直接呼叫 .mjs → 單測從來沒在 CI 跑過。
           node scripts/test-distribute-column-widths.mjs
+          # 「哪幾列正在編輯」的反函式判定表 + 前綴代理對照組(2026-11-16 A25 覆核 SF10):編輯列永遠留在虛擬範圍裡靠它找列;
+          # I39 的 story 列 id 不含 `__`,改回前綴代理 I39 照樣綠 —— 這支是唯一分辨得出兩者的閘(幾毫秒)。
+          node scripts/test-data-table-editing-rows.mjs --selftest
           node scripts/test-fast-scroll-gate-policy.mjs
           # CDP Tracing 摘要 lib 的判定表 + 三個突變對照組(2026-11-16,A25):快速捲動閘 --trace 與感知閘送幀缺口診斷都靠它歸因,
           # 算錯 = 紅的當下指錯執行緒;沒人呼叫它就是沒寫(M32 第二問)。
