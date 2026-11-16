@@ -190,7 +190,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - 點 end input → `activeEnd='end'` + 開 popover;同理只更新 end
 - **Auto-advance**:選完 start → 自動切 `activeEnd='end'` 等待 user 選 end(一次連續選完一段區間,不必再去點結束欄)
 - **showTime=true 時 TimeColumns 套 active end 的 time**(只能編一端的時間,符合單一焦點原則)
-- 視覺指示:active input 加 `decoration-primary underline-offset-4 decoration-2`(對齊 Field focus 語意)
+- 視覺指示:active input 加 `decoration-primary underline-offset-4 decoration-2`(對齊 Field focus 語意)【AI 推導 2026-11-16:`decoration-2` = 畫出來就是 2px,不是只有樣式值 2px。sm / md 的 14px 字級下這條線有一半落在行盒下緣之外,所以起訖文字的截斷只能裁水平(`overflow-x-clip`),不能雙軸裁;2026-11-17 前雙軸裁切把下半裁掉、只畫出 1px(A50)。閘 `scripts/datepicker-range-active-underline-invariant.mjs`(三種 size × 起訖兩端 × 鍵盤 / 點開兩種出現方式 × 像素比 1 / 2,外加長日期仍截斷)】
 
 ### Popover 行為
 

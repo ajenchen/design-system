@@ -1843,7 +1843,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3d4baff57a22f4ecec5520ff41c0cd18b121708b5033f1581979198c43dfa99d",
+      "hash": "sha256:1b5d830a04f6dae36d021e20f12a4f0f0e7c4738aaa4f0cefc12830121d747ff",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1906,12 +1906,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0b19158b4a2913cd459cb67bcc36b8626c86eeac29f6b7c47e1d69d4de80a690",
+      "hash": "sha256:e5d0946c20431250438196db98ed785e97afcb524ae199452a596fb0e0e2fe81",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 40844,
+      "size": 41059,
       "type": "file"
     },
     {
@@ -2065,12 +2065,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:62d2ed522b19ff338b7d3b1e9ec30a76f0d3756ec82de121c2421dd9a59a7adf",
+      "hash": "sha256:97ec7889c301017b2480854b4ce6251aae4641448780514cc74c4972362d2592",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 33936,
+      "size": 34171,
       "type": "file"
     },
     {
@@ -2586,7 +2586,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:f6803e5883b0a2ed2b0cc999c5ce28b46ccaa2fded4b41c1898ffd336a154260",
+      "hash": "sha256:a27f736393d81e2a1e989fb618e13f1bacca621749b44ecd070bc08ede7e56df",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3093,8 +3093,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 768,
-      "hash": "sha256:8bed984dd39efd84b27e11ac6dee89415e101df6b6dbfd1de389f53d713c6ad8",
+      "files": 770,
+      "hash": "sha256:f7b2e51ad80035359c2db89010f8547931be62931ceb9cd3894b28284db67e87",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

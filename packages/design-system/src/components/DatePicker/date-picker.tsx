@@ -876,6 +876,13 @@ DatePicker.displayName = 'DatePicker'
 //
 // **Trigger**:2 input button,active end blue underline 標示
 
+// 起訖兩顆按鈕裡的文字:**只裁水平**(長日期照樣「…」截斷),垂直不裁。作用端那條主色底線(`underline-offset-4` + `decoration-2`,
+// date-picker.spec.md「Active-end 機制」視覺指示)在 14px 字級(sm / md)時有一半落在 21px 行盒的下緣之外;2026-11-17 前文字與按鈕
+// 都是 `truncate`(雙軸 overflow:hidden),下半被裁掉、2px 只畫出 1px(A50;md 實量:按鈕高 21、底線畫在按鈕頂下 20.3–22.3,只剩上面那一列)。
+// 同一招與理由見 combobox.tsx `tagRowOverflowClass`:`clip` 不建捲動容器;**不可**改成 overflow-x-hidden(另一軸會算成 auto,變得可捲)。
+// 截斷提示(useTruncated 量 scrollWidth > clientWidth)在 `overflow-x: clip` 下照常量得到。閘:scripts/datepicker-range-active-underline-invariant.mjs。
+const RANGE_END_TEXT_CLASS = 'block overflow-x-clip text-ellipsis whitespace-nowrap'
+
 export interface DatePickerRangeProps
   extends DateFormatOptions,
     Omit<
@@ -1222,8 +1229,9 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
+                    // `overflow-visible` 蓋掉 bareInputStyles 的 truncate:按鈕本身不裁,截斷交給裡面的 RANGE_END_TEXT_CLASS(底線才不被按鈕下緣裁掉);寬度仍由 bareInputStyles 的 min-w-0 收
                     // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠下方主色底線區分(見下一行)
-                    'truncate text-left cursor-pointer focus-visible:outline-none',
+                    'overflow-visible text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
                     // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
@@ -1233,7 +1241,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     !startIso && 'text-fg-muted',
                   )}
                 >
-                  <span ref={startTruncationRef} className="block truncate">{startText}</span>
+                  <span ref={startTruncationRef} className={RANGE_END_TEXT_CLASS}>{startText}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent>{startTooltipActive ? startText : null}</TooltipContent>
@@ -1251,8 +1259,9 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
+                    // `overflow-visible`:同起始端那顆(按鈕不裁,截斷交給 RANGE_END_TEXT_CLASS)
                     // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx#fieldDefaultChromeCompounds);起訖兩顆靠下方主色底線區分(見下一行)
-                    'truncate text-left cursor-pointer focus-visible:outline-none',
+                    'overflow-visible text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
                     // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
@@ -1262,7 +1271,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     !endIso && 'text-fg-muted',
                   )}
                 >
-                  <span ref={endTruncationRef} className="block truncate">{endText}</span>
+                  <span ref={endTruncationRef} className={RANGE_END_TEXT_CLASS}>{endText}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent>{endTooltipActive ? endText : null}</TooltipContent>

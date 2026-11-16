@@ -685,6 +685,10 @@
             "timeoutMs": 600000
           },
           {
+            "path": "scripts/test-datepicker-range-active-underline-invariant.mjs",
+            "timeoutMs": 360000
+          },
+          {
             "path": "scripts/test-governance-build-graph.mjs",
             "timeoutMs": 900000
           },
@@ -748,6 +752,7 @@
           "scripts/test-data-table-panel-reset-clear-invariant.mjs",
           "scripts/test-data-table-row-cache-deps-invariant.mjs",
           "scripts/test-data-table-tree-view-doc-invariant.mjs",
+          "scripts/test-datepicker-range-active-underline-invariant.mjs",
           "scripts/test-demo-people-roster-invariant.mjs",
           "scripts/test-drag-announcement-invariant.mjs",
           "scripts/test-dropdown-menu-keyboard-invariant.mjs",
