@@ -6,7 +6,7 @@
 //
 // 判斷只看 `packages/design-system/package.json` 的 version(發布出去的就是這個版本):
 //   - 主版號 0(0.y.z)或帶預發布標籤(-beta.N、-rc.N …)= `no-compat`:改名 / 移除一律不留舊名、不標 @deprecated,
-//     同一版把 DS 自己的程式、範例、規格改完,並登記進發布說明的「破壞性變更」(scripts/breaking-changes.json、root-exports-removals.json)。
+//     同一版把 DS 自己的程式、範例、規格改完,並寫進變更帳本 packages/design-system/ds-changes.json(隨 npm 出貨;GitHub Release「破壞性變更」由它產生)。
 //     依據 semver 2.0.0 第 4 條「Major version zero (0.y.z) is for initial development. Anything MAY change at any time.
 //     The public API SHOULD NOT be considered stable.」、第 9 條「A pre-release version indicates that the version is unstable
 //     and might not satisfy the intended compatibility requirements」(https://semver.org/spec/v2.0.0.html)。

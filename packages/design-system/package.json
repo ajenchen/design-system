@@ -25,6 +25,7 @@
     "!**/*.pyc",
     "cli-init.mjs",
     "ds-story-manifest.json",
+    "ds-changes.json",
     "llms.txt",
     "llms-full.txt",
     "tools"
@@ -54,6 +55,7 @@
     "./styles/tokens": "./src/styles/tokens.css",
     "./package.json": "./package.json",
     "./ds-story-manifest.json": "./ds-story-manifest.json",
+    "./ds-changes.json": "./ds-changes.json",
     "./llms.txt": "./llms.txt",
     "./llms-full.txt": "./llms-full.txt",
     "./tools/codemods": "./tools/codemods/index.mjs",

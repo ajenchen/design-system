@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// meta-test for compat-policy-invariant —— 現況必綠 + 對照組(--selftest:政策判定表、NC1–NC4 合成正反例、beta.148 真實原始碼)必紅 / 必綠,
+// meta-test for compat-policy-invariant —— 現況必綠 + 對照組(--selftest:政策判定表、NC1 / NC2 合成正反例、beta.148 真實原始碼)必紅 / 必綠,
 // 外加「真的有人跑它」:package.json 的入口與 ci.yml 的呼叫(寫了閘卻沒有執行面呼叫它 = 假保護,AGENTS.md 失敗記憶索引)。
 // 規則:packages/design-system/ds-canonical/references/props-naming.md「相容政策」(user 2026-11-15);版本判斷 scripts/lib/compat-policy.mjs。
 // 跑法與判準的單一實作住在 scripts/lib/gate-selftest-meta.mjs。

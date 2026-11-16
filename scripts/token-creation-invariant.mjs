@@ -47,7 +47,7 @@
  *            當成孤兒誤刪,user 沒說過要刪,同日還原)。
  *   C1(保留類別,2026-11-15):分類表 `retention` 的每一類 key ↔ `retention.spec`(tokens/orphan-tokens.spec.md)每類標題
  *      `### N. \`key\` — …` ↔ 各列 `retain`,三方一致(保留分類原本住兩處、腳本另內建一份,`--brand` 因此被當孤兒)。
- *   C10 產品可讀的名字不得悄悄消失(2026-11-15):對照基準(與 main 的分岔點、HEAD),分類表登記產品可讀(product 不是 no)的
+ *   C10 產品可讀的名字不得悄悄消失(2026-11-15;理由 = 決策權:產品可讀名字的退場由 user 逐字決定):對照基準(與 main 的分岔點、HEAD),分類表登記產品可讀(product 不是 no)的
  *      名字、或指向這種名字的 Tailwind 轉接名,在基準有宣告、工作樹不再宣告 → 紅;除非它登記在分類表 `retired`
  *      (user 原話逐字、日期;改名加 renamedTo 且新名字要有宣告)。基準沒有分類表時用工作樹的。
  *      要不要「先保留一版」讀相容政策 scripts/lib/compat-policy.mjs(2026-11-15 user:「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」):
@@ -691,7 +691,8 @@ export function runChecks(ctx) {
   const unread = []
   for (const n of need.keys()) {
     const r = ownRow(n)
-    // 產品可讀的名字不進(丙)(2026-11-15 審查):設計系統裡看不到讀者 ≠ 沒有讀者,零讀者不是退場理由(orphan-tokens.spec.md「退場流程」(一)、C10)
+    // 產品可讀的名字不進(丙)(2026-11-15 審查):產品可讀名字的退場由 user 逐字決定(決策權,AGENTS.md「自主執行 canonical」把 token 列為產品決策),
+    // 讀者數不是 AI 自己退場的依據(orphan-tokens.spec.md「退場流程」(一)、C10)
     if (!real(r) || r.class === 'raw' || r.retain || (r.product && r.product !== 'no') || !m.globalDecls.has(n) || readBy(n) || reportedC9.has(n)) continue
     if (r.class === 'shared') {
       const cut = n.lastIndexOf('-')
@@ -703,7 +704,8 @@ export function runChecks(ctx) {
   }
   ratchet(P.C9, 'unread', unread, known.unread, ctx.mainRegistry?.known?.unread, ctx.mainRegistry, (n) => `${n} 沒有任何執行期讀者(設計系統、apps/ 都沒有;轉接名自己那一行不算)${ownRow(n)?.class === 'shared' ? '、也不是一組級距 / 狀態裡有人讀的組員' : ''} —— 退場(刪宣告與分類表那一列),或產品端真的在讀就登記 known.productExternal(丙)`)
 
-  // C10 產品可讀的名字不得悄悄消失(2026-11-15)。產品不只本 repo 的 apps/ 與 WM:要不要退場由 user 決定。
+  // C10 產品可讀的名字不得悄悄消失(2026-11-15)。理由是決策權:產品可讀名字的退場由 user 逐字決定(AGENTS.md「自主執行 canonical」
+  // 把 token / 視覺規範列為產品決策),AI 不自己判斷「沒人用」就刪。退場本身不留舊名(相容政策),登記在變更帳本。
   // 對照每個基準(與 main 的分岔點、HEAD):基準有宣告(整頁生效的宣告或 Tailwind 轉接名)、分類表登記產品可讀,
   // 工作樹不再宣告 → 紅;登記在分類表 retired(user 原話)的放行。基準沒有分類表 → 用工作樹的分類表查 product。
   // 要不要「先保留一版」由相容政策決定(scripts/lib/compat-policy.mjs,讀 packages/design-system/package.json 的版本;
@@ -741,7 +743,7 @@ export function runChecks(ctx) {
       const row = rowOf(target)
       if (!real(row) || row.product === 'no') continue
       goneReported.add(n)
-      P.C10.push(`${n}${alias ? `(${target} 的 Tailwind 轉接名)` : ''} 在基準「${base.label}」有宣告、分類表登記產品可讀(${row.match} 列 product: ${row.product}),工作樹不再宣告 —— 產品可讀的名字要不要退場由 user 決定,在分類表 retired 登記原話(改名加 renamedTo;版本欄看相容政策),並登記發布說明(orphan-tokens.spec.md「退場流程」)`)
+      P.C10.push(`${n}${alias ? `(${target} 的 Tailwind 轉接名)` : ''} 在基準「${base.label}」有宣告、分類表登記產品可讀(${row.match} 列 product: ${row.product}),工作樹不再宣告 —— 產品可讀名字的退場由 user 逐字決定(決策權):在分類表 retired 登記原話(改名加 renamedTo;版本欄看相容政策),並寫進變更帳本 packages/design-system/ds-changes.json(orphan-tokens.spec.md「退場流程」)`)
     }
   }
 
@@ -1043,7 +1045,7 @@ function selftest() {
         ['C1', true, '--brand', '列的 retain 指到不存在的類別', () => run({ registry: regEdit((r) => { r.rows.find((x) => x.match === '--brand').retain = 'no-such-category' }) })],
         ['C1', false, 'reservation', '現況:規格每類標題 ↔ 分類表 retention 一致', () => run({})],
         // C9(丙):retain 寫明保留類別的不算沒人讀
-        ['C9', false, '--brand', '拿掉 --brand 的 retain → 仍不報:產品可讀的名字不進(丙),看不到讀者不是退場理由', () => run({ registry: regEdit((r) => { delete r.rows.find((x) => x.match === '--brand').retain }) })],
+        ['C9', false, '--brand', '拿掉 --brand 的 retain → 仍不報:產品可讀的名字不進(丙),退場由 user 決定、不由讀者數決定', () => run({ registry: regEdit((r) => { delete r.rows.find((x) => x.match === '--brand').retain }) })],
         ['C9', true, '--brand', '把 --brand 改成 product: no 又拿掉 retain → 設計系統沒有任何讀者(丙)', () => run({ registry: regEdit((r) => { const b = r.rows.find((x) => x.match === '--brand'); delete b.retain; b.product = 'no' }) })],
         ['C9', false, '--brand', '現況:--brand 寫了 retain = reservation(產品層預留)', () => run({})],
         // C11:用詞

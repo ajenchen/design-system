@@ -126,7 +126,7 @@
 
 ## 新增 / 搬家 / 退場時要做的事
 
-1. **分類表**:新名字加一列完整名字(`why` 必填;共用刻度寫 `scale` 或 `secondReader`);搬家改 `home`;退場刪那一列。**產品可讀**(`product` 不是 `no`)的名字與它的 Tailwind 轉接名退場,另要在分類表 `retired` 登記 user 原話(改名加 `renamedTo`;要不要留一版看相容政策 `../../ds-canonical/references/props-naming.md`「相容政策」—— 0.x 不留;閘 C10),並登記發布說明 `scripts/breaking-changes.json`,流程住 `orphan-tokens.spec.md`「退場流程」。設計系統自己不讀、仍要保留的(例:產品層預留的 `--brand`),該列 `retain` 寫保留類別(類別只住 `orphan-tokens.spec.md`)。
+1. **分類表**:新名字加一列完整名字(`why` 必填;共用刻度寫 `scale` 或 `secondReader`);搬家改 `home`;退場刪那一列。**產品可讀**(`product` 不是 `no`)的名字與它的 Tailwind 轉接名退場,另要在分類表 `retired` 登記 user 原話(改名加 `renamedTo`;要不要留一版看相容政策 `../../ds-canonical/references/props-naming.md`「相容政策」—— 0.x 不留;閘 C10),並寫進變更帳本 `../../ds-changes.json`,流程住 `orphan-tokens.spec.md`「退場流程」。設計系統自己不讀、仍要保留的(例:產品層預留的 `--brand`),該列 `retain` 寫保留類別(類別只住 `orphan-tokens.spec.md`)。
 2. **規格**:主人的規格寫這顆值是多少、為什麼(新名字必須完整出現在該列 `spec` 那份規格,閘 C4)。
 3. **樣式檔**:預設與切換段同檔;新的元件樣式檔跑 `node scripts/gen-figma-make-artifacts.mjs` 進彙總檔。
 4. **Tailwind 轉接**:要 class 就補 `@theme inline` / `@utility`。

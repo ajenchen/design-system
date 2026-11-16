@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
+      "sha256": "39a7abebc72099fac2ce7881c367012841cda86833e36af6ddf6bad4c3d12038",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -271,7 +271,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
+      "sha256": "39a7abebc72099fac2ce7881c367012841cda86833e36af6ddf6bad4c3d12038",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -695,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "b3816a928818f61979ba88f04ac90ab14bf71ac285a7230e22e1afe0d6589c64",
+      "sha256": "1bc750f6731800d4983c97cbe3c7eb1957b038880fb8759d8fb3c4959932fbe8",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -818,6 +818,14 @@
       "sha256": "6a5c00788dc330b0eea1c3610f68d4aa3c91e86f4079a50edf0cc205f921db33",
       "source": "inject_deploy_url_after_push.sh",
       "classification": "SHIP_REWRITTEN",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "hooks/lib/_ds_removed_names.sh",
+      "sha256": "07a79b1af5d50070b9aeb39c21fcc7e4acc54bdaf968812c656fdd76c924942f",
+      "source": "lib/_ds_removed_names.sh",
+      "classification": "HELPER",
       "destination": null
     },
     {
@@ -1433,6 +1441,14 @@
       "file": "providers/codex/skills/visual-audit/references/world-class-benchmarks.md",
       "sha256": "4aaa29c4b12b6da16111429dcb107017ff015f9c96196e0ec0baa6939641f472",
       "source": "skills/visual-audit/references/world-class-benchmarks.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "references/ds-removed-names.json",
+      "sha256": "34f3ab9833b2537c1d4d8592a3902f1d94a977318851a5da7249800633224817",
+      "source": "packages/design-system/ds-changes.json",
       "classification": null,
       "destination": null
     },

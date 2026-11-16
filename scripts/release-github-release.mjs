@@ -4,7 +4,7 @@
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { captureClosedGitHubToken, runClosedGh, runClosedGit } from './lib/closed-tool-execution.mjs'
-import { namesMissingFromNotes, rootExportsRemovalNotes } from './lib/root-exports-release-notes.mjs'
+import { idsMissingFromText, LEDGER_REPO_PATH, renderReleaseSection } from '../packages/design-system/tools/changes/ledger.mjs'
 import { inspectReleaseSet } from './release-set.mjs'
 
 const sleep = milliseconds => new Promise(done => setTimeout(done, milliseconds))
@@ -123,45 +123,61 @@ function gitRead(args) {
   return { status: result.status, stdout: String(result.stdout ?? ''), stderr: String(result.stderr ?? '') }
 }
 
-// 「破壞性變更 → root 出口」段:登記清單(scripts/root-exports-removals.json)在 gitHead 上、
-// 對應上一次發布 tag 的那一段。main() 與 root-exports-invariant --selftest 走同一支(見 lib/root-exports-release-notes.mjs)。
-export function releaseRemovalNotes(gitHead, tag) {
-  return rootExportsRemovalNotes({ gitHead, tag, git: gitRead })
+// 「破壞性變更」段:變更帳本(packages/design-system/ds-changes.json,隨 npm 出貨的唯一來源)在 gitHead 上、
+// 這一版那一節(鍵 = 版本號 = tag 去掉 v)。renderer 與讀回驗收都是帳本 lib 的同一支(packages/design-system/tools/changes/ledger.mjs;
+// 只用 node 內建模組 —— 這個 job 沒有 npm install)。比對閘 scripts/public-surface-invariant.mjs 保證這一節沒漏寫。
+// git = (args) => { status, stdout, stderr },預設走 closed git;測試可注入。
+export function releaseBreakingNotes(gitHead, tag, git = gitRead) {
+  const version = String(tag ?? '').replace(/^v/, '')
+  if (!version) throw new Error('release breaking notes: tag is required')
+  const shown = git(['show', `${gitHead}:${LEDGER_REPO_PATH}`])
+  if (shown?.status !== 0) {
+    // 帳本是破壞性變更的唯一來源;讀不到不是「沒有破壞性變更」(M37:沒觀察到 ≠ 沒發生)
+    throw new Error(`release breaking notes: cannot read ${String(gitHead).slice(0, 12)}:${LEDGER_REPO_PATH} (git show exit ${shown?.status}: ${String(shown?.stderr ?? '').trim().slice(0, 200)})`)
+  }
+  let ledger
+  try { ledger = JSON.parse(String(shown.stdout)) } catch (error) { throw new Error(`release breaking notes: ${LEDGER_REPO_PATH} is not valid JSON: ${error.message}`) }
+  const section = renderReleaseSection(ledger, version)
+  const entries = ledger.releases?.[version]?.changes ?? []
+  return { version, ledger, entries, section }
 }
 
 // GitHub API:generate_release_notes 與 body 同時給時,body 接在自動產生的說明前面。
-export function releaseCreateArgs(expected, removalSection) {
+export function releaseCreateArgs(expected, breakingSection) {
   const args = [
     'release', 'create', expected.tag, '--repo', expected.repository, '--verify-tag',
     '--target', expected.gitHead, '--generate-notes', '--title', expected.tag, '--draft',
   ]
-  if (removalSection) args.push('--notes', removalSection)
+  if (breakingSection) args.push('--notes', breakingSection)
   return args
 }
 
-const removalNamesMissing = (entries, body) => (
-  typeof body === 'string' && body.trim() ? namesMissingFromNotes(entries, body) : entries.map(entry => entry.name)
-)
+/** 讀回的說明漏了哪些條目 id(說明空白 = 全部漏) */
+export function breakingIdsMissing(notes, body) {
+  if (!notes.section) return []
+  if (typeof body !== 'string' || !body.trim()) return [...notes.entries.map(entry => entry.id), ...(notes.ledger.releases[notes.version].errata ?? []).map(e => e.supersedes)]
+  return idsMissingFromText(notes.ledger, notes.version, body)
+}
 
-// 發布(--draft=false)前讀回草稿說明:登記的名字少一個就不發布。續跑時草稿可能是舊程式建的(沒有這一段),
+// 發布(--draft=false)前讀回草稿說明:帳本這一節的條目 id 少一個就不發布。續跑時草稿可能是舊程式建的(沒有這一段),
 // 那就把整段接到最前面再讀回一次 —— 「傳了 --notes」不等於「說明真的有寫」(M37),驗的是讀回來的說明本身。
-function ensureDraftRemovalNotes(ghContext, expected, removalNotes) {
-  if (!removalNotes.entries.length) return
+function ensureDraftBreakingNotes(ghContext, expected, notes) {
+  if (!notes.section) return
   const readBody = () => ghJson(ghContext, ['release', 'view', expected.tag, '--repo', expected.repository, '--json', 'body']).body
   let body = readBody()
-  if (removalNamesMissing(removalNotes.entries, body).length) {
+  if (breakingIdsMissing(notes, body).length) {
     recheckRemoteTag(ghContext, expected)
     ghRun(ghContext, [
       'release', 'edit', expected.tag, '--repo', expected.repository,
-      '--notes', [removalNotes.section, String(body ?? '').trim()].filter(Boolean).join('\n\n'),
+      '--notes', [notes.section, String(body ?? '').trim()].filter(Boolean).join('\n\n'),
     ])
     body = readBody()
   }
-  const missing = removalNamesMissing(removalNotes.entries, body)
+  const missing = breakingIdsMissing(notes, body)
   if (missing.length) {
-    throw new Error(`GitHub draft release notes omit ${missing.length} removed root export(s) registered for ${removalNotes.previousTag}: ${missing.join(', ')}`)
+    throw new Error(`GitHub draft release notes omit ${missing.length} breaking-change ledger entr(ies) of ${notes.version}: ${missing.join(', ')}`)
   }
-  console.log(`✅ draft release notes list all ${removalNotes.entries.length} root exports removed since ${removalNotes.previousTag}`)
+  console.log(`✅ draft release notes list all ${notes.entries.length} breaking-change ledger entries of ${notes.version}`)
 }
 
 function validateIdentity(state, expected, { published }) {
@@ -220,10 +236,10 @@ async function main() {
     return
   }
 
-  const removalNotes = releaseRemovalNotes(expected.gitHead, expected.tag)
+  const breakingNotes = releaseBreakingNotes(expected.gitHead, expected.tag)
   if (!state) {
     recheckRemoteTag(ghContext, expected)
-    ghRun(ghContext, releaseCreateArgs(expected, removalNotes.section))
+    ghRun(ghContext, releaseCreateArgs(expected, breakingNotes.section))
     state = viewRelease(ghContext, expected.repository, expected.tag)
     if (!state) throw new Error('GitHub draft creation returned success but the draft is unavailable')
   }
@@ -238,7 +254,7 @@ async function main() {
   validateIdentity(state, expected, { published: false })
   const stillMissing = compareReleaseAssets(state, expectedFiles)
   if (stillMissing.length) throw new Error(`GitHub draft upload is incomplete: ${stillMissing.map(item => item.name).join(', ')}`)
-  ensureDraftRemovalNotes(ghContext, expected, removalNotes)
+  ensureDraftBreakingNotes(ghContext, expected, breakingNotes)
 
   recheckRemoteTag(ghContext, expected)
   ghRun(ghContext, [

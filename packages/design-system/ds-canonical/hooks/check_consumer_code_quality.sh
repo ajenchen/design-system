@@ -2,6 +2,11 @@
 # Provider-neutral, standalone consumer source gate. This is intentionally independent of the
 # DS-author post_edit_dispatcher/lib tree so it can ship in the immutable fork corpus and replay in
 # hooks-off CI. Native Claude/Codex events are only accelerators; exit 2 is also asserted directly.
+#
+# Two checks share one exit 2 report (2026-11-16, folded in instead of a 61st hook — hard cap 60):
+#   1. consumer code quality — unchanged scope: apps/*/src/**/*.[cm]?[jt]sx?
+#   2. DS removed / renamed names (lib/_ds_removed_names.sh) — code = (apps/<app>/)src/**/*.[cm]?[jt]sx? or .css,
+#      doc = docs/**/*.md or governance/overlay.md; node_modules / dist excluded; names only from the corpus.
 
 set -uo pipefail
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
@@ -13,6 +18,10 @@ source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_ds_removed_names.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: removed-names helper unavailable\n' >&2
+  exit 70
+}
 
 governance_hook_load_input
 governance_hook_require_commands grep head perl python3 tr wc
@@ -22,17 +31,29 @@ FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // .file_path //
   || governance_hook_integrity_fail 'consumer quality path extraction failed'
 
 [ "$EVENT" != "PostToolUse" ] && exit 0
-printf '%s' "$FILE_PATH" | grep -Eq '(^|/)apps/[^/]+/src/.*\.[cm]?[jt]sx?$' || exit 0
+QUALITY=0
+printf '%s' "$FILE_PATH" | grep -Eq '(^|/)apps/[^/]+/src/.*\.[cm]?[jt]sx?$' && QUALITY=1
+KIND=""
+case "$FILE_PATH" in
+  */node_modules/*|*/dist/*) ;;
+  *)
+    if printf '%s' "$FILE_PATH" | grep -Eq '(^|/)(apps/[^/]+/)?src/.*\.([cm]?[jt]sx?|css)$'; then KIND=code
+    elif printf '%s' "$FILE_PATH" | grep -Eq '(^|/)docs/.*\.md$|(^|/)governance/overlay\.md$'; then KIND=doc
+    fi ;;
+esac
+[ "$QUALITY" = 0 ] && [ -z "$KIND" ] && exit 0
 FILE_PATH=$(governance_hook_project_file_path "$FILE_PATH" 2>/dev/null) \
   || governance_hook_integrity_fail 'consumer quality target escapes the project or crosses a symlink'
 if [ -L "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ] || [ ! -r "$FILE_PATH" ]; then
   governance_hook_integrity_fail 'consumer quality target is unavailable or unsafe'
 fi
+VIOLATIONS=""
 
+# ── 1. consumer code quality(原範圍 apps/*/src 的 js/ts/jsx/tsx;以下到「1 結束」一格未改)──
+if [ "$QUALITY" = 1 ]; then
 # Remove comments before structural signatures. Escape markers are checked against the original.
 BODY=$(perl -0777 -pe 's{\{/\*.*?\*/\}}{}gs; s{/\*.*?\*/}{}gs; s{^[ \t]*//.*$}{}gm' "$FILE_PATH" 2>/dev/null) \
   || governance_hook_integrity_fail 'consumer quality target could not be parsed'
-VIOLATIONS=""
 add_violation() { VIOLATIONS="${VIOLATIONS}\n- $1"; }
 has_rationale() {
   local marker="$1"
@@ -169,9 +190,39 @@ if header_account and footer_user and not multi_mode:
 if [ "$ACCOUNT_DUP" = "DUP" ] && ! has_rationale '@account-entry-allow'; then
   add_violation 'duplicate account entry: SidebarHeader account menu + SidebarFooter user area coexist; app-shell.spec.md 帳號入口只能出現一次(primary-sidebar → SidebarFooter / primary-header → globalHeader 右);escape @account-entry-allow: <rationale>'
 fi
+fi
+# ── 1 結束 ──
 
-if [ -n "$VIOLATIONS" ]; then
-  printf 'GOV-CONSUMER-QUALITY-001:%b\nFile:%s\n' "$VIOLATIONS" "$FILE_PATH" >&2
+# ── 2. DS 已移除 / 改名的名字(lib/_ds_removed_names.sh;名單只讀 corpus)──
+REMOVED_REPORT=""
+if [ -n "$KIND" ]; then
+  CORPUS_ROOT=$(governance_corpus_root 2>/dev/null) \
+    || governance_hook_integrity_fail 'removed-names corpus root could not be resolved'
+  PROJECT_ROOT=$(governance_project_root 2>/dev/null) \
+    || governance_hook_integrity_fail 'removed-names project root could not be resolved'
+  # 範圍以專案根為準:apps/<app>/src 或 src(DS 作者 repo 的 packages/** 是名字的主人,不是消費端);
+  # DS 作者 repo(專案根有 packages/design-system/ds-changes.json)不查 docs —— 那裡寫歷史是正常的。
+  REL=$(governance_project_relative_path "$FILE_PATH" 2>/dev/null) \
+    || governance_hook_integrity_fail 'removed-names target path could not be made project-relative'
+  REMOVED_SCOPE=1
+  case "$KIND" in
+    code) printf '%s' "$REL" | grep -Eq '^(apps/[^/]+/)?src/' || REMOVED_SCOPE=0 ;;
+    doc) printf '%s' "$REL" | grep -Eq '^docs/|^governance/overlay\.md$' || REMOVED_SCOPE=0 ;;
+  esac
+  [ "$KIND" = doc ] && [ -f "$PROJECT_ROOT/packages/design-system/ds-changes.json" ] && REMOVED_SCOPE=0
+  if [ "$REMOVED_SCOPE" = 1 ]; then
+    REMOVED_REPORT=$(governance_ds_removed_names_scan "$FILE_PATH" "$KIND" "$CORPUS_ROOT")
+    REMOVED_STATUS=$?
+    case "$REMOVED_STATUS" in
+      0|2) ;;
+      *) governance_hook_integrity_fail "removed-names matcher failed (exit ${REMOVED_STATUS})" ;;
+    esac
+  fi
+fi
+
+if [ -n "$VIOLATIONS" ] || [ -n "$REMOVED_REPORT" ]; then
+  [ -n "$VIOLATIONS" ] && printf 'GOV-CONSUMER-QUALITY-001:%b\nFile:%s\n' "$VIOLATIONS" "$FILE_PATH" >&2
+  [ -n "$REMOVED_REPORT" ] && printf '%s\n' "$REMOVED_REPORT" >&2
   exit 2
 fi
 exit 0

@@ -1043,7 +1043,7 @@
       "renamedTo": "--radius-sm",
       "quote": "難道不是我們的 token 變成只有sm(2px),md(4px),lg(8px)和full,然後其他不准用？所以就是把sm退場然後把xs改名sm？ 目前整個ds都沒有實際消費者，所以不用顧及改名會造成breaking change",
       "quoteDate": "2026-11-15",
-      "note": "原題:AI 11-15 先提出改名的代價(照 Tailwind 習慣寫 rounded-sm 會靜默拿到 2px),user 回「可是現在完全沒有人用sm」,再回本則(前句反問、後句直述,同一則訊息)。AI 同日兩次回「圓角照你說的做…現在的 sm（4px）退場，xs（2px）改名成 sm」,user 之後的訊息沒有反對。【AI 判讀 2026-11-16:反問句 + 「不用顧及改名」= 要做;代價 user 已看過】。值不變(2px),只改名;舊的 --radius-sm(4px,與 --radius-md 同值)同時退場,名字由這一檔接手 —— 4px 一律 --radius-md / rounded-md。歷史與理由:radius.spec.md「歷史」。發布說明:scripts/breaking-changes.json(kind token)。"
+      "note": "原題:AI 11-15 先提出改名的代價(照 Tailwind 習慣寫 rounded-sm 會靜默拿到 2px),user 回「可是現在完全沒有人用sm」,再回本則(前句反問、後句直述,同一則訊息)。AI 同日兩次回「圓角照你說的做…現在的 sm（4px）退場，xs（2px）改名成 sm」,user 之後的訊息沒有反對。【AI 判讀 2026-11-16:反問句 + 「不用顧及改名」= 要做;代價 user 已看過】。值不變(2px),只改名;舊的 --radius-sm(4px,與 --radius-md 同值)同時退場,名字由這一檔接手 —— 4px 一律 --radius-md / rounded-md。歷史與理由:radius.spec.md「歷史」。變更帳本:packages/design-system/ds-changes.json(0.1.0-beta.149 節,surface token)。"
     }
   ]
 }

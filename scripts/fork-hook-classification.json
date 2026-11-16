@@ -72,8 +72,8 @@
   "SHIP_REWRITTEN": [
     {
       "hook": "check_consumer_code_quality.sh",
-      "transform": "canonical utility registry runtime lookup → runner-authenticated fork corpus references/utility-registry.json；canonical owner identity 保持 packages/design-system/src/tokens/utility-registry.json",
-      "reason": "standalone provider-neutral hard gate:consumer any/file-size/raw-row/overlay/chrome/AppShell primary-header invariants；alias policy只讀 runner-authenticated corpus registry，不從 consumer node_modules shadow；可由 native hooks 與 hooks-off CI 同一份 corpus 執行。"
+      "transform": "canonical utility registry runtime lookup → runner-authenticated fork corpus references/utility-registry.json；canonical owner identity 保持 packages/design-system/src/tokens/utility-registry.json；已移除名字的名單(lib/_ds_removed_names.sh)canonical 讀 corpus 帳本 packages/design-system/ds-changes.json 經 tools/changes/ledger.mjs 投影 → fork 改讀 runner-authenticated corpus references/ds-removed-names.json(build-fork-governance 預先投影,helper 隨 hooks/lib 出貨並套同一個 applyTransform)",
+      "reason": "standalone provider-neutral hard gate:consumer any/file-size/raw-row/overlay/chrome/AppShell primary-header invariants；alias policy只讀 runner-authenticated corpus registry，不從 consumer node_modules shadow；可由 native hooks 與 hooks-off CI 同一份 corpus 執行。另含 DS 已移除 / 改名名字的寫入當下擋(code = (apps/<app>/)src 的 js/ts/jsx/tsx/css、doc = docs/**/*.md 與 governance/overlay.md;與品質檢查合一份 exit 2 報告,2026-11-16 併入以守 hook 數 60 上限);名單只讀 corpus,不讀消費端 node_modules。"
     },
     {
       "hook": "check_opacity_token_usage.sh",

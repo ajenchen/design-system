@@ -210,14 +210,15 @@ jobs:
           # 宣告真的用了 token、用了就要登記)、lib/README 每個模組的公開 / @internal 與 root barrel 一致、Button loading 不再被說成「自動 disabled」、
           # 元件原始碼只用三階字重(font-semibold 只給文件外框)、story 裡每個 <Steps> 有名字。修前的樹五條全紅(46 / 14 / 4 / 2 / 19)。純靜態,約 2 秒。
           npm run test:owner-claims
-          # npm root 出口被拿掉一定要寫明(2026-11-04,r1b others 九-3):hook / 元件常數 / 型別(useIsNarrowViewport、StepsExpansion 等)
-          # 被拿掉時 C2 量不到。比「上一次發布的 tag 的 index.ts 出口全集 vs 現在」(TypeScript 展開 export * / export type),
-          # 拿掉的名字必須登記在 scripts/root-exports-removals.json(= 發布說明「破壞性變更」的來源)。修前(沒有登記)紅 27 筆。純靜態,約 5 秒。
-          npm run test:root-exports
+          # 公開介面比對(2026-11-16,取代 root-exports 與 compat-policy NC3 / NC4;user 2026-11-15「主要其實也是讓要更新的消費者，通常會是 AI ，
+          # 可以很清楚明確知道新版增刪改了什麼」):比「上一個發布 tag(git archive)vs 工作樹」的 exports 子路徑與出口、出口走得到的型別成員
+          # (含 ColumnMeta 擴充)、出貨 CSS 自訂屬性、@utility、預設值;每個破壞性差異都要對到變更帳本 packages/design-system/ds-changes.json
+          # 「下一版」那一節(漏寫 / 寫了卻沒發生 / 改名 to 不存在 / spec 非出貨檔都紅),已發布的節逐位元不改。帳本隨 npm 出貨,消費端升版讀它。
+          # 對照組在 --selftest(合成樹十二類各破一處 + 146→147 真實資料)。純靜態 + git 讀 tag,約 25 秒(引入帳本的這一版另逐段驗回填的三節)。
+          npm run test:public-surface
           # 相容政策(2026-11-15,user:「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」;規則 ds-canonical/references/props-naming.md「相容政策」,
-          # 版本判斷 scripts/lib/compat-policy.mjs):0.x / 預發布版 DS 原始碼不得有 @deprecated、不得拿「向後相容 / 保留一版」當理由;
-          # 跟上一次發布的 tag 比,*Props / *Labels 拿掉的成員都要登記在 scripts/breaking-changes.json(= 發布說明「破壞性變更 → 參數」的來源)。
-          # 修前的樹:NC1 14 筆 @deprecated、NC2 77 行。對照組在 --selftest(含 beta.148 真實原始碼)。純靜態 + git 讀 tag,約 5 秒。
+          # 版本判斷 scripts/lib/compat-policy.mjs):0.x / 預發布版 DS 原始碼不得有 @deprecated、不得拿「向後相容 / 保留一版」當理由。
+          # 修前的樹:NC1 14 筆 @deprecated、NC2 77 行。對照組在 --selftest(含 beta.148 真實原始碼)。純靜態,約 3 秒。
           npm run test:compat-policy
           # token 允許集合單一來源(2026-11-15,user:「確保ssot 難道不是我們的 token 變成只有sm(2px),md(4px),lg(8px)和full,然後其他不准用？」):
           # 每一類的允許集合只住該類規格框起來的那一段(scripts/lib/token-allow-sets.mjs 讀)—— utility-registry(hook 讀的)、fork 副本、CSS 宣告必須與它一致;

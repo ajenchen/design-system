@@ -1595,9 +1595,9 @@
       "required": true
     },
     {
-      "id": "release-github-release-removal-notes",
+      "id": "release-github-release-breaking-notes",
       "ownerRepo": "design-system",
-      "path": "scripts/lib/root-exports-release-notes.mjs",
+      "path": "packages/design-system/tools/changes/ledger.mjs",
       "required": true
     },
     {

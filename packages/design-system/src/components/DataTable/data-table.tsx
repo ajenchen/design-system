@@ -1690,7 +1690,7 @@ function DataTableInner<TData>(
   //   此 pre-process 把 meta 值 copy 到 root size/minSize/maxSize,確保 TanStack column
   //   resize state 正常運作。**meta 一律勝出**(2026-11-16):寫了 meta.width / minWidth / maxWidth 就蓋掉同一欄的
   //   TanStack root `size` / `minSize` / `maxSize` —— 欄寬的公開寫法只有 meta 這一套;舊的「root 有寫就以 root 為準」
-  //   理由只有相容,已移除(props-naming.md「相容政策」;登記 scripts/breaking-changes.json)。型別上不擋 root size:
+  //   理由只有相容,已移除(props-naming.md「相容政策」;登記變更帳本 ds-changes.json)。型別上不擋 root size:
   //   TanStack 的 ColumnDef 每一型都宣告 `size?: number`,用 Omit / never 擋會讓每個型別標成 ColumnDef 的欄陣列
   //   (含 columnHelper 產出的)全部編譯失敗,不管有沒有寫 size。
   // 有 `meta.type`、沒自帶 `sortingFn` 的欄掛該型比法(`./lib/column-sorting.ts`,理由在其檔頭;spec「七、Column Type」排序表);select / multiSelect 帶 `meta.options`(照選項順序)。

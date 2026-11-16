@@ -124,7 +124,7 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 ## tabsSlot 連動(本 SSOT 最核心契約)
 
-當 header 帶 Tabs 時,**6 條 lockstep 規則**。Tabs 進 header 只有一條路:`tabsSlot`(ChromeHeader / SurfaceHeader,以及繼承它們的 SidebarHeader / DialogHeader / SheetHeader);把 `<Tabs>` / `<TabsList>` 寫進 header 的 children 由 hook `_header_with_tabs_border.sh` 擋。原本另有 `withTabs` 布林(只抑制 border-b、Tabs 由 consumer 自己排),它寫下的理由只有相容,DS 與 WM 都沒有單獨用它 —— 2026-11-16 移除(`../../../ds-canonical/references/props-naming.md`「相容政策」;登記在 `scripts/breaking-changes.json`)。
+當 header 帶 Tabs 時,**6 條 lockstep 規則**。Tabs 進 header 只有一條路:`tabsSlot`(ChromeHeader / SurfaceHeader,以及繼承它們的 SidebarHeader / DialogHeader / SheetHeader);把 `<Tabs>` / `<TabsList>` 寫進 header 的 children 由 hook `_header_with_tabs_border.sh` 擋。原本另有 `withTabs` 布林(只抑制 border-b、Tabs 由 consumer 自己排),它寫下的理由只有相容,DS 與 WM 都沒有單獨用它 —— 2026-11-16 移除(`../../../ds-canonical/references/props-naming.md`「相容政策」;登記在變更帳本 `../../../ds-changes.json`)。
 
 ### Rule W1:Border ownership = semantic vs paint 拆分
 
