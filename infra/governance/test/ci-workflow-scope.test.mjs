@@ -549,6 +549,139 @@ test('Pages deployment binds and reads back the exact Storybook source', () => {
   assert.ok(stepNames.indexOf('Refuse a stale artifact before upload') < stepNames.indexOf('Upload Pages artifact'))
 })
 
+// A26b(2026-11-17):PR 的 CI 只因 INSTRUMENT-FAIL 紅時自動重跑一次。這一條測三件事:(1) 觸發、權限與信任邊界的形狀;
+// (2) fan-in 名稱與 ci.yml / required check 同一個字串(改名就紅,不讓它靜默變成「每次都擋」);
+// (3) 判定步驟與重跑步驟**原文**在夾具裡實跑(假 gh 吐 job 清單與日誌、真 jq / awk / bash),兩面都要成立 ——
+//     該重跑的(edges0 那一筆的形狀)判 true;腳本回顯裡的字面、前一步印過、逾時、產品紅、只有 fan-in 紅、日誌讀不到 → false;0 個 job → 步驟本身紅。
+test('CI instrument-fail rerun:只在 PR 的第 1 次嘗試、每個失敗步驟都印 INSTRUMENT-FAIL 時重跑一次,權限封閉、不跑 PR 的程式', () => {
+  const source = readWorkflow('ci-instrument-rerun.yml')
+  const workflow = parseWorkflowSemantics(source)
+  const raw = loadYaml(source)
+  assert.deepEqual(Object.keys(workflow.on), ['workflow_run'])
+  assert.deepEqual(workflow.on.workflow_run.workflows, ['CI'])
+  assert.deepEqual(workflow.on.workflow_run.types, ['completed'])
+  assert.deepEqual(workflow.permissions, {}, '頂層不給任何權限')
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['decide', 'rerun'])
+  const { decide, rerun } = workflow.jobs
+  assert.deepEqual(decide.permissions, { actions: 'read' }, '讀日誌的 job 只能讀')
+  assert.deepEqual(rerun.permissions, { actions: 'write' }, '按重跑的 job 只有 actions: write')
+  assert.equal(rerun.needs, 'decide')
+  assert.equal(rerun.if, "needs.decide.outputs.rerun == 'true'")
+  for (const condition of [
+    "github.event.workflow_run.event == 'pull_request'",
+    "github.event.workflow_run.conclusion == 'failure'",
+    'github.event.workflow_run.run_attempt == 1',
+    "github.event.workflow_run.path == '.github/workflows/ci.yml'",
+  ]) assert.ok(decide.if.includes(condition), `decide 的 if 缺條件:${condition}`)
+  for (const [id, job] of Object.entries(workflow.jobs)) {
+    assert.ok(job.steps.every(step => step.uses === null), `${id}:不得用任何 action(包含 checkout)—— 不碰 PR 的程式`)
+  }
+  assert.doesNotMatch(source, /\bsecrets\.|actions\/checkout|head_sha|head_branch|pull_requests/, '不讀 secret、不簽出、不把 PR 控制的欄位帶進來')
+  // fan-in 名稱 = ci.yml `verify` 的 name = required check context(三處同一個字串)
+  const ci = parseWorkflowSemantics(readWorkflow('ci.yml'))
+  const desired = JSON.parse(readFileSync(resolve(ROOT, 'infra/governance/desired/github.json'), 'utf8'))
+  const fanIn = raw.jobs.decide.steps[0].env.FAN_IN_JOB
+  assert.equal(fanIn, ci.jobs.verify.name, 'FAN_IN_JOB 必須等於 ci.yml verify 的 name')
+  assert.ok(desired.profiles['design-system-authority'].requiredChecks.some(check => check.context === fanIn), 'FAN_IN_JOB 必須是 required check 的 context')
+  const decideRun = raw.jobs.decide.steps[0].run
+  const rerunRun = raw.jobs.rerun.steps[0].run
+  assert.ok(rerunRun.indexOf('run_attempt') >= 0 && rerunRun.indexOf('run_attempt') < rerunRun.indexOf('rerun-failed-jobs'), '按重跑之前必須再讀一次嘗試數')
+
+  const base = realpathSync(mkdtempSync(join(tmpdir(), 'ci-instrument-rerun-')))
+  try {
+    const bin = join(base, 'bin')
+    mkdirSync(bin)
+    // 假 gh:job 清單用真 jq 套 workflow 裡的 --jq 運算式;日誌照 id 吐;run 狀態用真 jq;POST 只記帳
+    writeFileSync(join(bin, 'gh'), [
+      '#!/bin/bash',
+      'echo "$*" >> "$FAKE_GH/calls"',
+      '[ "$1" = api ] || exit 9; shift',
+      'expr=""; path=""; method=GET',
+      'while [ $# -gt 0 ]; do case "$1" in --paginate) ;; --jq) shift; expr="$1" ;; --method) shift; method="$1" ;; *) path="$1" ;; esac; shift; done',
+      'case "$method $path" in',
+      '  "GET repos/o/r/actions/runs/123/attempts/1/jobs?per_page=100") jq -r "$expr" < "$FAKE_GH/jobs.json" ;;',
+      '  "GET repos/o/r/actions/jobs/"*/logs) id="${path#repos/o/r/actions/jobs/}"; cat "$FAKE_GH/logs/${id%/logs}.log" 2>/dev/null || true ;;',
+      '  "GET repos/o/r/actions/runs/123") jq -r "$expr" < "$FAKE_GH/run.json" ;;',
+      '  "POST repos/o/r/actions/runs/123/rerun-failed-jobs") echo "{}" ;;',
+      '  *) echo "unexpected gh $method $path" >&2; exit 9 ;;',
+      'esac',
+      '',
+    ].join('\n'))
+    chmodSync(join(bin, 'gh'), 0o755)
+    let n = 0
+    const runStep = (script, { jobs = [], logs = {}, run = null } = {}) => {
+      const dir = join(base, `case-${n++}`)
+      mkdirSync(join(dir, 'logs'), { recursive: true })
+      writeFileSync(join(dir, 'jobs.json'), JSON.stringify({ total_count: jobs.length, jobs }))
+      for (const [id, text] of Object.entries(logs)) writeFileSync(join(dir, 'logs', `${id}.log`), text)
+      if (run) writeFileSync(join(dir, 'run.json'), JSON.stringify(run))
+      writeFileSync(join(dir, 'out'), '')
+      writeFileSync(join(dir, 'step.sh'), script)
+      // 靜態的 '--' 在腳本路徑之前:bash 不再把後面當選項(-c 進不來),argv 可審查(harness-source-inventory 的 POSIX 分隔規則;同檔 :487 / :947 同寫法)
+      const r = spawnSync('bash', ['--', join(dir, 'step.sh')], {
+        encoding: 'utf8',
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, FAKE_GH: dir, REPO: 'o/r', RUN_ID: '123', FAN_IN_JOB: fanIn, RUNNER_TEMP: dir, GITHUB_OUTPUT: join(dir, 'out') },
+      })
+      const calls = (() => { try { return readFileSync(join(dir, 'calls'), 'utf8') } catch { return '' } })()
+      return { ...r, output: readFileSync(join(dir, 'out'), 'utf8'), calls }
+    }
+    const T = '2026-11-16T21:27:06.6445734Z '
+    // 一個 job 的日誌:每一步 = GitHub 回顯的 Run 區塊(腳本原文在裡面)+ 步驟自己的輸出(+ 失敗時的 exit code 行)
+    const step = (script, output, code = null) => [
+      `${T}##[group]Run ${script.split('\n')[0]}`, ...script.split('\n').map(line => `${T}\u001b[36;1m${line}\u001b[0m`), `${T}##[endgroup]`,
+      ...output.map(line => `${T}${line}`), ...(code === null ? [] : [`${T}##[error]Process completed with exit code ${code}.`]),
+    ]
+    const gate = 'node scripts/layout-body-edges-invariant.mjs --shard="$SHARD"\n# 儀器失效(INSTRUMENT-FAIL、exit 2)不是產品裁決'
+    const instrumentOut = ['✗ INSTRUMENT-FAIL story「design-system-components-agentpanel-展示--decision-card-errors @lg」沒有量到 —— Storybook 顯示錯誤頁', '✗ layout-body-edges:儀器失效 —— 這次沒有量完(exit 2)']
+    const productOut = ['✗ dialog @md 底 48,應 16', '✗ layout-body-edges:1084 則 story 裡有容器的底距不照規則 4']
+    const job = (id, conclusion, name) => ({ id, conclusion, name })
+    const ok = (id, name) => job(id, 'success', name)
+    const fanInFail = job(99, 'failure', fanIn)
+    const verdict = (r) => r.output.trim()
+    const decideCase = (opts) => runStep(decideRun, opts)
+
+    // 該重跑:24408a62 第 0 片的形狀(失敗步驟自己印了標記;fan-in 跟著紅;其他綠)
+    const edges0 = decideCase({
+      jobs: [ok(1, 'Verify static(tsc + tests + build)'), job(2, 'failure', 'Verify browser(layout edges) (0/2)'), ok(3, 'Verify browser(layout edges) (1/2)'), fanInFail],
+      logs: { 2: [...step('npm run build-storybook', ['built']), ...step(gate, instrumentOut, 2)].join('\n') },
+    })
+    assert.equal(edges0.status, 0, edges0.stderr)
+    assert.equal(verdict(edges0), 'rerun=true', `edges0 形狀應重跑:${edges0.stdout}`)
+    assert.match(edges0.calls, /actions\/jobs\/2\/logs/, '對照組:失敗 job 的日誌要真的被讀')
+    assert.doesNotMatch(edges0.calls, /actions\/jobs\/(1|3|99)\/logs/, '綠的 job 與 fan-in 不讀日誌')
+    // 不該重跑:標記只出現在 GitHub 回顯的腳本裡(產品紅)
+    const echoed = decideCase({ jobs: [job(2, 'failure', 'Verify browser(layout edges) (0/2)'), fanInFail], logs: { 2: step(gate, productOut, 1).join('\n') } })
+    assert.equal(verdict(echoed), 'rerun=false', '腳本回顯裡的 INSTRUMENT-FAIL 字面不算 —— 否則產品紅燈也會被重跑')
+    // 不該重跑:前一步印過(A26 冷卻後重量成功),真正失敗的是後一步的產品裁決
+    const earlier = decideCase({ jobs: [job(2, 'failure', 'Verify browser(datatable perception)'), fanInFail], logs: { 2: [...step('node scripts/a.mjs', ['✗ INSTRUMENT-FAIL:第 1 輪全部作廢', '✓ 冷卻後重量通過']), ...step('node scripts/b.mjs', productOut, 1)].join('\n') } })
+    assert.equal(verdict(earlier), 'rerun=false', '標記要在失敗的那一步自己的輸出裡')
+    // 不該重跑:一個帶標記、另一個是產品紅 / 逾時(cancelled)
+    const mixed = decideCase({ jobs: [job(2, 'failure', 'A'), job(3, 'failure', 'B'), fanInFail], logs: { 2: step(gate, instrumentOut, 2).join('\n'), 3: step('node scripts/b.mjs', productOut, 1).join('\n') } })
+    assert.equal(verdict(mixed), 'rerun=false', '每一個失敗 job 都要帶標記')
+    const timedOut = decideCase({ jobs: [job(2, 'failure', 'A'), job(3, 'cancelled', 'B'), fanInFail], logs: { 2: step(gate, instrumentOut, 2).join('\n') } })
+    assert.equal(verdict(timedOut), 'rerun=false', '逾時 / 取消不是量具說它沒量到')
+    // 不該重跑:只有 fan-in 紅;日誌讀到 0 位元組
+    assert.equal(verdict(decideCase({ jobs: [ok(1, 'A'), fanInFail] })), 'rerun=false', '只有 fan-in 紅不重跑')
+    assert.equal(verdict(decideCase({ jobs: [job(2, 'failure', 'A'), fanInFail], logs: {} })), 'rerun=false', '日誌讀不到 = 判不了,不重跑')
+    // 查詢回 0 個 job = 量具壞了:步驟本身紅,不當成「不用重跑」
+    const none = decideCase({ jobs: [] })
+    assert.notEqual(none.status, 0)
+    assert.match(none.stderr, /讀到 0 個 job/)
+
+    // 重跑那一步:只在「第 1 次嘗試、已完成」時按;已被重跑 / 還在跑就不按
+    const press = runStep(rerunRun, { run: { run_attempt: 1, status: 'completed' } })
+    assert.equal(press.status, 0, press.stderr)
+    assert.match(press.calls, /--method POST repos\/o\/r\/actions\/runs\/123\/rerun-failed-jobs/)
+    for (const run of [{ run_attempt: 2, status: 'completed' }, { run_attempt: 1, status: 'in_progress' }]) {
+      const skip = runStep(rerunRun, { run })
+      assert.equal(skip.status, 0, skip.stderr)
+      assert.doesNotMatch(skip.calls, /rerun-failed-jobs/, `run 是 ${JSON.stringify(run)} 時不得再按`)
+    }
+  } finally {
+    rmSync(base, { recursive: true, force: true })
+  }
+})
+
 // 2026-10-14(待辦總帳 R3):PR 分支用**自己的**這份 Visual Regression 重拍。repository_dispatch 永遠拿 main 的 workflow 檔跑,
 // 而 main 那份的「Resolve reference ref」在合併前是壞的(SM7)→ 合併前沒有任何路徑能重拍;R3 的圖組要在合併前給 user 逐張看。
 // push 事件跑的是被推上去那個 commit 自己的 workflow 檔,所以開一條**只在非 main、只看重拍請求檔**的 push 觸發;

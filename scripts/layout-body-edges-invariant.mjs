@@ -39,12 +39,14 @@
  *         一般按鈕 / 選單項目重開之後點不到或點了頁面不見了、選單觸發點點了沒出現 role=menu(都沒登記時)、一則的按鈕 + 選單觸發點超過 CLICK_CAP、
  *         量不到底 / 頂 / token / 容器種類、第一個內容沒捲在最上面、兩種密度在頁面根讀到同一個 loose、完整跑時一個容器都沒量到、
  *         靠觸發點才量到的容器 0 個(那一步沒在起作用)、算不出 main 的分岔點。
+ *         **開不起來重開一次**(measureWithRetry,2026-11-17):一則 × 一密度遇到瀏覽器掛掉 / 開不起來 / 錯誤頁(含 play 斷言失敗)/ 動畫沒跑完,
+ *         關掉瀏覽器重開、同一則只重試一次,第二次仍失敗才判上面那條;重試一律印出來。數量上限(重開也一樣)與量具自己的程式錯不重試。判定標準不動。
  *   綠: 全部 story 量完,上面每一條都沒有。只等被量的東西本身與動畫跑完,不睡固定時間;重複跑恆等。
  *   --selftest: (a) 判定表(不開瀏覽器):bounded / unbounded / element × fill / hug / capped / pinned 每格該綠、該紅各一;標記與 DOM 對不上兩種;
  *         宣告種類不符兩種;例外 / structural / pending(未修、已修好要刪)/ 觸發點登記 / 過期 / 新例外沒有 userQuote / 有 userQuote / 分岔點沒有檔;
  *         整筆比:同一個 key 放寬 stories + container、trigger 改 "*"、換種類、沿用舊原話放寬 → 紅;一字不改 / stories 縮成子集 / 刪掉 / 帶新原話 → 不紅;
  *         分岔點沒有、只有 HEAD 有的新 key → 紅;
- *         儀器失效五種。(b) 真建置(Dialog「大檔位:對話框裡放表格」,點開才看得到):現況綠(底 = loose);
+ *         儀器失效五種;開不起來重開一次(第一次錯誤頁、第二次開得起來 → 綠;兩次都錯誤頁 → INSTRUMENT-FAIL;瀏覽器掛掉一次 → 綠;數量上限 / 程式錯不重試)。(b) 真建置(Dialog「大檔位:對話框裡放表格」,點開才看得到):現況綠(底 = loose);
  *         δ 不點觸發點 → 那個容器不在結果裡(證明點開這一步必要);γ 拿掉表格外框的 data-layout-region → 紅、底 48、訊息點名「缺標記」;
  *         β 注入一行 CSS 讓容器不再自判(底一律 bottom)→ 同一格紅;另 SurfaceBody 三段範例(hug)紅「與頂部同值」;
  *         ε 一般按鈕 / 選單項目打開的對話框(Empty「建立任務」、DataTable 列動作「編輯」與「更多操作 → 刪除」)量得到;
@@ -841,6 +843,37 @@ const instrumentLine = (label, error) => {
   return message.includes(INSTRUMENT_FAIL_MARKER) ? message : `${INSTRUMENT_FAIL_MARKER}:story「${label}」沒有量到 —— ${message.slice(0, 240)}`
 }
 
+/** 重開也一樣的儀器失效(數量上限:同一份建置每次數到的一樣)—— 不重試 */
+const NO_RETRY_KINDS = new Set(['trigger-cap', 'click-cap'])
+/** 這次失敗值不值得關掉重開再量一次:瀏覽器掛掉,或 story 開不起來 / 錯誤頁(含 play 斷言失敗)/ 等不到渲染 / 動畫沒跑完這類儀器失效 */
+export function isRetryableFailure(error) {
+  if (/closed|crash|disconnected|Target/i.test(String(error?.message))) return true
+  return error instanceof StoryRenderInstrumentError && !NO_RETRY_KINDS.has(error.kind)
+}
+
+/**
+ * 一則 story × 一種密度:量一次;失敗 → 關掉重開(relaunch:換一個乾淨的瀏覽器),儀器失效類只重試**一次**,第二次仍失敗才記 INSTRUMENT-FAIL。
+ * 2026-11-17(24408a62 第 0 片):decision-card-errors @lg 一次 play 斷言失敗(進場動畫第 0 格就斷言)整片 exit 2,前兩輪同一片都綠。
+ * **判定標準不動**:重試只決定「這一則量不量得到」;量到之後的 rows / triggerMisses 照常交給 judgeAll,失敗那一次的量測一筆都不留(measureStory 只在成功時回傳)。
+ * 重試一律印出來(不默默吞掉);呼叫端與 --selftest 共用這一支。crashed():分頁 / 瀏覽器已經斷線(訊息沒寫出來的掛掉)。回 { got, retried } 或 { instrument }。
+ */
+export async function measureWithRetry(label, attempt, relaunch, { log = () => {}, crashed = () => false } = {}) {
+  let first = null
+  for (let n = 0; n < 2; n++) {
+    try {
+      const got = await attempt()
+      if (first) log(`  · 重試後量到:${label}(第一次:${instrumentLine(label, first).slice(0, 200)})`)
+      return { got, retried: Boolean(first) }
+    } catch (error) {
+      const retryable = crashed() || isRetryableFailure(error)
+      await relaunch() // 失敗的那一頁可能還卡著(點了之後沒回應、錯誤頁),換一個乾淨的瀏覽器(重試與下一則都用它)
+      if (n === 0 && retryable) { first = error; continue }
+      return { instrument: instrumentLine(label, error), retried: Boolean(first) }
+    }
+  }
+  return { instrument: instrumentLine(label, first), retried: true } // 走不到(第二次一定 return);留著讓「沒有結果」不可能被當成綠
+}
+
 async function runScan(firstBrowser, server, exSel, shard = { i: 0, n: 1 }, ex = null) {
   const index = readServedStorybookIndex(server)
   const allIds = Object.values(index.entries ?? {}).filter((e) => e.type === 'story').map((e) => e.id)
@@ -867,20 +900,15 @@ async function runScan(firstBrowser, server, exSel, shard = { i: 0, n: 1 }, ex =
     await Promise.all(workers.map(async (w) => {
       for (let id = queue.shift(); id; id = queue.shift()) {
         const s0 = Date.now()
-        let ok = false
-        for (let attempt = 0; attempt < 2 && !ok; attempt++) {
-          try {
-            const got = await measureStory(w.page, server.origin, server.notFound, id, density, { exSel })
-            rows.push(...got.rows); regions.push(...got.regions); triggerMisses.push(...got.triggerMisses)
-            if (got.rows.some((r) => !r.err)) withContainers.add(id)
-            ok = true
-          } catch (error) {
-            const crashed = w.page.isClosed() || !w.b.isConnected() || /closed|crash|disconnected|Target/i.test(String(error?.message))
-            if (crashed && attempt === 0) { await relaunch(w); continue } // 瀏覽器自己掛掉:換一個再試一次(同一則);第二次仍失敗才算儀器失效
-            instrument.push(instrumentLine(`${id} @${density}`, error))
-            await relaunch(w) // 失敗的那一頁可能還卡著(點了之後沒回應),換一個乾淨的瀏覽器給下一則
-            break
-          }
+        // 瀏覽器掛掉 / 開不起來 / 錯誤頁(play 斷言失敗)→ 關掉重開、同一則只重試一次;第二次仍失敗才算儀器失效(measureWithRetry)
+        const res = await measureWithRetry(`${id} @${density}`, () => measureStory(w.page, server.origin, server.notFound, id, density, { exSel }), () => relaunch(w), {
+          log: (s) => console.log(s), crashed: () => w.page.isClosed() || !w.b.isConnected(),
+        })
+        if (res.instrument) instrument.push(res.instrument)
+        else {
+          const got = res.got
+          rows.push(...got.rows); regions.push(...got.regions); triggerMisses.push(...got.triggerMisses)
+          if (got.rows.some((r) => !r.err)) withContainers.add(id)
         }
         if (Date.now() - s0 > 30_000) console.log(`  · 慢:${id} @${density} ${Math.round((Date.now() - s0) / 1000)} 秒`)
         if (++done % 100 === 0) console.log(`  … ${density} ${done}/${list.length}(${Math.round((Date.now() - t0) / 1000)} 秒)`)
@@ -1051,6 +1079,39 @@ function selftestTable() {
   return problems
 }
 
+/**
+ * --selftest (a) 續:開不起來重開一次(measureWithRetry —— runScan 每一則都經它)。不開瀏覽器:attempt 依序丟出 / 回傳寫好的結果,
+ * 再把結果照 runScan 的接法交給 judgeAll,看整趟的裁決。錯誤頁那一格用 24408a62 第 0 片的原句。
+ */
+async function selftestRetry() {
+  const problems = []
+  const expect = (cond, msg) => { if (!cond) problems.push(msg) }
+  const label = 'design-system-components-agentpanel-展示--decision-card-errors @lg'
+  const errorPage = () => new StoryRenderInstrumentError({ storyId: label, kind: 'storybook-error', reason: 'Storybook 顯示錯誤頁(story 不存在、模組載入失敗或渲染拋錯)', storybookError: 'expect(element).toBeVisible() | Received element is not visible:' })
+  const good = { rows: [row({ id: label.split(' ')[0], density: 'lg', ...T.lg, ...BOX.hug, top: 16, bottom: 16, lastF: F.element })], regions: [], triggerMisses: [] }
+  const run = async (script) => {
+    let calls = 0, relaunches = 0
+    const res = await measureWithRetry(label, async () => { const step = script[calls++]; if (step instanceof Error) throw step; return step }, async () => { relaunches++ })
+    // 照 runScan 的接法:失敗 → instrument;成功 → rows 交給 judgeAll
+    const verdict = judgeAll({ rows: res.got?.rows ?? [], regions: [], triggerMisses: [], ex: EMPTY_EX, bases: [], full: false })
+    verdict.instrument.unshift(...(res.instrument ? [res.instrument] : []))
+    return { res, calls, relaunches, verdict }
+  }
+  const once = await run([errorPage(), good])
+  expect(once.calls === 2 && once.relaunches === 1 && !once.res.instrument && once.res.retried && once.verdict.instrument.length === 0 && once.verdict.failures.length === 0 && once.verdict.counts.measured === 1,
+    `第一次錯誤頁、第二次開得起來應綠(重開 1 次、量到 1 格);實得 呼叫 ${once.calls} 次、重開 ${once.relaunches} 次、${JSON.stringify(once.verdict.instrument)} / ${JSON.stringify(once.verdict.failures)}`)
+  const twice = await run([errorPage(), errorPage(), good])
+  expect(twice.calls === 2 && twice.verdict.instrument.length === 1 && twice.verdict.instrument[0].includes(INSTRUMENT_FAIL_MARKER) && twice.verdict.instrument[0].includes(label) && twice.verdict.instrument[0].includes('toBeVisible'),
+    `兩次都錯誤頁應判 INSTRUMENT-FAIL、點名 story 與錯誤原文、只試 2 次;實得 呼叫 ${twice.calls} 次、${JSON.stringify(twice.verdict.instrument)}`)
+  const crash = await run([new Error('page.goto: Target page, context or browser has been closed'), good])
+  expect(crash.calls === 2 && crash.verdict.instrument.length === 0, `瀏覽器掛掉一次、重開後量到應綠(原本就有的那一種重試);實得 呼叫 ${crash.calls} 次、${JSON.stringify(crash.verdict.instrument)}`)
+  const cap = await run([new StoryRenderInstrumentError({ storyId: label, kind: 'click-cap', reason: '一般按鈕 + 選單觸發點 200 個' }), good])
+  expect(cap.calls === 1 && cap.verdict.instrument.some((s) => s.includes('200 個')), `數量上限(重開也一樣)應不重試、直接儀器失效;實得 呼叫 ${cap.calls} 次、${JSON.stringify(cap.verdict.instrument)}`)
+  const bug = await run([new TypeError('x is not a function'), good])
+  expect(bug.calls === 1 && bug.verdict.instrument.length === 1, `量具自己的程式錯(不是開頁失敗)應不重試、直接儀器失效;實得 呼叫 ${bug.calls} 次`)
+  return problems
+}
+
 /** --selftest (b):真建置。回 problems(空 = 通過)。 */
 async function selftestBrowser(browser, server, ex) {
   const problems = []
@@ -1135,9 +1196,9 @@ if (isDirectRun(import.meta.url)) {
   // --selftest 只在第 1 片做(兩片都做 = 同一組對照組跑兩次;CI 兩格都帶 --shard)
   if (SELFTEST && SHARD.i !== 0) { console.log(`· ${GATE_NAME} selftest:分片 ${SHARD.i}/${SHARD.n} 不跑(只在第 0 片做)`); process.exit(0) }
   if (SELFTEST) {
-    const tableProblems = selftestTable()
+    const tableProblems = [...selftestTable(), ...await selftestRetry()]
     if (tableProblems.length) { console.log(`✗ ${GATE_NAME} selftest (a) 判定表:\n  ${tableProblems.join('\n  ')}`); process.exit(1) }
-    console.log(`✓ ${GATE_NAME} selftest (a) 判定表通過(角色 × 容器種類兩面、標記實不實、宣告種類、例外 / pending / 觸發點 / 過期 / 只准變少、儀器失效)`)
+    console.log(`✓ ${GATE_NAME} selftest (a) 判定表通過(角色 × 容器種類兩面、標記實不實、宣告種類、例外 / pending / 觸發點 / 過期 / 只准變少、儀器失效、開不起來重開一次)`)
   } else if (STATIC_ARG) requireStorybookBuild(path.join(STATIC, 'index.json'))
   else requireFreshStorybookBuild(STATIC, FRESH_SOURCES)
   if (SELFTEST) requireStorybookBuild(path.join(STATIC, 'index.json'))

@@ -465,15 +465,19 @@ export const DecisionCardErrors: Story = {
   name: '決策卡錯誤狀態',
   render: () => <DecisionCardScene questions={THREE_QUESTIONS} intro="公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。" />,
   play: async ({ canvasElement }) => {
-    const { expect, userEvent, within } = await import('@storybook/test')
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
     const canvas = within(canvasElement)
     // 只在決策卡裡找(輸入盒也有一顆「送出」):卡片根 = 標題列 ×(名字「取消」,整張卡唯一一顆)所在的 role="group"
     const card = () => within(canvas.getByRole('button', { name: '取消' }).closest('[role="group"]') as HTMLElement)
     const otherInput = () => card().getByRole('textbox', { name: '其他(自由輸入)' })
+    // 錯誤訊息要「看得見」:等元素本身變成看得見,不在單一時間點斷言(M32 第四題)。面板與卡片進場都是 fade-in-0(第 0 格 opacity 0),
+    // 機器忙、第一個影格還沒畫出來時 play 已經走到這裡 → 祖先 opacity 還是 0,單點斷言假紅(CI 24408a62 layout-body-edges 第 0 片 @lg;
+    // 動畫停在第 0 格可穩定重現同一句「Received element is not visible」)。上限只是「等不到」的界線,動畫一直不動照樣紅
+    const errorShown = (text: string) => waitFor(() => expect(card().getByText(text)).toBeVisible(), { timeout: 5000 })
     // 第 1 題:按下「其他」輸入格 = 選中「其他」;文字留空就按「下一題」
     await userEvent.click(otherInput())
     await userEvent.click(card().getByRole('button', { name: '下一題' }))
-    await expect(await card().findByText('請輸入其他選項')).toBeVisible()
+    await errorShown('請輸入其他選項')
     // 填好就前進;第 2 題用預選的建議解
     await userEvent.type(otherInput(), '比照上次改版公告')
     await userEvent.click(card().getByRole('button', { name: '下一題' }))
@@ -482,7 +486,7 @@ export const DecisionCardErrors: Story = {
     // 第 3 題(複選):一項都沒勾就按「送出」
     await card().findByText('3 / 3')
     await userEvent.click(card().getByRole('button', { name: '送出' }))
-    await expect(await card().findByText('請至少選擇一個選項')).toBeVisible()
+    await errorShown('請至少選擇一個選項')
   },
 }
 

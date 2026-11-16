@@ -1,0 +1,120 @@
+name: CI instrument-fail rerun
+
+# A26b(2026-11-17):PR 上的 CI 因「儀器失效」(INSTRUMENT-FAIL —— 量具這次沒量到,不是產品裁決)偶發變紅時,把失敗的 job 自動重跑一次。
+# 錨:連三輪各一個這種紅燈 —— 41622d91 dpr1 / ca46a310 dpr2(捲動感知整窗跳轉)、24408a62 layout-body-edges 第 0 片
+# (decision-card-errors @lg 錯誤頁);同一份內容前後輪都綠,而主控的 PAT 沒有 actions:write、不能重跑(#163 同一個死結)。
+#
+# 全部成立才重跑,其餘一律不動:
+#   1. 觸發的是 ci.yml(比 path,不信 workflow 名稱)、事件是 pull_request、結論是 failure、而且是第 1 次嘗試(run_attempt == 1)。
+#   2. 這次嘗試裡每一個沒過的 job 都是 failure —— cancelled / timed_out / 其他結論一律不重跑(逾時與取消不是「量具說它沒量到」);
+#      而且每一個失敗步驟**自己的輸出**裡有 INSTRUMENT-FAIL。GitHub 回顯的腳本在 ##[group]…##[endgroup] 裡,不算 ——
+#      ci.yml 的腳本本身就寫著 echo "✗ INSTRUMENT-FAIL…" 這種字面,算進去就會把產品紅燈也重跑。
+#      唯一例外是 fan-in(FAN_IN_JOB,= ci.yml 的 `verify`):它只彙整上游的 result,上游都符合時它的紅是衍生的;
+#      只有它紅、沒有任何上游帶標記 → 不重跑。
+# 判定標準不動:重跑只是同一份 commit 再量一次,紅的照樣紅。防無限重跑:只認 run_attempt == 1(重跑出來的是第 2 次嘗試,
+# 完成時這支不再動作);按下去之前再讀一次 run,已經不是「第 1 次、已完成」(有人手動重跑過 / 還在跑)就不按;同一個 run 的 concurrency 互斥。
+#
+# 信任邊界:workflow_run 只讀 default branch(main)上的這份檔 —— **這支合併進 main 之後才生效**,PR 改不到它、也不會在 PR 分支上先跑。
+# 不 checkout、不執行 PR 的任何程式;PR 能控制的只有日誌內容與 job 名稱,這裡只拿來給 awk 比對字串(不 eval、不進 ${{ }} 插值),
+# 最壞情況是讓自己的 CI 多重跑一次。權限:判定 job 只有 actions: read(讀 job 清單與日誌);只有按重跑的 job 有 actions: write,
+# 而且它只拿數字 run id。不需要、也沒有 contents / pull-requests / secrets。
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: ci-instrument-rerun-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    name: Decide whether every failure is INSTRUMENT-FAIL
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      (github.event.workflow_run.path == '.github/workflows/ci.yml' || startsWith(github.event.workflow_run.path, '.github/workflows/ci.yml@')) &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+    outputs:
+      rerun: ${{ steps.judge.outputs.rerun }}
+    steps:
+      - name: Read failed jobs and their failing-step output
+        id: judge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          # = ci.yml `verify` 的 name(required check 的 context);改名時 ci-workflow-scope 測試會紅
+          FAN_IN_JOB: Verify(tsc + tests + compile + build)
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${RUN_ID}" in ''|*[!0-9]*) echo "✗ run id 不是數字:「${RUN_ID}」" >&2; exit 1 ;; esac
+          work="$RUNNER_TEMP/ci-instrument-rerun"
+          mkdir -p "$work"
+          # 失敗步驟自己的輸出:從它的「##[group]Run …」回顯區塊結束後,到「##[error]Process completed with exit code N.」為止。
+          # 每一個失敗步驟都要印過 INSTRUMENT-FAIL 才回 0;沒有任何失敗步驟(runner 掉線、uses 失敗等)回 1。
+          cat > "$work/failing-steps.awk" <<'AWK'
+          /##\[group\]/ { grouped = 1; if ($0 ~ /##\[group\]Run /) hit = 0; next }
+          /##\[endgroup\]/ { grouped = 0; next }
+          grouped { next }
+          /##\[error\]Process completed with exit code [0-9]+\./ { failing++; if (!hit) bare++; hit = 0; next }
+          /INSTRUMENT-FAIL/ { hit = 1 }
+          END { exit !(failing > 0 && bare == 0) }
+          AWK
+          # 第 1 次嘗試的全部 job(@tsv 會把名稱裡的換行 / tab 轉義,一行一個 job)
+          gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/attempts/1/jobs?per_page=100" \
+            --jq '.jobs[] | [.id, (.conclusion // "null"), .name] | @tsv' > "$work/jobs.tsv"
+          # 結論是 failure 的 run 一定有 job:讀到 0 個 = 查詢壞了,不是「沒有失敗」(不默默當成不用重跑)
+          [ -s "$work/jobs.tsv" ] || { echo "✗ 讀到 0 個 job —— 查詢壞了,判不了" >&2; exit 1; }
+          blocked=0; marked=0; fan_in=0
+          while IFS=$'\t' read -r id conclusion name; do
+            case "$conclusion" in success|skipped|neutral) continue ;; esac
+            case "${id}" in ''|*[!0-9]*) echo "· 不重跑:job id 不是數字:「${id}」"; blocked=1; continue ;; esac
+            if [ "$conclusion" != failure ]; then
+              echo "· 不重跑:「${name}」結論是 ${conclusion}(逾時 / 取消不是量具說它沒量到)"; blocked=1; continue
+            fi
+            if [ "$name" = "$FAN_IN_JOB" ]; then fan_in=1; continue; fi
+            gh api "repos/$REPO/actions/jobs/$id/logs" < /dev/null > "$work/$id.log"
+            if [ ! -s "$work/$id.log" ]; then
+              echo "· 不重跑:「${name}」的日誌讀到 0 位元組 —— 判不了"; blocked=1
+            elif awk -f "$work/failing-steps.awk" "$work/$id.log"; then
+              echo "· 「${name}」每一個失敗步驟都印了 INSTRUMENT-FAIL"; marked=$((marked + 1))
+            else
+              echo "· 不重跑:「${name}」有失敗步驟沒印 INSTRUMENT-FAIL(可能是產品裁決)"; blocked=1
+            fi
+          done < "$work/jobs.tsv"
+          if [ "$blocked" = 0 ] && [ "$marked" -gt 0 ]; then rerun=true; else rerun=false; fi
+          if [ "${fan_in}" = 1 ] && [ "${marked}" = 0 ]; then echo "· 不重跑:只有 fan-in 紅、沒有任何上游帶 INSTRUMENT-FAIL"; fi
+          echo "rerun=${rerun}(帶標記的失敗 job ${marked} 個;fan-in 紅 ${fan_in};擋下 ${blocked})"
+          echo "rerun=${rerun}" >> "$GITHUB_OUTPUT"
+
+  rerun:
+    name: Re-run failed CI jobs once
+    needs: decide
+    if: needs.decide.outputs.rerun == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Re-run failed jobs of attempt 1 (only while it is still attempt 1)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${RUN_ID}" in ''|*[!0-9]*) echo "✗ run id 不是數字:「${RUN_ID}」" >&2; exit 1 ;; esac
+          # 按之前再讀一次:已經被重跑過(嘗試數 > 1)或還在跑 → 不按,避免疊兩次
+          state="$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '"\(.run_attempt) \(.status)"')"
+          if [ "${state}" != "1 completed" ]; then echo "· 不重跑:run ${RUN_ID} 現在是「${state}」(已經被重跑或還在跑)"; exit 0; fi
+          gh api --method POST "repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs" > /dev/null
+          echo "✓ 已要求重跑 run ${RUN_ID} 的失敗 job(第 2 次嘗試;它再紅不會再自動重跑)"
