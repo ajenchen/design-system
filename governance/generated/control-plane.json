@@ -164,7 +164,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:a961fbeeebfd5197da6d4baef7bf1915b52867389a95d7465862c3256e1c08f8",
+      "hash": "sha256:736e7574454107be38eda823ed4ffb73ae89c50d64ed80b024349ba943c94585",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 766,
-      "hash": "sha256:bbe505a23e7656f92ca60df7eff61c6924ce919b423b060e3126510492a5ad08",
+      "hash": "sha256:fb1efa45390afe33ae58dc8701406d4bcde3174919b616f20ecccb14df247a05",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 /**
  * @gate-contract
- *   保證: 捲軸不佔 / 佔版面兩種幾何下,指標停在表頭上把有欄寬調整的表捲到最右端,之後每一個畫出來的影格表頭與表身的 scrollLeft 相等、每欄左緣差 ≤ 0.5px;祖先有 transform: scale() 時操作欄寬、填滿高度、多區列高與不縮放時相等
- *   紅: 拿掉表頭內層的 overflow-x: clip、或表頭偏 3px、或在縮放下注入錯的面板寬 / 上限 / 列高(--selftest);7777b61c 的建置跑必須紅 31 項(overlay 1005 / 1002、137 / 134)
- *   綠: 修好的建置兩個 lane 全綠;rAF 逐格與 screencast 逐格兩種量法同時為 0 才綠,沒有水平溢出 / lane 幾何不對 / screencast 任一階段收不到幀時以儀器失效紅而不是綠
+ *   保證: 捲軸不佔 / 佔版面兩種幾何下,表頭與表身由同一個捲動盒捲動;指標在表身上滾輪往右推時,**捲動當下**每一個畫出來的影格表頭與表身位移 0(H4);指標停在表頭上把有欄寬調整的表捲到最右端,之後每一個畫出來的影格每欄左緣差 ≤ 0.5px、最後一欄右緣貼齊中央區右界;祖先有 transform: scale() 時操作欄寬、填滿高度、多區列高與不縮放時相等
+ *   紅: 表頭中央區自己變成捲動盒(H1)、捲動時表頭晚一格(H4)、拿掉表頭內層的 overflow-x: clip 並偏 3px(H1b–H3)、或在縮放下注入錯的面板寬 / 上限 / 列高(--selftest);4efc5799(兩個捲動盒 + JS 同步)的建置跑必須紅 H1 + H4(每推一下滾輪一格 −40);7777b61c 的建置另紅 Q2a 的 3px
+ *   綠: 修好的建置兩個 lane 全綠;rAF 逐格與 screencast 逐格兩種量法同時為 0 才綠,沒有水平溢出 / lane 幾何不對 / screencast 任一階段收不到幀 / 滾輪沒推到預期位置時以儀器失效紅而不是綠
  * ─────
- * DataTable 表頭 / 表身水平捲動同步 + 版面量測不受 transform 影響(2026-10-13,待辦總帳 Q2a / Q2c)。
+ * DataTable 表頭 / 表身水平捲動同步 + 版面量測不受 transform 影響(2026-10-13,待辦總帳 Q2a / Q2c;2026-11-05 Q2b 單一捲動盒)。
+ *
+ * Q2b(2026-11-05;user 2026-10-13 04:59「照你建議做到完美並自行驗證到完美」):修前表頭與表身是兩個捲動盒,表頭由程式在
+ *   下一個 scroll 事件跟上 —— 捲動當下表頭固定晚表身一格畫面(每台機器都有,停手才回來)。改成同一個捲動盒 + 表頭黏頂之後:
+ *     H1 表頭中央區與表身中央區最近的水平捲動盒是**同一個**元素(修前是兩個 → 紅)
+ *     H1b 捲到最右時,表頭與表身最後一欄右緣 = 中央區右界(範圍沒被凸出去的欄寬把手多撐 —— 表頭內層 overflow-x: clip)
+ *     H4 指標在表身上滾輪往右推 8 下,CDP screencast 逐格量表頭紅條 / 表身藍條位移,每一格都必須 0(修前每推一下有一格 −40;
+ *        rAF 讀 scrollLeft 量不到這件事:scroll 事件早於 rAF,讀到的永遠相等 —— 只認畫面)
+ *   兩代結構都量得到(對照組跑修前建置):一律量「最近的水平捲動盒」(修前兩個、修後一個),看得見的區域 = 面板 ∩ 捲動盒可視框。
  *
  * Q2a(user 2026-10-13:「在其他機器上，當table出現水平卷軸的時候,往後方捲動之後，欄位的header跟body也會發生沒有對齊起來的情況…
  *   root cause到底是什麼？」)。根因:最後一欄的欄寬把手刻意往外凸 3px(`patterns/resize-handle/resize-handle.tsx` HIT_OUTSET),
@@ -30,7 +38,7 @@
  *        並以**收到的幀數**當條件等(推前 / 每一下之後 / 停手後各 ≥ 3 格,上限 5 秒,不足 = INSTRUMENT-FAIL),
  *        不用固定時間猜機器多快(M32 第四題)。
  *     H3 從最左邊開始,指標一直停在表頭上一路捲到底(refute 第 3 條:觸控板在表頭列上滑到底就中),同樣逐影格
- *   對照組:`--build=<7777b61c 的建置>` overlay lane 的 H1 / H2 / H3 必紅(實測 625 / 622,12 欄全差 3px)。
+ *   對照組:`--build=<7777b61c 的建置>` overlay lane 的 H2 / H3 必紅(實測 625 / 622,12 欄全差 3px);`--build=<4efc5799 的建置>` H1 + H4 必紅。
  *
  * Q2c:版面量測一律用不受 transform 影響的值。`getBoundingClientRect` 量的是**畫面上**的大小 —— 祖先有 `transform: scale()`
  *   (Dialog / Popover 的 `zoom-in-95` 進場動畫、Storybook 工具列縮放)時量到的是縮放後的值,拿去寫成 CSS 寬高就錯
@@ -41,8 +49,9 @@
  *     T3 自動行高的多區表:每一列在三區的版面高相等,且等於不縮放時的值
  *   對照組:同上 `--build=` 指向 7777b61c,T1 / T2 / T3 必紅。
  *
- * `--selftest`:不改產品,在頁面注入兩種破法,各自必須讓對應斷言變紅(儀器先證明它會紅,M32):
- *   (1) 把表頭內層的裁切拿掉(`overflow-x: visible`)→ overlay lane 的 H1 必紅;
+ * `--selftest`:不改產品,在頁面注入破法,各自必須讓對應斷言變紅(儀器先證明它會紅,M32):
+ *   (0) 量 H1 的那一下把表頭中央區設成 `overflow-x: auto`(= 修前的兩個捲動盒)→ H1 必紅;H4 期間改掛「表頭晚一格」→ H4 必紅;
+ *   (1) 把表頭內層的裁切拿掉(`overflow-x: visible`);
  *   (2) 表頭內層 `translateX(3px)` → H2 / H3 的「每欄左緣」與 screencast 位移必紅(只在 overlay lane 跑:classic lane 的尾端讓位帶本來就吞得掉這 3px);
  *   (3) T1 / T2 / T3 各注入一個錯值(右側表身面板寬、表身上限、左區第 0 列 min-height)→ 必紅。
  * 開 story 一律經 lib/launch-browser.mjs 的 openStory(開不起來 = 儀器失效,exit 2,`--selftest` 下也不算如預期紅)。
@@ -98,61 +107,101 @@ const open = async (page, id, waitFor = '[data-datatable-hscroll] [role="row"]')
 const settle = async (page) => (await settleAfterInteraction(page, { frames: 8, capMs: 6000 })).ok
 
 // ── 頁面端:每一張「表頭中央區 + 表身中央區」的幾何 ───────────────────────────────────────────
+// 兩代結構都要能量(對照組跑修前建置):修前表頭中央區與表身中央區**各自**是捲動盒;2026-11-05 起(Q2b)兩者在**同一個**
+// 捲動盒裡。所以一律量「它最近的水平捲動盒」(`scrollerOf`,含自己)—— 修前是兩個不同的元素,修後是同一個;
+// 看得見的區域一律取「面板 ∩ 捲動盒可視框」,表身再扣掉黏在上面的表頭。
 function tablesGeometry() {
-  return [...document.querySelectorAll('[data-datatable-hscroll]')].map((body, index) => {
-    const table = body.closest('[role="table"], [role="grid"]')
+  const scrollerOf = (el) => { for (let n = el; n; n = n.parentElement) { const o = getComputedStyle(n).overflowX; if (o === 'auto' || o === 'scroll') return n } return null }
+  const visible = (el, sc, top = -Infinity) => {
+    const r = el.getBoundingClientRect(), c = sc.getBoundingClientRect()
+    const x = Math.max(r.x, c.x + sc.clientLeft), y = Math.max(r.y, c.y + sc.clientTop, top)
+    const x1 = Math.min(r.right, c.x + sc.clientLeft + sc.clientWidth), y1 = Math.min(r.bottom, c.y + sc.clientTop + sc.clientHeight)
+    return { x, y, w: Math.max(0, x1 - x), h: Math.max(0, y1 - y) }
+  }
+  return [...document.querySelectorAll('[data-datatable-hscroll]')].map((anchor, index) => {
+    const table = anchor.closest('[role="table"], [role="grid"]')
     const header = table?.querySelector('[data-datatable-header-panel="center"]')
-    if (!header) return { index, header: false }
-    const b = body.getBoundingClientRect(), h = header.getBoundingClientRect()
+    const bodyPanel = table?.querySelector('[data-datatable-panel="center"]')
+    if (!header || !bodyPanel) return { index, header: false }
+    const hs = scrollerOf(header), bs = scrollerOf(bodyPanel)
+    if (!hs || !bs) return { index, header: false }
+    const head = visible(header, hs)
+    const body = visible(bodyPanel, bs, head.y + head.h)
+    // 中央區右界 = min(右釘選區左緣, 捲動盒可視框右緣):捲到最右時,最後一欄的右緣必須正好貼在這裡(H1b)。
+    // 取 min 是為了兩代結構都對:修前右釘選區與中央區之間夾著垂直捲軸(中央區自己的),界線是捲動盒可視框右緣;修後是右釘選區左緣。
+    const right = table.querySelector('[data-datatable-panel="right"]')
+    const cb = bs.getBoundingClientRect()
+    const clientRight = cb.x + bs.clientLeft + bs.clientWidth
+    const centerRight = right ? Math.min(right.getBoundingClientRect().x, clientRight) : clientRight
     return {
-      index, header: true,
-      bodyMax: body.scrollWidth - body.clientWidth,
-      headerMax: header.scrollWidth - header.clientWidth,
+      index, header: true, shared: hs === bs,
+      bodyMax: bs.scrollWidth - bs.clientWidth,
+      headerMax: hs.scrollWidth - hs.clientWidth,
       // 水平捲軸厚度(這張表一定有水平溢出,否則下面判 INSTRUMENT-FAIL):overlay 幾何 = 0、classic = 15
-      hGutter: body.offsetHeight - body.clientHeight - (parseFloat(getComputedStyle(body).borderTopWidth) || 0) - (parseFloat(getComputedStyle(body).borderBottomWidth) || 0),
-      body: { x: b.x, y: b.y, w: b.width, h: b.height },
-      head: { x: h.x, y: h.y, w: h.width, h: h.height },
+      hGutter: bs.offsetHeight - bs.clientHeight - (parseFloat(getComputedStyle(bs).borderTopWidth) || 0) - (parseFloat(getComputedStyle(bs).borderBottomWidth) || 0),
+      centerRight,
+      body, head,
     }
   })
 }
 
+/** 頁面端:第 index 張表的表頭中央區、表身中央區、各自最近的水平捲動盒(修前是兩個、修後是同一個) */
+function dtParts(index) {
+  const scrollerOf = (el) => { for (let n = el; n; n = n.parentElement) { const o = getComputedStyle(n).overflowX; if (o === 'auto' || o === 'scroll') return n } return null }
+  const anchor = document.querySelectorAll('[data-datatable-hscroll]')[index]
+  const table = anchor.closest('[role="table"], [role="grid"]')
+  const header = table.querySelector('[data-datatable-header-panel="center"]')
+  const bodyPanel = table.querySelector('[data-datatable-panel="center"]')
+  return { anchor, table, header, bodyPanel, hs: scrollerOf(header), bs: scrollerOf(bodyPanel) }
+}
+
 /** 頁面端:對第 index 張表啟動逐影格取樣(rAF —— 這一格畫出來之前,scroll 事件與同步都已跑完)。 */
 function startSampler(index) {
-  const body = document.querySelectorAll('[data-datatable-hscroll]')[index]
-  const header = body.closest('[role="table"], [role="grid"]').querySelector('[data-datatable-header-panel="center"]')
+  const scrollerOf = (el) => { for (let n = el; n; n = n.parentElement) { const o = getComputedStyle(n).overflowX; if (o === 'auto' || o === 'scroll') return n } return null }
+  const anchor = document.querySelectorAll('[data-datatable-hscroll]')[index]
+  const table = anchor.closest('[role="table"], [role="grid"]')
+  const header = table.querySelector('[data-datatable-header-panel="center"]')
+  const bodyPanel = table.querySelector('[data-datatable-panel="center"]')
+  const hs = scrollerOf(header), bs = scrollerOf(bodyPanel)
   const samples = []
   let stop = false
   const tick = () => {
     if (stop) return
     const heads = [...header.querySelectorAll('[role="columnheader"]')]
-    const row = [...body.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
+    const row = [...bodyPanel.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
     const cells = row ? [...row.querySelectorAll(':scope > :is([role="cell"], [role="gridcell"])')] : []
     const n = Math.min(heads.length, cells.length)
     let worst = 0
     for (let i = 0; i < n; i++) worst = Math.max(worst, Math.abs(heads[i].getBoundingClientRect().left - cells[i].getBoundingClientRect().left))
-    samples.push({ h: header.scrollLeft, b: body.scrollLeft, edge: +worst.toFixed(2), n })
+    samples.push({ h: hs.scrollLeft, b: bs.scrollLeft, edge: +worst.toFixed(2), n })
     requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
   window.__dtSync = { samples, stop: () => { stop = true; return samples } }
 }
 
-/** 頁面端:停手後的最終狀態(每欄左緣 + 兩邊 scrollLeft) */
+/** 頁面端:停手後的最終狀態(每欄左緣 + 兩邊 scrollLeft + 最後一欄右緣) */
 function finalState(index) {
-  const body = document.querySelectorAll('[data-datatable-hscroll]')[index]
-  const header = body.closest('[role="table"], [role="grid"]').querySelector('[data-datatable-header-panel="center"]')
+  const scrollerOf = (el) => { for (let n = el; n; n = n.parentElement) { const o = getComputedStyle(n).overflowX; if (o === 'auto' || o === 'scroll') return n } return null }
+  const anchor = document.querySelectorAll('[data-datatable-hscroll]')[index]
+  const table = anchor.closest('[role="table"], [role="grid"]')
+  const header = table.querySelector('[data-datatable-header-panel="center"]')
+  const bodyPanel = table.querySelector('[data-datatable-panel="center"]')
+  const hs = scrollerOf(header), bs = scrollerOf(bodyPanel)
   const heads = [...header.querySelectorAll('[role="columnheader"]')]
-  const row = [...body.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
+  const row = [...bodyPanel.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
   const cells = row ? [...row.querySelectorAll(':scope > :is([role="cell"], [role="gridcell"])')] : []
   const n = Math.min(heads.length, cells.length)
   const deltas = []
   for (let i = 0; i < n; i++) deltas.push(+(heads[i].getBoundingClientRect().left - cells[i].getBoundingClientRect().left).toFixed(2))
-  return { h: header.scrollLeft, b: body.scrollLeft, bodyMax: body.scrollWidth - body.clientWidth, deltas, n }
+  const lastHeadRight = heads.length ? heads[heads.length - 1].getBoundingClientRect().right : null
+  const lastCellRight = cells.length ? cells[cells.length - 1].getBoundingClientRect().right : null
+  return { h: hs.scrollLeft, b: bs.scrollLeft, bodyMax: bs.scrollWidth - bs.clientWidth, deltas, n, lastHeadRight, lastCellRight }
 }
 
 // ── screencast:逐影格量表頭紅條與表身藍條的相對位移 ─────────────────────────────────────────
 const MARKER_CSS = `[data-datatable-header-panel="center"] [role="columnheader"]{box-shadow: inset 2px 0 0 rgb(255,0,0) !important}
-[data-datatable-hscroll] [role="row"] > :is([role="cell"],[role="gridcell"]){box-shadow: inset 2px 0 0 rgb(0,0,255) !important}`
+[data-datatable-panel="center"] [role="row"] > :is([role="cell"],[role="gridcell"]){box-shadow: inset 2px 0 0 rgb(0,0,255) !important}`
 // 心跳方塊:每個 rAF 換一次色,保證每一格都有畫面變動 → screencast 每一格都會送(而不是只在產品剛好有動的時候)。
 // 兩個顏色都不會被下面的紅條 / 藍條判準認成標記條(r、b 都 ≤ 128)。
 const HEARTBEAT_COLORS = [[64, 64, 128], [96, 64, 128]]
@@ -210,7 +259,8 @@ function frameShift(png, scale, geo) {
   const blue = (r, g, b) => b > 190 && r < 90 && g < 90
   const hx = scan(geo.hy, red), bx = scan(geo.by, blue)
   let best = null, bestN = -1
-  for (let k = -20; k <= 20; k++) {
+  // ±60:H4 量的「晚一格」是一次滾輪的位移(40px),±20 的視窗會把它錯認成別的對位(2026-11-05)
+  for (let k = -60; k <= 60; k++) {
     const n = hx.filter((x) => bx.some((v) => Math.abs(v - (x + k)) <= 0.5)).length
     if (n > bestN || (n === bestN && Math.abs(k) < Math.abs(best))) { bestN = n; best = k }
   }
@@ -222,9 +272,10 @@ async function runSyncLane(context, page, lane) {
   for (const story of SYNC_STORIES) {
     if (!(await open(page, story))) continue
     await page.addStyleTag({ content: MARKER_CSS })
-    if (SELFTEST) {
-      await page.addStyleTag({ content: '[data-datatable-header-panel="center"] > div{overflow-x:visible!important;transform:translateX(3px)}' })
-    }
+    // H1–H3 的破法(表頭內層拿掉裁切 + 偏 3px);H4 量的是「捲動當下」,開跑前拿掉這條、換成「表頭晚一格」的破法(見 runH4)
+    const breakStyle = SELFTEST
+      ? await page.addStyleTag({ content: '[data-datatable-header-panel="center"] > div{overflow-x:visible!important;transform:translateX(3px)}' })
+      : null
     await settle(page)
     const tables = (await page.evaluate(tablesGeometry)).filter((t) => t.header)
     if (tables.length === 0) { instrument(`${lane.name} ${story}`, '找不到表頭中央區 + 表身中央區'); continue }
@@ -234,7 +285,18 @@ async function runSyncLane(context, page, lane) {
       if (lane.name === 'overlay' && t.hGutter !== 0) { instrument(tag, `overlay lane 量到水平捲軸厚 ${t.hGutter}px(應 0:捲軸不佔版面)`); continue }
       if (lane.name === 'classic' && !(t.hGutter > 0)) { instrument(tag, `classic lane 量到水平捲軸厚 ${t.hGutter}px(應 > 0:捲軸佔版面)`); continue }
 
-      check(`H1 ${tag}:表頭與表身最大可捲量相等`, Math.abs(t.headerMax - t.bodyMax) <= EDGE_TOL, `表頭 ${t.headerMax} / 表身 ${t.bodyMax}`)
+      // H1(2026-11-05 改寫,待辦總帳 Q2b):表頭中央區與表身中央區**由同一個捲動盒捲動**。修前是兩個捲動盒 + JS 同步 ——
+      // 「兩邊最大可捲量相等」(原 H1,Q2a)只保證停手後對齊,捲動當下表頭一定晚一格(H4);同一個捲動盒之後範圍相等是結構上成立。
+      // --selftest:H1 的破法(表頭中央區自己變成捲動盒 = 修前的兩個捲動盒)只在量 H1 的這一下掛上 —— 掛著的話 H3 從表頭推不動表身
+      let t1 = t
+      if (SELFTEST) {
+        const h1Break = await page.addStyleTag({ content: '[data-datatable-header-panel="center"]{overflow-x:auto!important}' })
+        await settle(page)
+        t1 = (await page.evaluate(tablesGeometry)).find((x) => x.index === t.index) ?? t
+        await h1Break.evaluate((el) => el.remove())
+        await settle(page)
+      }
+      check(`H1 ${tag}:表頭與表身由同一個捲動盒捲動(最大可捲量 表頭 ${t1.headerMax} / 表身 ${t1.bodyMax})`, t1.shared && Math.abs(t1.headerMax - t1.bodyMax) <= EDGE_TOL, t1.shared ? '' : '兩個不同的捲動盒')
 
       // H2:指標在表身上捲到底,再移到表頭上往右推
       const bodyPt = { x: t.body.x + t.body.w / 2, y: t.body.y + Math.min(60, t.body.h / 2) }
@@ -251,6 +313,11 @@ async function runSyncLane(context, page, lane) {
       await settle(page)
       const atEnd = await page.evaluate(finalState, t.index)
       if (Math.abs(atEnd.b - atEnd.bodyMax) > 0.5) { instrument(`H2 ${tag}`, `在表身上捲不到最右(${atEnd.b} / ${atEnd.bodyMax})`); continue }
+      // H1b(2026-11-05):捲到最右時,表頭與表身的最後一欄右緣都正好貼在中央區右界(右釘選區左緣 / 捲動盒可視框右緣)——
+      // 單一捲動盒之後「兩邊可捲範圍相等」結構上成立,剩下要守的是範圍本身沒被凸出去的欄寬把手多撐(表頭內層 `overflow-x: clip`)。
+      check(`H1b ${tag}:捲到最右,表頭 / 表身最後一欄右緣 = 中央區右界(${t.centerRight.toFixed(1)})`,
+        atEnd.lastHeadRight != null && atEnd.lastCellRight != null && Math.abs(atEnd.lastHeadRight - t.centerRight) <= EDGE_TOL && Math.abs(atEnd.lastCellRight - t.centerRight) <= EDGE_TOL,
+        `表頭 ${atEnd.lastHeadRight?.toFixed(1)} / 表身 ${atEnd.lastCellRight?.toFixed(1)}`)
       await page.mouse.move(headPt.x, headPt.y)
       await settle(page)
       const cdp = await context.newCDPSession(page)
@@ -327,8 +394,99 @@ async function runSyncLane(context, page, lane) {
       check(`H3 ${tag}:指標停在表頭上從最左捲到底,每一個影格(rAF ${samples3.length} 格)與停手後表頭 = 表身、每欄左緣對齊`,
         bad3.length === 0 && Math.abs(after3.h - after3.b) <= EDGE_TOL && after3.deltas.every((d) => Math.abs(d) <= EDGE_TOL),
         `${bad3.length} 格錯開${bad3.length ? `,例 ${JSON.stringify(bad3.slice(0, 3))}` : ''};停手後 表頭 ${after3.h} / 表身 ${after3.b}`)
+
+      await runH4(context, page, t, tag, breakStyle)
     }
   }
+}
+
+/**
+ * H4(2026-11-05,待辦總帳 Q2b):**捲動當下**表頭與表身同一格畫面。
+ * 指標停在表身上,從最左往右推滾輪(每下 40px),CDP screencast 逐格量表頭紅條 / 表身藍條的位移,每一格都必須是 0。
+ * 修前(兩個捲動盒 + JS 同步)每推一下就有一格是 −40(表身已被合成器捲過去、表頭等下一個 scroll 事件才跟上;2026-11-05 實測
+ * 4efc5799 12 下 12 格 −40);修後同一個捲動盒,瀏覽器同一次合成一起動。rAF 讀 scrollLeft 量不到這件事(scroll 事件早於 rAF,
+ * 讀到的永遠相等 —— M37 代理),所以只認畫面。
+ * --selftest:拿掉 H1–H3 的 3px 破法,改注入「表頭晚一格」:捲動盒每送一次 scroll 事件,表頭內層就先往回偏這次的位移、兩格後才歸位
+ * (= 修前 JS 同步的時序),H4 必紅。
+ */
+async function runH4(context, page, t, tag, breakStyle) {
+  if (breakStyle) {
+    // H1–H3 的破法在 H4 期間停用、量完還原(下一張表還要用);改掛「表頭晚一格」,量完拆掉
+    await breakStyle.evaluate((el) => { el.sheet.disabled = true })
+    await settle(page)
+    await page.evaluate((i) => {
+      const anchor = document.querySelectorAll('[data-datatable-hscroll]')[i]
+      const header = anchor.closest('[role="table"], [role="grid"]').querySelector('[data-datatable-header-panel="center"]')
+      const inner = header.firstElementChild
+      let last = anchor.scrollLeft
+      const lag = () => {
+        const d = anchor.scrollLeft - last
+        last = anchor.scrollLeft
+        if (!d) return
+        inner.style.transform = `translateX(${d}px)`
+        requestAnimationFrame(() => requestAnimationFrame(() => { inner.style.transform = '' }))
+      }
+      anchor.addEventListener('scroll', lag)
+      window.__dtLagOff = () => { anchor.removeEventListener('scroll', lag); inner.style.transform = '' }
+    }, t.index)
+  }
+  await page.evaluate((i) => { document.querySelectorAll('[data-datatable-hscroll]')[i].scrollLeft = 0 }, t.index)
+  await settle(page)
+  const bodyPt = { x: t.body.x + t.body.w / 2, y: t.body.y + Math.min(60, t.body.h / 2) }
+  await page.mouse.move(bodyPt.x, bodyPt.y)
+  await settle(page)
+  const cdp = await context.newCDPSession(page)
+  const frames = []
+  cdp.on('Page.screencastFrame', async (f) => {
+    frames.push(f.data)
+    try { await cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }) } catch { /* 停止後的最後一格 */ }
+  })
+  const geo = { x0: Math.max(t.head.x, t.body.x) + 2, x1: Math.min(t.head.x + t.head.w, t.body.x + t.body.w) - 6, hy: Math.round(t.head.y + t.head.h / 2), by: Math.round(t.body.y + Math.min(20, t.body.h / 4)) }
+  const hb = await page.evaluate(startHeartbeat, { size: HEARTBEAT_SIZE, colors: HEARTBEAT_COLORS })
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
+  const hbOnScanRow = [geo.hy, geo.by].some((y) => y >= hb.y - 1 && y <= hb.y + hb.h + 1) && hb.x <= geo.x1 && hb.x + hb.w >= geo.x0
+  const phases = []
+  const waitFrames = async (phase, since, minimumMs) => {
+    const started = Date.now()
+    await page.waitForTimeout(minimumMs)
+    while (frames.length - since < FRAMES_PER_PHASE && Date.now() - started < PHASE_FRAME_DEADLINE_MS) await page.waitForTimeout(10)
+    phases.push({ phase, frames: frames.length - since })
+  }
+  await cdp.send('Page.startScreencast', { format: 'png', everyNthFrame: 1 })
+  await waitFrames('推前', 0, 150)
+  const STEPS = 8
+  for (let k = 0; k < STEPS; k++) {
+    const since = frames.length
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: bodyPt.x, y: bodyPt.y, deltaX: 40, deltaY: 0 })
+    await waitFrames(`推第 ${k + 1} 下後`, since, 60)
+  }
+  await waitFrames('停手後', frames.length, 400)
+  await cdp.send('Page.stopScreencast')
+  await cdp.detach().catch(() => {})
+  await page.evaluate(() => window.__dtHeartbeat.stop())
+  const { moved, max } = await page.evaluate((i) => { const a = document.querySelectorAll('[data-datatable-hscroll]')[i]; return { moved: a.scrollLeft, max: a.scrollWidth - a.clientWidth } }, t.index)
+  if (breakStyle) {
+    await page.evaluate(() => window.__dtLagOff?.())
+    await breakStyle.evaluate((el) => { el.sheet.disabled = false })
+    await settle(page)
+  }
+  const shifts = frames.map((d) => {
+    const png = PNG.sync.read(Buffer.from(d, 'base64'))
+    const scale = png.width / VIEWPORT.width
+    return { ...frameShift(png, scale, geo), heartbeat: heartbeatVisible(png, scale, hb) }
+  })
+  const unreadable = shifts.filter((x) => x.shift === null)
+  const starved = phases.filter((p) => p.frames < FRAMES_PER_PHASE)
+  const noHeartbeat = shifts.filter((x) => !x.heartbeat).length
+  const coverage = phases.map((p) => `${p.phase} ${p.frames}`).join(' / ')
+  const want = Math.min(STEPS * 40, max)
+  if (hbOnScanRow) instrument(`H4 ${tag} screencast`, `心跳方塊 ${JSON.stringify(hb)} 壓到掃描列(表頭 y=${geo.hy} / 表身 y=${geo.by})`)
+  else if (Math.abs(moved - want) > 1) instrument(`H4 ${tag}`, `滾輪沒有把表身捲到預期位置(${moved} / ${want})—— 量不到「捲動當下」`)
+  else if (starved.length) instrument(`H4 ${tag} screencast`, `心跳每一格都在變,${PHASE_FRAME_DEADLINE_MS}ms 內仍收不到 ${FRAMES_PER_PHASE} 格:${starved.map((p) => `${p.phase} ${p.frames} 格`).join('、')}(各階段 ${coverage})`)
+  else if (noHeartbeat) instrument(`H4 ${tag} screencast`, `${noHeartbeat} / ${frames.length} 格看不到心跳方塊 —— 送來的幀不是這一頁畫出來的`)
+  else if (unreadable.length) instrument(`H4 ${tag} screencast`, `${frames.length} 格,${unreadable.length} 格讀不到標記條(例 ${JSON.stringify(unreadable.slice(0, 2))})`)
+  else check(`H4 ${tag}:指標在表身上滾輪往右推 ${STEPS} 下,捲動當下每一個畫出來的影格(screencast ${frames.length} 格;各階段 ${coverage})表頭紅條與表身藍條位移 0`,
+    shifts.every((x) => x.shift === 0), `位移序列(值×連續格數)${runLengths(shifts.map((x) => x.shift))}`)
 }
 
 // ── Q2c:transform 祖先下的版面量測 ───────────────────────────────────────────────────────────
@@ -337,7 +495,8 @@ function layoutReport() {
   const rh = document.querySelector('[data-datatable-header-panel="right"]')
   const rb = document.querySelector('[data-datatable-panel="right"]')
   if (rh && rb) out.actions = { headW: rh.offsetWidth, bodyW: rb.offsetWidth, headVis: +rh.getBoundingClientRect().width.toFixed(2), bodyVis: +rb.getBoundingClientRect().width.toFixed(2) }
-  const center = document.querySelector('[data-datatable-panel="center"]')
+  // 填滿高度的上限掛在「表身的捲動盒」上:修前 = 中央表身面板;2026-11-05 起 = 表頭與三區共用的捲動盒(同一個屬性名)
+  const center = document.querySelector('[data-datatable-hscroll]')
   if (center) out.fill = parseFloat(center.style.maxHeight) || null
   for (const w of [...document.querySelectorAll('[data-datatable-panel="center"]')].map((c) => c.parentElement)) {
     const byIndex = new Map()
@@ -384,7 +543,7 @@ async function runTransformLane(page) {
     }
     if (opened && SELFTEST && scale !== 1) {
       await page.addStyleTag({ content: '[data-datatable-panel="right"]{width:30px!important}[data-datatable-panel="left"] [data-row-index="0"]{min-height:200px!important}' })
-      await page.evaluate(() => { const c = document.querySelector('[data-datatable-panel="center"]'); if (c) c.style.maxHeight = `${(parseFloat(c.style.maxHeight) || 100) + 37}px` })
+      await page.evaluate(() => { const c = document.querySelector('[data-datatable-hscroll]'); if (c) c.style.maxHeight = `${(parseFloat(c.style.maxHeight) || 100) + 37}px` })
       await settle(page)
     }
     return opened ? page.evaluate(layoutReport) : null

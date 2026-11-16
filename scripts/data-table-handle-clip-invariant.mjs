@@ -69,14 +69,17 @@ try {
   const sc = () => page.evaluate(() => { const e = document.querySelector('[data-datatable-hscroll]'); return { top: e.scrollTop, left: e.scrollLeft } })
   // 捲動後的 250ms 不是「已渲染」的代理:等的是捲動事件把閂鎖閂上、虛擬列重排,以及把手 150ms 的 opacity 過渡走完
   const scrollBy = async (px) => { await page.evaluate((d) => { document.querySelector('[data-datatable-hscroll]').scrollTop += d }, px); await page.waitForTimeout(250) }
-  /** 所屬 body 面板(primary = center)的可視帶(client box)與所有列的中心。 */
+  /** 可視帶與所有列的中心。可視帶 = 捲動盒的 client box 扣掉盒內黏頂的表頭(2026-11-05 Q2b 起表頭與列在同一個捲動盒裡;
+   *  修前捲動盒就是中央表身面板、表頭在盒外 —— 兩代結構同一個量法)。 */
   const geometry = () => page.evaluate(() => {
     const panel = document.querySelector('[data-datatable-panel="center"]')
-    const pr = panel.getBoundingClientRect()
-    const bandTop = pr.top + panel.clientTop, bandBottom = bandTop + panel.clientHeight
+    const sc = panel.closest('[data-datatable-hscroll]') ?? panel
+    const pr = sc.getBoundingClientRect()
+    const head = sc.querySelector('.dtHeaderRowGroup')
+    const bandTop = Math.max(pr.top + sc.clientTop, head ? head.getBoundingClientRect().bottom : -Infinity), bandBottom = pr.top + sc.clientTop + sc.clientHeight
     // 只取有把手錨點的列(depth 0;巢狀子列不可拖、沒有把手 —— roadmap story 有 4 列子任務)
     const rows = [...panel.querySelectorAll('[role="row"][data-row-index]')].filter((r) => r.querySelector(':scope > span[aria-hidden][style*="width: 0"]')).map((r) => { const b = r.getBoundingClientRect(); return { idx: r.getAttribute('data-row-index'), top: b.top, bottom: b.bottom, cy: (b.top + b.bottom) / 2, h: b.height, x: b.left + 60 } })
-    return { bandTop, bandBottom, offsetBottom: pr.bottom, scrollbar: Math.round(pr.height - panel.clientHeight), rows }
+    return { bandTop, bandBottom, offsetBottom: pr.bottom, scrollbar: Math.round(pr.height - sc.clientHeight - sc.clientTop), rows }
   })
   /** 正在畫的把手(computed opacity > 0)。 */
   const painted = () => page.evaluate((sel) => {

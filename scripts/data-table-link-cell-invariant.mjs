@@ -121,7 +121,9 @@ async function injectBreaks(kind) {
   if (kind === 'L1') await page.addStyleTag({ content: 'a[href]{display:block!important;width:100%!important}' })
   // L2:收起延伸區(= ①乙 之前:可編輯的網址格只有網址文字是連結)—— 空白 / 內距 / 滑過那幾列必紅
   // 同時收掉格的滑過外框與試算表浮層的外框(= 2026-11-10 前:有連結的網址格不出淺框)—— 「能編輯的網址格滑過出淺框」那幾列必紅
-  if (kind === 'L2') await page.addStyleTag({ content: '[data-link-stretch]::before{display:none!important} [data-cell-id]:hover{outline-style:none!important} [aria-hidden] div{outline-style:none!important}' })
+  // 浮層框的選擇器與偵測端 `outlineAround` 同一組(2026-11-16 A25,M10 同族):修前框是固定層 `[aria-hidden]` 的子孫 div,
+  // 單一捲動盒(Q2b / Q2c)起框 portal 進格子、框本身就是 `div[aria-hidden]` —— 只收前者時這條破法打不到修後的框,對照組不紅
+  if (kind === 'L2') await page.addStyleTag({ content: '[data-link-stretch]::before{display:none!important} [data-cell-id]:hover{outline-style:none!important} div[aria-hidden], [aria-hidden] div{outline-style:none!important}' })
   // L6:鉛筆改回 16px(= 2026-10-13 – 10-28 的行內小按鈕)而且加框(= 乙 tertiary 有框)—— 任一都要紅
   if (kind === 'L6') await page.addStyleTag({ content: '[data-link-edit-entry] button, [data-cell-id] button[aria-label="編輯連結"]{width:16px!important;height:16px!important;min-width:16px!important;border:1px solid red!important}' })
   // L8:連結外面包回會裁切的 wrapper(= a6390356 的 `truncate` 外殼)、可拖欄頭的框改回往外(= 修前)
@@ -307,7 +309,8 @@ const outlineAround = (cellId) => page.evaluate((cellId) => {
   const cb = cell.getBoundingClientRect()
   const drawn = (el) => { const cs = getComputedStyle(el); return cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1 && cs.outlineColor !== 'rgba(0, 0, 0, 0)' && cs.outlineColor !== 'transparent' }
   if (drawn(cell)) return 'cell'
-  for (const el of document.querySelectorAll('[aria-hidden] div')) {
+  // 覆蓋層框:修前畫在表格外的固定層(`[aria-hidden]` 的子孫 div);2026-11-05(Q2b / Q2c)起 portal 進格子裡、框本身就是 `aria-hidden` 的 div
+  for (const el of document.querySelectorAll('div[aria-hidden], [aria-hidden] div')) {
     const b = el.getBoundingClientRect()
     if (Math.abs(b.x - cb.x) < 1.5 && Math.abs(b.y - cb.y) < 1.5 && Math.abs(b.width - cb.width) < 1.5 && Math.abs(b.height - cb.height) < 1.5 && drawn(el)) return 'overlay'
   }
