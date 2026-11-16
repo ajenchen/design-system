@@ -52,8 +52,8 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 ### SurfaceBody
 - 根節點帶 `data-slot="surface-body"`
-- `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
-- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 不起作用,放在任何容器都安全)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:186 恆套)矛盾。consumer 依浮層類型:
+- 左右 `px-[var(--layout-space-loose)]`;上下內距由容器自己給 —— 根節點宣告 `data-layout-body="hug"`(不擋頁面、貼內容),底依最後一個東西照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判,不由寫的人挑值」(實作 `layoutSpace.css`)。本規格不寫上下內距的值(2026-11-17 前這一行寫死 `py-[var(--layout-space-tight)]`)
+- **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 不起作用,放在任何容器都安全)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx#SurfaceBody 恆套)矛盾。consumer 依浮層類型:
 - **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScrollKeyboard` story(test-only)的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
   - **Dialog / Sheet**:consumer **不直接 wrap SurfaceBody**——走 ScrollArea canonical(下節),padding 搬到 ScrollArea viewport 內層 div
@@ -74,7 +74,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 ```tsx
 // DialogBody / SheetBody 內部:
 <ScrollArea className="flex-1 min-h-0">
-  <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+  <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
     {children}
   </div>
 </ScrollArea>
@@ -82,7 +82,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 - `flex-1 min-h-0` → 撐滿 Content 剩餘高度(min-h-0 防止 flex child 撐破 container)
 - Padding 搬進 ScrollArea viewport 內的 inner div(因 ScrollArea Root 自己是 `overflow-hidden`,padding 應在捲動內容上)
-- `pb-bottom` 保留 Dialog / Sheet「大容器底部多一拍」的 canonical
+- 上下內距由容器自己給(`data-layout-body`;`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判」):Dialog / Sheet 擋住頁面 = `fill` → 最後是一般元素時底部 `bottom` 48(「大容器底部多一拍」= 規則 4 第 1 列),最後是有框的表格 / 卡片 `loose`、自帶上下內距的清單 0;SurfaceBody(Popover 等)= `hug` → 最後是一般元素時與頂部同值(第 4 列)。本規格不寫底距的值(2026-11-17 前寫死 `pb-bottom`)
 
 **Popover 例外**:Popover 無 viewport-fill、內容預期短,PopoverBody 直接消費 SurfaceBody bare;若未來有長內容 Popover consumer,同樣應 wrap ScrollArea。
 
@@ -94,13 +94,13 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 當 overlay body(Dialog / Sheet / Popover)**內容是一個 unbounded list**(contact picker / settings menu / command palette / nav)時 — body 不該有 chrome padding,讓 list 自管視覺節奏。
 
-**判定條件(唯一)**:body 撤掉 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer wrapper 自帶 `py-2` + item 自帶 `px-loose`。三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
+**判定條件(唯一)**:body 撤掉 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer wrapper 自帶 `py-2` + item 自帶 `px-loose`。(2026-11-17:list outer wrapper 帶 `data-layout-region="unbounded"` 時,body 底部 0 由容器自己給 —— `layoutSpace.spec.md` 規則 4「容器自己判」;頂部仍要撤,頂部自判未做。)三件事全成立即是 List-as-region。**item 用不用 `MenuItem`、有沒有 hover 底色,都不是判定條件** —— hover / focus / selected 屬 state 視覺,跟隨永久視覺層分類,不獨立觸發分類(同向旁證:`../element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」段落的 state-follows-permanent-layer 原則;該段本身管的是相鄰 item 的 gap,不是本判定條件,故只作旁證不作條文)。
 
 ### 為什麼**不**做成 body variant(`flush`)
 
 2026-05-01 移除 `<DialogBody flush>` / `<SheetBody flush>` / `<PopoverBody flush>` variant。原因:
 
-1. **Variant 不解決底層脆弱**:flush 只省一行 chrome padding override;consumer 仍要管 list outer `py-2` + item `px-loose rounded-md` — 加 1 row search/banner 就破功(body 反而沒 chrome padding,更難排版)。
+1. **Variant 不解決底層脆弱**:flush 只省一行 chrome padding override;consumer 仍要管 list outer `py-2` + item `px-loose rounded-md` — 加 1 row search/banner 就破功(body 反而沒 chrome padding,更難排版)。容器自判(2026-11-17,`data-layout-body`)不是 variant:看的是最後一個東西,清單後面多一列就自動回到那一列的值,不會破功。
 2. **世界級主流不做 universal flush**:Material M3 / Atlassian Dialog / Mantine Modal / shadcn Dialog 都讓 consumer 用 className override 處理。Polaris 有 flush API 但 scope 極窄(只 ResourceList in Modal)。Mainstream 把這個 case 歸 consumer 自管。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 3. **Single API surface**:body 一律 chrome padded,list-only 場景用 `className="!px-0 !pt-0 !pb-0"` override + 自管 list outer wrapper — surface 概念清楚,不雙路徑。
 

@@ -410,7 +410,7 @@ export const Inspector: Story = {
                 </tr>
                 <tr>
                   <Td>InfoPanel 內 padding</Td>
-                  <Td mono>px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]</Td>
+                  <Td mono>px-[var(--layout-space-loose)] + data-layout-body="fill"(上 tight、底依最後一個東西 —— 規則 4)</Td>
                 </tr>
                 <tr>
                   <Td>Filmstrip 高</Td>
@@ -707,8 +707,8 @@ export const SizeMatrix: Story = {
               </tr>
               <tr>
                 <Td>Body 垂直 padding</Td>
-                <Td mono>pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]</Td>
-                <Td>非對稱:top tight / bottom 48(FileViewer 擋住頁面而且撐滿,最後是一般元素 → body 收尾留 48,捲到底時看得完整;layoutSpace 規則 4 第 1 列)</Td>
+                <Td mono>data-layout-body="fill"(容器自己給,tokens/layoutSpace/layoutSpace.css)</Td>
+                <Td>非對稱:top tight / bottom 48(FileViewer 擋住頁面而且撐滿,最後是一般元素 → body 收尾留 48,捲到底時看得完整;layoutSpace 規則 4 第 1 列 —— 最後換成有框的表格 / 卡片時容器自動給 loose)</Td>
               </tr>
               <tr>
                 <Td>Section 間 gap</Td>

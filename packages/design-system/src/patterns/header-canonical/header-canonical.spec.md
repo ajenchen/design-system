@@ -186,7 +186,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 **禁忌**:
 - ❌ 把 `<Tabs>` 放在 `<DialogContent>` 外(Radix TabsList ↔ TabsContent 必同 Tabs root)
 - ❌ 在 TabsList 上加 `className="px-*"`(會與 wrapper padding 疊加)
-- ❌ 在 TabsContent 上加 padding(會跟 DialogBody canonical px-loose pt-tight pb-bottom 重複)
+- ❌ 在 TabsContent 上加 padding(會跟 DialogBody 自己給的內距重複:左右 px-loose、上下由容器依 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2 / 4 給)
 - ❌ 把 `<TabsList>` 寫進 header 的 children(不走 `tabsSlot`):header 照樣自畫 border-b,跟 TabsList 自己的 border-b 疊成雙線;hook `_header_with_tabs_border.sh` 擋
 
 **Verify**:write-time 由 `chrome_header_dispatcher.sh` 經 lib helper(`_tab_lg_chrome_header_equal.sh` + `_header_with_tabs_border.sh`,2026-05-31 升 exit 2 BLOCK)把關;pixel-quantified visual probe 走 `/visual-audit --scope=changed`(無專屬 runtime-verify script)。

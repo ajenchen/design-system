@@ -466,7 +466,9 @@ const CommandList = React.forwardRef<
         `flex h-full flex-col`(command.tsx#Command)= chain 完整;非 flex 容器內 flex-1 不起作用(放在任何容器都安全【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。
       清單捲動上限 18.75rem(300px):值只住這一行(command.spec.md「邊界案例」清單捲動上限;只有 CommandList 在讀、
         不隨密度切換 → 不開 token,2026-11-11 token「3全收」從 uiSize.css 收回)。 */
-  <ScrollArea className="flex-1 min-h-0 max-h-[18.75rem]">
+  // 邊緣標記(2026-11-17 A102):選項清單無框、上下留白由群組自帶(MenuGroup py-2)= unbounded region(layoutSpace.spec.md「region 子分類」);
+  // 放在會自己給上下內距的容器(data-layout-body)最後時,容器底自動 = 0(規則 4 第 3 列;tokens/layoutSpace/layoutSpace.css)。
+  <ScrollArea className="flex-1 min-h-0 max-h-[18.75rem]" data-layout-region="unbounded">
     {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
         (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
         data-[selected=true]:focus-ring-inset(下方 CommandItem 的 cursorByKeyboard 分支;原寫行號 331 已過期)。 */}

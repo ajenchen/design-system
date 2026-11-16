@@ -52,7 +52,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 其他結構化浮層 spec 若討論 align 應 pointer 指回本節。
 
 **結構化組合（可選）**：PopoverContent 外殼無內距，consumer 可選擇：
-- **單一 body**：包 `<PopoverBody>` 取得 SurfaceBody canonical padding (`px-loose py-tight`,`overlay-surface.spec.md` SSOT;Dialog body 另有 `pb-[--layout-space-bottom]` 特化)
+- **單一 body**:包 `<PopoverBody>` 取得 SurfaceBody canonical padding(左右 `px-loose`;上下由容器自己給 —— `data-layout-body="hug"`,上 `tight`、最後是一般元素時底與頂同值、最後是有框的表格 `loose`、自帶內距的清單 0;`overlay-surface.spec.md` SSOT、`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4。Dialog body 是擋住頁面的容器,最後是一般元素時底部 48 —— 同一條規則的第 1 列,不是特化)
 - **含標題**：組合 `<PopoverHeader>` + `<PopoverBody>`（下分隔線由 Header 提供）
 - **含操作按鈕列**：再加 `<PopoverFooter>`（上分隔線由 Footer 提供）
 

@@ -77,7 +77,7 @@ export const Overview: Story = {
             <thead><tr><Th>區塊</Th><Th>條件渲染</Th><Th>Padding</Th><Th>說明</Th></tr></thead>
             <tbody>
               <tr><Td>Media</Td><Td mono>image != null</Td><Td mono>無 inner padding</Td><Td>full-width bg-muted,overflow-hidden;比例由 mediaRatio 控制(預設 16:9)</Td></tr>
-              <tr><Td>Body</Td><Td mono>title || description</Td><Td mono>PopoverBody(px-loose py-tight)</Td><Td>title(body-lg)+ desc(body)垂直 stack,desc 套 mt <code>--item-gap-label-desc-reading-lg</code>(2px)</Td></tr>
+              <tr><Td>Body</Td><Td mono>title || description</Td><Td mono>PopoverBody(px-loose;上下由容器自己給,layoutSpace 規則 4)</Td><Td>title(body-lg)+ desc(body)垂直 stack,desc 套 mt <code>--item-gap-label-desc-reading-lg</code>(2px)</Td></tr>
               <tr><Td>Footer</Td><Td mono>step || onSkip || onNext || onPrev</Td><Td mono>PopoverFooter(px-loose py-tight)</Td><Td>justify-between(不是 justify-end)</Td></tr>
             </tbody>
           </table>

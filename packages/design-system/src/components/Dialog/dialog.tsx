@@ -440,7 +440,10 @@ DialogHeader.displayName = "DialogHeader"
 
 // DialogBody: flex-1 ScrollArea + chrome padding(對齊 overlay-surface SSOT + ScrollArea canonical)
 // 捲軸必用 ScrollArea(跨 OS 一致、不吃寬度)— 不自寫 overflow-y-auto。
-// padding 搬進 viewport inner div:px-loose / pt-tight / pb-bottom(Dialog 「大容器」底部多一拍呼吸)。
+// padding 搬進 viewport inner div:左右 px-loose(規則 1 / 6);上下由容器自己給 —— inner div 宣告 data-layout-body="fill"
+// (對話框擋住頁面 = layoutSpace.spec.md 規則 4 第 1 列),上 = tight、底依最後一個東西的邊緣:element → bottom 48、
+// 有框的表格 / 卡片(data-layout-region="bounded")→ loose、自帶上下內距的清單(unbounded)→ 0。實作住 tokens/layoutSpace/layoutSpace.css,
+// 本檔不寫底距的值(2026-11-17 A102:修前寫死 pb-bottom,A18 的「對話框裡放表格」因此底部 48、照規則應 16 / 24)。
 // data-dialog-body:讓 DialogContent onOpenAutoFocus 找得到 body 第一個有意義互動元素(避免 focus 到 close X)
 //
 // ── List-as-region 場景(menu group / Cmd+K)──
@@ -466,12 +469,7 @@ const DialogBody = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ScrollArea>
 >(({ className, children, ...props }, ref) => (
   <ScrollArea fillX ref={ref} data-dialog-body className="flex-1 min-h-0" {...props}>
-    <div
-      className={cn(
-        "px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]",
-        className,
-      )}
-    >
+    <div data-layout-body="fill" className={cn("px-[var(--layout-space-loose)]", className)}>
       {children}
     </div>
   </ScrollArea>

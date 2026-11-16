@@ -24,7 +24,7 @@ const meta: Meta = {
     docs: {
       description: {
         component: `
-**@internal** — Dialog / Sheet / Popover / Coachmark 共用的浮層結構 primitive(SurfaceHeader / SurfaceBody / SurfaceFooter),統一 padding(\`px-loose py-tight\`)+ 分隔線(\`border-divider\`)語言,消除各 overlay 自寫 chrome 的漂移空間。
+**@internal** — Dialog / Sheet / Popover / Coachmark 共用的浮層結構 primitive(SurfaceHeader / SurfaceBody / SurfaceFooter),統一 padding(左右 \`px-loose\`;header / footer 上下 \`py-tight\`,body 上下由容器自己給 —— \`data-layout-body\`,layoutSpace.spec.md 規則 4)+ 分隔線(\`border-divider\`)語言,消除各 overlay 自寫 chrome 的漂移空間。
 
 end-user 不直接 import——用 DialogHeader / SheetHeader / PopoverHeader 等 consumer wrapper;本頁是 DS contributor 的結構參照。
 

@@ -178,8 +178,8 @@ const PENDING_ORDER_COLUMNS: DataTableProps<PendingOrder>['columns'] = [
 function DashboardPage() {
   return (
     // 四邊都是 loose:chrome header → 有框的 DataTable = bounded region(DS `layoutSpace.spec.md` 規則 2)、
-    // 左右 = 規則 1、最後是有框的 DataTable → 容器底 = 規則 4「bounded region → 容器底」
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
+    // 左右 = 規則 1、最後是有框的 DataTable → 容器底 = 規則 4「bounded region → 容器底」—— 底由容器自己給(data-layout-body,DS 依最後一個東西判)
+    <div data-layout-body="fill" className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)]">
       <DataTable columns={PENDING_ORDER_COLUMNS} data={PENDING_ORDERS} maxHeight="none" aria-label="今日待處理訂單" />
     </div>
   )

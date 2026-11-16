@@ -33,7 +33,7 @@ export const Overview: Story = {
             <thead><tr><Th>區塊</Th><Th>CSS</Th><Th>用途</Th></tr></thead>
             <tbody>
               <tr><Td mono>DialogHeader</Td><Td mono>border-b, px-loose py-tight</Td><Td>Title + Close button(靠右,flex 第一 child flex-1 grow 自然右推,非 position:fixed)</Td></tr>
-              <tr><Td mono>DialogBody</Td><Td mono>ScrollArea(flex-1 min-h-0)+ inner div(px-loose pt-tight pb-bottom)</Td><Td>主要內容(ScrollArea 捲動,底部留較大空間)</Td></tr>
+              <tr><Td mono>DialogBody</Td><Td mono>ScrollArea(flex-1 min-h-0)+ inner div(px-loose;上下由容器自己給:data-layout-body=&quot;fill&quot;)</Td><Td>主要內容(ScrollArea 捲動;底部留白依最後一個東西,照 layoutSpace.spec.md 規則 4)</Td></tr>
               <tr><Td mono>DialogFooter</Td><Td mono>border-t, px-loose py-tight</Td><Td>Action buttons(justify-end, gap-2)</Td></tr>
             </tbody>
           </table>

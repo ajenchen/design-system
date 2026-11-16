@@ -374,7 +374,7 @@ const SPRINT_OPEN_ISSUES: SprintIssueRow[] = [
  */
 export function ActiveSprintView() {
   return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)] pb-[var(--layout-space-loose)]">
+    <div data-layout-body="fill" className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)]">
       <DataTable columns={SPRINT_OPEN_COLUMNS} data={SPRINT_OPEN_ISSUES} maxHeight="none" aria-label="Sprint 42 還沒完成的議題" />
     </div>
   )
@@ -437,13 +437,13 @@ const PRIORITY_COLOR = {
 export function IssueDetail({ issue }: { issue: Issue | null }) {
   if (!issue) {
     return (
-      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] text-fg-muted">
+      <div data-layout-body="fill" className="px-[var(--layout-space-loose)] text-fg-muted">
         選一個 issue 看詳情
       </div>
     )
   }
   return (
-    <div className="flex flex-col px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+    <div data-layout-body="fill" className="flex flex-col px-[var(--layout-space-loose)]">
       <div className="flex flex-col gap-[var(--layout-space-loose)]">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <ItemContent

@@ -514,17 +514,17 @@ const InfoPanel = React.memo(function InfoPanel({
       </ChromeHeader>
 
       {/* Panel body — header(shrink-0)上常駐 + body 走 ScrollArea(高度小時內容可捲動)。
-          底部 = bottom 48:資訊面板最後是一般元素(layoutSpace.spec.md「檔案資訊」DescriptionList = element),
-          FileViewer 會擋住頁面而且高度撐滿 → 規則 4 第 1 列(user 2026-10-28「這個沒問題」)。最後一個 DescriptionList 列
+          上下內距由容器自己給(data-layout-body="fill",tokens/layoutSpace/layoutSpace.css;2026-11-17 A102 起不在本檔寫值):
+          資訊面板最後是一般元素(layoutSpace.spec.md「檔案資訊」DescriptionList = element),
+          FileViewer 會擋住頁面而且高度撐滿 → 規則 4 第 1 列 = bottom 48(user 2026-10-28「這個沒問題」)。最後一個 DescriptionList 列
           不自帶下內距(description-list.tsx `last:pb-0`),這段距離只由這一層給。
           說明 ↔ 檔案資訊 = 區塊 ↔ 區塊:一條隱形分隔線的位置,上下各 loose(合計 loose × 2;layoutSpace.spec.md 規則 3「組 ↔ 組」,
           user 2026-11-06 #18「照你建議」= 乙)。區塊感夠(兩塊各有標題)→ 不畫線;只有 loose 時「檔案資訊」標題離上一塊(16)
           比離自己的清單還近,看起來黏在上面那塊。 */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className={cn(
+        <div data-layout-body="fill" className={cn(
           'flex flex-col gap-[calc(var(--layout-space-loose)*2)]',
           'px-[var(--layout-space-loose)]',
-          'pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]',
         )}>
         {/* 說明 — 用 DS Field + FieldLabel + Textarea(2026-04-20 B12 決策:
             FileViewer 一律消費 DS Field 家族,不手刻 `<span>label` + raw control) */}

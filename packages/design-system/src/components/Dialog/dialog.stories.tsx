@@ -609,7 +609,7 @@ export const LargeWithTable = {
 
 // 超大檔位 xl —— 兩欄並排:主內容 + 一欄資訊(dialog.spec.md「寬度檔位」選檔規則「兩欄 → xl」)。xl 是建議上限;比它更大的內容先考慮改成頁面或側板。
 // 組合照 overlay-surface.spec.md「兩欄 dialog 組合」四條(2026-07-10 user 拍板:組合,不做元件):① 各欄自帶 ScrollArea 獨立捲動(padding 進內層 div,
-// 同 DialogBody 的 px-loose / pt-tight / pb-bottom);② 右欄 <aside> 自帶 border-l border-divider,從 body 頂貫到底;③ 欄底 footer(留言框)釘在左欄內,
+// 左右 px-loose、上下同 DialogBody 由容器自己給 —— 內層 div 宣告 data-layout-body="fill",底依最後一個東西照 layoutSpace.spec.md 規則 4);② 右欄 <aside> 自帶 border-l border-divider,從 body 頂貫到底;③ 欄底 footer(留言框)釘在左欄內,
 // 消費 DialogFooter(= SurfaceFooter chrome);④ header 全寬,分欄從 body 才開始。Archetype:WM WorkItemDetailDialog / file-viewer.tsx InfoPanel(spec 同段)。
 // 右欄寬 288(w-72)= WM 工作項詳情同一欄寬。留言會增加 → 預設高度 fill(spec「高度軸」判準)。
 // 送出鈕在留言空白時停用:同 FileViewer 展示「評論側欄」的送出鈕(file-viewer.stories.tsx)。
@@ -653,7 +653,7 @@ function TaskDetailTwoColumnDialog() {
         <div data-dialog-body className="flex min-h-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">
             <ScrollArea fillX className="min-h-0 flex-1">
-              <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+              <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
                 <DescriptionList>
                   <DescriptionItem label="描述">重新設計結帳步驟,將付款方式與發票資訊合併為單一步驟,預期提升轉換率。</DescriptionItem>
                   <DescriptionItem label="驗收條件">
@@ -679,7 +679,7 @@ function TaskDetailTwoColumnDialog() {
           </div>
           <aside aria-label="任務屬性" className="flex w-72 shrink-0 flex-col border-l border-divider">
             <ScrollArea fillX className="min-h-0 flex-1">
-              <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+              <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
                 <DescriptionList>
                   {DETAIL_PROPERTIES.map((p) => <DescriptionItem key={p.label} label={p.label}>{p.value}</DescriptionItem>)}
                 </DescriptionList>

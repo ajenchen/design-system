@@ -189,8 +189,8 @@ const steps = [
 | Title | `text-body-lg font-medium text-foreground` | body 主 title(16px),比 kind header 的 `PopoverTitle` 小標籤(`text-body` 14px)重一階——主教學訊息是視覺主角 |
 | Description | `text-body text-fg-secondary` | 主說明文字 |
 | Step 計數 | `text-body text-fg-secondary tabular-nums` | 跟 body 內文同字體；固定數字 advance width，切換步驟時維持量測穩定 |
-| Body padding | `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]` | overlay-surface SSOT(PopoverBody) |
-| Footer padding | 同上 | overlay-surface SSOT(PopoverFooter) |
+| Body padding | 左右 `px-[var(--layout-space-loose)]`;上下由容器自己給(SurfaceBody 宣告 `data-layout-body="hug"`,`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4「容器自己判,不由寫的人挑值」),本規格不寫值 | overlay-surface SSOT(PopoverBody) |
+| Footer padding | `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]` | overlay-surface SSOT(PopoverFooter) |
 | Width | 比 Popover 預設寬一階(固定,具體 class 見 `coachmark.tsx`) | 固定;consumer 可 className 覆寫 |
 
 ---

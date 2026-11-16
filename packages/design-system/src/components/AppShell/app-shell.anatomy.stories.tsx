@@ -205,7 +205,7 @@ function CompleteSprintAction() {
 function LayoutReadout() {
   const { display } = useAppShell()
   return (
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] space-y-[var(--layout-space-loose)]">
+    <div data-layout-body="fill" className="px-[var(--layout-space-loose)] space-y-[var(--layout-space-loose)]">
       <DescriptionList orientation="horizontal" divided>
         <DescriptionItem label="Menu"><span data-readout="menu">{DISPLAY_LABEL[display.menu]}</span></DescriptionItem>
         <DescriptionItem label="Right panel"><span data-readout="right">{DISPLAY_LABEL[display.right]}</span></DescriptionItem>
@@ -279,7 +279,7 @@ function LayoutRuleDemo(raw: LayoutRuleArgs) {
         aside={
           <AppShellAside title="ENG-1042" contentType="issue-detail" widthRange={args.right}>
             {/* 右欄撐滿、最後是一般元素 → 底 bottom 48(layoutSpace.spec.md 規則 4 第 1 列) */}
-            <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] text-body">登入後 redirect 失敗 —— Alan Chen 處理中,週五到期</div>
+            <div data-layout-body="fill" className="px-[var(--layout-space-loose)] text-body">登入後 redirect 失敗 —— Alan Chen 處理中,週五到期</div>
           </AppShellAside>
         }
         asideOpen={asideOpen}

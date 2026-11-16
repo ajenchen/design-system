@@ -142,7 +142,7 @@ const validateTaiwanId = (v: unknown) => {
  *    靠右 → 全局排序 primary 在最右:[上一步 tertiary][下一步 primary](action-bar.spec.md「全局排序」);第一步不渲染上一步。
  *    footer 只在右半邊,左邊的樹全高(overlay-surface.spec.md「欄底 footer(如 comment composer)釘在所屬欄內」);「下一步」每一步都在同一個位置。
  *  - 內容區 = 沒有標題列的 Surface body:上 tight(overlay-surface.spec.md 的 SurfaceBody `py-tight`)、左右 loose、
- *    下 bottom(body 自己的下內距,同 dialog.tsx DialogBody `pb-[var(--layout-space-bottom)]`);長內容在內容區裡捲(ScrollArea,
+ *    下 bottom(內容區宣告 data-layout-body="fill",同 dialog.tsx DialogBody:上下由容器自己給、底依最後一個東西照 layoutSpace.spec.md 規則 4);長內容在內容區裡捲(ScrollArea,
  *    overlay-surface.spec.md「Body overflow canonical」)。
  *  - 標題 ↔ 說明 = `--item-gap-label-desc-reading-lg`(2px,同 DialogTitle / DialogDescription,dialog.spec.md「Header 可成長」;
  *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 第一個欄位 = loose(標題 + 說明是這一頁整組欄位的標題,
@@ -155,7 +155,7 @@ function OnboardingPage({ title, description, children, onSubmit, onBack, submit
   return (
     <form onSubmit={onSubmit} aria-label={title} className="flex flex-col flex-1 min-h-0">
       <ScrollArea fillX className="flex-1 min-h-0">
-        <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
+        <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
           <h3 className="text-body-lg font-medium text-foreground">{title}</h3>
           <p className="mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary">{description}</p>
           <div className="mt-[var(--layout-space-loose)]">{children}</div>

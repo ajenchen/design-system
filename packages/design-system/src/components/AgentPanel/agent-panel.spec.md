@@ -201,6 +201,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   8+24(工具列 xs 高)+8,懸停工具列絕對定位於輪距內,出現不推擠。
 - **底部內距 = `--layout-space-bottom` 48**:捲到最底時,最後內容(常駐工具列)→ 輸入盒至少 48(user 2026-09-02 23:14
   「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」)。
+  對話區**不**宣告 `data-layout-body`(不讓容器依最後一則自判,維持恆 48;user 原話只講常駐工具列在最後的情況,「不看最後一則是誰」是【AI 推導 2026-11-14】);
+  `scripts/layout-body-edges-invariant.mjs` 以例外 `agent-conversation-end-48` 登記這一格(`scripts/layout-body-edges-exceptions.json`)。
 - **常駐判定 = 本元件**:直接子 `AgentMessage` 中最後一則 `role="agent"` 的工具列常駐(在流內佔位),
   其餘懸停/鍵盤聚焦時瞬間出現(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
 - **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(往上捲 = 正在讀舊訊息,不把人拉走);

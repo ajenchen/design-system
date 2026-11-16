@@ -69,7 +69,7 @@ Sheet 是**從畫面邊緣滑入的浮層面板**。**消費者 API = 右側滑�
 
 ## Padding SSOT
 
-Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter` primitive;`SheetBody` 用 `<ScrollArea>` wrap + 同一套 overlay-surface padding token(對齊 DialogBody canonical,SSOT 見 `patterns/overlay-surface/overlay-surface.spec.md`「Body overflow canonical」)——padding + 分隔線由 overlay-surface own,Sheet 與 Dialog / Popover 共用,避免 token 漂移。Sheet 特有行為:side variant(`top` / `right` / `bottom` / `left`)決定滑入方向 + height/width 響應式策略,padding 本身對齊 overlay-surface canonical。
+Sheet 的 `SheetHeader` / `SheetFooter` 消費 `SurfaceHeader` / `SurfaceFooter` primitive;`SheetBody` 用 `<ScrollArea>` wrap + 同一套 overlay-surface padding(對齊 DialogBody canonical,SSOT 見 `patterns/overlay-surface/overlay-surface.spec.md`「Body overflow canonical」;上下內距由容器自己給 —— `data-layout-body="fill"`,底依最後一個東西照 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4,本規格不寫值)——padding + 分隔線由 overlay-surface own,Sheet 與 Dialog / Popover 共用,避免 token 漂移。Sheet 特有行為:side variant(`top` / `right` / `bottom` / `left`)決定滑入方向 + height/width 響應式策略,padding 本身對齊 overlay-surface canonical。
 
 ---
 

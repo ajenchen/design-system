@@ -987,6 +987,9 @@ const SidebarGroup = React.forwardRef<HTMLDivElement, SidebarGroupProps>(({ clas
   }, [open, shared, internals, value, onOpenChange])
 
   // 非 collapsible 就是 plain div,舊行為完全不變
+  // 邊緣標記 data-layout-region="unbounded"(2026-11-17 A102):群組無框、上下留白由自己的 py-2 給 = unbounded region
+  // (layoutSpace.spec.md「region 子分類」例:Sidebar nav;規則 4 第 3 列 → 容器底 0)。py 在群組這一層、不在清單元素上,
+  // 量具從 DOM 分不出來(舊閘 NOT_COVERED「Sidebar 標頭 → nav」),所以由元件自己宣告;閘另驗「無框、第一 / 最後一列不貼邊」。
   const baseClass = cn(
     "relative flex w-full min-w-0 flex-col py-2",
     "[&+&]:before:absolute [&+&]:before:top-0 [&+&]:before:left-[var(--layout-space-loose)] [&+&]:before:right-[var(--layout-space-loose)] [&+&]:before:h-px [&+&]:before:bg-divider [&+&]:before:content-['']",
@@ -996,7 +999,7 @@ const SidebarGroup = React.forwardRef<HTMLDivElement, SidebarGroupProps>(({ clas
   if (!collapsible) {
     return (
       <SidebarGroupContext.Provider value={contextValue}>
-        <div ref={ref} data-sidebar="group" className={baseClass} {...props}>
+        <div ref={ref} data-sidebar="group" data-layout-region="unbounded" className={baseClass} {...props}>
           {children}
         </div>
       </SidebarGroupContext.Provider>
@@ -1009,6 +1012,7 @@ const SidebarGroup = React.forwardRef<HTMLDivElement, SidebarGroupProps>(({ clas
       <CollapsiblePrimitive.Root
         ref={ref}
         data-sidebar="group"
+        data-layout-region="unbounded"
         open={isOpen}
         onOpenChange={handleOpenChange}
         className={baseClass}

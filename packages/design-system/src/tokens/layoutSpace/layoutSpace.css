@@ -49,3 +49,48 @@
   --layout-space-loose:  16px;
   --layout-space-tight:  12px;
 }
+
+/* ═══ 容器自己給上下內距 —— 規則 4(底)依最後一個東西的邊緣自判(2026-11-17,A102)═══
+   規則住 layoutSpace.spec.md 規則 4(本段只是它的實作,值仍只住上面的 token)。
+   起因:Dialog / Sheet body 的底寫死 48、不看最後一個是什麼 —— A18 的「對話框裡放表格」最後是有框的表格(bounded region),
+   照規則 4 第 2 列應該 loose,畫面卻是 48;清單制的閘又沒登記那則範例,所以沒有人知道(user 2026-11-17:「到底要怎樣才能根本解？」)。
+   【AI 推導 2026-11-17】把規則做進容器本身:
+   · 容器宣告 data-layout-body="fill"(擋住頁面或高度撐滿 = 規則 4 第 1 / 2 / 3 列)或 "hug"(不擋頁面、高度貼內容 = 第 4 列);
+   · 元件根部宣告自己的邊緣 data-layout-region="bounded"(有完整外框:表格 / 卡片 / 面板)或 "unbounded"(無框、清單自帶上下內距);
+     沒有標記 = element(預設)。標記只描述元件的邊緣,不是元件級固定分類(spec「元件角色」:角色由該層判;容器只看最後一個東西的邊緣)。
+   · 容器看最後一個佔版面的子孫(略過 sr-only / hidden / script / style / template,最多穿過兩層沒有標記、也不是巢狀容器的包層):
+     bounded → loose、unbounded → 0、其餘 → fill = bottom(48)/ hug = 與頂部同值。
+   · 寫在 @layer base:consumer 的 pt-* / pb-* / !pb-0 一律蓋得過(既有寫法不必改)。上內距目前仍是規則 2 element 的 tight(頂部的自判未做)。
+   機械:scripts/layout-body-edges-invariant.mjs 掃建置裡全部 story(含點開浮層),從 DOM 判最後一個東西與容器種類、量像素比規則 4;
+   標記與 DOM 對不上(標 bounded 卻沒有框、宣告 hug 卻撐滿)也紅。:has() 只在 Chromium 上由閘實測;不支援的瀏覽器退回 element 的值(= 修前的行為)。 */
+@layer base {
+  [data-layout-body] {
+    --layout-body-start: var(--layout-space-tight);
+    --layout-body-end: var(--layout-space-bottom);
+    padding-top: var(--layout-body-start);
+    padding-bottom: var(--layout-body-end);
+  }
+  [data-layout-body="hug"] {
+    --layout-body-end: var(--layout-body-start);
+  }
+  [data-layout-body]:has(
+    > [data-layout-region="bounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)),
+    > :nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)):not([data-layout-body], [data-layout-region])
+      > [data-layout-region="bounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)),
+    > :nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)):not([data-layout-body], [data-layout-region])
+      > :nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)):not([data-layout-body], [data-layout-region])
+      > [data-layout-region="bounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template))
+  ) {
+    --layout-body-end: var(--layout-space-loose);
+  }
+  [data-layout-body]:has(
+    > [data-layout-region="unbounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)),
+    > :nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)):not([data-layout-body], [data-layout-region])
+      > [data-layout-region="unbounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)),
+    > :nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)):not([data-layout-body], [data-layout-region])
+      > :nth-last-child(1 of :not(.sr-only, [hidden], script, style, template)):not([data-layout-body], [data-layout-region])
+      > [data-layout-region="unbounded"]:nth-last-child(1 of :not(.sr-only, [hidden], script, style, template))
+  ) {
+    --layout-body-end: 0px;
+  }
+}

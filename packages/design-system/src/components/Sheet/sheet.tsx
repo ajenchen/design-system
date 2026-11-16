@@ -235,7 +235,8 @@ SheetHeader.displayName = "SheetHeader"
 
 // ── SheetBody:flex-1 ScrollArea + chrome padding(對齊 DialogBody + ScrollArea canonical) ──
 // 捲軸必用 ScrollArea(跨 OS 一致、不吃寬度)— 不自寫 overflow-y-auto。
-// padding 搬進 viewport inner div:px-loose / pt-tight / pb-bottom。
+// padding 搬進 viewport inner div:左右 px-loose;上下由容器自己給(data-layout-body="fill":側板擋住頁面 = 規則 4 第 1 列,
+// 底依最後一個東西的邊緣 element 48 / bounded loose / unbounded 0;實作 tokens/layoutSpace/layoutSpace.css,同 DialogBody)。
 // data-sheet-body:讓 SheetContent onOpenAutoFocus 找得到 body 第一個互動元素
 //
 // ── List-as-region 場景(menu / nav / settings list)──
@@ -250,12 +251,7 @@ const SheetBody = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ScrollArea>
 >(({ className, children, ...props }, ref) => (
   <ScrollArea ref={ref} data-sheet-body className="flex-1 min-h-0" {...props}>
-    <div
-      className={cn(
-        "px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]",
-        className,
-      )}
-    >
+    <div data-layout-body="fill" className={cn("px-[var(--layout-space-loose)]", className)}>
       {children}
     </div>
   </ScrollArea>

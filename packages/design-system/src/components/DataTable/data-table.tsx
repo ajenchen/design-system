@@ -4935,6 +4935,10 @@ function DataTableInner<TData>(
       ref={(el) => { tableRef.current = el; if (typeof ref === 'function') ref(el); else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el }}
       data-table-size={size}
       data-data-table-outer  // anchor for RowDragHandle Portal getBoundingClientRect (M25 invariant: outer 一定存在)
+      // 邊緣標記(2026-11-17 A102):表格外框完整 = bounded region 的邊緣(layoutSpace.spec.md「region 子分類」bounded、規則 4 第 2 列)。
+      // 放進會自己給上下內距的容器(DialogBody / SheetBody / SurfaceBody 等 data-layout-body)且是最後一個東西時,容器底自動 = loose
+      // (tokens/layoutSpace/layoutSpace.css);後面接分頁列時最後一個是分頁列(element),容器照 element 給。
+      data-layout-region="bounded"
       // 填滿高度(`isFillHeight`,height = 100% / 100vh / fill)的直接標記,給量具認「這張表的高度跟著格子走」用。
       // 2026-11-06:捲軸可見閘的 E(格子縮 1–3px 後不得裁切)原本用「捲動盒有 inline maxHeight」代認填滿高度 ——
       // 固定 px 的上限也掛在中央表身的 inline maxHeight,E 於是量到固定高度的表(契約外)。

@@ -263,6 +263,7 @@
     "test:doc-heading-inventory": "node scripts/doc-heading-inventory-invariant.mjs && node scripts/doc-heading-inventory-invariant.mjs --selftest",
     "test:header-first-gap": "node scripts/header-first-gap-invariant.mjs && node scripts/header-first-gap-invariant.mjs --selftest",
     "test:header-content-sides": "node scripts/header-content-sides-invariant.mjs && node scripts/header-content-sides-invariant.mjs --selftest",
+    "test:layout-body-edges": "node scripts/layout-body-edges-invariant.mjs && node scripts/layout-body-edges-invariant.mjs --selftest",
     "test:form-example-card": "node scripts/form-example-card-invariant.mjs && node scripts/form-example-card-invariant.mjs --selftest",
     "test:sidebar-main-follows-selection": "node scripts/sidebar-main-follows-selection-invariant.mjs && node scripts/sidebar-main-follows-selection-invariant.mjs --selftest",
     "test:sidebar-label-matches-header": "node scripts/sidebar-label-matches-header-invariant.mjs && node scripts/sidebar-label-matches-header-invariant.mjs --selftest",
