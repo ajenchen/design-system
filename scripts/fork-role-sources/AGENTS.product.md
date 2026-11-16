@@ -17,8 +17,8 @@
 - `governance/lock.json`, managed provider adapters, and managed skills are generated upstream.
   Product-specific, provider-neutral policy belongs in `governance/overlay.md` (read it when present);
   it may add stricter product rules but never replaces or weakens upstream controls.
-- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed pull
-  requests pinning an exact version with the regenerated lock/adapters.
+- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed exact-version
+  PRs with the regenerated lock/adapters (steps: DS package README).
 <!-- canonical-decision-authority:inject -->
 
 ## Six working principles
@@ -79,20 +79,6 @@ Missing required tooling is a failure, not a pass. Evidence must bind the checke
   read-only evidence, or the report claims `REVIEW-BLOCKED`. Peer availability never blocks ordinary
   engineering or the standard five-step release. Product review cannot authorize DS/template/release
   changes; route reusable defects upstream.
-
-## Upgrading @qijenchen/design-system
-
-0.x releases keep no aliases: a renamed or removed name breaks at once. Upgrading the DS is therefore:
-open a dedicated branch → install the exact new version (manual exact proposal in
-`docs/04-ds-upgrade.md`: `npm run sync-all -- --apply --to X.Y.Z`) → read every section of
-`node_modules/@qijenchen/design-system/ds-changes.json` after the old version up to the new one → run
-`npx qijenchen-ds-codemod upgrade --source apps/<app>/src` in one run, one `--source` per product app (product
-source only, never `scripts/` or `governance/`), before committing the version bump — it refuses to run over
-uncommitted files in those folders and, through a stamp under `.git/`, to apply the same from → to twice (it cannot
-stamp when `--root` is not the git top level, so never run it a second time there) — and handle every entry its report lists → fix until `npm run typecheck`, `npm run lint:imports`, `npm run governance:check`, and
-`npm run build` are green → open the PR. Automated sync verifies before it pushes a branch, so a
-breaking version arrives as no PR at all; use the manual path above. Rules always come from the shipped
-specs in the package — never keep a hand-copied summary of DS rules.
 
 ## Git and release flow
 

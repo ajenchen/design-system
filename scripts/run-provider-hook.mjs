@@ -591,6 +591,10 @@ function hookCorpusAuthorityPaths(canonicalRegistry) {
     roots.skills,
     'packages/governance/canonical/providers.json',
     'packages/design-system/src/tokens/utility-registry.json',
+    // check_consumer_code_quality.sh 的「已移除名字」段(lib/_ds_removed_names.sh)在 DS 作者角色讀帳本並用
+    // 唯一實作當場投影;少了這兩個檔,外掛路徑上每次寫消費端程式都會因儀器失效被擋(2026-11-16 CI 7029f58f)。
+    'packages/design-system/ds-changes.json',
+    'packages/design-system/tools/changes/ledger.mjs',
   ]
   if (paths.some((value) => typeof value !== 'string' || !value)) {
     failIntegrity('provider hook corpus authority path declaration is invalid')

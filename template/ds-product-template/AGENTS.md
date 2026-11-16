@@ -17,8 +17,8 @@
 - `governance/lock.json`, managed provider adapters, and managed skills are generated upstream.
   Product-specific, provider-neutral policy belongs in `governance/overlay.md` (read it when present);
   it may add stricter product rules but never replaces or weakens upstream controls.
-- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed pull
-  requests pinning an exact version with the regenerated lock/adapters.
+- Never install a mutable tag or semver range for internal packages. Upgrades are reviewed exact-version
+  PRs with the regenerated lock/adapters (steps: DS package README).
 <!-- canonical-decision-authority:start -->
 **Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更(behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules);核准 = user 在對話中對 **exact target + choice** 說可(**「我說可以就是可以,就是授權」— user 2026-08-04 verbatim**;最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的 exact 提案)。引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO,含已核准 UI／UX 實作/機械 generation/sync,與 `infra/governance/release-workflow.json` 的五步;依 frozen scope、SSOT、required checks、security、least privilege、rollback/readback 收斂,不逐 milestone 重問。**Deep Audit 必須在單一 branch／PR 完成 remediation 與 local/CI candidate validation**,禁把 immutable publish 當 iteration/test loop,**每次 audit 最多一次 final release**;額外 release 需 incident evidence ref。Certification/rollout/preview-canary/independent review 都是**明確要求時**的附加 assurance,不得進入標準五步的 blocking graph。(digest 佐證等細則見 `governance/memory/feedback_ship_then_revert_anti_pattern.md`。)
 
@@ -85,20 +85,6 @@ Missing required tooling is a failure, not a pass. Evidence must bind the checke
   read-only evidence, or the report claims `REVIEW-BLOCKED`. Peer availability never blocks ordinary
   engineering or the standard five-step release. Product review cannot authorize DS/template/release
   changes; route reusable defects upstream.
-
-## Upgrading @qijenchen/design-system
-
-0.x releases keep no aliases: a renamed or removed name breaks at once. Upgrading the DS is therefore:
-open a dedicated branch → install the exact new version (manual exact proposal in
-`docs/04-ds-upgrade.md`: `npm run sync-all -- --apply --to X.Y.Z`) → read every section of
-`node_modules/@qijenchen/design-system/ds-changes.json` after the old version up to the new one → run
-`npx qijenchen-ds-codemod upgrade --source apps/<app>/src` in one run, one `--source` per product app (product
-source only, never `scripts/` or `governance/`), before committing the version bump — it refuses to run over
-uncommitted files in those folders and, through a stamp under `.git/`, to apply the same from → to twice (it cannot
-stamp when `--root` is not the git top level, so never run it a second time there) — and handle every entry its report lists → fix until `npm run typecheck`, `npm run lint:imports`, `npm run governance:check`, and
-`npm run build` are green → open the PR. Automated sync verifies before it pushes a branch, so a
-breaking version arrives as no PR at all; use the manual path above. Rules always come from the shipped
-specs in the package — never keep a hand-copied summary of DS rules.
 
 ## Git and release flow
 
