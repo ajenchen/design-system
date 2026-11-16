@@ -123,6 +123,8 @@ Table 層級的模式切換，不是 column 層級:同一張表的列高只有�
 - **固定行高（預設，適合大多數場景）**：所有 row 同高、內容垂直置中——文字、tag、badge、avatar 等不同高度的元件都自然居中，不需處理對齊；文字一律截斷不換行（column 的 `wrap: true` 被忽略）
 - **自動行高（適合描述、備註等需完整顯示的欄位）**：row 高度由最高的 cell 決定、內容頂部對齊；垂直 padding 由目標行高推導（單行時製造置中效果，多行時保持頂部對齊）；`wrap: true` 的欄位可換行撐高 row
 
+**參數**:`<DataTable rowHeight="hug">` = 自動行高;不寫 = 固定行高。寫法跟 `width="hug"` 同一套(`../../../ds-canonical/references/props-naming.md`「尺寸參數」:高度同理,`autoHeight` 這類名字不准用)。2026-11-17 前叫 `autoRowHeight`(布林),已移除、不留舊名 —— 改名紀錄在變更帳本 `0.1.0-beta.149` 的 `DataTableProps.autoRowHeight`(帶 `fix`,`qijenchen-ds-codemod upgrade` 自動改)。依據:決策頁 r10 第 5 題甲(AI 擬、AI 建議;選項原文「例如 rowHeight="hug"；不寫 = 固定列高」),user 2026-11-17 對這題沒有留言,同日回「我把我有意見的部分都留言了，沒意見的部分照你建議」= 採甲;不留舊名依 user 2026-11-15 原話(逐字):「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分，確保ds可以如期運作並乾淨才是重點，反正你發版的時候會有release note,大家自己看release note去更新就好了 看我上述說的是否合理，若合理看有哪些地方要調整才能永遠達到我要求的工作流程」(props-naming.md「相容政策」)。
+
 **垂直內距公式（SSOT，`data-table.css`）**:
 
 ```
@@ -314,7 +316,7 @@ Cell 已 `flex items-center`,consumer render 直接 inline-flex + gap-2。Icon s
 
 ### 十一、Cell 單行截斷原則
 
-固定行高下 cell 單行,空間不足:純文字 `text-overflow: ellipsis`;Tag 文字內部 truncate(Tag bg 跟縮);multiSelect 動態 `+N`;Person avatar 不縮 name truncate;Link truncate。每個 view 態元件自管 truncation,Cell `overflow-hidden` 僅 safety net。截斷必顯 `...`(禁硬裁無 ellipsis)。截斷 hover 顯 tooltip。autoRowHeight wrap 模式不適用(可換行撐 row 高)。
+固定行高下 cell 單行,空間不足:純文字 `text-overflow: ellipsis`;Tag 文字內部 truncate(Tag bg 跟縮);multiSelect 動態 `+N`;Person avatar 不縮 name truncate;Link truncate。每個 view 態元件自管 truncation,Cell `overflow-hidden` 僅 safety net。截斷必顯 `...`(禁硬裁無 ellipsis)。截斷 hover 顯 tooltip。自動行高(`rowHeight="hug"`)的 wrap 欄不適用(可換行撐 row 高)。
 
 ### 十二、可推導值用 `calc()` 表達(不硬寫結果)— 上游動,下游自動跟著算
 
@@ -496,7 +498,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
   - **下限**(【AI 推導 2026-11-15】,算法 = research-r5 選項 B 第 4 點「從列的組成推出來」;各元件常數旁有算式):排序 25rem、篩選 35rem(巢狀 + 120px)、欄位顯示 15.5rem。`width` 比下限窄 → 照下限畫(開發模式 `console.warn`);`minWidth` 只能把下限往上拉;`maxWidth` 壓不過下限(CSS `min-width` 勝 `max-width`);視窗比下限窄時視窗夾限優先(這時篩選列裡固定寬的欄位 / 條件下拉會在面板內捲動 —— 手機寬篩選列本身的排法是另一項既有缺陷,research-r5 建議另開)。
   - **篩選面板巢狀**:`width` 是平面寬,巢狀自動 + 120px(= 預設 760 − 640;research-r5 子選項「甲」,AI 傾向、user「照你建議」);`minWidth` / `maxWidth` 是整個面板的邊界,不加差額。
   - **欄位顯示面板**:傳了 `width`,外層 `PopoverContent` 要用 `width="hug"`(同排序 / 篩選面板;否則被外層的 18rem 裁掉)。
-  - **與 DropdownMenu / SelectMenu 的 `minWidth` 不同**:那兩個的 `minWidth` 取代預設下限(可以更窄),這裡的下限保護列不被擠壞、只能拉高 —— 兩邊對齊與否是 `props-naming.md`「尺寸參數」待辦那一條。
+  - **與 DropdownMenu / SelectMenu 的 `minWidth` 同一套**(2026-11-17 A95 起):三處都是「只能把元件自己的下限往上拉」,規則住 `../../../ds-canonical/references/props-naming.md`「尺寸參數」第 8 條。(之前那兩個是取代預設下限、可以更窄。)
   世界級(有自己畫面板的那一類都給有型別的數字參數):AG Grid Side Bar 工具面板 `width` / `minWidth`(預設 100)/ `maxWidth`([`iSideBar.ts#L24-L42`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/interfaces/iSideBar.ts#L24-L42))、Advanced Filter Builder `minWidth`(預設 500,[`iAdvancedFilterBuilderParams.ts#L1-L30`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/interfaces/iAdvancedFilterBuilderParams.ts#L1-L30))。閘 `scripts/data-table-panel-reset-clear-invariant.mjs` (6)(量面板根元素寬、375px 在視窗內、下限寬裡沒有元素凸出;對照組 = 「寬度參數不作用 / 沒有下限 / 沒有視窗夾限 / 預設寬被改」等 13 個突變各自剛好紅該紅的列)。
 - **Relative date 群組**:`DATE_RELATIVE_GROUPS` Past / Current / Future,走 `<Select groups>`
 - **Labels / i18n**:所有 panel-owned 可見文字與 accessible name 經 `labels`；operator 與 relative-date maps 是 nested partial override。Column header / option label 仍由 consumer 的 `ColumnDef` 提供，不由 panel 翻譯。
@@ -543,7 +545,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 ### Inline Edit — per-column opt-in
 
-`columnDef.meta.editable: boolean | (row) => boolean`(`true` / fn-true 才開)。Commit:blur or Enter → `onCellCommit(rowId, colId, value)`;Cancel:Esc。例外:autoRowHeight string cell 的 edit 是 `Textarea` — Enter 換行、`Cmd/Ctrl+Enter` commit(blur 同 commit)。
+`columnDef.meta.editable: boolean | (row) => boolean`(`true` / fn-true 才開)。Commit:blur or Enter → `onCellCommit(rowId, colId, value)`;Cancel:Esc。例外:`rowHeight="hug"` 表的 string cell,edit 是 `Textarea` — Enter 換行、`Cmd/Ctrl+Enter` commit(blur 同 commit)。
 
 | ColumnType | Trigger | Edit mode |
 |--|--|--|
@@ -641,7 +643,7 @@ Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity
 
 **Overlay**:viewport `position:fixed inset:0` layer。`getCellRect()` 從 `getBoundingClientRect()` 取 float coords no rounding。Paint:hover ring 1px `--border-hover` `outline outline-offset:-1px` in-place;selected ring(格游標)= DS 焦點框 `focus-ring-inset`(2px `--ring` 往內,只掛 class 不寫值,2026-09-26 起;見「試算表模式」段)(range outer ring 已 2026-05-10 retire — range 視覺只剩 cell-bg `--primary-subtle` `[data-range-cell]`,bg 已足以標示範圍、外框冗餘);active editor host portal opaque `<div>` z 3(cell 保持 view 態)。**Viewport clip**(Issue 6):body panel 加 `data-datatable-panel="left|center|right"`;`getCellGeometry()` return cell+panel rect;`<ClipMask>` panel rect `overflow:hidden`,內部 `toRelRect()` 轉 mask-relative(hover/selected ring 按 panel clip,不畫出 pin boundary)。Active editor host **不 clip**，因為 editor 必能越過 cell paint layer 接收互動。
 
-**Cell errors**(Issue 9):`cellErrors?: Record<string, string|string[]>` prop key `${rowId}:${colId}`。Cell view 態渲 error 14px `text-error` 下方 gap-1;array→`<ul><li>`;single→`<span>`。`aria-describedby` + `aria-invalid` + `<span role="alert">`。`overflow:visible` 當有 error(搭 `autoRowHeight`)。**Per-row state SSOT** cell-render wrapper(`items-X` 等)必 consume `effectiveAutoRowForCell`,禁 global `autoRowHeight`(audit `audit-data-table-row-mode-ssot.mjs` 強制)。**Edit-clears-own-cell** 自動清視覺,consumer onCellCommit validate 後回填。**a11y caveat**:≥ 5 同時 `role="alert"` 第一次 paint AT 噪音 → consumer 可考 `role="status"` fallback，避免初次 paint 同時打斷多次。
+**Cell errors**(Issue 9):`cellErrors?: Record<string, string|string[]>` prop key `${rowId}:${colId}`。Cell view 態渲 error 14px `text-error` 下方 gap-1;array→`<ul><li>`;single→`<span>`。`aria-describedby` + `aria-invalid` + `<span role="alert">`。`overflow:visible` 當有 error(搭 `rowHeight="hug"`)。**Per-row state SSOT** cell-render wrapper(`items-X` 等)必 consume `effectiveAutoRowForCell`,禁整張表的 `autoRowHeight`(`data-table.tsx` 內部布林 = `rowHeight === 'hug'`;audit `audit-data-table-row-mode-ssot.mjs` 強制)。**Edit-clears-own-cell** 自動清視覺,consumer onCellCommit validate 後回填。**a11y caveat**:≥ 5 同時 `role="alert"` 第一次 paint AT 噪音 → consumer 可考 `role="status"` fallback，避免初次 paint 同時打斷多次。
 
 ---
 

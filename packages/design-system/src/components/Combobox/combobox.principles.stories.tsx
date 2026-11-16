@@ -41,7 +41,7 @@ const categoryOptions = [
 // Combobox),用表格的預設固定行高 —— 不手刻表頭 / 列幾何去模擬一張表。
 // 2026-10-20 T1:原本這則是「❌ Table cell 不用 wrap」,示範的卻是 DataTable 正式支援的「自動行高 + wrap 欄位」
 // (data-table.spec.md「四、行高模式」:自動行高時 wrap: true 的欄位可換行撐高 row;cell-registry.tsx MultiSelectCell
-// wrap = autoRowHeight && meta.wrap)—— 表格的 owner 已經允許的事不該被標成 ❌,改成教固定行高下的單行 + +N。
+// wrap = rowHeight="hug" && meta.wrap)—— 表格的 owner 已經允許的事不該被標成 ❌,改成教固定行高下的單行 + +N。
 type ProductRow = { name: string; categories: string[] }
 const WRAP_ROWS: ProductRow[] = [
   { name: 'Headphones', categories: ['electronics', 'lifestyle', 'sports'] },
@@ -163,7 +163,7 @@ export const WrapRule: Story = {
 
         <TutorialRule
           title="表格儲存格:用單行 + +N(表格預設的固定行高)"
-          note="固定行高的表格每一列同高,欄位的 wrap 會被忽略,放不下的 Tag 收成 +N,滑過看完整清單 —— 掃視節奏不被打斷。只有表格開了自動行高(autoRowHeight,給描述 / 備註這類要完整顯示的欄位)時,標了 wrap 的欄位才會換行撐高該列"
+          note="固定行高的表格每一列同高,欄位的 wrap 會被忽略,放不下的 Tag 收成 +N,滑過看完整清單 —— 掃視節奏不被打斷。只有表格開了自動行高(rowHeight 設成 hug,給描述 / 備註這類要完整顯示的欄位)時,標了 wrap 的欄位才會換行撐高該列"
         >
           {/* 表格寬 = 窄欄位(DataTable 預設各欄均分剩餘寬度;max-w-sm 讓 Categories 欄放不下三個 Tag → 看得到 +N) */}
           <div className="w-full max-w-sm">

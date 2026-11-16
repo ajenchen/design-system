@@ -179,9 +179,9 @@ export interface SelectMenuProps {
   /** 對齊方式 */
   align?: 'start' | 'end'
   /**
-   * 最小寬度（px）。不傳 = `max(觸發元件寬度, 15rem)`(窄觸發元件時吃 15rem 地板)。
-   * 注意:傳入的值**整個取代**這個預設(不是跟觸發元件寬取大)—— 傳得比觸發元件窄,選單就比觸發元件窄
-   *(2026-11-15 audit-r7 INV-11 修 JSDoc;行為照舊,要不要改成「只能拉高」記在尺寸參數規則的待辦)。
+   * 最小寬度（px）。預設下限 `max(觸發元件寬度, 15rem)`(窄觸發元件時吃 15rem 地板)。
+   * 傳入的值**只能把下限往上拉**:有效下限 = `max(觸發元件寬度, 15rem, minWidth)`,傳得比預設小照預設畫、不會比觸發元件窄
+   *(2026-11-17 A95;跟表格三個工具面板同一套,props-naming.md「尺寸參數」第 8 條。之前是整個取代預設下限)。
    */
   minWidth?: number
 
@@ -573,7 +573,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         )}
         style={{
           boxShadow: 'var(--elevation-200)',
-          minWidth: minWidth ?? 'max(var(--radix-popover-trigger-width), 15rem)',
+          minWidth: minWidth != null
+            ? `max(var(--radix-popover-trigger-width), 15rem, ${minWidth}px)`
+            : 'max(var(--radix-popover-trigger-width), 15rem)',
         }}
         align={align}
         sideOffset={OVERLAY_SIDE_OFFSET}

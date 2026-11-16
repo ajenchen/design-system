@@ -22,7 +22,7 @@
  *         字串屬性裡的標記不算、「{/* 標記 *\/}<div …>」只放行自己那一行(不連帶下一行)、`@layout-space-magic-ok:` 沒寫理由(< 6 字)不算:
  *         (a) 新建表單的主送出鈕被停用 —— 表單的送出鈕(`type="submit"`、在 `<form>` 裡,或停用條件讀的正是某個控件 `value=` 綁的值)
  *             寫成 `<Button variant="primary" disabled={條件}>`,且條件不是 useFormValidation 自己的送出狀態;
- *             spec 明文的兩種例外(更新類 / 對話輸入盒)要逐行或整檔寫 `@submit-intent: update|composer — 理由`;
+ *             spec 明文的兩種例外(更新類 / 需要填的欄位只有一個 —— 2026-11-17 前綁 agent-panel.spec.md 的對話輸入盒)要逐行或整檔寫 `@submit-intent: update|composer — 理由`;
  *         (b) 寫死的間距(gap / p / m 家族的任何數字刻度、[Npx|rem|em] 任意值、inline style 的 gap / padding* / margin* 字面值),
  *             判法與 check_layout_space_magic_numbers.sh 同一套:utility-registry 的 micro 幾何分類器(直接呼叫 hooks/lib/_micro_geometry.sh)、
  *             分隔線與 `@layout-space-magic-ok:` 照舊放行;
@@ -198,8 +198,8 @@ export const RULE_IDS = Object.freeze(['primary-submit-disabled', 'hardcoded-spa
 export const RULES = Object.freeze({
   'primary-submit-disabled': {
     label: '(a) 新建表單的主送出鈕被停用',
-    owner: 'packages/design-system/src/components/Field/form-validation.spec.md:15「新建(Create)| 不看填了沒、填對沒,一律 enabled」+ :146「❌ 對 Create form 用 disabled-until-dirty Submit button」',
-    fix: '送出鈕不看填了沒、填對沒,一律可按,按下時由 useFormValidation 驗證並把焦點帶到第一個錯誤(同 field.stories.tsx CreateProjectForm);真的是更新類 / 對話輸入盒,在該行正上方寫 {/* @submit-intent: update|composer — 理由 */}',
+    owner: 'packages/design-system/src/components/Field/form-validation.spec.md:15「新建(Create)| 不看填了沒、填對沒,一律 enabled」+ :173「❌ 對 Create form 用 disabled-until-dirty Submit button」',
+    fix: '送出鈕不看填了沒、填對沒,一律可按,按下時由 useFormValidation 驗證並把焦點帶到第一個錯誤(同 field.stories.tsx CreateProjectForm);真的是更新類 / 需要填的欄位只有一個(唯一擋住的是空白),在該行正上方寫 {/* @submit-intent: update|composer — 理由 */}',
   },
   'hardcoded-spacing': {
     label: '(b) 寫死的間距',
@@ -228,9 +228,11 @@ export const SUBMIT_INTENTS = Object.freeze({
     meaning: '更新類表單:沒改就不用存,有變更才亮起來',
   },
   composer: {
-    spec: 'packages/design-system/src/components/AgentPanel/agent-panel.spec.md',
-    quote: 'AgentPromptInput 空值時送出鈕不可按',
-    meaning: '對話輸入盒:空白時送出鈕不可按',
+    // 2026-11-17 起綁 form-validation.spec.md 的第三列(B13);之前綁 agent-panel.spec.md「AgentPromptInput 空值時送出鈕不可按」,
+    // 那句現在改成指向這一列。名字 composer 照舊(DS 內既有標記不改字)。
+    spec: 'packages/design-system/src/components/Field/form-validation.spec.md',
+    quote: '| **需要填的欄位只有一個**,而且唯一擋住送出的原因是它沒有值(新建也算;這一列優先於「新建」) | **disabled** | 那個欄位有值 | 那個欄位沒有值(空白);格式、長度等其他條件一律不停用 |',
+    meaning: '需要填的欄位只有一個、唯一擋住送出的是它沒有值:空白時送出鈕不可按(格式、長度等其他條件不停用)',
   },
 })
 

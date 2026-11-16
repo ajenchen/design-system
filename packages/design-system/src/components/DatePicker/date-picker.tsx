@@ -343,7 +343,7 @@ export interface DatePickerProps
   /**
    * View 態是否渲 Calendar icon + Field naked wrapper(D-path opt-in,2026-05-08)
    * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 span,不畫欄位外框 / 圖示;
-   *   這個預設值的設計理由待 user 定 —— 2026-11-15 前理由欄只寫了相容,0.x 不成立)。
+   *   理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix CalendarIcon,
    * 與 edit 同 DOM 結構,消除 Layer-B padding mismatch。
    */
@@ -357,8 +357,8 @@ export interface DatePickerProps
    * 同時保持 Calendar icon trigger 開啟 calendar 選擇(對齊 Material X DatePicker / Ant
    * DatePicker / Notion typed-date idiom)。
    *
-   * 預設 false — trigger 是 `<div role="combobox">` + `<span>` 文字,要直接打字的欄位才開(這個預設值的設計理由待 user 定 ——
-   * 2026-11-15 前理由欄只寫了相容)。
+   * 預設 false — trigger 是 `<div role="combobox">` + `<span>` 文字,要直接打字的欄位才開(理由:開不開由消費者依情境決定,
+   * 預設可打字不是所有情境都比較方便 —— user 2026-11-17 選甲維持,原話見 date-picker.spec.md「Typed input」)。
    *
    * Behavior(opt-in `typeable=true`):
    *   - `<input>` 取代 `<span>` displayValue,user 可直接打字
@@ -539,7 +539,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     })
 
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 DatePickerDisplay sub-component(retired)。
-    //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Calendar icon —— 裸 span(預設值的理由待 user 定,見 prop docblock)。
+    //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Calendar icon —— 裸 span(理由:檢視態只顯示值,見 prop docblock)。
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Calendar,
     //   與 edit 同結構消除 cell view↔edit 像素偏移(Layer-B padding mismatch)。
     if (resolvedMode === 'view') {

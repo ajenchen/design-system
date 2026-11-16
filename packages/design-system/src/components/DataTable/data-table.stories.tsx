@@ -394,7 +394,7 @@ export const ColumnReorder: Story = {
   },
 }
 
-/* ── 行高模式 — autoRowHeight prop(每 row 內容驅動高度) ── */
+/* ── 行高模式 — rowHeight="hug"(每 row 內容驅動高度) ── */
 export const RowAutoHeightInlineEdit: Story = {
   name: '自動行高 × 就地編輯',
   parameters: {
@@ -426,7 +426,7 @@ export const RowAutoHeightInlineEdit: Story = {
     return (
       <div className="max-w-5xl">
         <DataTable
-          columns={cols} data={list} maxHeight="none" autoRowHeight inlineEdit
+          columns={cols} data={list} maxHeight="none" rowHeight="hug" inlineEdit
           onCellCommit={(rowId, col, val) => {
             setList((prev) => prev.map((r) => r.sku === rowId ? { ...r, [col]: val as never } : r))
           }}
@@ -446,8 +446,8 @@ export const RowAutoHeightModes: Story = {
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
         <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
       </ExampleSection>
-      <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
-        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" autoRowHeight />
+      <ExampleSection title={'自動行高（rowHeight="hug"）'} description="內容頂部對齊，wrap 欄位可撐高 row">
+        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" rowHeight="hug" />
       </ExampleSection>
     </ExampleStack>
   ),
@@ -474,8 +474,8 @@ export const RowAutoHeight: Story = {
       <ExampleSection title="固定行高（預設）" description="所有內容垂直置中，文字截斷">
         <DataTable columns={baseColumns} data={sampleData} maxHeight="none" />
       </ExampleSection>
-      <ExampleSection title="自動行高（autoRowHeight）" description="內容頂部對齊，wrap 欄位可撐高 row">
-        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" autoRowHeight />
+      <ExampleSection title={'自動行高（rowHeight="hug"）'} description="內容頂部對齊，wrap 欄位可撐高 row">
+        <DataTable columns={columnsWithNote} data={dataWithNotes} maxHeight="none" rowHeight="hug" />
       </ExampleSection>
       {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
           另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
@@ -487,7 +487,7 @@ export const RowAutoHeight: Story = {
           columns={columnsWithNote}
           data={dataWithNotes}
           maxHeight="none"
-          autoRowHeight
+          rowHeight="hug"
           pinnedLeftColumns={['sku']}
           rowActions={() => (
             <>
@@ -506,7 +506,7 @@ export const RowAutoHeight: Story = {
           columns={columnsWithNote}
           data={virtualNotes}
           maxHeight={360}
-          autoRowHeight
+          rowHeight="hug"
           pinnedLeftColumns={['sku']}
           rowActions={() => (
             <>
@@ -1008,14 +1008,14 @@ export const CellErrors: Story = {
           欄位驗證錯誤直接顯示在內容下方,不蓋住資料。一格多個錯誤分行條列。點進該格編輯時暫時隱藏錯誤,
           交給使用者修正;改完確認後由 app 端決定是否還要顯示。
         </p>
-        {/* 2026-05-10 fix(user 第二次糾正):restore `autoRowHeight` — 原本 story 用全表
+        {/* 2026-05-10 fix(user 第二次糾正):restore 全表自動行高(今 `rowHeight="hug"`)— 原本 story 用全表
             auto-row 是正確 baseline,error row 自然撐高 + 其他 row 仍 auto(內容驅動)。 */}
         <DataTable
           columns={editableColumns}
           data={data}
           maxHeight="none"
           inlineEdit
-          autoRowHeight
+          rowHeight="hug"
           getRowId={(row) => row.sku}
           tableOptions={{ getRowId: (row) => row.sku }}
           onCellCommit={handleCommit}
@@ -1061,7 +1061,7 @@ export const CellErrorsFixedRowOverride: Story = {
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-4xl">
         <p className="text-caption text-fg-muted">
-          表格本身是固定行高(沒開 autoRowHeight),但 PRD-001 跟 PRD-003 有錯誤訊息 → 這兩 row
+          表格本身是固定行高(沒寫 rowHeight="hug"),但 PRD-001 跟 PRD-003 有錯誤訊息 → 這兩 row
           自動撐高顯示訊息;PRD-002、PRD-004 沒錯誤,維持原本的固定行高,內容垂直置中。
           觀察 row 之間高度差,以及同一 row 內所有 cell 對齊一致(撐高 row 全頂對齊,固定 row 全置中)。
         </p>

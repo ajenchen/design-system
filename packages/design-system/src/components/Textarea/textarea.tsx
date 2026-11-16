@@ -89,7 +89,7 @@ const textareaVariants = cva(
       // (2026-07-09 `bare` chrome × mode compounds 退役已移除;error:true 為 variant-agnostic 保留)
       // (2026-07-09 display×bare / readonly×bare / disabled×bare compounds 退役已移除)
       // naked chrome × mode — cell-as-input substrate(2026-05-06 v14 revert v12)。
-      //   v12 `!absolute -inset-px` autoRowHeight 不相容 → revert v9 baseline + 保留 v13.3
+      //   v12 `!absolute -inset-px` 跟 DataTable 自動行高(rowHeight="hug")不相容 → revert v9 baseline + 保留 v13.3
       //   focus !important。focus-visible 用 textarea 自身 selector(focusable element)。
       {
         mode: 'edit',

@@ -421,7 +421,7 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 
 - `hasVariants=false`:家族各元件無視覺 variant 軸(結構分支如 Chip assist 屬 Chip 元件)。
 - `hasSizes=false`:面板寬/列高/鈕尺寸全由消費的 primitive/token 決定,無獨立 size 軸。
-- Field 家族空值/驗證:AgentPromptInput 空值時送出鈕不可按(剛送出而變空的那一刻送出鈕握著焦點 → 不轉原生 disabled、焦點留在原鈕,
+- Field 家族空值/驗證:AgentPromptInput 只有一個要填的欄位,照 `../Field/form-validation.spec.md`「Submit Button 狀態」第三列(需要填的欄位只有一個)—— 空白時送出鈕不可按(2026-11-17 起規則住該處,本條只是套用;剛送出而變空的那一刻送出鈕握著焦點 → 不轉原生 disabled、焦點留在原鈕,
   `../Button/button.tsx` 可聚焦的停用);改名 Dialog 走 form-validation 更新類規則(未異動停用/dirty 亮/還原再停;空白可按、按了報錯並移焦點 ——
   2026-10-01 前這裡寫「空白時一併停用,避免可按卻無反應」,查無 user 原話,且 hook 下按了會報錯移焦點,前提不成立,見上方「改名」條)。
 

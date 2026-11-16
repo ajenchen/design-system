@@ -7,7 +7,7 @@
  *   紅: R1 公開元件的 *Props 出現撐滿 / 跟內容的同義名(fullWidth / block / autoWidth …)或已移除的舊名(REMOVED_PROP_NAMES)——
  *          0.x / 預發布版標了 @deprecated 也紅(不留舊名);1.0 以後的正式版才准同義名標 @deprecated 留一個版本;
  *       R2 DS 自己的 JSX(元件 / 範例 / 模板 / 閘夾具,沒有例外)用已移除的舊名(<Button fullWidth> / <FieldControlGroup block> /
- *          <Input autoWidth> / <FieldGroup horizontalLabelWidth> / <DataTable height> / <DialogContent maxWidth>);
+ *          <Input autoWidth> / <FieldGroup horizontalLabelWidth> / <DataTable height> / <DialogContent maxWidth> / <DataTable autoRowHeight>);
  *       R3 *Props 的 `size` 收數字或任意字串(= 拿 size 當長度),不在正方形媒體例外清單;
  *       R4 *Props 繼承 InputHTMLAttributes 卻沒把原生 `width` / `height` Omit 掉;
  *       R5 DS 自己的 `<DialogContent width>` 寫數字(或檔名以外的字串)—— DS 的元件、範例只寫寬度檔名 sm / md / lg / xl
@@ -54,6 +54,8 @@ export const REMOVED_PROP_NAMES = new Map([
   ['FieldGroupProps.horizontalLabelWidth', 'labelWidth'],
   ['DataTableProps.height', 'maxHeight'],
   ['DialogContentProps.maxWidth', 'width(檔名 sm / md / lg / xl 或數字)'],
+  // 2026-11-17(A96,user 同日照建議選甲):列高跟內容 = rowHeight="hug",跟 width="hug" 同一套;舊名不在 SIZING_MODE_ALIASES(那張只比完整名字)
+  ['DataTableProps.autoRowHeight', 'rowHeight="hug"'],
 ])
 
 /** R2:DS 自己的 JSX 不得再用的舊寫法(元件名 → 屬性名 → 新寫法)。DialogContent autoHeight 歸 overlay-story-contract S3。 */
@@ -64,6 +66,7 @@ export const REMOVED_JSX = [
   { tag: /^FieldGroup$/, attr: 'horizontalLabelWidth', fix: 'labelWidth' },
   { tag: /^DataTable$/, attr: 'height', fix: 'maxHeight(height="auto" → maxHeight="none"、"400px" → {400}、"100%" → "100%")' },
   { tag: /^DialogContent$/, attr: 'maxWidth', fix: 'width(DS 自己只寫檔名 sm / md / lg / xl,照 dialog.spec.md「寬度檔位」選檔;閘夾具才寫數字)' },
+  { tag: /^DataTable$/, attr: 'autoRowHeight', fix: 'rowHeight="hug"(autoRowHeight={false} 或不寫 → 不寫 = 固定列高)' },
 ]
 // (2026-11-15 前這裡有一張 R2 例外清單,放行「量舊名相容路徑」的 dialog-width 夾具;舊名移除後相容路徑不存在,例外一起拿掉。)
 /** R5:DialogContent 的寬度檔名(dialog.tsx DIALOG_WIDTH_TIERS 的 key;數值不在這裡,只認名字)。 */
@@ -279,6 +282,7 @@ function selftest() {
   expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <Button fullWidth>送出</Button>')) === 'R2', 'R2:<Button fullWidth> 應紅')
   expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <FieldControlGroup block><Input /></FieldControlGroup>')) === 'R2', 'R2:<FieldControlGroup block> 應紅')
   expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <DataTable columns={c} data={d} height="auto" />')) === 'R2', 'R2:<DataTable height> 應紅')
+  expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <DataTable columns={c} data={d} autoRowHeight />')) === 'R2', 'R2:<DataTable autoRowHeight> 應紅')
   expect(rules(checkJsxSource('x/a.stories.tsx', 'const a = <FieldGroup horizontalLabelWidth="120px" />')) === 'R2', 'R2:<FieldGroup horizontalLabelWidth> 應紅')
   expect(checkJsxSource('x/a.stories.tsx', 'const a = <><Button width="fill" /><DataTable maxHeight="none" /><DialogContent height="hug" /><svg height="16" /><img height={40} /></>').length === 0, 'R2:新寫法與 svg / img / DialogContent 的 height 不應紅')
   // R3:size 收數字 → 紅;檔位 → 綠;例外清單 → 綠

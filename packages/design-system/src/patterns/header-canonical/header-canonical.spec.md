@@ -222,7 +222,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - 獨立 chrome-replacement tabs → tabs lg(W3 已 cover)
 - 中間階梯(md=40)無清楚場景 — 多家世界級 DS(Material / MUI / Primer / Polaris)只有 1 個 default size(無 sm/md/lg 階梯)= sweet spot 只需 2 tier <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
-**Conservative path**:token 不刪;spec 明寫 future tier。【待決 2026-11-16】原本寫的理由是「避免 breaking change 與 stories 維護成本」—— 前半是相容,0.x 下不成立(`../../../ds-canonical/references/props-naming.md`「相容政策」),後半不是設計理由。沒有 use case 的 md 這一檔(Tabs `size="md"` + `--tab-height-md`)要留還是拿掉,由 user 決定;拿掉的話 Tabs 的設計規格(尺寸表、檢閱器的 size 選項)與設計原則「尺寸選擇」少了 md 這一檔,其餘畫面不變(DS 範例沒有任何一處用 md 當實際分頁)。
+**保留 md(user 2026-11-17 決定)**:Tabs `size="md"` 與 `--tab-height-md` 都保留,spec 明寫 future tier。依據:user 2026-11-17 對決策頁 r10 第 6 題②的留言(逐字,貼在「乙 保留」那一列):「我認為要保留，md有可能會用在主內容區內吧？」—— user 決定保留;用途 user 提到可能用在主內容區(問句,未定),所以本檔不把「主內容區」寫成 md 的定案用途,新 consumer 要用 md 仍先諮詢 DS owner(上方「規則」)。2026-11-16 以前寫的理由「避免 breaking change 與 stories 維護成本」已撤:前半是相容,0.x 下不成立(`../../../ds-canonical/references/props-naming.md`「相容政策」),後半不是設計理由。
 
 ### Rule W6:Default tabs size 為 sm(已 land)
 

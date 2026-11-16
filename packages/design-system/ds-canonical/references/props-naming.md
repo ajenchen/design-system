@@ -58,7 +58,8 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 |---|---|---|---|
 | 寬怎麼長(撐滿 / 跟內容 / 固定) | `width` | `'fill'`(撐滿容器)\|`'hug'`(跟內容)\|數字(px,固定寬)—— **每個元件只列自己支援的值**。Dialog 另收寬度檔名 `'sm'\|'md'\|'lg'\|'xl'`(檔名與數字都是最大寬,受視窗四邊留白夾住;不收 `'fill'` / `'hug'`;`../../src/components/Dialog/dialog.spec.md`「寬度檔位」) | `<Select width={160}>`、`<Button width="fill">`、`<Input width="hug">`、`<DialogContent width="lg">` |
 | 高怎麼長 | `height` | 同上(目前只有 Dialog:`'fill' \| 'hug'`) | `<DialogContent height="hug">` |
-| 上下限 | `minWidth` / `maxWidth` / `minHeight` / `maxHeight` | 數字(px);需要 CSS 單位或關鍵字時另收字串(例:`'100%'`、`'none'` = 沒有上限) | `<DataTable maxHeight={400}>`、`maxHeight="none"` |
+| 表格每一列的高怎麼長 | `rowHeight` | `'hug'`(跟內容長高);不寫 = 固定列高(由 `size` 決定)。2026-11-17 起,之前叫 `autoRowHeight` | `<DataTable rowHeight="hug">` |
+| 上下限 | `minWidth` / `maxWidth` / `minHeight` / `maxHeight` | 數字(px);需要 CSS 單位或關鍵字時另收字串(例:`'100%'`、`'none'` = 沒有上限)。`minWidth` 只能把元件自己的下限往上拉(第 8 條) | `<DataTable maxHeight={400}>`、`maxHeight="none"` |
 | 大小檔位(跟密度一起變的高度 / 字級 / 內距) | `size` | `'sm' \| 'md' \| 'lg'`(Button / SegmentedControl 多一檔 `xs`) | `<Select size="sm">` |
 | 子部位的寬 | `<部位>Width`(同一個值只有一個名字) | 數字(px)\|CSS 長度字串(比例寬) | Field / FieldGroup 的 `labelWidth` |
 | 使用者可拖寬的面板 | `widthRange` / `defaultWidth` / `width`(受控) | 數字(px) | Sidebar / AppShellAside / AgentPanel(既有,不動) |
@@ -71,8 +72,11 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 5. **改名 / 移除照下方「相容政策」**:0.x 與預發布版**不留舊名**(不標 `@deprecated`、不在內部把舊名轉成新名),同一版把 DS 自己的程式、範例、規格改完,同一個 PR 在變更帳本寫一條(能機械改寫就附 `fix`);1.0 以後的正式版才改回「留舊名一個版本」。
 6. **拿掉漏出來的 HTML 原生 `width` / `height`**:欄位家族(Input / NumberInput / LinkInput)的 `<input type="text">` 原生 width / height 沒有作用,型別上必須 Omit,改走 DS 的 `width` 軸;否則 `<Input width="hug">` 型別會過、畫面毫無反應。
 7. 判斷「同一個字在別處是不是不同義」(AGENTS.md 命名 3 重 test 第 (3) 題)的答案:`width` 在全 DS 都是「這個元件的寬」—— 模式詞與數字是同一個軸上的值,不是兩種意思;各元件能填的值不同是**型別範圍**不同(看編輯器提示),不是語意不同(這是甲案自己寫明的代價:「每個元件的 `width` 能填的值不完全一樣,要看編輯器提示」)。
+8. **`minWidth` 只能把元件自己的下限往上拉**:有效下限 = max(元件預設下限, 傳入值)。傳得比預設下限小,照預設下限畫,不會讓元件更窄。DropdownMenu(預設下限 `max(180px, 觸發元件寬)`)、SelectMenu(`max(觸發元件寬, 15rem)`)與表格三個工具面板(`../../src/components/DataTable/data-table.spec.md`「工具面板的寬度」)同一套 —— 同一個名字只有一個意思(AGENTS.md 命名 3 重 test 第 (3) 題)。依據:決策頁 r10 第 4 題甲(AI 擬、AI 建議;選項原文「全部改成「只能往上拉」」「下拉選單永遠不比觸發的按鈕窄、不小於預設下限」),user 2026-11-17 對這題沒有留言,同日回「我把我有意見的部分都留言了，沒意見的部分照你建議」= 採甲。2026-11-17 前下拉選單的 `minWidth` 是「整個取代預設下限」(可以比觸發元件窄),帳本 `0.1.0-beta.149` 記一條 behavior。
 
 **2026-11-15 收斂並移除的舊名**(升版照表改;全部登記在變更帳本 `../../ds-changes.json` 的 `0.1.0-beta.149` 節,帶 `fix` 的由 `qijenchen-ds-codemod upgrade` 自動改):Button / SegmentedControl `fullWidth` → `width="fill"`;FieldControlGroup `block` → `width="fill"`;Input `autoWidth` → `width="hug"`;FieldGroup `horizontalLabelWidth` → `labelWidth`;DataTable `height` → `maxHeight`(`"auto"` → `"none"`、`"400px"` → `{400}`、`"100%"` 照寫);DialogContent `autoHeight` → `height="hug"`(2026-09 已停用,閘 `scripts/overlay-story-contract-invariant.mjs` S3);DialogContent `maxWidth` → `width`(A18:檔名或數字;它的行為一直是「寬」,不是只當上限,第 3 條)。原本「先保留一個版本、行為不變」,user 2026-11-15 定下相容政策之後同一天拿掉(見下方「相容政策」)。**欄位家族新增固定寬**:Select / Combobox / DatePicker / DatePicker.Range / PeoplePicker / TimePicker / Input 收 `width` 數字,NumberInput / LinkInput 收 `'fill' | 數字`(`../../src/components/Field/field-controls.spec.md`「寬度軸(width: fill / hug)」)。
+
+**2026-11-17 移除的舊名**(A96;同上,登記在帳本 `0.1.0-beta.149` 節、帶 `fix`):DataTable `autoRowHeight` → `rowHeight="hug"`(`autoRowHeight={false}` 或不寫 → 不寫 = 固定列高)。
 
 **世界級對照**(只列 2026-11-15 讀到原文的):
 - CSS `width` 一個屬性同時收長度 / 百分比與關鍵字(`auto` / `max-content` / `min-content` / `fit-content` / `stretch`);`stretch`「behaving similar to `100%`」、`fit-content`「Use the available space, but not more than max-content」([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/width))—— 一個軸名同時收模式詞與長度。
@@ -85,7 +89,7 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 
 **機械閘**:`scripts/sizing-props-invariant.mjs`(`npm run test:sizing-props`,CI 必跑;`--selftest` 對照組):R1 公開元件 props 不得有撐滿 / 跟內容的同義名、也不得把已移除的舊名加回來(0.x 標了 `@deprecated` 也紅,政策讀 `scripts/lib/compat-policy.mjs`);R2 DS 自己的 JSX 不得用已移除的舊名(含 `<DialogContent maxWidth>`,閘夾具也不例外);R3 `size` 只能是檔位(例外清單 = 上面第 4 條);R4 欄位家族型別不得漏出原生 `width` / `height`;R5 DS 自己的 `<DialogContent width>` 只寫檔名、不寫數字(閘夾具除外;`dialog.spec.md`「寬度檔位」)。
 **2026-11-15 同日第二批(A19)新增**(預設全部不變):表格三個工具面板 `DataTableSortManager` / `DataTableFilterPanel` / `DataTableColumnVisibilityPanel` 收 `width` / `minWidth` / `maxWidth`(px;下限保護列、只能拉高,視窗夾限恆在 —— `../../src/components/DataTable/data-table.spec.md`「工具面板的寬度」);`PopoverContent` 收 `width`(數字 | `'hug'`,數字夾在視窗內);`SheetContent` 收 `width`(數字,左右側板,不超過 75%)。依據:工具面板 = 本節開頭 user 2026-11-11 那句(逐字);Popover / Sheet = 決策頁 r9「照既有原則直接做」的「Sheet、Popover 加寬度參數」(預選、user 未逐字選)。視窗夾限一份:`../../src/tokens/elevation/overlay-geometry.ts` `OVERLAY_VIEWPORT_MAX_WIDTH`。同批的「清單列的左右內距改成元件參數」不是尺寸軸,住 `Command` 的 `gutter`(`'field' | 'surface'`,`../../src/patterns/element-anatomy/item-anatomy.spec.md`「Token: `--item-px`」客製方式)。
-**待辦(不在 2026-11-15 這兩批)**:~~Dialog `maxWidth` 實為寬度(另案 A18 對話框寬度檔位)~~ —— 2026-11-15 A18 結案:改名 `width`(檔名 sm / md / lg / xl 或數字),見上方舊名清單與 `../../src/components/Dialog/dialog.spec.md`「寬度檔位」;DropdownMenu / SelectMenu 的 `minWidth` 目前是「取代預設下限」,表格工具面板的 `minWidth` 是「只能拉高」(下限保護列)—— 同名、對「比預設小」的處理不同,要不要統一是行為改變,未改。
+**待辦(不在 2026-11-15 這兩批)**:~~Dialog `maxWidth` 實為寬度(另案 A18 對話框寬度檔位)~~ —— 2026-11-15 A18 結案:改名 `width`(檔名 sm / md / lg / xl 或數字),見上方舊名清單與 `../../src/components/Dialog/dialog.spec.md`「寬度檔位」;~~DropdownMenu / SelectMenu 的 `minWidth` 是「取代預設下限」,表格工具面板的是「只能拉高」~~ —— 2026-11-17 A95 結案:全部「只能往上拉」,見上方規則第 8 條。
 
 ## 相容政策(改名 / 移除;2026-11-15,唯一住處)
 

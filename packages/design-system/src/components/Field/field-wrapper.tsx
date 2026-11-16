@@ -207,7 +207,7 @@ export const fieldWrapperStyles = cva(
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //
       // ── 2026-05-06 v14:revert v12 → v9 baseline + keep v13.3 ──
-      // v12 `!absolute -inset-px` autoRowHeight 不相容(Field 抽 layout flow → cell 塌 42px;
+      // v12 `!absolute -inset-px` 跟 DataTable 自動行高(rowHeight="hug")不相容(Field 抽 layout flow → cell 塌 42px;
       // user production 回報 Field 沒撐滿 cell、比改之前還糟)→ revert。
       //
       // v14 = v9 baseline border-based state machine + v13.3 focus !important。

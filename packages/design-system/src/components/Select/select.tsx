@@ -162,7 +162,7 @@ export interface SelectProps
   onOpenChange?: (open: boolean) => void
   /**
    * View mode 顯 picker intrinsic end icon(2026-05-08 D path Phase 1)。
-   * 預設 false:`mode="view"` 純展示 bare span(預設值的理由待 user 定,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
+   * 預設 false:`mode="view"` 純展示 bare span(理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
    * Field naked-view + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
@@ -372,7 +372,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
       <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
         {/* 2026-05-14 item-anatomy SSOT fix(per codex H2 propagation 斷點):加 nakedCellRowModeAlign
-            → autoRowHeight cell 內 selected renderer 也對齊 first-line,不再 vertical-center 整 row。 */}
+            → DataTable rowHeight="hug" 的 cell 內 selected renderer 也對齊 first-line,不再 vertical-center 整 row。 */}
         <span className={cn("flex-1 min-w-0 inline-flex items-center", nakedCellRowModeAlign)}>{selectedItemRenderer(selectedOpt)}</span>
       </>
     )
@@ -432,7 +432,7 @@ function ReadonlyDisplay({
   const emptyText = placeholder ?? emptyDisplay
 
   // mode='view':2 path(2026-05-08 D path Phase 1 Select canary)
-  //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(預設值的理由待 user 定,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)
+  //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)
   //      對齊原 SelectDisplay sub-component(retired)。readonly / disabled 仍走下方 fieldWrapperStyles。
   //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-view wrapper +
   //      ChevronDown ItemSuffix。SSOT canonical 跟 readonly/edit/disabled mode 同 DOM 結構。

@@ -134,7 +134,7 @@ Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-densi
 | Size | md density | lg density | 字體 | 何時用 | 世界級對照 |
 |------|-----------|-----------|------|--------|-----------|
 | `sm` ★ cva default(2026-05-17 從 md 改 sm)| 32 | 40 | `text-body` (14) | **預設 use case**:所有 header 內 tabs(overlay header / chrome header / Dialog / Sidebar / dense toolbar)| Ant Design verbatim:「**small size could be used in Modal**」(`ant.design/components/tabs`)|
-| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留這一檔、不作新用例預設(去留【待決 2026-11-16】,見 `../../patterns/header-canonical/header-canonical.spec.md` Rule W5) |
+| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留這一檔、不作新用例預設(user 2026-11-17 決定保留;user 提到可能用在主內容區,是問句、未定成用途 —— 原話見 `../../patterns/header-canonical/header-canonical.spec.md` Rule W5) |
 | `lg` | 48 | 56 | `text-body-lg` (16) | **獨立 tabs 直接取代 chrome header 用**(tab 高度 = `--chrome-header-height` 像素相等,48/56)— page-level workspace 主導覽 | Ant verbatim:「**Large size tabs are usually used in page header**」(`ant.design/components/tabs`)|
 
 **Token alignment + size 階梯 rationale SSOT**:`--tab-height-lg` (48/56) = `--chrome-header-height` (48/56) 像素相等(2026-11-15 起直接寫成 `var(--chrome-header-height)`,一個住處)+ md future tier + sm default 遷移 — **完整 cross-family canonical 詳** `patterns/header-canonical/header-canonical.spec.md` W3/W5/W6(per Rule-of-3 SSOT 集中此處,本元件 spec.md 不重複論述,只列上表 size table)。

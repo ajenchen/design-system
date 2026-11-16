@@ -659,7 +659,7 @@ const InspectorInner = () => {
                           borderRight: `1.5px dashed ${Z.control.border}`,
                         }}
                       >
-                        <span className="text-caption font-mono font-bold text-center leading-tight" style={{ color: Z.control.text, whiteSpace: 'pre-line' }}>
+                        <span className="text-caption font-mono font-bold text-center" style={{ color: Z.control.text, whiteSpace: 'pre-line' }}>
                           {`control\n${spec.iconPx}px`}
                         </span>
                       </div>
@@ -680,7 +680,7 @@ const InspectorInner = () => {
                           borderRight: `1.5px dashed ${Z.icon.border}`,
                         }}
                       >
-                        <span className="text-caption font-mono font-bold text-center leading-tight" style={{ color: Z.icon.text, whiteSpace: 'pre-line' }}>
+                        <span className="text-caption font-mono font-bold text-center" style={{ color: Z.icon.text, whiteSpace: 'pre-line' }}>
                           {effectivePrefixType === 'icon'
                             ? `icon\n${spec.iconPx}px`
                             : isBlockAlign
@@ -711,7 +711,7 @@ const InspectorInner = () => {
                   >
                     <span
                       // @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                      className={cn('text-caption font-mono font-bold leading-snug px-2 break-words', labelClampClass)}
+                      className={cn('text-caption font-mono font-bold px-2 break-words', labelClampClass)}
                       style={{ color: Z.label.text }}
                     >
                       {labelText}
@@ -721,7 +721,7 @@ const InspectorInner = () => {
                         <div className="h-0.5" />
                         <span
                           // @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                          className={cn('text-footnote font-mono leading-snug px-2 text-fg-secondary break-words', descClampClass)}
+                          className={cn('text-footnote font-mono px-2 text-fg-secondary break-words', descClampClass)}
                         >
                           {descText}
                         </span>
@@ -738,7 +738,7 @@ const InspectorInner = () => {
                       borderRight: `1.5px dashed ${Z.spacer.border}`,
                     }}
                   >
-                    <span className="text-footnote font-mono font-bold text-center leading-tight" style={{ color: Z.spacer.text, whiteSpace: 'pre-line' }}>
+                    <span className="text-footnote font-mono font-bold text-center" style={{ color: Z.spacer.text, whiteSpace: 'pre-line' }}>
                       {'flex-1\npush →'}
                     </span>
                   </div>

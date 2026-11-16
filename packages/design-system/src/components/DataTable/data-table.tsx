@@ -165,7 +165,13 @@ export interface DataTableProps<TData>
   columns: DataTableColumnDef<TData>[]
   data: TData[]
   size?: TableSize
-  autoRowHeight?: boolean
+  /**
+   * 列高怎麼長:`"hug"` = 每一列跟著內容長高(文字換行、`meta.wrap` 欄、錯誤訊息撐高,內容頂端對齊);
+   * 不寫 = 固定列高(由 `size` 決定,內容垂直置中、文字截斷)。規則住 data-table.spec.md「四、行高模式」。
+   * 寫法跟 `width="hug"` 同一套(props-naming.md「尺寸參數」:高度同理)。2026-11-17 前叫 `autoRowHeight`(布林),
+   * 舊名已移除、不留舊名(0.x 相容政策;帳本 0.1.0-beta.149 `DataTableProps.autoRowHeight`)。
+   */
+  rowHeight?: 'hug'
   /**
    * 高度上限。表格**永遠跟著資料長高**(資料少 = 內容高度),超過上限才在表身內捲動(表頭固定、資料多時啟用虛擬捲動)。
    * - 數字 = px(`maxHeight={400}`);也收 CSS 長度字串(`"30rem"`)。固定長度管的是**表身**(資料列捲動區)的上限,表頭另計
@@ -194,8 +200,7 @@ export interface DataTableProps<TData>
    * 下方渲 `text-body text-error` 訊息,gap-1 spacing。Multi-error 用 array → ul / li 分行渲。
    *
    * **使用建議**:
-   *   - 搭配 `autoRowHeight` prop:cell error 訊息 wrap → row 自動拉高吸收。fixed 高 row 模式
-   *     error 訊息會被裁切(consumer 應 set autoRowHeight=true 給有 error 的 use case)。
+   *   - 有錯誤訊息的那一列自動拉高吸收(per-row,固定列高的表也一樣);整張表都要跟內容長高時用 `rowHeight="hug"`。
    *   - Edit cell 自動 clear 自己的 error(展開 portal Field 時消失,新值 commit 由 consumer
    *     onCellCommit 驗證後決定 set / clear)。
    *   - aria-describedby:cell wrapper 接 error message id,AT 讀 cell 內容後讀 error。
@@ -1508,7 +1513,7 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 function DataTableInner<TData>(
   {
-    columns, data, size = 'md', autoRowHeight = false, maxHeight: maxHeightProp,
+    columns, data, size = 'md', rowHeight: rowHeightProp, maxHeight: maxHeightProp,
     overscan = 5, emptyState, enableHover = true, bordered,
     estimateRowHeight, tableOptions, rowActions, cellErrors,
     pinnedLeftColumns, pinnedRightColumns, inlineEdit = false,
@@ -1538,6 +1543,9 @@ function DataTableInner<TData>(
   // 未分頁 = 既有 '400px' 預設不變。顯式傳一律尊重(prop docblock 有完整規則)。
   // 下面的 `height` 是內部的 CSS 上限字串('auto' = 沒有上限),下游一整串判斷都吃它;對外參數叫 `maxHeight`(「尺寸:甲」)。
   const height = maxHeightToCss(maxHeightProp) ?? (pagination ? 'auto' : '400px')
+  // 對外參數 `rowHeight="hug"`(2026-11-17 前叫 `autoRowHeight`);內部一整串判斷(列殼、儲存格、per-row 錯誤撐高、
+  // scripts/audit-data-table-row-mode-ssot.mjs 盯的 cell-render 範圍)沿用這個布林名,意思 = 「整張表跟內容長高」。
+  const autoRowHeight = rowHeightProp === 'hug'
   // ── L4 Inline edit state ──
   // editingCellId: `${rowId}__${columnId}` 標識當前進 edit mode 的 cell;null = 無
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
@@ -4645,7 +4653,7 @@ function DataTableInner<TData>(
 
       // H1 fix(2026-05-10,per user 確認):per-row autoRowHeight when any cell in this row has
       // error。Fixed-height row 模式下,該 row 的任一 cell 有 error msg → THAT row 自動 auto-height
-      // 撐 message;error 全清 → 回 fixed。Other rows 不受影響(global autoRowHeight prop 不變)。
+      // 撐 message;error 全清 → 回 fixed。Other rows 不受影響(整張表的 `rowHeight` 不變)。
       // Per Material X-DataGrid `getRowHeight` per-row dynamic + AG Grid `rowHeight: 'auto'`
       // per-row idiom。Compute by scanning row's visible cells for cellErrors map hit。
       const rowHasError = !!cellErrors && row.getVisibleCells().some((c) => {

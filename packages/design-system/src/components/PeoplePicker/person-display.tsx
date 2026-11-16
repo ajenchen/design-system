@@ -154,7 +154,7 @@ function PersonAvatar({
 
 // 2026-05-14 item-anatomy SSOT fix(per codex+Layer A 共識 path (a) + user 拍板「全部做完」):
 // outer 改 items-start + Avatar 外包 ItemPrefix primitive consumption。單行視覺 = items-center 等效;
-// 多行(autoRowHeight cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
+// 多行(DataTable rowHeight="hug" 的 cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
 // 對齊 TreeView / MenuItem / SelectionItem 共用 ItemPrefix wrap chevron/icon/avatar canonical。
 function PersonDisplay({ value, size = 'md', disabled = false, onRemove, nameYielded = false }: {
   value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void

@@ -3,9 +3,9 @@
 //
 // 2026-05-12 Round 4.5 codify(per user 拍板「下次遇到類似場景可以完美使用」):
 //   任何 cell-render wrapper(items-X / row-conditional class)必 consume `effectiveAutoRowForCell`
-//   per-row state,**禁** consume global `autoRowHeight` prop。
+//   per-row state,**禁** consume 整張表的 `autoRowHeight`(data-table.tsx 內部布林 = 對外參數 `rowHeight === 'hug'`;2026-11-17 前對外參數就叫 autoRowHeight)。
 //
-//   為何:`autoRowHeight` 是 table 級 prop;row 可能 per-row 撐高(rowHasAnyError → effectiveAutoRow=true),
+//   為何:`autoRowHeight` 是 table 級設定;row 可能 per-row 撐高(rowHasAnyError → effectiveAutoRow=true),
 //   此時該 row 內所有 cells 該全 top-align,不論 global autoRowHeight 設啥。
 //   Round 4 修了 line 1559 non-error wrapper;Round 4.5 補修 line 1512 error-cell flex-col 內部 wrapper
 //   (codex M31 dual-track 抓漏)。本 audit script 機械化攔未來再 regress。

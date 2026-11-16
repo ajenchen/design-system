@@ -124,7 +124,7 @@ function ComboboxTagStack({
   // `overflow-visible` → `overflow-hidden` 讓 narrow cell width 強制 clip(Tag 內建 truncate
   // 處理 text ellipsis,stack `-ml-0.5` 負 margin 在 wrapper 內不受影響)。對齊
   // `data-table.spec.md`「十一、Cell 單行截斷原則」(空間不足一律 ellipsis,不硬裁)+ MUI X / Ant Table column.ellipsis 共識。
-  // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
+  // (2026-05-14 nakedCellRowModeAlign 同保留 — DataTable rowHeight="hug" cell first-line align canonical。)
   // TAG_ROW_CONTAINER_CLASS:`relative` =「+N」量尺的定位容器、`isolate` = Tag 的疊放值只在這一列裡比(OverflowTagList 檔頭)
   return (
     <div className={cn(TAG_ROW_CONTAINER_CLASS, 'flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : cn(tagRowOverflowClass, tagRowFocusRoomClass))} style={{ gap: GAP }}>
@@ -329,7 +329,7 @@ export interface ComboboxProps {
   /**
    * Display 是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
    * — DataTable cell view↔edit 像素級對齊用。預設 false(檢視態只畫值:裸 tag stack,不畫欄位外框 / 箭頭;
-   *   這個預設值的設計理由待 user 定 —— 2026-11-15 前理由欄只寫了相容,0.x 不成立)。
+   *   理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
    * 與 edit 同 DOM 結構,消除 Layer-B padding mismatch。
    */

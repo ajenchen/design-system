@@ -362,6 +362,16 @@
     },
     {
       "kind": "prop",
+      "name": "autoRowHeight",
+      "component": "DataTable",
+      "since": "0.1.0-beta.149",
+      "id": "0.1.0-beta.149/DataTableProps.autoRowHeight",
+      "to": "rowHeight",
+      "do": "autoRowHeight 改名 rowHeight,寫法跟 width=\"hug\" 同一套:autoRowHeight → rowHeight=\"hug\",autoRowHeight={false} 或不寫 → 不寫(= 固定列高);autoRowHeight={條件} 改寫成 rowHeight={條件 ? \"hug\" : undefined}。",
+      "spec": "src/components/DataTable/data-table.spec.md「四、行高模式」"
+    },
+    {
+      "kind": "prop",
       "name": "resettable",
       "component": "DataTableColumnVisibilityPanel",
       "since": "0.1.0-beta.149",

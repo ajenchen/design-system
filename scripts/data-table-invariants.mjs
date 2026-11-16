@@ -325,7 +325,7 @@ for (const c of lgFonts.cells) {
 // → row 塌成內容高度(non-editable 33 / editable 44,而非 token 40)。I1-I4 只驗 display↔edit **一致性**
 // (兩態同塌 → 0 delta → 假綠,抓不到「絕對高度崩」)。I7 驗「fixed row 絕對高度 == token 值」補此洞。
 // root cause 另有 write-time hook `check_dynamic_tailwind_class.sh` 攔動態 class;I7 = runtime 防線第二層。
-// 用 Inspector(設計規格,fixed-height 非 autoRowHeight)@ sm/md/lg 三尺寸;預設密度 token。
+// 用 Inspector(設計規格,fixed-height 非 rowHeight="hug")@ sm/md/lg 三尺寸;預設密度 token。
 // 值的住處:components/DataTable/data-table.css 的 :root 段(2026-11-11 從 uiSize.css 搬來;不寫行號,行號會漂)。
 const ROW_TOKEN = { sm: 32, md: 40, lg: 48 }  // 預設密度 --table-row-{size}(data-table.css :root 段)
 for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
@@ -1772,7 +1772,7 @@ if (!urlDisplay) {
  * 因此每深一層剛好位移一個 indent。修前是手刻 `w-4 h-4 mr-2` 的 button,三個常數與 token 分家。
  * 唯一的像素證據是 2026-08-01 的 curated baseline(早於修正、非 required check)。這裡對 `nested-rows`
  * (md)量按鈕 rect、真 hover 後 overlay 的 rect 與 computed 底色、相鄰兩層的箭頭 / 文字左緣差、以及
- * 葉節點列(空槽)的文字左緣是否仍與同層有箭頭的列對齊。sm / lg 與 autoRowHeight 的巢狀 story 尚不存在
+ * 葉節點列(空槽)的文字左緣是否仍與同層有箭頭的列對齊。sm / lg 與 rowHeight="hug" 的巢狀 story 尚不存在
  * (render 不吃 args),補上後把 size 對應的期望值(16/16/20、18/18/22、24/24/28)套過去即可。
  */
 const CHEVRON_EXPECT_MD = { box: 16, hoverBg: 18 } // ICON_SIZE.md / INLINE_ACTION_HOVER_BG_SIZE.md

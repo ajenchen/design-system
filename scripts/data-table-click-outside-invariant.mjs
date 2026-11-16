@@ -123,7 +123,7 @@ function App() {
         <Sheet id="a" rows={TAIPEI} label="台北倉" />
         <Sheet id="b" rows={HSINCHU} label="新竹倉" />
         <section data-sheet="outer" aria-label="出貨單">
-          <DataTable columns={ORDER_COLS} data={ORDERS} height="auto" autoRowHeight spreadsheetMode
+          <DataTable columns={ORDER_COLS} data={ORDERS} height="auto" rowHeight="hug" spreadsheetMode
             getRowId={(r) => r.order} tableOptions={{ getRowId: (r) => r.order }} />
         </section>
       </main>

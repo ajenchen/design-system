@@ -14,8 +14,34 @@
 |---|---|---|---|
 | **新建**(Create) | **不看填了沒、填對沒,一律 enabled** | — | — |
 | **更新**(Update) | **disabled** | 使用者變更任何欄位(dirty) | 變更被還原回原值(pristine) |
+| **需要填的欄位只有一個**,而且唯一擋住送出的原因是它沒有值(新建也算;這一列優先於「新建」) | **disabled** | 那個欄位有值 | 那個欄位沒有值(空白);格式、長度等其他條件一律不停用 |
 
 新建不看填了沒、填對沒,一律 enabled——不讓使用者猜「為什麼按不了」。更新用 disabled 明確表達「沒改就不用存」,有變更才亮起來。
+
+**需要填的欄位只有一個**(2026-11-17,上表第三列):
+- **判準(兩條都要成立)**:① 需要填的欄位只有一個 —— 任何欄位控件都算(Field 家族,`field-controls.spec.md`);Switch / Slider 永遠有值,不會成為擋住送出的原因,不算;附件鈕、格式工具列不是在填資料,不算。② 唯一擋住送出的原因是它沒有值。判準看性質、不看名稱(留言、回覆、對話輸入盒都只是例子)。
+- **行為**:空白時停用;格式、長度等其他條件一律可按,按下時在欄位下方顯示錯誤(Field `error`,同下方「Submit 驗證」),不用 Toast。送出後欄位變空、送出鈕因此停用的那一刻,焦點照樣留在送出鈕(下方「送出鈕的焦點」)。
+- **依據**:user 2026-11-17 原話(逐字;同一則訊息最前面一段談表格底部留白,另案,不引):
+  > 另外我好奇如何定義何謂不是表單送出？如何區別表單送出？
+  >
+  > 我沒有要全然反對送出按鈕為何停用
+  > 但我想補充，「不用 Toast 取代 error validation」此情境應該是在表單的情境吧？就是內含有很多欄位的情境，因為有很多錯的話，會難以知道到底是哪個欄位錯，但如果是在永遠只會一個輸入的地方就不會有此問題吧？
+  >
+  > 此外當初會永遠enable表單的送出按鈕也是因為想要讓使用者可以無腦點擊然後知道到底還缺哪些，不用一個一個檢查半天，不確定這是否是合理理由
+  >
+  > 但若是合理理由的話，推論到永遠只有一個輸入的地方的情境，其實非常明確地可以知道到底缺什麼，用不著先點送出按鈕來試錯就可以很明確知道到底該填什麼了，換言之，此情境確實用 disable 也沒差？
+  >
+  > 若上述推論合理，那是否應該是依此來定義SSOT?
+
+  (整段是問句;AI 同日回覆推論成立,跟上方「不讓使用者猜「為什麼按不了」」的理由一致。)同日兩則追問(逐字):
+  > "2.	送出鈕就在它旁邊。"跟位置沒啥關係吧？？
+
+  —— AI 原本多擬的「送出鈕在欄位旁邊」條件因此撤回。
+  > '1.	畫面上只有一個輸入。'
+  > 各種 field control 都算是這邊所謂的輸入？
+
+  —— AI 回答:算,即上方判準 ①(Switch / Slider、附件鈕、格式工具列除外)。
+- 【AI 推導 2026-11-17】「只限空白」與「一律停用」:user 的原意是「用 disable 也沒差」(可以停用,沒說必須)。這裡收成「兩條都成立就一律空白時停用」,免得同一種情境兩種做法;停用條件只限空白,格式、長度不停用 —— 那些要按下去才能在欄位下方說清楚哪裡錯,理由同新建表單一律可按。user 要改成「可以停用、不強制」時改這一條。
 
 **更新表單送出成功後也算「沒改」**(2026-10-01,AI 依本表「沒改就不用存」推導,待辦總帳 N69;本表「何時停用」那一格的延伸,表格原文是 story-layer 漂移閘 `@submit-intent` 例外的出處、不改字):剛送出的值成為新的比對基準 —— isDirty 回 false、送出鈕再度停用、Escape(規則 4)回到**已存的值**而不是存檔前的舊值;await 期間使用者又打的字逐格重算 dirty。新建表單不重設(建立後 consumer 常要 `reset()` 回空白繼續建下一筆)。對照 Polaris Contextual Save Bar "Become visible when a form on the page has unsaved changes"(<https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/internal-only/contextual-save-bar.mdx#L48-L51>)、Mantine `form.resetDirty(values)`(<https://github.com/mantinedev/mantine/blob/f38933cb4f1c534600f4ff59ee3ddbb4685a4bc4/apps/mantine.dev/src/pages/form/status.mdx#L106-L119>)、react-hook-form `reset` with values updates defaultValues(<https://github.com/react-hook-form/documentation/blob/3ac1fe0254947748d993cd4b1915fc5dea87ba8b/src/content/docs/useform/reset.mdx#L38>)。
 **送出鈕的焦點**:送出中(`isSubmitting` → Button `loading`)與存檔後(pristine → `disabled`)焦點都**留在送出鈕上**,不掉到 `<body>`:Button 在忙碌、或握著焦點時被停用,不轉成原生 `disabled`(`../Button/button.tsx` 可聚焦的停用;規則 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」)。2026-10-01 前 `submitDisabled` 接原生 disabled,送出那一下焦點掉到 body(N69 實測)。
@@ -111,6 +137,7 @@ const form = useFormValidation({
 |----|-------|
 | 新建(Create)| **always enabled** |
 | 更新(Update)| **disabled-until-dirty** |
+| 需要填的欄位只有一個、唯一擋住的是空白 | **disabled-while-empty**(只限空白;見「Submit Button 狀態」第三列) |
 
 ## 設計哲學
 
@@ -130,7 +157,7 @@ Ant Design 預設 `validateTrigger` 是 `'onChange'`([form/index.en-US.md#L91](h
 
 **(3) Create always-enabled / Update disabled-until-dirty 不對稱**
 
-Create 若要填完所有 required 才亮,使用者第一次進 form 看到 disabled button 會困惑「為什麼按不了」;所以 Create 永遠 enabled — 點擊後若 invalid,顯示 error 並 scroll,使用者明確知道為什麼。
+Create 若要填完所有 required 才亮,使用者第一次進 form 看到 disabled button 會困惑「為什麼按不了」;所以 Create 永遠 enabled — 點擊後若 invalid,顯示 error 並 scroll,使用者明確知道為什麼。例外:需要填的欄位只有一個、唯一擋住的是空白時(上方「Submit Button 狀態」第三列),缺什麼一眼就知道,空白時停用不會讓人猜(2026-11-17)。
 
 Update 場景反向:沒改的 Update 沒提交意義(「intent 才 commit」),disabled 表達「等你做動作」比 enabled 後點擊才判斷「沒變化」更直接。
 
@@ -172,6 +199,7 @@ Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification +
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `checkbox.spec.md`
 - `combobox.spec.md`
 - `date-picker.spec.md`

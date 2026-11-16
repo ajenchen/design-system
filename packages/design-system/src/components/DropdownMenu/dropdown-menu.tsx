@@ -235,8 +235,9 @@ interface DropdownMenuContentProps
   extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>, 'asChild'> {
   size?: SizeKey
   /**
-   * 最小寬度（px），預設 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板。
-   * 注意:傳入的值**整個取代**這個預設(不是跟觸發元件寬取大),傳得比觸發元件窄,選單就比觸發元件窄(2026-11-15 補明文,行為照舊)。
+   * 最小寬度（px）。預設下限 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板。
+   * 傳入的值**只能把下限往上拉**:有效下限 = `max(180px, 觸發元件寬度, minWidth)`,傳得比預設小照預設畫、不會比觸發元件窄
+   *(2026-11-17 A95;跟表格三個工具面板同一套,props-naming.md「尺寸參數」第 8 條。之前是整個取代預設下限)。
    */
   minWidth?: number
   /**
@@ -276,7 +277,9 @@ const DropdownMenuContent = React.forwardRef<
       className={cn(floatingLayerClass, 'flex flex-col min-h-0', className)}
       style={{
         boxShadow: 'var(--elevation-200)',
-        minWidth: minWidth ?? 'max(180px, var(--radix-dropdown-menu-trigger-width))',
+        minWidth: minWidth != null
+          ? `max(180px, var(--radix-dropdown-menu-trigger-width), ${minWidth}px)`
+          : 'max(180px, var(--radix-dropdown-menu-trigger-width))',
         // 2026-07-18 viewport-adaptive max-h(對齊 HoverCard/Popover 既有 canonical):夾到「trigger 到
         //   碰撞邊界(已內縮 collisionPadding=8px)的剩餘高度」→ 高選單不溢出視窗、離視窗邊 ≥8px、
         //   短選單仍貼內容;consumer `maxHeight` 為**可選更低上限**(min 取小者)。inline style 非 class,

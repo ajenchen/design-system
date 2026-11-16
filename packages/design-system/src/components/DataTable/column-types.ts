@@ -61,11 +61,11 @@ declare module '@tanstack/react-table' {
     type?: ColumnType
     /** Override default alignment from column type */
     align?: 'left' | 'right' | 'center'
-    /** Allow text wrapping (only effective when autoRowHeight is true) */
+    /** Allow text wrapping (only effective when the table has rowHeight="hug") */
     wrap?: boolean
     /**
      * Max visible lines before ellipsis(2026-05-14 I9 per codex verdict + user 拍板)。
-     * Only effective when `autoRowHeight + wrap=true`。view 用 `line-clamp-N`,edit textarea
+     * Only effective when `rowHeight="hug"` + `wrap=true`。view 用 `line-clamp-N`,edit textarea
      * 高度 match clamp。對齊 Notion 「Truncate」row toggle / AG Grid `cellClassRules` 上限 row height。
      * Default = undefined(無 clamp,完整 wrap)。
      */
