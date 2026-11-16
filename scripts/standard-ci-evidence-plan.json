@@ -22,6 +22,13 @@
     "repositoryId": "design-system",
     "requiredCheck": "Verify(tsc + tests + compile + build)"
   },
+  "consumerSelection": {
+    "note": "consumers 列的是「可能被升級」的 consumer 全集與各自的證據規則;每次發版只要求「實際被選中升級」的 consumer 交證據。template(upgrade: automatic)恆被選中;WM(upgrade: on-request)只在 user 明確要求、以 RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management 帶進來時才被選中。沒被選中的記成 observation.consumerSelection.notRequested(本次未要求升級),不得默默消失,也不得為了讓 dim 64/66 變綠而去升 WM。user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。",
+    "source": "infra/governance/release-workflow.json#/automation/consumers/*/upgrade",
+    "implementation": "scripts/lib/release-consumer-selection.mjs",
+    "requestEnv": "RELEASE_REQUESTED_CONSUMERS",
+    "notRequestedStatus": "not-requested-this-release"
+  },
   "consumers": [
     {
       "repositoryId": "ds-product-template",

@@ -1422,7 +1422,8 @@ test('fleet fanout without a reviewed runtime identity snapshot is not ready and
 test('fleet fanout enumerates every registered opt-in product consumer without claiming global template-lineage discovery', () => {
   const propagationContract = readFileSync(new URL('../../../packages/design-system/ds-canonical/skills/knowledge-prune/references/phase-z-cross-repo-ssot-propagation.md', import.meta.url), 'utf8')
   assert.match(propagationContract, /owned only by `infra\/governance\/release-workflow\.json`/)
-  assert.match(propagationContract, /reviewed exact-version PRs land in the template and WM/)
+  assert.match(propagationContract, /reviewed exact-version PRs land in the template on every release, and in WM only when the user explicitly requests it/)
+  assert.doesNotMatch(propagationContract, /land in the template and WM/, 'WM 只在 user 要求時升級(user 2026-11-05),不得寫回「每次都升 WM」')
   assert.doesNotMatch(propagationContract, /every consumer receives an exact-version PR/i)
 
   const fixture = fleetFixture()
