@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { MAX_ATTEMPTS, controlTimeoutMs } from "./lib/scroll-perception-budget.mjs";
+import { MAX_ATTEMPTS, controlTimeoutMs, extensionRoundPlan, attemptFits, deadlineMsFromEnv } from "./lib/scroll-perception-budget.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -224,6 +224,29 @@ assert.equal(
   false,
   "Missing the final PNG offset must fail"
 );
+// 冷卻後再一輪的預算判定(lib/scroll-perception-budget.mjs;A26)。數字取 CI 真實時間戳:
+// ca46a310 dpr2 在 20:39:12 判 INSTRUMENT-FAIL,該步 20:35:07 開始、截止 = 開始 + 15 分 = 20:50:07;最慢一次 41 秒 → 估 30 + 5×41 + 15 = 250 秒,放得進。
+// 41622d91 dpr1 在 20:23:30 判,該步 20:04:08 開始、截止 = 開始 + 19 分 = 20:23:08 → 已過截止,不得開(job 上限 25 分不能被延長輪撐破)。
+{
+  const at = (hms) => Date.parse(`2026-11-16T${hms}Z`);
+  const dpr2 = extensionRoundPlan({ nowMs: at("20:39:12"), deadlineMs: at("20:35:07") + 15 * 60000, slowestAttemptMs: 41000, attempts: 5 });
+  assert.deepEqual(dpr2, { go: true, why: "go", estMs: 250000 }, "dpr2 那一輪截止前放得進 → 冷卻後再一輪");
+  const dpr1 = extensionRoundPlan({ nowMs: at("20:23:30"), deadlineMs: at("20:04:08") + 19 * 60000, slowestAttemptMs: 41000, attempts: 5 });
+  assert.equal(dpr1.go, false, "dpr1 那一輪已過截止 → 不開");
+  assert.equal(dpr1.why, "budget");
+  // 邊界兩面:剛好放得進 / 多 1ms 就放不進
+  assert.equal(extensionRoundPlan({ nowMs: 0, deadlineMs: 250000, slowestAttemptMs: 41000, attempts: 5 }).go, true);
+  assert.equal(extensionRoundPlan({ nowMs: 1, deadlineMs: 250000, slowestAttemptMs: 41000, attempts: 5 }).go, false);
+  // 不知道 = 不開:沒有截止、截止解不開、還沒有任何一次的時間(Math.max() = -Infinity)
+  assert.equal(extensionRoundPlan({ nowMs: 0, deadlineMs: NaN, slowestAttemptMs: 41000 }).why, "no-deadline");
+  assert.equal(extensionRoundPlan({ nowMs: 0, deadlineMs: 1e12, slowestAttemptMs: Math.max() }).why, "no-estimate");
+  assert.ok(Number.isNaN(deadlineMsFromEnv("")) && Number.isNaN(deadlineMsFromEnv(null)) && Number.isNaN(deadlineMsFromEnv("abc")) && Number.isNaN(deadlineMsFromEnv("0")));
+  assert.equal(deadlineMsFromEnv("1794860000"), 1794860000000, "截止以 epoch 秒給(ci.yml 用 date +%s 算)");
+  // 輪中每一次重跑前的守衛:退避 + 最慢一次要放得進
+  assert.equal(attemptFits({ nowMs: 0, deadlineMs: 50000, slowestAttemptMs: 41000, backoffMs: 9000 }), true);
+  assert.equal(attemptFits({ nowMs: 0, deadlineMs: 50000, slowestAttemptMs: 41000, backoffMs: 9001 }), false);
+  assert.equal(attemptFits({ nowMs: 0, deadlineMs: NaN, slowestAttemptMs: 1 }), false, "截止不明 → 延長輪不再重跑");
+}
 if (process.argv.includes("--unit-only")) {
   console.log(
     "PASS: content/shell/missing/unresolved/full-row ink/partial padding/PNG coverage controls"
@@ -264,7 +287,8 @@ if (process.argv.includes("--unit-only")) {
         `--sabotage=${mode}`,
         "--assert=on",
       ],
-      { encoding: "utf8", timeout: CONTROL_TIMEOUT_MS }
+      // 對照組不延長(清掉截止):CONTROL_TIMEOUT_MS 只算一輪,延長輪會讓 #143 那種「父的逾時 < 子的最壞時間」復發
+      { encoding: "utf8", timeout: CONTROL_TIMEOUT_MS, env: { ...process.env, DT_PERCEPTION_DEADLINE_EPOCH: "" } }
     );
     writeFileSync(
       join(out, `runtime-${mode}.log`),

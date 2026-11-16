@@ -24,3 +24,31 @@ const totalBackoffMs = (attempts) => Array.from({ length: Math.max(0, attempts -
 
 /** 父行程 spawnSync 的逾時:子行程最壞跑完所有重試(含各次退避)+ 收尾餘裕。 */
 export const controlTimeoutMs = (attempts = MAX_ATTEMPTS) => attempts * PER_ATTEMPT_MS + totalBackoffMs(attempts) + 30000
+
+/**
+ * 冷卻後再一輪(2026-11-17,A26)【AI 推導 2026-11-17】:一輪 MAX_ATTEMPTS 次**全部**整窗跳轉、且沒有一次擷取有效
+ * (= 走到 INSTRUMENT-FAIL)時,同一步裡冷卻後把整段再跑一輪;判準一格不動,只是多一輪量的機會。
+ * 錨:41622d91 dpr1(398 / 398 / 420 / 431 / 403px)、ca46a310 dpr2(510 / 554 / 553 / 441 / 454px)兩支都是 5 次全作廢,
+ * 每一次的殼 / 滿列留白都是 0 —— 紅的是「量不到」,不是表格。
+ *
+ * **只在知道 job 還剩多少時間時才開**:截止時刻由呼叫端(ci.yml 該步)以 `DT_PERCEPTION_DEADLINE_EPOCH`(epoch 秒)給;
+ * 沒給 / 解不開 → 不開(「不知道會不會超時 = 不開」,與 lib/fast-scroll-gate-policy.mjs nextExtraRound 同一條)。
+ * 一輪的估計 = 冷卻 + 次數 × **本次執行最慢那一次**的牆鐘(CI 上同一步的嘗試是 9–11 秒或 38–41 秒雙峰,取最慢才不低估)
+ * + 各次退避。輪中每次重跑前再問一次 `attemptFits`,所以就算後面幾次比估計慢,超出截止也頂多一次的散布。
+ */
+export const EXTENSION_COOLDOWN_MS = 30000
+export const deadlineMsFromEnv = (raw = process.env.DT_PERCEPTION_DEADLINE_EPOCH) => {
+  const s = raw == null || raw === '' ? NaN : Number(raw)
+  return Number.isFinite(s) && s > 0 ? s * 1000 : NaN
+}
+/** 冷卻後再一輪要不要開。回 { go, why, estMs }。 */
+export function extensionRoundPlan({ nowMs, deadlineMs, slowestAttemptMs, attempts = MAX_ATTEMPTS, cooldownMs = EXTENSION_COOLDOWN_MS }) {
+  if (!Number.isFinite(deadlineMs)) return { go: false, why: 'no-deadline', estMs: NaN }
+  if (!(Number.isFinite(slowestAttemptMs) && slowestAttemptMs > 0)) return { go: false, why: 'no-estimate', estMs: NaN }
+  const estMs = cooldownMs + attempts * slowestAttemptMs + totalBackoffMs(attempts)
+  if (!Number.isFinite(nowMs) || nowMs + estMs > deadlineMs) return { go: false, why: 'budget', estMs }
+  return { go: true, why: 'go', estMs }
+}
+/** 延長輪裡,下一次(含它之前的退避)還放得進截止嗎。截止不明 → false。 */
+export const attemptFits = ({ nowMs, deadlineMs, slowestAttemptMs, backoffMs = 0 }) =>
+  Number.isFinite(deadlineMs) && Number.isFinite(nowMs) && Number.isFinite(slowestAttemptMs) && nowMs + backoffMs + slowestAttemptMs <= deadlineMs

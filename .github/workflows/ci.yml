@@ -874,6 +874,11 @@ jobs:
 
       - name: DataTable handle + dpr1 perception gates (browser)
         run: |
+          # 感知閘「冷卻後再一輪」的截止(2026-11-17,A26;lib/scroll-perception-budget.mjs extensionRoundPlan):一輪全部整窗跳轉
+          # → INSTRUMENT-FAIL 時,放得進這個截止才再量一輪,判準不變。本步約在 job 第 2.1 分開始(41622d91:20:02:02 → 20:04:08),
+          # 截止 = 本步開始 + 19 分 ≈ job 第 21.1 分;之後 bursts + wheel 兩支 ≈ 2 × 41 秒、上傳 artifact,留 ≈ 2.4 分給建置時間的散布,
+          # 延長輪不會把 job 撐過 25 分。現況這個 job 的感知迴圈在步驟第 ~17–19 分才跑到,多半放不進 = 照舊紅(訊息會講)。
+          export DT_PERCEPTION_DEADLINE_EPOCH=$(( $(date +%s) + 19 * 60 ))
           npx --no-install playwright install chromium
           # 合成 pointermove = 指標真的在動)把手必須回來。--hover=follow:指標有動時可見把手貼原列中心 ±1px;對照組注入 20px 偏移必被抓到。
           node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control
@@ -978,6 +983,10 @@ jobs:
         env:
           DT_PERCEPTION_GAP_MS: '130'
         run: |
+          # 感知閘「冷卻後再一輪」的截止(2026-11-17,A26;同上一個 job 的說明):本步約在 job 第 2.2 分開始(ca46a310:20:32:57 → 20:35:07),
+          # 截止 = 本步開始 + 15 分 ≈ job 第 17.2 分;之後 bursts + wheel ≈ 82 秒、快速捲動對照組兩支 CI 實測合計 188 秒、上傳 artifact
+          # ≈ job 第 21.8 分,留 ≈ 3 分餘裕。ca46a310 那一輪在 20:39:12 判 INSTRUMENT-FAIL,估 30 + 5 × 41 + 15 = 250 秒,放得進。
+          export DT_PERCEPTION_DEADLINE_EPOCH=$(( $(date +%s) + 15 * 60 ))
           npx --no-install playwright install chromium
           node scripts/data-table-handle-position.mjs --dpr=2 --out=tmp/datatable-handle-2
           for peak in 1500 3000 4500; do
