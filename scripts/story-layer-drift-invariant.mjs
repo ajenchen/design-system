@@ -198,8 +198,8 @@ export const RULE_IDS = Object.freeze(['primary-submit-disabled', 'hardcoded-spa
 export const RULES = Object.freeze({
   'primary-submit-disabled': {
     label: '(a) 新建表單的主送出鈕被停用',
-    owner: 'packages/design-system/src/components/Field/form-validation.spec.md:15「新建(Create)| 不看填了沒、填對沒,一律 enabled」+ :173「❌ 對 Create form 用 disabled-until-dirty Submit button」',
-    fix: '送出鈕不看填了沒、填對沒,一律可按,按下時由 useFormValidation 驗證並把焦點帶到第一個錯誤(同 field.stories.tsx CreateProjectForm);真的是更新類 / 需要填的欄位只有一個(唯一擋住的是空白),在該行正上方寫 {/* @submit-intent: update|composer — 理由 */}',
+    owner: 'packages/design-system/src/components/Field/form-validation.spec.md:15「新建(Create)| 不看填了沒、填對沒,一律 enabled」+ :174「❌ 對 Create form 用 disabled-until-dirty Submit button」',
+    fix: '送出鈕不看填了沒、填對沒,一律可按,按下時由 useFormValidation 驗證並把焦點帶到第一個錯誤(同 field.stories.tsx CreateProjectForm);需要填的欄位只有一個(唯一擋住的是空白)→ useFormValidation 的 soleRequiredField + disabled={form.submitDisabled}(同 empty.stories.tsx SprintBacklog);不經 hook 的更新類 / 單一欄位,在該行正上方寫 {/* @submit-intent: update|composer — 理由 */}',
   },
   'hardcoded-spacing': {
     label: '(b) 寫死的間距',

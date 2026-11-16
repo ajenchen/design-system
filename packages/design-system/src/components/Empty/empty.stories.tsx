@@ -86,9 +86,11 @@ const TASK_COLUMNS: DataTableColumnDef<SprintTask>[] = [
 function SprintBacklog() {
   const [tasks, setTasks] = React.useState<SprintTask[]>([])
   const [open, setOpen] = React.useState(false)
-  // 對話框裡的表單同 Dialog 展示「表單」:走 useFormValidation、沒有 <form>(footer 鈕呼叫 handleSubmit)、打開那一刻 reset、送出成功 Toast 再關
+  // 對話框裡的表單同 Dialog 展示「表單」:走 useFormValidation、沒有 <form>(footer 鈕呼叫 handleSubmit)、打開那一刻 reset、送出成功 Toast 再關。
+  // 需要填的只有任務名稱 → 空白時「建立」停用(form-validation.spec.md「Submit Button 狀態」第三列;hook 的 soleRequiredField 算)
   const form = useFormValidation({
     initialValues: { title: '' },
+    soleRequiredField: 'title',
     validate: { title: (v) => (String(v ?? '').trim() ? undefined : '任務名稱必填') },
     onSubmit: (values) => {
       setTasks((list) => [...list, { id: `task-${list.length + 1}`, title: String(values.title).trim(), status: '待處理' }])
@@ -137,7 +139,7 @@ function SprintBacklog() {
             <DialogClose asChild>
               <Button variant="tertiary">取消</Button>
             </DialogClose>
-            <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>建立</Button>
+            <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>建立</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

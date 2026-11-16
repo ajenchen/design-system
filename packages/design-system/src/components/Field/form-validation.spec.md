@@ -21,6 +21,7 @@
 **需要填的欄位只有一個**(2026-11-17,上表第三列):
 - **判準(兩條都要成立)**:① 需要填的欄位只有一個 —— 任何欄位控件都算(Field 家族,`field-controls.spec.md`);Switch / Slider 永遠有值,不會成為擋住送出的原因,不算;附件鈕、格式工具列不是在填資料,不算。② 唯一擋住送出的原因是它沒有值。判準看性質、不看名稱(留言、回覆、對話輸入盒都只是例子)。
 - **行為**:空白時停用;格式、長度等其他條件一律可按,按下時在欄位下方顯示錯誤(Field `error`,同下方「Submit 驗證」),不用 Toast。送出後欄位變空、送出鈕因此停用的那一刻,焦點照樣留在送出鈕(下方「送出鈕的焦點」)。
+- **寫法**:`useFormValidation({ soleRequiredField: '<那一欄>' })`,送出鈕照常接 `disabled={form.submitDisabled}` —— 停用條件由 hook 算,不在各處手寫 `!value.trim()`(下方「可執行層」)。「沒有值」= null / undefined / 只有空白的字串 / 空陣列(或每一項都沒有值);控件的沒有值若是值域內的某個值(Rating 的 0 = 未評分,`../Rating/rating.spec.md`「邊界案例」),寫 `soleRequiredField: { name: 'rating', emptyValue: 0 }`。只收一個值、不收判斷式 —— 停用條件只限空白,判斷式會讓格式檢查混進來。可與 `intent: 'update'` 並用(沒改或空白都停用)。
 - **依據**:user 2026-11-17 原話(逐字;同一則訊息最前面一段談表格底部留白,另案,不引):
   > 另外我好奇如何定義何謂不是表單送出？如何區別表單送出？
   >
@@ -110,7 +111,7 @@ const form = useFormValidation({
 |---|---|
 | Blur validation timing(1/2/6)+ Edit 清 error(5)+ Escape 回復(4;原值 = dirty 比對基準:掛載時的 `initialValues`,更新表單送出成功後 = 剛送出的值 —— 回復後該欄算沒改過、清掉該欄錯誤;放在浮層裡第一下只回復、第二下才關,見規則 4) | **`useFormValidation` 內建(不可配置)** |
 | Submit 全驗 + anchor 第一個錯誤(7/8)+ 業務/async 錯誤同軌(9) | **`useFormValidation.handleSubmit` 內建** |
-| Dirty tracking + Submit button 狀態(Create/Update) | **`useFormValidation.submitDisabled`** |
+| Dirty tracking + Submit button 狀態(Create/Update;需要填的欄位只有一個 → `soleRequiredField`,空白時停用) | **`useFormValidation.submitDisabled`** |
 | Double-submit 防護 + submit 進行中狀態(規則 9 配套) | **`useFormValidation.handleSubmit` 重入 guard + `isSubmitting`** |
 | 更新表單送出成功 → 剛送出的值成為新基準(「Submit Button 狀態」段) | **`useFormValidation.handleSubmit` 成功路徑內建**(`reset(snapshot, { keepValues })` + 逐格重算) |
 | Field error visual(紅框 + FieldError) | Field 元件 `invalid` context(既有,hook 不侵入) |

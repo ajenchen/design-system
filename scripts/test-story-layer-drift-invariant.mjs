@@ -200,8 +200,10 @@ check('突變:真檔 description-list 展示的 h3 標題改回 div → (c) 在�
 })
 
 const ratingNow = readFileSync(join(REPO, RATING_STORY), 'utf8')
-const SUBMIT = '<Button type="submit" variant="primary">送出評分</Button>'
-check('突變:重建後的 Rating 把送出鈕改回「給分前停用」→ 在那一行紅;改成 hook 自己的 submitDisabled → 不紅', () => {
+// 2026-11-17 起(規格第三列「需要填的欄位只有一個」)真檔的送出鈕接 hook 的 submitDisabled(soleRequiredField 算沒給分);
+// 突變仍是「手寫 rating === 0」—— 同樣是給分前停用,但不是 hook 算的 = 第二份規則,照紅
+const SUBMIT = '<Button type="submit" variant="primary" disabled={form.submitDisabled}>送出評分</Button>'
+check('突變:重建後的 Rating 把送出鈕改回手寫的「給分前停用」→ 在那一行紅;hook 自己的 submitDisabled(現行真檔)→ 不紅', () => {
   const at = ratingNow.split('\n').findIndex((l) => l.includes(SUBMIT)) + 1
   assert.ok(at > 0, `重建後的 Rating 找不到送出鈕 ${SUBMIT}(被改寫了?請更新本突變的錨點)`)
   const reverted = ratingNow.replace(SUBMIT, '<Button type="submit" variant="primary" disabled={form.values.rating === 0}>送出評分</Button>')
@@ -218,7 +220,7 @@ check('規則出處仍在(spec 行被改掉,閘的說明就會指錯地方)', ()
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 306, '元素間 gap 硬寫'],
     ['packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md', 159, '刻意固定'],
     ['packages/design-system/src/components/Field/form-validation.spec.md', 15, '不看填了沒、填對沒,一律 enabled'],
-    ['packages/design-system/src/components/Field/form-validation.spec.md', 146, 'disabled-until-dirty'],
+    ['packages/design-system/src/components/Field/form-validation.spec.md', 140, 'disabled-until-dirty'],
     // (c) 不收 span 的出處:chrome 文字(workspace brand / user name)明文用 span + text-body-lg font-medium
     ['packages/design-system/src/components/Sidebar/sidebar.spec.md', 264, 'text-body-lg font-medium'],
     // test-only 不在範圍的出處

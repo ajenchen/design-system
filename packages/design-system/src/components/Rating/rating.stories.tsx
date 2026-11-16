@@ -80,7 +80,9 @@ function ServiceRatingForm() {
   const [submitted, setSubmitted] = useState(false)
   const form = useFormValidation({
     initialValues: { rating: 0 },
-    intent: 'create', // 新建:送出鈕不看填了沒、填對沒,一律可按,按了才驗證全部(form-validation.spec.md「Submit Button 狀態」)
+    // 需要填的只有評分、唯一擋住送出的是沒給分 → 沒給分時「送出評分」停用(form-validation.spec.md「Submit Button 狀態」第三列,優先於「新建」);
+    // Rating 的 0 = 未評分(rating.spec.md「邊界案例」),是值域內的值,所以用 emptyValue 指名
+    soleRequiredField: { name: 'rating', emptyValue: 0 },
     validate: { rating: (v) => (v === 0 ? '請至少給 1 星' : undefined) },
     onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
   })
@@ -94,7 +96,7 @@ function ServiceRatingForm() {
       </Field>
       {/* 欄位 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」,同 field.stories.tsx「表單驗證」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
       <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
-        <Button type="submit" variant="primary">送出評分</Button>
+        <Button type="submit" variant="primary" disabled={form.submitDisabled}>送出評分</Button>
       </ButtonGroup>
     </form>
   )
@@ -106,7 +108,7 @@ export const InField: Story = {
     docs: {
       description: {
         story:
-          '訂單完成後幫這次服務評分。送出鈕不看填了沒、填對沒,一律可按:沒給分就離開評分或按送出,欄位顯示「請至少給 1 星」;按送出時焦點同時移到評分。送出成功後跳出「評分已送出」提示(Toast),同一欄改成唯讀精簡版。',
+          '訂單完成後幫這次服務評分。需要填的只有評分,所以沒給分時「送出評分」停用,給了分就可以按;沒給分就離開評分,欄位顯示「請至少給 1 星」。送出成功後跳出「評分已送出」提示(Toast),同一欄改成唯讀精簡版。',
       },
     },
   },
@@ -128,3 +130,4 @@ export const InField: Story = {
 //   手刻卡片 / 標題 / 間距、新建情境卻停用送出鈕(form-validation.spec.md「Submit Button 狀態」)、
 //   按送出沒有任何後續、自創「很差…很棒」文字標籤(rating.spec.md Props 無此 API)。
 //   送出評分情境改由「包在 Field 內」承擔(useFormValidation 建立表單 + 送出後唯讀),story-rules.md earn-existence 兩題皆否。
+//   (2026-11-17 起規格第三列「需要填的欄位只有一個」改為沒給分時停用,由 hook 的 soleRequiredField 算 —— 不是回到當年手寫的 `rating === 0`)

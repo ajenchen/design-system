@@ -7,6 +7,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
+import { useFormValidation } from '@/design-system/components/Field/use-form-validation'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
@@ -168,7 +169,16 @@ export const NoIconRule: Story = {
 }
 
 function NoIconRuleDemo() {
-  const [comment, setComment] = React.useState('')
+  // 評論框:需要填的只有評論 → 空白時「送出」停用(form-validation.spec.md「Submit Button 狀態」第三列;hook 的 soleRequiredField 算)。
+  // 送出 = 跳 Toast、清空輸入框(稽核 L074 接上行為);清空讓送出鈕停用的那一刻,焦點留在送出鈕上(Button 可聚焦的停用)
+  const form = useFormValidation({
+    initialValues: { comment: '' },
+    soleRequiredField: 'comment',
+    onSubmit: (): void => {
+      toast({ variant: 'success', title: '評論已送出' })
+      form.reset()
+    },
+  })
   return (
     <TutorialPage>
       <TutorialRule
@@ -185,10 +195,10 @@ function NoIconRuleDemo() {
         {/* 輸入框 → 跟在後面的送出鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;user 10-20 22:46 回 Q2、10-21 09:25 回 Q5:可以基於 AI 的建議(同則訊息另問 Step 標題區間距與內容底部間距,不在這一格));
             按鈕用預設 md(action-bar.spec.md「三、Variant 與排序」Size 列:「form / dialog 用中尺寸配合表單元素的高度」) */}
         <div className="flex flex-col gap-[var(--layout-space-loose)]">
-          <Textarea placeholder="留下你的評論..." rows={3} aria-label="評論" value={comment} onChange={(e) => setComment(e.target.value)} />
-          {/* 送出列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右);送出 = 跳 Toast、清空輸入框(稽核 L074 接上行為) */}
+          <Textarea placeholder="留下你的評論..." rows={3} aria-label="評論" {...form.getInputProps('comment')} />
+          {/* 送出列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
           <ButtonGroup>
-            <Button variant="primary" onClick={() => { toast({ variant: 'success', title: '評論已送出' }); setComment('') }}>送出</Button>
+            <Button variant="primary" disabled={form.submitDisabled} onClick={() => void form.handleSubmit()}>送出</Button>
           </ButtonGroup>
         </div>
         <ExampleCaption>↑ 按鈕在 Textarea 下方,不塞進框內</ExampleCaption>

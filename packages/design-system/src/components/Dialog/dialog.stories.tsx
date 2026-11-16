@@ -167,10 +167,12 @@ export default meta
 
 // 邀請成員:說明寫「輸入 Email 即可邀請」就要真的有 Email 欄(2026-10-28 前只有一段字,「寄出邀請」點了沒反應;稽核 M096)。
 // 表單接 useFormValidation、送出成功 → Toast 再關閉、每次打開回到空白(同下方「表單」的寫法與理由)。
+// 需要填的只有 Email → 空白時「寄出邀請」停用;格式不對照樣可按,按下在欄位下方報錯(form-validation.spec.md「Submit Button 狀態」第三列)。
 function InviteMemberDialog() {
   const [open, setOpen] = useState(false)
   const form = useFormValidation({
     initialValues: { email: '' },
+    soleRequiredField: 'email',
     validate: {
       email: (v) => (!String(v).trim() ? 'Email 必填' : /^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
     },
@@ -205,7 +207,7 @@ function InviteMemberDialog() {
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>寄出邀請</Button>
+          <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>寄出邀請</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

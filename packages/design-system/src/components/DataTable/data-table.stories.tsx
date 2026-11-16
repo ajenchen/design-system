@@ -120,8 +120,10 @@ function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitL
   initialValue?: string
   onSubmit: (value: string) => void
 }) {
+  // 需要填的只有這一欄 → 空白時送出鈕停用(form-validation.spec.md「Submit Button 狀態」第三列;hook 的 soleRequiredField 算)
   const form = useFormValidation({
     initialValues: { value: initialValue },
+    soleRequiredField: 'value',
     validate: { value: (v) => (String(v).trim() ? undefined : `${label}必填`) },
     onSubmit: (values) => {
       onSubmit(String(values.value).trim())
@@ -150,7 +152,7 @@ function NameFormDialog({ open, onOpenChange, title, label, placeholder, submitL
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>{submitLabel}</Button>
+          <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>{submitLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
