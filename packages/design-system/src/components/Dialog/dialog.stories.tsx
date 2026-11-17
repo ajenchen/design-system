@@ -457,13 +457,18 @@ function ListBodyDialogs({ membersOpen = false }: { membersOpen?: boolean }) {
         </DialogContent>
       </Dialog>
 
-      {/* 中 item:title+desc + 右側直接 Switch 設定(in-modal 操作,不 navigate)
-          user Image 9 指出 modal 內 list item 通常可直接被設定 — 對齊 Gmail 通知設定 /
-          macOS System Preferences / Notion preferences 的 in-modal pattern */}
-      <NotificationSettings />
+      {/* 開啟快照只放開著的那一則:另外兩個觸發鈕會被開著的對話框蓋住,點不到也拍不到(layout-body-edges 把它們判成「點了沒開」= 儀器失效,e017c41c CI) */}
+      {!membersOpen && (
+        <>
+          {/* 中 item:title+desc + 右側直接 Switch 設定(in-modal 操作,不 navigate)
+              user Image 9 指出 modal 內 list item 通常可直接被設定 — 對齊 Gmail 通知設定 /
+              macOS System Preferences / Notion preferences 的 in-modal pattern */}
+          <NotificationSettings />
 
-      {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集);勾選暫存、按「套用」才寫回(overlay-surface.spec.md「暫存選擇 + Save CTA 才 commit → Dialog + MenuItem」) */}
-      <TagPickerDialog />
+          {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集);勾選暫存、按「套用」才寫回(overlay-surface.spec.md「暫存選擇 + Save CTA 才 commit → Dialog + MenuItem」) */}
+          <TagPickerDialog />
+        </>
+      )}
     </div>
   )
 }
