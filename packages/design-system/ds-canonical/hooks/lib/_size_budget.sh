@@ -101,6 +101,10 @@ governance_size_budget() {
 
   # ── 3. canonical SKILL.md ──
   skills_root="$(governance_canonical_relative_root skills 2>/dev/null)" || return 2
+  if [ "$rel" = "$skills_root/design-system-audit/SKILL.md" ]; then
+    _governance_size_budget_design_system_audit
+    return 0
+  fi
   if governance_path_is_under "$rel" "$skills_root" && [ "${rel##*/}" = "SKILL.md" ]; then
     _governance_size_emit 250 400 lines "canonical SKILL.md"
     return 0
@@ -118,10 +122,26 @@ governance_size_budget() {
   esac
   if [ -n "$skill_entry" ] && governance_path_is_under "$rel" "$provider_skill_root" \
     && [ "${rel##*/}" = "$skill_entry" ]; then
-    _governance_size_emit 250 400 lines "provider skill entry($skill_entry)"
+    # provider skill view 是 canonical SKILL.md 的投影,上限跟著 canonical 走(同一份內容,同一個數字)
+    if [ "$rel" = "$provider_skill_root/design-system-audit/$skill_entry" ]; then
+      _governance_size_budget_design_system_audit
+    else
+      _governance_size_emit 250 400 lines "provider skill entry($skill_entry)"
+    fi
     return 0
   fi
   return 1
+}
+
+# design-system-audit SKILL.md 是 audit dim 的 registry 正本(2026-11-18 訂;取代該檔「Budget note」的散文豁免):
+#   - 「## The audit dimensions」段(38649f5a 實量:第 36–223 行共 188 行,91 列 dim)不能拆出去 ——
+#     scripts/dispatch-audit-dims.mjs、sync-governance-counters.mjs、audit-preflight.mjs、audit-coverage-matrix.mjs
+#     都直接讀這一個檔、用 `| N | **title**` 解析 dim 列;拆檔就是同時改四支 parser 的來源。所以這段不受一般 SKILL 的 250 行管。
+#   - 段外的散文(同次量 209 行)仍照一般 SKILL 的標準:
+#     BUDGET = 188 + 250 = 438 → 440;TRANSITION = 188 + 400 = 588 → 590。
+#   - 之後新增 dim 讓 registry 段變長:重量那段行數,照同一個算式改這兩個數字。
+_governance_size_budget_design_system_audit() {
+  _governance_size_emit 440 590 lines "design-system-audit SKILL.md(audit dim registry SSOT)"
 }
 
 governance_size_measure() {

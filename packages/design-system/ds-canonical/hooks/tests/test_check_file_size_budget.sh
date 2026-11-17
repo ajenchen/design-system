@@ -191,5 +191,23 @@ run_hook "" "$RULES_DIR/meta-patterns.md"
 pass_if says 'M99 1601 chars'
 pass_if says 'always-loaded rule file'
 
+SKILLS_DIR="$TMP_PROJECT/packages/design-system/ds-canonical/skills"
+mkdir -p "$SKILLS_DIR/design-system-audit" "$SKILLS_DIR/release-notes"
+
+echo "Test 22: design-system-audit SKILL.md(dim registry)430 lines → silent"
+yes 'x' | head -430 > "$SKILLS_DIR/design-system-audit/SKILL.md"
+run_hook "" "$SKILLS_DIR/design-system-audit/SKILL.md"
+pass_if silent
+
+echo "Test 23 (same 430 lines, any other canonical SKILL.md): the exception does not leak → hard-cap warning"
+yes 'x' | head -430 > "$SKILLS_DIR/release-notes/SKILL.md"
+run_hook "" "$SKILLS_DIR/release-notes/SKILL.md"
+pass_if says '430 lines (hard cap 400)'
+
+echo "Test 24: design-system-audit SKILL.md 591 lines → its own hard cap"
+yes 'x' | head -591 > "$SKILLS_DIR/design-system-audit/SKILL.md"
+run_hook "" "$SKILLS_DIR/design-system-audit/SKILL.md"
+pass_if says '591 lines (hard cap 590)'
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
