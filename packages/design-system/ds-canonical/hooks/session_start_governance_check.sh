@@ -16,7 +16,8 @@ set -uo pipefail
 #    2. 距上次 knowledge-prune commit > 180 天 → BLOCKER
 #    3. 待處理 user-corrections > 40 筆 → BLOCKER
 #    7. hook 數 > 60 → BLOCKER;> 26 → PRUNE_TRIGGERS
-#    8. governance/memory 檔數 > 20 → BLOCKER;≥ 18 → PRUNE_TRIGGERS
+#    8. MEMORY.md 索引條數 > contract.json 的 maxIndexEntries → BLOCKER;≥ 上限 − 2 → PRUNE_TRIGGERS
+#       (數法與上限都在 scripts/validate-memory-contract.mjs,和 CI 同一個函式)
 #    9. provider 分支 > 1(本機、遠端各算)、本機 main 與 origin/main 分叉 → PRUNE_TRIGGERS
 #   10. sync-governance-counters 抓到寫死數字漂移 → PRUNE_TRIGGERS
 #   12. provider 檢視有 hook 群組沒有派工入口 → PRUNE_TRIGGERS
@@ -147,24 +148,31 @@ elif [ "$HOOK_COUNT" -gt 26 ]; then
   PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Hook count ${HOOK_COUNT}(soft 26 trigger,2026-05-15 升 — Anthropic guideline ~15;含 root + lib/). /knowledge-prune 評估 retire / consolidate 候選."
 fi
 
-# Check 8: Memory entries auto-trigger(soft 18 / hard 20)
-# Always count the committed provider-neutral SSOT. Home state is an optional cache and cannot
-# change governance outcomes.
-REPO_MEMORY_DIR="$PROJECT_DIR/governance/memory"
-if [ -d "$REPO_MEMORY_DIR" ]; then
-  MEMORY_DIR="$REPO_MEMORY_DIR"
-else
-  MEMORY_DIR=""
-fi
-MEM_COUNT=0
-if [ -n "$MEMORY_DIR" ] && [ -d "$MEMORY_DIR" ]; then
-  MEM_COUNT=$(find "$MEMORY_DIR" -maxdepth 1 -name "*.md" -not -name "MEMORY.md" -not -name "README.md" 2>/dev/null | wc -l | tr -d ' ')
-  MEM_COUNT=${MEM_COUNT:-0}
-fi
-if [ "$MEM_COUNT" -gt 20 ]; then
-  BLOCKERS="${BLOCKERS}\n- Memory entries ${MEM_COUNT}(hard 20 cap). /knowledge-prune REQUIRED FIRST ACTION."
-elif [ "$MEM_COUNT" -ge 18 ]; then
-  PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Memory entries ${MEM_COUNT}(soft 18 trigger,20 = hard cap). /knowledge-prune 建議排程."
+# Check 8: memory 索引條數(> 上限 → BLOCKER;≥ 上限 − 2 → PRUNE_TRIGGERS)
+# 只數 committed 的 governance/memory(provider-neutral SSOT);home 底下的快取不影響判定。
+# 數法與上限只有一份:scripts/validate-memory-contract.mjs。CI 用它的 validateMemoryContract 判紅;這裡叫同一支的
+# --index-budget —— 同一個 memoryIndexLinks 數 MEMORY.md 的索引條目,上限讀 contract.json 的 maxIndexEntries。
+# 本檔不另寫數法(M17)。改前數的是 governance/memory 的 .md 檔數,和 CI 判的不是同一個東西(2026-11-18 改)。
+# soft = 上限 − 2:改前寫死 18 / 20,現在跟著 contract 的上限走,數值不變。
+# 沒有 contract.json = 這個專案沒有 memory 契約,本 Check 不適用;node 不在 PATH 由 Check 11 報。
+# 量不到(腳本缺、輸出不是預期的 JSON)不得當成「沒超標」:進 PRUNE_TRIGGERS 點名量具失效(M37 第八種形狀)。
+MEMORY_CONTRACT="$PROJECT_DIR/governance/memory/contract.json"
+if [ -f "$MEMORY_CONTRACT" ] && command -v node >/dev/null 2>&1; then
+  MEM_BUDGET_OUT=$(node scripts/validate-memory-contract.mjs --index-budget 2>&1 || true)
+  MEM_BUDGET=$(printf '%s' "$MEM_BUDGET_OUT" \
+    | jq -r 'if (.entries | type) == "number" and (.maxIndexEntries | type) == "number" then "\(.entries) \(.maxIndexEntries)" else empty end' 2>/dev/null || true)
+  if [[ "$MEM_BUDGET" =~ ^([0-9]+)\ ([1-9][0-9]*)$ ]]; then
+    MEM_ENTRIES="${BASH_REMATCH[1]}"
+    MEM_MAX="${BASH_REMATCH[2]}"
+    if [ "$MEM_ENTRIES" -gt "$MEM_MAX" ]; then
+      BLOCKERS="${BLOCKERS}\n- Memory index entries ${MEM_ENTRIES}(hard ${MEM_MAX} = governance/memory/contract.json maxIndexEntries;CI 的 validate-memory-contract 會紅). /knowledge-prune REQUIRED FIRST ACTION."
+    elif [ "$MEM_ENTRIES" -ge $((MEM_MAX - 2)) ]; then
+      PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Memory index entries ${MEM_ENTRIES}(soft $((MEM_MAX - 2)) trigger,${MEM_MAX} = hard cap). /knowledge-prune 建議排程."
+    fi
+  else
+    MEM_BUDGET_FIRST=$(printf '%s\n' "$MEM_BUDGET_OUT" | sed -n '1p' | cut -c1-160)
+    PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- Memory index 量不到(node scripts/validate-memory-contract.mjs --index-budget 回:${MEM_BUDGET_FIRST:-空});量不到 ≠ 沒超標,先修好量具再判斷。"
+  fi
 fi
 
 # Check 9: Branch sprawl(M28 — solo work = 1 chat = 1 branch / 0-1 active feature).

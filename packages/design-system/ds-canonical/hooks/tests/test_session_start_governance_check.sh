@@ -16,6 +16,8 @@
 #  13. provider view group reachability(Check 12)
 #  14. 上次 prune 181 天 — BLOCKER;100 天 — 安靜(Check 2)
 #  15. 靜態:hook 裡沒有「只累加、從不讀」的變數(含合成檔對照組)
+#  16. memory 索引條數(Check 8):上限 +1 → BLOCKER;等於上限 → 不出 BLOCKER(soft 照舊);索引與檔數分開數;
+#      上限讀 contract;量具失效 → 點名「量不到」
 #  (原 Test 5 fire-weighted gap 與 Test 10 的 benchmark fetch 那格,隨 Check 5 / Check 4 刪除而刪除,2026-11-18)
 
 set -u
@@ -368,6 +370,63 @@ else
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 15"
 fi
 teardown_proj
+
+# Test 16:Check 8 數的是 MEMORY.md 的索引條目(和 CI 的 validate-memory-contract.mjs 同一個函式),上限讀 contract.json。
+#   fixture 用真實的 validate-memory-contract.mjs 與 contract.json 原樣副本(腳本以自己所在目錄的上一層當 ROOT)。
+#   上限從 contract.json 讀,不寫死(MAX_16)。各格:
+#   (a) 索引 MAX+1 條、0 個內容檔 → BLOCKER(改前數檔數 = 0,會安靜 —— 這格分得出新舊數法)
+#   (b) 索引 MAX 條 → 沒有 BLOCKER;soft(MAX−2)照舊進 PRUNE_TRIGGERS
+#   (c) 索引 MAX−3 條 → 安靜
+#   (d) 索引 MAX−3 條、MAX+2 個內容檔 → 安靜(改前數檔數會出 BLOCKER —— 這格也分得出新舊數法)
+#   (e) contract 的 maxIndexEntries 改成 10、索引 11 條 → BLOCKER「hard 10」(證明上限是讀 contract 的)
+#   (f) 有 contract、沒有 validator → PRUNE_TRIGGERS 點名「量不到」,不出 BLOCKER(量具失效不當成沒超標)
+echo "Test 16: Check 8 counts MEMORY.md index entries against contract maxIndexEntries"
+REPO_ROOT_16="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+MAX_16=$(jq -r '.maxIndexEntries' "$REPO_ROOT_16/governance/memory/contract.json")
+write_memory_index() {
+  local i
+  : > "$TMP_PROJ/governance/memory/MEMORY.md"
+  for i in $(seq 1 "$1"); do
+    printf -- '- [Entry %s](entry_%s.md) — fixture\n' "$i" "$i" >> "$TMP_PROJ/governance/memory/MEMORY.md"
+  done
+}
+memory_fixture() {  # $1 = 索引條數;$2 = 要不要放 validator(1/0)
+  mkdir -p "$TMP_PROJ/scripts"
+  cp "$REPO_ROOT_16/governance/memory/contract.json" "$TMP_PROJ/governance/memory/contract.json"
+  [ "$2" = "1" ] && cp "$REPO_ROOT_16/scripts/validate-memory-contract.mjs" "$TMP_PROJ/scripts/validate-memory-contract.mjs"
+  write_memory_index "$1"
+}
+if printf '%s' "$MAX_16" | grep -qE '^[0-9]+$' && [ "$MAX_16" -ge 4 ]; then
+  setup_proj; memory_fixture $((MAX_16 + 1)) 1; run_hook; A_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture "$MAX_16" 1; run_hook; B_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture $((MAX_16 - 3)) 1; run_hook; C_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture $((MAX_16 - 3)) 1
+  for i in $(seq 1 $((MAX_16 + 2))); do : > "$TMP_PROJ/governance/memory/note_${i}.md"; done
+  run_hook; D_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture 11 1
+  jq '.maxIndexEntries = 10' "$TMP_PROJ/governance/memory/contract.json" > "$TMP_PROJ/contract.tmp" \
+    && mv "$TMP_PROJ/contract.tmp" "$TMP_PROJ/governance/memory/contract.json"
+  run_hook; E_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  setup_proj; memory_fixture $((MAX_16 + 1)) 0; run_hook; F_16="$EXIT|$STDOUT_TEXT"; teardown_proj
+  CHECK_16=""
+  case "$A_16" in "0|"*BLOCKER*"Memory index entries $((MAX_16 + 1))(hard ${MAX_16} = governance/memory/contract.json maxIndexEntries"*) ;; *) CHECK_16="${CHECK_16} a" ;; esac
+  case "$B_16" in *BLOCKER*) CHECK_16="${CHECK_16} b" ;; "0|"*"Memory index entries ${MAX_16}(soft $((MAX_16 - 2)) trigger"*) ;; *) CHECK_16="${CHECK_16} b" ;; esac
+  [ "$C_16" = "0|" ] || CHECK_16="${CHECK_16} c"
+  [ "$D_16" = "0|" ] || CHECK_16="${CHECK_16} d"
+  case "$E_16" in "0|"*BLOCKER*"Memory index entries 11(hard 10 = "*) ;; *) CHECK_16="${CHECK_16} e" ;; esac
+  case "$F_16" in *BLOCKER*) CHECK_16="${CHECK_16} f" ;; "0|"*"Memory index 量不到"*) ;; *) CHECK_16="${CHECK_16} f" ;; esac
+  if [ -z "$CHECK_16" ]; then
+    echo "  PASS  Test 16 index entries vs contract cap (a)–(f)"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  Test 16 failing cells:${CHECK_16}"
+    echo "    a='${A_16:0:220}'"; echo "    b='${B_16:0:220}'"; echo "    c='${C_16:0:220}'"
+    echo "    d='${D_16:0:220}'"; echo "    e='${E_16:0:220}'"; echo "    f='${F_16:0:220}'"
+    FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 16"
+  fi
+else
+  echo "  FAIL  Test 16 contract maxIndexEntries unreadable or < 4: '${MAX_16}'"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 16 (contract unreadable)"
+fi
 
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"
