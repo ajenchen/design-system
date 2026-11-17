@@ -820,6 +820,7 @@
           "scripts/test-token-creation-invariant.mjs",
           "scripts/test-token-twin-invariant.mjs",
           "scripts/test-tutorial-page-invariant.mjs",
+          "scripts/test-validate-knowledge-prune-run.mjs",
           "scripts/test-verify-deep-audit-coverage.mjs",
           "scripts/test-verify-mirror-evidence.mjs",
           "scripts/test-verify-mirror-release.mjs",
