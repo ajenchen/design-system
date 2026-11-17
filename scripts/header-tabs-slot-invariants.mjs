@@ -117,6 +117,20 @@ function record(invariant, label, pass, detail = '') {
  * 現在:Storybook 回報渲染完成 → tablist(量測前提)出現 → beforeSettle → 連續 10 影格靜止才量。
  * 等不到 → 記成儀器失效(點名 story、附 Storybook 錯誤原文與 404),回 false,該段不量。
  */
+// 溢出模式的兩則量 W1 前把 header 收窄到「全部分頁總寬的 60%」,保證真的溢出、不靠字型:CI 的 Verify browser 機器(ubuntu-24.04 +
+// playwright 自帶 chromium)沒有中文字型,分頁字變成窄的缺字方塊,418px 的 header 塞得下全部分頁 → 沒有溢出、沒有遮罩,W1-連續量到的只是整條線
+// (2026-11-17 CI 807f32a8:「內容溢出 + 遮罩已掛上」等 10 秒等不到)。寬度從量到的分頁總寬算,不寫死:本機把分頁字縮成 1px 模擬缺字型,
+// 固定 220px 時 scroll 模式仍塞得下(fix/probe-overflow 實測)。不改 story 本身(基準圖不動)。
+async function forceOverflow() {
+  await page.evaluate(() => {
+    const header = document.querySelector('header')
+    const tabs = [...document.querySelectorAll('[data-slot="tabs-list"] [role="tab"]')]
+    if (!header || tabs.length < 2) return
+    const total = tabs[tabs.length - 1].getBoundingClientRect().right - tabs[0].getBoundingClientRect().left
+    header.style.setProperty('max-width', `${Math.max(120, Math.floor(total * 0.6))}px`, 'important')
+  })
+}
+
 async function loadStory(id, label, { beforeSettle = null } = {}) {
   try {
     await openStory(page, `${served.origin}/iframe.html?id=${id}&viewMode=story`, {
@@ -262,7 +276,13 @@ async function measureBaselinePixels(story, tag = '') {
       return sc.scrollWidth > sc.clientWidth + 1 && !!mask && mask !== 'none'
     }, null, { timeout: 10000 }).then(() => true, () => false)
     if (!ready) {
-      instrumentFailures.push(`✗ ${label} | W1 像素量測前提:10 秒內沒有等到「內容溢出 + 淡出遮罩已掛上」—— 量不到要防的那種斷線`)
+      const why = await page.evaluate(() => {
+        const sc = document.querySelector('[data-slot="tabs-list"]')?.parentElement
+        if (!sc) return 'tablist 沒有父容器'
+        const cs = getComputedStyle(sc)
+        return `scrollWidth ${sc.scrollWidth} / clientWidth ${sc.clientWidth}、mask-image「${cs.maskImage || ''}」、-webkit-mask-image「${cs.webkitMaskImage || ''}」、header 寬 ${document.querySelector('header')?.getBoundingClientRect().width}`
+      })
+      instrumentFailures.push(`✗ ${label} | W1 像素量測前提:10 秒內沒有等到「內容溢出 + 淡出遮罩已掛上」—— 量不到要防的那種斷線(${why})`)
       return
     }
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
@@ -376,6 +396,8 @@ if (!SELFTEST) {
   for (const story of STORIES) {
     if (!(await loadStory(story.id, story.label))) continue
     await measureLayout(story)
+    // W2 / W1-寬 量的是 story 原本的寬度(上一行);W1 像素那一段才收窄
+    if (story.mode !== 'none') await forceOverflow()
     await measureBaselinePixels(story)
   }
 } else {
@@ -383,6 +405,7 @@ if (!SELFTEST) {
     for (const story of OVERFLOW_STORIES) {
       // 在靜止判定之前注入(beforeSettle),量的就是注入之後穩定下來的畫面
       if (!(await loadStory(story.id, `${story.label}${control.tag}`, { beforeSettle: (p) => p.addStyleTag({ content: control.css }) }))) continue
+      await forceOverflow()
       const before = { inst: instrumentFailures.length, pass: passes.length, fail: failures.length }
       await measureBaselinePixels(story, control.tag)
       if (control.expectInstrument) {
