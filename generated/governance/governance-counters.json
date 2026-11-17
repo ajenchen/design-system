@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "counts": {
-    "hooks": 59,
+    "hooks": 58,
     "mRules": 33,
     "auditDims": 91,
     "auditDimMin": 1,
@@ -100,9 +100,8 @@
     "packages/design-system/ds-canonical/hooks/post_edit_dispatcher.sh",
     "packages/design-system/ds-canonical/hooks/record_release_consent.sh",
     "packages/design-system/ds-canonical/hooks/session_start_governance_check.sh",
-    "packages/design-system/ds-canonical/hooks/stop_audit_content_quality.sh",
-    "packages/design-system/ds-canonical/hooks/stop_extract_canonical_rules.sh",
     "packages/design-system/ds-canonical/hooks/stop_passive_logging.sh",
+    "packages/design-system/ds-canonical/hooks/stop_repository_text_checks.sh",
     "packages/design-system/ds-canonical/hooks/stop_self_audit.sh"
   ],
   "drifts": []

@@ -268,12 +268,8 @@
       "reason": "DS-author claim-verify/cross-provider/solo-dev/completeness gate(讀 neutral evidence root)= 全 DS-author-only。"
     },
     {
-      "hook": "stop_audit_content_quality.sh",
-      "reason": "DS-author Stop context hook；執行 repository-only scripts/audit-content-quality.mjs，consumer corpus 不擁有該執行檔，ship 後只會 false-green 或鎖死。Consumer 品質由 immutable governance-check 與自身 CI gate 覆蓋。"
-    },
-    {
-      "hook": "stop_extract_canonical_rules.sh",
-      "reason": "DS-author canonical 編輯回饋 hook；執行 repository-only scripts/extract-canonical-rules.mjs，產品 repo 不可擁有或重建這個 canonical authoring authority。"
+      "hook": "stop_repository_text_checks.sh",
+      "reason": "DS-author Stop context hook(2026-11-17 合併原 stop_audit_content_quality.sh + stop_extract_canonical_rules.sh);執行 repository-only scripts/audit-content-quality.mjs 與 scripts/extract-canonical-rules.mjs，consumer corpus 不擁有這兩支執行檔，ship 後只會 false-green 或鎖死；產品 repo 也不可擁有或重建 canonical authoring authority。Consumer 品質由 immutable governance-check 與自身 CI gate 覆蓋。"
     },
     {
       "hook": "check_ssot_header_declaration.sh",

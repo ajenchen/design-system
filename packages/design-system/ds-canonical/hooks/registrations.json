@@ -421,13 +421,7 @@
           },
           {
             "kind": "hook",
-            "hook": "stop_audit_content_quality.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "stop_extract_canonical_rules.sh",
+            "hook": "stop_repository_text_checks.sh",
             "runtime": "bash",
             "outputMode": "governance-context"
           }

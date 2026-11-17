@@ -10,7 +10,7 @@
   "contractDigest": "sha256:6f63c4b98da5ea84c426d714819e8628160ad12bade78d4cdf1f7f791f99420d",
   "files": [
     {
-      "hash": "sha256:28235c7f7858e8f871d7a5458d8f9be03f8c1758ca62197124ddaac9ca19c4cf",
+      "hash": "sha256:80defb5f9ad072a579312f363ca95ab7972293124dee863c28c3590177fbee0c",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:633d08e530d6c6abf43fb16c48dfc6e5f338a9bc6351517c89b9e6d7fb83de4d",
+      "hash": "sha256:8e6e14bfa3f2739d88dde53d757c0d4d41466887835de48044511f05d65b5dfa",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140199,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:c92466b92f6238701864b75be2d0f3f6b27a67d01744beaf812016e9ffe36d7d",
+  "inputDigest": "sha256:f550ad1743051543145e25ee4d0f93d08a548eed0cca97859de06c164e76ce5e",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:6bd84beb237a43132dfb798ec8a6afccada1316485593ccfefee42411231a83b",
+  "snapshotDigest": "sha256:ab770f78f452ab373e1787d06c959cf687dc6ad55c66e6c7da51a2ffbe0bd967",
   "sources": [
     {
       "hash": "sha256:8b3ffc69ca8453ba9b2109b1a9665edf09d71fef45624a284ca1cb1da34ce477",
@@ -653,8 +653,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 233,
-      "hash": "sha256:d0532b461f4b4cbec903819d9d1afe9ac1334e05ecfbeed160c252eca9828971",
+      "files": 230,
+      "hash": "sha256:df5a482ce327a1fc86048c13c69626ed8a5753ad354006c6cbae6febb5260ecb",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2288,12 +2288,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:ba69cfbaa336b251ea36a7079e8e4b2811e7e3bee5ec4cf6e47a90336bfcbc04",
+      "hash": "sha256:6d15824cdf2a17d4fd43f242eca8046899a2a218fcd7a3ca62ef5b97acdc785c",
       "id": "governance-counter-metadata",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/governance-counters.json",
-      "size": 5305,
+      "size": 5225,
       "type": "file"
     },
     {
@@ -2355,7 +2355,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3c7bf0c99841249a88e0bfbc61b50929b57ce1da49b6fd5904552e4f2f9d6e07",
+      "hash": "sha256:74f337853760399084d83dc8a5c8f2cd58910c6a83fcc33b719f2a95f99413b3",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2418,12 +2418,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:91ec1c71cc7558346e1c0119f8b57ce8fa5229821efe091ebd986c6a91094070",
+      "hash": "sha256:d11dd2902a99fa5bc9e9834fb7cfd5cabf43ca7df9ed12b16171541ec1a2e941",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 41292,
+      "size": 41098,
       "type": "file"
     },
     {
@@ -3098,7 +3098,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a163a76bb1eea8a4d2fd36bea35b49aa150d6a1a08ed8b6673674977a9e20cc2",
+      "hash": "sha256:c28ab696ef0a223faf3482bc3ff68714c3bc4aac595b78e5c1e9938ff3574b0c",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3116,12 +3116,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:d73641ab6942bf12e84b6cd98ae18b6e558c2da4c32a0619610064786d55e29e",
+      "hash": "sha256:909cbbf632a459e3ea4ef4f3ee3a5cc06d1b85cc1aa892b8d60a2e4383cc82b9",
       "id": "provider-hook-coverage-artifact",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/provider-hook-coverage.json",
-      "size": 118397,
+      "size": 116660,
       "type": "file"
     },
     {
@@ -3152,12 +3152,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ec48c9ae775f59a1cfc228280bfa0340ca9ba513333d00db9e0e1ba20a110687",
+      "hash": "sha256:044676b2d7c4b431655bb554e8813cd7967b779b647983cf584885260e811600",
       "id": "provider-hook-registrations",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/registrations.json",
-      "size": 13501,
+      "size": 13316,
       "type": "file"
     },
     {
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 773,
-      "hash": "sha256:e7c3819cf16330b6478463d7fdb749319011f17af56bb3783b58db37b52bac65",
+      "hash": "sha256:4f4249df6578fb27c0d29a9037452f700f5d67586455e76b5ff5982a235e74b6",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

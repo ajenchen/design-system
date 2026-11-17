@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:5900e0f550d100edf608aa1957b243a5c704bbdbabe57ea94f650a0b43c0c74b",
+      "hookRegistrations": "sha256:2b64183b53516f8b1d5b5d0cf627cb3c7472eddd3a197992447f7693ec694685",
       "providerRegistry": "sha256:c8c96ab26ea34a73d6223c57cad875bbc57fbb00407850f6537b8f71c5016508",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -24,8 +24,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "complete-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 61,
-      "projectedCount": 61,
+      "canonicalRegistrationCount": 60,
+      "projectedCount": 60,
       "excludedCount": 0,
       "projected": [
         {
@@ -847,22 +847,7 @@
         {
           "event": "Stop",
           "canonicalMatcher": "",
-          "hook": "stop_audit_content_quality.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "governance-context",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "Stop",
-          "projectedMatcher": "",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "Stop",
-          "canonicalMatcher": "",
-          "hook": "stop_extract_canonical_rules.sh",
+          "hook": "stop_repository_text_checks.sh",
           "kind": "hook",
           "runtime": "bash",
           "outputMode": "governance-context",
@@ -958,8 +943,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "partial-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 61,
-      "projectedCount": 58,
+      "canonicalRegistrationCount": 60,
+      "projectedCount": 57,
       "excludedCount": 3,
       "projected": [
         {
@@ -1751,22 +1736,7 @@
         {
           "event": "Stop",
           "canonicalMatcher": "",
-          "hook": "stop_audit_content_quality.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "governance-context",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "Stop",
-          "projectedMatcher": "",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "Stop",
-          "canonicalMatcher": "",
-          "hook": "stop_extract_canonical_rules.sh",
+          "hook": "stop_repository_text_checks.sh",
           "kind": "hook",
           "runtime": "bash",
           "outputMode": "governance-context",
@@ -1914,9 +1884,9 @@
       "hookEnforcement": "ci-only",
       "projectionStatus": "unavailable",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 61,
+      "canonicalRegistrationCount": 60,
       "projectedCount": 0,
-      "excludedCount": 61,
+      "excludedCount": 60,
       "projected": [],
       "excluded": [
         {
@@ -2912,25 +2882,7 @@
         {
           "event": "Stop",
           "canonicalMatcher": "",
-          "hook": "stop_audit_content_quality.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "governance-context",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeCoverage": "gap",
-          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
-          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
-          "certificationImpact": "not-certified",
-          "authoritativeFallback": {
-            "status": "none"
-          }
-        },
-        {
-          "event": "Stop",
-          "canonicalMatcher": "",
-          "hook": "stop_extract_canonical_rules.sh",
+          "hook": "stop_repository_text_checks.sh",
           "kind": "hook",
           "runtime": "bash",
           "outputMode": "governance-context",
