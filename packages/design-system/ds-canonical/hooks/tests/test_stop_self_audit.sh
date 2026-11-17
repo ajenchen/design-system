@@ -74,8 +74,21 @@ export GOVERNANCE_INSTRUCTION_ENTRY=AGENTS.md
 export GOVERNANCE_SHARED_INSTRUCTION_ENTRY=AGENTS.md
 
 PASS=0; FAIL=0
+# 正式環境的 hook 一律在 LANG=C / LC_ALL=C 下跑(scripts/run-provider-hook.mjs 組 hook 環境時寫死),
+# 而本測試預設沿用呼叫者的語系(本機 zh_TW.UTF-8、CI 的 C.UTF-8)。中文字放進 [^…] 或後面接 ?/{m,n}
+# 時,兩種語系的意思不同 —— 所以 2026-11-18 起新增的格都在兩種語系各跑一次(HOOK_LC 指定)。
+hook_invoke() {
+  if [ -n "${HOOK_LC:-}" ]; then
+    LC_ALL="$HOOK_LC" LANG="$HOOK_LC" bash "$HOOK"
+  else
+    bash "$HOOK"
+  fi
+}
+UTF8_LC=$(locale -a 2>/dev/null | grep -ixE 'c\.utf-?8|en_us\.utf-?8' | head -1)
 run_test() {
   local name="$1"; local expect_block="$2"; local transcript_content="$3"; local direct_message="${4:-}"
+  # $5(可省)= 擋下時 reason 必須含的字串:證明是「該機制」擋的,不是別的機制剛好也擋
+  local reason_needle="${5:-}"
   local transcript="$TMPDIR/transcript-$$.jsonl"
   printf '%s\n' "$transcript_content" > "$transcript"
   local input
@@ -84,14 +97,15 @@ run_test() {
   local stdout stderr_file exit_code
   stderr_file=$(mktemp)
   set +e
-  stdout=$(echo "$input" | bash "$HOOK" 2>"$stderr_file")
+  stdout=$(echo "$input" | hook_invoke 2>"$stderr_file")
   exit_code=$?
   set -e
   if [ "$expect_block" = "1" ]; then
-    if [ "$exit_code" = "0" ] && echo "$stdout" | grep -q '"governanceDecision":"block"'; then
+    if [ "$exit_code" = "0" ] && echo "$stdout" | grep -q '"governanceDecision":"block"' \
+      && { [ -z "$reason_needle" ] || printf '%s' "$stdout" | grep -qF "$reason_needle"; }; then
       echo "  PASS  $name (blocked as expected)"; PASS=$((PASS+1))
     else
-      echo "  FAIL  $name (expected block, exit=$exit_code, got: ${stdout:0:120}, stderr: $(head -c 160 "$stderr_file"))"; FAIL=$((FAIL+1))
+      echo "  FAIL  $name (expected block${reason_needle:+ by「${reason_needle}」}, exit=$exit_code, got: ${stdout:0:120}, stderr: $(head -c 160 "$stderr_file"))"; FAIL=$((FAIL+1))
     fi
   else
     if [ "$exit_code" != "0" ]; then
@@ -588,6 +602,63 @@ T34=$(self_lock_transcript 'ok' '規格原話「footer 左緣要對齊上方內�
 run_test "Test 34: 不帶日期的「原話」(規格原文)→ no block" 0 "$T34"
 T35=$(self_lock_transcript 'ok' 'user 11-11 原話「先維持」,所以這項擱置。')
 run_test "Test 35: 帶日期的舊原話 + 擱置 + 沒寫原題(user 前綴)→ block" 1 "$T35"
+
+# ── 2026-11-18 起(工作包 E2):以下每一格都在 LC_ALL=C(正式環境)與 UTF-8(本機 / CI 預設)各跑一次 ──
+run_test_locales() {
+  # 參數同 run_test(第 4 個 direct_message 固定空字串):name expect transcript [reason_needle]
+  local name="$1" expect="$2" content="$3" needle="${4:-}" lc
+  for lc in C "$UTF8_LC"; do
+    [ -n "$lc" ] || continue
+    HOOK_LC="$lc" run_test "$name [LC_ALL=$lc]" "$expect" "$content" "" "$needle"
+  done
+}
+[ -n "$UTF8_LC" ] || echo "  NOTE  找不到 UTF-8 語系,新格只跑 LC_ALL=C(正式環境的語系)"
+
+# Tests 36-45: Mechanism 8 補「user 看過」(稽核 #5 = A80 ⑤)。Mechanism 8 只寫提醒、不擋 turn,
+# 觀察面同 Tests 25-27:遙測開著時 hook 寫的 self-audit-warnings.jsonl 有沒有「Provenance 升格」。
+WARN_SEQ=0
+run_warning_case() {
+  # $1 = name;$2 = 1 該有提醒 / 0 不該有;$3 = transcript
+  local name="$1" want="$2" content="$3" lc state transcript got
+  for lc in C "$UTF8_LC"; do
+    [ -n "$lc" ] || continue
+    WARN_SEQ=$((WARN_SEQ + 1))
+    state="$GIT_DIR/governance-runtime/warn-$WARN_SEQ"
+    transcript="$TMPDIR/warn-$WARN_SEQ.jsonl"
+    mkdir -p "$state"
+    printf '%s\n' "$content" > "$transcript"
+    jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"warn",last_assistant_message:""}' \
+      | HOOK_LC="$lc" GOVERNANCE_TELEMETRY_OPT_IN=1 GOVERNANCE_READ_ONLY=0 GOVERNANCE_STATE_DIR="$state" \
+        hook_invoke >/dev/null 2>&1 || true
+    got=0
+    grep -qF 'Provenance 升格' "$state/self-audit-warnings.jsonl" 2>/dev/null && got=1
+    if [ "$got" = "$want" ]; then
+      echo "  PASS  $name [LC_ALL=$lc]"; PASS=$((PASS+1))
+    else
+      echo "  FAIL  $name [LC_ALL=$lc] (Provenance 提醒 present=$got, want=$want)"; FAIL=$((FAIL+1))
+    fi
+  done
+}
+run_warning_case "Test 36: 「這頁你看過了」當依據、沒引原話 → 提醒" 1 \
+  "$(quote_turn_transcript '收尾' '這頁你看過了,所以照這樣改。')"
+run_warning_case "Test 37: 同句附 user 原話「可以改」→ 不提醒" 0 \
+  "$(quote_turn_transcript '收尾' '這頁你看過了,你回「可以改」,所以照這樣改。')"
+run_warning_case "Test 38: 主詞是 AI(我看過規格)→ 不提醒" 0 \
+  "$(quote_turn_transcript '收尾' '我看過規格,所以照這樣改。')"
+run_warning_case "Test 39: 「已給你看過」→ 提醒" 1 \
+  "$(quote_turn_transcript '收尾' '這張圖已給你看過,照這樣發版。')"
+run_warning_case "Test 40: A80 錨例原句「依 user 看過的句子退場」→ 提醒" 1 \
+  "$(quote_turn_transcript '收尾' '--brand 依 user 看過的句子退場。')"
+run_warning_case "Test 41: 「你這頁看過了」(「這」的 UTF-8 含 0x80 位元組;C 語系下 [^。] 會把它當成「。」的一部分擋掉)→ 提醒" 1 \
+  "$(quote_turn_transcript '收尾' '你這頁看過了,所以照這樣改。')"
+run_warning_case "Test 42: 「user 在 notion 看過了」(方括號裡寫 \\n 是字母 n,不是換行)→ 提醒" 1 \
+  "$(quote_turn_transcript '收尾' 'user 在 notion 看過了,所以照這樣改。')"
+run_warning_case "Test 43: 「你」在前但看過的是我(你要的那頁我看過了)→ 不提醒" 0 \
+  "$(quote_turn_transcript '收尾' '你要的那頁我看過了,照規格改。')"
+run_warning_case "Test 44: 否定(這頁你還沒看過)→ 不提醒" 0 \
+  "$(quote_turn_transcript '收尾' '這頁你還沒看過,我先截圖給你。')"
+run_warning_case "Test 45: 問句(這頁你看過了嗎)→ 不提醒" 0 \
+  "$(quote_turn_transcript '收尾' '這頁你看過了嗎?')"
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

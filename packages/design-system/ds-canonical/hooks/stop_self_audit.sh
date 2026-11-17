@@ -455,18 +455,54 @@ fi
 # Escape 極簡:引 user 原話(「…」)或明寫「AI 推導 / AI 建議」即不 fire。
 if [ -n "$LAST_ASSISTANT" ]; then
   ATTRIB_RE='(user (拍板|決定|核准)|你(拍板|的拍板)|已拍板|你最早的(拍板|決定))'
+  # 「user 看過」當依據(2026-11-18,A80 ⑤ / 工作包 E2):A80 那次把 --brand 寫成「依 user 看過的句子退場」——
+  # 看過不等於同意,但這樣寫讀起來就像 user 核准過,同屬 M36(a) 升格,與上面的歸因語同一級(只提醒、不擋 turn)。
+  # 判式:以全形「。，、；：！？」與半形「, ; : ?」切成子句,子句裡「看過」前面最近的人稱是「你 / user」(兩者之間不夾「我」、
+  # 相距 ≤ 36 位元組 ≈ 12 個中文字),且不是否定(沒 / 未 / 不曾)、不是問句(看過後 3 字內有「嗎」)。
+  # 為什麼不寫成一行 grep:正式環境的 hook 在 LC_ALL=C 下跑(scripts/run-provider-hook.mjs 組 hook 環境時把
+  # LANG / LC_ALL 寫死成 C),中文字放進 [^。] 會被拆成三個位元組各自排除 ——「這」(E9 80 99)含 0x80,
+  # 和「。」(E3 80 82)共用一個位元組,於是「你這頁看過」比不到;方括號裡的 \n 是字母 n,「user 在 notion
+  # 看過」也比不到。所以這裡一律 LC_ALL=C + index / substr 字面比對;Tests 36-45 在 C 與 UTF-8 兩種語系各跑一次。
+  USER_SEEN_AWK='
+    function lastpos(s, t,   p, q) { p = 0; while ((q = index(substr(s, p + 1), t)) > 0) p += q; return p }
+    BEGIN { RS = "\001" }
+    { s = s $0 "\n" }
+    END {
+      gsub(/。|，|、|；|：|！|？|,|;|:|\?/, "\n", s)
+      n = split(s, c, "\n")
+      for (i = 1; i <= n; i++) {
+        t = c[i]
+        while ((k = index(t, "看過")) > 0) {
+          pre = substr(t, 1, k - 1); u = 0; w = 0
+          p = lastpos(pre, "你");            if (p > u) { u = p; w = 3 }
+          p = lastpos(tolower(pre), "user"); if (p > u) { u = p; w = 4 }
+          if (u > 0) {
+            gap = substr(pre, u + w); post = substr(t, k + 6, 9)
+            if (length(gap) <= 36 && !index(gap, "我") && !index(gap, "沒") && !index(gap, "未") &&
+              !index(gap, "不曾") && !index(post, "嗎")) exit 0
+          }
+          t = substr(t, k + 6)
+        }
+      }
+      exit 1
+    }'
+  ATTRIB_HIT=0
+  grep -qE "$ATTRIB_RE" <<< "$LAST_ASSISTANT" && ATTRIB_HIT=1
+  if [ "$ATTRIB_HIT" = "0" ] && LC_ALL=C awk "$USER_SEEN_AWK" <<< "$LAST_ASSISTANT"; then
+    ATTRIB_HIT=1
+  fi
   # 有引號 = 有引原話;明說 AI 推導/建議 = 已誠實降級;兩者皆為合格 escape
   PROV_ESCAPE_RE='(「|」|AI 推導|AI 建議|未經拍板|前提錯誤|我捏造|本文自創)'
   # M36(a) 引文完整性(2026-08-09):引 user 原話當裁決依據,但引文以徵詢語氣結尾
   # (吧/嗎/?)= 那是提議不是拍板。錨例:把「…才對吧?」寫成「…才對」竄改語氣。
   QUOTE_ASK_RE='「[^」]*(吧|嗎)[?？]?」|「[^」]*[?？]」'
-  if grep -qE "$ATTRIB_RE" <<< "$LAST_ASSISTANT" \
+  if [ "$ATTRIB_HIT" = "1" ] \
     && grep -qE "$QUOTE_ASK_RE" <<< "$LAST_ASSISTANT"; then
     WARNINGS="${WARNINGS}\n  • 引文語氣(M36a):你引的 user 原話以「吧/嗎/?」結尾——那是徵詢不是拍板。改標「user 提議、查證後採用」或「未決」;引文一律逐字,禁刪語氣詞。"
   fi
-  if grep -qE "$ATTRIB_RE" <<< "$LAST_ASSISTANT" \
+  if [ "$ATTRIB_HIT" = "1" ] \
     && ! grep -qE "$PROV_ESCAPE_RE" <<< "$LAST_ASSISTANT"; then
-    WARNINGS="${WARNINGS}\n  • Provenance 升格(M36a):你寫了「user 拍板/決定」但整段沒有引 user 原話。立刻補引原話,或降級成「AI 推導 / AI 建議、user 採納」。問句不是同意。"
+    WARNINGS="${WARNINGS}\n  • Provenance 升格(M36a):你寫了「user 拍板/決定」或「user 看過」當依據,但整段沒有引 user 原話。看過不等於同意。立刻補引原話,或降級成「AI 推導 / AI 建議、user 採納」。問句不是同意。"
   fi
 fi
 
