@@ -441,9 +441,9 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 
 **為什麼 state 不獨立列規則**:state 視覺(hover / focus / active / selected)跟隨 permanent layer 分類,不獨立觸發。瞬時 state(hover/focus/active)單一 item 啟用不會創造相鄰衝突;selected 的連續 bg 在 permanent flush / transparent item 上是 **multi-select feature**(連續選取的列連成一塊,一眼看出選了哪一段),在 permanent standalone card 上依然必 gap(card identity 保留)。
 
-### 世界級 benchmark(2026-04-22 掃 6 家) <!-- @benchmark-unverified -->
+### 世界級 benchmark(2026-04-22 掃 6 家)
 
-<!-- @benchmark-unverified -->
+<!-- @benchmark-unverified: 2026-11-18 複查,per M22 (d) —— 下表 6 家 × 4 欄仍沒有逐家一手來源(本次沒有逐格開檔查證),補來源前只當未驗證的觀察 -->
 | DS | menu item | file/card list | table row | settings row |
 |----|-----------|---------------|-----------|-------------|
 | Polaris | flush + border-b,0 gap | ResourceList flush rows border-b;MediaCard standalone 才 card | IndexTable flush border-b 0 gap | Card.Section Divider 0 gap |
@@ -611,9 +611,9 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 **2. 業界 convention 全部如此**
 
-Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris ResourceItem——**全部**是「prefix 跟 suffix 各自獨立對齊」。沒有任何一個把小 suffix 強迫對齊到大 avatar 中心。 <!-- @benchmark-unverified -->
+Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris ResourceItem——**全部**是「prefix 跟 suffix 各自獨立對齊」。沒有任何一個把小 suffix 強迫對齊到大 avatar 中心。 <!-- @benchmark-unverified: 2026-11-18 複查,per M22 (d) —— 「全部」沒有逐家查證,而且 Material 3 是反例(見下表標記) -->
 
-<!-- @benchmark-unverified -->
+<!-- @benchmark-unverified: 2026-11-18 複查,per M22 (d) —— 四列仍沒有逐家一手來源;Material 3 那列與本節下方「大塊 suffix」段引的 androidx ListItem 原始碼不符(一、二行的列 leading 與 trailing 都垂直置中,三行的列兩者都靠上),待照 M22 改寫 -->
 | 系統 | Prefix(大 avatar) | Suffix(小元素) |
 |---|---|---|
 | Apple Mail | Avatar 40px → 文字塊中心 | Date → Subject 第一行 |
