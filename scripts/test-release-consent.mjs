@@ -38,7 +38,7 @@ const {
   productContentDigest, productVisibleFilesChanged, readReleaseConsent,
   consentReleaseLedger, recordConsentRelease, withdrawReleaseConsent, writeReleaseConsent,
 } = await import('./release-orchestrator.mjs')
-const { classifyConsentPrompt } = await import('./lib/release-consent-language.mjs')
+const { classifyConsentPrompt, loadConsentPolicy } = await import('./lib/release-consent-language.mjs')
 
 const workflow = loadReleaseWorkflow()
 const sha = 'f'.repeat(40)
@@ -155,6 +155,25 @@ try {
   }
   assert.equal(classifyConsentPrompt(workflow.releaseConsent.userVerbatim).verdict, 'deferred',
     'SSOT 自己的 userVerbatim 被判成 consent = 這道閘在自廢')
+
+  // 5e. 條件句的另一種:user 把「做完」交給 AI 判 → **刻意判 consent**(2026-11-18)。
+  //     fixture 是磁碟上真實出現過的原話:2026-11-17 落地的發版同意收據(授權 ec9208b7)的 quote。
+  //     理由寫在 release-consent-language.mjs 函式內第 4 步:改判 deferred 只會逼 user 再講一次
+  //     「發版」;保護靠產品指紋(上面 5.)而不是再問。這格擋的是「依稽核建議改判 → 改回來」的來回,
+  //     要改判先改這格並寫出新證據。
+  const AI_SIDE = '現在該做的任務都做完了就發版'
+  assert.equal(classifyConsentPrompt(AI_SIDE).verdict, 'consent',
+    `「${AI_SIDE}」是 user 把「做完」交給 AI 判,不是在等 user 自己確認`)
+  assert.equal(writeReleaseConsent({ headSha: head, branch, quote: AI_SIDE, source: 'manual-agent' }).quote, AI_SIDE,
+    '手動落地(當初那份收據走的路)必須與 hook 同判')
+  //     同一格的另一面:條件在 user 身上 → 仍是 deferred(與 5d 同一份判準)
+  assert.equal(classifyConsentPrompt('等我看完預覽再發版').verdict, 'deferred', '等 user 自己確認的條件句不得被一起放寬')
+  //     會紅的對照組:判準若多一條「做完了就」,同一句必須改判 —— 證明這句真的走到條件那一步、
+  //     這格量得到判準變動,不是恆綠。只在記憶體裡複製判準,不寫任何檔。
+  const livePolicy = loadConsentPolicy()
+  const tightened = { ...livePolicy, conditionalMarkers: [...livePolicy.conditionalMarkers, '做完了就'] }
+  assert.equal(classifyConsentPrompt(AI_SIDE, tightened).verdict, 'deferred',
+    '判準多一條「做完了就」卻沒改判 = 這格量不到判準變動,綠燈是零證據')
 
   // 重新落地一份乾淨的同意,讓後面的格子有東西可用
   writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'test' })

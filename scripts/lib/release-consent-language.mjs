@@ -24,10 +24,13 @@
 //    不先攔下來,一句在問我的話會被當成撤回而把同意刪掉(2026-09-20 實測)。
 // 3. **否定** → withdraw。否定詞一律**要帶發版受詞**:裸的「不要發」會命中
 //    「不要發生問題」而把同意刪掉(實測),裸的「先不要」會命中「先不要管那個」。
-// 4. 沒有同意詞 → none。
-// 5. **問句**(可以嗎／是否／…嗎／?)→ question。保守側:
+// 4. **條件 / 延後**(conditionalMarkers:等我看完／確認後／明天／如果…)+ 同意詞 → deferred。
+//    「…做完了就發版」這種把「做完」交給 AI 判的說法**刻意不在此列**,判 consent ——
+//    理由與邊界寫在函式內第 4 步,`scripts/test-release-consent.mjs` 5e 鎖住(2026-11-18)。
+// 5. 沒有同意詞 → none。
+// 6. **問句**(可以嗎／是否／…嗎／?)→ question。保守側:
 //    不記錄、也不撤回,而且**必須印出來讓人知道它被擋了**(靜默丟棄才是真正的傷害)。
-// 6. 其餘 → consent。
+// 7. 其餘 → consent。
 //
 // 任何一邊的修改都要同時更新 SSOT 與兩面對照測試(`scripts/test-release-consent.mjs`),
 // 對照組必須用磁碟上真實出現過的原話當 fixture —— 不會紅的對照組是零證據。
@@ -85,8 +88,27 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
   //    **連 release-workflow.json 自己存的 userVerbatim(2026-09-02 user 定義這道閘的那句話)
   //    餵回判準都會被判成「現在就發版」並寫出有效收據** —— 那正是這道閘要防的事。
   //    **必須排在否定之後**:「先不要發版,我再看看」同時命中「先…再」與「不要發版」,
-//    明確的否定要贏(2026-09-21 當場被 hook 測試抓到)。
-//    與 question 同樣:不記錄、也不撤回,但一定要出聲。
+  //    明確的否定要贏(2026-09-21 當場被 hook 測試抓到)。
+  //    與 question 同樣:不記錄、也不撤回,但一定要出聲。
+  //
+  //    **條件句分兩種,只有第一種判 deferred**(2026-11-18 補記;判準本身沒有改):
+  //    (a) 同意要等**之後另一個確認**才成立 —— 等 user 自己看／確認(等我看完、我確認後)、
+  //        等時間(明天、下一輪)、明示的假設(如果…、若…就)→ deferred,維持現狀。
+  //        conditionalMarkers 列的就是這一類。
+  //    (b) user 把「做完」交給 AI 判,做完即發(「現在該做的任務都做完了就發版」、
+  //        「滿足我的要求就發版」)→ **刻意不列進 conditionalMarkers**,落到最後判 consent。
+  //        這個讀法是 AI 推導,依據是兩句 user 原話:本檔判定順序第 1 點記的
+  //        「我不是老早就說滿足我的要求就發版了嗎?」—— user 自己把這種說法當成早就給過的同意;
+  //        以及 governance/memory/feedback_solo_dev_workflow.md:12 的「你他媽我從頭到尾就這樣要求,
+  //        也沒有新增任何設計需求?你他媽到底是要我說發版說到何時?」—— 改判 deferred 只會逼 user
+  //        再講一次「發版」。
+  //    (b) 的保護不靠再問 user:同意綁產品指紋(scripts/release-orchestrator.mjs `consentCoversHead`),
+  //        預覽看得見的檔一動就失效、要重新確認;合併前 required CI 仍要全綠。AI 誤報「做完」是
+  //        回報誠實的問題,改這裡的判準修不到它。
+  //    邊界(實測現況):同一句若也命中清單裡的詞 —— 「先把剩下的做完再發版」命中「先…再」、
+  //    「如果都做完了就發版」命中「如果」—— 清單贏,判 deferred。這是保守側,代價是多問一次。
+  //    2026-11-18 自查曾提議把 (b) 改判 deferred,因上述理由不採(該次工作交接 OPEN-ITEMS B1)。
+  //    要再改這一格,先改 scripts/test-release-consent.mjs 5e 並寫出新證據 —— 那格就是為了擋這種來回。
   if (hasAny(value, policy.conditionalMarkers) && hasLiteral(value, policy.consentPhrases)) {
     return { verdict: 'deferred', reason: '這是條件或延後的說法(等/確認後/才/如果…),不是現在就發' }
   }
