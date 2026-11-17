@@ -26,6 +26,12 @@
  *          不在中間那格上,並等兩格的框色都停下來(鄰居滑過的框色有過渡);開頭先確認三格真的相鄰、各重疊 1px(共用一條線)。
  *          驗證錯誤那一組的限制:錯誤欄位靜止時 computed 就是 --error,所以它的 computed(K1 的前半、G1)分不出有沒有聚焦 / 開著;
  *          分得出的是像素列與層級列(沒抬高時右邊那條線被右鄰居蓋住 —— 破法 (d) 下 K1 / G2 紅的就是這一邊)。
+ *        S 併排欄位組裡停用的成員被滑過(story「設計規格 › 狀態行為」停用那一組:Select 停用 / Input 停用;量的是帶原生 disabled、左邊有鄰居的
+ *          那一格 = Input):S1 滑鼠停在它上面 → 它的 computed z-index 仍是 0(field-control-group.spec.md States 表 disabled 那一列;
+ *          2026-11-18 前樣式表裡滑過那條排在停用那條後面、權重相同 → 3);同一刻另印左鄰居的 z-index 與兩格共用那條線的像素。
+ *          S2 同一刻它四邊中點的像素 = 靜止時同一點的像素(滑過停用的成員畫面不變;左邊那一點就是兩格共用的線)。
+ *          這一組兩格都是停用、框色都是 --border-opaque(K12),所以修之前抬到 3 時那條線的顏色也一樣 —— S2 在修前修後都綠,
+ *          它守的是「停用的成員被滑過不該有任何變化」;層級對不對只有 S1 量得出來。
  *        X 外面包一層浮層、直接把欄位當觸發點(夾具:導覽提示 × Select、Popover × 日期區間、Tooltip × TimePicker):
  *          X1 外面那層開著、欄位自己沒開 → 外框 = 開之前靜止時的顏色(不是 --primary);X2 同一個欄位自己的浮層開著 → --primary。
  *        Z 欄位裡的小按鈕開選單(FileViewer 縮放):選單開著 → 外框 = 開之前的顏色。
@@ -38,7 +44,7 @@
  *        中間那格本來就蓋得住左邊。與破法 (e) 是同一張表。夾具那一組在改前的建置上量到的**不是**改前的行為:夾具 = 這次的原始碼配那份建置的 CSS,
  *        這次的 class(聚焦 / 開著 z-index 4)在舊 CSS 裡沒有規則 → 聚焦 / 開著完全不抬高(停在預設的 2,比改前的 3 還低)→ 與破法 (d) 同一張表
  *        (只有 G1 與 C1 綠),只能當「沒抬高會紅」的旁證,不能當「改前長這樣」的證據。
- *        `--selftest` 在真建置上跑六種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+ *        `--selftest` 在真建置上跑八種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
  *        (a) css:開著的框改回 hover 色(--border-hover / --error-hover)→ 全部 O 列、G1 / G2、滑過鄰居的像素列 G3 / G5(中間那格還在最上面,但它的框已不是
  *            期望色)、X2 紅;K0 / C1 / X1 / Z、G 的層級列 G4 / G6 / G7、鍵盤聚焦那一段 K1–K6(沒開,破法碰不到)綠。
  *        (b) mark:記號一出現就拿掉(= 元件漏接記號)→ 開著而焦點不在欄位裡的 O 列紅(錯誤欄位只有滑鼠停在欄位上那一列紅 —— 靜止時本來就是 --error);
@@ -57,6 +63,9 @@
  *            不是 (d)(e) 的事(滑鼠在鄰居上或空白處時,中間那格沒被滑過,這個破法碰不到)。聚焦那一半(K6)= field-control-group.tsx 少了第一條
  *            補的規則時的實際樣子;開著那一半(G7)在現行樣式表順序下不補也是 4,第二條補的規則是不靠排序的保險,單獨拿掉它這支閘不會紅。
  *        (d)(e)(f) 只跑併排欄位組那一段(兩組都跑),而且都動到鍵盤聚焦那一段 → 那一段另有一列「還原」。
+ *        (g) dishover:停用的成員被滑過時抬回 3(= 2026-11-18 修之前的樣子)→ S1 紅、S2 綠(兩格同色,畫面本來就不變)。
+ *        (h) dispaint:停用的成員被滑過時框改成 --primary(層級不動)→ S2 紅(右 / 上 / 下三邊變色;左邊那條被層級較高的鄰居蓋住)、S1 綠。
+ *        (g)(h) 只跑 S 那一段,各多一列「還原」。拿 38649f5a 的建置(沒有 field-control-group.tsx 停用又被滑過那一行)跑判定:S1 紅(z-index 3)、S2 綠。
  *        找不到欄位 / 浮層沒開 / 滑鼠不在該在的地方 / 顏色一直在變 / 實際量的列數 ≠ 排定的列數 = INSTRUMENT-FAIL(exit 2),不當成通過也不當成紅。
  *   綠: 有這條規則的建置全部相符;重複跑同一份建置結果相同(每一格重新開頁、等的是值穩定不是固定毫秒,機器慢只會等久一點 ——
  *        `--cpu-throttle=6` 把頁面 CPU 放慢 6 倍重跑,列數與結果必須與不放慢時相同)。
@@ -134,6 +143,10 @@ const GROUPS = [
   { title: 'G 併排欄位組中間那一格(Select)', target: { story: story('fieldcontrolgroup-展示--filter-row') }, scope: '#storybook-root', error: false },
   { title: 'G 併排欄位組中間那一格(Select · 驗證錯誤;夾具)', target: { fixture: 'group-error-mid' }, scope: '[data-fob-cell="group-error-mid"]', error: true },
 ]
+/** S:成員全部停用的那一組(設計規格頁「狀態行為」;spec 禁止事項不准停用 / 非停用混在同一組,所以量全停用的那一種) */
+const DISABLED_STORY = story('fieldcontrolgroup-設計規格--state-behavior')
+/** 只動停用成員的兩種破法(只跑 S 那一段) */
+const DISABLED_BREAKS = new Set(['dishover', 'dispaint'])
 /** reachRed:外面那層開著時,欄位外框上的 data-state 會不會是 "open"(Tooltip 寫的是 instant-open,破法 (c) 選不到它) */
 const WRAPPED = [
   { kind: '導覽提示 × Select', cell: 'wrap-coachmark-select', reachRed: true },
@@ -175,10 +188,18 @@ const instrument = (name, detail) => { instrumentFail = true; console.log(`✗ $
  *   self  只有「聚焦 / 開著又被滑過」壓回 3 → selfz 紅;其餘三種量的時候中間那格沒被滑過 → 綠。
  *   css / mark 只動「開著」的那格,鍵盤聚焦那一段(when = 'focus')一律綠。開著那一段:
  *   css   框色改掉、層級沒動 → 像素紅、層級與 selfz 綠;mark 記號沒了(焦點又不在欄位裡)→ 不抬高 → 都紅(停在自己上面只剩滑過的 3)。
+ *   停用成員被滑過(S;只在 real 與 (g)(h) 跑):
+ *   disz    停用成員被滑過時的 z-index 0(S1)—— dishover 把它抬回 3 → 紅;dispaint 只改框色 → 綠。
+ *   dispx   同一刻四邊中點像素 = 靜止時(S2)—— dispaint 改框色 → 紅;dishover 只改層級,兩格同色 → 綠。
  */
 const GROUP_FAMILIES = new Set(['kbase', 'nbpx', 'layer', 'selfz'])
 function expectOf(mode, family, { m, error = false, reachRed = false, side, when } = {}) {
   if (mode === 'real' || family === 'closed' || family === 'restore') return 'green'
+  if (family === 'disz' || family === 'dispx') {
+    if (mode === 'dishover') return family === 'disz' ? 'red' : 'green'
+    if (mode === 'dispaint') return family === 'dispx' ? 'red' : 'green'
+    throw new TypeError(`expectOf:${family} 只在 real 與 dishover / dispaint 跑,實得 ${mode}`)
+  }
   if (family === 'foreign') return mode === 'reach' && reachRed ? 'red' : 'green'
   if (GROUP_FAMILIES.has(family)) {
     if ((family === 'nbpx' || family === 'layer') && side !== 'left' && side !== 'right') throw new TypeError(`expectOf:${family} 要給 side(left / right),實得 ${side}`)
@@ -312,14 +333,20 @@ const installBreakInPage = (mode) => {
       const on = h.getAttribute('data-state') === 'open' || !!h.querySelector('[data-state="open"], [aria-expanded="true"]')
       if (on) force(h, 'var(--primary)'); else release(h)
     })
-  } else if (mode === 'stack' || mode === 'tie' || mode === 'self') {
-    // 併排欄位組的三種破法都用樣式表:聚焦不會改任何屬性,MutationObserver 追不到。元件的 z-index 那幾條 utility 都不帶 !important,
+  } else if (['stack', 'tie', 'self', 'dishover', 'dispaint'].includes(mode)) { // 頁面端函式:不得引用外層的 DISABLED_BREAKS
+    // 併排欄位組的五種破法都用樣式表:聚焦 / 滑過不會改任何屬性,MutationObserver 追不到。元件的 z-index 與停用框色那幾條 utility 都不帶 !important,
     // 所以這裡帶了就一定贏(上面說的「贏不了」只發生在對方是分層而且也帶 !important 的宣告)。
     // (d) stack:聚焦或開著的那格不再浮到鄰居上面(壓到跟靜止的鄰居同一層 2)。2026-11-13 審查前只壓「開著」的那格(行內樣式),碰不到鍵盤聚焦
     // (e) tie:聚焦 / 開著的那格壓回跟滑過同一層(z-index 3 = 2026-11-13 改之前的行為)
     // (f) self:只有「聚焦 / 開著又被滑過」的那格壓回 3(聚焦那一半 = 少了第一條補的規則的樣子:滑過那條排在聚焦那條後面,會蓋回 3;開著那一半不補也是 4)
+    // (g) dishover:停用的成員被滑過時抬回 3(= 2026-11-18 修之前:滑過那條權重與停用那條相同、排在後面)
+    // (h) dispaint:停用的成員被滑過時框改成 --primary,層級不動(證明 S2 的像素量的是那一格畫出來的樣子)
     const MEMBER = '[data-field-control-group] > :is(:focus-within, [data-field-open])'
-    const rule = { stack: `${MEMBER} { z-index: 2 !important; }`, tie: `${MEMBER} { z-index: 3 !important; }`, self: `${MEMBER}:hover { z-index: 3 !important; }` }[mode]
+    const DISABLED = '[data-field-control-group] > :is([disabled], :has([disabled])):hover'
+    const rule = {
+      stack: `${MEMBER} { z-index: 2 !important; }`, tie: `${MEMBER} { z-index: 3 !important; }`, self: `${MEMBER}:hover { z-index: 3 !important; }`,
+      dishover: `${DISABLED} { z-index: 3 !important; }`, dispaint: `${DISABLED} { border-color: var(--primary) !important; }`,
+    }[mode]
     filter = ['data-field-open']
     apply = () => {}
     const style = document.createElement('style')
@@ -734,6 +761,64 @@ async function runGroup(group, mode) {
   }
 }
 
+// ── S:併排欄位組裡停用的成員被滑過 ─────────────────────────────────────────────────────────
+/** 量測對象四邊中點的像素(上 / 右 / 下 / 左;只取那一點,拿來跟同一點靜止時的像素比) */
+async function edgeRaw() {
+  const box = await page.evaluate((hostSel) => { const r = document.querySelector(hostSel).getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom } }, HOST)
+  const png = PNG.sync.read(await page.screenshot())
+  const L = Math.round(box.left), R = Math.round(box.right) - 1, T = Math.round(box.top), B = Math.round(box.bottom) - 1
+  const mx = Math.round((box.left + box.right) / 2), my = Math.round((box.top + box.bottom) / 2)
+  const sides = [['上', [mx, T]], ['右', [R, my]], ['下', [mx, B]], ['左(兩格共用的線)', [L, my]]].map(([label, at]) => ({ label, at, pixel: px(png, at[0], at[1]) }))
+  if (sides.some((s) => !s.pixel)) throw new InstrumentError(`停用成員有一邊在畫面外(${sides.map((s) => `${s.label} ${s.at}`).join(' / ')})`)
+  return sides
+}
+const sameEdges = (now, base) => now.every((s, k) => near(s.pixel, base[k].pixel))
+const showEdges = (now, base) => now.map((s, k) => `${s.label} ${rgb(s.pixel)}${near(s.pixel, base[k].pixel) ? '' : `(靜止時 ${rgb(base[k].pixel)})✗`}`).join(' / ')
+async function runDisabled(mode) {
+  const name = 'S 併排欄位組停用的成員被滑過(story「設計規格 › 狀態行為」停用那一組)'
+  planned += rowsOf(mode, 2)
+  try {
+    const ALL_DISABLED = '#storybook-root [data-field-control-group]:not(:has(> :not([data-field-mode="disabled"])))'
+    await openTarget({ story: DISABLED_STORY }, `${ALL_DISABLED} > [data-field-mode="disabled"]`, mode)
+    const found = await page.evaluate((sel) => {
+      const g = document.querySelector(sel)
+      const kids = g ? [...g.children] : []
+      if (kids.length < 2) return { ok: false, why: '找不到「成員全部停用」而且至少兩格的併排欄位組' }
+      // 量帶原生 disabled(spec「選擇器覆蓋範圍」:z-index 降 0 認原生 [disabled])、左邊有鄰居的那一格
+      const i = kids.findIndex((k, n) => n > 0 && (k.matches('[disabled]') || !!k.querySelector('[disabled]')))
+      if (i < 1) return { ok: false, why: '停用那一組裡找不到「左邊有鄰居、帶原生 disabled」的成員' }
+      document.querySelectorAll('[data-fob-host]').forEach((x) => x.removeAttribute('data-fob-host'))
+      kids[i].setAttribute('data-fob-host', '')
+      kids[i - 1].setAttribute('data-fob-neighbour', 'left')
+      kids[i].scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
+      const a = kids[i - 1].getBoundingClientRect(), b = kids[i].getBoundingClientRect()
+      if (!(Math.abs(a.top - b.top) < 0.5 && Math.abs(a.right - b.left - 1) < 0.5)) return { ok: false, why: `兩格沒有相鄰重疊 1px(左 ${a.left}–${a.right}、右 ${b.left}–${b.right})` }
+      return { ok: true, who: (kids[i].querySelector('[aria-label]')?.getAttribute('aria-label') || '').slice(0, 18) }
+    }, ALL_DISABLED)
+    if (!found.ok) throw new InstrumentError(found.why)
+    await rest('靜止')
+    const base = await edgeRaw()
+    await hoverOwn('S1')
+    const m = await measure('S1')
+    if (!m.hover) throw new InstrumentError(`S1:滑鼠移到停用的成員「${found.who}」上,它卻不在 :hover`)
+    const nz = await page.evaluate(() => getComputedStyle(document.querySelector('[data-fob-neighbour="left"]')).zIndex)
+    const now = await edgeRaw()
+    const shared = now[3]
+    check(mode, `${name} | S1 滑鼠停在停用的成員「${found.who}」上 → 它的 z-index 仍是 0(States 表 disabled 那一列)`, m.z === '0',
+      `停用成員 z-index=${m.z}、左鄰居 z-index=${nz};兩格共用那條線(${shared.at})像素 ${rgb(shared.pixel)}(靜止時 ${rgb(base[3].pixel)})`, expectOf(mode, 'disz'))
+    check(mode, `${name} | S2 同一刻它四邊中點的像素 = 靜止時(停用的成員被滑過,畫面不變)`, sameEdges(now, base), showEdges(now, base), expectOf(mode, 'dispx'))
+    if (mode !== 'real') {
+      await stopBreak()
+      const r = await measure('還原')
+      if (!r.hover) throw new InstrumentError('還原:滑鼠應該還停在停用的成員上')
+      const back = await edgeRaw()
+      check(mode, `${name} | 還原(破法拿掉、滑鼠仍停在停用的成員上)→ z-index 0、四邊中點像素 = 靜止時`, r.z === '0' && sameEdges(back, base), `z-index=${r.z};${showEdges(back, base)}`, expectOf(mode, 'restore'))
+    }
+  } catch (error) {
+    instrument(name, String(error?.message ?? error).split('\n')[0].slice(0, 300))
+  }
+}
+
 // ── X:外面包一層浮層、直接把欄位當觸發點(夾具)────────────────────────────────────────────────
 async function runWrapped(w, mode) {
   const name = `X ${w.kind}(外面那層把欄位當觸發點)`
@@ -834,12 +919,16 @@ const MODE_TITLE = {
   stack: '(d) stack:併排欄位組裡聚焦或開著的那格不再浮到鄰居上面(z-index 壓到 2)',
   tie: '(e) tie:併排欄位組裡聚焦 / 開著的那格壓回跟滑過同一層(z-index 3 = 2026-11-13 改之前的行為)',
   self: '(f) self:併排欄位組裡只有「聚焦 / 開著又被滑過」的那格壓回 3(停在自己上面不再是 4)',
+  dishover: '(g) dishover:併排欄位組裡停用的成員被滑過時抬回 3(= 2026-11-18 修之前的樣子)',
+  dispaint: '(h) dispaint:併排欄位組裡停用的成員被滑過時框改成 --primary(層級不動)',
 }
 const BREAK_MODES = Object.keys(MODE_TITLE)
 async function runMode(mode) {
   if (mode !== 'real') console.log(`\n── 破法 ${MODE_TITLE[mode]} ──`)
   // (d)(e)(f) 只動併排欄位組的 z-index,別的格不受影響 → 只跑那一段(兩組都跑)
   if (KEYBOARD_BREAKS.has(mode)) { for (const group of GROUPS) await runGroup(group, mode); return }
+  // (g)(h) 只動停用的成員被滑過時的樣子 → 只跑 S 那一段;S 不在其他破法下跑(那幾種只動得到開著 / 聚焦的成員,停用的成員碰不到)
+  if (DISABLED_BREAKS.has(mode)) { await runDisabled(mode); return }
   if (mode === 'reach') {
     for (const w of WRAPPED) await runWrapped(w, mode)
     await runInner(mode)
@@ -850,6 +939,7 @@ async function runMode(mode) {
   for (const cell of NAKED) await runNaked(cell, mode)
   await runNakedError(mode)
   for (const group of GROUPS) await runGroup(group, mode)
+  if (mode === 'real') await runDisabled(mode)
   for (const w of WRAPPED) await runWrapped(w, mode)
   await runInner(mode)
 }

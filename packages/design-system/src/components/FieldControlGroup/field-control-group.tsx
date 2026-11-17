@@ -101,7 +101,10 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
           // (聚焦那條 → 滑過那條 → 開著那條;2026-11-13 拿 repo 裝的 tailwindcss 4.2.2 編這幾個 class 實看)—— 只寫上一行的話,
           // 聚焦又被滑過的那一格會被滑過那條蓋回 3。下面兩條多帶一個條件、權重較高,不看排序。
           '[&>*:focus-within:hover]:z-[4] [&>*[data-field-open]:hover]:z-[4]',
+          // 停用 = 0(spec States 表),被滑過也是 0。只寫第一行的話,停用的成員被滑過時是 3:兩條權重相同、樣式表裡滑過那條排在後面
+          // (2026-11-18 拿 38649f5a 的建置實量:story「狀態行為」停用那一組,滑過停用的 Input 時 z-index 3)→ 第二行多帶 :hover、權重較高,不看排序。
           '[&>*[disabled]]:z-0 [&>*:has([disabled])]:z-0',
+          '[&>*[disabled]:hover]:z-0 [&>*:has([disabled]):hover]:z-0',
           // border overlap
           '[&>*+*]:-ml-px',
           // border radius — 中間 0,首/尾保留外側 radii
