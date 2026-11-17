@@ -220,9 +220,9 @@ function minGapBetween(nodes: Element[]): number {
 
 /**
  * 只負責排版的容器除了 class / style 之外可以帶的屬性:主題 / 密度的範圍宣告,與 FieldGroup(一疊欄位的排版群組,不是一個元件 —— 往裡數)。
- * 【AI 推導 2026-11-17,待問 user】「FieldGroup + 說明它的文字」(第 2 步只剩一塊 → `one`)與「只剩一個欄位的 FieldGroup」(往裡數到一個 Field → `one`)
- * 要不要照規則 3 第 1 題當成表單、改 `many`,沒有 user 的話:2026-11-17 這裡曾改成「FieldGroup 一律 many」,同日撤回 —— 依據是 AI 補的一句、
- * r12 決策頁上沒有,而且外面多包一層排版容器的那幾處沒改到(layoutSpace.spec.md 規則 3 邊角表最後一列)。
+ * 「FieldGroup + 說明它的文字」(第 2 步只剩一塊 → `one`)與「只剩一個欄位的 FieldGroup」(往裡數到一個 Field → `one`)維持一塊【AI 推導 2026-11-17】:
+ * 文件頁這種示範,標題描述的就是底下那一則 → 親近(user 2026-11-11「是否是完完全全在描述下方的東西？若是的話，那就是親近吧？」)。
+ * 同日曾改成「FieldGroup 一律 many」又撤回(依據是 AI 補的一句)。理由與清單:layoutSpace.spec.md 規則 3 邊角表最後一列。
  */
 const LAYOUT_WRAPPER_ATTRS = new Set(['class', 'style', 'data-theme', 'data-density', 'data-layout-space', 'data-field-group'])
 const LAYOUT_WRAPPER_TAGS = new Set(['DIV', 'SECTION', 'SPAN', 'ARTICLE', 'MAIN'])
@@ -256,7 +256,7 @@ function isProse(el: Element): boolean {
  *    - 全是說明文字:段落之間隔 ≥ loose → 並列的好幾段 = `many`;比 loose 近 = 同一段話 = `one`(`loose` 由呼叫端從被量的元素讀)
  * 所以:一張表 / 一張圖 / 一份清單 / 一個元件(含一個 Field)/ 一列按鈕 / 一則示範 + 一段說明 = 一塊;
  * 好幾則示範(不論彼此隔 tight 還是 loose —— user 2026-11-12)、FieldGroup 裡的好幾個欄位 = 兩塊以上。
- * 「FieldGroup + 說明」「只剩一個欄位的 FieldGroup」現在數成一塊,是否改判【AI 推導 2026-11-17,待問 user】(見 `LAYOUT_WRAPPER_ATTRS`)。
+ * 「FieldGroup + 說明」「只剩一個欄位的 FieldGroup」數成一塊【AI 推導 2026-11-17,定案維持】(見 `LAYOUT_WRAPPER_ATTRS`)。
  */
 export function headingContentOf(nodes: Element[], loose: number): HeadingContent {
   let run = nodes
