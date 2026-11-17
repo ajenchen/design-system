@@ -154,7 +154,7 @@ type TableSize = 'sm' | 'md' | 'lg'
  * 標成 TanStack 的 `ColumnDef<Row>[]` 會被擋 —— 那一型包含群組。`columnHelper.accessor()` / `.display()` 的回傳值直接可用,
  * `columnHelper.group()` 不行。
  */
-// any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 同下方 DataTableProps.columns
+// any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 同下方 DataTableProps.columns(2026-11-18 複查仍成立:table-core 的 ColumnDef 預設 TValue = unknown,值型別不同的 accessor 欄放進同一個陣列會 TS2322)
 export type DataTableColumnDef<TData, TValue = any> =
   (DisplayColumnDef<TData, TValue> | AccessorColumnDef<TData, TValue>) & { columns?: never }
 
