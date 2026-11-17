@@ -37,15 +37,15 @@
     **減速段**:從當下角度以 exit 曲線的時間鏡像 (0,0,0.7,1) 續轉最小 ≥252° 且落回正位 0° 的角度
     (時長 Δ/(ω·0.7) ∈ 0.50–1.21s,交接速度連續、停定即正位),**停定即接靜止、不淡入**(見「轉場」)。
     轉速依據(2026-09-04 修訂;取代 2026-09-02 版):比較對象一律取**出貨值**、逐檔讀第一手原始碼,
-    由快到慢 —— [Chakra v2 0.45s](https://github.com/chakra-ui/chakra-ui/blob/v2/packages/components/src/spinner/spinner.tsx#L68)、
-    [Carbon 690ms](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/loading/_animation.scss#L13)、
-    [Bootstrap .75s](https://github.com/twbs/bootstrap/blob/main/scss/_variables.scss#L1694)、
-    [Radix Themes 800ms](https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/spinner.css#L2)、
-    [Primer 1000ms](https://github.com/primer/react/blob/main/packages/react/src/Spinner/Spinner.tsx#L10)、
-    [Ant 1.2s](https://github.com/ant-design/ant-design/blob/master/components/spin/style/index.ts#L196)、
-    [Fluent 1.5s](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-spinner/library/src/components/Spinner/useSpinnerStyles.styles.ts#L58)、
-    [VS Code 1.5s](https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/codicons/codicon/codicon-modifiers.css#L23)、
-    [Material 3 ≈1568ms](https://github.com/material-components/material-web/blob/main/progress/internal/_circular-progress.scss#L47)
+    由快到慢 —— [Chakra v2 0.45s](https://github.com/chakra-ui/chakra-ui/blob/a1005f7f129f225058e7616c52e580b6cf8dcfdc/packages/components/src/spinner/spinner.tsx#L68)、
+    [Carbon 690ms](https://github.com/carbon-design-system/carbon/blob/f577d3573ab87b97fb774a3482402ffed375aa1b/packages/styles/scss/components/loading/_animation.scss#L13)、
+    [Bootstrap .75s](https://github.com/twbs/bootstrap/blob/349bdb50b8ab6782248c1b296443087cd7222ead/scss/_variables.scss#L1695)、
+    [Radix Themes 800ms](https://github.com/radix-ui/themes/blob/1faff10ac26ae17f09944d418c6949b93fc6b566/packages/radix-ui-themes/src/components/spinner.css#L2)、
+    [Primer 1000ms](https://github.com/primer/react/blob/31c717c3901f0940af23c40e0c54de9f54f9036c/packages/react/src/Spinner/Spinner.tsx#L10)、
+    [Ant 1.2s](https://github.com/ant-design/ant-design/blob/3bf122d3e161717ad74f846c8b24a12705cf2cc9/components/spin/style/index.ts#L196-L197)、
+    [Fluent 1.5s](https://github.com/microsoft/fluentui/blob/8ee8138daffeb7dbb95aaa7418d20472cc2e6fd1/packages/react-components/react-spinner/library/src/components/Spinner/useSpinnerStyles.styles.ts#L58)、
+    [VS Code 1.5s](https://github.com/microsoft/vscode/blob/a8bc471020764fc8af333710c1435da768d9aa53/src/vs/base/browser/ui/codicons/codicon/codicon-modifiers.css#L23)、
+    [Material 3 ≈1568ms](https://github.com/material-components/material-web/blob/c6e9a66360b1fdac82970dfa5e168a9817b89a93/progress/internal/_circular-progress.scss#L47)
     (單層等速旋轉的常數是 `$linear-rotate-duration: calc($arc-duration * 360 / 306)` = 1333 × 360 / 306 ≈ 1568ms;
     `#L43` 的 `$arc-duration: 1333ms` 是弧長形變週期、不是轉速 —— 2026-09-05 更正,2026-09-02 版原本寫對,
     Material 因此移到「由快到慢」最慢端)。

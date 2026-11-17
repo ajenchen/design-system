@@ -92,7 +92,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 
 **量的是容器不是視窗。** 表格被側欄擠窄時,視窗可能還有 1440px —— Tailwind 的 `sm:`/`lg:` 與
 Ant Pagination 的 `responsive`(`useBreakpoint`,[Pagination.tsx#L99-L120](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/Pagination.tsx#L99-L120);`useBreakpoint` 是 grid 的視窗斷點 hook,L22)量的都是視窗,在那個情境一律判「寬螢幕」不會動。
-[Carbon 是唯一用 container query 的一家](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/pagination/_pagination.scss#L43)
+[Carbon 是唯一用 container query 的一家](https://github.com/carbon-design-system/carbon/blob/f577d3573ab87b97fb774a3482402ffed375aa1b/packages/styles/scss/components/pagination/_pagination.scss#L44-L45)
 (`container-type: inline-size` + `@container pagination (max-width: 42rem)`),量測語意對。
 我們用 `ResizeObserver` 而不是 CSS container query,因為第 2 階(改格位數)本來就得在 JS 做,
 用兩套機制守同一條階梯只會讓它們有機會不同步。
@@ -135,8 +135,8 @@ Ant Pagination 的 `responsive`(`useBreakpoint`,[Pagination.tsx#L99-L120](https:
   - **不消費 `<ScrollArea orientation="horizontal">`**:理由不變(它的 affordance 是 ChevronLeft/Right,跟分頁自己的
     上下頁箭頭長得一模一樣,同一列會分不清「捲動」還是「翻頁」);現在更直接 —— 分頁列根本不捲。
 - **格位是既有參數,不是新機制**:`boundary` / `sibling` 本來就是摺疊演算法的入參;
-  [MUI `usePagination` 的 `boundaryCount=1` / `siblingCount=1`](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/usePagination/usePagination.js#L7)
-  與 [Primer 的 `marginPageCount=1` / `surroundingPageCount=2`](https://github.com/primer/react/blob/main/packages/react/src/Pagination/Pagination.tsx#L128)
+  [MUI `usePagination` 的 `boundaryCount=1` / `siblingCount=1`](https://github.com/mui/material-ui/blob/e9e46749dc031d9938411bb12adbfc1054f20672/packages/mui-material/src/usePagination/usePagination.js#L7-L18)
+  與 [Primer 的 `marginPageCount=1` / `surroundingPageCount=2`](https://github.com/primer/react/blob/31c717c3901f0940af23c40e0c54de9f54f9036c/packages/react/src/Pagination/Pagination.tsx#L128-L130)
   都把這兩顆旋鈕開成公開 API,只是交給開發者手填。**「隨容器寬自動轉」沒有現成一家在做,是我們的組合**(M22 誠實標註)。
 - **機械閘** = `scripts/pagination-narrow-ladder-invariant.mjs`(`npm run test:pagination-invariants`),
   載入「窄容器階梯」story 的五個固定寬度容器 —— 各自在掛載時由 layout effect 收斂,不依賴
