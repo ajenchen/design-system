@@ -13,7 +13,7 @@ Provider-neutral external-signal configuration for `/knowledge-prune` Phase 0.5 
 
 ## Refresh
 
-Run `bash governance/benchmarks/fetch.sh` manually. (`session_start_governance_check.sh` Check 4 is meant to remind when the receipt is over 30 days old, but it currently reads `$GOVERNANCE_STATE_DIR/benchmarks/last-fetch.txt` and requires an executable `fetch.sh`, while `fetch.sh` is committed as 100644 and writes `infra/governance/runtime/benchmarks/last-fetch.txt` — so it never computes a reminder; and even when it does, session_start puts it in soft `REMINDERS`, which the hook never emits — only BLOCKERs and prune triggers are output. Recorded 2026-11-17 knowledge-prune; there is no automatic freshness reminder today, and no scheduled refresh workflow exists.)
+Run `bash governance/benchmarks/fetch.sh` manually. Freshness is looked at only by `/governance-health` Phase 1 (metric harvest: `last-fetch.txt` older than 30 days = stale). No hook reminds you, and no scheduled refresh workflow exists. (`session_start_governance_check.sh` used to carry a Check 4 for this; it read a different path from the one `fetch.sh` writes, and its result went to a reminder variable the hook never printed. Removed 2026-11-18.)
 
 `fetch.sh` is **fail-silent**: network errors do not block product work; it updates `last-fetch.txt` only after at least one successful fetch and appends failures to runtime evidence.
 

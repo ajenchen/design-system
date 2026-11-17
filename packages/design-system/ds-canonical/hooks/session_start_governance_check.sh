@@ -19,7 +19,6 @@ set -uo pipefail
 #   1. Registry-resolved bootstrap line count — soft 400 / hard 800(本檔即 SSOT;單檔上限另見 check_file_size_budget.sh)
 #   2. Days since last prune    — soft 90   / hard 180
 #   3. user-corrections pending — soft 20   / hard 40
-#   4. Benchmarks freshness     — read-only reminder at 30 days(no hard tier)
 
 # Per-hook fire logging(enables /knowledge-prune D2 dead-hook detection)
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
@@ -61,18 +60,14 @@ case "$MEMORY_SYNC_SCRIPT" in
   ""|/*|*..*) MEMORY_SYNC_SCRIPT="" ;;
 esac
 if [ -n "$MEMORY_SYNC_SCRIPT" ] && [ "${GOVERNANCE_READ_ONLY:-0}" != "1" ] && [ -f "$MEMORY_SYNC_SCRIPT" ]; then
-  SYNC_OUT=$(node "$MEMORY_SYNC_SCRIPT" 2>&1 || true)
-  COPIED=$(grep -m 1 -oE 'copied: [0-9]+' <<<"$SYNC_OUT" | grep -oE '[0-9]+' | sed -n '1p' || true)
-  # COPIED > 0 → 加入 REMINDERS(下面 main flow inject)
-  if [ -n "$COPIED" ] && [ "$COPIED" -gt 0 ]; then
-    MEMSYNC_NOTE="\n- 🔄 auto sync-memory(SessionStart): committed repo SSOT → provider cache refreshed ${COPIED} memory file(s)。"
-  fi
+  # 同步本身是目的;同步了幾份不輸出給模型(只有下面兩條通道會輸出)。
+  node "$MEMORY_SYNC_SCRIPT" >/dev/null 2>&1 || true
 fi
 
-# 注意(2026-11-17 knowledge-prune 讀程式確認):REMINDERS 只收集、**從不輸出** —— 檔尾只輸出 BLOCKERS /
-# PRUNE_TRIGGERS / QUARTERLY_DUE(2026-04-26 降噪)。所以 Check 2 soft / Check 3 soft / Check 4 / Check 6 / Check 5
-# 的提醒都不會到模型;要讓某條真的提醒,得把它升到 PRUNE_TRIGGERS 或 BLOCKERS。
-REMINDERS="${MEMSYNC_NOTE:-}"
+# 輸出只有 BLOCKERS 與 PRUNE_TRIGGERS 兩條通道(2026-04-26 降噪)。要新增提示就放進其中一條;
+# 不要另開「只收集、不輸出」的變數 —— 2026-11-18 刪掉的舊提醒變數就是這種死碼:Check 1 的 500 / 600 段、
+# Check 2 / 3 的 soft 段、Check 4 / 5 / 6 全段與 memory 同步註記都寫進它,卻從沒送到模型(M37④)。
+# 測試 test_session_start_governance_check.sh 有一格靜態檢查,抓「只累加、從不讀」的變數。
 BLOCKERS=""
 
 # Check 1: bootstrap size(provider entry + shared entry,unique and registry-resolved).
@@ -85,120 +80,33 @@ for ENTRY in "$INSTRUCTION_ENTRY" "$SHARED_INSTRUCTION_ENTRY"; do
   [ -f "$ENTRY" ] && LINES=$((LINES + $(wc -l < "$ENTRY" | tr -d ' ')))
 done
 if [ "$LINES" -gt 0 ]; then
-  # 2026-04-26 tightened thresholds(對應 M19 + user 質問「auto self-improve」要更主動):
   # SSOT alignment per AGENTS.md: target ≤ 250 / transition ≤ 400 / hard cap 800
-  # Stratified soft warnings: 500 approaching / 600 strong / 800 hard-cap blocker
   if [ "$LINES" -gt 800 ]; then
     BLOCKERS="${BLOCKERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(hard cap 800 breached). /knowledge-prune REQUIRED FIRST ACTION this session."
-  elif [ "$LINES" -gt 600 ]; then
-    REMINDERS="${REMINDERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(50% over 400 transition cap). /knowledge-prune strongly recommended this session."
-  elif [ "$LINES" -gt 500 ]; then
-    REMINDERS="${REMINDERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(approaching 600 strong-warn). Consider /knowledge-prune."
   fi
 fi
 
-# Check 2: Last /knowledge-prune commit(soft 90d / hard 180d)
+# Check 2: Last /knowledge-prune commit(> 180 天 → BLOCKER)
 LAST_PRUNE=$(git log --format='%ct' --grep='knowledge-prune\|prune:\|governance.*prune' -1 2>/dev/null || echo "")
 if [ -n "$LAST_PRUNE" ]; then
   NOW=$(date +%s)
   DAYS=$(( (NOW - LAST_PRUNE) / 86400 ))
   if [ "$DAYS" -gt 180 ]; then
     BLOCKERS="${BLOCKERS}\n- Last /knowledge-prune was ${DAYS} days ago(HARD THRESHOLD 180 breached). /knowledge-prune REQUIRED FIRST ACTION this session."
-  elif [ "$DAYS" -gt 90 ]; then
-    REMINDERS="${REMINDERS}\n- Last /knowledge-prune commit was ${DAYS} days ago (target: quarterly ≤ 90 days)."
   fi
 fi
 
-# Check 3: user-corrections pending(soft 20 / hard 40)
+# Check 3: user-corrections pending(> 40 → BLOCKER)
 CORRECTIONS_LOG="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/user-corrections.jsonl}"
 if [ -f "$CORRECTIONS_LOG" ]; then
   CORRECTION_COUNT=$(wc -l < "$CORRECTIONS_LOG" | tr -d ' ')
   if [ "$CORRECTION_COUNT" -gt 40 ]; then
     BLOCKERS="${BLOCKERS}\n- ${CORRECTION_COUNT} user-corrections pending(HARD THRESHOLD 40 breached). /codify-corrections REQUIRED FIRST ACTION this session."
-  elif [ "$CORRECTION_COUNT" -gt 20 ]; then
-    REMINDERS="${REMINDERS}\n- ${CORRECTION_COUNT} user-correction signals pending codification (provider-neutral runtime state). Review + codify pending ones."
   fi
 fi
 
-# Check 4: benchmark freshness is advisory and read-only. Network refresh is an explicit
-# operator/automation action; a SessionStart hook must never mutate the checkout in background.
-BENCH_DIR="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/benchmarks}"
-BENCH_FETCHER="$PROJECT_DIR/governance/benchmarks/fetch.sh"
-if [ -n "$BENCH_DIR" ] && [ -x "$BENCH_FETCHER" ]; then
-  LAST_FETCH_FILE="$BENCH_DIR/last-fetch.txt"
-  SHOULD_AUTO_FETCH=0
-
-  if [ ! -f "$LAST_FETCH_FILE" ]; then
-    SHOULD_AUTO_FETCH=1
-    FETCH_REASON="never fetched"
-  else
-    # GNU coreutils first, BSD/macOS second — same portability order as stop_passive_logging.sh:161.
-    # Without the GNU form this silently returned 0 on Linux, which made every staleness window
-    # look infinitely old on containerized hosts.
-    LAST_TS=$(stat -c '%Y' "$LAST_FETCH_FILE" 2>/dev/null || stat -f '%m' "$LAST_FETCH_FILE" 2>/dev/null || echo "0")
-    NOW=$(date +%s)
-    DAYS=$(( (NOW - LAST_TS) / 86400 ))
-    if [ "$DAYS" -gt 30 ]; then
-      SHOULD_AUTO_FETCH=1
-      FETCH_REASON="${DAYS} days stale"
-    fi
-  fi
-
-  [ "$SHOULD_AUTO_FETCH" = "1" ] && REMINDERS="${REMINDERS}\n- Benchmarks ${FETCH_REASON} → explicitly run \`bash governance/benchmarks/fetch.sh\` or the scheduled refresh workflow."
-fi
-
-# Check 6: Fix commits without /scan-similar-bugs invoke(M10 mechanical 落地)
-# Detect 24h 內 fix( commit 但 skill-invokes log 沒對應 scan-similar-bugs invoke
-RECENT_FIX_COMMITS=$(git log -5 --since='24 hours ago' --grep='^fix(\|^bugfix:\|^fix:' --oneline 2>/dev/null || true)
-if [ -n "$RECENT_FIX_COMMITS" ]; then
-  SKILL_LOG="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/skill-invokes.jsonl}"
-  RECENT_SCAN_INVOKE=0
-  if [ -f "$SKILL_LOG" ]; then
-    # Check 24h 內有 scan-similar-bugs invoke
-    NOW_EPOCH=$(date -u +%s)
-    DAY_AGO_EPOCH=$(( NOW_EPOCH - 86400 ))
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      if grep -q "scan-similar-bugs" <<<"$line"; then
-        TS=$(echo "$line" | jq -r '.ts // empty' 2>/dev/null)
-        if [ -n "$TS" ]; then
-          TS_EPOCH=$(date -u -d "$TS" +%s 2>/dev/null || date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
-          if [ "$TS_EPOCH" -gt "$DAY_AGO_EPOCH" ]; then
-            RECENT_SCAN_INVOKE=1
-            break
-          fi
-        fi
-      fi
-    done < "$SKILL_LOG"
-  fi
-  if [ "$RECENT_SCAN_INVOKE" = "0" ]; then
-    FIX_LIST=$(sed 's/^/  - /' <<<"$RECENT_FIX_COMMITS" | awk 'NR <= 3')
-    REMINDERS="${REMINDERS}\n- 24h 內 fix commit(s) 未 follow /scan-similar-bugs(M10 mechanical 落地):\n${FIX_LIST}\n  考慮 invoke /scan-similar-bugs 確認 DS-wide 同類 bug 全清。"
-  fi
-fi
-
-# Check 5: Fire-weighted test gap(G7)— hooks with fires > 100 but no test
-FIRES_LOG="${RUNTIME_STATE_DIR:+$RUNTIME_STATE_DIR/hook-fires-per-hook.jsonl}"
-TESTS_DIR="$PROJECT_DIR/$CANONICAL_HOOK_ROOT/tests"
-if [ -f "$FIRES_LOG" ] && [ -d "$TESTS_DIR" ]; then
-  # Top hot hooks by fire count(讀近 10000 lines 防 log 太長跑太久)
-  HOT_HOOKS=$(tail -10000 "$FIRES_LOG" 2>/dev/null \
-    | jq -r '.hook // empty' 2>/dev/null \
-    | sort | uniq -c | sort -rn \
-    | awk '$1 > 100 { sub(/\.sh$|\.py$/, "", $2); print $1, $2 }')
-  HOT_GAPS=""
-  while IFS= read -r line; do
-    [ -z "$line" ] && continue
-    COUNT=$(echo "$line" | awk '{print $1}')
-    NAME=$(echo "$line" | awk '{print $2}')
-    if [ ! -f "$TESTS_DIR/test_${NAME}.sh" ]; then
-      HOT_GAPS="${HOT_GAPS}\n  - ${NAME}(${COUNT} fires,無 test)"
-    fi
-  done <<< "$HOT_HOOKS"
-  if [ -n "$HOT_GAPS" ]; then
-    REMINDERS="${REMINDERS}\n- Fire-weighted test gap(hook > 100 fires 仍無 test):${HOT_GAPS}\n  推力:在 canonical hook tests 寫 \`test_<name>.sh\`,參考 test_check_story_anatomy.sh。"
-  fi
-fi
+# Check 4 / 5 / 6 已刪(2026-11-18):benchmark 新鮮度、fire-weighted test gap、fix 後漏跑 /scan-similar-bugs
+# 三者的結果都只寫進不輸出的舊提醒變數。編號不重排 —— Check 2 / 3 / 7 / 8 / 12 有外部文件按編號引用。
 
 # Check 7: Hook count auto-trigger(soft 26 / hard 60 — Anthropic guideline ~15;真值見下方 -gt 判斷,本檔即 SSOT)
 # 2026-05-09 fix:tree-recursive count(含 lib/ helpers)。前身 -maxdepth 1 只 count root,
@@ -345,23 +253,17 @@ if [ -n "$ENV_SMOKE" ]; then
   PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- 🩺 env-smoke(non-blocking,環境健檢):${ENV_SMOKE}"
 fi
 
-# Inject if HARD BLOCKERS(must)or auto-prune-triggers or quarterly-prune-overdue
-# Check 2 already derives prune recency from committed Git history. The former
-# `.last-prune` provider-local receipt had no writer and duplicated that authority.
-QUARTERLY_DUE=""
-
-[ -z "$BLOCKERS" ] && [ -z "$QUARTERLY_DUE" ] && [ -z "$PRUNE_TRIGGERS" ] && exit 0
+# 兩條通道都空 → 不輸出。季度到期由 Check 2 從 committed Git history 算(> 180 天進 BLOCKERS);
+# 舊的季度變數恆為空字串、它專用的第三種訊息永遠走不到,2026-11-18 一併刪除。
+[ -z "$BLOCKERS" ] && [ -z "$PRUNE_TRIGGERS" ] && exit 0
 
 if [ -n "$BLOCKERS" ]; then
   MSG="🚨 BLOCKER — governance hard thresholds breached (SessionStart):${BLOCKERS}\n\n"
   MSG="${MSG}⚠️ REQUIRED_FIRST_ACTION:先 invoke 上述 skill(/knowledge-prune 或 /codify-corrections)"
   MSG="${MSG}把 governance 帶回健康區間,再處理 user 的實際請求。"
   [ -n "$PRUNE_TRIGGERS" ] && MSG="${MSG}\n\n附 soft prune triggers:${PRUNE_TRIGGERS}"
-  [ -n "$QUARTERLY_DUE" ] && MSG="${MSG}\n${QUARTERLY_DUE}"
-elif [ -n "$PRUNE_TRIGGERS" ]; then
-  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑；P0/P1/P2E 工程治理自主執行，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單 — per design-system-audit SKILL「Phase 4.5」Deep mode).${QUARTERLY_DUE}"
 else
-  MSG="🧭 Governance hygiene reminder (SessionStart):${QUARTERLY_DUE}\nNot blocking — address inline when convenient."
+  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑；P0/P1/P2E 工程治理自主執行，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單 — per design-system-audit SKILL「Phase 4.5」Deep mode)."
 fi
 # jq 不在時不再由各 hook 自己靜默 exit 0(G4,2026-10-07):唯一入口 scripts/run-provider-hook.mjs 在 hook 的
 # PATH 放探針(CLOSED_HOOK_TOOL_LABELS),本 hook 一呼叫 jq 就被標成「沒有跑完」並列名給模型,同組其他 hook 照常。

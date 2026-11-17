@@ -257,7 +257,7 @@
     },
     {
       "hook": "session_start_governance_check.sh",
-      "reason": "DS-author session-start governance/prune 檢查(讀 provider-neutral runtime state|benchmarks|committed memory)。"
+      "reason": "DS-author session-start governance/prune 檢查(讀 provider-neutral runtime state|committed memory)。"
     },
     {
       "hook": "stop_passive_logging.sh",
