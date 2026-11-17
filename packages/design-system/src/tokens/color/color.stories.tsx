@@ -449,9 +449,9 @@ export const FunctionalHighlight: Story = {
       </TutorialRule>
       <TutorialRule paragraph={false} title="頁內搜尋配對(Ctrl+F)">
         <p className="max-w-xl rounded-md border border-border bg-surface p-[var(--layout-space-loose)] text-body">
-          搜尋「報表」:月度<mark className="rounded-sm bg-search-match text-inherit">報表</mark>
-          已歸檔;季度<mark className="rounded-sm bg-search-match-current text-inherit">報表</mark>
-          為目前所在配對,尚待審核;年度<mark className="rounded-sm bg-search-match text-inherit">報表</mark>
+          搜尋「報表」:月度<mark className="rounded-md bg-search-match text-inherit">報表</mark>
+          已歸檔;季度<mark className="rounded-md bg-search-match-current text-inherit">報表</mark>
+          為目前所在配對,尚待審核;年度<mark className="rounded-md bg-search-match text-inherit">報表</mark>
           排定下週產出。
         </p>
         <span className="block text-caption text-fg-muted">

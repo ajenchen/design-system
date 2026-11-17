@@ -203,7 +203,7 @@ export const ImmediateVsSubmitRule: Story = {
               按鈕下方 = 卡片自己的底內距(layoutSpace.spec.md 規則 4)。稽核 L048 拿掉的是舊版手刻外框加「包在 Form 容器內」的說法(好像 DS 有一種表單容器);
               這張是範例已有的卡片樣式,只為示範按鈕下方,不是新容器(依 user 2026-10-21 09:25 同意的 Q5 建議「表單放進看得見的容器」,原話逐字「Q5可以基於你的建議」)。
               欄位 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」,同 Field 展示「表單驗證」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
+          <div className="border border-border rounded-md p-[var(--layout-space-loose)]">
             <Field>
               <FieldLabel>商品分類</FieldLabel>
               <Select options={categoryOptions} value={draft} onChange={setDraft} />

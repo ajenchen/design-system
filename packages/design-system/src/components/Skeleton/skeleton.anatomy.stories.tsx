@@ -86,7 +86,7 @@ export const CommonShapes: Story = {
 
       <div>
         <H3>Card 載入</H3>
-        <div className="border border-border rounded-lg p-4 max-w-sm flex flex-col gap-3">
+        <div className="border border-border rounded-md p-4 max-w-sm flex flex-col gap-3">
           <Skeleton className="h-40 w-full rounded-md" />
           <Skeleton className="h-5 w-3/4" />
           <div className="flex flex-col gap-1">

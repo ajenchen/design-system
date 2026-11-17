@@ -242,7 +242,7 @@ const InspectorInner = () => {
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[300px]">
           {/* Live preview */}
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center gap-6">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center gap-6">
             <RadioGroup defaultValue={checked === 'checked' ? 'preview' : undefined} className="flex gap-4">
               <RadioGroupItem
                 size={size}
@@ -306,7 +306,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>
@@ -505,7 +505,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
       {/* Mutual exclusion demo */}
       <ExampleSection title="單選互斥(Mutual Exclusion)" description={<>點任一選項,其他選項自動清除——這是 Checkbox / Switch 沒有的核心差異。由 Radix Root 的 value / onValueChange 統一管理,consumer 不需自己實作互斥邏輯。</>}>
         <div className="flex gap-6 items-start">
-          <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">
+          <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
             <div className="text-[11px] text-fg-muted mb-3 font-mono">value = "{plan}"</div>
             <RadioGroup value={plan} onValueChange={setPlan} className="flex flex-col gap-2">
               <RadioGroupItem value="starter" label="Starter" description="個人使用 · 免費" />
@@ -525,7 +525,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
       {/* Individual disabled */}
       <ExampleSection title="個別 item disabled(不影響其他)" description={<>單一選項 disabled 時其他仍可互動——disabled item 保留其 checked 視覺但 cursor-not-allowed,無法被選中。適用「功能尚未開放 / 方案不含」等情境。</>}>
         <div className="flex gap-6 items-start">
-          <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">
+          <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
             <RadioGroup value={billing} onValueChange={setBilling} className="flex flex-col gap-2">
               <RadioGroupItem value="monthly" label="每月付款" description="可隨時取消" />
               <RadioGroupItem value="yearly" label="每年付款" description="省 20%" />
@@ -542,7 +542,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
       {/* Whole group disabled */}
       <ExampleSection title="整組 disabled(Field context 接管)" description={<>整組放進停用的 Field 時,裡面每個選項會自動一起變灰,不需逐一設定。下方為靜態示意(逐 item 傳 disabled 重現相同視覺);實際使用以 {'<Field disabled>'} 包裹即可。</>}>
         <div className="flex gap-6 items-start">
-          <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">
+          <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
             <RadioGroup defaultValue="b" className="flex flex-col gap-2">
               <RadioGroupItem value="a" label="個人版" disabled />
               <RadioGroupItem value="b" label="團隊版(目前方案)" disabled />

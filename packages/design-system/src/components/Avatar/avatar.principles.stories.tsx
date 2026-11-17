@@ -45,7 +45,7 @@ export const UsageGuidance: Story = {
           title="❌ 代表抽象概念:用 Lucide Icon"
           note="「設定」「通知」「首頁」這類功能 / 動作 / 概念不是「誰」,是「做什麼」。Icon 更適合——Avatar 用在這裡會讓使用者以為是某個人的頭像"
         >
-          <div className="border border-divider rounded-lg bg-surface">
+          <div className="border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="Avatar 誤用範例">
               {/* 真實誤用:把功能名「設定」直接當 avatar 的 alt,fallback 渲染首字「設」的色塊,看起來像某個成員或群組 */}
               {/* @story-counter-example: 反例本身 —— 功能名當成頭像(avatar.spec.md:39「Avatar 代表實體身份，icon 代表動作 / 概念」) */}
@@ -53,7 +53,7 @@ export const UsageGuidance: Story = {
             </MenuGroup>
           </div>
           <ExampleCaption warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</ExampleCaption>
-          <div className="border border-divider rounded-lg bg-surface">
+          <div className="border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="功能圖示正確用法">
               <MenuItem role="presentation" startIcon={Settings}>設定</MenuItem>
             </MenuGroup>
@@ -78,7 +78,7 @@ export const UsageGuidance: Story = {
         >
           {/* 選單 → 解讀它的圖例 = labeling(tight);兩者成一組,與 Rule 內其他範例並列(loose 由 Rule 擁有) */}
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
-            <div className="border border-divider rounded-lg bg-surface">
+            <div className="border border-divider rounded-md bg-surface">
               <MenuGroup aria-label="身份與功能圖示對照">
                 {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉;首字標記讓團隊 / 組織一眼可辨,又不會被誤認成某個人)*/}
                 <MenuItem role="presentation" avatar={{ src: demoPersonPhoto('Ada Chen', 48), alt: ada.name, hoverCard: samplePersonCard(ada) }}>Ada Chen 的留言</MenuItem>

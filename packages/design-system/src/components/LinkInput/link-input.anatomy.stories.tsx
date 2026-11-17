@@ -289,7 +289,7 @@ const InspectorInner = () => {
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[340px]">
           {/* Live preview */}
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             <div className="w-64">
               {mode === 'edit' && editState === 'link' && (
                 <LiveLinkInput mode="edit" size={size} value="https://github.com" />
@@ -350,7 +350,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-caption font-semibold text-foreground">Inspect</span>
           </div>

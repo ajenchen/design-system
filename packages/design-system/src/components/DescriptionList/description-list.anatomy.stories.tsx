@@ -26,7 +26,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>DescriptionList 是 <code>dl / dt / dd</code> HTML 語義元件——每個 DescriptionItem 是一組 label(dt)+ value(dd)配對。對齊 Atlassian / Polaris 慣例。CSS grid 容器,<code>cols</code> prop 控制欄數。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <DescriptionList>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
             <DescriptionItem label="團隊">Engineering</DescriptionItem>
@@ -87,7 +87,7 @@ export const Inspector: Story = {
     divided: { control: 'boolean', description: 'horizontal 模式下,每個 item 下加 border-b 對齊 rows(長列表建議開)' },
   },
   render: (args) => (
-    <div className="border border-border rounded-lg p-4 max-w-lg">
+    <div className="border border-border rounded-md p-4 max-w-lg">
       <DescriptionList {...args}>
         <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
         <DescriptionItem label="團隊">Engineering</DescriptionItem>
@@ -107,7 +107,7 @@ export const ColsMatrix: Story = {
       <div>
         <H3>cols=1(預設,窄容器)</H3>
         <Desc>垂直堆疊,適合 ProfileCard、sidebar detail 等窄容器。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-xs">
+        <div className="border border-border rounded-md p-4 max-w-xs">
           <DescriptionList cols={1}>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
             <DescriptionItem label="團隊">Engineering</DescriptionItem>
@@ -119,7 +119,7 @@ export const ColsMatrix: Story = {
       <div>
         <H3>cols=2(中等寬度)</H3>
         <Desc>兩欄並排,適合 ProfileCard info fields / detail panel。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-lg">
+        <div className="border border-border rounded-md p-4 max-w-lg">
           <DescriptionList cols={2}>
             <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
             <DescriptionItem label="職稱">Design Engineer</DescriptionItem>
@@ -134,7 +134,7 @@ export const ColsMatrix: Story = {
       <div>
         <H3>cols=3(寬容器)</H3>
         <Desc>三欄,適合寬 detail panel 顯示大量屬性。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-3xl">
+        <div className="border border-border rounded-md p-4 max-w-3xl">
           <DescriptionList cols={3}>
             <DescriptionItem label="訂單編號">#20260418-001</DescriptionItem>
             <DescriptionItem label="狀態">已出貨</DescriptionItem>

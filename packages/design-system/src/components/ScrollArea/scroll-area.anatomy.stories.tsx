@@ -62,7 +62,7 @@ export const Overview: Story = {
           ScrollArea 包 Radix 四層 primitive:Root(relative 容器)→ Viewport(實際可捲動區,內含 children)
           → Scrollbar(overlay 捲軸,10px 固定寬)→ Thumb(可抓握的圓角把手)。Root 額外包 Corner 處理雙向 scrollbar 交會。
         </Desc>
-        <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 max-w-xl">
+        <div className="border-2 border-dashed border-primary/30 rounded-md p-4 max-w-xl">
           <div className="text-caption font-mono text-fg-muted mb-2">Root (relative + overflow-hidden)</div>
           <div className="border border-dashed border-info/50 rounded-md p-3 bg-info/5">
             <div className="text-caption font-mono text-info mb-2">Viewport (flex-1 min-h-0 w-full · rounded-[inherit])</div>
@@ -159,7 +159,7 @@ export const Inspector: Story = {
       <div className="flex gap-6 items-start">
         {/* Left: preview */}
         <div className="flex flex-col gap-5 min-w-[340px]">
-          <div className="px-6 py-6 rounded-lg bg-canvas border border-divider">
+          <div className="px-6 py-6 rounded-md bg-canvas border border-divider">
             <ScrollArea className="h-[200px] border border-border rounded-md bg-surface">
               <PreviewList count={16} />
             </ScrollArea>
@@ -197,7 +197,7 @@ export const Inspector: Story = {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[320px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[320px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-caption font-semibold text-foreground">Inspect</span>
           </div>

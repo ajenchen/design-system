@@ -69,7 +69,7 @@ const SidebarPreview = ({
   const [projects, setProjects] = React.useState(['結帳流程改版', '對帳批次'])
   return (
     <div
-      className="relative border border-divider rounded-lg overflow-hidden bg-surface"
+      className="relative border border-divider rounded-md overflow-hidden bg-surface"
       style={{ width }}
     >
       <SidebarProvider size={size} defaultActiveId={activeId} style={{ minHeight: 'auto' }}>
@@ -501,7 +501,7 @@ function CollapseModeFrame({ label, collapsible, open }: { label: string; collap
   return (
   <div className="flex flex-col gap-2 items-start">
     <Label>{label}</Label>
-    <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 420, height: 220 }}>
+    <div className="border border-divider rounded-md overflow-hidden bg-surface" style={{ width: 420, height: 220 }}>
       <SidebarProvider defaultOpen={open} activeId={activeId} onActiveChange={setActiveId} style={{ minHeight: 'auto', height: '100%' }}>
         <div className="flex w-full h-full">
           <Sidebar side="left" collapsible={collapsible}>
@@ -544,7 +544,7 @@ function CollapseModeFrame({ label, collapsible, open }: { label: string; collap
 function LiveToggleFrame() {
   const [activeId, setActiveId] = React.useState<string>(MAIN_NAV[0].id)
   return (
-    <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
+    <div className="border border-divider rounded-md overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
       <SidebarProvider activeId={activeId} onActiveChange={setActiveId} style={{ minHeight: 'auto', height: '100%' }}>
         <div className="flex w-full h-full">
           <Sidebar side="left" collapsible="icon">

@@ -117,7 +117,7 @@ export const Overview = {
             { mode: 'Text', desc: '有 alt → 首字大寫', el: <Avatar size={48} alt={bob.name} color="purple" hoverCard={samplePersonCard({ ...bob, avatarSrc: undefined })} /> },
           ] as const).map(({ mode, desc, el }) => (
             <div key={mode} className="flex flex-col gap-3 items-center">
-              <div className="flex items-center justify-center w-[80px] h-[80px] rounded-lg border-2 border-dashed border-primary/30">
+              <div className="flex items-center justify-center w-[80px] h-[80px] rounded-md border-2 border-dashed border-primary/30">
                 {el}
               </div>
               <div className="flex flex-col items-center gap-0.5">
@@ -253,7 +253,7 @@ const InspectorInner = () => {
       <div className="flex gap-6 items-start">
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[280px]">
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             {renderAvatar()}
           </div>
 
@@ -279,7 +279,8 @@ const InspectorInner = () => {
                 <div className="flex flex-col items-center justify-center gap-0.5"
                   style={{
                     width: 40, height: 40,
-                    borderRadius: '2px',
+                    // 40×40 的內容框 = 短邊 > 10px,照 radius.spec.md「四檔」用 md(原寫 2px = 只給短邊 ≤ 10px 的指示)
+                    borderRadius: 'var(--radius-md)',
                     background: Z.content.bg,
                     border: `1.5px dashed ${Z.content.border}`,
                   }}>
@@ -306,7 +307,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>

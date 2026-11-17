@@ -50,7 +50,7 @@ export const Overview: Story = {
           ProfileCard 是人員 HoverCard 的內容元件——提供統一的人員資訊展示格式。本身不含觸發或定位邏輯
           (那是 HoverCard 的職責),只是 HoverCard content 的標準人員模板。固定寬度 320px。
         </Desc>
-        <div className="border border-border rounded-lg p-4">
+        <div className="border border-border rounded-md p-4">
           {samplePersonCard(ada)}
         </div>
       </div>
@@ -282,7 +282,7 @@ export const HoverCardIntegration: Story = {
           人員頭像的標準寫法:名片交給 Avatar 的 hoverCard(Avatar 規格「Avatar HoverCard 原則」的消費者寫法)。
           觸發、定位、進退場與鍵盤可達都由 Avatar 內建的 HoverCard 處理,ProfileCard 只管內容。
         </Desc>
-        <div className="border border-border rounded-lg p-6 flex items-center gap-8">
+        <div className="border border-border rounded-md p-6 flex items-center gap-8">
           {/* 2026-10-28 前這裡手組 HoverCard + 可聚焦 span + ProfileCard(稽核 M078):Avatar hoverCard 已內建同一組
               (可聚焦、外殼、延遲),手組一份就多一個會漂的地方;名片內容走全 DS 同一支建構器 */}
           {[SAMPLE_PEOPLE.ada, SAMPLE_PEOPLE.alice, SAMPLE_PEOPLE.bob].map((p) => (

@@ -110,7 +110,7 @@ export const TriggerContextRule: Story = {
         note="ProfileCard 是 avatar hover 觸發的 HoverCard 內容模板,不是獨立 Card primitive——缺浮層外殼(radius / border / shadow)與定位邏輯。需要頁面內人員卡佈局時,請用 avatar hoverCard,或自組 Surface / 專屬元件。"
       >
         {/* 反例框只留紅虛線:2026-10-28 前另加 opacity-60(稽核 M077;DS 沒有定義數字透明度 token,登記簿 B10) */}
-        <div className="border border-dashed border-error rounded-lg">
+        <div className="border border-dashed border-error rounded-md">
           {samplePersonCard(alice)}
         </div>
         <ExampleCaption warn>↑ 反例:直接嵌頁面缺浮層外殼 + 繞過 avatar 觸發語意</ExampleCaption>

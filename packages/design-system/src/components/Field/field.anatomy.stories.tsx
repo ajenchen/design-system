@@ -24,7 +24,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Field 是表單欄位的佈局容器,由 4 個 slot 組成。Field 本身不擁有資料邏輯,只管 label/control/description/error 的空間關係 + 透過 context 把 mode/disabled/required/invalid/id 傳給子元件。</Desc>
-        <div className="border border-border rounded-lg p-6 max-w-xl bg-muted/20">
+        <div className="border border-border rounded-md p-6 max-w-xl bg-muted/20">
           <FieldGroup>
             <Field required>
               <FieldLabel>電子郵件</FieldLabel>

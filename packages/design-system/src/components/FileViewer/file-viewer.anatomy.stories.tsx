@@ -110,7 +110,7 @@ export const Overview: Story = {
 
         {/* Anatomy 示意圖(純 slot 標示,不是 live viewer) */}
         <div
-          className="rounded-lg overflow-hidden border border-border text-foreground"
+          className="rounded-md overflow-hidden border border-border text-foreground"
           data-theme="dark"
           style={{ maxWidth: 960 }}
         >
@@ -478,7 +478,7 @@ export const ColorMatrix: Story = {
         <H3>Chrome 分層對照</H3>
         <div
           data-theme="dark"
-          className="rounded-lg overflow-hidden border border-border text-foreground"
+          className="rounded-md overflow-hidden border border-border text-foreground"
           style={{ width: 720 }}
         >
           <div className="bg-canvas">

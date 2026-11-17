@@ -202,7 +202,7 @@ const InspectorInner = () => {
       <div className="flex gap-6 items-start">
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[280px]">
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             {isDot
               ? <Badge dot variant={variant === 'high' ? 'high' : 'critical'} />
               : <Badge count={count} variant={variant} max={count > 99 ? 99 : undefined} />
@@ -265,7 +265,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[280px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[280px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>

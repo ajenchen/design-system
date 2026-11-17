@@ -113,7 +113,7 @@ export const Overview = {
                   style={{ borderColor: 'var(--info)', backgroundColor: 'var(--info-subtle)', color: 'var(--info)' }}>Trigger</span>
               </div>
               <span className="text-fg-muted text-caption">→</span>
-              <div className="border-2 border-dashed border-primary/30 rounded-lg px-3 py-2 flex flex-col gap-1">
+              <div className="border-2 border-dashed border-primary/30 rounded-md px-3 py-2 flex flex-col gap-1">
                 <span className="text-[10px] font-mono text-fg-muted mb-1">Content (size={'{sm|md|lg}'})</span>
                 {[
                   { name: 'Item', color: 'success' },
@@ -283,7 +283,7 @@ const InspectorInner = () => {
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[380px]">
           {/* Live preview (static rendering — no Radix context needed) */}
-          <div className="px-10 py-6 rounded-lg bg-canvas border border-divider">
+          <div className="px-10 py-6 rounded-md bg-canvas border border-divider">
             <div className="rounded-lg border border-border bg-surface-raised py-2" style={{ boxShadow: 'var(--elevation-200)', minWidth: 220 }}>
               {itemMode === 'item' && (
                 <>
@@ -355,7 +355,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>
@@ -775,7 +775,7 @@ const StateBehaviorInner = () => {
     {/* Submenu expansion */}
     <ExampleSection title="子選單展開(hover/focus 延遲 + sideways slide)" description={<>SubTrigger hover 約 100ms 自動展開 submenu 向右側滑入。Submenu 是獨立 floating layer——與 parent 共存,parent 不 close。鍵盤用 ArrowRight 展開 / ArrowLeft 或 Esc 收起這一層(Esc 一次只關一層);本 DS 為 LTR-only。</>}>
       <div className="flex gap-6 items-start">
-        <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
+        <div className="flex items-center justify-center px-6 py-8 rounded-md bg-canvas border border-divider min-w-[280px]">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="tertiary" size="sm" endIcon={ChevronDown}>檔案操作</Button>
@@ -811,7 +811,7 @@ const StateBehaviorInner = () => {
     {/* CheckboxItem toggle */}
     <ExampleSection title="勾選項多選(選了選單不關)" description={<>CheckboxItem 與一般 Item 的關鍵差異:點擊後 menu 保持開啟(保留當前 filter 狀態讓使用者繼續勾 / 取消勾),直到 Esc / 外部點擊才關閉。對比 {'<DropdownMenuItem>'} 點擊即 close。</>}>
       <div className="flex gap-6 items-start">
-        <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
+        <div className="flex items-center justify-center px-6 py-8 rounded-md bg-canvas border border-divider min-w-[280px]">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="tertiary" size="sm" endIcon={ChevronDown}>

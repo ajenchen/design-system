@@ -32,7 +32,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Command 是基於 cmdk 的搜尋 + 鍵盤導覽清單;項目消費 CommandItem(內包 MenuItem)、空狀態與載入中消費 MenuItem 訊息列(CommandEmpty / CommandLoading)、搜尋列與 SelectMenu 共用。結構:CommandInput(搜尋框)+ CommandList(捲動區)+ CommandGroup(分組)+ CommandItem(項目)+ CommandEmpty(空狀態)。本 DS 在 cmdk 原結構上套用設計 token(顏色 / 字級 / 間距),並用 ScrollArea 包住清單做跨系統一致的捲軸;選項與訊息列都經 MenuItem 取得同一種列幾何,Command 自己不寫第二份樣式。</Desc>
-        <div className="rounded-lg border border-border max-w-md overflow-hidden">
+        <div className="rounded-md border border-border max-w-md overflow-hidden">
           <Command label="搜尋指令">
             <CommandInput placeholder="輸入指令或搜尋..." />
             <CommandEmpty>找不到結果</CommandEmpty>

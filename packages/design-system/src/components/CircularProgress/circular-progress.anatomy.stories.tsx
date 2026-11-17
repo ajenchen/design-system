@@ -47,7 +47,7 @@ export const Overview: Story = {
           <span className="font-mono">animate-spin</span> 旋轉;determinate 模式 arc 長度 = value/100。
           strokeWidth 動態 scale = <span className="font-mono">max(2, size/10)</span>。
         </Desc>
-        <div className="flex items-center gap-6 border border-border rounded-lg p-6">
+        <div className="flex items-center gap-6 border border-border rounded-md p-6">
           {/* CircularProgress 只有一種預設尺寸(24)。其他尺寸 **不**示範 —
               consumer 在 Button / Input / Empty 等 context 內由這些元件自動依原則縮放
               (見 spec.md「Size canonical」+ UsageInButton / UsageInline 兩個 context story)。

@@ -549,7 +549,7 @@ const InspectorInner = () => {
         <div className="flex flex-col gap-6 min-w-[440px]">
           {/* Live preview */}
           {/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
-          <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-8 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             {consumer === 'MenuItem' && (
               <MenuFrame width={360}>
                 <MenuItem role="presentation"
@@ -580,7 +580,7 @@ const InspectorInner = () => {
               </div>
             )}
             {consumer === 'ListItem' && (
-              <div className="w-[360px] rounded-lg border border-divider overflow-hidden bg-surface">
+              <div className="w-[360px] rounded-md border border-divider overflow-hidden bg-surface">
                 <ListItemPreview
                   size={size}
                   startIcon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
@@ -631,7 +631,7 @@ const InspectorInner = () => {
               padding-y 區域固定 PY_ZONE(20px),演示「padding 不變,內容自然撐高」的 calc() 公式。
             */}
             <div className="flex items-start">
-              <div className="flex flex-col rounded-lg overflow-hidden" style={{ width: 520, outline: `2px solid ${Z.dim.text}22` }}>
+              <div className="flex flex-col rounded-md overflow-hidden" style={{ width: 520, outline: `2px solid ${Z.dim.text}22` }}>
                 {/* Top padding zone */}
                 <div className="flex items-center justify-center"
                   style={{ height: PY_ZONE, background: Z.pad.bg, borderBottom: `1.5px dashed ${Z.pad.border}` }}>
@@ -850,7 +850,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: Inspect panel */}
-        <div className="w-[320px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[320px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           {/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <div className="flex items-center justify-between">
@@ -979,7 +979,7 @@ export const AlignmentThreshold = {
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             {/* Blueprint diagram — LARGE */}
             <div className="flex flex-col gap-[var(--layout-space-tight)]">
-              <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
+              <div className="inline-flex items-stretch self-start rounded-md overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
                 <div className="flex items-center justify-center shrink-0"
                   style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
                   {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
@@ -1028,7 +1028,7 @@ export const AlignmentThreshold = {
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             {/* Blueprint diagram — LARGE */}
             <div className="flex flex-col gap-[var(--layout-space-tight)]">
-              <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
+              <div className="inline-flex items-stretch self-start rounded-md overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
                 <div className="flex items-center justify-center shrink-0"
                   style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
                   {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
@@ -1437,7 +1437,7 @@ export const IconColorsAndPresets = {
 
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <span className="text-caption text-fg-muted font-medium">ListItem（模擬）</span>
-            <div className="w-[280px] rounded-lg border border-divider overflow-hidden bg-surface">
+            <div className="w-[280px] rounded-md border border-divider overflow-hidden bg-surface">
               <ListItemPreview
                 size="md"
                 startIcon={Mail}

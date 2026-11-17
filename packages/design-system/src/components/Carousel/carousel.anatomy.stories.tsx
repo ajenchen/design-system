@@ -36,7 +36,7 @@ const slides = [
 
 const SampleSlide = ({ label, image, height = 240 }: { label: string; image: string; height?: number }) => (
   <div
-    className="rounded-lg overflow-hidden flex items-end p-6 text-on-emphasis bg-cover bg-center"
+    className="rounded-md overflow-hidden flex items-end p-6 text-on-emphasis bg-cover bg-center"
     style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${image})`, height }}
   >
     <div className="relative z-10">
@@ -143,7 +143,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Preview with forced hover */}
-        <div className="px-6 py-6 rounded-lg bg-canvas border border-divider">
+        <div className="px-6 py-6 rounded-md bg-canvas border border-divider">
           <div className={simulateHover ? 'group/carousel-force' : ''}>
             <style>{`
               .group\\/carousel-force [class*="opacity-0"] { opacity: 1 !important; }
@@ -192,7 +192,7 @@ const InspectorInner = () => {
       </div>
 
       {/* Right: inspect panel */}
-      <div className="w-[320px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+      <div className="w-[320px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
         <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
           <span className="text-[12px] font-semibold text-foreground">Inspect</span>
         </div>

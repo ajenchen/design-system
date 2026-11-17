@@ -31,7 +31,7 @@ export const Overview: Story = {
         <Desc>
           Accordion 由 Root(Accordion)+ AccordionItem(單一區塊)+ AccordionTrigger(可點擊 header,含 chevron)+ AccordionContent(展開內容)組成。基於 Radix Accordion primitive,視覺套用本 DS token。
         </Desc>
-        <div className="border border-border rounded-lg p-4 max-w-[640px]">
+        <div className="border border-border rounded-md p-4 max-w-[640px]">
           <Accordion type="single" collapsible defaultValue="anatomy">
             <AccordionItem value="anatomy">
               <AccordionTrigger>退款要多久才會入帳?</AccordionTrigger>
@@ -145,7 +145,7 @@ const InspectorView = () => {
         <ExampleStack>
           <div>
             <H3>即時預覽</H3>
-            <div className="border border-border rounded-lg p-4">
+            <div className="border border-border rounded-md p-4">
               <Accordion
                 type="single"
                 collapsible
@@ -172,7 +172,7 @@ const InspectorView = () => {
           <div>
             <H3>藍圖(Blueprint)</H3>
             <Desc>Trigger 為 <code>py-4</code>(vertical padding),水平寬度由父容器決定。Chevron 16px,旋轉跟內容同一份時長與曲線(<code>disclosureIndicatorMotion</code>:200ms、ease-out)。Content 有 <code>pb-4</code>,高度動畫消費共用的 <code>disclosureMotion</code>(200ms、關閉後保持高度 0、減少動態不播;與 TreeView / AgentPanel 思考塊同一份)。動畫跑的時候裁切內容,打開而且停下來之後就不裁,內容裡的焦點框才不會被切掉。</Desc>
-            <div className="border border-border rounded-lg p-4 max-w-[520px] bg-muted/40">
+            <div className="border border-border rounded-md p-4 max-w-[520px] bg-muted/40">
               <div className="border border-dashed border-primary-hover py-1 px-2 rounded mb-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-body font-medium text-foreground">Trigger label</span>
@@ -198,7 +198,7 @@ const InspectorView = () => {
         {/* 右:Inspect 面板 */}
         <div>
           <H3>Inspect 面板</H3>
-          <div className="border border-border rounded-lg p-4 flex flex-col gap-4 text-caption">
+          <div className="border border-border rounded-md p-4 flex flex-col gap-4 text-caption">
             <section>
               <p className="font-mono text-fg-muted mb-2">LAYOUT</p>
               <ul className="flex flex-col gap-1">
@@ -410,7 +410,7 @@ export const StateBehavior: Story = {
         <div className="grid grid-cols-2 gap-4 max-w-[800px]">
           <div>
             <p className="text-footnote text-fg-muted mb-2 font-mono">data-state="closed"</p>
-            <div className="border border-border rounded-lg p-4">
+            <div className="border border-border rounded-md p-4">
               <Accordion type="single" collapsible>
                 <AccordionItem value="q1">
                   <AccordionTrigger>如何更改訂閱方案?</AccordionTrigger>
@@ -421,7 +421,7 @@ export const StateBehavior: Story = {
           </div>
           <div>
             <p className="text-footnote text-fg-muted mb-2 font-mono">data-state="open"</p>
-            <div className="border border-border rounded-lg p-4">
+            <div className="border border-border rounded-md p-4">
               <Accordion type="single" collapsible defaultValue="q1">
                 <AccordionItem value="q1">
                   <AccordionTrigger>如何更改訂閱方案?</AccordionTrigger>
@@ -438,7 +438,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>disabled item</H3>
         <Desc>AccordionItem 設 disabled 後,對應 trigger 切語義 disabled 文字色(<code>text-fg-disabled</code>,非 opacity),滑過游標是禁止符號;Radix 將 disabled 設在原生 <code>&lt;button&gt;</code> 上,故鍵盤 Tab 會跳過該 trigger(原生 disabled 不可聚焦),ArrowUp/Down 也會略過它。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-[640px]">
+        <div className="border border-border rounded-md p-4 max-w-[640px]">
           <Accordion type="single" collapsible>
             <AccordionItem value="a">
               <AccordionTrigger>個人資料</AccordionTrigger>

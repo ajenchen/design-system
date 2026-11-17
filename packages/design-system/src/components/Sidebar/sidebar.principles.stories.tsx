@@ -48,7 +48,7 @@ const MiniSidebar = ({
   activeId?: string
 }) => (
   <div
-    className="relative border border-divider rounded-lg overflow-hidden bg-surface"
+    className="relative border border-divider rounded-md overflow-hidden bg-surface"
     style={{ width }}
   >
     <SidebarProvider defaultActiveId={activeId} style={{ minHeight: 'auto' }}>

@@ -195,7 +195,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>視覺並列對照</H3>
         <Desc>左 default / 中 selected / 右 disabled,觀察 border 同時染 primary(base)的視覺變化(非 bg 變化)。</Desc>
-        <div className="flex items-center gap-8 px-6 py-5 rounded-lg bg-canvas border border-divider">
+        <div className="flex items-center gap-8 px-6 py-5 rounded-md bg-canvas border border-divider">
           <div className="flex flex-col gap-2 items-start">
             <span className="text-footnote text-fg-muted font-mono">default</span>
             <ChipGroup type="multiple" defaultValue={[]}>

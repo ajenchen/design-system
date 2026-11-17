@@ -26,7 +26,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>SegmentedControl(role="group")+ N 個 Item(role="radio",N = 2-5)。Items 連體展示,基於 Radix ToggleGroup(type="single")。內部結構 mirror Button(gap-1、label px-1、badge gap-1)。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <SegmentedControl defaultValue="week">
             <SegmentedControlItem value="day">日</SegmentedControlItem>
             <SegmentedControlItem value="week">週</SegmentedControlItem>
@@ -39,7 +39,7 @@ export const Overview: Story = {
       <div>
         <H3>Item 內部結構</H3>
         <Desc>依序排列可選 startIcon、具 px-1 的 label span、以及可含 badge 的 gap-1 suffix；跟 Button size sm/md/lg 的 <code>gap-1</code> 和 <code>px-1</code> label 完全對齊,視覺肌肉記憶直接複用。</Desc>
-        <div className="flex flex-col gap-3 border border-border rounded-lg p-4 max-w-md">
+        <div className="flex flex-col gap-3 border border-border rounded-md p-4 max-w-md">
           <SegmentedControl defaultValue="all">
             <SegmentedControlItem value="all" badge={<Badge count={12} variant="low" />}>全部</SegmentedControlItem>
             <SegmentedControlItem value="active" badge={<Badge count={3} variant="high" />}>進行中</SegmentedControlItem>

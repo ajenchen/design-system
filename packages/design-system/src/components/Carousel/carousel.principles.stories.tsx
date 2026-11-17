@@ -38,7 +38,7 @@ const photoBackground = (image: string) => `linear-gradient(180deg, rgba(0,0,0,0
 const PhotoSlide = ({ label, image, height = 160 }: { label: string; image: string; height?: number }) => (
   <div
     // @layout-space-magic-ok: 照片樣本卡文字離邊 20px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-    className="rounded-lg overflow-hidden flex items-end p-5 text-on-emphasis bg-cover bg-center"
+    className="rounded-md overflow-hidden flex items-end p-5 text-on-emphasis bg-cover bg-center"
     style={{ backgroundImage: photoBackground(image), height }}
   >
     <div className="text-body-lg font-bold">{label}</div>
