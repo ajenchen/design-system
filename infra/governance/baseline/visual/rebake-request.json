@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "branch": "feat/batch1-ui-decisions-2026-11-10",
-  "update_baseline": true,
-  "reference_ref": "",
-  "reason": "R3:A114 Tabs 溢出模式分頁列灰線修正(header-with-tabs-overflow-scroll / -menu 分隔線那一列會變),重拍給 user 看「可以改」",
-  "requestedAt": "2026-11-17T09:46:30Z"
-}
