@@ -116,5 +116,36 @@ echo "Test 10: handwritten section after the auto-maintained block still counts"
 run_hook "" "$TMP_PROJECT/specs/tail.spec.md"
 if [ "$EXIT" = "0" ] && echo "$STDOUT" | grep -q '330 lines (excluding 20 auto-maintained'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
 
+# Tests 11 起:上限表抽到 lib/_size_budget.sh 之後新增 / 改變的類別 —— 每一類都是「超標出聲 / 未超標靜默」兩面,
+# 路徑都放在 canonical root 底下的真實相對位置。
+pass_if() { if "$@"; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi; }
+silent() { [ "$EXIT" = "0" ] && [ -z "$STDOUT" ]; }
+says() { [ "$EXIT" = "0" ] && printf '%s' "$STDOUT" | grep -qF -- "$1"; }
+mkdir -p "$TMP_PROJECT/governance/memory"
+
+echo "Test 11: memory file 101 lines → hard cap from governance/memory/contract.json"
+yes 'x' | head -101 > "$TMP_PROJECT/governance/memory/feedback_demo.md"
+run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
+pass_if says '101 lines (hard cap 100)'
+
+echo "Test 12 (control for 11): memory file 100 lines → silent"
+yes 'x' | head -100 > "$TMP_PROJECT/governance/memory/feedback_demo.md"
+run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
+pass_if silent
+
+# memory 的數字只住在 contract:換一份 maxLinesPerMemory = 5 的 contract,同一個 100 行的檔就要出聲。
+CONTRACT_CORPUS="$TMP_PROJECT/contract-corpus"
+mkdir -p "$CONTRACT_CORPUS/governance/memory"
+cp "$PROJECT_ROOT/packages/governance/canonical/providers.json" "$CONTRACT_CORPUS/providers.json"
+printf '{"maxLinesPerMemory": 5}\n' > "$CONTRACT_CORPUS/governance/memory/contract.json"
+echo "Test 13: the memory cap is read from the contract(fixture contract = 5)"
+TEST_CORPUS="$CONTRACT_CORPUS" TEST_REGISTRY=providers.json run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
+pass_if says '100 lines (hard cap 5)'
+
+echo "Test 14: contract missing → exit 2(an unreadable instrument is not a pass)"
+rm "$CONTRACT_CORPUS/governance/memory/contract.json"
+TEST_CORPUS="$CONTRACT_CORPUS" TEST_REGISTRY=providers.json run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
+if [ "$EXIT" = "2" ] && printf '%s' "$STDOUT" | grep -q 'contract.json'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
