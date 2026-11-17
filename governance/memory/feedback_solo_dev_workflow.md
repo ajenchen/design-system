@@ -4,7 +4,7 @@
 
 ## Invariants
 
-- One chat (session) = one working branch = one pull request(AGENTS.md「# Git / release canonical」;`check_solo_workflow.sh` R1 以 session_id 執法).
+- One chat (session) = one working branch = one pull request(AGENTS.md「# Git / release canonical」;`check_solo_workflow.sh` R1 以 session_id 執法,但只在開遙測時有作用 —— 見下方「Mechanical enforcement」R1).
 - Never edit or push directly on `main`.
 - The PR is the only merge path. Required CI and resolved review threads are the `pr-checks` completion gates.
 - In this solo repository, the PR author cannot meaningfully self-approve. CODEOWNERS records ownership, but the ruleset uses zero required human approvals; protected checks, resolved conversations, protected-main merge/readback, immutable publish, exact release readback, and exact consumer readback are the authority.
