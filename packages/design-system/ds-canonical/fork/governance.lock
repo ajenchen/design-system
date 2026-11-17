@@ -783,7 +783,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_story_determinism.sh",
-      "sha256": "4b893c8b37136c5fa4caad5f9a7548304f144800078f4a749d30210d9cd56ac3",
+      "sha256": "9125ddbfa6e59243271fb2f46c962dac524f839691b7af68d1d3826cea5313db",
       "source": "check_story_determinism.sh",
       "classification": "SHIP_AS_IS",
       "destination": null

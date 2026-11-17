@@ -27,7 +27,18 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
 ' 2>/dev/null || echo "")
 grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
-HITS=$(printf '%s\n' "$NEW_CONTENT" | grep -v '@nondeterministic-ok:' | grep -nE 'new Date\(\)|Date\.now\(\)|Math\.random\(\)' || true)
+# 2026-11-17 /knowledge-prune 收窄(D6-3):兩種寫法不影響畫面、卻會被誤報 —— 引號裡的字串(文件表格寫
+# 'new Date()' 當說明)與 `id: \`...${Date.now()}...\`` 這種事件處理裡產生的識別碼(只在使用者操作後
+# 才出現,初次渲染與 VR 截圖都不會有)。先把這兩種從該行拿掉再判;其他用法照舊警告。
+# 現存 5 個誤報:date-grid.anatomy.stories.tsx:142、field.stories.tsx:475、file-upload.stories.tsx:69/:104/:247。
+HITS=$(printf '%s\n' "$NEW_CONTENT" | awk '
+  /@nondeterministic-ok:/ { next }
+  {
+    probe = $0
+    gsub(/["\047](new Date[(][)]|Date[.]now[(][)]|Math[.]random[(][)])["\047]/, "", probe)
+    gsub(/id: *`[^`]*[$][{](Date[.]now[(][)]|Math[.]random[(][)])[}][^`]*`/, "", probe)
+    if (probe ~ /new Date[(][)]|Date[.]now[(][)]|Math[.]random[(][)]/) print NR ":" $0
+  }' || true)
 [ -z "$HITS" ] && exit 0
 
 cat >&2 <<EOF

@@ -34,6 +34,12 @@ run_case 'line rationale suppresses warning' 'apps/demo/src/demo.stories.tsx' 'c
 run_case 'fixed date remains deterministic' 'apps/demo/src/demo.stories.tsx' 'const day = new Date(2026, 6, 15)' Write 0
 run_case 'production file is out of scope' 'apps/demo/src/App.tsx' 'const now = new Date()' Write 0
 run_case 'read event is out of scope' 'apps/demo/src/demo.stories.tsx' 'const now = new Date()' Read 0
+# 2026-11-17 收窄:引號字串與事件處理的 id 不警告;同一行若另有裸用法照樣警告(對照組)
+run_case 'quoted docs string is not a call' 'apps/demo/src/demo.stories.tsx' "['defaultMonth', 'Date', 'new Date()', '初始可見月份']," Write 0
+run_case 'handler-generated id template is not rendered' 'apps/demo/src/demo.stories.tsx' '...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name })),' Write 0
+run_case 'multi-line id template property' 'apps/demo/src/demo.stories.tsx' '                id: `new-${Date.now()}-${i}`,' Edit 0
+run_case 'id template plus bare call still warns' 'apps/demo/src/demo.stories.tsx' 'const a = { id: `x-${Date.now()}`, at: new Date() }' Write 1
+run_case 'Date.now outside id template still warns' 'apps/demo/src/demo.stories.tsx' 'const label = `updated ${Date.now()}`' Write 1
 
 echo "Passed: $PASS / $((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]
