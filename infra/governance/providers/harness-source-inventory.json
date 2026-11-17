@@ -722,6 +722,7 @@
           "scripts/test-audit-coverage-matrix.mjs",
           "scripts/test-audit-data-table-row-mode-ssot.mjs",
           "scripts/test-audit-failure-class-coverage.mjs",
+          "scripts/test-audit-gate-meta-test-coverage.mjs",
           "scripts/test-audit-hook-quality.mjs",
           "scripts/test-audit-hook-test-coverage.mjs",
           "scripts/test-audit-layout-family-frontmatter.mjs",

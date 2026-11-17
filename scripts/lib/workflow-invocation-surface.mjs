@@ -17,6 +17,7 @@
  */
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { load as loadYaml } from 'js-yaml'
 
 const SCRIPT_TOKEN = /scripts\/([A-Za-z0-9._-]+\.mjs)\b/g
 // `npm run x` / `npm run --silent x` / `npm run-script x` / `npm run --workspace=pkg x`(旗標可以夾在中間)
@@ -108,6 +109,62 @@ export function resolveWorkflowInvocationSurface({
   const scripts = new Set()
   for (const m of corpus.matchAll(SCRIPT_TOKEN)) scripts.add(m[1])
   return { scripts, npmScripts: triggered, corpus }
+}
+
+/**
+ * workflow 的觸發事件名稱(`on:` 的鍵;字串 / 陣列 / 物件三種寫法都收)。
+ * YAML 解析失敗或沒有 `on:` → 丟例外(呼叫端當儀器失效處理,不當成「沒有觸發」)。
+ */
+export function workflowTriggers(source) {
+  const document = loadYaml(String(source ?? ''))
+  const on = document?.on
+  if (typeof on === 'string') return [on]
+  if (Array.isArray(on)) return on.map(String)
+  if (on && typeof on === 'object') return Object.keys(on)
+  throw new Error('workflow 沒有 on: 觸發宣告')
+}
+
+/**
+ * 一份 workflow **真的會執行的指令文字**:每個 job 每個 step 的 `run:`(YAML 折行由解析器還原),
+ * shell 的整行註解與行尾註解(`#` 前面是空白)剔除。
+ *
+ * 與 `resolveWorkflowInvocationSurface` 拿 workflow 全文的差別:step 的 `name:`、`env:` 提到腳本檔名不算有人跑它;
+ * `run: >-` 折行寫法把 `--selftest` 放在下一行,也還原成同一條指令。呼叫 reusable workflow 的 job(`uses:`)
+ * 沒有 run 文字可讀,不算 —— 寧可少認,不可多認(多認 = 把沒人跑的對照組算成有人跑)。
+ */
+export function workflowRunText(source) {
+  const document = loadYaml(String(source ?? ''))
+  const jobs = document?.jobs
+  if (!jobs || typeof jobs !== 'object') throw new Error('workflow 沒有 jobs')
+  const runs = []
+  for (const job of Object.values(jobs)) {
+    for (const step of Array.isArray(job?.steps) ? job.steps : []) {
+      if (typeof step?.run !== 'string') continue
+      runs.push(stripCommentLines(step.run).split('\n').map((line) => line.replace(/(^|\s)#.*$/, '$1')).join('\n'))
+    }
+  }
+  return runs.join('\n')
+}
+
+/**
+ * 指令文字 → 「以 `--selftest` 跑起來的 scripts/*.mjs」檔名集合。
+ *
+ * **歸屬以單一指令為單位**:先接回 `\` 續行,再以換行 / `&&` / `||` / `;` / `|` 切成一條條指令,
+ * 一條指令裡同時有「第一個 scripts/x.mjs」與 `--selftest` 旗標,才算 x 的對照組有人跑。
+ * 2026-11-18 量到的反例:`npm run test:agent-panel-invariants` 是
+ * `node scripts/agent-fab-hit-area-invariant.mjs && … && node scripts/agent-fab-drag-click-invariant.mjs --selftest`
+ * —— 整行掃 `--selftest` 會把後面那支的對照組記到前面五支頭上(它們在 PR 只跑現況)。
+ * `--selftest-force-ink` 之類的長旗標不算 `--selftest`。
+ */
+export function selftestScriptInvocations(text) {
+  const found = new Set()
+  const commands = String(text ?? '').replace(/\\\r?\n/g, ' ').split(/\r?\n|&&|\|\||;|\|/)
+  for (const command of commands) {
+    if (!/(?:^|\s)--selftest(?![\w-])/.test(command)) continue
+    const first = /scripts\/([A-Za-z0-9._-]+\.mjs)\b/.exec(command)
+    if (first) found.add(first[1])
+  }
+  return found
 }
 
 /** 讀 repo 內的 workspace package.json(名稱 → scripts),給 `npm -w <name> run x` 用。 */
