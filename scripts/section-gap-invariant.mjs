@@ -11,11 +11,14 @@
  *           各量「最後一個欄位底 → 按鈕列頂」= loose × 2。歷史紅燈:2e1f2e27 建置 8 處都是 md 16 / lg 24(只有一份 loose)。
  *         · 標題區 → 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」;user 2026-11-11「我覺得主要取決於那個標題和說明是否是
  *           完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？…」+ 決策頁「說明頁:甲」):
+ *           2026-11-17 起規格是照順序問三題(版型 → 那個位置是不是只可能放一個東西 → 其他:標題到第一個 = 東西之間、至少 loose;user 對 r12
+ *           第 1 題回「都照你建議，你的理由合理」),文件頁用「幾塊」自動近似 —— 本檔量的就是這個近似:
  *           底下只有一塊 = tight(heading-one)、兩塊以上 = loose(heading-many)。四種標題區(設計規格頁單獨的 H3、H3 + Desc、ExampleSection、
  *           TutorialRule)× 一塊 / 兩塊以上,每一格至少一列真頁(2026-11-14 A7 ⑤ 補齊「H3 + Desc × 兩塊以上」那一格),量「標題區底 → 第一個內容頂」。
  *           「一塊 / 兩塊以上是怎麼數出來的」(tutorial-page.tsx `headingContentOf`)每一條路至少一列:只有一個節點(一張表 / 一個元件 /
  *           一段說明文字)、一則示範 + 說明它的文字、彼此比 12 近 → 一塊(一列按鈕)、彼此 ≥ 12 → 兩塊以上、全是說明文字(隔 ≥ loose 兩塊以上 /
- *           比 loose 近一塊)、ExampleSection 直接放兩個以上子節點(結構上就是並列)。歷史紅燈:3d7f8ae6 建置一塊的也是 md 16 / lg 24。
+ *           比 loose 近一塊)、ExampleSection 直接放兩個以上子節點(結構上就是並列)、只負責排版的容器往裡數(只帶 class 的 grid;FieldGroup 靠
+ *           `LAYOUT_WRAPPER_ATTRS` 認 `data-field-group` 才往裡數,另一列 —— 2026-11-17 補)。歷史紅燈:3d7f8ae6 建置一塊的也是 md 16 / lg 24。
  *           好幾個示範塊彼此只隔 tight 也算兩塊以上(user 2026-11-12「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,第四批成品頁
  *           「多塊緊排」題標「建議」的選項 =「乙：有兩塊以上就維持遠的距離」):三種共用元件各挑一頁「彼此只隔 tight 的好幾塊」量 = loose
  *           (H3:ProgressBar「Status 一覽」三列;ExampleSection:Checkbox「尺寸一覽」三列;TutorialRule:Avatar「Avatar 代表身份…」選單框 + 圖例列兩塊 ——
@@ -126,6 +129,9 @@ export const CASES = [
   // 這兩格 2026-11-12 前後判定相同,守的是數法改寫時沒有把一個 Field 的 label 與輸入框數成兩塊。
   { id: 'heading-es-one-component', kind: 'heading-one', story: 'design-system-components-field-展示--horizontal-label-alignment', at: 'es', text: '驗證：單行 label 與 input 中線對齊', label: 'Field 展示「驗證：單行 label 與 input 中線對齊」→ 一個 Field' },
   { id: 'heading-es-many-fields', kind: 'heading-many', story: 'design-system-components-field-展示--mixed-control-alignment', at: 'es', text: '水平並排', label: 'Field 展示「水平並排…」→ 三個欄位' },
+  // 2026-11-17:上一列是只帶 class 的 grid 包三個 Field,沒走到 FieldGroup —— FieldGroup 帶 `data-field-group`,是靠 tutorial-page.tsx
+  // `LAYOUT_WRAPPER_ATTRS` 認它才往裡數;這一列守那一格(拿掉 → FieldGroup 被當成一個元件 → 一塊 → tight,這一列紅)。
+  { id: 'heading-es-many-fieldgroup', kind: 'heading-many', story: 'design-system-components-field-展示--mixed-control-alignment', at: 'es', text: '垂直 Field', label: 'Field 展示「垂直 Field…」→ FieldGroup 裡三個欄位' },
   // 2026-11-14(A7 ⑤):把「幾塊怎麼數」沒有列在量的路補起來(design-doc-headings.md 三之 B 的 R1–R7;每一列加之前在現行建置量過符合)。
   // 哪一頁算哪一種都是照 layoutSpace.spec.md「幾塊怎麼數」與邊角表 —— 數法是【AI 推導】,不是 user 的決定。
   { id: 'heading-desc-many-demos', kind: 'heading-many', story: 'design-system-components-tabs-設計規格--size-matrix', at: 'h3+desc', text: '三種 Size', label: 'Tabs 設計規格「三種 Size」→ 三則示範(H3 + Desc × 兩塊以上)' },

@@ -148,7 +148,7 @@ const validateTaiwanId = (v: unknown) => {
  *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 內容 = loose,6 步同一個距離:標題 + 說明是這一頁整組內容的標題,
  *    不是第一個欄位的小標(user 2026-10-21 A4 甲);每一步的內容是這一步要填 / 要核對的欄位,數量依步驟而變(前 3 步各有好幾個欄位,
  *    撥款週期、同意條款各只有一個),同一個精靈每一步同一個距離,不因某一步剛好只有一個欄位改成 tight(同 Steps:steps.tsx 這一段寫死 loose)
- *    【AI 推導 2026-11-17,回應 user 成品頁 r11 的留言;依據、原話與「待拍板」見 layoutSpace.spec.md 規則 3 產品畫面那一條】。
+ *    = layoutSpace.spec.md 規則 3「標題區 → 內容」第 1 題(user 2026-11-17 對 r12 第 1 題回「都照你建議，你的理由合理」= 選乙;原話與出處見該段)。
  *    2026-11-17 A67 曾把後 3 步改成 tight,同日退回。
  *  - 標題字級同 DialogTitle(dialog.tsx `text-body-lg font-medium`) */
 function OnboardingPage({ title, description, children, onSubmit, onBack, submitLabel = '下一步', submitting }: {

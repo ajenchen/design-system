@@ -20,12 +20,14 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *   文件頁(教學頁、Tokens / Patterns 文件頁、展示 / 設計規格頁的範例堆疊)的這個值只寫在本檔。
  * - 規則標題 ↔ 它自己的說明 = 2px(`--item-gap-label-desc-scanning`:text-h6 14 / 1.3 + text-caption 12 / 1.3 正是 item-anatomy
  *   「Label ↔ Desc 間距」scanning 那一型)。
- * - 標題區(標題 + 說明)→ 內容(2026-11-11,layoutSpace.spec.md 規則 3「標題區 → 內容」):**底下只有一塊 → tight;兩塊以上 → loose**。
+ * - 標題區(標題 + 說明)→ 內容(layoutSpace.spec.md 規則 3「標題區 → 內容」,2026-11-11 立、2026-11-17 改判法):照順序問三題 ——
+ *   ① 哪一種版型(同一種版型每一頁同一個距離)② 那個位置只可能放一個東西 → tight ③ 其他(會有好幾個的)→ 標題到第一個 = 東西之間、至少 loose。
  *   出處:user 2026-11-11「我覺得主要取決於那個標題和說明是否是完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？」
- *   + 決策頁「說明頁:甲」(說明頁也套);兩塊以上 = loose 即 user 2026-10-21 A4 甲(「他是所有內容的標題而非內容第一個的小標，所以內容之間是 loose的話，那內容到‘標題＋說明’也是loose吧」)。
- *   好幾個示範塊彼此只隔 tight 也算兩塊以上 → loose:user 2026-11-12「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,
+ *   + 決策頁「說明頁:甲」(說明頁也套);loose 的值即 user 2026-10-21 A4 甲(「他是所有內容的標題而非內容第一個的小標，所以內容之間是 loose的話，那內容到‘標題＋說明’也是loose吧」);
+ *   三題 = AI 在 r12 決策頁第 1 題寫的選項乙,user 2026-11-17 回「都照你建議，你的理由合理」(規格那一段有全部原話與出處)。
+ *   好幾個示範塊彼此只隔 tight 也是 loose:user 2026-11-12「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,
  *   第四批成品頁「多塊緊排」題的建議選項是「乙：有兩塊以上就維持遠的距離」。
- *   「幾塊」怎麼數只寫在本檔 `headingContentOf`(【AI 推導】的數法,見該函式)。規則內容是一段文字 / 清單(段落)時照舊一律 tight(內容之間本來就是 tight)。
+ *   文件頁用「幾塊」自動近似三題,怎麼數只寫在本檔 `headingContentOf`(【AI 推導】的數法,見該函式;它是工具、不是定義)。規則內容是一段文字 / 清單(段落)時照舊一律 tight(內容之間本來就是 tight)。
  *   值與判斷只寫在本檔:規則、展示頁的範例區段(`ExampleSection`)、設計規格頁的 `H3` / `Desc`(anatomy-utils.tsx,用本檔的 `useHeadingContent` 與 `SPEC_HEADING_GAP`)都從這裡來。
  * - 段落標題 → 段落內第一則規則 = loose × 2(同規則 ↔ 規則;Q2 ②):段落標題上下等距,靠 24px 半粗體 + 底線分出它屬於下面。
  *   設計規格頁 / Patterns 文件頁也一樣(2026-11-17 A42【AI 推導】:依 user 2026-10-27「Q2照你建議」的同一理由 ——「標題要離上一塊比離自己的
@@ -167,10 +169,10 @@ export const SectionDescription = React.forwardRef<HTMLParagraphElement, React.H
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   標題區 → 內容:幾塊(2026-11-11;2026-11-12 好幾個示範塊緊排也算兩塊以上)
+   標題區 → 內容:文件頁用「幾塊」自動近似規格的三題(2026-11-11;2026-11-12 示範塊緊排也算兩塊以上)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** 標題區底下的內容:`one` = 只有一塊(→ tight)、`many` = 兩塊以上(→ loose)。 */
+/** 標題區底下的內容:`one` = 只有一塊(≈ 那個位置只可能放一個東西 → tight)、`many` = 兩塊以上(≈ 會有好幾個的 → loose)。 */
 export type HeadingContent = 'one' | 'many'
 
 /**
@@ -216,7 +218,12 @@ function minGapBetween(nodes: Element[]): number {
   return min
 }
 
-/** 只負責排版的容器除了 class / style 之外可以帶的屬性:主題 / 密度的範圍宣告,與 FieldGroup(一疊欄位的排版群組,不是一個元件)。 */
+/**
+ * 只負責排版的容器除了 class / style 之外可以帶的屬性:主題 / 密度的範圍宣告,與 FieldGroup(一疊欄位的排版群組,不是一個元件 —— 往裡數)。
+ * 【AI 推導 2026-11-17,待問 user】「FieldGroup + 說明它的文字」(第 2 步只剩一塊 → `one`)與「只剩一個欄位的 FieldGroup」(往裡數到一個 Field → `one`)
+ * 要不要照規則 3 第 1 題當成表單、改 `many`,沒有 user 的話:2026-11-17 這裡曾改成「FieldGroup 一律 many」,同日撤回 —— 依據是 AI 補的一句、
+ * r12 決策頁上沒有,而且外面多包一層排版容器的那幾處沒改到(layoutSpace.spec.md 規則 3 邊角表最後一列)。
+ */
 const LAYOUT_WRAPPER_ATTRS = new Set(['class', 'style', 'data-theme', 'data-density', 'data-layout-space', 'data-field-group'])
 const LAYOUT_WRAPPER_TAGS = new Set(['DIV', 'SECTION', 'SPAN', 'ARTICLE', 'MAIN'])
 
@@ -237,16 +244,19 @@ function isProse(el: Element): boolean {
 }
 
 /**
- * 標題區底下有幾塊 —— 規範 layoutSpace.spec.md 規則 3「標題區 → 內容」;user 原話與決策見本檔檔頭。
+ * 標題區底下有幾塊 —— 規範 layoutSpace.spec.md 規則 3「標題區 → 內容」(照順序問三題);本函式是**文件頁的自動判斷工具,不是定義**:
+ * 文件頁的內容寫死在範例裡,現在放幾個就是會放幾個,所以用數的近似三題(`one` ≈ 第 2 題「那個位置只可能放一個東西」→ tight;
+ * `many` ≈ 第 3 題「會有好幾個的」→ loose);跟三題的答案不同時以三題為準、改這裡。user 原話與決策見本檔檔頭。
  * 【AI 推導】數法(機械可判,同一份給 `ExampleSection`、`TutorialRule`、設計規格頁 `H3` / `Desc`):
- * 1. 只有一個節點:有視覺邊界(邊框 / 底色 / 陰影),或不是只負責排版的容器(一個元件的根、`<p>`、`<table>`、`<dl>`、`<label>` …)
- *    = 一塊(`one`);是只負責排版的容器 → 往裡看它的子節點,回到這一步。看到底都沒有子節點(一張圖、一個空容器)= `one`。
+ * 1. 只有一個節點:有視覺邊界(邊框 / 底色 / 陰影),或不是只負責排版的容器(一個元件的根、`<p>`、`<table>`、`<dl>`、`<label>`、`<form>` …)
+ *    = 一塊(`one`);是只負責排版的容器(含 FieldGroup)→ 往裡看它的子節點,回到這一步。看到底都沒有子節點(一張圖、一個空容器)= `one`。
  * 2. 有兩個以上節點,先扣掉說明文字(`isProse`),看剩幾塊:
  *    - 剩兩塊以上,**扣掉說明文字之後的那幾塊**彼此至少隔一格版面間距(`HEADING_BLOCK_MIN_GAP_PX`)→ `many`(說明文字離它們多近不算);隔得更近 = 元件的微距(一列按鈕、一排 chip)= `one`
  *    - 只剩一塊(一則示範 + 說明它的文字)→ `one`
  *    - 全是說明文字:段落之間隔 ≥ loose → 並列的好幾段 = `many`;比 loose 近 = 同一段話 = `one`(`loose` 由呼叫端從被量的元素讀)
- * 所以:一張表 / 一張圖 / 一份清單 / 一個元件 / 一列按鈕 / 一則示範 + 一段說明 = 一塊;
+ * 所以:一張表 / 一張圖 / 一份清單 / 一個元件(含一個 Field)/ 一列按鈕 / 一則示範 + 一段說明 = 一塊;
  * 好幾則示範(不論彼此隔 tight 還是 loose —— user 2026-11-12)、FieldGroup 裡的好幾個欄位 = 兩塊以上。
+ * 「FieldGroup + 說明」「只剩一個欄位的 FieldGroup」現在數成一塊,是否改判【AI 推導 2026-11-17,待問 user】(見 `LAYOUT_WRAPPER_ATTRS`)。
  */
 export function headingContentOf(nodes: Element[], loose: number): HeadingContent {
   let run = nodes
@@ -436,7 +446,7 @@ export function specHeadingWatched(el: HTMLElement): Element[] {
 }
 
 /**
- * 設計規格頁 `H3` / `Desc`(anatomy-utils.tsx)的「標題區 → 內容」下方距離:預設(兩塊以上)loose、只有一塊 tight。
+ * 設計規格頁 `H3` / `Desc`(anatomy-utils.tsx)的「標題區 → 內容」下方距離:預設(兩塊以上)loose、只有一塊 tight(`headingContentOf` 數)。
  * 它們是兄弟節點,只能用下方 margin 給(其他地方一律用 `ExampleSection` 的外層 gap)。值只寫在本檔。
  */
 export const SPEC_HEADING_GAP = 'mb-[var(--layout-space-loose)] data-[heading-content=one]:mb-[var(--layout-space-tight)]'
@@ -476,7 +486,7 @@ const sectionContent = (el: HTMLElement): Element[] | 'many' | null => {
 const sectionWatched = (el: HTMLElement): Element[] => boxChildren(el)
 
 /**
- * 範例區段(2026-10-27,user 2026-10-21 A4;2026-11-11 標題區 → 內容看幾塊):標題 ↔ 說明 2px;(標題 + 說明)→ 內容:
+ * 範例區段(2026-10-27,user 2026-10-21 A4;2026-11-11 標題區 → 內容看幾塊,2026-11-17 起「幾塊」是規格三題的自動近似):標題 ↔ 說明 2px;(標題 + 說明)→ 內容:
  * 段落 tight、區塊底下只有一塊 tight、兩塊以上 loose;跟著密度走。
  * 展示頁 / 原則頁 / 設計規格頁裡「一個小標 + 說明 + 一塊範例」一律用這支,不再手寫 `<h3 className="text-h6 font-semibold …">`;
  * `TutorialRule` 就是它加上範例區。間距由外層 gap 給,各塊不留自己的下方 margin。
@@ -520,7 +530,8 @@ export interface TutorialRuleProps {
   /**
    * 規則內容是一段文字 / 清單(段落)→ 標題區 → 內容 tight;是範例 / 示範區塊 → 區塊(同 `ExampleSection`:只有一則範例 tight、
    * 兩則以上 loose)。預設跟著 `examples`:有範例區 = 區塊、沒有 = 段落。沒走範例區、內容卻是示範區塊的規則寫 `paragraph={false}`
-   * (內容之間仍照順序以 tight 排;標題區 → 內容照「幾塊」判 —— 好幾個示範塊即使彼此只隔 tight 也是兩塊以上 → loose,user 2026-11-12)。
+   * (內容之間仍照順序以 tight 排;標題區 → 內容照「幾塊」判 —— 好幾個示範塊即使彼此只隔 tight 也是兩塊以上 → loose,user 2026-11-12;
+   * 規格三題第 3 題的「至少 loose」)。
    */
   paragraph?: boolean
   children?: React.ReactNode

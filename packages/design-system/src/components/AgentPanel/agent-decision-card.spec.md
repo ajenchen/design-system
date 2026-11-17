@@ -19,7 +19,11 @@
 - 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
   **整卡可點**:卡內任一點點一下 = 點控件一次(`ds-canonical/references/hit-area-canonical.md` 一-4「點下去等於點控件」;控件與 SelectionItem 的 `<label for>` 照它們自己的轉發、「其他」輸入格的外框歸輸入格,其餘由卡轉給控件 —— 同一下點擊只有一個主人,`agent-panel.tsx` `pressOptionCard`;機械閘 `scripts/agent-decision-card-option-press-invariant.mjs` 逐點量切換次數;滑過見下一條);卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
   (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)
-  + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8。
+  + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8(不跟密度變)。
+  卡間距維持 8、不改成跟「題目 → 第一張」「最後一張 → 送出」一樣的 12 / 16:2026-11-17 r12 決策頁第 2 題「決策卡的選項卡之間要不要拉開」(甲 維持 8 / 乙 改成三段一樣),
+  user 回「都照你建議，你的理由合理」= 甲(對話紀錄 96d711a5-00d3-43ef-b37c-7309237e0e6c.jsonl:34266;決策頁 = PR #172 第十二批 r12)。
+  頁上建議甲的理由(AI 寫的)引 user 2026-10-21 09:13 原話(節錄,／ = 原文換行;那一題 S3 原本問的是設定列)「selection item通常應該是用在／一個群組內要進行選擇／所以彼此之間會是緊密相鄰」:
+  選項是同一題裡的幾個選擇,彼此該比較近;篩選的群組是各自獨立的幾組條件,關係不同 —— 所以不套 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「一串同樣的條目」的上下等距(同檔規則 3「標題區 → 內容」第 3 題的卡片分法:同一題的選項卡 → 見 r12 第 2 題 = 本段)。
   「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
   [Polaris ChoiceChildren 同款](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Choice/Choice.module.css);
   距卡右/下各 12);指標按進輸入格或開始打字即選中「其他」,只用 Tab 經過不改選取(只用鍵盤的人才走得過這一格:選填題清掉後只用 Tab 走到「下一題」,[WCAG 2.1.1](https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html));**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),

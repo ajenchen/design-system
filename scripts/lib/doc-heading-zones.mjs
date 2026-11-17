@@ -12,6 +12,7 @@
 //   產品在標題區最後一個元素上標 `data-heading-content="one|many"`(tutorial-page.tsx `useHeadingContent`,每次 render 後的 layout effect 重判;
 //   2026-11-15 起內容「看不到 ↔ 看得到」時也重判 —— 本檔 revealHeadingZones 量這一條),
 //   間距 class 依它切換:one(底下只有一塊)= tight、many(兩塊以上)= loose;段落模式(底下是一段文字 / 清單)不標、一律 tight。
+//   (「幾塊」是文件頁對 layoutSpace.spec.md 規則 3「標題區 → 內容」三題的自動近似,2026-11-17 起規格的定義是三題、不是塊數。)
 //   「幾塊怎麼數」只寫在產品(tutorial-page.tsx `headingContentOf`,【AI 推導】的數法)—— **本檔不抄數法**,只讀產品標的結果、量像素。
 //
 // 一個標題區 = 下面其中一種(依文件順序):

@@ -1626,7 +1626,7 @@ jobs:
           npm run test:overlay-density-follows-trigger
           node scripts/overlay-density-follows-trigger-invariant.mjs --selftest
           # 區塊 ↔ 區塊(2026-11-06 user #18):一條分隔線的位置、上下各 loose —— 不畫線 = loose × 2(FileViewer 資訊面板 說明 → 檔案資訊),
-          # 畫 Separator = 線兩側各 loose;表單欄位 → 表單按鈕列 8 處;標題區 → 內容(一塊 tight / 兩塊以上 loose)四種標題區 × 兩種判定、「幾塊怎麼數」每條路一列。md / lg 量像素。
+          # 畫 Separator = 線兩側各 loose;表單欄位 → 表單按鈕列 8 處;標題區 → 內容(文件頁「幾塊」= 規格三題的自動近似:一塊 tight / 兩塊以上 loose)四種標題區 × 兩種判定、「幾塊怎麼數」每條路一列。md / lg 量像素。
           # selftest:判定表(修前實測必紅、每一列標題區餵相反判定的距離必紅)+ 在頁面上把四種標題區的標記翻面必紅、數字正好是另一個 token(這一段要建置)。
           # 後來才顯示(heading-reveal,2026-11-15):四列真頁藏起來 → 顯示要回到 loose、不得出現 ResizeObserver loop;另加五列夾具(直接打包 DS 原始碼、不經 storybook):
           # 巢狀 2(分得出產品「下一格才寫」還是「觀察者回呼裡直接寫」)、排版容器裡晚顯示 2(ExampleSection / H3)、兩段式 1(重判後觀察範圍要跟著數法換路)。
