@@ -13,7 +13,7 @@ Provider-neutral external-signal configuration for `/knowledge-prune` Phase 0.5 
 
 ## Refresh
 
-Run `bash governance/benchmarks/fetch.sh` manually, or let `session_start_governance_check.sh` remind when the runtime receipt is over 30 days old.
+Run `bash governance/benchmarks/fetch.sh` manually. (`session_start_governance_check.sh` Check 4 is meant to remind when the receipt is over 30 days old, but it currently reads `$GOVERNANCE_STATE_DIR/benchmarks/last-fetch.txt` and requires an executable `fetch.sh`, while `fetch.sh` is committed as 100644 and writes `infra/governance/runtime/benchmarks/last-fetch.txt` — so it never computes a reminder; and even when it does, session_start puts it in soft `REMINDERS`, which the hook never emits — only BLOCKERs and prune triggers are output. Recorded 2026-11-17 knowledge-prune; there is no automatic freshness reminder today, and no scheduled refresh workflow exists.)
 
 `fetch.sh` is **fail-silent**: network errors do not block product work; it updates `last-fetch.txt` only after at least one successful fetch and appends failures to runtime evidence.
 
@@ -21,4 +21,4 @@ Run `bash governance/benchmarks/fetch.sh` manually, or let `session_start_govern
 
 Session memory forgets. World-class DS ship changes we should track (new Material 3 tokens, Polaris v13 breaking changes, Claude Code 9.0 feature). Without a local store + refresh cadence, we drift.
 
-Per CLAUDE.md `# 資訊治理 canonical` → external signal driving internal governance.
+Per AGENTS.md `# 治理 canonical` → external signal driving internal governance.

@@ -38,7 +38,7 @@
 
 **行數預算**:Bootstrap(AGENTS.md + CLAUDE.md)/ SKILL / spec / memory / hooks 各有 cap,**具體數值不在本檔重述**(三處列舉必然漂移)—— 各檔(spec / SKILL / memory / 本檔)行數上限的 SSOT 是 `check_file_size_budget.sh` 的 case 表;開場檔總行數、hook 數、memory 筆數門檻是 `session_start_governance_check.sh` 檔頭「Checks + thresholds」與 Check 7 / 8,動態值以 `scripts/sync-governance-counters.mjs` 跑出為準。
 
-**Anti-bloat** 三層:L1 pre-write 檔案大小閘 / L2 per-edit fire log / L3 季度 `/knowledge-prune`。各層的 owner 檔案、telemetry 路徑與「只移除有證據的噪音、禁為湊比例犧牲真實 invariant」的鐵律,SSOT 在 `skills/knowledge-prune/SKILL.md`,本檔不重述。
+**Anti-bloat** 三層:L1 pre-write 檔案大小閘 / L2 per-edit fire log(要 `GOVERNANCE_TELEMETRY_OPT_IN=1`,預設關)/ L3 季度 `/knowledge-prune`。各層的 owner 檔案、telemetry 路徑與「只移除有證據的噪音、禁為湊比例犧牲真實 invariant」的鐵律,SSOT 在 `skills/knowledge-prune/SKILL.md`,本檔不重述。
 
 **加規則前必過 3 題**:(1) 既有 Meta-Pattern／近親 spec／canonical chapter 命中 → append pointer 不新寫;(2) **Rule-of-3**:同概念 ≥ 3 處 → 選 SSOT 其他 pointer;(3) 7 天後還會 fire 嗎?不確定 → 不寫。
 

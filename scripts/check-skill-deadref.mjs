@@ -27,6 +27,7 @@ const SCAN_DIRS = [
   'packages/design-system/ds-canonical/rules',
   'packages/design-system/ds-canonical/references',
   'packages/design-system/ds-canonical/commands',
+  'governance/benchmarks',
 ]
 const PRODUCT_SPEC_DIR = 'packages/design-system/src'
 const EXCLUDE = /\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/

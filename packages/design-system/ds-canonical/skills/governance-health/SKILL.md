@@ -61,7 +61,7 @@ Output: 「`check_item_list_gap.sh` 6 月 fired 78 次 → 提議擴充到 `pack
 
 #### 2b. Dead rule → retire 候選
 
-Hook 0 fire / 6 月 OR skill 0 invoke / 3 月 = 無 consumer = retire 候選。
+Hook 0 fire / 6 月 OR skill 0 invoke / 3 月 = 無 consumer = retire 候選。**前提:`audit:hook-quality` 報告的 `summary.observation.blind` 必須是 false,且 skill log 涵蓋 3 個月**;遙測預設關,全盲時零筆不是證據,不得提名(判法同 `/knowledge-prune` D2)。
 
 Output: 「`check_sideoffset_canonical.sh`(retired;已移入 hooks/retired/,此為 dead-rule 偵測示例)6 月 0 fire → retire 候選(先 grep 全 repo 確認無 reference 才執行)」
 

@@ -20,7 +20,7 @@ This canonical workflow contains a committed inventory of legacy assumptions. Re
 
 **🔒 核心前提(每次必遵,不需 user 提醒 — mindset #6「tell me once」)**:prune 唯一目的是**移除噪音以銳化 signal、提升遵循正確率**,**絕不以犧牲品質換行數 / 條目下降**。每次跑同時必滿足:(a) 品質不可因 prune 打折;(b) 以**提升品質**(清晰度↑ / drift 風險↓ / recall 精度↑)為目標。故:① 只 retire 真冗餘 / stale / 已被上游完整吸收的條目(這類本身是噪音,清掉反提升正確率);② consolidate 重複(同概念多 home → 選 SSOT + pointer);③ **每條真實 invariant / 機械防線必完整保留 — retire 前必 grep 確認保護已被別處覆蓋,否則不動**;④ distinct 條目強合成大條目會降 recall 精度 = 反 pattern,不做。**retire rate 是結果指標非目標**:湊 % 傷品質 = 違本前提;寧可 retire rate < 5% + report 明寫「成熟無冗餘」rationale,也不強刪真保護。本前提 override 下方所有 Phase / Checkpoint 的數值 target。
 
-**對齊 `AGENTS.md` `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)+ L2(fire log)自動執行；L3 的純工程治理 retire／consolidate 決策已 standing-delegated，依 evidence 與最高可用工程能力自主收斂。只有 task／deliverable 明確要求時才啟動 independent review；明確 waiver 必記錄且不得冒充已做。
+**對齊 `AGENTS.md` `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)自動執行;L2(fire log)要 `GOVERNANCE_TELEMETRY_OPT_IN=1` 才寫(預設關,見 D2)；L3 的純工程治理 retire／consolidate 決策已 standing-delegated，依 evidence 與最高可用工程能力自主收斂。只有 task／deliverable 明確要求時才啟動 independent review；明確 waiver 必記錄且不得冒充已做。
 
 **Authority boundary**:canonical substantive 本身不是 human gate。只有 resolution 會改變產品／UI／UX SSOT 且仍存在真實取捨才 **STOP**；治理 ownership、hook/skill lifecycle、架構與表達／duplicate／pointer 都依 `AGENTS.md # 自主執行 canonical` **AUTO**。
 
@@ -61,20 +61,20 @@ memory files      N              per-file ≤100
 
 ### Phase 0.5 — 讀 external signal(AUTO)
 
-讀 Git-owned provider-neutral evidence `<absolute-git-dir>/governance-runtime/evidence/` + provider telemetry `${GOVERNANCE_STATE_DIR}` + benchmark policy `governance/benchmarks/`:
+讀 Git-owned provider-neutral evidence `<absolute-git-dir>/governance-runtime/evidence/` + provider telemetry `${GOVERNANCE_STATE_DIR}` + benchmark 產物 `infra/governance/runtime/benchmarks/`(由 `governance/benchmarks/fetch.sh` 手動抓;policy 見同目錄 README):
 
 - `hook-fires.jsonl` — governance-file edits(tool/path per event);用於 hot governance files 分析
 - `hook-fires-per-hook.jsonl` — per-hook fire count(2026-04-25 起);via canonical shared helper `packages/design-system/ds-canonical/hooks/_log-fire.sh`;啟用 D2 dead-hook detection
 - `skill-invokes.jsonl`(若存在)— 過去 3 月每 skill invoke 次數
 - `user-corrections.jsonl`(若存在)— pending codification 清單
-- `benchmarks/claude-code-features.jsonl` — 新 CC feature 採用提議
-- `benchmarks/external-ds-snapshots/*.md` — Polaris / Material / Atlassian 近期更動
+- `infra/governance/runtime/benchmarks/claude-code-features.md` — 新 CC feature 採用提議
+- `infra/governance/runtime/benchmarks/external-ds-snapshots/*.html` — Polaris / Material / Atlassian 近期更動
 
 **Output**:外部 signal 摘要(送 Phase 3 judging)
 
-### Phase 1 — 4 維 scan(並行 sub-agent)
+### Phase 1 — 10 維 scan(D1–D10,並行 sub-agent)
 
-4 個 sub-agent 並行跑,每個產 finding 清單:
+依維度分 sub-agent 並行跑(D5–D10 細節在 references/prune-dimensions-d5-d10.md);**每一維都要回報「有候選 / 無候選 / 儀器全盲」三選一**,不得因本節只展開 D1–D4 就略過 D5–D10:
 
 #### D1 — Duplicate across homes(Rule-of-3)
 
@@ -94,9 +94,9 @@ Example violations(historic — 2026-05-22 prune verify 後均已收斂為 point
   - 先看 report 的 `summary.observation`:`blind: true` 代表觀測窗沒有涵蓋分類窗(log 的最早一筆晚於窗頭,或最後一筆離現在太久),此時所有零筆 hook 一律標 `unknown` 而非 `dead`,`retireCandidates` 恆為 0。**這種報告不得用來 retire 任何 hook**,本維度當次直接記「儀器全盲、無候選」。
   - 要讓這一維真的能用:`GOVERNANCE_TELEMETRY_OPT_IN=1` 讓 hook 開始記錄,累積滿一個分類窗(6 個月)之後再跑。判準與兩面對照組:`scripts/lib/hook-fire-observability.mjs` + `scripts/test-audit-hook-quality.mjs`(紅面:空 log → 0 提名;綠面:健康 log → 仍然標得出 dead)。錨:2026-09-24 這一維把全部 60 支 hook 標成 `dead`,而同一天 Stop hook 才剛擋過我好幾次 —— 典型 M37「沒觀察到」被當成「沒發生」。
 - **Stale memories**:只枚舉 repository SSOT `governance/memory/*.md`；以 `git log -- governance/memory/<file>`、`governance/memory/MEMORY.md` index 與 `governance/memory/contract.json` 判斷。不得讀取或回寫任何 provider home/cache 來決定 authority。
-- **Unused skills**:`skill-invokes.jsonl` 3 月 0 invoke(除非是 rare-event skill,例 `delivery-handoff`)
+- **Unused skills**:`skill-invokes.jsonl` 3 月 0 invoke(除非是 rare-event skill,例 `delivery-handoff`)。前提同 Dead hooks:這份 log 也要開遙測才寫,而且收不到 user 打 `/name` 的 slash 呼叫;log 不存在或沒涵蓋 3 個月 = 儀器全盲,本項記「無候選」
 - **Commands / context-fork agents**(2026-07-10 hunt 補,原零掃描):先讀 `packages/governance/canonical/providers.json` 的 `canonical.roots.commands` 與 `canonical.roots.contextForkAgents`,再對這兩個 canonical tree 做 enumeration。Commands 對照 `skill-invokes.jsonl`(命令同走 registered skill invocation log);context-fork agents 無 invoke log → 用 canonical file 的 git log recency + transcript grep 判 dead。Provider views 只驗 generated projection,不參與 dead/retire 決策。
-- **References orphan**(2026-07-10 hunt 補):枚舉 `packages/design-system/ds-canonical/references/*.md`,rg 檔名 across `packages/design-system/ds-canonical/skills/` + `AGENTS.md` + `packages/**/*.spec.md` + `packages/design-system/ds-canonical/hooks/`;0 cite = retire 候選。Provider views 僅可用 mirror-check 驗交付完整性,不能反向證明 canonical 在使用。
+- **References orphan**(2026-07-10 hunt 補):枚舉 `packages/design-system/ds-canonical/references/*.md`,rg 檔名 across `packages/design-system/ds-canonical/{skills,hooks,rules,references}/`(扣掉檔案自己與 README 索引)+ `AGENTS.md` + `packages/**/src/**`(含 `*.spec.md` 與程式註解)+ `scripts/` + `infra/governance/`,排除 generated provider view / planning / archive;0 cite = retire 候選(2026-11-17:只搜 skills / AGENTS / spec / hooks 會把 drag-canonical、certified-surfaces、tailwind-gotchas 誤報成孤兒)。Provider views 僅可用 mirror-check 驗交付完整性,不能反向證明 canonical 在使用。
 - **Stale marker 兌現**(2026-07-10 hunt 補):`marker='stale''-pending-prune'; rg -l "$marker" packages/design-system/ds-canonical/ governance/ AGENTS.md` → 命中即列 update/retire 候選；命令與教學文字不得直接含 marker literal 造成自命中；generated provider view 的同源命中不重複計數。
 
 **Output**:retire 候選 + rationale(`fire=0 / last_edit=2025-10 / 被 M14 吸收`)
@@ -133,7 +133,7 @@ Phase 1 findings(D1-D10):
 - D2 dead/stale: N items
 - D3 over-concrete: K items (abstract proposals)
 - D4 contradiction: L pairs
-- D5-D10(2026-05-17 加,detail 詳 references/prune-dimensions-d5-d10.md): D5 canonical drift / D6 hook-fire health / D7 skill-invoke health / D8 memory recency-orphan / D9 benchmark-citation debt / D10 verification artifact rot — 各 N items
+- D5-D10(2026-05-17 加,detail 詳 references/prune-dimensions-d5-d10.md): D5 canonical drift / D6 hook-fire health / D7 skill-invoke health / D8 memory recency-orphan / D9 benchmark-citation debt / D10 verification artifact rot — 各 N items(每維必寫「有候選 N / 無候選 / 儀器全盲」其一)
 
 Priority:
 - P0 (AUTO): 對齊 SSOT / 補 pointer / 刪 confirmed dead hook / retire unused skill — 表達層調整,不動 canonical 意思
@@ -238,8 +238,8 @@ Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 建立新 Meta-Pat
 
 | 項目 | Retire criteria |
 |------|-----------------|
-| Hook | 6 月 `hook-fires-per-hook.jsonl` 0 fire + 無 future-planned consumer。**前提:report 的 `summary.observation.blind` 必須是 `false`** —— 全盲時零筆不是證據,見 D2 |
-| Skill | 3 月 0 invoke + 非 rare-event skill(release-cut 類可例外) |
+| Hook | 6 月 `hook-fires-per-hook.jsonl` 0 fire + 無 future-planned consumer。**前提:report 的 `summary.observation.blind` 必須是 `false`** —— 全盲時零筆不是證據,見 D2;全盲時改用靜態判準(references/prune-dimensions-d5-d10.md「遙測全盲時的靜態退場判準」) |
+| Skill | 3 月 0 invoke + 非 rare-event skill(release-cut 類可例外)。**前提同 Hook 列**:skill-invokes 要開遙測才寫、收不到 slash 呼叫,全盲時零筆不是證據 |
 | Meta-Pattern 條目 | 被新上游 meta 完全吸收 + grep 無引用 |
 | Memory file | 6 月未更新 + 現況已不符 + MEMORY.md 無 head pointer |
 | Spec 段落 | 被 SSOT pointer 取代 + grep 無外部引用 |

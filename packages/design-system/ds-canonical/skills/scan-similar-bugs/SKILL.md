@@ -22,7 +22,7 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 **強制(auto-chain)— batch-end only**(2026-05-12 重構,per independent review):
 - multi-issue session 結束後**一次**(不是每 fix 一次)
 - session 內 ≥ 2 fix commit 觸發批次 root-pattern scan
-- session_start_governance_check.sh Check 6 偵測 24h 內 ≥1 fix commit 且 skill-invokes log 24h 無 scan-similar-bugs invoke → soft 提醒
+- session_start_governance_check.sh Check 6 會算「24h 內 ≥1 fix commit 且 skill-invokes log 24h 無 scan-similar-bugs invoke」,但結果放在 soft REMINDERS,session_start 不輸出 REMINDERS;skill-invokes log 也要 `GOVERNANCE_TELEMETRY_OPT_IN=1` 才有 —— **目前不會提醒**,靠 batch-end 自律
 
 **手動 invoke**:
 - user 明言「掃同類 bug / 看其他元件有沒有 / 全 DS scan」

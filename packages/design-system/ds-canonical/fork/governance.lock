@@ -199,7 +199,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "57d04a23a94b9c15ee4e5e5ebba3c71f338e69a7dc0ec290e5223caca2020224",
+      "sha256": "59418c2759c163cef139593b3bdfec9078bf94995868a96ec5f8c3515878358a",
       "source": "providers/codex/skills/scan-similar-bugs",
       "classification": null,
       "destination": null
@@ -1151,7 +1151,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "7674c811b84f6b08af362f7642fb93e722649dbdf73a9f6ab5c37b2b9879a589",
+      "sha256": "9b998ba8e1e7c6a5023dac705ad0d50d3f35cd331f8a4d927bbdcfa73c9e3cb4",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1391,7 +1391,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "57d04a23a94b9c15ee4e5e5ebba3c71f338e69a7dc0ec290e5223caca2020224",
+      "sha256": "59418c2759c163cef139593b3bdfec9078bf94995868a96ec5f8c3515878358a",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1679,7 +1679,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "a7d2f40f000eedccd15d90e7d4dfa773e41bd24491f92d2871484a590602a58f",
+      "sha256": "691cb1ca9139d94182adf527dbcf4ea3a0adca32b736f167179dbb49e4f96378",
       "source": null,
       "classification": null,
       "destination": null
