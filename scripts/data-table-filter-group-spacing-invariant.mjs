@@ -28,6 +28,11 @@
  *           P  群組框四邊內距 = 8(框內第一條條件 / 最後一排「加入巢狀篩選」到框的四邊);
  *           R  框內列距 = 8(條件 ↔ 條件、最後一條 → 「加入巢狀篩選」那一排);
  *           L  框外左邊 Where / And / Or 標籤的頂 = 框內第一條條件的頂(標籤包層的上內距 8 = 框的上內距);
+ *           M  同一個標籤看得見的部分的中線 = 框內第一條條件的中線(差 ≤ 0.5px;文字標籤量字本身的行框 —— Range 包住標籤的字,
+ *              不是標籤外框;第二個群組的標籤是 And / Or 下拉,量下拉的欄位外框)。依據 data-table.spec.md「巢狀群組的間距」框外標籤那一句
+ *              (同一個標籤在平鋪列裡本來就跟那一列垂直置中;【AI 推導 2026-11-18】)。2026-11-18 前文字標籤只有一行字高、頂對齊,
+ *              字的中線比第一條條件高 3.5 / 5.5px(一般 / 大密度,38649f5a 的建置實量)—— L 量的是外框的頂,量不到這件事;
+ *              拿那份建置跑本閘:只紅 [M]。
  *           G  群組 ↔ 群組 = 面板 body 讀到的 --layout-space-tight;
  *           D  框內的 8(P、R)一般 / 大兩種密度同值(元件內部固定值,不跟密度);頁面根的 loose 兩種密度必須不同(密度有套上,否則儀器失效)。
  *           不保證(沒有量):「這段距離只由容器那一層給」(layoutSpace.spec.md 規則 4「同一段距離只由一層給:容器給內距,元件不再加外距去推容器」)。
@@ -38,10 +43,10 @@
  *   紅: 任一段與期望值差 > 0.5px → 指名密度 / 哪一個面板 / 哪一個群組 / 哪一段 / 數字並 exit 1;量不到 = INSTRUMENT-FAIL、exit 2(不讀成通過,也不指控產品)。
  *       `--selftest`:(a) 判定表(純函式 judge / judgeRhythm)—— 每一段各有該紅、該綠、儀器失效;A70 的形狀(巢狀上下 loose、群組間 tight)必紅 [T][K]、[B] 不紅;
  *       (b) 真建置上先量一趟現況(必綠),再逐一在頁面上拆掉一段,每一種的紅燈集合必須**正好等於**登記的那一組(多紅、少紅都算量具沒在量它宣稱的東西)——
- *       拆法(紅燈集合):群組框內距改 12 [P][L] / 框內列距改 12 [R] / 第一個群組往下推 4px [T][K][B] /
+ *       拆法(紅燈集合):群組框內距改 12 [P][L][M] / 框內列距改 12 [R] / 第一個群組往下推 4px [T][K][B] /
  *       巢狀面板上下內距都改成 loose(A70 的樣子)[T][K] / 巢狀面板下內距改成 loose(上 tight 下 loose)[B][K] /
  *       平鋪面板上內距改成 loose [F][K] / 群組清光後上內距改成 loose [E][B] / 群組清光後下內距改成 loose [B] /
- *       標籤上內距歸零 [L] / 第二個群組往下推 4px [G][K] / 框內距改成跟密度走 [P][D][L] /
+ *       標籤上內距歸零 [L][M] / 文字標籤改回一行字高(2026-11-18 前的樣子)[M] / 第二個群組往下推 4px [G][K] / 框內距改成跟密度走 [P][D][L][M] /
  *       最後一個群組 →「加入篩選器」那一排往下推 4px [K](只有 K 量得到這一段)/ 平鋪面板第二條往下推 4px [K] / 排序面板上內距改成 loose [K] —— 不符 → exit 1。
  *   綠: 現況每一段都等於期望值,md / lg 兩種密度。純幾何(getBoundingClientRect / computed token),等群組框 / 「加一筆」那一排本身出現、
  *       版面連續 10 個影格靜止、動畫跑完才量;重複跑恆等。
@@ -154,10 +159,10 @@ export function judgeRhythm(where, what, m) {
 }
 
 /**
- * 純函式:[{ density, err?, tight, loose, rootLoose, headerToGroup, groupGaps: number[], groups: [{ pad: { top, right, bottom, left }, rowGaps: number[], labelDelta, conditions }],
+ * 純函式:[{ density, err?, tight, loose, rootLoose, headerToGroup, groupGaps: number[], groups: [{ pad: { top, right, bottom, left }, rowGaps: number[], labelDelta, labelMid, labelKind, conditions }],
  *          flatTight, flatHeaderToRow, clearedHeaderToRow, clearedFirst, nestedEnd, clearedEnd, rhythm: { nested, flat, sort } }]
  * (nestedEnd / clearedEnd 見 judgeEnd、rhythm 的每一格見 judgeRhythm)→ 不符合的訊息清單(呼叫端與 selftest 共用)。
- * 訊息開頭的 [T] / [K] / [F] / [E] / [B] / [P] / [R] / [L] / [G] / [D] = 檔頭契約的那一段。
+ * 訊息開頭的 [T] / [K] / [F] / [E] / [B] / [P] / [R] / [L] / [M] / [G] / [D] = 檔頭契約的那一段。
  */
 export function judge(rows) {
   const failures = []
@@ -170,7 +175,7 @@ export function judge(rows) {
       failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 巢狀面板要量到 ≥ 2 個群組、其中一個有 ≥ 2 條條件(量到 ${r.groups?.length ?? 0} 個群組、條件數 ${JSON.stringify((r.groups ?? []).map((g) => g.conditions))})—— 範例換了,量不到「群組 ↔ 群組」或「條件 ↔ 條件」`)
       continue
     }
-    const measured = [r.headerToGroup, r.flatHeaderToRow, r.clearedHeaderToRow, ...r.groupGaps, ...r.groups.flatMap((g) => [g.pad.top, g.pad.right, g.pad.bottom, g.pad.left, g.labelDelta, ...g.rowGaps])]
+    const measured = [r.headerToGroup, r.flatHeaderToRow, r.clearedHeaderToRow, ...r.groupGaps, ...r.groups.flatMap((g) => [g.pad.top, g.pad.right, g.pad.bottom, g.pad.left, g.labelDelta, g.labelMid, ...g.rowGaps])]
     if (!measured.every(Number.isFinite) || r.groupGaps.length !== r.groups.length - 1 || r.groups.some((g) => g.rowGaps.length < 1)) {
       failures.push(`${INSTRUMENT_FAIL_MARKER}:${where} 有一段沒量到(巢狀標題列 → 群組 ${r.headerToGroup}、平鋪標題列 → 條件列 ${r.flatHeaderToRow}、清光後標題列 → 按鈕列 ${r.clearedHeaderToRow}、群組間 ${JSON.stringify(r.groupGaps)}、群組 ${JSON.stringify(r.groups)})`)
       continue
@@ -190,6 +195,7 @@ export function judge(rows) {
       const badGap = g.rowGaps.filter((v) => !near(v, GROUP_INNER))
       if (badGap.length) failures.push(`[R] ${who} 框內列距 ${g.rowGaps.join(' / ')}px,應每一段 ${GROUP_INNER}(條件 ↔ 條件、最後一條 → 「加入巢狀篩選」)`)
       if (!near(g.labelDelta, 0)) failures.push(`[L] ${who} 框外標籤的頂比框內第一條條件的頂${g.labelDelta > 0 ? '低' : '高'} ${Math.abs(g.labelDelta)}px,應齊平(標籤包層的上內距 = 框的上內距 ${GROUP_INNER})`)
+      if (!near(g.labelMid, 0)) failures.push(`[M] ${who} 框外標籤(${g.labelKind ?? '?'})的中線比框內第一條條件的中線${g.labelMid > 0 ? '低' : '高'} ${Math.abs(g.labelMid)}px,應對齊(標籤佔一條條件列的高、字在裡面垂直置中;data-table.spec.md「巢狀群組的間距」)`)
       ;(inner[i] ??= []).push({ density: r.density, values: [g.pad.top, g.pad.right, g.pad.bottom, g.pad.left, ...g.rowGaps] })
     })
     r.groupGaps.forEach((v, i) => { if (!near(v, r.tight)) failures.push(`[G] ${where} 第 ${i + 1} 個群組 → 第 ${i + 2} 個群組 = ${v}px,應 ${r.tight}(面板 body 的塊距 tight;有底色的獨立框之間必留間距)`) })
@@ -241,11 +247,19 @@ export const probeGroups = ({ groupSelector }) => {
       const inner = { top: gr.top + num(g, 'borderTopWidth'), right: gr.right - num(g, 'borderRightWidth'), bottom: gr.bottom - num(g, 'borderBottomWidth'), left: gr.left + num(g, 'borderLeftWidth') }
       const first = kids[0], last = kids[kids.length - 1]
       const label = g.previousElementSibling?.firstElementChild ?? null
+      // M:標籤看得見的部分 —— 下拉(index 1)= 欄位外框;文字標籤 = Range 包住字的行框(不是標籤外框:外框跟字一樣高時量不出字有沒有置中)
+      const field = label?.querySelector('[data-field-mode]') ?? null
+      let seen = null
+      if (field) seen = rect(field)
+      else if (label && (label.textContent || '').trim()) { const rg = document.createRange(); rg.selectNodeContents(label); seen = rg.getBoundingClientRect() }
+      const mid = (b) => (b.top + b.bottom) / 2
       return {
         conditions: Math.max(0, kids.length - 1),
         pad: first ? { top: r1(rect(first).top - inner.top), right: r1(inner.right - Math.max(...kids.map((k) => rect(k).right))), bottom: r1(inner.bottom - rect(last).bottom), left: r1(Math.min(...kids.map((k) => rect(k).left)) - inner.left) } : { top: NaN, right: NaN, bottom: NaN, left: NaN },
         rowGaps: kids.slice(1).map((k, i) => r1(rect(k).top - rect(kids[i]).bottom)),
         labelDelta: label && first ? r1(rect(label).top - rect(first).top) : NaN,
+        labelMid: seen && seen.height > 0 && first ? r1(mid(seen) - mid(rect(first))) : NaN,
+        labelKind: field ? '下拉' : label ? `文字「${(label.textContent || '').trim()}」` : null,
       }
     }),
   }
@@ -317,7 +331,7 @@ const noRunningAnimation = () => document.getAnimations().every((a) => a.playSta
  * 推法用 margin(不改內距)的,落在「那一筆的包層」上:清光之後那幾筆就不在了,不會連帶推到 E / B。
  */
 const MUTATIONS = [
-  { what: '群組框內距改 12', want: ['P', 'L'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) g.style.setProperty('padding', '12px', 'important') } },
+  { what: '群組框內距改 12', want: ['P', 'L', 'M'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) g.style.setProperty('padding', '12px', 'important') } },
   { what: '框內列距改 12', want: ['R'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) g.style.setProperty('row-gap', '12px', 'important') } },
   { what: '第一個群組往下推 4px', want: ['T', 'K', 'B'], phase: 'open', fn: (sel) => { const g = document.querySelector(sel); if (g) g.parentElement.style.setProperty('margin-top', '4px', 'important') } },
   // 這兩種照 A70 程式的條件寫(只在 body 裡有群組時套;群組清光後回到預設)—— 用 :has 樣式規則,不寫在元素的 style 上(寫在元素上清光後還留著,會連帶紅 [E] / 清光後的 [B])
@@ -326,9 +340,11 @@ const MUTATIONS = [
   { what: '平鋪面板 body 上內距改成 loose', want: ['F', 'K'], phase: 'open', fn: (sel) => { const b = [...document.querySelectorAll('[data-slot="surface-body"]')].find((x) => !x.querySelector(sel)); if (b) b.style.setProperty('padding-top', 'var(--layout-space-loose)', 'important') } },
   { what: '群組清光後上內距改成 loose(巢狀模式另給 loose)', want: ['E', 'B'], phase: 'cleared', fn: (b) => { b.style.setProperty('padding-top', 'var(--layout-space-loose)', 'important') } },
   { what: '群組清光後下內距改成 loose', want: ['B'], phase: 'cleared', fn: (b) => { b.style.setProperty('padding-bottom', 'var(--layout-space-loose)', 'important') } },
-  { what: '標籤包層的上內距歸零', want: ['L'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) g.previousElementSibling?.style.setProperty('padding-top', '0px', 'important') } },
+  { what: '標籤包層的上內距歸零', want: ['L', 'M'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) g.previousElementSibling?.style.setProperty('padding-top', '0px', 'important') } },
+  // 2026-11-18 前的樣子:文字標籤只有一行字高(外框的頂仍跟第一條條件齊平 → [L] 不紅;只有量字中線的 [M] 紅)
+  { what: '文字標籤改回一行字高(2026-11-18 前的樣子)', want: ['M'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) { const l = g.previousElementSibling?.firstElementChild; if (l && !l.querySelector('[data-field-mode]')) l.style.setProperty('height', 'auto', 'important') } } },
   { what: '第二個群組往下推 4px', want: ['G', 'K'], phase: 'open', fn: (sel) => { const g = document.querySelectorAll(sel)[1]; if (g) g.parentElement.style.setProperty('margin-top', '4px', 'important') } },
-  { what: '框內距改成跟密度走(--layout-space-tight)', want: ['P', 'D', 'L'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) g.style.setProperty('padding', 'var(--layout-space-tight)', 'important') } },
+  { what: '框內距改成跟密度走(--layout-space-tight)', want: ['P', 'D', 'L', 'M'], phase: 'open', fn: (sel) => { for (const g of document.querySelectorAll(sel)) g.style.setProperty('padding', 'var(--layout-space-tight)', 'important') } },
   { what: '最後一個群組 →「加入篩選器」那一排往下推 4px(T / G / B 都量不到的那一段)', want: ['K'], phase: 'open', fn: (sel) => { const gs = document.querySelectorAll(sel); const g = gs[gs.length - 1]; if (g) g.parentElement.style.setProperty('margin-bottom', '4px', 'important') } },
   { what: '平鋪面板第二條往下推 4px', want: ['K'], phase: 'open', fn: (sel) => { const b = [...document.querySelectorAll('[data-slot="surface-body"]')].find((x) => !x.querySelector(sel)); const row = b ? [...b.children].filter((c) => !c.matches('[data-panel-add-row]') && getComputedStyle(c).position !== 'absolute')[1] : null; if (row) row.style.setProperty('margin-top', '4px', 'important') } },
   { what: '排序面板 body 上內距改成 loose', want: ['K'], phase: 'sort', fn: (b) => { b.style.setProperty('padding-top', 'var(--layout-space-loose)', 'important') } },
@@ -453,7 +469,7 @@ async function measure(page, server, mutation = null) {
 
 const endText = (e) => (!e ? '沒量' : e.err ? e.err : `頂 ${e.top} 底 ${e.bottom}(最後 ${e.last}、${e.box})`)
 const rhythmText = (m) => (!m ? '沒量' : m.err ? m.err : `${m.segments.map((s) => s.v).join(' / ')}(${m.items} 筆;tight ${m.tight})`)
-const describe = (r) => (r.err ? `  @${r.density}  ${r.err}` : `  @${r.density}  巢狀:標題列 → 群組 ${r.headerToGroup}(tight ${r.tight})、收尾 ${endText(r.nestedEnd)}  平鋪:標題列 → 條件列 ${r.flatHeaderToRow}(tight ${r.flatTight})  清光後:標題列 → ${r.clearedFirst} ${r.clearedHeaderToRow}(tight ${r.tight})、收尾 ${endText(r.clearedEnd)}  群組間 ${r.groupGaps.join(' / ')}  ${r.groups.map((g, i) => `〔群組 ${i + 1}:${g.conditions} 條條件、內距 上 ${g.pad.top} 右 ${g.pad.right} 下 ${g.pad.bottom} 左 ${g.pad.left}、列距 ${g.rowGaps.join(' / ')}、標籤頂差 ${g.labelDelta}〕`).join(' ')}\n        韻律(頂 / 筆 ↔ 筆 … / 最後一筆 → 加一筆那排 / 那排 → 底):${RHYTHM_PANELS.map(([k, what]) => `${what} ${rhythmText(r.rhythm?.[k])}`).join(';')}`)
+const describe = (r) => (r.err ? `  @${r.density}  ${r.err}` : `  @${r.density}  巢狀:標題列 → 群組 ${r.headerToGroup}(tight ${r.tight})、收尾 ${endText(r.nestedEnd)}  平鋪:標題列 → 條件列 ${r.flatHeaderToRow}(tight ${r.flatTight})  清光後:標題列 → ${r.clearedFirst} ${r.clearedHeaderToRow}(tight ${r.tight})、收尾 ${endText(r.clearedEnd)}  群組間 ${r.groupGaps.join(' / ')}  ${r.groups.map((g, i) => `〔群組 ${i + 1}:${g.conditions} 條條件、內距 上 ${g.pad.top} 右 ${g.pad.right} 下 ${g.pad.bottom} 左 ${g.pad.left}、列距 ${g.rowGaps.join(' / ')}、標籤頂差 ${g.labelDelta}、標籤中線差 ${g.labelMid}(${g.labelKind})〕`).join(' ')}\n        韻律(頂 / 筆 ↔ 筆 … / 最後一筆 → 加一筆那排 / 那排 → 底):${RHYTHM_PANELS.map(([k, what]) => `${what} ${rhythmText(r.rhythm?.[k])}`).join(';')}`)
 
 /** 失敗訊息 → 紅燈段落的集合(訊息開頭的 [X])。 */
 const redTags = (failures) => new Set(failures.map((s) => /^\[([A-Z])\]/.exec(s)?.[1]).filter(Boolean))
@@ -462,7 +478,7 @@ function selftestTable() {
   let ok = true
   const expect = (cond, msg) => { if (!cond) { console.error(`✗ selftest:${msg}`); ok = false } }
   const T = { md: { tight: 12, loose: 16, rootLoose: 16, flatTight: 12 }, lg: { tight: 16, loose: 24, rootLoose: 24, flatTight: 16 } }
-  const group = (over = {}) => ({ conditions: 2, pad: { top: 8, right: 8, bottom: 8, left: 8 }, rowGaps: [8, 8], labelDelta: 0, ...over })
+  const group = (over = {}) => ({ conditions: 2, pad: { top: 8, right: 8, bottom: 8, left: 8 }, rowGaps: [8, 8], labelDelta: 0, labelMid: 0, labelKind: '文字「Where」', ...over })
   // B 的一次收尾量測(probeSides 的形狀;修後:頂 = 底)
   const end = (density, v, over = {}) => ({ top: v, bottom: v, scrolled: 0, last: 'element', box: 'hug', lastDesc: '<button>「加入篩選器」', loose: T[density].loose, tight: T[density].tight, bottomToken: 48, grow: 20, free: 0, ...over })
   // K 的一個面板(probeRhythm 的形狀):n 筆、每一段都是 v;over 依 kind 改值({ top, last, end } 或 gaps: [..])
@@ -534,6 +550,12 @@ function selftestTable() {
   // L:標籤比第一條條件高 8(標籤包層沒有上內距)→ [L]
   const l = judge(both({ groups: [group({ labelDelta: -8 }), group({ conditions: 1, rowGaps: [8] })] }))
   expect(tagged(l, 'L').length === 2 && l.length === 2 && l.every((s) => s.includes('高 8px')), `標籤沒對齊應兩密度只紅 [L],實得 ${JSON.stringify(l)}`)
+  // M:2026-11-18 前(38649f5a 實量):文字標籤外框的頂齊平(L 綠)、字的中線高 3.5 / 5.5 → 只紅 [M],指名高多少
+  const mOld = judge(both((d) => ({ groups: [group({ labelMid: d === 'md' ? -3.5 : -5.5 }), group({ conditions: 1, rowGaps: [8], labelKind: '下拉' })] })))
+  expect(sameSet(mOld, ['M']) && mOld.length === 2 && mOld.some((s) => s.includes('高 3.5px')) && mOld.some((s) => s.includes('高 5.5px')) && mOld.every((s) => s.includes('文字「Where」')), `文字標籤中線比第一條條件高 3.5 / 5.5 應兩密度只紅 [M],實得 ${JSON.stringify(mOld)}`)
+  // M 的容差:差 0.5 以內綠、0.6 紅(同 TOL)
+  expect(judge(both({ groups: [group({ labelMid: 0.5 }), group({ conditions: 1, rowGaps: [8] })] })).length === 0, '標籤中線差 0.5px 應綠(容差內)')
+  expect(sameSet(judge(both({ groups: [group(), group({ conditions: 1, rowGaps: [8], labelMid: 0.6 })] })), ['M']), '第二個群組的標籤中線差 0.6px 應紅 [M]')
   // G:群組 ↔ 群組用了 loose → [G]
   const g = judge(both((d) => ({ groupGaps: [T[d].loose] })))
   expect(tagged(g, 'G').length === 2 && g.length === 2, `群組間用 loose 應兩密度只紅 [G],實得 ${JSON.stringify(g)}`)
@@ -553,6 +575,7 @@ function selftestTable() {
   expect(inst(both({ groups: [group()], groupGaps: [] })), '只量到一個群組應判儀器失效(量不到群組 ↔ 群組)')
   expect(inst(both({ groups: [group({ conditions: 1, rowGaps: [8] }), group({ conditions: 1, rowGaps: [8] })] })), '沒有任何群組有 ≥ 2 條條件應判儀器失效(量不到條件 ↔ 條件)')
   expect(inst(both({ groups: [group({ labelDelta: NaN }), group({ conditions: 1, rowGaps: [8] })] })), '標籤沒量到應判儀器失效')
+  expect(inst(both({ groups: [group({ labelMid: NaN }), group({ conditions: 1, rowGaps: [8] })] })), '標籤中線沒量到(例:標籤沒有字、也不是下拉)應判儀器失效')
   expect(inst(both({ headerToGroup: NaN })), '巢狀標題列 → 群組沒量到應判儀器失效')
   expect(inst(both({ flatHeaderToRow: NaN })), '平鋪標題列 → 條件列沒量到應判儀器失效')
   expect(inst(both({ clearedHeaderToRow: undefined })), '群組清光後沒量到應判儀器失效(不准默默跳過 E)')
@@ -572,7 +595,7 @@ function selftestTable() {
   expect(onlyInst({ rhythm: rhythms('md', { nested: { ...rhythmOf('md', 2), tight: NaN } }) }), '韻律讀不到 tight 應判儀器失效')
   expect(onlyInst({ rhythm: rhythms('md', { nested: { ...rhythmOf('md', 2), segments: rhythmOf('md', 2).segments.filter((s) => s.kind !== 'end') } }) }), '韻律缺「那一排 → 面板底」應判儀器失效')
   // 拆法清單本身:每一種都登記了該紅的全集、段落代號都是本閘有的
-  const KNOWN = new Set(['T', 'K', 'F', 'E', 'B', 'P', 'R', 'L', 'G', 'D'])
+  const KNOWN = new Set(['T', 'K', 'F', 'E', 'B', 'P', 'R', 'L', 'M', 'G', 'D'])
   expect(MUTATIONS.every((m) => Array.isArray(m.want) && m.want.length > 0 && m.want.every((x) => KNOWN.has(x)) && ['open', 'cleared', 'sort'].includes(m.phase)), '每一種拆法都要登記該紅的段落全集與套用時機')
   expect([...KNOWN].every((x) => MUTATIONS.some((m) => m.want.includes(x))),`每一段至少要有一種頁面拆法會紅(沒有的:${[...KNOWN].filter((x) => !MUTATIONS.some((m) => m.want.includes(x))).join('、')})`)
   return ok
@@ -620,7 +643,7 @@ if (isMain) {
       // 量不到 = 儀器失效(exit 2,不讀成通過,也不只當成產品紅);其餘 = 產品不符(exit 1)
       process.exit(failures.some((s) => s.includes(INSTRUMENT_FAIL_MARKER)) ? 2 : 1)
     }
-    console.log(`✅ data-table-filter-group-spacing PASS(篩選 / 排序面板 × md / lg:巢狀標題列 → 群組 = tight、平鋪標題列 → 條件列 = tight、群組清光後標題列 → 按鈕列 = tight、三個面板的韻律(頂 = 筆 ↔ 筆 = 最後一筆 → 加一筆那排 = 那排 → 底 = tight)、巢狀面板收尾 = 與頂部同值(群組在前 / 清光後)、群組框內距 / 列距 = ${GROUP_INNER}(不跟密度)、標籤頂對齊第一條條件、群組 ↔ 群組 = tight)`)
+    console.log(`✅ data-table-filter-group-spacing PASS(篩選 / 排序面板 × md / lg:巢狀標題列 → 群組 = tight、平鋪標題列 → 條件列 = tight、群組清光後標題列 → 按鈕列 = tight、三個面板的韻律(頂 = 筆 ↔ 筆 = 最後一筆 → 加一筆那排 = 那排 → 底 = tight)、巢狀面板收尾 = 與頂部同值(群組在前 / 清光後)、群組框內距 / 列距 = ${GROUP_INNER}(不跟密度)、標籤頂與中線都對齊第一條條件、群組 ↔ 群組 = tight)`)
   } catch (error) {
     if (error instanceof StoryRenderInstrumentError) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:${error.message}`); process.exit(2) }
     throw error

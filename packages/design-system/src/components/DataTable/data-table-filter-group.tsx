@@ -73,12 +73,17 @@ function ConjunctionLabel({
   // index ≥ 2:被連動的 row,read-only 顯示當前 conjunction 文字(同 Where 視覺,A6 canonical)
   //   對齊 Airtable / Notion / Linear 共識 @benchmark-unverified(non-OSS)
   //   px-[var(--field-px)] 對齊 Field 內部 padding 12px(Q13)
+  //   h-field-sm flex items-center(2026-11-18):文字標籤佔一條條件列的高(條件列的欄位與 index 1 的 Select 都是 size="sm",同一顆 token),
+  //   字在裡面垂直置中 → 字的中線 = 旁邊那一條條件的中線。平鋪列(FilterRow 的 items-center)本來就這樣;巢狀的群組標籤
+  //   (GroupBlock 包層 pt-2,頂對齊)以前只有一行字高,字的中線比框內第一條條件高 3.5 / 5.5px(一般 / 大密度,38649f5a 實量)。
+  //   規則與依據住 data-table.spec.md「巢狀群組的間距」;閘 data-table-filter-group-spacing-invariant.mjs 的 M 段
+  const TEXT_LABEL = 'w-20 shrink-0 h-field-sm flex items-center text-body text-fg-secondary px-[var(--field-px)]'
   if (index === 0) {
-    return <div className="w-20 shrink-0 text-body text-fg-secondary px-[var(--field-px)] self-center">{labels.where}</div>
+    return <div className={TEXT_LABEL}>{labels.where}</div>
   }
   if (index >= 2) {
     const label = conjunction === 'and' ? labels.and : labels.or
-    return <div className="w-20 shrink-0 text-body text-fg-secondary px-[var(--field-px)] self-center">{label}</div>
+    return <div className={TEXT_LABEL}>{label}</div>
   }
   // index === 1:可切換的 AND/OR Select
   return (
