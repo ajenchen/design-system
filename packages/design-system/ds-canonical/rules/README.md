@@ -27,7 +27,7 @@ paths:
 
 | | Canonical/provider bootstrap | Canonical rules |
 |---|---|---|
-| 載入時機 | 每 session start 載入(行數上限見 `hooks/lib/_size_budget.sh` 上限表 + `hooks/session_start_governance_check.sh` Check 1;本檔不硬寫數值)| 支援 path scope 的 adapter 於編對應 file 時載入；其他 provider 按 index 讀取 |
+| 載入時機 | 每 session start 載入(行數上限見 `hooks/lib/_size_budget.sh` 上限表 + `hooks/session_start_governance_check.sh` Check 1;本檔不硬寫數值)| 支援 path scope 的 adapter 於編對應 file 時載入；其他 provider 按 index 讀取(字數上限見同一張上限表,`hooks/check_file_size_budget.sh` 寫入當下提醒)|
 | 內容 | 6 mindset + 治理 / 稽核 / SSOT canonical / 任務導航 / fundamental rules | 該 file family 細節規則(spec 撰寫 / UI 開發 / story / self-verify)|
 
 ## 新增 rule 流程

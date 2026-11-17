@@ -2,22 +2,27 @@
 # _size_budget.sh —— 治理檔大小上限的唯一一張表,連同量法(helper,被 source;本身不是 hook)。
 #
 # 讀者:check_file_size_budget.sh(PreToolUse,寫入當下提醒)。Stop hook 的上限清單也要改接本檔 ——
-#       接完之後,全庫各檔(instruction entry / memory / spec / SKILL)的上限只剩這一張表。
+#       接完之後,全庫各檔(instruction entry / memory / rules / spec / SKILL)的上限只剩這一張表。
 #       外部文件寫「check_file_size_budget.sh 的 case 表」指的就是這裡的 governance_size_budget。
 # 不在這裡的門檻:開場檔「總」行數、hook 數、memory 索引條數 → session_start_governance_check.sh(檔頭 + Check 1 / 7 / 8);
 #       memory 會讓 CI 紅的那一份 → governance/memory/contract.json(本表 memory 那一列直接讀它,不另寫數字)。
 #
 # 介面(全部只讀,不寫任何檔):
 #   governance_size_budget <repo 相對路徑>
-#       有預算 → 印一行 `BUDGET<TAB>TRANSITION<TAB>UNIT<TAB>LABEL`(UNIT 目前只有 lines;LABEL 放最後,可含空白),回 0
+#       有預算 → 印一行 `BUDGET<TAB>TRANSITION<TAB>UNIT<TAB>LABEL`(UNIT = lines | chars;LABEL 放最後,可含空白),回 0
 #       不在表內 → 不印,回 1
 #       量具壞了(registry / contract 讀不到)→ 回 2。「讀不到」不等於「不在表內」,呼叫端不得當成放行。
-#   governance_size_measure <檔案> <lines>
+#   governance_size_measure <檔案> <lines|chars>
 #       印 `手寫量<TAB>被扣掉的量`。扣掉的是 scripts/add-reciprocal-pointers.mjs 自動維護的「## 被引用(auto-maintained…)」段
 #      (標題行起,到下一個 `## ` 標題或檔尾為止;段後若還有手寫章節照算)—— 該段長度只取決於有幾份 spec 指向本檔,
-#       作者刪不掉也不該刪,量它就是拿代理當性質(M37)。
+#       作者刪不掉也不該刪,量它就是拿代理當性質(M37)。chars = Unicode 字元數(與 UTF-8 locale 下的 `wc -m` 同值),
+#       不受執行環境 locale 影響。
+#   governance_size_cell_budget <repo 相對路徑>
+#       有「表格單格」上限 → 印 `N<TAB>LABEL`,回 0;沒有 → 回 1。目前只有 meta-patterns.md 的 M-rule 第 2 欄。
+#   governance_size_oversized_cells <檔案> <N>
+#       每個第 2 欄超過 N 字的 M-rule 列印一行 `<M-ID><TAB><字數>`(GFM 的 `\|` 是格內的字,不切格)。
 #
-# 全部都只是「預算」:超標要不要擋由呼叫端決定(check_file_size_budget.sh 檔頭寫了它的做法)。
+# 全部都只是「預算」:超標要不要擋由呼叫端決定(check_file_size_budget.sh 檔頭寫了為什麼不擋)。
 
 # 路徑事實(provider / canonical roots)一律經 _provider_paths.sh 由 registry 解析;呼叫端還沒 source 就在這裡補。
 if ! declare -F governance_provider_string_field >/dev/null 2>&1; then
@@ -40,7 +45,7 @@ _governance_size_memory_max_lines() {
 }
 
 governance_size_budget() {
-  local rel="${1#./}" skills_root max_lines
+  local rel="${1#./}" skills_root rules_root rule_name max_lines
   local instruction_entry shared_entry provider_skill_root skill_entry
   [ -n "$rel" ] || return 1
 
@@ -72,14 +77,36 @@ governance_size_budget() {
       return 0 ;;
   esac
 
-  # ── 2. canonical SKILL.md ──
+  # ── 2. canonical rules(rules/*.md;2026-11-18 新增,單位是字數)──
+  # 規則檔是每次對話都塞進 context 的檔(meta-patterns 無 paths、永遠載入;其餘依 paths 命中載入),
+  # 成本跟字數走,不跟行數走 —— meta-patterns 一列可以三千多字,量行數永遠量不到。
+  # 數值 = 38649f5a 實量取整(進位到千),TRANSITION 再 +10%:
+  #   meta-patterns.md 31,983 字 → 32,000 / 35,200;
+  #   其餘規則檔最大的是 story-rules.md 14,131 字 → 15,000 / 16,500(拿 meta-patterns 的數字套它們,
+  #   story-rules 可以再長一倍多都沒有訊號,等於沒訂)。
+  # registry 沒宣告 rules root(只有測試用的 fixture registry 會這樣)= 沒有規則檔可管。
+  rules_root="$(governance_canonical_relative_root rules 2>/dev/null || true)"
+  if [ -n "$rules_root" ] && governance_path_is_under "$rel" "$rules_root"; then
+    rule_name="${rel#"$rules_root"/}"
+    case "$rule_name" in
+      meta-patterns.md)
+        _governance_size_emit 32000 35200 chars "always-loaded rule file(meta-patterns.md)"
+        return 0 ;;
+      */*) ;;
+      *.md)
+        _governance_size_emit 15000 16500 chars "path-scoped rule file"
+        return 0 ;;
+    esac
+  fi
+
+  # ── 3. canonical SKILL.md ──
   skills_root="$(governance_canonical_relative_root skills 2>/dev/null)" || return 2
   if governance_path_is_under "$rel" "$skills_root" && [ "${rel##*/}" = "SKILL.md" ]; then
     _governance_size_emit 250 400 lines "canonical SKILL.md"
     return 0
   fi
 
-  # ── 3. 要知道是哪個 provider 才能判的類別 ──
+  # ── 4. 要知道是哪個 provider 才能判的類別 ──
   instruction_entry="$(governance_provider_string_field instructionEntry 2>/dev/null)" || return 2
   shared_entry="$(governance_provider_string_field sharedInstructionEntry 2>/dev/null)" || return 2
   provider_skill_root="$(governance_provider_string_field skillDirectory 2>/dev/null)" || return 2
@@ -111,6 +138,62 @@ governance_size_measure() {
       ' "$file") || return 1
       printf '%s\t%s\n' "$((total - auto))" "$auto"
       ;;
+    chars)
+      python3 - "$file" <<'PY'
+import sys
+
+text = open(sys.argv[1], 'rb').read().decode('utf-8', 'replace')
+parts = text.split('\n')
+lines = [part + '\n' for part in parts[:-1]] + ([parts[-1]] if parts[-1] else [])
+auto = 0
+skip = False
+for line in lines:
+    if line.startswith('## 被引用(auto-maintained'):
+        skip = True
+        auto += len(line)
+        continue
+    if skip and line.startswith('## '):
+        skip = False
+    if skip:
+        auto += len(line)
+print(f'{len(text) - auto}\t{auto}')
+PY
+      ;;
     *) return 1 ;;
   esac
+}
+
+# meta-patterns.md 的 M-rule 表第 2 欄(Meta-Principle)單格上限,只提醒、不擋。
+# N = 38649f5a 實量 33 列的 p90(nearest-rank)1,580 字,取整到 1,600。當時超過的是 M23 2,585 / M32 2,961 / M36 3,241 ——
+# 規則欄裡夾了事件經過;經過該搬去 skills/design-system-audit/references/historical-bugs.md,規則欄留規則句與一行索引。
+# 那幾列瘦下來之後,這個數字可以再收緊(重量分布,照同一個取法)。
+governance_size_cell_budget() {
+  local rel="${1#./}" rules_root
+  rules_root="$(governance_canonical_relative_root rules 2>/dev/null)" || return 1
+  [ "$rel" = "$rules_root/meta-patterns.md" ] || return 1
+  printf '%s\t%s\n' 1600 "meta-patterns.md M-rule column 2 (Meta-Principle)"
+}
+
+governance_size_oversized_cells() {
+  local file="$1" limit="$2"
+  [ -f "$file" ] || return 1
+  printf '%s' "$limit" | grep -qE '^[0-9]+$' || return 1
+  python3 - "$file" "$limit" <<'PY'
+import re
+import sys
+
+path, limit = sys.argv[1], int(sys.argv[2])
+text = open(path, 'rb').read().decode('utf-8', 'replace')
+row = re.compile(r'^\|\s*\*\*(M\d+)\*\*\s*\|')
+for line in text.split('\n'):
+    match = row.match(line)
+    if not match:
+        continue
+    cells = re.split(r'(?<!\\)\|', line)
+    if len(cells) < 4:
+        continue
+    size = len(cells[2].strip())
+    if size > limit:
+        print(f'{match.group(1)}\t{size}')
+PY
 }

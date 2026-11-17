@@ -1,8 +1,8 @@
 #!/bin/bash
 set -uo pipefail
-# PreToolUse Edit/Write: per-file line budgets for governance files(只提醒,見下方 Non-blocking)。
+# PreToolUse Edit/Write: per-file size budgets for governance files(行數或字數;只提醒,見下方 Non-blocking)。
 #
-# 上限表 —— 各檔(instruction entry / memory / spec / SKILL)上限的唯一住處 = lib/_size_budget.sh 的
+# 上限表 —— 各檔(instruction entry / memory / rules / spec / SKILL)上限的唯一住處 = lib/_size_budget.sh 的
 # governance_size_budget,量法也在同一檔;本 hook 只負責「讀表、量、出聲」。外部文件寫「check_file_size_budget.sh
 # 的 case 表」指的就是那張表。開場檔總行數、hook 數、memory 筆數門檻在 session_start_governance_check.sh
 #(檔頭 + Check 7 / 8)。AGENTS.md `# 治理 canonical`「行數預算」只是指向這兩處的索引,不寫數值。
@@ -66,6 +66,19 @@ if [ "$AMOUNT" -gt "$BUDGET" ]; then
     MESSAGES+=("⛔ ${LABEL} at ${FILE_PATH} is ${AMOUNT} ${UNIT}${AUTO_NOTE} (hard cap ${TRANSITION}). Must reduce before adding. Run /knowledge-prune or identify which section to remove.")
   else
     MESSAGES+=("⚠️ ${LABEL} at ${FILE_PATH} is ${AMOUNT} ${UNIT}${AUTO_NOTE} (budget ${BUDGET}, transition cap ${TRANSITION}). Prefer consolidating over appending. What can you remove/merge to make room?")
+  fi
+fi
+
+# 表格單格上限(目前只有 meta-patterns 的 M-rule 第 2 欄):跟整檔預算分開量,整檔沒超也照樣看。
+if CELL_ROW="$(governance_size_cell_budget "$REL_PATH")"; then
+  IFS=$'\t' read -r CELL_LIMIT CELL_LABEL <<< "$CELL_ROW"
+  OVERSIZED="$(governance_size_oversized_cells "$FILE_PATH" "$CELL_LIMIT")" || {
+    printf 'file-size hook blocked: could not measure table cells in %s\n' "$FILE_PATH" >&2
+    exit 2
+  }
+  if [ -n "$OVERSIZED" ]; then
+    CELL_LIST="$(printf '%s\n' "$OVERSIZED" | awk -F '\t' '{ printf "%s%s %s chars", (NR > 1 ? ", " : ""), $1, $2 }')"
+    MESSAGES+=("⚠️ ${CELL_LABEL} over ${CELL_LIMIT} chars: ${CELL_LIST}. Keep the rule sentence in the cell; move incident narrative to skills/design-system-audit/references/historical-bugs.md and leave a one-line index.")
   fi
 fi
 

@@ -147,5 +147,49 @@ rm "$CONTRACT_CORPUS/governance/memory/contract.json"
 TEST_CORPUS="$CONTRACT_CORPUS" TEST_REGISTRY=providers.json run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
 if [ "$EXIT" = "2" ] && printf '%s' "$STDOUT" | grep -q 'contract.json'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
 
+# N 個中文字 + 換行 = N+1 個字元、3N+1 個 byte:用來證明量的是字元不是 byte。
+cjk_line() { python3 -c 'import sys; sys.stdout.write("字" * int(sys.argv[1]) + "\n")' "$1"; }
+cjk_file() { cjk_line "$1" > "$2"; }
+RULES_DIR="$TMP_PROJECT/packages/design-system/ds-canonical/rules"
+mkdir -p "$RULES_DIR"
+
+echo "Test 15: always-loaded rule file 32,001 chars → warning in chars"
+cjk_file 32000 "$RULES_DIR/meta-patterns.md"
+run_hook "" "$RULES_DIR/meta-patterns.md"
+pass_if says '32001 chars (budget 32000, transition cap 35200)'
+
+echo "Test 16 (control for 15): 31,001 chars = 93,001 bytes → silent(counts characters, not bytes)"
+cjk_file 31000 "$RULES_DIR/meta-patterns.md"
+run_hook "" "$RULES_DIR/meta-patterns.md"
+pass_if silent
+
+echo "Test 17: path-scoped rule file 15,001 chars → warning"
+cjk_file 15000 "$RULES_DIR/story-rules.md"
+run_hook "" "$RULES_DIR/story-rules.md"
+pass_if says '15001 chars (budget 15000, transition cap 16500)'
+
+echo "Test 18 (control for 17): path-scoped rule file 14,001 chars → silent"
+cjk_file 14000 "$RULES_DIR/story-rules.md"
+run_hook "" "$RULES_DIR/story-rules.md"
+pass_if silent
+
+# 單格:第 2 欄中間夾一個 GFM 跳脫的 `\|`;若被當成切格,第 2 欄只剩 802 字,Test 19 就會變靜默而紅。
+meta_row() { python3 -c 'import sys; n = int(sys.argv[1]); print("| **M99** | " + "a" * 800 + " \\| " + "b" * (n - 804) + " | 錨例 |")' "$1"; }
+echo "Test 19: meta-patterns M-rule column 2 of 1,601 chars(with an escaped pipe inside)→ names the row"
+{ echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1601; } > "$RULES_DIR/meta-patterns.md"
+run_hook "" "$RULES_DIR/meta-patterns.md"
+pass_if says 'M99 1601 chars'
+
+echo "Test 20 (control for 19): column 2 of exactly 1,600 chars → silent"
+{ echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1600; } > "$RULES_DIR/meta-patterns.md"
+run_hook "" "$RULES_DIR/meta-patterns.md"
+pass_if silent
+
+echo "Test 21: whole-file and cell budgets fire together in one message"
+{ cjk_line 32000; echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1601; } > "$RULES_DIR/meta-patterns.md"
+run_hook "" "$RULES_DIR/meta-patterns.md"
+pass_if says 'M99 1601 chars'
+pass_if says 'always-loaded rule file'
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
