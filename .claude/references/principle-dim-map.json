@@ -112,7 +112,7 @@
       "note": "Dim 32 filter operator + 通用 SSOT 消費隱含全 audit 中"
     },
     "M18": {
-      "name": "Propose-time 4-Q gate",
+      "name": "Propose-time 自檢 gate(Q0–Q5)",
       "dims": [],
       "note": "propose-options skill;runtime discipline"
     },

@@ -341,7 +341,7 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 1. 把 trigger 放進 `data-theme="dark"` subtree(或反向:trigger 在 dark、app root light)
 2. 開啟 overlay,截圖 Portal Content
 3. **驗**:Content 顏色對齊「它該繼承的 theme」(預設 = app root theme,不被 trigger subtree 污染);若元件刻意要繼承 trigger theme → 必在 spec 聲明 + 顯式 set `data-theme` on Portal Content
-4. **同類 chain**:`data-density` 部分 overlay 刻意 lock `md`(見 `density.spec.md`)→ 同樣 probe 驗
+4. **同類 chain**:density —— 小浮層跟觸發點那一區、蓋住整頁的跟整頁,不得用 `data-density` 鎖浮層(見 `density.spec.md`「Canonical 情境 1」)→ 用 `scripts/overlay-density-follows-trigger-invariant.mjs` 驗
 
 **違反 → M3 portal escape bug**(歷史:DropdownMenu 在 dark subtree 變亮 / Avatar HoverCard NameCard 文字白色)。
 

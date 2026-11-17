@@ -28,9 +28,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:19144b2bd5c0641b1c18351bc461ed8033bba61633bd36ad05f7329cd5f09b7a` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:ff8a94cb8a3b458b2786c7015f5654db325ca3a38bc1e5a9160aa21da9feb9cd` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:91b2cef662c3dca90928f9c88967835a953e77222af0b172df959cfdf24e1256` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:69b960d60da5c814b93c415b3b4c080158fa36d2472ff5d7cdf488a41b0f0e14` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:b54b7fbd0fdcdccc8788ddb553a74f1e6c165c3dab897b7548e63deae27f3b38` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:1fdb7bcbf365088fcb7ebd5345316d61b83f1875082bf708335814244cf54477` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:50edda64bd8df6ba9bd52bb46613970650d208fdbe29e4650f261ad7f35c18a2` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:fb9a3543dfb3018da92158a20d15fbe5b1568c91c10550aa8a41375d13e7342b` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:1c20e26e8d33f2eaa3ba919a73fe9bda90209cd2218deb533303b55764f0cd7d` |
@@ -106,7 +106,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-closed-tool-execution-library | `packages/governance/src/closed-tool-execution.mjs` | `sha256:642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda` |
 | exact-codemod-cli | `packages/design-system/tools/codemods/cli.mjs` | `sha256:96259ff87afe7a9b88877d43a416a69201bdc73d04aa1423a9f91f9a34a891f0` |
 | exact-codemod-library | `packages/design-system/tools/codemods/index.mjs` | `sha256:c49f98d8127694a41a9d5c7915b9c14782b9c8bbeb7537624fccfa1cf64531cf` |
-| exact-deep-audit-skill | `packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md` | `sha256:53842d22da57acd7deb454a6ca687cc3433be4cba0bfb5f7c4c0b4872f35d570` |
+| exact-deep-audit-skill | `packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md` | `sha256:1359c3e3a3bab2b8472657b6bf85fc9eec8ca4fa82819e3fa0f962a63d8766e4` |
 | exact-devcontainer-config | `.devcontainer/devcontainer.json` | `sha256:d7ee9d978fdc13caf2f8d52e3bba7de653f96a3dd8a997fd5bebe22090207ab9` |
 | exact-devcontainer-post-create | `.devcontainer/post-create.mjs` | `sha256:6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b` |
 | exact-disposable-repository-snapshot-library | `scripts/lib/disposable-repository-snapshot.mjs` | `sha256:dddb6ad1dfe4428ee7c774ee2d15534b250ae30c8292a588b0632dd5ba567762` |
@@ -306,7 +306,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-schema | `packages/governance/canonical/schemas/provider-lifecycle.schema.json` | `sha256:807e126ffac67694193029f19b94e1b8d3e97282e70372b65bdd094a0604c2de` |
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:beb2a852c5371133b4f37e80fa69eb6719e21fc7c9153bd6feab726af44c4008` |
-| provider-neutral-memory | `governance/memory` | `sha256:6fa1bc360640b8dc9bae417c58014e1593867954a318c4b78eddcfc4b6c3aa73` |
+| provider-neutral-memory | `governance/memory` | `sha256:79453c73c5c5eade65b0ac2deada074d5b554a7f08ad9110a22fae190f7fc429` |
 | provider-neutral-planning-ledger | `governance/planning` | `sha256:53786e7724bf0e0266127043ac28d5fde3212c959680c91bb51a1e568816bde5` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:e3ede8c62b7ce50e974ff383c1d36d33b86ad95f9e183731cef0ca51bd29da1f` |

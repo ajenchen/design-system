@@ -164,7 +164,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:91b2cef662c3dca90928f9c88967835a953e77222af0b172df959cfdf24e1256",
+      "hash": "sha256:1fdb7bcbf365088fcb7ebd5345316d61b83f1875082bf708335814244cf54477",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -175,7 +175,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:69b960d60da5c814b93c415b3b4c080158fa36d2472ff5d7cdf488a41b0f0e14",
+      "hash": "sha256:50edda64bd8df6ba9bd52bb46613970650d208fdbe29e4650f261ad7f35c18a2",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 66,
-      "hash": "sha256:b54b7fbd0fdcdccc8788ddb553a74f1e6c165c3dab897b7548e63deae27f3b38",
+      "hash": "sha256:fb9a3543dfb3018da92158a20d15fbe5b1568c91c10550aa8a41375d13e7342b",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -873,12 +873,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:53842d22da57acd7deb454a6ca687cc3433be4cba0bfb5f7c4c0b4872f35d570",
+      "hash": "sha256:1359c3e3a3bab2b8472657b6bf85fc9eec8ca4fa82819e3fa0f962a63d8766e4",
       "id": "exact-deep-audit-skill",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md",
-      "size": 5761,
+      "size": 5996,
       "type": "file"
     },
     {
@@ -2708,7 +2708,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 21,
-      "hash": "sha256:6fa1bc360640b8dc9bae417c58014e1593867954a318c4b78eddcfc4b6c3aa73",
+      "hash": "sha256:79453c73c5c5eade65b0ac2deada074d5b554a7f08ad9110a22fae190f7fc429",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3464,7 +3464,7 @@
         {
           "expectedTargetDigest": "sha256:b79700476462c80e7d6f564522750c68554fdf3906532754e617a27de5666008",
           "name": "deep-audit-cross-codex",
-          "sourceDigest": "sha256:48f202b09f95356539b2aa972dd3224011a00cc3cc4be13a940579b59566e371",
+          "sourceDigest": "sha256:ccfe5189bedffc9215c9cd5a8422a46afe9065cb4326a64429c7b6209ff3d54c",
           "targetDigest": "sha256:b79700476462c80e7d6f564522750c68554fdf3906532754e617a27de5666008"
         },
         {
@@ -3474,16 +3474,16 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:57cb62ad382c3e2a4b49a41e1bd18674279d8665110f5efba50f5dc755724017",
+          "expectedTargetDigest": "sha256:4d039bfb376323f2c9650df783e7969267d6f118919281c9083a66b5b36798a8",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:d3239f0910291c3b7d7457d0c88992571950dc1487179807019dcf656a8194b9",
-          "targetDigest": "sha256:57cb62ad382c3e2a4b49a41e1bd18674279d8665110f5efba50f5dc755724017"
+          "sourceDigest": "sha256:2fbc9e81287444d3fcda82ffcf3608806dc6931cd57d16ee89fc89b15c45d79d",
+          "targetDigest": "sha256:4d039bfb376323f2c9650df783e7969267d6f118919281c9083a66b5b36798a8"
         },
         {
-          "expectedTargetDigest": "sha256:aa92ec8c02d08e0de289622ca641acea0621186e6508c8b7bf9e415d1ba32456",
+          "expectedTargetDigest": "sha256:e1b651def342e8cd8a554fefc0f092e19bc1e635801c5db96bbcf78ddb7c0099",
           "name": "ensure-canonical",
-          "sourceDigest": "sha256:20caca7f5ce23d345bc4a1578acdbfe532702f6edcdbebfb347e273fffd98a78",
-          "targetDigest": "sha256:aa92ec8c02d08e0de289622ca641acea0621186e6508c8b7bf9e415d1ba32456"
+          "sourceDigest": "sha256:fa3457f634191023033b8c18318d5fdc29eecd9460f734223cf27f2c587cce73",
+          "targetDigest": "sha256:e1b651def342e8cd8a554fefc0f092e19bc1e635801c5db96bbcf78ddb7c0099"
         },
         {
           "expectedTargetDigest": "sha256:93ea5545726a8fb6a1fadb5f8050259f05c240930508d6b8a38537320675160e",
@@ -3687,7 +3687,7 @@
         {
           "expectedTargetDigest": "sha256:debd34d9533dcd11fe04c8da9a5947ffe048d8699d5ff657de7ab16dd325bb72",
           "name": "deep-audit-cross-codex",
-          "sourceDigest": "sha256:48f202b09f95356539b2aa972dd3224011a00cc3cc4be13a940579b59566e371",
+          "sourceDigest": "sha256:ccfe5189bedffc9215c9cd5a8422a46afe9065cb4326a64429c7b6209ff3d54c",
           "targetDigest": "sha256:debd34d9533dcd11fe04c8da9a5947ffe048d8699d5ff657de7ab16dd325bb72"
         },
         {
@@ -3697,16 +3697,16 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:c45d2b243eb90095263971532aee39b341d5d84c4ac48585591d6ff764ec98b8",
+          "expectedTargetDigest": "sha256:9663f87ece3a2a5f784dd3ec329fd9138a8b341eb53c5afe82b48f5f02ccf4aa",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:d3239f0910291c3b7d7457d0c88992571950dc1487179807019dcf656a8194b9",
-          "targetDigest": "sha256:c45d2b243eb90095263971532aee39b341d5d84c4ac48585591d6ff764ec98b8"
+          "sourceDigest": "sha256:2fbc9e81287444d3fcda82ffcf3608806dc6931cd57d16ee89fc89b15c45d79d",
+          "targetDigest": "sha256:9663f87ece3a2a5f784dd3ec329fd9138a8b341eb53c5afe82b48f5f02ccf4aa"
         },
         {
-          "expectedTargetDigest": "sha256:ea09df77193adf7cf92d5ac5d4472b1abd9d2e18f216b560de779c7cecf7e7a3",
+          "expectedTargetDigest": "sha256:0edf89e71011799b4d98e1e687148d58d46b16f6bb137cbc992ffaa28a3598c2",
           "name": "ensure-canonical",
-          "sourceDigest": "sha256:20caca7f5ce23d345bc4a1578acdbfe532702f6edcdbebfb347e273fffd98a78",
-          "targetDigest": "sha256:ea09df77193adf7cf92d5ac5d4472b1abd9d2e18f216b560de779c7cecf7e7a3"
+          "sourceDigest": "sha256:fa3457f634191023033b8c18318d5fdc29eecd9460f734223cf27f2c587cce73",
+          "targetDigest": "sha256:0edf89e71011799b4d98e1e687148d58d46b16f6bb137cbc992ffaa28a3598c2"
         },
         {
           "expectedTargetDigest": "sha256:2cdcb9105b3343f94dceae7b7c41c28a8af634dfe0a6ff9ca32e252b311bc170",

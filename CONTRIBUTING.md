@@ -4,7 +4,7 @@
 
 ## Daily workflow
 
-1. **Working branch**:1 task = 1 working branch + 1 PR(per `governance/memory/feedback_solo_dev_workflow.md`;protected `main` 禁 direct push)
+1. **Working branch**:1 chat(session)= 1 working branch + 1 PR(per `governance/memory/feedback_solo_dev_workflow.md`;protected `main` 禁 direct push)
 2. **Edit → commit → push branch**:每次 push 觸發 Netlify preview deploy(per-branch URL);建立/更新該 task 唯一 PR
 3. **Required CI + conversations resolved** 後依 Standing Authorization 自動 squash merge 進 protected `main`(Netlify preview 是 optional 佐證,不是 merge gate)
 4. **Cleanup**:merge 後刪 remote/local branch(`npm run release:status` 讀回安全後)
