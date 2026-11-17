@@ -7,7 +7,7 @@ paths:
 
 僅在編輯任何 file(`src/**` / canonical governance paths / `*.spec.md` / `*.tsx` / `*.css`)時 load。
 
-**Why**:M10/M11/M20/M32 散在 meta-patterns,缺單一「改檔前中後該驗什麼」canonical。本 rule SSOT。對齊 Linux kernel patch checklist / Toyota TPS 自働化 / Google CL pre-submit。
+**Why**:M10/M11/M20/M32 散在 meta-patterns,缺單一「改檔前中後該驗什麼」canonical。本 rule SSOT。
 
 ## 4 階段強制(每階段 fail 任一 → STOP)
 
@@ -54,10 +54,5 @@ paths:
 - ❌ **宣告「已全盤稽核 / 邏輯都對過」但只驗了單句層級**(cite / 數字 / 引文),沒跑結論兩兩相容性掃描 → 假檢查。anchor:2026-08-09 agent UI 規格連跑數次「全盤稽核」全漏,user 抓「你在檢查的時候難道都沒有發現他們邏輯不通嗎」
 - (溝通紀律——**問句必正面回答**、**禁自己虛構矛盾再自己否掉**——owner 在 `governance/memory/feedback_propose_discipline.md` Sub-rule 3,本檔不複述)
 - ❌ **重大 / SSOT / 模型改動只靠自 grep 就宣告完成** → 漏 fragility / 沒貫徹到 consumer。必跑 target-specific deterministic tests、required CI 與 applicable live readback；若 task／deliverable 明確要求 independent review 才把 reviewer receipt 列為 required，waived run 不得冒充已做
-
-- Linux kernel:`scripts/checkpatch.pl` pre-submit + `git log --oneline | head -3` 後 sign-off
-- Toyota TPS:Jidoka(自働化)— 機器發現異常自己停,人別繼續(對應 hook BLOCKER)
-- Google CL:LGTM + 必跑 presubmit(對應 Pre-commit table)
-- Atlassian RFC:cite + counter-example scan 必過 reviewer round
 
 對應 AGENTS.md `# 自主執行 canonical` + meta-patterns M10/M11/M20/M32。
