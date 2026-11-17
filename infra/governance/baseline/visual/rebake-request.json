@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "branch": "fix/undici-advisory-shape-2026-09-30",
+  "branch": "feat/batch1-ui-decisions-2026-11-10",
   "update_baseline": true,
   "reference_ref": "",
-  "reason": "R3:PR #169 改到的精選基準圖在合併前重拍,給 user 逐張看「可以改」",
-  "requestedAt": "2026-10-14T02:47:03Z"
+  "reason": "R3:PR #172 合併前重拍精選基準圖,給 user 逐張看「可以改」(user 2026-11-17「確定那些要重拍的地方現在都正確就重拍」;本機 132 場景逐張確認、判錯 4 件已在 528c946b 修好)",
+  "requestedAt": "2026-11-17T07:30:00Z"
 }

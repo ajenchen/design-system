@@ -196,7 +196,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-audit-coverage-metadata | `generated/governance/audit-coverage-matrix.json` | `sha256:34e9b0e53bc8831f6096a9e5367e73ee6bab99600a9e22a70a35b68770f03a51` |
 | governance-authority-setup-cli | `scripts/setup-authority-governance.mjs` | `sha256:78ad76b31b334fc4b1f32b3e31e0ac9dc324dbd1b03674afb7445452c61ff44d` |
 | governance-authority-setup-tests | `infra/governance/test/authority-setup.test.mjs` | `sha256:154dc6d80fafb6df6c689fb8fdee0b9c65a51625658e3da14ac2708ea89d163f` |
-| governance-baseline-authority | `infra/governance/baseline/` | `sha256:604f149867ae36844422b82d8456a13f6dd8be086bc87b563fdf27bd4955e9e5` |
+| governance-baseline-authority | `infra/governance/baseline/` | `sha256:4fc68115c56d701826fc758b3f7fdca1e7e67101588a567735606d8ed7ce403c` |
 | governance-build-graph-definition | `scripts/governance-build-graph.json` | `sha256:20eb26b7d6a3718d970362382fcacdeb2df400e7aaf5fa3b5415fd2116d8457c` |
 | governance-build-graph-runner | `scripts/governance-build-graph.mjs` | `sha256:2fd156f12bf7069462cc53ca47d6bd2280d867432d98864546937449991c816b` |
 | governance-build-graph-schema | `scripts/schemas/governance-build-graph.schema.json` | `sha256:ea1104ef5d4fb9a8741ef352b95c79703db33db7fe561453d41caa649c7fdc58` |
