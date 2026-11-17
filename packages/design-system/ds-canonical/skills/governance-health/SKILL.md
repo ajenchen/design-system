@@ -35,7 +35,7 @@ done
 GOVERNANCE_TELEMETRY_DIR="$(dirname "$(node scripts/lib/governance-runtime-evidence.mjs --repo-root . --telemetry --path hook-fires.jsonl)")"
 ```
 
-resolver 只允許真實 Git directory 下的 `governance-runtime/`，並逐檔拒絕 escape/symlink/hardlink；禁止自行改讀 `.claude`、`.codex` 或 workspace runtime。若任一 log > 1MB → 提議由 canonical telemetry writer 實作受測 rotation，不能自行搬檔。無 log → Phase 0 回報「instrumentation 未 opt-in 或尚未積累 1-2 個月 baseline」,退出。
+resolver 只允許真實 Git directory 下的 `governance-runtime/`，並逐檔拒絕 escape/symlink/hardlink；禁止自行改讀 `.claude`、`.codex` 或 workspace runtime(唯一例外是 `infra/governance/runtime/benchmarks/`:Phase 1「Benchmark freshness」只讀其中的 `last-fetch.txt`,那是 `governance/benchmarks/fetch.sh` 寫的外部訊號快取、不是遙測;它的保留規則在 `packages/design-system/ds-canonical/references/runtime-evidence-retention.md`「Workspace runtime」)。若任一 log > 1MB → 提議由 canonical telemetry writer 實作受測 rotation，不能自行搬檔。無 log → Phase 0 回報「instrumentation 未 opt-in 或尚未積累 1-2 個月 baseline」,退出。
 
 ### Phase 1 — Metric harvest(parallel)
 
