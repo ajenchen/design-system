@@ -36,7 +36,7 @@ const Card = ({
   <ExampleSection title={title} description={desc}>
     {/* 外框不加內距:DateGrid 每張月曆自己四周留 --item-px(date-grid.tsx month),與 DatePicker 的 PopoverContent(不另加內距)是同一個單一內距 owner;
         讀數列同樣用 --item-px 內縮,不再另加間距 */}
-    <div className="inline-flex bg-surface-raised border border-border rounded-lg w-fit">
+    <div className="inline-flex bg-surface-raised border border-border rounded-md w-fit">
       {children}
     </div>
   </ExampleSection>

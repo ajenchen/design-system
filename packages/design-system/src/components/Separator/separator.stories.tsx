@@ -78,7 +78,7 @@ export const Vertical: Story = {
 export const BetweenSections: Story = {
   name: '在 DescriptionList 區塊之間',
   render: () => (
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md flex flex-col gap-[var(--layout-space-loose)]">
+    <div className="border border-border rounded-md p-[var(--layout-space-loose)] max-w-md flex flex-col gap-[var(--layout-space-loose)]">
       {/*
        * heading → first-item gap 對齊 item → item gap(都是 layout-space-tight):
        * Gestalt proximity canonical —— 相同距離代表 heading 擁有下方 items;

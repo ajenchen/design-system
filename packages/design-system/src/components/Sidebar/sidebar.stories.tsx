@@ -372,7 +372,7 @@ export const ActionHoverState: Story = {
   name: '側邊欄動作懸停狀態',
   tags: ['test-only'],
   render: () => (
-    <div className="w-[320px] overflow-hidden rounded-lg border border-divider bg-surface p-2">
+    <div className="w-[320px] overflow-hidden rounded-md border border-divider bg-surface p-2">
       <SidebarProvider defaultActiveId="roadmap" style={{ minHeight: 'auto' }}>
         <SidebarMenu>
           <SidebarMenuItem>

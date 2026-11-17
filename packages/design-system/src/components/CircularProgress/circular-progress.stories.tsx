@@ -111,7 +111,7 @@ export const InlineCellLoading: Story = {
 export const FullScreenOverlay: Story = {
   name: '全頁浮層',
   render: () => (
-    <div className="relative border border-border rounded-lg w-full h-80 overflow-hidden flex items-center justify-center">
+    <div className="relative border border-border rounded-md w-full h-80 overflow-hidden flex items-center justify-center">
       <Empty
         icon={<CircularProgress size={48} aria-label="切換 workspace 中" />}
         title="正在切換 workspace"

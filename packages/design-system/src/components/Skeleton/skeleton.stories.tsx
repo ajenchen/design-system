@@ -32,7 +32,7 @@ export const UserProfileCard: Story = {
   name: '個人資料卡載入',
   render: () => (
     // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值)
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
+    <div className="border border-border rounded-md p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
       <Skeleton className="h-12 w-12 rounded-full" />
       {/* @layout-space-magic-ok: 骨架文字區兩行(名稱 / 副標)之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
       <div className="flex flex-col gap-2 flex-1">
@@ -142,7 +142,7 @@ export const CardGridLoading: Story = {
   render: () => (
     <div className="grid grid-cols-3 gap-[var(--layout-space-loose)] max-w-4xl">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="border border-border rounded-lg p-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-tight)]">
+        <div key={i} className="border border-border rounded-md p-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-tight)]">
           <Skeleton className="h-32 w-full rounded-md" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />

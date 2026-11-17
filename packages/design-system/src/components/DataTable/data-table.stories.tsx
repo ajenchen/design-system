@@ -589,11 +589,11 @@ export const ContainerHeight: Story = {
 
         <ExampleSection title="有約束" description={<>maxHeight 給 300(px)，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</>}>
           <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
-            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+            <div className="bg-muted rounded-md p-[var(--layout-space-loose)]">
               <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">3 筆資料</p>
               <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} maxHeight={300} />
             </div>
-            <div className="bg-muted rounded-lg p-[var(--layout-space-loose)]">
+            <div className="bg-muted rounded-md p-[var(--layout-space-loose)]">
               <p className="text-footnote text-fg-muted mb-[var(--layout-space-tight)]">50 筆資料</p>
               <DataTable columns={baseColumns} data={manyRows} maxHeight={300} />
             </div>
@@ -2761,7 +2761,7 @@ export const HeaderActionsFixture: Story = {
       mode: 'flat', conjunction: 'and',
       children: [{ kind: 'cond', id: 'c1', field: 'name', op: 'contains', value: 'phone' }],
     }))
-    const shell = 'overflow-hidden rounded-lg border border-border bg-surface-raised'
+    const shell = 'overflow-hidden rounded-md border border-border bg-surface-raised'
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
         <div data-case="sort" data-expect="actions,dismiss" className={`w-[480px] ${shell}`}>

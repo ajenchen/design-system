@@ -88,7 +88,7 @@ export const WithDescription = {
       <ExampleGroup>
         <span className="text-caption text-fg-secondary font-medium">light mode</span>
         {/* @layout-space-magic-ok: 示範框內距 32px 是範例原值(與已發布版同值,F-S8),給樣本 Toast 的陰影留白(elevation-200 模糊半徑 32px,primitives.css);規格沒寫這個值(放行章 (d)) */}
-        <div data-theme="light" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas text-foreground border border-divider">
+        <div data-theme="light" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-md bg-canvas text-foreground border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
               <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'light')} theme</span>
@@ -100,7 +100,7 @@ export const WithDescription = {
       <ExampleGroup>
         <span className="text-caption text-fg-secondary font-medium">dark mode</span>
         {/* @layout-space-magic-ok: 示範框內距 32px 是範例原值(與已發布版同值,F-S8),給樣本 Toast 的陰影留白(elevation-200 模糊半徑 32px,primitives.css);規格沒寫這個值(放行章 (d)) */}
-        <div data-theme="dark" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-lg bg-canvas text-foreground border border-divider">
+        <div data-theme="dark" className="flex flex-col gap-[var(--layout-space-loose)] p-8 rounded-md bg-canvas text-foreground border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-[var(--layout-space-tight)]">
               <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'dark')} theme</span>

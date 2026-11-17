@@ -99,7 +99,7 @@ export const InContext = {
       <div className="flex gap-[var(--layout-space-loose)]">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption font-medium text-fg-secondary">無 description（inline）</span>
-          <div className="w-[280px] border border-divider rounded-lg bg-surface">
+          <div className="w-[280px] border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="無說明文字的成員選單">
               <MenuItem role="presentation" avatar={{ src: demoPersonPhoto('Alice Chen', 48), alt: alice.name, hoverCard: samplePersonCard(alice) }}>
                 Alice Chen
@@ -115,7 +115,7 @@ export const InContext = {
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-caption font-medium text-fg-secondary">有 description（block）</span>
-          <div className="w-[320px] border border-divider rounded-lg bg-surface">
+          <div className="w-[320px] border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="含職稱說明的成員選單">
               <MenuItem role="presentation"
                 avatar={{ src: demoPersonPhoto('Alice Chen', 64), alt: alice.name, hoverCard: samplePersonCard(alice) }}

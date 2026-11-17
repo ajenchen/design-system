@@ -675,7 +675,7 @@ function UpdateProjectSettingsForm() {
   })
   return (
     // 表單放進卡片(四邊 loose,同 Checkbox 設計原則的卡片):按鈕下方 = 卡片自己的底內距,不貼邊也不另訂(layoutSpace.spec.md 規則 4「最後一個東西 → 容器底邊」;依 user 2026-10-21 09:25 同意的 Q5 建議「表單放進看得見的容器」,原話逐字「Q5可以基於你的建議」)
-    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-lg p-[var(--layout-space-loose)]" aria-label="專案設定">
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-md p-[var(--layout-space-loose)]" aria-label="專案設定">
       <FieldGroup>
         <Field required invalid={!!form.errors.name}>
           <FieldLabel>專案名稱</FieldLabel>
@@ -711,7 +711,7 @@ function CreateProjectForm() {
   })
   return (
     // 表單放進卡片:同上方更新表單
-    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-lg p-[var(--layout-space-loose)]" aria-label="建立專案">
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-md p-[var(--layout-space-loose)]" aria-label="建立專案">
       <FieldGroup>
         <Field required invalid={!!form.errors.name}>
           <FieldLabel>專案名稱</FieldLabel>
