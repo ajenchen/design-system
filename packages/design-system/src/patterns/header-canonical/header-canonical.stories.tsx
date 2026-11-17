@@ -167,7 +167,7 @@ export const WithTabs = () => (
             </h2>
             <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" onClick={close} />
           </ChromeHeader>
-          {/* TabsContent 內建 mt-tight 已擁有 header → content(tabs.spec.md:195);內層只補水平 loose + 底部與頂部同值 tight(有框面板不擋頁面、高度貼內容 → 上下對稱,layoutSpace.spec.md 規則 4 第 4 列) */}
+          {/* TabsContent 內建 mt-tight 已擁有 header → content(tabs.spec.md「TabsContent 與 TabsList 間距」);內層只補水平 loose + 底部與頂部同值 tight(有框面板不擋頁面、高度貼內容 → 上下對稱,layoutSpace.spec.md 規則 4 第 4 列) */}
           <TabsContent value="overview">
             {/* @layout-space-magic-ok: 概覽兩行(專案 meta ↔ 說明)4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
             <div className="flex flex-col gap-1 px-[var(--layout-space-loose)] pb-[var(--layout-space-tight)] text-body text-fg-secondary">
@@ -204,7 +204,8 @@ WithTabs.storyName = '含分頁列'
 /* tabsSlot × overflow(scroll / menu)— header 分頁列在窄容器的溢出模式。
    對標專案管理工具的專案設定頁:細分頁多到單行放不下(概覽/待辦清單/衝刺/看板/報表/版本/元件/權限/通知)。
    Panel 限寬 420px + 9 個分頁強制觸發溢出;W2 契約(triggers 內縮 px-loose 對齊 header
-   content row)三種 overflow 模式同享,border 隨溢出內容延展(min-w-full,header-canonical.spec.md Rule W2)。
+   content row)三種 overflow 模式同享;分頁列底線橫跨整個 header,溢出時畫在淡出遮罩外,右箭頭 / ⌄ 底下也連著
+   (header-canonical.spec.md Rule W1 / W2;tabs.spec.md「TabsList 容器寬度」)。
    兩則共用同組分頁資料(同 tabs.stories.tsx OverflowScroll/OverflowMenu 精神),各教一種溢出機制。 */
 const projectSettingsTabs = [
   { value: 'overview', label: '概覽', content: '負責人:張惟安 · 分類:客戶關係 · Scrum 流程已啟用' },

@@ -130,7 +130,7 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 **規則**:**Header 是 semantic owner**(「這 surface 需要 bottom border 分區」是 header 的概念決定),**Paint owner 隨 state 變**:
 - 沒給 `tabsSlot` → header 自畫(`border-b border-divider`)
-- 給了 `tabsSlot` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)
+- 給了 `tabsSlot` → header **auto-suppress 自己的 paint**,**TabsList 自身的 `border-b border-divider` 接管實際 paint**(視覺同一條線;`tabs.tsx#TABS_LIST_BASE` 用 `border-divider` neutral-4,同 Dialog/Sheet/Popover/Sidebar header)。scroll / menu 溢出模式由 Tabs 改在捲動遮罩外畫同色的一條(`tabs.tsx#TabsOverflowBaseline`,2026-11-17;遮罩會連 TabsList border 一起淡掉),paint owner 仍在 Tabs,理由見 `tabs.spec.md`「TabsList 容器寬度」
 
 **這不是 reject user 直覺**(「border 該由 header 自己畫」)— 而是把「誰負責這條線存在」和「誰實際 paint」拆開。User 直覺 = semantic ownership 正確;DS 實作 = 有 tabsSlot 時 delegate paint 給 TabsList,因為 tabs selected underline 是「從 1px gray border 長出 2px primary」設計 idiom(`tabs.spec.md:187-189`),paint owner 不在 tabs 會讓 underline 失去 base line。
 
@@ -151,9 +151,9 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 - Row 1:children(title + close X / actions)— 跟 single-row 模式同 padding,但 border-b 撤掉
 - Row 2:tabsSlot 包在 `<div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>`(= `[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]`,`chrome-header.tsx` 單一 SSOT const;wrapper 本身**不** inset,只用 CSS arbitrary variant 對契約元素注入內 padding)
   - **選取契約 = `data-slot="tabs-list"` attribute(v4,2026-07-30)**:`tabs.tsx` 三種 overflow 模式(none / scroll / menu)的 `role=tablist` 元素(TabsPrimitive.List)皆自標 `data-slot="tabs-list"`(對齊 shadcn v4 tabs.tsx `data-slot` idiom,https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/tabs.tsx + DS 既有 `data-unbounded` 標記式契約);wrapper 用 descendant selector,不依賴 DOM 深度(beta.86 overlay 包裹層教訓,見下 v1-v4 歷史)
-  - **TabsList 全 dialog 寬 = TabsList 自帶,wrapper 不注入寬度**:none 模式 `w-full`(tabs.tsx 自帶)→ 自身 `border-b border-divider` 延展全 dialog 寬 = W1 視覺一條線;scroll / menu 模式 `min-w-full`(border 隨溢出內容成長;blanket `w-full` 會把 border 截在可視寬 → **禁**由 wrapper 注入寬度)
+  - **TabsList 全 dialog 寬 = TabsList 自帶,wrapper 不注入寬度**:none 模式 `w-full`(tabs.tsx 自帶)→ 自身 `border-b border-divider` 延展全 dialog 寬 = W1 視覺一條線;scroll / menu 模式 `min-w-full`(border 列隨溢出內容成長;blanket `w-full` 會把 border 截在可視寬 → **禁**由 wrapper 注入寬度)—— 溢出模式這條 border 只留透明列,看得到的灰線是 Tabs 畫在捲動遮罩外、橫跨整列的那一條(2026-11-17,`tabs.spec.md`「TabsList 容器寬度」)
   - **TabsList 內 padding-x = px-loose** → triggers 從 px-loose 內邊起,對齊 header content row(W2 alignment 達成;三種 overflow 模式同享)
-  - Selected trigger 2px primary 真 overlay TabsList 1px gray border(`tabs.spec.md:189-191` canonical)
+  - Selected trigger 2px primary 真 overlay 1px gray 線(`tabs.spec.md`「Underline 與 TabsList border 的視覺關係」;溢出模式蓋在遮罩外那一條之上)
 
 **v1/v2/v3 反 pattern**(歷史錨):
 - v1(2026-05-18 initial):wrapper 加 `border-b border-divider` + TabsList 自身 `border-b border-border` 共存 → 雙線(色不同 + 1px box gap)

@@ -7,10 +7,24 @@
 //          「density 環境漂移」分開報錯)
 //   (W2-c) 第一個 [role=tab] rect.left − header rect.left === 16 ± 0.5px(M32 pixel-quantified:
 //          視覺意圖 = triggers 對齊 header content row,與實作 selector 機制無關)
-//   (W1)   border 全寬一條線:none 模式 tablist rect.width === header 寬;scroll 模式量 scroll
-//          container(tablist 是 min-w-full 可比容器寬,量錯對象 false-fail);menu 模式量
-//          scroll container 的 flex row(scroll 區 + ⌄ navigator 容器共同鋪滿 header 寬,
-//          兩者各自 border-b 連成全寬一條線;⌄ 未觸發時 row == scroll container 退化同 scroll)
+//   (W1)   分頁列底線連成整條、右端達 header 邊緣(tabs.spec.md「TabsList 容器寬度」),**以像素判定**(2026-11-17):
+//          W1-連續 —— 在 tablist 底邊那一列(分隔線所在的像素列)沿 header 全寬截 1px 高的圖,逐點不能是背景色;
+//                    「背景」= 同一個 x 往下兩列(header 底下的留白);「是線」= 與背景的差 ≥ 灰線本身對背景差的一半
+//                    (灰線本身 = 在同一塊背景上放一個 bg-divider 探針實拍;選中底線的主色差更大,也算有線)。
+//                    紅的時候印出斷開的 x 範圍(頁面座標 + 相對 header 左緣)。
+//          W1-選中底線 —— 選中 tab 正中那一行,分隔線那一列與它上面一列必須同色且都是強對比:選中的 2px 主色底線
+//                    沒有被灰線蓋掉下半(灰線疊在主色上 = 下半變暗 9%,這一條會紅)。前提:選中 tab 不在遮罩範圍內
+//                    (有遮罩的那一側,離捲動容器邊緣 ≥ 箭頭 32 + 淡出 16 = 48px),否則記儀器失效,不判產品。
+//          W1-寬(輔助,保留原本的寬度量測):none 量 tablist、scroll 量捲動容器、menu 量捲動區 + ⌄ 的整列 = header 寬。
+//          **這一條是代理量**:2026-11-17 前 W1 只有它,溢出模式的灰線被淡出遮罩吃掉(scroll 右箭頭底下沒有線、
+//          menu 捲動區右端淡掉後才接上 ⌄ 的線)時寬度全對 → 一直綠。判定以 W1-連續 / W1-選中底線的像素為準。
+//
+// 對照組(`--selftest`;只跑對照,不跑正常量測,正常量測是不帶旗標的那一趟):
+//   A「灰線畫回遮罩內」—— 注入 CSS 把 [data-tabs-baseline] 藏起來、把灰線顏色還給捲動容器裡的 TabsList border
+//     (= 修法前的根因:線畫在帶 mask-image 的捲動容器裡)→ scroll / menu 兩則的 W1-連續都必須變紅(印出斷開範圍)。
+//   B「灰線蓋到選中底線上」—— 注入 CSS 把 [data-tabs-baseline] 的 z-index 拉高 → scroll / menu 兩則的 W1-選中底線都必須變紅。
+//   W3「清空 overlay」(見 W3 段)→ W3 兩條都必須變紅。
+//   任一組沒有如期變紅 = 那一段的綠燈不算證據,exit 1。
 //
 // 病根(2026-07-30 F1):beta.86 inlineAction overlay 包 `<div class="relative">` 把 v3
 // direct-child selector `[&>[role=tablist]]` 斷鏈 → px-loose 靜默消失(computed 0px),
@@ -21,11 +35,13 @@
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild } from './lib/launch-browser.mjs'
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
+const { PNG } = createRequire(join(ROOT, 'package.json'))('pngjs')
 // `--build=<dir>`(預設 storybook-static):量另一份建置。給對照組用 —— 在建置的複本上注入違規,不必動工作樹的 storybook-static。
 const STATIC = resolve(ROOT, process.argv.find((a) => a.startsWith('--build='))?.slice('--build='.length) ?? 'storybook-static')
 
@@ -123,12 +139,11 @@ const STORIES = [
 ]
 
 const fmt = (v) => (v == null ? 'null' : typeof v === 'number' ? v.toFixed(2) : String(v))
-/** `--selftest` 只影響 W3(見該段):把 overlay 清空,重現「那顆鈕從未渲染」的狀態,W3 必須變紅 */
+/** `--selftest`:只跑對照組(檔頭 A / B + W3),每一組都必須如期變紅;正常量測是不帶旗標的那一趟 */
 const SELFTEST = process.argv.includes('--selftest')
 
-for (const story of STORIES) {
-  if (!(await loadStory(story.id, story.label))) continue
-
+/** W2 + W1-寬(輔助)+ 結構檢查。story 已由呼叫端載入。 */
+async function measureLayout(story) {
   const d = await page.evaluate(() => {
     const header = document.querySelector('header')
     const tl = document.querySelector('[data-slot="tabs-list"]')
@@ -157,7 +172,7 @@ for (const story of STORIES) {
   })
   if (d.error) {
     record('LOAD', `${story.label} story 量測(${story.id})`, false, d.error)
-    continue
+    return
   }
 
   // (W2-a) computed padding = 解析後 token(token 鏈通不通)
@@ -177,29 +192,173 @@ for (const story of STORIES) {
     d.firstTabLeft !== null && Math.abs(d.firstTabLeft - d.headerLeft - 16) <= 0.5,
     `delta ${d.firstTabLeft === null ? 'no [role=tab]' : fmt(d.firstTabLeft - d.headerLeft)}(應 16;0 = px-loose 靜默消失)`)
 
-  // (W1) 全寬契約 — 量測對象依 overflow 模式(tablist scroll/menu 是 min-w-full 可比容器寬):
+  // (W1-寬,輔助)全寬 — 量測對象依 overflow 模式(tablist scroll/menu 是 min-w-full 可比容器寬)。
+  // 這是代理量(容器寬對,不代表線畫得出來;2026-11-17 前溢出模式的線被遮罩吃掉時它照綠),判定以下方 W1-連續 的像素為準。
   if (story.mode === 'none') {
-    record('W1', `${story.label} 結構:none 模式無 scroll container`, !d.hasScrollContainer,
+    record('W1-寬', `${story.label} 結構:none 模式無 scroll container`, !d.hasScrollContainer,
       'tablist parent 是 overflow-x 容器 — story 疑似 render 錯 overflow 模式')
-    record('W1', `${story.label} tablist 全寬 = header 寬 ±0.5`,
+    record('W1-寬', `${story.label} tablist 全寬 = header 寬 ±0.5`,
       Math.abs(d.tablistWidth - d.headerWidth) <= 0.5,
       `tablist ${fmt(d.tablistWidth)} vs header ${fmt(d.headerWidth)}(w-full 注入斷 = border 沒鋪滿)`)
   } else {
-    record('W1', `${story.label} 結構:${story.mode} 模式有 scroll container`, d.hasScrollContainer,
+    record('W1-寬', `${story.label} 結構:${story.mode} 模式有 scroll container`, d.hasScrollContainer,
       'tablist parent 非 overflow-x 容器 — story 疑似 render 錯 overflow 模式,禁 silent skip')
     if (story.mode === 'scroll') {
-      record('W1', `${story.label} scroll container 全寬 = header 寬 ±0.5`,
+      record('W1-寬', `${story.label} scroll container 全寬 = header 寬 ±0.5`,
         d.scWidth !== null && Math.abs(d.scWidth - d.headerWidth) <= 0.5,
         `container ${fmt(d.scWidth)} vs header ${fmt(d.headerWidth)}(arrows 是 absolute overlay 不佔寬)`)
     } else {
       // menu:⌄ navigator 觸發時 scroll container 讓出右側寬度給按鈕容器,兩者的 flex row
       // 才是「border 連成全寬一條線」的量測對象;未觸發時 row == scroll container(退化同 scroll)。
-      record('W1', `${story.label} scroll row(捲動區 + ⌄ 容器)全寬 = header 寬 ±0.5`,
+      record('W1-寬', `${story.label} scroll row(捲動區 + ⌄ 容器)全寬 = header 寬 ±0.5`,
         d.rowWidth !== null && Math.abs(d.rowWidth - d.headerWidth) <= 0.5,
         `row ${fmt(d.rowWidth)} vs header ${fmt(d.headerWidth)}`)
-      record('W1', `${story.label} scroll container 左緣貼齊 header 左緣 ±0.5`,
+      record('W1-寬', `${story.label} scroll container 左緣貼齊 header 左緣 ±0.5`,
         d.scLeft !== null && Math.abs(d.scLeft - d.headerLeft) <= 0.5,
         `container.left ${fmt(d.scLeft)} vs header.left ${fmt(d.headerLeft)}`)
+    }
+  }
+}
+
+// ── W1 像素(2026-11-17):分頁列底線真的畫成整條,選中底線真的是 2px ─────────────────
+// 病根:溢出模式的灰線原本是 TabsList 的 border-b,畫在帶 mask-image 的捲動容器裡 —— 遮罩淡化的是整個內容,
+// 連線一起淡掉(scroll 右箭頭底下沒有線;menu 捲動區右端淡掉、⌄ 容器自己的 border 才接上 → 中間斷一格)。
+// W1-寬 量容器寬,線被吃掉時寬度全對,所以一直綠。這一段直接看畫面。
+/**
+ * 一側遮罩最多吃進來的寬(px)= ARROW_BUTTON_WIDTH 32 + FADE_WIDTH 16(horizontal-overflow.tsx)。
+ * 那一側**有遮罩**(還沒捲到底,判法同 use-overflow-items.ts 的 atStart / atEnd)時,選中 tab 中心要離該側至少這麼遠,上下兩列才可比
+ */
+const MASK_REACH = 48
+/** 背景列 = 分隔線列往下第幾列(header 底下、TabsContent 的上方留白) */
+const BG_ROW_OFFSET = 2
+/** 選中底線上下兩列「同色」的容差(每個色版 0–255)。灰線(9% 黑)疊在主色上,下半會差約 20 */
+const SAME_COLOR_TOLERANCE = 6
+/** 灰線對背景的差小於這個值,就分不出線與背景 → 儀器失效,不判產品 */
+const MIN_DIVIDER_CONTRAST = 6
+
+const channelDiff = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]))
+const rgb = (c) => `rgb(${c.join(',')})`
+
+/** 截一塊(CSS px;DPR 1 時 = 裝置像素),回傳 (欄, 列) → [r, g, b] */
+async function grab(clip) {
+  const png = PNG.sync.read(await page.screenshot({ clip }))
+  return (x, row) => {
+    const i = (row * png.width + x) * 4
+    return [png.data[i], png.data[i + 1], png.data[i + 2]]
+  }
+}
+
+async function measureBaselinePixels(story, tag = '') {
+  const label = `${story.label}${tag}`
+  const g = await page.evaluate(() => {
+    const header = document.querySelector('header')
+    const tl = document.querySelector('[data-slot="tabs-list"]')
+    if (!header || !tl) return { error: 'header 或 [data-slot=tabs-list] 不存在' }
+    const hr = header.getBoundingClientRect()
+    const tr = tl.getBoundingClientRect()
+    const sel = tl.querySelector('[role="tab"][aria-selected="true"]')
+    const sr = sel ? sel.getBoundingClientRect() : null
+    const parent = tl.parentElement
+    const ox = parent ? getComputedStyle(parent).overflowX : null
+    const scr = ox === 'auto' || ox === 'scroll' ? parent.getBoundingClientRect() : null
+    return {
+      dpr: devicePixelRatio, left: hr.left, right: hr.right, bottom: tr.bottom,
+      sel: sr ? { left: sr.left, right: sr.right } : null,
+      sc: scr ? {
+        left: scr.left, right: scr.right,
+        atStart: parent.scrollLeft <= 0,
+        atEnd: parent.scrollLeft + parent.clientWidth >= parent.scrollWidth - 1,
+      } : null,
+    }
+  })
+  if (g.error) { instrumentFailures.push(`✗ ${label} | W1 像素量測前提:${g.error}`); return }
+  // 前提:DPR 1、分隔線與 header 左右緣都落在整數像素上 —— 否則「那一列」不是一列,逐點判讀沒有意義
+  const offGrid = [g.bottom, g.left, g.right].some((v) => Math.abs(v - Math.round(v)) > 0.01)
+  if (g.dpr !== 1 || offGrid) {
+    instrumentFailures.push(`✗ ${label} | W1 像素量測前提:DPR=${g.dpr}、tablist 底 ${fmt(g.bottom)}、header ${fmt(g.left)}–${fmt(g.right)} 不在整數像素上`)
+    return
+  }
+  const x0 = Math.round(g.left)
+  const width = Math.round(g.right) - x0
+  const y = Math.round(g.bottom) - 1 // 分隔線列 = tablist border-box 最下面那一列
+  // 列 0 = 選中底線上半(y−1)、列 1 = 分隔線列(y)、列 1+BG_ROW_OFFSET = 背景
+  const px = await grab({ x: x0, y: y - 1, width, height: 2 + BG_ROW_OFFSET })
+  const LINE = 1
+  const BG = 1 + BG_ROW_OFFSET
+
+  // 灰線本身對背景的差:在 header 底下同一塊背景放一個 bg-divider 探針實拍(掛在 header 裡,吃同一套主題 token),拍完拿掉
+  const probeTop = y + BG_ROW_OFFSET + 1
+  const probe = await page.evaluate(({ left, top }) => {
+    const p = document.createElement('div')
+    p.setAttribute('data-w1-divider-probe', '')
+    p.className = 'bg-divider'
+    Object.assign(p.style, { position: 'fixed', left: `${left}px`, top: `${top}px`, width: '8px', height: '1px', pointerEvents: 'none', zIndex: '2147483647' })
+    document.querySelector('header').appendChild(p)
+    const r = p.getBoundingClientRect()
+    return { left: r.left, top: r.top, width: r.width, height: r.height }
+  }, { left: x0 + 2, top: probeTop })
+  let contrast = null
+  if (probe.left === x0 + 2 && probe.top === probeTop && probe.width === 8 && probe.height === 1) {
+    const ref = await grab({ x: x0 + 2, y: probeTop - 1, width: 8, height: 2 }) // 列 0 = 背景、列 1 = 探針
+    const ds = Array.from({ length: 8 }, (_, i) => channelDiff(ref(i, 1), ref(i, 0))).sort((a, b) => a - b)
+    contrast = ds[4]
+  }
+  await page.evaluate(() => document.querySelector('[data-w1-divider-probe]')?.remove())
+  if (contrast === null || contrast < MIN_DIVIDER_CONTRAST) {
+    instrumentFailures.push(`✗ ${label} | W1 像素量測前提:灰線探針${contrast === null ? `沒有落在要求的位置(${JSON.stringify(probe)})` : `對背景只差 ${contrast},分不出線與背景`}`)
+    return
+  }
+  const threshold = contrast / 2
+  console.log(`ℹ W1 ${label}:分隔線列 y=${y},header x=${x0}–${x0 + width},灰線對背景差 ${contrast}(低於 ${threshold} 算斷)`)
+
+  // W1-連續:逐點,與同一個 x 的背景差 ≥ 灰線差的一半 = 有線(選中底線的主色差更大,也算)
+  const gaps = []
+  for (let x = 0; x < width; x++) {
+    if (channelDiff(px(x, LINE), px(x, BG)) >= threshold) continue
+    const last = gaps[gaps.length - 1]
+    if (last && last.to === x - 1) last.to = x
+    else gaps.push({ from: x, to: x })
+  }
+  record('W1-連續', `${label} 分隔線列沿 header 全寬 ${width}px 逐點有線`, gaps.length === 0,
+    `斷開 ${gaps.length} 段:${gaps.map((r) => `x=${x0 + r.from}–${x0 + r.to}(相對 header 左緣 ${r.from}–${r.to},${r.to - r.from + 1}px)`).join('、')}`)
+
+  // W1-選中底線:選中 tab 正中,上下兩列都是強對比且同色 = 2px 主色底線沒有被灰線蓋掉下半
+  if (!g.sel) { instrumentFailures.push(`✗ ${label} | W1-選中底線前提:沒有 aria-selected=true 的 tab`); return }
+  const cxAbs = Math.round((g.sel.left + g.sel.right) / 2)
+  if (g.sc && ((!g.sc.atStart && cxAbs - g.sc.left < MASK_REACH) || (!g.sc.atEnd && g.sc.right - cxAbs < MASK_REACH))) {
+    instrumentFailures.push(`✗ ${label} | W1-選中底線前提:選中 tab 中心 x=${cxAbs} 落在捲動容器 ${fmt(g.sc.left)}–${fmt(g.sc.right)} 有遮罩那一側的 ${MASK_REACH}px 內(atStart=${g.sc.atStart} atEnd=${g.sc.atEnd}),上下兩列不可比`)
+    return
+  }
+  const cx = cxAbs - x0
+  const upper = px(cx, 0), lower = px(cx, LINE), bg = px(cx, BG)
+  const ok = channelDiff(upper, bg) >= contrast && channelDiff(lower, bg) >= contrast && channelDiff(upper, lower) <= SAME_COLOR_TOLERANCE
+  record('W1-選中底線', `${label} 選中 tab(x=${cxAbs})底線兩列同色、都壓過背景`, ok,
+    `上列 ${rgb(upper)} / 分隔線列 ${rgb(lower)} / 背景 ${rgb(bg)};兩列差 ${channelDiff(upper, lower)}(> ${SAME_COLOR_TOLERANCE} = 下半被別的東西蓋過)`)
+}
+
+/** `--selftest` 的 W1 對照組(檔頭 A / B):只對溢出模式,每一組指定哪一條必須變紅 */
+const BASELINE_CONTROLS = [
+  {
+    tag: '〔對照 A:灰線畫回遮罩內〕',
+    css: '[data-tabs-baseline]{display:none!important}[data-slot="tabs-list"]{border-bottom-color:var(--divider)!important}',
+    expectRed: 'W1-連續',
+  },
+  { tag: '〔對照 B:灰線蓋到選中底線上〕', css: '[data-tabs-baseline]{z-index:30!important}', expectRed: 'W1-選中底線' },
+]
+const OVERFLOW_STORIES = STORIES.filter((s) => s.mode !== 'none')
+
+if (!SELFTEST) {
+  for (const story of STORIES) {
+    if (!(await loadStory(story.id, story.label))) continue
+    await measureLayout(story)
+    await measureBaselinePixels(story)
+  }
+} else {
+  for (const control of BASELINE_CONTROLS) {
+    for (const story of OVERFLOW_STORIES) {
+      // 在靜止判定之前注入(beforeSettle),量的就是注入之後穩定下來的畫面
+      if (!(await loadStory(story.id, `${story.label}${control.tag}`, { beforeSettle: (p) => p.addStyleTag({ content: control.css }) }))) continue
+      await measureBaselinePixels(story, control.tag)
     }
   }
 }
@@ -244,7 +403,7 @@ for (const story of STORIES) {
 }
 
 // ── Output ──
-console.log(`\n=== Header tabsSlot W2 Invariants Test ===`)
+console.log(`\n=== Header tabsSlot W1 / W2 / W3 Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
 console.log(`FAIL: ${failures.length}`)
 // 計數列不印 INSTRUMENT-FAIL 標記字:那是「真的發生儀器失效」的機讀標記(lib/launch-browser.mjs),
@@ -268,11 +427,21 @@ if (instrumentFailures.length > 0) {
   process.exit(1)
 }
 if (SELFTEST) {
+  const missing = []
+  for (const control of BASELINE_CONTROLS) {
+    for (const story of OVERFLOW_STORIES) {
+      const key = `${control.expectRed} | ${story.label}${control.tag}`
+      if (!failures.some((f) => f.startsWith(`✗ ${key}`))) missing.push(key)
+    }
+  }
   const w3 = failures.filter((f) => f.includes('W3-'))
-  console.log(w3.length >= 2
-    ? `\n✓ selftest:清空 overlay 後 W3 兩條都變紅(${w3.length} 條)—— 儀器有效`
-    : '\n✗ selftest:overlay 都清空了 W3 還是綠 —— 這一段的綠燈不算證據')
-  process.exit(w3.length >= 2 ? 0 : 1)
+  if (w3.length < 2) missing.push(`W3-a / W3-b | 清空 overlay(只紅了 ${w3.length} 條)`)
+  if (missing.length === 0) {
+    console.log(`\n✓ selftest:灰線畫回遮罩內 → W1-連續 兩則都紅;灰線蓋到選中底線上 → W1-選中底線 兩則都紅;清空 overlay → W3 兩條都紅 —— 儀器有效`)
+    process.exit(0)
+  }
+  console.log(`\n✗ selftest:下列對照組該紅卻沒紅 —— 那一段的綠燈不算證據:\n  ${missing.join('\n  ')}`)
+  process.exit(1)
 }
 if (failures.length > 0) {
   console.error(`\n✗ ${failures.length} invariant(s) failed. Block commit.`)

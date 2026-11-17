@@ -117,7 +117,7 @@ scope: "utility primitives module (use-overflow-items hooks: useScrollEdges + us
 
 ### 為什麼不做成封閉的 `<HorizontalOverflowContainer>`?
 
-- Tabs 的 separator owner 是 **list**，Chip 的 boundary owner 是**各 item**；兩者的 outer container 都只負責 overflow orchestration。責任歸屬不同，不能藏進同一個封閉 container prop。確切 utility、DOM 結構與歷史瀏覽器修復由 `tabs.tsx` / `chip.tsx` source comments 與 regression checks 擁有。
+- Tabs 的 separator owner 是 **Tabs 自己**(none 模式 = list 的 border;scroll / menu 模式 = 畫在遮罩外的那一條,list border 只留透明列給選中底線疊合 —— 見下方「典型 scroll 模式組裝」後的遮罩註),Chip 的 boundary owner 是**各 item**;本 module 的 primitive 都不畫分隔線,只負責 overflow orchestration。責任歸屬不同，不能藏進同一個封閉 container prop。確切 utility、DOM 結構與歷史瀏覽器修復由 `tabs.tsx` / `chip.tsx` source comments 與 regression checks 擁有。
 - Tabs 用 `TabsPrimitive.List` 作為 inner list;Chip 用 `ToggleGroupPrimitive.Root`
 - Tabs 用 `DropdownMenuItem + selected`(單選);Chip 用 `DropdownMenuCheckboxItem`(多選)
 - Tabs 有 `gap-[var(--layout-space-loose)]`;Chip 有 `gap-2`
@@ -143,19 +143,24 @@ const maskImage = buildFadeMask({
 })
 
 return (
-  <div className="relative">    {/* outer 不畫 border;Tabs underline owner 在 list 內 */}
+  <div className="relative">
+    {/* 跨整排的分隔線畫在遮罩外、排在捲動容器前面(Tabs:TabsOverflowBaseline);沒有跨整排分隔線的消費者(Chip)不用 */}
+    <div aria-hidden data-tabs-baseline className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-divider" />
     <div
       ref={scrollRef}
       className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       style={{ maskImage, WebkitMaskImage: maskImage }}
     >
-      <TabsPrimitive.List className={cn(TABS_LIST_BASE, 'w-fit')}>...</TabsPrimitive.List>
+      {/* border-b 只留透明的 1px 列給選中底線疊合(TABS_OVERFLOW_LIST_CLASS = min-w-full border-transparent) */}
+      <TabsPrimitive.List className={cn(TABS_LIST_BASE, TABS_OVERFLOW_LIST_CLASS)}>...</TabsPrimitive.List>
     </div>
     {!atStart && canScroll && <OverflowScrollArrow direction="left" onClick={() => scrollByPage('left')} />}
     {!atEnd && canScroll && <OverflowScrollArrow direction="right" onClick={() => scrollByPage('right')} />}
   </div>
 )
 ```
+
+> **遮罩會吃掉畫在捲動容器裡的分隔線(2026-11-17)**:`mask-image` 淡化的是捲動容器的整個內容,含裡面元素的 border。所以「跨整排、要連成一條」的分隔線(Tabs 的灰色底線)**不得**畫在捲動容器裡,改由外層畫一條(absolute 貼底、橫跨淡出區與箭頭 / ⌄ 底下),DOM 排在捲動容器前面 —— 捲動容器有遮罩時自成疊放層、沒有遮罩時項目本身是 relative,兩種情況項目都畫在線之上(Tabs 選中 2px 底線不被蓋)。項目**自己的**邊框(Chip 外框)跟著項目一起淡出是預期行為,不在此列。修法前 Tabs scroll 模式右箭頭底下沒有線、menu 模式淡出那段斷一格;閘 `scripts/header-tabs-slot-invariants.mjs` W1-連續 逐點量那一列的像素。Tabs 端的契約在 `tabs.spec.md`「TabsList 容器寬度」。
 
 > **箭頭卸載時的焦點接力(2026-09-29,待辦總帳 OE26)**:箭頭是條件渲染,鍵盤使用者按到底的那一下焦點正停在它上面;`OverflowScrollArrow` 在 layout-effect cleanup(React 拿掉節點之前)看到焦點在自己身上,就交給同容器另一側箭頭,兩側都沒有(內容不再溢出)就交給捲動容器(`useScrollEdges` 在容器上標 `data-overflow-scroller`,必要時補 `tabindex=-1`)。消費者不用多傳任何東西;同 BulkActionBar / Dialog 的 return-focus 契約。閘:`horizontal-overflow.stories.tsx`「到底時焦點交給另一側箭頭」play。
 
@@ -175,19 +180,21 @@ const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>(
 const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: 0 })
 
 return (
-  <div className="flex items-stretch">   {/* items-stretch 讓 menu button 容器跟 list 共底線 */}
+  <div className="relative flex items-stretch">   {/* items-stretch:⌄ 容器與捲動區同高;relative 給分隔線定位 */}
+    {/* 分隔線一條畫到底(橫跨捲動區與 ⌄ 底下),在遮罩外、排在捲動容器前面;⌄ 容器不再自帶 border-b */}
+    <div aria-hidden data-tabs-baseline className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-divider" />
     <div ref={scrollRef} className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden ..." style={{ maskImage, WebkitMaskImage: maskImage }}>
-      <TabsPrimitive.List className={cn(TABS_LIST_BASE, 'w-fit')}>...</TabsPrimitive.List>
+      <TabsPrimitive.List className={cn(TABS_LIST_BASE, TABS_OVERFLOW_LIST_CLASS)}>...</TabsPrimitive.List>
     </div>
     {canScroll && (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <OverflowMenuTriggerButton aria-label={`頁籤選單(共 ${items.length} 個)`} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {/* menu button container 自帶 border-b border-divider 對齊 list border */}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex-shrink-0 pl-[var(--layout-space-loose)] pb-px flex items-center">   {/* pb-px:讓出分隔線那一列,⌄ 與分頁文字同一條中線 */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <OverflowMenuTriggerButton aria-label={`頁籤選單(共 ${items.length} 個)`} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">...</DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     )}
   </div>
 )

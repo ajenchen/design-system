@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils'
  * 對 `[data-slot=tabs-list]`(tabs.tsx 三種 overflow 模式的 role=tablist 元素皆自標,對齊
  * shadcn v4 data-slot idiom,例 https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/separator.tsx#L15 )注入內 `px-loose` inset triggers(對齊 header content = W2)。
  * 寬度不在此注入 — TabsList 各模式自帶(none `w-full` border-b 延展全寬 = W1 一條線;
- * scroll/menu `min-w-full` 讓 border 隨溢出內容成長,blanket `w-full` 會把 border 截在可視寬)。
+ * scroll/menu `min-w-full` 讓 border 列隨溢出內容成長,blanket `w-full` 會把 border 截在可視寬;
+ * 溢出模式看得到的灰線由 Tabs 畫在捲動遮罩外,見 tabs.tsx TabsOverflowBaseline,2026-11-17)。
  * v4(2026-07-30 regression fix):beta.86 inlineAction overlay(fc2a3a5c)包 `<div class="relative">`
  * 後,原 `[&>[role=tablist]]` direct-child 結構選擇器全滅(px-loose 靜默消失,且 scroll/menu 深度
  * 本就 >1 從未命中)→ 改 data-slot attribute contract + descendant selector,免疫 DOM 深度重構。
@@ -59,7 +60,8 @@ export interface ChromeHeaderProps
    *   row 2 = tabsSlot 包在 `HEADER_TABS_SLOT_WRAPPER_CLASS` wrapper
    *           (`[&_[data-slot=tabs-list]]` 注入 TabsList 內 px-loose;寬度 TabsList 各
    *           overflow 模式自帶 w-full / min-w-full;wrapper 本身無 padding 無 border——
-   *           border 由 TabsList 自畫,W1 全寬 paint 一條線)
+   *           分隔線由 Tabs 自畫,W1 全寬 paint 一條線:none = TabsList border,
+   *           scroll / menu = 捲動遮罩外的 TabsOverflowBaseline)
    *
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 放 ChromeHeader 之外。
    * Standalone Tabs(無 chrome header)該直接用 `<TabsList>` 不需 wrapper。
@@ -115,7 +117,7 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
           {/* Row 2:tabsSlot wrapper — TabsList 全 dialog 寬 + 內 px-loose inset triggers
               2026-05-18 v3 fix(同 SurfaceHeader,per user verbatim「分隔線寬度應該要填滿整個
               dialog」+「就這樣做」approval):TabsList 自己 px-loose 內 padding 而非 wrapper
-              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md:201` 既有 canonical。
+              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md`「Underline 與 TabsList border 的視覺關係」既有 canonical。
               2026-07-30 v4:選取機制改 `data-slot="tabs-list"` attribute contract(beta.86
               overlay 包裹層破 direct-child;詳 HEADER_TABS_SLOT_WRAPPER_CLASS 註解)。*/}
           <div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>

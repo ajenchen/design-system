@@ -1536,7 +1536,8 @@ jobs:
           # 登記測試裡需要 Chromium 的(2026-09-08 拆 job 後靜態 job 沒有瀏覽器,d16baf90 的 verify-static 因此紅):
           npm run test:devmode-geometry
           npm run test:header-tabs-slot-invariants
-          # 對照組:清空 overlay 後 W3(分頁 inlineAction 必須真的渲染)必須整批變紅。
+          # 對照組:清空 overlay 後 W3(分頁 inlineAction 必須真的渲染)必須整批變紅;
+          # 溢出模式灰線畫回遮罩內 → W1-連續 必紅、灰線蓋到選中底線上 → W1-選中底線 必紅(2026-11-17 W1 改量像素)。
           node scripts/header-tabs-slot-invariants.mjs --selftest
           # 選單訊息列(2026-09-08 user 拍板):「沒有選項 / 載入中」都是一列 MenuItem 的列幾何(md 48 = 8 + 32 + 8),
           # 列高 / 群組留白 / 置中 / 搜尋列與觸發點的轉圈尺寸與位置 / 不可互動,每條都量像素;對照組在 focus-deep-gates.yml。

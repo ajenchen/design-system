@@ -667,12 +667,12 @@
     {
       "id": "design-system-patterns-header-anatomy--with-tabs-overflow-scroll",
       "file": "header-with-tabs-overflow-scroll.png",
-      "rationale": "beta.97 Header W2 × overflow=scroll;窄容器下保留 px-loose trigger inset、min-w-full border 與水平捲動 affordance。"
+      "rationale": "beta.97 Header W2 × overflow=scroll;窄容器下保留 px-loose trigger inset、min-w-full border 與水平捲動 affordance。2026-11-17 起分頁列灰線畫在淡出遮罩外,右箭頭底下也連著(tabs.spec.md「TabsList 容器寬度」)。"
     },
     {
       "id": "design-system-patterns-header-anatomy--with-tabs-overflow-menu",
       "file": "header-with-tabs-overflow-menu.png",
-      "rationale": "beta.97 Header W2 × overflow=menu;多層 wrapper 下仍由 data-slot=tabs-list 套用 inset,並保留 show-all navigator。"
+      "rationale": "beta.97 Header W2 × overflow=menu;多層 wrapper 下仍由 data-slot=tabs-list 套用 inset,並保留 show-all navigator。2026-11-17 起分頁列灰線一條畫到 ⌄ 底下,淡出那段不再斷開(tabs.spec.md「TabsList 容器寬度」)。"
     },
     {
       "id": "design-system-patterns-item-anatomy--inline-action-hover-state",
