@@ -22,8 +22,8 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *   「Label ↔ Desc 間距」scanning 那一型)。
  * - 標題區(標題 + 說明)→ 內容(layoutSpace.spec.md 規則 3「標題區 → 內容」,2026-11-11 立、2026-11-17 改判法):照順序問三題 ——
  *   ① 哪一種版型(同一種版型每一頁同一個距離)② 那個位置只可能放一個東西 → tight ③ 其他(會有好幾個的)→ 標題到第一個 = 東西之間、至少 loose。
- *   出處:user 2026-11-11「我覺得主要取決於那個標題和說明是否是完完全全在描述下方的東西？若是的話，那就是親近吧？如果是描述下方的多個東西，那確實是用loose沒錯？」
- *   + 決策頁「說明頁:甲」(說明頁也套);loose 的值即 user 2026-10-21 A4 甲(「他是所有內容的標題而非內容第一個的小標，所以內容之間是 loose的話，那內容到‘標題＋說明’也是loose吧」);
+ *   出處:user 2026-11-11 原話(全句見 layoutSpace.spec.md 規則 3「出處」)
+ *   + 決策頁「說明頁:甲」(說明頁也套);loose 的值即 user 2026-10-21 A4 甲(原話全句同見該段「出處」);
  *   三題 = AI 在 r12 決策頁第 1 題寫的選項乙,user 2026-11-17 回「都照你建議，你的理由合理」(規格那一段有全部原話與出處)。
  *   好幾個示範塊彼此只隔 tight 也是 loose:user 2026-11-12「第四批成品的問題都照你建議，但清除全部的按鈕用TERTIARY」,
  *   第四批成品頁「多塊緊排」題的建議選項是「乙：有兩塊以上就維持遠的距離」。
@@ -221,7 +221,7 @@ function minGapBetween(nodes: Element[]): number {
 /**
  * 只負責排版的容器除了 class / style 之外可以帶的屬性:主題 / 密度的範圍宣告,與 FieldGroup(一疊欄位的排版群組,不是一個元件 —— 往裡數)。
  * 「FieldGroup + 說明它的文字」(第 2 步只剩一塊 → `one`)與「只剩一個欄位的 FieldGroup」(往裡數到一個 Field → `one`)維持一塊【AI 推導 2026-11-17】:
- * 文件頁這種示範,標題描述的就是底下那一則 → 親近(user 2026-11-11「是否是完完全全在描述下方的東西？若是的話，那就是親近吧？」)。
+ * 文件頁這種示範,標題描述的就是底下那一則 → 親近(user 2026-11-11 原話全句見 layoutSpace.spec.md 規則 3「出處」)。
  * 同日曾改成「FieldGroup 一律 many」又撤回(依據是 AI 補的一句)。理由與清單:layoutSpace.spec.md 規則 3 邊角表最後一列。
  */
 const LAYOUT_WRAPPER_ATTRS = new Set(['class', 'style', 'data-theme', 'data-density', 'data-layout-space', 'data-field-group'])
