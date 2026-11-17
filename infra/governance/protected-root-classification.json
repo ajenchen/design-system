@@ -12,7 +12,6 @@
     ".devcontainer",
     "governance",
     "generated",
-    "commands",
     "skills",
     "hooks",
     "snapshots-baseline",
@@ -118,15 +117,6 @@
       "excludes": [],
       "allowAbsent": false,
       "reason": "Canonical development-container contract."
-    },
-    {
-      "id": "plugin-command-alias",
-      "path": "commands",
-      "match": "file",
-      "classification": "generated-output",
-      "excludes": [],
-      "allowAbsent": false,
-      "reason": "Generated exact Claude plugin command symlink."
     },
     {
       "id": "plugin-skill-alias",

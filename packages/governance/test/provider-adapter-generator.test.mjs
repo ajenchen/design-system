@@ -253,6 +253,44 @@ test('Claude reviewer wiring and repository-only agents are generated from the r
   )
 })
 
+// D2-7(2026-11-18):Claude 把 .claude/commands/ 底下每個 .md 都當成 slash command,commands 住處的
+// charter(README.md)被整棵樹複製過去後,每個 session 都多出一個假的 /README。排除只拿掉 charter,
+// 樹本身仍是受管投影 —— 下面的對照組證明「拿掉排除就會投影」,所以綠燈不是因為機制整個關掉。
+test('commands charter is excluded from the Claude projection, not the whole commands tree', () => {
+  const claudeOf = (registry) => registry.providers.find((provider) => provider.id === 'claude')
+  const build = (registry) => buildProviderAdapterTargets({ registry, sourceRoot: repoRoot, outputRoot: repoRoot, providerIds: ['claude'] })
+  const projects = (built, name) => built.targets.some((target) => target.path === resolve(repoRoot, '.claude/commands', name))
+
+  const live = build(PROVIDER_REGISTRY)
+  assert.deepEqual(claudeOf(PROVIDER_REGISTRY).adapter.repositoryManagedTreeExcludes, { commands: ['README.md'] })
+  assert.equal(projects(live, 'README.md'), false, 'commands charter 不得投影成 /README 指令')
+  assert.ok(live.managedRoots.includes(resolve(repoRoot, '.claude/commands')), '.claude/commands 仍是受管投影樹(未來居民照常投影、多出的檔照常算漂移)')
+
+  const unexcluded = structuredClone(PROVIDER_REGISTRY)
+  delete claudeOf(unexcluded).adapter.repositoryManagedTreeExcludes
+  assert.equal(projects(build(unexcluded), 'README.md'), true, '對照組:拿掉排除,同一份 charter 必須被投影')
+
+  // 排除清單指向不存在的檔 = 守護對象改名後排除靜默失效,改名後的檔會被當成居民投影出去 → 必須失敗。
+  const stale = structuredClone(PROVIDER_REGISTRY)
+  claudeOf(stale).adapter.repositoryManagedTreeExcludes = { commands: ['GHOST.md'] }
+  assert.throws(() => build(stale), /repositoryManagedTreeExcludes names a file absent from .*:GHOST\.md/)
+
+  const unknownTree = structuredClone(PROVIDER_REGISTRY)
+  claudeOf(unknownTree).adapter.repositoryManagedTreeExcludes = { command: ['README.md'] }
+  assert.throws(() => validateProviderRegistry(unknownTree), /repositoryManagedTreeExcludes\.command names no repositoryManagedTrees entry/)
+
+  const unsorted = structuredClone(PROVIDER_REGISTRY)
+  claudeOf(unsorted).adapter.repositoryManagedTreeExcludes = { commands: ['README.md', 'AAA.md'] }
+  assert.throws(() => validateProviderRegistry(unsorted), /must be a non-empty sorted unique list/)
+
+  for (const entry of ['nested/README.md', '..']) {
+    const pathLike = structuredClone(PROVIDER_REGISTRY)
+    claudeOf(pathLike).adapter.repositoryManagedTreeExcludes = { commands: [entry] }
+    assert.throws(() => validateProviderRegistry(pathLike), /repositoryManagedTreeExcludes|must match pattern/, `排除項必須是根層檔名:${entry}`)
+    assert.throws(() => validateProviderRegistrySemantics(pathLike), /entries must be root-level file names/, `語意層也要擋(schema 之外的第二道):${entry}`)
+  }
+})
+
 test('generated provider hook coverage is closed, exhaustive, and declares only proved hook-independent fallback', async () => {
   const coverage = buildProviderHookCoverage()
   const byProvider = new Map(coverage.providers.map((provider) => [provider.provider, provider]))

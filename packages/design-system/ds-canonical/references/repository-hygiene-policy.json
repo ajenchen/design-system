@@ -42,7 +42,6 @@
         "CLAUDE.md": "Claude import shell",
         "CONTRIBUTING.md": "contributor guide",
         "apps": "first-party consumer applications",
-        "commands": "compatibility symlink to provider commands",
         "components.json": "component tooling configuration",
         "docs": "repository documentation",
         "eslint.config.mjs": "ESLint flat config for the react-hooks gate (check:react-hooks, N40)",
@@ -67,7 +66,6 @@
       },
       "declaredSymlinks": {
         ".claude/snapshots-baseline": "../infra/governance/baseline/visual/targeted",
-        "commands": ".claude/commands",
         "hooks/scripts": "../packages/design-system/ds-canonical/hooks",
         "skills": ".claude/skills",
         "snapshots-baseline": "infra/governance/baseline/visual/curated"

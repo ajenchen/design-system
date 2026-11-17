@@ -433,6 +433,19 @@ export function validateProviderRegistrySemantics(registry) {
       assertAdapterOutputPath(value, `${provider.id}.adapter.repositoryManagedTrees.${name}`)
       if (provider.adapter.generate) destructiveOutputs.push({ provider: provider.id, path: value, label: `repositoryManagedTrees.${name}` })
     }
+    // An exclusion may only name a root-level file of a tree this provider actually projects. A
+    // misspelled tree key or a nested path would make the exclusion silently inert (the charter would
+    // still be projected), so both fail here; the generator separately proves the file exists.
+    for (const [name, entries] of Object.entries(provider.adapter.repositoryManagedTreeExcludes || {})) {
+      const label = `${provider.id}.adapter.repositoryManagedTreeExcludes.${name}`
+      if (!Object.hasOwn(repositoryManagedTrees(provider), name)) throw new Error(`${label} names no repositoryManagedTrees entry`)
+      if (!Array.isArray(entries) || !entries.length || !exactSortedUniqueStrings(entries)) throw new Error(`${label} must be a non-empty sorted unique list`)
+      for (const entry of entries) {
+        if (!entry || entry === '.' || entry === '..' || entry.includes('/') || entry.includes('\\') || entry.includes('\0')) {
+          throw new Error(`${label} entries must be root-level file names:${entry}`)
+        }
+      }
+    }
     for (const [name, record] of Object.entries(productManagedTrees(provider))) {
       assertRepositoryPath(record.sourceRoot, `${provider.id}.adapter.productManagedTrees.${name}.sourceRoot`)
       assertAdapterOutputPath(record.destination, `${provider.id}.adapter.productManagedTrees.${name}.destination`)

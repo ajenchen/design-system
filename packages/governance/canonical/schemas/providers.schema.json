@@ -1531,6 +1531,20 @@
             "$ref": "#/$defs/adapterOutputPath"
           }
         },
+        "repositoryManagedTreeExcludes": {
+          "type": "object",
+          "description": "Root-level canonical files that a repositoryManagedTrees projection must not copy, keyed by the same tree name. Used when the provider discovery surface treats every file as a resident (for example every .md under .claude/commands becomes a slash command), so the home's charter README stays canonical-only.",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?!\\.{1,2}$)[^/\\\\]+$"
+            }
+          }
+        },
         "productManagedTrees": {
           "type": "object",
           "additionalProperties": {

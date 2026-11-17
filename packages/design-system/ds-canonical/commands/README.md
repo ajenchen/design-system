@@ -4,6 +4,8 @@ Claude Code 已將 custom commands 併入 skills，新增 workflow 一律寫入 
 
 此目錄只保留舊 consumer 的相容 pointer；新的 `/<name>` 由同名 skill 提供。
 
+**本檔不投影**:它是這個住處的 charter,不是指令。Claude Code 會把 `.claude/commands/` 底下每個 `.md` 都當成一個 slash command(本檔被投影時,session 的指令清單真的多出一個 `/README`),所以 `packages/governance/canonical/providers.json` 的 `repositoryManagedTreeExcludes.commands` 把本檔排除在投影外。居民 0 時 `.claude/commands/` 不存在,plugin 也不帶 `commands/` alias(plugin 只給 DS 作者端點;外部 consumer 的 legacy pointer 走 fork 的 `compatibilityProjections.legacyClaudeInstruction.discoveryCategories` 白名單)。
+
 ## 當前居民(0)
 
 原 `/gov-status` 已改為 `packages/design-system/ds-canonical/skills/governance-status/SKILL.md`，並移除主機絕對路徑與 Claude-only 假設。

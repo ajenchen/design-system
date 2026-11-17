@@ -143,7 +143,6 @@
         "scripts/sync-plugin-aliases.mjs"
       ],
       "sources": [
-        ".claude/commands/",
         ".claude/skills/",
         "packages/design-system/ds-canonical/hooks/",
         "packages/governance/canonical/plugin-aliases.json",
