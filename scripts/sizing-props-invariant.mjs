@@ -6,16 +6,22 @@
  *         已移除的舊名不回來(相容政策 props-naming.md「相容政策」;判斷讀 scripts/lib/compat-policy.mjs)。
  *   紅: R1 公開元件的 *Props 出現撐滿 / 跟內容的同義名(fullWidth / block / autoWidth …)或已移除的舊名(REMOVED_PROP_NAMES)——
  *          0.x / 預發布版標了 @deprecated 也紅(不留舊名);1.0 以後的正式版才准同義名標 @deprecated 留一個版本;
- *       R2 DS 自己的 JSX(元件 / 範例 / 模板 / 閘夾具,沒有例外)用已移除的舊名(<Button fullWidth> / <FieldControlGroup block> /
+ *       R2 DS 自己的 JSX(元件 / 範例 / 模板 / 閘夾具(scripts/test-fixtures/ 的 .tsx,以及 scripts/*-invariant.mjs 裡寫成字串的 JSX;
+ *          scripts/test-*.mjs 的刻意舊名輸入不在範圍))用已移除的舊名(<Button fullWidth> / <FieldControlGroup block> /
  *          <Input autoWidth> / <FieldGroup horizontalLabelWidth> / <DataTable height> / <DialogContent maxWidth> / <DataTable autoRowHeight>);
  *       R3 *Props 的 `size` 收數字或任意字串(= 拿 size 當長度),不在正方形媒體例外清單;
  *       R4 *Props 繼承 InputHTMLAttributes 卻沒把原生 `width` / `height` Omit 掉;
  *       R5 DS 自己的 `<DialogContent width>` 寫數字(或檔名以外的字串)—— DS 的元件、範例只寫寬度檔名 sm / md / lg / xl
- *          (dialog.spec.md「寬度檔位」;2026-11-15 A18)。閘夾具(scripts/test-fixtures/)除外:量行為的測試對話框寫原數字,寬度不跟著檔位表變。
- *       → 指名 file:line 與修法,exit 1。`--selftest` 用合成原始碼證明五條各自會紅、合規寫法不誤報。
+ *          (dialog.spec.md「寬度檔位」;2026-11-15 A18)。閘夾具(scripts/test-fixtures/ 與 *-invariant.mjs 裡的字串 JSX)除外:
+ *          量行為的測試對話框寫原數字,寬度不跟著檔位表變。
+ *       → 指名 file:line 與修法,exit 1(閘夾具指名的是 .mjs 原檔的行)。`--selftest` 用合成原始碼證明五條各自會紅、合規寫法不誤報。
  *   綠: 五條 0 筆。純語法掃描(TypeScript createSourceFile,不做型別推論),同一份 worktree 恆等,沒有取樣。
+ *        任一類掃到 0(*Props 檔 / JSX 檔 / *-invariant.mjs 支數 / 其中的字串 JSX 段數)= 掃描或抽取壞了,exit 2,不讀成乾淨。
  *   註: 2026-11-15 新寫(audit-r7 INV-24:「沒有任何一份 SSOT 規定尺寸類 prop 怎麼命名,所以各元件各自照外部某一家取名」)。
  *        DialogContent `autoHeight` 的 JSX 用法歸 `overlay-story-contract-invariant.mjs` S3 管,本閘的 R2 不重複報。
+ *        2026-11-18 R2 擴到 *-invariant.mjs 裡寫成字串的 JSX(audit 24 項 #10):原本檔頭寫「閘夾具,沒有例外」,實際只掃 .tsx,
+ *        5 處瀏覽器閘的 HARNESS 與 2 處 selftest 的合成範例還寫 `<DataTable height>`,沒有任何一道閘看得到(見 scanGateFixtures 上方註解)。
+ *        已知限制:字串**開頭**就是 `<DataTable height>` 這種寫法的說明文字也會被當 JSX 判紅 —— 說明文字改寫成「舊名 height」即可。
  */
 // sizing-props-invariant.mjs — 尺寸參數命名閘
 //
@@ -27,7 +33,8 @@
 // 判準住 props-naming.md「尺寸參數」;本檔只放機器要用的清單。
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { basename, join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { isDirectRun } from './lib/direct-run.mjs'
 import { compatPolicyFor, readCompatPolicy, POLICY_DOC } from './lib/compat-policy.mjs'
@@ -200,30 +207,150 @@ function dialogWidthIsTierName(initializer) {
   return ok
 }
 
-/** R2 / R5:掃一個檔案裡的 JSX 屬性。 */
-export function checkJsxSource(path, text) {
+/**
+ * R2 / R5 的判定本體:走一棵已解析的 TSX 樹。`lineAt(位置)` = 這個位置在**原檔**第幾行
+ * (.tsx 檔就是樹自己的行號;閘夾具是 .mjs 字串裡的一段 JSX,行號要換回 .mjs 的行 —— 見 checkGateFixtureSource)。
+ */
+function jsxHitsIn(sf, path, lineAt) {
   const hits = []
-  if (!path.endsWith('.tsx')) return hits
-  const sf = parse(path, text)
   const r5Exempt = path.startsWith(R5_EXEMPT_PREFIX) || !path.startsWith(R5_SCOPE_PREFIX)
   const visit = (node) => {
     if (ts.isJsxAttribute(node)) {
       const attr = node.name.getText(sf)
       const el = node.parent.parent
       const tag = el.tagName ? el.tagName.getText(sf) : ''
+      const line = lineAt(node.getStart(sf))
       for (const rule of REMOVED_JSX) {
         if (rule.attr === attr && rule.tag.test(tag)) {
-          hits.push({ rule: 'R2', path, line: lineOf(sf, node), found: `<${tag} ${node.getText(sf).replace(/\s+/g, ' ').slice(0, 60)}>`, fix: `已移除的舊名,改 ${rule.fix}(props-naming.md「相容政策」:DS 自己的程式、範例、模板、閘夾具同一版改完)` })
+          hits.push({ rule: 'R2', path, line, found: `<${tag} ${node.getText(sf).replace(/\s+/g, ' ').slice(0, 60)}>`, fix: `已移除的舊名,改 ${rule.fix}(props-naming.md「相容政策」:DS 自己的程式、範例、模板、閘夾具同一版改完)` })
         }
       }
       if (!r5Exempt && tag === 'DialogContent' && attr === 'width' && !dialogWidthIsTierName(node.initializer)) {
-        hits.push({ rule: 'R5', path, line: lineOf(sf, node), found: `<${tag} ${node.getText(sf).replace(/\s+/g, ' ').slice(0, 60)}>`, fix: 'DS 自己的元件、範例只寫寬度檔名 sm / md / lg / xl(dialog.spec.md「寬度檔位」選檔規則:一件 → sm、多件一欄 → md、有一件很寬 → lg、兩欄 → xl);數字是給產品特例的出口,閘夾具(scripts/test-fixtures/)除外' })
+        hits.push({ rule: 'R5', path, line, found: `<${tag} ${node.getText(sf).replace(/\s+/g, ' ').slice(0, 60)}>`, fix: 'DS 自己的元件、範例只寫寬度檔名 sm / md / lg / xl(dialog.spec.md「寬度檔位」選檔規則:一件 → sm、多件一欄 → md、有一件很寬 → lg、兩欄 → xl);數字是給產品特例的出口,閘夾具(scripts/test-fixtures/)除外' })
       }
     }
     ts.forEachChild(node, visit)
   }
   visit(sf)
   return hits
+}
+
+/** R2 / R5:掃一個檔案裡的 JSX 屬性。 */
+export function checkJsxSource(path, text) {
+  if (!path.endsWith('.tsx')) return []
+  const sf = parse(path, text)
+  return jsxHitsIn(sf, path, (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1)
+}
+
+// ── 閘夾具:scripts/*-invariant.mjs 裡寫成字串的 JSX(R2)─────────────────────────────────────
+// 瀏覽器閘把要量的畫面寫成字串(`const HARNESS = \`…<DataTable …/>…\``),執行時才由 esbuild 編譯 —— 不是 .tsx 檔,
+// JSX_DIRS 掃不到,型別檢查也碰不到。2026-11-15 DataTable 的 `height` 改名 `maxHeight` 之後,5 處夾具還寫 `height="auto"`:
+// 舊名不再被 data-table.tsx 的 `DataTableInner` 解構取出,落進 `...props` 展開到外框 div 變成 HTML 屬性,
+// 上限回到不傳時的預設 400px(同函式 `maxHeightToCss(maxHeightProp) ?? (pagination ? 'auto' : '400px')` 那一行)——
+// 夾具原本「不設上限」的意思默默沒了,沒有任何報錯(audit 24 項 #10;2026-11-18 真 Chromium 實量:30 列表舊寫法 442 高、新寫法 1242)。
+// 範圍刻意只到 scripts/ 第一層的 *-invariant.mjs:
+//   - scripts/test-*.mjs 不掃:那是工具自己的測試,codemod 的輸入本來就要寫舊名(例:test-design-system-codemod.mjs 把
+//     `<DataTable height="auto" />` 餵給 codemod、斷言它改成 maxHeight)。
+//   - 本檔不掃:selftest 與修法訊息本來就要寫出舊名。
+//   - scripts/test-fixtures/ 的 .tsx 已在 JSX_DIRS;story-determinism/*.txt 是凍結的歷史原始碼抄本,不是 DS 現在的 JSX。
+const GATE_FIXTURE_DIR = 'scripts'
+const SELF_FILE = basename(fileURLToPath(import.meta.url))
+/** 哪些檔是「閘」(純函式,selftest 直接驗範圍):scripts/ 第一層、檔名 *-invariant.mjs、不是本檔。 */
+export const isGateFixtureFile = (name) => name.endsWith('-invariant.mjs') && name !== SELF_FILE
+/** 字串裡出現 `<元件名`,且元件名在 REMOVED_JSX 裡 —— 才當成一段 JSX 夾具解析(清單不另抄,直接讀 REMOVED_JSX)。 */
+const mentionsRemovedJsxTag = (text) => [...text.matchAll(/<([A-Z][A-Za-z0-9]*)/g)].some((m) => REMOVED_JSX.some((r) => r.tag.test(m[1])))
+/** `${…}` 換成的佔位字(合法識別字,放在屬性位置、子節點位置都解析得過去;不含換行)。 */
+const SUBSTITUTION_PLACEHOLDER = '__sub__'
+
+/**
+ * 一段常值(字串 / 樣板的一節)在原檔的換行對照:回傳 cooked 內容裡第 k 個 '\n' **之後**的文字在原檔第幾行。
+ * 原始碼裡真的換行 → cooked 換行、原檔也換行;轉義的 `\n` → cooked 換行、原檔不換;`\` 接換行(行接續)→ cooked 不換、原檔換。
+ * 數出來的換行數對不上 cooked(`\x0a` / `\u000a` 這類少見寫法)→ 回 null,呼叫端整段都報常值開頭那一行(行號粗一點,不漏報)。
+ */
+function newlineLineMap(raw, cooked, startLine) {
+  const after = []
+  let line = startLine
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i]
+    if (c === '\n') { line++; after.push(line); continue }
+    if (c !== '\\') continue
+    const d = raw[i + 1]
+    if (d === 'n') after.push(line)
+    else if (d === '\n') line++
+    else if (d === '\r') { line++; if (raw[i + 2] === '\n') i++ }
+    i++
+  }
+  const cookedNewlines = cooked.split('\n').length - 1
+  return after.length === cookedNewlines ? after : null
+}
+
+/**
+ * 一個字串 / 樣板常值 → { text, lineAt }:text = 還原轉義後的內容(`${…}` 換成佔位字),lineAt(text 裡的位置) = 原檔第幾行。
+ * 一節 = 字串常值本身,或樣板的頭 / 中 / 尾;每節各自從它在原檔的起始行數起(`${…}` 裡的運算式跨行也不會讓後面的行號偏掉)。
+ */
+function cookLiteral(sf, node) {
+  const pieces = ts.isTemplateExpression(node) ? [node.head, ...node.templateSpans.map((s) => s.literal)] : [node]
+  const segs = []
+  let text = ''
+  pieces.forEach((tok, i) => {
+    if (i > 0) text += SUBSTITUTION_PLACEHOLDER
+    const start = tok.getStart(sf)
+    const opensSubstitution = ts.isTemplateHead(tok) || ts.isTemplateMiddle(tok) // 結尾是 `${`
+    const raw = sf.text.slice(start + 1, tok.end - (opensSubstitution ? 2 : 1))
+    const startLine = sf.getLineAndCharacterOfPosition(start).line + 1
+    segs.push({ offset: text.length, cooked: tok.text, startLine, after: newlineLineMap(raw, tok.text, startLine) })
+    text += tok.text
+  })
+  const lineAt = (pos) => {
+    let seg = segs[0]
+    for (const s of segs) if (s.offset <= pos) seg = s
+    if (!seg.after) return seg.startLine
+    const k = seg.cooked.slice(0, Math.max(0, pos - seg.offset)).split('\n').length - 1
+    return k === 0 ? seg.startLine : seg.after[Math.min(k, seg.after.length) - 1]
+  }
+  return { text, lineAt }
+}
+
+/**
+ * R2(閘夾具):掃一支 .mjs 閘裡所有字串 / 樣板常值;內容提到 REMOVED_JSX 的元件名的,當 TSX 解析、交給同一份判定(jsxHitsIn)。
+ * 回傳 { hits, fixtures }:fixtures = 解析了幾段(正式掃描用它證明「真的有讀到夾具」,0 段 = 抽取壞了,不是乾淨)。
+ * 只回 R2:R5(DialogContent width 只寫檔名)本來就不管閘夾具(檔頭 R5 註)。
+ */
+export function checkGateFixtureSource(path, text) {
+  const hits = []
+  let fixtures = 0
+  const sf = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const visit = (node) => {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) {
+      const lit = cookLiteral(sf, node)
+      if (mentionsRemovedJsxTag(lit.text)) {
+        fixtures++
+        const inner = ts.createSourceFile(`${path}.fixture.tsx`, lit.text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+        hits.push(...jsxHitsIn(inner, path, lit.lineAt).filter((h) => h.rule === 'R2'))
+      }
+      // 樣板裡 `${…}` 的運算式可能再包一段樣板(例:`${cond ? \`<Input autoWidth />\` : ''}`)—— 照樣往下走
+      if (ts.isTemplateExpression(node)) for (const s of node.templateSpans) visit(s.expression)
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return { hits, fixtures }
+}
+
+function scanGateFixtures() {
+  const hits = []
+  let files = 0
+  let fixtures = 0
+  for (const name of readdirSync(join(ROOT, GATE_FIXTURE_DIR)).sort()) {
+    if (!isGateFixtureFile(name)) continue
+    const rel = `${GATE_FIXTURE_DIR}/${name}`
+    files++
+    const r = checkGateFixtureSource(rel, readFileSync(join(ROOT, rel), 'utf8'))
+    hits.push(...r.hits)
+    fixtures += r.fixtures
+  }
+  return { hits, files, fixtures }
 }
 
 function scanRepo() {
@@ -242,7 +369,9 @@ function scanRepo() {
       hits.push(...checkJsxSource(f, readFileSync(join(ROOT, f), 'utf8')))
     }
   }
-  return { hits, propsFiles, jsxFiles }
+  const gate = scanGateFixtures()
+  hits.push(...gate.hits)
+  return { hits, propsFiles, jsxFiles, gateFiles: gate.files, gateFixtures: gate.fixtures }
 }
 
 // ── selftest:合成原始碼,四條各自會紅、合規寫法不誤報 ─────────────────────────────────────
@@ -310,12 +439,34 @@ function selftest() {
   expect(rules(checkJsxSource('scripts/test-fixtures/other/fixture.tsx', 'const a = <DialogContent maxWidth={480} />')) === 'R2', 'R2:其他夾具寫 <DialogContent maxWidth> 應紅')
   expect(checkJsxSource('scripts/test-fixtures/dialog-width/fixture.tsx', 'const a = <DialogContent width={w} height={h} />').length === 0, 'R2:夾具只用新名不應紅')
 
+  // R2(閘夾具):scripts/*-invariant.mjs 裡寫成字串的 JSX(2026-11-18,audit 24 項 #10)。行號必須是 .mjs 的行(指名 file:line 才修得到)。
+  const gateHits = (text) => checkGateFixtureSource('scripts/x-invariant.mjs', text)
+  const where = (r) => r.hits.map((h) => `${h.rule}:${h.line}`).sort().join(',')
+  const harness = (attr) => ['import { x } from "y"', 'const HARNESS = `', "import { DataTable } from '@/design-system/components/DataTable/data-table'", 'function App() {', `  return <DataTable columns={COLS} data={ROWS} ${attr} spreadsheetMode />`, '}', '`'].join('\n')
+  const red = gateHits(harness('height="auto"'))
+  expect(where(red) === 'R2:5', `閘夾具:樣板字串裡 <DataTable height="auto"> 應紅、指名 .mjs 第 5 行(實得 ${where(red) || '0 筆'})`)
+  const green = gateHits(harness('maxHeight="none"'))
+  expect(green.hits.length === 0 && green.fixtures === 1, `閘夾具:同一段改成 maxHeight="none" 應綠,而且是**讀到了**那段夾具才綠(實得 ${green.hits.length} 筆 / 解析 ${green.fixtures} 段)`)
+  // 單行字串 + 轉義的 \n:cooked 換行、原檔不換 → 仍指名常值那一行
+  const escaped = gateHits(['const a = 1', 'const s = \'import { DataTable } from "y"\\nexport const X = () => <DataTable size="sm" height="auto" />\''].join('\n'))
+  expect(where(escaped) === 'R2:2', `閘夾具:單行字串裡用 \\n 換行的 JSX 應指名常值那一行(第 2 行;實得 ${where(escaped) || '0 筆'})`)
+  // 樣板有 ${…}、運算式裡再包一段樣板:兩段都要掃到,行號不因 ${…} 偏掉
+  const nested = gateHits(['const H = `', '<main>', '  ${cond ? `<Input autoWidth />` : ""}', '  <Button fullWidth>送出</Button>', '</main>', '`'].join('\n'))
+  expect(where(nested) === 'R2:3,R2:4', `閘夾具:\${…} 裡的樣板與其後的 JSX 都應紅、行號 3 / 4(實得 ${where(nested) || '0 筆'})`)
+  // 沒提到 REMOVED_JSX 元件名的字串不解析(不是夾具);有提到但合規 → 0 筆
+  const none = gateHits('const s = `<div height="auto" />`\nconst t = "<svg height=\\"16\\" />"')
+  expect(none.fixtures === 0 && none.hits.length === 0, `閘夾具:不含 REMOVED_JSX 元件名的字串不應當成夾具(實得解析 ${none.fixtures} 段 / ${none.hits.length} 筆)`)
+  // 範圍:scripts/*-invariant.mjs,不含工具測試(codemod 的輸入本來就要舊名)與本檔(selftest 要寫舊名)
+  // (檔名用合成的 —— 寫真實腳本名會被 gate-reachability 讀成「本檔呼叫了那支」)
+  expect(isGateFixtureFile('orders-sheet-invariant.mjs') && !isGateFixtureFile('test-orders-codemod.mjs') && !isGateFixtureFile(SELF_FILE) && !isGateFixtureFile('probe-orders-scroll.mjs'),
+    '閘夾具範圍:*-invariant.mjs 要掃;test-*.mjs、本檔、其他工具不掃')
+
   if (problems.length) {
     console.error(`✗ sizing-props selftest:${problems.length} 格不符`)
     for (const p of problems) console.error(`   - ${p}`)
     process.exit(1)
   }
-  console.log('✓ sizing-props selftest:R1 新同義名 / 已移除的舊名加回來(0.x 標了 @deprecated 也紅;同一段在 1.0 正式版政策下綠 = 讀的是相容政策)、R2 舊寫法 JSX(含 <DialogContent maxWidth>,夾具沒有例外)、R3 size 當長度、R4 漏原生 width / height、R5 DS 的 DialogContent width 寫數字 各自會紅;合規寫法、非 *Props、svg / img 的 height、正方形媒體例外、閘夾具的數字寬不誤報')
+  console.log('✓ sizing-props selftest:R1 新同義名 / 已移除的舊名加回來(0.x 標了 @deprecated 也紅;同一段在 1.0 正式版政策下綠 = 讀的是相容政策)、R2 舊寫法 JSX(含 <DialogContent maxWidth>,夾具沒有例外;*-invariant.mjs 裡寫成字串的 JSX 也紅、指名 .mjs 行號,合規寫法綠且確實讀到那段)、R3 size 當長度、R4 漏原生 width / height、R5 DS 的 DialogContent width 寫數字 各自會紅;合規寫法、非 *Props、svg / img 的 height、正方形媒體例外、閘夾具的數字寬不誤報')
 }
 
 // 被 import 時(例:拿檢查函式對舊版原始碼做對照)只匯出函式、不跑;判準唯一實作 lib/direct-run.mjs(經符號連結叫也認得)
@@ -324,9 +475,9 @@ if (!isDirectRun(import.meta.url)) {
 } else if (process.argv.includes('--selftest')) {
   selftest()
 } else {
-  const { hits, propsFiles, jsxFiles } = scanRepo()
-  if (propsFiles === 0 || jsxFiles === 0) {
-    console.error(`✗ sizing-props-invariant:掃到 0 個檔(props ${propsFiles} / jsx ${jsxFiles})—— 掃描範圍壞了,不是乾淨(請在 repo 根目錄執行)`)
+  const { hits, propsFiles, jsxFiles, gateFiles, gateFixtures } = scanRepo()
+  if (propsFiles === 0 || jsxFiles === 0 || gateFiles === 0 || gateFixtures === 0) {
+    console.error(`✗ sizing-props-invariant:掃到 0 個(props ${propsFiles} 檔 / jsx ${jsxFiles} 檔 / 閘 ${gateFiles} 支 / 閘裡的字串 JSX ${gateFixtures} 段)—— 掃描範圍或夾具抽取壞了,不是乾淨(請在 repo 根目錄執行)`)
     process.exit(2)
   }
   if (hits.length) {
@@ -335,5 +486,5 @@ if (!isDirectRun(import.meta.url)) {
     console.error('   SSOT:packages/design-system/ds-canonical/references/props-naming.md「尺寸參數」')
     process.exit(1)
   }
-  console.log(`✓ sizing-props-invariant:R1–R5 0 筆(*Props 掃 ${propsFiles} 檔、JSX 掃 ${jsxFiles} 檔;已移除的舊名 ${REMOVED_PROP_NAMES.size} 個都沒回來;相容政策 ${currentPolicy().mode}(${currentPolicy().version}))`)
+  console.log(`✓ sizing-props-invariant:R1–R5 0 筆(*Props 掃 ${propsFiles} 檔、JSX 掃 ${jsxFiles} 檔、閘夾具掃 ${gateFiles} 支 *-invariant.mjs 裡 ${gateFixtures} 段字串 JSX;已移除的舊名 ${REMOVED_PROP_NAMES.size} 個都沒回來;相容政策 ${currentPolicy().mode}(${currentPolicy().version}))`)
 }

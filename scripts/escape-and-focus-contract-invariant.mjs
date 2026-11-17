@@ -464,7 +464,7 @@ function TableScene({ reorder }) {
   const [order, setOrder] = React.useState(['sku', 'qty'])
   return (
     <Shell title="表格">
-      <DataTable columns={COLS} data={ROWS} getRowId={(r) => r.id} height="auto" spreadsheetMode
+      <DataTable columns={COLS} data={ROWS} getRowId={(r) => r.id} maxHeight="none" spreadsheetMode
         {...(reorder ? { enableColumnReorder: true, columnOrder: order, onColumnOrderChange: setOrder } : {})} />
     </Shell>
   )
@@ -480,7 +480,7 @@ function TableWidgetScene() {
   const [rows, setRows] = React.useState(WROWS)
   return (
     <Shell title="表格">
-      <DataTable columns={WCOLS} data={rows} getRowId={(r) => r.id} height="auto" spreadsheetMode
+      <DataTable columns={WCOLS} data={rows} getRowId={(r) => r.id} maxHeight="none" spreadsheetMode
         onCellCommit={(rowId, columnId, value) => setRows((rs) => rs.map((r) => (r.id === rowId ? { ...r, [columnId]: value } : r)))} />
     </Shell>
   )
@@ -616,7 +616,7 @@ function TableHideScene() {
   return (
     <Shell title="表格">
       <button type="button" data-hide-qty onClick={() => setVisibility({ qty: false })}>隱藏數量欄</button>
-      <DataTable columns={COLS} data={ROWS} getRowId={(r) => r.id} height="auto" spreadsheetMode
+      <DataTable columns={COLS} data={ROWS} getRowId={(r) => r.id} maxHeight="none" spreadsheetMode
         columnVisibility={visibility} onColumnVisibilityChange={setVisibility} />
     </Shell>
   )

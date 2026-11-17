@@ -96,7 +96,7 @@ function Sheet({ id, rows, label }) {
   const [data, setData] = React.useState(rows)
   return (
     <section data-sheet={id} aria-label={label}>
-      <DataTable columns={STOCK_COLS} data={data} height="auto" inlineEdit spreadsheetMode
+      <DataTable columns={STOCK_COLS} data={data} maxHeight="none" inlineEdit spreadsheetMode
         getRowId={(r) => r.sku} tableOptions={{ getRowId: (r) => r.sku }}
         onCellCommit={(rowId, colId, value) => setData((prev) => prev.map((r) => r.sku === rowId ? { ...r, [colId]: value } : r))} />
     </section>
@@ -123,7 +123,7 @@ function App() {
         <Sheet id="a" rows={TAIPEI} label="台北倉" />
         <Sheet id="b" rows={HSINCHU} label="新竹倉" />
         <section data-sheet="outer" aria-label="出貨單">
-          <DataTable columns={ORDER_COLS} data={ORDERS} height="auto" rowHeight="hug" spreadsheetMode
+          <DataTable columns={ORDER_COLS} data={ORDERS} maxHeight="none" rowHeight="hug" spreadsheetMode
             getRowId={(r) => r.order} tableOptions={{ getRowId: (r) => r.order }} />
         </section>
       </main>

@@ -488,7 +488,7 @@ function selftestTable() {
   check('C 量了兩趟', [...trips(), trip('C')], { M: 'unjudged', C: 'instrument', D: 'green', E: 'green', S: 'green' }, noRed)
 
   // 靜態地板:範例自己傳了 estimateRowHeight
-  const story = (body) => `export const NestedRows: Story = {}\n\nexport const VirtualScroll: Story = {\n  render: () => (\n    <DataTable columns={columns} data={largeData} height="500px" overscan={10}${body} />\n  ),\n}\n\nexport const WithBulkActions: Story = { args: { estimateRowHeight: 36 } }\n`
+  const story = (body) => `export const NestedRows: Story = {}\n\nexport const VirtualScroll: Story = {\n  render: () => (\n    <DataTable columns={columns} data={largeData} maxHeight={500} overscan={10}${body} />\n  ),\n}\n\nexport const WithBulkActions: Story = { args: { estimateRowHeight: 36 } }\n`
   expect(storyPassesOwnEstimate(story('')).passes === false, '靜態地板:範例沒傳 estimateRowHeight 應放行(下一則 story 傳了不算)')
   expect(storyPassesOwnEstimate(story(' estimateRowHeight={36}')).passes === true, '靜態地板:範例傳了 estimateRowHeight={36} 應攔下')
   expect(typeof storyPassesOwnEstimate('export const Other: Story = {}\n').err === 'string', '靜態地板:找不到範例應回 err')

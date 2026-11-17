@@ -194,7 +194,7 @@ export function runSelftest() {
   // 3. 綠的情形
   expect(groupsOf([{ file: P, text: R1_CATALOG_COPY }]).length === 0, '只在一個檔 → 0 組')
   expect(groupsOf([{ file: P, text: R1_CATALOG_COPY }, { file: A, text: R1_CATALOG_COPY.replace("'Office Chair'", "'Ergonomic Office Chair'") }]).every((g) => g.name !== 'CATALOG_BASE'), '內容有差(品名不同)→ 不算同一份')
-  const story = `export const Big: Story = {\n  name: '大量資料',\n  render: () => (\n    <DataTable\n      data={rows}\n      height="400px"\n    />\n  ),\n}\n`
+  const story = `export const Big: Story = {\n  name: '大量資料',\n  render: () => (\n    <DataTable\n      data={rows}\n      maxHeight={400}\n    />\n  ),\n}\n`
   expect(groupsOf([{ file: P, text: story }, { file: A, text: story }]).length === 0, 'export 的 story 本身 → 不算')
   const short = "const OPTIONS = [\n  { value: 'a', label: 'A' },\n  { value: 'b', label: 'B' },\n]\n"
   expect(groupsOf([{ file: P, text: short }, { file: A, text: short }]).length === 0, `少於 ${MIN_LINES} 行 → 不算`)
