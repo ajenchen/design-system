@@ -1,6 +1,6 @@
 #!/bin/bash
 set -uo pipefail
-# PreToolUse Edit/Write: enforce per-file line budgets for governance files.
+# PreToolUse Edit/Write: per-file line budgets for governance files(只提醒,見下方 Non-blocking)。
 #
 # 上限表 —— 各檔(instruction entry / memory / spec / SKILL)上限的唯一住處 = lib/_size_budget.sh 的
 # governance_size_budget,量法也在同一檔;本 hook 只負責「讀表、量、出聲」。外部文件寫「check_file_size_budget.sh
@@ -8,10 +8,17 @@ set -uo pipefail
 #(檔頭 + Check 7 / 8)。AGENTS.md `# 治理 canonical`「行數預算」只是指向這兩處的索引,不寫數值。
 # Provider/instruction/skill 路徑由 canonical registry 解析,不以任一 generated home 當 authority。
 #
-# Non-blocking: emits a provider-neutral governance context warning; the adapter
-# transports it to the active model. Hard block would paralyse edits to legitimately
-# large canonical specs (e.g. item-anatomy ~900 lines) — require explicit override.
-# 超過 BUDGET 印 ⚠️、超過 TRANSITION(hard cap)印 ⛔,兩者都 exit 0。
+# Non-blocking —— 超過 BUDGET 印 ⚠️、超過 TRANSITION 印 ⛔,一律 exit 0;經 governanceContext 由 adapter 送給模型。
+# 為什麼不擋(D4-02 審計對本 hook 的結論:維持不擋):
+#   - 預算是反膨脹指標,不是 SSOT 內容規則:它只報「這個檔多長」,不判定任何一句對錯,也不宣稱在執法。
+#     governance/memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md 要求 P0 的是「DS 寫進 spec.md /
+#     canonical / SSOT 的東西」(該檔 Rule 段);它禁的「hook 偵測 → emit 警告但 exit 0 = 假裝 enforcement」
+#     前提是有違規可判,長度本身沒有對錯。
+#   - 硬擋會逼人為了湊數刪掉真規則、或把不同條目硬併 —— 正是 knowledge-prune SKILL.md「🔒 核心前提」
+#     ③「每條真實 invariant / 機械防線必完整保留」與 ④「distinct 條目強合成大條目會降 recall 精度」禁止的事。
+#   - 但也不能拿掉:沒有寫入當下的訊號,檔案只會一直堆 —— e017c41c 之前 meta-patterns.md 長到 55,456 bytes,
+#     因為規則檔不在本表,一次都沒出聲。
+#   - 真正會讓 CI 紅的上限另有正本:memory = governance/memory/contract.json(scripts/validate-memory-contract.mjs)。
 # 量具本身壞了(registry / contract / 量法讀不到)不等於「沒超標」:exit 2 並說明,不默默放行(M37)。
 
 # Per-hook fire logging(enables /knowledge-prune D2 dead-hook detection)
