@@ -253,11 +253,7 @@
     },
     {
       "hook": "log_governance_fires.sh",
-      "reason": "DS-author governance fire log。"
-    },
-    {
-      "hook": "log_skill_invokes.sh",
-      "reason": "DS-author skill invoke log。"
+      "reason": "DS-author governance fire log + skill invoke log(2026-11-17 併入原 log_skill_invokes.sh)。"
     },
     {
       "hook": "session_start_governance_check.sh",

@@ -377,22 +377,11 @@
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Write|Edit|MultiEdit|Skill",
         "hooks": [
           {
             "kind": "hook",
             "hook": "log_governance_fires.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
-          }
-        ]
-      },
-      {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "kind": "hook",
-            "hook": "log_skill_invokes.sh",
             "runtime": "bash",
             "outputMode": "diagnostic"
           }

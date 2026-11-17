@@ -122,5 +122,63 @@ else
   echo "  FAIL no-Git caller created non-authoritative telemetry"; FAIL=$((FAIL+1))
 fi
 
+# ── Skill 路徑(2026-11-17 /knowledge-prune:原 test_log_skill_invokes.sh 搬入,兩面都留)──
+
+echo "Test 8: incomplete Skill payload → silent rc0, opt-in or not, no skill log"
+SKILL_PROJECT="$TMP/skill-project"
+mkdir -p "$SKILL_PROJECT"
+(cd "$SKILL_PROJECT" && git init -q)
+SKILL_STATE="$(git -C "$SKILL_PROJECT" rev-parse --absolute-git-dir)/governance-runtime"
+for OPT in 0 1; do
+  printf '%s' '{"tool_name":"Skill"}' | GOVERNANCE_PROJECT_DIR="$SKILL_PROJECT" GOVERNANCE_STATE_DIR="$SKILL_STATE" \
+    GOVERNANCE_TELEMETRY_OPT_IN=$OPT bash "$HOOK" >"$TMP/skill-empty-$OPT.stdout" 2>"$TMP/skill-empty-$OPT.stderr"
+  EXIT=$?
+  if [ "$EXIT" -eq 0 ] && [ ! -s "$TMP/skill-empty-$OPT.stdout" ] && [ ! -s "$TMP/skill-empty-$OPT.stderr" ] \
+    && [ ! -e "$SKILL_STATE/skill-invokes.jsonl" ]; then
+    echo "  PASS opt-in=$OPT"; PASS=$((PASS+1))
+  else
+    echo "  FAIL opt-in=$OPT: expected silent rc0 and no skill log, got exit=$EXIT"; FAIL=$((FAIL+1))
+  fi
+done
+
+echo "Test 9: >256 KiB Skill args → silent rc0 + exact 200-character log slice(opt-in)"
+{
+  printf '%s' 'match-at-start:'
+  awk 'BEGIN {
+    for (i = 0; i < 12000; i++) {
+      printf "large-skill-args-%05d-abcdefghijklmnopqrstuvwxyz0123456789", i
+    }
+  }'
+  printf '\n'
+} >"$TMP/large-args.txt"
+if [ "$(wc -c <"$TMP/large-args.txt" | tr -d ' ')" -le 262144 ]; then
+  echo "  FAIL: large args fixture is not larger than 256 KiB"; FAIL=$((FAIL+1))
+else
+  jq -Rs '{hook_event_name:"PostToolUse",tool_name:"Skill",tool_input:{skill:"large-replay-skill",args:.}}' \
+    <"$TMP/large-args.txt" >"$TMP/large-payload.json"
+  GOVERNANCE_PROJECT_DIR="$SKILL_PROJECT" GOVERNANCE_STATE_DIR="$SKILL_STATE" GOVERNANCE_TELEMETRY_OPT_IN=1 \
+    bash "$HOOK" <"$TMP/large-payload.json" >"$TMP/large.stdout" 2>"$TMP/large.stderr"
+  EXIT=$?
+  if [ "$EXIT" -eq 0 ] && [ ! -s "$TMP/large.stdout" ] && [ ! -s "$TMP/large.stderr" ] \
+    && [ -f "$SKILL_STATE/skill-invokes.jsonl" ] \
+    && jq -e -s 'length == 1 and .[0].skill == "large-replay-skill" and (.[0].args | length) == 200
+      and (.[0].args | startswith("match-at-start:"))' "$SKILL_STATE/skill-invokes.jsonl" >/dev/null 2>&1; then
+    echo "  PASS"; PASS=$((PASS+1))
+  else
+    echo "  FAIL: expected silent rc0 and one valid truncated log (exit=$EXIT)"; FAIL=$((FAIL+1))
+  fi
+fi
+
+echo "Test 10: Skill payload without opt-in leaves Git runtime absent(Test 9 的對照組)"
+SKILL_OFF_PROJECT="$TMP/skill-off-project"
+mkdir -p "$SKILL_OFF_PROJECT"
+(cd "$SKILL_OFF_PROJECT" && git init -q)
+GOVERNANCE_PROJECT_DIR="$SKILL_OFF_PROJECT" bash "$HOOK" <"$TMP/large-payload.json" >/dev/null 2>&1
+if [ ! -e "$SKILL_OFF_PROJECT/.git/governance-runtime" ]; then
+  echo "  PASS default execution wrote no skill telemetry"; PASS=$((PASS+1))
+else
+  echo "  FAIL default execution created runtime bytes"; FAIL=$((FAIL+1))
+fi
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" = "0" ]

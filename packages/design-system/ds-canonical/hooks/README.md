@@ -42,13 +42,7 @@
 | `check_story_invariants.sh` | (同上,PostToolUse 路徑做 disk read drift check) |
 | `check_pixel_quantified_audit.sh` | M32 audit script 必 pixel-quantified verify(scans audit scripts for `getAttribute(` without `getBoundingClientRect(`) |
 | `check_field_controls_contracts.sh` | Field controls contract 強制(c)/(e)/(f) 等 |
-| `log_governance_fires.sh` | 治理檔 fire log 寫入 `$GOVERNANCE_STATE_DIR/hook-fires.jsonl`(L2 anti-bloat) |
-
-### PostToolUse(Skill)
-
-| Hook | 做什麼 |
-|------|--------|
-| `log_skill_invokes.sh` | skill invoke log(本 hook 僅捕 Skill tool 呼叫,slash-command 走 user prompt 不被捕 — known limitation) |
+| `log_governance_fires.sh` | matcher `Write\|Edit\|MultiEdit\|Skill`:治理檔編輯寫 `$GOVERNANCE_STATE_DIR/hook-fires.jsonl`,Skill tool 呼叫寫 `skill-invokes.jsonl`(2026-11-17 併入原 `log_skill_invokes.sh`;只捕 Skill tool,slash-command 走 user prompt 不被捕 — known limitation;要 `GOVERNANCE_TELEMETRY_OPT_IN=1` 才寫) |
 
 ### Stop
 
@@ -98,7 +92,7 @@ Node helper 必須是本 canonical tree 內可盤點、可雜湊的 committed `.
 ## Anti-bloat 落地
 
 - **L1 Pre-write**:`check_file_size_budget.sh` + `check_story_invariants.sh`(內含 principles canonical + l3 primitive 等 5 個合一)等(PreToolUse 阻擋 / 警告)
-- **L2 Per-edit**(PostToolUse Write|Edit|MultiEdit,script 內自過濾 governance file):`log_governance_fires.sh` → `$GOVERNANCE_STATE_DIR/hook-fires.jsonl`(governance file 編輯軌跡)+ `log_skill_invokes.sh`
+- **L2 Per-edit**(PostToolUse Write|Edit|MultiEdit|Skill,script 內自過濾 governance file;僅在 `GOVERNANCE_TELEMETRY_OPT_IN=1` 時寫,預設關):`log_governance_fires.sh` → `$GOVERNANCE_STATE_DIR/hook-fires.jsonl`(governance file 編輯軌跡)+ `skill-invokes.jsonl`(Skill tool 呼叫)
 - **L3 Periodic**:`/knowledge-prune` skill 季度跑；量化 retire rate，但只 retire 有證據的噪音，禁止為湊比例硬刪
 
 Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_OPT_IN=1`。`$GOVERNANCE_STATE_DIR` 只能在 Git-owned `<git-dir>/governance-runtime/` 內；未指定時使用該 Git-owned default，read-only / 未 opt-in 時不寫任何 runtime bytes。Generated provider homes 不是 telemetry authority。

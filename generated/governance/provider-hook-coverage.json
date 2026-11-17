@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:923fe1cd0af9b960729002f5b1fa1eced1e8f59bdd057b15a6b5a6b5f31678b4",
+      "hookRegistrations": "sha256:5900e0f550d100edf608aa1957b243a5c704bbdbabe57ea94f650a0b43c0c74b",
       "providerRegistry": "sha256:c8c96ab26ea34a73d6223c57cad875bbc57fbb00407850f6537b8f71c5016508",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -24,8 +24,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "complete-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 62,
-      "projectedCount": 62,
+      "canonicalRegistrationCount": 61,
+      "projectedCount": 61,
       "excludedCount": 0,
       "projected": [
         {
@@ -771,7 +771,7 @@
         },
         {
           "event": "PostToolUse",
-          "canonicalMatcher": "Write|Edit|MultiEdit",
+          "canonicalMatcher": "Write|Edit|MultiEdit|Skill",
           "hook": "log_governance_fires.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -780,22 +780,7 @@
           "transcriptRequirement": "none",
           "requirements": [],
           "nativeEvent": "PostToolUse",
-          "projectedMatcher": "Write|Edit|MultiEdit",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "PostToolUse",
-          "canonicalMatcher": "Skill",
-          "hook": "log_skill_invokes.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "PostToolUse",
-          "projectedMatcher": "Skill",
+          "projectedMatcher": "Write|Edit|MultiEdit|Skill",
           "nativeCoverage": "projected",
           "certificationImpact": "runtime-certification-required"
         },
@@ -973,8 +958,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "partial-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 62,
-      "projectedCount": 59,
+      "canonicalRegistrationCount": 61,
+      "projectedCount": 58,
       "excludedCount": 3,
       "projected": [
         {
@@ -1690,7 +1675,7 @@
         },
         {
           "event": "PostToolUse",
-          "canonicalMatcher": "Write|Edit|MultiEdit",
+          "canonicalMatcher": "Write|Edit|MultiEdit|Skill",
           "hook": "log_governance_fires.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -1699,22 +1684,7 @@
           "transcriptRequirement": "none",
           "requirements": [],
           "nativeEvent": "PostToolUse",
-          "projectedMatcher": "Write|write_file|apply_patch|Edit|edit_file|MultiEdit",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "PostToolUse",
-          "canonicalMatcher": "Skill",
-          "hook": "log_skill_invokes.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "PostToolUse",
-          "projectedMatcher": "Skill",
+          "projectedMatcher": "Write|write_file|apply_patch|Edit|edit_file|MultiEdit|Skill",
           "nativeCoverage": "projected",
           "certificationImpact": "runtime-certification-required"
         },
@@ -1944,9 +1914,9 @@
       "hookEnforcement": "ci-only",
       "projectionStatus": "unavailable",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 62,
+      "canonicalRegistrationCount": 61,
       "projectedCount": 0,
-      "excludedCount": 62,
+      "excludedCount": 61,
       "projected": [],
       "excluded": [
         {
@@ -2851,26 +2821,8 @@
         },
         {
           "event": "PostToolUse",
-          "canonicalMatcher": "Write|Edit|MultiEdit",
+          "canonicalMatcher": "Write|Edit|MultiEdit|Skill",
           "hook": "log_governance_fires.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeCoverage": "gap",
-          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
-          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
-          "certificationImpact": "not-certified",
-          "authoritativeFallback": {
-            "status": "none"
-          }
-        },
-        {
-          "event": "PostToolUse",
-          "canonicalMatcher": "Skill",
-          "hook": "log_skill_invokes.sh",
           "kind": "hook",
           "runtime": "bash",
           "outputMode": "diagnostic",

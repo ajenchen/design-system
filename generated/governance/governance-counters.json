@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "counts": {
-    "hooks": 60,
+    "hooks": 59,
     "mRules": 33,
     "auditDims": 91,
     "auditDimMin": 1,
@@ -97,7 +97,6 @@
     "packages/design-system/ds-canonical/hooks/inject_deploy_url_after_push.sh",
     "packages/design-system/ds-canonical/hooks/inject_pending_self_audit.sh",
     "packages/design-system/ds-canonical/hooks/log_governance_fires.sh",
-    "packages/design-system/ds-canonical/hooks/log_skill_invokes.sh",
     "packages/design-system/ds-canonical/hooks/post_edit_dispatcher.sh",
     "packages/design-system/ds-canonical/hooks/record_release_consent.sh",
     "packages/design-system/ds-canonical/hooks/session_start_governance_check.sh",
