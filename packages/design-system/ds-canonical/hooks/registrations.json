@@ -157,13 +157,7 @@
           },
           {
             "kind": "hook",
-            "hook": "check_chrome_header_avatar_canonical.sh",
-            "runtime": "bash",
-            "outputMode": "blocking"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_sidebar_menu_button_implicit_wrap.sh",
+            "hook": "check_sidebar_avatar_canonical.sh",
             "runtime": "bash",
             "outputMode": "blocking"
           },

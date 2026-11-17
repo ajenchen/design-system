@@ -3,12 +3,12 @@
     "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔，從 packages/design-system/ds-canonical/hooks 生成 ds-canonical/fork/。--check 若任何 canonical hook *.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
     "source": "legacy workflow wf_4070529c-5af critic agent 的 inventory 對抗分類 + 2026-06-16 組裝；現役 hook inventory authority = packages/design-system/ds-canonical/hooks",
     "authority": "packages/design-system/ds-canonical/hooks/**；fork corpus 與 provider hook homes 皆為 generated/materialized outputs",
-    "total": 60,
+    "total": 58,
     "tally": {
-      "SHIP_AS_IS": 12,
+      "SHIP_AS_IS": 11,
       "SHIP_REWRITTEN": 6,
       "REPLACE": 1,
-      "DROP": 41
+      "DROP": 40
     },
     "known_coverage_gaps": [],
     "buckets_def": {
@@ -41,12 +41,8 @@
       "reason": "scope *components/*.tsx 含 apps/**/components,layout-agnostic 真 fire;訊息 @/design-system alias 可選改(SHIP_REWRITTEN-lite),enforcement 正確。"
     },
     {
-      "hook": "check_sidebar_menu_button_implicit_wrap.sh",
-      "reason": "窄條件 exit 2(SidebarMenuButton+Avatar 無 asChild)+ env escape,非 blanket brick。verify escape 隨 ship。"
-    },
-    {
-      "hook": "check_chrome_header_avatar_canonical.sh",
-      "reason": "窄條件 exit 2(SidebarHeader 含 ItemAvatar)+ CLAUDE_BYPASS escape,非 blanket brick。verify escape 隨 ship。"
+      "hook": "check_sidebar_avatar_canonical.sh",
+      "reason": "2026-11-18 合併原 check_chrome_header_avatar_canonical.sh(r1)+ check_sidebar_menu_button_implicit_wrap.sh(r2),兩條仍出貨給 consumer(不併進 DROP 的 chrome_header_dispatcher.sh)。r1:窄條件 exit 2(SidebarHeader 含 ItemAvatar)+ CLAUDE_BYPASS escape;r2:窄條件 exit 2(SidebarMenuButton+Avatar 無 asChild)+ env escape;各自的 escape 只放行自己那條,非 blanket brick。verify escape 隨 ship。"
     },
     {
       "hook": "check_layout_space_magic_numbers.sh",
