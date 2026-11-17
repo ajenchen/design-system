@@ -574,10 +574,10 @@ function VerticalLayout({
         </div>
       </StepItemHeader>
       {showContent && (
-        // 步驟標題區 → 內容 = loose(md 16 / lg 24):標題 + 說明是這一步整組內容的標題,不是第一個內容的小標
-        //(user 2026-10-21 A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:一步的內容是一張表單的好幾個欄位 = 兩塊以上 → loose)。
-        // 已發布版寫死 mt-3(md、lg 都 12);閘 steps-content-follows-current (3)。
-        // 前提:每一步的內容都是兩塊以上 —— 沒有「一塊 → tight」的分支(layoutSpace.spec.md 規則 3 產品畫面那一條,2026-11-17 A67 補記)
+        // 步驟標題區 → 內容 = loose(md 16 / lg 24):標題 + 說明是這一步整組內容的標題,不是第一個內容的小標(user 2026-10-21 A4 甲)。
+        // 每一步寫死同一個 loose、刻意不照塊數分支:表單步驟的內容是欄位 = 數量依步驟而變的並列內容,同一個精靈每一步同一個距離,
+        // 某一步剛好只有一個欄位也不改 tight(layoutSpace.spec.md 規則 3 產品畫面那一條;【AI 推導 2026-11-17】回應 user 成品頁 r11 留言,
+        // 規則 3「一塊怎麼數」的完整修訂待 user 拍板)。已發布版寫死 mt-3(md、lg 都 12);閘 steps-content-follows-current (3)。
         <div className="flex items-start gap-3 mt-[var(--layout-space-loose)]">
           <div className="shrink-0" style={{ width: indicatorBox }} />
           <div className="flex-1 min-w-0">{content}</div>

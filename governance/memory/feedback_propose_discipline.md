@@ -10,7 +10,6 @@ User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb pri
 
 ## Sub-rule 1 — 中文人話(原 propose_in_plain_chinese;2026-05-31 擴大至所有 reply)
 **Rule**:propose 給 user 拍板的決策必用中文具體人話講,禁術語 jargon。**2026-05-31 擴大**:不只 propose —— **所有給 user 的 reply / 清單 / summary** 都必繁中人話。User 看不懂英文,整段/整句英文 = reply 對 user 無效 = 白做。唯一例外:不可避免的識別碼(檔名 / token 名 / commit hash / 指令)出現時必緊跟中文解釋。工具輸出(CI log / git output)要引用 → 摘成中文重點,禁貼原始英文 dump。**做事中途插的文字 user 都看得到**(2026-11-15):只寫 user 需要知道的(發現的問題、要 user 決定的、做完的結果),一律中文;沒有必要的進度句不寫。user 原話「為何你他媽又一直回覆我英文？到底要我教你幾次？」「若是沒必要讓我知道的垃圾訊息，你評估真的是垃圾，那就不用讓我看到吧？」;機械 = 同一支 hook 的中途文字檢查。
-
 **Anchor(2026-05-31)**:user verbatim「你他媽問題後面一長串英文是怎樣?我看不懂英文」。
 **Anchor(2026-07-18,第 3 次犯 — 這次是工具/開發術語)**:user verbatim「幹你娘可以講中文嗎?不是講過了?」。整個 session 一直裸夾 `tsc / build:lib / typecheck:stories / preflight / smoke / commit / merge / tree clean / branch / grep / playwright` 等**工具與開發術語**(前兩次抓的是 DS 術語,這次是 dev/工具術語,同一 failure mode)。→ 工具/指令名也算 jargon,必翻中文。**必翻對照**:
 - tsc/build/typecheck →「程式碼(型別)檢查」;preflight →「發版前總檢查」;smoke →「頁面實跑測試」
@@ -18,22 +17,15 @@ User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb pri
 - grep/rg/playwright/screenshot/gate/verified/done →「全庫搜尋/自動化瀏覽器測試/截圖/把關/驗過了/做完了」
 
 **Format**:`### 決策 N:<一句話標題>` → **現況**(目前行為,人話)→ **影響**(不改/改了會怎樣)→ **選項** A/B/C 各附後果 → **我推** X 因 Y。
-
 **禁止**:`L1-L7` / `canonical` / `primitive` / `SSOT` / `consume` / `traits` / `M-rule` / `cva` / `tier` / `tokens` / `wrapper` 等內部術語 propose 內裸用。翻譯:canonical/primitive/SSOT/spec →「主檔或標準寫法/共用零件/單一資料源/規格檔」;consume/traits/tier →「沿用/行為類型/層級」;tokens/wrapper →「設計變數/外殼」。
-
 **Anchor**:2026-05-15 user verbatim「要 user 決策必中文具體人話講(發生什麼/影響/選項 outcome)」。
-
 **Mechanical enforcement**:`packages/design-system/ds-canonical/hooks/check_propose_discipline.sh` r1(2026-06-11 merge)由 provider adapters 接入，偵測 propose pattern + jargon keyword → BLOCKER。
 
 ## Sub-rule 2 — file:line cite(原 propose_without_cite_fabrication)
 **Rule**:propose 含 claim「規定 / 必配 / canonical 寫 / spec 說 / 文件規定」必附 inline file:line cite。沒 cite = 視為瞎掰,自動撤回。
-
 **Format**:`**現況 + cite**:per <file>:<line> 「<逐字引文>」 → <推論>`
-
 **禁止**:「DS canonical 規定 X」/「spec 寫 Y」/「per 規範 Z」沒 cite。
-
 **Anchor**:2026-05-27 user verbatim「誰跟你說的?」— 我曾 cite「caption + muted SSOT 規定」但 grep `semantic.css:49` 是 use-case 描述非 rule。建議 propose 全 retract。
-
 **Mechanical enforcement**:同一 canonical hook 的 r2 由 provider adapters 接入，偵測 propose pattern + canonical claim 但無 file:line cite → BLOCKER。
 
 ## How to apply
@@ -98,3 +90,8 @@ M18 Q0(本 rule 是「人話」+「cite」的具體化)/ M22 benchmark cite mand
 **Why**:「每個改動都要附 user 依據」的規矩,讓找依據的人去語料裡搜關鍵字湊引文;脈絡稽核只比對主題字眼(按鈕 / 捲軸),沒比對情境條件;主 session 又直接轉述子代理結論。
 **Anchor 2(2026-11-15,第四犯)**:原話「bulkactionbar原本就是正確正常的，你他媽不要給我改壞喔」(`tmp/wip-2026-10-13/ssot-consolidated/user-answers-2026-10-21.md:18`)的原題是「B1 附圖 BulkActionBar」—— B1 問留言框送出鈕要不要靠左,BulkActionBar 只是對照圖;當時 AI 解讀欄寫成「BulkActionBar 一律不動」= 把範圍讀寬,11-11 因此擱置說明頁小標(C11);11-15 審查代理拿這筆摘要說 A13 的說明頁小標修正「跟 C11 擱置衝突」,主線沒核原題就撤回。user 11-15 第一則(‘…‘ 內是 user 引我的原句):「‘審查發現它跟交接清單 C11「擱置」那條衝突。我查到你 10-21 的原話：「bulkactionbar原本就是正確正常的，你他媽不要給我改壞喔」（ssot-consolidated/user-answers-2026-10-21.md:18）。‘我指的是元件本身或是範例本身，你確定你有理解我的意思？還是你又去脈絡化了？若是的話，真的是非常可惡，我已經警告過你多少次不要把我的回覆去脈絡化解讀，root cause 到底是什麼？？？」;第二則:「你要確保你他媽不會一直重蹈覆徹，之前有警告過你不要把我的回覆去脈絡化，然後就導致你不斷浪費我的token 做很多沒意義的回覆的查證，甚至導致每件任務的執行都變得很慢，你他媽可以先研究看看到底要怎麼取得平衡，到底怎樣最有效率嗎？？？不要一直重蹈覆轍，我要你不要去脈絡化也不要浪費我的token」。**為什麼重犯【AI 推導 2026-11-15】**:規則只住在這份檔;索引那一行沒提到它;沒有任何機械檢查;審查代理拿摘要(AI 解讀欄 + 交接清單)說「衝突」,主線沒核原題就照做。
 **How to apply(效率版 —— user 11-15 第二則要的平衡:不去脈絡化,也不浪費 token)**:(1) 只有拿原話去**擋 / 撤回 / 擴大**工作時才查,而且只查一件事:原話回答的那一題,回覆寫一行「原題:…」;其他引用不查。(2) 範圍取最窄的字面讀法。(3) 讀完仍不確定:動作可逆 → 照規格做、回覆裡一行說明;不可逆 → 問 user 一句。**不**為了證明自己沒讀錯而派代理、開查證 workflow、寫長報告。規格行優先於原話。機械:`packages/design-system/ds-canonical/hooks/stop_self_audit.sh` Mechanism 8b(引原話 + 同句或下一句拿它當不動 / 撤回 / 擱置等理由 + 整段沒有「原題:」→ BLOCKER)。
+
+## Sub-rule 9 — token 只花在 user 要的任務上:沒證明是問題不開新戰場、決議過或要你先忽略的不翻冷飯(2026-11-04;同晚兩次更正)
+**Anchor**:user 2026-11-04 23:16 原話「請確保你沒有沒來由另開新戰場且也沒有把以前決議過或是明確要你先忽略的事情又重新拿出來冷飯熱炒浪費我的時間也浪費我的token,確保你他媽把所有token都用在真的要你做的任務上 我他媽已經連續好幾個禮拜token都被你用光結果任務都沒做完」。**更正 1**(11-04 23:45 記入):user 23:40 原話「並不是說完全不能另開新戰場，我他媽上面講得很明確吧？要有條件的開，確認真的是問題才開，且若已經做了且確定有合理的理由，你確定要全砍？」。**更正 2**(11-05 00:05 記入,撤回 AI 23:50 自己加的一句:既有、已發布的樣式跟規格對不上也不翻案、不問):user 原話「你他媽這是什麼因噎廢食？？？？？跟規格對不上肯定是要翻案要修的確保ssot不是才是最重要的目標嗎？？？？？？且之前的設計或許真的可能有問題啊，可以在我要求 deep audit或是特別針對某部份研究時去深入研究啊 針對這個問題的處理的問題，我認為就只是針對某些地方的對比度的檢查可以先從寬 而不是叫你完全耍廢忽視真的是問題的問題欸」。出處:`tmp/wip-2026-10-13/ssot-consolidated/memory-rules-rescued-2026-11-03.md:30`、`:33`、`:34`(11-04 只寫進 home 快取 `feedback_token_budget_scope.md`、沒進 repo,開 session 的記憶同步會把它蓋掉;本條是 repo 版。token 帳見 `tmp/wip-2026-10-13/MASTER-TODO.md` §0c)。
+**Rule**(AI 依上面三段原話整理、已含兩次更正,不是 user 逐字):每項先標來源(user 要的 / 交付必需 / AI 自己發現的)。AI 自己發現的分三類 —— ① 已實測或重現、違反既有規格、看得到的錯或讓 CI 誤判 → 做;② 已經做完而且理由成立 → 保留,不為了省 token 全砍;③ 只是待查 / 核對 / 讀回、沒證明出過問題的工具改良 → 不開,只記。**程式跟規格對不上 = 照修,不管多舊**;重開 user 拍板過的設計本身好不好,只在 user 要求深度稽核或指定研究那一塊時;某些地方的對比度檢查先從寬(錨例:有色 Tag 淡底字),仍追蹤、不忽視。列題給 user 前先查 user 是否說過「先忽略 / 維持 / 照你建議」(查法照 Sub-rule 8 效率版)。獨立 / 對抗審查只在明確要求時設,而且只審產品程式與畫面 / 行為;代理一段只做一件事,結果寫檔、回覆只回結論。
+**How to apply(精華)**【AI 推導,user 可推翻;出自交接檔 `tmp/wip-2026-10-13/batch1-2026-11-10/handoff-2026-11-12/RESUME.md` §0 第 8 條(11-15 價值閘)、第 10 條(11-17 時間預算),兩次都是 user 問為什麼做這麼久之後訂的】:(1) 價值閘 —— 審查或量測冒出的新發現,當下只做三種:使用者 / 產品看得到或用得到的錯、會讓 CI 紅或讓已做的東西壞掉的、user 要求的;其餘(閘的內部寫法、註解措辭、只在說明頁才有的邊角、沒有閘守著)只記進「AI 找到的尾巴」,最後併 1–2 批做,沒有實害的不做。與更正 2 相容的讀法:程式跟規格對不上不在「只記」之列,照修。每項最多一輪審查,只有必修項擋提交;預設 1 位實作 + 1 位審查,不做一條一個代理。(2) 時間預算 —— 小修正能擴既有閘就擴,不每項新寫一支閘(擴不了就照 (1) 只記);本機只跑跟改動有關的檢查,其餘交給 CI;連續幾筆提交先全部準備好,在最終狀態跑一次檢查、推一次 CI。
