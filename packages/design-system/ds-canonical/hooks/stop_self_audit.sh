@@ -606,6 +606,37 @@ if [ -n "$LAST_ASSISTANT" ]; then
   fi
 fi
 
+# ── Mechanism 10b: 分類器擋下卻沒在回覆講(2026-11-18,工作包 E2 / 稽核 #8)────────────────
+# SSOT = governance/memory/reference_auto_mode_sandbox_boundaries.md 第四節第 4 條「分類器擋下 = 停在該處並回報」。
+# Mechanism 10 管「被擋之後把指令丟給 user」;這裡管另一半 —— 被擋了卻在回覆裡完全不提,user 不知道少做了什麼。
+# 判準刻意窄:
+#   (1) 只認**分類器**擋下:tool_result 內容含 auto mode classifier / Blocked by classifier,或該筆記錄標
+#       toolDenialKind = automode-blocked(Claude Code 寫在記錄上的欄位,措辭改了也還在)。專案 settings 的
+#       deny 規則擋下(Permission to use … has been denied)不算 —— 那類擋下之後改寫是日常,逐次回報是 user 不想看的雜訊。
+#   (2) 只認 is_error = true 的 tool_result 本身。讀到的檔案、子代理 / 工作流輸出裡「引述」那句話不算(本工作包的
+#       規劃證據就引了那句);api-request-blob 是 API 請求的重放副本,會夾帶更早 turn 的擋下紀錄,也不算。
+#   (3) 本 turn 全部回覆文字裡有「被擋 / 擋下 / 分類器 / 被拒」任一 = 已回報。
+if [ -n "$LAST_ASSISTANT" ] && [ -n "${THIS_TURN_TOOLS:-}" ]; then
+  CLASSIFIER_DENIALS=$(jq -R -r '
+    fromjson? | select(type == "object" and .type != "api-request-blob")
+    | . as $record
+    | (.message.content? // empty) | arrays | .[]
+    | select(type == "object" and .type == "tool_result" and .is_error == true)
+    | (.content | if type == "string" then .
+        elif type == "array" then ([.[]? | .text? // empty | strings] | join("\n"))
+        else "" end) as $text
+    | select($record.toolDenialKind? == "automode-blocked"
+        or ($text | test("auto mode classifier|Blocked by classifier")))
+    | "classifier-denial"
+  ' <<< "$THIS_TURN_TOOLS") \
+    || governance_hook_integrity_fail 'self-audit classifier denial extraction failed'
+  if [ -n "$CLASSIFIER_DENIALS" ] \
+    && ! LC_ALL=C grep -qE '被擋|擋下|分類器|被拒' <<< "$LAST_ASSISTANT"; then
+    CRITICAL_CLASSIFIER_SILENT=1
+    WARNINGS="${WARNINGS}\n  • 分類器擋下卻沒講:本 turn 有動作被 auto mode 分類器擋下,回覆裡沒有交代被擋的是什麼、為什麼、影響到哪裡。"
+  fi
+fi
+
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
@@ -876,6 +907,18 @@ if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; the
       "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本 turn 有工具被擋,而你在 reply 裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
       "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現)。")
     emit_governance_block "$REASON"
+  fi
+fi
+
+# ── BLOCKER for Mechanism 10b 分類器擋下卻沒講(2026-11-18)── 升級邏輯同 M10:第一次擋,同 hash 降 warn 防 loop。
+if [ "${CRITICAL_CLASSIFIER_SILENT:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
+  SILENT_HASH=$(printf '%s' "${LAST_ASSISTANT: -200}" | governance_hash_prefix)
+  LAST_BLOCKED_SILENT_FILE="$STATE_DIR/.last-blocked-classifier-silent.txt"
+  LAST_BLOCKED_SILENT=""
+  [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_SILENT_FILE" ] && LAST_BLOCKED_SILENT=$(cat "$LAST_BLOCKED_SILENT_FILE" 2>/dev/null || echo "")
+  if [ "$SILENT_HASH" != "$LAST_BLOCKED_SILENT" ]; then
+    [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$SILENT_HASH" > "$LAST_BLOCKED_SILENT_FILE" 2>/dev/null || true; }
+    emit_governance_block "🚨 CLASSIFIER-SILENT BLOCKER(governance/memory/reference_auto_mode_sandbox_boundaries.md 第四節第 4 條「分類器擋下 = 停在該處並回報」):本 turn 有動作被 auto mode 分類器擋下,但回覆沒有交代。在回覆寫明:哪一個動作被擋、分類器給的理由、這件事因此停在哪裡;不換工具或寫法重做同一件事、不下一 turn 再試,也不把指令交給 user 去跑。"
   fi
 fi
 
