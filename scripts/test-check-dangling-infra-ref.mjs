@@ -61,7 +61,7 @@ try {
 
   // 2026-10-14(SM5):帶目錄的 .mjs 指標也要真的驗存在 —— 先前拿整條路徑判「是不是 infra 腳本」,帶目錄的一律被略過,
   // 所以把裸檔名改寫成完整路徑會「轉綠」卻沒有被檢查過。三面:
-  //   (a) 裸檔名、檔案在 scripts / hooks / 根目錄以外(historical-bugs.md:480 的原形)→ 紅
+  //   (a) 裸檔名、檔案在 scripts / hooks / 根目錄以外(historical-bugs.md「M37 第十二種形狀」表內「寫入的檔案在受管目錄」那一列的原形)→ 紅
   //   (b) 同一個檔寫完整路徑、檔案真的在 → 綠
   //   (c) 完整路徑、檔案不在 → 紅(這一面在修前會被略過而綠)
   const testDir = join(fixture, 'packages/governance/test')

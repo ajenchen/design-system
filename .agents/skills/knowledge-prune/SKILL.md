@@ -5,7 +5,7 @@ description: Prune governance sprawl across provider-neutral instructions / spec
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/knowledge-prune/SKILL.md; provider: codex; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=27; assumptionFingerprint=sha256:f03a1a568840c9ce509154ff2512113c7ef6e8d2cfdb8265610e2b7d31319540; evidence=packages/governance/canonical/providers.json#codex -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=28; assumptionFingerprint=sha256:3b480ebb96e7fadb291e903e16feba2a6b156cb7b3fede5e42d7991864502b41; evidence=packages/governance/canonical/providers.json#codex -->
 
 ## Provider binding contract
 

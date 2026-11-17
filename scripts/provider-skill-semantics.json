@@ -288,8 +288,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 27,
-      "assumptionFingerprint": "sha256:f03a1a568840c9ce509154ff2512113c7ef6e8d2cfdb8265610e2b7d31319540"
+      "assumptionFindingCount": 28,
+      "assumptionFingerprint": "sha256:3b480ebb96e7fadb291e903e16feba2a6b156cb7b3fede5e42d7991864502b41"
     },
     {
       "name": "new-component",

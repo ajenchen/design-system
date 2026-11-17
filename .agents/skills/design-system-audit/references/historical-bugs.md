@@ -224,6 +224,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 - 2026-08-07 `grep candidateRelease | head -20` 截掉當時 `infra/governance/bin/consumerctl.mjs` 第 1737 / 1761 行兩個 caller → 把還有人讀的欄位判成死狀態歸零 → 鎖死 legacy consumer 唯一升級路線(才剛在 #83 解開的死鎖)。root:盤 reader 清單時 grep 接 `head`/`-m` = 假陰性;`cmd | head` 的 exit code 屬 head,`&&` 分支報相反結論(必看 `PIPESTATUS`)。
 - 2026-08-09 agent UI 規格:「agent 切換會重置左側 modal 層數」定調後未入結論總帳,規格三處寫成「尚未定案」,據此跑兩輪無謂辯論,連自己推薦方案的賣點違背既有結論都沒看出來;前後多次「全盤稽核」全只驗單句證據,零次驗結論兩兩相容性。user 原話:「你在檢查的時候難道都沒有發現他們邏輯不通嗎?那你之前到底在檢查什麼」
 
+2026-09 追錄(2026-11-17 knowledge-prune 從 meta-patterns.md M10 第 3 欄逐字搬來,規則句已移到 M10 第 2 欄「Sub-rule 同族全修」):
+- **2026-09-18/19 只修同族一條還明文寫「另一條不變」→ 隔天被同一種方式咬**:CI 比值閘的「長工單一最長」因尾端噪音誤紅,改成比合計時同一段註解寫下「frameGap 那條不變」,隔天 frameGap 就在**零個執行期檔案改動**的 commit 上誤紅(同一份建置量到 215 與 311,尾端散布 ±45% > 門檻 ±25%)。
+
 ### M11 — User-perspective interactive state walk
 2026-04-22 ListBody 修完 user 連抓 5 波:hover bg 貼邊違反不貼邊 / focus ring click 觸發擾人 / notification 範例不現實(誰會進 modal 又跳別處)/ menu py-2 沒對齊 / layoutSpace md reset selector 缺。每個都是 user 視角一看就知,AI 沒跑 7 題 state walk 就 commit。
 

@@ -29,8 +29,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:19144b2bd5c0641b1c18351bc461ed8033bba61633bd36ad05f7329cd5f09b7a` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:ff8a94cb8a3b458b2786c7015f5654db325ca3a38bc1e5a9160aa21da9feb9cd` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:91b2cef662c3dca90928f9c88967835a953e77222af0b172df959cfdf24e1256` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:305c08a4a42a1d58ab4d823d96767a385f24ca053c556e1b364b7253fd2d7a4a` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:b7f0ba1eb6b42c23991be5064bfa6e2e97eef4196ee03575c9d4955a60541472` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:69b960d60da5c814b93c415b3b4c080158fa36d2472ff5d7cdf488a41b0f0e14` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:b54b7fbd0fdcdccc8788ddb553a74f1e6c165c3dab897b7548e63deae27f3b38` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:1c20e26e8d33f2eaa3ba919a73fe9bda90209cd2218deb533303b55764f0cd7d` |
@@ -319,7 +319,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-runtime-conformance-profile | `infra/governance/providers/runtime-conformance.json` | `sha256:9e316ae9b6be58fca79823b7a31a9d53e9395af8c827f56e37c86d8fa3f80152` |
 | provider-runtime-conformance-profile-schema | `infra/governance/schemas/runtime-conformance-profile.schema.json` | `sha256:2808c2ba9484e51cf958317e878930362cc9bba1fa9026d3fe203bb193e3f358` |
 | provider-runtime-validator-artifact | `generated/governance/provider-runtime-validator.mjs` | `sha256:02d6e678b37ed1eca58f1fd0d324d4ff06bea26ac9c3ef77097474707cdd321d` |
-| provider-skill-semantics | `scripts/provider-skill-semantics.json` | `sha256:fdc05ece1506add505c634cbfa7b5d57cae635283715ccf7da0c3e363f956dd5` |
+| provider-skill-semantics | `scripts/provider-skill-semantics.json` | `sha256:3efa3d01ac3f2b511361a1ee0a4bb6fac72e72f25ef54a634fcc324846253e65` |
 | provider-skill-semantics-schema | `scripts/schemas/provider-skill-semantics.schema.json` | `sha256:2dfe1530e6eb161de83fd6113524f31d69d56a122218c803403c3bbd4c59e7c5` |
 | provider-surface-certifications | `infra/governance/providers/certifications.json` | `sha256:6d874cd92667d6abab7bcd9983da2332682b55d3948eef9077f8a1eaede02e30` |
 | provider-surface-certifications-schema | `infra/governance/schemas/provider-surface-certification.schema.json` | `sha256:df9ac150ce24dd2f3f23171ca9083352c41003a796d85d17669ae055f9488e6e` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:f280e855529458848a8c7e32abd554db10df198afddf0e70b28376a280fcd00f` |
+| repository-automation-corpus | `scripts` | `sha256:43a7b6336e3142c8ece0bf0c558d7517cb25a5a91ca6479e611525d534335be9` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
