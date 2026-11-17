@@ -1,24 +1,28 @@
 #!/bin/bash
 set -uo pipefail
-# SessionStart hook: check if governance hygiene actions are overdue; if so,
-# inject reminder into session context so the active provider proactively addresses them.
+# SessionStart hook:governance hygiene 超標時,把提示注入 session context,讓當下的 provider 先處理。
 #
-# Why: M10 — silent tech debt violates. If /knowledge-prune last ran 3+ months
-# ago, the shared/bootstrap instruction set is over 800 lines, or user-corrections.jsonl has pending
-# entries not yet codified → user / Claude should know at session start, not
-# discover later when things break.
+# Why: M10 — silent tech debt violates。開場檔總行數超過 800、上次 /knowledge-prune 超過 180 天、
+# 待處理的 user-corrections 超過 40 筆…… → 要在 session 開始時就知道,不是等東西壞了才發現。
 #
-# Two-tier thresholds(2026-04-25 G1):
-#   • Soft — inject reminder,non-blocking
-#   • Hard(2x soft)— inject BLOCKER context requiring Claude's first action
-#     to be /knowledge-prune(SessionStart hooks cannot truly block session,
-#     but hard-tier context is prefixed with 🚨 BLOCKER / REQUIRED_FIRST_ACTION
-#     so Claude reads it as must-address-first instruction)
+# 輸出只有兩條通道(2026-04-26 降噪):
+#   • BLOCKERS —— 訊息以 🚨 BLOCKER / REQUIRED_FIRST_ACTION 開頭。SessionStart hook 擋不了 session,
+#     靠這個前綴讓模型把它當成「必須先處理」。
+#   • PRUNE_TRIGGERS —— 不擋,但要求 AI 自動跑 /knowledge-prune。
+#   兩條都空 → 不輸出任何東西。
 #
-# Checks + thresholds:
-#   1. Registry-resolved bootstrap line count — soft 400 / hard 800(本檔即 SSOT;單檔上限另見 check_file_size_budget.sh)
-#   2. Days since last prune    — soft 90   / hard 180
-#   3. user-corrections pending — soft 20   / hard 40
+# Checks + thresholds(只列真的會輸出的;數值以下方各 Check 的判斷式為準,本檔即 SSOT):
+#    1. 開場檔總行數(provider entry + shared entry,去重)> 800 → BLOCKER
+#    2. 距上次 knowledge-prune commit > 180 天 → BLOCKER
+#    3. 待處理 user-corrections > 40 筆 → BLOCKER
+#    7. hook 數 > 60 → BLOCKER;> 26 → PRUNE_TRIGGERS
+#    8. governance/memory 檔數 > 20 → BLOCKER;≥ 18 → PRUNE_TRIGGERS
+#    9. provider 分支 > 1(本機、遠端各算)、本機 main 與 origin/main 分叉 → PRUNE_TRIGGERS
+#   10. sync-governance-counters 抓到寫死數字漂移 → PRUNE_TRIGGERS
+#   12. provider 檢視有 hook 群組沒有派工入口 → PRUNE_TRIGGERS
+#   11. 環境健檢(plugin 完整性 / node / peer CLI / consumer 安裝 / 長駐 bypass env)→ PRUNE_TRIGGERS
+#   單檔行數上限(AGENTS.md、CLAUDE.md、SKILL、spec、memory 各檔)不在本檔:SSOT 是 check_file_size_budget.sh
+#   的 case 表(寫入當下提醒,不擋)。
 
 # Per-hook fire logging(enables /knowledge-prune D2 dead-hook detection)
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
@@ -64,7 +68,7 @@ if [ -n "$MEMORY_SYNC_SCRIPT" ] && [ "${GOVERNANCE_READ_ONLY:-0}" != "1" ] && [ 
   node "$MEMORY_SYNC_SCRIPT" >/dev/null 2>&1 || true
 fi
 
-# 輸出只有 BLOCKERS 與 PRUNE_TRIGGERS 兩條通道(2026-04-26 降噪)。要新增提示就放進其中一條;
+# 要新增提示就放進 BLOCKERS 或 PRUNE_TRIGGERS(見檔頭「輸出只有兩條通道」);
 # 不要另開「只收集、不輸出」的變數 —— 2026-11-18 刪掉的舊提醒變數就是這種死碼:Check 1 的 500 / 600 段、
 # Check 2 / 3 的 soft 段、Check 4 / 5 / 6 全段與 memory 同步註記都寫進它,卻從沒送到模型(M37④)。
 # 測試 test_session_start_governance_check.sh 有一格靜態檢查,抓「只累加、從不讀」的變數。
@@ -80,7 +84,9 @@ for ENTRY in "$INSTRUCTION_ENTRY" "$SHARED_INSTRUCTION_ENTRY"; do
   [ -f "$ENTRY" ] && LINES=$((LINES + $(wc -l < "$ENTRY" | tr -d ' ')))
 done
 if [ "$LINES" -gt 0 ]; then
-  # SSOT alignment per AGENTS.md: target ≤ 250 / transition ≤ 400 / hard cap 800
+  # 本 Check 只看兩份 entry 去重後的總行數:> 800 出 BLOCKER(本檔即 SSOT)。
+  # 單檔(AGENTS.md、CLAUDE.md 各自)的 400 警告 / 800 上限在 check_file_size_budget.sh 的 case 表,寫入當下提醒、不擋。
+  # AGENTS.md「# 治理 canonical」的行數預算句不寫數值,只指向這兩處。
   if [ "$LINES" -gt 800 ]; then
     BLOCKERS="${BLOCKERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(hard cap 800 breached). /knowledge-prune REQUIRED FIRST ACTION this session."
   fi
