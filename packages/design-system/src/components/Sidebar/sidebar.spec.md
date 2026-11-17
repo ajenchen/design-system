@@ -31,7 +31,7 @@ benchmark:
 # Sidebar 設計原則
 
 > **Foundational SSOT rationale**(2026-04-24 approved,cap 800):
-> Sidebar 有獨立 `sidebarMenuButtonVariants` cva(對齊 MenuItem 但獨立實作,同步風險見 item-anatomy.spec「SidebarMenuButton 獨立實作風險」)+ 20+ Sidebar-specific features SSOT(Chrome header/footer 高度 / Collapsible / Icon 模式 / SidebarTrigger 位置 / 放不下時 / 持久化 / 快捷鍵 / Group 收合 / Single selection / Inline actions / Keyboard shortcuts),scope > 單一 MenuItem consumer。Full cva consume 提案經二次評估 declined(2026-04-24,詳 `.claude/planning/row-primitive-consolidation.md.rejected.20260424.md`)— ROW_PADDING_BY_SIZE token SSOT 已是 practical best。
+> Sidebar 有獨立 `sidebarMenuButtonVariants` cva(對齊 MenuItem 但獨立實作,同步風險見 item-anatomy.spec「SidebarMenuButton 獨立實作風險」)+ 20+ Sidebar-specific features SSOT(Chrome header/footer 高度 / Collapsible / Icon 模式 / SidebarTrigger 位置 / 放不下時 / 持久化 / 快捷鍵 / Group 收合 / Single selection / Inline actions / Keyboard shortcuts),scope > 單一 MenuItem consumer。Full cva consume 提案經二次評估 declined(2026-04-24,詳 `governance/planning/row-primitive-consolidation.md.rejected.20260424.md`)— ROW_PADDING_BY_SIZE token SSOT 已是 practical best。
 
 ## 定位
 

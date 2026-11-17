@@ -204,6 +204,7 @@ C5 只看「名字有沒有出現在回復段」;「區塊裡的值真的等於�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `action-bar.spec.md`
 - `agent-panel.spec.md`
 - `command.spec.md`
 - `header-canonical.spec.md`

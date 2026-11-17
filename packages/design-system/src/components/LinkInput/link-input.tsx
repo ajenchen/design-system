@@ -167,7 +167,7 @@ const LINK_HOST_CLASS = 'min-w-0'
 
 /**
  * @internal — 檢視態編輯入口那一層的標記(`viewEditAction`)。宿主用它找鈕做「編輯結束後焦點歸還」—— 標記是 LinkInput 自己的,
- * 不帶任何宿主字眼:欄位不知道表格(`.claude/planning/cell-indicator-ssot-rfc.md` 否決選項 3 的理由「Field 知道 DataTable context = leak」)。
+ * 不帶任何宿主字眼:欄位不知道表格(`governance/planning/cell-indicator-ssot-rfc.md` 否決選項 3 的理由「Field 知道 DataTable context = leak」)。
  */
 export const LINK_INPUT_EDIT_ENTRY_ATTR = 'data-link-edit-entry'
 

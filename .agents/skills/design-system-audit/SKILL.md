@@ -1,11 +1,11 @@
 ---
 name: design-system-audit
-description: Systematic audit of this design system for world-class quality. Runs the full audit dimension list(per `## The N audit dimensions` section) covering spec hygiene / code correctness / a11y / naming / tokens / patterns / canonical governance consistency / Layout Family compliance / prop value collisions / shadcn alias leakage / home-name-vs-scope fit / spec hardcoded-values, and remediates actionable findings under the shared authority classifier. Stops only for a genuine product/UI/UX SSOT tradeoff or a shared-governance human-only boundary. Invoke via /design-system-audit when asked to audit, re-audit, check quality, or verify design system health.
+description: Systematic audit of this design system for world-class quality. Runs the full audit dimension list(per `## The audit dimensions` section) covering spec hygiene / code correctness / a11y / naming / tokens / patterns / canonical governance consistency / Layout Family compliance / prop value collisions / shadcn alias leakage / home-name-vs-scope fit / spec hardcoded-values, and remediates actionable findings under the shared authority classifier. Stops only for a genuine product/UI/UX SSOT tradeoff or a shared-governance human-only boundary. Invoke via /design-system-audit when asked to audit, re-audit, check quality, or verify design system health.
 ---
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md; provider: codex; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=55; assumptionFingerprint=sha256:d6e5f7ac42c3042c8ef29775bf76cc686dbb6a3e31714b723ba0e0d36f166bad; evidence=packages/governance/canonical/providers.json#codex -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=56; assumptionFingerprint=sha256:ff2f2f9d4f1b78ca0c37b21dfff30220e8c8ad2a5cc3a0f6c020e78a975f0ce3; evidence=packages/governance/canonical/providers.json#codex -->
 
 ## Provider binding contract
 

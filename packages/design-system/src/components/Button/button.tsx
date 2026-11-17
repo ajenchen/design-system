@@ -713,7 +713,7 @@ Button.displayName = 'Button'
 
 /**
  * componentMeta — Story Auto-Compile 系統消費的結構化 canonical
- * (見 .claude/planning/story-auto-compile.md Phase 1)
+ * (見 governance/planning/story-auto-compile.md Phase 1)
  *
  * compile-stories.mjs 讀本 export + spec.md frontmatter 產出
  * anatomy.stories.tsx 的 variant/size/state/token 矩陣 canonical section。

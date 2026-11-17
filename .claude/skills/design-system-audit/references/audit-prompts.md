@@ -1,6 +1,6 @@
 # Audit Subagent Prompts(全 dim per `SKILL.md SSOT`)
 
-> **Count canonical**:本檔 dim 數對齊 `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The N audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準。Prompt section 對 PURE-JUDGMENT dims 必備;deterministic-script dims(eg. 84-88)無需 prompt(腳本即檢查)。**誠實註**:prompt 數**非**機械 count-verified(`sync-governance-counters.mjs` 不 parse 本檔)— 靠 audit dim 15 + Phase A 人工對齊(2026-05-30 修正前 frontmatter 誤稱有自動 cross-verify)。
+> **Count canonical**:本檔 dim 數對齊 `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準。Prompt section 對 PURE-JUDGMENT dims 必備;deterministic-script dims(eg. 84-88)無需 prompt(腳本即檢查)。**誠實註**:prompt 數**非**機械 count-verified(`sync-governance-counters.mjs` 不 parse 本檔)— 靠 audit dim 15 + Phase A 人工對齊(2026-05-30 修正前 frontmatter 誤稱有自動 cross-verify)。
 
 Each prompt is self-contained and can be dispatched through the current provider's registered isolated-worker mechanism with read-only repository access. If parallel workers are unavailable, execute the same prompts serially without reducing coverage.
 

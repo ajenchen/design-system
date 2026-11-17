@@ -220,8 +220,8 @@
         "provider-surface-path",
         "provider-transport"
       ],
-      "assumptionFindingCount": 55,
-      "assumptionFingerprint": "sha256:d6e5f7ac42c3042c8ef29775bf76cc686dbb6a3e31714b723ba0e0d36f166bad"
+      "assumptionFindingCount": 56,
+      "assumptionFingerprint": "sha256:ff2f2f9d4f1b78ca0c37b21dfff30220e8c8ad2a5cc3a0f6c020e78a975f0ce3"
     },
     {
       "name": "ensure-canonical",
@@ -288,8 +288,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 20,
-      "assumptionFingerprint": "sha256:b6d2f15093f874c95f57f621efc8ae45cba0c71f375adc949aad9daa5ba84145"
+      "assumptionFindingCount": 27,
+      "assumptionFingerprint": "sha256:f03a1a568840c9ce509154ff2512113c7ef6e8d2cfdb8265610e2b7d31319540"
     },
     {
       "name": "new-component",

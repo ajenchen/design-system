@@ -291,11 +291,13 @@ export const WithForm = {
   ),
 }
 
-export const LongContent = {
-  name: '長內容',
-  // 按了才開(D2 甲:不要一進頁就開著);開著的畫面由 test-only「開啟狀態」那則給截圖與閘
-  render: () => (
-    <Dialog>
+// 「長內容」的對話框。initiallyOpen 只給 test-only「長內容:開啟狀態」用(視覺基準 dialog-long-content 拍它);
+// 讀者看的「長內容」不傳 = 按了才開(D2 甲)。同一支元件兩處共用,寫法同 popover.stories.tsx 的 StatusFilterPanel。
+// 參數不叫 defaultOpen:dialog-coexistence-invariant 的靜態段會把 `defaultOpen={defaultOpen}` 右邊那個字讀成「預設開著」,
+// 誤判讀者版「長內容」(它不傳,是關著的);讀者版真的開著與否由同一支閘的瀏覽器段量 docs 頁 [role=dialog] 可見數
+function LongMemberListDialog({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  return (
+    <Dialog defaultOpen={initiallyOpen}>
       <DialogTrigger asChild>
         <Button>開啟成員列表</Button>
       </DialogTrigger>
@@ -306,7 +308,7 @@ export const LongContent = {
         {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
             wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose`(前緣對齊 header 標題)。
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
-            30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
+            29 筆(MEMBERS 全名冊)超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
           {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
           <div role="list" className="flex flex-col py-2">
@@ -322,7 +324,13 @@ export const LongContent = {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  ),
+  )
+}
+
+export const LongContent = {
+  name: '長內容',
+  // 按了才開(D2 甲:不要一進頁就開著);開著的畫面由 test-only「長內容:開啟狀態」那則給截圖與閘
+  render: () => <LongMemberListDialog />,
 }
 
 // 觸發鈕後面還有一層確認 → secondary + danger(button.spec.md「danger prop — 語意意圖」;登記簿 E14);
@@ -418,19 +426,13 @@ function TagPickerDialog() {
 // ListBody —— body 放清單(overlay-surface.spec.md「List-as-region in overlay body」):body 撤 chrome padding、
 // list wrapper 自帶 py-2、item 自帶 px-loose(可點的列另帶 hover 底色;成員列不可點,不帶)。三則對應三種清單密度(item-anatomy Family 2 / 選單列)。
 // (2026-10-28 前這段寫在 JSDoc,Autodocs 會把它當說明顯示給讀者;稽核 L136)
-export const ListBody = {
-  name: '主體放清單',
-  // 三則範例對應三種清單密度(觸發鈕寫使用者會按的動作,密度註記住這裡 —— 2026-10-20 前寫在觸發鈕上,獨立驗證 OV-14);
-  // 三則都是按了才開(D2 甲:不要一進頁就開著)
-  parameters: {
-    docs: {
-      description: { story: '三種清單密度:「查看成員」= 大列(頭像 40 + 名稱 + 說明);「通知設定」= 中列(標題 + 說明 + 右側開關,在對話框裡直接設定);「選擇標籤」= 小列(純文字,走選單列,勾選後按「套用」)。' },
-    },
-  },
-  render: () => (
+// membersOpen 只給 test-only「主體放清單:開啟狀態」用(視覺基準 dialog-list-body 拍它:「查看成員」那一則開著);
+// 讀者看的「主體放清單」不傳 = 三則都按了才開(D2 甲)。寫法同 popover.stories.tsx 的 StatusFilterPanel
+function ListBodyDialogs({ membersOpen = false }: { membersOpen?: boolean }) {
+  return (
     <div className="flex flex-col gap-[var(--layout-space-loose)] items-start">
       {/* 大 item:avatar 40 + title + description(對齊 user 期望 + Material M3 + FileItem rich) */}
-      <Dialog>
+      <Dialog defaultOpen={membersOpen}>
         <DialogTrigger asChild>
           <Button variant="tertiary">查看成員</Button>
         </DialogTrigger>
@@ -463,7 +465,19 @@ export const ListBody = {
       {/* 小 item:純文字 label(對齊 Linear Cmd+K 密集);勾選暫存、按「套用」才寫回(overlay-surface.spec.md「暫存選擇 + Save CTA 才 commit → Dialog + MenuItem」) */}
       <TagPickerDialog />
     </div>
-  ),
+  )
+}
+
+export const ListBody = {
+  name: '主體放清單',
+  // 三則範例對應三種清單密度(觸發鈕寫使用者會按的動作,密度註記住這裡 —— 2026-10-20 前寫在觸發鈕上,獨立驗證 OV-14);
+  // 三則都是按了才開(D2 甲:不要一進頁就開著)
+  parameters: {
+    docs: {
+      description: { story: '三種清單密度:「查看成員」= 大列(頭像 40 + 名稱 + 說明);「通知設定」= 中列(標題 + 說明 + 右側開關,在對話框裡直接設定);「選擇標籤」= 小列(純文字,走選單列,勾選後按「套用」)。' },
+    },
+  },
+  render: () => <ListBodyDialogs />,
 }
 
 // 標頭操作(actions slot,2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)
@@ -809,6 +823,21 @@ export const OpenSnapshot = {
       </DialogContent>
     </Dialog>
   ),
+}
+
+// 「長內容」「主體放清單」開著的樣子 —— 只給視覺基準拍(scripts/visual-assertions.json 的 dialog-long-content / dialog-list-body)。
+// 8eb473c7(#169)讓這兩則讀者 story 按了才開(D2 甲)之後,兩個場景仍指著讀者 story,只拍得到觸發鈕(main 每週比對 82% / 70% 超標)。
+// 開著的畫面依 story-rules.md「預設開啟的模態浮層 story」放 test-only;用的是讀者 story 同一支元件,內容不會分岔。
+export const LongContentOpen = {
+  name: '長內容:開啟狀態',
+  tags: ['test-only'],
+  render: () => <LongMemberListDialog initiallyOpen />,
+}
+
+export const ListBodyOpen = {
+  name: '主體放清單:開啟狀態',
+  tags: ['test-only'],
+  render: () => <ListBodyDialogs membersOpen />,
 }
 
 /* ── G1 POC:Modal Dialog 開著時,舞台上另一個浮層掛載會不會廢掉 Dialog 的焦點鎖 ──

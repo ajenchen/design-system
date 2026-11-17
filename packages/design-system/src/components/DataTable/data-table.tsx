@@ -216,7 +216,7 @@ export interface DataTableProps<TData>
   /**
    * Slice D Step 1B(2026-05-10):啟用 spreadsheet-grade interaction overlay。
    * 預設 false(實驗中的功能,要用的頁面自己開 —— 名字的 experimental 前綴就是這個意思【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。Enable 後 hover/editor/selected/range 由
-   * `DataTableInteractionLayer` overlay 統一畫,per `.claude/planning/datatable-spreadsheet-rfc.md`。
+   * `DataTableInteractionLayer` overlay 統一畫,per `governance/planning/datatable-spreadsheet-rfc.md`。
    * 現況:hover ring + selection ring + active editor host 三個 sub-layer
    * (詳 `data-table-interaction-layer.tsx` 檔頭)。
    */
@@ -3348,7 +3348,7 @@ function DataTableInner<TData>(
   //   — Select / TimePicker / DatePicker / Combobox / PeoplePicker 5 picker 的 view mode 內建
   //   `<ItemSuffix>` 渲對應 trigger icon(同 edit DOM 結構)。LinkInput URL anchor 例外(無 suffix)。
   // SSOT chain:cell-registry.tsx(opt-in props)→ Field component(intrinsic icon + ItemSuffix DOM)→
-  //   item-anatomy ItemPrefix/ItemSuffix layout SSOT。詳 `.claude/planning/cell-indicator-ssot-rfc.md`。
+  //   item-anatomy ItemPrefix/ItemSuffix layout SSOT。詳 `governance/planning/cell-indicator-ssot-rfc.md`。
   // 不再有 DataTable-level cell indicator code path — 跨元件 SSOT 對齊 Field family。
 
   // L4 row drag:sort active 時 drag handle disabled(對齊 Notion / Airtable 共識)
@@ -3508,7 +3508,7 @@ function DataTableInner<TData>(
     // Indicator canonical(2026-05-09 D-path retire):**Field naked-view branch own** via
     //   `showDisplayEndIcon` opt-in(per-picker `<ItemSuffix>` 渲 ChevronDown/Calendar/Clock)。
     //   DataTable cellEl 不再 render parallel indicator — SSOT 對齊 Field family。
-    //   詳 `.claude/planning/cell-indicator-ssot-rfc.md` Step 9。
+    //   詳 `governance/planning/cell-indicator-ssot-rfc.md` Step 9。
     // Cell click → 進 edit mode(boolean 不需 — 勾選框自己切換)。
     // url(2026-11-06 user「照①乙②b」;data-table.spec.md「Navigate-valued cell 通用類別」第 1 條):有連結的網址格,格裡鉛筆以外
     // 點了開連結(LinkInput 的延伸連結鋪滿整格,瀏覽器照常開),鉛筆 = 滑鼠唯一的編輯入口 → 它**不是**「點格即編輯」的格:點格不進編輯。
@@ -5310,7 +5310,7 @@ function DataTableInner<TData>(
         )}
         {scrollbarTroughs}
       </div>
-      {/* Slice D Step 1B(2026-05-10):Interaction Layer singleton(`.claude/planning/datatable-spreadsheet-rfc.md`)。
+      {/* Slice D Step 1B(2026-05-10):Interaction Layer singleton(`governance/planning/datatable-spreadsheet-rfc.md`)。
           預設關(實驗中的功能,experimentalSpreadsheetOverlay【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】)。Enable 後 hover/editor/selected/range 由 layer 統一畫,
           per Contract 8 「one geometry owner, two paint owners」。
           Step 1C-fix(2026-05-10):wire Contract 15 hover predicate 過濾 readonly /

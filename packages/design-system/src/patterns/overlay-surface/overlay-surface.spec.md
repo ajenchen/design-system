@@ -379,7 +379,7 @@ API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 co
 拍板落地)/ DS 內部同構先例 `file-viewer.tsx` InfoPanel(`<aside class="w-80 shrink-0 flex-col
 border-l border-divider">`)/ Atlassian [`modal-dialog/examples/101-full-height-illustration.tsx`](https://github.com/pioug/atlassian-frontend-mirror/blob/cee82aa5ac9c07849d00ae757b15b07214cae59b/design-system/modal-dialog/examples/101-full-height-illustration.tsx#L34-L42)
 (per-column `flex:1 + minHeight:0 + overflow auto`)。完整研究引文 →
-`.claude/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
+`governance/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
 
 ## 不屬本 primitive 的職責
 

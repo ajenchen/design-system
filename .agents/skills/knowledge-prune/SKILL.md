@@ -5,7 +5,7 @@ description: Prune governance sprawl across provider-neutral instructions / spec
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/knowledge-prune/SKILL.md; provider: codex; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=20; assumptionFingerprint=sha256:b6d2f15093f874c95f57f621efc8ae45cba0c71f375adc949aad9daa5ba84145; evidence=packages/governance/canonical/providers.json#codex -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=27; assumptionFingerprint=sha256:f03a1a568840c9ce509154ff2512113c7ef6e8d2cfdb8265610e2b7d31319540; evidence=packages/governance/canonical/providers.json#codex -->
 
 ## Provider binding contract
 
@@ -83,7 +83,7 @@ Scan:同概念(同 keyword / 同 canonical)出現在 ≥ 3 個不同 home 寫完
 Example violations(historic — 2026-05-22 prune verify 後均已收斂為 pointer 模式,僅留作教學範例):
 - `Portal 逃脫 theme`:過去在 hover-card.spec.md / avatar.spec.md / color.spec.md 各重述;現只 M3 SSOT + 各 spec pointer。2026-05-22 audit verify 為已對齊(僅 ui-development.md / meta-patterns.md 2 home 涉及,clean pointer)
 - `Inline Action vs Button predicate`:過去 `AGENTS.md` / item-anatomy.spec.md / button.spec.md 各完整;現 `inline-action.spec.md` 為 SSOT,其他 cross-link
-- 新範例(2026-05-22 抓):**hook count threshold** 在 `AGENTS.md` `# 治理 canonical` 行數預算表 / meta-patterns M14 / M20 / `session_start_governance_check.sh` 4 處 drift 3 值(40/35/30)→ M14/M20 strip 數字改 pointer SSOT 修
+- 新範例(2026-05-22 抓):**hook count threshold** 在當年 `AGENTS.md` `# 治理 canonical` 行數預算表(現已移除)/ meta-patterns M14 / M20 / `session_start_governance_check.sh` 4 處 drift 3 值(40/35/30)→ M14/M20 strip 數字改 pointer SSOT 修
 
 **Output**:duplicate cluster 清單 + 建議 SSOT home。
 
@@ -155,7 +155,7 @@ Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P
 ### Phase 4 — P2 resolution + apply
 
 - 每 P2 item 一個獨立 commit(animation trail 可回溯)；P2E 依最高 certified capability + evidence 自主收斂，只有明確要求時才加 independent review；P2H 只在取得產品／UI／UX決策後執行
-- 新 meta-pattern 加進 `AGENTS.md` `# Meta-Pattern 預警` → 同時**必檢討哪些下游條目冗餘**(上游加 = 下游減)
+- 新 meta-pattern 加進 `packages/design-system/ds-canonical/rules/meta-patterns.md`「# Meta-Pattern 預警」(AGENTS.md 沒有這一章,只有指標)→ 同時**必檢討哪些下游條目冗餘**(上游加 = 下游減)
 
 ### Phase Z reference — Cross-repo SSOT propagation
 

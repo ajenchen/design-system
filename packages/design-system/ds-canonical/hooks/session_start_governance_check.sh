@@ -16,7 +16,7 @@ set -uo pipefail
 #     so Claude reads it as must-address-first instruction)
 #
 # Checks + thresholds:
-#   1. Registry-resolved bootstrap line count — soft 400 / hard 800(AGENTS.md budget SSOT)
+#   1. Registry-resolved bootstrap line count — soft 400 / hard 800(本檔即 SSOT;單檔上限另見 check_file_size_budget.sh)
 #   2. Days since last prune    — soft 90   / hard 180
 #   3. user-corrections pending — soft 20   / hard 40
 #   4. Benchmarks freshness     — read-only reminder at 30 days(no hard tier)
@@ -197,7 +197,7 @@ if [ -f "$FIRES_LOG" ] && [ -d "$TESTS_DIR" ]; then
   fi
 fi
 
-# Check 7: Hook count auto-trigger(soft 26 / hard 60 — Anthropic guideline ~15;真值見下方 -gt 判斷 + AGENTS.md `# 治理 canonical`)
+# Check 7: Hook count auto-trigger(soft 26 / hard 60 — Anthropic guideline ~15;真值見下方 -gt 判斷,本檔即 SSOT)
 # 2026-05-09 fix:tree-recursive count(含 lib/ helpers)。前身 -maxdepth 1 只 count root,
 # 漏 16 個 lib/ helpers → metric reports 19,reality 35 = system gaming own metric。
 # 2026-05-13 prune consolidation:`_*.sh` 約定 = internal helper(Unix convention)。
@@ -219,7 +219,7 @@ elif [ -d "$HOOKS_DIR" ]; then
 fi
 # 現值**不在此硬寫**:本檔曾同時留下「59、headroom=1」(2026-08-05 註解)與「已為 60、零 headroom」
 # (2026-07-31 訊息字串)兩個互相矛盾的庫存數,兩個都會過期。真值一律由下方 find predicate 當場算,
-# 或 `npm run sync:counters` 跑出;60 是邊界不是基準,下一支 first-class hook 必先由
+# 或 `npm run sync-counters` 跑出;60 是邊界不是基準,下一支 first-class hook 必先由
 # /knowledge-prune retire / consolidate 既有 hook 騰出空間。
 if [ "$HOOK_COUNT" -gt 60 ]; then
   BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/ 與 _* helper)。超 60 = 先跑 /knowledge-prune 評估 retire / consolidate,不直接 re-raise。"

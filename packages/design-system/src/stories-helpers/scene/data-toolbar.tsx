@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
  * 這裡把幾何定一次,四支示範都消費它:
  * - 搜尋框是列裡**唯一可壓縮**的項目:上限 `max-w-sm`(384px),下限 `min-w-40`(160px = sm 欄位的放大鏡 + 內距 50px + 約 7.8 個
  *   14px 中文字;示範裡最長的提示字「搜尋商品 / SKU」整顆需 146px,四句都放得下)。**值由消費端(示範)自己定,不建 token** ——
- *   `tokens/README.md`「新增 token 的 criteria」:消費者只算 DS 元件與產品端程式,只有 stories / 範例重複不構成建 token 的理由。
+ *   `tokens/token-system.spec.md`「判斷流程」第 0 題:消費者只算 DS 元件與產品端程式,只有 stories / 範例重複不構成建 token 的理由。
  *   世界級同樣不為此發 token:Carbon 表格工具列的搜尋收合時吃通用版面尺寸 `layout.size('height')`、展開時 `inline-size: 100%`
  *   (https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/data-table/action/_data-table-action.scss);
  *   Polaris 只有通用寬度刻度 `width-0…width-3200`(https://github.com/Shopify/polaris/blob/main/polaris-tokens/src/themes/base/width.ts);

@@ -3,7 +3,7 @@ set -uo pipefail
 # PreToolUse Edit/Write: enforce audit dim count SSOT integrity.
 #
 # SSOT: `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md`
-# `## The N audit dimensions` 段。
+# `## The audit dimensions` 段。
 # 任何 chain it 的 skill / spec / rule / hook 禁 hardcode 具體 dim 數字
 # (e.g. `46 dim` / `53 dim` / `53-dim` / `53 audit dimensions`)— 用「全 dim」/
 # 「Group A-P」/「per design-system-audit SSOT」表達。
@@ -63,7 +63,7 @@ if [ -n "$HARDCODE_HITS" ]; then
     printf '⚠️ AUDIT DIM COUNT DRIFT(P1 soft):\n' >&2
     printf '   File: %s\n' "$FILE_PATH" >&2
     printf '   偵測到 hardcoded audit dim count:\n%s\n' "$VIOLATION_LINES" >&2
-    printf '\n  SSOT: `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The N audit dimensions`\n' >&2
+    printf '\n  SSOT: `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The audit dimensions`\n' >&2
     printf '  修法: 改用「全 dim」/「Group A-P」/「per design-system-audit SSOT」表達\n' >&2
     printf '       而非寫死「53 dim / 46 dim」等具體數字。\n' >&2
     printf '  Why: chain skill 自動繼承 SSOT 變動,避免 design-system-audit 升 54 dim 時下游漂移。\n' >&2

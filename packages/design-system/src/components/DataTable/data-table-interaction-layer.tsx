@@ -1,6 +1,6 @@
 // @internal — DS-internal 單元(viewport 覆蓋 paint layer,只被 data-table.tsx 內部消費);不隨 index.ts re-export 進 npm public surface。
 /**
- * DataTableInteractionLayer — Slice D Step 1A scaffold(per `.claude/planning/datatable-spreadsheet-rfc.md`)
+ * DataTableInteractionLayer — Slice D Step 1A scaffold(per `governance/planning/datatable-spreadsheet-rfc.md`)
  *
  * Singleton overlay root inside DataTable(M21 private,不抽 global pattern)。
  * Sub-layer children(2026-07-04 對齊實作;原 RFC 5-layer 清單含未實作元件):

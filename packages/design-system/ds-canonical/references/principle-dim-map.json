@@ -445,7 +445,7 @@
     },
     "dim_count_drift": {
       "dims": [],
-      "note": "2026-05-18 ship(audit SSOT integrity infra,non-component scope):PreToolUse Edit/Write 攔 chain skill / spec / rule / CLAUDE.md hardcode 具體 audit dim 數字(53 dim / 46-dim / N audit dimensions),強制 design-system-audit/SKILL.md `## The N audit dimensions` 為 SSOT,deep-audit-cross-codex 等 chain skill 自動繼承。Allowlist:SSOT file 自己 / invariant doc 引用(SSOT/禁/forbidden/example/hardcode keyword 同行)。起因 user 2026-05-18「deep-audit-cross-codex 應該要確保其中的 design system deep audit 跟 design-system-audit deep 是 ssot」"
+      "note": "2026-05-18 ship(audit SSOT integrity infra,non-component scope):PreToolUse Edit/Write 攔 chain skill / spec / rule / CLAUDE.md hardcode 具體 audit dim 數字(53 dim / 46-dim / N audit dimensions),強制 design-system-audit/SKILL.md `## The audit dimensions` 為 SSOT,deep-audit-cross-codex 等 chain skill 自動繼承。Allowlist:SSOT file 自己 / invariant doc 引用(SSOT/禁/forbidden/example/hardcode keyword 同行)。起因 user 2026-05-18「deep-audit-cross-codex 應該要確保其中的 design system deep audit 跟 design-system-audit deep 是 ssot」"
     },
     "propose_pre_grep_verify": {
       "dims": [],

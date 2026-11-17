@@ -3,7 +3,7 @@
 # Item Anatomy 設計原則(Family 1 + Family 2 row 結構 SSOT)
 
 > **Super-foundational SSOT rationale**(2026-04-24 approved,cap 1200 例外):
-> 涵蓋 Family 1 + Family 2 跨 10+ row primitive 的 SSOT(結構 canonical、slot 規則、24px 閾值對齊公式、選擇狀態視覺、新 primitive 建立指南、Inline Action 分家)。本 spec 是**全 DS 最大 SSOT**,前次 prune 嘗試搬 canonical 搬到 references 後 user 確認違反 2-home,restored。長期收斂路徑:`.claude/planning/row-primitive-consolidation.md`(SidebarMenuButton / TreeItem 消費 menuItemVariants 後可搬「獨立實作風險」節,估縮 ~100 行)。
+> 涵蓋 Family 1 + Family 2 跨 10+ row primitive 的 SSOT(結構 canonical、slot 規則、24px 閾值對齊公式、選擇狀態視覺、新 primitive 建立指南、Inline Action 分家)。本 spec 是**全 DS 最大 SSOT**,前次 prune 嘗試搬 canonical 搬到 references 後 user 確認違反 2-home,restored。長期收斂路徑:`governance/planning/row-primitive-consolidation.md.rejected.20260424.md`(提案 2026-04-24 二次評估 declined、已改名歸檔;SidebarMenuButton / TreeItem 消費 menuItemVariants 後可搬「獨立實作風險」節,估縮 ~100 行)。
 
 ## 定位
 

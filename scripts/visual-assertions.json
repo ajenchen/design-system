@@ -213,14 +213,46 @@
       "file": "dialog-destructive.png"
     },
     {
-      "id": "design-system-components-dialog-展示--list-body",
+      "id": "design-system-components-dialog-展示--list-body-open",
       "file": "dialog-list-body.png",
-      "rationale": "Body 放 list canonical — variant='list' 保留 px-loose(list item 左右對齊 header/footer),移除 pt/pb(item 自己 py)。對齊 Material M3 / Polaris / Linear Cmd+K 共識;3 item 尺寸 tier 示範(大 avatar+desc / 中 icon+desc / 小 text-only)"
+      "rationale": "Body 放 list canonical(overlay-surface.spec.md「List-as-region」)— body 撤 chrome padding、清單外框自帶上下 8px、每列自帶 px-loose(列前緣對齊 header / footer)。拍 test-only「主體放清單:開啟狀態」(「查看成員」那一則開著);8eb473c7(#169)讀者 story 改成按了才開(D2 甲)後,指著讀者 story 只拍得到三顆觸發鈕。下面兩條斷言選擇器都限在 [role=\"dialog\"] 裡:對話框沒開 = selectorMissing 紅,不會再靜默拍成只有按鈕",
+      "assertions": [
+        {
+          "name": "成員列左右內距 = loose 16px(列前緣對齊 header 標題)",
+          "type": "padding4Sided",
+          "selector": "[role=\"dialog\"] [role=\"listitem\"]",
+          "symmetric": "horizontal",
+          "expected": 16
+        },
+        {
+          "name": "清單外框上下 = 8px(body 撤 chrome padding,上下呼吸由清單自己帶)",
+          "type": "padding4Sided",
+          "selector": "[role=\"dialog\"] [role=\"list\"]",
+          "symmetric": "vertical",
+          "expected": 8
+        }
+      ]
     },
     {
-      "id": "design-system-components-dialog-展示--long-content",
+      "id": "design-system-components-dialog-展示--long-content-open",
       "file": "dialog-long-content.png",
-      "rationale": "長內容 body 捲動 canonical — 30 item list 示範 ScrollArea + variant='list' 組合(user Image 7 情境)。border-divider 分隔,item py-2(Family 2 reading 節奏)"
+      "rationale": "長內容 body 捲動 canonical — 29 位成員(MEMBERS 全名冊)超出視窗,驗證預設高度(填滿)+ body 區捲動;成員列 py-2(Family 2 reading 節奏)。拍 test-only「長內容:開啟狀態」;8eb473c7(#169)讀者 story 改成按了才開(D2 甲)後,指著讀者 story 只拍得到觸發鈕。斷言選擇器限在 [role=\"dialog\"] 裡:對話框沒開 = selectorMissing 紅",
+      "assertions": [
+        {
+          "name": "成員列左右內距 = loose 16px(列前緣對齊 header 標題)",
+          "type": "padding4Sided",
+          "selector": "[role=\"dialog\"] [role=\"listitem\"]",
+          "symmetric": "horizontal",
+          "expected": 16
+        },
+        {
+          "name": "清單外框上下 = 8px(body 撤 chrome padding,上下呼吸由清單自己帶)",
+          "type": "padding4Sided",
+          "selector": "[role=\"dialog\"] [role=\"list\"]",
+          "symmetric": "vertical",
+          "expected": 8
+        }
+      ]
     },
     {
       "id": "design-system-components-dialog-展示--open-snapshot",

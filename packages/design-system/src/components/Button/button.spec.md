@@ -1,5 +1,5 @@
 ---
-# Story Auto-Compile 結構化 canonical(見 .claude/planning/story-auto-compile.md Phase 2)
+# Story Auto-Compile 結構化 canonical(見 governance/planning/story-auto-compile.md Phase 2)
 # Keys 必跟 button.tsx buttonMeta + cva buttonVariants 對齊(compile-time 驗)。
 component: Button
 family: 3  # Pill Layout

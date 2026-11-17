@@ -68,8 +68,8 @@ M18 Q0(本 rule 是「人話」+「cite」的具體化)/ M22 benchmark cite mand
 
 **How to apply**:改規則 → 立刻自己跑 6-10 個具體情境 → 每格寫**直接答案**(會/不會,不是「依 X 而定」)→ 表放在規則正上方或正下方。**表跑不出來 = 規則還沒定完,不准交。**
 
-## Sub-rule 5 — 提「建 token」前必先過 tokens/README 三條 criteria(2026-09-16)
-**Rule**:任何提案或回覆出現「建 token / 立成 token / 新 token」,必先逐條貼出 `packages/design-system/src/tokens/README.md`「新增 token 的 criteria」的答案(既有 family 可鏡射?消費者是 DS 元件或產品端?命名三重測試過了?),沒貼 = 撤回。
+## Sub-rule 5 — 提「建 token」前必先過 token-system.spec.md「判斷流程」(2026-09-16;2026-11-17 指標改住處)
+**Rule**:任何提案或回覆出現「建 token / 立成 token / 新 token」,必先逐題貼出 `packages/design-system/src/tokens/token-system.spec.md`「判斷流程」的答案(第 0 題 (a)(b)(c) 哪一條成立、第二個讀者是誰;第 1、2 題分類;命名照 `rules/ui-development.md`「Token 命名 4 條硬規則」),沒貼 = 撤回。(當年的 README「新增 token 的 criteria」段已併入該處,README:3 改指 token-system.spec.md。)
 **Anchor(2026-09-16)**:工具列搜尋框下限 160px,我憑 M17「三處以上要抽出來」直接寫「四處消費所以立成 token」,沒讀 README、沒提名字;user:「為何你這次又沒有仔細全盤查證 ds 的 token 建立守則??」。真相:消費者只有四支示範、零元件,該抽 `stories-helpers/` 零件不是 token。
 **Why**:M17 是 token / primitive / utility 三選一,我把它預設成 token;README 早寫明消費者定義,缺的是提案前的強制對照(AGENTS.md 任務導航表「新增 token」列本來就要求先讀)。
 

@@ -90,5 +90,30 @@ TEST_CORPUS="$NOSKILL_CORPUS" TEST_REGISTRY=providers.json TEST_PROVIDER=orion \
   run_hook "" "$TMP_PROJECT/ORION.md"
 if [ "$EXIT" = "0" ] && echo "$STDOUT" | grep -q 'instruction entry'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
 
+# Tests 7–10:預算量手寫內容,不量自動維護的「## 被引用」段(兩面 + 對照組)。
+# 一般 spec.md budget = 300。
+RECIP_HEADER='## 被引用(auto-maintained,Dim 3 reciprocal audit)'
+mkdir -p "$TMP_PROJECT/specs"
+
+echo "Test 7: handwritten 290 + auto-maintained 60 (total > 300) → silent"
+{ yes 'x' | head -290; echo "$RECIP_HEADER"; yes '- `other.spec.md`' | head -59; } > "$TMP_PROJECT/specs/short.spec.md"
+run_hook "" "$TMP_PROJECT/specs/short.spec.md"
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
+
+echo "Test 8 (control for 7): same 350 lines without the auto-maintained header → warning"
+{ yes 'x' | head -290; echo "## 手寫章節"; yes '- `other.spec.md`' | head -59; } > "$TMP_PROJECT/specs/control.spec.md"
+run_hook "" "$TMP_PROJECT/specs/control.spec.md"
+if [ "$EXIT" = "0" ] && echo "$STDOUT" | grep -q '350 lines (budget 300'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
+
+echo "Test 9: handwritten 310 + auto-maintained 5 → still warns on handwritten count"
+{ yes 'x' | head -310; echo "$RECIP_HEADER"; yes '- `other.spec.md`' | head -4; } > "$TMP_PROJECT/specs/long.spec.md"
+run_hook "" "$TMP_PROJECT/specs/long.spec.md"
+if [ "$EXIT" = "0" ] && echo "$STDOUT" | grep -q '310 lines (excluding 5 auto-maintained'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
+
+echo "Test 10: handwritten section after the auto-maintained block still counts"
+{ yes 'x' | head -250; echo "$RECIP_HEADER"; yes '- `other.spec.md`' | head -19; echo "## 附錄"; yes 'y' | head -79; } > "$TMP_PROJECT/specs/tail.spec.md"
+run_hook "" "$TMP_PROJECT/specs/tail.spec.md"
+if [ "$EXIT" = "0" ] && echo "$STDOUT" | grep -q '330 lines (excluding 20 auto-maintained'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

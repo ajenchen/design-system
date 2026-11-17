@@ -1,6 +1,6 @@
 ---
 name: design-system-audit
-description: Systematic audit of this design system for world-class quality. Runs the full audit dimension list(per `## The N audit dimensions` section) covering spec hygiene / code correctness / a11y / naming / tokens / patterns / canonical governance consistency / Layout Family compliance / prop value collisions / shadcn alias leakage / home-name-vs-scope fit / spec hardcoded-values, and remediates actionable findings under the shared authority classifier. Stops only for a genuine product/UI/UX SSOT tradeoff or a shared-governance human-only boundary. Invoke via /design-system-audit when asked to audit, re-audit, check quality, or verify design system health.
+description: Systematic audit of this design system for world-class quality. Runs the full audit dimension list(per `## The audit dimensions` section) covering spec hygiene / code correctness / a11y / naming / tokens / patterns / canonical governance consistency / Layout Family compliance / prop value collisions / shadcn alias leakage / home-name-vs-scope fit / spec hardcoded-values, and remediates actionable findings under the shared authority classifier. Stops only for a genuine product/UI/UX SSOT tradeoff or a shared-governance human-only boundary. Invoke via /design-system-audit when asked to audit, re-audit, check quality, or verify design system health.
 ---
 
 # Design System Audit (Groups A–Q + Future-proof preflight; dim count canonical per `check_dim_count_drift.sh` / `dispatch-audit-dims.mjs` SSOT — 禁 hardcode)

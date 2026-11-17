@@ -2,7 +2,9 @@
 set -uo pipefail
 # PreToolUse Edit/Write: enforce per-file line budgets for governance files.
 #
-# Budgets — SSOT 是 shared instruction entry `# 治理 canonical` 「行數預算」段。
+# Budgets — 各檔(instruction entry / spec / SKILL / memory)行數上限的 SSOT 就是本檔下方 case 表;
+# 開場檔總行數、hook 數、memory 筆數門檻在 session_start_governance_check.sh(檔頭 + Check 7 / 8)。
+# AGENTS.md `# 治理 canonical`「行數預算」只是指向這兩處的索引,不寫數值。
 # Provider/instruction/skill 路徑由 canonical registry 解析,不以任一 generated home 當 authority。
 #
 # Non-blocking: emits a provider-neutral governance context warning; the adapter
@@ -63,14 +65,26 @@ case "$REL_PATH" in
     ;;
 esac
 
-LINES=$(wc -l < "$FILE_PATH" | tr -d ' ')
+# 量的是「手寫內容有多少」,不是檔案總行數(M37):scripts/add-reciprocal-pointers.mjs 自動維護的
+# 「## 被引用(auto-maintained…)」段長度只取決於有幾份 spec 指向本檔,作者刪不掉也不該刪。
+# 只扣該段本身(標題行起,到下一個 `## ` 標題或檔尾為止);段後若還有手寫章節照算。
+TOTAL_LINES=$(wc -l < "$FILE_PATH" | tr -d ' ')
+AUTO_LINES=$(awk '
+  index($0, "## 被引用(auto-maintained") == 1 { skip = 1; n++; next }
+  skip && /^## / { skip = 0 }
+  skip { n++ }
+  END { print n + 0 }
+' "$FILE_PATH")
+LINES=$((TOTAL_LINES - AUTO_LINES))
 [ "$LINES" -le "$BUDGET" ] && exit 0
+AUTO_NOTE=""
+[ "$AUTO_LINES" -gt 0 ] && AUTO_NOTE=" (excluding ${AUTO_LINES} auto-maintained 被引用 lines)"
 
 # Over budget — warn. Hard-block only if also over transition cap.
 if [ "$LINES" -gt "$TRANSITION" ]; then
-  MSG="⛔ ${LABEL} at ${FILE_PATH} is ${LINES} lines (hard cap ${TRANSITION}). Must reduce before adding. Run /knowledge-prune or identify which section to remove."
+  MSG="⛔ ${LABEL} at ${FILE_PATH} is ${LINES} lines${AUTO_NOTE} (hard cap ${TRANSITION}). Must reduce before adding. Run /knowledge-prune or identify which section to remove."
 else
-  MSG="⚠️ ${LABEL} at ${FILE_PATH} is ${LINES} lines (budget ${BUDGET}, transition cap ${TRANSITION}). Prefer consolidating over appending. What can you remove/merge to make room?"
+  MSG="⚠️ ${LABEL} at ${FILE_PATH} is ${LINES} lines${AUTO_NOTE} (budget ${BUDGET}, transition cap ${TRANSITION}). Prefer consolidating over appending. What can you remove/merge to make room?"
 fi
 
 ESCAPED=$(printf '%s' "$MSG" | jq -Rs .)
