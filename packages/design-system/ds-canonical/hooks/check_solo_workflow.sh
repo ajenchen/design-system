@@ -5,6 +5,8 @@ set -uo pipefail
 #
 # Blocks 2 violations:
 #   R1. A second working branch in the same session(checkout -b or switch -c).
+#       Only effective when GOVERNANCE_TELEMETRY_OPT_IN=1: the session→branch record lives in the
+#       telemetry state dir(STATE_WRITES below), so with telemetry off(the default)R1 never blocks.
 #   R2. Any direct push to main. PR is the only merge path.
 # Tag/release lifecycle belongs to `release:auto` + protected workflows; the retired
 # local release-preflight R4 branch must not insert a sixth standard release gate.

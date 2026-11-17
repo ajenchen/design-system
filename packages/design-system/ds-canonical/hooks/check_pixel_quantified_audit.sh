@@ -1,5 +1,5 @@
 #!/bin/bash
-# check_pixel_quantified_audit.sh — M32(a) pixel-quantified verify mechanical guardrail
+# check_pixel_quantified_audit.sh — M32 主句(pixel-quantified verify)的寫入當下提醒(只看 scripts/visual-audit*.mjs,不擋)
 #
 # Per M32(2026-05-12 user 抓「audit ALL PASS 但 user 看視覺仍 broken」連環事件 4 RC absorbed):
 #   audit script 必驗 `rect.top / .left / .height` numeric pixel position,**不**可只驗
@@ -42,7 +42,7 @@ PIXEL_HITS=$(grep -cE 'getBoundingClientRect\(|\.offsetTop\b|\.offsetHeight\b|\.
 PIXEL_HITS="${PIXEL_HITS//[^0-9]/}"; PIXEL_HITS=${PIXEL_HITS:-0}
 
 if [ "$ATTR_HITS" -gt 0 ] && [ "$PIXEL_HITS" -eq 0 ]; then
-  CTX="⚠️ M32(a) pixel-quantified verify gap:
+  CTX="⚠️ M32 pixel-quantified verify gap:
 ${FILE_PATH}:
   - getAttribute / hasAttribute calls: ${ATTR_HITS}
   - getBoundingClientRect / offsetTop calls: 0

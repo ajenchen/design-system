@@ -11,7 +11,7 @@
  *   install 探針更強:它把「clean-install 安全」變成每次 release 都驗的不變式,而非某次抽測。
  *
  * 註:`prepare` / `prepublishOnly` 是 **publish/pack 時**跑(在 DS repo,非 consumer 端),不在本檢查範圍。
- *   pnpm 為非官方支援 PM(certified-surfaces.md 標 Unsupported),不在本 gate 斷言範圍。
+ *   pnpm 不在本 gate 斷言範圍。(原句稱 certified-surfaces.md 標 pnpm Unsupported;`git log -S pnpm` 證實該檔從未有此內容,2026-11-17 刪除錯誤出處)
  *
  * 用法:node scripts/check-clean-install-safety.mjs [--check]
  *   (--check 與 bare 行為相同;統一 preflight 慣例保留旗標)
@@ -42,7 +42,7 @@ if (violations.length) {
   console.error('❌ clean-install 不安全:published package 含 consumer-install lifecycle script')
   console.error(violations.join('\n'))
   console.error('   修:移除 preinstall/install/postinstall(這些在 --ignore-scripts / 離線安裝會被跳過 → consumer 拿到半殘安裝)。')
-  console.error('   若確有必要 → 改成 consumer 自行執行的顯式 setup step,並在 certified-surfaces.md 記錄 clean-install 降級。')
+  console.error('   若確有必要 → 改成 consumer 自行執行的顯式 setup step,並在 consumer setup 說明記錄 clean-install 降級。')
   process.exit(1)
 }
 

@@ -3,7 +3,7 @@
 // audit coverage. Detects rules that exist in canonical text but lack
 // mechanical detector in audit-content-quality.mjs.
 //
-// Auto-run on Stop event by hooks/stop_rule_coverage_audit.sh — when new
+// Auto-run on Stop event by hooks/stop_extract_canonical_rules.sh — when new
 // rule appears in canonical without matching audit category → inject warn.
 //
 // Sources scanned:

@@ -32,7 +32,7 @@ const QUIET = process.argv.includes('--quiet')
 
 // ── Counts ───────────────────────────────────────────────────────────
 
-// 1) Hooks(對齊 session_start_governance_check.sh:168-170 邏輯)
+// 1) Hooks(對齊 session_start_governance_check.sh:171-173 邏輯)
 const CANONICAL = 'packages/design-system/ds-canonical'
 const hookFiles = globSync(`${CANONICAL}/hooks/**/*.{sh,py}`, { cwd: ROOT })
   .filter(f => !f.includes('/retired/'))
@@ -75,7 +75,7 @@ const traitCount = traitSet.size
 // SSOT canonical reference points(每加新 SSOT-pointer-hardcode 必加 entry):
 const drifts = []
 
-// session_start_governance_check.sh:173 hard cap
+// session_start_governance_check.sh:176 hard cap
 const sessStartPath = path.join(ROOT, CANONICAL, 'hooks/session_start_governance_check.sh')
 if (fs.existsSync(sessStartPath)) {
   const c = fs.readFileSync(sessStartPath, 'utf-8')

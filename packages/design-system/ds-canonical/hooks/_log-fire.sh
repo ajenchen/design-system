@@ -6,7 +6,8 @@
 #
 # Shared helper: resolve a provider-neutral runtime state directory and log per-hook fire there.
 #
-# Why: enables /knowledge-prune D2 dead-hook detection(6 月 0 fire → retire 提名)。
+# Why: enables /knowledge-prune D2 dead-hook detection(6 月 0 fire → retire 提名;前提是觀測窗涵蓋分類窗,
+#   遙測預設關 → 零筆是預設狀態不是證據,見 knowledge-prune SKILL D2)。
 # 各 hook 在 top-of-file source 本檔 + 呼叫 `log_hook_fire`。
 #
 # 與 hook-fires.jsonl 分離:後者記 governance-file edits(tool+path),本 log 記

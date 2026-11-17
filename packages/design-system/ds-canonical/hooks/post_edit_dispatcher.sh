@@ -2,7 +2,7 @@
 # post_edit_dispatcher.sh — orchestrate 8 lib helper rules (PostToolUse Write|Edit|MultiEdit)
 #
 # 2026-05-13 /knowledge-prune consolidation:
-#   Per AGENTS.md governance hook count budget (canonical soft/hard threshold;Anthropic ~15 guideline)
+#   Per hook count budget(SSOT = session_start_governance_check.sh Check 7)
 #   Pre-consolidation: 32 hooks → BLOCKER 30 cap breached
 #   This dispatcher folds 9 lib/_*.sh helpers into one hook registration
 #   Lib helpers remain as standalone testable files (renamed `_*` per Unix internal-helper convention)

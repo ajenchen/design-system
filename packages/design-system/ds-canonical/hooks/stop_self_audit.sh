@@ -743,7 +743,7 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
     WARNINGS="${WARNINGS}\n  • Topic「${TOP_TOPIC}」repeated ${TOP_COUNT}x — likely user 第 N 次提示同主題,可能 prior turns 落地不徹底。"
   fi
 
-  # ── Mechanism 4: M33 stop-hook overfire reflex detection(2026-05-13 ship)──
+  # ── Mechanism 11: M33 stop-hook overfire reflex detection(2026-05-13 ship;原與 peer-reply-verify 同叫 Mechanism 4,2026-11-17 改編號)──
   #
   # M33 canonical(meta-patterns.md):AI 對連續 stop hook BLOCKER 自動 conservative-defer
   # 「下個 session」「context budget」「省工」反 pattern。Detect 雙條件:

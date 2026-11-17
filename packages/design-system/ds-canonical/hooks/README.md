@@ -1,6 +1,6 @@
 # Provider-neutral hook corpus charter
 
-**Canonical owner:** `packages/design-system/ds-canonical/hooks/**`. `.claude/hooks/**` is a deterministic compatibility view. Event registration is owned by `registrations.json`; provider events, matcher aliases, environment mapping, and config paths are bindings in `packages/governance/canonical/providers.json`.
+**Canonical owner:** `packages/design-system/ds-canonical/hooks/**`. The `.claude/hooks/` mirror was retired on 2026-08-04; providers execute hooks through `scripts/run-provider-hook.mjs`. Event registration is owned by `registrations.json`; provider events, matcher aliases, environment mapping, and config paths are bindings in `packages/governance/canonical/providers.json`.
 
 ## 這裡只收:pre/post tool event 的機械化自動檢查
 
@@ -12,62 +12,11 @@
 
 **核心特徵**:**不依賴 AI 自律**,tool 層強制執行;規則可用 `grep` / 條件判斷自動驗證。
 
-## 當前居民(2026-04-26 重整,以 canonical `registrations.json` 註冊為準)
+## 當前居民
 
-### PreToolUse(Bash / Edit / Write / MultiEdit / mcp__github__*)
+**清單以 canonical `registrations.json` 為準**(事件 / matcher / outputMode / requires),每支 hook 做什麼看該檔檔頭;provider 實際接線看生成的 `generated/governance/provider-hook-coverage.json`。本檔不再維護手寫清單(2026-11-17 knowledge-prune:原表自稱「以 registrations.json 為準」,實際只列 24/60 支,還寫錯 Stop 的支數)。
 
-| Hook | 做什麼 |
-|------|--------|
-| `check_solo_workflow.sh` | M28 git ops gate(branch sprawl / PR / merge — solo work canonical) |
-| `check_codex_collab_5step.sh` | M31 independent-peer 5-step gate(legacy filename retained;peer 由 provider registry 決定) |
-| `enforce_home_charter.sh` | classification-sensitive dir / 新檔案的 charter gate(Write only) |
-| `check_file_size_budget.sh` | registry-declared instruction entry / spec / canonical-provider skill / memory 行數預算警告 |
-| `check_story_invariants.sh` | stories 合一 invariant 檢查(anatomy / slot-split / category / principles canonical — 2026-05-10 已合併 5 個 sub-hook) |
-| `check_canonical_propagation.sh` | canonical 改動(spec / token / primitive)時 consumer propagation 檢查 |
-| `check_pattern_invariants.sh` | pattern 層 invariant(overlay-surface / item-anatomy / action-bar / 等) |
-| `check_naming_and_abstraction.sh` | M21 prop variant test + M27 prop name conflict + naming 三 test |
-| `check_benchmark_citation.sh` | M22 benchmark claim inline cite verify(逐家比對:段裡每個被提到的名稱都要有自己的來源)；component specs 禁止未驗證／檔級 escape，維持 zero evidence debt。只看這次寫入的字;全樹在 CI 由 `scripts/benchmark-citation-invariant.mjs` 檢查,兩邊讀同一支 `lib/benchmark-citation.mjs` |
-| `check_wrapper_primitive_schema_drift.sh` | M30 wrapper schema 必 extends primitive |
-| `check_field_family_invariants.sh` | Field family layout / state machine 統一 |
-| `check_datatable_invariants.sh` | DataTable canonical(virtualizer / column-types / autoRow / overflow) |
-| `check_opacity_token_usage.sh` | opacity token 使用紀律 |
-| `check_substantive_edit_approval_preflight.sh` | target-bound authority classifier：工程 remediation AUTO；產品／UI／UX SSOT 真取捨需 exact decision；unknown fail closed |
-
-### PostToolUse(Edit / Write / MultiEdit)
-
-| Hook | 做什麼 |
-|------|--------|
-| `block_prototype_imports.py` | 產品 code 禁止 import `explorations/` |
-| `post_edit_dispatcher.sh` | **Dispatcher**(2026-05-13 prune):一次 orchestrate 8 個 lib helper(token_hygiene / hardcoded_strings / code_quality / layout_space / person_data / overlay_handcraft / cva_default_sync / story_compile_drift)— hook count 32 → 24 |
-| `check_story_invariants.sh` | (同上,PostToolUse 路徑做 disk read drift check) |
-| `check_pixel_quantified_audit.sh` | M32 audit script 必 pixel-quantified verify(scans audit scripts for `getAttribute(` without `getBoundingClientRect(`) |
-| `check_field_controls_contracts.sh` | Field controls contract 強制(c)/(e)/(f) 等 |
-| `log_governance_fires.sh` | matcher `Write\|Edit\|MultiEdit\|Skill`:治理檔編輯寫 `$GOVERNANCE_STATE_DIR/hook-fires.jsonl`,Skill tool 呼叫寫 `skill-invokes.jsonl`(2026-11-17 併入原 `log_skill_invokes.sh`;只捕 Skill tool,slash-command 走 user prompt 不被捕 — known limitation;要 `GOVERNANCE_TELEMETRY_OPT_IN=1` 才寫) |
-
-### Stop
-
-| Hook | 做什麼 |
-|------|--------|
-| `stop_passive_logging.sh` | **Dispatcher**(2026-05-13 prune):一次跑 5 rule(tsc sanity / harvest corrections / capture metrics / governance drift / infra best-practice score)— stop hook count 3 → 2 |
-| `stop_self_audit.sh` | turn 行為 audit(claim 沒 verify / prune trigger / topic 重複 ≥ 3 次 → BLOCKER inject,M20 100+ failure mode 升級 2026-05-13) |
-
-Stop 只有上面兩支**檔案**。2026-05-13 prune 把 `stop_harvest_corrections.sh`(user 糾正信號)、
-`stop_capture_metrics.sh`(session metric snapshot)、`stop_meta_self_audit.sh`(infra-score,
-8 維 score 跌 ≥ 5 / 任何 dim < 80 → silent log)折進 `stop_passive_logging.sh` 的 R2 / R3 / R5,
-**舊檔名已不存在**;要看那三條邏輯去 dispatcher 內對應的 rule function。
-
-### SessionStart
-
-| Hook | 做什麼 |
-|------|--------|
-| `session_start_governance_check.sh` | 多個 check(行數 / prune 逾期 / corrections / benchmark 新鮮度 / fire-weighted test gap / scan-similar-bugs / hook 數 / memory 數 / branch sprawl / counter drift / cross-repo smoke)。**數量與門檻不在本檔硬寫** — 以該腳本的 `^# Check N` 段落與 AGENTS.md `# 治理 canonical` 為準 |
-
-### UserPromptSubmit
-
-| Hook | 做什麼 |
-|------|--------|
-| `inject_pending_self_audit.sh` | 讀 stop_self_audit / stop_meta_self_audit silent log,dedup + 24h filter + 3KB cap,inject 到 next turn additionalContext。修補 Stop hook silent-log 不 inject 的 known issue。 |
-| `check_propose_without_benchmark.sh` | DS-author 提案型 prompt 若缺可驗證 benchmark 證據則注入 M26 提醒；一般 prompt 不阻擋。 |
+兩個常被找的舊名:2026-05-13 把 `stop_harvest_corrections.sh` / `stop_capture_metrics.sh` / `stop_meta_self_audit.sh` 折進 `stop_passive_logging.sh` 的 R2 / R3 / R5;2026-11-17 把 `log_skill_invokes.sh` 併進 `log_governance_fires.sh`(matcher `Write|Edit|MultiEdit|Skill`,要 `GOVERNANCE_TELEMETRY_OPT_IN=1` 才寫)。舊檔名都已不存在。
 
 ### Provider transcript 排錯
 
@@ -128,12 +77,12 @@ Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_O
 
 ## 已修(2026-04-28):Stop hook → UserPromptSubmit inject 鏈路
 
-**症狀**:Stop hooks(`stop_self_audit` / `stop_meta_self_audit`)silent-log 但不 inject,M14 / M20 的「auto-inject corrective prompt」 不生效 → AI reactive 模式持續。
+**症狀**:Stop hooks(`stop_self_audit` / 當時的 `stop_meta_self_audit`,現為 `stop_passive_logging` R5)silent-log 但不 inject,M14 / M20 的「auto-inject corrective prompt」 不生效 → AI reactive 模式持續。
 
 **修法**:加 `inject_pending_self_audit.sh` 註冊在 UserPromptSubmit hook(該 event 確認支援 `hookSpecificOutput.additionalContext`)。鏈路:
 
 ```
-turn 結束 Stop event → stop_self_audit / stop_meta_self_audit silent log to $GOVERNANCE_STATE_DIR/
+turn 結束 Stop event → stop_self_audit / stop_passive_logging R5 silent log to $GOVERNANCE_STATE_DIR/
                                               ↓
 user 下一個 prompt → UserPromptSubmit fires → inject_pending_self_audit.sh
                                               ↓

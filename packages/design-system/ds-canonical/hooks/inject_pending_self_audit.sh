@@ -7,7 +7,7 @@ set -uo pipefail
 #
 # Reads:
 #   $GOVERNANCE_STATE_DIR/self-audit-warnings.jsonl(stop_self_audit 寫入,behavioral check)
-#   $GOVERNANCE_STATE_DIR/score-history.jsonl(stop_meta_self_audit 寫入,infra-score regression)
+#   $GOVERNANCE_STATE_DIR/score-history.jsonl(stop_passive_logging.sh R5 寫入,infra-score regression;原 stop_meta_self_audit 已於 2026-05-13 折入)
 #   $GOVERNANCE_STATE_DIR/audit-post-report-validator.jsonl(check_audit_post_report_validator 寫入,
 #                                                           prune-chain-trigger signal)
 # State:
@@ -189,7 +189,7 @@ fi
 if [ -n "$WARNINGS_SCORE" ]; then
   SCORE_LABEL=""
   [ -n "$LATEST_SCORE" ] && SCORE_LABEL=" current=${LATEST_SCORE}/100"
-  CTX_PARTS="${CTX_PARTS}## Infra-score audit(stop_meta_self_audit,${SCORE_LABEL}):
+  CTX_PARTS="${CTX_PARTS}## Infra-score audit(stop_passive_logging R5,${SCORE_LABEL}):
 ${WARNINGS_SCORE}
 
 "

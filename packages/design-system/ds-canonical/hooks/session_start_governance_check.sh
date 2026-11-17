@@ -53,7 +53,7 @@ if [ -n "$GIT_DIR" ] && declare -F _governance_safe_runtime_path >/dev/null 2>&1
 fi
 
 # 2026-05-26 folded auto_sync_memory.sh in here(retire that hook for D8a budget):
-# Per AGENTS.md governance hook count budget,SessionStart-only utility helper inline
+# Per hook count budget(SSOT = 本檔 Check 7),SessionStart-only utility helper inline
 # under main governance hook 比 separate hook 更合 anti-bloat。
 # Memory sync = committed repo SSOT → an explicitly declared provider cache. Providers without
 # a registry binding (Codex today) must never inherit or guess another provider's private HOME.
@@ -69,6 +69,9 @@ if [ -n "$MEMORY_SYNC_SCRIPT" ] && [ "${GOVERNANCE_READ_ONLY:-0}" != "1" ] && [ 
   fi
 fi
 
+# 注意(2026-11-17 knowledge-prune 讀程式確認):REMINDERS 只收集、**從不輸出** —— 檔尾只輸出 BLOCKERS /
+# PRUNE_TRIGGERS / QUARTERLY_DUE(2026-04-26 降噪)。所以 Check 2 soft / Check 3 soft / Check 4 / Check 6 / Check 5
+# 的提醒都不會到模型;要讓某條真的提醒,得把它升到 PRUNE_TRIGGERS 或 BLOCKERS。
 REMINDERS="${MEMSYNC_NOTE:-}"
 BLOCKERS=""
 
@@ -356,7 +359,7 @@ if [ -n "$BLOCKERS" ]; then
   [ -n "$PRUNE_TRIGGERS" ] && MSG="${MSG}\n\n附 soft prune triggers:${PRUNE_TRIGGERS}"
   [ -n "$QUARTERLY_DUE" ] && MSG="${MSG}\n${QUARTERLY_DUE}"
 elif [ -n "$PRUNE_TRIGGERS" ]; then
-  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑；P0/P1/P2E 工程治理自主執行，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單 — per deep-audit-cross-codex SKILL C.0a).${QUARTERLY_DUE}"
+  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑；P0/P1/P2E 工程治理自主執行，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單 — per design-system-audit SKILL「Phase 4.5」Deep mode).${QUARTERLY_DUE}"
 else
   MSG="🧭 Governance hygiene reminder (SessionStart):${QUARTERLY_DUE}\nNot blocking — address inline when convenient."
 fi

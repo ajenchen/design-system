@@ -105,7 +105,6 @@ cat <<EOF
   - 憑記憶寫 mock 會被 mechanical BLOCKER 攔
 
 對應 canonical:
-  - template AGENTS.md「🚀 Onboarding(C-prime)」段(provider adapter 可建立自己的 instruction view)
   - ds-canonical/fork/manifest.json(build-fork-governance.mjs 生成)
 EOF
 exit 0

@@ -23,7 +23,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "75c9c8020c159dce4a3faf8043517adb68849c28c7866406b0d0848e6b9ff8d4",
+      "sha256": "d40e7db660505a24df5c56fb9e1fcef086e5d8196c9f2dfe56d5e1f4d9dbe25b",
       "source": "providers/codex/skills/bug-fix-rhythm",
       "classification": null,
       "destination": null
@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/_log-fire.sh",
-      "sha256": "87a54b77e35fe1ede49ef2d040ea22ae9ff6bf57101864670024b3fdd8c0459e",
+      "sha256": "84468c0b348ee8fd0815f1150215b87062c65bb2da23c3abe629fba29f83bd7f",
       "source": "_log-fire.sh",
       "classification": "HELPER",
       "destination": null
@@ -975,7 +975,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "74d17a0fa117f81b55c9923aa9de260c6e332bed8cbb5c83cbea235382d4e8fd",
+      "sha256": "1c1f135baff2a34b25160b6f711817721640d09bcd9dd9303bcd97b7f5214c74",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1215,7 +1215,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "75c9c8020c159dce4a3faf8043517adb68849c28c7866406b0d0848e6b9ff8d4",
+      "sha256": "d40e7db660505a24df5c56fb9e1fcef086e5d8196c9f2dfe56d5e1f4d9dbe25b",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1503,7 +1503,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "d971a3c08000791cdf891794ecee6675e4b9875435ec2802739b35c2332bc1e4",
+      "sha256": "19058b924c6171bab6e48bfa6454a97122a39d7c45bb0a305e42e90e08d9e9b4",
       "source": null,
       "classification": null,
       "destination": null

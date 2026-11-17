@@ -53,7 +53,7 @@
  *   理由:豁免是治理債,repo 對同類東西已經有一套退役窗 ——
  *   packages/design-system/ds-canonical/skills/knowledge-prune/SKILL.md :230「Hook | 6 月 0 fire」、:233「Memory file | 6 月未更新」、
  *   :231「Skill | 3 月 0 invoke」、:20「季度健檢(每 3 個月跑 1 次)」;
- *   packages/design-system/ds-canonical/hooks/session_start_governance_check.sh :103(knowledge-prune HARD THRESHOLD 180 天)/ :105(target ≤ 90 天)。
+ *   packages/design-system/ds-canonical/hooks/session_start_governance_check.sh :106(knowledge-prune HARD THRESHOLD 180 天)/ :105(target ≤ 90 天)。
  *   一個半年沒人看過的豁免,和半年沒 fire 的 hook 是同一種狀態;季檢(90 天)只當「快到期」提醒,不紅。
  *   世界級對照:eslint-plugin-unicorn `expiring-todo-comments`(`// TODO [2026-12-01]: …` 過期即 lint 紅)—— 到期紅是設計,不是誤報。
  *

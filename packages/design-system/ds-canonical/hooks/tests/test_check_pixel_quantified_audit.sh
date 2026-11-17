@@ -1,5 +1,5 @@
 #!/bin/bash
-# Tests for check_pixel_quantified_audit.sh(M32(a), 2026-05-12)
+# Tests for check_pixel_quantified_audit.sh(M32 主句 pixel-quantified, 2026-05-12)
 #
 # Hook 規則:PostToolUse Edit/Write/MultiEdit on scripts/visual-audit-*.{mjs,js}.
 # 檢查實體檔案有 `getAttribute(` 但 0 個 `getBoundingClientRect(` / `offsetTop` /

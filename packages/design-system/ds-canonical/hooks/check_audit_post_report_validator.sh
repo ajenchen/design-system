@@ -373,7 +373,7 @@ if [ "$TRIGGER_PRUNE" -eq 1 ] || [ -n "$WARNINGS" ]; then
   fi
 
   if [ "$TRIGGER_PRUNE" -eq 1 ]; then
-    CTX=$(printf '🚨 audit post-report validator: prune-chain-trigger fire。AI 必 AUTO-RUN /knowledge-prune(禁問 user;品質優先前提 per deep-audit SKILL C.0a；P2E 工程治理自主收斂，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單)。\n%b' "$WARNINGS")
+    CTX=$(printf '🚨 audit post-report validator: prune-chain-trigger fire。AI 必 AUTO-RUN /knowledge-prune(禁問 user;品質優先前提 per design-system-audit SKILL「Phase 4.5」Deep mode；P2E 工程治理自主收斂，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單)。\n%b' "$WARNINGS")
     CONTEXT=$(jq -nc --arg ctx "$CTX" '{
       governanceContext: { hookEventName: "PostToolUse", message: $ctx }
     }') || governance_hook_integrity_fail 'audit validator governance context could not be encoded'

@@ -11,8 +11,8 @@
 #
 # 注意:本 hook 走 UserPromptSubmit(在 AI reply 前 inject context),
 # ⚠️ fail-closed 設計約束(2026-07-07 治理進化方向 2 稽核結論):UserPromptSubmit 的 exit 2
-# 擋的是 user 輸入本身 = 錯誤工具語義,本 hook **不可**升 exit 2。propose 家族的 fail-closed
-# 端 = check_propose_pre_grep_verify.sh(M18 Q0 配對)+ stop_self_audit claim-verify 閘;
+# 擋的是 user 輸入本身 = 錯誤工具語義,本 hook **不可**升 exit 2。propose 家族目前**沒有會擋的一端**:
+# check_propose_pre_grep_verify.sh(M18 Q0 配對)是 P1 警告、永遠 exit 0(2026-11-17 knowledge-prune 更正原「fail-closed 端」說法);
 # 本 hook 職責 = 事前 P0 措辭 directive 注入(非 soft 建議)。
 # 跟 check_propose_pre_grep_verify.sh(走 PostToolUse 偵測 propose 已成型後再警示)互補。
 

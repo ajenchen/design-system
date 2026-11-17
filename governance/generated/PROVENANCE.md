@@ -26,11 +26,11 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:19144b2bd5c0641b1c18351bc461ed8033bba61633bd36ad05f7329cd5f09b7a` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:d0532b461f4b4cbec903819d9d1afe9ac1334e05ecfbeed160c252eca9828971` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:ff8a94cb8a3b458b2786c7015f5654db325ca3a38bc1e5a9160aa21da9feb9cd` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:1fdb7bcbf365088fcb7ebd5345316d61b83f1875082bf708335814244cf54477` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:02e0b129521dd06856f0ac8e92225df37e9d54137f326f39c9ee71409975a27e` |
-| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:e6cebc17632194a9696833af499079758eb8dfe6515e1ed8cbe0d526e740a8ec` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:805c17953c4d1ef2d0017f6a456c0e6039fb24c856bec2b73c688f99b794ff73` |
+| canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:3e7e7e2d0adf14db50c2bbebaa241978ea67f3fdfa493c5a48d32e4bd83861e8` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:bb47f03e021bfabceb7f614f39601d67ace1ec1909d757013ec5295107f63fa3` |
 | claude-managed-plugin-manifest | `.claude-plugin/plugin.json` | `sha256:1c20e26e8d33f2eaa3ba919a73fe9bda90209cd2218deb533303b55764f0cd7d` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:4d2f9f80285b3571092fafa7df56749acfc87441109693ebd74e80d0c502e9c1` |
+| repository-automation-corpus | `scripts` | `sha256:e7c3819cf16330b6478463d7fdb749319011f17af56bb3783b58db37b52bac65` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
