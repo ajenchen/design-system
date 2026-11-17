@@ -171,38 +171,14 @@ retire_rate = retired_this_quarter / total_governance_items_before
 
 **Target**:≥ 5% / quarter。< 5% 不一定壞(系統已成熟 / 無冗贅),但必在 report 明寫 rationale(「成熟 — 無 retire 候選 / stable ecosystem」),不可空白。
 
-```markdown
-## Prune report(N 日期)
+**報告格式**:照 references/phase5-report-template.md(段落、Metric delta 五列、逐維三選一、逐項結局、被擋的指令;範本只有那一個住所,validator 讀同一份)。
 
-### Metric delta
-- Bootstrap instructions: B → A(-X 行)
-- MEMORY.md: B → A(-Y 條目 / -Z 檔)
-- Total spec.md: B → A(-Z 行)
-- Hooks: B → A(-N 個 hook retired)
-- Skills: B → A(-N 個 skill retired)
-- **Retire rate: X% = retired N / total M**(target ≥ 5%)
-  - 公式套用見本 Phase 頂部
-  - 若 < 5% 必附 rationale(成熟 / 無冗贅 / deferred 等)
+**完成條件**:完成 = `node scripts/validate-knowledge-prune-run.mjs …`(參數見範本檔「怎麼跑」)exit 0;push、CI 綠都**不是**完成條件。
 
-### Retired(實際)
-- {list of retired items + why + grep 確認無 reference}
-
-### 未達 retire target rationale(若 < 5%)
-- {e.g. "governance ecosystem stable, 上季已大幅 prune,本季無重大冗贅"}
-
-### Human-only pending(只限產品／UI／UX SSOT 真取捨)
-- {list or 無}
-
-## Self-improvement capture
-- 新發現 prune pattern: {...} OR "無"
-- 新確立 anti-bloat rule: {...} OR "無"
-- 下次 prune trigger 建議: {...}
-```
-
-Update `${GOVERNANCE_STATE_DIR}/metric-snapshots.jsonl`(provider-neutral Git telemetry state):
+Update `${GOVERNANCE_STATE_DIR}/metric-snapshots.jsonl`(provider-neutral Git telemetry state;`tag` 寫 `knowledge-prune`,validator 比對的是最後一筆這個 tag 的行):
 
 ```json
-{"ts":"2026-04-24","retire_rate":0.07,"retired":5,"total_before":71,"bootstrap_instruction_lines":238,"hooks_total":18,"skills_total":13,"memory_entries":29}
+{"ts":"2026-04-24","tag":"knowledge-prune","retire_rate":0.07,"retired":5,"total_before":71,"bootstrap_instruction_lines":238,"hooks_total":18,"skills_total":13,"memory_entries":29}
 ```
 
 **本 snapshot 讓 `/governance-health` trend 分析:**若 3 季連續 retire rate < 5% 且 governance 行數仍增 → auto-propose「有隱性冗贅未抓,考慮換 /knowledge-prune 掃描策略」。
