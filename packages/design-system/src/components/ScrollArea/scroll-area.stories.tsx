@@ -47,21 +47,22 @@ const LINEAR_ISSUES: Array<{ id: string; title: string; status: string }> = [
   { id: 'ENG-1183', title: '時區設為 UTC+0 時排程日期少一天', status: 'In Progress' },
 ]
 
+// 狀態顯示中文(2026-11-18 前直接顯示英文 value —— 稽核 A113;同 inline-edit.stories.tsx STATUS_OPTIONS 的叫法)。value 是資料裡的鍵,不上畫面
 const ISSUE_STATUS_OPTIONS = [
-  { value: 'Backlog', label: 'Backlog', tagVariant: 'neutral' },
-  { value: 'Todo', label: 'Todo', tagVariant: 'neutral' },
-  { value: 'In Progress', label: 'In Progress', tagVariant: 'blue' },
-  { value: 'In Review', label: 'In Review', tagVariant: 'yellow' },
-  { value: 'Done', label: 'Done', tagVariant: 'green' },
+  { value: 'Backlog', label: '待規劃', tagVariant: 'neutral' },
+  { value: 'Todo', label: '待處理', tagVariant: 'neutral' },
+  { value: 'In Progress', label: '進行中', tagVariant: 'blue' },
+  { value: 'In Review', label: '審查中', tagVariant: 'yellow' },
+  { value: 'Done', label: '已完成', tagVariant: 'green' },
 ]
 
 type Issue = (typeof LINEAR_ISSUES)[number]
 const issueCol = createColumnHelper<Issue>()
 
 const ISSUE_COLUMNS = [
-  issueCol.accessor('id', { header: 'ID', meta: { type: 'string', width: 100 } }),
-  issueCol.accessor('title', { header: 'Title', meta: { type: 'string', width: 330 } }),
-  issueCol.accessor('status', { header: 'Status', meta: { type: 'select', options: ISSUE_STATUS_OPTIONS, display: 'tag', width: 130 } }),
+  issueCol.accessor('id', { header: '議題', meta: { type: 'string', width: 100 } }),
+  issueCol.accessor('title', { header: '標題', meta: { type: 'string', width: 330 } }),
+  issueCol.accessor('status', { header: '狀態', meta: { type: 'select', options: ISSUE_STATUS_OPTIONS, display: 'tag', width: 130 } }),
 ]
 
 // 文件工具式 sidebar nav
@@ -149,7 +150,7 @@ export const VerticalIssueList: Story = {
   render: () => (
     <div className="max-w-xl">
       <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-        長 issue 清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,不吃寬度。
+        長議題清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,捲軸不佔內容寬度。
       </p>
       {/* 議題清單直接用 DataTable(稽核 M090:原本每一列都是手刻 div + 手刻狀態圓點);捲動由外層 ScrollArea 擁有 */}
       <ScrollArea className="h-[320px] border border-border rounded-lg">

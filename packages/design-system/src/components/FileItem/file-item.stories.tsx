@@ -23,14 +23,14 @@ const meta: Meta<typeof FileItem> = {
 }
 export default meta
 
-// 每一則的刪除 / 下載 / 重試 / 點列 / View log 都接上真的反應(./_demo-files.tsx;之前全是空函式,點了沒反應)。
+// 每一則的刪除 / 下載 / 重試 / 點列 / 查看紀錄 都接上真的反應(./_demo-files.tsx;之前全是空函式,點了沒反應)。
 // 列內操作一律 Button xs iconOnly variant="text"(24 固定):compact 列靠 FileItem suffix wrapper 的負 margin 把 layout
 // footprint 收到 1lh、不撐高列,命中區仍 24(命中 ≡ 可視,ds-canonical/references/hit-area-canonical.md);
 // 判準住 item-anatomy.spec.md「結構:四個獨立 slot」的 suffix 表(Inline Action 列:點擊靶子 ≤ 24px)。
 
 // 同一張人像照(圖片檔,縮圖就是照片本身)的三種狀態;上傳中 40% = 3.0 / 7.5 MB,完成後 7.5 MB,前後對得上(之前上傳中寫 5.7 MB of 7.5MB、完成後寫 5.7 MB)
 const RICH_FILES: DemoFile[] = [
-  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
+  { uid: 'rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB / 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
   { uid: 'rich-completed', name: 'Alan Profile.png', mimeType: 'image/png', status: 'completed', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG, url: demoPersonPhoto('Alan Chen', 800) },
   { uid: 'rich-error', name: 'Alan Profile.png', mimeType: 'image/png', status: 'error', progress: 65, size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
 ]
@@ -136,7 +136,7 @@ const HOVER_RICH: DemoFile[] = [
 ]
 const HOVER_COMPACT: DemoFile[] = [
   { uid: 'hover-csv', name: 'data-2024-q1.csv', mimeType: 'text/csv', status: 'completed', size: '48 KB' },
-  { uid: 'hover-json', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+  { uid: 'hover-json', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: '網路連線逾時。' },
 ]
 
 export const HoverSwap = {
@@ -221,7 +221,7 @@ export const Clickable = {
 const COMPACT_MIXED: DemoFile[] = [
   { uid: 'mixed-uploading', name: '圖片草稿.png', mimeType: 'image/png', status: 'uploading', progress: 40, size: '1.8 MB' },
   { uid: 'mixed-reply', name: '回覆範本.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: '64 KB' },
-  { uid: 'mixed-error', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: 'Network timeout.' },
+  { uid: 'mixed-error', name: 'backup-failed.json', mimeType: 'application/json', status: 'error', size: '320 KB', errorText: '網路連線逾時。' },
   { uid: 'mixed-cover', name: '附件封面.pdf', mimeType: 'application/pdf', size: '220 KB' },
 ]
 
@@ -249,7 +249,7 @@ export const CompactMixed = {
 //   - 標頭只有收合鈕(傳輸中只能收合);全部成功 5 秒後整個面板收起,滑過 / 聚焦時暫停;有失敗就不收起
 // 試算表與 PDF 沒有圖片縮圖,不放人臉照片。
 const UPLOAD_MANAGER_RICH: DemoFile[] = [
-  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB of 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
+  { uid: 'um-rich-uploading', name: 'Alan Profile.png', mimeType: 'image/png', status: 'uploading', progress: 40, uploadingText: '3.0 MB / 7.5 MB', size: '7.5 MB', thumbnailSrc: ALAN_PROFILE_PNG },
   { uid: 'um-rich-completed', name: 'Q1 營收報表.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', status: 'completed', size: '2.4 MB' },
   { uid: 'um-rich-error', name: '合約草案 v3.pdf', mimeType: 'application/pdf', status: 'error', progress: 0, size: '3.1 MB' },
 ]

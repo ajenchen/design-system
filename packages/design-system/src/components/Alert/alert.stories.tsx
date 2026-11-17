@@ -51,8 +51,9 @@ function DeployCommitAlert() {
     <Alert
       variant="warning"
       appearance="subtle"
-      title="部署管線偵測到新的 commit"
-      description="點「重新整理」同步最新狀態,或忽略此訊息繼續目前作業。"
+      title="部署管線偵測到新的提交"
+      // 說明兩行、第二行約十個字(2026-11-18 前 27 字在 341px 寬的說明欄剛好溢出兩個字,第二行只剩「業。」孤字 —— 稽核 A113;實量見 commit 訊息)
+      description="點「重新整理」同步最新狀態;不急的話可以先忽略這則訊息,繼續目前的作業。"
       onDismiss={() => setShown(false)}
       endContent={
         <>

@@ -140,33 +140,36 @@ export const SizeAlignment: Story = {
 //   principles 使用指引頁對應 LinkTo(單行 vs 換行)同步移除。
 
 /* ── 搜尋 ── */
+// 兩格都用下方內容後台的文章標籤(articleTagOptions,中文);2026-11-18 前用共用的英文商品類別(Electronics / Food…),
+// 範例夾英文、說明寫程式寫法(searchable / searchIn='trigger')—— 稽核 A113(AGENTS.md「範例必真實業務場景」「單一檔案不中英夾雜」)。
+// 「打『設計』可以連勾」要有兩個以上標籤含同一段字:設計系統 / 介面設計 / 互動設計。
 export const Searchable: Story = {
   name: '搜尋',
-  parameters: { docs: { description: { story: '電商後台幫商品貼分類。上面的搜尋框在浮層裡:打「o」可以連勾 Food、Clothing,勾完關鍵字還在;下面的搜尋框在欄位裡:勾完一項關鍵字就清空,直接打下一個。兩種位置用滑鼠點選或按 Enter 結果一樣,游標一直留在搜尋框裡。把下面欄位的 Electronics 按 × 清空後,點欄位直接打字一樣會過濾 —— 空值時欄位裡也有搜尋框。' } } },
+  parameters: { docs: { description: { story: '內容後台幫文章貼標籤。上面的搜尋框在浮層裡:打「設計」可以連勾介面設計、互動設計,勾完關鍵字還在;下面的搜尋框在欄位裡:勾完一項關鍵字就清空,直接打下一個。兩種位置用滑鼠點選或按 Enter 結果一樣,游標一直留在搜尋框裡。把下面欄位的「前端工程」按 × 清空後,點欄位直接打字一樣會過濾 —— 空值時欄位裡也有搜尋框。' } } },
   render: () => {
-    const [value, setValue] = React.useState<string[]>(['electronics'])
-    const [value2, setValue2] = React.useState<string[]>(['electronics'])
+    const [value, setValue] = React.useState<string[]>(['frontend'])
+    const [value2, setValue2] = React.useState<string[]>(['frontend'])
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-sm">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <p className="text-caption text-fg-muted">searchable — 浮層內搜尋框，關鍵字保留可連續勾選</p>
+          <p className="text-caption text-fg-muted">搜尋框在浮層裡:勾選後關鍵字保留,可以接著勾</p>
           <Combobox
-            options={categoryOptions}
+            options={articleTagOptions}
             value={value}
             onChange={setValue}
             searchable
-            aria-label="類別(searchable popover demo)"
+            aria-label="文章標籤(浮層內搜尋)"
           />
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <p className="text-caption text-fg-muted">searchIn='trigger' — 欄位內搜尋框，勾一項就清空關鍵字</p>
+          <p className="text-caption text-fg-muted">搜尋框在欄位裡:勾一項就清空關鍵字</p>
           <Combobox
-            options={categoryOptions}
+            options={articleTagOptions}
             value={value2}
             onChange={setValue2}
             searchable
             searchIn="trigger"
-            aria-label="類別(searchable inline demo)"
+            aria-label="文章標籤(欄位內搜尋)"
           />
         </div>
       </div>
@@ -177,21 +180,28 @@ export const Searchable: Story = {
 /* ── 欄位內搜尋 × 換行 ── */
 // 內容後台幫文章貼標籤:標籤常超過一行、表單有空間 → wrap;在欄位裡直接打字找標籤(searchIn='trigger')。
 // 搜尋框永遠是 Tag 區最後一格,寬度 = 打的字(combobox.spec.md「欄位內搜尋框的寬度」):空的時候接在最後一顆 Tag 後面、不自己佔一列,
-// 打的字放不下這一列才換到下一列。一開始三顆 Tag 排滿第一列(320px 寬剩不到 60px),空的搜尋框接在第三顆後面、欄位只有一列;
-// 打字後放不下就換到第二列、欄位變兩列。它與 Tag 等高
+// 打的字放不下這一列才換到下一列。它與 Tag 等高
 // (field-controls.spec.md「wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px」;scripts/visual-assertions.json 量等高、列距 4px、搜尋框不單獨佔一列)。
-// 2026-09-30 前搜尋框有 60px 固定下限:就是這個狀態 —— 三顆 Tag 排滿第一列後,空的搜尋框自己換到第二列,關著的欄位多一列空白(實測 main 54.2px 高、修後 32px)。
-// 2026-10-01 前這則一開始是四顆 Tag(兩列),修前修後長得一樣,看不出那一列空白 —— 改成三顆,預設畫面就是被修掉的那個狀態。
+// 一開始五顆 Tag 排成兩列,兩列都排到剩不到 60px:第一列三顆(320px 欄位的 Tag 區 279px,三顆 264px、剩 15px),
+// 第二列「效能優化」+「元件庫版本管理」(90 + 4 + 132 = 226px、剩 53px);空的搜尋框(一個游標寬 15px)接在第五顆後面、欄位兩列。
+// 打字後放不下就換到第三列、欄位變三列。
+// 2026-09-30 前搜尋框有 60px 固定下限:最後一列剩不到 60px 時,空的搜尋框自己換到下一列,關著的欄位多一列空白(實測 main 54.2px 高、修後 32px)。
+// 這則的預設畫面要剛好落在那個狀態,修壞了才看得到、visual-assertions 的「搜尋框不單獨佔一列」才紅:
+// 2026-10-01 前一開始是四顆 Tag(第二列只有一顆,剩 189px,60px 下限也放得下),修前修後長得一樣 —— 改成三顆(一列);
+// 2026-11-18 稽核 A113 指出「欄位內搜尋 × 換行」的預設畫面一列放得下、看不出換行 → 改成五顆,同時保留「最後一列剩不到 60px」(寬度 2026-11-18 在建置上實量)。
 const articleTagOptions = [
   { value: 'design-system', label: '設計系統' },
   { value: 'accessibility', label: '無障礙' },
   { value: 'frontend', label: '前端工程' },
   { value: 'performance', label: '效能優化' },
+  { value: 'component-versioning', label: '元件庫版本管理' },
+  { value: 'ui-design', label: '介面設計' },
+  { value: 'interaction-design', label: '互動設計' },
   { value: 'user-research', label: '使用者研究' },
   { value: 'product-strategy', label: '產品策略' },
 ]
 function ArticleTagsField() {
-  const [value, setValue] = React.useState<string[]>(['design-system', 'accessibility', 'frontend'])
+  const [value, setValue] = React.useState<string[]>(['design-system', 'accessibility', 'frontend', 'performance', 'component-versioning'])
   return (
     <div className="w-80" data-visual-inline-wrap="">
       <Field>
@@ -203,7 +213,7 @@ function ArticleTagsField() {
 }
 export const SearchableInlineWrap: Story = {
   name: '欄位內搜尋 × 換行',
-  parameters: { docs: { description: { story: '內容後台幫文章貼標籤。三個標籤排滿第一列,欄位內的搜尋框接在最後一個標籤後面(空的時候只佔一個游標寬,欄位不會多出一列空白);點欄位直接打字找下一個標籤,打的字放不下這一列才換到下一列,選完關鍵字清空、游標留在欄位裡。' } } },
+  parameters: { docs: { description: { story: '內容後台幫文章貼標籤。五個標籤放不下一列,自動換到第二列;欄位內的搜尋框接在最後一個標籤後面(空的時候只佔一個游標寬,欄位不會多出一列空白);點欄位直接打字找下一個標籤,打的字放不下這一列才換到下一列,選完關鍵字清空、游標留在欄位裡。' } } },
   render: () => <ArticleTagsField />,
 }
 

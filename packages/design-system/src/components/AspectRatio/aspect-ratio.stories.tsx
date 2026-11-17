@@ -34,14 +34,17 @@ export const ProductPhoto4x3: Story = {
     // 兩則有標題的範例上下疊:範例之間 loose × 2(ExampleStack);各則標題 ↔ 說明 2px、標題區 → 內容 loose(ExampleSection)
     <ExampleStack className="max-w-[900px]">
       <ExampleSection
-        title="Stripe product listing — 防 CLS 坍塌"
-        description="產品卡用 4/3 統一 thumbnail 高度。即使圖片還沒載入(或 src 無效),容器仍鎖死比例 → 頁面 layout 不跳動(CLS = 0)。"
+        title="商品列表卡片:圖片載入前後版面不跳動"
+        description="三張商品卡的圖片一律 4:3,高度一致。圖片還沒載入、或網址失效時,容器照樣按比例佔好位置,下面的商品名稱與價格不會因為圖片晚到而被往下推。"
       >
         <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
+          {/* 每張先看過照片再配商品(2026-11-18 前 seed/headphones 是海浪、seed/keyboard 是森林、seed/camera 是登山客 —— 稽核 A113);
+              seed 是轉址到那一張的字(找法與不寫 /id/<n>/ 的理由見 carousel.stories.tsx heroBanners 上方)。
+              Picsum 沒有單獨拍耳機的照片 → 第一張改成照片裡真的有的黑膠唱盤 */}
           {[
-            { seed: 'headphones', title: 'Wireless Headphones', price: 'NT$ 3,990' },
-            { seed: 'keyboard', title: 'Mechanical Keyboard', price: 'NT$ 5,490' },
-            { seed: 'camera', title: 'Compact Camera', price: 'NT$ 12,800' },
+            { seed: 'demo-558', title: '黑膠唱盤', price: 'NT$ 9,990' }, // Picsum 39:唱盤與唱臂
+            { seed: 'demo-110', title: '全尺寸鍵盤', price: 'NT$ 1,890' }, // 366:鍵盤、滑鼠與馬克杯
+            { seed: 'demo-2840', title: '輕便相機', price: 'NT$ 12,800' }, // 250:旁軸相機特寫
           ].map(p => (
             // 縮圖 ↔ 它的名稱 / 價格 = tight(layoutSpace 規則 3 labeling);名稱 ↔ 價格是同一個文字塊,間距由 ItemContent 擁有
             // (--item-gap-label-desc-scanning;body 14 + caption 12 = scanning)
@@ -61,7 +64,7 @@ export const ProductPhoto4x3: Story = {
 
       <ExampleSection
         title="對照:未載入狀態"
-        description="Src 未 ready 時,AspectRatio 仍維持 bg-muted 的 placeholder 空間,不坍塌成 0 高。"
+        description="圖片還沒載入時,容器照樣保留同比例的灰色佔位,不會塌成 0 高。"
       >
         <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {[1, 2, 3].map(i => (
@@ -82,8 +85,10 @@ export const Ultrawide21x9: Story = {
       description="寬幅公告橫幅放在儀表板最上方:21/9 讓圖片佔滿整條寬度,高度卻只有寬度的四成多,不會把下方的數據擠出首屏。"
     >
       <AspectRatio ratio={21 / 9} className="bg-muted rounded-lg overflow-hidden">
+        {/* 季度活動 = 一場活動現場:seed/demo-197 = Picsum 452(舞台 + 舉手的觀眾);
+            2026-11-18 前 seed/cinematic 是海邊戴帽子的背影(338),跟「活動公告」對不上(稽核 A113) */}
         <img
-          src="https://picsum.photos/seed/cinematic/1260/540"
+          src="https://picsum.photos/seed/demo-197/1260/540"
           alt="儀表板頂部的季度活動公告橫幅"
           className="w-full h-full object-cover"
         />

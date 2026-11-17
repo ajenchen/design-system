@@ -160,7 +160,7 @@ export const RangePicker: Story = {
           <DatePicker.Range value={range} onChange={setRange} clearable />
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <p className="text-caption text-fg-muted">Empty 初始狀態(無 X 因為沒值):</p>
+          <p className="text-caption text-fg-muted">還沒選日期(沒有值,所以不顯示清除鈕):</p>
           <LiveDatePickerRange
             value={[null, null]}
             placeholder={['入住日期', '退房日期']}
@@ -190,19 +190,19 @@ export const WithError: Story = {
 
 /* ── showTime:datetime 模式(2026-05-02 新增,合併原 DateTimePicker)── */
 export const ShowTime: Story = {
-  name: 'showTime:會議排程',
+  name: '日期加時間:會議排程',
   render: () => {
     const [single, setSingle] = React.useState<string>('2026-04-15T14:30:00')
     return (
       <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <p className="text-caption text-fg-muted">
-            showTime 啟用後:popover 右側出現 H/M 滾選欄;footer「此刻 / 確定」(needConfirm=true 預設)。Value 變 ISO datetime。
+            日期加時間:展開後月曆右邊多出「時 / 分」兩欄可以捲動選;底下有「此刻」與「確定」,按「確定」才套用。選好的值同時帶日期與時間。
           </p>
           <DatePicker showTime value={single} onChange={setSingle} clearable />
         </div>
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <p className="text-caption text-fg-muted">會議常用 minuteStep=15:</p>
+          <p className="text-caption text-fg-muted">會議常用每 15 分鐘一格:</p>
           <DatePicker showTime minuteStep={15} value={single} onChange={setSingle} />
         </div>
       </div>

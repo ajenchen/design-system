@@ -209,7 +209,7 @@ export const IconOnly: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">variants — size="sm"</p>
+        <p className="text-caption text-fg-muted">小尺寸 · 各強調等級</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" onClick={done('已新增「未命名文件」')} />
           <Button size="sm" iconOnly variant="secondary" startIcon={Download}  aria-label="下載" onClick={done('已下載「2026 Q3 營收報告.pdf」')} />
@@ -219,7 +219,7 @@ export const IconOnly: Story = {
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">danger — size="sm"</p>
+        <p className="text-caption text-fg-muted">小尺寸 · 危險動作</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" onClick={done('已永久刪除「2026 Q3 營收報告.pdf」')} />
           <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" onClick={open} />}</ConfirmDelete>
@@ -227,7 +227,7 @@ export const IconOnly: Story = {
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">sizes — variant="text"</p>
+        <p className="text-caption text-fg-muted">文字按鈕 · 由小到大四種尺寸</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <DemoMenu items={SETTINGS_MENU}><Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" /></DemoMenu>
           <DemoMenu items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" /></DemoMenu>

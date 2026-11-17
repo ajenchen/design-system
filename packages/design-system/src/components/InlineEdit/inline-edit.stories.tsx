@@ -96,20 +96,20 @@ export const States: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex w-[440px] flex-col gap-[var(--layout-space-loose)]">
-      <StateRow caption="view(靜止)—— 純值,透明邊框(預留、不可見)、無底色">
-        <StatefulInlineEdit value="Design review notes" label="標題" />
+      <StateRow caption="平常:只顯示文字,沒有底色、看不到邊框(邊框的位置先留著)">
+        <StatefulInlineEdit value="設計審查會議紀錄" label="標題" />
       </StateRow>
       <StateRow
-        caption="view + hover —— 灰底 bg-neutral-hover + rounded-md(非邊框)"
+        caption="滑鼠移入:出現淺灰的圓角底色,不是邊框"
         data-testid="inline-edit-hover-row"
       >
-        <StatefulInlineEdit value="Design review notes" label="標題" />
+        <StatefulInlineEdit value="設計審查會議紀錄" label="標題" />
       </StateRow>
       <StateRow
-        caption="edit —— 真正的 Field 控件(border + focus 藍框 + input)"
+        caption="編輯中:換成真正的輸入框,有邊框,聚焦時是藍框"
         data-testid="inline-edit-edit-row"
       >
-        <StatefulInlineEdit value="Design review notes" label="標題" />
+        <StatefulInlineEdit value="設計審查會議紀錄" label="標題" />
       </StateRow>
     </div>
   ),

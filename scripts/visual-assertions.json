@@ -410,7 +410,7 @@
           "selector": "[data-visual-inline-wrap] [role=\"combobox\"] input:not([type=\"hidden\"])",
           "peers": "[data-tag-root]",
           "scope": "[role=\"combobox\"]",
-          "rationale": "combobox.spec.md「欄位內搜尋框的寬度」:最小寬 = 打的字 + 插入點,空的時候接在最後一顆 Tag 後面、不換到空白的一列。範例一開始三顆 Tag 排滿第一列(剩不到 60px)—— 正是修前會多一列空白的版面。實測 2026-10-01:搜尋框與三顆 Tag 同在第一列;修前的元件程式(60px 固定下限)配同一則範例,同一個斷言紅(同列 0 顆,搜尋框單獨在第二列)。2026-09-30 這裡寫的「修前同一個斷言紅」不成立:當時範例是四顆 Tag(修前修後一樣兩列),選擇器又用了修前沒有的 aria-autocomplete,在修前只會 selectorMissing。"
+          "rationale": "combobox.spec.md「欄位內搜尋框的寬度」:最小寬 = 打的字 + 插入點,空的時候接在最後一顆 Tag 後面、不換到空白的一列。範例一開始的最後一列剩不到 60px —— 正是修前會多一列空白的版面(2026-11-18 起五顆 Tag 兩列、第二列剩 53px;之前三顆 Tag 一列、剩 15px)。實測 2026-10-01:搜尋框與三顆 Tag 同在第一列;修前的元件程式(60px 固定下限)配同一則範例,同一個斷言紅(同列 0 顆,搜尋框單獨在第二列)。2026-09-30 這裡寫的「修前同一個斷言紅」不成立:當時範例是四顆 Tag(修前修後一樣兩列),選擇器又用了修前沒有的 aria-autocomplete,在修前只會 selectorMissing。"
         }
       ]
     },
