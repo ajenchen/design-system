@@ -71,7 +71,7 @@ export const HomepageHeroBanner = {
             <CarouselItem key={b.city}>
               <div
                 // @layout-space-magic-ok: 主視覺圖上文字離圖邊 32px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                className="relative h-[360px] rounded-lg overflow-hidden flex items-end p-8 bg-cover bg-center"
+                className="relative h-[360px] rounded-md overflow-hidden flex items-end p-8 bg-cover bg-center"
                 style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${b.image})` }}
               >
                 {/* @layout-space-magic-ok: 主視覺圖上小字 ↔ 城市名 ↔ 標語各 4px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 是各一個 mb-1,同值) */}
@@ -108,7 +108,7 @@ export const ProductImageGallery = {
                 ratio={1}
                 role="img"
                 aria-label={`${PRODUCT_NAME} ${img.label}`}
-                className="relative rounded-lg overflow-hidden bg-cover bg-center"
+                className="relative rounded-md overflow-hidden bg-cover bg-center"
                 style={{ backgroundImage: `url(${img.image})` }}
               />
             </CarouselItem>

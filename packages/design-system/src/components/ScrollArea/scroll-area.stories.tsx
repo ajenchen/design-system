@@ -153,7 +153,7 @@ export const VerticalIssueList: Story = {
         長議題清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,捲軸不佔內容寬度。
       </p>
       {/* 議題清單直接用 DataTable(稽核 M090:原本每一列都是手刻 div + 手刻狀態圓點);捲動由外層 ScrollArea 擁有 */}
-      <ScrollArea className="h-[320px] border border-border rounded-lg">
+      <ScrollArea className="h-[320px] border border-border rounded-md">
         <DataTable columns={ISSUE_COLUMNS} data={LINEAR_ISSUES} getRowId={(issue) => issue.id} maxHeight="none" bordered={false} />
       </ScrollArea>
     </div>
@@ -174,7 +174,7 @@ export const SidebarNav: Story = {
             SidebarProvider 只為了列元件需要的 context(作用中項目 / 列尺寸);它預設撐滿視窗高(min-h-svh,app 外殼用),這裡高度交給 ScrollArea */}
         <SidebarProvider activeId={activeId} onActiveChange={setActiveId} className="min-h-0">
           {/* 內容是一串自帶方向鍵的 SidebarMenu,捲動區本身不當 Tab 停靠點(scroll-area.spec.md:103,同 SidebarContent) */}
-          <ScrollArea className="h-[400px] w-full border border-border rounded-lg bg-canvas" viewportTabIndex={-1}>
+          <ScrollArea className="h-[400px] w-full border border-border rounded-md bg-canvas" viewportTabIndex={-1}>
             {NOTION_NAV.map((group) => (
               <SidebarGroup key={group.section}>
                 <SidebarGroupLabel>{group.section}</SidebarGroupLabel>
@@ -208,7 +208,7 @@ export const HorizontalProductTable: Story = {
         比 native 的優勢:Windows 不吃 17px,右邊 Status 欄不被裁切。
         表格本體消費真 DataTable(height=&quot;auto&quot; 無高度約束,捲動由 ScrollArea own)。
       </p>
-      <ScrollArea className="border border-border rounded-lg">
+      <ScrollArea className="border border-border rounded-md">
         <div className="min-w-max">
           <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
         </div>
@@ -227,7 +227,7 @@ export const BothDirections: Story = {
         (wrapper 已內建 vertical,consumer 只需再渲染一個 horizontal)。
         表格本體消費真 DataTable(height=&quot;auto&quot;,雙向捲動完全由 ScrollArea own)。
       </p>
-      <ScrollArea className="h-[280px] border border-border rounded-lg">
+      <ScrollArea className="h-[280px] border border-border rounded-md">
         <div className="min-w-max">
           <DataTable columns={PR_COLUMNS} data={PULL_REQUESTS} getRowId={(pr) => pr.id} maxHeight="none" bordered={false} />
         </div>

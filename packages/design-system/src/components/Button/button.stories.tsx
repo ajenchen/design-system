@@ -362,7 +362,7 @@ export const DismissHoverState: Story = {
   render: () => (
     // 關閉鈕住列尾槽 ItemSuffix(h-[1lh]),對齊標題第一行(item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」;
     // 同 Notice / Alert / Toast 的關閉鈕);容器設 text-body 讓 1lh = 標題行高。2026-10-27 前是 items-center,× 落在兩行字塊正中、比標題中線低約 8px
-    <div className="flex items-start gap-3 rounded-lg border border-divider bg-surface p-4 text-body">
+    <div className="flex items-start gap-3 rounded-md border border-divider bg-surface p-4 text-body">
       <div className="min-w-0 flex-1">
         <p className="text-body font-medium text-foreground">付款方式已更新</p>
         <p className="text-caption text-fg-secondary">此通知可直接關閉。</p>

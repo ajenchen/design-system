@@ -49,7 +49,7 @@ export const ProductPhoto4x3: Story = {
             // 縮圖 ↔ 它的名稱 / 價格 = tight(layoutSpace 規則 3 labeling);名稱 ↔ 價格是同一個文字塊,間距由 ItemContent 擁有
             // (--item-gap-label-desc-scanning;body 14 + caption 12 = scanning)
             <div key={p.seed} className="flex flex-col gap-[var(--layout-space-tight)]">
-              <AspectRatio ratio={4 / 3} className="bg-muted rounded-lg overflow-hidden">
+              <AspectRatio ratio={4 / 3} className="bg-muted rounded-md overflow-hidden">
                 <img
                   src={`https://picsum.photos/seed/${p.seed}/600/450`}
                   alt={p.title}
@@ -68,7 +68,7 @@ export const ProductPhoto4x3: Story = {
       >
         <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {[1, 2, 3].map(i => (
-            <AspectRatio key={i} ratio={4 / 3} className="bg-muted rounded-lg" />
+            <AspectRatio key={i} ratio={4 / 3} className="bg-muted rounded-md" />
           ))}
         </div>
       </ExampleSection>
@@ -84,7 +84,7 @@ export const Ultrawide21x9: Story = {
       title="儀表板頂部的季度活動公告"
       description="寬幅公告橫幅放在儀表板最上方:21/9 讓圖片佔滿整條寬度,高度卻只有寬度的四成多,不會把下方的數據擠出首屏。"
     >
-      <AspectRatio ratio={21 / 9} className="bg-muted rounded-lg overflow-hidden">
+      <AspectRatio ratio={21 / 9} className="bg-muted rounded-md overflow-hidden">
         {/* 季度活動 = 一場活動現場:seed/demo-197 = Picsum 452(舞台 + 舉手的觀眾);
             2026-11-18 前 seed/cinematic 是海邊戴帽子的背影(338),跟「活動公告」對不上(稽核 A113) */}
         <img

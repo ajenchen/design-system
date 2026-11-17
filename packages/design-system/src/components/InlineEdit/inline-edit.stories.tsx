@@ -32,7 +32,7 @@ export const TaskTitle: Story = {
   render: () => {
     const [title, setTitle] = React.useState('修正 Safari 上結帳 e2e 測試偶發失敗')
     return (
-      <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
+      <div className="w-[560px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
         {/* 議題編號 → 標題 = tight:編號替標題提供所在脈絡(layoutSpace 規則 3,layoutSpace.spec.md:76 / :81 context dependency) */}
         <p className="mb-[var(--layout-space-tight)] text-caption text-fg-secondary">PROJ-482</p>
         <InlineEdit
@@ -61,7 +61,7 @@ function MetaRow({ label, value, placeholder }: { label: string; value: string; 
 export const MetadataFields: Story = {
   name: '詳情欄位就地編輯',
   render: () => (
-    <div className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
+    <div className="w-[440px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
       {/* 標題 → 欄位 = loose(標題是整組欄位的標題,欄位之間 loose,它到欄位也是 loose:layoutSpace.spec.md 規則 3「標題區 → 內容」第 3 題:標題到第一個 = 欄位之間、至少 loose);
           同一張表的水平欄位共用 FieldGroup 的 label 寬(field.spec.md「同一表單的多個 horizontal Field 必經 FieldGroup labelWidth」) */}
       <h2 className="mb-[var(--layout-space-loose)] text-h6 font-medium text-foreground">詳細資訊</h2>
@@ -149,7 +149,7 @@ export const SelectTagField: Story = {
       <Field
         orientation="horizontal"
         labelWidth="128px"
-        className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]"
+        className="w-[440px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]"
       >
         <FieldLabel>狀態</FieldLabel>
         <InlineEdit<string>
@@ -194,7 +194,7 @@ export const MultilineDescription: Story = {
       'Safari 上點擊結帳時,e2e 測試會間歇性失敗。\n\n重現:連跑測試 5 次,約 2 次失敗;疑似 checkout webhook race。',
     )
     return (
-      <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
+      <div className="w-[560px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
         <Field orientation="vertical">
           <FieldLabel>描述</FieldLabel>
           <InlineEdit
@@ -224,7 +224,7 @@ export const VerticalFieldForm: Story = {
     return (
       <div
         data-testid="vfield-form"
-        className="flex w-[420px] flex-col gap-[var(--layout-space-loose)] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]"
+        className="flex w-[420px] flex-col gap-[var(--layout-space-loose)] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]"
       >
         <Field orientation="vertical">
           <FieldLabel>負責人</FieldLabel>

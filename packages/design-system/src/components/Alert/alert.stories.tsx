@@ -81,7 +81,7 @@ export const Fixed = {
   name: '固定顯示',
   parameters: { docs: { description: { story: '固定在頁首底下,無圓角、滿版寬度,用於全站層級的公告。' } } },
   render: () => (
-    <div className="border border-divider rounded-lg overflow-hidden">
+    <div className="border border-divider rounded-md overflow-hidden">
       <ChromeHeader className="bg-surface">
         <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">專案設定</h2>
       </ChromeHeader>
