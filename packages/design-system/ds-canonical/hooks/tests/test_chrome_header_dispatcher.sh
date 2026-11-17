@@ -5,6 +5,7 @@ set -uo pipefail
 
 SOURCE="$(cd "$(dirname "$0")/.." && pwd)/chrome_header_dispatcher.sh"
 FIXTURE=$(mktemp -d)
+[ -n "${FIXTURE:-}" ] && [ -d "$FIXTURE" ] || { echo "❌ mktemp -d failed(FIXTURE;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$FIXTURE"' EXIT
 mkdir -p "$FIXTURE/lib"
 cp "$SOURCE" "$FIXTURE/chrome_header_dispatcher.sh"

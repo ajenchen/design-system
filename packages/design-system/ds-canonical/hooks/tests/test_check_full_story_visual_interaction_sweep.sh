@@ -31,6 +31,7 @@ FAIL=0
 FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
+[ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ] || { echo "❌ mktemp -d failed(TMP_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # Override GOVERNANCE_PROJECT_DIR so manifest lookup + _log-fire land in TMP_DIR
@@ -177,6 +178,7 @@ expect_integrity "14. empty report → integrity failure" "report is malformed o
 # 15. Missing manifest means the hook cannot evaluate completeness.
 #     Temporarily point at a project dir without a manifest.
 NOMANIFEST_DIR=$(mktemp -d)
+[ -n "${NOMANIFEST_DIR:-}" ] && [ -d "$NOMANIFEST_DIR" ] || { echo "❌ mktemp -d failed(NOMANIFEST_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$NOMANIFEST_DIR/.claude/logs"
 payload=$(jq -n --arg fp "/tmp/codex-sweep/audit-report.json" --arg c "$(sampled_results 10)" \
   '{hook_event_name:"PreToolUse", tool_name:"Write", tool_input:{file_path:$fp, content:$c}}')

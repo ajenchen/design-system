@@ -10,7 +10,7 @@ PASS=0; FAIL=0; FAILED=""
 
 # Test 1:DS repo(有 packages/design-system/src)→ silent
 echo "Test 1: DS repo skip"
-TMP=$(mktemp -d); mkdir -p "$TMP/packages/design-system/src"
+TMP=$(mktemp -d); [ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }; mkdir -p "$TMP/packages/design-system/src"
 echo '{"@qijenchen/design-system":"^1"}' > "$TMP/package.json"
 STDOUT=$(cd "$TMP" && echo '{"hook_event_name":"SessionStart"}' | GOVERNANCE_PROJECT_DIR="$TMP" GOVERNANCE_PROVIDER=claude bash "$HOOK")
 if [ -z "$STDOUT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL: unexpected output"; FAIL=$((FAIL+1)); fi
@@ -18,14 +18,14 @@ rm -rf "$TMP"
 
 # Test 2:non-DS repo + 無 DS dep → silent
 echo "Test 2: non-DS repo without DS dep"
-TMP=$(mktemp -d); echo '{"react":"^18"}' > "$TMP/package.json"
+TMP=$(mktemp -d); [ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }; echo '{"react":"^18"}' > "$TMP/package.json"
 STDOUT=$(cd "$TMP" && echo '{"hook_event_name":"SessionStart"}' | GOVERNANCE_PROJECT_DIR="$TMP" GOVERNANCE_PROVIDER=claude bash "$HOOK")
 if [ -z "$STDOUT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL: unexpected output"; FAIL=$((FAIL+1)); fi
 rm -rf "$TMP"
 
 # Test 3:non-DS + 含 DS dep + plugin 未裝 → context inject
 echo "Test 3: fork-user without plugin → inject"
-TMP=$(mktemp -d); echo '{"dependencies":{"@qijenchen/design-system":"^1"}}' > "$TMP/package.json"
+TMP=$(mktemp -d); [ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }; echo '{"dependencies":{"@qijenchen/design-system":"^1"}}' > "$TMP/package.json"
 # Override HOME/CWD so plugin install detect 一定 fail
 STDOUT=$(cd "$TMP" && echo '{"hook_event_name":"SessionStart"}' | HOME="$TMP/empty-home" GOVERNANCE_PROJECT_DIR="$TMP" GOVERNANCE_PROVIDER=claude bash "$HOOK")
 # 2026-07-07 修 stale needle:hook 訊息 2026-06 演進為「Fork-user DS 治理鏈未就位」,
@@ -45,6 +45,7 @@ if [ -z "$STDOUT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; F
 # Test 5:Codex 不讀 Claude HOME;poisoned ~/.claude 不得讓缺 runtime 的 consumer 誤判健康。
 echo "Test 5: Codex outcome is invariant to poisoned Claude HOME"
 TMP=$(mktemp -d)
+[ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP/home"
 echo '{"dependencies":{"@qijenchen/design-system":"^1"}}' > "$TMP/package.json"
 BASELINE=$(cd "$TMP" && echo '{"hook_event_name":"SessionStart"}' | \
@@ -83,6 +84,7 @@ rm -rf "$TMP"
 # Test 6:A future provider is admitted by registry data and follows the neutral npm path.
 echo "Test 6: future provider is registry-driven and ignores Claude plugin state"
 TMP=$(mktemp -d)
+[ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP/home/.claude/plugins/design-system" "$TMP/corpus"
 echo '{"dependencies":{"@qijenchen/design-system":"^1"}}' > "$TMP/package.json"
 cat > "$TMP/corpus/providers.json" <<'EOF'
@@ -101,6 +103,7 @@ rm -rf "$TMP"
 # Test 7:The normalized project root, not the shell's incidental cwd, owns consumer detection.
 echo "Test 7: project-root semantics are invariant to cwd"
 TMP=$(mktemp -d)
+[ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP/project" "$TMP/incidental-cwd" "$TMP/home"
 echo '{"dependencies":{"@qijenchen/design-system":"^1"}}' > "$TMP/project/package.json"
 PROJECT_REAL=$(cd "$TMP/project" && pwd -P)
@@ -116,6 +119,7 @@ rm -rf "$TMP"
 
 echo "Test 8: exact-version setup guidance never falls back to a mutable tag"
 TMP=$(mktemp -d)
+[ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP/governance/bin" "$TMP/home"
 printf '%s\n' '{"dependencies":{"@qijenchen/design-system":"1.2.3"},"scripts":{"setup:all":"node scripts/setup-workspace.mjs","setup:governance":"node scripts/setup-governance.mjs"}}' > "$TMP/package.json"
 : > "$TMP/governance/bin/fork-governance-dispatcher.sh"
@@ -132,6 +136,7 @@ rm -rf "$TMP"
 
 echo "Test 9: pre-setup:all consumers retain an exact legacy fallback"
 TMP=$(mktemp -d)
+[ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP/governance/bin" "$TMP/home"
 printf '%s\n' '{"dependencies":{"@qijenchen/design-system":"1.2.3"},"scripts":{"setup:governance":"node scripts/setup-governance.mjs"}}' > "$TMP/package.json"
 : > "$TMP/governance/bin/fork-governance-dispatcher.sh"

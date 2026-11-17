@@ -23,6 +23,19 @@ unset GOVERNANCE_RUNTIME_ROOT GOVERNANCE_STATE_DIR \
   GOVERNANCE_WRITE_STATE_TRUST GOVERNANCE_PROVIDER_ADAPTER_JSON
 export GOVERNANCE_TELEMETRY_OPT_IN=0
 cd "$SCRIPT_DIR" || exit 1
+if [ -z "$GOVERNANCE_PROJECT_DIR" ]; then
+  echo "❌ hook tests must run inside a Git worktree(the repository-write detector below reads git status)" >&2
+  exit 1
+fi
+
+# Static gate first: every `mktemp -d` in these suites must be followed immediately by a
+# non-empty + is-directory check that exits the suite. One unguarded site is enough to turn a
+# broken TMPDIR into `git init` / `rm -rf` inside this corpus(2026-11-17 and 11-18), so refuse
+# the whole run up front instead of finding out after a suite has already written.
+if ! node "$GOVERNANCE_PROJECT_DIR/scripts/hook-test-fixture-guard-invariant.mjs"; then
+  echo "❌ hook tests refused:fix the unguarded mktemp -d listed above first" >&2
+  exit 1
+fi
 
 # Every suite builds its fixtures with `mktemp -d`. When TMPDIR is unwritable mktemp
 # returns empty, and the classic `VAR="$(cd "$VAR" && pwd -P)"` normalization then
@@ -34,6 +47,39 @@ if [ -z "$TMPDIR_PROBE" ] || [ ! -d "$TMPDIR_PROBE" ]; then
   exit 1
 fi
 rm -rf "$TMPDIR_PROBE"
+
+# Repository-write detector. The static gate above checks one known cause; this measures the
+# property itself —— "running a suite wrote into the repository" —— whatever the cause: an
+# unguarded mktemp, a guard the gate cannot parse, or a shape nobody has seen yet. Compared
+# after every suite so the writer is named, not whichever suite trips over the leftovers later.
+#   (1) any new `.git` anywhere in the repository(the 11-17 / 11-18 shape: `git init` in cwd)
+#   (2) Git's view of the hook tree, ignored and untracked files listed one by one
+# (2) stays scoped to the hook tree on purpose: this runner takes minutes, and a whole-repo
+# status would blame an innocent suite whenever someone edits an unrelated file meanwhile.
+HOOK_TREE="$(cd "$SCRIPT_DIR/.." && pwd)"
+repository_write_fingerprint() {
+  find "$GOVERNANCE_PROJECT_DIR" -name node_modules -prune -o -path "$GOVERNANCE_PROJECT_DIR/.git" -prune \
+    -o -name .git -print 2>/dev/null | LC_ALL=C sort
+  git -C "$GOVERNANCE_PROJECT_DIR" --no-optional-locks status --porcelain --ignored --untracked-files=all \
+    -- "$HOOK_TREE" 2>&1
+}
+# Lines only in $2 (+) / only in $1 (-). Pure shell on purpose: `diff <(...)` needs /dev/fd
+# (denied in the macOS sandbox) and here-strings need a writable TMPDIR —— the very thing that
+# is broken when this detector matters most.
+fingerprint_delta() {
+  local line saved_ifs="$IFS"
+  set -f
+  IFS=$'\n'
+  for line in $2; do
+    case $'\n'"$1"$'\n' in *$'\n'"$line"$'\n'*) ;; *) printf '    + %s\n' "$line" ;; esac
+  done
+  for line in $1; do
+    case $'\n'"$2"$'\n' in *$'\n'"$line"$'\n'*) ;; *) printf '    - %s\n' "$line" ;; esac
+  done
+  IFS="$saved_ifs"
+  set +f
+}
+WRITE_FINGERPRINT_BEFORE="$(repository_write_fingerprint)"
 
 TOTAL_SUITES=0
 PASSED_SUITES=0
@@ -60,6 +106,13 @@ for test_file in test_*.sh; do
   if [ ! -f "$SCRIPT_DIR/run-all.sh" ]; then
     echo "" >&2
     echo "❌ FATAL: $test_file destroyed the canonical hook test corpus at $SCRIPT_DIR" >&2
+    exit 1
+  fi
+  WRITE_FINGERPRINT_AFTER="$(repository_write_fingerprint)"
+  if [ "$WRITE_FINGERPRINT_AFTER" != "$WRITE_FINGERPRINT_BEFORE" ]; then
+    echo "" >&2
+    echo "❌ FATAL: $test_file wrote into the repository(new nested .git or changed files under $HOOK_TREE):" >&2
+    fingerprint_delta "$WRITE_FINGERPRINT_BEFORE" "$WRITE_FINGERPRINT_AFTER" >&2
     exit 1
   fi
 done

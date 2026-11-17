@@ -9,6 +9,7 @@ bash "$DIR/test_check_propose_plain_chinese.sh" < /dev/null || { echo "SUB-FAIL:
 bash "$DIR/test_check_propose_cite_required.sh" < /dev/null || { echo "SUB-FAIL: test_check_propose_cite_required.sh"; fail=1; }
 
 FAULT_DIR=$(mktemp -d)
+[ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
 awk '
   { print }

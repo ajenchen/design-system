@@ -11,6 +11,7 @@ bash "$DIR/test_check_consumer_ds_primitive_misuse.sh" < /dev/null || { echo "SU
 bash "$DIR/test_check_consumer_app_story_title.sh" < /dev/null || { echo "SUB-FAIL: test_check_consumer_app_story_title.sh"; fail=1; }
 
 FAULT_DIR=$(mktemp -d)
+[ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
 awk '
   { print }

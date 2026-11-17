@@ -19,6 +19,7 @@ if [ ! -x "$HOOK" ]; then
 fi
 
 TMP_ROOT=$(mktemp -d)
+[ -n "${TMP_ROOT:-}" ] && [ -d "$TMP_ROOT" ] || { echo "❌ mktemp -d failed(TMP_ROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_ROOT"' EXIT
 
 PASS=0

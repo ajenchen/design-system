@@ -8,6 +8,7 @@ HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/_token_hygiene.sh"
 REPO_ROOT=$(git -C "$(dirname "$HOOK")" rev-parse --show-toplevel)
 REGISTRY="$REPO_ROOT/packages/design-system/src/tokens/utility-registry.json"
 TMP=$(mktemp -d)
+[ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP"' EXIT
 PROJECT="$TMP/project"
 FILE="$PROJECT/packages/design-system/src/components/Foo/foo.tsx"

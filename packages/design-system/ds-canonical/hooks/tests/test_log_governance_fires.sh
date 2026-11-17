@@ -16,6 +16,7 @@ STDOUT=$(echo '{}' | bash "$HOOK" 2>&1); EXIT=$?
 
 echo "Test 2: Codex matcher ignores poisoned .claude but logs its registry-declared skill home"
 TMP=$(mktemp -d)
+[ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP"' EXIT
 (cd "$TMP" && git init -q)
 payload=$(jq -nc --arg path "$TMP/.agents/skills/demo/SKILL.md" '{tool_name:"Write",tool_input:{file_path:$path}}')

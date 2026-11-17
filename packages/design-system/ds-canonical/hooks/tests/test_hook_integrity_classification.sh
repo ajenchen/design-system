@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK_DIR="$SCRIPT_DIR/.."
 REPO_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 TMP_ROOT=$(mktemp -d)
+[ -n "${TMP_ROOT:-}" ] && [ -d "$TMP_ROOT" ] || { echo "❌ mktemp -d failed(TMP_ROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_ROOT"' EXIT
 
 PASS=0

@@ -6,6 +6,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../lib/_chrome_header_handcraft.sh"
 TMPROOT=$(mktemp -d)
+[ -n "${TMPROOT:-}" ] && [ -d "$TMPROOT" ] || { echo "❌ mktemp -d failed(TMPROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMPROOT"' EXIT
 
 PASS=0

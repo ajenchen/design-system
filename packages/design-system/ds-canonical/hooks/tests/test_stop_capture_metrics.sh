@@ -21,6 +21,7 @@ PASS=0; FAIL=0; FAILED=""
 # Use isolated temp project dir per test to avoid touching real metric file
 setup_temp_proj() {
   TMP_PROJ=$(mktemp -d)
+  [ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
   git -C "$TMP_PROJ" init -q
   RUNTIME_ROOT="$TMP_PROJ/.git/governance-runtime"
   STATE_DIR="$RUNTIME_ROOT"

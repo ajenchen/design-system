@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_HOOK="$SCRIPT_DIR/../lib/_tab_lg_chrome_header_equal.sh"
 LOG_FIRE_SH="$SCRIPT_DIR/../_log-fire.sh"
 TMPROOT=$(mktemp -d)
+[ -n "${TMPROOT:-}" ] && [ -d "$TMPROOT" ] || { echo "❌ mktemp -d failed(TMPROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMPROOT"' EXIT
 
 PASS=0

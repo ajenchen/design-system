@@ -3,6 +3,7 @@ set -uo pipefail
 
 HOOK="$(cd "$(dirname "$0")/.." && pwd)/check_story_determinism.sh"
 FIXTURE=$(mktemp -d)
+[ -n "${FIXTURE:-}" ] && [ -d "$FIXTURE" ] || { echo "❌ mktemp -d failed(FIXTURE;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$FIXTURE"' EXIT
 PASS=0
 FAIL=0

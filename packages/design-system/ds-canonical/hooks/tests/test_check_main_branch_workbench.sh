@@ -7,6 +7,7 @@ HOOK="$SCRIPT_DIR/../check_main_branch_workbench.sh"
 [ -x "$HOOK" ] || { echo "FATAL: hook not executable: $HOOK"; exit 1; }
 
 TMP_ROOT=$(mktemp -d)
+[ -n "${TMP_ROOT:-}" ] && [ -d "$TMP_ROOT" ] || { echo "❌ mktemp -d failed(TMP_ROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_ROOT"' EXIT
 REPO_MAIN="$TMP_ROOT/repo-main"
 REPO_FEAT="$TMP_ROOT/repo-feature"

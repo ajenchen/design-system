@@ -7,6 +7,7 @@ BRIEF_HOOK="$SCRIPT_DIR/../check_codex_brief_invariants.sh"
 COLLAB_HOOK="$SCRIPT_DIR/../check_codex_collab_5step.sh"
 STOP_HOOK="$SCRIPT_DIR/../stop_self_audit.sh"
 TMP_ROOT=$(mktemp -d)
+[ -n "${TMP_ROOT:-}" ] && [ -d "$TMP_ROOT" ] || { echo "❌ mktemp -d failed(TMP_ROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_ROOT"' EXIT
 mkdir -p "$TMP_ROOT/project/state"
 

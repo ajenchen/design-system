@@ -6,6 +6,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE="$SCRIPT_DIR/../post_edit_dispatcher.sh"
 FIXTURE=$(mktemp -d)
+[ -n "${FIXTURE:-}" ] && [ -d "$FIXTURE" ] || { echo "❌ mktemp -d failed(FIXTURE;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FIXTURE"' EXIT
 mkdir -p "$FIXTURE/lib"
 cp "$SOURCE" "$FIXTURE/post_edit_dispatcher.sh"

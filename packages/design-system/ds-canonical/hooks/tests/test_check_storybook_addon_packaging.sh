@@ -9,6 +9,7 @@ bash "$DIR/test_check_addon_subdir_ship.sh" < /dev/null || { echo "SUB-FAIL: tes
 bash "$DIR/test_check_storybook_addon_preset_cjs.sh" < /dev/null || { echo "SUB-FAIL: test_check_storybook_addon_preset_cjs.sh"; fail=1; }
 
 FAULT_DIR=$(mktemp -d)
+[ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
 awk '
   { print }

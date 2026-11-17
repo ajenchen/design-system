@@ -175,6 +175,7 @@ fi
 
 # 11. Composite integrity:an undefined child status must not be rewritten as advisory success.
 FAULT_DIR=$(mktemp -d)
+[ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
 awk '
   { print }

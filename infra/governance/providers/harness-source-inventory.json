@@ -772,6 +772,7 @@
           "scripts/test-governance-anchor-preflight.mjs",
           "scripts/test-governance-build-graph.mjs",
           "scripts/test-hook-citation-liveness-invariant.mjs",
+          "scripts/test-hook-test-fixture-guard-invariant.mjs",
           "scripts/test-hover-instant-invariant.mjs",
           "scripts/test-hover-own-pair-invariant.mjs",
           "scripts/test-import-waived-self-review.mjs",

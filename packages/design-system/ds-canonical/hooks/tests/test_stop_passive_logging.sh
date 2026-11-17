@@ -97,6 +97,7 @@ expect_exit_0 "7. realistic Stop event payload → exit 0"
 
 # 8. Provider-neutral metrics must consume registry-declared instruction/skill paths only.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJECT/.agents/skills/demo" "$TMP_PROJECT/.claude/skills"
 yes 'shared governance line' | head -601 > "$TMP_PROJECT/AGENTS.md"
 printf '# skill\n' > "$TMP_PROJECT/.agents/skills/demo/SKILL.md"
@@ -119,6 +120,7 @@ rm -rf "$TMP_PROJECT"
 
 # 9. A new concrete provider needs registry fixture data,not a hook-code branch.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 FIXTURE_CORPUS="$TMP_PROJECT/corpus"
 mkdir -p "$FIXTURE_CORPUS" "$TMP_PROJECT/.orion/workflows/demo"
 printf '# Orion\nrule\n' > "$TMP_PROJECT/ORION.md"
@@ -157,6 +159,7 @@ rm -rf "$TMP_PROJECT"
 
 # 10. Default provider execution is read-only unless a trusted caller opts in.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJECT/.agents/skills/demo"
 printf '# shared\n' > "$TMP_PROJECT/AGENTS.md"
 (cd "$TMP_PROJECT" && git init -q)
@@ -172,6 +175,7 @@ rm -rf "$TMP_PROJECT"
 
 # 11. A nested symlink cannot redirect any passive log outside Git runtime.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJECT/.agents/skills/demo" "$TMP_PROJECT/symlink-target"
 printf '# shared\n' > "$TMP_PROJECT/AGENTS.md"
 (cd "$TMP_PROJECT" && git init -q)

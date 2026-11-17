@@ -10,7 +10,7 @@ HOOK="$SCRIPT_DIR/../check_story_invariants.sh"
 [ -x "$HOOK" ] || { echo "FATAL: hook not executable"; exit 1; }
 PASS=0; FAIL=0
 
-setup() { TMP=$(mktemp -d); mkdir -p "$TMP/.claude/hooks"; echo 'log_hook_fire(){ :; }' > "$TMP/.claude/hooks/_log-fire.sh"; }
+setup() { TMP=$(mktemp -d); [ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }; mkdir -p "$TMP/.claude/hooks"; echo 'log_hook_fire(){ :; }' > "$TMP/.claude/hooks/_log-fire.sh"; }
 teardown() { rm -rf "$TMP"; }
 
 run() {

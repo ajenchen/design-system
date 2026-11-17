@@ -18,6 +18,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../check_audit_post_report_validator.sh"
 TMPDIR_TEST=$(mktemp -d)
+[ -n "${TMPDIR_TEST:-}" ] && [ -d "$TMPDIR_TEST" ] || { echo "❌ mktemp -d failed(TMPDIR_TEST;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMPDIR_TEST"' EXIT
 mkdir -p "$TMPDIR_TEST/.claude/logs"
 mkdir -p "$TMPDIR_TEST/corpus/packages/governance/canonical" \

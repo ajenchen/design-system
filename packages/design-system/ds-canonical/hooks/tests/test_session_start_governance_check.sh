@@ -24,6 +24,7 @@ PASS=0; FAIL=0; FAILED=""
 
 setup_proj() {
   TMP_PROJ=$(mktemp -d)
+  [ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
   # 2026-05-08 fix:test isolation — empty memory dir 強制 hook 走 PROJECT_DIR scope,
   # committed repo memory is the only SSOT; isolate it inside the fixture.
   mkdir -p "$TMP_PROJ/.governance-hooks/tests" "$TMP_PROJ/governance/memory"

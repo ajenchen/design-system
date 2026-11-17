@@ -9,6 +9,7 @@ HOOK="$SCRIPT_DIR/../check_file_size_budget.sh"
 PASS=0; FAIL=0
 PROJECT_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_PROJECT"' EXIT
 
 run_hook() {

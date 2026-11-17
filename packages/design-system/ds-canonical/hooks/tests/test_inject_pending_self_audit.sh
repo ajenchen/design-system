@@ -15,6 +15,7 @@ PASS=0; FAIL=0; FAILED=""
 
 setup_proj() {
   TMP_PROJ=$(mktemp -d)
+  [ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
   git -C "$TMP_PROJ" init -q
   STATE_DIR="$TMP_PROJ/.git/governance-runtime"
   mkdir -p "$TMP_PROJ/.claude/hooks" "$STATE_DIR"

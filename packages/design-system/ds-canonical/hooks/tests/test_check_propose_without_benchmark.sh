@@ -7,6 +7,7 @@ HOOK="$SCRIPT_DIR/../check_propose_without_benchmark.sh"
 [ ! -f "$HOOK" ] && { echo "FATAL"; exit 1; }
 PASS=0; FAIL=0
 TMP_DIR=$(mktemp -d)
+[ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ] || { echo "❌ mktemp -d failed(TMP_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 run() {

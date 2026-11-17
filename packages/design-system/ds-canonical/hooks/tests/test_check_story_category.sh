@@ -17,6 +17,7 @@ PASS=0; FAIL=0; FAILED=""
 
 setup_proj() {
   TMP_PROJ=$(mktemp -d)
+  [ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
   mkdir -p "$TMP_PROJ/src/design-system/components/Foo" "$TMP_PROJ/.claude/hooks"
   echo 'log_hook_fire() { :; }' > "$TMP_PROJ/.claude/hooks/_log-fire.sh"
 }
