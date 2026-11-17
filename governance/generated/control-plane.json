@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 66,
-      "hash": "sha256:3e7e7e2d0adf14db50c2bbebaa241978ea67f3fdfa493c5a48d32e4bd83861e8",
+      "hash": "sha256:ebcd339321aed0df4a49ac7a5a0b8ac4e7f622d1915723841faec19ca6ba3164",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2708,7 +2708,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 21,
-      "hash": "sha256:79453c73c5c5eade65b0ac2deada074d5b554a7f08ad9110a22fae190f7fc429",
+      "hash": "sha256:d468cfdd383b0b0b5b00ed0030bddf7fdb1d2c48dfd3dfaaba95093ae91a17ad",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3444,10 +3444,10 @@
           "targetDigest": "sha256:b76cd07025f35483002fd34f85d457027bc040db9562f1de0670c0c5e1b3a5c5"
         },
         {
-          "expectedTargetDigest": "sha256:1ce3682baac691b328711510bff877a8f4b71c3afcd5aa4a612cdfcf5c2dbc2b",
+          "expectedTargetDigest": "sha256:39e14f8d639a5e966593e6fad3729d1d6db0dcae3bab8e06d52babd50dcaefe3",
           "name": "codify-corrections",
-          "sourceDigest": "sha256:5386945df504822cea1910fe9a79fd2f539a543417aeeeda7474263807bdbc06",
-          "targetDigest": "sha256:1ce3682baac691b328711510bff877a8f4b71c3afcd5aa4a612cdfcf5c2dbc2b"
+          "sourceDigest": "sha256:b304ff21f6249b5f51a550447b85ac89a96eb190685585317997e992f57237ae",
+          "targetDigest": "sha256:39e14f8d639a5e966593e6fad3729d1d6db0dcae3bab8e06d52babd50dcaefe3"
         },
         {
           "expectedTargetDigest": "sha256:5779cc3beaa4ced342a905bbeb4f010fb3be1f75fe2b2cc763b9ce3a51d8011a",
@@ -3667,10 +3667,10 @@
           "targetDigest": "sha256:a1c3d2adf1441788a658cb10df8365bc20a6e53d8742a2c70f121337c1e83ce4"
         },
         {
-          "expectedTargetDigest": "sha256:d43f78de3aeafe448346bf5f61fd9045541a051e5ad77183ef92e66f972c2c0a",
+          "expectedTargetDigest": "sha256:8524f73973ac88a5e0938000bbaa589be8af28518614a46e59c47a5982d7bf5d",
           "name": "codify-corrections",
-          "sourceDigest": "sha256:5386945df504822cea1910fe9a79fd2f539a543417aeeeda7474263807bdbc06",
-          "targetDigest": "sha256:d43f78de3aeafe448346bf5f61fd9045541a051e5ad77183ef92e66f972c2c0a"
+          "sourceDigest": "sha256:b304ff21f6249b5f51a550447b85ac89a96eb190685585317997e992f57237ae",
+          "targetDigest": "sha256:8524f73973ac88a5e0938000bbaa589be8af28518614a46e59c47a5982d7bf5d"
         },
         {
           "expectedTargetDigest": "sha256:acf7ec4ed89af73e16897b25715a005783209af3d7899ee1b40190053e658cca",

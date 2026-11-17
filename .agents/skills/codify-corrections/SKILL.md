@@ -17,6 +17,8 @@ description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-h
 
 ## When to run
 
+**前提**:輸入檔 `user-corrections.jsonl` 只有在 `GOVERNANCE_TELEMETRY_OPT_IN=1` 時才會產生(`stop_passive_logging.sh` 拿不到狀態目錄就整支 exit 0)。遙測預設關 → 這份檔預設永遠不存在,下面的 session_start soft reminder 也不會輸出(session_start 不輸出 REMINDERS;只有 > 40 的 hard blocker 會出聲)。檔案不存在時本 skill 記「無輸入、儀器全盲」,不要當成「沒有糾正」。
+
 - User 明言「處理 correction / codify / 看一下 log」
 - `session_start_governance_check.sh` soft reminder(> 20 corrections)或 hard blocker(> 40)
 - 季度(跟 `/knowledge-prune` 同期)
