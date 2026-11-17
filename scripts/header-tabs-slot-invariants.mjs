@@ -250,6 +250,23 @@ async function grab(clip) {
 
 async function measureBaselinePixels(story, tag = '') {
   const label = `${story.label}${tag}`
+  if (story.mode !== 'none') {
+    // 前提:溢出模式要真的溢出、而且淡出遮罩已經掛上。遮罩是 useScrollEdges 量到溢出之後才由 React 設上的(非同步),
+    // 量得太早,灰線就算畫在遮罩裡也是整條 —— 2026-11-17 CI(5f0c05f8)對照組 A 該紅沒紅、本機卻紅,就是慢機器上量在遮罩之前。
+    // 等「那個狀態本身」,不等固定時間(M32 第四題);等不到 = 儀器失效,不是綠。
+    const ready = await page.waitForFunction(() => {
+      const sc = document.querySelector('[data-slot="tabs-list"]')?.parentElement
+      if (!sc) return false
+      const cs = getComputedStyle(sc)
+      const mask = cs.maskImage && cs.maskImage !== 'none' ? cs.maskImage : cs.webkitMaskImage
+      return sc.scrollWidth > sc.clientWidth + 1 && !!mask && mask !== 'none'
+    }, null, { timeout: 10000 }).then(() => true, () => false)
+    if (!ready) {
+      instrumentFailures.push(`✗ ${label} | W1 像素量測前提:10 秒內沒有等到「內容溢出 + 淡出遮罩已掛上」—— 量不到要防的那種斷線`)
+      return
+    }
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+  }
   const g = await page.evaluate(() => {
     const header = document.querySelector('header')
     const tl = document.querySelector('[data-slot="tabs-list"]')
@@ -344,8 +361,16 @@ const BASELINE_CONTROLS = [
     expectRed: 'W1-連續',
   },
   { tag: '〔對照 B:灰線蓋到選中底線上〕', css: '[data-tabs-baseline]{z-index:30!important}', expectRed: 'W1-選中底線' },
+  // 對照 C:灰線畫回遮罩內,而且遮罩永遠不掛上 = 「量在遮罩之前」那種慢機器狀態。必須是儀器失效(沒量到),不准是綠:
+  // 前提沒等到就量,這一組會量到整條線而判綠(2026-11-17 CI 5f0c05f8 對照組 A 該紅沒紅的成因)。
+  {
+    tag: '〔對照 C:遮罩沒掛上〕',
+    css: '[data-tabs-baseline]{display:none!important}[data-slot="tabs-list"]{border-bottom-color:var(--divider)!important}[data-overflow-scroller]{mask-image:none!important;-webkit-mask-image:none!important}',
+    expectInstrument: true,
+  },
 ]
 const OVERFLOW_STORIES = STORIES.filter((s) => s.mode !== 'none')
+const expectedInstrument = []
 
 if (!SELFTEST) {
   for (const story of STORIES) {
@@ -358,7 +383,13 @@ if (!SELFTEST) {
     for (const story of OVERFLOW_STORIES) {
       // 在靜止判定之前注入(beforeSettle),量的就是注入之後穩定下來的畫面
       if (!(await loadStory(story.id, `${story.label}${control.tag}`, { beforeSettle: (p) => p.addStyleTag({ content: control.css }) }))) continue
+      const before = { inst: instrumentFailures.length, pass: passes.length, fail: failures.length }
       await measureBaselinePixels(story, control.tag)
+      if (control.expectInstrument) {
+        // 預期中的儀器失效:移到對照紀錄,不算這趟的儀器失效;同時確認它沒有留下任何綠 / 紅判定
+        const got = instrumentFailures.splice(before.inst)
+        expectedInstrument.push({ key: `${story.label}${control.tag}`, ok: got.length > 0 && passes.length === before.pass && failures.length === before.fail })
+      }
     }
   }
 }
@@ -430,6 +461,11 @@ if (SELFTEST) {
   const missing = []
   for (const control of BASELINE_CONTROLS) {
     for (const story of OVERFLOW_STORIES) {
+      if (control.expectInstrument) {
+        const e = expectedInstrument.find((x) => x.key === `${story.label}${control.tag}`)
+        if (!e || !e.ok) missing.push(`儀器失效 | ${story.label}${control.tag}(遮罩沒掛上卻量了、或留下判定)`)
+        continue
+      }
       const key = `${control.expectRed} | ${story.label}${control.tag}`
       if (!failures.some((f) => f.startsWith(`✗ ${key}`))) missing.push(key)
     }
@@ -437,7 +473,7 @@ if (SELFTEST) {
   const w3 = failures.filter((f) => f.includes('W3-'))
   if (w3.length < 2) missing.push(`W3-a / W3-b | 清空 overlay(只紅了 ${w3.length} 條)`)
   if (missing.length === 0) {
-    console.log(`\n✓ selftest:灰線畫回遮罩內 → W1-連續 兩則都紅;灰線蓋到選中底線上 → W1-選中底線 兩則都紅;清空 overlay → W3 兩條都紅 —— 儀器有效`)
+    console.log(`\n✓ selftest:灰線畫回遮罩內 → W1-連續 兩則都紅;灰線蓋到選中底線上 → W1-選中底線 兩則都紅;遮罩沒掛上 → 兩則都是儀器失效(不是綠);清空 overlay → W3 兩條都紅 —— 儀器有效`)
     process.exit(0)
   }
   console.log(`\n✗ selftest:下列對照組該紅卻沒紅 —— 那一段的綠燈不算證據:\n  ${missing.join('\n  ')}`)
