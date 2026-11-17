@@ -9,7 +9,7 @@
  * 1. 網址一律 `https://i.pravatar.cc/<px>?img=<n>` —— px 只能一段數字且 ≤ 1000(取顯示尺寸 ×2),瀏覽器閘的本機替身
  *    (`scripts/lib/launch-browser.mjs` pravatarRoute)才接得上;不得省參數、不得亂數或時間(story-determinism)。
  * 2. 同一個人全 DS 同一張臉(名字 → 編號只有這一張表);同一支 story 檔裡不同人不共用臉。
- *    跨檔可以共用(可用的臉比名字少):例 Dialog 成員清單 29 人各一張,其中有些臉在別支檔是另一個人。
+ *    跨檔可以共用(可用的臉比名字少):例 Dialog 成員清單 26 人各一張,其中有些臉在別支檔是另一個人。
  * 3. 臉要在 24–32px 也認得出來:正面或四分之三側臉、看得到眼睛、單一成人、沒被杯子 / 手 / 帽子 / 墨鏡遮住、不是重度藝術處理;
  *    臉的性別觀感配名字(名字性別不明確的 Alex / Jamie / Yuki 依原頁用法)。不合格的臉列在 `DEMO_FACE_UNUSABLE`,名冊不得引用。
  * 4. 字串型人員值只會顯示縮寫(PeoplePicker/person-display.tsx `toPersonData`)—— 要顯示照片就傳人員物件(`demoPersonData`)。
@@ -32,7 +32,7 @@ export const DEMO_PERSON_PHOTO = {
   'Carol Lee': 16,
   'Dave Lin': 60,
   'Alex Wang': 21,
-  'Ben Liu': 66,
+  'Ben Liu': 54, // 2026-11-17:原 66 照剔除表不合格(手托腮擋臉)→ 換用到 Ben Liu 的檔裡沒人用的合格臉
   'Bella Wu': 36,
   // ── AppShell 示範 ──
   'Jamie Lin': 18,
@@ -49,7 +49,7 @@ export const DEMO_PERSON_PHOTO = {
   // ── PeoplePicker ──
   'Eric Tsai': 12,
   'Fiona Lee': 47,
-  'Carol Wu': 19,
+  'Carol Wu': 32, // 2026-11-17:原 19 照剔除表不合格(手指抵唇)→ 換同檔(PeoplePicker 設計原則)沒人用的合格臉
   'David Lee': 17,
   'Emma Yang': 5,
   // ── Menu ──
@@ -71,8 +71,8 @@ export const DEMO_PERSON_PHOTO = {
   陳美惠: 21,
   // ── ProfileCard 長姓名換行 ──
   'Alexander Benjamin Christopher Davidson-Williams III': 17,
-  // ── Dialog 成員清單(29 人同一支檔:29 張臉互不重複) ──
-  'Charlie Lee': 63,
+  // ── Dialog 成員清單(26 人同一支檔:26 張臉互不重複) ──
+  'Charlie Lee': 70, // 2026-11-17:原 63 照剔除表不合格(黑白、深色眼鏡、畫面有第二人)→ 接手 70(原 Tom Liang;Charlie Lee 在 Dialog 的任務 / 留言範例也出現,留在清單)
   'Diana Kim': 43,
   'Ethan Park': 12,
   'Fiona Lin': 32,
@@ -82,12 +82,9 @@ export const DEMO_PERSON_PHOTO = {
   'Julia Shen': 44,
   'Kevin Hsu': 54,
   'Lydia Cao': 36,
-  'Mark Tseng': 66,
   'Nina Pan': 26,
   'Oscar Lo': 68,
   'Ray Tang': 69,
-  'Sophia Fei': 19,
-  'Tom Liang': 70,
   'Uma Jiang': 34,
   'Victor Ren': 13,
   'Wendy Xia': 21,
@@ -110,6 +107,13 @@ export type DemoPersonName = keyof typeof DEMO_PERSON_PHOTO
  * 2026-11-15 新增 3 / 9 / 27 / 28 的理由是 AI 看圖判讀【AI 推導 2026-11-15】。28 列入後合格的臉剛好 29 張:dialog.stories.tsx 成員清單
  * 原本 30 人(同檔不得撞臉),同日拿掉用 28 的 Peggy Qin、改 29 人 —— 清單長度只是「長到要捲」,29 / 30 沒有差別,而 user 要的是
  *「盡量都用真實圖片」(2026-11-11),比讓其中一人改顯示縮寫更貼近【AI 推導 2026-11-15】。
+ * 2026-11-17 依本表判 A14 列為拿不準的 19 / 44 / 63 / 64 / 66(每張打開 300px 看,AI 看圖判讀【AI 推導 2026-11-17】):
+ * 19 / 63 / 66 不合格(理由見各列,判準照本表既有的 28「手指遮住嘴與下巴」、1 / 53「畫面有第二人」);44(帽子沒遮眼、臉清楚,
+ * 年齡觀感年輕但不是 42 那種兒童)與 64(黑白、毛帽在眉毛以上,正面看得到雙眼)照本表每一條都不擋,留用。
+ * 起因:重拍前確認流程看到 Dialog 成員清單第 3 列 Charlie Lee(63)黑白、深色眼鏡、左邊切到第二個人。
+ * 剔除後合格的臉 26 張:照 2026-11-15 同一個做法(「盡量都用真實圖片」,不改顯示縮寫),Dialog 成員清單改 26 人 —— 拿掉 Mark Tseng /
+ * Sophia Fei / Tom Liang(Charlie Lee 在同檔任務與留言範例也出現,留下並接手 Tom Liang 的 70);Carol Wu / Ben Liu 換成各自檔裡
+ * 沒人用的合格臉 32 / 54【AI 推導 2026-11-17】。
  */
 export const DEMO_FACE_UNUSABLE = {
   1: '兩人同框',
@@ -123,6 +127,7 @@ export const DEMO_FACE_UNUSABLE = {
   11: '墨鏡',
   14: '墨鏡 + 棒球帽',
   15: '墨鏡、吐舌',
+  19: '手指抵在嘴唇上(同 28 手遮嘴)、魅惑造型,不適合商務範例(2026-11-17)',
   20: '側臉低頭,看不到眼睛',
   22: '喬裝眼鏡加假鬍子',
   24: '杯子遮住下半臉',
@@ -151,7 +156,9 @@ export const DEMO_FACE_UNUSABLE = {
   58: '相機擋臉',
   61: '側臉、叼菸斗、逆光',
   62: '閉眼、泡在水中',
+  63: '黑白、深色有色眼鏡 + 草帽,左邊切到第二個人(同 1 / 53 畫面有第二人)(2026-11-17)',
   65: '牛仔帽裝扮,且疑似公眾人物',
+  66: '手托腮擋住半邊臉頰與下巴(同 28 手遮臉)、頭巾(2026-11-17)',
   67: '相機擋臉',
 } as const satisfies Record<number, string>
 

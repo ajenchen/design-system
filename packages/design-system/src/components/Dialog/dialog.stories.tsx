@@ -73,8 +73,9 @@ function NotificationSettings() {
  * - description = 「職稱｜員編｜工號」(full-width 「｜」separator;世界級成員卡以職稱辨識工作身份)
  */
 const MEMBER_ROLES = ['Design', 'Engineering', 'Product', 'Research'] as const
-// 照片走照片名冊(stories-helpers/data/people.ts):29 人同一支檔,29 張臉互不重複(閘 demo-people-roster-invariant)。
-// 2026-11-15 前 30 人;名冊重篩後合格的臉只剩 29 張,拿掉 Peggy Qin(理由見 people.ts DEMO_FACE_UNUSABLE 檔頭)
+// 照片走照片名冊(stories-helpers/data/people.ts):26 人同一支檔,26 張臉互不重複(閘 demo-people-roster-invariant)。
+// 2026-11-15 前 30 人;名冊重篩後合格的臉只剩 29 張,拿掉 Peggy Qin;2026-11-17 再剔除 3 張 → 剩 26 張,拿掉 Mark Tseng / Sophia Fei / Tom Liang
+// (理由見 people.ts DEMO_FACE_UNUSABLE 檔頭;清單只需「長到要捲」,不讓人改顯示縮寫)
 const MEMBERS: { name: DemoPersonName; empId: string; empNum: string }[] = [
   { name: 'Alan Chen', empId: 'D-0042', empNum: 'EMP-1001' },
   { name: 'Betty Wu', empId: 'E-0183', empNum: 'EMP-1002' },
@@ -88,12 +89,9 @@ const MEMBERS: { name: DemoPersonName; empId: string; empNum: string }[] = [
   { name: 'Julia Shen', empId: 'E-0302', empNum: 'EMP-1010' },
   { name: 'Kevin Hsu', empId: 'D-0076', empNum: 'EMP-1011' },
   { name: 'Lydia Cao', empId: 'M-0088', empNum: 'EMP-1012' },
-  { name: 'Mark Tseng', empId: 'E-0154', empNum: 'EMP-1013' },
   { name: 'Nina Pan', empId: 'D-0031', empNum: 'EMP-1014' },
   { name: 'Oscar Lo', empId: 'E-0249', empNum: 'EMP-1015' },
   { name: 'Ray Tang', empId: 'D-0192', empNum: 'EMP-1017' },
-  { name: 'Sophia Fei', empId: 'E-0115', empNum: 'EMP-1018' },
-  { name: 'Tom Liang', empId: 'D-0234', empNum: 'EMP-1019' },
   { name: 'Uma Jiang', empId: 'M-0043', empNum: 'EMP-1020' },
   { name: 'Victor Ren', empId: 'E-0168', empNum: 'EMP-1021' },
   { name: 'Wendy Xia', empId: 'D-0059', empNum: 'EMP-1022' },
@@ -308,7 +306,7 @@ function LongMemberListDialog({ initiallyOpen = false }: { initiallyOpen?: boole
         {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
             wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose`(前緣對齊 header 標題)。
             成員列不可點,沒有 hover 底色(overlay-surface.spec.md:底色有無不是 List-as-region 的判定條件)。
-            29 筆(MEMBERS 全名冊)超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
+            26 筆(MEMBERS 全名冊)超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
         <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
           {/* @layout-space-magic-ok: List-as-region 清單外框上下 8px 由清單自己帶(overlay-surface.spec.md:97「list outer wrapper 自帶 `py-2`」;Dialog body 的 padding 由 overlay-surface 擁有,dialog.spec.md「結構」) */}
           <div role="list" className="flex flex-col py-2">

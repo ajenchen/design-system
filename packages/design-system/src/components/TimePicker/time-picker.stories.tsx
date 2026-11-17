@@ -116,10 +116,11 @@ export const ShopBusinessHours: Story = {
         <FieldLabel>營業時段</FieldLabel>
         {/* @layout-space-magic-ok: 營業時段 開店 → 關店兩個時間欄位 = 同一組值的起迄,規則 5 gap 8px(layoutSpace.spec.md:177 規則 5) */}
         <div className="flex items-center gap-2">
-          <TimePicker value={open} onChange={setOpen} placeholder="開店時間" />
+          {/* width="hug"(field-controls.spec.md「寬度軸」:依內容收縮):預設 fill 在這一列被平分,macOS 字型下「22:00」被截成「22:…」 */}
+          <TimePicker value={open} onChange={setOpen} placeholder="開店時間" width="hug" />
           {/* 起迄之間 = ArrowRight 圖示(time-picker.spec.md「時間範圍(from-to)」:兩個 TimePicker 並列 + 之間 <ArrowRight>),尺寸 = 欄位 md 的圖示 token,與 DatePicker 範圍分隔同一套 */}
           <ArrowRight size={ICON_SIZE.md} className="shrink-0 text-fg-muted" aria-hidden />
-          <TimePicker value={close} onChange={setClose} placeholder="打烊時間" />
+          <TimePicker value={close} onChange={setClose} placeholder="打烊時間" width="hug" />
         </div>
       </Field>
     )

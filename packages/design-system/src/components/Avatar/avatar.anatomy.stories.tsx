@@ -17,7 +17,7 @@ import {
   type CategoricalHue,
 } from '@/design-system/tokens/categorical-color'
 import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
-import { ExampleSection, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { TkVal, PropRow } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 // 量測頁的人員頭像也帶名片(avatar.spec.md「Avatar HoverCard 原則」適用範圍無例外;登記簿 B21「我說所有」):名片讀共用名錄,
@@ -367,99 +367,96 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="色彩對照表" description="所有 primitive 色的背景 + 前景 token 對照，含 subtle 與 solid 兩種模式。色塊即時渲染，切 dark mode 自動更新。Image 模式不使用背景色。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="色彩對照表" description="所有 primitive 色的背景 + 前景 token 對照，含 subtle 與 solid 兩種模式。色塊即時渲染，切 dark mode 自動更新。Image 模式不使用背景色。" />
 
-      {/* Subtle */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-fg-secondary">Subtle（預設）</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>Color</Th>
-                <Th>Icon 模式</Th>
-                <Th>Text 模式</Th>
-                <Th>背景 token</Th>
-                <Th>前景 token</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {ALL_COLORS.map((c) => {
-                const tokens = COLOR_TOKENS.subtle[c]
-                return (
-                  <tr key={c}>
-                    <Td mono>{c}{c === 'neutral' ? '（預設）' : ''}</Td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} icon={Globe} color={c} />
-                    </td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} alt={ada.name} color={c} hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
-                    </td>
-                    <td className="p-2 border-b border-divider">
-                      <span className="inline-flex items-center gap-2">
-                        <Swatch value={tokens.bg} />
-                        <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
-                      </span>
-                    </td>
-                    <td className="p-2 border-b border-divider">
-                      <span className="inline-flex items-center gap-2">
-                        <Swatch value={tokens.text} />
-                        <span className="font-mono text-[12px] text-fg-secondary">{tokens.text}</span>
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Solid */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-fg-secondary">Solid</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>Color</Th>
-                <Th>Icon 模式</Th>
-                <Th>Text 模式</Th>
-                <Th>背景 token</Th>
-                <Th>前景 token</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {ALL_COLORS.map((c) => {
-                const tokens = COLOR_TOKENS.solid[c]
-                return (
-                  <tr key={c}>
-                    <Td mono>{c}</Td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} icon={Globe} color={c} solid />
-                    </td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} alt={ada.name} color={c} solid hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
-                    </td>
-                    <td className="p-2 border-b border-divider">
-                      <span className="inline-flex items-center gap-2">
-                        <Swatch value={tokens.bg} />
-                        <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
-                      </span>
-                    </td>
-                    <td className="p-2 border-b border-divider">
+    {/* Subtle */}
+    <ExampleSection title="Subtle（預設）">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead>
+            <tr>
+              <Th>Color</Th>
+              <Th>Icon 模式</Th>
+              <Th>Text 模式</Th>
+              <Th>背景 token</Th>
+              <Th>前景 token</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {ALL_COLORS.map((c) => {
+              const tokens = COLOR_TOKENS.subtle[c]
+              return (
+                <tr key={c}>
+                  <Td mono>{c}{c === 'neutral' ? '（預設）' : ''}</Td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} icon={Globe} color={c} />
+                  </td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} alt={ada.name} color={c} hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="inline-flex items-center gap-2">
+                      <Swatch value={tokens.bg} />
+                      <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
+                    </span>
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="inline-flex items-center gap-2">
+                      <Swatch value={tokens.text} />
                       <span className="font-mono text-[12px] text-fg-secondary">{tokens.text}</span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </ExampleSection>
+
+    {/* Solid */}
+    <ExampleSection title="Solid">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead>
+            <tr>
+              <Th>Color</Th>
+              <Th>Icon 模式</Th>
+              <Th>Text 模式</Th>
+              <Th>背景 token</Th>
+              <Th>前景 token</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {ALL_COLORS.map((c) => {
+              const tokens = COLOR_TOKENS.solid[c]
+              return (
+                <tr key={c}>
+                  <Td mono>{c}</Td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} icon={Globe} color={c} solid />
+                  </td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} alt={ada.name} color={c} solid hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="inline-flex items-center gap-2">
+                      <Swatch value={tokens.bg} />
+                      <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
+                    </span>
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="font-mono text-[12px] text-fg-secondary">{tokens.text}</span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -470,132 +467,130 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="尺寸對照表" description="size 接受任意 px 值，內部 icon 和文字尺寸自動按比例計算。不提供預設尺寸名稱，尺寸由消費元件決定。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="尺寸對照表" description="size 接受任意 px 值，內部 icon 和文字尺寸自動按比例計算。不提供預設尺寸名稱，尺寸由消費元件決定。" />
 
-      {/* Token calculation table */}
+    {/* Token calculation table */}
+    <div className="overflow-x-auto">
+      <table className="border-collapse text-caption">
+        <thead>
+          <tr>
+            <Th>屬性</Th>
+            {PRESET_SIZES.map((s) => <Th key={s}>{s}px</Th>)}
+            <Th>公式</Th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <Td>容器尺寸</Td>
+            {PRESET_SIZES.map((s) => (
+              <Td key={s} mono>
+                <div className="text-fg-secondary">{s}px</div>
+                <div className="text-fg-muted text-[10px]">width = height</div>
+              </Td>
+            ))}
+            <Td mono><span className="text-fg-muted text-[10px]">= size</span></Td>
+          </tr>
+          <tr>
+            <Td>Icon 尺寸</Td>
+            {PRESET_SIZES.map((s) => {
+              const iPx = getIconSize(s)
+              return (
+                <Td key={s} mono>
+                  <div className="text-fg-secondary">{iPx}px</div>
+                  <div className="text-fg-muted text-[10px]">{Math.round(iPx / s * 100)}%</div>
+                </Td>
+              )
+            })}
+            <Td mono><span className="text-fg-muted text-[10px]">round_even(size x 0.6)</span></Td>
+          </tr>
+          <tr>
+            <Td>Text 字體</Td>
+            {PRESET_SIZES.map((s) => {
+              const tPx = getTextSize(s)
+              return (
+                <Td key={s} mono>
+                  <div className="text-fg-secondary">{tPx}px</div>
+                  <div className="text-fg-muted text-[10px]">{Math.round(tPx / s * 100)}%</div>
+                </Td>
+              )
+            })}
+            <Td mono><span className="text-fg-muted text-[10px]">round(size x 0.5)</span></Td>
+          </tr>
+          <tr>
+            <Td>Border Radius (circle)</Td>
+            {PRESET_SIZES.map((s) => (
+              <Td key={s} mono><div className="text-fg-secondary">9999px</div></Td>
+            ))}
+            <Td mono><span className="text-fg-muted text-[10px]">rounded-full</span></Td>
+          </tr>
+          <tr>
+            <Td>Border Radius (square)</Td>
+            {PRESET_SIZES.map((s) => (
+              <Td key={s} mono><div className="text-fg-secondary">4px</div></Td>
+            ))}
+            <Td mono><span className="text-fg-muted text-[10px]">rounded-md</span></Td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {/* Visual preview */}
+    <ExampleSection title="預覽">
       <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
+        <table className="border-collapse">
           <thead>
             <tr>
-              <Th>屬性</Th>
+              <Th>模式</Th>
               {PRESET_SIZES.map((s) => <Th key={s}>{s}px</Th>)}
-              <Th>公式</Th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <Td>容器尺寸</Td>
+              <Td>Image</Td>
               {PRESET_SIZES.map((s) => (
-                <Td key={s} mono>
-                  <div className="text-fg-secondary">{s}px</div>
-                  <div className="text-fg-muted text-[10px]">width = height</div>
-                </Td>
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} src={demoPersonPhoto('Ada Chen', s * 2)} alt={ada.name} hoverCard={samplePersonCard(ada)} />
+                </td>
               ))}
-              <Td mono><span className="text-fg-muted text-[10px]">= size</span></Td>
             </tr>
             <tr>
-              <Td>Icon 尺寸</Td>
-              {PRESET_SIZES.map((s) => {
-                const iPx = getIconSize(s)
-                return (
-                  <Td key={s} mono>
-                    <div className="text-fg-secondary">{iPx}px</div>
-                    <div className="text-fg-muted text-[10px]">{Math.round(iPx / s * 100)}%</div>
-                  </Td>
-                )
-              })}
-              <Td mono><span className="text-fg-muted text-[10px]">round_even(size x 0.6)</span></Td>
-            </tr>
-            <tr>
-              <Td>Text 字體</Td>
-              {PRESET_SIZES.map((s) => {
-                const tPx = getTextSize(s)
-                return (
-                  <Td key={s} mono>
-                    <div className="text-fg-secondary">{tPx}px</div>
-                    <div className="text-fg-muted text-[10px]">{Math.round(tPx / s * 100)}%</div>
-                  </Td>
-                )
-              })}
-              <Td mono><span className="text-fg-muted text-[10px]">round(size x 0.5)</span></Td>
-            </tr>
-            <tr>
-              <Td>Border Radius (circle)</Td>
+              <Td>Icon (circle)</Td>
               {PRESET_SIZES.map((s) => (
-                <Td key={s} mono><div className="text-fg-secondary">9999px</div></Td>
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} icon={Folder} color="blue" />
+                </td>
               ))}
-              <Td mono><span className="text-fg-muted text-[10px]">rounded-full</span></Td>
             </tr>
             <tr>
-              <Td>Border Radius (square)</Td>
+              <Td>Icon (square)</Td>
               {PRESET_SIZES.map((s) => (
-                <Td key={s} mono><div className="text-fg-secondary">4px</div></Td>
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} icon={Building2} color="purple" shape="square" />
+                </td>
               ))}
-              <Td mono><span className="text-fg-muted text-[10px]">rounded-md</span></Td>
+            </tr>
+            <tr>
+              <Td>Text (circle)</Td>
+              {PRESET_SIZES.map((s) => (
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} alt={alice.name} color="green" hoverCard={samplePersonCard({ ...alice, avatarSrc: undefined })} />
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <Td>Text (square)</Td>
+              {PRESET_SIZES.map((s) => (
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} alt="Org" color="magenta" shape="square" />
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>
       </div>
-
-      {/* Visual preview */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>模式</Th>
-                {PRESET_SIZES.map((s) => <Th key={s}>{s}px</Th>)}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <Td>Image</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} src={demoPersonPhoto('Ada Chen', s * 2)} alt={ada.name} hoverCard={samplePersonCard(ada)} />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Icon (circle)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} icon={Folder} color="blue" />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Icon (square)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} icon={Building2} color="purple" shape="square" />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Text (circle)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} alt={alice.name} color="green" hoverCard={samplePersonCard({ ...alice, avatarSrc: undefined })} />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Text (square)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} alt="Org" color="magenta" shape="square" />
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      </div>
     </ExampleSection>
+    </ExampleStack>
   ),
 }
 

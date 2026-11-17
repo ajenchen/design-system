@@ -105,6 +105,8 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 **View 走 `Intl.DateTimeFormat`**(跨 locale 統一、12h/24h 支援)。`formatOptions` 透傳進去。
 
+**數字等寬(`tabular-nums`)**:觸發欄位與各 mode 顯示的時間值,跟下拉時間欄(`time-columns.tsx` 的欄內 item)同一個寫法 —— 同一個元件兩處一致;值的寬度不隨字型的數字寬度變(例:系統字型下「22:00」比「10:00」寬,兩個欄位並排時一寬一窄)。【AI 推導 2026-11-17:起因是「店家營業時間」展示在 macOS 字型下把「22:00」截成「22:…」;本檔原本沒有相反規定】
+
 ---
 
 ## 尺寸

@@ -42,6 +42,7 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { AccountMenu as AccountMenuPrimitive } from '@/design-system/components/AccountMenu/account-menu'
 import { DataTable, type DataTableProps } from '@/design-system/components/DataTable/data-table'
+import { formatDate } from '@/design-system/components/DatePicker/date-picker'
 import type { PersonData } from '@/design-system/components/PeoplePicker/person-display'
 import { demoPersonData, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 // 帳號選單內容(AccountMenuItems)在本檔以 DropdownMenu primitives 直接組,
@@ -460,9 +461,11 @@ export function IssueDetail({ issue }: { issue: Issue | null }) {
             <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>
           </div>
         </div>
+        {/* 標籤與日期跟旁邊的議題表同一套:欄名「負責人 / 截止日」;日期走 DataTable 日期欄同一條格式化路徑
+            (DatePicker `formatDate`,預設 YYYY/MM/DD —— date-picker.spec.md「格式化」),不直接印 ISO 字串(2026-11-17 重拍前確認) */}
         <DescriptionList orientation="horizontal" divided>
-          <DescriptionItem label="Assignee">{issue.assignee}</DescriptionItem>
-          <DescriptionItem label="Due">{issue.due}</DescriptionItem>
+          <DescriptionItem label="負責人">{issue.assignee}</DescriptionItem>
+          <DescriptionItem label="截止日">{formatDate(issue.due)}</DescriptionItem>
         </DescriptionList>
       </div>
     </div>

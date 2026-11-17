@@ -15,16 +15,26 @@
  *         `forceReRender`,等產品自己把每個標記寫回(頁面上沒有 pending)再等版面靜止 → 「重判」;有標題區的再開 lg 做同一件事。
  *         為什麼要重判:Storybook 把密度寫到 <html> 晚於標題判定(packages/storybook-config/preview.tsx 的 useEffect),用 lg 開頁時首次判定
  *         用的仍是一般密度的版面 —— 只比首次標記,A1 要抓的那種錯一個也看不到(--selftest 對照組 α 兩面都印)。
- *   紅: A1 / A2(A3 打開後也算)任一個標題區不符 → 逐個指名 story、共用元件、標題字、兩邊的判定(或量到的距離與應有值),exit 1。
+ *         A4 標題區之後是好幾個上下疊、其中有自帶標題的區塊時(2026-11-17):「標題區底 → 第一塊頂」= max(loose, 塊與塊之間最大的那一段)
+ *            (容許 0.6px;產品判成一塊(one)的不在這一格 —— 塊與塊只隔元件微距,本來就是一塊;段落模式也不在 —— 內容是一段文字 / 清單,
+ *            粗體開頭的清單項不是有標題的區塊,例:AppShell 設計原則「唯一判準:頂部標頭服務的範圍」)。
+ *            依據 layoutSpace.spec.md 規則 3「標題區 → 內容」第 3 題「標題到第一個 = 東西之間的距離,至少 loose」與同段「東西是好幾個有自己標題的區塊時,
+ *            『之間』= 組 ↔ 組的 loose × 2」(設計規格頁 / Patterns 文件頁 = A42【AI 推導】;寫法 tutorial-page.tsx 檔頭 = ExampleStack)。
+ *            起因:#169 把 34 處「ExampleSection 直接包 flex-col gap-8」的標題區改成共用元件後,標題 → 第一塊 16、塊與塊之間仍 32,
+ *            A3 只比「兩塊以上 → loose」看不到(radiogroup-states / tag-all-variants 重拍前確認判錯)。區塊怎麼取、什麼算自帶標題只寫在
+ *            scripts/lib/doc-heading-zones.mjs(`titledBlocksOf`;只管 ExampleSection 標題區與 ExampleStack 的段落標題,H3 / Desc 不在這一格)。
+ *   紅: A1 / A2 / A4(A3 打開後也算)任一個標題區不符 → 逐個指名 story、共用元件、標題字、兩邊的判定(或量到的距離與應有值),exit 1。
  *       量不到 = 儀器失效(印 INSTRUMENT-FAIL、exit 2;不是產品裁決,也不算通過):index.json 0 則、任一則開不起來 / 沒輪到、找不到 Storybook
  *       channel、重畫後還有 pending(點名)、等不到靜止、重畫後出現錯誤頁、同一則 md 與 lg(或首次與重判)的標題區對不上、讀不到 loose / tight、
  *       兩種密度讀到同一個 loose(密度沒套上);完整掃描(沒有 --limit)時有判定的標題區 0 個、H3 / Desc / ExampleSection / TutorialRule 任一種 0 個、
- *       一塊 / 兩塊以上任一種 0 個。
+ *       一塊 / 兩塊以上任一種 0 個、A4 適用的標題區 0 個。
  *       --selftest(同一支量法、同一個判定函式):判定表(不開瀏覽器);真頁面 Avatar 設計原則「使用指引」—— 現況三條全綠(前提);
  *       α 文件一開始就把一般密度的 tight 改成 8px → 紅的集合必須正好是 A1「Avatar 代表身份…」md one / lg many + A2 lg「Avatar 代表身份…」首次 one / 重判 many,
  *       同時印「只比首次標記:md one / lg one(看不到)」當量法的兩面對照;β 首次量完才把兩種密度的 tight 都改成 8px → 正好 A2 md、lg 各一筆
  *       「Avatar 代表身份…」首次 many / 重判 one,A1 必綠;γ 重判之後把每個 ExampleSection 的內容下推 4px → 正好那一頁每個有內容的標題區 A3 紅、
- *       數字正好多 4,A1 / A2 必綠;channel 的 emit 換成空函式 → 重判丟儀器失效;不存在的 story → 儀器失效;假建置子行程 → 結束碼 2 + 標記;
+ *       數字正好多 4,A1 / A2 必綠;δ(A4)RadioGroup 設計規格「狀態行為」(ExampleStack 段落標題 + 有自帶標題的區塊)現況 A4 綠,
+ *       重判後把段落標題下方拉近 16px(= 修前「標題 → 第一塊比塊與塊之間近」的寫法)→ 紅的集合必須正好是那一個標題區 md、lg 兩筆 A4、每格正好差 16;
+ *       channel 的 emit 換成空函式 → 重判丟儀器失效;不存在的 story → 儀器失效;假建置子行程 → 結束碼 2 + 標記;
  *       經符號連結叫自己、給不存在的建置 → 缺建置標記 + 結束碼 2(「是不是被直接執行」比真實路徑,lib/direct-run.mjs;只比字串時這裡 0 行、exit 0)。
  *   綠: 全部 story 量完,A1 / A2 零筆、沒有儀器失效 → exit 0(A3 打開後也要零筆)。同一份建置重複跑結果恆等(無取樣、無時鐘、
  *       只等被量的東西本身與版面靜止,不睡固定毫秒)。
@@ -99,9 +109,9 @@ const FAMILIES = ['h3', 'desc', 'es', 'rule']
  * @returns {{ findings: { A1: object[], A2: object[], A3: object[] }, instrument: string[], counts: object, enforceGap: boolean }}
  */
 export function judgeInventory(stories, { full = false, enforceGap = false } = {}) {
-  const findings = { A1: [], A2: [], A3: [] }
+  const findings = { A1: [], A2: [], A3: [], A4: [] }
   const instrument = []
-  const counts = { stories: stories.length, zones: 0, judged: 0, byFamily: Object.fromEntries(FAMILIES.map((f) => [f, 0])), byMark: { one: 0, many: 0 }, gaps: 0 }
+  const counts = { stories: stories.length, zones: 0, judged: 0, byFamily: Object.fromEntries(FAMILIES.map((f) => [f, 0])), byMark: { one: 0, many: 0 }, gaps: 0, titled: 0 }
   const aligned = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((z, i) => headingZoneKey(z) === headingZoneKey(b[i]))
   for (const s of stories) {
     if (!s.md || !s.lg) { instrument.push(`${s.id}:缺 ${s.md ? 'lg' : 'md'} 那一趟的量測 —— 比不了兩種密度`); continue }
@@ -129,6 +139,17 @@ export function judgeInventory(stories, { full = false, enforceGap = false } = {
         if (z.mark !== r.mark) findings.A2.push({ check: 'A2', story: s.id, density: d, zone: r, first: z.mark, rejudged: r.mark })
       })
       for (const z of s[d].rejudged) {
+        // A4:有自帶標題的區塊上下疊 → 標題區底 → 第一塊 = 東西之間、至少 loose
+        // (產品判成一塊的、段落模式(一段文字 / 清單,粗體開頭的清單項不是有標題的區塊)不在這一格)
+        const tb = z.titledBlocks
+        if (tb && z.mark !== 'one' && z.mode !== 'paragraph') {
+          if (d === 'md') counts.titled += 1
+          if (!Number.isFinite(tb.first) || !tb.between.length || !tb.between.every(Number.isFinite) || !(z.loose > 0)) instrument.push(`${s.id} @${d} ${describeHeadingZone(z)}:有自帶標題的區塊,卻量不到距離(${JSON.stringify(tb)};loose ${z.loose})`)
+          else {
+            const expected = Math.max(z.loose, ...tb.between)
+            if (Math.abs(tb.first - expected) > DOC_HEADING_GAP_TOL_PX) findings.A4.push({ check: 'A4', story: s.id, density: d, zone: z, first: tb.first, between: tb.between, expected })
+          }
+        }
         const exp = expectedHeadingGap(z)
         if (!exp) continue
         if (exp.unjudged) { findings.A3.push({ check: 'A3', story: s.id, density: d, zone: z, unjudged: true }); continue }
@@ -142,6 +163,7 @@ export function judgeInventory(stories, { full = false, enforceGap = false } = {
   if (full) {
     if (counts.judged === 0) instrument.push('完整掃描卻沒有任何一個有判定的標題區 —— 量具沒量到東西(選擇器 / 標記名換了?),不當綠燈')
     for (const f of FAMILIES) if (counts.byFamily[f] === 0) instrument.push(`完整掃描卻沒有任何一個有判定的「${f}」標題區 —— 那一種共用元件整個沒量到,不當綠燈`)
+    if (counts.titled === 0) instrument.push('完整掃描卻沒有任何一個 A4 適用的標題區(有自帶標題的區塊上下疊)—— 量具沒量到東西,不當綠燈')
     for (const m of ['one', 'many']) if (counts.byMark[m] === 0) instrument.push(`完整掃描卻沒有任何一個判成「${m}」的標題區 —— 判定的一半整個沒出現,不當綠燈`)
   }
   return { findings, instrument, counts, enforceGap }
@@ -150,7 +172,7 @@ export function judgeInventory(stories, { full = false, enforceGap = false } = {
 /** 判定 → 結論:'instrument'(有任何量不到)> 'red'(A1 / A2,A3 計入時也算)> 'green'。 */
 export function verdictOf(result) {
   if (result.instrument.length) return 'instrument'
-  const counted = result.findings.A1.length + result.findings.A2.length + (result.enforceGap ? result.findings.A3.length : 0)
+  const counted = result.findings.A1.length + result.findings.A2.length + result.findings.A4.length + (result.enforceGap ? result.findings.A3.length : 0)
   return counted ? 'red' : 'green'
 }
 
@@ -159,6 +181,7 @@ export function describeFinding(f) {
   const z = describeHeadingZone(f.zone)
   if (f.check === 'A1') return `[A1] ${f.story} ${z} 兩種密度判定不同:md ${f.md ?? '(無)'} / lg ${f.lg ?? '(無)'}`
   if (f.check === 'A2') return `[A2] ${f.story} @${f.density} ${z} 首次 ${f.first ?? '(無)'} / 重判 ${f.rejudged ?? '(無)'}`
+  if (f.check === 'A4') return `[A4] ${f.story} @${f.density} ${z} 標題區底 → 第一塊 = ${f.first}px,塊與塊之間 = ${f.between.join(' / ')}px,應 ${f.expected}(標題到第一個 = 東西之間、至少 loose:layoutSpace.spec.md 規則 3 第 3 題;寫法 ExampleStack)`
   if (f.unjudged) return `[A3] ${f.story} @${f.density} ${z} 區塊模式、後面有內容,卻沒有判定(產品該標 one / many 沒標)`
   return `[A3] ${f.story} @${f.density} ${z} 標題區底 → 內容頂 = ${f.gap}px,應 ${f.expected}(${f.token};判定 ${f.zone.mark ?? '段落'})`
 }
@@ -273,11 +296,11 @@ function writeDump(file, stories) {
 
 function printResult(result, { prefix = '' } = {}) {
   const { findings, instrument, counts } = result
-  for (const f of [...findings.A1, ...findings.A2]) console.log(`✗ ${prefix}${describeFinding(f)}`)
+  for (const f of [...findings.A1, ...findings.A2, ...findings.A4]) console.log(`✗ ${prefix}${describeFinding(f)}`)
   for (const f of findings.A3) console.log(`${result.enforceGap ? '✗' : '·'} ${prefix}${describeFinding(f)}${result.enforceGap ? '' : '(A3 未計入紅綠)'}`)
   for (const line of instrument) console.log(`✗ ${line.includes(INSTRUMENT_FAIL_MARKER) ? '' : `${INSTRUMENT_FAIL_MARKER}:`}${line}`)
-  console.log(`${prefix}標題區 ${counts.zones} 個(有判定 ${counts.judged}:H3 ${counts.byFamily.h3} / Desc ${counts.byFamily.desc} / ExampleSection ${counts.byFamily.es} / TutorialRule ${counts.byFamily.rule};一塊 ${counts.byMark.one} / 兩塊以上 ${counts.byMark.many});量了 ${counts.gaps} 段距離 × 密度`)
-  console.log(`${prefix}A1 兩種密度不同 ${findings.A1.length} / A2 首次 ≠ 重判 ${findings.A2.length} / A3 判定 → 距離不符 ${findings.A3.length}${result.enforceGap ? '' : '(未計入紅綠)'} / 儀器失效 ${instrument.length}`)
+  console.log(`${prefix}標題區 ${counts.zones} 個(有判定 ${counts.judged}:H3 ${counts.byFamily.h3} / Desc ${counts.byFamily.desc} / ExampleSection ${counts.byFamily.es} / TutorialRule ${counts.byFamily.rule};一塊 ${counts.byMark.one} / 兩塊以上 ${counts.byMark.many});量了 ${counts.gaps} 段距離 × 密度;A4 適用 ${counts.titled} 個`)
+  console.log(`${prefix}A1 兩種密度不同 ${findings.A1.length} / A2 首次 ≠ 重判 ${findings.A2.length} / A3 判定 → 距離不符 ${findings.A3.length}${result.enforceGap ? '' : '(未計入紅綠)'} / A4 標題 → 第一塊 ≠ 塊之間 ${findings.A4.length} / 儀器失效 ${instrument.length}`)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -297,6 +320,11 @@ const ALPHA_CSS = 'html:not([data-density="lg"]) { --layout-space-tight: 8px !im
 const BETA_CSS = 'html { --layout-space-tight: 8px !important; }'
 const GAMMA_PUSH_PX = 4
 const GAMMA_CSS = `[data-example-section] > :nth-child(2) { margin-top: ${GAMMA_PUSH_PX}px !important; }`
+/** δ(A4):ExampleStack 的段落標題 + 有自帶標題的區塊;把段落標題下方拉近 = 修前寫法(標題 → 第一塊 16、塊之間 32)。 */
+const A4_STORY = 'design-system-components-radiogroup-設計規格--state-behavior'
+const A4_TITLE = '狀態行為'
+const DELTA_PULL_PX = 16
+const DELTA_CSS = `[data-example-stack] > [data-example-section]:first-child { margin-bottom: -${DELTA_PULL_PX}px !important; }`
 
 function judgeTable() {
   const failures = []
@@ -308,7 +336,7 @@ function judgeTable() {
   const lgOf = (z) => ({ ...z, loose: 24, tight: 16, gap: z.gap === null ? null : (z.mark === 'many' ? 24 : 16) })
   const story = (id, mdZones, { lgZones = mdZones.map(lgOf), mdFirst = mdZones, lgFirst = lgZones } = {}) => ({ id, md: { first: mdFirst, rejudged: mdZones }, lg: { first: lgFirst, rejudged: lgZones } })
   const clean = [story('s1', [zone('甲', 'one'), zone('乙', 'many'), zone('段落', null, { mode: 'paragraph' }), zone('沒有內容', null, { hasContent: false, gap: null })])]
-  const keys = (r) => [...r.findings.A1, ...r.findings.A2, ...r.findings.A3].map(findingKey).sort()
+  const keys = (r) => [...r.findings.A1, ...r.findings.A2, ...r.findings.A3, ...r.findings.A4].map(findingKey).sort()
   const r0 = judgeInventory(clean)
   check(verdictOf(r0) === 'green' && keys(r0).length === 0 && r0.instrument.length === 0, `乾淨的 → 綠、0 筆(實得 ${verdictOf(r0)}、${JSON.stringify(keys(r0))}、${JSON.stringify(r0.instrument)})`)
   // A1:md one / lg many → 只紅 A1(那一個)
@@ -351,16 +379,38 @@ function judgeTable() {
   const floors = judgeInventory(onlyRules, { full: true })
   check(verdictOf(floors) === 'instrument' && ['h3', 'desc', 'es'].every((f) => floors.instrument.some((line) => line.includes(`「${f}」`))) && !floors.instrument.some((line) => line.includes('「rule」')),
     `完整掃描少了 H3 / Desc / ExampleSection → 三種各一行儀器失效、TutorialRule 有量到不列(實得 ${JSON.stringify(floors.instrument)})`)
-  const noMany = judgeInventory([story('s1', ['h3', 'h3+desc', 'es', 'rule'].map((kind, i) => zone(`t${i}`, 'one', { kind })))], { full: true })
+  // 帶一個 A4 適用的標題區(段落標題 + 有自帶標題的區塊),地板只剩「many」那一行
+  const stackHead = { ...zone('疊', null, { kind: 'es', hasContent: false, gap: null }), titledBlocks: { count: 2, titled: 2, first: 24, between: [24] } }
+  const noMany = judgeInventory([story('s1', ['h3', 'h3+desc', 'es', 'rule'].map((kind, i) => zone(`t${i}`, 'one', { kind })).concat([stackHead]))], { full: true })
   check(noMany.instrument.length === 1 && noMany.instrument[0].includes('「many」'), `完整掃描沒有任何一個兩塊以上 → 儀器失效(實得 ${JSON.stringify(noMany.instrument)})`)
   const allFour = judgeInventory([story('s1', ['h3', 'h3+desc', 'es', 'rule'].flatMap((kind, i) => [zone(`a${i}`, 'one', { kind }), zone(`b${i}`, 'many', { kind })]))], { full: true })
-  check(verdictOf(allFour) === 'green', `完整掃描四種共用元件、兩種判定都有 → 綠(實得 ${JSON.stringify(allFour.instrument)})`)
+  check(verdictOf(allFour) === 'instrument' && allFour.instrument.length === 1 && allFour.instrument[0].includes('A4'), `完整掃描四種共用元件、兩種判定都有、但沒有 A4 適用的標題區 → 只有 A4 地板一行儀器失效(實得 ${JSON.stringify(allFour.instrument)})`)
+  // A4:有自帶標題的區塊上下疊(2026-11-17)
+  const tb = (first, between) => ({ count: between.length + 1, titled: between.length + 1, first, between })
+  const withTb = (title, first, between, lgFirst = first, lgBetween = between) => story('s1', [{ ...zone(title, null, { hasContent: false, gap: null }), titledBlocks: tb(first, between) }], { lgZones: [{ ...lgOf(zone(title, null, { hasContent: false, gap: null })), titledBlocks: tb(lgFirst, lgBetween) }] })
+  const a4ok = judgeInventory([withTb('疊', 32, [32, 32], 48, [48, 48])])
+  check(verdictOf(a4ok) === 'green' && keys(a4ok).length === 0 && a4ok.counts.titled === 1, `標題 → 第一塊 = 塊之間(md 32 / lg 48)→ 綠、A4 適用 1(實得 ${verdictOf(a4ok)}、${JSON.stringify(keys(a4ok))}、${a4ok.counts.titled})`)
+  const a4bad = judgeInventory([withTb('疊', 16, [32, 32], 24, [48, 48])])
+  check(JSON.stringify(keys(a4bad)) === JSON.stringify(['A4|s1|lg|疊', 'A4|s1|md|疊']) && verdictOf(a4bad) === 'red', `標題 → 第一塊 16、塊之間 32(radiogroup-states 修前)→ 只紅 A4 md、lg(實得 ${JSON.stringify(keys(a4bad))})`)
+  check(describeFinding(a4bad.findings.A4.find((f) => f.density === 'md')).includes('= 16px,塊與塊之間 = 32 / 32px'), 'A4 的訊息講出量到的兩個數字')
+  const a4uneven = judgeInventory([withTb('疊', 32, [32, 40])])
+  check(keys(a4uneven).includes('A4|s1|md|疊'), '塊與塊之間最大一段 40、標題 → 第一塊 32 → A4 紅')
+  const a4tight = judgeInventory([withTb('疊', 16, [12, 12], 24, [16, 16])])
+  check(verdictOf(a4tight) === 'green', `塊與塊只隔 tight、標題 → 第一塊 = loose(「至少 loose」,user 2026-11-12 多塊緊排 = 乙)→ 綠(實得 ${JSON.stringify(keys(a4tight))})`)
+  const a4one = judgeInventory([story('s1', [{ ...zone('一', 'one'), titledBlocks: tb(12, [32]) }], { lgZones: [{ ...lgOf(zone('一', 'one')), titledBlocks: tb(16, [32]) }] })])
+  const a4para = judgeInventory([story('s1', [{ ...zone('段', null, { mode: 'paragraph', gap: 12 }), titledBlocks: tb(12, [12, 12]) }], { lgZones: [{ ...lgOf(zone('段', null, { mode: 'paragraph' })), gap: 16, titledBlocks: tb(16, [16, 16]) }] })], { enforceGap: true })
+  check(verdictOf(a4para) === 'green' && a4para.counts.titled === 0, `段落模式(粗體開頭的清單項)→ 不在 A4(實得 ${JSON.stringify(keys(a4para))}、適用 ${a4para.counts.titled})`)
+  check(verdictOf(a4one) === 'green' && a4one.counts.titled === 0, `產品判成一塊(one)→ 不在 A4(實得 ${JSON.stringify(keys(a4one))}、適用 ${a4one.counts.titled})`)
+  const a4blind = judgeInventory([withTb('疊', NaN, [32])])
+  check(verdictOf(a4blind) === 'instrument', '有自帶標題的區塊卻量不到距離 → 儀器失效(不讀成綠)')
+  const allFive = judgeInventory([story('s1', ['h3', 'h3+desc', 'es', 'rule'].flatMap((kind, i) => [zone(`a${i}`, 'one', { kind }), zone(`b${i}`, 'many', { kind })]).concat([{ ...zone('疊', null, { kind: 'es', hasContent: false, gap: null }), titledBlocks: tb(24, [24]) }]))], { full: true })
+  check(verdictOf(allFive) === 'green', `完整掃描四種共用元件、兩種判定、A4 都有 → 綠(實得 ${JSON.stringify(allFive.instrument)})`)
   return { failures, rows }
 }
 
 /** 紅的集合 = 期望的集合(多紅、少紅都指名)。 */
 function compareRedSet(label, result, expectedKeys) {
-  const actual = [...result.findings.A1, ...result.findings.A2, ...result.findings.A3].map(findingKey).sort()
+  const actual = [...result.findings.A1, ...result.findings.A2, ...result.findings.A3, ...result.findings.A4].map(findingKey).sort()
   const expected = [...expectedKeys].sort()
   const extra = actual.filter((k) => !expected.includes(k))
   const missing = expected.filter((k) => !actual.includes(k))
@@ -429,6 +479,24 @@ async function runSelftest(firstBrowser, server) {
   if (offBy.length) gammaProblems.push(`γ:紅了,但差的不是正好 ${GAMMA_PUSH_PX}px —— 量的不是那一段:${offBy.slice(0, 3).map(describeFinding).join(' ; ')}`)
   problems.push(...gammaProblems)
   if (!gammaProblems.length) out(`✓ 對照組 γ(重判後內容下推 ${GAMMA_PUSH_PX}px):紅 = 期望 —— 那一頁 ${gammaExpected.length} 格(標題區 × 密度)A3 全紅、每格正好多 ${GAMMA_PUSH_PX};A1 / A2 綠。例:${describeFinding(gammaResult.findings.A3[0])}`)
+
+  // δ(A4):現況綠 + 段落標題下方拉近 → 正好那一個標題區 md、lg 兩筆 A4、每格正好差 DELTA_PULL_PX
+  const bothOf = async (id, hooks = {}) => { const s = { id }; for (const d of DENSITIES) s[d] = await measureStory(page, server, id, d, hooks[d] ?? hooks.all ?? {}); return s }
+  const a4Base = await bothOf(A4_STORY)
+  const a4BaseResult = judgeInventory([a4Base], { enforceGap: true })
+  const a4Zone = a4Base.md.rejudged.find((z) => z.title.startsWith(A4_TITLE) && z.titledBlocks)
+  if (!a4Zone) problems.push(`δ:${A4_STORY} 上找不到 A4 適用的「${A4_TITLE}」標題區 —— 對照組不成立`)
+  else if (verdictOf(a4BaseResult) !== 'green') problems.push(`δ 前提不成立:未破壞的 ${A4_STORY} 就不綠:${[...a4BaseResult.findings.A1, ...a4BaseResult.findings.A2, ...a4BaseResult.findings.A3, ...a4BaseResult.findings.A4].map(describeFinding).join(' ; ')}${a4BaseResult.instrument.join(' ; ')}`)
+  else {
+    out(`✓ 現況(A4):${A4_STORY}「${a4Zone.title.slice(0, 20)}」標題 → 第一塊 ${a4Zone.titledBlocks.first}、塊之間 ${a4Zone.titledBlocks.between.join(' / ')}(md;${a4Zone.titledBlocks.count} 塊、自帶標題 ${a4Zone.titledBlocks.titled})`)
+    const delta = await bothOf(A4_STORY, { all: { afterRejudge: (p) => p.addStyleTag({ content: DELTA_CSS }) } })
+    const deltaResult = judgeInventory([delta], { enforceGap: true })
+    const deltaProblems = compareRedSet('δ', deltaResult, DENSITIES.map((d) => `A4|${A4_STORY}|${d}|${a4Zone.title}`))
+    const deltaOff = deltaResult.findings.A4.filter((f) => f.between.some((b) => Math.abs(b - f.first - DELTA_PULL_PX) > 0.1))
+    if (deltaOff.length) deltaProblems.push(`δ:紅了,但差的不是正好 ${DELTA_PULL_PX}px —— 量的不是那一段:${deltaOff.map(describeFinding).join(' ; ')}`)
+    problems.push(...deltaProblems)
+    if (!deltaProblems.length) out(`✓ 對照組 δ(段落標題下方拉近 ${DELTA_PULL_PX}px = 修前寫法):紅 = 期望 —— 只有 A4「${A4_TITLE}」md、lg,每格正好差 ${DELTA_PULL_PX}。例:${describeFinding(deltaResult.findings.A4[0])}`)
+  }
 
   // channel 的 emit 換成空函式 → 標記留在 pending → 重判必須丟儀器失效(不得讀成 one / many)
   await openStory(page, storyUrl(server.origin, CONTROL_STORY, 'md'), { settleFrames: DOC_HEADING_SETTLE_FRAMES, notFound: server.notFound, timeoutMs: DOC_HEADING_OPEN_TIMEOUT_MS })
@@ -513,7 +581,7 @@ if (isDirectRun(import.meta.url)) {
       }
       if (exitCode !== 2) {
         if (problems.length) { console.log(`\n✗ ${GATE_NAME}(selftest):\n  ${problems.join('\n  ')}\n  —— 量具沒有在該紅的地方紅(或紅到不該紅的地方),綠燈不能當證據`); exitCode = 1 }
-        else { out(`\n✓ ${GATE_NAME} selftest 通過(${Math.round((Date.now() - t0) / 1000)} 秒):判定表、現況、α / β / γ 三種破法的紅集合、channel 空函式 / 不存在的 story / 假建置三種「必須判成沒量到」、經符號連結叫自己也真的跑,全部成立`); exitCode = 0 }
+        else { out(`\n✓ ${GATE_NAME} selftest 通過(${Math.round((Date.now() - t0) / 1000)} 秒):判定表、現況、α / β / γ / δ 四種破法的紅集合、channel 空函式 / 不存在的 story / 假建置三種「必須判成沒量到」、經符號連結叫自己也真的跑,全部成立`); exitCode = 0 }
       }
     } else {
       const scan = await runScan(browser, server)

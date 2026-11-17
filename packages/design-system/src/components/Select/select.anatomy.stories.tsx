@@ -9,7 +9,7 @@ import { Flag } from 'lucide-react'
 import { Select } from './select'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { BpZone, PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Select/設計規格',
@@ -128,9 +128,6 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
    Swatch defaults to `size="md"` for inline token chips.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
@@ -547,90 +544,86 @@ const COLOR_STATES: StateKey[] = ['default', 'hover', 'focus', 'disabled']
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Mode x State 色彩對照" description="text 和 tag 模式共用同一組 wrapper 色彩 token（來自 fieldWrapperStyles）。差異在 tag 模式的 Tag 元件有自己的色彩（由 Tag variant 決定）。色塊即時渲染，切 dark mode 自動更新。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Mode x State 色彩對照" description="text 和 tag 模式共用同一組 wrapper 色彩 token（來自 fieldWrapperStyles）。差異在 tag 模式的 Tag 元件有自己的色彩（由 Tag variant 決定）。色塊即時渲染，切 dark mode 自動更新。" />
 
-        {/* ── Normal: mode x state ── */}
+      {/* ── Normal: mode x state ── */}
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead><tr><Th>Mode</Th>{COLOR_STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+          <tbody>
+            {MODES.map((m) => (
+              <tr key={m}>
+                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{m}</td>
+                {COLOR_STATES.map((st) => {
+                  const stateKey = m === 'disabled' ? 'disabled' : st
+                  const resolvedMode = m === 'disabled' ? 'disabled' : m
+                  return (
+                    <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
+                      <Select aria-label={`狀態(${resolvedMode} · ${st})`}
+                        mode={resolvedMode}
+                        options={statusOptions}
+                        value="active"
+                        size="sm"
+                        disabled={m === 'disabled'}
+                      />
+                      <TokenAnnotation colors={TOKEN_MAP[resolvedMode][stateKey]} />
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Error state (edit only) ── */}
+      <ExampleSection title="error = true（僅 edit 模式有視覺效果）">
         <div className="overflow-x-auto">
           <table className="border-collapse">
-            <thead><tr><Th>Mode</Th>{COLOR_STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+            <thead><tr><Th>State</Th>{(['default', 'hover', 'focus'] as const).map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+            <tbody>
+              <tr>
+                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">edit + error</td>
+                {(['default', 'hover', 'focus'] as const).map((st) => (
+                  <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
+                    <Select aria-label={`狀態(edit + error · ${st})`} options={statusOptions} value="active" size="sm" error />
+                    <TokenAnnotation colors={ERROR_TOKENS[st]} />
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ExampleSection>
+
+      {/* ── Tag mode color comparison ── */}
+      <ExampleSection title="text vs tag 模式色彩差異" description={<>wrapper 色彩相同，tag 模式的 Tag 元件有自己的底色和文字色（neutral = bg-secondary + text-foreground，tagVariant 時用對應色相）。disabled 時 wrapper 變 bg-disabled，Tag 本身色彩不變（Tag 元件無 disabled 樣式）。</>}>
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr><Th>Mode</Th><Th>text 模式</Th><Th>tag 模式</Th><Th>差異說明</Th></tr></thead>
             <tbody>
               {MODES.map((m) => (
                 <tr key={m}>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{m}</td>
-                  {COLOR_STATES.map((st) => {
-                    const stateKey = m === 'disabled' ? 'disabled' : st
-                    const resolvedMode = m === 'disabled' ? 'disabled' : m
-                    return (
-                      <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                        <Select aria-label={`狀態(${resolvedMode} · ${st})`}
-                          mode={resolvedMode}
-                          options={statusOptions}
-                          value="active"
-                          size="sm"
-                          disabled={m === 'disabled'}
-                        />
-                        <TokenAnnotation colors={TOKEN_MAP[resolvedMode][stateKey]} />
-                      </td>
-                    )
-                  })}
+                  <Td mono>{m}</Td>
+                  <Td>
+                    <Select aria-label={`狀態(${m} · text 模式)`} mode={m} display="plain" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
+                  </Td>
+                  <Td>
+                    <Select aria-label={`狀態(${m} · tag 模式)`} mode={m} display="tag" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
+                  </Td>
+                  <Td>
+                    {m === 'edit' && 'Wrapper 相同。Tag 用 Tag 元件色彩（neutral = bg-secondary + text-foreground）'}
+                    {m === 'readonly' && 'Wrapper 相同（bg-readonly）。Tag 用 tagPadding 置中'}
+                    {m === 'disabled' && 'Wrapper 變 bg-disabled。Tag 本身色彩不變（Tag 元件無 disabled 樣式）'}
+                  </Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* ── Error state (edit only) ── */}
-        <div className="flex flex-col gap-2">
-          <span className="text-caption font-medium text-fg-secondary">error = true（僅 edit 模式有視覺效果）</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>State</Th>{(['default', 'hover', 'focus'] as const).map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
-              <tbody>
-                <tr>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">edit + error</td>
-                  {(['default', 'hover', 'focus'] as const).map((st) => (
-                    <td key={st} className="p-3 border-b border-divider align-top min-w-[180px]">
-                      <Select aria-label={`狀態(edit + error · ${st})`} options={statusOptions} value="active" size="sm" error />
-                      <TokenAnnotation colors={ERROR_TOKENS[st]} />
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ── Tag mode color comparison ── */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">text vs tag 模式色彩差異</span>
-          <Desc>wrapper 色彩相同，tag 模式的 Tag 元件有自己的底色和文字色（neutral = bg-secondary + text-foreground，tagVariant 時用對應色相）。disabled 時 wrapper 變 bg-disabled，Tag 本身色彩不變（Tag 元件無 disabled 樣式）。</Desc>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>Mode</Th><Th>text 模式</Th><Th>tag 模式</Th><Th>差異說明</Th></tr></thead>
-              <tbody>
-                {MODES.map((m) => (
-                  <tr key={m}>
-                    <Td mono>{m}</Td>
-                    <Td>
-                      <Select aria-label={`狀態(${m} · text 模式)`} mode={m} display="plain" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
-                    </Td>
-                    <Td>
-                      <Select aria-label={`狀態(${m} · tag 模式)`} mode={m} display="tag" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
-                    </Td>
-                    <Td>
-                      {m === 'edit' && 'Wrapper 相同。Tag 用 Tag 元件色彩（neutral = bg-secondary + text-foreground）'}
-                      {m === 'readonly' && 'Wrapper 相同（bg-readonly）。Tag 用 tagPadding 置中'}
-                      {m === 'disabled' && 'Wrapper 變 bg-disabled。Tag 本身色彩不變（Tag 元件無 disabled 樣式）'}
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -641,138 +634,132 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。Field 高度使用 --field-height-* semantic token（rem），與 Button 共用。density 切換由系統自動處理。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。Field 高度使用 --field-height-* semantic token（rem），與 Button 共用。density 切換由系統自動處理。" />
 
-        {/* ── text mode token table ── */}
-        <div className="flex flex-col gap-2">
-          <span className="text-caption font-medium text-fg-secondary">text 模式</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse text-caption">
-              <thead><tr>
-                <Th>屬性</Th>
-                {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
-              </tr></thead>
-              <tbody>
-                {([
-                  { label: '高度', get: (s: SizeSpec) => ({ token: s.heightToken, sub: s.height }) },
-                  { label: '左右內距', get: (s: SizeSpec) => ({ token: s.pxToken, sub: s.px }) },
-                  { label: '元素間距', get: (s: SizeSpec) => ({ token: s.gapToken, sub: s.gap }) },
-                  { label: '字體', get: (s: SizeSpec) => ({ token: s.fontToken, sub: s.font }) },
-                  { label: 'Icon 尺寸', get: (s: SizeSpec) => ({ token: undefined, sub: `${s.icon}px` }) },
-                ]).map((row) => (
-                  <tr key={row.label}>
-                    <Td>{row.label}</Td>
-                    {SIZES.map((sz) => {
-                      const { token, sub } = row.get(SIZE_SPECS[sz])
-                      return (
-                        <Td key={sz} mono>
-                          {token && <div className="text-fg-secondary">{token}</div>}
-                          {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
-                        </Td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ── tag mode additional tokens ── */}
-        <div className="flex flex-col gap-2">
-          <span className="text-caption font-medium text-fg-secondary">tag 模式額外 token</span>
-          <Desc>tag 模式的 padding 用 calc() 公式讓 Tag 四邊等距：px = (field-height − 2px 邊框 − tag-height) / 2（sm/md 3px、lg 5px）。右側 paddingRight 固定 12px（--field-px token）。</Desc>
-          <div className="overflow-x-auto">
-            <table className="border-collapse text-caption">
-              <thead><tr>
-                <Th>屬性</Th>
-                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-              </tr></thead>
-              <tbody>
-                <tr>
-                  <Td>Tag 尺寸</Td>
-                  {SIZES.map((sz) => (
-                    <Td key={sz} mono>
-                      <div className="text-fg-secondary">{sz === 'sm' ? 'tag-sm' : sz === 'md' ? 'tag-md' : 'tag-lg'}</div>
-                      <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagHeight}</div>
-                    </Td>
-                  ))}
-                </tr>
-                <tr>
-                  <Td>tagPadding (px)</Td>
-                  {SIZES.map((sz) => (
-                    <Td key={sz} mono>
-                      <div className="text-fg-secondary">calc()</div>
-                      <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagPaddingFormula}</div>
-                    </Td>
-                  ))}
-                </tr>
-                <tr>
-                  <Td>paddingRight</Td>
-                  {SIZES.map((sz) => (
-                    <Td key={sz} mono>
-                      <div className="text-fg-secondary">var(--field-px)</div>
-                      <div className="text-fg-muted text-[10px]">12px（固定）</div>
-                    </Td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ── Visual preview: text mode ── */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽 — text 模式</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr>
-                <Th>Mode</Th>
-                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-              </tr></thead>
-              <tbody>
-                {MODES.map((m) => (
-                  <tr key={m}>
-                    <Td mono>{m}</Td>
-                    {SIZES.map((sz) => (
-                      <Td key={sz}>
-                        <Select aria-label={`狀態(${m} · ${sz} · text 模式)`} mode={m} display="plain" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
+      {/* ── text mode token table ── */}
+      <ExampleSection title="text 模式">
+        <div className="overflow-x-auto">
+          <table className="border-collapse text-caption">
+            <thead><tr>
+              <Th>屬性</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+            </tr></thead>
+            <tbody>
+              {([
+                { label: '高度', get: (s: SizeSpec) => ({ token: s.heightToken, sub: s.height }) },
+                { label: '左右內距', get: (s: SizeSpec) => ({ token: s.pxToken, sub: s.px }) },
+                { label: '元素間距', get: (s: SizeSpec) => ({ token: s.gapToken, sub: s.gap }) },
+                { label: '字體', get: (s: SizeSpec) => ({ token: s.fontToken, sub: s.font }) },
+                { label: 'Icon 尺寸', get: (s: SizeSpec) => ({ token: undefined, sub: `${s.icon}px` }) },
+              ]).map((row) => (
+                <tr key={row.label}>
+                  <Td>{row.label}</Td>
+                  {SIZES.map((sz) => {
+                    const { token, sub } = row.get(SIZE_SPECS[sz])
+                    return (
+                      <Td key={sz} mono>
+                        {token && <div className="text-fg-secondary">{token}</div>}
+                        {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
                       </Td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      </ExampleSection>
 
-        {/* ── Visual preview: tag mode ── */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽 — tag 模式</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr>
-                <Th>Mode</Th>
-                {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-              </tr></thead>
-              <tbody>
-                {MODES.map((m) => (
-                  <tr key={m}>
-                    <Td mono>{m}</Td>
-                    {SIZES.map((sz) => (
-                      <Td key={sz}>
-                        <Select aria-label={`狀態(${m} · ${sz} · tag 模式)`} mode={m} display="tag" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
-                      </Td>
-                    ))}
-                  </tr>
+      {/* ── tag mode additional tokens ── */}
+      <ExampleSection title="tag 模式額外 token" description={<>tag 模式的 padding 用 calc() 公式讓 Tag 四邊等距：px = (field-height − 2px 邊框 − tag-height) / 2（sm/md 3px、lg 5px）。右側 paddingRight 固定 12px（--field-px token）。</>}>
+        <div className="overflow-x-auto">
+          <table className="border-collapse text-caption">
+            <thead><tr>
+              <Th>屬性</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+            </tr></thead>
+            <tbody>
+              <tr>
+                <Td>Tag 尺寸</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">{sz === 'sm' ? 'tag-sm' : sz === 'md' ? 'tag-md' : 'tag-lg'}</div>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagHeight}</div>
+                  </Td>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+              <tr>
+                <Td>tagPadding (px)</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">calc()</div>
+                    <div className="text-fg-muted text-[10px]">{SIZE_SPECS[sz].tagPaddingFormula}</div>
+                  </Td>
+                ))}
+              </tr>
+              <tr>
+                <Td>paddingRight</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz} mono>
+                    <div className="text-fg-secondary">var(--field-px)</div>
+                    <div className="text-fg-muted text-[10px]">12px（固定）</div>
+                  </Td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+
+      {/* ── Visual preview: text mode ── */}
+      <ExampleSection title="預覽 — text 模式">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr>
+              <Th>Mode</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+            </tr></thead>
+            <tbody>
+              {MODES.map((m) => (
+                <tr key={m}>
+                  <Td mono>{m}</Td>
+                  {SIZES.map((sz) => (
+                    <Td key={sz}>
+                      <Select aria-label={`狀態(${m} · ${sz} · text 模式)`} mode={m} display="plain" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
+                    </Td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ExampleSection>
+
+      {/* ── Visual preview: tag mode ── */}
+      <ExampleSection title="預覽 — tag 模式">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr>
+              <Th>Mode</Th>
+              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+            </tr></thead>
+            <tbody>
+              {MODES.map((m) => (
+                <tr key={m}>
+                  <Td mono>{m}</Td>
+                  {SIZES.map((sz) => (
+                    <Td key={sz}>
+                      <Select aria-label={`狀態(${m} · ${sz} · tag 模式)`} mode={m} display="tag" size={sz} options={statusOptions} value="active" disabled={m === 'disabled'} />
+                    </Td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 

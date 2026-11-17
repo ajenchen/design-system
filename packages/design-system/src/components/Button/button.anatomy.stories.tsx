@@ -4,7 +4,7 @@ import { Plus, ChevronDown, Download, Trash2, Settings, Grid3x3, ListFilter, Arr
 import { Button } from './button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { BpZone, PropRow, Swatch, TkVal, TokenAnnotation } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { CAT_SUBTLE_TOKENS } from '@/design-system/tokens/categorical-color'
 
 const meta: Meta = {
@@ -448,19 +448,38 @@ export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
     // 標題區 → 兩張表 = loose(A4);兩張表之間維持原本的 32
-    <ExampleSection title="Variant × State 色彩對照" description="橫向看同 variant 的 state 變化，縱向比較不同 variant 的設計邏輯。色塊即時渲染，切 dark mode 自動更新。">
-    <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Variant × State 色彩對照" description="橫向看同 variant 的 state 變化，縱向比較不同 variant 的設計邏輯。色塊即時渲染，切 dark mode 自動更新。" />
+    <div className="overflow-x-auto">
+      <table className="border-collapse">
+        <thead><tr><Th>Variant</Th>{STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+        <tbody>
+          {VARIANTS.map((v) => (
+            <tr key={v}>
+              <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{v}</td>
+              {STATES.map((st) => (
+                <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
+                  <Button variant={v} size="sm" startIcon={Plus} disabled={st === 'disabled'}>{VARIANT_LABEL[v]}</Button>
+                  <TokenAnnotation colors={TOKEN_MAP[v][st]} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <ExampleSection title="danger = true">
       <div className="overflow-x-auto">
         <table className="border-collapse">
           <thead><tr><Th>Variant</Th>{STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
           <tbody>
-            {VARIANTS.map((v) => (
+            {DANGER_VARIANTS.map((v) => (
               <tr key={v}>
-                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{v}</td>
+                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{v} + danger</td>
                 {STATES.map((st) => (
                   <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
-                    <Button variant={v} size="sm" startIcon={Plus} disabled={st === 'disabled'}>{VARIANT_LABEL[v]}</Button>
-                    <TokenAnnotation colors={TOKEN_MAP[v][st]} />
+                    <Button variant={v} danger size="sm" startIcon={Trash2} disabled={st === 'disabled'}>{DANGER_LABEL[v]}</Button>
+                    <TokenAnnotation colors={DANGER_MAP[v]![st]} />
                   </td>
                 ))}
               </tr>
@@ -468,29 +487,8 @@ export const ColorMatrix = {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-col gap-2">
-        <span className="text-caption font-medium text-fg-secondary">danger = true</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>Variant</Th>{STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
-            <tbody>
-              {DANGER_VARIANTS.map((v) => (
-                <tr key={v}>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{v} + danger</td>
-                  {STATES.map((st) => (
-                    <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
-                      <Button variant={v} danger size="sm" startIcon={Trash2} disabled={st === 'disabled'}>{DANGER_LABEL[v]}</Button>
-                      <TokenAnnotation colors={DANGER_MAP[v]![st]} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
     </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -504,81 +502,79 @@ export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
     // 標題區 → 兩塊對照 = loose(A4);兩塊之間維持原本的 32
-    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。開發只需設 token，density 切換由系統自動處理。">
-    <div className="flex flex-col gap-8">
-      {/* Token comparison table */}
+    <ExampleStack>
+      <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。開發只需設 token，density 切換由系統自動處理。" />
+    {/* Token comparison table */}
+    <div className="overflow-x-auto">
+      <table className="border-collapse text-caption">
+        <thead><tr>
+          <Th>屬性</Th>
+          {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+        </tr></thead>
+        <tbody>
+          {([
+            { label: '高度', key: 'heightToken', sub: 'height', subFn: undefined as ((s: SizeSpec) => string) | undefined },
+            { label: '左右內距', key: 'pxToken', sub: undefined, subFn: (s: SizeSpec) => `${s.px}px` },
+            { label: '元素間距', key: 'gapToken', sub: undefined, subFn: (s: SizeSpec) => `${s.gap}px` },
+            { label: '字體', key: 'fontToken', sub: undefined, subFn: (s: SizeSpec) => s.font },
+            { label: 'Icon', key: undefined as string | undefined, sub: undefined, subFn: (s: SizeSpec) => `${s.icon}px` },
+            { label: 'Min Width', key: 'minWToken', sub: undefined, subFn: undefined as ((s: SizeSpec) => string) | undefined },
+          ] as const).map((row) => (
+            <tr key={row.label}>
+              <Td>{row.label}</Td>
+              {SIZES.map((sz) => {
+                const spec = SIZE_SPECS[sz]
+                const token = row.key ? spec[row.key as keyof SizeSpec] as string : undefined
+                const sub = row.sub ? spec[row.sub as keyof SizeSpec] as string : row.subFn?.(spec)
+                return (
+                  <Td key={sz} mono>
+                    {token && <div className="text-fg-secondary">{token}</div>}
+                    {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
+                  </Td>
+                )
+              })}
+            </tr>
+          ))}
+          {/* iconOnly overrides */}
+          <tr>
+            <Td>iconOnly 覆寫</Td>
+            {SIZES.map((sz) => (
+              <Td key={sz} mono>
+                <div className="text-fg-secondary">p-0 + aspect-square</div>
+                <div className="text-fg-muted text-[10px]">自然正方形 · min-w-0</div>
+              </Td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {/* Visual preview */}
+    <ExampleSection title="預覽">
       <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
+        <table className="border-collapse">
           <thead><tr>
-            <Th>屬性</Th>
-            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+            <Th>Variant</Th>
+            {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
+            {SIZES.map((sz) => <Th key={`io-${sz}`}>{sz} iconOnly</Th>)}
           </tr></thead>
           <tbody>
-            {([
-              { label: '高度', key: 'heightToken', sub: 'height', subFn: undefined as ((s: SizeSpec) => string) | undefined },
-              { label: '左右內距', key: 'pxToken', sub: undefined, subFn: (s: SizeSpec) => `${s.px}px` },
-              { label: '元素間距', key: 'gapToken', sub: undefined, subFn: (s: SizeSpec) => `${s.gap}px` },
-              { label: '字體', key: 'fontToken', sub: undefined, subFn: (s: SizeSpec) => s.font },
-              { label: 'Icon', key: undefined as string | undefined, sub: undefined, subFn: (s: SizeSpec) => `${s.icon}px` },
-              { label: 'Min Width', key: 'minWToken', sub: undefined, subFn: undefined as ((s: SizeSpec) => string) | undefined },
-            ] as const).map((row) => (
-              <tr key={row.label}>
-                <Td>{row.label}</Td>
-                {SIZES.map((sz) => {
-                  const spec = SIZE_SPECS[sz]
-                  const token = row.key ? spec[row.key as keyof SizeSpec] as string : undefined
-                  const sub = row.sub ? spec[row.sub as keyof SizeSpec] as string : row.subFn?.(spec)
-                  return (
-                    <Td key={sz} mono>
-                      {token && <div className="text-fg-secondary">{token}</div>}
-                      {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
-                    </Td>
-                  )
-                })}
+            {VARIANTS.map((v) => (
+              <tr key={v}>
+                <Td mono>{v}</Td>
+                {SIZES.map((sz) => (
+                  <Td key={sz}><Button variant={v} size={sz} startIcon={Plus}>{VARIANT_LABEL[v]}</Button></Td>
+                ))}
+                {SIZES.map((sz) => (
+                  <Td key={`io-${sz}`}><Button variant={v} size={sz} iconOnly startIcon={Plus} aria-label={VARIANT_LABEL[v]} /></Td>
+                ))}
               </tr>
             ))}
-            {/* iconOnly overrides */}
-            <tr>
-              <Td>iconOnly 覆寫</Td>
-              {SIZES.map((sz) => (
-                <Td key={sz} mono>
-                  <div className="text-fg-secondary">p-0 + aspect-square</div>
-                  <div className="text-fg-muted text-[10px]">自然正方形 · min-w-0</div>
-                </Td>
-              ))}
-            </tr>
           </tbody>
         </table>
       </div>
-
-      {/* Visual preview */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr>
-              <Th>Variant</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}</Th>)}
-              {SIZES.map((sz) => <Th key={`io-${sz}`}>{sz} iconOnly</Th>)}
-            </tr></thead>
-            <tbody>
-              {VARIANTS.map((v) => (
-                <tr key={v}>
-                  <Td mono>{v}</Td>
-                  {SIZES.map((sz) => (
-                    <Td key={sz}><Button variant={v} size={sz} startIcon={Plus}>{VARIANT_LABEL[v]}</Button></Td>
-                  ))}
-                  {SIZES.map((sz) => (
-                    <Td key={`io-${sz}`}><Button variant={v} size={sz} iconOnly startIcon={Plus} aria-label={VARIANT_LABEL[v]} /></Td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
     </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -590,66 +586,62 @@ export const StateBehavior = {
   name: '狀態行為',
   render: () => (
     // 標題區 → 各段 = loose(A4);各段之間維持原本的 32
-    <ExampleSection title="狀態行為" description="Loading、disabled、pressed toggle 的視覺變化與行為規則。">
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">Loading — CircularProgress 替換規則</span>
-        {[
-          { label: '有 startIcon', before: <Button variant="primary" startIcon={Download}>匯出</Button>, after: <Button variant="primary" startIcon={Download} loading>匯出</Button>, desc: 'startIcon → CircularProgress(同位置)' },
-          { label: '無 startIcon', before: <Button variant="primary">儲存</Button>, after: <Button variant="primary" loading>儲存</Button>, desc: 'CircularProgress 加在文字左側' },
-          { label: 'iconOnly', before: <Button iconOnly startIcon={Download} aria-label="下載" />, after: <Button iconOnly startIcon={Download} loading aria-label="下載" />, desc: 'CircularProgress 替換 icon' },
-          { label: '有 endIcon', before: <Button variant="primary" startIcon={Download} endIcon={ChevronDown}>匯出</Button>, after: <Button variant="primary" startIcon={Download} loading endIcon={ChevronDown}>匯出</Button>, desc: 'endIcon 維持顯示' },
-        ].map(({ label, before, after, desc }) => (
-          <div key={label} className="flex items-center gap-3">
-            <span className="text-[11px] text-fg-muted w-20 shrink-0">{label}</span>
-            {before}<span className="text-fg-muted text-caption">→</span>{after}
-            <span className="text-[11px] text-fg-muted">{desc}</span>
+    <ExampleStack>
+      <ExampleSection title="狀態行為" description="Loading、disabled、pressed toggle 的視覺變化與行為規則。" />
+    <ExampleSection title="Loading — CircularProgress 替換規則">
+      {[
+        { label: '有 startIcon', before: <Button variant="primary" startIcon={Download}>匯出</Button>, after: <Button variant="primary" startIcon={Download} loading>匯出</Button>, desc: 'startIcon → CircularProgress(同位置)' },
+        { label: '無 startIcon', before: <Button variant="primary">儲存</Button>, after: <Button variant="primary" loading>儲存</Button>, desc: 'CircularProgress 加在文字左側' },
+        { label: 'iconOnly', before: <Button iconOnly startIcon={Download} aria-label="下載" />, after: <Button iconOnly startIcon={Download} loading aria-label="下載" />, desc: 'CircularProgress 替換 icon' },
+        { label: '有 endIcon', before: <Button variant="primary" startIcon={Download} endIcon={ChevronDown}>匯出</Button>, after: <Button variant="primary" startIcon={Download} loading endIcon={ChevronDown}>匯出</Button>, desc: 'endIcon 維持顯示' },
+      ].map(({ label, before, after, desc }) => (
+        <div key={label} className="flex items-center gap-3">
+          <span className="text-[11px] text-fg-muted w-20 shrink-0">{label}</span>
+          {before}<span className="text-fg-muted text-caption">→</span>{after}
+          <span className="text-[11px] text-fg-muted">{desc}</span>
+        </div>
+      ))}
+    </ExampleSection>
+
+    <ExampleSection title="Disabled — 互動色 / 危險色移除，統一 neutral（含 danger）">
+      <div className="flex flex-wrap gap-3">
+        {VARIANTS.map((v) => (
+          <div key={v} className="flex flex-col items-center gap-1">
+            <Button variant={v} disabled startIcon={Plus}>{VARIANT_LABEL[v]}</Button>
+            <span className="text-[10px] text-fg-muted">{v}</span>
           </div>
         ))}
       </div>
-
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Disabled — 互動色 / 危險色移除，統一 neutral（含 danger）</span>
-        <div className="flex flex-wrap gap-3">
-          {VARIANTS.map((v) => (
-            <div key={v} className="flex flex-col items-center gap-1">
-              <Button variant={v} disabled startIcon={Plus}>{VARIANT_LABEL[v]}</Button>
-              <span className="text-[10px] text-fg-muted">{v}</span>
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-3">
-          {VARIANTS.map((v) => (
-            <div key={v} className="flex flex-col items-center gap-1">
-              <Button variant={v} disabled iconOnly startIcon={Plus} aria-label={v} />
-              <span className="text-[10px] text-fg-muted">{v} iconOnly</span>
-            </div>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-3">
+        {VARIANTS.map((v) => (
+          <div key={v} className="flex flex-col items-center gap-1">
+            <Button variant={v} disabled iconOnly startIcon={Plus} aria-label={v} />
+            <span className="text-[10px] text-fg-muted">{v} iconOnly</span>
+          </div>
+        ))}
       </div>
-
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Pressed prop — binary toggle（on / off）</span>
-        <p className="text-[11px] text-fg-muted">設定 pressed 時 Button 自動寫 aria-pressed + data-state，樣式由 variant 的 data-[state=on] 分支套用。僅 secondary/tertiary/text 有視覺效果。</p>
-        <div className="flex flex-col gap-2">
-          {PRESSED_VARIANTS.map((v) => (
-            <div key={v} className="flex items-center gap-3">
-              <span className="text-[11px] text-fg-muted w-20 font-mono">{v}</span>
-              <Button variant={v} iconOnly startIcon={Settings} aria-label={`${v}（關）`} />
-              <span className="text-fg-muted">⇄</span>
-              <Button variant={v} pressed iconOnly startIcon={Settings} aria-label={`${v}（開）`} />
-              <span className="text-[11px] text-fg-muted">
-                {`${v} + pressed → primary-subtle 系列（預設 pressedTone="emphasis"；傳 pressedTone="neutral" 則為 neutral-selected 灰底，見下一段）`}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <NeutralToggleLadder />
-      <StateStackingSnapshot />
-    </div>
     </ExampleSection>
+
+    <ExampleSection title="Pressed prop — binary toggle（on / off）">
+      <p className="text-[11px] text-fg-muted">設定 pressed 時 Button 自動寫 aria-pressed + data-state，樣式由 variant 的 data-[state=on] 分支套用。僅 secondary/tertiary/text 有視覺效果。</p>
+      <div className="flex flex-col gap-2">
+        {PRESSED_VARIANTS.map((v) => (
+          <div key={v} className="flex items-center gap-3">
+            <span className="text-[11px] text-fg-muted w-20 font-mono">{v}</span>
+            <Button variant={v} iconOnly startIcon={Settings} aria-label={`${v}（關）`} />
+            <span className="text-fg-muted">⇄</span>
+            <Button variant={v} pressed iconOnly startIcon={Settings} aria-label={`${v}（開）`} />
+            <span className="text-[11px] text-fg-muted">
+              {`${v} + pressed → primary-subtle 系列（預設 pressedTone="emphasis"；傳 pressedTone="neutral" 則為 neutral-selected 灰底，見下一段）`}
+            </span>
+          </div>
+        ))}
+      </div>
+    </ExampleSection>
+
+    <NeutralToggleLadder />
+    <StateStackingSnapshot />
+    </ExampleStack>
   ),
 }
 
@@ -723,20 +715,23 @@ function NeutralToggleLadderTable({ variant, ladder, idPrefix }: { variant: 'tex
   )
 }
 
+// 「狀態行為」那一疊(ExampleStack)裡的兩個有標題的小區塊:各自是一個 ExampleSection(layoutSpace.spec.md 規則 3「標題區 → 內容」第 3 題 + 「組 ↔ 組」)
 function NeutralToggleLadder() {
   return (
-    <div className="flex flex-col gap-3">
-      <span className="text-caption font-medium text-fg-secondary">灰色已按下切換鈕 — pressedTone="neutral"(可取消的切換鈕;導覽 / 目前頁不用它)</span>
-      <p className="text-[11px] text-fg-muted">
-        兩個型態各有自己的一條階梯:未按下 透明 → neutral-1 → neutral-2;已按下 neutral-2 → neutral-3 → neutral-4(同一個滑鼠狀態下開與關都分得出來)。滑過欄用開啟中的快照畫(開啟中 = 自己的滑過)。
-      </p>
-      <NeutralToggleLadderTable variant="text" ladder={NEUTRAL_TOGGLE_LADDER} idPrefix="neutral-toggle" />
-      <span className="text-caption font-medium text-fg-secondary">白底(secondary)切換鈕 — 已按下三階疊在 --surface 上(不換底)</span>
-      <p className="text-[11px] text-fg-muted">
-        白底鈕的底是「底」(--surface),已按下依配對總則第 2 列疊層而不換底:淺色看起來與換底相同,深色 --surface 與 --neutral-selected 都是白 8%,換底的話已按下會跟未按下一模一樣 —— 切到深色主題看這一表就看得出差別。
-      </p>
-      <NeutralToggleLadderTable variant="secondary" ladder={NEUTRAL_TOGGLE_LADDER_SECONDARY} idPrefix="neutral-toggle-secondary" />
-    </div>
+    <>
+      <ExampleSection
+        title='灰色已按下切換鈕 — pressedTone="neutral"(可取消的切換鈕;導覽 / 目前頁不用它)'
+        description="兩個型態各有自己的一條階梯:未按下 透明 → neutral-1 → neutral-2;已按下 neutral-2 → neutral-3 → neutral-4(同一個滑鼠狀態下開與關都分得出來)。滑過欄用開啟中的快照畫(開啟中 = 自己的滑過)。"
+      >
+        <NeutralToggleLadderTable variant="text" ladder={NEUTRAL_TOGGLE_LADDER} idPrefix="neutral-toggle" />
+      </ExampleSection>
+      <ExampleSection
+        title="白底(secondary)切換鈕 — 已按下三階疊在 --surface 上(不換底)"
+        description="白底鈕的底是「底」(--surface),已按下依配對總則第 2 列疊層而不換底:淺色看起來與換底相同,深色 --surface 與 --neutral-selected 都是白 8%,換底的話已按下會跟未按下一模一樣 —— 切到深色主題看這一表就看得出差別。"
+      >
+        <NeutralToggleLadderTable variant="secondary" ladder={NEUTRAL_TOGGLE_LADDER_SECONDARY} idPrefix="neutral-toggle-secondary" />
+      </ExampleSection>
+    </>
   )
 }
 
@@ -783,8 +778,7 @@ const STACKING_ROWS: { label: string; note: string; render: () => React.ReactNod
 
 function StateStackingSnapshot() {
   return (
-    <div className="flex flex-col gap-3">
-      <span className="text-caption font-medium text-fg-secondary">狀態疊加 — 開啟中 / 已按下 / aria-disabled</span>
+    <ExampleSection title="狀態疊加 — 開啟中 / 已按下 / aria-disabled">
       <div className="flex flex-col gap-2">
         {STACKING_ROWS.map(({ label, note, render }) => (
           <div key={label} className="flex flex-col gap-1">
@@ -796,7 +790,7 @@ function StateStackingSnapshot() {
           </div>
         ))}
       </div>
-    </div>
+    </ExampleSection>
   )
 }
 

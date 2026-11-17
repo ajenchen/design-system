@@ -57,13 +57,15 @@ type Story = StoryObj<typeof AppShell>
 const MAIN_MIN_WIDTH = 600
 
 const ch = createColumnHelper<Issue>()
+// 欄名與日期跟設計規格「元件總覽」的 Sprint 議題表(_demo-helpers.tsx SPRINT_OPEN_COLUMNS)、Right panel 議題詳情同一套:
+// 中文欄名;截止日 type 'date' = DataTable 日期欄的格式化路徑(YYYY/MM/DD,date-picker.spec.md「格式化」),不直接印 ISO 字串(2026-11-17)
 const ISSUE_COLUMNS = [
-  ch.accessor('id',       { header: 'ID',       meta: { width: 100 } }),
-  ch.accessor('title',    { header: 'Issue',    meta: { width: 280, minWidth: 160 } }),
-  ch.accessor('status',   { header: 'Status',   meta: { width: 120 } }),
-  ch.accessor('assignee', { header: 'Assignee', meta: { width: 140 } }),
-  ch.accessor('priority', { header: 'Priority', meta: { width: 90 } }),
-  ch.accessor('due',      { header: 'Due',      meta: { width: 110 } }),
+  ch.accessor('id',       { header: '議題',   meta: { width: 100 } }),
+  ch.accessor('title',    { header: '標題',   meta: { width: 280, minWidth: 160 } }),
+  ch.accessor('status',   { header: '狀態',   meta: { width: 120 } }),
+  ch.accessor('assignee', { header: '負責人', meta: { width: 140 } }),
+  ch.accessor('priority', { header: '優先級', meta: { width: 90 } }),
+  ch.accessor('due',      { header: '截止日', meta: { type: 'date', width: 110 } }),
 ]
 
 /**

@@ -10,7 +10,7 @@ import { MenuItem, MenuGroup } from './menu-item'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 // Avatar is now passed as AvatarData (data object), rendered internally by MenuItem
 
@@ -518,104 +518,100 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="State 色彩對照" description="單選用 bg-neutral-selected 背景指示選中，多選用 Checkbox 勾選——背景不變。disabled 時文字 / startIcon 用 fg-disabled、tag / endContent / startContent 用 opacity-disabled、checkbox 走自身 disabled、avatar 不變暗。色塊即時渲染，切 dark mode 自動更新。">
-    <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="State 色彩對照" description="單選用 bg-neutral-selected 背景指示選中，多選用 Checkbox 勾選——背景不變。disabled 時文字 / startIcon 用 fg-disabled、tag / endContent / startContent 用 opacity-disabled、checkbox 走自身 disabled、avatar 不變暗。色塊即時渲染，切 dark mode 自動更新。" />
 
-      {/* Single-select */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">單選（selected = bg-neutral-selected）</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>State</Th><Th>預覽</Th><Th>Token</Th></tr></thead>
-            <tbody>
-              {STATES.map((st) => (
-                <tr key={st}>
-                  <Td mono>{st}</Td>
-                  <td className="p-3 border-b border-divider align-top min-w-[280px]">
-                    <MenuContainer width={260}>
-                      <MenuGroup>
-                        <MenuItem role="presentation"
-                          size="md"
-                          startIcon={Mail}
-                          selected={st === 'selected'}
-                          disabled={st === 'disabled'}
-                          description="摘要通知"
-                        >
-                          電子郵件
-                        </MenuItem>
-                      </MenuGroup>
-                    </MenuContainer>
-                  </td>
-                  <td className="p-3 border-b border-divider align-top min-w-[200px]">
-                    <TokenAnnotation colors={SINGLE_TOKEN_MAP[st]} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+    {/* Single-select */}
+    <ExampleSection title="單選（selected = bg-neutral-selected）">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead><tr><Th>State</Th><Th>預覽</Th><Th>Token</Th></tr></thead>
+          <tbody>
+            {STATES.map((st) => (
+              <tr key={st}>
+                <Td mono>{st}</Td>
+                <td className="p-3 border-b border-divider align-top min-w-[280px]">
+                  <MenuContainer width={260}>
+                    <MenuGroup>
+                      <MenuItem role="presentation"
+                        size="md"
+                        startIcon={Mail}
+                        selected={st === 'selected'}
+                        disabled={st === 'disabled'}
+                        description="摘要通知"
+                      >
+                        電子郵件
+                      </MenuItem>
+                    </MenuGroup>
+                  </MenuContainer>
+                </td>
+                <td className="p-3 border-b border-divider align-top min-w-[200px]">
+                  <TokenAnnotation colors={SINGLE_TOKEN_MAP[st]} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-
-      {/* Multi-select */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">多選（selected = checkbox 勾選，背景不變）</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>State</Th><Th>預覽</Th><Th>Token</Th></tr></thead>
-            <tbody>
-              {STATES.map((st) => (
-                <tr key={st}>
-                  <Td mono>{st}</Td>
-                  <td className="p-3 border-b border-divider align-top min-w-[280px]">
-                    <MenuContainer width={260}>
-                      <MenuGroup>
-                        <MenuItem role="presentation"
-                          size="md"
-                          startIcon={Mail}
-                          checkbox
-                          checked={st === 'selected'}
-                          disabled={st === 'disabled'}
-                          description="摘要通知"
-                        >
-                          電子郵件
-                        </MenuItem>
-                      </MenuGroup>
-                    </MenuContainer>
-                  </td>
-                  <td className="p-3 border-b border-divider align-top min-w-[200px]">
-                    <TokenAnnotation colors={MULTI_TOKEN_MAP[st]} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Header */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">Header（群組標題）</span>
-        <div className="flex items-start gap-4">
-          <MenuContainer width={260}>
-            <MenuGroup>
-              <MenuItem role="presentation" size="md" header>群組標題</MenuItem>
-              <MenuItem role="presentation" size="md" startIcon={FileText}>一般選項</MenuItem>
-            </MenuGroup>
-          </MenuContainer>
-          <div className="flex flex-col gap-0.5">
-            <span className="inline-flex items-center gap-1 text-[10px]">
-              <span className="text-fg-muted w-7 shrink-0">text</span>
-              <span className="font-mono text-fg-secondary">--fg-muted + font-medium</span>
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px]">
-              <span className="text-fg-muted w-7 shrink-0">互動</span>
-              <span className="font-mono text-fg-secondary">pointer-events-none</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
     </ExampleSection>
+
+    {/* Multi-select */}
+    <ExampleSection title="多選（selected = checkbox 勾選，背景不變）">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead><tr><Th>State</Th><Th>預覽</Th><Th>Token</Th></tr></thead>
+          <tbody>
+            {STATES.map((st) => (
+              <tr key={st}>
+                <Td mono>{st}</Td>
+                <td className="p-3 border-b border-divider align-top min-w-[280px]">
+                  <MenuContainer width={260}>
+                    <MenuGroup>
+                      <MenuItem role="presentation"
+                        size="md"
+                        startIcon={Mail}
+                        checkbox
+                        checked={st === 'selected'}
+                        disabled={st === 'disabled'}
+                        description="摘要通知"
+                      >
+                        電子郵件
+                      </MenuItem>
+                    </MenuGroup>
+                  </MenuContainer>
+                </td>
+                <td className="p-3 border-b border-divider align-top min-w-[200px]">
+                  <TokenAnnotation colors={MULTI_TOKEN_MAP[st]} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </ExampleSection>
+
+    {/* Header */}
+    <ExampleSection title="Header（群組標題）">
+      <div className="flex items-start gap-4">
+        <MenuContainer width={260}>
+          <MenuGroup>
+            <MenuItem role="presentation" size="md" header>群組標題</MenuItem>
+            <MenuItem role="presentation" size="md" startIcon={FileText}>一般選項</MenuItem>
+          </MenuGroup>
+        </MenuContainer>
+        <div className="flex flex-col gap-0.5">
+          <span className="inline-flex items-center gap-1 text-[10px]">
+            <span className="text-fg-muted w-7 shrink-0">text</span>
+            <span className="font-mono text-fg-secondary">--fg-muted + font-medium</span>
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px]">
+            <span className="text-fg-muted w-7 shrink-0">互動</span>
+            <span className="font-mono text-fg-secondary">pointer-events-none</span>
+          </span>
+        </div>
+      </div>
+    </ExampleSection>
+    </ExampleStack>
   ),
 }
 

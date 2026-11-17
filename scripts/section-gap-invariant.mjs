@@ -111,7 +111,9 @@ export const CASES = [
   // 標題區 → 內容(2026-11-11):at = 要量的標題區種類 —— h3 = 設計規格頁單獨的 H3、h3+desc = H3 後面緊接 Desc(標題區的尾巴是 Desc)、
   // es = ExampleSection、rule = TutorialRule;text = 標題字樣(開頭比對),一塊 → tight、兩塊以上 → loose。各挑一頁實際的設計規格 / 設計原則頁。
   { id: 'heading-h3-one-table', kind: 'heading-one', story: 'design-system-internal-notice-設計規格--overview', at: 'h3', text: 'Slot 對照', label: 'Notice 設計規格「Slot 對照」→ 一張表(外包一層捲動容器)' },
-  { id: 'heading-es-many-sections', kind: 'heading-many', story: 'design-system-components-button-設計規格--state-behavior', at: 'es', text: '狀態行為', label: 'Button 設計規格「狀態行為」→ 一個容器裡隔 32 的三段' },
+  // 2026-11-17 前是 Button 設計規格「狀態行為」(一個容器裡隔 32 的三段):那三段各有小標,照 layoutSpace.spec.md 規則 3 第 3 題改成 ExampleStack
+  // (段落標題 → 第一塊 = 塊與塊之間 = loose × 2,doc-heading-inventory A4 量),已不是「一個 ExampleSection、內容一個容器」的幾何 → 換這一則
+  { id: 'heading-es-many-sections', kind: 'heading-many', story: 'design-system-components-datepicker-設計規格--overview', at: 'es', text: 'FieldMode 一覽', label: 'DatePicker 設計規格「FieldMode 一覽」→ 一個容器裡的兩段(各模式一覽 + 註腳)' },
   { id: 'heading-rule-many-examples', kind: 'heading-many', story: 'design-system-components-badge-設計原則--default-low-rule', at: 'rule', text: '選 level 時問', label: 'Badge 設計原則「選 level 時問…」→ 四則範例' },
   { id: 'heading-rule-one-example', kind: 'heading-one', story: 'design-system-components-badge-設計原則--default-low-rule', at: 'rule', text: '❌ 把 passive count 當 critical', label: 'Badge 設計原則「❌ 把 passive count 當 critical」→ 一則範例 + 說明' },
   // 好幾個示範塊彼此只隔 tight 也是兩塊以上 → loose(user 2026-11-12 第四批成品頁「多塊緊排」= 乙);三種共用元件各一頁。
@@ -148,7 +150,7 @@ export const CASES = [
   // 內容量起來全是 0 → 判成一塊 —— 再顯示、不再請產品重判,量「標題區底 → 內容頂」要回到兩塊以上的 loose(= 產品自己重判了)。
   // 四種標題區各挑一列「靠距離數出兩塊以上」的(結構上就是並列的那種藏起來也判 many,量不到有沒有重判);都是上面已經量過、判 many 的同一個標題區。
   // 歷史紅燈:A11 改之前的建置(9d3c4736 + A12 / A13 工作樹)四列兩種密度都停在 tight(藏著時判的一塊)。
-  { id: 'heading-reveal-es', kind: 'heading-reveal', story: 'design-system-components-button-設計規格--state-behavior', at: 'es', text: '狀態行為', label: 'Button 設計規格「狀態行為」藏起來判一次 → 顯示(ExampleSection)' },
+  { id: 'heading-reveal-es', kind: 'heading-reveal', story: 'design-system-components-datepicker-設計規格--overview', at: 'es', text: 'FieldMode 一覽', label: 'DatePicker 設計規格「FieldMode 一覽」藏起來判一次 → 顯示(ExampleSection;2026-11-17 前是 Button「狀態行為」,理由同上方 heading-es-many-sections)' },
   { id: 'heading-reveal-rule', kind: 'heading-reveal', story: 'design-system-components-badge-設計原則--default-low-rule', at: 'rule', text: '選 level 時問', label: 'Badge 設計原則「選 level 時問…」藏起來判一次 → 顯示(TutorialRule)' },
   { id: 'heading-reveal-h3', kind: 'heading-reveal', story: 'design-system-components-progressbar-設計規格--overview', at: 'h3', text: 'Status 一覽', label: 'ProgressBar 設計規格「Status 一覽」藏起來判一次 → 顯示(單獨的 H3)' },
   { id: 'heading-reveal-desc', kind: 'heading-reveal', story: 'design-system-components-tabs-設計規格--size-matrix', at: 'h3+desc', text: '三種 Size', label: 'Tabs 設計規格「三種 Size」藏起來判一次 → 顯示(H3 + Desc)' },

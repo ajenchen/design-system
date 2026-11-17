@@ -69,6 +69,44 @@ export const listHeadingZonesInPage = (options) => {
   }
   const round = (v) => Math.round(v * 10) / 10
   const text = (el) => String(el?.textContent ?? '').replace(/\s+/g, ' ').trim()
+  // ── 「有自己標題的小區塊」那一格(A4,2026-11-17):layoutSpace.spec.md 規則 3「標題區 → 內容」第 3 題「標題到第一個 = 東西之間」——
+  //    標題區之後是好幾個上下疊的區塊、其中有自帶標題的區塊時,量「標題區底 → 第一塊頂」與「塊與塊之間」。只管 ExampleSection 標題區
+  //    (含 ExampleStack 的第一個子節點 = 那一疊的段落標題);H3 / Desc 不在這一格。區塊 = 內容節點,唯一一個且是只負責排版的容器(只帶 class / style
+  //    的 div / section)就往裡看一層,直到不是。自帶標題 = 本身是 ExampleSection,或第一個佔位置的子節點是 H1–H6 / 設計規格頁 H3 /
+  //    一行半粗以上、只有字的 span / div / p / strong / b(手寫小標),而且後面還有東西。
+  const WRAPPER_ATTRS = ['class', 'style']
+  const isLayoutWrapper = (n) => ['DIV', 'SECTION'].includes(n.tagName) && Array.from(n.attributes).every((a) => WRAPPER_ATTRS.includes(a.name))
+  const INLINE_TAGS = ['CODE', 'STRONG', 'EM', 'B', 'I', 'SPAN', 'BR', 'KBD', 'SMALL']
+  const isTitleLike = (n) => {
+    if (/^H[1-6]$/.test(n.tagName) || n.hasAttribute('data-spec-heading')) return true
+    if (!['SPAN', 'DIV', 'P', 'STRONG', 'B'].includes(n.tagName)) return false
+    if (!Array.from(n.querySelectorAll('*')).every((c) => INLINE_TAGS.includes(c.tagName))) return false
+    const t = text(n)
+    if (!t || t.length > 80) return false
+    const cs = getComputedStyle(n)
+    if (!(parseFloat(cs.fontWeight) >= 500)) return false
+    const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4
+    return n.getBoundingClientRect().height <= lh * 1.5
+  }
+  const hasOwnTitle = (block) => {
+    if (block.hasAttribute('data-example-section')) return true
+    const kids = inFlowChildren(block)
+    return kids.length >= 2 && isTitleLike(kids[0])
+  }
+  /** 標題區底(`top` 參照)→ 區塊們;不適用(少於兩塊、沒有自帶標題的、有左右並排的)→ null。 */
+  const titledBlocksOf = (headBottom, blocks) => {
+    let list = blocks
+    while (list.length === 1 && isLayoutWrapper(list[0])) list = inFlowChildren(list[0])
+    if (list.length < 2 || !list.some(hasOwnTitle)) return null
+    const rects = list.map((b) => b.getBoundingClientRect())
+    for (let i = 1; i < rects.length; i++) if (rects[i].top < rects[i - 1].bottom - 1) return null // 左右並排:不是上下疊
+    return {
+      count: list.length,
+      titled: list.filter(hasOwnTitle).length,
+      first: round(rects[0].top - headBottom),
+      between: rects.slice(1).map((r, i) => round(r.top - rects[i].bottom)),
+    }
+  }
   const zones = []
   for (const el of document.querySelectorAll(selector)) {
     let kind; let title; let mode; let label = null; let next = null
@@ -102,7 +140,15 @@ export const listHeadingZonesInPage = (options) => {
     const tight = parseFloat(cs.getPropertyValue('--layout-space-tight'))
     const visible = Boolean(label) && el.getBoundingClientRect().height > 0 && label.getBoundingClientRect().height > 0
     const gap = visible && next ? round(next.getBoundingClientRect().top - label.getBoundingClientRect().bottom) : null
-    zones.push({ kind, title, mark: el.getAttribute('data-heading-content'), mode, loose, tight, gap, hasContent: Boolean(next), visible })
+    // A4:ExampleSection 的內容;沒有內容、又是 ExampleStack 第一個子節點(那一疊的段落標題)→ 內容 = 同一疊後面的子節點
+    let titledBlocks = null
+    if (visible && (kind === 'es' || kind === 'rule')) {
+      const content = inFlowChildren(el).slice(1)
+      const parent = el.parentElement
+      if (content.length) titledBlocks = titledBlocksOf(label.getBoundingClientRect().bottom, content)
+      else if (parent?.hasAttribute('data-example-stack') && inFlowChildren(parent)[0] === el) titledBlocks = titledBlocksOf(el.getBoundingClientRect().bottom, inFlowChildren(parent).slice(1))
+    }
+    zones.push({ kind, title, mark: el.getAttribute('data-heading-content'), mode, loose, tight, gap, hasContent: Boolean(next), visible, titledBlocks })
   }
   return zones
 }

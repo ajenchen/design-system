@@ -8,7 +8,7 @@ import { useState, useEffect, type ComponentProps } from 'react'
 import { LinkInput } from './link-input'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { BpZone, PropRow, type FieldSizeSpec as SizeSpec, Swatch, TkVal, TokenAnnotation } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/LinkInput/設計規格',
@@ -419,160 +419,156 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Mode x State 色彩對照" description="LinkInput 的色彩設計重點：edit-link 狀態的 value 用 text-primary 呈現為可點擊連結；error 狀態的邊框用 border-error。色塊即時渲染，切 dark mode 自動更新。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Mode x State 色彩對照" description="LinkInput 的色彩設計重點：edit-link 狀態的 value 用 text-primary 呈現為可點擊連結；error 狀態的邊框用 border-error。色塊即時渲染，切 dark mode 自動更新。" />
 
-        {/* edit mode — 3 states */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">edit 模式</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead>
-                <tr>
-                  <Th>State</Th>
-                  <Th>預覽</Th>
-                  <Th>Wrapper</Th>
-                  <Th>Value</Th>
-                  <Th>Pencil</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {EDIT_STATES.map((st) => {
-                  const c = COLOR_MAP.edit[st]!
-                  return (
-                    <tr key={st}>
-                      <Td mono>{st}</Td>
-                      <td className="p-3 border-b border-divider min-w-[200px]">
-                        {st === 'link' && <LiveLinkInput mode="edit" value="https://github.com" />}
-                        {st === 'input' && <LiveLinkInput mode="edit" value="" />}
-                        {st === 'error' && <LiveLinkInput mode="edit" value="" error />}
-                      </td>
-                      <td className="p-3 border-b border-divider align-top">
-                        <TokenAnnotation colors={c.wrapper} />
-                      </td>
-                      <td className="p-3 border-b border-divider align-top">
-                        <span className="inline-flex items-center gap-1 text-footnote">
-                          <Swatch value={c.value} size="sm" />
-                          <span className="font-mono text-fg-secondary">{c.value}</span>
-                        </span>
-                      </td>
-                      <td className="p-3 border-b border-divider align-top">
-                        {c.pencil !== '—' ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1 text-footnote">
-                              <Swatch value={c.pencil} size="sm" />
-                              <span className="font-mono text-fg-secondary">{c.pencil}</span>
-                              <span className="text-fg-muted">default</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-footnote">
-                              <Swatch value={c.pencilHover} size="sm" />
-                              <span className="font-mono text-fg-secondary">{c.pencilHover}</span>
-                              <span className="text-fg-muted">hover</span>
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-footnote text-fg-muted">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+      {/* edit mode — 3 states */}
+      <ExampleSection title="edit 模式">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead>
+              <tr>
+                <Th>State</Th>
+                <Th>預覽</Th>
+                <Th>Wrapper</Th>
+                <Th>Value</Th>
+                <Th>Pencil</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {EDIT_STATES.map((st) => {
+                const c = COLOR_MAP.edit[st]!
+                return (
+                  <tr key={st}>
+                    <Td mono>{st}</Td>
+                    <td className="p-3 border-b border-divider min-w-[200px]">
+                      {st === 'link' && <LiveLinkInput mode="edit" value="https://github.com" />}
+                      {st === 'input' && <LiveLinkInput mode="edit" value="" />}
+                      {st === 'error' && <LiveLinkInput mode="edit" value="" error />}
+                    </td>
+                    <td className="p-3 border-b border-divider align-top">
+                      <TokenAnnotation colors={c.wrapper} />
+                    </td>
+                    <td className="p-3 border-b border-divider align-top">
+                      <span className="inline-flex items-center gap-1 text-footnote">
+                        <Swatch value={c.value} size="sm" />
+                        <span className="font-mono text-fg-secondary">{c.value}</span>
+                      </span>
+                    </td>
+                    <td className="p-3 border-b border-divider align-top">
+                      {c.pencil !== '—' ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="inline-flex items-center gap-1 text-footnote">
+                            <Swatch value={c.pencil} size="sm" />
+                            <span className="font-mono text-fg-secondary">{c.pencil}</span>
+                            <span className="text-fg-muted">default</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-footnote">
+                            <Swatch value={c.pencilHover} size="sm" />
+                            <span className="font-mono text-fg-secondary">{c.pencilHover}</span>
+                            <span className="text-fg-muted">hover</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-footnote text-fg-muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
+      </ExampleSection>
 
-        {/* readonly + disabled */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">readonly / disabled</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead>
-                <tr>
-                  <Th>Mode</Th>
-                  <Th>預覽</Th>
-                  <Th>Wrapper</Th>
-                  <Th>Value</Th>
-                  <Th>說明</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {(['readonly', 'disabled'] as const).map((m) => {
-                  const c = COLOR_MAP[m].link!
-                  return (
-                    <tr key={m}>
-                      <Td mono>{m}</Td>
-                      <td className="p-3 border-b border-divider min-w-[200px]">
-                        <LinkInput mode={m} value="https://github.com" />
-                      </td>
-                      <td className="p-3 border-b border-divider align-top">
-                        <TokenAnnotation colors={c.wrapper} />
-                      </td>
-                      <td className="p-3 border-b border-divider align-top">
-                        <span className="inline-flex items-center gap-1 text-footnote">
-                          <Swatch value={c.value} size="sm" />
-                          <span className="font-mono text-fg-secondary">{c.value}</span>
-                        </span>
-                      </td>
-                      <td className="p-2 border-b border-divider text-caption text-fg-muted">
-                        {m === 'readonly' ? '藍色連結可點擊，無 Pencil' : '文字灰化，不可點擊'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+      {/* readonly + disabled */}
+      <ExampleSection title="readonly / disabled">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead>
+              <tr>
+                <Th>Mode</Th>
+                <Th>預覽</Th>
+                <Th>Wrapper</Th>
+                <Th>Value</Th>
+                <Th>說明</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {(['readonly', 'disabled'] as const).map((m) => {
+                const c = COLOR_MAP[m].link!
+                return (
+                  <tr key={m}>
+                    <Td mono>{m}</Td>
+                    <td className="p-3 border-b border-divider min-w-[200px]">
+                      <LinkInput mode={m} value="https://github.com" />
+                    </td>
+                    <td className="p-3 border-b border-divider align-top">
+                      <TokenAnnotation colors={c.wrapper} />
+                    </td>
+                    <td className="p-3 border-b border-divider align-top">
+                      <span className="inline-flex items-center gap-1 text-footnote">
+                        <Swatch value={c.value} size="sm" />
+                        <span className="font-mono text-fg-secondary">{c.value}</span>
+                      </span>
+                    </td>
+                    <td className="p-2 border-b border-divider text-caption text-fg-muted">
+                      {m === 'readonly' ? '藍色連結可點擊，無 Pencil' : '文字灰化，不可點擊'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
+      </ExampleSection>
 
-        {/* Hover states detail */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">hover 狀態</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>元素</Th><Th>Default</Th><Th>Hover</Th><Th>Active</Th></tr></thead>
-              <tbody>
-                <tr>
-                  <Td>Wrapper border (edit)</Td>
-                  <Td><TokenValue value="--border" /></Td>
-                  <Td><TokenValue value="--border-hover" /></Td>
-                  <Td>—</Td>
-                </tr>
-                <tr>
-                  <Td>Link text</Td>
-                  <Td><TokenValue value="--primary" /></Td>
-                  <Td>
-                    <span className="inline-flex items-center gap-2">
-                      <TokenValue value="--primary-hover" />
-                      <span className="text-footnote text-fg-muted">+ underline</span>
-                    </span>
-                  </Td>
-                  <Td>—</Td>
-                </tr>
-                <tr>
-                  <Td>Pencil icon</Td>
-                  <Td><TokenValue value="--fg-muted" /></Td>
-                  <Td><TokenValue value="--foreground" /></Td>
-                  <Td><TokenValue value="--foreground" /></Td>
-                </tr>
-                <tr>
-                  <Td>Pencil bg</Td>
-                  <Td><TokenValue value="transparent" /></Td>
-                  <Td><TokenValue value="--neutral-hover" /></Td>
-                  <Td><TokenValue value="--neutral-active" /></Td>
-                </tr>
-                <tr>
-                  <Td>Error border</Td>
-                  <Td><TokenValue value="--error" /></Td>
-                  <Td><TokenValue value="--error-hover" /></Td>
-                  <Td>—</Td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      {/* Hover states detail */}
+      <ExampleSection title="hover 狀態">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr><Th>元素</Th><Th>Default</Th><Th>Hover</Th><Th>Active</Th></tr></thead>
+            <tbody>
+              <tr>
+                <Td>Wrapper border (edit)</Td>
+                <Td><TokenValue value="--border" /></Td>
+                <Td><TokenValue value="--border-hover" /></Td>
+                <Td>—</Td>
+              </tr>
+              <tr>
+                <Td>Link text</Td>
+                <Td><TokenValue value="--primary" /></Td>
+                <Td>
+                  <span className="inline-flex items-center gap-2">
+                    <TokenValue value="--primary-hover" />
+                    <span className="text-footnote text-fg-muted">+ underline</span>
+                  </span>
+                </Td>
+                <Td>—</Td>
+              </tr>
+              <tr>
+                <Td>Pencil icon</Td>
+                <Td><TokenValue value="--fg-muted" /></Td>
+                <Td><TokenValue value="--foreground" /></Td>
+                <Td><TokenValue value="--foreground" /></Td>
+              </tr>
+              <tr>
+                <Td>Pencil bg</Td>
+                <Td><TokenValue value="transparent" /></Td>
+                <Td><TokenValue value="--neutral-hover" /></Td>
+                <Td><TokenValue value="--neutral-active" /></Td>
+              </tr>
+              <tr>
+                <Td>Error border</Td>
+                <Td><TokenValue value="--error" /></Td>
+                <Td><TokenValue value="--error-hover" /></Td>
+                <Td>—</Td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -583,82 +579,78 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。高度使用 --field-height-* semantic token，與 Button 共用同一組 token。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。高度使用 --field-height-* semantic token，與 Button 共用同一組 token。" />
 
-        {/* Token comparison table */}
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
-            <thead><tr>
-              <Th>屬性</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
-            </tr></thead>
-            <tbody>
-              {([
-                { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
-                { label: '左右內距', key: 'pxToken' as const, subFn: (s: SizeSpec) => `${s.px}px` },
-                { label: '元素間距', key: 'gapToken' as const, subFn: (s: SizeSpec) => `${s.gap}px` },
-                { label: '字體', key: 'fontToken' as const, subFn: (s: SizeSpec) => s.font },
-                { label: 'Pencil icon', subFn: (s: SizeSpec) => `${s.icon}px` },
-                { label: 'Action hover', subFn: (s: SizeSpec) => `${s.actionHover}px (icon+2)` },
-              ]).map((row) => (
-                <tr key={row.label}>
-                  <Td>{row.label}</Td>
-                  {SIZES.map((sz) => {
-                    const spec = SIZE_SPECS[sz]
-                    const token = row.key ? spec[row.key] as string : undefined
-                    const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : row.subFn?.(spec)
-                    return (
-                      <Td key={sz} mono>
-                        {token && <div className="text-fg-secondary">{token}</div>}
-                        {sub && <div className="text-fg-muted text-footnote">{sub}</div>}
-                      </Td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Visual preview */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽 — link 狀態</span>
-          <div className="flex flex-col gap-3">
-            {SIZES.map((sz) => (
-              <div key={sz} className="flex items-center gap-4">
-                <span className="text-caption text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
-                <LiveLinkInput mode="edit" size={sz} value="https://github.com" className="max-w-xs" />
-              </div>
+      {/* Token comparison table */}
+      <div className="overflow-x-auto">
+        <table className="border-collapse text-caption">
+          <thead><tr>
+            <Th>屬性</Th>
+            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+          </tr></thead>
+          <tbody>
+            {([
+              { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
+              { label: '左右內距', key: 'pxToken' as const, subFn: (s: SizeSpec) => `${s.px}px` },
+              { label: '元素間距', key: 'gapToken' as const, subFn: (s: SizeSpec) => `${s.gap}px` },
+              { label: '字體', key: 'fontToken' as const, subFn: (s: SizeSpec) => s.font },
+              { label: 'Pencil icon', subFn: (s: SizeSpec) => `${s.icon}px` },
+              { label: 'Action hover', subFn: (s: SizeSpec) => `${s.actionHover}px (icon+2)` },
+            ]).map((row) => (
+              <tr key={row.label}>
+                <Td>{row.label}</Td>
+                {SIZES.map((sz) => {
+                  const spec = SIZE_SPECS[sz]
+                  const token = row.key ? spec[row.key] as string : undefined
+                  const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : row.subFn?.(spec)
+                  return (
+                    <Td key={sz} mono>
+                      {token && <div className="text-fg-secondary">{token}</div>}
+                      {sub && <div className="text-fg-muted text-footnote">{sub}</div>}
+                    </Td>
+                  )
+                })}
+              </tr>
             ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽 — input 狀態</span>
-          <div className="flex flex-col gap-3">
-            {SIZES.map((sz) => (
-              <div key={sz} className="flex items-center gap-4">
-                <span className="text-caption text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
-                <LiveLinkInput mode="edit" size={sz} value="" className="max-w-xs" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽 — readonly / disabled</span>
-          <div className="flex flex-col gap-3">
-            {(['readonly', 'disabled'] as const).map((m) => (
-              <div key={m} className="flex items-center gap-4">
-                <span className="text-caption text-fg-muted w-16 shrink-0 font-mono">{m}</span>
-                <LinkInput mode={m} value="https://github.com" className="max-w-xs" />
-              </div>
-            ))}
-          </div>
-        </div>
+          </tbody>
+        </table>
       </div>
-    </ExampleSection>
+
+      {/* Visual preview */}
+      <ExampleSection title="預覽 — link 狀態">
+        <div className="flex flex-col gap-3">
+          {SIZES.map((sz) => (
+            <div key={sz} className="flex items-center gap-4">
+              <span className="text-caption text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
+              <LiveLinkInput mode="edit" size={sz} value="https://github.com" className="max-w-xs" />
+            </div>
+          ))}
+        </div>
+      </ExampleSection>
+
+      <ExampleSection title="預覽 — input 狀態">
+        <div className="flex flex-col gap-3">
+          {SIZES.map((sz) => (
+            <div key={sz} className="flex items-center gap-4">
+              <span className="text-caption text-fg-muted w-8 shrink-0 font-mono">{sz}</span>
+              <LiveLinkInput mode="edit" size={sz} value="" className="max-w-xs" />
+            </div>
+          ))}
+        </div>
+      </ExampleSection>
+
+      <ExampleSection title="預覽 — readonly / disabled">
+        <div className="flex flex-col gap-3">
+          {(['readonly', 'disabled'] as const).map((m) => (
+            <div key={m} className="flex items-center gap-4">
+              <span className="text-caption text-fg-muted w-16 shrink-0 font-mono">{m}</span>
+              <LinkInput mode={m} value="https://github.com" className="max-w-xs" />
+            </div>
+          ))}
+        </div>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 

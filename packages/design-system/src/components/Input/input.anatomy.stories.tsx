@@ -6,7 +6,7 @@ import { Input } from './input'
 import { Field, FieldError } from '@/design-system/components/Field/field'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { BpZone, PropRow, type FieldSizeSpec as SizeSpec, Swatch, TkVal, INPUT_ZONES as Z } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/Input/設計規格',
@@ -412,96 +412,92 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Mode × State 色彩對照" description="edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 只有靜止這一種外觀(用鍵盤 Tab 進來時邊框轉主色,同 edit 的 focus;滑鼠點不變),disabled 只有一種。色塊即時渲染，切 dark mode 自動更新。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Mode × State 色彩對照" description="edit 模式有完整的狀態變化（default / hover / focus / error / disabled）。readonly 只有靜止這一種外觀(用鍵盤 Tab 進來時邊框轉主色,同 edit 的 focus;滑鼠點不變),disabled 只有一種。色塊即時渲染，切 dark mode 自動更新。" />
 
-        {/* Edit mode states */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">edit 模式 — 狀態變化</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>State</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
-              <tbody>
-                {EDIT_STATES.map((st) => {
-                  const colors = st === 'disabled' ? COLOR_MAP.edit.disabled! : COLOR_MAP.edit[st]!
-                  return (
-                    <tr key={st}>
-                      <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{st}</td>
-                      <td className="p-3 border-b border-divider align-top min-w-[240px]">
-                        <Input
-                          mode={st === 'disabled' ? 'disabled' : 'edit'}
-                          error={st === 'error'}
-                          defaultValue="Wireless Bluetooth Headphones"
-                          size="md"
-                          aria-label={`商品名稱（${st} 狀態）`}
-                        />
-                      </td>
-                      <td className="p-3 border-b border-divider align-top">
-                        <TokenAnnotation colors={colors} />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* readonly & disabled */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">readonly / disabled — 單一視覺狀態</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr><Th>Mode</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
-              <tbody>
-                {(['readonly', 'disabled'] as const).map((m) => (
-                  <tr key={m}>
-                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{m}</td>
+      {/* Edit mode states */}
+      <ExampleSection title="edit 模式 — 狀態變化">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr><Th>State</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
+            <tbody>
+              {EDIT_STATES.map((st) => {
+                const colors = st === 'disabled' ? COLOR_MAP.edit.disabled! : COLOR_MAP.edit[st]!
+                return (
+                  <tr key={st}>
+                    <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{st}</td>
                     <td className="p-3 border-b border-divider align-top min-w-[240px]">
                       <Input
-                        mode={m}
+                        mode={st === 'disabled' ? 'disabled' : 'edit'}
+                        error={st === 'error'}
                         defaultValue="Wireless Bluetooth Headphones"
                         size="md"
-                        aria-label={`商品名稱（${m} 模式）`}
+                        aria-label={`商品名稱（${st} 狀態）`}
                       />
                     </td>
                     <td className="p-3 border-b border-divider align-top">
-                      <TokenAnnotation colors={COLOR_MAP[m].default!} />
+                      <TokenAnnotation colors={colors} />
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
+      </ExampleSection>
 
-        {/* Icon color rules */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">Icon 色彩規則</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse text-caption">
-              <thead><tr><Th>元素</Th><Th>角色</Th><Th>default</Th><Th>hover</Th><Th>disabled</Th></tr></thead>
-              <tbody>
-                <tr>
-                  <Td mono>startIcon</Td>
-                  <Td>指示用途（如 Search）</Td>
-                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
-                  <Td><span className="text-fg-muted">不變</span></Td>
-                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-disabled" size="sm" /><span className="font-mono">--fg-disabled</span></span></Td>
+      {/* readonly & disabled */}
+      <ExampleSection title="readonly / disabled — 單一視覺狀態">
+        <div className="overflow-x-auto">
+          <table className="border-collapse">
+            <thead><tr><Th>Mode</Th><Th>預覽</Th><Th>色彩 Token</Th></tr></thead>
+            <tbody>
+              {(['readonly', 'disabled'] as const).map((m) => (
+                <tr key={m}>
+                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{m}</td>
+                  <td className="p-3 border-b border-divider align-top min-w-[240px]">
+                    <Input
+                      mode={m}
+                      defaultValue="Wireless Bluetooth Headphones"
+                      size="md"
+                      aria-label={`商品名稱（${m} 模式）`}
+                    />
+                  </td>
+                  <td className="p-3 border-b border-divider align-top">
+                    <TokenAnnotation colors={COLOR_MAP[m].default!} />
+                  </td>
                 </tr>
-                <tr>
-                  <Td mono>endAction</Td>
-                  <Td>操作動作（如清除）</Td>
-                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
-                  <Td><span className="inline-flex items-center gap-1"><Swatch value="--foreground" size="sm" /><span className="font-mono">--foreground</span></span></Td>
-                  <Td><span className="text-fg-muted">不渲染</span></Td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+
+      {/* Icon color rules */}
+      <ExampleSection title="Icon 色彩規則">
+        <div className="overflow-x-auto">
+          <table className="border-collapse text-caption">
+            <thead><tr><Th>元素</Th><Th>角色</Th><Th>default</Th><Th>hover</Th><Th>disabled</Th></tr></thead>
+            <tbody>
+              <tr>
+                <Td mono>startIcon</Td>
+                <Td>指示用途（如 Search）</Td>
+                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
+                <Td><span className="text-fg-muted">不變</span></Td>
+                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-disabled" size="sm" /><span className="font-mono">--fg-disabled</span></span></Td>
+              </tr>
+              <tr>
+                <Td mono>endAction</Td>
+                <Td>操作動作（如清除）</Td>
+                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1"><Swatch value="--foreground" size="sm" /><span className="font-mono">--foreground</span></span></Td>
+                <Td><span className="text-fg-muted">不渲染</span></Td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -512,86 +508,84 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。lg 是 icon 尺寸切換點（16px → 20px）。高度與 Button 共用 field-height token，同 size 並排時對齊。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Size Token 對照" description="每個 size 對應的 token 一覽。lg 是 icon 尺寸切換點（16px → 20px）。高度與 Button 共用 field-height token，同 size 並排時對齊。" />
 
-        {/* Token comparison table */}
+      {/* Token comparison table */}
+      <div className="overflow-x-auto">
+        <table className="border-collapse text-caption">
+          <thead><tr>
+            <Th>屬性</Th>
+            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+          </tr></thead>
+          <tbody>
+            {([
+              { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
+              { label: '左右內距', key: 'pxToken' as const, subFn: (s: SizeSpec) => `${s.px}px` },
+              { label: '元素間距', key: 'gapToken' as const, subFn: (s: SizeSpec) => `${s.gap}px` },
+              { label: '字體', key: 'fontToken' as const, subFn: (s: SizeSpec) => s.font },
+              { label: 'Icon 尺寸', subFn: (s: SizeSpec) => `${s.icon}px` },
+              { label: 'Action hover', subFn: (s: SizeSpec) => `${s.actionHover}px (icon+2)` },
+            ] as const).map((row) => (
+              <tr key={row.label}>
+                <Td>{row.label}</Td>
+                {SIZES.map((sz) => {
+                  const spec = SIZE_SPECS[sz]
+                  const token = 'key' in row && row.key ? spec[row.key] as string : undefined
+                  const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : 'subFn' in row ? row.subFn?.(spec) : undefined
+                  return (
+                    <Td key={sz} mono>
+                      {token && <div className="text-fg-secondary">{token}</div>}
+                      {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
+                    </Td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Visual preview — all sizes × all modes */}
+      <ExampleSection title="預覽 — Size × Mode">
         <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
+          <table className="border-collapse">
             <thead><tr>
-              <Th>屬性</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+              <Th>Size</Th>
+              {MODES.map((m) => <Th key={m}>{m}</Th>)}
+              <Th>edit + startIcon + endAction</Th>
             </tr></thead>
             <tbody>
-              {([
-                { label: '高度', key: 'heightToken' as const, subKey: 'height' as const },
-                { label: '左右內距', key: 'pxToken' as const, subFn: (s: SizeSpec) => `${s.px}px` },
-                { label: '元素間距', key: 'gapToken' as const, subFn: (s: SizeSpec) => `${s.gap}px` },
-                { label: '字體', key: 'fontToken' as const, subFn: (s: SizeSpec) => s.font },
-                { label: 'Icon 尺寸', subFn: (s: SizeSpec) => `${s.icon}px` },
-                { label: 'Action hover', subFn: (s: SizeSpec) => `${s.actionHover}px (icon+2)` },
-              ] as const).map((row) => (
-                <tr key={row.label}>
-                  <Td>{row.label}</Td>
-                  {SIZES.map((sz) => {
-                    const spec = SIZE_SPECS[sz]
-                    const token = 'key' in row && row.key ? spec[row.key] as string : undefined
-                    const sub = 'subKey' in row && row.subKey ? spec[row.subKey] as string : 'subFn' in row ? row.subFn?.(spec) : undefined
-                    return (
-                      <Td key={sz} mono>
-                        {token && <div className="text-fg-secondary">{token}</div>}
-                        {sub && <div className="text-fg-muted text-[10px]">{sub}</div>}
-                      </Td>
-                    )
-                  })}
+              {SIZES.map((sz) => (
+                <tr key={sz}>
+                  <Td mono>{sz}</Td>
+                  {MODES.map((m) => (
+                    <td key={m} className="p-2 border-b border-divider">
+                      <Input
+                        mode={m}
+                        size={sz}
+                        defaultValue="Headphones"
+                        aria-label={`商品名稱（${sz} 尺寸、${m} 模式）`}
+                        className="w-48"
+                      />
+                    </td>
+                  ))}
+                  <td className="p-2 border-b border-divider">
+                    <ClearableInput
+                      size={sz}
+                      startIcon={Search}
+                      defaultValue="Headphones"
+                      aria-label={`商品搜尋（${sz} 尺寸）`}
+                      className="w-48"
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* Visual preview — all sizes × all modes */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽 — Size × Mode</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              <thead><tr>
-                <Th>Size</Th>
-                {MODES.map((m) => <Th key={m}>{m}</Th>)}
-                <Th>edit + startIcon + endAction</Th>
-              </tr></thead>
-              <tbody>
-                {SIZES.map((sz) => (
-                  <tr key={sz}>
-                    <Td mono>{sz}</Td>
-                    {MODES.map((m) => (
-                      <td key={m} className="p-2 border-b border-divider">
-                        <Input
-                          mode={m}
-                          size={sz}
-                          defaultValue="Headphones"
-                          aria-label={`商品名稱（${sz} 尺寸、${m} 模式）`}
-                          className="w-48"
-                        />
-                      </td>
-                    ))}
-                    <td className="p-2 border-b border-divider">
-                      <ClearableInput
-                        size={sz}
-                        startIcon={Search}
-                        defaultValue="Headphones"
-                        aria-label={`商品搜尋（${sz} 尺寸）`}
-                        className="w-48"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -606,87 +600,81 @@ export const StateBehavior = {
     const [query, setQuery] = useState('Bluetooth')
 
     return (
-      <ExampleSection title="狀態行為" description="Focus、error、disabled 的視覺變化與互動規則。">
-        <div className="flex flex-col gap-8">
+      <ExampleStack>
+        <ExampleSection title="狀態行為" description="Focus、error、disabled 的視覺變化與互動規則。" />
 
-          {/* Focus behavior */}
-          <div className="flex flex-col gap-4">
-            <span className="text-caption font-medium text-fg-secondary">Focus — border-primary（1px），無外框（readonly 同樣是 1px 邊框轉主色，WCAG 2.4.7）</span>
-            <div className="flex flex-col gap-2 max-w-sm">
-              <span className="text-[11px] text-fg-muted">文字輸入永遠 focus-visible（瀏覽器規範），click 和 Tab 觸發相同效果。點擊下方 input 或用 Tab 切換觀察。</span>
-              <Input placeholder="輸入專案名稱" aria-label="專案名稱" />
-              <Input placeholder="輸入專案代號,例:ACME-2026" aria-label="專案代號" />
+        {/* Focus behavior */}
+        <ExampleSection title="Focus — border-primary（1px），無外框（readonly 同樣是 1px 邊框轉主色，WCAG 2.4.7）">
+          <div className="flex flex-col gap-2 max-w-sm">
+            <span className="text-[11px] text-fg-muted">文字輸入永遠 focus-visible（瀏覽器規範），click 和 Tab 觸發相同效果。點擊下方 input 或用 Tab 切換觀察。</span>
+            <Input placeholder="輸入專案名稱" aria-label="專案名稱" />
+            <Input placeholder="輸入專案代號,例:ACME-2026" aria-label="專案代號" />
+          </div>
+        </ExampleSection>
+
+        {/* Error behavior */}
+        <ExampleSection title="Error — 正交於 mode，只在 edit 模式生效">
+          <div className="flex flex-col gap-3 max-w-sm">
+            <div>
+              <span className="text-[11px] text-fg-muted block mb-1">border-error，hover 時 border-error-hover</span>
+              {/* 錯誤訊息走 Field + FieldError(稽核 M087;不手刻紅字) */}
+              <Field invalid>
+                <Input defaultValue="invalid-email@" aria-label="Email（錯誤狀態）" />
+                <FieldError>請輸入有效的 email 地址</FieldError>
+              </Field>
+            </div>
+            <div>
+              <span className="text-[11px] text-fg-muted block mb-1">focus 時 border-error（不切回 primary）</span>
+              <Input error defaultValue="bad-url" startIcon={Globe} aria-label="網址（錯誤焦點狀態）" />
             </div>
           </div>
+        </ExampleSection>
 
-          {/* Error behavior */}
-          <div className="flex flex-col gap-4">
-            <span className="text-caption font-medium text-fg-secondary">Error — 正交於 mode，只在 edit 模式生效</span>
-            <div className="flex flex-col gap-3 max-w-sm">
-              <div>
-                <span className="text-[11px] text-fg-muted block mb-1">border-error，hover 時 border-error-hover</span>
-                {/* 錯誤訊息走 Field + FieldError(稽核 M087;不手刻紅字) */}
-                <Field invalid>
-                  <Input defaultValue="invalid-email@" aria-label="Email（錯誤狀態）" />
-                  <FieldError>請輸入有效的 email 地址</FieldError>
-                </Field>
-              </div>
-              <div>
-                <span className="text-[11px] text-fg-muted block mb-1">focus 時 border-error（不切回 primary）</span>
-                <Input error defaultValue="bad-url" startIcon={Globe} aria-label="網址（錯誤焦點狀態）" />
-              </div>
-            </div>
+        {/* startIcon pointer-events (non-intercepting) */}
+        <ExampleSection title="startIcon 不攔截點擊 — pointer-events-none">
+          <div className="flex flex-col gap-2 max-w-sm">
+            <span className="text-[11px] text-fg-muted">startIcon（SVG）帶 pointer-events-none，不攔截點擊、不擋文字選取（不成為死區）。注意：點 icon 區域不會 focus input（icon 與 input 為 sibling，無 click-to-focus）。endAction 是互動元素，有自己的點擊行為。</span>
+            <Input
+              startIcon={Search}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="搜尋商品"
+              endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
+            />
           </div>
+        </ExampleSection>
 
-          {/* startIcon pointer-events (non-intercepting) */}
-          <div className="flex flex-col gap-4">
-            <span className="text-caption font-medium text-fg-secondary">startIcon 不攔截點擊 — pointer-events-none</span>
-            <div className="flex flex-col gap-2 max-w-sm">
-              <span className="text-[11px] text-fg-muted">startIcon（SVG）帶 pointer-events-none，不攔截點擊、不擋文字選取（不成為死區）。注意：點 icon 區域不會 focus input（icon 與 input 為 sibling，無 click-to-focus）。endAction 是互動元素，有自己的點擊行為。</span>
+        {/* endAction conditional rendering */}
+        <ExampleSection title="endAction — 條件渲染，消失不佔位">
+          <div className="flex flex-col gap-3 max-w-sm">
+            <div>
+              <span className="text-[11px] text-fg-muted block mb-1">密碼切換 — icon 隨狀態變化</span>
               <Input
-                startIcon={Search}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="搜尋商品"
-                endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
+                type={showPwd ? 'text' : 'password'}
+                defaultValue="my-secret-123"
+                aria-label="密碼"
+                endAction={{
+                  icon: showPwd ? EyeOff : Eye,
+                  label: showPwd ? '隱藏密碼' : '顯示密碼',
+                  onClick: () => setShowPwd(!showPwd),
+                }}
               />
             </div>
           </div>
+        </ExampleSection>
 
-          {/* endAction conditional rendering */}
-          <div className="flex flex-col gap-4">
-            <span className="text-caption font-medium text-fg-secondary">endAction — 條件渲染，消失不佔位</span>
-            <div className="flex flex-col gap-3 max-w-sm">
-              <div>
-                <span className="text-[11px] text-fg-muted block mb-1">密碼切換 — icon 隨狀態變化</span>
-                <Input
-                  type={showPwd ? 'text' : 'password'}
-                  defaultValue="my-secret-123"
-                  aria-label="密碼"
-                  endAction={{
-                    icon: showPwd ? EyeOff : Eye,
-                    label: showPwd ? '隱藏密碼' : '顯示密碼',
-                    onClick: () => setShowPwd(!showPwd),
-                  }}
-                />
-              </div>
+        {/* Disabled behavior */}
+        <ExampleSection title="Disabled — endAction 不渲染，停用原因由外部承擔">
+          <div className="flex flex-col gap-3 max-w-sm">
+            <div className="flex items-center gap-3">
+              <ClearableInput mode="edit" startIcon={Mail} defaultValue="alice@example.com" aria-label="Email（可編輯）" className="w-56" />
+              <span className="text-fg-muted text-caption">→</span>
+              <ClearableInput mode="disabled" startIcon={Mail} defaultValue="alice@example.com" aria-label="Email（停用）" className="w-56" />
             </div>
+            <span className="text-[11px] text-fg-muted">左：edit（有 endAction）→ 右：disabled（endAction 消失，icon 變 fg-disabled）</span>
           </div>
-
-          {/* Disabled behavior */}
-          <div className="flex flex-col gap-4">
-            <span className="text-caption font-medium text-fg-secondary">Disabled — endAction 不渲染，停用原因由外部承擔</span>
-            <div className="flex flex-col gap-3 max-w-sm">
-              <div className="flex items-center gap-3">
-                <ClearableInput mode="edit" startIcon={Mail} defaultValue="alice@example.com" aria-label="Email（可編輯）" className="w-56" />
-                <span className="text-fg-muted text-caption">→</span>
-                <ClearableInput mode="disabled" startIcon={Mail} defaultValue="alice@example.com" aria-label="Email（停用）" className="w-56" />
-              </div>
-              <span className="text-[11px] text-fg-muted">左：edit（有 endAction）→ 右：disabled（endAction 消失，icon 變 fg-disabled）</span>
-            </div>
-          </div>
-        </div>
-      </ExampleSection>
+        </ExampleSection>
+      </ExampleStack>
     )
   },
 }
