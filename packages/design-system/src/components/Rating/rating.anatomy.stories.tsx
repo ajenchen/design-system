@@ -394,8 +394,8 @@ export const SizeMatrix = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">元件只有內容高,列高交給所在的列;星的尺寸依呈現分兩套</span>
         <p className="text-caption text-fg-muted max-w-[720px]">
-          Rating 跟裸 Switch / 裸 Checkbox 同一個模型:本身不吃 <code>--field-height-*</code>，放進 Field 時由 Field 控件槽
-          （min-h-field-* + items-center）撐出跟 Input / Select 一樣的列高並置中；Field 外的列由列自己決定，評分不再撐高列。
+          Rating 跟裸 Switch / 裸 Checkbox 同一個模型:本身不吃 <code className="whitespace-nowrap">--field-height-*</code>，放進 Field 時由 Field 控件槽
+          （<code className="whitespace-nowrap">min-h-field-*</code> + <code className="whitespace-nowrap">items-center</code>）撐出跟 Input / Select 一樣的列高並置中；Field 外的列由列自己決定，評分不再撐高列。
           可以點的星走 item-anatomy inline Avatar 尺寸（sm=20 / md=24 / lg=24），
           而非 icon tier（16/16/20）——因為每一顆星是 filled identity 視覺（主要資料點），視覺份量要跟 Avatar 齊；
           唯讀精簡版的那一顆星則是數值旁的圖示，走 icon tier；星與數值的縫一律 4px，與星和星之間相同。
