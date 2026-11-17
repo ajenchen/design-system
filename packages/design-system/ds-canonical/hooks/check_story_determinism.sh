@@ -27,16 +27,17 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
 ' 2>/dev/null || echo "")
 grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
-# 2026-11-17 /knowledge-prune 收窄(D6-3):兩種寫法不影響畫面、卻會被誤報 —— 引號裡的字串(文件表格寫
-# 'new Date()' 當說明)與 `id: \`...${Date.now()}...\`` 這種事件處理裡產生的識別碼(只在使用者操作後
-# 才出現,初次渲染與 VR 截圖都不會有)。先把這兩種從該行拿掉再判;其他用法照舊警告。
-# 現存 5 個誤報:date-grid.anatomy.stories.tsx:142、field.stories.tsx:475、file-upload.stories.tsx:69/:104/:247。
+# 2026-11-17 /knowledge-prune 收窄(D6-3):引號裡的字串(文件表格寫 'new Date()' 當說明,例
+# date-grid.anatomy.stories.tsx)不是呼叫,先從該行拿掉再判;同一行另有裸用法照樣警告。
+# 「事件處理裡產生的 id」(field.stories.tsx、file-upload.stories.tsx 的 onUpload)**照樣警告**:
+# 「只在使用者操作後才出現」是程式結構的性質,單行比對看不出來 —— 拿 `id: \`…${Date.now()}…\`` 的寫法
+# 當代理,會連初次渲染資料裡的 id(`[{ id: \`ORD-${Date.now()}\` }]`)一起放行(M37;consumer CI 把本 hook
+# 的 stderr 判成 BLOCKER,放行 = 少一道擋)。那幾行請改用行內 `@nondeterministic-ok: <rationale>`。
 HITS=$(printf '%s\n' "$NEW_CONTENT" | awk '
   /@nondeterministic-ok:/ { next }
   {
     probe = $0
     gsub(/["\047](new Date[(][)]|Date[.]now[(][)]|Math[.]random[(][)])["\047]/, "", probe)
-    gsub(/id: *`[^`]*[$][{](Date[.]now[(][)]|Math[.]random[(][)])[}][^`]*`/, "", probe)
     if (probe ~ /new Date[(][)]|Date[.]now[(][)]|Math[.]random[(][)]/) print NR ":" $0
   }' || true)
 [ -z "$HITS" ] && exit 0

@@ -34,12 +34,17 @@ run_case 'line rationale suppresses warning' 'apps/demo/src/demo.stories.tsx' 'c
 run_case 'fixed date remains deterministic' 'apps/demo/src/demo.stories.tsx' 'const day = new Date(2026, 6, 15)' Write 0
 run_case 'production file is out of scope' 'apps/demo/src/App.tsx' 'const now = new Date()' Write 0
 run_case 'read event is out of scope' 'apps/demo/src/demo.stories.tsx' 'const now = new Date()' Read 0
-# 2026-11-17 收窄:引號字串與事件處理的 id 不警告;同一行若另有裸用法照樣警告(對照組)
+# 2026-11-17 收窄:只有引號字串不警告;同一行若另有裸用法照樣警告(對照組)
 run_case 'quoted docs string is not a call' 'apps/demo/src/demo.stories.tsx' "['defaultMonth', 'Date', 'new Date()', '初始可見月份']," Write 0
-run_case 'handler-generated id template is not rendered' 'apps/demo/src/demo.stories.tsx' '...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name })),' Write 0
-run_case 'multi-line id template property' 'apps/demo/src/demo.stories.tsx' '                id: `new-${Date.now()}-${i}`,' Edit 0
-run_case 'id template plus bare call still warns' 'apps/demo/src/demo.stories.tsx' 'const a = { id: `x-${Date.now()}`, at: new Date() }' Write 1
-run_case 'Date.now outside id template still warns' 'apps/demo/src/demo.stories.tsx' 'const label = `updated ${Date.now()}`' Write 1
+run_case 'quoted string plus bare call still warns' 'apps/demo/src/demo.stories.tsx' "const doc = 'new Date()'; const at = new Date()" Write 1
+run_case 'Date.now in template literal still warns' 'apps/demo/src/demo.stories.tsx' 'const label = `updated ${Date.now()}`' Write 1
+# id 寫法不是「只在事件處理裡」的證據(M37):初次渲染資料的 id、`rowid:`、事件處理的 id 一律照警告;
+# 事件處理那種用行內標記放行
+run_case 'initial-render data id still warns' 'apps/demo/src/demo.stories.tsx' 'const rows = [{ id: `ORD-${Date.now()}`, customer: "Acme" }]' Write 1
+run_case 'args id via Math.random still warns' 'apps/demo/src/demo.stories.tsx' 'args: { items: [{ id: `${Math.random()}` }] }' Edit 1
+run_case 'rowid template still warns' 'apps/demo/src/demo.stories.tsx' 'const r = { rowid: `r-${Math.random()}` }' Write 1
+run_case 'handler id without rationale still warns' 'apps/demo/src/demo.stories.tsx' '...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name })),' Write 1
+run_case 'handler id with rationale is silent' 'apps/demo/src/demo.stories.tsx' '...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}` })), // @nondeterministic-ok: 上傳後才產生的 id,不進初次渲染' Write 0
 
 echo "Passed: $PASS / $((PASS + FAIL))"
 [ "$FAIL" -eq 0 ]
