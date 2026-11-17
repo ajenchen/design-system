@@ -17,7 +17,7 @@ benchmark:
 
 Coachmark 是**主動推送的功能介紹浮層**——anchor 到特定 UI 元素,帶 media + title + description + footer 按鈕列,用於首次功能介紹 / onboarding 多步導覽 / 新功能提示。
 
-**實作基礎**:Popover 的 composition pattern——完全消費 Popover 的定位、動畫、焦點管理、overlay-surface padding 系統,不自寫浮層邏輯。差別:(1) **Header 可選**(`kind="tips" | "new-features" | ReactNode`;single-step 常無 header、multi-step tour 建議帶 header 提示整體脈絡),(2) 有 **Media 區**(可選,頂部 full-width 圖 / 截圖 / illustration),(3) Footer 是 `justify-between`(左 step 計數 / 右 actions)而非 `justify-end`。
+**實作基礎**:Popover 的 composition pattern——完全消費 Popover 的定位、動畫、焦點管理、overlay-surface padding 系統,不自寫浮層邏輯。差別:(1) **Header 可選**(`kind="tips" | "new-features" | ReactNode`;single-step 常無 header、multi-step tour 建議帶 header 提示整體脈絡),(2) 有 **Media 區**(可選,頂部 full-width 圖 / 截圖 / illustration),(3) Footer 是 `justify-between`(左 step 計數 / 右 actions)而非 `justify-end`,(4) Footer 上方**不畫分隔線**(見「與 Popover 的關係」)。
 
 **Layout Family**:非上述 family — composite / multi-section(Media / Body / Footer 多區塊組合)。
 
@@ -30,8 +30,10 @@ Coachmark 是**主動推送的功能介紹浮層**——anchor 到特定 UI 元�
 Coachmark **就是** Popover 的 composition —— 不是競品。改 Popover 視覺(bg / border / shadow / radius / padding)Coachmark 自動跟進,不需雙邊同步。唯一 Coachmark 自己擁有的視覺決策:
 
 - **預設比 Popover 寬一階**:容納 media + 多行 description(主動推送內容量 > 篩選面板);固定單一寬度、無 size variant,具體寬度值見 `coachmark.tsx`
-- **外殼移除預設 padding 並裁切圓角**:讓 Media 邊緣貼齊外殼圓角;Body / Footer 各自消費 overlay-surface padding token(實作見 `coachmark.tsx`)
 - **Footer `justify-between`**:step 計數(左)+ actions(右)，把目前位置與可執行導覽分成兩個穩定區域
+- **Footer 不畫上分隔線**:`PopoverFooter` 預設帶上分隔線(`../Popover/popover.spec.md`「結構化組合」:「含操作按鈕列：再加 `<PopoverFooter>`（上分隔線由 Footer 提供）」),Coachmark 傳 `!border-t-0` 拿掉(`coachmark.tsx` 的 `PopoverFooter`)。理由照程式註解原文:「footer 無上方分隔線(media + body + footer 視覺一氣呵成,不像 Dialog 需要 header/footer 分隔強化結構)」。所以整張卡畫出來的分隔線只有一條 —— 有 Header(傳了 `kind`)時 Header 底下那條(`PopoverHeader` 自帶,同一段「含標題」:「下分隔線由 Header 提供」);沒有 Header 就一條都沒有(見「Anatomy」)
+
+**外殼不是 Coachmark 的決策**(2026-11-18 更正):Popover 外殼本來就沒有內距(`../Popover/popover.spec.md`「結構化組合」第一句:「PopoverContent 外殼無內距」),而且同一個外殼帶 `overflow-hidden`、超出圓角的部分直接裁掉(`popover.tsx` 的 `PopoverContent`)—— 所以 Media 邊緣貼齊外殼圓角是沿用 Popover 外殼的結果;Body / Footer 各自消費 overlay-surface 內距 token。`coachmark.tsx` 另寫的 `p-0 overflow-hidden` 與外殼重複,畫面不靠它。2026-11-18 前本段寫「外殼移除預設 padding 並裁切圓角」,列成 Coachmark 自己的決策;`popover.tsx` 在 repo 裡最早的版本(2026-05-22)外殼就沒有內距,這句沒有成立過的根據,改成上面這樣。
 
 SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己結構層的差異。
 
@@ -80,14 +82,14 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 ┌────────────────────────────────┐
 │ Header(可選)                  │  ← kind="tips"/"new-features";tour-level title
 │   使用技巧 / 新功能介紹        │
-├────────────────────────────────┤
+├────────────────────────────────┤  ← 整張卡唯一畫出來的分隔線(Header 自帶;沒有 Header 就沒有)
 │ Media                          │  ← 可選,頂部 full-width,AspectRatio 鎖比例(預設 16:9)
 │ (image / illustration / video) │     邊緣貼齊外殼圓角
-├────────────────────────────────┤
+│ · · · · · · · · · · · · · · ·  │  ← 點線只標分區的分界:不畫線,分區直接相接
 │ Body                           │  ← Title + Description(token 見「視覺 Token」表)
 │   Title                        │
 │   Description                  │
-├────────────────────────────────┤
+│ · · · · · · · · · · · · · · ·  │  ← 不畫線:Footer 拿掉 PopoverFooter 預設的上分隔線(見「與 Popover 的關係」)
 │ Footer(justify-between)        │  ← 左 step 計數 / 右 actions
 │ 第 1 步,共 3 步 [略過][下一步] │     多步驟第一步:有略過,無上一步
 │ 第 2 步,共 3 步 [上一步][下一步]│     多步驟中段:有上一步,略過自動隱藏
