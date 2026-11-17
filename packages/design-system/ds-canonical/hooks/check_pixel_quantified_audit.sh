@@ -9,8 +9,6 @@
 # Mechanical rule:scripts/visual-audit*.mjs(or *.js;含 canonical scripts/visual-audit.mjs,
 # 舊 visual-audit-<target>.mjs 家族已於 2026-05-30 a2360e99 整批 retire)若有 `getAttribute(` 但沒 paired
 # `getBoundingClientRect(` 或 `offsetTop/.offsetHeight` 量化 measurement → warn。
-#
-# 對齊 Material X-DataGrid visual regression / AG Grid playwright pixel snapshot canonical。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 

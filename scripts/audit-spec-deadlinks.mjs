@@ -7,7 +7,6 @@
 // 本 script 把它降為 DETERMINISTIC：掃所有 spec.md 引用的 `<name>.spec.md` pointer，assert target 存在。
 //
 // 偵測：rename / 刪除 spec.md 後，其他 spec.md 仍用舊檔名指它 = 死指標（reader 點過去 404）。
-// 對齊 Carbon「design spec is source of truth」+ markdown-link-check canonical。
 //
 // Usage:
 //   node scripts/audit-spec-deadlinks.mjs           # 印報告

@@ -10,7 +10,7 @@ set -uo pipefail
 #       /governance-health 讀它判 unused / hot skill)。只捕 Skill tool —— user 打 /name 的 slash
 #       呼叫走 user prompt,不被捕(known limitation)。
 #
-# 2026-11-17 /knowledge-prune:原 log_skill_invokes.sh 併入本檔(user 2026-11-17 核准「做啊」)。
+# 2026-11-17 /knowledge-prune:原 log_skill_invokes.sh 併入本檔(工程治理 AUTO,AGENTS.md「# 自主執行 canonical」)。
 #   兩支同為 PostToolUse diagnostic logger、fork 分類同為 DROP、同吃 GOVERNANCE_TELEMETRY_OPT_IN;
 #   scripts/lib/provider-runtime-contract.mjs validateHookRegistrationSemantics 要求同一事件同一支
 #   hook 只註冊一次,故 matcher 合成 Write|Edit|MultiEdit|Skill。合併時兩條路徑都改走
