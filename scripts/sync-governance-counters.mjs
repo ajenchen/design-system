@@ -32,7 +32,7 @@ const QUIET = process.argv.includes('--quiet')
 
 // ── Counts ───────────────────────────────────────────────────────────
 
-// 1) Hooks(對齊 session_start_governance_check.sh:171-173 邏輯)
+// 1) Hooks(對齊 session_start_governance_check.sh「Check 7」的 hook 數 find 判斷式:排除 retired/、tests/ 與 `_*` helper)
 const CANONICAL = 'packages/design-system/ds-canonical'
 const hookFiles = globSync(`${CANONICAL}/hooks/**/*.{sh,py}`, { cwd: ROOT })
   .filter(f => !f.includes('/retired/'))
@@ -49,7 +49,7 @@ for (const m of metaContent.matchAll(/^##\s+M(\d+)\b/gm)) mRuleSet.add(parseInt(
 const mRules = [...mRuleSet].sort((a, b) => a - b)
 const mRuleCount = mRules.length
 
-// 3) Audit dims(讀 SKILL.md `## The N audit dimensions` table,grep numbered rows)
+// 3) Audit dims(讀 design-system-audit SKILL.md「## The audit dimensions」底下各 Group 表,grep numbered rows)
 const skillPath = path.join(ROOT, CANONICAL, 'skills/design-system-audit/SKILL.md')
 const skillContent = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf-8') : ''
 const dimRows = [...skillContent.matchAll(/^\|\s*(\d+)\s*\|\s*\*\*([^*]+)\*\*/gm)]
@@ -75,7 +75,7 @@ const traitCount = traitSet.size
 // SSOT canonical reference points(每加新 SSOT-pointer-hardcode 必加 entry):
 const drifts = []
 
-// session_start_governance_check.sh:176 hard cap
+// session_start_governance_check.sh「Check 7」的 hard cap(`HOOK_COUNT" -gt N`)
 const sessStartPath = path.join(ROOT, CANONICAL, 'hooks/session_start_governance_check.sh')
 if (fs.existsSync(sessStartPath)) {
   const c = fs.readFileSync(sessStartPath, 'utf-8')

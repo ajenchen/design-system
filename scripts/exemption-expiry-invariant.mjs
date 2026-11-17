@@ -51,9 +51,10 @@
  * ## N = REVIEW_AFTER_DAYS = 180 天;DUE_SOON_DAYS = 30 天(只在 --report 提醒)
  *
  *   理由:豁免是治理債,repo 對同類東西已經有一套退役窗 ——
- *   packages/design-system/ds-canonical/skills/knowledge-prune/SKILL.md :230「Hook | 6 月 0 fire」、:233「Memory file | 6 月未更新」、
- *   :231「Skill | 3 月 0 invoke」、:20「季度健檢(每 3 個月跑 1 次)」;
- *   packages/design-system/ds-canonical/hooks/session_start_governance_check.sh :106(knowledge-prune HARD THRESHOLD 180 天)/ :105(target ≤ 90 天)。
+ *   packages/design-system/ds-canonical/skills/knowledge-prune/SKILL.md「## Retire rules」表的 Hook 列「6 月 0 fire」、
+ *   Memory file 列「6 月未更新」、Skill 列「3 月 0 invoke」,與「## When to run」的「季度健檢(每 3 個月跑 1 次)」;
+ *   packages/design-system/ds-canonical/hooks/session_start_governance_check.sh「Check 2」(上次 knowledge-prune 超過 180 天
+ *   = HARD THRESHOLD、超過 90 天 = target quarterly 提醒)。用段名不用行號:行號引用會隨檔案增刪漂移(2026-11-17 曾漂成指錯行)。
  *   一個半年沒人看過的豁免,和半年沒 fire 的 hook 是同一種狀態;季檢(90 天)只當「快到期」提醒,不紅。
  *   世界級對照:eslint-plugin-unicorn `expiring-todo-comments`(`// TODO [2026-12-01]: …` 過期即 lint 紅)—— 到期紅是設計,不是誤報。
  *
