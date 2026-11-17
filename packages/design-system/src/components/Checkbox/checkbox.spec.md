@@ -20,7 +20,7 @@ benchmark:
   - Polaris Checkbox: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Checkbox
 ---
 
-<!-- @spec-budget-exception: SSOT-heavy 例外(`AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤800-1200)— 本檔持有跨元件 SSOT:「與 Switch 的分界」(~45 行)+「Clamp 政策(Label/Description 行數)」(~35 行);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(該次掃描明細留在 provider home 的 log,屬歷史 provenance,不是本例外的 authority —— 例外成立與否只看本句陳述的理由)。 -->
+<!-- 行數說明(不是豁免標記,沒有任何工具會「准」它):行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔(超過只提醒、不擋)。本檔偏長是因為持有兩段跨元件 SSOT:「與 Switch 的分界」與「Clamp 政策(Label / Description 行數)」;2026-07-14 knowledge-prune P2 的結論是「殘餘超標內容全是 canonical,再砍必動 meaning」。 -->
 
 
 # Checkbox 設計原則
