@@ -77,7 +77,7 @@
   以 charter + 空 inventory 為準。
 - **唯一還可以留在這裡的東西**:外部 consumer 仍固定呼叫舊路徑時的 thin pointer,且必須只是同名 skill 的
   指標,不得持有第二份 substantive workflow。
-- **新增單步 action 的正確去處** → Level 7 Skill(單步就是只有一個 step 的 skill,不需要另一個 home)
+- **新增單步 action 的正確去處** → Level 5 Skill(單步就是只有一個 step 的 skill,不需要另一個 home)
 - **inventory**:以 canonical commands 目錄實況為準,本文件不硬寫數量
 
 ### Level 9 — Planning (`governance/planning/`)

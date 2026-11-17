@@ -34,7 +34,7 @@ SKILL_ENTRY_FILE="$(governance_provider_skill_entry_file 2>/dev/null || true)"
 
 # Only check governance files
 # Shared bootstrap SSOT: target ≤ 250 / transition ≤ 400 / hard cap 800
-# 本 hook 在 transition 觸發 P1 warning,hard cap 觸發 P0 block
+# 本 hook 超過 BUDGET 印 ⚠️、超過 TRANSITION(hard cap)印 ⛔,兩者都 exit 0 —— 不擋(見檔頭 Non-blocking)
 case "$REL_PATH" in
   "$INSTRUCTION_ENTRY"|"$SHARED_INSTRUCTION_ENTRY") BUDGET=400; TRANSITION=800; LABEL="instruction entry" ;;
   governance/memory/*.md)               BUDGET=100;  TRANSITION=100; LABEL="memory file" ;;
@@ -80,7 +80,7 @@ LINES=$((TOTAL_LINES - AUTO_LINES))
 AUTO_NOTE=""
 [ "$AUTO_LINES" -gt 0 ] && AUTO_NOTE=" (excluding ${AUTO_LINES} auto-maintained 被引用 lines)"
 
-# Over budget — warn. Hard-block only if also over transition cap.
+# Over budget — warn(⚠️);also over transition cap — ⛔ 訊息,仍 exit 0(Non-blocking,見檔頭)。
 if [ "$LINES" -gt "$TRANSITION" ]; then
   MSG="⛔ ${LABEL} at ${FILE_PATH} is ${LINES} lines${AUTO_NOTE} (hard cap ${TRANSITION}). Must reduce before adding. Run /knowledge-prune or identify which section to remove."
 else

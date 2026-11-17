@@ -39,7 +39,7 @@ Home              Size           Over-budget?
 ─────────────────────────────────────────────
 Bootstrap         N lines        [AGENTS.md + provider import shell;target ≤ 250 / transition ≤ 400 / hard cap 800]
 MEMORY.md         N entries      [≤20]
-spec.md total     N files        per-file ≤300
+spec.md total     N files        per-file 分級(check_file_size_budget.sh case 表,非一律 300)
 SKILL.md total    N files        per-file ≤250
 hooks             N scripts      (count only, Phase 3 看 fire log)
 memory files      N              per-file ≤100

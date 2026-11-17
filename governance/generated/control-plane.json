@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 230,
-      "hash": "sha256:2c56ff4d76a67feadc0537e5d67c09a75ffeea554299ca95993be430733a1329",
+      "hash": "sha256:b9825828241e985070b32d10f55ec4953b6537b970ee2767999655e9be3d1239",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 66,
-      "hash": "sha256:8e271c9008d4e5aedfe1c6b441b617bf6d6abba3ab31253f65cb32b776c17036",
+      "hash": "sha256:4e43d40b8bf72d0424baccbf468d369297d06e3e680075550f015961a5780bec",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3474,10 +3474,10 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:9ac3998531d0c8eb6d77b5378dea845030d2217976fc5281c8f79964fd2f56e4",
+          "expectedTargetDigest": "sha256:d915d3f469398c6586f114cca0ef0d360d68744fe6ae2cc29398d320cb53374a",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:3f891405dd6860ae6402f7e18bef1971aeb2c46fd939cbc434b16c7989fc8e4a",
-          "targetDigest": "sha256:9ac3998531d0c8eb6d77b5378dea845030d2217976fc5281c8f79964fd2f56e4"
+          "sourceDigest": "sha256:7848cef728be6418384be077b57a9f863b5f8eafae235d5f7dd69290bf263ccc",
+          "targetDigest": "sha256:d915d3f469398c6586f114cca0ef0d360d68744fe6ae2cc29398d320cb53374a"
         },
         {
           "expectedTargetDigest": "sha256:e1b651def342e8cd8a554fefc0f092e19bc1e635801c5db96bbcf78ddb7c0099",
@@ -3504,10 +3504,10 @@
           "targetDigest": "sha256:ac3aa59f84b761cc763e3add28c39bc8195676305f614e4def9e7b72a074e937"
         },
         {
-          "expectedTargetDigest": "sha256:61ecd162e3930baa90c42a5e76a0dbfd51b031ecbc67723e3120cdc453e55907",
+          "expectedTargetDigest": "sha256:4b3a1b670fa824ed3f1956e8d02cb7a484f26a58f56e63e5bba4fe30f43637e3",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:8718c3fcc3f88f81305846dfc15b3040fce4baa9b9854f1fc8bb42006354914d",
-          "targetDigest": "sha256:61ecd162e3930baa90c42a5e76a0dbfd51b031ecbc67723e3120cdc453e55907"
+          "sourceDigest": "sha256:eef373476faf8a10109955ec643438b10061a3252c29c0fe6541e51474800d42",
+          "targetDigest": "sha256:4b3a1b670fa824ed3f1956e8d02cb7a484f26a58f56e63e5bba4fe30f43637e3"
         },
         {
           "expectedTargetDigest": "sha256:e4016a41233453d432b19dbe687deb70b43bfaa2aac95ad0668fc9906e680d8f",
@@ -3697,10 +3697,10 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:09a41ed5565ee3bc78009ae4ea3bd1b63abae2a5255e7d6e34a577b6508707d4",
+          "expectedTargetDigest": "sha256:3d8a318b5adf9de669d8baf7e9900eb81ec2af54f17c357a8c33c6bc0667fd95",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:3f891405dd6860ae6402f7e18bef1971aeb2c46fd939cbc434b16c7989fc8e4a",
-          "targetDigest": "sha256:09a41ed5565ee3bc78009ae4ea3bd1b63abae2a5255e7d6e34a577b6508707d4"
+          "sourceDigest": "sha256:7848cef728be6418384be077b57a9f863b5f8eafae235d5f7dd69290bf263ccc",
+          "targetDigest": "sha256:3d8a318b5adf9de669d8baf7e9900eb81ec2af54f17c357a8c33c6bc0667fd95"
         },
         {
           "expectedTargetDigest": "sha256:0edf89e71011799b4d98e1e687148d58d46b16f6bb137cbc992ffaa28a3598c2",
@@ -3727,10 +3727,10 @@
           "targetDigest": "sha256:322dcee9d7bf470f7f79c358a3b8d66a992360b6460443e5f46259ecf3733e91"
         },
         {
-          "expectedTargetDigest": "sha256:77ab5d253d73196b1b1d313b50f25b4f132c605359a58e52c97062da0170d574",
+          "expectedTargetDigest": "sha256:59072f5c3001394c2b406da7199e10bdf7bd32eb4826684f6aadc27a975b3007",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:8718c3fcc3f88f81305846dfc15b3040fce4baa9b9854f1fc8bb42006354914d",
-          "targetDigest": "sha256:77ab5d253d73196b1b1d313b50f25b4f132c605359a58e52c97062da0170d574"
+          "sourceDigest": "sha256:eef373476faf8a10109955ec643438b10061a3252c29c0fe6541e51474800d42",
+          "targetDigest": "sha256:59072f5c3001394c2b406da7199e10bdf7bd32eb4826684f6aadc27a975b3007"
         },
         {
           "expectedTargetDigest": "sha256:bc2337082ec6264f75f7b168155315434c9dddc0444a569064454c3686da7a40",
