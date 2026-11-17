@@ -6,44 +6,44 @@ family: 3
 # 對齊 Ant Tag「preset 原始色相名」categorical 模型 + Atlassian「categorical 色 vs semantic 色分離」。
 variants:
   neutral:
-    when: "通用分類、草稿、無特定語義"([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    when: "通用分類、草稿、無特定語義"  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
     world-class: ["Atlassian Tag standard", "Ant Tag default"]
   blue:
     when: "categorical 色相（--color-blue-*）— 分類 / 標記，常用於資訊類"
-    world-class: ["Ant Tag color=blue"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=blue"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   green:
     when: "categorical 色相（--color-green-*）— 分類 / 標記，常用於完成 / 正向類"
-    world-class: ["Ant Tag color=green"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=green"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   deep-orange:
     when: "categorical 色相（--color-deep-orange-*，hue 38）— 暖橙紅分類"
-    world-class: ["Ant Tag color=volcano"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=volcano"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   yellow:
     when: "categorical 色相（--color-yellow-*，淺底深字）— 分類 / 標記，常用於注意類"
-    world-class: ["Ant Tag color=gold"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=gold"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   red:
     when: "categorical 色相（--color-red-*，品牌紅家族 hue 25；≠ 語意 --error，與 deep-orange 無關）"
-    world-class: ["Ant Tag color=red"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=red"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   orange:
     when: "categorical 色相（--color-orange-*）— 分類 / 標記"
-    world-class: ["Ant Tag color=orange"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=orange"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   amber:
     when: "categorical 色相（--color-amber-*，淺底深字）— 琥珀分類"
-    world-class: ["Ant Tag color=gold"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=gold"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   lime:
     when: "categorical 色相（--color-lime-*）— 黃綠分類"
-    world-class: ["Ant Tag color=lime"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=lime"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   turquoise:
     when: "categorical 色相（--color-turquoise-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=cyan"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=cyan"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   indigo:
     when: "categorical 色相（--color-indigo-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=geekblue"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=geekblue"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   purple:
     when: "categorical 色相（--color-purple-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=purple"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=purple"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
   magenta:
     when: "categorical 色相（--color-magenta-*）— 產品線 / 團隊區別標記"
-    world-class: ["Ant Tag color=magenta"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
+    world-class: ["Ant Tag color=magenta"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/tag/demo/colorful.md)、[來源](https://atlassian.design/components/tag/examples))
 sizes:
   sm:
     when: "form field-height 28 / compact chrome / dialog / panel context"

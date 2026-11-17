@@ -2486,6 +2486,30 @@ function DataTableInner<TData>(
   })
 
   virtualizerRef.current = virtualizer
+  // 列高估計值變了(密度在掛載後才改:整頁、區塊 data-ui-size / data-density;上方「estimate 預設 size-aware 對齊 token」)→
+  // 清一次量測快取,並把捲動位置換算回原本在視窗頂端的那一列(2026-11-17 A69;data-table.spec.md「二、高度模式」)。
+  // 為什麼要清:TanStack Virtual 的位置表只從「這次量到尺寸有變的最小列號」往後重算(virtual-core `getMeasurements` 的 min),
+  // 估計函式換了不算 —— 捲到中段才換密度,視窗上方沒再畫過的列停在舊列高,一萬列量到總高 440,080(應 480,000)。
+  // 為什麼要換算:清掉之後每一列的位置都照新列高重排,不換算的話同一個 scrollTop 指到的是別的列(畫面跳走)。
+  // 換算 = 頂端那一列的新起點 + 原本露出的比例 × 新列高;畫面上留著的仍是同一批列。
+  const lastEstimateRef = React.useRef(resolvedEstimate)
+  React.useLayoutEffect(() => {
+    const prev = lastEstimateRef.current
+    lastEstimateRef.current = resolvedEstimate
+    if (!useVirtual || prev === resolvedEstimate) return
+    const el = centerBodyRef.current
+    const offset = el ? el.scrollTop : 0
+    // 先讀一次(也順便消化掉待重算的列號 —— 量到新尺寸的列會排一個「從這一列往後重算」,下面清完之後就不會只從那一列算起)
+    const anchor = virtualizer.getVirtualItemForOffset(offset)
+    const shown = anchor && anchor.size > 0 ? Math.min(1, Math.max(0, (offset - anchor.start) / anchor.size)) : 0
+    virtualizer.measure()
+    // 立刻照新的估計值重算整張位置表(getVirtualItemForOffset 會跑一次 getMeasurements;待重算的列號上面已消化 → 從第 0 列算起)。
+    // 不等下一次 render 才算:中間若有列被量到新尺寸,位置表又會只從那一列往後算,上方停在舊列高
+    virtualizer.getVirtualItemForOffset(0)
+    if (!anchor || offset <= 0) return
+    const moved = virtualizer.measurementsCache[anchor.index]
+    if (moved) virtualizer.scrollToOffset(moved.start + shown * moved.size, { align: 'start' })
+  }, [resolvedEstimate, useVirtual, virtualizer])
   // 一次 render 只取一次 virtual items(預排隊 / 列高同步 / 三區 render 共用同一份快照;Codex R20 A3)
   // 非虛擬模式回模組層常數,不寫 `[]`:字面值每次 render 都是新身分,會讓拿它當相依的 effect 每次 render 都跑。
   const rowVirtualItems = useVirtual ? virtualizer.getVirtualItems() : EMPTY_VIRTUAL_ITEMS

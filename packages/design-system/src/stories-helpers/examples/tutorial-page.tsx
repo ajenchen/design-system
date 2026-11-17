@@ -28,6 +28,9 @@ import { CaptionedExamples, type CaptionedExamplesProps } from './example-captio
  *   「幾塊」怎麼數只寫在本檔 `headingContentOf`(【AI 推導】的數法,見該函式)。規則內容是一段文字 / 清單(段落)時照舊一律 tight(內容之間本來就是 tight)。
  *   值與判斷只寫在本檔:規則、展示頁的範例區段(`ExampleSection`)、設計規格頁的 `H3` / `Desc`(anatomy-utils.tsx,用本檔的 `useHeadingContent` 與 `SPEC_HEADING_GAP`)都從這裡來。
  * - 段落標題 → 段落內第一則規則 = loose × 2(同規則 ↔ 規則;Q2 ②):段落標題上下等距,靠 24px 半粗體 + 底線分出它屬於下面。
+ *   設計規格頁 / Patterns 文件頁也一樣(2026-11-17 A42【AI 推導】:依 user 2026-10-27「Q2照你建議」的同一理由 ——「標題要離上一塊比離自己的
+ *   內容遠、看得出屬於下面」—— 推到這兩種頁,不是 user 對這一題逐字同意):段落標題 → 底下第一個**有標題的區段** = loose × 2。
+ *   寫法:段落標題放進 `ExampleStack` 當第一個子節點;教學框的規則說明 → 並排的有標題區段 = 區段放在規則之後(由 `TutorialPage` 的間距給)。
  * - 一頁多則有標題的範例(`ExampleSection`)上下疊 = loose × 2(`ExampleStack`,Q2 ①):標題離上一則比離自己的內容遠。
  * - 範例 ↔ 範例 = loose、說明 ↔ 它說的範例 = tight:照舊由 `CaptionedExamples` / `ExampleGroup` 擁有(example-captions.tsx)。
  * - 間距一律由外層 gap 給,各塊不留自己的下方 margin —— 最後一塊下面不會多出空白,同一塊放到別的版面也不必改它自己。
@@ -443,7 +446,7 @@ export const SPEC_HEADING_GAP_PARAGRAPH = 'mb-[var(--layout-space-tight)]'
 /**
  * 一頁多則有標題的範例上下疊(展示頁 / 設計規格頁;user 2026-10-27 21:31 回「Q2照你建議」①):範例之間 = loose × 2,
  * 跟教學頁規則之間同一級(值 = 本檔 `BLOCK_STACK`,全 repo 只寫在這裡)。子節點是 `ExampleSection` 或「小標 + 內容」的區塊;
- * `className` 只放寬度 / 對齊。
+ * 這一疊有自己的段落標題時,標題也放進來當第一個子節點(段落標題 → 第一則 = loose × 2,見檔頭;A42)。`className` 只放寬度 / 對齊。
  */
 export function ExampleStack({ className, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
   return <div data-example-stack="" className={cn(BLOCK_STACK, className)} {...rest} />

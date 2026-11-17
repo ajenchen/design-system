@@ -31,6 +31,7 @@ import { isImeComposing } from '@/design-system/lib/ime-composition'
 import { useI18n } from '@/design-system/lib/i18n/i18n-context'
 import {
   PANEL_PLACEMENT_ORDER,
+  defaultMenuWidthRange,
   deriveLayout,
   reduceLayout,
   resolveDisplayedWidth,
@@ -545,7 +546,8 @@ function useAppShellLayoutEngine(options: {
     },
     dismissMenuOverlay: () => dispatch({ type: 'dismiss-menu-overlay' }),
     railWidth: tokens.rail,
-    menuDefaultRange: { min: PANEL_WIDTH_MIN_DEFAULT, initial: tokens.sidebarInitial, max: tokens.sidebarInitial },
+    // 初始 / 最大 = 量到的 --sidebar-width(rem)與最小寬取大:瀏覽器字級小於 16px 時 15rem < 240,範圍不合法(layout-model `defaultMenuWidthRange`)
+    menuDefaultRange: defaultMenuWidthRange(tokens.sidebarInitial, PANEL_WIDTH_MIN_DEFAULT),
   }), [dispatch, tokens])
 
   const requestAside = React.useCallback((contentType?: string) => {

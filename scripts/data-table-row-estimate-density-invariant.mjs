@@ -10,15 +10,17 @@
  *           C  區塊只寫 data-ui-size="lg"(寫在 #storybook-root;html 仍是 data-density="md"):總高 = 列數 × 新的列高;
  *           D  掛載之後才在中間層加 data-density="lg"(寫在 #storybook-root):同上;
  *           E  對照:整頁密度 md → lg(html 的 data-density;2026-09-10 就有的那條路):同上。
+ *           S  捲到中段(列數一半那一列在視窗頂端)才把整頁密度 md → lg(2026-11-17 A69):總高同上,**而且視窗頂端仍是同一列**
+ *              (產品清量測快取時把捲動位置換算回原本那一列;不換算 = 畫面跳到別的列)。歷史紅燈:修前建置(6030e219)總高 440,080(應 480,000)。
  *   紅: 任一格總高與「列數 × 畫出來的列高」差 > 1px → 指名哪一格 / 量到多少 / 應該多少 / 推回去的估計值並 exit 1。
- *       `--selftest`:(a) 判定表(純函式 judge,主跑用的同一支)每一格各有該紅、該綠、量不到;(b) 真建置上先量一趟現況(四格必綠),
+ *       `--selftest`:(a) 判定表(純函式 judge,主跑用的同一支)每一格各有該紅、該綠、量不到;(b) 真建置上先量一趟現況(五格必綠),
  *       再用載入前的 init script 讓「訂了密度屬性的 MutationObserver」收不到某一類變動 ——
- *       X 收不到 data-ui-size → 四格的狀態必須正好是「C 紅、M / D / E 綠」;Y 收不到 html 以外元素的 data-density → 正好「D 紅、M / C / E 綠」
+ *       X 收不到 data-ui-size → 五格的狀態必須正好是「C 紅、M / D / E / S 綠」;Y 收不到 html 以外元素的 data-density → 正好「D 紅、M / C / E / S 綠」
  *       (修前 = c78b35e1 之前只盯最近一個帶 data-density 的祖先,X + Y 合起來就是它);破法讀回「標記到 0 個觀察器 / 該紅的那一趟丟掉 0 筆」
  *       = 產品換了機制、對照組不成立 → 自測失敗;(c) 拿一份只有「無預覽」頁的假建置把主跑跑一次(**經符號連結叫**,同時證明
  *       「是不是被直接執行」比真實路徑 —— lib/direct-run.mjs),必須以儀器失效的標記與 exit 2 結束。
  *       任何一項不符 → exit 1(真建置那幾趟自己量不到 → exit 2)。
- *   綠: 現況四格都等於期望值。讀數之前依序等三件事(都是畫面本身的狀態,沒有固定睡眠):畫出來的列都變成新的同一個高、
+ *   綠: 現況五格都等於期望值。讀數之前依序等三件事(都是畫面本身的狀態,沒有固定睡眠):畫出來的列都變成新的同一個高、
  *       列一列接一列(虛擬化器已照新量測重排)、版面連續 10 格靜止;任一件等不到 = 儀器失效,不指控產品。列高是固定行高,與字型、機器速度無關;
  *       紅的那個數字是穩定狀態(2026-11-14 研究時實量:再等 60 格不變),不是「還沒算完」。
  *       量不到的情況(找不到虛擬列 / 列數讀不到 / 列數太少 / 列高不只一種或不是整數 / 列疊在一起 / 捲動位置不是 0 / 整頁密度沒照網址套上 /
@@ -28,8 +30,8 @@
  *         虛擬高度那一層 = 它們共同的父元素(產品在它身上寫 height = getTotalSize()),列數 = 表格根的 aria-rowcount − 1。
  *         「區塊」= 執行時在 #storybook-root 寫屬性(掛載之後才改,正是這兩格的情境;不需要新 story,也不動視覺基準圖)。
  *         期望值用「畫出來的列高」:它由 CSS 固定行高直接決定、跟 JS 的估計值無關,閘不必把 rem 換成 px(那等於照抄產品的算法)。
- *   不在本閘保證內: 捲到中段之後才換密度 —— 2026-11-14 研究時實量總高停在 440,080(應 480,000),整頁密度那條路也一樣;那是另一件
- *         產品修正(主線另外追蹤)。本閘只從頂端量,把「捲動位置 = 0」列為儀器地板,免得有人以為這支涵蓋了它。
+ *   捲動位置: M / C / D / E 從頂端量(「捲動位置 = 0」是這四格的儀器地板);捲到中段才換密度由 S 量(2026-11-17 A69 修好之後加的;
+ *         修前 2026-11-14 研究時實量總高停在 440,080,當時列為「不在本閘保證內」)。S 動手前沒捲離頂端 / 讀不到頂端那一列 = 儀器失效。
  *   `--static=<dir>` 指定建置(自測的假建置用);指定時不跑新鮮度守衛。
  *   node scripts/data-table-row-estimate-density-invariant.mjs [--static=<storybook 建置目錄>] [--selftest]
  */
@@ -77,8 +79,9 @@ const CELLS = [
   { cell: 'C', what: '區塊只寫 data-ui-size="lg"(寫在 #storybook-root;html 仍是 data-density="md")', target: REGION, name: 'data-ui-size', value: 'lg', scene: { htmlDensity: 'md', htmlUiSize: null, regionDensity: null, regionUiSize: 'lg' } },
   { cell: 'D', what: '掛載之後才在中間層加 data-density="lg"(寫在 #storybook-root;掛載時它沒有這個屬性)', target: REGION, name: 'data-density', value: 'lg', scene: { htmlDensity: 'md', htmlUiSize: null, regionDensity: 'lg', regionUiSize: null } },
   { cell: 'E', what: '對照:整頁密度 md → lg(html 的 data-density)', target: 'html', name: 'data-density', value: 'lg', scene: { htmlDensity: 'lg', htmlUiSize: null, regionDensity: null, regionUiSize: null } },
+  { cell: 'S', what: '捲到中段(列數一半那一列在視窗頂端)才把整頁密度 md → lg', target: 'html', name: 'data-density', value: 'lg', scrolled: true, scene: { htmlDensity: 'lg', htmlUiSize: null, regionDensity: null, regionUiSize: null } },
 ]
-const CELL_ORDER = ['M', 'C', 'D', 'E']
+const CELL_ORDER = ['M', 'C', 'D', 'E', 'S']
 const M_WHAT = '掛載後(整頁一般密度、還沒動任何屬性)'
 /** --selftest 的兩種破法:各自只該讓一格紅 */
 const SABOTAGES = {
@@ -89,7 +92,7 @@ const SABOTAGES = {
 // ── 判定(純函式;主跑與 --selftest 共用)──────────────────────────────────────────────────────────────────
 
 /** 一次讀數能不能拿來判(動手前、動手後共用)。回 null = 可以;回字串 = 量不到的原因。 */
-export function readingProblem(r) {
+export function readingProblem(r, { scrolled = false } = {}) {
   if (!r) return '沒有讀數'
   if (r.err) return r.err
   if (!(r.rendered >= ROW_ESTIMATE_MIN_RENDERED_ROWS)) return `畫出來的虛擬列只有 ${r.rendered} 列(至少要 ${ROW_ESTIMATE_MIN_RENDERED_ROWS} 列)`
@@ -100,7 +103,9 @@ export function readingProblem(r) {
   if (!Number.isInteger(r.heights[0]) || r.heights[0] <= 0) return `列高 ${r.heights[0]} 不是正整數 px(瀏覽器縮放、或根字級不是 16?)`
   if (!r.contiguous) return '畫出來的列沒有一列接一列'
   if (r.scrollTop === null || r.scrollTop === undefined) return '找不到捲動容器'
-  if (r.scrollTop !== 0) return `捲動位置 ${r.scrollTop} 不是 0(本閘只保證從頂端量;捲到中段才換密度不在保證內)`
+  if (!scrolled && r.scrollTop !== 0) return `捲動位置 ${r.scrollTop} 不是 0(這一格從頂端量;捲到中段才換密度是 S 那一格)`
+  if (scrolled && !(r.scrollTop > 0)) return `捲動位置 ${r.scrollTop},沒有捲離頂端(S 要在中段量)`
+  if (scrolled && !Number.isInteger(r.topIndex)) return `讀不到視窗頂端那一列(${r.topIndex})`
   if (!Number.isFinite(r.total)) return `虛擬高度那一層的高讀不到(${r.total})`
   return null
 }
@@ -138,7 +143,7 @@ export function judge(trips) {
     if (matches.length !== 1) { instrument(`這一格應該剛好量一趟,實得 ${matches.length} 趟`); continue }
     const t = matches[0]
     if (t.err) { instrument(t.err); continue }
-    const preProblem = readingProblem(t.pre) ?? stageProblem(t.pre)
+    const preProblem = readingProblem(t.pre, spec) ?? stageProblem(t.pre)
     if (preProblem) { instrument(`動手前 —— ${preProblem}`); continue }
     mJudged += 1
     const preRow = t.pre.heights[0]
@@ -148,7 +153,7 @@ export function judge(trips) {
       status[spec.cell] = 'unjudged'
       continue
     }
-    const postProblem = readingProblem(t.post)
+    const postProblem = readingProblem(t.post, spec)
     if (postProblem) { instrument(`動手後 —— ${postProblem}`); continue }
     const off = Object.keys(spec.scene).filter((k) => t.post[k] !== spec.scene[k])
     if (off.length) { instrument(`動手後量到的不是這一格要的情境(${off.map((k) => `${k} = ${JSON.stringify(t.post[k])},應 ${JSON.stringify(spec.scene[k])}`).join(';')})`); continue }
@@ -157,6 +162,11 @@ export function judge(trips) {
     if (postRow === preRow) { instrument(`動手後畫出來的列高沒變(仍是 ${preRow})—— 這一區的密度沒有生效,量不到估計值有沒有跟上`); continue }
     if (Math.abs(t.post.total - t.post.n * postRow) > ROW_ESTIMATE_TOTAL_TOLERANCE_PX) {
       findings.push({ kind: 'red', cell: spec.cell, text: `${who}:捲動總高 ${t.post.total},應 ${t.post.n * postRow}(= ${t.post.n} 列 × ${postRow})。畫出來的 ${t.post.rendered} 列都是 ${postRow} 高;${impliedEstimate(t.post)} → 列高估計沒有跟著這一區的密度更新` })
+      status[spec.cell] = 'red'
+      continue
+    }
+    if (spec.scrolled && t.post.topIndex !== t.pre.topIndex) {
+      findings.push({ kind: 'red', cell: spec.cell, text: `${who}:視窗頂端原本是第 ${t.pre.topIndex} 列,換密度之後變成第 ${t.post.topIndex} 列 —— 清量測快取時沒有把捲動位置換算回原本那一列,畫面跳到別的列` })
       status[spec.cell] = 'red'
       continue
     }
@@ -218,8 +228,28 @@ const probeInPage = ({ rowSel, regionSel }) => {
     heights: [...new Set(list.map((x) => x.h))],
     contiguous: list.every((x, k) => k === 0 || Math.abs(x.top - (list[k - 1].top + list[k - 1].h)) <= 0.5),
     scrollTop: scroller ? Math.round(scroller.scrollTop) : null,
+    // 視窗頂端那一列 = 底邊超過捲動容器上緣的第一列(S 那一格比動手前後是不是同一列)
+    topIndex: (() => {
+      if (!scroller) return null
+      const top = scroller.getBoundingClientRect().top + 0.5
+      const hit = rows.map((r) => ({ i: Number(r.dataset.index), b: r.getBoundingClientRect() })).sort((a, b) => a.i - b.i).find((x) => x.b.bottom > top)
+      return hit ? hit.i : null
+    })(),
     sameParent: rows.every((r) => r.parentElement === spacer),
   }
+}
+
+/** S 那一格:把列數一半那一列捲到視窗頂端(用畫出來的列高算位置,與產品的估計值無關)。回捲完的 scrollTop;找不到捲動容器回 null。 */
+const scrollToMiddleInPage = ({ rowSel }) => {
+  const rows = [...document.querySelectorAll(rowSel)]
+  if (!rows.length) return null
+  let scroller = rows[0].parentElement.parentElement
+  while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+  const table = rows[0].closest('[role="table"], [role="grid"]')
+  const n = table && table.hasAttribute('aria-rowcount') ? Number(table.getAttribute('aria-rowcount')) - 1 : 0
+  if (!scroller || !n) return null
+  scroller.scrollTop = Math.floor(n / 2) * rows[0].getBoundingClientRect().height
+  return scroller.scrollTop
 }
 
 /** 寫屬性並讀回(target 'html' = 文件根)。找不到目標回 null。 */
@@ -301,7 +331,20 @@ async function measureTrip(page, url, spec, notFound) {
   try {
     await openStory(page, url, { waitFor: ROW, settleFrames: ROW_ESTIMATE_SETTLE_FRAMES, label: STORY, notFound })
     trip.pre = await page.evaluate(probeInPage, { rowSel: ROW, regionSel: REGION })
-    if (readingProblem(trip.pre) ?? stageProblem(trip.pre)) return trip // 舞台不對就不動手;原因由 judge 用同一支判定說
+    if (spec.scrolled) {
+      // S:先在頂端確認舞台(同其他格),再捲到中段、等列重新排好與版面靜止,動手前的讀數改用中段那一次
+      if (readingProblem(trip.pre) ?? stageProblem(trip.pre)) return trip
+      const at = await page.evaluate(scrollToMiddleInPage, { rowSel: ROW })
+      if (!(at > 0)) { trip.err = `捲到中段失敗(捲完 scrollTop = ${at})`; return trip }
+      try { await page.waitForFunction(rowsContiguousInPage, { rowSel: ROW, minRows: ROW_ESTIMATE_MIN_RENDERED_ROWS }, { timeout: ROW_ESTIMATE_WAIT_CAP_MS }) } catch (error) {
+        if (!isTimeout(error)) throw error
+        trip.err = '捲到中段之後列沒有一列接一列'; return trip
+      }
+      const settled = await settleAfterInteraction(page, { frames: ROW_ESTIMATE_SETTLE_FRAMES })
+      if (!settled.ok) { trip.err = `捲到中段之後版面等不到連續 ${ROW_ESTIMATE_SETTLE_FRAMES} 格靜止`; return trip }
+      trip.pre = await page.evaluate(probeInPage, { rowSel: ROW, regionSel: REGION })
+    }
+    if (readingProblem(trip.pre, spec) ?? stageProblem(trip.pre)) return trip // 舞台不對就不動手;原因由 judge 用同一支判定說
     const wrote = await page.evaluate(writeAttributeInPage, { target: spec.target, name: spec.name, value: spec.value })
     if (wrote !== spec.value) { trip.err = `在 ${spec.target} 寫 ${spec.name}="${spec.value}" 之後讀回 ${JSON.stringify(wrote)}`; return trip }
     const waited = await waitForNewLayout(page, trip.pre.heights[0])
@@ -314,7 +357,7 @@ async function measureTrip(page, url, spec, notFound) {
   return trip
 }
 
-/** 起伺服器 + 瀏覽器,C / D / E 各載入一次;sabotage = 'x' | 'y' 時先裝破法(一種破法一個瀏覽器:init script 要在載入前裝)。 */
+/** 起伺服器 + 瀏覽器,C / D / E / S 各載入一次;sabotage = 'x' | 'y' 時先裝破法(一種破法一個瀏覽器:init script 要在載入前裝)。 */
 async function measure({ sabotage = null } = {}) {
   const server = await startA11yStaticServer({ rootDirectory: STATIC, defaultFile: 'iframe.html' })
   const browser = await launchBrowserOrSkip({}, { cleanup: () => server.stop() })
@@ -342,7 +385,7 @@ function report(trips, { findings, status }) {
     for (const f of mine) console.log(f.kind === 'red' ? `✗ ${f.text}` : `✗ ${INSTRUMENT_FAIL_MARKER} ${f.text}`)
     if (status[cell] === 'green') {
       if (cell === 'M') console.log(`✓ [M] ${M_WHAT}:${CELLS.length} 趟動手前的捲動總高都 = 列數 × 列高(${CELLS.map((c) => measured(c.cell).pre.total).join(' / ')})`)
-      else { const t = measured(cell); console.log(`✓ [${cell}] ${CELLS.find((c) => c.cell === cell).what}:捲動總高 ${t.pre.total} → ${t.post.total}(= ${t.post.n} 列 × ${t.post.heights[0]})`) }
+      else { const t = measured(cell); console.log(`✓ [${cell}] ${CELLS.find((c) => c.cell === cell).what}:捲動總高 ${t.pre.total} → ${t.post.total}(= ${t.post.n} 列 × ${t.post.heights[0]})${cell === 'S' ? `;視窗頂端前後都是第 ${t.post.topIndex} 列` : ''}`) }
     } else if (status[cell] === 'unjudged') {
       console.log(`– [${cell}] 沒有判(${cell === 'M' ? '有一趟動手前就沒量到' : '這一趟的基準 M 就不對'})`)
     }
@@ -368,10 +411,13 @@ function selftestTable() {
     n: 10000, total: 400000, rendered: 18, heights: [40], contiguous: true, scrollTop: 0, sameParent: true,
     htmlDensity: 'md', htmlUiSize: null, regionExists: true, regionContainsTable: true, regionDensity: null, regionUiSize: null, ...over,
   })
-  const after = (cell, over = {}) => reading({ total: 480000, rendered: 16, heights: [48], ...CELLS.find((c) => c.cell === cell).scene, ...over })
-  const trip = (cell, over = {}) => ({ cell, pre: reading(), post: after(cell), ...over })
+  // S 那一格的讀數在中段:動手前 scrollTop 200000(第 5000 列 × 40)、動手後 240000(× 48),視窗頂端前後都是第 5000 列
+  const midPre = { scrollTop: 200000, topIndex: 5000 }
+  const midPost = { scrollTop: 240000, topIndex: 5000 }
+  const after = (cell, over = {}) => reading({ total: 480000, rendered: 16, heights: [48], ...CELLS.find((c) => c.cell === cell).scene, ...(cell === 'S' ? midPost : {}), ...over })
+  const trip = (cell, over = {}) => ({ cell, pre: reading(cell === 'S' ? midPre : {}), post: after(cell), ...over })
   const trips = (overByCell = {}) => CELLS.map(({ cell }) => trip(cell, overByCell[cell]))
-  const GREEN = { M: 'green', C: 'green', D: 'green', E: 'green' }
+  const GREEN = { M: 'green', C: 'green', D: 'green', E: 'green', S: 'green' }
   let rows = 0
   const check = (name, input, wantStatus, extra = () => true) => {
     rows += 1
@@ -392,14 +438,14 @@ function selftestTable() {
   check('C 多 2px', trips({ C: { post: after('C', { total: 480002 }) } }), { ...GREEN, C: 'red' }, onlyRed('C'))
   check('C 少 2px', trips({ C: { post: after('C', { total: 479998 }) } }), { ...GREEN, C: 'red' }, onlyRed('C'))
   // M:掛載後就不對(估 36、列高 40)→ 只紅 M,那一趟的格不往下判(不是綠也不是紅)
-  check('C 那一趟動手前總高 360000', trips({ C: { pre: reading({ total: 360000 }) } }), { M: 'red', C: 'unjudged', D: 'green', E: 'green' },
+  check('C 那一趟動手前總高 360000', trips({ C: { pre: reading({ total: 360000 }) } }), { M: 'red', C: 'unjudged', D: 'green', E: 'green', S: 'green' },
     (v) => onlyRed('M')(v) && v.findings[0].text.startsWith('[M]') && v.findings[0].text.includes('360000') && v.findings[0].text.includes('400000'))
   check('三趟動手前都不對', trips({ C: { pre: reading({ total: 360000 }) }, D: { pre: reading({ total: 360000 }) }, E: { pre: reading({ total: 360000 }) } }),
-    { M: 'red', C: 'unjudged', D: 'unjudged', E: 'unjudged' }, (v) => v.findings.length === 3 && v.findings.every((f) => f.kind === 'red' && f.cell === 'M'))
+    { M: 'red', C: 'unjudged', D: 'unjudged', E: 'unjudged', S: 'green' }, (v) => v.findings.length === 3 && v.findings.every((f) => f.kind === 'red' && f.cell === 'M'))
   // 量不到:每一種各一筆,都落在 D 那一趟 —— D = 沒量到(不是紅也不是綠),C / E 照綠,沒有任何一筆紅
   const dPre = (over) => ({ D: { pre: reading(over) } })
   const dPost = (over) => ({ D: { post: after('D', over) } })
-  const beforeActing = { M: 'unjudged', C: 'green', D: 'instrument', E: 'green' } // 動手前就量不到:那一趟的 M 也沒判
+  const beforeActing = { M: 'unjudged', C: 'green', D: 'instrument', E: 'green', S: 'green' } // 動手前就量不到:那一趟的 M 也沒判
   const afterActing = { ...GREEN, D: 'instrument' }
   for (const [name, input, want] of [
     ['量測中斷', { D: { err: '量測中斷 —— 假的' } }, beforeActing],
@@ -425,13 +471,21 @@ function selftestTable() {
     ['動手後列高兩種', dPost({ heights: [40, 48] }), afterActing],
     ['動手後列疊在一起', dPost({ contiguous: false }), afterActing],
     ['動手後屬性被洗掉(量到的不是這一格要的情境)', dPost({ regionDensity: null }), afterActing],
-    // 捲到中段才換密度(2026-11-14 研究時實量 440,080):不在本閘保證內 —— 判成沒量到,不指控產品
+    // D 這一格從頂端量:動手後捲動位置不是 0 = 量的不是這一格的情境(捲到中段才換密度是 S 那一格)
     ['動手後捲動位置不是 0、總高 440080', dPost({ total: 440080, scrollTop: 104 }), afterActing],
+    // S 那一格的量不到:沒捲離頂端、讀不到視窗頂端那一列
+    ['S 動手前沒捲離頂端', { S: { pre: reading({ topIndex: 0 }) } }, { ...beforeActing, D: 'green', S: 'instrument' }],
+    ['S 讀不到視窗頂端那一列', { S: { pre: reading({ scrollTop: 200000, topIndex: null }) } }, { ...beforeActing, D: 'green', S: 'instrument' }],
   ]) check(`量不到:${name}`, trips(input), want, noRed)
+  // S:修前實量(總高 440,080)紅、畫面跳到別的列紅 —— 各自只紅 S
+  check('S 總高停在 440080(修前 6030e219 實量)', trips({ S: { post: after('S', { total: 440080 }) } }), { ...GREEN, S: 'red' },
+    (v) => onlyRed('S')(v) && v.findings[0].text.includes('440080') && v.findings[0].text.includes('480000'))
+  check('S 換密度後視窗頂端變成別的列(沒換算捲動位置)', trips({ S: { post: after('S', { scrollTop: 200000, topIndex: 4166 }) } }), { ...GREEN, S: 'red' },
+    (v) => onlyRed('S')(v) && v.findings[0].text.includes('第 5000 列') && v.findings[0].text.includes('第 4166 列'))
   // 少一趟 / 多一趟 / 一趟都沒有 → 那一格沒量到(0 趟不得被讀成通過)
-  check('一趟都沒有', [], { M: 'unjudged', C: 'instrument', D: 'instrument', E: 'instrument' }, noRed)
-  check('少了 E 那一趟', trips().slice(0, 2), { M: 'unjudged', C: 'green', D: 'green', E: 'instrument' }, noRed)
-  check('C 量了兩趟', [...trips(), trip('C')], { M: 'unjudged', C: 'instrument', D: 'green', E: 'green' }, noRed)
+  check('一趟都沒有', [], { M: 'unjudged', C: 'instrument', D: 'instrument', E: 'instrument', S: 'instrument' }, noRed)
+  check('少了 E 那一趟', trips().filter((t) => t.cell !== 'E'), { M: 'unjudged', C: 'green', D: 'green', E: 'instrument', S: 'green' }, noRed)
+  check('C 量了兩趟', [...trips(), trip('C')], { M: 'unjudged', C: 'instrument', D: 'green', E: 'green', S: 'green' }, noRed)
 
   // 靜態地板:範例自己傳了 estimateRowHeight
   const story = (body) => `export const NestedRows: Story = {}\n\nexport const VirtualScroll: Story = {\n  render: () => (\n    <DataTable columns={columns} data={largeData} height="500px" overscan={10}${body} />\n  ),\n}\n\nexport const WithBulkActions: Story = { args: { estimateRowHeight: 36 } }\n`
@@ -508,7 +562,7 @@ async function selftest() {
   if (!staticArg) requireFreshStorybookBuild(STATIC, SOURCES)
 
   // (b) 真建置:現況必綠,再各裝一種破法
-  const GREEN = { M: 'green', C: 'green', D: 'green', E: 'green' }
+  const GREEN = { M: 'green', C: 'green', D: 'green', E: 'green', S: 'green' }
   const runs = [[null, '現況(不裝破法)', GREEN], ...Object.entries(SABOTAGES).map(([mode, s]) => [mode, `破法 ${mode.toUpperCase()}(${s.what})`, { ...GREEN, [s.red]: 'red' }])]
   for (const [mode, name, want] of runs) {
     const trips = await measure({ sabotage: mode })
@@ -517,7 +571,7 @@ async function selftest() {
     if (unmeasured.length) return instrumentExit([`selftest ${name}:沒量到不能讀成「對照組被抓到」`, ...unmeasured.map((f) => f.text)])
     const hit = mode ? sabotageProblem(mode, trips) : null
     const reds = verdict.findings.filter((f) => f.kind === 'red').map((f) => f.text)
-    if (!sameStatus(verdict.status, want)) failures.push(`${name}:四格應 ${showStatus(want)},實得 ${showStatus(verdict.status)}${reds.length ? `\n    ${reds.join('\n    ')}` : ''}${mode ? '' : '\n    基準不乾淨,對照組沒有意義'}`)
+    if (!sameStatus(verdict.status, want)) failures.push(`${name}:五格應 ${showStatus(want)},實得 ${showStatus(verdict.status)}${reds.length ? `\n    ${reds.join('\n    ')}` : ''}${mode ? '' : '\n    基準不乾淨,對照組沒有意義'}`)
     else if (hit) failures.push(`${name}:${hit}`)
     else say(`✓ ${name}:${showStatus(verdict.status)}${mode ? `;標記到 ${trips[0].sab.observers} 個觀察器、${SABOTAGES[mode].red} 那一趟丟掉 ${trips.find((t) => t.cell === SABOTAGES[mode].red).sab.dropped} 筆紀錄\n    ${reds.join('\n    ')}` : ''}`)
   }
@@ -532,7 +586,7 @@ async function selftest() {
     console.error('❌ data-table-row-estimate-density selftest FAIL')
     return 1
   }
-  say('✅ data-table-row-estimate-density selftest PASS(判定表 + 現況四格綠 + 破法 X 只紅 C、Y 只紅 D + 假建置走儀器失效出口)')
+  say('✅ data-table-row-estimate-density selftest PASS(判定表 + 現況五格綠 + 破法 X 只紅 C、Y 只紅 D + 假建置走儀器失效出口)')
   return 0
 }
 
@@ -545,7 +599,7 @@ async function main() {
   report(trips, verdict)
   if (verdict.findings.some((f) => f.kind === 'instrument')) return instrumentExit([])
   if (verdict.findings.some((f) => f.kind === 'red')) { console.error('\n❌ data-table-row-estimate-density FAIL'); return 1 }
-  console.log('\n✅ data-table-row-estimate-density PASS(大量資料那則掛載後 / 區塊只寫 data-ui-size / 掛載後才在中間層加 data-density / 整頁密度切換:捲動總高 = 列數 × 畫出來的列高)')
+  console.log('\n✅ data-table-row-estimate-density PASS(大量資料那則掛載後 / 區塊只寫 data-ui-size / 掛載後才在中間層加 data-density / 整頁密度切換 / 捲到中段才換密度:捲動總高 = 列數 × 畫出來的列高;中段那格視窗頂端仍是同一列)')
   return 0
 }
 

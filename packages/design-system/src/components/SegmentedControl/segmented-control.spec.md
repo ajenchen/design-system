@@ -6,7 +6,7 @@ sizes:
   xs:
     px: 24
     when: "row-embedded inline action(DataTable row inline action / Toolbar 內塞 segmented filter);text-caption"
-    world-class: ["Ant Segmented size=small(24)"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/segmented/style/index.ts#L91-L94)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/shared/genControlHeight.ts#L7)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/seed.ts#L69)、[來源](https://unpkg.com/@atlaskit/toggle@17.3.5/dist/types/types.d.ts))
+    world-class: ["Ant Segmented size=small(24)"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/segmented/style/index.ts#L91-L94)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/shared/genControlHeight.ts#L7)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/seed.ts#L69)、[來源](https://unpkg.com/@atlaskit/toggle@17.3.5/dist/types/types.d.ts))
   sm:
     px: 28
     when: "form field-height 28 / compact chrome bar(Filter bar / dense Toolbar)"

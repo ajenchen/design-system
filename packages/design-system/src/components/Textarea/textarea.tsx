@@ -97,15 +97,16 @@ const textareaVariants = cva(
         className: [
           'bg-transparent !rounded-none !resize-none !h-full',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
-          'border border-border',
-          'hover:border-border-hover',
+          // 框寬在這裡,靜止灰框 + 滑過只屬於沒有錯誤的那條(下一條)—— 同 field-wrapper.tsx naked 條(2026-11-17 A55):
+          // 寫在這裡會排在共用錯誤條之後,tailwind-merge 拿掉 `border-error` / `hover:border-error-hover`,無框款 × 驗證錯誤靜止與滑過變灰框
+          'border',
           // textarea UA stylesheet 預設 line-height: normal(1.2-1.5 不定),會跟 view
           // `<div>` text-body line-height: 1.5(21px @ 14px)不一致 → cell 進 edit 後 height
           // shift。顯式 leading 對齊 div 行為。
           '!leading-[1.5]',
         ],
       },
-      { mode: 'edit', variant: 'naked', error: false, className: 'focus-visible:!border-primary focus-visible:hover:!border-primary' },
+      { mode: 'edit', variant: 'naked', error: false, className: 'border-border hover:border-border-hover focus-visible:!border-primary focus-visible:hover:!border-primary' },
       // 2026-05-13 Q1 R4 verify(per codex Q1 verdict 補 Textarea nuance):
       // Textarea view×naked 用 `!h-full`,**不**對齊 Field wrapper 的 `!h-auto`。
       // Why divergence:textarea 是 native form element 帶 intrinsic rows-based height,且 cell 內

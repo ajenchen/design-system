@@ -540,6 +540,10 @@
             "timeoutMs": 1320000
           },
           {
+            "path": "scripts/test-sidebar-standalone-collapse-invariant.mjs",
+            "timeoutMs": 720000
+          },
+          {
             "path": "scripts/test-virtual-cursor-modality-invariant.mjs",
             "timeoutMs": 720000
           }

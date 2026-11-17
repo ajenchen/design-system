@@ -89,12 +89,13 @@ export const Overview: Story = {
 export const LayoutModeDiagram: Story = {
   name: '兩種布局模式對照圖',
   render: () => (
-    // 間距(layoutSpace.spec.md 規則 3「標題區 → 內容」):「兩 mode 對照」底下兩段並列 = loose;每個 h3 底下只有一塊
-    // (一張對照圖 + 它的說明)= tight(2026-11-11);兩個有標題的區段上下疊 = loose × 2(ExampleStack,Q2 ①:區段標題離上一段比離自己的圖遠);
-    // 對照圖 ↔ 它下面那句說明 = tight(說明替緊鄰的圖命名,規則 3「labeling」)。原本寫死 space-y-6 / space-y-2(24 / 8,不跟密度)
-    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] flex flex-col gap-[var(--layout-space-loose)] text-body">
-      <h2 className="text-h4">兩 mode 對照</h2>
+    // 間距(layoutSpace.spec.md 規則 3):段落標題「兩 mode 對照」→ 第一個區段 = 區段 ↔ 區段 = loose × 2(段落標題放進 ExampleStack 當第一個子節點,
+    // 同教學頁 TutorialSection「段落標題 → 第一則」;2026-11-17 A42【AI 推導】,依 user 2026-10-27「Q2照你建議」的同一理由推 —— 原本 loose,
+    // 第一個區段的小標離段落標題 16 / 24、離自己的圖 12 / 16,看不出屬於下面);每個 h3 底下只有一塊(一張對照圖 + 它的說明)= tight(2026-11-11);
+    // 兩個有標題的區段上下疊 = loose × 2(ExampleStack,Q2 ①);對照圖 ↔ 它下面那句說明 = tight(說明替緊鄰的圖命名,規則 3「labeling」)。
+    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-body">
         <ExampleStack>
+        <h2 className="text-h4">兩 mode 對照</h2>
         <section className="flex flex-col gap-[var(--layout-space-tight)]">
           <h3 className="text-h5">primary-sidebar(header 是當前頁的 local toolbar)</h3>
           <div className="flex flex-col gap-[var(--layout-space-tight)]">

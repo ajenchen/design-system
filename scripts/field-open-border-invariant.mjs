@@ -11,6 +11,9 @@
  *          O1 開著、滑鼠在空白處 / O2 開著、滑鼠停在欄位上 / O3 開著、滑鼠停在浮層裡 → 四邊 = 期望色;
  *          C1 關掉並離開欄位 → 四邊回到開之前靜止時的顏色。
  *        N 表格格內(無框款)Select / DatePicker:點進編輯(浮層跟著開)→ O1–O3 同上;關掉後格子上不留那個顏色的框。
+ *          另有無框款 × 驗證錯誤、沒開的兩列(夾具 naked-error-select;2026-11-17 A55):E1 靜止 → 四邊 --error、E2 滑鼠停在欄位上(沒聚焦)→ 四邊 --error-hover。
+ *          歷史紅燈:改前的原始碼(無框款那條把灰框寫在共用錯誤條之後,tailwind-merge 拿掉紅框)E1 = --border、E2 = --border-hover。
+ *          這兩列沒開浮層,六種破法都碰不到(family closed)。
  *        G 併排欄位組中間那一格,兩組各量一遍:story「篩選列」(欄位 / 欄位 / 欄位,期望色 --primary)與夾具「欄位 / 欄位[驗證錯誤] / 欄位」
  *          (期望色 --error:驗證錯誤的成員聚焦 / 開著時四邊紅、鄰居被滑過時共用那條線仍是紅)。每一組分兩段量:
  *          鍵盤聚焦、沒開(K1–K6):K1 滑鼠在空白處 → 四邊 computed 與四邊中點**像素** = 期望色(沒被鄰居蓋住);滑鼠停在左、右鄰居上各量兩列 ——
@@ -60,7 +63,7 @@
  *   node scripts/field-open-border-invariant.mjs [--build=<storybook 建置目錄>] [--selftest] [--cpu-throttle=<倍數>]
  *
  * 夾具(scripts/test-fixtures/field-open-border/fixture.tsx,由 lib/storybook-css-fixture.mjs 打包):X 三格、「驗證錯誤 × 可搜尋的 Select /
- * 可打字的 DatePicker / 日期區間」三種欄位、併排欄位組「欄位 / 欄位[驗證錯誤] / 欄位」一組 —— 第一種不該寫成 story、後兩種展示頁湊不出來
+ * 可打字的 DatePicker / 日期區間」三種欄位、併排欄位組「欄位 / 欄位[驗證錯誤] / 欄位」一組、表格格內(無框款)× 驗證錯誤一格 —— 第一種不該寫成 story、後三種展示頁湊不出來
  * (理由寫在夾具檔頭)。夾具列量到的是「這次 checkout 的元件原始碼 + 指定建置的 CSS」;其餘各列量的是指定建置裡的 story。
  */
 import { dirname, isAbsolute, join } from 'node:path'
@@ -537,6 +540,27 @@ async function runNaked(cell, mode) {
   }
 }
 
+// ── N 驗證錯誤:表格格內(無框款)× 驗證錯誤,沒開(夾具;A55)────────────────────────────────
+async function runNakedError(mode) {
+  const name = 'N 表格格內 Select(無框款)· 驗證錯誤 · 沒開(夾具)'
+  planned += 2
+  try {
+    const scope = '[data-fob-cell="naked-error-select"]'
+    await openTarget({ fixture: 'naked-error-select' }, `${scope} ${HOST_EDIT}`, mode)
+    const info = await markHost(scope, 0)
+    if (!info.error) throw new InstrumentError('夾具的無框款欄位沒有 data-error(夾具改了?)')
+    await readTokens()
+    const r = await rest('E1')
+    check(mode, `${name} | E1 靜止(滑鼠在空白處、焦點不在欄位裡)→ 四邊 --error`, all4(r, tokens['--error']), show(r), expectOf(mode, 'closed'))
+    await hoverOwn('E2')
+    const h = await measure('E2')
+    if (!h.hover || h.fw) throw new InstrumentError(`E2:要量「滑鼠停在欄位上、沒聚焦」,實際滑鼠在欄位上=${h.hover}、焦點在欄位裡=${h.fw}`)
+    check(mode, `${name} | E2 滑鼠停在欄位上(沒聚焦)→ 四邊 --error-hover`, all4(h, tokens['--error-hover']), show(h), expectOf(mode, 'closed'))
+  } catch (error) {
+    instrument(name, String(error?.message ?? error).split('\n')[0].slice(0, 300))
+  }
+}
+
 // ── G:併排欄位組 ──────────────────────────────────────────────────────────────────────
 const px = (png, x, y) => { if (x < 0 || y < 0 || x >= png.width || y >= png.height) return null; const i = (png.width * y + x) << 2; return [png.data[i], png.data[i + 1], png.data[i + 2]] }
 const near = (a, b) => !!a && !!b && Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2])) <= 2
@@ -824,6 +848,7 @@ async function runMode(mode) {
   }
   for (const field of FIELDS) for (const opener of ['mouse', 'keyboard']) await runField(field, opener, mode)
   for (const cell of NAKED) await runNaked(cell, mode)
+  await runNakedError(mode)
   for (const group of GROUPS) await runGroup(group, mode)
   for (const w of WRAPPED) await runWrapped(w, mode)
   await runInner(mode)

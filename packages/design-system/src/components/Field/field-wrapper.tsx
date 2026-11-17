@@ -229,8 +229,11 @@ export const fieldWrapperStyles = cva(
         className: [
           'bg-transparent !rounded-none !h-full',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
-          'border border-border',
-          'hover:border-border-hover',
+          // 框寬在這裡;框色(靜止 / 滑過)不在這條 —— 灰框只屬於沒有錯誤的那條(下一條)。2026-11-17 A55:灰框原本寫在這裡,
+          // 而這條排在共用的錯誤條(FIELD_DEFAULT_CHROME_COMPOUNDS 最後一條,不分 variant)之後,tailwind-merge 保留後寫的
+          // `border-border` / `hover:border-border-hover`、拿掉錯誤條的 `border-error` / `hover:border-error-hover` → 無框款 × 驗證錯誤
+          // 靜止與滑過都是灰框,只剩聚焦 / 開著(帶 `!`)是紅。改成跟 default 一樣:錯誤與否各自一條,不靠排序。
+          'border',
           // v13.3 SSOT canonical:focus-within !important(同 default + bare;
           // 2026-07-04 Q1:focus 藍移到 error:false compound,error:true 走共用 error compound)
           // 2026-09-25:開啟中的框同樣在 error:false compound(error 開啟中走共用 error compound);2026-11-12 起開啟中 = 聚焦的框
@@ -239,7 +242,8 @@ export const fieldWrapperStyles = cva(
       },
       // @focus-suppress C — naked wrapper 自己聚焦(DataTable 儲存格裡的 Select / DatePicker 觸發器);承擔者:同一行 focus-within:!border-primary
       // 開啟中 = 維持聚焦的框(同 default 的 error:false 條註解;field.spec.md「Field state machine」表)
-      { mode: 'edit', variant: 'naked', error: false, className: 'data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
+      // 靜止灰框 + 滑過(A55 從上一條移來):只在沒有錯誤時;有錯誤走共用錯誤條的紅框(閘 field-open-border-invariant.mjs 的 N 驗證錯誤兩列)
+      { mode: 'edit', variant: 'naked', error: false, className: 'border-border hover:border-border-hover data-[field-open]:!border-primary focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
         //   Q1 root invariant?:cell-as-input view 視覺位置 = `cell.items-{X}` × `Field.height`

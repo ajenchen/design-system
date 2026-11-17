@@ -62,7 +62,7 @@
   名字用「取消」二字、Esc 的層次、回執那一行、給 AI 的訊號、參數改名是 AI 依這兩句落地的細節【AI 推導 2026-11-15】。
   取代的是 user 同日回覆「跳過:甲」的後半。甲的原文(AI 建議、user 選甲):「拿掉下方的「跳過」，只留右上角 ×；× 的提示文字改成「跳過全部，用建議繼續」。第一題下方只剩「下一題」，第二題起是「上一題 / 下一題」。」
   —— 前半(拿掉下方的跳過、只留右上角 ×、footer 組成)不變;後半「× = 用建議繼續」的前提「Skip=全部用預設繼續(非取消)」是 2026-09-02 隨規格入庫的寫法,查無 user 原話。
-  user 最早的提問(逐字):「再者，ai agent決策卡的部分，下方有「跳過」，其應該跟點擊x是一樣的意思？那是否文案要改成「取消」之類的？或是建議拿掉這個按鈕？」;
+  user 最早的提問(逐字;原始對話 2026-11-10T14:48:18Z 核過,開頭「再者，」是原文 —— 待辦總帳那一行少了這兩字):「再者，ai agent決策卡的部分，下方有「跳過」，其應該跟點擊x是一樣的意思？那是否文案要改成「取消」之類的？或是建議拿掉這個按鈕？」;
   另在選填題那張圖留言(逐字,問句):「跳過要拿掉？」(AI 回答「要」)。2026-09-02 到 2026-11-10:第一題 footer 左鈕是「跳過」(與 × 同一行為),× 的名字也是「跳過」;
   2026-11-11 到 11-15:× 的名字「跳過全部，用建議繼續」,按了把預選 / 已選的值當答案交出去(三題的卡停在第 1 題按 ×,連沒看到的第 2 題也算進去)。
   對照:[MCP 徵詢規格](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2025-06-18/client/elicitation.mdx)把回應分三種,
@@ -90,7 +90,7 @@
   焦點不在它身上不動,同 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`;第三題回第二題時上一題還在,焦點留在原處)。
   「下一題」/「送出」恆可按(新建表單,`../Field/form-validation.spec.md`「Submit Button 狀態」),只在按下時驗這一題(「其他」要不要填看「其他」選了沒 = 跨欄位,規則 9):
   沒選(選填題 `optional` 除外 —— 題目後有「(選填)」,見 Header 條:照常前進,值為空字串)或「其他」空白 → 不前進,`FieldError` 放在最後一張選項卡之後,**距離 = 卡間距 8**
-  (依據:user 2026-10-29 原話「此外決策卡是否next/submit按鈕都不應該disable?然後點擊這些按鈕若有出錯 應該用跟 field 的 error msg 一樣的字放在最後一個選項的後面跟最後一個選項距離=選項跟選項之間的距離？你覺得如何？」—— 問句,照提案落地;
+  (依據:user 2026-10-29 原話(逐字;與 10-29 對話第十一輪的逐字彙整一字不差,本機紀錄不進版控)「此外決策卡是否next/submit按鈕都不應該disable?然後點擊這些按鈕若有出錯 應該用跟 field 的 error msg 一樣的字放在最後一個選項的後面跟最後一個選項距離=選項跟選項之間的距離？你覺得如何？」—— 問句,照提案落地;
   8 這個數是 AI 依既有規則定:世界級一致的只有「錯誤不比選項之間更靠近最後一個選項」—— Polaris ChoiceList 選項間 16 時錯誤也離 16、選項貼齊時錯誤 4
   (<https://github.com/Shopify/polaris/blob/5131f8a68b366f55a6e9e3a9e2dd624d4989cd33/polaris-react/src/components/ChoiceList/ChoiceList.tsx#L132-L150>)、
   Carbon 直排選項間 6、錯誤離最後一項 12(<https://github.com/carbon-design-system/carbon/blob/487b24869143fe35599118760ef39d17d8696c65/packages/styles/scss/components/radio-button/_radio-button.scss>

@@ -10,7 +10,7 @@
   "contractDigest": "sha256:6f63c4b98da5ea84c426d714819e8628160ad12bade78d4cdf1f7f791f99420d",
   "files": [
     {
-      "hash": "sha256:d7f773e21d4f267c4a8388ea82960ba398b183fe17857985a1ea1c08ef731024",
+      "hash": "sha256:e8c683a24101faa5436702351754f49250c213b637c496743308b7037a8eb29e",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7e6c69c3c247045593c49bbe050283ca91ce70dbfa950faa2896541d4f688ac1",
+      "hash": "sha256:ea9df6a95d33de31718cc768c344566906cb4012d68b4ea323eba24b2b04a324",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140199,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:34a974ed1fe2dcbbb1ef256382e02c6ac42402a57109ac2b8ee952a1c89509ac",
+  "inputDigest": "sha256:073d7e277a79abe3da2ea82be5db54d96203647c753894705c5f2623b39e3267",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -216,10 +216,10 @@
           "targetDigest": "sha256:9dca84e613c03426fba58e3a629994bbb235d6d49085278078942ccdd1e342b9"
         },
         {
-          "expectedTargetDigest": "sha256:27760b5cc5eaf09ef90997132012708e71c520bd6d41ff97c19c1a2eeef8916f",
+          "expectedTargetDigest": "sha256:631eb9f49c12785d01ca95c670ee0746a894d5482ac14a41353bc0dbd86b6315",
           "name": "story-writing",
-          "sourceDigest": "sha256:2a17c2463678a54bcd5b0334c3282e837a618505dcf5a4c09c9aef366b7ed23b",
-          "targetDigest": "sha256:27760b5cc5eaf09ef90997132012708e71c520bd6d41ff97c19c1a2eeef8916f"
+          "sourceDigest": "sha256:6cd0eab89232c516704df54f838c5b1952046e649fae0ca4fb1df5b5caba1945",
+          "targetDigest": "sha256:631eb9f49c12785d01ca95c670ee0746a894d5482ac14a41353bc0dbd86b6315"
         },
         {
           "expectedTargetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf",
@@ -439,10 +439,10 @@
           "targetDigest": "sha256:28c85166fc5072e28d11cd59d336dacfa0fb9be8d11ed35ad720bc254b551c81"
         },
         {
-          "expectedTargetDigest": "sha256:64e474f5991cc7d84c9dbc3cd022317b5e50258f0d04aff243a4e4740e9dd656",
+          "expectedTargetDigest": "sha256:ca2d78f550660e2644c53fef54c389197e2bc72d4f70aa63579daef076323957",
           "name": "story-writing",
-          "sourceDigest": "sha256:2a17c2463678a54bcd5b0334c3282e837a618505dcf5a4c09c9aef366b7ed23b",
-          "targetDigest": "sha256:64e474f5991cc7d84c9dbc3cd022317b5e50258f0d04aff243a4e4740e9dd656"
+          "sourceDigest": "sha256:6cd0eab89232c516704df54f838c5b1952046e649fae0ca4fb1df5b5caba1945",
+          "targetDigest": "sha256:ca2d78f550660e2644c53fef54c389197e2bc72d4f70aa63579daef076323957"
         },
         {
           "expectedTargetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d",
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:c52ce124c3b20adee36056e16fee04aa2f7ff1a2efd0648c322b579f908a9f9b",
+  "snapshotDigest": "sha256:028b66c2139188cb4108d3858ad12637b47f89383a4b31542f9dccf7e0f17281",
   "sources": [
     {
       "hash": "sha256:2c0e1fa5342aea91edf94d03338b9c0a3708a4e12d02b43646b6e886f2bd64f0",
@@ -698,7 +698,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:094cb894d63131807657d4488fd5f56b38304a3a51f624fcb57d894dadd125a5",
+      "hash": "sha256:6bc87d509d1a6510501cd61615d0cc55f2f013664b43af9d3a1c7b0b47b0615a",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2355,7 +2355,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:95f5520732997fec89d61515ef246e711f65661b4875e00e780c8c306f6d54ee",
+      "hash": "sha256:ce6ef983f24f7f1de4f3ab279382dafb9c8e773de32c9485ca09b62868e55717",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2418,12 +2418,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b5cfc3f084af1a4d0a0eacdb920e7d05b2c2eaff924b60b31512c09b5bbf4acd",
+      "hash": "sha256:7a234b78c86cea94d26634a8f9d36f2c7dcbfc14917993f3ea697bf87993628e",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 41242,
+      "size": 41377,
       "type": "file"
     },
     {
@@ -3098,7 +3098,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4ca6b4f293642f96ca7f13c7a99f94c3060a2b4d22c33e5af4a3477fed3bc45d",
+      "hash": "sha256:e6d3d5f7cc8b5ba47f107ad86bfec1aa3e34670c1ef19384f3c6e0703d4318bd",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 773,
-      "hash": "sha256:67b488391b6c3cba6aa4dfe1c4784f3f16d6f1a12c4fb978eb1fc2179ac92377",
+      "hash": "sha256:07a1ad714de8122910f81d1658dd5abd23136dfcc61f6fcc6384befb12ffd263",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

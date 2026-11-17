@@ -13,6 +13,8 @@
 //        (field-control-group.spec.md「States」)。DS 的範例只有「錯誤格在最後一格」(FieldControlGroup 規格頁「狀態行為」),
 //        錯誤格在中間、左右都有鄰居的組合沒有範例;這一組只為了量,不是業務情境的示範,所以不寫成 story。
 //        錯誤狀態用元件的正式寫法:成員自己的 `error`(field.spec.md「Field state machine SSOT」:控件只傳 `error` flag)。
+//   (四) 表格格內(無框款)× 驗證錯誤(2026-11-17 A55;格名 naked-error-select):DS 目前沒有任何範例用到這個組合
+//        (DataTable 格內編輯的展示頁沒有驗證錯誤),閘量它「沒開時靜止 = --error、滑過 = --error-hover」。
 // 夾具自己的版面用行內樣式:這個檔不在 Tailwind 的 @source 範圍裡,寫 class 不會產生樣式;DS 元件的樣式來自元件本身。
 // 例外只有 (三) 成員的寬度 class:逐字沿用 story「篩選列」(FieldControlGroup/field-control-group.stories.tsx)已經用的那三個字串,
 // 建置的 CSS 裡本來就有;story 改了字串,這一組只會變寬變窄,三格仍然相鄰(閘另外確認三格真的相鄰重疊 1px)。
@@ -93,6 +95,7 @@ function Fixture() {
   const [standup, setStandup] = React.useState('09:30')
   const [filterField, setFilterField] = React.useState('name')
   const [filterOperator, setFilterOperator] = React.useState('contains')
+  const [nakedCategory, setNakedCategory] = React.useState('')
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '320px 320px', columnGap: 200, rowGap: 96, padding: '64px 80px', minHeight: '100svh', alignContent: 'start' }}>
       {/* 左欄 = (二) 驗證錯誤 × 展示頁沒有的三種欄位;右欄 = (一) 外面包一層浮層(浮層開在欄位右邊,不蓋到別格) */}
@@ -148,6 +151,13 @@ function Fixture() {
           <Select aria-label="篩選條件" width={120} className="flex-shrink-0" error options={filterOperators} value={filterOperator} onChange={setFilterOperator} />
           <Input aria-label="篩選值" className="!flex-1 !min-w-0" defaultValue="無線滑鼠" />
         </FieldControlGroup>
+      </Cell>
+      {/* (四) 表格格內(無框款)× 驗證錯誤(2026-11-17 A55):DS 沒有任何展示頁用到這個組合,所以放夾具。
+          外層 40px 高 = 一格表格列,欄位 `!h-full` 撐滿它(同 DataTable 格內編輯) */}
+      <Cell name="naked-error-select" title="商品類別(表格格內編輯,必填,還沒選)">
+        <div style={{ height: 40, display: 'flex' }}>
+          <Select variant="naked" error options={filterFields} value={nakedCategory} onChange={setNakedCategory} placeholder="選擇類別…" aria-label="商品類別" />
+        </div>
       </Cell>
     </div>
   )

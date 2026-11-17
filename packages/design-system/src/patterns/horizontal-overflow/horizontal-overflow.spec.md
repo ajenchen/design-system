@@ -1,7 +1,7 @@
 ---
 pattern: horizontal-overflow
 internal: true
-scope: utility primitives module (use-overflow-items hooks: useScrollEdges + useOverflowIndices + fade-mask + scroll-arrow helper components) — DS-internal consumer only(Tabs / ChipGroup / FileViewer filmstrip wrap)
+scope: "utility primitives module (use-overflow-items hooks: useScrollEdges + useOverflowIndices + fade-mask + scroll-arrow helper components) — DS-internal consumer only(Tabs / ChipGroup / FileViewer filmstrip wrap)"
 ---
 
 <!-- @benchmark-unverified-blanket: 對齊 horizontal-overflow.tsx:5 的 file-level retraction(M22(d))——本檔 benchmark claim 均未逐條 URL cite,視為未驗證的視覺/用法陳述,除非後續 retrofit per-claim。 -->

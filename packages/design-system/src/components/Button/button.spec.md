@@ -10,21 +10,21 @@ traits:
 variants:
   primary:
     when: "主要 action / CTA。**必 explicit `variant=\"primary\"`,不靠預設**(2026-06-06 起預設改低 emphasis)"
-    world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L48)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/filled-button.ts#L26-L27)、[來源](https://unpkg.com/@atlaskit/button@25.7.0/dist/es2019/utils/button-appearances.js))
+    world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]  # ([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L48)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/filled-button.ts#L26-L27)、[來源](https://unpkg.com/@atlaskit/button@25.7.0/dist/es2019/utils/button-appearances.js))
   secondary:
     when: "陪襯 primary 的次要 action"
     # 2026-09-18 更正:本 variant 是**透明底 + 主色框 + 主色字**,不是填色鈕。
     # 舊寫的兩個對照都對不上(一個是有底色無框的填色鈕、一個是中性框),詳下方「世界級對照(per-variant)」。
-    world-class: ["Carbon Tertiary Button", "Ant ghost primary Button", "Bootstrap .btn-outline-primary"]([來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/button/_button.scss#L159-L167)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/style/variant.ts#L313-L315)、[來源](https://github.com/twbs/bootstrap/blob/6e1f75f420f68e1d52733b8e407fc7c3766c9dba/scss/mixins/_buttons.scss#L39-L47))
+    world-class: ["Carbon Tertiary Button", "Ant ghost primary Button", "Bootstrap .btn-outline-primary"]  # ([來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/button/_button.scss#L159-L167)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/style/variant.ts#L313-L315)、[來源](https://github.com/twbs/bootstrap/blob/6e1f75f420f68e1d52733b8e407fc7c3766c9dba/scss/mixins/_buttons.scss#L39-L47))
   tertiary:    # ★ labeled cva default(2026-06-06 從 primary 改 — 對齊世界級「預設低 emphasis、按重要程度升」)
     when: "**labeled 按鈕預設** / 第三級 action(tool-like / icon-heavy)。中性外框、清楚可點性,再按重要程度升 primary"
-    world-class: ["Material Outlined Button", "Ant Button default", "Polaris secondary"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L134-L141)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/outlined-button.ts#L25)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L125))
+    world-class: ["Material Outlined Button", "Ant Button default", "Polaris secondary"]  # ([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L134-L141)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/outlined-button.ts#L25)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L125))
   text:    # ★ iconOnly cva default(2026-06-06 加)
     when: "文字樣式 — low emphasis / toolbar embedded。**iconOnly 按鈕預設**(對齊 action-bar「純動作工具→text」+ Material 3「icon-only = no fill」)"
     world-class: ["Ant Button type=text", "Material Text Button", "Material 3 icon-only no-fill"]
   link:
     when: "內文連結 — inline reading context"
-    world-class: ["Polaris Link", "Ant Button type=link"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L35)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L129))
+    world-class: ["Polaris Link", "Ant Button type=link"]  # ([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L35)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L129))
 sizes:
   xs: { when: "row-embedded inline(FileItem rich action / DataTable row action)" }
   sm: { when: "form field-height 28 / compact chrome" }

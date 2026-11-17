@@ -145,12 +145,16 @@ const validateTaiwanId = (v: unknown) => {
  *    下 bottom(內容區宣告 data-layout-body="fill",同 dialog.tsx DialogBody:上下由容器自己給、底依最後一個東西照 layoutSpace.spec.md 規則 4);長內容在內容區裡捲(ScrollArea,
  *    overlay-surface.spec.md「Body overflow canonical」)。
  *  - 標題 ↔ 說明 = `--item-gap-label-desc-reading-lg`(2px,同 DialogTitle / DialogDescription,dialog.spec.md「Header 可成長」;
- *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 第一個欄位 = loose(標題 + 說明是這一頁整組欄位的標題,
- *    不是第一個欄位的小標:user 2026-10-21 A4 甲;layoutSpace.spec.md 規則 3「標題區 → 內容」:兩塊以上 = loose)
+ *    2026-10-21 前用 tight 12 / 16,標題與它自己的說明被當成兩個區塊);說明 → 內容照 layoutSpace.spec.md 規則 3「標題區 → 內容」
+ *    (user 2026-11-11 定的規則):底下兩塊以上(前 3 步:一組好幾個欄位)= loose(標題 + 說明是這一頁整組欄位的標題,不是第一個欄位的小標:
+ *    user 2026-10-21 A4 甲);底下只有一塊(後 3 步:一個欄位 / 一份核對清單 / 一個同意欄位)= tight(`singleBlock`;2026-11-17 A67,
+ *    之前 6 步都是 loose)。這頁是產品畫面的示範、不是說明頁,塊數由寫範例的人照內容標,不經說明頁的自動數法。
  *  - 標題字級同 DialogTitle(dialog.tsx `text-body-lg font-medium`) */
-function OnboardingPage({ title, description, children, onSubmit, onBack, submitLabel = '下一步', submitting }: {
+function OnboardingPage({ title, description, children, onSubmit, onBack, submitLabel = '下一步', submitting, singleBlock = false }: {
   title: string; description: string; children: React.ReactNode; onSubmit: (e?: React.FormEvent) => void
   onBack?: () => void; submitLabel?: string; submitting?: boolean
+  /** 標題區底下只有一塊內容(一個欄位 / 一份清單)→ 標題區 → 內容 = tight;不給 = 兩塊以上 → loose(layoutSpace.spec.md 規則 3「標題區 → 內容」) */
+  singleBlock?: boolean
 }) {
   return (
     <form onSubmit={onSubmit} aria-label={title} className="flex flex-col flex-1 min-h-0">
@@ -158,7 +162,7 @@ function OnboardingPage({ title, description, children, onSubmit, onBack, submit
         <div data-layout-body="fill" className="px-[var(--layout-space-loose)]">
           <h3 className="text-body-lg font-medium text-foreground">{title}</h3>
           <p className="mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary">{description}</p>
-          <div className="mt-[var(--layout-space-loose)]">{children}</div>
+          <div className={singleBlock ? 'mt-[var(--layout-space-tight)]' : 'mt-[var(--layout-space-loose)]'}>{children}</div>
         </div>
       </ScrollArea>
       <SurfaceFooter>
@@ -254,7 +258,7 @@ function BankStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
 function PayoutStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
   const { form, submit } = useOnboardingForm({ payoutCycle: draft.payoutCycle }, {}, onPass, onFail)
   return (
-    <OnboardingPage title="撥款週期" description="款項扣除手續費後,依你選的週期撥入收款帳戶。之後可在設定裡更改。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
+    <OnboardingPage title="撥款週期" singleBlock description="款項扣除手續費後,依你選的週期撥入收款帳戶。之後可在設定裡更改。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
       <Field>
         <FieldLabel>撥款週期</FieldLabel>
         <RadioGroup value={form.values.payoutCycle} onValueChange={(v) => form.setFieldValue('payoutCycle', v)}>
@@ -269,7 +273,7 @@ function ReviewStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
   const { form, submit } = useOnboardingForm({}, {}, onPass, onFail)
   const bank = BANK_OPTIONS.find((b) => b.value === draft.bankCode)?.label ?? '(尚未填寫)'
   return (
-    <OnboardingPage title="核對資料" description="送出後由審核團隊在 2 個工作天內完成,期間無法修改。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
+    <OnboardingPage title="核對資料" singleBlock description="送出後由審核團隊在 2 個工作天內完成,期間無法修改。" onSubmit={submit} onBack={onBack} submitting={form.isSubmitting}>
       <DescriptionList cols={1}>
         <DescriptionItem label="公司名稱">{draft.companyName}</DescriptionItem>
         <DescriptionItem label="統一編號">{draft.taxId}</DescriptionItem>
@@ -288,7 +292,7 @@ function AgreeStep({ draft, onPass, onFail, onBack }: OnboardingStepProps) {
     (v) => { onPass(v); toast({ variant: 'success', title: '已送出審核,結果會寄到負責人信箱' }) }, onFail,
   )
   return (
-    <OnboardingPage title="同意條款並送出" description="《收款服務條款》說明手續費、撥款時程與爭議款處理方式。" onSubmit={submit} onBack={onBack} submitLabel="送出審核" submitting={form.isSubmitting}>
+    <OnboardingPage title="同意條款並送出" singleBlock description="《收款服務條款》說明手續費、撥款時程與爭議款處理方式。" onSubmit={submit} onBack={onBack} submitLabel="送出審核" submitting={form.isSubmitting}>
       {/* 單一同意勾選框放在 Field 裡要包 CheckboxGroup,選項文字才不會被 FieldLabel 接管(checkbox.spec.md「insideGroup && insideField → 保留 label」);
           值走 setFieldValue(checkbox.spec.md「表單驗證接線」v1 邊界) */}
       <Field required invalid={!!form.errors.agreed}>
