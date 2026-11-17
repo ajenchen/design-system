@@ -12,7 +12,8 @@
 //   (b) Check 2 只掃 fieldWrapperStyles importer → 漏 group 控件(Checkbox/RadioGroup/SegmentedControl)。改掃**全 components**。
 //   (c) 漏「有 display/readonly branch 但不走 mode helper」的控件(此類根本不讀 fieldCtx,Check 2 抓不到)。新增 Check 1b。
 //
-// Run:ci.yml(deterministic source grep,無 build 依賴)。
+// Run:目前只由配對測試 scripts/test-check-field-cascade-resolve.mjs 經夜間 governance-harnesses.yml 帶跑,ci.yml 不直呼
+//   (2026-11-17 knowledge-prune 更正原「Run:ci.yml」)。deterministic source grep,無 build 依賴。
 
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
