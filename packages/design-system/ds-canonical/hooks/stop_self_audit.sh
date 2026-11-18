@@ -595,27 +595,103 @@ fi
 # user 去跑 → CRITICAL。真正的 human-only 邊界(login / MFA / OAuth / 帳單 / 缺 credential
 # reference)明文豁免,那些本來就該交給 user。
 #
-# 2026-11-18 補(工作包 E2;user 11-18 00:06「要打啥 確定沒有作繭自縛？確定這件事就是一定得為難我？」那次漏網):
-#   ① 交辦說法補「在對話框貼上 / 貼到這個對話框」(11-17 15:55Z 與 16:05Z 兩則都是這樣交辦,舊清單一個都比不到),
-#      以及以「! 」開頭的一行(程式碼區塊裡的 ! 指令;舊清單只認行內 `! 開頭)。
-#   ② 「你要?」改「你(要)?」:正式環境在 LC_ALL=C 下跑(scripts/run-provider-hook.mjs 組 hook 環境時寫死),
-#      ? 只管「要」的最後一個位元組,於是「你自己跑」從來比不到 —— 只在 UTF-8 語系的測試裡看起來會擋。
-#   ③ 被擋清單補 auto mode classifier:現行分類器擋下的原文是「Permission for this action was denied by the
-#      Claude Code auto mode classifier」,舊清單的 has been denied / Permission to use / Blocked by classifier 一個都不中。
-#   交辦比對一律 LC_ALL=C,先依全形「。！？」斷句,讓 .{0,24}(≈ 8 個中文字)不跨句。
-#   ④ 一律用 here-string 而非 printf | grep -q:grep -q 比到第一個符合的行就結束(本機 BSD grep 與 CI 的 GNU grep
-#      都一樣),本 turn 紀錄超過管線緩衝(64KiB)時寫端吃 SIGPIPE,pipefail 下整條回 141 = 假陰性 —— 擋下紀錄在前、
-#      後面還有大量輸出的 turn,本機制過去整個不發作(Test 60;與 Tests 12-14 同一個理由)。
-if [ -n "$LAST_ASSISTANT" ]; then
+# 2026-11-18 補(工作包 E2;user 11-18 00:06「要打啥 確定沒有作繭自縛？確定這件事就是一定得為難我？」那次漏網)。
+# 第一版(001c964d)只換了比對字串,註解寫「這兩種說法舊清單一個都比不到」,讓人以為換了字串就修好 —— 照 session 96d711a5
+# 的原始紀錄結構重放,第一版一樣不會擋(反駁 #1)。那幾次交辦的真實形狀是:
+#   (a) 15:54:00Z 與 16:05:29Z 兩個 turn:被擋紀錄在本 turn,交辦字只寫在 thinking 區塊與 PushNotification 的 message
+#       (16:05 那則:「刪測試殘留又被擋:請在對話框貼上我給的那行 ! cd … && rm -rf … && git checkout … 指令」);
+#       本 turn 唯一的可見文字是英文(「Once you've run that command, I'll check `git status`, …」)。舊版只看可見文字、只認中文。
+#   (b) 15:55:07Z「在對話框貼上下面這一整行…」:是 user 問「要打什麼？」之後的新一輪,本輪沒有任何工具被擋 ——
+#       被擋的是上一輪 15:53:48Z 那條 rm -rf(deny 規則)。舊版只看本 turn 的被擋紀錄。
+#   (c) 15:55:13Z「請把上面那行指令貼到對話框…」:前面夾了一則 Stop hook 回饋(isMeta = true 的 user 紀錄),
+#       舊版把回饋當成新的 user 回合,「本 turn」只剩回饋之後那幾行。
+# 現行判式:
+#   ① 交辦文字 = 可見回覆 + 本 turn PushNotification 的 message + AskUserQuestion 的題目與選項(三者都會送到 user 面前)。
+#      thinking 不掃:那是推理,掃它會把「要不要叫 user 跑?不要」這種自我檢查也算成交辦。
+#      依全形「。！？，；」切成子句;含 不用 / 不必 / 不需 / 無需 / 無須 / 毋須 的子句不算(「你不用在對話框貼任何東西」),
+#      以子句為單位,所以「不用擔心，在對話框貼上下面這行」的第二個子句照算。
+#   ② 強交辦(以「! 」開頭的一行、行內 `! 、對話框 + 貼上 / 輸入 / 執行 / 打 + 指令代稱、貼到 / 貼進對話框):被擋紀錄從
+#      「上一則真 user 提問」起算,即本輪加上一輪 —— 涵蓋 (b)(c)。不拿掉「有被擋」這個前提:M36(b) 管的是被擋之後把動作
+#      丟回 user,沒被擋時教 user 用 `!` 不在這條規則內(Test 66)。
+#   ③ 一般交辦(在終端機打、你(要)(自己)跑 …、英文 run that command / waiting for you to …):被擋紀錄從「最後一則真 user
+#      提問」起算。真 user 提問 = role user、不是 tool_result、不是 isMeta、不是 Stop hook 回饋 / 背景工作通知 /
+#      system-reminder / `!` 指令的輸入輸出 / 對話接續摘要(有 origin 欄位時只認 origin.kind = human)。
+#   「對話框」在本 repo 也是 Dialog 元件的中文名,所以只認「對話框 + 動詞 + 指令代稱」與「貼到 / 貼進對話框」,
+#   不認第一版的「對話框 … 貼」(「對話框的 footer 按鈕貼齊右側」不是交辦,Test 74)。
+#   比對一律 LC_ALL=C(正式環境的語系;scripts/run-provider-hook.mjs 組 hook 環境時寫死):中文只做字面比對,不放進方括號。
+#   被擋比對用 awk 逐行讀整段,不用 printf | grep -q:grep -q 比到就提早結束,寫端吃 SIGPIPE,pipefail 下回 141 = 假陰性(Test 60)。
+#   已知不涵蓋:被擋發生在兩輪以前,之後 user 又問了兩次才交辦(Test 67 把這個範圍釘住)。
+self_lock_genuine_prompt_lines() {
+  # 印出最後兩則「真 user 提問」的行號(舊在前)。判準見上面 ③。
+  grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | grep -v '"type":"tool_result"' \
+    | jq -R -r '
+      (capture("^(?<n>[0-9]+):(?<j>.*)$")?) as $m
+      | ($m.j | fromjson?) as $r
+      | select(($r | type) == "object" and $r.isMeta != true and $r.type != "api-request-blob")
+      | select((($r.origin? | type) != "object") or $r.origin.kind == "human")
+      | ($r.message.content? | if type == "string" then .
+          elif type == "array" then ([.[]? | select(type == "object" and .type == "text") | (.text? | strings)] | join("\n"))
+          else "" end) as $t
+      | select($t | test("^\\s*(Stop hook feedback|<task-notification>|<system-reminder>|<bash-(input|stdout|stderr)>|<local-command-|<command-(name|message|args)>|This session is being continued|\\[Request interrupted)") | not)
+      | $m.n' 2>/dev/null | tail -n 2
+}
+HANDOFF_SOURCE=""
+if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   BLOCKED_RE='(has been denied|Permission to use|Operation not permitted|EPERM|not accessible by personal access token|Blocked by classifier|auto mode classifier)'
-  HANDOFF_RE='(在終端機(打|輸入|跑|執行)|你(要)?(自己)?(跑|執行|打|輸入)|請你(跑|執行|手動)|麻煩你(跑|執行)|`![[:space:]]|貼(到|上|在)?.{0,24}對話框|對話框.{0,24}貼|^![[:space:]])'
+  # 指令代稱 = 交辦動詞後面接的那一段(下面這行 / 我給的那行 / `… / ! …)。只認這些,動詞後面接別的字(打開 / 輸入框)不算。
+  HANDOFF_CMD_REF='(一下)?([[:space:]]|:|：)*(我給的|我貼的|我寫的)?(下面|以下|底下|上面|這行|這一行|這一整行|這段指令|這條指令|這個指令|那行|那一行|那條指令|那個指令|指令|`|!)'
+  STRONG_HANDOFF_RE="(^![[:space:]]|\`![[:space:]]|對話框(裡|中|內)?(貼上|貼|輸入|執行|打)${HANDOFF_CMD_REF}|貼(到|進)(這個|你的)?對話框)"
+  WEAK_HANDOFF_RE='(在終端機(打|輸入|跑|執行)|你(要)?(自己)?(跑|執行|打|輸入)|請你(跑|執行|手動)|麻煩你(跑|執行))'
+  EN_HANDOFF_RE="(you('ve|’ve| have| can| need to| should| will)?|please) (just )?(run|type|paste|execute|enter) (that|this|the following|these|those|the) (command|commands|line|lines|one-liner)|waiting for you to (run|paste|type|execute|delete|remove)|(paste|type|enter) [^.]{0,40}(into|in) (the|this|your) (chat|prompt|input box|message box)|(run|execute|type|paste) [^.]{0,40}in your (own )?terminal|(run|execute) (it|this|that) yourself"
   HUMAN_ONLY_RE='(auth login|gh auth|MFA|OAuth|二階段|登入|帳單|billing|付費|credential reference|vault|Secret Manager)'
-  HANDOFF_TEXT=$(LC_ALL=C awk '{ gsub(/。|！|？/, "\n"); print }' <<< "$LAST_ASSISTANT")
-  if grep -qE "$BLOCKED_RE" <<< "${THIS_TURN_TOOLS:-}" \
-    && LC_ALL=C grep -qE "$HANDOFF_RE" <<< "$HANDOFF_TEXT" \
-    && ! grep -qE "$HUMAN_ONLY_RE" <<< "$LAST_ASSISTANT"; then
-    CRITICAL_SELF_LOCK_HANDOFF=1
-    WARNINGS="${WARNINGS}\n  • M36(b) 自鎖後把動作推給 user:本 turn 有工具被擋,而你請 user 自己跑指令。"
+  SELF_LOCK_DELIVERED=""
+  if [ -n "${THIS_TURN_TOOLS:-}" ]; then
+    SELF_LOCK_DELIVERED=$(jq -R -r '
+      fromjson? | select(type == "object" and .type != "api-request-blob")
+      | (.message.content? // empty) | arrays | .[]
+      | select(type == "object" and .type == "tool_use")
+      | if .name == "PushNotification" then (.input.message? | strings)
+        elif .name == "AskUserQuestion" then
+          (.input.questions[]? | select(type == "object")
+            | (.question? | strings),
+              (.options[]? | select(type == "object") | (.label? | strings), (.description? | strings)))
+        else empty end
+    ' <<< "$THIS_TURN_TOOLS") \
+      || governance_hook_integrity_fail 'self-audit handoff channel extraction failed'
+  fi
+  HANDOFF_SOURCE="$LAST_ASSISTANT"
+  [ -n "$SELF_LOCK_DELIVERED" ] && HANDOFF_SOURCE="${HANDOFF_SOURCE}${HANDOFF_SOURCE:+
+}${SELF_LOCK_DELIVERED}"
+  HANDOFF_KIND=""
+  if [ -n "$HANDOFF_SOURCE" ]; then
+    # grep -v 全部濾掉時回 1,代表沒有可算的子句,不是錯誤
+    HANDOFF_TEXT=$(LC_ALL=C awk '{ gsub(/。|！|？|，|；/, "\n"); print }' <<< "$HANDOFF_SOURCE" \
+      | LC_ALL=C grep -vE '不用|不必|不需|無需|無須|毋須')
+    if LC_ALL=C grep -qE "$STRONG_HANDOFF_RE" <<< "$HANDOFF_TEXT"; then
+      HANDOFF_KIND=strong
+    elif LC_ALL=C grep -qE "$WEAK_HANDOFF_RE" <<< "$HANDOFF_TEXT" \
+      || LC_ALL=C grep -qiE "$EN_HANDOFF_RE" <<< "$HANDOFF_TEXT"; then
+      HANDOFF_KIND=weak
+    fi
+  fi
+  if [ -n "$HANDOFF_KIND" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ] \
+    && ! grep -qE "$HUMAN_ONLY_RE" <<< "$HANDOFF_SOURCE"; then
+    GENUINE_LINES=$(self_lock_genuine_prompt_lines)
+    GENUINE_COUNT=$(grep -c . <<< "$GENUINE_LINES")
+    GEN_PREV="$LAST_USER_LINE"; GEN_CUR="$LAST_USER_LINE"
+    if [ "${GENUINE_COUNT:-0}" -ge 2 ]; then
+      GEN_PREV=$(head -n 1 <<< "$GENUINE_LINES"); GEN_CUR=$(tail -n 1 <<< "$GENUINE_LINES")
+    elif [ "${GENUINE_COUNT:-0}" -eq 1 ]; then
+      GEN_PREV=0; GEN_CUR="$GENUINE_LINES"
+    fi
+    case "$GEN_PREV$GEN_CUR" in (*[!0-9]*|'') GEN_PREV="$LAST_USER_LINE"; GEN_CUR="$LAST_USER_LINE" ;; esac
+    SELF_LOCK_FROM="$GEN_CUR"
+    [ "$HANDOFF_KIND" = strong ] && SELF_LOCK_FROM="$GEN_PREV"
+    if LC_ALL=C awk -v from="$SELF_LOCK_FROM" -v re="$BLOCKED_RE" \
+      'NR > from + 0 && $0 ~ re { hit = 1 } END { exit hit ? 0 : 1 }' "$TRANSCRIPT_PATH"; then
+      CRITICAL_SELF_LOCK_HANDOFF=1
+      WARNINGS="${WARNINGS}\n  • M36(b) 自鎖後把動作推給 user:本輪(強交辦含上一輪)有工具被擋,而你在回覆 / 推播 / 提問選項裡請 user 自己跑指令。"
+    fi
   fi
 fi
 
@@ -909,15 +985,15 @@ fi
 
 # ── BLOCKER for Mechanism 10 自鎖後把動作推給 user(M36(b),2026-09-19)──
 # 升級邏輯同 M1/M4:第一次 block 阻 turn,同 hash 降 warn 防 loop。
-if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
-  LOCK_HASH=$(printf '%s' "${LAST_ASSISTANT: -200}" | governance_hash_prefix)
+if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$HANDOFF_SOURCE" ]; then
+  LOCK_HASH=$(printf '%s' "${HANDOFF_SOURCE: -200}" | governance_hash_prefix)
   LAST_BLOCKED_LOCK_FILE="$STATE_DIR/.last-blocked-self-lock.txt"
   LAST_BLOCKED_LOCK=""
   [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_LOCK_FILE" ] && LAST_BLOCKED_LOCK=$(cat "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || echo "")
   if [ "$LOCK_HASH" != "$LAST_BLOCKED_LOCK" ]; then
     [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$LOCK_HASH" > "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || true; }
     REASON=$(printf '%s' \
-      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本 turn 有工具被擋,而你在 reply 裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
+      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本輪(交辦 '!' 指令或叫 user 在對話框貼上的,含上一輪)有工具被擋,而你在回覆、推播或提問選項裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
       "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現)。")
     emit_governance_block "$REASON"
   fi

@@ -689,17 +689,22 @@ T51=$(classifier_transcript 'Permission for this action was denied.' true '已�
 run_test_locales "Test 51: 擋下文字換了措辭,但記錄標 toolDenialKind=automode-blocked → block" 1 "$T51" "CLASSIFIER-SILENT"
 
 # Tests 52-60: Mechanism 10 補漏(user 2026-11-18 00:06「要打啥 確定沒有作繭自縛？確定這件事就是一定得為難我？」那次)。
+# 這一組只驗「措辭」:交辦字一律放在可見回覆、被擋紀錄一律放在同一 turn。原始紀錄的「結構」不是這樣
+# (交辦在 thinking + 推播、被擋在上一輪、中間夾 Stop hook 回饋),照原始結構重放的是 Tests 61-74(反駁 #1)。
 RULE_DENIAL='Permission to use Bash with command rm -rf …/hooks/.git has been denied.'
-# 2026-11-17T15:55:07Z 那則回覆逐字(路徑以「…」省略)
+# 2026-11-17T15:55:07Z 那則回覆逐字(路徑以「…」省略)。結構簡化:原始紀錄那一輪沒有工具被擋
+# (被擋在上一輪 15:53:48Z),照原始結構的是 Test 65。
 T52=$(self_lock_transcript "$RULE_DENIAL" "$(printf '%s\n\n%s\n%s\n%s\n\n%s' \
   '在對話框貼上下面這一整行，然後按 Enter（開頭的 `!` 也要一起打）：' \
   '```' '! rm -rf …/scratchpad/ds/packages/design-system/ds-canonical/hooks/.git' '```' \
   '這行會刪掉我工作用的複本裡，測試留下的那個空 git 目錄。不會動到你的 my-project 主資料夾。刪完我接著重跑檢查。')")
 run_test_locales "Test 52: 15:55Z 原文「在對話框貼上…開頭的 ! 也要一起打」→ block" 1 "$T52" "SELF-LOCK HANDOFF"
-# 2026-11-17T16:05:29Z 那一筆紀錄裡同一件事的另一種說法(同一 turn 16:05:10Z 的 rm -rf 剛被擋)
+# 2026-11-17T16:05:29Z 那句的措辭。原始紀錄(session 96d711a5 第 39160 行)裡它在 thinking 區塊,不是可見回覆;
+# 真正送到 user 面前的是推播(第 39161 行)與英文可見文字(第 39163 行),照原始結構的是 Tests 61-63。
+# 這格只驗「同一句話若寫在可見回覆」會擋。
 T53=$(self_lock_transcript "$RULE_DENIAL" \
   '請在對話框貼上那行以 `!` 開頭的清理指令，它會刪掉測試殘留並還原兩個被清掉的 `.gitkeep`，只動我的工作複本。')
-run_test_locales "Test 53: 「請在對話框貼上那行以 ! 開頭的清理指令」→ block" 1 "$T53" "SELF-LOCK HANDOFF"
+run_test_locales "Test 53: 「請在對話框貼上那行以 ! 開頭的清理指令」寫在可見回覆 → block" 1 "$T53" "SELF-LOCK HANDOFF"
 T54=$(self_lock_transcript "$RULE_DENIAL" "$(printf '%s\n\n%s\n%s\n%s' '清理指令如下：' '```' '! rm -rf …/hooks/.git' '```')")
 run_test_locales "Test 54: 只有一行以「! 」開頭的指令 → block" 1 "$T54" "SELF-LOCK HANDOFF"
 T55=$(self_lock_transcript "$RULE_DENIAL" '把下面那行貼到這個對話框就好。')
@@ -728,6 +733,86 @@ if [ "$(wc -c < "$LARGE_TURN" | tr -d ' ')" -gt 262144 ]; then
 else
   echo "  FAIL  Test 60 fixture is not larger than 256KiB"; FAIL=$((FAIL+1))
 fi
+
+# Tests 61-74(反駁 #1):照 session 96d711a5 原始紀錄的「結構」重放,不是只放措辭。
+# 第一版的 Tests 52-53 把交辦字當成可見回覆、把被擋紀錄放在同一 turn —— 跟原始紀錄不一樣,所以全綠也證明不了那次會擋。
+# 每個 rec_* 產生一筆紀錄,欄位照原始紀錄(type / isMeta / toolDenialKind / content 的區塊種類)。
+rec_user() { jq -nc --arg t "$1" '{type:"user",message:{role:"user",content:$t}}'; }
+rec_stop_feedback() { jq -nc --arg t "$1" '{type:"user",isMeta:true,message:{role:"user",content:("Stop hook feedback:\n" + $t)}}'; }
+rec_denial() { jq -nc --arg t "$1" '{type:"user",toolDenialKind:"permission-rule",message:{role:"user",content:[{type:"tool_result",is_error:true,content:$t}]}}'; }
+rec_result() { jq -nc --arg t "$1" '{type:"user",message:{role:"user",content:[{type:"tool_result",content:$t}]}}'; }
+rec_thinking() { jq -nc --arg t "$1" '{type:"assistant",message:{role:"assistant",content:[{type:"thinking",thinking:$t}]}}'; }
+rec_text() { jq -nc --arg t "$1" '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:$t}]}}'; }
+rec_push() { jq -nc --arg t "$1" '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",name:"PushNotification",input:{message:$t,status:"proactive"}}]}}'; }
+rec_ask() {
+  jq -nc --arg q "$1" --arg l "$2" --arg d "$3" \
+    '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",name:"AskUserQuestion",input:{questions:[{question:$q,header:"殘留目錄",multiSelect:false,options:[{label:$l,description:$d},{label:"授權我再刪一次",description:"我再跑一次同一個刪除指令。"}]}]}}]}}'
+}
+# 原始紀錄第 39155 行(16:05:10Z)被擋原文,路徑以 … 省略
+RM_DENIAL='Permission to use Bash with command T=… rm -rf "$T/.git" "$T/a.txt" "$T/f" "$T/netlify.toml" "$T/somefile" "$T/test-bin"; git -C "$T/../../../../.." status --short has been denied.'
+# 第 39160 行 thinking、第 39161 行 PushNotification、第 39163 行可見文字(逐字)
+THINK_1605='測試又被擋下，我停住了，沒有換方法。請在對話框貼上那行以 `!` 開頭的清理指令，它會刪掉測試殘留並還原兩個被清掉的 `.gitkeep`，只動我的工作複本。之後我會加一道檢查，避免測試再在工作區留下檔案。'
+PUSH_1605='刪測試殘留又被擋:請在對話框貼上我給的那行 ! cd … && rm -rf … && git checkout … 指令'
+TEXT_1605="The notification has been sent. Once you've run that command, I'll check \`git status\`, rerun the full hook test suite, and then start this batch of work."
+T61=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_denial "$RM_DENIAL")" "$(rec_thinking "$THINK_1605")" \
+  "$(rec_push "$PUSH_1605")" "$(rec_result 'Terminal notification sent. Mobile push requested.')" "$(rec_text "$TEXT_1605")")
+run_test_locales "Test 61: 16:05Z 原始結構(交辦在 thinking + 推播,可見文字是英文)→ block" 1 "$T61" "SELF-LOCK HANDOFF"
+T62=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_denial "$RM_DENIAL")" "$(rec_thinking "$THINK_1605")" \
+  "$(rec_push "$PUSH_1605")" "$(rec_result 'Terminal notification sent. Mobile push requested.')" "$(rec_text 'The notification has been sent.')")
+run_test_locales "Test 62: 同上,只有推播在交辦(可見文字不提)→ block" 1 "$T62" "SELF-LOCK HANDOFF"
+T63=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_denial "$RM_DENIAL")" "$(rec_thinking "$THINK_1605")" "$(rec_text "$TEXT_1605")")
+run_test_locales "Test 63: 同上,沒有推播,只有英文可見文字「Once you've run that command」→ block" 1 "$T63" "SELF-LOCK HANDOFF"
+T64=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_denial "$RM_DENIAL")" "$(rec_thinking "$THINK_1605")" \
+  "$(rec_push '刪測試殘留被擋下,停在原處,完成報告會寫明')" "$(rec_result 'Terminal notification sent. Mobile push requested.')" \
+  "$(rec_text 'The notification has been sent.')")
+run_test_locales "Test 64: 交辦字只在 thinking(推理,不是送給 user 的訊息)→ no block" 0 "$T64"
+# 15:53:48Z 上一輪被擋(第 38893 行)→ 15:55:03Z user「要打什麼？」(第 38916 行)→ 15:55:07Z 回覆(第 38929 行,逐字)
+PREV_TURN=$(printf '%s\n' "$(rec_user '大概還要多久？')" \
+  "$(rec_denial 'Permission to use Bash with command rm -rf …/hooks/.git && ls -d …/hooks/.git 2>&1 has been denied.')" \
+  "$(rec_text "The notification has been sent. I'm waiting for you to delete that directory; once you have, I'll rerun the checks in DS and start the next batch of work.")")
+REPLY_1555="$(printf '%s\n\n%s\n%s\n%s\n\n%s' \
+  '在對話框貼上下面這一整行，然後按 Enter（開頭的 `!` 也要一起打）：' \
+  '```' '! rm -rf …/scratchpad/ds/packages/design-system/ds-canonical/hooks/.git' '```' \
+  '這行會刪掉我工作用的複本裡，測試留下的那個空 git 目錄。不會動到你的 my-project 主資料夾。刪完我接著重跑檢查。')"
+T65=$(printf '%s\n' "$PREV_TURN" "$(rec_user '要打什麼？')" "$(rec_text "$REPLY_1555")")
+run_test_locales "Test 65: 15:55:07Z 原始結構(本輪沒被擋,被擋在上一輪;user 問要打什麼)→ block" 1 "$T65" "SELF-LOCK HANDOFF"
+T66=$(printf '%s\n' "$(rec_user '怎麼快速看最近的 commit？')" "$(rec_text '在對話框打 `! git log --oneline -5` 就能看到。')")
+run_test_locales "Test 66: 沒有任何工具被擋,只是教 user 用 ! → no block(「被擋」前提保留)" 0 "$T66"
+T67=$(printf '%s\n' "$PREV_TURN" "$(rec_user '那先做別的')" "$(rec_text '好,先處理知識清理。')" \
+  "$(rec_user '要打什麼？')" "$(rec_text "$REPLY_1555")")
+run_test_locales "Test 67: 被擋在上上輪(範圍刻意只到上一輪)→ no block" 0 "$T67"
+# 15:55:08Z Stop hook 回饋(第 38930 行,isMeta = true)→ 15:55:10Z 推播(第 38938 行)→ 15:55:13Z 回覆(第 38940 行,逐字)
+T68=$(printf '%s\n' "$PREV_TURN" "$(rec_user '要打什麼？')" "$(rec_text "$REPLY_1555")" \
+  "$(rec_stop_feedback '🚨 PUSH-NOTIFICATION BLOCKER(M6):本 turn 是 substantive output 但沒有 PushNotification tool call trace。')" \
+  "$(rec_push '請在對話框貼上那行 ! rm -rf …/hooks/.git 指令(開頭的 ! 也要),刪完我重跑檢查')" \
+  "$(rec_result 'Terminal notification sent. Mobile push requested.')" \
+  "$(rec_text '已補發通知。請把上面那行指令貼到對話框，開頭的 `!` 也要一起貼。你刪完之後，我會在 DS 重跑治理檢查和 hook 測試，再開始下一批工作。')")
+run_test_locales "Test 68: 15:55:13Z 原始結構(中間夾 Stop hook 回饋)→ block" 1 "$T68" "SELF-LOCK HANDOFF"
+T69=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_denial 'Permission to use Bash with command git branch -D foo has been denied.')" \
+  "$(rec_text '分支沒刪掉。')" \
+  "$(rec_stop_feedback '🚨 PUSH-NOTIFICATION BLOCKER(M6):本 turn 是 substantive output 但沒有 PushNotification tool call trace。')" \
+  "$(rec_push '分支沒刪掉')" "$(rec_result 'Terminal notification sent. Mobile push requested.')" \
+  "$(rec_text '已補發通知。你自己跑 git branch -D foo 就好。')")
+run_test_locales "Test 69: 一般交辦,被擋在 Stop hook 回饋之前(同一則 user 提問)→ block" 1 "$T69" "SELF-LOCK HANDOFF"
+T70=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_denial 'Permission to use Bash with command git branch -D foo has been denied.')" \
+  "$(rec_text '刪分支被擋下,停在原處。')" "$(rec_user '怎麼看即時預覽？')" \
+  "$(rec_text '你要跑的話在終端機打 npm run dev 就能看即時預覽。')")
+run_test_locales "Test 70: 一般交辦只看本輪,被擋在上一輪 → no block" 0 "$T70"
+# 15:51:41Z AskUserQuestion(第 38874 行)選項逐字(路徑以 … 省略)
+T71=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_denial 'Permission to use Bash with command rm -rf …/hooks/.git has been denied.')" \
+  "$(rec_ask 'DS 工作區裡有一個測試留下的空 git 目錄 `packages/design-system/ds-canonical/hooks/.git`。它沒有任何 commit，也不在 repo 裡，但會讓治理檢查和 hook 測試變紅。我刪它被擋了。要怎麼處理？' \
+    '你自己打一行刪 (建議)' '在對話框輸入：! rm -rf …/hooks/.git 。刪完我在 DS 重跑檢查。')" \
+  "$(rec_result 'The user answered: "要怎麼處理？"="授權你再次刪除，不要作繭自縛". ')" "$(rec_text '收到。')")
+run_test_locales "Test 71: 交辦寫在 AskUserQuestion 的選項 → block" 1 "$T71" "SELF-LOCK HANDOFF"
+T72=$(self_lock_transcript "$RULE_DENIAL" '我改用 git update-ref 刪掉了，你不用在對話框貼任何東西。')
+run_test_locales "Test 72: 「你不用在對話框貼任何東西」(否定子句)→ no block" 0 "$T72"
+T72B=$(self_lock_transcript "$RULE_DENIAL" '我已經改用 git update-ref 刪掉了，不需要你在終端機打任何指令，也不用在對話框貼上那行指令。')
+run_test_locales "Test 72b: 否定子句裡就算有完整的交辦說法(在終端機打 / 在對話框貼上那行指令)也不算 → no block" 0 "$T72B"
+T73=$(self_lock_transcript "$RULE_DENIAL" '不用擔心，在對話框貼上下面這行就好。')
+run_test_locales "Test 73: 「不用擔心，在對話框貼上下面這行」(否定只管它自己那個子句)→ block" 1 "$T73" "SELF-LOCK HANDOFF"
+T74=$(self_lock_transcript 'node --test: child process group cannot receive SIGTERM: EPERM' \
+  'Dialog 對話框的 footer 按鈕貼齊右側，對話框打開時焦點移到第一個輸入框。')
+run_test_locales "Test 74: 「對話框」是 Dialog 元件(貼齊 / 打開 / 輸入框),輸出裡有 EPERM → no block" 0 "$T74"
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
