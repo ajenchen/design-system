@@ -25,13 +25,19 @@ function regular(path, label) {
 function json(path, label) { regular(path, label); return JSON.parse(readFileSync(path, 'utf8')) }
 const lines = content => content.length === 0 ? 0 : content.replace(/\n$/, '').split('\n').length
 
-// memory 索引條目的**唯一**數法:CI(validateMemoryContract)與 SessionStart Check 8(--index-budget)都用這一個,
-// 不得在別處另寫一份(M17)。
+// memory 索引條目的數法(M17)。拿條數去比 contract.json maxIndexEntries 的呼叫端(session_start Check 8 的註解指回這裡、不重列):
+//   - CI:本檔 validateMemoryContract(無參數執行)
+//   - SessionStart Check 8:`--index-budget`(test_session_start_governance_check.sh Test 16 的 (a)(d) 兩格,換回數檔就紅)
+//   - scripts/score-infra-best-practice.mjs D3:readMemoryIndexBudget(test-score-infra-best-practice.mjs 的 D3 那格,換回數檔就紅)
+// 另有一處數 memory、但不比上限:stop_passive_logging.sh 遙測欄位 memory_entries 數內容檔(扣 MEMORY.md / README.md);
+// 本檔 validateMemoryContract 的 inventory 檢查要求索引連結 = 內容檔,所以在 CI 綠的樹上兩者相等。
+// 2026-11-18 之前 D3 自己數檔(連 README.md 也算)、上限寫死 20,和 CI 差 1(19 對 18)。
 export function memoryIndexLinks(indexText) {
   return [...indexText.matchAll(/\[[^\]]+\]\(([^)]+\.md)\)/g)].map(match => match[1])
 }
 
-// SessionStart Check 8 用:只讀 contract.json 的 index / maxIndexEntries 與索引本身,數條目;其餘契約由 CI 的完整驗證判。
+// SessionStart Check 8(經 --index-budget)與 score-infra D3 用:只讀 contract.json 的 index / maxIndexEntries 與索引本身,
+// 數條目;其餘契約由 CI 的完整驗證判。
 export function readMemoryIndexBudget({ root = ROOT } = {}) {
   const directory = resolve(root, 'governance/memory')
   const contract = json(resolve(directory, 'contract.json'), 'memory contract')

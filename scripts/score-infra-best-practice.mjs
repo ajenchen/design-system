@@ -7,6 +7,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
+import { readMemoryIndexBudget } from './validate-memory-contract.mjs';
 
 function argument(name) {
   const index = process.argv.indexOf(name)
@@ -85,14 +86,26 @@ const dimensions = [];
   dimensions.push({ dim: 'D2 Skill SKILL.md sizes', value: `${overBudget} in transition (250-400) / ${overCap} over cap (>400)`, score, max: 100 });
 }
 
-// === D3: Memory entries(target ≤ 20)===
-{
-  // Repository-owned, provider-neutral memory is authoritative. Claude/Codex
-  // discovery caches are disposable projections and must never affect score.
-  const memDir = join(ROOT, 'governance', 'memory');
-  const entries = existsSync(memDir) ? readdirSync(memDir).filter(f => f.endsWith('.md') && f !== 'MEMORY.md').length : 0;
-  const score = entries <= 15 ? 100 : entries <= 20 ? 80 : entries <= 30 ? 50 : 20;
-  dimensions.push({ dim: 'D3 Memory entries', value: `${entries}/20`, score, max: 100 });
+// === D3: Memory index entries(上限 = governance/memory/contract.json 的 maxIndexEntries)===
+// Repository-owned, provider-neutral memory is authoritative. Claude/Codex
+// discovery caches are disposable projections and must never affect score.
+// 條數與上限都由 validate-memory-contract.mjs 的 readMemoryIndexBudget 給(和 CI、SessionStart Check 8 同一個函式)。
+// 改前這裡自己數 governance/memory 的 .md 檔(只扣 MEMORY.md,連 README.md 也算進去)、上限寫死 20:
+// 2026-11-18 量到 19,同一棵樹 CI 判的是 18。
+// 級距相對於上限:≤ 上限 − 5 → 100、≤ 上限 → 80、≤ 上限 × 1.5 → 50、其餘 20(上限 20 時即改前的 15 / 20 / 30)。
+// 沒有 contract.json = 這個專案沒有 memory 契約,本維度不適用、不計分(與 SessionStart Check 8 同判)。
+// 有契約卻量不到 → 0 分並寫出原因:量不到不得當成沒超標(M37 第八種形狀)。
+if (existsSync(join(ROOT, 'governance', 'memory', 'contract.json'))) {
+  let budget = null
+  let failure = null
+  try { budget = readMemoryIndexBudget({ root: ROOT }) } catch (error) { failure = error.message }
+  if (budget) {
+    const { entries, maxIndexEntries: cap } = budget
+    const score = entries <= cap - 5 ? 100 : entries <= cap ? 80 : entries <= Math.floor(cap * 1.5) ? 50 : 20;
+    dimensions.push({ dim: 'D3 Memory index entries(cap = contract.json maxIndexEntries)', value: `${entries}/${cap}`, score, max: 100 });
+  } else {
+    dimensions.push({ dim: 'D3 Memory index entries(cap = contract.json maxIndexEntries)', value: `量不到:${failure}`, score: 0, max: 100 });
+  }
 }
 
 // === D4: Hook test coverage ===

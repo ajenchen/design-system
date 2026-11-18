@@ -150,8 +150,9 @@ fi
 
 # Check 8: memory 索引條數(> 上限 → BLOCKER;≥ 上限 − 2 → PRUNE_TRIGGERS)
 # 只數 committed 的 governance/memory(provider-neutral SSOT);home 底下的快取不影響判定。
-# 數法與上限只有一份:scripts/validate-memory-contract.mjs。CI 用它的 validateMemoryContract 判紅;這裡叫同一支的
+# 數法與上限都住在 scripts/validate-memory-contract.mjs。CI 用它的 validateMemoryContract 判紅;這裡叫同一支的
 # --index-budget —— 同一個 memoryIndexLinks 數 MEMORY.md 的索引條目,上限讀 contract.json 的 maxIndexEntries。
+# 還有誰用同一個函式,清單只寫在該檔 memoryIndexLinks 上方(本檔不重列)。
 # 本檔不另寫數法(M17)。改前數的是 governance/memory 的 .md 檔數,和 CI 判的不是同一個東西(2026-11-18 改)。
 # soft = 上限 − 2:改前寫死 18 / 20,現在跟著 contract 的上限走,數值不變。
 # 沒有 contract.json = 這個專案沒有 memory 契約,本 Check 不適用;node 不在 PATH 由 Check 11 報。
