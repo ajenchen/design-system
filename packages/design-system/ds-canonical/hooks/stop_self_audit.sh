@@ -594,13 +594,26 @@ fi
 # 判準:本 turn 有工具被擋(denied / EPERM / not permitted),且 reply 把一個**具體指令**交給
 # user 去跑 → CRITICAL。真正的 human-only 邊界(login / MFA / OAuth / 帳單 / 缺 credential
 # reference)明文豁免,那些本來就該交給 user。
+#
+# 2026-11-18 補(工作包 E2;user 11-18 00:06「要打啥 確定沒有作繭自縛？確定這件事就是一定得為難我？」那次漏網):
+#   ① 交辦說法補「在對話框貼上 / 貼到這個對話框」(11-17 15:55Z 與 16:05Z 兩則都是這樣交辦,舊清單一個都比不到),
+#      以及以「! 」開頭的一行(程式碼區塊裡的 ! 指令;舊清單只認行內 `! 開頭)。
+#   ② 「你要?」改「你(要)?」:正式環境在 LC_ALL=C 下跑(scripts/run-provider-hook.mjs 組 hook 環境時寫死),
+#      ? 只管「要」的最後一個位元組,於是「你自己跑」從來比不到 —— 只在 UTF-8 語系的測試裡看起來會擋。
+#   ③ 被擋清單補 auto mode classifier:現行分類器擋下的原文是「Permission for this action was denied by the
+#      Claude Code auto mode classifier」,舊清單的 has been denied / Permission to use / Blocked by classifier 一個都不中。
+#   交辦比對一律 LC_ALL=C,先依全形「。！？」斷句,讓 .{0,24}(≈ 8 個中文字)不跨句。
+#   ④ 一律用 here-string 而非 printf | grep -q:grep -q 比到第一個符合的行就結束(本機 BSD grep 與 CI 的 GNU grep
+#      都一樣),本 turn 紀錄超過管線緩衝(64KiB)時寫端吃 SIGPIPE,pipefail 下整條回 141 = 假陰性 —— 擋下紀錄在前、
+#      後面還有大量輸出的 turn,本機制過去整個不發作(Test 60;與 Tests 12-14 同一個理由)。
 if [ -n "$LAST_ASSISTANT" ]; then
-  BLOCKED_RE='(has been denied|Permission to use|Operation not permitted|EPERM|not accessible by personal access token|Blocked by classifier)'
-  HANDOFF_RE='(在終端機(打|輸入|跑|執行)|你要?(自己)?(跑|執行|打|輸入)|請你(跑|執行|手動)|麻煩你(跑|執行)|`![[:space:]])'
+  BLOCKED_RE='(has been denied|Permission to use|Operation not permitted|EPERM|not accessible by personal access token|Blocked by classifier|auto mode classifier)'
+  HANDOFF_RE='(在終端機(打|輸入|跑|執行)|你(要)?(自己)?(跑|執行|打|輸入)|請你(跑|執行|手動)|麻煩你(跑|執行)|`![[:space:]]|貼(到|上|在)?.{0,24}對話框|對話框.{0,24}貼|^![[:space:]])'
   HUMAN_ONLY_RE='(auth login|gh auth|MFA|OAuth|二階段|登入|帳單|billing|付費|credential reference|vault|Secret Manager)'
-  if printf '%s' "${THIS_TURN_TOOLS:-}" | grep -qE "$BLOCKED_RE" \
-    && printf '%s' "$LAST_ASSISTANT" | grep -qE "$HANDOFF_RE" \
-    && ! printf '%s' "$LAST_ASSISTANT" | grep -qE "$HUMAN_ONLY_RE"; then
+  HANDOFF_TEXT=$(LC_ALL=C awk '{ gsub(/。|！|？/, "\n"); print }' <<< "$LAST_ASSISTANT")
+  if grep -qE "$BLOCKED_RE" <<< "${THIS_TURN_TOOLS:-}" \
+    && LC_ALL=C grep -qE "$HANDOFF_RE" <<< "$HANDOFF_TEXT" \
+    && ! grep -qE "$HUMAN_ONLY_RE" <<< "$LAST_ASSISTANT"; then
     CRITICAL_SELF_LOCK_HANDOFF=1
     WARNINGS="${WARNINGS}\n  • M36(b) 自鎖後把動作推給 user:本 turn 有工具被擋,而你請 user 自己跑指令。"
   fi
