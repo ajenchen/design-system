@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 /**
+ * @gate-contract
+ *   保證: knowledge-prune 收尾驗證器 validate-knowledge-prune-run.mjs 真的會因為報告缺段、缺數字、Prune-Items 對不上而紅,
+ *         而且段名是從 Phase 5 報告範本讀的,不是寫死在驗證器裡(2026-11-18 合回第一波時接進 PR 必過 CI,原本只在夜間 harness)
+ *   紅: (a)–(i) 每一項各拿掉一段 → 驗證器 exit 1 並點名缺的那一段 / ID / commit;範本段名改掉 → 原本齊全的報告紅在新段名;
+ *       每一次「拿掉」先確認被換掉的字串真的存在,換不到就讓本測試自己紅(防沒改到東西而假綠)
+ *   綠: 同一份齊全 fixture(含實際報告常見寫法)必須 exit 0,而且印得出讀到的資料量(findings 的 ID 數、區間 commit 數),
+ *       證明不是讀到空的而放行;fixture 全建在拋棄式 tmp repo、時區固定,重複跑結果相同
+ *
  * meta-test for validate-knowledge-prune-run.mjs —— 兩面對照組:
  *   綠面:同一份齊全的 fixture(報告 + findings + snapshot + 一個拋棄式 git repo)必須 exit 0,而且印得出它真的讀到了資料
  *         (findings 幾個 ID、區間幾個 commit、幾個早於本規則);實際報告常見的寫法(表格版 Metric delta、標題前加編號、

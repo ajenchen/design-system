@@ -551,7 +551,7 @@
     },
     "65": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_chrome_header_avatar_canonical.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)",
+      "mechanism": "check_sidebar_avatar_canonical.sh r1_chrome_header_avatar PreToolUse multiline regex BLOCKER(原 check_chrome_header_avatar_canonical.sh,2026-11-18 prune merge;exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)",
       "enforcement": "block",
       "enforcement_source": "registrations.outputMode",
       "hook_events": [
@@ -569,7 +569,7 @@
     },
     "67": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_sidebar_menu_button_implicit_wrap.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)",
+      "mechanism": "check_sidebar_avatar_canonical.sh r2_menu_button_wrap PreToolUse multiline regex BLOCKER(原 check_sidebar_menu_button_implicit_wrap.sh,2026-11-18 prune merge;exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)",
       "enforcement": "block",
       "enforcement_source": "registrations.outputMode",
       "hook_events": [

@@ -1258,18 +1258,8 @@
         "transcriptRequirement": "none"
       },
       {
-        "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
-        "sourceHook": "check_sidebar_menu_button_implicit_wrap.sh",
-        "bucket": "SHIP_AS_IS",
-        "matcher": "Edit|Write|MultiEdit",
-        "runtime": "bash",
-        "outputMode": "blocking",
-        "inputContract": "event-v1",
-        "transcriptRequirement": "none"
-      },
-      {
-        "file": "hooks/check_chrome_header_avatar_canonical.sh",
-        "sourceHook": "check_chrome_header_avatar_canonical.sh",
+        "file": "hooks/check_sidebar_avatar_canonical.sh",
+        "sourceHook": "check_sidebar_avatar_canonical.sh",
         "bucket": "SHIP_AS_IS",
         "matcher": "Edit|Write|MultiEdit",
         "runtime": "bash",
@@ -1392,18 +1382,8 @@
     },
     {
       "event": "PreToolUse",
-      "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
-      "sourceHook": "check_sidebar_menu_button_implicit_wrap.sh",
-      "interpreter": "bash",
-      "matcher": "Edit|Write|MultiEdit",
-      "outputMode": "blocking",
-      "inputContract": "event-v1",
-      "transcriptRequirement": "none"
-    },
-    {
-      "event": "PreToolUse",
-      "file": "hooks/check_chrome_header_avatar_canonical.sh",
-      "sourceHook": "check_chrome_header_avatar_canonical.sh",
+      "file": "hooks/check_sidebar_avatar_canonical.sh",
+      "sourceHook": "check_sidebar_avatar_canonical.sh",
       "interpreter": "bash",
       "matcher": "Edit|Write|MultiEdit",
       "outputMode": "blocking",

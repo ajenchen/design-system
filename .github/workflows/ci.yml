@@ -116,6 +116,13 @@ jobs:
           # 機器可讀浮層表(觸發點 / 整頁)= 原始碼 = density.spec.md 情境 1 表。掃元件 / pattern / story / apps;--selftest 該紅的全紅、該綠的全綠(條數以閘印的為準)。
           node scripts/overlay-density-lock-invariant.mjs --selftest
           node scripts/overlay-density-lock-invariant.mjs
+          # 2026-11-18 合回 knowledge-prune 第一波時接進來(原本紅面只經夜間 harness):WP-19 新增「紅面只在排程跑的配對名單只准變短」棘輪,
+          # 名單量在合回前的基準點(71 筆);同一波 WP-03 / WP-02 各新增一支閘,紅面只經夜間 harness —— 三包各自全綠,合起來多 2 筆,棘輪正確地紅。
+          # 兩支都是純靜態、秒級,不該只在夜間跑:
+          # hook 測試暫存資料夾防護(WP-03):每個 mktemp -d 必須緊接防護;--selftest 每種壞法各一個合成檔、必須逐一被指名,約 1 秒。
+          node scripts/hook-test-fixture-guard-invariant.mjs --selftest
+          # knowledge-prune 收尾驗證器(WP-02):報告段落 / 數字 / Prune-Items 交叉比對;這支沒有 --selftest,紅綠對照在 meta-test 裡,約 15 秒。
+          node scripts/test-validate-knowledge-prune-run.mjs
           # 對外彙總檔 styles/tokens.css 檔頭寫「自動產生、禁止手改」,產生器檔頭也寫「--check 在 CI 跑」—— 2026-11-11 盤點兩者都不是真的:
           # 沒有任何 workflow / npm script 呼叫它,彙總檔被手加兩行(Tabs / Sidebar)、產生器輸出與提交的檔不同,零訊號。
           # 上面 C6 只管「元件樣式檔有進彙總檔或被程式匯入」,不管彙總檔是不是產生器的輸出(重跑會不會改樣式載入順序)。

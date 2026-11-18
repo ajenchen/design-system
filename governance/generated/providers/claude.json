@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:6f63c4b98da5ea84c426d714819e8628160ad12bade78d4cdf1f7f791f99420d",
+    "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.149",
@@ -96,6 +96,11 @@
       "productInstructionSource": "scripts/fork-role-sources/CLAUDE.product.md",
       "productManagedTrees": {},
       "repositoryInstructionSource": "packages/design-system/ds-canonical/adapters/claude-root-instructions.md",
+      "repositoryManagedTreeExcludes": {
+        "commands": [
+          "README.md"
+        ]
+      },
       "repositoryManagedTrees": {
         "commands": ".claude/commands",
         "contextForkAgents": ".claude/agents",

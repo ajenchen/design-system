@@ -25,7 +25,7 @@ Agent 在執行時按需讀的深度 reference 檔 — audit protocol / FP 記�
 | `principle-dim-map.json` | M-rule / trait / hook → audit dim explicit mapping(SSOT for dim coverage) |
 | `props-naming.md` | Props callback / Badge / icon canonical 詳表 |
 | `repository-hygiene.md` + `repository-hygiene-policy.json` | Full/deep audit 的 repo 拓撲、冗餘分類與可攜機械政策 |
-| `runtime-evidence-retention.md` | Git-local audit/review evidence 的 lifecycle retention、lazy bundle materialization 與 whole-run cleanup canonical |
+| `runtime-evidence-retention.md` | Git-local audit/review evidence 的 lifecycle retention、lazy bundle materialization 與 whole-run cleanup canonical;另含工作區 `infra/governance/runtime/` 的 workflow-identity proposal 與 benchmark 快取何時整份刪 |
 | `scenario-definition.md` | Monorepo 2-Scenario architecture SSOT(Scenario A direct fork DS / Scenario B fork template + mirror chain + verify checkpoints)|
 | `spec-rules.md` | SSOT 機制 / 邊界案例 scope default 詳展 |
 | `story-baseline-registry.json` | Anti-drift registry — stories wrap 既有 primitive 的 machine-readable canonical archetype(hook `check_story_invariants.sh R8` 讀)|

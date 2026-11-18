@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "counts": {
-    "hooks": 58,
+    "hooks": 56,
     "mRules": 33,
     "auditDims": 91,
     "auditDimMin": 1,
@@ -51,7 +51,6 @@
     "packages/design-system/ds-canonical/hooks/check_audit_sample_escape.sh",
     "packages/design-system/ds-canonical/hooks/check_benchmark_citation.sh",
     "packages/design-system/ds-canonical/hooks/check_canonical_propagation.sh",
-    "packages/design-system/ds-canonical/hooks/check_chrome_header_avatar_canonical.sh",
     "packages/design-system/ds-canonical/hooks/check_codex_brief_invariants.sh",
     "packages/design-system/ds-canonical/hooks/check_codex_collab_5step.sh",
     "packages/design-system/ds-canonical/hooks/check_consumer_app_invariants.sh",
@@ -70,7 +69,6 @@
     "packages/design-system/ds-canonical/hooks/check_main_branch_workbench.sh",
     "packages/design-system/ds-canonical/hooks/check_naming_and_abstraction.sh",
     "packages/design-system/ds-canonical/hooks/check_opacity_token_usage.sh",
-    "packages/design-system/ds-canonical/hooks/check_orphan_ds_css.sh",
     "packages/design-system/ds-canonical/hooks/check_overlay_open_focus_escape_probe.sh",
     "packages/design-system/ds-canonical/hooks/check_pattern_invariants.sh",
     "packages/design-system/ds-canonical/hooks/check_peoplepicker_ssot_drift.sh",
@@ -80,7 +78,7 @@
     "packages/design-system/ds-canonical/hooks/check_propose_pre_grep_verify.sh",
     "packages/design-system/ds-canonical/hooks/check_propose_without_benchmark.sh",
     "packages/design-system/ds-canonical/hooks/check_select_all_canonical.sh",
-    "packages/design-system/ds-canonical/hooks/check_sidebar_menu_button_implicit_wrap.sh",
+    "packages/design-system/ds-canonical/hooks/check_sidebar_avatar_canonical.sh",
     "packages/design-system/ds-canonical/hooks/check_solo_workflow.sh",
     "packages/design-system/ds-canonical/hooks/check_spec_class_drift.sh",
     "packages/design-system/ds-canonical/hooks/check_ssot_header_declaration.sh",

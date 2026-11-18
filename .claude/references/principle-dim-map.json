@@ -468,10 +468,6 @@
       "dims": [],
       "note": "2026-07-03 entry add:beta.27 release-fail anchor write-time P0;audit-time 由 release preflight build gate(build:lib + build-storybook)deterministic cover,無獨立 dim"
     },
-    "chrome_header_avatar_canonical": {
-      "dims": [],
-      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0 攔 chrome header 內 ItemAvatar 誤用(header-canonical 消費紀律);audit-time 由 dim 1 design-language + A.1b per-component cover,無獨立 dim"
-    },
     "codex_brief_invariants": {
       "dims": [],
       "note": "2026-07-03 entry add per audit-preflight gap:codex-collab runtime 紀律(brief 三 invariant);governance-only,solo mode 不涉"
@@ -523,10 +519,6 @@
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:app-code write-time P0(skip DS-src by design);DS-src 由 dim 90 judgment sweep cover"
     },
-    "orphan_ds_css": {
-      "dims": [],
-      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0(css 不在 aggregator 也沒被 import = orphan;失敗記憶索引條目);audit-time 由 build + visual 間接,無獨立 dim"
-    },
     "overlay_open_focus_escape_probe": {
       "dims": [
         74
@@ -547,11 +539,11 @@
       "dims": [],
       "note": "2026-07-03 entry add per audit-preflight gap:M26 runtime 紀律(propose 前 WebFetch);governance-only"
     },
-    "sidebar_menu_button_implicit_wrap": {
+    "sidebar_avatar_canonical": {
       "dims": [
         71
       ],
-      "note": "2026-07-03 entry add per audit-preflight gap:write-time 攔隱式 wrap;audit-time dim 71 primitive misuse + A.1b composition cover"
+      "note": "2026-11-18 合併原 chrome_header_avatar_canonical(r1)+ sidebar_menu_button_implicit_wrap(r2)兩筆,dims 取聯集。r1:write-time P0 攔 chrome header 內 ItemAvatar 誤用(header-canonical 消費紀律);audit-time 由 dim 1 design-language + A.1b per-component cover,無獨立 dim。r2:write-time 攔隱式 wrap;audit-time dim 71 primitive misuse + A.1b composition cover"
     },
     "dynamic_tailwind_class": {
       "dims": [

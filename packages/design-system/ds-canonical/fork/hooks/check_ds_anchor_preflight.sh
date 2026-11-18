@@ -174,12 +174,14 @@ if [ "$HAS_CANONICAL_READ" -gt 0 ] || [ "$HAS_3COL_OR_MARKER" -gt 0 ]; then
 fi
 
 # Override env var(audit-logged)
+# 稽核紀錄是功能狀態、不是遙測(_log-fire.sh governance_enforcement_state_dir):遙測沒開也要寫。
+# 2026-11-18 之前綁遙測開關 → 預設不寫,M29「bypass audit-logged」名不副實(knowledge-prune D5-01)。
+# 照實:GOVERNANCE_READ_ONLY=1、不經 adapter 直接跑、runtime root 不是本 repo Git 目錄下的
+# governance-runtime 時仍不寫(放行照舊)。
 if [ "${GOVERNANCE_BYPASS_DS_ANCHOR:-0}" = "1" ]; then
-  if STATE_DIR="$(governance_runtime_state_dir 2>/dev/null)"; then
-    mkdir -p "$STATE_DIR" 2>/dev/null
-    jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg file "$FILE_PATH" --arg tool "$TOOL" \
-      '{ts:$ts,event:"ds-anchor-bypass",file:$file,tool:$tool}' >> "$STATE_DIR/governance-bypass.jsonl" 2>/dev/null || true
-  fi
+  governance_append_enforcement_record governance-bypass.jsonl \
+    "$(jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg file "$FILE_PATH" --arg tool "$TOOL" \
+      '{ts:$ts,event:"ds-anchor-bypass",file:$file,tool:$tool}' 2>/dev/null)" 2>/dev/null || true
   exit 0
 fi
 

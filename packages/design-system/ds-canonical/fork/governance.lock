@@ -199,7 +199,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "59418c2759c163cef139593b3bdfec9078bf94995868a96ec5f8c3515878358a",
+      "sha256": "c68a79a8fbe18077419aea0d210518961a01047abcf42f37ddfaaa6be876ad98",
       "source": "providers/codex/skills/scan-similar-bugs",
       "classification": null,
       "destination": null
@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
+      "sha256": "200b3fc1d792fb571eeed42437af9240006e9cff6d7ec97b22b8d59310b83c47",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/_log-fire.sh",
-      "sha256": "84468c0b348ee8fd0815f1150215b87062c65bb2da23c3abe629fba29f83bd7f",
+      "sha256": "df8895d9e184f4d358a6ae9f9a6472142a2b5039de9c33e030281da454ee81ff",
       "source": "_log-fire.sh",
       "classification": "HELPER",
       "destination": null
@@ -673,14 +673,6 @@
       "file": "hooks/block_prototype_imports.py",
       "sha256": "f7d87dcc8dde09966c057ff1872fd67921e9f3a33d210cbc63115ff15b3ab05c",
       "source": "block_prototype_imports.py",
-      "classification": "SHIP_AS_IS",
-      "destination": null
-    },
-    {
-      "schemaVersion": 1,
-      "file": "hooks/check_chrome_header_avatar_canonical.sh",
-      "sha256": "327d01557e4002c49a57e3c93549707d254bca7fccf8608007d560429b869303",
-      "source": "check_chrome_header_avatar_canonical.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
     },
@@ -703,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "b2dee125fc51d840a6b18e8dcdfd61b0b3e52e30b2d3e8bf8f9d190d96cdc12b",
+      "sha256": "662601810cbe61171812be08925c653feba49139b7271e67f202547b3ebd6f06",
       "source": "check_ds_anchor_preflight.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -774,9 +766,9 @@
     },
     {
       "schemaVersion": 1,
-      "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
-      "sha256": "5ebadb0745bdc4ea29533e532c414fe8c9d35f85349c05b1a394268385b00bf7",
-      "source": "check_sidebar_menu_button_implicit_wrap.sh",
+      "file": "hooks/check_sidebar_avatar_canonical.sh",
+      "sha256": "d24c3d004e85c2cd49ed4e7d03617e216caf81a5954dcd5d407d13b78c656179",
+      "source": "check_sidebar_avatar_canonical.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
     },
@@ -943,7 +935,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "6ef1611f18493fc0312c24f943c16962de8deec83484a8f8d8fda7e608e52dc3",
+      "sha256": "47144418ac053d5809a6685fbd35b0f496671349d5c78f92c2d3a5fd3eb1a22d",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -951,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "a71aa27308f0364e669a59ac3dd7ce7e55d8939d7aecdb28f3c1e4319d4fe368",
+      "sha256": "34afc944552ad8113343baeb1f257bcd4c2366d55063d038859f90849ec0481a",
       "source": null,
       "classification": null,
       "destination": null
@@ -1151,7 +1143,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "9b998ba8e1e7c6a5023dac705ad0d50d3f35cd331f8a4d927bbdcfa73c9e3cb4",
+      "sha256": "c310d9950f005eacc1bb6edb84e1bef921529071af7398165d34edf92177b1cb",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1207,7 +1199,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
+      "sha256": "200b3fc1d792fb571eeed42437af9240006e9cff6d7ec97b22b8d59310b83c47",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null
@@ -1391,7 +1383,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "59418c2759c163cef139593b3bdfec9078bf94995868a96ec5f8c3515878358a",
+      "sha256": "c68a79a8fbe18077419aea0d210518961a01047abcf42f37ddfaaa6be876ad98",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1679,7 +1671,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "691cb1ca9139d94182adf527dbcf4ea3a0adca32b736f167179dbb49e4f96378",
+      "sha256": "e1c26f4c590395c0a7e2b2741a7cb8b02da0c825e722494d88d4c089f41d4e48",
       "source": null,
       "classification": null,
       "destination": null
