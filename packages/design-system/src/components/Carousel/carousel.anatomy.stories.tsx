@@ -8,6 +8,7 @@ import {
   CarouselNext,
   CarouselDots,
 } from './carousel'
+import { CITY_PHOTOS, demoPhoto } from './_carousel-demo'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
@@ -19,20 +20,13 @@ export default meta
 type Story = StoryObj
 
 // ── Sample slides ────────────────────────────────────────────────────────────
-// 2026-05-16 audit Round 6:展示 + 設計規格 兩層用真實 picsum seeded photo
-// 取代 gradient 色塊 — gradient 抽象 block 教不到真實裁切 / 內容裁切 / 視覺層次,
-// 且與主展示頁(carousel.stories.tsx)同源。設計原則(principles)層刻意用輕量 gradient
-// placeholder(聚焦「何時用 / 何時不用」決策規則,不搶真實照片視覺),故 media 來源與此二層不同。
-// Picsum.photos 提供 stable seeded photos(免登入 / 免 API key / 跨環境一致)。
+// 展示 / 設計原則 / 設計規格三層用同一組真實照片,資料只住 ./_carousel-demo.ts(為什麼用真實照片、seed 怎麼找的都寫在那裡)。
+// 2026-11-18 前本頁自己寫 seed/kyoto 等網址:展示頁因稽核 A113 換了照片,這裡沒跟上(「推薦目的地 京都」配海鷗照,PV2 反駁 #2);
+// 這段註解原本還寫「設計原則層刻意用輕量 gradient placeholder、media 來源與此二層不同」—— 原則頁早已改用同一組照片,一併刪。
 // 註:ColorMatrix「視覺樣本」cell 刻意保留純色 swatch(bg-foreground)——那是 token 色票
 // 非 slide 內容,用純色才能精準標 dot 的 bg-on-emphasis/60 · /80 · 全(--on-emphasis = white)token。
 
-const slides = [
-  { label: '京都',       image: 'https://picsum.photos/seed/kyoto/720/360' },
-  { label: '雷克雅維克', image: 'https://picsum.photos/seed/reykjavik/720/360' },
-  { label: '里斯本',     image: 'https://picsum.photos/seed/lisbon/720/360' },
-  { label: '峇里島',     image: 'https://picsum.photos/seed/bali/720/360' },
-]
+const slides = CITY_PHOTOS.map((c) => ({ label: c.city, image: demoPhoto(c.seed, 720, 360) }))
 
 const SampleSlide = ({ label, image, height = 240 }: { label: string; image: string; height?: number }) => (
   <div

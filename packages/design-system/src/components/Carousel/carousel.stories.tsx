@@ -10,6 +10,7 @@ import {
   CarouselNext,
   CarouselDots,
 } from './carousel'
+import { CITY_PHOTOS, LAPTOP_NAME, LAPTOP_PHOTOS, demoPhoto } from './_carousel-demo'
 import { Button } from '@/design-system/components/Button/button'
 import { AspectRatio } from '@/design-system/components/AspectRatio/aspect-ratio'
 import { Toaster, toast } from '@/design-system/components/Toast/toast'
@@ -26,33 +27,12 @@ export default meta
 
 // ── Real-content data ────────────────────────────────────────────────────────
 
-// 2026-05-16 audit codex Round 6:用真實 photo URL 取代 gradient color block — story 要教 carousel
-// 真實裁切 / 內容裁切 / 視覺層次,gradient 抽象 block 教不到(所以範例一律用真實照片)。
-// Picsum.photos 提供 stable seeded photos(免登入 / 免 API key / 跨環境一致)。
-// seed 只保證「同一個字每次同一張」,**不保證照片內容是那個字**:2026-11-18 前 seed/kyoto 是海鷗(Picsum 第 611 張)、
-// seed/reykjavik 是車站電扶梯(1033)、seed/headphones-front 是森林溪流(466)—— 稽核 A113 圖文不符。
-// 現在每張都先看過照片、再找轉址到那一張的 seed(`curl -sI https://picsum.photos/seed/<seed>/1/1` 的 location 帶 /id/<n>/,
-// 2026-11-18 實查,同一個 seed 不論尺寸都是同一張)。不直接寫 /id/<n>/:瀏覽器閘的本機代換圖只認 /seed/ 與 /<w>/<h>,
-// /id/<n> 會照常連網(scripts/lib/launch-browser.mjs picsumRoute「/id/<n> 要看站上圖庫有沒有那張」),離線就變儀器失效。
-const heroBanners = [
-  { city: '京都', tagline: '秋日楓紅限定行程', image: 'https://picsum.photos/seed/demo-1100/960/360' }, // Picsum 923:紅葉林間步道
-  { city: '雷克雅維克', tagline: '極光季早鳥 8 折', image: 'https://picsum.photos/seed/demo-1764/960/360' }, // 901:雪地上空的綠色極光
-  { city: '里斯本', tagline: '歐洲西岸 7 日自由行', image: 'https://picsum.photos/seed/demo-114/960/360' }, // 419:里斯本黃色電車
-  { city: '峇里島', tagline: '熱帶度假村 · 含機加酒', image: 'https://picsum.photos/seed/demo-1262/960/360' }, // 645:椰子樹
-]
+// 照片三層共用一份(./_carousel-demo.ts:為什麼用真實照片、每張照片的內容、seed 的找法與不寫 /id/<n>/ 的理由都寫在那裡)。
+const heroBanners = CITY_PHOTOS.map((c) => ({ city: c.city, tagline: c.tagline, image: demoPhoto(c.seed, 960, 360) }))
 
-// 同一台筆電的四張照片(Picsum 第 0–9 張是同一組桌面系列;seed 的找法同上);label = 這張拍的是什麼,給讀屏的圖片名稱用
-//(畫面上不再疊手刻的角度標籤膠囊,張數由底下的指示點表達)。
-// 2026-11-18 前是「無線降噪耳機 Pro」配 seed 照片:四張沒有一張是耳機,Picsum 也沒有同一副耳機的多角度照 → 改商品配照片。
-// 第一張(預設畫面)選底部中央偏暗的那張:指示點是白色、疊在照片上(carousel.spec.md「dots 疊在深色 / 圖片內容上」),
-// 原本第一張是亮白溪水,指示點對比 1.05(實量,見 commit 訊息)。
-const productImages = [
-  { label: '使用情境', image: 'https://picsum.photos/seed/demo-1977/480/480' }, // Picsum 5:雙手在筆電上打字
-  { label: '正面', image: 'https://picsum.photos/seed/demo-693/480/480' }, // 8:正面
-  { label: '右前方', image: 'https://picsum.photos/seed/demo-2522/480/480' }, // 2:右前方
-  { label: '左前方', image: 'https://picsum.photos/seed/demo-1959/480/480' }, // 0:左前方
-]
-const PRODUCT_NAME = '輕薄筆電 13 吋'
+// 同一台筆電的前四張;label = 這張拍的是什麼,給讀屏的圖片名稱用(畫面上不再疊手刻的角度標籤膠囊,張數由底下的指示點表達)。
+const productImages = LAPTOP_PHOTOS.slice(0, 4).map((p) => ({ label: p.label, image: demoPhoto(p.seed, 480, 480) }))
+const PRODUCT_NAME = LAPTOP_NAME
 
 
 // ── Stories ─────────────────────────────────────────────────────────────────

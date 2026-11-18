@@ -10,6 +10,7 @@ import {
   CarouselNext,
   CarouselDots,
 } from './carousel'
+import { CITY_PHOTOS, LAPTOP_PHOTOS, demoPhoto } from './_carousel-demo'
 import { Chip, ChipGroup } from '@/design-system/components/Chip/chip'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { ExampleCaption, ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
@@ -25,14 +26,10 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 
-// 樣本圖用跟展示頁「首頁主視覺橫幅」同一組城市照片(之前是手寫 hex 漸層色塊 —— 展示頁 2026-05-16 已定案
-// 「gradient 抽象 block 教不到真實裁切」改用真實照片,原則頁沒跟上)。文字下方疊同一層由透明到半透明黑的漸層,讓白字壓在照片上讀得到。
-const cityPhotos = [
-  { label: '京都', image: 'https://picsum.photos/seed/kyoto/960/360' },
-  { label: '雷克雅維克', image: 'https://picsum.photos/seed/reykjavik/960/360' },
-  { label: '里斯本', image: 'https://picsum.photos/seed/lisbon/960/360' },
-  { label: '峇里島', image: 'https://picsum.photos/seed/bali/960/360' },
-]
+// 樣本圖 = 展示頁「首頁主視覺橫幅」那四張城市照片,同一份資料(./_carousel-demo.ts)。之前是手寫 hex 漸層色塊 —— 展示頁 2026-05-16 已定案
+// 「gradient 抽象 block 教不到真實裁切」改用真實照片,原則頁沒跟上。文字下方疊同一層由透明到半透明黑的漸層,讓白字壓在照片上讀得到。
+// 2026-11-18 前本頁自己寫 seed/kyoto 等網址、註解寫「同一組」:展示頁換了照片,這裡沒跟上(京都配海鷗照,PV2 反駁 #2)→ 改成 import。
+const cityPhotos = CITY_PHOTOS.map((c) => ({ label: c.city, image: demoPhoto(c.seed, 960, 360) }))
 const photoBackground = (image: string) => `linear-gradient(180deg, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.6) 100%), url(${image})`
 
 const PhotoSlide = ({ label, image, height = 160 }: { label: string; image: string; height?: number }) => (
@@ -60,8 +57,6 @@ const DotsSample = ({ label, dotsClassName }: { label: string; dotsClassName?: s
   </Carousel>
 )
 
-// 8 張商品總覽(Grid 那一則):同展示頁「商品圖片輪播」那組耳機照片 + 同系列商品
-const PRODUCT_PHOTOS = ['headphones-front', 'headphones-side', 'headphones-back', 'headphones-lifestyle', 'earbuds-case', 'speaker-mini', 'charging-dock', 'travel-pouch']
 
 const CATEGORY_OPTIONS = ['全部', '3C 家電', '居家生活', '服飾配件', '美妝保養', '食品飲料', '運動戶外', '圖書文具', '母嬰玩具']
 /** 商品分類篩選列:DS ChipGroup 橫向捲動(可以真的勾選) */
@@ -311,10 +306,11 @@ export const ItemCountLimit: Story = {
         note="超過 7 張,使用者『找不到特定項』——不記得想看的那張在第幾張,要按多次才到。dots 也變得過密難以點擊。應改用 Grid(一眼看全)或 thumbnail + preview pattern。"
       >
         <ExampleGroup className="w-[600px]">
+          {/* 8 張商品總覽 = 展示頁「商品圖片輪播」那台筆電的八張照片(同一份資料,./_carousel-demo.ts;輪播只用前四張) */}
           {/* @layout-space-magic-ok: 相簿縮圖格之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
           <div className="grid grid-cols-4 gap-2">
-            {PRODUCT_PHOTOS.map((seed) => (
-              <div key={seed} className="aspect-square rounded-md bg-cover bg-center" style={{ backgroundImage: `url(https://picsum.photos/seed/${seed}/240/240)` }} />
+            {LAPTOP_PHOTOS.map((p) => (
+              <div key={p.seed} className="aspect-square rounded-md bg-cover bg-center" style={{ backgroundImage: `url(${demoPhoto(p.seed, 240, 240)})` }} />
             ))}
           </div>
           <ExampleCaption>8 張商品總覽用 Grid · 一眼看全 · 可直接點任一項</ExampleCaption>

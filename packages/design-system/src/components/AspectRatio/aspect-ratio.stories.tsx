@@ -39,7 +39,7 @@ export const ProductPhoto4x3: Story = {
       >
         <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {/* 每張先看過照片再配商品(2026-11-18 前 seed/headphones 是海浪、seed/keyboard 是森林、seed/camera 是登山客 —— 稽核 A113);
-              seed 是轉址到那一張的字(找法與不寫 /id/<n>/ 的理由見 carousel.stories.tsx heroBanners 上方)。
+              seed 是轉址到那一張的字(找法與不寫 /id/<n>/ 的理由見 ../Carousel/_carousel-demo.ts 檔頭)。
               Picsum 沒有單獨拍耳機的照片 → 第一張改成照片裡真的有的黑膠唱盤 */}
           {[
             { seed: 'demo-558', title: '黑膠唱盤', price: 'NT$ 9,990' }, // Picsum 39:唱盤與唱臂
