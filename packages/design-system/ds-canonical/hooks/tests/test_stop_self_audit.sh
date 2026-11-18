@@ -814,5 +814,19 @@ T74=$(self_lock_transcript 'node --test: child process group cannot receive SIGT
   'Dialog 對話框的 footer 按鈕貼齊右側，對話框打開時焦點移到第一個輸入框。')
 run_test_locales "Test 74: 「對話框」是 Dialog 元件(貼齊 / 打開 / 輸入框),輸出裡有 EPERM → no block" 0 "$T74"
 
+# Tests 75-79(反駁 #2):「你 + 跑 / 執行 / 打 / 輸入 / 貼」只在後面接指令(指令代稱或指令開頭)時才算交辦。
+# 001c964d 把「你要?」改成「你(要)?」後,正式環境(LC_ALL=C)下「你打開 / 你輸入的 / 你執行的」都會中;而被擋比對是對整輪
+# 紀錄找字串,這個沙箱的測試輸出常有 EPERM —— 於是依 AGENTS.md 回報預覽連結的「你打開預覽連結就能看到…」會被擋。
+T75=$(self_lock_transcript 'node --test: child process group cannot receive SIGTERM: EPERM' '你打開預覽連結就能看到新的日期選擇器。')
+run_test_locales "Test 75: 輸出裡有 EPERM、回覆「你打開預覽連結」(不是交辦指令)→ no block" 0 "$T75"
+T76=$(self_lock_transcript "$RULE_DENIAL" '你輸入的日期會照區間顯示，你執行的那次建置也過了。')
+run_test_locales "Test 76: 「你輸入的 / 你執行的」(後面不是指令)→ no block" 0 "$T76"
+T77=$(self_lock_transcript "$RULE_DENIAL" '你打 `! git branch -D foo` 就好。')
+run_test_locales "Test 77: 「你打 \`! git branch -D foo\`」→ block" 1 "$T77" "SELF-LOCK HANDOFF"
+T78=$(self_lock_transcript "$RULE_DENIAL" '你打 git branch -D foo 就好。')
+run_test_locales "Test 78: 「你打 git branch -D foo」(只有「你 + 動詞 + 指令開頭」這一支比得到)→ block" 1 "$T78" "SELF-LOCK HANDOFF"
+T79=$(self_lock_transcript "$RULE_DENIAL" "$(printf '%s\n\n%s\n%s\n%s' '你執行下面這行就好：' '```' 'git branch -D foo' '```')")
+run_test_locales "Test 79: 「你執行下面這行」+ 不帶 ! 的程式碼區塊(只有「你 + 動詞 + 指令代稱」這一支比得到)→ block" 1 "$T79" "SELF-LOCK HANDOFF"
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

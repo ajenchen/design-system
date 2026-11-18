@@ -613,7 +613,7 @@ fi
 #   ② 強交辦(以「! 」開頭的一行、行內 `! 、對話框 + 貼上 / 輸入 / 執行 / 打 + 指令代稱、貼到 / 貼進對話框):被擋紀錄從
 #      「上一則真 user 提問」起算,即本輪加上一輪 —— 涵蓋 (b)(c)。不拿掉「有被擋」這個前提:M36(b) 管的是被擋之後把動作
 #      丟回 user,沒被擋時教 user 用 `!` 不在這條規則內(Test 66)。
-#   ③ 一般交辦(在終端機打、你(要)(自己)跑 …、英文 run that command / waiting for you to …):被擋紀錄從「最後一則真 user
+#   ③ 一般交辦(在終端機打、你(要)(自己)跑 / 打 … + 指令、英文 run that command / waiting for you to …):被擋紀錄從「最後一則真 user
 #      提問」起算。真 user 提問 = role user、不是 tool_result、不是 isMeta、不是 Stop hook 回饋 / 背景工作通知 /
 #      system-reminder / `!` 指令的輸入輸出 / 對話接續摘要(有 origin 欄位時只認 origin.kind = human)。
 #   「對話框」在本 repo 也是 Dialog 元件的中文名,所以只認「對話框 + 動詞 + 指令代稱」與「貼到 / 貼進對話框」,
@@ -641,7 +641,11 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   # 指令代稱 = 交辦動詞後面接的那一段(下面這行 / 我給的那行 / `… / ! …)。只認這些,動詞後面接別的字(打開 / 輸入框)不算。
   HANDOFF_CMD_REF='(一下)?([[:space:]]|:|：)*(我給的|我貼的|我寫的)?(下面|以下|底下|上面|這行|這一行|這一整行|這段指令|這條指令|這個指令|那行|那一行|那條指令|那個指令|指令|`|!)'
   STRONG_HANDOFF_RE="(^![[:space:]]|\`![[:space:]]|對話框(裡|中|內)?(貼上|貼|輸入|執行|打)${HANDOFF_CMD_REF}|貼(到|進)(這個|你的)?對話框)"
-  WEAK_HANDOFF_RE='(在終端機(打|輸入|跑|執行)|你(要)?(自己)?(跑|執行|打|輸入)|請你(跑|執行|手動)|麻煩你(跑|執行))'
+  # 「你 + 動詞」只在後面接指令時才算(反駁 #2):指令代稱(同上)或指令開頭(git / npm / rm … / $ )。
+  # 001c964d 把「你要?」改成「你(要)?」之後,正式環境(LC_ALL=C)下「你打開 / 你輸入的 / 你執行的」全中;
+  # 被擋比對又是對整段紀錄找字串(測試輸出常有 EPERM),於是「你打開預覽連結就能看到…」這種回報會被擋(Test 75)。
+  HANDOFF_CMD_HEAD='(\$[[:space:]]|(git|npm|npx|node|pnpm|yarn|rm|cd|gh|bash|sh|zsh|curl|chmod|mv|cp|sudo|make|python3?)[[:space:]])'
+  WEAK_HANDOFF_RE="(在終端機(打|輸入|跑|執行)|你(要)?(自己)?(跑|執行|打|輸入|貼)(${HANDOFF_CMD_REF}|(一下)?([[:space:]]|:|：)*${HANDOFF_CMD_HEAD})|請你(跑|執行|手動)|麻煩你(跑|執行))"
   EN_HANDOFF_RE="(you('ve|’ve| have| can| need to| should| will)?|please) (just )?(run|type|paste|execute|enter) (that|this|the following|these|those|the) (command|commands|line|lines|one-liner)|waiting for you to (run|paste|type|execute|delete|remove)|(paste|type|enter) [^.]{0,40}(into|in) (the|this|your) (chat|prompt|input box|message box)|(run|execute|type|paste) [^.]{0,40}in your (own )?terminal|(run|execute) (it|this|that) yourself"
   HUMAN_ONLY_RE='(auth login|gh auth|MFA|OAuth|二階段|登入|帳單|billing|付費|credential reference|vault|Secret Manager)'
   SELF_LOCK_DELIVERED=""
