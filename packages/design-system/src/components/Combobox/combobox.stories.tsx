@@ -183,7 +183,7 @@ export const Searchable: Story = {
 // 打的字放不下這一列才換到下一列。它與 Tag 等高
 // (field-controls.spec.md「wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px」;scripts/visual-assertions.json 量等高、列距 4px、搜尋框不單獨佔一列)。
 // 一開始五顆 Tag 排成兩列,兩列都排到剩不到 60px:第一列三顆(320px 欄位的 Tag 區 279px,三顆 264px、剩 15px),
-// 第二列「效能優化」+「元件庫版本管理」(90 + 4 + 132 = 226px、剩 53px);空的搜尋框(一個游標寬 15px)接在第五顆後面、欄位兩列。
+// 第二列「效能優化」+「元件庫版本管理」(90 + 4 + 132 = 226px、剩 53px);空的搜尋框接在第五顆後面、填滿第二列剩下的 53px(還沒打字時基準寬 0、不參與換列),欄位兩列 320×60px。
 // 打字後放不下就換到第三列、欄位變三列。
 // 2026-09-30 前搜尋框有 60px 固定下限:最後一列剩不到 60px 時,空的搜尋框自己換到下一列,關著的欄位多一列空白(實測 main 54.2px 高、修後 32px)。
 // 這則的預設畫面要剛好落在那個狀態,修壞了才看得到、visual-assertions 的「搜尋框不單獨佔一列」才紅:
@@ -220,7 +220,7 @@ export const SearchableInlineWrap: Story = {
 // 欄位內搜尋(searchIn='trigger')的焦點 / 關鍵字 / aria-activedescendant 契約 probe(2026-09-30,user 同意「其他部分我覺得”可以”」;
 // 最後一段「浮層開著按 Tag × 焦點不離開搜尋框」是同一條不變式延伸到欄位上的按鈕,屬 AI 推導,出處見 select-menu.spec.md Focus 段)。
 // 規則住 select-menu.spec.md「A11y 預設」Focus 段與「搜尋關鍵字何時保留、何時清空」、combobox.spec.md「邊界案例」Empty。
-// 從空值開始 —— 上面「搜尋」範例一開始就帶著 Electronics,空值那條路徑(2026-09-30 前沒有輸入框)沒有任何 story 會走到。
+// 從空值開始 —— 上面「搜尋」範例一開始就帶著一個已選標籤(2026-11-18 前是 Electronics,之後是「前端工程」),空值那條路徑(2026-09-30 前沒有輸入框)沒有任何 story 會走到。
 // 同 ModesRemoveFocusContract 的做法(story-rules「Technical probe visibility」):標 test-only,自 sidebar / Autodocs 排除,
 // 瀏覽器閘逐支開 story 時照跑 play;結束在「已勾兩項、浮層開著、關鍵字已清空、焦點在欄位內搜尋框」這一格,visual-audit 看得到。
 const InlineSearchProbe = () => {
