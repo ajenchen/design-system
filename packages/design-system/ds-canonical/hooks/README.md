@@ -44,7 +44,9 @@ Node helper 必須是本 canonical tree 內可盤點、可雜湊的 committed `.
 - **L2 Per-edit**(PostToolUse Write|Edit|MultiEdit|Skill,script 內自過濾 governance file;僅在 `GOVERNANCE_TELEMETRY_OPT_IN=1` 時寫,預設關):`log_governance_fires.sh` → `$GOVERNANCE_STATE_DIR/hook-fires.jsonl`(governance file 編輯軌跡)+ `skill-invokes.jsonl`(Skill tool 呼叫)
 - **L3 Periodic**:`/knowledge-prune` skill 季度跑；量化 retire rate，但只 retire 有證據的噪音，禁止為湊比例硬刪
 
-Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_OPT_IN=1`。`$GOVERNANCE_STATE_DIR` 只能在 Git-owned `<git-dir>/governance-runtime/` 內；未指定時使用該 Git-owned default，read-only / 未 opt-in 時不寫任何 runtime bytes。Generated provider homes 不是 telemetry authority。
+Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_OPT_IN=1`。`$GOVERNANCE_STATE_DIR` 只能在 Git-owned `<git-dir>/governance-runtime/` 內；未指定時使用該 Git-owned default，read-only / 未 opt-in 時不寫任何 telemetry bytes。Generated provider homes 不是 telemetry authority。
+
+閘自己要讀回來判定或宣稱稽核的**功能狀態**(例:`check_solo_workflow.sh` R1 的同 session 分支紀錄、`GOVERNANCE_BYPASS_*` 稽核紀錄)不是遙測,不看 opt-in:由 adapter 啟動(有 `GOVERNANCE_RUNTIME_ROOT`)且非 `GOVERNANCE_READ_ONLY=1` 時寫進同一個 Git-owned 目錄;CI replay、hooks:test、直接手動跑 hook 仍然一個 byte 都不寫。條件與函式見 `_log-fire.sh`「兩種寫入、兩道開關」。
 
 ## 這裡**不收**(反例)
 
