@@ -19,6 +19,10 @@
  *   (a) 窗**開始之前**有紀錄  → 證明 log 的歷史真的回溯到窗頭(沒被 rotation 吃掉、不是昨天才開始錄)
  *   (b) 窗**結尾附近**有紀錄  → 證明錄到現在都還活著(不是中途被關掉)
  *   少任何一端 → 儀器全盲,不得產生任何 dead / retire 提名。
+ *
+ * 2026-11-18 同一條規則的另一層(檔尾「哪些名字算 hook」一節):
+ *   (c) 「有幾支 hook」量的是**註冊清單**,不是 hooks/ 目錄裡有幾個 .sh/.py —— 目錄裡還有被 source 的
+ *       `_log-fire.sh`,掃目錄得 59、註冊清單去重得 58。
  */
 
 import { readFileSync, readdirSync } from 'node:fs'
@@ -107,4 +111,19 @@ export function assessObservation({
     totalRecords: sorted.length,
     windowRecords: sorted.filter((ts) => Date.parse(ts) >= cutoffMs).length,
   }
+}
+
+// ── 哪些名字算 hook(2026-11-18)─────────────────────────────────────────────────
+
+/** 從已驗證的 hooks/registrations.json 取出註冊的 hook 名(同一支掛在多個事件只算一次),排序後回傳。 */
+export function registeredHookNames(registrations) {
+  const names = new Set()
+  for (const groups of Object.values(registrations?.hooks ?? {})) {
+    for (const group of groups ?? []) {
+      for (const descriptor of group?.hooks ?? []) {
+        if (descriptor?.kind === 'hook' && typeof descriptor.hook === 'string') names.add(descriptor.hook)
+      }
+    }
+  }
+  return [...names].sort()
 }

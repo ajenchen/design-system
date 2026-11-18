@@ -8,15 +8,18 @@
  * Output:<absolute-git-dir>/governance-runtime/evidence/audit/hook-quality-report.json
  *   - per-hook: fire_count_total / fire_count_6mo / fire_per_day / first_fire / last_fire
  *   - classification: hot (>50/day) / warm (5-50/day) / cool (<5/day) / dead (0 fire 6mo)
- *   - file_exists: yes/no(orphan signal:fire log mentions hook no longer exists)
+ *   - registered: 這個名字在不在註冊清單(orphan signal:fire log 有它、註冊清單沒有)
  *   - retire_candidate: ONLY flag with rationale,NOT execute
  *   - summary.observation: 儀器自述 —— blind=true 代表觀測窗沒涵蓋分類窗,
  *     此時所有零筆 hook 標 `unknown`(不是 `dead`)且**零 retire 提名**。
  *     判準見 lib/hook-fire-observability.mjs;對照組見 test-audit-hook-quality.mjs。
  *
- * 2026-11-18(knowledge-prune WP-07 D2-3):fire log 不存在(遙測從沒開過,也就是預設狀態;
- *   全新 clone 連狀態目錄都沒有)= 跟空 log 同一份全盲報告,exit 0。以前這裡 exit 2,
- *   knowledge-prune SKILL 叫人先看的 summary.observation 在預設狀態下根本產不出來。
+ * 2026-11-18(knowledge-prune WP-07):
+ *   - D2-3:fire log 不存在(遙測從沒開過,也就是預設狀態;全新 clone 連狀態目錄都沒有)= 跟空 log
+ *     同一份全盲報告,exit 0。以前這裡 exit 2,knowledge-prune SKILL 叫人先看的 summary.observation
+ *     在預設狀態下根本產不出來。
+ *   - Phase 0 觀察:「有哪些 hook」改讀註冊清單,不再掃目錄(掃目錄會把被 source 的 _log-fire.sh 也算進去)。
+ *     註冊清單壞掉、或清單上的 hook 檔不在 → exit 1,不出報告(清單對不上時任何分類都不可信)。
  *
  * Non-goals:
  * - 不刪 hook(per user「品質為前提,不為砍而砍」)
@@ -25,19 +28,57 @@
  *
  * Usage: node scripts/audit-hook-quality.mjs
  */
-import { readFileSync, existsSync, writeFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { prepareRuntimeEvidenceFile, resolveProviderTelemetryStateRoot } from './lib/governance-runtime-evidence.mjs'
-import { assessObservation, readFireRecords, DEFAULT_WINDOW_MS, DEFAULT_LIVE_TOLERANCE_MS } from './lib/hook-fire-observability.mjs'
+import { validateHookRegistrations, validateProviderRegistryDocument } from './lib/provider-runtime-validation.mjs'
+import {
+  assessObservation,
+  readFireRecords,
+  registeredHookNames,
+  DEFAULT_WINDOW_MS,
+  DEFAULT_LIVE_TOLERANCE_MS,
+} from './lib/hook-fire-observability.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const TELEMETRY_STATE = resolveProviderTelemetryStateRoot({ repoRoot: ROOT })
 const FIRE_LOG = join(TELEMETRY_STATE, 'hook-fires-per-hook.jsonl')
-const HOOK_DIR = join(ROOT, 'packages/design-system/ds-canonical/hooks')
 
-// 1. Read fire log + aggregate per-hook
+function abort(message) {
+  console.error(`❌ ${message}`)
+  process.exit(1)
+}
+
+function readJson(relativePath, label) {
+  try {
+    return JSON.parse(readFileSync(join(ROOT, relativePath), 'utf8'))
+  } catch (error) {
+    return abort(`${label} 讀不到或不是 JSON(${relativePath}):${error.message}`)
+  }
+}
+
+// 1. 「有哪些 hook」= 註冊清單(M37:要量的是「會被 provider 叫起來的 hook」,不是「目錄裡有這個檔」)。
+//    清單位置讀 providers.json 的 canonical.hookRegistrations(與 build-fork-governance.mjs 同一種讀法),
+//    兩份都先過 canonical validator。
+let PROVIDERS
+let REGISTRATIONS
+try {
+  PROVIDERS = validateProviderRegistryDocument(readJson('packages/governance/canonical/providers.json', 'provider registry'))
+  REGISTRATIONS = validateHookRegistrations(readJson(PROVIDERS.canonical.hookRegistrations, 'hook registrations'))
+} catch (error) {
+  abort(`註冊清單沒通過 canonical validator:${error.message}`)
+}
+const HOOK_DIR = join(ROOT, PROVIDERS.canonical.roots.hooks)
+const REGISTERED = registeredHookNames(REGISTRATIONS)
+for (const hook of REGISTERED) {
+  if (!existsSync(join(HOOK_DIR, hook))) {
+    abort(`註冊清單有 ${hook},但 ${join(PROVIDERS.canonical.roots.hooks, hook)} 不存在 —— 清單和檔案對不上,這份稽核不能出`)
+  }
+}
+
+// 2. Read fire log + aggregate per-hook
 // 2026-06-11 fix(prune D2):原只讀 current jsonl(~數小時)卻標「dead 6mo」= 系統性誤導。
 // 聚合 rotated archives(.jsonl.YYYYMM)+ summary 寫明真實觀測窗 span。
 // 2026-11-18:log 檔(甚至整個狀態目錄)不存在時,readFireRecords 回空陣列 → 跟空 log 走同一條全盲路徑。
@@ -64,29 +105,18 @@ for (const f of fires) {
   if (f.ts > perHook[f.hook].lastTs) perHook[f.hook].lastTs = f.ts
 }
 
-// 2. Enumerate active hooks (file system reality)
-const activeHooks = new Set()
-function walkHooks(dir, prefix = '') {
-  for (const entry of readdirSync(dir)) {
-    if (entry === 'retired' || entry === 'tests' || entry === 'lib') continue
-    const full = join(dir, entry)
-    const st = statSync(full)
-    if (st.isFile() && (entry.endsWith('.sh') || entry.endsWith('.py'))) activeHooks.add(entry)
-  }
-}
-walkHooks(HOOK_DIR)
-
 // 3. Compute 6-month window
 const SIX_MO_MS = 6 * 30 * 24 * 60 * 60 * 1000
 const NOW = Date.now()
 const SIX_MO_CUTOFF = new Date(NOW - SIX_MO_MS).toISOString()
 
 const report = []
-const seenHooks = new Set([...Object.keys(perHook), ...activeHooks])
+const registeredSet = new Set(REGISTERED)
+const seenHooks = new Set([...Object.keys(perHook), ...REGISTERED])
 
 for (const hook of [...seenHooks].sort()) {
   const data = perHook[hook] || { count: 0, firstTs: null, lastTs: null, recentTs: [] }
-  const fileExists = activeHooks.has(hook)
+  const registered = registeredSet.has(hook)
   // Count fires within 6mo
   const fires6mo = fires.filter(f => f.hook === hook && f.ts >= SIX_MO_CUTOFF).length
   // Compute fire/day in window where hook was active
@@ -98,30 +128,27 @@ for (const hook of [...seenHooks].sort()) {
   // Classify
   let classification
   // 儀器全盲時,零筆不構成任何關於這支 hook 的敘述 —— 標 unknown,不標 dead。
-  if (OBSERVATION.blind && fires6mo === 0) classification = fileExists ? 'unknown' : 'unknown-orphan'
-  else if (fires6mo === 0) classification = fileExists ? 'dead' : 'orphan'
+  if (OBSERVATION.blind && fires6mo === 0) classification = registered ? 'unknown' : 'unknown-orphan'
+  else if (fires6mo === 0) classification = registered ? 'dead' : 'orphan'
   else if (firePerDay > 50) classification = 'hot'
   else if (firePerDay > 5) classification = 'warm'
   else classification = 'cool'
 
   // Retire candidate signal(NOT execute)
-  // 2026-06-11 fix(prune D2):(a) `_` prefix root helpers(被 source 的共用 lib,自己永不 fire)
-  // 不提名 retire;(b) dead 標籤帶真實觀測窗(rotation 史曾遺失,窗可能遠短於 6mo)
-  const isSourcedHelper = hook.startsWith('_') && /log-fire|helper/.test(hook)
+  // 2026-06-11 fix(prune D2):dead 標籤帶真實觀測窗(rotation 史曾遺失,窗可能遠短於 6mo)。
+  // 2026-11-18:原本這裡另有一條「`_` 開頭的 log-fire / helper 不提名」的例外,那是給掃目錄時混進來的
+  // _log-fire.sh 用的;hook 清單改讀註冊清單之後它根本不會出現,例外一併拿掉。
   let retireCandidate = false
   let retireReason = null
   if (classification === 'unknown' || classification === 'unknown-orphan') {
     retireCandidate = false
     retireReason = '儀器全盲 —— 觀測窗沒有涵蓋分類窗,零筆不是證據(見 summary.observation.reasons)'
-  } else if (classification === 'dead' && fileExists && !isSourcedHelper) {
+  } else if (classification === 'dead') {
     retireCandidate = true
     retireReason = `0 fire in OBSERVED window(觀測窗見 summary.observedWindow,非保證 6mo)— observe rationale before retire`
-  } else if (isSourcedHelper && classification === 'dead') {
-    retireCandidate = false
-    retireReason = 'sourced shared helper(被其他 hook source,自身永不 fire)— NOT retirable'
   } else if (classification === 'orphan') {
     retireCandidate = true
-    retireReason = 'fire log mentions hook no longer in file system — likely already retired but log shows historical fires'
+    retireReason = 'fire log 有它的舊紀錄,但它不在註冊清單 —— 多半早已退場,log 裡是歷史紀錄'
   } else if (classification === 'hot') {
     retireCandidate = false
     retireReason = `HOT(${firePerDay.toFixed(1)}/day)— consider regex tuning if high false-positive,NOT retire`
@@ -130,7 +157,7 @@ for (const hook of [...seenHooks].sort()) {
   report.push({
     hook,
     classification,
-    fileExists,
+    registered,
     fireCount: data.count,
     fires6mo,
     firePerDay: Number(firePerDay.toFixed(2)),
@@ -148,7 +175,9 @@ const summary = {
   // 2026-06-11:真實觀測窗(rotation 史曾遺失;「dead」只代表此窗內 0 fire,非保證 6mo)
   observedWindow: allTs.length ? { from: allTs[0], to: allTs[allTs.length - 1], totalFires: allTs.length } : null,
   totalHooksInFireLog: Object.keys(perHook).length,
-  totalActiveFiles: activeHooks.size,
+  // 2026-11-18:hook 數 = 註冊清單去重(以前數目錄,會把 _log-fire.sh 也算進去)
+  hookRegistrations: PROVIDERS.canonical.hookRegistrations,
+  totalRegisteredHooks: REGISTERED.length,
   // 2026-09-24:儀器自述。blind=true 時本報告**不含任何 retire 提名**,不得拿去砍 hook。
   observation: {
     blind: OBSERVATION.blind,
