@@ -60,8 +60,18 @@ HOOK_TREE="$(cd "$SCRIPT_DIR/.." && pwd)"
 repository_write_fingerprint() {
   find "$GOVERNANCE_PROJECT_DIR" -name node_modules -prune -o -path "$GOVERNANCE_PROJECT_DIR/.git" -prune \
     -o -name .git -print 2>/dev/null | LC_ALL=C sort
+  # Keep git last: its exit status is the function's status, which every caller checks below.
   git -C "$GOVERNANCE_PROJECT_DIR" --no-optional-locks status --porcelain --ignored --untracked-files=all \
     -- "$HOOK_TREE" 2>&1
+}
+# A failing git status prints the same error before and after every suite, so the comparison
+# stays equal and half of the detector goes blind without a sound. "Saw no write" only counts
+# when the instrument could see one: when it cannot, refuse the run as an instrument failure
+# instead of letting the suites pass unwatched(M37).
+write_detector_unavailable() {
+  echo "❌ repository-write detector unavailable(git status failed $1);refusing to run hook tests:" >&2
+  printf '%s\n' "$2" | sed 's/^/    /' >&2
+  exit 1
 }
 # Lines only in $2 (+) / only in $1 (-). Pure shell on purpose: `diff <(...)` needs /dev/fd
 # (denied in the macOS sandbox) and here-strings need a writable TMPDIR —— the very thing that
@@ -79,7 +89,8 @@ fingerprint_delta() {
   IFS="$saved_ifs"
   set +f
 }
-WRITE_FINGERPRINT_BEFORE="$(repository_write_fingerprint)"
+WRITE_FINGERPRINT_BEFORE="$(repository_write_fingerprint)" \
+  || write_detector_unavailable "before any suite" "$WRITE_FINGERPRINT_BEFORE"
 
 TOTAL_SUITES=0
 PASSED_SUITES=0
@@ -108,7 +119,8 @@ for test_file in test_*.sh; do
     echo "❌ FATAL: $test_file destroyed the canonical hook test corpus at $SCRIPT_DIR" >&2
     exit 1
   fi
-  WRITE_FINGERPRINT_AFTER="$(repository_write_fingerprint)"
+  WRITE_FINGERPRINT_AFTER="$(repository_write_fingerprint)" \
+    || write_detector_unavailable "after $test_file" "$WRITE_FINGERPRINT_AFTER"
   if [ "$WRITE_FINGERPRINT_AFTER" != "$WRITE_FINGERPRINT_BEFORE" ]; then
     echo "" >&2
     echo "❌ FATAL: $test_file wrote into the repository(new nested .git or changed files under $HOOK_TREE):" >&2

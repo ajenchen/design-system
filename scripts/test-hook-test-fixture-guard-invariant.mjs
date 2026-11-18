@@ -16,6 +16,12 @@
  *      這支會在 suite 目錄裡 `git init`(就是那兩次事故的形狀),run-all 必須紅、點名這支、指出新出現的 .git。
  *   B4 綠面 · 寫入偵測不亂指控:B3 原封不動,只把 mktemp 換回正常 —— 同一支照樣跑完,run-all 不得報寫入。
  *      B3 與 B4 只差「mktemp 有沒有失敗」一個變數,所以 B3 的紅不是偵測器對這支 suite 本身過敏。
+ *   B3 只量得到寫入偵測的「巢狀 .git」那一半;另一半(hooks 樹的 git status --porcelain --ignored)由 B5–B7 量:
+ *   B5 紅面 · git status 半邊:一支不碰 mktemp 的替身 suite 往 hooks 樹寫一個普通檔(沒有 .git,find 那一半看不到)——
+ *      run-all 必須紅、點名這支,並列出 `+ ?? <hooks 樹>/zz-written-by-suite.txt`(這一行只可能來自 git status)。
+ *   B6 綠面:同一支只把寫入目標換成 $TMPDIR —— 照跑、通過、檔真的寫出來了,寫入偵測不得報。B5 與 B6 只差「寫到哪裡」。
+ *   B7 量具失效:複製樹的 run-all 把 git status 換成必定出錯的寫法(--porcelain=v9)。git 出錯時前後印出同一段錯誤、
+ *      比對恆等,這一半會瞎而且不出聲 —— run-all 必須以「偵測器不可用」紅,一支 suite 都不跑(那支會寫入的替身沒機會跑)。
  *
  * 假 mktemp 拒絕時往 fd 3 寫一個標記;fd 1 / 2 / 3 是同一個檔,所以標記按時間序落在各 suite 的輸出段落裡,
  * 連把 stderr 丟進 /dev/null 的那一支(test_record_release_consent.sh)也數得到。
@@ -38,6 +44,9 @@ const TESTS = `${HOOKS}/tests`
 const VICTIM = 'test_log_governance_fires.sh'
 const REFUSED = 'FAKE-MKTEMP-REFUSED'
 const WROTE = 'wrote into the repository'
+const DETECTOR_DOWN = 'repository-write detector unavailable'
+const PROBE = 'test_zz_write_probe.sh'
+const PROBE_FILE = 'zz-written-by-suite.txt'
 
 let failures = 0
 const check = (ok, label, detail = '') => {
@@ -151,7 +160,7 @@ try {
       timeout: 150_000,
     })
     closeSync(fd)
-    return { status: r.status, signal: r.signal, out: readFileSync(log, 'utf8') }
+    return { status: r.status, signal: r.signal, out: readFileSync(log, 'utf8'), tmp }
   }
   const sections = (out) => {
     const map = new Map()
@@ -187,6 +196,16 @@ try {
     writeFileSync(file, lines.join('\n'))
     return i + 1
   }
+  // 替身 suite:不用 mktemp -d(靜態閘照樣放行),只往 target 寫一個普通檔
+  const writeProbe = (target) => (repo) => writeFileSync(join(repo, TESTS, PROBE), [
+    '#!/bin/bash',
+    '# meta-test 替身:往指定位置寫一個普通檔,量 run-all 寫入偵測的 git status 半邊',
+    `echo x > ${target}`,
+    'echo "✓ probe file written"',
+    '',
+  ].join('\n'))
+  const INTO_HOOK_TREE = `"$(dirname "$0")/../${PROBE_FILE}"`
+  const INTO_TMPDIR = `"\${TMPDIR:?}/${PROBE_FILE}"`
 
   // B1 紅面:防護都在、mktemp -d 失敗
   {
@@ -225,7 +244,7 @@ try {
   {
     const repo = makeCopy('b3', { suites: [VICTIM], mutate: unguard, stubGate: true })
     const r = runAll(repo, 1)
-    check(r.status !== 0, `B3 run-all 非 0(實得 ${r.status})`, tail(r.out))
+    check(r.status !== 0 && !r.out.includes('Suites:'), `B3 run-all 非 0(實得 ${r.status}),而且停在那支之後、沒走到總結`, tail(r.out))
     check(r.out.includes(`FATAL: ${VICTIM} ${WROTE}`), `B3 寫入偵測點名 ${VICTIM}`, tail(r.out))
     check(r.out.includes(`${TESTS}/.git`), 'B3 指出 suite 目錄裡新出現的 .git', tail(r.out))
     const victim = sections(r.out).get(VICTIM) ?? []
@@ -243,6 +262,45 @@ try {
     check(!r.out.includes(REFUSED), 'B4 沒有任何 mktemp 被拒(變數只差這一個)')
     check(before === snapshotOf(repo), 'B4 複製樹不變')
   }
+
+  // B5 紅面 · 寫入偵測的 git status 半邊:替身 suite 往 hooks 樹寫普通檔(不產生 .git)
+  {
+    const repo = makeCopy('b5', { suites: [PROBE], mutate: writeProbe(INTO_HOOK_TREE) })
+    const r = runAll(repo, 1_000_000)
+    // 複製樹只留一支 suite,覆蓋率那段本來就會紅,所以只看結束碼分不出來;要看它停在那支之後、沒走到總結
+    check(r.status !== 0 && !r.out.includes('Suites:'), `B5 run-all 非 0(實得 ${r.status}),而且停在那支之後、沒走到總結`, tail(r.out))
+    check(r.out.includes(`FATAL: ${PROBE} ${WROTE}`), `B5 寫入偵測點名 ${PROBE}`, tail(r.out))
+    check(r.out.includes(`+ ?? ${HOOKS}/${PROBE_FILE}`), `B5 差異列出 + ?? ${HOOKS}/${PROBE_FILE}(只可能來自 git status 半邊)`, tail(r.out))
+  }
+
+  // B6 綠面:同一支只把寫入目標換成 $TMPDIR
+  {
+    const repo = makeCopy('b6', { suites: [PROBE], mutate: writeProbe(INTO_TMPDIR) })
+    const before = snapshotOf(repo)
+    const r = runAll(repo, 1_000_000)
+    check(sections(r.out).has(PROBE) && !failedList(r.out).includes(PROBE), `B6 ${PROBE} 有跑而且通過`, tail(r.out))
+    check(existsSync(join(r.tmp, PROBE_FILE)), 'B6 檔真的寫進 $TMPDIR(綠不是因為替身什麼都沒寫)')
+    check(!r.out.includes(WROTE) && !r.out.includes(DETECTOR_DOWN), 'B6 寫入偵測沒有報、也沒有報偵測器不可用', tail(r.out))
+    check(before === snapshotOf(repo), 'B6 複製樹不變')
+  }
+
+  // B7 量具失效:git status 必定出錯 → 必須以「偵測器不可用」紅,而不是前後同一段錯誤字串比成相等
+  {
+    const breakGitStatus = (repo) => {
+      const file = join(repo, TESTS, 'run-all.sh')
+      const text = readFileSync(file, 'utf8')
+      const from = 'status --porcelain --ignored'
+      if (text.split(from).length !== 2) throw new Error(`run-all.sh 裡「${from}」不是恰好一處 —— 對照組前提不成立`)
+      writeFileSync(file, text.replace(from, 'status --porcelain=v9 --ignored'))
+    }
+    const repo = makeCopy('b7', { suites: [PROBE], mutate: (r) => { writeProbe(INTO_HOOK_TREE)(r); breakGitStatus(r) } })
+    const before = snapshotOf(repo)
+    const r = runAll(repo, 1_000_000)
+    check(r.status !== 0, `B7 run-all 非 0(實得 ${r.status})`, tail(r.out))
+    check(r.out.includes(DETECTOR_DOWN), 'B7 以「偵測器不可用」紅', tail(r.out))
+    check(!r.out.includes('▶ Running'), 'B7 一支 suite 都沒有跑', tail(r.out))
+    check(before === snapshotOf(repo), 'B7 複製樹不變(那支會往 hooks 樹寫檔的替身沒有機會跑)')
+  }
 } catch (error) {
   check(false, `meta-test 本身出錯:${error.stack ?? error}`)
 } finally {
@@ -253,4 +311,4 @@ if (failures) {
   console.error(`✗ test-hook-test-fixture-guard-invariant:${failures} 項不符`)
   process.exit(1)
 }
-console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面全部成立')
+console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面 + 寫入偵測兩半(巢狀 .git、git status)與量具失效全部成立')

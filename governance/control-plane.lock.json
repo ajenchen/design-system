@@ -10,7 +10,7 @@
   "contractDigest": "sha256:6f63c4b98da5ea84c426d714819e8628160ad12bade78d4cdf1f7f791f99420d",
   "files": [
     {
-      "hash": "sha256:717ca947b866d4ba743072d74858c45ca7617096b1da71fbe8d62098ebdd5fb5",
+      "hash": "sha256:3b7d0326e9eb7634186390f4ec397e5018bcc3f7c395f844f1191b965b6259d2",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7d9f1d0ee08dda4ac82d7dcaaacfb0aca9976bcc501f9a5725734f70a9b1b62d",
+      "hash": "sha256:e910b85d9d5d507b36aade25888234d587b67231f87eae1849664ffa52a09580",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140199,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:28e59b785b3c0e8369ee23f8fd542af752ecfdc360fb032350b8dadca52ca4a6",
+  "inputDigest": "sha256:4bf87cb00bec1d816736abcb15ce54dc6f66bef10f77112a62d2d8a12e8c6cd4",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:dadaf8c443607c299ed3198fe1c36876518e7fc65ee21136a2645f274b5b4ff8",
+  "snapshotDigest": "sha256:5d4b2b032ac13efb648407996ced82dc2256f7632feceba7b9317b803328079d",
   "sources": [
     {
       "hash": "sha256:8b3ffc69ca8453ba9b2109b1a9665edf09d71fef45624a284ca1cb1da34ce477",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 230,
-      "hash": "sha256:4a143c00d63fbee7a7fafa8280aad819443a86ca06180954e151351a4db89778",
+      "hash": "sha256:ea35f8994ed6d0b69129c15e861841b610815b0aa35b2b3f575b0c884b628c37",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1331,12 +1331,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2a199691b41a65a33b0ccbe7bd909ab156af90bcd143d5bc60f24c4ca3362e11",
+      "hash": "sha256:d0b921d888b81a299f3cd0a6654d2d7be1a657bfc9e6d3b7d48c3416e0a11b3a",
       "id": "exact-canonical-hook-suite",
       "mode": "0755",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/tests/run-all.sh",
-      "size": 7405,
+      "size": 8185,
       "type": "file"
     },
     {
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 775,
-      "hash": "sha256:91c8cd6615bed36bbd582819be944552947138c97b82ce82d45f45b52a578791",
+      "hash": "sha256:cc57715998533751e53f84157da878ea297066ad9f0e950beec341c252eb4459",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

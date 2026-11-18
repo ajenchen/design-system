@@ -26,7 +26,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:4a143c00d63fbee7a7fafa8280aad819443a86ca06180954e151351a4db89778` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:ea35f8994ed6d0b69129c15e861841b610815b0aa35b2b3f575b0c884b628c37` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:ff8a94cb8a3b458b2786c7015f5654db325ca3a38bc1e5a9160aa21da9feb9cd` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:1fdb7bcbf365088fcb7ebd5345316d61b83f1875082bf708335814244cf54477` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:5532d984e610286643a87a92b617064edfeb4961bf1e323062fd2c096ad773b2` |
@@ -100,7 +100,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-artifact-upgrade-plan-schema | `packages/governance/canonical/schemas/upgrade-plan.schema.json` | `sha256:bd38c6f5bc51f24b901d79c4ae61a74aa67c992e8e5f27d79632fa6be9a6155d` |
 | exact-baseline-mirror-sync-entrypoint | `scripts/sync-governance-baseline-mirrors.mjs` | `sha256:a8bd057dc638c9da4ecb18d6d481a85dd2bf2b8836b45b0ff14326a159362729` |
 | exact-candidate-dependency-installer | `scripts/install-candidate-dependencies.mjs` | `sha256:dcc28c1d660ff012f943979364b9af14fa06b665f684d93080ca8bcbba0d952f` |
-| exact-canonical-hook-suite | `packages/design-system/ds-canonical/hooks/tests/run-all.sh` | `sha256:2a199691b41a65a33b0ccbe7bd909ab156af90bcd143d5bc60f24c4ca3362e11` |
+| exact-canonical-hook-suite | `packages/design-system/ds-canonical/hooks/tests/run-all.sh` | `sha256:d0b921d888b81a299f3cd0a6654d2d7be1a657bfc9e6d3b7d48c3416e0a11b3a` |
 | exact-canonical-path-containment-library | `scripts/lib/canonical-path-containment.mjs` | `sha256:0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd` |
 | exact-closed-tool-execution-authority-adapter | `scripts/lib/closed-tool-execution.mjs` | `sha256:9386c1e707bb69be9c0d78945b97575fd25aab36964b21aaff89a8fd4a9c08d3` |
 | exact-closed-tool-execution-library | `packages/governance/src/closed-tool-execution.mjs` | `sha256:642b3e788646545918fd47900841bb2f13b19252995a4235e1f9b6c039688cda` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:91c8cd6615bed36bbd582819be944552947138c97b82ce82d45f45b52a578791` |
+| repository-automation-corpus | `scripts` | `sha256:cc57715998533751e53f84157da878ea297066ad9f0e950beec341c252eb4459` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
