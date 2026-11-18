@@ -61,7 +61,7 @@ if BUDGET_ROW="$(governance_size_budget "$REL_PATH")"; then
 else
   rc=$?
   [ "$rc" -eq 1 ] && exit 0
-  printf 'file-size hook blocked: budget lookup for %s failed (registry or governance/memory/contract.json unreadable)\n' "$REL_PATH" >&2
+  printf 'file-size hook blocked: budget lookup for %s failed (provider registry, active provider id, or governance/memory/contract.json unreadable)\n' "$REL_PATH" >&2
   exit 2
 fi
 IFS=$'\t' read -r BUDGET TRANSITION UNIT LABEL <<< "$BUDGET_ROW"

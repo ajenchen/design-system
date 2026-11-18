@@ -11,7 +11,9 @@
 #   governance_size_budget <repo 相對路徑>
 #       有預算 → 印一行 `BUDGET<TAB>TRANSITION<TAB>UNIT<TAB>LABEL`(UNIT = lines | chars;LABEL 放最後,可含空白),回 0
 #       不在表內 → 不印,回 1
-#       量具壞了(registry / contract 讀不到)→ 回 2。「讀不到」不等於「不在表內」,呼叫端不得當成放行。
+#       量具壞了(registry / contract 讀不到;或路徑要靠 provider 才判得出、provider 卻解析不到)→ 回 2。
+#       「讀不到」不等於「不在表內」,呼叫端不得當成放行。provider 只在第 4 段用到:spec / memory / rules /
+#       canonical SKILL 只看路徑就能判,provider 壞了照樣量(測試 Test 26–28 兩面都守著)。
 #   governance_size_measure <檔案> <lines|chars>
 #       印 `手寫量<TAB>被扣掉的量`。扣掉的是 scripts/add-reciprocal-pointers.mjs 自動維護的「## 被引用(auto-maintained…)」段
 #      (標題行起,到下一個 `## ` 標題或檔尾為止;段後若還有手寫章節照算)—— 該段長度只取決於有幾份 spec 指向本檔,
@@ -113,6 +115,7 @@ governance_size_budget() {
   fi
 
   # ── 4. 要知道是哪個 provider 才能判的類別 ──
+  # provider 解析不到 → 回 2(量具壞了),不准回 1(那等於把 instruction entry / provider skill view 默默放行)。
   instruction_entry="$(governance_provider_string_field instructionEntry 2>/dev/null)" || return 2
   shared_entry="$(governance_provider_string_field sharedInstructionEntry 2>/dev/null)" || return 2
   provider_skill_root="$(governance_provider_string_field skillDirectory 2>/dev/null)" || return 2

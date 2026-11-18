@@ -237,5 +237,23 @@ run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
 pass_if advisory_only
 pass_if says 'CI fails above this cap: scripts/validate-memory-contract.mjs'
 
+# Tests 26–28:provider 解析不到時的兩面(反駁 #2)。上限表抽成 lib 之後,provider 改成「用到才解析」——
+# 這是一次判定收窄:以前任何檔只要 provider 壞了就 exit 2,現在只有要靠 provider 才判得出的路徑還會。
+# 26 / 27 = 同樣壞掉的 provider 放在「需要 provider」的違規情境,必須仍 exit 2(把 lib 第 4 段的
+# `|| return 2` 改成 `|| return 1` 會讓這兩格變紅);28 = 收窄只放掉不需要 provider 的路徑,照樣量、照樣出聲。
+echo "Test 26: unknown provider + over-budget instruction entry(AGENTS.md 450 lines)→ exit 2, not a silent pass"
+yes 'x' | head -450 > "$TMP_PROJECT/AGENTS.md"
+TEST_PROVIDER=nonexistent run_hook "" "$TMP_PROJECT/AGENTS.md"
+if [ "$EXIT" = "2" ] && printf '%s' "$STDOUT" | grep -qF 'budget lookup for AGENTS.md failed' \
+  && printf '%s' "$STDOUT" | grep -qF 'active provider id'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
+
+echo "Test 27: unknown provider + provider skill view(.agents/skills/demo/SKILL.md 300 lines)→ exit 2"
+TEST_PROVIDER=nonexistent run_hook "" "$TMP_PROJECT/.agents/skills/demo/SKILL.md"
+if [ "$EXIT" = "2" ] && printf '%s' "$STDOUT" | grep -qF 'budget lookup for .agents/skills/demo/SKILL.md failed'; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL ($EXIT, $STDOUT)"; FAIL=$((FAIL+1)); fi
+
+echo "Test 28 (control for 26/27): same unknown provider + spec.md 350 lines → still measured and warned"
+TEST_PROVIDER=nonexistent run_hook "" "$TMP_PROJECT/specs/control.spec.md"
+pass_if says '350 lines (budget 300'
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
