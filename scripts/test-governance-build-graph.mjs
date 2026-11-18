@@ -662,8 +662,10 @@ for (const stage of graph.stages.filter((candidate) => candidate.id !== 'provide
   // (canonicalRoot source kind) and the harness bindings read canonical tests directly, so no
   // stage lists the retired mirror as a provider-view source anymore.
   if (stage.id === 'plugin-aliases') {
-    // The plugin `commands` alias retired with the projected commands charter (zero residents means
-    // no .claude/commands directory for the alias to target).
+    // The plugin `commands` alias retired with the projected commands charter. A plugin alias needs a
+    // real, non-empty destination directory (scripts/lib/plugin-alias-contract.mjs
+    // assertPluginAliasDestination). With zero residents .claude/commands holds no files: a fresh
+    // checkout has no directory at all, and governance:generate leaves an empty one.
     assert.deepEqual(providerViewSources, ['.claude/skills/'])
   } else if (stage.id === 'harness-authority-bindings') {
     assert.deepEqual(providerViewSources, [])
