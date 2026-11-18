@@ -415,12 +415,6 @@
           },
           {
             "kind": "hook",
-            "hook": "check_orphan_ds_css.sh",
-            "runtime": "bash",
-            "outputMode": "governance-decision"
-          },
-          {
-            "kind": "hook",
             "hook": "stop_repository_text_checks.sh",
             "runtime": "bash",
             "outputMode": "governance-context"

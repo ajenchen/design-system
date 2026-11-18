@@ -66,7 +66,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs",
-        "sha256": "701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd",
+        "sha256": "ec330e8af2f695a94ca69550d48d4a65be06518c2ae7bd68e031818794761c9c",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh"
         ]
@@ -196,7 +196,6 @@
         "packages/design-system/ds-canonical/hooks/tests/test_check_main_branch_workbench.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_naming_and_abstraction.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_opacity_token_usage.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_orphan_ds_css.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_overlay_handcraft.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_overlay_open_focus_escape_probe.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_pattern_invariants.sh",

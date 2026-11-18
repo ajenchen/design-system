@@ -523,10 +523,6 @@
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:app-code write-time P0(skip DS-src by design);DS-src 由 dim 90 judgment sweep cover"
     },
-    "orphan_ds_css": {
-      "dims": [],
-      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0(css 不在 aggregator 也沒被 import = orphan;失敗記憶索引條目);audit-time 由 build + visual 間接,無獨立 dim"
-    },
     "overlay_open_focus_escape_probe": {
       "dims": [
         74

@@ -39,7 +39,10 @@
  *   C4 新名字完整出現在登記的那份規格裡(整個名字比對);既有在規格裡完全找不到的,列已知名單 `known.missingSpec`,只能變短。
  *   C5 有大密度覆寫就要有回復,而且覆寫、回復、預設值同一個檔;深色主題覆寫也跟預設值同檔。已知名單 `known.missingRestore`。
  *   C6 元件樣式檔有進對外彙總檔(`styles/tokens.css`)或被設計系統程式匯入 —— 2026-05-26 事故(產品拿不到值、版面跑掉)。
- *      判準同 `packages/design-system/ds-canonical/hooks/check_orphan_ds_css.sh`(那支只在本機收工時提醒),這裡是 CI 必跑的那一份。
+ *      原本另有一支本機收工(Stop)時提醒的 hook `check_orphan_ds_css.sh`,2026-11-18 退場(knowledge-prune H-R3),
+ *      這條只剩本閘負責(CI verify-static 必跑)。跟那支比:較嚴 —— 只認真的 import / @import(彙總檔註解裡寫了路徑不算)、
+ *      只被 stories 匯入不算(stories 不出貨);較窄 —— 範例專用資料夾(stories-helpers / story-governance)與測試不掃,
+ *      那裡的樣式檔不是產品執行期會載入的。--selftest 的 C6 格涵蓋那支 hook 測試的情境(事故原型、只寫在彙總檔註解、樣式檔串接)。
  *   C7 誰可以讀:(甲)產品端程式(本 repo `apps/`)不得讀 `product: "no"` 的名字、不得寫任何登記的名字
  *      (2026-11-16:產品不寫任何 token —— 依據 user 2026-11-11 決策頁「主題:甲」;甲原文沒有限定範圍,讀成所有 token 是
  *      AI 推導 ①(token-system.spec.md「誰可以讀」,原話與選項原文也住那裡);分類表 `product` 因此只有 no / read,原本的 read-write 這個值拿掉);
@@ -955,6 +958,7 @@ function selftest() {
   const clone = (o) => JSON.parse(JSON.stringify(o))
   const UI = `${DS_ROOT}/tokens/uiSize/uiSize.css`
   const DT = `${DS_ROOT}/components/DataTable/data-table.css`
+  const AGG_FILE = `${DS_ROOT}/${AGGREGATOR}`
   const withFiles = (extra, drop = []) => { const f = new Map(files); for (const d of drop) f.delete(d); for (const [k, v] of Object.entries(extra)) f.set(k, v); return f }
   const addRows = (...rows) => { const r = clone(registry); r.rows.push(...rows); return r }
   const appendRoot = (decl) => withFiles({ [UI]: `${files.get(UI)}\n:root { ${decl} }\n` })
@@ -1008,6 +1012,12 @@ function selftest() {
     // C6
     ['C6', true, 'components/FixtureOrphan/orphan.css', '假造一個沒被匯入的元件樣式檔', () => run({ files: withFiles({ [`${DS_ROOT}/components/FixtureOrphan/orphan.css`]: '.x { color: red; }\n' }) })],
     ['C6', false, 'components/FixtureOrphan/orphan.css', '同一個檔被元件程式匯入', () => run({ files: withFiles({ [`${DS_ROOT}/components/FixtureOrphan/orphan.css`]: '.x { color: red; }\n', [`${DS_ROOT}/components/FixtureOrphan/orphan.tsx`]: "import './orphan.css'\nexport const x = 1\n" }) })],
+    // 2026-11-18:Stop hook check_orphan_ds_css 退場,它測試裡 C6 原本沒有的情境搬來這裡(那支的測試檔同 commit 刪掉)
+    ['C6', true, 'patterns/header-canonical/header-canonical.css', '彙總檔漏收一支既有樣式檔(2026-05-26 事故原型)', () => { const t = files.get(AGG_FILE); const cut = t.replace("@import './../patterns/header-canonical/header-canonical.css';\n", ''); return run({ files: withFiles({ [AGG_FILE]: cut === t ? `${t}\n/* 注入失敗:彙總檔裡找不到那一行 */\n` : cut }) }) }],
+    ['C6', true, 'components/FixtureOrphan/orphan.css', '只在彙總檔的註解裡寫了路徑(舊 hook 用字串比對,這種會放行)', () => run({ files: withFiles({ [`${DS_ROOT}/components/FixtureOrphan/orphan.css`]: '.x { color: red; }\n', [AGG_FILE]: `${files.get(AGG_FILE)}\n/* @import './../components/FixtureOrphan/orphan.css'; */\n` }) })],
+    ['C6', false, 'components/FixtureOrphan/', '樣式檔被另一支樣式檔 @import,那一支在彙總檔裡(串接)', () => run({ files: withFiles({ [`${DS_ROOT}/components/FixtureOrphan/sub.css`]: '.x { color: red; }\n', [`${DS_ROOT}/components/FixtureOrphan/index.css`]: "@import './sub.css';\n", [AGG_FILE]: `${files.get(AGG_FILE)}\n@import './../components/FixtureOrphan/index.css';\n` }) })],
+    ['C6', true, 'components/FixtureOrphan/index.css', '同一條串接,串頭沒進彙總檔 → 串頭紅', () => run({ files: withFiles({ [`${DS_ROOT}/components/FixtureOrphan/sub.css`]: '.x { color: red; }\n', [`${DS_ROOT}/components/FixtureOrphan/index.css`]: "@import './sub.css';\n" }) })],
+    ['C6', false, 'components/FixtureOrphan/sub.css', '同上,被串頭 @import 的那支不重複報', () => run({ files: withFiles({ [`${DS_ROOT}/components/FixtureOrphan/sub.css`]: '.x { color: red; }\n', [`${DS_ROOT}/components/FixtureOrphan/index.css`]: "@import './sub.css';\n" }) })],
     // C7(審查案例 C:按鈕裡寫 --color-teal-6)
     ['C7', true, '--color-teal-6', '產品讀原料色', () => run({ files: withFiles({ 'apps/template/src/fixture-read.tsx': "export const c = 'text-[var(--color-teal-6)]'\n" }) })],
     ['C7', false, '--primary', '產品讀語意色', () => run({ files: withFiles({ 'apps/template/src/fixture-read.tsx': "export const c = 'text-[var(--primary)]'\n" }) })],

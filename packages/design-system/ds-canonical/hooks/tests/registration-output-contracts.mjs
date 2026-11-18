@@ -126,7 +126,6 @@ const requiredModes = new Map([
   ['check_audit_post_report_validator.sh', 'governance-context-or-block'],
   ['auto_regen_ds_barrel.sh', 'governance-context'],
   ['stop_self_audit.sh', 'governance-decision'],
-  ['check_orphan_ds_css.sh', 'governance-decision'],
   ['inject_deploy_url_after_push.sh', 'governance-context'],
   ['session_start_governance_check.sh', 'governance-context'],
 ])

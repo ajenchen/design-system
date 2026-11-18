@@ -385,8 +385,13 @@ function successMockRunner(overrides = {}) {
         return { exitCode: 0, stdout, stderr: '', timedOut: false, outputExceeded: false, ...overrides[metadata.driver] }
       }
       if (metadata.driver === 'provider-hook-runner-stop') {
-        assert.equal(metadata.hook, 'check_orphan_ds_css.sh')
-        const reason = 'ORPHAN-DS-CSS BLOCKER: runtime-conformance-orphan.css'
+        assert.equal(metadata.hook, 'stop_self_audit.sh')
+        // The probe's block must come from the payload alone (no fixture file, transcript, or state).
+        assert.equal(metadata.provider === 'claude' ? payload.hook_event_name : payload.event_name, 'Stop')
+        assert.equal(typeof payload.last_assistant_message, 'string')
+        assert.match(payload.last_assistant_message, /\d\d-\d\d 的原話：「[^」]+」,所以這次改動要撤回/u)
+        assert.doesNotMatch(payload.last_assistant_message, /原題/u, 'a 原題 line is the escape that would turn the block off')
+        const reason = 'QUOTE-SCOPE BLOCKER: runtime conformance probe'
         const stdout = JSON.stringify(metadata.provider === 'claude' ? { decision: 'block', reason } : { continue: false, stopReason: reason })
         return { exitCode: 0, stdout, stderr: '', timedOut: false, outputExceeded: false, ...overrides[metadata.driver] }
       }
@@ -2072,7 +2077,7 @@ test('one canonical runtime harness identity covers every generation and certifi
     'packages/design-system/ds-canonical/hooks/check_canonical_propagation.sh',
     'packages/design-system/ds-canonical/hooks/_log-fire.sh',
     'packages/design-system/ds-canonical/hooks/session_start_governance_check.sh',
-    'packages/design-system/ds-canonical/hooks/check_orphan_ds_css.sh',
+    'packages/design-system/ds-canonical/hooks/stop_self_audit.sh',
     'packages/governance/package.json',
     'packages/governance/src/common.mjs',
     'packages/governance/src/contract.mjs',

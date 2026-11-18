@@ -180,10 +180,6 @@
       "reason": "DS-author 新元件命名/抽象紀律(scope DS src)。"
     },
     {
-      "hook": "check_orphan_ds_css.sh",
-      "reason": "DS CSS aggregator orphan 偵測;packages/design-system/src 不存在即 early-exit = fork 無意義。"
-    },
-    {
       "hook": "post_edit_dispatcher.sh",
       "reason": "fan-out 到 lib/_*.sh helper,但 helper 沒隨 corpus ship + 有 [ -f ]||return 0 guard → fork 內全 no-op = false-green(harness 深查抓到)。layout-space 價值已由 standalone check_layout_space_magic_numbers 涵蓋故 DROP;唯 _overlay_handcraft/_code_quality 列 known_coverage_gaps 待 promote。"
     },
