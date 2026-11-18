@@ -258,6 +258,10 @@ try {
   expectRed('Retire rate 百分比和 N / M 對不上', full('c', {
     report: mutate(REPORT, '2.5% = retired 1 / total 40', '3.5% = retired 1 / total 40'),
   }), 'c', ['3.5%', '1 / 40'])
+  expectRed('報告裡第二行 Retire rate 寫 2 / 40(本身算得對,但和第一行 1 / 40 不一致)', full('c-two-lines', {
+    report: mutate(REPORT, '- 這輪找到的大多是寫得不實的段落,修正不會讓公式項目變少;不為湊數字刪真的保護。',
+      '- 這輪找到的大多是寫得不實的段落,修正不會讓公式項目變少;不為湊數字刪真的保護。\n- Retire rate: 5.0% = retired 2 / total 40'),
+  }), 'c', ['前後不一致', '1 / 40', '2 / 40'])
   expectRed('低於 target 卻把 rationale 段寫成「無」', full('c-rationale', {
     report: mutate(REPORT, '- 這輪找到的大多是寫得不實的段落,修正不會讓公式項目變少;不為湊數字刪真的保護。', '- 無'),
   }), 'c', ['未達 retire target rationale'])
@@ -285,6 +289,12 @@ try {
   expectRed('snapshot 的 retired 和報告不一致', full('g-retired', {
     snapshot: mutate(SNAPSHOT, '"retired":1', '"retired":2'),
   }), 'g', ['retired=2'])
+  expectRed('snapshot 的 total_before 和報告不一致(41 對 40)', full('g-total', {
+    snapshot: mutate(SNAPSHOT, '"total_before":40', '"total_before":41'),
+  }), 'g', ['total_before=41', '40'])
+  expectRed('snapshot 的 retire_rate 和報告不一致(0.05 對 1 / 40)', full('g-rate', {
+    snapshot: mutate(SNAPSHOT, '"retire_rate":0.025', '"retire_rate":0.05'),
+  }), 'g', ['retire_rate=0.05', '1 / 40'])
   // 認 base 不認日期:日期不同但 base 相同就是同一輪;base 不同才是別輪的 snapshot
   expectRed('snapshot 的 base 不是這輪的 --base(別一輪寫的)', full('g-base', {
     snapshot: mutate(SNAPSHOT, `"base":"${short(BASE_SHA)}"`, `"base":"${short(C_SHA)}"`),
