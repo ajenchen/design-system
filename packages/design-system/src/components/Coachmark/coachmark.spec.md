@@ -33,7 +33,7 @@ Coachmark **就是** Popover 的 composition —— 不是競品。改 Popover �
 - **Footer `justify-between`**:step 計數(左)+ actions(右)，把目前位置與可執行導覽分成兩個穩定區域
 - **Footer 不畫上分隔線**:`PopoverFooter` 預設帶上分隔線(`../Popover/popover.spec.md`「結構化組合」:「含操作按鈕列：再加 `<PopoverFooter>`（上分隔線由 Footer 提供）」),Coachmark 傳 `!border-t-0` 拿掉(`coachmark.tsx` 的 `PopoverFooter`)。理由照程式註解原文:「footer 無上方分隔線(media + body + footer 視覺一氣呵成,不像 Dialog 需要 header/footer 分隔強化結構)」。所以整張卡畫出來的分隔線只有一條 —— 有 Header(傳了 `kind`)時 Header 底下那條(`PopoverHeader` 自帶,同一段「含標題」:「下分隔線由 Header 提供」);沒有 Header 就一條都沒有(見「Anatomy」)
 
-**外殼不是 Coachmark 的決策**(2026-11-18 更正):Popover 外殼本來就沒有內距(`../Popover/popover.spec.md`「結構化組合」第一句:「PopoverContent 外殼無內距」),而且同一個外殼帶 `overflow-hidden`、超出圓角的部分直接裁掉(`popover.tsx` 的 `PopoverContent`)—— 所以 Media 邊緣貼齊外殼圓角是沿用 Popover 外殼的結果;Body / Footer 各自消費 overlay-surface 內距 token。`coachmark.tsx` 另寫的 `p-0 overflow-hidden` 與外殼重複,畫面不靠它。2026-11-18 前本段寫「外殼移除預設 padding 並裁切圓角」,列成 Coachmark 自己的決策;`popover.tsx` 在 repo 裡最早的版本(2026-05-22)外殼就沒有內距,這句沒有成立過的根據,改成上面這樣。
+**外殼不是 Coachmark 的決策**(2026-11-18 更正):現在的 Popover 外殼沒有內距(`../Popover/popover.spec.md`「結構化組合」第一句:「PopoverContent 外殼無內距」),而且同一個外殼帶 `overflow-hidden`、超出圓角的部分直接裁掉(`popover.tsx` 的 `PopoverContent`)—— 所以 Media 邊緣貼齊外殼圓角是沿用 Popover 外殼的結果;Body / Footer 各自消費 overlay-surface 內距 token。`coachmark.tsx` 另寫的 `p-0 overflow-hidden` 與外殼重複,畫面不靠它。2026-11-18 前本段寫「外殼移除預設 padding 並裁切圓角」,列成 Coachmark 自己的決策 —— 那是建立當時的狀況,後來由 Popover 外殼自己補齊而過期(`git log --follow` 查 `popover.tsx`):Popover 外殼原本帶 shadcn 預設的 `p-4`(2026-04-08 `fad4f825`),2026-04-19 `2ad73312` 拿掉;Coachmark 同一天稍晚建立(`ee3e8f83`),寫 `p-0 overflow-hidden` 時 `p-0` 已經多餘,`overflow-hidden` 則是 Coachmark 自己的;2026-05-04 `066a976d` Popover 外殼也加上 `overflow-hidden`,裁切圓角才不再是 Coachmark 的決策。
 
 SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己結構層的差異。
 
