@@ -96,17 +96,10 @@ try {
     'scripts/lib/governance-runtime-evidence.mjs',
     // audit-hook-quality.mjs 2026-09-24 起 import 這支(觀測窗盲區判定);漏複製 → 夾具裡 ERR_MODULE_NOT_FOUND。
     'scripts/lib/hook-fire-observability.mjs',
-    // 2026-11-18 起「有哪些 hook」讀註冊清單:位置讀 providers.json,兩份都過 canonical validator。
-    'scripts/lib/provider-runtime-validation.mjs',
-    'scripts/lib/provider-runtime-contract.mjs',
-    'generated/governance/provider-runtime-validator.mjs',
-    'packages/governance/canonical/providers.json',
     'scripts/add-story-baseline.mjs',
     'scripts/audit-hook-quality.mjs',
     'scripts/audit-story-quality.mjs',
     'scripts/check-three-layer-stories.mjs',
-    // check-three-layer-stories.mjs 2026-10-14(SM2b)起 import 這支;漏抄 → 夾具裡 ERR_MODULE_NOT_FOUND。
-    'scripts/lib/unit-own-spec.mjs',
     'scripts/consolidate-audit-material.mjs',
     'scripts/dispatch-audit-dims.mjs',
   ]) install(fixture, file)
@@ -123,10 +116,6 @@ try {
   )
   mkdirSync(join(fixture, 'packages/design-system/ds-canonical/hooks'), { recursive: true })
   writeFileSync(join(fixture, 'packages/design-system/ds-canonical/hooks/example.sh'), '#!/bin/sh\n')
-  writeFileSync(join(fixture, 'packages/design-system/ds-canonical/hooks/registrations.json'), `${JSON.stringify({
-    schemaVersion: 1,
-    hooks: { PostToolUse: [{ matcher: 'Edit', hooks: [{ kind: 'hook', hook: 'example.sh', runtime: 'bash', outputMode: 'diagnostic' }] }] },
-  })}\n`)
   mkdirSync(join(fixture, 'packages/design-system/src/components/Fixture'), { recursive: true })
   for (const name of ['fixture.stories.tsx', 'fixture.anatomy.stories.tsx', 'fixture.principles.stories.tsx']) {
     writeFileSync(join(fixture, 'packages/design-system/src/components/Fixture', name), '')
