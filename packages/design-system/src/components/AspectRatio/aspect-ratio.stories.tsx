@@ -35,7 +35,7 @@ export const ProductPhoto4x3: Story = {
     <ExampleStack className="max-w-[900px]">
       <ExampleSection
         title="商品列表卡片:圖片載入前後版面不跳動"
-        description="三張商品卡的圖片一律 4:3,高度一致。圖片還沒載入、或網址失效時,容器照樣按比例佔好位置,下面的商品名稱與價格不會因為圖片晚到而被往下推。"
+        description="三張商品卡的圖片一律 4:3,高度一致;圖片還沒載入或網址失效時,容器照樣按比例佔好位置,名稱與價格不會被往下推。"
       >
         <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
           {/* 每張先看過照片再配商品(2026-11-18 前 seed/headphones 是海浪、seed/keyboard 是森林、seed/camera 是登山客 —— 稽核 A113);
