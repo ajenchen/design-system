@@ -316,6 +316,7 @@
       },
       "members": [
         "packages/governance/test/closed-tool-execution.test.mjs",
+        "packages/governance/test/inventory-nested-git.test.mjs",
         "packages/governance/test/plugin-hook-runtime.test.mjs",
         "packages/governance/test/product-launcher-runtime.test.mjs",
         "packages/governance/test/provider-adapter-generator.test.mjs",
