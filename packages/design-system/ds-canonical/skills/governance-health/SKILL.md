@@ -159,12 +159,13 @@ report 是 receipt，不是 approval milestone；完成後直接 routing:
 - 修完的矛盾 / user 糾正: {list}
 ```
 
-本 skill 保持 read-only，不直接 append telemetry。`$GOVERNANCE_TELEMETRY_DIR/metric-snapshots.jsonl` 有兩個寫入者,欄位名都照 `stop_passive_logging.sh` R3 的 schema v3:
-- canonical `stop_passive_logging.sh`:trusted adapter 已明示 `GOVERNANCE_TELEMETRY_OPT_IN=1` 時寫 `tag:"auto-daily"` 列(距檔案最後一列不到 24 小時就不寫):
+本 skill 保持 read-only，不直接 append telemetry。`$GOVERNANCE_TELEMETRY_DIR/metric-snapshots.jsonl` 有三個寫入者(另外兩個 skill 寫的 `$GOVERNANCE_STATE_DIR/metric-snapshots.jsonl` 是同一份檔:`scripts/lib/governance-runtime-evidence.mjs` 的 `resolveProviderTelemetryStateRoot` 與 hook 的 `governance_runtime_state_dir` 都解析到 `GOVERNANCE_STATE_DIR`,沒設就是 `<real-git-dir>/governance-runtime/`),各寫各的 `tag`、欄位不一樣。本 skill 讀欄位的兩處(Phase 1、§2d)一律先用 `tag` 篩選;不分 `tag` 的讀取只有一處,是下面 R3 的 24 小時去重:
+- canonical `stop_passive_logging.sh` R3:trusted adapter 已明示 `GOVERNANCE_TELEMETRY_OPT_IN=1` 時寫 `tag:"auto-daily"` 列,欄位是 schema v3(距檔案最後一列不到 24 小時就不寫;它只讀最後一列的 `ts`,不看那列是哪個寫入者寫的):
 ```json
 {"ts":"<UTC ISO 8601>","schema_version":"v3","tag":"auto-daily","instruction_lines":N,"memory_entries":N,"hooks_total":N,"skills_total":N,"untested_hooks":N,"last_prune_days_ago":N,"corrections_pending":N}
 ```
-- `/knowledge-prune` Phase 5:寫 `tag:"knowledge-prune"` 列(含 `retire_rate`),由 §2d 讀。
+- `/knowledge-prune` Phase 5:寫 `tag:"knowledge-prune"` 列(含 `retire_rate`,行數欄位用 v3 的 `instruction_lines`),由 §2d 讀。
+- `/codify-corrections` Phase 4:寫 `tag:"codify-corrections-run"` 列(`processed`/`p0`/`p1`/`p2`,沒有行數欄位),Phase 1 與 §2d 都不讀。
 
 下次 Phase 1 對比 trend。
 
