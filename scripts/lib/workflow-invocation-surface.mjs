@@ -31,6 +31,17 @@ export function stripCommentLines(text) {
   return String(text ?? '').split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
 }
 
+/**
+ * 同上,再加 JS 的整行註解(`//`、`/*`、block 註解續行的 `*`)—— 給 hook / 腳本原文用(2026-11-18,D10-02)。
+ * gate-reachability 分「PR 可達 / 只在夜間可達」時,hook 與腳本裡**註解提到**的檔名不算有人跑它:
+ * 實測 check_story_invariants.sh 只在 `#` 註解提到 category-classification-invariant.mjs、
+ * hooks/lib/benchmark-citation.mjs 只在 `//` 註解提到 exemption-expiry-invariant.mjs,兩支都不會在 PR 上被跑。
+ * 同樣只剔整行,行尾註解不動(偏向多算可達,不會把真的呼叫剔掉)。
+ */
+export function stripCodeCommentLines(text) {
+  return String(text ?? '').split('\n').filter((line) => !/^\s*(?:#|\/\/|\/\*|\*)/.test(line)).join('\n')
+}
+
 export function readWorkflowSources(root, dir = '.github/workflows') {
   const base = join(root, dir)
   if (!existsSync(base)) return {}
