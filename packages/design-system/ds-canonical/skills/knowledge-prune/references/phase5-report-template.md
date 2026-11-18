@@ -76,7 +76,8 @@ Phase 5 報告格式只有這一個住所。SKILL.md「Phase 5」只留指標;`s
 ### metric-snapshots.jsonl(`${GOVERNANCE_STATE_DIR}`,預設 `<git dir>/governance-runtime/`)
 
 - 比對的是**最後一筆 `"tag":"knowledge-prune"`** 的行(舊寫法 `"source":"knowledge-prune"` 也認),不是檔案最後一行:開遙測時 `stop_passive_logging.sh` R3 每天會追加 `"tag":"auto-daily"` 的行,「最後一行」會被它頂掉。
-- 那一行 `ts` 的前 10 字要等於報告標題的日期(YYYY-MM-DD),`retired`、`total_before`、`retire_rate` 要和報告的 Retire rate 行一致。
+- 那一行要有 `base`(這輪起點 commit 的 sha,短的也行),而且和 `--base` 是同一個 commit;`retired`、`total_before`、`retire_rate` 要和報告的 Retire rate 行一致。
+- `ts` 不比:snapshot 的 ts 是 UTC(`stop_passive_logging.sh` 用 `date -u`),報告標題是本地日期,台灣 00:00–08:00 兩者必然差一天。要確認的是「這一筆是這一輪寫的」,認的是 base。
 
 ### prune commit 訊息
 

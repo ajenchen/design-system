@@ -31,6 +31,8 @@ const ENV = (() => {
   Object.assign(env, {
     GIT_AUTHOR_NAME: 'Prune Meta Test', GIT_AUTHOR_EMAIL: 'prune-meta-test@example.invalid',
     GIT_COMMITTER_NAME: 'Prune Meta Test', GIT_COMMITTER_EMAIL: 'prune-meta-test@example.invalid',
+    // user 實際的時區:snapshot ts 是 UTC、報告標題是本地日期,這裡跑才看得到跨午夜那種誤紅
+    TZ: 'Asia/Taipei',
   })
   return env
 })()
@@ -182,12 +184,14 @@ const FINDINGS = `# Phase 1 findings(fixture)
 - D9-01 [P2E]:tsx 裡的無出處句
 `
 
-const SNAPSHOT = [
+// base 寫短 sha,和 11-17 那筆真的 snapshot(`"base":"ac52e21e"`)同一種寫法
+const snapshotFor = (baseSha) => [
   { ts: '2026-11-18T01:00:00Z', schema_version: 'v3', tag: 'auto-daily', instruction_lines: 203, hooks_total: 58 },
-  { ts: '2026-11-18T04:00:00Z', tag: 'knowledge-prune', retire_rate: 0.025, retired: 1, total_before: 40, instruction_lines: 203, hooks_total: 57 },
+  { ts: '2026-11-18T04:00:00Z', tag: 'knowledge-prune', base: short(baseSha), retire_rate: 0.025, retired: 1, total_before: 40, instruction_lines: 203, hooks_total: 57 },
   // 開遙測時 stop hook 會在之後再追加 auto-daily:檔案最後一行不是 prune 那一行,validator 不得因此誤紅
   { ts: '2026-11-19T01:00:00Z', schema_version: 'v3', tag: 'auto-daily', instruction_lines: 203, hooks_total: 57 },
 ].map((entry) => JSON.stringify(entry)).join('\n') + '\n'
+const SNAPSHOT = snapshotFor(BASE_SHA)
 
 const files = (name, { report = REPORT, findings = FINDINGS, snapshot = SNAPSHOT } = {}) => {
   const dir = join(WORK, 'inputs', name)
@@ -199,7 +203,7 @@ const files = (name, { report = REPORT, findings = FINDINGS, snapshot = SNAPSHOT
 }
 
 const full = (name, inputs = {}, { repo = base, extra = [] } = {}) => {
-  const paths = files(name, inputs)
+  const paths = files(name, { snapshot: snapshotFor(repo.shas[0]), ...inputs })
   return run(repo.root, ['--report', paths.report, '--findings', paths.findings, '--snapshot', paths.snapshot, '--base', repo.shas[0], ...extra])
 }
 
@@ -281,9 +285,16 @@ try {
   expectRed('snapshot 的 retired 和報告不一致', full('g-retired', {
     snapshot: mutate(SNAPSHOT, '"retired":1', '"retired":2'),
   }), 'g', ['retired=2'])
-  expectRed('snapshot 日期和報告日期不同', full('g-date', {
-    snapshot: mutate(SNAPSHOT, '"ts":"2026-11-18T04:00:00Z"', '"ts":"2026-11-17T04:00:00Z"'),
-  }), 'g', ['2026-11-17', '2026-11-18'])
+  // 認 base 不認日期:日期不同但 base 相同就是同一輪;base 不同才是別輪的 snapshot
+  expectRed('snapshot 的 base 不是這輪的 --base(別一輪寫的)', full('g-base', {
+    snapshot: mutate(SNAPSHOT, `"base":"${short(BASE_SHA)}"`, `"base":"${short(C_SHA)}"`),
+  }), 'g', ['base', short(C_SHA)])
+  expectRed('snapshot 那一筆沒有 base', full('g-no-base', {
+    snapshot: mutate(SNAPSHOT, `"base":"${short(BASE_SHA)}",`, ''),
+  }), 'g', ['沒有 base'])
+  expectGreen('ts 是 UTC 前一天(2026-11-17T17:55:55Z = 台灣 11-18 01:55)、報告標題 2026-11-18:不得誤紅', full('g-midnight', {
+    snapshot: mutate(SNAPSHOT, '"ts":"2026-11-18T04:00:00Z"', '"ts":"2026-11-17T17:55:55Z"'),
+  }), ['✅ (g)'])
   expectRed('snapshot 沒有 knowledge-prune 那一行(只剩 auto-daily)', full('g-tag', {
     snapshot: mutate(SNAPSHOT, '"tag":"knowledge-prune"', '"tag":"auto-daily"'),
   }), 'g', ['knowledge-prune'])

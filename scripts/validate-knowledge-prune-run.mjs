@@ -2,7 +2,8 @@
 /**
  * @gate-contract
  *   保證: 一輪 /knowledge-prune 真的照 SKILL.md 走完 —— Phase 5 報告有範本規定的每一段、Metric delta 五列有數字、
- *         Retire rate 的 N / M 與百分比算得對、D1–D10 每維恰好一個判定、Retired 每項附 grep、metric snapshot 與報告一致、
+ *         Retire rate 的 N / M 與百分比算得對、D1–D10 每維恰好一個判定、Retired 每項附 grep、
+ *         metric snapshot 那一筆是這一輪寫的(base 與 --base 同一個 commit;不比日期)且數字與報告一致、
  *         Phase 1 每個 ID 都有結局(區間內、Prune-Items 列了這個 ID 的 commit,或「沒做 + 理由」),
  *         而且每個 prune commit 都記了 Prune-Items 與 Phase0-After
  *   紅: (a)–(i) 任一項拿掉一段 —— 少一段、少一列數字、百分比算錯、某維兩個判定、Retired 某項沒附 grep、snapshot 對不上、
@@ -66,6 +67,7 @@ const ID_IN_LIST = new RegExp(`(?<![A-Za-z0-9#-])${ID_SOURCE}(?![A-Za-z0-9#-])`,
 const ID_LIST_SEPARATORS = /[\s,,、//]+/g
 const SHA_TOKEN = /\b[0-9a-f]{7,40}\b/g
 const LEADING_SKIP = /^[\s::*`|—–-]*(?:沒做|未做|不做)(.*)$/
+const SHA_ONLY = /^[0-9a-f]{7,40}$/
 const ARROW_WITH_NUMBERS = /\d[^\n]*?(?:→|->)[^\n]*?\d/
 const PHASE0_FORMAT = /^\d[\d,]*\s*\/\s*\d[\d,]*\s*\/\s*\d[\d,]*/
 
@@ -231,12 +233,21 @@ function parseFindings(text) {
   return [...ids.values()]
 }
 
-function git(args) {
+function gitResult(args) {
   const result = spawnSync('git', args, { cwd: process.cwd(), encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
-  if (result.error || result.status !== 0) {
-    throw new InstrumentError(`git ${args.join(' ')} 失敗:${(result.stderr || result.error?.message || '').trim()}`)
-  }
+  return { ok: !result.error && result.status === 0, stdout: result.stdout ?? '', stderr: (result.stderr || result.error?.message || '').trim() }
+}
+
+function git(args) {
+  const result = gitResult(args)
+  if (!result.ok) throw new InstrumentError(`git ${args.join(' ')} 失敗:${result.stderr}`)
   return result.stdout
+}
+
+/** 把 sha / ref 解成完整 commit sha;解不到回 null(由呼叫端決定是紅還是量具失效)。 */
+function resolveCommit(ref) {
+  const result = gitResult(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`])
+  return result.ok ? result.stdout.trim() : null
 }
 
 function listCommits(range) {
@@ -319,7 +330,7 @@ function checkCommits(commits, { findingsPriority = new Map() } = {}) {
   return { problems, notes, summary, itemsBySha }
 }
 
-function validateReport({ template, report, findings, findingsError, snapshot, snapshotError, commits }) {
+function validateReport({ template, report, findings, findingsError, snapshot, snapshotError, commits, base, baseSha }) {
   const results = []
   const add = (letter, title, problems, detail = '') => results.push({ letter, title, problems, detail })
   const sectionOf = (id) => findSection(report, template.byId[id].key)
@@ -453,10 +464,9 @@ function validateReport({ template, report, findings, findingsError, snapshot, s
   }
   add('f', '被擋的指令 / Human-only pending', fProblems)
 
-  // (g) metric snapshot 與報告一致
+  // (g) metric snapshot 與報告一致。認的是 base(這輪起點 commit),不是日期:ts 是 UTC(stop_passive_logging.sh 用 date -u),
+  //     報告標題是本地日期,台灣 00:00–08:00 兩者必然差一天 —— 日期只是「同一輪」的代理(M37)
   const gProblems = []
-  const reportHeading = sectionOf(SECTION.report)
-  const reportDate = reportHeading?.title.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null
   let snapshotDetail = ''
   if (snapshotError) gProblems.push(snapshotError)
   else {
@@ -470,9 +480,11 @@ function validateReport({ template, report, findings, findingsError, snapshot, s
     else {
       const value = prune.value
       snapshotDetail = `第 ${prune.number} 行`
-      const date = String(value.ts ?? '').slice(0, 10)
-      if (!reportDate) gProblems.push('報告標題沒有日期(YYYY-MM-DD),無法比對 snapshot')
-      else if (date !== reportDate) gProblems.push(`snapshot 日期 ${date || '(沒有 ts)'} ≠ 報告日期 ${reportDate}(snapshot ${snapshotDetail})`)
+      if (typeof value.base !== 'string' || !SHA_ONLY.test(value.base)) {
+        gProblems.push(`snapshot ${snapshotDetail} 沒有 base(這輪起點 commit 的 sha),收到「${value.base ?? '(沒有這個欄位)'}」`)
+      } else if (resolveCommit(value.base) !== baseSha) {
+        gProblems.push(`snapshot base=${value.base} 不是這輪的 --base ${base}(snapshot ${snapshotDetail})`)
+      }
       if (!rate) gProblems.push('報告沒有可比對的 Retire rate 行')
       else {
         if (value.retired !== rate.retired) gProblems.push(`snapshot retired=${value.retired} ≠ 報告 ${rate.retired}`)
@@ -613,6 +625,8 @@ function runFull(args) {
   const findingsInput = readInput(args.findings, ' findings 檔')
   const snapshotInput = readInput(args.snapshot, ' snapshot 檔')
   const commits = listCommits(`${args.base}..HEAD`)
+  const baseSha = resolveCommit(args.base)
+  if (!baseSha) throw new InstrumentError(`--base ${args.base} 解不到 commit`)
   console.log(`=== knowledge-prune 一輪的完成檢查(報告 ${args.report};${args.base}..HEAD)===`)
   const { results, notes } = validateReport({
     template,
@@ -622,6 +636,8 @@ function runFull(args) {
     snapshot: snapshotInput.text,
     snapshotError: snapshotInput.error,
     commits,
+    base: args.base,
+    baseSha,
   })
   return print(results, notes)
 }

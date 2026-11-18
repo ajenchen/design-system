@@ -175,10 +175,10 @@ retire_rate = retired_this_quarter / total_governance_items_before
 
 **完成條件**:完成 = `node scripts/validate-knowledge-prune-run.mjs …`(參數見範本檔「怎麼跑」)exit 0;push、CI 綠都**不是**完成條件。
 
-Update `${GOVERNANCE_STATE_DIR}/metric-snapshots.jsonl`(provider-neutral Git telemetry state;`tag` 寫 `knowledge-prune`,validator 比對的是最後一筆這個 tag 的行):
+Update `${GOVERNANCE_STATE_DIR}/metric-snapshots.jsonl`(provider-neutral Git telemetry state;`tag` 寫 `knowledge-prune`、`base` 寫這輪起點 commit,validator 比對的是最後一筆這個 tag 的行,認 base 不認日期):
 
 ```json
-{"ts":"2026-04-24","tag":"knowledge-prune","retire_rate":0.07,"retired":5,"total_before":71,"bootstrap_instruction_lines":238,"hooks_total":18,"skills_total":13,"memory_entries":29}
+{"ts":"2026-04-24","tag":"knowledge-prune","base":"ac52e21e","retire_rate":0.07,"retired":5,"total_before":71,"bootstrap_instruction_lines":238,"hooks_total":18,"skills_total":13,"memory_entries":29}
 ```
 
 **本 snapshot 讓 `/governance-health` trend 分析:**若 3 季連續 retire rate < 5% 且 governance 行數仍增 → auto-propose「有隱性冗贅未抓,考慮換 /knowledge-prune 掃描策略」。
