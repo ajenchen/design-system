@@ -317,6 +317,22 @@ try {
       message: PRUNE_MESSAGE('prune(knowledge-prune D9-01 D9-02): 兩個 P2 塞進同一個 commit', 'D9-01, D9-02', 'Prune-Priority: P2E\n'),
     }])
     expectRed('Prune-Priority: P2E 卻有 2 個 ID', run(p2Declared.root, ['--commits-only', `${p2Declared.shas[0]}..HEAD`]), 'i', ['P2', 'D9-01, D9-02'])
+    // 換個分隔符不得繞過「P2 只准 1 個 ID」:只認逗號拆時,這兩種寫法都 exit 0(本 repo 的 prune subject 就常用「 / 」)
+    for (const [name, label, items] of [['i-p2-space', '空白分隔', 'D9-01 D9-02'], ['i-p2-slash', '「 / 」分隔', 'D9-01 / D9-02']]) {
+      const separated = makeRepo(name, [...BASE_COMMITS, {
+        files: { 'docs/e.md': 'e\n' },
+        message: PRUNE_MESSAGE('prune(knowledge-prune D9-01 D9-02): 兩個 P2 換個分隔符', items, 'Prune-Priority: P2E\n'),
+      }])
+      expectRed(`Prune-Priority: P2E 卻有 2 個 ID(${label})`, run(separated.root, ['--commits-only', `${separated.shas[0]}..HEAD`]), 'i', ['P2', 'D9-01, D9-02'])
+    }
+    const noId = makeRepo('i-no-id', [...BASE_COMMITS, { files: { 'docs/e.md': 'e\n' }, message: PRUNE_MESSAGE('prune(knowledge-prune 雜項): 沒寫 ID', '見內文') }])
+    expectRed('Prune-Items 寫「見內文」,一個 ID 都沒有', run(noId.root, ['--commits-only', `${noId.shas[0]}..HEAD`]), 'i', [short(noId.shas.at(-1)), '見內文', '沒有任何 ID'])
+    const abbreviated = makeRepo('i-abbrev', [...BASE_COMMITS, { files: { 'docs/e.md': 'e\n' }, message: PRUNE_MESSAGE('prune(knowledge-prune D4-03 / 04): 縮寫', 'D4-03 / 04') }])
+    expectRed('Prune-Items 有 ID 也有別的字(「D4-03 / 04」的 04)', run(abbreviated.root, ['--commits-only', `${abbreviated.shas[0]}..HEAD`]), 'i', [short(abbreviated.shas.at(-1)), '不是 ID 清單', '「04」'])
+    const twoPlain = makeRepo('i-two-plain', [...BASE_COMMITS, { files: { 'docs/e.md': 'e\n' }, message: PRUNE_MESSAGE('prune(knowledge-prune D1-02 D4-03): 兩個非 P2 項', 'D1-02 D4-03') }])
+    expectGreen('非 P2 的「D1-02 D4-03」(空白分隔)是合法的 ID 清單', run(twoPlain.root, ['--commits-only', `${twoPlain.shas[0]}..HEAD`]), [
+      '✅ (i)', 'prune commit 4 個(檢查 3、早於本規則 1)',
+    ])
     const p2Findings = makeRepo('i-p2-findings', [...BASE_COMMITS, {
       files: { 'docs/e.md': 'e\n' },
       message: PRUNE_MESSAGE('prune(knowledge-prune D9-01 D4-03): 沒宣告優先度,但 findings 標了 P2E', 'D9-01, D4-03'),

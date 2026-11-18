@@ -81,7 +81,8 @@ Phase 5 報告格式只有這一個住所。SKILL.md「Phase 5」只留指標;`s
 - 哪些 commit 算 prune commit:subject 的 type 是 `prune`,或括號 scope 含 `knowledge-prune`(例:`prune(knowledge-prune D5-02): …`、`fix(knowledge-prune 反駁 #1): …`)。只在內文提到 knowledge-prune 的不算。
 - 從本規則生效起才檢查:那個 commit 自己的 tree 裡已經有 `scripts/validate-knowledge-prune-run.mjs`。更早的 commit 會逐一印出「早於本規則」再略過,不默默放行。
 - 每個 prune commit 要各有一行 `Prune-Items: <ID>, <ID>` 和 `Phase0-After: <bootstrap 行數>/<hook 數>/<meta-patterns 字數>`。這兩行不必在 git 的 trailer 區塊裡(和 `Co-Authored-By` 之間隔一個空行也讀得到);同一個鍵出現多次,以最後一行為準。`Phase0-After` 只驗格式,數值不重算。
-- `Prune-Items` 裡有 P2 項(用一行 `Prune-Priority: P2E` 宣告,或 findings 把該 ID 標成 `[P2E]` / `[P2H]`)時,只准 1 個 ID。
+- `Prune-Items` 只能是 ID 清單:ID 之間用空白、逗號、頓號或斜線分隔都可以,但除此之外不得有別的字(例 `見內文`,或 `D4-03 / 04` 這種縮寫裡的 `04`),也不得一個 ID 都沒有。
+- `Prune-Items` 裡有 P2 項(用一行 `Prune-Priority: P2E` 宣告,或 findings 把該 ID 標成 `[P2E]` / `[P2H]`)時,只准 1 個 ID;數的是抽出來的不重複 ID,跟用哪種分隔符無關。
 
 ## 怎麼跑
 

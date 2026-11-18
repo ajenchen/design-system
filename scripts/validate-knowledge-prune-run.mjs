@@ -5,7 +5,8 @@
  *         Retire rate 的 N / M 與百分比算得對、D1–D10 每維恰好一個判定、Retired 每項附 grep、metric snapshot 與報告一致、
  *         Phase 1 每個 ID 都有結局(區間內的 commit,或「沒做 + 理由」),而且每個 prune commit 都記了 Prune-Items 與 Phase0-After
  *   紅: (a)–(i) 任一項拿掉一段 —— 少一段、少一列數字、百分比算錯、某維兩個判定、Retired 某項沒附 grep、snapshot 對不上、
- *       某個 ID 沒有結局或理由寫「下次再做 / 時間不夠」、sha 不在區間、prune commit 缺 trailer 或把兩個 P2 項塞進同一個 commit
+ *       某個 ID 沒有結局或理由寫「下次再做 / 時間不夠」、sha 不在區間、prune commit 缺 trailer、Prune-Items 不是 ID 清單,
+ *       或把兩個 P2 項塞進同一個 commit(不論 ID 之間用逗號、空白還是斜線)
  *       → 印出「❌ (字母)」並點名那一段 / 那個 ID / 那個 commit,exit 1;範本讀不到、缺代號、git 失敗、區間是空的 → exit 2(不是綠)
  *   綠: 齊全的 fixture exit 0。scripts/test-validate-knowledge-prune-run.mjs 每次先用同一份齊全 fixture 證綠,再逐項拿掉一段證紅、
  *       並把範本段名改掉證明段名真的是從範本讀的;純讀檔與讀 git,不看時鐘,同一份輸入重複跑結果相同
@@ -58,6 +59,9 @@ const SECTION = Object.freeze({
 const BANNED_REASONS = Object.freeze(['下次再做', '時間不夠', '下個 session'])
 const ID_SOURCE = '[A-Z][A-Za-z0-9]*(?:[-#][A-Za-z0-9]+)+'
 const LEADING_ID = new RegExp(`^\\s*(?:[-*+]|\\d+[.)]|\\|)\\s*\\**\`?(${ID_SOURCE})\`?\\**(?![A-Za-z0-9#-])(.*)$`)
+// Prune-Items 只能是 ID 清單:ID 之間只准空白、逗號、頓號、斜線。只認逗號拆的話,「D9-01 D9-02」「D9-01 / D9-02」會被當成 1 個 ID。
+const ID_IN_LIST = new RegExp(`(?<![A-Za-z0-9#-])${ID_SOURCE}(?![A-Za-z0-9#-])`, 'g')
+const ID_LIST_SEPARATORS = /[\s,,、//]+/g
 const SHA_TOKEN = /\b[0-9a-f]{7,40}\b/g
 const ARROW_WITH_NUMBERS = /\d[^\n]*?(?:→|->)[^\n]*?\d/
 const PHASE0_FORMAT = /^\d[\d,]*\s*\/\s*\d[\d,]*\s*\/\s*\d[\d,]*/
@@ -261,6 +265,13 @@ function lastLine(message, key) {
   return value
 }
 
+/** 從 Prune-Items 抽出不重複的 ID;拿掉 ID 與分隔符之後還剩的字 = leftover(不得有)。 */
+function parseIdList(text) {
+  const ids = [...new Set([...text.matchAll(ID_IN_LIST)].map((match) => match[0]))]
+  const leftover = text.replace(ID_IN_LIST, ' ').replace(ID_LIST_SEPARATORS, ' ').trim()
+  return { ids, leftover }
+}
+
 // ─────────────────────────────── 各項檢查 ───────────────────────────────
 
 function checkCommits(commits, { findingsPriority = new Map() } = {}) {
@@ -280,8 +291,12 @@ function checkCommits(commits, { findingsPriority = new Map() } = {}) {
     }
     checked += 1
     const items = lastLine(commit.message, 'Prune-Items')
-    const ids = (items ?? '').split(/[,,、]/).map((id) => id.trim()).filter(Boolean)
-    if (!ids.length) problems.push(`${tag} 缺 Prune-Items(這個 commit 處理了哪幾個 Phase 1 ID)`)
+    const { ids, leftover } = parseIdList(items ?? '')
+    if (!items) problems.push(`${tag} 缺 Prune-Items(這個 commit 處理了哪幾個 Phase 1 ID)`)
+    else {
+      if (!ids.length) problems.push(`${tag} 的 Prune-Items「${short(items)}」裡沒有任何 ID(要寫 Phase 1 的 ID,例 D4-02)`)
+      if (leftover) problems.push(`${tag} 的 Prune-Items「${short(items)}」不是 ID 清單:除了 ID 與分隔符(空白、逗號、頓號、斜線)還有「${short(leftover)}」`)
+    }
     const phase0 = lastLine(commit.message, 'Phase0-After')
     if (!phase0) problems.push(`${tag} 缺 Phase0-After(<bootstrap 行數>/<hook 數>/<meta-patterns 字數>)`)
     else if (!PHASE0_FORMAT.test(phase0)) problems.push(`${tag} 的 Phase0-After「${short(phase0)}」不是 <bootstrap 行數>/<hook 數>/<meta-patterns 字數>`)
