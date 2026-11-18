@@ -2,7 +2,7 @@
 /**
  * @gate-contract
  *   保證: 表單範例(Field 展示「表單驗證」兩張、Rating「包在 Field 內」、Select 設計原則「隨 form 送出」)放在卡片裡,
- *         卡片四邊 = loose(同 Checkbox 設計原則那張卡:`border border-border rounded-lg p-[var(--layout-space-loose)]`),
+ *         卡片四邊 = loose(同 Checkbox 設計原則「使用指引」裡的卡片:四邊框線、四邊 loose 內距;圓角本閘不量,照 radius.spec.md),
  *         所以「按鈕下方 = 容器自己的底內距」看得出來(layoutSpace.spec.md 規則 4;user 2026-10-21 09:25「Q5可以基於你的建議」
  *         同意的 Q5 建議「表單放進看得見的容器」、2026-10-28「頁面上的卡片照你建議」= 卡片四邊 16)。
  *   紅: 從送出鈕往上 3 層內找不到四邊都有框線的容器,或卡片內上 / 左 / 下(最後一顆按鈕 → 卡片底)距離與 loose 差 > 0.6px
