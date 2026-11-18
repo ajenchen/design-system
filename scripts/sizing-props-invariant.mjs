@@ -6,21 +6,25 @@
  *         已移除的舊名不回來(相容政策 props-naming.md「相容政策」;判斷讀 scripts/lib/compat-policy.mjs)。
  *   紅: R1 公開元件的 *Props 出現撐滿 / 跟內容的同義名(fullWidth / block / autoWidth …)或已移除的舊名(REMOVED_PROP_NAMES)——
  *          0.x / 預發布版標了 @deprecated 也紅(不留舊名);1.0 以後的正式版才准同義名標 @deprecated 留一個版本;
- *       R2 DS 自己的 JSX(元件 / 範例 / 模板 / 閘夾具(scripts/test-fixtures/ 的 .tsx,以及 scripts/*-invariant.mjs 裡寫成字串的 JSX;
- *          scripts/test-*.mjs 的刻意舊名輸入不在範圍))用已移除的舊名(<Button fullWidth> / <FieldControlGroup block> /
+ *       R2 DS 自己的 JSX(元件 / 範例 / 模板 / 閘夾具(scripts/test-fixtures/ 的 .tsx,以及 scripts/ 底下(含子目錄)所有
+ *          .mjs / .js / .cjs 腳本裡寫成字串的 JSX —— 閘、閘的 meta-test、工具測試都算;只豁免 FIXTURE_EXEMPT 列名的檔:
+ *          本檔與 codemod 的測試,輸入本來就要寫舊名))用已移除的舊名(<Button fullWidth> / <FieldControlGroup block> /
  *          <Input autoWidth> / <FieldGroup horizontalLabelWidth> / <DataTable height> / <DialogContent maxWidth> / <DataTable autoRowHeight>);
  *       R3 *Props 的 `size` 收數字或任意字串(= 拿 size 當長度),不在正方形媒體例外清單;
  *       R4 *Props 繼承 InputHTMLAttributes 卻沒把原生 `width` / `height` Omit 掉;
  *       R5 DS 自己的 `<DialogContent width>` 寫數字(或檔名以外的字串)—— DS 的元件、範例只寫寬度檔名 sm / md / lg / xl
- *          (dialog.spec.md「寬度檔位」;2026-11-15 A18)。閘夾具(scripts/test-fixtures/ 與 *-invariant.mjs 裡的字串 JSX)除外:
+ *          (dialog.spec.md「寬度檔位」;2026-11-15 A18)。閘夾具(scripts/test-fixtures/ 與 scripts/ 腳本裡的字串 JSX)除外:
  *          量行為的測試對話框寫原數字,寬度不跟著檔位表變。
  *       → 指名 file:line 與修法,exit 1(閘夾具指名的是 .mjs 原檔的行)。`--selftest` 用合成原始碼證明五條各自會紅、合規寫法不誤報。
  *   綠: 五條 0 筆。純語法掃描(TypeScript createSourceFile,不做型別推論),同一份 worktree 恆等,沒有取樣。
- *        任一類掃到 0(*Props 檔 / JSX 檔 / *-invariant.mjs 支數 / 其中的字串 JSX 段數)= 掃描或抽取壞了,exit 2,不讀成乾淨。
+ *        任一類掃到 0(*Props 檔 / JSX 檔 / scripts/ 腳本支數 / 其中的字串 JSX 段數)= 掃描或抽取壞了,exit 2,不讀成乾淨。
+ *        豁免清單(FIXTURE_EXEMPT)裡的檔已經不存在、或裡面已經沒有舊名 = 豁免過期,exit 1(沒有作用的豁免就是沒人看的洞)。
  *   註: 2026-11-15 新寫(audit-r7 INV-24:「沒有任何一份 SSOT 規定尺寸類 prop 怎麼命名,所以各元件各自照外部某一家取名」)。
  *        DialogContent `autoHeight` 的 JSX 用法歸 `overlay-story-contract-invariant.mjs` S3 管,本閘的 R2 不重複報。
  *        2026-11-18 R2 擴到 *-invariant.mjs 裡寫成字串的 JSX(audit 24 項 #10):原本檔頭寫「閘夾具,沒有例外」,實際只掃 .tsx,
  *        5 處瀏覽器閘的 HARNESS 與 2 處 selftest 的合成範例還寫 `<DataTable height>`,沒有任何一道閘看得到(見 scanGateFixtures 上方註解)。
+ *        同日範圍再改(E3 反駁 #1 #2):第一版用檔名「scripts/ 第一層、結尾 -invariant.mjs」代替「這支腳本裡有 DS 的 JSX」——
+ *        複數 *-invariants.mjs 整批漏掉,註解寫「test-*.mjs 不掃」程式卻有掃 test-*-invariant.mjs;改成 scripts/ 全掃、只豁免列名的檔。
  *        已知限制:字串**開頭**就是 `<DataTable height>` 這種寫法的說明文字也會被當 JSX 判紅 —— 說明文字改寫成「舊名 height」即可。
  */
 // sizing-props-invariant.mjs — 尺寸參數命名閘
@@ -242,21 +246,40 @@ export function checkJsxSource(path, text) {
   return jsxHitsIn(sf, path, (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1)
 }
 
-// ── 閘夾具:scripts/*-invariant.mjs 裡寫成字串的 JSX(R2)─────────────────────────────────────
+// ── 閘夾具:scripts/ 底下腳本裡寫成字串的 JSX(R2)──────────────────────────────────────────
 // 瀏覽器閘把要量的畫面寫成字串(`const HARNESS = \`…<DataTable …/>…\``),執行時才由 esbuild 編譯 —— 不是 .tsx 檔,
 // JSX_DIRS 掃不到,型別檢查也碰不到。2026-11-15 DataTable 的 `height` 改名 `maxHeight` 之後,5 處夾具還寫 `height="auto"`:
 // 舊名不再被 data-table.tsx 的 `DataTableInner` 解構取出,落進 `...props` 展開到外框 div 變成 HTML 屬性,
 // 上限回到不傳時的預設 400px(同函式 `maxHeightToCss(maxHeightProp) ?? (pagination ? 'auto' : '400px')` 那一行)——
 // 夾具原本「不設上限」的意思默默沒了,沒有任何報錯(audit 24 項 #10;2026-11-18 真 Chromium 實量:30 列表舊寫法 442 高、新寫法 1242)。
-// 範圍刻意只到 scripts/ 第一層的 *-invariant.mjs:
-//   - scripts/test-*.mjs 不掃:那是工具自己的測試,codemod 的輸入本來就要寫舊名(例:test-design-system-codemod.mjs 把
-//     `<DataTable height="auto" />` 餵給 codemod、斷言它改成 maxHeight)。
-//   - 本檔不掃:selftest 與修法訊息本來就要寫出舊名。
-//   - scripts/test-fixtures/ 的 .tsx 已在 JSX_DIRS;story-determinism/*.txt 是凍結的歷史原始碼抄本,不是 DS 現在的 JSX。
+//
+// 範圍 = scripts/ 底下(含子目錄)所有 .mjs / .js / .cjs,只豁免 FIXTURE_EXEMPT 列名的檔(每支寫得出理由,而且要還有作用)。
+// 為什麼不用檔名認「閘」(2026-11-18 E3 反駁 #1 #2):第一版範圍是「scripts/ 第一層、檔名結尾 -invariant.mjs」,
+// 拿檔名代替「這支腳本裡有 DS 的 JSX」(M37),同一天量到三個洞 ——
+//   - 複數 *-invariants.mjs 的 11 支全部沒掃,含 DataTable 主要的瀏覽器閘 data-table-invariants.mjs
+//     (在它尾端加一段 `<DataTable … height="auto" />` 樣板,閘照樣綠);
+//   - 註解寫「scripts/test-*.mjs 不掃」,程式卻有掃 test-*-invariant.mjs 那 135 支(test-story-layer-drift-invariant.mjs 就有 10 段夾具)
+//     —— 註解裡的斷言,程式沒有任何地方在執行;
+//   - 「test-*.mjs 是工具測試,輸入本來就要舊名」只對 codemod 的測試成立:test-fork-governance.mjs 偽表格那組的乾淨樣本
+//     就帶著過期的 `height="auto"`(audit 24 項 #10 靠人工才改到);deep-audit 確定性計畫跑的 dogfood-prepublish-verify.mjs
+//     寫給 consumer 建置的 App.tsx 也在兩種檔名範圍之外。
+// 對 scripts/ 底下 683 支腳本跑同一份抽取:有舊名的只有下面豁免的兩支,其餘全部 0 筆。
+// scripts/ 以外整個 repo 只有 packages/governance/test/provider-adapter-generator.test.mjs 一段(Edit 內容 `<Button>Save</Button>`,0 筆)——
+// 那是 governance 套件自己的測試輸入,不是 DS 的腳本,不在本閘範圍。
+// scripts/test-fixtures/ 的 .tsx 已在 JSX_DIRS;story-determinism/*.txt 是凍結的歷史原始碼抄本(不是腳本、也不是 DS 現在的 JSX);
+// scripts/.gate-bundles/ 是建置產物(walk 跳過 . 開頭的目錄)。
 const GATE_FIXTURE_DIR = 'scripts'
+const SCRIPT_EXT = /\.(mjs|js|cjs)$/
 const SELF_FILE = basename(fileURLToPath(import.meta.url))
-/** 哪些檔是「閘」(純函式,selftest 直接驗範圍):scripts/ 第一層、檔名 *-invariant.mjs、不是本檔。 */
-export const isGateFixtureFile = (name) => name.endsWith('-invariant.mjs') && name !== SELF_FILE
+/** 不掃的腳本:repo 相對路徑 → 理由。正式掃描照樣對它們跑一次抽取 —— 檔不在了、或裡面已經沒有舊名,就是豁免過期(staleExemptions)。 */
+export const FIXTURE_EXEMPT = new Map([
+  [`${GATE_FIXTURE_DIR}/${SELF_FILE}`, 'selftest 與修法訊息本來就要寫出舊名'],
+  [`${GATE_FIXTURE_DIR}/test-design-system-codemod.mjs`, 'codemod 的輸入本來就要寫舊名(把 `<DataTable height="auto" />` 餵給 codemod、斷言它改成 maxHeight)'],
+])
+/** 哪些腳本要掃(純函式,selftest 直接驗範圍):scripts/ 底下(含子目錄)的 .mjs / .js / .cjs,不在 FIXTURE_EXEMPT。 */
+export const isGateFixtureFile = (rel) => rel.startsWith(`${GATE_FIXTURE_DIR}/`) && SCRIPT_EXT.test(rel) && !FIXTURE_EXEMPT.has(rel)
+/** 豁免過期(純函式):Map<豁免的檔, 舊名筆數 | null(檔不在)> → 0 筆或 null 的那些。 */
+export const staleExemptions = (hitsByExempt) => [...hitsByExempt].filter(([, n]) => n === null || n === 0).map(([rel]) => rel)
 /** 字串裡出現 `<元件名`,且元件名在 REMOVED_JSX 裡 —— 才當成一段 JSX 夾具解析(清單不另抄,直接讀 REMOVED_JSX)。 */
 const mentionsRemovedJsxTag = (text) => [...text.matchAll(/<([A-Z][A-Za-z0-9]*)/g)].some((m) => REMOVED_JSX.some((r) => r.tag.test(m[1])))
 /** `${…}` 換成的佔位字(合法識別字,放在屬性位置、子節點位置都解析得過去;不含換行)。 */
@@ -342,15 +365,18 @@ function scanGateFixtures() {
   const hits = []
   let files = 0
   let fixtures = 0
-  for (const name of readdirSync(join(ROOT, GATE_FIXTURE_DIR)).sort()) {
-    if (!isGateFixtureFile(name)) continue
-    const rel = `${GATE_FIXTURE_DIR}/${name}`
+  for (const rel of walk(GATE_FIXTURE_DIR, [], (name) => SCRIPT_EXT.test(name)).sort()) {
+    if (!isGateFixtureFile(rel)) continue
     files++
     const r = checkGateFixtureSource(rel, readFileSync(join(ROOT, rel), 'utf8'))
     hits.push(...r.hits)
     fixtures += r.fixtures
   }
-  return { hits, files, fixtures }
+  // 豁免的檔照樣跑一次同一份抽取,只為了證明豁免還有作用(檔還在、裡面真的有舊名)
+  const exemptHits = new Map([...FIXTURE_EXEMPT.keys()].map((rel) => [
+    rel, existsSync(join(ROOT, rel)) ? checkGateFixtureSource(rel, readFileSync(join(ROOT, rel), 'utf8')).hits.length : null,
+  ]))
+  return { hits, files, fixtures, stale: staleExemptions(exemptHits) }
 }
 
 function scanRepo() {
@@ -371,7 +397,7 @@ function scanRepo() {
   }
   const gate = scanGateFixtures()
   hits.push(...gate.hits)
-  return { hits, propsFiles, jsxFiles, gateFiles: gate.files, gateFixtures: gate.fixtures }
+  return { hits, propsFiles, jsxFiles, gateFiles: gate.files, gateFixtures: gate.fixtures, staleExempt: gate.stale }
 }
 
 // ── selftest:合成原始碼,四條各自會紅、合規寫法不誤報 ─────────────────────────────────────
@@ -439,7 +465,7 @@ function selftest() {
   expect(rules(checkJsxSource('scripts/test-fixtures/other/fixture.tsx', 'const a = <DialogContent maxWidth={480} />')) === 'R2', 'R2:其他夾具寫 <DialogContent maxWidth> 應紅')
   expect(checkJsxSource('scripts/test-fixtures/dialog-width/fixture.tsx', 'const a = <DialogContent width={w} height={h} />').length === 0, 'R2:夾具只用新名不應紅')
 
-  // R2(閘夾具):scripts/*-invariant.mjs 裡寫成字串的 JSX(2026-11-18,audit 24 項 #10)。行號必須是 .mjs 的行(指名 file:line 才修得到)。
+  // R2(閘夾具):scripts/ 腳本裡寫成字串的 JSX(2026-11-18,audit 24 項 #10)。行號必須是 .mjs 的行(指名 file:line 才修得到)。
   const gateHits = (text) => checkGateFixtureSource('scripts/x-invariant.mjs', text)
   const where = (r) => r.hits.map((h) => `${h.rule}:${h.line}`).sort().join(',')
   const harness = (attr) => ['import { x } from "y"', 'const HARNESS = `', "import { DataTable } from '@/design-system/components/DataTable/data-table'", 'function App() {', `  return <DataTable columns={COLS} data={ROWS} ${attr} spreadsheetMode />`, '}', '`'].join('\n')
@@ -456,17 +482,34 @@ function selftest() {
   // 沒提到 REMOVED_JSX 元件名的字串不解析(不是夾具);有提到但合規 → 0 筆
   const none = gateHits('const s = `<div height="auto" />`\nconst t = "<svg height=\\"16\\" />"')
   expect(none.fixtures === 0 && none.hits.length === 0, `閘夾具:不含 REMOVED_JSX 元件名的字串不應當成夾具(實得解析 ${none.fixtures} 段 / ${none.hits.length} 筆)`)
-  // 範圍:scripts/*-invariant.mjs,不含工具測試(codemod 的輸入本來就要舊名)與本檔(selftest 要寫舊名)
+  // 範圍:scripts/ 底下所有腳本(含子目錄、閘的 meta-test、工具測試),只豁免 FIXTURE_EXEMPT 列名的檔(2026-11-18 E3 反駁 #1 #2)。
+  // 每一格都是第一版(「scripts/ 第一層、結尾 -invariant.mjs」)判錯或沒驗到的那一型。
   // (檔名用合成的 —— 寫真實腳本名會被 gate-reachability 讀成「本檔呼叫了那支」)
-  expect(isGateFixtureFile('orders-sheet-invariant.mjs') && !isGateFixtureFile('test-orders-codemod.mjs') && !isGateFixtureFile(SELF_FILE) && !isGateFixtureFile('probe-orders-scroll.mjs'),
-    '閘夾具範圍:*-invariant.mjs 要掃;test-*.mjs、本檔、其他工具不掃')
+  const scopeCells = [
+    ['scripts/orders-sheet-invariant.mjs', true, '單數 *-invariant.mjs 的閘'],
+    ['scripts/orders-sheet-invariants.mjs', true, '複數 *-invariants.mjs 的閘(反駁 #2:data-table-invariants.mjs 這一型第一版沒掃)'],
+    ['scripts/test-orders-sheet-invariant.mjs', true, '閘的 meta-test(反駁 #1:第一版註解說 test-*.mjs 不掃,程式其實有掃,而且沒有一格驗過)'],
+    ['scripts/test-orders-sheet-invariants.mjs', true, '複數閘的 meta-test'],
+    ['scripts/test-orders-hook.mjs', true, '工具測試(偽表格乾淨樣本曾帶著過期的 height="auto")'],
+    ['scripts/dogfood-orders-verify.mjs', true, '名字不像閘、卻寫 DS JSX 給建置用的檢查腳本'],
+    ['scripts/lib/orders-harness.mjs', true, '子目錄裡的共用 harness'],
+    ['scripts/user-probe/orders-probe.js', true, '.js 腳本'],
+    ['scripts/orders-notes.md', false, '不是腳本'],
+    ['scripts/test-fixtures/orders/fixture.tsx', false, '.tsx 歸 JSX_DIRS 那條路掃,這裡不重複'],
+    ['packages/design-system/scripts/orders-invariant.mjs', false, '不在 repo 根的 scripts/ 底下'],
+  ]
+  for (const [rel, want, why] of scopeCells) expect(isGateFixtureFile(rel) === want, `閘夾具範圍:${rel}(${why})應${want ? '掃' : '不掃'}`)
+  for (const rel of FIXTURE_EXEMPT.keys()) expect(!isGateFixtureFile(rel), `閘夾具範圍:${rel} 列在 FIXTURE_EXEMPT,不應掃`)
+  // 豁免過期:檔不在(null)或已沒有舊名(0 筆)都判過期;還有舊名的不判
+  const stale = staleExemptions(new Map([['scripts/a.mjs', 3], ['scripts/b.mjs', 0], ['scripts/c.mjs', null]]))
+  expect(stale.join(',') === 'scripts/b.mjs,scripts/c.mjs', `豁免過期:0 筆與檔不在應判過期、還有 3 筆舊名的不判(實得 ${stale.join(',') || '無'})`)
 
   if (problems.length) {
     console.error(`✗ sizing-props selftest:${problems.length} 格不符`)
     for (const p of problems) console.error(`   - ${p}`)
     process.exit(1)
   }
-  console.log('✓ sizing-props selftest:R1 新同義名 / 已移除的舊名加回來(0.x 標了 @deprecated 也紅;同一段在 1.0 正式版政策下綠 = 讀的是相容政策)、R2 舊寫法 JSX(含 <DialogContent maxWidth>,夾具沒有例外;*-invariant.mjs 裡寫成字串的 JSX 也紅、指名 .mjs 行號,合規寫法綠且確實讀到那段)、R3 size 當長度、R4 漏原生 width / height、R5 DS 的 DialogContent width 寫數字 各自會紅;合規寫法、非 *Props、svg / img 的 height、正方形媒體例外、閘夾具的數字寬不誤報')
+  console.log('✓ sizing-props selftest:R1 新同義名 / 已移除的舊名加回來(0.x 標了 @deprecated 也紅;同一段在 1.0 正式版政策下綠 = 讀的是相容政策)、R2 舊寫法 JSX(含 <DialogContent maxWidth>,夾具沒有例外;scripts/ 腳本裡寫成字串的 JSX 也紅、指名 .mjs 行號,合規寫法綠且確實讀到那段;範圍含複數 *-invariants.mjs / meta-test / 工具測試 / 子目錄,只豁免列名的檔,豁免過期會判出來)、R3 size 當長度、R4 漏原生 width / height、R5 DS 的 DialogContent width 寫數字 各自會紅;合規寫法、非 *Props、svg / img 的 height、正方形媒體例外、閘夾具的數字寬不誤報')
 }
 
 // 被 import 時(例:拿檢查函式對舊版原始碼做對照)只匯出函式、不跑;判準唯一實作 lib/direct-run.mjs(經符號連結叫也認得)
@@ -475,16 +518,17 @@ if (!isDirectRun(import.meta.url)) {
 } else if (process.argv.includes('--selftest')) {
   selftest()
 } else {
-  const { hits, propsFiles, jsxFiles, gateFiles, gateFixtures } = scanRepo()
+  const { hits, propsFiles, jsxFiles, gateFiles, gateFixtures, staleExempt } = scanRepo()
   if (propsFiles === 0 || jsxFiles === 0 || gateFiles === 0 || gateFixtures === 0) {
-    console.error(`✗ sizing-props-invariant:掃到 0 個(props ${propsFiles} 檔 / jsx ${jsxFiles} 檔 / 閘 ${gateFiles} 支 / 閘裡的字串 JSX ${gateFixtures} 段)—— 掃描範圍或夾具抽取壞了,不是乾淨(請在 repo 根目錄執行)`)
+    console.error(`✗ sizing-props-invariant:掃到 0 個(props ${propsFiles} 檔 / jsx ${jsxFiles} 檔 / scripts/ 腳本 ${gateFiles} 支 / 其中的字串 JSX ${gateFixtures} 段)—— 掃描範圍或夾具抽取壞了,不是乾淨(請在 repo 根目錄執行)`)
     process.exit(2)
   }
-  if (hits.length) {
-    console.error(`❌ sizing-props-invariant FAIL(${hits.length}):`)
+  if (hits.length || staleExempt.length) {
+    console.error(`❌ sizing-props-invariant FAIL(${hits.length + staleExempt.length}):`)
     for (const h of hits) console.error(`   - ${h.rule} ${h.path}:${h.line} ${h.found}\n       → ${h.fix}`)
+    for (const rel of staleExempt) console.error(`   - 豁免過期 ${rel}:檔不在了,或裡面已經沒有舊名\n       → 從本檔 FIXTURE_EXEMPT 拿掉(沒有作用的豁免就是沒人看的洞)`)
     console.error('   SSOT:packages/design-system/ds-canonical/references/props-naming.md「尺寸參數」')
     process.exit(1)
   }
-  console.log(`✓ sizing-props-invariant:R1–R5 0 筆(*Props 掃 ${propsFiles} 檔、JSX 掃 ${jsxFiles} 檔、閘夾具掃 ${gateFiles} 支 *-invariant.mjs 裡 ${gateFixtures} 段字串 JSX;已移除的舊名 ${REMOVED_PROP_NAMES.size} 個都沒回來;相容政策 ${currentPolicy().mode}(${currentPolicy().version}))`)
+  console.log(`✓ sizing-props-invariant:R1–R5 0 筆(*Props 掃 ${propsFiles} 檔、JSX 掃 ${jsxFiles} 檔、閘夾具掃 scripts/ ${gateFiles} 支腳本(豁免 ${FIXTURE_EXEMPT.size} 支,都還有作用)裡 ${gateFixtures} 段字串 JSX;已移除的舊名 ${REMOVED_PROP_NAMES.size} 個都沒回來;相容政策 ${currentPolicy().mode}(${currentPolicy().version}))`)
 }
