@@ -22,7 +22,8 @@
 #   governance_size_oversized_cells <檔案> <N>
 #       每個第 2 欄超過 N 字的 M-rule 列印一行 `<M-ID><TAB><字數>`(GFM 的 `\|` 是格內的字,不切格)。
 #
-# 全部都只是「預算」:超標要不要擋由呼叫端決定(check_file_size_budget.sh 檔頭寫了為什麼不擋)。
+# 全部都只是「預算」:超標要不要擋由呼叫端決定(check_file_size_budget.sh 檔頭記了它目前不擋的理由,
+# 以及這和 user 哪一條永久指令不一致)。
 
 # 路徑事實(provider / canonical roots)一律經 _provider_paths.sh 由 registry 解析;呼叫端還沒 source 就在這裡補。
 if ! declare -F governance_provider_string_field >/dev/null 2>&1; then
@@ -53,7 +54,8 @@ governance_size_budget() {
   case "$rel" in
     governance/memory/*.md)
       max_lines="$(_governance_size_memory_max_lines)" || return 2
-      _governance_size_emit "$max_lines" "$max_lines" lines "memory file"
+      # 呼叫端只提醒;這一類另有 CI 會擋,label 照實講出來,免得「size overruns never block the edit」被讀成「超過也沒關係」。
+      _governance_size_emit "$max_lines" "$max_lines" lines "memory file(CI fails above this cap: scripts/validate-memory-contract.mjs)"
       return 0 ;;
     # Super-foundational SSOT spec(item-anatomy = Family 1+2 跨 10+ 消費者 SSOT,唯一例外)
     */item-anatomy.spec.md)

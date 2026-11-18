@@ -123,10 +123,10 @@ silent() { [ "$EXIT" = "0" ] && [ -z "$STDOUT" ]; }
 says() { [ "$EXIT" = "0" ] && printf '%s' "$STDOUT" | grep -qF -- "$1"; }
 mkdir -p "$TMP_PROJECT/governance/memory"
 
-echo "Test 11: memory file 101 lines → hard cap from governance/memory/contract.json"
+echo "Test 11: memory file 101 lines → over the cap read from governance/memory/contract.json"
 yes 'x' | head -101 > "$TMP_PROJECT/governance/memory/feedback_demo.md"
 run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
-pass_if says '101 lines (hard cap 100)'
+pass_if says '101 lines, over the transition cap 100'
 
 echo "Test 12 (control for 11): memory file 100 lines → silent"
 yes 'x' | head -100 > "$TMP_PROJECT/governance/memory/feedback_demo.md"
@@ -140,7 +140,7 @@ cp "$PROJECT_ROOT/packages/governance/canonical/providers.json" "$CONTRACT_CORPU
 printf '{"maxLinesPerMemory": 5}\n' > "$CONTRACT_CORPUS/governance/memory/contract.json"
 echo "Test 13: the memory cap is read from the contract(fixture contract = 5)"
 TEST_CORPUS="$CONTRACT_CORPUS" TEST_REGISTRY=providers.json run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
-pass_if says '100 lines (hard cap 5)'
+pass_if says '100 lines, over the transition cap 5'
 
 echo "Test 14: contract missing → exit 2(an unreadable instrument is not a pass)"
 rm "$CONTRACT_CORPUS/governance/memory/contract.json"
@@ -156,7 +156,7 @@ mkdir -p "$RULES_DIR"
 echo "Test 15: always-loaded rule file 32,001 chars → warning in chars"
 cjk_file 32000 "$RULES_DIR/meta-patterns.md"
 run_hook "" "$RULES_DIR/meta-patterns.md"
-pass_if says '32001 chars (budget 32000, transition cap 35200)'
+pass_if says '32001 chars (budget 32000, transition cap 35200;'
 
 echo "Test 16 (control for 15): 31,001 chars = 93,001 bytes → silent(counts characters, not bytes)"
 cjk_file 31000 "$RULES_DIR/meta-patterns.md"
@@ -166,7 +166,7 @@ pass_if silent
 echo "Test 17: path-scoped rule file 15,001 chars → warning"
 cjk_file 15000 "$RULES_DIR/story-rules.md"
 run_hook "" "$RULES_DIR/story-rules.md"
-pass_if says '15001 chars (budget 15000, transition cap 16500)'
+pass_if says '15001 chars (budget 15000, transition cap 16500;'
 
 echo "Test 18 (control for 17): path-scoped rule file 14,001 chars → silent"
 cjk_file 14000 "$RULES_DIR/story-rules.md"
@@ -199,15 +199,43 @@ yes 'x' | head -430 > "$SKILLS_DIR/design-system-audit/SKILL.md"
 run_hook "" "$SKILLS_DIR/design-system-audit/SKILL.md"
 pass_if silent
 
-echo "Test 23 (same 430 lines, any other canonical SKILL.md): the exception does not leak → hard-cap warning"
+echo "Test 23 (same 430 lines, any other canonical SKILL.md): the exception does not leak → over-transition-cap warning"
 yes 'x' | head -430 > "$SKILLS_DIR/release-notes/SKILL.md"
 run_hook "" "$SKILLS_DIR/release-notes/SKILL.md"
-pass_if says '430 lines (hard cap 400)'
+pass_if says '430 lines, over the transition cap 400'
 
-echo "Test 24: design-system-audit SKILL.md 591 lines → its own hard cap"
+echo "Test 24: design-system-audit SKILL.md 591 lines → its own transition cap"
 yes 'x' | head -591 > "$SKILLS_DIR/design-system-audit/SKILL.md"
 run_hook "" "$SKILLS_DIR/design-system-audit/SKILL.md"
-pass_if says '591 lines (hard cap 590)'
+pass_if says '591 lines, over the transition cap 590'
+
+# Test 25:超標只提醒(exit 0),訊息就不准說得像會擋。三種訊息(超 budget / 超 transition cap / 單格)每一則
+# 都要自己講明只提醒,任何一則出現「hard cap」「Must reduce」就紅(反駁 #1:舊訊息印「hard cap N. Must reduce
+# before adding」卻 exit 0)。逐則看:取出 governanceContext.message,一行一則。
+ADVISORY_TEXT='advisory — size overruns never block the edit'
+advisory_only() {
+  local msg
+  [ "$EXIT" = "0" ] || return 1
+  msg="$(printf '%s' "$STDOUT" | jq -r '.governanceContext.message' 2>/dev/null)" || return 1
+  [ -n "$msg" ] && [ "$msg" != "null" ] || return 1
+  printf '%s\n' "$msg" | grep -qvF -- "$ADVISORY_TEXT" && return 1
+  printf '%s\n' "$msg" | grep -qiE 'hard cap|must reduce' && return 1
+  return 0
+}
+echo "Test 25a: over the transition cap(canonical SKILL.md 430 lines)→ advisory wording only"
+run_hook "" "$SKILLS_DIR/release-notes/SKILL.md"
+pass_if advisory_only
+echo "Test 25b: over budget only(spec.md 350 lines)→ advisory wording only"
+run_hook "" "$TMP_PROJECT/specs/control.spec.md"
+pass_if advisory_only
+echo "Test 25c: whole-file + table-cell messages together(meta-patterns)→ every line advisory"
+run_hook "" "$RULES_DIR/meta-patterns.md"
+pass_if advisory_only
+echo "Test 25d: memory over the contract cap → advisory, and the label says CI is what fails"
+yes 'x' | head -101 > "$TMP_PROJECT/governance/memory/feedback_demo.md"
+run_hook "" "$TMP_PROJECT/governance/memory/feedback_demo.md"
+pass_if advisory_only
+pass_if says 'CI fails above this cap: scripts/validate-memory-contract.mjs'
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
