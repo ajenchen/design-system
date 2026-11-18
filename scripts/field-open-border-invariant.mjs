@@ -32,6 +32,12 @@
  *          S2 同一刻它四邊中點的像素 = 靜止時同一點的像素(滑過停用的成員畫面不變;左邊那一點就是兩格共用的線)。
  *          這一組兩格都是停用、框色都是 --border-opaque(K12),所以修之前抬到 3 時那條線的顏色也一樣 —— S2 在修前修後都綠,
  *          它守的是「停用的成員被滑過不該有任何變化」;層級對不對只有 S1 量得出來。
+ *        T 觸控上啟用的原生 Select 不被當成停用(同一個分頁用 CDP 開觸控模擬,量完關掉:pointer: coarse → Select 走原生 <select>;
+ *          story「datatable 展示 › 進階篩選 — 各種狀態」第一個「Select / Select / 欄位」的篩選列,量中間那格「篩選條件」:沒停用、
+ *          有 placeholder → 裡面有 <option value="" disabled>)。停用那條規則認的是「成員本身停用」,<option disabled> 只是某個選項不能選
+ *          (field-control-group.spec.md「選擇器覆蓋範圍」)。T0 靜止 → z-index 2(預設層,不是停用的 0);T1 鍵盤聚焦、滑鼠在空白處 → z-index 4、
+ *          四邊 computed 與四邊中點像素 = --primary;T2 聚焦又被滑過(= 觸控上點一下:聚焦加上黏住的 :hover)→ 同 T1。
+ *          開頭先確認觸控模擬真的生效、那一格真的是「啟用的原生 <select>、裡面有 <option disabled>」、三格相鄰各重疊 1px —— 不是就量不到要量的事 = 儀器失效。
  *        X 外面包一層浮層、直接把欄位當觸發點(夾具:導覽提示 × Select、Popover × 日期區間、Tooltip × TimePicker):
  *          X1 外面那層開著、欄位自己沒開 → 外框 = 開之前靜止時的顏色(不是 --primary);X2 同一個欄位自己的浮層開著 → --primary。
  *        Z 欄位裡的小按鈕開選單(FileViewer 縮放):選單開著 → 外框 = 開之前的顏色。
@@ -44,7 +50,9 @@
  *        中間那格本來就蓋得住左邊。與破法 (e) 是同一張表。夾具那一組在改前的建置上量到的**不是**改前的行為:夾具 = 這次的原始碼配那份建置的 CSS,
  *        這次的 class(聚焦 / 開著 z-index 4)在舊 CSS 裡沒有規則 → 聚焦 / 開著完全不抬高(停在預設的 2,比改前的 3 還低)→ 與破法 (d) 同一張表
  *        (只有 G1 與 C1 綠),只能當「沒抬高會紅」的旁證,不能當「改前長這樣」的證據。
- *        `--selftest` 在真建置上跑八種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+ *        停用那條規則寫成寬的 `:has([disabled])` 的建置(2026-11-18 那兩份)在 T 段:38649f5a(只有靜止那條)→ T0、T1 紅(靜止 / 聚焦都是 0,
+ *        聚焦的框右邊那條被 DOM 較後的右鄰居蓋住)、T2 綠(「聚焦又被滑過」那條權重較高,4);0fe1a44b(另補了寬的 `:hover` 那條)→ T0–T2 全紅。
+ *        `--selftest` 在真建置上跑九種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
  *        (a) css:開著的框改回 hover 色(--border-hover / --error-hover)→ 全部 O 列、G1 / G2、滑過鄰居的像素列 G3 / G5(中間那格還在最上面,但它的框已不是
  *            期望色)、X2 紅;K0 / C1 / X1 / Z、G 的層級列 G4 / G6 / G7、鍵盤聚焦那一段 K1–K6(沒開,破法碰不到)綠。
  *        (b) mark:記號一出現就拿掉(= 元件漏接記號)→ 開著而焦點不在欄位裡的 O 列紅(錯誤欄位只有滑鼠停在欄位上那一列紅 —— 靜止時本來就是 --error);
@@ -66,6 +74,8 @@
  *        (g) dishover:停用的成員被滑過時抬回 3(= 2026-11-18 修之前的樣子)→ S1 紅、S2 綠(兩格同色,畫面本來就不變)。
  *        (h) dispaint:停用的成員被滑過時框改成 --primary(層級不動)→ S2 紅(右 / 上 / 下三邊變色;左邊那條被層級較高的鄰居蓋住)、S1 綠。
  *        (g)(h) 只跑 S 那一段,各多一列「還原」。拿 38649f5a 的建置(沒有 field-control-group.tsx 停用又被滑過那一行)跑判定:S1 紅(z-index 3)、S2 綠。
+ *        (i) widehas:把寬的 `:has([disabled])` 放回去(併排欄位組裡任何成員只要裡面有 [disabled] 就壓到 0,不論聚焦 / 滑過)→ T0–T2 紅;
+ *            S1 / S2 綠(停用的成員本來就該是 0)。只跑 S 與 T 兩段,各多一列「還原」。
  *        找不到欄位 / 浮層沒開 / 滑鼠不在該在的地方 / 顏色一直在變 / 實際量的列數 ≠ 排定的列數 = INSTRUMENT-FAIL(exit 2),不當成通過也不當成紅。
  *   綠: 有這條規則的建置全部相符;重複跑同一份建置結果相同(每一格重新開頁、等的是值穩定不是固定毫秒,機器慢只會等久一點 ——
  *        `--cpu-throttle=6` 把頁面 CPU 放慢 6 倍重跑,列數與結果必須與不放慢時相同)。
@@ -101,6 +111,7 @@ if (!buildArg) {
     'packages/design-system/src/components/FieldControlGroup', 'packages/design-system/src/components/SelectMenu',
     'packages/design-system/src/components/Select', 'packages/design-system/src/components/Combobox', 'packages/design-system/src/components/PeoplePicker',
     'packages/design-system/src/components/DatePicker', 'packages/design-system/src/components/TimePicker',
+    'packages/design-system/src/components/DataTable', // T 段量的是 DataTable 篩選面板的 story
   ])
 }
 
@@ -147,6 +158,8 @@ const GROUPS = [
 const DISABLED_STORY = story('fieldcontrolgroup-設計規格--state-behavior')
 /** 只動停用成員的兩種破法(只跑 S 那一段) */
 const DISABLED_BREAKS = new Set(['dishover', 'dispaint'])
+/** T:觸控上啟用的原生 Select(DataTable 篩選列;裡面有 placeholder 渲的 <option disabled>) */
+const TOUCH_STORY = story('datatable-展示--filter-panel-states')
 /** reachRed:外面那層開著時,欄位外框上的 data-state 會不會是 "open"(Tooltip 寫的是 instant-open,破法 (c) 選不到它) */
 const WRAPPED = [
   { kind: '導覽提示 × Select', cell: 'wrap-coachmark-select', reachRed: true },
@@ -188,9 +201,11 @@ const instrument = (name, detail) => { instrumentFail = true; console.log(`✗ $
  *   self  只有「聚焦 / 開著又被滑過」壓回 3 → selfz 紅;其餘三種量的時候中間那格沒被滑過 → 綠。
  *   css / mark 只動「開著」的那格,鍵盤聚焦那一段(when = 'focus')一律綠。開著那一段:
  *   css   框色改掉、層級沒動 → 像素紅、層級與 selfz 綠;mark 記號沒了(焦點又不在欄位裡)→ 不抬高 → 都紅(停在自己上面只剩滑過的 3)。
- *   停用成員被滑過(S;只在 real 與 (g)(h) 跑):
- *   disz    停用成員被滑過時的 z-index 0(S1)—— dishover 把它抬回 3 → 紅;dispaint 只改框色 → 綠。
- *   dispx   同一刻四邊中點像素 = 靜止時(S2)—— dispaint 改框色 → 紅;dishover 只改層級,兩格同色 → 綠。
+ *   停用成員被滑過(S;只在 real 與 (g)(h)(i) 跑):
+ *   disz    停用成員被滑過時的 z-index 0(S1)—— dishover 把它抬回 3 → 紅;dispaint 只改框色 → 綠;widehas 把它壓到 0 → 綠。
+ *   dispx   同一刻四邊中點像素 = 靜止時(S2)—— dispaint 改框色 → 紅;dishover 只改層級,兩格同色 → 綠;widehas 不改畫面 → 綠。
+ *   觸控上啟用的原生 Select(T;只在 real 與 (i) 跑):
+ *   touch   T0 預設層 2 / T1、T2 聚焦 4 且四邊 --primary —— widehas 把它壓到 0 → 三列全紅(T1 / T2 的框被 DOM 較後的右鄰居蓋掉右邊那條)。
  */
 const GROUP_FAMILIES = new Set(['kbase', 'nbpx', 'layer', 'selfz'])
 function expectOf(mode, family, { m, error = false, reachRed = false, side, when } = {}) {
@@ -198,7 +213,12 @@ function expectOf(mode, family, { m, error = false, reachRed = false, side, when
   if (family === 'disz' || family === 'dispx') {
     if (mode === 'dishover') return family === 'disz' ? 'red' : 'green'
     if (mode === 'dispaint') return family === 'dispx' ? 'red' : 'green'
-    throw new TypeError(`expectOf:${family} 只在 real 與 dishover / dispaint 跑,實得 ${mode}`)
+    if (mode === 'widehas') return 'green'
+    throw new TypeError(`expectOf:${family} 只在 real 與 dishover / dispaint / widehas 跑,實得 ${mode}`)
+  }
+  if (family === 'touch') {
+    if (mode === 'widehas') return 'red'
+    throw new TypeError(`expectOf:touch 只在 real 與 widehas 跑,實得 ${mode}`)
   }
   if (family === 'foreign') return mode === 'reach' && reachRed ? 'red' : 'green'
   if (GROUP_FAMILIES.has(family)) {
@@ -333,19 +353,23 @@ const installBreakInPage = (mode) => {
       const on = h.getAttribute('data-state') === 'open' || !!h.querySelector('[data-state="open"], [aria-expanded="true"]')
       if (on) force(h, 'var(--primary)'); else release(h)
     })
-  } else if (['stack', 'tie', 'self', 'dishover', 'dispaint'].includes(mode)) { // 頁面端函式:不得引用外層的 DISABLED_BREAKS
-    // 併排欄位組的五種破法都用樣式表:聚焦 / 滑過不會改任何屬性,MutationObserver 追不到。元件的 z-index 與停用框色那幾條 utility 都不帶 !important,
+  } else if (['stack', 'tie', 'self', 'dishover', 'dispaint', 'widehas'].includes(mode)) { // 頁面端函式:不得引用外層的 DISABLED_BREAKS
+    // 併排欄位組的六種破法都用樣式表:聚焦 / 滑過不會改任何屬性,MutationObserver 追不到。元件的 z-index 與停用框色那幾條 utility 都不帶 !important,
     // 所以這裡帶了就一定贏(上面說的「贏不了」只發生在對方是分層而且也帶 !important 的宣告)。
     // (d) stack:聚焦或開著的那格不再浮到鄰居上面(壓到跟靜止的鄰居同一層 2)。2026-11-13 審查前只壓「開著」的那格(行內樣式),碰不到鍵盤聚焦
     // (e) tie:聚焦 / 開著的那格壓回跟滑過同一層(z-index 3 = 2026-11-13 改之前的行為)
     // (f) self:只有「聚焦 / 開著又被滑過」的那格壓回 3(聚焦那一半 = 少了第一條補的規則的樣子:滑過那條排在聚焦那條後面,會蓋回 3;開著那一半不補也是 4)
     // (g) dishover:停用的成員被滑過時抬回 3(= 2026-11-18 修之前:滑過那條權重與停用那條相同、排在後面)
     // (h) dispaint:停用的成員被滑過時框改成 --primary,層級不動(證明 S2 的像素量的是那一格畫出來的樣子)
+    // (i) widehas:寬的 `:has([disabled])` 放回去 —— 成員裡面有任何 [disabled](含 <option disabled>)就壓到 0,不論聚焦 / 滑過
+    //     (T 段量的靜止 / 聚焦 / 聚焦又被滑過三種狀態 = 0fe1a44b 那份:它靜止那條排在聚焦那條後面、多帶 :hover 那條排在「聚焦又被滑過」後面,同權重都贏)
+    // 「停用的成員」照元件認的寫(成員自己帶 [disabled],或裡面有不是 <option> 的 [disabled]):(g)(h) 不該碰到觸控上啟用的原生 Select
     const MEMBER = '[data-field-control-group] > :is(:focus-within, [data-field-open])'
-    const DISABLED = '[data-field-control-group] > :is([disabled], :has([disabled])):hover'
+    const DISABLED = '[data-field-control-group] > :is([disabled], :has(:not(option)[disabled])):hover'
     const rule = {
       stack: `${MEMBER} { z-index: 2 !important; }`, tie: `${MEMBER} { z-index: 3 !important; }`, self: `${MEMBER}:hover { z-index: 3 !important; }`,
       dishover: `${DISABLED} { z-index: 3 !important; }`, dispaint: `${DISABLED} { border-color: var(--primary) !important; }`,
+      widehas: '[data-field-control-group] > :has([disabled]) { z-index: 0 !important; }',
     }[mode]
     filter = ['data-field-open']
     apply = () => {}
@@ -784,8 +808,8 @@ async function runDisabled(mode) {
       const g = document.querySelector(sel)
       const kids = g ? [...g.children] : []
       if (kids.length < 2) return { ok: false, why: '找不到「成員全部停用」而且至少兩格的併排欄位組' }
-      // 量帶原生 disabled(spec「選擇器覆蓋範圍」:z-index 降 0 認原生 [disabled])、左邊有鄰居的那一格
-      const i = kids.findIndex((k, n) => n > 0 && (k.matches('[disabled]') || !!k.querySelector('[disabled]')))
+      // 量帶原生 disabled(spec「選擇器覆蓋範圍」:z-index 降 0 認成員本身停用 —— 成員自己帶 [disabled],或裡面有不是 <option> 的 [disabled])、左邊有鄰居的那一格
+      const i = kids.findIndex((k, n) => n > 0 && (k.matches('[disabled]') || !!k.querySelector(':not(option)[disabled]')))
       if (i < 1) return { ok: false, why: '停用那一組裡找不到「左邊有鄰居、帶原生 disabled」的成員' }
       document.querySelectorAll('[data-fob-host]').forEach((x) => x.removeAttribute('data-fob-host'))
       kids[i].setAttribute('data-fob-host', '')
@@ -814,6 +838,83 @@ async function runDisabled(mode) {
       const back = await edgeRaw()
       check(mode, `${name} | 還原(破法拿掉、滑鼠仍停在停用的成員上)→ z-index 0、四邊中點像素 = 靜止時`, r.z === '0' && sameEdges(back, base), `z-index=${r.z};${showEdges(back, base)}`, expectOf(mode, 'restore'))
     }
+  } catch (error) {
+    instrument(name, String(error?.message ?? error).split('\n')[0].slice(0, 300))
+  }
+}
+
+// ── T:觸控上啟用的原生 Select 不被當成停用 ──────────────────────────────────────────────────
+/**
+ * 同一個分頁開觸控模擬跑 fn,量完關掉(fn 裡自己開頁;關掉之後下一段重新開頁就回到桌機)。
+ * 用 CDP Emulation.setTouchEmulationEnabled(Playwright 的 hasTouch 底下也是這一條):pointer: coarse、hover: none 成立,Select 走原生 <select>。
+ * 不另開 context / 分頁:本 repo 的 Chromium 用 --single-process 起(lib/launch-browser.mjs SANDBOX_ARGS),2026-11-18 實跑第二個 context 開分頁就
+ * 「Target page, context or browser has been closed」,連帶後面各段全部量不到。
+ */
+async function withTouchEmulation(fn) {
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 })
+  try {
+    return await fn()
+  } finally {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false }).catch(() => {})
+    await cdp.detach().catch(() => {})
+  }
+}
+async function runTouch(mode) {
+  const name = 'T 觸控上啟用的原生 Select(裡面有 <option disabled>)不被當成停用(story「datatable 展示 › 進階篩選 — 各種狀態」)'
+  planned += rowsOf(mode, 3)
+  try {
+    await withTouchEmulation(async () => {
+      await openTarget({ story: TOUCH_STORY }, '#storybook-root [data-field-control-group] > [data-field-mode="edit"] select', mode)
+      const found = await page.evaluate(({ HOST_EDIT }) => {
+        if (!matchMedia('(pointer: coarse)').matches) return { ok: false, why: '觸控模擬沒有生效(pointer: coarse 不成立),Select 不會走原生 <select>' }
+        // 啟用的原生 Select、裡面有 <option disabled>(= 寬的 :has([disabled]) 會誤認的那種成員)
+        const target = (k) => !!k && k.matches(HOST_EDIT) && !k.matches('[disabled]') && !!k.querySelector('select:not([disabled])') && !!k.querySelector('option[disabled]') && !k.querySelector(':not(option)[disabled]')
+        const group = [...document.querySelectorAll('#storybook-root [data-field-control-group]')].find((g) => { const k = [...g.children]; return k.length >= 3 && target(k[0]) && target(k[1]) && k[2].matches(HOST_EDIT) })
+        if (!group) return { ok: false, why: '找不到「啟用的原生 Select / 啟用的原生 Select / 可編輯欄位」的併排欄位組(story 改了?)' }
+        const kids = [...group.children]
+        document.querySelectorAll('[data-fob-host], [data-fob-neighbour]').forEach((x) => { x.removeAttribute('data-fob-host'); x.removeAttribute('data-fob-neighbour') })
+        kids[0].setAttribute('data-fob-neighbour', 'left')
+        kids[1].setAttribute('data-fob-host', '')
+        kids[2].setAttribute('data-fob-neighbour', 'right')
+        kids[1].scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
+        const [a, b, c] = kids.slice(0, 3).map((k) => k.getBoundingClientRect())
+        const adjacent = Math.abs(a.top - b.top) < 0.5 && Math.abs(b.top - c.top) < 0.5 && Math.abs(a.right - b.left - 1) < 0.5 && Math.abs(b.right - c.left - 1) < 0.5
+        if (!adjacent) return { ok: false, why: `三格沒有相鄰重疊 1px(左 ${a.left}–${a.right}、中 ${b.left}–${b.right}、右 ${c.left}–${c.right})` }
+        return { ok: true, who: kids[1].querySelector('select').getAttribute('aria-label') || '', option: kids[1].querySelector('option[disabled]').outerHTML.slice(0, 60) }
+      }, { HOST_EDIT })
+      if (!found.ok) throw new InstrumentError(found.why)
+      const who = `「${found.who}」(${found.option})`
+      const zOf = () => page.evaluate(() => ['left', 'right'].map((s) => getComputedStyle(document.querySelector(`[data-fob-neighbour="${s}"]`)).zIndex))
+      const z = await rest('T0')
+      await readTokens()
+      const primary = tokens['--primary']
+      if (colorsOf(z).includes(primary)) throw new InstrumentError(`靜止時就已經是 --primary(${show(z)}),分不出有沒有聚焦`)
+      const [l0, r0] = await zOf()
+      check(mode, `${name} | T0 靜止 → ${who} z-index 2(預設層,不是停用的 0)`, z.z === '2', `z-index=${z.z};左鄰居 ${l0}、右鄰居 ${r0}`, expectOf(mode, 'touch'))
+      await tabInto('T1')
+      await parkPointer(page)
+      const k = await measure('T1')
+      if (!k.fw || k.hover) throw new InstrumentError(`T1:要量「聚焦、滑鼠不在上面」,實際焦點在欄位裡=${k.fw}、滑鼠在欄位上=${k.hover}(焦點 ${k.active})`)
+      const kp = await edgePixels('--primary')
+      const [l1, r1] = await zOf()
+      check(mode, `${name} | T1 鍵盤聚焦、滑鼠在空白處 → z-index 4、四邊 computed 與四邊中點像素 --primary`, k.z === '4' && all4(k, primary) && kp.sides.every((s) => s.hit),
+        `z-index=${k.z}(左鄰居 ${l1}、右鄰居 ${r1});${show(k)};${showPixels(kp)}`, expectOf(mode, 'touch'))
+      await hoverOwn('T2')
+      const h = await measure('T2')
+      if (!h.fw || !h.hover) throw new InstrumentError(`T2:要量「聚焦又被滑過」,實際焦點在欄位裡=${h.fw}、滑鼠在欄位上=${h.hover}(焦點 ${h.active})`)
+      const hp = await edgePixels('--primary')
+      const [l2, r2] = await zOf()
+      check(mode, `${name} | T2 聚焦又被滑過(觸控上點一下)→ z-index 4、四邊 computed 與四邊中點像素 --primary`, h.z === '4' && all4(h, primary) && hp.sides.every((s) => s.hit),
+        `z-index=${h.z}(左鄰居 ${l2}、右鄰居 ${r2});${show(h)};${showPixels(hp)}`, expectOf(mode, 'touch'))
+      if (mode !== 'real') {
+        await stopBreak()
+        const r = await measure('還原')
+        if (!r.fw || !r.hover) throw new InstrumentError(`還原:應該還是聚焦又被滑過,實際焦點在欄位裡=${r.fw}、滑鼠在欄位上=${r.hover}`)
+        const rp = await edgePixels('--primary')
+        check(mode, `${name} | 還原(破法拿掉、仍聚焦又被滑過)→ z-index 4、四邊中點像素 --primary`, r.z === '4' && rp.sides.every((s) => s.hit), `z-index=${r.z};${showPixels(rp)}`, expectOf(mode, 'restore'))
+      }
+    })
   } catch (error) {
     instrument(name, String(error?.message ?? error).split('\n')[0].slice(0, 300))
   }
@@ -921,6 +1022,7 @@ const MODE_TITLE = {
   self: '(f) self:併排欄位組裡只有「聚焦 / 開著又被滑過」的那格壓回 3(停在自己上面不再是 4)',
   dishover: '(g) dishover:併排欄位組裡停用的成員被滑過時抬回 3(= 2026-11-18 修之前的樣子)',
   dispaint: '(h) dispaint:併排欄位組裡停用的成員被滑過時框改成 --primary(層級不動)',
+  widehas: '(i) widehas:寬的 :has([disabled]) 放回去(成員裡面有任何 [disabled],含 <option disabled>,就壓到 0)',
 }
 const BREAK_MODES = Object.keys(MODE_TITLE)
 async function runMode(mode) {
@@ -929,6 +1031,8 @@ async function runMode(mode) {
   if (KEYBOARD_BREAKS.has(mode)) { for (const group of GROUPS) await runGroup(group, mode); return }
   // (g)(h) 只動停用的成員被滑過時的樣子 → 只跑 S 那一段;S 不在其他破法下跑(那幾種只動得到開著 / 聚焦的成員,停用的成員碰不到)
   if (DISABLED_BREAKS.has(mode)) { await runDisabled(mode); return }
+  // (i) 只動「裡面有 [disabled] 的成員」的層級 → 跑 S(停用的成員,該綠)與 T(觸控上啟用的原生 Select,該紅)
+  if (mode === 'widehas') { await runDisabled(mode); await runTouch(mode); return }
   if (mode === 'reach') {
     for (const w of WRAPPED) await runWrapped(w, mode)
     await runInner(mode)
@@ -939,7 +1043,7 @@ async function runMode(mode) {
   for (const cell of NAKED) await runNaked(cell, mode)
   await runNakedError(mode)
   for (const group of GROUPS) await runGroup(group, mode)
-  if (mode === 'real') await runDisabled(mode)
+  if (mode === 'real') { await runDisabled(mode); await runTouch(mode) }
   for (const w of WRAPPED) await runWrapped(w, mode)
   await runInner(mode)
 }

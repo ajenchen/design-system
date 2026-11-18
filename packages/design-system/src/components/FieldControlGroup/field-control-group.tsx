@@ -101,10 +101,15 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
           // (聚焦那條 → 滑過那條 → 開著那條;2026-11-13 拿 repo 裝的 tailwindcss 4.2.2 編這幾個 class 實看)—— 只寫上一行的話,
           // 聚焦又被滑過的那一格會被滑過那條蓋回 3。下面兩條多帶一個條件、權重較高,不看排序。
           '[&>*:focus-within:hover]:z-[4] [&>*[data-field-open]:hover]:z-[4]',
-          // 停用 = 0(spec States 表),被滑過也是 0。只寫第一行的話,停用的成員被滑過時是 3:兩條權重相同、樣式表裡滑過那條排在後面
-          // (2026-11-18 拿 38649f5a 的建置實量:story「狀態行為」停用那一組,滑過停用的 Input 時 z-index 3)→ 第二行多帶 :hover、權重較高,不看排序。
-          '[&>*[disabled]]:z-0 [&>*:has([disabled])]:z-0',
-          '[&>*[disabled]:hover]:z-0 [&>*:has([disabled]):hover]:z-0',
+          // 停用 = 0(spec States 表),被滑過也是 0。認的是「成員本身停用」:成員自己帶原生 [disabled](Button),或成員裡的控制項帶
+          // (Input 的 <input>、觸控原生 Select 的 <select>)。**不認 <option disabled>**:觸控走原生 <select>,有 placeholder 就渲
+          // <option value="" disabled>(select.tsx NativeSelect),停用的選項也是 —— 那是「這個選項不能選」,不是成員停用。
+          // 2026-11-18 前寫 `:has([disabled])`,觸控上啟用的原生 Select 被當成停用(實量與規則住 field-control-group.spec.md「選擇器覆蓋範圍」)。
+          // 第二行(多帶 :hover):現行樣式表裡第一行已經贏過滑過 —— `[disabled]` 那條排在滑過那條後面;`:has(…)` 那條多了 :not(option)
+          // 的權重(改寫前的 `:has([disabled])` 與滑過同權重、排在前面,停用的 Input 被滑過是 3,2026-11-18 補第二行就是為了它)。
+          // 現在第二行守的是「停用又聚焦又被滑過」:上面「聚焦又被滑過」那條權重比第一行高,沒有第二行會抬回 4。
+          '[&>*[disabled]]:z-0 [&>*:has(:not(option)[disabled])]:z-0',
+          '[&>*[disabled]:hover]:z-0 [&>*:has(:not(option)[disabled]):hover]:z-0',
           // border overlap
           '[&>*+*]:-ml-px',
           // border radius — 中間 0,首/尾保留外側 radii
