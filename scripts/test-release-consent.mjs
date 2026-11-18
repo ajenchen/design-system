@@ -156,24 +156,57 @@ try {
   assert.equal(classifyConsentPrompt(workflow.releaseConsent.userVerbatim).verdict, 'deferred',
     'SSOT 自己的 userVerbatim 被判成 consent = 這道閘在自廢')
 
-  // 5e. 條件句的另一種:user 把「做完」交給 AI 判 → **刻意判 consent**(2026-11-18)。
+  // 5e. 「…做完了就發版」這一類 → **刻意不收進 conditionalMarkers,判 consent**(2026-11-18,規劃 ND1)。
+  //     判 consent 的原因只是清單裡沒有它的字,判準不懂條件在誰身上(見 5f)。
   //     fixture 是磁碟上真實出現過的原話:2026-11-17 落地的發版同意收據(授權 ec9208b7)的 quote。
-  //     理由寫在 release-consent-language.mjs 函式內第 4 步:改判 deferred 只會逼 user 再講一次
-  //     「發版」;保護靠產品指紋(上面 5.)而不是再問。這格擋的是「依稽核建議改判 → 改回來」的來回,
-  //     要改判先改這格並寫出新證據。
+  //     理由與哪些是 AI 推導,寫在 release-consent-language.mjs 函式內第 4 步;保護靠產品指紋(上面 5.)
+  //     而不是再問。這格擋的是「依稽核建議改判 → 改回來」的來回,要改判先改這格並寫出新證據。
   const AI_SIDE = '現在該做的任務都做完了就發版'
   assert.equal(classifyConsentPrompt(AI_SIDE).verdict, 'consent',
-    `「${AI_SIDE}」是 user 把「做完」交給 AI 判,不是在等 user 自己確認`)
+    `「${AI_SIDE}」不在 conditionalMarkers 裡(ND1 刻意不收),必須判 consent`)
   assert.equal(writeReleaseConsent({ headSha: head, branch, quote: AI_SIDE, source: 'manual-agent' }).quote, AI_SIDE,
     '手動落地(當初那份收據走的路)必須與 hook 同判')
-  //     同一格的另一面:條件在 user 身上 → 仍是 deferred(與 5d 同一份判準)
-  assert.equal(classifyConsentPrompt('等我看完預覽再發版').verdict, 'deferred', '等 user 自己確認的條件句不得被一起放寬')
+  //     同一格的另一面:命中清單的條件句 → 仍是 deferred(與 5d 同一份判準)
+  assert.equal(classifyConsentPrompt('等我看完預覽再發版').verdict, 'deferred', '命中清單的條件句不得被一起放寬')
   //     會紅的對照組:判準若多一條「做完了就」,同一句必須改判 —— 證明這句真的走到條件那一步、
   //     這格量得到判準變動,不是恆綠。只在記憶體裡複製判準,不寫任何檔。
   const livePolicy = loadConsentPolicy()
   const tightened = { ...livePolicy, conditionalMarkers: [...livePolicy.conditionalMarkers, '做完了就'] }
   assert.equal(classifyConsentPrompt(AI_SIDE, tightened).verdict, 'deferred',
     '判準多一條「做完了就」卻沒改判 = 這格量不到判準變動,綠燈是零證據')
+
+  // 5f. 第 4 步「邊界」段列的例句,逐句鎖住**現況**(2026-11-18,E1 反駁 #1)。
+  //     分界是「有沒有命中 conditionalMarkers 的字面」,兩個方向都有已知誤判。
+  //     **這張表斷言的是現況,不是期望**:偏放行那幾句是既有缺口(工程待辦,寫在第 4 步)。
+  //     哪天收緊清單,這格會紅 —— 意思是「同步改第 4 步邊界段與這張表」,不是「把清單改回去」。
+  //     作用是讓註解寫的例句與程式一致(M32:文字宣稱 ≠ 程式真實)。
+  const BOUNDARY = [
+    // 偏放行(既有缺口):條件在 user 身上或在時間上,清單沒有那幾個字 → consent
+    ['改完給我看,我說可以再發版', 'consent'],
+    ['你部署好讓我看,沒問題就發版', 'consent'],
+    ['看完沒問題就發版', 'consent'],
+    ['我看一下沒問題就發版', 'consent'],
+    ['確認沒問題才發版', 'consent'],
+    ['晚點發版', 'consent'],
+    ['下午再發版', 'consent'],
+    ['過兩天發版', 'consent'],
+    ['CI 綠了就發版', 'consent'], // 與 5d「如果 CI 全綠就發版」意思相同、判定相反
+    // 偏保守:清單的字出現在已看過的同意、或 5e 同一類的句子裡 → deferred
+    ['我看過了,發版', 'deferred'],
+    ['先把剩下的做完再發版', 'deferred'],
+    ['如果都做完了就發版', 'deferred'],
+  ]
+  for (const [text, now] of BOUNDARY) {
+    assert.equal(classifyConsentPrompt(text).verdict, now,
+      `「${text}」的判定與 release-consent-language.mjs 第 4 步邊界段寫的不同 —— 改了清單就要一起改那段與這張表`)
+  }
+  //     會紅的對照組:清單多一個「給我看」,缺口第一句必須改判 deferred,而 5e 那句不受影響 ——
+  //     證明這張表量得到清單變動,也證明補 user 那一側的詞不會牽動 ND1 那一類。只在記憶體裡,不寫檔。
+  const reviewSide = { ...livePolicy, conditionalMarkers: [...livePolicy.conditionalMarkers, '給我看'] }
+  assert.equal(classifyConsentPrompt(BOUNDARY[0][0], reviewSide).verdict, 'deferred',
+    '清單多一條「給我看」卻沒改判 = 這張表量不到清單變動,綠燈是零證據')
+  assert.equal(classifyConsentPrompt(AI_SIDE, reviewSide).verdict, 'consent',
+    '補 user 那一側的檢視條件,不得牽動 5e 那一類(ND1)')
 
   // 重新落地一份乾淨的同意,讓後面的格子有東西可用
   writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'test' })
