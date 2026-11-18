@@ -14,6 +14,10 @@
  *     此時所有零筆 hook 標 `unknown`(不是 `dead`)且**零 retire 提名**。
  *     判準見 lib/hook-fire-observability.mjs;對照組見 test-audit-hook-quality.mjs。
  *
+ * 2026-11-18(knowledge-prune WP-07 D2-3):fire log 不存在(遙測從沒開過,也就是預設狀態;
+ *   全新 clone 連狀態目錄都沒有)= 跟空 log 同一份全盲報告,exit 0。以前這裡 exit 2,
+ *   knowledge-prune SKILL 叫人先看的 summary.observation 在預設狀態下根本產不出來。
+ *
  * Non-goals:
  * - 不刪 hook(per user「品質為前提,不為砍而砍」)
  * - 不改 hook regex(那是 Task 3 scope)
@@ -32,17 +36,13 @@ const ROOT = join(__dirname, '..')
 const TELEMETRY_STATE = resolveProviderTelemetryStateRoot({ repoRoot: ROOT })
 const FIRE_LOG = join(TELEMETRY_STATE, 'hook-fires-per-hook.jsonl')
 const HOOK_DIR = join(ROOT, 'packages/design-system/ds-canonical/hooks')
-const OUT = prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'audit/hook-quality-report.json' })
-
-if (!existsSync(FIRE_LOG)) {
-  console.error('❌ fire log missing:', FIRE_LOG)
-  process.exit(2)
-}
 
 // 1. Read fire log + aggregate per-hook
 // 2026-06-11 fix(prune D2):原只讀 current jsonl(~數小時)卻標「dead 6mo」= 系統性誤導。
 // 聚合 rotated archives(.jsonl.YYYYMM)+ summary 寫明真實觀測窗 span。
+// 2026-11-18:log 檔(甚至整個狀態目錄)不存在時,readFireRecords 回空陣列 → 跟空 log 走同一條全盲路徑。
 const LOG_DIR = dirname(FIRE_LOG)
+const fireLogPresent = existsSync(FIRE_LOG)
 const fires = readFireRecords(LOG_DIR)
 
 // 2026-09-24 fix(M37 identity substitution):「log 裡零筆」不等於「這支 hook 沒 fire」。
@@ -155,6 +155,8 @@ const summary = {
     reasons: OBSERVATION.reasons,
     coversWindowStart: OBSERVATION.coversWindowStart,
     isLive: OBSERVATION.isLive,
+    // 2026-11-18:分得出「log 檔根本不存在」(遙測從沒開過)和「log 檔在但是空的」
+    fireLogPresent,
     telemetryOptIn: process.env.GOVERNANCE_TELEMETRY_OPT_IN === '1',
   },
   classifications: {
@@ -168,6 +170,9 @@ const summary = {
   retireCandidates: report.filter(r => r.retireCandidate).length,
   hotHooksForTuning: report.filter(r => r.classification === 'hot').map(r => r.hook),
 }
+
+// 報告到這裡才確定要寫:evidence 目錄在此才建立,前面任何一步失敗都不留下空目錄。
+const OUT = prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'audit/hook-quality-report.json' })
 
 // 2026-06-06 idempotent write:內容(排除 summary.generatedAt)無變則沿用既有時戳,避免每次跑 churn git tree
 const __payloadHQ = { summary, hooks: report }
