@@ -28,20 +28,36 @@
  * (之後以 baseline 為準)—— 規格說它「機械強制」,PR 上卻沒有任何東西會因為它變紅
  * (M37 ④ 換了一層:拿「有人跑」代替「會擋」)。所以同一份掃描分三輪,每支腳本落在四類之一:
  *   PR 可達   根 = `on:` 帶 pull_request / pull_request_target / merge_group 的 workflow(與它們 `npm run` 到的 script)
- *             + hook 目錄裡 .md 以外的檔(整行註解剔除;hook 寫入當下就跑,CI 的 hooks:test 也跑)
+ *             + hook 目錄裡的 .sh / .mjs(hook 寫入當下就跑,CI 的 hooks:test 也跑;.json 是資料)
  *             + 上面這些用**完整路徑**點名的 infra/governance 檔(例:ci.yml 直接 `node --test infra/governance/test/x.test.mjs`)。
  *             不用檔名比對 infra:harness-registry.mjs / harness-registry.test.mjs 的夾具字串會把 check-branch-protection 等
  *             只在夜間跑的腳本誤算成 PR 可達(2026-11-18 實測 6 支)。
  *   只在夜間  再加上 `on:` 只有 schedule(沒有 PR 事件)的 workflow、harness inventory、全部 infra/governance/{test,lib} 可執行檔
  *             (inventory 的 roots 就是 `infra/governance/test/**\/*.test.mjs`,harness 每晚全跑)。
- *             gate-meta 配對(run-gate-meta-tests.mjs 探索出來的)只在**那一輪的執行面直接點名 runner** 時才算 ——
- *             PR 執行面沒有點名它,所以配對與它們跑到的閘歸夜間。
- *   只在其他  只有寬口徑(下一行)才搆得到:技能文件的散文、hook / 腳本的註解、發布或手動觸發的 workflow。
+ *             gate-meta 配對(run-gate-meta-tests.mjs 探索出來的)只在**探索者本身在那一輪可達**時才算;
+ *             「可達」跟其他腳本同一套執行形狀 —— 只被讀原文(check-provider-neutral-ssot-residue.mjs 的
+ *             `text('scripts/run-gate-meta-tests.mjs')`)不算有人跑它,所以 PR 一輪探索者不可達,配對與它們跑到的閘歸夜間。
+ *   只在其他  只有寬口徑(下一行)才搆得到:技能文件的散文、hook / 腳本的註解、腳本裡**提到但不跑**的地方
+ *             (assert 的期望值、複製清單、說明字串)、發布或手動觸發的 workflow。
  *   孤兒      連寬口徑都搆不到。寬口徑 = 2026-09-27 起的原量法(全部 workflow + hooks + skills + infra + harness,原文不剔註解)。
- * 兩輪窄口徑一律剔整行註解(腳本原文遞移展開時也剔):註解提到的檔名不算有人跑(實測 check_story_invariants.sh 的 `#` 註解
- * 提到 category-classification-invariant.mjs、audit-story-quality.mjs 的 `//` 註解提到 dispatch-audit-dims.mjs)。
- * 已知近似(只能當上限看):動態組字串的呼叫(`node scripts/${name}`)會漏算,偏向**多報**夜間 / 其他(安全方向);
- * PR workflow 裡被 job `if:` 跳過的步驟、hook 測試沒走到的分支、字串裡只是提到檔名,則會**多算** PR 可達。
+ * 兩輪窄口徑裡,**程式碼文字只認執行形狀**(2026-11-18,WP-18 反駁 #2;形狀定義的唯一住處是
+ * lib/workflow-invocation-surface.mjs 的 execShapedText):腳本原文遞移展開、hook 的 .sh / .mjs、infra 的 .mjs 都先濾成
+ * 「spawn / exec / fork / import 的引數(跨行)、流進這些引數的常數、shell 的 node / npm 指令行與它用到的變數」再比對。
+ * 註解、assert、夾具資料、訊息裡出現的檔名一律不算有人跑。改這條之前,PR 一輪只剔註解 ——
+ * test-run-deterministic-deep-audit.mjs:77 一行 `assert.deepEqual(… ['node', 'scripts/repository-hygiene-invariant.mjs', …])`
+ * 就讓那支只在夜間跑的閘被算成 PR 可達、不在棘輪裡;同形的漏網 2026-11-18 量到 10 支(逐支見 commit)。
+ * workflow 與 npm script 是指令面,原文提到即算(PR workflow 每一行提到腳本的都帶 `node`,2026-11-18 實查)。
+ * 另外,`test-<stem>.mjs` 可達且原文提到 `<stem>.mjs` 時,`<stem>.mjs` 算被它跑到(gate-meta 配對的定義;
+ * 2026-11-18 實查 121 支 meta-test 經 `runGateSelftestMeta(…)` 這個 helper 跑閘(lib/gate-selftest-meta.mjs:131 spawnSync 它的引數),
+ * helper 呼叫本身不是執行形狀;121 支全是 test-<stem> 配對、原文都提到 <stem>.mjs,這條規則全數接得住)。
+ * 已知近似 —— **雙向,不是上限**:
+ *   少算 PR 可達(閘多報夜間 / 其他,看得見的方向):包一層的 helper(`run('scripts/x.mjs')`)、動態組字串
+ *     (`node scripts/${name}`)、迴圈變數(`for (const g of GATES) spawnSync(…, [g])`)、腳本裡的 `npm run`(不解析)、
+ *     資料驅動的執行計畫(governance-build-graph.json 的 stage 指令由 governance-build-graph.mjs 跑;2026-11-18 實測
+ *     把它加進模型,名字像閘的分類一支都不變,所以沒加)。
+ *   多算 PR 可達(閘默默放行,看不見的方向):PR workflow 裡被 job `if:` 跳過的步驟、hook 測試沒走到的分支、
+ *     靜態 import 一支閘只為了拿它的函式(模組載入但它的檢查沒跑)、常數同名但不同作用域、
+ *     檔名是另一支檔名的尾段(`includes` 比對,`stale-governance-check.mjs` 也會命中 `governance-check.mjs`)。
  *
  * **棘輪,不是一次到位**:現況有一批既有孤兒,一次全接進 CI 會同時炸開且無法評估落點。
  * 因此鎖 baseline(`scripts/gate-reachability-baseline.json`):**新增孤兒 = 紅**,既有孤兒清掉會提醒更新
@@ -52,11 +68,17 @@
  *
  * @gate-contract
  *   保證: 名字像閘/測試的腳本,真的有執行面(CI workflow 直接或經 npm run / hook / skill / harness)會呼叫它;
- *        而且名字像閘、不是 test- 開頭的,要嘛在 PR 執行面跑得到,要嘛記在 baseline 的「只在夜間」或「只在其他」清單裡(數字只准往下)
+ *        而且名字像閘、不是 test- 開頭的,要嘛在 PR 執行面以**執行形狀**跑得到(直接,或經 PR 會跑的腳本 spawn / exec / import 它;
+ *        近似的方向與邊界見上方「已知近似」),要嘛記在 baseline 的「只在夜間」或「只在其他」清單裡(數字只准往下)
  *   紅: 新增一支沒有任何人呼叫的閘(或把某支從 CI 拿掉、只剩 package.json 那條 script)→ 指名它並紅;
- *       把一支閘從 PR 執行面拿掉、只剩夜間 harness / 排程 workflow 跑它 → 指名它「新增只在夜間可達」並紅
- *   綠: 沒有新增時必須綠;selftest 每次注入 11 支合成腳本,各自只出現在一種地方(無人提到 / 只在 package.json / 只在 workflow 註解 /
- *       PR workflow 經 npm run / PR workflow 加 harness / 只在 harness / 只在排程 workflow / gate-meta 配對 / 只在手動 workflow / 只在 hook 註解),
+ *       把一支閘從 PR 執行面拿掉、只剩夜間 harness / 排程 workflow 跑它 → 指名它「新增只在夜間可達」並紅;
+ *       PR 會跑的腳本只在 assert / 資料 / 訊息裡提到它,不會讓它算成 PR 可達
+ *   綠: 沒有新增時必須綠;selftest 每次注入 18 支合成腳本,期望類別全部由合成情境寫死(不從受測程式算出的值推回來):
+ *       無人提到 / 只在 package.json / 只在 workflow 註解 → 孤兒;PR workflow 經 npm run / PR workflow 加 harness /
+ *       PR 腳本用常數 + 跨行 spawnSync 跑的探索者 B 與它的配對(配對測試只用 helper 呼叫)/ hook 先放變數再 node "$VAR" / PR caller 本身 → PR;
+ *       只在 harness / 只在排程 workflow / 探索者 A(排程 workflow 點名,PR 腳本只讀它原文)與它的配對 /
+ *       PR 腳本只在 assert、夾具 package.json、console 訊息提到(另在 harness)→ 夜間;
+ *       只在手動 workflow / 只在 hook 的註解、echo 字串、夾具寫檔 → 其他。
  *       每一支都必須落在它該在的那一類、而且該紅的那幾支要真的讓判定變紅,任一支落錯就是量具壞了
  *
  * 用法:
@@ -70,6 +92,8 @@ import { fileURLToPath } from 'node:url'
 import { parseWorkflowSemantics } from '../infra/governance/lib/workflow-trust.mjs'
 import { discoverGateMetaTestPairs } from './lib/gate-meta-test-inventory.mjs'
 import {
+  execShapedText,
+  executableLanguageOf,
   readWorkflowSources,
   readWorkspaceScripts,
   resolveWorkflowInvocationSurface,
@@ -92,12 +116,23 @@ const SYNTHETIC_VIA_NPM = 'synthetic-via-npm-invariant.mjs'                 // P
 const SYNTHETIC_PR_AND_HARNESS = 'synthetic-pr-and-harness-invariant.mjs'   // PR workflow 直接跑 + 也在 harness → PR
 const SYNTHETIC_HARNESS_ONLY = 'synthetic-harness-only-invariant.mjs'       // 只在 harness → 夜間(同一支換個地方 = 兩面)
 const SYNTHETIC_SCHEDULED_ONLY = 'synthetic-scheduled-only-invariant.mjs'   // 只在 schedule workflow → 夜間
-const SYNTHETIC_PAIR_GATE = 'synthetic-pair-invariant.mjs'                  // gate-meta 配對探索 → runner 在哪一輪被點名就歸哪一類
-const SYNTHETIC_PAIR_TEST = `test-${SYNTHETIC_PAIR_GATE}`
 const SYNTHETIC_DISPATCH_ONLY = 'synthetic-dispatch-only-invariant.mjs'     // 只在 workflow_dispatch workflow → 其他
-const SYNTHETIC_HOOK_COMMENT = 'synthetic-hook-comment-only-invariant.mjs'  // 只在 hook 的 # 註解 → 其他(寬口徑才算)
+const SYNTHETIC_HOOK_COMMENT = 'synthetic-hook-comment-only-invariant.mjs'  // 只在 hook 的 # 註解 / echo 字串 / 夾具寫檔 → 其他(寬口徑才算)
+// 以下為 WP-18 反駁 #1 / #2 的對照組:期望值全部由情境本身決定,不讀受測程式算出的任何值。
+// 探索者 A / B 是合成的 gate-meta runner(各自探索一組配對),與真的 run-gate-meta-tests.mjs 在哪裡被點名無關。
+const SYNTHETIC_PR_CALLER = 'synthetic-pr-caller.mjs'                       // PR workflow 直接跑;下面幾支的「提到」都寫在它裡面 → PR
+const SYNTHETIC_RUNNER_TEXT = 'synthetic-meta-runner-a.mjs'                 // 探索者 A:排程 workflow 點名;PR caller 只 `text('scripts/…')` 讀它原文 → 夜間
+const SYNTHETIC_PAIR_GATE = 'synthetic-pair-invariant.mjs'                  // A 探索出來的配對 → 夜間(寫死;反駁 #1)
+const SYNTHETIC_PAIR_TEST = `test-${SYNTHETIC_PAIR_GATE}`
+const SYNTHETIC_ASSERT_ONLY = 'synthetic-assert-only-invariant.mjs'         // PR caller 只在 assert / 夾具 package.json / console 訊息提到,另在 harness → 夜間(反駁 #2 E 形)
+const SYNTHETIC_RUNNER_EXEC = 'synthetic-meta-runner-b.mjs'                 // 探索者 B:PR caller 用常數 + 跨行 spawnSync 真的跑它 → PR(反駁 #2 正面)
+const SYNTHETIC_EXEC_PAIR_GATE = 'synthetic-exec-pair-invariant.mjs'        // B 探索出來的配對;配對測試只用 helper 呼叫它 → 靠 test-<stem> 規則 → PR
+const SYNTHETIC_EXEC_PAIR_TEST = `test-${SYNTHETIC_EXEC_PAIR_GATE}`
+const SYNTHETIC_HOOK_VAR = 'synthetic-hook-var-invariant.mjs'               // hook 先 GATE="…/scripts/…" 再 node "$GATE" → PR
 const SYNTHETICS = [SYNTHETIC, SYNTHETIC_PKG_ONLY, SYNTHETIC_COMMENT_ONLY, SYNTHETIC_VIA_NPM, SYNTHETIC_PR_AND_HARNESS,
-  SYNTHETIC_HARNESS_ONLY, SYNTHETIC_SCHEDULED_ONLY, SYNTHETIC_PAIR_GATE, SYNTHETIC_PAIR_TEST, SYNTHETIC_DISPATCH_ONLY, SYNTHETIC_HOOK_COMMENT]
+  SYNTHETIC_HARNESS_ONLY, SYNTHETIC_SCHEDULED_ONLY, SYNTHETIC_DISPATCH_ONLY, SYNTHETIC_HOOK_COMMENT,
+  SYNTHETIC_PR_CALLER, SYNTHETIC_RUNNER_TEXT, SYNTHETIC_PAIR_GATE, SYNTHETIC_PAIR_TEST, SYNTHETIC_ASSERT_ONLY,
+  SYNTHETIC_RUNNER_EXEC, SYNTHETIC_EXEC_PAIR_GATE, SYNTHETIC_EXEC_PAIR_TEST, SYNTHETIC_HOOK_VAR]
 
 /** 量具本身讀不到 / 讀不懂輸入:不是判定,exit 2(沒量到 ≠ 沒有問題)。 */
 const instrumentFail = (message) => { console.error(`✗ 量具失效:${message}`); process.exit(2) }
@@ -115,8 +150,10 @@ const walk = (dir, out = []) => {
   return out
 }
 const SURFACE_EXT = /\.(ya?ml|json|sh|mjs|md)$/
-// 窄口徑只讀「會被執行的檔」:.md 是說明文字(hooks/README.md 之類),提到檔名不等於會跑它
-const isExecutable = (path) => !path.endsWith('.md')
+// 窄口徑只讀「會被執行的檔」(.sh / .mjs),而且只讀其中執行形狀的那幾段(lib 的 execShapedText);
+// .md 是說明文字、.json 是資料(hooks/lib/benchmark-citation-sources.json 之類),提到檔名不等於會跑它
+const execShaped = (s) => execShapedText(s.text, executableLanguageOf(s.path))
+const isExecutable = (s) => executableLanguageOf(s.path) !== null
 const surface = (path) => ({ path: relative(ROOT, path), text: read(path) })
 
 // 執行面 = 真的會把腳本跑起來的地方。**package.json 不在裡面**:它只是 `npm run` 的查表(見檔頭)。
@@ -140,23 +177,34 @@ if (SELFTEST) {
   // PR workflow:註解裡那行不該算數;`npm run` 那條經 package.json script 才是真的可達;直接 `node` 那條也是
   workflows['synthetic-selftest.yml'] = [
     'name: synthetic', 'on:', '  pull_request:', `# node scripts/${SYNTHETIC_COMMENT_ONLY}`, 'jobs:', '  x:', '    runs-on: ubuntu-24.04', '    steps:',
-    '      - run: npm run test:synthetic-via-npm', `      - run: node scripts/${SYNTHETIC_PR_AND_HARNESS}`, '',
+    '      - run: npm run test:synthetic-via-npm', `      - run: node scripts/${SYNTHETIC_PR_AND_HARNESS}`,
+    `      - run: node scripts/${SYNTHETIC_PR_CALLER}`, '',
   ].join('\n')
   packageScripts['test:synthetic-via-npm'] = `node scripts/${SYNTHETIC_VIA_NPM} && node scripts/${SYNTHETIC_VIA_NPM} --selftest`
-  // 只有 schedule 的 workflow(與 governance-harnesses.yml 同形):夜間
+  // 只有 schedule 的 workflow(與 governance-harnesses.yml 同形):夜間;探索者 A 只在這裡被點名
   workflows['synthetic-nightly.yml'] = [
     'name: synthetic nightly', 'on:', '  schedule:', "    - cron: '0 3 * * *'", '  workflow_dispatch:', 'jobs:', '  x:', '    runs-on: ubuntu-24.04', '    steps:',
-    `      - run: node scripts/${SYNTHETIC_SCHEDULED_ONLY}`, '',
+    `      - run: node scripts/${SYNTHETIC_SCHEDULED_ONLY}`, `      - run: node scripts/${SYNTHETIC_RUNNER_TEXT}`, '',
   ].join('\n')
   // 只能手動觸發的 workflow:不擋 PR、也不是排程 → 其他
   workflows['synthetic-dispatch.yml'] = [
     'name: synthetic dispatch', 'on:', '  workflow_dispatch:', 'jobs:', '  x:', '    runs-on: ubuntu-24.04', '    steps:',
     `      - run: node scripts/${SYNTHETIC_DISPATCH_ONLY}`, '',
   ].join('\n')
-  // harness inventory 片段:一支只在這裡、一支同時也在 PR workflow
-  harnessSurfaces.push({ path: 'synthetic-harness-inventory.json', text: JSON.stringify({ suites: [{ members: [`scripts/${SYNTHETIC_HARNESS_ONLY}`, `scripts/${SYNTHETIC_PR_AND_HARNESS}`] }] }) })
-  // hook 只在註解提到:寬口徑(原文)搆得到,窄口徑(剔註解)搆不到
-  hookSurfaces.push({ path: 'packages/design-system/ds-canonical/hooks/synthetic-selftest.sh', text: `#!/usr/bin/env bash\n# 見 scripts/${SYNTHETIC_HOOK_COMMENT}\nexit 0\n` })
+  // harness inventory 片段:一支只在這裡、一支同時也在 PR workflow、一支 PR caller 只在 assert / 資料裡提到
+  harnessSurfaces.push({ path: 'synthetic-harness-inventory.json', text: JSON.stringify({ suites: [{ members: [`scripts/${SYNTHETIC_HARNESS_ONLY}`, `scripts/${SYNTHETIC_PR_AND_HARNESS}`, `scripts/${SYNTHETIC_ASSERT_ONLY}`] }] }) })
+  // hook:HOOK_COMMENT 只在註解 / echo 字串 / 夾具寫檔提到(寬口徑原文搆得到,窄口徑的執行形狀搆不到);
+  // HOOK_VAR 先放進變數、再 `node "$GATE"`(真的跑它)
+  hookSurfaces.push({
+    path: 'packages/design-system/ds-canonical/hooks/synthetic-selftest.sh',
+    text: [
+      '#!/usr/bin/env bash', `# 見 scripts/${SYNTHETIC_HOOK_COMMENT}`,
+      `echo "修好後跑 node scripts/${SYNTHETIC_HOOK_COMMENT} --update"`,
+      `printf '%s\\n' 'process.exit(0)' > "$FIXTURE/scripts/${SYNTHETIC_HOOK_COMMENT}"`,
+      `GATE="$PROJECT_DIR/scripts/${SYNTHETIC_HOOK_VAR}"`,
+      'if [ -f "$GATE" ]; then', '  OUT=$(node "$GATE" --check 2>&1 || true)', 'fi', 'exit 0', '',
+    ].join('\n'),
+  })
 }
 
 // ── lane:這支 workflow 會不會擋 PR ──
@@ -185,36 +233,65 @@ const source = Object.fromEntries(scripts.filter((f) => f !== SELF).map((f) => [
 // 只看「有沒有被字面提到」會把這些全判成孤兒 —— 那是拿「被提到」當「會被跑」的替身,
 // 跟這支閘自己要守的病同一種(2026-09-21:41 支新 meta-test 全被誤判成孤兒)。
 // 用同一支探索實作,不另寫一份規則(M17:同公式不得有第二個住所)。
+const GATE_META_RUNNER = 'run-gate-meta-tests.mjs'
 const pairs = discoverGateMetaTestPairs(ROOT)
+// 動態探索的執行者 → 它會跑的檔:探索者本身在某一輪可達,它探索出來的檔就在那一輪可達
+const discoveredBy = new Map([[GATE_META_RUNNER, pairs.map(({ file }) => file)]])
+// test-<stem>.mjs → <stem>.mjs:meta-test 跑它的閘(多半經 runGateSelftestMeta helper,不是執行形狀,所以另立一條)
+const pairGateOf = new Map(pairs.map(({ file, stem }) => [file, `${stem}.mjs`]))
 if (SELFTEST) {
   for (const f of SYNTHETICS) { scripts.push(f); source[f] = `// 合成腳本 ${f}:只給對照組用\n` }
-  // 配對的測試真的在跑它的閘(不是註解提到):窄口徑剔註解後仍要搆得到
+  // 探索者 A 的配對測試真的在跑它的閘(執行形狀);B 的配對測試只用 helper 呼叫(只有 test-<stem> 規則搆得到)
   source[SYNTHETIC_PAIR_TEST] = `spawnSync(process.execPath, ['scripts/${SYNTHETIC_PAIR_GATE}'])\n`
-  pairs.push({ file: SYNTHETIC_PAIR_TEST, stem: SYNTHETIC_PAIR_GATE.replace(/\.mjs$/, '') })
+  source[SYNTHETIC_EXEC_PAIR_TEST] = `runGateSelftestMeta('scripts/${SYNTHETIC_EXEC_PAIR_GATE}')\n`
+  discoveredBy.set(SYNTHETIC_RUNNER_TEXT, [SYNTHETIC_PAIR_TEST])
+  discoveredBy.set(SYNTHETIC_RUNNER_EXEC, [SYNTHETIC_EXEC_PAIR_TEST])
+  pairGateOf.set(SYNTHETIC_PAIR_TEST, SYNTHETIC_PAIR_GATE)
+  pairGateOf.set(SYNTHETIC_EXEC_PAIR_TEST, SYNTHETIC_EXEC_PAIR_GATE)
+  // PR caller:前四行只「提到」(assert 期望值 / 夾具 package.json / 訊息 / 讀原文,形狀照抄真實的
+  // test-run-deterministic-deep-audit.mjs:77 與 check-provider-neutral-ssot-residue.mjs:318),後面才真的跑探索者 B
+  source[SYNTHETIC_PR_CALLER] = [
+    `assert.deepEqual(plan.argv, ['node', 'scripts/${SYNTHETIC_ASSERT_ONLY}', '--check'])`,
+    `const fixture = { scripts: { 'x:check': 'node scripts/${SYNTHETIC_ASSERT_ONLY}' } }`,
+    `console.log('修好後跑 node scripts/${SYNTHETIC_ASSERT_ONLY} --update')`,
+    `const metaRunner = text('scripts/${SYNTHETIC_RUNNER_TEXT}')`,
+    `const META = join(ROOT, 'scripts/${SYNTHETIC_RUNNER_EXEC}')`,
+    'const result = spawnSync(process.execPath, [',
+    '  META,',
+    "  '--lane', 'x',",
+    '], { cwd: ROOT })', '',
+  ].join('\n')
 }
+// 窄口徑用:剔整行註解(test-<stem> 規則看它有沒有提到 <stem>)/ 只留執行形狀(遞移展開用)
 const strippedSource = Object.fromEntries(Object.entries(source).map(([f, text]) => [f, stripCodeCommentLines(text)]))
+const execSource = Object.fromEntries(Object.entries(source).map(([f, text]) => [f, execShapedText(text, 'js')]))
 
-const GATE_META_RUNNER = 'run-gate-meta-tests.mjs'
 /**
  * 從一組根出發,算出會被跑到的 scripts/*.mjs。
  * @param {{ workflows: Record<string,string>, surfaces: string[], sources: Record<string,string> }} roots
- *   workflows 的 `#` 註解行由 resolver 剔除;surfaces / sources 由呼叫端決定原文或剔註解
+ *   workflows 的 `#` 註解行由 resolver 剔除;surfaces / sources 由呼叫端決定原文或執行形狀
  */
 const reachableFrom = ({ workflows: rootWorkflows, surfaces, sources }) => {
   const invocation = resolveWorkflowInvocationSurface({ workflows: rootWorkflows, packageScripts, workspaceScripts, extraSurfaces: surfaces })
   // 執行面直接提到的算可達(量具自己被 CI 呼叫,所以它本身是可達的)
   const reachable = new Set(scripts.filter((f) => invocation.corpus.includes(f)))
-  // 前提是探索器自己得先被這一輪的執行面直接點名:它若沒人跑,它探索出來的東西也不會被跑
-  const runnerReached = reachable.has(GATE_META_RUNNER)
-  if (runnerReached) for (const { file } of pairs) reachable.add(file)
+  const runnersReached = new Set()
   for (let changed = true; changed;) {
     changed = false
+    const add = (f) => { if (!reachable.has(f)) { reachable.add(f); changed = true } }
+    // 探索者自己得先在這一輪可達(跟其他腳本同一把尺:窄口徑只認執行形狀),它探索出來的東西才會被跑
+    for (const [runner, files] of discoveredBy) {
+      if (runnersReached.has(runner) || !reachable.has(runner)) continue
+      runnersReached.add(runner)
+      for (const f of files) add(f)
+    }
+    for (const [test, gate] of pairGateOf) if (reachable.has(test) && strippedSource[test]?.includes(gate)) add(gate)
     for (const f of scripts) {
       if (reachable.has(f)) continue
-      for (const r of reachable) if (sources[r]?.includes(f)) { reachable.add(f); changed = true; break }
+      for (const r of reachable) if (sources[r]?.includes(f)) { add(f); break }
     }
   }
-  return { reachable, invocation, runnerReached }
+  return { reachable, invocation, runnerReached: runnersReached.has(GATE_META_RUNNER), runnersReached }
 }
 
 // 寬口徑(2026-09-27 起的原量法,決定孤兒):全部 workflow + hooks + skills + infra + harness,原文
@@ -223,21 +300,21 @@ const wide = reachableFrom({
   surfaces: [...hookSurfaces, ...skillSurfaces, ...infraSurfaces, ...harnessSurfaces].map((s) => s.text),
   sources: source,
 })
-// PR 一輪:PR workflow + hook 可執行檔 + 被它們用完整路徑點名的 infra 檔,一律剔整行註解
-const hookExecutables = hookSurfaces.filter((s) => isExecutable(s.path)).map((s) => stripCodeCommentLines(s.text))
-const infraExecutables = infraSurfaces.filter((s) => isExecutable(s.path))
+// PR 一輪:PR workflow + hook 可執行檔 + 被它們用完整路徑點名的 infra 檔;程式碼文字一律只留執行形狀
+const hookExecutables = hookSurfaces.filter(isExecutable).map(execShaped)
+const infraExecutables = infraSurfaces.filter(isExecutable)
 const prProbeCorpus = resolveWorkflowInvocationSurface({ workflows: workflowsIn('pr'), packageScripts, workspaceScripts, extraSurfaces: hookExecutables }).corpus
 const infraNamedByPr = infraExecutables.filter((s) => prProbeCorpus.includes(s.path))
 const pr = reachableFrom({
   workflows: workflowsIn('pr'),
-  surfaces: [...hookExecutables, ...infraNamedByPr.map((s) => stripCodeCommentLines(s.text))],
-  sources: strippedSource,
+  surfaces: [...hookExecutables, ...infraNamedByPr.map(execShaped)],
+  sources: execSource,
 })
-// PR + 夜間一輪:再加 schedule workflow、harness inventory、全部 infra 可執行檔
+// PR + 夜間一輪:再加 schedule workflow、harness inventory(成員清單,提到即跑)、全部 infra 可執行檔
 const nightly = reachableFrom({
   workflows: workflowsIn('pr', 'scheduled'),
-  surfaces: [...hookExecutables, ...infraExecutables.map((s) => stripCodeCommentLines(s.text)), ...harnessSurfaces.map((s) => s.text)],
-  sources: strippedSource,
+  surfaces: [...hookExecutables, ...infraExecutables.map(execShaped), ...harnessSurfaces.map((s) => s.text)],
+  sources: execSource,
 })
 // 三輪必須一層包一層(PR ⊆ PR+夜間 ⊆ 寬口徑);不是的話分類沒有意義
 for (const [inner, outer, label] of [[pr, nightly, 'PR ⊆ PR+夜間'], [nightly, wide, 'PR+夜間 ⊆ 寬口徑']]) {
@@ -269,7 +346,7 @@ if (UPDATE) {
   const previous = existsSync(BASELINE) ? readManualOnly(JSON.parse(read(BASELINE))) : {}
   const manualOnly = Object.fromEntries(Object.entries(previous).filter(([f]) => orphans.includes(f)))
   writeFileSync(BASELINE, JSON.stringify({
-    note: '寫了閘就要有人跑它。orphans 記的是「目前沒有任何執行面會呼叫」的閘/測試腳本;nightlyOnly 記的是名字像閘(不含 test- 開頭)、只在夜間 harness / 只有 schedule 的 workflow 跑得到、PR 上沒有任何東西會因為它變紅的腳本;elsewhereOnly 記的是只在技能文件 / 註解 / 發布或手動 workflow 被提到的。三份清單的數字都只准往下 —— 新增任一類都會讓 gate-reachability-invariant.mjs 變紅。清掉之後(接進 PR 執行面或退役)跑 --update-baseline 重記。manualOnly:刻意只手動跑的那幾支孤兒,每支都要寫得出原因(同一件事的 CI 閘是哪一支、為什麼只能人看);沒寫的算待接線或退役。',
+    note: '寫了閘就要有人跑它。orphans 記的是「目前沒有任何執行面會呼叫」的閘/測試腳本;nightlyOnly 記的是名字像閘(不含 test- 開頭)、只在夜間 harness / 只有 schedule 的 workflow 跑得到、PR 上沒有任何東西會因為它變紅的腳本(PR 會跑的腳本只在 assert / 資料 / 訊息裡提到它不算 PR 跑它,只認 spawn / exec / import 等執行形狀);elsewhereOnly 記的是只在技能文件 / 註解 / 腳本裡提到但不跑 / 發布或手動 workflow 被提到的。三份清單的數字都只准往下 —— 新增任一類都會讓 gate-reachability-invariant.mjs 變紅。清掉之後(接進 PR 執行面或退役)跑 --update-baseline 重記。manualOnly:刻意只手動跑的那幾支孤兒,每支都要寫得出原因(同一件事的 CI 閘是哪一支、為什麼只能人看);沒寫的算待接線或退役。',
     generatedBy: 'scripts/gate-reachability-invariant.mjs --update-baseline',
     count: orphans.length,
     orphans,
@@ -315,7 +392,7 @@ for (const f of elsewhereOnly) console.log(`    · scripts/${f}`)
 console.log(`  沒人呼叫(孤兒):${orphans.length} 支(baseline ${baseline.count};其中刻意只手動跑、理由已記 ${Object.keys(manualOnly).length - staleManual.length} 支)`)
 for (const [f, why] of Object.entries(manualOnly)) if (orphans.includes(f)) console.log(`    · 刻意只手動跑:scripts/${f} —— ${why}`)
 for (const f of pending) console.log(`    · 待接線或退役:scripts/${f}`)
-console.log(`  gate-meta runner(${GATE_META_RUNNER})被直接點名:PR ${pr.runnerReached ? '是' : '否'} / PR+夜間 ${nightly.runnerReached ? '是' : '否'} / 寬口徑 ${wide.runnerReached ? '是' : '否'}`)
+console.log(`  gate-meta runner(${GATE_META_RUNNER})可達(窄口徑只認執行形狀):PR ${pr.runnerReached ? '是' : '否'} / PR+夜間 ${nightly.runnerReached ? '是' : '否'} / 寬口徑 ${wide.runnerReached ? '是' : '否'}`)
 if (!wide.runnerReached) console.log(`⚠️  ${GATE_META_RUNNER} 自己不可達 —— 它探索出來的 meta-test 一律照孤兒計`)
 
 const reminders = [
@@ -334,15 +411,18 @@ for (const f of elsewhereDiff.added) console.log(`  ✗ 新增只在其他面被
 const red = orphanDiff.added.length + nightlyDiff.added.length + elsewhereDiff.added.length + staleManual.length
 
 if (SELFTEST) {
-  // 逐支驗:落在哪一類 + 該紅的有沒有真的進到「新增」清單。runner 在哪一輪被直接點名,配對就該在哪一類。
-  const runnerClass = pr.runnerReached ? 'pr' : nightly.runnerReached ? 'nightly' : wide.runnerReached ? 'elsewhere' : 'orphan'
+  // 逐支驗:落在哪一類 + 該紅的有沒有真的進到「新增」清單。
+  // 期望值全部寫死、由合成情境決定(WP-18 反駁 #1):舊版配對那一格取自受測程式算出的 runnerReached,
+  // runner 判錯時期望值跟著錯,selftest 永遠對得上 —— 那一格等於沒驗。
   const expected = {
     [SYNTHETIC]: 'orphan', [SYNTHETIC_PKG_ONLY]: 'orphan', [SYNTHETIC_COMMENT_ONLY]: 'orphan',
-    [SYNTHETIC_VIA_NPM]: 'pr', [SYNTHETIC_PR_AND_HARNESS]: 'pr',
-    [SYNTHETIC_HARNESS_ONLY]: 'nightly', [SYNTHETIC_SCHEDULED_ONLY]: 'nightly',
-    [SYNTHETIC_PAIR_GATE]: runnerClass, [SYNTHETIC_PAIR_TEST]: runnerClass,
+    [SYNTHETIC_VIA_NPM]: 'pr', [SYNTHETIC_PR_AND_HARNESS]: 'pr', [SYNTHETIC_PR_CALLER]: 'pr',
+    [SYNTHETIC_RUNNER_EXEC]: 'pr', [SYNTHETIC_EXEC_PAIR_TEST]: 'pr', [SYNTHETIC_EXEC_PAIR_GATE]: 'pr', [SYNTHETIC_HOOK_VAR]: 'pr',
+    [SYNTHETIC_HARNESS_ONLY]: 'nightly', [SYNTHETIC_SCHEDULED_ONLY]: 'nightly', [SYNTHETIC_ASSERT_ONLY]: 'nightly',
+    [SYNTHETIC_RUNNER_TEXT]: 'nightly', [SYNTHETIC_PAIR_TEST]: 'nightly', [SYNTHETIC_PAIR_GATE]: 'nightly',
     [SYNTHETIC_DISPATCH_ONLY]: 'elsewhere', [SYNTHETIC_HOOK_COMMENT]: 'elsewhere',
   }
+  if (Object.keys(expected).length !== SYNTHETICS.length) instrumentFail(`selftest 期望表 ${Object.keys(expected).length} 格、合成腳本 ${SYNTHETICS.length} 支,對不上`)
   const addedBy = { orphan: orphanDiff.added, nightly: nightlyDiff.added, elsewhere: elsewhereDiff.added, pr: [] }
   let ok = true
   for (const [f, want] of Object.entries(expected)) {
@@ -353,8 +433,7 @@ if (SELFTEST) {
     if (!pass) ok = false
     console.log(`  ${pass ? '✓' : '✗'} selftest ${f}:應為 ${want}、實得 ${got}${mustBeAdded ? `,${flagged ? '有' : '沒有'}讓判定變紅` : ''}`)
   }
-  if (runnerClass === 'orphan') { ok = false; console.log(`  ✗ selftest:${GATE_META_RUNNER} 在哪一輪都沒被點名 —— 配對那一格驗不到東西`) }
-  if (ok && red > 0) { console.log('\n✓ selftest:11 支合成腳本各自落在該在的類,該紅的都讓判定變紅,量具會紅也會放行'); process.exit(0) }
+  if (ok && red > 0) { console.log(`\n✓ selftest:${SYNTHETICS.length} 支合成腳本各自落在該在的類,該紅的都讓判定變紅,量具會紅也會放行`); process.exit(0) }
   console.log('\n✗ selftest:有合成腳本落錯類(或判定沒變紅)—— 這支是假綠,不能當證據'); process.exit(1)
 }
 if (red) {
