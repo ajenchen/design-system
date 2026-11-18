@@ -1987,7 +1987,7 @@ jobs:
         run: |
           # 2026-11-15(user:「本來在該使用什麼圓角的時候不就要動腦想看到底怎樣用才符合ds規範嗎？」):規則只讀 radius.spec.md「四檔」表的
           # 值 / 機器判定兩欄,量計算後的像素:2px 只給短邊 ≤ 10px、帶 --elevation-200 的浮層外殼 8px(含 role=tooltip 的外殼 4px)、
-          # 8px 只給外殼與四角重合的裁切層、值不在刻度上一律紅;例外 / 待 user 看過的現況違規登記在 scripts/radius-usage-exceptions.json(過期也紅)。
+          # 8px 只給外殼與四角重合的裁切層、值不在刻度上一律紅;例外 / 還沒修的現況違規登記在 scripts/radius-usage-exceptions.json(過期也紅)。
           # 同一份建置,Chromium 上一步已裝。本機(並行 4 個瀏覽器)全 1084 則約 2 分;--selftest:判定表 + 真建置三種破法(按鈕 8px / 浮層 4px / 40px 方塊 2px)。
           # 放在這個 job:同是全 story 掃描等級;CI 未實測,首跑若太久先調 --concurrency。
           npm run test:radius-usage

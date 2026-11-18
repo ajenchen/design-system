@@ -8,8 +8,8 @@
  *         user 2026-11-15:「本來在該使用什麼圓角的時候不就要動腦想看到底怎樣用才符合ds規範嗎？」
  *   紅: R0 量到的值不在表上(6px、50%、橢圓雙值);R1 2px 那一檔用在短邊 > 10px 的元素;R2 浮層外殼(帶 --elevation-200 陰影)
  *       不是 8px、含 role=tooltip 的外殼不是 4px;R3 8px 用在不是浮層外殼、也不是四角跟外殼重合的裁切層的元素。
- *       例外只認 scripts/radius-usage-exceptions.json 逐筆登記(exceptions = 有理由的例外;pending = 畫面會變、等 user 看過的現況違規,
- *       只准變少);登記了卻沒對到任何元素(過期)也紅(--limit 跑法不判過期)。→ 指名 story / 元素 / 規則,exit 1。
+ *       例外只認 scripts/radius-usage-exceptions.json 逐筆登記(exceptions = 有理由的例外;pending = 量到、還沒修的現況違規,
+ *       只准變少;哪些由 AI 直接修、哪些要先給 user 看,寫在該檔 $comment);登記了卻沒對到任何元素(過期)也紅(--limit 跑法不判過期)。→ 指名 story / 元素 / 規則,exit 1。
  *   綠: 全部 story 量完,沒有未登記的違規、沒有過期登記。
  *   儀器失效(exit 2,印 INSTRUMENT-FAIL): 讀不懂規格表 / 例外檔、建置不存在或比原始碼舊、任一則 story 開不起來、
  *       量不到浮層陰影的參考值、一則都沒量到 —— 不讀成通過。
@@ -306,7 +306,7 @@ async function main() {
       red += printViolations(violations)
     }
     const pending = entries.filter((e) => e.kind === 'pending')
-    if (pending.length) console.log(`(待 user 看過的現況違規 ${pending.length} 組、${pending.reduce((n, e) => n + e.stories.length, 0)} 則 story,畫面會變所以沒改;清單 ${EXCEPTIONS} pending)`)
+    if (pending.length) console.log(`(登記中、還沒修的現況違規 ${pending.length} 組、${pending.reduce((n, e) => n + e.stories.length, 0)} 則 story;清單 ${EXCEPTIONS} pending,誰修、要不要先給 user 看見該檔 $comment)`)
     if (!LIMIT) {
       for (const e of entries) {
         const stale = e.stories.filter((s) => !e.used.has(s))
