@@ -60,6 +60,8 @@ Phase 5 報告格式只有這一個住所。SKILL.md「Phase 5」只留指標;`s
 - **逐維三選一** = 表格每一列的維度代號。報告裡每一維的「判定」欄恰好一個:`有候選 N`(N 要寫數字)/ `無候選` / `儀器全盲`。SKILL.md D2 寫的「儀器全盲、無候選」視同 `儀器全盲`。子項的說明寫在其他欄,不要再用這三個詞。
 - **Retired** 每一項都要附一條 grep 指令(反引號包住的 `git grep …` / `grep …` / `rg …`),證明刪掉後沒有斷鏈。沒有退場就寫「無」;但 Retire rate 的 N 大於 0 時不得寫「無」。
 - **逐項結局**:Phase 1 清單的每個 ID 一列,開頭就是 ID。後面要嘛是 `<base>..HEAD` 裡真的有的 commit sha,要嘛是「沒做」加理由。理由寫「下次再做」「時間不夠」「下個 session」直接紅(共同 bootstrap 的「# 自主執行 canonical」把延後列為反 pattern)。
+  - 引用的 commit 若在本規則生效之後,它的 `Prune-Items` 必須列了這個 ID;不是 prune commit(沒有 `Prune-Items`)也紅。只看「sha 在區間裡」的話,同一個 sha 貼給所有 ID 也會全綠。早於本規則的 commit 沒有 `Prune-Items` 可對,只核對在區間內,並逐一印出。
+  - ID 後面一開頭就寫「沒做」的列,一律當「沒做 + 理由」驗;理由裡提到的 sha 只是參考,不當成結局。
 - **Human-only pending**、**被擋的指令** 不得是空段;沒有就寫「無」。
 - **Self-improvement capture** 的三個小項(上面每一個 `- 名稱:` 列)都要有。
 

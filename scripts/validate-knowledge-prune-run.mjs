@@ -3,9 +3,11 @@
  * @gate-contract
  *   保證: 一輪 /knowledge-prune 真的照 SKILL.md 走完 —— Phase 5 報告有範本規定的每一段、Metric delta 五列有數字、
  *         Retire rate 的 N / M 與百分比算得對、D1–D10 每維恰好一個判定、Retired 每項附 grep、metric snapshot 與報告一致、
- *         Phase 1 每個 ID 都有結局(區間內的 commit,或「沒做 + 理由」),而且每個 prune commit 都記了 Prune-Items 與 Phase0-After
+ *         Phase 1 每個 ID 都有結局(區間內、Prune-Items 列了這個 ID 的 commit,或「沒做 + 理由」),
+ *         而且每個 prune commit 都記了 Prune-Items 與 Phase0-After
  *   紅: (a)–(i) 任一項拿掉一段 —— 少一段、少一列數字、百分比算錯、某維兩個判定、Retired 某項沒附 grep、snapshot 對不上、
- *       某個 ID 沒有結局或理由寫「下次再做 / 時間不夠」、sha 不在區間、prune commit 缺 trailer、Prune-Items 不是 ID 清單,
+ *       某個 ID 沒有結局或理由寫「下次再做 / 時間不夠」、sha 不在區間、引用的 commit 的 Prune-Items 沒有這個 ID(或根本不是
+ *       prune commit)、prune commit 缺 trailer、Prune-Items 不是 ID 清單,
  *       或把兩個 P2 項塞進同一個 commit(不論 ID 之間用逗號、空白還是斜線)
  *       → 印出「❌ (字母)」並點名那一段 / 那個 ID / 那個 commit,exit 1;範本讀不到、缺代號、git 失敗、區間是空的 → exit 2(不是綠)
  *   綠: 齊全的 fixture exit 0。scripts/test-validate-knowledge-prune-run.mjs 每次先用同一份齊全 fixture 證綠,再逐項拿掉一段證紅、
@@ -63,6 +65,7 @@ const LEADING_ID = new RegExp(`^\\s*(?:[-*+]|\\d+[.)]|\\|)\\s*\\**\`?(${ID_SOURC
 const ID_IN_LIST = new RegExp(`(?<![A-Za-z0-9#-])${ID_SOURCE}(?![A-Za-z0-9#-])`, 'g')
 const ID_LIST_SEPARATORS = /[\s,,、//]+/g
 const SHA_TOKEN = /\b[0-9a-f]{7,40}\b/g
+const LEADING_SKIP = /^[\s::*`|—–-]*(?:沒做|未做|不做)(.*)$/
 const ARROW_WITH_NUMBERS = /\d[^\n]*?(?:→|->)[^\n]*?\d/
 const PHASE0_FORMAT = /^\d[\d,]*\s*\/\s*\d[\d,]*\s*\/\s*\d[\d,]*/
 
@@ -253,9 +256,12 @@ function isPruneSubject(subject) {
   return Boolean(header) && (header[1].toLowerCase() === 'prune' || /knowledge-prune/i.test(header[2] ?? ''))
 }
 
+const inForceCache = new Map()
+
 /** 規則生效 = 那個 commit 自己的 tree 已經有本檔。看的是 commit 的內容,不是日期。 */
 function ruleInForce(sha) {
-  return git(['ls-tree', '--name-only', sha, '--', SELF_PATH]).trim() !== ''
+  if (!inForceCache.has(sha)) inForceCache.set(sha, git(['ls-tree', '--name-only', sha, '--', SELF_PATH]).trim() !== '')
+  return inForceCache.get(sha)
 }
 
 /** 不靠 git 的 trailer 解析:派工格式在 Phase0-After 與 Co-Authored-By 之間隔了空行,git 只認最後一段。 */
@@ -277,6 +283,7 @@ function parseIdList(text) {
 function checkCommits(commits, { findingsPriority = new Map() } = {}) {
   const problems = []
   const notes = []
+  const itemsBySha = new Map()
   let checked = 0
   let grandfathered = 0
   let pruneCount = 0
@@ -292,6 +299,7 @@ function checkCommits(commits, { findingsPriority = new Map() } = {}) {
     checked += 1
     const items = lastLine(commit.message, 'Prune-Items')
     const { ids, leftover } = parseIdList(items ?? '')
+    itemsBySha.set(commit.sha, new Set(ids))
     if (!items) problems.push(`${tag} 缺 Prune-Items(這個 commit 處理了哪幾個 Phase 1 ID)`)
     else {
       if (!ids.length) problems.push(`${tag} 的 Prune-Items「${short(items)}」裡沒有任何 ID(要寫 Phase 1 的 ID,例 D4-02)`)
@@ -308,7 +316,7 @@ function checkCommits(commits, { findingsPriority = new Map() } = {}) {
     }
   }
   const summary = `區間 ${commits.length} 個 commit;prune commit ${pruneCount} 個(檢查 ${checked}、早於本規則 ${grandfathered})`
-  return { problems, notes, summary }
+  return { problems, notes, summary, itemsBySha }
 }
 
 function validateReport({ template, report, findings, findingsError, snapshot, snapshotError, commits }) {
@@ -477,8 +485,12 @@ function validateReport({ template, report, findings, findingsError, snapshot, s
   }
   add('g', 'metric snapshot 與報告一致', gProblems, snapshotDetail)
 
+  // (i) 先算:(h) 要拿每個 prune commit 的 Prune-Items 交叉比對
+  const commitCheck = checkCommits(commits, { findingsPriority: new Map(findings.map((finding) => [finding.id, finding.priority])) })
+
   // (h) Phase 1 每個 ID 都有結局
   const hProblems = []
+  const hNotes = []
   const outcomesKey = template.byId[SECTION.outcomes].key
   const outcomesSection = sectionOf(SECTION.outcomes)
   if (findingsError) hProblems.push(findingsError)
@@ -491,7 +503,9 @@ function validateReport({ template, report, findings, findingsError, snapshot, s
       const match = line.text.match(LEADING_ID)
       if (match) outcomes.set(match[1], [...(outcomes.get(match[1]) ?? []), { text: match[2], number: line.number }])
     }
-    const shas = commits.map((commit) => commit.sha)
+    const checkReason = (id, reason, entry) => {
+      if (!reason.replace(/[\s::,,。.;;、—–\-()()]/g, '')) hProblems.push(`${id} 寫了沒做,但沒有理由(第 ${entry.number} 行)`)
+    }
     for (const { id } of findings) {
       const entries = outcomes.get(id)
       if (!entries) {
@@ -504,12 +518,30 @@ function validateReport({ template, report, findings, findingsError, snapshot, s
           hProblems.push(`${id} 的理由是「${banned}」(第 ${entry.number} 行)—— 這不是理由`)
           continue
         }
+        // 開頭就寫「沒做」= 這列是「沒做 + 理由」;理由裡順帶提到的 sha 只是參考,不當成結局去核對
+        const declaredSkip = entry.text.match(LEADING_SKIP)
+        if (declaredSkip) {
+          checkReason(id, declaredSkip[1], entry)
+          continue
+        }
         const tokens = entry.text.match(SHA_TOKEN) ?? []
-        const inRange = tokens.filter((token) => shas.some((sha) => sha.startsWith(token)))
-        if (inRange.length) continue
+        const cited = tokens.flatMap((token) => commits.filter((commit) => commit.sha.startsWith(token)).map((commit) => ({ token, commit })))
+        if (cited.length) {
+          // 「sha 在區間裡」只是代理;要保證的是「那個 commit 處理了這個 ID」,所以拿它的 Prune-Items 交叉比對
+          for (const { token, commit } of cited) {
+            if (!ruleInForce(commit.sha)) {
+              hNotes.push(`· ${id} 引用的 ${token} 早於本規則(那個 commit 沒有 Prune-Items 可對),只核對它在 base..HEAD 裡`)
+              continue
+            }
+            const listed = commitCheck.itemsBySha.get(commit.sha)
+            if (!listed) hProblems.push(`${id} 引用的 ${token} 不是 prune commit(「${short(commit.subject, 40)}」),沒有 Prune-Items 能證明它處理了 ${id}(第 ${entry.number} 行)`)
+            else if (!listed.has(id)) hProblems.push(`${id} 引用的 ${token} 的 Prune-Items 沒有 ${id}(它列的是 ${[...listed].join(', ') || '空的'};第 ${entry.number} 行)`)
+          }
+          continue
+        }
         const skipped = entry.text.match(/(?:沒做|未做|不做)(.*)$/)
         if (skipped) {
-          if (!skipped[1].replace(/[\s::,,。.;;、—–\-()()]/g, '')) hProblems.push(`${id} 寫了沒做,但沒有理由(第 ${entry.number} 行)`)
+          checkReason(id, skipped[1], entry)
           continue
         }
         if (tokens.length) hProblems.push(`${id} 的 ${tokens.join('、')} 不在 base..HEAD(第 ${entry.number} 行)`)
@@ -520,9 +552,8 @@ function validateReport({ template, report, findings, findingsError, snapshot, s
   add('h', 'Phase 1 每個 ID 都有結局', hProblems, findings.length ? `findings ${findings.length} 個 ID` : '')
 
   // (i) 區間內每個 prune commit 都帶 Prune-Items 與 Phase0-After
-  const commitCheck = checkCommits(commits, { findingsPriority: new Map(findings.map((finding) => [finding.id, finding.priority])) })
   add('i', 'prune commit 的 Prune-Items / Phase0-After', commitCheck.problems, commitCheck.summary)
-  return { results, notes: commitCheck.notes }
+  return { results, notes: [...commitCheck.notes, ...hNotes] }
 }
 
 // ─────────────────────────────── 輸出與入口 ───────────────────────────────

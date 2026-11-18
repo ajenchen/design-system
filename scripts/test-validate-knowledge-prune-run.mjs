@@ -121,7 +121,7 @@ const BASE_COMMITS = [
 ]
 
 const base = makeRepo('base', BASE_COMMITS)
-const [BASE_SHA, OLD_SHA, C_SHA, D_SHA] = base.shas
+const [BASE_SHA, OLD_SHA, C_SHA, D_SHA, DOCS_SHA] = base.shas
 const short = (sha) => sha.slice(0, 8)
 
 const REPORT = `# Prune report(2026-11-18,fixture)
@@ -302,6 +302,28 @@ try {
   expectRed('findings 讀不到任何 ID', full('h-empty', {
     findings: '# Phase 1 findings\n這份清單沒有照格式寫,一個 ID 都讀不到。\n',
   }), 'h', ['讀不到任何 ID'])
+  {
+    // 「sha 在區間裡」是代理:要的是「那個 commit 處理了這個 ID」,所以引用的 commit 要用它的 Prune-Items 交叉比對
+    const D9_LINE = /- D9-01:[^\n]*/.exec(REPORT)[0]
+    expectRed('D9-01 引用區間內、但 Prune-Items 只有 D1-02 的 commit', full('h-other-items', {
+      report: mutate(REPORT, D9_LINE, `- D9-01:${short(C_SHA)}`),
+    }), 'h', ['D9-01', short(C_SHA), 'Prune-Items 沒有 D9-01'])
+    expectRed('D9-01 引用區間內、規則生效後的非 prune commit', full('h-not-prune', {
+      report: mutate(REPORT, D9_LINE, `- D9-01:${short(DOCS_SHA)}`),
+    }), 'h', ['D9-01', short(DOCS_SHA), '不是 prune commit'])
+    expectGreen('D9-01 引用早於本規則的 commit:只核對在區間內,並逐一印出', full('h-grandfathered', {
+      report: mutate(REPORT, D9_LINE, `- D9-01:${short(OLD_SHA)}`),
+    }), ['✅ (h)', `· D9-01 引用的 ${short(OLD_SHA)} 早於本規則`])
+    expectGreen('開頭就寫「沒做」的列,理由裡提到區間內的 sha 不當成結局', full('h-skip-mentions-sha', {
+      report: mutate(REPORT, D9_LINE, `- D9-01:沒做 —— ${short(C_SHA)} 處理 D1-02 時評估過,要改 tsx 的標記,交給 /design-system-audit`),
+    }), ['✅ (h)'])
+    const own = makeRepo('h-own', [...BASE_COMMITS, {
+      files: { 'docs/e.md': 'e\n' },
+      message: PRUNE_MESSAGE('prune(knowledge-prune D9-01): tsx 裡的無出處句', 'D9-01', 'Prune-Priority: P2E\n'),
+    }])
+    const ownReport = mutate(mutateAll(mutateAll(REPORT, short(C_SHA), short(own.shas[2])), short(D_SHA), short(own.shas[3])), D9_LINE, `- D9-01:${short(own.shas[5])}`)
+    expectGreen('D9-01 引用 Prune-Items 列了 D9-01 的 commit', full('h-own', { report: ownReport }, { repo: own }), ['✅ (h)', '✅ (i)'])
+  }
   {
     // (i) 同樣寫法(prune(knowledge-prune …))放在規則生效之後、沒有 trailer → 紅;用 type=fix + scope 的寫法也要抓到
     const noItems = makeRepo('i-no-items', [...BASE_COMMITS, { files: { 'docs/e.md': 'e\n' }, message: 'prune(knowledge-prune D9-01): 規則生效後沒有 trailer\n' }])
