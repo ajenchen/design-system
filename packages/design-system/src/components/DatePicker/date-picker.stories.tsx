@@ -234,7 +234,7 @@ export const RangePopoverOpen: Story = {
 
 /* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
 export const ShowTimePopoverOpen: Story = {
-  name: 'showTime:浮層展開狀態',
+  name: '日期加時間:浮層展開狀態',
   parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid + TimePickerSidePanel(header + 滾選欄)+ footer。Verify TimePicker 高度 = calendar 高度,header 對齊 calendar 的「年月」(設計準則 2026-05-02)。' } } },
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
@@ -250,7 +250,7 @@ export const ShowTimePopoverOpen: Story = {
 
 /* ── OpenSnapshot:needConfirm date-only(2026-07-05 D4 修 footer gate 死路)── */
 export const NeedConfirmDateOnlyOpen: Story = {
-  name: 'needConfirm:合約生效日確認',
+  name: '需確認:合約生效日確認',
   parameters: { docs: { description: { story: '需確認模式:選日期只會先暫存(輸入框即時顯示),要按下方「確定」才真正套用。適用選錯成本高的日期,例如合約生效日、帳單結算起算日。' } } },
   render: () => {
     const [effectiveDate, setEffectiveDate] = React.useState('2026-08-01')
@@ -270,7 +270,7 @@ export const NeedConfirmDateOnlyOpen: Story = {
 
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
 export const ShowTimeRangePopoverOpen: Story = {
-  name: 'showTime 範圍:浮層展開狀態',
+  name: '日期加時間範圍:浮層展開狀態',
   parameters: { docs: { description: { story: 'Visual-audit — Range showTime popover:numberOfMonths=1(只渲 active end 月份)+ TimePickerSidePanel + footer。Verify Ant idiom「一次 edit 一端」(設計準則 2026-05-02)。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>([
@@ -347,7 +347,7 @@ export const RangePreviewStart: Story = {
 
 /* ── showTime + Range:活動時段 ── */
 export const ShowTimeRange: Story = {
-  name: 'showTime 範圍:活動時段',
+  name: '日期加時間範圍:活動時段',
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>([
       '2026-04-15T09:00:00',
