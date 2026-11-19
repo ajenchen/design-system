@@ -65,6 +65,20 @@ for (const f of allFiles) {
 
 // 2.2 + 2.3 @theme inline bridge + @utility blocks
 const allTokenCss = tokenFiles.map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n')
+
+// 2.1b token 檔裡「真的拿來畫東西」的 var()(2026-11-20,A123 / CISB0-ORPHAN-TOKENS):
+//   2.1 整個略過 token 檔,是因為 token 檔裡 `--a: var(--b)` 只是把一個名字接到另一個名字,不算有人用 --b。
+//   但 token 檔裡也有一般 CSS 屬性在讀 —— layoutSpace.css `[data-layout-body] { padding-top: var(--layout-body-start) }`
+//   (A102 讓容器自己算底距,值只在這條規則裡被讀)—— 那是實際的消費,略過它 = 把在用的名字判成孤兒(夜間 orphan-tokens 因此紅)。
+//   規則:拿掉註解後切成一條條宣告,屬性名不是 `--` 開頭(真的 CSS 屬性)的才收它值裡的 var();自訂屬性宣告照舊不算。
+for (const f of tokenFiles) {
+  const css = fs.readFileSync(path.join(ROOT, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+  for (const decl of css.split(/[;{}]/)) {
+    const m = decl.match(/^\s*([a-zA-Z-][\w-]*)\s*:([\s\S]*)$/)
+    if (!m || m[1].startsWith('--')) continue
+    for (const v of m[2].matchAll(/var\((--[a-zA-Z0-9-]+)/g)) consumed.add(v[1])
+  }
+}
 for (const block of allTokenCss.matchAll(/@theme\s+inline\s*\{[^}]*\}/gs)) {
   for (const m of block[0].matchAll(/var\((--[a-zA-Z0-9-]+)/g)) consumed.add(m[1])
   for (const m of block[0].matchAll(/(--[a-zA-Z0-9-]+):/g)) consumed.add(m[1])

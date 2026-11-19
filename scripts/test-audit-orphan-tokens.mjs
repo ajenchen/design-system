@@ -33,6 +33,24 @@ try {
   writeFileSync(target, orig)
 }
 
+// 2a) 2026-11-20(A123 / CISB0-ORPHAN-TOKENS):token 檔裡一般 CSS 屬性讀的 var() 算消費、自訂屬性宣告讀的不算 —— 兩面同一次注入:
+//     --zzz-…-used-by-property 只被 padding-top 讀 → 必須不是孤兒(改前會被誤判:layoutSpace.css 的 --layout-body-start / -end 就是這一種);
+//     --zzz-…-feeds-only-a-name 只被另一個自訂屬性讀、--zzz-…-alias 沒人讀 → 兩個都必須是孤兒(規則沒有放寬成「token 檔裡出現過 var() 就算」)。
+const runOut = () => spawnSync(process.execPath, ['--', 'scripts/audit-orphan-tokens.mjs', '--check'], { encoding: 'utf8', cwd: ROOT })
+try {
+  writeFileSync(target, orig + '\n[data-zzz-meta-test] {\n  --zzz-meta-test-used-by-property: 1px;\n  --zzz-meta-test-feeds-only-a-name: 2px;\n' +
+    '  --zzz-meta-test-alias: var(--zzz-meta-test-feeds-only-a-name);\n  padding-top: var(--zzz-meta-test-used-by-property);\n}\n')
+  const r = runOut()
+  const out = `${r.stdout}${r.stderr}`
+  const named = (name) => new RegExp(`❌ ${name} @`).test(out)
+  if (r.status === 0) { console.error('✗ 注入兩個只被自訂屬性讀 / 沒人讀的名字後 gate 未 FAIL'); ok = false }
+  else if (!named('--zzz-meta-test-feeds-only-a-name') || !named('--zzz-meta-test-alias')) { console.error('✗ 只被自訂屬性讀的名字沒被點名成孤兒(規則被放寬了)'); ok = false }
+  else if (named('--zzz-meta-test-used-by-property')) { console.error('✗ 被一般 CSS 屬性讀的名字被判成孤兒(token 檔裡的真消費沒算到)'); ok = false }
+  else console.log('✓ token 檔裡:被 padding-top 讀的不算孤兒、只被自訂屬性讀 / 沒人讀的兩個都被點名(exit ' + r.status + ')')
+} finally {
+  writeFileSync(target, orig)
+}
+
 // 2b) 2026-11-15:保留分類改讀分類表 token-registry.json 的 retention(腳本不再內建)。
 //     證明它真的讀那份:拿掉分類表的 palette 一類 → 原本歸在色階完整的孤兒變成真孤兒 → 必 FAIL → 還原。
 //     (腳本若還偷偷內建一份 regex,這一步會照樣 PASS —— 那就是第二份住處沒拆掉)
