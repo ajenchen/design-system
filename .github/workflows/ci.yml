@@ -1732,6 +1732,8 @@ jobs:
     # 估 CI 多約 1.4 分 → 本 job 估約 18.9 分 / 上限 25(估計值,合併後回頭看實際時間)。
     # 2026-11-13 欄位開啟外框閘的對照組多量一組併排欄位組(驗證錯誤的成員)與兩種破法(四種 → 六種):本機 202 → 239 秒,
     # 估 CI 多約 0.8 分 → 本 job 估約 19.7 分 / 上限 25(估計值)。
+    # 2026-11-18(audit PV4,b5bc8150 / 67b83c7e)對照組加停用成員 S 段、觸控上啟用的原生 Select T 段與三種破法(六種 → 九種):本機 239 → 380 秒
+    #(673 列;數字取自那兩個 commit 的實量),照上一段 +37 秒 ≈ CI +0.8 分的比例估 CI 多約 3.1 分 → 本 job 估約 22.8 分 / 上限 25(估計值,餘裕約 2 分)。
     name: Verify browser(sidebar menu keyboard + field open border control group)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -1771,13 +1773,15 @@ jobs:
       - name: Field open border control group (browser)
         run: |
           # 欄位開啟外框閘的**對照組**(判定 `npm run test:field-open-border` 在 verify-browser-field-edges;按預算放這裡,見本 job 檔頭)。
-          # 在真建置上跑六種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
+          # 在真建置上跑九種破法,每一列照表該紅的紅、該綠的綠,破法拿掉之後同一格當場回綠:
           # (a) 開著的框改回 hover 色 → 開著的列全紅;(b) 記號 data-field-open 一出現就拿掉(= 元件漏接記號)→ 焦點不在欄位裡的開著列紅、
           # 靠 focus-within 的照綠;(c) 外框改認通用的 data-state="open" / 裡面任何開著的東西 → 「外面包一層」與「欄位裡的小按鈕」的列紅;
           # (d) 併排欄位組裡聚焦或開著的那格不再浮到鄰居上面(z-index 壓到 2)→ 鍵盤聚焦與開著兩段的像素列、層級列、停在自己上面的列都紅,
           # 只有開著的 computed 列綠;(e) 併排欄位組裡聚焦 / 開著的那格壓回跟滑過同一層(2026-11-13 改之前的行為)→ 滑過右鄰居的像素列、
           # 層級列、停在自己上面的列紅,滑過左鄰居的像素列綠;(f) 只把「聚焦 / 開著又被滑過」的那格壓回 3
-          #(聚焦那一半 = 少了 field-control-group.tsx 第一條補的規則時的樣子)→ 只有停在自己上面的列紅。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
+          #(聚焦那一半 = 少了 field-control-group.tsx 第一條補的規則時的樣子)→ 只有停在自己上面的列紅;(g) 停用的成員被滑過時抬回 3(= 2026-11-18 修之前)→ S1(層級)紅、S2(像素)綠;
+          # (h) 停用的成員被滑過時框改成 --primary、層級不動 → S2 紅、S1 綠;(i) 寬的 `:has([disabled])` 放回去 → 觸控上啟用的原生 Select 那三列 T0–T2 紅、
+          # S1 / S2 綠((g)(h)(i) 各多一列「還原」)。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
           node scripts/field-open-border-invariant.mjs --selftest
 
   verify-browser-agent:
@@ -2281,7 +2285,7 @@ jobs:
           #「欄位 / 欄位[驗證錯誤] / 欄位」期望色 --error):中間那格鍵盤聚焦 / 滑鼠點開時,滑鼠停在左、右鄰居上 → 兩格共用那條線的像素
           # = 它的框色,而且中間那格 z-index 4、被滑過的鄰居 3;滑鼠停在中間那格自己上面 → 仍是 4(field-control-group.spec.md「States」;
           # 2026-11-13 AI 建議、user 採納,原話「你問我的問題，照你建議」)。
-          # 這裡只跑判定;對照組(六種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
+          # 這裡只跑判定;對照組(九種破法)在 verify-browser-sidebar-keyboard(見本 job 檔頭的預算說明)。
           npm run test:field-open-border
 
   verify-browser-footer-gutter:
