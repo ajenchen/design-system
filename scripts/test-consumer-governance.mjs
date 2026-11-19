@@ -151,7 +151,13 @@ try {
   mkdirSync(sbDest, { recursive: true })
   cpSync(join(root, 'packages/design-system/package.json'), join(dsDest, 'package.json'))
   cpSync(join(root, 'packages/design-system/ds-canonical'), join(dsDest, 'ds-canonical'), { recursive: true })
-  cpSync(join(root, 'packages/design-system/src/tokens/utility-registry.json'), join(dsDest, 'src/tokens/utility-registry.json'))
+  // 已安裝套件裡 hook 會讀的發布檔,放在跟 npm 包一樣的相對路徑 —— 清單與理由同 scripts/test-fork-governance.mjs 的 SHIPPED_TOKEN_FILES
+  // (2026-11-20 A121-F7:A76 只補了 fork 夾具;這裡少了 layoutSpace.css,check_layout_space_magic_numbers.sh 讀幻覺 token 白名單時
+  // DS repo 與 node_modules 兩處都找不到 → GOV-CONTENT-002「layout-space token SSOT unavailable」,夜間 consumer-clean-room 因此紅)。
+  for (const relative of ['src/tokens/utility-registry.json', 'src/tokens/layoutSpace/layoutSpace.css']) {
+    mkdirSync(dirname(join(dsDest, relative)), { recursive: true })
+    cpSync(join(root, 'packages/design-system', relative), join(dsDest, relative))
+  }
   cpSync(join(root, 'packages/storybook-config/package.json'), join(sbDest, 'package.json'))
   const mirrorPkg = JSON.parse(readFileSync(join(mirror, 'package.json'), 'utf8'))
   const exactNpmVersion = mirrorPkg.devDependencies?.npm
