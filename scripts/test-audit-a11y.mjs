@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   applyA11yLinuxOnlyBaseline,
+  buildA11yBaselineDocument,
   createA11yStoryCorpus,
   evaluateA11yRegressionGate,
   evaluateA11yScanIntegrity,
@@ -242,7 +243,8 @@ assert.match(productionSource, /evaluateA11yRegressionGate\(\{/, 'production CLI
 assert.match(productionSource, /scannedStoryIds: scanCorpus\.storyIds/, 'production CLI must bind the complete scanned story corpus')
 assert.match(productionSource, /completedStoryIds\.push\(s\.id\)/, 'production CLI must record each completed story instead of assuming the manifest was scanned')
 assert.match(productionSource, /scanCorpus\.storyIdsSha256 !== expectedScanCorpus\.storyIdsSha256/, 'production CLI must reject an incomplete completed-scan corpus')
-assert.match(productionSource, /storyIdsSha256: scanCorpus\.storyIdsSha256/, 'baseline writes must bind the sorted story corpus digest')
+// 基線文件由 lib 的 buildA11yBaselineDocument 組(它寫 corpus.storyIdsSha256;下面「macOS 連寫兩次」那段實跑驗證寫出去的摘要)
+assert.match(productionSource, /buildA11yBaselineDocument\(\{\s*merged,\s*corpus: scanCorpus,/, 'baseline writes must bind the sorted story corpus digest')
 assert.match(productionSource, /evaluateA11yScanIntegrity\(results\.violationsByStory\)/, 'production CLI must block scan errors before all output modes')
 assert.match(productionSource, /evaluateA11ySeverityGate\(results\)/, 'production CLI must call the tested severity gate')
 assert.match(productionSource, /startA11yStaticServer\(\{ rootDirectory: STORYBOOK_DIR/, 'production CLI must use the owned contained server')
@@ -339,6 +341,48 @@ assert.match(productionSource, /cdp\.send\('Accessibility\.getFullAXTree'\)/, 'p
     assert.equal(kept.fingerprints[key], canonicalBaseline.fingerprints[key], `${key} must survive a macOS baseline write`)
   }
   assert.match(productionSource, /applyA11yLinuxOnlyBaseline\(\{[\s\S]*?platform: process\.platform/, 'production --baseline-write must route through the tested Linux-only guard with the real platform')
+}
+
+// ── macOS 連寫兩次基線(2026-11-20,A123 r1 審查 minor):登記要跟著寫回,第二次才保得住 ──
+// 錨例(審查實跑):正式流程寫檔時拿掉寫回 _meta.linuxOnly 的那一行,上一段照樣綠 —— 第一次 macOS 寫基線 23 / 41 保住、登記卻被抹掉;
+// 第二次 macOS 寫基線沒有登記可認,寫回 22 / 40。這一段跑的是正式流程寫出去的那一份文件(buildA11yBaselineDocument),
+// 經過一次 JSON 來回(= 寫進檔案、下一次再讀回來),不是另組一份。
+{
+  const writeOnMac = (previousDocument, measuredFingerprints) => {
+    const storyIds = previousDocument._meta.storyIds
+    const merged = applyA11yLinuxOnlyBaseline({ measuredFingerprints, previousDocument, platform: 'darwin', storyIds })
+    const document = buildA11yBaselineDocument({ merged, corpus: createA11yStoryCorpus(storyIds), generatedAt: '2026-11-20T00:00:00.000Z' })
+    return JSON.parse(JSON.stringify(document, null, 2))
+  }
+  const registered = Object.keys(canonicalBaseline._meta.linuxOnly ?? {})
+  assert.ok(registered.length > 0, 'the governed baseline must carry the Linux-only registrations this sequence protects')
+  // macOS 量到的 = 每個登記的指紋少一(22 / 40 那一種),其餘照基線
+  const macMeasured = { ...canonicalBaseline.fingerprints }
+  for (const key of registered) macMeasured[key] = canonicalBaseline.fingerprints[key] - 1
+  const first = writeOnMac(canonicalBaseline, macMeasured)
+  const second = writeOnMac(first, macMeasured)
+  for (const key of registered) {
+    assert.equal(first._meta.linuxOnly?.[key], canonicalBaseline._meta.linuxOnly[key], `${key}: the first macOS write must write the _meta.linuxOnly registration back`)
+    assert.equal(first.fingerprints[key], canonicalBaseline.fingerprints[key], `${key}: the first macOS write must keep the Linux value`)
+    assert.equal(second.fingerprints[key], canonicalBaseline.fingerprints[key], `${key}: a second macOS write must still keep the Linux value(${canonicalBaseline.fingerprints[key]}, not ${macMeasured[key]})`)
+    assert.equal(second._meta.linuxOnly?.[key], canonicalBaseline._meta.linuxOnly[key], `${key}: the registration and its reason must survive repeated macOS writes`)
+  }
+  assert.deepEqual(second, first, 'repeated macOS writes with the same measurement must be stable')
+  // 寫出去的文件綁的是這次掃描的 story 清單與摘要,而且原樣就是 gate 收得下的基線
+  const scanned = createA11yStoryCorpus(canonicalBaseline._meta.storyIds)
+  assert.equal(second._meta.storyIdsSha256, scanned.storyIdsSha256, 'the written baseline must bind the sorted story corpus digest')
+  assert.equal(second._meta.stories, scanned.storyIds.length)
+  const secondViolations = {}
+  for (const [key, nodes] of Object.entries(second.fingerprints)) {
+    const [writtenStoryId, writtenRuleId] = key.split('|')
+    secondViolations[writtenStoryId] ||= []
+    secondViolations[writtenStoryId].push({ id: writtenRuleId, nodes })
+  }
+  assert.equal(evaluateA11yRegressionGate({ violationsByStory: secondViolations, baselineDocument: second, scannedStoryIds: scanned.storyIds }).ok, true,
+    'the written baseline must be a document the regression gate accepts')
+  assert.match(productionSource, /JSON\.stringify\(buildA11yBaselineDocument\(\{/, 'production --baseline-write must write the tested document builder output')
+  assert.doesNotMatch(productionSource, /_meta:\s*\{/, 'production must not assemble a second, untested baseline document')
+  console.log(`   macOS 連寫兩次基線:${registered.map((key) => `${key.split('|')[0]} = ${second.fingerprints[key]}`).join('、')}(登記仍在)`)
 }
 
 console.log('✅ a11y paired mutation: regression + scan-integrity + argv + static containment fail closed(no browser/external network)')

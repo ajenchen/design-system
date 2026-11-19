@@ -45,7 +45,7 @@ import path from 'node:path'
 import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import {
-  UNNAMED_CONTROL_RULE, applyA11yLinuxOnlyBaseline,
+  UNNAMED_CONTROL_RULE, applyA11yLinuxOnlyBaseline, buildA11yBaselineDocument,
   createA11yFingerprintMap,
   createA11yStoryCorpus,
   evaluateA11yRegressionGate,
@@ -267,18 +267,12 @@ if (WRITE_BASELINE) {
   for (const d of merged.dropped) console.log(`   ⓘ _meta.linuxOnly 拿掉 ${d.key}(${d.why})`)
   const dir = path.dirname(BASELINE_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(BASELINE_FILE, JSON.stringify({
-    _meta: {
-      purpose: 'a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)',
-      generatedAt: new Date().toISOString(),
-      stories: scanCorpus.storyIds.length,
-      storyIds: scanCorpus.storyIds,
-      storyIdsSha256: scanCorpus.storyIdsSha256,
-      fingerprints: Object.keys(merged.fingerprints).length,
-      ...(Object.keys(merged.linuxOnly).length ? { linuxOnly: merged.linuxOnly } : {}),
-    },
-    fingerprints: merged.fingerprints,
-  }, null, 2))
+  // 整份文件(含寫回 _meta.linuxOnly)由 lib 的 buildA11yBaselineDocument 組,test-audit-a11y.mjs 跑「macOS 連寫兩次」測的就是它。
+  fs.writeFileSync(BASELINE_FILE, JSON.stringify(buildA11yBaselineDocument({
+    merged,
+    corpus: scanCorpus,
+    generatedAt: new Date().toISOString(),
+  }), null, 2))
   console.log(`\n✅ baseline written: ${BASELINE_FILE}`)
   console.log(`   ${Object.keys(merged.fingerprints).length} fingerprints(storyId|ruleId)across ${results.total} stories`)
   process.exit(0)

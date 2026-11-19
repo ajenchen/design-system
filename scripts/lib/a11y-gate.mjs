@@ -238,6 +238,32 @@ export function applyA11yLinuxOnlyBaseline({ measuredFingerprints, previousDocum
   return { fingerprints: sorted(fingerprints), linuxOnly: sorted(linuxOnly), kept, dropped }
 }
 
+export const A11Y_BASELINE_PURPOSE = 'a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)'
+
+/**
+ * `--baseline-write` 寫出去的整份基線文件(audit-a11y.mjs 只負責寫檔)。
+ * `_meta.linuxOnly` 必須跟著 applyA11yLinuxOnlyBaseline 的結果寫回:少了它,第一次在 macOS 寫基線時數字保住了、登記卻被抹掉,
+ * 下一次 macOS 寫基線就沒有登記可認,又寫回本機值(22 / 40,e017c41c 那一種)。抽成純函式,讓 test-audit-a11y.mjs 能跑
+ * 「macOS 連寫兩次」的序列,測的就是正式流程寫出去的那一份(2026-11-20,A123 r1 審查 minor)。
+ */
+export function buildA11yBaselineDocument({ merged, corpus, generatedAt }) {
+  if (!isRecord(merged?.fingerprints) || !isRecord(merged?.linuxOnly)) fail('baseline document needs the fingerprints and linuxOnly returned by applyA11yLinuxOnlyBaseline')
+  if (!Array.isArray(corpus?.storyIds) || typeof corpus?.storyIdsSha256 !== 'string') fail('baseline document needs the scanned story corpus from createA11yStoryCorpus')
+  if (typeof generatedAt !== 'string' || !generatedAt) fail('baseline document needs generatedAt')
+  return {
+    _meta: {
+      purpose: A11Y_BASELINE_PURPOSE,
+      generatedAt,
+      stories: corpus.storyIds.length,
+      storyIds: corpus.storyIds,
+      storyIdsSha256: corpus.storyIdsSha256,
+      fingerprints: Object.keys(merged.fingerprints).length,
+      ...(Object.keys(merged.linuxOnly).length ? { linuxOnly: merged.linuxOnly } : {}),
+    },
+    fingerprints: merged.fingerprints,
+  }
+}
+
 /** Default developer-mode gate: critical and serious violations are blocking. */
 export function evaluateA11ySeverityGate(results) {
   const severity = results?.summary?.bySeverity
