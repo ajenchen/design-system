@@ -33,8 +33,9 @@ benchmark:
 | **Class-name match** | `text-primary-text` 對應 `--primary-text` | 走 Tailwind 命名約定 |
 | **JS literal mirror**(2026-11-15 起沒有這種 token:原例 `--motion-delay-*` 已退場,見 §8) | 程式常數有一份、CSS 另有一份同值鏡像 | JS 端 hardcode 數字 + import constant,不讀 CSS var |
 | **產品端讀取** | 產品 repo 的 `bg-brand`、`var(--radius-sm)` | 設計系統 repo 裡根本看不到;WM 也只是其中一個產品 |
+| **token 檔裡一般 CSS 屬性讀 `var()`**(2026-11-20 補,偵測器 2.1b) | `layoutSpace.css` 的 `[data-layout-body] { padding-top: var(--layout-body-start) }`(容器自己算底距,值只在這條規則裡被讀) | 不是 grep 漏抓,是偵測器自己的略過規則太寬:token 檔裡 `--a: var(--b)` 只是把名字接到另一個名字,不算有人用 `--b`,所以 `var()` 掃描整個略過 token 檔 —— 連同一個檔裡真的拿來畫東西的一般屬性也一起略過,`--layout-body-start` / `-end` 因此被判成孤兒(夜間 orphan-tokens 紅) |
 
-**修法**:`scripts/audit-orphan-tokens.mjs` 用 comprehensive consumer detection 涵蓋 5 條消費路徑,真實 orphan count drops from 175 → 0(2026-05-21 baseline)。最後一條(產品端)掃不到,所以產品可讀的名字另有退場規則(下方「退場流程」)。
+**修法**:`scripts/audit-orphan-tokens.mjs` 用 comprehensive consumer detection 涵蓋 5 條消費路徑,真實 orphan count drops from 175 → 0(2026-05-21 baseline)。5 條 = `var()` 直接讀、`@theme inline`、`@utility`、class-name、JS literal;其中 `var()` 直接讀分兩半:token 檔以外的 `.tsx` / `.ts` / `.css` 全收,token 檔裡只收一般 CSS 屬性(屬性名不是 `--` 開頭)值裡的 `var()`,自訂屬性宣告 `--a: var(--b)` 不算(上表最後一列;偵測器 2.1 / 2.1b,meta-test `scripts/test-audit-orphan-tokens.mjs` 2a 兩面都驗)。表裡的「產品端」掃不到,所以產品可讀的名字另有退場規則(下方「退場流程」)。
 
 ---
 

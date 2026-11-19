@@ -6,7 +6,8 @@
 // Purpose: 取代 grep-only detection 的 false-positive 噪音(grep `var()` 漏 Tailwind @theme bridge
 // + @utility + class-name 消費 + JS literal mirror)。Comprehensive consumer detection covering:
 //
-//   1. `var(--X)` direct consumption(.tsx / .ts / .css)
+//   1. `var(--X)` direct consumption(token 檔以外的 .tsx / .ts / .css 全收;token 檔裡只收一般 CSS 屬性值裡的 var(),
+//      `--a: var(--b)` 這種自訂屬性宣告不算 —— 下面 2.1 / 2.1b;orphan-tokens.spec.md「假孤兒」表最後一列)
 //   2. `@theme inline { ... }` Tailwind bridge(token 進 bridge = 自動 Tailwind class 生成,等同消費)
 //   3. `@utility xxx { ... }` definition(token 進 utility body = 該 class 消費)
 //   4. Tailwind class-name match(e.g. `--spacing-field-md` ↔ `h-field-md` / `bg-field-md` 等)
