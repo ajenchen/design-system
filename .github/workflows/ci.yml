@@ -1781,7 +1781,7 @@ jobs:
           # 層級列、停在自己上面的列紅,滑過左鄰居的像素列綠;(f) 只把「聚焦 / 開著又被滑過」的那格壓回 3
           #(聚焦那一半 = 少了 field-control-group.tsx 第一條補的規則時的樣子)→ 只有停在自己上面的列紅;(g) 停用的成員被滑過時抬回 3(= 2026-11-18 修之前)→ S1(層級)紅、S2(像素)綠;
           # (h) 停用的成員被滑過時框改成 --primary、層級不動 → S2 紅、S1 綠;(i) 寬的 `:has([disabled])` 放回去 → 觸控上啟用的原生 Select 那三列 T0–T2 紅、
-          # S1 / S2 綠((g)(h)(i) 各多一列「還原」)。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
+          # S1 / S2 綠((g)(h) 只跑 S 段,各多一列「還原」;(i) 跑 S、T 兩段,各多一列「還原」)。量不到 = INSTRUMENT-FAIL(exit 2),不當成對照組如預期紅。
           node scripts/field-open-border-invariant.mjs --selftest
 
   verify-browser-agent:
@@ -2220,7 +2220,7 @@ jobs:
     # 289bce76 那次撞 15 分被取消(job 115665117169)。兩支全 story 掃描各自變慢(原因記在待辦總帳 G10):欄位左緣 09-29 約 300 秒 → p90 363 秒、
     # footer 內距約 315 秒 → p90 390 秒。footer 內距搬到 verify-browser-footer-gutter,兩邊各約 8.5 分。
     # 2026-11-13 加欄位開啟外框閘的**判定**(本機 85–90 秒,CI 約本機 1.2–1.4 倍 → 約 2 分)→ 估約 10.5 分,上限 15 不動;
-    # 它的對照組(本機 239 秒,CI 估約 5.3 分;2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
+    # 它的對照組(本機 380 秒,CI 估約 8.4 分 —— 照原句 5.3 分 / 239 秒的同一個比例;380 秒出處 67b83c7e。2026-11-18 audit PV4 加 S、T 兩段與三種破法之前是 239 秒,2026-11-13 加第二組併排欄位組與兩種破法之前是 202 秒)疊進來會超過 15 分,照 virtual-cursor-modality「判定與對照組按預算分開放」的先例放 verify-browser-sidebar-keyboard。
     name: Verify browser(field edges + combobox single path + field open border)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
