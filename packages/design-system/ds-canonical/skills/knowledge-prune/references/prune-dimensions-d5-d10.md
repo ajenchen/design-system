@@ -43,7 +43,7 @@ Scan 全 repo:
 - `@benchmark-unverified-blanket` marker(per file retraction;codify 後該 backfill cite 變 verified)
 - spec.md / tsx 含 world-class DS keyword(Material / Polaris / Carbon / Ant / Atlassian / Apple)但無 inline URL / GitHub path / screenshot ref
 - 過期 benchmark(cite URL 是 v3 但 framework 已 v5)
-- 固定量具(2026-11-17 加):`node scripts/benchmark-citation-invariant.mjs --list`(CI 看得到的段)/ `node scripts/exemption-expiry-invariant.mjs --report`(豁免到期)/ 拿掉 `@benchmark-unverified-blanket` 後用同一支 `hooks/lib/benchmark-citation.mjs` 再判一次(看標記底下藏了幾段)。tsx 的債只列清單,補來源走 `/design-system-audit`(本 skill 不動 code)
+- 固定量具(2026-11-17 加):`node scripts/benchmark-citation-invariant.mjs --list`(CI 看得到的段)/ `node scripts/exemption-expiry-invariant.mjs --report`(豁免到期)/ 拿掉 `@benchmark-unverified-blanket` 後用同一支 `packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs` 再判一次(看標記底下藏了幾段)。tsx 的債只列清單,補來源走 `/design-system-audit`(本 skill 不動 code)
 
 **Output**:per (file, claim) cite debt entry + 建議 WebFetch 補 source
 
