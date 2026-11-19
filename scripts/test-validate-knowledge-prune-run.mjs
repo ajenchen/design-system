@@ -7,6 +7,12 @@
  *       每一次「拿掉」先確認被換掉的字串真的存在,換不到就讓本測試自己紅(防沒改到東西而假綠)
  *   綠: 同一份齊全 fixture(含實際報告常見寫法)必須 exit 0,而且印得出讀到的資料量(findings 的 ID 數、區間 commit 數),
  *       證明不是讀到空的而放行;fixture 全建在拋棄式 tmp repo、時區固定,重複跑結果相同
+ *   不保證(已知放行漏洞,WP-02 反駁者探針有跑、沒列入必修,至今未修;要不要修由排程決定 —— 下面每條都對過 validate-knowledge-prune-run.mjs 現行程式):
+ *     P5 理由寫「省工」「context budget」會被放行(BANNED_REASONS 只有「下次再做 / 時間不夠 / 下個 session」三句,:62);
+ *     P7「Phase0-After: 203/58/31983 待量」這種數字後面接了字也會被放行(PHASE0_FORMAT 沒有結尾錨點,:72);
+ *     P8「沒做 —— 無」被當成有理由(只檢查拿掉標點後是不是空的,「無」一個字就過,:519);
+ *     P10「Retired」段的項目數沒有和 Retire rate 的 N 比對(只擋「一項都沒列、N 卻 > 0」,:448)。
+ *     另有一個誤紅風險 P9:已經做完的那一列,描述裡只要出現「下次再做」字樣就紅(禁用語對每一列整行比對,:528)。本測試的紅面不涵蓋這五格。
  *
  * meta-test for validate-knowledge-prune-run.mjs —— 兩面對照組:
  *   綠面:同一份齊全的 fixture(報告 + findings + snapshot + 一個拋棄式 git repo)必須 exit 0,而且印得出它真的讀到了資料
