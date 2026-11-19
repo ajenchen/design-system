@@ -307,7 +307,7 @@ export const Overview = () => (
       note={
         <>
           ChromeHeader 另有 leadingRail 槽位(寬 = 側欄收合寬,專為跟側欄收合後的圖示對齊)。它只在有側欄時有意義,示範見{' '}
-          <StoryLink kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層(GitHub/Gmail/Slack 派)">AppShell 展示「主標頭佈局」</StoryLink>
+          <StoryLink kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層">AppShell 展示「主標頭佈局」</StoryLink>
           (全域標頭最左邊的側欄開關)。
         </>
       }

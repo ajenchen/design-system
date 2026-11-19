@@ -9,7 +9,11 @@
  *
  * 機制:掃 packages/design-system/src(+ apps)所有 *.stories.tsx:
  *   (1) 收集每檔 meta title + 每個 story 的 display name(name: '...' 優先,否則 export 名);
- *   (2) 收集所有 <LinkTo kind="X" name="Y">(name 可省略);
+ *   (2) 收集所有 <LinkTo kind="X" name="Y"> 與 <StoryLink kind="X" name="Y">(name 可省略);
+ *       StoryLink = stories-helpers/examples/tutorial-page.tsx 包 LinkTo 的元件,repo 的連結幾乎全用它(2026-11-19 實數:
+ *       src 底下 <StoryLink 271 處、<LinkTo 只剩 StoryLink 自己那 1 處,而且是 kind={kind} 不是字面值)。
+ *       2026-11-20 前只認 <LinkTo → 「掃 216 stories 檔,0 個 LinkTo」恆綠,meta-test 注入的斷鏈抓不到(A121-F9),
+ *       期間 PR #169 把 AppShell 一則 story 改名,兩處 StoryLink 斷掉沒人知道。
  *   (3) 每個 LinkTo 的 kind 必存在於 titles;帶 name 者,name 必存在於該 kind 的 story names。
  *
  * 用法:node scripts/audit-linkto-integrity.mjs [--check]
@@ -55,7 +59,7 @@ for (const f of files) {
   const src = fs.readFileSync(f, 'utf8')
   const lines = src.split('\n')
   for (let i = 0; i < lines.length; i++) {
-    for (const m of lines[i].matchAll(/<LinkTo\s+kind=["']([^"']+)["'](?:[^>]*?name=["']([^"']+)["'])?/g)) {
+    for (const m of lines[i].matchAll(/<(?:LinkTo|StoryLink)\s+kind=["']([^"']+)["'](?:[^>]*?name=["']([^"']+)["'])?/g)) {
       total++
       const [, kind, name] = m
       const rel = path.relative(ROOT, f) + ':' + (i + 1)

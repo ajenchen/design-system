@@ -9,6 +9,9 @@
  * 本 script = SSOT 機械防線:驗每個 LinkTo(kind, name)的 name 真的命中該 kind(title)底下某個 story 的
  * name(explicit `name:` OR export-derived)。對齊 user 2026-05-30「不抽樣 / 該 SSOT 就 SSOT / 全部世界級」。
  *
+ * 2026-11-20(A121-F9):同時認 `<StoryLink kind name>`(stories-helpers/examples/tutorial-page.tsx 包 LinkTo 的元件,repo 的連結幾乎全用它)。
+ * 之前只認 `<LinkTo`,而 `<LinkTo` 字面只剩 StoryLink 自己那一處(kind={kind}),本閘恆綠、meta-test 注入抓不到。
+ *
  * Usage: node scripts/check-story-linkto-targets.mjs [--check]
  */
 import fs from 'node:fs'
@@ -46,7 +49,7 @@ const unknownKind = []
 for (const rel of files) {
   const lines = fs.readFileSync(rel, 'utf8').split('\n')
   lines.forEach((line, i) => {
-    for (const m of line.matchAll(/<LinkTo\b[^>]*?\bkind=["']([^"']+)["'][^>]*?\bname=["']([^"']+)["']/g)) {
+    for (const m of line.matchAll(/<(?:LinkTo|StoryLink)\b[^>]*?\bkind=["']([^"']+)["'][^>]*?\bname=["']([^"']+)["']/g)) {
       const [, kind, name] = m
       if (!titleToNames.has(kind)) { unknownKind.push(`${rel}:${i + 1}  kind="${kind}"(無此 title 的 stories)`); continue }
       if (!titleToNames.get(kind).has(name)) {

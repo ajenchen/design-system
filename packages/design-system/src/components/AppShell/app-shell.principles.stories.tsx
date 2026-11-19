@@ -127,7 +127,7 @@ export const LayoutModeRule: Story = {
             放帳號、工作區切換、跨頁搜尋、通知;服務當前頁的工具列
             <em>仍在</em>主欄頂部,只是上面多了這條全域標頭。工作區品牌改放全域標頭(<code>globalHeader</code>)左側。
             參考 GitHub / Slack / Gmail。完整組合見{' '}
-            <StoryLink kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層(GitHub/Gmail/Slack 派)">展示 → 主標頭佈局 — 全域+本地兩層</StoryLink>
+            <StoryLink kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層">展示 → 主標頭佈局 — 全域+本地兩層</StoryLink>
           </li>
         </TutorialList>
         <p className="text-caption text-fg-secondary">

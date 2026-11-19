@@ -12,8 +12,11 @@ if (run() !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL'); process.
 // 2) 注入違規 → 必 FAIL → 還原
 const target = 'packages/design-system/src/components/Combobox/combobox.principles.stories.tsx'
 const orig = readFileSync(target, 'utf8')
+// 換不到 = 沒注入任何東西 → 對照組會因為沒改到而假綠(2026-11-20 A121-F9:閘只認 <LinkTo 時這裡恆紅,錨點本身沒驗過)
+const NEEDLE = 'name="三種尺寸"'
+if (!orig.includes(NEEDLE)) { console.error(`✗ 找不到注入錨點 ${NEEDLE}(target 檔內容已變,換錨點)`); process.exit(1) }
 try {
-  writeFileSync(target, orig.replace('name="三種尺寸"', 'name="不存在的斷鏈XYZ"'))
+  writeFileSync(target, orig.replace(NEEDLE, 'name="不存在的斷鏈XYZ"'))
   const code = run()
   if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(detection 失效)'); ok = false }
   else console.log('✓ 注入違規被抓(exit ' + code + ')')
