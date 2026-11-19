@@ -45,8 +45,7 @@ import path from 'node:path'
 import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import {
-  UNNAMED_CONTROL_RULE,
-  applyA11yLinuxOnlyBaseline,
+  UNNAMED_CONTROL_RULE, applyA11yLinuxOnlyBaseline,
   createA11yFingerprintMap,
   createA11yStoryCorpus,
   evaluateA11yRegressionGate,
