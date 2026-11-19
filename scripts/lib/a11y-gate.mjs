@@ -192,6 +192,52 @@ export function evaluateA11yRegressionGate({ violationsByStory, baselineDocument
   }
 }
 
+/**
+ * `--baseline-write` 的平台保護(2026-11-20,A123 / A121-F2):有些指紋的數量**只有 Linux(CI)量得到**。
+ * 錨例:Combobox / Select「設計規格 › inspector」藍圖區塊的 9px `text-fg-muted` 小標 —— macOS 的等寬字較寬、溢出區塊,
+ * axe 判「被遮住」歸 incomplete 不計;Linux 放得下 → 計入(2f367ee3 ②:Linux 實測 23 / 41)。
+ * 下一個 commit e017c41c 在 macOS 重產基線,又寫回 22 / 40 → 只在 Linux 跑的 a11y drift 排程從此每天紅。
+ * 基線 `_meta.linuxOnly`(指紋 → 理由)登記這些指紋;寫基線時:
+ *   - 不是 Linux:這幾個指紋**保留基線原本的值**(= 最後一次 Linux 實測),不用本機量到的;基線裡沒有那個值 → 拒寫
+ *     (沒有 Linux 值可保留,寫下去就是把本機值冒充 Linux 值)。
+ *   - Linux:照實量寫;實量裡已經沒有那個指紋 → 差異消失,那一列從 linuxOnly 拿掉。
+ *   - 指紋的 story 已不在掃描範圍 → 那一列拿掉。
+ * 純函式;寫檔與印訊息在 audit-a11y.mjs。
+ */
+export function applyA11yLinuxOnlyBaseline({ measuredFingerprints, previousDocument, platform, storyIds }) {
+  if (!isRecord(measuredFingerprints)) fail('measuredFingerprints must be an object')
+  if (typeof platform !== 'string' || !platform) fail('platform must be a non-empty string')
+  const corpus = new Set(createA11yStoryCorpus(storyIds).storyIds)
+  const declared = previousDocument?._meta?.linuxOnly ?? {}
+  if (!isRecord(declared)) fail('baseline _meta.linuxOnly must be an object(fingerprint → reason)')
+  const previous = isRecord(previousDocument?.fingerprints) ? previousDocument.fingerprints : {}
+  const fingerprints = { ...measuredFingerprints }
+  const linuxOnly = {}
+  const kept = []
+  const dropped = []
+  for (const [key, reason] of Object.entries(declared)) {
+    const parts = key.split('|')
+    if (parts.length !== 2) fail(`baseline _meta.linuxOnly key is invalid:${key}`)
+    fingerprintKey(parts[0], parts[1])
+    if (typeof reason !== 'string' || !reason.trim()) fail(`baseline _meta.linuxOnly ${key} must state its reason`)
+    if (!corpus.has(parts[0])) { dropped.push({ key, why: 'story 已不在掃描範圍' }); continue }
+    if (platform === 'linux') {
+      if (!Object.hasOwn(measuredFingerprints, key)) { dropped.push({ key, why: 'Linux 實量已沒有這個指紋' }); continue }
+      linuxOnly[key] = reason
+      continue
+    }
+    const linuxValue = previous[key]
+    if (!Number.isSafeInteger(linuxValue) || linuxValue <= 0) {
+      fail(`${key} 登記在 _meta.linuxOnly,但基線裡沒有它的 Linux 實測值可保留 —— 只能在 Linux 寫基線(platform=${platform})`)
+    }
+    kept.push({ key, measured: measuredFingerprints[key] ?? 0, kept: linuxValue })
+    fingerprints[key] = linuxValue
+    linuxOnly[key] = reason
+  }
+  const sorted = (record) => Object.fromEntries(Object.entries(record).sort(([left], [right]) => compareUtf8Bytes(left, right)))
+  return { fingerprints: sorted(fingerprints), linuxOnly: sorted(linuxOnly), kept, dropped }
+}
+
 /** Default developer-mode gate: critical and serious violations are blocking. */
 export function evaluateA11ySeverityGate(results) {
   const severity = results?.summary?.bySeverity
