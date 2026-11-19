@@ -26,24 +26,13 @@ import {
 } from './refresh-fork-launchers.mjs'
 import { buildProviderHookLaunchArgv } from './lib/provider-hook-output-transport.mjs'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+import { installShippedTokenFiles as installShippedTokenFilesFrom } from './lib/shipped-token-files.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const FORK_HOOKS = join(ROOT, 'packages/design-system/ds-canonical/fork/hooks')
 const CANONICAL_UTILITY_REGISTRY = join(ROOT, 'packages/design-system/src/tokens/utility-registry.json')
-// 已安裝套件裡 hook 會讀的發布檔,放在跟 npm 包一樣的相對路徑(package.json files 含 src/**/*.{tsx,ts,css} 與 src/**/*.json;
-// `npm pack --dry-run` 列得到 src/tokens/layoutSpace/layoutSpace.css)。少放一份 = 夾具比真的 consumer 弱:
-// 2026-11-09 packaging canary 就是夾具沒放 layoutSpace.css,check_layout_space_magic_numbers.sh 讀幻覺 token 白名單時
-// 兩處都找不到 → exit 70,乾淨樣本被當成違規(真的 consumer 裝得到這份檔,hook 沒錯)。
-const SHIPPED_TOKEN_FILES = Object.freeze([
-  'src/tokens/utility-registry.json',
-  'src/tokens/layoutSpace/layoutSpace.css',
-])
-function installShippedTokenFiles(installedDsRoot) {
-  for (const relative of SHIPPED_TOKEN_FILES) {
-    mkdirSync(dirname(join(installedDsRoot, relative)), { recursive: true })
-    copyFileSync(join(ROOT, 'packages/design-system', relative), join(installedDsRoot, relative))
-  }
-}
+// 已安裝套件裡 hook 會讀的發布檔:清單與理由只住 scripts/lib/shipped-token-files.mjs(consumer clean-room 夾具取同一份)
+const installShippedTokenFiles = (installedDsRoot) => installShippedTokenFilesFrom({ sourceDsRoot: join(ROOT, 'packages/design-system'), installedDsRoot })
 const CANONICAL_STORY_REGISTRY = join(
   ROOT,
   'packages/design-system/ds-canonical/references/story-baseline-registry.json',
