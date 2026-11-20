@@ -2,11 +2,11 @@
   "note": "豁免標記到期複查的棘輪。這裡記的是「目前已知的無主(無日期無指標)/ 過期(日期超過 N 天)」標記。數字只准往下 —— 新增的無主、新過期的會讓 exemption-expiry-invariant.mjs 變紅。修好(補日期 / 指標、或拿掉豁免)之後跑 --update-baseline 重記。key 不含行號;改了標記的字仍沒補日期會以新 key 變紅,那是刻意的。",
   "generatedBy": "scripts/exemption-expiry-invariant.mjs --update-baseline",
   "reviewAfterDays": 180,
-  "recordedAt": "2026-11-05",
-  "count": 427,
+  "recordedAt": "2026-11-21",
+  "count": 410,
   "byKind": {
-    "unanchored": 397,
-    "expired": 30
+    "unanchored": 382,
+    "expired": 28
   },
   "entries": [
     {
@@ -80,6 +80,14 @@
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
+    },
+    {
+      "key": "escape|packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx|@anatomy-rationale|b67ba5a1ced6",
+      "family": "escape",
+      "file": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx",
+      "marker": "@anatomy-rationale",
+      "kind": "unanchored",
+      "hint": "// @anatomy-rationale: Inspector + ColorMatrix N/A — AppShell 是 page-level layout composite // (Menu"
     },
     {
       "key": "cast|packages/design-system/src/components/AppShell/app-shell.stories.tsx|as any|da39a3ee5e6b",
@@ -208,14 +216,6 @@
       "marker": "@layout-space-magic-ok",
       "kind": "unanchored",
       "hint": "{/* @layout-space-magic-ok: 圖例 頭像 / 圖示 ↔ 名稱 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}"
-    },
-    {
-      "key": "cq|packages/design-system/src/components/Avatar/avatar.tsx|code-quality-allow|a4287fe8160c",
-      "family": "cq",
-      "file": "packages/design-system/src/components/Avatar/avatar.tsx",
-      "marker": "code-quality-allow",
-      "kind": "unanchored",
-      "hint": "// code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCar"
     },
     {
       "key": "escape|packages/design-system/src/components/Badge/badge.anatomy.stories.tsx|@anatomy-exempt|36517af9b649",
@@ -466,22 +466,6 @@
       "hint": "// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。"
     },
     {
-      "key": "cast|packages/design-system/src/components/Chip/chip.tsx|as unknown as|da39a3ee5e6b",
-      "family": "cast",
-      "file": "packages/design-system/src/components/Chip/chip.tsx",
-      "marker": "as unknown as",
-      "kind": "unanchored",
-      "hint": ""
-    },
-    {
-      "key": "cast|packages/design-system/src/components/Chip/chip.tsx|as unknown as|da39a3ee5e6b#2",
-      "family": "cast",
-      "file": "packages/design-system/src/components/Chip/chip.tsx",
-      "marker": "as unknown as",
-      "kind": "unanchored",
-      "hint": ""
-    },
-    {
       "key": "cq|packages/design-system/src/components/Chip/chip.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/Chip/chip.tsx",
@@ -491,14 +475,6 @@
     },
     {
       "key": "cq|packages/design-system/src/components/Chip/chip.tsx|code-quality-allow|954831b25ad5",
-      "family": "cq",
-      "file": "packages/design-system/src/components/Chip/chip.tsx",
-      "marker": "code-quality-allow",
-      "kind": "unanchored",
-      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
-    },
-    {
-      "key": "cq|packages/design-system/src/components/Chip/chip.tsx|code-quality-allow|954831b25ad5#2",
       "family": "cq",
       "file": "packages/design-system/src/components/Chip/chip.tsx",
       "marker": "code-quality-allow",
@@ -608,14 +584,6 @@
       "marker": "any-allow",
       "kind": "unanchored",
       "hint": "// any-allow: free-form consumer meta bag(prefix / options / formatOptions / locale / linkLabel 等)"
-    },
-    {
-      "key": "escape|packages/design-system/src/components/DataTable/cell-registry.tsx|@naked-row-mode-allow|81994b24e3ce",
-      "family": "escape",
-      "file": "packages/design-system/src/components/DataTable/cell-registry.tsx",
-      "marker": "@naked-row-mode-allow",
-      "kind": "unanchored",
-      "hint": "<span className=\"group/cell relative flex items-center w-full\"> {/* @naked-row-mode-allow: URL hover"
     },
     {
       "key": "cq|packages/design-system/src/components/DataTable/data-table-filter-labels.ts|code-quality-allow|3172638540b7",
@@ -832,14 +800,6 @@
       "marker": "as any",
       "kind": "unanchored",
       "hint": ""
-    },
-    {
-      "key": "cq|packages/design-system/src/components/DataTable/data-table.tsx|any-allow|510d1a41b326",
-      "family": "cq",
-      "file": "packages/design-system/src/components/DataTable/data-table.tsx",
-      "marker": "any-allow",
-      "kind": "unanchored",
-      "hint": "// any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 對齊本 module 既有 escape 紀律"
     },
     {
       "key": "cast|packages/design-system/src/components/DataTable/data-table.tsx|as unknown as|2e2c119c20fb",
@@ -1538,7 +1498,7 @@
       "hint": "// @anatomy-rationale: // StateBehavior covered by Overview「互動流程」段(7 種觸發 → 效果對照) // + ColorMatrix「ed"
     },
     {
-      "key": "escape|packages/design-system/src/components/LinkInput/link-input.stories.tsx|@story-trait-rationale|75439df362e4",
+      "key": "escape|packages/design-system/src/components/LinkInput/link-input.stories.tsx|@story-trait-rationale|09820de28cfd",
       "family": "escape",
       "file": "packages/design-system/src/components/LinkInput/link-input.stories.tsx",
       "marker": "@story-trait-rationale",
@@ -1594,7 +1554,7 @@
       "hint": "// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually"
     },
     {
-      "key": "escape|packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx|@principles-rationale|f45900768bff",
+      "key": "escape|packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx|@principles-rationale|7bc5e8427bbc",
       "family": "escape",
       "file": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx",
       "marker": "@principles-rationale",
@@ -2082,52 +2042,12 @@
       "hint": "// @principles-rationale: Merged WhenToUse + WhenNotToUse + TabsVsSegmentedControl // into a single "
     },
     {
-      "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|993b879cf01b",
-      "family": "cq",
-      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
-      "marker": "code-quality-allow",
-      "kind": "unanchored",
-      "hint": "// code-quality-allow: file-size — foundational composite(Tabs + overflow scroll mode + dropdown swi"
-    },
-    {
-      "key": "cast|packages/design-system/src/components/Tabs/tabs.tsx|as unknown as|da39a3ee5e6b",
-      "family": "cast",
-      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
-      "marker": "as unknown as",
-      "kind": "unanchored",
-      "hint": ""
-    },
-    {
-      "key": "cast|packages/design-system/src/components/Tabs/tabs.tsx|as unknown as|da39a3ee5e6b#2",
-      "family": "cast",
-      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
-      "marker": "as unknown as",
-      "kind": "unanchored",
-      "hint": ""
-    },
-    {
       "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|32ef3df4e312",
       "family": "cq",
       "file": "packages/design-system/src/components/Tabs/tabs.tsx",
       "marker": "code-quality-allow",
       "kind": "unanchored",
       "hint": "// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state "
-    },
-    {
-      "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|954831b25ad5",
-      "family": "cq",
-      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
-      "marker": "code-quality-allow",
-      "kind": "unanchored",
-      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
-    },
-    {
-      "key": "cq|packages/design-system/src/components/Tabs/tabs.tsx|code-quality-allow|954831b25ad5#2",
-      "family": "cq",
-      "file": "packages/design-system/src/components/Tabs/tabs.tsx",
-      "marker": "code-quality-allow",
-      "kind": "unanchored",
-      "hint": "// code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜"
     },
     {
       "key": "escape|packages/design-system/src/components/Tag/tag.anatomy.stories.tsx|@anatomy-rationale|c45a37f093dc",
@@ -2442,14 +2362,6 @@
       "hint": "**世界級對照**: <!-- @benchmark-unverified -->"
     },
     {
-      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|dee01a83dd9f",
-      "family": "escape",
-      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
-      "marker": "@benchmark-unverified",
-      "kind": "expired",
-      "hint": "### 世界級 benchmark(2026-04-22 掃 6 家) <!-- @benchmark-unverified -->"
-    },
-    {
       "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|def0b85c320c",
       "family": "escape",
       "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
@@ -2464,14 +2376,6 @@
       "marker": "@benchmark-unverified",
       "kind": "unanchored",
       "hint": "**世界級對照**:macOS View menu「Show toolbar」+ ✓ / Figma View menu「Show layout grids」+ toggle / VS Code Vi"
-    },
-    {
-      "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|03fb600c676b",
-      "family": "escape",
-      "file": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md",
-      "marker": "@benchmark-unverified",
-      "kind": "unanchored",
-      "hint": "Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris ResourceItem——**全部**是「prefi"
     },
     {
       "key": "escape|packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md|@benchmark-unverified|5695abae7726",
@@ -3226,14 +3130,6 @@
       "hint": "選 0.45 的位置: <!-- @benchmark-unverified -->"
     },
     {
-      "key": "escape|packages/design-system/src/tokens/opacity/opacity.spec.md|@benchmark-unverified|9bdb76c11e66",
-      "family": "escape",
-      "file": "packages/design-system/src/tokens/opacity/opacity.spec.md",
-      "marker": "@benchmark-unverified",
-      "kind": "expired",
-      "hint": "世界級對照(2026-05-01 加): <!-- @benchmark-unverified -->"
-    },
-    {
       "key": "escape|packages/design-system/src/tokens/opacity/opacity.spec.md|@benchmark-unverified|3cd1d0e70439",
       "family": "escape",
       "file": "packages/design-system/src/tokens/opacity/opacity.spec.md",
@@ -3248,38 +3144,6 @@
       "marker": "@benchmark-unverified",
       "kind": "unanchored",
       "hint": "**(2) Single tier 0.45 而非 Tailwind multi-tier opacity scale — 對齊 Polaris / Apple 單值哲學** <!-- @benchm"
-    },
-    {
-      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|9ec29757e55a",
-      "family": "escape",
-      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
-      "marker": "@benchmark-unverified",
-      "kind": "unanchored",
-      "hint": "**(1) 4 tier(xs/md/lg/full)— 對齊 Ant Design 4-tier minimal,捨多家 6+ tier** <!-- @benchmark-unverified -"
-    },
-    {
-      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|be29541f9aaf",
-      "family": "escape",
-      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
-      "marker": "@benchmark-unverified",
-      "kind": "unanchored",
-      "hint": "**(2) Geometric scale(2 / 4 / 8 doubling)— 對齊 Tailwind / Polaris 慣例** <!-- @benchmark-unverified -->"
-    },
-    {
-      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|03ec58f02f70",
-      "family": "escape",
-      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
-      "marker": "@benchmark-unverified",
-      "kind": "unanchored",
-      "hint": "**(3) `rounded-full` 9999px 而非 50%(對齊 Tailwind / Polaris)** <!-- @benchmark-unverified -->"
-    },
-    {
-      "key": "escape|packages/design-system/src/tokens/radius/radius.spec.md|@benchmark-unverified|1e84328faba2",
-      "family": "escape",
-      "file": "packages/design-system/src/tokens/radius/radius.spec.md",
-      "marker": "@benchmark-unverified",
-      "kind": "unanchored",
-      "hint": "**(4) 保留 `--radius-sm` token 但不用 — 對齊 Material「reserve for future dense pattern」** <!-- @benchmark-u"
     },
     {
       "key": "escape|packages/design-system/src/tokens/typography/typography.spec.md|@benchmark-unverified|a01bd291c063",

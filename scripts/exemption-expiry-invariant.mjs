@@ -15,6 +15,8 @@
  *
  *   1. 標記帶 **日期**(ISO `YYYY-MM-DD`,取該標記窗格裡最新的一個)= 上次複查日 → 時鐘從那天起算,
  *      超過 REVIEW_AFTER_DAYS 天 → **過期**(kind = expired)。複查後把日期改成複查日(或在後面補一個新日期)即歸零。
+ *      窗格 = 標記那一行 + 緊接的續行;一開頭就是自己 `@名稱` 的 `//` 行(如 `// @story-history: …`)是另一段註解,不算續行
+ *      (2026-11-21 前會併進來,那段的日期被當成這個標記的複查日 —— 見下方 LINE_SECTION_RE)。
  *   2. 標記只有 **指標**、沒有日期 = 有主無鐘(kind = pointer-only):由指標的主人負責複查
  *      (M-rule 由 /knowledge-prune 季檢、spec 由其 owner、待辦總帳項由總帳)。**不紅**,但 --report 會列出數量,讓債看得見。
  *   3. 既沒日期也沒指標 = **無主**(kind = unanchored)→ 紅:沒人說得出這個豁免是誰、何時、憑什麼給的。
@@ -81,7 +83,7 @@
  *   node scripts/exemption-expiry-invariant.mjs --now=2026-09-27    釘住今天(以上任一模式都可加)
  *
  * ## M32 四問(寫完閘立刻答)
- *   1. 弄壞它會紅嗎 —— --selftest 注入 11 筆該紅(無主 9 / 過期 2)+ 14 筆該放 + 5 筆長得像的;test-exemption-expiry-invariant.mjs 再把合成違規檔塞進真實掃描證明 fresh 會紅。
+ *   1. 弄壞它會紅嗎 —— --selftest 注入 12 筆該紅(無主 10 / 過期 2)+ 15 筆該放 + 5 筆長得像的;test-exemption-expiry-invariant.mjs 再把合成違規檔塞進真實掃描證明 fresh 會紅。
  *   2. 誰呼叫它 —— scripts/test-exemption-expiry-invariant.mjs(gate-meta lane);接 PR CI 由主代理決定。
  *   3. 受不受時序影響 —— 「今天」是唯一的時間輸入,用 --now 釘住;沒有瀏覽器、沒有計時器。
  *   4. 機器慢還綠嗎 —— 純讀檔 + 正規表示式,沒有任何等待或門檻與速度有關。
@@ -213,6 +215,11 @@ export function anchorsOf(text, { selfBase = '', index = fileIndex(), exists = (
 // ── 窗格:標記那一行 + 緊接的續行(最多 CONTINUATION 行)────────────────────
 const CONTINUATION = 8
 const ANY_MARKER_RE = new RegExp(`${ESCAPE_TOKEN}|${ESLINT_TOKEN}|${TS_TOKEN}|${CQ_TOKEN}`)
+// `//` 續行一開頭就是自己的 `@名稱`(如 `// @story-history: …`)= 另一段註解,不是這個標記的續行。
+// 2026-11-21 前只在下一行是「豁免標記」時才斷,`@story-history` 不是豁免標記,於是它整行被併進上一個標記的窗格:
+// 那一行的日期被當成上一個標記的複查日、那一行的檔名被當成指標(sidebar / textarea / button / breadcrumb 的 stories 第 1 行)。
+// 真正的複查續行(`//   2026-11-18 複查:…`)不以 `@` 開頭,照舊併入。
+const LINE_SECTION_RE = /^\/\/[ \t]*@[A-Za-z][\w-]*/
 
 function commentWindow(lines, i, markerCol) {
   const first = lines[i]
@@ -226,7 +233,7 @@ function commentWindow(lines, i, markerCol) {
   for (let j = i + 1; style !== 'done' && j < lines.length && j <= i + CONTINUATION; j++) {
     const l = lines[j], t = l.trim()
     if (ANY_MARKER_RE.test(t) && /^(\/\/|\*|\{\/\*|\/\*|<!--)/.test(t)) break        // 下一個標記自己一個窗格
-    if (style === 'line') { if (!t.startsWith('//')) break; out.push(l); continue }
+    if (style === 'line') { if (!t.startsWith('//') || LINE_SECTION_RE.test(t)) break; out.push(l); continue }
     if (style === 'html') { out.push(l); if (l.includes('-->')) break; continue }
     if (style === 'block') { out.push(l); if (l.includes('*/')) break; continue }
   }
@@ -481,6 +488,11 @@ export function selftest(now = todayUtc(), log = console.log) {
     `// @lambda-rationale:`,                                                            // 續行窗格:日期在第二行
     `//   SizeMatrix N/A — ${d(5)} 看過`,
     `// @mu-allow: ${d(200)} 舊,複查 ${d(3)}`,                                          // ok:取最新日期
+    `// @phi-allow: 理由寫了,但自己沒有日期也沒有指標`,                                  // 無主:下一行是另一段 `@story-history`,
+    `// @story-history: ${d(5)} 由 field-controls.spec.md 接手`,                        //   它的日期與檔名不得算成 phi 的複查日 / 指標
+    `// @psi-allow: 理由寫在這行`,                                                      // ok:真正的複查續行照舊認得,
+    `//   ${d(2)} 複查:仍成立`,                                                         //   即使緊接著還有一段 `@story-history`
+    `// @story-history: ${d(400)} 很久以前的事`,
     `// @nu-allow: 見 (#123) 那次 PR`,                                                  // 有主(PR)
     `// @xi-allow: 由 026d5788 起`,                                                     // 有主(commit)
     `// @omicron-allow: https://example.test/why`,                                      // 有主(URL)
@@ -515,7 +527,7 @@ export function selftest(now = todayUtc(), log = console.log) {
   const expect = {
     '@alpha-allow': 'unanchored', '@beta-allow': 'expired', '@gamma-allow': 'ok', '@delta-allow': 'pointer-only', '@epsilon-allow': 'pointer-only',
     '@zeta-allow': 'unanchored', '@eta-allow': 'unanchored', '@kappa-ok': 'pointer-only', 'eslint-disable-next-line': 'unanchored',
-    'as any': 'unanchored', 'as unknown as': 'ok', '@lambda-rationale': 'ok', '@mu-allow': 'ok', '@nu-allow': 'pointer-only',
+    'as any': 'unanchored', 'as unknown as': 'ok', '@lambda-rationale': 'ok', '@mu-allow': 'ok', '@phi-allow': 'unanchored', '@psi-allow': 'ok', '@nu-allow': 'pointer-only',
     '@xi-allow': 'pointer-only', '@omicron-allow': 'pointer-only', '@pi-allow': 'pointer-only', '@rho-allow': 'unanchored',
     '@benchmark-unverified': null, 'ALLOWLIST.ONE': 'unanchored', 'ALLOWLIST.TWO': 'ok', 'reg-old': 'expired', 'reg-new': 'ok',
     'code-quality-allow': 'unanchored', 'any-allow': 'ok',
@@ -535,6 +547,11 @@ export function selftest(now = todayUtc(), log = console.log) {
   check(r.markers.filter((m) => m.marker === 'as any').length === 1, `有 any-allow 註解的 as any 不另算 cast(cast 家族的 as any 實得 ${r.markers.filter((m) => m.marker === 'as any').length} 筆,應為 1)`)
   const mu = r.markers.find((m) => m.marker === '@mu-allow')
   check(mu?.newest === d(3), `多個日期取最新(實得 ${mu?.newest})`)
+  const phi = r.markers.find((m) => m.marker === '@phi-allow')
+  check(phi && !phi.window.includes('@story-history') && phi.newest === null && phi.anchors.length === 0,
+    `緊接的 // @story-history 是另一段:不併進窗格、它的日期 / 檔名不算(實得 newest=${phi?.newest} anchors=${JSON.stringify(phi?.anchors)})`)
+  const psi = r.markers.find((m) => m.marker === '@psi-allow')
+  check(psi?.newest === d(2) && !psi.window.includes('@story-history'), `真正的複查續行仍認得、後面的 @story-history 不併入(實得 newest=${psi?.newest})`)
   const expectedFresh = Object.entries(expect).filter(([, k]) => k === 'unanchored' || k === 'expired').length + 1 // +1:md 的無主那筆
   check(r.fresh.length === expectedFresh, `違規總數 = ${expectedFresh}(實得 ${r.fresh.length})`)
   check(verdictOf(r).status === 'VIOLATION', `判定 = VIOLATION(實得 ${verdictOf(r).status})`)
