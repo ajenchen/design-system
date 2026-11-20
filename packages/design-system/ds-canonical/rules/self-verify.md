@@ -39,7 +39,7 @@ paths:
 - **Pre-edit**:`check_substantive_edit_approval_preflight.sh`(production code)+ `stop_self_audit.sh`(spec/canonical 補位 — 僅覆蓋 codex-collab turn(Mechanism 4 嵌在 codex-reply 閘內);非 codex turn 的 spec.md edit 靠 discipline)+ `check_ds_anchor_preflight.sh`(M29 anchor)
 - **Post-edit**:`stop_self_audit.sh` Mechanism 1(claim-verify-gap)BLOCKER
 - **Pre-final(宣告完成前)**:`stop_self_audit.sh` Mechanism 7(完整性宣告閘)BLOCKER — 宣告「全做完 / 全部完成」+ 本 turn 實質改動但**無全庫 stale-ref 掃描證據** → block。**觸發器 = 「宣告完成」本身,非等 user 問第二次**(2026-06-03 user-authorized,根治重複 failure)
-- **Optional adversarial review**:中型以上改動可用 multi-agent review 增加 assurance，但只有 task／deliverable 明確要求時才是 completion condition；user waiver 必記錄且不得冒充已做。一般工程以 M7 自掃、targeted tests、required CI 與 live readback收斂，optional reviewer 缺席不阻擋。
+- **Optional adversarial review**:中型以上改動可用 multi-agent review 增加 assurance，但只有 task／deliverable 明確要求時才是 completion condition；user waiver 必記錄且不得冒充已做。一般工程以 M7 自掃、targeted tests、required CI 與 live readback收斂，optional reviewer 缺席不阻擋。多包 / 多步工作的規格核對審查是必經步驟,照 `rules/work-process.md`;本條只管額外的對抗審查。
 - **Pre-commit / release gate**:`scripts/audit-content-quality.mjs --check` 由 current required CI / deterministic audit chain fail closed；Stop hook 每 turn跑相關檢查僅報告時不得冒充 CI。Standard release唯一圖 = `infra/governance/release-workflow.json`，retired `release:preflight` 不得回流。
 
 ## Anti-pattern(永久 ban)

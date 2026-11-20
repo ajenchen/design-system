@@ -5,7 +5,7 @@ paths:
 
 # Canonical rules charter
 
-## 這裡只收:path-scoped 規則(編特定 file 才 load,降 every-session context cost)
+## 大多是 path-scoped 規則;meta-patterns.md 與 work-process.md 每次載入。
 
 每條 rule 一個 `.md` file,內含:
 - frontmatter `paths:` glob(`**/*.spec.md` / `**/*.tsx` 等)— provider materializer 可投影成原生 path-scoped discovery view
@@ -18,6 +18,7 @@ paths:
 | Rule | Paths | Scope |
 |------|-------|-------|
 | [meta-patterns.md](meta-patterns.md) | always(fundamental)| 33 active M-rules(M1-M32 + M36 + M37,M27/M33/M34/M35 retired)|
+| [work-process.md](work-process.md) | always | 多包 / 多步工作流程唯一住處 |
 | [spec-rules.md](spec-rules.md) | `**/*.spec.md` + `packages/design-system/src/**` | Spec 撰寫紀律 + SSOT / 邊界案例 / 職責分離 |
 | [ui-development.md](ui-development.md) | `**/*.tsx` + `**/*.ts` | 建 UI 前必讀 / Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn |
 | [story-rules.md](story-rules.md) | `**/*.stories.tsx` | 三層 stories canonical + Title / 範例 / 撰寫紀律 |

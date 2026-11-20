@@ -820,7 +820,8 @@
           "scripts/test-verify-mirror-evidence.mjs",
           "scripts/test-verify-mirror-release.mjs",
           "scripts/test-verify-upgrade-evidence.mjs",
-          "scripts/test-visual-audit.mjs"
+          "scripts/test-visual-audit.mjs",
+          "scripts/test-work-process-ssot-invariant.mjs"
         ]
       }
     ]

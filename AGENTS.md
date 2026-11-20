@@ -21,6 +21,7 @@
 | 檔案 | 何時必讀 |
 |---|---|
 | `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(33 條 M-rules,fundamental)|
+| `packages/design-system/ds-canonical/rules/work-process.md` | 每個多包 / 多步任務開工前 |
 | `packages/design-system/ds-canonical/rules/spec-rules.md` | 編任何 `*.spec.md` 或 DS 內容 |
 | `packages/design-system/ds-canonical/rules/ui-development.md` | 編任何 `.tsx`/`.ts`(Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn / public-vs-internal)|
 | `packages/design-system/ds-canonical/rules/story-rules.md` | 編任何 `*.stories.tsx`(三層定位 / Title / 範例準則)|
@@ -124,7 +125,7 @@
 
 # 自主執行 canonical(Autonomy Default)
 
-**Default = autonomous + complete + verify-to-perfection;省工 = anti-pattern(違 mindset #1)**。
+**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。跳過規格項或驗證 = 省工(違 mindset #1)。
 
 | 動作類別 | 預設 |
 |---------|-----|

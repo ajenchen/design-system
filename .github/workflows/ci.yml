@@ -154,6 +154,9 @@ jobs:
           # AGENTS.md / CLAUDE.md bootstrap 完整性(A1 指令鏈 ≤ 32KiB 等五條):閘 2026-07-16 就有,但真 repo 從沒有執行面呼叫它
           #(只有 fixture 測試跑它;待辦總帳 N14(a))—— 2026-09-27 接進來。
           npm run check:agents-bootstrap
+          # 多包 / 多步工作流程只有一個住處(rules/work-process.md):每次載入、啟動面都指向、別處不重述、退場說法不回流、依據數字有證據檔。
+          node scripts/work-process-ssot-invariant.mjs --selftest
+          node scripts/work-process-ssot-invariant.mjs
           # 分頁 inlineAction 的幾何:2026-09-10 抓到它對活的 DOMRect 做物件展開 → 永遠回 null,
           # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
           # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。
