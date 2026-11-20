@@ -13,7 +13,7 @@
     "probe-skeleton-band-raster.mjs": "刻意只手動跑(2026-11-18 記):它是決策紀錄的可重跑依據,不是閘 —— 檔頭 :7「這是決策紀錄的可重跑依據,不是 CI 閘;數字會隨 Chromium 版本浮動,看的是倍數關係」。它用 CDP LayerTree.profileSnapshot 量四種骨架底畫法的光柵毫秒數,只印數字、沒有任何紅綠斷言;數字與結論收在 packages/design-system/src/components/DataTable/data-table.tsx:645–655(骨架底 docblock),而那份光柵成本在同檔 :677–680 寫明「已知且接受」,所以沒有、也不該有守這個數的 CI 閘。同一層使用者看得到的行為(快速捲動零空白幀、畫得動的機器不出骨架)由 scripts/data-table-fast-scroll.mjs 在 ci.yml verify-browser-datatable 的「DataTable pixel invariants (browser)」那一步守(同一步的 --assert-max-blank-frames=0 與 --assert-max-shell-frames=0;原寫的行號 :512 / :523 在合回第一波後已不對,2026-11-20 WP-21 改指步驟名)。",
     "probe-windows-scrollbar.mjs": "刻意只手動跑(2026-09-27 記):它是截圖探針 —— 輸出 tmp/scrollbar-probe/{story}-baseline.png / -windows-sim.png / -corner-zoom.png 與 report.json 給人看右下角捲軸與圓角外框的關係,沒有任何「溢出多少算紅」的斷言可以讓 CI 判紅綠;同一個幾何(Bug H:Windows 傳統捲軸溢出圓角外框)的 CI 閘是 scripts/data-table-scrollbar-visibility.mjs(斷言 B 捲動區落在裁切祖先 padding-box 內 / C 捲軸內外側 hit-test / D 外側半條像素,ci.yml verify-browser-datatable `--quick` + focus-deep-gates.yml 全矩陣 + --selftest),它同樣拿掉 --hide-scrollbars。2026-09-25 補的「沒捲軸 = exit 1」只是讓手動跑時不印假 complete。"
   },
-  "nightlyOnlyCount": 14,
+  "nightlyOnlyCount": 13,
   "nightlyOnly": [
     "audit-a11y.mjs",
     "audit-consumer-a11y.mjs",
@@ -22,7 +22,6 @@
     "check-codex-freshness.mjs",
     "check-plugin-installed.mjs",
     "check-src-republish.mjs",
-    "checkbox-group-handcraft-invariant.mjs",
     "consolidate-audit-material.mjs",
     "dispatch-audit-dims.mjs",
     "exemption-expiry-invariant.mjs",

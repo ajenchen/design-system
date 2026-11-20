@@ -417,9 +417,15 @@ jobs:
           # 四個狀態元件的進度 / 步驟填色用 --info,不混 --primary(color.spec.md「Status」段)。
           node scripts/status-color-invariant.mjs
           node scripts/test-status-color-invariant.mjs
+          # 一組選項的 Checkbox 一律包 <CheckboxGroup>(zero-gap canonical,checkbox.spec.md),不手刻 <div flex|grid|space-y-N>;
+          # 各自獨立的「單一同意」勾選框用逐行豁免 @checkbox-group-handcraft-ok,出處要引得出 spec 原文。
+          # 2026-11-21(knowledge-prune WP-21b)接上:11-20 那批時它在 HEAD 上紅(3 筆手刻開關列),WP-17(904d00b4、c2d35677)修好後
+          # 主判定、--selftest 判定表、配對 meta-test 都 exit 0。純靜態,本機三條合計約 2 秒。
+          node scripts/checkbox-group-handcraft-invariant.mjs
+          node scripts/checkbox-group-handcraft-invariant.mjs --selftest
+          node scripts/test-checkbox-group-handcraft-invariant.mjs
           # 同一份「只在夜間可達」清單裡刻意沒接的(2026-11-20 逐支在 HEAD 上跑過;接紅閘等於讓每個 PR 一起紅,所以紅的先留在夜間、原因記在這裡):
-          #   在 HEAD 上紅 —— exemption-expiry-invariant(真實時鐘下 11 筆過期 / 無主的豁免標記,修法在 WP-24);
-          #     checkbox-group-handcraft-invariant(3 筆手刻 option-group,修法在 WP-17、接線在 WP-21b)。
+          #   在 HEAD 上紅 —— exemption-expiry-invariant(真實時鐘下 11 筆過期 / 無主的豁免標記,修法在 WP-24)。
           #   要瀏覽器 —— audit-a11y、audit-consumer-a11y。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
           #     check-codex-freshness(讀寫本機 ~/.codex 設定)。
           #   工具 / 報告,不是閘 —— audit-hook-quality(寫 runtime 報告)、consolidate-audit-material、dispatch-audit-dims、prepare-deep-audit-run、

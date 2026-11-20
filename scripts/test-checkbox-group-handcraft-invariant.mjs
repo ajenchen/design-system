@@ -4,6 +4,13 @@
 // 注入目標選非 checkbox 檔(Badge),前面沒有還沒關掉的 <CheckboxGroup(否則 gate 視為在群組裡 → 假綠)。
 // 豁免(@checkbox-group-handcraft-ok)兩面都用真實檔驗:出處對得上 → 綠;沒寫出處 / 出處那一行沒有引文 → 紅;
 // repo 裡每一筆現有豁免拿掉 → 必紅且指名該檔(證明每一筆豁免都真的在放行東西)。
+//
+// 2026-11-21 起由 ci.yml verify-static 直呼(knowledge-prune WP-21b),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: checkbox-group-handcraft-invariant.mjs 在該紅的時候會紅、該放行的時候放行 —— 在 components/Badge/badge.tsx 末尾注入手刻 <div className="space-y-2"> 包兩個帶 label 的 <Checkbox />,閘必須 exit 非 0 且指名該檔;同一處上方加出處對得上的豁免必須放行並列進豁免清單;豁免沒寫出處、出處行號對不上引文都必須紅;repo 裡現有的每一筆豁免拿掉都必須紅且指名該檔;注入前與還原後閘都必須 exit 0
+//   紅: 現況就紅(repo 已有真違規)、checkbox.spec.md 找不到「單一同意」(豁免夾具沒有出處可引)、注入後閘沒紅或沒指名該檔、有效豁免沒放行、壞豁免沒紅、拿掉現有豁免後沒紅、或還原後不綠 → 印出是哪一步並 exit 1
+//   綠: 每一步都照預期時 exit 0;badge.tsx 與每支被拿掉豁免的檔都在 finally 寫回原文,豁免出處的行號從 checkbox.spec.md 現場算(不寫死),不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync, globSync } from 'node:fs'
 
