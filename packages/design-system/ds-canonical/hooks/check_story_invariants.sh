@@ -511,7 +511,7 @@ ${rationale_trait}"
 
   # 2026-06-11 deep-audit R2(n=36):anatomy 分層 credit — 矩陣類 showcase 的 home 在 anatomy 層
   # (category-matrix stateComboMatrix/anatomyDiagram + dim 11 三層分工)。Drift 證據:12 個 hasSizes
-  # 元件 SizeMatrix 全在 anatomy 檔,展示檔無 AllSizes;button.stories.tsx:2 等 16 檔被迫用
+  # 元件 SizeMatrix 全在 anatomy 檔,展示檔無 AllSizes;button.stories.tsx:1 等 16 檔被迫用
   # 舊 file-wide @story-trait-rationale 曾繞過整個 hook(marker hack = required-exports
   # 集合與分層 convention 漂移)。現在只接受上方 scoped grammar。
   # Credit 對照:hasSizes ← SizeMatrix / hasInteractiveStates ← StateBehavior。
