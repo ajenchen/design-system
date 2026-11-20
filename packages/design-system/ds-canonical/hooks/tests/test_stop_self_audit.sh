@@ -618,8 +618,8 @@ run_test_locales() {
 # 觀察面同 Tests 25-27:遙測開著時 hook 寫的 self-audit-warnings.jsonl 有沒有「Provenance 升格」。
 WARN_SEQ=0
 run_warning_case() {
-  # $1 = name;$2 = 1 該有提醒 / 0 不該有;$3 = transcript
-  local name="$1" want="$2" content="$3" lc state transcript got
+  # $1 = name;$2 = 1 該有提醒 / 0 不該有;$3 = transcript;$4(可省)= 提醒文字(預設 Provenance 升格)
+  local name="$1" want="$2" content="$3" needle="${4:-Provenance 升格}" lc state transcript got
   for lc in C "$UTF8_LC"; do
     [ -n "$lc" ] || continue
     WARN_SEQ=$((WARN_SEQ + 1))
@@ -631,11 +631,11 @@ run_warning_case() {
       | HOOK_LC="$lc" GOVERNANCE_TELEMETRY_OPT_IN=1 GOVERNANCE_READ_ONLY=0 GOVERNANCE_STATE_DIR="$state" \
         hook_invoke >/dev/null 2>&1 || true
     got=0
-    grep -qF 'Provenance 升格' "$state/self-audit-warnings.jsonl" 2>/dev/null && got=1
+    grep -qF "$needle" "$state/self-audit-warnings.jsonl" 2>/dev/null && got=1
     if [ "$got" = "$want" ]; then
       echo "  PASS  $name [LC_ALL=$lc]"; PASS=$((PASS+1))
     else
-      echo "  FAIL  $name [LC_ALL=$lc] (Provenance 提醒 present=$got, want=$want)"; FAIL=$((FAIL+1))
+      echo "  FAIL  $name [LC_ALL=$lc] (「${needle}」提醒 present=${got}, want=${want})"; FAIL=$((FAIL+1))
     fi
   done
 }
@@ -827,6 +827,222 @@ T78=$(self_lock_transcript "$RULE_DENIAL" '你打 git branch -D foo 就好。')
 run_test_locales "Test 78: 「你打 git branch -D foo」(只有「你 + 動詞 + 指令開頭」這一支比得到)→ block" 1 "$T78" "SELF-LOCK HANDOFF"
 T79=$(self_lock_transcript "$RULE_DENIAL" "$(printf '%s\n\n%s\n%s\n%s' '你執行下面這行就好：' '```' 'git branch -D foo' '```')")
 run_test_locales "Test 79: 「你執行下面這行」+ 不帶 ! 的程式碼區塊(只有「你 + 動詞 + 指令代稱」這一支比得到)→ block" 1 "$T79" "SELF-LOCK HANDOFF"
+
+# Tests 80-92(2026-11-21,工作包 E7):Mechanism 12 發版前機器可讀項目自我稽核。
+# user 2026-11-17 原話「你他媽確定沒有遺漏或亂做其他東西了齁？不要每次我還要再三詢問你你他媽才會知道自己錯在哪」。
+# 這組驗 hook 的接線(哪些字送進判定、範圍從哪裡算、紀錄在哪、擋下的理由從哪來);逐句判定表與紀錄判定表在 scripts/test-release-self-audit.mjs。
+# 專用 fixture:一個有產品檔、有 upstream 的 Git repo(用 clone 建 upstream,不 push),判定腳本照抄本 repo 的版本。
+RSA_SRC="$TMPDIR/release-src"
+RSA_PROJECT="$TMPDIR/release-project"
+mkdir -p "$RSA_SRC/scripts/lib" "$RSA_SRC/infra/governance" "$RSA_SRC/packages/design-system/src/components/Button" "$RSA_SRC/governance"
+cp "$REPO_ROOT/scripts/release-self-audit.mjs" "$REPO_ROOT/scripts/release-orchestrator.mjs" "$RSA_SRC/scripts/"
+cp "$REPO_ROOT/scripts/lib/release-consent-language.mjs" "$REPO_ROOT/scripts/lib/release-consumer-selection.mjs" "$RSA_SRC/scripts/lib/"
+cp "$REPO_ROOT/infra/governance/release-workflow.json" "$RSA_SRC/infra/governance/"
+printf 'export const Button = 1\n' > "$RSA_SRC/packages/design-system/src/components/Button/button.tsx"
+printf '# rules\n' > "$RSA_SRC/governance/rules.md"
+git -C "$RSA_SRC" init -q
+git -C "$RSA_SRC" checkout -q -b claude/feature
+git -C "$RSA_SRC" add -A
+git -C "$RSA_SRC" -c user.name=fixture -c user.email=fixture@example.invalid commit -q -m init
+git clone -q -b claude/feature "$RSA_SRC" "$RSA_PROJECT"
+RSA_RECORD_DIR="$(cd "$(git -C "$RSA_PROJECT" rev-parse --absolute-git-dir)" && pwd -P)/governance-runtime/release-self-audit"
+# 紀錄產生器:正式的 collectSelfAudit / writeSelfAuditRecord,只把 CI 讀回換成合成的(green / failed);
+# tampered = 拿未解的紀錄,手把 pr-checks 改成 ok、未解數改成 0,不重算 sha256(模擬 AI 手改紀錄)。
+cat > "$TMPDIR/rsa-write-record.mjs" <<RSA_WRITER
+import { collectSelfAudit, writeSelfAuditRecord } from '$RSA_PROJECT/scripts/release-self-audit.mjs'
+const mode = process.argv[2]
+const green = mode === 'green'
+const record = collectSelfAudit({
+  readPullRequestChecks: ({ headSha }) => ({
+    status: green ? 'complete' : 'failed',
+    pullRequest: { number: 172, headRefOid: headSha, url: 'https://example.invalid/pull/172', mergeable: 'MERGEABLE' },
+    requiredChecks: [{ name: 'Verify static', bucket: green ? 'pass' : 'fail', state: green ? 'SUCCESS' : 'FAILURE', workflow: 'CI' }],
+  }),
+})
+if (mode === 'tampered') {
+  for (const item of record.items) if (item.source === 'pr-checks') item.status = 'ok'
+  record.unresolvedCount = 0
+}
+writeSelfAuditRecord(record)
+RSA_WRITER
+rsa_write_record() {
+  (cd "$RSA_PROJECT" && node "$TMPDIR/rsa-write-record.mjs" "$1") \
+    || { echo "  FAIL  rsa fixture: record writer ($1) failed"; FAIL=$((FAIL+1)); }
+}
+rsa_commit() {
+  # $1 = 檔案(相對 fixture 根);$2 = 內容。改在 upstream(本機拋棄式 repo)提交再 pull 回來,
+  # 讓預覽綁定那一項仍成立 —— 兩份紀錄只差在 HEAD / 產品指紋。
+  printf '%s\n' "$2" > "$RSA_SRC/$1"
+  git -C "$RSA_SRC" add -A
+  git -C "$RSA_SRC" -c user.name=fixture -c user.email=fixture@example.invalid commit -q -m "fixture: $1"
+  git -C "$RSA_PROJECT" pull -q --ff-only \
+    || { echo "  FAIL  rsa fixture: pull from local upstream failed"; FAIL=$((FAIL+1)); }
+}
+rsa_turn() {
+  # $1 = 本輪 user 訊息;$2 = 可見回覆;$3(可省)= 夾在中間的一筆工具紀錄(推播 / 提問)
+  rec_user "$1"
+  [ -n "${3:-}" ] && printf '%s\n' "$3"
+  rec_text "$2"
+}
+rec_ask_release() {
+  jq -nc --arg q "$1" --arg l "$2" \
+    '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",name:"AskUserQuestion",input:{questions:[{question:$q,header:"收尾",multiSelect:false,options:[{label:"先把 2 項刪檔做完",description:"做完再請你看預覽。"},{label:$l,description:"這 2 項之後另開分支。"}]}]}}]}}'
+}
+# 2026-11-17T11:38:23Z 那則回覆的請求句(session 96d711a5,逐字)
+ASK_1138='你看過沒問題，說「發版」我就合併、發布。'
+export GOVERNANCE_PROJECT_DIR="$RSA_PROJECT"
+
+T80=$(rsa_turn '大概還要多久？' "PR #172 的 CI 全部通過了。$ASK_1138")
+run_test_locales "Test 80: 11-17 11:38 原句要同意 + 沒有紀錄 → block" 1 "$T80" "RELEASE-SELF-AUDIT"
+T81=$(rsa_turn '發版流程是什麼？' '合併還是要等你說「發版」。照規則，你說「發版」我才會合併。')
+run_test_locales "Test 81: 解釋發版規則(沒紀錄也放行)→ no block" 0 "$T81"
+T82=$(rsa_turn '你什麼時候會叫我說發版？' '等自查零問題、CI 全綠，我才會請你回「可以改，發版」。')
+run_test_locales "Test 82: 回答「什麼時候會問你」→ no block" 0 "$T82"
+T83=$(rsa_turn '那次哪裡錯了？' '我 11-17 寫了「你看過沒問題，說『發版』我就合併」，那句是在沒查乾淨時開口要同意。')
+run_test_locales "Test 83: 引述自己過去的要同意句(請求在引號裡)→ no block" 0 "$T83"
+T84=$(rsa_turn '發版' '你說「發版」，我就開始跑發版流程。')
+run_test_locales "Test 84: 本輪 user 剛說「發版」,回覆在受理 → no block" 0 "$T84"
+T84B=$(rsa_turn '大概還要多久？' '你說「發版」，我就開始跑發版流程。')
+run_test_locales "Test 84b: 同一句回覆,本輪 user 沒說發版(對照組:放行只來自受理判斷)→ block" 1 "$T84B" "RELEASE-SELF-AUDIT"
+T85=$(rsa_turn '所以當初要求的knowledge prune已經做完了嗎？' '選一個就好。' "$(rec_ask_release '那 2 項刪檔要不要放進這次 PR？' '先發版')")
+run_test_locales "Test 85: 要同意寫在 AskUserQuestion 的選項(先發版)→ block" 1 "$T85" "RELEASE-SELF-AUDIT"
+T86=$(rsa_turn '大概還要多久？' 'CI 都跑完了。' "$(rec_push 'PR 全綠，你看過預覽沒問題就說「發版」')")
+run_test_locales "Test 86: 要同意只寫在推播 → block" 1 "$T86" "RELEASE-SELF-AUDIT"
+# 範圍(回合判斷共用 lib/_turn_boundary.sh):推播要同意 → 被別的 hook 擋(回饋不切回合)→ 補正回覆沒提 → 仍要擋
+T86B=$(printf '%s\n' "$(rec_user '大概還要多久？')" "$(rec_push 'PR 全綠，你看過預覽沒問題就說「發版」')" \
+  "$(rec_result 'Terminal notification sent. Mobile push requested.')" "$(rec_text 'CI 都跑完了。')" \
+  "$(rec_stop_feedback '🚨 CLAIM-VERIFY GAP BLOCKER:你 claim「verified」但本 turn 沒跑任何真驗證。')" \
+  "$(rec_text '撤回 claim,剛才那句沒有驗證。')")
+run_test_locales "Test 86b: 推播要同意 → 別的 hook 擋 → 補正回覆(推播仍在本回合)→ block" 1 "$T86B" "RELEASE-SELF-AUDIT"
+# 本機制已經擋過一次:那則回饋之前的推播不再重擋(AI 已被告知;不然紀錄補不齊時 turn 永遠結束不了)
+T86C=$(printf '%s\n' "$(rec_user '大概還要多久？')" "$(rec_push 'PR 全綠，你看過預覽沒問題就說「發版」')" \
+  "$(rec_result 'Terminal notification sent. Mobile push requested.')" "$(rec_text 'CI 都跑完了。')" \
+  "$(rec_stop_feedback '🚨 RELEASE-SELF-AUDIT BLOCKER(發版前機器可讀項目自我稽核):…')" \
+  "$(rec_text '剛才那則推播先不算:自我稽核紀錄還沒產生,還不能請你說發版。')")
+run_test_locales "Test 86c: 本機制擋過之後的補正回覆(沒再要)→ no block" 0 "$T86C"
+T86D=$(printf '%s\n' "$(rec_user '大概還要多久？')" "$(rec_push 'PR 全綠，你看過預覽沒問題就說「發版」')" \
+  "$(rec_result 'Terminal notification sent. Mobile push requested.')" "$(rec_text 'CI 都跑完了。')" \
+  "$(rec_stop_feedback '🚨 RELEASE-SELF-AUDIT BLOCKER(發版前機器可讀項目自我稽核):…')" \
+  "$(rec_text "還是一樣：$ASK_1138")")
+run_test_locales "Test 86d: 擋過之後補正回覆又開口要 → block(只放過擋下之前的)" 1 "$T86D" "RELEASE-SELF-AUDIT"
+
+rsa_write_record green
+run_test_locales "Test 87: 要同意 + 紀錄齊全(綁現在的指紋與 HEAD、零未解、腳本產生)→ no block" 0 "$T80"
+run_test_locales "Test 87b: 選項要同意 + 紀錄齊全 → no block" 0 "$T85"
+rsa_write_record tampered
+run_test_locales "Test 88: 紀錄被手改(未解改 0、pr-checks 改 ok,沒重算)→ block" 1 "$T80" "整份內容的 sha256 對不上"
+rsa_write_record green
+mv "$RSA_RECORD_DIR/current.json" "$RSA_RECORD_DIR/real.json"
+ln -s real.json "$RSA_RECORD_DIR/current.json"
+run_test_locales "Test 89: 紀錄路徑是符號連結(指向一份齊全的紀錄)→ 拒讀 → block" 1 "$T80" "符號連結"
+rm -f "$RSA_RECORD_DIR/current.json"
+mv -f "$RSA_RECORD_DIR/real.json" "$RSA_RECORD_DIR/current.json"
+run_test_locales "Test 89b: 換回一般檔(同一份紀錄)→ no block" 0 "$T80"
+rsa_write_record unresolved
+run_test_locales "Test 90: 紀錄未解 > 0(CI 紅)→ block" 1 "$T80" "(b) 未解 1 項"
+# 對照組(交接 process-audit 根因 9):紀錄齊全之後只改治理檔(產品指紋不變、HEAD 變了;CI 會在新 HEAD 上重跑,可能已經紅了)→ 紀錄失效
+rsa_write_record green
+run_test_locales "Test 90b: 改治理檔之前,同一份紀錄 → no block(對照組的綠面)" 0 "$T80"
+rsa_commit governance/rules.md '# rules (改了治理檔,沒動產品)'
+run_test_locales "Test 90c: 紀錄之後只改治理檔(產品指紋相同)→ block,理由是 HEAD 不同" 1 "$T80" "(a) 紀錄量的 HEAD"
+rsa_write_record unresolved
+run_test_locales "Test 90d: 在新 HEAD 上重跑紀錄、CI 紅 → block(b)" 1 "$T80" "(b) 未解 1 項"
+rsa_write_record green
+run_test_locales "Test 90e: 在新 HEAD 上重跑紀錄、CI 綠 → no block" 0 "$T80"
+rsa_commit packages/design-system/src/components/Button/button.tsx 'export const Button = 2'
+run_test_locales "Test 91: 紀錄之後改了預覽看得見的檔(指紋不符)→ block" 1 "$T80" "(a) 紀錄綁的產品指紋"
+run_test_locales "Test 92: 指紋不符時,沒在要同意的回覆照常放行 → no block" 0 "$T81"
+export GOVERNANCE_PROJECT_DIR="$PROJECT_DIR"
+
+# Tests 93-99(2026-11-21,工作包 E7):回合判斷共用 lib/_turn_boundary.sh(交接 process-audit 根因 8)。
+# hook 回饋不切回合;背景通知只切 Mechanism 6(沒人在看的回覆要自己推播)。
+LONG_REPLY='這一輪把三個檔案的改動都提交了,測試結果、改了哪些地方、還剩什麼都整理在下面。第一個是回合判斷,第二個是推播範圍,第三個是分類器擋下的回報範圍。每一項都附了對應的測試編號,之後要追查可以直接從測試名稱找回來。'
+push_case() {
+  # 推播能力由環境宣告(同 test_stop_self_audit_push_gate.sh);參數同 run_test_locales
+  export GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE=1
+  run_test_locales "$@"
+  unset GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE
+}
+T93=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_text "$LONG_REPLY")" \
+  "$(rec_push '三個檔案都提交了')" "$(rec_result 'Terminal notification sent. Mobile push requested.')" \
+  "$(rec_stop_feedback '🚨 QUOTE-SCOPE BLOCKER(M36a / feedback_propose_discipline.md Sub-rule 8):補一行「原題:」')" \
+  "$(rec_text "原題:B1 問留言框送出鈕要不要靠左。$LONG_REPLY")")
+push_case "Test 93: 推播 → 被別的 hook 擋 → 補正回覆(回饋不切回合,前面那次推播算數)→ no block" 0 "$T93"
+T94=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_text "$LONG_REPLY")" \
+  "$(rec_stop_feedback '🚨 QUOTE-SCOPE BLOCKER(M36a / feedback_propose_discipline.md Sub-rule 8):補一行「原題:」')" \
+  "$(rec_text "原題:B1 問留言框送出鈕要不要靠左。$LONG_REPLY")")
+push_case "Test 94: 整條鏈都沒推播 → block" 1 "$T94" "PUSH-NOTIFICATION"
+T95=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_text "$LONG_REPLY")" \
+  "$(rec_push '三個檔案都提交了')" "$(rec_result 'Terminal notification sent. Mobile push requested.')" \
+  "$(jq -nc '{type:"user",origin:{kind:"task-notification",producer:"session-task"},message:{role:"user",content:"<task-notification>\n<status>completed</status>\n</task-notification>"}}')" \
+  "$(rec_text "背景測試跑完了。$LONG_REPLY")")
+push_case "Test 95: 背景通知叫醒的回覆沒推播(通知切 Mechanism 6 的回合)→ block" 1 "$T95" "PUSH-NOTIFICATION"
+# Mechanism 10b 的範圍(E2 審查 PROBE-6):擋下之後夾一則背景通知 / hook 回饋,擋下紀錄仍在本回合
+rec_classifier_denial() { jq -nc --arg t "$CLASSIFIER_DENIAL" '{type:"user",toolDenialKind:"automode-blocked",message:{role:"user",content:[{type:"tool_result",is_error:true,content:$t}]}}'; }
+T96=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_classifier_denial)" \
+  "$(jq -nc '{type:"user",origin:{kind:"task-notification",producer:"session-task"},message:{role:"user",content:"<task-notification>\n<status>completed</status>\n</task-notification>"}}')" \
+  "$(rec_text '背景測試跑完了,全部通過。')")
+run_test_locales "Test 96: PROBE-6 擋下 → 背景通知 → 回覆不提 → block" 1 "$T96" "CLASSIFIER-SILENT"
+T97=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_classifier_denial)" "$(rec_text '刪分支這一步被分類器擋下,我停在原處。')" \
+  "$(rec_stop_feedback '🚨 PUSH-NOTIFICATION BLOCKER(M6):本 turn 是 substantive output 但沒有 PushNotification tool call trace。')" \
+  "$(rec_text '已補發通知。')")
+run_test_locales "Test 97: 擋下 → 回覆已講 → 被別的 hook 擋 → 補正回覆沒再講(同一回合講過就算)→ no block" 0 "$T97"
+T98=$(printf '%s\n' "$(rec_user '收尾')" "$(rec_classifier_denial)" "$(rec_text '已經改回原樣。')" \
+  "$(rec_stop_feedback '🚨 CLAIM-VERIFY GAP BLOCKER:你 claim「verified」但本 turn 沒跑任何真驗證。')" \
+  "$(rec_text '撤回 claim,還沒驗證。')")
+run_test_locales "Test 98: 擋下 → M1 先擋 → 補正回覆仍沒講被擋(舊版範圍已不含那筆)→ block" 1 "$T98" "CLASSIFIER-SILENT"
+# 回報字詞(E2 審查 PROBE-5)
+T99=$(classifier_transcript "$CLASSIFIER_DENIAL" true '這個 rm 被 auto mode classifier 擋掉，我停在原處，沒有換方法。')
+run_test_locales "Test 99: PROBE-5「被 auto mode classifier 擋掉」照實講 → no block" 0 "$T99"
+T99B=$(classifier_transcript "$CLASSIFIER_DENIAL" true 'The branch deletion was blocked by the classifier; I stopped there.')
+run_test_locales "Test 99b: 英文「blocked by the classifier」→ no block" 0 "$T99B"
+T99C=$(classifier_transcript "$CLASSIFIER_DENIAL" true '刪除動作被擋住了,停在原處。')
+run_test_locales "Test 99c: 「被擋住」→ no block" 0 "$T99C"
+
+# Tests 100-101(E2 審查 PROBE-4 建議):Mechanism 10 的「別」否定,只認緊接動作的「別(再)在 / 貼 / 打 / 跑 / 執行 / 輸入」。
+T100=$(self_lock_transcript "$RULE_DENIAL" '我已經改用 git update-ref 刪掉了，你別在對話框貼上下面那行指令。')
+run_test_locales "Test 100: 「你別在對話框貼上下面那行指令」(否定子句裡有完整交辦說法)→ no block" 0 "$T100"
+T101=$(self_lock_transcript "$RULE_DENIAL" '特別注意：在對話框貼上下面這行就好。')
+run_test_locales "Test 101: 「特別」裡的「別」不是否定 → block" 1 "$T101" "SELF-LOCK HANDOFF"
+
+# Tests 102-110(E2-SIB):同一支 hook 裡 8 處「測試用 UTF-8、正式環境用 C 語系」的比對分歧。每格兩種語系各跑一次;
+# 2026-11-21 實測把 8 處改回舊寫法:102、103、104、105、106、107、107b、108 在 LC_ALL=C 紅、UTF-8 綠(正式環境錯、測試看不到);
+# 104b 是照原意補全形逗號,舊寫法兩種語系都紅。
+# ① Mechanism 8 引文語氣(QUOTE_ASK):「這」含 0x80 位元組,C 語系的 [^」] 會擋掉。只提醒、不擋 turn,觀察面同 Tests 36-45。
+run_warning_case "Test 102: 你拍板「這樣對吧」(引文以吧結尾)→ 引文語氣提醒" 1 \
+  "$(quote_turn_transcript '收尾' '你拍板「這樣對吧」，所以照這樣改。')" '引文語氣'
+run_warning_case "Test 102b: 你拍板「這樣改」(不是徵詢語氣)→ 不提醒" 0 \
+  "$(quote_turn_transcript '收尾' '你拍板「這樣改」，所以照這樣改。')" '引文語氣'
+# ② Mechanism 9 問句結尾(ASK_TAIL):全形問號在 C 語系是三個位元組,[?？]? 只吃得下一個。
+run_warning_case "Test 103: user 以「這樣對吧？」結尾、回覆開頭沒表態 → 問句未正面回答提醒" 1 \
+  "$(quote_turn_transcript '這樣對吧？' '我照你說的改了，第三欄也換掉。')" '問句未正面回答'
+# ③ Mechanism 9 表態詞(STANCE):[,,。] 在 C 語系會被「「」的首位元組 E3 誤中;全形逗號照原意補上。
+run_warning_case "Test 104: 回覆「是「可以改」那一版」(是 後面不是逗號句號)→ 提醒" 1 \
+  "$(quote_turn_transcript '這樣可以嗎' '是「可以改」那一版。')" '問句未正面回答'
+run_warning_case "Test 104b: 回覆「對，照這樣改」(全形逗號)→ 不提醒" 0 \
+  "$(quote_turn_transcript '這樣可以嗎' '對，照這樣改。')" '問句未正面回答'
+# ④ Mechanism 7 完成宣告:「所有任務」與「做完」中間隔 5 個中文字(C 語系 .{0,6} 只剩 2 個字)。
+T105=$(printf '%s\n' "$USER_MSG" \
+  '{"message":{"role":"assistant","content":[{"type":"tool_use","name":"Edit","input":{}}]}}' \
+  '{"message":{"role":"assistant","content":[{"type":"tool_use","name":"Write","input":{}}]}}' \
+  "$(rec_text '所有任務這次都已經做完，beta 已上架。')")
+run_test_locales "Test 105: M7「所有任務這次都已經做完」+ 多改 + 無掃描 → block" 1 "$T105" "COMPLETENESS"
+# ⑤ Mechanism 7 否定排除:「還沒」與「宣告」中間隔 5 個字。
+T106=$(printf '%s\n' "$USER_MSG" \
+  '{"message":{"role":"assistant","content":[{"type":"tool_use","name":"Edit","input":{}}]}}' \
+  '{"message":{"role":"assistant","content":[{"type":"tool_use","name":"Write","input":{}}]}}' \
+  "$(rec_text '改動是全部做完了，但還沒有辦法正式宣告。')")
+run_test_locales "Test 106: M7「還沒有辦法正式宣告」(否定排除)→ no block" 0 "$T106"
+# ⑥ ⑦ Mechanism 7c deep audit:驗證器紅(receipt 缺 peer 證據),宣告與否定中間都隔多個中文字。
+printf '%s\n' '{"secondOpinion":"completed","peerEvidence":false}' > "$EVIDENCE_ROOT/deep-audit/fixture-complete.json"
+run_test_locales "Test 107: M7c「deep audit 這一輪全部完成」+ 驗證器紅 → block" 1 "$(rsa_turn '收尾' 'deep audit 這一輪全部完成。')" "DEEP-AUDIT-COVERAGE"
+run_test_locales "Test 107b: M7c「deep audit 完成，但覆蓋率目前仍未齊」(否定排除)→ no block" 0 "$(rsa_turn '收尾' 'deep audit 完成，但覆蓋率目前仍未齊。')"
+printf '%s\n' '{"secondOpinion":"completed","peerEvidence":true}' > "$EVIDENCE_ROOT/deep-audit/fixture-complete.json"
+# ⑧ Mechanism 5 peer 意圖:「請 beta」與「做」中間隔 15 個字(C 語系 .{0,30} 只剩 10 個字)。
+run_test_locales "Test 108: M5「請 beta 針對這一整段規格裡的每個元件做 review」+ 沒跑 discovery → block" 1 \
+  "$(rsa_turn '收尾' '我會請 beta 針對這一整段規格裡的每個元件做 review。')" "PEER-TRANSPORT-DISCOVERY"
+run_test_locales "Test 108b: 同一句加「本 turn 無 peer」撤回 → no block" 0 \
+  "$(rsa_turn '收尾' '本 turn 無 peer:之後才會請 beta 針對這一整段規格裡的每個元件做 review。')"
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

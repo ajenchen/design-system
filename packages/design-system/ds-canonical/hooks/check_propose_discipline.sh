@@ -11,6 +11,12 @@
 # 各規則跑在 pipeline 子 shell:規則內 exit 不中斷其他規則;任一 exit 2 → 整體 exit 2。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+# 「本回合 / 這一則回覆從 transcript 哪一行開始」只在這支 helper 判(2026-11-21,工作包 E7;與 stop_self_audit.sh 共用)。
+# r1 中途文字用「這一則回覆」的起點,r2 / r3 用「本回合」(user 本人上一則訊息)的起點;選擇表在 helper 檔頭。
+source "$(dirname "$0")/lib/_turn_boundary.sh" 2>/dev/null || {
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: turn-boundary helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 INPUT=$(cat 2>/dev/null) || {
@@ -71,8 +77,9 @@ fi
 # ── 中途文字(2026-11-15):這一輪做事中途插的文字,user 一樣看得到 ──
 # 下面的規則只看最後一則回覆(last_assistant_message);中途的 text 區塊從來沒被檢查過,於是中途一路寫英文進度句。
 # user 原話(2026-11-15):「為何你他媽又一直回覆我英文？到底要我教你幾次？以及若是沒必要讓我知道的垃圾訊息，你評估真的是垃圾，那就不用讓我看到吧？而不是把垃圾訊息轉成我看不懂的英文然後全部吐出來吧？」
-# 做法:從 transcript 取「最後一則真正的 user 訊息之後」的 assistant text 區塊(真正的 user 訊息 = role user 且內容不是
-# tool_result,同 stop_self_audit.sh 的 LAST_USER_LINE),排除最後一則回覆本身(它由下面的規則管),逐段(空行分段)判斷:
+# 做法:從 transcript 取「這一則回覆」起點之後的 assistant text 區塊(起點 = lib/_turn_boundary.sh 的最後一筆 role=user 紀錄,
+# 不論種類:說出口的話收不回來,被 Stop hook 擋下之後只看補正那一則;2026-11-21 前這裡自己判一份),
+# 排除最後一則回覆本身(它由下面的規則管),逐段(空行分段)判斷:
 # 剝掉程式碼區塊 / 行內程式碼 / 路徑 / 網址 / 雜湊後,英文詞 ≥ 6 且英文詞 × 2 > 漢字數 → 擋(exit 2)。
 # 中途文字通常一兩句,所以門檻比最後一則(≥ 30 個英文詞)低。transcript 讀不到 → 照舊只檢查最後一則,不因讀不到就擋。
 # 最後一則回覆從 stdin 傳(可能很長,不放在命令列參數)。單一段落要英文原文時,那一段寫 `@plain-chinese-skip: 理由`。
@@ -80,6 +87,7 @@ MID_PY=''
 IFS= read -r -d '' MID_PY <<'MID_PY_SOURCE' || true
 import json, re, sys
 path = sys.argv[1]
+start = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else 0
 final = sys.stdin.read().strip()
 try:
     with open(path, encoding='utf-8') as handle:
@@ -95,8 +103,12 @@ def role_of(record):
 def content_of(record):
     msg = message_of(record)
     return msg['content'] if 'content' in msg else record.get('content')
-records, last_user = [], -1
-for line in raw_lines:
+# 起點由 helper 判(實體行號);0 = transcript 裡沒有任何 role=user 紀錄 → 看不到這一則從哪裡開始,不判。
+if start <= 0:
+    print(json.dumps({'ok': False}))
+    sys.exit(0)
+records = []
+for line in raw_lines[start:]:
     try:
         record = json.loads(line)
     except ValueError:
@@ -104,16 +116,8 @@ for line in raw_lines:
     if not isinstance(record, dict):
         continue
     records.append(record)
-    if role_of(record) == 'user':
-        content = content_of(record)
-        if isinstance(content, list) and any(isinstance(item, dict) and item.get('type') == 'tool_result' for item in content):
-            continue
-        last_user = len(records) - 1
-if last_user < 0:
-    print(json.dumps({'ok': False}))
-    sys.exit(0)
 blocks = []
-for record in records[last_user + 1:]:
+for record in records:
     if role_of(record) != 'assistant':
         continue
     content = content_of(record)
@@ -157,7 +161,12 @@ print(json.dumps({'ok': True, 'count': len(flagged), 'flagged': flagged[:5]}, en
 MID_PY_SOURCE
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   LAST_MSG=$(jq -r '.last_assistant_message // ""' <<<"$INPUT" 2>/dev/null)
-  MID_ANALYSIS=$(printf '%s' "$LAST_MSG" | python3 -c "$MID_PY" "$TRANSCRIPT_PATH" 2>/dev/null) || {
+  MID_MARKS=$(governance_turn_marks "$TRANSCRIPT_PATH") || {
+    printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: turn boundary classification failed\n' >&2
+    exit 70
+  }
+  MID_FROM=$(governance_turn_last "$MID_MARKS" human wake feedback meta)
+  MID_ANALYSIS=$(printf '%s' "$LAST_MSG" | python3 -c "$MID_PY" "$TRANSCRIPT_PATH" "$MID_FROM" 2>/dev/null) || {
     printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: mid-turn plain-chinese analysis failed\n' >&2
     exit 70
   }
@@ -324,10 +333,27 @@ if [ -z "$LAST_REPLY" ] && [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
   LAST_REPLY_RAW=$(tail -200 "$TRANSCRIPT" 2>/dev/null | grep -E '"role":"assistant"|"type":"text"' | tail -50 | tr -d '\n')
   LAST_REPLY="${LAST_REPLY_RAW:0:8000}"
 fi
+# 2026-11-21(工作包 E7;交接 process-audit 根因 8):讀「同一個真 user 回合」裡的全部回覆,不只最後一則。
+# 起因:補正回覆常把關鍵字再寫一次(「上一則『照規定』的出處已經補上」),出處卻在同一回合稍早那則 ——
+# 只看最後一則就被自己的引述擋(11-18 17:27:10、18:06:06)。回合起點用 lib/_turn_boundary.sh 的 user 本人訊息,
+# Stop hook 回饋不切回合,不另外定義「補正鏈」。斷言、出處、escape、撤回都在整個回合裡找。
+if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
+  R2_MARKS=$(governance_turn_marks "$TRANSCRIPT") || {
+    printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: turn boundary classification failed\n' >&2
+    exit 70
+  }
+  R2_FROM=$(governance_turn_last "$R2_MARKS" human)
+  if [ "${R2_FROM:-0}" -gt 0 ]; then
+    R2_TURN_TEXT=$(governance_assistant_text_after "$TRANSCRIPT" "$R2_FROM")
+    [ -n "$R2_TURN_TEXT" ] && LAST_REPLY="${R2_TURN_TEXT}
+${LAST_REPLY}"
+  fi
+fi
 [ -z "$LAST_REPLY" ] && exit 0
 
-# Escape clause
-if grep -q 'propose-cite-skip' <<<"$LAST_REPLY"; then
+# Escape clause;「撤回 claim」是擋下訊息給的修法 (b) —— 改讀整個回合之後,被擋的那句還留在範圍裡,
+# 要認得這個撤回,否則只剩補出處一條路(2026-11-21 前它只是因為補正回覆不再含關鍵字而碰巧放行)。
+if grep -q 'propose-cite-skip' <<<"$LAST_REPLY" || grep -qF '撤回 claim' <<<"$LAST_REPLY"; then
   exit 0
 fi
 
@@ -397,10 +423,9 @@ exit 0
 #       tool_use 都沒有寫進檔案;第一版拿「tool_use 存在」當成「已寫入」(M37),檔案又不在,就改判 transcript 裡那段文字,
 #       擋的訊息給的修法(補出處 / escape / 拿掉提案)全都碰不到那段文字,Stop 會一直擋到模型去建 user 剛拒絕的檔
 #       (WP-13 審查必修 2)。找不到對應 tool_result = 看不到有沒有寫成,同下面「看不到就不判」。
-# 「這一輪」= 最後一則使用者本人訊息之後。判準同 hooks/lib 的 userVoiceText(isMeta / 掛在工具上的 /
-#   背景通知 / 壓縮摘要都不是使用者;這裡是 python 照抄的一份,沒有呼叫它 —— 所以不寫那支 .mjs 的檔名:
-#   harness-source-inventory 會把內文提到該檔名的 shell 都算成它的消費者、要求登記),再加一條:只認 type 與 role 一致的紀錄 —— 真實 transcript 每則訊息另有一份
-#   api-request-blob 副本(role 也是 user / assistant),算進來會把邊界切在本輪中間。不用 r1 中途文字的邊界:那個邊界在
+# 「這一輪」= 最後一則使用者本人訊息之後,起點由 lib/_turn_boundary.sh 判(human;2026-11-21 前這裡是 python 照抄的一份,
+#   工作包 E7 收進共用 helper,與 stop_self_audit.sh、r2 同一份)。helper 只認 type 與 role 一致的紀錄 —— 真實 transcript 每則訊息
+#   另有一份 api-request-blob 副本(role 也是 user / assistant),算進來會把邊界切在本輪中間。不用 r1 中途文字的邊界:那個邊界在
 #   「Stop hook feedback」(isMeta 的 user 紀錄)之後重算,r1 需要這樣(說出口的話收不回來),r3 不行(被擋後要看得到原本那次寫入)。
 # 看不到就不判:transcript 讀不到、或找不到使用者訊息(Codex 沒有 versioned transcript:packages/governance/canonical/providers.json:514)
 #   → exit 0;解析失敗 → GOVERNANCE_INTEGRITY exit 70,不讀成合格。
@@ -429,6 +454,7 @@ R3_PY=''
 IFS= read -r -d '' R3_PY <<'R3_PY_SOURCE' || true
 import json, os, re, stat, sys
 transcript, cwd = sys.argv[1], sys.argv[2]
+start = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 0
 DIR_PREFIX = re.compile(r'(?:planning|report|handoff)')
 MAX_DOC_BYTES = 8 * 1024 * 1024
 def message_of(record):
@@ -442,28 +468,18 @@ def content_of(record):
 def kind_of(record):
     role = role_of(record)
     return role if record.get('type') in (None, role) else None
-def text_of(content):
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        return '\n'.join(item['text'] for item in content
-                         if isinstance(item, dict) and item.get('type') != 'tool_result' and isinstance(item.get('text'), str) and item['text'])
-    return ''
-def is_user_voice(record):
-    if kind_of(record) != 'user' or record.get('isMeta') is True or isinstance(record.get('sourceToolUseID'), str):
-        return False
-    text = text_of(content_of(record)).strip()
-    if not text or re.match(r'\[SYSTEM NOTIFICATION\b', text) or '<task-notification>' in text:
-        return False
-    return not text.startswith('This session is being continued from a previous conversation')
 try:
     with open(transcript, encoding='utf-8') as handle:
         raw_lines = handle.read().splitlines()
 except (OSError, UnicodeDecodeError):
     print(json.dumps({'ok': False}))
     sys.exit(0)
-records, last_user = [], -1
-for line in raw_lines:
+# 起點(實體行號)由 helper 判;0 = 找不到使用者本人訊息 → 看不到就不判。
+if start <= 0:
+    print(json.dumps({'ok': False}))
+    sys.exit(0)
+records = []
+for line in raw_lines[start:]:
     try:
         record = json.loads(line)
     except ValueError:
@@ -471,14 +487,9 @@ for line in raw_lines:
     if not isinstance(record, dict):
         continue
     records.append(record)
-    if is_user_voice(record):
-        last_user = len(records) - 1
-if last_user < 0:
-    print(json.dumps({'ok': False}))
-    sys.exit(0)
 # 寫成功 = 對應的 tool_result 存在而且 is_error 不是 true(被拒絕 / 被擋 / 執行失敗的都是 is_error true)
 succeeded, failed = set(), set()
-for record in records[last_user + 1:]:
+for record in records:
     content = content_of(record)
     if kind_of(record) != 'user' or not isinstance(content, list):
         continue
@@ -486,7 +497,7 @@ for record in records[last_user + 1:]:
         if isinstance(item, dict) and item.get('type') == 'tool_result' and isinstance(item.get('tool_use_id'), str):
             (failed if item.get('is_error') is True else succeeded).add(item['tool_use_id'])
 written, order = {}, []
-for record in records[last_user + 1:]:
+for record in records:
     content = content_of(record)
     if kind_of(record) != 'assistant' or not isinstance(content, list):
         continue
@@ -522,7 +533,12 @@ def current_text(target):
 docs = [{'path': target, 'written': '\n'.join(written[target]), 'current': current_text(target)} for target in order]
 print(json.dumps({'ok': True, 'docs': docs}, ensure_ascii=False))
 R3_PY_SOURCE
-ANALYSIS=$(python3 -c "$R3_PY" "$TRANSCRIPT_PATH" "$HOOK_CWD" 2>/dev/null) \
+R3_MARKS=$(governance_turn_marks "$TRANSCRIPT_PATH") || {
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: turn boundary classification failed\n' >&2
+  exit 70
+}
+R3_FROM=$(governance_turn_last "$R3_MARKS" human)
+ANALYSIS=$(python3 -c "$R3_PY" "$TRANSCRIPT_PATH" "$HOOK_CWD" "$R3_FROM" 2>/dev/null) \
   && [ "$(jq -r '.ok | type' <<<"$ANALYSIS" 2>/dev/null)" = "boolean" ] || {
   printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: planning-doc cite analysis failed\n' >&2
   exit 70

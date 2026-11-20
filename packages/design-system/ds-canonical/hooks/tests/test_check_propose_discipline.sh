@@ -11,6 +11,10 @@ bash "$DIR/test_check_propose_cite_required.sh" < /dev/null || { echo "SUB-FAIL:
 FAULT_DIR=$(mktemp -d)
 [ -n "${FAULT_DIR:-}" ] && [ -d "$FAULT_DIR" ] || { echo "❌ mktemp -d failed(FAULT_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FAULT_DIR"' EXIT
+# 下面幾格把 hook 複製到 FAULT_DIR 再注入故障;hook 會 source 同層 lib/_turn_boundary.sh(回合判斷的唯一住處,2026-11-21),
+# 一起帶過去,否則每一格都只會量到「helper 不在 → rc70」。
+mkdir -p "$FAULT_DIR/lib" && cp "$DIR/../lib/_turn_boundary.sh" "$FAULT_DIR/lib/_turn_boundary.sh" \
+  || { echo "❌ cannot stage turn-boundary helper into FAULT_DIR" >&2; exit 1; }
 awk '
   { print }
   $0 == "r1_plain_chinese() {" { print "return 1" }
@@ -341,5 +345,55 @@ if [ "$rc" -eq 70 ] && [ ! -s "$R3_DIR/out" ] && grep -qF 'GOVERNANCE_INTEGRITY:
 else
   echo "SUB-FAIL: R3-17 r3 解析失敗沒有 fail closed(exit $rc;$(head -c 200 "$R3_DIR/err"))"
   fail=1
+fi
+
+# ── r2 讀「同一個真 user 回合」的全部回覆(2026-11-21,工作包 E7;交接 process-audit 根因 8)──
+# 錨:11-18 17:27:10 補正回覆寫「上一則『照規定』的出處已經補上」,出處在同一回合稍早那則,只看最後一則就被自己的引述擋。
+# 回合起點 = lib/_turn_boundary.sh 的 user 本人訊息;Stop hook 回饋不切回合。
+R2_DIR="$FAULT_DIR/r2"
+mkdir -p "$R2_DIR"
+r2_run() { # $1 transcript 路徑;$2 last_assistant_message
+  jq -nc --arg t "$1" --arg m "$2" '{hook_event_name:"Stop",transcript_path:$t,last_assistant_message:$m}' >"$R2_DIR/in.json"
+  set +e
+  bash "$DIR/../check_propose_discipline.sh" <"$R2_DIR/in.json" >"$R2_DIR/out" 2>"$R2_DIR/err"
+  R2_RC=$?
+  set -e
+}
+r2_user() { jq -nc --arg t "$1" '{type:"user",message:{role:"user",content:[{type:"text",text:$t}]}}'; }
+r2_text() { jq -nc --arg t "$1" '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:$t}]}}'; }
+r2_feedback() { jq -nc --arg t "$1" '{type:"user",isMeta:true,message:{role:"user",content:("Stop hook feedback:\n" + $t)}}'; }
+R2_FIX='上一則「照規定」的出處已經補上。'
+# @cite-fixture:下一行的 spec.md 行號是合成輸入
+R2_CITED='照規定 caption 配 muted,見 field-controls.spec.md:138 的 state 段落。'
+printf '%s\n' "$(r2_user '照規格改')" "$(r2_text "$R2_CITED")" \
+  "$(r2_feedback '🚨 PUSH-NOTIFICATION BLOCKER(M6)')" "$(r2_text "$R2_FIX")" >"$R2_DIR/t1.jsonl"
+r2_run "$R2_DIR/t1.jsonl" "$R2_FIX"
+if [ "$R2_RC" -eq 0 ] && [ ! -s "$R2_DIR/err" ]; then
+  echo "PASS: R2-T1 出處在同一回合稍早那則、補正回覆再寫一次「規定」→ 放行"
+else
+  echo "SUB-FAIL: R2-T1 同一回合有出處卻被擋(rc $R2_RC;$(head -c 200 "$R2_DIR/err"))"; fail=1
+fi
+printf '%s\n' "$(r2_user '照規格改')" "$(r2_text '照規定 caption 配 muted。')" \
+  "$(r2_feedback '🚨 PUSH-NOTIFICATION BLOCKER(M6)')" "$(r2_text "$R2_FIX")" >"$R2_DIR/t2.jsonl"
+r2_run "$R2_DIR/t2.jsonl" "$R2_FIX"
+if [ "$R2_RC" -eq 2 ] && grep -qF 'PROPOSE-WITHOUT-CITE BLOCKER' "$R2_DIR/err"; then
+  echo "PASS: R2-T2 整個回合都沒有出處 → 擋"
+else
+  echo "SUB-FAIL: R2-T2 整個回合沒有出處卻放行(rc $R2_RC)"; fail=1
+fi
+printf '%s\n' "$(r2_user '照規格改')" "$(r2_text '照規定 caption 配 muted。')" \
+  "$(r2_feedback '🚨 PROPOSE-WITHOUT-CITE BLOCKER')" "$(r2_text '撤回 claim:此條無 SSOT 依據。')" >"$R2_DIR/t3.jsonl"
+r2_run "$R2_DIR/t3.jsonl" '撤回 claim:此條無 SSOT 依據。'
+if [ "$R2_RC" -eq 0 ] && [ ! -s "$R2_DIR/err" ]; then
+  echo "PASS: R2-T3 被擋之後照擋下訊息的修法 (b) 撤回 claim → 放行(被擋那句仍在回合裡,不會死鎖)"
+else
+  echo "SUB-FAIL: R2-T3 撤回 claim 之後仍擋(rc $R2_RC;$(head -c 200 "$R2_DIR/err"))"; fail=1
+fi
+printf '%s\n' "$(r2_user '上一題')" "$(r2_text "$R2_CITED")" "$(r2_user '下一題')" "$(r2_text "$R2_FIX")" >"$R2_DIR/t4.jsonl"
+r2_run "$R2_DIR/t4.jsonl" "$R2_FIX"
+if [ "$R2_RC" -eq 2 ] && grep -qF 'PROPOSE-WITHOUT-CITE BLOCKER' "$R2_DIR/err"; then
+  echo "PASS: R2-T4 出處在上一個 user 回合(範圍不跨回合)→ 擋"
+else
+  echo "SUB-FAIL: R2-T4 上一回合的出處被算進這一回合(rc $R2_RC)"; fail=1
 fi
 exit $fail

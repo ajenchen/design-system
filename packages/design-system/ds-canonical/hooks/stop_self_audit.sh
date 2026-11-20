@@ -23,6 +23,9 @@ source "$HOOK_DIR/lib/_hook_integrity.sh" 2>/dev/null || {
   exit 70
 }
 source "$HOOK_DIR/_log-fire.sh" 2>/dev/null && log_hook_fire
+# 「本回合從哪一行開始」只在這支 helper 判(2026-11-21,工作包 E7);各 Mechanism 從哪一種紀錄算起,寫在它檔頭的表。
+source "$HOOK_DIR/lib/_turn_boundary.sh" 2>/dev/null \
+  || governance_hook_integrity_fail 'self-audit turn-boundary helper is unavailable'
 
 set -uo pipefail
 
@@ -92,6 +95,16 @@ fi
 
 WARNINGS=""
 
+# ── 含中文的比對一律在正式環境的語系下做(2026-11-21,工作包 E7 併入 E2-SIB 的 8 處)──
+# scripts/run-provider-hook.mjs 組 hook 環境時把 LANG / LC_ALL 寫死成 C,而本機與 CI 跑測試的預設是 UTF-8。
+# C 語系逐位元組比:中文字放進方括號會被拆成三個位元組各自比(「這」E9 80 99 含 0x80,和「」」E3 80 8D 共用一個位元組,
+# 所以 [^」] 比不過「這」—— user 拍板「這樣對吧」在 C 語系比不到);中文旁邊的 .{0,N} 只剩約 N/3 個中文字。
+# 兩種語系結果不同,測試綠也證明不了正式環境。修法:這些比對一律 LC_ALL=C;方括號裡不放中文(改成 (…|…));
+# 「最多隔 N 個字」寫成 ${U8C}{0,N} —— U8C 是 C 語系下逐位元組拼出來的「一個 UTF-8 字元」,N 照原意是字數。
+# 兩面對照在 tests/test_stop_self_audit.sh Tests 102–108(每格兩種語系各跑一次)。
+U8C_CONT="[$(printf '\200')-$(printf '\277')]"
+U8C="([$(printf '\001')-$(printf '\177')]|[$(printf '\302')-$(printf '\337')]${U8C_CONT}|[$(printf '\340')-$(printf '\357')]${U8C_CONT}{2}|[$(printf '\360')-$(printf '\364')]${U8C_CONT}{3})"
+
 governance_hash_prefix() {
   if command -v shasum >/dev/null 2>&1; then
     shasum -a 256 | awk '{print substr($1, 1, 16)}'
@@ -120,35 +133,47 @@ emit_governance_block() {
   exit 0
 }
 
-# `LAST_USER_LINE` = 最後一則**真** user 訊息的行號(versioned transcript contract 把
-# tool_result 也標 role="user",所以要濾掉)。整份 transcript 掃,不用 tail 視窗,避免邊界情況。
+# 三個起點都由 lib/_turn_boundary.sh 的同一份判斷算(2026-11-21,工作包 E7;交接 process-audit 根因 8):
+#   LAST_USER_LINE   = 最後一則 user 本人訊息(回合起點)。Stop hook 回饋、背景通知都不切回合 ——
+#                      舊寫法「role=user 且不是 tool_result」把 hook 回饋當成新回合,補正回覆看不到前面的推播與擋下紀錄。
+#   WAKE_START_LINE  = 最後一則 user 本人訊息或背景通知(只給 Mechanism 6 推播用,理由見 helper 檔頭的表)。
+#   REPLY_START_LINE = 最後一筆任何種類的 role=user 紀錄 = 這一則回覆的起點(被擋之後只看補正那一則)。
+# 整份 transcript 掃,不用 tail 視窗,避免邊界情況。
 #
 # **順序很重要**:2026-09-06 把 `THIS_TURN_TOOLS` 搬到所有 mechanism 之前(因為 Mechanism 6
 # 也要讀它),但那時 `LAST_USER_LINE` 還在 Mechanism 1 裡面算 —— 搬過頭之後它讀到的永遠是
 # 初始值 0,於是 `THIS_TURN_TOOLS` **恆為空字串**,驗證偵測看不到本 turn 跑過的 tsc,
 # Test 3(claim + tsc → 不該擋)因此一直紅。修法是把行號計算一起提前(2026-09-08)。
+TURN_MARKS=""
+WAKE_START_LINE=0
+REPLY_START_LINE=0
 if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ]; then
-  LAST_USER_LINE=$(grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | \
-    grep -v '"type":"tool_result"' | tail -1 | cut -d: -f1)
-  LAST_USER_LINE=${LAST_USER_LINE:-0}
+  TURN_MARKS=$(governance_turn_marks "$TRANSCRIPT_PATH") \
+    || governance_hook_integrity_fail 'self-audit turn boundary classification failed'
+  LAST_USER_LINE=$(governance_turn_last "$TURN_MARKS" human)
+  WAKE_START_LINE=$(governance_turn_last "$TURN_MARKS" human wake)
+  REPLY_START_LINE=$(governance_turn_last "$TURN_MARKS" human wake feedback meta)
 fi
 
-# `THIS_TURN_TOOLS` = 本 turn(最後一則 user 訊息之後)的 transcript 切片。
+# `THIS_TURN_TOOLS` = 本回合(LAST_USER_LINE 之後)的 transcript 切片:驗證、擋下、推播 / 提問這類「做過什麼」的證據。
+# `THIS_REPLY_TOOLS` = 這一則回覆(REPLY_START_LINE 之後)的切片:Mechanism 10 的交辦管道(說出口的話收不回來,被擋之後只看補正)。
 # 必須在所有 mechanism 之前算好:它原本只在 Mechanism 1 的 claim 分支內賦值,而 Mechanism 6
 # 也讀它 —— 當 Mechanism 1 沒進那個分支時,Mechanism 6 就會讀到未定義變數。
+THIS_TURN_TOOLS=""
+THIS_REPLY_TOOLS=""
 if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   THIS_TURN_TOOLS=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
-else
-  THIS_TURN_TOOLS=""
+  THIS_REPLY_TOOLS=$(tail -n +$((REPLY_START_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
 fi
 
 # ── Mechanism 1: Claim-verification gap ─────────────────────────────────────
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   # LAST_USER_LINE 已在上面(所有 mechanism 之前)算好,這裡不重算 ——
   # 重算會讓「提前計算」那段變成裝飾,順序 bug 也就看不出來。
+  # 回覆文字取「這一則回覆」(REPLY_START_LINE 之後);驗證證據(下面的 THIS_TURN_TOOLS)取整個回合 ——
+  # 被別的 hook 擋一次之後,補正回覆仍看得到同一回合稍早跑過的驗證。
   if [ "$LAST_USER_LINE" -gt 0 ]; then
-    TRANSCRIPT_LAST_ASSISTANT=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null | \
-      jq -r 'select(.message.role=="assistant") | .message.content[]?.text // empty' 2>/dev/null)
+    TRANSCRIPT_LAST_ASSISTANT=$(governance_assistant_text_after "$TRANSCRIPT_PATH" "$REPLY_START_LINE")
     [ -n "$TRANSCRIPT_LAST_ASSISTANT" ] && LAST_ASSISTANT="$TRANSCRIPT_LAST_ASSISTANT"
   fi
 
@@ -187,12 +212,13 @@ fi
 #   / iceberg 等)。觸發器該是「我要宣告全做完」自己,不是 user pushback。
 #   per self-verify.md Pre-final + meta-patterns M10 + mindset #6「tell me once」。
 if [ "${LAST_USER_LINE:-0}" -gt 0 ] && [ -n "$LAST_ASSISTANT" ]; then
-  COMPLETION_CLAIM_RE='(全做完|全部做完|都做完了|全部完成|所有任務.{0,6}(做完|完成)|100%.{0,4}完整|真的.{0,4}做完|全做到完)'
+  # 距離一律 ${U8C}{0,N}(N = 字數)、LC_ALL=C(理由見檔頭 U8C 那段;2026-11-21 前是 .{0,N},正式環境只剩約三分之一)。
+  COMPLETION_CLAIM_RE="(全做完|全部做完|都做完了|全部完成|所有任務${U8C}{0,6}(做完|完成)|100%${U8C}{0,4}完整|真的${U8C}{0,4}做完|全做到完)"
   # 否定/免責排除(對齊 Mechanism 1 RETRACT_RE 精神,2026-06-03 修 M7 自身 false-positive):
   # 宣告含「還沒說全做完」「沒資格說全做完」「核心做完…待跑」「等 X 才全做完/落地」等 disclaimer = 非完成宣告 → 不 fire。
-  COMPLETION_NEG_RE='(還沒.{0,6}(說|宣告|算|到)|沒.{0,3}(說|算|資格).{0,8}(全做完|完整)|未.{0,3}全做完|不(敢|算|是|該).{0,6}全做完|核心做完|完整性(掃描)?待|待.{0,4}(跑|落地|驗)|等.{0,18}(才|再).{0,8}(全做完|完整|落地|上架)|尚未.{0,4}完成)'
-  if grep -qE "$COMPLETION_CLAIM_RE" <<< "$LAST_ASSISTANT" \
-    && ! grep -qE "$COMPLETION_NEG_RE" <<< "$LAST_ASSISTANT"; then
+  COMPLETION_NEG_RE="(還沒${U8C}{0,6}(說|宣告|算|到)|沒${U8C}{0,3}(說|算|資格)${U8C}{0,8}(全做完|完整)|未${U8C}{0,3}全做完|不(敢|算|是|該)${U8C}{0,6}全做完|核心做完|完整性(掃描)?待|待${U8C}{0,4}(跑|落地|驗)|等${U8C}{0,18}(才|再)${U8C}{0,8}(全做完|完整|落地|上架)|尚未${U8C}{0,4}完成)"
+  if LC_ALL=C grep -qE "$COMPLETION_CLAIM_RE" <<< "$LAST_ASSISTANT" \
+    && ! LC_ALL=C grep -qE "$COMPLETION_NEG_RE" <<< "$LAST_ASSISTANT"; then
     THIS_TURN_FULL=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
     EDIT_COUNT=$(grep -oE '"name":"(Edit|Write|MultiEdit)"' <<< "$THIS_TURN_FULL" | wc -l | tr -d ' ')
     HAS_COMMIT=$(grep -cE 'git commit|git merge --ff' <<< "$THIS_TURN_FULL")
@@ -216,10 +242,11 @@ run_deep_audit_coverage_verify() {
     --self-provider "$SELF_PROVIDER"
 }
 if [ -n "$LAST_ASSISTANT" ] && [ -f scripts/verify-deep-audit-coverage.mjs ]; then
-  DEEPAUDIT_CLAIM_RE='(deep.?audit.{0,10}(完成|完整|done)|稽核.{0,8}(完整完美|全部完成|都.?跑完)|91.{0,6}dim.{0,8}(都|全).{0,4}(跑|過|完|有證據)|Phase A.{0,6}完成)'
-  DEEPAUDIT_NEG_RE='(未完成|還沒|尚未|缺口|gap|未跑|待跑|待驗|不算完成|覆蓋.{0,4}未|還有.{0,4}dim|待補)'
-  if grep -qE "$DEEPAUDIT_CLAIM_RE" <<< "$LAST_ASSISTANT" \
-    && ! grep -qE "$DEEPAUDIT_NEG_RE" <<< "$LAST_ASSISTANT"; then
+  # 距離同 Mechanism 7:${U8C}{0,N}(N = 字數)+ LC_ALL=C。
+  DEEPAUDIT_CLAIM_RE="(deep${U8C}?audit${U8C}{0,10}(完成|完整|done)|稽核${U8C}{0,8}(完整完美|全部完成|都${U8C}?跑完)|91${U8C}{0,6}dim${U8C}{0,8}(都|全)${U8C}{0,4}(跑|過|完|有證據)|Phase A${U8C}{0,6}完成)"
+  DEEPAUDIT_NEG_RE="(未完成|還沒|尚未|缺口|gap|未跑|待跑|待驗|不算完成|覆蓋${U8C}{0,4}未|還有${U8C}{0,4}dim|待補)"
+  if LC_ALL=C grep -qE "$DEEPAUDIT_CLAIM_RE" <<< "$LAST_ASSISTANT" \
+    && ! LC_ALL=C grep -qE "$DEEPAUDIT_NEG_RE" <<< "$LAST_ASSISTANT"; then
     if ! run_deep_audit_coverage_verify >/dev/null 2>&1; then
       WARNINGS="${WARNINGS}\n  • Deep-audit completion claim rejected:the active immutable run's provider set, 91 dimensions, or component evidence is incomplete."
       CRITICAL_DEEPAUDIT_COVERAGE=1
@@ -495,9 +522,26 @@ if [ -n "$LAST_ASSISTANT" ]; then
   PROV_ESCAPE_RE='(「|」|AI 推導|AI 建議|未經拍板|前提錯誤|我捏造|本文自創)'
   # M36(a) 引文完整性(2026-08-09):引 user 原話當裁決依據,但引文以徵詢語氣結尾
   # (吧/嗎/?)= 那是提議不是拍板。錨例:把「…才對吧?」寫成「…才對」竄改語氣。
-  QUOTE_ASK_RE='「[^」]*(吧|嗎)[?？]?」|「[^」]*[?？]」'
+  # 2026-11-21(E2-SIB):原本是一行 grep「「[^」]*(吧|嗎)[?？]?」」,正式環境(C 語系)下 [^」] 會把含 0x80 / 0x8D
+  # 位元組的中文字擋掉 —— user 拍板「這樣對吧」比不到。改成 LC_ALL=C + 字面 index / substr 逐一取出「」裡的字,
+  # 判它是不是以 吧 / 嗎 / ? / ? 結尾(跨行的引號不算,同原本一行一行比)。
+  QUOTE_ASK_AWK='
+    BEGIN { RS = "\001" }
+    { s = s $0 }
+    END {
+      p = 1
+      while ((a = index(substr(s, p), "「")) > 0) {
+        a = p + a - 1
+        b = index(substr(s, a + 3), "」")
+        if (b == 0) exit 1
+        q = substr(s, a + 3, b - 1)
+        if (!index(q, "\n") && q ~ /(吧|嗎|\?|？)$/) exit 0
+        p = a + 3
+      }
+      exit 1
+    }'
   if [ "$ATTRIB_HIT" = "1" ] \
-    && grep -qE "$QUOTE_ASK_RE" <<< "$LAST_ASSISTANT"; then
+    && LC_ALL=C awk "$QUOTE_ASK_AWK" <<< "$LAST_ASSISTANT"; then
     WARNINGS="${WARNINGS}\n  • 引文語氣(M36a):你引的 user 原話以「吧/嗎/?」結尾——那是徵詢不是拍板。改標「user 提議、查證後採用」或「未決」;引文一律逐字,禁刪語氣詞。"
   fi
   if [ "$ATTRIB_HIT" = "1" ] \
@@ -569,13 +613,16 @@ if [ -n "$LAST_ASSISTANT" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PA
   && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   USER_TEXT=$(sed -n "${LAST_USER_LINE}p" "$TRANSCRIPT_PATH" 2>/dev/null | \
     jq -r '.message.content as $c | if ($c|type)=="string" then $c else ($c[]?.text // empty) end' 2>/dev/null)
-  USER_TAIL=$(printf '%s' "$USER_TEXT" | tr -d '\r' | grep -v '^[[:space:]]*$' | tail -1)
-  ASK_TAIL_RE='(好不好|行不行|可以嗎|對吧|是不是|要不要|不是更[^?？]*嗎|嗎[?？]?|吧[?？]?)[?？]?$'
+  # 2026-11-21(E2-SIB):三個比對都改成 LC_ALL=C、方括號裡不放中文。原本 [?？] 在 C 語系下是「? 或 EF / BC / 9F 其中一個位元組」,
+  # 全形問號結尾的「這樣對吧？」比不到;[,,。] 會被「、」「」」的首位元組 E3 誤中;[[:space:]] 在 UTF-8 語系才含全形空白。
+  # 表態詞的逗號照原意補上全形「，」(原本寫成兩個半形逗號,「是，」「對，」從來沒被認過)。
+  USER_TAIL=$(printf '%s' "$USER_TEXT" | tr -d '\r' | LC_ALL=C grep -vE '^([[:space:]]|　)*$' | tail -1)
+  ASK_TAIL_RE='(好不好|行不行|可以嗎|對吧|是不是|要不要|不是更.*嗎|嗎(\?|？)?|吧(\?|？)?)(\?|？)?$'
   # 表態詞:任何明確裁決開頭都算合格 escape
-  STANCE_RE='(^|[[:space:]])(是[,,。]|不是|對[,,。]|不對|可以|不可以|不行|同意|不同意|你對|我錯|正確|錯了|沒錯|會|不會|要|不要|已決|未決)'
-  if [ -n "$USER_TAIL" ] && printf '%s' "$USER_TAIL" | grep -qE "$ASK_TAIL_RE"; then
+  STANCE_RE='(^|[[:space:]]|　)(是(，|,|。)|不是|對(，|,|。)|不對|可以|不可以|不行|同意|不同意|你對|我錯|正確|錯了|沒錯|會|不會|要|不要|已決|未決)'
+  if [ -n "$USER_TAIL" ] && LC_ALL=C grep -qE "$ASK_TAIL_RE" <<< "$USER_TAIL"; then
     REPLY_HEAD=$(printf '%s' "$LAST_ASSISTANT" | head -c 400)
-    if ! printf '%s' "$REPLY_HEAD" | grep -qE "$STANCE_RE"; then
+    if ! LC_ALL=C grep -qE "$STANCE_RE" <<< "$REPLY_HEAD"; then
       WARNINGS="${WARNINGS}\n  • 問句未正面回答:user 這則以徵詢語氣結尾(要裁決,不是要分析),但你開頭 400 字沒有任何表態。先給「是 / 不是 / 有條件的是(條件是什麼)」再展開;真的判不了就明說還缺什麼。"
     fi
   fi
@@ -610,31 +657,22 @@ fi
 #      thinking 不掃:那是推理,掃它會把「要不要叫 user 跑?不要」這種自我檢查也算成交辦。
 #      依全形「。！？，；」切成子句;含 不用 / 不必 / 不需 / 無需 / 無須 / 毋須 的子句不算(「你不用在對話框貼任何東西」),
 #      以子句為單位,所以「不用擔心，在對話框貼上下面這行」的第二個子句照算。
+#      2026-11-21(工作包 E7,E2 審查 PROBE-4 建議)補「別」:只認「別(再)在 / 貼 / 打 / 跑 / 執行 / 輸入」這種緊接動作的否定 ——
+#      裸的「別」會吃掉「特別 / 分別 / 別的」整個子句(「特別注意：在對話框貼上下面這行」仍要擋,Test 101;
+#      「特別在對話框…」這種字面仍會被當成否定,已知不涵蓋)。
+#      交辦管道只看「這一則回覆」(REPLY_START_LINE 之後):說出口的話收不回來,被擋之後只看補正那一則,否則永遠擋。
 #   ② 強交辦(以「! 」開頭的一行、行內 `! 、對話框 + 貼上 / 輸入 / 執行 / 打 + 指令代稱、貼到 / 貼進對話框):被擋紀錄從
 #      「上一則真 user 提問」起算,即本輪加上一輪 —— 涵蓋 (b)(c)。不拿掉「有被擋」這個前提:M36(b) 管的是被擋之後把動作
 #      丟回 user,沒被擋時教 user 用 `!` 不在這條規則內(Test 66)。
 #   ③ 一般交辦(在終端機打、你(要)(自己)跑 / 打 … + 指令、英文 run that command / waiting for you to …):被擋紀錄從「最後一則真 user
-#      提問」起算。真 user 提問 = role user、不是 tool_result、不是 isMeta、不是 Stop hook 回饋 / 背景工作通知 /
-#      system-reminder / `!` 指令的輸入輸出 / 對話接續摘要(有 origin 欄位時只認 origin.kind = human)。
+#      提問」起算。真 user 提問 = lib/_turn_boundary.sh 的 human(Stop hook 回饋 / 背景工作通知 / system-reminder /
+#      `!` 指令的輸入輸出 / 對話接續摘要都不是;有 origin 欄位時只認 origin.kind = human)。2026-11-21 前這裡另有一份
+#      self_lock_genuine_prompt_lines,判準搬進 helper 後兩邊只剩一份(工作包 E7)。
 #   「對話框」在本 repo 也是 Dialog 元件的中文名,所以只認「對話框 + 動詞 + 指令代稱」與「貼到 / 貼進對話框」,
 #   不認第一版的「對話框 … 貼」(「對話框的 footer 按鈕貼齊右側」不是交辦,Test 74)。
 #   比對一律 LC_ALL=C(正式環境的語系;scripts/run-provider-hook.mjs 組 hook 環境時寫死):中文只做字面比對,不放進方括號。
 #   被擋比對用 awk 逐行讀整段,不用 printf | grep -q:grep -q 比到就提早結束,寫端吃 SIGPIPE,pipefail 下回 141 = 假陰性(Test 60)。
 #   已知不涵蓋:被擋發生在兩輪以前,之後 user 又問了兩次才交辦(Test 67 把這個範圍釘住)。
-self_lock_genuine_prompt_lines() {
-  # 印出最後兩則「真 user 提問」的行號(舊在前)。判準見上面 ③。
-  grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | grep -v '"type":"tool_result"' \
-    | jq -R -r '
-      (capture("^(?<n>[0-9]+):(?<j>.*)$")?) as $m
-      | ($m.j | fromjson?) as $r
-      | select(($r | type) == "object" and $r.isMeta != true and $r.type != "api-request-blob")
-      | select((($r.origin? | type) != "object") or $r.origin.kind == "human")
-      | ($r.message.content? | if type == "string" then .
-          elif type == "array" then ([.[]? | select(type == "object" and .type == "text") | (.text? | strings)] | join("\n"))
-          else "" end) as $t
-      | select($t | test("^\\s*(Stop hook feedback|<task-notification>|<system-reminder>|<bash-(input|stdout|stderr)>|<local-command-|<command-(name|message|args)>|This session is being continued|\\[Request interrupted)") | not)
-      | $m.n' 2>/dev/null | tail -n 2
-}
 HANDOFF_SOURCE=""
 if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   BLOCKED_RE='(has been denied|Permission to use|Operation not permitted|EPERM|not accessible by personal access token|Blocked by classifier|auto mode classifier)'
@@ -649,7 +687,7 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   EN_HANDOFF_RE="(you('ve|’ve| have| can| need to| should| will)?|please) (just )?(run|type|paste|execute|enter) (that|this|the following|these|those|the) (command|commands|line|lines|one-liner)|waiting for you to (run|paste|type|execute|delete|remove)|(paste|type|enter) [^.]{0,40}(into|in) (the|this|your) (chat|prompt|input box|message box)|(run|execute|type|paste) [^.]{0,40}in your (own )?terminal|(run|execute) (it|this|that) yourself"
   HUMAN_ONLY_RE='(auth login|gh auth|MFA|OAuth|二階段|登入|帳單|billing|付費|credential reference|vault|Secret Manager)'
   SELF_LOCK_DELIVERED=""
-  if [ -n "${THIS_TURN_TOOLS:-}" ]; then
+  if [ -n "${THIS_REPLY_TOOLS:-}" ]; then
     SELF_LOCK_DELIVERED=$(jq -R -r '
       fromjson? | select(type == "object" and .type != "api-request-blob")
       | (.message.content? // empty) | arrays | .[]
@@ -660,7 +698,7 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
             | (.question? | strings),
               (.options[]? | select(type == "object") | (.label? | strings), (.description? | strings)))
         else empty end
-    ' <<< "$THIS_TURN_TOOLS") \
+    ' <<< "$THIS_REPLY_TOOLS") \
       || governance_hook_integrity_fail 'self-audit handoff channel extraction failed'
   fi
   HANDOFF_SOURCE="$LAST_ASSISTANT"
@@ -670,7 +708,7 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   if [ -n "$HANDOFF_SOURCE" ]; then
     # grep -v 全部濾掉時回 1,代表沒有可算的子句,不是錯誤
     HANDOFF_TEXT=$(LC_ALL=C awk '{ gsub(/。|！|？|，|；/, "\n"); print }' <<< "$HANDOFF_SOURCE" \
-      | LC_ALL=C grep -vE '不用|不必|不需|無需|無須|毋須')
+      | LC_ALL=C grep -vE '不用|不必|不需|無需|無須|毋須|別(再)?(在|貼|打|跑|執行|輸入)')
     if LC_ALL=C grep -qE "$STRONG_HANDOFF_RE" <<< "$HANDOFF_TEXT"; then
       HANDOFF_KIND=strong
     elif LC_ALL=C grep -qE "$WEAK_HANDOFF_RE" <<< "$HANDOFF_TEXT" \
@@ -680,7 +718,8 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   fi
   if [ -n "$HANDOFF_KIND" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ] \
     && ! grep -qE "$HUMAN_ONLY_RE" <<< "$HANDOFF_SOURCE"; then
-    GENUINE_LINES=$(self_lock_genuine_prompt_lines)
+    # 最後兩則 user 本人提問的行號(舊在前);判準只住 lib/_turn_boundary.sh
+    GENUINE_LINES=$(governance_turn_lines "$TURN_MARKS" human | tail -n 2)
     GENUINE_COUNT=$(grep -c . <<< "$GENUINE_LINES")
     GEN_PREV="$LAST_USER_LINE"; GEN_CUR="$LAST_USER_LINE"
     if [ "${GENUINE_COUNT:-0}" -ge 2 ]; then
@@ -708,7 +747,11 @@ fi
 #       deny 規則擋下(Permission to use … has been denied)不算 —— 那類擋下之後改寫是日常,逐次回報是 user 不想看的雜訊。
 #   (2) 只認 is_error = true 的 tool_result 本身。讀到的檔案、子代理 / 工作流輸出裡「引述」那句話不算(本工作包的
 #       規劃證據就引了那句);api-request-blob 是 API 請求的重放副本,會夾帶更早 turn 的擋下紀錄,也不算。
-#   (3) 本 turn 全部回覆文字裡有「被擋 / 擋下 / 分類器 / 被拒」任一 = 已回報。
+#   (3) 本回合全部回覆文字裡有「被擋 / 擋下 / 擋掉 / 擋住 / 分類器 / classifier / 被拒 / 拒絕」任一 = 已回報。
+#       後四個是 2026-11-21 補的(工作包 E7;E2 審查 PROBE-5:「這個 rm 被 auto mode classifier 擋掉」照實講了仍被擋)。
+#   (4) 範圍 = 本回合(LAST_USER_LINE 之後,lib/_turn_boundary.sh):擋下紀錄與回報文字都從 user 本人上一則訊息算起。
+#       2026-11-21 前用「最後一筆 role=user」切,背景工作通知或 Stop hook 回饋一插進來,先前的擋下就落在範圍外、永遠不查
+#       (PROBE-6);回報文字也看整個回合,前一則回覆已經講過、被別的 hook 擋下後的補正不必再講一次。
 if [ -n "$LAST_ASSISTANT" ] && [ -n "${THIS_TURN_TOOLS:-}" ]; then
   CLASSIFIER_DENIALS=$(jq -R -r '
     fromjson? | select(type == "object" and .type != "api-request-blob")
@@ -723,10 +766,98 @@ if [ -n "$LAST_ASSISTANT" ] && [ -n "${THIS_TURN_TOOLS:-}" ]; then
     | "classifier-denial"
   ' <<< "$THIS_TURN_TOOLS") \
     || governance_hook_integrity_fail 'self-audit classifier denial extraction failed'
+  CLASSIFIER_REPORT_TEXT="$LAST_ASSISTANT"
+  if [ -n "$CLASSIFIER_DENIALS" ]; then
+    CLASSIFIER_REPORT_TEXT="$(governance_assistant_text_after "$TRANSCRIPT_PATH" "$LAST_USER_LINE")
+${LAST_ASSISTANT}"
+  fi
   if [ -n "$CLASSIFIER_DENIALS" ] \
-    && ! LC_ALL=C grep -qE '被擋|擋下|分類器|被拒' <<< "$LAST_ASSISTANT"; then
+    && ! LC_ALL=C grep -qiE '被擋|擋下|擋掉|擋住|分類器|classifier|被拒|拒絕' <<< "$CLASSIFIER_REPORT_TEXT"; then
     CRITICAL_CLASSIFIER_SILENT=1
     WARNINGS="${WARNINGS}\n  • 分類器擋下卻沒講:本 turn 有動作被 auto mode 分類器擋下,回覆裡沒有交代被擋的是什麼、為什麼、影響到哪裡。"
+  fi
+fi
+
+# ── Mechanism 12: 發版前機器可讀項目自我稽核(2026-11-21,工作包 E7;M20 的機械化)────────────────
+# user 2026-11-17 20:01(台灣時間)原話:「你他媽確定沒有遺漏或亂做其他東西了齁？不要每次我還要再三詢問你你他媽才會知道自己錯在哪」
+# 起因:同日 AI 回報只剩 A101、A41 兩件就請 user 說「發版」,user 追問後自查才查出 24 項。發版同意綁產品指紋,
+# 但「開口要同意之前先把機器看得到的那一半查乾淨」沒有機械面。SSOT = governance/memory/feedback_solo_dev_workflow.md 發版同意段。
+# 名稱照實:紀錄只涵蓋機器讀得到的項目(工作樹、預覽綁定、PR 必過檢查),零未解 ≠ 沒有遺漏(交接 process-audit 根因 9)。
+# 判定全部在 scripts/release-self-audit.mjs(這裡只搬資料):
+#   ① 回覆 / 推播 / AskUserQuestion 題目裡,有沒有「請 user 現在說一句會被判成同意的話」—— 什麼字算同意只用
+#      release-consent-language.mjs 那一份判準;引述過去、解釋規則、回答「什麼時候會問你」、受理 user 本輪剛說的「發版」都不算;
+#      選項 label 直接交給同一份判準。
+#   ② 在要 → 紀錄(<git-dir>/governance-runtime/release-self-audit/current.json)必須 (a) 綁現在這一份:產品指紋 = 現在 HEAD 的
+#      (preview-binding;release-orchestrator.mjs productContentDigest,與發版同意同一個單位),record.headSha = 現在的 HEAD
+#      (git-worktree / pr-checks 量的是那一刻的 HEAD;只改治理檔把 CI 弄紅也要失效)(b) 未解 0(由逐項清單重算)
+#      (c) 由該腳本照機器讀回產生(腳本版本 + 整份 sha256 + 三個必備來源各帶證據);路徑有符號連結 / 硬連結 → 拒讀。
+# 範圍 = 本回合(LAST_USER_LINE 之後;推播、提問、回覆文字、user 原話都用同一個起點 —— 舊草稿推播從「最後一筆 role=user」抓、
+#   user 原話從真 user 提問抓,同一個機制兩種「本回合」,中間夾一則 hook 回饋就看不到前面那則請說發版的推播)。
+#   例外:本機制已經擋過一次(本回合有一則含 RELEASE-SELF-AUDIT BLOCKER 的 hook 回饋),那一則之前的不再重擋 ——
+#   推播送出去就收不回,AI 已經被告知,之後只看補正;不然紀錄補不齊時 turn 永遠結束不了。
+#   不做「同 hash 第二次降級」:那要開遙測才有狀態檔,這裡改用 transcript 本身判斷「擋過沒」。
+# 只在範圍內的文字含「 / 『 / “ 三種開引號之一、或有推播 / 提問時才叫 node(其餘 turn 零成本)。
+# 腳本不在(既有 fixture、consumer)= 不檢查,同 7c。
+RELEASE_SELF_AUDIT_SCRIPT="scripts/release-self-audit.mjs"
+RSA_REASON=""
+if [ -f "$RELEASE_SELF_AUDIT_SCRIPT" ] && [ ! -L "$RELEASE_SELF_AUDIT_SCRIPT" ]; then
+  RSA_FROM="${LAST_USER_LINE:-0}"
+  RSA_SLICE=""
+  RSA_REPLY="$LAST_ASSISTANT"
+  RSA_USER=""
+  if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] && [ "$RSA_FROM" -gt 0 ]; then
+    RSA_FEEDBACK_LINES=$(governance_turn_lines "$TURN_MARKS" feedback meta | awk -v from="$RSA_FROM" '$1 > from + 0' | tr '\n' ' ')
+    if [ -n "$RSA_FEEDBACK_LINES" ]; then
+      RSA_CUT=$(tail -n +$((RSA_FROM + 1)) "$TRANSCRIPT_PATH" 2>/dev/null | LC_ALL=C awk -v base="$RSA_FROM" -v want=" $RSA_FEEDBACK_LINES" \
+        'index(want, " " (NR + base) " ") && index($0, "RELEASE-SELF-AUDIT BLOCKER") { n = NR + base } END { print n + 0 }')
+      case "$RSA_CUT" in (''|*[!0-9]*) RSA_CUT=0 ;; esac
+      [ "$RSA_CUT" -gt "$RSA_FROM" ] && RSA_FROM="$RSA_CUT"
+    fi
+    RSA_SLICE=$(tail -n +$((RSA_FROM + 1)) "$TRANSCRIPT_PATH" 2>/dev/null)
+    RSA_REPLY="$(governance_assistant_text_after "$TRANSCRIPT_PATH" "$RSA_FROM")
+${LAST_ASSISTANT}"
+    RSA_USER=$(sed -n "${LAST_USER_LINE}p" "$TRANSCRIPT_PATH" 2>/dev/null | jq -r '
+      .message.content as $c
+      | if ($c | type) == "string" then $c
+        else ([$c[]? | select(type == "object" and .type == "text") | (.text? | strings)] | join("\n")) end' 2>/dev/null)
+  fi
+  RSA_SCAN=0
+  LC_ALL=C grep -qE '「|『|“' <<< "$RSA_REPLY" && RSA_SCAN=1
+  if [ -n "$RSA_SLICE" ] && LC_ALL=C grep -qE '"(PushNotification|AskUserQuestion)"' <<< "$RSA_SLICE"; then
+    RSA_SCAN=1
+  fi
+  if [ "$RSA_SCAN" = "1" ]; then
+    RSA_CHANNELS='{"delivered":[],"options":[]}'
+    if [ -n "$RSA_SLICE" ]; then
+      RSA_CHANNELS=$(jq -R -s -c '
+        [split("\n")[] | fromjson? | select(type == "object" and (.type == null or .type == "assistant"))
+          | (.message.content? // empty) | arrays | .[]
+          | select(type == "object" and .type == "tool_use")] as $uses
+        | {
+            delivered: [$uses[]
+              | if .name == "PushNotification" then (.input.message? | strings)
+                elif .name == "AskUserQuestion" then (.input.questions[]? | select(type == "object") | (.question? | strings))
+                else empty end],
+            options: [$uses[] | select(.name == "AskUserQuestion")
+              | .input.questions[]? | select(type == "object") | .options[]? | select(type == "object") | (.label? | strings)]
+          }' <<< "$RSA_SLICE") \
+        || governance_hook_integrity_fail 'release self-audit channel extraction failed'
+    fi
+    RSA_INPUT=$(jq -nc --arg reply "$RSA_REPLY" --arg user "$RSA_USER" --argjson channels "$RSA_CHANNELS" \
+      '{reply: $reply, currentUser: $user, delivered: $channels.delivered, options: $channels.options}') \
+      || governance_hook_integrity_fail 'release self-audit input could not be encoded'
+    RSA_OUT=$(node "$RELEASE_SELF_AUDIT_SCRIPT" stop-check <<< "$RSA_INPUT" 2>/dev/null)
+    RSA_RC=$?
+    case "$RSA_RC" in
+      0) ;;
+      2)
+        RSA_REASON=$(jq -r '.reason // empty' <<< "$RSA_OUT" 2>/dev/null)
+        [ -n "$RSA_REASON" ] || governance_hook_integrity_fail 'release self-audit block carried no reason'
+        CRITICAL_RELEASE_SELF_AUDIT=1
+        WARNINGS="${WARNINGS}\n  • 發版前機器可讀項目自我稽核:這一回合在向 user 要發版同意,但沒有綁現在這一份(產品指紋與 HEAD)、零未解、由腳本產生的紀錄。"
+        ;;
+      *) governance_hook_integrity_fail "release self-audit stop-check failed with rc=${RSA_RC}" ;;
+    esac
   fi
 fi
 
@@ -756,8 +887,13 @@ if [ "$NOTIFICATION_AVAILABLE" = "0" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TR
     NOTIFICATION_AVAILABLE=1
   fi
 fi
-if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
-  ASSISTANT_LEN=${#LAST_ASSISTANT}
+# 範圍(2026-11-21,工作包 E7;交接 process-audit 根因 8):從 WAKE_START_LINE 算起 = 最後一則 user 本人訊息或背景通知
+# (lib/_turn_boundary.sh)。Stop hook 回饋不切 —— 舊寫法把回饋當成新回合,「推播 → 被別的 hook 擋 → 補正回覆」會被誤擋
+# (11-18 17:27:04、17:27:15、18:06:40 三次,擋下前 9 到 54 秒其實已經推播過);背景通知照舊切,通知叫醒的回覆沒人在看。
+if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${WAKE_START_LINE:-0}" -gt 0 ]; then
+  # 長度一律算位元組(2026-11-21,E2-SIB 同族第 9 處):${#var} 在 UTF-8 語系算字、在 C 語系(正式環境)算位元組,
+  # 同一則 100 個中文字的回覆,測試判「不實質」、正式環境判「實質」。照正式環境的意思固定成位元組。
+  ASSISTANT_LEN=$(printf '%s' "$LAST_ASSISTANT" | wc -c | tr -d ' ')
   ASSISTANT_LEN=${ASSISTANT_LEN:-0}
   # Substantive trigger:長 reply OR 含 commit/ship/done/push keyword
   SUBSTANTIVE_RE='(commit|ship|push|done|完成|已 land|landed|merged|測試 PASS|verify gate PASS)'
@@ -775,7 +911,7 @@ if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TR
     # 改成解析 transcript 的 content block:type=tool_use 且 name=PushNotification 才算。
     HAS_PUSH=0
     if command -v python3 >/dev/null 2>&1; then
-      HAS_PUSH=$(TURN_START="$LAST_USER_LINE" python3 - "$TRANSCRIPT_PATH" <<'PY' 2>/dev/null || echo 0
+      HAS_PUSH=$(TURN_START="$WAKE_START_LINE" python3 - "$TRANSCRIPT_PATH" <<'PY' 2>/dev/null || echo 0
 import json, os, sys
 start = int(os.environ.get("TURN_START", "0"))
 count = 0
@@ -799,7 +935,7 @@ PY
       )
     else
       # 沒有 python3 的環境:退回較緊的兩段式比對(同一行同時有 tool_use 與 name),仍比舊寫法窄
-      HAS_PUSH=$(grep -E '"type"[[:space:]]*:[[:space:]]*"tool_use"' <<< "$THIS_TURN_TOOLS" 2>/dev/null | grep -cE '"name"[[:space:]]*:[[:space:]]*"PushNotification"' 2>/dev/null)
+      HAS_PUSH=$(tail -n +$((WAKE_START_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null | grep -E '"type"[[:space:]]*:[[:space:]]*"tool_use"' 2>/dev/null | grep -cE '"name"[[:space:]]*:[[:space:]]*"PushNotification"' 2>/dev/null)
     fi
     HAS_PUSH=${HAS_PUSH:-0}
     if [ "$HAS_PUSH" -eq 0 ]; then
@@ -823,8 +959,9 @@ if [ "$PEER_CONTEXT_PRESENT" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRAN
   THIS_TURN_RAW=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
   # Scope to assistant prose so commit messages, tool inputs, and historical citations do not
   # trigger the gate. Active intent requires an action verb adjacent to the resolved peer id.
-  PEER_INTENT_RE="(跟|找|請|問|用).{0,5}${PEER_PROVIDER}.{0,30}(討論|比稿|辯論|確認|propose|送 brief|exec|review|做|看)|(啟|跑|執行|觸發|invoke|run|start|trigger|execute|propose|action|will|may|going to).{0,15}(${PEER_PROVIDER}[-_ ]?(collab|exec|review)|dual-track)|@${PEER_PROVIDER} (DISCUSS|IMPLEMENT)|(派|dispatch|invoke|send to|送 brief|發給|propose) ${PEER_PROVIDER}|${PEER_PROVIDER}.{0,10}(做|跑|review)"
-  PEER_INTENT=$(grep -ciE "$PEER_INTENT_RE" <<< "$LAST_ASSISTANT" 2>/dev/null)
+  # 距離同 Mechanism 7:${U8C}{0,N}(N = 字數)+ LC_ALL=C(2026-11-21 E2-SIB;原本 .{0,N} 在正式環境只剩約三分之一)。
+  PEER_INTENT_RE="(跟|找|請|問|用)${U8C}{0,5}${PEER_PROVIDER}${U8C}{0,30}(討論|比稿|辯論|確認|propose|送 brief|exec|review|做|看)|(啟|跑|執行|觸發|invoke|run|start|trigger|execute|propose|action|will|may|going to)${U8C}{0,15}(${PEER_PROVIDER}[-_ ]?(collab|exec|review)|dual-track)|@${PEER_PROVIDER} (DISCUSS|IMPLEMENT)|(派|dispatch|invoke|send to|送 brief|發給|propose) ${PEER_PROVIDER}|${PEER_PROVIDER}${U8C}{0,10}(做|跑|review)"
+  PEER_INTENT=$(LC_ALL=C grep -ciE "$PEER_INTENT_RE" <<< "$LAST_ASSISTANT" 2>/dev/null)
   PEER_INTENT=${PEER_INTENT:-0}
   if [ "$PEER_INTENT" -gt 0 ]; then
     HAS_DISCOVERY=$(grep -cE "$PEER_DISCOVERY_RE" <<< "$THIS_TURN_RAW" 2>/dev/null)
@@ -1013,6 +1150,12 @@ if [ "${CRITICAL_CLASSIFIER_SILENT:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; the
     [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$SILENT_HASH" > "$LAST_BLOCKED_SILENT_FILE" 2>/dev/null || true; }
     emit_governance_block "🚨 CLASSIFIER-SILENT BLOCKER(governance/memory/reference_auto_mode_sandbox_boundaries.md 第四節第 4 條「分類器擋下 = 停在該處並回報」):本 turn 有動作被 auto mode 分類器擋下,但回覆沒有交代。在回覆寫明:哪一個動作被擋、分類器給的理由、這件事因此停在哪裡;不換工具或寫法重做同一件事、不下一 turn 再試,也不把指令交給 user 去跑。"
   fi
+fi
+
+# ── BLOCKER for Mechanism 12 發版前機器可讀項目自我稽核(2026-11-21)── 不做同 hash 降級;本機制擋過一次之後,
+# 那則 hook 回饋之前的推播 / 回覆不再重擋(範圍規則見 Mechanism 12 檔頭),所以不會死鎖。
+if [ "${CRITICAL_RELEASE_SELF_AUDIT:-0}" = "1" ] && [ -n "${RSA_REASON:-}" ]; then
+  emit_governance_block "$RSA_REASON"
 fi
 
 # ── BLOCKER for Mechanism 8b 引原話當限制理由卻沒寫原題(2026-11-15)── 升級邏輯同 M10。

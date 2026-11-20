@@ -166,8 +166,12 @@ try {
     `「${AI_SIDE}」不在 conditionalMarkers 裡(ND1 刻意不收),必須判 consent`)
   assert.equal(writeReleaseConsent({ headSha: head, branch, quote: AI_SIDE, source: 'manual-agent' }).quote, AI_SIDE,
     '手動落地(當初那份收據走的路)必須與 hook 同判')
-  //     同一格的另一面:命中清單的條件句 → 仍是 deferred(與 5d 同一份判準)
-  assert.equal(classifyConsentPrompt('等我看完預覽再發版').verdict, 'deferred', '命中清單的條件句不得被一起放寬')
+  //     同一格的另一面:句型一樣是「…就發版」、但條件在 user 身上而且命中清單 → deferred(與 5d 同一份判準)。
+  //     2026-11-21(工作包 E7,E1 驗證 minor):原本這裡用「等我看完預覽再發版」,和 5d 第一句一字不差,新增覆蓋是零;
+  //     換成同句型的「我確認後就發版」,才對照得出「同一句型,條件換到 user 身上就改判」。
+  const USER_SIDE_SAME_SHAPE = '我確認後就發版'
+  assert.equal(classifyConsentPrompt(USER_SIDE_SAME_SHAPE).verdict, 'deferred',
+    `「${USER_SIDE_SAME_SHAPE}」與 5e 同句型(…就發版),條件在 user 身上而且命中清單,不得被一起放寬`)
   //     會紅的對照組:判準若多一條「做完了就」,同一句必須改判 —— 證明這句真的走到條件那一步、
   //     這格量得到判準變動,不是恆綠。只在記憶體裡複製判準,不寫任何檔。
   const livePolicy = loadConsentPolicy()
@@ -175,24 +179,29 @@ try {
   assert.equal(classifyConsentPrompt(AI_SIDE, tightened).verdict, 'deferred',
     '判準多一條「做完了就」卻沒改判 = 這格量不到判準變動,綠燈是零證據')
 
-  // 5f. 第 4 步「邊界」段列的例句,逐句鎖住**現況**(2026-11-18,E1 反駁 #1)。
-  //     分界是「有沒有命中 conditionalMarkers 的字面」,兩個方向都有已知誤判。
-  //     **這張表斷言的是現況,不是期望**:偏放行那幾句是既有缺口(工程待辦,寫在第 4 步)。
-  //     哪天收緊清單,這格會紅 —— 意思是「同步改第 4 步邊界段與這張表」,不是「把清單改回去」。
-  //     作用是讓註解寫的例句與程式一致(M32:文字宣稱 ≠ 程式真實)。
+  // 5f. 第 4 步「邊界」段列的例句,逐句鎖住**現況**(2026-11-18 起;2026-11-21 工作包 E7 收緊兩面後改期望)。
+  //     分界是「有沒有命中 conditionalMarkers 的字面」。這張表斷言的是現況:改了清單,這格會紅 ——
+  //     意思是「同步改第 4 步邊界段與這張表」,不是「把清單改回去」(M32:文字宣稱 ≠ 程式真實)。
   const BOUNDARY = [
-    // 偏放行(既有缺口):條件在 user 身上或在時間上,清單沒有那幾個字 → consent
-    ['改完給我看,我說可以再發版', 'consent'],
-    ['你部署好讓我看,沒問題就發版', 'consent'],
-    ['看完沒問題就發版', 'consent'],
-    ['我看一下沒問題就發版', 'consent'],
-    ['確認沒問題才發版', 'consent'],
-    ['晚點發版', 'consent'],
-    ['下午再發版', 'consent'],
-    ['過兩天發版', 'consent'],
+    // 2026-11-21 收緊:條件在 user 身上或在時間上 → deferred(原本 consent,hook 會寫出有效收據)
+    ['改完給我看,我說可以再發版', 'deferred'],
+    ['你部署好讓我看,沒問題就發版', 'deferred'],
+    ['看完沒問題就發版', 'deferred'],
+    ['我看一下沒問題就發版', 'deferred'],
+    ['確認沒問題才發版', 'deferred'],
+    ['晚點發版', 'deferred'],
+    ['下午再發版', 'deferred'],
+    ['過兩天發版', 'deferred'],
+    // 2026-11-21 放寬:已經看過(「了」)不是條件 → consent(原本 deferred,user 得再講一次)
+    ['我看過了,發版', 'consent'],
+    ['我看完了，發版', 'consent'],
+    // 收緊刻意不吃的已看過說法 → 仍是 consent(E1 驗證提醒:加「沒問題就」會把第一句誤擋)
+    ['預覽我看了沒問題就發版', 'consent'],
+    ['你給我看的那版沒問題，發版', 'consent'],
+    ['我下午看過了，發版', 'consent'],
+    ['我說可以就是可以，發版', 'consent'],
+    // 這次不動的已知分界(理由在第 4 步邊界段)
     ['CI 綠了就發版', 'consent'], // 與 5d「如果 CI 全綠就發版」意思相同、判定相反
-    // 偏保守:清單的字出現在已看過的同意、或 5e 同一類的句子裡 → deferred
-    ['我看過了,發版', 'deferred'],
     ['先把剩下的做完再發版', 'deferred'],
     ['如果都做完了就發版', 'deferred'],
   ]
@@ -200,13 +209,47 @@ try {
     assert.equal(classifyConsentPrompt(text).verdict, now,
       `「${text}」的判定與 release-consent-language.mjs 第 4 步邊界段寫的不同 —— 改了清單就要一起改那段與這張表`)
   }
-  //     會紅的對照組:清單多一個「給我看」,缺口第一句必須改判 deferred,而 5e 那句不受影響 ——
-  //     證明這張表量得到清單變動,也證明補 user 那一側的詞不會牽動 ND1 那一類。只在記憶體裡,不寫檔。
-  const reviewSide = { ...livePolicy, conditionalMarkers: [...livePolicy.conditionalMarkers, '給我看'] }
-  assert.equal(classifyConsentPrompt(BOUNDARY[0][0], reviewSide).verdict, 'deferred',
-    '清單多一條「給我看」卻沒改判 = 這張表量不到清單變動,綠燈是零證據')
-  assert.equal(classifyConsentPrompt(AI_SIDE, reviewSide).verdict, 'consent',
-    '補 user 那一側的檢視條件,不得牽動 5e 那一類(ND1)')
+  //     會紅的對照組(只在記憶體裡複製判準,不寫檔):每一條新補的詞拿掉,它負責的那一句必須改判回 consent ——
+  //     證明這張表量得到每一條詞,不是其中一條就讓整張表恆綠;5e 那句在每一種拿掉的版本下都必須仍是 consent(ND1)。
+  const withoutMarker = (marker) => ({ ...livePolicy, conditionalMarkers: livePolicy.conditionalMarkers.filter((item) => item !== marker) })
+  const MARKER_ANCHORS = [
+    ['給我看(?!的|過)', '改完給我看,發版'],
+    ['讓我看(?!的|過)', '你部署好讓我看,沒問題就發版'],
+    ['我說(可以|OK|ok|好)(再|才|之後|後|就發)', '改好我說可以再發版'],
+    ['看(完|一下)(?!了).{0,4}(沒問題|沒有問題|OK|ok).{0,2}(就|再|才)', '看完沒問題就發版'],
+    ['沒(有)?問題才', '確認沒問題才發版'],
+    ['(下午|晚上|今晚|明早|晚點|晚一點|待會|稍後|等一下|改天|下週|下禮拜|過兩天|過幾天).{0,3}(發版|發布|發佈)', '晚點發版'],
+  ]
+  for (const [marker, anchor] of MARKER_ANCHORS) {
+    assert.ok(livePolicy.conditionalMarkers.includes(marker), `清單裡沒有「${marker}」—— 這張對照表跟 release-workflow.json 漂移了`)
+    assert.equal(classifyConsentPrompt(anchor).verdict, 'deferred', `「${anchor}」現在應判 deferred`)
+    assert.equal(classifyConsentPrompt(anchor, withoutMarker(marker)).verdict, 'consent',
+      `拿掉「${marker}」之後「${anchor}」沒有改判 = 這一條詞量不到,綠燈是零證據`)
+    assert.equal(classifyConsentPrompt(AI_SIDE, withoutMarker(marker)).verdict, 'consent', '5e 那一類不得被任何一條詞牽動(ND1)')
+  }
+  //     「了」那一面的對照:換回沒有 (?!了) 的舊寫法,「我看過了,發版」必須改判回 deferred。
+  const looseSeen = { ...livePolicy, conditionalMarkers: livePolicy.conditionalMarkers.map((item) => (item === '我看過(?!了)' ? '我看過' : item)) }
+  assert.equal(classifyConsentPrompt('我看過了,發版', looseSeen).verdict, 'deferred',
+    '換回舊的「我看過」卻沒改判 = 這格量不到「已看過」那一面')
+
+  // 5g. 磁碟上 user 真的說過、與「要不要發版」同形狀的話(2026-09-27 到 11-20 的 session transcript,逐字;時間為 UTC)。
+  //     2026-11-21 收緊兩面時,掃出的 17 則含發版 / 發布字樣的 user 訊息判定全部沒變;這 10 句逐句鎖住,
+  //     之後再改清單,任何一句被改判都會紅(要改先拿新證據改這張表)。
+  const REAL_USER = [
+    ['2026-09-27T05:45:24Z(末句)', '我猜上述可能你都已經確認好了，總之確保確認好之後就發版', 'consent'],
+    ['2026-09-30T00:27:02Z', '發版', 'consent'],
+    ['2026-11-05T14:48:56Z', '到底為何會這麼久？以前都不需要這麼久啊\n而且我他媽因為額度的關係已經好幾個禮拜都沒有發版\n就是因為你消耗了超多token每次都沒有把事情做完就用光了\n到底是什麼毛病？', 'question'],
+    ['2026-11-05T15:14:47Z', '所以確定這樣的流程修正之後真的有發版的可能？', 'question'],
+    ['2026-11-06T11:18:41Z', '已經使用94%兩，可以發版嗎？', 'question'],
+    ['2026-11-06T11:19:35Z', '已經用了94%還能發版完成的話就發版', 'consent'],
+    ['2026-11-06T11:21:07Z', '所有下週該做的事情都有整理好？等發版完之後下週就能夠無縫接軌？', 'question'],
+    ['2026-11-17T11:42:05Z', '現在該做的任務都做完了就發版', 'consent'],
+    ['2026-11-19T00:44:45Z', '另外想確認，之前跟你提到的發版 release note的部分已經做了嗎？還是在待辦？', 'question'],
+    ['2026-11-20T01:44:11Z', '大概還要多久才可以做完全部的東西並發版', 'deferred'],
+  ]
+  for (const [when, text, verdict] of REAL_USER) {
+    assert.equal(classifyConsentPrompt(text).verdict, verdict, `user ${when} 的原話判定變了:「${text}」`)
+  }
 
   // 重新落地一份乾淨的同意,讓後面的格子有東西可用
   writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'test' })
