@@ -1,8 +1,16 @@
 #!/bin/bash
-# Runner: executes all test_*.sh in this directory, aggregates results.
+# Runner: executes the test_*.sh suites in this directory, aggregates results.
 #
-# Usage: bash packages/design-system/ds-canonical/hooks/tests/run-all.sh
-#        npm run hooks:test(via package.json wrapper)
+# Usage: bash packages/design-system/ds-canonical/hooks/tests/run-all.sh [test_x.sh ...]
+#        npm run hooks:test                        every suite —— the canonical full run(gates / CI / harness)
+#        npm run hooks:test -- test_x.sh [...]     only the named suites(file names, or paths that resolve
+#                                                  into this directory; relative to where this was started)
+#
+# A subset run keeps every guard of the full run —— the static mktemp gate, the TMPDIR probe, the
+# repository-write detector after each suite and the hook coverage closure —— but it is not the full
+# run: the summary says SUBSET and how many suites did not run, so a green subset is never read as
+# "hook tests passed". A name that is not a suite here stops the run before any suite starts(a typo
+# must not turn into a zero-suite green, M37).
 #
 # Every suite runs with stdin from /dev/null. Hooks read their payload with `INPUT=$(cat)`, so a
 # test that calls a hook without feeding one inherits this runner's stdin and waits for as long as
@@ -13,6 +21,9 @@
 
 set -u
 
+# Relative suite paths on the command line are relative to where the runner was started(the repo
+# root under `npm run`), so remember it before the cd below.
+CALLER_PWD="$PWD"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Hook tests are behavioral verification, never a telemetry-producing native session. Use the real
 # git root for path semantics and make the entire replay byte-for-byte read-only.
@@ -30,6 +41,51 @@ export GOVERNANCE_TELEMETRY_OPT_IN=0
 cd "$SCRIPT_DIR" || exit 1
 if [ -z "$GOVERNANCE_PROJECT_DIR" ]; then
   echo "❌ hook tests must run inside a Git worktree(the repository-write detector below reads git status)" >&2
+  exit 1
+fi
+
+# Which suites run. No argument = every test_*.sh here(the canonical full suite). Every name is
+# checked before anything runs; the guards below run the same way for a subset as for the full run.
+ALL_SUITES=()
+for test_file in test_*.sh; do
+  [ -f "$test_file" ] && ALL_SUITES+=("$test_file")
+done
+SUITES=()
+SUBSET=0
+if [ "$#" -gt 0 ]; then
+  SUBSET=1
+  SUITE_DIR_REAL="$(pwd -P)"
+  for arg in "$@"; do
+    name="${arg##*/}"
+    if [ "$name" != "$arg" ]; then
+      case "$arg" in /*) candidate="$arg" ;; *) candidate="$CALLER_PWD/$arg" ;; esac
+      parent="${candidate%/*}"
+      [ -n "$parent" ] || parent=/
+      parent="$(cd "$parent" 2>/dev/null && pwd -P)" || parent=""
+      if [ "$parent" != "$SUITE_DIR_REAL" ]; then
+        echo "❌ hooks:test:$arg is not in $SCRIPT_DIR(name a suite file there, e.g. test_check_x.sh)" >&2
+        exit 1
+      fi
+    fi
+    case "$name" in
+      test_*.sh) ;;
+      *) echo "❌ hooks:test:$arg is not a suite name(test_*.sh)" >&2; exit 1 ;;
+    esac
+    if [ ! -f "$name" ]; then
+      echo "❌ hooks:test:no suite named $name in $SCRIPT_DIR" >&2
+      exit 1
+    fi
+    duplicate=0
+    for picked in ${SUITES[@]+"${SUITES[@]}"}; do
+      [ "$picked" = "$name" ] && duplicate=1
+    done
+    [ "$duplicate" = 1 ] || SUITES+=("$name")
+  done
+else
+  SUITES=(${ALL_SUITES[@]+"${ALL_SUITES[@]}"})
+fi
+if [ "${#SUITES[@]}" -eq 0 ]; then
+  echo "❌ hooks:test:no test_*.sh suite found in $SCRIPT_DIR" >&2
   exit 1
 fi
 
@@ -105,8 +161,7 @@ echo "════════════════════════�
 echo "  Hook test runner"
 echo "════════════════════════════════════════"
 
-for test_file in test_*.sh; do
-  [ -f "$test_file" ] || continue
+for test_file in "${SUITES[@]}"; do
   TOTAL_SUITES=$((TOTAL_SUITES+1))
   echo ""
   echo "▶ Running: $test_file"
@@ -138,6 +193,9 @@ done
 echo ""
 echo "════════════════════════════════════════"
 echo "  Suites: $PASSED_SUITES / $TOTAL_SUITES passed"
+if [ "$SUBSET" = 1 ]; then
+  echo "  SUBSET:$TOTAL_SUITES of ${#ALL_SUITES[@]} suites(named on the command line);$(( ${#ALL_SUITES[@]} - TOTAL_SUITES )) did not run —— not the full hook suite"
+fi
 echo "════════════════════════════════════════"
 
 # Coverage report:hooks with / without tests

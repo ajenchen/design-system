@@ -27,6 +27,11 @@
  *      run-all 的 stdin 接一條本測試自己握著寫端的 FIFO(讀的人永遠等不到 EOF),時限到就砍整個行程群組:
  *   B8 綠面:一支像 hook 一樣 `$(cat)` 的替身照樣跑完、讀到 0 bytes(suite 的 stdin 是 /dev/null)。
  *   B9 對照組:同一棵只把 run-all 的 `< /dev/null` 拿掉 —— 必須卡住、被時限砍掉(證明 B8 的綠不是因為 FIFO 根本沒擋住)。
+ *   B10–B13 子集參數(2026-11-20;`npm run hooks:test -- test_x.sh`):
+ *   B10 只跑點名的那支(檔名或指進本目錄的路徑都收),總結標 SUBSET 與「幾支沒跑」,覆蓋率閉包照跑。
+ *   B11 點錯(沒有這支 / 不是 test_*.sh / 路徑指到別的目錄)→ 一支 suite 都不跑就拒絕(打錯字不能變成 0 支 suite 的綠)。
+ *   B12 子集照跑靜態閘:只點名沒問題的那支,另一支拿掉防護 —— 照樣在跑任何 suite 之前拒絕並點名那一行。
+ *   B13 子集照跑寫入偵測:點名的那支往 hooks 樹寫檔 —— 照樣紅並點名。
  *
  * 假 mktemp 拒絕時往 fd 3 寫一個標記;fd 1 / 2 / 3 是同一個檔,所以標記按時間序落在各 suite 的輸出段落裡,
  * 連把 stderr 丟進 /dev/null 的那一支(test_record_release_consent.sh)也數得到。
@@ -370,6 +375,63 @@ try {
     check(r.timedOut, 'B9 拿掉 `< /dev/null` 後,讀 stdin 的替身卡住、被 10 秒時限砍掉(量具看得到「卡住」)', tail(r.out))
     check(!r.out.includes(STDIN_MARK), 'B9 替身沒有讀完(停在 $(cat))', tail(r.out))
   }
+
+  // B10–B13 子集參數:run-all 後面帶一個 suite 參數(argv 寫成字面陣列,理由同 runAll)
+  const OTHER_PROBE = 'test_zz_other_probe.sh'
+  const otherProbe = (repo) => writeFileSync(join(repo, TESTS, OTHER_PROBE), ['#!/bin/bash', 'echo "other probe ran"', ''].join('\n'))
+  const runSubset = (repo, suiteArg) => {
+    writeFileSync(join(state, 'count'), '0')
+    writeFileSync(join(state, 'limit'), '1000000')
+    const tmp = join(T, `tmp-${repo.split('/').pop()}`)
+    mkdirSync(tmp, { recursive: true })
+    const log = join(T, `${repo.split('/').pop()}-subset.log`)
+    const fd = openSync(log, 'w')
+    const r = spawnSync('bash', ['--', join(repo, TESTS, 'run-all.sh'), suiteArg], {
+      cwd: repo,
+      stdio: ['ignore', fd, fd, fd],
+      env: cleanEnv({ PATH: `${bin}:${process.env.PATH}`, TMPDIR: tmp }),
+      timeout: 150_000,
+    })
+    closeSync(fd)
+    return { status: r.status, signal: r.signal, out: readFileSync(log, 'utf8') }
+  }
+
+  // B10 只跑點名的那支
+  {
+    const repo = makeCopy('b10', { suites: [PROBE, OTHER_PROBE], mutate: (r) => { writeProbe(INTO_TMPDIR)(r); otherProbe(r) } })
+    const byName = runSubset(repo, PROBE)
+    const sec = sections(byName.out)
+    check(sec.has(PROBE) && !sec.has(OTHER_PROBE), `B10 只跑點名的 ${PROBE},沒跑 ${OTHER_PROBE}`, tail(byName.out))
+    check(byName.out.includes('SUBSET:1 of 2 suites') && byName.out.includes('1 did not run'), 'B10 總結標明 SUBSET、跑了幾支 / 共幾支、幾支沒跑', tail(byName.out))
+    check(byName.out.includes('📊 Coverage:'), 'B10 覆蓋率閉包照跑', tail(byName.out))
+    const byPath = runSubset(repo, join(repo, TESTS, PROBE))
+    check(sections(byPath.out).has(PROBE) && !sections(byPath.out).has(OTHER_PROBE), 'B10 指進本目錄的路徑也收,一樣只跑那一支', tail(byPath.out))
+  }
+
+  // B11 點錯 → 一支都不跑就拒絕
+  {
+    const repo = makeCopy('b11', { suites: [PROBE], mutate: writeProbe(INTO_TMPDIR) })
+    for (const [arg, why] of [['test_no_such_suite.sh', 'no suite named'], ['run-all.sh', 'is not a suite name'], [join(T, PROBE), 'is not in']]) {
+      const r = runSubset(repo, arg)
+      check(r.status !== 0 && !r.out.includes('▶ Running') && r.out.includes(why), `B11 「${arg}」→ 拒絕(${why}),一支 suite 都沒跑`, tail(r.out))
+    }
+  }
+
+  // B12 子集照跑靜態閘
+  {
+    let line = 0
+    const repo = makeCopy('b12', { suites: [VICTIM, PROBE], mutate: (r) => { line = unguard(r); writeProbe(INTO_TMPDIR)(r) } })
+    const r = runSubset(repo, PROBE)
+    check(r.status !== 0 && r.out.includes(`${VICTIM}:${line} TMP`) && !r.out.includes('▶ Running'),
+      `B12 只點名 ${PROBE},靜態閘照樣點名 ${VICTIM}:${line} 並整輪不跑`, tail(r.out))
+  }
+
+  // B13 子集照跑寫入偵測
+  {
+    const repo = makeCopy('b13', { suites: [PROBE, OTHER_PROBE], mutate: (r) => { writeProbe(INTO_HOOK_TREE)(r); otherProbe(r) } })
+    const r = runSubset(repo, PROBE)
+    check(r.status !== 0 && r.out.includes(`FATAL: ${PROBE} ${WROTE}`), `B13 子集裡寫入偵測照樣點名 ${PROBE}`, tail(r.out))
+  }
 } catch (error) {
   check(false, `meta-test 本身出錯:${error.stack ?? error}`)
 } finally {
@@ -380,4 +442,4 @@ if (failures) {
   console.error(`✗ test-hook-test-fixture-guard-invariant:${failures} 項不符`)
   process.exit(1)
 }
-console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面 + 寫入偵測兩半(巢狀 .git、git status)與量具失效 + suite 的 stdin 接 /dev/null(開著的 stdin 不會卡住,拿掉就卡住)全部成立')
+console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面 + 寫入偵測兩半(巢狀 .git、git status)與量具失效 + suite 的 stdin 接 /dev/null(開著的 stdin 不會卡住,拿掉就卡住)+ 子集參數(只跑點名的、點錯就拒絕、靜態閘與寫入偵測照跑)全部成立')
