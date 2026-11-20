@@ -472,7 +472,7 @@ export const ButtonAsControl: Story = {
                 fileListMode="compact"
                 onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))}
                 onUpload={(accepted) =>
-                  setFiles((prev) => [...prev, ...accepted.map((f, k) => ({ id: `contract-${Date.now()}-${k}`, name: f.name, size: f.size, status: 'completed' as const }))])
+                  setFiles((prev) => [...prev, ...accepted.map((f, k) => ({ id: `contract-${Date.now()}-${k}`, name: f.name, size: f.size, status: 'completed' as const }))]) // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
                 }
               />
               <FieldDescription>PDF / DOCX,最大 10 MB</FieldDescription>

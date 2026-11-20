@@ -66,7 +66,7 @@ export const BulkImageUpload = {
           onUpload={(accepted) =>
             setFiles((prev) => [
               ...prev,
-              ...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })),
+              ...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })), // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
             ])
           }
         />
@@ -101,7 +101,7 @@ const FileListDemo = () => {
             setItems((prev) => [
               ...prev,
               ...accepted.map((f, i) => ({
-                id: `new-${Date.now()}-${i}`,
+                id: `new-${Date.now()}-${i}`, // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
                 name: f.name,
                 size: f.size,
                 status: 'completed' as const,
@@ -244,7 +244,7 @@ export const ButtonVariant = {
           onUpload={(accepted) =>
             setItems((prev) => [
               ...prev,
-              ...accepted.map((f, i) => ({ id: `n-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })),
+              ...accepted.map((f, i) => ({ id: `n-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })), // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
             ])
           }
         />
