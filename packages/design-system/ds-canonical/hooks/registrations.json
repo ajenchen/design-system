@@ -296,7 +296,7 @@
             "kind": "hook",
             "hook": "post_edit_dispatcher.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block"
           },
           {
             "kind": "hook",

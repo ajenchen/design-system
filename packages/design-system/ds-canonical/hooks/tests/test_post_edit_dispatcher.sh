@@ -1,10 +1,14 @@
 #!/bin/bash
 # Enforcement-integrity tests for post_edit_dispatcher.sh.
+# 2026-11-18 D4-02:dispatcher 由「只出聲」改成「會擋」(outputMode governance-context-or-block)——
+# helper exit 2 + stderr-only = 擋;擋與既有違規一起給;其餘異常一律 fail closed(exit 70)。
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE="$SCRIPT_DIR/../post_edit_dispatcher.sh"
+REAL_LIB="$SCRIPT_DIR/../lib"
+REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 FIXTURE=$(mktemp -d)
 [ -n "${FIXTURE:-}" ] && [ -d "$FIXTURE" ] || { echo "❌ mktemp -d failed(FIXTURE;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf -- "$FIXTURE"' EXIT
@@ -13,11 +17,8 @@ cp "$SOURCE" "$FIXTURE/post_edit_dispatcher.sh"
 
 HELPERS=(
   _token_hygiene.sh
-  _hardcoded_strings.sh
   _code_quality.sh
-  _person_data_richness.sh
   _overlay_handcraft.sh
-  _cva_default_sync.sh
   _story_compile_drift.sh
   _governance_coverage_check.sh
 )
@@ -48,11 +49,47 @@ write_helper() {
         'printf '\''{"governanceContext":{"hookEventName":"PostToolUse","message":"context two"}}\n'\''' \
         'exit 0' >"$FIXTURE/lib/$helper"
       ;;
+    block-one)
+      printf '%s\n' \
+        '#!/bin/bash' \
+        'cat >/dev/null' \
+        'printf '\''block one\n'\'' >&2' \
+        'exit 2' >"$FIXTURE/lib/$helper"
+      ;;
+    block-two)
+      printf '%s\n' \
+        '#!/bin/bash' \
+        'cat >/dev/null' \
+        'printf '\''block two\n'\'' >&2' \
+        'exit 2' >"$FIXTURE/lib/$helper"
+      ;;
+    block-with-stdout)
+      printf '%s\n' \
+        '#!/bin/bash' \
+        'cat >/dev/null' \
+        'printf '\''{"governanceContext":{"hookEventName":"PostToolUse","message":"mixed"}}\n'\''' \
+        'printf '\''mixed block\n'\'' >&2' \
+        'exit 2' >"$FIXTURE/lib/$helper"
+      ;;
+    block-empty)
+      printf '#!/bin/bash\ncat >/dev/null\nexit 2\n' >"$FIXTURE/lib/$helper"
+      ;;
+    block-integrity-marker)
+      printf '%s\n' \
+        '#!/bin/bash' \
+        'cat >/dev/null' \
+        'printf '\''GOVERNANCE_INTEGRITY: helper instrument broke\n'\'' >&2' \
+        'exit 2' >"$FIXTURE/lib/$helper"
+      ;;
     rc1)
       printf '#!/bin/bash\ncat >/dev/null\nexit 1\n' >"$FIXTURE/lib/$helper"
       ;;
-    rc2)
-      printf '#!/bin/bash\ncat >/dev/null\nexit 2\n' >"$FIXTURE/lib/$helper"
+    rc70)
+      printf '%s\n' \
+        '#!/bin/bash' \
+        'cat >/dev/null' \
+        'printf '\''GOVERNANCE_INTEGRITY: helper verifier unavailable\n'\'' >&2' \
+        'exit 70' >"$FIXTURE/lib/$helper"
       ;;
     malformed)
       printf '%s\n' \
@@ -163,6 +200,51 @@ else
   fail "valid helper context aggregation (got exit $EXIT)"
 fi
 
+# 擋:helper exit 2 + stderr-only → dispatcher exit 2,stderr 帶齊兩支擋的理由與另一支的既有清單,stdout 空
+reset_helpers
+write_helper "_token_hygiene.sh" block-one
+write_helper "_overlay_handcraft.sh" block-two
+write_helper "_code_quality.sh" context-one
+run_hook "$VALID_PAYLOAD"
+if [ "$EXIT" -eq 2 ] && [ ! -s "$FIXTURE/stdout" ] \
+  && grep -qF 'block one' "$FIXTURE/stderr" && grep -qF 'block two' "$FIXTURE/stderr" \
+  && grep -qF 'context one' "$FIXTURE/stderr" && ! grep -qF 'GOVERNANCE_INTEGRITY' "$FIXTURE/stderr"; then
+  pass 'helper blocks propagate as one stderr-only exit 2 carrying every reason plus existing-violation context'
+else
+  fail "helper block propagation (got exit $EXIT)"
+fi
+
+# 擋的 helper 排在後面也一樣:不得因為前面有人出聲就漏掉後面的擋
+reset_helpers
+write_helper "_token_hygiene.sh" context-one
+write_helper "_governance_coverage_check.sh" block-one
+run_hook "$VALID_PAYLOAD"
+if [ "$EXIT" -eq 2 ] && [ ! -s "$FIXTURE/stdout" ] && grep -qF 'block one' "$FIXTURE/stderr"; then
+  pass 'last helper block still blocks after an earlier context'
+else
+  fail "late block (got exit $EXIT)"
+fi
+
+reset_helpers
+write_helper "_story_compile_drift.sh" block-with-stdout
+run_hook "$VALID_PAYLOAD"
+expect_integrity_failure 'exit 2 that also writes stdout fails closed' 'stderr-only'
+
+reset_helpers
+write_helper "_story_compile_drift.sh" block-empty
+run_hook "$VALID_PAYLOAD"
+expect_integrity_failure 'exit 2 without a reason fails closed' 'stderr-only'
+
+reset_helpers
+write_helper "_story_compile_drift.sh" block-integrity-marker
+run_hook "$VALID_PAYLOAD"
+expect_integrity_failure 'exit 2 carrying the integrity marker is an integrity failure, not a policy block' 'stderr-only'
+
+reset_helpers
+write_helper "_governance_coverage_check.sh" rc70
+run_hook "$VALID_PAYLOAD"
+expect_integrity_failure 'helper exit 70 fails closed and forwards its diagnostic' 'helper verifier unavailable'
+
 reset_helpers
 rm -f "$FIXTURE/lib/_story_compile_drift.sh"
 run_hook "$VALID_PAYLOAD"
@@ -175,30 +257,34 @@ ln -s "$FIXTURE/clean-target.sh" "$FIXTURE/lib/_story_compile_drift.sh"
 run_hook "$VALID_PAYLOAD"
 expect_integrity_failure 'symlink helper replacement fails closed' 'symlink'
 
+# 會擋的 helper 換成 symlink 也一樣(D4-02 升為擋的五支各換一次;現有行為不能退化)
+for helper in "${HELPERS[@]}"; do
+  reset_helpers
+  rm -f "$FIXTURE/lib/$helper"
+  ln -s "$FIXTURE/clean-target.sh" "$FIXTURE/lib/$helper"
+  run_hook "$VALID_PAYLOAD"
+  expect_integrity_failure "symlink replacement of blocking helper ${helper} fails closed" 'symlink'
+done
+
 reset_helpers
-write_helper "_hardcoded_strings.sh" rc1
+write_helper "_code_quality.sh" rc1
 run_hook "$VALID_PAYLOAD"
 expect_integrity_failure 'helper exit 1 fails closed' 'exit code 1'
 
 reset_helpers
-write_helper "_hardcoded_strings.sh" rc2
-run_hook "$VALID_PAYLOAD"
-expect_integrity_failure 'advisory helper exit 2 is integrity failure' 'exit code 2'
-
-reset_helpers
-write_helper "_cva_default_sync.sh" malformed
+write_helper "_overlay_handcraft.sh" malformed
 run_hook "$VALID_PAYLOAD"
 expect_integrity_failure 'malformed helper stdout fails closed' 'malformed or wrong-event envelope'
 
 reset_helpers
-write_helper "_cva_default_sync.sh" wrong-event
+write_helper "_overlay_handcraft.sh" wrong-event
 run_hook "$VALID_PAYLOAD"
 expect_integrity_failure 'wrong-event helper context fails closed' 'malformed or wrong-event envelope'
 
 reset_helpers
-write_helper "_person_data_richness.sh" raw-stderr
+write_helper "_code_quality.sh" raw-stderr
 run_hook "$VALID_PAYLOAD"
-expect_integrity_failure 'raw helper stderr fails closed' 'raw stderr'
+expect_integrity_failure 'raw helper stderr on exit 0 fails closed' 'raw stderr'
 
 reset_helpers
 run_hook 'not-json'
@@ -207,7 +293,26 @@ expect_integrity_failure 'malformed canonical input fails closed' 'malformed or 
 run_hook '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"apps/demo/src/App.tsx"}}'
 expect_integrity_failure 'misrouted event input fails closed' 'malformed or wrong-event canonical envelope'
 
-# Exercise the real dispatcher and all nine real helpers with both a >256 KiB
+# 共用的「新增行」判法不見了 → 會擋的 helper 不得把「量不到」讀成「沒有新增違規」
+LIBLESS="$FIXTURE/libless"
+mkdir -p "$LIBLESS/lib"
+cp "$SOURCE" "$LIBLESS/post_edit_dispatcher.sh"
+for helper in "${HELPERS[@]}" _provider_paths.sh; do
+  cp "$REAL_LIB/$helper" "$LIBLESS/lib/$helper"
+done
+LIBLESS_COMPONENT="$FIXTURE/libless-workspace/packages/design-system/src/components/Libless/libless.tsx"
+mkdir -p "$(dirname "$LIBLESS_COMPONENT")"
+printf '%s\n' 'export const Libless = () => <div className="bg-surface" />' >"$LIBLESS_COMPONENT"
+set +e
+jq -nc --arg path "$LIBLESS_COMPONENT" \
+  '{hook_event_name:"PostToolUse",tool_name:"Write",tool_input:{file_path:$path}}' \
+  | GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_CORPUS_ROOT="$REPO_ROOT" bash "$LIBLESS/post_edit_dispatcher.sh" \
+    >"$FIXTURE/stdout" 2>"$FIXTURE/stderr"
+EXIT=$?
+set -e
+expect_integrity_failure 'missing shared added-lines helper fails closed' 'added-lines helper unavailable'
+
+# Exercise the real dispatcher and all five real helpers with both a >256 KiB
 # canonical event and a file containing far more matches than every diagnostic
 # cap. This guards against producer -> early-closing grep/head pipelines
 # surfacing EPIPE as a false helper-integrity failure.
@@ -240,25 +345,53 @@ REAL_PAYLOAD=$(
   }' <"$REAL_COMPONENT"
 )
 
+# 新寫的檔(不在任何 git HEAD 裡)= 每一行都是新增 → 三支會擋的 helper 都擋,一次給齊,沒有 integrity 雜訊
 run_real_hook "$REAL_PAYLOAD"
 if [ "$(wc -c <"$REAL_COMPONENT" | tr -d ' ')" -gt 262144 ] \
-  && [ "$EXIT" -eq 0 ] \
-  && [ ! -s "$FIXTURE/stderr" ] \
-  && jq -e '
-    keys == ["governanceContext"]
-    and .governanceContext.hookEventName == "PostToolUse"
-    and (
-      .governanceContext.message
-      | contains("Token hygiene")
-        and contains("i18n hygiene")
-        and contains("Code quality lite")
-        and contains("Primitive consumption")
-        and contains("cva/defaultVariants touched")
-    )
-  ' "$FIXTURE/stdout" >/dev/null 2>&1; then
-  pass 'real dispatcher handles >256 KiB event and high-match helper scans without EPIPE/integrity noise'
+  && [ "$EXIT" -eq 2 ] \
+  && [ ! -s "$FIXTURE/stdout" ] \
+  && ! grep -qF 'GOVERNANCE_INTEGRITY' "$FIXTURE/stderr" \
+  && grep -qF 'Token hygiene:這次編輯新增了違規的行' "$FIXTURE/stderr" \
+  && grep -qF 'Code quality:這次編輯新增了違規' "$FIXTURE/stderr" \
+  && grep -qF 'Primitive consumption:這次編輯新增了自刻結構' "$FIXTURE/stderr" \
+  && ! grep -qF 'i18n hygiene' "$FIXTURE/stderr" \
+  && ! grep -qF 'cva/defaultVariants touched' "$FIXTURE/stderr" \
+  && ! grep -qF 'Sparse PersonData' "$FIXTURE/stderr"; then
+  pass 'real dispatcher blocks a >256 KiB new file with high-match scans, without EPIPE/integrity noise or retired helpers'
 else
-  fail "real dispatcher large-input/high-match regression (got exit $EXIT)"
+  fail "real dispatcher large-input/high-match block regression (got exit $EXIT)"
+fi
+
+# 同一個檔、這次只新增一行乾淨的程式 → 不擋;既有違規只在 governanceContext 列出(交稽核)
+EDIT_PAYLOAD=$(jq -nc --arg path "$REAL_COMPONENT" '{
+  hook_event_name: "PostToolUse", tool_name: "Edit",
+  tool_input: { file_path: $path, old_string: "import x from \"y\";", new_string: "import { cva } from \"class-variance-authority\";" }
+}')
+run_real_hook "$EDIT_PAYLOAD"
+if [ "$EXIT" -eq 0 ] && [ ! -s "$FIXTURE/stderr" ] \
+  && jq -e '
+    .governanceContext.hookEventName == "PostToolUse"
+    and (.governanceContext.message
+      | contains("Token hygiene 既有違規")
+        and contains("Code quality 既有違規")
+        and contains("Primitive consumption 既有違規"))
+  ' "$FIXTURE/stdout" >/dev/null 2>&1; then
+  pass 'edit that adds no violating line does not block; existing violations stay visible as context'
+else
+  fail "existing-violation context on a clean edit (got exit $EXIT)"
+fi
+
+# deep-audit 的整檔重播(old_string == new_string == 整檔內容)不是一次真實編輯 → 只列既有,不擋
+REPLAY_PAYLOAD=$(jq -Rs --arg path "$REAL_COMPONENT" '{
+  hook_event_name: "PostToolUse", tool_name: "Edit",
+  tool_input: { file_path: $path, old_string: ., new_string: ., content: ., edits: [{ old_string: ., new_string: . }] }
+}' <"$REAL_COMPONENT")
+run_real_hook "$REPLAY_PAYLOAD"
+if [ "$EXIT" -eq 0 ] && [ ! -s "$FIXTURE/stderr" ] \
+  && jq -e '.governanceContext.message | contains("Token hygiene 既有違規")' "$FIXTURE/stdout" >/dev/null 2>&1; then
+  pass 'full-file evidence replay reports existing violations as context instead of blocking'
+else
+  fail "full-file replay classification (got exit $EXIT)"
 fi
 
 printf 'Passed: %s / %s\n' "$PASS" "$((PASS + FAIL))"

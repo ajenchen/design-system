@@ -176,7 +176,7 @@ After the 2026-04-21 governance rebuild, each historical bug maps to one of the 
 
 ### 獨立技術陷阱(非 meta-pattern,保留 anchor)
 
-- cva `defaultVariants.size` 三方漂移(SegmentedControl) → `/story-writing` Phase 4 + hook `lib/_cva_default_sync.sh`(`post_edit_dispatcher.sh` 消費;原 check_cva_default_sync.sh 2026-05-13 fold)
+- cva `defaultVariants.size` 三方漂移(SegmentedControl) → `/story-writing` Phase 4 + design-system-audit dim 1(寫入當下的提醒 helper 原 check_cva_default_sync.sh 2026-05-13 fold 進 `post_edit_dispatcher.sh`,2026-11-18 D4-02 退場、檔案已不存在:它只要碰到 cva 就印同一句「去核對三方」,算出的三份預設值從沒拿來比,見 `post_edit_dispatcher.sh` 檔頭)
 - Row 硬寫 `py-2` 產生 gap(TreeView in SidebarGroup) → item-anatomy spec
 - asChild pattern consumer 自查 avatar size → item-anatomy spec
 - HoverCard 誤放 Components/(純行為 primitive 應 Internal/) → `# Story` 判斷 test

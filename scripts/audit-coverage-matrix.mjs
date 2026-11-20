@@ -47,7 +47,7 @@ const deterministicMechanism = (dim) => `scripts/deep-audit-deterministic-plan.j
 // Per-dim coverage classification(SSOT — sync 進 design-system-audit/SKILL.md per-dim row)
 const COVERAGE = {
   // Group A — Correctness
-  1: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_story_compile_drift.sh(cva 三方漂移 — story-auto-compile-migrate + scripts/compile-stories.mjs --check chain)' },
+  1: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_story_compile_drift.sh(scripts/compile-stories.mjs --all --check:tsx componentMeta ↔ spec frontmatter 的 key;cva defaultVariants 預設值三方比對沒有機械量具,audit-time 判;2026-11-18 D4-02 修 scope —— 原 `*/design-system/components/*` 自搬家後從未觸發)' },
   2: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(2) },
   3: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(3) },
   4: { tier: 'HOOK-ENFORCED', mechanism: 'check_opacity_token_usage.sh(write-time P0 BLOCKER exit 2,2026-07-07 治理進化方向 2 升級;per-line escape @token-registry-ok)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue' },
@@ -89,7 +89,7 @@ const COVERAGE = {
   29: { tier: 'HOOK-ENFORCED', mechanism: 'check_story_invariants.sh R3 category trait-based DS-wide enforce(原 check_story_category.sh)' },
   30: { tier: 'HOOK-ENFORCED', mechanism: 'check_canonical_propagation.sh E.1 principles canonical DS-wide enforce(原 check_principles_canonical.sh)' },
   // Group M — Overlay body
-  31: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_overlay_handcraft.sh WARN(exit 0,2026-05-31 修 dangling ref:原寫 check_overlay_handcraft.sh standalone 不存在,已 fold 成 lib helper)+ grep ban stripped-padding boolean variant audit-time' },
+  31: { tier: 'HOOK-ENFORCED', mechanism: 'post_edit_dispatcher.sh → lib/_overlay_handcraft.sh(2026-11-18 D4-02 起這次新增的行 exit 2;既有的只列 governanceContext)+ grep ban stripped-padding boolean variant audit-time' },
   32: { tier: 'PURE-JUDGMENT', mechanism: 'Filter operator registry SSOT consumption — dispatch 必 grep consumer hardcode op string DS-wide' },
   33: { tier: 'PURE-JUDGMENT', mechanism: 'Component classification + abstraction discipline DS-wide AI judgment;5 sub-dims per-component 全掃' },
   // Group N — State + chain
@@ -163,15 +163,19 @@ const COVERAGE = {
 //   warn           — 該規則只回 governance context / P1 提醒,不擋
 //   block-and-warn — 同一條規則裡 [P0] 類擋、[P1] / warn 類只提醒
 const HOOK_RULE_ENFORCEMENT = {
+  1: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_story_compile_drift.sh:這次編輯的元件 compile-stories --all --check 有 drift → exit 2(別的元件的 drift 只列 context)' },
   4: { enforcement: 'block', rule: 'check_opacity_token_usage.sh 硬違規 → exit 2;micro-gap / fraction soft note 不屬本維度' },
   11: { enforcement: 'block', rule: 'check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)' },
   13: { enforcement: 'block', rule: 'check_story_invariants.sh R1 anatomy(PreToolUse,record_worst 2)' },
+  18: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1:這次新增的行有 shadcn alias → exit 2;既有行只列 governanceContext' },
   29: { enforcement: 'block-and-warn', rule: 'check_story_invariants.sh R3 category:[P0] trait 缺口 record_worst 2;其餘只印 R3 trait warn' },
   30: { enforcement: 'block-and-warn', rule: 'check_canonical_propagation.sh E.1:[P0] 新檔擋;[P1] 既有檔只提醒' },
+  31: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_overlay_handcraft.sh Check 1 / 2.5 / 6:這次新增的行 → exit 2;既有行只列 governanceContext' },
   34: { enforcement: 'warn', rule: 'check_field_family_invariants.sh A.4 disabled placeholder color(P1 context,exit 0)' },
   35: { enforcement: 'warn', rule: 'check_pattern_invariants.sh C.1 overlay scroll chain(P1 WARN context)' },
   37: { enforcement: 'block', rule: 'check_field_family_invariants.sh A.3 Field state ring SSOT(P0,record_worst 2)' },
   39: { enforcement: 'block', rule: 'check_pattern_invariants.sh C.4 row slot handcraft(P0,record_worst 2)' },
+  47: { enforcement: 'block-and-warn', rule: 'post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1 / 3 / 4(registry 管的 shadcn alias、Tailwind 預設陰影、原料色名):這次新增的行 → exit 2;既有行只列 governanceContext' },
   54: { enforcement: 'block-and-warn', rule: 'check_story_invariants.sh R8:registry severity=block → record_worst 2;severity=warn → governance context' },
   57: { enforcement: 'block', rule: 'check_ds_anchor_preflight.sh M29 anchor:同 turn 未讀 DS canonical baseline → exit 2' },
 }

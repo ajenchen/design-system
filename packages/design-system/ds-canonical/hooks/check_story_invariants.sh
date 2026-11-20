@@ -794,7 +794,7 @@ rule_story_baseline_reference() {
   # 2026-06-11 R2 held-item #12:anatomy / principles 是 per-family 文件 story —— doc-table /
   # description 內 <Dialog> / <DataTable> 是說明文字非真 wrap,16 檔每次編輯固定 FP warn。
   # baseline-cite 要求 scope = scenario stories(story-rules.md「Production-grade composition
-  # fidelity」);file-type skip 對齊 lib/_overlay_handcraft.sh L31 + R9 isOverlay-家 skip idiom。
+  # fidelity」);file-type skip 對齊 lib/_overlay_handcraft.sh 的「Skip anatomy / principles stories」段 + R9 isOverlay-家 skip idiom。
   case "$FILE_PATH" in
     *.anatomy.stories.tsx|*.principles.stories.tsx) return 0 ;;
   esac
