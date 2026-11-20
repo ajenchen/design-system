@@ -12,8 +12,18 @@
 //   (b) Check 2 只掃 fieldWrapperStyles importer → 漏 group 控件(Checkbox/RadioGroup/SegmentedControl)。改掃**全 components**。
 //   (c) 漏「有 display/readonly branch 但不走 mode helper」的控件(此類根本不讀 fieldCtx,Check 2 抓不到)。新增 Check 1b。
 //
-// Run:目前只由配對測試 scripts/test-check-field-cascade-resolve.mjs 經夜間 governance-harnesses.yml 帶跑,ci.yml 不直呼
-//   (2026-11-17 knowledge-prune 更正原「Run:ci.yml」)。deterministic source grep,無 build 依賴。
+// Run:required CI —— ci.yml verify-static「Static gates that used to run only nightly」直呼本檔,接著跑配對測試
+//   scripts/test-check-field-cascade-resolve.mjs(2026-11-20 knowledge-prune WP-21 接上;2026-11-17 到接上之前只有夜間
+//   governance-harnesses.yml 經配對測試帶跑,8f824bc7 當時照實寫過)。deterministic source grep,無 build 依賴。
+//
+// @gate-contract
+//   保證: packages/design-system/src/components 底下(Field/ 本身、stories、test 除外)的控件 .tsx,
+//         消費 fieldWrapperStyles / bareInputStyles 的都呼叫了 useResolvedFieldSize( 與 useResolvedFieldMode((Check 1);
+//         有 'display' / 'readonly' 分支又讀 Field context 的都呼叫了 useResolvedFieldMode((Check 1b);
+//         程式碼裡沒有任何一行直接讀 fieldCtx.size / fieldCtx.mode / fieldCtx.disabled(Check 2a / 2b,行註解與單行區塊註解先剝掉)
+//   紅: 任一檢查有命中 → 印出「檔案: 該行 / 缺哪個 hook」並 exit 1;配對測試在 Badge 末尾注入一行 `fieldCtx.size` 直讀,
+//       本閘必須 exit 非 0,否則配對測試以「detection 失效」紅
+//   綠: 現行原始碼 0 筆時 exit 0,印出檢查了幾個 fieldWrapperStyles 控件;只讀檔與正規表示式,不讀時間、不開瀏覽器,重複跑結果相同
 
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'

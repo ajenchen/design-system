@@ -342,6 +342,18 @@ jobs:
           # 其他規格與 tsx 走棘輪 scripts/benchmark-citation-baseline.json(只准變少)。純靜態,對照組在 --selftest(判定表同時跑 hook)。
           npm run test:benchmark-citation
 
+      # 2026-11-20(knowledge-prune WP-21):下面這些閘原本只有夜間 governance-harnesses.yml 經各自的配對 meta-test 在跑 ——
+      # 那條 lane「is not a required check and never blocks the five-step release」(governance-harnesses.yml 檔頭),
+      # PR 上沒有任何東西會因為它們變紅(gate-reachability 的「只在夜間可達」清單)。挑出不開瀏覽器、主判定不寫檔、
+      # 在當下 HEAD 上主判定與紅面都綠的接進來:每支先跑主判定(紅了直接印出違規在哪),再跑它的紅面
+      # (配對 meta-test 或 --selftest,證明它在該紅的時候會紅)。
+      - name: Static gates that used to run only nightly
+        run: |
+          # Field 控件的 size / mode / disabled 一律經 resolver hook 解析(field-controls.spec.md「Field context cascade — SSOT」)。
+          # 規格那一段寫「機械強制」,2026-11-17 對帳時它其實只在夜間跑(8f824bc7 把規格改成照實寫);這裡讓那句話成真。純靜態,約 1 秒。
+          node scripts/check-field-cascade-resolve.mjs
+          node scripts/test-check-field-cascade-resolve.mjs
+
       - name: Cloud portability gates (provider config survivability)
         run: |
           node --test scripts/test-cloud-portability-invariants.mjs
