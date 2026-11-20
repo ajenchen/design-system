@@ -10,10 +10,10 @@
     "CI-ENFORCED": 2
   },
   "hook_enforcement_counts": {
-    "block": 23,
+    "block": 26,
     "block-and-warn": 7,
-    "warn": 9,
-    "prevents_landing": 12
+    "warn": 6,
+    "prevents_landing": 15
   },
   "gaps": [],
   "coverage_by_dim": {
@@ -274,25 +274,25 @@
     },
     "34": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh,P1 stderr)",
-      "enforcement": "warn",
-      "enforcement_source": "rule:check_field_family_invariants.sh A.4 disabled placeholder color(P1 context,exit 0)",
+      "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh;2026-11-21 WP-15b 由 P1 提醒升 P0 擋,只看這次寫入的內容)+ audit-time DS-wide grep 確認 residue",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_field_family_invariants.sh A.4 disabled placeholder color(P0,record_worst 2;2026-11-21 WP-15b 由 P1 context 升級)",
       "hook_events": [
         "PreToolUse"
       ],
-      "prevents_landing": false,
+      "prevents_landing": true,
       "id": "DS-DIM-034",
       "critical": true
     },
     "35": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh,P1 WARN)",
-      "enforcement": "warn",
-      "enforcement_source": "rule:check_pattern_invariants.sh C.1 overlay scroll chain(P1 WARN context)",
+      "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh;2026-11-21 WP-15b 由 P1 WARN 升 P0 擋,只看這次寫入的內容)+ audit-time DS-wide grep 確認 residue",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_pattern_invariants.sh C.1 overlay scroll chain(P0,record_worst 2;2026-11-21 WP-15b 由 P1 WARN 升級)",
       "hook_events": [
         "PreToolUse"
       ],
-      "prevents_landing": false,
+      "prevents_landing": true,
       "id": "DS-DIM-035",
       "critical": true
     },
@@ -424,13 +424,13 @@
     },
     "53": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_spec_class_drift.sh write-time WARN(exit 0,非 block)+ audit-time grep backstop",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "mechanism": "check_spec_class_drift.sh write-time P0 BLOCKER(exit 2;2026-11-21 WP-15b 由 WARN 升級,spec 檔頭 @spec-class-drift-allow 整檔豁免)+ audit-time grep backstop",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_spec_class_drift.sh:命中且 spec 檔頭沒有 @spec-class-drift-allow → exit 2;沒有只提醒的路徑(2026-11-21 WP-15b 升級,outputMode governance-context-or-block)",
       "hook_events": [
         "PreToolUse"
       ],
-      "prevents_landing": false,
+      "prevents_landing": true,
       "id": "DS-DIM-053",
       "critical": true
     },

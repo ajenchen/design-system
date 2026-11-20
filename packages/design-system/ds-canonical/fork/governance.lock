@@ -23,7 +23,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "d40e7db660505a24df5c56fb9e1fcef086e5d8196c9f2dfe56d5e1f4d9dbe25b",
+      "sha256": "0bfba038f2b1fd29f8e25eaf5f9948570259a6bae2710f6d3cefae76e21180b5",
       "source": "providers/codex/skills/bug-fix-rhythm",
       "classification": null,
       "destination": null
@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "200b3fc1d792fb571eeed42437af9240006e9cff6d7ec97b22b8d59310b83c47",
+      "sha256": "e5c478bfd3c19c9070e42f5c150e71e7f7ddfe96a8b7f803f03ddfa66786ab07",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -719,7 +719,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "9b9e39b0d65990c45406b399b4fb9bcd7e867b8a1d9e87e772041175064be80d",
+      "sha256": "82361f00cc9729d3171908b0e322a8c1c0b8d3bc3700cbf10c678e03fd616af9",
       "source": "check_field_family_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -759,7 +759,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "79b8b9130170c2c0062f08fe9cec2a105d5569e2b9378a450ec48e28457fa85c",
+      "sha256": "db6f143e1819fe7f8696c8f5c5b5b324e362ccf2a1f35e75fecbe17874b62588",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -775,7 +775,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_story_determinism.sh",
-      "sha256": "2cd7e8d6cc0954bccdb19e9673835437ddf9d0da137af35e0151665d5ec6ee29",
+      "sha256": "6a3574c04180dc6201a1182037b3168bea168519e4195c9a74c1048920c57c32",
       "source": "check_story_determinism.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -935,7 +935,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "47144418ac053d5809a6685fbd35b0f496671349d5c78f92c2d3a5fd3eb1a22d",
+      "sha256": "36d23ebd7e9276d0baae5b7238a44f281a8df7d4d78196f9caef0bad7b579f4b",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -943,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "34afc944552ad8113343baeb1f257bcd4c2366d55063d038859f90849ec0481a",
+      "sha256": "0052702268c02b0155903c4d96e669bf045dbf68bdd5215e54186ad77f4f4a5f",
       "source": null,
       "classification": null,
       "destination": null
@@ -967,7 +967,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "1c1f135baff2a34b25160b6f711817721640d09bcd9dd9303bcd97b7f5214c74",
+      "sha256": "5ff6d9a868cbd3949f17a0f6738a0a3cf6b0fdb33f005786c75a8044e8108bfb",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1199,7 +1199,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "200b3fc1d792fb571eeed42437af9240006e9cff6d7ec97b22b8d59310b83c47",
+      "sha256": "e5c478bfd3c19c9070e42f5c150e71e7f7ddfe96a8b7f803f03ddfa66786ab07",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null
@@ -1207,7 +1207,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "d40e7db660505a24df5c56fb9e1fcef086e5d8196c9f2dfe56d5e1f4d9dbe25b",
+      "sha256": "0bfba038f2b1fd29f8e25eaf5f9948570259a6bae2710f6d3cefae76e21180b5",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1495,7 +1495,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "19058b924c6171bab6e48bfa6454a97122a39d7c45bb0a305e42e90e08d9e9b4",
+      "sha256": "6d3fe80b41dfa82a04ae152e053b5a2b6eddc8069564420af05f2ddc8a715145",
       "source": null,
       "classification": null,
       "destination": null

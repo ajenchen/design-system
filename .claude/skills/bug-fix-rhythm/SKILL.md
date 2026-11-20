@@ -163,7 +163,7 @@ node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32 主句(
 | `/visual-audit` | 單次視覺對齊 | Phase 3 sub-step,本 skill 包它 |
 | `/component-quality-gate` | stakeholder gate | 不重疊(stakeholder vs daily bug fix) |
 | `stop_self_audit.sh`(hook) | claim-verify gap 攔 | 本 skill Phase 3 是 active side;hook 是 passive trip-wire |
-| `check_pixel_quantified_audit.sh`(hook) | M32 主句:audit script(`scripts/visual-audit*.mjs`,canonical = `visual-audit.mjs`)必 pixel | 本 skill Phase 3 跑該 audit |
+| `post_edit_contract_dispatcher.sh`(hook,lib `_pixel_quantified_audit.sh`) | M32 主句:audit script(`scripts/visual-audit*.mjs`,canonical = `visual-audit.mjs`)必 pixel,寫入當下擋 | 本 skill Phase 3 跑該 audit |
 
 **3 層 防線**:
 - **本 skill**(active workflow):MUST-ALL checklist + batch-end-verify rhythm

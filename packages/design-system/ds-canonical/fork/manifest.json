@@ -1273,7 +1273,7 @@
         "bucket": "SHIP_AS_IS",
         "matcher": "Edit|Write|MultiEdit",
         "runtime": "bash",
-        "outputMode": "diagnostic",
+        "outputMode": "governance-context-or-block",
         "inputContract": "event-v1",
         "transcriptRequirement": "none"
       },
@@ -1426,7 +1426,7 @@
       "sourceHook": "check_story_determinism.sh",
       "interpreter": "bash",
       "matcher": "Edit|Write|MultiEdit",
-      "outputMode": "diagnostic",
+      "outputMode": "governance-context-or-block",
       "inputContract": "event-v1",
       "transcriptRequirement": "none"
     },

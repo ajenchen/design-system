@@ -190,7 +190,7 @@
     "M32": {
       "name": "Audit script pixel-quantified",
       "dims": [],
-      "note": "hook check_pixel_quantified_audit;對 audit scripts 自身,不對 component"
+      "note": "write-time 由 post_edit_contract_dispatcher.sh 的 lib/_pixel_quantified_audit.sh 擋(2026-11-21 起;原 check_pixel_quantified_audit.sh 只提醒);對 audit scripts 自身,不對 component"
     },
     "M36": {
       "name": "Provenance 不得升格 + 禁自鎖",
@@ -320,7 +320,8 @@
         26,
         34,
         37
-      ]
+      ],
+      "note": "write-time 由 post_edit_contract_dispatcher.sh 的 lib/_field_controls_contracts.sh 擋(2026-11-21 起;原 check_field_controls_contracts.sh 只提醒)"
     },
     "field_family_invariants": {
       "dims": [
@@ -358,18 +359,18 @@
       "dims": [
         37
       ],
-      "note": "Dim 37 Field state machine SSOT 涵蓋 PeoplePicker trigger render / placeholder / overflow 等 SSOT-bearing API 屬 Field family scope;hook 為 write-time pre-warning,本 dim batch verify 既有 consumer"
+      "note": "Dim 37 Field state machine SSOT 涵蓋 PeoplePicker trigger render / placeholder / overflow 等 SSOT-bearing API 屬 Field family scope;write-time 由 post_edit_contract_dispatcher.sh 的 lib/_peoplepicker_ssot_drift.sh 擋這次新增的行(2026-11-21 起;原 check_peoplepicker_ssot_drift.sh 只提醒),本 dim batch verify 既有 consumer"
     },
     "select_all_canonical": {
       "dims": [
         17,
         32
       ],
-      "note": "Dim 17 SSOT propagation + Dim 32 filter SSOT consumption canonical 涵蓋 — `multi-select-ordering` primitive 屬 SSOT consumer propagation(per Ant Transfer + Table rowSelection grep 證據,Layer A + Codex M31 Round 4 共識,2026-05-16)。Hook write-time pre-warning,Dim 17/32 batch verify 既有 Select All consumer 是否 import primitive 而非自刻 `options.map(v).onValueChange` reset"
+      "note": "Dim 17 SSOT propagation + Dim 32 filter SSOT consumption canonical 涵蓋 — `multi-select-ordering` primitive 屬 SSOT consumer propagation(per Ant Transfer + Table rowSelection grep 證據,Layer A + Codex M31 Round 4 共識,2026-05-16)。write-time 由 post_edit_contract_dispatcher.sh 的 lib/_select_all_canonical.sh 擋這次新增的行(2026-11-21 起;原 check_select_all_canonical.sh 只提醒;既有命中列成 context),Dim 17/32 batch verify 既有 Select All consumer 是否 import primitive 而非自刻 `options.map(v).onValueChange` reset"
     },
     "pixel_quantified_audit": {
       "dims": [],
-      "note": "對 audit scripts 自身,not component"
+      "note": "對 audit scripts 自身,not component;write-time 由 post_edit_contract_dispatcher.sh 的 lib/_pixel_quantified_audit.sh 擋(2026-11-21 起)"
     },
     "propose_plain_chinese": {
       "dims": [],
@@ -433,7 +434,7 @@
       "dims": [
         53
       ],
-      "note": "2026-05-17 ship(audit Dim 53 reverse drift):spec.md 寫「固定 h-NN/寫死/硬寫」keyword 但對應 tsx 已消費 token → soft P1 warn。互補既有 forward direction(spec-to-code),起因 Phase 1 抓不到 FileViewer h-14 spec drift"
+      "note": "2026-05-17 ship(audit Dim 53 reverse drift):spec.md 寫「固定 h-NN/寫死/硬寫」keyword 但對應 tsx 已消費 token → 2026-11-21 起 P0 擋(原 soft P1 warn)。互補既有 forward direction(spec-to-code),起因 Phase 1 抓不到 FileViewer h-14 spec drift"
     },
     "audit_sample_escape": {
       "dims": [],

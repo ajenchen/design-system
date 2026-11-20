@@ -2,9 +2,9 @@
 # Pattern invariants unified hook(2026-05-08 cluster C consolidation)
 #
 # Merges 4 PreToolUse hooks(原各檔已 retire,合併入此):
-#   C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain,P1 WARN context)
+#   C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain;2026-11-21 起 P0 BLOCK exit 2,M25)
 #   C.7 CommandEmpty 手刻簽名(P0 BLOCK,2026-09-08)
-#   C.2 inline-action canonical gap(原 check_inline_action_canonical_gap,P1 WARN context)
+#   C.2 inline-action canonical gap(原 check_inline_action_canonical_gap;2026-11-21 起 P0 BLOCK exit 2)
 #   C.3 primitive wrapper padding(原 check_primitive_wrapper_padding,P0 BLOCK exit 2)
 #   C.4 row slot handcraft(原 check_row_slot_handcraft,P0 BLOCK exit 2)
 #   C.5 弱化 icon hover 階梯(2026-07-30 user 拍板,P0 BLOCK exit 2)
@@ -13,11 +13,18 @@
 # Why merge:皆 element-anatomy / overlay-surface SSOT 消費紀律 invariant,共用 INPUT
 # parsing + tsx filter,散裝是 M17 + Anthropic ≤ 15 hook best-practice 偏離。
 #
-# Output precedence:BLOCK(2,stderr)> WARN(0,單一 governanceContext)> silent(0)。
+# Output precedence:BLOCK(2,stderr)> silent(0)。
+#   2026-11-21 C.1 / C.2 由「只提醒」升為擋(knowledge-prune D4-02 / WP-15b:SSOT invariant 不得只提醒,
+#   governance/memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md),本檔已沒有只提醒的規則;
+#   exit 0 帶輸出的路徑只剩收容非預期輸出(仍包成 governanceContext,不靜默丟掉),所以 outputMode 維持
+#   governance-context-or-block。C.1 / C.2 只看這次寫入的內容(NEW_CONTENT;PreToolUse 拿不到寫完的檔,
+#   所以不用 lib/_added_lines.sh 的「新增行」—— 那支只能在 PostToolUse 用)。
+#   升擋前全樹重放(a05da20a,340 個 .tsx 逐檔整檔寫入)C.1 2 筆、C.2 3 筆,5 筆全是偵測誤判,升擋時一併修掉
+#   (細節在 C.1 / C.2 段);修完重放 C.1 / C.2 0 筆。
 #
 # Per-rule allowlist:
 #   C.1: `// @scroll-chain-allow: <reason>`(any line)
-#   C.2: `// @inline-action-gap-allow: <reason>`(any line)
+#   C.2: `// @inline-action-gap-allow: <reason>`(any line;豁免早就有,升擋沿用)
 #   C.3: `// @primitive-padding-allow: <reason>`(檔案前 5 行)
 #   C.4: `// @row-slot-handcraft-allow: <reason>`(any line)
 #   C.5: `// @hover-ramp-allow: <reason>`(any line)
@@ -188,15 +195,26 @@ EOF
   fi
 fi
 
-# ── C.1 overlay panel scroll chain(P1 WARN context)──────────────────────────
+# ── C.1 overlay panel scroll chain(P0 BLOCK exit 2,2026-11-21 由 P1 WARN 升級;M25)──────────────
+# 偵測:行首 `<div` 的 class 有固定寬(w-[…] / min-w-[…] / max-w-[…]),缺 flex + flex-col / h-full / min-h-0 其一,
+#   而往下 30 行內、遇到 `</div>` 之前出現 <SurfaceBody。
+# 2026-11-21 升擋時修的兩個誤判(升擋前全樹重放 C.1 的 2 筆都是 (a)):
+#   (a) 寬度判斷原本是子字串 /w-\[/ → `shadow-[…]`(sha-dow-[)也算「固定寬」:
+#       components/FileItem/file-item.principles.stories.tsx、patterns/header-canonical/header-canonical.stories.tsx
+#       兩支故事裡的卡片示意(不是浮層)因此命中。改成 class 邊界:前一字不是英數 / `_` / `-`,`min-` / `max-` 前綴照算。
+#   (b) div 與 SurfaceBody 之間若隔著浮層的 Content(Popover / Dialog / Sheet / HoverCard / DropdownMenu /
+#       ContextMenu / AlertDialog),那個 div 在 Portal 外面,不在 root → SurfaceBody 的鏈上(M3 Portal 逃逸),不算。
+#       目前樹裡 0 筆是這種,但故事 / 產品頁「固定寬示範框裡放一個 Popover」是常見寫法,升擋前先排除。
+#   兩者都是收窄;真正的違規形狀(浮層 Content 裡的固定寬 root 缺 flex 鏈)仍擋 —— 測試 C.1.1 / C.1.6 / C.1.7。
 if ! grep -q '@scroll-chain-allow' <<<"$NEW_CONTENT" \
    && grep -q '<SurfaceBody' <<<"$NEW_CONTENT"; then
   SUSPECT_C1=$(printf '%s' "$NEW_CONTENT" | awk '
     /^[[:space:]]*<div[[:space:]]/ {
       line = $0
       while (index(line, ">") == 0 && (getline next_line) > 0) line = line " " next_line
-      if (line ~ /w-\[/ && (line !~ /flex[^"]*flex-col/ || line !~ /h-full/ || line !~ /min-h-0/)) {
+      if (line ~ /(^|[^A-Za-z0-9_-])((min|max)-)?w-\[/ && (line !~ /flex[^"]*flex-col/ || line !~ /h-full/ || line !~ /min-h-0/)) {
         for (k = 0; k < 30 && (getline next_line) > 0; k++) {
+          if (next_line ~ /<(Popover|Dialog|Sheet|HoverCard|DropdownMenu|ContextMenu|AlertDialog)Content([^A-Za-z0-9_]|$)/) break
           if (next_line ~ /<SurfaceBody/) {
             print "[panel root w-[...] 缺 flex flex-col h-full min-h-0]: " substr(line, 1, 100)
             break
@@ -209,9 +227,9 @@ if ! grep -q '@scroll-chain-allow' <<<"$NEW_CONTENT" \
   if [ -n "$SUSPECT_C1" ]; then
     cat >&2 <<EOF
 
-┄┄┄ C.1 check_pattern_invariants — overlay scroll chain WARN ┄┄┄
+┄┄┄ C.1 check_pattern_invariants — overlay scroll chain BLOCKER ┄┄┄
 
-[P1] ${FILE_PATH}
+[P0] ${FILE_PATH}
 ${SUSPECT_C1}
 
 ⚠️  M25 canonical:Popover/HoverCard/Dialog/Sheet viewport-aware scroll 要求 root → SurfaceBody
@@ -222,33 +240,99 @@ ${SUSPECT_C1}
 例外:行尾 \`// @scroll-chain-allow: <reason>\`
 
 EOF
+    record_worst 2
   fi
 fi
 
-# ── C.2 inline-action canonical gap(P1 WARN context)─────────────────────────
+# ── C.2 inline-action canonical gap(P0 BLOCK exit 2,2026-11-21 由 P1 WARN 升級)─────────────────
+# 規則:inline-action.spec.md「多個 Inline Action 並排」—— 一個宿主上的 inline action 彼此間距 gap-2(8px)。
+# 偵測(2026-11-21 改寫):找每個 <ItemInlineAction> / <ItemInlineActionButton> 的「直接排版容器」——
+#   往外走過不產生 DOM 的包裝(Fragment / Radix Root 如 DropdownMenu、Popover / asChild 的 *Trigger、PopoverAnchor、Slot)
+#   後的第一個小寫 DOM 元素;
+#   該元素的屬性(className / cn(…) 全段)帶非 gap-2 的 gap-N 才算違規。往外先碰到其他大寫元件(ItemSuffix 之類,
+#   它自己負責排版)→ 不判。
+# 改寫前是「這次寫入裡有 ItemInlineAction,就把寫入內容任一行 className 的 gap-1/3/4… 都算」:
+#   升擋前全樹重放 C.2 的 3 筆 —— components/AgentPanel/agent-panel.tsx(附件列 gap-1、引用區 flex-col gap-1、
+#   標籤列 gap-1)、components/DataTable/data-table.tsx(錯誤訊息清單 flex-col gap-1)、components/Tabs/tabs.tsx
+#   (徽章 + 結尾圖示 gap-1)—— 全是同一檔裡跟 inline action 無關的 gap,升成擋會擋錯。這是收窄;
+#   違規形狀(同一個容器裡的 inline action 用非 gap-2)仍擋 —— 測試 C.2.1 / C.2.4 / C.2.5 / C.2.6。
+# JSX 掃描用 perl(C.3 已依賴 perl,缺 perl 同樣 fail-closed 擋);純註解行與 /* */ 先剝掉(保留行號)。
 case "$FILE_PATH" in
   *components/*.tsx|*patterns/*.tsx)
     case "$FILE_PATH" in
       */item-anatomy.tsx|*.stories.tsx|*.test.*) ;; # SSOT/test skip
       *)
         if ! grep -q '@inline-action-gap-allow' <<<"$NEW_CONTENT" \
-           && grep -qE '<ItemInlineAction(Button)?\b|DropdownMenuTrigger.*ItemInlineAction' <<<"$NEW_CONTENT"; then
-          WRONG_GAP=$(grep -m 3 -nE 'className=.*\bgap-(1|3|4|5|6|8|10|12)\b' <<<"$NEW_CONTENT" || true)
+           && grep -qE '<ItemInlineAction(Button)?([^A-Za-z0-9_]|$)' <<<"$NEW_CONTENT"; then
+          if ! command -v perl >/dev/null 2>&1; then
+            echo '🚨 check_pattern_invariants: required interpreter perl is unavailable — C.2 gate cannot run(fail-closed)' >&2
+            exit 2
+          fi
+          WRONG_GAP=$(printf '%s' "$NEW_CONTENT" | perl -0777 -ne '
+            my $src = $_;
+            # 剝註解但保留換行(行號才對得上)
+            $src =~ s{/\*.*?\*/}{ (my $m = $&) =~ s/[^\n]//g; $m }gse;
+            $src =~ s{^[ \t]*//[^\n]*}{}gm;
+            my @stack;
+            my %seen;
+            # 不產生 DOM 的包裝:Fragment、Radix Root(Context provider)、asChild 觸發點
+            my $transparent = qr/^(?:|React\.Fragment|Fragment|Slot|Tooltip|TooltipProvider|DropdownMenu|Popover|HoverCard|ContextMenu|[A-Za-z.]*Trigger|PopoverAnchor)$/;
+            my $len = length $src;
+            # 標籤起點:前一字不是識別字 / ) / ] / .(排除 useRef<T>、a<b 這類泛型與比較);
+            # 名字可空只限 <> / </>(Fragment)
+            while ($src =~ /(?<![\w\$)\].])<(\/?)([A-Za-z][\w.]*|(?=>))/g) {
+              my ($closing, $name) = ($1, $2);
+              my $start = $-[0];
+              my $i = $+[0];
+              my ($depth, $quote, $selfClose) = (0, "", 0);
+              while ($i < $len) {
+                my $c = substr($src, $i, 1);
+                if ($quote ne "") { $quote = "" if $c eq $quote && substr($src, $i - 1, 1) ne "\\"; $i++; next }
+                if ($c eq "\"" || $c eq "\x27" || $c eq "`") { $quote = $c; $i++; next }
+                if ($c eq "{") { $depth++; $i++; next }
+                if ($c eq "}") { $depth-- if $depth > 0; $i++; next }
+                if ($c eq ">" && $depth == 0) { $selfClose = (substr($src, $i - 1, 1) eq "/") ? 1 : 0; last }
+                $i++;
+              }
+              my $attrs = substr($src, $start, $i - $start);
+              pos($src) = $i < $len ? $i + 1 : $len;
+              if ($closing eq "/") {
+                for (my $k = $#stack; $k >= 0; $k--) { if ($stack[$k]{name} eq $name) { splice(@stack, $k); last } }
+                next;
+              }
+              if ($name =~ /^ItemInlineAction(?:Button)?$/) {
+                for (my $k = $#stack; $k >= 0; $k--) {
+                  my $anc = $stack[$k];
+                  next if $anc->{name} =~ $transparent;
+                  last if $anc->{name} !~ /^[a-z]/;
+                  if ($anc->{attrs} =~ /(?<![\w-])(gap-(?:1|3|4|5|6|8|10|12))(?![\w-])/) {
+                    my $gap = $1;
+                    my $line = (substr($src, 0, $anc->{start}) =~ tr/\n//) + 1;
+                    my $head = $anc->{attrs}; $head =~ s/\s+/ /g; $head = substr($head, 0, 100);
+                    print "$line: $head … ($gap)\n" unless $seen{$anc->{start}}++;
+                  }
+                  last;
+                }
+              }
+              push @stack, { name => $name, attrs => $attrs, start => $start } unless $selfClose;
+            }
+          ')
           if [ -n "$WRONG_GAP" ]; then
             cat >&2 <<EOF
 
-┄┄┄ C.2 check_pattern_invariants — inline-action gap WARN ┄┄┄
+┄┄┄ C.2 check_pattern_invariants — inline-action gap BLOCKER ┄┄┄
 
-[P1] ${FILE_PATH}
-ItemInlineAction* consumer 用非 \`gap-2\` 的 gap class:
+[P0] ${FILE_PATH}
+ItemInlineAction* 的直接排版容器用非 \`gap-2\` 的 gap class:
 ${WRONG_GAP}
 
-⚠️  inline-action.spec.md:80:inline-action 跟 sibling gap 必 \`gap-2\`(8px)。
+⚠️  inline-action.spec.md「多個 Inline Action 並排」:inline action 彼此間距 \`gap-2\`(8px)。
     12px = --table-cell-px(cell L/R padding,不是 inline-action gap)。
 
-修法:className gap → gap-2 / 加 \`// @inline-action-gap-allow: <reason>\` 行尾豁免
+修法:該容器的 gap → gap-2 / 真有理由 → 加 \`// @inline-action-gap-allow: <reason>\` 行尾豁免
 
 EOF
+            record_worst 2
           fi
         fi
         ;;
