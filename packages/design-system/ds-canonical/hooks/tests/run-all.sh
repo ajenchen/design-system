@@ -209,7 +209,24 @@ TESTED_HOOKS=$(find "$SCRIPT_DIR" -maxdepth 1 -type f -name 'test_*.sh' \
   | xargs -n1 basename \
   | sed 's/^test_//;s/\.sh$//' \
   | sort -u)
-UNTESTED=$(comm -23 <(printf '%s\n' "$ALL_HOOKS") <(printf '%s\n' "$TESTED_HOOKS"))
+# Set difference in pure shell, like fingerprint_delta above. This used to be
+# `comm -23 <(…) <(…)`: process substitution goes through /dev/fd, which the macOS sandbox refuses to
+# some readers(2026-11-20, same session: `diff <(…) <(…)` →「/dev/fd/12: Operation not permitted」while
+# `cat <(…)` worked), and a comm that fails inside $(…) leaves UNTESTED empty ——「every hook has a
+# test」, with no error(M37: not seeing an untested hook is not the same as there being none).
+UNTESTED=""
+NL=$'\n'
+saved_ifs="$IFS"
+set -f
+IFS="$NL"
+for hook in $ALL_HOOKS; do
+  case "$NL$TESTED_HOOKS$NL" in
+    *"$NL$hook$NL"*) ;;
+    *) UNTESTED="${UNTESTED:+$UNTESTED$NL}$hook" ;;
+  esac
+done
+IFS="$saved_ifs"
+set +f
 TOTAL_COUNT=$(printf '%s\n' "$ALL_HOOKS" | grep -c . 2>/dev/null || true)
 TESTED_COUNT=$(printf '%s\n' "$TESTED_HOOKS" | grep -c . 2>/dev/null || true)
 UNTESTED_COUNT=$(printf '%s\n' "$UNTESTED" | grep -c . 2>/dev/null || true)

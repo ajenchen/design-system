@@ -32,6 +32,9 @@
  *   B11 點錯(沒有這支 / 不是 test_*.sh / 路徑指到別的目錄)→ 一支 suite 都不跑就拒絕(打錯字不能變成 0 支 suite 的綠)。
  *   B12 子集照跑靜態閘:只點名沒問題的那支,另一支拿掉防護 —— 照樣在跑任何 suite 之前拒絕並點名那一行。
  *   B13 子集照跑寫入偵測:點名的那支往 hooks 樹寫檔 —— 照樣紅並點名。
+ *   B14 覆蓋率閉包不靠外部工具(2026-11-20):PATH 最前面放一支必定失敗的 comm(模擬 /dev/fd 被沙箱擋)。
+ *      複製樹只留一支 suite,其他 hook 都沒有測試 —— 閉包必須照樣紅、印出沒測試的數量。舊寫法 `comm -23 <(…) <(…)`
+ *      在 comm 失敗時 UNTESTED 是空字串 =「每支 hook 都有測試」,零報錯。
  *
  * 假 mktemp 拒絕時往 fd 3 寫一個標記;fd 1 / 2 / 3 是同一個檔,所以標記按時間序落在各 suite 的輸出段落裡,
  * 連把 stderr 丟進 /dev/null 的那一支(test_record_release_consent.sh)也數得到。
@@ -432,6 +435,31 @@ try {
     const r = runSubset(repo, PROBE)
     check(r.status !== 0 && r.out.includes(`FATAL: ${PROBE} ${WROTE}`), `B13 子集裡寫入偵測照樣點名 ${PROBE}`, tail(r.out))
   }
+
+  // B14 覆蓋率閉包不靠外部工具:PATH 最前面放一支必定失敗的 comm
+  {
+    const brokenBin = join(T, 'broken-comm-bin')
+    mkdirSync(brokenBin)
+    writeFileSync(join(brokenBin, 'comm'), '#!/bin/sh\necho "comm: /dev/fd/63: Operation not permitted" >&2\nexit 1\n')
+    chmodSync(join(brokenBin, 'comm'), 0o755)
+    const repo = makeCopy('b14', { suites: [PROBE], mutate: writeProbe(INTO_TMPDIR) })
+    writeFileSync(join(state, 'count'), '0')
+    writeFileSync(join(state, 'limit'), '1000000')
+    const tmp = join(T, 'tmp-b14')
+    mkdirSync(tmp, { recursive: true })
+    const log = join(T, 'b14.log')
+    const fd = openSync(log, 'w')
+    const r = spawnSync('bash', ['--', join(repo, TESTS, 'run-all.sh')], {
+      cwd: repo,
+      stdio: ['ignore', fd, fd, fd],
+      env: cleanEnv({ PATH: `${brokenBin}:${bin}:${process.env.PATH}`, TMPDIR: tmp }),
+      timeout: 150_000,
+    })
+    closeSync(fd)
+    const out = readFileSync(log, 'utf8')
+    check(r.status !== 0 && /Without:\s+[1-9]/.test(out) && /active-hook-test-closure\(\d+ untested\)/.test(out),
+      'B14 comm 壞掉時覆蓋率閉包照樣紅,印出沒測試的 hook 數(不是「Without: 0」)', tail(out))
+  }
 } catch (error) {
   check(false, `meta-test 本身出錯:${error.stack ?? error}`)
 } finally {
@@ -442,4 +470,4 @@ if (failures) {
   console.error(`✗ test-hook-test-fixture-guard-invariant:${failures} 項不符`)
   process.exit(1)
 }
-console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面 + 寫入偵測兩半(巢狀 .git、git status)與量具失效 + suite 的 stdin 接 /dev/null(開著的 stdin 不會卡住,拿掉就卡住)+ 子集參數(只跑點名的、點錯就拒絕、靜態閘與寫入偵測照跑)全部成立')
+console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面 + 寫入偵測兩半(巢狀 .git、git status)與量具失效 + suite 的 stdin 接 /dev/null(開著的 stdin 不會卡住,拿掉就卡住)+ 子集參數(只跑點名的、點錯就拒絕、靜態閘與寫入偵測照跑)+ 覆蓋率閉包不靠 comm / /dev/fd 全部成立')
