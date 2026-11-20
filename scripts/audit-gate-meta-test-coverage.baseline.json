@@ -30,7 +30,6 @@
       "consumer-source-harness",
       "data-table-invariants",
       "data-table-row-cache-deps-invariant",
-      "exemption-expiry-invariant",
       "field-label-binding-invariant",
       "governance-anchor-preflight",
       "governance-build-graph",

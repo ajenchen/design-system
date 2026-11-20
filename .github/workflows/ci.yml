@@ -424,8 +424,13 @@ jobs:
           node scripts/checkbox-group-handcraft-invariant.mjs
           node scripts/checkbox-group-handcraft-invariant.mjs --selftest
           node scripts/test-checkbox-group-handcraft-invariant.mjs
+          # 豁免標記到期複查(2026-11-21,knowledge-prune WP-24;2026-11-20 那時它在 HEAD 上紅,所以列在下一段沒接):配對 meta-test 把時鐘釘在
+          # exemption-expiry-baseline.json 的 recordedAt,主判定也在裡面帶同一個 --now 跑 —— 結果只看這棵樹、不看今天幾號:新增沒日期也沒指標的豁免標記、
+          # 改了已知標記的字卻沒補,都在 PR 上紅;合成的無主 / 過期 / @story-history 兩面必須紅。用真實時鐘跑照舊不接 PR
+          # (留給 knowledge-prune 的固定量具,prune-dimensions-d5-d10.md D9 的 `--report`):時間型閘接進 PR,跟改動無關的 PR 會因為某個標記的日期
+          # 剛好跨過 180 天而紅(M37 第九個形狀)。純 Node,本機約 5 秒。
+          node scripts/test-exemption-expiry-invariant.mjs
           # 同一份「只在夜間可達」清單裡刻意沒接的(2026-11-20 逐支在 HEAD 上跑過;接紅閘等於讓每個 PR 一起紅,所以紅的先留在夜間、原因記在這裡):
-          #   在 HEAD 上紅 —— exemption-expiry-invariant(真實時鐘下 11 筆過期 / 無主的豁免標記,修法在 WP-24)。
           #   要瀏覽器 —— audit-a11y、audit-consumer-a11y。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
           #     check-codex-freshness(讀寫本機 ~/.codex 設定)。
           #   工具 / 報告,不是閘 —— audit-hook-quality(寫 runtime 報告)、consolidate-audit-material、dispatch-audit-dims、prepare-deep-audit-run、

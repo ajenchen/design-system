@@ -24,7 +24,6 @@
     "check-src-republish.mjs",
     "consolidate-audit-material.mjs",
     "dispatch-audit-dims.mjs",
-    "exemption-expiry-invariant.mjs",
     "governance-check.mjs",
     "prepare-deep-audit-run.mjs",
     "run-gate-meta-tests.mjs"

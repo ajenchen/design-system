@@ -71,7 +71,8 @@
  *
  *   `--now=YYYY-MM-DD` 釘住「今天」。--selftest 的合成日期一律**相對於 now 推導**(now−181 天過期、now−180 天不過期),
  *   任何一天跑結果都一樣;meta-test 用 baseline 的 recordedAt 當 now,證明的是「儀器會紅」,不是「今天有沒有東西到期」。
- *   真正的到期警報在本閘自己的執行(CI lane 由主代理決定);沒接之前只有 --report / 手動跑會講。
+ *   真正的到期警報在本閘用真實時鐘的執行:不接 PR CI(跟改動無關的 PR 會因日期跨過 N 天而紅,就是上面這個形狀),
+ *   由 knowledge-prune 的固定量具 `--report` 與手動跑來講(prune-dimensions-d5-d10.md D9)。
  *
  * ## 用法
  *
@@ -84,7 +85,8 @@
  *
  * ## M32 四問(寫完閘立刻答)
  *   1. 弄壞它會紅嗎 —— --selftest 注入 12 筆該紅(無主 10 / 過期 2)+ 15 筆該放 + 5 筆長得像的;test-exemption-expiry-invariant.mjs 再把合成違規檔塞進真實掃描證明 fresh 會紅。
- *   2. 誰呼叫它 —— scripts/test-exemption-expiry-invariant.mjs(gate-meta lane);接 PR CI 由主代理決定。
+ *   2. 誰呼叫它 —— scripts/test-exemption-expiry-invariant.mjs:ci.yml verify-static「Static gates that used to run only nightly」
+ *      每支 PR 跑(2026-11-21 WP-24 接上;時鐘釘在 baseline.recordedAt),夜間 gate-meta lane 也跑;真實時鐘那次見上一段。
  *   3. 受不受時序影響 —— 「今天」是唯一的時間輸入,用 --now 釘住;沒有瀏覽器、沒有計時器。
  *   4. 機器慢還綠嗎 —— 純讀檔 + 正規表示式,沒有任何等待或門檻與速度有關。
  *
