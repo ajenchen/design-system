@@ -2,7 +2,8 @@
 set -uo pipefail
 # M31 機械強制:Adversarial dual-track 5-step canonical — author / independent peer 每次 collab 必走完整
 # 5-step(各自熟讀 / 各自驗證 / 各自視覺稽核 / cite-based propose / 整合完美版本)。
-# 執法等級:會擋(exit 2)。2026-11-21 knowledge-prune WP-16 依 D4-02 由「寫 stderr、exit 0」升級;整 commit 豁免 `@peer-collab-allow: <reason>`。
+# 執法等級:本支被呼叫時會擋(exit 2)。2026-11-21 knowledge-prune WP-16 依 D4-02 由「寫 stderr、exit 0」升級;整 commit 豁免 `@peer-collab-allow: <reason>`。
+# 但目前 adapter 不會派本支,在 session 裡實際不生效(見下「派送現況」)。
 #
 # PreToolUse(Bash git commit)hook — 攔截 commit message 含 registry-resolved peer / Layer A / Layer B keyword
 # 但**未同時**含以下 3 必備 marker:
@@ -16,8 +17,12 @@ set -uo pipefail
 # Allow escape:
 #   commit message 含 `@peer-collab-allow: <reason>` 整 commit 豁免(緊急 hotfix etc)
 #
-# 只在 M31 已啟動時跑:registrations.json 給本支 reviewSkill codex-collab + requires peer-review-binding,
-# task 沒要求 independent review(沒有選定 peer)時 adapter 不派本支,一般 commit 不經過這裡。
+# 派送現況(2026-11-21 實查):目前 adapter 不會派本支,M31 已啟動也一樣。registrations.json 給本支
+# reviewSkill codex-collab + requires peer-review-binding;唯一的執行入口 scripts/run-provider-hook.mjs 判資格
+# (resolveProviderHookEligibility)和準備子程序(resolveProviderReviewBinding)時都不帶 certified capability 選定,
+# 整支也沒有讀選定或收據的程式,所以 peer 恆為 null(REVIEW_CAPABILITY_SELECTION_REQUIRED):整組派送時本支被濾掉,
+# --hook 單派時整批 fail-open 放行。下面「出聲方式」是本支被呼叫時的行為(hook 測試直接呼叫本支量到的);
+# 要等將來接上派送路徑才會在 session 裡生效 —— 接上派送路徑或退役本支,是還沒做的工程取捨。
 #
 # 出聲方式(registrations.json outputMode = governance-context-or-block;輸出收法照 check_story_invariants.sh 的 _finalize_hook_output):
 #   - 缺 marker → exit 2,理由只寫 stderr:PreToolUse 擋下這次 git commit,模型把理由當工具錯誤讀到。

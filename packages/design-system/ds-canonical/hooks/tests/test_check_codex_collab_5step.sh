@@ -1,5 +1,6 @@
 #!/bin/bash
-# Tests for check_codex_collab_5step.sh(M31 5-step canonical;2026-11-21 knowledge-prune WP-16 起會擋)
+# Tests for check_codex_collab_5step.sh(M31 5-step canonical;2026-11-21 knowledge-prune WP-16 起本支被呼叫時會擋)
+# 注意:目前 adapter 不會派本支(見第 13 格與 hook 檔頭「派送現況」),下面 1–12 格都是直接呼叫 hook 量的。
 #
 # Hook 規則:Bash + git commit + commit message 含 peer collab keyword(registry 解出的 peer 名 / Layer A own /
 # Layer B <peer> / dual-track / 據理力爭 / cite battle)但缺 3 必備 marker
@@ -184,17 +185,19 @@ else
   record_fail "12. exit-0 output is a governanceContext envelope, never raw stderr" "expected envelope"
 fi
 
-# 13. 登記的 outputMode 必須讓「擋」的理由送到模型。本支要 M31 已啟動(certified review 選定 peer)adapter 才派,
-#     測試環境造不出那份選定,所以不像 test_check_story_determinism.sh 走真實入口;改核對 registrations.json:
+# 13. 只是靜態核對登記檔,不是行為檢查:registrations.json 裡本支每一筆都登記 governance-context-or-block。
+#     不像 test_check_story_determinism.sh 走真實入口,是因為目前根本沒有派送路徑:scripts/run-provider-hook.mjs
+#     判資格時不帶 certified capability 選定,peer 恆為 null,本支在任何 session(M31 已啟動也一樣)都判成不合資格
+#     (REVIEW_CAPABILITY_SELECTION_REQUIRED),走真實入口只會量到「沒派」。登記值要等將來接上派送路徑才有作用:
 #     adapter 只在 blocking / governance-context-or-block 把 exit 2 當 policy-block 交給模型,
 #     diagnostic 會把 exit 2 判成 hook 失敗(scripts/lib/provider-hook-output-transport.mjs 的 interpretProviderHookChildResult)。
-#     兩面對照:outputMode 改回 diagnostic 這格必紅。
+#     兩面對照:outputMode 改回 diagnostic 這格必紅(改登記檔就紅,量不到執行時的行為)。
 MODES=$(jq -r '[.hooks[][] | .hooks[] | select(.kind == "hook" and .hook == "check_codex_collab_5step.sh") | .outputMode] | unique | join(",")' "$REGISTRATIONS")
 if [ "$MODES" = "governance-context-or-block" ]; then
-  echo "  PASS  13. every registration uses governance-context-or-block (block reason reaches the model)"; PASS=$((PASS+1))
+  echo "  PASS  13. static registry check: every registration declares governance-context-or-block"; PASS=$((PASS+1))
 else
   STDOUT_TEXT="$MODES"; STDERR_TEXT=""; EXIT="-"
-  record_fail "13. every registration uses governance-context-or-block (block reason reaches the model)" "registered outputMode=$MODES"
+  record_fail "13. static registry check: every registration declares governance-context-or-block" "registered outputMode=$MODES"
 fi
 
 echo ""
