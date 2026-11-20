@@ -2,7 +2,7 @@
 // checkbox-group-handcraft-invariant — 防「手刻容器包多個 option Checkbox」復發
 //
 // @gate-contract
-//   保證: packages/design-system/src 的 .tsx 裡,每一個直接包兩個以上「帶可見 label 的 <Checkbox>」(或兩個以上 raw <label><input type="checkbox">)的 <div> 都在 <CheckboxGroup> 裡;唯一的例外是逐行豁免,而豁免必須引得出 spec 原文(檔:行 + 該行真的有的「引文」),且底下真的有它要放行的那一處
+//   保證: packages/design-system/src 的 .tsx 裡,每一個直接包(之間只隔空白或完整的 JSX 註解)兩個以上「帶可見 label 的 <Checkbox>」(或兩個以上 raw <label><input type="checkbox">)的 <div> 都在 <CheckboxGroup> 裡;唯一的例外是逐行豁免,而豁免必須引得出 spec 原文(檔:行 + 該行真的有的「引文」),且底下真的有它要放行的那一處
 //   紅: 把任一處 <CheckboxGroup> 換回手刻 <div className="flex flex-col">、拿掉一個有效豁免、豁免沒寫出處 / 出處那一行沒有那段引文 / 出處檔不存在、或豁免底下已經沒有手刻組(過期標記)→ 指名「檔:行 + 原因」並 exit 1;以真實檔注入的兩面在 scripts/test-checkbox-group-handcraft-invariant.mjs
 //   綠: 全部合規時 exit 0,印出掃描檔數與每一筆豁免的檔:行;判定是純文字比對、不讀時間也不讀網路,同一棵樹重跑結果相同;--selftest 的判定表兩面都有(該抓的抓到、不該抓的放行)
 //
@@ -28,6 +28,10 @@
 //   - 不再排除 checkbox 路徑檔(2026-06-15 修:原排除害 checkbox.principles 漏掃)。
 //   - 容器與選項之間、選項與選項之間夾 JSX 註解照抓(2026-11-20 修:selection-item.anatomy 檢閱器
 //     的開關列前面有一行註解,舊 regex 要求 <div> 後面緊接 <Checkbox,因此漏掃)。
+//     每一段註解只能吃到它自己的「*/}」為止,不准跨過去(同日審查修:原寫法 `[\s\S]*?` 在比對失敗回溯時
+//     會一路延伸到後面別段註解的結尾,把中間的程式碼一起吞掉 → 一個無關的 <div className="flex…"> 後面
+//     緊接註解、同檔更後面有「註解 + 兩個帶 label 的 Checkbox」(即使正確包在 <CheckboxGroup> 裡)
+//     就誤判在那個 div 上;回溯也讓註解多的檔掃一次要好幾秒)。
 //   - 容器 class 只要含 grid / flex / space-y-N 就算(2026-11-20 修:原本只認 flex-col / flex-wrap,
 //     水平手刻列 `flex gap-4` 漏掃)。
 //   - 「在不在 CheckboxGroup 裡」看結構:前面有沒有還沒關掉的 <CheckboxGroup(2026-11-20 修:原本看
@@ -42,8 +46,8 @@ import path from 'node:path'
 const ROOT = path.resolve(import.meta.dirname, '..')
 export const MARKER = '@checkbox-group-handcraft-ok'
 
-// 可夾在容器開頭與選項之間、選項與選項之間的 JSX 註解
-const CMT = String.raw`(?:\{\/\*[\s\S]*?\*\/\}\s*)*`
+// 可夾在容器開頭與選項之間、選項與選項之間的 JSX 註解;每一段只吃到自己的「*/」為止(不准跨過註解結尾)
+const CMT = String.raw`(?:\{\/\*(?:(?!\*\/)[\s\S])*\*\/\}\s*)*`
 // 可見 label= 的 Checkbox(排除 aria-label=:用 negative lookbehind 擋 `-label`)
 const ITEM = String.raw`<Checkbox\b(?:(?!\/>)[\s\S]){0,400}?(?<!-)label=(?:(?!\/>)[\s\S]){0,400}?\/>\s*`
 const DS_GROUP = new RegExp(String.raw`<div className="[^"]*(?:\bgrid\b|\bflex\b|space-y-[0-9])[^"]*">\s*` + CMT + String.raw`(?:` + ITEM + CMT + String.raw`){2,}`, 'g')
@@ -158,6 +162,9 @@ function selftest() {
     { n: 'raw input option group ×2 = 該抓', src: '<label className="x"><input type="checkbox"/> A</label><label className="x"><input type="checkbox"/> B</label>', e: 1 },
     { n: 'bare dev knob input = 不抓', src: '<input type="checkbox" checked={v} onChange={f} />', e: 0 },
     { n: '容器後面先夾一行 JSX 註解 = 照抓(selection-item.anatomy 的形狀)', src: '<div className="flex flex-col gap-2">\n{/* 說明 */}\n' + two + '\n</div>', e: 1 },
+    { n: '容器開頭與選項之間各夾多段 JSX 註解 = 照抓', src: '<div className="flex flex-col gap-2">\n{/* 一 */}\n{/* 二 */}\n<Checkbox label="a" />\n{/* 三 */}\n<Checkbox label="b" />\n</div>', e: 1 },
+    { n: '無關的 flex div 緊接註解,同一層後面的 <CheckboxGroup> 裡也有註解 = 不抓(註解不准跨過自己的結尾)', src: '<div className="flex flex-col gap-4">\n  {/* 區塊 A */}\n  <Button>x</Button>\n  <CheckboxGroup aria-label="通知">\n    {/* 選項 */}\n    <Checkbox label="Email" />\n    <Checkbox label="SMS" />\n  </CheckboxGroup>\n</div>', e: 0 },
+    { n: '無關的 flex div 緊接註解,隔很遠才有包在 <CheckboxGroup> 裡的「註解 + 兩個選項」= 不抓', src: '<div className="flex items-center gap-2">\n  {/* 工具列 */}\n  <Button>x</Button>\n</div>\n<p>其他內容</p>\n<section>\n  <CheckboxGroup>\n    {/* 選項 */}\n    <Checkbox label="Email" />\n    <Checkbox label="SMS" />\n  </CheckboxGroup>\n</section>', e: 0 },
     { n: '水平手刻列 flex gap-4 = 該抓(checkbox.anatomy「水平排列」的形狀)', src: '<div className="flex gap-4 border p-2">\n' + two + '\n</div>', e: 1 },
     { n: '兄弟範例的 </CheckboxGroup> 落在前 200 字內 = 照抓(舊判法的漏洞)', src: '<CheckboxGroup><Checkbox label="x" /></CheckboxGroup>\n<div className="flex gap-4">\n' + two + '\n</div>', e: 1 },
     { n: '<CheckboxGroup> 裡面再一層 div = 不抓', src: '<CheckboxGroup>\n<div className="grid grid-cols-2">\n' + two + '\n</div>\n</CheckboxGroup>', e: 0 },
