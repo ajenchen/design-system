@@ -228,7 +228,7 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 - 以上三者**禁止套 dismiss 弱化**
 
 **世界級對照**:
-- Dismiss:Polaris `Banner.onDismiss`(X 圖示)/ Ant Design `Alert.closable` → 一律 icon = `X`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
+- Dismiss:Polaris `Banner.onDismiss`(X 圖示)/ Ant Design `Alert.closable` → 一律 icon = `X`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46)、Ant `Alert` 可關閉時預設 `<CloseOutlined />`:[Alert.tsx](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/Alert.tsx))
 - Destructive:Polaris `Button tone="critical"` / 我們的 row Trash → 一般 primitive(無 dismiss 弱化)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
 
 #### Dismiss X 的實作(按 position 決定)

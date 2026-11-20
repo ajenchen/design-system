@@ -367,7 +367,7 @@ interface DropdownMenuItemProps
   badge?: React.ReactNode
   /** 後綴指示型 icon（LucideIcon），fg-muted */
   endIcon?: LucideIcon
-  /** 鍵盤快捷鍵提示 —— 渲染進 MenuItem `endContent` 正規後綴 slot(唯一的快捷鍵 API;shadcn 式 `<DropdownMenuShortcut>` child 2026-11-15 移除)。 */
+  /** 鍵盤快捷鍵提示 —— 渲染進 MenuItem `endContent` 正規後綴 slot(唯一的快捷鍵 API;shadcn 式 `<DropdownMenuShortcut>` child 2026-11-15 移除;shadcn 原件 https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx )。 */
   shortcut?: string
   /** 單選選中（bg-neutral-selected，持續選中狀態）*/
   selected?: boolean

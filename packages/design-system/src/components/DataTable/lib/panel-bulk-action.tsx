@@ -2,9 +2,10 @@
 //   1. 按下後**焦點不掉到 body**:這兩顆按鈕按下去就讓自己消失(值 = 預設 / 值 = 空 → 不再出現),握著焦點時(鍵盤按、或 Chrome 滑鼠按下給了焦點)
 //      焦點會被瀏覽器重設到 `<body>`(WHATWG focus fixup)。改交給同一個面板裡還在的那顆:加條件那一顆(「加排序」/「加篩選」)可按就給它,
 //      否則給標題列的 ×(恆渲染;欄位顯示面板沒有加條件鈕 → 直接給 ×,2026-11-15)。【AI 推導】依 DS 既有「焦點不可因 DOM unmount 掉到 body」(`ds-canonical/references/keyboard-model-canonical.md`
-//      「按了之後自己變停用」節列的六份 spec)+ W3C APG「focus is set on another element that provides logical work flow」(同檔 dialog 那段引文);
+//      「按了之後自己變停用」節列的六份 spec)+ W3C APG dialog「focus is set on another element that provides logical work flow」(https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/ );
 //      選「加條件」是因為兩個動作之後的下一步都是「重新加條件」。只有焦點真的掉了(activeElement 是 body / null)才搬,使用者已帶走焦點就不搶
-//      (React Aria FocusScope「Only restore focus if we've lost focus to the body」,同檔引文)。
+//      (React Aria FocusScope「Only restore focus if we've lost focus to the body」,
+//      https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/focus/FocusScope.tsx )。
 //   2. 按下後**播報結果**(polite):焦點落到「加排序」只會唸那顆按鈕,唸不出清單被清掉 / 換回預設。訊息只在「值仍等於這次動作的結果」時留著,
 //      使用者再改任何一處就清空 —— 下一次按同一顆時文字從空變回來,讀屏才會再唸(同一句文字不變 = 不播報)。
 //   規格:`../data-table.spec.md` L4「Header 恢復預設 / 清除全部」;閘:`scripts/data-table-panel-reset-clear-invariant.mjs`。

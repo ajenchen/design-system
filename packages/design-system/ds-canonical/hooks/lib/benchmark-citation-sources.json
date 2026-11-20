@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "M22「世界級對照要附一手來源」判定用的名稱 / 網域資料(唯一住處)。判定實作 packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs 讀這份;寫入當下的 hook(check_benchmark_citation.sh)與全樹檢查(scripts/benchmark-citation-invariant.mjs)都經那支實作,不另抄。",
-    "origin": "2026-11-05 K8 全樹盤點的 products.tsv(名稱 → 該名稱自己的來源比對)與當時 hook 的關鍵字 / 來源網域正則,2026-11-16 A29 搬進 repo。關鍵字集合 = 當時 hook 的 $bench 逐項相同(102 項)。搬進來時修的比對(都有現況樹上的實例):來源網域補 bitbucket.org(Atlassian 官方原始碼鏡像 atlassian-frontend-mirror 住在那裡);Linear / Gestalt 補上 hook 原有的撞名排除,Linear 另加字界(MUI 的 `LinearProgress` 不是那個產品);Linear / Element / Reach UI 的來源收窄到官網與原始碼位置(原本的 linear / element / reach 會被 MDN 等無關網址滿足);Material 的來源補 Compose Material 3(androidx)、Angular Material(angular/components、material.angular)的原始碼位置與 npm 套件路徑 `@material/`(jsdelivr / unpkg 上的 @material/web);Polaris 的來源補 shopify.dev(Polaris web components 的現行文件住在那裡);GitHub(產品)的來源補 github.com 上的 PR / issue 頁(那就是產品畫面本身);Cursor(AI 編輯器)只在列舉分隔符旁或後接 IDE / AI / 編輯器 / editor 時才算 —— 樹上的「Cursor」全是 CSS 游標與 Recharts 的 Cursor 元件,沒有一處是那個產品。",
+    "origin": "2026-11-05 K8 全樹盤點的 products.tsv(名稱 → 該名稱自己的來源比對)與當時 hook 的關鍵字 / 來源網域正則,2026-11-16 A29 搬進 repo。關鍵字集合 = 當時 hook 的 $bench 逐項相同(102 項)。搬進來時修的比對(都有現況樹上的實例):來源網域補 bitbucket.org(Atlassian 官方原始碼鏡像 atlassian-frontend-mirror 住在那裡);Linear / Gestalt 補上 hook 原有的撞名排除,Linear 另加字界(MUI 的 `LinearProgress` 不是那個產品);Linear / Element / Reach UI 的來源收窄到官網與原始碼位置(原本的 linear / element / reach 會被 MDN 等無關網址滿足);Material 的來源補 Compose Material 3(androidx)、Angular Material(angular/components、material.angular)的原始碼位置與 npm 套件路徑 `@material/`(jsdelivr / unpkg 上的 @material/web);Polaris 的來源補 shopify.dev(Polaris web components 的現行文件住在那裡);GitHub(產品)的來源補 github.com 上的 PR / issue 頁(那就是產品畫面本身);Cursor(AI 編輯器)只在列舉分隔符旁或後接 IDE / AI / 編輯器 / editor 時才算 —— 樹上的「Cursor」全是 CSS 游標與 Recharts 的 Cursor 元件,沒有一處是那個產品。2026-11-21 WP-25:Material 的來源補 Google 官方圖示 repo `google/material-design-icons/`(Material Symbols 的 SVG 原始檔住在那裡;agent-panel.tsx 停止鈕的出處就是它,舊表不認而判 partial)—— 只認 `google/` 這個帳號,別人 fork 的同名 repo 不算(selftest 判定表兩格)。",
     "fields": {
       "citeUrlPrefixes": "以 https:// 開頭、主機名稱以這些字開頭的網址算一手來源(沿用 2026-05 hook 的原始寫法)",
       "citeHosts": "主機名稱(含子網域)是這些網域的網址算一手來源;不寫 https:// 的「網域/路徑」寫法也算",
@@ -136,7 +136,7 @@
     {
       "name": "Material",
       "mention": "Material(?:\\s+X|\\s+Design|\\s+UI|\\s+3)?",
-      "sources": "material\\.io|mui\\.com|material-components|material-web|\\bmui/|material-ui|google\\.com|androidx|angular/components|material\\.angular|@material/"
+      "sources": "material\\.io|mui\\.com|material-components|material-web|\\bmui/|material-ui|google\\.com|androidx|angular/components|material\\.angular|@material/|(?<![\\w.-])google/material-design-icons/"
     },
     {
       "name": "MUI",

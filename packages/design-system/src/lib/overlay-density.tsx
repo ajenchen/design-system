@@ -128,7 +128,8 @@ export function useRegisterVirtualAnchor(family: OverlayFamily, virtualRef: Virt
   }, [registry, virtualRef])
 }
 
-/** virtualRef 的 current 是元素就用它;是量測物件就用它的 contextElement(Floating UI 虛擬元素的慣例);都沒有 = null。 */
+/** virtualRef 的 current 是元素就用它;是量測物件就用它的 contextElement(Floating UI 虛擬元素的慣例:「This property is useful if your
+ *  `getBoundingClientRect` method is derived from a real element」,https://floating-ui.com/docs/virtual-elements );都沒有 = null。 */
 function elementOfVirtual(v: unknown): Element | null {
   if (v instanceof Element) return v
   if (v && typeof v === "object" && "contextElement" in v) {

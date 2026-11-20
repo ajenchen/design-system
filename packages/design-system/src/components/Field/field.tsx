@@ -544,7 +544,11 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 // 那三檔是重構時自己長出來的,沒有任何 user 決定背書。實際使用也證實它不帶資訊:
 // 全 repo 33 個 `<FieldGroup>` 只有 2 個傳過 gap(1 個 compact 無理由、1 個傳的就是預設值),
 // `loose` 一次都沒用過。世界級同樣沒有一家開放 per-instance 檔位:
-// shadcn 元件固定 / MUI 泛用數值 × theme spacing / Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
+// shadcn 元件固定 / MUI Stack 任意數值經 `theme.spacing()` 換算(「The spacing value can be any number, including decimals,
+// or a string.」https://mui.com/material-ui/react-stack/ )/ Ant 全域 component token `itemMarginBottom`
+// (https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/form/style/index.ts )
+// 走 ConfigProvider 的 `theme.components`(「Modify Component Token and Alias Token applied to components」,
+// https://github.com/ant-design/ant-design/blob/615d1baef4a4d3197bd611651e6415d15d8bb4ca/docs/react/customize-theme.en-US.md )。
 //
 // md density 下新舊值都是 16px,所以 33 個用法裡 32 個視覺零變化;lg 下從凍結的 16px 變成 24px,
 // 也就是開始履行 density 的承諾。

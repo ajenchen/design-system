@@ -77,7 +77,7 @@
   Claude Code stops the turn.」,<https://code.claude.com/docs/en/permissions.md>,只當旁證);本卡「代理停下」的依據是上面 user 的方向與本節第一條「僅代理被阻擋、需人決策時出現」。
 - 收起後的焦點:送出 / 取消(× / Esc)之後 consumer 卸載卡片,握著焦點的那顆鈕跟著不見 —— 焦點在卡片裡時交給**面板的對話輸入框**(`AgentPromptInput` 的輸入格),不掉到 body
   (`../../../ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」;W3C APG dialog:按的元素不在了 →
-  「focus is set on another element that provides logical work flow」,原文與出處見同檔 Dialog 那一段)。落點【AI 推導】:卡片本來就完全覆蓋輸入區(本節第一條),
+  「focus is set on another element that provides logical work flow」,<https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/>)。落點【AI 推導】:卡片本來就完全覆蓋輸入區(本節第一條),
   收起後露出來的就是它,使用者下一步是看代理怎麼接、或自己再打一句(取消之後代理停下,下一步一定是使用者打字)。焦點不在卡片裡不動;consumer 送出後不卸載卡片(例如換成讀取中)時焦點留在原處。
   作法:`AgentPanel` 提供、`AgentPromptInput` 登記輸入格(`agent-panel.tsx` `AgentComposerContext`),卡片在卸載那一刻(版面效果收尾,DOM 還在)檢查焦點、
   交接走 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`(同「上一題」「清除選取」)。面板外單獨用卡片、或面板裡沒有輸入框時沒有落點可交,不動。

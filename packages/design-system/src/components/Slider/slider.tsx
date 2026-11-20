@@ -143,7 +143,7 @@ const Slider = React.forwardRef<
         **Thumb bg 兩態(2026-06-12 user 拍板,深色模式破洞修正)**:
           - Rest/hover/active:`bg-on-emphasis`(固定白、深淺主題不反轉)— 對齊自家
             Switch thumb(switch.tsx bg-on-emphasis)+ Radix Themes(thumb 字面 white
-            無 dark override)+ Apple iOS(深色模式旋鈕仍白)。原 `bg-surface` 在深色
+            無 dark override;原另列的行動平台原生滑桿 2026-11-21 查不到一手原文,拿掉)。原 `bg-surface` 在深色
             = 8% 白半透明 → thumb 變深色破洞且 track 穿透。
           - Disabled:`bg-canvas`(不透明頁面背景色)— 沉回背景表達「不可動」,
             = Radix disabled thumb 用 gray-1(app background)同款;不透明故 track

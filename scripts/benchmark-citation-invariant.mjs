@@ -183,6 +183,10 @@ export const JUDGEMENT_TABLE = [
   { cell: '截圖證據缺', path: SPEC, text: '# A\n\nLinear 的 sidebar 也這樣收合。', expect: 'block', kind: 'no-source' },
   { cell: '撞名:CSS 游標', path: PATTERN_SPEC, text: '# A\n\n- **Cursor**:`col-resize` / `row-resize`', expect: 'pass' },
   { cell: '撞名:產品 Cursor', path: PATTERN_SPEC, text: '# A\n\n代表:Linear(https://linear.app/docs)/ Cursor / VS Code(https://code.visualstudio.com/docs)', expect: 'block', kind: 'partial' },
+  // 2026-11-21 WP-25:Material 來源補 google/material-design-icons(Material Symbols 原始 SVG 的官方 repo)。這是放寬,
+  // 所以同一種寫法換成別人 fork 的同名 repo 必須仍然擋(github.com 是可認的來源網域 → partial)。
+  { cell: 'Material 官方圖示 repo:google 帳號', path: TSX, text: '// 停止鈕 = Material Symbols `stop`(https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/symbols/web/stop/materialsymbolsoutlined/stop_24px.svg)\nexport const A = 1', expect: 'pass' },
+  { cell: 'Material 官方圖示 repo:別人 fork 的同名 repo 不算', path: TSX, text: '// 停止鈕 = Material Symbols `stop`(https://github.com/notgoogle/material-design-icons/blob/main/symbols/web/stop/materialsymbolsoutlined/stop_24px.svg)\nexport const A = 1', expect: 'block', kind: 'partial' },
 ]
 
 function judgeCell(cell, judge) {
@@ -226,7 +230,7 @@ function selftest() {
     }
   }
   // 每格兩面:同一個判定主題至少一面放、一面擋(表本身寫壞時這裡先紅)
-  const pairs = ['有來源|沒來源', 'partial', '套件路徑來源', 'tsx 範例資料|tsx 註解宣稱', 'tsx 網址裡的 :// 不是註解|tsx 區塊註解宣稱', 'tsx note= 說明文字|tsx 其他屬性', '程式碼框', '撤回標記', '檔級豁免', '截圖證據', '撞名']
+  const pairs = ['有來源|沒來源', 'partial', '套件路徑來源', 'tsx 範例資料|tsx 註解宣稱', 'tsx 網址裡的 :// 不是註解|tsx 區塊註解宣稱', 'tsx note= 說明文字|tsx 其他屬性', '程式碼框', '撤回標記', '檔級豁免', '截圖證據', '撞名', 'Material 官方圖示 repo']
   for (const pair of pairs) {
     const pattern = new RegExp(`^(?:${pair.split('|').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`)
     const expects = new Set(JUDGEMENT_TABLE.filter((cell) => pattern.test(cell.cell)).map((cell) => cell.expect))

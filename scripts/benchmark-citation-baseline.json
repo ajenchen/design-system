@@ -4,27 +4,5 @@
     "origin": "2026-11-16 A29 以逐家比對判定(hooks/lib/benchmark-citation.mjs)量全樹時的現況;每一段的位置與缺哪幾家用 `node scripts/benchmark-citation-invariant.mjs --list` 看。",
     "remedy": "每段二選一:補該家自己的官網 / 原始碼網址(打開確認它真的支持那句話),或照 M22 改寫成 DS 內部理由。其他範圍也可以照舊加 `@benchmark-unverified` 逐句撤回,但那個標記的數量歸 scripts/exemption-expiry-invariant.mjs 管。"
   },
-  "files": {
-    "packages/design-system/src/components/AccountMenu/account-menu.principles.stories.tsx": 1,
-    "packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx": 1,
-    "packages/design-system/src/components/AgentPanel/agent-panel.tsx": 3,
-    "packages/design-system/src/components/Chart/chart.tsx": 1,
-    "packages/design-system/src/components/DataTable/lib/panel-bulk-action.tsx": 1,
-    "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx": 1,
-    "packages/design-system/src/components/Field/field.tsx": 1,
-    "packages/design-system/src/components/InlineEdit/inline-edit.tsx": 1,
-    "packages/design-system/src/components/Pagination/pagination.tsx": 5,
-    "packages/design-system/src/components/Slider/slider.tsx": 1,
-    "packages/design-system/src/components/Tooltip/tooltip.tsx": 1,
-    "packages/design-system/src/lib/overlay-density.tsx": 1,
-    "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md": 1,
-    "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md": 1,
-    "packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md": 1,
-    "packages/design-system/src/patterns/overlay-surface/overlay-surface.tsx": 1,
-    "packages/design-system/src/tokens/color/color.spec.md": 2,
-    "packages/design-system/src/tokens/motion/motion.spec.md": 1,
-    "packages/design-system/src/tokens/radius/radius.spec.md": 2,
-    "packages/design-system/src/tokens/token-system.spec.md": 2,
-    "packages/design-system/src/tokens/typography/typography.spec.md": 1
-  }
+  "files": {}
 }

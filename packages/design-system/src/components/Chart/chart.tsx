@@ -44,7 +44,9 @@ function useChart() {
 }
 
 // ── 系列名撞原料色(2026-11-15,稽核 P19 與反查更正)──────────────────────────
-// ChartStyle 在容器上注入 `--color-<key>`(shadcn 慣例,保留不改 —— 產品寫 var(--color-desktop)),原料色也叫 `--color-*`。
+// ChartStyle 在容器上注入 `--color-<key>`(shadcn 慣例:ChartStyle 逐鍵寫 `--color-${key}: ${color};`,
+// https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/chart.tsx ;
+// 保留不改 —— 產品寫 var(--color-desktop)),原料色也叫 `--color-*`。
 // 真的會出事的只有兩種:系列名是原料色名(圖表裡直接讀原料色的分類色被換掉),或是 white / black(帶 data-theme 的
 // 子元素重算語意色時讀到被換掉的值)。兩種都是「系列名 = 原料色名」,在開發期警告,不改任何行為(chart.spec.md「邊界案例」)。
 // 原料色名的色相清單消費 CATEGORICAL_HUES(加上 neutral 與 white / black),不另寫一份。

@@ -35,7 +35,8 @@ const TooltipProvider = ({ delayDuration = MOTION_DELAY_PLAIN_MS, ...props }: Re
 // Radix 之前登記,把派送中的事件記下來,下一個 task 清掉)且焦點仍在本觸發點、離聚焦或上一次放過的捲動不到 FOCUS_SCROLL_IDLE_MS
 // (平滑捲動一幀一個事件,一路延長)、總長不超過 FOCUS_SCROLL_MAX_MS。其他關閉(Esc、點擊、失焦、指標離開、別的提示打開、
 // 之後使用者自己捲動)一律照 Radix。同一種「自己造成的捲動不算」的例外,React Aria 也有:useCloseOnScroll 對 input / textarea
-// 的捲動不關(游標位置會讓它自己捲;adobe/react-spectrum packages/react-aria/src/overlays/useCloseOnScroll.ts#L52-L57)。
+// 的捲動不關(游標位置會讓它自己捲;「Ignore scroll events on any input or textarea as the cursor position can cause it to scroll」,
+// https://github.com/adobe/react-spectrum/blob/6dec77beccf0545a04318e6a01b8eb9cbe2dccc6/packages/react-aria/src/overlays/useCloseOnScroll.ts )。
 // 機械閘:scripts/sidebar-standalone-collapse-invariant.mjs R3k(主標頭佈局 820×700 真按 Tab 到細列列鈕)。
 const FOCUS_SCROLL_IDLE_MS = 150
 const FOCUS_SCROLL_MAX_MS = 1000

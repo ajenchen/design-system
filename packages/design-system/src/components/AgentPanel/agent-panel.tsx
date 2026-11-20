@@ -1735,7 +1735,9 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     }
     // 「上一題」從第 2 題回第 1 題:第 1 題沒有上一題,按下去的那顆鈕跟著卸載 —— 焦點不可掉到 body
     // (`ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」)。焦點在它身上才接手(同 keepFieldFocusBeforeUnmount
-    // 「不在就不動」),交給第 1 題的選項入口:單選 = 已選的那個圓、沒選 = 第一個(APG radio Tab 進群組的落點,同「清除選取」後的落點),複選 = 第一個方框。
+    // 「不在就不動」),交給第 1 題的選項入口:單選 = 已選的那個圓、沒選 = 第一個(APG radio Tab 進群組的落點,同「清除選取」後的落點:
+    //「If a radio button is checked, focus is set on the checked button.」「If none of the radio buttons are checked, focus is set on
+    // the first radio button in the group.」https://www.w3.org/WAI/ARIA/apg/patterns/radio/ ),複選 = 第一個方框。
     // 【AI 推導】按上一題 = 要改上一題的答案,所以落在答案上。2026-11-11 前第 1 題同一格是「跳過」鈕(React 沿用同一個 DOM 元素,焦點留在原處),拿掉後才需要接手。
     // 第 1 題的控件要等這一次渲染完才在 → 按下時記下目標,版面效果裡聚焦(只 focus、不另外捲動,同 advance)。
     const focusAfterBack = React.useRef<string | null>(null)
@@ -1754,7 +1756,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     }
     // 卡片收起(送出 / 取消之後 consumer 卸載它):握著焦點的那顆鈕跟著不見,焦點不可掉到 body
     // (`ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」;W3C APG dialog:按的元素不在了
-    // →「focus is set on another element that provides logical work flow」,原文與出處同檔 Dialog 那一段)。
+    // →「focus is set on another element that provides logical work flow」,https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/ )。
     // 落點 = 面板的對話輸入框(AgentComposerContext,由 AgentPromptInput 登記)【AI 推導】:卡片本來就蓋在它上面,收起後露出來的就是它,
     // 使用者下一步是看代理怎麼接、或自己再打一句(取消之後代理停下,下一步一定是使用者打字)。焦點在卡片裡才接手(同 keepFieldFocusBeforeUnmount「不在就不動」);
     // 用版面效果的收尾:React 卸載時先跑它、再把 DOM 拿掉,這一刻卡片還在、還看得到焦點在不在裡面。
@@ -1916,8 +1918,8 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
         {/* body:上下無內距、左右 16;選項=灰底卡 gap 8(整卡可點;拍板樣張,本地包裝不抽通用元件);捲軸必用 ScrollArea。
             錯誤訊息 = FieldError(與欄位錯誤同一個元件、同字級同色、role="alert"),放在最後一張選項卡之後(agent-decision-card.spec.md「步進」);
             沒有錯誤時 FieldError 不渲染、不佔位。與最後一張卡的距離 = 卡間距 8:放進選項卡同一個 gap 8 堆疊 —— user 2026-10-29 問句裡的提案
-            (「跟最後一個選項距離=選項跟選項之間的距離？」)照提案落地;8 是 AI 依既有規則定(Polaris ChoiceList / Carbon 都不讓錯誤比選項之間更近,
-            Field 內部 gap-1 4 因此排除;出處見 agent-decision-card.spec.md「步進」)。改距離時閘 `scripts/agent-decision-card-validation-invariant.mjs` E4 / E10 / N6 一起改。 */}
+            (「跟最後一個選項距離=選項跟選項之間的距離？」)照提案落地;8 是 AI 依既有規則定(世界級一致的只有「錯誤不比選項之間更近」,
+            Field 內部 gap-1 4 因此排除;各家數字與版本固定的原始碼連結只住 agent-decision-card.spec.md「步進」,這裡不抄)。改距離時閘 `scripts/agent-decision-card-validation-invariant.mjs` E4 / E10 / N6 一起改。 */}
         <ScrollArea fillX className="min-h-0">
           <div className="flex flex-col gap-2 px-[var(--layout-space-loose)]">
             {multi ? (

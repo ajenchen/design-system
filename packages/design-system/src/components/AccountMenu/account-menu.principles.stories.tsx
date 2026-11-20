@@ -1,6 +1,5 @@
-// @benchmark-cited: usage 分界與 placement 由 account-menu.spec.md 已列的
-// Atlassian / shadcn / Primer / Material primary sources 收斂；本檔只投影 canonical，(來源:https://unpkg.com/@atlaskit/atlassian-navigation@6.4.12/dist/types/components/Profile/types.d.ts)
-// 不新增 email、account switcher 或其他 aspirational contract。
+// @benchmark-cited: usage 分界與 placement 由 account-menu.spec.md「Benchmark(M8 / M22 cite)」表收斂(各家一手來源只住該表,這裡不抄);
+// 本檔只投影 canonical，不新增 email、account switcher 或其他 aspirational contract。
 import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
 import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'

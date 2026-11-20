@@ -196,7 +196,7 @@ Material 3 用 15 個 type role(display / headline / title / body / label 各分
 
 **(4) Font weight 3 階(400/500/700)— 對齊 Carbon / Polaris 共識** <!-- @benchmark-unverified -->
 
-Tailwind / Apple SF 的 9 階 weight scale 涵蓋 marketing / 印刷需求,但 productivity DS 的場景幾乎只用 normal / medium / bold 三階(Polaris 也只開 regular 450 / medium 550 / semibold 650 / bold 700 四階)。捨棄 100-300 hairline + 800-900 black 的代價是「行銷 hero text 表現力」,DS 不收 marketing 場景,接受([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/font.ts#L108-L118))。
+Tailwind / Apple SF 的 9 階 weight scale(Apple:「SF Pro features nine weights」,<https://developer.apple.com/fonts/>)涵蓋 marketing / 印刷需求,但 productivity DS 的場景幾乎只用 normal / medium / bold 三階(Polaris 也只開 regular 450 / medium 550 / semibold 650 / bold 700 四階)。捨棄 100-300 hairline + 800-900 black 的代價是「行銷 hero text 表現力」,DS 不收 marketing 場景,接受([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/font.ts#L108-L118))。
 
 ## 跨元件參考
 
