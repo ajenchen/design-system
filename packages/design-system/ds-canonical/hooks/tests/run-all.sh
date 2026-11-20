@@ -4,6 +4,11 @@
 # Usage: bash packages/design-system/ds-canonical/hooks/tests/run-all.sh
 #        npm run hooks:test(via package.json wrapper)
 #
+# Every suite runs with stdin from /dev/null. Hooks read their payload with `INPUT=$(cat)`, so a
+# test that calls a hook without feeding one inherits this runner's stdin and waits for as long as
+# the caller keeps that stdin open —— a background agent shell keeps it open forever(2026-11-18:
+# test_stop_capture_metrics.sh hung a measurement for 40+ minutes).
+#
 # Exit: 0 if all pass, 1 if any test suite fails.
 
 set -u
@@ -106,7 +111,8 @@ for test_file in test_*.sh; do
   echo ""
   echo "▶ Running: $test_file"
   echo "────────────────────────────────────────"
-  if bash "$test_file"; then
+  # stdin from /dev/null(see the header): a suite must never wait on the caller's stdin.
+  if bash "$test_file" < /dev/null; then
     PASSED_SUITES=$((PASSED_SUITES+1))
   else
     FAILED_SUITES="${FAILED_SUITES}\n  - $test_file"

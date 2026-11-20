@@ -22,12 +22,17 @@
  *   B6 綠面:同一支只把寫入目標換成 $TMPDIR —— 照跑、通過、檔真的寫出來了,寫入偵測不得報。B5 與 B6 只差「寫到哪裡」。
  *   B7 量具失效:複製樹的 run-all 把 git status 換成必定出錯的寫法(--porcelain=v9)。git 出錯時前後印出同一段錯誤、
  *      比對恆等,這一半會瞎而且不出聲 —— run-all 必須以「偵測器不可用」紅,一支 suite 都不跑(那支會寫入的替身沒機會跑)。
+ *   B8 / B9 stdin(2026-11-20):hook 用 `INPUT=$(cat)` 讀 payload,測試叫 hook 沒餵 payload 就繼承 runner 的 stdin;
+ *      呼叫端的 stdin 一直開著(代理的背景殼層)就永遠等(2026-11-18 test_stop_capture_metrics.sh 卡過 40 多分鐘)。
+ *      run-all 的 stdin 接一條本測試自己握著寫端的 FIFO(讀的人永遠等不到 EOF),時限到就砍整個行程群組:
+ *   B8 綠面:一支像 hook 一樣 `$(cat)` 的替身照樣跑完、讀到 0 bytes(suite 的 stdin 是 /dev/null)。
+ *   B9 對照組:同一棵只把 run-all 的 `< /dev/null` 拿掉 —— 必須卡住、被時限砍掉(證明 B8 的綠不是因為 FIFO 根本沒擋住)。
  *
  * 假 mktemp 拒絕時往 fd 3 寫一個標記;fd 1 / 2 / 3 是同一個檔,所以標記按時間序落在各 suite 的輸出段落裡,
  * 連把 stderr 丟進 /dev/null 的那一支(test_record_release_consent.sh)也數得到。
  * 允許的呼叫一律自帶模板(與沙箱的 mktemp 替身同一個作法),所以本測試在 macOS 沙箱、Linux CI、拋棄式快照裡結果相同。
  */
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import {
   chmodSync, closeSync, cpSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync,
   readdirSync, realpathSync, rmSync, statSync, writeFileSync,
@@ -301,6 +306,70 @@ try {
     check(!r.out.includes('▶ Running'), 'B7 一支 suite 都沒有跑', tail(r.out))
     check(before === snapshotOf(repo), 'B7 複製樹不變(那支會往 hooks 樹寫檔的替身沒有機會跑)')
   }
+
+  // B8 / B9 stdin:run-all 的 stdin 接一條本測試自己同時握著讀寫端的 FIFO —— 讀它的人永遠等不到 EOF。
+  // 子行程開成自己的行程群組(detached),時限到就整群 SIGKILL(run-all、suite、卡住的 cat 一起),不留孤兒。
+  const STDIN_PROBE = 'test_zz_stdin_probe.sh'
+  const STDIN_MARK = 'stdin-probe read'
+  const stdinProbe = (repo) => writeFileSync(join(repo, TESTS, STDIN_PROBE), [
+    '#!/bin/bash',
+    '# meta-test 替身:像 hook 一樣用 $(cat) 讀 stdin;stdin 沒被關掉就會一直等',
+    'IN=$(cat)',
+    `echo "${STDIN_MARK} \${#IN} bytes"`,
+    '',
+  ].join('\n'))
+  const runAllHoldingStdin = async (repo, timeoutMs) => {
+    const name = repo.split('/').pop()
+    const fifo = join(T, `${name}.stdin`)
+    const made = spawnSync('mkfifo', [fifo], { encoding: 'utf8' })
+    if (made.status !== 0) throw new Error(`mkfifo 失敗(${made.status}):${made.stderr}`)
+    const hold = openSync(fifo, 'r+')
+    writeFileSync(join(state, 'count'), '0')
+    writeFileSync(join(state, 'limit'), '1000000')
+    const tmp = join(T, `tmp-${name}`)
+    mkdirSync(tmp, { recursive: true })
+    const log = join(T, `${name}.log`)
+    const fd = openSync(log, 'w')
+    const child = spawn('bash', ['--', join(repo, TESTS, 'run-all.sh')], {
+      cwd: repo,
+      stdio: [hold, fd, fd, fd],
+      detached: true,
+      env: cleanEnv({ PATH: `${bin}:${process.env.PATH}`, TMPDIR: tmp }),
+    })
+    let timedOut = false
+    const timer = setTimeout(() => {
+      timedOut = true
+      try { process.kill(-child.pid, 'SIGKILL') } catch {}
+    }, timeoutMs)
+    const exit = await new Promise((done) => child.on('close', (status, signal) => done({ status, signal })))
+    clearTimeout(timer)
+    closeSync(hold)
+    closeSync(fd)
+    return { ...exit, timedOut, out: readFileSync(log, 'utf8') }
+  }
+
+  // B8 綠面:stdin 一直開著,讀 stdin 的替身照樣跑完、讀到 0 bytes
+  {
+    const repo = makeCopy('b8', { suites: [STDIN_PROBE], mutate: stdinProbe })
+    const r = await runAllHoldingStdin(repo, 60_000)
+    check(!r.timedOut && sections(r.out).has(STDIN_PROBE), `B8 stdin 一直開著,${STDIN_PROBE} 照樣跑完(沒有卡到時限)`, tail(r.out))
+    check(r.out.includes(`${STDIN_MARK} 0 bytes`), 'B8 替身讀到 0 bytes —— suite 的 stdin 是 /dev/null,不是呼叫端那條', tail(r.out))
+  }
+
+  // B9 對照組:同一棵只把 run-all 的 `< /dev/null` 拿掉 → 必須卡住、被時限砍掉
+  {
+    const dropDevNull = (repo) => {
+      const file = join(repo, TESTS, 'run-all.sh')
+      const text = readFileSync(file, 'utf8')
+      const from = 'bash "$test_file" < /dev/null'
+      if (text.split(from).length !== 2) throw new Error(`run-all.sh 裡「${from}」不是恰好一處 —— 對照組前提不成立`)
+      writeFileSync(file, text.replace(from, 'bash "$test_file"'))
+    }
+    const repo = makeCopy('b9', { suites: [STDIN_PROBE], mutate: (r) => { stdinProbe(r); dropDevNull(r) } })
+    const r = await runAllHoldingStdin(repo, 10_000)
+    check(r.timedOut, 'B9 拿掉 `< /dev/null` 後,讀 stdin 的替身卡住、被 10 秒時限砍掉(量具看得到「卡住」)', tail(r.out))
+    check(!r.out.includes(STDIN_MARK), 'B9 替身沒有讀完(停在 $(cat))', tail(r.out))
+  }
 } catch (error) {
   check(false, `meta-test 本身出錯:${error.stack ?? error}`)
 } finally {
@@ -311,4 +380,4 @@ if (failures) {
   console.error(`✗ test-hook-test-fixture-guard-invariant:${failures} 項不符`)
   process.exit(1)
 }
-console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面 + 寫入偵測兩半(巢狀 .git、git status)與量具失效全部成立')
+console.log('✓ test-hook-test-fixture-guard-invariant:靜態閘兩面 + 真實 mktemp 失敗的紅面 / 反向 / 綠面 + 寫入偵測兩半(巢狀 .git、git status)與量具失效 + suite 的 stdin 接 /dev/null(開著的 stdin 不會卡住,拿掉就卡住)全部成立')

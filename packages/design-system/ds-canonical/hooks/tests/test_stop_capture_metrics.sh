@@ -15,6 +15,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # stop_passive_logging.sh dispatcher R3。Test 走 dispatcher。
 HOOK="$SCRIPT_DIR/../stop_passive_logging.sh"
 [ -x "$HOOK" ] || { echo "FATAL: hook not executable"; exit 1; }
+# Every hook call below gets its stdin explicitly(< /dev/null = the empty payload this suite has
+# always been measured with under run-all). The hook reads its payload with `INPUT=$(cat)`; a call
+# that inherits stdin waits for as long as whoever started the suite keeps stdin open —— this suite
+# hung a background measurement for 40+ minutes on 2026-11-18 because no call here redirected it.
 
 PASS=0; FAIL=0; FAILED=""
 
@@ -38,7 +42,7 @@ teardown_temp_proj() {
 echo "Test 1: fresh project(no prior snapshot)"
 setup_temp_proj
 GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$STATE_DIR" \
-  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK" < /dev/null
 EXIT=$?
 LINES=$(wc -l < "$STATE_DIR/metric-snapshots.jsonl" 2>/dev/null | tr -d ' ' || echo 0)
 if [ "$EXIT" = "0" ] && [ "$LINES" = "1" ]; then
@@ -58,9 +62,9 @@ mkdir -p "$TMP_PROJ/governance/memory" "$TMP_PROJ/home-a/.claude/projects/privat
 touch "$TMP_PROJ/governance/memory/one.md"
 for i in $(seq 1 7); do touch "$TMP_PROJ/home-a/.claude/projects/private/memory/private-$i.md"; done
 HOME="$TMP_PROJ/home-a" GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$RUNTIME_ROOT/state-a" \
-  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK" < /dev/null
 HOME="$TMP_PROJ/home-b" GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$RUNTIME_ROOT/state-b" \
-  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK" < /dev/null
 MEM_A=$(jq -r '.memory_entries' "$RUNTIME_ROOT/state-a/metric-snapshots.jsonl")
 MEM_B=$(jq -r '.memory_entries' "$RUNTIME_ROOT/state-b/metric-snapshots.jsonl")
 if [ "$MEM_A" = "1" ] && [ "$MEM_B" = "1" ]; then
@@ -78,7 +82,7 @@ NOW_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 mkdir -p "$STATE_DIR"
 echo "{\"ts\":\"$NOW_ISO\",\"tag\":\"prior\",\"claude_md_lines\":1}" > "$STATE_DIR/metric-snapshots.jsonl"
 GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$STATE_DIR" \
-  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK" < /dev/null
 EXIT=$?
 LINES=$(wc -l < "$STATE_DIR/metric-snapshots.jsonl" | tr -d ' ')
 if [ "$EXIT" = "0" ] && [ "$LINES" = "1" ]; then
@@ -96,7 +100,7 @@ setup_temp_proj
 mkdir -p "$STATE_DIR"
 echo '{"ts":"2026-04-20T00:00:00Z","tag":"prior","claude_md_lines":1}' > "$STATE_DIR/metric-snapshots.jsonl"
 GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$STATE_DIR" \
-  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK" < /dev/null
 EXIT=$?
 LINES=$(wc -l < "$STATE_DIR/metric-snapshots.jsonl" | tr -d ' ')
 if [ "$EXIT" = "0" ] && [ "$LINES" = "2" ]; then
@@ -119,7 +123,7 @@ teardown_temp_proj
 echo "Test 5: telemetry defaults to read-only"
 setup_temp_proj
 GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$STATE_DIR" \
-  GOVERNANCE_PROVIDER=codex bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex bash "$HOOK" < /dev/null
 EXIT=$?
 if [ "$EXIT" = "0" ] && [ ! -e "$RUNTIME_ROOT" ]; then
   echo "  PASS  Test 5 no opt-in creates no runtime bytes"
@@ -137,7 +141,7 @@ OUTSIDE_STATE="$TMP_PROJ/outside-state"
 mkdir -p "$OUTSIDE_STATE"
 printf 'sentinel\n' > "$OUTSIDE_STATE/sentinel.txt"
 GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$OUTSIDE_STATE" \
-  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK" < /dev/null
 EXIT=$?
 if [ "$EXIT" = "0" ] && [ ! -e "$OUTSIDE_STATE/metric-snapshots.jsonl" ] \
   && [ "$(cat "$OUTSIDE_STATE/sentinel.txt")" = "sentinel" ]; then
@@ -156,7 +160,7 @@ mkdir -p "$RUNTIME_ROOT" "$TMP_PROJ/symlink-target"
 ln -s "$TMP_PROJ/symlink-target" "$RUNTIME_ROOT/poison-state"
 printf 'sentinel\n' > "$TMP_PROJ/symlink-target/sentinel.txt"
 GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_STATE_DIR="$RUNTIME_ROOT/poison-state" \
-  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK"
+  GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 bash "$HOOK" < /dev/null
 EXIT=$?
 if [ "$EXIT" = "0" ] && [ ! -e "$TMP_PROJ/symlink-target/metric-snapshots.jsonl" ] \
   && [ "$(cat "$TMP_PROJ/symlink-target/sentinel.txt")" = "sentinel" ]; then
