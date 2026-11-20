@@ -1,4 +1,4 @@
-# shellcheck shell=bash
+#!/bin/bash
 # 「本回合從 transcript 哪一行開始」的唯一判斷(2026-11-21,工作包 E7;交接 process-audit 根因 8 修法)。
 #
 # 為什麼抽出來:stop_self_audit.sh 原本有兩份判斷 —— 檔頭的 LAST_USER_LINE(role=user 且不是 tool_result 就算新回合)
