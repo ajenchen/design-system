@@ -310,6 +310,9 @@ jobs:
           # 這支稽核 2026-09-21 之前**沒有任何執行面呼叫它**(CI / npm script / hook 全 0),
           # 所以 87 支閘裡有 41 支從沒被證明過會紅,而且沒有人看得見 —— 跟它自己要守的病同一種。
           node scripts/audit-gate-meta-test-coverage.mjs --check
+          # 它自己的紅面(2026-11-20 接上,knowledge-prune WP-21;原本只在夜間 harness):合成 repo 證明它分得出「紅面在 PR 跑 / 只在排程跑 / 沒人跑」,
+          # 名單多一筆 / 少一筆 / 無人跑各自紅 —— 這支棘輪要守的病(對照組只在夜間跑)不能發生在它自己身上。純 Node,本機約 3 秒。
+          node scripts/test-audit-gate-meta-test-coverage.mjs
           # 這兩支同樣只註冊成 npm script、沒有任何 workflow 呼叫過(2026-09-21 盤點):
           #   check:bundle-size —— 上次設基準是 2026-07-14,之後兩個月的成長全沒被擋,
           #                        重設當天 total 超出舊 budget 19%、DataTable 超出 36%。
@@ -436,6 +439,10 @@ jobs:
           # 於是那把鎖永遠清不掉 —— 2026-09-08 連兩次提交被自己的機制擋住。
           node scripts/test-authority-generation-reaper.mjs
           node scripts/governance-build-graph.mjs --check
+          # audit-coverage-matrix 的紅面(2026-11-20 接上,knowledge-prune WP-21;原本只在夜間 harness):它的主判定(--check)就在上一行
+          # governance-build-graph --check → generate-governance-metadata.mjs 裡跑;配對 meta-test 在隔離夾具裡注入九種漂移各自必紅、
+          # 正式 CLI 帶 --root 必須 exit 2。本機約 11 秒。
+          node scripts/test-audit-coverage-matrix.mjs
           # 治理文件(skills / rules / references / memory / workflows / AGENTS.md)引用的 hook / 腳本必須真的在(2026-10-14 SM5):
           # 這支原本只在每週一的 packaging canary 跑,PR #169 寫進 historical-bugs.md 的裸檔名 PR CI 沒有這道閘、抓不到,合併後隔週才會紅。
           # 本機 < 1 秒;meta-test 逐面驗:裸檔名指到 scripts / hooks / 根目錄以外、完整路徑檔案不在、workflow 呼叫不存在的腳本 → 紅;

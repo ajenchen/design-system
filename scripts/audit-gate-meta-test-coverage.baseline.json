@@ -4,7 +4,7 @@
   "debtReasons": {},
   "redSurface": {
     "_note": "紅面只在排程(夜間 / 每週)跑的配對名單,只准變短。--write-baseline 只刪不加;新配對的紅面若真的只能在排程跑,手動加一筆並在 commit 訊息寫理由。",
-    "nightlyOnly": 52,
+    "nightlyOnly": 50,
     "nightlyOnlyPairs": [
       "agent-fab-hit-area-invariant",
       "agent-logo-brand-scale-invariant",
@@ -14,8 +14,6 @@
       "audit-a11y",
       "audit-consumer-a11y",
       "audit-content-quality",
-      "audit-coverage-matrix",
-      "audit-gate-meta-test-coverage",
       "audit-hook-quality",
       "audit-preflight",
       "audit-story-quality",

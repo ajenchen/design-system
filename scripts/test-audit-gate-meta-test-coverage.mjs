@@ -10,6 +10,17 @@
 //   · baseline 名單多一筆 / 少一筆 / 缺欄位 / 數字對不上、無人跑(none)各自紅,而且指名;--write-baseline 只刪不加
 //   · 量不出執行面(必過 check 指向不存在的 workflow)= INSTRUMENT-FAIL,不是綠
 // 最後在真實 repo 跑一次:三類加總 = 配對數、首行格式不變(harness-registry.test 依賴它)、--check 綠。
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑 —— 這支棘輪要守的病
+// (對照組只在排程跑)原本就發生在它自己身上。
+//
+// @gate-contract
+//   保證: audit-gate-meta-test-coverage.mjs 分得出每組配對的紅面在哪個執行面跑 —— 純函式表(--selftest 以單一指令歸屬、只認 step 的 run、
+//         觸發事件三種寫法、pr 優先於 nightly);mkdtemp 合成 repo 裡:配對只在 harness lane → nightly、加進必過 workflow → pr、
+//         閘自己的 --selftest 與經 npm run 遞移 → pr、非必過的 PR workflow / 註解 / `a && b --selftest` 不算;
+//         baseline 名單過期、新增 nightly、無人跑(none)、名單長度不符或未排序都紅,--write-baseline 拒收新 nightly 且不動 baseline;
+//         必過 check 指向不存在的 workflow → exit 2;最後在真實 repo:三類加總 = 配對數、none = 0、baseline 上限 = nightly 數、--check 綠
+//   紅: 任一斷言不成立 → node:assert 丟例外,exit 非 0
+//   綠: 都照預期時 exit 0 並逐格印出 ✓;合成 repo 在 finally 刪掉,不寫入受驗的工作樹,不讀時間,重複跑結果相同
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
