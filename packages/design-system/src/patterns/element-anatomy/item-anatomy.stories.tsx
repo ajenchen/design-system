@@ -966,7 +966,7 @@ export const AlignmentThreshold = {
     <TutorialPage>
       <TutorialRule
         title="對齊規則 — Prefix 與 Suffix 各自獨立"
-        note={<><strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline); &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。 <br /> <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。 理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的—— 業界 convention(Apple Mail / Gmail / iOS Settings / Material / Polaris)全部如此。</>}
+        note={<><strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline); &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。 <br /> <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。 理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的。</>}
       />
       {/* 並排兩個有標題的區段放在規則之後(不在規則的範例區裡):規則說明 → 區段小標 = 規則 ↔ 規則 = loose × 2(TutorialPage 的間距),
           小標離上方的規則說明比離自己的內容(loose)遠,看得出屬於下面(A42【AI 推導】,依 user 2026-10-27「Q2照你建議」的同一理由推;
