@@ -7,7 +7,8 @@
  *   紅: 任一檔任一規則比基準多、新檔有命中、基準比 merge-base 實測寬或格式不合、CI 裡數字變少卻沒收緊基準 → 指名 file:line 並 exit 1;
  *       --selftest 以 82f24938 原版 Rating 與合成新檔證明四條規則各自在指定行紅(細則見下)。
  *   綠: 命中數不高於基準時綠;乾淨的合成檔與合法標記 0 筆;純靜態(TypeScript AST + 既有分類器)、不讀時間、不開瀏覽器,
- *       同一份工作樹重複跑結果相同;掃到 0 檔或儀器讀不到 = 儀器失效(exit 2),不讀成通過。
+ *       同一份工作樹重複跑結果相同;掃到 0 檔、儀器讀不到、找不到可比對的 base(本機沒有 origin/main 也算)= 儀器失效(exit 2),
+ *       不讀成通過。
  *
  *   (以下細則是上面三句的完整條文;@gate-contract 檢查只讀開頭 2000 字,所以摘要放前面 —— 2026-10-07 CI gate-control-group 抓到
  *    細則把「綠」擠到 2000 字之後)
@@ -35,7 +36,8 @@
  *             任何 @theme --color-*,不產生 CSS,畫面靜默落回繼承色)—— 顏色集合從 tokens 的 @theme 讀,不寫死清單。
  *   紅細則: 任一檔任一規則的命中數高於基準、或新檔有命中 → 印出新增命中的 file:line 並 exit 1;基準本身比 merge-base 寬
  *       (用同一支儀器量 base 那棵樹,任一檔任一規則基準記的數字高於 base 實測:數字一致的手改加額度、替新檔預留)→ exit 1;
- *       基準格式不合(count ≠ hits、指紋不是 12 碼十六進位、替不在範圍的檔記數字)→ exit 1;CI 找不到可比對的 base → 儀器失效;
+ *       基準格式不合(count ≠ hits、指紋不是 12 碼十六進位、替不在範圍的檔記數字)→ exit 1;找不到可比對的 base → 儀器失效
+ *       (CI 與本機同一條:本機只認 origin/main,不退回本地 main 分支或 HEAD —— 跟自己比,「基準不得比 base 寬」永遠成立);
  *       CI 裡任一格比基準少而基準沒在同一個 PR 收緊 → exit 1(2026-10-06:否則合併後下一個無關 PR 會因「基準比 base 寬」誤紅、指名錯的 PR);
  *       --selftest 以 82f24938 原版
  *       rating.stories.tsx(fixture 以 git blob id 驗明正身)證明 (a)(b)(c) 各自在原本那幾行紅,以合成新檔證明四條規則各在指定 file:line 紅;
@@ -142,7 +144,7 @@
 //   外加兩格「被標記放行」的數字:設計原則層的反例標記、@layout-space-magic-ok 逃生口(2026-10-06 起;兩格比 base 多不算放寬,列進 review)。
 //   判定只看 count:目前 > 基準 → 紅;新檔 = 基準 0。數字變少:本機只提示,**CI 裡紅**(同一個 PR 要跑 --write-baseline 收緊,
 //   否則鬆的基準合併後,下一個無關 PR 的 base 比對會誤紅 —— 2026-10-06 審查「延遲誤紅」)。`--write-baseline` —— **CI 永遠不跑它**
-//   (2026-10-01 審查:數字彼此一致的手改原本整套放行 → 現在另外對 merge-base 實測:PR 用 origin/<GITHUB_BASE_REF>、main 上的 push 用 HEAD^,
+//   (2026-10-01 審查:數字彼此一致的手改原本整套放行 → 現在另外對 merge-base 實測:PR 用 origin/<GITHUB_BASE_REF>、main 上的 push 用 HEAD^、本機用 origin/main,
 //   `--base=<ref>` 可明確指定;比的是「同一支儀器量 base 那棵樹」而不是 base 的基準檔,偵測規則變寬時兩邊一起變,不會誤紅)
 //   (meta-test 斷言 ci.yml 與 package.json 都沒有這個旗標)。指紋 = sha256(規則 + 該行去頭尾空白 + 命中字)前 12 碼;行被改寫過
 //   但數字沒增加時照樣綠,只在數字增加時拿來把新增的那幾行挑出來(被改寫過的舊行也會一起列出,標「以下含改寫過的舊行」)。
@@ -1663,6 +1665,15 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   const emojiEsc = holeKeys(SYNTHETIC_DRIFT, ['  {/* @layout-space-magic-ok: 😀😀😀 */}', '  <div className="flex flex-col p-4">x</div>'])
   expect(emojiEsc === 'hardcoded-spacing@3:p-4', `理由數的是字(3 個 emoji 不是 6 個字),實得 ${emojiEsc}`)
 
+  // base 候選(2026-11-20):本機只認 origin/main;跟自己比(HEAD)與本地 main 分支都不是 PR 會被比的 base
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+  const localCandidates = baseCandidates([], {})
+  expect(same(localCandidates, ['origin/main']), `本機的 base 候選只能是 origin/main(不退回本地 main / HEAD),實得 ${JSON.stringify(localCandidates)}`)
+  expect(baseCandidates([], { CI: 'true', GITHUB_BASE_REF: 'release' })[0] === 'origin/release', 'CI 的 PR 先比 origin/<GITHUB_BASE_REF>')
+  expect(baseCandidates([], { CI: 'true' })[0] === 'HEAD^', 'CI 上的 push 先比 HEAD^')
+  expect(same(baseCandidates(['--base=abc123'], {}), ['abc123']) && same(baseCandidates(['--base=abc123'], { CI: 'true' }), ['abc123']), '--base= 只認指定的那一個')
+  expect(![{}, { CI: 'true' }, { CI: 'true', GITHUB_BASE_REF: 'main' }].some((env) => baseCandidates([], env).includes('HEAD')), '沒有明確指定時,任何環境的候選都不含 HEAD(跟自己比)')
+
   if (problems.length) {
     log('✗ story-layer-drift-invariant --selftest 失敗:')
     for (const p of problems) log(`  · ${p}`)
@@ -1685,6 +1696,7 @@ export function selftest(log = console.log, repo = REPO, instruments = loadInstr
   log('  · (c) 盲點:標題 div 後接 {children} / {props.children} 1 筆、只接 {note} 0 筆;反例標記綁的兩句出處原文任一句不見 → 儀器失效')
   log('  · 2026-10-06 偵測洞兩面:2xl: 前綴 / className 夾中文 / style as / 樣板字串 / token 夾字面值 / 常數與展開 / [gap:12px] / 跨行 div 標題 / Separator 同行別元素 → 紅;token、calc、0、分隔線自己的 class、名稱 + 說明 → 0 筆')
   log('  · 逃生口進棘輪:放行的字記帳(micro 行不算)、新增紅、基準記了綠、比 base 多只列 review、規格層不收;理由數 code point(3 個 emoji 不算 6 字)')
+  log('  · base 候選:本機只認 origin/main(不退回本地 main / HEAD)、CI PR 先比 origin/<GITHUB_BASE_REF>、CI push 先比 HEAD^、--base= 只認指定的;任何環境都不跟 HEAD 自己比')
   log(`  · 掃除前真檔(a89b6610):${LAYER_BEFORE_FIXTURES.map((fx) => `${fx.story.split('/').pop()} ${fx.expected.map((k) => k.slice(0, k.indexOf(':'))).join(' ')}`).join(';')} 全紅,對基準比都是新增`)
   log(`  · 重建後 Rating:(a)(c)(d) 0 筆;(b) ${spacing.length} 筆${spacing.length ? ` = ${RATING_STORY}:${spacing[0].line} gap-2,與 CreateProjectForm 表單底列逐字相同(待拍板)` : ''}`)
   return true
@@ -1698,23 +1710,34 @@ function git(repo, args, input) {
 }
 
 /**
- * 要拿來比的 base:`--base=<ref>` 明確指定(打錯 = 儀器失效,不退回別的 ref);否則 PR 用 origin/<GITHUB_BASE_REF>、
- * CI 上的 push 用 HEAD^(合併進 main 的那一筆之前)、本機依序試 origin/main → main → HEAD(HEAD = 跟已提交的那一份比,抓工作樹裡的手改)。
- * CI 找不到任何 base = 儀器失效(沒比到不是通過,M37);本機找不到只印出來。
+ * 要拿來比的 base 候選(純函式,selftest 直接驗):`--base=<ref>` 明確指定 → 只認它;否則 PR 用 origin/<GITHUB_BASE_REF>、
+ * CI 上的 push 用 HEAD^(合併進 main 的那一筆之前),後面再試 origin/main、main;**本機只認 origin/main**。
+ * 本機原本依序退回 main → HEAD(2026-11-20 拿掉):從本機複本 clone 出來的工作區沒有 origin/main,於是退回 HEAD =
+ * 拿已提交的基準跟它自己那一份比 ——「基準不得比 base 寬」永遠成立而且不出聲(M37:沒比到被讀成沒放寬);
+ * 本地 main 分支也只是某個時間點的副本,不是 PR 會被比的那個 base。
+ */
+export function baseCandidates(argv, env) {
+  const explicit = argv.find((a) => a.startsWith('--base='))?.slice('--base='.length)
+  if (explicit) return [explicit]
+  if (!env.CI) return ['origin/main']
+  return [env.GITHUB_BASE_REF ? `origin/${env.GITHUB_BASE_REF}` : 'HEAD^', 'origin/main', 'main']
+}
+
+/**
+ * 解析要拿來比的 base:候選見 baseCandidates;明確指定的打錯 = 儀器失效(不退回別的 ref)。
+ * 找不到任何 base = 儀器失效,CI 與本機同一條(沒比到不是通過,M37)。
  */
 export function resolveBase(repo, argv, env) {
   const explicit = argv.find((a) => a.startsWith('--base='))?.slice('--base='.length)
-  const ci = Boolean(env.CI)
-  const candidates = explicit
-    ? [explicit]
-    : [env.GITHUB_BASE_REF ? `origin/${env.GITHUB_BASE_REF}` : null, ci && !env.GITHUB_BASE_REF ? 'HEAD^' : null, 'origin/main', 'main', ci ? null : 'HEAD'].filter(Boolean)
+  const candidates = baseCandidates(argv, env)
   for (const ref of candidates) {
     const mb = git(repo, ['merge-base', 'HEAD', ref])
     if (mb.ok && mb.out.trim()) return { ref, mergeBase: mb.out.trim() }
     if (explicit) throw new InstrumentError(`--base=${explicit} 找不到共同祖先(git merge-base HEAD ${explicit} 失敗:${mb.err.trim().slice(0, 160)})`)
   }
-  if (ci) throw new InstrumentError(`CI 找不到可比對的 base(試過 ${candidates.join(', ')})—— 沒比到不是通過`)
-  return null
+  if (env.CI) throw new InstrumentError(`CI 找不到可比對的 base(試過 ${candidates.join(', ')})—— 沒比到不是通過`)
+  throw new InstrumentError('本機找不到 origin/main —— 沒比到不是通過(不再退回本地 main / HEAD:跟自己比永遠綠)。'
+    + '先 `git fetch origin +refs/heads/main:refs/remotes/origin/main`,或用 --base=<ref> 明確指定')
 }
 
 /** 某個 commit 那棵樹裡、範圍內的 story(路徑 + 原文);一次 git cat-file --batch 讀完。 */
@@ -1785,24 +1808,23 @@ export function runCli({ repo = REPO, argv = [], env = process.env, out = consol
       return 1
     }
     // 基準不得比 merge-base 寬:同一支儀器量 base 那棵樹,基準任一格高於 base 實測 = 手改加額度 / 替新檔預留 → 紅
+    // resolveBase 找不到 base 一律丟 InstrumentError(本機也是),不會回空值
     const base = resolveBase(repo, argv, env)
-    let baseLine = '(本機沒有可比對的 base,略過「基準不得比 base 寬」;CI 一定會比)'
-    if (base) {
-      const tree = treeAtCommit(repo, base.mergeBase)
-      if (!tree.hasGate) baseLine = `base ${base.ref}(${base.mergeBase.slice(0, 8)})還沒有這支閘 —— 本次變更引入它,沒有更早的基準可比`
-      else {
-        const measured = scanTree({ repo, instruments, files: tree.files, read: tree.read })
-        const audit = auditBaselineAgainstBase(baseline, measured)
-        baseLine = `基準對 base ${base.ref}(${base.mergeBase.slice(0, 8)},同一支儀器實測 ${measured.stats.files} 個 story)沒有放寬`
-        if (audit.review.length) {
-          out(`\n⚠ ${audit.review.length} 格「被標記放行」的數字比 base 多(已隨基準檔更新;請審查這幾行是否真是本則要示範的 ❌ / 真是刻意固定的值):`)
-          for (const r of audit.review) out(`  ${r.file}  ${keyLabel(r.key)}  base ${r.base} → 基準 ${r.committed}`)
-        }
-        if (audit.problems.length) {
-          err(`\n✗ ${BASELINE_PATH} 比 base(${base.ref} ${base.mergeBase.slice(0, 8)})寬 —— 基準只准往下,不得替新增的漂移加額度:`)
-          for (const pr of audit.problems) err(`  · ${pr.file}  ${keyLabel(pr.key)}:base 實測 ${pr.base} 筆,基準卻記 ${pr.committed} 筆`)
-          return 1
-        }
+    let baseLine
+    const tree = treeAtCommit(repo, base.mergeBase)
+    if (!tree.hasGate) baseLine = `base ${base.ref}(${base.mergeBase.slice(0, 8)})還沒有這支閘 —— 本次變更引入它,沒有更早的基準可比`
+    else {
+      const measured = scanTree({ repo, instruments, files: tree.files, read: tree.read })
+      const audit = auditBaselineAgainstBase(baseline, measured)
+      baseLine = `基準對 base ${base.ref}(${base.mergeBase.slice(0, 8)},同一支儀器實測 ${measured.stats.files} 個 story)沒有放寬`
+      if (audit.review.length) {
+        out(`\n⚠ ${audit.review.length} 格「被標記放行」的數字比 base 多(已隨基準檔更新;請審查這幾行是否真是本則要示範的 ❌ / 真是刻意固定的值):`)
+        for (const r of audit.review) out(`  ${r.file}  ${keyLabel(r.key)}  base ${r.base} → 基準 ${r.committed}`)
+      }
+      if (audit.problems.length) {
+        err(`\n✗ ${BASELINE_PATH} 比 base(${base.ref} ${base.mergeBase.slice(0, 8)})寬 —— 基準只准往下,不得替新增的漂移加額度:`)
+        for (const pr of audit.problems) err(`  · ${pr.file}  ${keyLabel(pr.key)}:base 實測 ${pr.base} 筆,基準卻記 ${pr.committed} 筆`)
+        return 1
       }
     }
     const { increases, decreases } = compareWithBaseline(perFile, baseline, counterPerFile, escapePerFile)

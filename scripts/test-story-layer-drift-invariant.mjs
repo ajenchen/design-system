@@ -17,6 +17,7 @@
  *       (閘 + 分類器 + 字級 token + 出處原文 + 三層各一支夾具 story,基準由閘自己寫、提交成 base)裡跑 runCli 與真的 `node 閘`:
  *       乾淨 → 0;三層各注入一筆 → 1(展示層那筆同時驗 gap-x / inline style margin / cn() 參數都被點名);數字一致的手改基準
  *       (+1、合法指紋、totals 跟著加)對 base → 1;格式不合的基準 → 1;CI 沒有 base → 2;掃到 0 個 story → 2;
+ *       本機沒有 origin/main → 2(只有本地 main 分支也是 2,不退回 HEAD 跟自己比)、補上 origin/main → 0;
  *       @submit-intent 出處原文被拿掉 → 2;CI 裡數字變少卻沒收緊基準 → 1(本機 → 0);新增一個逃生口放行 → 1、--write-baseline 後 → 0。
  *   綠: selftest 全過;全樹對已提交的基準沒有新增、基準格式合法;全樹一次判與逐檔判的結果逐筆相同;
  *        送出鈕用 useFormValidation 自己的 submitDisabled 時 0 筆。判定函式直接 import 呼叫;子行程只有被測閘自己叫的分類器、
@@ -460,6 +461,18 @@ try {
     const dirty = run()
     assert.ok(dirty.status === 1 && dirty.stderr.includes('gap-10'), `${dirty.stdout}\n${dirty.stderr}`)
     fxReset(fixture)
+  })
+
+  // 放最後:這一題會在臨時 repo 留下 main 分支與 origin/main(之後只剩 finally 整個刪掉)
+  check('CLI 接線:本機沒有 origin/main → 2(只有本地 main 分支也是 2,不退回 HEAD 跟自己比);補上 origin/main → 0', () => {
+    const none = fxRun(fixture, [])
+    assert.ok(none.code === 2 && none.text.includes('INSTRUMENT-FAIL') && none.text.includes('origin/main'), `本機沒有 origin/main 應儀器失效:\n${none.text}`)
+    fxGit(fixture, 'branch', 'main')
+    const localMain = fxRun(fixture, [])
+    assert.ok(localMain.code === 2 && localMain.text.includes('INSTRUMENT-FAIL'), `只有本地 main 分支也不算 base:\n${localMain.text}`)
+    fxGit(fixture, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
+    const withOrigin = fxRun(fixture, [])
+    assert.ok(withOrigin.code === 0 && withOrigin.text.includes('base origin/main'), `有 origin/main → 照常比、綠:\n${withOrigin.text}`)
   })
 } finally {
   rmSync(fixture, { recursive: true, force: true })

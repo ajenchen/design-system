@@ -850,12 +850,15 @@ const codexResults = []
       codexResults.push(`  codex hooks.json: ❌ commands=${cmds.length} / unresolved=${badPath.length} / structured-relative=${rootPinned} / events=${sameEvents} / manifest=${sameLaunchers}`); fail++
     } else codexResults.push(`  codex hooks.json: ✅ ${actualEvents.length} events → fixed env-clean command / zero shell interpolation → governance/bin 的 ${manifestLaunchers.length} shared thin adapters`)
   }
-  // 5c-bis The template's committed Claude settings are a canonical source, not a generated view, so
-  // `governance:generate` never rewrites them. Its sandbox block nevertheless has to carry the same
-  // contract as the policy every generated view is built from, and nothing compared the two — which is
-  // how the template kept shipping `enableWeakerNestedSandbox: false` after the policy flipped it to
-  // true, handing every new fork a cloud session that dies before its first tool call. Compared against
-  // the policy source rather than a generated artifact so a pending regeneration cannot fake a drift.
+  // 5c-bis The template's Claude settings are a generated view: `governance:generate` materializes
+  // template/ds-product-template/.claude/settings.json from claude-settings-base.json (the claude
+  // hookView in providers.json, listed by productProviderOutputs in scripts/governance-build-graph.mjs;
+  // a hand edit to its sandbox block is rewritten on the next generate), so it is never edited by hand.
+  // This comment used to call it a canonical source that generate never rewrites — true when 5c-bis was
+  // written, no longer true. The parity check still earns its place: the template once kept shipping
+  // `enableWeakerNestedSandbox: false` after the policy flipped it to true, handing every new fork a
+  // cloud session that dies before its first tool call. It reads the policy source rather than another
+  // generated artifact, so a template that was not regenerated shows up as drift.
   const tplSandbox = JSON.parse(
     readFileSync(join(ROOT, 'template/ds-product-template/.claude/settings.json'), 'utf8'),
   ).sandbox
@@ -863,7 +866,7 @@ const codexResults = []
     readFileSync(join(ROOT, 'packages/design-system/ds-canonical/adapters/claude-settings-base.json'), 'utf8'),
   ).sandbox
   if (JSON.stringify(tplSandbox) !== JSON.stringify(policySandbox)) {
-    codexResults.push('  template sandbox parity: ❌ template/.claude/settings.json 的 sandbox 段與 canonical policy(claude-settings-base.json)已分叉;template 是 canonical-source,generate 不會修它,需手動同步'); fail++
+    codexResults.push('  template sandbox parity: ❌ template/.claude/settings.json 的 sandbox 段與 canonical policy(claude-settings-base.json)已分叉;template 那份是 governance:generate 從 claude-settings-base.json 生成的,跑 npm run governance:generate 重生(不准手改生成檔)'); fail++
   } else codexResults.push('  template sandbox parity: ✅ template settings.sandbox == canonical policy sandbox(deep-equal)')
   // 5d Product-role skill inventory must be provider-symmetric. The product-safe reviewer is
   // present for both providers while the DS-author canonical reviewer stays excluded.
