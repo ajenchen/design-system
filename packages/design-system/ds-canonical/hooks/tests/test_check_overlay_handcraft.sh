@@ -3,6 +3,7 @@
 # Test 1–14:Check 6 stripped-padding boolean variant / Check 2.5 自刻 row 的偵測面與豁免。
 # Test 15–23(2026-11-18 D4-02 起會擋):留下的三條新增行 → exit 2、豁免沒理由照擋、逐行豁免不再整檔放行、
 # 退場的三條不再判、既有違規只列不擋。
+# Test 25–26:同一組判法吃正式入口 run-provider-hook.mjs 的輸入形狀(content + old_string,沒有 new_string)。
 set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../lib/_overlay_handcraft.sh"
@@ -230,6 +231,30 @@ printf '%s\n' 'const title = 1' '<div className="px-[var(--layout-space-loose)] 
 STDOUT=$(jq -nc --arg p "$TMP/apps/demo/src/Rail.tsx" '{tool_name:"Edit",tool_input:{file_path:$p,old_string:"py-2\"",new_string:"py-2 border-b border-divider\""}}' | bash "$HOOK" 2>&1)
 EXIT=$?
 expect_rc 'partial-line edit creating chrome' 2
+teardown
+
+# Test 25–26(WP-15a 審查必修 1):正式入口 scripts/run-provider-hook.mjs 交給 hook 的形狀沒有 new_string,
+# 只有 content(這次寫進去的文字)+ old_string。兩面對照:修正前 Test 25 是 exit 0 + 既有(正式路徑上從沒擋過);Test 26 修正前後都是既有。
+echo "Test 25: 正式入口形狀(content + old_string)的片段 Edit 讓那一行變成自刻 chrome → exit 2"
+setup
+mkdir -p "$TMP/apps/demo/src"
+printf '%s\n' 'const title = 1' '<div className="px-[var(--layout-space-loose)] py-2 border-b border-divider">x</div>' > "$TMP/apps/demo/src/Rail.tsx"
+STDOUT=$(jq -nc --arg p "$TMP/apps/demo/src/Rail.tsx" '{tool_name:"Edit",tool_input:{file_path:$p,path:$p,old_string:"py-2\"",content:"py-2 border-b border-divider\""}}' | bash "$HOOK" 2>&1)
+EXIT=$?
+expect_rc 'runner-shape partial-line edit creating chrome' 2
+teardown
+
+echo "Test 26: 正式入口形狀、改的是別行 → 既有 chrome 只列不擋"
+setup
+mkdir -p "$TMP/apps/demo/src"
+printf '%s\n' 'const title = 1' '<div className="px-[var(--layout-space-loose)] py-2 border-b border-divider">x</div>' > "$TMP/apps/demo/src/Rail.tsx"
+STDOUT=$(jq -nc --arg p "$TMP/apps/demo/src/Rail.tsx" '{tool_name:"Edit",tool_input:{file_path:$p,path:$p,old_string:"title = 0",content:"title = 1"}}' | bash "$HOOK" 2>&1)
+EXIT=$?
+if [ "$EXIT" = 0 ] && printf '%s' "$STDOUT" | jq -e '.governanceContext.message | contains("既有違規") and contains("自刻 overlay chrome")' >/dev/null 2>&1; then
+  echo "  PASS"; PASS=$((PASS+1))
+else
+  echo "  FAIL: runner-shape edit on another line should leave chrome as existing, got exit $EXIT: $STDOUT"; FAIL=$((FAIL+1))
+fi
 teardown
 
 echo ""

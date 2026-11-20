@@ -2,6 +2,7 @@
 # Enforcement-integrity tests for post_edit_dispatcher.sh.
 # 2026-11-18 D4-02:dispatcher 由「只出聲」改成「會擋」(outputMode governance-context-or-block)——
 # helper exit 2 + stderr-only = 擋;擋與既有違規一起給;其餘異常一律 fail closed(exit 70)。
+# 真 dispatcher 的格同時餵兩種輸入形狀:provider 原樣(new_string / edits[])與正式入口 run-provider-hook.mjs 的(content + old_string)。
 
 set -uo pipefail
 
@@ -392,6 +393,47 @@ if [ "$EXIT" -eq 0 ] && [ ! -s "$FIXTURE/stderr" ] \
   pass 'full-file evidence replay reports existing violations as context instead of blocking'
 else
   fail "full-file replay classification (got exit $EXIT)"
+fi
+
+# ── 正式入口的形狀(WP-15a 審查必修 1、2)──
+# 正式路徑是 .claude/settings.json → scripts/run-provider-hook.mjs → 本 dispatcher。runner 交來的 event-v1 輸入
+# 沒有 new_string、沒有 edits[](寫入類不帶原始 tool_input;逐檔 payload 只放 path / content / old_string,edits 刪掉):
+# Edit 的 content = 那一筆 new_string;MultiEdit 的 content = 每筆 new_string 用換行接起來、old_string 只有第一筆;
+# 純刪除時連 content 都不帶。上面每一格都直接餵 provider 原樣(new_string / edits[]),這個形狀一格都沒測到 ——
+# 修正前下面兩格「擋」都是 exit 0 + 既有(直接呼叫全綠,正式路徑上三支逐行 helper 從沒擋過)。
+RUNNER_COMPONENT="$FIXTURE/workspace/packages/design-system/src/components/RunnerShape/runner-shape.tsx"
+mkdir -p "$(dirname "$RUNNER_COMPONENT")"
+printf '%s\n' 'export const RunnerShape = () => (' '  <div className="flex shrink-0 shadow-md" />' ')' >"$RUNNER_COMPONENT"
+runner_shape_payload() { # <tool> <old_string> <content> —— 欄位照 run-provider-hook.mjs 的 normalizedBase + 逐檔 payload
+  jq -nc --arg path "$RUNNER_COMPONENT" --arg tool "$1" --arg o "$2" --arg c "$3" '{
+    hook_event_name: "PostToolUse", event: "PostToolUse", tool_name: $tool, tool: $tool, operation: "write",
+    tool_input: { file_path: $path, path: $path, old_string: $o, content: $c },
+    changed_paths: [$path]
+  }'
+}
+run_real_hook "$(runner_shape_payload Edit 'shrink-0"' 'shrink-0 shadow-md"')"
+if [ "$EXIT" -eq 2 ] && [ ! -s "$FIXTURE/stdout" ] \
+  && grep -qF 'Token hygiene:這次編輯新增了違規的行' "$FIXTURE/stderr" \
+  && grep -qF 'Tailwind 預設陰影' "$FIXTURE/stderr" \
+  && ! grep -qF 'GOVERNANCE_INTEGRITY' "$FIXTURE/stderr"; then
+  pass 'runner-shape Edit (content + old_string, no new_string) that adds a violation blocks through the real dispatcher'
+else
+  fail "runner-shape Edit block (got exit $EXIT)"
+fi
+run_real_hook "$(runner_shape_payload MultiEdit 'RunnerShape0' "$(printf '%s\n%s' 'RunnerShape' 'shrink-0 shadow-md"')")"
+if [ "$EXIT" -eq 2 ] && [ ! -s "$FIXTURE/stdout" ] && grep -qF 'Tailwind 預設陰影' "$FIXTURE/stderr" \
+  && ! grep -qF 'GOVERNANCE_INTEGRITY' "$FIXTURE/stderr"; then
+  pass 'runner-shape MultiEdit (joined content, first old_string only) that adds a violation blocks through the real dispatcher'
+else
+  fail "runner-shape MultiEdit block (got exit $EXIT)"
+fi
+# 另一面:同一個檔,runner 形狀的 Edit 改的是別行 → 既有違規只列不擋(寬判不能把別行算成新增)
+run_real_hook "$(runner_shape_payload Edit 'RunnerShape0 =' 'RunnerShape =')"
+if [ "$EXIT" -eq 0 ] && [ ! -s "$FIXTURE/stderr" ] \
+  && jq -e '.governanceContext.message | contains("Token hygiene 既有違規") and contains("shadow-md")' "$FIXTURE/stdout" >/dev/null 2>&1; then
+  pass 'runner-shape Edit on another line leaves the existing violation as context instead of blocking'
+else
+  fail "runner-shape existing-violation context (got exit $EXIT)"
 fi
 
 printf 'Passed: %s / %s\n' "$PASS" "$((PASS + FAIL))"

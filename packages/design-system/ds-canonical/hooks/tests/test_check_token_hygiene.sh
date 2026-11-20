@@ -2,6 +2,7 @@
 # Contract for the token-hygiene helper(2026-11-18 D4-02 起會擋):五條規則各一組兩面對照 ——
 # 這次新增的違規行 → exit 2(只寫 stderr);同一行寫豁免 + 理由 → 放行;豁免沒寫理由 → 照擋;
 # 違規在既有行(不是這次新增)→ exit 0 + governanceContext「既有」清單。
+# Edit / MultiEdit 兩種輸入形狀都測:provider 原樣(new_string / edits[])與正式入口 run-provider-hook.mjs 的(content + old_string)。
 # 另驗:registry 仍只讀 runner 認證的 corpus(專案裡的可變副本不得覆蓋),corpus 缺 registry → fail closed。
 
 set -uo pipefail
@@ -156,6 +157,29 @@ printf '%s\n' '<div className="shadow-md" />' 'const bar = 1' > "$FILE"
 run_payload "$(jq -nc --arg path "$FILE" '{hook_event_name:"PostToolUse",tool_name:"MultiEdit",tool_input:{file_path:$path,edits:[{old_string:"PLACEHOLDER",new_string:"<div className=\"shadow-md\" />\nconst foo = 1"},{old_string:"const foo = 1",new_string:"const bar = 1"}]}}')"
 expect_block 'MultiEdit whose earlier new_string was rewritten later still blocks the line it added' 'Tailwind 預設陰影'
 
+# ── 正式入口的形狀(WP-15a 審查必修 1):scripts/run-provider-hook.mjs 交給 hook 的 event-v1 輸入沒有 new_string、
+#    沒有 edits[],只有 content(這次寫進去的文字;MultiEdit 是每筆 new_string 用換行接起來)與第一筆的 old_string。
+#    兩面對照(2026-11-20):修正前只認 new_string / edits[],下面每一格「擋」都是 exit 0 + 既有(正式路徑上從沒擋過);
+#    「既有」的格修正前後都是既有(寬判不把別行的既有違規算成新增)。
+runner_payload() { # <tool> <old_string> <content> —— 欄位照 run-provider-hook.mjs 的逐檔 payload(file_path / path / old_string / content)
+  jq -nc --arg path "$FILE" --arg tool "$1" --arg o "$2" --arg c "$3" \
+    '{hook_event_name:"PostToolUse",tool_name:$tool,tool_input:{file_path:$path,path:$path,old_string:$o,content:$c}}'
+}
+printf '%s\n' 'const label = 1' '<div className="p-2 shadow-md" />' > "$FILE"
+run_payload "$(runner_payload Edit 'p-2"' 'p-2 shadow-md"')"
+expect_block 'runner-shape Edit (content + old_string, no new_string) adding a violation mid-line blocks' 'Tailwind 預設陰影'
+run_payload "$(runner_payload Edit '= 0' '= 1')"
+expect_existing 'runner-shape Edit on another line leaves that line'"'"'s violation as existing' 'shadow-md'
+printf '%s\n' 'const label = 1' '<div className="p-2 overflow-auto" />' 'const other = 2' > "$FILE"
+run_payload "$(runner_payload MultiEdit '= 0' "$(printf '%s\n%s' '= 1' 'p-2 overflow-auto"')")"
+expect_block 'runner-shape MultiEdit (joined content, first old_string only) adding a violation blocks' '原生 overflow'
+run_payload "$(runner_payload MultiEdit '= 0' "$(printf '%s\n%s' '= 1' 'other = 2')")"
+expect_existing 'runner-shape MultiEdit touching only clean lines leaves the old overflow as existing' 'overflow-auto'
+# 純刪除走正式入口時不帶 content(new_string 空)→ 拿不到可比對的文字,不得讀成「沒有新增行」→ 退回 git HEAD 比對;
+# 這個檔不在 git 裡 = 整檔都算新增(寧可多判)。另一面(違規行已在 HEAD = 既有)在下面 Write 那段的 git fixture 裡。
+run_payload "$(jq -nc --arg path "$FILE" '{hook_event_name:"PostToolUse",tool_name:"Edit",tool_input:{file_path:$path,path:$path,old_string:" stale"}}')"
+expect_block 'runner-shape Edit with nothing comparable falls back to git HEAD instead of reading as no added line' '原生 overflow'
+
 # ── Write 覆寫一個已在 git HEAD 的檔:HEAD 裡已有的違規行是既有,新多的違規行才擋 ──
 GIT_FIX=$(mktemp -d)
 [ -n "${GIT_FIX:-}" ] && [ -d "$GIT_FIX" ] || { echo "❌ mktemp -d failed(GIT_FIX;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
@@ -171,6 +195,10 @@ expect_existing 'Write over a tracked file treats lines already in HEAD as exist
 printf '%s\n' '<div className="overflow-auto" />' '<div className="shadow-lg" />' > "$GIT_FILE"
 run_payload "$(jq -nc --arg path "$GIT_FILE" '{hook_event_name:"PostToolUse",tool_name:"Write",tool_input:{file_path:$path}}')"
 expect_block 'Write over a tracked file blocks the line that is not in HEAD' 'Tailwind 預設陰影'
+# 正式入口的純刪除(不帶 content)退回 git HEAD 比對的另一面:刪掉剛加的那行之後,剩下的違規行在 HEAD 裡 = 既有,不擋
+printf '%s\n' '<div className="overflow-auto" />' > "$GIT_FILE"
+run_payload "$(jq -nc --arg path "$GIT_FILE" '{hook_event_name:"PostToolUse",tool_name:"Edit",tool_input:{file_path:$path,path:$path,old_string:"<div className=\"shadow-lg\" />\n"}}')"
+expect_existing 'runner-shape deletion on a tracked file keeps lines already in HEAD as existing' 'overflow-auto'
 rm -rf "$GIT_FIX"
 
 echo "Passed: $PASS / $((PASS + FAIL))"
