@@ -234,7 +234,7 @@ consumer 明寫的 `style.width` 仍勝過它。全 DS 尺寸參數的命名規�
   2026-10-13 第一版只拆了「量自己」那一半、沒看父層:窄容器 192 → 400px 停在「Electronics +2」、120 → 400px 停在「+3」,獨立驗證抓到。
   規則 `../Combobox/combobox.spec.md`「單行溢出」,與 PeoplePicker 頭像串 2026-09-07 拆的棘輪同一類,`../PeoplePicker/people-picker.stories.tsx`「寬度貼合內容 × 多人」;
   閘 `scripts/tag-overflow-room-invariant.mjs`(含父層 192 → 400 → 120 → 400px 那一段),probe 同上)
-- Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`(https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/select.tsx)/ Radix Select Trigger intrinsic sizing(https://www.radix-ui.com/primitives/docs/components/select)
+- Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`(https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/select.tsx#L39)/ Radix Select Trigger intrinsic sizing(https://www.radix-ui.com/primitives/docs/components/select)
 
 ---
 

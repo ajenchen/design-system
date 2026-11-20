@@ -1,4 +1,4 @@
-<!-- @benchmark-cited: 2026-11-15 重寫;2026-11-18 複查 —— 外部對照在「禁止事項」第一段、「設計理由」(1)(2) 與「歷史」第二條,每段都附了原始來源網址(數值的網址都釘了版本),逐條開檔核對過,內容支持原句。還缺一段:「禁止事項」裡「特別注意 `rounded-sm`」那段說 Tailwind 預設的 `rounded-sm` 是 4px,同段沒有附網址(同一個值的出處在「禁止事項」第一段)。 -->
+<!-- @benchmark-cited: 2026-11-15 重寫;2026-11-18 複查 —— 外部對照在「禁止事項」第一段、「設計理由」(1)(2) 與「歷史」第二條,每段都附了原始來源網址(數值的網址都釘了版本),逐條開檔核對過,內容支持原句。2026-11-21 補上最後一段:「禁止事項」裡「特別注意 `rounded-sm`」那段(Tailwind 預設的 `rounded-sm` 是 4px)同段附了 theme.css 網址,開檔核對過。 -->
 
 # Radius 設計原則
 
@@ -109,7 +109,7 @@
 <span className="rounded-full" />
 ```
 
-**特別注意 `rounded-sm`**:在 Tailwind 預設裡 `rounded-sm` 是 4px,在這套刻度裡是 2px。照 Tailwind 習慣寫 `rounded-sm` 想拿 4px,會靜默拿到 2px —— 所以不要靠名字猜,照上表的用途選;寫錯了會被 `scripts/radius-usage-invariant.mjs` 量出來(短邊 > 10px 的元素用 2px = 紅)。
+**特別注意 `rounded-sm`**:在 Tailwind 預設裡 `rounded-sm` 是 4px(4.2.2 `--radius-sm: 0.25rem;`,[theme.css L398](https://raw.githubusercontent.com/tailwindlabs/tailwindcss/v4.2.2/packages/tailwindcss/theme.css)),在這套刻度裡是 2px。照 Tailwind 習慣寫 `rounded-sm` 想拿 4px,會靜默拿到 2px —— 所以不要靠名字猜,照上表的用途選;寫錯了會被 `scripts/radius-usage-invariant.mjs` 量出來(短邊 > 10px 的元素用 2px = 紅)。
 
 ### 不寫圓角的行為
 

@@ -609,19 +609,9 @@ MenuItem 承載 Switch 時,**整列 row 的 click = toggle 這個 control**(不�
 
 兩個 slot 的視覺角色不同,被強迫同步反而違反它們各自的對齊邏輯。
 
-**2. 業界 convention 全部如此**
+(2026-11-21 前這裡另有一條「業界 convention 全部如此」與四家對照表:「全部」沒有逐家查證,其中一家那列與該家自己的原始碼不符(一、二行的列 leading 與 trailing 都垂直置中,出處見下方「大塊 suffix」段),照 M22 拿掉外部比較;規則不變,理由只留上下兩條 DS 內部的。)
 
-Apple Mail / Gmail / iOS Settings / Material 3 / Atlassian DSP / Polaris ResourceItem——**全部**是「prefix 跟 suffix 各自獨立對齊」。沒有任何一個把小 suffix 強迫對齊到大 avatar 中心。 <!-- @benchmark-unverified: 2026-11-18 複查,per M22 (d) —— 「全部」沒有逐家查證,而且 Material 3 是反例(見下表標記) -->
-
-<!-- @benchmark-unverified: 2026-11-18 複查,per M22 (d) —— 四列仍沒有逐家一手來源;Material 3 那列與本節下方「大塊 suffix」段引的 androidx ListItem 原始碼不符(一、二行的列 leading 與 trailing 都垂直置中,三行的列兩者都靠上),待照 M22 改寫 -->
-| 系統 | Prefix(大 avatar) | Suffix(小元素) |
-|---|---|---|
-| Apple Mail | Avatar 40px → 文字塊中心 | Date → Subject 第一行 |
-| Gmail | Star icon → 第一行 | Time → Subject 第一行 |
-| iOS Settings | Icon ≤24px → 第一行 | Chevron → Label 第一行 |
-| Material 3 List | Leading icon → 第一行 | Trailing icon → top-aligned |
-
-**3. 視覺重量平衡**
+**2. 視覺重量平衡**
 
 把小 suffix 強迫對齊大 avatar 中心,小 suffix 會「下沉」到 description 行,**視覺上跟 label 失聯**。對齊 label 第一行則讓 suffix 跟它修飾的對象在同一條基準線上,視覺重量自然分配。
 

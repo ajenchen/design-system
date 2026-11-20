@@ -188,7 +188,7 @@ ratio ladder(行高隨字級連續變化)雖精細,但 consumer 心智負擔重(
 
 捨棄連續 ratio 的代價是「極大字級 lh 過鬆」(48px h1 仍 1.3),實測無此問題(本 DS 無 60+ display 級字)。
 
-**(3) h5/h6 與 body-lg/body 同 size(16/14)— 靠 lh + weight 區分,不開新 size tier** <!-- @benchmark-unverified -->
+**(3) h5/h6 與 body-lg/body 同 size(16/14)— 靠 lh + weight 區分,不開新 size tier**
 
 Material 3 用 15 個 type role(display / headline / title / body / label 各分 large / medium / small)—— size scale 一大是 DS 維護負擔(每加 1 tier 就要全 component grep 評估)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-typescale.scss))。
 

@@ -1117,8 +1117,7 @@ export const AlignmentThreshold = {
         <p className="text-caption text-fg-muted max-w-[720px]">
           ※ Suffix 不跟 prefix 同步是有意的設計:suffix 是 label 的 metadata
           (Tag / Chevron / 時間 / 計數),不是整個 item 的。對齊 label 第一行讓使用者
-          眼睛從 label 自然往右掃到 suffix,不被打斷。Apple Mail / Gmail / iOS Settings /
-          Material / Polaris 全部如此。
+          眼睛從 label 自然往右掃到 suffix,不被打斷。
         </p>
       </TutorialRule>
     </TutorialPage>
