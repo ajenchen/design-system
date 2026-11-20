@@ -87,8 +87,8 @@
   O30(輸入框晚出現:卡片收起時輸入框不在、之後才登記)。`--selftest` ⑱ 卸載後 blur → O14f / O28f / O29f 紅;㉒ 拿掉「欠一次」的接手 → O30 紅。
   2026-11-11 前送出 / × 兩條路線焦點都落在 body(r3 實測)。(本句原寫成 `scripts/story-demo-focus-invariant.mjs`,那支裡沒有決策卡的格子,2026-11-12 更正。)
 - 步進:**一題一步**,footer 右側:第一題只有「下一題」(只有一題的卡 =「送出」);第二題起「上一題」+「下一題」、末步「送出」(上一題:答案保留;
-  [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
-  2026-09-02 落地;原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);主鈕靠右、每一題同一個位置;header × 恆為取消(見「關閉」條)。
+  [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/)「Make sure the link takes users to the previous page they were on, in the state they last saw it.」同款,
+  2026-09-02 落地(原另列 Material 第 1 版(2014)Steppers 頁,2026-11-21 複查該頁沒有任何上一步 / Back 鈕的說法,談回頭的只有「Editable steps allow users to return later to edit a step.」,撐不起這句,拿掉;Material 3 的元件頁是單頁應用、讀不到內文,未比對);原記為 user 拍板,依據是 user 在 artifact 的留言討論,原話未留存 —— 來源不明);主鈕靠右、每一題同一個位置;header × 恆為取消(見「關閉」條)。
   第二題按「上一題」回第一題:第一題沒有上一題,那顆鈕跟著卸載 —— 焦點在它身上時交給第一題的選項入口(單選 = 已選的圓、沒選 = 第一個圓;複選 = 第一個方框),不掉到 body
   (`../../../ds-canonical/references/keyboard-model-canonical.md`「焦點不可因 DOM unmount 掉到 body」;落點【AI 推導】:按上一題 = 要改上一題的答案,同「清除選取」後的落點;
   焦點不在它身上不動,同 `../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`;第三題回第二題時上一題還在,焦點留在原處)。
@@ -123,7 +123,8 @@
    [NN/g wizards 標出目前步、強制順序](https://www.nngroup.com/articles/wizards/))
 3. ⚙ **題目=一句完整問句、以「?」結尾、句內點名決策對象**(「公告要用哪種語氣?」);禁「確定嗎?」「注意!」。
    選填題標 `optional`,「(選填)」由元件接在題目後(Header 條),代理不寫該字樣(DEV 警告)。
-   ([Material 對話框標題=問句或陳述、禁 Are you sure?](https://m1.material.io/components/dialogs.html))
+   ([Material 第 1 版(2014)對話框標題=問句或陳述、禁 Are you sure?](https://m1.material.io/components/dialogs.html):「Use a clear question or statement with an explanation in the content area」「Avoid apologies, ambiguity, or questions, such as “Warning!” or “Are you sure?”」;
+   該頁自標「Material 1 is no longer maintained.」,Material 3 的對話框頁是單頁應用、2026-11-21 讀不到內文,未比對)
 4. ⚙ **具名選項 2–4 個**(不含「其他」);>4 → 拆題。
    ([SDK 2–4 options](https://code.claude.com/docs/en/agent-sdk/user-input);
    [NN/g ≤5 用 radio](https://www.nngroup.com/articles/listbox-dropdown/);`../RadioGroup/radio-group.spec.md`「2-5 個選項且全部可見」)
@@ -151,7 +152,7 @@
     (名字「取消」,見「關閉」條;2026-11-11 到 11-15 是「Skip = 全部用預設繼續」、× 名字「跳過全部，用建議繼續」;2026-11-11 拿掉 footer 跳過鈕);
     代理端:收到取消不得自行假設答案、不得照建議接著做(本檔末「接 AI 的產品端」);
     footer 右側最多兩鈕(第一題只有 下一題|送出,之後 上一題/下一題|送出),左側只有選填單選題的「清除選取」。
-    ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html):「Dialogs should not include more than two actions. A third action, such as “Learn more,” navigates away from the dialog, potentially leaving the task unfinished.」—— 上限是一般規則,「Learn more」只是舉例;
+    ([Material 第 1 版(2014)≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html)(同上,第 1 版;「Affirmative actions are placed on the right side and continue the process.」):「Dialogs should not include more than two actions. A third action, such as “Learn more,” navigates away from the dialog, potentially leaving the task unfinished.」—— 上限是一般規則,「Learn more」只是舉例;
     本卡偏離它的只有第二題起左側的「清除選取」(第一題最多「清除選取」+「下一題」兩顆):user 2026-10-30 提案加的,排法依 overlay-surface footer 順序,不是 Material 放行的;[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
 12. **題與題互不依賴**:後題不因前題答案改變;需要分支 → 下一回合另開一張卡。
     ([NN/g wizards self-sufficient steps](https://www.nngroup.com/articles/wizards/))
