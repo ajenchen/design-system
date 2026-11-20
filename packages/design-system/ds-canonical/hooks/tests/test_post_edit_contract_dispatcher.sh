@@ -1,14 +1,16 @@
 #!/bin/bash
 # Tests for post_edit_contract_dispatcher.sh 與它的 4 支 lib helper(WP-14,2026-11-21)。
 #
-# 合併自原 4 份測試(原格逐格搬入,「提醒」改成「擋」;每條規則兩面都在:違反 → 擋、加豁免 → 放行):
-#   test_check_peoplepicker_ssot_drift.sh → P-1…P-6
-#   test_check_pixel_quantified_audit.sh  → X-1…X-6(原 5「非 Edit 工具」改由 dispatcher 判:D-20)
-#   test_check_field_controls_contracts.sh → F-1…F-9(原 1「PreToolUse 事件」改由 dispatcher 判:D-19)
-#   test_check_select_all_canonical.sh   → S-1…S-7
+# 合併自原 4 份測試(原格逐格搬入,「提醒」改成「擋」;每條規則兩面都在:違反 → 擋、加豁免 → 放行)。原格 → 新格:
+#   test_check_peoplepicker_ssot_drift.sh  原 1–6 → P-1…P-6
+#   test_check_pixel_quantified_audit.sh   原 1 → X-1、2 → X-2、3 → X-3、4 → X-4、5「非 Edit 工具」→ D-20(改由 dispatcher 判)、6 → X-6
+#   test_check_field_controls_contracts.sh 原 1「PreToolUse 事件」→ D-19(改由 dispatcher 判)、2「檔案不存在」→ F-1a、3 → F-1、
+#     4 → F-2、5 → F-3、6 → F-4、7「emptyPlaceholder={noResults}」→ F-2a、8 → F-7、9「註解提到舊名」→ F-8 + F-8a(JSDoc 那一行)
+#   test_check_select_all_canonical.sh     原 1–7 → S-1…S-7
 # 分段:
 #   D-*  dispatcher 輸出契約(helper 換成假的):擋 / 既有清單 / 合併;helper 缺失、symlink、未定義 exit、輸出管道錯 → fail closed 70
 #   P/X/F/S-*  四條規則經真的 dispatcher 跑;新增格(-a、-b…)= 搬進來時改的判法與「拿掉豁免 → 擋」的對照
+#   X-L* / F-L*  pixel 與 field_controls 的逐行豁免(規格 step 1「擋 + 逐行豁免」):加了逐行豁免 → 放行、同一段拿掉 → 擋
 #   I-*  真 helper 的量具壞掉(共用新增行判法不見、寫入後不是一般檔)→ 70,不讀成通過
 
 set -uo pipefail
@@ -298,6 +300,32 @@ run_write "$VA" "// schema-only check
 const s = el.getAttribute('data-state');"
 expect_block "X-2a. 同一支拿掉豁免 → 擋" "M32 pixel-quantified verify gap" "getAttribute('data-state')"
 
+# 逐行豁免:標記放在第 4 行以後(檔首 3 行的寫法另由 X-2 管),只豁免命中那一行
+VA_HEAD="import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage();
+"
+run_write "$VA" "${VA_HEAD}// @pixel-quantified-allow: schema-only check of the menu's data-state contract
+const s = await page.getAttribute('[role=menu]', 'data-state');"
+expect_clean "X-L1. 命中那一行的上一行寫逐行豁免(不在檔首)→ 放行"
+
+run_write "$VA" "${VA_HEAD}// schema-only check of the menu's data-state contract
+const s = await page.getAttribute('[role=menu]', 'data-state');"
+expect_block "X-L2. 同一段拿掉逐行豁免 → 擋" "M32 pixel-quantified verify gap" "5:const s = await page.getAttribute"
+
+run_write "$VA" "${VA_HEAD}const s = await page.getAttribute('[role=menu]', 'data-state'); // @pixel-quantified-allow: schema-only"
+expect_clean "X-L3. 同一行寫逐行豁免 → 放行"
+
+run_write "$VA" "${VA_HEAD}// @pixel-quantified-allow: schema-only check of the menu's data-state contract
+const s = await page.getAttribute('[role=menu]', 'data-state');
+const open = await page.locator('[role=menu]').evaluate((el) => el.hasAttribute('open'));"
+expect_block "X-L4. 兩行屬性只豁免一行 → 擋,列出沒豁免的那一行" "M32 pixel-quantified verify gap" "6:const open"
+expect_not_in_stderr "X-L4b. 已豁免的那一行不列" "5:const s"
+
+run_write "$VA" "${VA_HEAD}// @pixel-quantified-allow:
+const s = await page.getAttribute('[role=menu]', 'data-state');"
+expect_block "X-L5. 標記冒號後沒寫理由 → 不算豁免、擋" "M32 pixel-quantified verify gap"
+
 run_write scripts/other-script.mjs "const s = el.getAttribute('data-state');"
 expect_clean "X-3. 不是 visual-audit 腳本 → 放行"
 
@@ -317,8 +345,15 @@ echo "--- F: Field controls shared contracts(lib/_field_controls_contracts.sh)--
 run_write packages/design-system/src/components/Button/button.tsx 'export function Button() { return <button className="h-9" /> }'
 expect_clean "F-1. 沒有違反 → 放行"
 
+# 原 field_controls 格 2:寫入後檔案不在 → 放行(路徑落在 components/*.tsx 範圍內,走到 field helper 的「檔案不在」那一支)
+run "$DISPATCHER" "$(write_payload "$FIX/packages/design-system/src/components/Foo/foo-nonexistent.tsx" 'emptyPlaceholder={emptyText}')"
+expect_clean "F-1a. 寫入後檔案不在(原 field_controls 格 2)→ 放行"
+
 run_write packages/design-system/src/components/Select/select.tsx 'export const Select = ({ emptyText }) => <Combobox emptyPlaceholder={emptyText} />'
 expect_block "F-2. (b) emptyPlaceholder={emptyText} → 擋" "contract (b) placeholder vocabulary"
+
+run_write packages/design-system/src/components/Qux/qux.tsx 'export const Qux = () => <X emptyPlaceholder={noResults} />;'
+expect_block "F-2a. (b) emptyPlaceholder={noResults}(原 field_controls 格 7)→ 擋" "contract (b) placeholder vocabulary" "emptyPlaceholder={noResults}"
 
 run_write packages/design-system/src/components/Select/select.tsx '// @placeholder-vocabulary-allow: migration shim
 export const Select = ({ emptyText }) => <Combobox emptyPlaceholder={emptyText} />'
@@ -342,6 +377,11 @@ expect_block "F-7. (b) 舊名 emptyPlaceholder?: string 寫回 → 擋" "contrac
 run_write packages/design-system/src/components/Combobox/combobox-fixture.tsx '// 舊名 emptyPlaceholder 已移除,改用 placeholder
 export const C = ({ placeholder }) => <Trigger placeholder={placeholder} />'
 expect_clean "F-8. (b) 只在註解提到舊名 → 放行"
+
+run_write packages/design-system/src/components/Combobox/combobox-fixture.tsx '/** 無值時的提示文字(2026-11-15 前另有舊名 `emptyPlaceholder`,已移除) */
+// 舊名 emptyPlaceholder 已移除
+export const Combobox = ({ placeholder = "選擇…" }) => <span>{placeholder}</span>;'
+expect_clean "F-8a. (b) JSDoc 與 // 註解都提到舊名(原 field_controls 格 9 原文)→ 放行"
 
 FC_A='interface P {
   tagRenderer?: (item: Item) => React.ReactNode
@@ -368,6 +408,80 @@ run_write packages/design-system/src/components/Input/input-fixture.tsx 'export 
 expect_clean "F-9d. (d) 已 token 化的 px-[var(--field-px)] → 放行"
 run_write packages/design-system/src/components/Input/input.stories.tsx 'export const Demo = () => <div className="px-3" />'
 expect_clean "F-9e. (d) *.stories.tsx 不在範圍 → 放行"
+
+# 逐行豁免(每條 contract 一對):標記放在第 4 行以後(檔首 3 行的寫法另由 F-3 / F-5 / F-9a / F-9c 管),只豁免命中那一行
+FC_HEAD="import * as React from 'react'
+import { cn } from '@/design-system/lib/utils'
+"
+FC_B_BODY='export const Select = ({ emptyText }) => (
+  <Combobox
+    MARK
+    emptyPlaceholder={emptyText}
+  />
+)'
+run_write packages/design-system/src/components/Select/select-fixture.tsx \
+  "${FC_HEAD}${FC_B_BODY/MARK/// @placeholder-vocabulary-allow: migration shim, removed with the next minor}"
+expect_clean "F-L1. (b) 命中那一行的上一行寫逐行豁免(不在檔首)→ 放行"
+run_write packages/design-system/src/components/Select/select-fixture.tsx \
+  "${FC_HEAD}${FC_B_BODY/MARK/// migration shim, removed with the next minor}"
+expect_block "F-L2. (b) 同一段拿掉逐行豁免 → 擋" "contract (b) placeholder vocabulary" "6:    emptyPlaceholder={emptyText}"
+
+FC_A_BODY='interface P {
+  MARK
+  tagRenderer?: (item: Item) => React.ReactNode
+}
+export function C({ tagRenderer, mode }: P) {
+  const edit = items.map((i) => tagRenderer(i))
+  if (mode === '"'"'display'"'"') {
+    return <span>{label}</span>
+  }
+  return <div>{edit}</div>
+}'
+run_write packages/design-system/src/components/Select/select-fixture.tsx \
+  "${FC_HEAD}${FC_A_BODY/MARK/// @renderer-symmetry-allow: display path tracked separately in Stream C}"
+expect_clean "F-L3. (a) props 定義那一行的上一行寫逐行豁免 → 放行"
+run_write packages/design-system/src/components/Select/select-fixture.tsx \
+  "${FC_HEAD}${FC_A_BODY/MARK/// rich renderer for the selected value}"
+expect_block "F-L4. (a) 同一段拿掉逐行豁免 → 擋,列出 props 定義那一行" "contract (a) renderer symmetry" "5:  tagRenderer?: (item: Item)"
+
+FC_C_BODY='export const C = () => (
+  MARK
+  <TagArea tagAreaPaddingLeftPx={8} />
+)'
+run_write packages/design-system/src/components/Combobox/combobox-fixture.tsx \
+  "${FC_HEAD}${FC_C_BODY/MARK/// @cell-metric-escape-allow: documented 8px for the legacy toolbar slot}"
+expect_clean "F-L5. (c) 命中那一行的上一行寫逐行豁免 → 放行"
+run_write packages/design-system/src/components/Combobox/combobox-fixture.tsx \
+  "${FC_HEAD}${FC_C_BODY/MARK/// documented 8px for the legacy toolbar slot}"
+expect_block "F-L6. (c) 同一段拿掉逐行豁免 → 擋" "contract (c) cell metric escape hatch" "5:  <TagArea tagAreaPaddingLeftPx={8} />"
+run_write packages/design-system/src/components/Combobox/combobox-fixture.tsx \
+  "${FC_HEAD}export const C = () => <TagArea tagAreaPaddingLeftPx={isEmpty ? undefined : 8} /> {/* @cell-metric-escape-allow: legacy toolbar slot */}"
+expect_clean "F-L6a. (c) 條件式那一行同一行寫 JSX 註解豁免 → 放行(F-6 = 同一行沒有豁免 → 擋)"
+
+FC_D_BODY='export const I = () => (
+  MARK
+  <input className="px-3 h-9" />
+)'
+run_write packages/design-system/src/components/Input/input-fixture.tsx \
+  "${FC_HEAD}${FC_D_BODY/MARK/// @field-px-escape-allow: native control demo keeps the browser padding}"
+expect_clean "F-L7. (d) 命中那一行的上一行寫逐行豁免 → 放行"
+run_write packages/design-system/src/components/Input/input-fixture.tsx \
+  "${FC_HEAD}${FC_D_BODY/MARK/// native control demo keeps the browser padding}"
+expect_block "F-L8. (d) 同一段拿掉逐行豁免 → 擋" "contract (d) field-px" '5:  <input className="px-3 h-9" />'
+
+run_write packages/design-system/src/components/Input/input-fixture.tsx "${FC_HEAD}export const I = () => (
+  <div>
+    {/* @field-px-escape-allow: native control demo keeps the browser padding */}
+    <input className=\"px-3 h-9\" />
+    <input style={{ paddingRight: '0.75rem' }} />
+  </div>
+)"
+expect_block "F-L9. (d) 兩行只豁免一行 → 擋,列出沒豁免的那一行" "contract (d) field-px" "7:    <input style={{ paddingRight: '0.75rem' }} />"
+expect_not_in_stderr "F-L9b. 已豁免的那一行不列" '6:    <input className="px-3 h-9" />'
+
+run_write packages/design-system/src/components/Select/select-fixture.tsx \
+  "${FC_HEAD}${FC_B_BODY/MARK/// @placeholder-vocabulary-allow:}"
+expect_block "F-L10. (b) 標記冒號後沒寫理由 → 不算豁免、擋" "contract (b) placeholder vocabulary"
 
 # 對照組:真的 combobox.tsx(帶著它的檔首豁免)原樣寫入必須放行;尾端加一行違反,(b)(d) 兩條都必須點名該行
 REAL_COMBOBOX="$REPO_ROOT/packages/design-system/src/components/Combobox/combobox.tsx"
