@@ -201,7 +201,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 **唯一例外(2026-08-05)**:觸控多選的 pill 降階只在 form surface 生效,table-cell 維持 stack —— 理由是 cell 的固定列高與 view↔edit 像素對齊契約優先於「觸控可移除成員」。**2026-09-18 更正**:原文接著寫「cell 觸控編輯本就走原生 picker,移除在 picker 內完成」,該前提已不成立 —— Combobox 的觸控原生路徑整個移除(見 `combobox.spec.md`「單一路徑(不分裝置)」),現在觸控編輯開的是同一套自訂浮層,已選成員在浮層裡打勾、可再點取消。降階規則本身不變。
 
-**改 PeoplePicker 視覺前必查本表,動 trigger render / placeholder / overflowShape / tagWrapperClassName 前先 cite 對應 row。** Hook `check_peoplepicker_ssot_drift.sh` 機械強制。
+**改 PeoplePicker 視覺前必查本表,動 trigger render / placeholder / overflowShape / tagWrapperClassName 前先 cite 對應 row。** Hook `post_edit_contract_dispatcher.sh`(lib `_peoplepicker_ssot_drift.sh`)寫入當下擋:三支檔(people-picker.tsx / person-display.tsx / combobox.tsx)這次新增的行動到這些名稱,而這次寫入沒附本表 §A–§F 的引用、該行或上一行也沒有 → 擋。
 
 **Avatar 左 inset SSOT**:single trigger / multi stack 第一個 avatar 距 trigger.left = **12px 固定**(不隨 size / density 漂移)。實作:PeoplePicker form context + 有 tag → `cn(className, '!px-[var(--field-px)]')` inject 12px override 到 Combobox Field wrapper,**覆蓋** Combobox `tagPadding[size]` density-dependent calc 公式(該公式在 default lg + 全 comfortable 共 4/6 組合漂離 12px,故報廢改固定值;推導史詳 git log 2026-05-13);`tagAreaPaddingLeftPx={undefined}` 不再 +8 magic。Cell context naked variant `!px-[var(--table-cell-px)]` 已是 12px 不 inject。固定 inset 讓 avatar 與其他 Field control 的文字起點共享同一水平節奏，不被 density 改寫。
 

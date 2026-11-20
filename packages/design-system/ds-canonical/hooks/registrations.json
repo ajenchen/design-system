@@ -312,9 +312,9 @@
           },
           {
             "kind": "hook",
-            "hook": "check_pixel_quantified_audit.sh",
+            "hook": "post_edit_contract_dispatcher.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block"
           },
           {
             "kind": "hook",
@@ -327,24 +327,6 @@
             "hook": "check_tabs_content_chrome_body_double_gap.sh",
             "runtime": "bash",
             "outputMode": "blocking"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_field_controls_contracts.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_peoplepicker_ssot_drift.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_select_all_canonical.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
           },
           {
             "kind": "hook",

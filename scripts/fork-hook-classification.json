@@ -3,12 +3,12 @@
     "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔，從 packages/design-system/ds-canonical/hooks 生成 ds-canonical/fork/。--check 若任何 canonical hook *.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
     "source": "legacy workflow wf_4070529c-5af critic agent 的 inventory 對抗分類 + 2026-06-16 組裝；現役 hook inventory authority = packages/design-system/ds-canonical/hooks",
     "authority": "packages/design-system/ds-canonical/hooks/**；fork corpus 與 provider hook homes 皆為 generated/materialized outputs",
-    "total": 56,
+    "total": 53,
     "tally": {
       "SHIP_AS_IS": 11,
       "SHIP_REWRITTEN": 6,
       "REPLACE": 1,
-      "DROP": 38
+      "DROP": 35
     },
     "known_coverage_gaps": [],
     "buckets_def": {
@@ -156,10 +156,6 @@
       "reason": "DS-author design-system-audit SKILL dim count drift。"
     },
     {
-      "hook": "check_field_controls_contracts.sh",
-      "reason": "DS-author Field 元件內部 contract(scope DS src)。"
-    },
-    {
       "hook": "check_file_size_budget.sh",
       "reason": "DS-author governance file 行數預算(CLAUDE.md/spec/SKILL)。"
     },
@@ -180,16 +176,12 @@
       "reason": "fan-out 到 lib/_*.sh helper,但 helper 沒隨 corpus ship + 有 [ -f ]||return 0 guard → fork 內全 no-op = false-green(harness 深查抓到)。layout-space 價值已由 standalone check_layout_space_magic_numbers 涵蓋故 DROP;唯 _overlay_handcraft/_code_quality 列 known_coverage_gaps 待 promote。"
     },
     {
+      "hook": "post_edit_contract_dispatcher.sh",
+      "reason": "2026-11-21(WP-14)合併原 check_peoplepicker_ssot_drift.sh / check_pixel_quantified_audit.sh / check_field_controls_contracts.sh / check_select_all_canonical.sh(四支原本都是 DROP),四條改成會擋。規則全是 DS 作者端的元件內部契約(PeoplePicker / Field family / multi-select-ordering 的 SSOT,scope DS src)與 DS 自己的 visual-audit 腳本;helper 住 lib/、不隨 corpus ship,fork 無意義。"
+    },
+    {
       "hook": "check_overlay_open_focus_escape_probe.sh",
       "reason": "DS-author overlay focus/escape 稽核 probe。"
-    },
-    {
-      "hook": "check_peoplepicker_ssot_drift.sh",
-      "reason": "DS-author PeoplePicker 元件 SSOT drift(scope DS src)。"
-    },
-    {
-      "hook": "check_pixel_quantified_audit.sh",
-      "reason": "DS-author audit pixel-quantified 強制。"
     },
     {
       "hook": "check_plugin_fork_health.sh",
@@ -202,10 +194,6 @@
     {
       "hook": "check_propose_without_benchmark.sh",
       "reason": "DS-author propose 前 WebFetch benchmark(M26)。"
-    },
-    {
-      "hook": "check_select_all_canonical.sh",
-      "reason": "DS-author Select-all 元件 canonical(scope DS src)。"
     },
     {
       "hook": "check_solo_workflow.sh",

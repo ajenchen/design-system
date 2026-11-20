@@ -23,7 +23,7 @@
  * **為何 SSOT(user 要求以後同類設計都走同一套邏輯、不偏移;原話已不可考,此為轉述)**:
  * 1. 集中 ordering logic 一處,future 改 ordering policy 只改本檔
  * 2. Future consumers(e.g. DataTable filter checkAll / 任何新 multi-select 元件 with Select All
- *    footer)必 import 本 primitive,hook `check_select_all_canonical.sh` 機械強制
+ *    footer)必 import 本 primitive,hook `post_edit_contract_dispatcher.sh`(lib `_select_all_canonical.sh`)寫入當下擋
  * 3. 對齊 mindset #2「優先消費既有」+ M17「SSOT 必可傳播」+ M23「DS internal canonical 優先」
  *
  * **世界級對照**:Ant Transfer + Table rowSelection canonical(2026-05-16 Round 4 grep verify)。
