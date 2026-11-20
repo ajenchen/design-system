@@ -251,6 +251,10 @@ jobs:
       - name: Registered test scripts nothing was running
         run: |
           npm run test:release-consent
+          # 發版前機器可讀項目自我稽核(2026-11-21,工作包 E7):向 user 要「發版」前必須有綁產品指紋與 HEAD、零未解、由腳本照機器讀回產生的紀錄,
+          # stop_self_audit.sh Mechanism 12 在回覆有開引號、或本回合有推播 / 提問時呼叫它。真實要同意 / 不是在要的句子判定表、紀錄 (a)(b)(c) 判定表
+          # (含「只改治理檔、產品指紋沒變、HEAD 變了 → 紀錄失效」那一格)、路徑安全都在這支,約 1 秒。
+          npm run test:release-self-audit
           # rsync -a 的預設判斷是「大小 + mtime 秒」,等長同秒會整個跳過且零訊息。
           # 2026-09-18 beta.134 實證:consumer mirror 的 package-lock.json 換版號後與舊版
           # 完全等長(292873 bytes 不變)、clone 又與生成同一秒 → lock 沒被複製過去、沒進 commit,
