@@ -17,7 +17,11 @@
 #       該擋 4 = JSX 屬性 / 物件 key / 裸屬性 / setAttribute
 #       該放 6 = fieldOpenProps / 唯一寫入者自己 / 說明文字裡的字面 / 讀選擇器 / story skip / escape
 #       + A.3.3 與 A.3.4 同時踩 → 一次 exit 2、兩段訊息都在
-#   A.4 disabled placeholder color(2026-11-21 WP-15b 由提醒升為擋):block / disabled override pass / allowlist pass
+#   A.4 disabled placeholder color(2026-11-21 WP-15b 由提醒升為擋):block / disabled override pass / allowlist pass;
+#       Edit / MultiEdit 觸發看片段、覆寫與豁免看寫完的整份檔(WP-15b 審查必修 2)兩面對照:
+#       該放 = 片段帶到既有 muted、覆寫在原檔別處(Edit / 正式入口 Edit 形狀 / MultiEdit)/ 豁免標記在原檔別處 /
+#              算不出寫完的樣子時退回原檔 + 片段、原檔有覆寫
+#       該擋 = 原檔也沒有覆寫 / 同一次把覆寫刪掉 / 退回原檔 + 片段、原檔也沒有覆寫
 #   A.6 空值顯示 SSOT(2026-07-08 半形 hyphen):非 owner import EMPTY_DISPLAY block /
 #       owner skip / 全形 em dash block / 半形 pass / allowlist
 #   non-target:non-tsx skip / SSOT host skip(field-wrapper.tsx)
@@ -518,6 +522,82 @@ else
   echo "  FAIL  A.4.3"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - A.4.3"
 fi
+
+# Edit / MultiEdit:觸發看片段,覆寫與豁免看寫完的整份檔(WP-15b 審查必修 2)。
+#   修正前只看片段:片段帶到原檔既有的 muted 那一行、覆寫寫在片段外 → 合規的檔被擋(textarea.tsx 等四個真檔都是)。
+#   要真的檔,所以這幾格用自己的專案根。
+A4_PROJECT=$(mktemp -d)
+[ -n "${A4_PROJECT:-}" ] && [ -d "$A4_PROJECT" ] || { echo "❌ mktemp -d failed(A4_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+mkdir -p "$A4_PROJECT/packages/design-system/src/components/Custom"
+A4_FILE="$A4_PROJECT/packages/design-system/src/components/Custom/custom.tsx"
+A4_MUTED="  'placeholder:text-fg-muted',"
+run_in_a4_project() { # $1 = tool_name,$2 = tool_input(不含 file_path 的 JSON)
+  local payload
+  payload=$(jq -n --arg tool "$1" --arg fp "$A4_FILE" --argjson ti "$2" \
+    '{hook_event_name:"PreToolUse", tool_name:$tool, tool_input:({file_path:$fp} + $ti)}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$A4_PROJECT" bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+a4_edit_json() { jq -n --arg o "$1" --arg n "$2" '{old_string:$o, new_string:$n}'; }
+write_a4_with_override() {
+  printf '%s\n' 'export const cls = [' "  'outline-none'," "$A4_MUTED" '  // disabled 時 placeholder 切 fg-disabled' "  'disabled:placeholder:text-fg-disabled'," "].join(' ')" > "$A4_FILE"
+}
+write_a4_without_override() {
+  printf '%s\n' 'export const cls = [' "  'outline-none'," "$A4_MUTED" "].join(' ')" > "$A4_FILE"
+}
+A4_TOUCH_MUTED=$(a4_edit_json "$A4_MUTED" "  // 說明
+$A4_MUTED")
+
+# 該放:片段只帶到原檔既有的 muted 那一行,覆寫在原檔別處
+write_a4_with_override
+run_in_a4_project Edit "$A4_TOUCH_MUTED"
+expect_exit "A.4.4 Edit 片段帶到既有 muted、覆寫在原檔別處 → pass" 0
+
+# 該擋:同一個片段,原檔也沒有覆寫
+write_a4_without_override
+run_in_a4_project Edit "$A4_TOUCH_MUTED"
+expect_exit "A.4.5 Edit 片段帶到 muted、原檔也沒有覆寫 → BLOCK" 2 "disabled placeholder color BLOCKER"
+
+# 該擋:這次 Edit 把覆寫刪掉、留下 muted(寫完的檔沒有覆寫)
+write_a4_with_override
+run_in_a4_project Edit "$(a4_edit_json "$A4_MUTED
+  // disabled 時 placeholder 切 fg-disabled
+  'disabled:placeholder:text-fg-disabled'," "$A4_MUTED")"
+expect_exit "A.4.6 Edit 同一次把覆寫刪掉 → BLOCK" 2 "disabled placeholder color BLOCKER"
+
+# 該放:正式入口 event-v1 的 Edit 形狀(new_string 放在 content、old_string 另給)
+write_a4_with_override
+run_in_a4_project Edit "$(jq -n --arg o "$A4_MUTED" --arg c "  // 說明
+$A4_MUTED" '{old_string:$o, content:$c}')"
+expect_exit "A.4.7 正式入口 Edit 形狀(content + old_string)、覆寫在原檔別處 → pass" 0
+
+# 該放:MultiEdit 其中一筆帶到 muted,覆寫在原檔別處
+write_a4_with_override
+A4_OTHER="  'outline-none',"
+run_in_a4_project MultiEdit "$(jq -n --arg m "$A4_MUTED" --arg o "$A4_OTHER" \
+  '{edits:[{old_string:$o, new_string:($o + " // 說明")}, {old_string:$m, new_string:("  // 說明\n" + $m)}]}')"
+expect_exit "A.4.8 MultiEdit 帶到 muted、覆寫在原檔別處 → pass" 0
+
+# 該放:原檔別處有豁免標記(沒有覆寫)
+printf '%s\n' '// @disabled-color-allow: 這個輸入盒沒有 disabled 狀態' 'export const cls = [' "$A4_MUTED" "].join(' ')" > "$A4_FILE"
+run_in_a4_project Edit "$A4_TOUCH_MUTED"
+expect_exit "A.4.9 Edit 片段帶到 muted、豁免標記在原檔別處 → pass" 0
+
+# 退回「原檔 + 片段」(算不出寫完的樣子:正式入口的 MultiEdit 只帶 content,沒有 edits[])—— 兩面
+write_a4_with_override
+run_in_a4_project MultiEdit "$(jq -n --arg c "  // 說明
+$A4_MUTED" '{content:$c}')"
+expect_exit "A.4.10 算不出寫完的樣子 → 看原檔 + 片段,原檔有覆寫 → pass" 0
+write_a4_without_override
+run_in_a4_project MultiEdit "$(jq -n --arg c "  // 說明
+$A4_MUTED" '{content:$c}')"
+expect_exit "A.4.11 算不出寫完的樣子 → 看原檔 + 片段,原檔也沒有覆寫 → BLOCK" 2 "disabled placeholder color BLOCKER"
+rm -rf "$A4_PROJECT"
 
 echo ""
 echo "=== A.6 空值顯示 SSOT(2026-07-08 半形 hyphen)==="
