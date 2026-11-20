@@ -164,7 +164,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:6cdeea28b6c11de0f60015af73ccf3ea5739f6950fada7b57fa40c02109a4c04",
+      "hash": "sha256:b27f8a4b83fd13eb47da4c5a64218b26cab8426b54efd8730c141582c3e68bc9",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -186,7 +186,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 67,
-      "hash": "sha256:1faebb5fd2949e6babadde93b591008aa13351008aef738a27421ed64fbb5198",
+      "hash": "sha256:01e324786f7786910a7a2a3467c15cc07e9fd5424c1d8352735251ea900c05b0",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1017,7 +1017,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0e4fe95d844d5052dbdb26902537ccc929a2db0aa16a577e06aab310916f3306",
+      "hash": "sha256:344e8c6afbefc40b6f2d49e8891ed6c9535195847b34e103cd40824254e23fb7",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1623,7 +1623,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:22a5e2d0194f6cd586bbe85a5be83e57775c03283f11d83b56c86a77d18585af",
+      "hash": "sha256:b539901e4eb370b91bf09e31a07a4ee7de1d61150bfc744e7d8b3be920b9a0ec",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1688,7 +1688,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:0436a12bd396a72c82873a1e6ec2b258f31b72e2b0267948c56e41c3b8a7beb2",
+      "hash": "sha256:657925f848cd9cb4215d994ccd794644098ef31971fcbf045b7f7f80a52724f0",
       "id": "governance-baseline-authority",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1799,7 +1799,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:b21b8f89067c34c9b8556dc240382b86ecaf90daaf956759e44301eed4ae0dd3",
+      "hash": "sha256:66d45063aacc5f3e615187dd53c708187d19c5209f214df49efb65e0fdb1d32a",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3093,8 +3093,8 @@
         "scripts/.gate-bundles/",
         "scripts/generated/"
       ],
-      "files": 778,
-      "hash": "sha256:76b01f0c4ada87fd6dac2976699c0c1c5d4caa1bcdff75af62084c27cbe252ba",
+      "files": 779,
+      "hash": "sha256:9ebd4829758180f803a91684dc9a2d0a36dd984e967ab3d977243dff32be570f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3504,10 +3504,10 @@
           "targetDigest": "sha256:ac3aa59f84b761cc763e3add28c39bc8195676305f614e4def9e7b72a074e937"
         },
         {
-          "expectedTargetDigest": "sha256:b0749430bf08b6644ff95162c8662def06fc3f16005c42d8ac3ee1ec4e700aec",
+          "expectedTargetDigest": "sha256:f7080ef4134c30090097d39ef31da6af2b439c42fbbf787bef6f3d94ab43c109",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:ce881653b959fa12917e713fba2f50bcd1e21c88ee5806b059546a5b834b9045",
-          "targetDigest": "sha256:b0749430bf08b6644ff95162c8662def06fc3f16005c42d8ac3ee1ec4e700aec"
+          "sourceDigest": "sha256:c73964ccbcbbd0b05f3918a16a2368964f41e6c89f6d20288fe78f55a12aa4e9",
+          "targetDigest": "sha256:f7080ef4134c30090097d39ef31da6af2b439c42fbbf787bef6f3d94ab43c109"
         },
         {
           "expectedTargetDigest": "sha256:e4016a41233453d432b19dbe687deb70b43bfaa2aac95ad0668fc9906e680d8f",
@@ -3727,10 +3727,10 @@
           "targetDigest": "sha256:322dcee9d7bf470f7f79c358a3b8d66a992360b6460443e5f46259ecf3733e91"
         },
         {
-          "expectedTargetDigest": "sha256:bfc917d2879b75852ab78078a5fef9437d48218024d7d0ef079166e17482a45e",
+          "expectedTargetDigest": "sha256:26cfa9db3f2289b2f7f6bce65841f579ff8eea1b840bf117d8039619acbf55a0",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:ce881653b959fa12917e713fba2f50bcd1e21c88ee5806b059546a5b834b9045",
-          "targetDigest": "sha256:bfc917d2879b75852ab78078a5fef9437d48218024d7d0ef079166e17482a45e"
+          "sourceDigest": "sha256:c73964ccbcbbd0b05f3918a16a2368964f41e6c89f6d20288fe78f55a12aa4e9",
+          "targetDigest": "sha256:26cfa9db3f2289b2f7f6bce65841f579ff8eea1b840bf117d8039619acbf55a0"
         },
         {
           "expectedTargetDigest": "sha256:bc2337082ec6264f75f7b168155315434c9dddc0444a569064454c3686da7a40",
