@@ -95,21 +95,36 @@ fi
 
 # ── r3_planning_doc_cite(2026-11-18 H-M4,原 check_propose_pre_grep_verify.sh 併入)──
 # transcript 用真實形狀:一行一筆 {type, message:{role, content}},同 fixtures/transcripts/claude-transcript-jsonl-v2.jsonl;
-# Write / Edit / MultiEdit 的 input 欄位照 Claude Code 工具。磁碟上的文件另外寫一份(r3 以檔案現在的內容判合不合格)。
+# Write / Edit / MultiEdit 的 input 欄位照 Claude Code 工具;每筆 tool_use 有自己的 id,後面接對應的 tool_result
+# (r3 只算 tool_result 不是 is_error 的寫入)。磁碟上的文件另外寫一份(r3 也看檔案現在還有沒有提案 / 出處)。
 R3_DIR="$FAULT_DIR/r3"
 mkdir -p "$R3_DIR"
 R3_CASE=0
+R3_TOOL=0
 r3_new() { # 開一份新 transcript,第一筆是使用者訊息;回傳路徑放在 R3_T
   R3_CASE=$((R3_CASE + 1))
   R3_T="$R3_DIR/t$R3_CASE.jsonl"
   jq -nc --arg t "${1:-幫我整理這次的規劃}" '{type:"user",message:{role:"user",content:[{type:"text",text:$t}]}}' >"$R3_T"
 }
-r3_write() { # $1 路徑 $2 內容;transcript 記一筆 Write,磁碟寫同樣內容(第 3 參數 = nodisk 時不寫磁碟)
+r3_tool() { # $1 工具名 $2 input(JSON)$3 結果:ok(預設)/ error(is_error true)/ none(沒有 tool_result)$4 結果文字
+  R3_TOOL=$((R3_TOOL + 1))
+  jq -nc --arg n "$1" --argjson i "$2" --arg id "toolu_r3_$R3_TOOL" \
+    '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",id:$id,name:$n,input:$i}]}}' >>"$R3_T"
+  case "${3:-ok}" in
+    ok) jq -nc --arg id "toolu_r3_$R3_TOOL" --arg c "${4:-ok}" \
+          '{type:"user",message:{role:"user",content:[{type:"tool_result",tool_use_id:$id,content:$c}]}}' >>"$R3_T" ;;
+    error) jq -nc --arg id "toolu_r3_$R3_TOOL" --arg c "${4:-error}" \
+          '{type:"user",message:{role:"user",content:[{type:"tool_result",tool_use_id:$id,content:$c,is_error:true}]}}' >>"$R3_T" ;;
+    none) ;;
+  esac
+}
+r3_write() { # $1 路徑 $2 內容;transcript 記一筆成功的 Write,磁碟寫同樣內容(第 3 參數 = nodisk 時不寫磁碟)
   mkdir -p "$(dirname "$1")"
-  jq -nc --arg p "$1" --arg c "$2" \
-    '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",id:"toolu_w",name:"Write",input:{file_path:$p,content:$c}}]}}' >>"$R3_T"
-  jq -nc '{type:"user",message:{role:"user",content:[{type:"tool_result",tool_use_id:"toolu_w",content:"ok"}]}}' >>"$R3_T"
+  r3_tool Write "$(jq -nc --arg p "$1" --arg c "$2" '{file_path:$p,content:$c}')"
   [ "${3:-}" = "nodisk" ] || printf '%s' "$2" >"$1"
+}
+r3_edit() { # $1 路徑 $2 old_string $3 new_string $4 結果(同 r3_tool);只記 transcript,磁碟由呼叫端改
+  r3_tool Edit "$(jq -nc --arg p "$1" --arg o "$2" --arg n "$3" '{file_path:$p,old_string:$o,new_string:$n}')" "${4:-ok}" "${5:-}"
 }
 r3_raw() { printf '%s\n' "$1" >>"$R3_T"; }
 r3_run() { # $1 = event(預設 Stop);transcript 用 R3_T(R3_T 為空字串 = 不帶 transcript)
@@ -201,7 +216,7 @@ r3_raw '{"type":"user","isMeta":true,"message":{"role":"user","content":"Stop ho
 r3_run
 r3_expect_block "R3-11a 擋過一次、沒修 → 再擋(feedback 不算使用者訊息)" "governance/planning/fix.md"
 # @cite-fixture:下一行與再下一行的 sheet.tsx 行號是合成輸入
-r3_raw "$(jq -nc --arg p "$R3_FIX" '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",id:"toolu_e",name:"Edit",input:{file_path:$p,old_string:"請拍板回 A 或 B。",new_string:"請拍板回 A 或 B。依據 `sheet.tsx:12`。"}}]}}')"
+r3_edit "$R3_FIX" "請拍板回 A 或 B。" "請拍板回 A 或 B。依據 \`sheet.tsx:12\`。"
 printf '%s\n依據 `sheet.tsx:12`。' "$R3_NO_CITE" >"$R3_FIX"
 r3_run
 r3_expect_pass "R3-11b 補 Edit 加出處 → 放行"
@@ -227,7 +242,7 @@ r3_expect_block "R3-13 api-request-blob / 背景通知不切斷本輪 → 擋" "
 
 # R3-14 Edit / MultiEdit 也看;檔案不在磁碟(已搬走)→ 改判本輪寫入的內容。提案字眼另收全形冒號「選項：」
 r3_new
-r3_raw "$(jq -nc --arg p "$R3_DIR/governance/planning/moved.md" '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",id:"toolu_m",name:"MultiEdit",input:{file_path:$p,edits:[{old_string:"a",new_string:"選項：甲 全部改、乙 不動"},{old_string:"b",new_string:"其他"}]}}]}}')"
+r3_tool MultiEdit "$(jq -nc --arg p "$R3_DIR/governance/planning/moved.md" '{file_path:$p,edits:[{old_string:"a",new_string:"選項：甲 全部改、乙 不動"},{old_string:"b",new_string:"其他"}]}')"
 r3_run
 r3_expect_block "R3-14 MultiEdit + 檔案不在 + 全形冒號 → 擋" "governance/planning/moved.md"
 
@@ -248,6 +263,66 @@ for _v in v1 v2; do
   r3_run
   r3_expect_block "R3-16 夾具 $_v 接一筆違規 Write → 擋" "governance/planning/fixture-$_v.md"
 done
+
+# R3-18 出處與 escape 要在本輪寫進去的內容裡(WP-13 審查必修 1):既有文件別處早有出處 / 檔頭早有 escape,
+# 本輪 Edit 加一段沒出處的提案 → 仍擋;被擋後補 Edit 加出處 / 更新 escape → 放行;本輪寫的出處後來又刪掉 → 擋
+R3_OLD="$R3_DIR/governance/planning/existing.md"
+# @cite-fixture:下一行的 sheet.tsx 行號是合成輸入
+printf '# 規劃\n先前的分析見 `sheet.tsx:12`。\n' >"$R3_OLD"
+R3_ADD='5 個元件缺 SurfaceBody。我推 A:全部改用。請拍板回 A 或 B。'
+r3_new; r3_edit "$R3_OLD" "先前的分析見" "$R3_ADD
+先前的分析見"
+# @cite-fixture:下一行的 sheet.tsx 行號是合成輸入
+printf '# 規劃\n%s\n先前的分析見 `sheet.tsx:12`。\n' "$R3_ADD" >"$R3_OLD"
+r3_run
+r3_expect_block "R3-18a 既有文件別處已有出處,本輪 Edit 加沒出處的提案 → 擋" "governance/planning/existing.md"
+# @cite-fixture:下一行與再下一行的 kebab.tsx 行號是合成輸入
+r3_edit "$R3_OLD" "請拍板回 A 或 B。" "請拍板回 A 或 B。依據 \`kebab.tsx:30\`。"
+printf '# 規劃\n%s依據 `kebab.tsx:30`。\n先前的分析見 `sheet.tsx:12`。\n' "$R3_ADD" >"$R3_OLD"
+r3_run
+r3_expect_pass "R3-18b 被擋後補 Edit 加出處 → 放行"
+R3_ESC="$R3_DIR/governance/planning/escaped.md"
+printf '<!-- @propose-pre-verified: 上一輪逐一 grep 過 -->\n# 規劃\n' >"$R3_ESC"
+r3_new; r3_edit "$R3_ESC" "# 規劃" "# 規劃
+$R3_ADD"
+printf '<!-- @propose-pre-verified: 上一輪逐一 grep 過 -->\n# 規劃\n%s\n' "$R3_ADD" >"$R3_ESC"
+r3_run
+r3_expect_block "R3-18c 檔頭早有 escape,本輪 Edit 加沒出處的提案 → 擋" "governance/planning/escaped.md"
+r3_edit "$R3_ESC" "<!-- @propose-pre-verified: 上一輪逐一 grep 過 -->" "<!-- @propose-pre-verified: 本輪也 grep 過五個元件,結果在 PR 說明 -->"
+printf '<!-- @propose-pre-verified: 本輪也 grep 過五個元件,結果在 PR 說明 -->\n# 規劃\n%s\n' "$R3_ADD" >"$R3_ESC"
+r3_run
+r3_expect_pass "R3-18d 被擋後本輪更新 escape 理由 → 放行"
+R3_GONE="$R3_DIR/governance/planning/cite-removed.md"
+# @cite-fixture:下面三行的 sheet.tsx 行號是合成輸入
+r3_new; r3_write "$R3_GONE" "$R3_NO_CITE
+依據 \`sheet.tsx:12\`。"
+r3_edit "$R3_GONE" "依據 \`sheet.tsx:12\`。" ""
+printf '%s\n' "$R3_NO_CITE" >"$R3_GONE"
+r3_run
+r3_expect_block "R3-18e 本輪寫的出處後來又刪掉(檔案現在沒出處)→ 擋" "governance/planning/cite-removed.md"
+
+# R3-19 只算寫成功的(WP-13 審查必修 2):tool_result 是 is_error(被拒絕 / 失敗)= 沒寫進檔案 → 不判,
+# 接一筆 Stop 回饋再跑也不判(以前會一直擋、只能去建 user 拒絕的檔);對照:同一筆 Write 寫成功(檔案不在)→ 擋
+R3_REJ="$R3_DIR/governance/planning/rejected.md"
+r3_new; r3_tool Write "$(jq -nc --arg p "$R3_REJ" --arg c "$R3_NO_CITE" '{file_path:$p,content:$c}')" error \
+  "The user doesn't want to proceed with this tool use. The tool use was rejected"
+r3_run
+r3_expect_pass "R3-19a Write 被拒絕(is_error)→ 不判"
+r3_raw '{"type":"user","isMeta":true,"message":{"role":"user","content":"Stop hook feedback:\n🚨 PROPOSE-PRE-VERIFY BLOCKER"}}'
+r3_run
+r3_expect_pass "R3-19b 被拒絕之後再一次 Stop → 仍不判"
+r3_new; r3_tool Write "$(jq -nc --arg p "$R3_REJ" --arg c "$R3_NO_CITE" '{file_path:$p,content:$c}')"
+r3_run
+r3_expect_block "R3-19c 對照:同一筆 Write 寫成功 → 擋" "governance/planning/rejected.md"
+# R3-19d 既有文件(上一輪留下、沒出處的提案)上本輪 Edit 失敗:檔案沒變、本輪什麼都沒寫進去 → 不判(以前會把舊內容算到本輪頭上)
+R3_FAILED="$R3_DIR/governance/planning/edit-failed.md"
+printf '%s\n' "$R3_NO_CITE" >"$R3_FAILED"
+r3_new; r3_edit "$R3_FAILED" "不存在的字串" "$R3_ADD" error "String to replace not found in file."
+r3_run
+r3_expect_pass "R3-19d Edit 失敗(is_error,檔案沒變)→ 不判"
+r3_new; r3_tool Write "$(jq -nc --arg p "$R3_REJ" --arg c "$R3_NO_CITE" '{file_path:$p,content:$c}')" none
+r3_run
+r3_expect_pass "R3-19e 找不到對應 tool_result(看不到有沒有寫成)→ 不判"
 
 # R3-17 解析失敗不得讀成合格:r3 的 python 換成必失敗 → GOVERNANCE_INTEGRITY rc70
 awk '

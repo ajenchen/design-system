@@ -377,7 +377,7 @@ exit 0
 }
 
 # ── r3(2026-11-18 knowledge-prune H-M4):規劃 / 報告 / 交接文件裡請 user 拍板,要先附查證的出處(M18 Q0)──
-# 原 check_propose_pre_grep_verify.sh(PreToolUse Edit/Write)的提案字眼與三種出處寫法逐字搬入,改了四件事:
+# 原 check_propose_pre_grep_verify.sh(PreToolUse Edit/Write)的提案字眼與三種出處寫法逐字搬入,改了五件事:
 #   (1) 擋,不是提醒:原支 outputMode = diagnostic(寫 stderr、exit 0),而「Claude never sees stderr from a hook
 #       that exits 0」(https://code.claude.com/docs/en/hooks);搬到 Stop 之後,governance-context 在 Stop 只會變成給
 #       user 看的 systemMessage(scripts/lib/provider-hook-output-transport.mjs:14),進得了模型的只有擋 ——
@@ -387,9 +387,16 @@ exit 0
 #       改成「任一層目錄名以 planning / report / handoff 開頭」的 .md。提案字眼另收全形冒號「選項：」(原支只收半形)。
 #   (3) 出處:原支只認反引號裡小寫路徑的 .tsx/.ts/.css/.md,引 `AGENTS.md` 或 .mjs/.sh/.json 的行號都算沒附;
 #       改成 propose_has_verifiable_cite(與 r2 同一個判準)或原支三種寫法任一(原本放行的照樣放行)。
-#   (4) 看「這一輪寫進去的」決定要不要查、看「檔案現在的樣子」決定合不合格:被擋後補一個 Edit 加出處、
-#       或把提案改掉,下一次 Stop 就放行;不會因為本輪第一次 Write 的內容永遠擋。檔案讀不到(已搬走、不是一般檔、
-#       超過 8 MiB)就改判本輪寫入的內容。
+#   (4) 出處與 escape 都要在「這一輪寫進這個檔的所有片段」(WRITTEN)裡,而且檔案現在也還有(新判準 = 舊判準 AND
+#       本輪寫入判準,舊版擋的不會變成放行)。第一版改看整份檔案現在的內容,結果對既有文件用 Edit 加一段沒出處的提案,
+#       只要文件別處早有任何出處(或檔頭早有 escape)就放行 —— repo 裡 planning / report 的 md 大多已有出處,r3 等於
+#       不出聲;舊支也只看這次寫進去的內容(WP-13 審查必修 1)。被擋後補一個 Edit 加出處,那筆 Edit 也屬本輪,
+#       會收進 WRITTEN,所以照樣放行;要不要查仍看「本輪寫進去的有提案字眼、而且檔案現在仍有」(把提案改掉就放行)。
+#       檔案讀不到(已搬走、不是一般檔、超過 8 MiB)就只判本輪寫入的內容。
+#   (5) 只算真的寫成功的:對應的 tool_result 存在而且不是 is_error。被 user 拒絕、被權限擋下、Edit 找不到字串的
+#       tool_use 都沒有寫進檔案;第一版拿「tool_use 存在」當成「已寫入」(M37),檔案又不在,就改判 transcript 裡那段文字,
+#       擋的訊息給的修法(補出處 / escape / 拿掉提案)全都碰不到那段文字,Stop 會一直擋到模型去建 user 剛拒絕的檔
+#       (WP-13 審查必修 2)。找不到對應 tool_result = 看不到有沒有寫成,同下面「看不到就不判」。
 # 「這一輪」= 最後一則使用者本人訊息之後。判準同 hooks/lib 的 userVoiceText(isMeta / 掛在工具上的 /
 #   背景通知 / 壓縮摘要都不是使用者;這裡是 python 照抄的一份,沒有呼叫它 —— 所以不寫那支 .mjs 的檔名:
 #   harness-source-inventory 會把內文提到該檔名的 shell 都算成它的消費者、要求登記),再加一條:只認 type 與 role 一致的紀錄 —— 真實 transcript 每則訊息另有一份
@@ -397,10 +404,12 @@ exit 0
 #   「Stop hook feedback」(isMeta 的 user 紀錄)之後重算,r1 需要這樣(說出口的話收不回來),r3 不行(被擋後要看得到原本那次寫入)。
 # 看不到就不判:transcript 讀不到、或找不到使用者訊息(Codex 沒有 versioned transcript:packages/governance/canonical/providers.json:514)
 #   → exit 0;解析失敗 → GOVERNANCE_INTEGRITY exit 70,不讀成合格。
-# Escape:檔案前 3 行有 `<!-- @propose-pre-verified: 查過什麼、為何不附出處 -->`(冒號後理由必填;原支不檢查理由,改成擋之後補上)。
+# Escape:檔案前 3 行有 `<!-- @propose-pre-verified: 查過什麼、為何不附出處 -->`(冒號後理由必填;原支不檢查理由,改成擋之後補上),
+#   而且這一輪有寫進去(見 (4):檔頭舊的 escape 不涵蓋本輪新加的提案)。
 R3_PROPOSE_RE='(請拍板|等你拍板|待你拍板|決策 [0-9N]|我推 [ABC]|選項(:|：)|propose for user|你決定|讓我判斷決策)'
 R3_LEGACY_CITE_RE='`[a-z][a-z0-9/-]+\.(tsx|ts|css|md):[0-9]+`|`[a-z][a-z0-9/-]+\.(tsx|ts|css|md)`|`packages/design-system/src/'
 R3_ESCAPE_RE='@propose-pre-verified:[[:space:]]*[^[:space:]>-]'
+r3_has_cite() { propose_has_verifiable_cite "$1" || grep -qE "$R3_LEGACY_CITE_RE" <<<"$1"; }
 r3_planning_doc_cite() {
 set -uo pipefail
 INPUT=$(cat 2>/dev/null || echo "{}")
@@ -467,6 +476,15 @@ for line in raw_lines:
 if last_user < 0:
     print(json.dumps({'ok': False}))
     sys.exit(0)
+# 寫成功 = 對應的 tool_result 存在而且 is_error 不是 true(被拒絕 / 被擋 / 執行失敗的都是 is_error true)
+succeeded, failed = set(), set()
+for record in records[last_user + 1:]:
+    content = content_of(record)
+    if kind_of(record) != 'user' or not isinstance(content, list):
+        continue
+    for item in content:
+        if isinstance(item, dict) and item.get('type') == 'tool_result' and isinstance(item.get('tool_use_id'), str):
+            (failed if item.get('is_error') is True else succeeded).add(item['tool_use_id'])
 written, order = {}, []
 for record in records[last_user + 1:]:
     content = content_of(record)
@@ -474,6 +492,9 @@ for record in records[last_user + 1:]:
         continue
     for item in content:
         if not isinstance(item, dict) or item.get('type') != 'tool_use' or item.get('name') not in ('Write', 'Edit', 'MultiEdit'):
+            continue
+        tool_id = item.get('id')
+        if not isinstance(tool_id, str) or tool_id not in succeeded or tool_id in failed:
             continue
         data = item.get('input') if isinstance(item.get('input'), dict) else {}
         target = data.get('file_path')
@@ -521,21 +542,22 @@ while [ "$INDEX" -lt "$DOC_COUNT" ]; do
   # 本輪寫進去的有提案字眼,而且檔案現在仍有(改掉了就放行)
   grep -qE "$R3_PROPOSE_RE" <<<"$WRITTEN" || continue
   grep -qE "$R3_PROPOSE_RE" <<<"$DOC" || continue
+  # escape 與出處:本輪寫進去的要有,檔案現在也要還有(文件別處原有的不算;理由見上方 (4))
   DOC_HEAD=$(sed -n '1,3p' <<<"$DOC")
-  grep -qE "$R3_ESCAPE_RE" <<<"$DOC_HEAD" && continue
-  propose_has_verifiable_cite "$DOC" && continue
-  grep -qE "$R3_LEGACY_CITE_RE" <<<"$DOC" && continue
+  grep -qE "$R3_ESCAPE_RE" <<<"$DOC_HEAD" && grep -qE "$R3_ESCAPE_RE" <<<"$WRITTEN" && continue
+  r3_has_cite "$WRITTEN" && r3_has_cite "$DOC" && continue
   FLAGGED="${FLAGGED}    • ${DOC_PATH}"$'\n'
 done
 [ -z "$FLAGGED" ] && exit 0
 {
-  echo "🚨 PROPOSE-PRE-VERIFY BLOCKER(M18 Q0):這一輪寫進規劃 / 報告 / 交接文件的內容有「請 user 拍板」類字眼,文件裡卻沒有任何可查證的出處:"
+  echo "🚨 PROPOSE-PRE-VERIFY BLOCKER(M18 Q0):這一輪寫進規劃 / 報告 / 交接文件的內容有「請 user 拍板」類字眼,這一輪寫進去的內容裡卻沒有任何可查證的出處(文件別處原有的出處不算):"
   printf '%s' "$FLAGGED"
-  echo "  要 user 決定之前,先 grep 全庫、讀相關 spec.md 與實際用法,確認問題真的存在,再把證據寫進同一份文件:"
+  echo "  要 user 決定之前,先 grep 全庫、讀相關 spec.md 與實際用法,確認問題真的存在,再用 Edit 把這次提案的證據寫進同一份文件:"
   echo "    檔名加行號(例如 .tsx / .md / .mjs 檔後接冒號與行號)、L 加行號、line 加行號,或官方文件網址;"
   echo "    用反引號包起來的 .tsx / .ts / .css / .md 路徑也算。"
-  echo "  查過之後發現不是真問題 → 把提案拿掉。已查證但文件不適合放出處 → 在該檔前 3 行加"
-  echo "    <!-- @propose-pre-verified: 查過什麼、為何不附出處 -->(冒號後理由必填)。"
+  echo "  查過之後發現不是真問題 → 把提案拿掉。已查證但文件不適合放出處 → 在該檔前 3 行加上"
+  echo "    <!-- @propose-pre-verified: 查過什麼、為何不附出處 -->(冒號後理由必填;要在這一輪整行寫進去,"
+  echo "    檔頭已經有的話用 Edit 整行重寫 —— 舊的 escape 不涵蓋新加的提案)。"
   echo "  錨例:2026-05-18 Sheet / inline-action / SurfaceBody 三題沒查就丟給 user 拍板,grep 之後 0 個真問題。"
   echo "  SSOT:packages/design-system/ds-canonical/skills/propose-options/SKILL.md 的 Q0 段。"
 } >&2

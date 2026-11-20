@@ -59,7 +59,7 @@ description: Auto-invoke when listing options / 建議 / 候選方案. Forces in
 - ✅ "grep 結果 Input/NumberInput/LinkInput 3 file 都未消費 ItemInlineAction(file:line)+ spec.md L60 表格列為 expected consumer → 真 gap"
 - ❌ "5 元件應該 migrate"(沒 grep / 沒 cite spec / 不知道 K 元件已 migrate / 是 colored host 合法例外)
 
-**對應 hook**:`check_propose_discipline.sh` 的 r3_planning_doc_cite(Stop;2026-05-18 原是一支 PreToolUse 只警告、模型看不到的獨立 hook,2026-11-18 併入並改成擋)— 本輪寫進「任一層目錄名以 planning / report / handoff 開頭」的 `.md`,內容含「請拍板 / 決策 N / 選項」等 propose keyword,而檔案裡沒有可查證的出處(`檔名:行號` / `L42` / `line 42` / 官方文件網址,或反引號包起來的 .tsx / .ts / .css / .md 路徑)→ exit 2 擋下,補出處或拿掉提案才放行;escape:檔案前 3 行 `<!-- @propose-pre-verified: 理由 -->`(理由必填)。chat reply 裡的 propose 字眼無 hook 覆蓋,靠本 skill Q0 自律(回覆裡「規定 / 必配」類斷言另由同一支的 r2 擋)
+**對應 hook**:`check_propose_discipline.sh` 的 r3_planning_doc_cite(Stop;2026-05-18 原是一支 PreToolUse 只警告、模型看不到的獨立 hook,2026-11-18 併入並改成擋)— 本輪寫進「任一層目錄名以 planning / report / handoff 開頭」的 `.md`,內容含「請拍板 / 決策 N / 選項」等 propose keyword,而本輪寫進去的內容裡沒有可查證的出處(文件別處原有的不算;被拒絕 / 失敗的寫入不算寫入;出處寫法:`檔名:行號` / `L42` / `line 42` / 官方文件網址,或反引號包起來的 .tsx / .ts / .css / .md 路徑)→ exit 2 擋下,補出處或拿掉提案才放行;escape:檔案前 3 行 `<!-- @propose-pre-verified: 理由 -->`(理由必填,本輪寫進去才算)。chat reply 裡的 propose 字眼無 hook 覆蓋,靠本 skill Q0 自律(回覆裡「規定 / 必配」類斷言另由同一支的 r2 擋)
 
 ### Q1 — M8 World-class benchmark
 **問**:本 option ≥ 3 家 world-class DS / framework / canonical 有對照嗎?
