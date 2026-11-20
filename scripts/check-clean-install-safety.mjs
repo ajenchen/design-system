@@ -15,6 +15,12 @@
  *
  * 用法:node scripts/check-clean-install-safety.mjs [--check]
  *   (--check 與 bare 行為相同;統一 preflight 慣例保留旗標)
+ *
+ * @gate-contract
+ *   保證: 隨 npm 出貨的 packages/design-system 與 packages/storybook-config(package.json 標 private 的跳過)的 scripts
+ *         沒有 preinstall / install / postinstall —— consumer 用 --ignore-scripts 或離線安裝時沒有任何步驟會被跳過
+ *   紅: 任一個套件有其中之一 → 印出套件名與那一條 script 並 exit 1;配對測試在 design-system 的 package.json 注入 postinstall,本閘必須紅
+ *   綠: 兩個套件都沒有時 exit 0;只讀兩個 package.json,不讀時間、不連網,重複跑結果相同
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

@@ -12,6 +12,13 @@
 //   Check C: product `*.spec.md` 禁 cite `CLAUDE.md`。CLAUDE.md 是 generated provider adapter；
 //            product semantics 必 cite AGENTS navigator 或 canonical spec/rule/reference owner。
 // Usage: node scripts/check-skill-deadref.mjs [--check]
+//
+// @gate-contract
+//   保證: ds-canonical 的 skills / rules / references / commands 與 governance/benchmarks 底下的 .md / .json(planning / scratch / retired / tmp 除外),
+//         加上 packages/design-system/src 的產品 *.spec.md,沒有「CLAUDE.md line N / L<N>」行號引用(Check A)、
+//         沒有在提到 CLAUDE.md 的行引用 REMOVED_SECTIONS 裡已改名或刪除的章節(Check B),產品 spec 沒有任何一行提到 CLAUDE.md(Check C)
+//   紅: --check 下任一處命中 → 印出檔名:行號並 exit 1;配對測試在隔離夾具寫「CLAUDE.md line 999」、或把產品 spec 的出處改成 CLAUDE.md,本閘都必須紅
+//   綠: 0 命中時 exit 0;只讀檔,不讀時間,重複跑結果相同
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 

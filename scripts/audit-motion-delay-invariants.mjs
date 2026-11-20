@@ -14,6 +14,13 @@
  * R3 單一住處:motion.ts 三個常數都在;motion.css 不得再宣告 --motion-delay-*(2026-11-15 前是「JS 與 CSS 三值一致」)
  *
  * Exit 1 on violation(deterministic audit / protected CI gate)。
+ *
+ * @gate-contract
+ *   保證: R1 packages/design-system/src 的正式 .ts / .tsx(路徑不含 stories / test / spec)沒有 openDelay / closeDelay / delayDuration 寫數字
+ *         (註解行與 @motion-delay-allow 除外);R2 Tooltip / HoverCard / Avatar / OverflowIndicator 四個消費者的檔位字串都還在;
+ *         R3 motion.ts 有 MOTION_DELAY_PLAIN_MS / RICH_MS / CLOSE_MS 三個 export,motion.css 沒有任何 --motion-delay-* 宣告
+ *   紅: 任一條不成立 → 逐條印出(R1 帶檔名:行號)並 exit 1;配對測試在 motion.css 補回 --motion-delay-plain、或把 motion.ts 的常數改名,本閘都必須紅
+ *   綠: 三條都成立時 exit 0;只讀檔,不讀時間、不開瀏覽器,重複跑結果相同
  */
 import { readFileSync, globSync } from 'node:fs'
 import { join, dirname } from 'node:path'

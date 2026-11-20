@@ -31,6 +31,16 @@
 //   Baseline SSOT: scripts/audit-orphan-tokens.baseline.json。
 //
 // Cite: `tokens/orphan-tokens.spec.md` SSOT canonical for token retire classification rules。
+// 2026-11-20 起由 ci.yml governance-control-plane job 直呼(knowledge-prune WP-21),原本只經配對測試在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: packages/design-system/src/tokens/**/*.css 宣告的每個 --token,不是有人消費(token 檔以外 src / packages 的 .tsx / .ts / .css 的 var()、
+//         token 檔裡一般 CSS 屬性值的 var()、@theme inline 轉接、@utility、Tailwind class 名、tsx 字串字面值),就是落在分類表
+//         token-registry.json retention 的某個保留類別;落進保留類別的名單與 scripts/audit-orphan-tokens.baseline.json 一致、總數不超過 baseline + 5
+//   紅: --check 下有真孤兒、有新名字落進保留類別卻不在 baseline、保留總數暴增、或沒有 baseline 檔 → 逐條印出並 exit 1;
+//       分類表讀不到 → INSTRUMENT-FAIL exit 1;配對測試在 motion.css 注入一顆沒人用的 --zzz- token、注入「只被另一個自訂屬性讀」的名字、
+//       拿掉分類表的 palette 一類,本閘都必須紅
+//   綠: 0 真孤兒、保留名單與 baseline 相同時 exit 0;--check 不寫檔(只有 --update 寫 baseline),不讀時間,同一份原始碼與 node_modules 重複跑結果相同
 
 import fs from 'fs'
 import path from 'path'

@@ -17,6 +17,14 @@
  *   (3) 每個 LinkTo 的 kind 必存在於 titles;帶 name 者,name 必存在於該 kind 的 story names。
  *
  * 用法:node scripts/audit-linkto-integrity.mjs [--check]
+ * 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只經配對測試在夜間 harness 跑。
+ *
+ * @gate-contract
+ *   保證: packages/design-system/src 與 apps 底下每個 *.stories.tsx 裡的 <LinkTo kind="…"> / <StoryLink kind="…">(name 可省略)都指得到東西 ——
+ *         kind 是某個 stories 檔的 meta title(Design System/ 或 Apps/ 開頭);帶 name 的,name 是那個 title 底下某則 story 的 name: 或 export 名
+ *   紅: --check 下有任一個斷鏈 → 印出「檔名:行號 — kind / name(哪一種斷)」並 exit 1(不帶 --check 只印不紅);
+ *       配對測試把 combobox.principles.stories.tsx 的 name="三種尺寸" 換成不存在的名字,本閘必須紅
+ *   綠: 0 斷鏈時 exit 0 並印出掃了幾個 stories 檔、幾個連結;只讀檔,不讀時間,重複跑結果相同
  */
 import fs from 'node:fs'
 import path from 'node:path'

@@ -10,12 +10,20 @@
  *   1. 每 class 必有 status ∈ {protected, remediating, judgment}
  *   2. remediating 必帶 plan(具體指標,禁空泛)
  *   3. judgment 必帶 auditDim(regex 不可判 → audit dim 兜底,不可裸放)
- *   4. protected 建議帶 note(防線 cite);缺 note 只 warn 不 fail
+ *   4. protected 必帶 note(> 10 字的防線 cite);缺 = 違規(2026-11-20 照程式更正:原寫「建議帶、缺只 warn」,程式其實記成違規)
  *   5. registry 本身必存在且 ≥ 1 class(防「刪 registry 繞閘」)
  *
  * 用法:
  *   node scripts/audit-failure-class-coverage.mjs          # report
  *   node scripts/audit-failure-class-coverage.mjs --check  # exit 1 on violation(preflight / dim 91)
+ *
+ * @gate-contract
+ *   保證: canonical registry packages/design-system/ds-canonical/references/failure-class-registry.json 存在、是單一 regular file、
+ *         JSON 可解析、至少一類;每一類有不重複的 id / name,status ∈ {protected, remediating, judgment},
+ *         remediating 帶具體 plan、judgment 帶 auditDim、protected 帶具體 note
+ *   紅: --check 下任一條不成立 → 逐類列出「❌ 違規」並 exit 1;registry 不存在、是 symlink / hard link、或解析不了 → 不論有沒有 --check 都 exit 1;
+ *       配對測試在隔離夾具裡把 status 改成 bogus、或把 registry 換成指到外面的 symlink,本閘都必須紅
+ *   綠: 現行 registry 全部合格時 exit 0 並印出各 status 的類數;只讀這一個檔,不讀時間,重複跑結果相同
  */
 
 import fs from 'node:fs'

@@ -135,7 +135,7 @@ benchmark:
 
 - **Dim 48**(= `design-system-audit/SKILL.md` 的「Unused / orphan token detector」audit 維度)— chain 本 spec + `audit-orphan-tokens.mjs --check`(not raw `grep var()`);保留分類由腳本讀分類表 `retention` 與各列 `retain`
 - **三方一致**:本檔每類標題的鍵 ↔ 分類表 `retention` ↔ 各列 `retain` 指到的鍵,由 `scripts/token-creation-invariant.mjs` C1 比對(PR CI 必跑)
-- **CI**:`scripts/test-audit-orphan-tokens.mjs`(gate-meta 家族,由 `scripts/run-gate-meta-tests.mjs` 帶跑,住在夜間 `governance-harnesses.yml` 的 `test:governance-harnesses`)的 baseline 步直呼 `node scripts/audit-orphan-tokens.mjs --check` — fail = real orphan 出現;再注入一顆假 orphan、再拿掉分類表的一類,證明兩種都會紅。**PR / release lane 目前不跑它**(舊句寫的 `scripts/release-preflight.mjs` 已於 #40 退役、`release.yml` 也不再直呼;2026-09-27 對帳改寫)
+- **CI**:required CI —— `ci.yml` governance-control-plane job 的「Slow static gates that used to run only nightly」直呼 `node scripts/audit-orphan-tokens.mjs --check`(fail = real orphan 出現,或新名字落進保留類別卻不在 baseline),接著跑配對測試 `scripts/test-audit-orphan-tokens.mjs`:注入一顆假 orphan、注入只被自訂屬性讀的名字、拿掉分類表的一類,證明三種都會紅(2026-11-20 接上)。接上之前它只在夜間 `governance-harnesses.yml` 經配對測試帶跑(舊句寫的 `scripts/release-preflight.mjs` 已於 #40 退役、`release.yml` 也不再直呼;2026-09-27 對帳改寫)
 - **Hook**:無 hook(本 audit run-time / monthly cadence,非 PreToolUse 攔截場景)
 
 ## Audit Dim 48 false-positive 經驗(2026-05-17,user 抓教訓;原 structural-token-retention.md)

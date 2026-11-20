@@ -5,6 +5,16 @@
 // 「N real orphan token(s)」→ process.exit(1)。本 meta-test 在真 token CSS 檔尾注入一個
 // 「不被任何 consumer 消費、且不落任何 structural-keep regex」的 orphan token(--zzz- 前綴不撞 bridge
 // class-name;唯一亂名不撞 JS literal mirror / @theme / @utility)→ 逼 cat.real 從 0 變 1 → gate FAIL。
+//
+// 2026-11-20 起由 ci.yml governance-control-plane job 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑;
+// 本機約 66 秒(閘本身每次約 13 秒、跑五次),放在與 verify-static 平行的 job,不拉長關鍵路徑。
+//
+// @gate-contract
+//   保證: audit-orphan-tokens.mjs(--check) 該紅時紅、該綠時綠 —— 在 tokens/motion/motion.css 末尾注入一顆沒人用的 --zzz- token → 必須非 0;
+//         注入「被 padding-top 讀」「只被另一個自訂屬性讀」「沒人讀」三個名字 → 必須非 0,而且只點名後兩個;
+//         拿掉 token-registry.json 的 palette 保留類別 → 必須非 0;注入前與每次還原後閘都必須 exit 0
+//   紅: 任一步不照預期 → 印出是哪一步並 exit 1
+//   綠: 都照預期時 exit 0;motion.css 與 token-registry.json 在 finally 寫回原文,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

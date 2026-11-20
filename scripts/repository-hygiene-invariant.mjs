@@ -1,6 +1,16 @@
 #!/usr/bin/env node
 // Dim 14 mechanical repository-hygiene core. Canonical rationale and exemptions live in
 // packages/design-system/ds-canonical/references/repository-hygiene{,-policy.json}.
+// 2026-11-20 起由 ci.yml verify-static 直呼 `--profile=authority --check`(knowledge-prune WP-21),原本只經配對測試在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: Git 工作樹的檔案清單(git ls-files --cached --others --exclude-standard)照 repository-hygiene-policy.json 該 profile:
+//         沒有暫存 / 編輯器 / 作業系統殘留(R1)、每個頂層目錄都有宣告用途(R2)、symlink 只有宣告過的那幾條而且目標正確(R3)、
+//         內容完全相同的檔案群組都有宣告(R4);future-reserved 宣告欄位齊全、底下有內容,而且 review-by / expire-on 的日期還沒到
+//   紅: 任一條不成立 → 逐條印出規則、路徑與原因並 exit 1;policy 讀不到或宣告格式錯 → exit 1;配對測試寫一個暫存檔、寫兩個內容相同的檔、
+//       把 future-reserved 少一欄或日期改成過去、在夾具裡拿掉 / 弄斷宣告的 symlink,本閘都必須紅
+//   綠: 全部成立時 exit 0 並印出掃了幾個路徑 / 頂層目錄 / symlink;只讀 git 清單與檔案。唯一讀時間的是 future-reserved 的日期:
+//       日期一到(現行唯一一筆 .changeset/ 是 review-by 2027-02-20)每支 PR 都會紅 —— 那條規則的用意就是到期要複查
 
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'

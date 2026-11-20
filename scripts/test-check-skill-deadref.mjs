@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 // Isolated meta-test for check-skill-deadref.  Never edits live provider views.
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: check-skill-deadref.mjs 該綠時綠、該紅時紅 —— 本 repo 現況(--check --root 本 repo)必須 exit 0;mkdtemp 夾具裡乾淨的 rules + 產品 spec
+//         → 必須 exit 0,rules 寫「CLAUDE.md line 999」→ 必須非 0,產品 spec 的出處改成 CLAUDE.md → 必須非 0;夾具跑完本 repo 再驗一次必須 exit 0
+//   紅: 任一步不照預期 → 印出是哪一步並 exit 1
+//   綠: 都照預期時 exit 0;不寫入本 repo,夾具在 finally 刪掉,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

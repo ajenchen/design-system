@@ -267,7 +267,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 <Progress className="bg-primary" value={60} />
 ```
 
-**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(執行面 = 配對測試 `scripts/test-status-color-invariant.mjs` 直呼它,登記在 `infra/governance/providers/harness-source-inventory.json` 的 gate-meta 家族、由夜間 `governance-harnesses.yml` 帶跑;舊句寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役,PR lane 目前不直呼 —— 2026-09-27 對帳改寫),回潮 `--primary` 即 fail。2026-06-05 把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + 互動色換色時不受牽連)—— 當時 commit `96f75ac1` 記載 user 在選項題選了『改用 --info(對齊 token 字典)』(選項由 AI 提供);那段對話紀錄已不存在、登記簿查無原話,來源以該 commit 記載為準。
+**機械強制**:此規則對 status 元件(ProgressBar / CircularProgress / Steps / Calendar today)由 `scripts/status-color-invariant.mjs` 鎖住(required CI:`ci.yml` verify-static 直呼,2026-11-20 接上;它在該紅的時候會紅,由同一步接著跑的配對測試 `scripts/test-status-color-invariant.mjs` 證明。2026-09-27 對帳到接上之前,只有夜間 `governance-harnesses.yml` 經配對測試帶跑;更早寫的 `scripts/release-preflight.mjs` 已於 2026-08-04 退役),回潮 `--primary` 即 fail。2026-06-05 把這 4 個元件的 progress/step/in-progress 填色從 `--primary` 全遷 `--info`(同色 blue-6 零視覺差,語義正確 + 互動色換色時不受牽連)—— 當時 commit `96f75ac1` 記載 user 在選項題選了『改用 --info(對齊 token 字典)』(選項由 AI 提供);那段對話紀錄已不存在、登記簿查無原話,來源以該 commit 記載為準。
 
 每個語義色的 bridge 同時產出 `bg-xxx`、`text-xxx`、`border-xxx` 三組 utility，視場景選用。
 

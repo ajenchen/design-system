@@ -14,6 +14,13 @@
 // + AG Grid `rowHeight: 'auto'` per-row dynamic — per-row state 永遠 override global table-level prop。
 //
 // Run: `node scripts/audit-data-table-row-mode-ssot.mjs`
+//
+// @gate-contract
+//   保證: data-table.tsx 從 `const effectiveAutoRowForCell =` 定義行起、到它所在的大括號作用域結束為止(格子渲染範圍),
+//         沒有任何一行用整張表的 `autoRowHeight ? '…'` 三元式決定格子對齊(同一行或上一行有 @row-mode-global-allow 的除外)
+//   紅: 範圍內出現 `autoRowHeight ? '` → 印出 data-table.tsx:行號 並 exit 1;找不到錨點、或算出來的範圍不到 40 行
+//       (範圍塌掉時的「無違規」是零證據)→ 同樣 exit 1;配對測試把第一處 effectiveAutoRowForCell 三元式換成 autoRowHeight,本閘必須紅
+//   綠: 現行 data-table.tsx 0 筆時 exit 0;只讀這一個檔,不讀時間、不開瀏覽器,重複跑結果相同
 
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'

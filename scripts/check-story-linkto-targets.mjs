@@ -13,6 +13,15 @@
  * 之前只認 `<LinkTo`,而 `<LinkTo` 字面只剩 StoryLink 自己那一處(kind={kind}),本閘恆綠、meta-test 注入抓不到。
  *
  * Usage: node scripts/check-story-linkto-targets.mjs [--check]
+ * 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只經配對測試在夜間 harness 跑。
+ *
+ * @gate-contract
+ *   保證: packages/design-system/src 底下每個 *.stories.tsx 裡同時帶 kind 與 name 的 <LinkTo> / <StoryLink>,kind 是某個 stories 檔的
+ *         meta title(Design System/ 或 Apps/ 開頭),name 是那個 title 底下某則 story 的 name:,或由 export 名推出的顯示名
+ *         (大小寫分詞、底線換空格,同 Storybook)
+ *   紅: --check 下有 name 對不到(stale)或 kind 不存在 → 列出檔名:行號與可選的 story 名並 exit 1(不帶 --check 只印不紅);
+ *       配對測試把 time-picker.principles.stories.tsx 的 name="會議時段" 換成不存在的名字,本閘必須紅
+ *   綠: 全部對得到時 exit 0,印出掃了幾個 stories 檔、幾個 title;只讀檔,不讀時間,重複跑結果相同
  */
 import fs from 'node:fs'
 import { globSync } from 'node:fs'

@@ -3,6 +3,14 @@
 // 2026-07-28 對齊 token 級合約:invariant 現逐 size 驗「fieldViewGeometry 多行 py ==
 // Textarea edit py == py-[var(--field-control-py-N)]」+ uiSize.css 公式未漂移,
 // 故注入也升級為 (a) class 漂移 (b) token 公式漂移 兩種。
+//
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: inline-edit-view-geometry-invariant.mjs 在該紅的時候會紅 —— (a) field-wrapper.tsx 的多行 md py 改回字面 py-2、
+//         (b) uiSize.css 的 --field-control-py-md 拿掉 −1px 邊框修正,兩次注入閘都必須 exit 非 0;注入前與還原後閘都必須 exit 0
+//   紅: 現況就紅、注入點不存在、任一注入後閘仍 exit 0、或還原後不綠 → 印出是哪一步並 exit 非 0
+//   綠: 都照預期時 exit 0;兩個檔在 finally 寫回原文,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 

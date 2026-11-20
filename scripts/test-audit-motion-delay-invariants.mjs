@@ -5,6 +5,14 @@
 //   (b) 把 motion.ts 的 MOTION_DELAY_PLAIN_MS 改名 → 唯一住處讀不到 → gate FAIL。
 // R1(numeric literal delay)/ R2(tier freeze needle)不受影響:(a) 改的是 CSS,(b) 改的是 export 名,
 // 都不是 openDelay/closeDelay/delayDuration 關鍵字;(b) 會讓 tier-freeze 的 consumer import 斷掉,但 R2 只比對字串,不編譯。
+//
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: audit-motion-delay-invariants.mjs 的 R3 在該紅的時候會紅 —— (a) motion.css 補回 --motion-delay-plain、(b) motion.ts 的
+//         MOTION_DELAY_PLAIN_MS 改名,兩次注入閘都必須 exit 非 0;注入前與還原後閘都必須 exit 0(R1 / R2 沒有注入,只靠現況必綠)
+//   紅: 現況就紅、注入沒改到東西(靶點漂移)、注入後閘仍 exit 0、或還原後不綠 → 印出是哪一步並 exit 1
+//   綠: 都照預期時 exit 0;兩個檔在 finally 寫回原文,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'

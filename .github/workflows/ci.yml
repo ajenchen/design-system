@@ -353,6 +353,69 @@ jobs:
           # 規格那一段寫「機械強制」,2026-11-17 對帳時它其實只在夜間跑(8f824bc7 把規格改成照實寫);這裡讓那句話成真。純靜態,約 1 秒。
           node scripts/check-field-cascade-resolve.mjs
           node scripts/test-check-field-cascade-resolve.mjs
+          # 以下 17 支同一批接上(2026-11-20 逐支在 HEAD 上跑過,主判定與紅面都 exit 0;本機主判定逐支 0–1 秒、紅面逐支 0–2 秒)。
+          # 會暫時改 repo 檔的紅面都在 finally 寫回;最慢的兩支(audit-orphan-tokens 與它的紅面)在平行的 governance-control-plane job。
+          # DataTable 格子對齊讀「這一列」的高度模式 effectiveAutoRowForCell,不讀整張表的 autoRowHeight(2026-09-21 修過一次:範圍塌成 1 行還報綠)。
+          node scripts/audit-data-table-row-mode-ssot.mjs
+          node scripts/test-audit-data-table-row-mode-ssot.mjs
+          # 每一類病根都有防線 / 具體計畫 / 稽核維度兜底(ds-canonical/references/failure-class-registry.json,deep-audit dim 91)。
+          node scripts/audit-failure-class-coverage.mjs --check
+          node scripts/test-audit-failure-class-coverage.mjs
+          # 含擋下邏輯的 hook 都有 hooks/tests/test_<name>.sh(只驗檔在;測試內容由 hooks-linux job 實跑)。
+          node scripts/audit-hook-test-coverage.mjs --check
+          node scripts/test-audit-hook-test-coverage.mjs
+          # 每個元件 / pattern 的主 spec 都宣告 Layout Family(AGENTS.md「# 4-Family Layout Model」)。
+          node scripts/audit-layout-family-frontmatter.mjs --check
+          node scripts/test-audit-layout-family-frontmatter.mjs
+          # story 裡的 <LinkTo> / <StoryLink> 都指得到存在的 title 與 story 名(story 改名 / 退場後漏改的斷鏈;2026-11-20 前只認 <LinkTo>,恆綠)。
+          node scripts/audit-linkto-integrity.mjs --check
+          node scripts/test-audit-linkto-integrity.mjs
+          # hover 延遲三檔只住 motion.ts、四個消費者的檔位凍結、正式程式不寫數字延遲(motion.spec.md「適用對照表」)。
+          node scripts/audit-motion-delay-invariants.mjs
+          node scripts/test-audit-motion-delay-invariants.mjs
+          # spec 之間 `<name>.spec.md` 的指標都指到存在的檔(改名 / 刪 spec 後漏改的死指標)。
+          node scripts/audit-spec-deadlinks.mjs --check
+          node scripts/test-audit-spec-deadlinks.mjs
+          # 資料夾 / story 標題 / 主 spec 的 isInternal 三個分類訊號一致、Autodocs 照分類、側欄順序照 story-governance/category-matrix.json。
+          node scripts/category-classification-invariant.mjs
+          node scripts/test-category-classification-invariant.mjs
+          # 隨 npm 出貨的兩個套件沒有 preinstall / install / postinstall(consumer 用 --ignore-scripts 或離線安裝 = 普通安裝)。
+          node scripts/check-clean-install-safety.mjs --check
+          node scripts/test-check-clean-install-safety.mjs
+          # 治理文件不寫「CLAUDE.md 第 N 行」、不引用已改名的章節,產品 spec 不提 CLAUDE.md(原本只在每週一的 packaging-canary 跑)。
+          node scripts/check-skill-deadref.mjs --check
+          node scripts/test-check-skill-deadref.mjs
+          # 帶 name 的 story 連結,name 要對得到該 title 底下 story 的 name: 或 export 推出的顯示名(同一件事的另一支,判法較嚴)。
+          node scripts/check-story-linkto-targets.mjs --check
+          node scripts/test-check-story-linkto-targets.mjs
+          # 每個公開元件都有展示 / 設計規格 / 設計原則三層 story(--check 不寫報告檔)。
+          node scripts/check-three-layer-stories.mjs --check
+          node scripts/test-check-three-layer-stories.mjs
+          # 列 / 項目宿主裡不得手刻行內動作鈕(patterns/element-anatomy/inline-action.spec.md)。
+          node scripts/inline-action-hand-craft-invariant.mjs
+          node scripts/inline-action-hand-craft-invariant.mjs --selftest
+          # InlineEdit 多行 view 與 Textarea edit 逐尺寸同一個 py token、uiSize.css 公式含 −1px 邊框修正(read↔edit 零跳)。
+          node scripts/inline-edit-view-geometry-invariant.mjs
+          node scripts/test-inline-edit-view-geometry-invariant.mjs
+          # className 不寫裸 px-loose / py-tight 等(Tailwind 沒註冊、產不出 CSS),一律 [var(--layout-space-*)]。
+          node scripts/layout-space-utility-invariant.mjs
+          node scripts/test-layout-space-utility-invariant.mjs
+          # 工作樹沒有暫存殘留、頂層目錄都有宣告用途、symlink 只有宣告過的、相同內容的檔有宣告(repository-hygiene-policy.json);
+          # future-reserved 的複查日期一到就紅(現行唯一一筆是 2027-02-20),這是那條規則的用意 —— 2026-11-02 那次到期時它只在夜間跑,PR 沒擋(A121-F8)。
+          node scripts/repository-hygiene-invariant.mjs --profile=authority --check
+          node scripts/test-repository-hygiene-invariant.mjs
+          # 四個狀態元件的進度 / 步驟填色用 --info,不混 --primary(color.spec.md「Status」段)。
+          node scripts/status-color-invariant.mjs
+          node scripts/test-status-color-invariant.mjs
+          # 同一份「只在夜間可達」清單裡刻意沒接的(2026-11-20 逐支在 HEAD 上跑過;接紅閘等於讓每個 PR 一起紅,所以紅的先留在夜間、原因記在這裡):
+          #   在 HEAD 上紅 —— exemption-expiry-invariant(真實時鐘下 11 筆過期 / 無主的豁免標記,修法在 WP-24);
+          #     checkbox-group-handcraft-invariant(3 筆手刻 option-group,修法在 WP-17、接線在 WP-21b)。
+          #   要瀏覽器 —— audit-a11y、audit-consumer-a11y。要網路或本機環境 —— check-branch-protection(GitHub API)、check-src-republish(npm registry)、
+          #     check-codex-freshness(讀寫本機 ~/.codex 設定)。
+          #   工具 / 報告,不是閘 —— audit-hook-quality(寫 runtime 報告)、consolidate-audit-material、dispatch-audit-dims、prepare-deep-audit-run、
+          #     run-gate-meta-tests(夜間執行器本身);governance-check 是裝在 consumer repo 的閘,check-plugin-installed 是 consumer 安裝後的提示。
+          #   audit-coverage-matrix 的主判定本來就在下面「Focused governance…」那一步經 governance-build-graph --check
+          #     → generate-governance-metadata.mjs 跑(gate-reachability 看不到資料驅動的呼叫)。
 
       - name: Cloud portability gates (provider config survivability)
         run: |
@@ -2454,6 +2517,15 @@ jobs:
           npm run --silent test:waived-self-review
           npm run --silent test:governance-evidence-control-plane
           npm run --silent test:governance-control-plane
+
+      # 2026-11-20(knowledge-prune WP-21):原本只在夜間 harness 跑、比較慢的靜態閘放這個平行 job,不拉長 verify-static 的關鍵路徑
+      # (同一批其他 18 支在 verify-static「Static gates that used to run only nightly」)。先跑主判定,再跑紅面。
+      - name: Slow static gates that used to run only nightly
+        run: |
+          # 每個 token 要嘛有人用、要嘛落在分類表 token-registry.json 的保留類別且在 baseline 裡(tokens/orphan-tokens.spec.md)。
+          # 本機主判定約 13 秒;紅面約 66 秒(注入真孤兒 / 只被自訂屬性讀的名字 / 拿掉分類表一類,各自必紅)。
+          node scripts/audit-orphan-tokens.mjs --check
+          node scripts/test-audit-orphan-tokens.mjs
 
   container-closed-git:
     name: Closed git inside the pinned Playwright container(Visual Regression 的執行環境)
