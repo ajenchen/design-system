@@ -761,11 +761,19 @@ try {
   rmSync(join(mirror, 'apps/template/src/node_modules'), { recursive: true, force: true })
   console.log('✅ negative: nested build/node_modules basenames cannot escape exhaustive source replay')
 
-  const warningOnlyPath = join(mirror, 'apps/template/src/WarningOnly.stories.tsx')
-  writeFileSync(warningOnlyPath, 'export const WarningOnly = { args: { now: Date.now() } }\n')
-  expectFailure('GOV-CONTENT-003')
-  rmSync(warningOnlyPath)
-  console.log('✅ negative: warning-only hook diagnostics are visible and blocking in strict replay')
+  // check_story_determinism.sh 2026-11-21(knowledge-prune WP-16)由 diagnostic 改成 governance-context-or-block:
+  // 重播命中從 GOV-CONTENT-003(diagnostic 的 stderr)變成 GOV-CONTENT-001(擋),仍是 BLOCKER。
+  const determinismPath = join(mirror, 'apps/template/src/DeterminismBypass.stories.tsx')
+  writeFileSync(determinismPath, 'export const DeterminismBypass = { args: { now: Date.now() } }\n')
+  const determinismBlocked = expectFailure('GOV-CONTENT-001')
+  if (!determinismBlocked.report.diagnostics.some((d) => d.ruleId === 'GOV-CONTENT-001'
+    && d.severity === 'BLOCKER'
+    && String(d.message).includes('DeterminismBypass.stories.tsx')
+    && String(d.message).includes('check_story_determinism.sh'))) {
+    throw new Error(`story determinism replay was not attributed to check_story_determinism.sh:${JSON.stringify(determinismBlocked.report.diagnostics)}`)
+  }
+  rmSync(determinismPath)
+  console.log('✅ negative: story determinism blocks in strict replay as GOV-CONTENT-001 BLOCKER')
 
   const missingAnchorPath = join(mirror, 'apps/template/src/MissingAnchor.tsx')
   writeFileSync(missingAnchorPath, `import { Button } from '@qijenchen/design-system'\nexport const MissingAnchor = () => <Button>Save</Button>\n`)

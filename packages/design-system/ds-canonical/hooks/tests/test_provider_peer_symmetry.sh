@@ -57,9 +57,10 @@ for pair in "alpha beta" "beta alpha"; do
   record "$([ "$rc" = "0" ] && [ ! -s "$TMP_ROOT/self.err" ] && echo 1 || echo 0)" "${self}→${peer} self CLI is not inverted into peer gate"
 
   payload=$(jq -nc --arg cmd "git commit -m '$peer collab'" '{hook_event_name:"PreToolUse",tool_name:"Bash",tool_input:{command:$cmd}}')
+  # 2026-11-21 knowledge-prune WP-16 起缺 marker 會擋(exit 2,理由在 stderr);改版前是 exit 0 + 模型看不到的 stderr
   printf '%s' "$payload" | bash "$COLLAB_HOOK" >/dev/null 2>"$TMP_ROOT/collab.err"
   rc=$?
-  record "$([ "$rc" = "0" ] && grep -q "self=$self,peer=$peer" "$TMP_ROOT/collab.err" && echo 1 || echo 0)" "${self}→${peer} collaboration marker is dynamic"
+  record "$([ "$rc" = "2" ] && grep -q "self=$self,peer=$peer" "$TMP_ROOT/collab.err" && echo 1 || echo 0)" "${self}→${peer} collaboration marker is dynamic"
 
   transcript="$TMP_ROOT/$self-$peer.jsonl"
   printf '%s\n' \

@@ -28,7 +28,7 @@
             "kind": "hook",
             "hook": "check_codex_collab_5step.sh",
             "runtime": "bash",
-            "outputMode": "diagnostic",
+            "outputMode": "governance-context-or-block",
             "reviewSkill": "codex-collab",
             "requires": [
               "peer-review-binding"
@@ -203,7 +203,7 @@
             "kind": "hook",
             "hook": "check_story_determinism.sh",
             "runtime": "bash",
-            "outputMode": "diagnostic"
+            "outputMode": "governance-context-or-block"
           }
         ]
       },

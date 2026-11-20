@@ -58,7 +58,7 @@
     },
     {
       "hook": "check_story_determinism.sh",
-      "reason": "path-agnostic *.stories.tsx 寫入哨(裸 new Date()/Date.now/Math.random → warn + @nondeterministic-ok escape);fork apps 自有 stories 同受換日 flake 之害,規則自包無 DS-repo 依賴。"
+      "reason": "path-agnostic *.stories.tsx 寫入哨(裸 new Date()/Date.now/Math.random → 擋 exit 2 + 逐行 @nondeterministic-ok escape);fork apps 自有 stories 同受換日 flake 之害,規則自包無 DS-repo 依賴。outputMode 2026-11-21(knowledge-prune WP-16)由 diagnostic 改成 governance-context-or-block:寫入當下擋、理由進模型,consumer CI 重播命中判 GOV-CONTENT-001 BLOCKER(原 -003)。"
     },
     {
       "hook": "check_dynamic_tailwind_class.sh",
