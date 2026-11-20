@@ -5,6 +5,7 @@ import { Coachmark } from './coachmark'
 import { MediaGradient } from './coachmark-story-helpers'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -136,13 +137,14 @@ export const Inspector: Story = {
         <div>
           <H3>預覽</H3>
           <div className="flex flex-col gap-4 items-start">
-            <div className="flex flex-wrap gap-3 p-3 bg-muted rounded-md text-caption">
+            {/* 五個開關是同一組選項 → <CheckboxGroup orientation="horizontal">,水平間距由它自帶(checkbox.spec.md「Orientation」),不手刻 flex-wrap gap */}
+            <CheckboxGroup orientation="horizontal" aria-label="檢閱器開關" className="p-3 bg-muted rounded-md text-caption">
               <Toggle label="hasImage" value={hasImage} onChange={setHasImage} />
               <Toggle label="hasStep" value={hasStep} onChange={setHasStep} />
               <Toggle label="hasPrev" value={hasPrev} onChange={setHasPrev} />
               <Toggle label="hasSkip" value={hasSkip} onChange={setHasSkip} />
               <Toggle label="isLastStep" value={isLast} onChange={setIsLast} />
-            </div>
+            </CheckboxGroup>
             <Coachmark
               open={open}
               onOpenChange={setOpen}

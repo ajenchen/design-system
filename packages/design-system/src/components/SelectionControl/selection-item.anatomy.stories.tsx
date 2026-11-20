@@ -11,6 +11,7 @@ import { Mail, Folder, Shield } from 'lucide-react'
 import { SelectionItem } from './selection-item'
 import { samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -303,11 +304,12 @@ function SelectionInspector() {
 
         <div>
           <H3>Props</H3>
-          <div className="flex flex-col gap-2">
-            {/* DS Checkbox 取代原生 checkbox(稽核 L054「有元件就用元件」) */}
+          {/* DS Checkbox 取代原生 checkbox(稽核 L054「有元件就用元件」);兩個開關是同一組選項 → <CheckboxGroup>,
+              列距由 SelectionItem py 給、外層不加 gap(checkbox.spec.md「Canonical 鐵律:零外部 gap」) */}
+          <CheckboxGroup aria-label="Props">
             <Checkbox size="sm" checked={hasDesc} onCheckedChange={(v) => setHasDesc(v === true)} label={<span className="font-mono">description</span>} />
             <Checkbox size="sm" checked={disabled} onCheckedChange={(v) => setDisabled(v === true)} label={<span className="font-mono">disabled</span>} />
-          </div>
+          </CheckboxGroup>
         </div>
 
         <div>

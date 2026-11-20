@@ -85,6 +85,7 @@ export const UsageGuidance: Story = {
                 兩個之間 = 規則 3 parallel = loose(layoutSpace.spec.md「跨範疇 + parallel」;2026-10-27 Q6 甲)。
                 勾選框 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」:表單欄位 → 跟在後面的表單按鈕列,同 Field 展示「表單驗證」)。 */}
             <div className="border border-border rounded-md p-[var(--layout-space-loose)]">
+              {/* @checkbox-group-handcraft-ok: checkbox.spec.md:49「單一同意」—— 兩個各自獨立的單一同意勾選框,不是同一組選項,所以不包 CheckboxGroup(理由見上方註解) */}
               <div className="flex flex-col gap-[var(--layout-space-loose)]">
                 <Checkbox
                   label="我同意服務條款與隱私政策"

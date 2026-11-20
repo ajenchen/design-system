@@ -523,11 +523,12 @@ export const StateBehavior = {
 
       {/* Horizontal Group */}
       <ExampleSection title="水平排列 — Item 之間 gap-4（16px）">
-        <div className="flex gap-4 border border-dashed border-divider rounded-md p-2">
+        {/* 水平間距由 CheckboxGroup orientation="horizontal" 自帶(checkbox.spec.md「Orientation」),不手刻 flex gap-4 */}
+        <CheckboxGroup orientation="horizontal" className="border border-dashed border-divider rounded-md p-2">
           <Checkbox label="Email" />
           <Checkbox label="SMS" />
           <Checkbox label="Push" />
-        </div>
+        </CheckboxGroup>
       </ExampleSection>
 
       {/* Multiline alignment */}

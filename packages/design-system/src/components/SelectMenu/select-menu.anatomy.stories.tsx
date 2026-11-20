@@ -11,6 +11,7 @@ import { Mail, MessageSquare, Smartphone } from 'lucide-react'
 import { SelectMenu, type SelectMenuOption, type SelectMenuGroupConfig } from './select-menu'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
@@ -372,11 +373,12 @@ function SelectMenuInspector() {
 
         <div>
           <H3>Mode</H3>
-          <div className="flex flex-col gap-2">
+          {/* 三個功能開關是同一組選項 → <CheckboxGroup>,列距由 SelectionItem py 給、外層不加 gap(checkbox.spec.md「Canonical 鐵律:零外部 gap」) */}
+          <CheckboxGroup aria-label="Mode">
             <Checkbox size="sm" checked={multiple} onCheckedChange={(v) => handleMultipleChange(v === true)} label={<span className="font-mono">multiple</span>} />
             <Checkbox size="sm" checked={searchable} onCheckedChange={(v) => setSearchable(v === true)} label={<span className="font-mono">searchable</span>} />
             <Checkbox size="sm" checked={creatable} onCheckedChange={(v) => setCreatable(v === true)} label={<span className="font-mono">creatable</span>} />
-          </div>
+          </CheckboxGroup>
         </div>
 
         <div>
