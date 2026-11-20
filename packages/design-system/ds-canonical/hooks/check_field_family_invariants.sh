@@ -3,23 +3,31 @@
 #
 # Merges PreToolUse hooks(原各檔已 retire,合併入此)— 共 6 條 sub-rules:
 #   A.1 naked row-mode propagation(原 check_naked_row_mode_propagation,P0 BLOCKER)
-#   A.2 FieldControlGroup wrapper direct child(原 check_field_control_group_direct_child,P1 WARN)
+#   A.2 FieldControlGroup wrapper direct child(原 check_field_control_group_direct_child;2026-11-21 起 P0 BLOCKER)
 #   A.3 Field state ring SSOT(原 check_field_state_token_consume,P0 BLOCKER;4 sub-rules ——
 #       A.3.3「欄位開著的框」於 2026-11-13 改寫、A.3.4「data-field-open 記號」同日新增)
-#   A.4 disabled placeholder color(原 check_disabled_placeholder_color,P1 context)
+#   A.4 disabled placeholder color(原 check_disabled_placeholder_color;2026-11-21 起 P0 BLOCKER,M24)
 #   A.5 _Group child fieldCtx.id 隔離(2026-05-31 折入,M4 AR34 regression detector,P0 BLOCKER)
 #   A.6 空值顯示 SSOT(2026-07-08 user 拍板半形 hyphen,P0 BLOCKER)
 #
 # Why merge:皆 Field 家族 invariant,共用 INPUT parsing + Edit/Write filter pattern,
 #   分散在 4 個 hook 是「散裝 SSOT」(M17 + Anthropic ≤ 15 hook best practice 違反)。
 #
-# Output precedence:BLOCK(2,stderr)> WARN(0,單一 governanceContext)> silent(0)。
+# Output precedence:BLOCK(2,stderr)> silent(0)。
+#   2026-11-21 A.2 / A.4 由「只提醒」升為擋(knowledge-prune D4-02 / WP-15b:SSOT invariant 不得只提醒,
+#   governance/memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md),本檔已沒有只提醒的規則;
+#   exit 0 帶輸出的路徑只剩收容非預期輸出(仍包成 governanceContext,不靜默丟掉),所以 outputMode 維持 governance-context-or-block。
+#   A.2 / A.4 只看這次寫入的內容(NEW_CONTENT),不會因為檔內既有的寫法卡住無關的編輯
+#   (不用 lib/_added_lines.sh 的「新增行」:那支要讀寫完的檔,只能在 PostToolUse 用;本 hook 是 PreToolUse)。
+#   升擋前全樹重放(a05da20a,499 個 .ts / .tsx 逐檔整檔寫入):A.2 0 筆、A.4 1 筆(AgentPanel 訊息輸入盒,見 A.4 段)。
 #
 # Per-rule allowlist(各自獨立):
 #   A.1: `// @naked-row-mode-allow: <reason>`
-#   A.2: `// @fcg-wrapper-allow: <reason>` 或檔頭
+#   A.2: 逐行 —— 寫在該 wrapper 那一行,或緊接在它上一行的純註解行(JSX 寫 `{/* @fcg-wrapper-allow: <reason> */}`);
+#        整檔 —— 檔頭前 5 行的檔案註解行 `// @fcg-wrapper-allow: <reason>`(Write 看寫入內容、Edit 看磁碟原檔)。
+#        格式比照 `@layout-space-magic-ok`,冒號後要有理由。
 #   A.3: `// @field-state-ring-allow: <reason>`
-#   A.4: `// @disabled-color-allow: <reason>`
+#   A.4: `// @disabled-color-allow: <reason>`(寫入內容任一行)
 #   A.5: `// @group-fieldctx-allow: <reason>`
 #   A.6: `// @empty-display-allow: <reason>`
 
@@ -164,33 +172,56 @@ EOF
     ;;
 esac
 
-# ── A.2 FieldControlGroup wrapper direct child(P1 WARN)────────────────────────
+# ── A.2 FieldControlGroup wrapper direct child(P0 BLOCKER,2026-11-21 由 P1 WARN 升級)─────────
+# 豁免(2026-11-21 收成逐行 + 檔頭兩種,格式比照 `@layout-space-magic-ok`;冒號後要有理由):
+#   逐行 = 標記在 wrapper 那一行,或緊接在它上一行、而且那一行是純註解行(trim 後以 //、{/*、/*、* 開頭)
+#          —— JSX 的 `<div …>` 行尾不能放 `//`(會變成畫面上的文字),所以要支援「上一行」;
+#          上一行若是程式碼,它行尾的標記只管它自己那一行,不往下串。
+#   檔頭 = 檔案前 5 行裡的檔案註解行(trim 後以 //、/*、* 開頭;JSX 的 {/* … */} 不是檔頭註解)= 整檔豁免。
+#          Write 看寫入內容的前 5 行(寫完的整份檔);Edit / MultiEdit 只送改動的片段,片段的前幾行不是檔頭 →
+#          看磁碟原檔的前 5 行。
+#   改前是「寫入內容任一處出現標記就整條規則跳過」:一個標記會連同一次寫入裡其他 wrapper 一起放行,
+#   而且比本檔頭與訊息寫的「行尾 / 檔頭」寬 —— 升擋時收回到文件寫的兩種。
+A2_MARK_AWK='@fcg-wrapper-allow:[ \t]*[^ \t*]'
 case "$FILE_PATH" in
   *.tsx)
-    if grep -q '<FieldControlGroup' <<<"$NEW_CONTENT" \
-       && ! grep -q '@fcg-wrapper-allow' <<<"$NEW_CONTENT"; then
-      SUSPECT=$(printf '%s' "$NEW_CONTENT" | awk '
-        /<FieldControlGroup/ { inFCG=1; next }
-        /<\/FieldControlGroup>/ { inFCG=0; next }
+    A2_HEADER_ALLOW=0
+    if [ "$TOOL" = "Write" ]; then
+      A2_HEADER_SOURCE="$NEW_CONTENT"
+    else
+      A2_HEADER_SOURCE="$FILE_CONTENT"
+    fi
+    # 讀完整份輸入再判(不在第 5 行就 exit):pipefail 下 awk 提早結束會讓 printf 收到 SIGPIPE,整條管線變成失敗
+    if printf '%s\n' "$A2_HEADER_SOURCE" | awk -v re="$A2_MARK_AWK" 'NR <= 5 && $0 ~ re && $0 ~ /^[[:space:]]*(\/\/|\/\*|\*)/ { found = 1 } END { exit(found ? 0 : 1) }'; then
+      A2_HEADER_ALLOW=1
+    fi
+    if [ "$A2_HEADER_ALLOW" = 0 ] && grep -q '<FieldControlGroup' <<<"$NEW_CONTENT"; then
+      SUSPECT=$(printf '%s' "$NEW_CONTENT" | awk -v re="$A2_MARK_AWK" '
+        /<FieldControlGroup/ { inFCG=1; prev=$0; next }
+        /<\/FieldControlGroup>/ { inFCG=0; prev=$0; next }
         inFCG && /^[[:space:]]*<(div|span)[[:space:]>]/ {
-          if ($0 !~ /display:[[:space:]]*contents/ && $0 !~ /@fcg-wrapper-allow/) print NR ":" $0
+          prevAllows = (prev ~ re && prev ~ /^[[:space:]]*(\/\/|[{]?\/\*|\*)/)
+          if ($0 !~ /display:[[:space:]]*contents/ && $0 !~ re && !prevAllows) print NR ":" $0
         }
+        { prev = $0 }
       ')
       if [ -n "$SUSPECT" ]; then
         cat >&2 <<EOF
 
-┄┄┄ A.2 check_field_family_invariants — FieldControlGroup wrapper WARN ┄┄┄
+┄┄┄ A.2 check_field_family_invariants — FieldControlGroup wrapper BLOCKER ┄┄┄
 
-[P1] ${FILE_PATH}
-偵測到 FieldControlGroup 內有 \`<div>\` / \`<span>\` wrapper(可能破壞 CSS \`[&>*]\` variants):
+[P0] ${FILE_PATH}
+偵測到 FieldControlGroup 內有 \`<div>\` / \`<span>\` wrapper(會破壞 CSS \`[&>*]\` variants):
 ${SUSPECT}
 
 修法 3 擇 1:
   1. 移除 wrapper,Field control 直接是 FieldControlGroup direct child
   2. 透過 prop forward className(eg \`<FilterValuePicker className="flex-1 min-w-0">\`)
-  3. wrapper 用 \`display:contents\` / 加 \`// @fcg-wrapper-allow: <reason>\`
+  3. wrapper 用 \`display:contents\`
+例外(逐行):在該 wrapper 上一行加 \`{/* @fcg-wrapper-allow: <reason> */}\`(或同一行);整檔:檔頭前 5 行加 \`// @fcg-wrapper-allow: <reason>\`
 
 EOF
+        record_worst 2
       fi
     fi
     ;;
@@ -375,7 +406,12 @@ EOF
     ;;
 esac
 
-# ── A.4 disabled placeholder color(P1 context,exit 0 不 block)─────────────────
+# ── A.4 disabled placeholder color(P0 BLOCKER,2026-11-21 由 P1 context 升級;M24)─────────────────
+# 規則:disabled > muted > emphasis(M24;tokens/color/color.spec.md「Disabled state precedence canonical」)。
+# 偵測只看這次寫入的內容:寫了 `placeholder:text-fg-muted` 卻沒有任何 disabled 覆寫,或 `<span text-fg-muted>{placeholder}` 不分 mode。
+# 已知限制:hook 看不出「這個欄位根本不會 disabled」—— 升擋前全樹重放唯一的命中就是這種:
+#   components/AgentPanel/agent-panel.tsx 訊息輸入盒的 textarea(a05da20a 量時第 1423 行的 'placeholder:text-fg-muted'),
+#   該 textarea 沒有 disabled 屬性。之後動到那一行(或整檔寫入)時,在寫入內容裡加 `// @disabled-color-allow: 此輸入盒沒有 disabled 狀態`。
 if ! grep -q '@disabled-color-allow' <<<"$NEW_CONTENT"; then
   SUSPECT_DP=""
   if echo "$NEW_CONTENT" | grep -E "placeholder:text-fg-muted" >/dev/null \
@@ -389,16 +425,16 @@ if ! grep -q '@disabled-color-allow' <<<"$NEW_CONTENT"; then
   if [ -n "$SUSPECT_DP" ]; then
     cat >&2 <<EOF
 
-┄┄┄ A.4 check_field_family_invariants — disabled placeholder color WARN ┄┄┄
+┄┄┄ A.4 check_field_family_invariants — disabled placeholder color BLOCKER ┄┄┄
 
-[P1] ${FILE_PATH}
+[P0] ${FILE_PATH}
 ${SUSPECT_DP}
 修法:disabled:placeholder:text-fg-disabled / group-data-[field-mode=disabled]/field:placeholder:text-fg-disabled / JSX 條件
 詳:tokens/color/color.spec.md「Disabled state precedence canonical」/ M24
-例外:行尾 \`// @disabled-color-allow: <reason>\`
+例外(這個欄位確實不會 disabled 之類):行尾 \`// @disabled-color-allow: <reason>\`
 
 EOF
-    # A.4 維持非阻擋 warning,由最外層聚合成 governanceContext。
+    record_worst 2
   fi
 fi
 

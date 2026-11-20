@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { cp, link, lstat, mkdir, mkdtemp, open, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { spawn, spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
@@ -717,16 +718,26 @@ test('runner normalizes contained paths, fans out per-file content, and translat
     }
   }
 
-  const sizePayload = {
-    hook_event_name: 'PreToolUse', tool_name: 'Edit',
+  // check_file_size_budget.sh 2026-11-21 起吃 proposed-text-v1(runner 算好的寫完內容):payload 必須是該 provider
+  // 原生、真的套得上的寫入(Codex 的寫入 transport 只有 apply_patch)。兩邊都寫成「item-anatomy.spec.md 不變長」:
+  // 超過 budget、沒超過 transition cap → 走只提醒的那條 transport。
+  const sizeTarget = 'packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md'
+  const sizeText = readFileSync(resolve(repoRoot, sizeTarget), 'utf8')
+  const sizeLines = sizeText.split('\n')
+  const sizeUniqueLine = sizeLines.find((line) => line.trim() && sizeLines.filter((other) => other === line).length === 1)
+  assert.ok(sizeUniqueLine, 'item-anatomy.spec.md needs one unique line for the apply_patch fixture')
+  const claudeSizePayload = {
+    hook_event_name: 'PreToolUse', tool_name: 'Write',
+    tool_input: { file_path: sizeTarget, content: sizeText },
+  }
+  const codexSizePayload = {
+    hook_event_name: 'PreToolUse', tool_name: 'apply_patch',
     tool_input: {
-      file_path: 'packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md',
-      old_string: 'legacy',
-      new_string: 'x',
+      command: ['*** Begin Patch', `*** Update File: ${sizeTarget}`, '@@', `-${sizeUniqueLine}`, `+${sizeUniqueLine}`, '*** End Patch'].join('\n'),
     },
   }
-  const claude = run('claude', 'check_file_size_budget.sh', sizePayload)
-  const codex = run('codex', 'check_file_size_budget.sh', sizePayload)
+  const claude = run('claude', 'check_file_size_budget.sh', claudeSizePayload)
+  const codex = run('codex', 'check_file_size_budget.sh', codexSizePayload)
   assert.equal(claude.status, 0)
   assert.equal(codex.status, 0)
   assert.equal(JSON.parse(claude.stdout).hookSpecificOutput.hookEventName, 'PreToolUse')

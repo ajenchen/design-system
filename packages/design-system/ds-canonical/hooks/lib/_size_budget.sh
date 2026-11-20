@@ -1,7 +1,8 @@
 #!/bin/bash
 # _size_budget.sh —— 治理檔大小上限的唯一一張表,連同量法(helper,被 source;本身不是 hook)。
 #
-# 讀者:check_file_size_budget.sh(PreToolUse,寫入當下提醒)。Stop hook 的上限清單也要改接本檔 ——
+# 讀者:check_file_size_budget.sh(PreToolUse,寫入當下判:寫完超過 TRANSITION 而且這次變長 → 擋,其餘超標只提醒)。
+#       Stop hook 的上限清單也要改接本檔 ——
 #       接完之後,全庫各檔(instruction entry / memory / rules / spec / SKILL)的上限只剩這一張表。
 #       外部文件寫「check_file_size_budget.sh 的 case 表」指的就是這裡的 governance_size_budget。
 # 不在這裡的門檻:開場檔「總」行數、hook 數、memory 索引條數 → session_start_governance_check.sh(檔頭 + Check 1 / 7 / 8);
@@ -24,8 +25,8 @@
 #   governance_size_oversized_cells <檔案> <N>
 #       每個第 2 欄超過 N 字的 M-rule 列印一行 `<M-ID><TAB><字數>`(GFM 的 `\|` 是格內的字,不切格)。
 #
-# 全部都只是「預算」:超標要不要擋由呼叫端決定(check_file_size_budget.sh 檔頭記了它目前不擋的理由,
-# 以及這和 user 哪一條永久指令不一致)。
+# 本檔只給數字與量法;超標要不要擋由呼叫端決定(check_file_size_budget.sh 檔頭:2026-11-21 起寫完超過 TRANSITION
+# 而且這次變長就擋,檔頭 `@size-budget-allow: <reason>` 整檔豁免;依據與沿革也記在那裡)。
 
 # 路徑事實(provider / canonical roots)一律經 _provider_paths.sh 由 registry 解析;呼叫端還沒 source 就在這裡補。
 if ! declare -F governance_provider_string_field >/dev/null 2>&1; then
@@ -56,7 +57,7 @@ governance_size_budget() {
   case "$rel" in
     governance/memory/*.md)
       max_lines="$(_governance_size_memory_max_lines)" || return 2
-      # 呼叫端只提醒;這一類另有 CI 會擋,label 照實講出來,免得「size overruns never block the edit」被讀成「超過也沒關係」。
+      # BUDGET = TRANSITION = contract 上限:寫完超過而且變長 → 呼叫端擋;沒變長只提醒。這一類另有 CI 會擋,label 照實講出來。
       _governance_size_emit "$max_lines" "$max_lines" lines "memory file(CI fails above this cap: scripts/validate-memory-contract.mjs)"
       return 0 ;;
     # Super-foundational SSOT spec(item-anatomy = Family 1+2 跨 10+ 消費者 SSOT,唯一例外)

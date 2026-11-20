@@ -340,7 +340,7 @@ DatePicker **不是**例外 —— 它的日曆格線有左緣,footer 的預設 
 
 **禁止**:`w-[640px]` 單獨用(❌ 斷鏈)/ `flex flex-col h-full` 無 `min-h-0`(❌ flex item 不 shrink,scroll 失效)。
 
-**DS-wide consumer 必檢點**:`grep '<PopoverContent\|<HoverCardContent\|<DialogContent\|<SheetContent'` 內第一層 wrapper 是否含 `flex flex-col h-full`(若該 panel 用 SurfaceBody)。Hook `check_pattern_invariants.sh` C.1(原 `check_overlay_panel_scroll_chain.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)write-time 機械化警示(P1 WARN stderr,僅掃本次 edit fragment 不 block);DS-wide 全掃(上述 grep 必檢點)走 audit。
+**DS-wide consumer 必檢點**:`grep '<PopoverContent\|<HoverCardContent\|<DialogContent\|<SheetContent'` 內第一層 wrapper 是否含 `flex flex-col h-full`(若該 panel 用 SurfaceBody)。Hook `check_pattern_invariants.sh` C.1(原 `check_overlay_panel_scroll_chain.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)write-time 擋(2026-11-21 起 P0 exit 2,僅掃本次寫入的內容;例外 `// @scroll-chain-allow: <reason>`);DS-wide 全掃(上述 grep 必檢點)走 audit。
 
 ---
 

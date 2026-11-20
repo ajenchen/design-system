@@ -122,7 +122,9 @@ for (const hook of new Set(
 
 // Lock the high-risk modes that exercise both neutral transports and genuine policy blocking.
 const requiredModes = new Map([
-  ['check_spec_class_drift.sh', 'governance-context'],
+  // 2026-11-21 WP-15b:spec_class_drift 由只提醒升為擋(governance-context → governance-context-or-block);
+  // governance-context 這條 transport 仍由下面 auto_regen_ds_barrel / inject_deploy_url / session_start 三支鎖住。
+  ['check_spec_class_drift.sh', 'governance-context-or-block'],
   ['check_audit_post_report_validator.sh', 'governance-context-or-block'],
   ['auto_regen_ds_barrel.sh', 'governance-context'],
   ['stop_self_audit.sh', 'governance-decision'],

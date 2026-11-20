@@ -1,5 +1,12 @@
 #!/bin/bash
-# Tests for check_pattern_invariants.sh — merged 4 sub-rules(C.1-C.4)
+# Tests for check_pattern_invariants.sh — merged sub-rules(C.1-C.7)
+#
+# C.1 / C.2 於 2026-11-21(WP-15b,knowledge-prune D4-02)由提醒升為擋,兩面對照:
+#   C.1 該擋 = 固定寬 root 缺 flex 鏈 / min-w-[…] 也算 / 浮層 Content 裡的固定寬 root
+#       該放 = flex 鏈齊 / 豁免 / shadow-[…] 不是寬度(故事卡片誤判的回歸)/ div 與 SurfaceBody 之間隔著浮層 Content(Portal 外)
+#   C.2 該擋 = inline action 的直接排版容器 gap-3 / 隔著 DropdownMenu、*Trigger asChild、Fragment 仍是同一個容器 / cn(…) 裡的 gap
+#       該放 = gap-2 / SSOT 宿主 / 豁免 / 同檔其他跟 inline action 無關的 gap(AgentPanel / DataTable / Tabs 誤判的回歸)/
+#              中間隔著別的元件(ItemSuffix 自己排版)
 
 set -u
 
@@ -78,7 +85,9 @@ expect_exit() {
 
 echo "=== C.1 overlay panel scroll chain ==="
 
-# 1. SurfaceBody + wrapper without flex flex-col h-full → governance context(exit 0)
+C1="overlay scroll chain BLOCKER"
+
+# 1. SurfaceBody + wrapper without flex flex-col h-full → 擋(2026-11-21 前是 exit 0 + governance context)
 run_hook "/r/src/app/foo.tsx" '
 function Panel() {
   return (
@@ -89,7 +98,7 @@ function Panel() {
   )
 }
 '
-expect_exit "C.1.1 SurfaceBody w/o flex chain → governance context" 0 "overlay scroll chain"
+expect_exit "C.1.1 SurfaceBody w/o flex chain → BLOCK" 2 "$C1"
 
 # 2. SurfaceBody + correct flex chain → silent
 run_hook "/r/src/app/foo.tsx" '
@@ -110,14 +119,72 @@ function Panel() { return <div className="w-[640px]"><SurfaceBody/></div> }
 '
 expect_exit "C.1.3 allowlist → silent" 0 ""
 
+# 該放:shadow-[…] 不是寬度(2026-11-21 前子字串 /w-\[/ 把 sha-dow-[ 當固定寬;
+#   FileItem / header-canonical 兩支故事的卡片示意因此命中)
+run_hook "/r/packages/design-system/src/components/FileItem/file-item.principles.stories.tsx" '
+function Demo() {
+  return (
+    <div className="max-w-md flex flex-col rounded-lg border border-border bg-surface-raised shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+      <SurfaceBody>y</SurfaceBody>
+    </div>
+  )
+}
+'
+expect_exit "C.1.4 shadow-[…] 不算固定寬 → silent" 0 ""
+
+# 該放:div 與 SurfaceBody 之間隔著浮層 Content(Content 走 Portal,那個 div 不在 root → SurfaceBody 的鏈上)
+run_hook "/r/src/app/foo.tsx" '
+function Demo() {
+  return (
+    <div className="w-[640px]">
+      <Popover>
+        <PopoverContent>
+          <SurfaceBody>y</SurfaceBody>
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+'
+expect_exit "C.1.5 固定寬示範框 → Popover Content(Portal)→ SurfaceBody → silent" 0 ""
+
+# 該擋:浮層 Content 裡的固定寬 root 缺 flex 鏈(真正的違規形狀,上一格的對照組)
+run_hook "/r/src/app/foo.tsx" '
+function Demo() {
+  return (
+    <PopoverContent>
+      <div className="w-[640px]">
+        <SurfaceBody>y</SurfaceBody>
+      </div>
+    </PopoverContent>
+  )
+}
+'
+expect_exit "C.1.6 Content 裡的固定寬 root 缺 flex 鏈 → BLOCK" 2 "$C1"
+
+# 該擋:min-w-[…] 也算固定寬;開始標籤跨行照樣接起來判
+run_hook "/r/src/app/foo.tsx" '
+function Demo() {
+  return (
+    <div className="min-w-[320px] flex flex-col"
+      data-slot="panel">
+      <SurfaceBody>y</SurfaceBody>
+    </div>
+  )
+}
+'
+expect_exit "C.1.7 跨行開始標籤的 min-w-[…] 缺 h-full / min-h-0 → BLOCK" 2 "$C1"
+
 echo ""
 echo "=== C.2 inline-action canonical gap ==="
 
-# 4. components/ ItemInlineAction + gap-3 → governance context
+C2="inline-action gap BLOCKER"
+
+# 4. components/ ItemInlineAction + gap-3 → 擋(2026-11-21 前是 exit 0 + governance context)
 run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
 <div className="flex gap-3"><ItemInlineAction /></div>
 '
-expect_exit "C.2.1 gap-3 inline-action → WARN" 0 "inline-action gap"
+expect_exit "C.2.1 gap-3 inline-action → BLOCK" 2 "$C2"
 
 # 5. components/ ItemInlineAction + gap-2 → silent
 run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
@@ -130,6 +197,94 @@ run_hook "/r/packages/design-system/src/patterns/element-anatomy/item-anatomy.ts
 <div className="flex gap-3"><ItemInlineAction /></div>
 '
 expect_exit "C.2.3 SSOT host skip → silent" 0 ""
+
+# 該擋:隔著 DropdownMenu / *Trigger asChild(不產生 DOM)的 inline action,直接排版容器仍是外面那個 div
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+function Row() {
+  return (
+    <div className="flex items-center gap-1">
+      <ItemInlineAction />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <ItemInlineActionButton onClick={() => setOpen((v) => !v)} />
+        </DropdownMenuTrigger>
+      </DropdownMenu>
+    </div>
+  )
+}
+'
+expect_exit "C.2.4 隔著 DropdownMenu / Trigger asChild 的容器 gap-1 → BLOCK" 2 "$C2"
+
+# 該擋:Fragment 不產生 DOM;cn(…) 裡的 gap 也算
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+function Row({ dense }) {
+  return (
+    <span className={cn("inline-flex items-center", dense ? "gap-1" : "gap-4")}>
+      <>
+        <ItemInlineActionButton aria-label="編輯" />
+        <ItemInlineActionButton aria-label="刪除" />
+      </>
+    </span>
+  )
+}
+'
+expect_exit "C.2.5 Fragment 裡的 inline action,容器 cn(…) 帶 gap-1 → BLOCK" 2 "$C2"
+
+# 該擋:同一檔另有無關的 gap-1 時,真正違規的那個容器照擋(收窄只拿掉無關的 gap)
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+function Card() {
+  return (
+    <div className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1"><li>附件 A</li></ul>
+      <div className="flex items-center gap-3">
+        <ItemInlineAction />
+      </div>
+    </div>
+  )
+}
+'
+if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] && echo "$STDERR_TEXT" | grep -qF "$C2" \
+  && echo "$STDERR_TEXT" | grep -qF '(gap-3)' && ! echo "$STDERR_TEXT" | grep -qF '(gap-1)'; then
+  echo "  PASS  C.2.6 只報 inline action 的容器(gap-3),不報同檔無關的 gap-1"; PASS=$((PASS+1))
+else
+  echo "  FAIL  C.2.6 只報 inline action 的容器 (exit $EXIT)"
+  echo "$STDERR_TEXT" | sed 's/^/    /'
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - C.2.6"
+fi
+
+# 該放:同檔其他跟 inline action 無關的 gap(2026-11-21 前「寫入內容任一行 className 的 gap-1」都算:
+#   全樹重放 AgentPanel / DataTable / Tabs 三筆都是這種)
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+function Composer() {
+  return (
+    <div className="flex flex-col">
+      <div className="mb-2 flex flex-wrap gap-1">{attachments}</div>
+      <ul className="list-disc list-inside flex flex-col gap-1"><li>錯誤</li></ul>
+      <div className="flex items-center gap-2">
+        <ItemInlineAction />
+      </div>
+    </div>
+  )
+}
+'
+expect_exit "C.2.7 同檔無關的 gap-1、inline action 容器 gap-2 → silent" 0 ""
+
+# 該放:往外先碰到別的元件(ItemSuffix 自己負責排版)→ 不判
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+<div className="flex gap-4">
+  <ItemSuffix>
+    <ItemInlineAction />
+  </ItemSuffix>
+</div>
+'
+expect_exit "C.2.8 中間隔著 ItemSuffix → silent" 0 ""
+
+# 該放:豁免(早就有的 @inline-action-gap-allow,升擋沿用)
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+// @inline-action-gap-allow: 表格格子內與 cell padding 對齊,見 data-table.spec.md
+<div className="flex gap-3"><ItemInlineAction /></div>
+'
+expect_exit "C.2.9 @inline-action-gap-allow → silent" 0 ""
 
 echo ""
 echo "=== C.3 primitive wrapper padding (BLOCK) ==="
@@ -276,22 +431,21 @@ fi
 echo ""
 echo "=== Output contract ==="
 
-# Multiple independent warnings must be aggregated into one exact envelope.
+# C.1 + C.2 同時踩(2026-11-21 起都擋)→ 一次 exit 2、stdout 空、兩段訊息都在 stderr
 run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
 <div className="w-[640px] gap-3">
   <ItemInlineAction />
   <SurfaceBody>content</SurfaceBody>
 </div>
 '
-if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
-  && is_exact_context "overlay scroll chain" \
-  && printf '%s' "$STDOUT_TEXT" | jq -e \
-    '.governanceContext.message | contains("inline-action gap")' >/dev/null; then
-  echo "  PASS  O.1 two warnings → one exact PreToolUse context"
+if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+  && echo "$STDERR_TEXT" | grep -qF "$C1" \
+  && echo "$STDERR_TEXT" | grep -qF "$C2"; then
+  echo "  PASS  O.1 C.1+C.2 → one exit 2, both messages on stderr"
   PASS=$((PASS+1))
 else
-  echo "  FAIL  O.1 warning aggregation contract"
-  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - O.1 warning aggregation"
+  echo "  FAIL  O.1 C.1+C.2 block aggregation contract (exit $EXIT)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - O.1 block aggregation"
 fi
 
 run_raw '{'

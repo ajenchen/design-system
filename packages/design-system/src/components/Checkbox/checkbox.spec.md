@@ -20,7 +20,7 @@ benchmark:
   - Polaris Checkbox: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Checkbox
 ---
 
-<!-- 行數說明(不是豁免標記,沒有任何工具會「准」它):行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔(超過只提醒、不擋)。本檔偏長是因為持有兩段跨元件 SSOT:「與 Switch 的分界」與「Clamp 政策(Label / Description 行數)」;2026-07-14 knowledge-prune P2 的結論是「殘餘超標內容全是 canonical,再砍必動 meaning」。 -->
+<!-- 行數說明(不是豁免標記,沒有任何工具會「准」它):行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔(超過 budget 只提醒;寫完超過 transition cap 而且這次變長才擋)。本檔偏長是因為持有兩段跨元件 SSOT:「與 Switch 的分界」與「Clamp 政策(Label / Description 行數)」;2026-07-14 knowledge-prune P2 的結論是「殘餘超標內容全是 canonical,再砍必動 meaning」。 -->
 
 
 # Checkbox 設計原則

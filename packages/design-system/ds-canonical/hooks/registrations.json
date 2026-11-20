@@ -80,7 +80,8 @@
             "kind": "hook",
             "hook": "check_file_size_budget.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block",
+            "inputContract": "proposed-text-v1"
           }
         ]
       },
@@ -184,7 +185,7 @@
             "kind": "hook",
             "hook": "check_spec_class_drift.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block"
           },
           {
             "kind": "hook",

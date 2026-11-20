@@ -1,5 +1,10 @@
 #!/bin/bash
 # Smoke test for check_file_size_budget.sh
+#
+# 2026-11-21(WP-15b;J-4b490b9929)起:寫完超過 transition cap 而且這次讓檔變長 → exit 2 擋;
+# 沒變長、檔頭有 `@size-budget-allow: <reason>`、或只超 budget → 只提醒(exit 0 + governanceContext)。
+# run_hook "" <檔> = 把磁碟上的檔原樣再寫一次(Write,內容不變 = 沒變長):Tests 1–28 量的是「這個大小該不該出聲」;
+# 擋 / 不擋的兩面對照在 Tests 29 起。
 
 set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,9 +21,20 @@ run_hook() {
   local content="$1"
   local file_path="$2"
   local payload
-  payload=$(jq -n --arg fp "$file_path" --arg ct "$content" \
-    '{tool_name:"Write", tool_input:{file_path:$fp, content:$ct}}')
-  STDOUT=$(echo "$payload" | GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" \
+  if [ -z "$content" ] && [ -f "$file_path" ]; then
+    # 原樣再寫一次:--rawfile 保留結尾換行,行數才跟磁碟上的檔一致
+    payload=$(jq -n --arg fp "$file_path" --rawfile ct "$file_path" \
+      '{tool_name:"Write", tool_input:{file_path:$fp, content:$ct}}')
+  else
+    payload=$(jq -n --arg fp "$file_path" --arg ct "$content" \
+      '{tool_name:"Write", tool_input:{file_path:$fp, content:$ct}}')
+  fi
+  run_payload "$payload"
+}
+
+run_payload() {
+  local payload="$1"
+  STDOUT=$(printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" \
     GOVERNANCE_CORPUS_ROOT="${TEST_CORPUS:-$PROJECT_ROOT}" \
     GOVERNANCE_PROVIDER_REGISTRY="${TEST_REGISTRY:-packages/governance/canonical/providers.json}" \
     GOVERNANCE_PROVIDER="${TEST_PROVIDER:-codex}" GOVERNANCE_READ_ONLY=1 bash "$HOOK" 2>&1)
@@ -209,10 +225,10 @@ yes 'x' | head -591 > "$SKILLS_DIR/design-system-audit/SKILL.md"
 run_hook "" "$SKILLS_DIR/design-system-audit/SKILL.md"
 pass_if says '591 lines, over the transition cap 590'
 
-# Test 25:超標只提醒(exit 0),訊息就不准說得像會擋。三種訊息(超 budget / 超 transition cap / 單格)每一則
-# 都要自己講明只提醒,任何一則出現「hard cap」「Must reduce」就紅(反駁 #1:舊訊息印「hard cap N. Must reduce
+# Test 25:沒擋(exit 0)的提醒,訊息就不准說得像會擋。三種訊息(超 budget / 超 transition cap 但沒變長 / 單格)
+# 每一則都要自己講明這次沒擋,任何一則出現「hard cap」「Must reduce」就紅(反駁 #1:舊訊息印「hard cap N. Must reduce
 # before adding」卻 exit 0)。逐則看:取出 governanceContext.message,一行一則。
-ADVISORY_TEXT='advisory — size overruns never block the edit'
+ADVISORY_TEXT='this write is not blocked'
 advisory_only() {
   local msg
   [ "$EXIT" = "0" ] || return 1
@@ -222,7 +238,7 @@ advisory_only() {
   printf '%s\n' "$msg" | grep -qiE 'hard cap|must reduce' && return 1
   return 0
 }
-echo "Test 25a: over the transition cap(canonical SKILL.md 430 lines)→ advisory wording only"
+echo "Test 25a: over the transition cap but not growing(canonical SKILL.md 430 lines rewritten as-is)→ advisory wording only"
 run_hook "" "$SKILLS_DIR/release-notes/SKILL.md"
 pass_if advisory_only
 echo "Test 25b: over budget only(spec.md 350 lines)→ advisory wording only"
@@ -254,6 +270,115 @@ if [ "$EXIT" = "2" ] && printf '%s' "$STDOUT" | grep -qF 'budget lookup for .age
 echo "Test 28 (control for 26/27): same unknown provider + spec.md 350 lines → still measured and warned"
 TEST_PROVIDER=nonexistent run_hook "" "$TMP_PROJECT/specs/control.spec.md"
 pass_if says '350 lines (budget 300'
+
+# Tests 29 起:擋 / 不擋的兩面對照(2026-11-21 WP-15b)。一般 spec.md:budget 300 / transition cap 500。
+blocked() { [ "$EXIT" = "2" ] && printf '%s' "$STDOUT" | grep -qF -- "$1"; }
+BLOCKER='FILE-SIZE TRANSITION CAP BLOCKER'
+SPEC_DIR="$TMP_PROJECT/specs"
+spec_lines() { { echo '# Demo'; echo; echo '## 規格'; yes 'x' | head -$(( $1 - 3 )); }; }
+# 寫入內容先落成檔、再用 --rawfile 帶進 payload:`$(…)` 會吃掉結尾換行,行數就差一行
+WRITE_SRC="$TMP_PROJECT/write-src.md"
+run_write_from_src() {
+  run_payload "$(jq -n --arg fp "$1" --rawfile ct "$WRITE_SRC" '{tool_name:"Write", tool_input:{file_path:$fp, content:$ct}}')"
+}
+
+echo "Test 29: Write grows a 480-line spec.md to 520 lines → blocked, says how much it adds"
+spec_lines 480 > "$SPEC_DIR/grow.spec.md"
+spec_lines 520 > "$WRITE_SRC"
+run_write_from_src "$SPEC_DIR/grow.spec.md"
+pass_if blocked "$BLOCKER"
+pass_if blocked 'would be 520 lines after this write'
+pass_if blocked 'this write adds 40 lines'
+
+echo "Test 30 (control for 29): same 520-line content, file already 530 lines on disk(shrinks)→ not blocked, advisory"
+spec_lines 530 > "$SPEC_DIR/grow.spec.md"
+run_write_from_src "$SPEC_DIR/grow.spec.md"
+pass_if says 'it does not grow the file'
+
+echo "Test 31 (control for 29): growing write + file-level exemption in the header → not blocked, says why"
+spec_lines 480 > "$SPEC_DIR/grow.spec.md"
+{ echo '# Demo'; echo '<!-- @size-budget-allow: 這份 spec 收兩個元件的分界拍板紀錄,拆檔會斷掉 3 處錨點 -->'; spec_lines 520 | tail -n +2; } > "$WRITE_SRC"
+run_write_from_src "$SPEC_DIR/grow.spec.md"
+pass_if says 'the file header declares @size-budget-allow'
+
+echo "Test 32: exemption without a reason → still blocked"
+{ echo '# Demo'; echo '<!-- @size-budget-allow: -->'; spec_lines 520 | tail -n +2; } > "$WRITE_SRC"
+run_write_from_src "$SPEC_DIR/grow.spec.md"
+pass_if blocked "$BLOCKER"
+
+echo "Test 33: exemption written in the body(after the first ## heading)→ still blocked"
+{ spec_lines 520; echo '<!-- @size-budget-allow: 寫在正文的不算 -->'; } > "$WRITE_SRC"
+run_write_from_src "$SPEC_DIR/grow.spec.md"
+pass_if blocked "$BLOCKER"
+
+echo "Test 34: brand-new spec.md written at 520 lines(nothing on disk)→ blocked"
+rm -f "$SPEC_DIR/new.spec.md"
+spec_lines 520 > "$WRITE_SRC"
+run_write_from_src "$SPEC_DIR/new.spec.md"
+pass_if blocked "$BLOCKER"
+
+# Edit / MultiEdit(直接呼叫):照 old_string → new_string 套在磁碟原檔上量寫完的樣子
+edit_payload() {
+  jq -n --arg fp "$1" --arg old "$2" --arg new "$3" \
+    '{tool_name:"Edit", tool_input:{file_path:$fp, old_string:$old, new_string:$new}}'
+}
+echo "Test 35: Edit adds 30 lines to a 490-line spec.md → blocked"
+spec_lines 490 > "$SPEC_DIR/edit.spec.md"
+run_payload "$(edit_payload "$SPEC_DIR/edit.spec.md" '## 規格' "## 規格
+$(yes 'y' | head -30)")"
+pass_if blocked "$BLOCKER"
+
+echo "Test 36 (control for 35): Edit rewrites one line in a 530-line spec.md(no growth)→ not blocked"
+spec_lines 530 > "$SPEC_DIR/edit.spec.md"
+run_payload "$(edit_payload "$SPEC_DIR/edit.spec.md" '## 規格' '## 規格(改名)')"
+pass_if says 'it does not grow the file'
+
+echo "Test 37: MultiEdit — net growth across edits past the cap → blocked;net shrink → not blocked"
+spec_lines 495 > "$SPEC_DIR/multi.spec.md"
+run_payload "$(jq -n --arg fp "$SPEC_DIR/multi.spec.md" --arg grow "## 規格
+$(yes 'z' | head -10)" '{tool_name:"MultiEdit", tool_input:{file_path:$fp, edits:[{old_string:"# Demo", new_string:"# Demo 2"}, {old_string:"## 規格", new_string:$grow}]}}')"
+pass_if blocked "$BLOCKER"
+spec_lines 530 > "$SPEC_DIR/multi.spec.md"
+run_payload "$(jq -n --arg fp "$SPEC_DIR/multi.spec.md" '{tool_name:"MultiEdit", tool_input:{file_path:$fp, edits:[{old_string:"# Demo\n\n", new_string:"# Demo\n"}, {old_string:"## 規格", new_string:"## 規格(改名)"}]}}')"
+pass_if says 'it does not grow the file'
+
+echo "Test 38: Edit whose old_string is not in the file(the edit cannot apply)→ measures the current file, not blocked"
+spec_lines 530 > "$SPEC_DIR/edit.spec.md"
+run_payload "$(edit_payload "$SPEC_DIR/edit.spec.md" '不存在的句子' "$(yes 'y' | head -30)")"
+pass_if says 'the current file was measured'
+
+# 正式入口:runner 以 proposed-text-v1 交來寫完的內容(GOVERNANCE_WRITE_STATE_TRUST=runner-v1)
+trusted_payload() {
+  jq -n --arg fp "$1" --arg rel "$2" --rawfile content "$WRITE_SRC" \
+    '{tool_name:"Edit", tool_input:{file_path:$fp, governance_write_state:{schemaVersion:1, path:$rel, kind:"text", content:$content}}}'
+}
+run_trusted() {
+  STDOUT=$(printf '%s' "$1" | GOVERNANCE_WRITE_STATE_TRUST=runner-v1 GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" \
+    GOVERNANCE_CORPUS_ROOT="$PROJECT_ROOT" GOVERNANCE_PROVIDER_REGISTRY=packages/governance/canonical/providers.json \
+    GOVERNANCE_PROVIDER=codex GOVERNANCE_READ_ONLY=1 bash "$HOOK" 2>&1)
+  EXIT=$?
+}
+echo "Test 39: trusted after-image(runner-v1)grows a 490-line spec.md to 520 → blocked"
+spec_lines 490 > "$SPEC_DIR/trusted.spec.md"
+spec_lines 520 > "$WRITE_SRC"
+run_trusted "$(trusted_payload "$SPEC_DIR/trusted.spec.md" specs/trusted.spec.md)"
+pass_if blocked "$BLOCKER"
+pass_if blocked 'this write adds 30 lines'
+
+echo "Test 40 (control for 39): trusted after-image shrinks it → not blocked"
+spec_lines 530 > "$SPEC_DIR/trusted.spec.md"
+run_trusted "$(trusted_payload "$SPEC_DIR/trusted.spec.md" specs/trusted.spec.md)"
+pass_if says 'it does not grow the file'
+
+echo "Test 41: trust marker set but the write state is missing / for another path → exit 2(not a silent pass)"
+run_trusted "$(jq -n --arg fp "$SPEC_DIR/trusted.spec.md" '{tool_name:"Edit", tool_input:{file_path:$fp}}')"
+pass_if blocked 'after-image of specs/trusted.spec.md could not be read'
+run_trusted "$(trusted_payload "$SPEC_DIR/trusted.spec.md" specs/other.spec.md)"
+pass_if blocked 'after-image of specs/trusted.spec.md could not be read'
+
+echo "Test 42: trusted delete → silent"
+run_trusted "$(jq -n --arg fp "$SPEC_DIR/trusted.spec.md" '{tool_name:"Edit", tool_input:{file_path:$fp, governance_write_state:{schemaVersion:1, path:"specs/trusted.spec.md", kind:"deleted"}}}')"
+pass_if silent
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

@@ -3,7 +3,10 @@
 #
 # Coverage(每 sub-rule pass + block 各 1 case):
 #   A.1 naked row-mode propagation:pass / block / allowlist
-#   A.2 FieldControlGroup wrapper child:pass / block / allowlist
+#   A.2 FieldControlGroup wrapper child(2026-11-21 WP-15b 由提醒升為擋)兩面對照:
+#       該擋 = wrapper 沒豁免 / 上一行是程式碼(行尾標記不往下串)/ 一個標記不連帶放行同次寫入的另一個 wrapper /
+#              標記沒有理由 / Edit 片段開頭的標記(片段不是檔頭)
+#       該放 = 直接 child / 檔頭標記(Write)/ 同一行標記 / 上一行純註解標記 / Edit 時磁碟原檔檔頭有標記
 #   A.3.1 / A.3.2 Field state ring:shadow inset block / outline block(含 data-[field-open] 變體)/ textarea SSOT skip
 #   A.3.3 欄位開著的框只有一個住所(2026-11-13 改寫)兩面對照:
 #       該擋 7 = 元件自己 open && 'border-primary'(含 !)/ field-wrapper.tsx 改回 data-[state=open] 的兩條原文 /
@@ -14,7 +17,7 @@
 #       該擋 4 = JSX 屬性 / 物件 key / 裸屬性 / setAttribute
 #       該放 6 = fieldOpenProps / 唯一寫入者自己 / 說明文字裡的字面 / 讀選擇器 / story skip / escape
 #       + A.3.3 與 A.3.4 同時踩 → 一次 exit 2、兩段訊息都在
-#   A.4 disabled placeholder color:pass / 1 stderr-warn(exit 0)/ allowlist
+#   A.4 disabled placeholder color(2026-11-21 WP-15b 由提醒升為擋):block / disabled override pass / allowlist pass
 #   A.6 空值顯示 SSOT(2026-07-08 半形 hyphen):非 owner import EMPTY_DISPLAY block /
 #       owner skip / 全形 em dash block / 半形 pass / allowlist
 #   non-target:non-tsx skip / SSOT host skip(field-wrapper.tsx)
@@ -131,7 +134,9 @@ expect_exit "A.1.4 SSOT host skip → pass" 0
 echo ""
 echo "=== A.2 FieldControlGroup wrapper direct child ==="
 
-# 5. <FieldControlGroup> 內 <div wrapper> → governance context(exit 0)
+A2="FieldControlGroup wrapper BLOCKER"
+
+# 5. <FieldControlGroup> 內 <div wrapper> → 擋(2026-11-21 前是 exit 0 + governance context)
 run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
 function F() { return (
   <FieldControlGroup>
@@ -141,7 +146,7 @@ function F() { return (
   </FieldControlGroup>
 )}
 '
-expect_exit "A.2.1 FCG with div wrapper → governance context" 0 "FieldControlGroup wrapper"
+expect_exit "A.2.1 FCG with div wrapper → BLOCK" 2 "$A2"
 
 # 6. <FieldControlGroup> 直接 child 沒 wrapper → pass
 run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
@@ -162,7 +167,109 @@ function F() { return (
   </FieldControlGroup>
 )}
 '
-expect_exit "A.2.3 FCG allowlist → pass" 0
+expect_exit "A.2.3 FCG 檔頭 allowlist(Write 前 5 行)→ pass" 0
+
+# 該放:同一行標記
+run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
+function F() { return (
+  <FieldControlGroup>
+    <div className="flex-1 min-w-0"> {/* @fcg-wrapper-allow: 第三方 picker 不收 className */}
+      <FilterValuePicker />
+    </div>
+  </FieldControlGroup>
+)}
+'
+expect_exit "A.2.4 同一行 @fcg-wrapper-allow → pass" 0
+
+# 該放:上一行是純註解行(JSX 的 {/* … */})
+run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
+function F() { return (
+  <FieldControlGroup>
+    {/* @fcg-wrapper-allow: 第三方 picker 不收 className */}
+    <div className="flex-1 min-w-0">
+      <FilterValuePicker />
+    </div>
+  </FieldControlGroup>
+)}
+'
+expect_exit "A.2.5 上一行純註解 @fcg-wrapper-allow → pass" 0
+
+# 該擋:上一行是程式碼,它行尾的標記只管它自己,不往下串
+run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
+function F() { return (
+  <FieldControlGroup>
+    <span className="contents" /> {/* @fcg-wrapper-allow: 只管這一行 */}
+    <div className="flex-1 min-w-0">
+      <FilterValuePicker />
+    </div>
+  </FieldControlGroup>
+)}
+'
+expect_exit "A.2.6 上一行是程式碼帶標記 → 不往下串 → BLOCK" 2 "$A2"
+
+# 該擋:一個標記不連帶放行同一次寫入裡的另一個 wrapper(2026-11-21 前「任一處有標記就整條跳過」)
+run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
+function F() { return (
+  <FieldControlGroup>
+    {/* @fcg-wrapper-allow: 第三方 picker 不收 className */}
+    <div className="flex-1 min-w-0"><FilterValuePicker /></div>
+    <span className="shrink-0"><FilterOperatorSelect /></span>
+  </FieldControlGroup>
+)}
+'
+if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] && echo "$STDERR_TEXT" | grep -qF "$A2" \
+  && echo "$STDERR_TEXT" | grep -qF '<span className="shrink-0">' \
+  && ! echo "$STDERR_TEXT" | grep -qF '<div className="flex-1 min-w-0">'; then
+  echo "  PASS  A.2.7 標記只放行它那一個 wrapper,另一個照擋"; PASS=$((PASS+1))
+else
+  echo "  FAIL  A.2.7 標記只放行它那一個 wrapper (exit $EXIT)"
+  echo "$STDERR_TEXT" | sed 's/^/    /'
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - A.2.7"
+fi
+
+# 該擋:標記沒有理由
+run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
+function F() { return (
+  <FieldControlGroup>
+    {/* @fcg-wrapper-allow: */}
+    <div className="flex-1 min-w-0"><FilterValuePicker /></div>
+  </FieldControlGroup>
+)}
+'
+expect_exit "A.2.8 標記沒有理由 → BLOCK" 2 "$A2"
+
+# Edit:片段的前幾行不是檔頭 → 看磁碟原檔的前 5 行(要真的檔,所以這兩格用自己的專案根)
+A2_PROJECT=$(mktemp -d)
+[ -n "${A2_PROJECT:-}" ] && [ -d "$A2_PROJECT" ] || { echo "❌ mktemp -d failed(A2_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+mkdir -p "$A2_PROJECT/packages/design-system/src/components/Filter"
+A2_FILE="$A2_PROJECT/packages/design-system/src/components/Filter/filter.tsx"
+run_edit_in_a2_project() {
+  local fragment="$1" payload
+  payload=$(jq -n --arg fp "$A2_FILE" --arg c "$fragment" \
+    '{hook_event_name:"PreToolUse", tool_name:"Edit", tool_input:{file_path:$fp, old_string:"<FilterValuePicker />", new_string:$c}}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$A2_PROJECT" bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+A2_FRAGMENT='<FieldControlGroup>
+    <div className="flex-1 min-w-0"><FilterValuePicker /></div>
+  </FieldControlGroup>'
+
+# 該放:磁碟原檔檔頭有標記
+printf '%s\n' '// @fcg-wrapper-allow: 這支 filter 的 picker 都是第三方元件,不收 className' '' 'export function F() {' '  return <FilterValuePicker />' '}' > "$A2_FILE"
+run_edit_in_a2_project "$A2_FRAGMENT"
+expect_exit "A.2.9 Edit + 磁碟原檔檔頭有標記 → pass" 0
+
+# 該擋:原檔沒有標記,片段開頭那行帶標記(片段不是檔頭;也不是 wrapper 的上一行)
+printf '%s\n' 'export function F() {' '  return <FilterValuePicker />' '}' > "$A2_FILE"
+run_edit_in_a2_project "// @fcg-wrapper-allow: 片段開頭的標記
+$A2_FRAGMENT"
+expect_exit "A.2.10 Edit 片段開頭帶標記、原檔沒有 → BLOCK" 2 "$A2"
+rm -rf "$A2_PROJECT"
 
 echo ""
 echo "=== A.3 Field state ring SSOT ==="
@@ -375,11 +482,17 @@ fi
 echo ""
 echo "=== A.4 disabled placeholder color ==="
 
-# 12. placeholder:text-fg-muted no override → exit 0 governance context
+# 12. placeholder:text-fg-muted no override → 擋(2026-11-21 前是 exit 0 + governance context)
 run_hook "/r/packages/design-system/src/components/Custom/custom.tsx" '
 const cls = "placeholder:text-fg-muted"
 '
-expect_exit "A.4.1 placeholder:text-fg-muted no override → governance context" 0 "disabled placeholder color"
+expect_exit "A.4.1 placeholder:text-fg-muted no override → BLOCK" 2 "disabled placeholder color BLOCKER"
+
+# 12b. <span text-fg-muted>{placeholder} 不分 mode → 擋
+run_hook "/r/packages/design-system/src/components/Custom/custom.tsx" '
+const view = <span className="text-fg-muted">{placeholder}</span>
+'
+expect_exit "A.4.1b <span text-fg-muted>{placeholder} 不分 mode → BLOCK" 2 "不分 mode"
 
 # 13. placeholder + disabled override → pass(stderr 不該 fire)
 run_hook "/r/packages/design-system/src/components/Custom/custom.tsx" '
@@ -451,15 +564,15 @@ function F() { return (
   </FieldControlGroup>
 )}
 '
-if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
-  && is_exact_context "FieldControlGroup wrapper" \
-  && printf '%s' "$STDOUT_TEXT" | jq -e \
-    '.governanceContext.message | contains("disabled placeholder color")' >/dev/null; then
-  echo "  PASS  O.1 A.2+A.4 warnings → one exact PreToolUse context"
+# 2026-11-21 起 A.2 / A.4 都擋:同時踩 → 一次 exit 2、stdout 空、兩段訊息都在 stderr
+if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+  && echo "$STDERR_TEXT" | grep -qF "FieldControlGroup wrapper BLOCKER" \
+  && echo "$STDERR_TEXT" | grep -qF "disabled placeholder color BLOCKER"; then
+  echo "  PASS  O.1 A.2+A.4 → one exit 2, both messages on stderr"
   PASS=$((PASS+1))
 else
-  echo "  FAIL  O.1 warning aggregation contract"
-  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - O.1 warning aggregation"
+  echo "  FAIL  O.1 A.2+A.4 block aggregation contract (exit $EXIT)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - O.1 block aggregation"
 fi
 
 run_raw '{'

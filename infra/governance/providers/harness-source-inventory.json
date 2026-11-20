@@ -66,7 +66,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs",
-        "sha256": "ec330e8af2f695a94ca69550d48d4a65be06518c2ae7bd68e031818794761c9c",
+        "sha256": "96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh"
         ]

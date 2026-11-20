@@ -23,7 +23,7 @@ set -uo pipefail
 #   12. provider 檢視有 hook 群組沒有派工入口 → PRUNE_TRIGGERS
 #   11. 環境健檢(plugin 完整性 / node / peer CLI / consumer 安裝 / 長駐 bypass env)→ PRUNE_TRIGGERS
 #   單檔行數上限(AGENTS.md、CLAUDE.md、SKILL、spec、memory 各檔)不在本檔:SSOT 是 check_file_size_budget.sh
-#   的 case 表(寫入當下提醒,不擋)。
+#   的 case 表(寫入當下判:寫完超過 transition cap 而且這次變長就擋,其餘只提醒)。
 
 # Per-hook fire logging(enables /knowledge-prune D2 dead-hook detection)
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
@@ -86,7 +86,7 @@ for ENTRY in "$INSTRUCTION_ENTRY" "$SHARED_INSTRUCTION_ENTRY"; do
 done
 if [ "$LINES" -gt 0 ]; then
   # 本 Check 只看兩份 entry 去重後的總行數:> 800 出 BLOCKER(本檔即 SSOT)。
-  # 單檔(AGENTS.md、CLAUDE.md 各自)的 400 警告 / 800 上限在 check_file_size_budget.sh 的 case 表,寫入當下提醒、不擋。
+  # 單檔(AGENTS.md、CLAUDE.md 各自)的 400 警告 / 800 上限在 check_file_size_budget.sh 的 case 表(寫完超過 800 而且這次變長就擋)。
   # AGENTS.md「# 治理 canonical」的行數預算句不寫數值,只指向這兩處。
   if [ "$LINES" -gt 800 ]; then
     BLOCKERS="${BLOCKERS}\n- Bootstrap instructions(${BOOTSTRAP_LABELS}) total ${LINES} lines(hard cap 800 breached). /knowledge-prune REQUIRED FIRST ACTION this session."

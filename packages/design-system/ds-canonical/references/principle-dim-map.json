@@ -434,7 +434,7 @@
       "dims": [
         53
       ],
-      "note": "2026-05-17 ship(audit Dim 53 reverse drift):spec.md 寫「固定 h-NN/寫死/硬寫」keyword 但對應 tsx 已消費 token → soft P1 warn。互補既有 forward direction(spec-to-code),起因 Phase 1 抓不到 FileViewer h-14 spec drift"
+      "note": "2026-05-17 ship(audit Dim 53 reverse drift):spec.md 寫「固定 h-NN/寫死/硬寫」keyword 但對應 tsx 已消費 token → 2026-11-21 起 P0 擋(原 soft P1 warn)。互補既有 forward direction(spec-to-code),起因 Phase 1 抓不到 FileViewer h-14 spec drift"
     },
     "audit_sample_escape": {
       "dims": [],
