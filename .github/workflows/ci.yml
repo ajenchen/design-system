@@ -123,6 +123,10 @@ jobs:
           node scripts/hook-test-fixture-guard-invariant.mjs --selftest
           # knowledge-prune 收尾驗證器(WP-02):報告段落 / 數字 / Prune-Items 交叉比對;這支沒有 --selftest,紅綠對照在 meta-test 裡,約 15 秒。
           node scripts/test-validate-knowledge-prune-run.mjs
+          # 同一支的主判定(2026-11-20 接上,knowledge-prune WP-21):這支 PR 帶進來的 prune commit 都要有 Prune-Items(只准 ID 清單)與 Phase0-After。
+          # auto = base 照 story-layer-drift 的 resolveBase(PR = origin/main 的 merge-base、push = HEAD^);標記 b0296c96 與它之前的 commit 不檢查
+          # (那之前已合回的 8 則訊息不合格,而歷史不改寫)。要讀完整歷史:本 job 的 checkout 已是 fetch-depth: 0。本機約 1 秒。
+          node scripts/validate-knowledge-prune-run.mjs --commits-only auto
           # 對外彙總檔 styles/tokens.css 檔頭寫「自動產生、禁止手改」,產生器檔頭也寫「--check 在 CI 跑」—— 2026-11-11 盤點兩者都不是真的:
           # 沒有任何 workflow / npm script 呼叫它,彙總檔被手加兩行(Tabs / Sidebar)、產生器輸出與提交的檔不同,零訊號。
           # 上面 C6 只管「元件樣式檔有進彙總檔或被程式匯入」,不管彙總檔是不是產生器的輸出(重跑會不會改樣式載入順序)。

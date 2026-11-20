@@ -11,8 +11,11 @@
  *       prune commit)、prune commit 缺 trailer、Prune-Items 不是 ID 清單,
  *       或把兩個 P2 項塞進同一個 commit(不論 ID 之間用逗號、空白還是斜線)
  *       → 印出「❌ (字母)」並點名那一段 / 那個 ID / 那個 commit,exit 1;範本讀不到、缺代號、git 失敗、區間是空的 → exit 2(不是綠)
+ *       --commits-only(ci.yml verify-static 每支 PR 跑 `--commits-only auto`):區間裡、標記 commit 之後的 prune commit 缺 trailer 或
+ *       Prune-Items 不是 ID 清單 → (i) 紅;`auto` 找不到 base → exit 2
  *   綠: 齊全的 fixture exit 0。scripts/test-validate-knowledge-prune-run.mjs 每次先用同一份齊全 fixture 證綠,再逐項拿掉一段證紅、
- *       並把範本段名改掉證明段名真的是從範本讀的;純讀檔與讀 git,不看時鐘,同一份輸入重複跑結果相同
+ *       並把範本段名改掉證明段名真的是從範本讀的;純讀檔與讀 git,不看時鐘,同一份輸入重複跑結果相同。
+ *       --commits-only 的標記:標記是 HEAD 的祖先時,標記與它之前的 commit 不檢查(印出略過幾個);標記不在祖先鏈 → 照原區間檢查、不報錯
  *
  * ── 為什麼有這支 ──
  *
@@ -31,8 +34,12 @@
  *
  * 用法:
  *   node scripts/validate-knowledge-prune-run.mjs --report <md> --findings <md> --snapshot <jsonl> --base <commit> [--template <md>]
- *   node scripts/validate-knowledge-prune-run.mjs --commits-only <base>..<head>
- * 結束碼:0 綠 / 1 紅 / 2 量具讀不到東西(範本、git、參數、空區間)
+ *   node scripts/validate-knowledge-prune-run.mjs --commits-only <base>..<head> [--marker <commit>]
+ *   node scripts/validate-knowledge-prune-run.mjs --commits-only auto [--marker <commit>]
+ *     auto = base 用 story-layer-drift-invariant.mjs 的 resolveBase(同一條規則,不另寫一份):PR 是 origin/<GITHUB_BASE_REF> 的 merge-base、
+ *     CI 上的 push / 手動觸發是 HEAD^、本機依序 origin/main → main;區間 = <base>..HEAD。ci.yml 用這個寫法(指令裡不出現 $GITHUB_*)。
+ *     --marker 只給對照組用(合成 repo 換標記);CI 一律不帶,用下面的 COMMITS_ONLY_MARKER。
+ * 結束碼:0 綠 / 1 紅 / 2 量具讀不到東西(範本、git、參數、空區間、auto 找不到 base)
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
@@ -43,7 +50,16 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SELF_PATH = 'scripts/validate-knowledge-prune-run.mjs'
 const TEMPLATE_PATH = 'packages/design-system/ds-canonical/skills/knowledge-prune/references/phase5-report-template.md'
 const EXIT = Object.freeze({ green: 0, red: 1, instrument: 2 })
-const FLAGS = Object.freeze(['report', 'findings', 'snapshot', 'base', 'commits-only', 'template'])
+const FLAGS = Object.freeze(['report', 'findings', 'snapshot', 'base', 'commits-only', 'template', 'marker'])
+
+// --commits-only 的標記 commit(2026-11-20 knowledge-prune WP-21,反駁 A3 的工程決定;AI 推導,不是 user 拍板):
+// 區間裡標記與它之前的 commit 不檢查。標記 = b0296c96「chore(integrate wave-a)」—— 第一波 21 包合回、本檔的紅面接進 PR 必過的那個 commit。
+// 標記之前已合回的 8 個 prune commit(aa251c4b、f4d90a3c、1b390632、ab0c6b00、05085697、d5ad3793、07630462、7688c478)
+// Prune-Items 不是 ID 清單或沒有 ID,而 commit 訊息不得改寫(knowledge-prune SKILL.md Non-goals「不刪歷史 commit / git log」、
+// Phase 3「歷史不改寫,漏了事後補不回來」)—— 所以從標記之後起算,不另列 SHA 豁免清單(清單只會越長)。
+// 標記不是 HEAD 的祖先(squash 合併進 main 之後 main 上沒有它;fixture repo 沒有它)→ 照原區間檢查,不報錯:
+// squash 之後那 8 個 commit 也不在 main 上了。
+const COMMITS_ONLY_MARKER = 'b0296c9603bc43c450ab1591eba597fa8c7d048f'
 
 // 範本標題的代號 → 這一段做哪種檢查。段名本身不寫在這裡。
 const SECTION = Object.freeze({
@@ -250,8 +266,8 @@ function resolveCommit(ref) {
   return result.ok ? result.stdout.trim() : null
 }
 
-function listCommits(range) {
-  return git(['log', '--reverse', '--format=%H%x1f%B%x1e', range, '--'])
+function listCommits(range, exclude = []) {
+  return git(['log', '--reverse', '--format=%H%x1f%B%x1e', range, ...exclude.map((sha) => `^${sha}`), '--'])
     .split('\x1e')
     .map((chunk) => chunk.replace(/^\n+/, ''))
     .filter((chunk) => chunk.trim())
@@ -604,13 +620,47 @@ function readInput(path, label) {
   return { text: readFileSync(absolute, 'utf8') }
 }
 
-function runCommitsOnly(range) {
-  if (!range.includes('..')) throw new InstrumentError(`--commits-only 要給區間 <base>..<head>,收到「${range}」`)
-  const commits = listCommits(range)
-  console.log(`=== knowledge-prune commit 檢查(${range})===`)
-  if (!commits.length) throw new InstrumentError(`區間 ${range} 是空的 —— 沒拿到任何 commit,無法判定(不是綠)`)
+/**
+ * `auto` → 用 resolveBase 取 base(跟 story-layer-drift / owner-claims 同一條規則,不另寫一份);其他值原樣當區間。
+ * 只在 auto 時才載入:story-layer-drift-invariant.mjs 依賴 typescript(node_modules),完整模式與明寫區間不需要它。
+ */
+async function resolveCommitsRange(spec) {
+  if (spec !== 'auto') {
+    const ends = spec.split('..')
+    if (spec.includes('...') || ends.length !== 2) throw new InstrumentError(`--commits-only 要給 auto 或區間 <base>..<head>,收到「${spec}」`)
+    return { range: spec, head: ends[1] || 'HEAD', label: spec }
+  }
+  let resolveBase
+  try { ({ resolveBase } = await import('./story-layer-drift-invariant.mjs')) } catch (error) {
+    throw new InstrumentError(`--commits-only auto 載入 story-layer-drift-invariant.mjs 的 resolveBase 失敗(要先裝 node_modules):${String(error.message).split('\n')[0]}`)
+  }
+  let found
+  try { found = resolveBase(process.cwd(), [], process.env) } catch (error) { throw new InstrumentError(`--commits-only auto 找不到 base:${error.message}`) }
+  if (!found) throw new InstrumentError('--commits-only auto 找不到 base(試過 origin/main、main、HEAD)—— 沒比到不是通過')
+  return { range: `${found.mergeBase}..HEAD`, head: 'HEAD', label: `auto:${found.ref} 與 HEAD 的 merge-base ${found.mergeBase.slice(0, 8)}..HEAD` }
+}
+
+/** 標記是區間終點的祖先 → 回傳要排除的 sha;不是(或 repo 裡沒有它)→ null,照原區間檢查。 */
+function markerToExclude(marker, head) {
+  const markerSha = resolveCommit(marker)
+  if (!markerSha) return null
+  const headSha = resolveCommit(head)
+  if (!headSha) throw new InstrumentError(`區間終點 ${head} 解不到 commit`)
+  return gitResult(['merge-base', '--is-ancestor', markerSha, headSha]).ok ? markerSha : null
+}
+
+async function runCommitsOnly(spec, marker) {
+  const { range, head, label } = await resolveCommitsRange(spec)
+  const all = listCommits(range)
+  console.log(`=== knowledge-prune commit 檢查(${label})===`)
+  if (!all.length) throw new InstrumentError(`區間 ${range} 是空的 —— 沒拿到任何 commit,無法判定(不是綠)`)
+  const markerSha = markerToExclude(marker, head)
+  const commits = markerSha ? listCommits(range, [markerSha]) : all
+  const markerNote = markerSha
+    ? `· 標記 ${markerSha.slice(0, 8)} 是 ${head} 的祖先:區間 ${all.length} 個 commit 裡,標記與它之前的 ${all.length - commits.length} 個不檢查(只檢查之後的 ${commits.length} 個)`
+    : `· 標記 ${marker.slice(0, 8)} 不在 ${head} 的祖先鏈(或 repo 裡沒有它):照原區間 ${all.length} 個 commit 檢查`
   const { problems, notes, summary } = checkCommits(commits)
-  return print([{ letter: 'i', title: 'prune commit 的 Prune-Items / Phase0-After', problems, detail: summary }], notes)
+  return print([{ letter: 'i', title: 'prune commit 的 Prune-Items / Phase0-After', problems, detail: summary }], [markerNote, ...notes])
 }
 
 function runFull(args) {
@@ -642,16 +692,17 @@ function runFull(args) {
   return print(results, notes)
 }
 
-function main(argv) {
+async function main(argv) {
   try {
     const args = parseArgs(argv)
-    return args['commits-only'] ? runCommitsOnly(args['commits-only']) : runFull(args)
+    if (args.marker && !args['commits-only']) throw new InstrumentError('--marker 只配 --commits-only')
+    return args['commits-only'] ? await runCommitsOnly(args['commits-only'], args.marker ?? COMMITS_ONLY_MARKER) : runFull(args)
   } catch (error) {
     if (!(error instanceof InstrumentError)) throw error
     console.error(`INSTRUMENT-FAIL ${error.message}`)
-    console.error('用法:--report <md> --findings <md> --snapshot <jsonl> --base <commit> [--template <md>] | --commits-only <base>..<head>')
+    console.error('用法:--report <md> --findings <md> --snapshot <jsonl> --base <commit> [--template <md>] | --commits-only <base>..<head>|auto [--marker <commit>]')
     return EXIT.instrument
   }
 }
 
-process.exitCode = main(process.argv.slice(2))
+process.exitCode = await main(process.argv.slice(2))

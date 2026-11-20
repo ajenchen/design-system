@@ -2,17 +2,21 @@
 /**
  * @gate-contract
  *   保證: knowledge-prune 收尾驗證器 validate-knowledge-prune-run.mjs 真的會因為報告缺段、缺數字、Prune-Items 對不上而紅,
- *         而且段名是從 Phase 5 報告範本讀的,不是寫死在驗證器裡(2026-11-18 合回第一波時接進 PR 必過 CI,原本只在夜間 harness)
+ *         而且段名是從 Phase 5 報告範本讀的,不是寫死在驗證器裡(2026-11-18 合回第一波時接進 PR 必過 CI,原本只在夜間 harness);
+ *         --commits-only 的標記與 auto(2026-11-20 WP-21,ci.yml 每支 PR 跑 `--commits-only auto`)也照宣告運作 ——
+ *         標記是 HEAD 的祖先時只檢查標記之後的 commit,不是祖先時照原區間檢查、不報錯;auto 的 base 依 CI / GITHUB_BASE_REF 取
  *   紅: (a)–(i) 每一項各拿掉一段 → 驗證器 exit 1 並點名缺的那一段 / ID / commit;範本段名改掉 → 原本齊全的報告紅在新段名;
+ *       同一個區間拿掉標記 → 紅在標記之前那一則壞訊息;標記之後的壞訊息、旁支標記(不在祖先鏈)下的壞訊息 → 照樣紅;
+ *       auto 在 PR 形狀與 CI push 形狀下遇到不合格的 prune commit → 紅,找不到 base → exit 2;
  *       每一次「拿掉」先確認被換掉的字串真的存在,換不到就讓本測試自己紅(防沒改到東西而假綠)
  *   綠: 同一份齊全 fixture(含實際報告常見寫法)必須 exit 0,而且印得出讀到的資料量(findings 的 ID 數、區間 commit 數),
  *       證明不是讀到空的而放行;fixture 全建在拋棄式 tmp repo、時區固定,重複跑結果相同
  *   不保證(已知放行漏洞,WP-02 反駁者探針有跑、沒列入必修,至今未修;要不要修由排程決定 —— 下面每條都對過 validate-knowledge-prune-run.mjs 現行程式):
- *     P5 理由寫「省工」「context budget」會被放行(BANNED_REASONS 只有「下次再做 / 時間不夠 / 下個 session」三句,:62);
- *     P7「Phase0-After: 203/58/31983 待量」這種數字後面接了字也會被放行(PHASE0_FORMAT 沒有結尾錨點,:72);
- *     P8「沒做 —— 無」被當成有理由(只檢查拿掉標點後是不是空的,「無」一個字就過,:519);
- *     P10「Retired」段的項目數沒有和 Retire rate 的 N 比對(只擋「一項都沒列、N 卻 > 0」,:448)。
- *     另有一個誤紅風險 P9:已經做完的那一列,描述裡只要出現「下次再做」字樣就紅(禁用語對每一列整行比對,:528)。本測試的紅面不涵蓋這五格。
+ *     P5 理由寫「省工」「context budget」會被放行(BANNED_REASONS 只有「下次再做 / 時間不夠 / 下個 session」三句,:78);
+ *     P7「Phase0-After: 203/58/31983 待量」這種數字後面接了字也會被放行(PHASE0_FORMAT 沒有結尾錨點,:88);
+ *     P8「沒做 —— 無」被當成有理由(只檢查拿掉標點後是不是空的,「無」一個字就過,:535);
+ *     P10「Retired」段的項目數沒有和 Retire rate 的 N 比對(只擋「一項都沒列、N 卻 > 0」,:464)。
+ *     另有一個誤紅風險 P9:已經做完的那一列,描述裡只要出現「下次再做」字樣就紅(禁用語對每一列整行比對,:544)。本測試的紅面不涵蓋這五格。
  *
  * meta-test for validate-knowledge-prune-run.mjs —— 兩面對照組:
  *   綠面:同一份齊全的 fixture(報告 + findings + snapshot + 一個拋棄式 git repo)必須 exit 0,而且印得出它真的讀到了資料
@@ -80,11 +84,14 @@ function makeRepo(name, commits) {
   return { root, shas }
 }
 
-function run(cwd, args) {
+function run(cwd, args, env = ENV) {
   // `--` 先收掉 node 自己的旗標:harness 的來源審查要能證明腳本前面沒有動態旗標
-  const result = spawnSync(process.execPath, ['--', VALIDATOR, ...args], { cwd, env: ENV, encoding: 'utf8' })
+  const result = spawnSync(process.execPath, ['--', VALIDATOR, ...args], { cwd, env, encoding: 'utf8' })
   return { status: result.status, out: `${result.stdout}${result.stderr}` }
 }
+
+/** `--commits-only auto` 讀 CI / GITHUB_BASE_REF 決定 base:每一格明寫這兩個值,不吃跑測試那台機器(CI 上本身就是 CI=true)的值。 */
+const envWith = (overrides) => ({ ...ENV, ...overrides })
 
 function record(name, ok, out) {
   cases += 1
@@ -399,6 +406,61 @@ try {
     const p2Result = full('i-p2-findings', { report }, { repo: p2Findings })
     expectRed('完整模式:findings 把 D9-01 標成 [P2E],它卻和別的 ID 同一個 commit', p2Result, 'i', ['D9-01', 'P2'])
     record('紅 (i) 上一格只紅在 (i)(其他八項仍綠)', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].every((letter) => p2Result.out.includes(`✅ (${letter})`)), p2Result.out)
+  }
+  {
+    // --commits-only 的標記(2026-11-20 WP-21,反駁 A3 的工程決定):區間裡標記與它之前的 commit 不檢查。
+    // 壞訊息用 05085697 那一則的真實形狀(Prune-Items 寫的是說明,不是 ID)。
+    const BAD = PRUNE_MESSAGE('prune(knowledge-prune 雜項): 標記之前已合回的壞訊息', 'SKILL.md:19 計數對象(程式側)')
+    const GOOD = PRUNE_MESSAGE('prune(knowledge-prune D9-01): 標記之後的合格訊息', 'D9-01')
+    const marked = makeRepo('m-marker', [...BASE_COMMITS,
+      { files: { 'docs/e.md': 'e\n' }, message: BAD },
+      { files: { 'docs/f.md': 'f\n' }, message: 'chore(integrate wave-a): 標記 commit\n' },
+      { files: { 'docs/g.md': 'g\n' }, message: GOOD },
+    ])
+    const [mBase] = marked.shas
+    const badSha = marked.shas[5]
+    const markerSha = marked.shas[6]
+    const withMarker = run(marked.root, ['--commits-only', `${mBase}..HEAD`, '--marker', markerSha])
+    expectGreen('標記是 HEAD 的祖先:標記之前的壞訊息不檢查,只檢查之後的', withMarker, [
+      '✅ (i)', `標記 ${short(markerSha)} 是 HEAD 的祖先`, '區間 7 個 commit 裡,標記與它之前的 6 個不檢查', 'prune commit 1 個(檢查 1、早於本規則 0)',
+    ])
+    // 對照組:同一個區間拿掉標記(CI 用的預設標記不在這個合成 repo 裡)→ 紅在標記之前那一則
+    expectRed('同一個區間不帶標記 → 紅在標記之前的壞訊息', run(marked.root, ['--commits-only', `${mBase}..HEAD`]), 'i', [short(badSha), '不是 ID 清單'])
+    const after = makeRepo('m-after', [...BASE_COMMITS,
+      { files: { 'docs/f.md': 'f\n' }, message: 'chore(integrate wave-a): 標記 commit\n' },
+      { files: { 'docs/e.md': 'e\n' }, message: BAD },
+    ])
+    expectRed('標記之後的壞訊息照樣紅', run(after.root, ['--commits-only', `${after.shas[0]}..HEAD`, '--marker', after.shas[5]]), 'i', [short(after.shas[6]), '沒有任何 ID'])
+    // 標記不在 HEAD 的祖先鏈(squash 合併進 main 之後的形狀):用 commit-tree 造一個旁支 commit 當標記,不動工作樹
+    const side = git(marked.root, ['commit-tree', `${mBase}^{tree}`, '-p', mBase, '-m', '旁支:不在 HEAD 祖先鏈上的標記'])
+    const sideRed = run(marked.root, ['--commits-only', `${mBase}..HEAD`, '--marker', side])
+    expectRed('標記不在 HEAD 的祖先鏈 → 照原區間檢查(壞訊息照樣紅,不是 exit 2)', sideRed, 'i', [short(badSha)])
+    record('紅 (i) 上一格印出「標記不在祖先鏈」', sideRed.out.includes(`標記 ${short(side)} 不在 HEAD 的祖先鏈`), sideRed.out)
+    const baseSide = git(base.root, ['commit-tree', `${BASE_SHA}^{tree}`, '-p', BASE_SHA, '-m', '旁支標記'])
+    expectGreen('標記不在祖先鏈、區間裡沒有壞訊息 → 綠,不報錯', run(base.root, ['--commits-only', `${BASE_SHA}..HEAD`, '--marker', baseSide]), [
+      '✅ (i)', `標記 ${short(baseSide)} 不在 HEAD 的祖先鏈`, 'prune commit 3 個(檢查 2、早於本規則 1)',
+    ])
+    expectInstrument('--marker 不配 --commits-only', run(base.root, ['--report', files('t-marker').report, '--marker', BASE_SHA]), '--marker 只配 --commits-only')
+    expectInstrument('--commits-only 給三點區間', run(base.root, ['--commits-only', `${BASE_SHA}...HEAD`]), '要給 auto 或區間')
+  }
+  {
+    // --commits-only auto:base 用 story-layer-drift 的 resolveBase(PR = origin/<GITHUB_BASE_REF> 的 merge-base、CI push = HEAD^、本機 origin/main → main)
+    const autoRepo = makeRepo('m-auto', [...BASE_COMMITS, { files: { 'docs/g.md': 'g\n' }, message: PRUNE_MESSAGE('prune(knowledge-prune D9-01): 合格訊息', 'D9-01') }])
+    git(autoRepo.root, ['branch', '-m', 'kp-fixture'])
+    git(autoRepo.root, ['update-ref', 'refs/remotes/origin/main', autoRepo.shas[0]])
+    expectGreen('auto(PR:CI=true、GITHUB_BASE_REF=main)→ 區間 = origin/main 的 merge-base..HEAD', run(autoRepo.root, ['--commits-only', 'auto'], envWith({ CI: 'true', GITHUB_BASE_REF: 'main' })), [
+      '✅ (i)', `auto:origin/main 與 HEAD 的 merge-base ${short(autoRepo.shas[0])}..HEAD`, '區間 5 個 commit;prune commit 4 個(檢查 3、早於本規則 1)',
+    ])
+    expectGreen('auto(本機:沒有 CI)→ 同樣取 origin/main', run(autoRepo.root, ['--commits-only', 'auto'], envWith({ CI: '', GITHUB_BASE_REF: '' })), [
+      '✅ (i)', 'auto:origin/main', 'prune commit 4 個(檢查 3、早於本規則 1)',
+    ])
+    const autoBad = makeRepo('m-auto-bad', [...BASE_COMMITS, { files: { 'docs/e.md': 'e\n' }, message: PRUNE_MESSAGE('prune(knowledge-prune 雜項): 不合格', '見內文') }])
+    git(autoBad.root, ['branch', '-m', 'kp-fixture'])
+    git(autoBad.root, ['update-ref', 'refs/remotes/origin/main', autoBad.shas[0]])
+    expectRed('auto(PR)區間裡有不合格的 prune commit → 紅', run(autoBad.root, ['--commits-only', 'auto'], envWith({ CI: 'true', GITHUB_BASE_REF: 'main' })), 'i', [short(autoBad.shas.at(-1)), '見內文'])
+    expectRed('auto(CI push:沒有 GITHUB_BASE_REF)→ 區間 = HEAD^..HEAD,只看最新那一筆', run(autoBad.root, ['--commits-only', 'auto'], envWith({ CI: 'true', GITHUB_BASE_REF: '' })), 'i', [short(autoBad.shas.at(-1))])
+    git(autoBad.root, ['update-ref', '-d', 'refs/remotes/origin/main'])
+    expectInstrument('auto(PR)找不到 origin/main 也沒有 main → exit 2,不是綠', run(autoBad.root, ['--commits-only', 'auto'], envWith({ CI: 'true', GITHUB_BASE_REF: 'main' })), '--commits-only auto 找不到 base')
   }
 
   // ─────────── exit 2:量具讀不到東西 ───────────
