@@ -4,6 +4,7 @@
 //   SelectMenu 等外層元件呈現。色彩 / 尺寸 / 狀態都由消費方(SelectMenu / Combobox /
 //   PeoplePicker)決定並在各自的 anatomy 詳述。本檔保留 Overview(教結構與
 //   消費路徑)+ Accessibility(6-canonical 中適用的 2 個;2026-05-17 per Dim 13 加)。
+//   2026-11-21 複查仍成立:command.spec.md「分類」段仍是 Internal primitive、由 SelectMenu 消費;本檔仍只有這兩個 story。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, User, LogOut, FileText } from 'lucide-react'
 import {

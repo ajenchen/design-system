@@ -1,5 +1,5 @@
-// @story-trait-rationale: isInputLike -> InField — InField 已同時渲染 invalid Field chrome 與 FieldError；另開 error-only story 會重複相同表單情境。
-// @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration)。
+// @story-trait-rationale: isInputLike -> InField — InField 已同時渲染 invalid Field chrome 與 FieldError；另開 error-only story 會重複相同表單情境。(2026-11-21 複查仍成立:InField 的「退件原因」欄是 `<Field invalid>` + FieldError;規則見 check_story_invariants.sh R3)
+// @story-history: hasSizes 由 textarea.anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration)。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Textarea } from './textarea'
 import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from '@/design-system/components/Field/field'
@@ -32,7 +32,7 @@ export const Default: Story = {
 }
 
 // @story-history: AllSizes / Modes / WithError retired per F migration 2026-05-15+17 —
-//   anatomy.stories.tsx SizeMatrix + ModeMatrix own trait matrices(state/mode/size 全 cover)。
+//   textarea.anatomy.stories.tsx SizeMatrix + ModeMatrix own trait matrices(state/mode/size 全 cover)。
 //   展示層保留 typical real-product 情境(Default + InField),避免跟 anatomy trait grid 重複。
 export const InField: Story = {
   name: '在 Field 內',

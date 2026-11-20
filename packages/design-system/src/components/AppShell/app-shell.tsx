@@ -869,7 +869,7 @@ export const appShellMeta = {
   defaultSize: undefined,
 } as const
 
-// code-quality-allow: dead-export useAppShell — public compound API hook(consumer 可自拼 custom aside layout、
+// useAppShell 是公開的 compound API hook(consumer 可自拼 custom aside layout、
 // 讀各區顯示方式 `display`、使用者要求 Right 顯示內容時呼叫 `requestAside`;對齊 MUI `useFormControl` 慣例)。(來源:https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/text-fields/text-fields.md#L192-L200)
-// 內部 AppShellAside 已消費,audit script 抓「無 cross-file import」是 false positive(2026-05-21 D2 codify)。
+// 由 src/index.ts 公開,Sidebar / AccountMenu / AgentPanel 跨檔消費 —— code-quality-audit 的 dead-export 本來就不會報它,不需要豁免標記。
 export { AppShell, AppShellAside, useAppShell }

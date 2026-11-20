@@ -320,13 +320,12 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   dismissCutout?: boolean
 }
 
-// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 // 2026-05-13 (a) perf fix part-2(per codex Layer C Roadmap rich-cell dominant + user 拍 Path (a)):
 // `React.memo` wrap forwardRef Avatar — Roadmap 13 columns 含 person/multiPerson,每 row 多 avatar
 // × HoverCard subtree + useDocumentTheme observer = 重渲染 hotspot。memo shallow-equal props,
 // HoverCard / themeRef stable across scroll 時 skip re-render。對齊 codex Profile Plan step 5
 // (filter Avatar/PeoplePicker/FieldSurfaceProvider remounts)。
-// code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCard × img-fallback 多軸 prop 組合,拆 sub-fn 會跨 fn 傳 imgError state + isTableScrolling observer 結果
+// code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCard × img-fallback 多軸 prop 組合,拆 sub-fn 會跨 fn 傳 imgError state + isTableScrolling observer 結果(2026-11-21 複查仍成立:AvatarInner 約 240 行,各軸的契約見 avatar.spec.md)
 const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
   ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, badgeCount, badgeAriaLabel, hoverCard, stacked = false, dismissCutout = false, className, style, ...props }, ref) => {
     const [imgError, setImgError] = React.useState(false)

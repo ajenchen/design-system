@@ -36,7 +36,10 @@
 import { sortingFns, type Row, type RowData, type SortingFn } from '@tanstack/react-table'
 import type { ColumnType } from '../column-types'
 
-/** 把一個值包成 TanStack SortingFn 吃的 row(內建比較只呼叫 `getValue`) */
+/**
+ * 把一個值包成 TanStack SortingFn 吃的 row(內建比較只呼叫 `getValue`)。`as unknown as` 的理由(2026-11-21 複查):table-core 8.21.3 的
+ * alphanumeric / basic 只讀 `rowA.getValue(columnId)`、`rowB.getValue(columnId)`(https://github.com/TanStack/table/blob/f4dc742b7b8bf01bb7dd10ee7d2f238400befcc0/packages/table-core/src/sortingFns.ts#L5-L10、#L47-L49),只帶 getValue 的假 row 就夠。
+ */
 const valueRow = (value: unknown) => ({ getValue: () => value }) as unknown as Row<RowData>
 
 /** TanStack 內建 alphanumeric:`toString` → 轉小寫 → 數字段照數值、其餘照字元比 */

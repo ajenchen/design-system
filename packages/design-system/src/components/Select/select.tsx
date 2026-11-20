@@ -44,9 +44,6 @@ const tagPadding = fieldTagInsetX
  *
  * Wrapper-only field(`tagVariant`)— Select 獨有 `display='tag'` 用,SelectMenu primitive 不該知道
  * 此 wrapper-only concern,所以 wrapper 層 extend 加上,不污染 primitive。
- *
- * 對齊 Polaris ChoiceList / Material Autocomplete / Carbon Dropdown 的 wrapper-vs-primitive
- * schema-extension idiom。
  */
 export interface SelectOption extends SelectMenuOption {
   /** Tag 模式的顏色。只在 display='tag' 時生效,對應 Tag 的 variant。Wrapper-only。 */

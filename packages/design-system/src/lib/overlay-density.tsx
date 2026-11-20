@@ -19,10 +19,11 @@
  * 不會被包在中間的 Tooltip 接走 —— 登記處的歸屬跟 Radix 的歸屬一致,不再是「最近的任何一種浮層」這個代理(M37)。
  *
  * 對照:React Spectrum 的浮層在 Portal 裡再包一層 Provider(`<Provider ref={ref} UNSAFE_style={{background: 'transparent', isolation: 'isolate'}} …>`,
- * https://github.com/adobe/react-spectrum/blob/main/packages/@react-spectrum/overlays/src/Overlay.tsx#L59),
+ * https://github.com/adobe/react-spectrum/blob/000fb9358a9962f2d15c866853d5430b67c1ffde/packages/@react-spectrum/overlays/src/Overlay.tsx#L76),
  * 那一層的 scale(medium / large = 密度)沒指定時沿用最近一層上層 Provider —— 也就是觸發點所在那一區
  * (`scale = prevContext ? prevContext.scale : autoScale`,
- * https://github.com/adobe/react-spectrum/blob/main/packages/@react-spectrum/provider/src/Provider.tsx#L57)。
+ * https://github.com/adobe/react-spectrum/blob/000fb9358a9962f2d15c866853d5430b67c1ffde/packages/@react-spectrum/provider/src/Provider.tsx#L62)。
+ * 兩條連結釘在這兩支檔還在原路徑的最後一版(2026-03-18;之後併進 packages/@adobe/react-spectrum,原 main 連結已 404),2026-11-21 開檔核對過那兩行。
  */
 
 import * as React from "react"

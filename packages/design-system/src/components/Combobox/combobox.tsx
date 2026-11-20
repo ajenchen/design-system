@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx#PeoplePicker)PersonDisplay SSOT 對齊;其他 Combobox consumer 走預設 `<Tag>` 純文字(一般選項只有文字標籤)。
+// @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx#PeoplePicker)PersonDisplay SSOT 對齊;其他 Combobox consumer 走預設 `<Tag>` 純文字(一般選項只有文字標籤)。(2026-11-21 複查仍成立:view path 的 ComboboxTagStack 仍不接 tagRenderer;唯一的 tagRenderer consumer PeoplePicker 在 view 走 MultiPersonDisplay、不經此 path,與 field-controls.spec.md 共享 contract (a) 的現況句一致)
 // code-quality-allow: file-size — Combobox 含 CustomCombobox / ReadonlyMultiSelect / ComboboxTagStack + 共用 helpers(單行 Tag 列的量測 2026-10-13 已抽到 ../OverflowIndicator/overflow-tag-list.tsx);CustomCombobox 的觸發欄位、鍵盤與搜尋框共用同一組 state / ref,拆檔要把十幾個 ref 與 handler 跨檔傳遞。
 import * as React from 'react'
 import { flushSync } from 'react-dom'
@@ -77,8 +77,8 @@ export function findInlineSearchMirror(root: ParentNode | null | undefined): HTM
  * Wrapper-only field 都沒有 → empty body interface(future 加 wrapper-only field 加在此處)。
  * `menuOptions` mapping(below)forward 全 SelectMenuOption surface。
  *
- * 對齊 Polaris ChoiceList / Material Autocomplete / Carbon Dropdown 的 wrapper-vs-primitive
- * schema-extension idiom。Hook `check_wrapper_primitive_schema_drift.sh`(M30 機械強制)。
+ * Hook `check_wrapper_primitive_schema_drift.sh`(M30;寫入當下跑的 governance-context-or-block hook:同名 `XxxOption`
+ * 沒 extends 另一個 Option 型別 → 擋;`menuOptions` mapping 漏 forward avatar / description / disabled → 只提醒)。
  */
 export interface ComboboxOption extends SelectMenuOption {
   // (no wrapper-only fields yet — kept for future扩 + same-name SSOT cross-wrapper)

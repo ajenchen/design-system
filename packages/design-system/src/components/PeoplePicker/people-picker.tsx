@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.
+// @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.(2026-11-21 複查仍成立:本檔說明退場經過的註解仍寫著那個舊寫法、實際傳 `tagAreaPaddingLeftPx={undefined}`,而 hook 的 regex 整檔 grep、分不出註解;規則見 field-controls.spec.md 共享 contract (c))
 import * as React from 'react'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ChevronDown } from 'lucide-react'

@@ -1,6 +1,4 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// code-quality-allow: file-size — foundational composite(Tabs + overflow scroll mode + dropdown switcher + inline action slot)在單一 wrapper SSOT 內,拆分會破壞 a11y / focus management chain。當前 ~740 < cap 800。
-// (2026-11-18 複查,理由仍成立:仍約 740 行 < cap 800(scripts/code-quality-audit.mjs FILE_SIZE_TRANSITION_CAP);三種部件的規格見 tabs.spec.md)
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import * as TabsPrimitive from '@radix-ui/react-tabs'

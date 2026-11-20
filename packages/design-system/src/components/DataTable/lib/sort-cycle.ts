@@ -65,7 +65,7 @@ export function columnMenuShowsCancelSort(sorting: SortingState, columnId: strin
  * AG Grid 欄位選單 `if (!(isAscending && isDefaultSort)) result.push('sortAscending')`、`if (!(isDescending && isDefaultSort)) result.push('sortDescending')`
  * (https://github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-enterprise/src/menu/columnMenuFactory.ts#L137-L160)、
  * MUI X `sortDirection !== 'asc'` / `sortDirection !== 'desc'` 才渲染該項
- * (https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/menu/columnMenu/menuItems/GridColumnMenuSortItem.tsx#L56-L73)。
+ * (https://github.com/mui/mui-x/blob/c6b4917eecbd1218c58016c73ff42bc90bee7405/packages/x-data-grid/src/components/menu/columnMenu/menuItems/GridColumnMenuSortItem.tsx#L56-L73,2026-11-21 開檔核對)。
  */
 export function columnMenuShowsSortDirection(sorting: SortingState, columnId: string, direction: SortDirection): boolean {
   return directionOf(sorting, columnId) !== direction

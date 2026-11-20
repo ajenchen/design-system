@@ -1,5 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @story-history: hasSizes / hasInteractiveStates / Default 由 anatomy.stories.tsx SizeMatrix + StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 層展示真實導覽 / 整合情境。
+//   2026-11-21 複查:「Show more」與整合區對齊兩處的說明仍以世界級產品為對照、沒附逐家來源,整檔撤回照舊。
+// @story-history: hasSizes / hasInteractiveStates / Default 由 sidebar.anatomy.stories.tsx SizeMatrix + StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 層展示真實導覽 / 整合情境。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {

@@ -23,7 +23,7 @@
  * slide-in-from)也用同一個判準(`not-data-[state=closed]:fade-in-0`)—— 否則動畫播了、起點變數沒設,看起來還是不動;
  * 閘 `scripts/motion-ssot-invariant.mjs` M1c 擋 `data-[state=open]:` 開頭的進場幾何。
  * 世界級:shadcn Tooltip 進場無條件宣告(`animate-in … fade-in-0 zoom-in-95`,只有收起看 `data-[state=closed]`),
- * 每次打開都播 —— <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/tooltip.tsx#L29-L33>(2026-10-13 開檔核對)。
+ * 每次打開都播 —— <https://github.com/shadcn-ui/ui/blob/c257f688cf4de7ec10cc1be84cad29cd4631182c/apps/v4/registry/new-york-v4/ui/tooltip.tsx#L44>(2026-10-13 開檔核對;2026-11-21 釘 SHA 時重核:className 那一行在 L44,原連結的行號 L29-L33 對不到)。
  *
  * **打開浮層的觸發點箭頭(2026-10-13,motion.spec.md「開合動畫」同族另見 (3),AI 建議「乙」、user 2026-10-07 採納,原話見 motion.spec.md)**:Select / Combobox / AgentPanel
  * 歷史等觸發點上的展開箭頭,跟它打開的浮層同一個時長(`--motion-duration-overlay`)與同一組曲線 —— 打開那一轉走進場曲線、
