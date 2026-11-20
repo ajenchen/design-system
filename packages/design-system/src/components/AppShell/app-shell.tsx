@@ -871,5 +871,5 @@ export const appShellMeta = {
 
 // useAppShell 是公開的 compound API hook(consumer 可自拼 custom aside layout、
 // 讀各區顯示方式 `display`、使用者要求 Right 顯示內容時呼叫 `requestAside`;對齊 MUI `useFormControl` 慣例)。(來源:https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/docs/data/material/components/text-fields/text-fields.md#L192-L200)
-// 由 src/index.ts 公開,Sidebar / AccountMenu / AgentPanel 跨檔消費 —— code-quality-audit 的 dead-export 本來就不會報它,不需要豁免標記。
+// 由 src/index.ts 公開;跨檔使用的是同目錄的 _demo-helpers.tsx、app-shell.stories.tsx、app-shell.anatomy.stories.tsx —— code-quality-audit 的 dead-export 本來就不會報它,不需要豁免標記。
 export { AppShell, AppShellAside, useAppShell }
