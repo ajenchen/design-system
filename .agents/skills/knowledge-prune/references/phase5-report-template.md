@@ -94,8 +94,11 @@ node scripts/validate-knowledge-prune-run.mjs \
   --report <prune-report.md> --findings <phase1-findings.md> \
   --snapshot <metric-snapshots.jsonl> --base <這輪起點 commit>
 node scripts/validate-knowledge-prune-run.mjs --commits-only <base>..<head>   # 只看 commit 訊息
+node scripts/validate-knowledge-prune-run.mjs --commits-only auto            # ci.yml verify-static 每支 PR 跑這個
 ```
 
-- 結束碼:0 = 綠;1 = 紅,逐項印出缺什麼;2 = 量具讀不到東西(範本、git、參數,或 `--commits-only` 的區間是空的)。2 不是綠。
+- 結束碼:0 = 綠;1 = 紅,逐項印出缺什麼;2 = 量具讀不到東西(範本、git、參數,或 `--commits-only` 的區間是空的、`auto` 找不到 base)。2 不是綠。
+- `auto` 的 base 跟 `story-layer-drift-invariant.mjs` 的 `resolveBase` 同一條規則:PR = `origin/<GITHUB_BASE_REF>` 的 merge-base、CI 上的 push = `HEAD^`、本機依序 `origin/main` → `main`;區間 = `<base>..HEAD`。
+- `--commits-only` 的區間裡,標記 commit(驗證器的 `COMMITS_ONLY_MARKER`,b0296c96)與它之前的 commit 不檢查,並印出略過幾個:那之前已合回的 prune commit 訊息不合格、歷史又不改寫。標記不在 HEAD 的祖先鏈(squash 合併進 main 之後)就照原區間檢查。
 - 完整模式在 git repo 裡跑(sha 與 commit 都從目前目錄的 repo 讀),一併檢查 `<base>..HEAD` 的 prune commit。
 - 兩面對照組:`scripts/test-validate-knowledge-prune-run.mjs`。

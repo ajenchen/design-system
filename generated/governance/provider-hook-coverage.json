@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:150320d6140e09a35d4ba90dc41a788d1e8b95adb9824c705c0e4e772478b51a",
+      "hookRegistrations": "sha256:2e37ef08a40ebad1ecbf0e89048145ea11174ea12c0bf2b5f852ce7680c275b8",
       "providerRegistry": "sha256:20f2995b8d3ff2e2814210c4ad7ca8a8f9578f3191bf5a3d2f598224cca4f22b",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -24,8 +24,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "complete-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 58,
-      "projectedCount": 58,
+      "canonicalRegistrationCount": 57,
+      "projectedCount": 57,
       "excludedCount": 0,
       "projected": [
         {
@@ -365,21 +365,6 @@
         {
           "event": "PreToolUse",
           "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_propose_pre_grep_verify.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "PreToolUse",
-          "projectedMatcher": "Edit|Write|MultiEdit",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
           "hook": "check_spec_class_drift.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -593,7 +578,7 @@
           "hook": "post_edit_dispatcher.sh",
           "kind": "hook",
           "runtime": "bash",
-          "outputMode": "governance-context",
+          "outputMode": "governance-context-or-block",
           "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],
@@ -913,8 +898,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "partial-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 58,
-      "projectedCount": 55,
+      "canonicalRegistrationCount": 57,
+      "projectedCount": 54,
       "excludedCount": 3,
       "projected": [
         {
@@ -1239,21 +1224,6 @@
         {
           "event": "PreToolUse",
           "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_propose_pre_grep_verify.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "PreToolUse",
-          "projectedMatcher": "Edit|edit_file|apply_patch|Write|write_file|MultiEdit",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
           "hook": "check_spec_class_drift.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -1452,7 +1422,7 @@
           "hook": "post_edit_dispatcher.sh",
           "kind": "hook",
           "runtime": "bash",
-          "outputMode": "governance-context",
+          "outputMode": "governance-context-or-block",
           "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],
@@ -1824,9 +1794,9 @@
       "hookEnforcement": "ci-only",
       "projectionStatus": "unavailable",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 58,
+      "canonicalRegistrationCount": 57,
       "projectedCount": 0,
-      "excludedCount": 58,
+      "excludedCount": 57,
       "projected": [],
       "excluded": [
         {
@@ -2232,24 +2202,6 @@
         {
           "event": "PreToolUse",
           "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_propose_pre_grep_verify.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeCoverage": "gap",
-          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
-          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
-          "certificationImpact": "not-certified",
-          "authoritativeFallback": {
-            "status": "none"
-          }
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
           "hook": "check_spec_class_drift.sh",
           "kind": "hook",
           "runtime": "bash",
@@ -2517,7 +2469,7 @@
           "hook": "post_edit_dispatcher.sh",
           "kind": "hook",
           "runtime": "bash",
-          "outputMode": "governance-context",
+          "outputMode": "governance-context-or-block",
           "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],

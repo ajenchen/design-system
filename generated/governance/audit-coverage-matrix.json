@@ -11,17 +11,17 @@
   },
   "hook_enforcement_counts": {
     "block": 23,
-    "block-and-warn": 3,
-    "warn": 13,
+    "block-and-warn": 7,
+    "warn": 9,
     "prevents_landing": 12
   },
   "gaps": [],
   "coverage_by_dim": {
     "1": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "post_edit_dispatcher.sh → lib/_story_compile_drift.sh(cva 三方漂移 — story-auto-compile-migrate + scripts/compile-stories.mjs --check chain)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "mechanism": "post_edit_dispatcher.sh → lib/_story_compile_drift.sh(scripts/compile-stories.mjs --all --check:tsx componentMeta ↔ spec frontmatter 的 key;cva defaultVariants 預設值三方比對沒有機械量具,audit-time 判;2026-11-18 D4-02 修 scope —— 原 `*/design-system/components/*` 自搬家後從未觸發)",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_story_compile_drift.sh:這次編輯的元件 compile-stories --all --check 有 drift → exit 2(別的元件的 drift 只列 context)",
       "hook_events": [
         "PostToolUse"
       ],
@@ -148,8 +148,8 @@
     "18": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(shadcn compat alias ban write-time;dispatcher 已 registered settings.json)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在,實際 active 路徑是 dispatcher source lib)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1:這次新增的行有 shadcn alias → exit 2;既有行只列 governanceContext",
       "hook_events": [
         "PostToolUse"
       ],
@@ -250,9 +250,9 @@
     },
     "31": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh WARN(exit 0,2026-05-31 修 dangling ref:原寫 check_overlay_handcraft.sh standalone 不存在,已 fold 成 lib helper)+ grep ban stripped-padding boolean variant audit-time",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "mechanism": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh(2026-11-18 D4-02 起這次新增的行 exit 2;既有的只列 governanceContext)+ grep ban stripped-padding boolean variant audit-time",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_overlay_handcraft.sh Check 1 / 2.5 / 6:這次新增的行 → exit 2;既有行只列 governanceContext",
       "hook_events": [
         "PostToolUse"
       ],
@@ -377,8 +377,8 @@
     "47": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(utility-registry.json SSOT compliance write-time)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1 / 3 / 4(registry 管的 shadcn alias、Tailwind 預設陰影、原料色名):這次新增的行 → exit 2;既有行只列 governanceContext",
       "hook_events": [
         "PostToolUse"
       ],

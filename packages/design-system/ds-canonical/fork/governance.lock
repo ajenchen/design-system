@@ -135,7 +135,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/propose-options/SKILL.md",
-      "sha256": "a3aa1f2661b0e8a4c0731ab4977f45177dcf87ebf5b12aa954a2cd03425439f7",
+      "sha256": "8d5774d8d5122f0ee936629f1f451a3d91b5c9ee83cc858951bb8d7110983066",
       "source": "providers/codex/skills/propose-options",
       "classification": null,
       "destination": null
@@ -1079,7 +1079,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/propose-options/SKILL.md",
-      "sha256": "3f255412753d8cb40baaa4d9e94339f888cf1ee5f18721241b5a6d690b6e2642",
+      "sha256": "f5ec5cb924e2f7ec243b1f88af69300852107c4175d6de6290032c8e2439ae2f",
       "source": "skills/propose-options/SKILL.md",
       "classification": null,
       "destination": null
@@ -1319,7 +1319,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/propose-options/SKILL.md",
-      "sha256": "a3aa1f2661b0e8a4c0731ab4977f45177dcf87ebf5b12aa954a2cd03425439f7",
+      "sha256": "8d5774d8d5122f0ee936629f1f451a3d91b5c9ee83cc858951bb8d7110983066",
       "source": "skills/propose-options/SKILL.md",
       "classification": null,
       "destination": null
@@ -1607,7 +1607,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/propose-options/SKILL.md",
-      "sha256": "9e5038f8e2193685781fa8434c57f58f2e991cf1d21497230b1c08a5ed5c6606",
+      "sha256": "0bcda4148cbee3176ef376d68c6b2b3c6aa4c1310e87e1a2d441bdcb3755c01a",
       "source": null,
       "classification": null,
       "destination": null

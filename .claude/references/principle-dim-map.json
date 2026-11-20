@@ -447,10 +447,6 @@
       "dims": [],
       "note": "2026-05-18 ship(audit SSOT integrity infra,non-component scope):PreToolUse Edit/Write 攔 chain skill / spec / rule / CLAUDE.md hardcode 具體 audit dim 數字(53 dim / 46-dim / N audit dimensions),強制 design-system-audit/SKILL.md `## The audit dimensions` 為 SSOT,deep-audit-cross-codex 等 chain skill 自動繼承。Allowlist:SSOT file 自己 / invariant doc 引用(SSOT/禁/forbidden/example/hardcode keyword 同行)。起因 user 2026-05-18「deep-audit-cross-codex 應該要確保其中的 design system deep audit 跟 design-system-audit deep 是 ssot」"
     },
-    "propose_pre_grep_verify": {
-      "dims": [],
-      "note": "2026-05-18 ship(M18 Q0 Pre-ASK self-verify governance infra):PreToolUse Edit/Write planning/reports/handoff *.md 偵測 propose keyword(請拍板 / 等你拍板 / 決策 N / 我推 A/B/C / 選項)但 content 無 file:line cite 證據 → P1 stderr warn。Escape:檔頭 <!-- @propose-pre-verified --> 含 rationale。起因 2026-05-18 Sheet/inline-action/SurfaceBody 三題 propose 給 user 拍板,grep 後 0 個真 gap;user verbatim「不是老早就跟你說過要我決策前請先基於我們所有的檔案包括設計原則包括 ssot 包括所有實作代碼,自主自動驗證這些問題是否真的是問題」"
-    },
     "tabs_content_chrome_body_double_gap": {
       "dims": [
         89,

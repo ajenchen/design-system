@@ -1064,7 +1064,7 @@ Per-component grep `*.stories.tsx`(非 anatomy/principles)反 pattern:
 
 ## 31. Overlay body 無 stripped-padding boolean variant
 
-**Type**: Absolute / **Canonical**: `overlay-surface.spec.md`「List-as-region in overlay body」+ memory `feedback_layout_v6_canonical.md` / **Home**: 檔頭 `// overlay-body-stripped-variant-allow:`(必含 ≥ 3 家世界級對照 + multi-row hold)
+**Type**: Absolute / **Canonical**: `overlay-surface.spec.md`「List-as-region in overlay body」+ memory `feedback_layout_v6_canonical.md` / **Home**: 同一行或上一行 `// overlay-body-stripped-variant-allow: <理由>`(逐行;2026-11-18 D4-02 前是檔頭整檔放行;必含 ≥ 3 家世界級對照 + multi-row hold)
 
 Per-overlay grep `components/(Dialog|Sheet|Popover)/*.tsx`(非 stories)反 pattern:`(flush|naked|bare|stripped|unpadded|noPadding|paddingless)\?:\s*boolean` 在 body component。對齊 Material/Atlassian/Mantine/shadcn 主流。違反 = list-as-region 該 consumer override(`!px-0 !pt-0`)+ 自管 list outer wrapper。Hook `lib/_overlay_handcraft.sh` Check 6 同源(`post_edit_dispatcher.sh` 消費;原 check_overlay_handcraft.sh 2026-05-13 fold)。
 

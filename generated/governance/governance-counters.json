@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "counts": {
-    "hooks": 56,
+    "hooks": 55,
     "mRules": 33,
     "auditDims": 91,
     "auditDimMin": 1,
@@ -75,7 +75,6 @@
     "packages/design-system/ds-canonical/hooks/check_pixel_quantified_audit.sh",
     "packages/design-system/ds-canonical/hooks/check_plugin_fork_health.sh",
     "packages/design-system/ds-canonical/hooks/check_propose_discipline.sh",
-    "packages/design-system/ds-canonical/hooks/check_propose_pre_grep_verify.sh",
     "packages/design-system/ds-canonical/hooks/check_propose_without_benchmark.sh",
     "packages/design-system/ds-canonical/hooks/check_select_all_canonical.sh",
     "packages/design-system/ds-canonical/hooks/check_sidebar_avatar_canonical.sh",

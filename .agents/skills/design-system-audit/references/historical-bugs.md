@@ -176,7 +176,7 @@ After the 2026-04-21 governance rebuild, each historical bug maps to one of the 
 
 ### 獨立技術陷阱(非 meta-pattern,保留 anchor)
 
-- cva `defaultVariants.size` 三方漂移(SegmentedControl) → `/story-writing` Phase 4 + hook `lib/_cva_default_sync.sh`(`post_edit_dispatcher.sh` 消費;原 check_cva_default_sync.sh 2026-05-13 fold)
+- cva `defaultVariants.size` 三方漂移(SegmentedControl) → `/story-writing` Phase 4 + design-system-audit dim 1(寫入當下的提醒 helper 原 check_cva_default_sync.sh 2026-05-13 fold 進 `post_edit_dispatcher.sh`,2026-11-18 D4-02 退場、檔案已不存在:它只要碰到 cva 就印同一句「去核對三方」,算出的三份預設值從沒拿來比,見 `post_edit_dispatcher.sh` 檔頭)
 - Row 硬寫 `py-2` 產生 gap(TreeView in SidebarGroup) → item-anatomy spec
 - asChild pattern consumer 自查 avatar size → item-anatomy spec
 - HoverCard 誤放 Components/(純行為 primitive 應 Internal/) → `# Story` 判斷 test
@@ -286,6 +286,18 @@ repo 根的治理 bootstrap 檔,其 root→cwd 合併鏈超過預設 32KiB 上�
 ### 工具靜默陷阱(rsync 等長同秒 / rg 黏寫 flag / mktemp 失敗回空)
 
 | 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""` 原地 → trap 刪掉 cwd | 必 `--checksum`、flag 分開寫;mktemp 後必 `[ -n "$V" ]` + `[ -d "$V" ]` 才可正規化／註冊 cleanup(2026-07-28)。**2026-09-18 beta.134 再犯**:consumer mirror 的 `package-lock.json` 換版號後與舊版**完全等長**(版本字串／resolved URL／integrity base64 三者都是固定長度,實測 292873 bytes 不變),clone 又與生成落在同一秒 → rsync 靜默跳過、lock 沒進 commit,直到 consumer 的 `npm ci` 才炸。**上游那句 `✓ lock pins the exact released version` 還是綠的,因為它驗的是來源那份、不是真的被複製過去的那份 —— 綠燈驗錯對象比沒有綠燈更騙人**。規則早就寫了、三處也遵守了,第四處漏掉 → 機械化 `scripts/rsync-checksum-invariant.mjs`(CI required,對照組用合成檔且必須只紅在合成檔上)。**2026-09-20 同一條的第二種形狀:驗了「怎麼判」,沒驗「判的那個值怎麼來」**——發版同意改綁分支後,判定表 8 格全綠、`npm run test:release-consent` 全綠,但餵給它的 `productVisibleFilesChanged` **恆回 true**(自家 helper `run()` 回 `{ok,stdout,stderr}` 沒有 `status`,寫成 `diff.status !== 0` 就是 `undefined !== 0`,恆真且零報錯),整個修正從第一天起是死的,是我刻意去驗它才抓到。**吃參數的純函式,參數邊界就是測試的天然盲點**:判定表把值當輸入,於是永遠測不到算那個值的程式。判準:純函式測試通過後,必再問「這個參數在正式流程裡是誰算的,那支有沒有被測」,並用**真實資料**(真 git commit、真 API 回應)跑兩面對照 —— 該 true 的一筆、該 false 的一筆,兩邊都找得到才算數,找不到對照組要 fail 而不是空跑當綠|
+
+**2026-11-20 補:shell 本身的三種靜默形狀 + /dev/fd**(PROC 包。出處:2026-11-20 派工說明裡的 Bash 鐵律;本包在代理的 Bash 工具〔zsh 5.9〕逐一實測)。代理的 Bash 工具實際上是 zsh,照 sh 的習慣寫會在**不報錯、或只報一行**的情況下少做事,輸出看起來像「0 筆」或「工具不支援」:
+(1) `$V` 不拆字 —— `V="a b c"; for x in $V` 只跑一圈,印 `item:a b c`(zsh 預設不做 word splitting),多個參數變成一個;
+(2) `echo ====` —— 預設 zsh(`zsh -f`)的 EQUALS 展開把 `=字` 當「指令『字』的路徑」:印 `zsh:1: === not found`、**這次呼叫剩下的每一行都不跑**、結束碼 1;同一個 session 的殼層恰好設了 `noequals` 而照常印出 —— 同一行字,結果取決於看不見的殼層選項;
+(3) 萬用字元沒有匹配 —— `ls 不存在的目錄/*.txt` 印 `no matches found`,**那一行整行不跑**(下一行照跑);
+(4) `<(…)` / `>(…)` 走 /dev/fd,沙箱只擋**部分讀法**:同一個 session 裡 `cat <(…)` 與 bash 的 `comm <(…) <(…)` 讀得到,`diff <(…) <(…)` 卻是 `diff: /dev/fd/12: Operation not permitted`(結束碼 2)—— 換一支工具就壞,包在 `$(…)` 裡時失敗只剩一個空字串。bash 自己的 `while … done < <(…)` 在本沙箱讀得到(printf 2 行 → 讀到 2 行)。讀到 0 筆還有一個與沙箱無關的來源:`<(…)` 裡那支指令的結束碼整個被丟掉 —— `done < <(false)`、`find` 找不到目錄、`jq` 讀不到檔,都是讀到 0 行、迴圈結束碼 0、不報錯(2026-11-20 PROC 修正段實測,bash 3.2.57)。
+判準:在 zsh 裡跑 sh 寫法,第一行先 `emulate sh`;兩份輸出要比,先各自存成檔再比兩個檔;任何「0 筆 / 不支援 / 空」,先證明那個工具真的跑過(M32「回 0 筆先證明它拿得到資料」)。同族在 repo 裡的實例:`hooks/tests/run-all.sh` 的覆蓋率閉包原本是 `comm -23 <(…) <(…)`,comm 一失敗 UNTESTED 就是空字串 =「每支 hook 都有測試」,零報錯 —— 改成純 shell 集合差,`scripts/test-hook-test-fixture-guard-invariant.mjs` B14 在 PATH 放一支必定失敗的 comm,閉包照樣紅(舊寫法在同一格印 `Without: 0`)。
+**同族盤點(2026-11-20 PROC 修正段更正:上一版只掃了 `hooks/tests/`,卻寫成「hook 樹內全掃」,commit 訊息還把 run-all 寫成「repo 內唯一一處」,兩句都不對)**。對整個 repo 全文掃 `<(`(`git grep -n -F '<(' HEAD`,不截斷,271 行;`.sh` 的 97 行逐行分開「真的 `<(…)`」與「regex / 字串 / 註解裡的 `<(`」;真的 `>(…)` 0 處):還會被執行的 `<(…)` 全是 `while … done < <(…)` 這一種讀法,共 30 處,都沒改(不在 PROC 範圍,交主線指派)。逐處「讀到 0 筆會怎樣」:
+- 正式 hook 3 處:`hooks/check_naming_and_abstraction.sh:114`(D.2 sibling stories namespace BLOCKER,`find` 列同目錄的 stories)—— 0 筆 = `INCONSISTENT` 維持空字串,**BLOCKER 靜默放行**;`hooks/check_story_invariants.sh:508`(讀 `@story-trait-rationale` 宣告)—— 0 筆 = 合法宣告拿不到抵免,該 trait 被要求補 story(這一半偏嚴、會假紅),但「格式錯」「理由是延後」兩種 P0 **靜默消失**;`hooks/stop_passive_logging.sh:259`(`git diff --name-only HEAD` 判 gov_edited)—— 0 筆而且這一輪沒有新 commit = 那次 Stop 不寫 governance-drift.jsonl,只少一筆軟性紀錄,不擋任何東西。
+- fork 啟動器 21 處(兩支 × 三份,三份內容逐位元相同:`ds-canonical/fork/launchers/`、`ds-canonical/templates/product-launchers/`、`template/ds-product-template/governance/bin/`):`fork-governance-dispatcher.sh:29 / :47` 與 SessionStart 前導啟動器(檔名 `inject_fork_governance_preamble` 加 `.sh`;不寫成一個字,是因為 hook-citation-liveness 閘把 `inject_` 開頭的 `.sh` 一律當 hook 名去 hook 樹找,這支是啟動器、不在 hook 樹)`:21 / :33`(`compgen -e` 清 GIT_* / LD_* / DYLD_* / BASH_ENV / NODE_OPTIONS 等注入變數與 *_TOOL_INPUT)、`dispatcher :33` 與 `preamble :25`(`compgen -A function` 清繼承函式)—— 0 筆 = **一個都沒清、照常往下跑**(只有 PATH 例外:迴圈後無條件重設);`dispatcher :97`(jq 讀 manifest 的 provider 環境對照)—— 0 筆 = 不做別名對照,jq 失敗也被 `2>/dev/null` 吃掉。兩支在迴圈上方的註解都寫這段是縱深防線,前面還有生成的 hook 指令自帶的清環境前綴(dispatcher :17–:22、preamble :11–:14),所以 0 筆是少一道,不是全沒有。
+- 測試 6 處:`hooks/tests/test_check_consumer_code_quality.sh:58`、`test_check_opacity_token_usage.sh:196 / :210`、`test_check_token_hygiene.sh:51`(jq 讀登記清單產生測試格)—— 0 筆 = 那幾格沒跑、suite 照綠;`packages/governance/test/product-launcher-runtime.test.mjs:54 / :66`(假 hook 用 `compgen -e` 查注入變數有沒有漏進來)—— 0 筆 = 漏了也查不到、測試照綠。
+另有 1 處在 `hooks/tests/` 裡是 printf 印出來當測資的字串(`< <(cat <<'EOF'`),不會被執行。
 
 ### 量 focus 顏色不等 transition
 
@@ -505,3 +517,8 @@ meta-patterns.md 每個 session 都讀;M23 / M32 / M36 / M37 第 2 欄裡有日�
 ## M37 七個同日錨例(2026-09-20;2026-11-17 knowledge-prune 從 meta-patterns.md M37 第 2 欄逐字搬來,第 3 欄留編號索引)
 
 ①「user 同意發這份工作」寫成綁 commit SHA → 發版必然產生新 commit,user 被迫為同一份工作講六次「發版」;②「必過 check」綁 check 名字;③「出處可信」綁 job 名;④「這道閘存在」= 檔案存在(沒有任何執行面呼叫它);⑤ 自家 helper 回 `{ok,…}` 卻讀 `.status`(`undefined !== 0` 恆真);⑥「畫面已渲染」= 過了 900 毫秒(慢的 runner 上假紅,還指控一個不存在的問題);⑦「已派工」被當成「已處理完」—— 而派工的目的正是讓分支**稍後**出現,於是正確路徑被自己鎖死,空轉到逾時。
+
+## 量測流程的兩個代理(2026-11-18 knowledge-prune 第一波;2026-11-20 PROC 落檔,M37 / M32 錨例)
+
+- **M37 代理例:「同一份內容重跑了幾次」拿 gate log 資料夾的名稱與序號來數**。第一波事後盤點:以資料夾名稱推估約 35 次是對同一份內容重跑,但無法以內容證實,其中至少 8 次確定**不是**重跑;以名稱推估的時間占比約 26%,單次 3–71 分鐘。要保證的性質是「同一份內容(`git write-tree` 的 TREE)、同一種模式、已經量過而且全綠」;拿來判斷的是「資料夾叫什麼、第幾號」;兩者在「修完再量」時分開 —— 新序號底下可能是新內容,也可能是同一份。修法:每次量測把 TREE 寫進紀錄,去重與「commit 之後內容沒變」都比 TREE(交接工具 gate 的 DEDUP-OF / tree-bound、wave-cost 的「同 TREE 同模式跑了不只一次」)。
+- **M32 第四題(「它在機器慢的時候還會綠嗎」)的估算版:拿單獨跑的耗時當多包同時跑時的預估**。單獨跑的基準(11-18 實測:治理套件測試 130 秒 / hook 測試 450 秒)不是那一步的常數,是「這台機器當下有多忙」的函數 —— 同一步 hook 測試在一次整串量測裡是 1082 秒(約 2.4 倍,占整串約 1400 秒的 77%)。預估要用同樣並行度下量到的數字;時限型的紅先看當下負載,高負載下的逾時先判儀器、低負載對同一份內容重跑仍紅才算產品紅(交接工具 gate 的 INSTRUMENT-SUSPECT)。同一天量具自己也犯了一次 M37:「滿載倍率」第一版被拿來當警示,量的是單次延遲而不是浪費 —— CPU 吃滿時每一步變慢是平均分攤、總完成量不變,真正的浪費是互搶到記憶體不夠、開始換頁,改看記憶體剩餘百分比(交接 `scripts/bin/wave-cost.py` 檔頭)。
