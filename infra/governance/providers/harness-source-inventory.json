@@ -205,7 +205,6 @@
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_cite_required.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_discipline.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_plain_chinese.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_propose_pre_grep_verify.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_without_benchmark.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_select_all_canonical.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_sidebar_avatar_canonical.sh",

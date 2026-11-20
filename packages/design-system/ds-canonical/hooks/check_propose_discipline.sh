@@ -1,10 +1,13 @@
 #!/bin/bash
-# check_propose_discipline.sh — Stop ×2 — propose 紀律(中文人話 + file:line cite;SSOT memory/feedback_propose_discipline.md)
+# check_propose_discipline.sh — Stop ×3 — propose 紀律(中文人話 + file:line cite;SSOT memory/feedback_propose_discipline.md)
 #
 # 2026-06-11 prune merge(user 拍板「照你建議做」;59→51 headroom):
 # #   r1_plain_chinese = 原 check_propose_plain_chinese.sh(規則逐字搬入,BLOCKER 級別與 escape 標記不變)
 #   r2_cite_required = 原 check_propose_cite_required.sh(規則逐字搬入,BLOCKER 級別與 escape 標記不變)
 # 原檔 → packages/design-system/ds-canonical/hooks/retired/2026-06-11-prune-merge/
+# 2026-11-18 knowledge-prune H-M4:
+#   r3_planning_doc_cite = 原 check_propose_pre_grep_verify.sh(PreToolUse 只寫 stderr、exit 0,模型看不到)併入,
+#   改成 Stop 端會擋;改了什麼、為什麼,寫在 r3 函式上方。
 # 各規則跑在 pipeline 子 shell:規則內 exit 不中斷其他規則;任一 exit 2 → 整體 exit 2。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
@@ -18,6 +21,35 @@ if ! printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1; then
   printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: invalid input envelope\n' >&2
   exit 70
 fi
+
+# ── 「可查證的出處」判準:唯一住處,r2(回覆裡的斷言)與 r3(規劃文件裡的提案)共用 ──
+# The rule's intent is "a claim must be verifiable", so the accepted forms must cover every place a
+# verifiable claim can live — not only design-system file types. Governance and CI claims live in
+# .mjs/.sh/.yml/.json, and claims about provider behaviour can only be sourced to external product
+# documentation, which has no repo line number. Keeping the narrow list turned honest citations into
+# BLOCKERs (2026-08-02: citing run-provider-hook.mjs and the official sandboxing docs was rejected),
+# which is the same "predicate narrower than intent" defect M7 warns about.
+# Accept: <file>.<ext>:42 for the source types below | L42 | L42-50 | #L42 | line 42 | https://… URL
+#
+# Deploy previews are not sources. Every solo-workflow reply carries a per-branch Netlify preview URL
+# (AGENTS.md, Git solo-work canonical step 2/5), so counting any URL as a citation would switch this
+# check off for exactly the replies it is meant to police. Negative-list rather than allowlist: an
+# allowlist of "real" documentation hosts drifts and reproduces the too-narrow predicate this hook
+# was widened to fix.
+# Blank out the URL text only. Dropping whole lines would also discard a real file:line citation that
+# happens to share a line with the preview link. Host-anchored: `[^/[:space:]]*` before the
+# alternation means the match must land in the authority component, so a documentation URL that
+# merely mentions "localhost" in its path or fragment is not blanked (2026-08-04 adversarial
+# review). ajenchen.github.io is this repo's own deployed Storybook — a deploy artifact, not a
+# source; scoped to the exact host so genuinely external *.github.io documentation still counts.
+# (2026-11-18 從 r2 函式內原封搬到這裡給 r3 共用;判準一個字都沒改,r2 的測試照跑。)
+PROPOSE_NON_SOURCE_URL='https?://[^/[:space:]]*(\.netlify\.app|localhost|127\.0\.0\.1|0\.0\.0\.0|ajenchen\.github\.io)[^[:space:]]*'
+PROPOSE_VERIFIABLE_CITE_RE='\.(spec\.md|md|css|tsx|ts|mjs|cjs|js|json|sh|ya?ml|toml):[0-9]+|#L[0-9]+|line[[:space:]]+[0-9]+|L[0-9]+-[0-9]+|L[0-9]+|https?://[^[:space:]]+'
+propose_has_verifiable_cite() {
+  local candidates
+  candidates=$(sed -E "s#${PROPOSE_NON_SOURCE_URL}#(deploy-preview)#g" <<<"$1")
+  grep -qE "$PROPOSE_VERIFIABLE_CITE_RE" <<<"$candidates"
+}
 
 r1_plain_chinese() {
 set -uo pipefail
@@ -312,30 +344,9 @@ if [ -z "$HAS_CLAIM" ]; then
   exit 0
 fi
 
-# Detect cite patterns.
-# The rule's intent is "a claim must be verifiable", so the accepted forms must cover every place a
-# verifiable claim can live — not only design-system file types. Governance and CI claims live in
-# .mjs/.sh/.yml/.json, and claims about provider behaviour can only be sourced to external product
-# documentation, which has no repo line number. Keeping the narrow list turned honest citations into
-# BLOCKERs (2026-08-02: citing run-provider-hook.mjs and the official sandboxing docs was rejected),
-# which is the same "predicate narrower than intent" defect M7 warns about.
-# Accept: <file>.<ext>:42 for the source types below | L42 | L42-50 | #L42 | line 42 | https://… URL
-#
-# Deploy previews are not sources. Every solo-workflow reply carries a per-branch Netlify preview URL
-# (AGENTS.md, Git solo-work canonical step 2/5), so counting any URL as a citation would switch this
-# check off for exactly the replies it is meant to police. Negative-list rather than allowlist: an
-# allowlist of "real" documentation hosts drifts and reproduces the too-narrow predicate this hook
-# was widened to fix.
-# Blank out the URL text only. Dropping whole lines would also discard a real file:line citation that
-# happens to share a line with the preview link. Host-anchored: `[^/[:space:]]*` before the
-# alternation means the match must land in the authority component, so a documentation URL that
-# merely mentions "localhost" in its path or fragment is not blanked (2026-08-04 adversarial
-# review). ajenchen.github.io is this repo's own deployed Storybook — a deploy artifact, not a
-# source; scoped to the exact host so genuinely external *.github.io documentation still counts.
-NON_SOURCE_URL='https?://[^/[:space:]]*(\.netlify\.app|localhost|127\.0\.0\.1|0\.0\.0\.0|ajenchen\.github\.io)[^[:space:]]*'
-CITE_CANDIDATES=$(sed -E "s#${NON_SOURCE_URL}#(deploy-preview)#g" <<<"$LAST_REPLY")
+# Detect cite patterns:判準與理由住在檔頭 propose_has_verifiable_cite(r3 共用)。
 HAS_CITE=""
-if grep -qE '\.(spec\.md|md|css|tsx|ts|mjs|cjs|js|json|sh|ya?ml|toml):[0-9]+|#L[0-9]+|line[[:space:]]+[0-9]+|L[0-9]+-[0-9]+|L[0-9]+|https?://[^[:space:]]+' <<<"$CITE_CANDIDATES"; then
+if propose_has_verifiable_cite "$LAST_REPLY"; then
   HAS_CITE="found"
 fi
 
@@ -365,6 +376,172 @@ fi
 exit 0
 }
 
+# ── r3(2026-11-18 knowledge-prune H-M4):規劃 / 報告 / 交接文件裡請 user 拍板,要先附查證的出處(M18 Q0)──
+# 原 check_propose_pre_grep_verify.sh(PreToolUse Edit/Write)的提案字眼與三種出處寫法逐字搬入,改了四件事:
+#   (1) 擋,不是提醒:原支 outputMode = diagnostic(寫 stderr、exit 0),而「Claude never sees stderr from a hook
+#       that exits 0」(https://code.claude.com/docs/en/hooks);搬到 Stop 之後,governance-context 在 Stop 只會變成給
+#       user 看的 systemMessage(scripts/lib/provider-hook-output-transport.mjs:14),進得了模型的只有擋 ——
+#       exit 2 時「Claude receives the stderr message as the explanation for why it should continue」(同一頁 Stop 段)。
+#       也照 governance/memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md:29(偵測 → 警告但 exit 0 = 假 enforcement)。
+#   (2) 範圍:原支只認字面 */planning/*.md|*/reports/*.md|*/handoff/*.md,`handoff-2026-11-12/` 這種目錄名對不上;
+#       改成「任一層目錄名以 planning / report / handoff 開頭」的 .md。提案字眼另收全形冒號「選項：」(原支只收半形)。
+#   (3) 出處:原支只認反引號裡小寫路徑的 .tsx/.ts/.css/.md,引 `AGENTS.md` 或 .mjs/.sh/.json 的行號都算沒附;
+#       改成 propose_has_verifiable_cite(與 r2 同一個判準)或原支三種寫法任一(原本放行的照樣放行)。
+#   (4) 看「這一輪寫進去的」決定要不要查、看「檔案現在的樣子」決定合不合格:被擋後補一個 Edit 加出處、
+#       或把提案改掉,下一次 Stop 就放行;不會因為本輪第一次 Write 的內容永遠擋。檔案讀不到(已搬走、不是一般檔、
+#       超過 8 MiB)就改判本輪寫入的內容。
+# 「這一輪」= 最後一則使用者本人訊息之後。判準同 hooks/lib 的 userVoiceText(isMeta / 掛在工具上的 /
+#   背景通知 / 壓縮摘要都不是使用者;這裡是 python 照抄的一份,沒有呼叫它 —— 所以不寫那支 .mjs 的檔名:
+#   harness-source-inventory 會把內文提到該檔名的 shell 都算成它的消費者、要求登記),再加一條:只認 type 與 role 一致的紀錄 —— 真實 transcript 每則訊息另有一份
+#   api-request-blob 副本(role 也是 user / assistant),算進來會把邊界切在本輪中間。不用 r1 中途文字的邊界:那個邊界在
+#   「Stop hook feedback」(isMeta 的 user 紀錄)之後重算,r1 需要這樣(說出口的話收不回來),r3 不行(被擋後要看得到原本那次寫入)。
+# 看不到就不判:transcript 讀不到、或找不到使用者訊息(Codex 沒有 versioned transcript:packages/governance/canonical/providers.json:514)
+#   → exit 0;解析失敗 → GOVERNANCE_INTEGRITY exit 70,不讀成合格。
+# Escape:檔案前 3 行有 `<!-- @propose-pre-verified: 查過什麼、為何不附出處 -->`(冒號後理由必填;原支不檢查理由,改成擋之後補上)。
+R3_PROPOSE_RE='(請拍板|等你拍板|待你拍板|決策 [0-9N]|我推 [ABC]|選項(:|：)|propose for user|你決定|讓我判斷決策)'
+R3_LEGACY_CITE_RE='`[a-z][a-z0-9/-]+\.(tsx|ts|css|md):[0-9]+`|`[a-z][a-z0-9/-]+\.(tsx|ts|css|md)`|`packages/design-system/src/'
+R3_ESCAPE_RE='@propose-pre-verified:[[:space:]]*[^[:space:]>-]'
+r3_planning_doc_cite() {
+set -uo pipefail
+INPUT=$(cat 2>/dev/null || echo "{}")
+EVENT=$(jq -r '.hook_event_name // ""' <<<"$INPUT" 2>/dev/null)
+case "${EVENT:-}" in
+  Stop|SubagentStop) ;;
+  *) exit 0 ;;
+esac
+TRANSCRIPT_PATH=$(jq -r '.transcript_path // ""' <<<"$INPUT" 2>/dev/null)
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+  exit 0
+fi
+HOOK_CWD=$(jq -r '.cwd // ""' <<<"$INPUT" 2>/dev/null)
+[ -n "$HOOK_CWD" ] || HOOK_CWD=$PWD
+
+R3_PY=''
+IFS= read -r -d '' R3_PY <<'R3_PY_SOURCE' || true
+import json, os, re, stat, sys
+transcript, cwd = sys.argv[1], sys.argv[2]
+DIR_PREFIX = re.compile(r'(?:planning|report|handoff)')
+MAX_DOC_BYTES = 8 * 1024 * 1024
+def message_of(record):
+    msg = record.get('message')
+    return msg if isinstance(msg, dict) else {}
+def role_of(record):
+    return message_of(record).get('role') or record.get('role')
+def content_of(record):
+    msg = message_of(record)
+    return msg['content'] if 'content' in msg else record.get('content')
+def kind_of(record):
+    role = role_of(record)
+    return role if record.get('type') in (None, role) else None
+def text_of(content):
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return '\n'.join(item['text'] for item in content
+                         if isinstance(item, dict) and item.get('type') != 'tool_result' and isinstance(item.get('text'), str) and item['text'])
+    return ''
+def is_user_voice(record):
+    if kind_of(record) != 'user' or record.get('isMeta') is True or isinstance(record.get('sourceToolUseID'), str):
+        return False
+    text = text_of(content_of(record)).strip()
+    if not text or re.match(r'\[SYSTEM NOTIFICATION\b', text) or '<task-notification>' in text:
+        return False
+    return not text.startswith('This session is being continued from a previous conversation')
+try:
+    with open(transcript, encoding='utf-8') as handle:
+        raw_lines = handle.read().splitlines()
+except (OSError, UnicodeDecodeError):
+    print(json.dumps({'ok': False}))
+    sys.exit(0)
+records, last_user = [], -1
+for line in raw_lines:
+    try:
+        record = json.loads(line)
+    except ValueError:
+        continue
+    if not isinstance(record, dict):
+        continue
+    records.append(record)
+    if is_user_voice(record):
+        last_user = len(records) - 1
+if last_user < 0:
+    print(json.dumps({'ok': False}))
+    sys.exit(0)
+written, order = {}, []
+for record in records[last_user + 1:]:
+    content = content_of(record)
+    if kind_of(record) != 'assistant' or not isinstance(content, list):
+        continue
+    for item in content:
+        if not isinstance(item, dict) or item.get('type') != 'tool_use' or item.get('name') not in ('Write', 'Edit', 'MultiEdit'):
+            continue
+        data = item.get('input') if isinstance(item.get('input'), dict) else {}
+        target = data.get('file_path')
+        if not isinstance(target, str) or not target.endswith('.md'):
+            continue
+        if not any(DIR_PREFIX.match(part) for part in target.split('/')[:-1]):
+            continue
+        chunks = [data[key] for key in ('content', 'new_string') if isinstance(data.get(key), str)]
+        if isinstance(data.get('edits'), list):
+            chunks += [edit['new_string'] for edit in data['edits'] if isinstance(edit, dict) and isinstance(edit.get('new_string'), str)]
+        if target not in written:
+            written[target] = []
+            order.append(target)
+        written[target].extend(chunks)
+def current_text(target):
+    full = target if os.path.isabs(target) else os.path.join(cwd, target)
+    try:
+        info = os.lstat(full)
+        if not stat.S_ISREG(info.st_mode) or info.st_size > MAX_DOC_BYTES:
+            return None
+        with open(full, encoding='utf-8') as handle:
+            return handle.read()
+    except (OSError, UnicodeDecodeError):
+        return None
+docs = [{'path': target, 'written': '\n'.join(written[target]), 'current': current_text(target)} for target in order]
+print(json.dumps({'ok': True, 'docs': docs}, ensure_ascii=False))
+R3_PY_SOURCE
+ANALYSIS=$(python3 -c "$R3_PY" "$TRANSCRIPT_PATH" "$HOOK_CWD" 2>/dev/null) \
+  && [ "$(jq -r '.ok | type' <<<"$ANALYSIS" 2>/dev/null)" = "boolean" ] || {
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: planning-doc cite analysis failed\n' >&2
+  exit 70
+}
+[ "$(jq -r '.ok' <<<"$ANALYSIS")" = "true" ] || exit 0
+DOC_COUNT=$(jq -er '.docs | length' <<<"$ANALYSIS" 2>/dev/null) || {
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: planning-doc list unreadable\n' >&2
+  exit 70
+}
+FLAGGED=""
+INDEX=0
+while [ "$INDEX" -lt "$DOC_COUNT" ]; do
+  DOC_PATH=$(jq -r --argjson i "$INDEX" '.docs[$i].path' <<<"$ANALYSIS")
+  WRITTEN=$(jq -r --argjson i "$INDEX" '.docs[$i].written' <<<"$ANALYSIS")
+  DOC=$(jq -r --argjson i "$INDEX" '.docs[$i].current // .docs[$i].written' <<<"$ANALYSIS")
+  INDEX=$((INDEX + 1))
+  # 本輪寫進去的有提案字眼,而且檔案現在仍有(改掉了就放行)
+  grep -qE "$R3_PROPOSE_RE" <<<"$WRITTEN" || continue
+  grep -qE "$R3_PROPOSE_RE" <<<"$DOC" || continue
+  DOC_HEAD=$(sed -n '1,3p' <<<"$DOC")
+  grep -qE "$R3_ESCAPE_RE" <<<"$DOC_HEAD" && continue
+  propose_has_verifiable_cite "$DOC" && continue
+  grep -qE "$R3_LEGACY_CITE_RE" <<<"$DOC" && continue
+  FLAGGED="${FLAGGED}    • ${DOC_PATH}"$'\n'
+done
+[ -z "$FLAGGED" ] && exit 0
+{
+  echo "🚨 PROPOSE-PRE-VERIFY BLOCKER(M18 Q0):這一輪寫進規劃 / 報告 / 交接文件的內容有「請 user 拍板」類字眼,文件裡卻沒有任何可查證的出處:"
+  printf '%s' "$FLAGGED"
+  echo "  要 user 決定之前,先 grep 全庫、讀相關 spec.md 與實際用法,確認問題真的存在,再把證據寫進同一份文件:"
+  echo "    檔名加行號(例如 .tsx / .md / .mjs 檔後接冒號與行號)、L 加行號、line 加行號,或官方文件網址;"
+  echo "    用反引號包起來的 .tsx / .ts / .css / .md 路徑也算。"
+  echo "  查過之後發現不是真問題 → 把提案拿掉。已查證但文件不適合放出處 → 在該檔前 3 行加"
+  echo "    <!-- @propose-pre-verified: 查過什麼、為何不附出處 -->(冒號後理由必填)。"
+  echo "  錨例:2026-05-18 Sheet / inline-action / SurfaceBody 三題沒查就丟給 user 拍板,grep 之後 0 個真問題。"
+  echo "  SSOT:packages/design-system/ds-canonical/skills/propose-options/SKILL.md 的 Q0 段。"
+} >&2
+exit 2
+}
+
 _CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/check-propose-discipline.XXXXXX") || {
   printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: output capture unavailable\n' >&2
   exit 70
@@ -380,7 +557,7 @@ _INPUT_FILE="$_CAPTURE_DIR/input"
 printf '%s' "$INPUT" >"$_INPUT_FILE"
 _RULE_INDEX=0
 
-for _rule in r1_plain_chinese r2_cite_required; do
+for _rule in r1_plain_chinese r2_cite_required r3_planning_doc_cite; do
   _RULE_INDEX=$((_RULE_INDEX + 1))
   _stdout="$_CAPTURE_DIR/$_RULE_INDEX.stdout"
   _stderr="$_CAPTURE_DIR/$_RULE_INDEX.stderr"

@@ -182,12 +182,6 @@
           },
           {
             "kind": "hook",
-            "hook": "check_propose_pre_grep_verify.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
-          },
-          {
-            "kind": "hook",
             "hook": "check_spec_class_drift.sh",
             "runtime": "bash",
             "outputMode": "governance-context"
