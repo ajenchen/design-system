@@ -8,13 +8,18 @@
 //      https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/focus/FocusScope.tsx )。
 //   2. 按下後**播報結果**(polite):焦點落到「加排序」只會唸那顆按鈕,唸不出清單被清掉 / 換回預設。訊息只在「值仍等於這次動作的結果」時留著,
 //      使用者再改任何一處就清空 —— 下一次按同一顆時文字從空變回來,讀屏才會再唸(同一句文字不變 = 不播報)。
+//      欄位顯示面板底部「顯示全部 / 全部隱藏」也走這裡播報(2026-11-21,A74 ⑤):那顆按下去不消失、只換字,焦點留在它身上,
+//      但讀屏不一定唸出聚焦中按鈕換了的名字 → 一樣要播報結果;它只改顯示 / 隱藏,所以由 `run` 的第 4 個參數只交出那一半(不碰順序)。
 //   規格:`../data-table.spec.md` L4「Header 恢復預設 / 清除全部」;閘:`scripts/data-table-panel-reset-clear-invariant.mjs`。
 
 import * as React from 'react'
 
 export interface PanelBulkAction<V> {
-  /** 在按鈕的 onClick 裡呼叫:記下「焦點在不在這顆按鈕上」、登記播報,再把 next 交給 consumer */
-  run: (event: React.MouseEvent<HTMLElement>, next: V, announcement: string) => void
+  /**
+   * 在按鈕的 onClick 裡呼叫:記下「焦點在不在這顆按鈕上」、登記播報,再把 next 交給 consumer。
+   * `apply`:這一下只改得到 next 的一部分時,由它交給 consumer(不給 = 交給 hook 的 `onChange`);播報照樣以「值 = next」判定。
+   */
+  run: (event: React.MouseEvent<HTMLElement>, next: V, announcement: string, apply?: (next: V) => void) => void
   /** 面板內恆渲染的 polite 區域(sr-only);沒渲染 = 整批動作無聲 */
   liveRegion: React.ReactElement
 }
@@ -48,11 +53,12 @@ export function usePanelBulkAction<V>({
     }
   })
 
-  const run = React.useCallback((event: React.MouseEvent<HTMLElement>, next: V, announcement: string) => {
+  const run = React.useCallback((event: React.MouseEvent<HTMLElement>, next: V, announcement: string, apply?: (next: V) => void) => {
     const button = event.currentTarget
     if (button.contains(button.ownerDocument.activeElement)) pendingFocus.current = true
     setNotice({ text: announcement, after: next })
-    onChange(next)
+    if (apply) apply(next)
+    else onChange(next)
   }, [onChange])
 
   const message = notice && isEqual(value, notice.after) ? notice.text : ''

@@ -11,7 +11,7 @@
  *   - 搜尋(跨欄位 label match)—— 2026-11-15 前要另外傳 `searchable` 才有;`searchable` 已移除
  *   - 可拖曳排序的欄位列 + Eye / EyeOff 切換;Locked 欄位(`lockedIds`)顯 Lock icon,不可 toggle / 不可 drag
  *     —— 2026-11-15 前要傳 `columnOrder` + `onColumnOrderChange` 才有拖曳;兩個現在必填(順序怎麼存只有產品能做,沒有內建 fallback)
- *   - 底部 bidirectional bulk toggle(全可見 → 全部隱藏 / 任一隱藏 → 顯示全部)
+ *   - 底部 bidirectional bulk toggle(全可見 → 全部隱藏 / 任一隱藏 → 顯示全部);按下後 polite 播報結果(2026-11-21)
  * 「恢復預設」:還原這個面板改得動的全部 —— 顯示 / 隱藏回到 `defaultVisibility`、順序回到 `defaultColumnOrder`(沒傳 = `columns`
  *   定義順序、鎖定欄排最前);兩個預設至少傳一個、目前與它不同才出現,都不傳就沒有 —— 同排序 / 篩選面板
  *   (data-table.spec.md L4「Header 恢復預設 / 清除全部」;2026-11-15 前是 `resettable` 開關 + 有隱藏欄才出現、按下 = 全部顯示;
@@ -219,14 +219,13 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     onVisibilityChange({ ...visibility, [id]: !visible })
   }
 
-  const handleBulkToggle = () => {
-    if (allVisible) {
-      const next: Record<string, boolean> = {}
-      togglableIds.forEach((id) => { next[id] = false })
-      onVisibilityChange(next)
-    } else {
-      onVisibilityChange({})
-    }
+  // 按下後播報結果(同一個 polite 區域;2026-11-21 前無聲):這顆按下去不消失、只把字換成相反的動作,焦點留在它身上,
+  // 讀屏不一定唸出聚焦中按鈕換了的名字 → 使用者聽不出欄位已全部顯示 / 隱藏。只改顯示 / 隱藏、不碰順序
+  //(第 4 個參數只交出顯示那一半;交給 bulk 的 onChange 會連帶呼叫 onColumnOrderChange)。【AI 推導 2026-11-21】data-table.spec.md L4
+  const handleBulkToggle = (e: React.MouseEvent<HTMLElement>) => {
+    const next: Record<string, boolean> = {}
+    if (allVisible) togglableIds.forEach((id) => { next[id] = false })
+    bulk.run(e, { visibility: next, order: orderedIds }, allVisible ? '已隱藏全部欄位' : '已顯示全部欄位', (n) => onVisibilityChange(n.visibility))
   }
 
   // C1/B2 修(2026-09-07):先前沒傳 accessibility → 吃 dnd-kit 英文預設,
@@ -340,7 +339,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
           {allVisible ? '全部隱藏' : '顯示全部'}
         </Button>
       </PopoverFooter>
-      {/* 恆渲染的 polite 區域(sr-only = 不佔版面):「恢復預設」的結果播報 */}
+      {/* 恆渲染的 polite 區域(sr-only = 不佔版面):「恢復預設」與底部「顯示全部 / 全部隱藏」的結果播報 */}
       {bulk.liveRegion}
     </div>
   )
