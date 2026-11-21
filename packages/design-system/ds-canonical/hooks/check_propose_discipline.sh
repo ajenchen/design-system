@@ -405,9 +405,12 @@ exit 0
 # ── r3(2026-11-18 knowledge-prune H-M4):規劃 / 報告 / 交接文件裡請 user 拍板,要先附查證的出處(M18 Q0)──
 # 原 check_propose_pre_grep_verify.sh(PreToolUse Edit/Write)的提案字眼與三種出處寫法逐字搬入,改了五件事:
 #   (1) 擋,不是提醒:原支 outputMode = diagnostic(寫 stderr、exit 0),而「Claude never sees stderr from a hook
-#       that exits 0」(https://code.claude.com/docs/en/hooks);搬到 Stop 之後,governance-context 在 Stop 只會變成給
-#       user 看的 systemMessage(scripts/lib/provider-hook-output-transport.mjs:14),進得了模型的只有擋 ——
+#       that exits 0」(https://code.claude.com/docs/en/hooks);搬到 Stop 之後,governance-context 在 Stop 當時只會變成給
+#       user 看的 systemMessage,進得了模型的只有擋 ——
 #       exit 2 時「Claude receives the stderr message as the explanation for why it should continue」(同一頁 Stop 段)。
+#       2026-11-21 PROC-H 起,Stop 的 context 在第一次停下(stop_hook_active 為 false)會走 Stop additionalContext,模型看得到,
+#       續跑中仍只給 user(scripts/lib/provider-hook-output-transport.mjs#formatProviderHookContext);r3 照舊用擋:
+#       沒出處的拍板請求不該在提醒後才補,而且續跑中那一次的提醒模型看不到。
 #       也照 governance/memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md:29(偵測 → 警告但 exit 0 = 假 enforcement)。
 #   (2) 範圍:原支只認字面 */planning/*.md|*/reports/*.md|*/handoff/*.md,`handoff-2026-11-12/` 這種目錄名對不上;
 #       改成「任一層目錄名以 planning / report / handoff 開頭」的 .md。提案字眼另收全形冒號「選項：」(原支只收半形)。
