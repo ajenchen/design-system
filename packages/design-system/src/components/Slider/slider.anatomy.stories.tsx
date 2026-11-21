@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import { Slider } from './slider'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -94,7 +93,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>一種視覺,多種容器尺寸</H3>
-        <Desc>Slider 的視覺(track 厚度、thumb 直徑、thumb 邊框寬度)是固定單一值——不隨 <code>size</code> 變動。業界(Material / Ant / Radix Themes / shadcn)共識:thumb 必須足夠大以便手指/鼠標捕捉,track 太細會看不清 range。</Desc>
+        <Desc>Slider 的視覺(track 厚度、thumb 直徑、thumb 邊框寬度)是固定單一值——不隨 <code>size</code> 變動。thumb 是位置指示器,必須夠大才容易捕捉,等比縮小會直接降低命中率;track 太細會看不清 range。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>元素</Th><Th>值</Th><Th>Token</Th></tr></thead>
@@ -146,7 +145,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-6 max-w-md">
       <div>
         <H3>互動狀態</H3>
-        <Desc>Hover 和 Active 用陰影(elevation)不用色變——Slider 是「當前位置指示器」,底色不該動(動了會暗示是另一個狀態)。對齊 Material 3 / iOS / Linear 共識。</Desc>
+        <Desc>Hover 和 Active 用陰影(elevation)不用色變——Slider 是「當前位置指示器」,底色不該動(動了會暗示是另一個狀態)。</Desc>
         <div className="flex flex-col gap-3">
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Default</div>
@@ -194,7 +193,7 @@ export const ColorBindingRule: Story = {
 
       <div>
         <H3>為什麼 thumb 是白底 + 邊框,不是實心 primary</H3>
-        <Desc>實心 primary thumb 在 range mode(兩個 thumb)+ primary range 一起時,會跟 range 融為一體,看不出 thumb 邊界。白底 + 邊框讓 thumb 的位置清楚浮出——Material 3 / iOS / Linear 的共同解法。</Desc>
+        <Desc>實心 primary thumb 在 range mode(兩個 thumb)+ primary range 一起時,會跟 range 融為一體,看不出 thumb 邊界。白底 + 邊框讓 thumb 的位置清楚浮出——thumb 是位置指示器,必須能從 range 中辨別。</Desc>
       </div>
     </div>
   ),

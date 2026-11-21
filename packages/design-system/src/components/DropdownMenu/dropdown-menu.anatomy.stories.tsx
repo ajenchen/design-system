@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
 import { Copy, Pencil, Trash2, Download, Monitor, ChevronDown, ChevronRight, Check, type LucideIcon } from 'lucide-react'
@@ -843,7 +842,7 @@ const StateBehaviorInner = () => {
         <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
           <div>打開後逐項勾選——menu 不會 close,使用者看得到即時的選擇組合。</div>
           <div className="pt-1 border-t border-divider">
-            Linear、Jira 的欄位切換、Notion 的篩選選擇器也都這樣;Select 的單選下拉則是選一項就關(那是確定選值)。
+            顯示 / 隱藏欄位、篩選條件這類逐項開關都這樣;Select 的單選下拉則是選一項就關(那是確定選值)。
           </div>
         </div>
       </div>

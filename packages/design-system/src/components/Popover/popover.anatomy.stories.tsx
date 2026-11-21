@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle } from './popover'
@@ -85,7 +84,7 @@ export const Overview: Story = {
             <tbody>
               <tr><Td mono>align</Td><Td mono>PopoverContent</Td><Td mono>'start' | 'center' | 'end'</Td><Td mono>'center'</Td><Td>相對 trigger 的對齊</Td></tr>
               <tr><Td mono>side</Td><Td mono>PopoverContent</Td><Td mono>'top' | 'right' | 'bottom' | 'left'</Td><Td mono>'bottom'</Td><Td>浮層出現在 trigger 的哪一側</Td></tr>
-              <tr><Td mono>sideOffset</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>與 trigger 的距離(px)。DS 設計準則 = 8(對標 Notion / Linear / Figma / Stripe)</Td></tr>
+              <tr><Td mono>sideOffset</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>與 trigger 的距離(px)。DS 設計準則 = 8(overlay 共用的呼吸距離)</Td></tr>
               <tr><Td mono>collisionPadding</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>浮層與 viewport 邊緣的最小間距(px)。DS 設計準則 = 8</Td></tr>
               <tr><Td mono>open / onOpenChange</Td><Td mono>Popover(Root)</Td><Td mono>{'boolean / (o) => void'}</Td><Td mono>—</Td><Td>controlled 開關(選用)</Td></tr>
               <tr><Td mono>defaultOpen</Td><Td mono>Popover(Root)</Td><Td mono>boolean</Td><Td mono>false</Td><Td>uncontrolled 初始開啟狀態</Td></tr>
@@ -140,7 +139,7 @@ export const Inspector: Story = {
     },
     sideOffset: {
       control: { type: 'range', min: 0, max: 24, step: 2 },
-      description: 'DS 設計準則 = 8(對標 Notion / Linear / Figma / Stripe)',
+      description: 'DS 設計準則 = 8(overlay 共用的呼吸距離)',
     },
     width: {
       control: 'radio',
@@ -260,7 +259,7 @@ export const SizeMatrix: Story = {
 
       <div>
         <H3>sideOffset(與 trigger 的距離)</H3>
-        <Desc>DS 設計準則 = 8px(對標 Notion / Linear / Figma / Stripe)。&lt; 4px 會讓浮層貼死 trigger 失去「另一層」感;&gt; 12px 會拉斷 trigger ↔ content 的視覺關聯。consumer 通常不需改,特殊情境(如 anchored tooltip-like)可傳覆蓋。</Desc>
+        <Desc>DS 設計準則 = 8px,overlay primitive 共用的呼吸距離。&lt; 4px 會讓浮層貼死 trigger 失去「另一層」感;&gt; 12px 會拉斷 trigger ↔ content 的視覺關聯。consumer 通常不需改,特殊情境(如 anchored tooltip-like)可傳覆蓋。</Desc>
       </div>
     </div>
   ),
@@ -272,7 +271,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3 paragraph>開啟 / 關閉</H3>
-        <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動:進場 <code>fade-in + zoom-in-95 + slide-from-side</code>,離場 <code>fade-out + zoom-out</code>(無 slide-out,對齊 shadcn 慣例)。進場方向 side-aware slide,浮層看起來從 trigger 「長出來」。</Desc>
+        <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動:進場 <code>fade-in + zoom-in-95 + slide-from-side</code>,離場 <code>fade-out + zoom-out</code>(無 slide-out,對齊 <a href="https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L32" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">shadcn popover</a>:進場有 slide-in、離場只有 fade-out + zoom-out)。進場方向 side-aware slide,浮層看起來從 trigger 「長出來」。</Desc>
         <ul className="text-caption text-fg-muted list-disc pl-5 space-y-1">
           <li>點擊 trigger → 開啟</li>
           <li>點 Popover 外部 → 關閉(click outside)</li>

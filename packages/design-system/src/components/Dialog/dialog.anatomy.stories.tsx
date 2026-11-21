@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: spec-reference tables(Props 速查 / Layout token / 視覺 token / 開關方式對照 / Focus management)為靜態文件對照表,非互動資料網格 — DataTable 為 row-data 互動元件,過度包裝靜態 spec 對照。對齊 Sheet / Popover anatomy 同 pattern。
 // @anatomy-rationale:
 //   Inspector N/A — 設計規格頁不放開得起來的對話框(登記簿 A32「dialog 的設計規格的範例給我拿掉」);可調的 props 列在元件總覽的 Props 速查,開起來的樣子在展示頁。
@@ -23,7 +22,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Dialog 由 Overlay + Content 組成。Content 分三個區塊:Header(邊框底)+ Body(可捲動 flex-1)+ Footer(邊框頂)。基於 Radix Dialog(shadcn 包裝),橋接 DS token。開起來的樣子見<StoryLink kind="Design System/Components/Dialog/展示" name="基本">展示頁</StoryLink>。</Desc>
+        <Desc>Dialog 由 Overlay + Content 組成。Content 分三個區塊:Header(邊框底)+ Body(可捲動 flex-1)+ Footer(邊框頂)。基於 Radix Dialog,橋接 DS token。開起來的樣子見<StoryLink kind="Design System/Components/Dialog/展示" name="基本">展示頁</StoryLink>。</Desc>
       </div>
 
       <div>
@@ -152,7 +151,9 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Density</H3>
-        <Desc>Dialog 不自設任何 density attribute,layout-space + ui-size 全繼承 page。md page → body px-loose 16 / header py-tight 12 → header 48;lg page → 24 / 16 → header 56,隨 page tier。modal 寬鬆呼吸由 page tier 自動滿足(lg 拿 24 = Material 級;md 16 = Polaris Modal 下限)。世界級:SAP Fiori / AWS Cloudscape 皆讓 modal 跟 page density dial 走,不釘固定 tier。</Desc>
+        <Desc>Dialog 不自設任何 density attribute,layout-space + ui-size 全繼承 page。md page → body px-loose 16 / header py-tight 12 → header 48;lg page → 24 / 16 → header 56,隨 page tier。modal 寬鬆呼吸由 page tier 自動滿足:lg 產品拿 24;md 產品本就要緊湊(資訊密集),16 仍留得出內容與外框之間的呼吸空間,是本 DS modal 內距的下限。有同類密度切換的{' '}
+          <a href="https://cloudscape.design/foundation/visual-foundation/content-density/" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">AWS Cloudscape</a>{' '}
+          也讓緊湊間距套到所有元件(例外只列說明性元件與小目標,不含 modal),不把 modal 釘在固定 tier。</Desc>
       </div>
 
       <div>

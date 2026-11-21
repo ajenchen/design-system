@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronDown } from 'lucide-react'
@@ -46,7 +45,7 @@ export const Overview: Story = {
           </Accordion>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          結構:<span className="font-mono">[trigger: label + chevron(16px, rotate 180deg when open)] / [content: pb-4 + text-fg-secondary]</span>。每個 AccordionItem(含最後一個)底緣皆有 <span className="font-mono">border-b border-divider</span>——divider 在 item 底緣而非僅 item 之間(shadcn 同款)。
+          結構:<span className="font-mono">[trigger: label + chevron(16px, rotate 180deg when open)] / [content: pb-4 + text-fg-secondary]</span>。每個 AccordionItem(含最後一個)底緣皆有 <span className="font-mono">border-b border-divider</span>——divider 在 item 底緣而非僅 item 之間。
         </p>
       </div>
 
@@ -253,7 +252,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>Trigger 五態色彩</H3>
         <Desc>
-          Trigger 預設為 foreground(正常閱讀色),hover 走 fg-secondary(文字色 tint 弱化;不用 underline,對齊 Notion / Linear / Stripe 現代 SaaS 慣例)。focus-visible 疊加 ring,disabled 時 trigger 文字切換為語義 disabled 色(對齊 Button variant=text,非降透明度),且 pointer-events-none。
+          Trigger 預設為 foreground(正常閱讀色),hover 走 fg-secondary(文字色 tint 弱化;不用 underline —— trigger 是就地展開本頁區塊、不是跳轉,不借用連結的底線訊號)。focus-visible 疊加 ring,disabled 時 trigger 文字切換為語義 disabled 色(對齊 Button variant=text,非降透明度),且 pointer-events-none。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

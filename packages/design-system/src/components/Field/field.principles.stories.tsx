@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -185,9 +184,7 @@ export const OrientationRule: Story = {
       <TutorialRule
         title="判斷法:「欄位數量 + 垂直空間預算」"
         note="表單 / 初次建立(空間充裕、引導性)→ vertical;settings / 修改(已知屬性、密集顯示)→ horizontal"
-      >
-        <ExampleCaption>世界級 DS(Polaris / Material)的 settings 頁都用 horizontal,表單用 vertical</ExampleCaption>
-      </TutorialRule>
+      />
     </TutorialPage>
   ),
 }

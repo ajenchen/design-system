@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { FileViewer, type FileInfo } from './file-viewer'
@@ -406,7 +405,7 @@ export const Inspector: Story = {
                 </tr>
                 <tr>
                   <Td>InfoPanel 寬</Td>
-                  <Td mono>w-80(320px,對齊 Figma right panel 慣例)</Td>
+                  <Td mono>w-80(320px,固定寬,保留更多空間給 viewport)</Td>
                 </tr>
                 <tr>
                   <Td>InfoPanel 內 padding</Td>
@@ -422,7 +421,7 @@ export const Inspector: Story = {
                 </tr>
                 <tr>
                   <Td>Filmstrip thumb gap</Td>
-                  <Td mono>gap-[var(--layout-space-tight)](density-aware,對齊 lightbox 慣例)</Td>
+                  <Td mono>gap-[var(--layout-space-tight)](density-aware)</Td>
                 </tr>
                 <tr>
                   <Td>Filmstrip active thumb ring</Td>
@@ -619,7 +618,6 @@ export const SizeMatrix: Story = {
               <tr>
                 <Th>區塊</Th>
                 <Th>值</Th>
-                <Th>世界級對照</Th>
                 <Th>理由</Th>
               </tr>
             </thead>
@@ -627,55 +625,46 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td>Dialog outer</Td>
                 <Td mono>fixed inset-0(viewport-fill)</Td>
-                <Td>Figma / Google Photos / Dropbox lightbox</Td>
                 <Td>內容消費 context,不留邊</Td>
               </tr>
               <tr>
                 <Td>Toolbar 高</Td>
                 <Td mono>--chrome-header-height(48 md / 56 lg)</Td>
-                <Td>Figma toolbar 48–56 / macOS Preview 56</Td>
                 <Td>ChromeHeader 繼承 page density,token 驅動;md=48 / lg=56(2026-06-15 移除 lockDensity)</Td>
               </tr>
               <tr>
                 <Td>InfoPanel 寬</Td>
                 <Td mono>w-80(320px)</Td>
-                <Td>Figma right panel 320 / Google Photos info 360</Td>
-                <Td>取 Figma 偏窄,留更多空間給 viewport</Td>
+                <Td>固定寬,metadata 長短不改變 viewport;取 320 留更多空間給 viewport</Td>
               </tr>
               <tr>
                 <Td>Filmstrip 高</Td>
                 <Td mono>h-24(96px)</Td>
-                <Td>Google Photos 96 / Dropbox 88</Td>
-                <Td>固定 96(對齊 Google Photos 96 benchmark);thumb 64 + py-2(16px)留白</Td>
+                <Td>固定 96:thumb 64 + py-2(16px)留白</Td>
               </tr>
               <tr>
                 <Td>Filmstrip thumb</Td>
                 <Td mono>64×64 px</Td>
-                <Td>Google Photos 64 / Dropbox 72</Td>
                 <Td>10+ 檔可同時見 + 能辨識縮圖</Td>
               </tr>
               <tr>
                 <Td>Filmstrip thumb gap</Td>
                 <Td mono>gap-[var(--layout-space-tight)]</Td>
-                <Td>Google Photos / Dropbox 3–4 px</Td>
-                <Td>density-aware token,緊密排列 lightbox 慣例</Td>
+                <Td>density-aware token,縮圖緊密排列</Td>
               </tr>
               <tr>
                 <Td>Toolbar 按鈕</Td>
                 <Td mono>Button size="sm" iconOnly</Td>
-                <Td>Figma / Google Drive 32 px icon button</Td>
                 <Td>密集 UI,text variant 不搶焦點</Td>
               </tr>
               <tr>
                 <Td>ZoomInput 寬</Td>
                 <Td mono>width="hug"(field-sizing:content)</Td>
-                <Td>Figma zoom 80 / Google Slides 72</Td>
                 <Td>隨 % 文字寬自適應,chevron 為 endSlot inline action</Td>
               </tr>
               <tr>
                 <Td>Prev/Next arrow</Td>
                 <Td mono>Button size="md" iconOnly</Td>
-                <Td>Google Photos / Dropbox 40 px</Td>
                 <Td>主要瀏覽動作,比 toolbar sm 更明顯</Td>
               </tr>
             </tbody>
@@ -834,7 +823,7 @@ export const StateBehavior: Story = {
               <tr>
                 <Td>雙擊 toggle</Td>
                 <Td mono>雙擊 image</Td>
-                <Td>在 fit-page 附近(±5pt)→ 跳 100%;否則 → 回 fit-page(對齊 Apple Photos / Preview.app / PhotoSwipe)</Td>
+                <Td>在 fit-page 附近(±5pt)→ 跳 100%;否則 → 回 fit-page(「看全貌」與「看原尺寸」是使用者最常要的兩個目的地)</Td>
               </tr>
               <tr>
                 <Td>Fit</Td>

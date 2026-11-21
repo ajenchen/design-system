@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import type { Meta } from '@storybook/react'
 import { useState, useEffect, type ComponentProps } from 'react'
@@ -717,7 +716,7 @@ export const CalendarTokens = {
                     <Td>today</Td>
                     <Td>文字下方藍色底線</Td>
                     <Td mono>[&gt;button]:after:bg-primary · after:h-[1.5px] · after:w-[40%] · after:rounded-full · after:bottom-[5px]</Td>
-                    <Td>after 偽元素 bar(非 text-decoration underline、非 ring circle),避免與 hover 混淆,對齊 Ant / Google Calendar / macOS Calendar</Td>
+                    <Td>after 偽元素 bar(非 text-decoration underline、非 ring circle):today 是持續參考點,不與 hover 的瞬時圈共用形狀,避免混淆</Td>
                   </tr>
                   <tr>
                     <Td>disabled</Td>
@@ -753,7 +752,7 @@ export const CalendarTokens = {
                     <Td>focus-visible(鍵盤焦點)</Td>
                     <Td>非藍底格:往內 2px 藍線;藍底格(選中日 / 端點):1px 白線退 3px,外圈留藍</Td>
                     <Td mono>day button focus-visible:focus-ring-inset;藍底 modifier 另掛 [&gt;button]:focus-visible:focus-ring-inset-emphasis(幾何住 styles/base.css;DateGrid EMPHASIS_FOCUS_RING_CLASSNAME)</Td>
-                    <Td>格距只有 4px、track 與預覽框就在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D,對照 Carbon 選中日)</Td>
+                    <Td>格距只有 4px、track 與預覽框就在縫裡,往外畫會壓到框線;藍底上藍線看不見、白線貼邊只是削小藍圓(2026-09-23 user 拍板 D;候選數值對照 <a href="https://github.com/carbon-design-system/carbon/blob/f577d3573ab87b97fb774a3482402ffed375aa1b/packages/styles/scss/components/date-picker/_flatpickr.scss#L561-L571" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">Carbon 選中日</a>的 1px 線、退 3px)</Td>
                   </tr>
                   <tr>
                     <Td>outside month</Td>
@@ -803,7 +802,7 @@ export const CalendarTokens = {
               <strong>State stacking</strong>:today + selected → selected 勝出(藍底白字圓);today + range-middle → track 灰底 + underline 仍可見。
             </p>
             <p className="text-footnote text-fg-muted mt-2">
-              <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 <code>bg-neutral-selected</code>(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,對齊 Google / Notion / Ant)。
+              <strong>對照 TimePicker</strong>:TimePicker panel 選項 selected 用 <code>bg-neutral-selected</code>(「列表選中」語意,跟 SelectMenu 同流派);DatePicker 用 primary(「最終選定日期」強 affordance,用主色表達確定性)。
             </p>
           </div>
         </div>

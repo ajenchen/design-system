@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @anatomy-rationale:
 //   StateBehavior 涵蓋 fallback chain(src 失敗 → icon → alt 首字 → User icon)
@@ -648,7 +647,7 @@ export const StateBehavior = {
 
       <ExampleSection
         title="Status presence dot(線上 / 離開 / 忙碌 / 離線)"
-        description={<>傳 status prop 在 Avatar 右下角加狀態點,尺寸為 avatar 的 28%(clamp 8–16px),色彩語意對齊 Slack / Teams 業界共識(見 <StoryLink kind="Design System/Components/ProfileCard/設計規格" name="色彩對照表">ProfileCard 色彩對照表</StoryLink>)。狀態本身為唯讀,Avatar 不擁有切換邏輯。</>}
+        description={<>傳 status prop 在 Avatar 右下角加狀態點,尺寸為 avatar 的 28%(clamp 8–16px),色彩走 presence 專屬 token <code>--status-*</code>,不借用 success / warning / error(見 <StoryLink kind="Design System/Components/ProfileCard/設計規格" name="色彩對照表">ProfileCard 色彩對照表</StoryLink>)。狀態本身為唯讀,Avatar 不擁有切換邏輯。</>}
       >
       <div className="flex items-center gap-6">
         {(['online', 'away', 'busy', 'offline'] as const).map(s => (
@@ -671,7 +670,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"・alt 必傳：即使有圖片,alt 同時是「圖片載入失敗時的文字 fallback」與「螢幕報讀時的身份說明」。人員頭像的 alt 建議含姓名與在線狀態(例:「陳冠霖(在線)」),組織 / 專案頭像用品牌或專案名;極少數純裝飾用途才用空字串。\n\n・沒有 alt 時的降級:圖片模式會自動降級為首字或 icon,不會留下沒有任何報讀內容的空頭像。\n\n・在線狀態點不另發報讀:右下角的狀態小點不會被螢幕報讀單獨朗讀,在線狀態整合進頭像本身的 alt 文字。這樣一長串成員名單就不會同時朗讀一堆「在線 / 離線」造成讀屏洪水。\n\n・hover 名片可用鍵盤抵達:當頭像帶有 hoverCard 時,頭像本身會變成可用 Tab 聚焦的圖像(role=img)並顯示聚焦框,鍵盤使用者也能打開名片浮層(頭像刻意不宣告成按鈕 / aria-haspopup,對齊 Radix / GitHub hover card 的零 popup ARIA 慣例)。"}</p>
+      <p className="whitespace-pre-line">{"・alt 必傳：即使有圖片,alt 同時是「圖片載入失敗時的文字 fallback」與「螢幕報讀時的身份說明」。人員頭像的 alt 建議含姓名與在線狀態(例:「陳冠霖(在線)」),組織 / 專案頭像用品牌或專案名;極少數純裝飾用途才用空字串。\n\n・沒有 alt 時的降級:圖片模式會自動降級為首字或 icon,不會留下沒有任何報讀內容的空頭像。\n\n・在線狀態點不另發報讀:右下角的狀態小點不會被螢幕報讀單獨朗讀,在線狀態整合進頭像本身的 alt 文字。這樣一長串成員名單就不會同時朗讀一堆「在線 / 離線」造成讀屏洪水。\n\n・hover 名片可用鍵盤抵達:當頭像帶有 hoverCard 時,頭像本身會變成可用 Tab 聚焦的圖像(role=img)並顯示聚焦框,鍵盤使用者也能打開名片浮層(頭像刻意不宣告成按鈕 / aria-haspopup:名片沒有 Enter / Space 開合行為、也沒有 aria-expanded,宣告了對輔助科技是空承諾)。"}</p>
     </div>
   ),
 }

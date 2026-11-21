@@ -1,5 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-//   2026-11-18 複查:「可互動省略」那則 story 的說明仍有一段世界級對照沒附逐家來源,整檔撤回照舊。
 // @story-history: Breadcrumb 是純結構導覽元件,disabled/states 由 BreadcrumbLink 內部 :focus-visible / :hover / :active 處理(spec.md 互動狀態段已 cover),無 element-level disabled mode(spec.md 互動狀態 > Disabled 段「通常 breadcrumb link 不會 disabled」)。互動行為示範由 InteractiveEllipsis story + anatomy StateBehavior 完整覆蓋。AllSizes retired per F migration 2026-05-15(anatomy auto-compile SizeMatrix owns size showcase)。
 import type { Meta, StoryObj } from '@storybook/react'
 import { House } from 'lucide-react'
@@ -63,7 +61,7 @@ export const InteractiveEllipsis: Story = {
   parameters: {
     docs: {
       description: {
-        story: '點 ⋯ 會開選單,列出被折疊起來的中間層級。滑鼠移上去時 ⋯ 用中性灰的高亮(和一般連結的主色高亮刻意分開,讓「展開選單」和「跳到某一層」兩種動作一眼可辨),對齊 Material / Atlassian / Ant Design 的做法。',
+        story: '點 ⋯ 會開選單,列出被折疊起來的中間層級。滑鼠移上去時 ⋯ 用中性灰的高亮(和一般連結的主色高亮刻意分開,讓「展開選單」和「跳到某一層」兩種動作一眼可辨)。',
       },
     },
   },
@@ -209,7 +207,7 @@ export const PairedWithPageTitle: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Breadcrumb 的字級應對應頁面標題的層級:sm 配 h4(對話框 / 側板),md 配 h3(一般頁面 header,預設),lg 配 h2(詳情頁主視覺)。讓階層視覺維持平衡,麵包屑不搶走標題的視覺權重。首項配 House icon 為業界慣例,用 startIcon 傳入即可,圖示尺寸由元件依字級自動決定(sm/md 16px、lg 20px),三個尺寸可對照觀察。',
+        story: 'Breadcrumb 的字級應對應頁面標題的層級:sm 配 h4(對話框 / 側板),md 配 h3(一般頁面 header,預設),lg 配 h2(詳情頁主視覺)。讓階層視覺維持平衡,麵包屑不搶走標題的視覺權重。首項可配 House icon 讓使用者一眼認出根層級,用 startIcon 傳入即可,圖示尺寸由元件依字級自動決定(sm/md 16px、lg 20px),三個尺寸可對照觀察。',
       },
     },
   },

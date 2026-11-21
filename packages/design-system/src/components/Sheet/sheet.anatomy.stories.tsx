@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Sheet,
@@ -130,7 +129,7 @@ export const SideMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Side 方向</H3>
-        <Desc>消費者只用 side=&quot;right&quot;(detail panel、filter panel;Jira / Linear / Notion 的側邊面板都在右側)。top / bottom / left 是 DS 內部基建(例:AppShell 的 Menu 放不下時從左側滑入的浮層),消費者不傳。</Desc>
+        <Desc>消費者只用 side=&quot;right&quot;(detail panel、編輯、filter panel)。top / bottom / left 是 DS 內部基建(例:AppShell 的 Menu 放不下時從左側滑入的浮層),消費者不傳。</Desc>
       </div>
 
       <div>

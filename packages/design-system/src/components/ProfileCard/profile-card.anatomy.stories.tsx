@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @overlay-open-skip: 本檔絕大多數 story 直接 render ProfileCard(內容不藏在浮層,snapshot 可見);
 //   唯一 HoverCard demo 只示範「hover 整合」消費方式,open-state 內容已由同檔直接 render 的
@@ -220,7 +219,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>四種狀態對應色彩(Avatar 狀態點 + Status 區)</H3>
         <Desc>
-          狀態點顏色語意對齊 Slack / Teams / Linear 業界共識。Status 區的標籤底色一律 <code>bg-muted</code> 保持中性
+          狀態點顏色走 presence 專屬 token <code>--status-*</code>,跟 Avatar 狀態點同源、不借用 success / warning / error(在線狀態不是驗證結果)。Status 區的標籤底色一律 <code>bg-muted</code> 保持中性
           (狀態是展示資訊,不可點擊,避免暗示互動性)。
         </Desc>
         <div className="overflow-x-auto">
