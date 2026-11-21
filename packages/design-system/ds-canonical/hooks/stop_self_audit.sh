@@ -851,6 +851,34 @@ ${LAST_ASSISTANT}"
   fi
 fi
 
+# ── Mechanism 13: 該不該問(2026-11-21,工作包 WP-06;user 2026-11-20 09:23「給我確保這種事情上都有SSOT 沒有漂移」)──
+# 最後一則回覆裡「請 user 決定 / 裁決 / 點頭 / 選 / 看」的句子,同句或同段要寫出合法 scope id(或發版同意)與出處,否則擋;
+# 否定句、講過去的句子、引述、描述規則的句子不擋。判定與合法集合都不在本檔:lib/ask-route.mjs 每次執行時讀本 hook 所在
+# repo 的三處正本 —— AGENTS.md#canonical-decision-authority 區塊、lib/approval-evidence.mjs 的 humanOnlyAuthorityScopes()、
+# infra/governance/release-workflow.json 的發版同意 gate。讀不到 = 儀器失效(70),不得當成通過。
+# 只看最後一則回覆:說出口的話收不回來,被擋之後只看補正那一則。字串比對輔助,已知漏網句型記在交接 ASKFIX-MATCH-AID。
+ASK_ROUTE_REASON=""
+if [ -n "$LAST_ASSISTANT" ]; then
+  ASK_ROUTE_ROOT="$(governance_corpus_root 2>/dev/null)" \
+    || governance_hook_integrity_fail 'ask-route SSOT repository root is unavailable'
+  ASK_ROUTE_OUT=$(printf '%s' "$LAST_ASSISTANT" | node -- "$HOOK_DIR/lib/ask-route.mjs" --root "$ASK_ROUTE_ROOT" 2>/dev/null)
+  ASK_ROUTE_RC=$?
+  case "$ASK_ROUTE_RC" in
+    0) ;;
+    2)
+      ASK_ROUTE_REASON=$(jq -r '
+        [.problems[] | "  • 第 \(.paragraph) 段「\(.sentence[0:160])」(命中:\(.hit))—— \(.why)"] | join("\n")' <<< "$ASK_ROUTE_OUT" 2>/dev/null)
+      ASK_ROUTE_ALLOWED=$(jq -r '.allowed | join(" / ")' <<< "$ASK_ROUTE_OUT" 2>/dev/null)
+      [ -n "$ASK_ROUTE_REASON" ] && [ -n "$ASK_ROUTE_ALLOWED" ] \
+        || governance_hook_integrity_fail 'ask-route block carried no problems or no SSOT set'
+      WARNINGS="${WARNINGS}\n  • 該不該問:回覆裡有請 user 決定 / 看的句子,同句同段沒有合法 scope id(${ASK_ROUTE_ALLOWED})與出處。"
+      ;;
+    *)
+      governance_hook_integrity_fail "ask-route SSOT unreadable or helper failed (rc=${ASK_ROUTE_RC}):$(jq -r '.error // empty' <<< "$ASK_ROUTE_OUT" 2>/dev/null)"
+      ;;
+  esac
+fi
+
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
@@ -1155,6 +1183,27 @@ fi
 # 那則 hook 回饋之前的推播 / 回覆不再重擋(範圍規則見 Mechanism 12 檔頭),所以不會死鎖。
 if [ "${CRITICAL_RELEASE_SELF_AUDIT:-0}" = "1" ] && [ -n "${RSA_REASON:-}" ]; then
   emit_governance_block "$RSA_REASON"
+fi
+
+# ── BLOCKER for Mechanism 13 該不該問(2026-11-21)── 防死鎖不靠遙測狀態檔:本回合的 hook 回饋裡已經有 2 則
+# ASK-ROUTE BLOCKER(同一回合被本機制擋過兩次)→ 第三次起只留提醒(上面的 WARNINGS 下一回合注入),不再擋。
+if [ -n "${ASK_ROUTE_REASON:-}" ]; then
+  ASK_ROUTE_PRIOR=0
+  if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+    ASK_FEEDBACK_LINES=$(governance_turn_lines "$TURN_MARKS" feedback | awk -v from="$LAST_USER_LINE" '$1 > from + 0' | tr '\n' ' ')
+    if [ -n "$ASK_FEEDBACK_LINES" ]; then
+      ASK_ROUTE_PRIOR=$(tail -n +$((LAST_USER_LINE + 1)) "$TRANSCRIPT_PATH" 2>/dev/null | LC_ALL=C awk -v base="$LAST_USER_LINE" \
+        -v want=" $ASK_FEEDBACK_LINES" 'index(want, " " (NR + base) " ") && index($0, "ASK-ROUTE BLOCKER") { n++ } END { print n + 0 }')
+      case "$ASK_ROUTE_PRIOR" in (''|*[!0-9]*) ASK_ROUTE_PRIOR=0 ;; esac
+    fi
+  fi
+  if [ "$ASK_ROUTE_PRIOR" -lt 2 ]; then
+    REASON=$(printf '%s\n%s\n%s' \
+      "🚨 ASK-ROUTE BLOCKER(該不該問,AGENTS.md#canonical-decision-authority):這則回覆請 user 決定 / 裁決 / 點頭 / 選 / 看,同句同段卻沒有合法 scope id 與出處 ——" \
+      "$ASK_ROUTE_REASON" \
+      "處理:不屬集合的事由你自己判斷並負責(AGENTS.md「不得用問 user 代替工程判斷」),把句子改成已做的決定;真屬於集合的,同句寫出 scope id 原字(${ASK_ROUTE_ALLOWED})與出處(AGENTS.md#canonical-decision-authority / approval-evidence.mjs / release-workflow.json)。集合每次從這三處正本讀,本 hook 不帶清單。")
+    emit_governance_block "$REASON"
+  fi
 fi
 
 # ── BLOCKER for Mechanism 8b 引原話當限制理由卻沒寫原題(2026-11-15)── 升級邏輯同 M10。

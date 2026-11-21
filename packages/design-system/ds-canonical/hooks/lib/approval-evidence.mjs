@@ -3,10 +3,10 @@
 // machine-readable design-edit authorization evidence. Denial and uncertainty always win.
 
 import { createHash } from 'node:crypto'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve as resolvePath } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 function argument(name) {
   const index = process.argv.indexOf(name)
@@ -783,6 +783,12 @@ const HUMAN_ONLY_AUTHORITY_SCOPES = Object.freeze([
   'plan-external-spend',
   'product-ui-ux-decision',
 ])
+// 唯讀匯出入口(2026-11-21 WP-06):「哪些事只有人能做」的集合只住在上面這一份常數。
+// 讀的人(stop_self_audit.sh Mechanism 13 經 lib/ask-route.mjs、交接的回覆閘)都從這裡拿,不抄;
+// 命令列 `--human-only-scopes` 印同一份,取代過去拿 `--operation-only` 做一次假分類來探的寫法。
+export function humanOnlyAuthorityScopes() {
+  return [...HUMAN_ONLY_AUTHORITY_SCOPES]
+}
 const CURRENT_OPERATION_SCOPE = 'current-target-operation'
 const PRODUCT_UI_UX_CHANGE_SCOPE = 'product-ui-ux-change'
 const AUTHORITY_SCOPE_PATTERNS = Object.freeze([
@@ -2023,7 +2029,23 @@ export function bashCommandWriteTargets(command, cwd, { isDirectory = isExisting
   return [...targets]
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+// 命令列入口:兩邊都取實際路徑再比。import.meta.url 是實際路徑,argv[1] 是呼叫時給的路徑 —— 經過符號連結呼叫
+// (例:暫存區 work → mp1/target)兩邊不等,舊寫法 `import.meta.url === pathToFileURL(argv[1]).href` 會靜默
+// 不輸出、結束碼 0(2026-11-20 實測;test_stop_self_audit.sh Test 117 經符號連結呼叫的對照格)。
+function invokedAsCli() {
+  if (!process.argv[1]) return false
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])
+  } catch {
+    return false
+  }
+}
+
+if (invokedAsCli()) {
+  if (process.argv.includes('--human-only-scopes')) {
+    process.stdout.write(`${JSON.stringify({ humanOnlyScopes: humanOnlyAuthorityScopes() })}\n`)
+    process.exit(0)
+  }
   const transcriptPath = argument('--transcript')
   const target = argument('--target')
   const readHookInput = process.argv.includes('--hook-input-stdin')

@@ -526,7 +526,7 @@ run_test "Test 21: 被擋後叫 user 自己跑指令 → block" 1 "$T21"
 
 T22=$(self_lock_transcript \
   'Permission to use Bash with command gh pr merge has been denied.' \
-  '這一步是真的 human-only:請你跑 gh auth login 完成登入,之後我會自動續跑。')
+  '這一步是真的 human-only:請你跑 gh auth login 完成登入(account-holder-platform-action;出處 AGENTS.md#canonical-decision-authority),之後我會自動續跑。')
 run_test "Test 22: 真 human-only(gh auth login)交辦 → no block" 0 "$T22"
 
 T23=$(self_lock_transcript \
@@ -719,7 +719,8 @@ T57=$(classifier_transcript "$CLASSIFIER_DENIAL" true '刪分支被分類器擋�
 run_test_locales "Test 57: 現行分類器擋下措辭(was denied by … auto mode classifier)+ 交辦 → block" 1 "$T57" "SELF-LOCK HANDOFF"
 T58=$(self_lock_transcript "$RULE_DENIAL" '你不用打任何東西。是我在作繭自縛，殘留只在已經不用的舊複本，不影響任何檢查。')
 run_test_locales "Test 58: 同一個被擋結果,回「你不用打任何東西」→ no block" 0 "$T58"
-T59=$(self_lock_transcript "$RULE_DENIAL" '這一步是真的 human-only:請你在終端機跑 gh auth login 完成登入,之後我會自動續跑。')
+# 2026-11-21 WP-06:Mechanism 13(該不該問)起,真 human-only 的交辦同句要寫 scope id 與出處;22 / 59 補上,Mechanism 10 的判定不變。
+T59=$(self_lock_transcript "$RULE_DENIAL" '這一步是真的 human-only:請你在終端機跑 gh auth login 完成登入(account-holder-platform-action;出處 AGENTS.md#canonical-decision-authority),之後我會自動續跑。')
 run_test_locales "Test 59: 真 human-only(gh auth login)照舊豁免 → no block" 0 "$T59"
 T59B=$(self_lock_transcript "$RULE_DENIAL" '我把結果貼在報告裡。對話框的版面這次不動。')
 run_test_locales "Test 59b: 「貼」與「對話框」分在兩句(不是交辦)→ no block" 0 "$T59B"
@@ -897,10 +898,13 @@ ASK_1138='你看過沒問題，說「發版」我就合併、發布。'
 export GOVERNANCE_PROJECT_DIR="$RSA_PROJECT"
 
 T80=$(rsa_turn '大概還要多久？' "PR #172 的 CI 全部通過了。$ASK_1138")
+# 2026-11-21 WP-06:Mechanism 13(該不該問)要求請 user 說發版的句子同段寫出 scope id 與出處。Test 80 留 11-17 原句;
+# 87–91 看「紀錄狀態」一個變數,用同一段補上出處的版本(T80C),兩面只差紀錄,不會被 Mechanism 13 混進來。
+T80C=$(rsa_turn '大概還要多久？' "PR #172 的 CI 全部通過了。$ASK_1138(user-release-consent;出處 infra/governance/release-workflow.json)")
 run_test_locales "Test 80: 11-17 11:38 原句要同意 + 沒有紀錄 → block" 1 "$T80" "RELEASE-SELF-AUDIT"
-T81=$(rsa_turn '發版流程是什麼？' '合併還是要等你說「發版」。照規則，你說「發版」我才會合併。')
+T81=$(rsa_turn '發版流程是什麼？' '合併還是要等你說「發版」。照規則，你說「發版」我才會合併(user-release-consent;出處 infra/governance/release-workflow.json)。')
 run_test_locales "Test 81: 解釋發版規則(沒紀錄也放行)→ no block" 0 "$T81"
-T82=$(rsa_turn '你什麼時候會叫我說發版？' '等自查零問題、CI 全綠，我才會請你回「可以改，發版」。')
+T82=$(rsa_turn '你什麼時候會叫我說發版？' '等自查零問題、CI 全綠，我才會請你回「可以改，發版」(user-release-consent;出處 infra/governance/release-workflow.json)。')
 run_test_locales "Test 82: 回答「什麼時候會問你」→ no block" 0 "$T82"
 T83=$(rsa_turn '那次哪裡錯了？' '我 11-17 寫了「你看過沒問題，說『發版』我就合併」，那句是在沒查乾淨時開口要同意。')
 run_test_locales "Test 83: 引述自己過去的要同意句(請求在引號裡)→ no block" 0 "$T83"
@@ -931,30 +935,30 @@ T86D=$(printf '%s\n' "$(rec_user '大概還要多久？')" "$(rec_push 'PR 全�
 run_test_locales "Test 86d: 擋過之後補正回覆又開口要 → block(只放過擋下之前的)" 1 "$T86D" "RELEASE-SELF-AUDIT"
 
 rsa_write_record green
-run_test_locales "Test 87: 要同意 + 紀錄齊全(綁現在的指紋與 HEAD、零未解、腳本產生)→ no block" 0 "$T80"
+run_test_locales "Test 87: 要同意 + 紀錄齊全(綁現在的指紋與 HEAD、零未解、腳本產生)→ no block" 0 "$T80C"
 run_test_locales "Test 87b: 選項要同意 + 紀錄齊全 → no block" 0 "$T85"
 rsa_write_record tampered
-run_test_locales "Test 88: 紀錄被手改(未解改 0、pr-checks 改 ok,沒重算)→ block" 1 "$T80" "整份內容的 sha256 對不上"
+run_test_locales "Test 88: 紀錄被手改(未解改 0、pr-checks 改 ok,沒重算)→ block" 1 "$T80C" "整份內容的 sha256 對不上"
 rsa_write_record green
 mv "$RSA_RECORD_DIR/current.json" "$RSA_RECORD_DIR/real.json"
 ln -s real.json "$RSA_RECORD_DIR/current.json"
-run_test_locales "Test 89: 紀錄路徑是符號連結(指向一份齊全的紀錄)→ 拒讀 → block" 1 "$T80" "符號連結"
+run_test_locales "Test 89: 紀錄路徑是符號連結(指向一份齊全的紀錄)→ 拒讀 → block" 1 "$T80C" "符號連結"
 rm -f "$RSA_RECORD_DIR/current.json"
 mv -f "$RSA_RECORD_DIR/real.json" "$RSA_RECORD_DIR/current.json"
-run_test_locales "Test 89b: 換回一般檔(同一份紀錄)→ no block" 0 "$T80"
+run_test_locales "Test 89b: 換回一般檔(同一份紀錄)→ no block" 0 "$T80C"
 rsa_write_record unresolved
-run_test_locales "Test 90: 紀錄未解 > 0(CI 紅)→ block" 1 "$T80" "(b) 未解 1 項"
+run_test_locales "Test 90: 紀錄未解 > 0(CI 紅)→ block" 1 "$T80C" "(b) 未解 1 項"
 # 對照組(交接 process-audit 根因 9):紀錄齊全之後只改治理檔(產品指紋不變、HEAD 變了;CI 會在新 HEAD 上重跑,可能已經紅了)→ 紀錄失效
 rsa_write_record green
-run_test_locales "Test 90b: 改治理檔之前,同一份紀錄 → no block(對照組的綠面)" 0 "$T80"
+run_test_locales "Test 90b: 改治理檔之前,同一份紀錄 → no block(對照組的綠面)" 0 "$T80C"
 rsa_commit governance/rules.md '# rules (改了治理檔,沒動產品)'
-run_test_locales "Test 90c: 紀錄之後只改治理檔(產品指紋相同)→ block,理由是 HEAD 不同" 1 "$T80" "(a) 紀錄量的 HEAD"
+run_test_locales "Test 90c: 紀錄之後只改治理檔(產品指紋相同)→ block,理由是 HEAD 不同" 1 "$T80C" "(a) 紀錄量的 HEAD"
 rsa_write_record unresolved
-run_test_locales "Test 90d: 在新 HEAD 上重跑紀錄、CI 紅 → block(b)" 1 "$T80" "(b) 未解 1 項"
+run_test_locales "Test 90d: 在新 HEAD 上重跑紀錄、CI 紅 → block(b)" 1 "$T80C" "(b) 未解 1 項"
 rsa_write_record green
-run_test_locales "Test 90e: 在新 HEAD 上重跑紀錄、CI 綠 → no block" 0 "$T80"
+run_test_locales "Test 90e: 在新 HEAD 上重跑紀錄、CI 綠 → no block" 0 "$T80C"
 rsa_commit packages/design-system/src/components/Button/button.tsx 'export const Button = 2'
-run_test_locales "Test 91: 紀錄之後改了預覽看得見的檔(指紋不符)→ block" 1 "$T80" "(a) 紀錄綁的產品指紋"
+run_test_locales "Test 91: 紀錄之後改了預覽看得見的檔(指紋不符)→ block" 1 "$T80C" "(a) 紀錄綁的產品指紋"
 run_test_locales "Test 92: 指紋不符時,沒在要同意的回覆照常放行 → no block" 0 "$T81"
 export GOVERNANCE_PROJECT_DIR="$PROJECT_DIR"
 
@@ -1115,6 +1119,109 @@ else
   echo "  FAIL  Tests 110-112: 共用表給不出 $CAP_SPEC_REL 的上限(量具失效)"; FAIL=$((FAIL+1))
 fi
 rm -f "$PROJECT_DIR/$CAP_SPEC_REL"
+
+# Tests 113-123(2026-11-21,工作包 WP-06 / ASKFIX-REPO-HOOK):Mechanism 13「該不該問」。合法集合不在 hook:
+# lib/ask-route.mjs 每次讀 AGENTS.md 決策區塊、approval-evidence.mjs 的 humanOnlyAuthorityScopes()、release-workflow.json。
+unset GOVERNANCE_CORPUS_ROOT
+SCOPE_CITE='(product-ui-ux-decision;出處 AGENTS.md#canonical-decision-authority)'
+ask_case() {
+  # $1 名稱;$2 1 該擋 / 0 不該;$3 回覆;$4(可省)hook 路徑,預設本 repo 的 hook
+  local name="$1" want="$2" reply="$3" hook="${4:-$HOOK}" transcript="$TMPDIR/ask-$((PASS + FAIL)).jsonl" out rc got=0
+  printf '%s\n' "$(rec_user '這兩個做法哪個好')" "$(rec_text "$reply")" > "$transcript"
+  # 上面的 run_test 留下 set -e:結束碼一律用「|| rc=$?」接,不讓非 0 中斷整支測試
+  rc=0
+  out=$(jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"ask",last_assistant_message:""}' | bash "$hook" 2>/dev/null) || rc=$?
+  [ "$rc" = "0" ] && printf '%s' "$out" | grep -q '"governanceDecision":"block"' && printf '%s' "$out" | grep -qF 'ASK-ROUTE BLOCKER' && got=1
+  if [ "$rc" = "0" ] && [ "$got" = "$want" ] && { [ "$want" = 1 ] || ! printf '%s' "$out" | grep -q '"governanceDecision":"block"'; }; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (rc=$rc ASK-ROUTE block=$got want=$want out=${out:0:160})"; FAIL=$((FAIL+1))
+  fi
+}
+ask_case "Test 113: 「要你決定」沒有 scope id 與出處 → block" 1 '這兩種做法要你決定。'
+ask_case "Test 114: 同一句寫出 scope id 與出處 → no block" 0 "這兩種做法要你決定${SCOPE_CITE}。"
+ask_case "Test 115: 否定句(目前沒有需要你決定的事)→ no block" 0 '目前沒有需要你決定的事,我照規格做完了。'
+ask_case "Test 116: 講過去(當時請你點頭的兩條)→ no block" 0 '當時請你點頭的兩條已經結案。'
+ask_case "Test 117: scope id 不在集合(engineering-execution 是 AUTO)→ block" 1 '這兩種做法要你決定(engineering-execution;出處 AGENTS.md#canonical-decision-authority)。'
+ask_case "Test 117b: 問句交給 user(要我直接刪掉嗎?)→ block" 1 '那個暫存目錄要我直接刪掉嗎？'
+# 防死鎖:同一回合已被本機制擋過兩次 → 第三次只留提醒;擋過一次 → 照擋(對照)。
+ask_prior_case() {
+  local name="$1" want="$2" prior="$3" transcript="$TMPDIR/ask-prior-$((PASS + FAIL)).jsonl" out got=0 i
+  {
+    rec_user '這兩個做法哪個好'
+    for i in $(seq 1 "$prior"); do
+      rec_text '這兩種做法要你決定。'
+      rec_stop_feedback '🚨 ASK-ROUTE BLOCKER(該不該問,AGENTS.md#canonical-decision-authority):這則回覆請 user 決定'
+    done
+    rec_text '這兩種做法要你決定。'
+  } > "$transcript"
+  out=$(jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"ask",last_assistant_message:""}' | bash "$HOOK" 2>/dev/null) || true
+  if printf '%s' "$out" | grep -qF 'ASK-ROUTE BLOCKER'; then got=1; fi
+  if [ "$got" = "$want" ]; then echo "  PASS  $name"; PASS=$((PASS+1)); else echo "  FAIL  $name (block=$got want=$want)"; FAIL=$((FAIL+1)); fi
+}
+ask_prior_case "Test 118: 本回合已被擋 1 次、補正回覆仍沒寫 → block" 1 1
+ask_prior_case "Test 118b: 本回合已被擋 2 次 → 第三次只留提醒,不再擋(防死鎖)" 0 2
+
+# 發版同意走 release-workflow.json 的 gate(helper 直接測:hook 那層另有 Mechanism 12 會一起判,這裡只看本判定)。
+ASK_ROUTE="$SCRIPT_DIR/../lib/ask-route.mjs"
+ask_helper_case() {
+  local name="$1" want_rc="$2" reply="$3" root="${4:-$REPO_ROOT}" rc=0
+  printf '%s' "$reply" | node -- "$ASK_ROUTE" --root "$root" >/dev/null 2>&1 || rc=$?
+  if [ "$rc" = "$want_rc" ]; then echo "  PASS  $name"; PASS=$((PASS+1)); else echo "  FAIL  $name (rc=$rc want=$want_rc)"; FAIL=$((FAIL+1)); fi
+}
+ask_helper_case "Test 119: 請 user 說「發版」沒寫出處 → 2" 2 '預覽看完沒問題,說「發版」我就合併。'
+ask_helper_case "Test 119b: 同段寫出 user-release-consent 與 release-workflow.json → 0" 0 '預覽看完沒問題,說「發版」我就合併(user-release-consent;出處 infra/governance/release-workflow.json)。'
+
+# 同族修正:approval-evidence.mjs 命令列入口經符號連結呼叫(2026-11-20 實測舊寫法靜默不輸出、結束碼 0)。
+APPROVAL_LIB="$SCRIPT_DIR/../lib/approval-evidence.mjs"
+ln -s "$APPROVAL_LIB" "$TMPDIR/approval-evidence-link.mjs"
+DIRECT_SCOPES=$(node -- "$APPROVAL_LIB" --human-only-scopes 2>/dev/null) || true
+LINK_SCOPES=$(node -- "$TMPDIR/approval-evidence-link.mjs" --human-only-scopes 2>/dev/null) || true
+if printf '%s' "$DIRECT_SCOPES" | jq -e '.humanOnlyScopes | length > 0' >/dev/null 2>&1 && [ "$LINK_SCOPES" = "$DIRECT_SCOPES" ]; then
+  echo "  PASS  Test 120: approval-evidence.mjs 經符號連結呼叫 --human-only-scopes 與直接呼叫輸出相同"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 120: 經符號連結呼叫輸出不同(direct=${DIRECT_SCOPES:0:80} link=${LINK_SCOPES:0:80})"; FAIL=$((FAIL+1))
+fi
+
+# 防漂移對照:在暫存複本把正本改掉,hook 判定跟著翻 —— 證明 hook 每次讀正本、沒有自己的清單。
+ssot_copy() {
+  # $1 = 複本目錄;複本是自己的 Git repo,hook 的 governance_corpus_root 解析到它
+  mkdir -p "$1/packages/design-system/ds-canonical" "$1/infra/governance"
+  cp -R "$REPO_ROOT/packages/design-system/ds-canonical/hooks" "$1/packages/design-system/ds-canonical/hooks"
+  cp "$REPO_ROOT/AGENTS.md" "$1/AGENTS.md"
+  cp "$REPO_ROOT/infra/governance/release-workflow.json" "$1/infra/governance/release-workflow.json"
+  git -C "$1" init -q
+}
+RENAMED="$TMPDIR/ssot-renamed"
+ssot_copy "$RENAMED"
+sed -i.bak "s/'account-holder-platform-action'/'platform-owner-action'/" "$RENAMED/packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs"
+RENAMED_HOOK="$RENAMED/packages/design-system/ds-canonical/hooks/stop_self_audit.sh"
+OLD_ID_REPLY='登入要你本人動手(account-holder-platform-action;出處 AGENTS.md#canonical-decision-authority)。'
+NEW_ID_REPLY='登入要你本人動手(platform-owner-action;出處 AGENTS.md#canonical-decision-authority)。'
+ask_case "Test 121: 正本 scope 名 → 本 repo hook 放行" 0 "$OLD_ID_REPLY"
+ask_case "Test 121b: 複本把那個 scope 改名 → 複本 hook 改擋同一句" 1 "$OLD_ID_REPLY" "$RENAMED_HOOK"
+ask_case "Test 121c: 新名字 → 本 repo hook 擋" 1 "$NEW_ID_REPLY"
+ask_case "Test 121d: 新名字 → 複本 hook 放行" 0 "$NEW_ID_REPLY" "$RENAMED_HOOK"
+# 正本讀不到 / 對不上 = 儀器失效(70),不是通過
+ask_instrument_case() {
+  local name="$1" hook="$2" transcript="$TMPDIR/ask-instr-$((PASS + FAIL)).jsonl" err rc=0
+  printf '%s\n' "$(rec_user '這兩個做法哪個好')" "$(rec_text '這兩種做法要你決定。')" > "$transcript"
+  err=$(jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"ask",last_assistant_message:""}' | bash "$hook" 2>&1 >/dev/null) || rc=$?
+  if [ "$rc" = "70" ] && printf '%s' "$err" | grep -qF 'GOVERNANCE_INTEGRITY: ask-route'; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (rc=$rc err=${err:0:160})"; FAIL=$((FAIL+1))
+  fi
+}
+NOBLOCK="$TMPDIR/ssot-noblock"
+ssot_copy "$NOBLOCK"
+sed -i.bak 's/<!-- canonical-decision-authority:start -->//' "$NOBLOCK/AGENTS.md"
+ask_instrument_case "Test 122: 複本的 AGENTS.md 沒有決策區塊 → 儀器失效 70" "$NOBLOCK/packages/design-system/ds-canonical/hooks/stop_self_audit.sh"
+NOPRODUCT="$TMPDIR/ssot-noproduct"
+ssot_copy "$NOPRODUCT"
+sed -i.bak "/^  'product-ui-ux-decision',$/d" "$NOPRODUCT/packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs"
+ask_instrument_case "Test 123: 複本拿掉 product-ui-ux-decision(決策區塊說 user 拍板產品、機器卻沒有對應 scope)→ 儀器失效 70" \
+  "$NOPRODUCT/packages/design-system/ds-canonical/hooks/stop_self_audit.sh"
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
