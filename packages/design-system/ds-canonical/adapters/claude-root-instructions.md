@@ -20,6 +20,6 @@
 ## Skills / Commands / Memory(Claude 專屬 discovery)
 
 - **Skills**:`.claude/skills/`(invoke 情境的多步驟 workflow + checkpoint;`/skill-name` 觸發)
-- **Commands**:`.claude/commands/`(一次性單步 action)
+- **Commands**:不收新居民;單步 action 也做成 skill(`rule-placement.md` Level 8)
 - **Memory**:committed `governance/memory/` 是跨 provider SSOT；`~/.claude/projects/<project>/memory/` 只是 Claude 可重建 cache。只允許 repo → home 的 `npm run sync-memory`，禁止 home 反向覆寫 repo。
 - **Plugin 邊界**:plugin 只能是 optional adapter / distribution convenience;任何 Critical 治理不得 plugin-only(cloud plugin 不可靠實證 → `governance/memory/reference_cloud_governance_loading.md`)
