@@ -38,7 +38,7 @@ const {
   productContentDigest, productVisibleFilesChanged, readReleaseConsent,
   consentReleaseLedger, recordConsentRelease, withdrawReleaseConsent, writeReleaseConsent,
 } = await import('./release-orchestrator.mjs')
-const { classifyConsentPrompt, loadConsentPolicy } = await import('./lib/release-consent-language.mjs')
+const { classifyConsentPrompt, isQuestionText, loadConsentPolicy } = await import('./lib/release-consent-language.mjs')
 
 const workflow = loadReleaseWorkflow()
 const sha = 'f'.repeat(40)
@@ -318,6 +318,24 @@ try {
     const orchSource = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
     assert.match(orchSource, /source: options\.source/, 'CLI 必須把 --source 傳給 writeReleaseConsent')
     assert.doesNotMatch(orchSource, /source: 'manual'/, "不得再寫死 'manual' —— 那正是兩條路分不出來的原因")
+  }
+
+  // 2026-11-21 PROC-H:問句判準只有 isQuestionText 一份(同意第 6 步與 UserPromptSubmit「先回一句」共用)。
+  // 兩面對照:問句記號 / A-不-A 要認得;陳述句不能誤認;沒有記號的問句是已知缺口(鎖住現況,改要連同意判準一起看)。
+  for (const q of ['確定所有時間都花得有意義?', '這樣可以嗎', '要不要先跑測試', '能不能先停一下', '是否要重跑？']) {
+    assert.equal(isQuestionText(q), true, `「${q}」是問句`)
+  }
+  for (const statement of ['把 sidebar 的間距改成 16', '發版', '全部做完再回報']) {
+    assert.equal(isQuestionText(statement), false, `「${statement}」不是問句`)
+  }
+  assert.equal(isQuestionText('大概還要多久'), false, '沒有問句記號的問句目前認不到(已知缺口,見 isQuestionText 註解)')
+  // 第 6 步改用 isQuestionText 之後,同意判定不變:問號 + 同意詞仍是 question,A-不-A + 同意詞仍在第 2 步攔下
+  assert.equal(classifyConsentPrompt('可以發版了嗎?').verdict, 'question')
+  assert.equal(classifyConsentPrompt('要不要發版').verdict, 'question')
+  {
+    const cli = (args, input) => execFileSync(process.execPath, [resolve(ROOT, 'scripts/lib/release-consent-language.mjs'), ...args], { input, encoding: 'utf8' })
+    assert.equal(cli(['--question'], '這樣可以嗎'), 'question\n')
+    assert.equal(cli(['--question'], '把間距改成 16'), 'statement\n')
   }
 
   const urls = previewUrls(workflow, base)

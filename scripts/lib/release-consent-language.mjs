@@ -57,6 +57,18 @@ export function loadConsentPolicy(path = WORKFLOW_PATH) {
 
 const hasAny = (text, list) => list.some((item) => new RegExp(item, 'iu').test(text))
 const hasLiteral = (text, list) => list.some((item) => text.includes(item))
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+
+/**
+ * 「這句話是不是問句」的**唯一**判準(2026-11-21 PROC-H):questionMarkers ∪ aNotAQuestions(兩份都在 release-workflow.json)。
+ * 使用者:classifyConsentPrompt 第 6 步(走到第 6 步時 A-不-A + 同意詞已在第 2 步返回,所以結果跟改前只比 questionMarkers 相同),
+ * 以及 check_propose_without_benchmark.sh 的「先回一句,再開始查」(經下方命令列 `--question`)。
+ * 已知看不到:沒有問句記號的問句(「大概還要多久」)—— 要收得改 questionMarkers,而那份清單同時決定發版同意,不在這裡擴。
+ */
+export function isQuestionText(text, policy = loadConsentPolicy()) {
+  const value = typeof text === 'string' ? text : ''
+  return hasAny(value, policy.questionMarkers.map(escapeRegExp)) || hasLiteral(value, policy.aNotAQuestions)
+}
 
 /**
  * @returns {{verdict: 'consent'|'withdraw'|'question'|'deferred'|'none', reason: string}}
@@ -134,7 +146,7 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
     return { verdict: 'none', reason: '沒有同意詞' }
   }
   // 6. 問句 ≠ 同意(M36)
-  if (hasAny(value, policy.questionMarkers.map((m) => m.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')))) {
+  if (isQuestionText(value, policy)) {
     return { verdict: 'question', reason: '有同意詞但判為問句(保守側:不記錄也不撤回)' }
   }
   return { verdict: 'consent', reason: '明確同意' }
@@ -142,11 +154,18 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
 
 // 直接執行時當成小 CLI:從 stdin 讀整段原話,印出判定。
 // hook(bash)靠它消費同一份判準 —— 不讓 bash 再自己寫一套 regex(那正是三方漂移的來源)。
+//   (無參數)   → `<verdict>\t<reason>`(record_release_consent.sh)
+//   --question → `question` 或 `statement`(check_propose_without_benchmark.sh 的「先回一句」)
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const chunks = []
   process.stdin.on('data', (c) => chunks.push(c))
   process.stdin.on('end', () => {
-    const { verdict, reason } = classifyConsentPrompt(Buffer.concat(chunks).toString('utf8'))
+    const text = Buffer.concat(chunks).toString('utf8')
+    if (process.argv.includes('--question')) {
+      process.stdout.write(`${isQuestionText(text) ? 'question' : 'statement'}\n`)
+      return
+    }
+    const { verdict, reason } = classifyConsentPrompt(text)
     process.stdout.write(`${verdict}\t${reason}\n`)
   })
 }

@@ -16,6 +16,14 @@
 # 永遠 exit 0 的那支併入並改成擋)—— 本輪寫進 planning / report / handoff 開頭目錄的 .md 有請 user 拍板的字眼卻沒有出處
 # → exit 2,模型讀到後補出處或拿掉提案;同一支的 r2 管回覆裡「規定 / 必配」類斷言沒附出處。
 # 本 hook 職責 = 事前 P0 措辭 directive 注入(非 soft 建議),與 r3 事後擋互補。
+#
+# ── 第二件事:問句 → 「先回一句,再開始查」(2026-11-21 PROC-H;process-audit 根因 8「處理悶頭查的問題」)──
+# user 問了問題,模型先連跑一串工具才回第一句(11-18 14:35:05「確定所有時間都花得有意義?」問完 6 分半、10 次工具才回)。
+# 這則 prompt 是問句 → 注入一行「先回一句,再開始查」。放在既有的 UserPromptSubmit hook 上,不另開一支、不另寫問句判斷:
+# 判準是 scripts/lib/release-consent-language.mjs 的 isQuestionText(questionMarkers ∪ aNotAQuestions,release-workflow.json),
+# 經命令列 `--question` 呼叫。不另外加 PreToolUse 提示(那會是第二份,process-audit 第 552 行)。
+# 判準跑不起來(檔不在、node 失敗、輸出不是 question / statement)→ 照樣經 context 告訴模型「這次沒判斷」,不靜默。
+# 已知看不到:沒有問句記號的問句(「大概還要多久」);平台 silent_turn_reminder 之後的記帳未做(見 PROC-H 回報)。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -26,14 +34,37 @@ TRANSCRIPT_PATH=$(jq -r '.transcript_path // ""' <<<"$INPUT" 2>/dev/null)
 PROMPT=$(jq -r '.prompt // ""' <<<"$INPUT" 2>/dev/null)
 
 [ "$EVENT" != "UserPromptSubmit" ] && exit 0
+CONTEXTS=""
+add_context() { CONTEXTS="${CONTEXTS:+$CONTEXTS
+
+}$1"; }
+
+# ── 問句 → 先回一句 ─────────────────────────────────────────────────────────
+# 路徑先解成實體路徑:CLI 用「argv[1] == 本檔」判斷要不要當命令列跑,路徑帶 .. 或 symlink 會讓它安靜不輸出。
+QUESTION_LIB_DIR=$(cd "$(dirname "$0")/../../../../scripts/lib" 2>/dev/null && pwd -P)
+QUESTION_CLI="${QUESTION_LIB_DIR:-/nonexistent}/release-consent-language.mjs"
+if [ -n "$PROMPT" ]; then
+  QUESTION_VERDICT=""
+  if [ -f "$QUESTION_CLI" ]; then
+    QUESTION_VERDICT=$(printf '%s' "$PROMPT" | node -- "$QUESTION_CLI" --question 2>/dev/null)
+  fi
+  case "$QUESTION_VERDICT" in
+    question) add_context "這則 user 訊息是問句:先回一句,再開始查 —— 第一個動作是用一兩句話回應(答案、或要怎麼查),然後才呼叫工具。" ;;
+    statement) ;;
+    *) add_context "⚠️ 問句判斷這次沒有跑成(scripts/lib/release-consent-language.mjs --question 回「${QUESTION_VERDICT:-空}」);這則若是問句,一樣先回一句再開始查。" ;;
+  esac
+fi
+
+# ── M26:propose 前要先 fetch ────────────────────────────────────────────────
+m26_context() {
 if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
-  exit 0
+  return 0
 fi
 
 # Heuristic:user prompt 含 specific visual / behavior decision trigger keyword(2026-05-26 tighten — 拿掉「應該/是否/改成/design/behavior/互動」太籠統的 false-positive triggers)
 PROPOSE_TRIGGER_RE='(propose me|give me options|列.{0,5}option|建議.{0,5}方案|建議.{0,5}做法|哪個比較|對齊哪家|比稿|要怎麼設計|該用哪個|design tradeoff|recommend|world-class.{0,10}(對照|比較))'
 if ! grep -qE "$PROPOSE_TRIGGER_RE" <<<"$PROMPT"; then
-  exit 0
+  return 0
 fi
 
 # Scan past ~20 turns(~400 lines)看是否有 WebFetch / WebSearch tool_use
@@ -47,7 +78,7 @@ HAS_FETCH=$(echo "$RECENT" | \
 HAS_FETCH=${HAS_FETCH:-0}
 
 if [ "$HAS_FETCH" -ge 2 ]; then
-  exit 0
+  return 0
 fi
 
 # P0-directive inject(exit 0 by design — 見檔頭 fail-closed 設計約束)
@@ -68,5 +99,10 @@ Pipeline(propose 前 inline 跑):
 對應:meta-patterns.md M26 / propose-options/SKILL.md Step B-3。
 EOF
 )
-jq -n --arg ctx "$MSG" '{governanceContext:{hookEventName:"UserPromptSubmit",message:$ctx}}'
+add_context "$MSG"
+}
+m26_context
+
+[ -n "$CONTEXTS" ] || exit 0
+jq -n --arg ctx "$CONTEXTS" '{governanceContext:{hookEventName:"UserPromptSubmit",message:$ctx}}'
 exit 0

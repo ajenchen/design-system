@@ -601,6 +601,9 @@ function hookCorpusAuthorityPaths(canonicalRegistry) {
     // check_bash_command_shape.sh 拿 provider deny 清單做「照動作意思」的比對(hooks/lib/_deny_norm.py);密封語料模式
     // 少了這個檔就每次 Bash 都報「沒比對」(2026-11-21 PROC-H)。
     'packages/design-system/ds-canonical/adapters/claude-settings-base.json',
+    // check_propose_without_benchmark.sh 的「先回一句」用這支問句判準(它讀上面的 release-workflow.json);
+    // 密封模式少了它,每則 prompt 都會報「問句判斷沒有跑成」(2026-11-21 PROC-H)。
+    'scripts/lib/release-consent-language.mjs',
   ]
   if (paths.some((value) => typeof value !== 'string' || !value)) {
     failIntegrity('provider hook corpus authority path declaration is invalid')
