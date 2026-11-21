@@ -131,6 +131,7 @@ Priority:
 - P2H (HUMAN-ONLY):resolution 會改變產品／UI／UX SSOT，且 evidence 收斂後仍有真實選擇或取捨
 
 Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P2H 若有則 batch-at-end 一次列出。
+「要 user 決定」只准出現在 P2H。遙測開關、要讀主資料夾(user 本機、代理不准讀)才能判的東西,寫進「量不到 / 外部前提」,不寫成要 user 決定。
 ```
 
 **Do NOT skip authority classification**:純工程 canonical substantive 必自主執行，不能用 user sign-off 代替工程判斷；只有 P2H 停下。
