@@ -1,0 +1,31 @@
+{
+ "schema": "deny-norm-cases/v1",
+ "what": "deny 正規化的唯一判定表:ledger.v3.py --selftest 與 deny-norm.py selftest(lib 介面 + PROC-H 的 hook 介面)都跑這一份。lit = 子指令照原樣就命中的規則;norm = 展開 / 還原成一般寫法之後才命中的規則(= 換寫法躲過拼法比對);actions = 「同一個動作」的鍵(只在有寫時比)。",
+ "denyFile": "base-b0296c96/packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+ "denySha256": "2abd572ab3d063ba3b0beb06df614bcdb6904488636d178591f994931f03ac5f",
+ "denyNote": "期望值只對這一份 deny 清單成立;deny 清單改了(例:PROC-H 改成照動作意思比對)就要在同一次改動更新本表的期望值與 denySha256,否則 selftest 回 2(儀器失效,不讀成通過)",
+ "cases": [
+  {"id": "L01", "from": "ledger.v2 selftest deny 第 1 格", "cmd": "cd /x/v && git checkout -q -B feat/x", "lit": ["Bash(git checkout *)"], "norm": []},
+  {"id": "L02", "from": "ledger.v2 selftest deny 第 2 格(git -C 換寫法)", "cmd": "git -C /x/v checkout -- a.sh", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "L03", "from": "ledger.v2 selftest deny 第 3 格", "cmd": "S=/x; rm -rf $S/t; mkdir -p $S/t", "lit": ["Bash(rm *)"], "norm": []},
+  {"id": "L04", "from": "ledger.v2 selftest deny 第 4 格", "cmd": "sleep 60; cat /x/seq.txt", "lit": [], "norm": []},
+  {"id": "L05", "from": "ledger.v2 selftest deny 第 5 格(heredoc 內文不算指令)", "cmd": "cat > f <<'EOF'\nrm -rf /\nEOF\necho ok", "lit": [], "norm": []},
+  {"id": "L06", "from": "ledger.v2 selftest deny 第 6 格(env 前綴 + git -c)", "cmd": "V=1 git -c user.name=a restore --staged x", "lit": [], "norm": ["Bash(git restore *)"]},
+  {"id": "L07", "from": "ledger.v2 selftest deny 第 7 格", "cmd": "(cd /x && git reset --hard HEAD)", "lit": ["Bash(git reset *)"], "norm": []},
+  {"id": "L08", "from": "ledger.v2 selftest deny 第 8 格(主對話 11-18 14:45:01 的函式包裝)", "cmd": "R=/x/r\ng() { git -C \"$R\" -c user.name=t -c user.email=t@t \"$@\"; }\ng add -A; g checkout -q README.md", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "L09", "from": "ledger.v2 selftest deny 第 9 格(變數包裝)", "cmd": "G=\"git -C /x/r -c user.name=t\"\n$G checkout -q README.md", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "L10", "from": "ledger.v2 selftest deny 第 10 格(sh -c)", "cmd": "sh -c 'git checkout -q -B feat/x'", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "L11", "from": "ledger.v2 selftest deny 第 11 格(bash -lc)", "cmd": "bash -lc \"cd /x && git reset --hard\"", "lit": [], "norm": ["Bash(git reset *)"]},
+  {"id": "L12", "from": "ledger.v2 selftest deny 第 12 格(eval)", "cmd": "eval git checkout -q -B feat/x", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "L13", "from": "ledger.v2 selftest deny 第 13 格(絕對路徑 + git -C)", "cmd": "/usr/bin/git -C /x/v checkout -q -B feat/x", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "L14", "from": "ledger.v2 selftest deny 第 14 格(反斜線)", "cmd": "\\git checkout -q -B feat/x", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "L15", "from": "ledger.v2 selftest deny 第 15 格(switch -c 不在 deny 清單)", "cmd": "git -C /x/v switch -c feat/x", "lit": [], "norm": [], "actions": ["git checkout -b feat/x"]},
+  {"id": "L16", "from": "ledger.v2 selftest deny 第 16 格(函式包裝 + 唯讀指令)", "cmd": "g() { git -C \"$R\" \"$@\"; }\ng status --short", "lit": [], "norm": []},
+  {"id": "P01", "from": "PROC-H:process-audit 根因 6 實例(verify:WP-05 11-18 16:07:33)", "cmd": "git -C $V checkout -- packages/design-system/ds-canonical/hooks/_log-fire.sh", "lit": [], "norm": ["Bash(git checkout *)"], "actions": ["git checkout -- packages/design-system/ds-canonical/hooks/_log-fire.sh"]},
+  {"id": "P02", "from": "PROC-H:根因 6 實例(E7 11-18 18:23:03 換成 -C 寫法就成功)", "cmd": "git -C /x/w checkout -q -b feat/e7", "lit": [], "norm": ["Bash(git checkout *)"], "actions": ["git checkout -b feat/e7"]},
+  {"id": "P03", "from": "PROC-H:git --git-dir= / --work-tree= 也要還原", "cmd": "git --git-dir=/x/.git --work-tree=/x restore README.md", "lit": [], "norm": ["Bash(git restore *)"]},
+  {"id": "P04", "from": "PROC-H:env 包裝 + -C", "cmd": "env -i git -C /x reset --hard", "lit": [], "norm": ["Bash(git reset *)"]},
+  {"id": "P05", "from": "PROC-H:唯讀的 -C 寫法不擋", "cmd": "git -C /x log --oneline -3 && git -C /x status --short", "lit": [], "norm": []},
+  {"id": "P06", "from": "PROC-H:command 包裝 rm", "cmd": "command rm -rf /x/tmp", "lit": [], "norm": ["Bash(rm *)"]}
+ ]
+}
