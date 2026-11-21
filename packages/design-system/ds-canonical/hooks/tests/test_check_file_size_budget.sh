@@ -191,20 +191,20 @@ pass_if silent
 
 # 單格:第 2 欄中間夾一個 GFM 跳脫的 `\|`;若被當成切格,第 2 欄只剩 802 字,Test 19 就會變靜默而紅。
 meta_row() { python3 -c 'import sys; n = int(sys.argv[1]); print("| **M99** | " + "a" * 800 + " \\| " + "b" * (n - 804) + " | 錨例 |")' "$1"; }
-echo "Test 19: meta-patterns M-rule column 2 of 1,601 chars(with an escaped pipe inside)→ names the row"
-{ echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1601; } > "$RULES_DIR/meta-patterns.md"
+echo "Test 19: meta-patterns M-rule column 2 of 1,401 chars(with an escaped pipe inside)→ names the row"
+{ echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1401; } > "$RULES_DIR/meta-patterns.md"
 run_hook "" "$RULES_DIR/meta-patterns.md"
-pass_if says 'M99 1601 chars'
+pass_if says 'M99 1401 chars'
 
-echo "Test 20 (control for 19): column 2 of exactly 1,600 chars → silent"
-{ echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1600; } > "$RULES_DIR/meta-patterns.md"
+echo "Test 20 (control for 19): column 2 of exactly 1,400 chars → silent"
+{ echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1400; } > "$RULES_DIR/meta-patterns.md"
 run_hook "" "$RULES_DIR/meta-patterns.md"
 pass_if silent
 
 echo "Test 21: whole-file and cell budgets fire together in one message"
-{ cjk_line 32000; echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1601; } > "$RULES_DIR/meta-patterns.md"
+{ cjk_line 32000; echo '| # | Meta-Principle | 能吸收的 bug 類型 |'; echo '|---|---|---|'; meta_row 1401; } > "$RULES_DIR/meta-patterns.md"
 run_hook "" "$RULES_DIR/meta-patterns.md"
-pass_if says 'M99 1601 chars'
+pass_if says 'M99 1401 chars'
 pass_if says 'always-loaded rule file'
 
 SKILLS_DIR="$TMP_PROJECT/packages/design-system/ds-canonical/skills"

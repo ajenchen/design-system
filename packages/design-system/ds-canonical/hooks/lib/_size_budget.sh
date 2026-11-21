@@ -213,14 +213,16 @@ governance_size_spec_overruns() {
 }
 
 # meta-patterns.md 的 M-rule 表第 2 欄(Meta-Principle)單格上限,只提醒、不擋。
-# N = 38649f5a 實量 33 列的 p90(nearest-rank)1,580 字,取整到 1,600。當時超過的是 M23 2,585 / M32 2,961 / M36 3,241 ——
-# 規則欄裡夾了事件經過;經過該搬去 skills/design-system-audit/references/historical-bugs.md,規則欄留規則句與一行索引。
-# 那幾列瘦下來之後,這個數字可以再收緊(重量分布,照同一個取法)。
+# N = 第 2 欄字數(本檔 governance_size_oversized_cells 同一量法)分布的 p90(nearest-rank),進位到百。
+#   2026-11-21 重量(knowledge-prune WP-META 把規則欄裡的事件經過搬去 skills/design-system-audit/references/historical-bugs.md
+#   之後的樹):32 列,第 29 名 M18 1,313 字 → 1,400。仍超過的是 M23 2,515 / M32 2,921 / M36 2,982 ——
+#   剩下的是規則句與機械問法,不是經過;要再短得重新設計規則本身,不是再搬。
+#   上一版:38649f5a 實量 33 列的 p90 1,580 字 → 1,600(當時超過的 M23 2,585 / M32 2,961 / M36 3,241 規則欄裡夾著經過)。
 governance_size_cell_budget() {
   local rel="${1#./}" rules_root
   rules_root="$(governance_canonical_relative_root rules 2>/dev/null)" || return 1
   [ "$rel" = "$rules_root/meta-patterns.md" ] || return 1
-  printf '%s\t%s\n' 1600 "meta-patterns.md M-rule column 2 (Meta-Principle)"
+  printf '%s\t%s\n' 1400 "meta-patterns.md M-rule column 2 (Meta-Principle)"
 }
 
 governance_size_oversized_cells() {
