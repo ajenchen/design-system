@@ -281,6 +281,33 @@ expect_true "24b. symlinked record: outside file untouched" sentinel_unchanged
 rm -f "$TRACK_FILE"
 if [ -e "$TRACK_FILE.saved" ]; then mv "$TRACK_FILE.saved" "$TRACK_FILE"; fi
 
+# 25. 開分支的其他寫法(2026-11-21 PROC-H,J-2931c7ba29 經真 adapter 實測放行的五種):
+#     經 hooks/lib/_deny_norm.py 的同一份正規化後都要認得 —— 本 session 已有分支時一律擋。
+run_hook_bash "git checkout -b feat/first" "sess-F"
+expect_pass_silent "25a. first branch of sess-F is recorded"
+run_hook_bash "git checkout -q -b feat/x1" "sess-F"
+expect_block "25b. checkout -q -b is a second branch" "R1 BLOCKER"
+run_hook_bash "git switch --create feat/x2" "sess-F"
+expect_block "25c. switch --create is a second branch" "R1 BLOCKER"
+run_hook_bash "git -C . checkout -b feat/x3" "sess-F"
+expect_block "25d. git -C . checkout -b is a second branch" "R1 BLOCKER"
+run_hook_bash "git branch feat/x4 && git switch feat/x4" "sess-F"
+expect_block "25e. git branch <name> && git switch is a second branch" "R1 BLOCKER"
+run_hook_bash "git worktree add -b feat/x5 ../wt" "sess-F"
+expect_block "25f. worktree add -b is a second branch" "R1 BLOCKER"
+run_hook_bash $'g() { git -C "$R" "$@"; }\ng checkout -b feat/x6' "sess-F"
+expect_block "25g. function-wrapped checkout -b is a second branch" "R1 BLOCKER"
+# 不是開分支的不能被誤認(對照組)
+run_hook_bash "git branch --show-current && git branch -vv" "sess-F"
+expect_pass_silent "25h. branch listing is not branch creation"
+run_hook_bash "git worktree add ../wt2 feat/first" "sess-F"
+expect_pass_silent "25i. worktree add of the existing branch passes"
+run_hook_bash "echo 'git checkout -b feat/quoted'" "sess-F"
+expect_pass_silent "25j. quoted example is not a command"
+# R2 同一份正規化:-C 包裝的 push main 也擋
+run_hook_bash "git -C . push origin main" "sess-G"
+expect_block "25k. git -C . push origin main is a direct push" "R2 BLOCKER"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

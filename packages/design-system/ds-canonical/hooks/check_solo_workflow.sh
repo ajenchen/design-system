@@ -12,7 +12,15 @@ set -uo pipefail
 #       不經 adapter 直接跑本檔(沒有 GOVERNANCE_RUNTIME_ROOT)、payload 沒有 session_id、
 #       runtime root 不是本 repo Git 目錄下的 governance-runtime(例:managed host 刻意給的停用 root)、
 #       紀錄檔被換成 symlink / hard link(拒寫也拒讀)。
-#   R2. Any direct push to main. PR is the only merge path.
+#       偵測寫法(2026-11-21 PROC-H,J-2931c7ba29):先經 hooks/lib/_deny_norm.py 的 canon_subs 拆子指令、
+#       展開函式 / 變數包裝與 sh -c / eval、還原 git -C / -c / 別名 / 絕對路徑(deny 比對用的同一份正規化),
+#       再認開分支的動作:checkout 的 -b / -B(前後可夾 -q 等旗標)、switch 的 -c / -C / --create / --force-create、
+#       worktree add -b / -B、`git branch <名>`(不帶刪除 / 改名 / 列表類旗標)。改前只認 `git` 後面緊接
+#       `checkout -b` / `switch -c`,`git checkout -q -b x`、`git switch --create x`、`git -C . checkout -b x`、
+#       `git branch x && git switch x`、`git worktree add -b x ../wt` 五種都放行。
+#       正規化載入失敗時退回改前的逐字比對(不因此放掉原本擋得到的寫法)。
+#       仍認不到的(照實列):~/.gitconfig 的別名、函式回傳的指令名、`git branch -c / -C` 複製出來的分支。
+#   R2. Any direct push to main. PR is the only merge path.(同一份正規化:`git -C . push origin main` 也算)
 # Tag/release lifecycle belongs to `release:auto` + protected workflows; the retired
 # local release-preflight R4 branch must not insert a sixth standard release gate.
 #
@@ -60,47 +68,95 @@ if [ "${GOVERNANCE_BYPASS_SOLO_WORKFLOW:-0}" = "1" ]; then
   exit 0
 fi
 
-# Helper: shell-aware working-branch creation detect(quoted-string-safe).
-# Recognizes both legacy checkout -b and modern switch -c for every provider prefix.
-detect_git_new_branch() {
-  python3 -c "
-import shlex, sys
-try:
-    tokens = shlex.split(sys.stdin.read(), comments=True)
-except Exception:
-    sys.exit(1)
-for i in range(len(tokens) - 2):
-    if tokens[i] != 'git':
-        continue
-    if i + 3 < len(tokens) and tokens[i+1] == 'checkout' and tokens[i+2] in ('-b', '-B'):
-        print(tokens[i+3])
-        sys.exit(0)
-    if i + 3 < len(tokens) and tokens[i+1] == 'switch' and tokens[i+2] in ('-c', '-C'):
-        print(tokens[i+3])
-        sys.exit(0)
-sys.exit(1)
-" 2>/dev/null
-}
+# 正規化的唯一實作(與 check_bash_command_shape.sh 的 deny 比對同一份)。python3 -B:不在 hooks/lib 留 __pycache__。
+DENY_NORM_LIB="$(cd "$(dirname "$0")" && pwd)/lib/_deny_norm.py"
 
-# Helper: shell-aware push to main detect
-detect_push_main() {
-  python3 -c "
-import shlex, sys
+# Helper: R1 / R2 的偵測,一支 python 做完。stdin = 指令文字;argv[1] = r1 | r2;argv[2] = _deny_norm.py。
+#   r1:印出新分支名(結束碼 0),沒有開分支 → 1。r2:直接推 main → 0,否則 1。
+#   載入正規化失敗 → 退回改前的逐字比對(shlex,引號裡的字不當指令)。
+detect_git_action() {
+  python3 -I -B -c '
+import importlib.util, shlex, sys
+mode, lib = sys.argv[1], sys.argv[2]
+cmd = sys.stdin.read()
+
+def legacy_tokens():
+    try:
+        return [shlex.split(cmd, comments=True)]
+    except Exception:
+        return []
+
+subs = None
 try:
-    tokens = shlex.split(sys.stdin.read(), comments=True)
+    spec = importlib.util.spec_from_file_location("_deny_norm", lib)
+    dn = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(dn)
+    subs = []
+    for _raw, norm in dn.canon_subs(cmd):
+        try:
+            subs.append(shlex.split(norm))
+        except Exception:
+            continue
 except Exception:
+    subs = None
+if subs is None:
+    subs = legacy_tokens()
+
+NON_CREATE_BRANCH = {"-d", "-D", "--delete", "-m", "-M", "--move", "-c", "-C", "--copy", "-a", "--all", "-r",
+                     "--remotes", "-l", "--list", "-v", "-vv", "--verbose", "--show-current", "--contains",
+                     "--no-contains", "--merged", "--no-merged", "-u", "--unset-upstream", "--edit-description",
+                     "--points-at", "--sort", "--format", "--column", "--no-column", "-h", "--help"}
+
+def new_branch(t):
+    for i in range(len(t) - 2):
+        if t[i] != "git":
+            continue
+        sub, rest = t[i + 1], t[i + 2:]
+        if sub == "checkout":
+            for j, x in enumerate(rest):
+                if x in ("-b", "-B") and j + 1 < len(rest):
+                    return rest[j + 1]
+        elif sub == "switch":
+            for j, x in enumerate(rest):
+                if x in ("-c", "-C", "--create", "--force-create") and j + 1 < len(rest):
+                    return rest[j + 1]
+                for pre in ("--create=", "--force-create="):
+                    if x.startswith(pre) and len(x) > len(pre):
+                        return x[len(pre):]
+        elif sub == "worktree" and rest[:1] == ["add"]:
+            for j, x in enumerate(rest[1:], 1):
+                if x in ("-b", "-B") and j + 1 < len(rest):
+                    return rest[j + 1]
+        elif sub == "branch" and rest:
+            if any(x in NON_CREATE_BRANCH or x.startswith(("--set-upstream-to", "--sort=", "--format=", "--points-at=",
+                                                           "--contains=", "--merged=", "--no-merged=")) for x in rest):
+                continue
+            names = [x for x in rest if not x.startswith("-")]
+            if names:
+                return names[0]
+    return None
+
+def push_main(t):
+    for i in range(len(t) - 2):
+        if t[i] == "git" and t[i + 1] == "push":
+            for j in range(i + 2, min(i + 6, len(t))):
+                x = t[j]
+                if x == "main" or x.endswith(":main") or x.endswith(" main"):
+                    return True
+    return False
+
+if mode == "r1":
+    for t in subs:
+        b = new_branch(t)
+        if b:
+            print(b)
+            sys.exit(0)
     sys.exit(1)
-for i in range(len(tokens) - 2):
-    # git push origin main / git push origin xxx:main / git push HEAD:main
-    if tokens[i] == 'git' and tokens[i+1] == 'push':
-        # Look for 'main' or 'X:main' as ref arg
-        for j in range(i+2, min(i+6, len(tokens))):
-            t = tokens[j]
-            if t == 'main' or t.endswith(':main') or t.endswith(' main'):
-                sys.exit(0)
-sys.exit(1)
-" 2>/dev/null
+sys.exit(0 if any(push_main(t) for t in subs) else 1)
+' "$1" "$DENY_NORM_LIB" 2>/dev/null
 }
+detect_git_new_branch() { detect_git_action r1; }
+detect_push_main() { detect_git_action r2; }
 
 if [ "$TOOL_NAME" = "Bash" ]; then
   COMMAND=$(jq -r '.tool_input.command // empty' <<<"$INPUT" 2>/dev/null)
