@@ -13,8 +13,8 @@
  *   - registered / instrumented / dispatchedBy:這個名字是不是註冊 hook、有沒有在寫紀錄、被誰叫
  *   - retire_candidate: ONLY flag with rationale,NOT execute
  *   - summary.observation: 儀器自述 —— blind=true 代表觀測窗沒涵蓋分類窗,
- *     此時所有零筆 hook 標 `unknown`(不是 `dead`)且**零 retire 提名**。
- *     判準見 lib/hook-fire-observability.mjs;對照組見 test-audit-hook-quality.mjs。
+ *     此時零筆 hook 都不標 `dead`(不寫紀錄 → not-instrumented、子規則 → dispatched、其餘 → unknown)且**零 retire 提名**。
+ *     判準與優先序見 lib/hook-fire-observability.mjs 的 classifyHook;對照組見 test-audit-hook-quality.mjs。
  *
  * 2026-11-18(knowledge-prune WP-07):
  *   - D2-3:fire log 不存在(遙測從沒開過,也就是預設狀態;全新 clone 連狀態目錄都沒有)= 跟空 log
