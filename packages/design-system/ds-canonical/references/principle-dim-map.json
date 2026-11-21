@@ -112,9 +112,11 @@
       "note": "Dim 32 filter operator + 通用 SSOT 消費隱含全 audit 中"
     },
     "M18": {
-      "name": "Propose-time 自檢 gate(Q0–Q5)",
-      "dims": [],
-      "note": "propose-options skill;runtime discipline"
+      "name": "Propose-time 自檢 gate(Q0–Q5;含 M21 子規則)",
+      "dims": [
+        33
+      ],
+      "note": "propose-options skill;runtime discipline。Sub-rule M21(2026-11-21 由 @watch 降級併入):Dim 33(b) premature abstraction"
     },
     "M19": {
       "name": "Trigger phrase auto-pipeline",
@@ -125,13 +127,6 @@
       "name": "AI 自問 best-practice + 自動 self-improve",
       "dims": [],
       "note": "stop hook self-audit;runtime discipline"
-    },
-    "M21": {
-      "name": "新元件抽象前 prop variant test",
-      "dims": [
-        33
-      ],
-      "note": "Dim 33(b) premature abstraction"
     },
     "M22": {
       "name": "Benchmark claim 必 inline cite",
@@ -206,7 +201,8 @@
       "M27": "2026-05-15 → folded into M23(c)(framework prop name conflict child)",
       "M33": "2026-05-22 → folded into M20(AI self-correction sub-rule)",
       "M34": "2026-05-22 → folded into M7(rule-authoring hygiene sub-rule)",
-      "M35": "2026-05-22 → folded into M23(d)(nearest same-purpose canonical sub-rule)"
+      "M35": "2026-05-22 → folded into M23(d)(nearest same-purpose canonical sub-rule)",
+      "M21": "2026-11-21 → folded into M18(@watch 觀察期 0 筆新 bug;new component prop-variant test sub-rule,Dim 33(b) 改掛 M18)"
     }
   },
   "traits": {
