@@ -170,9 +170,12 @@ export const HoverSwap = {
 }
 
 // 已上傳的附件:點列用 FileViewer 開;「圖片」區段只放圖片檔(之前把 報告.pdf / 合約附件.docx 放在圖片區)
+// 檔名照照片內容取(2026-11-21 SIB-PV 實查:舊的 seed/event-key-visual 是 Picsum 第 134 張鐵橋、seed/venue-floor-plan 是第 175 張時鐘,
+// 檔名卻是「活動主視覺.jpg」「會場平面圖.png」—— 同 Carousel 的圖文不符;Picsum 只有照片,沒有平面圖)。
+// 兩張都是活動場地的勘查照(咖啡廳):seed 找法同 ../Carousel/_carousel-demo.ts(先看照片,再找轉址到那一張的 seed;兩種尺寸各查一次)。
 const ATTACHMENT_IMAGES: DemoFile[] = [
-  { uid: 'attach-1', name: '活動主視覺.jpg', mimeType: 'image/jpeg', size: '2.3 MB', thumbnailSrc: 'https://picsum.photos/seed/event-key-visual/1200/800' },
-  { uid: 'attach-2', name: '會場平面圖.png', mimeType: 'image/png', size: '1.1 MB', thumbnailSrc: 'https://picsum.photos/seed/venue-floor-plan/1200/800' },
+  { uid: 'attach-1', name: '場勘照片-長桌區.jpg', mimeType: 'image/jpeg', size: '2.3 MB', thumbnailSrc: 'https://picsum.photos/seed/demo-1963/1200/800' }, // Picsum 42:咖啡廳長木桌
+  { uid: 'attach-2', name: '場勘照片-靠牆座位.jpg', mimeType: 'image/jpeg', size: '1.1 MB', thumbnailSrc: 'https://picsum.photos/seed/demo-1233/1200/800' }, // 48:白磚牆前的木桌
 ]
 const ATTACHMENT_DOCUMENTS: DemoFile[] = [
   { uid: 'attach-3', name: 'data.csv', mimeType: 'text/csv', size: '47 KB' },
