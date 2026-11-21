@@ -167,7 +167,7 @@ export const Overview = {
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-footnote text-fg-muted font-mono">無值 / 正在編輯 / URL 格式錯誤</span>
+            <span className="text-footnote text-fg-muted font-mono">無值 / 正在編輯 / URL 格式錯誤 · clearable 且框裡有字時,bareInput 右側多一顆清除 ×(同 Pencil 的行內動作)</span>
           </div>
 
           {/* Readonly */}
@@ -199,6 +199,7 @@ export const Overview = {
                 ['disabled', 'boolean', 'false', '等同 mode="disabled"'],
                 ['label', 'string', '—', '自訂顯示文字（覆蓋自動 hostname 提取）'],
                 ['showDisplayEndIcon', 'boolean', 'false', 'view 態改包 Field naked wrapper（D-path opt-in，DataTable cell view↔edit 像素對齊；本元件沒有型別 icon，故只給 wrapper；DataTable 可編輯連結格的「編輯連結」鈕另由內部的 viewEditAction 畫在外殼右側槽，Button text xs、滑過格才出現）'],
+                ['clearable', 'boolean', 'false', '打字狀態、框裡有字時右側出現清除 ×：清掉草稿、焦點留在輸入框，不提交，之後照失焦 / Enter 規則結算；連結狀態沒有 ×（同 Select / DatePicker 的 clearable，選填欄位才開）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -222,6 +223,8 @@ export const Overview = {
                 ['blur（空值）', '清除值，顯示 placeholder'],
                 ['Enter', '等同 blur——觸發驗證'],
                 ['Escape', '取消編輯，回復原值，不觸發驗證'],
+                ['點擊清除 ×（clearable）', '清掉打的字、焦點留在輸入框，不提交；之後照上面的 blur / Enter 結算，Escape 仍回復原值'],
+                ['焦點在輸入框與清除 × 之間移動', '不算離開欄位：不驗證、不觸發 onBlur；從 × 離開欄位才結算'],
               ].map(([trigger, effect]) => (
                 <tr key={trigger}><Td>{trigger}</Td><Td>{effect}</Td></tr>
               ))}
@@ -667,8 +670,10 @@ export const Accessibility = {
         <ul className="list-disc pl-5 space-y-1">
           <li>Tab — focus 進輸入框</li>
           <li>字母鍵 — 輸入</li>
-          <li>Enter — 提交,觸發 blur 驗證</li>
-          <li>Esc — 取消編輯,回復原值,不觸發驗證</li>
+          <li>Enter — 提交:合法 → 連結狀態、焦點給鉛筆;無效 / 清空 → 留在輸入框</li>
+          <li>Esc — 取消編輯,回復原值,不觸發驗證,焦點給鉛筆(浮層裡第一下只取消、第二下才關浮層)</li>
+          <li>連結狀態:Tab 依序停在連結(Enter 開啟)與鉛筆(Enter / Space 進入編輯並聚焦輸入框);外框本身不是 tab stop</li>
+          <li>打字狀態開了 clearable、框裡有字:Tab 依序停在輸入框與清除 ×(Enter / Space 清掉打的字、焦點回輸入框;Esc 同輸入框還原);兩者之間移動不結算</li>
         </ul>
         <p><b>Focus</b>:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的  focus-within:!border-primary  提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。</p>
         <p><b>驗證</b>:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。</p>

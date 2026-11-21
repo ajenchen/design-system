@@ -158,7 +158,7 @@ Row dedicated action 固定小尺寸 icon button,不依 row height 放大 ——
 
 | Host | Context | Primitive | Why |
 |------|---------|-----------|-----|
-| Input / NumberInput / Combobox clear X(Select / DatePicker / TimePicker / LinkInput 的 `clearable` × 同一顆 `FieldClearButton`)| Field chrome padding | Inline Action | Embedded |
+| Select / Combobox / DatePicker / TimePicker / LinkInput clear X(`clearable`;同一顆 `FieldClearButton`,PeoplePicker 轉發 Select / Combobox;Input / NumberInput 沒有 clear X)| Field chrome padding | Inline Action | Embedded |
 | Tag dismiss X | Pill body | Inline Action(colored host 繼承色)| Embedded |
 | Menu / TreeView / SidebarMenuButton / SelectionItem suffix | Row inline flow | Inline Action | Inline with content |
 | SidebarGroup header chevron | Aux toggle | Inline Action | Inline header toggle |
