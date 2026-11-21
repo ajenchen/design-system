@@ -60,9 +60,12 @@ const hasLiteral = (text, list) => list.some((item) => text.includes(item))
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
 
 /**
- * 「這句話是不是問句」的**唯一**判準(2026-11-21 PROC-H):questionMarkers ∪ aNotAQuestions(兩份都在 release-workflow.json)。
+ * 發版同意與「先回一句」共用的問句判準(2026-11-21 PROC-H):questionMarkers ∪ aNotAQuestions(兩份都在 release-workflow.json)。
  * 使用者:classifyConsentPrompt 第 6 步(走到第 6 步時 A-不-A + 同意詞已在第 2 步返回,所以結果跟改前只比 questionMarkers 相同),
  * 以及 check_propose_without_benchmark.sh 的「先回一句,再開始查」(經下方命令列 `--question`)。
+ * 不是 repo 裡唯一的問句判斷(照實列,尚未合併):packages/design-system/ds-canonical/hooks/lib/ask-route.mjs 的 isQuestion
+ *(逐句看句尾 ?/嗎/呢),以及 packages/design-system/ds-canonical/hooks/stop_self_audit.sh Mechanism 9 的 ASK_TAIL_RE
+ *(user 訊息最後一行是不是徵詢句尾)。三份判的範圍不同,合併要另外對過各自的判定。
  * 已知看不到:沒有問句記號的問句(「大概還要多久」)—— 要收得改 questionMarkers,而那份清單同時決定發版同意,不在這裡擴。
  */
 export function isQuestionText(text, policy = loadConsentPolicy()) {

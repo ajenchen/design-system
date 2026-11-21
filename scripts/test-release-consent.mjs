@@ -320,7 +320,7 @@ try {
     assert.doesNotMatch(orchSource, /source: 'manual'/, "不得再寫死 'manual' —— 那正是兩條路分不出來的原因")
   }
 
-  // 2026-11-21 PROC-H:問句判準只有 isQuestionText 一份(同意第 6 步與 UserPromptSubmit「先回一句」共用)。
+  // 2026-11-21 PROC-H:同意第 6 步與 UserPromptSubmit「先回一句」共用 isQuestionText(repo 裡另有兩份問句判斷,見它的註解)。
   // 兩面對照:問句記號 / A-不-A 要認得;陳述句不能誤認;沒有記號的問句是已知缺口(鎖住現況,改要連同意判準一起看)。
   for (const q of ['確定所有時間都花得有意義?', '這樣可以嗎', '要不要先跑測試', '能不能先停一下', '是否要重跑？']) {
     assert.equal(isQuestionText(q), true, `「${q}」是問句`)
