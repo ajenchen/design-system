@@ -13,7 +13,7 @@ benchmark:
 
 # Header Canonical 設計原則
 
-> **Foundational SSOT rationale**(cap 800):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `DialogHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
+> **Foundational SSOT rationale**(行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔;2026-05-17 建檔時寫的「cap 800」case 表從沒列過):本 pattern 統一**所有 header 家族**(chrome page header + overlay header)的視覺契約 — border ownership / padding / 高度策略 / tabs 連動 / dismiss canonical。consumer(`SidebarHeader` / `FileViewer Toolbar+InfoPanel` / `AppShell PageHeader+GlobalHeader` / `DialogHeader` / `SheetHeader` / `PopoverHeader` / `CoachmarkHeader` / 未來 Drawer)pointer 指向本 SSOT,**禁各自 hardcode**。
 
 ## 選哪個 header(decision — 做任何 header 前先回答這題)
 

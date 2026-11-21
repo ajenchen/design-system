@@ -540,7 +540,8 @@ T24=$(self_lock_transcript \
 run_test "Test 24: 被擋後停在該處、記入完成報告、沒交辦 → no block" 0 "$T24"
 
 # Tests 25-27:Mechanism 3 動態門檻(2026-10-07 收掉原 TODO)。遙測開著、樣本 ≥ 100 → max(共識下限, mean+2σ);
-# 樣本不足或沒開遙測 → 共識下限 5。觀察面 = 遙測開著時 hook 寫的 self-audit-warnings.jsonl。
+# 樣本不足或沒開遙測 → 共識下限 5。觀察面 = adapter 啟動時 hook 寫的 self-audit-warnings.jsonl(功能狀態,
+# 2026-11-21 WP-06 起不看遙測開關);基線樣本是遙測,所以這三格另外開遙測。
 threshold_transcript() {
   local i
   for i in 1 2 3 4 5 6; do
@@ -555,7 +556,8 @@ run_threshold_case() {
   [ -n "$2" ] && printf '%s' "$2" > "$state/self-audit-baseline-counts.jsonl"
   threshold_transcript > "$transcript"
   jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"threshold",last_assistant_message:"好,繼續處理。"}' \
-    | GOVERNANCE_TELEMETRY_OPT_IN=1 GOVERNANCE_READ_ONLY=0 GOVERNANCE_STATE_DIR="$state" bash "$HOOK" >/dev/null 2>&1
+    | GOVERNANCE_TELEMETRY_OPT_IN=1 GOVERNANCE_READ_ONLY=0 GOVERNANCE_RUNTIME_ROOT="$GIT_DIR/governance-runtime" \
+      GOVERNANCE_STATE_DIR="$state" bash "$HOOK" >/dev/null 2>&1
   THRESHOLD_WARNINGS=$(cat "$state/self-audit-warnings.jsonl" 2>/dev/null || true)
 }
 expect_trigger_warning() {
@@ -615,7 +617,8 @@ run_test_locales() {
 [ -n "$UTF8_LC" ] || echo "  NOTE  找不到 UTF-8 語系,新格只跑 LC_ALL=C(正式環境的語系)"
 
 # Tests 36-45: Mechanism 8 補「user 看過」(稽核 #5 = A80 ⑤)。Mechanism 8 只寫提醒、不擋 turn,
-# 觀察面同 Tests 25-27:遙測開著時 hook 寫的 self-audit-warnings.jsonl 有沒有「Provenance 升格」。
+# 觀察面同 Tests 25-27:hook 寫的 self-audit-warnings.jsonl 有沒有「Provenance 升格」。跑在正式預設的
+# 「adapter 啟動 + 遙測關」(2026-11-21 WP-06 前要開遙測才寫得出來)。
 WARN_SEQ=0
 run_warning_case() {
   # $1 = name;$2 = 1 該有提醒 / 0 不該有;$3 = transcript;$4(可省)= 提醒文字(預設 Provenance 升格)
@@ -628,7 +631,8 @@ run_warning_case() {
     mkdir -p "$state"
     printf '%s\n' "$content" > "$transcript"
     jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"warn",last_assistant_message:""}' \
-      | HOOK_LC="$lc" GOVERNANCE_TELEMETRY_OPT_IN=1 GOVERNANCE_READ_ONLY=0 GOVERNANCE_STATE_DIR="$state" \
+      | HOOK_LC="$lc" GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY=0 \
+        GOVERNANCE_RUNTIME_ROOT="$GIT_DIR/governance-runtime" GOVERNANCE_STATE_DIR="$state" \
         hook_invoke >/dev/null 2>&1 || true
     got=0
     grep -qF "$needle" "$state/self-audit-warnings.jsonl" 2>/dev/null && got=1
@@ -1043,6 +1047,74 @@ run_test_locales "Test 108: M5「請 beta 針對這一整段規格裡的每個�
   "$(rsa_turn '收尾' '我會請 beta 針對這一整段規格裡的每個元件做 review。')" "PEER-TRANSPORT-DISCOVERY"
 run_test_locales "Test 108b: 同一句加「本 turn 無 peer」撤回 → no block" 0 \
   "$(rsa_turn '收尾' '本 turn 無 peer:之後才會請 beta 針對這一整段規格裡的每個元件做 review。')"
+
+# Tests 109-109b(2026-11-21,工作包 WP-06):Mechanism 11(M33)的提醒要在下一回合送到 —— 沒開遙測也一樣。
+# 整條鏈:本 hook 寫功能狀態的 self-audit-warnings.jsonl → inject_pending_self_audit.sh 下一回合讀出來注入。
+INJECT_HOOK="$SCRIPT_DIR/../inject_pending_self_audit.sh"
+m33_chain() {
+  # $1 = 狀態子目錄名;$2 = GOVERNANCE_READ_ONLY 的值。印 inject 的輸出。
+  local state="$GIT_DIR/governance-runtime/$1" transcript="$TMPDIR/m33-$1.jsonl"
+  mkdir -p "$state"
+  printf '%s\n' "$(rec_user '繼續做完,不要停')" "$(rec_text '這部分留到下個 session 再處理。')" > "$transcript"
+  jq -nc --arg path "$transcript" '{transcript_path:$path,session_id:"m33",last_assistant_message:"這部分留到下個 session 再處理。"}' \
+    | GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY="$2" GOVERNANCE_RUNTIME_ROOT="$GIT_DIR/governance-runtime" \
+      GOVERNANCE_STATE_DIR="$state" bash "$HOOK" >/dev/null 2>&1 || true
+  echo '{}' | GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY="$2" GOVERNANCE_RUNTIME_ROOT="$GIT_DIR/governance-runtime" \
+    GOVERNANCE_STATE_DIR="$state" bash "$INJECT_HOOK" 2>/dev/null || true
+}
+M33_OUT=$(m33_chain m33-default 0)
+if printf '%s' "$M33_OUT" | grep -qF 'M33 stop-hook overfire reflex' \
+  && [ -s "$GIT_DIR/governance-runtime/m33-default/last-inject-ts.txt" ]; then
+  echo "  PASS  Test 109: OPT_IN=0 + adapter → M33 提醒下一回合送到"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 109: M33 提醒沒送到下一回合(inject 輸出:${M33_OUT:0:160})"; FAIL=$((FAIL+1))
+fi
+M33_RO_OUT=$(m33_chain m33-readonly 1)
+if [ -z "$M33_RO_OUT" ] && [ -z "$(ls -A "$GIT_DIR/governance-runtime/m33-readonly")" ]; then
+  echo "  PASS  Test 109b: READ_ONLY=1 → 不寫也不注入"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 109b: READ_ONLY=1 仍寫入或注入(輸出:${M33_RO_OUT:0:160};檔:$(ls -A "$GIT_DIR/governance-runtime/m33-readonly" | tr '\n' ' '))"; FAIL=$((FAIL+1))
+fi
+
+# Tests 110-112(2026-11-21,工作包 WP-06):Mechanism 2 的 spec 上限只讀 lib/_size_budget.sh 的表。
+# 數字在這裡從表上取(governance_size_budget),量法同表(扣掉 auto-maintained「被引用」段)。用 button.spec.md:
+# 舊清單寫 cap 800,表上是一般 spec 那一檔。
+source "$SCRIPT_DIR/../lib/_size_budget.sh"
+CAP_SPEC_REL="packages/design-system/src/components/Button/button.spec.md"
+CAP_SPEC_LIMIT="$(governance_size_budget "$CAP_SPEC_REL" | cut -f2)"
+cap_case() {
+  # $1 = 名稱;$2 = 1 該提醒 / 0 不該;$3 = 手寫行數;$4 = auto-maintained 段行數(含標題行)
+  local name="$1" want="$2" state="$GIT_DIR/governance-runtime/cap-$((PASS + FAIL))" got=0 i
+  mkdir -p "$state"
+  {
+    for i in $(seq 1 "$3"); do printf 'spec line %s\n' "$i"; done
+    if [ "$4" -gt 0 ]; then
+      printf '## 被引用(auto-maintained by scripts/add-reciprocal-pointers.mjs)\n'
+      for i in $(seq 2 "$4"); do printf -- '- pointer %s\n' "$i"; done
+    fi
+  } > "$PROJECT_DIR/$CAP_SPEC_REL"
+  jq -nc '{session_id:"cap",last_assistant_message:""}' \
+    | GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY=0 GOVERNANCE_RUNTIME_ROOT="$GIT_DIR/governance-runtime" \
+      GOVERNANCE_STATE_DIR="$state" bash "$HOOK" >/dev/null 2>&1 || true
+  # 任何一筆講到這個檔的提醒都算(用總行數量的舊寫法會印「上限 + 10」,也要被 Test 112 抓到)
+  grep -qF "$CAP_SPEC_REL " "$state/self-audit-warnings.jsonl" 2>/dev/null && got=1
+  if [ "$want" = "1" ] && ! grep -qF "$CAP_SPEC_REL $3/${CAP_SPEC_LIMIT} cap" "$state/self-audit-warnings.jsonl" 2>/dev/null; then
+    got="0(數字不對)"
+  fi
+  if [ "$got" = "$want" ]; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (提醒 present=$got, want=$want, cap=${CAP_SPEC_LIMIT})"; FAIL=$((FAIL+1))
+  fi
+}
+if [ -n "$CAP_SPEC_LIMIT" ]; then
+  cap_case "Test 110: 手寫行數 = 表上上限 + 1 → 提醒" 1 "$((CAP_SPEC_LIMIT + 1))" 0
+  cap_case "Test 111: 手寫行數 = 表上上限 → 不提醒" 0 "$CAP_SPEC_LIMIT" 0
+  cap_case "Test 112: 總行數超過、扣掉 auto-maintained 段就沒超過 → 不提醒(量法同表)" 0 "$CAP_SPEC_LIMIT" 10
+else
+  echo "  FAIL  Tests 110-112: 共用表給不出 $CAP_SPEC_REL 的上限(量具失效)"; FAIL=$((FAIL+1))
+fi
+rm -f "$PROJECT_DIR/$CAP_SPEC_REL"
 
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

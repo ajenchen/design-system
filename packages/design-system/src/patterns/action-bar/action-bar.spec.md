@@ -2,7 +2,7 @@
 
 # Action Bar 設計原則
 
-> **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
+> **Foundational SSOT rationale**(2026-04-25 approved;當時寫的「cap 800」只列在舊開場檔的例外清單,那份清單已不存在,`check_file_size_budget.sh` 的 case 表也從沒列過本檔 —— 行數上限以該表為準,本檔走一般 spec 那一檔):
 > 跨 pattern operations / utilities 角色系統 SSOT。Toolbar / DataTable / FileViewer / Dialog 等 action region 皆消費本 spec 的 overflow mechanics / section divider rules / primary 位置 / danger placement。scope 本質 > 單一 pattern。
 
 ## 定位

@@ -22,12 +22,15 @@ setup_proj() {
   echo 'log_hook_fire() { :; }' > "$TMP_PROJ/.claude/hooks/_log-fire.sh"
   export GOVERNANCE_PROJECT_DIR="$TMP_PROJ"
   export GOVERNANCE_STATE_DIR="$STATE_DIR"
-  export GOVERNANCE_TELEMETRY_OPT_IN=1
+  # 基本環境 = adapter 啟動(scripts/run-provider-hook.mjs 一定設 GOVERNANCE_RUNTIME_ROOT)+ 遙測關(預設):
+  # 讀 pending、寫 cursor 是功能狀態,不看遙測開關(2026-11-21 WP-06)。
+  export GOVERNANCE_RUNTIME_ROOT="$STATE_DIR"
+  export GOVERNANCE_TELEMETRY_OPT_IN=0
 }
 teardown_proj() {
   rm -rf "$TMP_PROJ"
   unset GOVERNANCE_PROJECT_DIR
-  unset GOVERNANCE_STATE_DIR GOVERNANCE_TELEMETRY_OPT_IN
+  unset GOVERNANCE_STATE_DIR GOVERNANCE_TELEMETRY_OPT_IN GOVERNANCE_RUNTIME_ROOT
 }
 
 run_hook() {
@@ -122,22 +125,57 @@ else
 fi
 teardown_proj
 
-# ── Test 6: 未明示 opt-in → 不讀、不 inject、不寫 cursor ──
-echo "Test 6: telemetry defaults to byte-for-byte read-only"
+# ── Test 6a: 沒開遙測 + adapter → 會注入、cursor 前進(第二次就不再送同一筆)──
+echo "Test 6a: OPT_IN=0 + adapter → inject and advance cursor"
+setup_proj
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ts":"%s","warnings":"\\n  • Delivered without telemetry"}\n' "$NOW" \
+  > "$STATE_DIR/self-audit-warnings.jsonl"
+run_hook
+FIRST_OUT="$STDOUT"; FIRST_EXIT="$EXIT"
+CURSOR=$(cat "$STATE_DIR/last-inject-ts.txt" 2>/dev/null || true)
+run_hook
+if [ "$FIRST_EXIT" = "0" ] && echo "$FIRST_OUT" | grep -q "Delivered without telemetry" \
+  && [ -n "$CURSOR" ] && ! [[ "$CURSOR" < "$NOW" ]] \
+  && [ "$EXIT" = "0" ] && [ -z "$STDOUT" ]; then
+  echo "  PASS  Test 6a default adapter path injected once and moved the cursor"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 6a (first exit=$FIRST_EXIT out=${FIRST_OUT:0:120} cursor=${CURSOR:-none} second=${STDOUT:0:80})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 6a"
+fi
+teardown_proj
+
+# ── Test 6b: READ_ONLY=1 → 不讀也不寫(adapter 在、遙測開著也一樣)──
+echo "Test 6b: READ_ONLY=1 stays byte-for-byte read-only"
 setup_proj
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '{"ts":"%s","warnings":"\\n  • Must stay unread"}\n' "$NOW" \
   > "$STATE_DIR/self-audit-warnings.jsonl"
-unset GOVERNANCE_TELEMETRY_OPT_IN
-BEFORE=$(shasum -a 256 "$STATE_DIR/self-audit-warnings.jsonl" | awk '{print $1}')
-run_hook
-AFTER=$(shasum -a 256 "$STATE_DIR/self-audit-warnings.jsonl" | awk '{print $1}')
+BEFORE=$(cd "$STATE_DIR" && find . -type f -exec shasum -a 256 {} + | sort)
+GOVERNANCE_READ_ONLY=1 GOVERNANCE_TELEMETRY_OPT_IN=1 run_hook
+AFTER=$(cd "$STATE_DIR" && find . -type f -exec shasum -a 256 {} + | sort)
 if [ "$EXIT" = "0" ] && [ -z "$STDOUT" ] && [ "$BEFORE" = "$AFTER" ] \
   && [ ! -e "$STATE_DIR/last-inject-ts.txt" ]; then
-  echo "  PASS  Test 6 no opt-in left runtime bytes unchanged"; PASS=$((PASS+1))
+  echo "  PASS  Test 6b READ_ONLY left runtime bytes unchanged"; PASS=$((PASS+1))
 else
-  echo "  FAIL  Test 6 default path read or wrote telemetry"
-  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 6"
+  echo "  FAIL  Test 6b READ_ONLY path read or wrote runtime state"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 6b"
+fi
+teardown_proj
+
+# ── Test 6c: 沒有 adapter(直接手動跑,沒有 GOVERNANCE_RUNTIME_ROOT)→ 不讀也不寫 ──
+echo "Test 6c: direct probe without adapter stays read-only"
+setup_proj
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ts":"%s","warnings":"\\n  • Must stay unread"}\n' "$NOW" \
+  > "$STATE_DIR/self-audit-warnings.jsonl"
+unset GOVERNANCE_RUNTIME_ROOT
+run_hook
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT" ] && [ ! -e "$STATE_DIR/last-inject-ts.txt" ]; then
+  echo "  PASS  Test 6c no adapter left runtime bytes unchanged"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 6c direct probe read or wrote runtime state"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 6c"
 fi
 teardown_proj
 

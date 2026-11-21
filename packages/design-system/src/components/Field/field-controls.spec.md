@@ -10,7 +10,7 @@ traits:
 
 # Field Controls 設計原則
 
-> **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
+> **Foundational SSOT rationale**(2026-04-25 approved;當時寫的「cap 800」只列在舊開場檔的例外清單,那份清單已不存在,`check_file_size_budget.sh` 的 case 表也從沒列過本檔 —— 行數上限以該表為準,本檔走一般 spec 那一檔):
 > Family 4 (Field Control Layout) SSOT owner。Input / NumberInput / DatePicker / Select / Combobox / LinkInput / TimePicker / Textarea / PeoplePicker 等皆消費 `fieldWrapperStyles` / edit-readonly-disabled 三態 mode architecture / endAction 處理 / `mode="view"` 渲染 pattern / Inline Action canonical(後者也 cascade 到 Sidebar / TreeView / DropdownMenu)。scope 本質 > 單一元件。
 
 > **注意**：此文件是 Field Controls（Input / NumberInput / DatePicker / Select / Combobox / LinkInput / PeoplePicker 等)**共用**的設計原則，與 `Field/field.spec.md`（表單 Layout 容器）**不是同一個東西**。

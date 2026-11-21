@@ -9,7 +9,7 @@ scope: overlay / 常駐面板 / 頁面置底按鈕列的 shell sub-components (S
 
 # Overlay Surface 設計原則
 
-> **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
+> **Foundational SSOT rationale**(2026-04-25 approved;當時寫的「cap 800」只列在舊開場檔的例外清單,那份清單已不存在,`check_file_size_budget.sh` 的 case 表也從沒列過本檔 —— 行數上限以該表為準,本檔走一般 spec 那一檔):
 > Dialog / Sheet / Popover / Coachmark / HoverCard 等 overlay 元件 structure 跨 pattern SSOT。定義 SurfaceHeader / SurfaceBody / SurfaceFooter sub-components + v5 `data-unbounded` slot trick + padding-based header canonical + dismiss size canonical。多 overlay 元件消費,scope 本質 > 單一 pattern。
 
 ## 定位

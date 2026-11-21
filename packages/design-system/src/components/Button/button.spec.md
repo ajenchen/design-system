@@ -50,7 +50,7 @@ benchmark:
 ---
 
 
-> **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
+> **Foundational SSOT rationale**(2026-04-25 approved;當時寫的「cap 800」只列在舊開場檔的例外清單,那份清單已不存在,`check_file_size_budget.sh` 的 case 表也從沒列過本檔 —— 行數上限以該表為準,本檔走一般 spec 那一檔):
 > Family 3 (Pill Layout) SSOT owner。SegmentedControlItem / Chip / Tag 繼承 Pill 結構;Dismiss canonical(X icon 色處理)cascade 到全 DS inline actions;Button sm/md/lg 與 Field sm/md/lg size pairing 是系統級 invariant。scope 本質 > 單一元件。
 
 # Button 設計原則

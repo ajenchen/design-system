@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Compute provider-neutral governance infra best-practice score (0-100).
-// This command is a pure observer: callers own any opt-in runtime history.
+// This command is a pure observer: callers own any runtime history it feeds.
 //
-// Used by stop_meta_self_audit.sh to detect regression auto-inject self-improve prompt.
+// Used by stop_passive_logging.sh R5(原 stop_meta_self_audit.sh,2026-05-13 併入)to detect regression and log it for next-turn injection.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -54,12 +54,13 @@ const dimensions = [];
 // === D1: provider instruction bootstrap size ===
 // The registry owns every instruction entry; a new provider changes data, not this scorer.
 //   ≤ 250 → 100,251-400 → 70(transition acceptable),401-800 → 40(approaching hard cap),> 800 → 10
-//   (門檻對齊 AGENTS.md「行數預算」的 target ≤ 250;此註解 2026-09-19 前寫 200,與下一行的 code 相反)
+//   250 / 400 是本評分自己的級距,不是上限:AGENTS.md「行數預算」不寫數值(原本對齊的「target ≤ 250」已不存在)。
+//   總行數的上限(> 800 出 BLOCKER)住在 session_start_governance_check.sh Check 1;單檔上限住 hooks/lib/_size_budget.sh 的表。
 {
   const entries = [...new Set(registry.canonical.reservedDiscovery.instructionNames)]
   const lines = entries.reduce((sum, entry) => sum + safeWc(entry), 0)
   const score = lines <= 250 ? 100 : lines <= 400 ? 70 : lines <= 800 ? 40 : 10;
-  dimensions.push({ dim: 'D1 registry instruction bootstrap size(target ≤250 / hard cap 800)', value: `${lines} lines across ${entries.length} entries`, score, max: 100 });
+  dimensions.push({ dim: 'D1 registry instruction bootstrap size(hard cap = session_start_governance_check.sh Check 1)', value: `${lines} lines across ${entries.length} entries`, score, max: 100 });
 }
 
 // === D2: Skill SKILL.md size discipline ===

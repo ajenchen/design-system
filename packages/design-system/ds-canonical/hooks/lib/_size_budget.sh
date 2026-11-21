@@ -1,9 +1,10 @@
 #!/bin/bash
 # _size_budget.sh —— 治理檔大小上限的唯一一張表,連同量法(helper,被 source;本身不是 hook)。
 #
-# 讀者:check_file_size_budget.sh(PreToolUse,寫入當下判:寫完超過 TRANSITION 而且這次變長 → 擋,其餘超標只提醒)。
-#       Stop hook 的上限清單也要改接本檔 ——
-#       接完之後,全庫各檔(instruction entry / memory / rules / spec / SKILL)的上限只剩這一張表。
+# 讀者:check_file_size_budget.sh(PreToolUse,寫入當下判:寫完超過 TRANSITION 而且這次變長 → 擋,其餘超標只提醒);
+#       stop_self_audit.sh Mechanism 2 與 stop_passive_logging.sh R4(Stop,經 governance_size_spec_overruns;
+#       2026-11-21 WP-06 接上,原本兩支各寫一份 spec 上限清單)。
+#       全庫各檔(instruction entry / memory / rules / spec / SKILL)的上限只剩這一張表。
 #       外部文件寫「check_file_size_budget.sh 的 case 表」指的就是這裡的 governance_size_budget。
 # 不在這裡的門檻:開場檔「總」行數、hook 數、memory 索引條數 → session_start_governance_check.sh(檔頭 + Check 1 / 7 / 8);
 #       memory 會讓 CI 紅的那一份 → governance/memory/contract.json(本表 memory 那一列直接讀它,不另寫數字)。
@@ -20,6 +21,10 @@
 #      (標題行起,到下一個 `## ` 標題或檔尾為止;段後若還有手寫章節照算)—— 該段長度只取決於有幾份 spec 指向本檔,
 #       作者刪不掉也不該刪,量它就是拿代理當性質(M37)。chars = Unicode 字元數(與 UTF-8 locale 下的 `wc -m` 同值),
 #       不受執行環境 locale 影響。
+#   governance_size_spec_overruns
+#       在目前目錄(repo 根)掃所有 *.spec.md(git 追蹤的 + 未追蹤且沒被忽略的),手寫量超過 TRANSITION 的每檔印一行
+#       `路徑<TAB>手寫量<TAB>TRANSITION<TAB>LABEL`,回 0。先用同一次 wc -l 的總行數篩:總行數沒超過 TRANSITION,
+#       扣掉 auto 段只會更少,不必逐檔量(Stop hook 每回合都跑,逐檔量約 1.6 秒,篩過約 0.1 秒)。
 #   governance_size_cell_budget <repo 相對路徑>
 #       有「表格單格」上限 → 印 `N<TAB>LABEL`,回 0;沒有 → 回 1。目前只有 meta-patterns.md 的 M-rule 第 2 欄。
 #   governance_size_oversized_cells <檔案> <N>
@@ -187,6 +192,24 @@ PY
       ;;
     *) return 1 ;;
   esac
+}
+
+governance_size_spec_overruns() {
+  git ls-files -z --cached --others --exclude-standard -- '*.spec.md' 2>/dev/null \
+    | xargs -0 wc -l 2>/dev/null \
+    | while read -r total f; do
+        [ -f "$f" ] || continue
+        printf '%s\t%s\t' "$f" "$total"
+        governance_size_budget "$f" || printf '\n'
+      done \
+    | while IFS=$'\t' read -r f total budget transition unit label; do
+        [ -n "$transition" ] || continue
+        [ "$unit" = lines ] && [ "$total" -le "$transition" ] && continue
+        measured="$(governance_size_measure "$f" "$unit" | cut -f1)" || continue
+        [ -n "$measured" ] && [ "$measured" -gt "$transition" ] \
+          && printf '%s\t%s\t%s\t%s\n' "$f" "$measured" "$transition" "$label"
+      done
+  return 0
 }
 
 # meta-patterns.md 的 M-rule 表第 2 欄(Meta-Principle)單格上限,只提醒、不擋。

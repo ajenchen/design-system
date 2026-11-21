@@ -4,7 +4,7 @@ set -uo pipefail
 #
 # 1. Claim-verification gap:assistant claimed「verified / done / 全部 / pass / 完成」
 #    in transcript but no verify cmd(tsc / hook test / compile / audit)ran this turn
-# 2. Auto-prune trigger:provider bootstrap > 500 OR foundational SSOT spec > cap → inject
+# 2. Auto-prune trigger:provider bootstrap > 500 OR spec > transition cap(case 表)→ inject
 #    /knowledge-prune chain reminder
 # 3. Repeated-topic detector:user 問同 topic ≥ 3 turns within session → inject
 #    /ensure-canonical reminder(M19 trigger phrase auto-pipeline)
@@ -32,9 +32,16 @@ set -uo pipefail
 PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR" 2>/dev/null \
   || governance_hook_integrity_fail "self-audit project root is unavailable:$PROJECT_DIR"
+# 兩種寫入、兩道開關(_log-fire.sh 檔頭同名段;2026-11-21 WP-06):
+#   遙測 STATE_DIR(要 GOVERNANCE_TELEMETRY_OPT_IN=1):Mechanism 3 的基線樣本、各 BLOCKER 的 .last-blocked-* 防重擋紀錄。
+#   功能狀態 WARN_STATE_DIR(adapter 啟動、非 READ_ONLY 就有,不看遙測開關):self-audit-warnings.jsonl ——
+#     inject_pending_self_audit.sh 下一回合讀它注入(M33 的 Mechanism 11 與其餘提醒都靠這一份送到下一回合)。
 STATE_DIR="$(governance_runtime_state_dir 2>/dev/null || true)"
 STATE_WRITES=0
 [ -n "$STATE_DIR" ] && STATE_WRITES=1
+WARN_STATE_DIR="$(governance_enforcement_state_dir 2>/dev/null || true)"
+source "$HOOK_DIR/lib/_size_budget.sh" 2>/dev/null \
+  || governance_hook_integrity_fail 'self-audit size-budget helper is unavailable'
 
 governance_hook_load_input
 governance_hook_require_commands node grep tail awk sed wc tr sort cut find date git mkdir basename
@@ -268,30 +275,13 @@ if [ "$BOOTSTRAP_LINES" -gt 500 ]; then
   WARNINGS="${WARNINGS}\n  • ${SELF_DISPLAY_NAME} bootstrap ${BOOTSTRAP_LINES} 行(over 500 — auto-prune trigger)。下輪 invoke /knowledge-prune scope=full,不 defer。"
 fi
 
-# Foundational SSOT spec over cap
-for f in packages/design-system/src/tokens/color/color.spec.md \
-         packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md \
-         packages/design-system/src/components/Sidebar/sidebar.spec.md \
-         packages/design-system/src/components/TreeView/tree-view.spec.md \
-         packages/design-system/src/components/Field/field.spec.md \
-         packages/design-system/src/components/Field/field-controls.spec.md \
-         packages/design-system/src/components/Button/button.spec.md \
-         packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md \
-         packages/design-system/src/patterns/action-bar/action-bar.spec.md \
-         packages/design-system/src/tokens/uiSize/uiSize.spec.md; do
-  [ -f "$f" ] || continue
-  L=$(wc -l < "$f" | tr -d ' ')
-  case "$f" in
-    */item-anatomy.spec.md) cap=1200 ;;
-    # 2026-05-22 prune codify per shared instruction「foundational SSOT 例外 ≤ 800-1200」range:
-    # color.spec.md = token system 218-line semantic 不可拆 + nested theme + Atlassian-flow rationale,foundational tier 2 cap 1000。
-    */color/color.spec.md) cap=1000 ;;
-    *) cap=800 ;;
-  esac
-  if [ "$L" -gt "$cap" ]; then
-    WARNINGS="${WARNINGS}\n  • $f ${L}/${cap} cap — auto-prune trigger,下輪 /knowledge-prune"
-  fi
-done
+# spec 超過 transition cap:上限與量法只讀 lib/_size_budget.sh 的表(check_file_size_budget.sh 的 case 表),
+# 本檔不留 spec 清單也不留 spec 上限數字(2026-11-21 WP-06;原本這裡另有一份 10 檔清單,其中 6 檔寫 cap 800,表上是 500)。
+SPEC_OVERRUNS="$(governance_size_spec_overruns)"
+while IFS=$'\t' read -r f L cap cap_label; do
+  [ -n "$f" ] || continue
+  WARNINGS="${WARNINGS}\n  • $f ${L}/${cap} cap(${cap_label})— auto-prune trigger,下輪 /knowledge-prune"
+done <<< "$SPEC_OVERRUNS"
 
 # ── Mechanism 4: Peer-reply-verify gap(2026-05-09 user-authorized)──────────
 # Why:dual-track markdown rule 沒 enforce — author 讀 peer reply 後可能直接採納,
@@ -1048,6 +1038,8 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   #   (b) Recent user msgs 含 push-back keyword(user 反覆催做完)
   # 兩條件成立 → WARN「revert next-session framing,continue work or be specific about prereq deliverable」
   # 2026-05-13 peer review fix:dedup 重複「下個 session」+ expand variants。
+  # WARN 寫進功能狀態的 self-audit-warnings.jsonl,下一回合由 inject_pending_self_audit.sh 注入;
+  # 2026-11-21 WP-06 以前綁遙測開關,預設關 = 永遠送不到(test_stop_self_audit.sh Test 109)。
   DEFER_RE='(下個 session|下次 session|下一個 session|下個工作 session|下一輪|context budget|context 不夠|上下文不夠|token budget|省 token|省工|next session|defer|留下次|留下個)'
   PUSHBACK_RE='(沒理由不做|繼續做下去|全部做完|繼續全部做完|馬不停蹄|繼續做不要停|繼續|做完|沒擔憂|沒原因)'
   if [ -n "$LAST_ASSISTANT" ] && [ -n "$USER_MSGS" ]; then
@@ -1061,7 +1053,7 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   fi
 
   # ── Baseline capture(每 turn always log trigger/topic counts,不論 fire)
-  # 為 future dynamic threshold(mean + 2σ)累積 ground truth distribution。
+  # 為 future dynamic threshold(mean + 2σ)累積 ground truth distribution。觀察用樣本 = 遙測(要 opt-in)。
   if [ "$STATE_WRITES" = "1" ]; then
     BASELINE_FILE="$STATE_DIR/self-audit-baseline-counts.jsonl"
     mkdir -p "$STATE_DIR" 2>/dev/null
@@ -1080,9 +1072,17 @@ fi
 # Dedup(2026-05-01):若同樣 warning content 已連續寫 ≥ 5 次 entry,skip 本次
 # 寫入 — 對齊 Bugsnag occurrence count = 5 哲學:同 warning fired ≥ 5 次仍沒解
 # = 該 user 主動處理,inject 第 6 次仍無效。避免 inject 一直 echo 老 warning。
-if [ "$STATE_WRITES" = "1" ] && [ -f "$STATE_DIR/self-audit-warnings.jsonl" ]; then
+# 這份檔是功能狀態(WARN_STATE_DIR,見檔頭):讀寫都走 governance_runtime_file_path(拒 symlink / hard link / 非一般檔);
+# 解析要 python3,放在 GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL=1 的子 shell —— 寫不成只少一筆提醒,不改本回合的判定。
+WARN_LOG=""
+if [ -n "$WARN_STATE_DIR" ]; then
+  WARN_LOG="$(GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL=1
+    export GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL
+    governance_runtime_file_path self-audit-warnings.jsonl "$WARN_STATE_DIR" 2>/dev/null)" || WARN_LOG=""
+fi
+if [ -n "$WARN_LOG" ] && [ -f "$WARN_LOG" ]; then
   WARN_HASH=$(printf '%b' "$WARNINGS" | governance_hash_prefix)
-  RECENT_HASHES=$(tail -5 "$STATE_DIR/self-audit-warnings.jsonl" 2>/dev/null | \
+  RECENT_HASHES=$(tail -5 "$WARN_LOG" 2>/dev/null | \
     jq -r '.warnings // empty' 2>/dev/null | \
     while IFS= read -r w; do printf '%s' "$w" | governance_hash_prefix; done)
   DEDUP_COUNT=$(grep -c "^${WARN_HASH}$" <<< "$RECENT_HASHES" 2>/dev/null)
@@ -1092,13 +1092,12 @@ if [ "$STATE_WRITES" = "1" ] && [ -f "$STATE_DIR/self-audit-warnings.jsonl" ]; t
   fi
 fi
 
-# 永遠 log warnings(下 turn 透過 inject_pending_self_audit 看到)
-if [ "$STATE_WRITES" = "1" ]; then
-  mkdir -p "$STATE_DIR" 2>/dev/null
-  printf '{"ts":"%s","warnings":%s}\n' \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    "$(printf '%b' "$WARNINGS" | jq -Rs .)" \
-    >> "$STATE_DIR/self-audit-warnings.jsonl" 2>/dev/null || true
+# 永遠 log warnings(下 turn 透過 inject_pending_self_audit 看到)。功能狀態:不看遙測開關(檔頭)。
+if [ -n "$WARN_STATE_DIR" ]; then
+  governance_append_enforcement_record self-audit-warnings.jsonl \
+    "$(printf '{"ts":"%s","warnings":%s}' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      "$(printf '%b' "$WARNINGS" | jq -Rs .)")" || true
 fi
 
 # ── BLOCKER upgrade(2026-04-30):Mechanism 1 claim-verify gap 升 block ──

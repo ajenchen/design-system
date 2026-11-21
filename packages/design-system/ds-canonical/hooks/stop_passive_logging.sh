@@ -19,10 +19,22 @@
 #   本 dispatcher 只 merge 4 lib non-blocking hooks(全 silent / log-only)。
 #
 # All 4 functions are exit 0(non-blocking),safe to chain in single dispatcher。
+#
+# 兩種寫入、兩道開關(2026-11-21 WP-06;條件與函式見 _log-fire.sh 檔頭同名段):
+#   功能狀態(有讀者會讀回來用)—— governance_prepare_enforcement_state_dir,不看遙測開關:
+#     R2 user-corrections.jsonl:session_start_governance_check.sh Check 3(> 40 筆 BLOCKER)與 /codify-corrections 讀;
+#     R5 score-history.jsonl:inject_pending_self_audit.sh 下一回合注入(M20)讀。
+#   遙測(只給人事後看)—— governance_prepare_runtime_state_dir,要 GOVERNANCE_TELEMETRY_OPT_IN=1:
+#     R3 metric-snapshots.jsonl;R4 governance-drift.jsonl(全庫沒有讀者)與它自己的 .stop-drift-last-head。
+#   兩個目錄都拿不到(READ_ONLY=1、沒有 adapter 又沒開遙測)才整支結束;只拿到一個就只跑那一類。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_PROVIDER_RESOLVER_UNAVAILABLE\n' >&2
+  exit 70
+}
+source "$(dirname "$0")/lib/_size_budget.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_SIZE_BUDGET_UNAVAILABLE\n' >&2
   exit 70
 }
 
@@ -34,10 +46,18 @@ SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"' 2>/dev/null)
 
 PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR" 2>/dev/null || exit 0
-STATE_DIR="$(governance_prepare_runtime_state_dir 2>/dev/null)" || exit 0
+ENFORCEMENT_DIR="$(governance_prepare_enforcement_state_dir 2>/dev/null || true)"
+TELEMETRY_DIR="$(governance_prepare_runtime_state_dir 2>/dev/null || true)"
+[ -n "$ENFORCEMENT_DIR$TELEMETRY_DIR" ] || exit 0
 
-runtime_file() {
-  governance_runtime_file_path "$1" "$STATE_DIR" 2>/dev/null
+# 目錄沒拿到就回 1:governance_runtime_file_path 第二個參數空白時會退回遙測目錄,不能讓功能段落借道。
+state_file() {
+  [ -n "$ENFORCEMENT_DIR" ] || return 1
+  governance_runtime_file_path "$1" "$ENFORCEMENT_DIR" 2>/dev/null
+}
+telemetry_file() {
+  [ -n "$TELEMETRY_DIR" ] || return 1
+  governance_runtime_file_path "$1" "$TELEMETRY_DIR" 2>/dev/null
 }
 
 INSTRUCTION_ENTRY="$(governance_provider_string_field instructionEntry 2>/dev/null)" || {
@@ -110,16 +130,15 @@ rule_harvest_corrections() {
   [ -z "$TRANSCRIPT_PATH" ] && return 0
   [ -f "$TRANSCRIPT_PATH" ] || return 0
 
-  local log_dir log_file archive_file tmp_file
-  log_dir="$STATE_DIR"
-  log_file="$(runtime_file user-corrections.jsonl)" || return 0
+  local log_file archive_file tmp_file
+  log_file="$(state_file user-corrections.jsonl)" || return 0
 
   # Rotate if > 1 MB
   if [ -f "$log_file" ]; then
     local size
     size=$(wc -c < "$log_file" | tr -d ' ')
     if [ "$size" -gt 1048576 ]; then
-      archive_file="$(runtime_file "user-corrections.jsonl.$(date +%Y%m)")" || return 0
+      archive_file="$(state_file "user-corrections.jsonl.$(date +%Y%m)")" || return 0
       mv "$log_file" "$archive_file"
     fi
   fi
@@ -135,7 +154,7 @@ rule_harvest_corrections() {
 
   # Dedup by session
   if [ -f "$log_file" ]; then
-    tmp_file="$(runtime_file user-corrections.jsonl.tmp)" || return 0
+    tmp_file="$(state_file user-corrections.jsonl.tmp)" || return 0
     grep -v "\"session\":\"$SESSION_ID\"" "$log_file" > "$tmp_file" 2>/dev/null || true
     [ -f "$tmp_file" ] && mv -f "$tmp_file" "$log_file"
   fi
@@ -151,7 +170,7 @@ rule_harvest_corrections() {
 # ─────────────────────────────────────────────────────────────────────────────
 rule_capture_metrics() {
   local snapshot_file
-  snapshot_file="$(runtime_file metric-snapshots.jsonl)" || return 0
+  snapshot_file="$(telemetry_file metric-snapshots.jsonl)" || return 0
 
   # 24h dedup
   if [ -f "$snapshot_file" ]; then
@@ -218,8 +237,9 @@ rule_capture_metrics() {
     last_prune_days=$(( (now - last_prune_ts) / 86400 ))
   fi
 
+  # 讀 R2 的檔:兩個目錄是同一個解析結果(_log-fire.sh _governance_resolve_runtime_state_dir),遙測開著就讀得到。
   local corrections_log corrections=0
-  corrections_log="$(runtime_file user-corrections.jsonl)" || return 0
+  corrections_log="$(telemetry_file user-corrections.jsonl)" || return 0
   [ -f "$corrections_log" ] && corrections=$(wc -l < "$corrections_log" | tr -d ' ')
 
   local timestamp snapshot
@@ -241,7 +261,7 @@ rule_capture_metrics() {
 rule_governance_drift() {
   local head_now head_prev_file head_prev commits_made gov_edited
   head_now=$(git rev-parse HEAD 2>/dev/null || echo "")
-  head_prev_file="$(runtime_file .stop-drift-last-head)" || return 0
+  head_prev_file="$(telemetry_file .stop-drift-last-head)" || return 0
   head_prev=""
   [ -f "$head_prev_file" ] && head_prev=$(cat "$head_prev_file" 2>/dev/null || echo "")
 
@@ -279,23 +299,13 @@ rule_governance_drift() {
     fi
   done
 
-  for f in packages/design-system/src/tokens/color/color.spec.md \
-           packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md \
-           packages/design-system/src/components/Sidebar/sidebar.spec.md \
-           packages/design-system/src/components/TreeView/tree-view.spec.md; do
-    [ -f "$f" ] || continue
-    L=$(wc -l < "$f" | tr -d ' ')
-    local cap
-    case "$f" in
-      */item-anatomy.spec.md) cap=1200 ;;
-      # 2026-05-22 prune codify per shared bootstrap「foundational SSOT 例外 ≤ 800-1200」range
-      */color/color.spec.md) cap=1000 ;;
-      *) cap=800 ;;
-    esac
-    if [ "$L" -gt "$cap" ]; then
-      warnings="${warnings}\n  • $f ${L} lines(over ${cap} cap)"
-    fi
-  done
+  # spec 上限與量法只讀 lib/_size_budget.sh 的表(check_file_size_budget.sh 的 case 表);本檔不留 spec 清單也不留 spec 上限數字。
+  local overruns f measured cap label
+  overruns="$(governance_size_spec_overruns)"
+  while IFS=$'\t' read -r f measured cap label; do
+    [ -n "$f" ] || continue
+    warnings="${warnings}\n  • $f ${measured} lines(over ${cap} cap;${label})"
+  done <<< "$overruns"
 
   # 原本這裡在「治理檔有改」時跑根目錄 `npx tsc -b --noEmit` 記「governance edit broke types」——
   # 2026-10-07 與 R1 一起退役(同一個錯的量具:不檢查 DS 原始碼;治理檔是 md / json,不會讓型別壞掉)。
@@ -303,7 +313,7 @@ rule_governance_drift() {
   [ -z "$warnings" ] && return 0
 
   local drift_log
-  drift_log="$(runtime_file governance-drift.jsonl)" || return 0
+  drift_log="$(telemetry_file governance-drift.jsonl)" || return 0
   printf '{"ts":"%s","warnings":%s}\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     "$(printf '%b' "$warnings" | jq -Rs .)" \
@@ -318,8 +328,8 @@ rule_governance_drift() {
 # ─────────────────────────────────────────────────────────────────────────────
 rule_infra_best_practice_score() {
   local log_file score_history_file
-  log_file="$(runtime_file infra-best-practice-score.jsonl)" || return 0
-  score_history_file="$(runtime_file score-history.jsonl)" || return 0
+  log_file="$(state_file infra-best-practice-score.jsonl)" || return 0
+  score_history_file="$(state_file score-history.jsonl)" || return 0
   local score_output current_score prev_score=0 warnings="" drop low_dims
 
   score_output=$(node scripts/score-infra-best-practice.mjs --json 2>/dev/null)
@@ -360,10 +370,10 @@ rule_infra_best_practice_score() {
     >> "$score_history_file" 2>/dev/null || true
 }
 
-# ─── Run rules sequentially(all non-blocking,exit 0)──
-rule_harvest_corrections
-rule_capture_metrics
-rule_governance_drift
-rule_infra_best_practice_score
+# ─── Run rules sequentially(all non-blocking,exit 0)── 功能段落看功能狀態目錄,遙測段落看遙測目錄(檔頭)。
+[ -n "$ENFORCEMENT_DIR" ] && rule_harvest_corrections
+[ -n "$TELEMETRY_DIR" ] && rule_capture_metrics
+[ -n "$TELEMETRY_DIR" ] && rule_governance_drift
+[ -n "$ENFORCEMENT_DIR" ] && rule_infra_best_practice_score
 
 exit 0
