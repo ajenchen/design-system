@@ -1692,6 +1692,8 @@ failureNoticeEvent = requestedEvent
 // fail-open by design (hooks accelerate; protected CI is the trust boundary), so the honest outcome
 // is a model-visible notice through the provider's own context channel — stderr alone is invisible
 // to the model on exit 0 (M37: 沒觀察到 ≠ 沒發生).
+// Stop payload 的 stop_hook_active(布林才算數;讀到 payload 之前一律 undefined → Stop 的通知只給 user 看,見 transport 註解)。
+let payloadStopHookActive
 function emitGovernanceNotice(event, message, { stderr = true } = {}) {
   if (stderr) writeStderrRecord(`GOVERNANCE_WARNING: ${String(message).slice(0, 900)}`)
   let output = null
@@ -1700,6 +1702,7 @@ function emitGovernanceNotice(event, message, { stderr = true } = {}) {
       transport: provider.runtime?.contextOutputTransport,
       event,
       message,
+      stopHookActive: payloadStopHookActive,
     })
   } catch {
     output = null
@@ -1746,6 +1749,7 @@ try {
 } catch (error) {
   fail(`provider hook adapter blocked:invalid JSON payload:${error.message}`)
 }
+if (typeof input.stop_hook_active === 'boolean') payloadStopHookActive = input.stop_hook_active
 
 if (authorityDecisionMode) {
   const expectedKeys = [
@@ -2701,7 +2705,7 @@ if (governanceDecision) {
 if (governanceContexts.length) {
   const message = governanceContexts.join('\n\n')
   const transport = provider.runtime?.contextOutputTransport
-  const output = formatProviderHookContext({ transport, event, message })
+  const output = formatProviderHookContext({ transport, event, message, stopHookActive: payloadStopHookActive })
   if (output) {
     providerStdoutCommitted = true
     await writeBoundedProviderOutput(process.stdout, `${JSON.stringify(output)}\n`, 'governance-context')
