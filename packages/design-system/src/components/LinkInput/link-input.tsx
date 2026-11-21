@@ -429,9 +429,17 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 合法的網址直接提交、切回連結狀態,× 跟著卸載,點擊落空(提案 A ②;同 React Aria useComboBox「Ignore blur if focused moved to the button」,
     // https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/combobox/useComboBox.ts#L269-L280 ;
     // 判準與 Select / DatePicker 的「觸發欄位 + 零件 = 同一個欄位」同一支 lib/composite-field-focus.ts)。沒開 clearable 時框裡沒有別的可聚焦零件,結果與修前相同。
+    // consumer 的 onBlur 跟結算同一個時點(composite-field-focus.ts「真的離開這個欄位才轉呼叫,一次離開只一次」,Select / DatePicker 同一條):
+    // 輸入框 ↔ × 之間移動不轉;從 × 離開時轉一個 currentTarget / target 換成輸入框的事件殼(consumer 的 onBlur 是掛在輸入框上的;殼的做法同該檔 withFieldTarget)。
+    const leaveField = (e: React.FocusEvent<HTMLElement>) => {
+      settleDraft()
+      const input = inputRef.current
+      if (!onBlurProp) return
+      if (!input || e.currentTarget === input) { onBlurProp(e as React.FocusEvent<HTMLInputElement>); return }
+      onBlurProp(Object.assign(Object.create(Object.getPrototypeOf(e) as object) as React.FocusEvent<HTMLInputElement>, e, { currentTarget: input, target: input }))
+    }
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget.parentElement })) settleDraft()
-      onBlurProp?.(e)
+      if (!isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget.parentElement })) leaveField(e)
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -543,10 +551,10 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         )}
         style={fieldWidthStyle(width)}
         onMouseDown={focusFieldInputFromChrome}
-        // 焦點從清除 × 離開整個欄位(Tab 走、點別處)= 離開欄位,照既有規則結算(輸入框自己的 blur 由 handleBlur 處理;× 只有開了 clearable 才有)
+        // 焦點從清除 × 離開整個欄位(Tab 走、點別處)= 離開欄位,照既有規則結算、轉呼叫 consumer 的 onBlur(輸入框自己的 blur 由 handleBlur 處理;× 只有開了 clearable 才有)
         onBlur={showClear ? (e) => {
           if (e.target === inputRef.current || isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget })) return
-          settleDraft()
+          leaveField(e)
         } : undefined}
         data-field-mode="edit"
         data-error={error ? '' : undefined}

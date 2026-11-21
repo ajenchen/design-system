@@ -100,7 +100,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 - **焦點**:
   - 滑鼠:輸入框握著焦點時按 ×,焦點不動(擋 mousedown 預設、click 照常;`../../lib/pointer-press.ts` `keepFocusOnPointerPress`,Select / Combobox 欄位內搜尋框同一支);焦點本來不在欄位裡時,按完放進輸入框 —— 草稿已經跟值不同,得有一次離開才會結算
   - 鍵盤:× 在 Tab 序上(輸入框 → ×);`Enter` / 空白鍵按下後焦點回輸入框,不隨 × 卸載掉到 `body`(`../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`,Select「清除後焦點」同一支);焦點在 × 上按 `Esc` 與在輸入框裡按同一層(還原原值,浮層裡第一下只還原);鍵盤聚焦 × 時它的 tooltip 開著,第一下 `Esc` 先收 tooltip(一次只收一層),第二下才還原
-  - **輸入框 ↔ × 之間移動不算離開欄位、不結算**;從 × 離開欄位(Tab 走、點別處)才結算(判準 = `../../lib/composite-field-focus.ts` `isWithinCompositeField`,與 Select / DatePicker「觸發欄位 + 零件 = 同一個欄位」同一支)
+  - **輸入框 ↔ × 之間移動不算離開欄位、不結算,也不呼叫 consumer 的 `onBlur`**;從 × 離開欄位(Tab 走、點別處)才結算、才呼叫一次 `onBlur`(事件的 `currentTarget` / `target` 是輸入框 —— consumer 的 `onBlur` 掛在輸入框上)(判準 = `../../lib/composite-field-focus.ts` `isWithinCompositeField`,與 Select / DatePicker「觸發欄位 + 零件 = 同一個欄位」同一支;`onBlur` 一次離開只一次,同該檔「真的離開這個欄位才轉呼叫」)
 - **為什麼要這兩條焦點處理**(提案 A ②):「離開輸入框就結算」會搶在 × 之前 —— 只把 × 接上「清字」的寫法,按 × 那一下輸入框先 blur,合法的網址當場提交、切回連結狀態,× 跟著卸載,點擊落空(退出編輯)。閘 `scripts/link-input-clear-invariant.mjs`(兩面對照:拿掉「× 算同一個欄位」或「按 × 焦點不動」任一條,按 × 會退出編輯 = 紅;現行留在編輯 = 綠)
 
 URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但看起來就是網址的字自動補 `https://`**(主機名 = 「標籤.標籤…頂級網域」,頂級網域要是真的頂級網域,可帶埠號與路徑,例:`www.acme.com`、`acme.com/pricing`;2026-10-21 確認頁 F2 乙)。其他協定(`javascript:` / `data:` / `mailto:` / `ftp:` …)、信箱、中間有空白的字、結尾是檔案副檔名而那個副檔名不是頂級網域的檔名(`report.pdf`、`node.js`)一律不合法。判斷只有一支 `link-input.tsx` `toWebUrl`:編輯模式的驗證與提交(提交的值是補好 `https://` 的完整網址)、唯讀 / 檢視 / 表格連結格的顯示都經它。
