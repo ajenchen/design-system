@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "counts": {
-    "hooks": 52,
+    "hooks": 50,
     "mRules": 33,
     "auditDims": 91,
     "auditDimMin": 1,
@@ -56,7 +56,6 @@
     "packages/design-system/ds-canonical/hooks/check_consumer_app_invariants.sh",
     "packages/design-system/ds-canonical/hooks/check_consumer_code_quality.sh",
     "packages/design-system/ds-canonical/hooks/check_datatable_invariants.sh",
-    "packages/design-system/ds-canonical/hooks/check_dim_count_drift.sh",
     "packages/design-system/ds-canonical/hooks/check_ds_anchor_preflight.sh",
     "packages/design-system/ds-canonical/hooks/check_dynamic_tailwind_class.sh",
     "packages/design-system/ds-canonical/hooks/check_escape_marker_abuse.sh",
@@ -70,7 +69,6 @@
     "packages/design-system/ds-canonical/hooks/check_opacity_token_usage.sh",
     "packages/design-system/ds-canonical/hooks/check_overlay_open_focus_escape_probe.sh",
     "packages/design-system/ds-canonical/hooks/check_pattern_invariants.sh",
-    "packages/design-system/ds-canonical/hooks/check_plugin_fork_health.sh",
     "packages/design-system/ds-canonical/hooks/check_propose_discipline.sh",
     "packages/design-system/ds-canonical/hooks/check_propose_without_benchmark.sh",
     "packages/design-system/ds-canonical/hooks/check_sidebar_avatar_canonical.sh",

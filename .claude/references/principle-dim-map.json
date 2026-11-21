@@ -444,10 +444,6 @@
       "dims": [],
       "note": "M28 protected-main feedback gate:PreToolUse Edit/Write 對 repo 內任何檔案偵測 current branch=main/master 即 BLOCKER；文件/治理也無 direct-main 豁免。Claude/Codex tool 欄位正規化，task branch 才放行。CLAUDE_BYPASS_MAIN_WORKBENCH=1 僅 recovery，本地 override 不能繞 GitHub ruleset。"
     },
-    "dim_count_drift": {
-      "dims": [],
-      "note": "2026-05-18 ship(audit SSOT integrity infra,non-component scope):PreToolUse Edit/Write 攔 chain skill / spec / rule / CLAUDE.md hardcode 具體 audit dim 數字(53 dim / 46-dim / N audit dimensions),強制 design-system-audit/SKILL.md `## The audit dimensions` 為 SSOT,deep-audit-cross-codex 等 chain skill 自動繼承。Allowlist:SSOT file 自己 / invariant doc 引用(SSOT/禁/forbidden/example/hardcode keyword 同行)。起因 user 2026-05-18「deep-audit-cross-codex 應該要確保其中的 design system deep audit 跟 design-system-audit deep 是 ssot」"
-    },
     "tabs_content_chrome_body_double_gap": {
       "dims": [
         89,
@@ -521,12 +517,6 @@
         74
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:dim 74 overlay probe 直接對應"
-    },
-    "plugin_fork_health": {
-      "dims": [
-        58
-      ],
-      "note": "2026-07-03 entry add per audit-preflight gap:dim 58 plugin install enforcement 直接對應"
     },
     "propose_discipline": {
       "dims": [],

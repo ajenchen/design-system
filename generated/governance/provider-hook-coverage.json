@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:43b75405d4c0d5b98d6d18e08b7db0c705426311fb9ae5f2abab4436b5f1e4fd",
+      "hookRegistrations": "sha256:3f6b5df7e286b7cbd6e48385da89680afc2202a69b6a1e9fc72c75e28797edcb",
       "providerRegistry": "sha256:20f2995b8d3ff2e2814210c4ad7ca8a8f9578f3191bf5a3d2f598224cca4f22b",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -24,8 +24,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "complete-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 54,
-      "projectedCount": 54,
+      "canonicalRegistrationCount": 52,
+      "projectedCount": 52,
       "excludedCount": 0,
       "projected": [
         {
@@ -340,21 +340,6 @@
           "runtime": "bash",
           "outputMode": "blocking",
           "inputContract": "proposed-text-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "PreToolUse",
-          "projectedMatcher": "Edit|Write|MultiEdit",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_dim_count_drift.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],
           "nativeEvent": "PreToolUse",
@@ -785,21 +770,6 @@
           "certificationImpact": "runtime-certification-required"
         },
         {
-          "event": "SessionStart",
-          "canonicalMatcher": "",
-          "hook": "check_plugin_fork_health.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "governance-context",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "SessionStart",
-          "projectedMatcher": "",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
           "event": "UserPromptSubmit",
           "canonicalMatcher": "",
           "hook": "inject_pending_self_audit.sh",
@@ -853,8 +823,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "partial-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 54,
-      "projectedCount": 51,
+      "canonicalRegistrationCount": 52,
+      "projectedCount": 49,
       "excludedCount": 3,
       "projected": [
         {
@@ -1154,21 +1124,6 @@
           "runtime": "bash",
           "outputMode": "blocking",
           "inputContract": "proposed-text-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "PreToolUse",
-          "projectedMatcher": "Edit|edit_file|apply_patch|Write|write_file|MultiEdit",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_dim_count_drift.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],
           "nativeEvent": "PreToolUse",
@@ -1584,21 +1539,6 @@
           "certificationImpact": "runtime-certification-required"
         },
         {
-          "event": "SessionStart",
-          "canonicalMatcher": "",
-          "hook": "check_plugin_fork_health.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "governance-context",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeEvent": "SessionStart",
-          "projectedMatcher": "",
-          "nativeCoverage": "projected",
-          "certificationImpact": "runtime-certification-required"
-        },
-        {
           "event": "UserPromptSubmit",
           "canonicalMatcher": "",
           "hook": "inject_pending_self_audit.sh",
@@ -1704,9 +1644,9 @@
       "hookEnforcement": "ci-only",
       "projectionStatus": "unavailable",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 54,
+      "canonicalRegistrationCount": 52,
       "projectedCount": 0,
-      "excludedCount": 54,
+      "excludedCount": 52,
       "projected": [],
       "excluded": [
         {
@@ -2081,24 +2021,6 @@
           "runtime": "bash",
           "outputMode": "blocking",
           "inputContract": "proposed-text-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeCoverage": "gap",
-          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
-          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
-          "certificationImpact": "not-certified",
-          "authoritativeFallback": {
-            "status": "none"
-          }
-        },
-        {
-          "event": "PreToolUse",
-          "canonicalMatcher": "Edit|Write|MultiEdit",
-          "hook": "check_dim_count_drift.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "diagnostic",
-          "inputContract": "event-v1",
           "transcriptRequirement": "none",
           "requirements": [],
           "nativeCoverage": "gap",
@@ -2613,24 +2535,6 @@
           "event": "SessionStart",
           "canonicalMatcher": "",
           "hook": "session_start_governance_check.sh",
-          "kind": "hook",
-          "runtime": "bash",
-          "outputMode": "governance-context",
-          "inputContract": "event-v1",
-          "transcriptRequirement": "none",
-          "requirements": [],
-          "nativeCoverage": "gap",
-          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
-          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
-          "certificationImpact": "not-certified",
-          "authoritativeFallback": {
-            "status": "none"
-          }
-        },
-        {
-          "event": "SessionStart",
-          "canonicalMatcher": "",
-          "hook": "check_plugin_fork_health.sh",
           "kind": "hook",
           "runtime": "bash",
           "outputMode": "governance-context",

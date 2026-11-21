@@ -3,8 +3,8 @@
   "expected_dims": 91,
   "classified": 91,
   "tier_counts": {
-    "DETERMINISTIC": 25,
-    "HOOK-ENFORCED": 39,
+    "DETERMINISTIC": 27,
+    "HOOK-ENFORCED": 37,
     "PURE-JUDGMENT": 25,
     "UNKNOWN": 0,
     "CI-ENFORCED": 2
@@ -12,7 +12,7 @@
   "hook_enforcement_counts": {
     "block": 26,
     "block-and-warn": 7,
-    "warn": 6,
+    "warn": 4,
     "prevents_landing": 15
   },
   "gaps": [],
@@ -478,14 +478,8 @@
       "critical": true
     },
     "58": {
-      "tier": "HOOK-ENFORCED",
-      "mechanism": "check_plugin_fork_health.sh SessionStart：r1 驗證 committed provider-neutral dispatcher + exact installed fork manifest；legacy plugin 僅相容性回饋、不能滿足治理健康契約",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
-      "hook_events": [
-        "SessionStart"
-      ],
-      "prevents_landing": false,
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/deep-audit-deterministic-plan.json dimension 58(argv/capability/coverage SSOT);scripts/test-fork-governance.mjs 驗兩道 consumer 端執行面的兩面:template 出貨的 SessionStart launcher governance/bin/inject_fork_governance_preamble.sh(已安裝套件或 fork manifest 缺 → GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE + npm run setup:all;不改工作樹)與 consumer 已安裝的 hard gate fork/consumer/governance-check.mjs(committed launcher 缺 → GOV-ADAPTER-005;manifest 缺 → GOV-CORPUS-001;npm run governance:check 與 setup:all 經 scripts/setup-governance.mjs 呼叫)。這兩面只在夜間 governance-harnesses.yml 與每週 packaging-canary.yml 跑,PR 必過跑不到;template 的 consumer CI(audit.yml)也不跑這道 hard gate。2026-11-21 前掛 SessionStart hook check_plugin_fork_health.sh,已 retired:DS repo 內早退、fork 分類 DROP、plugin 在非 ds-author target 不跑 = 沒有任何部署情境會出聲",
       "id": "DS-DIM-058",
       "critical": true
     },
@@ -652,14 +646,8 @@
       "critical": true
     },
     "75": {
-      "tier": "HOOK-ENFORCED",
-      "mechanism": "check_plugin_fork_health.sh r2_plugin_freshness SessionStart fork-user(原 check_plugin_freshness.sh)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
-      "hook_events": [
-        "SessionStart"
-      ],
-      "prevents_landing": false,
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/deep-audit-deterministic-plan.json dimension 75(argv/capability/coverage SSOT);npm run test:setup-governance(scripts/test-setup-governance.mjs)驗 setup:all 依 committed exact lock 安裝、驗簽、高風險 audit 後才跑已安裝的 hooks-off checker,缺 lock / 多一份 shrinkwrap / 設定注入一律在安裝前擋;版本漂移由 checker 的 GOV-VERSION / GOV-PACKAGE-LOCK / GOV-SUPPLY / GOV-DEPS 擋。這一面只在夜間 governance-harnesses.yml 跑,PR 必過跑不到。2026-11-21 前另有 check_plugin_fork_health.sh 的 r2(legacy Claude plugin marketplace 版本差異提示,自述 non-authoritative),已 retired:只在 Claude + plugin + fork 才會跑,而 plugin 在非 ds-author target 一律不跑",
       "id": "DS-DIM-075",
       "critical": true
     },

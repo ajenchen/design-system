@@ -807,7 +807,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/inject_deploy_url_after_push.sh",
-      "sha256": "6a5c00788dc330b0eea1c3610f68d4aa3c91e86f4079a50edf0cc205f921db33",
+      "sha256": "a7ac015727ae490fcf8a4cb1e50241a0479a2ab9751adfc80681d8385bd0bcb0",
       "source": "inject_deploy_url_after_push.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -847,7 +847,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "dbebda1afbfd3aab94c6cfb3891111e13f203d7b59d2ee28ab82a0151c3e0ad4",
+      "sha256": "ddedc548e38d6eac86ab261bb79b54af0c738fee9c569f665bc180aed4a2f0b9",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null

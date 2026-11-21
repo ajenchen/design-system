@@ -1,5 +1,18 @@
 # Prune Phase 1 D5-D10 dimension detail(2026-05-17 加;knowledge-prune SKILL.md Phase 1 extract)
 
+#### D3 補充 — @watch 判法(2026-11-21 加)
+
+`rules/meta-patterns.md` 分群表下方的 `@watch` 規則要判「觀察期內有沒有新 bug 被這條 M-rule 吸收」:先數有幾個 commit 訊息提到它,再逐筆讀。
+
+```sh
+git log --since=<起算日> -F --grep=<M-ID> --format='%h %s'
+```
+
+- **先跑對照**:同一條指令把 `<M-ID>` 換成 `M37` 先跑一次。對照拿得到資料,目標 M-ID 的 0 筆才可信;對照也是 0 筆 = 量具沒在量,不是「沒有新 bug」。
+- **禁用 `-E` 加 `\b`**(例 `-E --grep='\bM25\b'`):本機 git(macOS)的 ERE 不認 `\b`,不報錯、直接回 0 筆 —— 2026-11-17 那一輪因此把 M25 誤數成 0 筆(同條件用 `-F` 是 5 筆)。
+- 實測(2026-11-21,839029af,`--since=2026-06-01`):M37 61 筆;M25 用 `-F` 7 筆、用 `-E` 加 `\b` 0 筆。
+- `-F` 是子字串比對:`M2` 也會命中 `M20`–`M29`;命中的 commit 要逐筆讀過,才判「升 sharp keep」或「降級」。
+
 #### D5 — Canonical drift(spec vs code 語義漂移)— 2026-05-17 加
 
 Scan:`*.spec.md` 寫的 canonical vs `*.tsx` 實際 code 行為衝突 / spec 寫禁止但 code 仍用 / spec 升級但 code 沒跟。
@@ -53,9 +66,9 @@ Scan 全 audit / test infra:
 - audit script 只驗 `getAttribute(...)` / `class.includes(...)` 不驗 `getBoundingClientRect()` numeric(pixel-quantified 缺)
 - `*.spec.md` 寫 visual canonical 但無對應 playwright snapshot 或 visual-audit 覆蓋
 - stale screenshot ref(`infra/governance/baseline/visual/**` 內 committed baseline 6 月未更新;provider compatibility mirror 不另行計數)
-- 依 [runtime evidence retention canonical](../../../references/runtime-evidence-retention.md) 枚舉每個 observed worktree 的 `<absolute-git-dir>/governance-runtime/evidence/`:保留 current active/live referenced/genuine review/unexpired receipt closure；將 unreferenced blocked/failed/stale run 列為 whole-run 自主回收候選，禁止 partial CAS pruning
+- 依 [runtime evidence retention canonical](../../../references/runtime-evidence-retention.md) 枚舉每個 observed worktree 的 `<absolute-git-dir>/governance-runtime/evidence/`:保留 current active/live referenced/genuine review/unexpired receipt closure；將 unreferenced blocked/failed/stale run 列為 whole-run 自主回收候選，禁止 partial CAS pruning;+ 工作區 `infra/governance/runtime/`(同檔「Deep-audit and prune procedure」第 6 步:照「Workspace runtime」段逐檔分類,只整份刪該段標為可刪的檔,其餘列 unclassified)
 
-**Output**:per audit script 升 pixel-quantified 提名 + 缺 visual coverage列表 + runtime evidence bytes/保留根/whole-run 回收結果
+**Output**:per audit script 升 pixel-quantified 提名 + 缺 visual coverage列表 + runtime evidence bytes/保留根/whole-run 回收結果 + 工作區 `infra/governance/runtime/` bytes(與 Git-owned evidence 分開報)/已刪檔/unclassified 清單
 
 #### 遙測全盲時的靜態退場判準(Hook / Skill;2026-11-17 加)
 
