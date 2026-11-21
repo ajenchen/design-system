@@ -266,6 +266,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 - 2026-05-06 column width:DS 49+ 處 `size: 'sm'|'md'|'lg'` density vs TanStack `size: 280` px = 同 prop 不同義 → `meta.width` wrap(M23(c) 起源)。
 - 2026-05-20 AppShell-vs-Sidebar drift:simplified mock + jargon + wrong variant + 不消費 primitive props(M23(d) 起源)。
 - 2026-06-04 upload-manager 面板手刻 header + 殼(`py-2`≠`py-tight` / `rounded-md`≠`lg` / `border-divider`≠`border` / `bg-surface`≠`raised`),既有 3 道網全漏(R1-C 要 absolute+dismiss / `_chrome_header_handcraft` skip stories / R7-R8 只比已註冊 primitive 名)→ adversarial workflow 抓 + 加 R9 補洞。Hook `check_datatable_invariants.sh`(r2 folded,2026-06-11)+ `check_story_invariants.sh` R8/R9。
+- forcing-function 教訓原文(2026-11-21 knowledge-prune WP-META,D3-06,從 meta-patterns.md M23 第 2 欄逐字搬來;規則句收成 meta-patterns「判斷 meta-principle 是否漏寫的 test」重犯那一條,M23 原處留指標):**forcing-function 教訓**:M1/M23(d) 是 mindset,但 mindset 沒有完整 hook 兜底 = 紙老虎(會憑印象手刻);新場景若既有 hook 無 antiPattern 覆蓋 → 補 hook rule 才算落地。
 
 ### M30 — Wrapper-vs-primitive schema unify
 2026-05-10 PeoplePicker multi-mode 漏 avatar:`Combobox.SelectOption = { value, label }` weak schema(跟 `Select.SelectOption` 同名不同 fields)+ `Combobox.menuOptions` mapping 只 forward 2 fields → dropdown rows 永遠純文字。user 抓「為什麼之前會把 people picker 改壞 + 還有沒有其他東西也改壞」。Round 1 commit `561945b` 修(Combobox extends + forward 全 field)+ Round 2 codify。
@@ -284,6 +285,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 - 2026-11-21 knowledge-prune(WP-META,D3-05)從 meta-patterns.md M36 第 2 欄逐字搬來兩段,原處各留一行:
   - (a)「user 看過 ≠ 同意」的錨:(2026-11-15 `--brand` 被刪,依據只是 user 在決策頁看過 AI 寫的那句,user 沒說過要刪)
   - (b')(4)「`!` 在不在牆內看 session 種類」的官方引文:官方 https://code.claude.com/docs/en/sandboxing.md ,2026-11-16 讀:「a command you enter at the `!` shell-mode prompt runs unsandboxed in most sessions」;背景 session 仍在沙箱內;「Before v2.1.260, strict sandbox mode sandboxed shell-mode commands in every session」
+- (b'') 的「教訓本身」原文(2026-11-21 knowledge-prune WP-META,D3-06,從 meta-patterns.md M36 第 2 欄逐字搬來;規則句收成 meta-patterns「判斷 meta-principle 是否漏寫的 test」重犯那一條,M36 原處留指標):**教訓本身**:規則重犯代表缺的是強制面而不是再寫一遍散文 —— 同一條 M-rule 的兩個子款,有 hook 的那款沒再犯,沒 hook 的那款犯了兩次。
 
 ### M37 — 禁以當下剛好成立的觀察量代替要保證的性質
 - 第八個形狀的標題原寫「(2026-09-20,main 因此紅一次)」(2026-11-21 knowledge-prune WP-META,D3-01,從 meta-patterns.md M37 第 2 欄逐字搬來;那次誤紅的經過見本檔「長 M-rule 搬出的經過原文」M37 第一筆)。
