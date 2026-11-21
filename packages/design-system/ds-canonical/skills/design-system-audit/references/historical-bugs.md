@@ -253,6 +253,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 ### M18 — Propose-time 自檢 gate(Q0 起源)
 2026-05-18 Sheet 補 / 5 元件 inline-action migrate / 5 元件 SurfaceBody migrate 三題全錯誤 propose 給 user 拍板,grep 後 0 個真 gap(Sheet 已完整 / 6 元件全消費 inline action / Dialog 走 ScrollArea canonical 不該用 SurfaceBody / HoverCard 是 behavior primitive / DatePicker TimePicker 是專用 layout / Sidebar 是 chrome 不是浮層)。User verbatim「不是老早就跟你說過要我決策前請先基於我們所有的檔案包括設計原則包括 ssot 包括所有實作代碼,自主自動驗證這些問題是否真的是問題」→ 催生 Q0 Pre-ASK self-verify。
 
+### M20 — AI 自問 best-practice + 自動 self-improve
+2026-11-21 knowledge-prune(WP-META,D3-05)從 meta-patterns.md M20 第 3 欄逐字搬來(原處留一行索引;最後那句 Mechanism 12 是機械面指標,原處也保留):user 10 次問「best-practice 嗎」直到外部 benchmark 確認真 gap;2026-05-13 claim-verify-gap stop hook fire 12+ 次 → 我每 reply 自動 hedge → user 多次糾正「沒理由不做」;2026-11-17 回報只剩兩件就請 user 發版、追問後自查出 24 項 → `stop_self_audit.sh` Mechanism 12:要「發版」前必有綁產品指紋與 HEAD、零未解的機器可讀項目自我稽核紀錄(`governance/memory/feedback_solo_dev_workflow.md`)
+
 ### M22 — Benchmark claim 必附出處;引「不要拿 X 當 Y」必帶 Y 的範圍
 2026-09-24 一天三次裁掉禁令的範圍修飾語(Primer「global sidebar navigation」記成「sidebar navigation」、「為了突破四層上限而換成樹」只記後半句、差點裸引 Carbon「As the primary navigation in a product's UI」),錨例與 user 逐字在本檔末段「M37 第十種形狀」節尾的 2026-09-24 段落;子規則折入 `rules/meta-patterns.md` M22。2026-09-26 稽核一度判 4 處行號錯(Ant `form/style/index.ts`、Recharts、React Aria、Polaris),第二個人對 raw 原始碼逐一 curl 核對後**現行引用全部正確**(例:Ant 6.6.5 `cursor: 'help'` 就在 L289)—— 稽核員用的是非 raw 檢視或別的版本;教訓:核對行號一律拿釘版本的 raw 檔,而且**稽核的指控本身也要先過對照組**(M32),否則會照著錯的稽核去改對的東西。
 
@@ -278,6 +281,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 - 2026-09-23 「只有你能按」:重拍 visual baseline 要觸發 workflow,我憑上次的 403 記憶寫「我的 token 沒權限代按,是帳號層級的事」,叫 user 去 GitHub 按,連續 12 輪 30 分鐘監看空等;user 反問「為何你不能自己按」(而且他那台裝置根本沒登入,按鈕不會出現)。當場照 M36(b') 逐題探:workflow_dispatch 403 是真的,但**同一把 token 發 repository_dispatch 回 204**——擋住的不是帳號權限,是我們自己的 workflow 只監聽按鈕事件(第 3 問「有沒有已驗證可通的等價傳輸」從沒問過)。正解:workflow 多聽 `repository_dispatch: types:[visual-regression-run]`,三種觸發的輸入收斂到 job env 兩個變數。**憑記憶宣稱被擋 = 沒有探;宣稱前的四問要每次重跑,不能沿用上一次的答案。**
 - 2026-10-14 AppShell 規格讀錯(M18 Q0 + M36(a) 同一次):user 寫好一份 AppShell 版面規則(四區、誰並排誰變浮層、可拉上限、寬度紀錄),AI 派代理「拿它跟現行 DS 與世界級比較」,第一輪報告用舊設計概念轉述新設計(「960 蓋板門檻會變成浮動的」—— 規格裡根本沒有門檻)、把外部規則與 AI 舊計畫當成限制(Carbon「同一時間只展開一個浮層」與 DS 允許疊 modal 矛盾,`dialog.spec.md`「禁止事項」的 nested Dialog 收窄條;「Sidebar 拖寬要 RFC + 拍板」是 AI 2026-05-21 提的施工順序(`197401cc`,`resize-handle.spec.md`「Roadmap(用 user 既有的 v2 framing)」;commit 訊息記 user 以「都照你建議做」概括採納),是流程閘不是 user 禁止)、另提一個與規格第 6 節矛盾的分配算法,並把規格已回答的事列成「沒定義」;反駁關卡只核對引文與行號,AI 轉述前也沒拿 user 原文逐條對。user 原話「你到底有沒有讀懂我的規格啊？」、「為何規格會讀錯？？？？？」。**修法**:(1) user 給的規格先寫成可執行模型、user 舉的數字例子全部算對,才拿去比 DS / 世界級;(2) 問 user 前每一題先分「規格已回答 / AI 讀錯 / 真的沒寫」,只問第三類;(3) 反駁關卡必查「規格是否已回答」與「有沒有偷加 user 沒寫的規則」,任何限制先查出處是 user、DS 規格、外部還是 AI 舊計畫。待辦總帳 Q5。
 - 四路同 provider 對抗審查查不到 (a) 類(reviewer 無對話紀錄),故必須以 M36 rule + 來源總帳格式機械化。
+- 2026-11-21 knowledge-prune(WP-META,D3-05)從 meta-patterns.md M36 第 2 欄逐字搬來兩段,原處各留一行:
+  - (a)「user 看過 ≠ 同意」的錨:(2026-11-15 `--brand` 被刪,依據只是 user 在決策頁看過 AI 寫的那句,user 沒說過要刪)
+  - (b')(4)「`!` 在不在牆內看 session 種類」的官方引文:官方 https://code.claude.com/docs/en/sandboxing.md ,2026-11-16 讀:「a command you enter at the `!` shell-mode prompt runs unsandboxed in most sessions」;背景 session 仍在沙箱內;「Before v2.1.260, strict sandbox mode sandboxed shell-mode commands in every session」
 
 ### M37 — 禁以當下剛好成立的觀察量代替要保證的性質
 - 第八個形狀的標題原寫「(2026-09-20,main 因此紅一次)」(2026-11-21 knowledge-prune WP-META,D3-01,從 meta-patterns.md M37 第 2 欄逐字搬來;那次誤紅的經過見本檔「長 M-rule 搬出的經過原文」M37 第一筆)。
