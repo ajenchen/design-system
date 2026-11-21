@@ -41,7 +41,7 @@ Bootstrap         N lines        [AGENTS.md + provider import shell;target ≤ 2
 MEMORY.md         N entries      [≤20]
 spec.md total     N files        per-file 分級(check_file_size_budget.sh case 表,非一律 300)
 SKILL.md total    N files        per-file ≤250
-hooks             N scripts      (count only, Phase 3 看 fire log)
+hooks             N scripts      (count only, D2 看 fire log)
 memory files      N              per-file ≤100
 <absolute-git-dir>/governance-runtime/evidence/ parse existing evidence(feed Phase 3)
 ```
