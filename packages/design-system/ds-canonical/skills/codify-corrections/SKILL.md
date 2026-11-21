@@ -1,6 +1,6 @@
 ---
 name: codify-corrections
-description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-hook-harvested signals of user corrections ("不是" / "不對" / "應該" / "糾正" etc.). Dedup by session + keyword, cluster by topic, and apply edits to the canonical owner(ds-canonical rule / repository memory / canonical skill reference / spec.md rationale) under the shared authority classifier. After codification archive processed entries in the same Git-owned runtime state root. Invoke when user-corrections.jsonl exceeds 20 entries(session_start soft reminder)or exceeds 40 entries(hard threshold), OR quarterly.
+description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-hook-harvested signals of user corrections ("不是" / "不對" / "應該" / "糾正" etc.). Dedup by session + keyword, cluster by topic, and apply edits to the canonical owner(ds-canonical rule / repository memory / canonical skill reference / spec.md rationale) under the shared authority classifier. After codification archive processed entries in the same Git-owned runtime state root. Invoke when user-corrections.jsonl exceeds 40 entries(session_start hard blocker; there is no soft reminder), when the user asks, OR quarterly.
 ---
 
 # Codify Corrections — 把 user 糾正 log 落到 governance 文件
@@ -15,10 +15,10 @@ description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-h
 
 ## When to run
 
-**前提**:輸入檔 `user-corrections.jsonl` 只有在 `GOVERNANCE_TELEMETRY_OPT_IN=1` 時才會產生(`stop_passive_logging.sh` 拿不到狀態目錄就整支 exit 0)。遙測預設關 → 這份檔預設永遠不存在,下面的 session_start soft reminder 也不會輸出(session_start 不輸出 REMINDERS;只有 > 40 的 hard blocker 會出聲)。檔案不存在時本 skill 記「無輸入、儀器全盲」,不要當成「沒有糾正」。
+**前提**:輸入檔 `user-corrections.jsonl` 是功能狀態,不看遙測開關(2026-11-21 起):`stop_passive_logging.sh` R2 只在啟動 hook 的 adapter 給了本 repo Git 目錄下的 runtime root、且不是 `GOVERNANCE_READ_ONLY=1` 時才寫(直接手動跑 hook、CI replay、hooks:test 都不寫;條件見 `_log-fire.sh` 檔頭「兩種寫入、兩道開關」),而且只在 transcript 裡抓到糾正字樣時才新增一列。`session_start_governance_check.sh` Check 3 只有一條:> 40 筆 → BLOCKER,沒有 soft reminder。檔案不存在時先分清是哪一種:寫入條件不成立 → 記「無輸入、儀器全盲」;條件成立但還沒抓到糾正 → 記「0 筆」。不要一律當成「沒有糾正」。
 
 - User 明言「處理 correction / codify / 看一下 log」
-- `session_start_governance_check.sh` soft reminder(> 20 corrections)或 hard blocker(> 40)
+- `session_start_governance_check.sh` Check 3 hard blocker(> 40 筆)
 - 季度(跟 `/knowledge-prune` 同期)
 - `/knowledge-prune` Phase 0.5 external signal 可 chain 本 skill
 
