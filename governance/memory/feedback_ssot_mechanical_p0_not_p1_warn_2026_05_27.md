@@ -43,7 +43,7 @@ User 邏輯:
 
 ## Anchor(2026-05-27)
 
-`check_layout_space_magic_numbers.sh` 第一版寫 P1 WARN「magic numbers might be legitimate (Avatar size, icon size etc.)」→ user 抓「為何不全部 ssot 都要強制吻合」→ 升 P0 BLOCKER + `// @layout-space-magic-ok: <rationale>` per-line escape comment。Test:
+`check_layout_space_magic_numbers.sh` 第一版寫 P1 WARN「magic numbers might be legitimate (Avatar size, icon size etc.)」→ user 抓「那為何不全部 ssot 都要強制吻合?」→ 升 P0 BLOCKER + `// @layout-space-magic-ok: <rationale>` per-line escape comment。Test:
 - Plain `<div className="p-4">` → BLOCK exit 2 ✓
 - With escape → pass ✓
 - Token usage `var(--layout-space-loose)` → pass ✓
