@@ -191,7 +191,7 @@ export const MultilineDescription: Story = {
   name: '多行描述就地編輯(Jira 描述欄類)',
   render: () => {
     const [desc, setDesc] = React.useState(
-      'Safari 上點擊結帳時,e2e 測試會間歇性失敗。\n\n重現:連跑測試 5 次,約 2 次失敗;疑似 checkout webhook race。',
+      'Safari 上點擊結帳時,e2e 測試會間歇性失敗。\n\n重現:連跑測試 5 次,約 2 次失敗;疑似結帳 webhook 的時序問題。',
     )
     return (
       <div className="w-[560px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">

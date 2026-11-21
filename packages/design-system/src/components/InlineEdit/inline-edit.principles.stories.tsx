@@ -44,7 +44,7 @@ export const WhenToUse: Story = {
         title="✅ 詳情面板的可編欄位"
         note="Jira / Linear issue 詳情、Notion property —— 值平常是純內容,原地點擊即可改,不跳表單。"
       >
-        <Stateful value="Fix flaky checkout e2e test" label="標題" />
+        <Stateful value="修正 Safari 上結帳 e2e 測試偶發失敗" label="標題" />
       </TutorialRule>
       <TutorialRule
         title="✅ 標題型就地編輯"

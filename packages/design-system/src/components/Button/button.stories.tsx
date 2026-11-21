@@ -103,7 +103,7 @@ export const Pressed: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
-        <span className="text-caption text-fg-muted w-24">secondary</span>
+        <span className="text-caption text-fg-muted w-24">藍框按鈕</span>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           {/* 兩顆都是同一種開關,初始一關一開;按下切換 pressed,字跟著狀態走 */}
           <DemoToggle>{(on, flip) => <Button variant="secondary" pressed={on} onClick={flip}>{on ? '已顯示側欄' : '顯示側欄'}</Button>}</DemoToggle>
@@ -111,14 +111,14 @@ export const Pressed: Story = {
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
-        <span className="text-caption text-fg-muted w-24">tertiary</span>
+        <span className="text-caption text-fg-muted w-24">灰框按鈕</span>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <DemoToggle>{(on, flip) => <Button variant="tertiary" pressed={on} onClick={flip}>{on ? '自動儲存中' : '自動儲存'}</Button>}</DemoToggle>
           <DemoToggle defaultOn>{(on, flip) => <Button variant="tertiary" pressed={on} onClick={flip}>{on ? '自動儲存中' : '自動儲存'}</Button>}</DemoToggle>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-[var(--layout-space-tight)]">
-        <span className="text-caption text-fg-muted w-24">text</span>
+        <span className="text-caption text-fg-muted w-24">文字按鈕</span>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <DemoToggle>{(on, flip) => <Button variant="text" pressed={on} onClick={flip}>{on ? '已靜音' : '靜音'}</Button>}</DemoToggle>
           <DemoToggle defaultOn>{(on, flip) => <Button variant="text" pressed={on} onClick={flip}>{on ? '已靜音' : '靜音'}</Button>}</DemoToggle>
@@ -184,14 +184,14 @@ export const WithBadge: Story = {
   render: (args) => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">badge — inline 計數</p>
+        <p className="text-caption text-fg-muted">計數徽章</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <DemoMenu align="start" title="通知 · 3 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button></DemoMenu>
           <DemoMenu align="start" title="訊息 · 12 則未讀" items={MESSAGES}><Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button></DemoMenu>
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">badge + endIcon compound</p>
+        <p className="text-caption text-fg-muted">計數徽章 + 結尾的下拉圖示</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <DemoMenu align="start" title="通知 · 5 則" items={NOTIFICATIONS}><Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button></DemoMenu>
           <DemoMenu align="start" title="待辦 · 2 件" items={TODOS}><Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button></DemoMenu>
@@ -246,7 +246,7 @@ export const Disabled: Story = {
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <ExampleGroup>
         {/* 2026-10-21 前標「form footer 情境」卻連「取消」也停用 —— 真的表單底部取消永遠可按(r1b OTH-12);這一列是 variant 對照,不冒充情境 */}
-        <p className="text-caption text-fg-muted">全 variants</p>
+        <p className="text-caption text-fg-muted">各強調等級</p>
         <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" disabled>儲存</Button>
           <Button variant="secondary" disabled>匯出</Button>
@@ -257,7 +257,7 @@ export const Disabled: Story = {
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">danger</p>
+        <p className="text-caption text-fg-muted">危險動作</p>
         <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" danger disabled>刪除專案</Button>
           <Button variant="secondary" danger disabled>移除成員</Button>
@@ -265,7 +265,7 @@ export const Disabled: Story = {
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">icon-only — 全 variants</p>
+        <p className="text-caption text-fg-muted">純圖示 · 各強調等級</p>
         <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" disabled size="sm" iconOnly startIcon={Plus} aria-label="新增" />
           <Button variant="secondary" disabled size="sm" iconOnly startIcon={Download} aria-label="下載" />
@@ -275,7 +275,7 @@ export const Disabled: Story = {
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">icon-only — danger</p>
+        <p className="text-caption text-fg-muted">純圖示 · 危險動作</p>
         <div className="flex flex-wrap gap-[var(--layout-space-loose)]">
           <Button variant="primary" danger disabled size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
           <Button variant="secondary" danger disabled size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
@@ -300,20 +300,20 @@ export const Loading: Story = {
           <span />
           <Button variant="primary" startIcon={Download} onClick={done('已匯出「Q3 訂單.csv」')}>匯出</Button>
           <Button variant="primary" startIcon={Download} loading>匯出中</Button>
-          <span className="text-caption text-fg-muted">startIcon 被 spinner 替換，位置不變</span>
+          <span className="text-caption text-fg-muted">前面的圖示換成轉圈，位置不變</span>
           <Button variant="primary" onClick={done('已儲存變更')}>儲存</Button>
           <Button variant="primary" loading>儲存中</Button>
-          <span className="text-caption text-fg-muted">spinner 出現在文字左側，按鈕略寬</span>
+          <span className="text-caption text-fg-muted">轉圈出現在文字左側，按鈕略寬</span>
           <Button size="sm" iconOnly startIcon={Download} aria-label="下載" onClick={done('已下載「Q3 訂單.csv」')} />
           <Button size="sm" iconOnly startIcon={Download} loading aria-label="下載中" />
-          <span className="text-caption text-fg-muted">icon-only：spinner 替換 icon</span>
+          <span className="text-caption text-fg-muted">純圖示：圖示換成轉圈</span>
         </div>
       </ExampleGroup>
 
       {/* 全 variants:載入中 spinner 佔住 startIcon 的位置(上方對照第一列),有沒有 startIcon 長相相同 —— 2026-10-21 前分成「with / without
           startIcon」兩列,畫出來一模一樣,還有一顆載入中的「取消」(取消不會載入)(r1b OTH-12) */}
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">全 variants(匯出 / 同步情境)</p>
+        <p className="text-caption text-fg-muted">各強調等級(匯出 / 同步情境)</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button variant="primary" startIcon={Download} loading>匯出報表</Button>
           <Button variant="secondary" startIcon={RefreshCw} loading>同步 Stripe</Button>
@@ -326,7 +326,7 @@ export const Loading: Story = {
 
       {/* icon-only */}
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">icon-only</p>
+        <p className="text-caption text-fg-muted">純圖示</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button variant="primary" loading size="sm" iconOnly startIcon={Download} aria-label="下載" />
           <Button variant="secondary" loading size="sm" iconOnly startIcon={Download} aria-label="下載" />

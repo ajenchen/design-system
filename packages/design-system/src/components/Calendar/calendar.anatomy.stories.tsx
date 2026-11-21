@@ -23,13 +23,16 @@ type Story = StoryObj<typeof Calendar>
 // 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
+// 月份標題 / 星期名照讀者的中文產品排(同展示頁 calendar.stories.tsx 的 LOCALE;元件預設 'en-US')。2026-11-21 前本頁沒傳 locale、
+// 事件也是英文(Design review…),跟中文的「新事件」「今天」並排 —— PV2 交出的同族尾巴(SIB-PV,AGENTS.md「單一檔案不中英夾雜」)。
+const LOCALE = 'zh-TW'
 
 const sampleEvents: CalendarEvent[] = [
-  { id: 'e1', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
-  { id: 'e2', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
-  { id: 'e3', title: 'Release deadline', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'red' },
-  { id: 'e4', title: 'Q review', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
-  { id: 'e5', title: 'Alex vacation', start: `${thisMonth}-20`, end: `${thisMonth}-22`, color: 'yellow', allDay: true },
+  { id: 'e1', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
+  { id: 'e2', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
+  { id: 'e3', title: '版本發布截止', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'red' },
+  { id: 'e4', title: '季度檢討', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
+  { id: 'e5', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-22`, color: 'yellow', allDay: true },
 ]
 
 // 日期格 / 事件方塊各自二擇一:可點就接回調(型別層必填),不可點就寫 readOnlyDates / readOnlyEvents
@@ -54,7 +57,7 @@ export const Overview: Story = {
   name: '元件總覽',
   render: () => (
     <div className="h-screen p-4 bg-canvas">
-      <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} />
+      <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
     </div>
   ),
 }
@@ -68,7 +71,7 @@ export const Inspector: Story = {
   },
   args: {
     weekStartsOn: 0,
-    locale: 'en-US',
+    locale: LOCALE,
     events: sampleEvents,
     today: now,
   },
@@ -92,7 +95,7 @@ export const ColorMatrix: Story = {
   render: () => {
     const colorEvents: CalendarEvent[] = CATEGORICAL_HUES.map((c, i) => ({
       id: `c-${c}`,
-      title: `${c} category`,
+      title: `${c} 類別`,
       start: `${thisMonth}-${String(i + 2).padStart(2, '0')}`,
       end: `${thisMonth}-${String(i + 2).padStart(2, '0')}`,
       color: c,
@@ -107,7 +110,7 @@ export const ColorMatrix: Story = {
             顏色代表「這是哪一類事件」(同一個團隊 / 同一個專案),不是嚴重程度。每個色名對應一個色相,紅與橘各自獨立、可清楚區分。
           </Desc>
           {/* 不給固定高度:整月六週照格子的最小高度排開,最後一週的日期鈕不被裁(看得到的範圍 = 會觸發的範圍) */}
-          <CalendarDemo events={colorEvents} defaultReferenceDate={now} today={now} />
+          <CalendarDemo events={colorEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
         </div>
 
         <div>
@@ -228,16 +231,16 @@ export const StateBehavior: Story = {
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
         <div>• <b>唯讀</b>(<code>readOnlyDates</code> / <code>readOnlyEvents</code>,各自宣告):格子 / 事件方塊不亮、不是按鈕、游標不變;鍵盤仍可在格陣內走動(見<StoryLink kind="Design System/Components/Calendar/設計原則" name="唯讀的日期格與事件">設計原則 — 唯讀的日期格與事件</StoryLink>);右上角「新事件」是全域新增入口,唯讀時照樣在</div>
       </div>
-      <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} />
+      <CalendarDemo events={sampleEvents} defaultReferenceDate={now} today={now} locale={LOCALE} />
     </div>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('button', { name: /^2026-07-15,/ })).toHaveClass('bg-info')
     await userEvent.click(canvas.getByRole('button', { name: '下個月' }))
-    await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('August 2026')
+    await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('2026年8月')
     await userEvent.click(canvas.getByRole('button', { name: '今天' }))
-    await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('July 2026')
+    await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('2026年7月')
   },
 }
 

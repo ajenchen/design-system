@@ -21,11 +21,11 @@ type Story = StoryObj
 
 // 真實 Notion sidebar 頁面清單 — 垂直捲動 preview 內容(對齊展示頁 NOTION_NAV)
 const NOTION_PAGES = [
-  'Getting Started', 'Daily journal', 'Reading list', 'Recipes', 'Weekend projects',
-  'Japan 2026 trip', 'Engineering wiki', 'Design system spec', 'Meeting notes',
-  'Roadmap Q2', 'Incident retrospectives', 'Onboarding docs', 'Product handbook',
-  'Brand guidelines', 'Customer interviews', 'Competitive analysis', 'Press & media kit',
-  'Hiring pipeline',
+  '新手入門', '每日日誌', '閱讀清單', '食譜', '週末小專案',
+  '2026 日本旅行', '工程知識庫', '設計系統規格', '會議記錄',
+  'Q2 產品路線圖', '事故檢討', '新人到職文件', '產品手冊',
+  '品牌規範', '客戶訪談', '競品分析', '媒體資料包',
+  '招募進度',
 ]
 
 const PreviewList = ({ count = 20 }: { count?: number }) => (

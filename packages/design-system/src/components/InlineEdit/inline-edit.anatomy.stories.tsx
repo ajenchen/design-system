@@ -161,7 +161,7 @@ export const StateBehavior: Story = {
   render: () => (
     <div className="grid max-w-[720px] grid-cols-[140px_1fr] gap-x-6 gap-y-5">
       <span className="text-body font-medium text-foreground">view(可編)</span>
-      <div><Stateful value="Fix flaky e2e test" label="標題" /></div>
+      <div><Stateful value="修正 e2e 測試偶發失敗" label="標題" /></div>
       <span className="text-body font-medium text-foreground">view(鎖定)</span>
       <div><Stateful value="PROJ-482(系統產生)" label="編號" editable={false} /></div>
       <span className="text-body font-medium text-foreground">多行</span>
@@ -203,7 +203,7 @@ export const StateBehavior: Story = {
 // auto-sm 雙通道：Field 對直接 child 同步偵測 `fieldPreferredSize`；wrapper / memo / HOC
 // 遮蔽 static 時，InlineEdit 掛載後主動註冊偏好，Field 控件槽隨即跟上。顯式 size 優先。
 function CascadeDemo() {
-  const [title, setTitle] = React.useState('Fix flaky checkout e2e test')
+  const [title, setTitle] = React.useState('修正 Safari 上結帳 e2e 測試偶發失敗')
   const [owner, setOwner] = React.useState('')
   return (
     <div className="w-[420px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">

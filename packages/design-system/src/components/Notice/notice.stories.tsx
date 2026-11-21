@@ -32,7 +32,7 @@ export const DeploymentSuccess: Story = {
   name: '部署成功橫幅',
   render: () => (
     <div className="max-w-2xl">
-      <Alert variant="success" title="專案已成功部署到 production 環境" />
+      <Alert variant="success" title="專案已成功部署到正式環境" />
     </div>
   ),
 }
@@ -77,7 +77,7 @@ function PendingInviteNotice() {
   return (
     <Alert
       variant="neutral"
-      title="5 個成員已收到邀請 email,尚未加入工作區。"
+      title="5 個成員已收到邀請信,尚未加入工作區。"
       endContent={
         <Button variant="tertiary" size="xs" onClick={() => { setShown(false); toast({ variant: 'success', title: '已重新寄出 5 封邀請' }) }}>
           重發邀請

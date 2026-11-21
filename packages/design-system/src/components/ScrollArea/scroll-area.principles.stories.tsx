@@ -29,9 +29,9 @@ const TutorialRule = createTutorialRule({ examples: true, layout: 'wrap' })
 // ── Sample data ───────────────────────────────────────────────────────────────
 
 const NOTION_PAGES = [
-  'Getting Started', 'Daily journal', 'Reading list', 'Recipes', 'Weekend projects',
-  'Japan 2026 trip', 'Engineering wiki', 'Design system spec', 'Meeting notes',
-  'Roadmap Q2', 'Incident retrospectives', 'Onboarding docs',
+  '新手入門', '每日日誌', '閱讀清單', '食譜', '週末小專案',
+  '2026 日本旅行', '工程知識庫', '設計系統規格', '會議記錄',
+  'Q2 產品路線圖', '事故檢討', '新人到職文件',
 ]
 
 // Stripe 寬欄位商品表 — 消費真 DataTable(per data-table.spec.md「簡單展示也用 DataTable」,
@@ -238,7 +238,7 @@ export const SolvesDataTableBug: Story = {
     <TutorialPage>
       <TutorialRule
         title="問題 — Native horizontal scroll 在 Windows 吃 17px,右側欄被裁切"
-        note="macOS 的 scrollbar 是 overlay 不吃寬度;Windows / Linux always-visible 吃 ~17px。同一份 DataTable 在 macOS 對齊、在 Windows 右側 Status 欄被 scrollbar 壓掉一角 —— 「Left pinned + Row Actions」的典型跑版。"
+        note="macOS 的 scrollbar 是 overlay 不吃寬度;Windows / Linux always-visible 吃 ~17px。同一份 DataTable 在 macOS 對齊、在 Windows 右側「狀態」欄被 scrollbar 壓掉一角 —— 「Left pinned + Row Actions」的典型跑版。"
       >
         <ExampleGroup className="w-[560px]">
           <div className="border border-error/40 rounded-md bg-surface overflow-x-auto">
@@ -246,13 +246,13 @@ export const SolvesDataTableBug: Story = {
               <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
             </div>
           </div>
-          <ExampleCaption warn>❌ Native overflow-x-auto — Windows 右側 Status 欄被 scrollbar 吃掉</ExampleCaption>
+          <ExampleCaption warn>❌ Native overflow-x-auto — Windows 右側「狀態」欄被 scrollbar 吃掉</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
       <TutorialRule
         title="解法 — ScrollArea overlay 捲軸,跨 OS 一致不吃寬度"
-        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側 Status 欄不被裁切。此組合限外層包 maxHeight='none' 表格的 demo 場景;DataTable 中央捲動區本體走 native overflow-x-auto(釘選欄的結構需求)。"
+        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側「狀態」欄不被裁切。此組合限外層包 maxHeight='none' 表格的 demo 場景;DataTable 中央捲動區本體走 native overflow-x-auto(釘選欄的結構需求)。"
       >
         <ExampleGroup className="w-[560px]">
           <ScrollArea className="border border-success/40 rounded-md bg-surface">
