@@ -323,7 +323,7 @@ rule_governance_drift() {
 # ─────────────────────────────────────────────────────────────────────────────
 # R5 — infra best-practice score(原 stop_meta_self_audit.sh,2026-05-13 fold)
 #   per-Stop scripts/score-infra-best-practice.mjs(8 dim,0-100)
-#   regression / dim < 80 → log warning to provider-neutral runtime state
+#   regression / dim < 80 → log warning to provider-neutral runtime state(內容跟上一筆相同就不寫,見函式尾)
 #   silent log only(no provider-native context transport)
 # ─────────────────────────────────────────────────────────────────────────────
 rule_infra_best_practice_score() {
@@ -361,12 +361,21 @@ rule_infra_best_practice_score() {
     warnings="${warnings}\n  ❌ Overall score ${current_score}/100 below threshold 80"
   fi
 
-  [ -z "$warnings" ] && return 0
+  # 去重(2026-11-21 WP-06 審查必修 3):每一筆都會被下一則訊息注入一次(inject_pending_self_audit.sh),
+  # 長期低分的維度(例:D8a Hook count)若每回合照寫,就每回合注入同一則、永遠停不下來。
+  # 所以只在提醒內容跟上一筆不同時才寫;回到門檻以上時記一筆空提醒(inject 不注入空的),之後再掉下來會重新提醒一次。
+  local warnings_json last_json
+  warnings_json="$(printf '%b' "$warnings" | jq -Rs .)" || return 0
+  last_json=""
+  if [ -s "$score_history_file" ]; then
+    last_json="$(tail -1 "$score_history_file" 2>/dev/null | jq -c '.warnings // ""' 2>/dev/null)" || last_json=""
+  fi
+  [ "$warnings_json" = "${last_json:-\"\"}" ] && return 0
 
   printf '{"ts":"%s","score":%s,"prev":%s,"warnings":%s}\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     "$current_score" "$prev_score" \
-    "$(printf '%b' "$warnings" | jq -Rs .)" \
+    "$warnings_json" \
     >> "$score_history_file" 2>/dev/null || true
 }
 

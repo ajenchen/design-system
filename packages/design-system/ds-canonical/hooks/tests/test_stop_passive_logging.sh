@@ -4,6 +4,7 @@
 # 1–11:orchestrator smoke(all rules passive:silent log to Git-owned governance runtime state,no stderr / no exit non-zero)。
 # 12–16(2026-11-21 WP-06):功能狀態(R2 / R5)不看遙測開關、遙測段落(R3 / R4)照舊要 opt-in、READ_ONLY 唯讀,
 #   以及 R4 的 spec 上限改讀 lib/_size_budget.sh 的表(數字在測試執行時從表上取,不抄)。
+# 17–18(WP-06 審查必修 3):R5 去重 —— 同樣的低分維度連續兩回合只注入一次;回到門檻以上再掉下來會重新提醒。
 #
 # 2026-05-23 ship per Phase D4 sub-threshold cleanup(15+1 hook tests batch)。
 
@@ -285,6 +286,55 @@ else
   echo "  FAIL  15–16. shared size table has no budget for $SPEC_REL(instrument)"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15–16. size table unavailable"
 fi
+
+# 17–18(WP-06 審查必修 3):R5 去重。R5 改成功能狀態後,長期低分的維度(例:D8a Hook count)每次 Stop 都寫一筆,
+# 下一則訊息就被注入一次、永遠停不下來。現在只在提醒內容跟上一筆不同時才寫(回到門檻以上也記一筆空的,之後再掉下來會重新提醒)。
+# 走真實的鏈:本 hook(Stop)→ inject_pending_self_audit.sh(下一則訊息)。inject 的 cursor 是秒級時間戳,
+# 回合之間 sleep 1:第二回合若真的寫了,時間一定晚於上一回合的 cursor,不會因為落在同一秒被濾掉而假綠。
+INJECT_HOOK="$SCRIPT_DIR/../inject_pending_self_audit.sh"
+r5_score_fixture() {
+  # $1 = 維度分數、$2 = 總分(都 ≥ 80 → 沒有提醒;任一 < 80 → 有提醒)
+  printf '%s\n' "process.stdout.write(JSON.stringify({finalScore:$2,dimensions:[{dim:'D9 fixture',score:$1,value:'v'}]}))" \
+    > "$TMP_PROJECT/scripts/score-infra-best-practice.mjs"
+}
+r5_round() {
+  # 一次 Stop,接著下一則訊息的注入;注入輸出放 INJECT_TEXT
+  GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_PROVIDER=codex GOVERNANCE_RUNTIME_ROOT="$RUNTIME_ROOT" \
+    GOVERNANCE_TELEMETRY_OPT_IN=0 run_hook "{\"session_id\":\"$1\"}"
+  INJECT_TEXT=$(printf '{}' | GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_RUNTIME_ROOT="$RUNTIME_ROOT" \
+    GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY=0 bash "$INJECT_HOOK" 2>&1) || true
+}
+passive_fixture
+r5_round wp06-r5-1
+ROUND1="$INJECT_TEXT"
+sleep 1
+r5_round wp06-r5-2
+ROUND2="$INJECT_TEXT"
+LINES_AFTER_2="$(wc -l < "$RUNTIME_ROOT/score-history.jsonl" 2>/dev/null | tr -d ' ')"
+if printf '%s' "$ROUND1" | grep -qF 'D9 fixture: 60/100' && ! printf '%s' "$ROUND2" | grep -qF 'Infra-score audit' \
+  && [ "$LINES_AFTER_2" = "1" ]; then
+  echo "  PASS  17. same low-score dimension two rounds → injected once, second round silent"; PASS=$((PASS+1))
+else
+  echo "  FAIL  17. R5 re-injects the same reminder (lines=${LINES_AFTER_2} round1=${ROUND1:0:120} round2=${ROUND2:0:200})"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 17. R5 dedup"
+fi
+# 18. 對照:回到門檻以上 → 再掉下來(內容跟最早那筆一樣)→ 要重新提醒;去重不能變成「同一句永遠只講一次」。
+r5_score_fixture 90 90
+r5_round wp06-r5-3
+ROUND3="$INJECT_TEXT"
+r5_score_fixture 60 70
+sleep 1
+r5_round wp06-r5-4
+ROUND4="$INJECT_TEXT"
+LINES_AFTER_4="$(wc -l < "$RUNTIME_ROOT/score-history.jsonl" 2>/dev/null | tr -d ' ')"
+if ! printf '%s' "$ROUND3" | grep -qF 'Infra-score audit' && printf '%s' "$ROUND4" | grep -qF 'D9 fixture: 60/100' \
+  && [ "$LINES_AFTER_4" = "3" ] && [ "$(tail -2 "$RUNTIME_ROOT/score-history.jsonl" | head -1 | jq -r '.warnings')" = "" ]; then
+  echo "  PASS  18. recovered then dropped again → recorded once more and injected again"; PASS=$((PASS+1))
+else
+  echo "  FAIL  18. relapse after recovery not re-injected (lines=${LINES_AFTER_4} round3=${ROUND3:0:120} round4=${ROUND4:0:120})"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 18. R5 relapse"
+fi
+rm -rf "$TMP_PROJECT"
 
 echo ""
 echo "=== Summary ==="
