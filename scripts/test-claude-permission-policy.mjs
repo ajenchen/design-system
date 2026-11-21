@@ -104,6 +104,11 @@ for (const failClosedRule of [
   'Bash(git switch --force*)',
   'Bash(git switch -f *)',
   'Bash(git switch --discard-changes*)',
+  // 2026-11-21 PROC-H:checkout 照動作意思擋 —— 會丟改動的寫法(`-- <路徑>`、`.`、`-f` / `--force`)與 restore。
+  'Bash(git checkout *-- *)',
+  'Bash(git checkout .*)',
+  'Bash(git checkout -f*)',
+  'Bash(git restore *)',
   'Bash(npm unpublish *)',
   'Bash(rm *)',
   'Bash(*--dangerously-skip-permissions*)',
@@ -111,6 +116,8 @@ for (const failClosedRule of [
   'Read(~/.npmrc)',
   'Read(~/.ssh/**)',
 ]) assert.ok(policy.permissions.deny.includes(failClosedRule), `${failClosedRule} is not fail closed`)
+// 開分支(checkout -b / -B)不丟改動,不得再被整條 `git checkout *` 擋掉(process-audit 根因 6:沒加 -C 連開分支也擋)。
+assert.equal(policy.permissions.deny.includes('Bash(git checkout *)'), false, 'Bash(git checkout *) blanket-denies non-destructive branch creation')
 for (const humanOnlyRule of [
   'Bash(claude auth login*)',
   'Bash(gh auth login*)',
