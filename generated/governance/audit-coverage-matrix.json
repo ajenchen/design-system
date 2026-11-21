@@ -10,10 +10,10 @@
     "CI-ENFORCED": 2
   },
   "hook_enforcement_counts": {
-    "block": 26,
-    "block-and-warn": 7,
-    "warn": 4,
-    "prevents_landing": 15
+    "block": 27,
+    "block-and-warn": 8,
+    "warn": 2,
+    "prevents_landing": 16
   },
   "gaps": [],
   "coverage_by_dim": {
@@ -171,13 +171,13 @@
     },
     "21": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_item_list_gap.sh write-time WARN(exit 0 additionalContext,非 block)+ audit-time grep backstop",
-      "enforcement": "warn",
+      "mechanism": "check_item_list_gap.sh write-time BLOCKER(PreToolUse proposed-text-v1:TypeScript AST 判每個 FileItem 清單外層的 gap / 外框,這次寫入新增的違規 → exit 2;2026-11-22 WP-USER 由 WARN 升級)+ audit-time grep backstop(FileItem 以外的卡片列、AST 認不出外層的寫法)",
+      "enforcement": "block",
       "enforcement_source": "registrations.outputMode",
       "hook_events": [
         "PreToolUse"
       ],
-      "prevents_landing": false,
+      "prevents_landing": true,
       "id": "DS-DIM-021",
       "critical": true
     },
@@ -509,9 +509,9 @@
     },
     "61": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_item_list_gap.sh + check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "mechanism": "check_item_list_gap.sh(原 M16,BLOCKER)+ check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M23c,WARN exit 0)+ audit-time grep backstop",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:check_item_list_gap.sh(blocking):FileItem 清單外層這次寫入新增的 gap / 外框違規 → exit 2;check_datatable_invariants.sh r2(M23c,governance-context)只提醒",
       "hook_events": [
         "PreToolUse"
       ],

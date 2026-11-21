@@ -113,7 +113,7 @@ Q1. 是設計規則嗎?(如何寫 spec / code / token / story / pattern)
 
 Q2. 只在「特定 invoke 情境」才需要嗎?(audit / code review / setup 等)
     → YES 且是**可重複 workflow**: Skill(SKILL.md + references/；只有產品/UI/UX SSOT 真取捨設 user checkpoint)
-    → YES 且是**一次性單步 action**(scaffold / 單一 check): Slash Command
+    → YES 且是**一次性單步 action**(scaffold / 單一 check): 也是 Skill(單步 skill;Level 8 commands 是相容層,不收新居民)
     → NO: 繼續 Q3
 
 Q3. 是「隨時間變化的狀態」或完整計畫嗎?(已完成 / 待辦 / 決策紀錄 / user 偏好 / RFC / handoff)

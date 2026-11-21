@@ -207,7 +207,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "c68a79a8fbe18077419aea0d210518961a01047abcf42f37ddfaaa6be876ad98",
+      "sha256": "ee3227f61c6f384e92da155795262277acd70d083fb03c44a37d73805939221d",
       "source": "providers/codex/skills/scan-similar-bugs",
       "classification": null,
       "destination": null
@@ -223,7 +223,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/visual-audit/SKILL.md",
-      "sha256": "5c449f219d5595cd7fdbb52a78850382b5a2ba63afbc49195546b0ca905cc01e",
+      "sha256": "564bb4dd449c1b592ab4e71065ed097cd13778f29b4d89b9dde08f417723dbba",
       "source": "providers/codex/skills/visual-audit",
       "classification": null,
       "destination": null
@@ -263,7 +263,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "6485792502eb90e620fc999171ce3f7c419dc7b8aa6434d790ebedd276997630",
+      "sha256": "810c6fe1f33554d2ccc33eeb91cda4ab95209442649a204e996963ca10ed4fe0",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_item_list_gap.sh",
-      "sha256": "be9d7a92f638be88c539c65c248adee2d3fc733959bea8976fcfe8ae16281571",
+      "sha256": "86ad6489ec012e589b690854451685d6fc5bdcbc8c4fd2fe9941b63ff78663b9",
       "source": "check_item_list_gap.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -854,8 +854,16 @@
     },
     {
       "schemaVersion": 1,
+      "file": "hooks/lib/tsx-governance-analysis.mjs",
+      "sha256": "d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2",
+      "source": "lib/tsx-governance-analysis.mjs",
+      "classification": "HELPER",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "ddedc548e38d6eac86ab261bb79b54af0c738fee9c569f665bc180aed4a2f0b9",
+      "sha256": "db04b9d6484f9c861ff44d4f7c5d6f0ce3db5e22033ed0057a8058d415bf15be",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -863,7 +871,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/authority-decision-evidence.mjs",
-      "sha256": "6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781",
+      "sha256": "00c046c927cc7e3f32e50c9f7acec88a6bff2d741cf2db270336a24e42c33ae1",
       "source": "packages/governance/src/authority-decision-evidence.mjs",
       "classification": null,
       "destination": null
@@ -943,7 +951,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "8ce5fcd95989851fdd30238b4bb18b5c134e43d2089be7c3fa8b14514a2a4c6a",
+      "sha256": "12c0448b84223ae62fe5bc742e4c3cdd3e934ec7c00a5f2f47682f92b1f9c19d",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -951,7 +959,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "0052702268c02b0155903c4d96e669bf045dbf68bdd5215e54186ad77f4f4a5f",
+      "sha256": "011bfca0056d0e0e1b7e6580fb663d0179f5d791c71fe80c6dd71251f864bd08",
       "source": null,
       "classification": null,
       "destination": null
@@ -959,7 +967,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/hook-config.json",
-      "sha256": "0d5ef50663e74c9b80a62558786b546f721060d35ceb56ad6f10819ec3c117b6",
+      "sha256": "b17888945b06f3433e8cbeb0b659d63e41dbd391906461b6453500d8ec8ecec1",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:claude",
       "classification": null,
       "destination": null
@@ -1159,7 +1167,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "c310d9950f005eacc1bb6edb84e1bef921529071af7398165d34edf92177b1cb",
+      "sha256": "f428d9ea88bfa89ce7ff35d2ad6fc9b8587f97c3d8062233d14795e2f08a7728",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1175,7 +1183,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/visual-audit/SKILL.md",
-      "sha256": "fbc20c255c06ef87217c6441909f5da014aaaefe664156649ad2d304cd1e6524",
+      "sha256": "08bb6afc3adb328c74cb517e159152b8f12cd2a26c1d1b486f030a03b973ff6c",
       "source": "skills/visual-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1215,7 +1223,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "6485792502eb90e620fc999171ce3f7c419dc7b8aa6434d790ebedd276997630",
+      "sha256": "810c6fe1f33554d2ccc33eeb91cda4ab95209442649a204e996963ca10ed4fe0",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null
@@ -1407,7 +1415,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "c68a79a8fbe18077419aea0d210518961a01047abcf42f37ddfaaa6be876ad98",
+      "sha256": "ee3227f61c6f384e92da155795262277acd70d083fb03c44a37d73805939221d",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1423,7 +1431,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/visual-audit/SKILL.md",
-      "sha256": "5c449f219d5595cd7fdbb52a78850382b5a2ba63afbc49195546b0ca905cc01e",
+      "sha256": "564bb4dd449c1b592ab4e71065ed097cd13778f29b4d89b9dde08f417723dbba",
       "source": "skills/visual-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1703,7 +1711,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "e1c26f4c590395c0a7e2b2741a7cb8b02da0c825e722494d88d4c089f41d4e48",
+      "sha256": "92681b42c05ca21d2a6e2b636890b3d106d57c8473f91f8b0f34a1429d8c8932",
       "source": null,
       "classification": null,
       "destination": null
@@ -1719,7 +1727,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/visual-audit/SKILL.md",
-      "sha256": "3818a3d9ea457bd6d49271367c46777d4928947cebde3a43c1b3a44e167a3993",
+      "sha256": "d97e81c317ce5501be37f48b8afbdb15e8d9c1f509bf447c38088f1e85593394",
       "source": null,
       "classification": null,
       "destination": null

@@ -791,6 +791,19 @@ export function humanOnlyAuthorityScopes() {
 }
 const CURRENT_OPERATION_SCOPE = 'current-target-operation'
 const PRODUCT_UI_UX_CHANGE_SCOPE = 'product-ui-ux-change'
+const APPROVED_UI_UX_IMPLEMENTATION_SCOPE = 'approved-ui-ux-implementation'
+// 分類結果能出現的 scope 封閉集合(2026-11-22 WP-AGENTS / ASKFIX-REPO-DRIFT):收據契約
+// packages/governance/src/authority-decision-evidence.mjs 驗「分類結果的 scope 都在集合裡」時,從傳進去的這個模組讀,
+// 不再自己抄一份(以前抄了 19 個 id,新增 scope 時兩邊各改各的)。排序、不重複。
+export function classificationScopeIds() {
+  return [...new Set([
+    ...DELEGATED_AUTHORITY_SCOPES,
+    ...HUMAN_ONLY_AUTHORITY_SCOPES,
+    CURRENT_OPERATION_SCOPE,
+    PRODUCT_UI_UX_CHANGE_SCOPE,
+    APPROVED_UI_UX_IMPLEMENTATION_SCOPE,
+  ])].sort()
+}
 const AUTHORITY_SCOPE_PATTERNS = Object.freeze([
   ['consumer-template-adoption', [
     /\b(?:consumer|template|wm\s+onboarding|bootstrap|adoption)\b/iu,
@@ -974,7 +987,7 @@ function scopedClassification(classification, { message = '', operationText = ''
   const requestedScope = requestedAuthorityScope(classification, operationText)
   if (classification.decision === 'approved'
     && classification.reasonCode === 'TARGET_BOUND_UI_UX_DECISION_APPROVED') {
-    allowedScopes.unshift('approved-ui-ux-implementation')
+    allowedScopes.unshift(APPROVED_UI_UX_IMPLEMENTATION_SCOPE)
   }
   const deniedOrAmbiguousScopes = new Set(delegation.deniedOrAmbiguousScopes)
   let decision = classification.decision

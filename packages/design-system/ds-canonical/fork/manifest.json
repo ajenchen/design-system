@@ -1233,8 +1233,8 @@
         "bucket": "SHIP_AS_IS",
         "matcher": "Edit|Write|MultiEdit",
         "runtime": "bash",
-        "outputMode": "governance-context",
-        "inputContract": "event-v1",
+        "outputMode": "blocking",
+        "inputContract": "proposed-text-v1",
         "transcriptRequirement": "none"
       },
       {
@@ -1356,8 +1356,8 @@
       "sourceHook": "check_item_list_gap.sh",
       "interpreter": "bash",
       "matcher": "Edit|Write|MultiEdit",
-      "outputMode": "governance-context",
-      "inputContract": "event-v1",
+      "outputMode": "blocking",
+      "inputContract": "proposed-text-v1",
       "transcriptRequirement": "none"
     },
     {

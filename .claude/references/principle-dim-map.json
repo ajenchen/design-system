@@ -97,13 +97,6 @@
       "dims": [],
       "note": "考慮加 dim 47:檢查 stakeholder-facing OpenSnapshot story 存在"
     },
-    "M16": {
-      "name": "Standalone gap canonical",
-      "dims": [
-        21
-      ],
-      "note": "Group H 連續 item list gap"
-    },
     "M17": {
       "name": "SSOT 可傳播 (token / primitive / utility)",
       "dims": [
@@ -202,7 +195,8 @@
       "M33": "2026-05-22 → folded into M20(AI self-correction sub-rule)",
       "M34": "2026-05-22 → folded into M7(rule-authoring hygiene sub-rule)",
       "M35": "2026-05-22 → folded into M23(d)(nearest same-purpose canonical sub-rule)",
-      "M21": "2026-11-21 → folded into M18(@watch 觀察期 0 筆新 bug;new component prop-variant test sub-rule,Dim 33(b) 改掛 M18)"
+      "M21": "2026-11-21 → folded into M18(@watch 觀察期 0 筆新 bug;new component prop-variant test sub-rule,Dim 33(b) 改掛 M18)",
+      "M16": "2026-11-22 → demoted into item-anatomy.spec.md「連續 item 貼邊合法性」sub-rule(@watch 觀察期 0 筆新 bug;Dim 21 仍由 hooks.item_list_gap 對應)"
     }
   },
   "traits": {
@@ -500,7 +494,7 @@
       "dims": [
         21
       ],
-      "note": "2026-07-03 entry add per audit-preflight gap:M16 standalone gap;dim 21 直接對應"
+      "note": "2026-07-03 entry add per audit-preflight gap:item-anatomy.spec.md「連續 item 貼邊合法性」(原 M16)standalone gap;dim 21 直接對應"
     },
     "layout_space_magic_numbers": {
       "dims": [

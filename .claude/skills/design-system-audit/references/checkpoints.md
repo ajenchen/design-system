@@ -158,7 +158,7 @@ Verification:[focused + affected Harness]
 
 稽核過程若遇環境問題（node_modules 壞、storybook 啟動失敗、tsc 報不相關錯），
 先證明因果與 scope，再以 least-privilege、可回復方式自主修復或隔離；只有
-login/MFA/OAuth/owner/billing、缺 secret reference 或額外付費才形成 human action：
+共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary 才形成 human action：
 
 **格式範本**：
 ```
