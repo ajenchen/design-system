@@ -9,9 +9,9 @@ description: Prune governance sprawl across provider-neutral instructions / spec
 
 **🔒 核心前提(每次必遵,不需 user 提醒 — mindset #6「tell me once」)**:prune 唯一目的是**移除噪音以銳化 signal、提升遵循正確率**,**絕不以犧牲品質換行數 / 條目下降**。每次跑同時必滿足:(a) 品質不可因 prune 打折;(b) 以**提升品質**(清晰度↑ / drift 風險↓ / recall 精度↑)為目標。故:① 只 retire 真冗餘 / stale / 已被上游完整吸收的條目(這類本身是噪音,清掉反提升正確率);② consolidate 重複(同概念多 home → 選 SSOT + pointer);③ **每條真實 invariant / 機械防線必完整保留 — retire 前必 grep 確認保護已被別處覆蓋,否則不動**;④ distinct 條目強合成大條目會降 recall 精度 = 反 pattern,不做。**retire rate 是結果指標非目標**:湊 % 傷品質 = 違本前提;寧可 retire rate < 5% + report 明寫「成熟無冗餘」rationale,也不強刪真保護。本前提 override 下方所有 Phase / Checkpoint 的數值 target。
 
-**對齊 `AGENTS.md` `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)自動執行;L2(fire log)要 `GOVERNANCE_TELEMETRY_OPT_IN=1` 才寫(預設關,見 D2)；L3 的純工程治理 retire／consolidate 決策已 standing-delegated，依 evidence 與最高可用工程能力自主收斂。只有 task／deliverable 明確要求時才啟動 independent review；明確 waiver 必記錄且不得冒充已做。
+**對齊 `AGENTS.md` `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)自動執行;L2(fire log)要 `GOVERNANCE_TELEMETRY_OPT_IN=1` 才寫(預設關,見 D2)。
 
-**Authority boundary**:canonical substantive 本身不是 human gate。只有 resolution 會改變產品／UI／UX SSOT 且仍存在真實取捨才 **STOP**；治理 ownership、hook/skill lifecycle、架構與表達／duplicate／pointer 都依 `AGENTS.md # 自主執行 canonical` **AUTO**。
+**分權(本檔只寫這一次,以下各 Phase / Gate 都照這句)**:照 `AGENTS.md`「# 自主執行 canonical」—— canonical substantive 本身不是 human gate;只有 resolution 會改變產品／UI／UX SSOT、且 evidence 收斂後仍有真實取捨才 **STOP**(= P2H),其餘(L3 的 retire／consolidate、治理 ownership、hook/skill lifecycle、架構與表達／duplicate／pointer)依 evidence 與最高可用工程能力 **AUTO**、不得用 user sign-off 代替工程判斷;independent review 只在 task／deliverable 明確要求時才加,明確 waiver 必記錄且不得冒充已做。
 
 ## When to run
 
@@ -129,14 +129,14 @@ Phase 1 findings(D1-D10):
 Priority:
 - P0 (AUTO): 對齊 SSOT / 補 pointer / 刪 confirmed dead hook / retire unused skill — 表達層調整,不動 canonical 意思
 - P1 (AUTO with brief report): 合併 duplicate(保 semantic)/ 刪 6+ 月 stale memory(非 critical)/ 編號 renumber
-- P2E (AUTO):抽工程治理 meta / 解 governance contradiction / 撤工程 Meta-Pattern / 改治理 SSOT ownership；若 task／deliverable 明確要求 review，再加 maximum-assurance independent review
+- P2E (AUTO):抽工程治理 meta / 解 governance contradiction / 撤工程 Meta-Pattern / 改治理 SSOT ownership
 - P2H (HUMAN-ONLY):resolution 會改變產品／UI／UX SSOT，且 evidence 收斂後仍有真實選擇或取捨
 
 Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P2H 若有則 batch-at-end 一次列出。
 「要 user 決定」只准出現在 P2H。遙測開關、要讀主資料夾(user 本機、代理不准讀)才能判的東西,寫進「量不到 / 外部前提」,不寫成要 user 決定。
 ```
 
-**Do NOT skip authority classification**:純工程 canonical substantive 必自主執行，不能用 user sign-off 代替工程判斷；只有 P2H 停下。
+**Do NOT skip authority classification**:每一項都要分進 P0 / P1 / P2E / P2H;分權照檔頭「分權」那句。
 
 ### Phase 3 — Apply P0 + P1 fixes(分組 commit)
 
@@ -147,7 +147,7 @@ Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P
 
 ### Phase 4 — P2 resolution + apply
 
-- 每 P2 item 一個獨立 commit(animation trail 可回溯)；P2E 依最高 certified capability + evidence 自主收斂，只有明確要求時才加 independent review；P2H 只在取得產品／UI／UX決策後執行
+- 每 P2 item 一個獨立 commit(animation trail 可回溯);P2H 只在取得產品／UI／UX 決策後執行
 - 新 meta-pattern 加進 `packages/design-system/ds-canonical/rules/meta-patterns.md`「# Meta-Pattern 預警」(AGENTS.md 沒有這一章,只有指標)→ 同時**必檢討哪些下游條目冗餘**(上游加 = 下游減)
 
 ### Phase Z reference — Cross-repo SSOT propagation
@@ -193,15 +193,15 @@ Update `${GOVERNANCE_STATE_DIR}/metric-snapshots.jsonl`(provider-neutral Git tel
 
 ### Gate 2 — 動 Meta-Pattern(P2)
 
-撤／合併／改寫工程治理 Meta-Pattern 由最高 certified capability 依全 repo evidence、tests 與 rollback 自主決定；若 task／deliverable 明確要求 independent review 才把它納入 required evidence。若條目本身定義產品／UI／UX SSOT 且存在真取捨，才列 P2H 給 user 拍板。
+撤／合併／改寫 Meta-Pattern 依全 repo evidence、tests 與 rollback 決定;分 P2E / P2H 照檔頭「分權」那句。
 
 ### Gate 3 — 抽新 canonical
 
-Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 建立新 Meta-Pattern 前走命名三 test + world-class benchmark；只有 task／deliverable 明確要求時才加 independent review(對齊 `AGENTS.md` M8 / M12)，工程 governance 直接落地。
+Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 建立新 Meta-Pattern 前走命名三 test + world-class benchmark(對齊 meta-patterns M8 / M12),工程 governance 直接落地。
 
 ### Gate 4 — Retire 率 < 5%
 
-季度 prune 若 retire 不到 5%,由 evidence 判定是(a)成熟無冗餘或(b)judgment 太保守，report rationale；不得為達數字強刪，也不得把純工程判斷轉交 user。
+季度 prune 若 retire 不到 5%,由 evidence 判定是(a)成熟無冗餘或(b)judgment 太保守，report rationale；不得為達數字強刪。
 
 ## Retire rules(執行規則)
 
