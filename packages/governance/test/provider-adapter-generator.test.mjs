@@ -776,6 +776,8 @@ test('event-group runner parses and materializes once, preserves order, and sepa
     'packages/design-system/ds-changes.json',
     'packages/design-system/tools/changes/ledger.mjs',
     'infra/governance/release-workflow.json',
+    'packages/design-system/ds-canonical/adapters/claude-settings-base.json',
+    'scripts/lib/release-consent-language.mjs',
   ]) await copy(path)
 
   const hookDirectory = resolve(fixture, 'packages/design-system/ds-canonical/hooks')

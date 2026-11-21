@@ -332,11 +332,7 @@ try {
   // 第 6 步改用 isQuestionText 之後,同意判定不變:問號 + 同意詞仍是 question,A-不-A + 同意詞仍在第 2 步攔下
   assert.equal(classifyConsentPrompt('可以發版了嗎?').verdict, 'question')
   assert.equal(classifyConsentPrompt('要不要發版').verdict, 'question')
-  {
-    const cli = (args, input) => execFileSync(process.execPath, [resolve(ROOT, 'scripts/lib/release-consent-language.mjs'), ...args], { input, encoding: 'utf8' })
-    assert.equal(cli(['--question'], '這樣可以嗎'), 'question\n')
-    assert.equal(cli(['--question'], '把間距改成 16'), 'statement\n')
-  }
+  // `--question` 命令列的端到端(hook 真的呼叫到它)由 hooks/tests/test_check_propose_without_benchmark.sh Test 7–12 跑。
 
   const urls = previewUrls(workflow, base)
   assert.ok(urls[0].includes('deploy-preview-999--ajenchen-design-system.netlify.app'))

@@ -75,6 +75,8 @@ async function fixture(t) {
     ['packages/design-system/ds-changes.json'],
     ['packages/design-system/tools/changes/ledger.mjs'],
     ['infra/governance/release-workflow.json'],
+    ['packages/design-system/ds-canonical/adapters/claude-settings-base.json'],
+    ['scripts/lib/release-consent-language.mjs'],
     ['packages/design-system/ds-canonical/references'],
     ['packages/design-system/ds-canonical/rules'],
     ['packages/design-system/ds-canonical/skills'],
