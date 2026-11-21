@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 220,
-      "hash": "sha256:62db6a4f40794375ccb1c479cf4217f3e3bd1c91b64f6ee4c96c2d255bfb8a44",
+      "hash": "sha256:41189e3b9aa13a1c8be15141025f3865f233bcc155d5c3920d29ab005229874c",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -433,42 +433,82 @@ fi
 #   (c) 遠端多一個本機還沒抓的 commit → FIRST_REPLY 要點名、附 user 要打的那一行;
 #   (d) fetch 之後(物件在本機)→ 說「落後 1 個 commit」;(e) 本機在遠端 main 之上(工作分支)→ Check 13 安靜;
 #   (f) origin 指到不存在的 repo → 印「量不到」,不當成已同步。
+# fixture 不靠 git 的預設分支名(2026-11-21 第五個合回點:CI「Governance hooks(Linux portability)」紅、macOS 綠):
+#   Apple 的 git 由 CommandLineTools 的系統 gitconfig 設 init.defaultBranch=main,上游 git(Ubuntu CI)沒設 = master。
+#   改前 bare origin 沿用預設;master 時 origin 的 HEAD 指向不存在的 master → clone 出來的 other 停在沒有 commit 的 master,
+#   「remote ahead」變成無關的根 commit、push main 被拒(non-fast-forward)→ run_hook 留下的 set -e 讓整支測試在這裡
+#   中途結束,沒有任何 FAIL 字樣。
+#   現在:origin 照 GitHub 的樣子把 HEAD 指到 main、clone 指名 main;整段在預設 master / main 各跑一輪
+#   (GIT_CONFIG_COUNT 追加一組 init.defaultBranch,本輪 setup_proj 的 git init 也照它),兩種預設在 macOS 與 Linux 上都量得到。
+#   每一步另驗 fixture 前提(推上去了沒、遠端是不是剛好多一個 commit),不成立就點名「fixture」,不混成 hook 的紅,
+#   也不讓 set -e 靜默中斷。
 echo "Test 17: Check 13 main folder behind origin/main"
-REMOTE_17=$(mktemp -d)
-[ -n "${REMOTE_17:-}" ] && [ -d "$REMOTE_17" ] || { echo "❌ mktemp -d failed(REMOTE_17;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
-git init -q --bare "$REMOTE_17/origin.git"
-setup_proj
-run_hook; A_17="$EXIT|$STDOUT_TEXT"
-git -C "$TMP_PROJ" remote add origin "$REMOTE_17/origin.git"
-git -C "$TMP_PROJ" push -q origin HEAD:refs/heads/main 2>/dev/null
-run_hook; B_17="$EXIT|$STDOUT_TEXT"
-git clone -q "$REMOTE_17/origin.git" "$REMOTE_17/other" 2>/dev/null
-git -C "$REMOTE_17/other" -c commit.gpgsign=false -c user.name=test -c user.email=t@t.com commit -q --allow-empty -m "remote ahead"
-git -C "$REMOTE_17/other" push -q origin HEAD:refs/heads/main 2>/dev/null
-run_hook; C_17="$EXIT|$STDOUT_TEXT"
-git -C "$TMP_PROJ" fetch -q origin 2>/dev/null
-run_hook; D_17="$EXIT|$STDOUT_TEXT"
-git -C "$TMP_PROJ" -c commit.gpgsign=false -c user.name=test -c user.email=t@t.com merge -q --ff-only origin/main 2>/dev/null
-git -C "$TMP_PROJ" -c commit.gpgsign=false -c user.name=test -c user.email=t@t.com commit -q --allow-empty -m "local work"
-run_hook; E_17="$EXIT|$STDOUT_TEXT"
-git -C "$TMP_PROJ" remote set-url origin "$REMOTE_17/does-not-exist.git"
-run_hook; F_17="$EXIT|$STDOUT_TEXT"
-teardown_proj
-rm -rf "$REMOTE_17"
+GIT_17=(-c commit.gpgsign=false -c user.name=test -c user.email=t@t.com)
 CHECK_17=""
-[ "$A_17" = "0|" ] || CHECK_17="${CHECK_17} a"
-[ "$B_17" = "0|" ] || CHECK_17="${CHECK_17} b"
-case "$C_17" in "0|"*"主資料夾沒有包含 GitHub 最新的 main"*"遠端 main 有本機還沒抓下來的 commit"*"git fetch origin && git switch main && git pull --ff-only"*) ;; *) CHECK_17="${CHECK_17} c" ;; esac
-case "$D_17" in "0|"*"落後 1 個 commit"*"第一則回覆"*) ;; *) CHECK_17="${CHECK_17} d" ;; esac
-# (e)(f) 的本機 main 跟 origin/main 分叉,Check 9 照舊會出它自己的提示;這裡只看 Check 13 的兩種字樣。
-case "$E_17" in "0|"*"主資料夾沒有包含"*|"0|"*"量不到"*) CHECK_17="${CHECK_17} e" ;; "0|"*) ;; *) CHECK_17="${CHECK_17} e" ;; esac
-case "$F_17" in "0|"*"主資料夾沒有包含"*) CHECK_17="${CHECK_17} f" ;; "0|"*"落後 GitHub main 這次量不到"*) ;; *) CHECK_17="${CHECK_17} f" ;; esac
+REPORT_17=""
+test17_round() {
+  local db="$1" pin="${GIT_CONFIG_COUNT:-0}" had_count="${GIT_CONFIG_COUNT+1}" saved_count="${GIT_CONFIG_COUNT-}"
+  local fx="" base="" ahead="" a b c d e f
+  export "GIT_CONFIG_KEY_${pin}=init.defaultBranch" "GIT_CONFIG_VALUE_${pin}=${db}" "GIT_CONFIG_COUNT=$((pin + 1))"
+  REMOTE_17=$(mktemp -d)
+  [ -n "${REMOTE_17:-}" ] && [ -d "$REMOTE_17" ] || { echo "❌ mktemp -d failed(REMOTE_17;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+  git init -q --bare "$REMOTE_17/origin.git" || fx="${fx} init-bare"
+  git -C "$REMOTE_17/origin.git" symbolic-ref HEAD refs/heads/main || fx="${fx} origin-HEAD"
+  setup_proj
+  run_hook; a="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" remote add origin "$REMOTE_17/origin.git" || fx="${fx} remote-add"
+  git -C "$TMP_PROJ" push -q origin HEAD:refs/heads/main 2>/dev/null || fx="${fx} push-base"
+  base=$(git -C "$TMP_PROJ" rev-parse --verify -q 'HEAD^{commit}' 2>/dev/null) || base=""
+  [ -n "$base" ] && [ "$(git -C "$REMOTE_17/origin.git" rev-parse --verify -q refs/heads/main 2>/dev/null)" = "$base" ] \
+    || fx="${fx} origin-main≠HEAD"
+  run_hook; b="$EXIT|$STDOUT_TEXT"
+  git clone -q --branch main "$REMOTE_17/origin.git" "$REMOTE_17/other" 2>/dev/null || fx="${fx} clone"
+  git -C "$REMOTE_17/other" "${GIT_17[@]}" commit -q --allow-empty -m "remote ahead" || fx="${fx} commit-ahead"
+  git -C "$REMOTE_17/other" push -q origin HEAD:refs/heads/main 2>/dev/null || fx="${fx} push-ahead"
+  ahead=$(git -C "$REMOTE_17/origin.git" rev-parse --verify -q refs/heads/main 2>/dev/null) || ahead=""
+  [ -n "$ahead" ] && [ "$ahead" != "$base" ] \
+    && [ "$(git -C "$REMOTE_17/origin.git" rev-parse --verify -q "${ahead}^" 2>/dev/null)" = "$base" ] \
+    || fx="${fx} origin-not-1-ahead"
+  run_hook; c="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" fetch -q origin 2>/dev/null || fx="${fx} fetch"
+  run_hook; d="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" "${GIT_17[@]}" merge -q --ff-only origin/main 2>/dev/null || fx="${fx} ff-merge"
+  git -C "$TMP_PROJ" "${GIT_17[@]}" commit -q --allow-empty -m "local work" || fx="${fx} commit-local"
+  run_hook; e="$EXIT|$STDOUT_TEXT"
+  git -C "$TMP_PROJ" remote set-url origin "$REMOTE_17/does-not-exist.git" || fx="${fx} set-url"
+  run_hook; f="$EXIT|$STDOUT_TEXT"
+  teardown_proj
+  rm -rf "$REMOTE_17"
+  unset "GIT_CONFIG_KEY_${pin}" "GIT_CONFIG_VALUE_${pin}"
+  if [ -n "$had_count" ]; then export GIT_CONFIG_COUNT="$saved_count"; else unset GIT_CONFIG_COUNT; fi
+  local cells=""
+  [ -z "$fx" ] || cells="${cells} fixture(${fx# })"
+  [ "$a" = "0|" ] || cells="${cells} a"
+  [ "$b" = "0|" ] || cells="${cells} b"
+  case "$c" in "0|"*"主資料夾沒有包含 GitHub 最新的 main"*"遠端 main 有本機還沒抓下來的 commit"*"git fetch origin && git switch main && git pull --ff-only"*) ;; *) cells="${cells} c" ;; esac
+  case "$d" in "0|"*"落後 1 個 commit"*"第一則回覆"*) ;; *) cells="${cells} d" ;; esac
+  # (e)(f) 的本機分支跟 origin/main 可能分叉,Check 9 照舊會出它自己的提示;這裡只看 Check 13 的兩種字樣。
+  case "$e" in "0|"*"主資料夾沒有包含"*|"0|"*"量不到"*) cells="${cells} e" ;; "0|"*) ;; *) cells="${cells} e" ;; esac
+  case "$f" in "0|"*"主資料夾沒有包含"*) cells="${cells} f" ;; "0|"*"落後 GitHub main 這次量不到"*) ;; *) cells="${cells} f" ;; esac
+  if [ -n "$cells" ]; then
+    CHECK_17="${CHECK_17} [init.defaultBranch=${db}]${cells}"
+    REPORT_17="${REPORT_17}    [init.defaultBranch=${db}]
+    a='${a:0:200}'
+    b='${b:0:200}'
+    c='${c:0:300}'
+    d='${d:0:300}'
+    e='${e:0:200}'
+    f='${f:0:300}'
+"
+  fi
+}
+test17_round master
+test17_round main
 if [ -z "$CHECK_17" ]; then
-  echo "  PASS  Test 17 behind check (a)–(f)"; PASS=$((PASS+1))
+  echo "  PASS  Test 17 behind check (a)–(f),init.defaultBranch = master / main 兩輪"; PASS=$((PASS+1))
 else
   echo "  FAIL  Test 17 failing cells:${CHECK_17}"
-  echo "    a='${A_17:0:200}'"; echo "    b='${B_17:0:200}'"; echo "    c='${C_17:0:300}'"
-  echo "    d='${D_17:0:300}'"; echo "    e='${E_17:0:200}'"; echo "    f='${F_17:0:300}'"
+  printf '%s' "$REPORT_17"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 17"
 fi
 
