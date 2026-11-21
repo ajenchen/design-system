@@ -1,13 +1,15 @@
 ---
 name: design-system-audit
-description: Systematic audit of this design system for world-class quality. Runs the full audit dimension list(per `## The audit dimensions` section) covering spec hygiene / code correctness / a11y / naming / tokens / patterns / canonical governance consistency / Layout Family compliance / prop value collisions / shadcn alias leakage / home-name-vs-scope fit / spec hardcoded-values, and remediates actionable findings under the shared authority classifier. Stops only for a genuine product/UI/UX SSOT tradeoff or a shared-governance human-only boundary. Invoke via /design-system-audit when asked to audit, re-audit, check quality, or verify design system health.
+description: Systematic audit of this design system for world-class quality. Runs the full audit dimension list(per `## The audit dimensions` section) covering spec hygiene / code correctness / a11y / naming / tokens / patterns / canonical governance consistency / Layout Family compliance / prop value collisions / shadcn alias leakage / home-name-vs-scope fit / spec hardcoded-values, and remediates actionable findings under the shared authority classifier. Invoke via /design-system-audit when asked to audit, re-audit, check quality, or verify design system health.
 ---
 
 # Design System Audit (Groups A–Q + Future-proof preflight; dim count canonical per `dispatch-audit-dims.mjs` SSOT — 下游寫死的 dim 數由 `sync-governance-counters.mjs --check` 比對實數)
 
 > **Budget note**:本檔 = N-dim **registry SSOT**(N 以 `node scripts/dispatch-audit-dims.mjs` 輸出為準,禁 hardcode;dispatch-audit-dims.mjs / deep-audit / `scripts/sync-governance-counters.mjs` parse 此檔;後者 `--check`(CI 必過)擋下游寫錯的 dim 數)。行數上限照 `check_file_size_budget.sh` 的 case 表裡本檔那一條(表在 `hooks/lib/_size_budget.sh` 的 `_governance_size_budget_design_system_audit`,連同算式:dim table 不拆 —— 拆出會 break dispatch parser SSOT —— 段外散文照一般 SKILL 標準);數字只寫在 case 表,本檔不寫。
 
-Purpose: catch every bug class this project has shipped historically PLUS structural gaps relative to Polaris / Material / Atlassian / Ant / Carbon / Apple HIG. Each audit has a clear rubric tied to `packages/design-system/ds-canonical/rules/`, canonical references, or an owning spec. Reports/checkpoints are evidence receipts, not approval milestones; large engineering scope remains standing-delegated. Only a genuine product/UI/UX SSOT choice or a shared-governance human-only boundary may stop execution.
+Purpose: catch every bug class this project has shipped historically PLUS structural gaps relative to Polaris / Material / Atlassian / Ant / Carbon / Apple HIG. Each audit has a clear rubric tied to `packages/design-system/ds-canonical/rules/`, canonical references, or an owning spec. Reports/checkpoints are evidence receipts, not approval milestones.
+
+**分權(本檔只寫這一次,以下各 Phase / Gate / 表格都照這句)**:照 `AGENTS.md`「# 自主執行 canonical」—— 工程／治理 remediation(含大範圍 scope、補 dim／修 mapping、環境與建置修復)standing-delegated AUTO,不得把工程或 compute 策略選擇交給 user;只有會改產品／UI／UX SSOT、且 evidence 收斂後仍有真取捨(= P2H),或撞到共同治理的 human-only boundary(login／credential／額外付費等),才停;independent review 只在 task／deliverable 明確要求時才加。
 
 ## Skill 生態位 + 6 維對齊
 
@@ -234,7 +236,7 @@ User 2026-05-15 verbatim 抓「DS 深度稽核漏 storybook content quality」+�
    - `node scripts/audit-content-quality.mjs --check` — `✅ No content drift`(category 集以 script `violations` 鍵為準,禁 hardcode 數)
    - `node scripts/extract-canonical-rules.mjs` — `✅ All extracted rule keywords covered`
    - violation → 列 P0
-4. Build fail → 不跑依賴 build 的 dims；agent 先定位並在 frozen scope 內修復後重跑。只有 login/credential/額外付費等 human-only boundary 或依重試規則形成真 blocker 才停止
+4. Build fail → 不跑依賴 build 的 dims；agent 先定位並在 frozen scope 內修復後重跑;依重試規則仍重現才記 technical blocker(停止條件照檔頭分權句)
 5. TaskList entries 建好
 
 ### Phase 0.5 — Preflight 全面盤查(2026-05-15 user-mandated P0,NO-SAMPLE 前置)
@@ -248,7 +250,7 @@ User verbatim:「你完整稽核之前應該會先全面盤查全部檔案和所
 2. **設計原則 enumeration**:M-rule(meta-patterns.md)+ spec trait(frontmatter)+ hook invariant + rules
 3. **Coverage matrix**:每原則 → audit dim 對應(N 對應 / NO COVER gap)— derived JSON 寫 Git-owned `<git-dir>/governance-runtime/evidence/audit/preflight/audit-preflight-{date}.json`；完整每原則→dim 對應 SSOT = `packages/design-system/ds-canonical/references/principle-dim-map.json`(`--verbose` 才 dump coverageMap 進 evidence)
 
-**Gap 處理**:有 gap → Phase 1 前由 agent 依 canonical、failure-class coverage、tests 與 hard gates 補 dim／修 mapping；task／deliverable 明確要求時才加 independent review，不得接受 scope 內 coverage gap。只有撤換產品／UI／UX SSOT 原則且存在真取捨才請 user 決策。
+**Gap 處理**:有 gap → Phase 1 前由 agent 依 canonical、failure-class coverage、tests 與 hard gates 補 dim／修 mapping，不得接受 scope 內 coverage gap;要撤換原則時照檔頭分權句分類。
 
 **Phase 1 sub-agent 必引 preflight log**:Coverage matrix 對應 dim → sub-agent 跑該 dim 時掃 file enumeration list(DS-wide ALL,不 sample,per NO-SAMPLE invariant)。
 
@@ -296,7 +298,7 @@ User verbatim 2026-05-15:
 DS-wide ALL components(grep / glob 全 packages/design-system/src/components/*/),不挑樣本。
 若 context 不夠 → 拆 stage 分批(每 stage 10-15 元件),**所有 stages 必跑完才能寫 verdict**。
 **禁止**寫「sample / top N / heavy agent needed / full sweep deferred」等 escape clause。
-若 dim 依既定 staged/batched compute 仍真不可能全掃，標 `REVIEW-BLOCKED` + exact evidence；不得寫 sample escape clause，也不得把 compute／工程策略選擇丟給 user。
+若 dim 依既定 staged/batched compute 仍真不可能全掃，標 `REVIEW-BLOCKED` + exact evidence；不得寫 sample escape clause。
 
 **Triple-verify finding rule (2026-05-17 user-mandated)**:
 每抓 1 個 violation,sub-agent 必 verify 3 layer 才能列進 report:
@@ -320,19 +322,19 @@ Consolidate into priority matrix:
 |---|---|---|
 | **P0 (auto-fix OK)** | Three-way drift / dead links / Tailwind v4 grep violations / hardcoded colors | 明確 bug，surgical 修復，無 scope 爭議 |
 | **P1 (batch-fix + review)** | Rule A / 人話 / shadcn passthrough holes / a11y missing aria-label / anatomy missing section | 每組一個 commit，改完立刻 review |
-| **P2E (AUTO)** | engineering rule / audit coverage / governance ownership / cross-cutting refactor(helper extraction 41 files) | agent 依 frozen scope、evidence、tests、rollback自行收斂；task／deliverable 明確要求時才加 maximum-assurance review |
-| **P2H (HUMAN-ONLY)** | Rule B scope / new UI rule / public-vs-internal semantic classification 等會改產品／UI／UX SSOT且仍有真取捨 | batch-at-end 給 user 決策，不混入工程選項 |
+| **P2E (AUTO)** | engineering rule / audit coverage / governance ownership / cross-cutting refactor(helper extraction 41 files) | agent 依 frozen scope、evidence、tests、rollback自行收斂 |
+| **P2H (HUMAN-ONLY)** | Rule B scope / new UI rule / public-vs-internal semantic classification 等(檔頭分權句的停止類)| batch-at-end 給 user 決策，不混入工程選項 |
 
 ### Authority gates — reports are receipts, not approval milestones
 
 | # | When | Action |
 |---|------|--------|
 | 1 | Triage 完 | P0/P1/P2E 連續執行；P2H 若有，全部 audit 完後一次彙整 |
-| 2 | Audit surfaces pattern 未在 canonical rules/spec | 工程 guard自動 draft+review+落地；新產品/UI/UX semantics 才 P2H |
-| 3 | Classification ambiguous(Internal/Components / SSOT home / primitive vs semantic)| home/architecture 由 agent 判；若 public contract/UI 語意真取捨才 P2H |
-| 4 | Cross-cutting refactor > 10 檔 | agent 選最小可逆分組、逐組 verify，不問 user 工程 strategy |
-| 5 | 環境 / 建置 issue | 自行 remediation；只在 human-only boundary 或重試後真 technical blocker 停 |
-| 6 | spec 與 code 衝突 | 用 git history、consumer evidence 與 tests 收斂；task／deliverable 明確要求時才加 distinct-provider review，只把未解 UI/UX 真取捨列 P2H |
+| 2 | Audit surfaces pattern 未在 canonical rules/spec | 工程 guard自動 draft+review+落地；分類照 Phase 2 表 |
+| 3 | Classification ambiguous(Internal/Components / SSOT home / primitive vs semantic)| home/architecture 由 agent 判；分類照 Phase 2 表 |
+| 4 | Cross-cutting refactor > 10 檔 | agent 選最小可逆分組、逐組 verify |
+| 5 | 環境 / 建置 issue | 自行 remediation；重試後仍重現才記 technical blocker |
+| 6 | spec 與 code 衝突 | 用 git history、consumer evidence 與 tests 收斂；收斂不了的照 Phase 2 表分類 |
 | 7 | 「先不管」vs「之後再處理」semantic | **「先不管」= 完全忽略**(不入 tech debt);**「之後再處理」= park to memory**;絕不混淆 |
 
 **Naming proposal**:Authority Gate 2 前必過 `packages/design-system/ds-canonical/references/naming-conventions.md` 的命名三重 test(不 re-spec)。
@@ -348,9 +350,9 @@ Phase 1-3 覆蓋 D1+D2;D3-D6 chain 專門 skill。**模式**:高效(default)scop
 | Sub | 維度 | Skill | 規則 |
 |-----|------|-------|------|
 | 3.5a | D5 視覺 | `npm run visual-audit` Layer A → `/visual-audit` Layer B | violation 開新 commit 修回圈 |
-| 3.5b | D3 效能 | `/performance-audit` | 修實作與工程 canonical auto；產品／UI／UX SSOT 真取捨才 STOP |
+| 3.5b | D3 效能 | `/performance-audit` | 修實作與工程 canonical;分權照檔頭 |
 | 3.5c | D4 UX | `/ux-audit` | P0 a11y 必修 / P1 triage |
-| 3.5d | D6 原則自檢 | `references/principle-audit-protocol.md` 4 子維(合理 / 一致 / 無矛盾 / 完整)| 工程 canonical substantive AUTO；產品／UI／UX SSOT 真取捨 STOP；對齊 / 補 pointer AUTO;scan 前必讀「常見 FP 記憶」節 |
+| 3.5d | D6 原則自檢 | `references/principle-audit-protocol.md` 4 子維(合理 / 一致 / 無矛盾 / 完整)| 分類照該檔「核心公式」;scan 前必讀「常見 FP 記憶」節 |
 
 **跳過**:spec.md 純文字改 / 高效模式只跑 3.5a。
 
@@ -358,7 +360,7 @@ Phase 1-3 覆蓋 D1+D2;D3-D6 chain 專門 skill。**模式**:高效(default)scop
 
 **Default mode**:chain `/knowledge-prune` Phase 0(baseline)+ Phase 1 D1(duplicate)+ D4(contradiction)輕量 **report-only**(不修),~5 min。Codex Q5 verdict:contradiction 比 dup 更會破 SSOT,該優先,故 default 不只 D1。
 
-**Deep mode**(`--deep`):在**同一 run、final report 前**直接執行 `/knowledge-prune` full Phase 0–5；P0/P1/P2E auto-fix，只有 P2H 等 user。不得只排到 next turn、只寫 trigger、或以 report-only 冒充已跑。接著逐 row 讀 `packages/design-system/ds-canonical/references/governance-audit-coverage.md`，把每個 registered governance home／artifact 類型對到本次 deterministic 或 judgment evidence；未掛載外部 repo／缺 telemetry 必標 `UNOBSERVED`，不可寫 PASS。Trigger 條件(2026-05-17 加 4 條,共 9 條):registry-declared instruction budget 超標 / MEMORY > 20 / 動 Meta-Pattern / hook-fires 6 月 0 fire / corrections > 10 / **audit-prompts.md coverage < 100%** / **`@benchmark-unverified-blanket` count > 0** / **new audit dim added 本次** / **hooks count >= canonical soft threshold**。
+**Deep mode**(`--deep`):在**同一 run、final report 前**直接執行 `/knowledge-prune` full Phase 0–5(P0/P1/P2E auto-fix,分權照檔頭)。不得只排到 next turn、只寫 trigger、或以 report-only 冒充已跑。接著逐 row 讀 `packages/design-system/ds-canonical/references/governance-audit-coverage.md`，把每個 registered governance home／artifact 類型對到本次 deterministic 或 judgment evidence；未掛載外部 repo／缺 telemetry 必標 `UNOBSERVED`，不可寫 PASS。Trigger 條件(2026-05-17 加 4 條,共 9 條):registry-declared instruction budget 超標 / MEMORY > 20 / 動 Meta-Pattern / hook-fires 6 月 0 fire / corrections > 10 / **audit-prompts.md coverage < 100%** / **`@benchmark-unverified-blanket` count > 0** / **new audit dim added 本次** / **hooks count >= canonical soft threshold**。
 
 Deep final report 的收斂回執使用固定、可機械驗證的字串:`knowledge-prune: same-run complete`、`governance-coverage: same-run reconciled`（並列出各 `UNOBSERVED`），以及 `second opinion: waived by user`／`second opinion: not required by task`／可驗證的 required peer review 其一。回執缺席時 final report 必須 fail closed，不得把 recovery trigger 當作已完成證據。
 若 user 明確只豁免本次 second opinion，formal run 準備必顯式帶 `--second-opinion-waiver user`，把 exact one-run authority 固定進 immutable manifest；報告文字不能反向替未授權 run 補造 waiver，也不得和任何 peer selection 參數並用。
