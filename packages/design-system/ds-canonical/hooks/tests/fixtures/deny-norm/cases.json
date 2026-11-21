@@ -1,7 +1,7 @@
 {
  "schema": "deny-norm-cases/v1",
- "what": "deny 正規化的唯一判定表:ledger.v3.py --selftest 與 deny-norm.py selftest(lib 介面 + PROC-H 的 hook 介面)都跑這一份。lit = 子指令照原樣就命中的規則;norm = 展開 / 還原成一般寫法之後才命中的規則(= 換寫法躲過拼法比對);actions = 「同一個動作」的鍵(只在有寫時比)。",
- "denyFile": "base-b0296c96/packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+ "what": "deny 正規化的唯一判定表(2026-11-21 PROC-H 由交接 scripts/fixtures/deny-norm/cases.json 搬進 repo;之後只改這一份):hooks/lib/_deny_norm.py selftest(lib 介面 + hook 介面)由 hooks/tests/test_check_bash_command_shape.sh 跑,交接的 ledger 若要用也讀這一份。lit = 子指令照原樣就命中的規則;norm = 展開 / 還原成一般寫法之後才命中的規則(= 換寫法躲過拼法比對);actions = 「同一個動作」的鍵(只在有寫時比)。",
+ "denyFile": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
  "denySha256": "2abd572ab3d063ba3b0beb06df614bcdb6904488636d178591f994931f03ac5f",
  "denyNote": "期望值只對這一份 deny 清單成立;deny 清單改了(例:PROC-H 改成照動作意思比對)就要在同一次改動更新本表的期望值與 denySha256,否則 selftest 回 2(儀器失效,不讀成通過)",
  "cases": [
@@ -26,6 +26,8 @@
   {"id": "P03", "from": "PROC-H:git --git-dir= / --work-tree= 也要還原", "cmd": "git --git-dir=/x/.git --work-tree=/x restore README.md", "lit": [], "norm": ["Bash(git restore *)"]},
   {"id": "P04", "from": "PROC-H:env 包裝 + -C", "cmd": "env -i git -C /x reset --hard", "lit": [], "norm": ["Bash(git reset *)"]},
   {"id": "P05", "from": "PROC-H:唯讀的 -C 寫法不擋", "cmd": "git -C /x log --oneline -3 && git -C /x status --short", "lit": [], "norm": []},
-  {"id": "P06", "from": "PROC-H:command 包裝 rm", "cmd": "command rm -rf /x/tmp", "lit": [], "norm": ["Bash(rm *)"]}
+  {"id": "P06", "from": "PROC-H:command 包裝 rm", "cmd": "command rm -rf /x/tmp", "lit": [], "norm": ["Bash(rm *)"]},
+  {"id": "P07", "from": "RV-BPI2-DENY-ALIAS:-c 定義別名繞過 checkout(獨立再驗實測漏網)", "cmd": "git -c alias.co=checkout co -- a.sh", "lit": [], "norm": ["Bash(git checkout *)"]},
+  {"id": "P08", "from": "RV-BPI2-DENY-ALIAS:指令名寫成指令替換(獨立再驗實測漏網)", "cmd": "$(command -v git) reset --hard", "lit": [], "norm": ["Bash(git reset *)"]}
  ]
 }

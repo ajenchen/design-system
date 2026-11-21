@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
-# deny-norm.py —— deny 正規化的唯一一份(BP-INFRA2 第 3 條;BLUEPRINT §b2「同一判斷的第二份」、process-audit 根因 6)
+# _deny_norm.py —— deny 正規化的唯一一份(BP-INFRA2 第 3 條;BLUEPRINT §b2「同一判斷的第二份」、process-audit 根因 6)
 #
 # 內容:把一則 Bash 指令拆成子指令,展開同一則裡定義的函式 / 變數、sh -c / bash -c / eval 的內層,
 #   還原 git -C / -c / --git-dir 等、env 前綴、絕對路徑、反斜線之後,逐條比對 claude-settings-base.json 的 permissions.deny;
 #   以及「同一個動作」的鍵(git switch -c/-C 視同 checkout -b/-B,-q 不計)。
-#   下面「── deny 規則比對」到 action_keys 為止,是 ledger.v2.py 第 184–436 行逐位元組搬過來的(沒有改任何判定)。
-# 使用者(都 import 這一份,不准再抄):
-#   - ledger.v3.py 的「換寫法」判定(deny_hits / canon_subs / action_keys;它的 selftest 跑下面的判定表)
-#   - PROC-H 的 PreToolUse(Bash) hook:本檔的 `hook` 子指令就是它的介面 —— 讀 hook 事件 JSON(stdin),回 deny 判定。
-#     PROC-H 把本檔逐位元組放進 repo(sha256 寫在交接排程 PROC-H 的 overrides),hook 測試跑同一份判定表。
-# 判定表(唯一一份):<本檔>/../fixtures/deny-norm/cases.json —— ledger 的 deny 既有格 + hook 介面格,兩個使用者都跑它。
+#   下面「── deny 規則比對」到 action_keys 為止,原是 ledger.v2.py 第 184–436 行逐位元組搬過來的。
+# 出處:交接 scripts/bin/deny-norm.py(sha256 624e6472…)由 PROC-H 原樣搬進 repo(該 commit 只搬不改);
+#   之後只在這裡改。2026-11-21 PROC-H 補的兩處(RV-BPI2-DENY-ALIAS,判定表 P07 / P08):
+#   (1) `git -c alias.<名>=<值> <名> …` —— 用 -c 臨時定義別名繞過子指令名;還原時把別名換回原值(`!` 開頭 = shell 指令)。
+#   (2) 指令名寫成指令替換:`$(command -v git)`、`` `which git` ``、`$(type -p git)` —— 先換回名字再拆子指令。
+#   已知看不到的(照實列):寫在 ~/.gitconfig 或同一則裡 `git config alias.x …` 定義的別名、函式回傳的指令名。
+# 使用者(都讀這一份,不准再抄):
+#   - packages/design-system/ds-canonical/hooks/check_bash_command_shape.sh(PreToolUse Bash):呼叫本檔的 `hook` 子指令。
+#   - packages/design-system/ds-canonical/hooks/check_solo_workflow.sh R1:呼叫 `check` 子指令拿正規化後的子指令。
+#   - 交接的流程工具(ledger 的「換寫法」判定)若要用,讀 repo 這一份(rules/work-process.md:流程與工具住在 repo)。
+# 判定表(唯一一份):packages/design-system/ds-canonical/hooks/tests/fixtures/deny-norm/cases.json;
+#   hook 測試 test_check_bash_command_shape.sh 經 `selftest --via both` 跑它。
 #
 # 用法(Bash 第一行先 emulate sh):
-#   python3 -I deny-norm.py check --deny-file <claude-settings-base.json> < 指令文字
+#   python3 -I _deny_norm.py check --deny-file <claude-settings-base.json> < 指令文字
 #       → JSON {literal:[…], normalized:[…], canon:[[原子指令, 正規化後]…], actions:[…]};結束碼 0
-#   python3 -I deny-norm.py hook --deny-file <claude-settings-base.json> < hook 事件 JSON({tool_name, tool_input:{command}})
+#   python3 -I _deny_norm.py hook --deny-file <claude-settings-base.json> < hook 事件 JSON({tool_name, tool_input:{command}})
 #       → 照原樣或正規化後命中 deny:stdout 一行 JSON {decision:"block", rules:[…], normalized:[…]}、結束碼 2;
 #         沒命中:{decision:"allow"}、結束碼 0;事件讀不懂 / deny 檔讀不到:結束碼 3(儀器失效;hook 端照 fail-open 規則處理並通知)
-#   python3 -I deny-norm.py selftest [--cases <cases.json>] [--deny-file <…>] [--via lib|hook|both]
+#   python3 -I _deny_norm.py selftest [--cases <cases.json>] [--deny-file <…>] [--via lib|hook|both]
 #       → 判定表每一格跑一次(lib = 直接呼叫函式,hook = 經 `hook` 子指令的 stdin/stdout,both = 兩個介面都跑、結果要一樣);
 #         印 DENY-NORM SELFTEST OK|RED;結束碼 0 / 1;判定表或 deny 檔讀不到 = 2。
-#   --deny-file 沒給:判定表檔頭 denyFile(相對 settings.paths.scratchpad;讀 sched_paths.py),讀不到 = 2。
+#   --deny-file 沒給:判定表檔頭 denyFile(相對 repo 根目錄),讀不到 = 2。
 import json
 import os
 import re
@@ -28,7 +34,9 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CASES_DEFAULT = os.path.normpath(os.path.join(HERE, '..', 'fixtures', 'deny-norm', 'cases.json'))
+# 本檔住 packages/design-system/ds-canonical/hooks/lib/;repo 根目錄往上 5 層。
+REPO_ROOT = os.path.normpath(os.path.join(HERE, '..', '..', '..', '..', '..'))
+CASES_DEFAULT = os.path.normpath(os.path.join(HERE, '..', 'tests', 'fixtures', 'deny-norm', 'cases.json'))
 
 
 # ── deny 規則比對:拿子指令逐條比對 claude-settings-base.json 的 permissions.deny ──────────────
@@ -112,6 +120,12 @@ GIT_OPT = re.compile(r'^git\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace)\s+(
 SHELL_C = re.compile(r'^(?:sh|bash|zsh|dash|ksh)(?:\s+-[A-Za-z]+)*\s+-[A-Za-z]*c[A-Za-z]*\s+(.+)$', re.S)
 FUNC_DEF = re.compile(r'(?:^|(?<=[\n;&|{(]))\s*(?:function\s+)?([A-Za-z_][\w-]*)\s*\(\s*\)\s*\{\s+(.*?);?\s*\}(?=[ \t]*(?:$|[\n;&|)]))', re.S | re.M)
 VAR_DEF = re.compile(r'(?:^|(?<=[\n;&|])|(?<=\s))(?:export\s+)?([A-Za-z_]\w*)=(?:"((?:[^"\\]|\\.)*)"|\'([^\']*)\'|([^\s;&|"\']*))', re.M)
+# `git -c alias.co=checkout co …`:-c 臨時定義的別名(值可帶引號;`!` 開頭 = 交給 shell 跑的指令)。
+GIT_ALIAS = re.compile(r'''^git\s+-c\s+(?:"alias\.([\w.-]+)=([^"]*)"|'alias\.([\w.-]+)=([^']*)'|alias\.([\w.-]+)=(\S+))\s+''')
+# 指令名寫成指令替換:$(command -v git) / `which git` / $(type -p git) / $(whence -p git) —— 換回名字。
+CMD_SUBST_NAME = re.compile(
+    r'''"?\$\(\s*(?:command\s+-[vV]|which|type\s+-[pP]|whence(?:\s+-p)?)\s+([\w./-]+)\s*\)"?'''
+    r'''|`\s*(?:command\s+-[vV]|which|type\s+-[pP]|whence(?:\s+-p)?)\s+([\w./-]+)\s*`''')
 
 
 def unquote(s):
@@ -154,7 +168,10 @@ def expand_sub(sub, defs, depth=0):
 
 def normalize_sub(s):
     prev = None
-    while prev != s:
+    aliases = {}
+    rounds = 0
+    while prev != s and rounds < 20:  # 別名互相指(a=b、b=a)時靠輪數上限停下
+        rounds += 1
         prev = s
         s = ENV_PREFIX.sub('', s)
         s = WRAPPER.sub('', s)
@@ -167,7 +184,16 @@ def normalize_sub(s):
                 w2 = w2.rsplit('/', 1)[1]
             s = w2 + m.group(2)
         while GIT_OPT.match(s):
+            am = GIT_ALIAS.match(s)
+            if am:
+                name = am.group(1) or am.group(3) or am.group(5)
+                aliases[name] = am.group(2) if am.group(1) else (am.group(4) if am.group(3) else am.group(6))
             s = GIT_OPT.sub('git ', s, count=1)
+        if aliases:
+            gm = re.match(r'^git\s+(\S+)(.*)$', s, re.S)
+            if gm and gm.group(1) in aliases:
+                val = aliases[gm.group(1)].strip()
+                s = (val[1:] if val.startswith('!') else 'git ' + val) + gm.group(2)
     return s.strip()
 
 
@@ -176,6 +202,7 @@ def canon_subs(cmd, depth=0, defs=None):
     out = []
     if not cmd or depth > 3:
         return out
+    cmd = CMD_SUBST_NAME.sub(lambda m: m.group(1) or m.group(2), cmd)
     defs = defs or collect_defs(cmd)
     for raw in split_subcommands(cmd):
         for ex in expand_sub(raw, defs):
@@ -310,12 +337,7 @@ def hook_decide(event, rules):
 
 
 def default_deny_file(table):
-    import importlib.util
-    p = os.path.join(HERE, 'sched_paths.py')
-    spec = importlib.util.spec_from_file_location('sched_paths', p)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return os.path.join(mod.get('scratchpad'), table['denyFile'])
+    return os.path.join(REPO_ROOT, table['denyFile'])
 
 
 def run_cases(table, rules, via, deny_file):
