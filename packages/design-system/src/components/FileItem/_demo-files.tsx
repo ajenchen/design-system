@@ -5,7 +5,7 @@
 // (user 2026-09-08「一堆按鈕都無法正常反應」〔UD-A16〕)。行為只用 FileItem 規格寫過的:
 // - 刪除 = 那一列拿掉;重試 = 回到上傳中、跑完變完成;下載 = 跳一則通知(Toast);
 // - 點已上傳 / 已完成的列 = 用 FileViewer 開(file-item.spec.md「`surface="upload-manager"`」表的 Row-click 列);
-// - 錯誤說明裡的「查看紀錄」= 開上傳紀錄(連結長相照 file-item.spec.md「Description ReactNode 可含 clickable 元素」;規格那段程式範例是英文,範例畫面一律中文 —— AGENTS.md「單一檔案不中英夾雜」)。
+// - 錯誤說明裡的「查看紀錄」= 開上傳紀錄(連結長相照 file-item.spec.md「Description ReactNode 可含 clickable 元素」;規格那段程式範例 2026-11-21 起也寫「查看紀錄」,與範例畫面同一個字樣 —— AGENTS.md「單一檔案不中英夾雜」)。
 // 進度只在按下「重試」之後才開始跑:靜止畫面沒有任何計時器,截圖每次相同。
 // 用到通知的 story 自己掛 <Toaster />(toast.spec.md:每個獨立 story root 一個)。
 import * as React from 'react'

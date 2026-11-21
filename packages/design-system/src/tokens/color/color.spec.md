@@ -479,7 +479,7 @@ Tag、Avatar 等需要多色區分的場景（專案標籤、團隊分類等）�
 
 **不該用 `--{hue}-text` 的場景**：
 - ❌ Button label（用 `text-white` on primary bg）
-- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）—— **唯一例外**:放在有色訊息句子裡的連結(例:錯誤描述裡的「View log」)沿用那句訊息的 `-text` 色 + 平常就有底線,**滑過不換色**(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;範例與理由見 `../../components/FileItem/file-item.spec.md`「Description ReactNode 可含 clickable 元素」;世界級同款 Polaris Banner 內 Link 的 monochrome)。範圍只限「整句已經是有色訊息」;一般內文連結照上一行用 `text-primary`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L48-L54))
+- ❌ Link（用 `text-primary` = step-6，鮮豔度優先）—— **唯一例外**:放在有色訊息句子裡的連結(例:錯誤描述裡的「查看紀錄」)沿用那句訊息的 `-text` 色 + 平常就有底線,**滑過不換色**(user 2026-09-26 選「乙 紅字 + 底線，滑過不變」;範例與理由見 `../../components/FileItem/file-item.spec.md`「Description ReactNode 可含 clickable 元素」;世界級同款 Polaris Banner 內 Link 的 monochrome)。範圍只限「整句已經是有色訊息」;一般內文連結照上一行用 `text-primary`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L48-L54))
 - ❌ 任何 hover/active 互動回饋(上一條例外的連結因此滑過不換色,不得拿 `--{hue}-hover` 補 —— 那是 step-6 填色的配對)
 
 #### 為什麼 step-7 在兩個 mode 都對

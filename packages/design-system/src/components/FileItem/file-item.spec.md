@@ -225,7 +225,7 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 ### Description ReactNode 可含 clickable 元素
 
 Description 是 ReactNode,**不限純文字**。常見場景:
-- Error 描述含 "View log" 需可點 → 用 `<a className="underline">View log</a>` 或 inline Button:
+- Error 描述含「查看紀錄」需可點 → 用 `<a className="underline">查看紀錄</a>` 或 inline Button:
 
 ```tsx
 <FileItem
@@ -234,8 +234,8 @@ Description 是 ReactNode,**不限純文字**。常見場景:
   status="error"
   description={
     <>
-      Network timeout.{' '}
-      <a href="#logs" className="underline">View log</a>
+      網路連線逾時。{' '}
+      <a href="#logs" className="underline">查看紀錄</a>
     </>
   }
   onRetry={noop}
