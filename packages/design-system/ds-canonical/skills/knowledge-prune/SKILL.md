@@ -15,11 +15,11 @@ description: Prune governance sprawl across provider-neutral instructions / spec
 
 ## When to run
 
-- Bootstrap instructions(`AGENTS.md` + provider import shell) 超過 800 行(hook 硬 cap 觸發)
-- MEMORY.md 超過 20 條 index
+- Bootstrap instructions(`AGENTS.md` + provider import shell) 超過 800 行(由 `session_start_governance_check.sh` Check 1 判,超過 800 才出 BLOCKER context)
+- memory 索引條數超過 `governance/memory/contract.json` 的 `maxIndexEntries`(由 `scripts/validate-memory-contract.mjs` 判,CI 會紅)
 - 季度健檢(每 3 個月跑 1 次)
 - `/design-system-audit --deep` Phase 4.5 自動 chain
-- 單一 spec.md 超過 500 行(hook 硬 cap 觸發)
+- 單一 spec.md 超過 `check_file_size_budget.sh` case 表的上限(寫入當下判:超過預算只警告;寫完超過過渡上限而且這次變長才擋)
 
 ## Non-goals
 
