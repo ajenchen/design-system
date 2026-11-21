@@ -1420,6 +1420,11 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
             // @focus-suppress B — B Field 家族輸入控件;承擔者:指示器是輸入盒外框
             'block w-full resize-none bg-transparent outline-none',
             'px-[var(--field-px)] py-[var(--field-control-py-md)] text-body text-foreground',
+            // @disabled-color-allow: 這個輸入盒沒有 disabled 狀態,placeholder 的 muted 不會跟 disabled 疊在一起(M24 管的是 disabled 元件內的字)——
+            // textarea(本檔 :1403)不帶 disabled;props(:1279 AgentPromptInputProps 只繼承 div 的 HTMLAttributes)沒有 disabled 可傳;
+            // 外框寫死 fieldChromeStyles({ mode: 'edit' })(:1391);代理進行中(busy,:1285)只把送出鈕換成停止,輸入框照常可打字。
+            // 規格 agent-panel.spec.md:241 外框 =「Textarea edit×default 同一組字串」,沒有停用態。日後若加 disabled,
+            // 照同族 textarea.tsx:45 的寫法補 disabled 時 placeholder 換 fg-disabled 的覆寫,並拿掉這段豁免。
             'placeholder:text-fg-muted',
             'field-sizing-content max-h-40',
           )}
