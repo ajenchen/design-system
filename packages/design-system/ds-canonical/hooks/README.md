@@ -82,7 +82,9 @@ Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_O
 - **clone 裡的編輯不算經過寫入時 hook**:adapter 的 repo 根(`PROJECT_ROOT`)取自 `GOVERNANCE_PROJECT_DIR` / provider 的專案目錄變數
   (session 開在主資料夾就是主資料夾),hook 讀的規則、spec、registrations 都是那一份。在 scratchpad 等別處的 clone 裡改檔,
   hook 不會以 clone 當根執行;個別 hook 用路徑樣式比對時可能仍會觸發,但讀的是主資料夾的規則 —— 兩種情況都不能當成「clone 的改動過了寫入時檢查」。
-  clone 的改動要以 clone 為根跑合回前的全樹檢查(CI 導出的檢查與 `npm run hooks:test`,照 `rules/work-process.md`「合回點」)才算數。
+  合回點以 clone 為根跑的 CI 導出檢查與 `npm run hooks:test`(`rules/work-process.md`「合回點」)量的是 CI 那一層,
+  **不等於**寫入時 hook(PreToolUse / PostToolUse 的 Edit / Write)的判定;目前**沒有**把寫入時 hook 對 clone 的改動全樹重跑一次的檢查
+  (照實列:讓 hook 以 clone 當根執行,或另補等價的全樹檢查,兩條都還沒做)。
 
 ## Hook 退出碼約定(portable command-hook contract)
 
