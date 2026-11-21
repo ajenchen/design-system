@@ -89,15 +89,17 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
 
 | Finding 類型 | 動作 | 為何 STOP |
 |--------------|------|----------|
-| spec 聲明的原則世界級對照有疑 | **CLASSIFY** | 有唯一證據答案則 P2E auto；會改產品/UI/UX meaning 且有真取捨才 P2H |
-| 跨 spec 矛盾 **兩邊都有 rationale** | **CLASSIFY** | evidence 可收斂則 P2E auto；兩個可行 user-visible semantics 才 P2H |
+| spec 聲明的原則世界級對照有疑 | **CLASSIFY** | 照下方核心公式;看 benchmark 證據有沒有唯一答案 |
+| 跨 spec 矛盾 **兩邊都有 rationale** | **CLASSIFY** | 照下方核心公式;看 evidence 能不能收斂成一個 user-visible semantics |
 | 新增／刪除 governance canonical rule | **AUTO(P2E)** | 工程治理 policy 由 agent 依 evidence/hard gates 決策 |
-| 命名決策(新 prop value / 新術語)| **CLASSIFY** | public component semantics 真取捨為 P2H；機械命名/治理為 P2E |
-| 工程治理 scope 擴充 / 收緊 | **AUTO(P2E)** | 依 frozen scope、least privilege 與 tests；task／deliverable 明確要求時才加 independent review |
-| 擴產品/UI/UX SSOT 新 branch | **STOP(P2H)** | user-visible canonical 真取捨 — 2026-04-21 Inline Action icon 案例屬此 |
-| Rationale 疑似過時 | **CLASSIFY** | evidence 唯一則 P2E auto；兩個 user-visible outcomes 才 P2H |
+| 命名決策(新 prop value / 新術語)| **CLASSIFY** | 照下方核心公式;public component semantics 屬產品面,機械命名/治理屬工程面 |
+| 工程治理 scope 擴充 / 收緊 | **AUTO(P2E)** | 依 frozen scope、least privilege 與 tests |
+| 擴產品/UI/UX SSOT 新 branch | **STOP(P2H)** | 核心公式的 P2H 類 — 2026-04-21 Inline Action icon 案例屬此 |
+| Rationale 疑似過時 | **CLASSIFY** | 照下方核心公式;看 evidence 是否唯一 |
 
 ### 核心公式
+
+本檔的分權只寫這一處(上表與下方各 scan 步驟的 CLASSIFY 都照它),依據 `AGENTS.md`「# 自主執行 canonical」(含 independent review 何時才加)。
 
 ```
 動工程／治理 canonical substantive meaning → P2E AUTO
@@ -107,9 +109,8 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
 
 **判斷 substantive 的 keyword**:
 - 「canonical」「聲明」「必須」「統一規則」「SSOT」「rationale」「為什麼」「不允許」「禁止」
-- 出現在 spec prose 且動到的 edit 觸及這些關鍵字 → 觸發 **CLASSIFY**；evidence
-  已唯一決定的工程／治理修正是 P2E AUTO，只有會改變產品／UI／UX SSOT 且仍有真取捨
-  才 P2H STOP。關鍵字本身不是 human gate。
+- 出現在 spec prose 且動到的 edit 觸及這些關鍵字 → 觸發 **CLASSIFY**(照上方核心公式);
+  關鍵字本身不是 human gate。
 
 ---
 
@@ -136,8 +137,7 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
    - grep 所有 `variant:` / `size:` / `mode:` 在 .tsx
    - 建立 {literal: [components]} 表
    - 同字跨元件 → 驗語義一致(命名三 test #3)
-   - 語義不一致 → CLASSIFY；機械／治理命名由 evidence 收斂(P2E AUTO)，只有不同
-     public semantics 導向不同 UI／UX outcomes 才 P2H
+   - 語義不一致 → CLASSIFY(照核心公式;同上表「命名決策」列)
 
 3. 術語一致性
    - 常見 drift:dismiss vs close vs dismiss vs onDismiss / onClose
@@ -196,8 +196,7 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
    - 我方選擇跟世界級 3 家中過半不同 → flag(可能對或可能錯)
      → 查 spec 有無 rationale 解釋為何不同
      → 有 rationale = deviation ✓
-     → 無 rationale = P1 應補 rationale(AUTO 加 pointer)；若 benchmark 證據唯一則
-       P2E 自主 revise，只有真產品／UI／UX outcomes 取捨才 P2H
+     → 無 rationale = P1 應補 rationale(AUTO 加 pointer)；要改 example 本身 → CLASSIFY(照核心公式)
 
 4. Empty category check:
    - Decision tree 所有 category 都要有 ≥1 example
@@ -261,7 +260,7 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 ### D6d 完整性(AUTO)
 - ...
 
-## P2H 提議討論(只有產品／UI／UX SSOT 真取捨才 STOP)
+## P2H 提議討論(核心公式的 STOP 類)
 ### 跨產品／UI／UX canonical 矛盾需仲裁
 1. **{Concept}**:spec A 說 {X}(line),spec B 說 {Y}(line)
    - 選項 A:修 A 對齊 B,因為 {reason}

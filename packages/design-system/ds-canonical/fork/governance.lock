@@ -23,7 +23,15 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "0bfba038f2b1fd29f8e25eaf5f9948570259a6bae2710f6d3cefae76e21180b5",
+      "sha256": "e2e38d24ff1fa3d65fb37cb136d3b1be4ed229df2de79ddf0339d78f2928f294",
+      "source": "providers/codex/skills/bug-fix-rhythm",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
+      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
       "source": "providers/codex/skills/bug-fix-rhythm",
       "classification": null,
       "destination": null
@@ -967,8 +975,16 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "5ff6d9a868cbd3949f17a0f6738a0a3cf6b0fdb33f005786c75a8044e8108bfb",
+      "sha256": "7abf74c0c4d337548a002c9311304afb618493a4a1fc3e6deb37bd7178468382",
       "source": "skills/bug-fix-rhythm/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
+      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
+      "source": "skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
       "classification": null,
       "destination": null
     },
@@ -1207,8 +1223,16 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "0bfba038f2b1fd29f8e25eaf5f9948570259a6bae2710f6d3cefae76e21180b5",
+      "sha256": "e2e38d24ff1fa3d65fb37cb136d3b1be4ed229df2de79ddf0339d78f2928f294",
       "source": "skills/bug-fix-rhythm/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
+      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
+      "source": "skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
       "classification": null,
       "destination": null
     },
@@ -1495,7 +1519,15 @@
     {
       "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "6d3fe80b41dfa82a04ae152e053b5a2b6eddc8069564420af05f2ddc8a715145",
+      "sha256": "b63fb69dd860b52ad51f1314b54ab42458c1bca2e084edd51d929d02f47005ef",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/bug-fix-rhythm/references/multi-agent-orchestration.md",
+      "sha256": "8371b3f470ca73901477c09efdbeaa544e44ee03fc863f1161b88ee9e15f395a",
       "source": null,
       "classification": null,
       "destination": null

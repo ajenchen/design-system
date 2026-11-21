@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:0bf27ae30dbca9d315b97bc09f18d9bf1230f841d86e595a466b292a56834e16",
+      "hash": "sha256:5c7595095f88dc50befe051588d87cda30ee83551a10f2e8cf81b17831fdc599",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:93182b1ebb7b6b13cec429824b492d0ee58f8da99f4f8e64f1d42fa475c9dbb5",
+      "hash": "sha256:9c74c8d97064296378a8443e1e07c1404cd18504d0ed7d9c11203b5546ccf641",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140202,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:20cef50aae0830492c123d33ed8a4547603c61aacb8c37413b1bc701e0ee8355",
+  "inputDigest": "sha256:2e1def41c413f46818a7229e36d2ae1f264edacd1aa16aeb94f9f62dc01e1e4e",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -84,10 +84,10 @@
       "requiredTargetExtras": [],
       "sharedDigests": [
         {
-          "expectedTargetDigest": "sha256:3166d7257b0380ad66ae950137ca0667d70ac61c2e457e5ab60b99dff345bafe",
+          "expectedTargetDigest": "sha256:3d61336da90b10d26ef206f11fd99e4f0e9dd6351dc9c6b059b8a468f6bb9381",
           "name": "bug-fix-rhythm",
-          "sourceDigest": "sha256:fdcc30d6af49aa206d50021b54fbfd7045b7e39d52a1143e0eda6572ee2c58a2",
-          "targetDigest": "sha256:3166d7257b0380ad66ae950137ca0667d70ac61c2e457e5ab60b99dff345bafe"
+          "sourceDigest": "sha256:45f7f73120139ce3bfea757047d196a4cdec7fd32574f80a8165f5c20fc29daf",
+          "targetDigest": "sha256:3d61336da90b10d26ef206f11fd99e4f0e9dd6351dc9c6b059b8a468f6bb9381"
         },
         {
           "expectedTargetDigest": "sha256:b01d8e5ef440b74d318efd4ba2f3adb1ed11ceb7a2e90fc224887a7801586642",
@@ -108,10 +108,10 @@
           "targetDigest": "sha256:b76cd07025f35483002fd34f85d457027bc040db9562f1de0670c0c5e1b3a5c5"
         },
         {
-          "expectedTargetDigest": "sha256:39e14f8d639a5e966593e6fad3729d1d6db0dcae3bab8e06d52babd50dcaefe3",
+          "expectedTargetDigest": "sha256:a6fbb5146e06ed97003541639117d527a855b921c171123173108ee2475e2fa0",
           "name": "codify-corrections",
-          "sourceDigest": "sha256:b304ff21f6249b5f51a550447b85ac89a96eb190685585317997e992f57237ae",
-          "targetDigest": "sha256:39e14f8d639a5e966593e6fad3729d1d6db0dcae3bab8e06d52babd50dcaefe3"
+          "sourceDigest": "sha256:17cd0db438f7ade3d2a2b7a29b4d9c9bf6c43eb22d36c1a609cf6a0b91355154",
+          "targetDigest": "sha256:a6fbb5146e06ed97003541639117d527a855b921c171123173108ee2475e2fa0"
         },
         {
           "expectedTargetDigest": "sha256:5779cc3beaa4ced342a905bbeb4f010fb3be1f75fe2b2cc763b9ce3a51d8011a",
@@ -138,10 +138,10 @@
           "targetDigest": "sha256:38c2a2a5e29ab6a57591fa60f416886e33b52c1a18d3b2493a0f25f66d705374"
         },
         {
-          "expectedTargetDigest": "sha256:022b1a20a7bf1a064ea6f4c85b16f42c57167921461402c69a1ec20b479a178d",
+          "expectedTargetDigest": "sha256:a3606a712520a955ea098e3691042b7eef24d28ef3a481fc30f575b5c27620a0",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:c618c950e4f33f7f4bc68fb3df13b3079e11200b746fa57eda2f568f45283b0c",
-          "targetDigest": "sha256:022b1a20a7bf1a064ea6f4c85b16f42c57167921461402c69a1ec20b479a178d"
+          "sourceDigest": "sha256:1f83174f05923f2ce545201aa2da9f6c52205e6afd7453960e990cb9af920cc4",
+          "targetDigest": "sha256:a3606a712520a955ea098e3691042b7eef24d28ef3a481fc30f575b5c27620a0"
         },
         {
           "expectedTargetDigest": "sha256:e1b651def342e8cd8a554fefc0f092e19bc1e635801c5db96bbcf78ddb7c0099",
@@ -150,10 +150,10 @@
           "targetDigest": "sha256:e1b651def342e8cd8a554fefc0f092e19bc1e635801c5db96bbcf78ddb7c0099"
         },
         {
-          "expectedTargetDigest": "sha256:d228bfe40e88f803b291ec7e1e0cb674de22209b10b0c1b66f35a7604c00f38d",
+          "expectedTargetDigest": "sha256:ee8aa1c0dcee0b395499a651ee8ee4186c7ec6a0dfd88a036a83e2bea0132a1e",
           "name": "governance-health",
-          "sourceDigest": "sha256:b0af43021b9a63acf90510bf8731daf95767b413e497941c07506746443750cc",
-          "targetDigest": "sha256:d228bfe40e88f803b291ec7e1e0cb674de22209b10b0c1b66f35a7604c00f38d"
+          "sourceDigest": "sha256:ed733b12e0022345611b316adfa4a107ca75c69c2d6f3569f8728583ad701cf0",
+          "targetDigest": "sha256:ee8aa1c0dcee0b395499a651ee8ee4186c7ec6a0dfd88a036a83e2bea0132a1e"
         },
         {
           "expectedTargetDigest": "sha256:86986551c1941c1f318269a86538ca9eb0b29057632670b937f121bccc7f2773",
@@ -168,10 +168,10 @@
           "targetDigest": "sha256:ac3aa59f84b761cc763e3add28c39bc8195676305f614e4def9e7b72a074e937"
         },
         {
-          "expectedTargetDigest": "sha256:ced57195b70980c1f5bcff61772d10d2815352a15f00980773120918788a33be",
+          "expectedTargetDigest": "sha256:5d8e20fcedba8f503bb53406bd97dbd4174d5b5d8b682d5390afe244ae05f29e",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:52976ca6a50f6586e93cd3b5edd05e5d6a3dae257844c1d02682b4b7ef8c514f",
-          "targetDigest": "sha256:ced57195b70980c1f5bcff61772d10d2815352a15f00980773120918788a33be"
+          "sourceDigest": "sha256:fd218638a1b15c111780a385969312e2a0a0a9fcb645ceb053704b5800240bd8",
+          "targetDigest": "sha256:5d8e20fcedba8f503bb53406bd97dbd4174d5b5d8b682d5390afe244ae05f29e"
         },
         {
           "expectedTargetDigest": "sha256:e4016a41233453d432b19dbe687deb70b43bfaa2aac95ad0668fc9906e680d8f",
@@ -307,10 +307,10 @@
       "requiredTargetExtras": [],
       "sharedDigests": [
         {
-          "expectedTargetDigest": "sha256:80e1acbff957e3087b6698a4f2847d8dbf37f5481aab545aa36bee80ea0ec5a3",
+          "expectedTargetDigest": "sha256:4589458d2ebd7a949af58c445e4d557cf1ca77d9eaa73630115869394986725c",
           "name": "bug-fix-rhythm",
-          "sourceDigest": "sha256:fdcc30d6af49aa206d50021b54fbfd7045b7e39d52a1143e0eda6572ee2c58a2",
-          "targetDigest": "sha256:80e1acbff957e3087b6698a4f2847d8dbf37f5481aab545aa36bee80ea0ec5a3"
+          "sourceDigest": "sha256:45f7f73120139ce3bfea757047d196a4cdec7fd32574f80a8165f5c20fc29daf",
+          "targetDigest": "sha256:4589458d2ebd7a949af58c445e4d557cf1ca77d9eaa73630115869394986725c"
         },
         {
           "expectedTargetDigest": "sha256:4f516c00b3df06bf9cbcddf1d88f7b7fa4b93e3fe8168b15ba7031bfeb5b20bd",
@@ -331,10 +331,10 @@
           "targetDigest": "sha256:a1c3d2adf1441788a658cb10df8365bc20a6e53d8742a2c70f121337c1e83ce4"
         },
         {
-          "expectedTargetDigest": "sha256:8524f73973ac88a5e0938000bbaa589be8af28518614a46e59c47a5982d7bf5d",
+          "expectedTargetDigest": "sha256:c18f97cb13d21a4b4ce81caa88a49ca679516e23ddb72183773e79598524956a",
           "name": "codify-corrections",
-          "sourceDigest": "sha256:b304ff21f6249b5f51a550447b85ac89a96eb190685585317997e992f57237ae",
-          "targetDigest": "sha256:8524f73973ac88a5e0938000bbaa589be8af28518614a46e59c47a5982d7bf5d"
+          "sourceDigest": "sha256:17cd0db438f7ade3d2a2b7a29b4d9c9bf6c43eb22d36c1a609cf6a0b91355154",
+          "targetDigest": "sha256:c18f97cb13d21a4b4ce81caa88a49ca679516e23ddb72183773e79598524956a"
         },
         {
           "expectedTargetDigest": "sha256:acf7ec4ed89af73e16897b25715a005783209af3d7899ee1b40190053e658cca",
@@ -361,10 +361,10 @@
           "targetDigest": "sha256:2deab250f13ab3747e03beeb622ac3316c71d4b70a98b498c961f35bcfb36442"
         },
         {
-          "expectedTargetDigest": "sha256:7fd0e292503ab86079f370d764a8a540a83e7a4a6b32b876fe7083fd89f6ec3d",
+          "expectedTargetDigest": "sha256:cc4822a22bea813568e883a71f99433941328aca8606588ebed5aa3fb5e22798",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:c618c950e4f33f7f4bc68fb3df13b3079e11200b746fa57eda2f568f45283b0c",
-          "targetDigest": "sha256:7fd0e292503ab86079f370d764a8a540a83e7a4a6b32b876fe7083fd89f6ec3d"
+          "sourceDigest": "sha256:1f83174f05923f2ce545201aa2da9f6c52205e6afd7453960e990cb9af920cc4",
+          "targetDigest": "sha256:cc4822a22bea813568e883a71f99433941328aca8606588ebed5aa3fb5e22798"
         },
         {
           "expectedTargetDigest": "sha256:0edf89e71011799b4d98e1e687148d58d46b16f6bb137cbc992ffaa28a3598c2",
@@ -373,10 +373,10 @@
           "targetDigest": "sha256:0edf89e71011799b4d98e1e687148d58d46b16f6bb137cbc992ffaa28a3598c2"
         },
         {
-          "expectedTargetDigest": "sha256:01ed6f21ccd4f3cb520843b960b0d907ea8f3bb9efd484101a30868a6fdfd99a",
+          "expectedTargetDigest": "sha256:030f4a6fb3e5d9775c2128c7450148f560eb72ce9b7ba0f262a0d169eaba9abe",
           "name": "governance-health",
-          "sourceDigest": "sha256:b0af43021b9a63acf90510bf8731daf95767b413e497941c07506746443750cc",
-          "targetDigest": "sha256:01ed6f21ccd4f3cb520843b960b0d907ea8f3bb9efd484101a30868a6fdfd99a"
+          "sourceDigest": "sha256:ed733b12e0022345611b316adfa4a107ca75c69c2d6f3569f8728583ad701cf0",
+          "targetDigest": "sha256:030f4a6fb3e5d9775c2128c7450148f560eb72ce9b7ba0f262a0d169eaba9abe"
         },
         {
           "expectedTargetDigest": "sha256:a510015f64b751556e2f06bda793fa8fc3ea4c70376d9c419df6ae91846d9d7d",
@@ -391,10 +391,10 @@
           "targetDigest": "sha256:322dcee9d7bf470f7f79c358a3b8d66a992360b6460443e5f46259ecf3733e91"
         },
         {
-          "expectedTargetDigest": "sha256:32ce2daaabc7a79d11c2bc6851cc760bc030cfafbf48a2411740469de84e4afe",
+          "expectedTargetDigest": "sha256:b2b1b5323ac36714dd5235541a6b6854b6133ecfd8536b037eca35bc3ec23f05",
           "name": "knowledge-prune",
-          "sourceDigest": "sha256:52976ca6a50f6586e93cd3b5edd05e5d6a3dae257844c1d02682b4b7ef8c514f",
-          "targetDigest": "sha256:32ce2daaabc7a79d11c2bc6851cc760bc030cfafbf48a2411740469de84e4afe"
+          "sourceDigest": "sha256:fd218638a1b15c111780a385969312e2a0a0a9fcb645ceb053704b5800240bd8",
+          "targetDigest": "sha256:b2b1b5323ac36714dd5235541a6b6854b6133ecfd8536b037eca35bc3ec23f05"
         },
         {
           "expectedTargetDigest": "sha256:bc2337082ec6264f75f7b168155315434c9dddc0444a569064454c3686da7a40",
@@ -518,10 +518,10 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:954d68f32fc752a5334365e7683003cf49b190f7b5c69b31e6a1e3484c28bfd7",
+  "snapshotDigest": "sha256:e50ad84b6a3983d87570f284c3cfd4f1f4a81c5150f650eea4fed02dc66ec837",
   "sources": [
     {
-      "hash": "sha256:603d398316d291c992cc0379afd0b21b5a94f66e1ce5a68a485bd639199a9c0d",
+      "hash": "sha256:d223ef66c45c3f8a4984c28c0974298edfb7ac684c6d7ba6bac03e34c7de78c3",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 220,
-      "hash": "sha256:41189e3b9aa13a1c8be15141025f3865f233bcc155d5c3920d29ab005229874c",
+      "hash": "sha256:0297f3b0fbdda55594976203cb71fdb536d258f0fda7fba64fdcc17d80b31dd3",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -676,7 +676,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 27,
-      "hash": "sha256:487e70af5ebbd38306b7bd01b47d90df1b8f3ebc24a916a35fa005076ed93693",
+      "hash": "sha256:d703d235eaeb12d553e5e6e43abaa68d9389f43ccc3fd018e2fdde2356adfec6",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -687,7 +687,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 7,
-      "hash": "sha256:8a9af12eeb79fe71a7e7f4435368d723c45c1925607d8abbf3b2730254a39578",
+      "hash": "sha256:d857bea7e8ac01796dff4467b76055824de347deb5bb37bfcea679624c931b68",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -697,8 +697,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 67,
-      "hash": "sha256:5156a7a1209aef21a2965a85ffde25f5becbe73c10e8cfbb169fe84a8f454989",
+      "files": 68,
+      "hash": "sha256:2cc7192dc8f5fd841448739a07b66f27223aa5195b32baef0aff8a4b839ae39a",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2288,12 +2288,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:5b49cff9aa2b32846a5ba3c77c133ba73432642f176a749a2ff67c488213d49f",
+      "hash": "sha256:1db1384b878e899216e4fda83aff21952cc4038a2517eba41de060444c52d20a",
       "id": "governance-counter-metadata",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/governance-counters.json",
-      "size": 4656,
+      "size": 4645,
       "type": "file"
     },
     {
@@ -3219,8 +3219,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 21,
-      "hash": "sha256:8613977a23a86323bab6d2acb685b4e788a40722281816ebdf6ebb9281f26be3",
+      "files": 22,
+      "hash": "sha256:c130dbc056f015ea1f87243a9a10a260a66a77f2d9279c3603db0a5ec0862568",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3338,7 +3338,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ccf1b91726612be5e7ccd6ea431c1387240db65521c52d637de9565b734a8746",
+      "hash": "sha256:b1abd26cd7a72158a04fd98cfd77c733517bba579b165cdc45b5f4a925d21dc4",
       "id": "provider-skill-semantics",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 788,
-      "hash": "sha256:a32a09d053bcaa96ffae8af4fbf0827a3d128bdc5ddbe1787ecac7086e8cfc9f",
+      "hash": "sha256:b928de65b0fa1bd86660f3de7327fef1e16b2ca3d331d9358d9d8113aec6c007",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

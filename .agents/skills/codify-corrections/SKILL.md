@@ -1,6 +1,6 @@
 ---
 name: codify-corrections
-description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-hook-harvested signals of user corrections ("不是" / "不對" / "應該" / "糾正" etc.). Dedup by session + keyword, cluster by topic, and apply edits to the canonical owner(ds-canonical rule / repository memory / canonical skill reference / spec.md rationale) under the shared authority classifier. Engineering/governance clusters auto-execute with evidence; only genuine product/UI/UX SSOT tradeoffs stop. After codification archive processed entries in the same Git-owned runtime state root. Invoke when user-corrections.jsonl exceeds 20 entries(session_start soft reminder)or exceeds 40 entries(hard threshold), OR quarterly.
+description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-hook-harvested signals of user corrections ("不是" / "不對" / "應該" / "糾正" etc.). Dedup by session + keyword, cluster by topic, and apply edits to the canonical owner(ds-canonical rule / repository memory / canonical skill reference / spec.md rationale) under the shared authority classifier. After codification archive processed entries in the same Git-owned runtime state root. Invoke when user-corrections.jsonl exceeds 40 entries(session_start hard blocker; there is no soft reminder), when the user asks, OR quarterly.
 ---
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/codify-corrections/SKILL.md; provider: codex; do not edit this adapter view. -->
@@ -13,21 +13,21 @@ description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-h
 - 治理 canonical L2(per-commit)下游
 - mindset #6「user tell me once,我不該要 tell me twice」執行面
 - `packages/design-system/ds-canonical/rules/meta-patterns.md` M14 AUTO integrate pipeline 第 7 層(memory / canonical rule 落地)
-- 稽核 vs 執行分權:純工程／治理 canonical substantive → AUTO；只有產品／UI／UX SSOT 真取捨 → human-only boundary
+- **分權(本檔只寫這一次,以下各 Phase / Gate 都照這句)**:照共同 bootstrap(repo 根的共用指令檔)「# 自主執行 canonical」—— 純工程／治理 canonical substantive(含新 engineering M-row)依 evidence AUTO,不得把工程判斷轉交 user;只有會改產品／UI／UX SSOT、且仍有真取捨才是 P2H(human-only);independent review 只在 task／deliverable 明確要求時才加,user waiver 要記錄、不得冒充已做,缺席不阻擋 P2E
 
 ## When to run
 
-**前提**:輸入檔 `user-corrections.jsonl` 只有在 `GOVERNANCE_TELEMETRY_OPT_IN=1` 時才會產生(`stop_passive_logging.sh` 拿不到狀態目錄就整支 exit 0)。遙測預設關 → 這份檔預設永遠不存在,下面的 session_start soft reminder 也不會輸出(session_start 不輸出 REMINDERS;只有 > 40 的 hard blocker 會出聲)。檔案不存在時本 skill 記「無輸入、儀器全盲」,不要當成「沒有糾正」。
+**前提**:輸入檔 `user-corrections.jsonl` 是功能狀態,不看遙測開關(2026-11-21 起):`stop_passive_logging.sh` R2 只在啟動 hook 的 adapter 給了本 repo Git 目錄下的 runtime root、且不是 `GOVERNANCE_READ_ONLY=1` 時才寫(直接手動跑 hook、CI replay、hooks:test 都不寫;條件見 `_log-fire.sh` 檔頭「兩種寫入、兩道開關」),而且只在 transcript 裡抓到糾正字樣時才新增一列。`session_start_governance_check.sh` Check 3 只有一條:> 40 筆 → BLOCKER,沒有 soft reminder。檔案不存在時先分清是哪一種:寫入條件不成立 → 記「無輸入、儀器全盲」;條件成立但還沒抓到糾正 → 記「0 筆」。不要一律當成「沒有糾正」。
 
 - User 明言「處理 correction / codify / 看一下 log」
-- `session_start_governance_check.sh` soft reminder(> 20 corrections)或 hard blocker(> 40)
+- `session_start_governance_check.sh` Check 3 hard blocker(> 40 筆)
 - 季度(跟 `/knowledge-prune` 同期)
 - `/knowledge-prune` Phase 0.5 external signal 可 chain 本 skill
 
 ## Non-goals
 
 - 不改 code(`.tsx` / `.css`)— 只動 governance 文件
-- 不自行發明產品／UI／UX語意；工程治理 M-row 可依 evidence 自動落地，task／deliverable 明確要求時才加 maximum-assurance independent review
+- 不自行發明產品／UI／UX語意(工程治理 M-row 照檔頭分權句)
 - 不刪 jsonl 歷史 — 處理後 append 到 `.processed.jsonl`,raw log 保留 grep evidence
 - 不重跑 harvest — harvest 是 stop_passive_logging.sh R2 rule_harvest_corrections()(原 stop_harvest_corrections.sh,已 folded)的責任
 
@@ -69,25 +69,25 @@ description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-h
 
 ### Phase 1.5 — Authority classification + triage receipt
 
-在 `$GOVERNANCE_STATE_DIR` 寫 session-local triage receipt；P0／P1／P2E 不停下等待 user，只有 P2H 於全盤分類後 batch-at-end 提請產品決策：
+在 `$GOVERNANCE_STATE_DIR` 寫 session-local triage receipt(分權照檔頭那句)：
 ```
 Phase 0 scan 找到 N 條 pending corrections(dedup 後 M 條)。
 Phase 1 cluster:
   - P0(auto-apply)AUTO fixes to memory 現有 entry / spec rationale:X 條
   - P1(engineering review + apply)新建 memory file / engineering spec rationale 新段:Y 條
-  - P2E(AUTO；task／deliverable 明確要求時才加 maximum-assurance independent review)新 engineering M-row / governance substantive:Z 條
-  - P2H(HUMAN-ONLY)會改產品／UI／UX SSOT 且仍有真取捨:K 條
+  - P2E(AUTO)新 engineering M-row / governance substantive:Z 條
+  - P2H(HUMAN-ONLY,檔頭分權句的停止類):K 條
 
 Execution order:P0 → P1 → P2E；P2H 若有則 batch-at-end 一次提請產品決策。
 ```
 
-**Do NOT skip authority classification**:canonical substantive 不等於 human gate；不得把 P2E 工程判斷轉交 user。
+**Do NOT skip authority classification**:每一條都要分進 P0／P1／P2E／P2H;分法照檔頭分權句。
 
 ### Phase 2 — Apply P0 + P1
 
 **P0**(明確 home + 明確 edit):AUTO edit，commit 前記錄 diff receipt。
 
-**P1**(新建 memory / engineering spec 新段):由 agent 逐項以 canonical evidence review 後 edit；若內容引入產品／UI／UX SSOT 真取捨，重新分類 P2H。
+**P1**(新建 memory / engineering spec 新段):由 agent 逐項以 canonical evidence review 後 edit；若內容會改產品／UI／UX SSOT，照檔頭分權句重新分類。
 
 每次 Edit 後 tsc / lint 無需跑(純 governance 文件),但 MEMORY.md index 若有更新必包含。
 
@@ -108,7 +108,7 @@ Fail 任一 → 重名或拆分。
 - World-class benchmark(≥ 3 家 DS,M8 強制)
 - 被吸收的下游 M-row / specific bug / memory entries 清單(M10 下游刪)
 
-P2E 由最高 certified capability 依 canonical evidence、tests 與 hard gates 自主收斂後直接 edit `packages/design-system/ds-canonical/rules/meta-patterns.md`；只有 task／deliverable 明確要求 independent review 時才加 distinct-provider review。Exact run 若有 user waiver，記錄 waiver receipt 且不得冒充已做 review；optional review 缺席不得阻擋 P2E。P2H 才在 user 決定產品／UI／UX方向後 edit。Generated provider instruction/view 只能由 adapter materialize，禁止反向手改。
+P2E 由最高 certified capability 依 canonical evidence、tests 與 hard gates 自主收斂後直接 edit `packages/design-system/ds-canonical/rules/meta-patterns.md`(review 與 waiver 照檔頭分權句)。P2H 等 user 決定產品／UI／UX 方向後才 edit。Generated provider instruction/view 只能由 adapter materialize，禁止反向手改。
 
 ### Phase 3 — Archive processed entries
 
@@ -175,7 +175,7 @@ Update `$GOVERNANCE_STATE_DIR/metric-snapshots.jsonl`:
 
 - GitHub CODEOWNERS diff → assignment:本 skill 類似「correction ownership assignment」
 - Linux kernel `Documentation/process/howto.rst`:upstream patches go through maintainers — 我們 correction 也有「送到對的 home」的流程化
-- RFCs / ADRs workflow:新 canonical 走 Gate 3 evidence；task／deliverable 明確要求時才加 independent review，產品／UI／UX真取捨才升 human decision
+- RFCs / ADRs workflow:新 canonical 走 Gate 3 evidence，誰拍板照檔頭分權句
 
 本 skill 是本 DS 原創,因為常見 agent coding 生態沒有同層級的「session signal → governance codify」pipeline。
 
@@ -184,6 +184,6 @@ Update `$GOVERNANCE_STATE_DIR/metric-snapshots.jsonl`:
 ## Non-goals 重申
 
 - 不改 code
-- 不自行發明產品／UI／UX SSOT；工程治理 M-row 可自動寫入並驗證
+- 不自行發明產品／UI／UX SSOT
 - 不刪歷史 log
 - 不跑 harvest(是 hook 責任)

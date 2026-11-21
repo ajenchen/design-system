@@ -23,6 +23,8 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 
 **手動 invoke**:user 明言「批 fix」「一次做完」「跑完再驗」「列規則」
 
+**多代理批次工作**(多包分給不同代理同時實作):流程照 `node_modules/@qijenchen/design-system/ds-canonical/rules/work-process.md`;多代理同時動工才會撞到的原則與對照組做法見 [references/multi-agent-orchestration.md](references/multi-agent-orchestration.md)。
+
 **不 invoke**(對齊 current provider best practice 小修 skip):
 - 單一 surgical fix(無 numbered rule + 無 cross-component)— per-fix verify 即可
 - pure refactor / typo / import cleanup
@@ -158,7 +160,7 @@ use the active browser/Storybook screenshot workflow and preserve visual evidenc
 
 **3 層 防線**:
 - **本 skill**(active workflow):MUST-ALL checklist + batch-end-verify rhythm
-- **stop_self_audit.sh**(passive hook,claim-verify gap,BLOCKER)+ **check_codex_collab_5step.sh**(passive hook,codex-collab commit 缺 cite+verify+verdict marker,P1 soft stderr 不 block)
+- **stop_self_audit.sh**(passive hook,claim-verify gap,BLOCKER)+ **check_codex_collab_5step.sh**(passive hook,codex-collab commit 缺 cite+verify+verdict marker;本支被呼叫時會擋(exit 2),但目前 adapter 不會派本支,session 裡實際不生效 —— 見該檔頭「派送現況」)
 - **M20 / M32 主句(pixel-quantified)**(meta-rule):上游 invariant
 
 ---

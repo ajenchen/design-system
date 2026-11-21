@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "counts": {
     "hooks": 51,
-    "mRules": 33,
+    "mRules": 32,
     "auditDims": 91,
     "auditDimMin": 1,
     "auditDimMax": 91,
@@ -30,7 +30,6 @@
     "M18",
     "M19",
     "M20",
-    "M21",
     "M22",
     "M23",
     "M24",
