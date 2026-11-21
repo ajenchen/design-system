@@ -9,6 +9,10 @@ import { ItemInlineAction, ItemSuffix, type ItemSuffixHoverGroup } from '@/desig
 import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
+import { FieldClearButton } from '@/design-system/components/Field/field-clear-button'
+import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { isWithinCompositeField } from '@/design-system/lib/composite-field-focus'
+import { escapeLayerProps, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
@@ -235,6 +239,14 @@ export interface LinkInputProps
    * 目前只有 DataTable 網址格傳(能不能編輯都延伸到整格;格本來就是 `relative`)。
    */
   linkHitAreaFromHost?: boolean
+  /**
+   * 打字狀態可一鍵清空(2026-11-21,user 2026-11-19 拍板提案 A;link-input.spec.md「可清除(clearable)」)。與 Select / Combobox /
+   * DatePicker / TimePicker 的 `clearable` 同名同語意、預設關:只在編輯模式的**打字狀態**、框裡有字時,右側出現清除 ×
+   *(Field 共用的那一顆 `Field/field-clear-button.tsx`)。按 × = 清掉打的字(草稿)、焦點留在輸入框,**不**當場提交;
+   * 之後照既有規則結算(離開 / Enter:空白 = 清值、合法 = 提交、不合法 = 紅框),Esc 還原原值。連結狀態沒有 ×(照舊只有 Pencil)。
+   * 何時開照 select.spec.md「何時開 clearable」:「沒有網址」是有效值(選填)才開。
+   */
+  clearable?: boolean
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -255,6 +267,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       showDisplayEndIcon = false,
       viewEditAction,
       linkHitAreaFromHost = false,
+      clearable = false,
       readOnly,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
@@ -412,8 +425,11 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       return false
     }
 
+    // 離開欄位就結算。焦點搬到**同一個欄位裡**的清除 ×(鍵盤 Tab、Chrome 滑鼠按下 ×)不算離開 —— 否則 × 還沒按到,這一下 blur 就先把草稿結算掉:
+    // 合法的網址直接提交、切回連結狀態,× 跟著卸載,點擊落空(提案 A ②;同 React Aria useComboBox「Ignore blur if focused moved to the button」,
+    // 判準與 Select / DatePicker 的「觸發欄位 + 零件 = 同一個欄位」同一支 lib/composite-field-focus.ts)。沒開 clearable 時框裡沒有別的可聚焦零件,結果與修前相同。
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      settleDraft()
+      if (!isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget.parentElement })) settleDraft()
       onBlurProp?.(e)
     }
 
@@ -503,6 +519,17 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       )
     }
 
+    // 清除 ×(`clearable`,link-input.spec.md「可清除(clearable)」):打字狀態、框裡有字才出現。按下 = 清草稿、留在輸入框,不提交;
+    // 錯誤一併清掉(開始編輯就清錯誤,form-validation.spec.md 規則 5,同 handleChange)。
+    // 焦點:鍵盤 / Chrome 滑鼠按下時焦點在 × 上 → FieldClearButton 先交回輸入框(field-wrapper.tsx keepFieldFocusBeforeUnmount,× 隨清空卸載);
+    // 焦點本來不在欄位裡(Safari 點按鈕不給焦點)也一律放回輸入框 —— 草稿已經跟值不同,得有一次離開才會結算,不能留一個沒人結算的空框。
+    const showClear = clearable && localValue !== ''
+    const clearDraft = () => {
+      setLocalValue('')
+      if (localError) setLocalError(false)
+      inputRef.current?.focus({ preventScroll: true })
+    }
+
     // edit — text input mode（正在編輯、無值、或格式錯誤）
     return (
       <div
@@ -515,6 +542,11 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         )}
         style={fieldWidthStyle(width)}
         onMouseDown={focusFieldInputFromChrome}
+        // 焦點從清除 × 離開整個欄位(Tab 走、點別處)= 離開欄位,照既有規則結算(輸入框自己的 blur 由 handleBlur 處理;× 只有開了 clearable 才有)
+        onBlur={showClear ? (e) => {
+          if (e.target === inputRef.current || isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget })) return
+          settleDraft()
+        } : undefined}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
       >
@@ -537,6 +569,30 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
         />
+        {showClear && (
+          <span
+            className="contents"
+            // 輸入框握著焦點時按 ×:焦點不動(擋 mousedown 預設,click 照常)—— 不 blur 就不會搶先結算;Safari 按按鈕本來就不給焦點,
+            // 不擋的話焦點落到 body、照樣 blur 結算(lib/pointer-press.ts keepFocusOnPointerPress,Select / Combobox 欄位內搜尋框同一支)
+            onMouseDown={(e) => { keepFocusOnPointerPress(e, e.currentTarget, inputRef.current) }}
+            // 焦點在 × 上按 Esc 與在輸入框裡按同一層(正在編輯、或有打了還沒存的字):還原原值。焦點先回輸入框(× 可能隨還原卸載),
+            // 浮層裡第一下只還原、第二下才關浮層(同輸入框的 data-escape-layer;lib/overlay-escape.ts)。
+            // 這一下已被更內層用掉(鍵盤聚焦 × 時開著的 tooltip 先收,Radix 擋了預設)→ 不動,焦點也不搬(Esc 一次只收一層)
+            {...escapeLayerProps(ownsEscape)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Escape' || !ownsEscape || isEscapeTakenElsewhere(e)) return
+              inputRef.current?.focus({ preventScroll: true })
+              settleKeys.onKeyDown(e)
+            }}
+          >
+            <FieldClearButton
+              size={size ?? 'md'}
+              label="清除網址" // i18n-allow: DS default inline-action label(「清除 + 清掉的是什麼」,同清除日期 / 清除時間)
+              focusOwner={() => inputRef.current}
+              onClear={clearDraft}
+            />
+          </span>
+        )}
       </div>
     )
   }

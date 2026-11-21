@@ -66,6 +66,33 @@ export const Validation: Story = {
   },
 }
 
+/* ── 可清除 ── */
+// link-input.spec.md「可清除(clearable)」:選填的網址欄位開 clearable;× 只在打字狀態、框裡有字時出現,連結狀態照舊只有 Pencil。
+export const Clearable: Story = {
+  name: '可清除',
+  render: () => <ClearableDemo />,
+}
+
+function ClearableDemo() {
+  // 三個選填欄位各管各的值:有連結 / 貼錯的字(不合法、框裡有字)/ 還沒填
+  const [designLink, setDesignLink] = React.useState('https://www.figma.com/design/checkout-flow')
+  const [specLink, setSpecLink] = React.useState('結帳流程需求文件 v3')
+  const [ticketLink, setTicketLink] = React.useState('')
+  return (
+    <ExampleStack className="max-w-sm">
+      <ExampleSection title="有連結:沒有 ×" description="連結狀態不變,右側只有 Pencil。按 Pencil 進入打字狀態後,框裡有字才出現 ×。">
+        <LinkInput clearable value={designLink} onChange={setDesignLink} aria-label="設計稿連結" />
+      </ExampleSection>
+      <ExampleSection title="打字狀態、框裡有字:出現 ×" description="貼錯的字不是網址,按 × 一鍵清掉重打;焦點留在輸入框,離開或按 Enter 才結算(空白 = 清值),Esc 還原。">
+        <LinkInput clearable value={specLink} onChange={setSpecLink} aria-label="需求文件連結" />
+      </ExampleSection>
+      <ExampleSection title="空白:沒有 ×" description="開始打字後才出現。">
+        <LinkInput clearable value={ticketLink} onChange={setTicketLink} placeholder="貼上 Jira 工單網址" aria-label="Jira 工單連結" />
+      </ExampleSection>
+    </ExampleStack>
+  )
+}
+
 /* ── 四模式 ── */
 export const Modes: Story = {
   name: '四模式',

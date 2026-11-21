@@ -1,0 +1,307 @@
+#!/usr/bin/env node
+/**
+ * @gate-contract
+ *   保證: LinkInput `clearable`(link-input.spec.md「驗證」段「可清除(clearable)」,2026-11-21,user 2026-11-19 拍板提案 A)在真瀏覽器裡 ——
+ *     C1 清除 × 只在打字狀態、框裡有字時出現:連結狀態沒有(只有 Pencil)、空白框沒有、沒開 clearable 沒有;× 右緣到框右緣 = 邊框 + 右內距
+ *     C2 滑鼠按 ×(編輯合法網址中):草稿清空、**留在打字狀態**(沒有退出編輯、沒有切回連結)、焦點在輸入框、× 消失
+ *     C3 清掉之後按 Esc:還原原值、切回連結狀態、焦點給 Pencil
+ *     C4 清掉之後點別處離開:照既有規則結算 —— 空白 = 清值(連結不回來、輸入框空白、不再有 Esc 層)
+ *     C5 清掉之後按 Enter:同離開(清值),焦點留在輸入框
+ *     C6 鍵盤:輸入框按 Tab 到 ×,**不結算**(仍在打字狀態、草稿還在);Enter 清草稿、焦點回輸入框;從 × 再按 Tab 離開欄位 = 結算(合法網址提交、回連結狀態)
+ *     C7 焦點在 × 上按 Esc:還原原值、回連結狀態、焦點給 Pencil
+ *     C8 不合法的字、焦點不在欄位裡:按 × 清空、焦點放進輸入框;離開後清值、沒有紅框
+ *     C9 模擬 Safari(按按鈕不給焦點:mousedown 沒被擋就把焦點丟到 body):按 × 仍留在打字狀態
+ *   紅: --selftest 造回「舊寫法」各組必紅(兩面對照,提案 A ②):
+ *     S1 攔下 × 的 mousedown(元件擋不到預設)+ 模擬 Safari → C2 必紅(退出編輯);
+ *     S2 把元件裡「焦點移到同一個欄位的 × 不算離開」那一句換成 false(改寫送到瀏覽器的 story 程式,改到 0 處 = 儀器失效)+ 攔下 × 的 mousedown → C2、C6 必紅;
+ *     S3 攔下 Esc(元件收不到)→ C3 必紅;S4 攔下 focusout(元件收不到離開)→ C4 必紅;S5 在連結狀態的框裡塞一顆「清除網址」→ C1 必紅
+ *   綠: 現行建置全綠;story 開不起來 / 找不到要量的欄位 / 互動後版面不靜止 = 儀器失效(exit 2),不當通過
+ * ─────
+ * 為什麼(提案 A ②):LinkInput 的輸入框「離開就結算」(link-input.tsx handleBlur)。只把 × 接上「清字」的寫法,按 × 那一下輸入框先 blur,
+ * 合法的網址當場提交、切回連結狀態,× 跟著卸載,點擊落空 —— 使用者看到的是「按了 × 卻退出編輯、網址還在」。現行兩條:
+ * 按 × 時焦點不動(lib/pointer-press.ts keepFocusOnPointerPress)、焦點移到同一個欄位的 × 不算離開(lib/composite-field-focus.ts isWithinCompositeField);
+ * × 卸載前焦點交回輸入框(Field/field-wrapper.tsx keepFieldFocusBeforeUnmount,經 Field/field-clear-button.tsx)。
+ * 開 story 經 lib/launch-browser.mjs 的 openStory;互動後等 settleAfterInteraction(M32 第四問:不靠固定睡眠)。
+ *
+ *   node scripts/link-input-clear-invariant.mjs              判定(exit 0 綠 / 1 紅 / 2 儀器失效)
+ *   node scripts/link-input-clear-invariant.mjs --selftest   對照組(每組都必須紅才 exit 0)
+ */
+import { join } from 'node:path'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { openStory, StoryRenderInstrumentError, launchBrowserOrSkip, requireStorybookBuild, settleAfterInteraction, INSTRUMENT_FAIL_MARKER } from './lib/launch-browser.mjs'
+
+const SELFTEST = process.argv.includes('--selftest')
+const S = join(process.cwd(), 'storybook-static')
+requireStorybookBuild(join(S, 'index.json'))
+const sv = await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
+const br = await launchBrowserOrSkip({}, { cleanup: () => sv.stop() })
+
+const CLEARABLE = 'design-system-components-linkinput-展示--clearable'
+const PLAIN = 'design-system-components-linkinput-展示--default'
+const CLEAR = 'button[aria-label="清除網址"]'
+const PENCIL = 'button[aria-label="編輯連結"]'
+const FIGMA = 'https://www.figma.com/design/checkout-flow'
+
+class Instrument extends Error {}
+const bail = async (msg) => {
+  console.error(`✗ ${INSTRUMENT_FAIL_MARKER} ${msg}(儀器失效,不是產品裁決)`)
+  await br.close(); await sv.stop(); process.exit(2)
+}
+
+// ── 破法(只給 --selftest;不改產品原始碼)──
+// 攔下 × 的 mousedown:元件的 keepFocusOnPointerPress 收不到 → 擋不到預設。safari:同時把焦點丟到 body(Safari 按按鈕不給焦點的預設行為)
+const blockClearMouseDown = (safari) => `window.addEventListener('mousedown', (e) => {
+  if (!(e.target instanceof Element) || !e.target.closest('${CLEAR}')) return
+  e.stopPropagation()
+  ${safari ? "if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur()" : ''}
+}, true)`
+// 模擬 Safari(主跑 C9 用):mousedown 派送完沒被擋預設 → 焦點丟到 body(擋了就照擋,同真 Safari)
+const SAFARI_DEFAULT = `window.addEventListener('mousedown', (e) => {
+  if (!(e.target instanceof Element) || !e.target.closest('${CLEAR}') || e.defaultPrevented) return
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur()
+})`
+const BLOCK_ESCAPE = `window.addEventListener('keydown', (e) => { if (e.key === 'Escape') e.stopPropagation() }, true)`
+const BLOCK_FOCUSOUT = `window.addEventListener('focusout', (e) => { if (e.target instanceof Element && e.target.closest('[data-field-mode="edit"]')) e.stopPropagation() }, true)`
+const FAKE_CLEAR_IN_LINK_STATE = `(() => { const w = document.querySelectorAll('[data-field-mode="edit"]')[0]; const b = document.createElement('button'); b.setAttribute('aria-label', '清除網址'); w.appendChild(b) })()`
+// 「焦點移到同一個欄位的 × 不算離開」那一句(link-input.tsx handleBlur):isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget.parentElement })
+// 壓縮後識別字會換名,屬性名留著 —— 以屬性名的形狀找;改到 0 處 = 儀器失效(不准當成「改了也沒紅」)
+const SAME_FIELD_BLUR = /[A-Za-z_$][\w$]*\(([A-Za-z_$][\w$]*)\.relatedTarget,\{trigger:\1\.currentTarget\.parentElement\}\)/g
+
+// 整趟只開一個分頁:沙箱參數 --single-process(lib/launch-browser.mjs SANDBOX_ARGS)下關掉分頁 / 情境、或同時開第二個情境,瀏覽器就整個斷線(本機實測)。
+// 所以破法不靠新情境的 addInitScript:每次開 story 之後在同一頁注入(`mode.init`);改寫送出的程式用分頁層的 route(開了 route 瀏覽器不走 HTTP 快取)。
+const page = await (await br.newContext({ viewport: { width: 1280, height: 900 } })).newPage()
+const ASSET_JS = /\/assets\/.*\.js(?:\?.*)?$/
+let mode = { init: [] }
+let patched = 0
+const patchRoute = async (route) => {
+  const res = await route.fetch()
+  const body = await res.text()
+  const next = body.replace(SAME_FIELD_BLUR, () => { patched++; return 'false' })
+  await route.fulfill({ response: res, body: next })
+}
+async function setMode({ init = [], patchSameFieldBlur = false } = {}) {
+  await page.unroute(ASSET_JS).catch(() => {})
+  mode = { init }
+  patched = 0
+  if (patchSameFieldBlur) await page.route(ASSET_JS, patchRoute)
+}
+async function open(id, waitFor) {
+  try {
+    await openStory(page, `${sv.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitFor, settleFrames: 10, notFound: sv.notFound })
+  } catch (e) {
+    if (!(e instanceof StoryRenderInstrumentError)) throw e
+    throw new Instrument(e.message)
+  }
+  for (const script of mode.init) await page.evaluate(script)
+}
+async function settle(what) {
+  const r = await settleAfterInteraction(page, { frames: 10 })
+  if (!r.ok) throw new Instrument(`${what}之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)`)
+}
+/** 第 i 個編輯模式欄位此刻的狀態(故事裡三個欄位依序:有連結 / 不合法的字 / 空白) */
+const probe = (i) => page.evaluate(({ i, CLEAR, PENCIL }) => {
+  const w = document.querySelectorAll('[data-field-mode="edit"]')[i]
+  if (!w) return null
+  const input = w.querySelector('input')
+  const clear = w.querySelector(CLEAR)
+  const pencil = w.querySelector(PENCIL)
+  const a = w.querySelector('a[href]')
+  const ae = document.activeElement
+  const box = w.getBoundingClientRect()
+  const cs = getComputedStyle(w)
+  return {
+    input: !!input, value: input ? input.value : null, link: a ? a.getAttribute('href') : null, clear: !!clear, pencil: !!pencil,
+    focus: ae === input && input ? 'input' : ae === clear && clear ? 'clear' : ae === pencil && pencil ? 'pencil' : (ae ? ae.tagName : null),
+    layer: input ? input.hasAttribute('data-escape-layer') : null, error: w.hasAttribute('data-error'),
+    clearInset: clear ? Math.round((box.right - clear.getBoundingClientRect().right) * 100) / 100 : null,
+    expectInset: Math.round((parseFloat(cs.borderRightWidth) + parseFloat(cs.paddingRight)) * 100) / 100,
+  }
+}, { i, CLEAR, PENCIL })
+async function field(i, what) {
+  const s = await probe(i)
+  if (!s) throw new Instrument(`${what}:找不到第 ${i + 1} 個編輯模式欄位`)
+  return s
+}
+async function clickIn(i, selector, what) {
+  const b = await page.evaluate(({ i, selector }) => {
+    const el = document.querySelectorAll('[data-field-mode="edit"]')[i]?.querySelector(selector)
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return r.width > 0 && r.height > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : null
+  }, { i, selector })
+  if (!b) throw new Instrument(`${what}:第 ${i + 1} 個欄位裡找不到 ${selector}`)
+  await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2)
+  await settle(what)
+}
+async function press(key, what) { await page.keyboard.press(key); await settle(what) }
+/** 進到第 1 個欄位(合法網址)的打字狀態:按 Pencil */
+async function editFirst() {
+  await open(CLEARABLE, PENCIL)
+  await clickIn(0, PENCIL, '按 Pencil')
+  const s = await field(0, '按 Pencil')
+  if (!s.input || s.value !== FIGMA || s.focus !== 'input') throw new Instrument(`按 Pencil 沒進到打字狀態:${JSON.stringify(s)}`)
+}
+
+const results = []
+const ck = (group, name, ok, detail) => results.push({ group, name, ok: !!ok, detail })
+const J = (v) => JSON.stringify(v)
+
+// ── 各組斷言(主跑與對照組共用同一份)──
+const CHECKS = {
+  async C1() {
+    await open(CLEARABLE, PENCIL)
+    const link = await field(0, 'C1'), bad = await field(1, 'C1'), empty = await field(2, 'C1')
+    ck('C1', '連結狀態沒有 ×(只有 Pencil)', link.link === FIGMA && link.pencil && !link.clear, J(link))
+    ck('C1', '不合法的字(打字狀態、框裡有字)有 ×', bad.input && bad.value !== '' && bad.clear, J(bad))
+    ck('C1', '× 右緣到框右緣 = 邊框 + 右內距', bad.clearInset != null && Math.abs(bad.clearInset - bad.expectInset) < 0.5, `${bad.clearInset} vs ${bad.expectInset}`)
+    ck('C1', '空白框沒有 ×', empty.input && empty.value === '' && !empty.clear, J(empty))
+    await open(PLAIN, PENCIL)
+    await clickIn(0, PENCIL, '沒開 clearable 按 Pencil')
+    const plain = await field(0, '沒開 clearable')
+    ck('C1', '沒開 clearable:打字狀態有字也沒有 ×', plain.input && plain.value !== '' && !plain.clear, J(plain))
+  },
+  async C2() {
+    await editFirst()
+    await clickIn(0, CLEAR, '滑鼠按 ×')
+    const s = await field(0, 'C2')
+    ck('C2', '按 × 後留在打字狀態(沒有切回連結)', s.input && s.link == null, J(s))
+    ck('C2', '草稿清空、× 消失', s.value === '' && !s.clear, J(s))
+    ck('C2', '焦點在輸入框', s.focus === 'input', J(s))
+  },
+  async C3() {
+    await editFirst()
+    await clickIn(0, CLEAR, '滑鼠按 ×')
+    await press('Escape', 'Esc')
+    const s = await field(0, 'C3')
+    ck('C3', 'Esc 還原原值、回連結狀態', !s.input && s.link === FIGMA, J(s))
+    ck('C3', 'Esc 後焦點給 Pencil', s.focus === 'pencil', J(s))
+  },
+  async C4() {
+    await editFirst()
+    await clickIn(0, CLEAR, '滑鼠按 ×')
+    await page.mouse.click(1200, 860); await settle('點別處')
+    const s = await field(0, 'C4')
+    ck('C4', '離開後清值:連結不回來、輸入框空白', s.input && s.value === '' && s.link == null, J(s))
+    ck('C4', '離開後沒有未結算的草稿(不再有 Esc 層)', s.layer === false, J(s))
+  },
+  async C5() {
+    await editFirst()
+    await clickIn(0, CLEAR, '滑鼠按 ×')
+    await press('Enter', 'Enter')
+    const s = await field(0, 'C5')
+    ck('C5', 'Enter 結算 = 清值,焦點留在輸入框', s.input && s.value === '' && s.link == null && s.layer === false && s.focus === 'input', J(s))
+  },
+  async C6() {
+    await editFirst()
+    await press('Tab', '輸入框按 Tab')
+    const a = await field(0, 'C6 Tab')
+    ck('C6', 'Tab 到 ×:不結算(仍在打字狀態、草稿還在)', a.input && a.value === FIGMA && a.link == null && a.focus === 'clear', J(a))
+    await press('Enter', '× 上按 Enter')
+    const b = await field(0, 'C6 Enter')
+    ck('C6', '× 上按 Enter:清草稿、焦點回輸入框', b.input && b.value === '' && !b.clear && b.focus === 'input', J(b))
+    await editFirst()
+    await press('Tab', '輸入框按 Tab')
+    await press('Tab', '× 上按 Tab')
+    const c = await field(0, 'C6 離開')
+    ck('C6', '從 × 按 Tab 離開欄位 = 結算(合法網址回連結狀態)', !c.input && c.link === FIGMA, J(c))
+  },
+  async C7() {
+    await editFirst()
+    await page.keyboard.press('End'); await page.keyboard.type('/v2'); await settle('打字')
+    await press('Tab', '輸入框按 Tab')
+    const a = await field(0, 'C7 Tab')
+    if (a.focus !== 'clear') { ck('C7', '× 上按 Esc 還原(前置:焦點在 ×)', false, J(a)); return }
+    // 鍵盤聚焦 × 會開它的 tooltip(Radix);Esc 一次只收一層 —— 第一下只收 tooltip,草稿與焦點都不動,第二下才還原
+    if (await page.evaluate(() => !!document.querySelector('[role="tooltip"]'))) {
+      await press('Escape', '× 上按第一下 Esc')
+      const b = await field(0, 'C7 第一下')
+      const tip = await page.evaluate(() => !!document.querySelector('[role="tooltip"]'))
+      ck('C7', '× 上第一下 Esc 只收 tooltip(草稿、焦點不動)', !tip && b.focus === 'clear' && b.value === a.value && b.input, `${J(b)} tooltip=${tip}`)
+    }
+    await press('Escape', '× 上按 Esc')
+    const s = await field(0, 'C7')
+    ck('C7', '× 上按 Esc:還原原值、回連結狀態、焦點給 Pencil', !s.input && s.link === FIGMA && s.focus === 'pencil', J(s))
+  },
+  async C8() {
+    await open(CLEARABLE, PENCIL)
+    const before = await field(1, 'C8')
+    if (before.focus === 'input') throw new Instrument('C8 前置:焦點不該已在第 2 個欄位')
+    await clickIn(1, CLEAR, '按不合法欄位的 ×')
+    const s = await field(1, 'C8')
+    ck('C8', '焦點不在欄位時按 ×:清空、焦點放進輸入框', s.input && s.value === '' && !s.clear && s.focus === 'input', J(s))
+    await page.mouse.click(1200, 860); await settle('點別處')
+    const t = await field(1, 'C8 離開')
+    ck('C8', '離開後清值、沒有紅框', t.input && t.value === '' && !t.error && t.layer === false, J(t))
+  },
+  async C9() {
+    await editFirst()
+    await clickIn(0, CLEAR, '模擬 Safari 按 ×')
+    const s = await field(0, 'C9')
+    ck('C9', '模擬 Safari:按 × 後仍留在打字狀態、焦點在輸入框', s.input && s.link == null && s.value === '' && s.focus === 'input', J(s))
+  },
+}
+
+// 主跑:每組一個乾淨的分頁;C9 另外掛「Safari 預設」
+const MAIN = [
+  { groups: ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8'] },
+  { groups: ['C9'], init: [SAFARI_DEFAULT] },
+]
+// 對照組:每組破法 → 指定的斷言必須至少一條紅
+const MUTANTS = [
+  { name: 'S1 擋不到 × 的 mousedown + Safari', init: [blockClearMouseDown(true)], groups: ['C2'], mustRed: ['C2'] },
+  { name: 'S3 元件收不到 Esc', init: [BLOCK_ESCAPE], groups: ['C3'], mustRed: ['C3'] },
+  { name: 'S4 元件收不到離開', init: [BLOCK_FOCUSOUT], groups: ['C4'], mustRed: ['C4'] },
+  { name: 'S5 連結狀態塞一顆 ×', groups: ['C1'], mustRed: ['C1'], after: FAKE_CLEAR_IN_LINK_STATE },
+  // 改寫送出程式的這組排最後:開了 route 瀏覽器不走 HTTP 快取,但排最後就不必賭改寫過的檔有沒有被快取下來給後面的組用
+  { name: 'S2 焦點移到 × 算離開(舊寫法)+ 擋不到 mousedown', init: [blockClearMouseDown(false)], patchSameFieldBlur: true, groups: ['C2', 'C6'], mustRed: ['C2', 'C6'] },
+]
+
+async function runGroups(groups, { after } = {}) {
+  for (const g of groups) {
+    if (after) {
+      // S5:開好 story 後才塞(C1 第一段量的就是這一頁)
+      await open(CLEARABLE, PENCIL)
+      await page.evaluate(after)
+      const link = await field(0, 'S5')
+      ck(g, '連結狀態沒有 ×(只有 Pencil)', link.link === FIGMA && link.pencil && !link.clear, J(link))
+      continue
+    }
+    await CHECKS[g]()
+  }
+}
+
+try {
+  if (!SELFTEST) {
+    for (const run of MAIN) {
+      await setMode({ init: run.init ?? [] })
+      await runGroups(run.groups)
+    }
+    for (const r of results) console.log(`${r.ok ? '✓' : '✗'} [${r.group}] ${r.name}${r.ok ? '' : ` | ${r.detail}`}`)
+    const red = results.filter((r) => !r.ok)
+    if (!results.length) await bail('一條斷言都沒跑到')
+    console.log(red.length ? `\n✗ ${red.length} / ${results.length} 條未通過` : `\n✓ LinkInput clearable:${results.length} 條全部通過`)
+    await br.close(); await sv.stop(); process.exit(red.length ? 1 : 0)
+  }
+  let bad = 0
+  for (const m of MUTANTS) {
+    results.length = 0
+    await setMode({ init: m.init ?? [], patchSameFieldBlur: !!m.patchSameFieldBlur })
+    await runGroups(m.groups, { after: m.after })
+    if (m.patchSameFieldBlur && patched === 0) await bail(`${m.name}:送到瀏覽器的程式裡找不到「焦點移到 × 不算離開」那一句(改到 0 處)`)
+    const reds = new Set(results.filter((r) => !r.ok).map((r) => r.group))
+    const missing = m.mustRed.filter((g) => !reds.has(g))
+    if (missing.length) {
+      bad++
+      console.log(`✗ ${m.name}:${missing.join(' / ')} 沒有紅(破法沒被量到)`)
+      for (const r of results) console.log(`    ${r.ok ? '✓' : '✗'} [${r.group}] ${r.name} | ${r.detail}`)
+    } else {
+      const named = results.filter((r) => !r.ok).map((r) => `[${r.group}] ${r.name}`)
+      console.log(`✓ ${m.name}:紅 —— ${named.join(';')}${m.patchSameFieldBlur ? `(改寫 ${patched} 處)` : ''}`)
+    }
+  }
+  console.log(bad ? `\n✗ 對照組 ${bad} / ${MUTANTS.length} 組沒紅` : `\n✓ 對照組 ${MUTANTS.length} 組全部紅(量具會紅)`)
+  await br.close(); await sv.stop(); process.exit(bad ? 1 : 0)
+} catch (e) {
+  if (e instanceof Instrument) await bail(e.message)
+  throw e
+}

@@ -70,6 +70,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 - 外觀與 Input 一模一樣（bareInput + placeholder）
 - blur 時驗證格式，合法則自動切回 link 狀態
 - 格式不合法維持 input 狀態 + error 邊框，直到格式正確
+- 開了 `clearable`、框裡有字時右側有清除 ×(按下 = 清草稿、留在輸入框;見「驗證」段「可清除(clearable)」)
 
 ### View 模式幾何（不包 wrapper）
 
@@ -87,6 +88,20 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 4. **Escape 取消編輯**——回復原值，不觸發驗證;焦點給鉛筆(同 `../InlineEdit/inline-edit.spec.md`「退出 edit 態(focus 分流)」)。**正在編輯、或有打了還沒存的字,是焦點所在控件自己的一層**(2026-10-01;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):放在 Dialog / Sheet 裡第一下 Esc 只取消、浮層不關,第二下才關;它是同一個 `<input>` 上比 consumer 自己接的 `onKeyDown` 更內層的一層 —— 先收它,consumer 的 Esc 下一下才輪到(表單引擎目前接不上 LinkInput,見下段)
 
 **不在 `useFormValidation` `getInputProps` 的 v1 支援清單**(`../Field/form-validation.spec.md` v1 邊界 (a),2026-10-01 實測):連結狀態不渲 `<input>`,`getInputProps` 帶的 `name` / 歸屬標記 / Esc 層 / handler 到不了 —— 連結狀態下改過的值按 Esc 不回復(表單那一層輪不到),規則 8 也找不到帶 name 的元素;從輸入狀態被表單回復成合法網址時輸入框卸載、焦點掉到對話框殼。要接上得先定它在連結狀態的欄位語意(待辦總帳 N85)。
+
+### 可清除(clearable)
+
+2026-11-21 起(user 2026-11-19 拍板提案 A「照你建議」)。`clearable` 與 Select / Combobox / DatePicker / TimePicker 同名同語意、**預設關**;何時開照 `../Select/select.spec.md`「何時開 clearable」(「沒有網址」是有效值 —— 選填欄位 —— 才開)。
+
+- **何時出現**:只在編輯模式的**打字狀態**(上方「Input 狀態」:正在編輯、無值、網址不合法)、**框裡有字**時,輸入框右側出現清除 ×;空白的框沒有。網址不合法、框裡有字時也有 —— 一鍵清掉重打。**連結狀態不變**:沒有 ×,右側照舊只有 Pencil;readonly / disabled / view 沒有
+- **長相**:Field 家族共用的那一顆(`../Field/field-clear-button.tsx` FieldClearButton = `ItemInlineAction` X,`../../patterns/element-anatomy/inline-action.spec.md`「Real case 表」clear X 列),名稱「清除網址」(「清除 + 清掉的是什麼」,同「清除日期」「清除時間」);右緣內距照 `../Field/field-controls.spec.md`「右側元素」
+- **按下**:清掉打的字(草稿)與紅框,**焦點留在輸入框**;**不**當場提交、不呼叫 `onChange`
+- **之後照既有規則結算**(上方「驗證」):離開欄位或 Enter —— 空白 = 清值(`onChange('')`)、合法 = 提交、不合法 = 紅框;Esc = 還原原值(打字狀態的 Esc 層照舊,見「驗證」4)
+- **焦點**:
+  - 滑鼠:輸入框握著焦點時按 ×,焦點不動(擋 mousedown 預設、click 照常;`../../lib/pointer-press.ts` `keepFocusOnPointerPress`,Select / Combobox 欄位內搜尋框同一支);焦點本來不在欄位裡時,按完放進輸入框 —— 草稿已經跟值不同,得有一次離開才會結算
+  - 鍵盤:× 在 Tab 序上(輸入框 → ×);`Enter` / 空白鍵按下後焦點回輸入框,不隨 × 卸載掉到 `body`(`../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`,Select「清除後焦點」同一支);焦點在 × 上按 `Esc` 與在輸入框裡按同一層(還原原值,浮層裡第一下只還原)
+  - **輸入框 ↔ × 之間移動不算離開欄位、不結算**;從 × 離開欄位(Tab 走、點別處)才結算(判準 = `../../lib/composite-field-focus.ts` `isWithinCompositeField`,與 Select / DatePicker「觸發欄位 + 零件 = 同一個欄位」同一支)
+- **為什麼要這兩條焦點處理**(提案 A ②):「離開輸入框就結算」會搶在 × 之前 —— 只把 × 接上「清字」的寫法,按 × 那一下輸入框先 blur,合法的網址當場提交、切回連結狀態,× 跟著卸載,點擊落空(退出編輯)。閘 `scripts/link-input-clear-invariant.mjs`(兩面對照:拿掉「× 算同一個欄位」或「按 × 焦點不動」任一條,按 × 會退出編輯 = 紅;現行留在編輯 = 綠)
 
 URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但看起來就是網址的字自動補 `https://`**(主機名 = 「標籤.標籤…頂級網域」,頂級網域要是真的頂級網域,可帶埠號與路徑,例:`www.acme.com`、`acme.com/pricing`;2026-10-21 確認頁 F2 乙)。其他協定(`javascript:` / `data:` / `mailto:` / `ftp:` …)、信箱、中間有空白的字、結尾是檔案副檔名而那個副檔名不是頂級網域的檔名(`report.pdf`、`node.js`)一律不合法。判斷只有一支 `link-input.tsx` `toWebUrl`:編輯模式的驗證與提交(提交的值是補好 `https://` 的完整網址)、唯讀 / 檢視 / 表格連結格的顯示都經它。
 
@@ -123,6 +138,7 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 - ❌ 不在網址框裡留下「滑過沒變化卻點得開」或「滑過有底線卻點不開」的區塊——底線 + 手形的範圍 = 點擊範圍(Pencil 除外)
 - ❌ 不讓 link 狀態外框裡滑過會變色的地方點下去沒有反應——Pencil 以外都是連結
 - ❌ 不在打字過程中即時驗證格式——等 blur
+- ❌ 不讓清除 × 當場提交或退出編輯——按 × 只清草稿、焦點留在輸入框,之後照「驗證」結算;焦點移到 × 不算離開欄位
 - ❌ 不放行別的協定(`javascript:` / `data:` / `mailto:` …)——只有網頁網址(含補上 `https://` 的網址樣字)才是合法值
 
 ---
@@ -152,6 +168,7 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 - Enter — 提交(見「驗證」3:合法 → 連結狀態、焦點給鉛筆;無效 / 清空 → 留在輸入框)
 - Esc — 取消編輯,回復原值,不觸發驗證,焦點給鉛筆(見「驗證」4:浮層裡第一下只取消、第二下才關浮層)
 - Link 狀態:Tab 依序停在連結(Enter 開啟)與 Pencil(Enter / Space 進入編輯並聚焦輸入框)。外框本身不是 tab stop(滑鼠點框 = 開連結,鍵盤走連結本身);編輯走 Pencil
+- 打字狀態開了 `clearable`、框裡有字:Tab 依序停在輸入框與清除 ×(Enter / Space 清草稿、焦點回輸入框;Esc 同輸入框還原);兩者之間移動不結算(見「驗證」段「可清除(clearable)」)
 
 **Focus**:原生 input outline 已關閉;focus 視覺提示由 Field wrapper 的 `focus-within:!border-primary` 提供(滑鼠點入也亮藍框,對齊 Field wrapper canonical)。連結(link / readonly / view 狀態,含 DataTable 連結格)與 Pencil 鍵盤聚焦時畫 DS 焦點框(全域外描邊,往外 2px),**四邊都要畫得出來**:包著連結的外殼不得用 `overflow` 裁切 —— 上方「單行 truncate」由連結自己(`inline-block max-w-full truncate` + `TruncatedText`)做,外殼只給 `min-w-0`(`link-input.tsx` `LINK_HOST_CLASS`;`../../../ds-canonical/references/focus-canonical.md`「問題二」→「正當障礙」:截斷 wrapper 不是正當障礙,修 wrapper、不改內描邊)。2026-10-21 前三處外殼寫 `truncate`,框只剩右邊一條 2px(r1b DT-01;閘 `scripts/data-table-link-cell-invariant.mjs` L8)。
 

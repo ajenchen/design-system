@@ -158,7 +158,7 @@ Row dedicated action 固定小尺寸 icon button,不依 row height 放大 ——
 
 | Host | Context | Primitive | Why |
 |------|---------|-----------|-----|
-| Input / NumberInput / Combobox clear X | Field chrome padding | Inline Action | Embedded |
+| Input / NumberInput / Combobox clear X(Select / DatePicker / TimePicker / LinkInput 的 `clearable` × 同一顆 `FieldClearButton`)| Field chrome padding | Inline Action | Embedded |
 | Tag dismiss X | Pill body | Inline Action(colored host 繼承色)| Embedded |
 | Menu / TreeView / SidebarMenuButton / SelectionItem suffix | Row inline flow | Inline Action | Inline with content |
 | SidebarGroup header chevron | Aux toggle | Inline Action | Inline header toggle |
@@ -304,7 +304,7 @@ hook `check_story_invariants.sh` R1(原 `check_story_anatomy.sh` 規則 B,已 fo
 - ✅ `TreeView.TreeItem.inlineActionsSlot`
 - ✅ `SidebarMenuButton.inlineActionsSlot`
 
-**不適用清單**:DatePicker / Combobox / Select / TimePicker / LinkInput 右側由元件自帶 chrome 獨佔(Calendar / ChevronDown / Clock / ExternalLink 等 intrinsic affordance),不開放 consumer 放置 endAction/endSlot — 這些元件的 inline-action 需求走**內建 clear X**(consumer 透過 `clearable` prop opt-in)或 `<Button iconOnly />` 放在 Field 外側。Escape hatch canonical 不涵蓋此類 host(本質上非 consumer-facing slot)。
+**不適用清單**:DatePicker / Combobox / Select / TimePicker / LinkInput 右側由元件自帶 chrome 獨佔(Calendar / ChevronDown / Clock 等 intrinsic affordance;LinkInput 連結狀態是編輯入口 Pencil),不開放 consumer 放置 endAction/endSlot — 這些元件的 inline-action 需求走**內建 clear X**(consumer 透過 `clearable` prop opt-in;五個都有,LinkInput 2026-11-21 起、只在打字狀態框裡有字時出現,`../../components/LinkInput/link-input.spec.md`「可清除(clearable)」;× 是同一顆 `../../components/Field/field-clear-button.tsx` `FieldClearButton`)或 `<Button iconOnly />` 放在 Field 外側。Escape hatch canonical 不涵蓋此類 host(本質上非 consumer-facing slot)。
 
 **世界級對照**: <!-- @benchmark-unverified -->
 - Material UI:`InputAdornment` ReactNode slot(無 config,純 escape hatch 派 — 我們的 90/10 比 Material 更有結構)
