@@ -83,8 +83,12 @@ Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_O
   (session 開在主資料夾就是主資料夾),hook 讀的規則、spec、registrations 都是那一份。在 scratchpad 等別處的 clone 裡改檔,
   hook 不會以 clone 當根執行;個別 hook 用路徑樣式比對時可能仍會觸發,但讀的是主資料夾的規則 —— 兩種情況都不能當成「clone 的改動過了寫入時檢查」。
   合回點以 clone 為根跑的 CI 導出檢查與 `npm run hooks:test`(`rules/work-process.md`「合回點」)量的是 CI 那一層,
-  **不等於**寫入時 hook(PreToolUse / PostToolUse 的 Edit / Write)的判定;目前**沒有**把寫入時 hook 對 clone 的改動全樹重跑一次的檢查
-  (照實列:讓 hook 以 clone 當根執行,或另補等價的全樹檢查,兩條都還沒做)。
+  **不等於**寫入時 hook(PreToolUse / PostToolUse 的 Edit / Write)的判定。
+- **clone 的「等價全樹檢查」就是合回點本機跑的 CI 導出全部檢查,不另寫全樹重跑工具**(2026-11-21 PROC-H 選定:明文承認 clone 不經寫入時 hook,
+  不改成讓 hook 以 clone 當根執行)。依據:寫入時 hook 是加速器、不是信任邊界,強制層是 provider-neutral verifier、受保護 CI 與外部 required check ——
+  `AGENTS.md` 檔頭「**最終 authority 不是本檔**」那段、`CLAUDE.md`「Hooks(write-time 加速器,非信任邊界)」;
+  為流程另寫一支「把寫入時 hook 對 clone 全樹重跑」的工具,違反 `rules/work-process.md`「每一包」第 7 點。
+  剩下的缺口照實列:**只有寫入時 hook 擋、CI 沒有對應腳本的規則**,clone 裡的改動不會被它們量到。這個缺口列進追蹤,不在 PROC-H 處理。
 
 ## Hook 退出碼約定(portable command-hook contract)
 
