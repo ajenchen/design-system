@@ -428,6 +428,50 @@ else
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 16 (contract unreadable)"
 fi
 
+# Test 17:Check 13 主資料夾落後遠端 main(2026-11-21 PROC-H,CG0-BEHIND-CHECK)。origin 用本機 bare repo,不連網。
+#   (a) 沒設 origin → 安靜(Test 1 已涵蓋,這裡再鎖一次);(b) 跟遠端 main 同一個 commit → 安靜;
+#   (c) 遠端多一個本機還沒抓的 commit → FIRST_REPLY 要點名、附 user 要打的那一行;
+#   (d) fetch 之後(物件在本機)→ 說「落後 1 個 commit」;(e) 本機在遠端 main 之上(工作分支)→ Check 13 安靜;
+#   (f) origin 指到不存在的 repo → 印「量不到」,不當成已同步。
+echo "Test 17: Check 13 main folder behind origin/main"
+REMOTE_17=$(mktemp -d)
+[ -n "${REMOTE_17:-}" ] && [ -d "$REMOTE_17" ] || { echo "❌ mktemp -d failed(REMOTE_17;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+git init -q --bare "$REMOTE_17/origin.git"
+setup_proj
+run_hook; A_17="$EXIT|$STDOUT_TEXT"
+git -C "$TMP_PROJ" remote add origin "$REMOTE_17/origin.git"
+git -C "$TMP_PROJ" push -q origin HEAD:refs/heads/main 2>/dev/null
+run_hook; B_17="$EXIT|$STDOUT_TEXT"
+git clone -q "$REMOTE_17/origin.git" "$REMOTE_17/other" 2>/dev/null
+git -C "$REMOTE_17/other" -c commit.gpgsign=false -c user.name=test -c user.email=t@t.com commit -q --allow-empty -m "remote ahead"
+git -C "$REMOTE_17/other" push -q origin HEAD:refs/heads/main 2>/dev/null
+run_hook; C_17="$EXIT|$STDOUT_TEXT"
+git -C "$TMP_PROJ" fetch -q origin 2>/dev/null
+run_hook; D_17="$EXIT|$STDOUT_TEXT"
+git -C "$TMP_PROJ" -c commit.gpgsign=false -c user.name=test -c user.email=t@t.com merge -q --ff-only origin/main 2>/dev/null
+git -C "$TMP_PROJ" -c commit.gpgsign=false -c user.name=test -c user.email=t@t.com commit -q --allow-empty -m "local work"
+run_hook; E_17="$EXIT|$STDOUT_TEXT"
+git -C "$TMP_PROJ" remote set-url origin "$REMOTE_17/does-not-exist.git"
+run_hook; F_17="$EXIT|$STDOUT_TEXT"
+teardown_proj
+rm -rf "$REMOTE_17"
+CHECK_17=""
+[ "$A_17" = "0|" ] || CHECK_17="${CHECK_17} a"
+[ "$B_17" = "0|" ] || CHECK_17="${CHECK_17} b"
+case "$C_17" in "0|"*"主資料夾沒有包含 GitHub 最新的 main"*"遠端 main 有本機還沒抓下來的 commit"*"git fetch origin && git switch main && git pull --ff-only"*) ;; *) CHECK_17="${CHECK_17} c" ;; esac
+case "$D_17" in "0|"*"落後 1 個 commit"*"第一則回覆"*) ;; *) CHECK_17="${CHECK_17} d" ;; esac
+# (e)(f) 的本機 main 跟 origin/main 分叉,Check 9 照舊會出它自己的提示;這裡只看 Check 13 的兩種字樣。
+case "$E_17" in "0|"*"主資料夾沒有包含"*|"0|"*"量不到"*) CHECK_17="${CHECK_17} e" ;; "0|"*) ;; *) CHECK_17="${CHECK_17} e" ;; esac
+case "$F_17" in "0|"*"主資料夾沒有包含"*) CHECK_17="${CHECK_17} f" ;; "0|"*"落後 GitHub main 這次量不到"*) ;; *) CHECK_17="${CHECK_17} f" ;; esac
+if [ -z "$CHECK_17" ]; then
+  echo "  PASS  Test 17 behind check (a)–(f)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 17 failing cells:${CHECK_17}"
+  echo "    a='${A_17:0:200}'"; echo "    b='${B_17:0:200}'"; echo "    c='${C_17:0:300}'"
+  echo "    d='${D_17:0:300}'"; echo "    e='${E_17:0:200}'"; echo "    f='${F_17:0:300}'"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 17"
+fi
+
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"
 [ "$FAIL" -gt 0 ] && { printf "Failed:%b\n" "$FAILED"; exit 1; }

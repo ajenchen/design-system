@@ -5,11 +5,12 @@ set -uo pipefail
 # Why: M10 — silent tech debt violates。開場檔總行數超過 800、上次 /knowledge-prune 超過 180 天、
 # 待處理的 user-corrections 超過 40 筆…… → 要在 session 開始時就知道,不是等東西壞了才發現。
 #
-# 輸出只有兩條通道(2026-04-26 降噪):
+# 輸出只有三條通道(2026-04-26 降噪;第三條 2026-11-21 PROC-H 加):
 #   • BLOCKERS —— 訊息以 🚨 BLOCKER / REQUIRED_FIRST_ACTION 開頭。SessionStart hook 擋不了 session,
 #     靠這個前綴讓模型把它當成「必須先處理」。
 #   • PRUNE_TRIGGERS —— 不擋,但要求 AI 自動跑 /knowledge-prune。
-#   兩條都空 → 不輸出任何東西。
+#   • FIRST_REPLY —— 不擋、也不是 prune;要 AI 在第一則回覆就轉告 user 的事(目前只有 Check 13 主資料夾落後)。
+#   三條都空 → 不輸出任何東西。
 #
 # Checks + thresholds(只列真的會輸出的;數值以下方各 Check 的判斷式為準,本檔即 SSOT):
 #    1. 開場檔總行數(provider entry + shared entry,去重)> 800 → BLOCKER
@@ -22,6 +23,9 @@ set -uo pipefail
 #   10. sync-governance-counters 抓到寫死數字漂移 → PRUNE_TRIGGERS
 #   12. provider 檢視有 hook 群組沒有派工入口 → PRUNE_TRIGGERS
 #   11. 環境健檢(plugin 完整性 / node / peer CLI / consumer 安裝 / 長駐 bypass env)→ PRUNE_TRIGGERS
+#   13. 主資料夾 HEAD 沒包含遠端 main(git ls-remote origin refs/heads/main,逾時 5 秒)→ FIRST_REPLY:要 AI 在第一則
+#       回覆告訴 user 在自己終端機打的那一行;量不到(網路不通、逾時、origin 讀不到或沒有 main)→ FIRST_REPLY 印「量不到」,不當成已同步;
+#       沒設 origin 的 repo(測試 fixture、還沒推過的新專案)不適用、不輸出。
 #   單檔行數上限(AGENTS.md、CLAUDE.md、SKILL、spec、memory 各檔)不在本檔:SSOT 是 check_file_size_budget.sh
 #   的 case 表(寫入當下判:寫完超過 transition cap 而且這次變長就擋,其餘只提醒)。
 
@@ -65,11 +69,11 @@ case "$MEMORY_SYNC_SCRIPT" in
   ""|/*|*..*) MEMORY_SYNC_SCRIPT="" ;;
 esac
 if [ -n "$MEMORY_SYNC_SCRIPT" ] && [ "${GOVERNANCE_READ_ONLY:-0}" != "1" ] && [ -f "$MEMORY_SYNC_SCRIPT" ]; then
-  # 同步本身是目的;同步了幾份不輸出給模型(只有下面兩條通道會輸出)。
+  # 同步本身是目的;同步了幾份不輸出給模型(只有檔頭列的三條通道會輸出)。
   node "$MEMORY_SYNC_SCRIPT" >/dev/null 2>&1 || true
 fi
 
-# 要新增提示就放進 BLOCKERS 或 PRUNE_TRIGGERS(見檔頭「輸出只有兩條通道」);
+# 要新增提示就放進 BLOCKERS、PRUNE_TRIGGERS 或 FIRST_REPLY(見檔頭「輸出只有三條通道」);
 # 不要另開「只收集、不輸出」的變數 —— 2026-11-18 刪掉的舊提醒變數就是這種死碼:Check 1 的 500 / 600 段、
 # Check 2 / 3 的 soft 段、Check 4 / 5 / 6 全段與 memory 同步註記都寫進它,卻從沒送到模型(M37④)。
 # 測試 test_session_start_governance_check.sh 有一格靜態檢查,抓「只累加、從不讀」的變數。
@@ -236,6 +240,33 @@ if command -v node >/dev/null 2>&1 && [ -f scripts/provider-view-group-reachabil
   fi
 fi
 
+# Check 13: 主資料夾落後遠端 main(2026-11-21 PROC-H,CG0-BEHIND-CHECK)
+# 11-17 對 user 的承諾:「之後我會讓開場檢查自動提醒落後幾版,不會每次另外麻煩你」(session 96d711a5 01:53:14);
+# 交接 logs/efficiency/synthesis.md F0 第 4 點:比對主資料夾 HEAD 和 `git ls-remote origin refs/heads/main`,落後就要 AI
+# 在第一則回覆告訴 user 要打的那一行。hook 都從主資料夾跑,主資料夾沒同步 = 新的 hook / 規則全都沒生效(根因 1)。
+# 兩面:HEAD 已包含遠端 main(同一個 commit,或在它之上)→ 不提醒;沒包含 → 提醒;量不到 → 印「量不到」,不當同步(M37)。
+# 這是唯一會連網的 Check:perl alarm 限 5 秒,GIT_TERMINAL_PROMPT=0 不讓 git 卡在帳密提示。
+FIRST_REPLY=""
+if git -C "$PROJECT_DIR" remote get-url origin >/dev/null 2>&1; then
+  REMOTE_MAIN_LINE=$(GIT_TERMINAL_PROMPT=0 perl -e 'alarm shift; exec @ARGV' 5 \
+    git -C "$PROJECT_DIR" ls-remote origin refs/heads/main 2>/dev/null </dev/null || true)
+  REMOTE_MAIN="${REMOTE_MAIN_LINE%%[[:space:]]*}"
+  LOCAL_HEAD=$(git -C "$PROJECT_DIR" rev-parse --verify -q 'HEAD^{commit}' 2>/dev/null || true)
+  if ! [[ "$REMOTE_MAIN" =~ ^[0-9a-f]{40}$ ]] || [ -z "$LOCAL_HEAD" ]; then
+    FIRST_REPLY="${FIRST_REPLY}\n- 主資料夾有沒有落後 GitHub main 這次量不到(git ls-remote origin refs/heads/main 失敗、逾時 5 秒,或遠端沒有 main)。量不到 ≠ 已同步;不用為此停下,下次開場會再量。"
+  elif [ "$REMOTE_MAIN" != "$LOCAL_HEAD" ] \
+    && ! { git -C "$PROJECT_DIR" cat-file -e "${REMOTE_MAIN}^{commit}" 2>/dev/null \
+           && git -C "$PROJECT_DIR" merge-base --is-ancestor "$REMOTE_MAIN" "$LOCAL_HEAD" 2>/dev/null; }; then
+    if git -C "$PROJECT_DIR" cat-file -e "${REMOTE_MAIN}^{commit}" 2>/dev/null; then
+      BEHIND_COUNT=$(git -C "$PROJECT_DIR" rev-list --count "${LOCAL_HEAD}..${REMOTE_MAIN}" 2>/dev/null || echo "?")
+      BEHIND_TEXT="落後 ${BEHIND_COUNT} 個 commit"
+    else
+      BEHIND_TEXT="遠端 main 有本機還沒抓下來的 commit"
+    fi
+    FIRST_REPLY="${FIRST_REPLY}\n- 主資料夾沒有包含 GitHub 最新的 main(本機 HEAD ${LOCAL_HEAD:0:8},遠端 main ${REMOTE_MAIN:0:8},${BEHIND_TEXT})。新的 hook 與規則要等主資料夾同步才生效。\n  在你的第一則回覆就告訴 user:請在自己的終端機打這一行(AI 不替 user 跑;有未提交改動時 switch 會拒絕,先跟 user 確認怎麼處理,不要丟棄):\n    cd \"${PROJECT_DIR}\" && git fetch origin && git switch main && git pull --ff-only"
+  fi
+fi
+
 # Check 11: Cross-repo env smoke(2026-05-30 — NON-BLOCKING:只進 PRUNE_TRIGGERS soft channel,
 # 永不進 BLOCKER 路徑、永不非零退出。set -uo pipefail(無 -e)→ 探針非零返回不殺 script;
 # 但 set -u 下 unset var 必 ${VAR:-} guard。每探針獨立、無 network、無 blocking subshell。
@@ -268,17 +299,21 @@ if [ -n "$ENV_SMOKE" ]; then
   PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- 🩺 env-smoke(non-blocking,環境健檢):${ENV_SMOKE}"
 fi
 
-# 兩條通道都空 → 不輸出。季度到期由 Check 2 從 committed Git history 算(> 180 天進 BLOCKERS);
+# 三條通道都空 → 不輸出。季度到期由 Check 2 從 committed Git history 算(> 180 天進 BLOCKERS);
 # 舊的季度變數恆為空字串、它專用的第三種訊息永遠走不到,2026-11-18 一併刪除。
-[ -z "$BLOCKERS" ] && [ -z "$PRUNE_TRIGGERS" ] && exit 0
+[ -z "$BLOCKERS" ] && [ -z "$PRUNE_TRIGGERS" ] && [ -z "$FIRST_REPLY" ] && exit 0
 
+MSG=""
 if [ -n "$BLOCKERS" ]; then
   MSG="🚨 BLOCKER — governance hard thresholds breached (SessionStart):${BLOCKERS}\n\n"
   MSG="${MSG}⚠️ REQUIRED_FIRST_ACTION:先 invoke 上述 skill(/knowledge-prune 或 /codify-corrections)"
   MSG="${MSG}把 governance 帶回健康區間,再處理 user 的實際請求。"
   [ -n "$PRUNE_TRIGGERS" ] && MSG="${MSG}\n\n附 soft prune triggers:${PRUNE_TRIGGERS}"
-else
+elif [ -n "$PRUNE_TRIGGERS" ]; then
   MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑；P0/P1/P2E 工程治理自主執行，只有產品／UI／UX SSOT 真取捨的 P2H 才列拍板清單 — per design-system-audit SKILL「Phase 4.5」Deep mode)."
+fi
+if [ -n "$FIRST_REPLY" ]; then
+  MSG="${MSG:+${MSG}\n\n}📌 主資料夾同步檢查(SessionStart):${FIRST_REPLY}"
 fi
 # jq 不在時不再由各 hook 自己靜默 exit 0(G4,2026-10-07):唯一入口 scripts/run-provider-hook.mjs 在 hook 的
 # PATH 放探針(CLOSED_HOOK_TOOL_LABELS),本 hook 一呼叫 jq 就被標成「沒有跑完」並列名給模型,同組其他 hook 照常。
