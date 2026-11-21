@@ -75,7 +75,7 @@ export const HomepageHeroBanner = {
 export const ProductImageGallery = {
   name: '商品圖片輪播',
   parameters: {
-    docs: { description: { story: '單一商品的 4 張照片(使用情境、正面、左右兩側),底下的指示點表示共有幾張。適合電商或行銷網站的商品頁;按「加入購物車」會跳一則通知。' } },
+    docs: { description: { story: '單一商品的 4 張照片(使用情境、俯視、左右兩側),底下的指示點表示共有幾張。適合電商或行銷網站的商品頁;按「加入購物車」會跳一則通知。' } },
   },
   render: () => (
     <div className="max-w-[480px]">

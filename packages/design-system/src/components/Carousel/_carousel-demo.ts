@@ -34,7 +34,7 @@ export const LAPTOP_NAME = '輕薄筆電 13 吋'
  *  原本第一張是亮白溪水,指示點對比 1.05(實量,見 8337d81c 的 commit 訊息)。 */
 export const LAPTOP_PHOTOS = [
   { label: '使用情境', seed: 'demo-1977' }, // Picsum 5:雙手在筆電上打字
-  { label: '正面', seed: 'demo-693' }, // 8:正面
+  { label: '俯視', seed: 'demo-693' }, // 8:正上方往下拍,筆電旁有筆記本、手機、咖啡(2026-11-21 前寫「正面」,照片其實是俯視 —— PV2 驗證 J-17ef8cfa43)
   { label: '右前方', seed: 'demo-2522' }, // 2:右前方
   { label: '左前方', seed: 'demo-1959' }, // 0:左前方
   { label: '打字情境', seed: 'demo-1017' }, // 1:從肩後看雙手打字
