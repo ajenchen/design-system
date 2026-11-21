@@ -67,7 +67,7 @@ export const InteractiveEllipsis: Story = {
   },
   render: () => (
     <>
-      {/* 內部實作(對 consumer 不可見):BreadcrumbEllipsis 永遠 render <button> + DropdownMenuTrigger
+      {/* 內部實作(對 consumer 不可見):BreadcrumbEllipsis 永遠 render 原生 button 元素 + DropdownMenuTrigger
           asChild 注入 dropdown 行為;hover 走 neutral(fg-muted → foreground + neutral hover bg,消費
           ItemInlineActionButton),刻意與 BreadcrumbLink 的 primary-hover 語言區隔。
           畫布只放範例,說明在 docs.description(稽核 L110:展示層畫布只留真實範例)。 */}
