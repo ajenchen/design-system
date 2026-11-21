@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:3f6b5df7e286b7cbd6e48385da89680afc2202a69b6a1e9fc72c75e28797edcb",
+      "hookRegistrations": "sha256:f960f9fe1ab24fabc6b382994a96a5e4a01bd266ab4f25490c9eb4aa24aa75ae",
       "providerRegistry": "sha256:20f2995b8d3ff2e2814210c4ad7ca8a8f9578f3191bf5a3d2f598224cca4f22b",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -24,8 +24,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "complete-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 52,
-      "projectedCount": 52,
+      "canonicalRegistrationCount": 53,
+      "projectedCount": 53,
       "excludedCount": 0,
       "projected": [
         {
@@ -102,6 +102,21 @@
           "requirements": [
             "peer-cli"
           ],
+          "nativeEvent": "PreToolUse",
+          "projectedMatcher": "Bash",
+          "nativeCoverage": "projected",
+          "certificationImpact": "runtime-certification-required"
+        },
+        {
+          "event": "PreToolUse",
+          "canonicalMatcher": "Bash",
+          "hook": "check_bash_command_shape.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "governance-context-or-block",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "none",
+          "requirements": [],
           "nativeEvent": "PreToolUse",
           "projectedMatcher": "Bash",
           "nativeCoverage": "projected",
@@ -823,8 +838,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "partial-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 52,
-      "projectedCount": 49,
+      "canonicalRegistrationCount": 53,
+      "projectedCount": 50,
       "excludedCount": 3,
       "projected": [
         {
@@ -886,6 +901,21 @@
           "requirements": [
             "peer-cli"
           ],
+          "nativeEvent": "PreToolUse",
+          "projectedMatcher": "Bash|exec_command|shell_command",
+          "nativeCoverage": "projected",
+          "certificationImpact": "runtime-certification-required"
+        },
+        {
+          "event": "PreToolUse",
+          "canonicalMatcher": "Bash",
+          "hook": "check_bash_command_shape.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "governance-context-or-block",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "none",
+          "requirements": [],
           "nativeEvent": "PreToolUse",
           "projectedMatcher": "Bash|exec_command|shell_command",
           "nativeCoverage": "projected",
@@ -1644,9 +1674,9 @@
       "hookEnforcement": "ci-only",
       "projectionStatus": "unavailable",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 52,
+      "canonicalRegistrationCount": 53,
       "projectedCount": 0,
-      "excludedCount": 52,
+      "excludedCount": 53,
       "projected": [],
       "excluded": [
         {
@@ -1735,6 +1765,24 @@
           "requirements": [
             "peer-cli"
           ],
+          "nativeCoverage": "gap",
+          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
+          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
+          "certificationImpact": "not-certified",
+          "authoritativeFallback": {
+            "status": "none"
+          }
+        },
+        {
+          "event": "PreToolUse",
+          "canonicalMatcher": "Bash",
+          "hook": "check_bash_command_shape.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "governance-context-or-block",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "none",
+          "requirements": [],
           "nativeCoverage": "gap",
           "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
           "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",

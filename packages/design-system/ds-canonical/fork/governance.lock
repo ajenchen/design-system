@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "e5c478bfd3c19c9070e42f5c150e71e7f7ddfe96a8b7f803f03ddfa66786ab07",
+      "sha256": "6485792502eb90e620fc999171ce3f7c419dc7b8aa6434d790ebedd276997630",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -911,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/product-hook-dispatch-runtime.mjs",
-      "sha256": "8fafbb86542d6f5ff7b8e1f99f64bd875dea2387a04ad6d84b19236a87027489",
+      "sha256": "11410c585c51258c15c6a7c54634561a359dfcc514d5974bfa82a652be83fa11",
       "source": "packages/design-system/ds-canonical/templates/product-launchers/product-hook-dispatch-runtime.mjs",
       "classification": null,
       "destination": null
@@ -927,7 +927,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-output-transport.mjs",
-      "sha256": "4b7f9e31276d628e14eeefcf8159bcc09577e7d1c91a589019611b9adebc2769",
+      "sha256": "0e7c737b3c2106ed859cfc18449fc100cdaade17395b68b005d1c11751f8be3f",
       "source": "scripts/lib/provider-hook-output-transport.mjs",
       "classification": null,
       "destination": null
@@ -935,7 +935,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "36d23ebd7e9276d0baae5b7238a44f281a8df7d4d78196f9caef0bad7b579f4b",
+      "sha256": "8ce5fcd95989851fdd30238b4bb18b5c134e43d2089be7c3fa8b14514a2a4c6a",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -951,7 +951,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/hook-config.json",
-      "sha256": "e74f55b6fe1e3fb6643cd82e0613fa5ca49c781b14c57a6ccf606998f3ba5ff4",
+      "sha256": "0d5ef50663e74c9b80a62558786b546f721060d35ceb56ad6f10819ec3c117b6",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:claude",
       "classification": null,
       "destination": null
@@ -1199,7 +1199,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "e5c478bfd3c19c9070e42f5c150e71e7f7ddfe96a8b7f803f03ddfa66786ab07",
+      "sha256": "6485792502eb90e620fc999171ce3f7c419dc7b8aa6434d790ebedd276997630",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

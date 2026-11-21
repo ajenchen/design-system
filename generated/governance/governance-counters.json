@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "counts": {
-    "hooks": 50,
+    "hooks": 51,
     "mRules": 33,
     "auditDims": 91,
     "auditDimMin": 1,
@@ -49,6 +49,7 @@
     "packages/design-system/ds-canonical/hooks/block_prototype_imports.py",
     "packages/design-system/ds-canonical/hooks/check_audit_post_report_validator.sh",
     "packages/design-system/ds-canonical/hooks/check_audit_sample_escape.sh",
+    "packages/design-system/ds-canonical/hooks/check_bash_command_shape.sh",
     "packages/design-system/ds-canonical/hooks/check_benchmark_citation.sh",
     "packages/design-system/ds-canonical/hooks/check_canonical_propagation.sh",
     "packages/design-system/ds-canonical/hooks/check_codex_brief_invariants.sh",
