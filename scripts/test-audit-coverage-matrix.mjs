@@ -130,7 +130,7 @@ try {
   }
   const enforcementMutations = [
     {
-      name: '原本只能提醒的 hook 改成可擋可不擋,沒有規則出處就不准算',
+      name: '只擋的 hook 改成可擋可不擋,沒有規則出處就不准算',
       hook: 'check_item_list_gap.sh',
       outputMode: 'governance-context-or-block',
       expect: /HOOK_RULE_ENFORCEMENT 缺這一維的規則出處/,

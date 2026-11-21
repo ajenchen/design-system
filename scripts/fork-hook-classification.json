@@ -30,7 +30,7 @@
     },
     {
       "hook": "check_item_list_gap.sh",
-      "reason": "standalone card/pill multi-instance gap,內容式偵測,fire on apps/**。"
+      "reason": "FileItem 清單外層的 gap / 外框(file-item.spec.md「List wrapper canonical」),consumer 一樣會寫;2026-11-22 起用 TypeScript AST 判每個外層、會擋(exit 2),AST 量法 hooks/lib/tsx-governance-analysis.mjs 隨 corpus 出貨、TypeScript 從 consumer 專案解析;寫完的檔沒有 FileItem 就不需要 parser。"
     },
     {
       "hook": "check_pattern_invariants.sh",

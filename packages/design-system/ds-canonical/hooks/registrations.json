@@ -172,7 +172,8 @@
             "kind": "hook",
             "hook": "check_item_list_gap.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "blocking",
+            "inputContract": "proposed-text-v1"
           },
           {
             "kind": "hook",

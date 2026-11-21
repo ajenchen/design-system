@@ -68,6 +68,9 @@ function buildFixture() {
   copyFileSync(CANONICAL_STORY_REGISTRY, join(FIX_CORPUS, 'references/story-baseline-registry.json'))
   writeFileSync(join(dsSpecDir, 'components/CircularProgress/circular-progress.spec.md'), '# CircularProgress\nsize 預設 24\n')
   writeFileSync(join(FIX, 'apps/demo/src/App.tsx'), 'export const App = () => <div>x</div>\n')
+  // check_item_list_gap.sh 用 consumer 專案自己的 TypeScript 解析 TSX(fork corpus 帶 hooks/lib/tsx-governance-analysis.mjs,
+  // 不帶 parser);合成 fork 借 repo 已安裝的那一份,跟 consumer 專案裝了 typescript 同一個形狀。
+  symlinkSync(join(ROOT, 'node_modules/typescript'), join(FIX, 'node_modules/typescript'), 'dir')
 }
 
 // run a hook with a synthetic tool_input; returns {exit, stderr}
@@ -116,6 +119,10 @@ const CASES = [
   { hook: 'check_fork_product_quality.sh', tool: 'Write', enforce: false, neverBrick: true,
     violation: 'export const X=()=><table><thead><th>a</th></thead></table>',
     clean: 'export const X=()=><div>ok</div>' },
+  // FileItem 清單外層(file-item.spec.md「List wrapper canonical」):rich 卡片清單外層沒有 gap → 擋;gap-2 → 放
+  { hook: 'check_item_list_gap.sh', tool: 'Write', enforce: true,
+    violation: 'export const X=({files})=><div className="flex flex-col">{files.map((f)=><FileItem key={f.id} mode="rich" name={f.name}/>)}</div>',
+    clean: 'export const X=({files})=><div className="flex flex-col gap-2">{files.map((f)=><FileItem key={f.id} mode="rich" name={f.name}/>)}</div>' },
   // PNG P2.4:codex-projected hook(fork/codex/hooks.json 唯一投影)— 違規必擋 / 乾淨必放
   { hook: 'check_tailwind_wildcard_in_docs.sh', tool: 'Write', enforce: true,
     violation: 'docs shorthand: `shadow-[var(--elevation-*)]`',

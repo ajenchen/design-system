@@ -74,7 +74,7 @@ const COVERAGE = {
   19: { tier: 'PURE-JUDGMENT', mechanism: 'Home-name-vs-scope AI judgment;dispatch 必 DS-wide enumerate folder vs actual scope' },
   20: { tier: 'PURE-JUDGMENT', mechanism: 'Spec 硬寫機械化值 — dispatch 必 grep DS-wide spec.md 找 px / hex / Tailwind class lists' },
   // Group H — Consumer
-  21: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh write-time WARN(exit 0 additionalContext,非 block)+ audit-time grep backstop' },
+  21: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh write-time BLOCKER(PreToolUse proposed-text-v1:TypeScript AST 判每個 FileItem 清單外層的 gap / 外框,這次寫入新增的違規 → exit 2;2026-11-22 WP-USER 由 WARN 升級)+ audit-time grep backstop(FileItem 以外的卡片列、AST 認不出外層的寫法)' },
   22: { tier: 'PURE-JUDGMENT', mechanism: '視覺容器 inner breathing — dispatch agent DS-wide 全掃有邊界容器是否缺 inner padding;原 check_container_breathing.sh 已 retired 無 active 替代(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED)' },
   // Group I — Story auto-compile
   23: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(23) },
@@ -123,7 +123,7 @@ const COVERAGE = {
   58: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(58) + ';scripts/test-fork-governance.mjs 驗兩道 consumer 端執行面的兩面:template 出貨的 SessionStart launcher governance/bin/inject_fork_governance_preamble.sh(已安裝套件或 fork manifest 缺 → GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE + npm run setup:all;不改工作樹)與 consumer 已安裝的 hard gate fork/consumer/governance-check.mjs(committed launcher 缺 → GOV-ADAPTER-005;manifest 缺 → GOV-CORPUS-001;npm run governance:check 與 setup:all 經 scripts/setup-governance.mjs 呼叫)。這兩面只在夜間 governance-harnesses.yml 與每週 packaging-canary.yml 跑,PR 必過跑不到;template 的 consumer CI(audit.yml)也不跑這道 hard gate。2026-11-21 前掛 SessionStart hook check_plugin_fork_health.sh,已 retired:DS repo 內早退、fork 分類 DROP、plugin 在非 ds-author target 不跑 = 沒有任何部署情境會出聲' },
   59: { tier: 'HOOK-ENFORCED', mechanism: 'check_substantive_edit_approval_preflight.sh scope apps/** + node_modules/@qijenchen' },
   60: { tier: 'HOOK-ENFORCED', mechanism: 'check_propose_without_benchmark.sh UserPromptSubmit(M26)' },
-  61: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh + check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop' },
+  61: { tier: 'HOOK-ENFORCED', mechanism: 'check_item_list_gap.sh(M16,BLOCKER)+ check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M23c,WARN exit 0)+ audit-time grep backstop' },
   62: { tier: 'PURE-JUDGMENT', mechanism: 'Fork Netlify onboarding canonical — dispatch 必 DS-wide enumerate netlify.toml / manager-head / setup-netlify / CLAUDE.md Access-control 段' },
   63: { tier: 'HOOK-ENFORCED', mechanism: 'inject_deploy_url_after_push.sh PostToolUse + scripts/deploy-url.mjs' },
   64: { tier: 'CI-ENFORCED', mechanism: 'standard five-step live observation:PR tree=squash-merge tree=tag tree + immutable release/BOM/npm provenance;no candidate freeze,external activation,offline attestor,or import ceremony' },
@@ -179,6 +179,7 @@ const HOOK_RULE_ENFORCEMENT = {
   54: { enforcement: 'block-and-warn', rule: 'check_story_invariants.sh R8:registry severity=block → record_worst 2;severity=warn → governance context' },
   53: { enforcement: 'block', rule: 'check_spec_class_drift.sh:命中且 spec 檔頭沒有 @spec-class-drift-allow → exit 2;沒有只提醒的路徑(2026-11-21 WP-15b 升級,outputMode governance-context-or-block)' },
   57: { enforcement: 'block', rule: 'check_ds_anchor_preflight.sh M29 anchor:同 turn 未讀 DS canonical baseline → exit 2' },
+  61: { enforcement: 'block-and-warn', rule: 'check_item_list_gap.sh(blocking):FileItem 清單外層這次寫入新增的 gap / 外框違規 → exit 2;check_datatable_invariants.sh r2(M23c,governance-context)只提醒' },
 }
 const ENFORCEMENT_VALUES = ['block', 'warn', 'block-and-warn']
 // registrations outputMode → 這支 hook 在 adapter 契約下「能做到的」(interpretProviderHookChildResult:
@@ -365,6 +366,9 @@ for (const [dimText, entry] of Object.entries(COVERAGE)) {
     }
     for (const value of allowed) ceiling.add(value)
   }
+  // 一維引了兩支 hook、一支只會擋(blocking)一支只會提醒(governance-context)→ 這一維做得到的就是「一部分擋、一部分提醒」
+  //(2026-11-22 dim 61:check_item_list_gap.sh 升為擋、check_datatable_invariants.sh 仍只提醒)。
+  if (ceiling.has('block') && ceiling.has('warn')) ceiling.add('block-and-warn')
   const ruleEntry = HOOK_RULE_ENFORCEMENT[dim]
   let enforcement
   let source

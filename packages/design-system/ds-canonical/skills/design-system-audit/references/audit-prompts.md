@@ -838,7 +838,7 @@ Scan consumer 層(`.tsx` / `.stories.tsx` / `src/explorations/`)對 item 元件�
 2. 公式 2(同類 flush / transparent list):0 gap 合法,分隔靠 border-b / progress bar / connector。無需 gap → flag 是 FP
 3. 公式 3(混合視覺語言 list):必取最保守 gap。violation:compact FileItem Type A + Type B 混用但無 gap
 
-Hook `check_item_list_gap.sh` 已 P2 block 外框 / P1 warn 缺 gap,本 dim 為 audit 層 redundant check 捕遺漏。
+Hook `check_item_list_gap.sh` 在寫入當下擋 FileItem 清單外層的外框與 gap 不合規(只認得出 FileItem 往上第一個 JSX 元素當外層;寫在別的函式裡的認不出),本 dim 為 audit 層補:FileItem 以外的卡片 / pill 清單與 hook 認不出的寫法。
 
 對每個 list wrapper violation:
 - file:line

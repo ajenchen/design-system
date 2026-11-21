@@ -12,6 +12,7 @@ const modes = new Set([
   'header-with-tabs-border',
   'app-shell-primary-header',
   'chrome-header-handcraft',
+  'item-list-gap',
 ])
 if (extra.length !== 0 || !modes.has(mode)) process.exit(2)
 
@@ -442,6 +443,315 @@ function analyzeChromeHeaderHandcraft() {
   process.stdout.write(hit ? 'HIT' : 'CLEAN')
 }
 
+// FileItem 清單的外層(list wrapper)—— `check_item_list_gap.sh` 的量法。
+// SSOT:components/FileItem/file-item.spec.md「List wrapper canonical」(gap 表)+「List wrapper 本身不加視覺」;
+// 規則的原理在 patterns/element-anatomy/item-anatomy.spec.md「連續 item 貼邊合法性」(meta-patterns M16)。
+// 外層 = FileItem 往上第一個 JSX 元素;中間只穿過 `{…}`、括號、條件式、`&&`、Fragment 與 `.map` / `.flatMap` 的 callback
+// (穿過 callback = 這一筆會重複出現)。FileItem 寫在別的函式裡(例:renderRow 再被呼叫)→ 認不出外層,不判。
+// 每個外層各自判,一行一筆:I = 認出的外層、E = 該外層有豁免標記、V = 違規(hook 只看 V);外層開頭那一行或緊接上一行有
+// `@item-list-gap-allow: <理由>` → 只放行這一個外層;檔頭 leading line comment 同一標記 → 整檔放行。
+function analyzeItemListGap() {
+  if (hasLeadingLineEscape('item-list-gap-allow')) {
+    process.stdout.write('ESCAPE')
+    return
+  }
+
+  const lines = source.split('\n')
+  const lineOf = (node) => sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line
+  const tagName = (opening) => {
+    const text = opening.tagName.getText(sourceFile)
+    return text.includes('.') ? text.slice(text.lastIndexOf('.') + 1) : text
+  }
+  const isFileItem = (opening) => tagName(opening) === 'FileItem'
+  const isFragmentTag = (opening) => tagName(opening) === 'Fragment'
+  const unwrap = (expression) => {
+    let current = expression
+    while (
+      ts.isParenthesizedExpression(current)
+      || ts.isAsExpression(current)
+      || ts.isNonNullExpression(current)
+      || ts.isSatisfiesExpression(current)
+    ) current = current.expression
+    return current
+  }
+
+  // 一個 JSX 元素底下「直接」排列的 FileItem(穿過透明的運算式節點,不進其他 JSX 元素)。
+  const collect = (node, repeated, out) => {
+    if (!node) return
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const opening = openingOf(node)
+      if (isFileItem(opening)) { out.push({ opening, repeated }); return }
+      if (ts.isJsxElement(node) && isFragmentTag(opening)) {
+        for (const child of node.children) collect(child, repeated, out)
+      }
+      return
+    }
+    if (ts.isJsxFragment(node)) {
+      for (const child of node.children) collect(child, repeated, out)
+      return
+    }
+    if (ts.isJsxExpression(node)) { collect(node.expression, repeated, out); return }
+    const current = unwrap(node)
+    if (current !== node) { collect(current, repeated, out); return }
+    if (ts.isConditionalExpression(node)) {
+      collect(node.whenTrue, repeated, out)
+      collect(node.whenFalse, repeated, out)
+      return
+    }
+    if (ts.isBinaryExpression(node)) {
+      const kind = node.operatorToken.kind
+      if (kind === ts.SyntaxKind.AmpersandAmpersandToken) collect(node.right, repeated, out)
+      else if (kind === ts.SyntaxKind.BarBarToken || kind === ts.SyntaxKind.QuestionQuestionToken) {
+        collect(node.left, repeated, out)
+        collect(node.right, repeated, out)
+      }
+      return
+    }
+    if (ts.isArrayLiteralExpression(node)) {
+      for (const element of node.elements) collect(element, repeated, out)
+      return
+    }
+    if (
+      ts.isCallExpression(node)
+      && ts.isPropertyAccessExpression(node.expression)
+      && ['map', 'flatMap'].includes(node.expression.name.text)
+    ) {
+      const callback = node.arguments[0] && unwrap(node.arguments[0])
+      if (callback && (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback))) {
+        if (ts.isBlock(callback.body)) {
+          const visitReturns = (statement) => {
+            if (ts.isReturnStatement(statement)) { collect(statement.expression, true, out); return }
+            if (ts.isFunctionLike(statement)) return
+            ts.forEachChild(statement, visitReturns)
+          }
+          ts.forEachChild(callback.body, visitReturns)
+        } else {
+          collect(callback.body, true, out)
+        }
+      }
+    }
+  }
+
+  const constInitializers = new Map()
+  const indexConsts = (node) => {
+    if (
+      ts.isVariableDeclaration(node)
+      && ts.isIdentifier(node.name)
+      && node.initializer
+      && (node.parent.flags & ts.NodeFlags.Const) !== 0
+    ) {
+      const name = node.name.text
+      constInitializers.set(name, constInitializers.has(name) ? null : node.initializer)
+    }
+    ts.forEachChild(node, indexConsts)
+  }
+  indexConsts(sourceFile)
+
+  // className 能靜態讀出的字串片段(字串、template、cn(…) 引數、條件式兩邊、`&&` 右邊、檔內 const)。
+  // 讀不出的部分 = 不知道;不知道就不判 gap(不猜)。
+  const fragments = (expression, seen) => {
+    const current = unwrap(expression)
+    if (ts.isStringLiteral(current) || ts.isNoSubstitutionTemplateLiteral(current)) {
+      return { known: true, values: [current.text] }
+    }
+    if (ts.isTemplateExpression(current)) {
+      const parts = [current.head.text]
+      let known = true
+      for (const span of current.templateSpans) {
+        const inner = fragments(span.expression, seen)
+        known = known && inner.known
+        parts.push(...inner.values, span.literal.text)
+      }
+      return { known, values: parts }
+    }
+    if (ts.isIdentifier(current)) {
+      const init = constInitializers.get(current.text)
+      if (init && !seen.has(current.text)) {
+        const nextSeen = new Set(seen)
+        nextSeen.add(current.text)
+        return fragments(init, nextSeen)
+      }
+      return { known: false, values: [] }
+    }
+    if (ts.isConditionalExpression(current)) {
+      const a = fragments(current.whenTrue, seen)
+      const b = fragments(current.whenFalse, seen)
+      return { known: a.known && b.known, values: [...a.values, ...b.values] }
+    }
+    if (ts.isBinaryExpression(current)) {
+      const kind = current.operatorToken.kind
+      if (kind === ts.SyntaxKind.AmpersandAmpersandToken) return fragments(current.right, seen)
+      if (kind === ts.SyntaxKind.PlusToken || kind === ts.SyntaxKind.BarBarToken || kind === ts.SyntaxKind.QuestionQuestionToken) {
+        const a = fragments(current.left, seen)
+        const b = fragments(current.right, seen)
+        return { known: a.known && b.known, values: [...a.values, ...b.values] }
+      }
+      return { known: false, values: [] }
+    }
+    if (ts.isCallExpression(current)) {
+      let known = true
+      const values = []
+      for (const argument of current.arguments) {
+        const inner = fragments(argument, seen)
+        known = known && inner.known
+        values.push(...inner.values)
+      }
+      return { known, values }
+    }
+    if (ts.isArrayLiteralExpression(current)) {
+      let known = true
+      const values = []
+      for (const element of current.elements) {
+        const inner = fragments(element, seen)
+        known = known && inner.known
+        values.push(...inner.values)
+      }
+      return { known, values }
+    }
+    if (
+      current.kind === ts.SyntaxKind.FalseKeyword
+      || current.kind === ts.SyntaxKind.NullKeyword
+      || (ts.isIdentifier(current) && current.text === 'undefined')
+    ) return { known: true, values: [] }
+    return { known: false, values: [] }
+  }
+
+  // 最後一個同名屬性生效;它之後(或沒有它時)有 spread → 不知道。
+  const effectiveAttribute = (opening, name) => {
+    const properties = opening.attributes.properties
+    for (let index = properties.length - 1; index >= 0; index -= 1) {
+      const item = properties[index]
+      if (ts.isJsxSpreadAttribute(item)) return { known: false, item: null }
+      if (ts.isJsxAttribute(item) && item.name.getText(sourceFile) === name) return { known: true, item }
+    }
+    return { known: true, item: null }
+  }
+  const attributeFragments = (opening, name) => {
+    const resolved = effectiveAttribute(opening, name)
+    if (!resolved.known) return { known: false, values: [] }
+    if (!resolved.item) return { known: true, values: [], absent: true }
+    const init = resolved.item.initializer
+    if (!init) return { known: false, values: [] }
+    if (ts.isStringLiteral(init)) return { known: true, values: [init.text] }
+    if (ts.isJsxExpression(init) && init.expression) return fragments(init.expression, new Set())
+    return { known: false, values: [] }
+  }
+  // FileItem 的 mode / surface:沒寫 = 預設(file-item.tsx:mode='compact'、surface='form');
+  // 讀不出(變數、spread 蓋過)= null。
+  const literalProp = (opening, name, fallback) => {
+    const resolved = effectiveAttribute(opening, name)
+    if (resolved.known && !resolved.item) {
+      // 沒有這個屬性:前面有 spread 也可能帶進來 → 不知道
+      const hasSpread = opening.attributes.properties.some((item) => ts.isJsxSpreadAttribute(item))
+      return hasSpread ? null : fallback
+    }
+    const read = attributeFragments(opening, name)
+    if (!read.known || read.values.length !== 1) return null
+    return read.values[0]
+  }
+
+  const baseOf = (token) => {
+    const bracket = token.indexOf('[')
+    const head = bracket < 0 ? token : token.slice(0, bracket)
+    const colon = head.lastIndexOf(':')
+    const base = colon < 0 ? token : token.slice(colon + 1)
+    return base.replace(/^!/, '').replace(/!$/, '')
+  }
+  const isFrame = (base) => (
+    base === 'border'
+    || /^border-(?:[xytblrse](?:-\d+)?|[1-9]\d*)$/.test(base)
+    || (/^rounded(?:-|$)/.test(base) && base !== 'rounded-none')
+    || base === 'overflow-hidden'
+  )
+  // 垂直間距(px);gap-x 是橫向,不算。讀不出值的(var(…))記 'var'。
+  const gapValue = (base) => {
+    let match = base.match(/^(?:gap|gap-y|space-y)-(\d+(?:\.\d+)?)$/)
+    if (match) return Number(match[1]) * 4
+    if (/^(?:gap|gap-y|space-y)-px$/.test(base)) return 1
+    match = base.match(/^(?:gap|gap-y|space-y)-\[(\d+(?:\.\d+)?)(px|rem)\]$/)
+    if (match) return match[2] === 'rem' ? Number(match[1]) * 16 : Number(match[1])
+    if (/^(?:gap|gap-y|space-y)-\[/.test(base)) return 'var'
+    return null
+  }
+  // 冒號後要有理由:拿掉註解收尾(`*/`、`*/}`)後還有字才算
+  const hasReason = (text) => {
+    const match = (text || '').match(/@item-list-gap-allow:(.*)$/)
+    return Boolean(match && match[1].replace(/\*\/\s*\}?\s*$/, '').trim())
+  }
+  const escapedAt = (lineIndex) => {
+    if (hasReason(lines[lineIndex])) return true
+    const previous = (lines[lineIndex - 1] || '').trim()
+    return /^(?:\/\/|\{\s*\/\*|\/\*)/.test(previous) && hasReason(previous)
+  }
+  const PX_TO_CLASS = { 4: 'gap-1', 8: 'gap-2' }
+
+  const results = []
+  const visit = (node) => {
+    if (ts.isJsxElement(node)) {
+      const opening = node.openingElement
+      if (!isFileItem(opening) && !isFragmentTag(opening)) {
+        const items = []
+        for (const child of node.children) collect(child, false, items)
+        const weight = items.reduce((sum, item) => sum + (item.repeated ? 2 : 1), 0)
+        if (weight >= 2) inspect(node, opening, items)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+
+  const inspect = (node, opening, items) => {
+    const lineIndex = lineOf(opening)
+    if (escapedAt(lineIndex)) {
+      results.push(`E\t${lineIndex + 1}\t${tagName(opening)}`)
+      return
+    }
+    // 每個認出來的外層都記一行 I(量具真的有在量的證據;hook 只看 V)
+    results.push(`I\t${lineIndex + 1}\t${tagName(opening)}`)
+    const className = attributeFragments(opening, 'className')
+    const isDomTag = /^[a-z]/.test(opening.tagName.getText(sourceFile))
+    // 元件當外層又沒給 className:版面由元件自己決定,這裡讀不到 → 不判
+    if (!className.known || (className.absent && !isDomTag)) return
+    const tokens = className.values.flatMap((value) => value.split(/\s+/)).filter(Boolean)
+    const bases = tokens.map(baseOf)
+    const key = (kind) => `${kind}|${opening.getText(sourceFile).replace(/\s+/g, ' ')}`
+    const where = `${lineIndex + 1}\t${tagName(opening)}`
+
+    const frame = [...new Set(bases.filter(isFrame))]
+    if (frame.length) {
+      results.push(`V\t${where}\tframe\t${frame.join(' ')}\t${key('frame')}`)
+    }
+
+    const surfaces = items.map((item) => literalProp(item.opening, 'surface', 'form'))
+    const modes = items.map((item) => literalProp(item.opening, 'mode', 'compact'))
+    if (surfaces.some((value) => value !== 'form' && value !== 'upload-manager')) return
+    const values = bases.map(gapValue).filter((value) => value !== null)
+    if (surfaces.every((value) => value === 'upload-manager')) {
+      const positive = values.filter((value) => value === 'var' || value > 0)
+      if (positive.length) {
+        results.push(`V\t${where}\tgap\tupload-manager 列間要 gap-0(有 ${positive.join('/')}px)\t${key('gap-um')}`)
+      }
+      return
+    }
+    if (!surfaces.every((value) => value === 'form')) return
+    // 混合 → 取最保守(item-anatomy.spec.md 公式 3);讀不出 mode 的 → rich 8 或 compact 4 都接受
+    const knownModes = modes.filter((value) => value === 'rich' || value === 'compact')
+    const unknownMode = modes.some((value) => value !== 'rich' && value !== 'compact')
+    let required
+    if (knownModes.includes('rich')) required = [8]
+    else if (unknownMode) required = [4, 8]
+    else required = [4]
+    if (!values.some((value) => required.includes(value))) {
+      const want = required.map((px) => `${PX_TO_CLASS[px]}(${px}px)`).join(' 或 ')
+      const have = values.length ? values.map((value) => `${value}px`).join('/') : '沒有 gap'
+      results.push(`V\t${where}\tgap\t要 ${want},現在 ${have}\t${key('gap-form')}`)
+    }
+  }
+
+  visit(sourceFile)
+  process.stdout.write(results.length ? `${results.join('\n')}\n` : '')
+}
+
 if (mode === 'header-with-tabs-border') analyzeHeaderWithTabsBorder()
 else if (mode === 'app-shell-primary-header') analyzeAppShellPrimaryHeader()
+else if (mode === 'item-list-gap') analyzeItemListGap()
 else analyzeChromeHeaderHandcraft()

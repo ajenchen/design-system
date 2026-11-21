@@ -885,6 +885,8 @@ test('a clean installed Claude plugin can execute a release-bound canonical hook
     const target = resolve(project, 'src/Example.tsx')
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, 'export const Example = () => null\n')
+    // check_item_list_gap.sh 用被管專案自己的 TypeScript 解析 TSX(consumer 用自己鎖的版本);這個空專案借 repo 的依賴。
+    symlinkSync(resolve(REPO_ROOT, 'node_modules'), resolve(project, 'node_modules'), 'dir')
     const result = spawnSync(process.execPath, ['--',
       'scripts/run-provider-hook.mjs',
       '--provider', 'claude',
@@ -903,11 +905,10 @@ test('a clean installed Claude plugin can execute a release-bound canonical hook
       }),
       encoding: 'utf8',
     })
-    assert.equal(result.status, 0, result.stderr)
-    assert.equal(result.stderr, '')
-    const output = JSON.parse(result.stdout)
-    assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse')
-    assert.match(output.hookSpecificOutput.additionalContext, /M16 Item-list gap canonical/)
+    // 2026-11-22 起這支 hook 會擋(blocking + proposed-text-v1):runner 算出寫完的檔 → 兩筆 FileItem、外層沒有 gap → exit 2
+    assert.equal(result.status, 2, result.stderr)
+    assert.match(result.stderr, /FileItem 清單外層違規/)
+    assert.match(result.stderr, /gap-1\(4px\)/)
   } finally {
     rmSync(project, { recursive: true, force: true })
     rmSync(fixture.hostRoot, { recursive: true, force: true })

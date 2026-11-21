@@ -1225,8 +1225,9 @@ export function buildCorpus({
   // Shipped hooks keep their provider-neutral path and integrity helpers as real sibling files.
   // These are authenticated corpus dependencies, not hook registrations; omitting them turns a
   // valid policy replay into reserved integrity exit 70 on every provider and in hooks-off CI.
+  // tsx-governance-analysis.mjs:check_item_list_gap.sh(SHIP_AS_IS)的 TypeScript AST 量法(2026-11-22 WP-USER)。
   mkdirSync(join(outDir, 'hooks/lib'), { recursive: true })
-  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh', '_ds_removed_names.sh']) {
+  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh', '_ds_removed_names.sh', 'tsx-governance-analysis.mjs']) {
     const helperPath = assertRegularSource(
       join(canonicalSources.hooksDir, 'lib', helper),
       `canonical fork hook helper ${helper}`,
