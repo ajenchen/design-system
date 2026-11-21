@@ -114,6 +114,27 @@ check('提問選項 label 判成同意(先發版)→ 在要', () => assert.equal
 check('提問選項 label 不是同意詞 → 不在要', () => assert.equal(asking('選一個就好。', { options: ['做', '先不做'] }), false))
 check('提問選項 label 是問句 → 不在要', () => assert.equal(asking('選一個就好。', { options: ['要不要發版?'] }), false))
 
+// AI 端:同意詞後面還接著字(RC-LANG-FP 規格核對必修 1;合成句,不是 transcript 原文)。
+// 共用判準加了第 7 步 mention 之後,「說「X」」的 X 與選項 label 若只認 consent,下面這些要同意的說法就不再算在要
+// (base f87872c8 都算在要)。現在兩條路都交給 isReleaseRequestPhrase:consent,或同意詞前面不是 上次 / 已 / 沒 … 的 mention。
+const TRAILING_PHRASES = ['發版到 npm', '發布 beta.140', '發版 OK', 'ship it now', '發版 beta.140', '立刻發版並更新 Storybook', '發布到 npm']
+for (const phrase of TRAILING_PHRASES) {
+  // 先確認這幾格量的是 mention 那條路(判成 consent 的話,下面的格子在第一版 RC-LANG-FP 也會綠,量不到這次的修正)
+  check(`AI 端前提:「${phrase}」共用判準判 mention`, () => assert.equal(classifyConsentPrompt(phrase, policy).verdict, 'mention', phrase))
+}
+for (const sentence of ['沒問題就回「發版到 npm」。', '請直接回「發布 beta.140」。', '沒問題就說「發版 OK」。', '請回「ship it now」。']) {
+  check(`AI 端:請 user 說的話同意詞後面接著字仍算在要:${sentence}`, () => assert.equal(asking(sentence), true, sentence))
+}
+for (const label of ['發版 beta.140', '立刻發版並更新 Storybook', '發布到 npm', '發版（合併並發布）']) {
+  check(`AI 端:選項 label 同意詞後面接著字仍算在要:${label}`, () => assert.equal(asking('選一個就好。', { options: [label] }), true, label))
+}
+// 另一面:每一處同意詞都緊接 上次 / 已 / 沒 …,講的是別次或已發生的發版 → 不算在要
+// (base 判 consent、算在要,是誤判;「還原已發布的 Button tertiary xs」是 user 2026-10-27 回覆裡引的選項文字)。
+for (const label of ['還原已發布的 Button tertiary xs', '上次發版的變更清單']) {
+  check(`AI 端:選項 label 只是提到別次發版不算在要:${label}`, () => assert.equal(asking('選一個就好。', { options: [label] }), false, label))
+  check(`AI 端:請 user 說的話只是提到別次發版不算在要:${label}`, () => assert.equal(asking(`沒問題就回「${label}」。`), false, label))
+}
+
 // user 這一側(2026-11-17 / 11-18 等真實訊息,逐字;transcript 已比對):先證明共用判準怎麼判,再證明「本輪 user 剛說同意 → 回覆是在受理」。
 const USER_SIDE = [
   ['96d711a5 2026-11-17T11:42:05Z', '現在該做的任務都做完了就發版', 'consent'],

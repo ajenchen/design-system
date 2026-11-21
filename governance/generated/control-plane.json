@@ -142,7 +142,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 215,
-      "hash": "sha256:f8922bf943e4e17f69377f09fab3c9ba806e0a6b22133801ddb199c454f7e21a",
+      "hash": "sha256:d6e9287d17f431bd4c45c01787f05e3fe391542ede4748dba4b64f09ea35cda8",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 785,
-      "hash": "sha256:65a997b7114a75520c85194e9dbce7b7a5c02f789470d9ac34c8f9b7503990b8",
+      "hash": "sha256:a3543fd6831f307d9693c8f980f907da9a79537e7937f395bfa8e85fad803a54",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3184,12 +3184,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b30a864aea1e00336b148a556ebd4e32091d067ccb93ff6fd6f5a74be06a70ac",
+      "hash": "sha256:c00f898f2fac7356582abf2a69daf8223336fce810404622185e578df88d7d9e",
       "id": "standard-release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-workflow.json",
-      "size": 8378,
+      "size": 8494,
       "type": "file"
     },
     {

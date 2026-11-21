@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:a19500a4a7d1b71d9b7fb321ad00d7e890fe7a71d8edc073650593436a8b70dd",
+      "hash": "sha256:7a2270c448bd43b8a58ae84fc65f7933e5fa61125cf4385159aeebc6b8007f1c",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c9b56e643a725b8da3e9bf7c37466f87d663d86d177be9ef8c4d11a5ebc7d366",
+      "hash": "sha256:402b78e5f02206546b3c03d336b8f92335cd1e9234e19d8980de925ab7508b02",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140202,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:ca3fc60fcb9616318748ec118ff267bbd046808ee0359ee9847d88b3fb64a4bc",
+  "inputDigest": "sha256:f5d440c238b6e82ab677ee00d06112771a3335e500965f2348457782a73be6b0",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:463e20c6ad62c8f707b28850b68325eeb6a057907300d584a77f7e69c56bbb48",
+  "snapshotDigest": "sha256:eac48d49a6dd05df2a5eba5db0178b76b87c2215dfb214befe2eb2c58b060631",
   "sources": [
     {
       "hash": "sha256:603d398316d291c992cc0379afd0b21b5a94f66e1ce5a68a485bd639199a9c0d",
@@ -654,7 +654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 215,
-      "hash": "sha256:f8922bf943e4e17f69377f09fab3c9ba806e0a6b22133801ddb199c454f7e21a",
+      "hash": "sha256:d6e9287d17f431bd4c45c01787f05e3fe391542ede4748dba4b64f09ea35cda8",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3606,7 +3606,7 @@
         "scripts/generated/"
       ],
       "files": 785,
-      "hash": "sha256:65a997b7114a75520c85194e9dbce7b7a5c02f789470d9ac34c8f9b7503990b8",
+      "hash": "sha256:a3543fd6831f307d9693c8f980f907da9a79537e7937f395bfa8e85fad803a54",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3696,12 +3696,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b30a864aea1e00336b148a556ebd4e32091d067ccb93ff6fd6f5a74be06a70ac",
+      "hash": "sha256:c00f898f2fac7356582abf2a69daf8223336fce810404622185e578df88d7d9e",
       "id": "standard-release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-workflow.json",
-      "size": 8378,
+      "size": 8494,
       "type": "file"
     },
     {

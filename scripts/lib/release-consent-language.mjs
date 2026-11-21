@@ -34,9 +34,13 @@
 // 6. **問句**(可以嗎／是否／…嗎／?)→ question。保守側:
 //    不記錄、也不撤回,而且**必須印出來讓人知道它被擋了**(靜默丟棄才是真正的傷害)。
 // 7. **只是提到**(2026-11-21,工作包 RC-LANG-FP)→ mention。每一處同意詞都不是在下指示:
-//    前面緊接 mentionPrefixes(上次 / 已 / 沒 …),或後面接的不是 directiveEndings(句尾或標點,中間可夾語助詞)。
+//    前面緊接 mentionPrefixes(上次 / 已 / 沒 …),或後面接的不是 directiveEndings(句尾或標點,中間可夾語助詞、
+//    收尾的引號 / 括號、刪節號、emoji)。
 //    例:「自上次發版後的異動」「還原已發布的 Button」。不記錄也不撤回,hook 要出聲。理由與邊界寫在函式內第 7 步。
 // 8. 其餘 → consent。
+//
+// AI 那一側(release-self-audit Mechanism 12:AI 是不是在請 user 說同意)用 `isReleaseRequestPhrase`,
+// 它也只是套用上面這份判定,不另寫詞表;寫在本檔下方。
 //
 // 任何一邊的修改都要同時更新 SSOT 與兩面對照測試(`scripts/test-release-consent.mjs`),
 // 對照組必須用磁碟上真實出現過的原話當 fixture —— 不會紅的對照組是零證據。
@@ -79,22 +83,26 @@ export function isQuestionText(text, policy = loadConsentPolicy()) {
 }
 
 /**
- * 第 7 步:句中有沒有任何一處同意詞是在「下指示」。
- * 一處算指示 = 前面沒有緊接 mentionPrefixes,而且後面緊接 directiveEndings(句尾或標點,可夾語助詞)。
+ * 第 7 步:逐處看句中的同意詞。
+ *   directive  = 有一處是在「下指示」:前面沒有緊接 mentionPrefixes,而且後面緊接 directiveEndings
+ *                (句尾或標點;中間可夾語助詞、收尾的引號 / 括號、刪節號、emoji)。
+ *   unprefixed = 有一處前面沒有緊接 mentionPrefixes(不論後面接什麼)。
  * 兩份清單都住在 release-workflow.json;本函式只負責逐處套用。
  */
-function hasDirectiveUse(text, policy) {
+function consentPhraseUses(text, policy) {
   const prefixes = policy.mentionPrefixes.map((item) => new RegExp(`(?:${item})$`, 'u'))
   const endings = policy.directiveEndings.map((item) => new RegExp(`^(?:${item})`, 'u'))
+  let unprefixed = false
   for (const phrase of policy.consentPhrases) {
     for (let at = text.indexOf(phrase); at >= 0; at = text.indexOf(phrase, at + 1)) {
       const before = text.slice(0, at)
       const after = text.slice(at + phrase.length)
       if (prefixes.some((pattern) => pattern.test(before))) continue
-      if (endings.some((pattern) => pattern.test(after))) return true
+      unprefixed = true
+      if (endings.some((pattern) => pattern.test(after))) return { directive: true, unprefixed }
     }
   }
-  return false
+  return { directive: false, unprefixed }
 }
 
 /**
@@ -187,10 +195,33 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
   //    刻意保守、已知會擋到的:「發版到 npm」「發布新版本」這類同意詞後面直接接受詞的說法 → mention(hook 會出聲,
   //    請 user 直接說「發版」);流程設計本來就是請 user 說「發版」兩個字(AGENTS.md 1.5),真句表與 N1 回覆「可以改，發版」都在句尾。
   //    `scripts/test-release-consent.mjs` 5h 兩面鎖住,並在記憶體裡拿掉兩份清單證明這幾格量得到。
-  if (!hasDirectiveUse(value, policy)) {
+  //    句尾也收收尾的引號 / 括號(」』”"’'）)]】〕〉》)、刪節號(…⋯)、emoji,以及只在訊息最後的冒號(RC-LANG-FP 規格核對必修 2):
+  //    hook 對 mention 印「直接說「發版」即可」,user 照著連引號打出 「發版」 若仍判 mention,就永遠落不了地(繞圈);
+  //    「發版🙏」「可以改，發版🙏」「（發版）」也是同一類。代價照實寫:轉述句「你說「發版」。」也判 consent
+  //    (base f87872c8 本來就判 consent,不是新放寬)。引號 / 括號後面還接著字(「發版」流程、發版（beta.140）)仍是 mention。
+  //    仍是 mention、待主線 / user 決定的:「發版 謝謝」「發版 OK」這類同意詞後面接客套或受詞的說法(見 5h)。
+  if (!consentPhraseUses(value, policy).directive) {
     return { verdict: 'mention', reason: '講的是別次或已發生的事,或把發版當名詞 / 修飾語用;沒有一處是在指示現在發版' }
   }
   return { verdict: 'consent', reason: '明確同意' }
+}
+
+/**
+ * AI 那一側用(release-self-audit Mechanism 12):AI 請 user 說這段字(「說「X」」的 X),或把它當提問選項 label,
+ * 算不算在向 user 要發版同意。判定照樣交給 classifyConsentPrompt,不另寫詞表:
+ *   consent → 算。
+ *   mention 且有一處同意詞前面不是 上次 / 已 / 沒 …(只是後面還接著字:「發版到 npm」「發版 beta.140」「立刻發版並更新 Storybook」)
+ *     → 算。AI 仍是在請 user 授權發版;user 照打雖然不會落地(hook 會請他再說「發版」),但這正是 Mechanism 12 要先看紀錄的時刻。
+ *     第 7 步加進來以前這些都判 consent、都算在要(base f87872c8),這裡維持原樣。
+ *   mention 且每一處都緊接 上次 / 已 / 沒 …(「還原已發布的 Button tertiary xs」)→ 不算:講的是別次或已發生的發版。
+ *     base 判 consent、算在要,是誤判(user 2026-10-27 回覆裡引的選項文字就是這句)。
+ *   question / deferred / withdraw / none → 不算。「先不發版」這類 RC-LANG-FP 新判 withdraw 的,base 判 consent、算在要,現在不算。
+ * 兩面在 scripts/test-release-self-audit.mjs「AI 端:同意詞後面還接著字」那一段鎖住(RC-LANG-FP 規格核對必修 1)。
+ */
+export function isReleaseRequestPhrase(text, policy = loadConsentPolicy()) {
+  const { verdict } = classifyConsentPrompt(text, policy)
+  if (verdict === 'consent') return true
+  return verdict === 'mention' && consentPhraseUses(String(text), policy).unprefixed
 }
 
 // 直接執行時當成小 CLI:從 stdin 讀整段原話,印出判定。

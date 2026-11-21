@@ -62,7 +62,7 @@ import {
 } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { classifyConsentPrompt, loadConsentPolicy } from './lib/release-consent-language.mjs'
+import { classifyConsentPrompt, isReleaseRequestPhrase, loadConsentPolicy } from './lib/release-consent-language.mjs'
 import {
   PRODUCT_VISIBLE, buildFiveStepStatus, collectLiveObservation, loadReleaseWorkflow, productContentDigest,
 } from './release-orchestrator.mjs'
@@ -89,11 +89,15 @@ const USER_VERBATIM_2026_11_17 = '你他媽確定沒有遺漏或亂做其他東�
 // 什麼字算同意,只有一份判準:release-consent-language.mjs 的 classifyConsentPrompt(與 hook、手動落地共用)。
 // 這裡只多回答一件事 —— AI 是不是在**請 user 現在說**那句會被判成同意的話。形狀:
 //   說 / 講 / 回 / 回覆 / 回答 / 打 / 輸入 / 留言(+ 一句 / 一聲 / 聲 / 個 / 一下)緊接「X」(或「X」或「Y」…),
-//   X 交給 classifyConsentPrompt 判為 consent,而且這個請求是「現在」的:
+//   X 交給 isReleaseRequestPhrase(同一份判準:consent,或同意詞後面還接著字的 mention,例「發版到 npm」)判為在要,
+//   而且這個請求是「現在」的:
 //     前面緊接 請 / 麻煩 / 沒問題就(再)/ 沒意見就 / 直接 / 只要(中間可夾「在對話(框)」);或同句前面有 只差你 / 只等你;或引號後緊接 就好 / 我就 / 兩個字 / 這幾個字…
 //   排除(引號內的字不算):動詞所在的子句有 之後 / 之前 / 才會 / 再請 / 會請 / 不會 / 不准 / 最後會 / 到時 / 剛才 / 已經 …,
 //   或整句以 規則是 / 規定: / 例如 / 錨例 / 原話 開頭框住 —— 那些是在講以後才會問、解釋規則、引述過去,不是現在在要。
-// 只看送到 user 面前的文字:可見回覆、推播訊息、AskUserQuestion 的題目;選項的 label 直接交給同一支判準。
+// 只看送到 user 面前的文字:可見回覆、推播訊息、AskUserQuestion 的題目;選項的 label 直接交給 isReleaseRequestPhrase。
+// 2026-11-21(RC-LANG-FP 規格核對必修 1):判準加了 mention 之後,這兩條路若只認 consent,「說「發版到 npm」」、
+// 選項「發版 beta.140」就不再算在要(base 都算);所以改認 isReleaseRequestPhrase。只有前面緊接 上次 / 已 / 沒 … 的
+// (選項「還原已發布的 Button tertiary xs」)改成不算 —— base 算在要是誤判。兩面在 scripts/test-release-self-audit.mjs 鎖住。
 // 不看:程式碼區塊、> 引用行、行內 `code`、引號裡面的請求(那是在引述,例如引自己 11-17 那句錯誤示範)。
 // 本輪真 user 訊息本身判為 consent → 回覆是在受理 user 剛說的「發版」,不是在要。
 // 刻意窄:誤擋的代價是 turn 結束不了;已知不涵蓋 —— 英文要同意、不用引號的要法(「你說發版我就合併」)。
@@ -225,7 +229,7 @@ function headClause(before) {
 /** 單句判定(抽出來讓判定表可以逐句驗)。回 null = 不是在要同意。 */
 export function consentRequestInSentence(sentence, policy = loadConsentPolicy()) {
   for (const request of findSayRequests(sentence)) {
-    const consentPhrase = request.phrases.find((phrase) => classifyConsentPrompt(phrase, policy).verdict === 'consent')
+    const consentPhrase = request.phrases.find((phrase) => isReleaseRequestPhrase(phrase, policy))
     if (!consentPhrase) continue
     const before = sentence.slice(0, request.verbIndex)
     const after = sentence.slice(request.chainEnd)
@@ -260,7 +264,7 @@ export function detectConsentRequest({ reply = '', delivered = [], options = [],
   scan('reply', reply)
   for (const text of Array.isArray(delivered) ? delivered : []) if (typeof text === 'string') scan('delivered', text)
   for (const label of Array.isArray(options) ? options : []) {
-    if (typeof label === 'string' && classifyConsentPrompt(label, policy).verdict === 'consent') {
+    if (typeof label === 'string' && isReleaseRequestPhrase(label, policy)) {
       matches.push({ channel: 'option', sentence: label.trim(), phrase: label.trim() })
     }
   }

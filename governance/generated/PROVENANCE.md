@@ -26,7 +26,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:f8922bf943e4e17f69377f09fab3c9ba806e0a6b22133801ddb199c454f7e21a` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:d6e9287d17f431bd4c45c01787f05e3fe391542ede4748dba4b64f09ea35cda8` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:ff8a94cb8a3b458b2786c7015f5654db325ca3a38bc1e5a9160aa21da9feb9cd` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:487e70af5ebbd38306b7bd01b47d90df1b8f3ebc24a916a35fa005076ed93693` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:8a9af12eeb79fe71a7e7f4435368d723c45c1925607d8abbf3b2730254a39578` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:65a997b7114a75520c85194e9dbce7b7a5c02f789470d9ac34c8f9b7503990b8` |
+| repository-automation-corpus | `scripts` | `sha256:a3543fd6831f307d9693c8f980f907da9a79537e7937f395bfa8e85fad803a54` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
@@ -358,7 +358,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | signed-release-tag-adversarial-tests | `infra/governance/test/signed-release-tag.test.mjs` | `sha256:3db02827a0d9edce2a07b559131836e3a0efa5ac45537a8388f7f97c37203587` |
 | signed-release-tag-verifier | `infra/governance/lib/signed-release-tag.mjs` | `sha256:d081048b17171cc3f469f2e460fb254023d3c866d35033cb689b366d2ddb8230` |
 | standard-release-orchestrator | `scripts/release-orchestrator.mjs` | `sha256:fa4a7c1214009e001e8a464eb3eb704487a4828900c04e8c4df501028fdede23` |
-| standard-release-workflow | `infra/governance/release-workflow.json` | `sha256:b30a864aea1e00336b148a556ebd4e32091d067ccb93ff6fd6f5a74be06a70ac` |
+| standard-release-workflow | `infra/governance/release-workflow.json` | `sha256:c00f898f2fac7356582abf2a69daf8223336fce810404622185e578df88d7d9e` |
 | standard-release-workflow-schema | `infra/governance/schemas/release-workflow.schema.json` | `sha256:cb3e411547348d63ed03871a47e863ba41487349842ea5d0ced2a8c8ef5b219b` |
 | standard-release-workflow-tests | `infra/governance/test/release-workflow.test.mjs` | `sha256:0986d2a6713044150367520f9821cc6c65e16d72f6029b203fe7ce6da2e5ae0d` |
 | storybook-package-contract | `packages/storybook-config/package.json` | `sha256:e93c9520bf25b755d1f2f446b899313de43a68aab8cb718b866d6c2cef86b1e6` |

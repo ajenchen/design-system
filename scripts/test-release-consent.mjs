@@ -251,7 +251,7 @@ try {
     assert.equal(classifyConsentPrompt(text).verdict, verdict, `user ${when} 的原話判定變了:「${text}」`)
   }
 
-  // 5h. 不是同意的兩類(2026-11-21,工作包 RC-LANG-FP;E7 實作者回報、E7 審查實測,先前每一句都判 consent,
+  // 5h. 不是同意的兩類(2026-11-21,工作包 RC-LANG-FP;E7 實作者回報、E7 審查實測,先前除「不要發版」外每一句都判 consent,
   //     hook 與手動落地都會寫出有效收據):(a) 只是提到發版 / 發布;(b) 否定 / 延後。
   //     (a) 的兩句是 user 真實原話全文(session 1920833e transcript 的 user 訊息,逐字;時間為 UTC),另附規格給的最小片段。
   const REAL_0926 = '確保所有包括自上次發版後的異動都是追根究柢的增刪改，該SSOT的部分都有確保SSOT,所有內容都有符合我們一致的設計語言且不違背世界級的設計，整個ds沒有漂移,確保所有相關問題都有一併被修正，然後確保沒有改壞任何原本好的地方，都有透過可驗證的方式自行驗證到完整完美，包括視覺稽查，確保所有都合乎我的要求'
@@ -282,6 +282,21 @@ try {
   }
   //     刻意保守、已知會擋到的(release-consent-language.mjs 第 7 步寫明):同意詞後面直接接受詞 → mention,hook 會出聲。
   assert.equal(classifyConsentPrompt('發版到 npm').verdict, 'mention')
+  //     「發版 謝謝」這類同意詞後面接客套 / 受詞的說法現在也是 mention;要不要改收是產品語意取捨(RC-LANG-FP 規格核對 minor 4,
+  //     交主線 / user 決定)。這格只鎖現況:改判時連同這段說明一起改。
+  assert.equal(classifyConsentPrompt('發版 謝謝').verdict, 'mention')
+
+  //     句尾的引號 / 括號、刪節號、emoji、訊息最後的冒號都算句尾(RC-LANG-FP 規格核對必修 2)。
+  //     hook 對 mention 印「若這是要我發版,直接說「發版」即可」;user 照著連引號打「發版」若仍判 mention,就永遠落不了地。
+  //     這些 base f87872c8 都判 consent,第一版 RC-LANG-FP 誤改成 mention。
+  const CLOSING_CONSENT = ['「發版」', '"發版"', '（發版）', '發版…', '發版🙏', 'OK，發版🚀', '可以改，發版🙏', '發版：']
+  for (const text of CLOSING_CONSENT) {
+    assert.equal(classifyConsentPrompt(text).verdict, 'consent', `「${text}」是明確同意(收尾符號不是在接受詞),不得判成只是提到`)
+  }
+  //     另一面:收尾符號後面還接著字、或開括號接受詞,仍是只是提到。
+  for (const text of ['「發版」流程', '發版（beta.140）', '發版：beta.140 已上線']) {
+    assert.equal(classifyConsentPrompt(text).verdict, 'mention', `「${text}」後面還接著字,不是在指示現在發版`)
+  }
 
   //     會紅的對照組(只在記憶體裡複製判準,不寫檔):
   //     (a) 兩份清單一起拿掉(句尾條件換成「什麼都算」、前綴換成永不命中)→ 提到的句子必須改判回 consent,
@@ -294,6 +309,12 @@ try {
   }
   assert.equal(classifyConsentPrompt('發版流程太慢了', { ...livePolicy, directiveEndings: [''] }).verdict, 'consent',
     '句尾條件放寬成「什麼都算」卻沒改判 = directiveEndings 量不到')
+  //     換回第一版 RC-LANG-FP 的句尾條件(只收句尾 / 標點 / 語助詞)→ 上面那幾句收尾符號的同意必須改判回 mention,
+  //     證明讓它們成立的是這次放寬的收尾符號,不是別的步驟。
+  const FIRST_ENDINGS = { ...livePolicy, directiveEndings: ['\\s*([吧啦了囉嘍喔哦唷呀啊咯～~]\\s*)*($|[，,。．.！!；;、\\n])'] }
+  for (const text of CLOSING_CONSENT) {
+    assert.equal(classifyConsentPrompt(text, FIRST_ENDINGS).verdict, 'mention', `換回第一版句尾條件後「${text}」沒有改判 = 這格量不到收尾符號`)
+  }
   const PREFIX_ANCHORS = [
     ['(上|下|前|每)一?(次|回)', '上次發版。'],
     ['已經?', '已經發版了'],

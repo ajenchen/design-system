@@ -92,6 +92,10 @@ for NEG in 先不發版 這次不發版 延後發版 還不能發版; do
   run "${NEG}" >/dev/null; check "9k. 「${NEG}」→ 撤回既有同意" no "$FILE"
 done
 run "發版" >/dev/null; check "9l. 「發版」→ 落地(後面的格子要用)" yes "$FILE"
+# 9m. 照 mention 訊息「直接說「發版」即可」連引號一起打出來,必須落地 —— 否則 user 永遠在同一句訊息裡繞圈
+#     (RC-LANG-FP 規格核對必修 2;判準兩面在 scripts/test-release-consent.mjs 5h)。
+rm -f "$FILE"
+run "「發版」" >/dev/null; check "9m. 連引號打「發版」→ 落地(不得又判只是提到)" yes "$FILE"
 
 # 10. 判準來自 SSOT,不是 hook 自己寫的 regex
 grep -q "release-consent-language.mjs" "$HOOK"; assert "10. hook 消費共用判準(不自己寫 regex)" $?
