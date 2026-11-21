@@ -59,6 +59,12 @@
             "requires": [
               "peer-cli"
             ]
+          },
+          {
+            "kind": "hook",
+            "hook": "check_bash_command_shape.sh",
+            "runtime": "bash",
+            "outputMode": "governance-context-or-block"
           }
         ]
       },

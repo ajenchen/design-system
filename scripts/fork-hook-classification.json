@@ -242,6 +242,10 @@
     {
       "hook": "check_ssot_header_declaration.sh",
       "reason": "DS-authoring 專用:scope = packages/design-system/src/components 新檔(fork 端該路徑在 node_modules 唯讀,永不觸發);fork consumer 造輪防護由 check_consumer_app_invariants r3 primitive-misuse 涵蓋。"
+    },
+    {
+      "hook": "check_bash_command_shape.sh",
+      "reason": "2026-11-21 PROC-H:PreToolUse(Bash) deny 照動作意思比對 + emulate sh 提示。讀 DS repo 的 adapters/claude-settings-base.json 與 hooks/lib/_deny_norm.py(fork 語料不帶這兩個檔,consumer 的 deny 清單由 template/.claude/settings.json 投影);要出貨給 consumer 得先把 lib 與 deny 檔一起投影進 fork,不在本包。"
     }
   ]
 }

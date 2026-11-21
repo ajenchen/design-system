@@ -36,6 +36,7 @@ Claude 每個 prompt（包含 `Hi`）都在送出前顯示 `TRANSCRIPT_SIZE_OR_T
 | `lib/benchmark-citation-sources.json` | 上一列讀的名稱 / 網域資料表(2026-11-05 K8 盤點的名稱對網域表) |
 | `lib/ask-route.mjs` | `stop_self_audit.sh` Mechanism 13「該不該問」的判定;合法集合每次從 AGENTS.md 決策區塊、`lib/approval-evidence.mjs` 的 `humanOnlyAuthorityScopes()`、`infra/governance/release-workflow.json` 讀,本檔與 hook 都不帶清單 |
 | `tests/registration-output-contracts.mjs` | registration output contract 的固定測試程式 |
+| `lib/_deny_norm.py` | deny 正規化的唯一實作(展開函式 / 變數包裝、sh -c、eval,還原 git -C / -c / 別名、env 前綴、絕對路徑後比對 `adapters/claude-settings-base.json` 的 deny);`check_bash_command_shape.sh` 用 `hook` 子指令、`check_solo_workflow.sh` R1 用 `check` 子指令。判定表唯一一份:`tests/fixtures/deny-norm/cases.json`(改 deny 清單要同一次改期望值與 denySha256) |
 
 Node helper 必須是本 canonical tree 內可盤點、可雜湊的 committed `.mjs`，shell 只能用 `node -- <exact-static-path> ...` 傳資料。禁止 `node -e`、`node -p`、`--eval`、`--print`、stdin / heredoc JavaScript；provider view 一律由 canonical source 生成。
 

@@ -172,6 +172,7 @@
         "packages/design-system/ds-canonical/hooks/tests/test_check_app_shell_primary_header_consistency.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_audit_post_report_validator.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_audit_sample_escape.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_bash_command_shape.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_benchmark_citation.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_canonical_propagation.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_chrome_header_handcraft.sh",

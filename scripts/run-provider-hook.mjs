@@ -598,6 +598,9 @@ function hookCorpusAuthorityPaths(canonicalRegistry) {
     // stop_self_audit.sh Mechanism 13(lib/ask-route.mjs)從 corpus 讀發版同意的 gate;少了這個檔,密封語料模式
     // (GOVERNANCE_HOOK_SEALED_CORPUS=1 / STRICT / NODE_ENV=test)每次 Stop 都回 70,整支 stop_self_audit 降級(2026-11-21 WP-06)。
     'infra/governance/release-workflow.json',
+    // check_bash_command_shape.sh 拿 provider deny 清單做「照動作意思」的比對(hooks/lib/_deny_norm.py);密封語料模式
+    // 少了這個檔就每次 Bash 都報「沒比對」(2026-11-21 PROC-H)。
+    'packages/design-system/ds-canonical/adapters/claude-settings-base.json',
   ]
   if (paths.some((value) => typeof value !== 'string' || !value)) {
     failIntegrity('provider hook corpus authority path declaration is invalid')
