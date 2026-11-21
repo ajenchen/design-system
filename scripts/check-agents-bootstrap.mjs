@@ -3,9 +3,12 @@
  * @gate-contract
  *   保證: AGENTS.md / CLAUDE.md 的 bootstrap 結構完整 —— A1 root→最深 package scope 的指令鏈 ≤ 32KiB(Codex 靜默截斷上限)、
  *         A2 CLAUDE.md 以 `@AGENTS.md` 開頭、A3 Rule Index 路徑存在且 provider view 只出現在明示 adapter 的說明、
- *         A4 兩檔無重複 normative 標題、A5 npm files 含兩檔且 shipped package instructions 來自獨立短 source。
- *   紅: 任一斷言不成立 → 印出哪一條與實測數字(例:鏈的 bytes),exit 1。
- *   綠: 五條全部成立。純靜態讀檔,結果不隨時間 / 機器變。
+ *         A4 兩檔無重複 normative 標題、A5 npm files 含兩檔且 shipped package instructions 來自獨立短 source、
+ *         A8「交 user / human-only」集合只住 AGENTS.md#canonical-decision-authority + approval-evidence.mjs + release-workflow.json,
+ *         別處的手抄清單 / 寫死的 scope id / 手寫類別數都要引用它(引了 id 清單就要與它相同),分類器與收據契約的 fork / template 投影逐位元組相同。
+ *   紅: 任一斷言不成立 → 印出哪一條與實測數字(例:鏈的 bytes)或 檔:行,exit 1。
+ *       A8 讀不到 SSOT、或每次先跑的對照組(用 SSOT 字彙造的合成文字)答錯 → 量具失效 exit 2(不是綠)。
+ *   綠: 全部成立。純靜態讀檔,結果不隨時間 / 機器變。A8 只在有 packages/design-system/ds-canonical 的 repo 跑(fixture 小樹沒有就不適用)。
  *   執行面: 2026-09-27 起 verify-static `npm run check:agents-bootstrap`(此前只有 fixture 測試呼叫,真 repo 沒人跑 —— 待辦總帳 N14(a))。
  *
  * check-agents-bootstrap.mjs — PNG P1.3 bootstrap 完整性閘(2026-07-16)。
@@ -21,11 +24,13 @@
  *   A3 AGENTS.md canonical repo 路徑存在；provider-view 路徑只准出現在明示 adapter/non-authority 的說明
  *   A4 兩檔無重複 normative 標題(# / ## 級;Claude 段的機制說明豁免清單)
  *   A5 npm files 含 AGENTS/CLAUDE；shipped package instructions 精確來自獨立短 source，且不得複製 root
+ *   A8 authority 集合不在別處手抄(2026-11-22 WP-AGENTS / ASKFIX-REPO-DRIFT;判法見 A8 段開頭)
  *
  * 用法:node scripts/check-agents-bootstrap.mjs [--check]
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { readAskRouteSsot } from '../packages/design-system/ds-canonical/hooks/lib/ask-route.mjs'
 
 const rootIndex = process.argv.indexOf('--root')
 if (rootIndex !== -1 && !process.argv[rootIndex + 1]) {
@@ -151,6 +156,181 @@ try {
     if (first?.trim() !== '@AGENTS.md') errors.push('A5: packages/design-system/CLAUDE.md 首個非空行必須是 "@AGENTS.md"')
   }
 } catch (e) { errors.push(`A5: package.json 讀取失敗 ${e.message}`) }
+
+// A8:「交 user / human-only」集合不得在別處手抄(ASKFIX-REPO-DRIFT;user 2026-11-20 09:23「給我確保這種事情上都有SSOT 沒有漂移」)。
+// SSOT = AGENTS.md#canonical-decision-authority 區塊 + approval-evidence.mjs humanOnlyAuthorityScopes() + release-workflow.json 發版同意,
+// 執行時經 hooks/lib/ask-route.mjs 的 readAskRouteSsot 讀(同一支讀法,不另寫;靜態 import,不動態載入模組)。偵測字彙全部由 SSOT 衍生、本檔不帶清單:
+//   A8a 同一段寫了 ≥ 2 個 humanOnlyScopes id → 那一段要引用 SSOT,而且列的 id 集合要等於 SSOT(引了出處卻抄舊集合也紅);
+//       [交user:<id>] 是逐筆宣告,不算列舉。
+//   A8b 連續幾行(每行至少一個)寫到 ≥ 3 個 human-only 動作詞 → 同一段要引用 SSOT。
+//       動作詞 = 決策區塊「**Human-only boundaries**」第一句(括號內的補充除外)裡,以 / 、 , 分開的每一項的英文詞。
+//   A8c 寫「交 user 的只有 N 種 / 類」這種類別數 → 同一段要引用 SSOT,且 N = SSOT 集合大小。
+//   A8d approval-evidence.mjs、authority-decision-evidence.mjs 的 fork / template 投影與正本逐位元組相同。
+// 掃的範圍 = 會被讀來決定下一步的正本(根目錄 .md、ds-canonical、scripts、infra、packages/governance、governance/memory、docs);
+// 生成檔(provider views、fork、template、generated)、歷史與證據(governance/planning、governance/archive、fixtures)不掃。
+// 豁免:標記區塊本身、SSOT 檔本身(approval-evidence.mjs、ask-route.mjs、release-workflow.json)。
+// 每次執行先跑對照組(用 SSOT 讀到的字彙造合成文字;該紅的要紅、該綠的要綠),答錯 = 量具失效 exit 2。
+const DS_CANONICAL = path.join(ROOT, 'packages/design-system/ds-canonical')
+if (fs.existsSync(DS_CANONICAL)) {
+  const CLASSIFIER_REL = 'packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs'
+  const RECEIPT_REL = 'packages/governance/src/authority-decision-evidence.mjs'
+  const SSOT_FILES = new Set([CLASSIFIER_REL, 'packages/design-system/ds-canonical/hooks/lib/ask-route.mjs', 'infra/governance/release-workflow.json'])
+  const PROJECTIONS = [
+    [CLASSIFIER_REL, 'packages/design-system/ds-canonical/fork/launchers/approval-evidence.mjs'],
+    [CLASSIFIER_REL, 'template/ds-product-template/governance/bin/approval-evidence.mjs'],
+    [RECEIPT_REL, 'packages/design-system/ds-canonical/fork/launchers/authority-decision-evidence.mjs'],
+    [RECEIPT_REL, 'template/ds-product-template/governance/bin/authority-decision-evidence.mjs'],
+  ]
+  const CITE = /canonical-decision-authority|approval-evidence\.mjs|release-workflow\.json|humanOnlyAuthorityScopes/
+  const INCLUDE = [/^[^/]+\.md$/, /^packages\/design-system\/ds-canonical\//, /^scripts\//, /^infra\//, /^packages\/governance\//, /^governance\/memory\//, /^docs\//]
+  const EXCLUDE = [/^packages\/design-system\/ds-canonical\/fork\//, /^governance\/(?:planning|archive|generated)\//, /(?:^|\/)(?:test-)?fixtures\//,
+    /^infra\/governance\/(?:evidence|runtime|baseline)\//, /^CHANGELOG/, /(?:^|\/)package-lock\.json$/]
+  const TEXT = /\.(?:md|mjs|js|cjs|ts|sh|py|json|ya?ml|txt)$/
+  const MD = /\.md$/
+  const MARKER = /\[\s*交\s*user\s*[:：][^\]\n]*\]/g
+  const CN_NUM = { 一: 1, 二: 2, 兩: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 }
+  const N = '([0-9]+|[一二兩三四五六七八九十])'
+  const ROUTE = '(?:ASK|human[-\\s]?only|交\\s*(?:給\\s*)?user|問\\s*user|要你決定|請你決定|user\\s*(?:決定|拍板))'
+  const COUNT_RES = [
+    new RegExp(`${ROUTE}[^。\\n]{0,10}?(?:只有|只限|只准|只能|僅限?|就是|共)\\s*${N}\\s*(?:種|類)`, 'iu'),
+    new RegExp(`(?:只有|只限|只准|只能|僅限?)[^。\\n]{0,16}?${N}\\s*(?:種|類)\\s*(?:的\\s*)?${ROUTE}`, 'iu'),
+    new RegExp(`(?:分成?|共)\\s*${N}\\s*(?:種|類)(?=[^。\\n]{0,24}${ROUTE})`, 'iu'),
+  ]
+  const instrument = []
+  let ssot = null
+  let terms = []
+  try {
+    ssot = readAskRouteSsot(ROOT)
+    const agentsLines = fs.readFileSync(A, 'utf8').split('\n')
+    const boundary = [...ssot.refLines].map((n) => agentsLines[n - 1]).find((l) => /^\*\*Human-only boundaries\*\*/.test(l.trim()))
+    if (!boundary) throw new Error('決策區塊裡沒有「**Human-only boundaries**」段')
+    const first = boundary.trim().replace(/^\*\*Human-only boundaries\*\*\s*[:：]?/, '').split('。')[0].replace(/[(（][^)）]*[)）]/g, ' ')
+    terms = [...new Set(first.split(/[/／、,，;；]/).map((item) => (item.match(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})*/g) || []).join(' ').toLowerCase()).filter(Boolean))]
+    if (terms.length < 3) throw new Error(`Human-only boundaries 只讀到 ${terms.length} 個動作詞(${terms.join(', ')})`)
+  } catch (e) {
+    instrument.push(`A8 量具失效:讀不到 SSOT(${e.message})`)
+  }
+  const termRe = terms.map((t) => [t, new RegExp(`(?<![A-Za-z])${t.split(' ').map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[\\s_-]+')}(?![A-Za-z])`, 'i')])
+  const idRe = (ssot?.scopes || []).map((id) => [id, new RegExp(`(?<![A-Za-z0-9-])${id}(?![A-Za-z0-9-])`)])
+  const paragraphs = (lines, md) => {
+    // 段落 = 連續非空行;markdown 再從條列項、表格列、標題切開。回 [起, 迄](0 起算、含迄)。
+    const out = []
+    const head = (l) => /^\s*(?:[-*+]|\d+[.)])\s|^\s*\||^\s*#{1,6}\s/.test(l)
+    let i = 0
+    while (i < lines.length) {
+      if (!lines[i].trim()) { i += 1; continue }
+      let j = i + 1
+      while (j < lines.length && lines[j].trim() && !(md && (head(lines[j]) || /^\s*\|/.test(lines[i])))) j += 1
+      out.push([i, j - 1])
+      i = j
+    }
+    return out
+  }
+  const scan = (rel, text, skip = () => false) => {
+    const found = []
+    const md = MD.test(rel)
+    const lines = text.split('\n')
+    const paras = paragraphs(lines, md)
+    const paraOf = new Array(lines.length)
+    paras.forEach((p, k) => { for (let i = p[0]; i <= p[1]; i += 1) paraOf[i] = k })
+    const windowText = (a, b) => {
+      const s = Math.max(paras[paraOf[a]]?.[0] ?? a, a - 12)
+      const e = Math.min(paras[paraOf[b]]?.[1] ?? b, b + 12)
+      return lines.slice(s, e + 1).join('\n')
+    }
+    // A8a 清單形狀:同一行 ≥ 2 個 id,或連續幾行(每行有 id,或是一個單獨的 kebab 字串 / 條列項,例 `'x-y',`)合起來 ≥ 2 個 id
+    const idHits = lines.map((l, i) => (skip(i) ? [] : idRe.filter(([, re]) => re.test(l.replace(MARKER, ' '))).map(([id]) => id)))
+    const element = (l) => /^\s*(?:[-*+]\s+`?[a-z0-9]+(?:-[a-z0-9]+)*`?\s*$|['"`][a-z0-9]+(?:-[a-z0-9]+)*['"`],?\s*$)/.test(l)
+    for (let i = 0; i < lines.length;) {
+      if (!idHits[i].length) { i += 1; continue }
+      let j = i
+      const ids = new Set()
+      while (j < lines.length && !skip(j) && (idHits[j].length || element(lines[j]))) { idHits[j].forEach((id) => ids.add(id)); j += 1 }
+      if (ids.size >= 2) {
+        const listed = [...ids]
+        if (!CITE.test(windowText(i, j - 1))) found.push(`A8a ${rel}:${i + 1} 寫死 ${listed.length} 個 humanOnlyScopes id(${listed.join(', ')})卻沒引用 SSOT(AGENTS.md#canonical-decision-authority / approval-evidence.mjs)`)
+        else if (listed.length !== ssot.scopes.length) found.push(`A8a ${rel}:${i + 1} 引了 SSOT 卻只列 ${listed.length} / ${ssot.scopes.length} 個 id(${listed.join(', ')})—— 抄本與正本不符`)
+      }
+      i = j
+    }
+    // A8b
+    const hits = lines.map((l, i) => (skip(i) ? [] : termRe.filter(([, re]) => re.test(l)).map(([t]) => t)))
+    for (let i = 0; i < lines.length;) {
+      if (!hits[i].length) { i += 1; continue }
+      let j = i
+      const union = new Set()
+      while (j < lines.length && hits[j].length) { hits[j].forEach((t) => union.add(t)); j += 1 }
+      if (union.size >= 3 && !CITE.test(windowText(i, j - 1))) {
+        found.push(`A8b ${rel}:${i + 1} 自訂 human-only 清單(${[...union].join(' / ')})卻沒引用 SSOT(AGENTS.md#canonical-decision-authority)`)
+      }
+      i = j
+    }
+    // A8c
+    lines.forEach((l, i) => {
+      if (skip(i)) return
+      const plain = l.replace(/「[^「」]*」/g, '「」')
+      for (const sentence of plain.split(/[。!！?？]/)) {
+        for (const re of COUNT_RES) {
+          const m = re.exec(sentence)
+          if (!m) continue
+          const n = /^\d+$/.test(m[1]) ? Number(m[1]) : CN_NUM[m[1]]
+          if (!CITE.test(windowText(i, i)) || n !== ssot.allowed.length) {
+            found.push(`A8c ${rel}:${i + 1} 手寫「交 user」類別數「${m[0]}」(SSOT 集合 ${ssot.allowed.length} 個;要引用 SSOT 且數字一致,或改成指向)`)
+          }
+        }
+      }
+    })
+    return found
+  }
+  if (!instrument.length) {
+    // 對照組:字彙取自 SSOT,本檔不寫任何類別清單。
+    const [t1, t2, t3] = terms
+    const ids = ssot.scopes
+    const allIdsCode = `const X = [\n${ids.map((id) => `  '${id}',`).join('\n')}\n]\n`
+    const controls = [
+      ['a.md', `只有 ${t1} / ${t2} / ${t3} 要交給人。\n`, 'A8b'],
+      ['a.md', `只有 ${t1} / ${t2} / ${t3} 要交給人(見 AGENTS.md#canonical-decision-authority)。\n`, null],
+      ['a.mjs', `const ROUTES = {\n  '${t1}': 1,\n  '${t2}': 2,\n  '${t3}': 3,\n}\n`, 'A8b'],
+      ['a.mjs', allIdsCode, 'A8a'],
+      ['a.mjs', `// 出處 approval-evidence.mjs\n${allIdsCode}`, null],
+      ['a.mjs', `// 出處 approval-evidence.mjs\nconst X = ['${ids[0]}', '${ids[1]}']\n`, 'A8a'],
+      ['a.md', `第一段 ${ids[0]}。\n\n第二段 ${ids[1]}。\n`, null],
+      ['a.md', `[交user:${ids[0]}] 與 [交user:${ids[1]}]\n`, null],
+      ['a.md', `交 user 的只有 ${ssot.allowed.length + 1} 種。\n`, 'A8c'],
+    ]
+    controls.forEach(([rel, text, want], k) => {
+      const got = scan(rel, text)
+      const ok = want ? got.length > 0 && got.every((f) => f.startsWith(want)) : got.length === 0
+      if (!ok) instrument.push(`A8 量具失效:對照組第 ${k + 1} 格應${want ? `紅在 ${want}` : '綠'},實際 ${JSON.stringify(got)}`)
+    })
+  }
+  if (instrument.length) {
+    console.error('❌ agents-bootstrap 閘 INSTRUMENT:')
+    for (const e of instrument) console.error('   - ' + e)
+    process.exit(2)
+  }
+  const walk = (dir, out = []) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isSymbolicLink()) continue
+      const abs = path.join(dir, entry.name)
+      if (entry.isDirectory()) { if (!DISCOVERY_SKIP_DIRECTORIES.has(entry.name)) walk(abs, out) } else if (entry.isFile()) out.push(path.relative(ROOT, abs).split(path.sep).join('/'))
+    }
+    return out
+  }
+  const corpus = walk(ROOT).filter((rel) => TEXT.test(rel) && INCLUDE.some((re) => re.test(rel)) && !EXCLUDE.some((re) => re.test(rel)) && !SSOT_FILES.has(rel))
+  const blockLines = ssot.refLines
+  for (const rel of corpus) {
+    const skip = rel === 'AGENTS.md' ? (i) => blockLines.has(i + 1) : undefined
+    errors.push(...scan(rel, fs.readFileSync(path.join(ROOT, rel), 'utf8'), skip))
+  }
+  for (const [source, projection] of PROJECTIONS) {
+    const a = path.join(ROOT, source)
+    const b = path.join(ROOT, projection)
+    if (!fs.existsSync(a) || !fs.existsSync(b)) errors.push(`A8d 缺檔:${!fs.existsSync(a) ? source : projection}`)
+    else if (!fs.readFileSync(a).equals(fs.readFileSync(b))) errors.push(`A8d ${projection} 與正本 ${source} 位元組不同(跑 npm run governance:generate)`)
+  }
+  console.log(`A8 掃了 ${corpus.length} 個正本文字檔;動作詞 ${terms.length} 個、scope id ${ssot.scopes.length} 個、SSOT 集合 ${ssot.allowed.length} 個(皆由 SSOT 讀);對照組 9 格答對`)
+}
 
 if (errors.length) {
   console.error('❌ agents-bootstrap 閘 FAIL:')

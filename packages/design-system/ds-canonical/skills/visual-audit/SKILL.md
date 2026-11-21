@@ -67,8 +67,8 @@ capture manifest 解析 audit target。缺 screenshot 時，優先用既有 Stor
 流程自行產生；viewport、density、theme 與 size 必取自同一 capture manifest，不靠猜測或
 另問 user。元件 token 由 owning spec 與 token registry 解析。
 
-只有在本機／既有受治理環境確實無法取得 target 或影像，且原因是不可代理的登入、MFA、
-OAuth 或 private surface access 時，才形成 shared-governance human-only action；此時先完成
+只有在本機／既有受治理環境確實無法取得 target 或影像，且原因是共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary
+(例:不可代理的登入、private surface access)時，才形成 human-only action；此時先完成
 所有其他 preflight，只回報唯一必要操作。若 owning spec 缺 token，記為 P2E governance
 evidence gap 並交 canonical owner；若補值會創造產品／UI／UX SSOT 真取捨才列 P2H。
 

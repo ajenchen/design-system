@@ -9,7 +9,7 @@ description: Systematic audit of this design system for world-class quality. Run
 
 Purpose: catch every bug class this project has shipped historically PLUS structural gaps relative to Polaris / Material / Atlassian / Ant / Carbon / Apple HIG. Each audit has a clear rubric tied to `packages/design-system/ds-canonical/rules/`, canonical references, or an owning spec. Reports/checkpoints are evidence receipts, not approval milestones.
 
-**分權(本檔只寫這一次,以下各 Phase / Gate / 表格都照這句)**:照 `AGENTS.md`「# 自主執行 canonical」—— 工程／治理 remediation(含大範圍 scope、補 dim／修 mapping、環境與建置修復)standing-delegated AUTO,不得把工程或 compute 策略選擇交給 user;只有會改產品／UI／UX SSOT、且 evidence 收斂後仍有真取捨(= P2H),或撞到共同治理的 human-only boundary(login／credential／額外付費等),才停;independent review 只在 task／deliverable 明確要求時才加。
+**分權(本檔只寫這一次,以下各 Phase / Gate / 表格都照這句)**:照 `AGENTS.md`「# 自主執行 canonical」—— 工程／治理 remediation(含大範圍 scope、補 dim／修 mapping、環境與建置修復)standing-delegated AUTO,不得把工程或 compute 策略選擇交給 user;只有會改產品／UI／UX SSOT、且 evidence 收斂後仍有真取捨(= P2H),或撞到共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary,才停;independent review 只在 task／deliverable 明確要求時才加。
 
 ## Skill 生態位 + 6 維對齊
 

@@ -104,7 +104,7 @@ Authority: <ENGINEERING-AUTO | PRODUCT-UIUX-DECISION | HUMAN-PLATFORM-ACTION>
 Substantive 動議: <工程 → evidence/review/rollback；產品 UI/UX 真取捨 → batch-at-end decision>
 ```
 
-`ENGINEERING-AUTO` 直接進 Phase 6，不等 milestone 確認。只有 `PRODUCT-UIUX-DECISION` 或 shared governance 定義的平台／credential／額外付費／法律帳號商業 human-only boundary 才停；平台 action 前仍先完成唯一工程方案與可做 preflight。
+`ENGINEERING-AUTO` 直接進 Phase 6，不等 milestone 確認。只有 `PRODUCT-UIUX-DECISION` 或共同 bootstrap `canonical-decision-authority` 區塊列的 human-only boundary 才停；平台 action 前仍先完成唯一工程方案與可做 preflight。
 
 ### Phase 6 — Execute(每層 commit / verify)
 

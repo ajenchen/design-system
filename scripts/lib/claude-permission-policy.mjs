@@ -182,6 +182,7 @@ export function readClaudePermissionPolicy({ sourceRoot = DEFAULT_ROOT } = {}) {
     throw new Error('Claude DS adapter permissions.allow must expose only the canonical engineering delegation and registered skills')
   }
   const askCommands = ask.map((rule) => bashRuleCommand(rule, 'Claude permission-policy permissions.ask'))
+  // permissions.ask 只收 human-only 互動;集合 SSOT = AGENTS.md#canonical-decision-authority「Human-only boundaries」。
   if (askCommands.some((command) => !HUMAN_INTERACTION_ASK_COMMANDS.some((pattern) => pattern.test(command)))) {
     throw new Error('Claude permission-policy permissions.ask must be limited to login, MFA/OAuth/2FA, credential-reference, billing, or platform-owner interaction')
   }

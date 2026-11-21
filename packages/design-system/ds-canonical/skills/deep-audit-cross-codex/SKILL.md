@@ -36,7 +36,7 @@ This canonical workflow contains no provider, model, version, API, context-lengt
 
 1. Compare both passes dimension by dimension and independently verify every disagreement.
 2. Preserve unresolved gaps; silence is not agreement and missing evidence is not PASS.
-3. Batch user decisions only for genuine unresolved product／UI／UX SSOT choices. Resolve engineering, governance, security, provider, release, rollout, and remediation decisions under the canonical Standing Authorization; platform-only login/MFA/OAuth/owner/billing actions are human actions, not human engineering decisions.
+3. Batch user decisions only for genuine unresolved product／UI／UX SSOT choices. Resolve engineering, governance, security, provider, release, rollout, and remediation decisions under the canonical Standing Authorization; platform-only human-only actions (the shared bootstrap's `canonical-decision-authority` block) are human actions, not human engineering decisions.
 4. Re-run deterministic gates against the final diff and record both coverage and remaining risk.
 
 A user may explicitly request a single-provider audit. It must be labelled single-provider and must never claim independent review.

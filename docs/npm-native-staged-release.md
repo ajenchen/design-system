@@ -33,7 +33,7 @@ protected-main PR。WM 使用 `design-system-published` repository dispatch，pa
 release 的 `{version, tag, commit}`，receiver 也只能開 PR；兩邊都禁止 direct-main delivery。
 
 五步全部是 `AUTO`。唯一 `ASK` 是既有證據與 SSOT 無法解出的產品／UI／UX 真取捨。
-`login`、`MFA`、`OAuth` 或缺 credential reference 是 runtime `HUMAN_ONLY` 邊界：agent 先完成其餘
+runtime `HUMAN_ONLY` 邊界(集合 = `infra/governance/release-workflow.json` 的 `decisionAuthority.humanOnly`)：agent 先完成其餘
 preparation，只提出一個精確動作；完成後 `npm run release:auto` 從 live state 自動續跑。
 
 ## 發布安全條件
@@ -63,6 +63,6 @@ maximum-assurance profile，必須另有明示 scope；不能偷偷改寫本 run
 
 1. 先跑 `npm run release:status`，以第一個未完成步驟定位問題。
 2. CI／merge／workflow 失敗：agent 在同一 branch/PR 或同一 immutable release identity 自動修復。
-3. login/MFA/OAuth/credential reference：只完成該 exact human action，再跑 `npm run release:auto`。
+3. human-only 邊界(`infra/governance/release-workflow.json` 的 `decisionAuthority.humanOnly`)：只完成該 exact human action，再跑 `npm run release:auto`。
 4. 遠端已成功但本機中斷：直接重跑；orchestrator 會略過已有 live readback 的步驟。
 5. 任何 readback 不一致：fail closed，不移動舊 tag、不改寫已發布 version，修正後使用新的 exact version。

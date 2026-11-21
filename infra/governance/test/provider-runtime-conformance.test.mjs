@@ -220,6 +220,7 @@ function successMockRunner(overrides = {}) {
             release: 'AUTO',
             approvedVisualBaseline: 'AUTO',
             unresolvedUiUxSsot: 'ASK',
+            // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照
             login: 'HUMAN_ONLY',
             mfa: 'HUMAN_ONLY',
             oauth: 'HUMAN_ONLY',
@@ -539,6 +540,7 @@ test('mocked Claude and Codex CLIs produce deterministic semantic evidence witho
       'authority-routing-release-auto': true,
       'authority-routing-approved-visual-baseline-auto': true,
       'authority-routing-unresolved-ui-ux-ssot-ask': true,
+      // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照
       'authority-routing-login-human-only': true,
       'authority-routing-mfa-human-only': true,
       'authority-routing-oauth-human-only': true,
@@ -1577,6 +1579,7 @@ test('Claude decision-authority routing is required and fails closed on route or
             release: 'AUTO',
             approvedVisualBaseline: 'ASK',
             unresolvedUiUxSsot: 'AUTO',
+            // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照(故意填錯的那一份)
             login: 'ASK',
             mfa: 'HUMAN_ONLY',
             oauth: 'HUMAN_ONLY',
@@ -1600,6 +1603,7 @@ test('Claude decision-authority routing is required and fails closed on route or
   assert.equal(assertions.get('authority-routing-engineering-auto'), false)
   assert.equal(assertions.get('authority-routing-approved-visual-baseline-auto'), false)
   assert.equal(assertions.get('authority-routing-unresolved-ui-ux-ssot-ask'), false)
+  // human-only 路由列 = AGENTS.md#canonical-decision-authority「Human-only boundaries」的對照
   assert.equal(assertions.get('authority-routing-login-human-only'), false)
   assert.equal(assertions.get('authority-routing-owner-action-human-only'), false)
   assert.equal(assertions.get('authority-routing-billing-human-only'), false)

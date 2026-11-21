@@ -13,7 +13,7 @@ originSessionId: b1e3fe19-f71f-4828-b483-cf3fe2323f47
 「我要授權codex永遠都可以做這種事啊,確保ssot不要再作繭自縛了,我授權該做的就自動做一做」
 → 研究/審查/比稿 ad-hoc codex 一律可用 `--sandbox danger-full-access` / `--dangerously-bypass-approvals-and-sandbox`,**不逐次請示**。
 **邊界不變**:brief 限 read-only 產出,禁 codex 寫/刪/改 source;受治理 provider broker lane 的 `forbiddenArguments` 禁令不因此放寬。
-**禁自鎖**(user:「你他媽不要又再作繭自縛為自己加鎖了」):授權內動作被自家 policy/schema/sandbox/hook 擋 → 解自己的鎖或用不放寬安全邊界的既有機制;禁丟回 user/要 user 付費/宣稱做不到。真人邊界僅 login/MFA/OAuth、缺 credential reference、plan 外付費、法律/帳號、產品-UI-UX 真取捨。同族 = M36(b)(b′)。
+**禁自鎖**(user:「你他媽不要又再作繭自縛為自己加鎖了」):授權內動作被自家 policy/schema/sandbox/hook 擋 → 解自己的鎖或用不放寬安全邊界的既有機制;禁丟回 user/要 user 付費/宣稱做不到。真人邊界僅 `AGENTS.md#canonical-decision-authority` 列的那幾類。同族 = M36(b)(b′)。
 
 ## B. Transport(地端)
 

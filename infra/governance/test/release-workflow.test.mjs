@@ -86,6 +86,7 @@ test('canonical release workflow validates and exposes exactly five AUTO steps',
 })
 
 test('decision authority has one ASK class and only four resumable human runtime boundaries', () => {
+  // 釘選 release-workflow.json 的 decisionAuthority(SSOT 就是這份 JSON)
   assert.deepEqual(workflow.decisionAuthority, {
     engineering: 'AUTO',
     ask: 'unresolved-product-ui-ux-ssot-choice',

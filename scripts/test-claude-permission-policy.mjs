@@ -201,6 +201,7 @@ try {
     writeFileSync(sourcePath, `${JSON.stringify(poisoned)}\n`)
     assert.throws(() => readClaudePermissionPolicy({ sourceRoot: semanticFixture }), pattern)
   }
+  // 錯誤訊息裡的 human-only 動作 = AGENTS.md#canonical-decision-authority「Human-only boundaries」(claude-permission-policy.mjs 同一句)
   assertSemanticPoison(
     value => value.permissions.ask.push('Bash(git push *)'),
     /ask must be limited to login, MFA\/OAuth\/2FA, credential-reference, billing, or platform-owner/,

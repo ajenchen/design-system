@@ -390,6 +390,7 @@ export function validateReleaseWorkflow(workflow) {
   invariant(workflow.profile === 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM', 'release workflow must use the standard small-team profile')
   invariant(workflow.decisionAuthority?.engineering === 'AUTO', 'release engineering authority must be AUTO')
   invariant(workflow.decisionAuthority?.ask === 'unresolved-product-ui-ux-ssot-choice', 'only unresolved product/UI/UX SSOT choices may ASK')
+  // 釘選 infra/governance/release-workflow.json 的 decisionAuthority.humanOnly(SSOT 在該檔;改那份時這裡一起改)
   invariant(
     JSON.stringify(workflow.decisionAuthority?.humanOnly) === JSON.stringify(['login', 'mfa', 'oauth', 'credential-reference']),
     'human-only boundaries must be exactly login/MFA/OAuth/credential-reference',
@@ -496,6 +497,7 @@ function run(command, args, { allowFailure = false, input, env } = {}) {
   if (result.status !== 0 && !allowFailure) {
     const detail = `${result.stderr || result.stdout}`.trim()
     if (/authentication|not logged|login|oauth|token.*required|HTTP 401/i.test(detail)) {
+      // 邊界名取自 release-workflow.json decisionAuthority.humanOnly
       throw new HumanBoundaryError('login/oauth/credential-reference', detail || `${command} authentication is required`)
     }
     if (/two.factor|2fa|mfa/i.test(detail)) {
@@ -597,6 +599,7 @@ export function curlGitHubParallel(paths, { token = null, retry = path => curlGi
 function shimDone(response, { allowFailure, label, mapText = null }) {
   if (!response.ok) {
     if (allowFailure) return { ok: false, stdout: '', stderr: `HTTP ${response.code}` }
+    // 邊界名取自 release-workflow.json decisionAuthority.humanOnly
     if (response.code === 401) throw new HumanBoundaryError('login/oauth/credential-reference', `HTTP 401 for ${label}`)
     throw new Error(`${label} failed: HTTP ${response.code}: ${response.text.slice(0, 300)}`)
   }

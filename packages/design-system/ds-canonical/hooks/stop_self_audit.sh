@@ -630,8 +630,8 @@ fi
 # M36(a) 有 Mechanism 8 把關,M36(b) 一直是**零機械強制** —— 所以它才會重犯。
 #
 # 判準:本 turn 有工具被擋(denied / EPERM / not permitted),且 reply 把一個**具體指令**交給
-# user 去跑 → CRITICAL。真正的 human-only 邊界(login / MFA / OAuth / 帳單 / 缺 credential
-# reference)明文豁免,那些本來就該交給 user。
+# user 去跑 → CRITICAL。真正的 human-only 邊界(AGENTS.md#canonical-decision-authority「Human-only boundaries」)
+# 明文豁免,那些本來就該交給 user。
 #
 # 2026-11-18 補(工作包 E2;user 11-18 00:06「要打啥 確定沒有作繭自縛？確定這件事就是一定得為難我？」那次漏網)。
 # 第一版(001c964d)只換了比對字串,註解寫「這兩種說法舊清單一個都比不到」,讓人以為換了字串就修好 —— 照 session 96d711a5
@@ -676,6 +676,7 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] || [ -n "$LAST_ASSISTANT" ]; then
   HANDOFF_CMD_HEAD='(\$[[:space:]]|(git|npm|npx|node|pnpm|yarn|rm|cd|gh|bash|sh|zsh|curl|chmod|mv|cp|sudo|make|python3?)[[:space:]])'
   WEAK_HANDOFF_RE="(在終端機(打|輸入|跑|執行)|你(要)?(自己)?(跑|執行|打|輸入|貼)(${HANDOFF_CMD_REF}|(一下)?([[:space:]]|:|：)*${HANDOFF_CMD_HEAD})|請你(跑|執行|手動)|麻煩你(跑|執行))"
   EN_HANDOFF_RE="(you('ve|’ve| have| can| need to| should| will)?|please) (just )?(run|type|paste|execute|enter) (that|this|the following|these|those|the) (command|commands|line|lines|one-liner)|waiting for you to (run|paste|type|execute|delete|remove)|(paste|type|enter) [^.]{0,40}(into|in) (the|this|your) (chat|prompt|input box|message box)|(run|execute|type|paste) [^.]{0,40}in your (own )?terminal|(run|execute) (it|this|that) yourself"
+  # HUMAN_ONLY_RE = AGENTS.md#canonical-decision-authority「Human-only boundaries」的比對字樣(含中文說法);集合改時這裡跟著改。
   HUMAN_ONLY_RE='(auth login|gh auth|MFA|OAuth|二階段|登入|帳單|billing|付費|credential reference|vault|Secret Manager)'
   SELF_LOCK_DELIVERED=""
   if [ -n "${THIS_REPLY_TOOLS:-}" ]; then
@@ -1224,7 +1225,7 @@ if [ "${CRITICAL_SELF_LOCK_HANDOFF:-0}" = "1" ] && [ -n "$HANDOFF_SOURCE" ]; the
   if [ "$LOCK_HASH" != "$LAST_BLOCKED_LOCK" ]; then
     [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$LOCK_HASH" > "$LAST_BLOCKED_LOCK_FILE" 2>/dev/null || true; }
     REASON=$(printf '%s' \
-      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本輪(交辦 '!' 指令或叫 user 在對話框貼上的,含上一輪)有工具被擋,而你在回覆、推播或提問選項裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 login/MFA/OAuth/帳單/缺 credential reference。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
+      "🚨 SELF-LOCK HANDOFF BLOCKER(M36(b)):本輪(交辦 '!' 指令或叫 user 在對話框貼上的,含上一輪)有工具被擋,而你在回覆、推播或提問選項裡請 user 自己跑指令。先答 M36(b') 三問 — (1) 憑證真的缺嗎?(2) 體檢測的是真實需要的能力嗎?(3) 有沒有已驗證可通的等價傳輸?尤其 git plumbing(update-ref -d / update-index --cacheinfo,只寫 .git 可寫區)、harness 檔案工具、index-authoritative generator。'!' 在不在牆內看 session:一般 session 的 '!' 在沙箱外(官方 sandboxing 文件,v2.1.260 起),背景 session 仍在沙箱內、指它 = 把死路交給 user;不論哪種,上面三問沒答完就交出去,都是把動作丟回 user。真 human-only 只有 AGENTS.md#canonical-decision-authority「Human-only boundaries」列的那幾類。做到了,或確認是真 human-only 邊界,才可結束 turn。" \
       "本機制 = M36(b) 從純散文升為 mechanical BLOCKER(2026-09-19;規則 2026-08-08 就立、2026-08-28 已明文禁指路 '!',仍於 2026-09-19 再犯且是 user 反問才發現)。")
     emit_governance_block "$REASON"
   fi

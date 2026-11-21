@@ -18,7 +18,7 @@ metadata:
 - 被權限 / 分類器擋下只有三種處置:放棄 / 更安全的替代(寫明多了哪道保護)/ 交 user 決定;`git -C` 換寫法不算更安全;分類器寫「Let the user decide」就只能放棄或交 user。
 - 推送前本機要跑哪些檢查、推送後怎麼讀回 CI,照 `rules/work-process.md`「合回點」(本檔不重述)。
 - 對 user 的數字從 log 用指令擷取、時間用台灣時間、預估附算式與量測條件。
-- 要交給 user 決定的項目,先逐項對照 AGENTS.md「# Git / release canonical」的「ASK 只有兩種」(產品／UI／UX SSOT 真取捨、發版同意)、「# 自主執行 canonical」分權表(security / dependency / supply chain / CI = AUTO)與 Human-only 清單,標出類別;不在 ASK 類 = 自主處理,只寫進 commit / PR 說明 / 交接。「新、高風險、沒先例」不等於要問 user;子代理建議「交 user」也要先過這一關(2026-11-18 SEC1 誤列 user 決策項,user:「我又要決定什麼？確定按照工作流程是我要決定的？」)。
+- 要交給 user 決定的項目,先逐項對照 `AGENTS.md#canonical-decision-authority` 的集合(含 Human-only boundaries)與發版同意、「# 自主執行 canonical」分權表(security / dependency / supply chain / CI = AUTO),標出類別;不在 ASK 類 = 自主處理,只寫進 commit / PR 說明 / 交接。「新、高風險、沒先例」不等於要問 user;子代理建議「交 user」也要先過這一關(2026-11-18 SEC1 誤列 user 決策項,user:「我又要決定什麼？確定按照工作流程是我要決定的？」)。
 - 流程與工具都住在 repo(`rules/work-process.md`「適用」):多包 / 多步工作的步驟、門檻、輪數只照該檔;交接資料夾只放當批的狀態(例如上面 settings 的數值),不是流程規則或工具的來源。
 - 本檔就是 repo 版(`governance/memory/`),以本檔為準;Claude home 的同名檔只是由 repo 單向同步出去、可重建的快取(`governance/memory/README.md`「用途」)。
 

@@ -24,7 +24,7 @@
 5. Run `npm run release:auto`. It monitors required CI and unresolved conversations and remediates on the same PR, then **stops at `AWAITING_USER_RELEASE_CONSENT`** and prints the PR + Netlify deploy-preview URLs. Report the preview to the user and wait.
 5b. Only after the user says「發版」(receipt bound to the preview-visible content the user reviewed — not to a commit, not to a branch), rerun `npm run release:auto`: it merges through protected `main`, publishes, reads back GitHub/npm, and lands the exact-version template PR (WM only when the user explicitly requested it — see the WM invariant above). Unchanged content stays consented across commits and branches; only a change to preview-visible content requires a new consent.
 6. If the user requests changes before merge, continue on the same branch and PR.
-7. If login/MFA/OAuth/credential reference pauses one action, complete that human action and rerun `release:auto`; it resumes from the first incomplete machine step.
+7. If a human-only boundary (`infra/governance/release-workflow.json` `decisionAuthority.humanOnly`) pauses one action, complete that human action and rerun `release:auto`; it resumes from the first incomplete machine step.
 8. Confirm completion with `npm run release:status -- --json`; optional preview/canary/soak may continue asynchronously but cannot block standard completion.
 9. Delete the merged remote branch and clean local branch only after the orchestrator/readback says it is safe.
 
