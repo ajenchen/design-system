@@ -159,6 +159,37 @@ try {
   copy(classifierRel, 'packages/design-system/ds-canonical/fork/launchers/approval-evidence.mjs')
   rmSync(join(authorityFixture, note))
 
+  // A8 中文 / 混寫清單與「誰決定」結構(2026-11-22 審查必修 1:原本只認英文詞,規格點名 4 支 skill 的手抄原文還原回去仍綠)。
+  // (1) 中文清單由 SSOT 那一句自己造:決策區塊 Human-only boundaries 那一句拿掉英文詞、只剩中文項 → 紅;附出處 → 綠。
+  write(note, `${boundaryLine.replace(/^\*\*Human-only boundaries\*\*/, '要交給人的只有這些').replace(/[A-Za-z]+/g, '')}\n`)
+  expect('A8 只剩中文項的 human-only 清單、沒引用 → 紅', false)
+  write(note, `${boundaryLine.replace(/^\*\*Human-only boundaries\*\*/, '要交給人的只有這些').replace(/[A-Za-z]+/g, '')}(見 AGENTS.md#canonical-decision-authority)\n`)
+  expect('A8 只剩中文項的清單附上出處 → 綠', true)
+  rmSync(join(authorityFixture, note))
+  // (2) 真實寫法讀 scripts/test-fixtures/agents-bootstrap-a8/cases.json(本檔不寫清單):規格點名 4 支 skill 先放 repo 現行檔
+  //     (引用決策區塊)證綠,再逐支換成 68c260ee 的手抄原文證紅、換回證綠;其餘中文 / 混寫 / 結構寫法放進規則檔照 want 判。
+  const a8Cases = JSON.parse(readFileSync(resolve(REPO, 'scripts/test-fixtures/agents-bootstrap-a8/cases.json'), 'utf8')).cases
+  const isSkill = (c) => c.rel.includes('/skills/')
+  const skillRels = [...new Set(a8Cases.filter(isSkill).map((c) => c.rel))]
+  if (skillRels.length !== 4) {
+    console.error(`✗ cases.json 應列規格點名的 4 支 skill,實際 ${skillRels.length} 支`)
+    ok = false
+  }
+  for (const rel of skillRels) copy(rel)
+  expect(`A8 規格點名 ${skillRels.length} 支 skill 的現行檔(引用決策區塊)→ 綠`, true)
+  for (const c of a8Cases.filter((x) => isSkill(x) && x.want === 'red')) {
+    write(c.rel, c.text)
+    expect(`A8 ${c.name} 放回原路徑 → 紅`, false)
+    copy(c.rel)
+  }
+  expect('A8 4 支 skill 換回現行檔 → 綠', true)
+  for (const c of a8Cases.filter((x) => !isSkill(x))) {
+    const rel = `packages/design-system/ds-canonical/rules/${c.rel}`
+    write(rel, c.text)
+    expect(`A8 ${c.name} → ${c.want === 'red' ? '紅' : '綠'}`, c.want !== 'red')
+    rmSync(join(authorityFixture, rel))
+  }
+
   // A6 開場 bytes 上限(CG0-SLIM-CAP):把開場固定載入檔湊到剛好等於上限 → 綠;多一行 → 紅;
   // 同一份大檔加上 paths 前置設定(不再每次載入)→ 不算進開場 → 綠。上限從檢查器原始碼讀,不在本檔重寫數字。
   const cap = Number(readFileSync(CHECKER, 'utf8').match(/const OPENING_FILES_MAX_BYTES = ([\d_]+)/)[1].replaceAll('_', ''))

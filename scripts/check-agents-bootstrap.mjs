@@ -6,9 +6,11 @@
  *         A4 兩檔無重複 normative 標題、A5 npm files 含兩檔且 shipped package instructions 來自獨立短 source、
  *         A6 開場固定載入檔(AGENTS.md + CLAUDE.md + 無 paths 的規則檔)總 bytes ≤ 釘住的上限、A7「分診與預算」段與 meta-patterns 優先序那一行還在、
  *         A8「交 user / human-only」集合只住 AGENTS.md#canonical-decision-authority + approval-evidence.mjs + release-workflow.json,
- *         別處的手抄清單 / 寫死的 scope id / 手寫類別數都要引用它(引了 id 清單就要與它相同),分類器與收據契約的 fork / template 投影逐位元組相同。
+ *         別處的手抄清單(英文、中文、中英混寫,或「標籤 → 交 user」的誰決定清單)/ 寫死的 scope id / 手寫類別數都要引用它
+ *         (引了 id 清單就要與它相同),分類器與收據契約的 fork / template 投影逐位元組相同。
  *   紅: 任一斷言不成立 → 印出哪一條與實測數字(例:鏈的 bytes)或 檔:行,exit 1。
- *       A6 的對照組(上限本身綠、多一行紅)答錯 → exit 2;A8 讀不到 SSOT、或每次先跑的對照組(用 SSOT 字彙造的合成文字)答錯 → 量具失效 exit 2(不是綠)。
+ *       A6 的對照組(上限本身綠、多一行紅)答錯 → exit 2;A8 讀不到 SSOT、或每次先跑的對照組(用 SSOT 字彙造的合成文字,
+ *       與 scripts/test-fixtures/agents-bootstrap-a8/cases.json 的真實寫法)答錯 → 量具失效 exit 2(不是綠)。
  *   綠: 全部成立。純靜態讀檔,結果不隨時間 / 機器變。A8 只在有 packages/design-system/ds-canonical 的 repo 跑(fixture 小樹沒有就不適用)。
  *   執行面: 2026-09-27 起 verify-static `npm run check:agents-bootstrap`(此前只有 fixture 測試呼叫,真 repo 沒人跑 —— 待辦總帳 N14(a))。
  *
@@ -33,7 +35,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { readAskRouteSsot } from '../packages/design-system/ds-canonical/hooks/lib/ask-route.mjs'
+import { askSpans, readAskRouteSsot } from '../packages/design-system/ds-canonical/hooks/lib/ask-route.mjs'
 
 const rootIndex = process.argv.indexOf('--root')
 if (rootIndex !== -1 && !process.argv[rootIndex + 1]) {
@@ -200,14 +202,19 @@ if (fs.existsSync(DS_CANONICAL) && fs.existsSync(META_PATTERNS) && !/^\*\*優先
 // 執行時經 hooks/lib/ask-route.mjs 的 readAskRouteSsot 讀(同一支讀法,不另寫;靜態 import,不動態載入模組)。偵測字彙全部由 SSOT 衍生、本檔不帶清單:
 //   A8a 同一段寫了 ≥ 2 個 humanOnlyScopes id → 那一段要引用 SSOT,而且列的 id 集合要等於 SSOT(引了出處卻抄舊集合也紅);
 //       [交user:<id>] 是逐筆宣告,不算列舉。
-//   A8b 連續幾行(每行至少一個)寫到 ≥ 3 個 human-only 動作詞 → 同一段要引用 SSOT。
-//       動作詞 = 決策區塊「**Human-only boundaries**」第一句(括號內的補充除外)裡,以 / 、 , 分開的每一項的英文詞。
+//   A8b 連續幾行(每行至少一個)寫到 ≥ 3 個 human-only 動作詞;或 ≥ 2 個、而同一串行寫了 human-only / ASK / 交 user → 同一段要引用 SSOT。
+//       動作詞 = 決策區塊「**Human-only boundaries**」第一句(括號內的補充除外)裡,以 / ／ 、 , 分開的每一項的英文詞,
+//       以及每一項裡 ≥ 2 字的中文詞(回指前文的「上述…」那一項除外)—— 中文、中英混寫的清單一樣抓(2026-11-22 審查必修 1)。
 //   A8c 寫「交 user 的只有 N 種 / 類」這種類別數 → 同一段要引用 SSOT,且 N = SSOT 集合大小。
 //   A8d approval-evidence.mjs、authority-decision-evidence.mjs 的 fork / template 投影與正本逐位元組相同。
+//   A8e「誰決定」清單(結構判定,照交接參考實作 drift-scan.py):一行一筆的「標籤 → 去處」(條列、表格列、程式裡一行一筆的鍵值)
+//       有 ≥ 2 個不同標籤交 user;或 markdown 條列裡 ≥ 2 筆用箭頭分流、其中有一筆交 user → 清單本身或它前一行要引用 SSOT。
+//       「交 user」= ask-route.mjs 的 askSpans(Stop hook 同一份寬判定),再加 human-only / ASK 字樣。
 // 掃的範圍 = 會被讀來決定下一步的正本(根目錄 .md、ds-canonical、scripts、infra、packages/governance、governance/memory、docs);
 // 生成檔(provider views、fork、template、generated)、歷史與證據(governance/planning、governance/archive、fixtures)不掃。
 // 豁免:標記區塊本身、SSOT 檔本身(approval-evidence.mjs、ask-route.mjs、release-workflow.json)。
-// 每次執行先跑對照組(用 SSOT 讀到的字彙造合成文字;該紅的要紅、該綠的要綠),答錯 = 量具失效 exit 2。
+// 每次執行先跑對照組,答錯 = 量具失效 exit 2:(1) 用 SSOT 讀到的字彙造合成文字;(2) scripts/test-fixtures/agents-bootstrap-a8/cases.json
+// 的真實寫法(規格點名 4 支 skill 在 68c260ee 的手抄原文與現行引用寫法、中文 / 混寫清單)—— 該紅的要紅、該綠的要綠。
 if (fs.existsSync(DS_CANONICAL)) {
   const CLASSIFIER_REL = 'packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs'
   const RECEIPT_REL = 'packages/governance/src/authority-decision-evidence.mjs'
@@ -236,18 +243,31 @@ if (fs.existsSync(DS_CANONICAL)) {
   const instrument = []
   let ssot = null
   let terms = []
+  let cnTerms = []
   try {
     ssot = readAskRouteSsot(ROOT)
     const agentsLines = fs.readFileSync(A, 'utf8').split('\n')
     const boundary = [...ssot.refLines].map((n) => agentsLines[n - 1]).find((l) => /^\*\*Human-only boundaries\*\*/.test(l.trim()))
     if (!boundary) throw new Error('決策區塊裡沒有「**Human-only boundaries**」段')
     const first = boundary.trim().replace(/^\*\*Human-only boundaries\*\*\s*[:：]?/, '').split('。')[0].replace(/[(（][^)）]*[)）]/g, ' ')
-    terms = [...new Set(first.split(/[/／、,，;；]/).map((item) => (item.match(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})*/g) || []).join(' ').toLowerCase()).filter(Boolean))]
-    if (terms.length < 3) throw new Error(`Human-only boundaries 只讀到 ${terms.length} 個動作詞(${terms.join(', ')})`)
+    const items = first.split(/[/／、,，;；]/)
+    terms = [...new Set(items.map((item) => (item.match(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})*/g) || []).join(' ').toLowerCase()).filter(Boolean))]
+    if (terms.length < 3) throw new Error(`Human-only boundaries 只讀到 ${terms.length} 個英文動作詞(${terms.join(', ')})`)
+    // 中文動作詞:每一項裡 ≥ 2 字的中文詞(中英混寫的項只取中文那段);含「上述」的項是回指前文、不是新的一類,不收。
+    cnTerms = [...new Set(items.filter((item) => !/上述/.test(item)).flatMap((item) => item.match(/[一-鿿]{2,}/g) || []))]
+    if (cnTerms.length < 3) throw new Error(`Human-only boundaries 只讀到 ${cnTerms.length} 個中文動作詞(${cnTerms.join('、')})`)
   } catch (e) {
     instrument.push(`A8 量具失效:讀不到 SSOT(${e.message})`)
   }
-  const termRe = terms.map((t) => [t, new RegExp(`(?<![A-Za-z])${t.split(' ').map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[\\s_-]+')}(?![A-Za-z])`, 'i')])
+  const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const termRe = [
+    ...terms.map((t) => [t, new RegExp(`(?<![A-Za-z])${t.split(' ').map(escapeRe).join('[\\s_-]+')}(?![A-Za-z])`, 'i')]),
+    ...cnTerms.map((t) => [t, new RegExp(escapeRe(t))]),
+  ]
+  // 「交 user」:窄判定 ROUTE_HINT(A8b 用)與寬判定(A8e 每筆的去處 = ROUTE_HINT + askSpans;askSpans 的「問句」那一類不算 ——
+  // 規則表、程式裡的問號不是把事交給 user)。「user 拍板」這種講出處的標註不是分流,交給 askSpans 判(它只認「由 / 請 / 等 user 拍板」)。
+  const ROUTE_HINT = /(?<![A-Za-z])ASK(?![A-Za-z])|(?<![A-Za-z])human[-\s_]?only(?![A-Za-z])|交\s*(?:給|由)?\s*user|(?:問|請)\s*user/i
+  const routesToUser = (text) => ROUTE_HINT.test(text) || askSpans(text, ssot).some((span) => span.name !== '問句交user')
   const idRe = (ssot?.scopes || []).map((id) => [id, new RegExp(`(?<![A-Za-z0-9-])${id}(?![A-Za-z0-9-])`)])
   const paragraphs = (lines, md) => {
     // 段落 = 連續非空行;markdown 再從條列項、表格列、標題切開。回 [起, 迄](0 起算、含迄)。
@@ -297,8 +317,51 @@ if (fs.existsSync(DS_CANONICAL)) {
       let j = i
       const union = new Set()
       while (j < lines.length && hits[j].length) { hits[j].forEach((t) => union.add(t)); j += 1 }
-      if (union.size >= 3 && !CITE.test(windowText(i, j - 1))) {
+      // ≥ 2 個也算:同一句(句號 / 分號斷句,跨行照接)裡另寫了 human-only / ASK / 交 user —— 那一句就是在列交給人的類別。
+      const routed = union.size >= 2 && lines.slice(i, j).join('\n').split(/[。！？!?；;]/)
+        .some((sentence) => ROUTE_HINT.test(sentence) && termRe.filter(([, re]) => re.test(sentence)).length >= 2)
+      if ((union.size >= 3 || routed) && !CITE.test(windowText(i, j - 1))) {
         found.push(`A8b ${rel}:${i + 1} 自訂 human-only 清單(${[...union].join(' / ')})卻沒引用 SSOT(AGENTS.md#canonical-decision-authority)`)
+      }
+      i = j
+    }
+    // A8e「誰決定」清單:一行一筆「標籤 → 去處」。markdown 認條列項與表格列(表格的標籤 = 第一格,≤ 12 字且不含空白);
+    // 其他檔認一行一筆的鍵值(`鍵: 值`)。去處只看前 40 字(參考實作同一個長度;長段說明不是分流)。
+    const LIST_ITEM = /^\s*(?:[-*+•]|\d+[.)、])\s+(.*)$/
+    const entryOf = (line) => {
+      if (md && /^\s*\|/.test(line)) {
+        const cells = line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim())
+        if (cells.length < 2 || cells[0].length > 12 || /\s/.test(cells[0]) || /^[:\s-]*$/.test(cells[0])) return null
+        const routedCell = cells.slice(1).find((c) => c.length <= 40 && routesToUser(c))
+        return { label: cells[0], dest: routedCell || cells[1], toUser: Boolean(routedCell), arrow: false }
+      }
+      if (md) {
+        const item = LIST_ITEM.exec(line)
+        if (!item) return null
+        const body = item[1].trim()
+        const arrow = /^(.{1,40}?)\s*(?:→|=>|->)\s*(.+)$/.exec(body)
+        const colon = arrow ? null : /^([^\s:：→|=()]{1,12})\s*[:：)]\s*(.+)$/.exec(body)
+        const m = arrow || colon
+        return m ? { label: m[1], dest: m[2], toUser: routesToUser(m[2].slice(0, 40)), arrow: Boolean(arrow) } : null
+      }
+      const kv = /^\s*['"`]?([^\s'"`:：]{1,40})['"`]?\s*[:：]\s*(.+)$/.exec(line)
+      return kv ? { label: kv[1], dest: kv[2], toUser: routesToUser(kv[2].slice(0, 40)), arrow: false } : null
+    }
+    const entries = lines.map((l, i) => (skip(i) ? null : entryOf(l)))
+    for (let i = 0; i < lines.length;) {
+      if (!entries[i]) { i += 1; continue }
+      // 一個清單 = 連續的「一筆」行;markdown 條列中間夾的縮排續行不打斷清單。
+      let j = i
+      const unit = []
+      while (j < lines.length && !skip(j) && (entries[j] || (md && unit.length && /^\s{2,}\S/.test(lines[j]) && !LIST_ITEM.test(lines[j])))) {
+        if (entries[j]) unit.push(entries[j])
+        j += 1
+      }
+      const toUser = unit.filter((e) => e.toUser)
+      const labels = new Set(toUser.map((e) => e.label.replace(/[*`'"]/g, '').trim()))
+      const custom = labels.size >= 2 || (unit.filter((e) => e.arrow).length >= 2 && toUser.some((e) => e.arrow))
+      if (custom && !CITE.test(`${lines[i - 1] || ''}\n${windowText(i, j - 1)}`)) {
+        found.push(`A8e ${rel}:${i + 1} 自訂「誰決定」清單(${toUser.map((e) => `${e.label.trim()} → ${e.dest.trim().slice(0, 24)}`).join(' | ')})卻沒引用 SSOT(AGENTS.md#canonical-decision-authority)`)
       }
       i = j
     }
@@ -319,14 +382,17 @@ if (fs.existsSync(DS_CANONICAL)) {
     })
     return found
   }
+  let controlCount = 0
   if (!instrument.length) {
-    // 對照組:字彙取自 SSOT,本檔不寫任何類別清單。
+    // 對照組 (1):字彙取自 SSOT,本檔不寫任何類別清單。
     const [t1, t2, t3] = terms
+    const [c1, c2, c3] = cnTerms
     const ids = ssot.scopes
     const allIdsCode = `const X = [\n${ids.map((id) => `  '${id}',`).join('\n')}\n]\n`
+    const cite = '(見 AGENTS.md#canonical-decision-authority)'
     const controls = [
       ['a.md', `只有 ${t1} / ${t2} / ${t3} 要交給人。\n`, 'A8b'],
-      ['a.md', `只有 ${t1} / ${t2} / ${t3} 要交給人(見 AGENTS.md#canonical-decision-authority)。\n`, null],
+      ['a.md', `只有 ${t1} / ${t2} / ${t3} 要交給人${cite}。\n`, null],
       ['a.mjs', `const ROUTES = {\n  '${t1}': 1,\n  '${t2}': 2,\n  '${t3}': 3,\n}\n`, 'A8b'],
       ['a.mjs', allIdsCode, 'A8a'],
       ['a.mjs', `// 出處 approval-evidence.mjs\n${allIdsCode}`, null],
@@ -334,12 +400,35 @@ if (fs.existsSync(DS_CANONICAL)) {
       ['a.md', `第一段 ${ids[0]}。\n\n第二段 ${ids[1]}。\n`, null],
       ['a.md', `[交user:${ids[0]}] 與 [交user:${ids[1]}]\n`, null],
       ['a.md', `交 user 的只有 ${ssot.allowed.length + 1} 種。\n`, 'A8c'],
+      // 中文清單(2026-11-22 審查必修 1)
+      ['a.md', `只有${c1}、${c2}、${c3}要交給人。\n`, 'A8b'],
+      ['a.md', `只有${c1}、${c2}、${c3}要交給人${cite}。\n`, null],
+      ['a.md', `${t1}、${c1} 是 human-only。\n`, 'A8b'],
+      ['a.md', `${t1}、${c1} 各寫一次,兩者無關。\n`, null],
+      // 「誰決定」結構(2026-11-22 審查必修 1;參考實作 drift-scan.py)
+      ['a.md', `- 甲類 → 交 user\n- 乙類 → 交 user\n`, 'A8e'],
+      ['a.md', `類別照 AGENTS.md#canonical-decision-authority:\n- 甲類 → 交 user\n- 乙類 → 交 user\n`, null],
+      ['a.md', `- 甲類 → AUTO\n- 乙類 → 交 user\n`, 'A8e'],
+      ['a.md', `- 甲類 → AUTO\n- 乙類 → AUTO\n`, null],
     ]
     controls.forEach(([rel, text, want], k) => {
       const got = scan(rel, text)
       const ok = want ? got.length > 0 && got.every((f) => f.startsWith(want)) : got.length === 0
       if (!ok) instrument.push(`A8 量具失效:對照組第 ${k + 1} 格應${want ? `紅在 ${want}` : '綠'},實際 ${JSON.stringify(got)}`)
     })
+    // 對照組 (2):真實寫法(規格點名 4 支 skill 的手抄原文 / 現行引用寫法、中文 / 混寫清單);讀檔失敗 = 量具失效。
+    let cases = []
+    try {
+      cases = JSON.parse(fs.readFileSync(new URL('./test-fixtures/agents-bootstrap-a8/cases.json', import.meta.url), 'utf8')).cases
+      if (!Array.isArray(cases) || !cases.some((c) => c.want === 'red') || !cases.some((c) => c.want === 'green')) throw new Error('cases 要同時有 red 與 green')
+    } catch (e) {
+      instrument.push(`A8 量具失效:讀不到 test-fixtures/agents-bootstrap-a8/cases.json(${e.message})`)
+    }
+    for (const c of cases) {
+      const got = scan(c.rel, c.text)
+      if ((got.length > 0) !== (c.want === 'red')) instrument.push(`A8 量具失效:對照組「${c.name}」應${c.want === 'red' ? '紅' : '綠'},實際 ${JSON.stringify(got)}`)
+    }
+    controlCount = controls.length + cases.length
   }
   if (instrument.length) {
     console.error('❌ agents-bootstrap 閘 INSTRUMENT:')
@@ -366,7 +455,7 @@ if (fs.existsSync(DS_CANONICAL)) {
     if (!fs.existsSync(a) || !fs.existsSync(b)) errors.push(`A8d 缺檔:${!fs.existsSync(a) ? source : projection}`)
     else if (!fs.readFileSync(a).equals(fs.readFileSync(b))) errors.push(`A8d ${projection} 與正本 ${source} 位元組不同(跑 npm run governance:generate)`)
   }
-  console.log(`A8 掃了 ${corpus.length} 個正本文字檔;動作詞 ${terms.length} 個、scope id ${ssot.scopes.length} 個、SSOT 集合 ${ssot.allowed.length} 個(皆由 SSOT 讀);對照組 9 格答對`)
+  console.log(`A8 掃了 ${corpus.length} 個正本文字檔;動作詞 英文 ${terms.length} 個 + 中文 ${cnTerms.length} 個、scope id ${ssot.scopes.length} 個、SSOT 集合 ${ssot.allowed.length} 個(皆由 SSOT 讀);對照組 ${controlCount} 格答對`)
 }
 
 if (errors.length) {
