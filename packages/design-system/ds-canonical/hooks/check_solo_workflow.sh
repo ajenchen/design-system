@@ -25,7 +25,8 @@ set -uo pipefail
 #       `cd <clone> && git checkout -q -B` 開分支不能被記成本 session 的分支、也不能被擋。做法:hooks/lib/_deny_norm.py 的
 #       canon_subs_at 從 payload 的 cwd(沒有 → 專案根)起算,經同一則的 cd 與 git -C 推出 git 作用的目錄,
 #       拿它的 git common dir 和專案根的比(linked worktree 算同一個 repo)。推不出來的(本則沒定義的變數、指令替換、
-#       --git-dir / GIT_DIR=)照改前的逐字比對;( … ) 子 shell 裡的 cd 會被當成延續到括號外(照實列)。
+#       --git-dir / GIT_DIR=)照改前的逐字比對。仍看不到的(照實列):( … ) 子 shell 裡的 cd 會被當成延續到括號外;
+#       `cd <不存在的目錄>; git checkout -b x`(cd 失敗、git 其實在原目錄跑)會被當成不在本專案。
 #   R2. Any direct push to main. PR is the only merge path.(同一份正規化:`git -C . push origin main` 也算)
 # Tag/release lifecycle belongs to `release:auto` + protected workflows; the retired
 # local release-preflight R4 branch must not insert a sixth standard release gate.
@@ -229,7 +230,16 @@ if mode == "r1":
         st, cd = common_dir(proj)
         project_cd = cd if st == "repo" else None
     entries = []
-    for raw, norm, d in dn.canon_subs_at(cmd, start):
+    try:
+        located = dn.canon_subs_at(cmd, start)
+    except Exception:
+        # 推目錄這段自己壞掉 → 退回改前的逐字比對(不靜默放掉改前擋得到的寫法)
+        b = legacy_branch(cmd)
+        if b:
+            print(b)
+            sys.exit(0)
+        sys.exit(1)
+    for raw, norm, d in located:
         try:
             entries.append((raw, shlex.split(norm), d))
         except Exception:
