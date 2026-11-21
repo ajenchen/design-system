@@ -12,7 +12,8 @@
 #   已知看不到的(照實列):寫在 ~/.gitconfig 或同一則裡 `git config alias.x …` 定義的別名、函式回傳的指令名。
 # 使用者(都讀這一份,不准再抄):
 #   - packages/design-system/ds-canonical/hooks/check_bash_command_shape.sh(PreToolUse Bash):呼叫本檔的 `hook` 子指令。
-#   - packages/design-system/ds-canonical/hooks/check_solo_workflow.sh R1:呼叫 `check` 子指令拿正規化後的子指令。
+#   - packages/design-system/ds-canonical/hooks/check_solo_workflow.sh R1 / R2:載入本檔,R2 用 canon_subs;
+#     R1 用 canon_subs_at(同一份正規化,另推每條子指令的 git 作用在哪個目錄,只算本專案 repo 的開分支)。
 #   - 交接的流程工具(ledger 的「換寫法」判定)若要用,讀 repo 這一份(rules/work-process.md:流程與工具住在 repo)。
 # 判定表(唯一一份):packages/design-system/ds-canonical/hooks/tests/fixtures/deny-norm/cases.json;
 #   hook 測試 test_check_bash_command_shape.sh 經 `selftest --via both` 跑它。
@@ -30,6 +31,7 @@
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -166,13 +168,19 @@ def expand_sub(sub, defs, depth=0):
     return [sub]
 
 
-def normalize_sub(s):
+def normalize_sub(s, strips=None):
+    """strips 給 list 時,依序 append 被剝掉的前綴:('env', `X=… ` 前綴)、('git', `git -C … ` 這類全域選項)。
+    只是旁記,不改正規化結果;canon_subs_at 拿它推 git 實際作用的目錄。"""
     prev = None
     aliases = {}
     rounds = 0
     while prev != s and rounds < 20:  # 別名互相指(a=b、b=a)時靠輪數上限停下
         rounds += 1
         prev = s
+        if strips is not None:
+            em = ENV_PREFIX.match(s)
+            if em:
+                strips.append(('env', em.group(0)))
         s = ENV_PREFIX.sub('', s)
         s = WRAPPER.sub('', s)
         # 首字的絕對路徑(/usr/bin/git)、反斜線(\git)、引號("git")
@@ -184,6 +192,8 @@ def normalize_sub(s):
                 w2 = w2.rsplit('/', 1)[1]
             s = w2 + m.group(2)
         while GIT_OPT.match(s):
+            if strips is not None:
+                strips.append(('git', GIT_OPT.match(s).group(0)))
             am = GIT_ALIAS.match(s)
             if am:
                 name = am.group(1) or am.group(3) or am.group(5)
@@ -197,6 +207,18 @@ def normalize_sub(s):
     return s.strip()
 
 
+def shell_inner(n):
+    """正規化後的子指令是 sh -c / bash -c '…' 或 eval '…' → 回內層指令文字;不是 → None。"""
+    m = SHELL_C.match(n)
+    if m:
+        inner = m.group(1).strip()
+        qm = re.match(r'^(["\'])(.*?)\1', inner, re.S)
+        return qm.group(2) if qm else inner
+    if n.startswith('eval '):
+        return unquote(n[5:])
+    return None
+
+
 def canon_subs(cmd, depth=0, defs=None):
     """回 [(raw_sub, normalized)]:展開本則的函式 / 變數、sh -c / bash -c / eval 的內層,再正規化。"""
     out = []
@@ -207,17 +229,138 @@ def canon_subs(cmd, depth=0, defs=None):
     for raw in split_subcommands(cmd):
         for ex in expand_sub(raw, defs):
             n = normalize_sub(ex)
-            m = SHELL_C.match(n)
-            if m:
-                inner = m.group(1).strip()
-                qm = re.match(r'^(["\'])(.*?)\1', inner, re.S)
-                inner = qm.group(2) if qm else inner
+            inner = shell_inner(n)
+            if inner is not None:
                 out.extend((raw, x) for _, x in canon_subs(inner, depth + 1, defs))
                 continue
-            if n.startswith('eval '):
-                out.extend((raw, x) for _, x in canon_subs(unquote(n[5:]), depth + 1, defs))
-                continue
             out.append((raw, n))
+    return out
+
+
+# ── 子指令在哪個目錄跑(check_solo_workflow R1 用:只算本專案 repo 的開分支)──────────────
+VAR_REF = re.compile(r'\$\{([A-Za-z_]\w*)\}|\$([A-Za-z_]\w*)')
+
+
+def expand_word(word, cwd, vars_, depth=0):
+    """把 cd / git -C 的參數展開成字串;推不出來 → None。
+    認得:本則定義的變數、$PWD(= 推算中的目錄)、$HOME 與開頭的 ~ / ~/。
+    推不出來:本則沒定義的變數(hook 的環境不是那則 Bash 的環境,不拿來猜)、指令替換、萬用字元、~user、${X:-…} 這類寫法。"""
+    if word is None or depth > 4 or '`' in word or '$(' in word or any(c in word for c in '*?['):
+        return None
+    if word == '~' or word.startswith('~/'):
+        home = os.environ.get('HOME')
+        if not home:
+            return None
+        word = home + word[1:]
+    elif word.startswith('~'):
+        return None
+    parts, pos = [], 0
+    for m in VAR_REF.finditer(word):
+        parts.append(word[pos:m.start()])
+        name = m.group(1) or m.group(2)
+        if name in vars_:
+            val = expand_word(vars_[name], cwd, vars_, depth + 1)
+        elif name == 'PWD':
+            val = cwd
+        elif name == 'HOME':
+            val = os.environ.get('HOME')
+        else:
+            val = None
+        if val is None:
+            return None
+        parts.append(val)
+        pos = m.end()
+    parts.append(word[pos:])
+    out = ''.join(parts)
+    return None if '$' in out else out
+
+
+def resolve_dir(word, cwd, vars_):
+    """參數 → 絕對路徑(相對路徑接在 cwd 後面);推不出來或展開成空字串 → None。"""
+    v = expand_word(word, cwd, vars_)
+    if not v:
+        return None
+    if os.path.isabs(v):
+        return os.path.normpath(v)
+    return os.path.normpath(os.path.join(cwd, v)) if cwd else None
+
+
+def _words(n):
+    try:
+        return shlex.split(n)
+    except ValueError:
+        return None
+
+
+def _cd_target(words, cwd, vars_):
+    """cd / pushd / popd 之後的目錄。`cd`(沒參數)不當成回家目錄:未加引號的 `cd $(…)` 被拆子指令後也長這樣。"""
+    if words[0] == 'popd':
+        return None
+    args = [w for w in words[1:] if w not in ('-P', '-L', '-e', '-@', '--')]
+    if not args or args[0] == '-' or (words[0] == 'pushd' and args[0][:1] in ('+', '-')):
+        return None
+    return resolve_dir(args[0], cwd, vars_)
+
+
+def _git_target(strips, cwd, vars_):
+    """git 實際作用的目錄:起點 cwd,依序套 `-C`(相對的接在前一個後面,`-C ""` 不變)。
+    帶 --git-dir / --work-tree 或 GIT_DIR= 這類前綴 → None(repo 不由目錄決定)。"""
+    d = cwd
+    for kind, text in strips:
+        if kind == 'env':
+            if re.search(r'(?:^|\s)GIT_(?:DIR|WORK_TREE|COMMON_DIR)=', text):
+                return None
+            continue
+        w = _words(text)
+        if w is None:
+            return None
+        opts = w[1:] if w[:1] == ['git'] else w
+        if not opts:
+            continue
+        if opts[0] == '-C':
+            if len(opts) < 2:
+                return None
+            v = expand_word(opts[1], d, vars_)
+            if v is None:
+                return None
+            if v == '':
+                continue
+            if os.path.isabs(v):
+                d = os.path.normpath(v)
+            elif d:
+                d = os.path.normpath(os.path.join(d, v))
+            else:
+                return None
+        elif opts[0].startswith(('--git-dir', '--work-tree')):
+            return None
+    return d
+
+
+def canon_subs_at(cmd, cwd, depth=0, defs=None):
+    """同 canon_subs,另推每條子指令的 git 作用在哪個目錄。回 [(raw_sub, normalized, dir)]。
+    dir = 起點 cwd 經同一則裡的 cd / pushd 與 git -C 推出的絕對路徑;推不出來 = None(見 expand_word / _git_target)。
+    函式本體裡的 cd 會延續到之後的子指令(同一個 shell);sh -c / bash -c / eval 的內層從當下目錄起算,內層的 cd 不帶回外層。
+    已知看不到(照實列):( … ) 子 shell 裡的 cd 會被當成延續到括號外(split_subcommands 不保留括號)。"""
+    out = []
+    if not cmd or depth > 3:
+        return out
+    cmd = CMD_SUBST_NAME.sub(lambda m: m.group(1) or m.group(2), cmd)
+    defs = defs or collect_defs(cmd)
+    vars_ = defs[1]
+    for raw in split_subcommands(cmd):
+        for ex in expand_sub(raw, defs):
+            strips = []
+            n = normalize_sub(ex, strips)
+            inner = shell_inner(n)
+            if inner is not None:
+                out.extend((raw, x, d) for _, x, d in canon_subs_at(inner, cwd, depth + 1, defs))
+                continue
+            w = _words(n)
+            if w and w[0] in ('cd', 'pushd', 'popd'):
+                cwd = _cd_target(w, cwd, vars_)
+                out.append((raw, n, cwd))
+                continue
+            out.append((raw, n, _git_target(strips, cwd, vars_)))
     return out
 
 

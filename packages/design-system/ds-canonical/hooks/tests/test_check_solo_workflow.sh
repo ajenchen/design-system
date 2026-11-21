@@ -295,7 +295,8 @@ run_hook_bash "git branch feat/x4 && git switch feat/x4" "sess-F"
 expect_block "25e. git branch <name> && git switch is a second branch" "R1 BLOCKER"
 run_hook_bash "git worktree add -b feat/x5 ../wt" "sess-F"
 expect_block "25f. worktree add -b is a second branch" "R1 BLOCKER"
-run_hook_bash $'g() { git -C "$R" "$@"; }\ng checkout -b feat/x6' "sess-F"
+# R 在同一則裡定義(R1 只算本專案 repo 的分支之後,-C 的目標要推得出來;本則沒定義的變數見 26o)
+run_hook_bash $'R=.\ng() { git -C "$R" "$@"; }\ng checkout -b feat/x6' "sess-F"
 expect_block "25g. function-wrapped checkout -b is a second branch" "R1 BLOCKER"
 # 不是開分支的不能被誤認(對照組)
 run_hook_bash "git branch --show-current && git branch -vv" "sess-F"
@@ -307,6 +308,67 @@ expect_pass_silent "25j. quoted example is not a command"
 # R2 同一份正規化:-C 包裝的 push main 也擋
 run_hook_bash "git -C . push origin main" "sess-G"
 expect_block "25k. git -C . push origin main is a direct push" "R2 BLOCKER"
+
+# 26. R1 只算開在本專案 repo 的分支(2026-11-21 PROC-H 審查必修:多包流程在各 scratch clone 開分支,
+#     改前一個 session 從第二個 clone 起就被 R1 擋,第一個 clone 的分支還被記成本 session 的工作分支)。
+#     clone 放在 fixture 底下(各自 git init,跟專案不是同一個 repo);linked worktree 與子目錄是同一個 repo。
+CLONE_A="$TMP_DIR/scratch/PKG-A/clone"; CLONE_B="$TMP_DIR/scratch/PKG-B/clone"; CLONE_C="$TMP_DIR/scratch/PKG-C/clone"
+for d in "$CLONE_A" "$CLONE_B" "$CLONE_C"; do mkdir -p "$d" && git -C "$d" init -q; done
+PROJECT_WT="$TMP_DIR/scratch/project-wt"
+git -C "$TMP_DIR" worktree add -q --detach "$PROJECT_WT" HEAD
+mkdir -p "$TMP_DIR/sub"
+
+run_hook_bash_cwd() {
+  local cmd="$1"; local session="$2"; local cwd="$3"
+  local payload
+  payload=$(jq -n --arg c "$cmd" --arg s "$session" --arg w "$cwd" '{tool_name:"Bash", session_id:$s, cwd:$w, tool_input:{command:$c}}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+
+# 審查探針的三個指令,同一個 session 依序跑:改前第 2、3 個 R1 BLOCKER,第 1 個把 pkg-a 記成本 session 的分支。
+run_hook_bash "git -C $CLONE_A switch -q -c pkg-a" "sess-K"
+expect_pass_silent "26a. git -C <clone A> switch -c passes"
+run_hook_bash "git -C $CLONE_B switch -q -c pkg-b" "sess-K"
+expect_pass_silent "26b. git -C <a different clone B> switch -c passes"
+run_hook_bash "cd $CLONE_C && git checkout -q -B pkg-c" "sess-K"
+expect_pass_silent "26c. cd <clone C> && git checkout -q -B passes"
+no_record_k() { ! track_has_session "sess-K"; }
+expect_true "26d. clone branches are not recorded as this session's working branch" no_record_k
+# 專案 repo 照舊:第一條記下,第二條擋
+run_hook_bash "git checkout -b feat/k-main" "sess-K"
+expect_pass_silent "26e. first project branch after clone branches is recorded"
+run_hook_bash "git -C . checkout -b feat/k-second" "sess-K"
+expect_block "26f. git -C . checkout -b in the project is still a second branch" "R1 BLOCKER"
+run_hook_bash "git -C $CLONE_A switch -q -c pkg-a2" "sess-K"
+expect_pass_silent "26g. clone branch after the project branch still passes"
+run_hook_bash "git -C $PROJECT_WT checkout -b feat/k-wt" "sess-K"
+expect_block "26h. a linked worktree of the project is the same repo" "R1 BLOCKER"
+run_hook_bash "cd $TMP_DIR/sub && git switch -c feat/k-sub" "sess-K"
+expect_block "26i. cd into a project subdirectory is the same repo" "R1 BLOCKER"
+run_hook_bash "cd $CLONE_A && cd $TMP_DIR && git checkout -b feat/k-back" "sess-K"
+expect_block "26j. cd into a clone and back to the project counts the project" "R1 BLOCKER"
+run_hook_bash "V=$CLONE_B; cd \"\$V\" && git checkout -q -B pkg-v" "sess-K"
+expect_pass_silent "26k. clone path held in a variable defined in the same command passes"
+# payload 的 cwd 是起點(provider 延續的工作目錄)
+run_hook_bash_cwd "git checkout -b feat/k-cwd" "sess-K" "$CLONE_A"
+expect_pass_silent "26l. session cwd inside a clone: plain checkout -b passes"
+run_hook_bash_cwd "git checkout -b feat/k-cwd2" "sess-K" "$TMP_DIR"
+expect_block "26m. session cwd in the project: plain checkout -b is a second branch" "R1 BLOCKER"
+# 寫死的路徑還不存在(同一則才 clone 出來):不會是本專案 repo
+run_hook_bash "git clone -q $TMP_DIR $TMP_DIR/scratch/new && cd $TMP_DIR/scratch/new && git checkout -b pkg-new" "sess-K"
+expect_pass_silent "26n. clone-then-branch in one command passes"
+# 推不出目錄 → 照改前的逐字比對(兩面:改前認不到的 -C 寫法放行、改前認得的 git checkout -b 照擋)
+run_hook_bash $'g() { git -C "$R_NOT_DEFINED_IN_THIS_COMMAND" "$@"; }\ng checkout -b feat/k-u' "sess-K"
+expect_pass_silent "26o. unknowable -C target falls back to the pre-change literal match(not recognized, as before)"
+run_hook_bash 'cd "$(git rev-parse --show-toplevel)" && git checkout -b feat/k-u2' "sess-K"
+expect_block "26p. unknowable cd target falls back to the pre-change literal match(git checkout -b still blocked)" "R1 BLOCKER"
 
 echo ""
 echo "=== Summary ==="
