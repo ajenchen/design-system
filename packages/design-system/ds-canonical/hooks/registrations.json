@@ -402,12 +402,6 @@
             "hook": "session_start_governance_check.sh",
             "runtime": "bash",
             "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_plugin_fork_health.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
           }
         ]
       }

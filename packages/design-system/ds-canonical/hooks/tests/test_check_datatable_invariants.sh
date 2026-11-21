@@ -231,7 +231,7 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - genuine policy rc2"
 fi
 
-# 12. 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法照抄 test_check_plugin_fork_health.sh):
+# 12. 規則分派 SIGPIPE 同族回歸(69230cef,2026-09-25;寫法同 test_check_consumer_app_invariants.sh 的同名一格):
 #     r2 不讀 stdin 就退出時,不得被判成「未定義 exit code」rc70;而且要斷言 r2 **真的跑到** ——
 #     只看 exit 0 會被「r1 的 exit 提早結束整支 hook、r2 根本沒跑」騙過(拿掉管線卻沒補子殼層的那一版正是這樣假綠)。
 #     300KB 輸入超過管線緩衝區(64KiB),舊寫法 `printf | rule` 必定 SIGPIPE,不靠時序。

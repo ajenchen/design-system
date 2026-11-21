@@ -45,7 +45,6 @@ const EXEMPT = new Set([
   '_log-fire', '_log_fire',
   'chrome_header_dispatcher',      // dispatcher,委派給子 hook
   'inject_deploy_url_after_push',  // PostToolUse inject context,無 block
-  'check_plugin_freshness',        // SessionStart 提醒,無 block
 ])
 
 function hasBlockerLogic(content) {

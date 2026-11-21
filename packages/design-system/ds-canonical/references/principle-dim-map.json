@@ -522,12 +522,6 @@
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:dim 74 overlay probe 直接對應"
     },
-    "plugin_fork_health": {
-      "dims": [
-        58
-      ],
-      "note": "2026-07-03 entry add per audit-preflight gap:dim 58 plugin install enforcement 直接對應"
-    },
     "propose_discipline": {
       "dims": [],
       "note": "2026-07-03 entry add per audit-preflight gap:Stop hook runtime 紀律(中文人話 + cite);governance-only"

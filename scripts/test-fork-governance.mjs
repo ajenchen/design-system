@@ -272,6 +272,7 @@ buildFullFixture()
     ok = context.includes('committed AGENTS.md') && context.includes('唯讀驗證')
   } catch (e) { ok = false }
   if (!ok) { flowResults.push('  inject_verify_only: ❌ 未輸出 committed AGENTS.md + 唯讀驗證狀態'); fail++ }
+  else if (r.err.includes('GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE')) { flowResults.push('  inject_verify_only: ❌ 套件與 manifest 都在,卻報治理本體不可用'); fail++ }
   else if (before !== after) { flowResults.push('  inject_verify_only: ❌ SessionStart 改寫了工作區'); fail++ }
   else flowResults.push('  inject_verify_only: ✅ valid status + zero workspace mutation')
 
@@ -374,6 +375,17 @@ buildFullFixture()
   const v = runTpl('fork-governance-dispatcher.sh', JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: 'apps/demo/src/App.tsx', new_string: 'x' } }))
   if (v.exit !== 0) { flowResults.push(`  dispatcher(manifest 缺): ❌ brick(exit=${v.exit},應 0)`); fail++ }
   else flowResults.push('  dispatcher(manifest 缺): ✅ exit 0 不 brick')
+  // manifest 缺時 SessionStart 必須講出來:fork 的 SessionStart 只登記這一支(template 的 .claude/settings.json 與
+  // .codex/hooks.json 都是)。DS 端原本另有 check_plugin_fork_health.sh 想做同一件事,但它在每一種部署情境都提早結束,
+  // 2026-11-21 退場。另一面 = 上面 inject_verify_only(套件與 manifest 都在 → 不報)。
+  const beforeMissingManifest = fixtureSnapshot(FULL)
+  const m = runTpl('inject_fork_governance_preamble.sh', '{"hook_event_name":"SessionStart"}')
+  const afterMissingManifest = fixtureSnapshot(FULL)
+  if (m.exit !== 0 || !m.err.includes('GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE') || !m.err.includes('npm run setup:all') || m.out.trim() !== '') {
+    flowResults.push(`  inject(manifest 缺): ❌ 沒有講出治理本體不可用 + npm run setup:all(exit=${m.exit} stdout=${JSON.stringify(m.out.trim())} stderr=${JSON.stringify(m.err.trim())})`); fail++
+  } else if (beforeMissingManifest !== afterMissingManifest) {
+    flowResults.push('  inject(manifest 缺): ❌ SessionStart 自己動手改了工作區'); fail++
+  } else flowResults.push('  inject(manifest 缺): ✅ exit 0 + GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE + npm run setup:all + zero workspace mutation')
   // committed bootstrap 缺失時只報 degraded；不得自動安裝或修補工作區。
   copyFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'), join(FULL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'))
   rmSync(join(FULL, 'AGENTS.md'), { force: true })
@@ -953,6 +965,74 @@ const codexResults = []
   } else codexResults.push('  retire-Claude closure: ✅ 刪除整個 .claude 後，Codex 仍由 governance/bin 執行同一 corpus（clean pass / violation block）')
 }
 
+// 7) fork 治理鏈缺件時,consumer 已安裝的 hard gate 必須指名(2026-11-21)。
+// 這是 dim 58 的擋點:SessionStart launcher 只提醒、不擋;擋的是 fork/consumer/governance-check.mjs
+// (npm run governance:check,setup:all 經 scripts/setup-governance.mjs 也會跑)。夾具用跟發布同一支
+// build-published-template-mirror.mjs 造出來的 template fork。判定只看「拿掉 → 出現、還原 → 消失」那一條
+// 診斷:同一份夾具在不同機器上可能另有與本題無關的診斷(例如沙箱裡沒有封閉工具組),不拿整體 ok 當判準。
+const chainResults = []
+{
+  const MIRROR = join(TEST_ROOT, 'consumer-mirror')
+  const build = spawnSync(process.execPath, ['--', join(ROOT, 'scripts/build-published-template-mirror.mjs'), `--out=${MIRROR}`], {
+    cwd: ROOT, encoding: 'utf8', env: childEnvironment(),
+  })
+  if (build.status !== 0) {
+    chainResults.push(`  mirror build: ❌ exit ${build.status}:${(build.stderr || build.stdout || '').trim().slice(0, 400)}`); fail++
+  } else {
+    const installedDs = join(MIRROR, 'node_modules/@qijenchen/design-system')
+    const installedSb = join(MIRROR, 'node_modules/@qijenchen/storybook-config')
+    mkdirSync(installedDs, { recursive: true })
+    mkdirSync(installedSb, { recursive: true })
+    copyFileSync(join(ROOT, 'packages/design-system/package.json'), join(installedDs, 'package.json'))
+    cpSync(join(ROOT, 'packages/design-system/ds-canonical'), join(installedDs, 'ds-canonical'), { recursive: true })
+    installShippedTokenFiles(installedDs)
+    copyFileSync(join(ROOT, 'packages/storybook-config/package.json'), join(installedSb, 'package.json'))
+    const checker = join(installedDs, 'ds-canonical/fork/consumer/governance-check.mjs')
+    const diagnostics = (label) => {
+      const run = spawnSync(process.execPath, ['--', checker, '--repo', MIRROR, '--json', '--hooks-off'], {
+        cwd: ROOT, encoding: 'utf8', env: childEnvironment(),
+      })
+      try {
+        const report = JSON.parse(run.stdout)
+        return { status: run.status, rows: report.diagnostics.map((item) => `${item.ruleId} ${item.message}`) }
+      } catch {
+        chainResults.push(`  ${label}: ❌ checker 沒有輸出可解析的 JSON(exit=${run.status}):${(run.stderr || run.stdout || '').trim().slice(0, 300)}`); fail++
+        return null
+      }
+    }
+    const pair = ({ label, target, signature }) => {
+      const hits = (result) => result.rows.filter((row) => row.startsWith(`${signature.ruleId} `) && row.includes(signature.text))
+      const baseline = diagnostics(`${label}(現況)`)
+      if (!baseline) return
+      const bytes = readFileSync(target)
+      rmSync(target)
+      let missing
+      try { missing = diagnostics(`${label}(拿掉)`) } finally { writeFileSync(target, bytes) }
+      const restored = diagnostics(`${label}(還原)`)
+      if (!missing || !restored) return
+      if (hits(baseline).length !== 0) {
+        chainResults.push(`  ${label}: ❌ 現況就已經報 ${signature.ruleId}(夾具不乾淨,對照組無效):${hits(baseline).join(' / ')}`); fail++
+      } else if (missing.status === 0 || hits(missing).length === 0) {
+        chainResults.push(`  ${label}: ❌ 拿掉之後 checker 沒有指名(exit=${missing.status};要的是 ${signature.ruleId} 含「${signature.text}」)`); fail++
+      } else if (hits(restored).length !== 0) {
+        chainResults.push(`  ${label}: ❌ 還原之後 ${signature.ruleId} 沒有消失`); fail++
+      } else {
+        chainResults.push(`  ${label}: ✅ 現況不報 / 拿掉 → ${signature.ruleId}「${signature.text}」 / 還原 → 消失`)
+      }
+    }
+    pair({
+      label: 'committed dispatcher 缺',
+      target: join(MIRROR, 'governance/bin/fork-governance-dispatcher.sh'),
+      signature: { ruleId: 'GOV-ADAPTER-005', text: 'shared thin adapter drift: fork-governance-dispatcher.sh' },
+    })
+    pair({
+      label: 'installed fork manifest 缺',
+      target: join(installedDs, 'ds-canonical/fork/manifest.json'),
+      signature: { ruleId: 'GOV-CORPUS-001', text: 'fork/manifest.json missing' },
+    })
+  }
+}
+
 console.log('=== 假 fork 測試 harness 結果 ===')
 console.log(`fixture: ${FIX}(apps/** + node_modules/@qijenchen/design-system/src,NO packages/design-system)`)
 console.log(results.join('\n'))
@@ -962,6 +1042,8 @@ console.log('\n=== 接線骨架刷新(sync-all refresh-fork-launchers:idempotent
 console.log(skelResults.join('\n'))
 console.log('\n=== codex surface(PNG P2.4:AGENTS.md / hooks.json / product-role skill parity)===')
 console.log(codexResults.join('\n'))
+console.log('\n=== consumer hard gate(fork 治理鏈缺件 → installed governance-check 指名)===')
+console.log(chainResults.join('\n'))
 console.log(`\ncrash 檢查(${allHooks.length} hook):${crashed.length ? '\n  ' + crashed.join('\n  ') : '✅ 無 syntax error / 無 exit-127'}`)
 console.log(`\n${fail === 0 ? '✅ FORK-GOVERNANCE HARNESS PASS — 無 false-green / 無 brick / 無 crash' : `❌ ${fail} 項 fail(見上）`}`)
 if (fail !== 0) process.exitCode = 1
