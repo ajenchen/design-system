@@ -74,7 +74,7 @@ Command 通常由 `SelectMenu` 或自訂 Command Palette 元件消費——直�
 - ❌ **不在短選單（< 6 項）用 Command**：多此一舉增加認知負擔,改用 DropdownMenu 或 RadioGroup
 - ❌ **Command 不當 form input**：它是選值浮層而非輸入框——表單內選值請用 Select / Combobox,它們會自動決定是否啟用 Command 模式
 - ❌ **搜尋列不得另寫一份樣式**:CommandDialog、SelectMenu、inline 三種形態都用同一個 `CommandInput`;它的高度吃 Field 的 `--field-height-*` token(+8px 內距)、字級與 placeholder 同 Field 控件,不是獨立規格。(2026-09-08 撤回原「Command 搜尋框不是 Field Control,走自身尺寸規格」—— 那句就是兩份樣式漂移的許可證)
-- ⚠️ **Inline 嵌頁面 = 次要用法,必須自帶邊框容器**(2026-06-12 user 拍板放寬,原為全面禁止):主用法仍是浮層(SelectMenu 內部 / CommandDialog Cmd+K)——實際產品幾乎都走浮層形態。Inline 嵌頁面是原廠 documented 用法(cmdk README「Render this to show the command menu inline」;shadcn 預設範例即 inline 且包 `rounded-lg border`),允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),且不可拿來替代 SelectMenu / Select(表單選值仍走它們)([來源](https://github.com/pacocoursey/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/README.md#L88)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/examples/command-demo.tsx#L23))
+- ⚠️ **Inline 嵌頁面 = 次要用法,必須自帶邊框容器**(2026-06-12 user 拍板放寬,原為全面禁止):主用法仍是浮層(SelectMenu 內部 / CommandDialog Cmd+K)——實際產品幾乎都走浮層形態。Inline 嵌頁面是原廠 documented 用法(cmdk README「Render this to show the command menu inline」;shadcn 預設範例即 inline 且包 `rounded-lg border shadow-md`),允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),圓角值照 `../../tokens/radius/radius.spec.md`(不浮起來的容器 = `rounded-md`)【AI 推導 2026-11-18】,且不可拿來替代 SelectMenu / Select(表單選值仍走它們)([來源](https://github.com/pacocoursey/cmdk/blob/dd2250ed608443e8f32bafc5fa2d1d07a3746aa3/README.md#L88)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/examples/command-demo.tsx#L23))
 
 ---
 

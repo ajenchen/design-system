@@ -80,7 +80,7 @@ scope: "utility primitives module (use-overflow-items hooks: useScrollEdges + us
 
 `useRevealSelected(scrollRef, { itemSelector, selectedAttribute, reserveArrowWidth })` —— 水平溢出那一排「使用者剛動到的那一項」一律**置中**,兩端到底時**夾住**(不留空白)。這是本 module 唯一的揭露 primitive,消費者不得自己寫 `scrollIntoView` / `scrollLeft`。
 
-**對齊方式 B(一律置中)的出處**:user 2026-11-11(逐字)「Chip 的問題確保有找到root cause，並修 root cause，然後我覺得 B比較好吧？」、「「我建議 A。你還是想要 B 也完全可以，根因的修法三種都一樣。」都先B」。(A = 剛好露出 + 可讀邊距,是 AI 當時的建議;user 選 B。)
+**對齊方式 B(一律置中)的出處**:user 2026-11-11(逐字節錄;第一則後面還有一句「不可能世界級的設計那麼少選 b吧？」)「Chip 的問題確保有找到root cause，並修 root cause，然後我覺得 B比較好吧？」、「「我建議 A。你還是想要 B 也完全可以，根因的修法三種都一樣。」都先B」。(A = 剛好露出 + 可讀邊距,是 AI 當時的建議;user 選 B。)
 
 **根因**(2026-11-11 研究,MASTER-TODO 11-11):捲動原本只寫在 Chip / Tabs 的 ⌄ 選單處理程式(requestAnimationFrame + `scrollIntoView`);直接點擊走 Radix Toggle / Tabs Trigger,沒有捲動;鍵盤只靠瀏覽器的 focus 捲動,而 Chromium 對水平「部分可見」的項目不捲 —— Tabs scroll 模式方向鍵選中的分頁可以整顆落在箭頭 + 淡出底下(可讀 0)。本 module 當時沒有「選到就露出來」的 primitive 與契約,縮圖列另寫一份。現在三個消費者都只呼叫這一支。
 

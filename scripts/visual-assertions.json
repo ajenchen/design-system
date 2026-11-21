@@ -236,7 +236,7 @@
     {
       "id": "design-system-components-dialog-展示--long-content-open",
       "file": "dialog-long-content.png",
-      "rationale": "長內容 body 捲動 canonical — 29 位成員(MEMBERS 全名冊)超出視窗,驗證預設高度(填滿)+ body 區捲動;成員列 py-2(Family 2 reading 節奏)。拍 test-only「長內容:開啟狀態」;8eb473c7(#169)讀者 story 改成按了才開(D2 甲)後,指著讀者 story 只拍得到觸發鈕。斷言選擇器限在 [role=\"dialog\"] 裡:對話框沒開 = selectorMissing 紅",
+      "rationale": "長內容 body 捲動 canonical — MEMBERS 全名冊的全部成員超出視窗,驗證預設高度(填滿)+ body 區捲動;成員列 py-2(Family 2 reading 節奏)。拍 test-only「長內容:開啟狀態」;8eb473c7(#169)讀者 story 改成按了才開(D2 甲)後,指著讀者 story 只拍得到觸發鈕。斷言選擇器限在 [role=\"dialog\"] 裡:對話框沒開 = selectorMissing 紅",
       "assertions": [
         {
           "name": "成員列左右內距 = loose 16px(列前緣對齊 header 標題)",
