@@ -1223,5 +1223,29 @@ sed -i.bak "/^  'product-ui-ux-decision',$/d" "$NOPRODUCT/packages/design-system
 ask_instrument_case "Test 123: 複本拿掉 product-ui-ux-decision(決策區塊說 user 拍板產品、機器卻沒有對應 scope)→ 儀器失效 70" \
   "$NOPRODUCT/packages/design-system/ds-canonical/hooks/stop_self_audit.sh"
 
+# Tests 124-124b(WP-06 審查必修 2):密封語料模式(GOVERNANCE_HOOK_SEALED_CORPUS=1;STRICT、NODE_ENV=test 也會開)經真實 adapter。
+# 這個模式下 hook 的 corpus root 是快照,只收 scripts/run-provider-hook.mjs hookCorpusAuthorityPaths 列的檔;
+# 清單少了 release-workflow.json 時,Mechanism 13 讀不到正本 → 每次 Stop 都 70 → 整支 stop_self_audit 降級(BLOCKER 全關)。
+# 乾淨環境(env -i)跑本 repo 的 adapter,不繼承上面的 fixture 變數;READ_ONLY=1,不寫 .git/governance-runtime。
+# 任何 GOVERNANCE_WARNING(降級、整批跳過)或 systemMessage 都算沒跑成;transcript 路徑要是 realpath(adapter 拒收別名路徑)。
+sealed_case() {
+  local name="$1" reply="$2" want="$3" transcript out rc=0 ok=0
+  transcript="$(cd "$TMPDIR" && pwd -P)/sealed-$((PASS + FAIL)).jsonl"
+  printf '%s\n' "$(rec_user '今天的工作做完了嗎')" "$(rec_text "$reply")" > "$transcript"
+  out=$(cd "$REPO_ROOT" && jq -nc --arg path "$transcript" '{transcript_path:$path,hook_event_name:"Stop",session_id:"sealed"}' \
+    | env -i HOME="$HOME" PATH="$PATH" TMPDIR="$TMPDIR" GOVERNANCE_READ_ONLY=1 GOVERNANCE_HOOK_SEALED_CORPUS=1 \
+      node "$REPO_ROOT/scripts/run-provider-hook.mjs" --provider claude --hook stop_self_audit.sh 2>&1) || rc=$?
+  if [ "$rc" = "0" ] && ! printf '%s' "$out" | grep -qE 'GOVERNANCE_WARNING|systemMessage'; then
+    case "$want" in
+      quiet) printf '%s' "$out" | grep -q '"decision"' || ok=1 ;;
+      *) printf '%s' "$out" | grep -qF "$want" && ok=1 ;;
+    esac
+  fi
+  if [ "$ok" = "1" ]; then echo "  PASS  $name"; PASS=$((PASS+1)); else echo "  FAIL  $name (rc=$rc out=${out:0:200})"; FAIL=$((FAIL+1)); fi
+}
+sealed_case "Test 124: 密封語料模式 + 普通回覆 → stop_self_audit 不降級、不擋" '做完了,三支測試都跑過。' quiet
+sealed_case "Test 124b: 密封語料模式 + 請 user 決定沒寫 scope id → Mechanism 13 照擋(讀得到發版同意的正本)" \
+  '這兩種做法要你決定。' 'ASK-ROUTE BLOCKER'
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

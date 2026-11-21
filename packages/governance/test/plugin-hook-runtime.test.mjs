@@ -74,6 +74,7 @@ async function fixture(t) {
     ['packages/design-system/src/tokens/utility-registry.json'],
     ['packages/design-system/ds-changes.json'],
     ['packages/design-system/tools/changes/ledger.mjs'],
+    ['infra/governance/release-workflow.json'],
     ['packages/design-system/ds-canonical/references'],
     ['packages/design-system/ds-canonical/rules'],
     ['packages/design-system/ds-canonical/skills'],
