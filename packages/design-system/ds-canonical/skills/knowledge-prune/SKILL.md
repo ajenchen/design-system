@@ -139,8 +139,8 @@ Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P
 
 - 每個 cluster 一個 commit(`prune: duplicate X → SSOT owner Y / pointers elsewhere`)
 - 每個 prune commit(含 Phase 4 的 P2 commit)訊息末尾都要帶 `Prune-Items: <Phase 1 ID>` 與 `Phase0-After: <bootstrap 行數>/<hook 數>/<meta-patterns 字數>`;P2 項再加 `Prune-Priority: P2E|P2H` 且只准 1 個 ID。格式見 references/phase5-report-template.md「prune commit 訊息」,`validate-knowledge-prune-run.mjs --commits-only` 會驗;歷史不改寫,漏了事後補不回來
-- 每次 commit 後跑 `npm run governance:check` + `node scripts/validate-memory-contract.mjs` + `npm run test:reciprocal-pointers`(prune 不動 code;要防的是治理檔與指標斷鏈,`tsc -b` 根本不看這些)
-- 每 commit 後重跑 Phase 0 baseline,確認 size 有下降
+- 每個 commit:跑跟這個 commit 改到的檔有關的檢查,並重量 Phase 0 寫進 `Phase0-After`(確認 size 有下降;validator 只驗格式、不重算數字)
+- 全套(`npm run governance:generate` 後 `npm run governance:check` + `node scripts/validate-memory-contract.mjs` + `npm run test:reciprocal-pointers`)在最終狀態跑一次,再推 CI(prune 不動 code;要防的是治理檔與指標斷鏈,`tsc -b` 根本不看這些)。依據:`governance/memory/feedback_propose_discipline.md` Sub-rule 9 How to apply —— 本機 / CI 各跑什麼照 `rules/work-process.md`
 
 ### Phase 4 — P2 resolution + apply
 
