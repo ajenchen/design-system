@@ -625,9 +625,11 @@ export const StateBehavior = {
               <td className="p-3 border-b border-divider"><Avatar size={32} src={demoPersonPhoto('Alice Chen', 64)} alt={alice.name} hoverCard={samplePersonCard(alice)} /></td>
               <Td>{'有 src + 載入成功 → 圖片'}</Td>
             </tr>
+            {/* icon 這一列代表組織(Building2):alt 寫組織名、方形(avatar.spec.md「人用 circle,東西用 square」)。
+                2026-11-21 前 alt 寫人名 "Bob"、圓形 —— 讀屏唸人名,畫面卻是大樓(A75 ①) */}
             <tr>
               <Td mono>src 失敗 → icon</Td>
-              <td className="p-3 border-b border-divider"><Avatar size={32} src="https://invalid.local/x.jpg" alt="Bob" icon={Building2} color="blue" /></td>
+              <td className="p-3 border-b border-divider"><Avatar size={32} src="https://invalid.local/x.jpg" alt="Acme Inc" icon={Building2} color="blue" shape="square" /></td>
               <Td>{'有 icon prop → 圖片失敗時顯示 icon'}</Td>
             </tr>
             <tr>
