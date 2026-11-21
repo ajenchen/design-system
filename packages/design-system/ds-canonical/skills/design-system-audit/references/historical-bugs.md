@@ -227,6 +227,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 2026-09 追錄(2026-11-17 knowledge-prune 從 meta-patterns.md M10 第 3 欄逐字搬來,規則句已移到 M10 第 2 欄「Sub-rule 同族全修」):
 - **2026-09-18/19 只修同族一條還明文寫「另一條不變」→ 隔天被同一種方式咬**:CI 比值閘的「長工單一最長」因尾端噪音誤紅,改成比合計時同一段註解寫下「frameGap 那條不變」,隔天 frameGap 就在**零個執行期檔案改動**的 commit 上誤紅(同一份建置量到 215 與 311,尾端散布 ±45% > 門檻 ±25%)。
 
+2026-11 追錄(2026-11-21 knowledge-prune WP-META 落檔;規則句 = meta-patterns.md M10「自檢不得只做單句層級」第 (3) 維度「目標覆蓋」):
+- **2026-11-19 只拿已知問題清單由下往上驗,漏了最大的塊**:user 原話「為何又要我追問才發現有遺漏？root cause?」(session 96d711a5,2026-11-19 13:33:54)。根因:「完整」一直是對著「已知問題清單」由下往上驗(每個出過的問題都有對策 = 完整),從沒有由上往下對著 user 的目標驗(目標拆成量得到的組成,最大的塊有沒有手段);而所有審查與檢查程式都只驗「寫出來的東西對不對、互不矛盾」(M10 兩個維度),沒有任何一道在找「沒寫出來的」—— 這是 M37 代理:拿「已知問題都補了」代替「目標達成」。
+
 ### M11 — User-perspective interactive state walk
 2026-04-22 ListBody 修完 user 連抓 5 波:hover bg 貼邊違反不貼邊 / focus ring click 觸發擾人 / notification 範例不現實(誰會進 modal 又跳別處)/ menu py-2 沒對齊 / layoutSpace md reset selector 缺。每個都是 user 視角一看就知,AI 沒跑 7 題 state walk 就 commit。
 
