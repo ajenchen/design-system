@@ -427,6 +427,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
 
     // 離開欄位就結算。焦點搬到**同一個欄位裡**的清除 ×(鍵盤 Tab、Chrome 滑鼠按下 ×)不算離開 —— 否則 × 還沒按到,這一下 blur 就先把草稿結算掉:
     // 合法的網址直接提交、切回連結狀態,× 跟著卸載,點擊落空(提案 A ②;同 React Aria useComboBox「Ignore blur if focused moved to the button」,
+    // https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/combobox/useComboBox.ts#L269-L280 ;
     // 判準與 Select / DatePicker 的「觸發欄位 + 零件 = 同一個欄位」同一支 lib/composite-field-focus.ts)。沒開 clearable 時框裡沒有別的可聚焦零件,結果與修前相同。
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       if (!isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget.parentElement })) settleDraft()

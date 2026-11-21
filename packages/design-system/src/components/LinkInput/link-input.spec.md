@@ -99,7 +99,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 - **之後照既有規則結算**(上方「驗證」):離開欄位或 Enter —— 空白 = 清值(`onChange('')`)、合法 = 提交、不合法 = 紅框;Esc = 還原原值(打字狀態的 Esc 層照舊,見「驗證」4)
 - **焦點**:
   - 滑鼠:輸入框握著焦點時按 ×,焦點不動(擋 mousedown 預設、click 照常;`../../lib/pointer-press.ts` `keepFocusOnPointerPress`,Select / Combobox 欄位內搜尋框同一支);焦點本來不在欄位裡時,按完放進輸入框 —— 草稿已經跟值不同,得有一次離開才會結算
-  - 鍵盤:× 在 Tab 序上(輸入框 → ×);`Enter` / 空白鍵按下後焦點回輸入框,不隨 × 卸載掉到 `body`(`../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`,Select「清除後焦點」同一支);焦點在 × 上按 `Esc` 與在輸入框裡按同一層(還原原值,浮層裡第一下只還原)
+  - 鍵盤:× 在 Tab 序上(輸入框 → ×);`Enter` / 空白鍵按下後焦點回輸入框,不隨 × 卸載掉到 `body`(`../Field/field-wrapper.tsx` `keepFieldFocusBeforeUnmount`,Select「清除後焦點」同一支);焦點在 × 上按 `Esc` 與在輸入框裡按同一層(還原原值,浮層裡第一下只還原);鍵盤聚焦 × 時它的 tooltip 開著,第一下 `Esc` 先收 tooltip(一次只收一層),第二下才還原
   - **輸入框 ↔ × 之間移動不算離開欄位、不結算**;從 × 離開欄位(Tab 走、點別處)才結算(判準 = `../../lib/composite-field-focus.ts` `isWithinCompositeField`,與 Select / DatePicker「觸發欄位 + 零件 = 同一個欄位」同一支)
 - **為什麼要這兩條焦點處理**(提案 A ②):「離開輸入框就結算」會搶在 × 之前 —— 只把 × 接上「清字」的寫法,按 × 那一下輸入框先 blur,合法的網址當場提交、切回連結狀態,× 跟著卸載,點擊落空(退出編輯)。閘 `scripts/link-input-clear-invariant.mjs`(兩面對照:拿掉「× 算同一個欄位」或「按 × 焦點不動」任一條,按 × 會退出編輯 = 紅;現行留在編輯 = 綠)
 
@@ -179,6 +179,7 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `data-table.spec.md`
+- `field-controls.spec.md`
 - `file-item.spec.md`
 - `input.spec.md`
 - `textarea.spec.md`
