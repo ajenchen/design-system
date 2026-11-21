@@ -219,7 +219,7 @@ const openPopoverPlay = (selector: string) => async ({ canvasElement }: { canvas
 /* ── OpenSnapshot:Range popover 內 range track 視覺驗證(M15)── */
 export const RangePopoverOpen: Story = {
   name: '範圍:浮層展開狀態',
-  parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid mode=range,verify range track 高度 = button 高度(28×28 @ md),不留 cell 上下 2px 多餘空白(Q8 設計準則 2026-05-02)。' } } },
+  parameters: { docs: { description: { story: '範圍模式打開月曆的樣子:已選區間的灰色底條與日期按鈕同高(標準尺寸 28×28),格子上下不多留 2px 空白(2026-05-02 設計準則 Q8)。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
     return (
@@ -235,7 +235,7 @@ export const RangePopoverOpen: Story = {
 /* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
 export const ShowTimePopoverOpen: Story = {
   name: '日期加時間:浮層展開狀態',
-  parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid + TimePickerSidePanel(header + 滾選欄)+ footer。Verify TimePicker 高度 = calendar 高度,header 對齊 calendar 的「年月」(設計準則 2026-05-02)。' } } },
+  parameters: { docs: { description: { story: '日期加時間打開的樣子:月曆右邊是時間欄(頂端顯示目前選的時:分,下面是「時 / 分」兩欄捲動選),底下是「此刻」與「確定」。時間欄跟月曆一樣高,頂端那列跟月曆的「年月」列對齊(2026-05-02 設計準則)。' } } },
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
     return (
@@ -271,7 +271,7 @@ export const NeedConfirmDateOnlyOpen: Story = {
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
 export const ShowTimeRangePopoverOpen: Story = {
   name: '日期加時間範圍:浮層展開狀態',
-  parameters: { docs: { description: { story: 'Visual-audit — Range showTime popover:numberOfMonths=1(只渲 active end 月份)+ TimePickerSidePanel + footer。Verify Ant idiom「一次 edit 一端」(設計準則 2026-05-02)。' } } },
+  parameters: { docs: { description: { story: '日期加時間的範圍打開的樣子:一次只編一端,所以只顯示正在編的那一端的一個月(這裡是開始日),右邊是時間欄,底下只有「確定」—— 按下才套用這一端。一次編一端是 Ant Design 範圍選擇器的做法(2026-05-02 設計準則)。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>([
       '2026-04-15T09:00:00',
