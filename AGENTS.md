@@ -31,7 +31,7 @@
 | `packages/design-system/ds-canonical/references/naming-conventions.md` | 命名新檔/變數/prop |
 | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | 稽核判準 SSOT(91 dim rubric,Claude 與 Codex 同判準)|
 
-(Claude Code 對 generated `.claude/rules/` view 有 path-scoped 自動載入,其他 agent 依本表讀 canonical source;兩者由 build graph exact projection,禁把 provider view 當第二份 SSOT。)
+(`.claude/rules/` 是 build graph 生成的 adapter view,Claude 依 paths 自動載入;其他 agent 依本表讀 canonical,不得把它當第二份 SSOT。)
 
 # 治理 canonical(home 分層 + anti-bloat)
 
@@ -57,7 +57,7 @@
 
 **Consistency 類稽核必 Phase 0 全掃再判**。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11;來源不明):先全 DS 掃完(NO-SAMPLE)→ 跨元件去重 → **最後一次**列決策清單給 user 拍板;**禁**途中逐元件問。
 
-**Audit-vs-execute 分權**:照 `# 自主執行 canonical`(本節不重述);要 user 拍板的一律 batch-at-end。對齊／表達統一／清 duplicate／補 pointer 一律 AUTO。
+**Audit-vs-execute 分權**:照 `# 自主執行 canonical`(不重述)。對齊／表達統一／清 duplicate／補 pointer 一律 AUTO。
 
 **Scope classifier — Surgical visual bug**:user 列 N 個 visual defects + 無新 canonical／無新 API contract／無跨元件語意改動 → **Surgical scope**(batch fix + 最後一次 pixel-quantified verify,不開 audit report);其餘回上一段的 audit-vs-execute 分權。
 
@@ -66,9 +66,7 @@
 **只有 task／deliverable 明確要求時才啟動**(optional review 缺席不阻擋一般工程、deep audit 或 standard release)。
 判準 = 同一份 rubric(`audit-prompts.md`);author ≠ reviewer;雙方 provider/model/version 與 waiver 都入 receipt,waived 的 run 不得冒充已做 review。**Binding 不可用 → 只把該 claim 標 `REVIEW-BLOCKED`,不阻擋其他事**;
 禁同一 agent 假扮另一 provider。
-**完整條文不在本檔重述**,owner 是
-`packages/governance/canonical/providers.json`(selection policy)+ `packages/governance/src/provider-review-binding.mjs`
-的 `resolveProviderReviewBinding` +
+**完整條文不在本檔重述**,owner 是 `packages/governance/canonical/providers.json`(selection policy)+ `packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` +
 `packages/design-system/ds-canonical/skills/independent-review/SKILL.md`(產品第二意見)與 `packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md`(重大 governance/release);
 散文版見 meta-patterns M31。禁從 skill 名稱推斷 peer。
 
@@ -92,8 +90,8 @@
 | **Tailwind 出怪事** | `rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出／稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
-| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | `# Independent second opinion` |
-| **多代理批次工作** | `rules/work-process.md` + `skills/bug-fix-rhythm/references/multi-agent-orchestration.md` |
+| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | `# Independent second opinion`(`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json`;`/independent-review`、`/deep-audit-cross-codex`) |
+| **多代理批次工作** | `rules/work-process.md` + bug-fix-rhythm 的 `references/multi-agent-orchestration.md` |
 | **PR merge 後／session start branch 健檢** | `# Git / release canonical` |
 
 **找不到** → `# 遇不確定時的協議`。
@@ -111,7 +109,7 @@
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
 | 5 `consumer` | 自動建立、修復、合併 template exact-version PR,讀回 consumer protected main;WM 只在要求時升級 |
 
-公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK** 只限 `#canonical-decision-authority` 的集合與**發版同意**;human-only 動作只停那一步,完成後 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
+公開入口只有三支:`npm run release:auto`(安全續跑;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀)、`npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需原話)。**ASK** 只限 `#canonical-decision-authority` 的集合與**發版同意**;human-only 動作做完即 AUTO resume。已退役的 ceremony(candidate-freeze、soak、fleet promotion 等)不得回到 blocking graph —— 清單見 `infra/governance/release-workflow.json`。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 
 **禁止**:direct push main / 同 chat 多 branch 或多 PR / required CI、conversation 或 live readback bypass / mutable dependency tag / 把 external write 或 legacy ceremony 當人類核准 gate / **未經 user 說「發版」就合併或發布**(2026-09-02 錨:beta.131 與 #122 在 user 還在看草稿時就被自動發出)。
 
@@ -128,7 +126,7 @@
 
 **Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。跳過規格項或驗證 = 省工(違 mindset #1)。
 
-**分診與預算**(開工前):只開工 ① user／產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤,不開工。派工先寫預算(代理數／花費／牆鐘),用滿就停派,交付已完成的並回報。驗到哪:改到的檔在 CI 對應的檢查,不跑本機全套;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14／M19／M23／M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「全部 ssot 都要強制吻合」)不在此限。
+**分診與預算**(開工前):只開工 ① user／產品看得到的錯 ② CI 紅或弄壞已做好的 ③ user 明確要求(附原話 檔:行);其餘記一行進追蹤、不開工。派工先寫預算(代理數／花費／牆鐘),用滿就停派、交付已完成的並回報。只驗改到的檔在 CI 對應的檢查;改畫面加預覽讀回,AI 推導的先給 user 看再加固。小修不新寫閘,能擴既有閘就擴;與 M14／M19／M23／M32 的補閘、多層落地衝突時本段優先;user 原話定的規則(例 05-27「全部 ssot 都要強制吻合」)除外。
 
 | 動作類別 | 預設 |
 |---------|-----|
@@ -137,7 +135,7 @@
 | Bug fix / clean / refactor / 命名一致 / perf / a11y / test / audit / verify | **AUTO** — 整批做完 + 完整驗證 + 撤回機制 |
 
 **同時優化 7 軸**:言簡意賅／效率+效能／SSOT 鐵律／易懂維護擴充／世界級+一致設計語言／完整 self-verify／自動 self-improve。**反 pattern**(禁):「省工」「下次再做」「下個 session」「OK 嗎?」過度 ASK、shortcut 避 verify。
-**Trigger phrase auto-pipeline**:「依原則自主」「不需問」「馬不停蹄」「全部做完」「自動」→ autonomous mode(ASK 照下方區塊)。
+**Trigger phrase auto-pipeline**:「依原則自主」「不需問」「馬不停蹄」「全部做完」「自動」→ autonomous mode。
 **Triple-verify before propose**:propose／列 option／宣稱發現「問題」前必 inline 跑 (1) grep DS-wide (2) Read spec.md／tsx (3) 對照 canonical exception,三題全過才 propose。
 **SSOT auto-sync invariant**:跨 file 數字禁 hardcode 多處;以 `scripts/sync-governance-counters.mjs` 機械對齊。
 
@@ -151,7 +149,7 @@
 
 # 遇不確定時的協議
 
-**無前例且影響產品／UI／UX SSOT 的真實取捨**才走 3 步(禁跳):**grep 既有**(30 秒)→ **讀近親 spec.md** → **仍有真選擇才停下問** user;其餘依 Engineering Decision Policy(`#canonical-decision-authority`)自主,無需問。禁:跳 grep 憑記憶／隨便挑／留 TODO;可跳:bug 修／機械勞動／user 明確指示。
+**無前例且影響產品／UI／UX SSOT 的真實取捨**才走 3 步(禁跳):**grep 既有**(30 秒)→ **讀近親 spec.md** → **仍有真選擇才停下問** user;其餘依 Engineering Decision Policy 自主,無需問。禁:跳 grep 憑記憶／隨便挑／留 TODO;可跳:bug 修／機械勞動／user 明確指示。
 
 # 失敗記憶索引(技術沉默陷阱 only)
 

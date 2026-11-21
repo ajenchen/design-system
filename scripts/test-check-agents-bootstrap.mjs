@@ -117,7 +117,8 @@ try {
   const end = agentsText.indexOf('<!-- canonical-decision-authority:end -->') + '<!-- canonical-decision-authority:end -->'.length
   const block = agentsText.slice(start, end)
   const boundaryLine = block.split('\n').find((line) => line.startsWith('**Human-only boundaries**'))
-  write('AGENTS.md', `# Fixture governance\n\n${block}\n`)
+  const triageLine = agentsText.split('\n').find((line) => line.startsWith('**分診與預算**'))
+  write('AGENTS.md', `# Fixture governance\n\n${triageLine}\n\n${block}\n`)
   write('CLAUDE.md', '@AGENTS.md\n')
   for (const rel of [...block.matchAll(/`((?:scripts|packages|governance|infra)\/[^`*]+?\.(?:md|mjs|sh|json))`/g)].map((m) => m[1])) write(rel, 'fixture\n')
   write('scripts/package-role-sources/AGENTS.package.md', '# Package scope\n\nScoped augmentation; not repository or consumer SSOT.\n')
@@ -139,22 +140,47 @@ try {
   const expect = (label, wantGreen) => {
     const code = run(authorityFixture)
     if ((code === 0) !== wantGreen) {
-      console.error(`✗ A8 ${label}:應${wantGreen ? '綠' : '紅'},實際 exit ${code}`)
+      console.error(`✗ ${label}:應${wantGreen ? '綠' : '紅'},實際 exit ${code}`)
       ok = false
-    } else console.log(`✓ A8 ${label}(exit ${code})`)
+    } else console.log(`✓ ${label}(exit ${code})`)
   }
-  expect('SSOT 齊全、沒有手抄 → 綠', true)
+  expect('A8 SSOT 齊全、沒有手抄 → 綠', true)
   const note = 'packages/design-system/ds-canonical/rules/note.md'
   write(note, `${boundaryLine.replace(/^\*\*Human-only boundaries\*\*/, '要交給人的只有這些')}\n`)
-  expect('規則檔抄一份 human-only 清單、沒引用 → 紅', false)
+  expect('A8 規則檔抄一份 human-only 清單、沒引用 → 紅', false)
   write(note, `${boundaryLine.replace(/^\*\*Human-only boundaries\*\*/, '要交給人的只有這些')}(見 AGENTS.md#canonical-decision-authority)\n`)
-  expect('同一份清單附上 SSOT 出處 → 綠', true)
+  expect('A8 同一份清單附上 SSOT 出處 → 綠', true)
   write(note, `可以交給 user 的:${ids.slice(0, 2).join('、')}。\n`)
-  expect('寫死 2 個 scope id、沒引用 → 紅', false)
+  expect('A8 寫死 2 個 scope id、沒引用 → 紅', false)
   write(note, `可以交給 user 的:${ids.join('、')}(approval-evidence.mjs humanOnlyAuthorityScopes())。\n`)
-  expect('完整 id 集合 + 出處 → 綠', true)
+  expect('A8 完整 id 集合 + 出處 → 綠', true)
   write('packages/design-system/ds-canonical/fork/launchers/approval-evidence.mjs', `${readFileSync(resolve(REPO, classifierRel), 'utf8')}\n// drift\n`)
-  expect('分類器 fork 投影與正本不同 → 紅', false)
+  expect('A8 分類器 fork 投影與正本不同 → 紅', false)
+  copy(classifierRel, 'packages/design-system/ds-canonical/fork/launchers/approval-evidence.mjs')
+  rmSync(join(authorityFixture, note))
+
+  // A6 開場 bytes 上限(CG0-SLIM-CAP):把開場固定載入檔湊到剛好等於上限 → 綠;多一行 → 紅;
+  // 同一份大檔加上 paths 前置設定(不再每次載入)→ 不算進開場 → 綠。上限從檢查器原始碼讀,不在本檔重寫數字。
+  const cap = Number(readFileSync(CHECKER, 'utf8').match(/const OPENING_FILES_MAX_BYTES = ([\d_]+)/)[1].replaceAll('_', ''))
+  const sizeOf = (rel) => Buffer.byteLength(readFileSync(join(authorityFixture, rel), 'utf8'))
+  const metaRel = 'packages/design-system/ds-canonical/rules/meta-patterns.md'
+  const metaHead = '**優先序**:見 AGENTS.md「分診與預算」。\n'
+  const filler = (n) => metaHead + 'x'.repeat(n - Buffer.byteLength(metaHead))
+  write(metaRel, metaHead)
+  const others = sizeOf('AGENTS.md') + sizeOf('CLAUDE.md')
+  write(metaRel, filler(cap - others))
+  expect('A6 開場固定載入剛好等於上限 → 綠', true)
+  write(metaRel, `${filler(cap - others)}\n`)
+  expect('A6 多一行 → 紅', false)
+  write(metaRel, `---\npaths:\n  - "**/*.tsx"\n---\n${filler(cap - others)}\n`)
+  expect('A6 同一份檔改成依 paths 載入(不在開場)→ 綠', true)
+  write(metaRel, metaHead)
+  // A7「分診與預算」段(CG0-THRIFT):刪掉 → 紅;meta-patterns 優先序那一行刪掉 → 紅
+  write('AGENTS.md', `# Fixture governance\n\n${block}\n`)
+  expect('A7 AGENTS.md 刪掉「分診與預算」段 → 紅', false)
+  write('AGENTS.md', `# Fixture governance\n\n${triageLine}\n\n${block}\n`)
+  write(metaRel, 'x\n')
+  expect('A7 meta-patterns 刪掉優先序那一行 → 紅', false)
 } finally {
   rmSync(authorityFixture, { recursive: true, force: true })
 }

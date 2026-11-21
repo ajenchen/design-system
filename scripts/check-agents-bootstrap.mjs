@@ -4,10 +4,11 @@
  *   保證: AGENTS.md / CLAUDE.md 的 bootstrap 結構完整 —— A1 root→最深 package scope 的指令鏈 ≤ 32KiB(Codex 靜默截斷上限)、
  *         A2 CLAUDE.md 以 `@AGENTS.md` 開頭、A3 Rule Index 路徑存在且 provider view 只出現在明示 adapter 的說明、
  *         A4 兩檔無重複 normative 標題、A5 npm files 含兩檔且 shipped package instructions 來自獨立短 source、
+ *         A6 開場固定載入檔(AGENTS.md + CLAUDE.md + 無 paths 的規則檔)總 bytes ≤ 釘住的上限、A7「分診與預算」段與 meta-patterns 優先序那一行還在、
  *         A8「交 user / human-only」集合只住 AGENTS.md#canonical-decision-authority + approval-evidence.mjs + release-workflow.json,
  *         別處的手抄清單 / 寫死的 scope id / 手寫類別數都要引用它(引了 id 清單就要與它相同),分類器與收據契約的 fork / template 投影逐位元組相同。
  *   紅: 任一斷言不成立 → 印出哪一條與實測數字(例:鏈的 bytes)或 檔:行,exit 1。
- *       A8 讀不到 SSOT、或每次先跑的對照組(用 SSOT 字彙造的合成文字)答錯 → 量具失效 exit 2(不是綠)。
+ *       A6 的對照組(上限本身綠、多一行紅)答錯 → exit 2;A8 讀不到 SSOT、或每次先跑的對照組(用 SSOT 字彙造的合成文字)答錯 → 量具失效 exit 2(不是綠)。
  *   綠: 全部成立。純靜態讀檔,結果不隨時間 / 機器變。A8 只在有 packages/design-system/ds-canonical 的 repo 跑(fixture 小樹沒有就不適用)。
  *   執行面: 2026-09-27 起 verify-static `npm run check:agents-bootstrap`(此前只有 fixture 測試呼叫,真 repo 沒人跑 —— 待辦總帳 N14(a))。
  *
@@ -24,6 +25,8 @@
  *   A3 AGENTS.md canonical repo 路徑存在；provider-view 路徑只准出現在明示 adapter/non-authority 的說明
  *   A4 兩檔無重複 normative 標題(# / ## 級;Claude 段的機制說明豁免清單)
  *   A5 npm files 含 AGENTS/CLAUDE；shipped package instructions 精確來自獨立短 source，且不得複製 root
+ *   A6 開場固定載入檔總 bytes ≤ OPENING_FILES_MAX_BYTES(2026-11-22 CG0-SLIM-CAP)
+ *   A7 AGENTS.md「分診與預算」段 + meta-patterns 優先序那一行存在(2026-11-22 CG0-THRIFT)
  *   A8 authority 集合不在別處手抄(2026-11-22 WP-AGENTS / ASKFIX-REPO-DRIFT;判法見 A8 段開頭)
  *
  * 用法:node scripts/check-agents-bootstrap.mjs [--check]
@@ -157,6 +160,41 @@ try {
   }
 } catch (e) { errors.push(`A5: package.json 讀取失敗 ${e.message}`) }
 
+// A6:開場固定載入的檔總 bytes 有上限(CG0-SLIM-CAP;logs/efficiency/synthesis.md §2 F4「釘在瘦身後的數字,要變大必須在 PR 裡明改上限」)。
+// 開場固定載入 = AGENTS.md + CLAUDE.md + rules/ 底下沒有 paths 前置設定的規則檔(Claude 每次對話都載入;目前 meta-patterns.md、
+// work-process.md)—— 名單從目錄機械算,新增一支常駐規則檔自動算進來,不必改本檔。上限 = 2026-11-22 WP-AGENTS 收尾時的實量,
+// 只在確定要讓開場變大時才改這個數字(改了 PR diff 看得到)。量的是正本;.claude/rules 是逐位元組投影(governance:check 管)。
+const OPENING_FILES_MAX_BYTES = 76_152
+const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
+const alwaysLoadedRules = fs.existsSync(RULES_DIR)
+  ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {
+    const head = fs.readFileSync(path.join(RULES_DIR, name), 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/)
+    return !(head && /^paths\s*:/m.test(head[1]))
+  }).map((name) => path.join(RULES_DIR, name))
+  : []
+const openingFiles = [A, C, ...alwaysLoadedRules].filter((file) => fs.existsSync(file))
+const openingBytes = openingFiles.reduce((sum, file) => sum + fs.statSync(file).size, 0)
+const openingOver = (bytes) => bytes > OPENING_FILES_MAX_BYTES
+// 兩面對照(每次執行):剛好等於上限 → 不紅;多一行 → 紅。答錯 = 量具失效。
+if (openingOver(OPENING_FILES_MAX_BYTES) || !openingOver(OPENING_FILES_MAX_BYTES + '\n'.length)) {
+  console.error('❌ agents-bootstrap 閘 INSTRUMENT:A6 對照組答錯(上限本身應綠、多一行應紅)')
+  process.exit(2)
+}
+if (openingOver(openingBytes)) {
+  errors.push(`A6: 開場固定載入 ${openingBytes} bytes > 上限 ${OPENING_FILES_MAX_BYTES}(${openingFiles.map((file) => path.relative(ROOT, file)).join(' + ')})—— 先瘦身;確定要變大就在本檔明改 OPENING_FILES_MAX_BYTES`)
+}
+
+// A7:「分診與預算」段還在(CG0-THRIFT;synthesis.md §2 F3「刪掉會紅」),meta-patterns 開頭的優先序那一行也指向它。
+// 只在 DS 作者 repo(有 packages/design-system/ds-canonical)檢查;fixture 小樹不適用。
+const DS_CANONICAL = path.join(ROOT, 'packages/design-system/ds-canonical')
+if (fs.existsSync(DS_CANONICAL) && fs.existsSync(A) && !/^\*\*分診與預算\*\*/m.test(fs.readFileSync(A, 'utf8'))) {
+  errors.push('A7: AGENTS.md 缺「**分診與預算**」段 —— 省錢規則與它的優先序只住這裡,每個代理(含 Codex)開場都讀')
+}
+const META_PATTERNS = path.join(RULES_DIR, 'meta-patterns.md')
+if (fs.existsSync(DS_CANONICAL) && fs.existsSync(META_PATTERNS) && !/^\*\*優先序\*\*.*「分診與預算」/m.test(fs.readFileSync(META_PATTERNS, 'utf8'))) {
+  errors.push('A7: meta-patterns.md 開頭缺指向 AGENTS.md「分診與預算」的優先序那一行')
+}
+
 // A8:「交 user / human-only」集合不得在別處手抄(ASKFIX-REPO-DRIFT;user 2026-11-20 09:23「給我確保這種事情上都有SSOT 沒有漂移」)。
 // SSOT = AGENTS.md#canonical-decision-authority 區塊 + approval-evidence.mjs humanOnlyAuthorityScopes() + release-workflow.json 發版同意,
 // 執行時經 hooks/lib/ask-route.mjs 的 readAskRouteSsot 讀(同一支讀法,不另寫;靜態 import,不動態載入模組)。偵測字彙全部由 SSOT 衍生、本檔不帶清單:
@@ -170,7 +208,6 @@ try {
 // 生成檔(provider views、fork、template、generated)、歷史與證據(governance/planning、governance/archive、fixtures)不掃。
 // 豁免:標記區塊本身、SSOT 檔本身(approval-evidence.mjs、ask-route.mjs、release-workflow.json)。
 // 每次執行先跑對照組(用 SSOT 讀到的字彙造合成文字;該紅的要紅、該綠的要綠),答錯 = 量具失效 exit 2。
-const DS_CANONICAL = path.join(ROOT, 'packages/design-system/ds-canonical')
 if (fs.existsSync(DS_CANONICAL)) {
   const CLASSIFIER_REL = 'packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs'
   const RECEIPT_REL = 'packages/governance/src/authority-decision-evidence.mjs'
@@ -337,4 +374,5 @@ if (errors.length) {
   for (const e of errors) console.error('   - ' + e)
   process.exit(1)
 }
-console.log('✅ agents-bootstrap 閘 PASS(root→cwd AGENTS chain ≤32KiB / Claude @import / Rule Index 零死鏈 / 無雙 SSOT / scoped npm instructions 同步)')
+console.log(`A6 開場固定載入 ${openingBytes} / ${OPENING_FILES_MAX_BYTES} bytes(${openingFiles.length} 檔)`)
+console.log('✅ agents-bootstrap 閘 PASS(root→cwd AGENTS chain ≤32KiB / Claude @import / Rule Index 零死鏈 / 無雙 SSOT / scoped npm instructions 同步 / 開場 bytes 上限 / 分診段 / authority 集合不手抄)')
