@@ -166,7 +166,7 @@ try {
 // 開場固定載入 = AGENTS.md + CLAUDE.md + rules/ 底下沒有 paths 前置設定的規則檔(Claude 每次對話都載入;目前 meta-patterns.md、
 // work-process.md)—— 名單從目錄機械算,新增一支常駐規則檔自動算進來,不必改本檔。上限 = 2026-11-22 WP-AGENTS 收尾時的實量,
 // 只在確定要讓開場變大時才改這個數字(改了 PR diff 看得到)。量的是正本;.claude/rules 是逐位元組投影(governance:check 管)。
-const OPENING_FILES_MAX_BYTES = 76_152
+const OPENING_FILES_MAX_BYTES = 76_151
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {
