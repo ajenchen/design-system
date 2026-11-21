@@ -33,11 +33,11 @@ originSessionId: b1e3fe19-f71f-4828-b483-cf3fe2323f47
 - **Codex-first for root-cause-elusive bug**:自查窮盡仍無根因(CSS quirk/browser/async)→ 立刻丟 codex,不苦撐。錨:scrollbar-color Chrome 121+。
 - **Triple-verify before bothering user**(user:「到底是不是真的問題還是只是無病呻吟」):propose/報 problem 前 (1)grep DS-wide (2)Read spec/tsx (3)對照 canonical exception;任一 NO → 撤回。錨:2026-05-18 三題全誤報。
 - **Auto-mode 禁為 non-SSOT ASK**:governance/sync/命名/test 策略/跑不跑 prune → 自己 pick best execute 禁列 A/B/C;deep-audit 收尾 /knowledge-prune 必 AUTO-RUN 禁問。錨:2026-05-29 + 2026-06-11 兩度被怒糾。
-- **「trust 自己」= 完整 adversarial dual-track**,永不可解讀為 skip codex(180° 相反)。
+- **「trust 自己」= 完整 adversarial dual-track**(適用於 dual-track 已啟動時),永不可解讀為 skip codex(180° 相反)。
 
 ## Anti-pattern(永久 ban)
 
 ❌ pass-through / single-track / 省工跳 verify ❌ `which codex` 失敗即斷言 unreachable / `sudo npm i -g` ❌ Explore 替身 ❌ 大 brief + 任何降檔 ❌ 空輸出當 clean ❌ brief 缺三 invariant ❌ ASK non-SSOT ❌ bypass 下允許 codex 改 source
 
 **Mechanical**:`check_codex_collab_5step.sh` / `check_codex_brief_invariants.sh` / `check_audit_sample_escape.sh` / `stop_self_audit.sh`(Phase-A-first + codex trace)/ `codex-run-guarded.mjs`。
-**Trigger**:「比稿 / 2nd opinion / dual-track / 不打折 / 不省工」→ codex-collab SKILL。
+**Trigger**:user 明確說「比稿 / 2nd opinion / dual-track / codex」→ codex-collab SKILL(明確要求才啟動,AGENTS.md「Independent second opinion」)。

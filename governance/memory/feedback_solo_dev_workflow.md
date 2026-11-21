@@ -4,7 +4,7 @@
 
 ## Invariants
 
-- One chat (session) = one working branch = one pull request(AGENTS.md「# Git / release canonical」;`check_solo_workflow.sh` R1 以 session_id 執法,但只在開遙測時有作用 —— 見下方「Mechanical enforcement」R1).
+- One chat (session) = one working branch = one pull request(AGENTS.md「# Git / release canonical」;`check_solo_workflow.sh` R1 以 session_id 執法,用功能狀態,不需要遙測 —— 見下方「Mechanical enforcement」R1).
 - Never edit or push directly on `main`.
 - The PR is the only merge path. Required CI and resolved review threads are the `pr-checks` completion gates.
 - In this solo repository, the PR author cannot meaningfully self-approve. CODEOWNERS records ownership, but the ruleset uses zero required human approvals; protected checks, resolved conversations, protected-main merge/readback, immutable publish, exact release readback, and exact consumer readback are the authority.
@@ -32,7 +32,7 @@
 
 `packages/design-system/ds-canonical/hooks/check_solo_workflow.sh` 是唯一 enforcement source；provider hook views 皆由它生成：
 
-- R1: a session cannot create a second working branch; both `git checkout -b` and `git switch -c` are recognized across provider branch prefixes. **Only effective when `GOVERNANCE_TELEMETRY_OPT_IN=1`**: the session→branch record lives in the telemetry state dir, so with telemetry off (the default) R1 never blocks.
+- R1: a session cannot create a second working branch; both `git checkout -b` and `git switch -c` are recognized across provider branch prefixes. Enforced by `session_id` with enforcement state, not telemetry: the session→branch record lives in the enforcement state dir, so R1 blocks whether telemetry is on or off (the default is off). The cases R1 cannot record (and so cannot block) are listed in the hook header.
 - R2: any direct push to `main` is blocked. Standing authorization does not bypass protected-main architecture.
 Tag creation/push is owned by `release:auto` + the registered Release workflow, not a provider hook or retired local preflight marker. R3's transcript-keyword merge gate and the old R4 tag-attestation branch are retired because they inserted non-canonical ceremony. Remote protected checks and five-step live readback remain fail-closed.
 
