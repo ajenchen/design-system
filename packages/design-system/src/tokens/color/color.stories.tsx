@@ -415,7 +415,8 @@ export const Interactive: Story = {
                   className={`${base} ${layer} flex flex-col items-start gap-[var(--item-gap-label-desc-scanning)] rounded-md border border-border px-3 py-2 text-body`}
                 >
                   <span>{state}</span>
-                  <code className="text-caption text-fg-muted">{layer || base}</code>
+                  {/* whitespace-normal:說明頁的 <code> 一律不斷行(src/globals.css);這裡的 token 名比示範條還寬,照上面的設計只在「-」處換行(2026-11-21 SIB-PV) */}
+                  <code className="whitespace-normal text-caption text-fg-muted">{layer || base}</code>
                 </div>
               ))}
             </div>

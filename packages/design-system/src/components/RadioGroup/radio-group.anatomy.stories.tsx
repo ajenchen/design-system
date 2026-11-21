@@ -534,7 +534,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
           </div>
           <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
             <div>第三項 disabled,選擇仍正常運作在前兩項。</div>
-            <div className="pt-1 border-t border-divider">Token:disabled item 邊框 transparent / 底色 <code className="whitespace-nowrap">--bg-disabled</code>。</div>
+            <div className="pt-1 border-t border-divider">Token:disabled item 邊框 transparent / 底色 <code>--bg-disabled</code>。</div>
           </div>
         </div>
       </ExampleSection>
@@ -550,7 +550,7 @@ default / hover / checked / disabled 色彩對照見<StoryLink kind="Design Syst
             </RadioGroup>
           </div>
           <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
-            <div>整組不可互動,已選中的項目維持 dot 視覺(但 dot 色走 <code className="whitespace-nowrap">--fg-disabled</code>)。</div>
+            <div>整組不可互動,已選中的項目維持 dot 視覺(但 dot 色走 <code>--fg-disabled</code>)。</div>
             <div className="pt-1 border-t border-divider">
               情境:表單審核中 / 已送出不可改;常配合 FieldDescription 解釋「為什麼不能改」。
             </div>
