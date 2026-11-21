@@ -24,6 +24,8 @@
 //    不先攔下來,一句在問我的話會被當成撤回而把同意刪掉(2026-09-20 實測)。
 // 3. **否定** → withdraw。否定詞一律**要帶發版受詞**:裸的「不要發」會命中
 //    「不要發生問題」而把同意刪掉(實測),裸的「先不要」會命中「先不要管那個」。
+//    2026-11-21(工作包 RC-LANG-FP)補「不發版 / 不能發版 / 延後發版」這一族(先前「先不發版」「這次不發版」
+//    「延後發版」「還不能發版」都落到第 8 步被判成同意);同一句後面有問號或「嗎」就不算否定,交給第 6 步判問句、不撤回。
 // 4. **條件 / 延後**:命中 conditionalMarkers 的字面(等我／確認後／明天／如果…)+ 同意詞 → deferred。
 //    分界只有「有沒有命中清單的字」,判準不懂條件在誰身上;兩個方向都有已知誤判。
 //    例句、「…做完了就發版」為何不收、待辦,寫在函式內第 4 步;
@@ -31,7 +33,10 @@
 // 5. 沒有同意詞 → none。
 // 6. **問句**(可以嗎／是否／…嗎／?)→ question。保守側:
 //    不記錄、也不撤回,而且**必須印出來讓人知道它被擋了**(靜默丟棄才是真正的傷害)。
-// 7. 其餘 → consent。
+// 7. **只是提到**(2026-11-21,工作包 RC-LANG-FP)→ mention。每一處同意詞都不是在下指示:
+//    前面緊接 mentionPrefixes(上次 / 已 / 沒 …),或後面接的不是 directiveEndings(句尾或標點,中間可夾語助詞)。
+//    例:「自上次發版後的異動」「還原已發布的 Button」。不記錄也不撤回,hook 要出聲。理由與邊界寫在函式內第 7 步。
+// 8. 其餘 → consent。
 //
 // 任何一邊的修改都要同時更新 SSOT 與兩面對照測試(`scripts/test-release-consent.mjs`),
 // 對照組必須用磁碟上真實出現過的原話當 fixture —— 不會紅的對照組是零證據。
@@ -47,7 +52,7 @@ const WORKFLOW_PATH = resolve(ROOT, 'infra/governance/release-workflow.json')
 export function loadConsentPolicy(path = WORKFLOW_PATH) {
   const policy = JSON.parse(readFileSync(path, 'utf8')).releaseConsent
   if (!policy) throw new Error('release-workflow.json 缺 releaseConsent 判準')
-  for (const key of ['consentPhrases', 'questionMarkers', 'denialMarkers', 'priorConsentAssertions', 'aNotAQuestions', 'conditionalMarkers']) {
+  for (const key of ['consentPhrases', 'questionMarkers', 'denialMarkers', 'priorConsentAssertions', 'aNotAQuestions', 'conditionalMarkers', 'mentionPrefixes', 'directiveEndings']) {
     if (!Array.isArray(policy[key]) || policy[key].length === 0) {
       throw new Error(`releaseConsent.${key} 必須是非空陣列 —— 判準缺一項就等於那一面沒有防線`)
     }
@@ -74,11 +79,31 @@ export function isQuestionText(text, policy = loadConsentPolicy()) {
 }
 
 /**
- * @returns {{verdict: 'consent'|'withdraw'|'question'|'deferred'|'none', reason: string}}
+ * 第 7 步:句中有沒有任何一處同意詞是在「下指示」。
+ * 一處算指示 = 前面沒有緊接 mentionPrefixes,而且後面緊接 directiveEndings(句尾或標點,可夾語助詞)。
+ * 兩份清單都住在 release-workflow.json;本函式只負責逐處套用。
+ */
+function hasDirectiveUse(text, policy) {
+  const prefixes = policy.mentionPrefixes.map((item) => new RegExp(`(?:${item})$`, 'u'))
+  const endings = policy.directiveEndings.map((item) => new RegExp(`^(?:${item})`, 'u'))
+  for (const phrase of policy.consentPhrases) {
+    for (let at = text.indexOf(phrase); at >= 0; at = text.indexOf(phrase, at + 1)) {
+      const before = text.slice(0, at)
+      const after = text.slice(at + phrase.length)
+      if (prefixes.some((pattern) => pattern.test(before))) continue
+      if (endings.some((pattern) => pattern.test(after))) return true
+    }
+  }
+  return false
+}
+
+/**
+ * @returns {{verdict: 'consent'|'withdraw'|'question'|'deferred'|'mention'|'none', reason: string}}
  *   consent  = 記錄同意
  *   withdraw = 撤回既有同意
  *   question = 偵測到同意詞但判為問句;**不記錄也不撤回**,呼叫端必須把這件事說出來
  *   deferred = 條件/延後的說法(等我看完再發版);同樣不記錄也不撤回,必須出聲
+ *   mention  = 有同意詞,但只是提到(上次發版後 / 已發布的…),沒有一處在下指示;同樣不記錄也不撤回,必須出聲
  *   none     = 與發版無關
  */
 export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
@@ -151,6 +176,19 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
   // 6. 問句 ≠ 同意(M36)
   if (isQuestionText(value, policy)) {
     return { verdict: 'question', reason: '有同意詞但判為問句(保守側:不記錄也不撤回)' }
+  }
+  // 7. **只是提到**(2026-11-21,工作包 RC-LANG-FP;E7 實作者回報、E7 審查實測)。
+  //    先前走到這裡一律判 consent:句子裡只要有「發版 / 發布」、又不是問句 / 否定 / 條件,就寫出有效收據。
+  //    user 2026-09-26 那句全面稽核指示(「確保所有包括自上次發版後的異動都是追根究柢的增刪改…」)與
+  //    2026-10-27 那句 Q4 回覆(「…還原已發布的 Button tertiary xs…」)都會被判成「現在就發版」—— 這道閘要防的正是這件事。
+  //    分界:同意詞要當指示用 —— 後面緊接句尾或標點(中間可夾 吧 / 了 / 囉 …),而且前面不是 上次 / 已 / 沒 … 這類
+  //    「講的是別次或已發生的事」的字。只要有一處符合就照舊往下判 consent;「…發版完成的話就發版」靠最後那一處成立。
+  //    只放在問句之後、consent 之前:只會把原本的 consent 改成 mention,不動其他判定(5g 鎖的 10 句判定不變)。
+  //    刻意保守、已知會擋到的:「發版到 npm」「發布新版本」這類同意詞後面直接接受詞的說法 → mention(hook 會出聲,
+  //    請 user 直接說「發版」);流程設計本來就是請 user 說「發版」兩個字(AGENTS.md 1.5),真句表與 N1 回覆「可以改，發版」都在句尾。
+  //    `scripts/test-release-consent.mjs` 5h 兩面鎖住,並在記憶體裡拿掉兩份清單證明這幾格量得到。
+  if (!hasDirectiveUse(value, policy)) {
+    return { verdict: 'mention', reason: '講的是別次或已發生的事,或把發版當名詞 / 修飾語用;沒有一處是在指示現在發版' }
   }
   return { verdict: 'consent', reason: '明確同意' }
 }

@@ -125,12 +125,23 @@ const USER_SIDE = [
   ['95de79d8 2026-11-06T11:18:41Z', '已經使用94%兩，可以發版嗎？', 'question'],
   ['95de79d8 2026-11-06T11:19:35Z', '已經用了94%還能發版完成的話就發版', 'consent'],
   ['1920833e 2026-09-30T00:27:02Z', '發版', 'consent'],
+  // 2026-11-21(工作包 RC-LANG-FP)補:只是提到發版 / 發布的 user 原話(1920833e transcript,逐字)。共用判準以前判 consent,
+  // 於是 Mechanism 12 把本輪當成「user 剛說了發版」、不看 AI 這則回覆有沒有在要同意;改判 mention 後,下面「受理排除」那格改成要看。
+  ['1920833e 2026-09-26T15:06:17Z(只是提到)', '確保所有包括自上次發版後的異動都是追根究柢的增刪改，該SSOT的部分都有確保SSOT,所有內容都有符合我們一致的設計語言且不違背世界級的設計，整個ds沒有漂移,確保所有相關問題都有一併被修正，然後確保沒有改壞任何原本好的地方，都有透過可驗證的方式自行驗證到完整完美，包括視覺稽查，確保所有都合乎我的要求', 'mention'],
+  ['1920833e 2026-10-27T16:26:13Z(只是提到)', '你繼續處理該處理的任務\n但總覺得關於Q4應該好像還是選‘乙：還原已發布的 Button tertiary xs（24、有框白底）。好處：長相、位置全部回到以前；跟同一列的 ⋯ 列操作同樣是 24。\'\n原因在於cell一般狀態hover時其實本來就跟field control hover時是不同的交互（一個是edit按鈕hover時才出現來確保好點擊，一個是edit按鈕本來就是常駐的），那應該也沒有必要要長得一樣吧,此外標頭用inline action是因為標頭的動作本來就比較次要，但是table body cell是主內容本來就可以比較強調其中的動作吧，而且也可以讓同一個row的action看起來都是視覺一致的', 'mention'],
 ]
 const ACK = '你說「發版」，我就開始跑發版流程。'
 for (const [when, text, verdict] of USER_SIDE) {
   check(`user 訊息判準:${when}`, () => assert.equal(classifyConsentPrompt(text, policy).verdict, verdict, text))
   check(`user 訊息本身不是 AI 在要:${when}`, () => assert.equal(asking(text), false, text))
   check(`受理排除只在 user 本輪說了同意時成立:${when}`, () => assert.equal(asking(ACK, { currentUser: text }), verdict !== 'consent'))
+}
+// 同一處改判的否定那一面(RC-LANG-FP 規格列的否定 / 延後句,合成,不是 transcript 原文):以前判 consent → 受理排除成立;
+// 現在判 withdraw → 不是在受理同意,AI 回覆若在要同意照樣要看紀錄。提案選項 label 是這幾句時也不算在要。
+for (const text of ['先不發版', '這次不發版', '延後發版', '還不能發版']) {
+  check(`否定句判準:${text}`, () => assert.equal(classifyConsentPrompt(text, policy).verdict, 'withdraw', text))
+  check(`否定句不構成受理排除:${text}`, () => assert.equal(asking(ACK, { currentUser: text }), true))
+  check(`否定句當選項 label 不算在要:${text}`, () => assert.equal(asking('選一個就好。', { options: [text] }), false))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

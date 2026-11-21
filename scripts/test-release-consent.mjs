@@ -251,6 +251,76 @@ try {
     assert.equal(classifyConsentPrompt(text).verdict, verdict, `user ${when} 的原話判定變了:「${text}」`)
   }
 
+  // 5h. 不是同意的兩類(2026-11-21,工作包 RC-LANG-FP;E7 實作者回報、E7 審查實測,先前每一句都判 consent,
+  //     hook 與手動落地都會寫出有效收據):(a) 只是提到發版 / 發布;(b) 否定 / 延後。
+  //     (a) 的兩句是 user 真實原話全文(session 1920833e transcript 的 user 訊息,逐字;時間為 UTC),另附規格給的最小片段。
+  const REAL_0926 = '確保所有包括自上次發版後的異動都是追根究柢的增刪改，該SSOT的部分都有確保SSOT,所有內容都有符合我們一致的設計語言且不違背世界級的設計，整個ds沒有漂移,確保所有相關問題都有一併被修正，然後確保沒有改壞任何原本好的地方，都有透過可驗證的方式自行驗證到完整完美，包括視覺稽查，確保所有都合乎我的要求'
+  const REAL_1027 = '你繼續處理該處理的任務\n但總覺得關於Q4應該好像還是選‘乙：還原已發布的 Button tertiary xs（24、有框白底）。好處：長相、位置全部回到以前；跟同一列的 ⋯ 列操作同樣是 24。\'\n原因在於cell一般狀態hover時其實本來就跟field control hover時是不同的交互（一個是edit按鈕hover時才出現來確保好點擊，一個是edit按鈕本來就是常駐的），那應該也沒有必要要長得一樣吧,此外標頭用inline action是因為標頭的動作本來就比較次要，但是table body cell是主內容本來就可以比較強調其中的動作吧，而且也可以讓同一個row的action看起來都是視覺一致的'
+  const NOT_CONSENT = [
+    ['user 2026-09-26T15:06:17Z 全文', REAL_0926, 'mention'],
+    ['user 2026-10-27T16:26:13Z 全文', REAL_1027, 'mention'],
+    ['最小片段', '確保所有包括自上次發版後的異動', 'mention'],
+    ['最小片段', '還原已發布的 Button tertiary xs', 'mention'],
+    ['否定', '先不發版', 'withdraw'],
+    ['否定', '這次不發版', 'withdraw'],
+    ['延後', '延後發版', 'withdraw'],
+    ['否定', '還不能發版', 'withdraw'],
+    ['否定', '不要發版', 'withdraw'],
+  ]
+  for (const [label, text, verdict] of NOT_CONSENT) {
+    assert.equal(classifyConsentPrompt(text).verdict, verdict, `${label}「${text.slice(0, 40)}」必須判 ${verdict},不得判成同意`)
+    assert.throws(() => writeReleaseConsent({ headSha: head, branch, quote: text, source: 'manual-agent' }), /不構成發版同意/,
+      `${label}「${text.slice(0, 40)}」不得被手動落地成同意`)
+  }
+  //     另一面:對發版的明確同意照舊(5e、5f、5g 另有鎖;這裡補單獨一詞與 N1 預期回覆「可以改，發版」,全形 / 半形逗號各一)。
+  for (const text of ['發版', '可以改，發版', '可以改,發版']) {
+    assert.equal(classifyConsentPrompt(text).verdict, 'consent', `「${text}」是明確同意,不得被這次的修正擋掉`)
+  }
+  //     否定句帶問號 → 判問句,不撤回(「還不能發版嗎？」是在催,不是在收回同意);A-不-A 照舊。
+  for (const text of ['還不能發版嗎？', '為什麼不發版？', '需不需要發版？']) {
+    assert.equal(classifyConsentPrompt(text).verdict, 'question', `「${text}」是問句,不得當成撤回`)
+  }
+  //     刻意保守、已知會擋到的(release-consent-language.mjs 第 7 步寫明):同意詞後面直接接受詞 → mention,hook 會出聲。
+  assert.equal(classifyConsentPrompt('發版到 npm').verdict, 'mention')
+
+  //     會紅的對照組(只在記憶體裡複製判準,不寫檔):
+  //     (a) 兩份清單一起拿掉(句尾條件換成「什麼都算」、前綴換成永不命中)→ 提到的句子必須改判回 consent,
+  //         證明擋下它們的是第 7 步、不是別的步驟;再逐條拿掉前綴、單獨放寬句尾條件,各自負責的那一句必須改判。
+  const NEVER = '(?!)'
+  const noMentionStep = { ...livePolicy, mentionPrefixes: [NEVER], directiveEndings: [''] }
+  for (const [label, text, verdict] of NOT_CONSENT.filter(([, , v]) => v === 'mention')) {
+    assert.equal(classifyConsentPrompt(text, noMentionStep).verdict, 'consent',
+      `拿掉第 7 步的兩份清單後 ${label} 沒有改判回 consent = 這格量不到第 7 步`)
+  }
+  assert.equal(classifyConsentPrompt('發版流程太慢了', { ...livePolicy, directiveEndings: [''] }).verdict, 'consent',
+    '句尾條件放寬成「什麼都算」卻沒改判 = directiveEndings 量不到')
+  const PREFIX_ANCHORS = [
+    ['(上|下|前|每)一?(次|回)', '上次發版。'],
+    ['已經?', '已經發版了'],
+    ['曾經?', '曾經發版。'],
+    ['未', '尚未發布。'],
+    ['沒有?', '還沒發版。'],
+  ]
+  for (const [prefix, anchor] of PREFIX_ANCHORS) {
+    assert.ok(livePolicy.mentionPrefixes.includes(prefix), `清單裡沒有「${prefix}」—— 這張對照表跟 release-workflow.json 漂移了`)
+    assert.equal(classifyConsentPrompt(anchor).verdict, 'mention', `「${anchor}」現在應判 mention`)
+    const without = { ...livePolicy, mentionPrefixes: livePolicy.mentionPrefixes.filter((item) => item !== prefix) }
+    assert.equal(classifyConsentPrompt(anchor, without).verdict, 'consent', `拿掉「${prefix}」之後「${anchor}」沒有改判 = 這一條量不到`)
+  }
+  //     (b) 逐條拿掉新補的否定詞,它負責的那一句必須改判(前三條回到 consent;「發版延後」沒有句尾,回到 mention)。
+  const DENIAL_ANCHORS = [
+    ['(?<![發要能可該需准必])不(發版|發布|發佈)(?![^。！!\\n]*[?？嗎])', '這次不發版', 'consent'],
+    ['(?<![發要能可該需准必])不(要先|能|可以|准|該|應該|需要|必)(發版|發布|發佈)(?![^。！!\\n]*[?？嗎])', '還不能發版', 'consent'],
+    ['(延後|延遲|推遲|延期|暫緩|取消)(發版|發布|發佈)(?![^。！!\\n]*[?？嗎])', '延後發版', 'consent'],
+    ['(發版|發布|發佈)(先|就|要)?(延後|延遲|推遲|延期|暫緩|取消)(?![^。！!\\n]*[?？嗎])', '發版延後', 'mention'],
+  ]
+  for (const [marker, anchor, fallback] of DENIAL_ANCHORS) {
+    assert.ok(livePolicy.denialMarkers.includes(marker), `清單裡沒有「${marker}」—— 這張對照表跟 release-workflow.json 漂移了`)
+    assert.equal(classifyConsentPrompt(anchor).verdict, 'withdraw', `「${anchor}」現在應判 withdraw`)
+    const without = { ...livePolicy, denialMarkers: livePolicy.denialMarkers.filter((item) => item !== marker) }
+    assert.equal(classifyConsentPrompt(anchor, without).verdict, fallback, `拿掉「${marker}」之後「${anchor}」沒有改判 = 這一條量不到`)
+  }
+
   // 重新落地一份乾淨的同意,讓後面的格子有東西可用
   writeReleaseConsent({ headSha: head, branch, quote: '發版', source: 'test' })
 
