@@ -256,6 +256,8 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 ### M22 — Benchmark claim 必附出處;引「不要拿 X 當 Y」必帶 Y 的範圍
 2026-09-24 一天三次裁掉禁令的範圍修飾語(Primer「global sidebar navigation」記成「sidebar navigation」、「為了突破四層上限而換成樹」只記後半句、差點裸引 Carbon「As the primary navigation in a product's UI」),錨例與 user 逐字在本檔末段「M37 第十種形狀」節尾的 2026-09-24 段落;子規則折入 `rules/meta-patterns.md` M22。2026-09-26 稽核一度判 4 處行號錯(Ant `form/style/index.ts`、Recharts、React Aria、Polaris),第二個人對 raw 原始碼逐一 curl 核對後**現行引用全部正確**(例:Ant 6.6.5 `cursor: 'help'` 就在 L289)—— 稽核員用的是非 raw 檢視或別的版本;教訓:核對行號一律拿釘版本的 raw 檔,而且**稽核的指控本身也要先過對照組**(M32),否則會照著錯的稽核去改對的東西。
 
+2026-11-21 knowledge-prune(WP-META,D3-01)從 meta-patterns.md M22 第 3 欄逐字搬來(同欄 2026-09-24 那半句本檔已有原文,見上):claim「Ant showTime range = 2 calendars」憑印象,實證 source code `multiplePanel = false` = 1 calendar(2026-05-02 鬼話事件)
+
 ### M23 — DS 內既有 canonical 優先於外部 benchmark
 - 2026-05-03 chevron color:DS `text-foreground`(icon-only Button neutral-9 85%)vs 憑「Ant 5 家 muted」印象覆蓋 → 自開新 tier 違反一致設計語言。
 - 2026-05-06 column width:DS 49+ 處 `size: 'sm'|'md'|'lg'` density vs TanStack `size: 280` px = 同 prop 不同義 → `meta.width` wrap(M23(c) 起源)。
@@ -265,6 +267,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 ### M30 — Wrapper-vs-primitive schema unify
 2026-05-10 PeoplePicker multi-mode 漏 avatar:`Combobox.SelectOption = { value, label }` weak schema(跟 `Select.SelectOption` 同名不同 fields)+ `Combobox.menuOptions` mapping 只 forward 2 fields → dropdown rows 永遠純文字。user 抓「為什麼之前會把 people picker 改壞 + 還有沒有其他東西也改壞」。Round 1 commit `561945b` 修(Combobox extends + forward 全 field)+ Round 2 codify。
 
+### M32 — Audit script 必 pixel-quantified verify(儀器要先有對照組)
+- (h) 跨網域效能比較(2026-11-21 knowledge-prune WP-META,D3-01,從 meta-patterns.md M32 第 2 欄逐字搬來;完整經過與量測表在 `governance/memory/reference_perf_validation_same_host.md`):經過(兩天追不到、LoAF 歸因到 `thin-client-min.js`、唯一變數是網域)→ `governance/memory/reference_perf_validation_same_host.md`。
+
 ### M36 — 禁推論升格 user 決定;禁自鎖
 - 2026-09-18 理由編造(2026-11-17 knowledge-prune 從 meta-patterns.md M36 第 2 欄逐字搬來):錯例:Combobox 的 tagPadding,規格白紙黑字寫「確保 tag 四邊等距」,我看到 sm/md 剛好讓 Tag 內文字落在 `--field-px` 那條線上,就寫成「它存在的唯一理由就是把字推回那條線」,並據此把 lg(四邊等距算出 5、字落 15px)判成「兩條規範打架」丟給 user 拍板 —— **那是我自己造出來的假議題**,而且該規則三天前才立、commit message 就寫著理由。
 - 2026-08-08 同一 session 連犯 4 次 provenance 升格(「<768 modal 無入口是你拍板」/「X = 終結 session」/「392px user 接受」/「816 讓位線」),user 原話「我他媽到底哪有拍板過這件事」;同日又因 `claude-permission-policy` 把 sandbox unix socket 鎖死,先叫 user 去買 API key 而非解自家鎖,user 原話「你他媽不要又再作繭自縛為自己加鎖了」。
@@ -273,6 +278,9 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 - 2026-09-23 「只有你能按」:重拍 visual baseline 要觸發 workflow,我憑上次的 403 記憶寫「我的 token 沒權限代按,是帳號層級的事」,叫 user 去 GitHub 按,連續 12 輪 30 分鐘監看空等;user 反問「為何你不能自己按」(而且他那台裝置根本沒登入,按鈕不會出現)。當場照 M36(b') 逐題探:workflow_dispatch 403 是真的,但**同一把 token 發 repository_dispatch 回 204**——擋住的不是帳號權限,是我們自己的 workflow 只監聽按鈕事件(第 3 問「有沒有已驗證可通的等價傳輸」從沒問過)。正解:workflow 多聽 `repository_dispatch: types:[visual-regression-run]`,三種觸發的輸入收斂到 job env 兩個變數。**憑記憶宣稱被擋 = 沒有探;宣稱前的四問要每次重跑,不能沿用上一次的答案。**
 - 2026-10-14 AppShell 規格讀錯(M18 Q0 + M36(a) 同一次):user 寫好一份 AppShell 版面規則(四區、誰並排誰變浮層、可拉上限、寬度紀錄),AI 派代理「拿它跟現行 DS 與世界級比較」,第一輪報告用舊設計概念轉述新設計(「960 蓋板門檻會變成浮動的」—— 規格裡根本沒有門檻)、把外部規則與 AI 舊計畫當成限制(Carbon「同一時間只展開一個浮層」與 DS 允許疊 modal 矛盾,`dialog.spec.md`「禁止事項」的 nested Dialog 收窄條;「Sidebar 拖寬要 RFC + 拍板」是 AI 2026-05-21 提的施工順序(`197401cc`,`resize-handle.spec.md`「Roadmap(用 user 既有的 v2 framing)」;commit 訊息記 user 以「都照你建議做」概括採納),是流程閘不是 user 禁止)、另提一個與規格第 6 節矛盾的分配算法,並把規格已回答的事列成「沒定義」;反駁關卡只核對引文與行號,AI 轉述前也沒拿 user 原文逐條對。user 原話「你到底有沒有讀懂我的規格啊？」、「為何規格會讀錯？？？？？」。**修法**:(1) user 給的規格先寫成可執行模型、user 舉的數字例子全部算對,才拿去比 DS / 世界級;(2) 問 user 前每一題先分「規格已回答 / AI 讀錯 / 真的沒寫」,只問第三類;(3) 反駁關卡必查「規格是否已回答」與「有沒有偷加 user 沒寫的規則」,任何限制先查出處是 user、DS 規格、外部還是 AI 舊計畫。待辦總帳 Q5。
 - 四路同 provider 對抗審查查不到 (a) 類(reviewer 無對話紀錄),故必須以 M36 rule + 來源總帳格式機械化。
+
+### M37 — 禁以當下剛好成立的觀察量代替要保證的性質
+- 第八個形狀的標題原寫「(2026-09-20,main 因此紅一次)」(2026-11-21 knowledge-prune WP-META,D3-01,從 meta-patterns.md M37 第 2 欄逐字搬來;那次誤紅的經過見本檔「長 M-rule 搬出的經過原文」M37 第一筆)。
 
 ## 失敗記憶索引搬家(2026-09-21)
 
