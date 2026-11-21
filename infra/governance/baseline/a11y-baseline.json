@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-11-17T03:16:16.364Z",
-    "stories": 1086,
+    "generatedAt": "2026-11-21T07:24:53.149Z",
+    "stories": 1087,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -571,6 +571,7 @@
       "design-system-components-input-設計規格--overview",
       "design-system-components-input-設計規格--size-matrix",
       "design-system-components-input-設計規格--state-behavior",
+      "design-system-components-linkinput-展示--clearable",
       "design-system-components-linkinput-展示--default",
       "design-system-components-linkinput-展示--empty",
       "design-system-components-linkinput-展示--modes",
@@ -1091,8 +1092,8 @@
       "design-system-tokens-uisize--overview",
       "design-system-tokens-uisize--product-alignment"
     ],
-    "storyIdsSha256": "5f9b1175295b4f56c17c0ada559e24b4b4342bc00a8140739d83dcd68ffe9048",
-    "fingerprints": 733,
+    "storyIdsSha256": "7b45cd97ef02dc08265c53c31fae1f8b9efd9ee8a97f62249427c048db204937",
+    "fingerprints": 734,
     "linuxOnly": {
       "design-system-components-combobox-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)",
       "design-system-components-select-設計規格--inspector|color-contrast": "藍圖區塊的 9px text-fg-muted 小標(anatomy-utils.tsx:174):macOS 等寬字溢出區塊、axe 歸 incomplete 不計,Linux 放得下才計入 —— 只有 Linux(CI)量得到;值 = 2f367ee3(A76)寫入的 CI 實測;main 的 a11y drift 排程 2026-11-19(run 44499310317)在 Linux 量到同值 23 / 41。--color-fg-muted 已定案例外(color.spec.md「已定案(禁再問)」)"
@@ -1469,6 +1470,7 @@
     "design-system-components-input-設計規格--overview|color-contrast": 13,
     "design-system-components-input-設計規格--size-matrix|color-contrast": 29,
     "design-system-components-input-設計規格--state-behavior|color-contrast": 7,
+    "design-system-components-linkinput-展示--clearable|color-contrast": 3,
     "design-system-components-linkinput-展示--default|color-contrast": 1,
     "design-system-components-linkinput-展示--empty|color-contrast": 1,
     "design-system-components-linkinput-展示--validation|color-contrast": 1,
