@@ -1,5 +1,18 @@
 # Prune Phase 1 D5-D10 dimension detail(2026-05-17 加;knowledge-prune SKILL.md Phase 1 extract)
 
+#### D3 補充 — @watch 判法(2026-11-21 加)
+
+`rules/meta-patterns.md` 分群表下方的 `@watch` 規則要判「觀察期內有沒有新 bug 被這條 M-rule 吸收」:先數有幾個 commit 訊息提到它,再逐筆讀。
+
+```sh
+git log --since=<起算日> -F --grep=<M-ID> --format='%h %s'
+```
+
+- **先跑對照**:同一條指令把 `<M-ID>` 換成 `M37` 先跑一次。對照拿得到資料,目標 M-ID 的 0 筆才可信;對照也是 0 筆 = 量具沒在量,不是「沒有新 bug」。
+- **禁用 `-E` 加 `\b`**(例 `-E --grep='\bM25\b'`):本機 git(macOS)的 ERE 不認 `\b`,不報錯、直接回 0 筆 —— 2026-11-17 那一輪因此把 M25 誤數成 0 筆(同條件用 `-F` 是 5 筆)。
+- 實測(2026-11-21,839029af,`--since=2026-06-01`):M37 61 筆;M25 用 `-F` 7 筆、用 `-E` 加 `\b` 0 筆。
+- `-F` 是子字串比對:`M2` 也會命中 `M20`–`M29`;命中的 commit 要逐筆讀過,才判「升 sharp keep」或「降級」。
+
 #### D5 — Canonical drift(spec vs code 語義漂移)— 2026-05-17 加
 
 Scan:`*.spec.md` 寫的 canonical vs `*.tsx` 實際 code 行為衝突 / spec 寫禁止但 code 仍用 / spec 升級但 code 沒跟。

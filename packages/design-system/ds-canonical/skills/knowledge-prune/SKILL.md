@@ -100,6 +100,8 @@ Example:
 
 **Output**:候選 abstract proposal + 被吸收後可刪的下游條目
 
+帶 `@watch` 的 M-rule 去留(升 sharp keep / 降級)用 references/prune-dimensions-d5-d10.md「D3 補充 — @watch 判法」數證據。
+
 #### D4 — Cross-home contradiction
 
 Scan:`AGENTS.md` canonical vs spec.md vs skill reference 描述同概念時**語義衝突**(非表達差異)?
