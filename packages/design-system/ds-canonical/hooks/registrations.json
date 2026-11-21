@@ -177,12 +177,6 @@
           },
           {
             "kind": "hook",
-            "hook": "check_dim_count_drift.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
-          },
-          {
-            "kind": "hook",
             "hook": "check_spec_class_drift.sh",
             "runtime": "bash",
             "outputMode": "governance-context-or-block"

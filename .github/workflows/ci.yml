@@ -465,6 +465,11 @@ jobs:
           # governance-build-graph --check → generate-governance-metadata.mjs 裡跑;配對 meta-test 在隔離夾具裡注入九種漂移各自必紅、
           # 正式 CLI 帶 --root 必須 exit 2。本機約 11 秒。
           node scripts/test-audit-coverage-matrix.mjs
+          # sync-governance-counters 的紅面(2026-11-21 knowledge-prune WP-10):它的 --check 同樣在 governance-build-graph --check →
+          # generate-governance-metadata.mjs 裡跑,治理文件寫死的 audit dim / hooks / skills / M-rules 總數必須等於實數(掃 AGENTS.md、
+          # canonical skills / references / rules;取代只在 stderr 警告的 hook check_dim_count_drift.sh,retired、檔案已不存在)。
+          # 配對 meta-test:寫錯會紅、寫對與「7 維度」這類非總數寫法不報、「33 條 M-rules」夾量詞也納管、真腳本有接上。本機約 1 秒。
+          node scripts/test-sync-governance-counters.mjs
           # 治理文件(skills / rules / references / memory / workflows / AGENTS.md)引用的 hook / 腳本必須真的在(2026-10-14 SM5):
           # 這支原本只在每週一的 packaging canary 跑,PR #169 寫進 historical-bugs.md 的裸檔名 PR CI 沒有這道閘、抓不到,合併後隔週才會紅。
           # 本機 < 1 秒;meta-test 逐面驗:裸檔名指到 scripts / hooks / 根目錄以外、完整路徑檔案不在、workflow 呼叫不存在的腳本 → 紅;

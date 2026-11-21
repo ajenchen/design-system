@@ -152,10 +152,6 @@
       "reason": "DS-author DataTable 元件內部 invariant(scope DS src)。"
     },
     {
-      "hook": "check_dim_count_drift.sh",
-      "reason": "DS-author design-system-audit SKILL dim count drift。"
-    },
-    {
       "hook": "check_file_size_budget.sh",
       "reason": "DS-author governance file 行數預算(CLAUDE.md/spec/SKILL)。"
     },

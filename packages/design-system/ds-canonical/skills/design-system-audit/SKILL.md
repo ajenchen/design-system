@@ -3,9 +3,9 @@ name: design-system-audit
 description: Systematic audit of this design system for world-class quality. Runs the full audit dimension list(per `## The audit dimensions` section) covering spec hygiene / code correctness / a11y / naming / tokens / patterns / canonical governance consistency / Layout Family compliance / prop value collisions / shadcn alias leakage / home-name-vs-scope fit / spec hardcoded-values, and remediates actionable findings under the shared authority classifier. Stops only for a genuine product/UI/UX SSOT tradeoff or a shared-governance human-only boundary. Invoke via /design-system-audit when asked to audit, re-audit, check quality, or verify design system health.
 ---
 
-# Design System Audit (Groups A–Q + Future-proof preflight; dim count canonical per `check_dim_count_drift.sh` / `dispatch-audit-dims.mjs` SSOT — 禁 hardcode)
+# Design System Audit (Groups A–Q + Future-proof preflight; dim count canonical per `dispatch-audit-dims.mjs` SSOT — 下游寫死的 dim 數由 `sync-governance-counters.mjs --check` 比對實數)
 
-> **Budget note**:本檔 = N-dim **registry SSOT**(N 以 `node scripts/dispatch-audit-dims.mjs` 輸出為準,禁 hardcode;dispatch-audit-dims.mjs / deep-audit parse 此檔,`packages/design-system/ds-canonical/hooks/check_dim_count_drift.sh` enforce 下游禁 hardcode — 不 parse 本檔),per canonical governance 的「foundational SSOT 例外 ≤ 800-1200」,**不受 250 SKILL cap**(dim table 本質就是 registry,拆出會 break dispatch parser SSOT)。
+> **Budget note**:本檔 = N-dim **registry SSOT**(N 以 `node scripts/dispatch-audit-dims.mjs` 輸出為準,禁 hardcode;dispatch-audit-dims.mjs / deep-audit / `scripts/sync-governance-counters.mjs` parse 此檔;後者 `--check`(CI 必過)擋下游寫錯的 dim 數),per canonical governance 的「foundational SSOT 例外 ≤ 800-1200」,**不受 250 SKILL cap**(dim table 本質就是 registry,拆出會 break dispatch parser SSOT)。
 
 Purpose: catch every bug class this project has shipped historically PLUS structural gaps relative to Polaris / Material / Atlassian / Ant / Carbon / Apple HIG. Each audit has a clear rubric tied to `packages/design-system/ds-canonical/rules/`, canonical references, or an owning spec. Reports/checkpoints are evidence receipts, not approval milestones; large engineering scope remains standing-delegated. Only a genuine product/UI/UX SSOT choice or a shared-governance human-only boundary may stop execution.
 
@@ -33,7 +33,7 @@ Purpose: catch every bug class this project has shipped historically PLUS struct
 
 ---
 
-## The audit dimensions(Groups A–Q,full list per below;count canonical 不 hardcode per `check_dim_count_drift.sh`)
+## The audit dimensions(Groups A–Q,full list per below;count 以本表為準,下游寫死的數字由 `sync-governance-counters.mjs --check` 比對)
 
 Grouped by theme. Each runs as an independent subagent; many can parallelize.
 
