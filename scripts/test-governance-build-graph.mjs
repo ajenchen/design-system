@@ -606,6 +606,7 @@ for (const releaseTrustSource of [
   'scripts/release-npm-finalization-receipt.mjs',
   'scripts/release-npm-finalize-verify.mjs',
   'scripts/release-github-release.mjs',
+  'packages/design-system/tools/changes/ledger.mjs',
   'scripts/release-remote-tag.mjs',
   'scripts/schemas/npm-stage-receipt.schema.json',
   'scripts/schemas/npm-finalization-receipt.schema.json',
@@ -642,7 +643,13 @@ assert.deepEqual(ids('packages/governance/canonical/schemas/provider-hook-covera
 assert.deepEqual(ids('.agents/skills/canonical-reviewer/SKILL.md'), ['control-plane', 'provider-adapters'])
 // Tombstone: the .claude/hooks mirror retired 2026-08-04 — no stage may consume or produce it.
 assert.deepEqual(ids('.claude/hooks/check_consumer_code_quality.sh'), [])
-assert.deepEqual(ids('.claude/commands/README.md'), ['control-plane', 'plugin-aliases', 'provider-adapters'])
+// The commands home has zero residents; its README.md is the home charter, and Claude turns every
+// .md under .claude/commands into a slash command, so the charter is excluded from projection
+// (providers.json repositoryManagedTreeExcludes). The tree itself stays a managed projection: a
+// future resident is still produced by provider-adapters and fingerprinted by control-plane.
+assert.equal(fs.existsSync(resolve(root, 'packages/design-system/ds-canonical/commands/README.md')), true, 'commands charter must stay canonical')
+assert.equal(fs.existsSync(resolve(root, '.claude/commands/README.md')), false, 'commands charter must not be projected as a /README command')
+assert.deepEqual(ids('.claude/commands/future-command.md'), ['control-plane', 'provider-adapters'])
 assert.deepEqual(ids('.claude/skills/prototype/SKILL.md'), ['control-plane', 'plugin-aliases', 'provider-adapters'])
 assert.deepEqual(ids('.claude/agents/canonical-reviewer.md'), ['control-plane', 'provider-adapters'])
 // Generated provider views may feed the narrowly-scoped plugin alias materializer,
@@ -655,7 +662,11 @@ for (const stage of graph.stages.filter((candidate) => candidate.id !== 'provide
   // (canonicalRoot source kind) and the harness bindings read canonical tests directly, so no
   // stage lists the retired mirror as a provider-view source anymore.
   if (stage.id === 'plugin-aliases') {
-    assert.deepEqual(providerViewSources, ['.claude/commands/', '.claude/skills/'])
+    // The plugin `commands` alias retired with the projected commands charter. A plugin alias needs a
+    // real, non-empty destination directory (scripts/lib/plugin-alias-contract.mjs
+    // assertPluginAliasDestination). With zero residents .claude/commands holds no files: a fresh
+    // checkout has no directory at all, and governance:generate leaves an empty one.
+    assert.deepEqual(providerViewSources, ['.claude/skills/'])
   } else if (stage.id === 'harness-authority-bindings') {
     assert.deepEqual(providerViewSources, [])
   } else if (stage.id === 'control-plane') {
@@ -673,7 +684,7 @@ for (const stage of graph.stages.filter((candidate) => candidate.id !== 'provide
     assert.deepEqual(providerViewSources, [], `${stage.id} consumes a generated provider view as source`)
   }
 }
-assert.deepEqual(ids('commands'), ['plugin-aliases'])
+assert.deepEqual(ids('commands'), [])
 assert.deepEqual(ids('hooks/scripts'), ['plugin-aliases'])
 assert.deepEqual(ids('skills'), ['plugin-aliases'])
 assert.deepEqual(

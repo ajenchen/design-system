@@ -77,7 +77,7 @@ Multi 模式搜尋文案公開 `searchPlaceholder` / `searchAriaLabel`，分別�
 PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為人員清單通常規模較大且使用者記得人名關鍵字（符合 Select spec「Searchable 開啟判斷」的「label 性質」主判準：人名是獨特關鍵字）。
 
 - **搜尋 placeholder**：預設「搜尋人員…」，可透過 `searchPlaceholder` 覆寫。**僅 multi 模式 panel-top search（`searchIn='menu'`，default）生效**——single mode wrap `<Select searchable>` 走 inline-trigger 搜尋，提示取自 `placeholder`（Select 無 searchPlaceholder prop）；multi `searchIn='trigger'` inline 搜尋同理走 placeholder 規則（見「Trigger display SSOT canonical table」§E）
-- **空狀態**：預設「沒有人員」(2026-09-08 一句到底,`people-picker.tsx:156`),透過 `emptyText` 覆寫;渲成選單的一列 `MenuItem message`(與 1 筆結果等高、無最小高度、不用 `Empty`),SSOT `../SelectMenu/select-menu.spec.md`「Empty state」
+- **空狀態**：預設「沒有人員」(2026-09-08 一句到底,`people-picker.tsx:152`),透過 `emptyText` 覆寫;渲成選單的一列 `MenuItem message`(與 1 筆結果等高、無最小高度、不用 `Empty`),SSOT `../SelectMenu/select-menu.spec.md`「Empty state」
 
 ---
 
@@ -150,7 +150,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | state | trigger 顯示 |
 |---|---|
 | 空、closed | placeholder「請選擇人員」+ 按空間 ellipsis |
-| 選 1 人、closed | avatar + 人名 + 按空間 ellipsis(`PersonDisplay`,`person-display.tsx:139-154`)|
+| 選 1 人、closed | avatar + 人名 + 按空間 ellipsis(`PersonDisplay`,`person-display.tsx:138-153`)|
 | open + inline-search、未選 | input cursor + placeholder「請選擇人員」(trigger empty placeholder,**不**用「搜尋…」)|
 | open + inline-search、選 1 人 | input cursor + 該人名 overlay(本人名字當記憶提示,按空間 ellipsis;`select.tsx` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` + `showSelectedOverlay` span 顯人名,2026-05-15 Bug 2 fix 改 span overlay 取代原 native placeholder)|
 | open + panel-search、選 1 人 | avatar + 人名 + ellipsis(搜尋框在 panel 內,trigger 視覺不變)|
@@ -177,8 +177,8 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 共享項 | SSOT owner |
 |---|---|
 | Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx#PeoplePicker` `!px-[var(--field-px)]` inject(form context)/ `!px-[var(--table-cell-px)]`(naked variant table cell)|
-| Avatar+人名視覺 | `person-display.tsx:139-154` `PersonDisplay`(共享 renderer)|
-| 人名按空間 ellipsis | `person-display.tsx:152` `truncate flex-1 min-w-0` |
+| Avatar+人名視覺 | `person-display.tsx:138-153` `PersonDisplay`(共享 renderer)|
+| 人名按空間 ellipsis | `person-display.tsx:151` `truncate flex-1 min-w-0` |
 | Placeholder ellipsis(inline-search active 時)| `field-wrapper.tsx#bareInputStyles` 含 `truncate` |
 | Empty-state inline-search placeholder(未選時 → trigger empty placeholder) | `select.tsx` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` / `combobox.tsx` CustomCombobox 欄位內搜尋框(空值也渲染,`placeholder` 屬性顯示 trigger empty placeholder;2026-09-30 修 —— 此前空值分支沒有輸入框,這一格自 2026-05-15 起引用的是走不到的程式碼)|
 
@@ -201,7 +201,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 **唯一例外(2026-08-05)**:觸控多選的 pill 降階只在 form surface 生效,table-cell 維持 stack —— 理由是 cell 的固定列高與 view↔edit 像素對齊契約優先於「觸控可移除成員」。**2026-09-18 更正**:原文接著寫「cell 觸控編輯本就走原生 picker,移除在 picker 內完成」,該前提已不成立 —— Combobox 的觸控原生路徑整個移除(見 `combobox.spec.md`「單一路徑(不分裝置)」),現在觸控編輯開的是同一套自訂浮層,已選成員在浮層裡打勾、可再點取消。降階規則本身不變。
 
-**改 PeoplePicker 視覺前必查本表,動 trigger render / placeholder / overflowShape / tagWrapperClassName 前先 cite 對應 row。** Hook `check_peoplepicker_ssot_drift.sh` 機械強制。
+**改 PeoplePicker 視覺前必查本表,動 trigger render / placeholder / overflowShape / tagWrapperClassName 前先 cite 對應 row。** Hook `post_edit_contract_dispatcher.sh`(lib `_peoplepicker_ssot_drift.sh`)寫入當下擋:三支檔(people-picker.tsx / person-display.tsx / combobox.tsx)這次新增的行動到這些名稱,而這次寫入沒附本表 §A–§F 的引用、該行或上一行也沒有 → 擋。
 
 **Avatar 左 inset SSOT**:single trigger / multi stack 第一個 avatar 距 trigger.left = **12px 固定**(不隨 size / density 漂移)。實作:PeoplePicker form context + 有 tag → `cn(className, '!px-[var(--field-px)]')` inject 12px override 到 Combobox Field wrapper,**覆蓋** Combobox `tagPadding[size]` density-dependent calc 公式(該公式在 default lg + 全 comfortable 共 4/6 組合漂離 12px,故報廢改固定值;推導史詳 git log 2026-05-13);`tagAreaPaddingLeftPx={undefined}` 不再 +8 magic。Cell context naked variant `!px-[var(--table-cell-px)]` 已是 12px 不 inject。固定 inset 讓 avatar 與其他 Field control 的文字起點共享同一水平節奏，不被 density 改寫。
 
@@ -219,7 +219,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上**單人**(wrapped Select)切至 native 分支(下拉 = 原生 `<select>` picker);**多人**(wrapped Combobox)不分裝置只有自建浮層一條路(2026-09-18 起,`../Combobox/combobox.spec.md`「單一路徑（不分裝置）」;2026-10-21 更正本句原寫「Select / Combobox 切至 native 分支」)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
 
 - **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
-- **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:186` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx#buildCellWithSurface` 的 `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
+- **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選**在 form surface** 自動降階為既有 `multiDisplay='pill'`(`people-picker.tsx:183` `isTouch && isMulti && surface === 'form'`);**table-cell / inline-edit / toolbar 維持 stack**(cell 固定列高與 view↔edit 像素對齊契約優先,cell 的 surface 由 `cell-registry.tsx#buildCellWithSurface` 的 `FieldSurfaceProvider surface="table-cell"` 提供)。降階後的視覺是既有 pill 型態(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
 - **顯示層 pointer 契約**:renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 `[&_button]` 回收」三件套 — pill 上的 X 照常可點(移除成員)。**2026-09-18 更正**:原文說 pill 本體 tap 會「穿透喚起原生 picker」,那是舊觸控路徑的機制;Combobox 已無原生路徑(見 `combobox.spec.md`「單一路徑(不分裝置)」),新增成員改為點欄位開同一套自訂浮層
 - **選單**:單人觸控走原生 `<select>` picker(Select 的觸控路徑,`../Select/select.spec.md`「實作:裝置自適應雙路徑」);原生選項無法渲 avatar 屬平台限制。多人(Combobox)觸控開的是與桌機同一套自建浮層,avatar + description 選項照常(2026-10-21 更正:原句寫「Combobox 觸控 SSOT」走原生 picker,該路徑 2026-09-18 已移除)
 - 一鍵清空 X(`clearable`):單人由基座 native 分支(NativeSelect)自行渲染;多人與桌機同一個 Combobox 觸發區,觸控同樣可用
@@ -253,6 +253,7 @@ interface PersonData {
 
 與其他 Field 一致：
 - **readonly**：顯示選中人員（Avatar + Name），無 dropdown trigger、無搜尋；avatar hover ProfileCard 保留（純展示仍可查閱人員資訊）
+- **readonly 的焦點**(2026-11-11):外框本身不是 tab stop,頭像才是(開名片卡)—— 鍵盤聚焦頭像 = 頭像自己的全域 2px 外描邊,**欄位邊框不亮**(一個 tab stop 一個指示器;修前 `focus-within` 讓頭像外描邊 + 欄位邊框兩個同時出現);滑鼠點頭像兩者都不畫(唯讀欄位滑鼠點不變,規則 `../Field/field-controls.spec.md`「Focus 行為」readonly 段)
 - **disabled**：灰化整個 field，不可互動——含 avatar dim（host-controlled opacity）+ 抑制 avatar ProfileCard hoverCard（無 HoverCard wrapper / 無 tab stop；2026-07-14 修，原 hoverCard 未抑制 falsify「不可互動」）
 
 ---
@@ -280,7 +281,7 @@ PeoplePicker 是 **composite Field Control**(Field shell + Avatar + SelectMenu),
 
 ## ref / props 轉發例外說明
 
-PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox>`(multi)),其主 API 為 declarative(value / onChange / size / mode / people...)。**有套 `forwardRef` + HTML root props spread**(codex P2 fix 2026-05-07 v15.10,`people-picker.tsx:113` / L53 / L131 `...rest`):
+PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox>`(multi)),其主 API 為 declarative(value / onChange / size / mode / people...)。**有套 `forwardRef` + HTML root props spread**(codex P2 fix 2026-05-07 v15.10,`people-picker.tsx:109` / L53 / L131 `...rest`):
 
 - **forwardRef + 單一 root**:`PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'>`,ref 與 `...rest`(`id` / `data-testid` / `onBlur` / `onFocus` / `aria-*` 等 HTML root props)forward 到內部 trigger 容器(readonly/disabled root div、或 wrapped Select / Combobox 的 root),對齊 DS 既有 Combobox / Select 慣例
 - **`onChange` 走 Omit**:本元件 onChange 用 `(value: PersonValue[]) => void` custom signature,跟 HTMLAttributes onChange 衝突,故 Omit
@@ -326,7 +327,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - Tab / Shift+Tab(picker 開著)— **single**(包 `<Select searchable>`):選定反白那一位 → 收起 → 焦點走到觸發欄位的下一個 / 上一個可 Tab 元素;**multi**(包 `<Combobox>`):行為不變,預設 panel-top 搜尋時 Tab 在面板裡繞圈(搜尋框 → 清單 → 全選),`searchIn='trigger'` 時焦點在欄位內、Tab 照 DOM 順序走(觸發欄位已是頁面最後一格時會走進浮層,2026-09-30 實測)。規則單一住所 = `../SelectMenu/select-menu.spec.md`「A11y 預設」(W3C 出處在該處;來源 = 待辦總帳 B11)
 - →(選單清單裡的頭像名片)— 每一位的頭像(名片觸發點)**不在 Tab 路上**(09-25 前多選浮層 4 人 = 4 站);多選浮層內搜尋時,插入點在字尾按 `→` 進反白那一位的頭像(名片浮出),`←` 回搜尋框;頭像上 ↑↓ / Home / End 回搜尋框並移反白、Tab / Shift+Tab 一下離開清單、Enter / Space **不**選這一位。2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;按鍵表住 `../Command/command.spec.md`「A11y 預設」(鍵盤路由 Command 提供,本元件不另寫)。欄位裡已選人員的頭像 / 移除 ×(stack)照 Combobox Tag 移除契約(`../Combobox/combobox.spec.md`「Tag 操作」),不在此列;「+N」浮出清單裡的人員 Tag × 也是同一條:本元件的 `renderHiddenTag` 用 Combobox 給的第二個參數 `onRemove` 移除(2026-09-30 前自己呼叫 `onChange`,跳過焦點接力 → 焦點掉到 body;搜尋框握著焦點時按它,焦點也被搬走,實測)
 
-**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框，按照畫框原則在此情境是要畫成外框的嗎？」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 開著時焦點留在搜尋框(浮層內或欄位內),滑鼠點選與 `Enter` 相同,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;插入點控件本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
+**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框，按照畫框原則在此情境是要畫成外框的嗎？」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致？」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 開著時焦點留在搜尋框(浮層內或欄位內),滑鼠點選與 `Enter` 相同,規則 `../SelectMenu/select-menu.spec.md`「A11y 預設」Focus 段;插入點控件本來就沒有外框)。浮層開著時欄位外框一律維持聚焦的框,不看焦點在欄位內還是浮層內(single / multi 都是;唯一出處 `../Field/field.spec.md`「Field state machine SSOT」的「欄位自己的浮層開著」)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
 
 移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`(實作全 DS 一支 `../../lib/collection-removal-focus.ts`,2026-10-01)。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
 
@@ -337,5 +338,4 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `combobox.spec.md`
-- `field-controls.spec.md`
 - `select-menu.spec.md`

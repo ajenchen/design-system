@@ -65,7 +65,7 @@ export interface AppShellRegistry {
   dismissMenuOverlay: () => void
   /** Menu 細列寬(px,量 `--sidebar-width-icon`);沒有細列時 0。 */
   railWidth: number
-  /** 產品沒給 Menu 寬度設定時的 DS 預設(量 `--sidebar-width-min` / `--sidebar-width`;§1)。 */
+  /** 產品沒給 Menu 寬度設定時的 DS 預設(最小 = AppShell 的常數 240;初始量 `--sidebar-width`;§1)。 */
   menuDefaultRange: PanelWidthRange
   /** Menu 浮層的 portal 目的地(`<AppShell portalContainer>`;省略 = document.body)。 */
   portalContainer?: HTMLElement | null

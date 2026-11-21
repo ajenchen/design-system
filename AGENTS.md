@@ -21,6 +21,7 @@
 | 檔案 | 何時必讀 |
 |---|---|
 | `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(33 條 M-rules,fundamental)|
+| `packages/design-system/ds-canonical/rules/work-process.md` | 每個多包 / 多步任務開工前 |
 | `packages/design-system/ds-canonical/rules/spec-rules.md` | 編任何 `*.spec.md` 或 DS 內容 |
 | `packages/design-system/ds-canonical/rules/ui-development.md` | 編任何 `.tsx`/`.ts`(Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn / public-vs-internal)|
 | `packages/design-system/ds-canonical/rules/story-rules.md` | 編任何 `*.stories.tsx`(三層定位 / Title / 範例準則)|
@@ -36,9 +37,9 @@
 
 **規則放哪裡**:本檔只做每 session 導航,不是 home taxonomy 的第二份 SSOT。Level 1–9 的唯一 owner／scope／flowchart 是 `skills/design-system-audit/references/rule-placement.md`。Provider views 只作 discovery/delivery,不得反向成為 semantic owner。
 
-**行數預算**:Bootstrap(AGENTS.md + CLAUDE.md)/ SKILL / spec / memory / hooks 各有 cap,**具體數值不在本檔重述**(三處列舉必然漂移)—— SSOT 是 `session_start_governance_check.sh` 檔頭「Checks + thresholds」與 Check 7,動態值以 `scripts/sync-governance-counters.mjs` 跑出為準。
+**行數預算**:Bootstrap(AGENTS.md + CLAUDE.md)/ SKILL / spec / memory / hooks 各有 cap,**具體數值不在本檔重述**(三處列舉必然漂移)—— 各檔(spec / SKILL / memory / 本檔)行數上限的 SSOT 是 `check_file_size_budget.sh` 的 case 表;開場檔總行數、hook 數、memory 筆數門檻是 `session_start_governance_check.sh` 檔頭「Checks + thresholds」與 Check 7 / 8,動態值以 `scripts/sync-governance-counters.mjs` 跑出為準。
 
-**Anti-bloat** 三層:L1 pre-write 檔案大小閘 / L2 per-edit fire log / L3 季度 `/knowledge-prune`。各層的 owner 檔案、telemetry 路徑與「只移除有證據的噪音、禁為湊比例犧牲真實 invariant」的鐵律,SSOT 在 `skills/knowledge-prune/SKILL.md`,本檔不重述。
+**Anti-bloat** 三層:L1 pre-write 檔案大小閘 / L2 per-edit fire log(要 `GOVERNANCE_TELEMETRY_OPT_IN=1`,預設關)/ L3 季度 `/knowledge-prune`。各層的 owner 檔案、telemetry 路徑與「只移除有證據的噪音、禁為湊比例犧牲真實 invariant」的鐵律,SSOT 在 `skills/knowledge-prune/SKILL.md`,本檔不重述。
 
 **加規則前必過 3 題**:(1) 既有 Meta-Pattern／近親 spec／canonical chapter 命中 → append pointer 不新寫;(2) **Rule-of-3**:同概念 ≥ 3 處 → 選 SSOT 其他 pointer;(3) 7 天後還會 fire 嗎?不確定 → 不寫。
 
@@ -81,7 +82,7 @@
 |------|------|
 | **新增元件** | canonical `rules/ui-development.md`「建立 UI 前必讀 / shadcn 元件規範」+ `rules/spec-rules.md` → `/component-quality-gate` |
 | **修 variant / size / state** | 該元件 `spec.md` → `/story-writing` |
-| **新增 token** | `tokens/README.md` → `rules/ui-development.md`「Token 命名 4 條硬規則」→ `tokens/xxx.spec.md` |
+| **新增 token** | `tokens/token-system.spec.md`「判斷流程」→ `rules/ui-development.md`「Token 命名 4 條硬規則」→ `tokens/xxx.spec.md` |
 | **寫 story / 視覺 code** | `/story-writing` + `# SSOT 消費 canonical` |
 | **命名新檔／變數／prop** | `# 命名與語言一致性` + `rules/ui-development.md`「元件 Props 命名」 |
 | **新元件 layout** | `# 4-Family Layout Model` |
@@ -124,7 +125,7 @@
 
 # 自主執行 canonical(Autonomy Default)
 
-**Default = autonomous + complete + verify-to-perfection;省工 = anti-pattern(違 mindset #1)**。
+**Default = autonomous + complete**;多包 / 多步工作照 `packages/design-system/ds-canonical/rules/work-process.md`(不在此重述)。跳過規格項或驗證 = 省工(違 mindset #1)。
 
 | 動作類別 | 預設 |
 |---------|-----|
@@ -153,23 +154,18 @@
 
 | 技術陷阱 | 一行 anchor |
 |--------|-----------|
-| Tailwind v4 `[--foo]` 必 `var()` | silent 失效 |
-| tailwind-merge 自訂 utility 必註冊 group | 否則 strip |
+| Tailwind v4 `[--foo]` 必 `var()` / tailwind-merge 自訂 utility 必註冊 group | 前者 silent 失效,後者被 strip |
 | 元件自包 Provider | 劫持全站 |
-| 清 unused imports 後 runtime | tsc 不充分,需 storybook |
+| `tsc -b` 在本 repo composite 設定下不檢查 DS 原始碼(根目錄 `tsc --noEmit` 是 0 個檔)/ 清 unused imports 後 runtime | 型別以 `npm run build:lib` 為準,runtime 需 storybook。詳 historical-bugs.md |
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支只傳 consumer child |
-| `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼**;根目錄 `tsc --noEmit` 更是 0 個檔(`files: []`) | 「tsc -b / --noEmit 通過」不構成型別正確的證據;任何 .tsx 改動一律以 `npm run build:lib` 為準。詳 historical-bugs.md |
-| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 | 必 `--checksum`、flag 分開寫、mktemp 後驗非空。**判準**:純函式測過之後,必再問「這個參數在正式流程裡是誰算的,那支有沒有被測」,並用真實資料跑**兩面對照**(該 true 一筆、該 false 一筆)。詳 historical-bugs.md |
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg -rn` 的 `-r`=replace / `mktemp -d` 失敗回空 / `git commit -- <路徑>`(部分提交)鎖 index 讓 pre-commit 掛掉 / zsh 當 sh 寫(`$V` 不拆字、`echo ====` 吃掉後面每一行、萬用字元沒匹配整行不跑)/ `<(…)` 的 /dev/fd 被沙箱擋 | `--checksum`、flag 分開寫、mktemp 後驗非空、`git add` 後不帶路徑 commit、zsh 先 `emulate sh`、兩份輸出各存成檔再比;「0 筆／不支援」先證明工具真的跑了;參數要問「正式流程裡是誰算的」並跑兩面對照。詳 historical-bugs.md |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
-| storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
-| hook 測試直跑留 fixture `.git/` 進 corpus | `git status` 不顯但 snapshot tree fingerprint 全算 → trio 漂移;測試必經 run-all.sh。詳 historical-bugs.md |
-| SMIL `begin="indefinite"` 動畫掛上後沒人 `beginElement()` = 永不起跑(靜默) | begin-once 守衛的觸發 key 必含每個會新掛動畫的狀態段;驗證看 `getStartTime()` 是否丟例外。詳 historical-bugs.md |
-| 量 focus 顏色不等 transition = 量到過渡中間值 | `transition-colors` 的 transition-property 含 `outline-color`;**凡量 focus 顏色先等過渡**。詳 historical-bugs.md |
-| 拖曳 vs 點擊只靠「收到幾個 pointermove」或「吞 click」= 輸入代理下靜默失效 | 判準必是**放開點離按下點的距離**;吞 click 的旗標由下一次 pointerdown 才清。詳 historical-bugs.md |
-| `git commit -- <路徑>`(部分提交)會讓治理 pre-commit 掛掉 | 看起來像沙箱權限問題,其實是**部分提交模式下 git 自己鎖著 index**。正解:`git add` 後跑**不帶路徑**的 commit。詳 historical-bugs.md |
-| **寫了閘卻沒有任何執行面呼叫它** | 那條保護是假的而且**零訊號**。**判準**:寫完任一支閘立刻問「誰呼叫它」,grep 執行面拿不到答案就等於沒寫;動態探索出來的執行路徑(gate-meta pair、harness inventory)也要模進去,只 grep 字串會誤判。棘輪 SSOT `scripts/gate-reachability-baseline.json`,閘 `scripts/gate-reachability-invariant.mjs`(CI required)。**第二種形狀(2026-09-24)**:斷在**產生檢視**那一層(工作樹的 hook 設定檢視沒跟上新群組)→ 閘 `scripts/provider-view-group-reachability-invariant.mjs`(CI required)+ `session_start_governance_check.sh` Check 12。詳 historical-bugs.md |
-| `file://` 開 storybook = story 整個不渲染而且不報錯 | CORS 擋掉模組載入;瀏覽器閘一律起本機靜態站。另:CSSOM 對含 `var()` 的簡寫回空字串,要用 `r.cssText`。詳 historical-bugs.md |
+| 驗證環境陷阱:storybook-smoke 驗舊 build = 假綠 / `file://` 開 storybook 不渲染不報錯 / hook 測試直跑留 fixture `.git/` 進 corpus | smoke 有 stale-build guard;瀏覽器閘起本機靜態站(含 `var()` 的簡寫用 `r.cssText`);hook 測試必經 run-all.sh。詳 historical-bugs.md |
+| SMIL `begin="indefinite"` 掛上後沒人 `beginElement()` = 永不起跑 | 觸發 key 必含每個會新掛動畫的狀態段;驗 `getStartTime()`。詳 historical-bugs.md |
+| 拖曳 vs 點擊只靠 pointermove 數或吞 click = 輸入代理下失效 | 判準是放開點離按下點的距離;吞 click 旗標由下一次 pointerdown 清。詳 historical-bugs.md |
+
+量具類兩條 ——「量 focus 顏色不等 transition」、「寫了閘卻沒有任何執行面呼叫它」—— 住 meta-patterns M32(對照組四問、(c))與 M37④;棘輪 `scripts/gate-reachability-invariant.mjs` + `scripts/provider-view-group-reachability-invariant.mjs`(CI required)。詳 historical-bugs.md。
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。
 

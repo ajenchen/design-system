@@ -74,7 +74,7 @@ export const WithExtendDatasetHint: Story = {
                 <button
                   type="button"
                   onClick={() => { setSelection([]); setAllSelected(false) }}
-                  className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
+                  className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-md"
                 >
                   清除選取項目
                 </button>
@@ -86,7 +86,7 @@ export const WithExtendDatasetHint: Story = {
                 <button
                   type="button"
                   onClick={() => setAllSelected(true)}
-                  className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-sm"
+                  className="text-primary hover:text-primary-hover focus-visible:focus-ring-inset rounded-md"
                 >
                   點此選取全部 {TOTAL} 個項目
                 </button>

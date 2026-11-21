@@ -135,7 +135,7 @@ export const UsageGuidance: Story = {
           note="「熱門」「Beta」「NEW」是 categorical label，不是 1–5 評分。分類標籤用 Tag——Badge 是通知計數 / 紅點指示器，不用來做分類標籤。Tag 傳達「屬於哪類」，Rating 傳達「值多少分」。"
         >
           <Example>
-            {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
+            {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:234)(layoutSpace.spec.md:117 同範疇 spec-own) */}
             <div className="flex items-center gap-1">
               <Tag color="blue">熱門</Tag>
               <Tag color="neutral">Beta</Tag>
@@ -285,7 +285,7 @@ export const YellowStarConvention: Story = {
     <TutorialPage>
       <TutorialRule
         title="黃星 = 世界級 convention，破壞 = 破壞使用者直覺"
-        note={<>黃 / 金色星是星級評分最通用的視覺慣例——Amazon 商品評分、Google 地點評分都用金黃星，使用者的視覺記憶早已把「黃星 = 評分」綁定。換成品牌 primary 色（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」，這一瞬間就是設計 bug —— 所以 Rating 的星色跟狀態色共用 <code>--warning</code> 色相、但語境不同,是規格明文的例外,元件也把星色綁死在 <code>--warning</code>,不會跟著外層文字色變。（少數平台改用自家色：Yelp 紅星、Tripadvisor 綠色圓點 bubble——但黃 / 金星仍是跨平台最通用的星級評分色。）</>}
+        note={<>黃 / 金色星是星級評分最通用的視覺慣例——Amazon 商品評分、Google 地點評分都用金黃星，使用者的視覺記憶早已把「黃星 = 評分」綁定。換成互動色 primary（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」，這一瞬間就是設計 bug —— 所以 Rating 的星色跟狀態色共用 <code>--warning</code> 色相、但語境不同,是規格明文的例外,元件也把星色綁死在 <code>--warning</code>,不會跟著外層文字色變。（少數平台改用自家色：Yelp 紅星、Tripadvisor 綠色圓點 bubble——但黃 / 金星仍是跨平台最通用的星級評分色。）</>}
       >
         {/* 兩個範例並排、共用一句說明(比的是同一件事:兩種呈現的星色)—— 直接放進 Rule:CaptionedExamples 把兩則範例併成一段
             (範例之間 loose),說明貼在整段下方(tight) */}

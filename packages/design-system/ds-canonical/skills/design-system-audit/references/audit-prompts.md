@@ -1,6 +1,6 @@
 # Audit Subagent Prompts(全 dim per `SKILL.md SSOT`)
 
-> **Count canonical**:本檔 dim 數對齊 `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The N audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準。Prompt section 對 PURE-JUDGMENT dims 必備;deterministic-script dims(eg. 84-88)無需 prompt(腳本即檢查)。**誠實註**:prompt 數**非**機械 count-verified(`sync-governance-counters.mjs` 不 parse 本檔)— 靠 audit dim 15 + Phase A 人工對齊(2026-05-30 修正前 frontmatter 誤稱有自動 cross-verify)。
+> **Count canonical**:本檔 dim 數對齊 `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準。Prompt section 對 PURE-JUDGMENT dims 必備;deterministic-script dims(eg. 84-88)無需 prompt(腳本即檢查)。**誠實註**:prompt 數**非**機械 count-verified(`sync-governance-counters.mjs` 只比對本檔寫死的 dim / hooks / skills / M-rules 總數,不數 prompt)— 靠 audit dim 15 + Phase A 人工對齊(2026-05-30 修正前 frontmatter 誤稱有自動 cross-verify)。
 
 Each prompt is self-contained and can be dispatched through the current provider's registered isolated-worker mechanism with read-only repository access. If parallel workers are unavailable, execute the same prompts serially without reducing coverage.
 
@@ -188,7 +188,7 @@ End: `N .tsx files checked, M violations.` Under 400 words. Don't fix.
 
 **Type**: Absolute
 **Canonical source**: `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」 → 禁止清單 (hex / rgb / shadow-md/sm / raw px 等)
-**Rationale home**: N/A — tokens bypass breaks dark mode / density / brand-swap
+**Rationale home**: N/A — tokens bypass breaks dark mode / density / 互動色換色
 
 ```
 Your job: grep packages/design-system/src/components/*.tsx for hardcoded color values, pixel values, or magic numbers that should use tokens.
@@ -1064,7 +1064,7 @@ Per-component grep `*.stories.tsx`(非 anatomy/principles)反 pattern:
 
 ## 31. Overlay body 無 stripped-padding boolean variant
 
-**Type**: Absolute / **Canonical**: `overlay-surface.spec.md`「List-as-region in overlay body」+ memory `feedback_layout_v6_canonical.md` / **Home**: 檔頭 `// overlay-body-stripped-variant-allow:`(必含 ≥ 3 家世界級對照 + multi-row hold)
+**Type**: Absolute / **Canonical**: `overlay-surface.spec.md`「List-as-region in overlay body」+ memory `feedback_layout_v6_canonical.md` / **Home**: 同一行或上一行 `// overlay-body-stripped-variant-allow: <理由>`(逐行;2026-11-18 D4-02 前是檔頭整檔放行;必含 ≥ 3 家世界級對照 + multi-row hold)
 
 Per-overlay grep `components/(Dialog|Sheet|Popover)/*.tsx`(非 stories)反 pattern:`(flush|naked|bare|stripped|unpadded|noPadding|paddingless)\?:\s*boolean` 在 body component。對齊 Material/Atlassian/Mantine/shadcn 主流。違反 = list-as-region 該 consumer override(`!px-0 !pt-0`)+ 自管 list outer wrapper。Hook `lib/_overlay_handcraft.sh` Check 6 同源(`post_edit_dispatcher.sh` 消費;原 check_overlay_handcraft.sh 2026-05-13 fold)。
 
@@ -1105,11 +1105,11 @@ Overlay primitive → SurfaceBody 中間 wrapper 必 `flex flex-col h-full`,斷�
 
 `variant="naked"` consumer 內 wrapper 必 import + apply `nakedCellRowModeAlign` SSOT。Hook `check_field_family_invariants.sh`(A.1 naked row-mode propagation,原 check_naked_row_mode_propagation.sh folded 已合入)同源。
 
-## 37. Field state machine「focus dominates everything」(M19 v13.3)
+## 37. Field state machine「focus dominates everything — 除 error」(M19 v13.3)
 
-**Type**: Absolute / **Canonical**: `field-wrapper.tsx` 三 compoundVariant SSOT / **Home**: spec.md state machine 段
+**Type**: Absolute / **Canonical**: `field-wrapper.tsx` 三 compoundVariant SSOT / **Home**: `field.spec.md`「Field state machine SSOT」段(每一態的框色、「欄位自己的浮層開著 = 維持聚焦的框」與它的邊界只寫在那裡,本 dim 不重述)
 
-禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。Hook `check_field_family_invariants.sh`(A.3 Field state ring SSOT,原 check_field_state_token_consume.sh folded 已合入)同源,本 dim batch verify Field family + outliers。
+禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。2026-11-13 起另一條(AI 工程判斷):禁在欄位外框上認 `data-[state=open]` 換框色 —— 欄位自己的浮層開著時的框只認欄位自己掛的 `data-field-open`(唯一寫入者 `lib/composite-field-focus.ts` 的 `fieldOpenProps`),規則、邊界與出處都在上面 Home 那一段;按鈕類觸發(「開著 = 自己的 hover」,`inline-action.spec.md`)不歸本 dim,不得當成欄位判。Hook `check_field_family_invariants.sh`(A.3 Field state ring SSOT,原 check_field_state_token_consume.sh folded 已合入)同源,本 dim batch verify Field family + outliers。
 
 ## 38. Inline-action gap canonical
 
@@ -1223,7 +1223,7 @@ Deep mode 每 core story 跑現有 `theme-density` 4-cell(light/dark × density-
 
 對齊 GitHub Primer header + Ant Design Layout.Header + Material v1 AppBar 共識。Per chrome / overlay header tsx 跑 6 invariants:
 
-- **W1**:含 `<Tabs>` child 必有 `withTabs` prop(border 自動 suppress;手寫 `border-b-0` = 違反)
+- **W1**:Tabs 一律經 `tabsSlot` 進 header(border 自動 suppress;`<Tabs>` / `<TabsList>` 寫進 header children、手寫 `border-b-0` = 違反)
 - **W2**:tabs padding 必 = header padding(`px-[var(--layout-space-loose)]`),不可獨立 padding 值
 - **W3**:`--tab-height-lg` 必 == `--chrome-header-height`(md/lg 對等,token 公式 cross-check)
 - **W4**:header + tabs flush stack 必無 negative margin(`-mt-px` / `-mb-px` = 違反)
@@ -1236,9 +1236,9 @@ Your job: audit Header W1-W6 canonical invariants DS-wide.
 Coverage requirement(NO-SAMPLE STRICT):全 `packages/design-system/src/components/*/<X>.tsx` + `packages/design-system/src/patterns/chrome-header/**` + overlay surface header usage。
 
 For each header tsx:
-1. **W1** — grep `<Tabs` / `<TabsList` inside header — 若有 → require `withTabs` prop on header element。手寫 `border-b-0` / `border-b-transparent` 同步 flag
+1. **W1** — grep `<Tabs` / `<TabsList` inside header children — 若有 → 改用 header 的 `tabsSlot`。手寫 `border-b-0` / `border-b-transparent` 同步 flag
 2. **W2** — Tabs padding 必 reference `var(--layout-space-loose)`,不可硬寫 `px-N` 或別的 token
-3. **W3** — open tokens/uiSize / tokens/layoutSpace spec.md verify `--tab-height-lg === --chrome-header-height`(計算公式對等;不等 = token drift)
+3. **W3** — open components/Tabs/tabs.spec.md + tokens/uiSize/uiSize.spec.md verify `--tab-height-lg === --chrome-header-height`(兩顆住處以 tokens/token-registry.json 為準;計算公式對等;不等 = token drift)
 4. **W4** — grep `-mt-px` / `-mb-px` / `-mt-N` 在 header + tabs flush stack region = violation
 5. **W5** — grep `<Tabs ... size="md"` in chrome header usage = violation(default sm)
 6. **W6** — grep `defaultVariants:\s*\{\s*size:\s*['"]md['"]` in `tabs.tsx` cva = violation
@@ -1313,9 +1313,10 @@ Report file:line gaps。End:`N onboarding 環節 checked, M gaps`。Don't fix.
 **Type**: Absolute / **Canonical**: protected-main `release.yml` exact-tag build-once + npm Trusted Publishing + GitHub/npm readback + `mirror-to-published-template.yml` repository_dispatch + `consumerctl governance-release` exact-version PR/readback + consumer native `audit.yml / Verify consumer` + standard live CI evidence plan + `infra/governance/desired/github.json` / **Home**: scenario-definition.md mirror chain
 
 ```
-Your job(NO-SAMPLE):驗 protected DS PR required check → squash merge → immutable npm/GitHub publish/readback → template/WM exact-version PR → `Verify consumer` 整鏈無斷；任何 direct-main、PAT fallback、mutable tag dependency 都是失敗。
-**成立條件**:必須由 `npm run audit:ci-evidence-observe` live readback 證明 active PR tree = squash-merge tree = tag tree、release/mirror 均為成功 repository_dispatch、immutable release/BOM 與三包 npm SLSA provenance 一致、template/WM lockfile 的 version/integrity/resolved 逐包一致，且 dim 64/66 receipt 共用同一 observation digest。candidate freeze、external activation、offline completion attestor、staging/import、只讀 workflow 原始碼、模型判斷或手寫 JSON 均不得充當 standard PASS。
-Enumerate + Read:protected-main `release.yml` exact-tag build-once/publish/readback → `mirror-to-published-template.yml` repository_dispatch → `consumerctl governance-release` exact-version PR → template/WM `audit.yml / Verify consumer` → standard CI evidence plan。對每環節驗 exact workflow bytes/event/commit/tree/BOM/npm/lock/PR/check producer 綁定、無 PAT scope 漏或 direct-main fallback。Report file:line。End:`N 環節, M gaps`。Don't fix.
+Your job(NO-SAMPLE):驗 protected DS PR required check → squash merge → immutable npm/GitHub publish/readback → 本次被選中 consumer 的 exact-version PR → `Verify consumer` 整鏈無斷；任何 direct-main、PAT fallback、mutable tag dependency 都是失敗。
+**Consumer 範圍**:template(`upgrade: automatic`)每次都被選中；WM(`upgrade: on-request`)只在 user 要求、以 `RELEASE_REQUESTED_CONSUMERS=ajenchen/work-management` 帶進 `release:auto` 與 `audit:ci-evidence-observe` 時才被選中(user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」)。選法唯一實作 `scripts/lib/release-consumer-selection.mjs`,orchestrator 第五步與本 dim 證據共用。沒被要求的 WM 在 observation 記成 `consumerSelection.notRequested`(`not-requested-this-release`)= 本次未要求升級,**不是 gap**;**禁止為了讓本 dim 變綠而去升 WM**。
+**成立條件**:必須由 `npm run audit:ci-evidence-observe` live readback 證明 active PR tree = squash-merge tree = tag tree、release/mirror 均為成功 repository_dispatch、immutable release/BOM 與三包 npm SLSA provenance 一致、**本次被選中升級的每個 consumer**(template 恆在;WM 僅在 user 要求時)lockfile 的 version/integrity/resolved 逐包一致、未被選中的 consumer 逐一記成 `not-requested-this-release` 不得默默消失，且 dim 64/66 receipt 共用同一 observation digest。candidate freeze、external activation、offline completion attestor、staging/import、只讀 workflow 原始碼、模型判斷或手寫 JSON 均不得充當 standard PASS。
+Enumerate + Read:protected-main `release.yml` exact-tag build-once/publish/readback → `mirror-to-published-template.yml` repository_dispatch → `consumerctl governance-release` exact-version PR → 被選中 consumer 的 `audit.yml / Verify consumer` → standard CI evidence plan(含 `consumerSelection`)。對每環節驗 exact workflow bytes/event/commit/tree/BOM/npm/lock/PR/check producer 綁定、無 PAT scope 漏或 direct-main fallback。Report file:line。End:`N 環節, M gaps`。Don't fix.
 ```
 
 ## 68. Stories-vs-spec drift(PURE-JUDGMENT,2026-05-31 補)

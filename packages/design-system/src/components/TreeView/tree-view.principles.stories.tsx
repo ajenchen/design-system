@@ -39,7 +39,7 @@ export const UsageGuidance: Story = {
           note="檔案資料夾、組織架構、專案 / 子專案 / 任務。每個 node 有 children 就可展開,沒有就是 leaf"
         >
           {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
-          <div className="border border-border rounded-lg py-2 w-80">
+          <div className="border border-border rounded-md py-2 w-80">
             <TreeView aria-label="文件與下載資料夾樹" defaultExpandedIds={['docs', 'photos', 'downloads']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
@@ -62,7 +62,7 @@ export const UsageGuidance: Story = {
           note='TreeView 預設允許任意多個節點同時展開。平面設定分段若需要「展開一個、其他自動收合」的互斥語意,用 Accordion type="single"(非 TreeView)'
         >
           {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
-          <div className="border border-border rounded-lg py-2 w-80">
+          <div className="border border-border rounded-md py-2 w-80">
             <TreeView aria-label="帳號設定分段" selectionMode="none" defaultExpandedIds={['account', 'notify', 'privacy']}>
               <TreeItem id="account" label="帳號設定">
                 <TreeItem id="account-email" label="電子郵件" />
@@ -87,7 +87,7 @@ export const UsageGuidance: Story = {
           note="TreeView 為階層而設計——若資料本質是平面(使用者清單、訂單清單),用 DataTable 更自然,TreeView 的遞迴結構徒增 overhead"
         >
           {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
-          <div className="border border-border rounded-lg py-2 w-80">
+          <div className="border border-border rounded-md py-2 w-80">
             <TreeView aria-label="平面使用者清單反例">
               <TreeItem id="alice" label="Alice" icon={User} />
               <TreeItem id="bob" label="Bob" icon={User} />
@@ -120,7 +120,7 @@ export const ExpandSelectSeparationRule: Story = {
           note="兩個獨立的互動區——點 chevron 只展開不選,點 label 只選不展開(除非 consumer 顯式 opt-in expandOnSelect)。分開才能只選不展開,選一個資料夾不必連帶攤開整串子項" /* 來源:https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/platform/list/browser/listService.ts#L1478-L1482 */
         >
           {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
-          <div className="border border-border rounded-lg py-2 w-80">
+          <div className="border border-border rounded-md py-2 w-80">
             <TreeView aria-label="展開與選取行為範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
@@ -153,7 +153,7 @@ export const IndentRule: Story = {
         note="indentStep = chevronSize + gap-2,跟 item-layout 的 prefix-content gap 一致。讓 indent 視覺跟 item-layout 融為一體,而非獨立數字系統"
       >
         {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
-        <div className="border border-border rounded-lg py-2 w-80">
+        <div className="border border-border rounded-md py-2 w-80">
           <TreeView aria-label="工程團隊縮排範例" defaultExpandedIds={['eng', 'frontend', 'backend']}>
             <TreeItem id="eng" label="Engineering" icon={Users}>
               <TreeItem id="frontend" label="Frontend" icon={Users}>
@@ -174,7 +174,7 @@ export const IndentRule: Story = {
         note="同層 siblings 有展開 icon、有的沒有 → label 不對齊。TreeView 自動給葉節點留 chevron 位置(透明 placeholder),consumer 不需介入"
       >
         {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
-        <div className="border border-border rounded-lg py-2 w-80">
+        <div className="border border-border rounded-md py-2 w-80">
           <TreeView aria-label="行銷素材資料夾樹" defaultExpandedIds={['assets', 'social']}>
             <TreeItem id="assets" label="行銷素材" icon={Folder}>
               <TreeItem id="hero" label="活動主視覺.png" icon={Image} />
@@ -192,7 +192,7 @@ export const IndentRule: Story = {
         note="Chevron 有自動佔位(leaf 也留等寬空白),但 icon 無自動佔位——同層有些節點傳 icon、有些沒傳,label 起點會直接錯開。要嘛全傳 icon,要嘛全不傳"
       >
         {/* @layout-space-magic-ok: 有框容器裡的樹列集合:外框只給上下 8px,左右 0 讓滑過 / 選中底色貼齊框邊 = tree-view.spec.md「使用脈絡(Context)與水平 Padding」的「垂直 padding 的歸屬」(story wrapper 自己加 `py-2`;已發布版規格同一句) */}
-        <div className="border border-border rounded-lg py-2 w-80">
+        <div className="border border-border rounded-md py-2 w-80">
           <TreeView aria-label="icon 混用反例檔案樹" defaultExpandedIds={['src', 'public']}>
             <TreeItem id="src" label="src" icon={Folder}>
               <TreeItem id="app" label="App.tsx" icon={FileText} />

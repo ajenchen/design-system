@@ -18,7 +18,7 @@ benchmark:
 # TreeView 設計原則
 
 > **Foundational SSOT rationale**(2026-04-24 approved,cap 800):
-> TreeView 有獨立 `treeItemVariants` cva + Tree-specific features SSOT(Indent 層級 / Tree Guides 連線 / 展開收合 chevron / 鍵盤導覽 arrow 展開 / 多選 checkbox / Drag-drop / Hover-only inline actions / Node 解剖 / Consumer 擴展點)。這些是 tree hierarchy 本質特徵,跟 MenuItem 的 flat list 語義本質不同,無法直接繼承。Long-term refactor 可行範圍只有 **visual base**(padding / typography / height 共用 menuItemVariants),tree-specific behavior 仍需獨立 SSOT。見 `.claude/planning/row-primitive-consolidation.md` Phase 0 評估。
+> TreeView 有獨立 `treeItemVariants` cva + Tree-specific features SSOT(Indent 層級 / Tree Guides 連線 / 展開收合 chevron / 鍵盤導覽 arrow 展開 / 多選 checkbox / Drag-drop / Hover-only inline actions / Node 解剖 / Consumer 擴展點)。這些是 tree hierarchy 本質特徵,跟 MenuItem 的 flat list 語義本質不同,無法直接繼承。Long-term refactor 可行範圍只有 **visual base**(padding / typography / height 共用 menuItemVariants),tree-specific behavior 仍需獨立 SSOT。見 `governance/planning/row-primitive-consolidation.md.rejected.20260424.md` Phase 0 評估。
 
 ## 定位
 
@@ -446,7 +446,7 @@ Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `fg-secondary
 
 ### 鍵盤重排(2026-07-14 v1)
 
-`draggable` 啟用後,鍵盤與指標同樣可重排(WCAG 2.1.1 keyboard parity——四鍵可組合出任何 pointer 可達的合法樹位置)。鍵位 `Cmd/Ctrl+Shift+方向鍵`(對齊 [Notion 移動 block 鍵位](https://www.notion.com/help/keyboard-shortcuts),WebFetch 驗證紀錄 `.claude/logs/treeview-keyboard-dnd-design.md#L25`;[Asana](https://keycombiner.com/collections/asana/) / [Todoist](https://www.todoist.com/help/articles/use-keyboard-shortcuts-in-todoist-Wyovn2) 同「modifier+方向鍵直接移動」派),對焦點所在的那一列操作(只從列上發動;焦點在列上的按鈕時不重排),**每按一下立即 commit**——無 grab-mode、無預覽、無 cancel(反向鍵即 undo)。**不用** dnd-kit `KeyboardSensor`:它是「按下開始 → 方向鍵搬 → 再按放下」的抓取模式,預設用 `Enter` / `Space` 開始([dnd-kit sensors 文件](https://dndkit.com/api-documentation/sensors/keyboard)),而本元件這兩個鍵是「選取」、重排語意又是每按即 commit,故為容器 `handleKeyDown` 的自建分支。(舊理由「列不可聚焦,與虛擬焦點結構性不相容」在 2026-09-25 列改為真焦點後不再成立,已撤回。)
+`draggable` 啟用後,鍵盤與指標同樣可重排(WCAG 2.1.1 keyboard parity——四鍵可組合出任何 pointer 可達的合法樹位置)。鍵位 `Cmd/Ctrl+Shift+方向鍵`(對齊 [Notion 移動 block 鍵位](https://www.notion.com/help/keyboard-shortcuts),WebFetch 驗證紀錄 `.claude/logs/treeview-keyboard-dnd-design.md#L25`;[Todoist](https://www.todoist.com/help/articles/use-keyboard-shortcuts-in-todoist-Wyovn2) 同「modifier+方向鍵直接移動」派),對焦點所在的那一列操作(只從列上發動;焦點在列上的按鈕時不重排),**每按一下立即 commit**——無 grab-mode、無預覽、無 cancel(反向鍵即 undo)。**不用** dnd-kit `KeyboardSensor`:它是「按下開始 → 方向鍵搬 → 再按放下」的抓取模式,預設用 `Enter` / `Space` 開始([dnd-kit sensors 文件](https://dndkit.com/api-documentation/sensors/keyboard)),而本元件這兩個鍵是「選取」、重排語意又是每按即 commit,故為容器 `handleKeyDown` 的自建分支。(舊理由「列不可聚焦,與虛擬焦點結構性不相容」在 2026-09-25 列改為真焦點後不再成立,已撤回。)
 
 | 按鍵 | 行為 | 發出事件 |
 |---|---|---|

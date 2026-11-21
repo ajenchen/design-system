@@ -9,6 +9,10 @@ import { BulkActionBar } from './bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { Button } from '@/design-system/components/Button/button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+// 說明頁的小標 / 說明用設計規格頁共用的那一份(標題 ↔ 說明 2px、標題區 → 內容看底下幾塊);2026-11-15 前本檔自抄一份(mb-1 / mb-3 寫死,不跟密度)。
+// 只動說明頁的小標與說明文字,BulkActionBar 元件本身與各則範例的長相不動(user 2026-10-21「bulkactionbar原本就是正確正常的，你他媽不要給我改壞喔」
+// 講的是元件本身與範例 —— user 2026-11-15 更正 AI 把它讀成「整頁一律不動」)
+import { H3, Desc } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
   title: 'Design System/Components/BulkActionBar/設計規格',
@@ -16,13 +20,6 @@ const meta: Meta = {
 }
 export default meta
 type Story = StoryObj
-
-const H3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-h6 font-semibold text-foreground mb-1">{children}</h3>
-)
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px] mb-3">{children}</p>
-)
 
 export const Overview: Story = {
   name: '元件總覽',
@@ -183,7 +180,7 @@ export const Accessibility: Story = {
   render: () => (
     <div className="flex flex-col gap-6 max-w-3xl text-body">
       <section>
-        <H3>ARIA roles</H3>
+        <H3 paragraph>ARIA roles</H3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li><code>role="group"</code> on root + <code>aria-label="批次操作"</code>(可 i18n override;2026-07-06 自 toolbar 降級——未實作 toolbar 角色的方向鍵移動焦點,宣告 toolbar 等於讓輔助科技說「工具列」卻按方向鍵沒反應;group 語意誠實)</li>
           <li>Clear icon:<code>aria-label="清除選取"</code></li>
@@ -193,7 +190,7 @@ export const Accessibility: Story = {
       </section>
 
       <section>
-        <H3>鍵盤(預期 consumer 在 page 層級監聽)</H3>
+        <H3 paragraph>鍵盤(預期 consumer 在 page 層級監聽)</H3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li><kbd>Esc</kbd> → 觸發 <code>onClearSelection()</code>(consumer 在 page-level keydown 監聽)</li>
           <li>Tab 序:close → actions(count 是純文字 / aria 朗讀對象,非 tab stop)</li>

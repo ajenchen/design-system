@@ -193,7 +193,7 @@ const InspectorInner = () => {
       <div className="flex gap-8 items-start">
         {/* Left: live preview */}
         <div className="flex flex-col gap-5 min-w-[340px]">
-          <div className="px-16 py-16 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-16 py-16 rounded-md bg-canvas border border-divider flex items-center justify-center">
             <Tooltip defaultOpen>
               <TooltipTrigger asChild>
                 <Button variant="tertiary" startIcon={Settings} size="sm" onClick={fn().mockName('開啟欄位設定')}>欄位設定</Button>
@@ -232,7 +232,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: token panel */}
-        <div className="flex flex-col gap-0 min-w-[260px] border border-divider rounded-lg overflow-hidden">
+        <div className="flex flex-col gap-0 min-w-[260px] border border-divider rounded-md overflow-hidden">
           <div className="px-3 py-2 bg-surface-raised border-b border-divider">
             <span className="text-[12px] font-semibold text-fg-secondary">Token Details</span>
           </div>
@@ -313,7 +313,7 @@ export const PlacementReference = {
         {(['top', 'right', 'bottom', 'left'] as const).map((s) => (
           <div key={s} className="flex flex-col gap-2 items-start">
             <span className="text-[11px] font-mono text-fg-muted font-medium">side="{s}"</span>
-            <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center w-full">
+            <div className="px-8 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center w-full">
               <Tooltip defaultOpen>
                 <TooltipTrigger asChild>
                   {/* 工具列的真實動作:按了記到 Storybook「Actions」面板 */}

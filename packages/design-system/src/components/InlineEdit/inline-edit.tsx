@@ -81,7 +81,7 @@ export interface InlineEditProps<T = string> {
   editMaxRows?: number
   /**
    * 是否可編輯(預設 true)。false → view 態無 hover 入口、無藍框、不可點進 edit(對齊世界級就地編輯
-   * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;cite 見檔頭 MUI X / AG Grid URL)。(來源:https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/data-grid/editing/editing.md?plain=1#L190)
+   * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;兩家就地編輯的 cite 見檔頭「就地編輯無 disabled 態」那兩行)。(來源:https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/docs/data/data-grid/editing/editing.md?plain=1#L190)
    * 永久唯讀值何時用此 prop 見 inline-edit.spec.md「editable 閘」;不用 disabled。
    */
   editable?: boolean
@@ -419,7 +419,7 @@ function InlineEditImpl<T = string>(
               type="button"
               aria-label={label ? `編輯 ${label}` : '編輯'}
               onClick={enterEdit}
-              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 :398 的 `[&:has(button:focus-visible)]:border-primary`)
+              // @focus-suppress C — C 隱形整列觸發器;承擔者:指示器在外層 div(見上方 inline-edit.tsx:404 的 `[&:has(button:focus-visible)]:border-primary`)
               className="absolute -inset-px cursor-text rounded-md focus-visible:outline-none"
             />
           )}

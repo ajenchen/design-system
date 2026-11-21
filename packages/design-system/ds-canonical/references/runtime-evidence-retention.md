@@ -2,7 +2,9 @@
 
 This policy owns the lifecycle of mutable audit, rollout, and review evidence below
 `<absolute-git-dir>/governance-runtime/evidence/`. That evidence supports current operations; it is
-not product authority, a permanent archive, or a reason to keep every attempted run forever.
+not product authority, a permanent archive, or a reason to keep every attempted run forever. The
+"Workspace runtime" section separately covers two disposable classes in the working-tree runtime
+directory `infra/governance/runtime/`.
 
 ## Scope and unit of retention
 
@@ -73,6 +75,39 @@ single-provider or self-attested audit may use `--require coverage`, which exits
 when every expected evidence artifact validates and `coverageStatus=complete`; it does not suppress
 findings or upgrade compliance/release authority.
 
+## Workspace runtime (`infra/governance/runtime/`)
+
+`infra/governance/runtime/` is a second runtime directory, inside the working tree. Its own
+`.gitignore` ignores everything except itself, so nothing written there is tracked, portable, or
+authority. The whole-run rules above are written for the Git-owned evidence root and grant no
+cleanup here. This section covers exactly two disposable classes. Every other file in the directory
+keeps the lifecycle its writer defines (for example the reconcile journal, consumer-fleet receipts,
+the all-harness receipt, and provider runtime-conformance staging evidence); this section grants no
+cleanup for those, and a sweep reports their names and bytes as unclassified instead of deleting
+them.
+
+| Class | Writer | Keep | Delete (whole files only) |
+|---|---|---|---|
+| Workflow-identity review proposal | `npm run governance:workflow-identities:propose -- --output <file>` | while it can still be applied: its `sourceRevision` equals the current `HEAD` commit and tree, **and** its `desired.beforeSha256` equals the SHA-256 of the current `infra/governance/desired/github.json` | as soon as either binding stops matching; `applyReviewedWorkflowIdentityProposal` refuses such a file anyway. A successful apply rewrites `desired/github.json`, so every applied proposal lands here. Also any leftover `.*.tmp` from an interrupted proposal write |
+| Benchmark cache, `benchmarks/` | `bash governance/benchmarks/fetch.sh` | the newest copy of each fetched file plus `last-fetch.txt`; `fetch.sh` already replaces each file in place | leftover `*.tmp` files, any dated or duplicate copy `fetch.sh` does not write, and `last-failure.jsonl` once `last-fetch.txt` is later than the `ts` of its last row (the newest run then succeeded completely) |
+
+Identify a proposal by its content (`"kind": "workflow-identity-review-proposal"`), not by its file
+name: `--output` accepts any name below the directory.
+
+**Who deletes.** The agent that wrote a proposal deletes it right after
+`governance:workflow-identities:apply-reviewed` succeeds, or when it abandons the change. A full/deep
+audit and knowledge-prune D10 sweep whatever is left with the same rules, as step 6 of the procedure
+below.
+
+**No partial deletion.** A proposal is exact canonical bytes bound to its `proposalDigest`; editing
+or trimming it makes it unparseable, not smaller. Delete whole files only: never trim rows out of
+`last-failure.jsonl` and never rewrite a proposal.
+
+**No automatic reclaimer, on purpose.** Re-running `--propose` on the current `HEAD` regenerates a
+deleted proposal and `fetch.sh` regenerates a deleted benchmark file, so a missed cleanup costs disk
+space, not evidence. A cleanup script would add one more writer to maintain without protecting
+anything.
+
 ## Deep-audit and prune procedure
 
 A full/deep audit and knowledge-prune D10 must:
@@ -81,7 +116,10 @@ A full/deep audit and knowledge-prune D10 must:
 2. validate the active pointer against the current target;
 3. enumerate direct references from rollout, release, readback, journals, and receipts;
 4. classify every observed run as preserved or whole-run reclaimable with its reason;
-5. autonomously perform high-confidence recoverable cleanup, then verify the remaining roots.
+5. autonomously perform high-confidence recoverable cleanup, then verify the remaining roots;
+6. classify every file below `infra/governance/runtime/` under "Workspace runtime", report its bytes
+   separately from the Git-owned evidence root, delete the whole files that section marks as
+   deletable, and list the rest as unclassified.
 
 Repository hygiene reports this ignored runtime separately from Git worktree topology. Git-tracked
 fixtures, baselines, release provenance, and archives continue to follow their owning policies and

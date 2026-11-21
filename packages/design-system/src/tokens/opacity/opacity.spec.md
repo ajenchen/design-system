@@ -6,9 +6,14 @@ Opacity 定義元件停用狀態的透明度，確保全系統 disabled 視覺�
 
 ## Token
 
+下表 utility 欄是允許清單的來源(閘 `scripts/token-allowlist-invariant.mjs` 驗 `../utility-registry.json` 的 `opacity.allow` 逐字相等)。
+
+<!-- opacity-scale:start -->
 | Token | 值 | Tailwind utility | 用途 |
 |-------|-----|-----------------|------|
 | `--opacity-disabled` | 0.45 | `opacity-disabled` | 所有元件的 disabled 狀態 |
+| —(不是 token)| 0 / 1 | `opacity-0` / `opacity-100` | 顯示 / 隱藏切換(淡入淡出的兩端、hover 才出現的動作鈕),**不是透明度角色**:只有全透明與不透明兩端,沒有「半透明」的中間值 |
+<!-- opacity-scale:end -->
 
 ## 使用規則
 
@@ -27,7 +32,7 @@ Opacity 定義元件停用狀態的透明度，確保全系統 disabled 視覺�
 
 0.45 在 light mode 和 dark mode 都能對 disabled 元件產生足夠辨識度（明顯區分於 active state）。「辨識」與「閱讀」是兩個不同要求：WCAG 2.1 SC 1.4.3 明文豁免 inactive UI component 的文字對比（無法定「可讀對比」門檻）；但 UX 上使用者仍須**辨識**出「這裡有一個控件、且目前停用」——0.45 服務的是辨識，不是閱讀。
 
-選 0.45 的位置: <!-- @benchmark-unverified -->
+選 0.45 的位置:
 
 - 比 **Material 0.38** 略亮(Material 在白底 dark text 0.38 太弱,DS 使用 lg / dark mode 共用一個值需折衷)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-comp-filled-button.scss#L46))
 - 比 **Atlassian 0.4** 稍亮(DS desktop 場景文字密集需更可辨識)([來源](https://unpkg.com/@atlaskit/tokens@20.9.0/dist/es2019/artifacts/themes/atlassian-light.js))
@@ -60,7 +65,7 @@ Tailwind 提供 `opacity-{5/10/20/30/40/50/60/70/80/90/95}` 百分比 ladder,但
 
 ## 消費者
 
-直接套用 `opacity-disabled` 的元件（grep 驗證 2026-07-16;Textarea 已全面 token-swap 化移除）：Avatar（Field disabled context self-dim）、Button（`aria-disabled` 分支）、MenuItem、Rating（disabled / loading 整塊）、Steps、Switch、DataTable（drag source 半透 + 整表 refresh loading reuse，經 `lib/drag-visual.ts`）、PersonDisplay（disabled 整塊,`person-display.tsx:139`）。
+直接套用 `opacity-disabled` 的元件（grep 驗證 2026-07-16;Textarea 已全面 token-swap 化移除）：Avatar（Field disabled context self-dim）、Button（`aria-disabled` 分支）、MenuItem、Rating（disabled / loading 整塊）、Steps、Switch、DataTable（drag source 半透 + 整表 refresh loading reuse，經 `lib/drag-visual.ts`）、PersonDisplay（disabled 整塊,`person-display.tsx:138`）。
 
 非消費者（曾誤列）：Slider / Sidebar 走灰階 token swap；Chip 無 opacity 用例；Field wrapper blanket 已移除（Avatar self-dim 取代，見 field-wrapper.tsx 註解）。
 

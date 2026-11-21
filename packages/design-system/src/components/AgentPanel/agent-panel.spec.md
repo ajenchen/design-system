@@ -24,13 +24,15 @@ traits:
 - **Layout Family**:self-contained 容器家族(面板=容器;各子元件按其節聲明消費對應 anatomy)。
 - **版面**:右欄固定寬 + chrome header + 卷軸訊息區 + 底部複合輸入(定案出處:上方提案規格 v4 六畫面)。
 
-## Token(本家族新增 3 個)
+## 動畫的值(本家族自己的值;2026-09-02 立時是 3 個共用 token,2026-11-15 收回元件)
 
-| Token | 值 | 家 | 出處 |
+| 值 | 用途 | 現在住哪 | 出處 |
 |---|---|---|---|
-| `--motion-easing-swell` | cubic-bezier(0.4,0.14,0.3,1) | motion.css (C) 循環動態 | 循環「起」;Carbon expressive 參考([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L171-L172)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L83)) |
-| `--motion-easing-settle` | cubic-bezier(0.2,0,0.38,0.9) | motion.css (C) 循環動態 | 循環「收」;Carbon productive 參考 |
-| `--motion-duration-shimmer` | 2s | motion.css (C) 循環動態 | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
+| cubic-bezier(0.4,0.14,0.3,1) | 循環「起」(標誌吸氣) | `agent-panel-logo.tsx` 的 `SWELL` | Carbon expressive 參考([來源](https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/elements/motion/overview.mdx#L171-L172)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L83)) |
+| cubic-bezier(0.2,0,0.38,0.9) | 循環「收」(標誌呼氣) | `agent-panel-logo.tsx` 的 `SETTLE` | Carbon productive 參考 |
+| 2s | 思考中文字微光一輪 | `agent-panel.css` `.agent-shimmer` | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
+
+**為什麼收回元件**:三顆原本叫 `--motion-easing-swell` / `--motion-easing-settle` / `--motion-duration-shimmer`、住共用的 `tokens/motion/motion.css`,但只有本家族在用 —— 前兩顆甚至沒有任何讀者(標誌的 SVG 動畫是 SMIL,讀不到 CSS 變數,實際生效的一直是 `SWELL` / `SETTLE` 字串),第三顆唯一讀者是微光那一行。照 `../../tokens/token-system.spec.md` 第 0 題「只有一個元件在用、又不切換的值不開全系統的名字」收回,值都不變(稽核 P07 / P10)。微光週期 2s 靠名字開頭 `--motion-duration-` 算動畫時長那一組的組員,是「一組」寬讀法的漏洞;規格改採窄讀法(同一用途的級距才算組員)。【AI 推導 2026-11-15:窄讀法是 AI 的選擇,user 沒有回覆稽核 P10 那一題】
 
 面板寬**沒有 CSS token**:預設 360 / 400 / 640 只住 `agent-panel.tsx` `AGENT_PANEL_WIDTH_MIN / DEFAULT / MAX`(與 `../AppShell/app-shell.spec.md`「版面規則」§1 同一份;400 = 稿全六畫面 rightSider 實測)。
 `--agent-panel-width`(2026-09-02 立)**2026-10-15 退役**:執行期從來沒有任何讀取者(元件一直用 JS 常數 400),同一個值兩個住所(M17;r1b 複驗 F8)——
@@ -195,10 +197,12 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 3. AgentConversation(訊息卷軸區)
 
-- ScrollArea(跨 OS 一致捲軸;Dialog body 同法)包 `flex-1`;內距 16(--layout-space-loose);**輪距 40**(我方↔代理)=
+- ScrollArea(跨 OS 一致捲軸;Dialog body 同法)包 `flex-1`;內距 16(--layout-space-loose;一般密度 16 / 大密度 24),上與左右同值、下見下一條 —— 第一則是我方氣泡時,它有底色、外框完整 → 照規則 2 表 bounded 那一列,標頭 → 它 = `loose`、上與左右對稱(這一段只管頂部;底部見下一條,恆 48、不看最後一則是誰 —— 不套規則 4 表 bounded → `loose` 那一列【AI 推導 2026-11-14】)(`../../tokens/layoutSpace/layoutSpace.spec.md`「元件角色」那段與規則 2 表;依據 user 2026-11-14 在 A5 成品頁的留言 ①,逐字住那一段);代理先開口(第一則是沒有底色的代理文字)時也是同一個值 —— 對話區只有一個上內距值,不知道第一則是誰;本規格不另訂,照該檔規則 2「適用範圍與量法三點」(1)「容器只有一個上內距、標頭底下第一個東西隨內容換的」那一句(那一句是【AI 推導 2026-11-14】;`scripts/header-first-gap-invariant.mjs` 那一格登記成例外 `loose`)。【更正 2026-11-14】2026-11-13(A5)把上內距改成 `tight`(12 / 16);留言 ① 說原本比較美觀(陳述)、並問這個理由是否成立(問句),AI 評估同意,已改回 2026-09-02 隨本規格入庫的 16 / 24;**輪距 40**(我方↔代理)=
   8+24(工具列 xs 高)+8,懸停工具列絕對定位於輪距內,出現不推擠。
 - **底部內距 = `--layout-space-bottom` 48**:捲到最底時,最後內容(常駐工具列)→ 輸入盒至少 48(user 2026-09-02 23:14
   「當聊天內容捲到最底時,那個工具列距離prompt input 應該至少要留 bottom (layout space token, 48px)的距離吧？」)。
+  對話區**不**宣告 `data-layout-body`(不讓容器依最後一則自判,維持恆 48;user 原話只講常駐工具列在最後的情況,「不看最後一則是誰」是【AI 推導 2026-11-14】);
+  `scripts/layout-body-edges-invariant.mjs` 以例外 `agent-conversation-end-48` 登記這一格(`scripts/layout-body-edges-exceptions.json`)。
 - **常駐判定 = 本元件**:直接子 `AgentMessage` 中最後一則 `role="agent"` 的工具列常駐(在流內佔位),
   其餘懸停/鍵盤聚焦時瞬間出現(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
 - **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(往上捲 = 正在讀舊訊息,不把人拉走);
@@ -221,7 +225,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   恆定(同 Select/Combobox 觸發器 chevron:select.tsx `text-fg-muted`),**不吃微光、不隨懸停變色**
   (Accordion 亦僅 chevron 靜色;2026-09-02 拍板)。
 - 微光:**僅文字**(標題字+正在寫入的最新一行);shadcn shimmer 參數(帶寬 3ch+40px、斜 20°([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L93)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L109)、[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/content/docs/utils/shimmer.mdx#L29))、
-  `--motion-duration-shimmer` linear);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
+  一輪 2s linear,值住 `agent-panel.css`);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
   reduced-motion 自停。**完成步驟靜態、色 `text-fg-secondary`**(次要層級,非 muted)。
 - 開合=Radix Collapsible + `disclosureMotion`(`tokens/motion/disclosure-motion.ts`,與 TreeView / Accordion 同一份):`--motion-duration-disclosure` 200ms、ease-out;收起後保持高度 0 直到卸載;減少動態不播。
 - A11y:標題=button + `aria-expanded`;內文不另設 aria-live(容器已是 live region)。
@@ -259,12 +263,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 8. AgentDecisionCard(決策卡)→ `agent-decision-card.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
-決策卡的外觀(繼承 Popover surface 配方 + SurfaceFooter)/ 選項卡與滑過 / 步進與跳過 / 產題守則 14 條,整段住在 `./agent-decision-card.spec.md`;本檔只留這個指標。
+決策卡的外觀(繼承 Popover surface 配方 + SurfaceFooter)/ 選項卡與滑過 / 步進與取消(× / Esc = 取消、不送答案)/ 產題守則 14 條 / 接 AI 的產品端,整段住在 `./agent-decision-card.spec.md`;本檔只留這個指標。
 
 ### 9. AgentDecisionSummary(決策回執)
 
 - 決策完成後在對話流中的靜態回執:`border-border rounded-md`;問題=fg-secondary、
-  答案=foreground。無互動。
+  答案=foreground。無互動。只用在**送出**;決策卡**取消**時沒有答案可列,對話只記一行取消(`./agent-decision-card.spec.md`「接 AI 的產品端」第 3 點;
+  展示頁「決策回執」兩種都畫,2026-11-15)。
 
 ### 附:歷史浮層(消費現成,不新增公開元件)
 
@@ -283,12 +288,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   今天/昨天/更早)+ CommandSeparator;無結果=`<Empty>`(CommandEmpty);搜尋列 `h-8 py-0`(列高 40 守 SelectMenu)。
 - 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,**瞬間出現、不淡入** —— 2026-09-26 待辦總帳 L9「全部瞬間」延伸到滑過才出現的按鈕,規則住 ItemSuffix;2026-09-26 前 150ms 淡入);**鍵盤(2026-09-25 待辦總帳 B9 路線乙,user 逐字「確定建議符合我們一致的設計語言且不違背世界級的設計就照建議」;規則住 `ds-canonical/references/keyboard-model-canonical.md`「列上有小按鈕的一串」)**:改名/刪除**不在 Tab 路上**(09-25 前 4 列 = 8 站);搜尋框 ↑↓ 移反白,插入點在字尾時 `→` 進反白列的「改名」、再 `→`「刪除」(停住),`←` 退一顆、第一顆 `←` 回搜尋框;鈕上 ↑↓ / Home / End = 回搜尋框並移反白;鈕上 Tab / Shift+Tab 一下離開這一串(浮層照舊在面板裡繞圈);鍵盤反白的那一列浮出改名/刪除,焦點進到鈕上時反白列的框讓給那顆鈕(一個項目一個指示器)——「插入點在字尾」條件(搜尋框的 `→` 仍要能移插入點)與「鍵盤反白列浮出」是 AI 推導;Esc 不規定(照舊關浮層)。
   **Enter / Space 在行內動作上 = 啟動該動作**,不是選列——cmdk 的 Enter=選列由 Command 根統一擋掉(`../Command/command.spec.md`「A11y」;2026-09-02 實測補時本元件另寫了一份,2026-09-26 收回 Command,待辦總帳〇節「按鍵規則合併」);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
-- 改名=Dialog(`height="hug"` 隨內容、寬 440 = DS 確認框/短表單慣例;Field「名稱」+Input 預填全選、`required`;
+- 改名=Dialog(`height="hug"` 隨內容、`width="sm"`(只有一件事 = 一個改名輸入框,`../Dialog/dialog.spec.md`「寬度檔位」;2026-11-15 前寫死 440);Field「名稱」+Input 預填全選、`required`;
   **驗證走 `useFormValidation`**(2026-10-01,待辦總帳 N70;`../Field/form-validation.spec.md` 更新類):沒改停用、改了亮、還原再停;焦點在欄位裡不報錯(規則 1)、
-  清空後直接按「取消」那一下不會被長出來的錯誤推走(規則 2 延後);**空白時「儲存」可按**,按了才顯示 FieldError「名稱不可空白」並把焦點移到欄位(規則 7 / 8;
-  原「空白時停用」查無 user 原話且與 hook 的 submitDisabled 衝突,AI 推導改寫);Enter=儲存;**Esc 分兩層**:改過名稱第一下 Esc 回復、第二下才關
+  清空後直接按「取消」那一下不會被長出來的錯誤推走(規則 2 延後);**空白時「儲存」停用**(`../Field/form-validation.spec.md`「Submit Button 狀態」第三列:
+  需要填的欄位只有名稱、唯一擋住的是空白 → hook 的 `soleRequiredField: 'title'` 算,與更新類的「沒改停用」並用;2026-11-17 起。2026-10-01 → 11-17 是「空白可按、
+  按了才報錯」—— 當時的理由是原「空白時停用」查無 user 原話,現在第三列有 user 2026-11-17 原話可依);Enter=儲存(空白時報 FieldError「名稱不可空白」、焦點留在欄位);**Esc 分兩層**:改過名稱第一下 Esc 回復、第二下才關
   (`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」),沒改直接關);
-  刪除=Dialog 危險樣式(`primary + danger`,同 hug/440)。
+  刪除=Dialog 危險樣式(`primary + danger`,同 hug / `width="sm"`:一句確認)。
   **刪當前對話契約**(consumer 實作,spec 定義):切到最近一則;全空→空狀態(NewConversation)。
 - 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發(開啟時 `captureFocusOrigin` 記下行內動作鈕、關閉時 `returnFocusToOpener` 還,找不到就走標題觸發這條 fallback;2026-09-30 前是關閉後 `setTimeout 0` 聚焦標題的另一份實作)。
 - 所有 callback(`onSelectConversation` / `onRenameConversation` / `onDeleteConversation`)可省略,列與動作仍渲染(固定 anatomy 律)。
@@ -296,7 +302,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 ### 附:空狀態
 
 - 問候區圖示位=`<AgentLogo state="attract" size={48}>`(招喚態邀請開始);
-  其餘照既有 Empty 元件(icon slot)。
+  其餘照既有 Empty 元件(icon slot)。位置與內距:空狀態放在 Anatomy 中間那一格(沒有訊息時取代 AgentConversation),**在標頭與輸入框之間的可用範圍正中**(標頭底 → 空狀態頂 = 空狀態底 → 輸入框頂;`../Empty/empty.spec.md`「垂直定位」有框 → 垂直置中 —— 面板有標題列與邊線,算有框【AI 推導 2026-11-13】),包層上下不給內距:垂直置中的狀態不套規則 2 / 4 的上下距離(SSOT = `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 2「適用範圍與量法三點」(3),依據 user 2026-11-14 在 A5 成品頁的留言 ②,逐字住那一點)。左右留 `--layout-space-loose`【AI 推導 2026-11-14】:現況字到面板左右邊都是 86,看不出差別;只在面板很窄、說明很長時擋住字貼邊(`../Empty/empty.spec.md`「文字不限寬」:行寬由容器 padding 控制)。【更正 2026-11-14】2026-11-13(A5)包層補過上 `tight` / 下 `bottom`(說是「跟對話區同一組」),空狀態比正中高 18 / 16px,已拿掉。DS 元件本身沒有空狀態容器,這個包層目前住在範例輔助檔 `stories-helpers/scene/agent-demo.tsx` 的 `DemoConversation`;由 `scripts/header-first-gap-invariant.mjs`(置中格:上下兩段相等)與 `scripts/header-content-sides-invariant.mjs`(左右 = loose)機械檢查。
 
 ## AgentLogo(標誌;附屬資產)→ `agent-panel-logo.spec.md`(2026-09-27 抽出,獨立 SSOT)
 
@@ -319,7 +325,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 |---|---|---|
 | 面板開合 | 淡入+右滑 | `--motion-duration-surface` 250ms |
 | 浮層遮罩(AI agent 為浮層時)| 淡入,與面板同相 | `--motion-duration-surface` 250ms;減動作停 |
-| 訊息/決策卡/送出↔停止 進場 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
+| 訊息/決策卡/送出↔停止 進場 | 淡入(+ 8px 位移,值由元件的 tw-animate-css 幾何 class 帶;原寫的 `--motion-enter-distance` 從沒被讀過、2026-11-15 退場) | `--motion-duration-overlay` 150ms |
 | 非最後一則的工具列(懸停/聚焦才出現) | 瞬間出現(滑過造成的變化不做過渡) | 0 |
 | 思考塊開合 | Radix Collapsible + disclosureMotion | `--motion-duration-disclosure` 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
@@ -373,6 +379,7 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 浮層 | 在面板內,裡面沒有任何浮層 | **關閉面板**(= ×:開關紀錄變關;對話、草稿、閱讀位置保留,見「關閉不等於卸載」;決策卡關掉 ≠ 回答,重開時還在);焦點回入口鈕 | — |
 | 浮層 | 底下壓著有網址的 modal、焦點在面板 | 關閉面板,modal 留著(與點遮罩的 a 案同一個結果) | 交給露出來的 modal |
 | 浮層 | 輸入法組字中 | 只取消組字,什麼都不關(`../../lib/ime-composition.ts`) | 照上列 |
+| 任一 | 焦點在決策卡裡(2026-11-15;**先於上面兩列「裡面沒有任何浮層」**—— 卡片自己算一層) | **取消決策卡**(= 卡片的 ×:不送答案,`./agent-decision-card.spec.md`「關閉」條);焦點回對話輸入框,面板不動。來源:AI 依 user 2026-11-11 問句「我覺得我們的x其實才是取消和esc之類的吧？」落地【AI 推導 2026-11-15】,不在上方「決定來源」那次核准裡 | 照上列(焦點已在輸入框) |
 | 任一 | 焦點在面板裡改過、還沒存的欄位 | 欄位自己那一層先(`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」;宣告了卻沒認領的那一下照常往下關,不困住使用者) | 照上列 |
 | 任一 | 焦點在面板外(Menu / Main / Dialog)且那裡開著浮層 | 關該區自己的浮層,不跨區碰面板(作用域封閉在焦點所在區) | — |
 
@@ -399,7 +406,8 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 
 - ❌ 手刻 chrome header / 浮層殼 / row 結構(必消費 ChromeHeader / overlay-surface /
   MenuItem 家族)。
-- ❌ AgentDecisionCard 加 Esc / 外點關閉(阻擋語意)。
+- ❌ AgentDecisionCard 加外點關閉(卡片不是浮層,點對話區是在讀不是取消;Esc 2026-11-15 起 = 取消,見 `./agent-decision-card.spec.md`「關閉」條。
+  2026-11-15 前本條是「加 Esc / 外點關閉(阻擋語意)」—— × 當時是「用建議繼續」,Esc 沒有對應的動作;× 改成取消後,Esc 照鍵盤總則算同一個動作)。
 - ❌ 標誌動畫另立第三種本體語言(蓄勢=招喚態同款;「變淡」已於 2026-09-02 收斂棄用)。
 - ❌ 附件在氣泡內用 Tag 或 FileItem(送出後=Chip assist 視覺;輸入中才是 Tag)。
 - ❌ 思考塊微光套到已完成步驟(僅標題+最新一行)。
@@ -416,9 +424,9 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 
 - `hasVariants=false`:家族各元件無視覺 variant 軸(結構分支如 Chip assist 屬 Chip 元件)。
 - `hasSizes=false`:面板寬/列高/鈕尺寸全由消費的 primitive/token 決定,無獨立 size 軸。
-- Field 家族空值/驗證:AgentPromptInput 空值時送出鈕不可按(剛送出而變空的那一刻送出鈕握著焦點 → 不轉原生 disabled、焦點留在原鈕,
-  `../Button/button.tsx` 可聚焦的停用);改名 Dialog 走 form-validation 更新類規則(未異動停用/dirty 亮/還原再停;空白可按、按了報錯並移焦點 ——
-  2026-10-01 前這裡寫「空白時一併停用,避免可按卻無反應」,查無 user 原話,且 hook 下按了會報錯移焦點,前提不成立,見上方「改名」條)。
+- Field 家族空值/驗證:AgentPromptInput 只有一個要填的欄位,照 `../Field/form-validation.spec.md`「Submit Button 狀態」第三列(需要填的欄位只有一個)—— 空白時送出鈕不可按(2026-11-17 起規則住該處,本條只是套用;剛送出而變空的那一刻送出鈕握著焦點 → 不轉原生 disabled、焦點留在原鈕,
+  `../Button/button.tsx` 可聚焦的停用);改名 Dialog 走 form-validation 更新類規則(未異動停用/dirty 亮/還原再停)+ 第三列(需要填的欄位只有一個:空白時停用,
+  `soleRequiredField`;2026-11-17 起,見上方「改名」條)。
 
 ## Loading / 無障礙預設
 
@@ -444,6 +452,8 @@ window 結構上一定早於它)。「這一下 Esc 該不該關浮層」全 DS 
 - `agent-panel-fab.spec.md`
 - `agent-panel-logo.spec.md`
 - `app-shell.spec.md`
+- `empty.spec.md`
+- `layoutSpace.spec.md`
 - `motion.spec.md`
 - `overflow-indicator.spec.md`
 - `toast.spec.md`

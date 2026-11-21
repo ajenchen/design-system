@@ -12,8 +12,8 @@
  *   H2 上限 = 視窗高 − inset×2,且**小於視窗高**
  *   H3 `height="hug"` 真的隨內容長高(內容少就矮),`fill` 不隨內容變
  *   H4 `maxHeight` 只能更矮:傳比視窗大的值不得超過視窗;傳小的值要生效
- *   H5 視窗變矮時「內容溢出走 body 捲動」(`dialog.spec.md`「maxWidth」逐字)——**每一支 dialog story** 都要
- *      (a) 沒有任何後代畫到容器外(容器自己 `overflow: hidden`,對齊 `overlay-surface.tsx:182-184`
+ *   H5 視窗變矮時「內容溢出走 body 捲動」(`dialog.spec.md`「父層契約」逐字)——**每一支 dialog story** 都要
+ *      (a) 沒有任何後代畫到容器外(容器自己 `overflow: hidden`,對齊 `overlay-surface.tsx:173-175`
  *          明文要求的父層契約:「parent…是 flex flex-col + max-h + overflow-hidden」)
  *      (b) 內容搆得到:捲動區 `scrollHeight > clientHeight` 時,捲到底之後最後一個互動元素要完整可見
  *      H5 是 2026-09-12 user 截圖「dialog body 內容超出容器」的防線。當時 H1-H4 全綠 ——
@@ -48,6 +48,8 @@ const SELFTEST = process.argv.includes('--selftest')
 const SELFTEST_H5 = process.argv.includes('--selftest-h5')
 const VH = 800
 const INSET = 48
+/** --selftest 要從送出的 bundle 拿掉的那段高度上限字面(dialog.tsx DIALOG_BLOCK_HEIGHT;2026-11-15 前是 `calc(100svh - `) */
+const DIALOG_HEIGHT_CAP = 'min(100svh, 100%)'
 const AVAILABLE = VH - INSET * 2 // 704
 
 // 沒有建置 → MISSING-BUILD exit 2(缺前置;lib/launch-browser.mjs 的共用標記,gate-selftest-meta 認得)。原本直接 ENOENT 崩掉。
@@ -74,7 +76,7 @@ const recordInstrument = (id, error) => {
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: VH } })
   if (SELFTEST && !SELFTEST_H5) {
-    // 把兩種模式共用的上限拿掉(`calc(100svh - …)` 換成一個永遠夾不住的值)。
+    // 把兩種模式共用的上限拿掉(`calc(min(100svh, 100%) - …)` 的上限那段換成一個永遠夾不住的值)。
     // **路由所有 .js 不是只路由 dialog-*.js**(2026-09-11):CI 的 chunk 切法跟本機不同,
     // 只比對檔名會整個漏掉 —— 那一跑對照組沒生效、`fail` 是 0,腳本卻印「如預期紅」並 exit 1(訊息與事實相反)。
     await page.route((u) => u.pathname.endsWith('.js'), async (route) => {
@@ -87,7 +89,9 @@ try {
         routeRetries++
         try { await fetchBody() } catch { return route.abort('failed').catch(() => {}) }
       }
-      if (body.includes('calc(100svh - ')) { patchedChunks++; body = body.split('calc(100svh - ').join('calc(100000px - ') }
+      // 2026-11-15(A18)起可用高 = `calc(min(100svh, 100%) - …)`(dialog.tsx DIALOG_BLOCK_HEIGHT:所在區塊高與 svh 取小);
+      // 換掉的是這一段字串 —— 不論打包時常數有沒有被內聯進模板字串,字面都還在
+      if (body.includes(DIALOG_HEIGHT_CAP)) { patchedChunks++; body = body.split(DIALOG_HEIGHT_CAP).join('100000px') }
       return route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'application/javascript' } })
         .catch(() => route.abort('failed').catch(() => {}))   // 頁面已換頁 / 請求已取消:同上,交給 openStory 判定,不讓閘崩掉
     })
@@ -119,8 +123,15 @@ try {
       if (!d) return null
       const cs = getComputedStyle(d)
       const body = d.querySelector('[data-dialog-body]')
+      // 上限的**像素值**:2026-11-15(A18)起上限式子含所在區塊的百分比(`min(100svh, 100%)`),computed max-height 回的是
+      // 未解開的 calc 字串、不是 px —— parseFloat 會得 NaN。把同一個上限套到一個與對話框同一個所在區塊的 fixed 探針上量出實際高(M32:量像素)。
+      const probe = document.createElement('div')
+      probe.style.cssText = `position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:${cs.maxHeight}`
+      d.parentElement.appendChild(probe)
+      const maxHpx = Math.round(probe.getBoundingClientRect().height)
+      probe.remove()
       return { h: Math.round(d.getBoundingClientRect().height), top: Math.round(d.getBoundingClientRect().top),
-        bottom: Math.round(d.getBoundingClientRect().bottom), maxH: cs.maxHeight, cssH: cs.height,
+        bottom: Math.round(d.getBoundingClientRect().bottom), maxH: cs.maxHeight, maxHpx, cssH: cs.height,
         bodyScroll: body ? body.scrollHeight : null }
     })
   }
@@ -138,9 +149,9 @@ try {
 
   if (h1to4 && short && longC) {
     ck(`H1 兩種模式回報同一個上限(hug=${short.maxH} / fill=${longC.maxH})`, short.maxH === longC.maxH, `${short.maxH} vs ${longC.maxH}`)
-    const capPx = Math.round(parseFloat(short.maxH))
+    const capPx = short.maxHpx
     ck(`H2 上限 = 視窗高 − inset×2 = ${AVAILABLE}px,且 < 視窗高 ${VH}px`,
-       Math.abs(capPx - AVAILABLE) <= 1 && capPx < VH, `量到 ${short.maxH}`)
+       Math.abs(capPx - AVAILABLE) <= 1 && capPx < VH && longC.maxHpx === capPx, `量到 ${capPx}px(hug)/ ${longC.maxHpx}px(fill);式子 ${short.maxH}`)
     ck('H3 hug 真的隨內容長高(確認框遠矮於上限)', short.h < AVAILABLE * 0.6, `確認框 ${short.h}px vs 上限 ${AVAILABLE}px`)
     ck('H3 fill 不隨內容變(長內容 = 上限)', Math.abs(longC.h - AVAILABLE) <= 2, `長內容 ${longC.h}px`)
     ck('H2 兩種模式都沒有溢出視窗', short.top >= 0 && short.bottom <= VH && longC.top >= 0 && longC.bottom <= VH,
@@ -281,7 +292,7 @@ if (SELFTEST_H5) {
 if (SELFTEST) {
   // 對照組要能宣稱「儀器有效」,必須同時成立:(a) 真的改寫到了 chunk (b) 改寫之後真的紅了。
   // 少了 (a) 就只是「什麼都沒做所以沒紅」,那不是證據。
-  if (patchedChunks === 0) { console.log(`\n✗ 對照組沒有生效:沒有任何 chunk 含 \`calc(100svh - \`(chunk 切法變了?)——這次什麼都沒驗到`); process.exit(1) }
+  if (patchedChunks === 0) { console.log(`\n✗ 對照組沒有生效:沒有任何 chunk 含 \`${DIALOG_HEIGHT_CAP}\`(chunk 切法或 dialog.tsx 的上限寫法變了?)——這次什麼都沒驗到`); process.exit(1) }
   if (!preconditionOk) { console.log(`\n✗ 對照組前提失敗:dialog 沒開起來 —— 紅的是前提不是 H2 / H4,什麼都沒驗到`); process.exit(1) }
   if (fail === 0) { console.log(`\n✗ 對照組改寫了 ${patchedChunks} 個 chunk,但斷言全過 —— 儀器該紅卻沒紅`); process.exit(1) }
   console.log(`\n✓ 對照組:改寫 ${patchedChunks} 個 chunk 拿掉上限後,${fail} 條斷言如預期紅(儀器有效)${routeRetries ? `;轉送 .js 重送 ${routeRetries} 次` : ''}`)

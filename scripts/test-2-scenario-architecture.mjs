@@ -15,9 +15,10 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, lstatSync, readFileSync, rmSync, mkdtempSync, readdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
+import { buildProviderAdapterTargets } from './gen-codex-adapter.mjs'
 import {
   assertRuntimeDependencyClosureDirectory,
   assertRuntimeDependencyClosureEntries,
@@ -121,6 +122,16 @@ if (sbMain?.includes('sharedStoryGlobs') && sbMain?.includes("'../apps/**/*.stor
 
 // A4: canonical corpus is present, and Claude's native discovery adapter is materialized exactly
 // where the canonical provider registry declares it. The adapter proves delivery only, not ownership.
+// "Materialized" is read from the same function governance:generate writes the adapter from
+// (gen-codex-adapter.mjs buildProviderAdapterTargets): every file it would write under a
+// registry-declared Claude path must be present in this checkout as a regular file. A directory
+// existing is not that property (M37): a managed tree with zero residents (commands, whose charter
+// README is excluded by repositoryManagedTreeExcludes) materializes no file, so a fresh checkout has
+// no directory at all (git does not track empty directories) while an authoring checkout that ran
+// governance:generate has an empty one. Neither delivers anything and both are correct; checking
+// the directory made the weekly canary red on every fresh checkout and green only after generate.
+// Only a repositoryManagedTrees entry may materialize nothing; an instruction entry, hook config or
+// skill directory with no generated file is a broken declaration and fails.
 const providerRegistry = readJson(PROVIDER_REGISTRY_PATH)
 const canonicalHomes = Object.values(providerRegistry?.canonical?.roots || {})
 const claudeProvider = providerRegistry?.providers?.find((provider) => provider.id === 'claude' && provider.adapter?.generate)
@@ -130,12 +141,35 @@ const claudeAdapterPaths = claudeProvider ? [
   claudeProvider.skillDirectory,
   ...Object.values(claudeProvider.adapter.repositoryManagedTrees || {}),
 ].filter(Boolean) : []
+const claudeManagedTrees = new Set(Object.values(claudeProvider?.adapter?.repositoryManagedTrees || {}))
+let claudeAdapterFiles = []
+let claudeAdapterError = null
+if (claudeProvider) {
+  try {
+    claudeAdapterFiles = buildProviderAdapterTargets({ providerIds: ['claude'] }).targets
+      .map((target) => relative(REPO_ROOT, target.path).split(sep).join('/'))
+  } catch (error) {
+    claudeAdapterError = error.message
+  }
+}
+const claudeMaterialization = claudeAdapterPaths.map((declared) => ({
+  declared,
+  files: claudeAdapterFiles.filter((file) => file === declared || file.startsWith(`${declared}/`)),
+}))
+const claudeAdapterMissing = claudeMaterialization.flatMap(({ files }) => files.filter((file) => {
+  const path = join(REPO_ROOT, file)
+  return !existsSync(path) || !lstatSync(path).isFile()
+}))
+const claudeAdapterEmpty = claudeMaterialization.filter(({ files }) => files.length === 0).map(({ declared }) => declared)
+const claudeAdapterUnmaterialized = claudeAdapterEmpty.filter((declared) => !claudeManagedTrees.has(declared))
+const claudeAdapterFileCount = claudeMaterialization.reduce((sum, { files }) => sum + files.length, 0)
 const canonicalReadable = canonicalHomes.length > 0 && canonicalHomes.every((path) => existsSync(join(REPO_ROOT, path)))
-const claudeAdapterReadable = claudeAdapterPaths.length > 0 && claudeAdapterPaths.every((path) => existsSync(join(REPO_ROOT, path)))
+const claudeAdapterReadable = !claudeAdapterError && claudeAdapterPaths.length > 0 && claudeAdapterFileCount > 0
+  && claudeAdapterMissing.length === 0 && claudeAdapterUnmaterialized.length === 0
 if (canonicalReadable && claudeAdapterReadable) {
-  pass_test('A4', `canonical governance corpus + registry-declared Claude adapter readable(Scenario A 不需 /plugin install)`)
+  pass_test('A4', `canonical governance corpus + registry-declared Claude adapter readable(生成程式要寫的 ${claudeAdapterFileCount} 個檔都在;居民 0、不產檔的受管樹:${claudeAdapterEmpty.join(', ') || '無'};Scenario A 不需 /plugin install)`)
 } else {
-  fail_test('A4', 'canonical governance corpus or registry-declared Claude adapter missing', `canonical=${canonicalReadable};adapter=${claudeAdapterReadable}`)
+  fail_test('A4', 'canonical governance corpus or registry-declared Claude adapter missing', `canonical=${canonicalReadable};adapter=${claudeAdapterReadable};generator-error=${claudeAdapterError || 'none'};missing=${claudeAdapterMissing.join(',') || 'none'};declared-but-never-generated=${claudeAdapterUnmaterialized.join(',') || 'none'}`)
 }
 
 // A5: apps/template/package.json DS dep `*`(workspace resolution)

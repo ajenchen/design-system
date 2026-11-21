@@ -132,7 +132,7 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 - **Loading**:Notice 非 async surface,無 loading state。Body 內若 consumer 注入 CTA Button,該 Button 自行處理 loading。
 - **Empty**:Notice 的 `title` 為必填(TypeScript required prop,消費合約),`description` 選填;layout 至少 1 行 title 內容。誤傳空字串時照常 render(無 runtime warn / throw),空 title 的內容責任在 consumer(Alert / Toast)。`neutral` variant 不渲 status icon 時即為 title-only icon-less 形態(見 `NeutralTitleOnly` story),仍合法 render。
 - **Icon-only / variant=neutral**:`neutral` variant 不渲 status icon,layout 自動收斂為 `[title + description?]  [endContent?]  [dismiss X?]` 三 slot。
-- **`dismissible` 無 `onDismiss`**(2026-07-05 D4):X 渲染條件 = `dismissible`(預設 true)**且**有傳 `onDismiss`——Notice / Alert 為 controlled-only(不自我移除),無 handler 的 X 是可 focus、SR 播報「關閉通知」但按下零反應的死按鈕(假 affordance)。對齊 Polaris Banner(`onDismiss` 存在才顯示 X,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L164)/ Ant Alert(`closable` 預設 false)。顯式傳 `dismissible={true}` 卻缺 `onDismiss` 時 dev-only `console.warn` 提示(預設未傳不吵)。
+- **`dismissible` 無 `onDismiss`**(2026-07-05 D4):X 渲染條件 = `dismissible`(預設 true)**且**有傳 `onDismiss`——Notice / Alert 為 controlled-only(不自我移除),無 handler 的 X 是可 focus、SR 播報「關閉通知」但按下零反應的死按鈕(假 affordance)。對齊 Polaris Banner(`onDismiss` 存在才顯示 X,https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L164)/ Ant Alert(`closable` 預設 `false`,[index.en-US.md#L49](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/index.en-US.md#L49))。顯式傳 `dismissible={true}` 卻缺 `onDismiss` 時 dev-only `console.warn` 提示(預設未傳不吵)。
 
 ---
 

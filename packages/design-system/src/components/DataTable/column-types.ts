@@ -61,11 +61,11 @@ declare module '@tanstack/react-table' {
     type?: ColumnType
     /** Override default alignment from column type */
     align?: 'left' | 'right' | 'center'
-    /** Allow text wrapping (only effective when autoRowHeight is true) */
+    /** Allow text wrapping (only effective when the table has rowHeight="hug") */
     wrap?: boolean
     /**
      * Max visible lines before ellipsis(2026-05-14 I9 per codex verdict + user 拍板)。
-     * Only effective when `autoRowHeight + wrap=true`。view 用 `line-clamp-N`,edit textarea
+     * Only effective when `rowHeight="hug"` + `wrap=true`。view 用 `line-clamp-N`,edit textarea
      * 高度 match clamp。對齊 Notion 「Truncate」row toggle / AG Grid `cellClassRules` 上限 row height。
      * Default = undefined(無 clamp,完整 wrap)。
      */
@@ -157,7 +157,7 @@ declare module '@tanstack/react-table' {
      * - string / number / currency:click cell → inline `<Input>` autoFocus + selected
      * - date / select / multiSelect / person / multiPerson:click cell → 進 edit mode 的 Field control(用戶按 trigger 開 picker)
      * - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
-     * - url:read = 連結(只有網址文字寬)+ 滑過格 / 鍵盤聚焦時出現的 Pencil;點網址文字開連結,點格的其他地方或 Pencil 進 `<Input>` edit mode
+     * - url:read = 連結(盒子只有網址文字寬,點擊範圍延伸到整格)+ 滑過格 / 鍵盤聚焦時出現的 Pencil;格裡 Pencil 以外開連結,Pencil 進 `<Input>` edit mode(空值 / 不是網址時點格也進)
      *
      * Esc cancel / blur or Enter commit。Commit 觸發 `onCellCommit`。
      */

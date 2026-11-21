@@ -4,7 +4,7 @@
     "type": "git",
     "url": "git+https://github.com/ajenchen/design-system.git"
   },
-  "version": "0.1.0-beta.148",
+  "version": "0.1.0-beta.149",
   "private": false,
   "description": "World-class design system — components, patterns, tokens, hooks (single source of truth for team distribution).",
   "type": "module",
@@ -25,6 +25,7 @@
     "!**/*.pyc",
     "cli-init.mjs",
     "ds-story-manifest.json",
+    "ds-changes.json",
     "llms.txt",
     "llms-full.txt",
     "tools"
@@ -54,6 +55,7 @@
     "./styles/tokens": "./src/styles/tokens.css",
     "./package.json": "./package.json",
     "./ds-story-manifest.json": "./ds-story-manifest.json",
+    "./ds-changes.json": "./ds-changes.json",
     "./llms.txt": "./llms.txt",
     "./llms-full.txt": "./llms-full.txt",
     "./tools/codemods": "./tools/codemods/index.mjs",

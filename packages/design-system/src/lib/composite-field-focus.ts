@@ -32,7 +32,25 @@
  * 所以一次離開不管從哪一邊量到,consumer 的 `onBlur` 都只跑一次。
  * 世界級:React Aria useSelect 觸發鈕與選單**兩邊**都接 blur、選單那邊「only if focus moved outside the menu」才轉給 consumer
  * (https://github.com/adobe/react-spectrum/blob/956ecbcb8803f0d0d5d5d973bb169d70c52aea02/packages/react-aria/src/select/useSelect.ts#L244-L251、#L271-L278)。
+ *
+ * **「這個欄位自己的浮層開著」的記號也由這裡寫**(2026-11-13;`FIELD_OPEN_ATTR` = `data-field-open`,`fieldOpenProps`):同一個想法的視覺那一半 ——
+ * 欄位自己的浮層開著時外框維持聚焦的樣子(field.spec.md「Field state machine」表;樣式住 `components/Field/field-wrapper.tsx`)。
+ * 兩半認的範圍不同:blur 那一半另含 `extra` 零件(Combobox「+N」浮出清單);記號只跟**主浮層**(選單 / 月曆 / 時間面板)的 open 走。
+ * 外框**不認** Radix 通用的 `data-state="open"`:那個屬性任何一層 Trigger 都會寫,外面的浮層(Tooltip / Popover / DropdownMenu / 導覽提示)
+ * 把欄位元件當觸發點時,Radix Slot 會把外面那層的 `data-state` 蓋到欄位外框上(子元素自己的 prop 贏)→ 外面開著欄位假藍(Tooltip 除外:
+ * 它寫的值是 delayed-open / instant-open)、外面包了任何一層(含 Tooltip)欄位自己開著卻是灰的(2026-11-13 實測 84 格:假藍 35 / 35、假灰 36 / 42)。
+ * **誰掛記號**:每個欄位的外框宿主自己展開 `fieldOpenProps(open)`,而且寫在 consumer 傳進來的 props **之後** ——
+ * 不經 PopoverTrigger 轉送(Slot 合併時子元素自己的 prop 贏,連 undefined 也贏:外面傳同名屬性就能讓欄位假開或把記號蓋掉;
+ * 而且 SelectMenu 的觸發點不一定是欄位,轉送會把記號寫到按鈕上)。現有 5 處:Select / Combobox(PeoplePicker 走這兩支)/ DatePicker / 日期區間 / TimePicker。
  */
+
+/** 「欄位自己的浮層開著」的記號(屬性存在 = 開著;同 `data-field-invalid` / `data-field-disabled` 的寫法)。唯一寫入者 = 本模組的 `fieldOpenProps`。 */
+export const FIELD_OPEN_ATTR = 'data-field-open'
+
+/** 要掛在欄位外框宿主上的記號 props。由外框自己展開、寫在 consumer 的 props 之後(見檔頭最後一段「誰掛記號」)。 */
+export function fieldOpenProps(open: boolean | undefined): { 'data-field-open': '' | undefined } {
+  return { [FIELD_OPEN_ATTR]: open ? '' : undefined } as { 'data-field-open': '' | undefined }
+}
 
 import * as React from 'react'
 

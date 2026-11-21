@@ -131,16 +131,15 @@ if (AUTO_START && STATIC_STORYBOOK) {
   console.error('[visual-audit] --auto-start 與 --static 二擇一')
   process.exit(1)
 }
-// Dim 51 theme/density matrix。`theme-density-rtl` 僅保留為 legacy CLI alias；
-// RTL 明確不支援，不得把 alias 名稱誤當 RTL coverage。現行矩陣只跑
-// (light / dark) × (density-md / density-lg) 共 4 cells。
+// Dim 51 theme/density matrix。現行矩陣只跑 (light / dark) × (density-md / density-lg) 共 4 cells;
+// RTL 明確不支援(舊 CLI 別名 `theme-density-rtl` 2026-11-15 拿掉:repo 內 0 個呼叫者,名字還會被誤當 RTL coverage)。
 // Storybook globals 對齊 .storybook/preview.tsx 的 theme={light|dark}、density={md|lg}。
-const MATRIX = ARGS_KV['--matrix'] // 'theme-density' | 'theme-density-rtl'(舊名,同義)| undefined
+const MATRIX = ARGS_KV['--matrix'] // 'theme-density' | undefined
 // 2026-06-11 dim 51 真落地:MATRIX_CELLS 原為 dead code(定義後 main loop 從未消費 = doc-claim ≠ code)。
 // 同時修 cell 清單造假:preview.tsx globals 真值只有 theme{light,dark} × density{md,lg} —
 // 原 hc / dir:rtl cell 注入未知 global = Storybook 靜默忽略 = 截到的其實是 light/ltr(假覆蓋)。
 // RTL 已明確不支援；high-contrast 也尚無 baseline 槽。兩者都不得虛構為現行 coverage。
-const MATRIX_CELLS = MATRIX === 'theme-density' || MATRIX === 'theme-density-rtl'
+const MATRIX_CELLS = MATRIX === 'theme-density'
   ? [
       { theme: 'light', density: 'md', label: 'light-md' },
       { theme: 'dark', density: 'md', label: 'dark-md' },

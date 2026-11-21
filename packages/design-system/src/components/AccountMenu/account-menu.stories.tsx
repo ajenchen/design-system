@@ -3,6 +3,7 @@
 //  故本檔照 M23(d) 抄 production baseline 結構 + cite,不 cross-folder import demo helper)
 import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 
@@ -21,7 +22,7 @@ const noop = () => {}
 // 示範資料對齊 AppShell demo baseline(Alan Chen / EMP-1001,真實業務場景)
 const DEMO_USER = {
   name: 'Alan Chen',
-  avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' as const },
+  avatar: { src: demoPersonPhoto('Alan Chen', 48), color: 'blue' as const },
 }
 
 // ── 全域標頭帳號入口(primary-header globalHeader 右側 canonical 位置)──

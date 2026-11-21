@@ -4,7 +4,7 @@
   "title": "Standard five-step live CI evidence observation",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "kind", "profile", "planSha256", "observedAt", "runBinding", "authority", "release", "npm", "consumers", "dimensions"],
+  "required": ["schemaVersion", "kind", "profile", "planSha256", "observedAt", "runBinding", "authority", "release", "npm", "consumers", "consumerSelection", "dimensions"],
   "properties": {
     "schemaVersion": {"const": 1},
     "kind": {"const": "standard-five-step-live-ci-observation"},
@@ -15,7 +15,8 @@
     "authority": {"$ref": "#/$defs/authority"},
     "release": {"$ref": "#/$defs/release"},
     "npm": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"$ref": "#/$defs/npmPackage"}},
-    "consumers": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/consumer"}},
+    "consumers": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"$ref": "#/$defs/consumer"}},
+    "consumerSelection": {"$ref": "#/$defs/consumerSelection"},
     "dimensions": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/dimension"}}
   },
   "$defs": {
@@ -81,6 +82,21 @@
       "type": "object", "additionalProperties": false,
       "required": ["repositoryId", "role", "repository", "defaultBranch", "protectedMain", "sourcePullRequest", "sourceWorkflow", "packageLock", "auditWorkflow", "requiredCheck"],
       "properties": {"repositoryId": {"$ref": "#/$defs/nonEmpty"}, "role": {"enum": ["template-mirror", "product-consumer"]}, "repository": {"$ref": "#/$defs/nonEmpty"}, "defaultBranch": {"$ref": "#/$defs/nonEmpty"}, "protectedMain": {"type": "object", "additionalProperties": false, "required": ["head", "tree"], "properties": {"head": {"$ref": "#/$defs/gitOid"}, "tree": {"$ref": "#/$defs/gitOid"}}}, "sourcePullRequest": {"$ref": "#/$defs/pullRequest"}, "sourceWorkflow": {"$ref": "#/$defs/workflowRun"}, "packageLock": {"type": "object", "additionalProperties": false, "required": ["path", "sha256", "packages"], "properties": {"path": {"const": "package-lock.json"}, "sha256": {"$ref": "#/$defs/sha256"}, "packages": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/lockPackage"}}}}, "auditWorkflow": {"$ref": "#/$defs/workflowIdentity"}, "requiredCheck": {"$ref": "#/$defs/check"}}
+    },
+    "consumerSelection": {
+      "description": "這次發版實際被選中升級的 consumer 由 scripts/lib/release-consumer-selection.mjs 決定(與 release:auto 第五步同一支)。requested = RELEASE_REQUESTED_CONSUMERS;沒被選中的記在 notRequested(本次未要求升級),不得默默消失。user 2026-11-05 原話:「以後WM的升級都不要自動做除非我有特別要求」。",
+      "type": "object", "additionalProperties": false,
+      "required": ["requested", "notRequested"],
+      "properties": {
+        "requested": {"type": "array", "items": {"$ref": "#/$defs/nonEmpty"}},
+        "notRequested": {"type": "array", "items": {"$ref": "#/$defs/notRequestedConsumer"}}
+      }
+    },
+    "notRequestedConsumer": {
+      "description": "本次未要求升級的 on-request consumer:不讀回、不要求升級證據,但必須留下這一筆紀錄。",
+      "type": "object", "additionalProperties": false,
+      "required": ["repositoryId", "repository", "upgrade", "status"],
+      "properties": {"repositoryId": {"$ref": "#/$defs/nonEmpty"}, "repository": {"$ref": "#/$defs/nonEmpty"}, "upgrade": {"const": "on-request"}, "status": {"const": "not-requested-this-release"}}
     },
     "dimension": {"type": "object", "additionalProperties": false, "required": ["dim", "capability", "observationRunId"], "properties": {"dim": {"enum": [64, 66]}, "capability": {"$ref": "#/$defs/nonEmpty"}, "observationRunId": {"$ref": "#/$defs/positiveId"}}}
   }

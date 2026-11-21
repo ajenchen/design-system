@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.148",
-    "storybookConfig": "0.1.0-beta.148"
+    "designSystem": "0.1.0-beta.149",
+    "storybookConfig": "0.1.0-beta.149"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,24 +42,24 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "8e050a4a830b600cafe97f307d4916a0ac5e70d8d6d61e7113ee6a86a37ecea9",
+    "forkCorpusLockSha256": "2b84da29711cadbb5cc8ed554337d5ce2679645ba66c3719d8ede62e0930b3a0",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "0b5c37ec27205e3b3f6d1a2cad9e3a0226ae39bd960f5ebb3ec65b7476ca1db5",
+    "providerLifecycleSha256": "16e9537b443b0d483c5629c62353fe11d7a872b596f5514d847ecd907d0ab90f",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
-    "commonInstructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
+    "commonInstructionSha256": "116e54e0abbe465f6d722b9ea082bb4da347a6b153eb0ca5f64d8534b0f7b1c1",
     "providerArtifactDigests": {
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
         "hookSha256": "e74f55b6fe1e3fb6643cd82e0613fa5ca49c781b14c57a6ccf606998f3ba5ff4",
-        "skillsSha256": "1470de24565bda3dd7b544832125a5cbad557f95e6c810944bc59cdf10bc4d2b",
+        "skillsSha256": "30c77bc8c74842c5b2d0710bbed9fd64a2a2a4ef172297ed20e6f6bcdb21be42",
         "treeDigests": {}
       },
       "codex": {
-        "instructionSha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
-        "hookSha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
-        "skillsSha256": "ea45435cdc65eb729cf0711b775e71bd6d1ca6f06cd620967db48fba3ff5d2e7",
+        "instructionSha256": "116e54e0abbe465f6d722b9ea082bb4da347a6b153eb0ca5f64d8534b0f7b1c1",
+        "hookSha256": "e5c478bfd3c19c9070e42f5c150e71e7f7ddfe96a8b7f803f03ddfa66786ab07",
+        "skillsSha256": "6e7bde7969c33e4fa6ad45560c2d4e6dcd82d50f70099a00d1b7e2ed8d7ebbef",
         "treeDigests": {}
       },
       "generic": {
@@ -73,8 +73,8 @@
       "claude": "e74f55b6fe1e3fb6643cd82e0613fa5ca49c781b14c57a6ccf606998f3ba5ff4"
     },
     "governanceCheckSha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
-    "utilityRegistrySha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
-    "sharedSkillsSha256": "2e99c03dfa9f5dd8a9a3f66508d4f4b691a7fd079bb97a864901c40a61584f62",
+    "utilityRegistrySha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
+    "sharedSkillsSha256": "7ddeba79c6270ef69b0b6f6dd7c0ed0779a2398f755f0629a6808ed9708e42fd",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",
@@ -94,8 +94,8 @@
       ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
       "governance/consumer-governance.md": "4545d0dac5d869c58ec26f37ff6ed70a255f61f9cf406efd41e99a9aeaa885b2",
-      "governance/provider-cli-toolchain.json": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",
-      "governance/provider-cli-toolchain.package-lock.json": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
+      "governance/provider-cli-toolchain.json": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
+      "governance/provider-cli-toolchain.package-lock.json": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "governance/schemas/issuer-registry.schema.json": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",
       "governance/schemas/visual-baseline-review-policy.schema.json": "29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45",
       "governance/trust/issuers.json": "b4da935a9d39239f99fdb15f9ee0a05b538ac0c427b32b77fce8010560fdef2b",

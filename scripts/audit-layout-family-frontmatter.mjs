@@ -10,6 +10,13 @@
  * form-validation 等非 primary)豁免。真要豁免 primary 用同檔 `<!-- @no-layout-family: <reason> -->`。
  *
  * Usage: node scripts/audit-layout-family-frontmatter.mjs [--check]
+ *
+ * @gate-contract
+ *   保證: packages/design-system/src/{components,patterns}/<資料夾>/ 底下的主 spec(檔名 = 資料夾名或它的 kebab 寫法)
+ *         都宣告了 Layout Family —— frontmatter `family:`,或內文「Layout Family」後 120 字內出現 self-contained / Family 1–4 / composite,
+ *         或同檔明寫 `@no-layout-family:` 豁免
+ *   紅: --check 下有任一份缺宣告 → 列出檔名並 exit 1;配對測試把 button.spec.md 換成沒有宣告的內容,本閘必須紅
+ *   綠: 全部有宣告時 exit 0 並印出主 spec 數;只讀檔,不讀時間,重複跑結果相同
  */
 import fs from 'node:fs'
 import { globSync } from 'node:fs'

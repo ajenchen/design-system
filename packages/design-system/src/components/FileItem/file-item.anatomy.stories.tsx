@@ -35,7 +35,7 @@ export const Overview: Story = {
             name="beach-photo.jpg"
             description="4.8 MB"
             mode="rich"
-            thumbnailSrc="https://i.pravatar.cc/112?img=3"
+            thumbnailSrc="https://i.pravatar.cc/112?img=13"
           />
         </div>
       </div>
@@ -52,7 +52,7 @@ export const Overview: Story = {
                 ['surface', "'form' | 'upload-manager'", "'form'", '所在容器 context:form=rich 為 border card / upload-manager=rich 無邊框無 bg(面板自身是容器,avatar 作 item 邊界);upload-manager 的列自帶左右 loose、上下 tight/2,鋪滿面板寬(面板 body 左右 0)。詳 spec「邊框 / 背景」「Padding」表'],
                 ['status', "'uploading' | 'completed' | 'error'", '—', '上傳狀態(不傳=已上傳靜態)'],
                 ['progress', 'number', '0', '上傳進度 0-100(有 status 時顯示 bar;completed 強制 100%)'],
-                ['description', 'ReactNode', '—', 'rich 任意場景 / compact 只有 error 才顯示。ReactNode — 可含 inline clickable link(如「View log」)'],
+                ['description', 'ReactNode', '—', 'rich 任意場景 / compact 只有 error 才顯示。ReactNode — 可含 inline clickable link(如錯誤說明後面的「查看紀錄」)'],
                 ['thumbnailSrc', 'string', '—', 'rich mode 的縮圖 URL(圖片類檔案)'],
                 ['actions', 'ReactNode', '—', 'suffix actions(例:delete / cancel button)'],
                 ['onDownload', '() => void', '—', "hover-swap:status='completed' 時,滑鼠移上整列,綠勾 ✓ 換成下載 ↓。兩種 mode 都用 Button xs(24)iconOnly,符合列內操作 ≤ 24 上限"],
@@ -80,7 +80,7 @@ export const Inspector: Story = {
     status: 'uploading',
     progress: 60,
     description: '2.4 MB · 上傳中',
-    thumbnailSrc: 'https://i.pravatar.cc/112?img=3',
+    thumbnailSrc: 'https://i.pravatar.cc/112?img=13',
   },
   argTypes: {
     name: { control: 'text' },
@@ -193,7 +193,7 @@ export const ModeMatrix: Story = {
         <Desc>掃描模式(text-body 14px + leading-compact 1.3;兩 mode 統一 scanning),資訊容量較高。適合圖片 / 文件 / 需要縮圖的場景。</Desc>
         <div className="flex flex-col gap-2 max-w-lg">
           <FileItem name="Q1-report.pdf" description="2.4 MB · 已上傳" mode="rich" />
-          <FileItem name="photo.jpg" description="4.8 MB" mode="rich" thumbnailSrc="https://i.pravatar.cc/112?img=3" />
+          <FileItem name="photo.jpg" description="4.8 MB" mode="rich" thumbnailSrc="https://i.pravatar.cc/112?img=13" />
           <FileItem name="contract.pdf" description="1.2 MB · 上傳中 45%" status="uploading" progress={45} mode="rich" />
         </div>
       </div>

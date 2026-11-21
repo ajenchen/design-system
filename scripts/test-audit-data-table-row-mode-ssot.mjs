@@ -4,6 +4,14 @@
 // 驗這支 gate 真能抓「cell-render scope 內消費 global `autoRowHeight` 而非 per-row `effectiveAutoRowForCell`」的 regression。
 // 注入方式:把 cell-render scope 內第一處 `effectiveAutoRowForCell ? 'items-start' : 'items-center',`
 // 換成 global `autoRowHeight ? 'items-start' : 'items-center',` — 即 gate 設計要攔的真實違規。
+//
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: audit-data-table-row-mode-ssot.mjs 在該紅的時候會紅 —— 把 data-table.tsx 第一處
+//         `effectiveAutoRowForCell ? 'items-start' : 'items-center',` 換成 `autoRowHeight ? …`,閘必須 exit 非 0;注入前與還原後閘都必須 exit 0
+//   紅: 現況就紅、注入錨點找不到(要更新本測試)、注入後閘仍 exit 0(偵測失效)、或還原後不綠 → 印出是哪一步並 exit 1
+//   綠: 都照預期時 exit 0;data-table.tsx 在 finally 寫回原文,只讀寫這一個檔,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'

@@ -1,4 +1,15 @@
 #!/usr/bin/env node
+// audit-coverage-matrix.mjs 的配對 meta-test。2026-11-20 起由 ci.yml verify-static「Focused governance and release SSOT checks」直呼(knowledge-prune WP-21),
+// 原本只在夜間 harness 跑;主判定(--check)本來就在同一步經 governance-build-graph --check → generate-governance-metadata.mjs 跑。
+//
+// @gate-contract
+//   保證: audit-coverage-matrix.mjs 該綠時綠、該紅時紅 —— 先驗 lib/audit-coverage-classification.mjs 的 validateAuditCoverageEntry
+//         判定表(合格那一列放行;tier 打錯、mechanism 空白、多出欄位都丟例外);其餘全在 mkdtemp 夾具裡(91 維的 SKILL.md 表、deterministic plan、registrations、
+//         被引用的 hook 都放進去):夾具 baseline 與每次還原後必須 exit 0;被引用的 hook 刪掉只剩註解提到、hook 在磁碟上卻沒登記、
+//         hook 的 outputMode 與規則表宣稱的擋 / 提醒不符(兩種)、dispatcher 不再 source 它的 lib helper、plan 不見 / 少一維、
+//         SKILL.md 維度少一個 / 重複一個,都必須 exit 1 且訊息點名;正式 CLI 帶 --root 必須 exit 2(不留夾具後門)
+//   紅: 任一斷言不成立 → node:assert 丟例外,exit 非 0
+//   綠: 都照預期時 exit 0 並印出 ✅;不寫入受驗的工作樹(cwd 是夾具),夾具在 finally 刪掉,不讀時間,重複跑結果相同
 import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

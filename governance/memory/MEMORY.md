@@ -7,12 +7,13 @@
 ## Project (active work)
 - [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已落地(2026-09-07 起實作;唯一權威 = planning `2026-09-06-agent-principles-v14.md`,2026-08-11 規格與隔離令只剩歷史);後續改動走 spec / v14 propose 流程,禁把 v14 已答題重列為未決
 - [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **WM 身分(每 session 必知)與 canary 操作檔案**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
+- active plan:`governance/planning/2026-09-25-interaction-and-hover-remediation.md`(registry 唯一 `status: active` 的計畫;user 要求每個未解問題追到結案。結案時拿掉本行,`validate-memory-contract.mjs` 會擋指向非 active 計畫的指標)
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
-- [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 task = 1 branch + 1 PR；protected main/required checks/conversations + canonical five-step readback；合併前需 user 說「發版」的 receipt,綁**user 看過的預覽內容**(不綁 commit 也不綁分支),其餘依 Standing Authorization 自動(M28)，preview/canary 非 blocking
+- [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 chat = 1 branch + 1 PR；protected main/required checks/conversations + canonical five-step readback；合併前需 user 說「發版」的 receipt,綁**user 看過的預覽內容**(不綁 commit 也不綁分支),其餘依 Standing Authorization 自動(M28)，preview/canary 非 blocking
 - [feedback_ship_then_revert_anti_pattern.md](feedback_ship_then_revert_anti_pattern.md) — 產品／UI／UX SSOT 真取捨需 exact target-bound decision；工程 remediation AUTO；unknown fail closed(2026-05-15／2026-07-26)
-- [feedback_propose_discipline.md](feedback_propose_discipline.md) — 中文人話(禁 jargon,2026-05-31 擴大至**所有 reply**,user 看不懂英文)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27 + 2026-05-31,合 3 file)
+- [feedback_propose_discipline.md](feedback_propose_discipline.md) — 中文人話(禁 jargon,2026-05-31 擴大至**所有 reply**,user 看不懂英文)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27 + 2026-05-31,合 3 file)+ 引原話先比原題(Sub-rule 8:範圍取字面最窄,只在擋 / 撤回 / 擴大工作時查一行)+ token 只花在 user 要的任務上(Sub-rule 9:沒證明是問題不開新戰場、決議過的不翻冷飯、程式跟規格對不上照修)
 - [feedback_codex_full_access_standing_auth.md](feedback_codex_full_access_standing_auth.md) — Codex collab canonical(2026-08-12 三檔合併):常設授權全存取沙箱(user 2026-08-08)+ 地端 transport 4-test/守衛入口/最強禁降檔/小 focused brief + M31 dual-track 三層禁 pass-through/brief 三 invariant/Phase-A-first/auto-mode 禁問
 - [feedback_push_always_call.md](feedback_push_always_call.md) — registered runtime 有 PushNotification capability 時 substantive turn 結尾必 call；能力缺席 = nonblocking/unobserved(2026-08-02 provider-neutral 收斂)
 - [Storybook addon preset MUST be .cjs](feedback_storybook_addon_preset_must_be_cjs.md) — beta.27-.31 5 連敗 root cause: 強制 CJS evaluation,bypass Node ESM/esbuild-register CJS-interop 衝突(2026-05-28)
@@ -27,12 +28,4 @@
 - [reference_auto_mode_sandbox_boundaries.md](reference_auto_mode_sandbox_boundaries.md) — **被擋時先查這裡**:沙箱 / 封閉環境 / 分類器實測邊界(主目錄 .claude 鎖 → clone;封閉 npm 不透傳代理 → 端到端只靠 CI;分類器擋下 = 停下記入完成報告,不換指令繞過、不交給 user)+ 發版與工具傳輸「症狀 → 已建成的解」對照表(gh/npm/TLS/journal/Chrome MCP/mktemp);immutable 版號不可重用;供應鏈閘是真警報(2026-08-11 → 2026-10-07)
 
 ---
-**Prune history**(細節在 governance/archive/memory-retired/ + git log):
-- 2026-05-15 → 2026-06-11 六輪 prune/consolidate(D1/D2/D3 上游吸收 + codex-transport + M31 Phase fold + story_baseline fold + deploy_url/css-aggregator 合併;2026-05-27 起各輪原文在 governance/archive/memory-retired/ 對應目錄;2026-05-15 該輪為上游吸收無 archive 目錄,詳 git log)
-- 2026-07-07 D8 headroom:netlify_basic_password→deploy_targets 合併(同部署域 D1 consolidation,invariant 零損;19→18)
-- 2026-07-14 D8 headroom:project_cprime_governance_shipped→reference_cloud_governance_loading 合併(campaign 已完結 + 同雲端治理域 + 同 originSession D1 consolidation,invariant 零損;19→18)
-- 2026-07-23 provider-neutral consolidation:退役 fixed Claude/Codex layer mapping 與 Codex exec transport；歷史原文移至 `governance/archive/memory-retired/2026-07-23-provider-neutral-consolidate/`，現行 authority 只保留 registry/binding/certification contracts
-- 2026-07-31 續作保障:新增 planning baton；2026-08-01 deep-audit 收為 `reference / non-executable`，live state 回歸 machine evidence；**未新增 index 條目**
-- 2026-08-12 superset 收斂:home-only dual_track+exec_transport → full_access 三檔合併(codex 域 D1,invariant 零損;home-only 來源,無 repo 原文可歸檔);promote agent_ui backlog 指標入 repo;index 20 = hard cap
-- 2026-08-18 D8 prune:nearest_same_purpose 完全吸收退役(M23(d) + story-rules + story-writing SKILL + story-baseline-registry 全覆蓋)/ governance_evolution_roadmap 純 pointer 退役(planning registry 已是 status SSOT)/ wm_ds_alignment_campaign 收官歸檔(live 操作檔案併入 project_provider_neutral_governance);20→17
-- 2026-10-07 D1+D4 consolidation:feedback_anti_self_lock_release_transport → reference_auto_mode_sandbox_boundaries 第六節(兩份都自稱「被擋先查這裡」且互相矛盾:分類器擋下要不要換指令、AI 能不能直接合併 consumer PR)。原表 35 列:1 列依第三節刪除(擋下就換工具)、1 列移到第一節(sync-memory)、33 列保留:26 列逐字原文,6 列加註「2026-10-07 更正」(依第三節:git branch -D 改成停下回報、兩列 consumer PR 合併改走 release:auto 並待 G1 (2) 讀回;過時說法:.claude/hooks 鏡像已退役、發版同意綁內容不綁 commit、Bash 套 patch 已被核准閘擋),1 列加註「2026-10-07 補」(純註解判定讀 adapter 的 content 欄位);原文 `governance/archive/memory-retired/2026-10-07-blocked-route-merge/`;19→18
+**Prune history** → `governance/memory/README.md`「Prune history」(2026-11-17 從本檔搬出;本檔每個 session 都載入,只留索引)。

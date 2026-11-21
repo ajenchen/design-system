@@ -13,7 +13,7 @@ paths:
 
 ## Public component vs Internal primitive canonical(SSOT,2026-05-23 user 拍板;**2026-06-06 refine 為 intent-based,retire 舊「空 render 測試」**)
 
-**唯一判準 = 「DS 是否想讓 consumer 直接 import 來用它」(public-API intent)** —— **不是**「空 `<X/>` 能不能 render 出有意義 UI」。世界級實證:MUI Base 官方「**requiring composition and styling does NOT make something internal — these are explicitly public primitives**」;Atlassian Primitives(Box/Stack/Inline)/ Bootstrap input-group / Ant Space.Compact 皆 public 卻需 compose。
+**唯一判準 = 「DS 是否想讓 consumer 直接 import 來用它」(public-API intent)** —— **不是**「空 `<X/>` 能不能 render 出有意義 UI」。世界級實證:Atlassian `@atlaskit/primitives`(「Primitives are token-backed low-level building blocks.」,<https://unpkg.com/@atlaskit/primitives@22.8.0/package.json>)/ Bootstrap input-group(「Easily extend form controls by adding text, buttons, or button groups on either side of textual inputs…」,<https://getbootstrap.com/docs/5.3/forms/input-group/>)/ Ant Space.Compact(「Use Space.Compact when child form components are compactly connected and the border is collapsed.」,<https://ant.design/components/space>)皆 public 卻需 compose。(2026-11-21 刪:原句另引一段「MUI Base 官方」英文原話,MUI Base 與 Base UI 文件都查無此句。)
 
 **Public**(consumer-facing):DS 想讓 consumer 直接用的東西,**包含**:(a) 成品元件 `<Button>` / `<Avatar>` / `<Dialog>` / `<DataTable>` / `<Select>`;(b) **組合 primitive —— consumer 把自己內容塞進去 / 自接 callback 才完整**:`<FieldControlGroup>`(塞 field controls = Bootstrap input-group idiom)/ `<ResizeHandle>`(接 drag math = VS Code/Figma resize idiom)/ `<ChromeHeader>`(自建 chrome header chrome,follow `header-canonical` anatomy = 對標 item-anatomy 的公開 anatomy primitive)/ `<ItemIcon>` `<ItemAvatar>`(row context 內 consumer 塞 icon/avatar 的公開 named slot —— item-anatomy.spec.md「Helper 程式化封裝」段 mandate consumer 必用 + root barrel 匯出;對齊 Material ListItemIcon/ListItemAvatar、Primer ActionList.LeadingVisual 公開 named-slot 模型;**row-context-scoped**:離開 row primitive 子樹無意義,如 Material ListItemIcon 離開 List 無意義)。**「需要 children / 接線 / 組合」是正常 public 用法,不是 internal**。判斷訊號:benchmark 對標 consumer-facing primitive / spec「何時用」是 consumer 場景 / 有 standalone 用法 / export 給 consumer。
 
@@ -38,13 +38,13 @@ paths:
 
 ## 建立 UI 前必讀
 
-**先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius}/*.spec.md`)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
+**先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius|opacity|motion}/*.spec.md`;**選 token 先判斷元素是哪一種東西,再查該類用途表**,不照 Tailwind 名字猜 —— 例:圓角看 `radius.spec.md`「四檔」,`rounded-sm` 在本系統是 2px、只給短邊 ≤ 10px 的指示,`scripts/radius-usage-invariant.mjs` 在建置好的 Storybook 上逐元素量)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
 
 **既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `packages/design-system/ds-canonical/references/build-ui-canonicals.md`。
 
 ## UI 開發 4 條核心
 
-必重用既有 `components/` / 必用 design tokens(禁硬寫色/字/間距/圓角)/ 建新 UI 前查 pattern / 用 `cn()`(`@/lib/utils`)合併 Tailwind class。
+必重用既有 `components/` / 必用 design tokens(屬於既有刻度的色 / 字 / 間距 / 圓角禁硬寫;該不該開新 token 照 `packages/design-system/src/tokens/token-system.spec.md` 判斷流程第 0 題 —— 不開的值寫在元件自己的檔裡,不是常識值就加一行註解寫為什麼【AI 推導 2026-11-16:原句只寫「禁硬寫色/字/間距/圓角」,跟第 0 題(三個都不是就不開 token)矛盾,改成一致;來源是 2026-11-11 決策頁「照既有原則直接做」清單裡把互相矛盾的規則改成一致那一項 —— 那一項是 AI 寫的,user 沒有回應,不算 user 決定】)/ 建新 UI 前查 pattern / 用 `cn()`(`@/lib/utils`)合併 Tailwind class。
 
 深度規則 → `packages/design-system/ds-canonical/references/ui-dev-rules.md`(slot 幾何 / Padding source / Icon size 3 層)。
 
@@ -59,9 +59,9 @@ paths:
 
 1. **CSS variable 必 `var()` 包覆** — `w-[var(--foo)]` 而非 `w-[--foo]`(v4 silent 失效)
 2. **自訂 utility 必在 `lib/utils.ts` 註冊 group** — 否則 tailwind-merge 誤判 strip
-3. **禁 `shadow-sm/md/lg` / `text-xs/sm/base` / 硬寫色值** — 用 `shadow-[var(--elevation-N)]` (N ∈ {100,200},+`-hover` 變體) / `text-body`
-4. **禁 shadcn compat alias**(`bg-popover` / `text-muted-foreground` / `bg-accent` 等)— 用 direct token
-5. **禁 primitive 色名作 utility**(`bg-neutral-3` / `text-blue-6`)— 用 semantic utility 或 `bg-[var(--color-blue-6)]`
+3. **禁 `shadow-sm/md/lg` / `text-xs/sm/base` / 硬寫色值** — 依用途選:頁面內容層 `shadow-[var(--elevation-100)]`、浮層 `shadow-[var(--elevation-200)]`(`elevation.spec.md`「層級」);字級照 `typography.spec.md`「Token 表」的用途欄
+4. **禁 shadcn compat alias**(`bg-popover` / `text-muted-foreground` / `bg-accent` 等)— 依用途查 `color.spec.md` 用途表選語意色
+5. **禁 primitive 色名作 utility**(`bg-neutral-3` / `text-blue-6`)— 依用途選語意色;也不要換成 `bg-[var(--color-blue-6)]` 讀原料(`color.spec.md`「禁止事項」;只有 Tag / Avatar / Calendar 的類別色例外)
 
 ## Token 命名 4 條硬規則
 
@@ -80,6 +80,10 @@ paths:
 
 **4 名關閉 / 移除 callback**(詳 `packages/design-system/ds-canonical/references/props-naming.md`):
 `onClose` / `onDismiss` / `onRemove` / `onClear` 各有語意不合併。
+
+**尺寸參數**(2026-11-15 user「尺寸:甲」):寬怎麼長一律 `width`(`'fill'` 撐滿 / `'hug'` 跟內容 / 數字 px),高同理;上下限 `minWidth` / `maxWidth` / `minHeight` / `maxHeight`;`size` 只當檔位。禁 `fullWidth` / `block` / `autoWidth` 這類同義名。詳 `packages/design-system/ds-canonical/references/props-naming.md`「尺寸參數」(唯一住處),閘 `scripts/sizing-props-invariant.mjs`。
+
+**改名 / 移除(相容政策,2026-11-15 user)**:0.x / 預發布版**不留舊名** —— 不標 `@deprecated`、不在內部把舊名轉成新名、不寫「向後相容」當理由;同一版把 DS 自己的程式、範例、規格改完,同一個 PR 在變更帳本 `packages/design-system/ds-changes.json` 寫一條(隨 npm 出貨;GitHub Release「破壞性變更」由它產生)。詳 `packages/design-system/ds-canonical/references/props-naming.md`「相容政策」(唯一住處),版本判斷 `scripts/lib/compat-policy.mjs`,閘 `scripts/compat-policy-invariant.mjs`(舊名 / 相容理由)與 `scripts/public-surface-invariant.mjs`(帳本寫齊)。
 
 **Badge 命名按放置**:`badge`(inline)/ `overlayBadge`(疊視覺重心 iconOnly)/ `badgeCount`(Avatar count)/ `status`(presence dot — Avatar / ProfileCard / PeoplePicker;另有 lifecycle value-set 用於 FileItem / FileUpload / ProgressBar,詳 `props-naming.md`)。
 

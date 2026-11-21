@@ -16,11 +16,12 @@
  *         開著的 Dialog / Sheet / FileViewer 的 aria-describedby 不指向不存在的元素、Elevation 層級對比兩張卡真的重疊、
  *         Sheet 編輯存檔後標題跟著存下的名字、通知清單地標名稱是 DS 預設中文、Coachmark / ProfileCard 預設文案沒有英文、
  *         Dialog 成員名片的 ID / 員工編號與列上一致、ProfileCard 欄位值(長 email)不畫進旁邊那一欄、多字欄位值只在空白處斷、
- *         深色溢出清單每人一列、Coachmark 頁腳(單步 / 多步)按鈕群靠右且 primary 在最右。
+ *         深色溢出清單每人一列、Coachmark 頁腳(單步 / 多步)按鈕群靠右且 primary 在最右、
+ *         Coachmark 媒體區貼齊(2026-11-13,R17 / R18):左右貼外殼內緣,上緣有標題列時貼標題列的分隔線、沒有時貼外殼頂(md / lg 量像素)。
  *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest`:靜態每列注入一個修前形狀(2026-10-20 前的原始碼片段)必須紅在那一列;
  *       真建置每列在頁面上拆掉修法(拿掉字色 / 陰影、移一則說明、把觸發點設成不可聚焦、換掉 CTA 的事件、拿掉欄的主題、
  *       寫回懸空的 aria-describedby、把卡片移開、把標題改回舊名、把地標名稱改回英文、把按鈕字改回英文、把兩個欄位值對調、拿掉欄位值的 break-words、
- *       把 break-words 換成 break-all、把溢出清單改成橫排、把 Coachmark 頁腳改成靠左)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
+ *       把 break-words 換成 break-all、把溢出清單改成橫排、把 Coachmark 頁腳改成靠左、Coachmark 媒體區上方 / 左邊各多 4px)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
  *       另有「乾淨對照」:注入本來就正確的歷史句(S5)不得讓任何一列紅 —— 防止量具把對的東西判錯、逼人改寫正確的句子(M37)。
  *       對修前建置(`--build=<修前 storybook-static>`)跑 = 天然對照組。
  *   綠: 現行原始碼與建置每列都量到且符合;找不到要量的元素、story 開不起來、建置缺 = 儀器失效(exit 2,M37:沒量到 ≠ 沒發生),不讀成通過。
@@ -224,7 +225,7 @@ function runStatic(files, { quiet = false } = {}) {
           walkLabels(attrs.get('fields'))
         }
         // S3 DialogContent autoHeight
-        if (tag === 'DialogContent' && attrs.has('autoHeight')) add('S3', `${where} <DialogContent autoHeight> —— 已停用,改 height="hug"(dialog.spec.md「高度軸」;OV-09)`)
+        if (tag === 'DialogContent' && attrs.has('autoHeight')) add('S3', `${where} <DialogContent autoHeight> —— 已移除(2026-11-15,0.x 不留舊名),改 height="hug"(dialog.spec.md「高度軸」;OV-09)`)
         // S6 / S7 按鈕的字
         if (tag === 'Button') {
           buttons++
@@ -267,7 +268,7 @@ function runStatic(files, { quiet = false } = {}) {
     src.split('\n').forEach((l, i) => {
       if (!/\bautoHeight\b/.test(l)) return
       const prose = /\.md$/.test(rel) || /^\s*(?:\*|\/\/|\{?\/\*)/.test(l) || /\.stories\.tsx$/.test(rel)
-      if (prose && !/height="hug"|deprecated|已停用|停用/.test(l)) add('S3', `${rel}:${i + 1} 把 autoHeight 寫成現行用法 —— 已停用,同一句寫 height="hug" 或「已停用」(dialog.spec.md「高度軸」;OV-09 同族)`)
+      if (prose && !/height="hug"|已移除|移除|已停用|停用/.test(l)) add('S3', `${rel}:${i + 1} 把 autoHeight 寫成現行用法 —— 已移除,同一句寫 height="hug" 或「已移除」(dialog.spec.md「高度軸」;OV-09 同族)`)
     })
   }
   // S7 同族:文字裡把這個動作叫做「顯示欄位」(引號裡的名稱)只能是歷史句(覆核 2026-10-21:popover 原則頁註解)
@@ -408,7 +409,7 @@ function runStatic(files, { quiet = false } = {}) {
 const ROWS = {
   S1: '換了主題(data-theme)的元素重新宣告字色(alert.tsx「data-theme 必須搭配 text-foreground」、M3;OV-02 / OV-03)',
   S2: 'HoverCardContent 的外殼只消費 HOVER_CARD_SURFACE_CLASS / HOVER_CARD_TOOLTIP_SURFACE_CLASS(OV-06 / OV-V03 / OV-02;M17)',
-  S3: '沒有 <DialogContent autoHeight>(已停用的 API;DS 原始碼與閘夾具都不准用,OV-09)',
+  S3: '沒有 <DialogContent autoHeight>(已移除的 API;DS 原始碼與閘夾具都不准用,OV-09)',
   S4: '按鈕不用文字符號(▾ ☰ …)當圖示(OV-12)',
   S5: '退役的名稱只以歷史出現(同一行寫出接班者,或寫成歷史句;OV-04 / OV-11)',
   S6: '觸發鈕的字是使用者會按的動作,不是實作註記 / variant 名 / 佔位(OV-14 / OV-08)',
@@ -436,6 +437,8 @@ const ROWS = {
   R14: 'ProfileCard 多字欄位值只在空白處斷(description-list.spec.md「長值換行」直式自然流文字依字詞換行;只有比整欄還寬的字才准在字中斷;覆核 2026-10-21)',
   R16: 'Coachmark 頁腳(單步 / 多步)按鈕群靠右、primary 在最右(overlay-surface.spec.md SurfaceFooter + action-bar.spec.md「全局排序」;覆核 2026-10-21 題 3)',
   R15: '深色溢出清單每人一列(同 hover-card.stories.tsx「溢出清單」/ overflow-indicator.stories.tsx 正規用法 flex-col;覆核 2026-10-21)',
+  R17: 'Coachmark 媒體區上緣貼齊:有標題列貼標題列的分隔線、沒有貼外殼頂(coachmark.spec.md「Media 區規則」位置;layoutSpace.spec.md 規則 2 結構分區不套表【AI 推導 2026-11-13】)',
+  R18: 'Coachmark 媒體區左右貼齊外殼內緣(滿版;coachmark.spec.md「Media 區規則」位置)',
 }
 const results = new Map()
 const mark = (id, ok, detail = []) => {
@@ -787,6 +790,40 @@ async function runRuntime({ mutateRow = null } = {}) {
       rec('R16', Math.abs(f.gap) <= 1 && f.lastPrimary && f.primaries === 1, `${what}:最右一顆「${f.lastText}」${f.lastPrimary ? '是' : '不是'} primary、離頁腳右緣 ${f.gap.toFixed(1)}px`)
     }
 
+    // R17 / R18 Coachmark 媒體區貼齊(2026-11-13;coachmark.spec.md「Media 區規則」位置:媒體區是外殼的一個分區,與 Header / Body / Footer 同層、分區之間相接;
+    // layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1) 結構分區不套表【AI 推導 2026-11-13】—— user 沒有逐字講過這一段):
+    // 量媒體區外框(Radix AspectRatio 的外包層)到外殼內緣 / 標題列底的距離,等媒體區本身出現、開場動畫跑完才量;md / lg。
+    // 有標題列(多步新手導覽)→ 上緣貼標題列的分隔線;沒有(單步驟新功能介紹)→ 貼外殼頂。範例的標題列有無與登記不符 = 量的不是原本那一格 → 儀器失效。
+    for (const [id, what, wantHeader] of [['design-system-components-coachmark-展示--feature-discovery', '單步驟新功能介紹(沒有標題列)', false], ['design-system-components-coachmark-展示--multi-step-tour', '多步新手導覽(有標題列)', true]]) {
+      for (const density of ['md', 'lg']) {
+        await open(id, { density })
+        await waitFor(() => !!document.querySelector('[role="dialog"] [data-radix-aspect-ratio-wrapper]'), null, `Coachmark ${what} 的媒體區`)
+        await waitFor(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming?.().iterations === Infinity), null, `Coachmark ${what} 開場動畫跑完`)
+        const readMedia = () => page.evaluate(() => {
+          const m = document.querySelector('[role="dialog"] [data-radix-aspect-ratio-wrapper]')
+          const shell = m?.closest('[role="dialog"]')
+          if (!m || !shell) return null
+          const num = (el, p) => parseFloat(getComputedStyle(el)[p]) || 0
+          const sb = shell.getBoundingClientRect(), mb = m.getBoundingClientRect()
+          const head = shell.querySelector('[data-slot="surface-header"]')
+          return {
+            header: !!head, width: mb.width, height: mb.height,
+            left: mb.left - (sb.left + num(shell, 'borderLeftWidth')), right: (sb.right - num(shell, 'borderRightWidth')) - mb.right,
+            top: head ? mb.top - head.getBoundingClientRect().bottom : mb.top - (sb.top + num(shell, 'borderTopWidth')),
+          }
+        })
+        await mutate('R17')
+        const top = await readMedia()
+        if (!top || !(top.width > 0) || !(top.height > 0)) fail(`Coachmark ${what}(${density}):找不到媒體區或它沒有尺寸`)
+        if (top.header !== wantHeader) fail(`Coachmark ${what}(${density}):這則範例應${wantHeader ? '有' : '沒有'}標題列,實際${top.header ? '有' : '沒有'}—— 範例換了,量的不是原本那一格`)
+        rec('R17', Math.abs(top.top) <= 0.5, `${what} ${density}:媒體區上緣離${wantHeader ? '標題列底(分隔線)' : '外殼內緣頂'} ${top.top.toFixed(1)}px,應 0`)
+        await mutate('R18')
+        const sidesOfMedia = await readMedia()
+        if (!sidesOfMedia) fail(`Coachmark ${what}(${density}):媒體區不見了`)
+        rec('R18', Math.abs(sidesOfMedia.left) <= 0.5 && Math.abs(sidesOfMedia.right) <= 0.5, `${what} ${density}:媒體區離外殼內緣 左 ${sidesOfMedia.left.toFixed(1)} / 右 ${sidesOfMedia.right.toFixed(1)}px,應 0 / 0`)
+      }
+    }
+
     // R12 Dialog 成員名片
     await open('design-system-components-dialog-展示--list-body')
     // 「查看成員」按了才開(D2 甲,2026-10-28)
@@ -941,6 +978,10 @@ const MUTATIONS = {
   R13: () => { for (const sp of document.querySelectorAll('#storybook-root dl.grid dd span.break-words')) sp.classList.remove('break-words') },
   // R14:2026-10-20 第一版修法 —— 欄位值用 break-all(多字值從字中間斷)
   R14: () => { for (const sp of document.querySelectorAll('#storybook-root dl.grid dd span.break-words')) sp.classList.replace('break-words', 'break-all') },
+  // R17:媒體區上方多出 4px(不再貼著標題列的分隔線 / 外殼頂)—— 兩則範例(有 / 沒有標題列)× 兩密度都必紅
+  R17: () => { const m = document.querySelector('[role="dialog"] [data-radix-aspect-ratio-wrapper]'); if (m) m.style.marginTop = '4px' },
+  // R18:媒體區左邊多出 4px(不再滿版:左離外殼 4、右超出 4)
+  R18: () => { const m = document.querySelector('[role="dialog"] [data-radix-aspect-ratio-wrapper]'); if (m) m.style.marginLeft = '4px' },
   // R16:照 action-bar :109「沒有標題 → 靠左」的錯誤推論把頁腳改成靠左(單步卡)
   R16: () => { const card = document.querySelector('[role="dialog"].w-80'); const g = [...(card?.querySelectorAll('button') ?? [])].at(-1)?.closest('div')?.parentElement; if (g) g.style.justifyContent = 'flex-start' },
   // R15:2026-10-20 第一版修法 —— 溢出清單的名字直接放進 OverflowIndicator(ShrinkWrapList 橫排成一行)
@@ -955,7 +996,7 @@ const STATIC_MUTANTS = [
   // S1:Toast「有標題與描述」2026-10-20 前的右欄 —— 整組設 dark、沒宣告字色(欄標在淺色頁白字白底);OverflowIndicator 那一種同時會紅 S2,另由頁面 R1 量
   ['S1', 'packages/design-system/src/__selftest__/toast-columns-before.tsx', 'const a = <ExampleGroup data-theme="dark"><span className="text-caption text-fg-secondary font-medium">dark mode</span></ExampleGroup>'],
   ['S2', 'packages/design-system/src/__selftest__/trigger-showcase-before.tsx', 'const b = <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-[var(--layout-space-loose)]"><div>Ada Chen</div></HoverCardContent>'],
-  ['S3', 'packages/design-system/src/__selftest__/dialog-before.tsx', 'const c = <DialogContent autoHeight maxWidth={480}><div /></DialogContent>'],
+  ['S3', 'packages/design-system/src/__selftest__/dialog-before.tsx', 'const c = <DialogContent autoHeight width={480}><div /></DialogContent>'],
   ['S4', 'packages/design-system/src/__selftest__/popover-principles-before.tsx', 'const d = <Button variant="tertiary">檔案操作 ▾</Button>'],
   ['S5', 'packages/design-system/src/__selftest__/combobox-before.spec.md', '由浮層 `PopoverContent` 的 `onEscapeKeyDown` 經同一支模組的 `withImeSafeEscape` 擋掉'],
   ['S6', 'packages/design-system/src/__selftest__/dialog-stories-before.tsx', 'const e = <Button variant="tertiary">開啟成員列表(大 item:avatar+desc)</Button>'],
@@ -1002,7 +1043,7 @@ const STATIC_CLEAN = [
   ['packages/design-system/src/__selftest__/clean-ime.ts', '// 2026-10-01 上午曾在這裡放 `withImeSafeEscape`(浮層的 `onEscapeKeyDown`:組字中的 Esc 不關那一層)。同日下午「這一下 Esc 由誰處理」'],
   ['packages/design-system/src/__selftest__/clean-focus-return.ts', ' * 2026-09-30 之前的五份:Command `returnFocusAfterCommandClose`(SelectMenu / AgentPanel 歷史 / CommandDialog)、Sidebar 窄版抽屜、\n * AppShell 窄版側欄、DatePicker 區間、AgentPanel 入口鈕右鍵選單各寫一份「記開啟者 + 關閉時還」,判準各不相同'],
   // S9:一支檔住兩支元件,文案物件只屬於其中一支(agent-panel.tsx 的形狀):另一支沒有文案物件,它的讀屏名稱不算「決策卡寫死」
-  ['packages/design-system/src/__selftest__/clean-multi-component.tsx', "export interface AgentDecisionCardLabels { skip?: string }\nconst DEFAULT_LABELS: AgentDecisionCardLabels = { skip: '跳過' }\nfunction AgentDecisionCard({ labels }: { labels?: AgentDecisionCardLabels }) { const l = { ...DEFAULT_LABELS, ...labels }; return <Button aria-label={l.skip} /> }\nfunction AgentPanelHeader() { return <Button aria-label=\"新對話\" /> }"],
+  ['packages/design-system/src/__selftest__/clean-multi-component.tsx', "export interface AgentDecisionCardLabels { cancel?: string }\nconst DEFAULT_LABELS: AgentDecisionCardLabels = { cancel: '取消' }\nfunction AgentDecisionCard({ labels }: { labels?: AgentDecisionCardLabels }) { const l = { ...DEFAULT_LABELS, ...labels }; return <Button aria-label={l.cancel} /> }\nfunction AgentPanelHeader() { return <Button aria-label=\"新對話\" /> }"],
 ]
 
 // ─── 主程式 ──────────────────────────────────────────────────────────────────

@@ -25,7 +25,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Track(pill 形容器)+ Thumb(白色圓 + 2px border + check icon when ON)。基於 Radix Switch,shadcn 包裝 + 橋接 DS token。</Desc>
-        <div className="flex items-center gap-6 border border-border rounded-lg p-6">
+        <div className="flex items-center gap-6 border border-border rounded-md p-6">
           <Switch aria-label="關閉狀態 Switch" />
           <Switch defaultChecked aria-label="開啟狀態 Switch" />
           <span className="text-caption text-fg-muted font-mono">OFF → ON 切換 track bg-border → bg-primary,thumb 白色 + 2px border 視覺延續</span>
@@ -112,7 +112,7 @@ export const SizeMatrix: Story = {
             </tbody>
           </table>
         </div>
-        <div className="flex items-center gap-8 border border-border rounded-lg p-4">
+        <div className="flex items-center gap-8 border border-border rounded-md p-4">
           <div className="flex flex-col items-center gap-2">
             <Switch size="sm" defaultChecked aria-label="sm 尺寸開啟狀態 Switch" />
             <span className="text-caption text-fg-muted font-mono">sm</span>

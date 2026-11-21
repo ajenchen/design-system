@@ -6,14 +6,14 @@ variants:
     when: "最高優先級通知 — 錯誤計數 / 緊急徽章（例:未讀通知紅點）"
     world-class: ["Polaris Badge tone=critical", "Material Badge error", "Ant Badge status=error / count"]
   high:
-    when: "高優先級通知 — 主要計數（Slack 訊息計數 / GitHub PR review badge）"
-    world-class: ["Polaris Badge tone=info", "Material Badge primary", "Atlassian Lozenge inProgress"]
+    when: "高優先級通知 — 主要計數（訊息未讀數 / 待審 PR 數）"
+    world-class: ["Polaris Badge tone=info", "Material Badge primary"]
   medium:
-    when: "中優先級提示 — 次級計數（Linear issue count / Notion sidebar indicator）"
+    when: "中優先級提示 — 次級計數（議題數 / 側欄頁面上的提示點）"
     world-class: ["Polaris Badge tone=info subtle", "Ant Badge status=processing"]
   low:
-    when: "低強度指示 — 使用者切 tab 才看（Slack sidebar 靜默標記 / VS Code tab modified dot）"
-    world-class: ["Polaris Badge tone=new", "GitHub subtle count"]
+    when: "低強度指示 — 使用者切 tab 才看（側欄靜默標記 / 分頁「已修改」小點）"
+    world-class: ["Polaris Badge tone=new"]
 sizes: {}
 traits:
   - hasVariants

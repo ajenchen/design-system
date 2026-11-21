@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, Bell, Home } from 'lucide-react'
 import { Avatar } from './avatar'
 import { MenuItem, MenuGroup } from '@/design-system/components/Menu/menu-item'
-import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleCaption } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -17,8 +17,10 @@ type Story = StoryObj
 
 const TutorialRule = createTutorialRule({ examples: true, examplesClassName: 'max-w-md' })
 
-// 人員頭像一律帶名片(avatar.spec.md「Avatar HoverCard 原則」;登記簿 B21「我說所有」),名片讀共用名錄;名片裡的頭像用觸發點同一張圖
+// 人員頭像一律帶名片(avatar.spec.md「Avatar HoverCard 原則」;登記簿 B21「我說所有」),名片讀共用名錄;名片裡的頭像與觸發點是同一張臉
 // (或同樣沒有圖)。2026-10-28 前本頁只有「Avatar + ProfileCard 整合」那一顆接了名片(稽核 L001)。
+// 照片一律走照片名冊(stories-helpers/data/people.ts):2026-11-15 前「後備順序」第一顆 Ada Chen 寫死 img=1(兩人同框),
+// 與本檔其他 story 的 Ada Chen(名冊的臉)不是同一張臉(A14)。
 const { ada, alice, alex, ben, bella } = SAMPLE_PEOPLE
 
 // ── Stories ───────────────────────────────────────────────────────────────────
@@ -43,7 +45,7 @@ export const UsageGuidance: Story = {
           title="❌ 代表抽象概念:用 Lucide Icon"
           note="「設定」「通知」「首頁」這類功能 / 動作 / 概念不是「誰」,是「做什麼」。Icon 更適合——Avatar 用在這裡會讓使用者以為是某個人的頭像"
         >
-          <div className="border border-divider rounded-lg bg-surface">
+          <div className="border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="Avatar 誤用範例">
               {/* 真實誤用:把功能名「設定」直接當 avatar 的 alt,fallback 渲染首字「設」的色塊,看起來像某個成員或群組 */}
               {/* @story-counter-example: 反例本身 —— 功能名當成頭像(avatar.spec.md:39「Avatar 代表實體身份，icon 代表動作 / 概念」) */}
@@ -51,7 +53,7 @@ export const UsageGuidance: Story = {
             </MenuGroup>
           </div>
           <ExampleCaption warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</ExampleCaption>
-          <div className="border border-divider rounded-lg bg-surface">
+          <div className="border border-divider rounded-md bg-surface">
             <MenuGroup aria-label="功能圖示正確用法">
               <MenuItem role="presentation" startIcon={Settings}>設定</MenuItem>
             </MenuGroup>
@@ -63,7 +65,7 @@ export const UsageGuidance: Story = {
           title="❌ src 壞掉又沒 name → 空 avatar(不可辨識)"
           note="Avatar 的核心是識別身份,沒 name 又沒 src 等於失去意義。必須至少有 name"
         >
-          {/* @story-counter-example: 反例本身 —— 沒有名字的頭像(avatar.spec.md:309「alt 必傳 canonical」),沒有人可以接名片 */}
+          {/* @story-counter-example: 反例本身 —— 沒有名字的頭像(avatar.spec.md:311「alt 必傳 canonical」),沒有人可以接名片 */}
           <Avatar alt="" size={40} src="https://invalid-url.example/fail.jpg" />
           <ExampleCaption warn>↑ 空 avatar → 使用者不知道是誰</ExampleCaption>
         </TutorialRule>
@@ -76,10 +78,10 @@ export const UsageGuidance: Story = {
         >
           {/* 選單 → 解讀它的圖例 = labeling(tight);兩者成一組,與 Rule 內其他範例並列(loose 由 Rule 擁有) */}
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
-            <div className="border border-divider rounded-lg bg-surface">
+            <div className="border border-divider rounded-md bg-surface">
               <MenuGroup aria-label="身份與功能圖示對照">
                 {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉;首字標記讓團隊 / 組織一眼可辨,又不會被誤認成某個人)*/}
-                <MenuItem role="presentation" avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: ada.name, hoverCard: samplePersonCard(ada) }}>Ada Chen 的留言</MenuItem>
+                <MenuItem role="presentation" avatar={{ src: demoPersonPhoto('Ada Chen', 48), alt: ada.name, hoverCard: samplePersonCard(ada) }}>Ada Chen 的留言</MenuItem>
                 {/* @example-basis: 團隊是實體,不接人員名片(avatar.spec.md:78「不代表人員」) */}
                 <MenuItem role="presentation" avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
               </MenuGroup>
@@ -88,7 +90,7 @@ export const UsageGuidance: Story = {
             <div className="flex items-center gap-[var(--layout-space-loose)] flex-wrap">
               {/* @anatomy-exempt-next  @layout-space-magic-ok: 圖例 頭像 / 圖示 ↔ 名稱 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
               <div className="flex items-center gap-2">
-                <Avatar src="https://i.pravatar.cc/48?u=ada-chen" alt={ada.name} size={24} hoverCard={samplePersonCard(ada)} />
+                <Avatar src={demoPersonPhoto('Ada Chen', 48)} alt={ada.name} size={24} hoverCard={samplePersonCard(ada)} />
                 <span className="text-footnote text-fg-muted">人員</span>
               </div>
               {/* @layout-space-magic-ok: 圖例 頭像 / 圖示 ↔ 名稱 8px 是範例原值(與已發布版同值,F-S8),規格沒寫(放行章 (d)) */}
@@ -125,7 +127,7 @@ export const FallbackRule: Story = {
         {/* 刻意示範 initials fallback:後三顆**必須**無 src(fallback 順序示範,
             2026-07-08 demo 人像真實化 sweep 豁免保留) */}
         <div className="flex items-center gap-[var(--layout-space-loose)]">
-          <Avatar alt={ada.name} size={40} src="https://i.pravatar.cc/80?img=1" hoverCard={samplePersonCard({ ...ada, avatarSrc: 'https://i.pravatar.cc/80?img=1' })} />
+          <Avatar alt={ada.name} size={40} src={demoPersonPhoto('Ada Chen', 80)} hoverCard={samplePersonCard(ada)} />
           <Avatar alt={ada.name} size={40} hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
           <Avatar alt={alice.name} size={40} hoverCard={samplePersonCard({ ...alice, avatarSrc: undefined })} />
           <Avatar alt="ABC Corp" size={40} color="blue" />

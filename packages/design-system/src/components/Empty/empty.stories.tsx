@@ -1,11 +1,10 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { SearchX, Lock, Inbox, Search, X } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonGroup } from '@/design-system/components/Button/button-group'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldError, FieldLabel, useFormValidation } from '@/design-system/components/Field/field'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/design-system/components/Dialog/dialog'
@@ -59,7 +58,7 @@ function OrderSearch() {
         columns={orderColumns}
         data={rows}
         getRowId={(r) => r.id}
-        height="auto"
+        maxHeight="none"
         emptyState={
           <Empty
             icon={SearchX}
@@ -79,7 +78,7 @@ export const SearchNoResults: Story = {
 
 /* ── 空清單:這個 Sprint 還沒有任務,建立任務 → 表格出現第一筆 ───────────────── */
 type SprintTask = { id: string; title: string; status: string }
-const TASK_COLUMNS: ColumnDef<SprintTask>[] = [
+const TASK_COLUMNS: DataTableColumnDef<SprintTask>[] = [
   { accessorKey: 'title', header: '任務' },
   { accessorKey: 'status', header: '狀態' },
 ]
@@ -87,9 +86,11 @@ const TASK_COLUMNS: ColumnDef<SprintTask>[] = [
 function SprintBacklog() {
   const [tasks, setTasks] = React.useState<SprintTask[]>([])
   const [open, setOpen] = React.useState(false)
-  // 對話框裡的表單同 Dialog 展示「表單」:走 useFormValidation、沒有 <form>(footer 鈕呼叫 handleSubmit)、打開那一刻 reset、送出成功 Toast 再關
+  // 對話框裡的表單同 Dialog 展示「表單」:走 useFormValidation、沒有 <form>(footer 鈕呼叫 handleSubmit)、打開那一刻 reset、送出成功 Toast 再關。
+  // 需要填的只有任務名稱 → 空白時「建立」停用(form-validation.spec.md「Submit Button 狀態」第三列;hook 的 soleRequiredField 算)
   const form = useFormValidation({
     initialValues: { title: '' },
+    soleRequiredField: 'title',
     validate: { title: (v) => (String(v ?? '').trim() ? undefined : '任務名稱必填') },
     onSubmit: (values) => {
       setTasks((list) => [...list, { id: `task-${list.length + 1}`, title: String(values.title).trim(), status: '待處理' }])
@@ -112,7 +113,7 @@ function SprintBacklog() {
         columns={TASK_COLUMNS}
         data={tasks}
         getRowId={(r) => r.id}
-        height="auto"
+        maxHeight="none"
         emptyState={
           <Empty
             icon={Inbox}
@@ -122,7 +123,8 @@ function SprintBacklog() {
         }
       />
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent height="hug">
+        {/* 只有一個欄位(任務名稱)→ sm(dialog.spec.md「寬度檔位」) */}
+        <DialogContent height="hug" width="sm">
           <DialogHeader>
             <DialogTitle>建立任務</DialogTitle>
           </DialogHeader>
@@ -137,7 +139,7 @@ function SprintBacklog() {
             <DialogClose asChild>
               <Button variant="tertiary">取消</Button>
             </DialogClose>
-            <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>建立</Button>
+            <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>建立</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -167,7 +169,7 @@ export const NoPermission: Story = {
     <>
       <Toaster />
       {/* @layout-space-magic-ok: 有框容器包 Empty 的外框內距 32px —— empty.spec.md「間距」只寫「Outer padding 由 consumer 容器決定」、沒寫這個值,不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
-      <div className="border border-border rounded-lg p-8 max-w-md">
+      <div className="border border-border rounded-md p-8 max-w-md">
         <Empty
           icon={Lock}
           title="你沒有檢視這個專案的權限"

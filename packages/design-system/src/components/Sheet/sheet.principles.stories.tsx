@@ -162,7 +162,7 @@ export const UsageGuidance: Story = {
             <DialogTrigger asChild>
               <Button variant="secondary" danger startIcon={Trash2}>永久刪除專案</Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth="440px">
+            <DialogContent height="hug" width="sm">
               <DialogHeader>
                 <DialogTitle>確定要永久刪除此專案?</DialogTitle>
               </DialogHeader>

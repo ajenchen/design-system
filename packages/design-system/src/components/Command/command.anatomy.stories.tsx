@@ -4,6 +4,7 @@
 //   SelectMenu 等外層元件呈現。色彩 / 尺寸 / 狀態都由消費方(SelectMenu / Combobox /
 //   PeoplePicker)決定並在各自的 anatomy 詳述。本檔保留 Overview(教結構與
 //   消費路徑)+ Accessibility(6-canonical 中適用的 2 個;2026-05-17 per Dim 13 加)。
+//   2026-11-21 複查仍成立:command.spec.md「分類」段仍是 Internal primitive、由 SelectMenu 消費;本檔仍只有這兩個 story。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, User, LogOut, FileText } from 'lucide-react'
 import {
@@ -32,7 +33,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Command 是基於 cmdk 的搜尋 + 鍵盤導覽清單;項目消費 CommandItem(內包 MenuItem)、空狀態與載入中消費 MenuItem 訊息列(CommandEmpty / CommandLoading)、搜尋列與 SelectMenu 共用。結構:CommandInput(搜尋框)+ CommandList(捲動區)+ CommandGroup(分組)+ CommandItem(項目)+ CommandEmpty(空狀態)。本 DS 在 cmdk 原結構上套用設計 token(顏色 / 字級 / 間距),並用 ScrollArea 包住清單做跨系統一致的捲軸;選項與訊息列都經 MenuItem 取得同一種列幾何,Command 自己不寫第二份樣式。</Desc>
-        <div className="rounded-lg border border-border max-w-md overflow-hidden">
+        <div className="rounded-md border border-border max-w-md overflow-hidden">
           <Command label="搜尋指令">
             <CommandInput placeholder="輸入指令或搜尋..." />
             <CommandEmpty>找不到結果</CommandEmpty>

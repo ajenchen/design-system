@@ -32,6 +32,10 @@ const customTileActivated = fn()
 // 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
+// 讀者看的情境都是中文產品:月份標題 / 星期名照中文排(元件的 locale 預設 'en-US',calendar.tsx `locale = 'en-US'`;
+// 2026-11-18 前沒傳,畫面是「July 2026」「Sun–Sat」配中文介面 —— 稽核 A113,AGENTS.md「單一檔案不中英夾雜」)。
+// test-only 的鍵盤夾具不是給人看的,照元件預設。
+const LOCALE = 'zh-TW'
 
 /**
  * 團隊行事曆 — Notion / Google Calendar 替代品情境
@@ -41,18 +45,18 @@ export const TeamCalendar: Story = {
   name: '團隊行事曆',
   render: () => {
     const events: CalendarEvent[] = [
-      { id: '1', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
-      { id: '2', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
-      { id: '3', title: 'Project Orion deadline', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'red' },
-      { id: '4', title: '1:1 w/ Sarah', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'purple' },
-      { id: '5', title: 'Standup', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'blue' },
-      { id: '6', title: 'Q2 OKR review', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
-      { id: '7', title: 'Alex vacation', start: `${thisMonth}-20`, end: `${thisMonth}-22`, color: 'yellow', allDay: true },
-      { id: '8', title: 'Customer meeting', start: `${thisMonth}-25`, end: `${thisMonth}-25`, color: 'orange' },
+      { id: '1', title: '設計審查', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
+      { id: '2', title: '衝刺規劃會議', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
+      { id: '3', title: 'Orion 專案截止', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'red' },
+      { id: '4', title: '與 Sarah 一對一', start: `${thisMonth}-12`, end: `${thisMonth}-12`, color: 'purple' },
+      { id: '5', title: '每日站會', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'blue' },
+      { id: '6', title: 'Q2 OKR 檢討', start: `${thisMonth}-18`, end: `${thisMonth}-18`, color: 'green' },
+      { id: '7', title: 'Alex 休假', start: `${thisMonth}-20`, end: `${thisMonth}-22`, color: 'yellow', allDay: true },
+      { id: '8', title: '客戶會議', start: `${thisMonth}-25`, end: `${thisMonth}-25`, color: 'orange' },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
       </div>
     )
   },
@@ -66,17 +70,17 @@ export const LaunchWeek: Story = {
   name: '產品上線週',
   render: () => {
     const events: CalendarEvent[] = [
-      { id: 'l1', title: 'Code freeze', start: `${thisMonth}-13`, end: `${thisMonth}-13`, color: 'red' },
-      { id: 'l2', title: 'Release v2.0', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'blue' },
+      { id: 'l1', title: '程式碼凍結', start: `${thisMonth}-13`, end: `${thisMonth}-13`, color: 'red' },
+      { id: 'l2', title: '發布 v2.0', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'blue' },
       { id: 'l3', title: '客服待命(全天)', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'yellow', allDay: true },
       { id: 'l4', title: '上線公告 10:00', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'green' },
       { id: 'l5', title: '監控輪值 14:00', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'purple' },
       { id: 'l6', title: '慶功 18:30', start: `${thisMonth}-15`, end: `${thisMonth}-15`, color: 'orange' },
-      { id: 'l7', title: 'Post-mortem', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
+      { id: 'l7', title: '上線檢討會', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'blue' },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
       </div>
     )
   },
@@ -98,15 +102,15 @@ export const ContentPublishingSchedule: Story = {
   render: () => {
     // 五種內容各一色;只用字與底色對比 ≥ 4.5 的色相(green / orange 事件色的字對比 3.71 / 3.82,不到 WCAG AA 4.5;色票本身怎麼改是 tokens 的題目,不在範例裡處理)
     const events: CalendarEvent[] = [
-      { id: 'p1', title: '週五 newsletter', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' },
-      { id: 'p2', title: 'Blog: 設計系統 v2', start: `${thisMonth}-07`, end: `${thisMonth}-07`, color: 'purple' },
-      { id: 'p3', title: 'YouTube: tutorial ep 3', start: `${thisMonth}-10`, end: `${thisMonth}-10`, color: 'red' },
-      { id: 'p4', title: 'Podcast: interview', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'turquoise' },
-      { id: 'p5', title: 'Product announcement', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'magenta' },
+      { id: 'p1', title: '週五電子報', start: `${thisMonth}-02`, end: `${thisMonth}-02`, color: 'blue' },
+      { id: 'p2', title: '部落格:設計系統 v2', start: `${thisMonth}-07`, end: `${thisMonth}-07`, color: 'purple' },
+      { id: 'p3', title: 'YouTube:教學影片第 3 集', start: `${thisMonth}-10`, end: `${thisMonth}-10`, color: 'red' },
+      { id: 'p4', title: 'Podcast:來賓訪談', start: `${thisMonth}-17`, end: `${thisMonth}-17`, color: 'turquoise' },
+      { id: 'p5', title: '產品發表', start: `${thisMonth}-28`, end: `${thisMonth}-28`, color: 'magenta' },
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo events={events} defaultReferenceDate={now} today={now} readOnlyDates />
+        <CalendarDemo events={events} defaultReferenceDate={now} today={now} locale={LOCALE} readOnlyDates />
       </div>
     )
   },
@@ -153,7 +157,7 @@ export const EmptyCalendar: Story = {
   name: '空行事曆',
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-      <CalendarDemo events={[]} defaultReferenceDate={now} today={now} readOnlyDates />
+      <CalendarDemo events={[]} defaultReferenceDate={now} today={now} locale={LOCALE} readOnlyDates />
     </div>
   ),
 }

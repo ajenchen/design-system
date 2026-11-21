@@ -142,6 +142,86 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 9"
 fi
 
+# ── Test 10–13(WP-05):M29 bypass 的稽核紀錄是功能狀態,遙測沒開也要寫;唯讀 / 沒有 adapter 照舊不寫 ──
+FIXTURE=$(mktemp -d)
+[ -n "${FIXTURE:-}" ] && [ -d "$FIXTURE" ] || { echo "❌ mktemp -d failed(FIXTURE;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+FIXTURE="$(cd "$FIXTURE" && pwd -P)"
+trap 'rm -rf "$FIXTURE"' EXIT
+git -C "$FIXTURE" init -q
+FIX_GIT_DIR="$(cd "$(git -C "$FIXTURE" rev-parse --absolute-git-dir)" && pwd -P)"
+FIX_RUNTIME="$FIX_GIT_DIR/governance-runtime"
+BYPASS_LOG="$FIX_RUNTIME/governance-bypass.jsonl"
+# 沒有 canonical read、也沒有 marker 的 transcript → 不 bypass 就會被擋(Test 13 對照)。
+BYPASS_TRANSCRIPT="$FIXTURE/transcript.jsonl"
+: > "$BYPASS_TRANSCRIPT"
+
+# usage: run_bypass_case <bypass 0|1> [env(1) edits...]
+# 呼叫端的修改交給第二個 env:env(1) 的選項(-u)只能出現在變數指派之前,
+# 寫在固定指派後面會被當成指令名(exit 127)。
+run_bypass_case() {
+  local bypass="$1"; shift
+  local payload
+  payload=$(jq -n --arg fp "/some/apps/product/src/App.tsx" --arg c "$CONTENT" --arg tp "$BYPASS_TRANSCRIPT" \
+    '{hook_event_name: "PreToolUse", tool_name: "Write", tool_input: {file_path: $fp, content: $c}, transcript_path: $tp}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | env GOVERNANCE_PROJECT_DIR="$FIXTURE" GOVERNANCE_STATIC_REPLAY=0 \
+    GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY=0 \
+    GOVERNANCE_RUNTIME_ROOT="$FIX_RUNTIME" GOVERNANCE_STATE_DIR="$FIX_RUNTIME" \
+    GOVERNANCE_BYPASS_DS_ANCHOR="$bypass" env "$@" bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT" 2>/dev/null)
+  STDERR_TEXT=$(cat "$STDERR" 2>/dev/null)
+  rm -f "$STDOUT" "$STDERR"
+}
+bypass_lines() { if [ -f "$BYPASS_LOG" ]; then grep -c '"event":"ds-anchor-bypass"' "$BYPASS_LOG" || true; else echo 0; fi; }
+# 每格只看「這一次」加了幾行,不看累計:一格紅不會連帶讓後面幾格跟著紅(看得出是哪一個條件壞了)。
+bypass_case() {
+  local before
+  before=$(bypass_lines)
+  run_bypass_case "$@"
+  ADDED=$(( $(bypass_lines) - before ))
+}
+
+echo "Test 10: bypass + 遙測關 + adapter 環境 → 放行且寫進 governance-bypass.jsonl"
+bypass_case 1
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && [ -z "$STDOUT_TEXT" ] && [ "$ADDED" = "1" ] \
+   && grep -qF '"file":"/some/apps/product/src/App.tsx"' "$BYPASS_LOG"; then
+  echo "  PASS  Test 10"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 10 (bypass not audit-logged with telemetry off;exit=$EXIT added=$ADDED)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 10"
+fi
+
+echo "Test 11: bypass + READ_ONLY=1 → 放行,一個檔都不寫"
+bypass_case 1 GOVERNANCE_READ_ONLY=1
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && [ "$ADDED" = "0" ]; then
+  echo "  PASS  Test 11"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 11 (read-only wrote or blocked;exit=$EXIT added=$ADDED)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 11"
+fi
+
+echo "Test 12: bypass + 直接跑(沒有 adapter 的 runtime root)→ 放行,不寫"
+bypass_case 1 -u GOVERNANCE_RUNTIME_ROOT
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && [ "$ADDED" = "0" ]; then
+  echo "  PASS  Test 12"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 12 (direct probe wrote or blocked;exit=$EXIT added=$ADDED)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 12"
+fi
+
+echo "Test 13: 對照 —— 同一份內容不 bypass → 擋,而且不寫稽核紀錄"
+bypass_case 0
+if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -q "M29 DS Anchor Preflight" && [ "$ADDED" = "0" ]; then
+  echo "  PASS  Test 13"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 13 (control did not block or wrote;exit=$EXIT added=$ADDED)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - Test 13"
+fi
+
+rm -rf "$FIXTURE"
 rm -f "$TMP_TRANSCRIPT" "$TMP_TRANSCRIPT_WITH_READ"
 
 echo ""

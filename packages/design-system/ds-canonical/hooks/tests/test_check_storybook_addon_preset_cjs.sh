@@ -32,6 +32,7 @@ FAIL=0
 FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
+[ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ] || { echo "❌ mktemp -d failed(TMP_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_DIR"' EXIT
 # Override GOVERNANCE_PROJECT_DIR so _log-fire.sh state lands in TMP_DIR(不污染 repo .claude/logs/)
 export GOVERNANCE_PROJECT_DIR="$TMP_DIR"

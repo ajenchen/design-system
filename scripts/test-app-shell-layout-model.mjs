@@ -260,9 +260,12 @@ function buildTable(m) {
       const l = L(shell({ W: 1600, rail: 48, open: RA }))
       return expect([['上限', [l.caps.right, l.caps.agent], [426, 526]], ['細列 + 上限 + Main', 48 + l.caps.right + l.caps.agent + 600, 1600], ['細列在版面上', l.railInLayout, true]])
     }],
-    ['D9', 'D:24', '細列 68(寬鬆密度)→ Right 416、AI agent 516', () => {
-      const l = L(shell({ W: 1600, rail: 68, open: RA }))
-      return expect([['上限', [l.caps.right, l.caps.agent], [416, 516]]])
+    // 2026-11-13:細列寬改成四格(sidebar.spec.md「尺寸規範」:一般密度 48、一般密度 × 側欄 size lg 52、大密度 64、大密度 × size lg 68;密度的叫法照 density.spec.md)。
+    // D:24 核准的是規則(細列像 Main 最小寬一樣先扣),這裡的數字是把細列寬代進同一條規則算出來的:
+    // 68 那一格原本只標密度、沒標 size,現在是大密度 × size lg;大密度預設(size sm / md)是 64 → 另補一格,一般密度 × size lg 的 52 也補。
+    ['D9', 'D:24', '細列寬代入同一條規則(1600、Menu 關閉):68(大密度 × 側欄 size lg)→ Right 416、AI agent 516;64(大密度)→ 418 / 518;52(一般密度 × size lg)→ 424 / 524', () => {
+      const caps = (rail) => { const l = L(shell({ W: 1600, rail, open: RA })); return [l.caps.right, l.caps.agent] }
+      return expect([['細列 68 的上限', caps(68), [416, 516]], ['細列 64 的上限', caps(64), [418, 518]], ['細列 52 的上限', caps(52), [424, 524]]])
     }],
     ['D10', 'D:24', '連帶關閉的合計加細列:1100 → 600+48+300+300 = 1248 > 1100 關閉;1230 → 1248 > 1230 也關閉(不加細列的話不關,AI agent 會變浮層蓋住 Right)', () => {
       const a = act(shell({ W: 1100, cfg: CFG2, rail: 48, open: { agent: true } }), { type: 'request-right', contentType: 'detail' })
@@ -374,13 +377,23 @@ function buildTable(m) {
       const l = L(act(shell({ W: 2200, open: ALL }), drag('right', 480), resize(1600)))
       return expect([['Right', l.widths.right, 330], ['Main', l.mainWidth, 650], ['Menu / AI agent 還能拉', [l.caps.menu - l.widths.menu, l.caps.agent - l.widths.agent], [20, 30]]])
     }],
+    ['A13', 'AI(U:6;sidebar.spec.md「尺寸規範」)', '產品沒給 Menu 寬度設定時的預設範圍:最小 240(px 常數)、初始 = 最大 = 量到的 --sidebar-width(15rem)與 240 取大 —— 瀏覽器字級 12px 量到 180 仍合法(240 / 240 / 240);16px 零差異;20px 照量到的 300', () => {
+      const at = (rootPx) => m.defaultMenuWidthRange(15 * rootPx, 240)
+      const r12 = at(12)
+      return expect([
+        ['字級 12px', [r12.min, r12.initial, r12.max], [240, 240, 240]],
+        ['字級 12px 合法', m.validatePanelWidthRange(r12), null],
+        ['字級 16px', Object.values(at(16)), [240, 240, 240]],
+        ['字級 20px', Object.values(at(20)), [240, 300, 300]],
+      ])
+    }],
 
     // ══ 性質(逐格窮舉,不抽樣、不隨機)══
-    ['P1', 'U:33、D:24', '每一種開啟組合 × 視窗 600–2800(每 10px)× 細列 0 / 48 / 68:不捲動時 細列 + 上限合計 + Main 最小 + 留給 Main 的 = 視窗寬,而且只有全部到最大寬時才有留給 Main 的;要捲動時上限 = 最小寬、Main = 最小寬', () => {
+    ['P1', 'U:33、D:24', '每一種開啟組合 × 視窗 600–2800(每 10px)× 細列 0 / 48 / 52 / 64 / 68(沒有細列 + sidebar.spec.md「尺寸規範」的四格):不捲動時 細列 + 上限合計 + Main 最小 + 留給 Main 的 = 視窗寬,而且只有全部到最大寬時才有留給 Main 的;要捲動時上限 = 最小寬、Main = 最小寬', () => {
       const combos = [ALL, RA, { menu: true, agent: true }, { menu: true, right: true }, { agent: true }, { right: true }, { menu: true }]
       let n = 0
       const bad = []
-      for (const open of combos) for (const rail of [0, 48, 68]) for (let W = 600; W <= 2800; W += 10) {
+      for (const open of combos) for (const rail of [0, 48, 52, 64, 68]) for (let W = 600; W <= 2800; W += 10) {
         const l = L(shell({ W, rail, open }))
         const ids = ['menu', 'right', 'agent'].filter((id) => l.display[id] === 'side-by-side')
         const capSum = ids.reduce((a, id) => a + l.caps[id], 0)
@@ -442,12 +455,15 @@ const MUTANTS = [
   ['連帶關閉用 Right 舊內容的最小寬', 'rightMinWidth: rightMin,', "rightMinWidth: currentWidthRange(state, 'right').min,", ['A3']],
   ['拿掉「已是浮層就維持」', "else display.menu = menuOverlayActive ? 'overlay' : 'hidden'", "else display.menu = 'hidden'", ['U14', 'D13', 'D15']],
   ['排 Right、AI agent 前不先扣細列', 'let reserved = mainMinWidth + railWidth', 'let reserved = mainMinWidth', ['D12']],
+  // 2026-11-13 補:D8 / D9(細列寬代進可拉上限)原本沒有任何改壞版指名 —— D9 多了 64 / 52 兩格之後,先證明這幾格會紅
+  ['算可拉上限時不扣細列', 'let remaining = availableWidth - mainMinWidth - railWidthInLayout', 'let remaining = availableWidth - mainMinWidth', ['D8', 'D9', 'P1']],
   ['aria-expanded 跟開關紀錄走(暫藏也算展開)', "return display === 'side-by-side' || display === 'overlay'", "return display !== 'closed'", ['A10']],
   ['被版面收掉時焦點不移', "return 'main' // K7:沿用既有後備", 'return null', ['A9']],
   ['並排時從 AI agent 導向 Main 也收起', "return deriveLayout(state).display.agent === 'overlay' ? { ...state, open: { ...state.open, agent: false } } : state", 'return { ...state, open: { ...state.open, agent: false } }', ['D6']],
   ['浮層放不下最小寬時吃掉留白(維持最小寬)', 'if (hi < min) return { min: hi, max: hi, belowMin: true }', 'if (hi < min) return { min, max: min, belowMin: false }', ['U7', 'A5']],
   ['連帶關閉把 Menu 的最小寬也算進合計(違反 U:12)', 'agentMinWidth: currentWidthRange(state, \'agent\').min,', "agentMinWidth: currentWidthRange(state, 'agent').min + (state.open.menu ? currentWidthRange(state, 'menu').min : 0),", ['U23']],
   ['內容自動變化也走連帶關閉(違反 U:11)', "    case 'set-content-type':\n", "    case 'set-content-type':\n      if (action.panel === 'right') return applyAction(state, { type: 'request-right', contentType: action.contentType })\n", ['U24']],
+  ['Menu 預設範圍直接用量到的 --sidebar-width(2026-11-17 前:字級 < 16px 時 初始 < 最小)', 'const initial = Math.max(measuredInitial, minDefault)', 'const initial = measuredInitial', ['A13']],
   ['Menu 並排時連帶關閉不扣細列(§6 舊措辭)', '        railWidth: state.railWidth,\n        rightMinWidth: rightMin,', "        railWidth: deriveLayout(state).display.menu === 'side-by-side' ? 0 : state.railWidth,\n        rightMinWidth: rightMin,", ['D17', 'P2']],
 ]
 
@@ -461,13 +477,14 @@ const AGENT_PANEL_TSX = join(ROOT, 'packages/design-system/src/components/AgentP
 const PARALLEL = [/\b960\b/, /\b768\b/, /\b1280\b/, /\* ?3 ?\/ ?8/, /useIsNarrowViewport/, /matchMedia\(/, /SIDE_BY_SIDE_MIN/, /function placePanels|function computeSideBySideCaps|function computeOverlayRange/]
 function callerChecks(appShellSrc, agentPanelSrc) {
   const appShell = /from '\.\/layout-model'/.test(appShellSrc) && /reduceLayout\(/.test(appShellSrc) && /deriveLayout\(/.test(appShellSrc)
+    && /menuDefaultRange: defaultMenuWidthRange\(/.test(appShellSrc)
     && !PARALLEL.some((re) => re.test(appShellSrc.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '')))
   const agent = /from '@\/design-system\/components\/AppShell\/layout-model'/.test(agentPanelSrc) && /computeStandaloneAgentLayout\(/.test(agentPanelSrc)
     && /useAppShellPanel\(\s*'agent'/.test(agentPanelSrc)
     && !PARALLEL.some((re) => re.test(agentPanelSrc.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '')))
   const unreached = modelActionTypes(readFileSync(MODEL, 'utf8')).filter((type) => !OWNER_HELD[type] && !appShellSrc.includes(`type: '${type}'`))
   return [
-    { code: 'C1', ok: appShell, name: 'app-shell.tsx 經 layout-model 的 reduceLayout / deriveLayout 排四區,沒有自己的門檻、比例或並排判斷' },
+    { code: 'C1', ok: appShell, name: 'app-shell.tsx 經 layout-model 的 reduceLayout / deriveLayout 排四區、Menu 預設範圍經 defaultMenuWidthRange(A13),沒有自己的門檻、比例或並排判斷' },
     { code: 'C2', ok: agent, name: 'agent-panel.tsx 在 AppShell 裡由 AppShell 給版面(useAppShellPanel)、單獨使用時經 computeStandaloneAgentLayout 只算自己,沒有 960 / 3/8' },
     { code: 'C3', ok: unreached.length === 0, name: `模型的每一種動作都有執行面(app-shell.tsx 派送,或主人持有的開關)${unreached.length ? ` —— 沒有人派送:${unreached.join(', ')}` : ''}` },
   ]
@@ -545,6 +562,7 @@ if (SELFTEST) {
   const CALLER_MUTANTS = [
     ['app-shell.tsx 不經 reduceLayout(平行實作)', () => callerChecks(appSrc.replaceAll('reduceLayout(', 'reduceLayoutLocal('), agentSrc), 'C1'],
     ['app-shell.tsx 塞回 768 斷點', () => callerChecks(appSrc + '\nconst NARROW = 768\n', agentSrc), 'C1'],
+    ['app-shell.tsx 的 Menu 預設範圍不經 defaultMenuWidthRange(A13 驗的是平行實作)', () => callerChecks(appSrc.replace(/menuDefaultRange: defaultMenuWidthRange\([^)]*\)/, 'menuDefaultRange: { min: PANEL_WIDTH_MIN_DEFAULT, initial: tokens.sidebarInitial, max: tokens.sidebarInitial }'), agentSrc), 'C1'],
     ['agent-panel.tsx 單獨使用時塞回 960 門檻', () => callerChecks(appSrc, agentSrc + '\nconst SIDE = 960\n'), 'C2'],
     ['agent-panel.tsx 不經 computeStandaloneAgentLayout', () => callerChecks(appSrc, agentSrc.replaceAll('computeStandaloneAgentLayout(', 'localLayout(')), 'C2'],
     ['app-shell.tsx 不派送「從 AI agent 導向 Main」(模型規則沒有執行面)', () => callerChecks(appSrc.replaceAll("type: 'navigate-main-from-agent'", "type: 'resize'"), agentSrc), 'C3'],

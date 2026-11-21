@@ -1,5 +1,5 @@
 {
-  "note": "寫了閘就要有人跑它。這裡記的是「目前沒有任何執行面會呼叫」的閘/測試腳本。數字只准往下 —— 新增孤兒會讓 gate-reachability-invariant.mjs 變紅。清掉既有孤兒(接進 CI 或退役)之後跑 --update-baseline 重記。manualOnly:刻意只手動跑的那幾支,每支都要寫得出原因(同一件事的 CI 閘是哪一支、為什麼只能人看);沒寫的算待接線或退役。",
+  "note": "寫了閘就要有人跑它。orphans 記的是「目前沒有任何執行面會呼叫」的閘/測試腳本;nightlyOnly 記的是名字像閘(不含 test- 開頭)、只在夜間 harness / 只有 schedule 的 workflow 跑得到、PR 上沒有任何東西會因為它變紅的腳本(PR 會跑的腳本只在 assert / 資料 / 訊息裡提到它不算 PR 跑它,只認 spawn / exec / import 等執行形狀);elsewhereOnly 記的是只在技能文件 / 註解 / 腳本裡提到但不跑 / 發布或手動 workflow 被提到的。三份清單的數字都只准往下 —— 新增任一類都會讓 gate-reachability-invariant.mjs 變紅。清掉之後(接進 PR 執行面或退役)跑 --update-baseline 重記。manualOnly:刻意只手動跑的那幾支孤兒,每支都要寫得出原因(同一件事的 CI 閘是哪一支、為什麼只能人看);沒寫的算待接線或退役。",
   "generatedBy": "scripts/gate-reachability-invariant.mjs --update-baseline",
   "count": 4,
   "orphans": [
@@ -9,6 +9,27 @@
     "probe-windows-scrollbar.mjs"
   ],
   "manualOnly": {
+    "probe-cell-picker-geometry.mjs": "刻意只手動跑(2026-11-18 記):它是 Cell Indicator RFC D 路徑實作前的基準擷取工具,不是閘 —— 檔頭 :3「capture pre-implement baseline」、:22「這是探針(工具),不是閘」。它把 9 種欄位 display / edit 的格子盒與內容盒(Field 外框或第一段字)存成 tmp/cell-picker-geometry/*.png 與 baseline.json、印 INNER DELTA(:171)給人比對,沒有任何紅綠斷言(exit 1 只代表儀器失效,:217);它服務的 governance/planning/cell-indicator-ssot-rfc.md 已是 REFERENCE、實作完成(:5)。同一件事 CI 守的部分:scripts/data-table-invariants.mjs 的 I1–I4(:261–264,InlineEdit story 的可編輯欄,含 select / multiSelect / person / multiPerson / date / time,清單在 :279 起)與 I24(:1715 起,url 經鉛筆進編輯),量 display↔edit 的格子盒寬高差(I1 ≤ 1px、I2 / I3 < 0.5px)與 Field 填滿格高(I4 < 1px),ci.yml verify-browser-datatable 的「DataTable pixel invariants (browser)」那一步(行號會隨 ci.yml 增刪漂移,2026-11-20 WP-21 改指步驟名)。CI 沒守的:RFC:56 要的「文字 x/y display↔edit ≤ 0.5px」—— I1–I4 / I24 只量盒子、不量字的位置,這支探針也只印數字不判;要守它得另寫斷言,不是把這支接進 CI。",
+    "probe-skeleton-band-raster.mjs": "刻意只手動跑(2026-11-18 記):它是決策紀錄的可重跑依據,不是閘 —— 檔頭 :7「這是決策紀錄的可重跑依據,不是 CI 閘;數字會隨 Chromium 版本浮動,看的是倍數關係」。它用 CDP LayerTree.profileSnapshot 量四種骨架底畫法的光柵毫秒數,只印數字、沒有任何紅綠斷言;數字與結論收在 packages/design-system/src/components/DataTable/data-table.tsx:645–655(骨架底 docblock),而那份光柵成本在同檔 :677–680 寫明「已知且接受」,所以沒有、也不該有守這個數的 CI 閘。同一層使用者看得到的行為(快速捲動零空白幀、畫得動的機器不出骨架)由 scripts/data-table-fast-scroll.mjs 在 ci.yml verify-browser-datatable 的「DataTable pixel invariants (browser)」那一步守(同一步的 --assert-max-blank-frames=0 與 --assert-max-shell-frames=0;原寫的行號 :512 / :523 在合回第一波後已不對,2026-11-20 WP-21 改指步驟名)。",
     "probe-windows-scrollbar.mjs": "刻意只手動跑(2026-09-27 記):它是截圖探針 —— 輸出 tmp/scrollbar-probe/{story}-baseline.png / -windows-sim.png / -corner-zoom.png 與 report.json 給人看右下角捲軸與圓角外框的關係,沒有任何「溢出多少算紅」的斷言可以讓 CI 判紅綠;同一個幾何(Bug H:Windows 傳統捲軸溢出圓角外框)的 CI 閘是 scripts/data-table-scrollbar-visibility.mjs(斷言 B 捲動區落在裁切祖先 padding-box 內 / C 捲軸內外側 hit-test / D 外側半條像素,ci.yml verify-browser-datatable `--quick` + focus-deep-gates.yml 全矩陣 + --selftest),它同樣拿掉 --hide-scrollbars。2026-09-25 補的「沒捲軸 = exit 1」只是讓手動跑時不印假 complete。"
-  }
+  },
+  "nightlyOnlyCount": 12,
+  "nightlyOnly": [
+    "audit-a11y.mjs",
+    "audit-consumer-a11y.mjs",
+    "audit-hook-quality.mjs",
+    "check-branch-protection.mjs",
+    "check-codex-freshness.mjs",
+    "check-plugin-installed.mjs",
+    "check-src-republish.mjs",
+    "consolidate-audit-material.mjs",
+    "dispatch-audit-dims.mjs",
+    "governance-check.mjs",
+    "prepare-deep-audit-run.mjs",
+    "run-gate-meta-tests.mjs"
+  ],
+  "elsewhereOnlyCount": 1,
+  "elsewhereOnly": [
+    "code-quality-audit.mjs"
+  ]
 }

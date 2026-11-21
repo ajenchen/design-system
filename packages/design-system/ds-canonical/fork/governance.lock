@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
+      "sha256": "116e54e0abbe465f6d722b9ea082bb4da347a6b153eb0ca5f64d8534b0f7b1c1",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -23,7 +23,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "75c9c8020c159dce4a3faf8043517adb68849c28c7866406b0d0848e6b9ff8d4",
+      "sha256": "0bfba038f2b1fd29f8e25eaf5f9948570259a6bae2710f6d3cefae76e21180b5",
       "source": "providers/codex/skills/bug-fix-rhythm",
       "classification": null,
       "destination": null
@@ -111,7 +111,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -135,7 +135,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/propose-options/SKILL.md",
-      "sha256": "a3aa1f2661b0e8a4c0731ab4977f45177dcf87ebf5b12aa954a2cd03425439f7",
+      "sha256": "8d5774d8d5122f0ee936629f1f451a3d91b5c9ee83cc858951bb8d7110983066",
       "source": "providers/codex/skills/propose-options",
       "classification": null,
       "destination": null
@@ -199,7 +199,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "57d04a23a94b9c15ee4e5e5ebba3c71f338e69a7dc0ec290e5223caca2020224",
+      "sha256": "c68a79a8fbe18077419aea0d210518961a01047abcf42f37ddfaaa6be876ad98",
       "source": "providers/codex/skills/scan-similar-bugs",
       "classification": null,
       "destination": null
@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
+      "sha256": "e5c478bfd3c19c9070e42f5c150e71e7f7ddfe96a8b7f803f03ddfa66786ab07",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -271,7 +271,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "e730127bff1820a035b11c3b3119e7354975d7e9c8c69d7e8b1adfe307c53ecc",
+      "sha256": "116e54e0abbe465f6d722b9ea082bb4da347a6b153eb0ca5f64d8534b0f7b1c1",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -311,7 +311,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/189e551431181e4a88783c02130d2787b801ef731c86e35bcde89a7313aa020e.blob",
-      "sha256": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",
+      "sha256": "5280bc83de46486d6fd13e29349eee849d347970ed5fdf32412d463629124170",
       "source": "infra/governance/providers/provider-cli-toolchain.json",
       "classification": null,
       "destination": "governance/provider-cli-toolchain.json"
@@ -631,7 +631,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e930ebca6fd8eeb30802aac0930efae7bcc44cc0996f24de07c11ca6a081fedf.blob",
-      "sha256": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
+      "sha256": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
       "source": "infra/governance/providers/provider-cli-toolchain.package-lock.json",
       "classification": null,
       "destination": "governance/provider-cli-toolchain.package-lock.json"
@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/_log-fire.sh",
-      "sha256": "87a54b77e35fe1ede49ef2d040ea22ae9ff6bf57101864670024b3fdd8c0459e",
+      "sha256": "df8895d9e184f4d358a6ae9f9a6472142a2b5039de9c33e030281da454ee81ff",
       "source": "_log-fire.sh",
       "classification": "HELPER",
       "destination": null
@@ -678,16 +678,8 @@
     },
     {
       "schemaVersion": 1,
-      "file": "hooks/check_chrome_header_avatar_canonical.sh",
-      "sha256": "9415aad9a40931d36f42bd004b26f160f19f488a2f512fb899f9a0641acf0b06",
-      "source": "check_chrome_header_avatar_canonical.sh",
-      "classification": "SHIP_AS_IS",
-      "destination": null
-    },
-    {
-      "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "14e21430f00346766caf37ba25334f05d80c8bbb1acf731f22e9dc7fb9ab6eb8",
+      "sha256": "e07b5bd1ab3c84b5a30c0d0a15da808c018ebd98a032f6b8ee22c99399a3bc4c",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -695,7 +687,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "b3816a928818f61979ba88f04ac90ab14bf71ac285a7230e22e1afe0d6589c64",
+      "sha256": "1bc750f6731800d4983c97cbe3c7eb1957b038880fb8759d8fb3c4959932fbe8",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -703,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "b2dee125fc51d840a6b18e8dcdfd61b0b3e52e30b2d3e8bf8f9d190d96cdc12b",
+      "sha256": "662601810cbe61171812be08925c653feba49139b7271e67f202547b3ebd6f06",
       "source": "check_ds_anchor_preflight.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -727,7 +719,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "087e4078f0fab1fb9415ae5a2bead03c91e4375429f798436609372c7a5f20ca",
+      "sha256": "82361f00cc9729d3171908b0e322a8c1c0b8d3bc3700cbf10c678e03fd616af9",
       "source": "check_field_family_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -751,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "e96fcb804d4e297e0994172978669ed7a96a545589db11dbbb67ed3e7a4749aa",
+      "sha256": "258126371e53c98fc398399ce429a9aaf3cca9a7d1c1399be47d6de2a23b9a05",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -759,7 +751,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "05cc5e8f48dd5428fcb5d6dd5b8c9524b54b130854b769924155636a89cd78a6",
+      "sha256": "fa89c8ae5937e990260ef7572ac95a96ab570515877c54f088f70dba41cba185",
       "source": "check_opacity_token_usage.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -767,23 +759,23 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "79b8b9130170c2c0062f08fe9cec2a105d5569e2b9378a450ec48e28457fa85c",
+      "sha256": "db6f143e1819fe7f8696c8f5c5b5b324e362ccf2a1f35e75fecbe17874b62588",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
     },
     {
       "schemaVersion": 1,
-      "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
-      "sha256": "5ebadb0745bdc4ea29533e532c414fe8c9d35f85349c05b1a394268385b00bf7",
-      "source": "check_sidebar_menu_button_implicit_wrap.sh",
+      "file": "hooks/check_sidebar_avatar_canonical.sh",
+      "sha256": "d24c3d004e85c2cd49ed4e7d03617e216caf81a5954dcd5d407d13b78c656179",
+      "source": "check_sidebar_avatar_canonical.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
     },
     {
       "schemaVersion": 1,
       "file": "hooks/check_story_determinism.sh",
-      "sha256": "4b893c8b37136c5fa4caad5f9a7548304f144800078f4a749d30210d9cd56ac3",
+      "sha256": "6a3574c04180dc6201a1182037b3168bea168519e4195c9a74c1048920c57c32",
       "source": "check_story_determinism.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -815,9 +807,17 @@
     {
       "schemaVersion": 1,
       "file": "hooks/inject_deploy_url_after_push.sh",
-      "sha256": "6a5c00788dc330b0eea1c3610f68d4aa3c91e86f4079a50edf0cc205f921db33",
+      "sha256": "a7ac015727ae490fcf8a4cb1e50241a0479a2ab9751adfc80681d8385bd0bcb0",
       "source": "inject_deploy_url_after_push.sh",
       "classification": "SHIP_REWRITTEN",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "hooks/lib/_ds_removed_names.sh",
+      "sha256": "07a79b1af5d50070b9aeb39c21fcc7e4acc54bdaf968812c656fdd76c924942f",
+      "source": "lib/_ds_removed_names.sh",
+      "classification": "HELPER",
       "destination": null
     },
     {
@@ -847,7 +847,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "dbebda1afbfd3aab94c6cfb3891111e13f203d7b59d2ee28ab82a0151c3e0ad4",
+      "sha256": "ddedc548e38d6eac86ab261bb79b54af0c738fee9c569f665bc180aed4a2f0b9",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -935,7 +935,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "6ef1611f18493fc0312c24f943c16962de8deec83484a8f8d8fda7e608e52dc3",
+      "sha256": "36d23ebd7e9276d0baae5b7238a44f281a8df7d4d78196f9caef0bad7b579f4b",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -943,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "897148c182a77d70e0f1d1ab5eee4a1d9f32bf184d894a2f5756d9fdc6e1da58",
+      "sha256": "0052702268c02b0155903c4d96e669bf045dbf68bdd5215e54186ad77f4f4a5f",
       "source": null,
       "classification": null,
       "destination": null
@@ -967,7 +967,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "74d17a0fa117f81b55c9923aa9de260c6e332bed8cbb5c83cbea235382d4e8fd",
+      "sha256": "5ff6d9a868cbd3949f17a0f6738a0a3cf6b0fdb33f005786c75a8044e8108bfb",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1055,7 +1055,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": "skills/product-ui-audit/references/audit-checks.md",
       "classification": null,
       "destination": null
@@ -1079,7 +1079,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/propose-options/SKILL.md",
-      "sha256": "3f255412753d8cb40baaa4d9e94339f888cf1ee5f18721241b5a6d690b6e2642",
+      "sha256": "f5ec5cb924e2f7ec243b1f88af69300852107c4175d6de6290032c8e2439ae2f",
       "source": "skills/propose-options/SKILL.md",
       "classification": null,
       "destination": null
@@ -1143,7 +1143,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "7674c811b84f6b08af362f7642fb93e722649dbdf73a9f6ab5c37b2b9879a589",
+      "sha256": "c310d9950f005eacc1bb6edb84e1bef921529071af7398165d34edf92177b1cb",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1199,7 +1199,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "94bc0e9e2f6cdbcb211495ee776943b71ef3fc44ece562f6ee152a810cb8a97d",
+      "sha256": "e5c478bfd3c19c9070e42f5c150e71e7f7ddfe96a8b7f803f03ddfa66786ab07",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null
@@ -1207,7 +1207,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "75c9c8020c159dce4a3faf8043517adb68849c28c7866406b0d0848e6b9ff8d4",
+      "sha256": "0bfba038f2b1fd29f8e25eaf5f9948570259a6bae2710f6d3cefae76e21180b5",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1295,7 +1295,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": "skills/product-ui-audit/references/audit-checks.md",
       "classification": null,
       "destination": null
@@ -1319,7 +1319,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/propose-options/SKILL.md",
-      "sha256": "a3aa1f2661b0e8a4c0731ab4977f45177dcf87ebf5b12aa954a2cd03425439f7",
+      "sha256": "8d5774d8d5122f0ee936629f1f451a3d91b5c9ee83cc858951bb8d7110983066",
       "source": "skills/propose-options/SKILL.md",
       "classification": null,
       "destination": null
@@ -1383,7 +1383,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "57d04a23a94b9c15ee4e5e5ebba3c71f338e69a7dc0ec290e5223caca2020224",
+      "sha256": "c68a79a8fbe18077419aea0d210518961a01047abcf42f37ddfaaa6be876ad98",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1438,6 +1438,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "references/ds-removed-names.json",
+      "sha256": "b4968f70e07c71c113994332ca4cc04a97f36014a3023b952f15bfcd2c40d899",
+      "source": "packages/design-system/ds-changes.json",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "references/story-baseline-registry.json",
       "sha256": "f2e84184d26b19bfebae3d8724ac80c00e38db07b7e408179ec48a99d879abc5",
       "source": "packages/design-system/ds-canonical/references/story-baseline-registry.json",
@@ -1455,7 +1463,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
+      "sha256": "0e78034d31ba8d1b0f7c08ab4a931990c4a461a5b53019574828849342f903b1",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1487,7 +1495,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "d971a3c08000791cdf891794ecee6675e4b9875435ec2802739b35c2332bc1e4",
+      "sha256": "6d3fe80b41dfa82a04ae152e053b5a2b6eddc8069564420af05f2ddc8a715145",
       "source": null,
       "classification": null,
       "destination": null
@@ -1575,7 +1583,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "sha256": "6b1c0df89be2c3c5206801f4fd96208545705b5b9803939375db736cefda9494",
       "source": null,
       "classification": null,
       "destination": null
@@ -1599,7 +1607,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/propose-options/SKILL.md",
-      "sha256": "9e5038f8e2193685781fa8434c57f58f2e991cf1d21497230b1c08a5ed5c6606",
+      "sha256": "0bcda4148cbee3176ef376d68c6b2b3c6aa4c1310e87e1a2d441bdcb3755c01a",
       "source": null,
       "classification": null,
       "destination": null
@@ -1663,7 +1671,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "a7d2f40f000eedccd15d90e7d4dfa773e41bd24491f92d2871484a590602a58f",
+      "sha256": "e1c26f4c590395c0a7e2b2741a7cb8b02da0c825e722494d88d4c089f41d4e48",
       "source": null,
       "classification": null,
       "destination": null

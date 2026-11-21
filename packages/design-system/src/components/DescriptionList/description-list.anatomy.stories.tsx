@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: inspector 規格表格(token / prop 對照)用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @anatomy-rationale:
 //   ColorMatrix N/A — 純 typography 元件,色彩固定為 fg-secondary(label)+
@@ -25,8 +24,8 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>DescriptionList 是 <code>dl / dt / dd</code> HTML 語義元件——每個 DescriptionItem 是一組 label(dt)+ value(dd)配對。對齊 Atlassian / Polaris 慣例。CSS grid 容器,<code>cols</code> prop 控制欄數。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <Desc>DescriptionList 是 <code>dl / dt / dd</code> HTML 語義元件——每個 DescriptionItem 是一組 label(dt)+ value(dd)配對。CSS grid 容器,<code>cols</code> prop 控制欄數。</Desc>
+        <div className="border border-border rounded-md p-4 max-w-md">
           <DescriptionList>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
             <DescriptionItem label="團隊">Engineering</DescriptionItem>
@@ -87,7 +86,7 @@ export const Inspector: Story = {
     divided: { control: 'boolean', description: 'horizontal 模式下,每個 item 下加 border-b 對齊 rows(長列表建議開)' },
   },
   render: (args) => (
-    <div className="border border-border rounded-lg p-4 max-w-lg">
+    <div className="border border-border rounded-md p-4 max-w-lg">
       <DescriptionList {...args}>
         <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
         <DescriptionItem label="團隊">Engineering</DescriptionItem>
@@ -107,7 +106,7 @@ export const ColsMatrix: Story = {
       <div>
         <H3>cols=1(預設,窄容器)</H3>
         <Desc>垂直堆疊,適合 ProfileCard、sidebar detail 等窄容器。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-xs">
+        <div className="border border-border rounded-md p-4 max-w-xs">
           <DescriptionList cols={1}>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
             <DescriptionItem label="團隊">Engineering</DescriptionItem>
@@ -119,7 +118,7 @@ export const ColsMatrix: Story = {
       <div>
         <H3>cols=2(中等寬度)</H3>
         <Desc>兩欄並排,適合 ProfileCard info fields / detail panel。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-lg">
+        <div className="border border-border rounded-md p-4 max-w-lg">
           <DescriptionList cols={2}>
             <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
             <DescriptionItem label="職稱">Design Engineer</DescriptionItem>
@@ -134,7 +133,7 @@ export const ColsMatrix: Story = {
       <div>
         <H3>cols=3(寬容器)</H3>
         <Desc>三欄,適合寬 detail panel 顯示大量屬性。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-3xl">
+        <div className="border border-border rounded-md p-4 max-w-3xl">
           <DescriptionList cols={3}>
             <DescriptionItem label="訂單編號">#20260418-001</DescriptionItem>
             <DescriptionItem label="狀態">已出貨</DescriptionItem>
@@ -160,7 +159,7 @@ export const StateBehavior: Story = {
         <H3>空值呈現 — 一律用半形 <code>-</code> 字元(hyphen)</H3>
         <Desc>
           DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。一律用半形連字號
-          (<code>-</code>,對齊 Field <code>EMPTY_DISPLAY</code>)明確表達「有查過,但這個欄位目前沒值」;色同 value <code>text-foreground</code>。對齊 Atlassian / Polaris / GitHub 的資訊卡慣例。
+          (<code>-</code>,對齊 Field <code>EMPTY_DISPLAY</code>)明確表達「有查過,但這個欄位目前沒值」;色同 value <code>text-foreground</code>(「-」是供檢視的值,不是 placeholder 提示)。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <DescriptionList cols={2}>

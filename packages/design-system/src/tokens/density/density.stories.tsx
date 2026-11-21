@@ -107,7 +107,8 @@ const Page = ({ mode }: { mode: 'md' | 'lg' }) => (
         ))}
       </div>
     </div>
-    {/* 按鈕跟在內容後:上方 = loose(layoutSpace.spec.md 規則 3;規則 4 核心「內容 → 按鈕」跟「最後一個東西 → 容器底邊」是兩回事)。
+    {/* 按鈕跟在內容後:上方 = loose(layoutSpace.spec.md 規則 3;上方三條是同質佔位列、不是表單欄位 —— 表單欄位 → 表單按鈕列才是「組 ↔ 組」loose × 2;
+        規則 4 核心「內容 → 按鈕」跟「最後一個東西 → 容器底邊」是兩回事)。
         動作列沒有標題 → 靠左(action-bar.spec.md:109;2026-10-20 XF-01:原本 justify-end 靠右) */}
     <div
       className="flex"

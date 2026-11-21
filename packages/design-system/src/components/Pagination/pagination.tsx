@@ -6,7 +6,8 @@
 // - Select(size="sm"):../Select/select.tsx —— 完整形態的「N 筆/頁」選單
 // - Ellipsis icon:MoreHorizontal(packages/design-system/ds-canonical/rules/ui-development.md「Icon canonical」)
 // - DOM 骨架:shadcn Pagination(nav > ul > li + aria-current="page";https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/pagination.tsx#L11-L60 );
-//   controlled 事件驅動 + total/pageSize 資料模型對齊 Ant Pagination(2026-07-06 user 拍板:
+//   controlled 事件驅動 + total/pageSize 資料模型對齊 Ant Pagination(API 表的 current / pageSize / total / onChange,
+//   https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/pagination/index.en-US.md ;2026-07-06 user 拍板:
 //   Pagination 本體 = 完整功能 SSOT —— showTotal / 每頁筆數皆本元件 own,Table 轉發 config 消費)
 // 設計規則:./pagination.spec.md
 import * as React from 'react'
@@ -24,15 +25,17 @@ const BOUNDARY_COUNT = 1
 /** 最後一階砍掉頭尾頁碼(user 2026-09-10 拍板「我覺得可以砍頭砍尾」)。
  *  砍完的最後一階 = 上一頁 · … · 現在頁 · … · 下一頁 = 5 格 × 28 + 4 × gap 4 = **156px**,
  *  低於 DS 定義的最窄容器(側欄下限 240px,扣內距約 208px),所以支援得到的寬度**都不需要捲**。
- *  世界級對照(2026-09-10 16 家原始碼掃描):收合頁碼是絕對多數解 —— Atlassian `max = 7` 超過插 ellipsis、
- *  Carbon PaginationNav 在 `isSm` 直接砍成 4 顆、Ant `pageBufferSize`、Primer 逐級藏。 */
+ *  世界級對照(2026-09-10 16 家原始碼掃描):收合頁碼是絕對多數解 —— 各家寫法只住 pagination.spec.md
+ *  「窄容器階梯」的「為什麼不捲」條,這裡不抄(2026-11-21 前這裡另列四家、沒附連結,其中兩家 spec 也沒有列)。 */
 const BOUNDARY_COUNT_NARROW = 0
 const SIBLING_COUNT = 1
 /**
  * 窄容器時把 sibling 轉成 0 —— 格位 7 → 5(`1 … [5] … 12`)。
  * 這**不是新機制,是轉既有參數**:`boundary` / `sibling` 本來就是摺疊演算法的入參,
  * MUI(`usePagination` 的 `boundaryCount=1` / `siblingCount=1`)與 Primer
- * (`marginPageCount=1` / `surroundingPageCount=2`)都把這兩顆旋鈕開成公開 API,
+ * (`marginPageCount = 1` / `surroundingPageCount = 2`,
+ * https://github.com/primer/react/blob/31c717c3901f0940af23c40e0c54de9f54f9036c/packages/react/src/Pagination/Pagination.tsx )
+ * 都把這兩顆旋鈕開成公開 API,
  * 只是交給開發者手填。**「隨容器寬自動轉」是我們的組合,沒有現成一家這樣做**(M22 誠實標註)。
  * 關鍵是它**不改變瀏覽模式**:一樣是數字頁碼派,只是視窗變小 —— 這條線是 2026-09-04 user 定的。
  */
@@ -145,7 +148,7 @@ export interface PaginationProps extends React.ComponentPropsWithoutRef<'nav'> {
   onPageChange?: (page: number) => void
   /** 每頁筆數變更 callback。 */
   onPageSizeChange?: (pageSize: number) => void
-  /** 完整形態:左側顯示「第 x–y 筆,共 N 筆」range 資訊(Ant showTotal / MUI / Carbon 同款,opt-in)。 */
+  /** 完整形態:左側顯示「第 x–y 筆,共 N 筆」range 資訊(三家同款,各家格式與出處見 pagination.spec.md「完整形態」;opt-in)。 */
   showTotal?: boolean
   /** 完整形態:頁碼右側渲染「N 筆/頁」選單(消費 Select sm;Ant showSizeChanger 同款,opt-in)。 */
   pageSizeOptions?: number[]
@@ -278,7 +281,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
               </Button>
             </li>
           ) : (
-            // Ellipsis 純指示不可點(MUI / shadcn 同;Ant 為可點 jump-5 派,見 spec);寬度對齊數字鈕保持節奏
+            // Ellipsis 純指示不可點(世界級的兩派與各家原始碼連結見 pagination.spec.md「Ellipsis 非互動」條);寬度對齊數字鈕保持節奏
             <li
               key={slot}
               aria-hidden
@@ -312,19 +315,22 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
           // 原本它是「砍無可砍時整條橫向可捲」的最後一道,由 2026-09-04 的 commit 0eff9ab6 依我們自己的
           // Tabs canonical 類推而來,**沒有任何 user 原話核准過**。查證結果:16 家世界級設計系統掃過約 20 個
           // 分頁原始檔,`overflow: auto|scroll` 只中一條 —— MUI 的 `TablePagination.js`(https://github.com/mui/material-ui/blob/fec132cb22a5f4f7e122f56cac616195e52bfeea/packages/mui-material/src/TablePagination/TablePagination.js#L26-L31 ),而那是表格頁尾
-          // 工具列(`<td>`)不是頁碼導覽;Carbon 甚至在 `_pagination.scss:37` 明文寫 `overflow: initial` 擋掉捲動。
+          // 工具列(`<td>`)不是頁碼導覽;Carbon 甚至在 `_pagination.scss` 明文寫 `overflow: initial` 擋掉捲動
+          // (https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/pagination/_pagination.scss#L39 ;
+          // 2026-11-21 前這裡寫成第 37 行,與 spec 的 #L39 不一致)。
           // 沒有任何一家讓數字頁碼列橫向捲。改用主流解:多砍一階(見 BOUNDARY_COUNT_NARROW),
           // 最後一階只要 156px,低於 DS 最窄容器,所以支援得到的寬度都不需要捲。
           // 連帶好處:沒有裁切邊之後,焦點框、陰影、浮層在所有寬度都不再被切。
           'flex items-center',
-          // 完整形態 =「資訊左、操作右」(Ant 源碼結構:total 文字最左 li、size changer 最右 li)
+          // 完整形態 =「資訊左、操作右」(Ant 源碼結構:total 文字最左 li、size changer 最右 li —— rc-pagination 的 `<ul>`
+          // 第一個子元素是 `{totalText}`、最後一個是 `<Options`,https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/Pagination.tsx )
           hasExtras && 'w-full justify-between gap-[var(--layout-space-tight)]',
           className,
         )}
         {...props}
       >
         {hasExtras && (
-          // i18n-allow: DS default(range 格式 = Ant/MUI/Carbon 共識);showTotal=false 時渲染
+          // i18n-allow: DS default(range 格式 = Ant/MUI/Carbon 共識,三家出處見 pagination.spec.md「完整形態」);showTotal=false 時渲染
           // 空 span 佔 justify-between 左位,不含 stray 文字節點
           // `whitespace-nowrap` + `shrink-0`:資訊文字**永遠不會超過一行**(2026-09-04 user 要求)。
           // 沒有這兩個,flex 會把它壓到剩一個字寬再逐字斷行 —— 實測 440px 容器下分頁列高度
@@ -347,10 +353,12 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
                 if (!Number.isFinite(next) || next <= 0 || next === safePageSize) return
                 setPageSize(next)
                 // 換每頁筆數回第 1 頁——MUI TablePagination / TanStack autoResetPageIndex 派;
-                // Ant 為 preserve-position(clamp)派,本 DS 採 reset-to-1(spec「完整形態」段有註記)
+                // Ant 為 preserve-position(clamp)派(rc-pagination 換每頁筆數時只在頁碼超過新的最後一頁才夾回:
+                // `current > newCurrent && newCurrent !== 0 ? newCurrent : current`,同上 rc-pagination Pagination.tsx),
+                // 本 DS 採 reset-to-1(spec「完整形態」段有註記)
                 setPage(1)
               }}
-              options={sizeOptions.map((n) => ({ value: String(n), label: `${n} 筆/頁` }))} // i18n-allow: DS default(Ant「20 / page」內嵌同款)
+              options={sizeOptions.map((n) => ({ value: String(n), label: `${n} 筆/頁` }))} // i18n-allow: DS default(Ant「20 / page」內嵌同款:rc-pagination 英文語系 `items_per_page: '/ page'`,https://github.com/react-component/pagination/blob/f71d381edfabb6047ff5f1f3d8a82651f1377fcd/src/locale/en_US.ts )
             />
           )}
         </div>

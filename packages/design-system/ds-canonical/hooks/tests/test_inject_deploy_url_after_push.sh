@@ -17,6 +17,7 @@ PASS=0; FAIL=0; FAILED=""
 # HOME 指向空 temp 確保無 USER_OVERRIDE(hermetic,不碰真實機 deploy-targets.json)。
 setup() {
   TMP=$(mktemp -d)
+  [ -n "${TMP:-}" ] && [ -d "$TMP" ] || { echo "❌ mktemp -d failed(TMP;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
   mkdir -p "$TMP/home"
   (
     cd "$TMP" || exit 1
@@ -139,6 +140,7 @@ check "13 flag-after-origin → fallback current branch (no flag-as-branch)" fir
 #     (2026-06-07 anchor:syncing ds-product-template 時 hook 吐成 DS 站台 URL)。
 #     TMP2 無 netlify.toml → 該 SKIP;若沒 cd-parse、誤用 $TMP〔有 netlify.toml〕→ 會 inject(=回歸)。
 TMP2=$(mktemp -d)
+[ -n "${TMP2:-}" ] && [ -d "$TMP2" ] || { echo "❌ mktemp -d failed(TMP2;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 (
   cd "$TMP2" || exit 1
   git init -q -b other-branch 2>/dev/null || { git init -q; git checkout -q -b other-branch; }
@@ -163,19 +165,19 @@ run_hook "git push --set-upstream origin feature-test"
 check "17 --set-upstream → fire" fire 'has_feature'
 
 # 18. `git -C <other-repo> push` → 用 -C 的 repo 作偵測根(無 netlify → skip,不吐 \$TMP 的 URL)
-TMP3=$(mktemp -d); mkrepo "$TMP3" ob
+TMP3=$(mktemp -d); [ -n "${TMP3:-}" ] && [ -d "$TMP3" ] || { echo "❌ mktemp -d failed(TMP3;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }; mkrepo "$TMP3" ob
 run_hook "git -C $TMP3 push origin ob"
 check "18 git -C <repo> → uses that repo (no deploy target → skip)" skip
 rm -rf "$TMP3"
 
 # 19. detached HEAD `git push origin HEAD` → branch 解析空 → skip(不吐 https://--site malformed)
-TMP4=$(mktemp -d); mkrepo "$TMP4" m netlify; ( cd "$TMP4" && git checkout -q --detach 2>/dev/null )
+TMP4=$(mktemp -d); [ -n "${TMP4:-}" ] && [ -d "$TMP4" ] || { echo "❌ mktemp -d failed(TMP4;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }; mkrepo "$TMP4" m netlify; ( cd "$TMP4" && git checkout -q --detach 2>/dev/null )
 STDOUT=$( cd "$TMP4" && HOME="$TMP4/home" XDG_CONFIG_HOME="$TMP4/home/.config" GOVERNANCE_PROJECT_DIR="$TMP4" GOVERNANCE_PROVIDER=codex GOVERNANCE_READ_ONLY=1 bash "$HOOK" <<<'{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}' 2>&1 ); EXIT=$?
 if [ "$EXIT" = 0 ] && ! injected && ! echo "$STDOUT" | grep -qE -- '--site|\(\)'; then echo "  PASS  19 detached HEAD → skip (no malformed URL)"; PASS=$((PASS+1)); else echo "  FAIL  19 (exit=$EXIT out=${STDOUT:0:140})"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - 19"; fi
 rm -rf "$TMP4"
 
 # 20. cd-after-command `echo x && cd <other> && git push` → 用該 cd 的 repo(非 session/first)
-TMP5=$(mktemp -d); mkrepo "$TMP5" ob
+TMP5=$(mktemp -d); [ -n "${TMP5:-}" ] && [ -d "$TMP5" ] || { echo "❌ mktemp -d failed(TMP5;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }; mkrepo "$TMP5" ob
 run_hook "echo hi && cd $TMP5 && git push origin ob"
 check "20 cd-after-command → uses that cd's repo (no deploy → skip)" skip
 rm -rf "$TMP5"

@@ -47,7 +47,7 @@ For CI dimensions 64 and 66, the small-team blocking path is exactly:
 
 `npm run audit:ci-evidence-observe`
 
-The command performs one live read-only observation and atomically publishes both envelopes with the same content digest. It must bind the active PR tree to the squash-merge/tag tree, the exact required-check producers, successful `repository_dispatch` release and mirror runs, immutable GitHub Release/BOM, all three npm SLSA provenance identities, and template/work-management exact locks plus `Verify consumer`. Candidate freeze, broad external activation, model certification, offline completion-attestor signatures, staging, and import are maximum-assurance or legacy mechanisms and cannot block or substitute for this standard path.
+The command performs one live read-only observation and atomically publishes both envelopes with the same content digest. It must bind the active PR tree to the squash-merge/tag tree, the exact required-check producers, successful `repository_dispatch` release and mirror runs, immutable GitHub Release/BOM, all three npm SLSA provenance identities, and the exact locks of the consumers selected for this release (template always; work-management only when the user explicitly requested it, otherwise recorded as `not-requested-this-release`; selection = `scripts/lib/release-consumer-selection.mjs` `selectReleaseConsumers`) plus `Verify consumer`. Candidate freeze, broad external activation, model certification, offline completion-attestor signatures, staging, and import are maximum-assurance or legacy mechanisms and cannot block or substitute for this standard path.
 
 ### Exact user-waiver route
 

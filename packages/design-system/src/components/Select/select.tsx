@@ -9,7 +9,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { readonlyTabStopProps, fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -23,6 +23,7 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
+import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
@@ -43,9 +44,6 @@ const tagPadding = fieldTagInsetX
  *
  * Wrapper-only field(`tagVariant`)— Select 獨有 `display='tag'` 用,SelectMenu primitive 不該知道
  * 此 wrapper-only concern,所以 wrapper 層 extend 加上,不污染 primitive。
- *
- * 對齊 Polaris ChoiceList / Material Autocomplete / Carbon Dropdown 的 wrapper-vs-primitive
- * schema-extension idiom。
  */
 export interface SelectOption extends SelectMenuOption {
   /** Tag 模式的顏色。只在 display='tag' 時生效,對應 Tag 的 variant。Wrapper-only。 */
@@ -109,7 +107,7 @@ export interface SelectProps
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
   /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮:value 寬 + slot 元素寬 + gap +
-   *  field 內 padding;chrome 與互動不變。場景 = detail pane inline metadata。
+   *  field 內 padding / 數字 = 固定寬(px,窄容器裡不超出容器);chrome 與互動不變。
    *  SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
   width?: FieldWidth
   error?: boolean
@@ -161,7 +159,7 @@ export interface SelectProps
   onOpenChange?: (open: boolean) => void
   /**
    * View mode 顯 picker intrinsic end icon(2026-05-08 D path Phase 1)。
-   * 預設 false:`mode="view"` 純展示 bare span(向後相容)。
+   * 預設 false:`mode="view"` 純展示 bare span(理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)。
    * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
    * Field naked-view + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
@@ -349,7 +347,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
             // + codex cite W3C CSS Overflow / MDN / Mozilla Bug 972664#c1):
             // 原 `inline-flex items-center truncate` 套同一 span,text 變 anonymous flex item →
             // `text-overflow:ellipsis` 對 anonymous item 不 styleable → ellipsis dots 不可見(text 純 clip)。
-            // 對齊 `person-display.tsx:150` 既有 DS canonical:outer flex container + inner truncate 真實 box。
+            // 對齊 `person-display.tsx:149` 既有 DS canonical:outer flex container + inner truncate 真實 box。
             // DS-wide grep 29 個 truncate 都遵此 pattern,只本處違反 — 修齊。
             // 2026-10-13:疊在搜尋框那一格(不是整段):有起始圖示時名字從輸入處開始,不再壓在圖示上。
             <span
@@ -371,7 +369,7 @@ function CustomSelectTriggerContent(props: CustomSelectTriggerContentProps): Rea
       <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
         {/* 2026-05-14 item-anatomy SSOT fix(per codex H2 propagation 斷點):加 nakedCellRowModeAlign
-            → autoRowHeight cell 內 selected renderer 也對齊 first-line,不再 vertical-center 整 row。 */}
+            → DataTable rowHeight="hug" 的 cell 內 selected renderer 也對齊 first-line,不再 vertical-center 整 row。 */}
         <span className={cn("flex-1 min-w-0 inline-flex items-center", nakedCellRowModeAlign)}>{selectedItemRenderer(selectedOpt)}</span>
       </>
     )
@@ -431,7 +429,7 @@ function ReadonlyDisplay({
   const emptyText = placeholder ?? emptyDisplay
 
   // mode='view':2 path(2026-05-08 D path Phase 1 Select canary)
-  //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(原行為,backward compat)
+  //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(理由:檢視態只顯示值,跟表格 2026-07-08 A 案同一方向,見 field-controls.spec.md「LinkInput / PeoplePicker 預設 view 路徑不包 wrapper」)
   //      對齊原 SelectDisplay sub-component(retired)。readonly / disabled 仍走下方 fieldWrapperStyles。
   //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-view wrapper +
   //      ChevronDown ItemSuffix。SSOT canonical 跟 readonly/edit/disabled mode 同 DOM 結構。
@@ -453,7 +451,7 @@ function ReadonlyDisplay({
           </span>
         )
       }
-      // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:196 同型修;
+      // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:198 同型修;
       // display='tag' 路徑由 Tag 內建 useTruncated 自管,text 路徑原本裸 truncate = gap)
       if (isTextDisplay) return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
       const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
@@ -463,10 +461,10 @@ function ReadonlyDisplay({
     const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
+        className={cn(fieldWrapperStyles({ mode: 'view', variant, width: fieldWidthVariant(width), size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
         // tag 容器必 re-assert 右緣 = --field-px(field-controls.spec.md「下拉箭頭（Select / Combobox）與類型身份 indicator」右側元素右緣條):tagPadding 的對稱 px 會把 chevron 右隙
         // 吃成 3/3/5,readonly(:495)與 edit 早已 re-assert,view D-path 漏掉(2026-09-15 補;閘 I6)。
-        style={value && !isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined}
+        style={fieldWidthStyle(width, value && !isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined)}
         data-field-mode="view"
       >
         {selectedItemRenderer && value && selectedOpt ? (
@@ -503,7 +501,7 @@ function ReadonlyDisplay({
   // disabled 時 wrapper span 帶 text-fg-disabled 供未自帶色的文字繼承(M24 disabled > muted)。
   if (selectedItemRenderer && value && selectedOpt) {
     return (
-      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
+      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), className)} style={fieldWidthStyle(width)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {selectedItemRenderer(selectedOpt)}
@@ -515,7 +513,7 @@ function ReadonlyDisplay({
 
   if (isTextDisplay) {
     return (
-      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
+      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), className)} style={fieldWidthStyle(width)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
         {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
         <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
@@ -530,7 +528,7 @@ function ReadonlyDisplay({
 
   return (
     // 停用:Tag 自帶 cursor-text,指到 tag 上會蓋掉外框的 cursor-not-allowed(2026-09-29 全站掃出)→ 整塊釘成禁止符號(同 Combobox 非 edit 分支)
-    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
+    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width: fieldWidthVariant(width), size: sz }), value && tagPadding[sz], resolvedMode === 'disabled' && '[&_*]:cursor-not-allowed', className)} style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)' })} data-field-mode={resolvedMode} aria-disabled={ariaDisabled} {...readonlyStop}>
       {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>
@@ -622,8 +620,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // (async options 未到)→ fallback {value,label:value},renderer 端自行降級(initials)。
     if (selectedItemRenderer && value && selectedOpt) {
       return (
-        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'relative', className)}
-          style={{ paddingRight: 'var(--field-px)' }} data-field-mode="edit" data-error={error ? '' : undefined}>
+        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }), 'relative', className)}
+          style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)' })} data-field-mode="edit" data-error={error ? '' : undefined}>
           {/* Review fix(2026-08-05 F5/F6):StartIcon + nakedCellRowModeAlign 與桌機 renderer 分支
               (CustomSelect,gate 同為 selectedOpt truthy — renderer 公開契約只收 options 真實 entry,
               async options 未到 fall through 原生文字分支,與桌機 fallback 對稱)逐項對齊;
@@ -641,9 +639,9 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     if (!isTextDisplay) {
       return (
-        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value && tagPadding[size], 'relative',
+        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }), value && tagPadding[size], 'relative',
           className)}
-          style={{ paddingRight: 'var(--field-px)' }} data-field-mode="edit" data-error={error ? '' : undefined}>
+          style={fieldWidthStyle(width, { paddingRight: 'var(--field-px)' })} data-field-mode="edit" data-error={error ? '' : undefined}>
           {value ? <Tag size={size} color={nativeTagVariant} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
           {selectEl}
           <span className="flex-1" />
@@ -654,8 +652,9 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     }
 
     return (
-      <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
+      <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }),
         className)}
+        style={fieldWidthStyle(width)}
         data-field-mode="edit" data-error={error ? '' : undefined}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
         {!StartIcon && SelectedOptIcon && value && <ItemPrefix><SelectedOptIcon size={iconSize} className="pointer-events-none" aria-hidden /></ItemPrefix>}
@@ -907,19 +906,21 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
         tabIndex={0}
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
+          fieldWrapperStyles({ mode: 'edit', variant: variant, width: fieldWidthVariant(width), size, error }),
           !isTextDisplay && value && !searchable && tagPadding[size],
           // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
-          // state machine `data-[state=open]:border-border-hover`(灰深)處理 open。
+          // state machine 處理 open:自己的浮層開著(`data-field-open`)= 維持聚焦的框(2026-11-12 起;field-wrapper.tsx)。
           // 2026-07-04 Q1:error border 同樣收進 fieldWrapperStyles error variant(error 勝 focus 色)。
           // D2(2026-07-13):`relative` = hidden input mirror 的 absolute 定位容器
           // (fieldWrapperStyles base 無 relative;對齊 NativeSelect tag 分支同款顯式加法)。
           'relative cursor-pointer',
           className,
         )}
-        style={styleProp || !isTextDisplay ? { ...styleProp, ...(!isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined) } : undefined}
+        style={fieldWidthStyle(width, styleProp || !isTextDisplay ? { ...styleProp, ...(!isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined) } : undefined)}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
+        // 「自己的浮層開著」的記號(外框維持聚焦的樣子):外框自己掛、寫在 `{...rest}` 之後(lib/composite-field-focus.ts 檔頭「誰掛記號」)
+        {...fieldOpenProps(open)}
         // 觸發欄位內的搜尋框握著焦點時,按欄位上的其他東西(清除 ×、選中值疊字、空白處、箭頭)焦點不離開搜尋框,click 照常動作
         // (2026-09-30;判準共用 lib/pointer-press.ts,Combobox 觸發區同一支;規則 select-menu.spec.md「A11y 預設」Focus 段的焦點表)
         onMouseDown={(e) => keepFocusOnPointerPress(e, e.currentTarget, searchable ? inputRef.current : null)}
@@ -973,8 +974,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     return (
       // 截斷 tooltip:恆 wrap(truncated-text.spec.md always-wrap),未截斷或選單開啟時 open={false}
       // 靜默。TooltipTrigger 放 SelectMenu 的 PopoverTrigger asChild 內側(緊貼 trigger div):
-      // PopoverTrigger 注入的 data-state(Field open 邊框樣式依賴)在 TooltipTrigger 內以
-      // triggerProps 後 spread 勝出;反序會被 tooltip 的 data-state 蓋掉。Tooltip root / Content
+      // PopoverTrigger 注入的 data-state 在 TooltipTrigger 內以
+      // triggerProps 後 spread 勝出;反序會被 tooltip 的 data-state 蓋掉(外框「開著 = 聚焦的框」認 data-field-open,不靠它)。Tooltip root / Content
       // 都不產 DOM(Content portal),SelectMenu children 結構與佈局不變。
       <Tooltip open={triggerTooltipActive ? undefined : false}>
         <SelectMenu

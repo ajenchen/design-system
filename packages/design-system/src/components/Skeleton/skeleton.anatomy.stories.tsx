@@ -5,6 +5,7 @@
 //   bg-muted 從 theme 繼承(2026-05-20 修 drift,實際 skeleton.tsx:10 用 bg-muted);
 //   loading 是唯一狀態(無 hover / focus / active)。
 //   本檔保留 Overview + CommonShapes + DesignPrinciple + Accessibility 四個 story。
+//   2026-11-21 複查仍成立:skeleton.tsx 仍只收 className 與 HTML 屬性(沒有 size / color / variant prop)、底色仍是 bg-muted(見 skeleton.spec.md)。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Skeleton } from './skeleton'
 import { H3, Desc } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -12,7 +13,7 @@ import { H3, Desc } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 /**
  * Skeleton 是極簡 animation primitive——單一 div + pulse animation,
  * **刻意沒有 size / color / variant**。形狀 / 尺寸完全由 consumer 的 className
- * (Tailwind utilities)決定。底色固定用 `bg-muted`,深淺模式由主題色自動切換。
+ * (Tailwind utilities)決定。底色固定用 `bg-muted`,換主題(亮 / 暗)時自動跟著切換。
  *
  * 因此本 spec 只有 Overview + 常見形狀 + 設計原則 + 無障礙四個 story,沒有 SizeMatrix /
  * ColorMatrix / StateMatrix——這些概念對 Skeleton 不適用。
@@ -86,7 +87,7 @@ export const CommonShapes: Story = {
 
       <div>
         <H3>Card 載入</H3>
-        <div className="border border-border rounded-lg p-4 max-w-sm flex flex-col gap-3">
+        <div className="border border-border rounded-md p-4 max-w-sm flex flex-col gap-3">
           <Skeleton className="h-40 w-full rounded-md" />
           <Skeleton className="h-5 w-3/4" />
           <div className="flex flex-col gap-1">

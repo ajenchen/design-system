@@ -114,7 +114,7 @@ export const ColorMatrix: Story = {
           </tbody>
         </table>
       </div>
-      <div className="grid grid-cols-[140px_1fr] items-center gap-x-6 gap-y-4 rounded-lg border border-divider p-4">
+      <div className="grid grid-cols-[140px_1fr] items-center gap-x-6 gap-y-4 rounded-md border border-divider p-4">
         <span className="text-caption font-medium text-fg-secondary">可編：hover / Tab</span>
         <Stateful value="更新付款條件" label="任務標題" />
         <span className="text-caption font-medium text-fg-secondary">鎖定：無 affordance</span>
@@ -144,7 +144,7 @@ export const SizeMatrix: Story = {
           <tr><td className="p-2 font-mono">lg</td><td className="p-2 font-mono">--field-height-lg</td><td className="p-2 font-mono">--field-px</td><td className="p-2 font-mono">text-body-lg</td></tr>
         </tbody>
       </table>
-      <div className="grid grid-cols-[80px_1fr] items-center gap-x-6 gap-y-4 rounded-lg border border-divider p-4">
+      <div className="grid grid-cols-[80px_1fr] items-center gap-x-6 gap-y-4 rounded-md border border-divider p-4">
         {(['sm', 'md', 'lg'] as const).map(size => (
           <React.Fragment key={size}>
             <span className="font-mono text-caption text-fg-muted">{size}</span>
@@ -206,7 +206,7 @@ function CascadeDemo() {
   const [title, setTitle] = React.useState('Fix flaky checkout e2e test')
   const [owner, setOwner] = React.useState('')
   return (
-    <div className="w-[420px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
+    <div className="w-[420px] rounded-md border border-border bg-surface p-[var(--layout-space-loose)]">
       {/* Field 偵測 InlineEdit 靜態 fieldPreferredSize='sm' → 未指定 size 自動收 sm;
           vertical orientation → InlineEdit -mx 讓 view 值落 FieldLabel 同左緣 */}
       <Field className="mb-4">

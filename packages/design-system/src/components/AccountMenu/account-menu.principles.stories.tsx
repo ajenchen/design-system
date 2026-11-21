@@ -1,8 +1,8 @@
-// @benchmark-cited: usage 分界與 placement 由 account-menu.spec.md 已列的
-// Atlassian / shadcn / Primer / Material primary sources 收斂；本檔只投影 canonical，(來源:https://unpkg.com/@atlaskit/atlassian-navigation@6.4.12/dist/types/components/Profile/types.d.ts)
-// 不新增 email、account switcher 或其他 aspirational contract。
+// @benchmark-cited: usage 分界與 placement 由 account-menu.spec.md「Benchmark(M8 / M22 cite)」表收斂(各家一手來源只住該表,這裡不抄);
+// 本檔只投影 canonical，不新增 email、account switcher 或其他 aspirational contract。
 import type { Meta, StoryObj } from '@storybook/react'
 import { AccountMenu } from './account-menu'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 import { ExampleGroup } from '@/design-system/stories-helpers/examples/example-captions'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -16,7 +16,7 @@ type Story = StoryObj
 const noop = () => {}
 const DEMO_USER = {
   name: 'Alan Chen',
-  avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' as const },
+  avatar: { src: demoPersonPhoto('Alan Chen', 48), color: 'blue' as const },
 }
 
 // 規則的內容是一段說明(不是範例區)

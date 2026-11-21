@@ -38,7 +38,7 @@ export const UsageGuidance: Story = {
           note="切換即生效——物理開關類比(牆上 light switch、iPhone settings)。使用者按下那刻 Bluetooth 就開了,不經任何 submit 流程"
         >
           {/* 標籤 / 說明用 Switch 自己的 label / description(switch.spec.md「label / description 整合」:左文字、右開關,間距與字級由 Switch 擁有) */}
-          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
+          <div className="border border-border rounded-md p-[var(--layout-space-loose)]">
             <Switch
               checked={bluetooth}
               onCheckedChange={setBluetooth}
@@ -59,7 +59,7 @@ export const UsageGuidance: Story = {
               包進 Field 時 Checkbox 的 label 由 FieldLabel 接管、自己的字不畫(checkbox.spec.md「insideField && !insideGroup → 抑制 label」),
               畫面上只剩一個沒有字、讀屏也沒有名字的勾選框。原本的「送出 / 取消」兩顆鈕按了沒反應(稽核 M061),照稽核另一個修法拿掉,
               「旁邊有送出」已寫在本則說明與下方 caption */}
-          <div className="border border-border rounded-lg p-[var(--layout-space-loose)]">
+          <div className="border border-border rounded-md p-[var(--layout-space-loose)]">
             <Checkbox
               label="我同意服務條款與隱私政策"
               checked={agreeTerms}

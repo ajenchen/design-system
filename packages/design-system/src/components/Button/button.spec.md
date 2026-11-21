@@ -1,5 +1,5 @@
 ---
-# Story Auto-Compile 結構化 canonical(見 .claude/planning/story-auto-compile.md Phase 2)
+# Story Auto-Compile 結構化 canonical(見 governance/planning/story-auto-compile.md Phase 2)
 # Keys 必跟 button.tsx buttonMeta + cva buttonVariants 對齊(compile-time 驗)。
 component: Button
 family: 3  # Pill Layout
@@ -10,21 +10,21 @@ traits:
 variants:
   primary:
     when: "主要 action / CTA。**必 explicit `variant=\"primary\"`,不靠預設**(2026-06-06 起預設改低 emphasis)"
-    world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L48)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/filled-button.ts#L26-L27)、[來源](https://unpkg.com/@atlaskit/button@25.7.0/dist/es2019/utils/button-appearances.js))
+    world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]  # ([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L48)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/filled-button.ts#L26-L27)、[來源](https://unpkg.com/@atlaskit/button@25.7.0/dist/es2019/utils/button-appearances.js))
   secondary:
     when: "陪襯 primary 的次要 action"
     # 2026-09-18 更正:本 variant 是**透明底 + 主色框 + 主色字**,不是填色鈕。
     # 舊寫的兩個對照都對不上(一個是有底色無框的填色鈕、一個是中性框),詳下方「世界級對照(per-variant)」。
-    world-class: ["Carbon Tertiary Button", "Ant ghost primary Button", "Bootstrap .btn-outline-primary"]([來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/button/_button.scss#L159-L167)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/style/variant.ts#L313-L315)、[來源](https://github.com/twbs/bootstrap/blob/6e1f75f420f68e1d52733b8e407fc7c3766c9dba/scss/mixins/_buttons.scss#L39-L47))
+    world-class: ["Carbon Tertiary Button", "Ant ghost primary Button", "Bootstrap .btn-outline-primary"]  # ([來源](https://github.com/carbon-design-system/carbon/blob/593de4deda2d96f47f71cdfc9b30d07bd1302304/packages/styles/scss/components/button/_button.scss#L159-L167)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/style/variant.ts#L313-L315)、[來源](https://github.com/twbs/bootstrap/blob/6e1f75f420f68e1d52733b8e407fc7c3766c9dba/scss/mixins/_buttons.scss#L39-L47))
   tertiary:    # ★ labeled cva default(2026-06-06 從 primary 改 — 對齊世界級「預設低 emphasis、按重要程度升」)
     when: "**labeled 按鈕預設** / 第三級 action(tool-like / icon-heavy)。中性外框、清楚可點性,再按重要程度升 primary"
-    world-class: ["Material Outlined Button", "Ant Button default", "Polaris secondary"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L134-L141)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/outlined-button.ts#L25)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L125))
+    world-class: ["Material Outlined Button", "Ant Button default", "Polaris secondary"]  # ([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L134-L141)、[來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/button/outlined-button.ts#L25)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L125))
   text:    # ★ iconOnly cva default(2026-06-06 加)
     when: "文字樣式 — low emphasis / toolbar embedded。**iconOnly 按鈕預設**(對齊 action-bar「純動作工具→text」+ Material 3「icon-only = no fill」)"
     world-class: ["Ant Button type=text", "Material Text Button", "Material 3 icon-only no-fill"]
   link:
     when: "內文連結 — inline reading context"
-    world-class: ["Polaris Link", "Ant Button type=link"]([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L35)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L129))
+    world-class: ["Polaris Link", "Ant Button type=link"]  # ([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Link/Link.tsx#L35)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/button/Button.tsx#L129))
 sizes:
   xs: { when: "row-embedded inline(FileItem rich action / DataTable row action)" }
   sm: { when: "form field-height 28 / compact chrome" }
@@ -50,7 +50,7 @@ benchmark:
 ---
 
 
-> **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
+> **Foundational SSOT rationale**(2026-04-25 approved;當時寫的「cap 800」只列在舊開場檔的例外清單,那份清單已不存在,`check_file_size_budget.sh` 的 case 表也從沒列過本檔 —— 行數上限以該表為準,本檔走一般 spec 那一檔):
 > Family 3 (Pill Layout) SSOT owner。SegmentedControlItem / Chip / Tag 繼承 Pill 結構;Dismiss canonical(X icon 色處理)cascade 到全 DS inline actions;Button sm/md/lg 與 Field sm/md/lg size pairing 是系統級 invariant。scope 本質 > 單一元件。
 
 # Button 設計原則
@@ -206,7 +206,7 @@ Variant 控制**視覺強調等級**（visual weight），不決定語意意圖�
   - Ant 的對應是 `ghost`:底 `token.ghostBg`(透明)、字 `token.colorPrimary`;Ant 的 `default` 才是中性框中性字
     (`token.defaultColor` / `token.defaultBorderColor` / `token.defaultBg`,
     <https://github.com/ant-design/ant-design/blob/master/components/button/style/variant.ts>)—— 中性那組是本元件的 `tertiary`,不是 `secondary`。
-  - Bootstrap `button-outline-variant` 把 `--bs-btn-color` 與 `--bs-btn-border-color` 都設成同一顆主題色、底維持透明
+  - Bootstrap `button-outline-variant` 把 `--bs-btn-color` 與 `--bs-btn-border-color` 都設成同一個變體色(mixin 參數 `$color`)、底維持透明
     (<https://github.com/twbs/bootstrap/blob/main/scss/mixins/_buttons.scss>),是最直白的同款。
 
   **注意**:同一段 `tertiary` 那行原寫的「Polaris `tertiary`」對不上 —— Polaris 的 tertiary 沒有框也沒有底(`.variantTertiary` 不設 box-shadow,沿用 `.Button` 的 `--pc-button-box-shadow: transparent`、`--pc-button-bg: transparent`),本元件 tertiary 是中性框中性字;Polaris 有框的中性鈕是 `secondary`(`--p-shadow-button` + `--p-color-bg-fill`)。tertiary 那行應改成「Polaris `secondary`」或拿掉 Polaris([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.module.css#L145-L152))。
@@ -319,14 +319,14 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 - 防止表單重複送出、避免使用者因延遲而重複點擊
 - `disabled` 本身**不代表**正在載入；若需傳達載入中，應同時設定 `loading`。**握著焦點的那一刻被停用 → 不轉原生 `disabled`**(2026-10-01;確認頁 F9 ②『按鈕忙碌 / 被停用時焦點留在原處』;user 2026-10-21 回「照你建議，但是這裡我看不懂你在講什麼，但你之前丟給我的deploy preview，我認為看起來沒有大礙」):改 `aria-disabled` + `data-disabled-focusable`、擋掉觸發、長相與原生停用相同,焦點留在原鈕,焦點離開後才回原生 disabled(Tab 序與今天相同)。規則、根因(HTML focus fixup)、七家出處與機制住 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」,本檔只放指標
-- disabled 時品牌 / 狀態色完全移除，統一回到 neutral——避免「可用但弱化」的視覺誤導
+- disabled 時互動色 / 狀態色完全移除，統一回到 neutral——避免「可用但弱化」的視覺誤導
 - danger 在 disabled 時同樣消失，呈現與非 danger 版本相同的外觀
 - `pressed` + disabled 並存:**disabled 視覺優先**——pressed 底色被 disabled token 取代(state > emphasis,同 M24 precedence;`aria-pressed` 語意仍保留)
 - 常見誤解:「disabled 時 badge 還能傳達待辦數」——badge 不應與 disabled / loading 並存(使用者無法互動,計數成誤導;規則同 loading 段)
 
 ### loading
 
-顯示 `CircularProgress`(indeterminate),設定 `aria-busy`,**可聚焦的停用**:`aria-disabled` + `data-disabled-focusable`、擋掉 click 與表單隱含送出、焦點留著、Tab 走得到(2026-10-01,確認頁 F9 ②,user 回覆同上「disabled」段;2026-10-01 前走原生 `disabled`,按下送出那一刻焦點被瀏覽器丟到 `<body>`,待辦總帳 N69)。長相與原生停用相同 —— 靜止、滑過、按住都是(灰底、禁止符號游標;`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,`button.tsx` 在這個狀態拿掉 `aria-disabled:` 開頭的那一整組 class),**不是**下方「狀態疊加」表 `aria-disabled` 列那套不透明度 + 滑過釘在品牌色的長相(2026-10-07 修:前一版滑過時仍套品牌色,閘 `scripts/escape-and-focus-contract-invariant.mjs` F-look)。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」。disabled + loading 並存時視覺同樣是 disabled neutral token 為底,spinner 照常渲染(`text-current` 繼承 disabled 文字色)。
+顯示 `CircularProgress`(indeterminate),設定 `aria-busy`,**可聚焦的停用**:`aria-disabled` + `data-disabled-focusable`、擋掉 click 與表單隱含送出、焦點留著、Tab 走得到(2026-10-01,確認頁 F9 ②,user 回覆同上「disabled」段;2026-10-01 前走原生 `disabled`,按下送出那一刻焦點被瀏覽器丟到 `<body>`,待辦總帳 N69)。長相與原生停用相同 —— 靜止、滑過、按住都是(灰底、禁止符號游標;`styles/base.css` 把 `disabled:` 變體擴成「原生 :disabled 或 [data-disabled-focusable]」,`button.tsx` 在這個狀態拿掉 `aria-disabled:` 開頭的那一整組 class),**不是**下方「狀態疊加」表 `aria-disabled` 列那套不透明度 + 滑過釘在原本填色的長相(2026-10-07 修:前一版滑過時仍套原本的填色,閘 `scripts/escape-and-focus-contract-invariant.mjs` F-look)。規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」。disabled + loading 並存時視覺同樣是 disabled neutral token 為底,spinner 照常渲染(`text-current` 繼承 disabled 文字色)。
 
 **CircularProgress 永遠在左側(`startIcon` 位置)**,方向與行動發起一致:
 - 有 `startIcon` → icon 換成 CircularProgress(同位置替換)
@@ -405,9 +405,9 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 
 **實際應用**:`SurfaceHeader` 內建 CSS rule(SSOT 在 `overlay-surface.tsx` `CHROME_UNBOUNDED_SLOT`,此處僅引述不重述完整公式;`SurfaceFooter` 不套此 rule):
 ```css
-[&_[data-unbounded]]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]
+[&_[data-unbounded]]:my-[calc((var(--surface-chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]
 ```
-→ slot 高度由 `--chrome-slot-h` 參數化(default 衍生 `calc(var(--font-body-lg-size)*1.5)`=24;Popover-tier override = `COMPACT_HEADER_SLOT` 衍生 21;皆 title 字級改自動跟)
+→ slot 高度由 `--surface-chrome-slot-h` 參數化(default 衍生 `calc(var(--font-body-lg-size)*1.5)`=24;Popover-tier override = `COMPACT_HEADER_SLOT` 衍生 21;皆 title 字級改自動跟)
 → default(md): my=-2px / lg: my=-4px
 → 效果:Button native size 不變(sm 28/32,命中區亦同 —— 命中 ≡ 可視,owner = `ds-canonical/references/hit-area-canonical.md`;2026-09-24 把原文的「touch target」正名為命中區),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
 
@@ -434,7 +434,9 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 
 ### 垂直排列
 
-所有按鈕撐滿容器寬度（`fullWidth`）。**最希望被點擊的按鈕放最上方**——視覺動線由上往下。
+所有按鈕撐滿容器寬度（`width="fill"`;直排的 `<ButtonGroup orientation="vertical">` 自動套用,按鈕上明寫的 `width` 勝過群組）。**最希望被點擊的按鈕放最上方**——視覺動線由上往下。
+
+**寬度參數**(2026-11-15,user 2026-11-11 決策頁「尺寸:甲」):Button 的寬度模式叫 `width`,`'hug'`(預設,跟內容)/ `'fill'`(撐滿父容器);直排的 `<ButtonGroup>` 裡沒傳時自動 `'fill'`。2026-11-15 前叫布林 `fullWidth`(`fullWidth` = `width="fill"`),已移除、不留舊名(0.x 相容政策,`ds-canonical/references/props-naming.md`「相容政策」)。Button 不收數字寬 —— 按鈕寬度交給內容或版面【AI 推導 2026-11-15:哪個元件收哪些值是 AI 依「每個元件能填的值不完全一樣」這條代價決定的,user 原話沒有點名 Button】(全 DS 規則 `ds-canonical/references/props-naming.md`「尺寸參數」)。
 
 ---
 
@@ -447,7 +449,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 - ❌ 不得引用 `lucide-react` 以外的 icon
 - ❌ `startIcon` 不得放超過一個
 - ❌ `link` variant 不得嵌入段落文字——用 HTML `<a>` 代替
-- ❌ 不得直接使用 `variant="destructive"` 或 `variant="ghost"`——shadcn 內部 alias，僅供框架元件使用([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/button.tsx#L12-L18))
+- ❌ 沒有 `variant="destructive"` / `variant="ghost"`(shadcn 的名字,[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/button.tsx#L12-L18)):危險操作用 `danger`(搭 primary / secondary / text),低強調用 `variant="text"`。2026-11-15 前這兩個值會在執行期被靜默轉成 primary + danger / text,已移除(0.x 相容政策,`ds-canonical/references/props-naming.md`「相容政策」)
 - ❌ `danger` 僅支援 `primary`、`secondary`、`text`——`tertiary` + danger 無對應 compoundVariant,會靜默渲染成一般 tertiary（灰、無紅色 danger 視覺,並非等同 secondary),`link` + danger 語義矛盾（連結暗示導覽，非破壞）
 - ❌ `pressed` 不得用於多選一——應使用 Segmented Control
 - ❌ `pressed` 不得套用於 `primary` / `link`——主要操作不應 toggle、link 語意為導覽

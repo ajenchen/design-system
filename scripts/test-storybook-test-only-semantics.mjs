@@ -15,7 +15,7 @@ const expected = new Map([
   ['packages/design-system/src/components/FileViewer/file-viewer.stories.tsx', ['OpenSnapshot']],
   ['packages/design-system/src/components/Popover/popover.stories.tsx', ['OpenSnapshot']],
   ['packages/design-system/src/components/DataTable/data-table.stories.tsx', ['NestedRowsExpanderHoverState', 'RoadmapPerfBudget', 'FilterPanelLabelsAndLimit']],
-  ['packages/design-system/src/components/Dialog/dialog.stories.tsx', ['OpenSnapshot']],
+  ['packages/design-system/src/components/Dialog/dialog.stories.tsx', ['OpenSnapshot', 'LongContentOpen', 'ListBodyOpen']],
   ['packages/design-system/src/components/Tag/tag.stories.tsx', ['DismissHoverState']],
   ['packages/design-system/src/components/Button/button.stories.tsx', ['DismissHoverState', 'HoverFocusState', 'TooltipVisible']],
   ['packages/design-system/src/components/Sheet/sheet.stories.tsx', ['OpenSnapshot']],

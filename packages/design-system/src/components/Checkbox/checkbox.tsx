@@ -301,6 +301,8 @@ const Checkbox = React.forwardRef<
           aria-labelledby={fieldCtx?.labelId}
           aria-invalid={fieldCtx?.invalid || undefined}
           data-readonly="true"
+          // Field 家族控件宿主標記(同 Input / Select 等 wrapper):唯讀焦點只認鍵盤的判斷靠它認出「這是唯讀欄位」(lib/pointer-focus-guard.ts isInReadonlyField)
+          data-field-mode="readonly"
           tabIndex={0}
           className={cn(
             fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),

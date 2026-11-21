@@ -65,7 +65,7 @@ const verticalItemMinHeight = (size: StepsSize) => INDICATOR_SIZE[size] + 2 * CO
 // 是白 8% 半透明,底下那層環色透上來 —— 實測深色間隙 #58A5FF(應為頁面底 #0A0A0A),整顆看起來是一個大藍圓,
 // 淺色卻是「圓 + 白色間隙 + 外環」,兩主題長得不一樣。
 // outline-offset 那一圈本來就是透明的,露出的是**真正的背景**(不論放在頁面、卡片還是對話框上),
-// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:51-53 `:focus-visible` 的
+// 兩主題同一個長相;而且這正是全 DS 焦點框的畫法(styles/base.css:52-54 `:focus-visible` 的
 // outline 2px + offset 2px),粗細與間隙逐字相同。outline 與 box-shadow 一樣不佔排版,連接線幾何不動。
 const RING_GAP_PX = STACK_GAP_PX // 「疊在一起的兩樣東西」之間的縫,全 DS 同一個值(tokens/uiSize/stack-gap.ts)
 const RING_WIDTH_PX = 2
@@ -505,7 +505,7 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
       // trigger 語意套在它身上會讓讀屏把導覽念成開合。目前那一步由 li 的 aria-current="step" 說出來(Carbon ProgressIndicator /
       // Cloudscape Wizard 同款,出處在 steps.spec.md「A11y 預設」)。
       className={cn(
-        // leading-compact:scanning-family header 行高 = 1.3(item-anatomy.spec.md:776 掃描模式 label 行高)。
+        // leading-compact:scanning-family header 行高 = 1.3(item-anatomy.spec.md:770 掃描模式 label 行高)。
         // 設在 header 而非 li 根 → prefix h-[1lh] + 水平 connector h-[1lh] + label(StepLabel 亦 leading-compact)
         // 全用 1.3 對齊;li 根 text-body(1.5,`stepItemVariants` 的 size 變體)留給 StepContent 的 reading 行高,不被
         // scanning 波及(避免 改A壞B)。對齊 MenuItem 把 leading-compact 放 row 容器之原則(item-anatomy.tsx:144-146)。
@@ -574,9 +574,10 @@ function VerticalLayout({
         </div>
       </StepItemHeader>
       {showContent && (
-        // 步驟標題區 → 內容 = loose(md 16 / lg 24):標題 + 說明是這一步整組內容的標題,不是第一個內容的小標
-        //(user 2026-10-21 A4 甲;layoutSpace.spec.md「親疏 3 級」跨範疇 parallel 那一列的「標題(+ 說明)→ 它底下的並列內容」→ 規則 3 loose)。
-        // 已發布版寫死 mt-3(md、lg 都 12);閘 steps-content-follows-current (3)
+        // 步驟標題區 → 內容 = loose(md 16 / lg 24):標題 + 說明是這一步整組內容的標題,不是第一個內容的小標(user 2026-10-21 A4 甲)。
+        // 每一步寫死同一個 loose、刻意不照塊數分支:同一個精靈每一步同一個距離,某一步剛好只有一個欄位也不改 tight
+        // (layoutSpace.spec.md 規則 3「標題區 → 內容」第 1 題;user 2026-11-17 對 r12 第 1 題回「都照你建議，你的理由合理」= 選乙)。
+        // 已發布版寫死 mt-3(md、lg 都 12);閘 steps-content-follows-current (3)。
         <div className="flex items-start gap-3 mt-[var(--layout-space-loose)]">
           <div className="shrink-0" style={{ width: indicatorBox }} />
           <div className="flex-1 min-w-0">{content}</div>
@@ -848,7 +849,7 @@ const StepLabel = React.forwardRef<HTMLSpanElement, StepLabelProps>(
       <span
         ref={ref}
         className={cn(
-          // leading-compact:scanning-family label 行高 = 1.3(item-anatomy.spec.md:776);text-body utility
+          // leading-compact:scanning-family label 行高 = 1.3(item-anatomy.spec.md:770);text-body utility
           // 自帶 lh:1.5,須顯式 leading-compact 蓋回 1.3,跟 MenuItem label(實測 14px/18px=1.3)一致。
           'font-medium break-words leading-compact',
           size === 'lg' ? 'text-body-lg' : 'text-body',

@@ -3,7 +3,8 @@
  * @gate-contract
  *   保證: Rating 的尺寸模型逐字符合 rating.spec.md「Size」——(1) 元件只有內容高:根節點**沒有** `h-field-*` / `min-h-field-*` 容器 class,
  *         列高交給所在的列(Field 槽 / 表格 / 列);(2) 尺寸解析序:consumer 明傳 size 最優先 → Field 明確指定的 size → 表格 surface size →
- *         預設 md(Field 內外同一個預設,同 Switch / Checkbox);(3) 沒有 xs:執行期傳 'xs'(JS consumer / 舊 d.ts)映到 sm 並 dev-warn。
+ *         預設 md(Field 內外同一個預設,同 Switch / Checkbox);(3) 沒有 xs:型別不收(2026-09-27 退役;執行期轉 sm 的相容映射
+ *         2026-11-15 拿掉,0.x 相容政策 —— 這一格隨之移除)。
  *   紅: 任一格的 `data-size` 與判定表不符、根節點帶容器高度 class、或缺 data-size → exit 1,指名那一格。
  *       歷史紅燈:2026-07-29 `b644488f` 改 useResolvedFieldSize 優先序後,Rating 無條件 fallback 'xs' → Field 內沒指定 size 的評分
  *       靜默變 xs 兩個月;2026-09-27 抓到(user:「用field的地方一定要照規定吧？」「反正就是要遵照 field 的設計原則」),同日 xs 整個退役、
@@ -33,7 +34,6 @@ export const EXPECTED = {
   standaloneSm: 'sm',      // Field 外明傳 sm → sm
   surfaceLg: 'lg',         // 表格 surface size lg、無 Field → lg(field-context surface-size 序)
   fieldInSurfaceLg: 'md',  // surface lg 裡再包一個沒指定 size 的 Field → Field 預設 md 先於 surface(field-context 解析序;實務 cell 不包 Field,邊界格)
-  runtimeXs: 'sm',         // 執行期傳 'xs'(型別已拒,JS 仍可能傳)→ 映到 sm
 }
 const CONTAINER_CLASS = /\b(?:min-)?h-field-(?:xs|sm|md|lg)\b/
 
@@ -77,7 +77,6 @@ const cases: Record<string, JSX.Element> = {
   standaloneSm: R({ size: 'sm' }),
   surfaceLg: <FieldSurfaceSizeProvider size="lg">{R()}</FieldSurfaceSizeProvider>,
   fieldInSurfaceLg: <FieldSurfaceSizeProvider size="lg"><Field><FieldLabel>滿意度</FieldLabel>{R()}</Field></FieldSurfaceSizeProvider>,
-  runtimeXs: R({ size: 'xs' as never }),
 }
 const warns: string[] = []
 const origWarn = console.warn
@@ -131,11 +130,9 @@ function selftest() {
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) {
   if (process.argv.includes('--selftest')) process.exit(selftest() ? 0 : 1)
-  const { out, warns } = measure()
+  const { out } = measure()
   const failures = judge(out)
-  // 執行期 'xs' 必須 dev-warn(型別擋不住 JS consumer;靜默映射會讓舊用法零訊號)
-  if (!warns.some((w) => /xs/.test(w))) failures.push('runtimeXs: 傳 \'xs\' 沒有 dev-warn(靜默映射 = 零訊號)')
   for (const [k, v] of Object.entries(out)) console.log(`  ${k.padEnd(18)} data-size=${v?.size ?? '(無)'}${v?.cls && CONTAINER_CLASS.test(v.cls) ? '  ⚠ 容器 class' : ''}`)
   if (failures.length) { console.error('❌ rating-field-size FAIL:\n  ' + failures.join('\n  ')); process.exit(1) }
-  console.log('✅ rating-field-size PASS(元件只有內容高;prop > Field 明確 size > surface > md;xs 映 sm 並 warn)')
+  console.log('✅ rating-field-size PASS(元件只有內容高;prop > Field 明確 size > surface > md)')
 }

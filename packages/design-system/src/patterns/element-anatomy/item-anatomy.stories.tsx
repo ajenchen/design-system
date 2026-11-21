@@ -12,15 +12,15 @@ import { SelectionItem } from '@/design-system/components/SelectionControl/selec
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { samplePersonCard, demoPersonPhoto, type DemoPersonName } from '@/design-system/stories-helpers/scene/person-card'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 
 /** Person avatar hover canonical helper — avatar.spec.md DS-wide rule:
  *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含)
- *  真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)*/
-const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
+ *  真實人像走照片名冊(stories-helpers/data/people.ts,2026-11-11):頭像與名片同一張臉 */
+const avatarSrc = (name: DemoPersonName, px = 96) => demoPersonPhoto(name, px)
 // 人員名片樣本 = stories-helpers/scene/person-card.tsx(全 DS story 一份)
-const personHover = (name: string, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
+const personHover = (name: DemoPersonName, subtitle?: string) => samplePersonCard({ name, subtitle, avatarSrc: avatarSrc(name) })
 import { Button } from '@/design-system/components/Button/button'
 import { Alert } from '@/design-system/components/Alert/alert'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -549,13 +549,13 @@ const InspectorInner = () => {
         <div className="flex flex-col gap-6 min-w-[440px]">
           {/* Live preview */}
           {/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
-          <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-8 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             {consumer === 'MenuItem' && (
               <MenuFrame width={360}>
                 <MenuItem role="presentation"
                   size={size}
                   startIcon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
-                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
+                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") } : undefined}
                   description={hasDescription ? descText : undefined}
                   tag={effectiveHasSuffix ? <Tag size={size} color="blue">Pro</Tag> : undefined}
                   labelMaxLines={propLabelClamp}
@@ -571,7 +571,7 @@ const InspectorInner = () => {
                   size={size}
                   control={<Checkbox size={size} checked={true} aria-label={labelText} />}
                   icon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
-                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
+                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") } : undefined}
                   label={labelText}
                   description={hasDescription ? descText : undefined}
                   labelMaxLines={propLabelClamp}
@@ -580,11 +580,11 @@ const InspectorInner = () => {
               </div>
             )}
             {consumer === 'ListItem' && (
-              <div className="w-[360px] rounded-lg border border-divider overflow-hidden bg-surface">
+              <div className="w-[360px] rounded-md border border-divider overflow-hidden bg-surface">
                 <ListItemPreview
                   size={size}
                   startIcon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
-                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
+                  avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") } : undefined}
                   label={labelText}
                   description={hasDescription ? descText : undefined}
                   suffix={effectiveHasSuffix ? <ChevronRight size={spec.iconPx} className="text-fg-muted" /> : undefined}
@@ -631,7 +631,7 @@ const InspectorInner = () => {
               padding-y 區域固定 PY_ZONE(20px),演示「padding 不變,內容自然撐高」的 calc() 公式。
             */}
             <div className="flex items-start">
-              <div className="flex flex-col rounded-lg overflow-hidden" style={{ width: 520, outline: `2px solid ${Z.dim.text}22` }}>
+              <div className="flex flex-col rounded-md overflow-hidden" style={{ width: 520, outline: `2px solid ${Z.dim.text}22` }}>
                 {/* Top padding zone */}
                 <div className="flex items-center justify-center"
                   style={{ height: PY_ZONE, background: Z.pad.bg, borderBottom: `1.5px dashed ${Z.pad.border}` }}>
@@ -659,7 +659,7 @@ const InspectorInner = () => {
                           borderRight: `1.5px dashed ${Z.control.border}`,
                         }}
                       >
-                        <span className="text-caption font-mono font-bold text-center leading-tight" style={{ color: Z.control.text, whiteSpace: 'pre-line' }}>
+                        <span className="text-caption font-mono font-bold text-center" style={{ color: Z.control.text, whiteSpace: 'pre-line' }}>
                           {`control\n${spec.iconPx}px`}
                         </span>
                       </div>
@@ -680,7 +680,7 @@ const InspectorInner = () => {
                           borderRight: `1.5px dashed ${Z.icon.border}`,
                         }}
                       >
-                        <span className="text-caption font-mono font-bold text-center leading-tight" style={{ color: Z.icon.text, whiteSpace: 'pre-line' }}>
+                        <span className="text-caption font-mono font-bold text-center" style={{ color: Z.icon.text, whiteSpace: 'pre-line' }}>
                           {effectivePrefixType === 'icon'
                             ? `icon\n${spec.iconPx}px`
                             : isBlockAlign
@@ -711,7 +711,7 @@ const InspectorInner = () => {
                   >
                     <span
                       // @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                      className={cn('text-caption font-mono font-bold leading-snug px-2 break-words', labelClampClass)}
+                      className={cn('text-caption font-mono font-bold px-2 break-words', labelClampClass)}
                       style={{ color: Z.label.text }}
                     >
                       {labelText}
@@ -721,7 +721,7 @@ const InspectorInner = () => {
                         <div className="h-0.5" />
                         <span
                           // @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值)
-                          className={cn('text-footnote font-mono leading-snug px-2 text-fg-secondary break-words', descClampClass)}
+                          className={cn('text-footnote font-mono px-2 text-fg-secondary break-words', descClampClass)}
                         >
                           {descText}
                         </span>
@@ -738,7 +738,7 @@ const InspectorInner = () => {
                       borderRight: `1.5px dashed ${Z.spacer.border}`,
                     }}
                   >
-                    <span className="text-footnote font-mono font-bold text-center leading-tight" style={{ color: Z.spacer.text, whiteSpace: 'pre-line' }}>
+                    <span className="text-footnote font-mono font-bold text-center" style={{ color: Z.spacer.text, whiteSpace: 'pre-line' }}>
                       {'flex-1\npush →'}
                     </span>
                   </div>
@@ -850,7 +850,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: Inspect panel */}
-        <div className="w-[320px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[320px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           {/* @layout-space-magic-ok: 檢閱器的量測版面(控制列 / 預覽框 / 量測標註 / 屬性面板)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <div className="flex items-center justify-between">
@@ -965,10 +965,12 @@ export const AlignmentThreshold = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        paragraph={false}
         title="對齊規則 — Prefix 與 Suffix 各自獨立"
-        note={<><strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline); &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。 <br /> <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。 理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的—— 業界 convention(Apple Mail / Gmail / iOS Settings / Material / Polaris)全部如此。</>}
-      >
+        note={<><strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline); &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。 <br /> <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。 理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的。</>}
+      />
+      {/* 並排兩個有標題的區段放在規則之後(不在規則的範例區裡):規則說明 → 區段小標 = 規則 ↔ 規則 = loose × 2(TutorialPage 的間距),
+          小標離上方的規則說明比離自己的內容(loose)遠,看得出屬於下面(A42【AI 推導】,依 user 2026-10-27「Q2照你建議」的同一理由推;
+          category-templates.md「教學框的間距與標題」)。原本放在規則裡 = 規則標題區 → 內容 loose,小標上下等距 */}
         {/* Side-by-side comparison */}
         <div className="flex gap-[var(--layout-space-loose)] items-start">
           {/* Inline: <= 24px */}
@@ -977,7 +979,7 @@ export const AlignmentThreshold = {
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             {/* Blueprint diagram — LARGE */}
             <div className="flex flex-col gap-[var(--layout-space-tight)]">
-              <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
+              <div className="inline-flex items-stretch self-start rounded-md overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
                 <div className="flex items-center justify-center shrink-0"
                   style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
                   {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
@@ -1026,7 +1028,7 @@ export const AlignmentThreshold = {
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             {/* Blueprint diagram — LARGE */}
             <div className="flex flex-col gap-[var(--layout-space-tight)]">
-              <div className="inline-flex items-stretch self-start rounded-lg overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
+              <div className="inline-flex items-stretch self-start rounded-md overflow-hidden" style={{ height: 88, outline: `2px solid ${Z.dim.text}22` }}>
                 <div className="flex items-center justify-center shrink-0"
                   style={{ width: 72, height: '100%', background: Z.icon.bg, borderRight: `1.5px dashed ${Z.icon.border}` }}>
                   {/* @layout-space-magic-ok: 藍圖量測標註(區塊標籤 / token 名 / 對齊位移)—— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(main 同值) */}
@@ -1076,7 +1078,6 @@ export const AlignmentThreshold = {
           </div>
           </ExampleSection>
         </div>
-      </TutorialRule>
       {/* Rules table */}
       <TutorialRule
         paragraph={false}
@@ -1116,8 +1117,7 @@ export const AlignmentThreshold = {
         <p className="text-caption text-fg-muted max-w-[720px]">
           ※ Suffix 不跟 prefix 同步是有意的設計:suffix 是 label 的 metadata
           (Tag / Chevron / 時間 / 計數),不是整個 item 的。對齊 label 第一行讓使用者
-          眼睛從 label 自然往右掃到 suffix,不被打斷。Apple Mail / Gmail / iOS Settings /
-          Material / Polaris 全部如此。
+          眼睛從 label 自然往右掃到 suffix,不被打斷。
         </p>
       </TutorialRule>
     </TutorialPage>
@@ -1133,10 +1133,10 @@ export const ReadingModes = {
   render: () => (
     <TutorialPage>
       <TutorialRule
-        paragraph={false}
         title="掃描模式 vs 閱讀模式"
         note="同一套佈局結構，typography 策略依閱讀場景調整。掃描模式用於選單類浮層（下拉、指令面板，一掃而過），閱讀模式用於頁面 / 表單 / 對話框裡的展示列（仔細閱讀）。差異在行高和 description 字級。"
-      >
+      />
+      {/* 並排兩個有標題的區段放在規則之後:規則說明 → 區段小標 = loose × 2(同上方「對齊容器」那則,A42) */}
         {/* Side-by-side at all sizes */}
         <div className="flex gap-[var(--layout-space-loose)] items-start">
           {/* Scanning */}
@@ -1189,7 +1189,6 @@ export const ReadingModes = {
           </div>
           </ExampleSection>
         </div>
-      </TutorialRule>
       {/* Token comparison table */}
       <TutorialRule
         paragraph={false}
@@ -1437,7 +1436,7 @@ export const IconColorsAndPresets = {
 
           <div className="flex flex-col gap-[var(--layout-space-tight)]">
             <span className="text-caption text-fg-muted font-medium">ListItem（模擬）</span>
-            <div className="w-[280px] rounded-lg border border-divider overflow-hidden bg-surface">
+            <div className="w-[280px] rounded-md border border-divider overflow-hidden bg-surface">
               <ListItemPreview
                 size="md"
                 startIcon={Mail}

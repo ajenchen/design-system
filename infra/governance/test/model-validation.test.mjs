@@ -236,7 +236,7 @@ function runtimeEvidenceFixtureSource() {
       targetBinding: { id: target.id, digest: runtimeTargetDigest(target) },
       tool: {
         executable: provider.executable,
-        version: provider.id === 'codex' ? 'codex-cli 0.144.6' : '2.1.215 (Claude Code)',
+        version: provider.id === 'codex' ? `codex-cli ${target.distributionVersion}` : `${target.distributionVersion} (Claude Code)`,
         status: 'pass',
         command: {
           executable: provider.executable,

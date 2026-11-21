@@ -24,7 +24,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>TreeView 是階層結構的遞迴元件——一個 TreeItem 就是一個 node,有 children 就可展開,沒有就是 leaf。展開/收合的高度動畫借用 Collapsible 元件,樹的結構與 ARIA 樹狀表格(treegrid)鍵盤導覽由元件自建(2026-09-25 由 tree 改為 treegrid,見 spec「鍵盤導覽」)。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <TreeView aria-label="文件樹範例" defaultExpandedIds={['docs', 'photos']}>
             <TreeItem id="docs" label="Documents" icon={Folder}>
               <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
@@ -158,7 +158,7 @@ export const Inspector: Story = {
   render: (args) => {
     const { size, context, selectionMode, expandOnSelect, stepNavigation } = args as InspectorArgs
     return (
-      <div className="border border-border rounded-lg p-4 max-w-md">
+      <div className="border border-border rounded-md p-4 max-w-md">
         <TreeView
           size={size}
           context={context}
@@ -346,7 +346,7 @@ export const ColorMatrix: Story = {
         <div>
           <H3>Hover + Selected 並存的實際渲染</H3>
           <Desc>以下 <code>Documents/Photos/beach.jpg</code> 為 selected row,可 hover 任一其他 row 觀察 neutral-hover。</Desc>
-          <div className="border border-border rounded-lg p-4 max-w-md">
+          <div className="border border-border rounded-md p-4 max-w-md">
             <TreeView aria-label="色彩狀態範例檔案樹" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
@@ -370,7 +370,7 @@ export const IndentMatrix: Story = {
       <div>
         <H3>indentStep = chevronSize + gap-2</H3>
         <Desc>每層 indent 剛好是 chevron(16 / 20px)+ gap-2(8px)的距離——跟 item-layout 的 prefix-content gap 一致。讓 tree indent 視覺跟 item-layout 融為一體,不是獨立數字系統。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <TreeView aria-label="品牌資產資料夾樹" defaultExpandedIds={['brand', 'website', 'images']}>
             <TreeItem id="brand" label="品牌資產" icon={Folder}>
               <TreeItem id="website" label="網站" icon={Folder}>
@@ -386,7 +386,7 @@ export const IndentMatrix: Story = {
       <div>
         <H3>葉節點 chevron placeholder</H3>
         <Desc>同層有展開 icon、有的沒有 → label 不會對齊。TreeView 自動給葉節點留透明 chevron placeholder,label 永遠對齊 column。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <TreeView aria-label="設計交付資料夾樹" defaultExpandedIds={['delivery']}>
             <TreeItem id="delivery" label="設計交付" icon={Folder}>
               <TreeItem id="spec" label="元件規格.pdf" icon={FileText} />
@@ -412,8 +412,12 @@ interface TeamMember { id: string; label: string }
 
 /** 改名對話框的表單:每次打開以那一列現在的名字起算(key = 成員 id,換人就重建)。寫法同 Dialog 展示「表單」:useFormValidation、沒有 <form>、送出成功 Toast 再關 */
 function RenameMemberForm({ member, onSave }: { member: TeamMember; onSave: (label: string) => void }) {
+  // 「儲存」何時停用(form-validation.spec.md「Submit Button 狀態」):改名是更新 → 沒改停用(intent: 'update');
+  // 需要填的只有名稱 → 空白時也停用(第三列,hook 的 soleRequiredField 算)
   const form = useFormValidation({
     initialValues: { name: member.label },
+    intent: 'update',
+    soleRequiredField: 'name',
     validate: { name: (v) => (String(v ?? '').trim() ? undefined : '名稱必填') },
     onSubmit: (values) => onSave(String(values.name).trim()),
   })
@@ -433,7 +437,7 @@ function RenameMemberForm({ member, onSave }: { member: TeamMember; onSave: (lab
         <DialogClose asChild>
           <Button variant="tertiary">取消</Button>
         </DialogClose>
-        <Button variant="primary" loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
+        <Button variant="primary" disabled={form.submitDisabled} loading={form.isSubmitting} onClick={() => void form.handleSubmit()}>儲存</Button>
       </DialogFooter>
     </>
   )
@@ -466,7 +470,7 @@ function StateBehaviorDemo() {
       <div>
         <H3>Selected vs Expanded 語意分離</H3>
         <Desc>Chevron 負責展開/收合,label 負責選取——兩者獨立(除非 consumer 顯式 opt-in <code>expandOnSelect</code>)。分開才能「只選不展開」——選一個資料夾看它的資訊,不必連帶把整串子項攤開。現在選取中的是「Resume.pdf」;Documents、Photos 點箭頭可以展開 / 收合。</Desc> {/* 來源:https://github.com/microsoft/vscode/blob/37a810122e886264b40e69a0c505b5a92e6f3a18/src/vs/platform/list/browser/listService.ts#L1478-L1482 */}
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <TreeView aria-label="選取與展開範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
             <TreeItem id="docs" label="Documents" icon={Folder}>
               <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
@@ -487,7 +491,7 @@ function StateBehaviorDemo() {
           鍵盤:↑↓ 換列、→ 進這一列的按鈕、← 回到列;Tab 一下就離開整棵樹 —— 別列的按鈕不在 Tab 路上
           (2026-09-25 前,這棵樹從 Engineering 出發要按 5 下 Tab 才出得去,走過的全是 Alice、Bob 的按鈕)。
         </Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <TreeView aria-label="工程團隊樹" defaultExpandedIds={['eng', 'frontend']}>
             <TreeItem id="eng" label="Engineering" icon={Users}>
               <TreeItem id="frontend" label="Frontend" icon={Users}>
@@ -508,7 +512,7 @@ function StateBehaviorDemo() {
           </TreeView>
         </div>
         <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-          <DialogContent height="hug">
+          <DialogContent height="hug" width="sm">
             {renaming && <RenameMemberForm key={renaming.id} member={renaming} onSave={saveRename} />}
           </DialogContent>
         </Dialog>

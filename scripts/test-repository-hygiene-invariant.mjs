@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+// meta-test for repository-hygiene-invariant。2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: repository-hygiene-invariant.mjs(--profile=authority --check) 該紅時紅、該綠時綠 —— 現況必須 exit 0;
+//         future-reserved 宣告少 owner / purpose / activationCondition / lifecycle 任一欄、或日期改成過去(時鐘固定 2026-08-02)→ 驗證函式必須丟例外;
+//         在 repo 根寫一個 .tmp- 開頭的暫存檔、在 docs/ 寫兩個內容相同的檔 → 閘必須非 0;夾具 repo 的宣告 symlink 齊全 → 0,
+//         拿掉一條、或弄斷一條的目標 → 1 且印出 R3 訊息;每次還原後閘都必須 exit 0
+//   紅: 任一斷言不成立 → 丟例外,exit 非 0
+//   綠: 都照預期時 exit 0 並印出 ✅;寫進 repo 的三個檔在 finally 刪掉、夾具在 finally 刪掉(開始前那三個路徑已存在就拒跑),
+//       判定表用固定時鐘,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -16,14 +26,13 @@ const runFixture = (root) => spawnSync(process.execPath, [
 function makeSymlinkFixture({ missing = null, broken = null } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'repository-hygiene-symlink-'))
   const targets = [
-    '.claude/commands',
     '.claude/skills',
     'packages/design-system/ds-canonical/hooks',
     'infra/governance/baseline/visual/targeted',
     'infra/governance/baseline/visual/curated',
   ]
   for (const target of targets) {
-    if (broken === 'commands' && target === '.claude/commands') continue
+    if (broken === 'skills' && target === '.claude/skills') continue
     mkdirSync(join(root, target), { recursive: true })
   }
   mkdirSync(join(root, '.changeset'), { recursive: true })
@@ -32,7 +41,6 @@ function makeSymlinkFixture({ missing = null, broken = null } = {}) {
   writeFileSync(join(root, 'infra/governance/release-workflow.json'), '{"fixture":"release-owner"}\n')
   const links = {
     '.claude/snapshots-baseline': '../infra/governance/baseline/visual/targeted',
-    commands: '.claude/commands',
     'hooks/scripts': '../packages/design-system/ds-canonical/hooks',
     skills: '.claude/skills',
     'snapshots-baseline': 'infra/governance/baseline/visual/curated',
@@ -102,8 +110,8 @@ if (run() !== 0) throw new Error('repository hygiene must pass after paired muta
 
 for (const fixtureCase of [
   { options: {}, expected: 0, label: 'declared symlink fixture baseline' },
-  { options: { missing: 'commands' }, expected: 1, label: 'missing declared symlink' },
-  { options: { broken: 'commands' }, expected: 1, label: 'broken declared symlink target' },
+  { options: { missing: 'skills' }, expected: 1, label: 'missing declared symlink' },
+  { options: { broken: 'skills' }, expected: 1, label: 'broken declared symlink target' },
 ]) {
   const fixture = makeSymlinkFixture(fixtureCase.options)
   try {

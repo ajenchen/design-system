@@ -113,13 +113,9 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
     const readOnly = readOnlyProp || resolvedMode === 'readonly'
     // 尺寸解析(field-context useResolvedFieldSize):prop > Field 明確指定的 size > Field 預設 md > 表格 surface size > md。
     // 不傳 fallback:傳了會排在 Field 預設與 surface size 前面(那是 Switch / Checkbox 的 'md' 寫法,表格格子就接不到 surface size);
-    // Rating 在表格格子裡要跟表格(rating.spec.md「Size」:使用時機 = 跟所在容器)。
-    // 執行期傳 'xs'(型別已拒,JS consumer / 舊 d.ts 仍可能傳)→ 映到 sm 並 dev-warn(靜默映射 = 零訊號);閘 scripts/rating-field-size-invariant.mjs(meta test scripts/test-rating-field-size-invariant.mjs)。
-    const legacyXs = (sizeProp as string | undefined) === 'xs'
-    if (legacyXs && typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
-      console.warn('[DS] Rating size="xs" 已於 2026-09-27 退役(改為 sm;元件只有內容高,列高由所在的列供給)。')
-    }
-    const size = useResolvedFieldSize<RatingSize>(legacyXs ? 'sm' : sizeProp)
+    // Rating 在表格格子裡要跟表格(rating.spec.md「Size」:使用時機 = 跟所在容器)。閘 scripts/rating-field-size-invariant.mjs(meta test scripts/test-rating-field-size-invariant.mjs)。
+    // size="xs" 2026-09-27 退役,型別不收;執行期轉 sm 的相容映射 2026-11-15 拿掉(0.x 相容政策,props-naming.md「相容政策」)。
+    const size = useResolvedFieldSize<RatingSize>(sizeProp)
     const [internalValue, setInternalValue] = React.useState(defaultValue)
     const [hoverValue, setHoverValue] = React.useState<number | null>(null)
     const valueTextId = React.useId()

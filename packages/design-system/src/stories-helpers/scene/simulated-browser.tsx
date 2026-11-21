@@ -45,7 +45,7 @@ export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = f
     <div className={cn('flex flex-col', fill && 'min-h-0 flex-1')}>
       <div
         ref={toolbarRef}
-        className="flex items-center gap-2 rounded-t-lg border border-border bg-surface px-3 py-2"
+        className="flex items-center gap-2 rounded-t-md border border-border bg-surface px-3 py-2"
         style={{ boxShadow: 'var(--elevation-100)' }}
         role="group"
         aria-label="模擬瀏覽器工具列(說明用)"
@@ -58,7 +58,7 @@ export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = f
       <div
         ref={canvasRef}
         data-simulated-canvas=""
-        className={cn('relative flex overflow-hidden rounded-b-lg border border-t-0 border-border bg-canvas', fill && 'min-h-0 flex-1')}
+        className={cn('relative flex overflow-hidden rounded-b-md border border-t-0 border-border bg-canvas', fill && 'min-h-0 flex-1')}
         style={{ height: fill ? undefined : height, transform: 'translateZ(0)', boxShadow: 'var(--elevation-100)' }}
       >
         {children}

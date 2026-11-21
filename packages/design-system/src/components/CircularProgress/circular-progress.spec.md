@@ -164,7 +164,7 @@ CircularProgress **沒有**「success / error」variant。完成與失敗的語�
 
 ### 顏色策略:固定 `text-info` + consumer 覆寫
 
-固定 `text-info`(品牌語義色「正在處理」)。不隨狀態變色。
+固定 `text-info`(語意色「正在處理」)。不隨狀態變色。
 
 | Consumer | className | 實際色彩 |
 |----------|-----------|---------|

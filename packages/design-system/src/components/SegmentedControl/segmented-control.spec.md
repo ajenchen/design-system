@@ -6,7 +6,7 @@ sizes:
   xs:
     px: 24
     when: "row-embedded inline action(DataTable row inline action / Toolbar 內塞 segmented filter);text-caption"
-    world-class: ["Ant Segmented size=small(24)"]([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/segmented/style/index.ts#L91-L94)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/shared/genControlHeight.ts#L7)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/seed.ts#L69)、[來源](https://unpkg.com/@atlaskit/toggle@17.3.5/dist/types/types.d.ts))
+    world-class: ["Ant Segmented size=small(24)"]  # ([來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/segmented/style/index.ts#L91-L94)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/shared/genControlHeight.ts#L7)、[來源](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/theme/themes/seed.ts#L69)、[來源](https://unpkg.com/@atlaskit/toggle@17.3.5/dist/types/types.d.ts))
   sm:
     px: 28
     when: "form field-height 28 / compact chrome bar(Filter bar / dense Toolbar)"
@@ -142,33 +142,37 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 
 ---
 
-## fullWidth
+## 寬度模式(width)
 
-`fullWidth` prop（boolean，預設 `false`）：
+`width` prop（`'hug' | 'fill'`，預設 `'hug'`；2026-11-15 前是布林 `fullWidth`,已移除）：
 
-- **false（hug content）★default**：SegmentedControl 寬度由 item 總寬決定，items 各自照內容寬度排列
-- **true**：SegmentedControl 撐滿父容器，所有 item 等分該寬度。fullWidth 與 size 正交——只影響寬度分配，高度仍由 `size` 決定（xs fullWidth 仍是 24px 固定）
+- **`'hug'`（跟內容）★default**：SegmentedControl 寬度由 item 總寬決定，items 各自照內容寬度排列
+- **`'fill'`（撐滿）**：SegmentedControl 撐滿父容器，所有 item 等分該寬度。寬度模式與 size 正交——只影響寬度分配，高度仍由 `size` 決定（xs 撐滿仍是 24px 固定）
 
-> **不論 `fullWidth` 為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵：同一選擇組的 segments 應共享一種寬度邏輯，否則視覺重量會被 label 長度誤導。
+**改名紀錄**(2026-11-15;user 2026-11-11 回覆「尺寸:甲」,甲 = 決策頁選項原文,AI 擬、user 選:「寬度一律叫 width,可以填 "fill"(撐滿)、"hug"(跟內容)或數字;……舊名字保留一個版本,畫面不變。」):
+`fullWidth={true}` = `width="fill"`、`fullWidth={false}` = `width="hug"`,同一組 class(根 `w-full` / `w-fit`、item `flex-1 min-w-0`)。「舊名字保留一個版本」那一句已被 user 2026-11-15 原話「我認為還是 beta 的狀況下都不要再顧及所有向後相容的部分」取代(0.x 相容政策 = `ds-canonical/references/props-naming.md`「相容政策」):`fullWidth` 已移除、不留舊名。
+撐滿時 items **等分**是本元件 fill 的一部分(不是另一個參數)。全 DS 命名規則住 `ds-canonical/references/props-naming.md`「尺寸參數」。
 
-### fullWidth 的判準：**跟著容器尺度走，跟 label 長度無關**
+> **不論寬度模式為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵：同一選擇組的 segments 應共享一種寬度邏輯，否則視覺重量會被 label 長度誤導。
 
-- ✅ **小容器 / 狹窄上下文** → `fullWidth = true`
+### 撐滿的判準：**跟著容器尺度走，跟 label 長度無關**
+
+- ✅ **小容器 / 狹窄上下文** → `width = 'fill'`
   - Mobile viewport
   - 窄 Sidebar 面板
   - Dialog / Sheet 內
   - Field 表單 row（搭配 Field 容器寬度）
   - 原因：在小容器內，SegmentedControl 通常是該區塊的主要寬度元件，留白反而浪費
-- ✅ **寬容器 / toolbar / 跟其他 control 並排** → `fullWidth = false`（hug）
+- ✅ **寬容器 / toolbar / 跟其他 control 並排** → `width = 'hug'`（預設）
   - Desktop 一般頁面 toolbar
   - Filter bar 跟其他 Button / Select 並排
   - Chart 上方 density 切換
-  - 原因：若 fullWidth，它會搶走同行其他元素的空間；hug 保持 compact 尺寸才能融入 toolbar
+  - 原因：若撐滿，它會搶走同行其他元素的空間；hug 保持 compact 尺寸才能融入 toolbar
 
 ### 常見誤解
 
-**誤解**：「label 長度差異大時不該用 fullWidth，會視覺失衡」。
-**事實**：fullWidth 永遠等分空間，各 item 視覺上等寬，不存在「短 label 周圍空白失衡」的問題。唯一需要留意的是：若 label 太長導致在狹小容器內被截斷，那是 **content overflow**（應該換 Select / 減少選項），不是 fullWidth 的問題。
+**誤解**：「label 長度差異大時不該撐滿，會視覺失衡」。
+**事實**：撐滿永遠等分空間，各 item 視覺上等寬，不存在「短 label 周圍空白失衡」的問題。唯一需要留意的是：若 label 太長導致在狹小容器內被截斷，那是 **content overflow**（應該換 Select / 減少選項），不是撐不撐滿的問題。
 
 ---
 
@@ -231,7 +235,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 - **點擊已選中 item**：不取消選取——wrapper 忽略 Radix single ToggleGroup 的 deselect（空字串），維持「恆有一值」的 radio 語意
 - **個別 item disabled**：Radix roving focus 跳過該 item（`focusable: !disabled`），方向鍵不停留；disabled item 不得是當前 value（contract，見「狀態 › disabled」）
 - **所有 item disabled**：整組無可聚焦 item，Radix roving focus 將 group 的 tab 停留點設為 `tabIndex=-1`，Tab 直接跳過
-- **disabled × fullWidth 並存**：兩者正交——fullWidth 只控寬度等分，disabled 只控互動與色彩，無交互規則
+- **disabled × 撐滿(width="fill")並存**：兩者正交——寬度模式只控寬度等分，disabled 只控互動與色彩，無交互規則
 - **表單驗證 / invalid**：SegmentedControl **恆有一值**（radio 語意），故「必填未選」的 required 驗證天然不適用；元件**無 `invalid` / `error` prop**，不渲染 error 邊框或 `aria-invalid`（它讀 Field context 的 `disabled` / `size`，但**不讀 `invalid`**，與 Input / Select 等可空控件不同）。值的業務合法性（是否落在允許選項）由 consumer 保證，需要 invalid 視覺提示時由外層 Field / consumer 承擔——屬 consumer-owned，非本元件狀態
 
 ---
@@ -254,7 +258,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 - **無 ColorMatrix**:SegmentedControl 沒有 Button 那種強調層級 variant(primary / secondary / tertiary / text)——只有「選中 / 未選」兩種 **state**,色彩變化純由 state 驅動(底色恆為 `bg-surface` 不變;選中 = `text-primary` + `border-primary`;未選 hover = `text-foreground`,詳「狀態」段)。這是 pill 風格元件(Chip / SegmentedControl)共用的選中規則,非 Button variant。因此 ColorMatrix(逐 variant 列色)不適用,狀態色已在 `StateBehavior` 完整覆蓋。
 
-對應 anatomy story:`Overview` + `Inspector` + `SizeMatrix` + `StateBehavior` + 元件特有 `FullWidthMatrix` + `IconOnlyMatrix` + `Accessibility`。Inspector 用 Storybook Controls 即時切 `size` × `fullWidth` × `iconOnly`(在 Storybook 裡直接看各組合);三張矩陣 story(`SizeMatrix` / `FullWidthMatrix` / `IconOnlyMatrix`)則提供結構性並排對照,兩者互補。
+對應 anatomy story:`Overview` + `Inspector` + `SizeMatrix` + `StateBehavior` + 元件特有 `FullWidthMatrix` + `IconOnlyMatrix` + `Accessibility`。Inspector 用 Storybook Controls 即時切 `size` × `width` × `iconOnly`(在 Storybook 裡直接看各組合);三張矩陣 story(`SizeMatrix` / `FullWidthMatrix` / `IconOnlyMatrix`)則提供結構性並排對照,兩者互補。
 
 ---
 

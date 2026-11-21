@@ -25,11 +25,20 @@
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-        "sha256": "dbebda1afbfd3aab94c6cfb3891111e13f203d7b59d2ee28ab82a0151c3e0ad4",
+        "sha256": "ddedc548e38d6eac86ab261bb79b54af0c738fee9c569f665bc180aed4a2f0b9",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
           "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
-          "packages/design-system/ds-canonical/hooks/tests/test_check_substantive_edit_approval_preflight.sh"
+          "packages/design-system/ds-canonical/hooks/tests/test_check_substantive_edit_approval_preflight.sh",
+          "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit.sh"
+        ]
+      },
+      {
+        "path": "packages/design-system/ds-canonical/hooks/lib/ask-route.mjs",
+        "sha256": "b724d74bab582b5b806754776eb42a6db0fbd9d94135eb063b911cc4423bc904",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
+          "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit.sh"
         ]
       },
       {
@@ -37,6 +46,14 @@
         "sha256": "c014698c206510f4f322ab668e6694dae87148454ab62c1f7a70becf2709c78a",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_audit_post_report_validator.sh"
+        ]
+      },
+      {
+        "path": "packages/design-system/ds-canonical/hooks/lib/benchmark-citation.mjs",
+        "sha256": "547f52ea4855bed32247925d7ac3168d601e205581ef7f61fe90fc3b97a14ba4",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/check_benchmark_citation.sh",
+          "packages/design-system/ds-canonical/hooks/tests/test_check_benchmark_citation.sh"
         ]
       },
       {
@@ -49,7 +66,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
-        "sha256": "f22e0be346e6c3ac422f835347b28456aa7dc81c06d5b497b166d570c07fdf69",
+        "sha256": "8a172e1839aff1a8cfd74b838cb207b11989aa8a04815a0db04be4f47a25ba9e",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",
           "packages/design-system/ds-canonical/hooks/lib/_chrome_header_handcraft.sh",
@@ -58,7 +75,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs",
-        "sha256": "701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd",
+        "sha256": "96c5a30cf956ecd9471b106396e0b80823c9e8e1c29c5b21f052b3bcd68d7fa0",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh"
         ]
@@ -157,7 +174,6 @@
         "packages/design-system/ds-canonical/hooks/tests/test_check_audit_sample_escape.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_benchmark_citation.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_canonical_propagation.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_chrome_header_avatar_canonical.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_chrome_header_handcraft.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_code_quality.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_codex_brief_invariants.sh",
@@ -168,40 +184,29 @@
         "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_ds_primitive_misuse.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_no_ds_catalog.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_story_baseline.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_cva_default_sync.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_data_table_size_num_to_meta_width.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_datatable_invariants.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_dim_count_drift.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_ds_anchor_preflight.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_ds_removed_names.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_dynamic_tailwind_class.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_escape_marker_abuse.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_field_controls_contracts.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_field_family_invariants.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_file_size_budget.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_fork_user_plugin_install.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_full_story_visual_interaction_sweep.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_hardcoded_strings.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_header_with_tabs_border.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_item_list_gap.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_layout_space_magic_numbers.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_main_branch_workbench.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_naming_and_abstraction.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_opacity_token_usage.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_orphan_ds_css.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_overlay_handcraft.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_overlay_open_focus_escape_probe.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_pattern_invariants.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_peoplepicker_ssot_drift.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_person_data_richness.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_pixel_quantified_audit.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_plugin_fork_health.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_cite_required.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_discipline.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_plain_chinese.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_propose_pre_grep_verify.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_without_benchmark.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_select_all_canonical.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_sidebar_menu_button_implicit_wrap.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_sidebar_avatar_canonical.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_solo_workflow.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_spec_class_drift.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_ssot_header_declaration.sh",
@@ -228,19 +233,17 @@
         "packages/design-system/ds-canonical/hooks/tests/test_inject_deploy_url_after_push.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_inject_pending_self_audit.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_log_governance_fires.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_log_skill_invokes.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_post_edit_contract_dispatcher.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_post_edit_dispatcher.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_provider_peer_symmetry.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_record_release_consent.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_session_start_governance_check.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_stop_audit_content_quality.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_capture_metrics.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_stop_extract_canonical_rules.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_governance_drift_check.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_harvest_corrections.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_passive_logging.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_stop_repository_command_context.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_repository_text_checks.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit_push_gate.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_tsc_sanity.sh"
@@ -310,6 +313,7 @@
       },
       "members": [
         "packages/governance/test/closed-tool-execution.test.mjs",
+        "packages/governance/test/inventory-nested-git.test.mjs",
         "packages/governance/test/plugin-hook-runtime.test.mjs",
         "packages/governance/test/product-launcher-runtime.test.mjs",
         "packages/governance/test/provider-adapter-generator.test.mjs",
@@ -338,14 +342,17 @@
         "scripts/test-authority-generation-reaper.mjs",
         "scripts/test-build-fork-filesystem-safety.mjs",
         "scripts/test-canonical-path-containment.mjs",
+        "scripts/test-cdp-trace-summary.mjs",
         "scripts/test-check-codex-freshness-authorization.mjs",
         "scripts/test-claude-permission-policy.mjs",
         "scripts/test-cloud-portability-invariants.mjs",
         "scripts/test-consumer-pr-merge-evidence.mjs",
         "scripts/test-data-table-column-sorting.mjs",
+        "scripts/test-data-table-editing-rows.mjs",
         "scripts/test-data-table-range-hover.mjs",
         "scripts/test-data-table-sort-cycle.mjs",
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
+        "scripts/test-density-subtree-token-parity.mjs",
         "scripts/test-design-system-codemod.mjs",
         "scripts/test-deterministic-vite-output.mjs",
         "scripts/test-devmode-geometry-invariant.mjs",
@@ -427,6 +434,7 @@
           "scripts/test-header-tabs-slot-invariants.mjs",
           "scripts/test-menu-message-row-invariant.mjs",
           "scripts/test-pagination-narrow-ladder-invariant.mjs",
+          "scripts/test-sidebar-handle-scrollbar-hit-invariant.mjs",
           "scripts/test-switch-thumb-ring-invariant.mjs"
         ]
       },
@@ -457,6 +465,7 @@
           "scripts/test-avatar-anchor-box-invariant.mjs",
           "scripts/test-data-table-column-sorting-invariant.mjs",
           "scripts/test-focus-indicator-invariants.mjs",
+          "scripts/test-form-example-card-invariant.mjs",
           "scripts/test-open-close-motion-invariant.mjs",
           "scripts/test-overlay-detached-anchor-invariant.mjs",
           "scripts/test-overlay-list-as-region-invariant.mjs",
@@ -496,6 +505,8 @@
           "scripts/test-data-table-header-scroll-sync.mjs",
           "scripts/test-field-view-typography-invariant.mjs",
           "scripts/test-modifier-click-focus-invariant.mjs",
+          "scripts/test-overlay-header-actions-invariant.mjs",
+          "scripts/test-overlay-header-title-area-invariant.mjs",
           "scripts/test-overlay-shortcut-scope-invariant.mjs",
           "scripts/test-row-suffix-first-line-invariant.mjs",
           "scripts/test-searchable-menu-focus-invariant.mjs",
@@ -524,6 +535,10 @@
             "timeoutMs": 1320000
           },
           {
+            "path": "scripts/test-sidebar-standalone-collapse-invariant.mjs",
+            "timeoutMs": 720000
+          },
+          {
             "path": "scripts/test-virtual-cursor-modality-invariant.mjs",
             "timeoutMs": 720000
           }
@@ -536,6 +551,8 @@
           "scripts/test-dialog-height-invariant.mjs",
           "scripts/test-radio-group-tab-stop-invariant.mjs",
           "scripts/test-select-all-footer-invariant.mjs",
+          "scripts/test-sidebar-label-matches-header-invariant.mjs",
+          "scripts/test-sidebar-main-follows-selection-invariant.mjs",
           "scripts/test-sidebar-menu-keyboard-invariant.mjs",
           "scripts/test-sidebar-standalone-collapse-invariant.mjs",
           "scripts/test-tree-view-keyboard-route-invariant.mjs",
@@ -555,12 +572,20 @@
             "timeoutMs": 360000
           },
           {
+            "path": "scripts/test-field-open-border-invariant.mjs",
+            "timeoutMs": 720000
+          },
+          {
             "path": "scripts/test-form-validation-contract-invariant.mjs",
             "timeoutMs": 1200000
           },
           {
             "path": "scripts/test-layer-order-invariant.mjs",
             "timeoutMs": 660000
+          },
+          {
+            "path": "scripts/test-radius-usage-invariant.mjs",
+            "timeoutMs": 600000
           },
           {
             "path": "scripts/test-searchable-field-keys-invariant.mjs",
@@ -572,11 +597,15 @@
           "scripts/test-agent-decision-card-option-press-invariant.mjs",
           "scripts/test-color-scheme-invariant.mjs",
           "scripts/test-data-table-link-cell-invariant.mjs",
+          "scripts/test-data-table-row-estimate-density-invariant.mjs",
           "scripts/test-data-table-row-under-pointer-invariant.mjs",
           "scripts/test-dialog-coexist-scroll-lock-invariant.mjs",
+          "scripts/test-doc-heading-inventory-invariant.mjs",
+          "scripts/test-field-open-border-invariant.mjs",
           "scripts/test-form-validation-contract-invariant.mjs",
           "scripts/test-hover-color-pair-invariant.mjs",
           "scripts/test-layer-order-invariant.mjs",
+          "scripts/test-radius-usage-invariant.mjs",
           "scripts/test-searchable-field-keys-invariant.mjs",
           "scripts/test-toast-viewport-placement-invariant.mjs"
         ]
@@ -593,8 +622,20 @@
             "timeoutMs": 420000
           },
           {
+            "path": "scripts/test-data-table-multi-sort-invariant.mjs",
+            "timeoutMs": 420000
+          },
+          {
             "path": "scripts/test-field-text-left-edge-invariant.mjs",
             "timeoutMs": 900000
+          },
+          {
+            "path": "scripts/test-layout-body-edges-invariant.mjs",
+            "timeoutMs": 420000
+          },
+          {
+            "path": "scripts/test-overflow-reveal-selected-invariant.mjs",
+            "timeoutMs": 420000
           },
           {
             "path": "scripts/test-overlay-footer-gutter-invariant.mjs",
@@ -610,12 +651,21 @@
           "scripts/test-agent-decision-card-validation-invariant.mjs",
           "scripts/test-agent-logo-continuity-invariant.mjs",
           "scripts/test-data-table-column-divider-invariant.mjs",
+          "scripts/test-data-table-filter-group-spacing-invariant.mjs",
           "scripts/test-data-table-hover-exclusivity-invariant.mjs",
           "scripts/test-data-table-multi-sort-invariant.mjs",
           "scripts/test-data-table-pinned-resize-invariant.mjs",
           "scripts/test-dialog-coexistence-invariant.mjs",
+          "scripts/test-dialog-width-invariant.mjs",
           "scripts/test-field-text-left-edge-invariant.mjs",
+          "scripts/test-header-content-sides-invariant.mjs",
+          "scripts/test-header-first-gap-invariant.mjs",
+          "scripts/test-layout-body-edges-invariant.mjs",
+          "scripts/test-overflow-reveal-selected-invariant.mjs",
+          "scripts/test-overlay-density-follows-trigger-invariant.mjs",
           "scripts/test-overlay-footer-gutter-invariant.mjs",
+          "scripts/test-readonly-focus-pointer-invariant.mjs",
+          "scripts/test-section-gap-invariant.mjs",
           "scripts/test-select-tab-leave-invariant.mjs",
           "scripts/test-story-demo-focus-invariant.mjs"
         ]
@@ -635,6 +685,14 @@
             "timeoutMs": 240000
           },
           {
+            "path": "scripts/test-data-table-panel-reset-clear-invariant.mjs",
+            "timeoutMs": 600000
+          },
+          {
+            "path": "scripts/test-datepicker-range-active-underline-invariant.mjs",
+            "timeoutMs": 360000
+          },
+          {
             "path": "scripts/test-governance-build-graph.mjs",
             "timeoutMs": 900000
           },
@@ -647,7 +705,7 @@
             "timeoutMs": 420000
           }
         ],
-        "totalTimeoutMs": 1800000,
+        "totalTimeoutMs": 1980000,
         "members": [
           "scripts/test-action-row-order-invariant.mjs",
           "scripts/test-agent-logo-brand-scale-invariant.mjs",
@@ -661,6 +719,7 @@
           "scripts/test-audit-coverage-matrix.mjs",
           "scripts/test-audit-data-table-row-mode-ssot.mjs",
           "scripts/test-audit-failure-class-coverage.mjs",
+          "scripts/test-audit-gate-meta-test-coverage.mjs",
           "scripts/test-audit-hook-quality.mjs",
           "scripts/test-audit-hook-test-coverage.mjs",
           "scripts/test-audit-layout-family-frontmatter.mjs",
@@ -671,6 +730,7 @@
           "scripts/test-audit-spec-deadlinks.mjs",
           "scripts/test-audit-story-quality.mjs",
           "scripts/test-audit-workflow-security.mjs",
+          "scripts/test-benchmark-citation-invariant.mjs",
           "scripts/test-button-variant-invariant.mjs",
           "scripts/test-calc-self-audit-baseline.mjs",
           "scripts/test-categorical-color-invariants.mjs",
@@ -690,15 +750,20 @@
           "scripts/test-checkbox-group-handcraft-invariant.mjs",
           "scripts/test-closed-git-foreign-owner-invariant.mjs",
           "scripts/test-code-pointer-liveness-invariant.mjs",
+          "scripts/test-compat-policy-invariant.mjs",
           "scripts/test-composite-role-keyboard-invariant.mjs",
           "scripts/test-consumer-source-harness.mjs",
           "scripts/test-data-table-click-outside-invariant.mjs",
+          "scripts/test-data-table-panel-reset-clear-invariant.mjs",
           "scripts/test-data-table-row-cache-deps-invariant.mjs",
           "scripts/test-data-table-tree-view-doc-invariant.mjs",
+          "scripts/test-datepicker-range-active-underline-invariant.mjs",
+          "scripts/test-demo-people-roster-invariant.mjs",
           "scripts/test-drag-announcement-invariant.mjs",
           "scripts/test-dropdown-menu-keyboard-invariant.mjs",
           "scripts/test-exemption-expiry-invariant.mjs",
           "scripts/test-field-label-binding-invariant.mjs",
+          "scripts/test-field-view-font-size-invariant.mjs",
           "scripts/test-focus-geometry-invariant.mjs",
           "scripts/test-gate-control-group-invariant.mjs",
           "scripts/test-gate-reachability-invariant.mjs",
@@ -706,6 +771,7 @@
           "scripts/test-governance-anchor-preflight.mjs",
           "scripts/test-governance-build-graph.mjs",
           "scripts/test-hook-citation-liveness-invariant.mjs",
+          "scripts/test-hook-test-fixture-guard-invariant.mjs",
           "scripts/test-hover-instant-invariant.mjs",
           "scripts/test-hover-own-pair-invariant.mjs",
           "scripts/test-import-waived-self-review.mjs",
@@ -721,16 +787,18 @@
           "scripts/test-motion-ssot-invariant.mjs",
           "scripts/test-named-constant-drift-invariant.mjs",
           "scripts/test-naming-structure-invariant.mjs",
+          "scripts/test-overlay-density-lock-invariant.mjs",
           "scripts/test-overlay-nested-dismiss-invariant.mjs",
           "scripts/test-owner-claims-invariant.mjs",
           "scripts/test-produce-hook-enforced-evidence.mjs",
           "scripts/test-product-template-scaffold-lock.mjs",
           "scripts/test-propose-provider-cli-package-content.mjs",
           "scripts/test-provider-view-group-reachability-invariant.mjs",
+          "scripts/test-public-surface-invariant.mjs",
           "scripts/test-rating-field-size-invariant.mjs",
           "scripts/test-release-finalizer-mirror-handoff.mjs",
+          "scripts/test-release-self-audit.mjs",
           "scripts/test-repository-hygiene-invariant.mjs",
-          "scripts/test-root-exports-invariant.mjs",
           "scripts/test-rsync-checksum-invariant.mjs",
           "scripts/test-run-deterministic-deep-audit.mjs",
           "scripts/test-score-infra-best-practice.mjs",
@@ -739,21 +807,26 @@
           "scripts/test-setup-netlify-access.mjs",
           "scripts/test-setup-provider-cli-toolchain.mjs",
           "scripts/test-setup-workspace.mjs",
+          "scripts/test-sizing-props-invariant.mjs",
           "scripts/test-status-color-invariant.mjs",
           "scripts/test-story-determinism-invariant.mjs",
           "scripts/test-story-helper-duplication-invariant.mjs",
           "scripts/test-story-layer-drift-invariant.mjs",
+          "scripts/test-sync-governance-counters.mjs",
           "scripts/test-sync-memory.mjs",
           "scripts/test-sync-plugin-aliases.mjs",
           "scripts/test-sync-template-canonical-app.mjs",
+          "scripts/test-token-allowlist-invariant.mjs",
           "scripts/test-token-creation-invariant.mjs",
           "scripts/test-token-twin-invariant.mjs",
           "scripts/test-tutorial-page-invariant.mjs",
+          "scripts/test-validate-knowledge-prune-run.mjs",
           "scripts/test-verify-deep-audit-coverage.mjs",
           "scripts/test-verify-mirror-evidence.mjs",
           "scripts/test-verify-mirror-release.mjs",
           "scripts/test-verify-upgrade-evidence.mjs",
-          "scripts/test-visual-audit.mjs"
+          "scripts/test-visual-audit.mjs",
+          "scripts/test-work-process-ssot-invariant.mjs"
         ]
       }
     ]

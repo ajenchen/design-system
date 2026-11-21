@@ -7,8 +7,8 @@
 //   FilterValuePicker 為 direct child,className forward 不開 wrapper div — 2026-05-04 #2 fix)
 // - Button(variant="text" iconOnly)row meta trash / Select(size="sm")conjunction・field・op
 //   (data-table.spec.md「四、UI canonical」:trash = form-control row text Button;A6 conjunction)
-// - Width tokens:--data-table-filter-field-width / --data-table-filter-op-width(uiSize.css SSOT,
-//   2026-05-23 Phase A.4 Decision 2)
+// - 欄位 / 條件下拉的寬:元件自己的值 10rem / 7.5rem(只有 FilterRow 在用、不隨密度切換 → 不開 token,
+//   token-system.spec.md 判斷流程第 0 題;2026-11-11 token「3全收」從 uiSize.css 收回)
 // - Operator SSOT:./filter-operators.ts OPERATOR_REGISTRY(禁 hardcode op 字串)
 // - Group container 灰底 bg-muted:color.spec.md L651-654 靜態低重要 surface semantic(2026-05-09 Q3 A)
 // 設計規則:./filter-operators.spec.md + ./data-table.spec.md「進階篩選」段
@@ -73,12 +73,17 @@ function ConjunctionLabel({
   // index ≥ 2:被連動的 row,read-only 顯示當前 conjunction 文字(同 Where 視覺,A6 canonical)
   //   對齊 Airtable / Notion / Linear 共識 @benchmark-unverified(non-OSS)
   //   px-[var(--field-px)] 對齊 Field 內部 padding 12px(Q13)
+  //   h-field-sm flex items-center(2026-11-18):文字標籤佔一條條件列的高(條件列的欄位與 index 1 的 Select 都是 size="sm",同一顆 token),
+  //   字在裡面垂直置中 → 字的中線 = 旁邊那一條條件的中線。平鋪列(FilterRow 的 items-center)本來就這樣;巢狀的群組標籤
+  //   (GroupBlock 包層 pt-2,頂對齊)以前只有一行字高,字的中線比框內第一條條件高 3.5 / 5.5px(一般 / 大密度,38649f5a 實量)。
+  //   規則與依據住 data-table.spec.md「巢狀群組的間距」;閘 data-table-filter-group-spacing-invariant.mjs 的 M 段
+  const TEXT_LABEL = 'w-20 shrink-0 h-field-sm flex items-center text-body text-fg-secondary px-[var(--field-px)]'
   if (index === 0) {
-    return <div className="w-20 shrink-0 text-body text-fg-secondary px-[var(--field-px)] self-center">{labels.where}</div>
+    return <div className={TEXT_LABEL}>{labels.where}</div>
   }
   if (index >= 2) {
     const label = conjunction === 'and' ? labels.and : labels.or
-    return <div className="w-20 shrink-0 text-body text-fg-secondary px-[var(--field-px)] self-center">{label}</div>
+    return <div className={TEXT_LABEL}>{label}</div>
   }
   // index === 1:可切換的 AND/OR Select
   return (
@@ -137,14 +142,13 @@ export function FilterRow({
     <div className="flex items-center gap-2">
       <ConjunctionLabel index={index} conjunction={conjunction} onChange={onChangeConjunction} labels={labels} />
       {/* **#9 fix(2026-05-04 v4)**:Field controls trigger `w-full` override 外 className,改用 Tailwind `!`
-          important 強制 override(`!w-[160px]` / `!w-[120px]`),value 用 `!flex-1 !min-w-0`。
+          important 強制 override(`!w-[10rem]` / `!w-[7.5rem]`),value 用 `!flex-1 !min-w-0`。
           Select 元件本身沒 destructure `style` prop 所以 inline style flex-basis 行不通,只能用 className。 */}
-      <FieldControlGroup block className="flex-1 min-w-0">
-        {/* 2026-05-23 Phase A.4 Decision 2:`!w-[160px]` / `!w-[120px]` → tokens
-            `--data-table-filter-field-width` / `--data-table-filter-op-width`(SSOT in uiSize.css)
-            Behavior preserved 完好如初:flat + nested 同 width(token 是 design constant) */}
+      <FieldControlGroup width="fill" className="flex-1 min-w-0">
+        {/* 欄位下拉 10rem(160px)、條件下拉 7.5rem(120px):flat 與 nested 同寬,值只住這兩行
+            (2026-11-11 token「3全收」:原本的兩顆 token 只有這裡在讀,收回成元件自己的值;rem 跟著使用者字級設定縮放) */}
         <Select
-          className="!w-[var(--data-table-filter-field-width)] flex-shrink-0 [&_.text-fg-muted]:!text-fg-secondary"
+          className="!w-[10rem] flex-shrink-0 [&_.text-fg-muted]:!text-fg-secondary"
           size="sm"
           options={fieldOptions}
           value={condition.field}
@@ -153,7 +157,7 @@ export function FilterRow({
           aria-label={labels.fieldAriaLabel}
         />
         <Select
-          className={hasValueCell ? '!w-[var(--data-table-filter-op-width)] flex-shrink-0' : '!flex-1 !min-w-0'}
+          className={hasValueCell ? '!w-[7.5rem] flex-shrink-0' : '!flex-1 !min-w-0'}
           size="sm"
           options={operatorOptions}
           value={condition.op}
@@ -208,8 +212,8 @@ export function GroupBlock({
       <div className="pt-2">
         <ConjunctionLabel index={index} conjunction={rootConjunction} onChange={onChangeRootConjunction} labels={labels} />
       </div>
-      {/* Group container 灰底 — `bg-muted`(`--muted` neutral-2,user 2026-05-09 拍板 Q3 A)。對齊 color.spec.md L651-654 「table header / tab / code block / skeleton」靜態低重要 surface semantic */}
-      <div className="flex-1 min-w-0 rounded-md bg-muted p-2 flex flex-col gap-2">
+      {/* Group container 灰底 — `bg-muted`(`--muted` neutral-2,user 2026-05-09 拍板 Q3 A)。對齊 color.spec.md L651-654 「table header / tab / code block / skeleton」靜態低重要 surface semantic。data-panel-filter-group = 給閘定位這個框用(同 data-panel-add-row 的寫法),不影響畫面;框的間距規格在 data-table.spec.md L4「巢狀群組的間距」 */}
+      <div className="flex-1 min-w-0 rounded-md bg-muted p-2 flex flex-col gap-2" data-panel-filter-group="">
         {group.children.map((cond, cIdx) => (
           <FilterRow
             key={cond.id}

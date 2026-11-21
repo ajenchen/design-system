@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { LayoutDashboard, Inbox, Folder, Plus } from 'lucide-react'
@@ -22,7 +21,8 @@ import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { H3, Desc, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 import { SectionDescription, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { MAIN_NAV } from '@/design-system/stories-helpers/data/sidebar-nav'
+import { MAIN_NAV, navLabel } from '@/design-system/stories-helpers/data/sidebar-nav'
+import { demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計規格',
@@ -56,7 +56,7 @@ const Swatch = ({ value }: { value: string }) => (
 /** 縮小的 demo sidebar preview (inside padded story)。`withGroups`:多畫兩個帶標題的群組(列尾 + 與收合箭頭),尺寸對照表用 */
 const SidebarPreview = ({
   size = 'md',
-  activeId = 'dashboard',
+  activeId = MAIN_NAV[0].id,
   width = 240,
   withGroups = false,
 }: {
@@ -68,7 +68,7 @@ const SidebarPreview = ({
   const [projects, setProjects] = React.useState(['結帳流程改版', '對帳批次'])
   return (
     <div
-      className="relative border border-divider rounded-lg overflow-hidden bg-surface"
+      className="relative border border-divider rounded-md overflow-hidden bg-surface"
       style={{ width }}
     >
       <SidebarProvider size={size} defaultActiveId={activeId} style={{ minHeight: 'auto' }}>
@@ -131,7 +131,7 @@ const SidebarPreview = ({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <button type="button">
-                    <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+                    <ItemAvatar src={demoPersonPhoto('Alan Chen', 48)} alt="Alan Chen" color="blue" />
                     <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
                   </button>
                 </SidebarMenuButton>
@@ -276,7 +276,8 @@ export const Overview: Story = {
 
 interface InspectorArgs {
   size: 'sm' | 'md' | 'lg'
-  activeId: 'dashboard' | 'inbox' | 'team' | 'notifications' | 'settings'
+  /** 主導覽的 id(選項從 MAIN_NAV 讀,不另寫一份) */
+  activeId: (typeof MAIN_NAV)[number]['id']
   width: number
 }
 
@@ -292,7 +293,7 @@ export const Inspector: Story = {
   },
   args: {
     size: 'md',
-    activeId: 'dashboard',
+    activeId: MAIN_NAV[0].id,
     width: 240,
   },
   argTypes: {
@@ -303,7 +304,7 @@ export const Inspector: Story = {
     },
     activeId: {
       control: 'radio',
-      options: ['dashboard', 'inbox', 'team', 'notifications', 'settings'],
+      options: MAIN_NAV.map((item) => item.id),
       description: '當前 active item(router-driven 時從 URL 算出)',
     },
     width: {
@@ -491,12 +492,16 @@ export const ColorMatrix: Story = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** 狀態行為的靜態格:真的 SidebarProvider + Sidebar(作法同本檔 SidebarPreview 與下方「展開與收合」那格),開關狀態固定在 `open`。
- *  品牌 = chrome header 標準寫法(raw Avatar 24 + text-body-lg font-medium,sidebar.spec.md「Header — brand」);收成細列時名稱隱藏、Avatar 置中。 */
-const CollapseModeFrame = ({ label, collapsible, open }: { label: string; collapsible: 'icon' | 'offcanvas'; open: boolean }) => (
+ *  品牌 = chrome header 標準寫法(raw Avatar 24 + text-body-lg font-medium,sidebar.spec.md「Header — brand」);收成細列時名稱隱藏、Avatar 置中。
+ *  標頭的字 = 側欄選中項的字(sidebar.spec.md「選中項的字 = 那一頁標頭的字」):選中狀態由這一格自己管、標頭讀 `navLabel`,
+ *  點別的項目標頭跟著換(2026-11-15 前標頭寫死「Dashboard」,點了 Inbox 側欄亮 Inbox、標頭還是 Dashboard)。 */
+function CollapseModeFrame({ label, collapsible, open }: { label: string; collapsible: 'icon' | 'offcanvas'; open: boolean }) {
+  const [activeId, setActiveId] = React.useState<string>(MAIN_NAV[0].id)
+  return (
   <div className="flex flex-col gap-2 items-start">
     <Label>{label}</Label>
-    <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 420, height: 220 }}>
-      <SidebarProvider defaultOpen={open} defaultActiveId="dashboard" style={{ minHeight: 'auto', height: '100%' }}>
+    <div className="border border-divider rounded-md overflow-hidden bg-surface" style={{ width: 420, height: 220 }}>
+      <SidebarProvider defaultOpen={open} activeId={activeId} onActiveChange={setActiveId} style={{ minHeight: 'auto', height: '100%' }}>
         <div className="flex w-full h-full">
           <Sidebar side="left" collapsible={collapsible}>
             <SidebarHeader>
@@ -523,14 +528,61 @@ const CollapseModeFrame = ({ label, collapsible, open }: { label: string; collap
           </Sidebar>
           <div className="flex-1 flex flex-col min-w-0">
             <ChromeHeader className="bg-surface">
-              <span className="text-body-lg font-medium">Dashboard</span>
+              <span className="text-body-lg font-medium">{navLabel(activeId)}</span>
             </ChromeHeader>
           </div>
         </div>
       </SidebarProvider>
     </div>
   </div>
-)
+  )
+}
+
+/** 狀態行為「展開與收合」那一格:開關按 SidebarTrigger 或 ⌘B。標頭的字 = 側欄選中項的字(同上一格;2026-11-15 前沒有選中項、標頭寫死「Dashboard」,
+ *  側欄改成「Due soon」之後那個字已不是側欄上的任何一項 → 這一格也照同一份資料:預設選第一項、標頭讀 `navLabel`)。 */
+function LiveToggleFrame() {
+  const [activeId, setActiveId] = React.useState<string>(MAIN_NAV[0].id)
+  return (
+    <div className="border border-divider rounded-md overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
+      <SidebarProvider activeId={activeId} onActiveChange={setActiveId} style={{ minHeight: 'auto', height: '100%' }}>
+        <div className="flex w-full h-full">
+          <Sidebar side="left" collapsible="icon">
+            <SidebarHeader>
+              <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
+                <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
+                <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
+              </div>
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {MAIN_NAV.filter((item) => item.id !== 'notifications').map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton id={item.id} startIcon={item.icon}>
+                          {item.label}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+          <div className="flex-1 flex flex-col">
+            {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
+                與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
+                「Chrome header 的高度不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
+            <ChromeHeader className="bg-surface">
+              <SidebarTrigger />
+              <span className="text-body-lg font-medium">{navLabel(activeId)}</span>
+            </ChromeHeader>
+          </div>
+        </div>
+      </SidebarProvider>
+    </div>
+  )
+}
 
 // 2026-05-17 ship per audit Dim 45 strict re-run — cva variant matrix codify
 // SidebarMenuButton cva 有 variant: { default, meta } 兩個值,本 story 展示 default vs meta 區別
@@ -562,7 +614,7 @@ export const VariantMatrix: Story = {
         <H3>variant=&quot;meta&quot;(命令 row,非導覽目的地)</H3>
         <Desc>
           section 底部的命令(「查看更多 / 載入更多 / + 新增專案」)。文字退到 <code>text-fg-muted</code> + <code>font-normal</code>,
-          視覺重量下沉。<strong>不參與 single-selection</strong>(誤傳 isActive 也不啟動)。對齊 Linear「Show N more」/ Notion「Show more」/ Slack「Show more」/ Gmail Labels「More」共識。
+          視覺重量下沉。<strong>不參與 single-selection</strong>(誤傳 isActive 也不啟動)。固定放在 section 底部 —— 位置本身就是「這是尾巴」的訊號。
         </Desc>
         <div className="border border-border rounded-md p-3 bg-surface">
           <SidebarProvider style={{ minHeight: 'auto' }}>
@@ -603,7 +655,7 @@ export const StateBehavior: Story = {
         <div className="flex flex-col gap-3">
           <span className="text-caption font-medium text-fg-secondary">三種收合模式</span>
           <SectionDescription>
-            <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 68) / <code>none</code> = 永遠展開。選擇依使用情境:Linear / Figma / Notion 等「深度導覽」app 用 <code>icon</code>(使用者常切 section);Stripe Dashboard / Intercom 等「主內容為主」用 <code>offcanvas</code>(sidebar 只是啟動器)。
+            <code>collapsible</code> prop 控制收合策略:<code>offcanvas</code>(預設)= 整條 sidebar 滑出視窗外 / <code>icon</code> = 收縮到細列只留 icon(<code>--sidebar-width-icon</code>:標準密度 48 / 寬鬆密度 64;<code>size="lg"</code> 的圖示大 4px,各多 4) / <code>none</code> = 永遠展開。選擇依使用情境:使用者常切 section 的高頻導覽用 <code>icon</code>;主內容為主、sidebar 只是低頻啟動器時用 <code>offcanvas</code>。
           </SectionDescription>
           <div className="flex flex-wrap gap-6">
             <CollapseModeFrame label='collapsible="icon" · expanded' collapsible="icon" open />
@@ -617,53 +669,16 @@ export const StateBehavior: Story = {
           <span className="text-caption font-medium text-fg-secondary">用 Cmd/Ctrl+B 或 SidebarTrigger 展開與收合</span>
           <SectionDescription>
             SidebarProvider 內建 Cmd+B (Mac) / Ctrl+B (Win) 全域快捷鍵,同時 SidebarTrigger iconOnly Button 作為視覺 toggle。open state 寫入 cookie(7 天);跨 session 還原需 consumer 讀 cookie 後傳 defaultOpen(詳 spec「持久化與快捷鍵」)。
-            點下方的 SidebarTrigger 或按 Cmd/Ctrl+B,sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 68),再按一次展開。
+            點下方的 SidebarTrigger 或按 Cmd/Ctrl+B,sidebar 縮到細列(icon mode;標準密度 48 / 寬鬆密度 64),再按一次展開。
           </SectionDescription>
-          <div className="border border-divider rounded-lg overflow-hidden bg-surface" style={{ width: 480, height: 280 }}>
-            <SidebarProvider style={{ minHeight: 'auto', height: '100%' }}>
-              <div className="flex w-full h-full">
-                <Sidebar side="left" collapsible="icon">
-                  <SidebarHeader>
-                    <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
-                      <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
-                      <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
-                    </div>
-                  </SidebarHeader>
-                  <SidebarContent>
-                    <SidebarGroup>
-                      <SidebarGroupContent>
-                        <SidebarMenu>
-                          {MAIN_NAV.filter((item) => item.id !== 'notifications').map((item) => (
-                            <SidebarMenuItem key={item.id}>
-                              <SidebarMenuButton id={item.id} startIcon={item.icon}>
-                                {item.label}
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          ))}
-                        </SidebarMenu>
-                      </SidebarGroupContent>
-                    </SidebarGroup>
-                  </SidebarContent>
-                </Sidebar>
-                <div className="flex-1 flex flex-col">
-                  {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
-                      與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
-                      「Chrome header 不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
-                  <ChromeHeader className="bg-surface">
-                    <SidebarTrigger />
-                    <span className="text-body-lg font-medium">Dashboard</span>
-                  </ChromeHeader>
-                </div>
-              </div>
-            </SidebarProvider>
-          </div>
+          <LiveToggleFrame />
         </div>
 
         {/* Icon mode — tooltip for item labels */}
         <div className="flex flex-col gap-3">
           <span className="text-caption font-medium text-fg-secondary">收成細列時用 Tooltip 補上標籤</span>
           <SectionDescription>
-            collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 <code>tooltip</code> prop,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(<code>tooltip</code> prop)。
+            collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 <code>tooltip</code> prop,opt-in)才出現 Tooltip(顯示 label)補償 — 避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(<code>tooltip</code> prop)。
           </SectionDescription>
         </div>
 
@@ -693,6 +708,9 @@ export const ChromeTokens: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Sidebar 寬度 tokens</H3>
+        <Desc>
+          產品沒設時的預設值,兩顆。產品沒設時 Menu 與 Right panel 的最小寬 240 不是 token,是 AppShell 內建的預設值(產品用 <code>widthRange</code> 設自己的最小 / 初始 / 最大);收合寬公式裡的圖示寬由 <code>SidebarProvider</code> 依 <code>size</code> 自己帶入,產品不用設定。
+        </Desc>
         <table className="min-w-full text-left border-collapse">
           <thead>
             <tr>
@@ -708,19 +726,9 @@ export const ChromeTokens: Story = {
               <Td>產品沒設時 Menu 的初始寬(Menu 浮層與並排共用同一份寬度紀錄,沒有浮層專用寬)</Td>
             </tr>
             <tr>
-              <Td><TkVal token="--sidebar-width-min" value="240px" /></Td>
-              <Td mono>240px</Td>
-              <Td>產品沒設時 Menu 與 Right panel 的最小寬(2026-10-14 起產品設的最小 / 初始 / 最大為準,DS 不再硬夾)</Td>
-            </tr>
-            <tr>
               <Td><TkVal token="--sidebar-width-icon" value="calc(2 × loose + icon)" /></Td>
               <Td mono>calc()</Td>
-              <Td>icon 收合模式寬度(= 左右各一個 loose + 圖示寬:md 2×16+16 = 48 / lg 2×24+20 = 68,展開與收合時圖示中心 x 不動)</Td>
-            </tr>
-            <tr>
-              <Td><TkVal token="--sidebar-menu-icon-size" value="1rem (16px)" /></Td>
-              <Td mono>1rem</Td>
-              <Td>menu icon 大小(sm / md 16px;size = lg 的列另外覆寫成 20px)</Td>
+              <Td>icon 收合模式寬度(= 左右各一個 loose + 這個 Sidebar 畫出來的圖示寬:標準密度 2×16+16 = 48 / 寬鬆密度 2×24+16 = 64;<code>size="lg"</code> 的圖示是 20,各多 4 = 52 / 68。展開與收合時圖示中心 x 不動;換了密度的區塊裡照區塊的密度算)</Td>
             </tr>
           </tbody>
         </table>
@@ -759,7 +767,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發,但有三道 guard:app 已處理同鍵(defaultPrevented)/ IME 組字中(isComposing)/ 可編輯 target(input / textarea / contentEditable 內讓位給 bold 等編輯語意)時不 toggle。仍無 disableShortcut opt-out。\n\n-   方向鍵與 Tab:每一串 SidebarMenu 只佔一個 Tab 停靠點,Tab 進來落在上次停的那一項(沒停過就是當前頁,再沒有就是第一項),再按一下 Tab 就離開這一串。↑↓ 換項目、Home / End 到第一 / 最後一項;→ 進這一列自己的小按鈕(更多動作、新增等),←→ 在小按鈕之間移動,第一顆按 ← 回到項目;小按鈕上按 ↑↓ 直接換到上下一項。只在滑過時出現的小按鈕,鍵盤焦點在這一列時照樣顯示。側欄捲動區本身不是停靠點。完整按鍵表見 Sidebar 規格「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   放不下時的左側浮層(2026-10-14 起沒有 768 斷點):放在 AppShell 裡且 Menu 放不下時,按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層的無障礙名稱是「選單」;焦點進浮層、Tab 只在浮層裡走,Esc 或點浮層外收回細列。SidebarTrigger 直接登記自己為開啟者,快捷鍵則記錄當下焦點,收回後由 onCloseAutoFocus 還給仍掛著的開啟者。展開的 Menu(並排或浮層)看得到字,選單項不掛提示,第一下 Esc 就收回;只有細列的圖示才有提示。單獨使用(不在 AppShell 裡)時一律並排,沒有浮層。"}</p>
+      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發,但有三道 guard:app 已處理同鍵(defaultPrevented)/ IME 組字中(isComposing)/ 可編輯 target(input / textarea / contentEditable 內讓位給 bold 等編輯語意)時不 toggle。仍無 disableShortcut opt-out。\n\n-   方向鍵與 Tab:每一串 SidebarMenu 只佔一個 Tab 停靠點,Tab 進來落在上次停的那一項(沒停過就是當前頁,再沒有就是第一項),再按一下 Tab 就離開這一串。↑↓ 換項目、Home / End 到第一 / 最後一項;→ 進這一列自己的小按鈕(更多動作、新增等),←→ 在小按鈕之間移動,第一顆按 ← 回到項目;小按鈕上按 ↑↓ 直接換到上下一項。只在滑過時出現的小按鈕,鍵盤焦點在這一列時照樣顯示。側欄捲動區本身不是停靠點。完整按鍵表見 Sidebar 規格「鍵盤:一串 SidebarMenu = 一個 Tab 停靠點」。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   放不下時的左側浮層(2026-10-14 起沒有 768 斷點):放在 AppShell 裡且 Menu 放不下時,按開關(或 Cmd/Ctrl+B)叫出左側浮層,浮層的無障礙名稱是「選單」;焦點進浮層、Tab 只在浮層裡走,Esc 或點浮層外收回細列。SidebarTrigger 直接登記自己為開啟者,快捷鍵則記錄當下焦點,收回後由 onCloseAutoFocus 還給仍掛著的開啟者。展開的 Menu(並排或浮層)看得到字,選單項不掛提示,第一下 Esc 就收回;只有細列的圖示才有提示。單獨使用(不在 AppShell 裡)時一律並排,沒有浮層。"}</p>
     </div>
   ),
 }

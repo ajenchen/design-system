@@ -23,7 +23,7 @@ benchmark:
 
 Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延遲時間(對齊 token 名 `delay` 術語)。**目的不是動畫長度,是「user 真的想看」過濾器** — 短暫滑過不該觸發 expensive overlay(ProfileCard fetch 資料 / Tooltip 視覺擾動)。
 
-**Scope**:motion token 統一在 `--motion-*` 前綴下,兩個 sub-family:(A)**delay**(hover 開/關延遲,見下)(B)**進出場動畫**(overlay fade/zoom/slide 的 duration/easing/幾何,與原地展開收合的高度動畫,見「進出場動畫 token」段與「開合動畫:何時播、怎麼收尾」段)。overlay 開啟後的 fetch loading 視覺(skeleton / 留空)屬各 consumer 元件 spec,不在 motion token scope。
+**Scope**:motion token 統一在 `--motion-*` 前綴下,兩個 sub-family:(A)**delay**(hover 開/關延遲,見下;2026-11-15 起值只住程式常數 `motion.ts`,CSS 名字退場,見下表後的註)(B)**進出場動畫**(overlay fade/zoom/slide 的 duration/easing/幾何,與原地展開收合的高度動畫,見「進出場動畫 token」段與「開合動畫:何時播、怎麼收尾」段)。overlay 開啟後的 fetch loading 視覺(skeleton / 留空)屬各 consumer 元件 spec,不在 motion token scope。
 
 ## 三層 tier 系統
 
@@ -32,6 +32,8 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 | `--motion-delay-plain` | `500ms` | Tooltip 純文字提示 | 被動 hint,需 user「真停留」才觸發,避免滑過列表時 N 次視覺擾動。對齊 Material 3 plain tooltip 500ms / Apple HIG ~500ms / shadcn-Radix default 500ms 主流共識 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 | `--motion-delay-rich` | `700ms` | HoverCard / ProfileCard 內容預覽 | 含 avatar / fields / actions 的 rich content(可能含 fetch)。User 必須「真的想看」才停留 700ms,避免列表掃視時誤觸發 N 個 fetch waterfall |
 | `--motion-delay-close` | `200ms` | 所有 overlay 關閉 | Mouse leave 後給 200ms 緩衝(user 可能誤滑出再回來)。對齊 UX 共識「close delay ≤ open delay」+ 既有 Avatar `closeDelay={200}` 值 |
+
+> **2026-11-15 起這三個值只住程式常數** `tokens/motion/motion.ts`(`MOTION_DELAY_PLAIN_MS` / `MOTION_DELAY_RICH_MS` / `MOTION_DELAY_CLOSE_MS`)。上表第一欄的 `--motion-delay-*` 留作這三檔的**規格名**,CSS 宣告已退場:執行期沒有任何 CSS 讀者(Radix 的延遲參數只吃數字,四個消費元件一直讀常數),產品又不讀 motion;舊的保留理由「CSS 留一份給設計稿看 + 未來可能有程式讀」與 `../token-system.spec.md` 第 0 題「禁止『之後可能有人用』就先開」矛盾(稽核 P09 與反查更正;`../orphan-tokens.spec.md` 原 §8 同日撤掉)。寫程式一律 import 常數,不寫 `var(--motion-delay-*)`(讀不到值)。【AI 推導 2026-11-15:照稽核 P09 做的工程收斂,值不變;依據是產品不讀 motion(分類表 `--motion-` 列 `product: no`),不是 user 的決定 —— 2026-11-11 決策頁上 AI 寫在「照既有原則直接做（不用你決定）」清單的那句是「沒人用的名字、值住在別處又沒鎖住的、佔位名字、開頭跟主人對不上的、規格放錯的，全部同值替換或刪除，畫面零差異。」—— 那是 AI 寫的句子,user「看過」不等於同意】
 
 ## 為何不用單一值 / 為何不沿用過去 200ms
 
@@ -43,13 +45,13 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 
 ## 何時用 / 何時不用
 
-| 場景 | 用哪 token | 為何 |
+| 場景 | 用哪一檔(程式常數) | 為何 |
 |---|---|---|
-| Icon-only Button → 顯示文字提示 | `--motion-delay-plain` | 純文字輔助 |
-| Avatar / Username → 顯示完整人物卡 | `--motion-delay-rich` | 含 fetch + multi-section content |
-| OverflowIndicator → 顯示隱藏列表 | `--motion-delay-plain` | 純列表展開,無 fetch |
-| Tag / Chip → 顯示說明 | `--motion-delay-plain` | 純文字 |
-| 任何 overlay 關閉延遲 | `--motion-delay-close` | universal |
+| Icon-only Button → 顯示文字提示 | plain(`MOTION_DELAY_PLAIN_MS`) | 純文字輔助 |
+| Avatar / Username → 顯示完整人物卡 | rich(`MOTION_DELAY_RICH_MS`) | 含 fetch + multi-section content |
+| OverflowIndicator → 顯示隱藏列表 | plain(`MOTION_DELAY_PLAIN_MS`) | 純列表展開,無 fetch |
+| Tag / Chip → 顯示說明 | plain(`MOTION_DELAY_PLAIN_MS`) | 純文字 |
+| 任何 overlay 關閉延遲 | close(`MOTION_DELAY_CLOSE_MS`) | universal |
 | Click-triggered Popover / Dialog | — | N/A,click 不適用 hover delay |
 | Tooltip 鍵盤 focus 觸發 | — | N/A,直接顯示(本 DS 決定:鍵盤使用者是逐一走過去才聚焦,不會像滑鼠那樣掃過誤觸,不需要延遲擋誤觸)([來源](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/tooltip/tooltip-pattern.html#L27-L28)) |
 
@@ -69,11 +71,11 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 ## 消費者
 
 - `components/Avatar/avatar.tsx` — HoverCard openDelay / closeDelay 消費 `MOTION_DELAY_RICH_MS` / `MOTION_DELAY_CLOSE_MS`(原硬寫 300/200,migrate 到 token)
-- `components/HoverCard/hover-card.tsx` — Root 預設 `openDelay`=`--motion-delay-rich` / `closeDelay`=`--motion-delay-close`(Radix HoverCard 無 Provider;2026-06-11 落地,原宣稱與 code 脫鉤)
-- `components/Tooltip/tooltip.tsx` — Radix Provider 預設 delayDuration override 為 `--motion-delay-plain`
-- `components/ProfileCard/profile-card.tsx`(consumer of HoverCard)— 繼承 `--motion-delay-rich`
-- `components/OverflowIndicator/overflow-indicator.tsx`(consumer)— 用 `--motion-delay-plain`
-- 任何 future overlay hover consumer 必 import 此 token(per M17 SSOT 必可傳播)
+- `components/HoverCard/hover-card.tsx` — Root 預設 `openDelay`=`MOTION_DELAY_RICH_MS` / `closeDelay`=`MOTION_DELAY_CLOSE_MS`(Radix HoverCard 無 Provider;2026-06-11 落地,原宣稱與 code 脫鉤)
+- `components/Tooltip/tooltip.tsx` — Radix Provider 預設 delayDuration override 為 `MOTION_DELAY_PLAIN_MS`
+- `components/ProfileCard/profile-card.tsx`(consumer of HoverCard)— 繼承 rich(`MOTION_DELAY_RICH_MS`)
+- `components/OverflowIndicator/overflow-indicator.tsx`(consumer)— 用 `MOTION_DELAY_PLAIN_MS`
+- 任何 future overlay hover consumer 必 import `tokens/motion/motion.ts` 的常數(per M17 SSOT 必可傳播;值只住那裡)
 
 ## 世界級對照
 
@@ -104,11 +106,11 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 | `--motion-duration-surface` | `250ms` | 模態面板(Dialog/Sheet/FileViewer,面積大位移遠→慢一階) | Material medium1 / Polaris 250([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/motion.ts#L59-L60)) |
 | `--motion-easing-enter` | `cubic-bezier(0,0,0,1)` | 進場(減速,快起平滑落定) | Material standard-decelerate(企業級中性沉穩)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-motion.scss#L51-L52)) |
 | `--motion-easing-exit` | `cubic-bezier(0.3,0,1,1)` | 出場(加速) | Material standard-accelerate([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-motion.scss#L49-L50)) |
-| `--motion-enter-distance` | `0.5rem`(8px) | slide 位移 | shadcn/Radix canonical(= 現行 slide-*-2)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L32)) |
-| `--motion-enter-scale` | `0.95` | zoom scale | shadcn default(= 現行 zoom-95)([來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L32)) |
 | `--motion-duration-disclosure` | `200ms` | 原地展開收合的高度動畫(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊;共用 SSOT `disclosure-motion.ts`) | 現況值,不是新選的:三個消費者 2026-07-14 起實際渲染的都是 tw-animate-css 1.4.0 collapsible / accordion 工具類的預設 `.2s`(`node_modules/tw-animate-css/dist/tw-animate.css`),也是 `components/AgentPanel/agent-panel.spec.md`「動畫總表」「思考塊開合」那一列(200ms)與舊 base.css accordion 的宣告。2026-10-07 收成 token(待辦總帳 T8,見「開合動畫」段) |
 
-**幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px,朝觸發點);模態置中 = **fade+zoom、不位移**(Dialog/FileViewer;2026-09-09 修正 —— 原「slide-center」是 shadcn v3 在 keyframe 內重寫置中位移的 hack,Tailwind v4 的 `translate` 屬性不再被 keyframe 蓋掉,留著會變成從左上角飛入;shadcn v4 已拿掉 <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>,詳 `components/Dialog/dialog.spec.md`「動畫」段);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**何時播 / 時長 / 曲線 / 收尾 / 減少動態**(全 7 浮層 + 各自的遮罩,見下方「開合動畫」段),非幾何原型(對齊 Material standard-vs-emphasized 的曲線分層)。
+**滑入距離與縮放不開 token**(2026-11-15):原表的 `--motion-enter-distance`(0.5rem)與 `--motion-enter-scale`(0.95)從來沒有讀者 —— 7 個浮層的實際值由各自的 tw-animate-css 幾何 class(`slide-in-from-*-2` = 8px、`zoom-in-95`)帶,改 token 什麼都不會變(稽核 P08)。幾何本來就照下方原型各自帶(`overlay-motion.ts` 檔頭「幾何 per-prototype 各自帶」),所以兩顆退場、值不變;8px / 0.95 的出處(shadcn popover.tsx#L32 的 `slide-in-from-*-2` / `zoom-in-95`,[來源](https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L32))照舊。另一條路是把 7 個浮層改成讀 token(稽核建議的做法之一),會動到 7 個元件的動畫 class 組合,而靜態量測驗不到動畫中間格,這次不做。【AI 推導 2026-11-15:兩條路都在稽核 ACTION 裡,選了不動元件、畫面零差異的那一條】
+
+**幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px,朝觸發點);模態置中 = **fade+zoom、不位移**(Dialog/FileViewer;2026-09-09 修正 —— 原「slide-center」是 shadcn v3 在 keyframe 內重寫置中位移的 hack,Tailwind v4 的 `translate` 屬性不再被 keyframe 蓋掉,留著會變成從左上角飛入;shadcn v4 已拿掉 <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>,詳 `components/Dialog/dialog.spec.md`「動畫」段);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**何時播 / 時長 / 曲線 / 收尾 / 減少動態**(全 7 浮層 + 各自的遮罩,見下方「開合動畫」段),非幾何原型(對齊 Material standard-vs-emphasized 的曲線分層:standard「Easing used for utility focused animations that begin and end on screen.」、emphasized「Easing used for common, M3-styled animations that begin and end on screen.」,[Motion.md](https://github.com/material-components/material-components-android/blob/66b0eeb53afeb6025ffbbd37734b08e5bce197ed/docs/theming/Motion.md))。
 
 **a11y**:`prefers-reduced-motion: reduce` 下全 7 浮層(含遮罩)與 3 個原地展開收合都**不播**開合動畫 —— 動畫本身只宣告在 `motion-safe:` 底下(見下方「開合動畫」段「何時播」)。
 
@@ -140,7 +142,7 @@ Radix 關閉時先把 `data-state` 改成 `closed`、等收起動畫的 `animati
 
 **同族另見(2026-10-07 回報;2026-10-13 三項都已收掉)**:
 
-(1)**Tooltip 打開從沒播過進場動畫 —— 已修(2026-10-13,待辦總帳 T10)**。原因:Radix Tooltip 打開時的 `data-state` 是 `delayed-open`(停留等待後打開)/ `instant-open`(焦點打開,或剛關掉一個 Tooltip 隨即移到下一個),從來不是 `open`(`@radix-ui/react-tooltip` `dist/index.mjs:103-104`);而 `overlayMotion` 與 Tooltip 的進場幾何都寫 `data-[state=open]`,兩種打開都對不上。本檔「進出場動畫 token」段第一句寫明 Tooltip 有進出場、機制是 tw-animate-css(= shadcn 官方機制),而 shadcn Tooltip 每次打開都播進場(進場無條件宣告,只有收起看 `data-[state=closed]`:<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/tooltip.tsx#L29-L33>,2026-10-13 開檔核對);規格沒有區分兩種打開,所以兩種都播。修在 SSOT:`overlay-motion.ts` 的「打開」判準改成「不是 closed」(`not-data-[state=closed]`,檔頭「打開的判準」),一個判準涵蓋 Radix 全部打開狀態;七個浮層元件的進場幾何(fade-in / zoom-in / slide-in-from)改用同一個判準 —— 除了 Tooltip,它們的打開狀態本來就是 `open`,畫面不變。Tooltip 現在打開時淡入 + 從 95% 放大 + 朝觸發點方向滑入 8px,150ms、進場曲線;減少動態下不播。閘:`scripts/motion-ssot-invariant.mjs` M1c(`data-[state=open]:` 開頭的進場一律紅)、`scripts/open-close-motion-invariant.mjs` N1(兩種打開狀態各量一次,1ef86547 的建置兩筆都紅)。
+(1)**Tooltip 打開從沒播過進場動畫 —— 已修(2026-10-13,待辦總帳 T10)**。原因:Radix Tooltip 打開時的 `data-state` 是 `delayed-open`(停留等待後打開)/ `instant-open`(焦點打開,或剛關掉一個 Tooltip 隨即移到下一個),從來不是 `open`(`@radix-ui/react-tooltip` `dist/index.mjs:103-104`);而 `overlayMotion` 與 Tooltip 的進場幾何都寫 `data-[state=open]`,兩種打開都對不上。本檔「進出場動畫 token」段第一句寫明 Tooltip 有進出場、機制是 tw-animate-css(= shadcn 官方機制),而 shadcn Tooltip 每次打開都播進場(進場無條件宣告,只有收起看 `data-[state=closed]`:<https://github.com/shadcn-ui/ui/blob/968d8cb9dc42ae5d52e8fd356cf84596ec832a26/apps/v4/registry/new-york-v4/ui/tooltip.tsx#L44>,2026-10-13 開檔核對、2026-11-18 釘版重核);規格沒有區分兩種打開,所以兩種都播。修在 SSOT:`overlay-motion.ts` 的「打開」判準改成「不是 closed」(`not-data-[state=closed]`,檔頭「打開的判準」),一個判準涵蓋 Radix 全部打開狀態;七個浮層元件的進場幾何(fade-in / zoom-in / slide-in-from)改用同一個判準 —— 除了 Tooltip,它們的打開狀態本來就是 `open`,畫面不變。Tooltip 現在打開時淡入 + 從 95% 放大 + 朝觸發點方向滑入 8px,150ms、進場曲線;減少動態下不播。閘:`scripts/motion-ssot-invariant.mjs` M1c(`data-[state=open]:` 開頭的進場一律紅)、`scripts/open-close-motion-invariant.mjs` N1(兩種打開狀態各量一次,1ef86547 的建置兩筆都紅)。
 
 (2)**Popover 收起從沒播過動畫 —— 已修(2026-10-13,待辦總帳 T11)**。原因:`components/Popover/popover.tsx` 在 `PopoverPrimitive.Portal` 與 Content 之間包了 `PopoverTitleContext.Provider`(eff41482);Portal 外層那個 Presence(`@radix-ui/react-popover` `dist/index.mjs:110`)經 Slot 把 ref 交給 Portal 的直接子元素,落在 Provider 上拿不到節點、讀不到 animation-name,關閉當下整個卸載。修法:Provider 搬到 Portal 外面(React context 本來就穿得過 Portal,PopoverTitle 自動接 `aria-labelledby` 的行為不變)。結果:**Select / Combobox / DatePicker / 篩選面板等所有 Popover 消費者,關閉時都多一段 150ms 淡出 + 縮到 95%**(`--motion-duration-overlay`、出場曲線)—— 這是本檔第一句本來就寫的行為,不是新決定。閘:`open-close-motion-invariant.mjs` E0(關閉當下就卸載 = 紅,1ef86547 的建置 Popover 紅)與新成員 Select(Popover 消費者 + 觸發點箭頭)。關閉之後才量東西的瀏覽器閘,一律等真正的終態(`document.getAnimations()` 跑完、目標卸載),不得放寬門檻。
 
@@ -169,7 +171,7 @@ Radix 關閉時先把 `data-state` 改成 `closed`、等收起動畫的 `animati
 - Sidebar 群組與 DataTable 展開列的內容沒有高度動畫(收起當下隱藏 / 條件渲染),箭頭照樣吃原地展開這一檔:它們同屬「原地展開」,一個 DS 裡原地展開的箭頭只有一種手感(選項原文「側欄群組、表格展開列會從 150 變 200」)。
 - 旋轉角度(`rotate-90` / `rotate-180`)是幾何,由 `patterns/element-anatomy/item-anatomy.spec.md`「Chevron 方向慣例」決定,不在此。旋轉寫在**會轉的那個圖示本身**(Accordion 原本從標題用 `[&[data-state=open]>svg]:rotate-180` 去轉子元素,改成箭頭自己寫 `[[data-state=open]>&]:rotate-180`,畫面相同)。角度看**自己那顆觸發鈕**的狀態(直接父層 `>&`、命名 group 或 JS 狀態),不寫 `[[data-state=open]_&]`(任一層祖先):Sidebar 群組箭頭原本這樣寫,窄螢幕側欄住在 `SheetContent`(`data-state="open"`)裡,收合的群組箭頭也被轉成朝上 —— 2026-10-13 同族掃描時一併改成 `>&`(`components/Sidebar/sidebar.tsx` `SidebarGroupLabel`),寬螢幕畫面不變。
 - 減少動態:箭頭的旋轉過渡只宣告在 `motion-safe:` 底下 —— 要求減少動態時箭頭直接換角度、不轉(與內容不播高度動畫、浮層不播進出場一致;原本是 `motion-reduce:duration-0`,看起來一樣)。
-- 世界級:shadcn Accordion 的箭頭 `transition-transform duration-200` 與內容 `animate-accordion-down`(tw-animate-css 預設 .2s)同時長(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/accordion.tsx#L38-L52>,2026-10-13 開檔核對),但曲線各吃各的預設(箭頭是 Tailwind 預設、內容是 ease-out);本 DS 連曲線一起收成同一份。
+- 世界級:shadcn Accordion 的箭頭 `transition-transform duration-200` 與內容 `animate-accordion-down`(tw-animate-css 預設 .2s)同時長(<https://github.com/shadcn-ui/ui/blob/968d8cb9dc42ae5d52e8fd356cf84596ec832a26/apps/v4/registry/new-york-v4/ui/accordion.tsx#L43-L57>,2026-10-13 開檔核對、2026-11-18 釘版重核),但曲線各吃各的預設(箭頭是 Tailwind 預設、內容是 ease-out);本 DS 連曲線一起收成同一份。
 
 **看得見的變化(2026-10-13)**:
 

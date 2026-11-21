@@ -34,17 +34,17 @@ const REVENUE_SUMMARY: Record<string, string> = {
   month: '本月營收 NT$ 512,900 · 較上月 −2%',
 }
 
-// fullWidth 的小容器情境:真的 Dialog,裡面的分段控制撐滿寬
+// 撐滿(width="fill")的小容器情境:真的 Dialog,裡面的分段控制撐滿寬
 function ReportPeriodDialog() {
   const [open, setOpen] = useState(false)
   const [range, setRange] = useState('day')
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button variant="tertiary">設定報表週期</Button></DialogTrigger>
-      <DialogContent height="hug">
+      <DialogContent height="hug" width="sm">
         <DialogHeader><DialogTitle>報表週期</DialogTitle></DialogHeader>
         <DialogBody>
-          <SegmentedControl value={range} onValueChange={(v) => v && setRange(v)} fullWidth aria-label="報表週期">
+          <SegmentedControl value={range} onValueChange={(v) => v && setRange(v)} width="fill" aria-label="報表週期">
             <SegmentedControlItem value="day">日</SegmentedControlItem>
             <SegmentedControlItem value="week">週</SegmentedControlItem>
             <SegmentedControlItem value="month">月</SegmentedControlItem>
@@ -260,10 +260,10 @@ export const IconOnlyRule: Story = {
   ),
 }
 
-// ── fullWidth ────────────────────────────────────────────────────────────────
+// ── 寬度模式(width;2026-11-15 前叫 fullWidth)──────────────────────────────────
 
 export const FullWidthRule: Story = {
-  name: 'fullWidth 的適用情境',
+  name: '撐滿的適用情境',
   render: () => <FullWidthRuleDemo />,
 }
 
@@ -272,11 +272,11 @@ function FullWidthRuleDemo() {
   return (
     <TutorialPage>
       <TutorialRule
-        title="fullWidth 的判準：跟著容器尺度走，不是跟著 label 長度"
-        note="對齊 Apple HIG / Material 3 / Carbon 等世界級定義——segmented 永遠各 item 等寬或全由內容決定，不存在『撐滿但寬度不一』的混血模式。所以 fullWidth 的選擇只看容器大小，不看 label 長度"
+        title="撐滿(width 填 fill)的判準：跟著容器尺度走，不是跟著 label 長度"
+        note="對齊 Apple HIG / Material 3 / Carbon 等世界級定義——segmented 永遠各 item 等寬或全由內容決定，不存在『撐滿但寬度不一』的混血模式。所以要不要撐滿只看容器大小，不看 label 長度"
       >
         <ExampleGroup>
-          <ExampleCaption>✅ 小容器（Dialog / Sheet / 窄 sidebar / Field row）→ fullWidth</ExampleCaption>
+          <ExampleCaption>✅ 小容器（Dialog / Sheet / 窄 sidebar / Field row）→ 撐滿(fill)</ExampleCaption>
           {/* 真的 Dialog(稽核 M075:Dialog 情境放真的 Dialog,不手畫一個像 Dialog 的框) */}
           <ReportPeriodDialog />
         </ExampleGroup>
@@ -298,18 +298,18 @@ function FullWidthRuleDemo() {
               <Button variant="tertiary" size="sm" onClick={() => setToolbarRange('day')}>今天</Button>
             </ButtonGroup>
           </div>
-          <ExampleCaption>↑ 這裡若 fullWidth 會搶走同行其他元素的空間</ExampleCaption>
+          <ExampleCaption>↑ 這裡若撐滿會搶走同行其他元素的空間</ExampleCaption>
         </ExampleGroup>
       </TutorialRule>
 
       <TutorialRule
-        title="常見誤解：「label 長度差異不能用 fullWidth」是錯的"
-        note="SegmentedControl 的 items 永遠等寬（fullWidth 時）或全由內容決定（hug 時），不存在「短 label 周圍空白失衡」的情況——fullWidth 永遠平均分配空間。唯一要擔心的是 label 被截斷，那是 content overflow 問題（該減少選項或改 Select），跟 fullWidth 無關"
+        title="常見誤解：「label 長度差異不能撐滿」是錯的"
+        note="SegmentedControl 的 items 永遠等寬（fill 時）或全由內容決定（hug 時），不存在「短 label 周圍空白失衡」的情況——撐滿永遠平均分配空間。唯一要擔心的是 label 被截斷，那是 content overflow 問題（該減少選項或改 Select），跟撐不撐滿無關"
       >
         <ExampleGroup>
-          <ExampleCaption>✅ 就算 label 長度差異大，fullWidth 仍然等寬，視覺不會失衡</ExampleCaption>
+          <ExampleCaption>✅ 就算 label 長度差異大，撐滿仍然等寬，視覺不會失衡</ExampleCaption>
           <div className="w-[480px]">
-            <SegmentedControl defaultValue="all" fullWidth>
+            <SegmentedControl defaultValue="all" width="fill">
               <SegmentedControlItem value="all">全部</SegmentedControlItem>
               <SegmentedControlItem value="active">進行中的項目</SegmentedControlItem>
               <SegmentedControlItem value="done">已完成</SegmentedControlItem>

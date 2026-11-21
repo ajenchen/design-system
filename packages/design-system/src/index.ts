@@ -36,6 +36,7 @@ export {
   AgentPromptInput,
   AgentThinking,
   AgentToolbar,
+  agentDecisionCancelMessage,
 } from './components/AgentPanel/index'
 export type {
   AgentAttachment,
@@ -209,13 +210,13 @@ export type {
 } from './components/Combobox/index'
 export {
   DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,
+  DATA_TABLE_SORT_MANAGER_DEFAULT_LABELS,
   DataTable,
   DataTableColumnVisibilityPanel,
   DataTableFilterPanel,
   DataTableSortManager,
   MIN_COLUMN_WIDTH,
   createEmptyFilterTree,
-  dataTableFilterMatch,
   dataTableVariants,
   distributeColumnWidths,
   evaluateTree,
@@ -223,12 +224,14 @@ export {
 } from './components/DataTable/index'
 export type {
   Conjunction,
+  DataTableColumnDef,
   DataTableColumnVisibilityPanelProps,
   DataTableFilterPanelLabels,
   DataTableFilterPanelProps,
   DataTablePaginationOptions,
   DataTableProps,
   DataTableSelection,
+  DataTableSortManagerLabels,
   DataTableSortManagerProps,
   FilterCondition,
   FilterGroup,
@@ -282,7 +285,6 @@ export {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -314,6 +316,7 @@ export type {
   FieldVariant,
   FieldWidth,
   FormFieldInputProps,
+  SizingMode,
   UseFormValidationOptions,
   UseFormValidationReturn,
 } from './components/Field/index'
@@ -383,12 +386,10 @@ export type {
 } from './components/Pagination/index'
 export {
   MultiPersonDisplay,
-  PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS,
   PeoplePicker,
   PersonAvatarTag,
   PersonDisplay,
   buildPersonProfileCard,
-  getPeoplePickerTagWrapperClass,
   resolvePerson,
 } from './components/PeoplePicker/index'
 export type {
@@ -686,6 +687,7 @@ export type {
 //   - components/FileItem:fileItemRingCutoutStyle
 //   - components/LinkInput:LINK_INPUT_EDIT_ENTRY_ATTR
 //   - components/LinkInput:LinkInputViewEditAction
+//   - components/LinkInput:isLinkInputValueLinkable
 //   - components/Sheet:handleSheetOpenAutoFocus
 //   - components/Toast:ToastSurface
 //   - components/Toast:ToastSurfaceProps
@@ -703,6 +705,7 @@ export type {
 //   - lib/composite-field-focus.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/focus-after-trigger.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/ime-composition.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
+//   - lib/overlay-density.tsx(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-description.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-escape.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)
 //   - lib/overlay-focus-return.ts(檔頭標模組層 @internal;lib 沒有 subpath,只供 DS 內部相對 import)

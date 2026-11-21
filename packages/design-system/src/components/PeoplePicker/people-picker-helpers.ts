@@ -7,7 +7,7 @@
 // SSOT-bearing render logic(tagRenderer / selectedItemRenderer / 多人 stack 視覺等）仍留在
 // `people-picker.tsx`,因為消費 Combobox / Select / state 等 closure。
 //
-// Hook `check_peoplepicker_ssot_drift.sh` 不檢查本檔 literal — 因規則 cite spec.md row 的義務
+// Hook `post_edit_contract_dispatcher.sh` 的 PeoplePicker 規則(lib `_peoplepicker_ssot_drift.sh`)不檢查本檔 — 因規則 cite spec.md row 的義務
 // 在主檔 SSOT-bearing API 邊界處,本檔屬機械搬移。
 import { nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
 import type { SelectOption } from '@/design-system/components/Select/select'
@@ -23,7 +23,7 @@ import { buildPersonProfileCard, resolvePerson, type PersonValue } from './perso
 // truncate 無效(Bug 1 user 抓到越界蓋住 indicator)。
 //
 // **Why centralize**:M14 mechanical guard against future drift。任何人未來改 stack mode 邏輯,
-// 必經此 helper(hook `check_peoplepicker_ssot_drift.sh` 攔接 wrapper class literal in tsx)。
+// 必經此 helper(people-picker.tsx 動 `tagWrapperClassName` 時,hook `post_edit_contract_dispatcher.sh` 的 PeoplePicker 規則要求引用規格那一列)。
 //
 // **2026-05-15 SSOT alignment**(user 問單選 people picker 沒壞,難道沒有 SSOT):
 // 單選 picker wrapper(`select.tsx#CustomSelectTriggerContent` selectedItemRenderer wrapper)= `flex-1 min-w-0 inline-flex items-center +
@@ -40,7 +40,7 @@ import { buildPersonProfileCard, resolvePerson, type PersonValue } from './perso
 //   ellipsis trigger(圖一 + 圖二 root cause)。
 
 // code-quality-allow: dead-export — SSOT primitive 公開供 future cross-file 消費 + hook
-// `check_peoplepicker_ssot_drift.sh` enforce wrapper class literal pattern
+// `post_edit_contract_dispatcher.sh`(lib `_peoplepicker_ssot_drift.sh`)守 people-picker.tsx 的 tagWrapperClassName 改動
 export const PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS = `flex-1 min-w-0 inline-flex items-center ${nakedCellRowModeAlign}`
 // 同一份、但只拿自己要的寬(`flex: 0 1 auto`,不撐 flex-1):旁邊有欄位內搜尋框時(getPeoplePickerTagWrapperClass 第二個參數)用。
 // 單選欄位那一格是這一列唯一會長的東西,flex-1 = 吃滿;多人 1 位 × 欄位內搜尋時同一列還有搜尋框那一格(Combobox `flex-auto`,恆在),
@@ -56,9 +56,9 @@ export function getPeoplePickerTagWrapperClass(selectedCount: number, besideInli
   return selectedCount === 1
     ? PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS  // SSOT aligned to single picker wrapper(select.tsx#CustomSelectTriggerContent selectedItemRenderer wrapper)
     // length>=2 stack 視覺(spec.md §D row 1):圓形 avatar overlap + group/avatar selector for dismiss overlay。
-    // 疊的量走 token `--avatar-stack-overlap`(tokens/uiSize/uiSize.css;JS 雙生 avatar.tsx `AVATAR_STACK_OVERLAP_PX`),
+    // 疊的量走 token `--avatar-stack-overlap`(components/Avatar/avatar.css;JS 雙生 avatar.tsx `AVATAR_STACK_OVERLAP_PX`),
     // 這裡不再寫字面值(2026-09-26 前是 `-ml-0.5`,與常數各寫一份、註解要求「兩處同改」= 假 SSOT)。
-    // 疊放順序與「聚焦時升到最上層」由 Tag 列的 wrapper 負責(OverflowIndicator/overflow-tag-list.tsx `--tag-stack-z`;列容器 `TAG_ROW_CONTAINER_CLASS` 圈住)。
+    // 疊放順序與「聚焦時升到最上層」由 Tag 列的 wrapper 負責(OverflowIndicator/overflow-tag-list.tsx `--overflow-tag-stack-z`;列容器 `TAG_ROW_CONTAINER_CLASS` 圈住)。
     : '-ml-[var(--avatar-stack-overlap)] first:ml-0 relative inline-flex group/avatar'
 }
 

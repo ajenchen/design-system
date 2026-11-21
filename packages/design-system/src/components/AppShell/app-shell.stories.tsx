@@ -6,8 +6,8 @@ import * as React from 'react'
 import { userEvent, within } from '@storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Search, Filter, ArrowUpDown, Info } from 'lucide-react'
-import { AppShell, AppShellAside, useAppShell, type PanelWidthRange } from './app-shell'
-import { AcmeSidebar, PageHeader, GlobalHeader, InsightsView, MAIN_NAV } from './_demo-helpers'
+import { AppShell, AppShellAside, useAppShell } from './app-shell'
+import { AcmeSidebar, PageHeader, GlobalHeader, ActiveSprintView, navLabel, ISSUES, ISSUE_DETAIL_WIDTH, IssueDetail, type Issue } from './_demo-helpers'
 import { SidebarProvider } from '@/design-system/components/Sidebar/sidebar'
 import {
   AgentPanel,
@@ -17,17 +17,14 @@ import {
 import { AgentPanelDock } from '@/design-system/components/AgentPanel/agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
-import { Tag } from '@/design-system/components/Tag/tag'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import { DataTableFilterPanel, createEmptyFilterTree, isFilterTreeActive, type FilterTree } from '@/design-system/components/DataTable/data-table-filter-panel'
 import { DataTableSortManager } from '@/design-system/components/DataTable/data-table-sort-manager'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { DataToolbar } from '@/design-system/stories-helpers/scene/data-toolbar'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 import { useAgentDemo, DemoConversation } from '@/design-system/stories-helpers/scene/agent-demo'
-import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import type { SortingState } from '@tanstack/react-table'
 
@@ -43,28 +40,13 @@ const meta: Meta<typeof AppShell> = {
 export default meta
 type Story = StoryObj<typeof AppShell>
 
-// Helpers(AcmeSidebar / PageHeader / WorkspaceBrand / UserFooter / MAIN_NAV)從 ./_demo-helpers
+// Helpers(AcmeSidebar / PageHeader / WorkspaceBrand / UserFooter / MAIN_NAV / navLabel)從 ./_demo-helpers
 // import,跟 anatomy stories 共用 single baseline source(避免 anatomy 跟 showcase 自分歧)。
+// 頁面標頭的字一律 `navLabel(activeId)` —— 跟側欄選中項讀同一份字(sidebar.spec.md「選中項的字 = 那一頁標頭的字」);
+// 2026-11-15 前每則另留 `?? 'Inbox'` 第二份字。
 
-// ── Mock data — 議題追蹤(issue tracker)────────────────────────────────
-
-type Issue = {
-  id: string
-  title: string
-  status: 'In Progress' | 'Backlog' | 'In Review' | 'Done'
-  assignee: string
-  priority: 'P0' | 'P1' | 'P2'
-  due: string
-}
-
-const ISSUES: Issue[] = [
-  { id: 'ENG-1042', title: '登入後 redirect 失敗',         status: 'In Progress', assignee: 'Alan Chen',   priority: 'P0', due: '2026-05-22' },
-  { id: 'ENG-1041', title: 'Stripe webhook timeout > 10s', status: 'Backlog',     assignee: 'Jamie Lin',   priority: 'P0', due: '2026-05-25' },
-  { id: 'ENG-1038', title: 'PeoplePicker multi-select bug', status: 'In Review',  assignee: 'Sophia Wang', priority: 'P1', due: '2026-05-26' },
-  { id: 'ENG-1035', title: 'DataTable Safari scroll jitter', status: 'Done',      assignee: 'Marco Tsai',  priority: 'P1', due: '2026-05-20' },
-  { id: 'ENG-1031', title: '匯出 CSV 漏特殊字元',           status: 'In Progress', assignee: 'Sophia Wang', priority: 'P2', due: '2026-05-28' },
-  { id: 'ENG-1028', title: 'Onboarding 第 3 步無 a11y',     status: 'Backlog',     assignee: 'Jamie Lin',   priority: 'P2', due: '2026-06-02' },
-]
+// ── Mock data — 議題追蹤(issue tracker):Issue / ISSUES / ISSUE_DETAIL_WIDTH / IssueDetail 住 ./_demo-helpers
+// (設計規格「元件總覽」的 Right panel 也用同一份,2026-11-11 起)
 
 // ── 版面寬度設定(示範產品的值;規則見 app-shell.spec.md「版面規則」§1:Main 最小寬必填、各區依內容類型給最小 / 初始 / 最大)──
 /**
@@ -73,17 +55,17 @@ const ISSUES: Issue[] = [
  * 不撐開 AppShell。2026-10-14 這裡寫「議題表 6 欄的可讀下限」是 AI 編的理由(與欄寬宣告矛盾;2026-10-15 r1b 複驗 F6,M36(a)),已改正。
  */
 const MAIN_MIN_WIDTH = 600
-/** Right panel「議題詳情」這種內容的寬度(示範值:最小 320 放得下欄位標籤 + 值兩欄,最大 560 免得留言行過長)。 */
-const ISSUE_DETAIL_WIDTH: PanelWidthRange = { min: 320, initial: 360, max: 560 }
 
 const ch = createColumnHelper<Issue>()
+// 欄名與日期跟設計規格「元件總覽」的 Sprint 議題表(_demo-helpers.tsx SPRINT_OPEN_COLUMNS)、Right panel 議題詳情同一套:
+// 中文欄名;截止日 type 'date' = DataTable 日期欄的格式化路徑(YYYY/MM/DD,date-picker.spec.md「格式化」),不直接印 ISO 字串(2026-11-17)
 const ISSUE_COLUMNS = [
-  ch.accessor('id',       { header: 'ID',       meta: { width: 100 } }),
-  ch.accessor('title',    { header: 'Issue',    meta: { width: 280, minWidth: 160 } }),
-  ch.accessor('status',   { header: 'Status',   meta: { width: 120 } }),
-  ch.accessor('assignee', { header: 'Assignee', meta: { width: 140 } }),
-  ch.accessor('priority', { header: 'Priority', meta: { width: 90 } }),
-  ch.accessor('due',      { header: 'Due',      meta: { width: 110 } }),
+  ch.accessor('id',       { header: '議題',   meta: { width: 100 } }),
+  ch.accessor('title',    { header: '標題',   meta: { width: 280, minWidth: 160 } }),
+  ch.accessor('status',   { header: '狀態',   meta: { width: 120 } }),
+  ch.accessor('assignee', { header: '負責人', meta: { width: 140 } }),
+  ch.accessor('priority', { header: '優先級', meta: { width: 90 } }),
+  ch.accessor('due',      { header: '截止日', meta: { type: 'date', width: 110 } }),
 ]
 
 /**
@@ -150,7 +132,7 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
               pressed={isFilterTreeActive(filterTree)}
             />
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-auto p-0">
+          <PopoverContent align="end" width="hug" className="p-0">
             <DataTableFilterPanel
               columns={ISSUE_COLUMNS as any}
               value={filterTree}
@@ -171,7 +153,7 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
               pressed={sorting.length > 0}
             />
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-auto p-0">
+          <PopoverContent align="end" width="hug" className="p-0">
             <DataTableSortManager
               columns={ISSUE_COLUMNS as any}
               sorting={sorting}
@@ -188,7 +170,7 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
         <DataTable
           columns={ISSUE_COLUMNS as any}
           data={filtered}
-          height="100%"
+          maxHeight="100%"
           bordered
           rowActions={(row: Issue) => (
             <Button
@@ -205,70 +187,6 @@ function IssuesView({ selectedId, onSelectIssue, scope = 'all' }: { selectedId?:
             />
           )}
         />
-      </div>
-    </div>
-  )
-}
-
-// Status / Priority → Tag color mapping(per Tag spec status marker canonical)
-const STATUS_COLOR = {
-  'In Progress': 'blue',
-  'Backlog': 'neutral',
-  'In Review': 'yellow',
-  'Done': 'green',
-} as const
-
-const PRIORITY_COLOR = {
-  P0: 'red',
-  P1: 'yellow',
-  P2: 'neutral',
-} as const
-
-/**
- * Aside content:Issue detail panel。
- * @usage-ref: packages/design-system/src/components/DescriptionList/description-list.stories.tsx
- * @usage-consumes: ItemContent(entity identity)+ Tag(status/priority)+ DescriptionList(metadata)
- *
- * Per codex Layer B D1+D2(2026-05-20):
- * - Entity identity(title + id 副標)→ ItemContent(item-anatomy Family 2 subtitle pattern,非 ProfileCard 因 scope 是 people only)
- * - Status / Priority marker → Tag color-coded(per tag.spec.md status use case)
- * - Metadata fields → DescriptionList + DescriptionItem(per description-list.spec.md「Profile / detail panel 的屬性列表」use case)
- *
- * 2026-10-28:原本面板底部還有「分派給我」「標記完成」兩顆按鈕 —— 沒有規格依據、按了沒反應,user 訊息裡搜『分派』『標記完成』都是 0 筆;
- * 詳情面板該放哪些動作是產品內容,範例不替產品決定,拿掉(稽核 M057;ssot PA5)。面板只示範內容。
- * 底部 = bottom 48:右欄高度撐滿版面欄、最後是一般元素(layoutSpace.spec.md 規則 4 第 1 列;user 2026-10-28「這個沒問題」)。
- * 最後一個 DescriptionList 列不自帶下內距(description-list.tsx `last:pb-0`),底部只由這一層給。
- */
-function IssueDetail({ issue }: { issue: Issue | null }) {
-  if (!issue) {
-    return (
-      <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)] text-fg-muted">
-        選一個 issue 看詳情
-      </div>
-    )
-  }
-  return (
-    <div className="flex flex-col px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-        <div className="flex flex-col gap-[var(--layout-space-tight)]">
-          <ItemContent
-            size="lg"
-            label={issue.title}
-            description={issue.id}
-            descriptionTone="muted"
-            labelTruncate={false}
-            labelClassName="font-medium text-foreground"
-          />
-          {/* @layout-space-magic-ok: Tag 與 Tag 之間 gap 4px(tag.spec.md:230)(layoutSpace.spec.md:113 同範疇 spec-own) */}
-          <div className="flex flex-wrap gap-1">
-            <Tag size="sm" color={STATUS_COLOR[issue.status]}>{issue.status}</Tag>
-            <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>
-          </div>
-        </div>
-        <DescriptionList orientation="horizontal" divided>
-          <DescriptionItem label="Assignee">{issue.assignee}</DescriptionItem>
-          <DescriptionItem label="Due">{issue.due}</DescriptionItem>
-        </DescriptionList>
       </div>
     </div>
   )
@@ -300,7 +218,7 @@ export const PrimarySidebar: Story = {
           sidebar={<AcmeSidebar />}
           header={
             <PageHeader
-              title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Inbox'}
+              title={navLabel(activeId)}
             />
           }
           aside={
@@ -357,7 +275,7 @@ export const PrimarySidebarWithTabs: Story = {
             sidebar={<AcmeSidebar />}
             header={
               <PageHeader
-                title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Inbox'}
+                title={navLabel(activeId)}
                 tabsSlot={
                   <TabsList size="sm">
                     {ISSUE_TABS.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
@@ -432,7 +350,7 @@ export const PrimaryHeader: Story = {
           globalHeader={<GlobalHeader />}
           header={
             <PageHeader
-              title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Inbox'}
+              title={navLabel(activeId)}
               includeSidebarTrigger={false}
             />
           }
@@ -458,30 +376,34 @@ export const PrimaryHeader: Story = {
 
 // ── AI agent(第四區)──────────────────────────────────────────────────────────
 
-/** 議題助理回覆裡的「Insights」連結要做的事(換頁由示範產品給;收起浮層由 AppShell 給)—— 經 context 交給回覆那一則 */
-const OpenInsightsContext = React.createContext<() => void>(() => undefined)
+/** 議題助理回覆裡指向 Active sprint 頁的連結要做的事(換頁由示範產品給;收起浮層由 AppShell 給)—— 經 context 交給回覆那一則 */
+const OpenActiveSprintContext = React.createContext<() => void>(() => undefined)
+
+/** 回覆連結指向的那一頁(id = 側欄項目、網址;連結字 = 那一頁的標頭字,讀同一份 navLabel) */
+const ACTIVE_SPRINT = 'active-sprint'
 
 /**
- * 議題助理的回覆:「Insights」連結 = 從 AI agent 導向 Main(app-shell.spec.md「版面規則」§4 末條):產品自己的導航(換到 Insights 頁)
+ * 議題助理的回覆:「Active sprint」連結 = 從 AI agent 導向 Main(app-shell.spec.md「版面規則」§4 末條):產品自己的導航(換到 Active sprint 頁)
  * 與 `useAppShell().navigateFromAgent()` 放在同一個事件裡 —— AI agent 是浮層時收起、讓 Main 的目標端到眼前;並排時維持開著。
+ * 連結字 = 目標頁的標頭字(同一份 navLabel;2026-11-15 前那一頁叫 Insights,改名理由見 _demo-helpers.tsx MAIN_NAV)。
  */
 function TriageReply() {
-  const onOpenInsights = React.useContext(OpenInsightsContext)
+  const onOpenActiveSprint = React.useContext(OpenActiveSprintContext)
   const { navigateFromAgent } = useAppShell()
   return (
     <>
       有兩筆:ENG-1042「登入後 redirect 失敗」由 Alan Chen 處理中,週五到期;ENG-1041「Stripe webhook timeout」還在 Backlog、
-      下週一到期,建議今天先指派給 Jamie Lin。本週燃盡進度在{' '}
+      下週一到期,建議今天先指派給 Jamie Lin。Sprint 42 還沒完成的議題都整理在{' '}
       <a
-        href="#insights"
-        data-agent-link="insights"
+        href={`#${ACTIVE_SPRINT}`}
+        data-agent-link={ACTIVE_SPRINT}
         onClick={(event) => {
           event.preventDefault()
-          onOpenInsights()
+          onOpenActiveSprint()
           navigateFromAgent()
         }}
       >
-        Insights
+        {navLabel(ACTIVE_SPRINT)}
       </a>
       。
     </>
@@ -494,7 +416,7 @@ function TriageReply() {
  * 輸入盒、送出、加附件、標題列的歷史與 + 都接上真的行為(共用對話模型 stories-helpers/scene/agent-demo.tsx;
  * 稽核 M058:原本 + 與加附件接空函式,按了沒反應)。
  */
-function IssueAssistant({ onOpenInsights, persistentElements }: { onOpenInsights: () => void; persistentElements?: () => Element[] }) {
+function IssueAssistant({ onOpenActiveSprint, persistentElements }: { onOpenActiveSprint: () => void; persistentElements?: () => Element[] }) {
   const demo = useAgentDemo({
     sessions: [
       {
@@ -509,7 +431,7 @@ function IssueAssistant({ onOpenInsights, persistentElements }: { onOpenInsights
     ],
   })
   return (
-    <OpenInsightsContext.Provider value={onOpenInsights}>
+    <OpenActiveSprintContext.Provider value={onOpenActiveSprint}>
       <AgentPanelDock defaultOpen logoState="still">
         {({ close, logoState }) => (
           <AgentPanel onClose={close} persistentElements={persistentElements}>
@@ -519,7 +441,7 @@ function IssueAssistant({ onOpenInsights, persistentElements }: { onOpenInsights
           </AgentPanel>
         )}
       </AgentPanelDock>
-    </OpenInsightsContext.Provider>
+    </OpenActiveSprintContext.Provider>
   )
 }
 
@@ -542,11 +464,11 @@ function FourRegionShell({ frameWidth, agent }: { frameWidth?: number; agent?: (
   const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
   const toolbarRef = React.useRef<HTMLDivElement | null>(null)
   const keep = React.useCallback(() => [toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
-  // 換頁(示範產品的導航邏輯,不是 AppShell 規則):Insights 是自己的一頁,右側的議題詳情跟它無關 → 一起收起
-  // (換頁時議題詳情一起收 —— 詳情屬於原頁的那一筆;2026-10-15 r1b 複驗 F11:原本 Main 換到 Insights,右側仍掛著 ENG-1042)。其餘選單項示範仍是議題清單,詳情保留。
+  // 換頁(示範產品的導航邏輯,不是 AppShell 規則):Active sprint 是自己的一頁,右側的議題詳情跟它無關 → 一起收起
+  // (換頁時議題詳情一起收 —— 詳情屬於原頁的那一筆;2026-10-15 r1b 複驗 F11:原本 Main 換到這一頁(當時叫 Insights),右側仍掛著 ENG-1042)。其餘選單項示範仍是議題清單,詳情保留。
   const navigate = React.useCallback((id: string) => {
     setActiveId(id)
-    if (id === 'insights') setAsideOpen(false)
+    if (id === ACTIVE_SPRINT) setAsideOpen(false)
   }, [])
   const shell = (
     // 放進畫布時:SidebarProvider 預設 `min-h-svh` 會把殼撐到整個視窗高、超出畫布 → 取消並撐滿畫布(先例 sidebar.anatomy.stories.tsx「狀態行為」)
@@ -557,7 +479,7 @@ function FourRegionShell({ frameWidth, agent }: { frameWidth?: number; agent?: (
         className={frameWidth ? 'h-full' : undefined}
         portalContainer={frameWidth ? canvas : undefined}
         sidebar={<AcmeSidebar />}
-        header={<PageHeader title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Inbox'} />}
+        header={<PageHeader title={navLabel(activeId)} />}
         aside={
           <AppShellAside title={selected ? selected.id : '詳情'} contentType="issue-detail" widthRange={ISSUE_DETAIL_WIDTH}>
             <IssueDetail issue={selected} />
@@ -567,7 +489,7 @@ function FourRegionShell({ frameWidth, agent }: { frameWidth?: number; agent?: (
         onAsideOpenChange={setAsideOpen}
         agent={agent?.(navigate, keep)}
       >
-        {activeId === 'insights' ? <InsightsView /> : <IssuesView selectedId={selected?.id} onSelectIssue={setSelected} />}
+        {activeId === ACTIVE_SPRINT ? <ActiveSprintView /> : <IssuesView selectedId={selected?.id} onSelectIssue={setSelected} />}
       </AppShell>
     </SidebarProvider>
   )
@@ -589,7 +511,7 @@ function FourRegionShell({ frameWidth, agent }: { frameWidth?: number; agent?: (
 // 依 Right → AI agent → Menu 的順序,每一步只看各區最小寬:放得下就並排,放不下時 Right 仍並排、AI agent 變右側浮層、Menu 收成細列。
 // 四區同時並排要 Main 600 + 詳情 320 + 任務助理 360 + Menu 240 = 1520 以上(Menu 展開時取代細列);窄一點先收起 Menu(只剩細列),
 // 再窄到 Main + 細列 + 詳情 + 任務助理的最小寬也放不下(細列 48 時是 1328)AI agent 變浮層。沒有任何固定斷點。
-// AI agent 回覆裡的「Insights」連結 = 從 AI agent 導向 Main:並排時 Main 換到 Insights 頁、AI agent 維持開著(§4 末條);右側的議題詳情跟著換頁收起。
+// AI agent 回覆裡的「Active sprint」連結 = 從 AI agent 導向 Main:並排時 Main 換到 Active sprint 頁、AI agent 維持開著(§4 末條);右側的議題詳情跟著換頁收起。
 // 文件頁的畫布比 1328 窄,這一則載入時 AI agent 就是浮層(遮罩 + 底下不可操作),所以在文件頁各自進 iframe(story-rules.md「預設開啟的模態浮層 story」)。
 // (開發備忘用一般註解,不進 docs —— 稽核 L136;讀者看的說明在 docs.description)
 export const FourRegions: Story = {
@@ -597,17 +519,17 @@ export const FourRegions: Story = {
   parameters: {
     docs: {
       story: openOverlayDocsStory('720px'),
-      description: { story: '由左至右 Menu、Main、Right panel、AI agent。依 Right → AI agent → Menu 的順序看各區最小寬:放得下就並排,放不下時 Right 仍並排、AI agent 變右側浮層、Menu 收成細列,沒有固定斷點。四區同時並排要 Main 600 + 詳情 320 + 任務助理 360 + Menu 240 = 1520 以上。點任務助理回覆裡的「Insights」,Main 換到 Insights 頁、任務助理維持開著,右側詳情跟著換頁收起。' },
+      description: { story: '由左至右 Menu、Main、Right panel、AI agent。依 Right → AI agent → Menu 的順序看各區最小寬:放得下就並排,放不下時 Right 仍並排、AI agent 變右側浮層、Menu 收成細列,沒有固定斷點。四區同時並排要 Main 600 + 詳情 320 + 任務助理 360 + Menu 240 = 1520 以上。點任務助理回覆裡的「Active sprint」,Main 換到 Active sprint 頁、任務助理維持開著,右側詳情跟著換頁收起。' },
     },
   },
-  render: () => <FourRegionShell agent={(navigate, keep) => <IssueAssistant onOpenInsights={() => navigate('insights')} persistentElements={keep} />} />,
+  render: () => <FourRegionShell agent={(navigate, keep) => <IssueAssistant onOpenActiveSprint={() => navigate(ACTIVE_SPRINT)} persistentElements={keep} />} />,
 }
 
 // 2026-10-15 r1b 複驗 F3(docs 頁互相 inert 卡死 → docs 隔離)、F10(裸 div 釘寬 → 模擬瀏覽器)。
 // AI agent 放不下時變右側浮層(OpenSnapshot,M15):模擬瀏覽器的視窗寬 1100px —— Main 最小 600 + 細列 48 + 詳情最小 320 之後,只剩 132px,
 // 放不下 AI agent 的最小寬 360 → AI agent 改成蓋在右側的浮層:寬度照紀錄(沒調過 = 初始 400)、左側至少留 48px、底下鋪遮罩、
 // 底下其餘區域暫時不能操作;點遮罩、按 ×、或焦點在面板裡按 Esc 都會收起(對話與草稿保留,入口鈕接手)。Menu 也放不下,只剩細列。
-// 點回覆裡的「Insights」連結 → Main 換到 Insights 頁,浮層的 AI agent 自己收起、焦點交給 Main(使用者要看的目標端到眼前;§4 末條)。
+// 點回覆裡的「Active sprint」連結 → Main 換到 Active sprint 頁,浮層的 AI agent 自己收起、焦點交給 Main(使用者要看的目標端到眼前;§4 末條)。
 // 2026-10-14 前這個狀態由「容器 < 960」決定(agent-panel 展示的「窄畫布:蓋板與遮罩」),現在每次用各區最小寬現算。
 // 載入就是浮層(遮罩 + 底下不可操作、焦點進面板)→ 文件頁各自進 iframe(story-rules.md「預設開啟的模態浮層 story」)。
 // (開發備忘用一般註解,不進 docs —— 稽核 L136;讀者看的說明在 docs.description)
@@ -616,10 +538,10 @@ export const AgentOverlay: Story = {
   parameters: {
     docs: {
       story: openOverlayDocsStory('720px'),
-      description: { story: '模擬瀏覽器的視窗寬 1100px:Main 最小 600 + 細列 48 + 詳情最小 320 之後只剩 132px,放不下任務助理的最小寬 360,任務助理改成蓋在右側的浮層(寬度照紀錄、左側至少留 48px、底下鋪遮罩),點遮罩、按 × 或在面板裡按 Esc 都會收起。點回覆裡的「Insights」,Main 換到 Insights 頁、浮層自己收起。' },
+      description: { story: '模擬瀏覽器的視窗寬 1100px:Main 最小 600 + 細列 48 + 詳情最小 320 之後只剩 132px,放不下任務助理的最小寬 360,任務助理改成蓋在右側的浮層(寬度照紀錄、左側至少留 48px、底下鋪遮罩),點遮罩、按 × 或在面板裡按 Esc 都會收起。點回覆裡的「Active sprint」,Main 換到 Active sprint 頁、浮層自己收起。' },
     },
   },
-  render: () => <FourRegionShell frameWidth={1100} agent={(navigate, keep) => <IssueAssistant onOpenInsights={() => navigate('insights')} persistentElements={keep} />} />,
+  render: () => <FourRegionShell frameWidth={1100} agent={(navigate, keep) => <IssueAssistant onOpenActiveSprint={() => navigate(ACTIVE_SPRINT)} persistentElements={keep} />} />,
 }
 
 // 2026-10-15 r1b 複驗 F7(原寫「600 + 細列 48 + 320 之後只剩 80」,字面相減是 32;模型比的是 available − reserved + 細列)、F10(模擬瀏覽器 + 浮層傳送進畫布)。

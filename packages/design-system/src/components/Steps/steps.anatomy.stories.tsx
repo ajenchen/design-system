@@ -30,7 +30,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Steps 是有序步驟序列——Indicator(圓形)+ Label + 可選 Description + Connector(連接線)。每個 StepItem 有四種狀態:completed / current / upcoming / error(reachable 為 linear 模式內部推導的解鎖態,不在介紹層暴露)。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-2xl">
+        <div className="border border-border rounded-md p-4 max-w-2xl">
           <Steps aria-label="結帳進度" readOnly value="shipping" completedValues={['cart', 'payment']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款資訊</StepLabel></StepItem>
@@ -136,7 +136,7 @@ function InspectorSteps({ value: valueArg, ...args }: ComponentProps<typeof Step
   const [value, setValue] = useState(valueArg)
   useEffect(() => setValue(valueArg), [valueArg])
   return (
-    <div className="border border-border rounded-lg p-4 max-w-2xl">
+    <div className="border border-border rounded-md p-4 max-w-2xl">
       <Steps aria-label="結帳進度" {...args} value={value} onValueChange={setValue}>
         <StepItem value="cart"><StepLabel>購物車</StepLabel><StepDescription>3 件商品,合計 NT$ 2,490</StepDescription></StepItem>
         <StepItem value="payment"><StepLabel>付款資訊</StepLabel><StepDescription>信用卡 / ATM / LINE Pay</StepDescription></StepItem>
@@ -155,7 +155,7 @@ export const OrientationMatrix: Story = {
       <div>
         <H3>Horizontal</H3>
         <Desc>步驟水平排列,常見於結帳流程 / wizard 頂部。Indicator 之間有橫向 connector。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-2xl">
+        <div className="border border-border rounded-md p-4 max-w-2xl">
           <Steps aria-label="結帳進度" readOnly orientation="horizontal" value="payment" completedValues={['cart']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款</StepLabel></StepItem>
@@ -168,7 +168,7 @@ export const OrientationMatrix: Story = {
       <div>
         <H3>Vertical(預設)</H3>
         <Desc>步驟垂直排列,支援 description 與 content 區 —— 只有目前那一步底下放這一步要做的事(這裡是自訂網域寄件的 DKIM 設定精靈:要貼進 DNS 的兩個值用唯讀欄位給使用者複製)。常見於 onboarding / 設定精靈 / 複雜流程。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <Steps orientation="vertical" readOnly value="dns" completedValues={['keys']} aria-label="DKIM 設定進度">
             <StepItem value="keys"><StepLabel>產生 DKIM 金鑰</StepLabel><StepDescription>為 mail.acme.example 產生 2048-bit 金鑰對</StepDescription></StepItem>
             <StepItem value="dns">
@@ -264,7 +264,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>完整四態實際渲染</H3>
         <Desc>包含 error state 的結帳流程(例如付款失敗)。error 取代原本的 completed 指示。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-2xl">
+        <div className="border border-border rounded-md p-4 max-w-2xl">
           <Steps aria-label="結帳進度" readOnly value="shipping" completedValues={['cart']} errorValues={['payment']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款失敗</StepLabel><StepDescription>信用卡驗證未通過</StepDescription></StepItem>
@@ -319,7 +319,7 @@ const ProgressFlow = () => {
   const completed = CHECKOUT_STEPS.slice(0, idx).map((s) => s.value)
   return (
     <div className="flex flex-col gap-3 min-w-[340px]">
-      <div className="border border-border rounded-lg p-4">
+      <div className="border border-border rounded-md p-4">
         <Steps aria-label="結帳進度" readOnly value={current} completedValues={completed} orientation="horizontal">
           {CHECKOUT_STEPS.map((s) => (
             <StepItem key={s.value} value={s.value}>
@@ -347,7 +347,7 @@ const LinearVsNonlinear = () => {
     <div className="flex gap-6">
       <ExampleGroup className="min-w-[240px]">
         <ExampleCaption><code>linear</code>(預設)</ExampleCaption>
-        <div className="border border-border rounded-lg p-4">
+        <div className="border border-border rounded-md p-4">
           <Steps aria-label="結帳進度" defaultValue="shipping" completedValues={['cart']} orientation="vertical">
             {CHECKOUT_STEPS.slice(0, 4).map((s) => (
               <StepItem key={s.value} value={s.value}>
@@ -360,7 +360,7 @@ const LinearVsNonlinear = () => {
       </ExampleGroup>
       <ExampleGroup className="min-w-[240px]">
         <ExampleCaption><code>linear={'{false}'}</code>(可以跳著填)</ExampleCaption>
-        <div className="border border-border rounded-lg p-4">
+        <div className="border border-border rounded-md p-4">
           <Steps aria-label="結帳進度" defaultValue="shipping" completedValues={['cart']} linear={false} orientation="vertical">
             {CHECKOUT_STEPS.slice(0, 4).map((s) => (
               <StepItem key={s.value} value={s.value}>
@@ -377,7 +377,7 @@ const LinearVsNonlinear = () => {
 
 const ErrorInterrupt = () => {
   return (
-    <div className="border border-border rounded-lg p-4 min-w-[300px]">
+    <div className="border border-border rounded-md p-4 min-w-[300px]">
       <Steps aria-label="結帳進度" readOnly value="payment" completedValues={['cart', 'shipping']} errorValues={['payment']} orientation="horizontal">
         {CHECKOUT_STEPS.slice(0, 4).map((s) => (
           <StepItem key={s.value} value={s.value}>
@@ -444,7 +444,7 @@ export const IndentAlignment: Story = {
       <div>
         <H3>Indicator 永遠 inline 對齊 label 第一行</H3>
         <Desc>刻意打破 item-layout 的 24px 閾值規則——不管 indicator 尺寸、不管有無 description,一律 inline 對齊。Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」。這是 Steps 跟其他 row primitive 的本質差異——Steps 是「一條有連接關係的進度路徑」,column rhythm 是元件本身。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
+        <div className="border border-border rounded-md p-4 max-w-md">
           <Steps aria-label="商家開通進度" readOnly orientation="vertical" value="b" completedValues={['a']}>
             <StepItem value="a"><StepLabel>驗證電子信箱</StepLabel></StepItem>
             <StepItem value="b">

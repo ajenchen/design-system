@@ -28,8 +28,7 @@ Carousel 用於在**有限空間內輪播同類視覺內容**——單次只顯�
 
 - **Embla engine**:本元件只包裝已採用的 carousel engine，DS API 擁有結構、按鈕與內容規範
 - **Ant Design Carousel**:dots indicator 在底部中央的慣例來源(`dotPlacement` 預設 `bottom`,[index.en-US.md#L39](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/carousel/index.en-US.md#L39);點列 `justifyContent: 'center'`,[style/index.ts#L253](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/carousel/style/index.ts#L253))
-- **Material / Polaris**:無獨立 Carousel 元件——Material 建議用 image list / hero module;Polaris 明確不支援 auto-playing carousel(a11y 疑慮)
-- **Swiper**:獨立 library,功能遠超 DS 需求(3D effects / virtualization / zoom 等);本 DS 刻意**不選 Swiper**,因為 Embla 更輕量、tree-shakable,且本 DS 的 carousel 用途單純(hero banner / product image / testimonial),Swiper 的 feature 90% 不會用到,屬過度工程
+- **Swiper**:獨立 library,功能遠超 DS 需求(3D effects / virtualization / zoom 等,[Swiper API](https://swiperjs.com/swiper-api) 的 Zoom、Cube / Coverflow / Flip / Creative Effect 各自成模組、參數 `virtual`「Enables virtual slides functionality」);本 DS 刻意**不選 Swiper**,因為 Embla 更輕量、tree-shakable,且本 DS 的 carousel 用途單純(hero banner / product image / testimonial),Swiper 的 feature 90% 不會用到,屬過度工程
 
 ---
 
@@ -199,7 +198,7 @@ dots 條貼在 `bottom-3`(12px,`carousel.tsx#CarouselDots`),所以往下 9 仍�
 | **Swiper** `pagination.css:11-18, 73-76`([pagination.css](https://github.com/nolimits4web/swiper/blob/master/src/modules/pagination/pagination.css)) | `8×8`(`--swiper-pagination-bullet-size`) | 同樣 **8×8**,**零外擴** | 不外擴,改成把點本身做大(8 而非 6),並用 `--swiper-pagination-bullet-horizontal-gap: 4px` 的 margin 分隔 |
 
 三家都同意「6px 級的點不能只靠自己的形狀當目標」,但分兩派:Bootstrap 走**單軸外擴**(正是本元件的作法;[v5.3.8 _carousel.scss#L175-L177](https://github.com/twbs/bootstrap/blob/v5.3.8/scss/_carousel.scss#L175-L177)),
-slick 走**把盒做大**,Swiper 走**把點做大**。本元件選 Bootstrap 那派的理由是視覺:dots 疊在照片上,
+slick 走**把盒做大**,Swiper 走**把點做大**([pagination.css](https://github.com/nolimits4web/swiper/blob/master/src/modules/pagination/pagination.css) 點預設 8px、`button` 版本 `padding: 0`,沒有外擴)。本元件選 Bootstrap 那派的理由是視覺:dots 疊在照片上,
 把點或盒做大會壓到畫面(本檔「視覺規格」段的 photo overlay 慣例);外擴則完全不動基準圖。
 
 **實測(2026-09-24,`page.mouse.click` 真點擊 + `elementFromPoint` 逐點掃描,storybook 展示--首頁主視覺輪播 / 商品圖庫)**:
@@ -265,7 +264,7 @@ W3C APG carousel pattern 有兩條合法路:**tabbed**(dot `role="tab"` + slide 
 2. **鍵盤契約衝突**:tabs pattern 要求方向鍵在 tablist 內移 focus(roving tabindex);本元件方向鍵 = 切張(根容器),兩者互斥
 3. **compound API**:`CarouselItem` 不知自己 index,`aria-controls` 接線需額外 registration 機制,複雜度不對價
 
-現張標記採 `aria-current="true"`(非 APG 原文的 `aria-disabled`:[carousel-pattern.html#L182](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)「The picker button representing the currently displayed slide has the property aria-disabled set to true.」)— M23 DS 既有 canonical 優先:FileViewer filmstrip(`file-viewer.spec.md`「Filmstrip 規則」,2026-06-01 source-verified)同類控件已 codify `group` + `<button>` + `aria-current`;Bootstrap 5 carousel indicators 同 idiom。兩者皆 APG 合法變體,DS 內一致性勝
+現張標記採 `aria-current="true"`(非 APG 原文的 `aria-disabled`:[carousel-pattern.html#L182](https://github.com/w3c/aria-practices/blob/0f765e4dc33e966026114ac12a8380db1de3b787/content/patterns/carousel/carousel-pattern.html#L182)「The picker button representing the currently displayed slide has the property aria-disabled set to true.」)— M23 DS 既有 canonical 優先:FileViewer filmstrip(`file-viewer.spec.md`「Filmstrip 規則」,2026-06-01 source-verified)同類控件已 codify `group` + `<button>` + `aria-current`;Bootstrap 5 carousel indicators 同 idiom(官方 Indicators 範例現張按鈕 `aria-current="true"`,[carousel#indicators](https://getbootstrap.com/docs/5.3/components/carousel/#indicators))。兩者皆 APG 合法變體,DS 內一致性勝
 
 ❌ **禁半套 tabs**(dot `role="tab"` + `aria-selected` 但無 `aria-controls`、slide 非 `tabpanel`)— 對 SR 宣告了不存在的 tabs 結構
 

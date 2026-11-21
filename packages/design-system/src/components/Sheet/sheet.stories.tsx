@@ -214,7 +214,7 @@ export const OpenSnapshot: Story = {
   render: () => (
     <Sheet defaultOpen>
       <SheetTrigger asChild>
-        <Button>打開 Sheet</Button>
+        <Button>編輯個人資料</Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col sm:max-w-lg">
         <SheetHeader>
@@ -227,11 +227,11 @@ export const OpenSnapshot: Story = {
           </Field>
           <Field>
             <FieldLabel>職稱</FieldLabel>
-            <Input defaultValue="Senior Designer" />
+            <Input defaultValue="資深設計師" />
           </Field>
           <Field>
             <FieldLabel>自我介紹</FieldLabel>
-            <Textarea defaultValue="設計師,專注於 DS + tooling。" rows={3} />
+            <Textarea defaultValue="設計師,專注於設計系統與設計工具。" rows={3} />
           </Field>
         </SheetBody>
         <SheetFooter>

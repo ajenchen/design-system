@@ -152,7 +152,7 @@ export const Horizontal: Story = {
   name: '水平',
   render: () => (
     <div className="max-w-2xl">
-      <FieldGroup horizontalLabelWidth="120px">
+      <FieldGroup labelWidth={120}>
         <Field orientation="horizontal" required>
           <FieldLabel>姓名</FieldLabel>
           <Input placeholder="請輸入姓名" />
@@ -272,7 +272,7 @@ export const MixedControlAlignment: Story = {
       </ExampleSection>
 
       <ExampleSection title="Horizontal Field：label 與任何 control 都對齊中線">
-        <FieldGroup horizontalLabelWidth="120px">
+        <FieldGroup labelWidth={120}>
           <Field orientation="horizontal">
             <FieldLabel>姓名</FieldLabel>
             <Input placeholder="請輸入姓名" />
@@ -342,7 +342,7 @@ export const SegmentedControlInField: Story = {
 
       <ExampleSection title="Horizontal：label 與 SegmentedControl 中線對齊" description={<>水平排列時,分段控制器跟其他控件(輸入框、勾選框、開關)一樣維持相同的行高節奏,
           標籤的第一行會對齊控件的垂直中線。</>}>
-        <FieldGroup horizontalLabelWidth="120px">
+        <FieldGroup labelWidth={120}>
           <Field orientation="horizontal">
             <FieldLabel>名稱</FieldLabel>
             <Input placeholder="如:Q3 行銷看板" />
@@ -420,7 +420,7 @@ export const BlockControlRadioGroup: Story = {
       <ExampleSection title="Inline + Block 並排:FieldGroup 韻律不斷" description={<>同一組欄位裡混用單行控件(輸入框)和多行控件(單選群組)時,每個欄位標籤的
           第一行中線都落在同一條視覺基準上——姓名輸入框的中線、性別第一個選項(男性)的中線、Email 輸入框的中線。
           這就是整套欄位一致的行高節奏。</>}>
-        <FieldGroup horizontalLabelWidth="120px">
+        <FieldGroup labelWidth={120}>
           <Field orientation="horizontal" required>
             <FieldLabel>姓名</FieldLabel>
             <Input placeholder="請輸入姓名" />
@@ -456,7 +456,7 @@ export const ButtonAsControl: Story = {
         <ExampleSection title="Upload Button 作為附件欄位的 control" description={<>Button 是「承載 file value 的輸入介面」——點擊開檔案選擇器,結果寫回 field。
             Button 高度與 <code>field-height</code> 共用同一組 token,放進 inline control area 自然對齊
             Input 中線,horizontal label 公式也直接套用,不需要任何特例。</>}>
-          <FieldGroup horizontalLabelWidth="120px">
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required>
               <FieldLabel>專案名稱</FieldLabel>
               <Input placeholder="如:Q2 行銷活動" />
@@ -472,7 +472,7 @@ export const ButtonAsControl: Story = {
                 fileListMode="compact"
                 onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))}
                 onUpload={(accepted) =>
-                  setFiles((prev) => [...prev, ...accepted.map((f, k) => ({ id: `contract-${Date.now()}-${k}`, name: f.name, size: f.size, status: 'completed' as const }))])
+                  setFiles((prev) => [...prev, ...accepted.map((f, k) => ({ id: `contract-${Date.now()}-${k}`, name: f.name, size: f.size, status: 'completed' as const }))]) // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
                 }
               />
               <FieldDescription>PDF / DOCX,最大 10 MB</FieldDescription>
@@ -588,7 +588,7 @@ export const SliderAlignsWithOtherFields: Story = {
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
           <div className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">size = {size}</div>
-          <FieldGroup horizontalLabelWidth="96px">
+          <FieldGroup labelWidth={96}>
             <Field orientation="horizontal">
               <FieldLabel>姓名</FieldLabel>
               <Input size={size} placeholder="請輸入姓名" />
@@ -619,7 +619,7 @@ export const SliderWithLiveNumberInput: Story = {
       <div className="max-w-sm">
         <Field>
           <FieldLabel>縮放比例</FieldLabel>
-          {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:140 規則 5) */}
+          {/* @layout-space-magic-ok: Slider ↔ 同步的 NumberInput = 同一個值的兩個橫排輸入,規則 5「緊密相關」gap 8px(layoutSpace.spec.md:177 規則 5) */}
           <div className="flex items-center gap-2 w-full">
             <div className="flex-1 min-w-0">
               <Slider
@@ -674,7 +674,8 @@ function UpdateProjectSettingsForm() {
     },
   })
   return (
-    <form onSubmit={form.handleSubmit} className="w-80" aria-label="專案設定">
+    // 表單放進卡片(四邊 loose,同 Checkbox 設計原則的卡片):按鈕下方 = 卡片自己的底內距,不貼邊也不另訂(layoutSpace.spec.md 規則 4「最後一個東西 → 容器底邊」;依 user 2026-10-21 09:25 同意的 Q5 建議「表單放進看得見的容器」,原話逐字「Q5可以基於你的建議」)
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-md p-[var(--layout-space-loose)]" aria-label="專案設定">
       <FieldGroup>
         <Field required invalid={!!form.errors.name}>
           <FieldLabel>專案名稱</FieldLabel>
@@ -688,8 +689,9 @@ function UpdateProjectSettingsForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      {/* 欄位 → 表單按鈕列 = loose × 2(layoutSpace.spec.md 規則 3「組 ↔ 組」:一條隱形分隔線的位置,上下各 loose;user 2026-11-10 PR #172 留言指這顆鈕)。
+          規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事 */}
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         {/* 送出中 = 忙碌(焦點留著、擋重送);存檔後因 pristine 停用 —— 兩種都不把焦點丟到 body(button.tsx 可聚焦的停用,待辦總帳 N69) */}
         <Button type="submit" variant="primary" loading={form.isSubmitting} disabled={form.submitDisabled}>儲存變更</Button>
       </ButtonGroup>
@@ -708,7 +710,8 @@ function CreateProjectForm() {
     onSubmit: () => { toast({ variant: 'success', title: '專案已建立' }) }, // 送出成功 → Toast(同上方更新表單;新建不重設基準,consumer 要清空自己 reset())
   })
   return (
-    <form onSubmit={form.handleSubmit} className="w-80" aria-label="建立專案">
+    // 表單放進卡片:同上方更新表單
+    <form onSubmit={form.handleSubmit} className="w-80 border border-border rounded-md p-[var(--layout-space-loose)]" aria-label="建立專案">
       <FieldGroup>
         <Field required invalid={!!form.errors.name}>
           <FieldLabel>專案名稱</FieldLabel>
@@ -721,8 +724,8 @@ function CreateProjectForm() {
           <FieldError>{form.errors.ownerEmail}</FieldError>
         </Field>
       </FieldGroup>
-      {/* 內容 → 跟在後面的按鈕 = loose(layoutSpace.spec.md 規則 3「跨範疇 + parallel」;規則 4 核心:「內容 → 按鈕」走規則 3,跟「最後一個東西 → 容器底邊」是兩回事) */}
-      <ButtonGroup className="mt-[var(--layout-space-loose)]">
+      {/* 欄位 → 表單按鈕列 = loose × 2(同上方更新表單;layoutSpace.spec.md 規則 3「組 ↔ 組」) */}
+      <ButtonGroup className="mt-[calc(var(--layout-space-loose)*2)]">
         <Button type="submit" variant="primary" loading={form.isSubmitting}>建立專案</Button>
       </ButtonGroup>
     </form>

@@ -220,8 +220,8 @@
         "provider-surface-path",
         "provider-transport"
       ],
-      "assumptionFindingCount": 55,
-      "assumptionFingerprint": "sha256:d6e5f7ac42c3042c8ef29775bf76cc686dbb6a3e31714b723ba0e0d36f166bad"
+      "assumptionFindingCount": 56,
+      "assumptionFingerprint": "sha256:ff2f2f9d4f1b78ca0c37b21dfff30220e8c8ad2a5cc3a0f6c020e78a975f0ce3"
     },
     {
       "name": "ensure-canonical",
@@ -244,8 +244,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 5,
-      "assumptionFingerprint": "sha256:ce07b69347835e41e0723f4f3b5357c855611cd26f73cebbf4f213849e158f88"
+      "assumptionFindingCount": 4,
+      "assumptionFingerprint": "sha256:5080240df9ea2d810cef2a5c9acd4d05ade8d91d9684d1dccbb9e96e2563c068"
     },
     {
       "name": "governance-status",
@@ -288,8 +288,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 20,
-      "assumptionFingerprint": "sha256:b6d2f15093f874c95f57f621efc8ae45cba0c71f375adc949aad9daa5ba84145"
+      "assumptionFindingCount": 27,
+      "assumptionFingerprint": "sha256:a0e1466a60f6ff78b3d2f2385ad3ec0b61345afb2f182e10983a28294efe82da"
     },
     {
       "name": "new-component",

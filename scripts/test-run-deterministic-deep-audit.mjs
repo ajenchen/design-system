@@ -40,7 +40,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const RUNNER = resolve(ROOT, 'scripts/run-deterministic-deep-audit.mjs')
 const PLAN_PATH = resolve(ROOT, 'scripts/deep-audit-deterministic-plan.json')
 const PROCESS_TREE_FIXTURE_ROOT = resolve(ROOT, 'scripts/test-fixtures/deterministic-deep-audit')
-const EXPECTED_DIMS = [2, 3, 5, 14, 15, 16, 23, 27, 36, 40, 41, 42, 45, 48, 49, 50, 51, 77, 83, 84, 85, 86, 87, 88, 91]
+const EXPECTED_DIMS = [2, 3, 5, 14, 15, 16, 23, 27, 36, 40, 41, 42, 45, 48, 49, 50, 51, 58, 75, 77, 83, 84, 85, 86, 87, 88, 91] // 58 / 75:2026-11-21 起(原掛的 SessionStart hook 已退場)
 
 function browserlessNestedFixtureEnvironment(snapshot) {
   // The outer gate-meta snapshot can provide Playwright for the real DS repo.
@@ -67,7 +67,7 @@ function browserlessNestedFixtureEnvironment(snapshot) {
   return environment
 }
 
-test('execution plan exactly closes the 25 deterministic matrix dimensions and corrected argv', () => {
+test('execution plan exactly closes the 27 deterministic matrix dimensions and corrected argv', () => {
   const state = loadDeterministicDeepAuditPlan({ repoRoot: ROOT })
   assertDeterministicMatrixParity(state, { repoRoot: ROOT })
   assert.deepEqual([...state.dimensionByNumber.keys()].sort((a, b) => a - b), EXPECTED_DIMS)
@@ -124,6 +124,10 @@ test('execution plan exactly closes the 25 deterministic matrix dimensions and c
     '--consumer-static=storybook-static', '--consumer-root=apps/template', '--require-mappings', '--threshold-pct=0.5',
   ])
   assert.deepEqual(state.commandById.get('published-live-deploy').argv, ['node', 'scripts/verify-published-deploy.mjs', '--live'])
+  assert.deepEqual(state.dimensionByNumber.get(58).commandIds, ['fork-governance-harness'])
+  assert.deepEqual(state.commandById.get('fork-governance-harness').argv, ['node', 'scripts/test-fork-governance.mjs'])
+  assert.deepEqual(state.dimensionByNumber.get(75).commandIds, ['consumer-setup-governance'])
+  assert.deepEqual(state.commandById.get('consumer-setup-governance').argv, ['npm', 'run', '--silent', 'test:setup-governance'])
 })
 
 test('default command executor reaps the complete descendant group on success and timeout', async (t) => {

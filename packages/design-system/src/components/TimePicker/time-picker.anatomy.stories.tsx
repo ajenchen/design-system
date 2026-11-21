@@ -39,7 +39,7 @@ function LiveTimePicker({ value: initial, ...rest }: React.ComponentProps<typeof
 // 在 DataTable 那支上的實際後果:篩選面板一開著,點任何一個選項(不是只有新的全選按鈕)整個面板就消失。
 // 抓到它的是 `scripts/select-all-footer-invariant.mjs`;同一天全 DS 掃出同一寫法五處,一起搬出來。
 const Swatch = ({ value }: { value: string }) => (
-  <span className="inline-block w-3 h-3 rounded-sm border border-black/10 align-middle mr-1.5" style={{ backgroundColor: `var(${value})` }} />
+  <span className="inline-block w-3 h-3 rounded-md border border-black/10 align-middle mr-1.5" style={{ backgroundColor: `var(${value})` }} />
 )
 
 export const Overview: Story = {
@@ -52,112 +52,111 @@ export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => {
     return (
-      <ExampleSection title="TimePicker 色彩分兩層" description={<>Trigger 層走 Field Controls family 色彩(與 Input / Select 共用);Panel 層 column item 走 SelectMenu / MenuItem family 色彩(與 Select dropdown / DropdownMenu 共用)。TimePicker 本身無色彩變體——色彩完全繼承上游 主檔。</>}>
-        <div className="flex flex-col gap-10">
+      <ExampleStack>
+        <ExampleSection title="TimePicker 色彩分兩層" description={<>Trigger 層走 Field Controls family 色彩(與 Input / Select 共用);Panel 層 column item 走 SelectMenu / MenuItem family 色彩(與 Select dropdown / DropdownMenu 共用)。TimePicker 本身無色彩變體——色彩完全繼承上游 主檔。</>} />
 
-          {/* Trigger layer */}
-          <ExampleSection title="第 1 層:觸發欄位(沿用一般輸入欄位配色)" description="色彩與 Input / Select 等輸入欄位共用同一套規則。">
-            <div className="overflow-x-auto">
-              <table className="text-caption border-collapse min-w-[640px]">
-                <thead>
-                  <tr>
-                    <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">State</th>
-                    <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Background</th>
-                    <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Border</th>
-                    <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Foreground</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">default</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--border" /><span className="font-mono">--border</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">hover</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--border-hover" /><span className="font-mono">--border-hover</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">focus(focus-within)</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--primary" /><span className="font-mono">--primary</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">open(autofocus 移入 panel)</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--border-hover" /><span className="font-mono">--border-hover</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">disabled</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--bg-disabled" /><span className="font-mono">--bg-disabled</span></td>
-                    <td className="p-2 border-b border-divider"><span className="font-mono">transparent</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--fg-disabled" /><span className="font-mono">--fg-disabled</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">error</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--error" /><span className="font-mono">--error</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="flex gap-3">
-              <LiveTimePicker value="09:00" aria-label="時間欄位配色(預設)" />
-              <LiveTimePicker value="09:00" error aria-label="時間欄位配色(錯誤狀態)" />
-              <LiveTimePicker value="09:00" disabled aria-label="時間欄位配色(停用)" />
-            </div>
-          </ExampleSection>
+        {/* Trigger layer */}
+        <ExampleSection title="第 1 層:觸發欄位(沿用一般輸入欄位配色)" description="色彩與 Input / Select 等輸入欄位共用同一套規則。">
+          <div className="overflow-x-auto">
+            <table className="text-caption border-collapse min-w-[640px]">
+              <thead>
+                <tr>
+                  <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">State</th>
+                  <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Background</th>
+                  <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Border</th>
+                  <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Foreground</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">default</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--border" /><span className="font-mono">--border</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">hover</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--border-hover" /><span className="font-mono">--border-hover</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">focus(focus-within)</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--primary" /><span className="font-mono">--primary</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">open(autofocus 移入 panel)</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--border-hover" /><span className="font-mono">--border-hover</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">disabled</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--bg-disabled" /><span className="font-mono">--bg-disabled</span></td>
+                  <td className="p-2 border-b border-divider"><span className="font-mono">transparent</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--fg-disabled" /><span className="font-mono">--fg-disabled</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">error</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--error" /><span className="font-mono">--error</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="flex gap-3">
+            <LiveTimePicker value="09:00" aria-label="時間欄位配色(預設)" />
+            <LiveTimePicker value="09:00" error aria-label="時間欄位配色(錯誤狀態)" />
+            <LiveTimePicker value="09:00" disabled aria-label="時間欄位配色(停用)" />
+          </div>
+        </ExampleSection>
 
-          {/* Panel layer */}
-          <ExampleSection title="第 2 層:面板裡的時 / 分 / 秒選項(沿用下拉選單配色)" description="選項的 hover / 選中 / 停用配色,與下拉選單(Select / 選單項目)的選取狀態共用同一套規則。">
-            <div className="text-caption text-fg-secondary max-w-[720px]">
-              <strong>關鍵決策:selected 走 neutral 非 primary</strong>(對齊 SelectMenu 設計準則)。TimePicker panel 是「列表選中」語意,跟 SelectMenu / MenuItem 同流派;DatePicker date cell 用 <code>--primary</code> 是因為那是「最終選定日期」的強 affordance(確定性),兩者不同語意,不互調。
-            </div>
-            <div className="overflow-x-auto">
-              <table className="text-caption border-collapse min-w-[640px]">
-                <thead>
-                  <tr>
-                    <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">State</th>
-                    <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Background</th>
-                    <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Foreground</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">default(normal 數字)</td>
-                    <td className="p-2 border-b border-divider"><span className="font-mono">transparent</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">hover</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--neutral-hover" /><span className="font-mono">--neutral-hover</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">selected</td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--neutral-selected" /><span className="font-mono">--neutral-selected(非 primary)</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-divider font-mono">disabled(disabledTime)</td>
-                    <td className="p-2 border-b border-divider"><span className="font-mono">transparent</span></td>
-                    <td className="p-2 border-b border-divider"><Swatch value="--fg-disabled" /><span className="font-mono">--fg-disabled + cursor-not-allowed</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="text-caption text-fg-muted">
-              對照 DatePicker <code>ColorMatrix</code> 的 date cell selected 用 <code>--primary</code> — 那是「提交語意」;TimePicker 是「正在挑選」中的中間態,neutral-selected 與 Ant Design / Google Calendar TimePicker 一致。點開本頁 TimePicker trigger 可直接看到 Panel selected 的視覺效果。
-            </div>
-          </ExampleSection>
-        </div>
-      </ExampleSection>
+        {/* Panel layer */}
+        <ExampleSection title="第 2 層:面板裡的時 / 分 / 秒選項(沿用下拉選單配色)" description="選項的 hover / 選中 / 停用配色,與下拉選單(Select / 選單項目)的選取狀態共用同一套規則。">
+          <div className="text-caption text-fg-secondary max-w-[720px]">
+            <strong>關鍵決策:selected 走 neutral 非 primary</strong>(對齊 SelectMenu 設計準則)。TimePicker panel 是「列表選中」語意,跟 SelectMenu / MenuItem 同流派;DatePicker date cell 用 <code>--primary</code> 是因為那是「最終選定日期」的強 affordance(確定性),兩者不同語意,不互調。
+          </div>
+          <div className="overflow-x-auto">
+            <table className="text-caption border-collapse min-w-[640px]">
+              <thead>
+                <tr>
+                  <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">State</th>
+                  <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Background</th>
+                  <th className="text-left p-2 border-b border-divider text-fg-muted font-medium">Foreground</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">default(normal 數字)</td>
+                  <td className="p-2 border-b border-divider"><span className="font-mono">transparent</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">hover</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--neutral-hover" /><span className="font-mono">--neutral-hover</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">selected</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--neutral-selected" /><span className="font-mono">--neutral-selected(非 primary)</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">disabled(disabledTime)</td>
+                  <td className="p-2 border-b border-divider"><span className="font-mono">transparent</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--fg-disabled" /><span className="font-mono">--fg-disabled + cursor-not-allowed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="text-caption text-fg-muted">
+            對照 DatePicker <code>ColorMatrix</code> 的 date cell selected 用 <code>--primary</code> — 那是「提交語意」;TimePicker 是「正在挑選」中的中間態,neutral-selected 與 Ant Design / Google Calendar TimePicker 一致。點開本頁 TimePicker trigger 可直接看到 Panel selected 的視覺效果。
+          </div>
+        </ExampleSection>
+      </ExampleStack>
     )
   },
 }

@@ -7,6 +7,7 @@ HOOK="$SCRIPT_DIR/../check_dynamic_tailwind_class.sh"
 PASS=0; FAIL=0; FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
+[ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ] || { echo "❌ mktemp -d failed(TMP_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_DIR"' EXIT
 export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"

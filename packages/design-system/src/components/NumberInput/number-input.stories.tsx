@@ -131,7 +131,7 @@ export const InDataTable: Story = {
         <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
           不需要手寫 cell renderer——meta.type + 格式化參數自動套用 Display 元件
         </p>
-        <DataTable columns={columns} data={data} height="auto" />
+        <DataTable columns={columns} data={data} maxHeight="none" />
       </div>
     )
   },

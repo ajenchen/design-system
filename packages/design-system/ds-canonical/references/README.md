@@ -25,14 +25,14 @@ Agent 在執行時按需讀的深度 reference 檔 — audit protocol / FP 記�
 | `principle-dim-map.json` | M-rule / trait / hook → audit dim explicit mapping(SSOT for dim coverage) |
 | `props-naming.md` | Props callback / Badge / icon canonical 詳表 |
 | `repository-hygiene.md` + `repository-hygiene-policy.json` | Full/deep audit 的 repo 拓撲、冗餘分類與可攜機械政策 |
-| `runtime-evidence-retention.md` | Git-local audit/review evidence 的 lifecycle retention、lazy bundle materialization 與 whole-run cleanup canonical |
+| `runtime-evidence-retention.md` | Git-local audit/review evidence 的 lifecycle retention、lazy bundle materialization 與 whole-run cleanup canonical;另含工作區 `infra/governance/runtime/` 的 workflow-identity proposal 與 benchmark 快取何時整份刪 |
 | `scenario-definition.md` | Monorepo 2-Scenario architecture SSOT(Scenario A direct fork DS / Scenario B fork template + mirror chain + verify checkpoints)|
 | `spec-rules.md` | SSOT 機制 / 邊界案例 scope default 詳展 |
 | `story-baseline-registry.json` | Anti-drift registry — stories wrap 既有 primitive 的 machine-readable canonical archetype(hook `check_story_invariants.sh R8` 讀)|
 | `story-baseline-registry.schema.json` | Story baseline registry 的封閉 JSON Schema |
 | `ssot-consultation.md` | SSOT 消費完整對照表 |
 | `ssot-index.md` | High-risk interface ownership map(propose 前 grep 找 owner) |
-| `structural-token-retention.md` | 6 類結構性保留 token canonical(audit Dim 48 triple-verify) |
+| `structural-token-retention.md` | 只剩一行指標:保留 / 退場分類 2026-11-15 併入 `packages/design-system/src/tokens/orphan-tokens.spec.md` |
 | `tailwind-gotchas.md` | Tailwind v4 / tailwind-merge 技術陷阱深展 |
 | `ui-dev-rules.md` | flex slot 幾何 / 數值前先查 / Padding 三層 / Icon size 三類 |
 

@@ -5,7 +5,7 @@
  *        form-validation.spec.md 的規則 1 / 2 / 4 / 5 / 6 / 7 / 8 動作 —— 用真鍵盤、真滑鼠、觸控在欄位同名的幾張表單上逐條走
  *        (每一列見下方「判定表」):錯誤會顯示也會清掉、Escape 回原值、送出失敗時焦點只落在被送出那張表的第一個錯誤、
  *        打了不合法的值直接按下方的按鈕時,錯誤長出來不會把這一下 click 推離那顆按鈕;原生拖曳之後「按著」不會卡住。
- *   紅: 任一條不符 → 逐條點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個 2026-10-01 修掉的根因(二十六個:hook 十一個 + 對話框 / 送出鈕焦點 / Toast 十五個,見下方
+ *   紅: 任一條不符 → 逐條點名 exit 1。`--selftest` 在 DS 原始碼上各造回一個 2026-10-01 修掉的根因(二十七個:hook 十二個 + 對話框 / 送出鈕焦點 / Toast 十五個,見下方
  *        「突變」與 MUTANTS),每個突變都必須**剛好**紅它負責的那幾條(多紅少紅都算量具不可信),契約列每一條都要被某個突變弄紅過。
  *   綠: 現行 hook 每條都量到且符合,且對照列(C2 剛掛載就空送出看得到錯誤、C3 第一張表的焦點搬家、
  *        C5 只清被編輯那欄、C6 改成仍不合法再離開錯誤回來、C9 reset 清空、C8b / C8c 那一下送出真的有跑驗證)
@@ -55,6 +55,8 @@
  * 送出成功的回饋(user 2026-10-01「送出成功跳提示」;harness 直接掛三則 story 原始碼):
  *   T-update / T-create / T-rating 送出成功後 Toaster 的 polite 朗讀區 = 該表的文案、有一則 [data-sonner-toast]、表單內沒有 role=status;
  *   T-update 另附對照:業務驗證擋下(名稱重複)時 polite 區不變、沒有 toast。
+ *   R-sole(2026-11-17,規格「Submit Button 狀態」第三列「需要填的欄位只有一個」;同一則 Rating story 原始碼,soleRequiredField
+ *     `{ name: 'rating', emptyValue: 0 }`):剛掛上沒給分 →「送出評分」停用;給 3 星 → 可按(接著就是 T-rating 的送出)。
  *   T-dialog / T-sheet(2026-10-07;放在浮層裡、送出成功就關的三則 story 原始碼:Dialog「表單」、Sheet「建立新專案」「編輯成員詳情」):
  *     空白送出 → 欄位報錯、浮層不關、沒有 Toast;填好送出 → 多一則該文案的 Toast、浮層關閉;再打開 → 建立表單是空白、更新表單是剛存的值
  *     (修前:沒有 Toast;建立表單再打開還留著上次打的字。Toast 以「該文案的 [data-sonner-toast] 多一則」判,不讀朗讀區 ——
@@ -75,7 +77,7 @@
  * 欄位改過不掛 Esc 層 / 浮層守門不看標記 → R4-dialog / R4-one-layer / R4-saved(都是「對話框裡改過的欄位按 Esc」);
  * DialogContent 不記開啟者 → R-return;Button loading 走原生 disabled → R9-busy;Button 握著焦點時仍轉原生 disabled → R9-saved;
  * Button 焦點離開後不回原生 disabled → R9-leave;送出成功不重設基準 → R4-saved / R9-leave / R9-saved / T-sheet;可聚焦停用不擋 click → R9-busy;
- * 三則 story 各拿掉 toast() → T-update / T-create / T-rating。(「Esc 不看 Radix 已用掉」在 escape-and-focus-contract 量,理由見 MUTANTS 該處註解)
+ * 三則 story 各拿掉 toast() → T-update / T-create / T-rating;hook 不看 soleRequiredField(空白也可按 = 2026-11-17 前)→ R-sole。(「Esc 不看 Radix 已用掉」在 escape-and-focus-contract 量,理由見 MUTANTS 該處註解)
  * Dialog「表單」拿掉 toast() / 打開時不 reset() → T-dialog;Sheet「編輯成員詳情」拿掉 toast() / 「建立新專案」打開時不 reset() → T-sheet。
  *
  * ── 為什麼測 hook 本身、不測 story ──
@@ -94,7 +96,7 @@
  *
  * 用法:
  *   node scripts/form-validation-contract-invariant.mjs                 判定(現行原始碼)
- *   node scripts/form-validation-contract-invariant.mjs --selftest      對照組(二十六個單一根因突變,各自必須剛好紅該紅的)
+ *   node scripts/form-validation-contract-invariant.mjs --selftest      對照組(二十七個單一根因突變,各自必須剛好紅該紅的)
  *   node scripts/form-validation-contract-invariant.mjs --hook=<路徑>   只換 hook 原始碼(例:修正前的版本),判定表不變
  *   node scripts/form-validation-contract-invariant.mjs --root=<dir>    改量另一棵原始碼(例:git archive 出來的修改前基準樹)
  */
@@ -132,7 +134,7 @@ const HOOK_OVERRIDE = process.argv.find((a) => a.startsWith('--hook='))?.slice('
  */
 const LANES = Math.max(1, Number(process.argv.find((a) => a.startsWith('--lanes='))?.slice('--lanes='.length) ?? 4) || 4)
 
-// ─── 二十六個單一根因突變(--selftest;`file` 相對 packages/design-system/src,省略 = hook)──────────
+// ─── 二十七個單一根因突變(--selftest;`file` 相對 packages/design-system/src,省略 = hook)──────────
 // 錨點找不到 = 原始碼改了、突變沒套上 → 儀器失效(不得讓「沒突變」看起來像「突變也綠」)。
 const MUTANTS = [
   {
@@ -273,6 +275,12 @@ const MUTANTS = [
     file: 'components/Button/button.tsx',
     expectRed: ['R9-leave'],
     apply: (src) => replaceOnce(src, /onBlur=\{\(e\) => \{ setHoldsFocus\(false\); restProps\.onBlur\?\.\(e\) \}\}/, 'onBlur={(e) => { restProps.onBlur?.(e) }}'),
+  },
+  {
+    id: 'sole-required-field-ignored',
+    what: 'hook 不看 soleRequiredField(需要填的欄位只有一個卻空白也可按 = 2026-11-17 前「新建一律可按」)',
+    expectRed: ['R-sole'],
+    apply: (src) => replaceOnce(src, /\(intent === 'update' \? !isDirty : false\) \|\| soleEmpty \|\| isSubmitting/, "(intent === 'update' ? !isDirty : false) || isSubmitting"),
   },
   {
     id: 'no-rebaseline',
@@ -460,7 +468,7 @@ function DialogForm() {
     <section aria-label="對話框表單" data-submits={submits} data-submit-clicks={clicks}>
       <button type="button" data-open-dialog onClick={() => setOpen(true)}>開啟設定</button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent id="form-dialog" height="hug" maxWidth={480}>
+        <DialogContent id="form-dialog" height="hug" width={480}>
           <DialogHeader><DialogTitle>專案設定</DialogTitle></DialogHeader>
           <DialogBody>
             <form aria-label="對話框設定" onSubmit={form.handleSubmit}>
@@ -1049,8 +1057,14 @@ async function runChecks(page) {
     tCreate.polite === '專案已建立' && tCreate.toasts >= 1 && tCreate.statusInForm === 0, tCreate)
   const RATING = '為這次服務評分'
   await view(page, 'story-rating', `form[aria-label="${RATING}"]`)
+  // R-sole:需要填的只有評分 → 沒給分時送出鈕停用、給了分就可按(焦點不在鈕上 → 讀原生 disabled)
+  const ratingSubmitState = () => page.$eval(`form[aria-label="${RATING}"] button[type="submit"]`, (b) => ({ disabled: b.disabled, ariaDisabled: b.getAttribute('aria-disabled') }))
+  const soleBlank = await ratingSubmitState()
   await page.focus(`form[aria-label="${RATING}"] [role="slider"]`); await settle(page)
   await press(page, 'ArrowRight'); await press(page, 'ArrowRight'); await press(page, 'ArrowRight')
+  const soleRated = await ratingSubmitState()
+  check('R-sole', 'contract', '需要填的欄位只有一個(Rating「包在 Field 內」,soleRequiredField):沒給分時「送出評分」停用,給 3 星後可按',
+    soleBlank.disabled === true && soleRated.disabled === false && soleRated.ariaDisabled !== 'true', { soleBlank, soleRated })
   await click(page, `form[aria-label="${RATING}"] button[type="submit"]`)
   const seenRating = await waitForOutcome(page, () => document.querySelectorAll('[data-sonner-toast]').length > 0 || document.querySelector('form[aria-label="為這次服務評分"] [role="alert"]') || (document.querySelector('form[aria-label="為這次服務評分"] [role="status"]')?.textContent ?? '').trim() !== '')
   const tRating = { ...(await tsnap(RATING)), outcomeSeen: seenRating }

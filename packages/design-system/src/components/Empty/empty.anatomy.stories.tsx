@@ -64,7 +64,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Empty 是 layout pattern——排列 Icon + Title + Description + Action 成居中垂直堆疊。預設只有 description,icon / title / action 全部可選。</Desc>
-        <div className="border border-border rounded-lg p-8">
+        <div className="border border-border rounded-md p-8">
           <Empty
             icon={Users}
             title="還沒有團隊成員"
@@ -142,7 +142,7 @@ export const Inspector: InspectorStory = {
   render: (args) => {
     const icon = ICON_OPTIONS[args.iconKey]
     return (
-      <div className="border border-border rounded-lg p-8 max-w-md">
+      <div className="border border-border rounded-md p-8 max-w-md">
         <Empty
           icon={icon}
           title={args.title || undefined}
@@ -160,14 +160,14 @@ export const ScenarioMatrix: Story = {
     <ExampleStack>
       <div>
         <H3>Table 空資料</H3>
-        <div className="border border-border rounded-lg p-8">
+        <div className="border border-border rounded-md p-8">
           <Empty description="還沒有訂單" className="py-12" />
         </div>
       </div>
 
       <div>
         <H3>Page section 初次引導</H3>
-        <div className="border border-border rounded-lg p-8">
+        <div className="border border-border rounded-md p-8">
           <Empty
             icon={FileText}
             title="還沒有專案"
@@ -212,7 +212,7 @@ export const SlotCombinations: Story = {
 
       <div>
         <H3>只有說明(DataTable 空)</H3>
-        <div className="border border-border rounded-lg p-8 max-w-md">
+        <div className="border border-border rounded-md p-8 max-w-md">
           <Empty description="無符合條件的訂單" className="py-6" />
         </div>
       </div>
@@ -220,14 +220,14 @@ export const SlotCombinations: Story = {
       {/* 情境與文案照 empty.spec.md「消費範例」的「搜尋頁 / 篩選後的列表無結果」那一則;下拉選單的 0 筆不是 Empty 的場景(同檔「何時不用」,稽核 M022) */}
       <div>
         <H3>圖示 + 說明(搜尋頁無結果)</H3>
-        <div className="border border-border rounded-lg p-8 max-w-md">
+        <div className="border border-border rounded-md p-8 max-w-md">
           <Empty icon={SearchX} description="找不到符合的結果" className="py-6" />
         </div>
       </div>
 
       <div>
         <H3>圖示 + 標題 + 說明(收件匣空)</H3>
-        <div className="border border-border rounded-lg p-8 max-w-md">
+        <div className="border border-border rounded-md p-8 max-w-md">
           <Empty
             icon={Inbox}
             title="收件匣已清空"
@@ -238,7 +238,7 @@ export const SlotCombinations: Story = {
 
       <div>
         <H3>全部插槽(初次引導)</H3>
-        <div className="border border-border rounded-lg p-8 max-w-md">
+        <div className="border border-border rounded-md p-8 max-w-md">
           <Empty
             icon={ClipboardList}
             title="還沒有任何問卷"

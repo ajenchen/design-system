@@ -126,7 +126,7 @@ function useDocumentTheme(): string | null {
 // (ui-development.md「符號級 @internal 排除」)。未來 Avatar.Group 會把這段收進元件(overflow-indicator.spec.md)。
 /**
  * @internal
- * 第 2 項起往左疊的量。CSS 雙生:`tokens/uiSize/uiSize.css` `--avatar-stack-overlap`(class 字串裡用它;
+ * 第 2 項起往左疊的量。CSS 雙生:`components/Avatar/avatar.css` `--avatar-stack-overlap`(2026-11-11 從 uiSize.css 搬來;class 字串裡用它;
  * 這個數字給量寬與遮罩幾何用),兩邊相等由 scripts/token-twin-invariant.mjs 鎖住。
  */
 export const AVATAR_STACK_OVERLAP_PX = 2
@@ -320,13 +320,12 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   dismissCutout?: boolean
 }
 
-// code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 // 2026-05-13 (a) perf fix part-2(per codex Layer C Roadmap rich-cell dominant + user 拍 Path (a)):
 // `React.memo` wrap forwardRef Avatar — Roadmap 13 columns 含 person/multiPerson,每 row 多 avatar
 // × HoverCard subtree + useDocumentTheme observer = 重渲染 hotspot。memo shallow-equal props,
 // HoverCard / themeRef stable across scroll 時 skip re-render。對齊 codex Profile Plan step 5
 // (filter Avatar/PeoplePicker/FieldSurfaceProvider remounts)。
-// code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCard × img-fallback 多軸 prop 組合,拆 sub-fn 會跨 fn 傳 imgError state + isTableScrolling observer 結果
+// code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCard × img-fallback 多軸 prop 組合,拆 sub-fn 會跨 fn 傳 imgError state + isTableScrolling observer 結果(2026-11-21 複查仍成立:AvatarInner 約 240 行,各軸的契約見 avatar.spec.md)
 const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
   ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, badgeCount, badgeAriaLabel, hoverCard, stacked = false, dismissCutout = false, className, style, ...props }, ref) => {
     const [imgError, setImgError] = React.useState(false)
@@ -344,10 +343,10 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     const isTableScrolling = useTableIsScrolling()
     // 2026-05-13 R3.5(per codex Q3 verdict + user 拍「想盡辦法 auto-handle prereq」):
     // Avatar self-dim when in disabled Field wrapper context(取代既有 wrapper opacity-disabled blanket
-    // 逃生艙 — color.spec.md:729 specific-disabled-color canonical)。
+    // 逃生艙 — color.spec.md:743 specific-disabled-color canonical)。
     // Scope:`useResolvedFieldDisabled()`(= fieldCtx.disabled,涵蓋 <Field disabled> 與 <Field mode="disabled">),標準 Field
     // 家族 wrapper disabled 時才 dim;**沒包在 Field wrapper 內的 standalone Avatar**(ProfileCard / FileItem /
-    // HoverCard / Dialog 等 display 場景)**backward compat 不變**。對齊 avatar.spec.md「Avatar 在 disabled
+    // HoverCard / Dialog 等 display 場景)**不變淡** —— 那些場景沒有「停用的欄位」可以跟【AI 推導 2026-11-16:讀行為推出來的理由,原文只寫了相容】。對齊 avatar.spec.md「Avatar 在 disabled
     // 元件內 host-controlled opacity」canonical — 升級成「Avatar self-managed via fieldCtx」。
     // 2026-06-08 SSOT:欄位內 Avatar 跟隨 <Field disabled>/<Field mode="disabled"> 變淡(fieldCtx-scoped,cell 無 fieldCtx → 不影響)
     const isDisabledInField = useResolvedFieldDisabled()
@@ -360,7 +359,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     const variantKey: VariantKey = solid ? 'solid' : 'subtle'
     const colors = COLOR_MAP[variantKey]?.[color] ?? COLOR_MAP.subtle.neutral
     // 2026-07-14 dim-20 修:inline style 不能用 rounded-* class,但可消費 radius token
-    // (radius.spec.md:18 canonical「所有 4px 圓角一律用 rounded-md」+ :86 禁硬寫值;
+    // (radius.spec.md「四檔」:方形頭像是一般元件 = md 4px;「禁止事項」禁硬寫值;
     // token 改值 Avatar 跟隨 — M17 SSOT 傳播)。
     const radius = shape === 'circle' ? 'var(--radius-full)' : 'var(--radius-md)'
 

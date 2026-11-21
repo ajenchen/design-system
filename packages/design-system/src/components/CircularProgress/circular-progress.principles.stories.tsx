@@ -42,7 +42,7 @@ export const UsageGuidance: Story = {
           note="語意鎖「正在載入、正在處理」。永遠旋轉的裝飾會讓 a11y 使用者(螢幕閱讀器)持續收到 loading 通知,也讓視覺使用者無法判斷何時結束"
         >
           {/* @layout-space-magic-ok: 示範卡內 圖示 ↔ 文字 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
-          <div className="flex items-center gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
+          <div className="flex items-center gap-2 border border-border rounded-md p-[var(--layout-space-loose)] w-72">
             <CircularProgress aria-label="載入中（裝飾誤用示範）" />
             <span className="text-body">歡迎使用本系統</span>
           </div>
@@ -120,7 +120,7 @@ export const UsageGuidance: Story = {
           note="List / table / card grid 初次載入——佈局結構確定,只差資料。用 Skeleton 讓版面先定型,避免資料回來時跳動"
         >
           {/* @layout-space-magic-ok: 骨架列 頭像佔位 ↔ 文字佔位 12px = 載入後那一列的 item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值) */}
-          <div className="flex items-center gap-3 w-72 border border-border rounded-lg p-[var(--layout-space-loose)]">
+          <div className="flex items-center gap-3 w-72 border border-border rounded-md p-[var(--layout-space-loose)]">
             <Skeleton className="h-10 w-10 rounded-full" />
             {/* @layout-space-magic-ok: 骨架文字兩行之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
             <div className="flex flex-col gap-2 flex-1">
@@ -247,7 +247,7 @@ export const SizeMatchContextRule: Story = {
         note="中等尺寸,放在 row / card 內容區,視覺重量足夠吸引注意但不喧賓奪主"
       >
         {/* @layout-space-magic-ok: 載入列內 旋轉指示 ↔ 文字 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
-        <div className="flex items-center justify-center gap-2 border border-border rounded-lg p-[var(--layout-space-loose)] w-72">
+        <div className="flex items-center justify-center gap-2 border border-border rounded-md p-[var(--layout-space-loose)] w-72">
           <CircularProgress size={24} aria-label="載入更多留言" />
           <span className="text-body text-fg-muted">載入更多留言...</span>
         </div>

@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle } from './popover'
@@ -22,13 +21,14 @@ const TYPE_OPTIONS = ['待處理', '進行中', '已完成'] as const
  * 清除 = 全部取消勾選、套用 = 收起浮層(2026-10-28 前兩顆都沒有作用;登記簿 A16「一堆按鈕都無法正常反應」)。
  */
 function TypeFilterPopover({
-  defaultOpen = false, side, align, sideOffset, className, showHeader = true, showFooter = true,
+  defaultOpen = false, side, align, sideOffset, width, showHeader = true, showFooter = true,
 }: {
   defaultOpen?: boolean
   side?: 'top' | 'right' | 'bottom' | 'left'
   align?: 'start' | 'center' | 'end'
   sideOffset?: number
-  className?: string
+  /** PopoverContent 的 `width`(2026-11-15 起是真的 prop;之前這裡收 className 字串 w-72 / w-80 / w-96) */
+  width?: number
   showHeader?: boolean
   showFooter?: boolean
 }) {
@@ -40,7 +40,7 @@ function TypeFilterPopover({
       <PopoverTrigger asChild>
         <Button variant="tertiary">篩選設定</Button>
       </PopoverTrigger>
-      <PopoverContent side={side} align={align} sideOffset={sideOffset} className={className}>
+      <PopoverContent side={side} align={align} sideOffset={sideOffset} width={width}>
         {showHeader && (
           <PopoverHeader><PopoverTitle>依類型篩選</PopoverTitle></PopoverHeader>
         )}
@@ -84,7 +84,7 @@ export const Overview: Story = {
             <tbody>
               <tr><Td mono>align</Td><Td mono>PopoverContent</Td><Td mono>'start' | 'center' | 'end'</Td><Td mono>'center'</Td><Td>相對 trigger 的對齊</Td></tr>
               <tr><Td mono>side</Td><Td mono>PopoverContent</Td><Td mono>'top' | 'right' | 'bottom' | 'left'</Td><Td mono>'bottom'</Td><Td>浮層出現在 trigger 的哪一側</Td></tr>
-              <tr><Td mono>sideOffset</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>與 trigger 的距離(px)。DS 設計準則 = 8(對標 Notion / Linear / Figma / Stripe)</Td></tr>
+              <tr><Td mono>sideOffset</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>與 trigger 的距離(px)。DS 設計準則 = 8(overlay 共用的呼吸距離)</Td></tr>
               <tr><Td mono>collisionPadding</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>浮層與 viewport 邊緣的最小間距(px)。DS 設計準則 = 8</Td></tr>
               <tr><Td mono>open / onOpenChange</Td><Td mono>Popover(Root)</Td><Td mono>{'boolean / (o) => void'}</Td><Td mono>—</Td><Td>controlled 開關(選用)</Td></tr>
               <tr><Td mono>defaultOpen</Td><Td mono>Popover(Root)</Td><Td mono>boolean</Td><Td mono>false</Td><Td>uncontrolled 初始開啟狀態</Td></tr>
@@ -103,7 +103,7 @@ interface InspectorArgs {
   side: 'top' | 'right' | 'bottom' | 'left'
   align: 'start' | 'center' | 'end'
   sideOffset: number
-  width: 'w-72' | 'w-80' | 'w-96'
+  width: 288 | 320 | 384
   showHeader: boolean
   showFooter: boolean
 }
@@ -122,7 +122,7 @@ export const Inspector: Story = {
     side: 'bottom',
     align: 'center',
     sideOffset: 8,
-    width: 'w-72',
+    width: 288,
     showHeader: true,
     showFooter: true,
   },
@@ -139,12 +139,12 @@ export const Inspector: Story = {
     },
     sideOffset: {
       control: { type: 'range', min: 0, max: 24, step: 2 },
-      description: 'DS 設計準則 = 8(對標 Notion / Linear / Figma / Stripe)',
+      description: 'DS 設計準則 = 8(overlay 共用的呼吸距離)',
     },
     width: {
       control: 'radio',
-      options: ['w-72', 'w-80', 'w-96'],
-      description: 'w-72★default(簡短設定)/ w-96(內容複雜)',
+      options: [288, 320, 384],
+      description: 'PopoverContent `width`(px,夾在視窗內;不傳 = 18rem = 288)。288★default(簡短設定)/ 384(內容複雜);跟內容寬用 `width="hug"`',
     },
     showHeader: { control: 'boolean', description: '顯示 PopoverHeader(含右上 X 關閉)' },
     showFooter: { control: 'boolean', description: '顯示 PopoverFooter(含 CTA 按鈕)' },
@@ -153,7 +153,7 @@ export const Inspector: Story = {
     const { side, align, sideOffset, width, showHeader, showFooter } = args as InspectorArgs
     return (
       <div className="flex items-center justify-center py-20">
-        <TypeFilterPopover defaultOpen side={side} align={align} sideOffset={sideOffset} className={width} showHeader={showHeader} showFooter={showFooter} />
+        <TypeFilterPopover defaultOpen side={side} align={align} sideOffset={sideOffset} width={width} showHeader={showHeader} showFooter={showFooter} />
       </div>
     )
   },
@@ -213,7 +213,7 @@ export const ColorMatrix: Story = {
               <tr><Td>次要文字</Td><Td><TokenCell token="--fg-secondary" display="text-fg-secondary" /></Td><Td>說明 / 次要資訊</Td></tr>
               <tr><Td>圓角</Td><Td mono>rounded-lg(8px)</Td><Td>對齊 Dialog radius(浮層視覺語言一致)</Td></tr>
               <tr><Td>陰影</Td><Td mono>--elevation-200</Td><Td>浮層級 elevation(見 <StoryLink kind="Design System/Tokens/Elevation" name="總覽">Elevation 總覽</StoryLink>)</Td></tr>
-              <tr><Td>Layout-space</Td><Td mono>data-layout-space="md"</Td><Td>只鎖版面間距(header py-tight 精簡);ui-size 跟 page → 內部控件對齊觸發點(2026-06-15 改,原 data-density master switch)</Td></tr>
+              <tr><Td>Layout-space</Td><Td mono>data-layout-space="md"</Td><Td>只鎖版面間距(header py-tight 精簡);ui-size 跟觸發點那一區 → 內部控件對齊觸發點(2026-06-15 起不鎖;2026-11-11 起從跟整頁改成跟觸發點)</Td></tr>
               <tr><Td>Header/Body/Footer padding</Td><Td mono>px-[loose] py-[tight]</Td><Td>結構化 sub-components 採 Dialog 同一套 padding token</Td></tr>
               <tr><Td>Portal z-index</Td><Td mono>z-50</Td><Td>Radix Portal 統一層級,避開一般頁面內容</Td></tr>
             </tbody>
@@ -259,7 +259,7 @@ export const SizeMatrix: Story = {
 
       <div>
         <H3>sideOffset(與 trigger 的距離)</H3>
-        <Desc>DS 設計準則 = 8px(對標 Notion / Linear / Figma / Stripe)。&lt; 4px 會讓浮層貼死 trigger 失去「另一層」感;&gt; 12px 會拉斷 trigger ↔ content 的視覺關聯。consumer 通常不需改,特殊情境(如 anchored tooltip-like)可傳覆蓋。</Desc>
+        <Desc>DS 設計準則 = 8px,overlay primitive 共用的呼吸距離。&lt; 4px 會讓浮層貼死 trigger 失去「另一層」感;&gt; 12px 會拉斷 trigger ↔ content 的視覺關聯。consumer 通常不需改,特殊情境(如 anchored tooltip-like)可傳覆蓋。</Desc>
       </div>
     </div>
   ),
@@ -271,7 +271,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3 paragraph>開啟 / 關閉</H3>
-        <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動:進場 <code>fade-in + zoom-in-95 + slide-from-side</code>,離場 <code>fade-out + zoom-out</code>(無 slide-out,對齊 shadcn 慣例)。進場方向 side-aware slide,浮層看起來從 trigger 「長出來」。</Desc>
+        <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動:進場 <code>fade-in + zoom-in-95 + slide-from-side</code>,離場 <code>fade-out + zoom-out</code>(無 slide-out,對齊 <a href="https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/ui/popover.tsx#L32" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">shadcn popover</a>:進場有 slide-in、離場只有 fade-out + zoom-out)。進場方向 side-aware slide,浮層看起來從 trigger 「長出來」。</Desc>
         <ul className="text-caption text-fg-muted list-disc pl-5 space-y-1">
           <li>點擊 trigger → 開啟</li>
           <li>點 Popover 外部 → 關閉(click outside)</li>

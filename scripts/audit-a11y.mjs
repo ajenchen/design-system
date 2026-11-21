@@ -45,7 +45,7 @@ import path from 'node:path'
 import { launchBrowser, openStory, requireStorybookBuild, StoryRenderInstrumentError } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import {
-  UNNAMED_CONTROL_RULE,
+  UNNAMED_CONTROL_RULE, applyA11yLinuxOnlyBaseline, buildA11yBaselineDocument,
   createA11yFingerprintMap,
   createA11yStoryCorpus,
   evaluateA11yRegressionGate,
@@ -240,21 +240,41 @@ if (WRITE_BASELINE) {
     console.error(`\n❌ refusing baseline write: ${scanErrors.length} story scan(s) failed:${scanErrors.slice(0, 5).join(', ')}${scanErrors.length > 5 ? ' …' : ''}`)
     process.exit(1)
   }
+  // 只有 Linux 量得到的指紋(基線 _meta.linuxOnly)在別的平台保留基線原值(lib/a11y-gate.mjs applyA11yLinuxOnlyBaseline;A123 / A121-F2)。
+  // 舊基線讀不到就拒寫:讀不到 = 不知道哪些值要保留,照寫會把 Linux 值換成本機值(e017c41c 那一種)。
+  let previousDocument = null
+  if (fs.existsSync(BASELINE_FILE)) {
+    try {
+      previousDocument = JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf-8'))
+    } catch (error) {
+      console.error(`\n❌ refusing baseline write: 讀不到既有基線 ${BASELINE_FILE}(${String(error.message).split('\n')[0]})—— 不知道哪些 Linux 實測值要保留`)
+      process.exit(1)
+    }
+  }
+  let merged
+  try {
+    merged = applyA11yLinuxOnlyBaseline({
+      measuredFingerprints: sortedMap,
+      previousDocument,
+      platform: process.platform,
+      storyIds: scanCorpus.storyIds,
+    })
+  } catch (error) {
+    console.error(`\n❌ refusing baseline write: ${error.message}`)
+    process.exit(1)
+  }
+  for (const k of merged.kept) console.log(`   ⓘ 保留 Linux 實測值 ${k.key} = ${k.kept}(本機 ${process.platform} 量到 ${k.measured};_meta.linuxOnly)`)
+  for (const d of merged.dropped) console.log(`   ⓘ _meta.linuxOnly 拿掉 ${d.key}(${d.why})`)
   const dir = path.dirname(BASELINE_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(BASELINE_FILE, JSON.stringify({
-    _meta: {
-      purpose: 'a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)',
-      generatedAt: new Date().toISOString(),
-      stories: scanCorpus.storyIds.length,
-      storyIds: scanCorpus.storyIds,
-      storyIdsSha256: scanCorpus.storyIdsSha256,
-      fingerprints: Object.keys(sortedMap).length,
-    },
-    fingerprints: sortedMap,
-  }, null, 2))
+  // 整份文件(含寫回 _meta.linuxOnly)由 lib 的 buildA11yBaselineDocument 組,test-audit-a11y.mjs 跑「macOS 連寫兩次」測的就是它。
+  fs.writeFileSync(BASELINE_FILE, JSON.stringify(buildA11yBaselineDocument({
+    merged,
+    corpus: scanCorpus,
+    generatedAt: new Date().toISOString(),
+  }), null, 2))
   console.log(`\n✅ baseline written: ${BASELINE_FILE}`)
-  console.log(`   ${Object.keys(sortedMap).length} fingerprints(storyId|ruleId)across ${results.total} stories`)
+  console.log(`   ${Object.keys(merged.fingerprints).length} fingerprints(storyId|ruleId)across ${results.total} stories`)
   process.exit(0)
 }
 

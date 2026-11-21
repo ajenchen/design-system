@@ -5,7 +5,7 @@ paths:
 
 # Canonical rules charter
 
-## 這裡只收:path-scoped 規則(編特定 file 才 load,降 every-session context cost)
+## 大多是 path-scoped 規則;meta-patterns.md 與 work-process.md 每次載入。
 
 每條 rule 一個 `.md` file,內含:
 - frontmatter `paths:` glob(`**/*.spec.md` / `**/*.tsx` 等)— provider materializer 可投影成原生 path-scoped discovery view
@@ -18,6 +18,7 @@ paths:
 | Rule | Paths | Scope |
 |------|-------|-------|
 | [meta-patterns.md](meta-patterns.md) | always(fundamental)| 33 active M-rules(M1-M32 + M36 + M37,M27/M33/M34/M35 retired)|
+| [work-process.md](work-process.md) | always | 多包 / 多步工作流程唯一住處 |
 | [spec-rules.md](spec-rules.md) | `**/*.spec.md` + `packages/design-system/src/**` | Spec 撰寫紀律 + SSOT / 邊界案例 / 職責分離 |
 | [ui-development.md](ui-development.md) | `**/*.tsx` + `**/*.ts` | 建 UI 前必讀 / Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn |
 | [story-rules.md](story-rules.md) | `**/*.stories.tsx` | 三層 stories canonical + Title / 範例 / 撰寫紀律 |
@@ -27,7 +28,7 @@ paths:
 
 | | Canonical/provider bootstrap | Canonical rules |
 |---|---|---|
-| 載入時機 | 每 session start 載入(行數預算見 `AGENTS.md`「行數預算」,本檔不硬寫數值)| 支援 path scope 的 adapter 於編對應 file 時載入；其他 provider 按 index 讀取 |
+| 載入時機 | 每 session start 載入(行數上限見 `hooks/lib/_size_budget.sh` 上限表 + `hooks/session_start_governance_check.sh` Check 1;本檔不硬寫數值)| 支援 path scope 的 adapter 於編對應 file 時載入；其他 provider 按 index 讀取(字數上限見同一張上限表,`hooks/check_file_size_budget.sh` 寫入當下判:超過過渡上限而且變長就擋,其餘提醒)|
 | 內容 | 6 mindset + 治理 / 稽核 / SSOT canonical / 任務導航 / fundamental rules | 該 file family 細節規則(spec 撰寫 / UI 開發 / story / self-verify)|
 
 ## 新增 rule 流程

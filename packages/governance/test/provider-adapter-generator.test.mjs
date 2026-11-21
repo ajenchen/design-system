@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { cp, link, lstat, mkdir, mkdtemp, open, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { spawn, spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
@@ -251,6 +252,44 @@ test('Claude reviewer wiring and repository-only agents are generated from the r
     () => buildProviderAdapterTargets({ registry: missingCanonicalAgent, sourceRoot: repoRoot, outputRoot: repoRoot, providerIds: ['claude'] }),
     /canonical agent source must exist.*ADAPTER-BLOCKED/,
   )
+})
+
+// D2-7(2026-11-18):Claude 把 .claude/commands/ 底下每個 .md 都當成 slash command,commands 住處的
+// charter(README.md)被整棵樹複製過去後,每個 session 都多出一個假的 /README。排除只拿掉 charter,
+// 樹本身仍是受管投影 —— 下面的對照組證明「拿掉排除就會投影」,所以綠燈不是因為機制整個關掉。
+test('commands charter is excluded from the Claude projection, not the whole commands tree', () => {
+  const claudeOf = (registry) => registry.providers.find((provider) => provider.id === 'claude')
+  const build = (registry) => buildProviderAdapterTargets({ registry, sourceRoot: repoRoot, outputRoot: repoRoot, providerIds: ['claude'] })
+  const projects = (built, name) => built.targets.some((target) => target.path === resolve(repoRoot, '.claude/commands', name))
+
+  const live = build(PROVIDER_REGISTRY)
+  assert.deepEqual(claudeOf(PROVIDER_REGISTRY).adapter.repositoryManagedTreeExcludes, { commands: ['README.md'] })
+  assert.equal(projects(live, 'README.md'), false, 'commands charter 不得投影成 /README 指令')
+  assert.ok(live.managedRoots.includes(resolve(repoRoot, '.claude/commands')), '.claude/commands 仍是受管投影樹(未來居民照常投影、多出的檔照常算漂移)')
+
+  const unexcluded = structuredClone(PROVIDER_REGISTRY)
+  delete claudeOf(unexcluded).adapter.repositoryManagedTreeExcludes
+  assert.equal(projects(build(unexcluded), 'README.md'), true, '對照組:拿掉排除,同一份 charter 必須被投影')
+
+  // 排除清單指向不存在的檔 = 守護對象改名後排除靜默失效,改名後的檔會被當成居民投影出去 → 必須失敗。
+  const stale = structuredClone(PROVIDER_REGISTRY)
+  claudeOf(stale).adapter.repositoryManagedTreeExcludes = { commands: ['GHOST.md'] }
+  assert.throws(() => build(stale), /repositoryManagedTreeExcludes names a file absent from .*:GHOST\.md/)
+
+  const unknownTree = structuredClone(PROVIDER_REGISTRY)
+  claudeOf(unknownTree).adapter.repositoryManagedTreeExcludes = { command: ['README.md'] }
+  assert.throws(() => validateProviderRegistry(unknownTree), /repositoryManagedTreeExcludes\.command names no repositoryManagedTrees entry/)
+
+  const unsorted = structuredClone(PROVIDER_REGISTRY)
+  claudeOf(unsorted).adapter.repositoryManagedTreeExcludes = { commands: ['README.md', 'AAA.md'] }
+  assert.throws(() => validateProviderRegistry(unsorted), /must be a non-empty sorted unique list/)
+
+  for (const entry of ['nested/README.md', '..']) {
+    const pathLike = structuredClone(PROVIDER_REGISTRY)
+    claudeOf(pathLike).adapter.repositoryManagedTreeExcludes = { commands: [entry] }
+    assert.throws(() => validateProviderRegistry(pathLike), /repositoryManagedTreeExcludes|must match pattern/, `排除項必須是根層檔名:${entry}`)
+    assert.throws(() => validateProviderRegistrySemantics(pathLike), /entries must be root-level file names/, `語意層也要擋(schema 之外的第二道):${entry}`)
+  }
 })
 
 test('generated provider hook coverage is closed, exhaustive, and declares only proved hook-independent fallback', async () => {
@@ -679,16 +718,26 @@ test('runner normalizes contained paths, fans out per-file content, and translat
     }
   }
 
-  const sizePayload = {
-    hook_event_name: 'PreToolUse', tool_name: 'Edit',
+  // check_file_size_budget.sh 2026-11-21 起吃 proposed-text-v1(runner 算好的寫完內容):payload 必須是該 provider
+  // 原生、真的套得上的寫入(Codex 的寫入 transport 只有 apply_patch)。兩邊都寫成「item-anatomy.spec.md 不變長」:
+  // 超過 budget、沒超過 transition cap → 走只提醒的那條 transport。
+  const sizeTarget = 'packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md'
+  const sizeText = readFileSync(resolve(repoRoot, sizeTarget), 'utf8')
+  const sizeLines = sizeText.split('\n')
+  const sizeUniqueLine = sizeLines.find((line) => line.trim() && sizeLines.filter((other) => other === line).length === 1)
+  assert.ok(sizeUniqueLine, 'item-anatomy.spec.md needs one unique line for the apply_patch fixture')
+  const claudeSizePayload = {
+    hook_event_name: 'PreToolUse', tool_name: 'Write',
+    tool_input: { file_path: sizeTarget, content: sizeText },
+  }
+  const codexSizePayload = {
+    hook_event_name: 'PreToolUse', tool_name: 'apply_patch',
     tool_input: {
-      file_path: 'packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md',
-      old_string: 'legacy',
-      new_string: 'x',
+      command: ['*** Begin Patch', `*** Update File: ${sizeTarget}`, '@@', `-${sizeUniqueLine}`, `+${sizeUniqueLine}`, '*** End Patch'].join('\n'),
     },
   }
-  const claude = run('claude', 'check_file_size_budget.sh', sizePayload)
-  const codex = run('codex', 'check_file_size_budget.sh', sizePayload)
+  const claude = run('claude', 'check_file_size_budget.sh', claudeSizePayload)
+  const codex = run('codex', 'check_file_size_budget.sh', codexSizePayload)
   assert.equal(claude.status, 0)
   assert.equal(codex.status, 0)
   assert.equal(JSON.parse(claude.stdout).hookSpecificOutput.hookEventName, 'PreToolUse')
@@ -724,6 +773,9 @@ test('event-group runner parses and materializes once, preserves order, and sepa
     'packages/design-system/ds-canonical/rules',
     'packages/design-system/ds-canonical/skills',
     'packages/design-system/src/tokens/utility-registry.json',
+    'packages/design-system/ds-changes.json',
+    'packages/design-system/tools/changes/ledger.mjs',
+    'infra/governance/release-workflow.json',
   ]) await copy(path)
 
   const hookDirectory = resolve(fixture, 'packages/design-system/ds-canonical/hooks')

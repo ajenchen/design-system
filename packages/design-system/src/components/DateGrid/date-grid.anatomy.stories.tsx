@@ -91,7 +91,7 @@ export const Overview = {
         <H3>結構(Anatomy)</H3>
         <Desc>DateGrid 由四個區塊組成:月份 caption、星期標頭、日期網格、左右 nav 按鈕。各區塊以 classNames prop 用 DS token 覆寫 react-day-picker 的視覺樣式;元件載入 RDP style.css 作結構基底,未覆寫的結構 key 沿用原生 .rdp-* 預設。</Desc>
 
-        <div className="inline-flex flex-col gap-2 border-2 border-dashed border-primary/30 rounded-lg p-4 bg-surface">
+        <div className="inline-flex flex-col gap-2 border-2 border-dashed border-primary/30 rounded-md p-4 bg-surface">
           <div className="flex items-center justify-between gap-2">
             <AnatomyBox label="button_previous" color="info" />
             <AnatomyBox label="caption_label" color="success" />
@@ -111,7 +111,7 @@ export const Overview = {
       <div>
         <H3>視覺一覽</H3>
         <Desc>實際渲染 — single mode,已選今日的前一日展示 selected 視覺,today 以數字下方藍色底線標示。</Desc>
-        <div className="inline-flex bg-surface-raised border border-border rounded-lg w-fit">
+        <div className="inline-flex bg-surface-raised border border-border rounded-md w-fit">
           <DateGrid
             mode="single"
             selected={storyDate(STORY_TODAY.getDate() - 1)}
@@ -197,8 +197,8 @@ export const Inspector = {
         <div className="flex gap-6 items-start flex-wrap">
           {/* Left: live preview + blueprint */}
           <div className="flex flex-col gap-5">
-            <div className="px-6 py-6 rounded-lg bg-canvas border border-divider flex items-center justify-center">
-              <div className="bg-surface-raised border border-border rounded-lg">
+            <div className="px-6 py-6 rounded-md bg-canvas border border-divider flex items-center justify-center">
+              <div className="bg-surface-raised border border-border rounded-md">
                 <DateGrid
                   mode="single"
                   selected={selected}
@@ -239,7 +239,7 @@ export const Inspector = {
           </div>
 
           {/* Right: Inspect panel */}
-          <div className="w-[340px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+          <div className="w-[340px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
             <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
               <span className="text-[12px] font-semibold text-foreground">Inspect</span>
             </div>
@@ -443,13 +443,13 @@ export const SizeMatrix = {
       <div className="flex flex-wrap gap-6 items-start">
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">單月(預設)</span>
-          <div className="bg-surface-raised border border-border rounded-lg">
+          <div className="bg-surface-raised border border-border rounded-md">
             <DateGrid mode="single" defaultMonth={STORY_TODAY} today={STORY_TODAY} locale={zhTW} />
           </div>
         </div>
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">雙月並排(range 常用)</span>
-          <div className="bg-surface-raised border border-border rounded-lg">
+          <div className="bg-surface-raised border border-border rounded-md">
             <DateGrid mode="single" defaultMonth={STORY_TODAY} today={STORY_TODAY} locale={zhTW} numberOfMonths={2} />
           </div>
         </div>
@@ -483,7 +483,7 @@ export const StateBehavior = {
         <div className="flex flex-wrap gap-6 items-start">
           <div className="flex flex-col gap-2 min-w-0">
             <span className="text-caption font-medium text-fg-secondary">mode="single"</span>
-            <div className="bg-surface-raised border border-border rounded-lg">
+            <div className="bg-surface-raised border border-border rounded-md">
               <DateGrid
                 mode="single"
                 selected={single}
@@ -500,7 +500,7 @@ export const StateBehavior = {
 
           <div className="flex flex-col gap-2 min-w-0">
             <span className="text-caption font-medium text-fg-secondary">mode="multiple"</span>
-            <div className="bg-surface-raised border border-border rounded-lg">
+            <div className="bg-surface-raised border border-border rounded-md">
               <DateGrid
                 mode="multiple"
                 selected={multiple}
@@ -517,7 +517,7 @@ export const StateBehavior = {
 
           <div className="flex flex-col gap-2 min-w-0">
             <span className="text-caption font-medium text-fg-secondary">mode="range"</span>
-            <div className="bg-surface-raised border border-border rounded-lg">
+            <div className="bg-surface-raised border border-border rounded-md">
               <DateGrid
                 mode="range"
                 selected={range}

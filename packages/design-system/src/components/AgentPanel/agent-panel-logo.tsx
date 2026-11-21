@@ -15,9 +15,10 @@
  *   exit 曲線的時間鏡像 (0,0,0.7,1),位移取最小 ≥252° 且落回正位 0°(mod 360)的角度,
  *   時長 = Δ/(ω·0.7) ∈ [0.50, 1.21]s,停定後才淡入下一狀態。
  * - 轉心/波源/縮放中心一律用 LOGO_CX/LOGO_CY(外輪廓圓心),**不是** viewBox 中心 627,627。
- * - 緩動:--motion-easing-swell / --motion-easing-settle / --motion-easing-exit
- *   (tokens/motion/motion.css)。SMIL keySplines 不能吃 CSS var,以下常數為 token 值的逐字鏡像,
- *   改 token 必同步此處。
+ * - 緩動:SWELL(吸氣 / 所有「起」)/ SETTLE(呼氣 / 所有「收」)是 AgentPanel 標誌自己的值,
+ *   **唯一住處就是本檔**(2026-11-15 起;之前 motion.css 另有 --motion-easing-swell / --motion-easing-settle
+ *   兩個 CSS 名字,沒有任何讀者 —— SMIL keySplines 不能吃 CSS var —— 已退場,稽核 P07)。
+ *   EXIT 是共用曲線 --motion-easing-exit(tokens/motion/motion.css)的逐字鏡像,改 token 必同步此處(目前沒有機器鎖)。
  * - 狀態切換:新狀態 0.15s 淡入(--motion-duration-overlay;agent-panel.css `.agent-logo-enter`)。
  * - 減動作:互動觸發必可停(WCAG 2.3.3);常駐 loop 全停 → 一律回靜止
  *   (agent-panel-logo.spec.md「AgentLogo(標誌;附屬資產)」節的轉場、減動作兩條)。
@@ -34,12 +35,12 @@ const BREATH_S = 3
  */
 export const BREATH_DUR = `${BREATH_S}s`
 /**
- * = var(--motion-easing-swell) 的 SMIL 鏡像(吸氣 / 所有「起」)。
+ * 吸氣 / 所有「起」的曲線 cubic-bezier(0.4, 0.14, 0.3, 1)(值的出處見 agent-panel.spec.md 動畫 token 表;唯一住處,見檔頭「緩動」)。
  * @internal
  */
 export const SWELL = '0.4 0.14 0.3 1'
 /**
- * = var(--motion-easing-settle) 的 SMIL 鏡像(呼氣 / 所有「收」)。
+ * 呼氣 / 所有「收」的曲線 cubic-bezier(0.2, 0, 0.38, 0.9)(值的出處見 agent-panel.spec.md 動畫 token 表;唯一住處,見檔頭「緩動」)。
  * @internal
  */
 export const SETTLE = '0.2 0 0.38 0.9'
@@ -51,11 +52,10 @@ const DECEL = '0 0 0.7 1'
  * 思考態等速轉速。**數值住所只有這個「一息切幾圈」**,ω 由它推出 —— 舊版把 480 寫死、把「= 一息/4」
  * 只寫在註解裡,程式碼零綁定:改一息轉速不動、改轉速註解就過期(2026-09-04 改為真綁定)。
  *
- * 取 6 圈(0.5s/圈 = 720°/s)的依據全是第一手出貨值(單層等速旋轉,逐檔讀原始碼;URL 見
- * spec「AgentLogo」節):出貨最快是 Chakra v2 的 0.45s,往下 Carbon 690ms、Bootstrap .75s、
- * Radix Themes 800ms、Primer / Chakra v3 1s、Ant 1.2s、Fluent / VS Code 1.5s、Material 3 ≈1.568s
- * (`$linear-rotate-duration = $arc-duration × 360 / 306`;1.333s 是弧長形變的 `$arc-duration`,不是轉速)。
- * 0.5s 落在「最快檔 0.45–0.69s」之內,不是自創的更快值;唯一更快的出貨值 0.45s 只多 11% 速度,
+ * 取 6 圈(0.5s/圈 = 720°/s)的依據全是第一手出貨值(單層等速旋轉,逐檔讀原始碼):各家的值、由快到慢的
+ * 排序與版本固定的原始碼連結**只住** `agent-panel-logo.spec.md`「AgentLogo」節的「轉速依據」,這裡不抄
+ * (2026-11-21 前本段把各家數字再抄一遍、沒附連結,兩處會各自過期)。
+ * 0.5s 落在該表「最快檔 0.45–0.69s」之內,不是自創的更快值;唯一更快的出貨值 0.45s 只多 11% 速度,
  * 卻讓一息 = N 圈斷掉(3 / 0.45 = 6.67),不取。
  *
  * 閃爍:造型無 C2 對稱(洞心繞轉軸轉 180° 不落回自身)→ 整圈才重複一次 = 2.0 Hz,低於 WCAG 2.3.1

@@ -17,13 +17,16 @@
 // Fork user 替換步驟:
 //   1. 替換 NAV array(新 product 的真實導覽項)
 //   2. 替換 WorkspaceBrand 內 workspace 名 / Avatar 顏色
-//   3. 替換 DashboardPage 為真實業務內容(用 DS 元件組:DataTable / Chart 等)與自己的資料來源
+//   3. 替換 DashboardPage 為真實業務內容(用 DS 元件組:DataTable / Chart 等)與自己的資料來源;
+//      主區只有一塊內容時,標頭標題就說明了這頁是什麼,不在主區另放標題與說明(DS `app-shell.spec.md`「Main 內塞什麼」)——
+//      所以那一頁的導覽字(NAV 的 label)要說得出主區那塊內容;標頭讀同一份 label,側欄項目的字 = 標頭的字
+//      (DS `sidebar.spec.md`「選中項的字 = 那一頁標頭的字」)
 //   4. 頁面有主要動作時,放進 PageHeader 的 rightSlot(只放在用得到的那一頁,按鈕要接上真實行為)
 //   5. 替換版面寬度設定(MAIN_MIN_WIDTH / MENU_WIDTH)為產品的值:AppShell 的 Main 最小寬必填、Menu 的最大寬產品必給
 //      (DS `app-shell.spec.md`「版面規則」§1;§8 消費者指引:Main 最小寬 + 細列寬 + 每種 Right 內容最小寬 ≤ 要支援的最窄 desktop 版面寬,
 //      水平捲軸就幾乎不會出現)
 
-import { useId, useState, type ReactElement } from 'react'
+import { useState, type ReactElement } from 'react'
 import {
   AppShell,
   SidebarProvider,
@@ -50,11 +53,13 @@ import {
   DataTable,
   type DataTableProps,
 } from '@qijenchen/design-system'
-import { LayoutDashboard, Users, Settings, FileText, BarChart3, User, LogOut } from 'lucide-react'
+import { Truck, Users, Settings, FileText, BarChart3, User, LogOut } from 'lucide-react'
 
 // 範本整份畫面用同一種語言 —— 跟 DS 預設文案一致用中文(DS 元件內建的提示、讀屏名稱預設就是中文)
+// 第一項 = 範本的首頁(DashboardPage):主區只有「已付款、還沒出貨」的訂單表,導覽字與標頭字都是「待出貨訂單」
+// (2026-11-15 前是「總覽」—— 主區的區段標題 2026-11-11 拿掉後,「總覽」說不出下面那張表)
 const NAV = [
-  { id: 'dashboard', label: '總覽', icon: LayoutDashboard },
+  { id: 'to-ship', label: '待出貨訂單', icon: Truck },
   { id: 'customers', label: '客戶', icon: Users },
   { id: 'orders', label: '訂單', icon: FileText },
   { id: 'reports', label: '報表', icon: BarChart3 },
@@ -64,7 +69,7 @@ const NAV = [
 // ── 版面寬度設定(產品的值;DS `app-shell.spec.md`「版面規則」§1)──
 // Main 最小寬:AppShell 必填,DS 不替產品挑預設。480 = 範本起點(示範值,產品依自己最寬的主內容調整)。
 const MAIN_MIN_WIDTH = 480
-// Menu 最小 / 初始 / 最大:最小與初始 240 = DS 預設(`--sidebar-width-min` / `--sidebar-width`);最大 DS 沒有既有值,產品必給(範本示範 320)。
+// Menu 最小 / 初始 / 最大:最小與初始 240 = DS 預設(最小是 AppShell 內建的 240、初始是 `--sidebar-width`);最大 DS 沒有既有值,產品必給(範本示範 320)。
 const MENU_WIDTH = { min: 240, initial: 240, max: 320 }
 
 // ── Sidebar(對齊 DS IconCollapse baseline:collapsible="icon" + WorkspaceBrand + footer)──
@@ -168,27 +173,21 @@ const PENDING_ORDER_COLUMNS: DataTableProps<PendingOrder>['columns'] = [
   { accessorKey: 'placedAt', header: '下單時間', meta: { type: 'time', width: 120 } },
 ]
 
+// 主區只有一塊內容、頁面標頭(PageHeader 的標題)已經說明這頁是什麼 → 不在主區重複放區段標題與說明,表格直接接在標頭下
+// (DS `app-shell.spec.md`「Main 內塞什麼」);表格的讀屏名稱用 aria-label。
 function DashboardPage() {
-  const titleId = useId()
   return (
-    // 頂:chrome header → 第一個元素(區段標題)= tight;底:最後是有框的 DataTable = loose
-    //(DS `layoutSpace.spec.md` 規則 2 / 規則 4「bounded region → 容器底」)
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]">
-      {/* 區段標題(+ 說明)→ 它底下的表格 = loose(DS `layoutSpace.spec.md` 規則 3:標題(+ 說明)→ 它底下的並列內容) */}
-      <section className="flex flex-col gap-[var(--layout-space-loose)]">
-        {/* 標題 ↔ 自己的說明 = 2px(DS `item-anatomy.spec.md`「Label ↔ Desc 間距」的 token) */}
-        <div className="flex flex-col gap-[var(--item-gap-label-desc-reading-lg)]">
-          <h2 id={titleId} className="text-h5">今日待處理訂單</h2>
-          <p className="text-body text-fg-secondary">已付款、還沒出貨的訂單,依下單時間排序。</p>
-        </div>
-        <DataTable columns={PENDING_ORDER_COLUMNS} data={PENDING_ORDERS} height="auto" aria-labelledby={titleId} />
-      </section>
+    // 四邊都是 loose:chrome header → 有框的 DataTable = bounded region(DS `layoutSpace.spec.md` 規則 2)、
+    // 左右 = 規則 1、最後是有框的 DataTable → 容器底 = 規則 4「bounded region → 容器底」—— 底由容器自己給(data-layout-body,DS 依最後一個東西判)
+    <div data-layout-body="fill" className="px-[var(--layout-space-loose)] pt-[var(--layout-space-loose)]">
+      <DataTable columns={PENDING_ORDER_COLUMNS} data={PENDING_ORDERS} maxHeight="none" aria-label="今日待處理訂單" />
     </div>
   )
 }
 
 export default function App() {
-  const [activeId, setActiveId] = useState<string>('dashboard')
+  const [activeId, setActiveId] = useState<string>(NAV[0].id)
+  // 標頭的字 = 側欄選中項的字:兩邊讀同一個 NAV 項目的 label,不另寫一份
   const current = NAV.find((n) => n.id === activeId) ?? NAV[0]
   // TooltipProvider self-wrap(Storybook story render 跳過 main.tsx → App 必自帶 TooltipProvider context)
   return (

@@ -207,7 +207,7 @@ Avatar 支援兩個 overlay API(`status` 右下 presence / `badgeCount` 右上 c
 | Overlay | Prop | 元件本體 | 位置 | 語義 | 世界級對照 |
 |---------|------|---------|------|------|-----------|
 | Status dot(presence)| `status="online"/"away"/"busy"/"offline"` | **Avatar 內部 `span`**(非 Badge) | **右下角**(circle avatar 圓周 45°) | 此人現在線上狀態 | Fluent 2 Avatar `badge` slot 右下([useAvatarStyles.styles.ts#L181-L186](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/Avatar/useAvatarStyles.styles.ts#L181-L186)) |
-| Count badge(通知)| `badgeCount={N}` | **`<Badge variant="critical">`**(此 anchor 唯一 Badge) | **右上角** | 此對話 / 此使用者有 N 條新事件 | iMessage / Slack thread / LINE / WhatsApp |
+| Count badge(通知)| `badgeCount={N}` | **`<Badge variant="critical">`**(此 anchor 唯一 Badge) | **右上角** | 此對話 / 此使用者有 N 條新事件 | 無一手來源(原列的通訊軟體對照 2026-11-16 撤回;位置依據是上方「為什麼可並存」) |
 
 **為什麼 status 做 Avatar 內部 span 而不是 `<Badge dot>`**:兩者語義完全不同——presence 是「這個人的狀態」,Badge 是「計數 / 通知緊急度」。若用 Badge 承載 presence,color token 會混用(Badge 有 low/medium/high/critical 對應緊急度,presence 有 online/busy/away/offline 對應狀態;強行映射會失真);brand 也無法獨立調 presence 色而不動 Badge 色。(Fluent 2 是另一種切法:presence 用 badge 套件裡專用的 `PresenceBadge`,掛在 Avatar 的 `badge` slot —— [Avatar.types.ts#L1](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/Avatar/Avatar.types.ts#L1)、[#L49](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/Avatar/Avatar.types.ts#L49);它同樣不拿計數用的 Badge 承載 presence,但元件住在 badge 套件,不是 avatar 自有 primitive。)
 
@@ -245,6 +245,8 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 | 鍵盤焦點 | 某一項裡有東西拿到鍵盤焦點時,整項升到最上層 —— 全域外描邊往外畫,左半圈不被上一顆蓋住(`ds-canonical/references/focus-canonical.md` 判準表「疊層/徽章不算鄰居」→ 往外) |
 | 名片 | 重疊那 2px 屬於上面那顆(滑過開上面那顆的 ProfileCard);挖空不改變任何一顆的觸發範圍 |
 
+**重疊量 token `--avatar-stack-overlap`**(頭像的值,2px):第 2 顆起往左疊的量。讀者:`avatar.tsx` 遮罩幾何與項目位移(讀程式對照常數 `AVATAR_STACK_OVERLAP_PX`)、PeoplePicker 編輯態標籤 wrapper `-ml-[var(--avatar-stack-overlap)]`。抽 token 前 `-ml-0.5` 字面值散在兩處、常數另一份(2026-09-27,M17)。宣告住本資料夾 `avatar.css`(2026-11-11 從 `tokens/uiSize/uiSize.css` 搬來,user 2026-11-10 token「2甲」第三批;名字與值不變)。CSS 值與 `AVATAR_STACK_OVERLAP_PX` 由 `scripts/token-twin-invariant.mjs` 機械鎖住相等(只改一邊 CI 會紅)。值與用法 2026-11-15 前登記在 `../../tokens/uiSize/uiSize.spec.md`(共用資料夾),依 `../../tokens/token-system.spec.md` 規則 1「規格 = 主人資料夾裡的規格」搬來本段(稽核 P15)。挖空的縫 `--stack-gap` 是共用刻度,住 `uiSize.spec.md`「Stack Gap」。
+
 **為什麼挖空、不畫外圈**(2026-09-26 採用,紀錄見待辦總帳 L3 與「其餘建議」條):
 
 - 舊做法(2026-04-02 起)每顆加 2px 外圈、圈色寫死 `--surface`。外圈只擋得住「圈」的那一段,擋不住重疊處:上面那顆的半透明底色直接疊在下面那顆上,透出下面那顆(2026-09-26 AI 實測,重疊處與「把下面那顆藏起來」相比:淺色灰疊灰差 9–10、深色差 17(0–255 通道差);示範 story 的 `+N` 疊在受控單色照片上差 170–215)。
@@ -262,7 +264,7 @@ Avatar `badgeCount` 內部消費 DS `<Badge variant="critical" max={99}>`,加上
 | Fluent 2(@fluentui/react-avatar 9.11.8) | 疊放時每顆加 `box-shadow` 外圈,圈色寫死 `colorNeutralBackground2` | [useAvatarGroupItemStyles.styles.ts#L59-L61](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/AvatarGroupItem/useAvatarGroupItemStyles.styles.ts#L59-L61) |
 | Ant Design(6.6.5) | 群組內每顆的框色寫死 `groupBorderColor`,第 2 顆起往左疊 | [avatar/style/index.ts#L176-L185](https://github.com/ant-design/ant-design/blob/6.6.5/components/avatar/style/index.ts#L176-L185) |
 
-外圈派(MUI / Fluent / Ant)的圈色都是一個固定的底色 token(MUI [AvatarGroup.js#L42](https://github.com/mui/material-ui/blob/v9.4.0/packages/mui-material/src/AvatarGroup/AvatarGroup.js#L42)、Fluent [useAvatarGroupItemStyles.styles.ts#L59-L61](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/AvatarGroupItem/useAvatarGroupItemStyles.styles.ts#L59-L61)、Ant [avatar/style/index.ts#L176-L185](https://github.com/ant-design/ant-design/blob/6.6.5/components/avatar/style/index.ts#L176-L185))。**AI 推導**:這與 DS 舊做法同一類,只在那個底色上看起來是縫;本 DS 的欄位有唯讀底、表格有滑過底、深色 `--surface` 半透明,所以選挖空(Primer)。此取捨由 AI 依上述實測整理後提出,採用紀錄同上。
+外圈派(MUI / Fluent / Ant)的圈色都是一個固定的底色 token(MUI [AvatarGroup.js#L42](https://github.com/mui/material-ui/blob/v9.4.0/packages/mui-material/src/AvatarGroup/AvatarGroup.js#L42)、Fluent [useAvatarGroupItemStyles.styles.ts#L59-L61](https://github.com/microsoft/fluentui/blob/%40fluentui/react-avatar_v9.11.8/packages/react-components/react-avatar/library/src/components/AvatarGroupItem/useAvatarGroupItemStyles.styles.ts#L59-L61)、Ant [avatar/style/index.ts#L176-L185](https://github.com/ant-design/ant-design/blob/6.6.5/components/avatar/style/index.ts#L176-L185))。**AI 推導**:這與 DS 舊做法同一類,只在那個底色上看起來是縫;本 DS 的欄位有唯讀底、表格有滑過底、深色 `--surface` 半透明,所以選挖空(Primer,[AvatarStack.module.css#L168-L194](https://github.com/primer/react/blob/%40primer/react%4038.40.0/packages/react/src/AvatarStack/AvatarStack.module.css#L168-L194))。此取捨由 AI 依上述實測整理後提出,採用紀錄同上。
 
 ---
 

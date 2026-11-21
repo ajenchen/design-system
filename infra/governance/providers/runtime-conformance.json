@@ -28,14 +28,14 @@
       "distributionVersionAuthority": {"kind": "provider-cli-toolchain", "path": "infra/governance/providers/provider-cli-toolchain.json", "providerId": "claude-code"},
       "versionArguments": ["--version"],
       "certificationTargets": [
-        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space"},
-        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space"},
-        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space"},
-        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space"},
-        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "no-space"},
-        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "contains-space"},
-        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "no-space"},
-        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "contains-space"}
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "no-space"},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.316", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.316", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.316", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.316", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.316", "pathClass": "contains-space"}
       ],
       "checks": [
         {

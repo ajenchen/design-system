@@ -20,7 +20,7 @@ benchmark:
   - Polaris Checkbox: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Checkbox
 ---
 
-<!-- @spec-budget-exception: SSOT-heavy 例外(`AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤800-1200)— 本檔持有跨元件 SSOT:「與 Switch 的分界」(~45 行)+「Clamp 政策(Label/Description 行數)」(~35 行);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(該次掃描明細留在 provider home 的 log,屬歷史 provenance,不是本例外的 authority —— 例外成立與否只看本句陳述的理由)。 -->
+<!-- 行數說明(不是豁免標記,沒有任何工具會「准」它):行數上限以 `check_file_size_budget.sh` 的 case 表為準,本檔走一般 spec 那一檔(超過 budget 只提醒;寫完超過 transition cap 而且這次變長才擋)。本檔偏長是因為持有兩段跨元件 SSOT:「與 Switch 的分界」與「Clamp 政策(Label / Description 行數)」;2026-07-14 knowledge-prune P2 的結論是「殘餘超標內容全是 canonical,再砍必動 meaning」。 -->
 
 
 # Checkbox 設計原則
@@ -252,7 +252,7 @@ Checkbox / Radio **無 Loading 狀態**——選擇控件是同步 toggle,值隨
 `mode?: 'edit' | 'view' | 'readonly' | 'disabled'`(默認 inherit Field context 或 `'edit'`),對齊 `field-types.ts` FieldMode(完整 4-mode canonical SSOT → `Field/field-controls.spec.md`;本段鏡像 switch.spec.md 同名段):
 - `edit`(預設)— 可勾選的 Checkbox。
 - `view` — **純展示**:渲染 **Check icon(true=勾)/ X icon(false=叉)**,中性 `text-foreground` 色,非互動、無 input chrome,供 DataTable boolean cell 非編輯態共用。boolean 值符號 SSOT = `../SelectionControl/boolean-value.tsx`(勾/叉 icon + 中性色;M22 世界級:MUI X DataGrid Check/Close icon 中性色([GridRootStyles.ts#L702-L707](https://github.com/mui/mui-x/blob/7d387072c89002693bd423eef0b3ab6db87837f9/packages/x-data-grid/src/components/containers/GridRootStyles.ts#L702-L707):true = `foreground.muted`、false = `foreground.disabled`,皆非紅)/ React-admin TrueIcon-FalseIcon([BooleanField.tsx#L34-L35](https://github.com/marmelab/react-admin/blob/v5.10.0/packages/ra-ui-materialui/src/field/BooleanField.tsx#L34-L35));false 中性非紅 = 「否」值非「錯誤」)。
-- `readonly` — **Field 內(無 inline label)**= `fieldWrapperStyles` readonly 灰框 + 勾/叉 icon(與 Input readonly 同一視覺語言,2026-06-12 user 拍板〔UD-J05〕;世界級:Salesforce output ✓ glyph / SAP 靜態文字);**standalone / 有 inline label**(SelectionItem row)= 正常色鎖互動(同下方 Read-only)。
+- `readonly` — **Field 內(無 inline label)**= `fieldWrapperStyles` readonly 灰框 + 勾/叉 icon(與 Input readonly 同一視覺語言,2026-06-12 user 拍板〔UD-J05〕;原附的兩家世界級對照沒有一手來源,2026-11-16 撤回);**standalone / 有 inline label**(SelectionItem row)= 正常色鎖互動(同下方 Read-only)。
 - `disabled` — 落到真 disabled chrome(`effectiveDisabled`,2026-06-12 修:mode='disabled' 直傳〔如 `<Field mode="disabled">` cascade〕與 `disabled` prop 等效,降色 + 不可 focus)。DataTable cell 無 disabled 態(已廢除);cell 非編輯態 = `view` 純展示。
 
 CheckboxGroup 是純 layout primitive — **不**持有 group-level selection state(無 `value` / `defaultValue` / `onValueChange`)。每個 `<Checkbox>` child 各自管自己的 `checked` / `defaultChecked` / `onCheckedChange`;CheckboxGroup 只透過 `CheckboxGroupContext` 告知 child「你在 group 裡」(保留各自 label)。
@@ -350,7 +350,7 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 
 **ARIA / Pattern**:繼承 Radix `checkbox` primitive a11y 預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/checkbox#accessibility)。
 
-**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為);聚焦中被切 disabled 時由瀏覽器原生 drop focus(native disabled button 行為),不另行管理。焦點指示分兩路,對應兩個真 tab stop:**edit 控件**(Radix `<button role="checkbox">`;`checkbox.tsx` 不寫任何焦點 class)吃 `styles/base.css` 的全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px);**Field 內的 readonly 灰框**(`checkbox.tsx:295-311` 的 `<div role="checkbox" tabIndex={0}>`,消費 `fieldWrapperStyles({ mode: 'readonly' })`)走 Field 家族統一的「欄位邊框轉主色 1px」——靜止的 1px 透明邊框聚焦時轉成主色,同一行的 `focus-visible:outline-none` 把全域外描邊壓掉,長相與可編輯欄位一致(user 2026-09-10 拍板,見 `../Field/field-wrapper.tsx` 檔頭 JSDoc)。standalone 的 readOnly 走 `tabIndex={-1}`(`checkbox.tsx:331`),不是 tab stop。SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」。
+**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為);聚焦中被切 disabled 時由瀏覽器原生 drop focus(native disabled button 行為),不另行管理。焦點指示分兩路,對應兩個真 tab stop:**edit 控件**(Radix `<button role="checkbox">`;`checkbox.tsx` 不寫任何焦點 class)吃 `styles/base.css` 的全域 `:focus-visible` 外描邊(`outline: 2px solid var(--ring)`,往外 2px);**Field 內的 readonly 灰框**(`checkbox.tsx:295-313` 的 `<div role="checkbox" tabIndex={0}>`,消費 `fieldWrapperStyles({ mode: 'readonly' })`)走 Field 家族統一的「欄位邊框轉主色 1px」——靜止的 1px 透明邊框**鍵盤**聚焦時轉成主色、**滑鼠點不變**(2026-11-11,`../Field/field-controls.spec.md`「Focus 行為」readonly 段),同一行的 `focus-visible:outline-none` 把全域外描邊壓掉,長相與可編輯欄位一致(長相 user 2026-09-10 拍板,見 `../Field/field-wrapper.tsx` 檔頭 JSDoc)。standalone 的 readOnly 走 `tabIndex={-1}`(`checkbox.tsx:333`),不是 tab stop。SSOT `ds-canonical/references/focus-canonical.md`「框怎麼畫」。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

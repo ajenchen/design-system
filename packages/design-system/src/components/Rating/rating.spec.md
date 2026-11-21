@@ -90,9 +90,9 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 - **現況**:可以點的評分根高 = 星 sm 20 / md 24 / lg 24;唯讀精簡版 21 / 21 / 24(星與行高較大者);都不等於 `--field-height-sm/md/lg` 28 / 32 / 36。
 - **Rationale**:評分是「嵌在一列中的小控件」,跟裸 Switch(track 20 / 24)、裸 Checkbox(16 / 20)同一個模型 —— 元件本身只有內容高,列高由宿主供給(Field 控件槽 `min-h-field-* + items-center`、表格格子、列)。吃固定容器會把 Field 外的列撐高(2026-09-27 實量:商品卡裡 24 容器實佔 26px、caption 列 16 → 24),而容器對命中零幫助(命中盒 = 星)。Slider 不同:它的根就是拖曳的命中面,高度即命中區,故仍吃 `h-field-*`(`../Slider/slider.spec.md`「一種視覺,多種容器尺寸」:size「只控 root 容器外高」)。
-- **世界級對照**(2026-09-27 讀原始碼):多數 hug 星、表單對齊交給表單列 —— MUI Rating 根 `inline-flex` 無高度、字級 24 / 18 / 30([Rating.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Rating/Rating.js));Ant Design Rate 根 `display: inline-block; fontSize: starSize; lineHeight: 1`,對齊由 Form.Item 的 `minHeight: controlHeight` + `alignItems: center` 負責([rate/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/rate/style/index.ts)、[form/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/form/style/index.ts));Fluent 2 Rating 根只有 `display: 'flex', flexWrap: 'wrap'`([useRatingStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/Rating/useRatingStyles.styles.ts)),星 12 / 16 / 20 / 28([useRatingItemStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingItem/useRatingItemStyles.styles.ts));Mantine Rating 根 `display: flex; width: max-content`([Rating.module.css](https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Rating/Rating.module.css));Chakra v3 根 `display: "inline-flex"`([rating-group.ts](https://github.com/chakra-ui/chakra-ui/blob/main/packages/react/src/theme/recipes/rating-group.ts));PrimeReact `.p-rating { display: flex; align-items: center; }`([RatingBase.js](https://github.com/primefaces/primereact/blob/master/components/lib/rating/RatingBase.js))—— 都沒有高度。少數把容器綁到控件高:Element Plus `el-rate` 根 `height: 32px`(large 40 / small 24,[rate.scss](https://github.com/element-plus/element-plus/blob/dev/packages/theme-chalk/src/rate.scss))、Arco `.arco-rate-inner { min-height: @rate-min-height }` 且 `@rate-min-height: @size-default`(它的預設控件高;[index.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/index.less)、[token.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/token.less))—— 本 DS 不跟,列高由 Field 槽供給已是 Switch / Checkbox 的既有模型。
+- **世界級對照**(2026-09-27 讀原始碼):多數 hug 星、表單對齊交給表單列 —— MUI Rating 根 `inline-flex` 無高度、字級 24 / 18 / 30([Rating.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Rating/Rating.js));Ant Design Rate 根 `display: inline-block; fontSize: starSize; lineHeight: 1`,對齊由 Form.Item 的 `minHeight: controlHeight` + `alignItems: center` 負責([rate/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/rate/style/index.ts)、[form/style/index.ts](https://github.com/ant-design/ant-design/blob/master/components/form/style/index.ts));Fluent 2 Rating 根只有 `display: 'flex', flexWrap: 'wrap'`([useRatingStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/Rating/useRatingStyles.styles.ts)),星 12 / 16 / 20 / 28([useRatingItemStyles.styles.ts](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-rating/library/src/components/RatingItem/useRatingItemStyles.styles.ts));Mantine Rating 根 `display: flex; width: max-content`([Rating.module.css](https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Rating/Rating.module.css));Chakra v3 根 `display: "inline-flex"`([rating-group.ts](https://github.com/chakra-ui/chakra-ui/blob/main/packages/react/src/theme/recipes/rating-group.ts));PrimeReact `.p-rating { display: flex; align-items: center; }`([RatingBase.js](https://github.com/primefaces/primereact/blob/master/components/lib/rating/RatingBase.js))—— 都沒有高度。少數把容器綁到控件高:Element Plus `el-rate` 根 `height: 32px`(large 40 / small 24,[rate.scss](https://github.com/element-plus/element-plus/blob/6eceaa5e3ef606d7ae6fdeb6c26e146ccd3bc621/packages/theme-chalk/src/rate.scss#L7-L14))、Arco `.arco-rate-inner { min-height: @rate-min-height }` 且 `@rate-min-height: @size-default`(它的預設控件高;[index.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/index.less)、[token.less](https://github.com/arco-design/arco-design/blob/main/components/Rate/style/token.less))—— 本 DS 不跟,列高由 Field 槽供給已是 Switch / Checkbox 的既有模型。
 
-**xs 退役(2026-09-27)**:可以點的 xs(2026-04-21 `6d9d48f2` AI 加、無 user 原話、無出處;容器 24 / 星 20)與 sm 只差容器,容器拿掉後兩者相同;唯讀 xs(16 星 + 12px 字)是 2026-09-26 `1e0d4545` 做精簡版時 AI 自訂的配對,從沒給 user 看過,產品 0 處、只有 3 個 story 用。user 原話:「這個xs是你這一兩天生的吧？而且這個設計也沒經過我同意吧？如果上述兩個問題都為真，那就應該直接整個移掉吧？然後應該是整個rating xs都移掉吧？」—— 兩題皆真,整個移掉。閘 `scripts/rating-field-size-invariant.mjs`(尺寸解析序、無容器 class、執行期 'xs' 映 sm 並 dev-warn;meta test `scripts/test-rating-field-size-invariant.mjs`)。
+**xs 退役(2026-09-27)**:可以點的 xs(2026-04-21 `6d9d48f2` AI 加、無 user 原話、無出處;容器 24 / 星 20)與 sm 只差容器,容器拿掉後兩者相同;唯讀 xs(16 星 + 12px 字)是 2026-09-26 `1e0d4545` 做精簡版時 AI 自訂的配對,從沒給 user 看過,產品 0 處、只有 3 個 story 用。user 原話:「這個xs是你這一兩天生的吧？而且這個設計也沒經過我同意吧？如果上述兩個問題都為真，那就應該直接整個移掉吧？然後應該是整個rating xs都移掉吧？」—— 兩題皆真,整個移掉。閘 `scripts/rating-field-size-invariant.mjs`(尺寸解析序、無容器 class;meta test `scripts/test-rating-field-size-invariant.mjs`)。2026-09-27 到 2026-11-15 之間,執行期傳 'xs' 仍會映到 sm 並 dev-warn(給 JS consumer 的相容墊片);2026-11-15 拿掉,0.x 不做向後相容(`../../../ds-canonical/references/props-naming.md`「相容政策」)。升版對照:`size="xs"` → `size="sm"`。
 
 ### 為什麼不完全對齊 icon tier — 可以點的星對齊 **Avatar inline**(2026-04-21 AR48 canonical)
 
@@ -110,13 +110,13 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ### 放入 Field 的可組合性
 
-Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制)。驗證走 `useFormValidation`(`../Field/form-validation.spec.md`:blur + submit,不在初始 / 操作中即時報錯 —— error 由 `form.errors` 驅動,不是 `rating === 0` 立即判,那會讓初始未觸碰的欄位直接紅框);送出評分是新建,`intent: 'create'` → 送出鈕不看填了沒、填對沒,一律可按(同該 spec「Submit Button 狀態」)。送出成功 → Toast「評分已送出」(該 spec「A11y 預設 › Submit 成功宣告」,user 2026-10-01 拍板 Toast),送出後同一欄切唯讀。完整可執行版(含送出鈕與 Toast)= 本元件展示「包在 Field 內」,結構同 `../Field/field.stories.tsx` CreateProjectForm:
+Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制)。驗證走 `useFormValidation`(`../Field/form-validation.spec.md`:blur + submit,不在初始 / 操作中即時報錯 —— error 由 `form.errors` 驅動,不是 `rating === 0` 立即判,那會讓初始未觸碰的欄位直接紅框);送出評分需要填的只有評分、唯一擋住送出的是沒給分 → 沒給分時送出鈕停用(該 spec「Submit Button 狀態」第三列「需要填的欄位只有一個」,優先於「新建」;2026-11-17 前是新建一律可按)。Rating 的「沒有值」是值域內的 0(本檔「邊界案例」),所以用 `soleRequiredField: { name: 'rating', emptyValue: 0 }` 指名。送出成功 → Toast「評分已送出」(該 spec「A11y 預設 › Submit 成功宣告」,user 2026-10-01 拍板 Toast),送出後同一欄切唯讀。完整可執行版(含送出鈕與 Toast)= 本元件展示「包在 Field 內」,結構同 `../Field/field.stories.tsx` CreateProjectForm:
 
 ```tsx
 const [submitted, setSubmitted] = useState(false) // 送出成功 → 切唯讀;<form>、送出鈕與 <Toaster /> 見展示「包在 Field 內」
 const form = useFormValidation({
   initialValues: { rating: 0 },
-  intent: 'create',
+  soleRequiredField: { name: 'rating', emptyValue: 0 }, // 沒給分時 submitDisabled = true
   validate: { rating: (v) => (v === 0 ? '請至少給 1 星' : undefined) },
   onSubmit: () => { setSubmitted(true); toast({ variant: 'success', title: '評分已送出' }) },
 })
@@ -153,8 +153,8 @@ const form = useFormValidation({
 | **Apple HIG** rating indicators | — | — | "A rating indicator doesn't display partial symbols; it rounds the value to display complete symbols only."(範圍:只有 macOS,原文 "Not supported in iOS, iPadOS, tvOS, visionOS, or watchOS.") | [rating-indicators](https://developer.apple.com/design/human-interface-guidelines/rating-indicators) |
 
 **對照結論**:
-- 規則一:可以點的只有整顆 = SAP / UI5 / Spectrum CSS 的做法;MUI / Ant / Chakra / Fluent 預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`(https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L387);Apple macOS 顯示也只畫整顆、四捨五入。
-- 規則二:唯讀精簡版 = Fluent `RatingDisplay` 的 `compact` + `count`(Fluent 另拆一個元件;本 DS 不拆,用 `readOnly` 分開「能不能點」)。**但 Fluent 的 `compact` 是選項(預設 false),MUI / Ant 的唯讀是同一個元件加 `readOnly` / `disabled`** —— 把精簡版定為唯讀的**唯一**呈現是 user 的決定,不是世界級共識,照實記錄。
+- 規則一:可以點的只有整顆 = 上表「半顆:不能」那三列的做法;上表「可自己打開」的四列預設也是整顆,半顆要自己打開 —— 本 DS 不提供這個開關。非整數值四捨五入到整顆 = MUI 預設 `precision = 1` 的 `roundValueToPrecision`(https://github.com/mui/material-ui/blob/34d78acfd16dfe3426c0b2c7d9f94b7fb930f5f8/packages/mui-material/src/Rating/Rating.js#L387);Apple macOS 顯示也只畫整顆、四捨五入(「doesn't display partial symbols; it rounds the value to display complete symbols only」,[rating-indicators](https://developer.apple.com/design/human-interface-guidelines/rating-indicators))。
+- 規則二:唯讀精簡版 = Fluent `RatingDisplay` 的 `compact` + `count`([RatingDisplay.types.ts#L21-L29](https://github.com/microsoft/fluentui/blob/a51547435d0a5c4a0fb15c2996c3d3efea5b49dd/packages/react-components/react-rating/library/src/components/RatingDisplay/RatingDisplay.types.ts#L21-L29);Fluent 另拆一個元件;本 DS 不拆,用 `readOnly` 分開「能不能點」)。**但 Fluent 的 `compact` 是選項(預設 false),MUI / Ant 的唯讀是同一個元件加 `readOnly` / `disabled`**(Ant「disabled \| If read only, unable to interact」,[index.en-US.md#L41](https://github.com/ant-design/ant-design/blob/4a39f54842eade4e565ab336ef6097cd7e723cdd/components/rate/index.en-US.md#L41)) —— 把精簡版定為唯讀的**唯一**呈現是 user 的決定,不是世界級共識,照實記錄。
 
 ---
 
@@ -230,7 +230,7 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 
 | Role | Token | 色值（light） | 說明 |
 |------|-------|--------------|------|
-| Filled star | `var(--warning)` | yellow-6 | 本 DS 評分語意的固定黃色，不隨品牌 primary 色變動；可以點的填色星與唯讀精簡版那一顆星同色 |
+| Filled star | `var(--warning)` | yellow-6 | 本 DS 評分語意的固定黃色，不隨互動色 primary 變動；可以點的填色星與唯讀精簡版那一顆星同色 |
 | Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的星;借 `--divider` semantic alias(neutral-4,2026-05-09 記為 user 拍板,來源不明:登記簿查無原話),與分隔線同級的 muted-fill。只出現在可以點的評分(唯讀精簡版沒有空星) |
 | 唯讀數值 | `text-foreground` | `--color-neutral-9` | 精簡版的數值(取一位小數),`tabular-nums` |
 | 唯讀評論數 | `text-fg-secondary` | `--color-neutral-8` | 精簡版括號內的評論數,千分位 |
@@ -245,7 +245,7 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 
 ### 為什麼用 `--warning`（黃色）而不用 `--primary`
 
-黃星是本 DS 的評分語意 canonical。使用者在同一產品內應以相同色相辨識評分，換成品牌 primary 色（藍、綠、紫）會讓評分與一般選取狀態混淆。
+黃星是本 DS 的評分語意 canonical。使用者在同一產品內應以相同色相辨識評分，換成互動色 primary（藍、綠、紫）會讓評分與一般選取狀態混淆。
 
 `--warning` 在本系統指向 yellow-6，與 Rating **共用色相但語境不同**——evaluation convention color，非 status color。這是 documented 例外（見 `color.spec.md`），不是每個元件都能這樣共用。
 
@@ -293,4 +293,5 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `form-validation.spec.md`
 - `uiSize.spec.md`

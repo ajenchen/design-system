@@ -28,7 +28,7 @@
             "kind": "hook",
             "hook": "check_codex_collab_5step.sh",
             "runtime": "bash",
-            "outputMode": "diagnostic",
+            "outputMode": "governance-context-or-block",
             "reviewSkill": "codex-collab",
             "requires": [
               "peer-review-binding"
@@ -80,7 +80,8 @@
             "kind": "hook",
             "hook": "check_file_size_budget.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block",
+            "inputContract": "proposed-text-v1"
           }
         ]
       },
@@ -157,13 +158,7 @@
           },
           {
             "kind": "hook",
-            "hook": "check_chrome_header_avatar_canonical.sh",
-            "runtime": "bash",
-            "outputMode": "blocking"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_sidebar_menu_button_implicit_wrap.sh",
+            "hook": "check_sidebar_avatar_canonical.sh",
             "runtime": "bash",
             "outputMode": "blocking"
           },
@@ -182,21 +177,9 @@
           },
           {
             "kind": "hook",
-            "hook": "check_dim_count_drift.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_propose_pre_grep_verify.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
-          },
-          {
-            "kind": "hook",
             "hook": "check_spec_class_drift.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block"
           },
           {
             "kind": "hook",
@@ -214,7 +197,7 @@
             "kind": "hook",
             "hook": "check_story_determinism.sh",
             "runtime": "bash",
-            "outputMode": "diagnostic"
+            "outputMode": "governance-context-or-block"
           }
         ]
       },
@@ -308,7 +291,7 @@
             "kind": "hook",
             "hook": "post_edit_dispatcher.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block"
           },
           {
             "kind": "hook",
@@ -324,9 +307,9 @@
           },
           {
             "kind": "hook",
-            "hook": "check_pixel_quantified_audit.sh",
+            "hook": "post_edit_contract_dispatcher.sh",
             "runtime": "bash",
-            "outputMode": "governance-context"
+            "outputMode": "governance-context-or-block"
           },
           {
             "kind": "hook",
@@ -339,24 +322,6 @@
             "hook": "check_tabs_content_chrome_body_double_gap.sh",
             "runtime": "bash",
             "outputMode": "blocking"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_field_controls_contracts.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_peoplepicker_ssot_drift.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_select_all_canonical.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
           },
           {
             "kind": "hook",
@@ -377,22 +342,11 @@
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Write|Edit|MultiEdit|Skill",
         "hooks": [
           {
             "kind": "hook",
             "hook": "log_governance_fires.sh",
-            "runtime": "bash",
-            "outputMode": "diagnostic"
-          }
-        ]
-      },
-      {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "kind": "hook",
-            "hook": "log_skill_invokes.sh",
             "runtime": "bash",
             "outputMode": "diagnostic"
           }
@@ -426,19 +380,7 @@
           },
           {
             "kind": "hook",
-            "hook": "check_orphan_ds_css.sh",
-            "runtime": "bash",
-            "outputMode": "governance-decision"
-          },
-          {
-            "kind": "hook",
-            "hook": "stop_audit_content_quality.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "stop_extract_canonical_rules.sh",
+            "hook": "stop_repository_text_checks.sh",
             "runtime": "bash",
             "outputMode": "governance-context"
           }
@@ -452,12 +394,6 @@
           {
             "kind": "hook",
             "hook": "session_start_governance_check.sh",
-            "runtime": "bash",
-            "outputMode": "governance-context"
-          },
-          {
-            "kind": "hook",
-            "hook": "check_plugin_fork_health.sh",
             "runtime": "bash",
             "outputMode": "governance-context"
           }

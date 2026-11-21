@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK_DIR="$SCRIPT_DIR/.."
 REPO_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 TMP_ROOT=$(mktemp -d)
+[ -n "${TMP_ROOT:-}" ] && [ -d "$TMP_ROOT" ] || { echo "❌ mktemp -d failed(TMP_ROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_ROOT"' EXIT
 
 PASS=0
@@ -63,8 +64,7 @@ echo '=== malformed canonical input envelopes ==='
 for hook_name in \
   check_dynamic_tailwind_class.sh \
   check_substantive_edit_approval_preflight.sh \
-  check_chrome_header_avatar_canonical.sh \
-  check_sidebar_menu_button_implicit_wrap.sh \
+  check_sidebar_avatar_canonical.sh \
   check_ds_anchor_preflight.sh \
   check_field_family_invariants.sh \
   check_story_invariants.sh \

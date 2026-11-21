@@ -43,6 +43,8 @@ npm run sync-all -- --apply --to X.Y.Z
 npm run governance:check -- --hooks-off
 ```
 
+Before running the codemod, read `node_modules/@qijenchen/design-system/ds-changes.json` (every section after the old version up to the new one), then, before committing the version bump, run `npm run ds:migrate -- upgrade --root . --source apps/<app>/src` once with one `--source` per product app (it refuses to run over uncommitted files in those folders, and a stamp under `.git/` refuses the same from → to twice; outside a git top level there is no stamp, so do not run it again); it applies the mechanical renames and lists every entry's status with file:line, the action, and the spec section. Finish with `npm run typecheck`, `npm run lint:imports`, `npm run governance:check`, and `npm run build`.
+
 Review all generated changes, run product CI, then open a PR. Mutable values such as `beta`, `latest`, `^0.1.0`, or `*` are rejected in a consumer release.
 
 If the plan changes a protected control-plane path or any package script, stop the ordinary flow and use the recurring reviewed control-plane route below. This is intentional: an updater may not automatically replace the workflow/verifier that grants its next update authority. The historical `GOV-UPGRADE-BOOTSTRAP-001/002` identifiers remain stable compatibility IDs; they do not mean an established v2 consumer should repeat the one-time legacy bootstrap.

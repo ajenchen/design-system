@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: spec-reference tables(Props 速查 / Layout token / 視覺 token / 開關方式對照 / Focus management)為靜態文件對照表,非互動資料網格 — DataTable 為 row-data 互動元件,過度包裝靜態 spec 對照。對齊 Sheet / Popover anatomy 同 pattern。
 // @anatomy-rationale:
 //   Inspector N/A — 設計規格頁不放開得起來的對話框(登記簿 A32「dialog 的設計規格的範例給我拿掉」);可調的 props 列在元件總覽的 Props 速查,開起來的樣子在展示頁。
@@ -23,7 +22,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Dialog 由 Overlay + Content 組成。Content 分三個區塊:Header(邊框底)+ Body(可捲動 flex-1)+ Footer(邊框頂)。基於 Radix Dialog(shadcn 包裝),橋接 DS token。開起來的樣子見<StoryLink kind="Design System/Components/Dialog/展示" name="基本">展示頁</StoryLink>。</Desc>
+        <Desc>Dialog 由 Overlay + Content 組成。Content 分三個區塊:Header(邊框底)+ Body(可捲動 flex-1)+ Footer(邊框頂)。基於 Radix Dialog,橋接 DS token。開起來的樣子見<StoryLink kind="Design System/Components/Dialog/展示" name="基本">展示頁</StoryLink>。</Desc>
       </div>
 
       <div>
@@ -33,7 +32,7 @@ export const Overview: Story = {
             <thead><tr><Th>區塊</Th><Th>CSS</Th><Th>用途</Th></tr></thead>
             <tbody>
               <tr><Td mono>DialogHeader</Td><Td mono>border-b, px-loose py-tight</Td><Td>Title + Close button(靠右,flex 第一 child flex-1 grow 自然右推,非 position:fixed)</Td></tr>
-              <tr><Td mono>DialogBody</Td><Td mono>ScrollArea(flex-1 min-h-0)+ inner div(px-loose pt-tight pb-bottom)</Td><Td>主要內容(ScrollArea 捲動,底部留較大空間)</Td></tr>
+              <tr><Td mono>DialogBody</Td><Td mono>ScrollArea(flex-1 min-h-0)+ inner div(px-loose;上下由容器自己給:data-layout-body=&quot;fill&quot;)</Td><Td>主要內容(ScrollArea 捲動;底部留白依最後一個東西,照 layoutSpace.spec.md 規則 4)</Td></tr>
               <tr><Td mono>DialogFooter</Td><Td mono>border-t, px-loose py-tight</Td><Td>Action buttons(justify-end, gap-2)</Td></tr>
             </tbody>
           </table>
@@ -47,9 +46,9 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['height', "'fill' | 'hug'", "'fill'", "'hug'=隨內容長高 / 'fill'=填滿可用高度(body 捲動);判準:開啟期間內容高度會不會變(舊名 autoHeight 已停用)"],
+                ['height', "'fill' | 'hug'", "'fill'", "'hug'=隨內容長高 / 'fill'=填滿可用高度(body 捲動);判準:開啟期間內容高度會不會變"],
                 ['maxHeight', 'string | number', '—', '只能選更矮的上限:min(視窗可用高度, 此值)'],
-                ['maxWidth', 'string | number', "'512px'", 'Content 最大寬度(傳 number 視為 px,亦可傳 CSS 值如 32rem),受 viewport inset 限制'],
+                ['width', "'sm' | 'md' | 'lg' | 'xl' | number", "'md'", '寬度檔位或數字(px),兩種都是最大寬:實際寬 = min(此值, 所在區塊寬 − 96),沒有下限。檔位見「尺寸對照表」;數字只給檔位不適用的產品特例'],
                 ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作(上一筆 / 下一筆 / ⋮ 更多);DS 自動在 actions 與關閉 × 之間放分隔線,防誤觸關閉'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -67,33 +66,35 @@ export const SizeMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-10">
       <div>
-        <H3>四種常見 maxWidth tier</H3>
+        <H3>寬度檔位</H3>
         <Desc>
-          Dialog 沒有 <code>size</code> prop(跟 Button / Input 的 sm/md/lg 不同)——由 <code>maxWidth</code>(px number)
-          直接控制。選擇 tier 依內容量:confirmation → 400;form → 480;complex form → 560;rich form /
-          dashboard → 720。Viewport 小於 maxWidth 時自動收到 inset 內(48px 四邊留白)。
+          <code>width</code> 收四個檔名或數字(px),預設 <code>md</code>。數字是寬螢幕時的寬,也是上限;寬度不隨密度變,內距隨密度變(md 16 / lg 24),所以內容寬列兩組。
+          怎麼選:一件 → sm;多件疊成一欄 → md;有一件很寬 → lg;兩欄 → xl。內容不得橫向捲動,放不下往上一檔。
+          開起來的樣子:<StoryLink kind="Design System/Components/Dialog/展示" name="大檔位:對話框裡放表格">大檔位</StoryLink>、
+          <StoryLink kind="Design System/Components/Dialog/展示" name="超大檔位:兩欄記錄詳情">超大檔位</StoryLink>。
         </Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
             <thead>
               <tr>
-                <Th>maxWidth</Th>
-                <Th>使用場景</Th>
-                <Th>content 範例</Th>
+                <Th>檔位</Th>
+                <Th>寬</Th>
+                <Th>內容寬(md / lg 密度)</Th>
+                <Th>放什麼</Th>
               </tr>
             </thead>
             <tbody>
-              <tr><Td mono>400</Td><Td>Confirmation / alert</Td><Td>「確定要刪除?」/「儲存變更?」</Td></tr>
-              <tr><Td mono>480</Td><Td>Simple form</Td><Td>建立專案、改密碼、邀請成員(1-3 fields)</Td></tr>
-              <tr><Td mono>512 ★ default</Td><Td>Medium form</Td><Td>通用表單 4-6 fields</Td></tr>
-              <tr><Td mono>560</Td><Td>Detailed form</Td><Td>建立完整 issue、商品資訊</Td></tr>
-              <tr><Td mono>720</Td><Td>Rich form / dashboard preview</Td><Td>多欄位表單、嵌入 data preview</Td></tr>
+              <tr><Td mono>sm</Td><Td mono>400</Td><Td mono>368 / 352</Td><Td>只有一件事:一兩句話(確認、刪除確認、告知、離開不儲存),或一個控制項(改名輸入框、一個選單)</Td></tr>
+              <tr><Td mono>md ★ 預設</Td><Td mono>480</Td><Td mono>448 / 432</Td><Td>幾件事疊成一欄:多欄位表單、說明加欄位、成員清單。不確定時用它</Td></tr>
+              <tr><Td mono>lg</Td><Td mono>640</Td><Td mono>608 / 592</Td><Td>有一件東西本身就寬:表格、拖放上傳區、圖片預覽。只有文字時不用</Td></tr>
+              <tr><Td mono>xl</Td><Td mono>960</Td><Td mono>928 / 912</Td><Td>兩欄並排(主內容 + 資訊欄)或 lg 放不下的表格。建議上限</Td></tr>
             </tbody>
           </table>
         </div>
         <p className="text-footnote text-fg-muted">
-          Dialog 在 viewport 小於 <code>maxWidth + 96px</code> 時自動縮到 inset 內——48px 四邊 viewport padding
-          是硬上限(token: <code>--layout-space-viewport-inset</code>);實際渲染寬度 = min(viewport − 96px, maxWidth)。
+          實際寬 = min(檔位或數字, 所在區塊寬 − 96px):四邊各留 <code>--layout-space-viewport-inset</code>(48px),沒有下限。
+          所在區塊平常是視窗;傳 <code>portalContainer</code> 時是那個舞台。各檔開始內縮的寬:sm 496 / md 576 / lg 736 / xl 1056。
+          產品自填數字不設上限,但先用檔位;比 xl 還大的內容先考慮改成頁面或側板。規則與出處住 dialog.spec.md「寬度檔位」。
         </p>
       </div>
     </div>
@@ -150,7 +151,9 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Density</H3>
-        <Desc>Dialog 不自設任何 density attribute,layout-space + ui-size 全繼承 page。md page → body px-loose 16 / header py-tight 12 → header 48;lg page → 24 / 16 → header 56,隨 page tier。modal 寬鬆呼吸由 page tier 自動滿足(lg 拿 24 = Material 級;md 16 = Polaris Modal 下限)。世界級:SAP Fiori / AWS Cloudscape 皆讓 modal 跟 page density dial 走,不釘固定 tier。</Desc>
+        <Desc>Dialog 不自設任何 density attribute,layout-space + ui-size 全繼承 page。md page → body px-loose 16 / header py-tight 12 → header 48;lg page → 24 / 16 → header 56,隨 page tier。modal 寬鬆呼吸由 page tier 自動滿足:lg 產品拿 24;md 產品本就要緊湊(資訊密集),16 仍留得出內容與外框之間的呼吸空間,是本 DS modal 內距的下限。有同類密度切換的{' '}
+          <a href="https://cloudscape.design/foundation/visual-foundation/content-density/" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">AWS Cloudscape</a>{' '}
+          也讓緊湊間距套到所有元件(例外只列說明性元件與小目標,不含 modal),不把 modal 釘在固定 tier。</Desc>
       </div>
 
       <div>

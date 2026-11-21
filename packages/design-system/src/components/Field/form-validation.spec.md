@@ -14,8 +14,35 @@
 |---|---|---|---|
 | **新建**(Create) | **不看填了沒、填對沒,一律 enabled** | — | — |
 | **更新**(Update) | **disabled** | 使用者變更任何欄位(dirty) | 變更被還原回原值(pristine) |
+| **需要填的欄位只有一個**,而且唯一擋住送出的原因是它沒有值(新建也算;這一列優先於「新建」) | **disabled** | 那個欄位有值 | 那個欄位沒有值(空白);格式、長度等其他條件一律不停用 |
 
 新建不看填了沒、填對沒,一律 enabled——不讓使用者猜「為什麼按不了」。更新用 disabled 明確表達「沒改就不用存」,有變更才亮起來。
+
+**需要填的欄位只有一個**(2026-11-17,上表第三列):
+- **判準(兩條都要成立)**:① 需要填的欄位只有一個 —— 任何欄位控件都算(Field 家族,`field-controls.spec.md`);Switch / Slider 永遠有值,不會成為擋住送出的原因,不算;附件鈕、格式工具列不是在填資料,不算。② 唯一擋住送出的原因是它沒有值。判準看性質、不看名稱(留言、回覆、對話輸入盒都只是例子)。
+- **行為**:空白時停用;格式、長度等其他條件一律可按,按下時在欄位下方顯示錯誤(Field `error`,同下方「Submit 驗證」),不用 Toast。送出後欄位變空、送出鈕因此停用的那一刻,焦點照樣留在送出鈕(下方「送出鈕的焦點」)。
+- **寫法**:`useFormValidation({ soleRequiredField: '<那一欄>' })`,送出鈕照常接 `disabled={form.submitDisabled}` —— 停用條件由 hook 算,不在各處手寫 `!value.trim()`(下方「可執行層」)。「沒有值」= null / undefined / 只有空白的字串 / 空陣列(或每一項都沒有值);控件的沒有值若是值域內的某個值(Rating 的 0 = 未評分,`../Rating/rating.spec.md`「邊界案例」),寫 `soleRequiredField: { name: 'rating', emptyValue: 0 }`。只收一個值、不收判斷式 —— 停用條件只限空白,判斷式會讓格式檢查混進來。可與 `intent: 'update'` 並用(沒改或空白都停用)。
+- **依據**:user 2026-11-17 原話(逐字;同一則訊息最前面一段談表格底部留白,另案,不引):
+  > 另外我好奇如何定義何謂不是表單送出？如何區別表單送出？
+  >
+  > 我沒有要全然反對送出按鈕為何停用
+  > 但我想補充，「不用 Toast 取代 error validation」此情境應該是在表單的情境吧？就是內含有很多欄位的情境，因為有很多錯的話，會難以知道到底是哪個欄位錯，但如果是在永遠只會一個輸入的地方就不會有此問題吧？
+  >
+  > 此外當初會永遠enable表單的送出按鈕也是因為想要讓使用者可以無腦點擊然後知道到底還缺哪些，不用一個一個檢查半天，不確定這是否是合理理由
+  >
+  > 但若是合理理由的話，推論到永遠只有一個輸入的地方的情境，其實非常明確地可以知道到底缺什麼，用不著先點送出按鈕來試錯就可以很明確知道到底該填什麼了，換言之，此情境確實用 disable 也沒差？
+  >
+  > 若上述推論合理，那是否應該是依此來定義SSOT?
+
+  (整段是問句;AI 同日回覆推論成立,跟上方「不讓使用者猜「為什麼按不了」」的理由一致。)同日兩則追問(逐字):
+  > "2.	送出鈕就在它旁邊。"跟位置沒啥關係吧？？
+
+  —— AI 原本多擬的「送出鈕在欄位旁邊」條件因此撤回。
+  > '1.	畫面上只有一個輸入。'
+  > 各種 field control 都算是這邊所謂的輸入？
+
+  —— AI 回答:算,即上方判準 ①(Switch / Slider、附件鈕、格式工具列除外)。
+- 【AI 推導 2026-11-17】「只限空白」與「一律停用」:user 的原意是「用 disable 也沒差」(可以停用,沒說必須)。這裡收成「兩條都成立就一律空白時停用」,免得同一種情境兩種做法;停用條件只限空白,格式、長度不停用 —— 那些要按下去才能在欄位下方說清楚哪裡錯,理由同新建表單一律可按。user 要改成「可以停用、不強制」時改這一條。
 
 **更新表單送出成功後也算「沒改」**(2026-10-01,AI 依本表「沒改就不用存」推導,待辦總帳 N69;本表「何時停用」那一格的延伸,表格原文是 story-layer 漂移閘 `@submit-intent` 例外的出處、不改字):剛送出的值成為新的比對基準 —— isDirty 回 false、送出鈕再度停用、Escape(規則 4)回到**已存的值**而不是存檔前的舊值;await 期間使用者又打的字逐格重算 dirty。新建表單不重設(建立後 consumer 常要 `reset()` 回空白繼續建下一筆)。對照 Polaris Contextual Save Bar "Become visible when a form on the page has unsaved changes"(<https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/internal-only/contextual-save-bar.mdx#L48-L51>)、Mantine `form.resetDirty(values)`(<https://github.com/mantinedev/mantine/blob/f38933cb4f1c534600f4ff59ee3ddbb4685a4bc4/apps/mantine.dev/src/pages/form/status.mdx#L106-L119>)、react-hook-form `reset` with values updates defaultValues(<https://github.com/react-hook-form/documentation/blob/3ac1fe0254947748d993cd4b1915fc5dea87ba8b/src/content/docs/useform/reset.mdx#L38>)。
 **送出鈕的焦點**:送出中(`isSubmitting` → Button `loading`)與存檔後(pristine → `disabled`)焦點都**留在送出鈕上**,不掉到 `<body>`:Button 在忙碌、或握著焦點時被停用,不轉成原生 `disabled`(`../Button/button.tsx` 可聚焦的停用;規則 `ds-canonical/references/keyboard-model-canonical.md`「按了之後自己變停用:焦點留在原處」)。2026-10-01 前 `submitDisabled` 接原生 disabled,送出那一下焦點掉到 body(N69 實測)。
@@ -84,7 +111,7 @@ const form = useFormValidation({
 |---|---|
 | Blur validation timing(1/2/6)+ Edit 清 error(5)+ Escape 回復(4;原值 = dirty 比對基準:掛載時的 `initialValues`,更新表單送出成功後 = 剛送出的值 —— 回復後該欄算沒改過、清掉該欄錯誤;放在浮層裡第一下只回復、第二下才關,見規則 4) | **`useFormValidation` 內建(不可配置)** |
 | Submit 全驗 + anchor 第一個錯誤(7/8)+ 業務/async 錯誤同軌(9) | **`useFormValidation.handleSubmit` 內建** |
-| Dirty tracking + Submit button 狀態(Create/Update) | **`useFormValidation.submitDisabled`** |
+| Dirty tracking + Submit button 狀態(Create/Update;需要填的欄位只有一個 → `soleRequiredField`,空白時停用) | **`useFormValidation.submitDisabled`** |
 | Double-submit 防護 + submit 進行中狀態(規則 9 配套) | **`useFormValidation.handleSubmit` 重入 guard + `isSubmitting`** |
 | 更新表單送出成功 → 剛送出的值成為新基準(「Submit Button 狀態」段) | **`useFormValidation.handleSubmit` 成功路徑內建**(`reset(snapshot, { keepValues })` + 逐格重算) |
 | Field error visual(紅框 + FieldError) | Field 元件 `invalid` context(既有,hook 不侵入) |
@@ -111,6 +138,7 @@ const form = useFormValidation({
 |----|-------|
 | 新建(Create)| **always enabled** |
 | 更新(Update)| **disabled-until-dirty** |
+| 需要填的欄位只有一個、唯一擋住的是空白 | **disabled-while-empty**(只限空白;見「Submit Button 狀態」第三列) |
 
 ## 設計哲學
 
@@ -130,7 +158,7 @@ Ant Design 預設 `validateTrigger` 是 `'onChange'`([form/index.en-US.md#L91](h
 
 **(3) Create always-enabled / Update disabled-until-dirty 不對稱**
 
-Create 若要填完所有 required 才亮,使用者第一次進 form 看到 disabled button 會困惑「為什麼按不了」;所以 Create 永遠 enabled — 點擊後若 invalid,顯示 error 並 scroll,使用者明確知道為什麼。
+Create 若要填完所有 required 才亮,使用者第一次進 form 看到 disabled button 會困惑「為什麼按不了」;所以 Create 永遠 enabled — 點擊後若 invalid,顯示 error 並 scroll,使用者明確知道為什麼。例外:需要填的欄位只有一個、唯一擋住的是空白時(上方「Submit Button 狀態」第三列),缺什麼一眼就知道,空白時停用不會讓人猜(2026-11-17)。
 
 Update 場景反向:沒改的 Update 沒提交意義(「intent 才 commit」),disabled 表達「等你做動作」比 enabled 後點擊才判斷「沒變化」更直接。
 
@@ -153,11 +181,11 @@ Email 格式 / URL 格式 / 必填等「single-field 純 syntax」blur 即可判
 
 Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification + 3.3.3 Error Suggestion):
 
-- **Error message ARIA**:`<FieldError>` 容器 id = `{fieldId}-error`(fieldId 為 Field 的 `id` prop / `useId`,field.tsx:174),控件經 Field context 自動接 `aria-errormessage`(有 error 時指向 errorId)+ `aria-invalid="true"`;`aria-describedby` 保留給 FieldDescription(descriptionId)。SR 在 focus field 時可得 label + error 完整資訊;接線 SSOT 見 `field.spec.md`「驗證與 aria 屬性」段(input.tsx:187-190)
+- **Error message ARIA**:`<FieldError>` 容器 id = `{fieldId}-error`(fieldId 為 Field 的 `id` prop / `useId`,field.tsx:174),控件經 Field context 自動接 `aria-errormessage`(有 error 時指向 errorId)+ `aria-invalid="true"`;`aria-describedby` 保留給 FieldDescription(descriptionId)。SR 在 focus field 時可得 label + error 完整資訊;接線 SSOT 見 `field.spec.md`「驗證與 aria 屬性」段(input.tsx:189-192)
 - **Submit error scroll**:submit 失敗後,focus 自動 jump 到被送出那張表單的第一個 invalid field(`field.focus()` + `scrollIntoView({block: 'center'})`;定位得到哪些控件見「v1 邊界」(b))
 - **Error 宣告**:`<FieldError>` 為 `role="alert"`(隱含 `aria-live="assertive"`,field.tsx:472)——error 文字一出現即由 SR 宣讀;children 有值才渲染(children-gated,非讀 Field.invalid)。錯誤**不**另設 `aria-live="polite"` 容器(送出成功的 polite 宣告由 `<Toaster />` 的朗讀區承擔,見下一條),跨欄位 / async error 亦透過對應 field 的 `<FieldError>` 呈現
 - **Submit 成功宣告**(WCAG 4.1.3 Status Messages):**送出成功 → Toast**(user 2026-10-01 逐字:「以上噎一律處理到完美，然後送出成功跳提示」;待辦總帳 N64 已決)。在 onSubmit 的成功路徑呼叫 `toast({ variant: 'success', title })`(`../Toast/toast.spec.md`:操作結果短暫回饋 / success 用於「確認動作已完成」;不帶 `action` → 預設 4000ms,不另傳 duration;業務驗證回傳錯誤或 onSubmit 拋錯時不跳),讀屏由 `<Toaster />` 的 polite 朗讀區宣讀(toast.spec.md「DS 自帶完整 announcer」:consumer 不應另建 live region),表單內**不**自建 `role="status"`。文案用 toast.spec 範例的「名詞 + 已 + 動詞」句型(「專案設定已儲存」「專案已建立」「評分已送出」;Polaris "noun + verb",<https://github.com/Shopify/polaris-react-archive/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris.shopify.com/content/components/internal-only/toast.mdx#L81-L88>;Carbon success notification "Confirm a task was completed as expected",<https://github.com/carbon-design-system/carbon-website/blob/5e9cd1da43c32d3d3b991dc947b427f674da61a8/src/pages/components/notification/usage.mdx#L169>)。範例 `field.stories.tsx` UpdateProjectSettingsForm / CreateProjectForm、`../Rating/rating.stories.tsx`「包在 Field 內」,以及放在浮層裡、送出成功就關閉的四則:`../Dialog/dialog.stories.tsx`「表單」(「專案已建立」)、`../Sheet/sheet.stories.tsx`「建立新專案」(「專案已建立」)/「編輯成員詳情」(「成員資料已儲存」)、`../AgentPanel/agent-panel.stories.tsx` 網址註冊表的任務對話框(「任務已儲存」/「任務已建立」)(每個 story root 掛一個 `<Toaster />`,toast.spec.md 允許;2026-10-07 補齊後四則 —— 前一版只有前三則跳提示,獨立驗證抓到)。**送出成功就關閉的浮層表單**:先 `toast()` 再關;建立表單每次**打開**那一刻 `reset()` 回到空白、更新表單打開時 `reset()` 回到最後存下的值(AI 推導:關閉當下不清,收起動畫期間欄位不會先閃掉;修前送出後再打開,上一次打的字還在)。hook 本身不加 toast 選項:表單層對回饋零耦合,文案屬於 consumer。2026-10-01 前的做法(表單內 `role="status"` 朗讀區「已儲存 ✓」)已撤
-- **Required indicator**:label 的 `*` 為純視覺、對讀屏隱藏(`aria-hidden="true"`,field.tsx:398);required 語意由內部輸入控件的 `aria-required`(input.tsx:188)承擔,避免讀屏讀出「asterisk」語義不清
+- **Required indicator**:label 的 `*` 為純視覺、對讀屏隱藏(`aria-hidden="true"`,field.tsx:398);required 語意由內部輸入控件的 `aria-required`(input.tsx:190)承擔,避免讀屏讀出「asterisk」語義不清
 - **Color-only error 警告**:error border 紅色之外必有文字訊息(WCAG 1.4.1 不僅靠顏色)— 由 `<FieldError>` 文字承擔;DS **不**在 input 內放 error 狀態 icon(見 `field-controls.spec.md`「禁止事項」)
 
 **空值 / Loading(明文 N/A)**:本 spec 是跨 Field 控件的驗證時機原則(非 UI 元件)——空值渲染與 loading 狀態分屬各控件 spec(SSOT → `field-controls.spec.md`「null / undefined 值」+「Loading state」段)。
@@ -172,6 +200,7 @@ Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification +
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `agent-panel.spec.md`
 - `checkbox.spec.md`
 - `combobox.spec.md`
 - `date-picker.spec.md`

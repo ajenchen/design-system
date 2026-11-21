@@ -1,15 +1,17 @@
 #!/bin/bash
 # Tests for stop_passive_logging.sh — Stop hook orchestrator(4 internal rules:harvest_corrections / capture_metrics / governance_drift / infra_best_practice_score;tsc_sanity 2026-10-07 退役)
 #
-# Orchestrator smoke test only — all 5 internal rules are passive(silent log to Git-owned governance runtime state,no stderr / no exit non-zero)。
-# Detailed rule tests are within their original lib hooks(now folded into this dispatcher,unit tests at lib level historically)。
+# 1–11:orchestrator smoke(all rules passive:silent log to Git-owned governance runtime state,no stderr / no exit non-zero)。
+# 12–16(2026-11-21 WP-06):功能狀態(R2 / R5)不看遙測開關、遙測段落(R3 / R4)照舊要 opt-in、READ_ONLY 唯讀,
+#   以及 R4 的 spec 上限改讀 lib/_size_budget.sh 的表(數字在測試執行時從表上取,不抄)。
+# 17–18(WP-06 審查必修 3):R5 去重 —— 同樣的低分維度連續兩回合只注入一次;回到門檻以上再掉下來會重新提醒。
 #
 # 2026-05-23 ship per Phase D4 sub-threshold cleanup(15+1 hook tests batch)。
 
 set -u
 
-# This suite explicitly exercises isolated opt-in telemetry writes. Do not
-# inherit the aggregate runner's read-only replay flag.
+# This suite explicitly exercises isolated runtime-state writes(opt-in telemetry and adapter-admitted
+# enforcement state). Do not inherit the aggregate runner's read-only replay flag.
 export GOVERNANCE_READ_ONLY=0
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -97,6 +99,7 @@ expect_exit_0 "7. realistic Stop event payload → exit 0"
 
 # 8. Provider-neutral metrics must consume registry-declared instruction/skill paths only.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJECT/.agents/skills/demo" "$TMP_PROJECT/.claude/skills"
 yes 'shared governance line' | head -601 > "$TMP_PROJECT/AGENTS.md"
 printf '# skill\n' > "$TMP_PROJECT/.agents/skills/demo/SKILL.md"
@@ -119,6 +122,7 @@ rm -rf "$TMP_PROJECT"
 
 # 9. A new concrete provider needs registry fixture data,not a hook-code branch.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 FIXTURE_CORPUS="$TMP_PROJECT/corpus"
 mkdir -p "$FIXTURE_CORPUS" "$TMP_PROJECT/.orion/workflows/demo"
 printf '# Orion\nrule\n' > "$TMP_PROJECT/ORION.md"
@@ -155,15 +159,16 @@ else
 fi
 rm -rf "$TMP_PROJECT"
 
-# 10. Default provider execution is read-only unless a trusted caller opts in.
+# 10. Without an adapter-provided runtime root and without telemetry opt-in, nothing is written.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJECT/.agents/skills/demo"
 printf '# shared\n' > "$TMP_PROJECT/AGENTS.md"
 (cd "$TMP_PROJECT" && git init -q)
 GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_PROVIDER=codex \
   run_hook '{"session_id":"read-only-default"}'
 if [ "$EXIT" = "0" ] && [ ! -e "$TMP_PROJECT/.git/governance-runtime" ]; then
-  echo "  PASS  10. no opt-in creates no runtime bytes"; PASS=$((PASS+1))
+  echo "  PASS  10. no adapter + no opt-in creates no runtime bytes"; PASS=$((PASS+1))
 else
   echo "  FAIL  10. default execution created runtime bytes"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 10. telemetry default"
@@ -172,6 +177,7 @@ rm -rf "$TMP_PROJECT"
 
 # 11. A nested symlink cannot redirect any passive log outside Git runtime.
 TMP_PROJECT=$(mktemp -d)
+[ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJECT/.agents/skills/demo" "$TMP_PROJECT/symlink-target"
 printf '# shared\n' > "$TMP_PROJECT/AGENTS.md"
 (cd "$TMP_PROJECT" && git init -q)
@@ -189,6 +195,144 @@ if [ "$EXIT" = "0" ] \
 else
   echo "  FAIL  11. nested symlink state was accepted or mutated"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 11. symlink poison"
+fi
+rm -rf "$TMP_PROJECT"
+
+# 12–14:功能狀態 vs 遙測(_log-fire.sh「兩種寫入、兩道開關」)。adapter 一定設 GOVERNANCE_RUNTIME_ROOT,遙測預設關。
+passive_fixture() {
+  TMP_PROJECT=$(mktemp -d)
+  [ -n "${TMP_PROJECT:-}" ] && [ -d "$TMP_PROJECT" ] || { echo "❌ mktemp -d failed(TMP_PROJECT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+  mkdir -p "$TMP_PROJECT/.agents/skills/demo" "$TMP_PROJECT/scripts"
+  printf '# shared\n' > "$TMP_PROJECT/AGENTS.md"
+  (cd "$TMP_PROJECT" && git init -q && git add AGENTS.md && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t git commit -q -m init)
+  RUNTIME_ROOT="$TMP_PROJECT/.git/governance-runtime"
+  # R5 的評分程式換成固定輸出(70 分、一維 60 分 → 兩個觸發條件都成立);正式的在 scripts/score-infra-best-practice.mjs
+  printf '%s\n' "process.stdout.write(JSON.stringify({finalScore:70,dimensions:[{dim:'D9 fixture',score:60,value:'v'}]}))" \
+    > "$TMP_PROJECT/scripts/score-infra-best-practice.mjs"
+  TRANSCRIPT_FIXTURE="$TMP_PROJECT/transcript.jsonl"
+  printf '%s\n' '{"type":"user","message":{"role":"user","content":"這樣不對,應該先跑測試"}}' > "$TRANSCRIPT_FIXTURE"
+}
+
+# 12. R2 糾正收集 + R5 評分 = 功能狀態:沒開遙測、有 adapter → 照寫;R3 / R4 是遙測 → 不寫。
+passive_fixture
+GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_PROVIDER=codex GOVERNANCE_RUNTIME_ROOT="$RUNTIME_ROOT" \
+  GOVERNANCE_TELEMETRY_OPT_IN=0 \
+  run_hook "{\"transcript_path\":\"$TRANSCRIPT_FIXTURE\",\"session_id\":\"wp06-r2\"}"
+if [ "$EXIT" = "0" ] && [ -f "$RUNTIME_ROOT/user-corrections.jsonl" ] \
+  && [ "$(jq -r '.session' "$RUNTIME_ROOT/user-corrections.jsonl" 2>/dev/null)" = "wp06-r2" ] \
+  && [ ! -e "$RUNTIME_ROOT/metric-snapshots.jsonl" ] && [ ! -e "$RUNTIME_ROOT/.stop-drift-last-head" ]; then
+  echo "  PASS  12. R2 writes corrections with OPT_IN=0 under an adapter;telemetry rules stay off"; PASS=$((PASS+1))
+else
+  echo "  FAIL  12. R2 enforcement write (exit=$EXIT files=$(ls -A "$RUNTIME_ROOT" 2>/dev/null | tr '\n' ' '))"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 12. R2 enforcement write"
+fi
+# 13. 同一次執行:R5 的 score-history.jsonl(inject_pending_self_audit.sh 下一回合讀)也寫了。
+if [ -f "$RUNTIME_ROOT/score-history.jsonl" ] \
+  && [ "$(jq -r '.score' "$RUNTIME_ROOT/score-history.jsonl" 2>/dev/null)" = "70" ] \
+  && grep -q 'D9 fixture' "$RUNTIME_ROOT/score-history.jsonl"; then
+  echo "  PASS  13. R5 writes score-history with OPT_IN=0 under an adapter"; PASS=$((PASS+1))
+else
+  echo "  FAIL  13. R5 enforcement write (score-history=$(cat "$RUNTIME_ROOT/score-history.jsonl" 2>/dev/null))"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 13. R5 enforcement write"
+fi
+rm -rf "$TMP_PROJECT"
+
+# 14. READ_ONLY=1(CI replay、hooks:test)→ adapter 在、遙測開著也一個 byte 都不寫。
+passive_fixture
+GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_PROVIDER=codex GOVERNANCE_RUNTIME_ROOT="$RUNTIME_ROOT" \
+  GOVERNANCE_TELEMETRY_OPT_IN=1 GOVERNANCE_READ_ONLY=1 \
+  run_hook "{\"transcript_path\":\"$TRANSCRIPT_FIXTURE\",\"session_id\":\"wp06-ro\"}"
+if [ "$EXIT" = "0" ] && [ ! -e "$RUNTIME_ROOT" ]; then
+  echo "  PASS  14. READ_ONLY=1 creates no runtime bytes even with adapter + opt-in"; PASS=$((PASS+1))
+else
+  echo "  FAIL  14. READ_ONLY wrote runtime bytes ($(ls -A "$RUNTIME_ROOT" 2>/dev/null | tr '\n' ' '))"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 14. READ_ONLY"
+fi
+rm -rf "$TMP_PROJECT"
+
+# 15–16:R4 的 spec 上限只讀共用表。數字在這裡從表上取(governance_size_budget),表一改這兩格跟著走。
+# 用 button.spec.md:舊清單寫 cap 800,表上是一般 spec 那一檔。R4 是遙測(要 opt-in),且只在治理檔有改時才量。
+source "$SCRIPT_DIR/../lib/_size_budget.sh"
+SPEC_REL="packages/design-system/src/components/Button/button.spec.md"
+SPEC_CAP="$(governance_size_budget "$SPEC_REL" | cut -f2)"
+run_drift_case() {
+  # $1 = 改後的行數
+  passive_fixture
+  mkdir -p "$TMP_PROJECT/$(dirname "$SPEC_REL")"
+  printf '# spec\n' > "$TMP_PROJECT/$SPEC_REL"
+  (cd "$TMP_PROJECT" && git add "$SPEC_REL" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t git commit -q -m spec)
+  yes 'spec line' | head -n "$1" > "$TMP_PROJECT/$SPEC_REL"
+  GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_PROVIDER=codex GOVERNANCE_TELEMETRY_OPT_IN=1 \
+    run_hook '{"session_id":"wp06-drift"}'
+  DRIFT_TEXT="$(jq -r '.warnings' "$RUNTIME_ROOT/governance-drift.jsonl" 2>/dev/null || true)"
+  rm -rf "$TMP_PROJECT"
+}
+if [ -n "$SPEC_CAP" ]; then
+  run_drift_case "$((SPEC_CAP + 1))"
+  if [ "$EXIT" = "0" ] && printf '%s' "$DRIFT_TEXT" | grep -qF "$SPEC_REL $((SPEC_CAP + 1)) lines(over ${SPEC_CAP} cap"; then
+    echo "  PASS  15. spec at table cap + 1 → drift warning(cap ${SPEC_CAP} from the shared table)"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  15. over-cap spec not reported (cap=${SPEC_CAP} drift=${DRIFT_TEXT})"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15. over cap"
+  fi
+  run_drift_case "$SPEC_CAP"
+  if [ "$EXIT" = "0" ] && ! printf '%s' "$DRIFT_TEXT" | grep -qF "$SPEC_REL"; then
+    echo "  PASS  16. spec exactly at table cap → no drift warning"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  16. at-cap spec reported (cap=${SPEC_CAP} drift=${DRIFT_TEXT})"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 16. at cap"
+  fi
+else
+  echo "  FAIL  15–16. shared size table has no budget for $SPEC_REL(instrument)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15–16. size table unavailable"
+fi
+
+# 17–18(WP-06 審查必修 3):R5 去重。R5 改成功能狀態後,長期低分的維度(例:D8a Hook count)每次 Stop 都寫一筆,
+# 下一則訊息就被注入一次、永遠停不下來。現在只在提醒內容跟上一筆不同時才寫(回到門檻以上也記一筆空的,之後再掉下來會重新提醒)。
+# 走真實的鏈:本 hook(Stop)→ inject_pending_self_audit.sh(下一則訊息)。inject 的 cursor 是秒級時間戳,
+# 回合之間 sleep 1:第二回合若真的寫了,時間一定晚於上一回合的 cursor,不會因為落在同一秒被濾掉而假綠。
+INJECT_HOOK="$SCRIPT_DIR/../inject_pending_self_audit.sh"
+r5_score_fixture() {
+  # $1 = 維度分數、$2 = 總分(都 ≥ 80 → 沒有提醒;任一 < 80 → 有提醒)
+  printf '%s\n' "process.stdout.write(JSON.stringify({finalScore:$2,dimensions:[{dim:'D9 fixture',score:$1,value:'v'}]}))" \
+    > "$TMP_PROJECT/scripts/score-infra-best-practice.mjs"
+}
+r5_round() {
+  # 一次 Stop,接著下一則訊息的注入;注入輸出放 INJECT_TEXT
+  GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_PROVIDER=codex GOVERNANCE_RUNTIME_ROOT="$RUNTIME_ROOT" \
+    GOVERNANCE_TELEMETRY_OPT_IN=0 run_hook "{\"session_id\":\"$1\"}"
+  INJECT_TEXT=$(printf '{}' | GOVERNANCE_PROJECT_DIR="$TMP_PROJECT" GOVERNANCE_RUNTIME_ROOT="$RUNTIME_ROOT" \
+    GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY=0 bash "$INJECT_HOOK" 2>&1) || true
+}
+passive_fixture
+r5_round wp06-r5-1
+ROUND1="$INJECT_TEXT"
+sleep 1
+r5_round wp06-r5-2
+ROUND2="$INJECT_TEXT"
+LINES_AFTER_2="$(wc -l < "$RUNTIME_ROOT/score-history.jsonl" 2>/dev/null | tr -d ' ')"
+if printf '%s' "$ROUND1" | grep -qF 'D9 fixture: 60/100' && ! printf '%s' "$ROUND2" | grep -qF 'Infra-score audit' \
+  && [ "$LINES_AFTER_2" = "1" ]; then
+  echo "  PASS  17. same low-score dimension two rounds → injected once, second round silent"; PASS=$((PASS+1))
+else
+  echo "  FAIL  17. R5 re-injects the same reminder (lines=${LINES_AFTER_2} round1=${ROUND1:0:120} round2=${ROUND2:0:200})"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 17. R5 dedup"
+fi
+# 18. 對照:回到門檻以上 → 再掉下來(內容跟最早那筆一樣)→ 要重新提醒;去重不能變成「同一句永遠只講一次」。
+r5_score_fixture 90 90
+r5_round wp06-r5-3
+ROUND3="$INJECT_TEXT"
+r5_score_fixture 60 70
+sleep 1
+r5_round wp06-r5-4
+ROUND4="$INJECT_TEXT"
+LINES_AFTER_4="$(wc -l < "$RUNTIME_ROOT/score-history.jsonl" 2>/dev/null | tr -d ' ')"
+if ! printf '%s' "$ROUND3" | grep -qF 'Infra-score audit' && printf '%s' "$ROUND4" | grep -qF 'D9 fixture: 60/100' \
+  && [ "$LINES_AFTER_4" = "3" ] && [ "$(tail -2 "$RUNTIME_ROOT/score-history.jsonl" | head -1 | jq -r '.warnings')" = "" ]; then
+  echo "  PASS  18. recovered then dropped again → recorded once more and injected again"; PASS=$((PASS+1))
+else
+  echo "  FAIL  18. relapse after recovery not re-injected (lines=${LINES_AFTER_4} round3=${ROUND3:0:120} round4=${ROUND4:0:120})"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 18. R5 relapse"
 fi
 rm -rf "$TMP_PROJECT"
 

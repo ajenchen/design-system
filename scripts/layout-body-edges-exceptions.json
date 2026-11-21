@@ -1,0 +1,66 @@
+{
+  "$comment": "scripts/layout-body-edges-invariant.mjs 的例外登記(規則只住 packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md 規則 4)。structural = 不套規則 4 的結構分區 / 置中狀態(不比底);exceptions = 有規格依據、底改用 want(bottom / loose / tight / 數字);pending = 量到的現況違規、照規則修畫面會變、等 user 看過(measured / want 寫 md、lg,visualChange 寫畫面怎麼變;修好就刪);triggers = aria-haspopup=\"dialog\" 卻點了不開新 role=dialog 的觸發點,或一般按鈕 / 選單項目點了量不到的(trigger = 觸發點字的一部分)。每筆:key / stories(story id,結尾 * = 開頭相同的都算)/ container(容器的 CSS 選擇器,triggers 沒有)/ reason / source。完整跑時對不到任何東西 = 過期,閘會紅。只准變少:對照與 main 的分岔點與 HEAD(每一個都要過),新 key、或同一個 key 整筆改寫(放寬 stories / container / trigger 等;只把 stories 縮成子集不算)都要帶新的 userQuote(user 逐字)+ quoteDate,AI 不能自己加或放寬。2026-11-17(A102)第一次登記時分岔點沒有這個檔,以下是當時全站實量後逐筆分類的結果。",
+  "structural": [
+    {
+      "key": "agentpanel-new-conversation-centered",
+      "stories": [
+        "design-system-components-agentpanel-展示--new-conversation"
+      ],
+      "container": "div.flex-1.items-center.justify-center",
+      "reason": "新對話空白頁:空狀態在撐滿的包層裡垂直置中,不套規則 2 / 4 的上下距離(上下在不在可用範圍正中由 header-first-gap 的 centered 格驗)",
+      "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(3)(user 2026-11-14 在 A5 成品頁的留言 ②)"
+    },
+    {
+      "key": "fileviewer-viewport-row",
+      "stories": [
+        "*"
+      ],
+      "container": "[role=dialog] > [data-theme=\"dark\"] > div.flex-1.min-h-0.flex",
+      "reason": "FileViewer 工具列底下那一列是結構分區(Viewport 貼齊外殼、圖置中,右邊可接資訊面板),不是標頭底下的 body 內容;資訊面板本身是 data-layout-body,照常量。這是 FileViewer 自己的結構、與從哪一則打開無關(FileItem / Chip 點開的同一個檢視器也是),所以 stories 不限、選擇器指 FileViewer 的殼(對話框 > 鎖深色的那一層 > 這一列)",
+      "source": "layoutSpace.spec.md 規則 2「適用範圍與量法三點」(1);file-viewer.spec.md「Anatomy」;header-first-gap-invariant.mjs NOT_COVERED「FileViewer 工具列 → Viewport」"
+    }
+  ],
+  "exceptions": [
+    {
+      "key": "agent-conversation-end-48",
+      "stories": [
+        "design-system-components-agentpanel-*"
+      ],
+      "container": "[role=\"log\"]",
+      "want": "bottom",
+      "reason": "AgentPanel 對話區底部恆 48、不看最後一則是誰(不宣告 data-layout-body,不讓容器自判);設計規格「狀態行為」那則面板貼內容,照規則 4 第 4 列會是與頂部同值,所以要登記",
+      "source": "agent-panel.spec.md「3. AgentConversation」(user 2026-09-02 原話只講常駐工具列在最後;「不看最後一則是誰」是【AI 推導 2026-11-14】)"
+    }
+  ],
+  "pending": [],
+  "triggers": [
+    {
+      "key": "agentpanel-unsaved-guard-covered",
+      "stories": [
+        "design-system-components-agentpanel-展示--unsaved-changes-guard"
+      ],
+      "trigger": "*",
+      "reason": "這則一開頁就有對話框(未儲存變更的確認)擋住整頁,底下的觸發點點不到;開著的兩個對話框在初始那一輪已量"
+    },
+    {
+      "key": "appshell-toolbar-covered",
+      "stories": [
+        "design-system-components-appshell-展示--menu-overlay",
+        "design-system-components-appshell-展示--four-regions",
+        "design-system-components-appshell-展示--agent-overlay"
+      ],
+      "trigger": "*",
+      "reason": "這三則一開頁 Menu / AI agent 浮層就開著、蓋住主區工具列,「篩選」「排序」點不到(同一個工具列在 primary-sidebar 等則照常點開量到)"
+    },
+    {
+      "key": "datepicker-range-already-open",
+      "stories": [
+        "design-system-components-datepicker-展示--range-popover-open",
+        "design-system-components-datepicker-展示--show-time-range-popover-open",
+        "design-system-components-datepicker-展示--range-preview-*"
+      ],
+      "trigger": "date",
+      "reason": "區間日期的浮層一開頁就開著(初始那一輪已量),點另一端只是把焦點移到另一個日期,不會再開新的 role=dialog"
+    }
+  ]
+}

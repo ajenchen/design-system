@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 Pressed / IconOnly / 各 variant 真實業務情境 story 覆蓋。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2, Save, X } from 'lucide-react'
@@ -26,7 +25,7 @@ const meta: Meta<typeof Button> = {
     variant: {
       control: 'select',
       options: ['primary', 'secondary', 'tertiary', 'text', 'link'],
-      description: '視覺強調等級。`destructive` / `ghost` 為 shadcn 內部 compat alias，應用層請勿直接使用。',
+      description: '視覺強調等級。危險操作另用 `danger`。',
     },
     danger: {
       control: 'boolean',
@@ -62,9 +61,10 @@ const meta: Meta<typeof Button> = {
       control: 'boolean',
       description: '停用按鈕。不代表載入中，若需傳達載入請同時設定 `loading`。',
     },
-    fullWidth: {
-      control: 'boolean',
-      description: '加上 `w-full`，撐滿父容器。垂直排列按鈕群組時使用。',
+    width: {
+      control: 'inline-radio',
+      options: ['hug', 'fill'],
+      description: '寬度模式:hug(預設)跟內容 / fill 撐滿父容器。垂直排列的按鈕群組會自動 fill。',
     },
     asChild: {
       control: false,
@@ -208,7 +208,7 @@ export const IconOnly: Story = {
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)]">
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">variants — size="sm"</p>
+        <p className="text-caption text-fg-muted">小尺寸 · 各強調等級</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" onClick={done('已新增「未命名文件」')} />
           <Button size="sm" iconOnly variant="secondary" startIcon={Download}  aria-label="下載" onClick={done('已下載「2026 Q3 營收報告.pdf」')} />
@@ -218,7 +218,7 @@ export const IconOnly: Story = {
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">danger — size="sm"</p>
+        <p className="text-caption text-fg-muted">小尺寸 · 危險動作</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" onClick={done('已永久刪除「2026 Q3 營收報告.pdf」')} />
           <ConfirmDelete noun="檔案" target="「2026 Q3 營收報告.pdf」">{(open) => <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" onClick={open} />}</ConfirmDelete>
@@ -226,7 +226,7 @@ export const IconOnly: Story = {
         </div>
       </ExampleGroup>
       <ExampleGroup>
-        <p className="text-caption text-fg-muted">sizes — variant="text"</p>
+        <p className="text-caption text-fg-muted">文字按鈕 · 由小到大四種尺寸</p>
         <div className="flex flex-wrap items-center gap-[var(--layout-space-loose)]">
           <DemoMenu items={SETTINGS_MENU}><Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" /></DemoMenu>
           <DemoMenu items={SETTINGS_MENU}><Button size="sm" iconOnly variant="text" startIcon={Settings} aria-label="設定 sm" /></DemoMenu>
@@ -343,9 +343,9 @@ export const FullWidth: Story = {
   name: '全寬',
   render: () => (
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-xs">
-      <Button variant="primary" fullWidth onClick={done('已送出訂單')}>確認送出</Button>
-      <Button variant="tertiary" fullWidth>取消</Button>
-      <Button variant="primary" danger fullWidth startIcon={Trash2} onClick={done('已永久刪除訂單 #4210')}>永久刪除</Button>
+      <Button variant="primary" width="fill" onClick={done('已送出訂單')}>確認送出</Button>
+      <Button variant="tertiary" width="fill">取消</Button>
+      <Button variant="primary" danger width="fill" startIcon={Trash2} onClick={done('已永久刪除訂單 #4210')}>永久刪除</Button>
     </div>
   ),
 }
@@ -361,7 +361,7 @@ export const DismissHoverState: Story = {
   render: () => (
     // 關閉鈕住列尾槽 ItemSuffix(h-[1lh]),對齊標題第一行(item-anatomy.spec.md「Suffix 一律 `h-[1lh]` inline 對齊第一行 label」;
     // 同 Notice / Alert / Toast 的關閉鈕);容器設 text-body 讓 1lh = 標題行高。2026-10-27 前是 items-center,× 落在兩行字塊正中、比標題中線低約 8px
-    <div className="flex items-start gap-3 rounded-lg border border-divider bg-surface p-4 text-body">
+    <div className="flex items-start gap-3 rounded-md border border-divider bg-surface p-4 text-body">
       <div className="min-w-0 flex-1">
         <p className="text-body font-medium text-foreground">付款方式已更新</p>
         <p className="text-caption text-fg-secondary">此通知可直接關閉。</p>

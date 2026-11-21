@@ -96,7 +96,8 @@ type SelectionMode = 'single' | 'multiple' | 'none'
 type TreeContext = 'sidebar' | 'menu'
 
 // Base horizontal padding per context — 用 CSS variable 注入到 TreeView 容器,
-// TreeItem 用 calc(var(--tree-px) + indent) 算出最終 paddingLeft。
+// TreeItem 用 calc(var(--tree-view-px) + indent) 算出最終 paddingLeft。
+// 元件內變數用主人開頭(2026-11-15 前叫 --tree-px,跟共用刻度 --tree-indent-* 同一個開頭;稽核 P20 反查)。
 const CONTEXT_PX_VAR: Record<TreeContext, string> = {
   sidebar: 'var(--layout-space-loose)',  // md=16px, lg=24px(density 連動)
   // 2026-09-17:原本是字面值 `'12px'` + 一句「對齊 MenuItem」的註解 —— 那是第二份,
@@ -1135,8 +1136,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
 
     const treeEl = (
       <div
-        // {...props} 在最前:內部 role/style(--tree-px)/onKeyDownCapture 必須勝過 consumer
-        // 誤傳(原 spread 在最後 → consumer style 會整組蓋掉 --tree-px、鍵盤 handler 蓋掉鍵盤導覽);
+        // {...props} 在最前:內部 role/style(--tree-view-px)/onKeyDownCapture 必須勝過 consumer
+        // 誤傳(原 spread 在最後 → consumer style 會整組蓋掉 --tree-view-px、鍵盤 handler 蓋掉鍵盤導覽);
         // consumer 的 onKeyDownCapture 由 handleKeyDownCapture 先呼叫再接手(同 SidebarMenu)
         {...props}
         ref={treeRef}
@@ -1162,7 +1163,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           className,
         )}
         style={{
-          ['--tree-px' as string]: CONTEXT_PX_VAR[context],
+          ['--tree-view-px' as string]: CONTEXT_PX_VAR[context],
           ...props.style,
         } as React.CSSProperties}
         // 指標拖曳中按 Esc 只取消拖曳(dnd-kit PointerSensor 在 document 上聽 Esc):宣告這一層、把這一下標成拖曳獨占,
@@ -1699,7 +1700,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
           {isDropTarget && dropTarget?.position === 'before' && (
             <div
               className={dropIndicatorRow.before}
-              style={{ left: `calc(var(--tree-px) + ${indentPx}px)` }}
+              style={{ left: `calc(var(--tree-view-px) + ${indentPx}px)` }}
             />
           )}
 
@@ -1773,9 +1774,9 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               ...style,
               // Structural indent 由 TreeView SSOT 最終擁有，consumer style 不得抹掉。
               paddingLeft: indentPx > 0
-                ? `calc(var(--tree-px) + ${indentPx}px)`
-                : 'var(--tree-px)',
-              paddingRight: 'var(--tree-px)',
+                ? `calc(var(--tree-view-px) + ${indentPx}px)`
+                : 'var(--tree-view-px)',
+              paddingRight: 'var(--tree-view-px)',
             }}
             // 2026-07-05 D4 修:只 spread listeners,不 spread dnd-kit attributes —
             // useDraggable 預設 attributes 注入 role="button" + tabIndex=0 + aria-pressed +
@@ -1877,7 +1878,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
           {isDropTarget && dropTarget?.position === 'after' && (
             <div
               className={dropIndicatorRow.after}
-              style={{ left: `calc(var(--tree-px) + ${indentPx}px)` }}
+              style={{ left: `calc(var(--tree-view-px) + ${indentPx}px)` }}
             />
           )}
 

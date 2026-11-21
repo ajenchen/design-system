@@ -88,7 +88,7 @@ export const DecorativeSemanticRule: Story = {
         title="明確結構性分組(語意分隔)→ decorative={false}"
         note={'當 Separator 真的代表內容層級的結構邊界(例如 profile page 的「個人」vs「團隊」兩個 section),設 decorative={false},讓 screen reader 讀出 role="separator"'}
       >
-        <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md flex flex-col gap-[var(--layout-space-loose)]">
+        <div className="border border-border rounded-md p-[var(--layout-space-loose)] max-w-md flex flex-col gap-[var(--layout-space-loose)]">
           <div className="flex flex-col gap-[var(--item-gap-label-desc-scanning)]">
             <h4 className="text-h6 font-medium text-foreground">個人資訊</h4>
             <p className="text-caption text-fg-muted">姓名、email、時區</p>

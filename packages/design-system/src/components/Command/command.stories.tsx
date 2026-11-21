@@ -50,7 +50,7 @@ type Story = StoryObj
 // 嵌在頁面裡(不在浮層內)的 Command 外框:規格只要求自己包一層「rounded + border」(command.spec.md「禁止事項」Inline 那條;
 // shadcn 範例是 rounded + border + shadow,這裡只取前兩項,https://github.com/shadcn-ui/ui/blob/8a3536678a528cc012b9e62484290e79d0be410f/apps/v4/registry/new-york-v4/examples/command-demo.tsx#L23),跟設計規格頁「元件總覽」同一個樣子 —— 不加浮層的底色與陰影(它不是浮層)。下面四則共用這一份。
 function InlineFrame({ children }: { children: ReactNode }) {
-  return <div className="max-w-md rounded-lg border border-border overflow-hidden">{children}</div>
+  return <div className="max-w-md rounded-md border border-border overflow-hidden">{children}</div>
 }
 
 // 範例裡「選了就跳到那一頁」:讀者不會真的離開 Storybook,改在 Actions 面板記一筆要去哪

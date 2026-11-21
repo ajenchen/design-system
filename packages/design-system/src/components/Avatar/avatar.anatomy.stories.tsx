@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @anatomy-rationale:
 //   StateBehavior 涵蓋 fallback chain(src 失敗 → icon → alt 首字 → User icon)
@@ -16,13 +15,14 @@ import {
   type CategoricalColor,
   type CategoricalHue,
 } from '@/design-system/tokens/categorical-color'
-import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
-import { ExampleSection, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { SAMPLE_PEOPLE, samplePersonCard, demoPersonPhoto } from '@/design-system/stories-helpers/scene/person-card'
+import { ExampleSection, ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 import { TkVal, PropRow } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 // 量測頁的人員頭像也帶名片(avatar.spec.md「Avatar HoverCard 原則」適用範圍無例外;登記簿 B21「我說所有」):名片讀共用名錄,
-// 名片裡的頭像用觸發點同一張圖(或同樣沒有圖)。實體頭像(icon / 組織)照 avatar.spec.md:78 不接;沒有任何身分資料的頭像
+// 名片裡的頭像與觸發點是同一張臉(或同樣沒有圖)。實體頭像(icon / 組織)照 avatar.spec.md:78 不接;沒有任何身分資料的頭像
 // (Fallback chain 最後一列「無 src 無 alt」)沒有人可以接名片,維持原樣。2026-10-28 前本頁人員頭像都沒接名片(稽核 MO-L002)。
+// 照片一律走照片名冊(stories-helpers/data/people.ts;觸發點網址取顯示尺寸 ×2,名片用名錄自己那一份);2026-11-15 前本頁寫死 `?u=` 照片(A14)。
 const { ada, alice, bob, carol } = SAMPLE_PEOPLE
 
 const meta: Meta = {
@@ -111,12 +111,12 @@ export const Overview = {
       <ExampleSection title="三種內容模式" description="按優先順序決定顯示內容：src → icon → alt 首字。都沒有時顯示預設 User icon。">
         <div className="flex gap-8">
           {([
-            { mode: 'Image', desc: '有 src → 圖片填滿容器', el: <Avatar size={48} src="https://i.pravatar.cc/96?u=overview" alt={alice.name} hoverCard={samplePersonCard({ ...alice, avatarSrc: 'https://i.pravatar.cc/96?u=overview' })} /> },
+            { mode: 'Image', desc: '有 src → 圖片填滿容器', el: <Avatar size={48} src={demoPersonPhoto('Alice Chen', 96)} alt={alice.name} hoverCard={samplePersonCard(alice)} /> },
             { mode: 'Icon', desc: '有 icon → Icon 在底色背景', el: <Avatar size={48} icon={Building2} color="blue" /> },
             { mode: 'Text', desc: '有 alt → 首字大寫', el: <Avatar size={48} alt={bob.name} color="purple" hoverCard={samplePersonCard({ ...bob, avatarSrc: undefined })} /> },
           ] as const).map(({ mode, desc, el }) => (
             <div key={mode} className="flex flex-col gap-3 items-center">
-              <div className="flex items-center justify-center w-[80px] h-[80px] rounded-lg border-2 border-dashed border-primary/30">
+              <div className="flex items-center justify-center w-[80px] h-[80px] rounded-md border-2 border-dashed border-primary/30">
                 {el}
               </div>
               <div className="flex flex-col items-center gap-0.5">
@@ -133,7 +133,7 @@ export const Overview = {
         <div className="flex gap-8">
           <div className="flex flex-col items-center gap-2">
             {/* circle = 人物 → 真實人像(2026-07-08 demo 人像真實化);square = 實體 → icon */}
-            <Avatar size={40} src="https://i.pravatar.cc/80?u=alice-chen" alt={alice.name} shape="circle" hoverCard={samplePersonCard({ ...alice, avatarSrc: 'https://i.pravatar.cc/80?u=alice-chen' })} />
+            <Avatar size={40} src={demoPersonPhoto('Alice Chen', 80)} alt={alice.name} shape="circle" hoverCard={samplePersonCard(alice)} />
             <span className="text-[11px] font-mono text-fg-muted">circle（預設）</span>
             <span className="text-[10px] text-fg-muted">rounded-full</span>
           </div>
@@ -198,7 +198,7 @@ const InspectorInner = () => {
 
   const renderAvatar = () => {
     switch (mode) {
-      case 'image': return <Avatar size={size} shape={shape} src="https://i.pravatar.cc/96?u=inspector" alt={ada.name} hoverCard={samplePersonCard({ ...ada, avatarSrc: 'https://i.pravatar.cc/96?u=inspector' })} />
+      case 'image': return <Avatar size={size} shape={shape} src={demoPersonPhoto('Ada Chen', size * 2)} alt={ada.name} hoverCard={samplePersonCard(ada)} />
       case 'icon': return <Avatar size={size} shape={shape} icon={Folder} color={color} solid={solid} />
       case 'text': return <Avatar size={size} shape={shape} alt={alice.name} color={color} solid={solid} hoverCard={samplePersonCard({ ...alice, avatarSrc: undefined })} />
     }
@@ -252,7 +252,7 @@ const InspectorInner = () => {
       <div className="flex gap-6 items-start">
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[280px]">
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center">
             {renderAvatar()}
           </div>
 
@@ -270,14 +270,16 @@ const InspectorInner = () => {
               <div className="flex items-center justify-center overflow-hidden"
                 style={{
                   width: 72, height: 72,
-                  borderRadius: shape === 'circle' ? '50%' : '4px',
+                  // 圓角照 radius.spec.md「四檔」:圓形 = full、方形 = md(原寫 50% / 4px,72×72 正方形上畫出來相同)
+                  borderRadius: shape === 'circle' ? 'var(--radius-full)' : 'var(--radius-md)',
                   background: Z.container.bg,
                   border: `2px dashed ${Z.container.border}`,
                 }}>
                 <div className="flex flex-col items-center justify-center gap-0.5"
                   style={{
                     width: 40, height: 40,
-                    borderRadius: '2px',
+                    // 40×40 的內容框 = 短邊 > 10px,照 radius.spec.md「四檔」用 md(原寫 2px = 只給短邊 ≤ 10px 的指示)
+                    borderRadius: 'var(--radius-md)',
                     background: Z.content.bg,
                     border: `1.5px dashed ${Z.content.border}`,
                   }}>
@@ -304,7 +306,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>
@@ -365,99 +367,96 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="色彩對照表" description="所有 primitive 色的背景 + 前景 token 對照，含 subtle 與 solid 兩種模式。色塊即時渲染，切 dark mode 自動更新。Image 模式不使用背景色。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="色彩對照表" description="所有 primitive 色的背景 + 前景 token 對照，含 subtle 與 solid 兩種模式。色塊即時渲染，切 dark mode 自動更新。Image 模式不使用背景色。" />
 
-      {/* Subtle */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-fg-secondary">Subtle（預設）</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>Color</Th>
-                <Th>Icon 模式</Th>
-                <Th>Text 模式</Th>
-                <Th>背景 token</Th>
-                <Th>前景 token</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {ALL_COLORS.map((c) => {
-                const tokens = COLOR_TOKENS.subtle[c]
-                return (
-                  <tr key={c}>
-                    <Td mono>{c}{c === 'neutral' ? '（預設）' : ''}</Td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} icon={Globe} color={c} />
-                    </td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} alt={ada.name} color={c} hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
-                    </td>
-                    <td className="p-2 border-b border-divider">
-                      <span className="inline-flex items-center gap-2">
-                        <Swatch value={tokens.bg} />
-                        <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
-                      </span>
-                    </td>
-                    <td className="p-2 border-b border-divider">
-                      <span className="inline-flex items-center gap-2">
-                        <Swatch value={tokens.text} />
-                        <span className="font-mono text-[12px] text-fg-secondary">{tokens.text}</span>
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Solid */}
-      <div className="flex flex-col gap-3">
-        <span className="text-caption font-semibold text-fg-secondary">Solid</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>Color</Th>
-                <Th>Icon 模式</Th>
-                <Th>Text 模式</Th>
-                <Th>背景 token</Th>
-                <Th>前景 token</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {ALL_COLORS.map((c) => {
-                const tokens = COLOR_TOKENS.solid[c]
-                return (
-                  <tr key={c}>
-                    <Td mono>{c}</Td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} icon={Globe} color={c} solid />
-                    </td>
-                    <td className="p-3 border-b border-divider">
-                      <Avatar size={32} alt={ada.name} color={c} solid hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
-                    </td>
-                    <td className="p-2 border-b border-divider">
-                      <span className="inline-flex items-center gap-2">
-                        <Swatch value={tokens.bg} />
-                        <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
-                      </span>
-                    </td>
-                    <td className="p-2 border-b border-divider">
+    {/* Subtle */}
+    <ExampleSection title="Subtle（預設）">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead>
+            <tr>
+              <Th>Color</Th>
+              <Th>Icon 模式</Th>
+              <Th>Text 模式</Th>
+              <Th>背景 token</Th>
+              <Th>前景 token</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {ALL_COLORS.map((c) => {
+              const tokens = COLOR_TOKENS.subtle[c]
+              return (
+                <tr key={c}>
+                  <Td mono>{c}{c === 'neutral' ? '（預設）' : ''}</Td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} icon={Globe} color={c} />
+                  </td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} alt={ada.name} color={c} hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="inline-flex items-center gap-2">
+                      <Swatch value={tokens.bg} />
+                      <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
+                    </span>
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="inline-flex items-center gap-2">
+                      <Swatch value={tokens.text} />
                       <span className="font-mono text-[12px] text-fg-secondary">{tokens.text}</span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </ExampleSection>
+
+    {/* Solid */}
+    <ExampleSection title="Solid">
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead>
+            <tr>
+              <Th>Color</Th>
+              <Th>Icon 模式</Th>
+              <Th>Text 模式</Th>
+              <Th>背景 token</Th>
+              <Th>前景 token</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {ALL_COLORS.map((c) => {
+              const tokens = COLOR_TOKENS.solid[c]
+              return (
+                <tr key={c}>
+                  <Td mono>{c}</Td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} icon={Globe} color={c} solid />
+                  </td>
+                  <td className="p-3 border-b border-divider">
+                    <Avatar size={32} alt={ada.name} color={c} solid hoverCard={samplePersonCard({ ...ada, avatarSrc: undefined })} />
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="inline-flex items-center gap-2">
+                      <Swatch value={tokens.bg} />
+                      <span className="font-mono text-[12px] text-fg-secondary">{tokens.bg}</span>
+                    </span>
+                  </td>
+                  <td className="p-2 border-b border-divider">
+                    <span className="font-mono text-[12px] text-fg-secondary">{tokens.text}</span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -468,132 +467,130 @@ export const ColorMatrix = {
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="尺寸對照表" description="size 接受任意 px 值，內部 icon 和文字尺寸自動按比例計算。不提供預設尺寸名稱，尺寸由消費元件決定。">
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="尺寸對照表" description="size 接受任意 px 值，內部 icon 和文字尺寸自動按比例計算。不提供預設尺寸名稱，尺寸由消費元件決定。" />
 
-      {/* Token calculation table */}
+    {/* Token calculation table */}
+    <div className="overflow-x-auto">
+      <table className="border-collapse text-caption">
+        <thead>
+          <tr>
+            <Th>屬性</Th>
+            {PRESET_SIZES.map((s) => <Th key={s}>{s}px</Th>)}
+            <Th>公式</Th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <Td>容器尺寸</Td>
+            {PRESET_SIZES.map((s) => (
+              <Td key={s} mono>
+                <div className="text-fg-secondary">{s}px</div>
+                <div className="text-fg-muted text-[10px]">width = height</div>
+              </Td>
+            ))}
+            <Td mono><span className="text-fg-muted text-[10px]">= size</span></Td>
+          </tr>
+          <tr>
+            <Td>Icon 尺寸</Td>
+            {PRESET_SIZES.map((s) => {
+              const iPx = getIconSize(s)
+              return (
+                <Td key={s} mono>
+                  <div className="text-fg-secondary">{iPx}px</div>
+                  <div className="text-fg-muted text-[10px]">{Math.round(iPx / s * 100)}%</div>
+                </Td>
+              )
+            })}
+            <Td mono><span className="text-fg-muted text-[10px]">round_even(size x 0.6)</span></Td>
+          </tr>
+          <tr>
+            <Td>Text 字體</Td>
+            {PRESET_SIZES.map((s) => {
+              const tPx = getTextSize(s)
+              return (
+                <Td key={s} mono>
+                  <div className="text-fg-secondary">{tPx}px</div>
+                  <div className="text-fg-muted text-[10px]">{Math.round(tPx / s * 100)}%</div>
+                </Td>
+              )
+            })}
+            <Td mono><span className="text-fg-muted text-[10px]">round(size x 0.5)</span></Td>
+          </tr>
+          <tr>
+            <Td>Border Radius (circle)</Td>
+            {PRESET_SIZES.map((s) => (
+              <Td key={s} mono><div className="text-fg-secondary">9999px</div></Td>
+            ))}
+            <Td mono><span className="text-fg-muted text-[10px]">rounded-full</span></Td>
+          </tr>
+          <tr>
+            <Td>Border Radius (square)</Td>
+            {PRESET_SIZES.map((s) => (
+              <Td key={s} mono><div className="text-fg-secondary">4px</div></Td>
+            ))}
+            <Td mono><span className="text-fg-muted text-[10px]">rounded-md</span></Td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {/* Visual preview */}
+    <ExampleSection title="預覽">
       <div className="overflow-x-auto">
-        <table className="border-collapse text-caption">
+        <table className="border-collapse">
           <thead>
             <tr>
-              <Th>屬性</Th>
+              <Th>模式</Th>
               {PRESET_SIZES.map((s) => <Th key={s}>{s}px</Th>)}
-              <Th>公式</Th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <Td>容器尺寸</Td>
+              <Td>Image</Td>
               {PRESET_SIZES.map((s) => (
-                <Td key={s} mono>
-                  <div className="text-fg-secondary">{s}px</div>
-                  <div className="text-fg-muted text-[10px]">width = height</div>
-                </Td>
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} src={demoPersonPhoto('Ada Chen', s * 2)} alt={ada.name} hoverCard={samplePersonCard(ada)} />
+                </td>
               ))}
-              <Td mono><span className="text-fg-muted text-[10px]">= size</span></Td>
             </tr>
             <tr>
-              <Td>Icon 尺寸</Td>
-              {PRESET_SIZES.map((s) => {
-                const iPx = getIconSize(s)
-                return (
-                  <Td key={s} mono>
-                    <div className="text-fg-secondary">{iPx}px</div>
-                    <div className="text-fg-muted text-[10px]">{Math.round(iPx / s * 100)}%</div>
-                  </Td>
-                )
-              })}
-              <Td mono><span className="text-fg-muted text-[10px]">round_even(size x 0.6)</span></Td>
-            </tr>
-            <tr>
-              <Td>Text 字體</Td>
-              {PRESET_SIZES.map((s) => {
-                const tPx = getTextSize(s)
-                return (
-                  <Td key={s} mono>
-                    <div className="text-fg-secondary">{tPx}px</div>
-                    <div className="text-fg-muted text-[10px]">{Math.round(tPx / s * 100)}%</div>
-                  </Td>
-                )
-              })}
-              <Td mono><span className="text-fg-muted text-[10px]">round(size x 0.5)</span></Td>
-            </tr>
-            <tr>
-              <Td>Border Radius (circle)</Td>
+              <Td>Icon (circle)</Td>
               {PRESET_SIZES.map((s) => (
-                <Td key={s} mono><div className="text-fg-secondary">9999px</div></Td>
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} icon={Folder} color="blue" />
+                </td>
               ))}
-              <Td mono><span className="text-fg-muted text-[10px]">rounded-full</span></Td>
             </tr>
             <tr>
-              <Td>Border Radius (square)</Td>
+              <Td>Icon (square)</Td>
               {PRESET_SIZES.map((s) => (
-                <Td key={s} mono><div className="text-fg-secondary">4px</div></Td>
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} icon={Building2} color="purple" shape="square" />
+                </td>
               ))}
-              <Td mono><span className="text-fg-muted text-[10px]">rounded-md</span></Td>
+            </tr>
+            <tr>
+              <Td>Text (circle)</Td>
+              {PRESET_SIZES.map((s) => (
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} alt={alice.name} color="green" hoverCard={samplePersonCard({ ...alice, avatarSrc: undefined })} />
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <Td>Text (square)</Td>
+              {PRESET_SIZES.map((s) => (
+                <td key={s} className="p-3 border-b border-divider">
+                  <Avatar size={s} alt="Org" color="magenta" shape="square" />
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>
       </div>
-
-      {/* Visual preview */}
-      <div className="flex flex-col gap-4">
-        <span className="text-caption font-medium text-fg-secondary">預覽</span>
-        <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <Th>模式</Th>
-                {PRESET_SIZES.map((s) => <Th key={s}>{s}px</Th>)}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <Td>Image</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} src={`https://i.pravatar.cc/${s * 2}?u=size-matrix`} alt={ada.name} hoverCard={samplePersonCard({ ...ada, avatarSrc: 'https://i.pravatar.cc/80?u=size-matrix' })} />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Icon (circle)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} icon={Folder} color="blue" />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Icon (square)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} icon={Building2} color="purple" shape="square" />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Text (circle)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} alt={alice.name} color="green" hoverCard={samplePersonCard({ ...alice, avatarSrc: undefined })} />
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <Td>Text (square)</Td>
-                {PRESET_SIZES.map((s) => (
-                  <td key={s} className="p-3 border-b border-divider">
-                    <Avatar size={s} alt="Org" color="magenta" shape="square" />
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      </div>
     </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -625,7 +622,7 @@ export const StateBehavior = {
           <tbody>
             <tr>
               <Td mono>src 載入成功</Td>
-              <td className="p-3 border-b border-divider"><Avatar size={32} src="https://i.pravatar.cc/64?u=state-ok" alt={alice.name} hoverCard={samplePersonCard({ ...alice, avatarSrc: 'https://i.pravatar.cc/64?u=state-ok' })} /></td>
+              <td className="p-3 border-b border-divider"><Avatar size={32} src={demoPersonPhoto('Alice Chen', 64)} alt={alice.name} hoverCard={samplePersonCard(alice)} /></td>
               <Td>{'有 src + 載入成功 → 圖片'}</Td>
             </tr>
             <tr>
@@ -650,13 +647,13 @@ export const StateBehavior = {
 
       <ExampleSection
         title="Status presence dot(線上 / 離開 / 忙碌 / 離線)"
-        description={<>傳 status prop 在 Avatar 右下角加狀態點,尺寸為 avatar 的 28%(clamp 8–16px),色彩語意對齊 Slack / Teams 業界共識(見 <StoryLink kind="Design System/Components/ProfileCard/設計規格" name="色彩對照表">ProfileCard 色彩對照表</StoryLink>)。狀態本身為唯讀,Avatar 不擁有切換邏輯。</>}
+        description={<>傳 status prop 在 Avatar 右下角加狀態點,尺寸為 avatar 的 28%(clamp 8–16px),色彩走 presence 專屬 token <code>--status-*</code>,不借用 success / warning / error(見 <StoryLink kind="Design System/Components/ProfileCard/設計規格" name="色彩對照表">ProfileCard 色彩對照表</StoryLink>)。狀態本身為唯讀,Avatar 不擁有切換邏輯。</>}
       >
       <div className="flex items-center gap-6">
         {(['online', 'away', 'busy', 'offline'] as const).map(s => (
           <div key={s} className="flex flex-col items-center gap-2">
             {/* 名片的狀態跟頭像右下角的點同一個值,狀態訊息跟著狀態換(線上不寫休假) */}
-            <Avatar size={40} src="https://i.pravatar.cc/80?u=ada-chen" alt={ada.name} status={s} hoverCard={samplePersonCard({ ...ada, status: s, statusMessage: PRESENCE_MESSAGE[s] })} />
+            <Avatar size={40} src={demoPersonPhoto('Ada Chen', 80)} alt={ada.name} status={s} hoverCard={samplePersonCard({ ...ada, status: s, statusMessage: PRESENCE_MESSAGE[s] })} />
             <span className="text-[11px] font-mono text-fg-muted">{s}</span>
           </div>
         ))}
@@ -673,7 +670,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"・alt 必傳：即使有圖片,alt 同時是「圖片載入失敗時的文字 fallback」與「螢幕報讀時的身份說明」。人員頭像的 alt 建議含姓名與在線狀態(例:「陳冠霖(在線)」),組織 / 專案頭像用品牌或專案名;極少數純裝飾用途才用空字串。\n\n・沒有 alt 時的降級:圖片模式會自動降級為首字或 icon,不會留下沒有任何報讀內容的空頭像。\n\n・在線狀態點不另發報讀:右下角的狀態小點不會被螢幕報讀單獨朗讀,在線狀態整合進頭像本身的 alt 文字。這樣一長串成員名單就不會同時朗讀一堆「在線 / 離線」造成讀屏洪水。\n\n・hover 名片可用鍵盤抵達:當頭像帶有 hoverCard 時,頭像本身會變成可用 Tab 聚焦的圖像(role=img)並顯示聚焦框,鍵盤使用者也能打開名片浮層(頭像刻意不宣告成按鈕 / aria-haspopup,對齊 Radix / GitHub hover card 的零 popup ARIA 慣例)。"}</p>
+      <p className="whitespace-pre-line">{"・alt 必傳：即使有圖片,alt 同時是「圖片載入失敗時的文字 fallback」與「螢幕報讀時的身份說明」。人員頭像的 alt 建議含姓名與在線狀態(例:「陳冠霖(在線)」),組織 / 專案頭像用品牌或專案名;極少數純裝飾用途才用空字串。\n\n・沒有 alt 時的降級:圖片模式會自動降級為首字或 icon,不會留下沒有任何報讀內容的空頭像。\n\n・在線狀態點不另發報讀:右下角的狀態小點不會被螢幕報讀單獨朗讀,在線狀態整合進頭像本身的 alt 文字。這樣一長串成員名單就不會同時朗讀一堆「在線 / 離線」造成讀屏洪水。\n\n・hover 名片可用鍵盤抵達:當頭像帶有 hoverCard 時,頭像本身會變成可用 Tab 聚焦的圖像(role=img)並顯示聚焦框,鍵盤使用者也能打開名片浮層(頭像刻意不宣告成按鈕 / aria-haspopup:名片沒有 Enter / Space 開合行為、也沒有 aria-expanded,宣告了對輔助科技是空承諾)。"}</p>
     </div>
   ),
 }

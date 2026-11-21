@@ -19,7 +19,7 @@ export const TAG_ROW_GAP_PX = 4
  * 單行 Tag 列的容器(`OverflowTagList` 的父元素)必掛的 class —— 四個容器(Combobox 檢視態的 Tag 列、唯讀 / 停用欄位外框、
  * 編輯態的 Tag 區、AgentPanel 輸入盒的附件列)同一份:
  * - `relative`:「+N」量尺(`OVERFLOW_MEASURE_ATTR`,絕對定位在左上)的定位容器,量尺才待在被裁切的容器裡;
- * - `isolate`:每顆 Tag 的疊放值 `--tag-stack-z` = 項目數 − 索引、聚焦時 = 項目數 + 1,**沒有上限**(四十幾顆 Tag 的表格格就是四十幾)——
+ * - `isolate`:每顆 Tag 的疊放值 `--overflow-tag-stack-z` = 項目數 − 索引、聚焦時 = 項目數 + 1,**沒有上限**(四十幾顆 Tag 的表格格就是四十幾)——
  *   只能在這一列裡比,不能漏到外層去跟黏住的表頭、浮層比。與 `../Avatar/avatar.tsx` `AVATAR_STACK_CLASS`(頭像堆疊列)同一件事,
  *   對齊 Primer `.AvatarStack { isolation: isolate }`。全 DS 層級表 `../../tokens/elevation/elevation.spec.md`「疊放順序」第 1 列;(來源:https://github.com/primer/react/blob/62d32c94ac730847a4557441b65a6a48334201a3/packages/react/src/AvatarStack/AvatarStack.module.css#L2-L12)
  *   閘 `scripts/layer-order-invariant.mjs` D(真建置逐項量:每一顆用變數疊放的項目,所在那一列都自成疊放脈絡)。
@@ -135,7 +135,7 @@ function useOverflowCount({
       const shownText = countNode?.data ?? ''
       // ① 攤開:全部 Tag 顯示、「+N」轉量尺(不佔位)並寫成全部收起時的數字(最壞情況,「+N」的寬下限要用它)、Tag 寬上限變數拿掉 ——
       //    這一刻的版面與上一次決定無關
-      container.style.removeProperty('--combobox-tag-area-inline-size')
+      container.style.removeProperty('--tag-max-inline-size')
       for (const el of tagEls.current) if (el) el.hidden = false
       ofEl?.setAttribute(OVERFLOW_MEASURE_ATTR, '')
       if (countNode) countNode.data = `+${totalCount}`
@@ -209,7 +209,8 @@ function useOverflowCount({
       ofEl?.toggleAttribute(OVERFLOW_MEASURE_ATTR, count >= totalCount)
       // 2026-05-18 Round 5:可用寬以 CSS 變數交給 Tag 當上限(explicit length,避開 CSS Sizing 3 §5.2.1 cyclic percentage);
       // 有欄位內搜尋框時扣掉它的位:一顆長 Tag 截斷在搜尋框前面,不把它擠出去(只有一顆、它自己就比可用寬還寬時才真的起作用)。
-      container.style.setProperty('--combobox-tag-area-inline-size', `${Math.max(0, available - reserve)}px`)
+      // 名字:Tag 的值 --tag-max-inline-size(tag.spec.md;2026-11-15 前叫 --combobox-tag-area-inline-size,稽核 P17)
+      container.style.setProperty('--tag-max-inline-size', `${Math.max(0, available - reserve)}px`)
       // (2026-05-18 Round 5 曾在這裡加「最後一顆看得見的 Tag 右緣超出容器就再收一顆」的保險,防整數 / 小數混用的進位誤差。
       //  可用寬與 Tag 寬改成同一種小數單位之後,算式本身就是版面:不再需要事後量一次 —— 拿掉它也少一次強制版面。)
       // 2026-09-08:標籤列是 `flex-1 min-w-0`,容器夠窄時它會被壓到 0 寬,而「+N」在裁切容器內、會一起被裁掉 ——
@@ -274,7 +275,7 @@ export interface OverflowTagListProps {
   /**
    * 2026-05-14 I4 fix(per codex M31 verdict + user 抓到 display overflow 有 avatar、edit 沒有):
    * Optional renderer for hidden items in `+N` overflow popover。Default fallback = `<Tag>{label}</Tag>`
-   * (純文字 chip,backward-compat)。Consumer pass 此 prop 讓 hidden items 顯示同 avatar 視覺
+   * (純文字 chip,一般選項只有文字標籤)。Consumer pass 此 prop 讓 hidden items 顯示同 avatar 視覺
    * (對齊 view path MultiPersonDisplay overflow popover Tag avatar SSOT)。
    * 第二個參數 = 這一項的移除(與 `renderTag` 的 Tag 同一條移除路徑,見 CustomCombobox `handleRemove`)。
    */
@@ -301,7 +302,7 @@ export interface OverflowTagListProps {
   overflowWrapperClassName?: string
   /**
    * Overflow indicator(+N)形狀(2026-05-12 Round 7 fix,user 抓 PeoplePicker stack +N 該圓形):
-   * - `'tag'`(default,backward-compat)— 矩形 chip(對齊 Combobox 文字 tag)
+   * - `'tag'`(預設)— 矩形 chip(跟它旁邊的文字 tag 同形狀;對齊 Combobox 文字 tag)
    * - `'circle'`(opt-in for avatar stack consumers)— 圓形 avatar-shape +N:跟它旁邊的圓形頭像同形狀,讀起來是「還有 N 個人」而不是一顆標籤
    * PeoplePicker stack mode pass `'circle'`,Combobox 文字 tag 自走 `'tag'`。
    */
@@ -350,17 +351,17 @@ export function OverflowTagList({ items, size, wrap, renderTag, renderHiddenTag,
         // 左半圈會被前一項蓋住(同 avatar.tsx AVATAR_STACK_ITEM_CLASS 的理由;頭像堆疊只在 PeoplePicker 會重疊,一般 Tag 不重疊、升層無副作用)。
         // 這兩個值沒有上限,只在容器那一列裡比 —— 容器必掛 TAG_ROW_CONTAINER_CLASS(`isolate`,見檔頭)。
         <div key={item.value} ref={el => { tagEls.current[i] = el }}
-          className={cn('shrink-0 max-w-full flex z-[var(--tag-stack-z)] has-[:focus-visible]:z-[var(--tag-stack-z-focus)]', tagWrapperClassName)}
-          style={{ ['--tag-stack-z' as string]: items.length - i, ['--tag-stack-z-focus' as string]: items.length + 1 }}>{renderTag(item, i)}</div>
+          className={cn('shrink-0 max-w-full flex z-[var(--overflow-tag-stack-z)] has-[:focus-visible]:z-[var(--overflow-tag-stack-z-focus)]', tagWrapperClassName)}
+          style={{ ['--overflow-tag-stack-z' as string]: items.length - i, ['--overflow-tag-stack-z-focus' as string]: items.length + 1 }}>{renderTag(item, i)}</div>
       ))}
       {/* 「+N」恆在:有東西收進去時是可互動的指示器;沒有時是量尺(OVERFLOW_MEASURE_ATTR:絕對定位在容器左上、看不見、點不到、讀屏略過),
           數字是全部收起時的 N(useOverflowCount 量各個候選數字時會暫時改它的字、量完改回)—— 第一次決定就有真的東西可量。容器要是定位容器,量尺才待在被裁切的容器裡,
           不會撐出外層捲動範圍(Tag 區 / 欄位外框都是 relative)。 */}
       <div ref={overflowEl} data-overflow-measure={overflow > 0 ? undefined : ''}
-        className={cn('shrink-0 flex has-[:focus-visible]:z-[var(--tag-stack-z-focus)]',
+        className={cn('shrink-0 flex has-[:focus-visible]:z-[var(--overflow-tag-stack-z-focus)]',
           'data-[overflow-measure]:absolute data-[overflow-measure]:left-0 data-[overflow-measure]:top-0 data-[overflow-measure]:invisible data-[overflow-measure]:pointer-events-none',
           overflowWrapperClassName)}
-        style={{ ['--tag-stack-z-focus' as string]: items.length + 1 }}>
+        style={{ ['--overflow-tag-stack-z-focus' as string]: items.length + 1 }}>
         {overflow > 0 ? (
           <OverflowIndicator count={overflow} shape={overflowShape} size={size} onContentMouseDown={onOverflowMouseDown} contentId={overflowContentId}>
             {hiddenItems.map(item => (

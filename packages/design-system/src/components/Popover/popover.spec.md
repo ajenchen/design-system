@@ -22,9 +22,9 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
-**視覺對齊 Dialog**：外殼 token 與 Dialog 完全一致（`bg-surface-raised` / `border-border` / `rounded-lg` / `elevation-200`）。差別僅兩點：(1) Popover 是 non-modal 輕量浮層不阻斷背景，(2) **layout-space 鎖 `md`** — header / footer padding 不隨頁面放大（輕量 chrome 保持精簡）；**ui-size 不鎖、繼承 page** — 內部控件隨 page 放大、對齊觸發點（2026-06-15 改,原 `data-density` master switch,見 `popover.tsx` docblock）。
+**視覺對齊 Dialog**：外殼 token 與 Dialog 完全一致（`bg-surface-raised` / `border-border` / `rounded-lg` / `elevation-200`）。差別僅兩點：(1) Popover 是 non-modal 輕量浮層不阻斷背景，(2) **layout-space 鎖 `md`** — header / footer padding 不隨頁面放大（輕量 chrome 保持精簡）；**ui-size 不鎖、跟觸發點那一區** — 內部控件跟觸發點同一檔(2026-06-15 起不鎖,原 `data-density` master switch;2026-11-11 起來源從「整頁」改成「觸發點那一區」,user「浮層密度:跟按鈕」,`tokens/density/density.spec.md`「浮層跟觸發點」、`lib/overlay-density.tsx`)。
 
-**Content size canonical（2026-04-29,2026-06-15 更新）**:ui-size 繼承 page → **fields(Input / Select / Checkbox)預設隨 page ui-size**(md page = `size="md"` field-height-md 32px;lg page 放大,與觸發點一致)。其餘細節走 SSOT pointer:
+**Content size canonical（2026-04-29,2026-06-15 更新）**:ui-size 跟觸發點那一區 → **fields(Input / Select / Checkbox)預設隨那一區的 ui-size**(一般密度 = `size="md"` field-height-md 32px;大密度放大到 36,與觸發點一致)。其餘細節走 SSOT pointer:
 - Chrome corner buttons(close X / refresh / dismiss)→ `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」(sm native + v5 trick)
 - Row inline action(panel list row 內 Eye / drag / suffix toggle)→ `patterns/element-anatomy/inline-action.spec.md`「尺寸對照」table(md = 16+18 hover bg)
 - Footer action button → `action-bar.spec.md`(輕量 chrome,sm canonical)
@@ -52,15 +52,15 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 其他結構化浮層 spec 若討論 align 應 pointer 指回本節。
 
 **結構化組合（可選）**：PopoverContent 外殼無內距，consumer 可選擇：
-- **單一 body**：包 `<PopoverBody>` 取得 SurfaceBody canonical padding (`px-loose py-tight`,`overlay-surface.spec.md` SSOT;Dialog body 另有 `pb-[--layout-space-bottom]` 特化)
+- **單一 body**:包 `<PopoverBody>` 取得 SurfaceBody canonical padding(左右 `px-loose`;上下由容器自己給 —— `data-layout-body="hug"`,上 `tight`、最後是一般元素時底與頂同值、最後是有框的表格 `loose`、自帶內距的清單 0;`overlay-surface.spec.md` SSOT、`../../tokens/layoutSpace/layoutSpace.spec.md` 規則 4。Dialog body 是擋住頁面的容器,最後是一般元素時底部 48 —— 同一條規則的第 1 列,不是特化)
 - **含標題**：組合 `<PopoverHeader>` + `<PopoverBody>`（下分隔線由 Header 提供）
 - **含操作按鈕列**：再加 `<PopoverFooter>`（上分隔線由 Footer 提供）
 
 **Dismiss 預設**(與 Dialog 一致):Popover **預設 dismissible** —— 點擊 trigger 外 / 按 Esc / 焦點被移到 content 樹之外(滑鼠點到別處、程式把焦點移走),三者任一皆關閉。由 Radix 內建 `onPointerDownOutside` / `onFocusOutside` / `onEscapeKeyDown` 行為提供,consumer 無需額外 wire。**鍵盤 Tab 不是離開的路**:面板裡按 Tab / Shift+Tab 在面板內繞圈、走不到 content 樹之外(見「A11y 預設」;2026-09-25 更正,原句「focus 離開 content 樹」被讀成 Tab 可以走出去,與實測不符)。如需強制 modal(必須按 Close 才能關),傳 `modal={true}` 並在 Header 放 Close 按鈕;但這是例外,不是預設——Popover 的本質是「使用者可以忽略、繼續主流程」。
 
-> **跨家族 SSOT pointer**:PopoverHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / withTabs(tabs 進 PopoverHeader 時 border auto-suppress + tabs size sm)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Popover 特有 close X v5 unbounded canonical。
+> **跨家族 SSOT pointer**:PopoverHeader 屬 **Padding-based overlay header 家族**;border / padding / dismiss size / tabsSlot(tabs 進 header 時 border auto-suppress + tabs size sm)的跨家族視覺契約 SSOT 詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify Popover 特有 close X v5 unbounded canonical。
 
-**Close X 按鈕(2026-04-22 v5 unbounded canonical)**:所有 `PopoverHeader` 內建右上 X 按鈕,`<Button data-dismiss iconOnly dismiss size="sm" />` native sm(28 md / 32 lg)。透過 SurfaceHeader 的 v5 CSS rule 自動套負 margin 讓 layout 佔位;PopoverHeader 走 `COMPACT_HEADER_SLOT`(= calc(--font-body-size×1.5) = 21 = title line-box,衍生)→ 佔位 21(輕量 chrome,見 `popover.tsx` docblock),非 Dialog 的 24。`hideClose` prop 可讓 composition 元件(如 Coachmark)選擇隱藏。詳 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。
+**Close X 按鈕(2026-04-22 v5 unbounded canonical)**:所有 `PopoverHeader` 內建右上 X 按鈕,`<Button data-dismiss iconOnly dismiss size="sm" />` native sm(28 md / 32 lg)。透過 SurfaceHeader 的 v5 CSS rule 自動套負 margin 讓 layout 佔位;PopoverHeader 走 `COMPACT_HEADER_SLOT`(= calc(--font-body-size×1.5) = 21 = title line-box,衍生)→ 佔位 21(輕量 chrome,見 `popover.tsx` docblock),非 Dialog 的 24。`hideClose` prop 可讓 composition 元件(如 Coachmark)選擇隱藏。詳 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。 標題列操作放 `<PopoverHeader actions={…}>`(與 × 之間的分隔線由 SurfaceHeader 放,`../../patterns/overlay-surface/overlay-surface.spec.md`「SurfaceHeader」右側按鈕位)。
 
 **Header / Footer 高度 canonical**:padding-based(繼承 SurfaceHeader / SurfaceFooter),高度 = max(child layout) + 2×tight。header:slot 佔位 21(`COMPACT_HEADER_SLOT` = title line-box,衍生)→ max(21 title, 21 slot) + 2×12 = **45**,自然比 Dialog / Sheet 48 輕一級(`popover.tsx` PopoverHeader docblock + overlay-surface.tsx 對照);footer:SurfaceFooter **不**套 unbounded slot trick(僅 padding + `border-t`,見 `overlay-surface.spec.md`「為什麼 SurfaceHeader 是 padding-based」)→ 高度 = max(child layout) + 2×tight(sm action button 28 → **52** md)。詳 `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」。
 
@@ -143,9 +143,10 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 - **實作 —— 極長內容**:PopoverContent 設 `max-h-[var(--radix-popover-content-available-height)]`(popover.tsx#PopoverContent),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 的 flex chain 規則見 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
 - **Viewport 邊緣**:`collisionPadding = 8` 自動推開(見「Viewport 邊距 canonical」)。
+- **寬度(`width`,2026-11-15)**:不傳 = 18rem(`w-72`,畫面不變);**數字 = px 固定寬,夾在視窗內**(`min(…, 100vw − 2rem)`,`../../tokens/elevation/overlay-geometry.ts` `OVERLAY_VIEWPORT_MAX_WIDTH`,與表格三個工具面板同一份);**`"hug"` = 跟內容**(裡面的面板自己決定寬:`DataTableSortManager` / `DataTableFilterPanel`,以及指定了 `width` 的 `DataTableColumnVisibilityPanel` —— `../DataTable/data-table.spec.md`「工具面板的寬度」)。名字與值域照 user「尺寸:甲」(`../../../ds-canonical/references/props-naming.md`「尺寸參數」);依據是決策頁 r9「照既有原則直接做」的「Sheet、Popover 加寬度參數」(「要設定的值走元件參數」4甲 推得出來;**預選、user 未逐字選**,user 只回了 7 題、沒有提出異議)。2026-11-15 前只能寫 `className="w-80"` / `"w-auto"`(沒有型別;className 仍可用)。閘 `scripts/data-table-panel-reset-clear-invariant.mjs` (6)。
 - **嵌套 Popover**:禁止(見「禁止事項」)。
 - **Dark mode**:殼走 semantic token 自動 adapt(見 `color.spec.md`)。
-- **Density**:layout-space 鎖 `md`(header / footer padding 精簡);ui-size 繼承 page(見「定位」段)。
+- **Density**:layout-space 鎖 `md`(header / footer padding 精簡);ui-size 跟觸發點那一區(見「定位」段;Trigger 與 Anchor 都登記,區間 DatePicker 只用 Anchor 也照樣讀得到)。
 - **空內容 / loading / error / validation ownership**:Popover shell **不擁有**這些狀態——由 `PopoverBody` 內的 consumer 內容層負責:空狀態放 `<Empty>`、載入放 `<Skeleton>`、錯誤放 `<Alert>`、表單驗證放 `<Field>` 的 `FieldError`。structural pattern 的職責邊界 SSOT 見 `../../patterns/overlay-surface/overlay-surface.spec.md` SurfaceBody「邊界」段(loading / error / empty 屬 consumer 內容層)。
 - **disabled ownership**:Popover 容器無 disabled 態;trigger 的 disabled 由 trigger 元件自管(`<Button disabled>`),content 內控件各自的 disabled 由該控件負責(對應 `StateBehavior` story「職責邊界」段)。
 
@@ -172,7 +173,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 ## Inspector
 
-`Inspector` 提供互動 Controls 即時切換 PopoverContent 六個關鍵維度:`side` / `align`(12 種定位組合)、`sideOffset`(與 trigger 距離)、`width`(w-72 / w-80 / w-96)、`showHeader` / `showFooter`(chrome 結構開關)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop(對齊 `sheet.spec.md`「Inspector」canonical)。`PlacementMatrix` 另以靜態 12-cell side × align 矩陣一眼呈現所有定位組合;Header / Body / Footer padding 屬 `overlay-surface` SSOT,由 `ColorMatrix` 的 token 表 + 該 pattern spec 覆蓋。
+`Inspector` 提供互動 Controls 即時切換 PopoverContent 六個關鍵維度:`side` / `align`(12 種定位組合)、`sideOffset`(與 trigger 距離)、`width`(288 / 320 / 384 —— 2026-11-15 起是 PopoverContent 真的 `width` prop,之前是 story 自己的 className 字串)、`showHeader` / `showFooter`(chrome 結構開關)。內容區由 consumer 決定,Inspector 聚焦容器層級的可試玩 prop(對齊 `sheet.spec.md`「Inspector」canonical)。`PlacementMatrix` 另以靜態 12-cell side × align 矩陣一眼呈現所有定位組合;Header / Body / Footer padding 屬 `overlay-surface` SSOT,由 `ColorMatrix` 的 token 表 + 該 pattern spec 覆蓋。
 
 對應 anatomy story:保留 `Overview` + `Inspector` + 元件特有 `PlacementMatrix`(12-cell side × align 矩陣) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`(open / close / animation) + `Accessibility`。
 

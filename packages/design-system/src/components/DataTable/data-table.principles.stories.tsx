@@ -124,7 +124,7 @@ export const ColumnTypeRule: Story = {
           title={<>✅ 宣告 <code>meta.type</code>,DataTable 自動選對應 view 渲染</>}
           note={<>每個 Field Control 的 <code>mode='view'</code> 渲染(<code>&lt;Input mode='view'&gt;</code> / <code>&lt;NumberInput mode='view'&gt;</code> / <code>&lt;Checkbox mode='view'&gt;</code> 等)是該資料類型的唯一真實來源——format 邏輯、對齊、null 顯示都住一份。Consumer 只需宣告 type,不需重複造輪子</>}
         >
-          <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
+          <DataTable columns={columns} data={SAMPLE_DATA} maxHeight="none" />
         </TutorialRule>
 
         <TutorialRule
@@ -173,26 +173,26 @@ export const VirtualScrollRule: Story = {
     return (
       <TutorialPage>
         <TutorialRule
-          title="height='auto' — 少量資料(30 筆以內),全部渲染"
-          note="資料量小,全渲染比 virtualizer 簡單。沒有固定高度,table 自然撐開,頁面捲動即可"
+          title="maxHeight='none' — 少量資料(30 筆以內),全部渲染"
+          note="資料量小,全渲染比 virtualizer 簡單。沒有高度上限,table 自然撐開,頁面捲動即可"
         >
-          <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
+          <DataTable columns={columns} data={SAMPLE_DATA} maxHeight="none" />
           <ExampleCaption>↑ 4 筆資料無需虛擬捲動</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
-          title="固定 height — 超過 30 筆時自動虛擬捲動"
-          note="傳固定高度、資料又超過 30 筆時,TanStack Virtual 自動啟用——只渲染可見 rows。500 筆資料只渲染 ~20 rows,大幅降低列渲染成本。注意:排序 / 篩選 / 完整 row model 與記憶體成本仍隨資料量增長——超大量或遠端資料仍需分頁或 server-side 排序 / 篩選"
+          title="固定上限 maxHeight — 超過 30 筆時自動虛擬捲動"
+          note="傳固定高度上限、資料又超過 30 筆時,TanStack Virtual 自動啟用——只渲染可見 rows。500 筆資料只渲染 ~20 rows,大幅降低列渲染成本。注意:排序 / 篩選 / 完整 row model 與記憶體成本仍隨資料量增長——超大量或遠端資料仍需分頁或 server-side 排序 / 篩選"
         >
-          <DataTable columns={columns} data={bigData} height="400px" />
-          <ExampleCaption>↑ 500 筆資料,固定 400px 高度 → virtualizer 只渲染畫面中的 ~20 rows</ExampleCaption>
+          <DataTable columns={columns} data={bigData} maxHeight={400} />
+          <ExampleCaption>↑ 500 筆資料,上限 400px → virtualizer 只渲染畫面中的 ~20 rows</ExampleCaption>
         </TutorialRule>
 
         <TutorialRule
-          title="❌ 會長大的資料用 height='auto'"
-          note="auto 永遠全部渲染(沒有虛擬捲動):資料越多,初始 render 越慢、捲動越卡、記憶體越吃緊。只有傳固定 height,資料超過 30 筆後才會自動虛擬化"
+          title="❌ 會長大的資料用 maxHeight='none'"
+          note="沒有上限就永遠全部渲染(沒有虛擬捲動):資料越多,初始 render 越慢、捲動越卡、記憶體越吃緊。只有傳固定上限,資料超過 30 筆後才會自動虛擬化"
         >
-          <ExampleCaption warn>判斷法:資料會超過 30 筆、或筆數會隨使用者資料成長,就用固定 height</ExampleCaption>
+          <ExampleCaption warn>判斷法:資料會超過 30 筆、或筆數會隨使用者資料成長,就給固定上限 maxHeight</ExampleCaption>
         </TutorialRule>
       </TutorialPage>
     )
@@ -216,7 +216,7 @@ export const EmptyStateRule: Story = {
           <DataTable
             columns={columns}
             data={[]}
-            height="auto"
+            maxHeight="none"
             emptyState={<Empty title="尚無商品" description="還沒有任何商品,新增的商品會列在這裡。" />}
           />
           <ExampleCaption>↑ 傳 <code>emptyState</code> 消費 Empty primitive,並以業務語言描述缺什麼資料</ExampleCaption>

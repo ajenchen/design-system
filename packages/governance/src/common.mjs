@@ -182,6 +182,19 @@ export async function writeJsonAtomic(file, value, mode = 0o644) {
   }
 }
 
+// A `.git` entry (directory, or the pointer file a worktree/submodule leaves) never belongs
+// inside a governance inventory root. Before this guard it was silently folded into the
+// digest: an empty `.git/` changed nothing, a populated one surfaced only as
+// GOV-SNAPSHOT-001 hash drift on governance/generated/* without ever naming the culprit.
+// An explicit `excludes` entry is the only way to admit one, so a caller that truly needs
+// it has to say so. The digest algorithm for every other entry is unchanged.
+const NESTED_GIT_ENTRY_NAME = '.git'
+
+function nestedGitInventoryMessage(root, rel) {
+  return `nested .git inside governance inventory root: ${resolve(root, rel)} (inventory root ${resolve(root)}, entry ${rel}). `
+    + '多半是 hook 測試直接跑留下的 fixture(應經 npm run hooks:test),見 AGENTS.md 失敗記憶索引。'
+}
+
 export async function inventoryTree(root, { excludes = [], projectFile = null } = {}) {
   if (!(await exists(root))) return []
   const rootInfo = await lstat(root)
@@ -200,6 +213,7 @@ export async function inventoryTree(root, { excludes = [], projectFile = null } 
       const absolute = resolve(directory, child.name)
       const rel = prefix ? `${prefix}/${child.name}` : child.name
       if (isExcluded(rel)) continue
+      if (child.name === NESTED_GIT_ENTRY_NAME) throw new Error(nestedGitInventoryMessage(root, rel))
       const info = await lstat(absolute)
       if (child.isDirectory()) {
         await visit(absolute, rel)

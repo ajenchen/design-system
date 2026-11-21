@@ -6,15 +6,20 @@
  *   --motion-<measurement>-<variant>
  *   grep `--motion-` 即抓齊全 motion family。
  *
- * ── 3 個 sub-measurement family ──
+ * ── 2026-11-15:7 顆沒有讀者的名字退場(值都不變;稽核 P07 / P08 / P09 / P10)──
+ * 留在本檔的都是執行期有 CSS 讀者的(overlay-motion.ts / disclosure-motion.ts 經 tw-animate-css 的 --tw-duration / --tw-ease 讀)。
+ * 退場的值與它們現在唯一的住處:
+ *   (A) hover 開 / 關延遲 plain 500ms / rich 700ms / close 200ms(2026-05-18/20 user 拍板 #3A)
+ *       → tokens/motion/motion.ts 的 MOTION_DELAY_PLAIN_MS / RICH_MS / CLOSE_MS。Radix 的延遲參數只吃數字,
+ *       四個消費元件一直讀這三個常數,CSS 版從沒有 CSS 讀者(motion.spec.md「三層 tier 系統」表後的註)。
+ *   (B) 滑入距離 0.5rem / 縮放 0.95 → 7 個浮層各自的 tw-animate-css 幾何 class(slide-in-from-*-2 / zoom-in-95)。
+ *       幾何照原型各自帶(overlay-motion.ts 檔頭),token 從沒被讀(motion.spec.md「進出場動畫 token」)。
+ *   (C) 循環動態的 swell / settle 曲線 → AgentPanel 標誌 agent-panel-logo.tsx 的 SWELL / SETTLE(SVG 的 SMIL 動畫讀不到 CSS 變數,
+ *       那兩個字串本來就是唯一生效的值);思考中文字微光週期 2s → AgentPanel 的 agent-panel.css(只有它在用,
+ *       依 token-system.spec.md「一組」的窄讀法不算動畫時長那一組的組員)。
  *
- * (A) delay(何時開/關 — hover open/close 延遲;Radix delayDuration/openDelay/closeDelay 吃 JS 鏡像)
- *   - plain 500ms → Tooltip 純文字提示(被動 hint,對齊 Material 3 / Apple HIG / shadcn-Radix 主流)
- *   - rich  700ms → HoverCard / ProfileCard 內容預覽(含 fetch,避免列表掃視誤觸發)
- *   - close 200ms → 全 overlay 關閉延遲(close ≤ open UX 共識,user 誤滑出可回來)
- *   (2026-05-18/20 user 拍板 #3A;原名 `--hover-delay-*`,2026-07-11 統一前綴為 `--motion-delay-*`)
- *
- * (B) 進出場動畫(fade/zoom/slide 的 duration / easing / 幾何 — CSS 驅動,由 tw-animate-css 消費)
+ * ── 現行 ──
+ * (B) 進出場動畫(fade/zoom/slide 的 duration / easing — CSS 驅動,由 tw-animate-css 消費)
  *   全部世界級實證(見 motion.spec.md「世界級對照」+ planning/2026-07-11-overlay-motion-tokens.md):
  *   - duration-overlay 150ms:輕量浮層(Tooltip/Popover/HoverCard/DropdownMenu)。
  *       Material short3 / Carbon moderate-01 / Polaris 150 / tw-animate-css 預設 **四家一致**。
@@ -22,44 +27,18 @@
  *       Material medium1 / Polaris 250 / Carbon moderate-02(240)。
  *   - easing-enter cubic-bezier(0,0,0,1):進場減速(Material standard-decelerate,企業級中性沉穩)。
  *   - easing-exit  cubic-bezier(0.3,0,1,1):出場加速(Material standard-accelerate)。
- *   - enter-distance 0.5rem(8px):slide 位移,沿用現行 slide-*-2 = shadcn/Radix canonical。
- *   - enter-scale 0.95:zoom scale,沿用現行 zoom-95 = shadcn default。
+ *       AgentPanel 標誌的 SMIL 動畫另有一份逐字鏡像字串(agent-panel-logo.tsx 的 EXIT;SMIL 讀不到 CSS 變數)。
  *   - duration-disclosure 200ms:原地展開收合(TreeView 子項 / Accordion 內容 / AgentPanel 思考塊的高度動畫;
  *       共用 SSOT = disclosure-motion.ts)。值 = 三個消費者現況實際渲染的時長(tw-animate-css 1.4.0 的
  *       collapsible / accordion 預設 `.2s`,node_modules/tw-animate-css/dist/tw-animate.css),也是 agent-panel.spec.md
  *       「思考塊開合 200ms」與舊 base.css accordion 的宣告;舊 base.css collapsible 的 150ms 從 2026-07-14 起就被
  *       tw-animate-css 同名工具類蓋掉、沒有生效過(待辦總帳 T8)。登記成 token 是把「實際值由外掛預設決定」收回 DS(M17)。
- *
- * (C) 循環動態(repeatCount infinite 的呼吸/微光 loop — AgentPanel 家族引入,2026-09-02)
- *   既有 easing-enter/exit 語意=單次進退場;循環動態的「起/收」是不同 measurement,故新增:
- *   - easing-swell cubic-bezier(0.4,0.14,0.3,1):循環「起」段(吸氣/蓄勢)。
- *       值=Carbon expressive 參考(carbondesignsystem.com motion/overview,productive/expressive 雙檔制)。
- *   - easing-settle cubic-bezier(0.2,0,0.38,0.9):循環「收」段(吐氣/回落)。
- *       值=Carbon productive 參考(同上)。
- *   - duration-shimmer 2s:思考中文字微光週期(獨立於標誌 3s 一息家族)。
- *       值=shadcn shimmer 逐字(ui.shadcn.com/docs/utils/shimmer:
- *       `animation: tw-shimmer var(--shimmer-duration, 2s) linear infinite`;2026-09-02 實開頁複核)。
- *   SMIL(SVG 動畫)無法消費 CSS var:agent-panel-logo.tsx 內 keySplines 常數為 swell/settle
- *   token 值的逐字鏡像(該檔檔頭註記;改值必同步兩處)。
  */
 
 :root {
-  /* (A) delay */
-  --motion-delay-plain: 500ms;
-  --motion-delay-rich: 700ms;
-  --motion-delay-close: 200ms;
-
-  /* (B) 進出場動畫 */
   --motion-duration-overlay: 150ms;
   --motion-duration-surface: 250ms;
   --motion-easing-enter: cubic-bezier(0, 0, 0, 1);
   --motion-easing-exit: cubic-bezier(0.3, 0, 1, 1);
-  --motion-enter-distance: 0.5rem;
-  --motion-enter-scale: 0.95;
   --motion-duration-disclosure: 200ms;
-
-  /* (C) 循環動態 */
-  --motion-easing-swell: cubic-bezier(0.4, 0.14, 0.3, 1);
-  --motion-easing-settle: cubic-bezier(0.2, 0, 0.38, 0.9);
-  --motion-duration-shimmer: 2s;
 }

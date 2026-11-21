@@ -35,7 +35,7 @@ const STATUS_OPTIONS = ['待處理', '進行中', '已完成', '已封存'] as c
  * 導覽與 listbox 結構的容器內,`Command` 自帶方向鍵與 `role="listbox"`(`SelectMenu` 內部走同一條路)。
  * **列的水平內距是唯一要客製的東西**,而且**設在清單容器上、不是設在每一列**:
  * 列的內距讀 `--item-px`(owner = `item-anatomy.spec.md`「Token: `--item-px`」,預設 `var(--field-px)` 12px);
- * 這裡在 `Command` 根設一次 `var(--layout-space-loose)`(16px),整份清單(含空狀態 / 載入中訊息列)一起換。
+ * 這裡在 `Command` 根設一次 `gutter="surface"`(= `var(--layout-space-loose)`,16px;2026-11-15 前手寫 style),整份清單(含空狀態 / 載入中訊息列)一起換。
  *
  * 目的是讓**列的最前緣**(這裡是勾選框)對齊 header 標題與 footer 按鈕左緣
  * (`overlay-surface.spec.md`「Canonical pattern」第 2 條 + 同檔「底部區域:按鈕列 vs 列式」footer 同一條對齊線)。**對齊的是前緣不是文字** ——
@@ -68,7 +68,7 @@ function StatusFilterPanel({ defaultOpen = false }: { defaultOpen?: boolean }) {
           <PopoverTitle>依狀態篩選</PopoverTitle>
         </PopoverHeader>
         <PopoverBody className="!px-0 !pt-0 !pb-0">
-          <Command label="狀態選項" style={{ '--item-px': 'var(--layout-space-loose)' } as React.CSSProperties}>
+          <Command label="狀態選項" gutter="surface">
             <CommandList>
               <CommandGroup>
                 {STATUS_OPTIONS.map((status) => (

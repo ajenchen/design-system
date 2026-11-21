@@ -4,6 +4,13 @@
 // Gate 抓什麼:packages/design-system/src/**/*.tsx? 內,className/cn() context 的裸 `px-loose`/`py-tight`/
 //   `pb-bottom`/`gap-cozy` 等 layout-space utility 名(Tailwind 未註冊 → silent 產不出 CSS)。合法形式僅
 //   `px-[var(--layout-space-loose)]`。Gate 無 --check flag,直接 `node scripts/layout-space-utility-invariant.mjs`,fail → exit 1。
+//
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: layout-space-utility-invariant.mjs 在該紅的時候會紅 —— 在 components/Button/button.tsx 末尾加一行 `<div className="px-loose" />`,閘必須 exit 非 0;注入前與還原後同一支閘都必須 exit 0
+//   紅: 現況就紅(repo 已有真違規)、注入後閘仍 exit 0(偵測失效)、或還原後不綠 → 印出是哪一步並 exit 1
+//   綠: 三步都照預期時 exit 0;button.tsx 在 finally 寫回原文,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 

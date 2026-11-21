@@ -347,7 +347,7 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown, dat
   }
 
   // (date 精度 helper 已提升為 top-level `toDateMs`;文字 ops 的 filterValue lowercase 消費
-  //  prepared 快取,prepared 缺席 = deprecated dataTableFilterMatch 路徑 inline fallback — D3 perf)
+  //  prepared 快取,快取裡沒有該欄位時 inline 算 — D3 perf)
 
   switch (op) {
     case 'contains':         return String(cellValue ?? '').toLowerCase().includes(prepared?.filterTextLower ?? String(filterValue).toLowerCase())
@@ -447,17 +447,4 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown, dat
 
     default: return true
   }
-}
-
-/**
- * @deprecated v0.x — old per-column filterFn integration。
- * 新版用 `evaluateTree` 配 TanStack `globalFilter`。
- * 保留為了過渡期 backward-compat,新 consumer 不要用。
- */
-export function dataTableFilterMatch(cellValue: unknown, filterValue: unknown): boolean {
-  if (typeof filterValue === 'object' && filterValue !== null && 'operator' in filterValue && 'value' in filterValue) {
-    const fv = filterValue as { operator: string; value: unknown }
-    return matchOperator(fv.operator, cellValue, fv.value)
-  }
-  return String(cellValue ?? '').toLowerCase().includes(String(filterValue ?? '').toLowerCase())
 }

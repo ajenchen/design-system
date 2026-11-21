@@ -10,16 +10,13 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../block_prototype_imports.py"
-PROJECT_ROOT=$(mktemp -d)
-OUTSIDE_RUNTIME=$(mktemp -d)
 # Empty fixture roots turn later `cd "$VAR" && pwd -P` normalization into the caller's
-# working directory and make cleanup traps destructive. Fail closed instead.
-for fixture_root in "${PROJECT_ROOT:-}" "${OUTSIDE_RUNTIME:-}"; do
-  if [ -z "$fixture_root" ] || [ ! -d "$fixture_root" ]; then
-    echo "❌ mktemp -d failed(TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2
-    exit 1
-  fi
-done
+# working directory and make cleanup traps destructive. Fail closed instead —— each root is
+# checked immediately after it is created(scripts/hook-test-fixture-guard-invariant.mjs).
+PROJECT_ROOT=$(mktemp -d)
+[ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT" ] || { echo "❌ mktemp -d failed(PROJECT_ROOT;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
+OUTSIDE_RUNTIME=$(mktemp -d)
+[ -n "${OUTSIDE_RUNTIME:-}" ] && [ -d "$OUTSIDE_RUNTIME" ] || { echo "❌ mktemp -d failed(OUTSIDE_RUNTIME;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 export GOVERNANCE_PROJECT_DIR="$PROJECT_ROOT"
 export GOVERNANCE_READ_ONLY=1
 export GOVERNANCE_TELEMETRY_OPT_IN=0

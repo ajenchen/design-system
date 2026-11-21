@@ -126,9 +126,7 @@ Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action
 
 **世界級對照**:
 - **Material Banner**(關閉不是右上角的 X,而是一至兩顆文字動作鈕之一(primary / secondary action),放在訊息旁、手機版疊到訊息下方;banner 要使用者按動作才會消失,https://github.com/material-components/material-components-web/blob/6ceadb81df508ac08ab007c52c4d3dc1d811cc15/packages/mdc-banner/README.md#L25)
-- **Polaris Banner**(`onDismiss` 走 IconButton,右上 action group)
-- **VS Code editor tab** window corner(close + pin + split,全部同 size IconButton)
-- **Figma panel corner**(close + collapse 同 group,divider 分隔)
+- 原列的另外三家(右上 action group 同尺寸、分隔線隔開)沒有一手來源,2026-11-16 撤回;本節規則的依據是上面「規則」三條與 `patterns/action-bar/action-bar.spec.md` 第五節
 
 ### Multi corner action 場景
 

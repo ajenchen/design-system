@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
@@ -28,7 +27,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Chip 是 Material Design Filter Chip 實作——多選或單選的 pill 控件(<code>type</code> 必填)。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 <code>rounded-full</code> pill,各自有 <code>gap-2</code> 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
+        <Desc>Chip 是 <a href="https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/docs/components/chip.md#L228-L234" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">Material Design Filter Chip</a> 實作——多選或單選的 pill 控件(<code>type</code> 必填)。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 <code>rounded-full</code> pill,各自有 <code>gap-2</code> 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
         <ChipGroup type="multiple" defaultValue={['electronics', 'food']}>
           <Chip value="electronics">電子產品</Chip>
           <Chip value="furniture">家具</Chip>
@@ -59,7 +58,7 @@ export const Overview: Story = {
             <tbody>
               <tr><Td>選擇語意</Td><Td>多選為主,可選單選</Td><Td>固定單選(radio)</Td></tr>
               <tr><Td>視覺連接</Td><Td mono>各自獨立 pill,gap-2</Td><Td mono>Items 連體,-ml-px border 重疊</Td></tr>
-              <tr><Td>圓角</Td><Td mono>rounded-full(M3 身份特徵)</Td><Td mono>rounded-md</Td></tr>
+              <tr><Td>圓角</Td><Td mono>rounded-full</Td><Td mono>rounded-md</Td></tr>
               <tr><Td>溢出處理</Td><Td>layout="scroll" / "menu"(共用 horizontal-overflow pattern)</Td><Td>不支援 overflow</Td></tr>
             </tbody>
           </table>
@@ -74,7 +73,7 @@ export const Inspector: InspectorStory = {
   parameters: {
     docs: {
       description: {
-        story: '在右側 Controls 面板切換 type / selected / disabled / startIcon / layout,即時查看 Chip 狀態。世界級 DS 的 Inspector = Figma inspect 替代。',
+        story: '在右側 Controls 面板切換 type / selected / disabled / startIcon / layout,即時查看 Chip 狀態,取代 Figma inspect。',
       },
     },
   },
@@ -111,7 +110,7 @@ export const Inspector: InspectorStory = {
   },
   // 2026-07-14 dim-26 修:原 mount-only defaultValue — Controls 切 selected 不生效,且
   // layout=menu 違反 chip.spec.md「menu 模式需要 controlled ChipGroup」
-  // (chip.tsx:298 runtime warn)。改 controlled inner(repo anatomy 慣例 useState Inner)+
+  // (chip.tsx#MenuChipGroup 的 toggleFromMenu runtime warn)。改 controlled inner(repo anatomy 慣例 useState Inner)+
   // key remount 讓 Controls 切換 type / selected 即時反映。
   render: (args) => <InspectorControlled key={`${args.type}-${args.selected}`} {...args} />,
 }
@@ -195,7 +194,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>視覺並列對照</H3>
         <Desc>左 default / 中 selected / 右 disabled,觀察 border 同時染 primary(base)的視覺變化(非 bg 變化)。</Desc>
-        <div className="flex items-center gap-8 px-6 py-5 rounded-lg bg-canvas border border-divider">
+        <div className="flex items-center gap-8 px-6 py-5 rounded-md bg-canvas border border-divider">
           <div className="flex flex-col gap-2 items-start">
             <span className="text-footnote text-fg-muted font-mono">default</span>
             <ChipGroup type="multiple" defaultValue={[]}>
@@ -222,7 +221,7 @@ export const ColorMatrix: Story = {
           </div>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          世界級對照:Material 3 Filter Chip / Atlassian Chip / Polaris Filter 全部採「border + text 同步染 primary」而非 bg 染色——保持 filter row 的視覺輕量。
+          selected 只把 border + text 同步染 primary、底色維持 surface 不變,不做 bg 染色——保持 filter row 的視覺輕量(理由見下一段)。
         </p>
       </div>
 
@@ -273,8 +272,8 @@ export const SizeMatrix: Story = {
       <div>
         <H3>單一 size = h-field-sm(28 / 32 density-aware)</H3>
         <Desc>
-          Chip 故意只有一種尺寸——對齊 Material 3 / Atlassian / Polaris 的 filter chip
-          設計準則 共識。Chip 是 filter 語意,filter 列的視覺重量應該固定;如果需要多 tier,那是
+          Chip 故意只有一種尺寸——既有使用場景(filter bar、tag panel)共享同一密度,多 size
+          不增加語意表達力,只會擴張 API 與組合分歧。Chip 是 filter 語意,filter 列的視覺重量應該固定;如果需要多 tier,那是
           Button 或 Tabs 的領域。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -287,7 +286,7 @@ export const SizeMatrix: Story = {
               <tr><Td>Label 左右留白</Td><Td mono>px-1</Td><Td>4px 貼合視覺中心</Td></tr>
               <tr><Td>Chip 之間 gap</Td><Td mono>gap-2</Td><Td>8px(獨立 pill 間距)</Td></tr>
               <tr><Td>Icon size</Td><Td mono>16px</Td><Td>對齊 Button sm icon</Td></tr>
-              <tr><Td>Border radius</Td><Td mono>rounded-full</Td><Td>M3 身份特徵</Td></tr>
+              <tr><Td>Border radius</Td><Td mono>rounded-full</Td><Td>獨立 pill 外形(非連體,與 SegmentedControl 區隔)</Td></tr>
               <tr><Td>Typography</Td><Td mono>text-body font-medium</Td><Td>14px 500 leading-compact</Td></tr>
             </tbody>
           </table>
@@ -420,7 +419,7 @@ export const LayoutMatrix: Story = {
 
       <div>
         <H3>menu(show-all navigator dropdown)</H3>
-        <Desc>所有 chip 留在單行水平捲動容器,全部可見可點(不隱藏);dropdown 永遠列出全部 chip 供快速勾選(對齊 Chrome tab dropdown / VS Code editor tabs)。適合 chip 很多但使用者不常切後面的場景。</Desc>
+        <Desc>所有 chip 留在單行水平捲動容器,全部可見可點(不隱藏);dropdown 永遠列出全部 chip 供快速勾選(show-all navigator:不做動態 overflow 計算)。適合 chip 很多但使用者不常切後面的場景。</Desc>
         <div className="max-w-md border border-border rounded-md p-3">
           <MenuLayoutExample />
         </div>

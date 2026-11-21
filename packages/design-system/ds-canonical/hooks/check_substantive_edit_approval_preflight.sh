@@ -14,7 +14,7 @@
 # - Stop hook BLOCKER = post-action backstop(stop_self_audit.sh Mechanism 4)
 # - AI inline self-statement = discipline(M31 Layer A/C marker + 本 hook context)
 #
-# 對齊:AGENTS.md `# 稽核 canonical` Audit-vs-execute 分權 + M31 Layer A/C + M32(f) ship gate。
+# 對齊:AGENTS.md `# 稽核 canonical` Audit-vs-execute 分權 + M31 Layer A/C + 原 M32(f) ship gate(現住 AGENTS.md `# 稽核 canonical`)。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {

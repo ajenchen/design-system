@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — 產品架構參照(Linear / Notion / Figma / GitHub / Slack / Gmail 等)為 usage 觀察,非逐句 URL-cited;視為 unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import { TutorialPage, UsageSection, TutorialList, StoryLink, createTutorialRule } from '@/design-system/stories-helpers/examples/tutorial-page'
 
@@ -19,7 +18,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="when">
         <TutorialList>
           <li>
-            多頁 web service 的主結構——Linear / Notion / Slack / GitHub / Asana 這類「左側導覽 + 中央工作區」產品。完整組合見{' '}
+            多頁 web service 的主結構——議題追蹤、文件協作、團隊訊息、程式碼託管這類「左側導覽 + 中央工作區」的工作型產品。完整組合見{' '}
             <StoryLink kind="Design System/Components/AppShell/展示" name="主側欄佈局 — Linear 式議題追蹤">展示 → 主側欄佈局 — Linear 式議題追蹤</StoryLink>
           </li>
           <li>
@@ -27,7 +26,7 @@ export const UsageGuidance: Story = {
             <StoryLink kind="Design System/Components/AppShell/展示" name="主側欄佈局 + 頁面分頁">展示 → 主側欄佈局 + 頁面分頁</StoryLink>
           </li>
           <li>
-            需要右側詳情面板(議題詳情 / inspector / 成員資料)跟 main 並存——如 Linear 點選議題後右側展開詳情。開合行為見{' '}
+            需要右側詳情面板(議題詳情 / inspector / 成員資料)跟 main 並存——如點選議題後在右側展開詳情。開合行為見{' '}
             <StoryLink kind="Design System/Components/AppShell/設計規格" name="狀態行為">設計規格 → 狀態行為(四區版面)</StoryLink>
           </li>
           <li>
@@ -113,21 +112,20 @@ export const LayoutModeRule: Story = {
       <TutorialRule title="唯一判準:頂部標頭服務的範圍">
         <p className="text-body">
           唯一的區分標準 = <strong>頂部標頭服務的是「目前這一頁」還是「整個產品」</strong>,
-          <em>不是</em>工作區(workspace)的數量多寡(Notion / Gmail 都支援多工作區,卻分屬不同派)。
+          <em>不是</em>工作區(workspace)的數量多寡(工作區切換放 Sidebar 頂或全域標頭左側都有位置,跟版面模式無關)。
           問自己:頂部那條標頭列服務的是當前頁面,還是整個產品?
         </p>
         <TutorialList>
           <li>
             <strong>primary-sidebar</strong>:頂部是<strong>服務當前頁的工具列</strong> —
             放麵包屑、頁面層級操作、篩選。Sidebar 頂天立地,工作區品牌(<code>WorkspaceBrand</code>)放在 sidebar 頂。
-            參考 Linear / Notion / Figma。
           </li>
           <li>
             <strong>primary-header</strong>:多一條<strong>橫跨頂部、服務整個產品的全域標頭</strong> —
             放帳號、工作區切換、跨頁搜尋、通知;服務當前頁的工具列
             <em>仍在</em>主欄頂部,只是上面多了這條全域標頭。工作區品牌改放全域標頭(<code>globalHeader</code>)左側。
-            參考 GitHub / Slack / Gmail。完整組合見{' '}
-            <StoryLink kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層(GitHub/Gmail/Slack 派)">展示 → 主標頭佈局 — 全域+本地兩層</StoryLink>
+            完整組合見{' '}
+            <StoryLink kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層">展示 → 主標頭佈局 — 全域+本地兩層</StoryLink>
           </li>
         </TutorialList>
         <p className="text-caption text-fg-secondary">
@@ -139,23 +137,23 @@ export const LayoutModeRule: Story = {
       <TutorialRule title="常見誤解:全域標頭會取代當前頁工具列">
         <p className="text-body">
           錯。primary-header = primary-sidebar 的所有東西 + <strong>額外一條</strong>全域標頭在頂;
-          當前頁工具列(<code>header</code> slot)<strong>仍然存在</strong>。GitHub / Slack / Gmail 全部同時保有兩層,
+          當前頁工具列(<code>header</code> slot)<strong>仍然存在</strong>。全域標頭加在當前頁工具列之上,兩層同時存在,
           不是二選一。
         </p>
       </TutorialRule>
 
       <TutorialRule title="WorkspaceBrand 跟著 mode 走(只能出現一次)">
         <TutorialList>
-          <li><strong>primary-sidebar</strong>:WorkspaceBrand 放 Sidebar 頂部(<code>&lt;SidebarHeader&gt;</code> 內)— Linear / Notion / Figma file panel</li>
-          <li><strong>primary-header</strong>:WorkspaceBrand 改放 globalHeader 左側(搭配 SidebarTrigger),SidebarHeader 留空 — GitHub / Gmail / Figma file editor</li>
+          <li><strong>primary-sidebar</strong>:WorkspaceBrand 放 Sidebar 頂部(<code>&lt;SidebarHeader&gt;</code> 內)— 沒有全域標頭,工作區品牌自然在 Sidebar 頂</li>
+          <li><strong>primary-header</strong>:WorkspaceBrand 改放 globalHeader 左側(搭配 SidebarTrigger),SidebarHeader 留空 — 品牌已在全域標頭,Sidebar 再放一次就重複</li>
           <li>禁止:<code>primary-header</code> mode 同時在 globalHeader + SidebarHeader 各放一份 = 視覺冗餘 + 跨產品識別混淆(WorkspaceBrand 視覺 SSOT,只能出現一次)</li>
         </TutorialList>
       </TutorialRule>
 
       <TutorialRule title="帳號入口(個人設定)跟著 mode 走(只能出現一次)">
         <TutorialList>
-          <li><strong>primary-sidebar</strong>:帳號 / 個人設定放 Sidebar 底部(<code>&lt;SidebarFooter&gt;</code>)— Linear / Notion / Figma</li>
-          <li><strong>primary-header</strong>:帳號入口改放 globalHeader 右側 avatar(品牌左、帳號右,左右對稱),sidebar 不放帳號頁尾 — GitHub / Gmail / Slack 帳號一律在全域標頭右上</li>
+          <li><strong>primary-sidebar</strong>:帳號 / 個人設定放 Sidebar 底部(<code>&lt;SidebarFooter&gt;</code>)— 沒有全域標頭,帳號自然在 Sidebar 底</li>
+          <li><strong>primary-header</strong>:帳號入口改放 globalHeader 右側 avatar(品牌左、帳號右,左右對稱),sidebar 不放帳號頁尾 — 帳號是整個 app 共用的入口,屬於跨頁 chrome</li>
           <li>開「個人資料 / 設定 / 登出」帳號選單(<code>&lt;DropdownMenu&gt;</code>),<strong>不用 ProfileCard</strong>(ProfileCard 是看別人的人員卡,預設動作 Chat/通話用在自己身上不對)</li>
           <li>帳號 avatar = 24px,跟左側品牌 avatar 同尺寸(沿用標準標頭的頭像尺寸規範);右側邊距與品牌距分割線對稱</li>
           <li>禁止:<code>primary-header</code> mode 同時在 globalHeader + sidebar footer 各放一份 = 入口混淆(帳號入口視覺 SSOT,只能出現一次)</li>

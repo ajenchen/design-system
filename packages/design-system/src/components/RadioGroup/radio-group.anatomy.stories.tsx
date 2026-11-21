@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { PropRow, Swatch, TkVal } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
-import { ExampleSection, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
+import { ExampleSection, ExampleStack, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta = {
   title: 'Design System/Components/RadioGroup/設計規格',
@@ -60,9 +60,6 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
    Swatch defaults to `size="md"` for inline token chips.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const Desc = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-caption text-fg-muted max-w-[720px]">{children}</p>
-)
 const Th = ({ children }: { children: React.ReactNode }) => (
   <th className="text-left p-2 border-b border-divider text-fg-muted font-medium text-caption whitespace-nowrap">{children}</th>
 )
@@ -151,7 +148,7 @@ Radio 必須在 RadioGroup 內使用（互斥選擇語意）。</>}>
               {[
                 ['value', 'string', '(required)', 'RadioGroup 內的唯一值'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '控件尺寸（sm/md = 16px, lg = 20px）'],
-                ['disabled', 'boolean', 'false', '不可互動，移除品牌色'],
+                ['disabled', 'boolean', 'false', '不可互動，移除互動色'],
                 ['label', 'ReactNode', '—', '選項 label；傳入時自動以 SelectionItem 包裝'],
                 ['description', 'ReactNode', '—', '次要說明文字（須與 label 搭配）'],
                 ['readOnly', 'boolean', 'false', '鎖互動、保留 checked 視覺(standalone 整組 readonly 由 RadioGroup mode="readonly" 傳遞;Field 內整組改渲染灰框 + 選中項 label)'],
@@ -172,7 +169,7 @@ Radio 必須在 RadioGroup 內使用（互斥選擇語意）。</>}>
             <tbody>
               {[
                 ['形狀', 'rounded-md（方）', 'rounded-full（圓）'],
-                ['指示器', 'Check icon（白色）', 'Filled dot（品牌色）'],
+                ['指示器', 'Check icon（白色）', 'Filled dot（互動色）'],
                 ['語意', '獨立 toggle（多選）', '互斥選擇（單選）'],
                 ['容器', '可獨立使用', '必須在 RadioGroup 內'],
               ].map(([label, cb, radio]) => (
@@ -245,7 +242,7 @@ const InspectorInner = () => {
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[300px]">
           {/* Live preview */}
-          <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center gap-6">
+          <div className="px-10 py-8 rounded-md bg-canvas border border-divider flex items-center justify-center gap-6">
             <RadioGroup defaultValue={checked === 'checked' ? 'preview' : undefined} className="flex gap-4">
               <RadioGroupItem
                 size={size}
@@ -309,7 +306,7 @@ const InspectorInner = () => {
         </div>
 
         {/* Right: inspect panel */}
-        <div className="w-[300px] shrink-0 border border-divider rounded-lg bg-surface overflow-hidden">
+        <div className="w-[300px] shrink-0 border border-divider rounded-md bg-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-divider bg-neutral-hover">
             <span className="text-[12px] font-semibold text-foreground">Inspect</span>
           </div>
@@ -360,64 +357,62 @@ export const Inspector = {
 export const ColorMatrix = {
   name: '色彩對照表',
   render: () => (
-    <ExampleSection title="Checked × State 色彩對照" description={<>橫向看同一 checked 狀態的 state 變化，縱向比較 unchecked 和 checked 的設計邏輯。
-Radio 與 Checkbox 的關鍵差異：checked 時底色維持 surface，指示器用品牌色 dot（Checkbox 則是底色變 primary、指示器用白色 check）。</>}>
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Checked × State 色彩對照" description={<>橫向看同一 checked 狀態的 state 變化，縱向比較 unchecked 和 checked 的設計邏輯。
+Radio 與 Checkbox 的關鍵差異：checked 時底色維持 surface，指示器用互動色 dot（Checkbox 則是底色變 primary、指示器用白色 check）。</>} />
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <thead><tr><Th>狀態</Th>{STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+          <tbody>
+            {CHECKED_STATES.map((c) => (
+              <tr key={c}>
+                <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{c}</td>
+                {STATES.map((st) => {
+                  const isChecked = c === 'checked'
+                  const isDisabled = st === 'disabled'
+                  return (
+                    <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
+                      <RadioGroup defaultValue={isChecked ? 'demo' : undefined}>
+                        <RadioGroupItem
+                          value="demo"
+                          disabled={isDisabled}
+                          aria-label={`${c} ${st} Radio`}
+                        />
+                      </RadioGroup>
+                      <TokenAnnotation colors={TOKEN_MAP[c][st]} />
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Token summary */}
+      <ExampleSection title="Token 摘要">
         <div className="overflow-x-auto">
-          <table className="border-collapse">
-            <thead><tr><Th>狀態</Th>{STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
+          <table className="border-collapse text-caption">
+            <thead><tr><Th>屬性</Th><Th>Unchecked</Th><Th>Checked</Th><Th>Disabled（共用）</Th></tr></thead>
             <tbody>
-              {CHECKED_STATES.map((c) => (
-                <tr key={c}>
-                  <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{c}</td>
-                  {STATES.map((st) => {
-                    const isChecked = c === 'checked'
-                    const isDisabled = st === 'disabled'
-                    return (
-                      <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
-                        <RadioGroup defaultValue={isChecked ? 'demo' : undefined}>
-                          <RadioGroupItem
-                            value="demo"
-                            disabled={isDisabled}
-                            aria-label={`${c} ${st} Radio`}
-                          />
-                        </RadioGroup>
-                        <TokenAnnotation colors={TOKEN_MAP[c][st]} />
-                      </td>
-                    )
-                  })}
+              {[
+                ['邊框', '--border', '--primary', 'transparent'],
+                ['底色', '--surface', '--surface', '--bg-disabled'],
+                ['Dot', '(hidden)', '--primary', '--fg-disabled / (hidden)'],
+                ['Hover 邊框', '--border-hover', '--primary-hover', '—'],
+              ].map(([label, unchk, chk, dis]) => (
+                <tr key={label}>
+                  <Td>{label}</Td>
+                  <Td mono>{unchk}</Td>
+                  <Td mono>{chk}</Td>
+                  <Td mono>{dis}</Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* Token summary */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">Token 摘要</span>
-          <div className="overflow-x-auto">
-            <table className="border-collapse text-caption">
-              <thead><tr><Th>屬性</Th><Th>Unchecked</Th><Th>Checked</Th><Th>Disabled（共用）</Th></tr></thead>
-              <tbody>
-                {[
-                  ['邊框', '--border', '--primary', 'transparent'],
-                  ['底色', '--surface', '--surface', '--bg-disabled'],
-                  ['Dot', '(hidden)', '--primary', '--fg-disabled / (hidden)'],
-                  ['Hover 邊框', '--border-hover', '--primary-hover', '—'],
-                ].map(([label, unchk, chk, dis]) => (
-                  <tr key={label}>
-                    <Td>{label}</Td>
-                    <Td mono>{unchk}</Td>
-                    <Td mono>{chk}</Td>
-                    <Td mono>{dis}</Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </ExampleSection>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -428,71 +423,69 @@ Radio 與 Checkbox 的關鍵差異：checked 時底色維持 surface，指示器
 export const SizeMatrix = {
   name: '尺寸對照表',
   render: () => (
-    <ExampleSection title="Size Token 對照" description={<>三種尺寸（sm/md = 16px, lg = 20px）。sm 和 md 視覺相同，純粹是命名 mapping 讓消費者直接傳同一個 size prop。
-搭配 SelectionItem 時，item 高度自動對齊同 size 的 Input。</>}>
-      <div className="flex flex-col gap-8">
+    <ExampleStack>
+      <ExampleSection title="Size Token 對照" description={<>三種尺寸（sm/md = 16px, lg = 20px）。sm 和 md 視覺相同，純粹是命名 mapping 讓消費者直接傳同一個 size prop。
+搭配 SelectionItem 時，item 高度自動對齊同 size 的 Input。</>} />
 
-        {/* Token table */}
-        <div className="overflow-x-auto">
-          <table className="border-collapse text-caption">
-            <thead><tr>
-              <Th>屬性</Th>
-              {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
-            </tr></thead>
-            <tbody>
-              {([
-                { label: '控件尺寸', fn: (s: SizeSpec) => ({ token: s.controlToken, sub: `${s.controlPx}px` }) },
-                { label: 'Dot 尺寸', fn: (s: SizeSpec) => ({ token: `${s.dotPx}px`, sub: 'filled circle' }) },
-                { label: '形狀', fn: () => ({ token: 'rounded-full', sub: '9999px' }) },
-                { label: 'Item 字體', fn: (_: SizeSpec, sz: SizeKey) => ({ token: sz === 'lg' ? 'text-body-lg' : 'text-body', sub: sz === 'lg' ? '16px' : '14px' }) },
-                { label: 'Item 間距', fn: () => ({ token: 'gap-2', sub: '8px (control-label)' }) },
-              ]).map((row) => (
-                <tr key={row.label}>
-                  <Td>{row.label}</Td>
-                  {SIZES.map((sz) => {
-                    const spec = SIZE_SPECS[sz]
-                    const { token, sub } = row.fn(spec, sz)
-                    return (
-                      <Td key={sz} mono>
-                        <div className="text-fg-secondary">{token}</div>
-                        <div className="text-fg-muted text-[10px]">{sub}</div>
-                      </Td>
-                    )
-                  })}
-                </tr>
-              ))}
-              {/* SelectionItem padding formula */}
-              <tr>
-                <Td>Item padding</Td>
-                {SIZES.map((sz) => (
-                  <Td key={sz} mono>
-                    <div className="text-fg-secondary">py = (field-height − 一行文字高度) / 2</div>
-                    <div className="text-fg-muted text-[10px]">單行 = field-height-{sz}</div>
-                  </Td>
-                ))}
+      {/* Token table */}
+      <div className="overflow-x-auto">
+        <table className="border-collapse text-caption">
+          <thead><tr>
+            <Th>屬性</Th>
+            {SIZES.map((sz) => <Th key={sz}>{sz}{sz === 'md' ? '（預設）' : ''}</Th>)}
+          </tr></thead>
+          <tbody>
+            {([
+              { label: '控件尺寸', fn: (s: SizeSpec) => ({ token: s.controlToken, sub: `${s.controlPx}px` }) },
+              { label: 'Dot 尺寸', fn: (s: SizeSpec) => ({ token: `${s.dotPx}px`, sub: 'filled circle' }) },
+              { label: '形狀', fn: () => ({ token: 'rounded-full', sub: '9999px' }) },
+              { label: 'Item 字體', fn: (_: SizeSpec, sz: SizeKey) => ({ token: sz === 'lg' ? 'text-body-lg' : 'text-body', sub: sz === 'lg' ? '16px' : '14px' }) },
+              { label: 'Item 間距', fn: () => ({ token: 'gap-2', sub: '8px (control-label)' }) },
+            ]).map((row) => (
+              <tr key={row.label}>
+                <Td>{row.label}</Td>
+                {SIZES.map((sz) => {
+                  const spec = SIZE_SPECS[sz]
+                  const { token, sub } = row.fn(spec, sz)
+                  return (
+                    <Td key={sz} mono>
+                      <div className="text-fg-secondary">{token}</div>
+                      <div className="text-fg-muted text-[10px]">{sub}</div>
+                    </Td>
+                  )
+                })}
               </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Visual preview */}
-        <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">預覽</span>
-          <div className="flex gap-8">
-            {SIZES.map((sz) => (
-              <div key={sz} className="flex flex-col gap-2">
-                <span className="text-[11px] text-fg-muted font-mono">size="{sz}" ({SIZE_SPECS[sz].controlPx}px)</span>
-                <RadioGroup defaultValue="a">
-                  <RadioGroupItem size={sz} value="a" label="即時" />
-                  <RadioGroupItem size={sz} value="b" label="每日摘要" description="每天晚上 9 點寄一次" />
-                  <RadioGroupItem size={sz} value="c" label="每週摘要" disabled />
-                </RadioGroup>
-              </div>
             ))}
-          </div>
-        </div>
+            {/* SelectionItem padding formula */}
+            <tr>
+              <Td>Item padding</Td>
+              {SIZES.map((sz) => (
+                <Td key={sz} mono>
+                  <div className="text-fg-secondary">py = (field-height − 一行文字高度) / 2</div>
+                  <div className="text-fg-muted text-[10px]">單行 = field-height-{sz}</div>
+                </Td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
       </div>
-    </ExampleSection>
+
+      {/* Visual preview */}
+      <ExampleSection title="預覽">
+        <div className="flex gap-8">
+          {SIZES.map((sz) => (
+            <div key={sz} className="flex flex-col gap-2">
+              <span className="text-[11px] text-fg-muted font-mono">size="{sz}" ({SIZE_SPECS[sz].controlPx}px)</span>
+              <RadioGroup defaultValue="a">
+                <RadioGroupItem size={sz} value="a" label="即時" />
+                <RadioGroupItem size={sz} value="b" label="每日摘要" description="每天晚上 9 點寄一次" />
+                <RadioGroupItem size={sz} value="c" label="每週摘要" disabled />
+              </RadioGroup>
+            </div>
+          ))}
+        </div>
+      </ExampleSection>
+    </ExampleStack>
   ),
 }
 
@@ -504,93 +497,77 @@ const StateBehaviorInner = () => {
   const [plan, setPlan] = useState('starter')
   const [billing, setBilling] = useState('monthly')
   return (
-    <ExampleSection title="狀態行為" description={<>Radio 的關鍵行為來自 <span className="font-mono">RadioGroup</span> 層級——單選互斥(切 A 會同時清 B),
+    <ExampleStack>
+      <ExampleSection title="狀態行為" description={<>Radio 的關鍵行為來自 <span className="font-mono">RadioGroup</span> 層級——單選互斥(切 A 會同時清 B),
 而非個別 item 的 toggle(那是 Checkbox)。本 story 展示 RadioGroup 特有行為,item 級別的
-default / hover / checked / disabled 色彩對照見<StoryLink kind="Design System/Components/RadioGroup/設計規格" name="色彩對照表">色彩對照表</StoryLink>。</>}>
-      <div className="flex flex-col gap-8">
+default / hover / checked / disabled 色彩對照見<StoryLink kind="Design System/Components/RadioGroup/設計規格" name="色彩對照表">色彩對照表</StoryLink>。</>} />
 
-        {/* Mutual exclusion demo */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">單選互斥(Mutual Exclusion)</span>
-          <Desc>
-            點任一選項,其他選項自動清除——這是 Checkbox / Switch 沒有的核心差異。由 Radix Root 的 value / onValueChange 統一管理,consumer 不需自己實作互斥邏輯。
-          </Desc>
-          <div className="flex gap-6 items-start">
-            <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">
-              <div className="text-[11px] text-fg-muted mb-3 font-mono">value = "{plan}"</div>
-              <RadioGroup value={plan} onValueChange={setPlan} className="flex flex-col gap-2">
-                <RadioGroupItem value="starter" label="Starter" description="個人使用 · 免費" />
-                <RadioGroupItem value="pro" label="Pro" description="小型團隊 · $12/月" />
-                <RadioGroupItem value="business" label="Business" description="企業級 · $49/月" />
-              </RadioGroup>
-            </div>
-            <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
-              <div>切換任一選項,觀察其他選項的 dot 自動消失。</div>
-              <div className="pt-1 border-t border-divider">
-                對照 Checkbox:Checkbox 每項獨立 checked,可同時多選。
-              </div>
+      {/* Mutual exclusion demo */}
+      <ExampleSection title="單選互斥(Mutual Exclusion)" description={<>點任一選項,其他選項自動清除——這是 Checkbox / Switch 沒有的核心差異。由 Radix Root 的 value / onValueChange 統一管理,consumer 不需自己實作互斥邏輯。</>}>
+        <div className="flex gap-6 items-start">
+          <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
+            <div className="text-[11px] text-fg-muted mb-3 font-mono">value = "{plan}"</div>
+            <RadioGroup value={plan} onValueChange={setPlan} className="flex flex-col gap-2">
+              <RadioGroupItem value="starter" label="Starter" description="個人使用 · 免費" />
+              <RadioGroupItem value="pro" label="Pro" description="小型團隊 · $12/月" />
+              <RadioGroupItem value="business" label="Business" description="企業級 · $49/月" />
+            </RadioGroup>
+          </div>
+          <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
+            <div>切換任一選項,觀察其他選項的 dot 自動消失。</div>
+            <div className="pt-1 border-t border-divider">
+              對照 Checkbox:Checkbox 每項獨立 checked,可同時多選。
             </div>
           </div>
         </div>
+      </ExampleSection>
 
-        {/* Individual disabled */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">個別 item disabled(不影響其他)</span>
-          <Desc>
-            單一選項 disabled 時其他仍可互動——disabled item 保留其 checked 視覺但 cursor-not-allowed,無法被選中。適用「功能尚未開放 / 方案不含」等情境。
-          </Desc>
-          <div className="flex gap-6 items-start">
-            <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">
-              <RadioGroup value={billing} onValueChange={setBilling} className="flex flex-col gap-2">
-                <RadioGroupItem value="monthly" label="每月付款" description="可隨時取消" />
-                <RadioGroupItem value="yearly" label="每年付款" description="省 20%" />
-                <RadioGroupItem value="enterprise" label="企業年約" description="請聯繫業務" disabled />
-              </RadioGroup>
-            </div>
-            <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
-              <div>第三項 disabled,選擇仍正常運作在前兩項。</div>
-              <div className="pt-1 border-t border-divider">Token:disabled item 邊框 transparent / 底色 <code>--bg-disabled</code>。</div>
+      {/* Individual disabled */}
+      <ExampleSection title="個別 item disabled(不影響其他)" description={<>單一選項 disabled 時其他仍可互動——disabled item 保留其 checked 視覺但 cursor-not-allowed,無法被選中。適用「功能尚未開放 / 方案不含」等情境。</>}>
+        <div className="flex gap-6 items-start">
+          <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
+            <RadioGroup value={billing} onValueChange={setBilling} className="flex flex-col gap-2">
+              <RadioGroupItem value="monthly" label="每月付款" description="可隨時取消" />
+              <RadioGroupItem value="yearly" label="每年付款" description="省 20%" />
+              <RadioGroupItem value="enterprise" label="企業年約" description="請聯繫業務" disabled />
+            </RadioGroup>
+          </div>
+          <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
+            <div>第三項 disabled,選擇仍正常運作在前兩項。</div>
+            <div className="pt-1 border-t border-divider">Token:disabled item 邊框 transparent / 底色 <code className="whitespace-nowrap">--bg-disabled</code>。</div>
+          </div>
+        </div>
+      </ExampleSection>
+
+      {/* Whole group disabled */}
+      <ExampleSection title="整組 disabled(Field context 接管)" description={<>整組放進停用的 Field 時,裡面每個選項會自動一起變灰,不需逐一設定。下方為靜態示意(逐 item 傳 disabled 重現相同視覺);實際使用以 {'<Field disabled>'} 包裹即可。</>}>
+        <div className="flex gap-6 items-start">
+          <div className="px-6 py-5 rounded-md bg-canvas border border-divider min-w-[280px]">
+            <RadioGroup defaultValue="b" className="flex flex-col gap-2">
+              <RadioGroupItem value="a" label="個人版" disabled />
+              <RadioGroupItem value="b" label="團隊版(目前方案)" disabled />
+              <RadioGroupItem value="c" label="企業版" disabled />
+            </RadioGroup>
+          </div>
+          <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
+            <div>整組不可互動,已選中的項目維持 dot 視覺(但 dot 色走 <code className="whitespace-nowrap">--fg-disabled</code>)。</div>
+            <div className="pt-1 border-t border-divider">
+              情境:表單審核中 / 已送出不可改;常配合 FieldDescription 解釋「為什麼不能改」。
             </div>
           </div>
         </div>
+      </ExampleSection>
 
-        {/* Whole group disabled */}
-        <div className="flex flex-col gap-3">
-          <span className="text-caption font-medium text-fg-secondary">整組 disabled(Field context 接管)</span>
-          {/* 架構理由(移出 user-visible Desc,per story-rules.md 人話原則):item 經 useResolvedFieldDisabled
-              繼承 Field 的 disabled;SSOT = field-controls.spec.md cascade 段。 */}
-          <Desc>
-            整組放進停用的 Field 時,裡面每個選項會自動一起變灰,不需逐一設定。下方為靜態示意(逐 item 傳 disabled 重現相同視覺);實際使用以 {'<Field disabled>'} 包裹即可。
-          </Desc>
-          <div className="flex gap-6 items-start">
-            <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">
-              <RadioGroup defaultValue="b" className="flex flex-col gap-2">
-                <RadioGroupItem value="a" label="個人版" disabled />
-                <RadioGroupItem value="b" label="團隊版(目前方案)" disabled />
-                <RadioGroupItem value="c" label="企業版" disabled />
-              </RadioGroup>
-            </div>
-            <div className="flex flex-col gap-2 text-[11px] text-fg-muted max-w-[280px]">
-              <div>整組不可互動,已選中的項目維持 dot 視覺(但 dot 色走 <code>--fg-disabled</code>)。</div>
-              <div className="pt-1 border-t border-divider">
-                情境:表單審核中 / 已送出不可改;常配合 FieldDescription 解釋「為什麼不能改」。
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Rule notes */}
-        <div className="flex flex-col gap-2 pt-4 border-t border-divider">
-          <span className="text-caption font-medium text-fg-secondary">行為規則</span>
-          <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
-            <li>RadioGroup 必須提供 value(受控)或 defaultValue(非受控)——不給預設值 = 空狀態(無任何 dot)。</li>
-            <li>單一 disabled item 不影響 group 的 value / onValueChange——disabled item 不會被選中。</li>
-            <li>Keyboard:焦點進入 group 後,↑↓ 循環在非 disabled 選項間移動,移到哪個就選哪個(Radix 內建)。</li>
-            <li>不要用 RadioGroup 做「多選」——改用 Checkbox。RadioGroup 的核心語意是「N 選 1」。</li>
-          </ul>
-        </div>
-      </div>
-    </ExampleSection>
+      {/* Rule notes(一則有標題的段落;區塊之間 = ExampleStack 的 loose × 2,不再手畫上框線 + pt-4) */}
+      <ExampleSection title="行為規則" paragraph>
+        <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
+          <li>RadioGroup 必須提供 value(受控)或 defaultValue(非受控)——不給預設值 = 空狀態(無任何 dot)。</li>
+          <li>單一 disabled item 不影響 group 的 value / onValueChange——disabled item 不會被選中。</li>
+          <li>Keyboard:焦點進入 group 後,↑↓ 循環在非 disabled 選項間移動,移到哪個就選哪個(Radix 內建)。</li>
+          <li>不要用 RadioGroup 做「多選」——改用 Checkbox。RadioGroup 的核心語意是「N 選 1」。</li>
+        </ul>
+      </ExampleSection>
+    </ExampleStack>
   )
 }
 

@@ -39,7 +39,7 @@
 | `<CollapsiblePrimitive.Trigger asChild>` | `false`(default) |
 | 純 onClick handler / drag handle / dismiss X | `false`(default) |
 
-落實同源:`fieldWrapperStyles data-[state=open]:border-border-hover` 對 Combobox/DatePicker overlay trigger 仍正確(這些只用於 overlay 包覆)。Button 變體的 `data-[state=open]` 規則目前**未 prop 化**(latent — Button 從未被當 `Collapsible.Trigger` asChild 包覆,故無 active bug);若未來出現 Button 包覆 Collapsible 場景,同 prop 化處理。
+適用範圍:本節的「開著 = host hover」只管**按鈕類觸發**(inline action / Button)。**欄位(Field 家族)不適用** —— 欄位自己的浮層開著時維持聚焦的框,唯一出處 `components/Field/field.spec.md`「Field state machine SSOT」(2026-11-12 前這一句把本節延伸到欄位外框,已退役;退役紀錄在該檔)。Button 變體的 `data-[state=open]` 規則目前**未 prop 化**(latent — Button 從未被當 `Collapsible.Trigger` asChild 包覆,故無 active bug);若未來出現 Button 包覆 Collapsible 場景,同 prop 化處理。
 
 ### Icon 色彩（按 host 分兩類,2026-04-21 D6 矛盾解）
 
@@ -228,7 +228,7 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 - 以上三者**禁止套 dismiss 弱化**
 
 **世界級對照**:
-- Dismiss:Polaris `Banner.onDismiss`(X 圖示)/ Ant Design `Alert.closable` → 一律 icon = `X`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
+- Dismiss:Polaris `Banner.onDismiss`(X 圖示)/ Ant Design `Alert.closable` → 一律 icon = `X`([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46)、Ant `Alert` 可關閉時預設 `<CloseOutlined />`:[Alert.tsx](https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/alert/Alert.tsx))
 - Destructive:Polaris `Button tone="critical"` / 我們的 row Trash → 一般 primitive(無 dismiss 弱化)([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Banner/Banner.tsx#L149-L161)、[來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-react/src/components/Button/Button.tsx#L46))
 
 #### Dismiss X 的實作(按 position 決定)

@@ -134,13 +134,24 @@ const RUNNER_BOOTSTRAP_ROOTS = Object.freeze([
   UNIFIED_PROVIDER_RUNNER,
   ...RUNNER_DYNAMIC_MODULE_ROOTS,
 ])
+// The Stop translation probe needs a real registered canonical Stop hook whose outputMode is
+// governance-decision and whose block is deterministic without a transcript, persisted state, or
+// any source-repository file. stop_self_audit.sh Mechanism 8b (quote-scope) meets that: it reads only
+// last_assistant_message. The sentence is synthetic and says so; it quotes nobody. Adding a `原題:`
+// line to it would turn the block off (packages/design-system/ds-canonical/hooks/tests/
+// test_stop_self_audit.sh Tests 28/29 pin that block / no-block pair). Before 2026-11-18 this probe used
+// check_orphan_ds_css.sh with an orphaned fixture stylesheet; that hook was retired because CI's
+// scripts/token-creation-invariant.mjs C6 enforces the same rule.
+const STOP_PROBE_HOOK = 'stop_self_audit.sh'
+const STOP_PROBE_ASSISTANT_MESSAGE = '執行期一致性探針(合成句,不是任何人說過的話):你 10-21 的原話：「探針合成引文」,所以這次改動要撤回。'
+const STOP_PROBE_REASON_MARKER = 'QUOTE-SCOPE BLOCKER'
 const CANONICAL_HOOKS_BY_DRIVER = Object.freeze({
   'generated-provider-adapter-block': ['governance_control_plane.sh'],
   'provider-hook-adapter': ['governance_control_plane.sh'],
   'provider-hook-runner-pass': ['check_canonical_propagation.sh', '_log-fire.sh'],
   'provider-hook-runner-block': ['check_canonical_propagation.sh', '_log-fire.sh'],
   'provider-hook-runner-context': ['session_start_governance_check.sh', '_log-fire.sh'],
-  'provider-hook-runner-stop': ['check_orphan_ds_css.sh', '_log-fire.sh'],
+  'provider-hook-runner-stop': [STOP_PROBE_HOOK, '_log-fire.sh'],
 })
 const GENERATED_ADAPTER_RUNTIME_INPUTS = Object.freeze([
   'packages/governance/package.json',
@@ -1769,10 +1780,8 @@ function initializeFixture(providerId, contractDigest, repoRoot) {
     ? `\n${canonicalAuthorityPolicy(repoRoot)}\n`
     : ''
   writeFixtureFile(root, 'AGENTS.md', `# Runtime conformance fixture\n\nPublic runtime project-instruction evidence: ${tokens.publicProjectInstructionEvidence}\n\nThis synthetic marker is public, non-secret runtime evidence intentionally designed to be quoted verbatim for conformance. It contains no credential, private configuration, or user data.\n${authorityPolicy}`)
-  // The unified runner probes use a real canonical Stop hook. This deliberately orphaned CSS
-  // file makes the neutral decision deterministic without touching the source repository.
-  writeFixtureFile(root, 'packages/design-system/src/styles/tokens.css', '/* runtime conformance aggregator */\n')
-  writeFixtureFile(root, 'packages/design-system/src/runtime-conformance-orphan.css', '.runtime-conformance-orphan {}\n')
+  // The unified runner Stop probe needs no fixture file: its block comes from the payload alone
+  // (see STOP_PROBE_HOOK), so the source repository is never touched.
 
   if (providerId === 'claude') {
     writeFixtureFile(root, 'CLAUDE.md', '@AGENTS.md\n')
@@ -2725,7 +2734,12 @@ async function runGeneratedProviderAdapterBlock({ repoRoot, provider, check, pro
   })
 }
 
-function providerHookPayload(provider, { event, tool, path, content } = {}) {
+function providerHookPayload(provider, { event, tool, path, content, lastAssistantMessage } = {}) {
+  // Both provider Stop envelopes carry the final assistant text under the same field; the unified
+  // runner forwards it only for Stop (scripts/run-provider-hook.mjs copyOptionalString).
+  const stopText = typeof lastAssistantMessage === 'string'
+    ? { last_assistant_message: lastAssistantMessage }
+    : {}
   if (provider.id === 'codex') {
     const normalizedContent = String(content ?? '').replaceAll('\r\n', '\n')
     const contentLines = normalizedContent.endsWith('\n')
@@ -2744,12 +2758,14 @@ function providerHookPayload(provider, { event, tool, path, content } = {}) {
       event_name: event,
       operation: tool === 'Write' ? 'apply_patch' : (tool || ''),
       ...(command ? { tool_input: { command, file_path: path } } : {}),
+      ...stopText,
     }
   }
   return {
     hook_event_name: event,
     tool_name: tool || '',
     ...(path ? { tool_input: { file_path: path, content: content || '' } } : {}),
+    ...stopText,
   }
 }
 
@@ -2875,7 +2891,7 @@ function translatedStopAssertions(provider, result) {
     assertion('canonical-stop-provider-transport-observed', provider.id === 'claude'
       ? output?.decision === 'block' && output?.continue === undefined && output?.suppressOutput === undefined
       : output?.continue === false && output?.decision === undefined && output?.suppressOutput === undefined),
-    assertion('canonical-stop-reason-observed', typeof reason === 'string' && reason.includes('ORPHAN-DS-CSS BLOCKER')),
+    assertion('canonical-stop-reason-observed', typeof reason === 'string' && reason.includes(STOP_PROBE_REASON_MARKER)),
     assertion('neutral-stop-envelope-was-consumed', output?.governanceDecision === undefined),
   ]
 }
@@ -2884,8 +2900,8 @@ async function runProviderHookRunnerStop(options) {
   const { provider } = options
   const { command, result } = await invokeUnifiedProviderHook({
     ...options,
-    hook: 'check_orphan_ds_css.sh',
-    payload: providerHookPayload(provider, { event: 'Stop' }),
+    hook: STOP_PROBE_HOOK,
+    payload: providerHookPayload(provider, { event: 'Stop', lastAssistantMessage: STOP_PROBE_ASSISTANT_MESSAGE }),
   })
   return checkEvidence({
     id: options.check.id,

@@ -19,7 +19,7 @@ export function ProductSearchDemo({ placeholder = '搜尋商品或關鍵字' }: 
   }
   return (
     <div className="flex flex-col gap-[var(--layout-space-tight)]">
-      <FieldControlGroup block>
+      <FieldControlGroup width="fill">
         <Input
           className="!flex-1 !min-w-0"
           startIcon={Search}

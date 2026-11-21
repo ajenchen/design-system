@@ -53,6 +53,7 @@ echo "=== D.1 premature abstraction ==="
 
 # Setup: temp components/ — create Button base so suffix matching can find it
 TMP_DS=$(mktemp -d)
+[ -n "${TMP_DS:-}" ] && [ -d "$TMP_DS" ] || { echo "❌ mktemp -d failed(TMP_DS;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_DS/packages/design-system/src/components/Button"
 echo "// existing base" > "$TMP_DS/packages/design-system/src/components/Button/button.tsx"
 
@@ -86,6 +87,7 @@ echo "=== D.2 internal namespace consistency ==="
 
 # Setup: temp dir with conflicting sibling stories
 TMP_NS=$(mktemp -d)
+[ -n "${TMP_NS:-}" ] && [ -d "$TMP_NS" ] || { echo "❌ mktemp -d failed(TMP_NS;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_NS/SelectionControl"
 cat >"$TMP_NS/SelectionControl/sibling.stories.tsx" <<'EOF'
 const meta = { title: 'Design System/Internal/SelectionControl' }

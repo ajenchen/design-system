@@ -34,6 +34,7 @@ FAIL=0
 FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
+[ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ] || { echo "❌ mktemp -d failed(TMP_DIR;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # Override GOVERNANCE_PROJECT_DIR so _log-fire.sh writes its per-hook fire log into
@@ -133,7 +134,7 @@ expect_block "P5. SubagentStop event claim「spec 寫」無 cite → BLOCK" "$NE
 
 # N1. near-miss:claim keyword「規定」但同 reply 附合法 .spec.md:line cite
 #     → 不該 fire (guard over-broad regex)
-run_stop_with_reply "DS 規定 caption 配 muted,見 field-controls.spec.md:142 的 state 段落。"
+run_stop_with_reply "DS 規定 caption 配 muted,見 field-controls.spec.md:138 的 state 段落。"
 expect_pass_silent "N1. claim + .spec.md:142 cite → silent (over-broad guard)"
 
 # N2. near-miss:claim keyword「必須是」+ #L 形式 cite → silent

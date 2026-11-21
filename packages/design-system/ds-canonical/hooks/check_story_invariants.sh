@@ -511,7 +511,7 @@ ${rationale_trait}"
 
   # 2026-06-11 deep-audit R2(n=36):anatomy 分層 credit — 矩陣類 showcase 的 home 在 anatomy 層
   # (category-matrix stateComboMatrix/anatomyDiagram + dim 11 三層分工)。Drift 證據:12 個 hasSizes
-  # 元件 SizeMatrix 全在 anatomy 檔,展示檔無 AllSizes;button.stories.tsx:2 等 16 檔被迫用
+  # 元件 SizeMatrix 全在 anatomy 檔,展示檔無 AllSizes;button.stories.tsx:1 等 16 檔被迫用
   # 舊 file-wide @story-trait-rationale 曾繞過整個 hook(marker hack = required-exports
   # 集合與分層 convention 漂移)。現在只接受上方 scoped grammar。
   # Credit 對照:hasSizes ← SizeMatrix / hasInteractiveStates ← StateBehavior。
@@ -659,7 +659,7 @@ ${SPEC_HITS}"
 import re
 import sys
 
-EXEMPT = re.compile(r'\b(cva|Radix|Polaris|Material|Atlassian|Carbon|Ant|Apple|MUI|TanStack|shadcn|Recharts|cmdk|dnd-kit|TypeScript|JavaScript|API|UI|UX|Jira|Stripe|Notion|Figma|Linear|GitHub|Gmail|Dropbox|Slack|Spotify|Discord|VS Code|Sketch|Storybook|Tailwind|onChange|onClick|ARIA|WCAG|FAQ|HSL|CSS|HTML|DOM|DS|F[1-9]|FAB|RWD|MVP|Token|Mode|Variant|Slot|Size|Field|Input|Button|Avatar|Badge|Chip|Tag|Subtle|Solid|Range|Multiple|Single|primary|secondary|tertiary|hover|focus|active|disabled|invalid|readonly|drag|drop|inline|block|naked|bare|fixed|absolute|sticky|null|true|false|Dialog|Sheet|Drawer|Popover|HoverCard|Tooltip|Toast|Notice|Alert|Combobox|Select|MultiSelect|SelectMenu|DropdownMenu|Menu|MenuItem|Sidebar|TreeView|Tabs|Tab|Accordion|Collapsible|Breadcrumb|Pagination|Stepper|Steps|DataTable|FileItem|FileUpload|FileViewer|PeoplePicker|NameCard|OverflowIndicator|Checkbox|Radio|RadioGroup|CheckboxGroup|Switch|SegmentedControl|Slider|Rating|NumberInput|TextArea|SearchBox|DatePicker|TimePicker|DateGrid|Calendar|Carousel|Skeleton|CircularProgress|ProgressBar|LinearProgress|Empty|ScrollArea|AspectRatio|Separator|Toolbar|Header|SurfaceHeader|ChromeHeader|DialogHeader|SheetHeader|PopoverHeader|SidebarHeader|TabsList|TabsTrigger|TabsContent|ColorMatrix|SizeMatrix|StateBehavior|Accessibility|Anatomy|Overview|Inspector|Usage|Default|withTabs|asChild)\b', re.I)
+EXEMPT = re.compile(r'\b(cva|Radix|Polaris|Material|Atlassian|Carbon|Ant|Apple|MUI|TanStack|shadcn|Recharts|cmdk|dnd-kit|TypeScript|JavaScript|API|UI|UX|Jira|Stripe|Notion|Figma|Linear|GitHub|Gmail|Dropbox|Slack|Spotify|Discord|VS Code|Sketch|Storybook|Tailwind|onChange|onClick|ARIA|WCAG|FAQ|HSL|CSS|HTML|DOM|DS|F[1-9]|FAB|RWD|MVP|Token|Mode|Variant|Slot|Size|Field|Input|Button|Avatar|Badge|Chip|Tag|Subtle|Solid|Range|Multiple|Single|primary|secondary|tertiary|hover|focus|active|disabled|invalid|readonly|drag|drop|inline|block|naked|bare|fixed|absolute|sticky|null|true|false|Dialog|Sheet|Drawer|Popover|HoverCard|Tooltip|Toast|Notice|Alert|Combobox|Select|MultiSelect|SelectMenu|DropdownMenu|Menu|MenuItem|Sidebar|TreeView|Tabs|Tab|Accordion|Collapsible|Breadcrumb|Pagination|Stepper|Steps|DataTable|FileItem|FileUpload|FileViewer|PeoplePicker|NameCard|OverflowIndicator|Checkbox|Radio|RadioGroup|CheckboxGroup|Switch|SegmentedControl|Slider|Rating|NumberInput|TextArea|SearchBox|DatePicker|TimePicker|DateGrid|Calendar|Carousel|Skeleton|CircularProgress|ProgressBar|LinearProgress|Empty|ScrollArea|AspectRatio|Separator|Toolbar|Header|SurfaceHeader|ChromeHeader|DialogHeader|SheetHeader|PopoverHeader|SidebarHeader|TabsList|TabsTrigger|TabsContent|ColorMatrix|SizeMatrix|StateBehavior|Accessibility|Anatomy|Overview|Inspector|Usage|Default|tabsSlot|asChild)\b', re.I)
 COMMON_JARGON = re.compile(r'\b(row|overlay|per-row|tree-table|chrome|offcanvas|flow|tag|tab|panel|sheet|popup)\b', re.I)
 hits = 0
 with open(sys.argv[1], encoding='utf-8') as story:
@@ -794,7 +794,7 @@ rule_story_baseline_reference() {
   # 2026-06-11 R2 held-item #12:anatomy / principles 是 per-family 文件 story —— doc-table /
   # description 內 <Dialog> / <DataTable> 是說明文字非真 wrap,16 檔每次編輯固定 FP warn。
   # baseline-cite 要求 scope = scenario stories(story-rules.md「Production-grade composition
-  # fidelity」);file-type skip 對齊 lib/_overlay_handcraft.sh L31 + R9 isOverlay-家 skip idiom。
+  # fidelity」);file-type skip 對齊 lib/_overlay_handcraft.sh 的「Skip anatomy / principles stories」段 + R9 isOverlay-家 skip idiom。
   case "$FILE_PATH" in
     *.anatomy.stories.tsx|*.principles.stories.tsx) return 0 ;;
   esac
@@ -1145,7 +1145,7 @@ rule_component_in_render() {
 # 我沒有特別要求為何要使用 secondary?root cause 是什麼?我們的 ds 的設計原則寫得不夠清楚嗎?」)
 # 原則本身寫得很清楚(`button.spec.md`「Variant 控制視覺強調等級」表):
 #   secondary = **正面與負面選項並存**時代表正面那個(儲存草稿 vs 放棄);
-#   tertiary  = 最常用的非主要按鈕,也是 cva 的預設(button.tsx:217)。
+#   tertiary  = 最常用的非主要按鈕,也是 cva 的預設(button.tsx:218)。
 # 不清楚的不是規則,是**沒有任何東西在守**:當天全 DS 掃出 story 內 54 處 `variant="secondary"`,
 # 扣掉 Button 自家的 variant 展示 22 處,其餘 30 處**一處都沒有並存的負面選項**(機械驗過無 danger 兄弟),
 # 全是單獨的觸發鈕 / 輔助動作,照表都該是 tertiary。同日一次改完。

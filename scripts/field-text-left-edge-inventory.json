@@ -18,6 +18,8 @@
     "design-system-components-datatable-展示--filter-panel-empty": 2,
     "design-system-components-datatable-展示--filter-panel-labels-and-limit": 25,
     "design-system-components-datatable-展示--filter-panel-states": 26,
+    "design-system-components-datatable-展示--header-actions-fixture": 8,
+    "design-system-components-datatable-展示--sort-panel-states": 8,
     "design-system-components-datatable-展示--with-pagination": 1,
     "design-system-components-datepicker-展示--clearable": 1,
     "design-system-components-datepicker-展示--default": 1,
@@ -42,7 +44,7 @@
     "design-system-components-datepicker-設計規格--overview": 4,
     "design-system-components-datepicker-設計規格--state-behavior": 7,
     "design-system-components-field-展示--inline-search-yield-width-contract": 9,
-    "design-system-components-field-展示--state-cascade": 4,
+    "design-system-components-field-展示--state-cascade": 5,
     "design-system-components-field-展示--view-alignment-contract": 8,
     "design-system-components-field-設計原則--orientation-rule": 1,
     "design-system-components-field-設計原則--usage-guidance": 1,
@@ -120,6 +122,7 @@
     "design-system-internal-selectmenu-展示--multi-searchable": 1,
     "design-system-internal-selectmenu-展示--option-states": 1,
     "design-system-internal-selectmenu-展示--searchable": 1,
-    "design-system-internal-selectmenu-展示--single-select": 1
+    "design-system-internal-selectmenu-展示--single-select": 1,
+    "design-system-tokens-uisize--product-alignment": 4
   }
 }

@@ -1,9 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import type { Meta, StoryObj } from '@storybook/react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { Skeleton } from './skeleton'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
 /**
@@ -33,7 +32,7 @@ export const UserProfileCard: Story = {
   name: '個人資料卡載入',
   render: () => (
     // @layout-space-magic-ok: 頭像骨架 ↔ 文字區 = 載入後那一列的 prefix ↔ content,item-anatomy.spec.md「ListItem（頁面列表，未來元件）」表「prefix ↔ content gap」12px(`gap-3`)(已發布同值)
-    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
+    <div className="border border-border rounded-md p-[var(--layout-space-loose)] max-w-sm flex items-center gap-3">
       <Skeleton className="h-12 w-12 rounded-full" />
       {/* @layout-space-magic-ok: 骨架文字區兩行(名稱 / 副標)之間 8px —— 規格沒寫這個值、不由 AI 補進規格(F-S7),沿用已發布值(v0.1.0-beta.147 ec7466f5 同值) */}
       <div className="flex flex-col gap-2 flex-1">
@@ -54,7 +53,7 @@ interface TaskLoadingRow {
 
 const TASK_LOADING_ROWS: TaskLoadingRow[] = Array.from({ length: 5 }, (_, i) => ({ id: `task-loading-${i + 1}` }))
 
-const taskLoadingColumns: ColumnDef<TaskLoadingRow>[] = [
+const taskLoadingColumns: DataTableColumnDef<TaskLoadingRow>[] = [
   { id: 'key', header: '編號', meta: { width: 110 }, cell: () => <Skeleton className="h-4 w-16" /> },
   { id: 'title', header: '標題', meta: { width: 280 }, cell: () => <Skeleton className="h-4 w-56" /> },
   { id: 'status', header: '狀態', meta: { width: 120 }, cell: () => <Skeleton className="h-6 w-16 rounded-full" /> },
@@ -65,7 +64,7 @@ export const TaskListLoading: Story = {
   name: '任務列表載入',
   render: () => (
     <div aria-busy="true" className="max-w-2xl">
-      <DataTable columns={taskLoadingColumns} data={TASK_LOADING_ROWS} getRowId={(r) => r.id} height="auto" />
+      <DataTable columns={taskLoadingColumns} data={TASK_LOADING_ROWS} getRowId={(r) => r.id} maxHeight="none" />
     </div>
   ),
 }
@@ -81,7 +80,7 @@ interface LoadingRow {
 
 const LOADING_ROWS: LoadingRow[] = Array.from({ length: 4 }, (_, i) => ({ id: `loading-${i + 1}` }))
 
-const loadingColumns: ColumnDef<LoadingRow>[] = [
+const loadingColumns: DataTableColumnDef<LoadingRow>[] = [
   { id: 'txn', header: '交易編號', meta: { width: 160 }, cell: () => <Skeleton className="h-4 w-28" /> },
   { id: 'amount', header: '金額', meta: { width: 110, align: 'right' }, cell: () => <Skeleton className="h-4 w-16" /> },
   {
@@ -103,7 +102,7 @@ export const TableRowLoading: Story = {
   name: '表格列載入',
   render: () => (
     <div aria-busy="true" className="max-w-3xl">
-      <DataTable columns={loadingColumns} data={LOADING_ROWS} getRowId={(r) => r.id} height="auto" />
+      <DataTable columns={loadingColumns} data={LOADING_ROWS} getRowId={(r) => r.id} maxHeight="none" />
     </div>
   ),
 }
@@ -112,7 +111,7 @@ export const DocumentLoading: Story = {
   name: '文件載入',
   render: () => (
     // 標題區(標題 + 作者列)→ 內文 = loose:標題是整份文件的標題,不是第一段的小標(user 2026-10-21 A4 甲;
-    // layoutSpace.spec.md「親疏 3 級」的「標題(+ 說明)→ 它底下的並列內容」= 規則 3 loose);段與段並列 = loose。
+    // layoutSpace.spec.md 規則 3「標題區 → 內容」:兩段以上並列 = loose);段與段並列 = loose。
     // 標題 → 作者列 = tight(同一個標題區,沿用)。2026-10-27 前整個標題區 → 內文也是 tight(註解寫「functional 鏈」)。
     <div className="flex flex-col gap-[var(--layout-space-loose)] max-w-2xl">
       <div className="flex flex-col gap-[var(--layout-space-tight)]">
@@ -143,7 +142,7 @@ export const CardGridLoading: Story = {
   render: () => (
     <div className="grid grid-cols-3 gap-[var(--layout-space-loose)] max-w-4xl">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="border border-border rounded-lg p-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-tight)]">
+        <div key={i} className="border border-border rounded-md p-[var(--layout-space-loose)] flex flex-col gap-[var(--layout-space-tight)]">
           <Skeleton className="h-32 w-full rounded-md" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />

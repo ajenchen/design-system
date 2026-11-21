@@ -7,7 +7,7 @@ import { Badge } from '@/design-system/components/Badge/badge'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { Plus } from 'lucide-react'
 import { TutorialPage, TutorialSection, StoryLink } from '@/design-system/stories-helpers/examples/tutorial-page'
-import { samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
+import { SAMPLE_PEOPLE, samplePersonCard } from '@/design-system/stories-helpers/scene/person-card'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Radius',
@@ -17,7 +17,7 @@ const meta: Meta = {
     docs: {
       description: {
         component: `
-圓角系統。四個選項,對應四種尺寸情境。
+圓角系統。四檔(sm 2px / md 4px / lg 8px / full),照元素的用途選 —— 用途表與機器判定見 radius.spec.md「四檔」。
         `,
       },
     },
@@ -35,14 +35,14 @@ export const Overview: Story = {
     // 段落之間 loose × 2(md 32 / lg 48)、段落標題 h2 + 淺分隔線 —— 原本 space-y-loose 讓四個圓角段之間只剩 16px,
     // 與段內「名稱 → 樣本」幾乎一樣近;名稱列原本是 12px 的 code + 說明(手刻的段落標題)
     <TutorialPage>
-      <TutorialSection title="rounded-xs(2px)— 極小 indicator(≤ 10px)">
+      <TutorialSection title="rounded-sm(2px)— 極小指示(短邊 ≤ 10px)">
         <div className="flex flex-wrap gap-[var(--layout-space-tight)] items-center">
           <div className="flex gap-[var(--layout-space-loose)] items-center">
-            <div aria-hidden="true" className="rounded-xs bg-primary h-2 w-2" />
-            <div aria-hidden="true" className="rounded-xs bg-success h-2 w-2" />
-            <div aria-hidden="true" className="rounded-xs bg-error h-2 w-2" />
+            <div aria-hidden="true" className="rounded-sm bg-primary h-2 w-2" />
+            <div aria-hidden="true" className="rounded-sm bg-success h-2 w-2" />
+            <div aria-hidden="true" className="rounded-sm bg-error h-2 w-2" />
           </div>
-          <span className="text-caption text-fg-muted">Chart legend swatch(8×8 色塊):md 4px 在 8×8 上接近 50% 圓,xs 2px 保留「色塊」而非「膠囊」語意</span>
+          <span className="text-caption text-fg-muted">圖表圖例色塊(8×8):md 4px 在 8×8 上接近 50% 圓,sm 2px 保留「色塊」而非「膠囊」的意思</span>
         </div>
       </TutorialSection>
 
@@ -59,7 +59,7 @@ export const Overview: Story = {
         </div>
       </TutorialSection>
 
-      <TutorialSection title="rounded-lg(8px)— 浮層 / 容器">
+      <TutorialSection title="rounded-lg(8px)— 浮層外殼">
         {/* 原本是手畫的「Popover」浮層殼(M23 手刻浮層殼子規則 / 登記簿 B35:浮層一律消費 Popover);token 頁不開真浮層蓋住下方段落,改連到 Popover 頁看實物 */}
         <p className="text-body text-fg-secondary">
           Dialog、Popover、Dropdown 等浮層使用 rounded-lg,實際樣子見{' '}
@@ -75,8 +75,9 @@ export const Overview: Story = {
           {/* 人員頭像滑過一律出名片(登記簿 B21「我說所有」;avatar.spec.md「ALL person avatars,無例外」) */}
           <Avatar
             size={32}
+            src={SAMPLE_PEOPLE.alice.avatarSrc}
             alt="Alice Chen"
-            hoverCard={samplePersonCard({ name: 'Alice Chen', subtitle: 'Design｜ALICEC｜1031406', id: 'ALICEC', employeeNumber: '1031406' })}
+            hoverCard={samplePersonCard(SAMPLE_PEOPLE.alice)}
           />
           <Badge variant="critical" count={3} />
           <Switch defaultChecked aria-label="接收通知" />

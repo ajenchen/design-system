@@ -8,11 +8,13 @@ Typography 定義字體尺寸與行高的 token 系統，確保全系統文字�
 
 Typography 由三個獨立維度組成，分開疊加：
 
+<!-- typography-allow-weight:start -->
 | 維度 | 控制方式 | 說明 |
 |------|---------|------|
 | font-size | `text-{role}` utility | token 決定，不可繞過 |
 | line-height | 烤進 token，需要時覆蓋 | heading / supplementary → 1.3；body → 1.5 |
 | font-weight | `font-normal` / `font-medium` / `font-bold` | 使用端疊加，不寫死在 token |
+<!-- typography-allow-weight:end -->
 
 **line-height 的選擇基於「是否適合多行閱讀」：**
 - `1.5`：適合連續閱讀的段落（14px / 16px）
@@ -27,6 +29,9 @@ Typography 由三個獨立維度組成，分開疊加：
 
 ## Token 表
 
+允許清單的來源:本表、上方「設計原則」表的字重、下方「line-height 覆蓋」與「既定 role」兩段框起來的 utility(閘 `scripts/token-allowlist-invariant.mjs` 驗 `../utility-registry.json` 的 `typography.allow` 逐字相等,並驗 Tailwind 預設的 `text-*` / `font-*` / `leading-*` / `tracking-*` 名字全部被擋)。選字級照「用途」欄,不照 Tailwind 名字對應。
+
+<!-- typography-allow-size:start -->
 | Utility        | font-size | line-height | 用途 |
 |----------------|-----------|-------------|------|
 | `text-h1`      | 48px      | 1.3         | 頁面主標題 |
@@ -39,6 +44,7 @@ Typography 由三個獨立維度組成，分開疊加：
 | `text-body`    | 14px      | 1.5         | ★ 主要內文基準 |
 | `text-caption` | 12px      | 1.3         | 圖表附註、標籤文字、元件內次要說明 |
 | `text-footnote`| 10px      | 1.3         | 法律文字、來源標注（極少用）|
+<!-- typography-allow-size:end -->
 
 > **10px a11y 用途限制**（2026-07-17）：`text-footnote` 僅限**非必要的附帶資訊**（法律細字、來源標注、storybook 註解）——目前全庫零正式元件消費，只用於 stories `<p>` 註解。**使用者需理解才能操作的資訊禁止只靠 10px**；任何 ≤12px 用途上線前須驗 200% 放大（WCAG 1.4.4）不裁切。視覺標題 ≠ 語義標題（一律用 `h1–h6`，WCAG 1.3.1）。
 
@@ -64,9 +70,11 @@ Typography 由三個獨立維度組成，分開疊加：
 
 單行保證由容器自身承擔（Button / SegmentedControl item 等套 `whitespace-nowrap`）——`leading-compact` 不處理 2 行以上的 label；多行截斷是 `line-clamp-*` + 預設行高的職責（見下方反 pattern）。
 
-可用的 override utility：
+可用的 override utility(只有這兩個;Tailwind 預設的 `leading-tight` / `snug` / `relaxed` / `loose` 與數字行高一律擋):
+<!-- typography-allow-leading:start -->
 - `leading-compact`：1.3（自訂，只給 `text-body` / `text-body-lg`）
 - `leading-normal`：1.5（Tailwind 內建，正式 DS 元件**不需**主動覆蓋成 1.5，因為 `text-body` / `text-body-lg` 預設就是 1.5）
+<!-- typography-allow-leading:end -->
 
 ### 反 pattern（禁用）
 
@@ -143,9 +151,11 @@ Typography 由三個獨立維度組成，分開疊加：
 
 ### 既定 role
 
+<!-- typography-allow-tracking:start -->
 | Token | 值 | Tailwind utility | Role |
 |---|---|---|---|
-| `--tracking-shortcut` | `0.1em` | `tracking-shortcut` | 鍵盤快捷鍵 hint(`⌘K` / `Ctrl+S` 等),Command/CommandShortcut + DropdownMenuShortcut + 同類 kbd 顯示 consumed via `text-caption` 或 `text-footnote` |
+| `--tracking-shortcut` | `0.1em` | `tracking-shortcut` | 鍵盤快捷鍵 hint(`⌘K` / `Ctrl+S` 等),Command/CommandShortcut + DropdownMenuItem `shortcut` 後綴 + 同類 kbd 顯示 consumed via `text-caption` 或 `text-footnote` |
+<!-- typography-allow-tracking:end -->
 
 ### 新增 role 流程
 
@@ -178,7 +188,7 @@ ratio ladder(行高隨字級連續變化)雖精細,但 consumer 心智負擔重(
 
 捨棄連續 ratio 的代價是「極大字級 lh 過鬆」(48px h1 仍 1.3),實測無此問題(本 DS 無 60+ display 級字)。
 
-**(3) h5/h6 與 body-lg/body 同 size(16/14)— 靠 lh + weight 區分,不開新 size tier** <!-- @benchmark-unverified -->
+**(3) h5/h6 與 body-lg/body 同 size(16/14)— 靠 lh + weight 區分,不開新 size tier**
 
 Material 3 用 15 個 type role(display / headline / title / body / label 各分 large / medium / small)—— size scale 一大是 DS 維護負擔(每加 1 tier 就要全 component grep 評估)([來源](https://github.com/material-components/material-web/blob/d872455c4be56022da2095349b30ef46e0b55bc3/tokens/versions/v0_192/_md-sys-typescale.scss))。
 
@@ -186,7 +196,7 @@ Material 3 用 15 個 type role(display / headline / title / body / label 各分
 
 **(4) Font weight 3 階(400/500/700)— 對齊 Carbon / Polaris 共識** <!-- @benchmark-unverified -->
 
-Tailwind / Apple SF 的 9 階 weight scale 涵蓋 marketing / 印刷需求,但 productivity DS 的場景幾乎只用 normal / medium / bold 三階(Polaris 也只開 regular 450 / medium 550 / semibold 650 / bold 700 四階)。捨棄 100-300 hairline + 800-900 black 的代價是「行銷 hero text 表現力」,DS 不收 marketing 場景,接受([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/font.ts#L108-L118))。
+Tailwind / Apple SF 的 9 階 weight scale(Apple:「SF Pro features nine weights」,<https://developer.apple.com/fonts/>)涵蓋 marketing / 印刷需求,但 productivity DS 的場景幾乎只用 normal / medium / bold 三階(Polaris 也只開 regular 450 / medium 550 / semibold 650 / bold 700 四階)。捨棄 100-300 hairline + 800-900 black 的代價是「行銷 hero text 表現力」,DS 不收 marketing 場景,接受([來源](https://github.com/Shopify/polaris/blob/3f7954ae42fabf26d63cee68c23ceebfd7ef0972/polaris-tokens/src/themes/base/font.ts#L108-L118))。
 
 ## 跨元件參考
 
@@ -197,4 +207,3 @@ Tailwind / Apple SF 的 9 階 weight scale 涵蓋 marketing / 印刷需求,但 p
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `empty.spec.md`
-- `token-system.spec.md`

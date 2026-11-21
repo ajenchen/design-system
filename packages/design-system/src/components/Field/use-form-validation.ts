@@ -30,6 +30,7 @@
  * 8 Anchor 到第一個錯誤    → focus + scrollIntoView({block:'center'});每次 submit 重算;只找這個 hook 實例自己的欄位
  * 9 Async / 跨欄位 defer 到 submit → onSubmit 回傳 field-keyed errors → 同 8 anchor
  * + Submit button:Create 不看填了沒、填對沒,一律 enabled / Update disabled-until-dirty → `submitDisabled`
+ *   需要填的欄位只有一個(`soleRequiredField`,2026-11-17 規格第三列):那一欄沒有值時停用,只限空白 —— 格式、長度照常按下才報錯
  * + 更新表單送出成功後,剛送出的值成為新的比對基準(2026-10-01,待辦總帳 N69 / 規格「Submit Button 狀態」):
  *   isDirty 回 false、送出鈕再度停用、Escape 回到已存的值 —— 不是存檔前的舊值;await 期間使用者又打的字逐格重算
  * + Double-submit 防護(2026-07-05 D4):await onSubmit 期間重入直接忽略;`isSubmitting`
@@ -66,6 +67,18 @@ export interface UseFormValidationOptions<T extends FieldValues> {
    */
   intent?: 'create' | 'update'
   /**
+   * 需要填的欄位只有一個(form-validation.spec.md「Submit Button 狀態」第三列;這一列優先於「新建」):填那一欄的名字 →
+   * 那一欄沒有值時 submitDisabled = true,有值就可按。只看「有沒有值」:格式、長度等其他條件一律可按,按下時照常在欄位下方報錯。
+   * 適用條件(兩條都要成立):① 需要填的欄位只有一個(Switch / Slider 永遠有值、附件鈕 / 格式工具列不是在填資料,都不算);
+   * ② 唯一擋住送出的原因是它沒有值。可與 intent: 'update' 並用(沒改或空白都停用)。
+   * 「沒有值」= null / undefined / 只有空白的字串 / 空陣列(或每一項都沒有值,例:區間兩端都沒選);控件的「沒有值」若是值域內的
+   * 某個值(Rating 的 0 = 未評分,rating.spec.md「邊界案例」),用物件寫法 `{ name: 'rating', emptyValue: 0 }` 指名。
+   * 只收一個值、不收判斷式:停用條件只限空白,判斷式會讓格式檢查混進來。
+   */
+  soleRequiredField?:
+    | (keyof T & string)
+    | { [K in keyof T & string]: { name: K; emptyValue: T[K] } }[keyof T & string]
+  /**
    * 格式驗證(blur 層,規則 2):single-field 純 syntax(email 格式 / 必填 / URL)。
    * 回傳 error 訊息字串 = 不合法;undefined = 合法。
    * 業務 / async / 跨欄位驗證**不要**放這裡——放 onSubmit 回傳(規則 9)。
@@ -99,7 +112,7 @@ export interface UseFormValidationReturn<T extends FieldValues> {
   errors: Partial<Record<keyof T, string>>
   /** 任一欄位偏離 initialValues(深比對,還原回原值 = false) */
   isDirty: boolean
-  /** Submit button disabled 狀態(intent 驅動,見 options.intent;submit 進行中一併 disabled) */
+  /** Submit button disabled 狀態(intent 與 soleRequiredField 驅動,見兩個選項;submit 進行中一併 disabled) */
   submitDisabled: boolean
   /** Submit 進行中(await onSubmit 期間 true)— 餵 Button loading;double-submit 防護的 state 面 */
   isSubmitting: boolean
@@ -137,6 +150,16 @@ function sameValue(a: unknown, b: unknown): boolean {
   if (a && b && typeof a === 'object' && typeof b === 'object') {
     try { return JSON.stringify(a) === JSON.stringify(b) } catch { return false }
   }
+  return false
+}
+
+/** soleRequiredField 的「沒有值」(form-validation.spec.md「Submit Button 狀態」第三列):只看有沒有值,不看格式 / 長度。
+ *  數字 0、false、Date 都是值(NumberInput 的沒有值是 null);值域內代表沒有值的那個值由 consumer 以 emptyValue 指名(Rating 的 0)。 */
+function hasNoValue(value: unknown): boolean {
+  if (value == null) return true
+  if (typeof value === 'string') return value.trim() === ''
+  if (typeof value === 'number') return Number.isNaN(value)
+  if (Array.isArray(value)) return value.every(hasNoValue)
   return false
 }
 
@@ -189,7 +212,7 @@ function focusFirstError(errorNames: string[], owner: string, scope: HTMLFormEle
 export function useFormValidation<T extends FieldValues>(
   options: UseFormValidationOptions<T>,
 ): UseFormValidationReturn<T> {
-  const { initialValues, intent = 'create', validate, onSubmit } = options
+  const { initialValues, intent = 'create', soleRequiredField, validate, onSubmit } = options
 
   // RHF 引擎(wrapped):驗證時機由本 hook own,故 RHF 自身 mode 鎖 onSubmit 且不掛 resolver
   // (所有 setError/clearErrors 走手動,RHF 只當 state + dirty + errors store)。
@@ -390,13 +413,20 @@ export function useFormValidation<T extends FieldValues>(
     [form, validate, onSubmit, owner, intent, rebaseline],
   )
 
+  // 需要填的欄位只有一個(soleRequiredField):那一欄沒有值 → 停用;只看有沒有值,格式 / 長度照常按下才在欄位下方報錯
+  const soleName = typeof soleRequiredField === 'object' ? soleRequiredField.name : soleRequiredField
+  const soleEmpty =
+    soleName !== undefined &&
+    (hasNoValue(values[soleName]) ||
+      (typeof soleRequiredField === 'object' && sameValue(values[soleName], soleRequiredField.emptyValue)))
+
   return {
     values,
     errors,
     isDirty,
-    // Submit Button 狀態 canonical:Create 不看填了沒、填對沒,一律 enabled / Update disabled-until-dirty;
-    // submit 進行中一律 disabled(double-submit 防護的 UI 面,2026-07-05 D4)
-    submitDisabled: (intent === 'update' ? !isDirty : false) || isSubmitting,
+    // Submit Button 狀態 canonical:Create 不看填了沒、填對沒,一律 enabled / Update disabled-until-dirty /
+    // 需要填的欄位只有一個 → 空白時停用(優先於 Create);submit 進行中一律 disabled(double-submit 防護的 UI 面,2026-07-05 D4)
+    submitDisabled: (intent === 'update' ? !isDirty : false) || soleEmpty || isSubmitting,
     isSubmitting,
     getInputProps,
     handleSubmit,

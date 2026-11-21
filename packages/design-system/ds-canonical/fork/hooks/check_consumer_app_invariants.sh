@@ -478,7 +478,7 @@ fi
 # 簽名 = 同段 content 有 grid-cols-[ 且(bg-muted|bg-neutral-selected 當 header 底 或 自創
 # ROW_PAD 類常數)。escape:@handcraft-table-ok:(真非表格的 grid 佈局)。
 if grep -qE 'grid-cols-\[' <<<"$CONTENT" && grep -qE '(bg-muted|bg-neutral-selected)[^a-z-]' <<<"$CONTENT" && grep -qiE 'ROW_PAD|MINI_TABLE|<div[^>]*grid[^>]*font-medium' <<<"$CONTENT" && ! grep -q '@handcraft-table-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - 偽表格簽名(div grid-cols + header bg + row 常數):div-grid 手刻資料表 → 必用 <DataTable size=\"sm\" height=\"auto\">(data-table.spec「嵌入式表格」canonical;WM MembersTab 等 5 檔錨例)。真非表格 grid 佈局 → 行內 @handcraft-table-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - 偽表格簽名(div grid-cols + header bg + row 常數):div-grid 手刻資料表 → 必用 <DataTable size=\"sm\" maxHeight=\"none\">(舊寫法 height=\"auto\" 已移除;data-table.spec「嵌入式表格」canonical;WM MembersTab 等 5 檔錨例)。真非表格 grid 佈局 → 行內 @handcraft-table-ok: <rationale>\n"
 fi
 if grep -qE '<img\b[^>]*rounded-full' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 <img ... rounded-full> 頭像 → 必用 <Avatar>(build-ui-canonicals.md:25)\n"

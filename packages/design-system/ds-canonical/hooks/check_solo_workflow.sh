@@ -5,13 +5,21 @@ set -uo pipefail
 #
 # Blocks 2 violations:
 #   R1. A second working branch in the same session(checkout -b or switch -c).
+#       The session→branch record is enforcement state, not telemetry(_log-fire.sh
+#       governance_enforcement_state_dir):遙測開不開都一樣有作用。2026-11-18 之前它住在遙測目錄裡,
+#       遙測預設關 → R1 預設從不擋(knowledge-prune D4-01)。
+#       R1 記不到、也就擋不到的情況(照實列):GOVERNANCE_READ_ONLY=1(CI replay、hooks:test)、
+#       不經 adapter 直接跑本檔(沒有 GOVERNANCE_RUNTIME_ROOT)、payload 沒有 session_id、
+#       runtime root 不是本 repo Git 目錄下的 governance-runtime(例:managed host 刻意給的停用 root)、
+#       紀錄檔被換成 symlink / hard link(拒寫也拒讀)。
 #   R2. Any direct push to main. PR is the only merge path.
 # Tag/release lifecycle belongs to `release:auto` + protected workflows; the retired
 # local release-preflight R4 branch must not insert a sixth standard release gate.
 #
 # Managed recovery override: GOVERNANCE_BYPASS_SOLO_WORKFLOW=1 in the hook host
-# environment (audit-logged to neutral runtime state when opted in). Command text
-# can never activate the override.
+# environment (audit-logged to solo-workflow-bypass.jsonl in the same enforcement state
+# as R1, under the same conditions — telemetry not required). Command text can never
+# activate the override.
 #
 # 違反歷史:本 hook 2026-05-08 codified — 同 session AI 開 5 個 branch + 2 PR
 # 後 user 第 3 次糾正才升 mechanical (markdown rule + memory file 都不夠)。
@@ -20,11 +28,22 @@ source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 
-STATE_DIR="$(governance_runtime_state_dir 2>/dev/null || true)"
+TRACK_NAME=session-branch-track.jsonl
+BYPASS_NAME=solo-workflow-bypass.jsonl
+
+# Enforcement state is resolved lazily — only on the R1 path. Resolving it costs python3 calls, and the
+# vast majority of Bash calls are not git branch commands(see the early exit below; G4 複核二).
+STATE_DIR=""
 STATE_WRITES=0
-[ -n "$STATE_DIR" ] && STATE_WRITES=1
-TRACK_FILE="$STATE_DIR/session-branch-track.jsonl"
-BYPASS_LOG="$STATE_DIR/solo-workflow-bypass.jsonl"
+TRACK_FILE=""
+solo_enforcement_state_init() {
+  STATE_DIR="$(governance_enforcement_state_dir 2>/dev/null)" || STATE_DIR=""
+  [ -n "$STATE_DIR" ] || return 0
+  # Same filename validation as telemetry(rejects symlink / hard link / non-regular file).
+  TRACK_FILE="$(governance_runtime_file_path "$TRACK_NAME" "$STATE_DIR" 2>/dev/null)" || TRACK_FILE=""
+  [ -n "$TRACK_FILE" ] && STATE_WRITES=1
+  return 0
+}
 
 INPUT=$(cat 2>/dev/null || echo '{}')
 TOOL_NAME=$(jq -r '.tool_name // .tool // empty' <<<"$INPUT" 2>/dev/null)
@@ -35,11 +54,9 @@ SESSION_ID=$(jq -r '.session_id // empty' <<<"$INPUT" 2>/dev/null)
 # is authoritative. Treating a token in tool_input.command as an override would
 # let the command being inspected disable its own guard.
 if [ "${GOVERNANCE_BYPASS_SOLO_WORKFLOW:-0}" = "1" ]; then
-  if [ "$STATE_WRITES" = "1" ]; then
-    mkdir -p "$STATE_DIR"
-    jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg tool "$TOOL_NAME" --arg session "$SESSION_ID" \
-      '{ts:$ts,tool:$tool,session:$session}' >> "$BYPASS_LOG"
-  fi
+  governance_append_enforcement_record "$BYPASS_NAME" \
+    "$(jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg tool "$TOOL_NAME" --arg session "$SESSION_ID" \
+      '{ts:$ts,tool:$tool,session:$session}' 2>/dev/null)" 2>/dev/null || true
   exit 0
 fi
 
@@ -95,6 +112,7 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   # Use shlex tokenizer(quoted-string-safe)— quoted examples are not treated as commands.
   NEW_BRANCH=$(echo "$COMMAND" | detect_git_new_branch)
   if [ -n "$NEW_BRANCH" ]; then
+    solo_enforcement_state_init
 
     if [ "$STATE_WRITES" = "1" ] && [ -f "$TRACK_FILE" ] && [ -n "$SESSION_ID" ]; then
       EXISTING=$(jq -rs --arg s "$SESSION_ID" 'map(select(.session_id == $s))[0].branch // empty' "$TRACK_FILE" 2>/dev/null)
@@ -124,10 +142,12 @@ EOF
     fi
 
     # Record new session branch (first creation OK)
+    # jq 組 JSON(舊版 printf 直接塞字串:分支名帶 `"` 就寫出一行壞 JSON,之後 jq -s 整檔讀失敗 →
+    # 每個 session 的 R1 都靜默放行)。
     if [ "$STATE_WRITES" = "1" ] && [ -n "$SESSION_ID" ] && [ -n "$NEW_BRANCH" ]; then
-      mkdir -p "$STATE_DIR"
-      printf '{"session_id":"%s","branch":"%s","created_at":"%s"}\n' \
-        "$SESSION_ID" "$NEW_BRANCH" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$TRACK_FILE"
+      governance_append_enforcement_record "$TRACK_NAME" \
+        "$(jq -nc --arg s "$SESSION_ID" --arg b "$NEW_BRANCH" --arg t "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          '{session_id:$s,branch:$b,created_at:$t}' 2>/dev/null)" 2>/dev/null || true
     fi
     exit 0
   fi

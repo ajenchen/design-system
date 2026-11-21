@@ -3,11 +3,10 @@
 // (per .claude/references/story-baseline-registry.json#DataTable)
 import type { Meta, StoryObj } from '@storybook/react'
 import { Search } from 'lucide-react'
-import type { ColumnDef } from '@tanstack/react-table'
 import { CircularProgress } from './circular-progress'
 import { Input } from '@/design-system/components/Input/input'
 import { Empty } from '@/design-system/components/Empty/empty'
-import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { DataTable, type DataTableColumnDef } from '@/design-system/components/DataTable/data-table'
 
 /**
  * CircularProgress 展示——整個設計系統 circular 形式進度的 SSOT。
@@ -69,7 +68,7 @@ export const InlineAction: Story = {
 
 type SyncRow = { file: string; modified: string; sync: 'syncing' | 'synced' }
 
-const syncColumns: ColumnDef<SyncRow>[] = [
+const syncColumns: DataTableColumnDef<SyncRow>[] = [
   { accessorKey: 'file', header: '檔案' },
   {
     accessorKey: 'modified',
@@ -112,7 +111,7 @@ export const InlineCellLoading: Story = {
 export const FullScreenOverlay: Story = {
   name: '全頁浮層',
   render: () => (
-    <div className="relative border border-border rounded-lg w-full h-80 overflow-hidden flex items-center justify-center">
+    <div className="relative border border-border rounded-md w-full h-80 overflow-hidden flex items-center justify-center">
       <Empty
         icon={<CircularProgress size={48} aria-label="切換 workspace 中" />}
         title="正在切換 workspace"

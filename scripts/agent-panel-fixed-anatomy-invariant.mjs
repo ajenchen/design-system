@@ -25,10 +25,19 @@ const REQUIRED_PROPS = {
   // 實際後果:URL 註冊表示意那則沒傳,user 在預覽站點遮罩「根本沒有任何反應」(2026-09-18 回報)。
   // 同一條律的第三個住所(前兩個是標題列與輸入盒),不是新規則。
   AgentPanelProps: ['onClose'],
+  // 2026-11-11 加(r3 審查):決策卡的標題列 × 恆渲染(19af33cc 拿掉 footer 跳過鈕),送出鈕也恆渲染 ——
+  // 兩者都沒有內建行為,寫成可選 = 沒傳的 consumer 按了沒反應、使用者除了答完沒有離開的路。同一條律的第四個住所。
+  // 2026-11-15(A16):× = 取消,回呼由 onSkip(answers) 改名 onCancel();Esc 也走它。
+  AgentDecisionCardProps: ['onSubmit', 'onCancel'],
 }
+/**
+ * 取消不帶答案(2026-11-15,A16;agent-decision-card.spec.md「關閉」條):`onCancel` 的型別必須是不收任何參數的 `() => void` ——
+ * 型別上收得到答案,實作遲早會把預選的建議塞回去(2026-11-15 前的 `onSkip(resolvedAnswers())` 就是這樣)。舊名 `onSkip` 不得回到 props(語意變了,不留別名)。
+ */
+const NO_ANSWER_CALLBACKS = { AgentDecisionCardProps: { callback: 'onCancel', retired: ['onSkip'] } }
 /** 任何固定 anatomy callback 都不得當渲染閘。 */
 const GATE_CALLBACKS = [
-  'onNewConversation', 'onClose', 'onSubmit', 'onRemoveAttachment', 'onAddAttachment',
+  'onNewConversation', 'onClose', 'onSubmit', 'onCancel', 'onSkip', 'onRemoveAttachment', 'onAddAttachment',
   'onStop', 'onCopy', 'onLike', 'onDislike', 'onSelectConversation', 'onRenameConversation', 'onDeleteConversation',
 ]
 
@@ -41,6 +50,15 @@ export function checkSource(src) {
       if (!new RegExp(`\\n\\s+${p}:`).test(m[0])) out.push(`${iface}.${p} 必為必填(固定 anatomy 律)`)
     }
   }
+  for (const [iface, { callback, retired }] of Object.entries(NO_ANSWER_CALLBACKS)) {
+    const m = src.match(new RegExp(`export interface ${iface}[\\s\\S]*?\\n}`))
+    if (!m) continue
+    const decl = m[0].match(new RegExp(`\\n\\s+${callback}\\??:\\s*([^\\n]+)`))
+    if (decl && !/^\(\s*\)\s*=>/.test(decl[1].trim())) out.push(`${iface}.${callback} 必須是 () => void(取消不帶答案):現在是「${decl[1].trim()}」`)
+    for (const old of retired) {
+      if (new RegExp(`\\n\\s+${old}\\??:`).test(m[0])) out.push(`${iface}.${old} 已退役(語意變了,不留別名;改用 ${callback})`)
+    }
+  }
   const gate = new RegExp(`\\{\\s*(?:props\\.)?(${GATE_CALLBACKS.join('|')})\\s*(?:&&|\\?)\\s*\\(?\\s*<`, 'g')
   for (const m of src.matchAll(gate)) {
     out.push(`L${src.slice(0, m.index).split('\n').length}:以 ${m[1]} 有無決定渲染(固定 anatomy 律)`)
@@ -49,8 +67,16 @@ export function checkSource(src) {
 }
 
 function selftest() {
-  const iface = 'export interface AgentPanelHeaderProps {\n  onNewConversation: () => void\n  onClose: () => void\n}\nexport interface AgentPromptInputProps {\n  onSubmit: () => void\n  onRemoveAttachment: (id: string) => void\n  onAddAttachment: () => void\n}\nexport interface AgentPanelProps {\n  onClose: () => void\n}\n'
+  const iface = 'export interface AgentPanelHeaderProps {\n  onNewConversation: () => void\n  onClose: () => void\n}\nexport interface AgentPromptInputProps {\n  onSubmit: () => void\n  onRemoveAttachment: (id: string) => void\n  onAddAttachment: () => void\n}\nexport interface AgentPanelProps {\n  onClose: () => void\n}\nexport interface AgentDecisionCardProps\n  extends Omit<X, \'onSubmit\'> {\n  onSubmit: (a: A) => void\n  onCancel: () => void\n}\n'
   const c = [
+    // 2026-11-11 迴歸:決策卡 × 恆渲染,× 的回呼可選 = × 按了沒反應,必須抓;送出同理(2026-11-15 起回呼叫 onCancel)
+    { n: '可選 onCancel(決策卡 ×)= 該抓', src: iface.replace('  onCancel: ()', '  onCancel?: ()'), e: 1 },
+    { n: '可選 onSubmit(決策卡送出)= 該抓', src: iface.replace('  onSubmit: (a: A)', '  onSubmit?: (a: A)'), e: 1 },
+    { n: '{onCancel && (<Button/>)} 閘 = 該抓', src: iface + '{onCancel && (<Button dismiss />)}', e: 1 },
+    // 2026-11-15 根因(A16):取消把答案帶出去 = 型別上收得到答案;舊名 onSkip 回到 props 也算(語意變了,不留別名)
+    { n: 'onCancel 收答案參數(取消又帶答案)= 該抓', src: iface.replace('  onCancel: () => void', '  onCancel: (answers: Record<string, string>) => void'), e: 1 },
+    { n: '舊名 onSkip(answers) 取代 onCancel = 該抓(缺 onCancel + 舊名回來)', src: iface.replace('  onCancel: () => void', '  onSkip: (a: A) => void'), e: 2 },
+    { n: 'onCancel 之外另留 onSkip 別名 = 該抓', src: iface.replace('  onCancel: () => void', '  onCancel: () => void\n  onSkip?: (a: A) => void'), e: 1 },
     { n: '必填 + 無閘 = 合格', src: iface + 'onStop?.()', e: 0 },
     { n: '可選 onClose(標題列)= 該抓', src: iface.replace('onClose:', 'onClose?:'), e: 1 },
     // 2026-09-18 迴歸:面板本身的 onClose 寫成可選 = 遮罩點了不關,必須抓

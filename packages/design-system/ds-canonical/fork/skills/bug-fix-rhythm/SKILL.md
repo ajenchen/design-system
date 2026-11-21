@@ -154,12 +154,12 @@ use the active browser/Storybook screenshot workflow and preserve visual evidenc
 | `/visual-audit` | 單次視覺對齊 | Phase 3 sub-step,本 skill 包它 |
 | `/component-quality-gate` | stakeholder gate | 不重疊(stakeholder vs daily bug fix) |
 | the installed immutable governance checker(hook) | claim-verify gap 攔 | 本 skill Phase 3 是 active side;hook 是 passive trip-wire |
-| the installed immutable governance checker(hook) | M32(a) audit script(the product-specific verification workflow (when configured),canonical = `visual-audit.mjs`)必 pixel | 本 skill Phase 3 跑該 audit |
+| the installed immutable governance checker(hook,lib the installed immutable governance checker) | M32 主句:audit script(the product-specific verification workflow (when configured),canonical = `visual-audit.mjs`)必 pixel,寫入當下擋 | 本 skill Phase 3 跑該 audit |
 
 **3 層 防線**:
 - **本 skill**(active workflow):MUST-ALL checklist + batch-end-verify rhythm
 - **stop_self_audit.sh**(passive hook,claim-verify gap,BLOCKER)+ **check_codex_collab_5step.sh**(passive hook,codex-collab commit 缺 cite+verify+verdict marker,P1 soft stderr 不 block)
-- **M20 / M32(a)**(meta-rule):上游 invariant
+- **M20 / M32 主句(pixel-quantified)**(meta-rule):上游 invariant
 
 ---
 
@@ -193,4 +193,4 @@ use the active browser/Storybook screenshot workflow and preserve visual evidenc
 3. breadcrumb tooltip audit「ALL PASS」但 user 連抓 hover 不 fire(audit 沒驗 Portal DOM bounding rect)
 4. row-alignment audit「Δ=0 ALL PASS」(attr 對齊,Field collapse 沒抓)
 
-具體 M32(a) pixel-quantified rule 仍在 meta-patterns.md,本 skill 是其 workflow side。
+具體 M32 主句(pixel-quantified)rule 仍在 meta-patterns.md,本 skill 是其 workflow side。

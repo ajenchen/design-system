@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Compute provider-neutral governance infra best-practice score (0-100).
-// This command is a pure observer: callers own any opt-in runtime history.
+// This command is a pure observer: callers own any runtime history it feeds.
 //
-// Used by stop_meta_self_audit.sh to detect regression auto-inject self-improve prompt.
+// Used by stop_passive_logging.sh R5(原 stop_meta_self_audit.sh,2026-05-13 併入)to detect regression and log it for next-turn injection.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
+import { readMemoryIndexBudget } from './validate-memory-contract.mjs';
 
 function argument(name) {
   const index = process.argv.indexOf(name)
@@ -53,12 +54,13 @@ const dimensions = [];
 // === D1: provider instruction bootstrap size ===
 // The registry owns every instruction entry; a new provider changes data, not this scorer.
 //   ≤ 250 → 100,251-400 → 70(transition acceptable),401-800 → 40(approaching hard cap),> 800 → 10
-//   (門檻對齊 AGENTS.md「行數預算」的 target ≤ 250;此註解 2026-09-19 前寫 200,與下一行的 code 相反)
+//   250 / 400 是本評分自己的級距,不是上限:AGENTS.md「行數預算」不寫數值(原本對齊的「target ≤ 250」已不存在)。
+//   總行數的上限(> 800 出 BLOCKER)住在 session_start_governance_check.sh Check 1;單檔上限住 hooks/lib/_size_budget.sh 的表。
 {
   const entries = [...new Set(registry.canonical.reservedDiscovery.instructionNames)]
   const lines = entries.reduce((sum, entry) => sum + safeWc(entry), 0)
   const score = lines <= 250 ? 100 : lines <= 400 ? 70 : lines <= 800 ? 40 : 10;
-  dimensions.push({ dim: 'D1 registry instruction bootstrap size(target ≤250 / hard cap 800)', value: `${lines} lines across ${entries.length} entries`, score, max: 100 });
+  dimensions.push({ dim: 'D1 registry instruction bootstrap size(hard cap = session_start_governance_check.sh Check 1)', value: `${lines} lines across ${entries.length} entries`, score, max: 100 });
 }
 
 // === D2: Skill SKILL.md size discipline ===
@@ -85,14 +87,26 @@ const dimensions = [];
   dimensions.push({ dim: 'D2 Skill SKILL.md sizes', value: `${overBudget} in transition (250-400) / ${overCap} over cap (>400)`, score, max: 100 });
 }
 
-// === D3: Memory entries(target ≤ 20)===
-{
-  // Repository-owned, provider-neutral memory is authoritative. Claude/Codex
-  // discovery caches are disposable projections and must never affect score.
-  const memDir = join(ROOT, 'governance', 'memory');
-  const entries = existsSync(memDir) ? readdirSync(memDir).filter(f => f.endsWith('.md') && f !== 'MEMORY.md').length : 0;
-  const score = entries <= 15 ? 100 : entries <= 20 ? 80 : entries <= 30 ? 50 : 20;
-  dimensions.push({ dim: 'D3 Memory entries', value: `${entries}/20`, score, max: 100 });
+// === D3: Memory index entries(上限 = governance/memory/contract.json 的 maxIndexEntries)===
+// Repository-owned, provider-neutral memory is authoritative. Claude/Codex
+// discovery caches are disposable projections and must never affect score.
+// 條數與上限都由 validate-memory-contract.mjs 的 readMemoryIndexBudget 給(和 CI、SessionStart Check 8 同一個函式)。
+// 改前這裡自己數 governance/memory 的 .md 檔(只扣 MEMORY.md,連 README.md 也算進去)、上限寫死 20:
+// 2026-11-18 量到 19,同一棵樹 CI 判的是 18。
+// 級距相對於上限:≤ 上限 − 5 → 100、≤ 上限 → 80、≤ 上限 × 1.5 → 50、其餘 20(上限 20 時即改前的 15 / 20 / 30)。
+// 沒有 contract.json = 這個專案沒有 memory 契約,本維度不適用、不計分(與 SessionStart Check 8 同判)。
+// 有契約卻量不到 → 0 分並寫出原因:量不到不得當成沒超標(M37 第八種形狀)。
+if (existsSync(join(ROOT, 'governance', 'memory', 'contract.json'))) {
+  let budget = null
+  let failure = null
+  try { budget = readMemoryIndexBudget({ root: ROOT }) } catch (error) { failure = error.message }
+  if (budget) {
+    const { entries, maxIndexEntries: cap } = budget
+    const score = entries <= cap - 5 ? 100 : entries <= cap ? 80 : entries <= Math.floor(cap * 1.5) ? 50 : 20;
+    dimensions.push({ dim: 'D3 Memory index entries(cap = contract.json maxIndexEntries)', value: `${entries}/${cap}`, score, max: 100 });
+  } else {
+    dimensions.push({ dim: 'D3 Memory index entries(cap = contract.json maxIndexEntries)', value: `量不到:${failure}`, score: 0, max: 100 });
+  }
 }
 
 // === D4: Hook test coverage ===

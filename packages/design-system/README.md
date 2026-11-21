@@ -125,6 +125,8 @@ Token `--font-sans` stack = `Roboto, -apple-system, BlinkMacSystemFont, "Segoe U
 - `@qijenchen/design-system/src/...`(internal source path,未來 SSOT 結構改會壞)
 - `@qijenchen/design-system/dist/...`(internal build artifact,未來 build pipeline 改會壞)
 
+**版本與相容**:目前是 0.x 預發布版(semver 2.0.0 第 4 條:「Major version zero (0.y.z) is for initial development. Anything MAY change at any time. The public API SHOULD NOT be considered stable.」)。改名 / 移除**不留舊名、不標 `@deprecated`**;每一版的破壞性變更逐條寫在隨套件出貨的變更帳本 `ds-changes.json`(每節的鍵 = 含這些變更的版本號;每條有 target / change / to / do / spec,能機械改寫的附 fix)。**升版**:開專用分支、裝 exact 新版,先讀 `node_modules/@qijenchen/design-system/ds-changes.json` 裡舊版之後到新版的各節,在 commit 版號之前跑一次 `npx qijenchen-ds-codemod upgrade --source apps/<app>/src`(每個產品 app 一個 `--source`;自動改帶 fix 的條目,報告逐條列出狀態與 檔:行、做法、規格段落;範圍內有未 commit 的檔、或 `.git/` 裡的戳記記著同一組 from → to 已跑過,都會拒跑;`--root` 不是 git 最上層時沒有戳記,不要跑第二次),修到 typecheck / lint:imports / governance:check / build 全綠。GitHub Release 的「破壞性變更」段由同一份帳本產生。規則住 `ds-canonical/references/props-naming.md`「相容政策」。
+
 ---
 
 ## Compatibility matrix

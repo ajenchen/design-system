@@ -7,13 +7,18 @@
 // 本 script 把它降為 DETERMINISTIC：掃所有 spec.md 引用的 `<name>.spec.md` pointer，assert target 存在。
 //
 // 偵測：rename / 刪除 spec.md 後，其他 spec.md 仍用舊檔名指它 = 死指標（reader 點過去 404）。
-// 對齊 Carbon「design spec is source of truth」+ markdown-link-check canonical。
 //
 // Usage:
 //   node scripts/audit-spec-deadlinks.mjs           # 印報告
 //   node scripts/audit-spec-deadlinks.mjs --check    # CI gate（有死連結 exit 1）
 //
 // Escape：spec.md 內該行加 `<!-- @deadlink-allow: 理由 -->`（同行或前一行）跳過該 reference。
+//
+// @gate-contract
+//   保證: packages/design-system/src 底下每份 .spec.md 裡寫到的 `<name>.spec.md`(可帶路徑)都指到存在的 spec ——
+//         檔名(basename)存在即算,帶路徑的另接受相對路徑尾段相符;自己引用自己、同行或上一行有 @deadlink-allow: 的不算
+//   紅: --check 下有任一個死連結 → 印出「來源檔:行號 → 指到的名字」並 exit 1;配對測試在 overlay-surface.spec.md 加一行指向不存在的 spec,本閘必須紅
+//   綠: 0 死連結時 exit 0 並印出掃了幾份 spec、幾個指標;只讀檔,不讀時間,重複跑結果相同
 
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, basename, relative } from 'node:path'

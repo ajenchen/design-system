@@ -131,8 +131,10 @@ export const DropzoneVisualRule: Story = {
         {/* ✓ = 真的 FileUpload 停在拖進來的狀態(data-state="drag-over",同設計規格頁 MockDropzone 的做法);❌ 是刻意畫出來的錯誤長相(稽核 L040) */}
         <div className="flex flex-col gap-[var(--layout-space-loose)]">
           <FileUpload data-state="drag-over" title="✅ 僅改邊框顏色" description="dashed primary-hover,底維持 surface" />
-          {/* @story-counter-example: 反例教的是 packages/design-system/src/components/FileUpload/file-upload.spec.md:131「不加 scale / shadow 等裝飾」 */}
-          <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted scale-105 shadow-[var(--elevation-200)]">
+          {/* 反例的陰影用頁面內容層的拖拽 lift(elevation.spec.md「層級」--elevation-100-hover),不用浮層的 200:放置區是頁面內容、不是浮層,
+              圓角跟 ✅ 那格同為 4px —— 兩格只差這一則要教的「scale + 陰影」,不多出一個沒在教的差異(用 200 會被量成浮層外殼,牽出 radius.spec.md 的 8px)【AI 推導 2026-11-18】 */}
+          {/* @story-counter-example: 反例教的是 packages/design-system/src/components/FileUpload/file-upload.spec.md:130「不加 scale / shadow 等裝飾」 */}
+          <div className="border-2 border-dashed border-primary-hover bg-surface rounded-md p-[var(--layout-space-loose)] text-center text-caption text-fg-muted scale-105 shadow-[var(--elevation-100-hover)]">
             ❌ scale + shadow — 視覺噪音,與 elevation 系統衝突
           </div>
         </div>

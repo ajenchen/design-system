@@ -1,0 +1,8 @@
+{
+  "_meta": {
+    "purpose": "scripts/benchmark-citation-invariant.mjs 的棘輪:其他規格(packages/design-system/src 底下、components/ 以外的 *.spec.md)與 *.tsx 裡「世界級對照段缺逐家一手來源」的既有段數,每檔一個數字。只准往下:檔不在表上 / 數字變大 = 紅;修掉後跑 `node scripts/benchmark-citation-invariant.mjs --update-baseline` 收緊(只減不加,不會把新的段加進來)。元件規格(components/**/*.spec.md)是零證據債範圍,不准進這張表。",
+    "origin": "2026-11-16 A29 以逐家比對判定(hooks/lib/benchmark-citation.mjs)量全樹時的現況;每一段的位置與缺哪幾家用 `node scripts/benchmark-citation-invariant.mjs --list` 看。",
+    "remedy": "每段二選一:補該家自己的官網 / 原始碼網址(打開確認它真的支持那句話),或照 M22 改寫成 DS 內部理由。其他範圍也可以照舊加 `@benchmark-unverified` 逐句撤回,但那個標記的數量歸 scripts/exemption-expiry-invariant.mjs 管。"
+  },
+  "files": {}
+}

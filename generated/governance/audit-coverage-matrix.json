@@ -3,25 +3,25 @@
   "expected_dims": 91,
   "classified": 91,
   "tier_counts": {
-    "DETERMINISTIC": 25,
-    "HOOK-ENFORCED": 39,
+    "DETERMINISTIC": 27,
+    "HOOK-ENFORCED": 37,
     "PURE-JUDGMENT": 25,
     "UNKNOWN": 0,
     "CI-ENFORCED": 2
   },
   "hook_enforcement_counts": {
-    "block": 23,
-    "block-and-warn": 3,
-    "warn": 13,
-    "prevents_landing": 12
+    "block": 26,
+    "block-and-warn": 7,
+    "warn": 4,
+    "prevents_landing": 15
   },
   "gaps": [],
   "coverage_by_dim": {
     "1": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "post_edit_dispatcher.sh → lib/_story_compile_drift.sh(cva 三方漂移 — story-auto-compile-migrate + scripts/compile-stories.mjs --check chain)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "mechanism": "post_edit_dispatcher.sh → lib/_story_compile_drift.sh(scripts/compile-stories.mjs --all --check:tsx componentMeta ↔ spec frontmatter 的 key;cva defaultVariants 預設值三方比對沒有機械量具,audit-time 判;2026-11-18 D4-02 修 scope —— 原 `*/design-system/components/*` 自搬家後從未觸發)",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_story_compile_drift.sh:這次編輯的元件 compile-stories --all --check 有 drift → exit 2(別的元件的 drift 只列 context)",
       "hook_events": [
         "PostToolUse"
       ],
@@ -148,8 +148,8 @@
     "18": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(shadcn compat alias ban write-time;dispatcher 已 registered settings.json)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在,實際 active 路徑是 dispatcher source lib)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1:這次新增的行有 shadcn alias → exit 2;既有行只列 governanceContext",
       "hook_events": [
         "PostToolUse"
       ],
@@ -250,9 +250,9 @@
     },
     "31": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh WARN(exit 0,2026-05-31 修 dangling ref:原寫 check_overlay_handcraft.sh standalone 不存在,已 fold 成 lib helper)+ grep ban stripped-padding boolean variant audit-time",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "mechanism": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh(2026-11-18 D4-02 起這次新增的行 exit 2;既有的只列 governanceContext)+ grep ban stripped-padding boolean variant audit-time",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_overlay_handcraft.sh Check 1 / 2.5 / 6:這次新增的行 → exit 2;既有行只列 governanceContext",
       "hook_events": [
         "PostToolUse"
       ],
@@ -274,25 +274,25 @@
     },
     "34": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh,P1 stderr)",
-      "enforcement": "warn",
-      "enforcement_source": "rule:check_field_family_invariants.sh A.4 disabled placeholder color(P1 context,exit 0)",
+      "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh;2026-11-21 WP-15b 由 P1 提醒升 P0 擋,只看這次寫入的內容)+ audit-time DS-wide grep 確認 residue",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_field_family_invariants.sh A.4 disabled placeholder color(P0,record_worst 2;2026-11-21 WP-15b 由 P1 context 升級)",
       "hook_events": [
         "PreToolUse"
       ],
-      "prevents_landing": false,
+      "prevents_landing": true,
       "id": "DS-DIM-034",
       "critical": true
     },
     "35": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh,P1 WARN)",
-      "enforcement": "warn",
-      "enforcement_source": "rule:check_pattern_invariants.sh C.1 overlay scroll chain(P1 WARN context)",
+      "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh;2026-11-21 WP-15b 由 P1 WARN 升 P0 擋,只看這次寫入的內容)+ audit-time DS-wide grep 確認 residue",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_pattern_invariants.sh C.1 overlay scroll chain(P0,record_worst 2;2026-11-21 WP-15b 由 P1 WARN 升級)",
       "hook_events": [
         "PreToolUse"
       ],
-      "prevents_landing": false,
+      "prevents_landing": true,
       "id": "DS-DIM-035",
       "critical": true
     },
@@ -377,8 +377,8 @@
     "47": {
       "tier": "HOOK-ENFORCED",
       "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(utility-registry.json SSOT compliance write-time)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "enforcement": "block-and-warn",
+      "enforcement_source": "rule:post_edit_dispatcher.sh → lib/_token_hygiene.sh Check 1 / 3 / 4(registry 管的 shadcn alias、Tailwind 預設陰影、原料色名):這次新增的行 → exit 2;既有行只列 governanceContext",
       "hook_events": [
         "PostToolUse"
       ],
@@ -424,13 +424,13 @@
     },
     "53": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_spec_class_drift.sh write-time WARN(exit 0,非 block)+ audit-time grep backstop",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
+      "mechanism": "check_spec_class_drift.sh write-time P0 BLOCKER(exit 2;2026-11-21 WP-15b 由 WARN 升級,spec 檔頭 @spec-class-drift-allow 整檔豁免)+ audit-time grep backstop",
+      "enforcement": "block",
+      "enforcement_source": "rule:check_spec_class_drift.sh:命中且 spec 檔頭沒有 @spec-class-drift-allow → exit 2;沒有只提醒的路徑(2026-11-21 WP-15b 升級,outputMode governance-context-or-block)",
       "hook_events": [
         "PreToolUse"
       ],
-      "prevents_landing": false,
+      "prevents_landing": true,
       "id": "DS-DIM-053",
       "critical": true
     },
@@ -478,14 +478,8 @@
       "critical": true
     },
     "58": {
-      "tier": "HOOK-ENFORCED",
-      "mechanism": "check_plugin_fork_health.sh SessionStart：r1 驗證 committed provider-neutral dispatcher + exact installed fork manifest；legacy plugin 僅相容性回饋、不能滿足治理健康契約",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
-      "hook_events": [
-        "SessionStart"
-      ],
-      "prevents_landing": false,
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/deep-audit-deterministic-plan.json dimension 58(argv/capability/coverage SSOT);scripts/test-fork-governance.mjs 驗兩道 consumer 端執行面的兩面:template 出貨的 SessionStart launcher governance/bin/inject_fork_governance_preamble.sh(已安裝套件或 fork manifest 缺 → GOVERNANCE-COMMON-INSTRUCTION-UNAVAILABLE + npm run setup:all;不改工作樹)與 consumer 已安裝的 hard gate fork/consumer/governance-check.mjs(committed launcher 缺 → GOV-ADAPTER-005;manifest 缺 → GOV-CORPUS-001;npm run governance:check 與 setup:all 經 scripts/setup-governance.mjs 呼叫)。這兩面只在夜間 governance-harnesses.yml 與每週 packaging-canary.yml 跑,PR 必過跑不到;template 的 consumer CI(audit.yml)也不跑這道 hard gate。2026-11-21 前掛 SessionStart hook check_plugin_fork_health.sh,已 retired:DS repo 內早退、fork 分類 DROP、plugin 在非 ds-author target 不跑 = 沒有任何部署情境會出聲",
       "id": "DS-DIM-058",
       "critical": true
     },
@@ -551,7 +545,7 @@
     },
     "65": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_chrome_header_avatar_canonical.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)",
+      "mechanism": "check_sidebar_avatar_canonical.sh r1_chrome_header_avatar PreToolUse multiline regex BLOCKER(原 check_chrome_header_avatar_canonical.sh,2026-11-18 prune merge;exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)",
       "enforcement": "block",
       "enforcement_source": "registrations.outputMode",
       "hook_events": [
@@ -569,7 +563,7 @@
     },
     "67": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_sidebar_menu_button_implicit_wrap.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)",
+      "mechanism": "check_sidebar_avatar_canonical.sh r2_menu_button_wrap PreToolUse multiline regex BLOCKER(原 check_sidebar_menu_button_implicit_wrap.sh,2026-11-18 prune merge;exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)",
       "enforcement": "block",
       "enforcement_source": "registrations.outputMode",
       "hook_events": [
@@ -652,14 +646,8 @@
       "critical": true
     },
     "75": {
-      "tier": "HOOK-ENFORCED",
-      "mechanism": "check_plugin_fork_health.sh r2_plugin_freshness SessionStart fork-user(原 check_plugin_freshness.sh)",
-      "enforcement": "warn",
-      "enforcement_source": "registrations.outputMode",
-      "hook_events": [
-        "SessionStart"
-      ],
-      "prevents_landing": false,
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/deep-audit-deterministic-plan.json dimension 75(argv/capability/coverage SSOT);npm run test:setup-governance(scripts/test-setup-governance.mjs)驗 setup:all 依 committed exact lock 安裝、驗簽、高風險 audit 後才跑已安裝的 hooks-off checker,缺 lock / 多一份 shrinkwrap / 設定注入一律在安裝前擋;版本漂移由 checker 的 GOV-VERSION / GOV-PACKAGE-LOCK / GOV-SUPPLY / GOV-DEPS 擋。這一面只在夜間 governance-harnesses.yml 跑,PR 必過跑不到。2026-11-21 前另有 check_plugin_fork_health.sh 的 r2(legacy Claude plugin marketplace 版本差異提示,自述 non-authoritative),已 retired:只在 Claude + plugin + fork 才會跑,而 plugin 在非 ds-author target 一律不跑",
       "id": "DS-DIM-075",
       "critical": true
     },

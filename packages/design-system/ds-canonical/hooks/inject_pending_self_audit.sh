@@ -7,11 +7,16 @@ set -uo pipefail
 #
 # Reads:
 #   $GOVERNANCE_STATE_DIR/self-audit-warnings.jsonl(stop_self_audit 寫入,behavioral check)
-#   $GOVERNANCE_STATE_DIR/score-history.jsonl(stop_meta_self_audit 寫入,infra-score regression)
+#   $GOVERNANCE_STATE_DIR/score-history.jsonl(stop_passive_logging.sh R5 寫入,infra-score regression;原 stop_meta_self_audit 已於 2026-05-13 折入)
 #   $GOVERNANCE_STATE_DIR/audit-post-report-validator.jsonl(check_audit_post_report_validator 寫入,
-#                                                           prune-chain-trigger signal)
+#                                                           prune-chain-trigger signal;寫入端仍綁遙測開關)
 # State:
 #   $GOVERNANCE_STATE_DIR/last-inject-ts.txt — 上次 inject 的 timestamp
+#
+# 讀 pending、寫 cursor 都是功能狀態(_log-fire.sh「兩種寫入、兩道開關」;2026-11-21 WP-06):
+#   adapter 啟動(有 GOVERNANCE_RUNTIME_ROOT)且非 GOVERNANCE_READ_ONLY=1 就讀寫,不看遙測開關;
+#   READ_ONLY=1(CI replay、hooks:test)或直接手動跑(沒有 adapter)→ 不讀也不寫。
+#   以前綁遙測、預設關 = 上面兩支 Stop hook 的提醒預設永遠送不到下一回合(M20 / M33 的注入失效)。
 #
 # Logic:
 #   1. 讀 LAST_TS,撈兩個 log 中 ts > LAST_TS 的條目
@@ -24,7 +29,7 @@ set -uo pipefail
 
 PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR" || exit 0
-STATE_DIR="$(governance_prepare_runtime_state_dir 2>/dev/null)" || exit 0
+STATE_DIR="$(governance_prepare_enforcement_state_dir 2>/dev/null)" || exit 0
 
 LAST_TS_FILE="$(governance_runtime_file_path last-inject-ts.txt "$STATE_DIR" 2>/dev/null)" || exit 0
 BEHAVIORAL_LOG="$(governance_runtime_file_path self-audit-warnings.jsonl "$STATE_DIR" 2>/dev/null)" || exit 0
@@ -189,7 +194,7 @@ fi
 if [ -n "$WARNINGS_SCORE" ]; then
   SCORE_LABEL=""
   [ -n "$LATEST_SCORE" ] && SCORE_LABEL=" current=${LATEST_SCORE}/100"
-  CTX_PARTS="${CTX_PARTS}## Infra-score audit(stop_meta_self_audit,${SCORE_LABEL}):
+  CTX_PARTS="${CTX_PARTS}## Infra-score audit(stop_passive_logging R5,${SCORE_LABEL}):
 ${WARNINGS_SCORE}
 
 "

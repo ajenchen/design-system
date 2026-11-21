@@ -47,21 +47,22 @@ const LINEAR_ISSUES: Array<{ id: string; title: string; status: string }> = [
   { id: 'ENG-1183', title: '時區設為 UTC+0 時排程日期少一天', status: 'In Progress' },
 ]
 
+// 狀態顯示中文(2026-11-18 前直接顯示英文 value —— 稽核 A113;同 inline-edit.stories.tsx STATUS_OPTIONS 的叫法)。value 是資料裡的鍵,不上畫面
 const ISSUE_STATUS_OPTIONS = [
-  { value: 'Backlog', label: 'Backlog', tagVariant: 'neutral' },
-  { value: 'Todo', label: 'Todo', tagVariant: 'neutral' },
-  { value: 'In Progress', label: 'In Progress', tagVariant: 'blue' },
-  { value: 'In Review', label: 'In Review', tagVariant: 'yellow' },
-  { value: 'Done', label: 'Done', tagVariant: 'green' },
+  { value: 'Backlog', label: '待規劃', tagVariant: 'neutral' },
+  { value: 'Todo', label: '待處理', tagVariant: 'neutral' },
+  { value: 'In Progress', label: '進行中', tagVariant: 'blue' },
+  { value: 'In Review', label: '審查中', tagVariant: 'yellow' },
+  { value: 'Done', label: '已完成', tagVariant: 'green' },
 ]
 
 type Issue = (typeof LINEAR_ISSUES)[number]
 const issueCol = createColumnHelper<Issue>()
 
 const ISSUE_COLUMNS = [
-  issueCol.accessor('id', { header: 'ID', meta: { type: 'string', width: 100 } }),
-  issueCol.accessor('title', { header: 'Title', meta: { type: 'string', width: 330 } }),
-  issueCol.accessor('status', { header: 'Status', meta: { type: 'select', options: ISSUE_STATUS_OPTIONS, display: 'tag', width: 130 } }),
+  issueCol.accessor('id', { header: '議題', meta: { type: 'string', width: 100 } }),
+  issueCol.accessor('title', { header: '標題', meta: { type: 'string', width: 330 } }),
+  issueCol.accessor('status', { header: '狀態', meta: { type: 'select', options: ISSUE_STATUS_OPTIONS, display: 'tag', width: 130 } }),
 ]
 
 // 文件工具式 sidebar nav
@@ -73,7 +74,7 @@ const NOTION_NAV = [
 
 // ── DataTable columns ─────────────────────────────────────────────────────────
 // 消費真 <DataTable>(per data-table.spec.md「簡單展示也用 DataTable」:不維護第二個靜態 Table 元件)。
-// ScrollArea 包 height="auto" DataTable = scroll-area.spec.md「Orientation」段 canonical 組合:
+// ScrollArea 包 maxHeight="none" DataTable = scroll-area.spec.md「Orientation」段 canonical 組合:
 // 捲動完全由 ScrollArea own(DataTable 無高度約束 + min-w-max 不啟內部捲軸)。
 
 interface PullRequest {
@@ -149,11 +150,11 @@ export const VerticalIssueList: Story = {
   render: () => (
     <div className="max-w-xl">
       <p className="text-caption text-fg-muted mb-[var(--layout-space-tight)]">
-        長 issue 清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,不吃寬度。
+        長議題清單(12 筆),容器固定 320px 高。macOS / Windows 呈現一致,捲軸不佔內容寬度。
       </p>
       {/* 議題清單直接用 DataTable(稽核 M090:原本每一列都是手刻 div + 手刻狀態圓點);捲動由外層 ScrollArea 擁有 */}
-      <ScrollArea className="h-[320px] border border-border rounded-lg">
-        <DataTable columns={ISSUE_COLUMNS} data={LINEAR_ISSUES} getRowId={(issue) => issue.id} height="auto" bordered={false} />
+      <ScrollArea className="h-[320px] border border-border rounded-md">
+        <DataTable columns={ISSUE_COLUMNS} data={LINEAR_ISSUES} getRowId={(issue) => issue.id} maxHeight="none" bordered={false} />
       </ScrollArea>
     </div>
   ),
@@ -173,7 +174,7 @@ export const SidebarNav: Story = {
             SidebarProvider 只為了列元件需要的 context(作用中項目 / 列尺寸);它預設撐滿視窗高(min-h-svh,app 外殼用),這裡高度交給 ScrollArea */}
         <SidebarProvider activeId={activeId} onActiveChange={setActiveId} className="min-h-0">
           {/* 內容是一串自帶方向鍵的 SidebarMenu,捲動區本身不當 Tab 停靠點(scroll-area.spec.md:103,同 SidebarContent) */}
-          <ScrollArea className="h-[400px] w-full border border-border rounded-lg bg-canvas" viewportTabIndex={-1}>
+          <ScrollArea className="h-[400px] w-full border border-border rounded-md bg-canvas" viewportTabIndex={-1}>
             {NOTION_NAV.map((group) => (
               <SidebarGroup key={group.section}>
                 <SidebarGroupLabel>{group.section}</SidebarGroupLabel>
@@ -207,9 +208,9 @@ export const HorizontalProductTable: Story = {
         比 native 的優勢:Windows 不吃 17px,右邊 Status 欄不被裁切。
         表格本體消費真 DataTable(height=&quot;auto&quot; 無高度約束,捲動由 ScrollArea own)。
       </p>
-      <ScrollArea className="border border-border rounded-lg">
+      <ScrollArea className="border border-border rounded-md">
         <div className="min-w-max">
-          <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} height="auto" bordered={false} />
+          <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} maxHeight="none" bordered={false} />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
@@ -226,9 +227,9 @@ export const BothDirections: Story = {
         (wrapper 已內建 vertical,consumer 只需再渲染一個 horizontal)。
         表格本體消費真 DataTable(height=&quot;auto&quot;,雙向捲動完全由 ScrollArea own)。
       </p>
-      <ScrollArea className="h-[280px] border border-border rounded-lg">
+      <ScrollArea className="h-[280px] border border-border rounded-md">
         <div className="min-w-max">
-          <DataTable columns={PR_COLUMNS} data={PULL_REQUESTS} getRowId={(pr) => pr.id} height="auto" bordered={false} />
+          <DataTable columns={PR_COLUMNS} data={PULL_REQUESTS} getRowId={(pr) => pr.id} maxHeight="none" bordered={false} />
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>

@@ -105,6 +105,8 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 **View 走 `Intl.DateTimeFormat`**(跨 locale 統一、12h/24h 支援)。`formatOptions` 透傳進去。
 
+**數字等寬(`tabular-nums`)**:觸發欄位與各 mode 顯示的時間值,跟下拉時間欄(`time-columns.tsx` 的欄內 item)同一個寫法 —— 同一個元件兩處一致;值的寬度不隨字型的數字寬度變(例:系統字型下「22:00」比「10:00」寬,兩個欄位並排時一寬一窄)。【AI 推導 2026-11-17:起因是「店家營業時間」展示在 macOS 字型下把「22:00」截成「22:…」;本檔原本沒有相反規定】
+
 ---
 
 ## 尺寸
@@ -210,7 +212,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 
 ## A11y 預設
 
-**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 面板開啟時焦點進到欄位 listbox(浮層殼不畫框,@focus-suppress A),選項的鍵盤游標由項目自己的內描邊承擔。
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;關閉時觸發器 wrapper 自己是焦點站,只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。**自己的浮層開著時**維持同一個聚焦的框,不看焦點留在欄位裡還是已搬進浮層(唯一出處 `../Field/field.spec.md`「Field state machine SSOT」;本句 2026-11-12 前寫「不分開著關著」並說開啟時焦點在裡面的插入點控件,對焦點會搬進浮層的情形不成立,已更正)。唯讀態:同樣是邊框轉主色 1px,但**只在鍵盤聚焦時畫、滑鼠點不變**(2026-11-11;`../Field/field-controls.spec.md`「Focus 行為」readonly 段。本句 2026-09-10 前寫「改由全域外描邊畫」,已過時)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 面板開啟時焦點進到欄位 listbox(浮層殼不畫框,@focus-suppress A),選項的鍵盤游標由項目自己的內描邊承擔。
 
 - trigger `role="combobox"`,在 `<Field>` 內時以 `aria-labelledby` 指向 field label(`fieldCtx.labelId`)
 - **Standalone(無 `<Field>` 包裹)accessible name**:trigger 無預設 `aria-label`,`<Field>` 外使用時 consumer **必須**自帶 `aria-label` 或 `aria-labelledby`,否則 `role="combobox"` 成為無名稱控件(對齊 Select / Combobox / DatePicker 同家族 standalone 約定)。DS 不為 trigger 塞泛用 fallback name(如「時間」),避免遮蔽 consumer 的具體語意(如「會議開始時間」);Field 內則自動接線無需 consumer 介入。Panel 本體(Popover dialog)另有本 DS 提供的 `aria-label="選擇時間"`,與 trigger name 職責分離

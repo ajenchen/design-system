@@ -18,6 +18,14 @@
 // Usage:
 //   node scripts/audit-hook-test-coverage.mjs           # 印 debt 報告
 //   node scripts/audit-hook-test-coverage.mjs --check    # CI gate（BLOCKER hook 缺 test exit 1）
+//
+// @gate-contract
+//   保證: packages/design-system/ds-canonical/hooks/ 第一層的 .sh / .py(EXEMPT 清單除外)只要含擋下邏輯
+//         (`exit 2` / "deny" / permissionDecision / "block" / BLOCKER 字樣),就有 hooks/tests/test_<name>.sh,而且 hook 與測試都是
+//         單一 regular file(不是 symlink / hard link);只驗「測試檔在」,測試內容由 ci.yml hooks-linux job 的 hooks:test 實跑
+//   紅: --check 下有任一支缺測試或檔案型別不安全 → 列出名字並 exit 1;配對測試在隔離夾具裡刪掉 test_check_fixture.sh、
+//       或加一支含 BLOCKER 的 .py 而沒有測試,本閘都必須紅
+//   綠: 全部有測試時 exit 0 並印出 BLOCKER hook 數與有測試數;只讀檔,不讀時間,重複跑結果相同
 
 import { readFileSync, readdirSync, existsSync, lstatSync, realpathSync } from 'node:fs'
 import { join, basename, resolve } from 'node:path'
@@ -37,7 +45,6 @@ const EXEMPT = new Set([
   '_log-fire', '_log_fire',
   'chrome_header_dispatcher',      // dispatcher,委派給子 hook
   'inject_deploy_url_after_push',  // PostToolUse inject context,無 block
-  'check_plugin_freshness',        // SessionStart 提醒,無 block
 ])
 
 function hasBlockerLogic(content) {

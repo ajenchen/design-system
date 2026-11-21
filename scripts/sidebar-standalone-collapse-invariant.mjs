@@ -21,6 +21,19 @@
  *           R7 捲軸浮出時,列鈕伸到捲軸底下的那段照樣點得到 —— 沿每顆列鈕中線逐 px 命中測試,滑塊畫到的地方 = 滑塊、其餘(含透明軌道)= 列鈕;
  *              真指標停在軌道上:列鈕 :hover、細列列鈕的 Tooltip 打開;按住滑塊拖 24px 捲動位置往下、軌道上滾輪往上捲動位置往上。
  *              只量細列:細列軌道不接指標是 Sidebar 細列自己的規則(sidebar.spec.md「收起後的寬」),展開時與全 DS 其他捲動區照 ScrollArea 通則(點軌道跳頁)。
+ *         收合前後圖示中心不動(R8;sidebar.spec.md「尺寸規範」`--sidebar-width-icon` 那一列的幾何保證)—— 真按開關,展開量一次、收成細列再量一次:
+ *           R8a 圖示中心(相對側欄外框左緣)展開 = 收合;
+ *           R8b 收合外框寬 = 2 × 當下的 `--layout-space-loose`(探針量)+ 畫出來的圖示寬(量 svg),不寫死數字;
+ *           R8c(只在 AppShell 裡)AppShell 自己量到的細列寬(`[data-token-probe="rail"]`)= 側欄收合外框寬;
+ *           R8d 收合外框寬 = 規格「尺寸規範」寫的那一格(值從 sidebar.spec.md 讀:一般 / 大密度 × 側欄 size sm·md / lg 四格,不在閘裡另寫一份);
+ *           格子(RAIL_CENTER_CASES,十二格。R8 的格名用規格的叫法「一般 / 大密度」(density.spec.md;R8d 比的就是規格那四格),
+ *           R1–R7 既有的格名沿用 Storybook 工具列的叫法「標準 / 寬鬆」—— 同一件事,這次沒有改既有的格名):
+ *           完整佈局一般 / 大密度(size md)、AppShell「狀態行為」一般 / 大密度 × size md / lg(`&args=menuSize:lg`)、
+ *           一般密度頁面裡 `data-density="lg"` 的區塊(掛在 SidebarProvider 外面那一層 / 裡面的側欄外框,由閘掛上,DS 沒有這種範例;size md)、
+ *           單獨使用 × size lg 一般 / 大密度(閘自己的夾具 scripts/test-fixtures/sidebar-rail-center/fixture.tsx,DS 沒有這種範例)、
+ *           同一支夾具 × size lg 再把密度掛在側欄外框上(一般密度頁面掛大密度 → 68;大密度頁面鎖回一般密度 → 52):SidebarProvider 外層設的圖示欄(20)
+ *           要穿過外框這道密度邊界繼承下去。size md 的區塊格驗不到這件事 —— 16 剛好等於備用值 1rem,繼承斷了照樣綠(2026-11-13 審查實測)。
+ *           只量「圖示列、沒開全域前綴對齊」:頭像列與開了 `uniformPrefix` 的混用列收合時移到細列中線是 item-anatomy.spec.md 的既有規則,不在這條保證裡。
  *         另有靜態段:全 DS 的 `.tsx` / `.ts` 沒有任何元素在自己身上同時帶 `group` 與 `group-*` 變體、或 `peer` 與 `peer-*` 變體
  *         (Tailwind 的 `group-*` 編譯成後代選擇器、`peer-*` 編譯成兄弟選擇器,都比不到自己 → 靜默失效;2026-10-14 Sidebar 收合寬就是這樣失效的)。
  *         一個元素的 class 來源 = `className=` 屬性與 `cn(` / `clsx(` / `twMerge(` / `cva(` 的引數(TypeScript 語法樹;疊加變體、具名 group 都算)。
@@ -35,10 +48,22 @@
  *           拿掉列鈕的 `!pr-0` → 預留列尾動作右內距的細列 R1–R4 都紅(標準 / 寬鬆);
  *           Tooltip 外殼右移 4px → R2、R3 紅;細列捲軸 visibility:hidden(= 不出捲軸)→ R5 紅;捲軸加寬到 28px → R6 紅;
  *           Tab 到細列列鈕 300ms 後再派一次外層捲動容器的 scroll(= 修前症狀:捲動把剛打開的 Tooltip 關掉)→ R3k 紅;
-           捲軸軌道接指標(= 2026-10-28 修前:軌道蓋住列鈕右側約 10px)→ 每一格細列捲軸 case R7 紅;滑塊也不接指標(拖不動)→ 每一格 R7 紅。
+           捲軸軌道接指標(= 2026-10-28 修前:軌道蓋住列鈕右側約 10px)→ 每一格細列捲軸 case R7 紅;滑塊也不接指標(拖不動)→ 每一格 R7 紅;
+ *           R8 五種(注入 CSS;前兩種要 `!important` 才蓋得過 SidebarProvider 外層的 inline 值,第三、四種蓋的是樣式檔的規則與 AppShell 探針的寬):圖示欄固定 20(= 2026-05-26 → 11-13 的實際症狀:圖示欄跟密度不跟 size)
+ *           → size md 的六格 R8a / R8b / R8d 紅、size lg 的六格維持綠;圖示欄固定 16 → size lg 的六格紅、size md 的六格維持綠;
+ *           SidebarProvider 外層不重算細列寬(= 樣式檔的選擇器漏了外層)→ size lg、而且外層與側欄外框之間沒有再換密度的四格(A3 / A4 / F1 / F2)紅,
+ *           其餘八格維持綠(size md 的六格本來就等於備用值;F3 / F4 的側欄外框自己是換密度的元素,公式在外框上重算,不靠外層算好的值);
+ *           AppShell 的細列量值探針釘成 40px(= AppShell 量到的寬與側欄實際寬脫鉤)→ AppShell 四格 R8c 紅、其餘規則與其餘格維持綠;
+ *           在換密度的元素上把圖示欄重設成 1rem(= 圖示欄沒有穿過密度邊界繼承下去;不加 `!important`,SidebarProvider 外層自己的 inline 值不受影響)
+ *           → 只有 F3 / F4 的 R8a / R8b / R8d 紅、其餘十格維持綠(2026-11-13 審查實測:還沒有這兩格時,這種破法十格全綠 = 當時的盲點)。
+ *           另有 R8 判定表(純計算):前 6 列取自 2026-11-13 修前 / 修後建置的實量(修前 size lg 的兩列是夾具量的 = 這次的程式配修前的樣式),
+ *           第 7、8 列是同日審查實測的 F3 / F4 破法數字,最後 4 列是邊界情境(設想的數字);
+ *           修前大密度 × size md(展開 32 / 收合 34 / 外框 68)、修前一般密度 × size lg(26 / 24 / 48)與審查實測的兩列(34 / 32 / 64、26 / 24 / 48)必紅,其餘實量列必綠。
  *       story 開不起來 = 儀器失效,點名 story、exit 1。該有 Tooltip 的列鈕一格都沒量到、聚焦後不是 :focus-visible、焦點框往外畫(本量法只量往內畫的框)、
  *       細列內容沒有比視窗高(量不到捲軸)= 儀器失效(量不到不等於沒問題,M37 第八形);R7 沒有列鈕伸到軌道底下、找不到離開滑塊的列 = 該格紅(不放行)。
- *   綠: 六則 story 收起 / 展開兩步都符合、R1–R7 全部相符(含寬鬆密度、放了骨架列 / 搜尋框 / 預留動作內距的細列、AppShell 細列捲軸)、靜態段 0 違規時綠。寬度比到 0.75px(瀏覽器以小數 px 排版),Tooltip 間距比到 1px。
+ *       R8 量不到(找不到帶圖示的列鈕、一開始不是展開、畫出來的圖示不是要量的那個 size、密度沒切到、開了全域前綴對齊)= 那一格紅並標「儀器失效」、其餘格照量,
+ *       結尾另印 INSTRUMENT-FAIL、exit 1(對照組裡量不到的格不算「被抓到」)。
+ *   綠: 六則 story 收起 / 展開兩步都符合、R1–R8 全部相符(含寬鬆密度、放了骨架列 / 搜尋框 / 預留動作內距的細列、AppShell 細列捲軸、收合前後圖示中心十二格)、靜態段 0 違規時綠。寬度比到 0.75px(瀏覽器以小數 px 排版),Tooltip 間距比到 1px。
  *
  * 出處:2026-10-15 r1b 複驗 F1(P0)—— 單獨使用的 Sidebar `icon` / `offcanvas` 收起後外框仍 240(main 是 48 / 0),offcanvas 還把看得到的選單設 inert +
  * aria-hidden(看得到、點不到、讀不到)。根因:sidebar.tsx 把 `group-data-[collapsible=…]:!w-…` 寫在帶 `group` 的那個元素自己身上。
@@ -52,6 +77,11 @@
  * R7:2026-10-27 獨立審查實測 —— E3 乙的細列捲軸浮出時蓋住每顆列鈕右側約 10px(標準密度 x37–47、寬鬆 x57–67 打到捲軸),選中底色與焦點框畫到 47、
  * 點與 Tooltip 只到 37。跟 hit-area-canonical「懸停回饋形狀 ≡ 命中區」衝突,屬產品取捨;2026-10-28 user 選「只在側欄細列讓軌道不接收滑鼠」(回覆原文「乙：只在側欄細列讓軌道不接收滑鼠。照這樣」)。
  * (2026-10-28 先前一版 82490733 把全 DS 捲軸軌道都改成不接指標、還引了 2026-09-04 那則講「浮在表格上方的高層按鈕」的話當依據 —— 情境不同,已回退 fce86582。)
+ * R8:2026-11-13(來源是既有規格與 git 歷史,AI 的工程判斷;user 沒有決定過這個改法,只問過一句,原話見 token-system.spec.md「搬家與收回的紀錄」)。細列寬公式裡的圖示欄 2026-05-26(commit 3d79e867)起誤跟密度走,
+ * 畫出來的圖示卻跟側欄的 size 走 —— 兩者不同檔的兩格,圖示收合前後各跳 2px(大密度 × size md 往右、一般密度 × size lg 往左)。
+ * 毛病存在的五個多月(2026-05-26 → 11-13)裡沒有任何閘量圖示中心;本閘是 2026-10-15 那次複驗之後才有的(見上方出處;進 main 是 2026-11-06 的 commit 8eb473c7),而且只量「外框寬 = `--sidebar-width-icon`」(上方收起那一格):
+ * 那顆變數自己算錯時這條照樣綠(M37:拿「等於那顆 token」代替「圖示不動」)。
+ * R8a 量性質本身;R8d 另把規格寫的數字釘在量到的寬上(2026-07-14 的稽核把規格的 64 改成 68 去遷就程式,沒有任何東西會紅)。
  *
  * Run: `node scripts/sidebar-standalone-collapse-invariant.mjs [--static=<dir>] [--selftest]`(預設讀 `storybook-static`)
  */
@@ -59,6 +89,7 @@ import ts from 'typescript'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { FixtureInstrumentError, startStorybookCssFixture } from './lib/storybook-css-fixture.mjs'
 import {
   openStory,
   parkPointer,
@@ -78,6 +109,22 @@ const SETTLE_FRAMES = 10
 // 浮層與觸發元件的間距 SSOT(tokens/elevation/overlay-geometry.ts);讀原始碼,不在閘裡另寫一份 8
 const OVERLAY_SIDE_OFFSET = Number(/export const OVERLAY_SIDE_OFFSET = (\d+)/.exec(readFileSync(join(ROOT, 'packages/design-system/src/tokens/elevation/overlay-geometry.ts'), 'utf8'))?.[1])
 if (!Number.isFinite(OVERLAY_SIDE_OFFSET)) { console.error('✗ 讀不到 OVERLAY_SIDE_OFFSET(overlay-geometry.ts)—— 儀器失效'); process.exit(1) }
+// R8 用:每個 size 畫出來的圖示寬 SSOT(patterns/element-anatomy/item-anatomy.tsx 的 ICON_SIZE);讀原始碼,不在閘裡另寫一份 16 / 16 / 20
+const ICON_SIZE = Object.fromEntries([...(/export const ICON_SIZE: Record<RowSize, number> = \{([^}]*)\}/.exec(readFileSync(join(ROOT, 'packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx'), 'utf8'))?.[1] ?? '').matchAll(/\b(sm|md|lg):\s*(\d+)/g)].map((m) => [m[1], Number(m[2])]))
+if (!['sm', 'md', 'lg'].every((k) => Number.isFinite(ICON_SIZE[k]))) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:讀不到 ICON_SIZE 的 sm / md / lg(item-anatomy.tsx)`); process.exit(1) }
+// R8d 用:細列寬四格數字的 SSOT = sidebar.spec.md「尺寸規範」`--sidebar-width-icon` 那一列(「一般密度 × sm / md = 2×16+16 = 48、…」;
+// 密度的叫法照 density.spec.md:一般密度 = md、大密度 = lg);
+// 讀規格,不在閘裡另寫一份 48 / 52 / 64 / 68。key = `<密度 md|lg>/<size sm|md|lg>`;同一格讀到兩個不同的數字、或缺任何一格 = 儀器失效(規格的寫法變了,先修這裡)
+const SPEC_RAIL = (() => {
+  const seen = {}
+  for (const m of readFileSync(join(ROOT, 'packages/design-system/src/components/Sidebar/sidebar.spec.md'), 'utf8').matchAll(/(一般|大)密度 × (sm \/ md|lg) = [0-9×+]+ = (\d+)/g)) {
+    for (const size of m[2] === 'lg' ? ['lg'] : ['sm', 'md']) (seen[`${m[1] === '大' ? 'lg' : 'md'}/${size}`] ??= new Set()).add(Number(m[3]))
+  }
+  const keys = ['md', 'lg'].flatMap((d) => ['sm', 'md', 'lg'].map((s) => `${d}/${s}`))
+  const bad = keys.filter((k) => seen[k]?.size !== 1)
+  if (bad.length) { console.error(`✗ ${INSTRUMENT_FAIL_MARKER}:sidebar.spec.md「尺寸規範」讀不到細列寬(每格要正好一個數字):${bad.map((k) => `${k} → ${[...(seen[k] ?? [])].join(' / ') || '沒有'}`).join(';')}`); process.exit(1) }
+  return Object.fromEntries(keys.map((k) => [k, [...seen[k]][0]]))
+})()
 
 // ── 靜態段:元素自己帶 `group`(或 `peer`)又在自己身上用 `group-*`(或 `peer-*`)變體 ──
 // 一個元素的 class 來源 = JSX `className="…"` / `className={…}`,以及 `cn(` / `clsx(` / `twMerge(` / `cva(` 的引數
@@ -238,6 +285,47 @@ const SCROLL_CASES = [
 const TAB_CASES = [
   { id: 'design-system-components-appshell-展示--primary-header', kind: 'shell', viewport: { width: 820, height: 700 } },
 ]
+// R8:收合前後圖示中心不動(檔頭契約 R8a–R8d)。key = 格名(對照組用它指名該紅 / 該綠的格)。
+//   density = 整頁的密度;block = 另外在哪一層換密度(由閘掛上 `data-density`)、blockDensity = 那一層換成哪個密度。
+//   S = 單獨使用的完整佈局;A = AppShell「狀態行為」(Right panel 與 AI agent 用網址參數關掉,Menu 在 1440 寬一開始並排展開;
+//       布林值的寫法同 app-shell-layout-invariant.mjs 的 storyUrl;size lg 用 `menuSize:lg` —— DS 唯一「size lg 又能收成細列」的 story 入口);
+//   D = 一般密度頁面裡的大密度區塊(size md):outside = 掛在 SidebarProvider 外面那一層(驗外層有重算)、
+//       inside = 掛在 SidebarProvider 裡面的側欄外框(驗公式在外框這道密度邊界上用新的 loose 重算。它驗不到「圖示欄穿過邊界繼承下去」:
+//       size md 的圖示欄 16 剛好等於備用值 1rem,繼承斷了照樣綠 —— 那件事由 F3 / F4 驗);
+//   F = 閘自己的夾具(單獨使用 × size lg;DS 沒有這種範例。樣式來自正在服務的建置,所以配修前的建置量得到修前的寬)。
+//       F1 / F2 = 整頁一般 / 大密度;F3 / F4 = 再把密度掛在側欄外框上(F3 一般密度頁面掛大密度 → 68;F4 大密度頁面鎖回一般密度 → 52):
+//       圖示欄 20 要從 SidebarProvider 外層穿過外框這道密度邊界繼承下去,公式在外框上用外框的 loose 重算
+//       (2026-11-13 審查抓到的盲點:在換密度的元素上把圖示欄重設成 1rem,當時的十格全綠;審查用自己的量測腳本注入同一種破法,
+//       量到這兩種組合的細列寬變成 64 / 48、圖示收合後往左 2px —— 數字收在下方判定表)。
+const ICON_COLLAPSE = 'design-system-components-sidebar-展示--icon-collapse'
+const SHELL_STATE = 'design-system-components-appshell-設計規格--state-behavior'
+const SHELL_STATE_ARGS = 'rightOpen:!false;agentOpen:!false'
+const RAIL_FIXTURE_SOURCE = 'scripts/test-fixtures/sidebar-rail-center/fixture.tsx'
+const RAIL_CENTER_CASES = [
+  { key: 'S1', kind: 'standalone', id: ICON_COLLAPSE, density: 'md', size: 'md' },
+  { key: 'S2', kind: 'standalone', id: ICON_COLLAPSE, density: 'lg', size: 'md' },
+  { key: 'A1', kind: 'shell', id: SHELL_STATE, args: SHELL_STATE_ARGS, density: 'md', size: 'md' },
+  { key: 'A2', kind: 'shell', id: SHELL_STATE, args: SHELL_STATE_ARGS, density: 'lg', size: 'md' },
+  { key: 'A3', kind: 'shell', id: SHELL_STATE, args: `${SHELL_STATE_ARGS};menuSize:lg`, density: 'md', size: 'lg' },
+  { key: 'A4', kind: 'shell', id: SHELL_STATE, args: `${SHELL_STATE_ARGS};menuSize:lg`, density: 'lg', size: 'lg' },
+  { key: 'D1', kind: 'standalone', id: ICON_COLLAPSE, density: 'md', block: 'outside', blockDensity: 'lg', size: 'md' },
+  { key: 'D2', kind: 'standalone', id: ICON_COLLAPSE, density: 'md', block: 'inside', blockDensity: 'lg', size: 'md' },
+  { key: 'F1', kind: 'standalone', fixture: true, density: 'md', size: 'lg' },
+  { key: 'F2', kind: 'standalone', fixture: true, density: 'lg', size: 'lg' },
+  { key: 'F3', kind: 'standalone', fixture: true, density: 'md', block: 'inside', blockDensity: 'lg', size: 'lg' },
+  { key: 'F4', kind: 'standalone', fixture: true, density: 'lg', block: 'inside', blockDensity: 'md', size: 'lg' },
+]
+const MD_CENTER_KEYS = RAIL_CENTER_CASES.filter((c) => c.size === 'md').map((c) => c.key)
+const LG_CENTER_KEYS = RAIL_CENTER_CASES.filter((c) => c.size === 'lg').map((c) => c.key)
+const SHELL_CENTER_KEYS = RAIL_CENTER_CASES.filter((c) => c.kind === 'shell').map((c) => c.key)
+// size lg、密度掛在側欄外框上的格(F3 / F4):外框自己就是換密度的元素 —— 公式在外框上重算,圖示欄要從 SidebarProvider 外層繼承進來
+const LG_INSIDE_KEYS = RAIL_CENTER_CASES.filter((c) => c.size === 'lg' && c.block === 'inside').map((c) => c.key)
+// R8 的格名用規格的叫法(density.spec.md:md = 一般密度、lg = 大密度;R8d 比的是規格那四格)。
+// R1–R7 既有的格名沿用下方 densityName(Storybook 工具列的「標準 / 寬鬆」),這次沒有動
+const SPEC_DENSITY_NAME = { md: '一般', lg: '大' }
+const BLOCK_NAME = { outside: 'SidebarProvider 外面那一層', inside: 'SidebarProvider 裡面的側欄外框' }
+const blockVerb = (c) => (c.blockDensity === 'lg' ? '掛大密度' : '鎖回一般密度')
+const railCenterPrefix = (c) => `${c.key} ${c.fixture ? '夾具(單獨使用)' : short(c.id)} ${c.block ? `${SPEC_DENSITY_NAME[c.density]}密度頁面、${BLOCK_NAME[c.block]}${blockVerb(c)}` : `${SPEC_DENSITY_NAME[c.density]}密度`} × size ${c.size}`
 /** 打開之後再等這麼久仍要開著(> tooltip.tsx 的 FOCUS_SCROLL_IDLE_MS 150:修前是聚焦後約 15ms 就被捲動關掉)。量的是「持續」,所以是固定等待,不是代理。 */
 const TAB_PERSIST_MS = 600
 const TAB_ROLE = 'Tab 到的細列列鈕'
@@ -659,6 +747,120 @@ async function reachCell(page, kind, prefix, shown, tooltip) {
   return { ok, label, detail: notes.join(';') }
 }
 
+/**
+ * 頁面端(序列化傳入,不得引用外部變數):R8 的量測。kind = standalone(單獨使用,含夾具)/ shell(AppShell 版面上那一份)。
+ * op:block(把 `data-density="<blockDensity>"` 掛到 block 指定的那一層:outside = SidebarProvider 外層的父層 / inside = 側欄外框)/
+ *     measure(外框寬、圖示寬與中心、當下的 loose、AppShell 的細列量值探針)。
+ * 量的列鈕 = 捲動區裡第一顆看得到、前綴是圖示的列鈕;圖示中心相對側欄外框左緣(外框位置會跟著版面移,不比視窗座標)。
+ */
+function railCenterProbe({ kind, op, block, blockDensity }) {
+  const r2 = (n) => Math.round(n * 100) / 100
+  const frame = kind === 'shell'
+    ? document.querySelector('[data-app-shell-panel="menu"]:not([data-menu-overlay])')
+    : ((fs, tr) => fs.find((el) => { if (!tr) return true; let p = el.parentElement; while (p && !p.contains(tr)) p = p.parentElement; return !!p && fs.filter((x) => p.contains(x)).length === 1 }))([...document.querySelectorAll('[data-side][data-state]')].filter((el) => !el.closest('[data-app-shell]') && el.querySelector('[data-sidebar="sidebar"]')), document.querySelector('[data-sidebar="trigger"]'))
+  if (!frame) return { err: `找不到${kind === 'shell' ? ' AppShell 版面上的' : '單獨使用的'} Sidebar 外框` }
+  if (op === 'block') {
+    // SidebarProvider 外層:2026-11-13 起帶 data-sidebar="wrapper";修前的建置沒有這個屬性,退回它一直都有的 class(group/sidebar-wrapper)
+    const wrapper = frame.closest('[data-sidebar="wrapper"]') ?? frame.closest('[class~="group/sidebar-wrapper"]')
+    const host = block === 'outside' ? wrapper?.parentElement : block === 'inside' ? frame : null
+    if (!host || host === document.documentElement) return { err: `找不到要掛密度的那一層(${block})` }
+    if (blockDensity !== 'md' && blockDensity !== 'lg') return { err: `區塊要換成哪個密度沒給(blockDensity=${blockDensity})` }
+    host.setAttribute('data-density', blockDensity)
+    return { ok: true }
+  }
+  const btn = [...frame.querySelectorAll('[data-sidebar="content"] [data-sidebar="menu-button"]')].find((el) => el.getClientRects().length > 0 && !el.closest('[inert],[aria-hidden="true"]') && el.querySelector('[data-prefix-type="icon"] svg'))
+  const svg = btn?.querySelector('[data-prefix-type="icon"] svg')
+  if (!svg) return { err: '側欄捲動區裡找不到帶圖示的列鈕' }
+  const f = frame.getBoundingClientRect(), s = svg.getBoundingClientRect()
+  // 當下的值:探針放在側欄外框裡(區塊換密度時,外框裡的 loose 才是列鈕用的那一個)
+  const probe = (v, host = frame) => { const p = document.createElement('div'); p.style.cssText = `position:absolute;visibility:hidden;height:1px;width:${v}`; host.appendChild(p); const w = p.getBoundingClientRect().width; p.remove(); return r2(w) }
+  const shellProbe = kind === 'shell' ? document.querySelector('[data-token-probe="rail"]') : null
+  return {
+    state: frame.getAttribute('data-state'),
+    collapsible: frame.getAttribute('data-collapsible'),
+    htmlDensity: document.documentElement.getAttribute('data-density'),
+    width: r2(f.width),
+    loose: probe('var(--layout-space-loose)'),
+    pageLoose: probe('var(--layout-space-loose)', document.body),
+    itemIcon: probe('var(--item-icon-size)'),
+    iconWidth: r2(s.width),
+    iconCenter: r2(s.left + s.width / 2 - f.left),
+    label: (btn.getAttribute('aria-label') || btn.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 20),
+    shellProbe: shellProbe ? r2(shellProbe.getBoundingClientRect().width) : null,
+  }
+}
+
+/**
+ * R8 的判定(純函式;`--selftest` 的判定表直接餵實量的數字,不用開瀏覽器)。
+ * m = { expandedCenter, collapsedCenter, railWidth, loose, iconWidth, specWidth, shellProbe(null = 不在 AppShell 裡,不判 R8c) }
+ * 回傳每一條規則 { key, name, ok, detail }。
+ */
+export function railCenterVerdict(m, tol = TOL) {
+  const r2 = (n) => Math.round(n * 100) / 100
+  const near = (a, b) => Math.abs(a - b) <= tol
+  const formula = 2 * m.loose + m.iconWidth
+  const out = [
+    { key: 'R8a', name: '收合前後圖示中心不動(相對側欄外框左緣)', ok: near(m.collapsedCenter, m.expandedCenter), detail: `展開 ${m.expandedCenter}、收合 ${m.collapsedCenter}(差 ${r2(m.collapsedCenter - m.expandedCenter)})` },
+    { key: 'R8b', name: '收合外框寬 = 2 × 當下的 loose + 畫出來的圖示寬', ok: near(m.railWidth, formula), detail: `外框 ${m.railWidth};2 × ${m.loose} + ${m.iconWidth} = ${r2(formula)}` },
+    { key: 'R8d', name: `收合外框寬 = 規格「尺寸規範」寫的這一格(${m.specWidth})`, ok: near(m.railWidth, m.specWidth), detail: `外框 ${m.railWidth}、規格 ${m.specWidth}` },
+  ]
+  if (m.shellProbe != null) out.push({ key: 'R8c', name: 'AppShell 自己量到的細列寬 = 側欄收合外框寬', ok: near(m.shellProbe, m.railWidth), detail: `AppShell 量到 ${m.shellProbe}、外框 ${m.railWidth}` })
+  return out
+}
+// 判定表(--selftest)。前 6 列取自 2026-11-13 修前 / 修後兩份建置的實量(修前 = 圖示欄跟密度走;修後 = 跟側欄的 size 走);
+// 其中修前 size lg 的兩列是夾具量的 —— 這次的程式配修前的樣式(修前的建置沒有「size lg 又能收成細列」的 story 入口)。
+// 第 7、8 列是 2026-11-13 審查用自己的量測腳本在修後建置上量的(同一種夾具、同一種破法:在換密度的元素上把圖示欄重設成 1rem)。
+// 最後 4 列是邊界情境(數字是設想的,不是哪一份建置量到的)。
+const RAIL_CENTER_TABLE = [
+  ['修前 一般密度 × size md', { expandedCenter: 24, collapsedCenter: 24, railWidth: 48, loose: 16, iconWidth: 16, specWidth: 48, shellProbe: null }, []],
+  ['修前 大密度 × size md(圖示往右 2px)', { expandedCenter: 32, collapsedCenter: 34, railWidth: 68, loose: 24, iconWidth: 16, specWidth: 64, shellProbe: null }, ['R8a', 'R8b', 'R8d']],
+  ['修前 一般密度 × size lg(夾具;圖示往左 2px)', { expandedCenter: 26, collapsedCenter: 24, railWidth: 48, loose: 16, iconWidth: 20, specWidth: 52, shellProbe: null }, ['R8a', 'R8b', 'R8d']],
+  ['修前 大密度 × size lg(夾具)', { expandedCenter: 34, collapsedCenter: 34, railWidth: 68, loose: 24, iconWidth: 20, specWidth: 68, shellProbe: null }, []],
+  ['修後 大密度 × size md', { expandedCenter: 32, collapsedCenter: 32, railWidth: 64, loose: 24, iconWidth: 16, specWidth: 64, shellProbe: 64 }, []],
+  ['修後 一般密度 × size lg', { expandedCenter: 26, collapsedCenter: 26, railWidth: 52, loose: 16, iconWidth: 20, specWidth: 52, shellProbe: 52 }, []],
+  ['審查實測:一般密度頁面、側欄外框掛大密度 × size lg,圖示欄在外框上被重設成 1rem(F3 的破法;圖示往左 2px)', { expandedCenter: 34, collapsedCenter: 32, railWidth: 64, loose: 24, iconWidth: 20, specWidth: 68, shellProbe: null }, ['R8a', 'R8b', 'R8d']],
+  ['審查實測:大密度頁面、側欄外框鎖回一般密度 × size lg,圖示欄在外框上被重設成 1rem(F4 的破法;圖示往左 2px)', { expandedCenter: 26, collapsedCenter: 24, railWidth: 48, loose: 16, iconWidth: 20, specWidth: 52, shellProbe: null }, ['R8a', 'R8b', 'R8d']],
+  ['AppShell 量到的細列寬與側欄實際寬脫鉤(SidebarProvider 包在 AppShell 裡面時 size lg 的樣子)', { expandedCenter: 26, collapsedCenter: 26, railWidth: 52, loose: 16, iconWidth: 20, specWidth: 52, shellProbe: 48 }, ['R8c']],
+  ['規格的數字被改去遷就算錯的寬(2026-07-14 那種:量到 68、規格也寫 68)—— R8d 會綠,R8a / R8b 照樣紅', { expandedCenter: 32, collapsedCenter: 34, railWidth: 68, loose: 24, iconWidth: 16, specWidth: 68, shellProbe: null }, ['R8a', 'R8b']],
+  ['小數 px 排版:差 0.5 不算跳', { expandedCenter: 24, collapsedCenter: 24.5, railWidth: 48.5, loose: 16, iconWidth: 16, specWidth: 48, shellProbe: null }, []],
+  ['差 1px 就算', { expandedCenter: 24, collapsedCenter: 25, railWidth: 49, loose: 16, iconWidth: 16, specWidth: 48, shellProbe: null }, ['R8a', 'R8b', 'R8d']],
+]
+
+/**
+ * R8:一格 = 展開量一次 → 真按開關 → 收成細列再量一次。回傳的每一筆帶 center(格名)與 rule(R8a–R8d);量不到 = instrument: true 的紅格(不丟例外,其餘格照量)。
+ */
+async function railCenterCells(page, c, prefix) {
+  const tag = { center: c.key }
+  const instrument = (detail) => [{ ok: false, instrument: true, ...tag, rule: 'R8', label: `${prefix}:R8 量不到(儀器失效)`, detail }]
+  if (c.block) {
+    const b = await page.evaluate(railCenterProbe, { kind: c.kind, op: 'block', block: c.block, blockDensity: c.blockDensity })
+    if (b.err) return instrument(b.err)
+    if (!(await settleAfterInteraction(page, { frames: SETTLE_FRAMES })).ok) return instrument('掛上區塊密度後等不到版面靜止')
+  }
+  await parkPointer(page)
+  const e = await page.evaluate(railCenterProbe, { kind: c.kind, op: 'measure' })
+  if (e.err) return instrument(e.err)
+  if (e.state !== 'expanded') return instrument(`一開始不是展開(data-state=${e.state}),量不到展開時的圖示中心`)
+  const wantIcon = ICON_SIZE[c.size]
+  if (Math.abs(e.iconWidth - wantIcon) > TOL) return instrument(`要量的是側欄 size=${c.size}(圖示 ${wantIcon}),畫出來的圖示是 ${e.iconWidth} —— size 的入口沒生效`)
+  if (Math.abs(e.itemIcon - e.iconWidth) > TOL) return instrument(`前綴欄(--item-icon-size ${e.itemIcon})不等於圖示寬 ${e.iconWidth} —— 這一頁開了全域前綴對齊的混用列,不在 R8 的保證裡`)
+  if (e.htmlDensity !== c.density) return instrument(`要量的是整頁${SPEC_DENSITY_NAME[c.density]}密度,<html data-density>=${e.htmlDensity}`)
+  // 區塊格:側欄外框裡的 loose 要跟整頁的不一樣、而且方向對(掛大密度 → 比整頁大;鎖回一般密度 → 比整頁小),
+  // 否則掛上去的密度沒生效(量到的只是整頁的密度,不是區塊)
+  if (c.block && !(c.blockDensity === 'lg' ? e.loose > e.pageLoose + TOL : e.loose < e.pageLoose - TOL)) return instrument(`區塊密度沒生效(要${blockVerb(c)};側欄外框裡的 loose ${e.loose}、整頁 ${e.pageLoose})`)
+  await page.click('[data-sidebar="trigger"]')
+  if (!(await settleAfterInteraction(page, { frames: SETTLE_FRAMES })).ok) return instrument('按開關後等不到版面靜止')
+  await parkPointer(page)
+  const k = await page.evaluate(railCenterProbe, { kind: c.kind, op: 'measure' })
+  if (k.err) return instrument(k.err)
+  if (k.state !== 'collapsed' || k.collapsible !== 'icon') return [{ ok: false, ...tag, rule: 'R8', label: `${prefix}:R8 按開關後收成細列`, detail: `data-state=${k.state} data-collapsible=${k.collapsible}` }]
+  if (c.kind === 'shell' && k.shellProbe == null) return instrument('找不到 AppShell 的細列量值探針([data-token-probe="rail"])')
+  // 區塊格的規格數字 = 區塊換成的那個密度的那一格(sidebar.spec.md「換了密度的區塊裡也照區塊的密度算」)
+  const specWidth = SPEC_RAIL[`${c.block ? c.blockDensity : c.density}/${c.size}`]
+  return railCenterVerdict({ expandedCenter: e.iconCenter, collapsedCenter: k.iconCenter, railWidth: k.width, loose: k.loose, iconWidth: k.iconWidth, specWidth, shellProbe: c.kind === 'shell' ? k.shellProbe : null })
+    .map((v) => ({ ok: v.ok, ...tag, rule: v.key, label: `${prefix}:${v.key} ${v.name}`, detail: `「${k.label}」${v.detail}` }))
+}
+
 function judge(story, step, m) {
   const near = (a, b) => Math.abs(a - b) <= TOL
   if (m.err) return [{ ok: false, label: `${story.id} ${step}`, detail: m.err }]
@@ -681,7 +883,7 @@ function judge(story, step, m) {
   return out
 }
 
-/** only:對照組只跑會讓指定斷言紅的那幾段(stories = 單獨使用的 story id;shell / density / stress / scroll = 跑不跑 AppShell 細列 / 寬鬆密度細列 / 放了東西的細列(STRESS_RAILS)/ 捲軸段) */
+/** only:對照組只跑會讓指定斷言紅的那幾段(stories = 單獨使用的 story id;shell / density / stress / center / tab / scroll = 跑不跑 AppShell 細列 / 寬鬆密度細列 / 放了東西的細列(STRESS_RAILS)/ 收合前後圖示中心(RAIL_CENTER_CASES)/ 真按 Tab / 捲軸段) */
 /** R3k:從文件開頭真按 Tab,走到細列上的第一顆列鈕為止;途中記下外層捲動容器捲到的最大 scrollLeft。 */
 async function tabCells(page, c, prefix) {
   const out = []
@@ -753,6 +955,27 @@ async function runPages(page, sv, sabotage, only = null) {
       return false
     }
   }
+  // 夾具頁(R8 的 F 格):網址參數給 size;密度寫在 <html data-density>(Storybook 預覽也是寫在這裡),對照組的注入照樣進這一頁
+  const openFixture = async (c) => {
+    try {
+      await openStory(page, `${railFixture.url}?size=${c.size}`, {
+        settleFrames: SETTLE_FRAMES,
+        notFound: railFixture.notFound,
+        waitFor: '[data-sidebar="trigger"]',
+        label: `細列圖示中心夾具 size=${c.size}`,
+        beforeSettle: async (p) => {
+          await p.evaluate((d) => document.documentElement.setAttribute('data-density', d), c.density)
+          if (sabotage?.css) await p.addStyleTag({ content: sabotage.css })
+          if (sabotage?.script) await p.addScriptTag({ content: sabotage.script })
+        },
+      })
+      return true
+    } catch (error) {
+      if (!(error instanceof StoryRenderInstrumentError)) throw error
+      console.error(`\n✗ 細列圖示中心夾具 size=${c.size}:${error.message}`)
+      return false
+    }
+  }
   try {
     await page.setViewportSize(DEFAULT_VIEWPORT)
     for (const story of STORIES) {
@@ -800,6 +1023,11 @@ async function runPages(page, sv, sabotage, only = null) {
       await parkPointer(page)
       results.push(...await railCells(page, 'standalone', `${prefix}(${inj.what} ${inj.size} > 細列看得到的 ${inj.visible})`, true))
     }
+    for (const c of RAIL_CENTER_CASES) {
+      if (only && !only.center) continue
+      if (!(await (c.fixture ? openFixture(c) : open(c.id, `${densityQuery(c.density)}${c.args ? `&args=${c.args}` : ''}`)))) return { instrumentFail: true, results }
+      results.push(...await railCenterCells(page, c, railCenterPrefix(c)))
+    }
     for (const c of TAB_CASES) {
       if (only && !only.tab) continue
       await page.setViewportSize(c.viewport)
@@ -829,8 +1057,11 @@ async function runPages(page, sv, sabotage, only = null) {
 
 // ── 對照組 (b):2026-10-14 的症狀、「拿掉 inert」、2026-05-21 → 10-27 的細列症狀與它的各個面 ──
 const ICON_IDS = STORIES.filter((s) => s.mode === 'icon').map((s) => s.id)
-const ICON_COLLAPSE = 'design-system-components-sidebar-展示--icon-collapse'
 const redAt = (res, re) => res.some((r) => !r.ok && re.test(r.label))
+// R8 的對照組判定:某一格的某一條規則紅了(量不到的格不算「被抓到」);某一格全部規則都綠(一條都沒量到不算綠)
+const centerRed = (res, key, rule) => res.some((r) => r.center === key && r.rule === rule && !r.ok && !r.instrument)
+const centerGreen = (res, key, rules = null) => { const rs = res.filter((r) => r.center === key && (!rules || rules.includes(r.rule))); return rs.length > 0 && rs.every((r) => r.ok) }
+const WIDTH_RULES = ['R8a', 'R8b', 'R8d']
 const PAGE_SABOTAGE = [
   ['收起的外框寬釘回 --sidebar-width(2026-10-14 實際症狀)', { css: '[data-side][data-collapsible="icon"],[data-side][data-collapsible="offcanvas"]{width:var(--sidebar-width)!important}' },
     { stories: STORIES.map((s) => s.id) },
@@ -879,6 +1110,37 @@ const PAGE_SABOTAGE = [
   ['滑塊也不接指標(拖不動)', { css: '[data-sidebar="content"] [data-radix-scroll-area-viewport] ~ [data-orientation="vertical"] > *{pointer-events:none!important}' },
     { scroll: true },
     (res) => SCROLL_CASES.every((c) => res.some((r) => !r.ok && r.label.startsWith(scrollPrefix(c)) && /:R7 /.test(r.label)))],
+  // ── R8 的五種破法(前兩種注入的 !important 蓋過 SidebarProvider 外層的 inline 值;第三、四種蓋的是樣式檔的規則與 AppShell 探針的寬)。每一種都同時指名「必紅的格」與「必須維持綠的格」:
+  //    量具分得出 size md 與 size lg、分得出側欄自己的寬與 AppShell 量到的寬、分得出「外層算的」與「外框自己重算的」,不是一律紅 ──
+  // 2026-05-26 → 11-13 的實際症狀:圖示欄不跟側欄的 size(那時是跟密度);釘成 20 = 當時大密度的值 → size md 的格圖示往右 2px
+  ['圖示欄固定 20、不跟側欄的 size(2026-05-26 → 11-13 大密度 × size md 的實際症狀)', { css: '[data-sidebar="wrapper"]{--sidebar-rail-icon-slot:1.25rem!important}' },
+    { center: true },
+    (res) => MD_CENTER_KEYS.every((k) => WIDTH_RULES.every((rule) => centerRed(res, k, rule))) && LG_CENTER_KEYS.every((k) => centerGreen(res, k))],
+  // 同一個症狀的另一半:釘成 16 = 當時一般密度的值 → size lg 的格圖示往左 2px(F3 / F4 的側欄外框繼承到的也是這個 16,同樣紅)
+  ['圖示欄固定 16、不跟側欄的 size(2026-05-26 → 11-13 一般密度 × size lg 的實際症狀)', { css: '[data-sidebar="wrapper"]{--sidebar-rail-icon-slot:1rem!important}' },
+    { center: true },
+    (res) => LG_CENTER_KEYS.every((k) => WIDTH_RULES.every((rule) => centerRed(res, k, rule))) && MD_CENTER_KEYS.every((k) => centerGreen(res, k))],
+  // 樣式檔「衍生值」段的選擇器漏了 SidebarProvider 外層:外層沿用整頁 / 區塊算好的值(圖示欄用備用值 16)→ size lg 少 4px;size md 本來就等於那個值。
+  // F3 / F4 不靠外層算好的值:側欄外框自己帶 data-density,公式在外框上重算、圖示欄 20 照常從外層繼承進來 → 維持綠
+  ['SidebarProvider 外層不重算細列寬(樣式檔的選擇器漏了外層)', { css: '[data-sidebar="wrapper"]{--sidebar-width-icon:inherit!important}' },
+    { center: true },
+    (res) => LG_CENTER_KEYS.filter((k) => !LG_INSIDE_KEYS.includes(k)).every((k) => WIDTH_RULES.every((rule) => centerRed(res, k, rule)))
+      && [...MD_CENTER_KEYS, ...LG_INSIDE_KEYS].every((k) => centerGreen(res, k))],
+  // AppShell 的量值探針量到別的寬(SidebarProvider 包在 AppShell 裡面時 size lg 會這樣):版面模型用的細列寬 ≠ 側欄實際寬。
+  // 40 不等於任何一格的細列寬 → AppShell 四格的 R8c 都紅;側欄自己的寬沒動 → 同四格的 R8a / R8b / R8d 與其餘八格維持綠
+  ['AppShell 量到的細列寬釘成 40(與側欄實際寬脫鉤)', { css: '[data-token-probe="rail"]{width:40px!important}' },
+    { center: true },
+    (res) => SHELL_CENTER_KEYS.every((k) => centerRed(res, k, 'R8c') && centerGreen(res, k, WIDTH_RULES))
+      && RAIL_CENTER_CASES.filter((c) => c.kind !== 'shell').every((c) => centerGreen(res, c.key))],
+  // 圖示欄沒有穿過密度邊界繼承下去(2026-11-13 審查的破法):在每個換密度的元素上把圖示欄重設成備用值 1rem。不加 !important ——
+  // SidebarProvider 外層自己的 inline 值照樣贏,所以 <html> 與外層的父層被重設不影響任何一格;只有「外層裡面又有換密度的元素」那裡會斷。
+  // size md 的格(含 D2)圖示欄本來就是 16 = 1rem → 維持綠(= 還沒有 F3 / F4 時這種破法十格全綠的原因);
+  // size lg、密度掛在側欄外框上的 F3 / F4 → 細列寬少 4(64 / 48)、圖示收合後往左 2px → R8a / R8b / R8d 紅
+  ['換密度的元素上把圖示欄重設成 1rem(圖示欄沒有穿過密度邊界繼承下去)', { css: '[data-density],[data-ui-size],[data-layout-space]{--sidebar-rail-icon-slot:1rem}' },
+    { center: true },
+    // LG_INSIDE_KEYS 是空的(有人把 F3 / F4 拿掉)= 這種破法沒有任何一格在驗 → 不算被抓到(空集合的 every 恆真,M37「沒觀察到 ≠ 沒發生」)
+    (res) => LG_INSIDE_KEYS.length > 0 && LG_INSIDE_KEYS.every((k) => WIDTH_RULES.every((rule) => centerRed(res, k, rule)))
+      && RAIL_CENTER_CASES.filter((c) => !LG_INSIDE_KEYS.includes(c.key)).every((c) => centerGreen(res, c.key))],
 ]
 
 // ── 跑 ──
@@ -897,6 +1159,12 @@ if (SELFTEST) {
     if (v.length) problems.push(`靜態段誤報乾淨寫法:${clean}`)
   }
   if (!problems.length) console.log(`✓ 乾淨寫法 ${CLEAN_SNIPPETS.length} 種都不誤報`)
+  // R8 判定表:實量的數字餵給純函式,該紅的規則紅、其餘綠(紅的集合要一模一樣,多紅一條也算錯)
+  for (const [name, m, mustRed] of RAIL_CENTER_TABLE) {
+    const red = railCenterVerdict(m).filter((v) => !v.ok).map((v) => v.key).sort()
+    if (red.join(',') === [...mustRed].sort().join(',')) console.log(`✓ R8 判定表:${name} → ${red.length ? `${red.join('、')} 紅` : '全綠'}`)
+    else problems.push(`R8 判定表「${name}」:該紅 ${mustRed.join('、') || '無'},實際紅 ${red.join('、') || '無'}`)
+  }
 } else {
   const st = staticScan()
   console.log(`${st.bad.length ? '✗' : '✓'} 靜態:元素自己帶 group / peer 又用 group-* / peer-* 變體(掃 ${st.files} 檔)${st.bad.length ? '\n    ' + st.bad.join('\n    ') : ''}`)
@@ -905,41 +1173,63 @@ if (SELFTEST) {
 
 requireFreshStorybookBuild(S, [
   'packages/design-system/src/components/Sidebar/sidebar.tsx',
+  // 細列寬的公式住這個樣式檔(2026-11-13 修的正是它;沒列的話拿舊建置跑,R8 會假綠 / 假紅)
+  'packages/design-system/src/components/Sidebar/sidebar.css',
   'packages/design-system/src/components/Sidebar/sidebar.stories.tsx',
   'packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx',
   'packages/design-system/src/components/AppShell/app-shell.tsx',
   'packages/design-system/src/components/AppShell/app-shell.stories.tsx',
+  // R8 的 A 格:AppShell「狀態行為」與它用的示範側欄(`menuSize` 參數住這裡)
+  'packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx',
+  'packages/design-system/src/components/AppShell/_demo-helpers.tsx',
   'packages/design-system/src/components/ScrollArea/scroll-area.tsx',
   'packages/design-system/src/components/Tooltip/tooltip.tsx',
 ])
 const sv = await startA11yStaticServer({ rootDirectory: S, defaultFile: 'iframe.html' })
 process.once('exit', (code) => { if (code && sv.notFound.length) console.error('同源 404:', [...new Set(sv.notFound)].join(', ')) })
-const br = await launchBrowserOrSkip({}, { cleanup: () => sv.stop() })
+// R8 的 F 格用的夾具頁(樣式 = 正在服務的這一份建置;元件 = 這次 checkout 的原始碼)。掛不起來 = 儀器失效
+let railFixture = null
+try {
+  railFixture = await startStorybookCssFixture(sv.servedRoot, { source: RAIL_FIXTURE_SOURCE, label: '細列圖示中心夾具', title: '細列圖示中心夾具' })
+} catch (error) {
+  await sv.stop()
+  if (!(error instanceof FixtureInstrumentError)) throw error
+  console.error(`✗ ${INSTRUMENT_FAIL_MARKER} ${error.message}(${RAIL_FIXTURE_SOURCE})—— 夾具掛不起來是儀器失效,不是產品裁決`)
+  process.exit(1)
+}
+const stopServers = async () => { await railFixture.stop(); await sv.stop() }
+const br = await launchBrowserOrSkip({}, { cleanup: stopServers })
 const page = await br.newPage({ viewport: DEFAULT_VIEWPORT })
+/** R8 量不到的格:結尾另印標記(meta-test 靠它分辨「量不到」與「被抓到」) */
+const unmeasured = (results) => results.filter((r) => r.instrument)
 
 if (!SELFTEST) {
   const run = await runPages(page, sv, null)
-  if (run.instrumentFail) { await br.close(); await sv.stop(); process.exit(1) }
-  // 綠的格也印量到的值(R1–R6 的數字是證據,不只是勾)
-  for (const r of run.results) console.log(`${r.ok ? '✓' : '✗'} ${r.label}${r.ok && !/:R\d /.test(r.label) ? '' : ` | ${r.detail}`}`)
+  if (run.instrumentFail) { await br.close(); await stopServers(); process.exit(1) }
+  // 綠的格也印量到的值(R1–R8 的數字是證據,不只是勾)
+  for (const r of run.results) console.log(`${r.ok ? '✓' : '✗'} ${r.label}${r.ok && !/:R\d[a-z]? /.test(r.label) ? '' : ` | ${r.detail}`}`)
   const failed = run.results.filter((r) => !r.ok).length
   if (failed) problems.push(`頁面段 ${failed} 格不符`)
+  const blind = unmeasured(run.results)
+  if (blind.length) console.error(`\n✗ ${INSTRUMENT_FAIL_MARKER}:R8 有 ${blind.length} 格量不到(${blind.map((r) => r.center).join('、')})—— 量不到不等於沒問題`)
 } else {
   // 前提:未破壞的頁面本身全綠(否則對照組紅了也不代表什麼)
   const base = await runPages(page, sv, null)
-  if (base.instrumentFail) { await br.close(); await sv.stop(); process.exit(1) }
+  if (base.instrumentFail) { await br.close(); await stopServers(); process.exit(1) }
   const baseBad = base.results.filter((r) => !r.ok)
   if (baseBad.length) problems.push(`前提不成立:未破壞的頁面就有 ${baseBad.length} 格不符(${baseBad[0].label})`)
   for (const [name, sabotage, only, isRed] of PAGE_SABOTAGE) {
     const run = await runPages(page, sv, sabotage, only)
-    if (run.instrumentFail) { await br.close(); await sv.stop(); process.exit(1) }
-    if (isRed(run.results)) console.log(`✓ 對照組 (b)「${name}」→ 指定的斷言紅(${run.results.filter((r) => !r.ok).length} 格)`)
+    if (run.instrumentFail) { await br.close(); await stopServers(); process.exit(1) }
+    const blind = unmeasured(run.results)
+    if (blind.length) problems.push(`對照組 (b)「${name}」有 ${blind.length} 格量不到(${blind.map((r) => `${r.center}:${r.detail}`).join(' / ')})—— ${INSTRUMENT_FAIL_MARKER},量不到不算被抓到`)
+    else if (isRed(run.results)) console.log(`✓ 對照組 (b)「${name}」→ 指定的斷言紅(${run.results.filter((r) => !r.ok).length} 格)`)
     else problems.push(`對照組 (b)「${name}」沒讓指定的斷言紅 —— 量具無效(紅的格:${run.results.filter((r) => !r.ok).map((r) => r.label).join(' / ') || '無'})`)
   }
 }
-await br.close(); await sv.stop()
+await br.close(); await stopServers()
 if (problems.length) { console.log(`\n✗ ${SELFTEST ? 'selftest' : '單獨使用的 Sidebar 收合'}:\n  ${problems.join('\n  ')}`); process.exit(1) }
 console.log(SELFTEST
-  ? `\n✓ selftest:靜態對照組與 ${PAGE_SABOTAGE.length} 種頁面破壞各自讓閘紅 —— 量具會紅`
-  : `\n✅ 單獨使用的 Sidebar:${STORIES.length} 則 story 收起 / 展開的寬度與可操作性、細列(含 AppShell ${SHELL_RAILS.length} 則、寬鬆密度 ${DENSITY_RAILS.length} 則、放骨架列 / 搜尋框 / 預留動作內距 ${STRESS_RAILS.length} 格)的列鈕版面 / Tooltip 間距 / 焦點框四邊、真按 Tab 到細列的 Tooltip(${TAB_CASES.length} 格)、捲軸(${SCROLL_CASES.length} 種組合,含 AppShell;細列捲軸蓋到的那段列鈕點得到,只量細列)都符合、靜態段 0 違規`)
+  ? `\n✓ selftest:靜態對照組、R8 判定表 ${RAIL_CENTER_TABLE.length} 列與 ${PAGE_SABOTAGE.length} 種頁面破壞各自讓閘紅 —— 量具會紅`
+  : `\n✅ 單獨使用的 Sidebar:${STORIES.length} 則 story 收起 / 展開的寬度與可操作性、細列(含 AppShell ${SHELL_RAILS.length} 則、寬鬆密度 ${DENSITY_RAILS.length} 則、放骨架列 / 搜尋框 / 預留動作內距 ${STRESS_RAILS.length} 格)的列鈕版面 / Tooltip 間距 / 焦點框四邊、收合前後圖示中心與細列寬(${RAIL_CENTER_CASES.length} 格:兩種密度 × 側欄 size md / lg、區塊密度、AppShell)、真按 Tab 到細列的 Tooltip(${TAB_CASES.length} 格)、捲軸(${SCROLL_CASES.length} 種組合,含 AppShell;細列捲軸蓋到的那段列鈕點得到,只量細列)都符合、靜態段 0 違規`)
 process.exit(0)

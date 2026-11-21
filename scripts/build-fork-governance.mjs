@@ -68,6 +68,7 @@ import {
   readClaudePermissionPolicy,
 } from './lib/claude-permission-policy.mjs'
 import { TRUSTED_UPGRADE_POLICY } from './verify-upgrade-provenance.mjs'
+import { LEDGER_REPO_PATH, removedNamesDocument } from '../packages/design-system/tools/changes/ledger.mjs'
 import {
   assertNoSymlinkPath,
   assertSafeTree,
@@ -122,6 +123,7 @@ const MANAGED_REPOSITORY_INVENTORY_SCHEMA_PATH = join(ROOT, 'infra/governance/sc
 const DS_PACKAGE_PATH = join(ROOT, 'packages/design-system/package.json')
 const STORYBOOK_PACKAGE_PATH = join(ROOT, 'packages/storybook-config/package.json')
 const UTILITY_REGISTRY_PATH = join(ROOT, 'packages/design-system/src/tokens/utility-registry.json')
+const DS_CHANGES_LEDGER_PATH = join(ROOT, 'packages/design-system/ds-changes.json')
 const UTILITY_REGISTRY_SCHEMA_PATH = join(ROOT, 'packages/design-system/src/tokens/utility-registry.schema.json')
 const STORY_BASELINE_REGISTRY_PATH = join(CANONICAL_ROOT, 'references/story-baseline-registry.json')
 const STORY_BASELINE_REGISTRY_SCHEMA_PATH = join(CANONICAL_ROOT, 'references/story-baseline-registry.schema.json')
@@ -698,6 +700,15 @@ function applyTransform(content) {
       '$CORPUS_ROOT/packages/design-system/src/tokens/utility-registry.json',
       '$CORPUS_ROOT/references/utility-registry.json',
     )
+    // lib/_ds_removed_names.sh:canonical 由 corpus 帳本經 ledger.mjs 當場投影;fork 不帶帳本工具,改讀預先投影的名單檔
+    .replaceAll(
+      'local source="$CORPUS_ROOT/packages/design-system/ds-changes.json"',
+      'local source="$CORPUS_ROOT/references/ds-removed-names.json"',
+    )
+    .replaceAll(
+      'node "$CORPUS_ROOT/packages/design-system/tools/changes/ledger.mjs" removed-names "$source"',
+      'cat "$source"',
+    )
     // DS src spec/story/token 路徑 → node_modules(fork 佈局)
     .replace(/packages\/design-system\/src/g, 'node_modules/@qijenchen/design-system/src')
     .replace(/\.\.\/\.\.\/packages\/design-system\/src/g, 'node_modules/@qijenchen/design-system/src')
@@ -1215,12 +1226,20 @@ export function buildCorpus({
   // These are authenticated corpus dependencies, not hook registrations; omitting them turns a
   // valid policy replay into reserved integrity exit 70 on every provider and in hooks-off CI.
   mkdirSync(join(outDir, 'hooks/lib'), { recursive: true })
-  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh']) {
+  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh', '_ds_removed_names.sh']) {
     const helperPath = assertRegularSource(
       join(canonicalSources.hooksDir, 'lib', helper),
       `canonical fork hook helper ${helper}`,
     )
-    const helperBody = readFileSync(helperPath)
+    let helperBody = readFileSync(helperPath)
+    if (helper === '_ds_removed_names.sh') {
+      // 名單來源改寫(帳本投影 → corpus 的 references/ds-removed-names.json);沒改到 = fork 會去找不存在的帳本工具,直接擋建置
+      const rewritten = applyTransform(helperBody.toString('utf8'))
+      if (!rewritten.includes('cat "$source"') || !rewritten.includes('$CORPUS_ROOT/references/ds-removed-names.json')) {
+        throw new Error('fork helper _ds_removed_names.sh: removed-names list path transform did not apply')
+      }
+      helperBody = Buffer.from(rewritten)
+    }
     writeFileSync(join(outDir, 'hooks/lib', helper), helperBody)
     lockEntries.push({
       file: `hooks/lib/${helper}`,
@@ -1276,6 +1295,14 @@ export function buildCorpus({
       sha256: createHash('sha256').update(body).digest('hex'),
       source: relative(ROOT, source).split(sep).join('/'),
     })
+  }
+  // 消費端寫入檢查(check_consumer_code_quality.sh 經 hooks/lib/_ds_removed_names.sh)的名單:變更帳本(唯一來源)→「曾刪除或改名、目前不存在」的名字。
+  // 是帳本的投影(generated),不是第二份規則;governance.lock 綁住 bytes 並記下來源路徑。
+  {
+    const ledger = JSON.parse(readFileSync(DS_CHANGES_LEDGER_PATH, 'utf8'))
+    const body = Buffer.from(`${JSON.stringify(removedNamesDocument(ledger), null, 2)}\n`)
+    writeFileSync(join(outDir, 'references', 'ds-removed-names.json'), body)
+    lockEntries.push({ file: 'references/ds-removed-names.json', sha256: createHash('sha256').update(body).digest('hex'), source: LEDGER_REPO_PATH })
   }
 
   // ── 必-committed 類別(skills / commands):canonical 整目錄投影進 ds-canonical/fork/<cat>/ ──

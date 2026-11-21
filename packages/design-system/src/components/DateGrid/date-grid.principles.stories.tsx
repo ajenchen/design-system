@@ -30,7 +30,7 @@ const Demo = ({ title, children }: { title: string; children: React.ReactNode })
   <ExampleGroup className="min-w-0">
     <ExampleCaption>{title}</ExampleCaption>
     {/* 外框不加內距:DateGrid 每張月曆自己四周留 --item-px(date-grid.tsx month),與 DatePicker 的 PopoverContent(不另加內距)是同一個單一內距 owner */}
-    <div className="bg-surface-raised border border-border rounded-lg w-fit">{children}</div>
+    <div className="bg-surface-raised border border-border rounded-md w-fit">{children}</div>
   </ExampleGroup>
 )
 
@@ -264,7 +264,7 @@ export const VisualTokenRule: Story = {
 
       <TutorialRule
         title="❌ 禁止硬寫色值繞過 token"
-        note="bg-primary / text-fg-disabled / ring-primary 等全部來自 DS semantic token。dark mode / brand swap 會自動聯動,若改用 bg-blue-500 / text-gray-400 會在 dark mode 顯示錯誤顏色。"
+        note="bg-primary / text-fg-disabled / ring-primary 等全部來自 DS semantic token。換主題 / 互動色換色都會自動聯動,若改用 bg-blue-500 / text-gray-400 會在 dark mode 顯示錯誤顏色。"
       >
         <ExampleCaption warn>
           ❌ bg-blue-500(硬色) → ✅ bg-primary(semantic)<br />

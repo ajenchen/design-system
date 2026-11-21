@@ -66,7 +66,7 @@ export const BulkImageUpload = {
           onUpload={(accepted) =>
             setFiles((prev) => [
               ...prev,
-              ...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })),
+              ...accepted.map((f, i) => ({ id: `photo-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })), // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
             ])
           }
         />
@@ -101,7 +101,7 @@ const FileListDemo = () => {
             setItems((prev) => [
               ...prev,
               ...accepted.map((f, i) => ({
-                id: `new-${Date.now()}-${i}`,
+                id: `new-${Date.now()}-${i}`, // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
                 name: f.name,
                 size: f.size,
                 status: 'completed' as const,
@@ -124,7 +124,7 @@ export const WithFileList = {
 export const FileListRemoveFocusContract = {
   name: '移除焦點接力驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:117「移除焦點:在 callback 前把 focus 交給下一項 remove button」
+  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:116「移除焦點:在 callback 前把 focus 交給下一項 remove button」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <FileListDemo />,
@@ -140,7 +140,7 @@ export const FileListRemoveFocusContract = {
 export const FileListKeyboardContract = {
   name: '檔案清單鍵盤走法驗證',
   // 示範焦點是本則的主題(story-rules「示範 = 滑鼠使用者」):不放掉 play 造出的鍵盤焦點
-  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:163「上 / 下一列,不繞回」
+  // @example-basis: packages/design-system/src/components/FileUpload/file-upload.spec.md:162「上 / 下一列,不繞回」
   parameters: { demoFocus: 'keep' },
   tags: ['test-only'],
   render: () => <FileListDemo />,
@@ -244,7 +244,7 @@ export const ButtonVariant = {
           onUpload={(accepted) =>
             setItems((prev) => [
               ...prev,
-              ...accepted.map((f, i) => ({ id: `n-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })),
+              ...accepted.map((f, i) => ({ id: `n-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })), // @nondeterministic-ok: 使用者操作後才產生,初次渲染和截圖都不會有(見 check_story_determinism.sh)
             ])
           }
         />

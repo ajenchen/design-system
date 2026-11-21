@@ -6,6 +6,7 @@
 本檔由 source(spec.md frontmatter)build-time 自動生成,**禁手改**(CI --check drift gate 守)。
 每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。
 元件原始範例 source:node_modules/@qijenchen/design-system/src/<dir>/*.stories.tsx;rendered:Storybook 連結。
+升版:各版的破壞性變更(改名 / 移除 / 必填 / 預設值 / 行為,每條附做法與規格段落)見 [ds-changes.json](./ds-changes.json);讀舊版之後到新版的各節,再跑 `npx qijenchen-ds-codemod upgrade`。
 
 ## Components
 - [Accordion](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Accordion
@@ -18,7 +19,7 @@
 - [Badge](https://ajenchen-design-system.netlify.app): variants:critical/high/medium/low — src:components/Badge
 - [Breadcrumb](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Breadcrumb
 - [BulkActionBar](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/BulkActionBar
-- [Button](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Button
+- [Button](https://ajenchen-design-system.netlify.app): variants:primary/secondary/tertiary/text/link;sizes:xs/sm/md/lg — src:components/Button
 - [Calendar](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Calendar
 - [Carousel](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Carousel
 - [Chart](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Chart
@@ -30,7 +31,7 @@
 - [DataTable](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DataTable
 - [DatePicker](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DatePicker
 - [DescriptionList](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DescriptionList
-- [Dialog](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Dialog
+- [Dialog](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg/xl — src:components/Dialog
 - [DropdownMenu](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/DropdownMenu
 - [Empty](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Empty
 - [Field](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Field
@@ -51,7 +52,7 @@
 - [RadioGroup](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/RadioGroup
 - [Rating](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Rating
 - [ScrollArea](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/ScrollArea
-- [SegmentedControl](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/SegmentedControl
+- [SegmentedControl](https://ajenchen-design-system.netlify.app): sizes:xs/sm/md/lg — src:components/SegmentedControl
 - [Select](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Select
 - [SelectMenu](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/SelectMenu
 - [Separator](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Separator
@@ -62,7 +63,7 @@
 - [Steps](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Steps
 - [Switch](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Switch
 - [Tabs](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Tabs
-- [Tag](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Tag
+- [Tag](https://ajenchen-design-system.netlify.app): variants:neutral/blue/green/deep-orange/yellow/red/orange/amber/lime/turquoise/indigo/purple/magenta;sizes:sm/md/lg — src:components/Tag
 - [Textarea](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Textarea
 - [TimePicker](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/TimePicker
 - [Toast](https://ajenchen-design-system.netlify.app): variants:neutral/info/success/warning/error — src:components/Toast

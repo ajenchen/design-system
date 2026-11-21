@@ -3,7 +3,7 @@
 # Fail-silent: network / site errors don't block, only last-fetch.txt on success.
 #
 # Run manually: bash governance/benchmarks/fetch.sh
-# Auto-reminded: session_start_governance_check.sh when > 30 days stale.
+# Freshness: no hook reminds; /governance-health Phase 1 flags last-fetch.txt older than 30 days.
 
 set -u  # NOT -e; we want to continue on individual fetch failures
 

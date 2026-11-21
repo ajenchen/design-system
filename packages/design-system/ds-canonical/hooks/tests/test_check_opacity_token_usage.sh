@@ -222,7 +222,10 @@ while IFS=$'\t' read -r RULE_ID LABEL FIXTURE; do
   run_hook "$FP71" "$FIXTURE"
   expect_warn "registry pattern closure: $RULE_ID" "[$LABEL]"
 done <<'EOF_PATTERN_FIXTURES'
-typography-leading-numeric	leading numeric	const a = <div className="leading-7" />
+typography-leading-numeric	leading raw	const a = <div className="leading-7" />
+typography-leading-numeric	leading raw	const a = <div className="leading-tight" />
+primitive-color-family	primitive color as utility	const a = <div className="bg-magenta-6" />
+primitive-color-family	primitive color as utility	const a = <div className="text-rose-500" />
 typography-inline-style	typography inline style	const a = <div style={{ fontSize: 12 }} />
 radius-arbitrary	radius arbitrary	const a = <div className="rounded-[7px]" />
 radius-inline-style	radius inline style	const a = <div style={{ borderRadius: 7 }} />
@@ -234,6 +237,12 @@ EOF_PATTERN_FIXTURES
 
 run_hook "$FP71" 'const a = <div className="rounded-[inherit]" />'
 expect_pass_silent "registry pattern exclusion: rounded-[inherit] remains allowed"
+
+# 2026-11-15 圓角收成四檔(radius.spec.md「四檔」):2px 這一檔叫 rounded-sm(放行),Tailwind 預設的 rounded-xs 擋
+run_hook "$FP71" 'const a = <div className="h-2 w-2 rounded-sm" />'
+expect_pass_silent "radius scale: rounded-sm(2px)is on the scale"
+run_hook "$FP71" 'const a = <div className="h-2 w-2 rounded-xs" />'
+expect_warn "radius scale: rounded-xs is a Tailwind default outside the scale" "[radius out-of-range]"
 
 run_raw '{'
 if [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \

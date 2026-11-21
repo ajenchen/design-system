@@ -57,6 +57,7 @@ fi
 # Test 4: Write new file inside classification dir(charter exists)→ pass
 echo "Test 4: Write new file in classified dir(charter exists)→ pass"
 TMP_PROJ=$(mktemp -d)
+[ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJ/.agents/skills"
 echo "# Skills charter" > "$TMP_PROJ/.agents/skills/README.md"
 GOVERNANCE_PROJECT_DIR="$TMP_PROJ" GOVERNANCE_PROVIDER=codex run_hook "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$TMP_PROJ/.agents/skills/new-skill/SKILL.md\"}}"
@@ -70,6 +71,7 @@ rm -rf "$TMP_PROJ"
 # Test 5:unknown concrete provider is onboarded by registry fixture data only.
 echo "Test 5: unknown provider managed home comes from registry data"
 TMP_PROJ=$(mktemp -d)
+[ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJ/corpus" "$TMP_PROJ/.orion/workflows"
 echo "# Orion workflow charter" > "$TMP_PROJ/.orion/workflows/README.md"
 cat > "$TMP_PROJ/corpus/providers.json" <<'EOF'
@@ -98,6 +100,7 @@ rm -rf "$TMP_PROJ"
 # Test 6:unsafe registry path fails closed before it can widen a managed home.
 echo "Test 6: unsafe provider root fails closed"
 TMP_PROJ=$(mktemp -d)
+[ -n "${TMP_PROJ:-}" ] && [ -d "$TMP_PROJ" ] || { echo "❌ mktemp -d failed(TMP_PROJ;TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2; exit 1; }
 mkdir -p "$TMP_PROJ/corpus"
 cat > "$TMP_PROJ/corpus/providers.json" <<'EOF'
 {

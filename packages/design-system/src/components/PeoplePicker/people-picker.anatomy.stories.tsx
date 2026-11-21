@@ -31,7 +31,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>PeoplePicker 是組合元件——single mode 包 Select、multi mode 包 Combobox,已選值用 PersonDisplay(Avatar + Name)呈現。浮層搜尋(Popover + cmdk + SelectMenu)是底層 Select / Combobox 內部細節。外觀對齊 Select / Combobox,差異在選項前綴有 Avatar 視覺。</Desc>
-        <div className="max-w-md border border-border rounded-lg p-4">
+        <div className="max-w-md border border-border rounded-md p-4">
           <LivePeoplePicker
             people={SAMPLE_PEOPLE}
             value={SAMPLE_PEOPLE[0]}

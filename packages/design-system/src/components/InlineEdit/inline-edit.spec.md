@@ -45,7 +45,7 @@ benchmark:
 - **Enter**(鍵盤)→ `commit`,**焦點送回 view 按鈕** + focus-visible 顯藍框(鍵盤焦點不遺失)
 - **Esc**(鍵盤)→ `cancel`(放棄草稿還原 view 態,不 commit),焦點同送回 view 按鈕。**編輯中是焦點所在控件自己的一層**(2026-10-01):放在 Dialog / Sheet / Popover 裡第一下 Esc 只取消編輯、浮層不關,第二下才關(`../Field/field-edit-keys.ts` `editSettleKeyProps` 掛 `data-escape-layer`;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」)。LinkInput 2026-10-01 起同一支結算 helper(Enter / Esc 後焦點給鉛筆,同本條分流)
 - 分流理由:鍵盤路徑需焦點連續(a11y);滑鼠 blur = 使用者意圖已在別處,強拉焦點回來是搶焦。`focus-visible` 保證只有鍵盤路徑顯藍框。
-- **exit 由 InlineEdit 保證、不靠 consumer 自接(2026-07-17 root cause 修:blur 後 chrome 殘留)**:自訂 `renderEdit`(Select/DatePicker 等 overlay 控件)若只接 `onChange→commit`、不接 dismiss,**不選直接點外面**時舊設計卡 `editing=true`(edit chrome 殘留)。修:InlineEdit 用 **document-level pointerdown-outside**(對齊 [Radix DismissableLayer](https://www.radix-ui.com/primitives/docs/utilities/dismissable-layer) + [Atlassian inline-edit](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx) click-outside)—— editing 時點在 edit 子樹外且不在本 edit popover 內 → `commit` 回 view(「本 edit 的 popover」= 編輯容器元件樹上的子孫 —— edit 控件 portal 出去的選單 / 日曆,`../../lib/composite-field-focus.ts` `useOwnTreeEvents`;InlineEdit 放在 Dialog / Sheet / Popover 裡時,宿主本身是外面 —— 2026-11-03 前認的是「任何一層 popper / listbox / dialog」,連宿主也算,點宿主空白、Tab 到宿主裡的下一格都卡在 edit;閘 `scripts/overlay-nested-dismiss-invariant.mjs` I 列);+ `onBlur` focusout 補 tab-out 路徑。**任何控件(含 overlay)blur/點外面都保證回 display**,pixel 驗證 `probe-inline-edit-align.mjs`(點 Status 進 edit→blur→`editing=0`)。
+- **exit 由 InlineEdit 保證、不靠 consumer 自接(2026-07-17 root cause 修:blur 後 chrome 殘留)**:自訂 `renderEdit`(Select/DatePicker 等 overlay 控件)若只接 `onChange→commit`、不接 dismiss,**不選直接點外面**時舊設計卡 `editing=true`(edit chrome 殘留)。修:InlineEdit 用 **document-level pointerdown-outside**(對齊 [Radix DismissableLayer](https://www.radix-ui.com/primitives/docs/utilities/dismissable-layer) + [Atlassian inline-edit](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx) click-outside)—— editing 時點在 edit 子樹外且不在本 edit popover 內 → `commit` 回 view(「本 edit 的 popover」= 編輯容器元件樹上的子孫 —— edit 控件 portal 出去的選單 / 日曆,`../../lib/composite-field-focus.ts` `useOwnTreeEvents`;InlineEdit 放在 Dialog / Sheet / Popover 裡時,宿主本身是外面 —— 2026-11-03 前認的是「任何一層 popper / listbox / dialog」,連宿主也算,點宿主空白、Tab 到宿主裡的下一格都卡在 edit;閘 `scripts/overlay-nested-dismiss-invariant.mjs` I 列);+ `onBlur` focusout 補 tab-out 路徑。**任何控件(含 overlay)blur/點外面都保證回 display**。量測:放在 Dialog / Sheet / Popover 裡的由上面的 `overlay-nested-dismiss-invariant.mjs` I 列在 CI 量;沒有宿主的一般表單只有手動探針 `scripts/probe-inline-edit-align.mjs` 量(點「狀態」進 edit→點頁面空白→`editing=0`;不在 CI)。
 
 ## editable 閘（無 disabled 態）
 
@@ -66,7 +66,7 @@ InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 f
 - **對齊 root invariant**:固定 `-mx-[--field-px]` 要能把值/tag/avatar 左緣拉到 label x=0,**充要條件 = 委派控件 view 左 px 恆 = field-px**。故 InlineEdit **兩條 view 路徑都用同一個 `fieldViewGeometry`(field-px + min-h + py)**:純值/標題路徑直接套;**委派控件路徑(renderRead)也用 `fieldViewGeometry` 包住**(委派控件 bare view 皆 0px 左內距 → 包住後統一 field-px)。這樣 tag/avatar/date 全對齊 label(不碰任何控件的 tagPadding)。
 - **vertical(預設,含 standalone)** → `-mx-[var(--field-px)]` + `w-[calc(100%+2*var(--field-px))]`:整塊拉到欄左緣 → 值/tag 左緣落 label x=0。**-mx 只依 orientation、不依 fieldCtx**(spec Model A 原意;舊 `fieldCtx &&` gate 讓 standalone 不對齊 = bug,已移除)。-mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
 - **horizontal** → `w-full min-w-0`,**不用 -mx**:值內縮 px = 對齊 sibling 控件
-- **edit 態完全繼承原 field**(2026-07-17 記為 user 拍板,來源不明:登記簿查無原話):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式 —— 進入編輯就是那個欄位本人,使用者看到的控件跟表單裡一模一樣。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(可接受)。pixel 驗證 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain/tag/多行 Δ≤1px)
+- **edit 態完全繼承原 field**(2026-07-17 記為 user 拍板,來源不明:登記簿查無原話):edit **不套** field-px 統一,tag 保留 tagPadding 等原生樣式 —— 進入編輯就是那個欄位本人,使用者看到的控件跟表單裡一模一樣。純文字 view↔edit 零跳;tag 進 edit 有 ~6px 微移(可接受)。pixel 量測用手動探針 `scripts/probe-inline-edit-align.mjs`(VerticalFieldForm plain / tag / 多行,值左緣對標籤左緣容差 1.5px;不在 CI —— PR 上沒有任何閘量 InlineEdit 這一段,探針列在 `scripts/gate-reachability-baseline.json` 的孤兒清單)
 
 **多行(multiline)**:view = `items-start py-2`,**= Textarea edit `py-2`**(textarea.tsx base)——`scripts/inline-edit-view-geometry-invariant.mjs` 機械鎖此契約(Textarea py 一改即紅)。
 
@@ -136,7 +136,7 @@ InlineEdit 為**泛型 `<T>`**（非只 string）:`value: T` / `onCommit: (next:
 
 ## 常見誤解
 
-- **「view 態 hover 該加邊框」** → 錯。hover = 背景 tint（`bg-neutral-hover`）;邊框是 edit 態語言。
+- **「view 態 hover 該加邊框」** → 錯。本元件檢視態滑過 = 背景 tint（`bg-neutral-hover`）,設計如此(上方「互動模型」表);Atlassian inline-edit 讀取態同做法(邊框透明、滑過換底色 `color.background.neutral.subtle.hovered`,[read-view.tsx#L56-L62](https://github.com/pioug/atlassian-frontend-mirror/blob/4f81d05437195b5ee2ee383eeedfbe60d8c56bd9/design-system/inline-edit/src/internal/read-view.tsx#L56-L62))。DataTable 可編輯格檢視態滑過用外框(`../Field/field.spec.md` L4),兩者意思相同 —— 都是「這裡可以改值」,各元件照自己的規格表現。〔2026-11-10 改寫:舊句「邊框是 edit 態語言」與 L4(表格格在檢視態用外框)相反,已拿掉;user 同日原話「因為我覺得 inline edit 一點都不怪，當初定義的設計就是這樣」〕
 - **「edit 態要自己刻 input chrome」** → 錯。edit 態 = 真正的 Field 控件(預設 `<Input>`),完全回歸 field-controls edit canonical,不重刻。
 - **「大標題 inline edit 要自己做 focus/commit/esc」** → 錯。用 InlineEdit,生命週期(commit/cancel/Esc/focus 返回)由 primitive 統一處理。
 
@@ -168,12 +168,12 @@ InlineEdit 不含 async loading state。若 commit 需要 async 儲存,consumer 
 
 **Focus 管理(分流)**:進 edit 態自動 focus 控件（`autoFocus`);**鍵盤結算**(Enter commit / Esc cancel)後焦點送回 view 按鈕 + focus-visible 藍框(焦點不遺失);**滑鼠 blur 結算刻意不回焦**——回純 view 不搶焦(理由見「退出 edit 態(focus 分流)」段)。
 
-## shadcn passthrough 例外說明
-InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動態生成的 edit 控件),遵循 shadcn 結構 idiom(forwardRef + displayName)但**無 `...props` spread**:外層 div 只是對齊盒、非 consumer 可預期的互動 surface(spread 目標不明——view 按鈕?edit 控件?),DOM 級屬性應透過 `renderEdit` / `renderRead` 下傳給真正的控件;`ref` / `className` 附著於外層對齊盒。`asChild` 不支援(composite 非 Slot-compat,Slot 慣例見 https://www.radix-ui.com/primitives/docs/utilities/slot)。
+## Props passthrough 例外說明(稽核 dim 9)
+InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動態生成的 edit 控件),遵循 DS 元件的結構慣例(forwardRef + displayName)但**無 `...props` spread**:外層 div 只是對齊盒、非 consumer 可預期的互動 surface(spread 目標不明——view 按鈕?edit 控件?),DOM 級屬性應透過 `renderEdit` / `renderRead` 下傳給真正的控件;`ref` / `className` 附著於外層對齊盒。`asChild` 不支援(composite 非 Slot-compat,Slot 慣例見 https://www.radix-ui.com/primitives/docs/utilities/slot)。
 
 ## 禁止事項
 
-- ❌ view 態 hover 用邊框——用 `bg-neutral-hover` 背景 tint（邊框是 edit 態語言）
+- ❌ view 態 hover 用邊框——用 `bg-neutral-hover` 背景 tint(本元件檢視態滑過用底色;DataTable 可編輯格用外框,意思同為「可以改值」,見「常見誤解」第 1 條)
 - ❌ edit 態手刻 input chrome——用 Field 控件（預設 `<Input>`)
 - ❌ 用 InlineEdit 包 DataTable 密集可編輯格——用 naked cell
 - ❌ 空值顯示唯讀展示的半形 `-` dash——InlineEdit 是可編輯欄位,空值 = placeholder 或空白

@@ -104,7 +104,7 @@ export const UsageGuidance: Story = {
         </TutorialList>
         <TutorialRule
           title="FileViewer — 看檔案內容(佔滿畫面 + 深色底)"
-          note="工單附件檢視、文件配圖預覽、設計稿審閱、郵件多附件預覽。主任務是「看 content」,需要 viewport 最大化 + dark 底襯托媒體。FileViewer 固定 fullscreen + toolbar chrome,避免 Dialog 的 maxWidth inset 把 media 擠小"
+          note="工單附件檢視、文件配圖預覽、設計稿審閱、郵件多附件預覽。主任務是「看 content」,需要 viewport 最大化 + dark 底襯托媒體。FileViewer 固定 fullscreen + toolbar chrome,避免 Dialog 的寬度檔位上限把 media 擠小"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setFvOpen(true)}>
             開啟 Jira bug 附件(2 張截圖)
@@ -122,7 +122,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TutorialRule
           title="❌ 確認 / 表單 / 決策:用 Dialog"
-          note="「確定要刪除專案?」「建立新客戶」這類聚焦決策或短表單場景,要用 Dialog。Dialog 是居中 modal(maxWidth 400–720),讓文字決策強制聚焦;若改用 FileViewer,使用者會因為 fullscreen dark 底感到突兀(「看圖」的視覺期待沒出現)"
+          note="「確定要刪除專案?」「建立新客戶」這類聚焦決策或短表單場景,要用 Dialog。Dialog 是居中 modal(寬度檔位 400–960),讓文字決策強制聚焦;若改用 FileViewer,使用者會因為 fullscreen dark 底感到突兀(「看圖」的視覺期待沒出現)"
         >
           <Dialog>
             <DialogTrigger asChild>
@@ -131,7 +131,7 @@ export const UsageGuidance: Story = {
                 永久刪除專案
               </Button>
             </DialogTrigger>
-            <DialogContent height="hug" maxWidth={440}>
+            <DialogContent height="hug" width="sm">
               <DialogHeader>
                 <DialogTitle>確定要永久刪除此專案?</DialogTitle>
               </DialogHeader>
@@ -164,7 +164,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="siblings">
         <TutorialRule
           title="判準:要讓使用者看什麼?"
-          note="看文字決策 / 表單欄位 → Dialog(居中、maxWidth、light 底)。看媒體 content(圖 / PDF / 影片 / 設計稿)→ FileViewer(fullscreen、dark 底、toolbar chrome)"
+          note="看文字決策 / 表單欄位 → Dialog(居中、寬度檔位、light 底)。看媒體 content(圖 / PDF / 影片 / 設計稿)→ FileViewer(fullscreen、dark 底、toolbar chrome)"
         >
           <ExampleCaption>FileViewer:Jira 附件、Notion 配圖、Figma design、Gmail 附件、產品 gallery</ExampleCaption>
           <ExampleCaption>Dialog:建立 / 編輯 / 刪除確認、付款確認、登出多裝置</ExampleCaption>

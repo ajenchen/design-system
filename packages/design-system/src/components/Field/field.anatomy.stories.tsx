@@ -24,7 +24,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>Field 是表單欄位的佈局容器,由 4 個 slot 組成。Field 本身不擁有資料邏輯,只管 label/control/description/error 的空間關係 + 透過 context 把 mode/disabled/required/invalid/id 傳給子元件。</Desc>
-        <div className="border border-border rounded-lg p-6 max-w-xl bg-muted/20">
+        <div className="border border-border rounded-md p-6 max-w-xl bg-muted/20">
           <FieldGroup>
             <Field required>
               <FieldLabel>電子郵件</FieldLabel>
@@ -67,7 +67,7 @@ export const Overview: Story = {
             <tbody>
               {[
                 ['orientation', "'vertical' | 'horizontal'", "'vertical'", 'label 位置:上方 / 左方'],
-                ['labelWidth', 'string', "'auto'", 'horizontal 模式 label 寬度'],
+                ['labelWidth', 'number | string', "'auto'", 'horizontal 模式 label 寬度(數字 = px;FieldGroup 用同名 labelWidth 統一整組)'],
                 ['required', 'boolean', 'false', '顯示 * 星號 + context.required'],
                 ['invalid', 'boolean', 'false', 'error 狀態 + context.invalid(觸發 aria-invalid)'],
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
@@ -225,7 +225,7 @@ export const OrientationMatrix: Story = {
         <H3>Horizontal — label 在控件左方</H3>
         <Desc>Settings / 詳情頁場景。label 寬度(labelWidth,預設 auto 由內容撐開)對齊縱向軸,節省垂直空間。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-2xl">
-          <FieldGroup horizontalLabelWidth="120px">
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required>
               <FieldLabel>電子郵件</FieldLabel>
               <Input type="email" defaultValue="user@example.com" />
@@ -350,7 +350,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>組合:Required + Horizontal + Size=md(settings 典型場景)</H3>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-2xl">
-          <FieldGroup horizontalLabelWidth="120px">
+          <FieldGroup labelWidth={120}>
             <Field orientation="horizontal" required size="md">
               <FieldLabel>姓名</FieldLabel>
               <Input defaultValue="Ada Chen" />
@@ -505,8 +505,8 @@ export const FieldGroupBehavior: Story = {
           </div>
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">horizontal orientation</div>
-            {/* horizontalLabelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup horizontalLabelWidth cascade」硬規則)*/}
-            <FieldGroup horizontalLabelWidth="120px">
+            {/* labelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup labelWidth cascade」硬規則)*/}
+            <FieldGroup labelWidth={120}>
               <Field orientation="horizontal" required>
                 <FieldLabel>姓名</FieldLabel>
                 <Input placeholder="請輸入姓名" />
@@ -537,7 +537,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-[var(--layout-space-tight)]">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"Field 本身只是排版容器,不接管任何鍵盤事件——它把焦點、鍵盤與互動全都交給裡面的輸入控件(Input / Select / 日期選擇器等)。\n\n  鍵盤操作  :\n\n- Tab 鍵會把焦點移進裡面的輸入控件,使用者直接操作該控件,不需要滑鼠。\n- 取消編輯、按 Esc 收起等行為,由控件本身或放置它的容器(例如表格儲存格)決定,Field 不負責。\n\n  焦點指示  :欄位家族的焦點指示是「欄位邊框轉成主色」(1px),不另外畫一圈外框 —— 不論在裡面打字、還是選單關著時焦點停在欄位本身,都長同一個樣子。唯讀欄位的邊框是透明的、沒有顏色可轉,才改用整套設計系統共用的外框(往外 2px)。Field 不另外搶焦點。\n\n  驗證標準  :Storybook 的無障礙檢查面板應該沒有任何嚴重問題;只用鍵盤就能完整操作;文字對比至少 4.5:1、介面元素至少 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"Field 本身只是排版容器,不接管任何鍵盤事件——它把焦點、鍵盤與互動全都交給裡面的輸入控件(Input / Select / 日期選擇器等)。\n\n  鍵盤操作  :\n\n- Tab 鍵會把焦點移進裡面的輸入控件,使用者直接操作該控件,不需要滑鼠。\n- 取消編輯、按 Esc 收起等行為,由控件本身或放置它的容器(例如表格儲存格)決定,Field 不負責。\n\n  焦點指示  :欄位家族的焦點指示是「欄位邊框轉成主色」(1px),不另外畫一圈外框 —— 不論在裡面打字、還是選單關著時焦點停在欄位本身,都長同一個樣子。唯讀欄位也是同一種邊框轉色,但只在用鍵盤 Tab 進來時出現,滑鼠點下去不變。Field 不另外搶焦點。\n\n  驗證標準  :Storybook 的無障礙檢查面板應該沒有任何嚴重問題;只用鍵盤就能完整操作;文字對比至少 4.5:1、介面元素至少 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

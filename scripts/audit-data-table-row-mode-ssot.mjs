@@ -3,9 +3,9 @@
 //
 // 2026-05-12 Round 4.5 codify(per user 拍板「下次遇到類似場景可以完美使用」):
 //   任何 cell-render wrapper(items-X / row-conditional class)必 consume `effectiveAutoRowForCell`
-//   per-row state,**禁** consume global `autoRowHeight` prop。
+//   per-row state,**禁** consume 整張表的 `autoRowHeight`(data-table.tsx 內部布林 = 對外參數 `rowHeight === 'hug'`;2026-11-17 前對外參數就叫 autoRowHeight)。
 //
-//   為何:`autoRowHeight` 是 table 級 prop;row 可能 per-row 撐高(rowHasAnyError → effectiveAutoRow=true),
+//   為何:`autoRowHeight` 是 table 級設定;row 可能 per-row 撐高(rowHasAnyError → effectiveAutoRow=true),
 //   此時該 row 內所有 cells 該全 top-align,不論 global autoRowHeight 設啥。
 //   Round 4 修了 line 1559 non-error wrapper;Round 4.5 補修 line 1512 error-cell flex-col 內部 wrapper
 //   (codex M31 dual-track 抓漏)。本 audit script 機械化攔未來再 regress。
@@ -14,6 +14,13 @@
 // + AG Grid `rowHeight: 'auto'` per-row dynamic — per-row state 永遠 override global table-level prop。
 //
 // Run: `node scripts/audit-data-table-row-mode-ssot.mjs`
+//
+// @gate-contract
+//   保證: data-table.tsx 從 `const effectiveAutoRowForCell =` 定義行起、到它所在的大括號作用域結束為止(格子渲染範圍),
+//         沒有任何一行用整張表的 `autoRowHeight ? '…'` 三元式決定格子對齊(同一行或上一行有 @row-mode-global-allow 的除外)
+//   紅: 範圍內出現 `autoRowHeight ? '` → 印出 data-table.tsx:行號 並 exit 1;找不到錨點、或算出來的範圍不到 40 行
+//       (範圍塌掉時的「無違規」是零證據)→ 同樣 exit 1;配對測試把第一處 effectiveAutoRowForCell 三元式換成 autoRowHeight,本閘必須紅
+//   綠: 現行 data-table.tsx 0 筆時 exit 0;只讀這一個檔,不讀時間、不開瀏覽器,重複跑結果相同
 
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'

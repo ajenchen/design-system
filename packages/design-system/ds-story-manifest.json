@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-04T21:28:59.130Z"
+    "generatedAt": "2026-11-17T02:42:44.790Z"
   },
   "components": {
     "accordion": {
@@ -584,12 +584,15 @@
           "design-system-components-datatable-展示--selection-disabled-rows",
           "design-system-components-datatable-展示--filter-panel-empty",
           "design-system-components-datatable-展示--filter-panel-states",
+          "design-system-components-datatable-展示--sort-panel-states",
+          "design-system-components-datatable-展示--column-visibility-panel-states",
           "design-system-components-datatable-展示--filter-panel-labels-and-limit",
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
           "design-system-components-datatable-展示--roadmap-perf-budget",
-          "design-system-components-datatable-展示--with-pagination"
+          "design-system-components-datatable-展示--with-pagination",
+          "design-system-components-datatable-展示--header-actions-fixture"
         ],
         "設計規格": [
           "design-system-components-datatable-設計規格--overview",
@@ -720,8 +723,12 @@
           "design-system-components-dialog-展示--destructive",
           "design-system-components-dialog-展示--list-body",
           "design-system-components-dialog-展示--header-actions",
+          "design-system-components-dialog-展示--large-with-table",
+          "design-system-components-dialog-展示--extra-large-two-column",
           "design-system-components-dialog-展示--with-tabs-in-header",
           "design-system-components-dialog-展示--open-snapshot",
+          "design-system-components-dialog-展示--long-content-open",
+          "design-system-components-dialog-展示--list-body-open",
           "design-system-components-dialog-展示--focus-trap-with-concurrent-overlay",
           "design-system-components-dialog-展示--focus-trap-control-no-dialog"
         ],
@@ -739,7 +746,9 @@
         ]
       },
       "openSnapshotIds": [
-        "design-system-components-dialog-展示--open-snapshot"
+        "design-system-components-dialog-展示--open-snapshot",
+        "design-system-components-dialog-展示--long-content-open",
+        "design-system-components-dialog-展示--list-body-open"
       ],
       "exception": null
     },
@@ -1857,5 +1866,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 1025
+  "totalStories": 1032
 }

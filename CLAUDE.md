@@ -9,6 +9,7 @@
 僅在編對應 path 檔案時載入,降低每 session context 成本(其他 agent 依 AGENTS.md「Rule Index」在編對應檔案前主動讀**同一份檔案**):
 
 - `.claude/rules/meta-patterns.md` — active M-rules(always loads,fundamental;count is derived by governance counters)
+- `.claude/rules/work-process.md` — 多包 / 多步工作流程(always loads;generated adapter view of the canonical rule)
 - `.claude/rules/spec-rules.md` — paths: `**/*.spec.md` + `packages/design-system/**`
 - `.claude/rules/ui-development.md` — paths: `**/*.tsx` + `**/*.ts`
 - `.claude/rules/story-rules.md` — paths: `**/*.stories.tsx`

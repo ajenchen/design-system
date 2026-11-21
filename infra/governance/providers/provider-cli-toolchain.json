@@ -6,7 +6,7 @@
   "packageLock": {
     "path": "infra/governance/providers/provider-cli-toolchain.package-lock.json",
     "consumerPath": "governance/provider-cli-toolchain.package-lock.json",
-    "sha256": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
+    "sha256": "d0a5fceebe21101b67848e7ace1856e9bc35f6532e4ba4deaf64462fe4fc81bb",
     "lockfileVersion": 3,
     "rootName": "@qijenchen/provider-cli-toolchain",
     "rootVersion": "0.0.0",
@@ -19,37 +19,37 @@
       {
         "lockPath": "node_modules/@anthropic-ai/claude-code",
         "platforms": ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
-        "treeSha256": "1dfd2f54a4b271a8eaef8fa3ee762ac99f2ad1ee819a9519478b18d3b8ac8699",
+        "treeSha256": "a2da91495d46bd28f653a33aaa5dee3181254beda82cf8e93134967d9f625432",
         "fileCount": 7,
-        "totalBytes": 165282
+        "totalBytes": 190269
       },
       {
         "lockPath": "node_modules/@anthropic-ai/claude-code-darwin-arm64",
         "platforms": ["darwin-arm64"],
-        "treeSha256": "c2ae47e35e9818ad32968d4cc800eed574ed5e0d30ff7cd9b64a45ca44e7c1a4",
+        "treeSha256": "9f3025414bc543a387947fff399e6360c46d471f2267f3cf74c4fcd9b1f0329d",
         "fileCount": 4,
-        "totalBytes": 247124913
+        "totalBytes": 310114753
       },
       {
         "lockPath": "node_modules/@anthropic-ai/claude-code-darwin-x64",
         "platforms": ["darwin-x64"],
-        "treeSha256": "5a924450c9c1282a761c0269894a2e30086e11eb3f0c523fe6fa3197dc31ecbe",
+        "treeSha256": "38619705c593c060231a81ad7587fef79ab0c392265bfa30d87accb23d1eec27",
         "fileCount": 4,
-        "totalBytes": 256540617
+        "totalBytes": 324381881
       },
       {
         "lockPath": "node_modules/@anthropic-ai/claude-code-linux-arm64",
         "platforms": ["linux-arm64"],
-        "treeSha256": "cfaf62cc5c19186a351e5490a545eb94a7a899093320e6f2a41a67ba078fba68",
+        "treeSha256": "8f97cc9d2f682f17236cd2ea6e8da286d578b23ff995c9de1d134e98e39c8cf8",
         "fileCount": 4,
-        "totalBytes": 262061554
+        "totalBytes": 328460138
       },
       {
         "lockPath": "node_modules/@anthropic-ai/claude-code-linux-x64",
         "platforms": ["linux-x64"],
-        "treeSha256": "3c862b2824ad072a7cb0af91b3b20864f5defb0d8ce15472081cf6a8ade400c9",
+        "treeSha256": "b32b31106c2f7b0e30ce0d36efcbe348f60ec7af44a326831b7cff467247fa05",
         "fileCount": 4,
-        "totalBytes": 265240122
+        "totalBytes": 328262586
       },
       {
         "lockPath": "node_modules/@openai/codex",
@@ -122,7 +122,7 @@
     {
       "providerId": "claude-code",
       "packageName": "@anthropic-ai/claude-code",
-      "version": "2.1.215",
+      "version": "2.1.316",
       "executable": "claude",
       "binKind": "platform-native",
       "packageBin": "bin/claude.exe",

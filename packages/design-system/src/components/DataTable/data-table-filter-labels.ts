@@ -9,6 +9,12 @@ type RelativeDateValue = (typeof DATE_RELATIVE_OPTIONS)[number]['value']
 export interface DataTableFilterPanelLabels {
   title: string
   resetToDefault: string
+  /** 「恢復預設」按下後的 polite 播報 */
+  resetToDefaultDone: string
+  /** 「加篩選」那一排最右的「清除全部」 */
+  clearAll: string
+  /** 「清除全部」按下後的 polite 播報 */
+  clearAllDone: string
   close: string
   where: string
   and: string
@@ -48,6 +54,9 @@ export interface DataTableFilterPanelLabels {
 export const DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS: DataTableFilterPanelLabels = {
   title: '篩選',
   resetToDefault: '恢復預設',
+  resetToDefaultDone: '已恢復預設篩選條件',
+  clearAll: '清除全部',
+  clearAllDone: '已清除全部篩選條件',
   close: '關閉',
   where: 'Where',
   and: 'And',

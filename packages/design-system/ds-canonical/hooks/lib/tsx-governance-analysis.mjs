@@ -59,7 +59,7 @@ const openingOf = (node) => (
 )
 
 function analyzeHeaderWithTabsBorder() {
-  if (hasLeadingLineEscape('header-withtabs-allow')) {
+  if (hasLeadingLineEscape('header-tabs-slot-allow')) {
     process.stdout.write('ESCAPE')
     return
   }
@@ -75,30 +75,23 @@ function analyzeHeaderWithTabsBorder() {
   const isTabs = (opening) => (
     ['Tabs', 'TabsList', 'TabsTrigger'].includes(nameText(opening.tagName))
   )
-  const hasTrueWithTabs = (opening) => {
-    const properties = opening.attributes.properties
-    const items = properties.filter((property) => (
-      ts.isJsxAttribute(property) && property.name.getText(sourceFile) === 'withTabs'
-    ))
-    if (items.length !== 1) return false
-    const item = items[0]
-    const itemIndex = properties.indexOf(item)
-    if (properties.slice(itemIndex + 1).some(ts.isJsxSpreadAttribute)) return false
-    if (!item.initializer) return true
-    return (
-      ts.isJsxExpression(item.initializer)
-      && item.initializer.expression?.kind === ts.SyntaxKind.TrueKeyword
-    )
-  }
-  const containsTabs = (header) => {
+  // 只認這個 header 自己 opening 上的 tabsSlot(JsxAttribute → JsxAttributes → opening);
+  // 別的元素上叫 tabsSlot 的屬性不是合法位置。
+  const isOwnTabsSlot = (node, headerOpening) => (
+    ts.isJsxAttribute(node)
+    && node.name.getText(sourceFile) === 'tabsSlot'
+    && node.parent?.parent === headerOpening
+  )
+  // 掃 header 底下(不進巢狀 header —— 它自己判)找 Tabs;skipSlot = true 時跳過 header 自己的 tabsSlot 值。
+  const findTabs = (header, headerOpening, skipSlot) => {
     let found = false
     const visit = (node) => {
-      if (node !== header) {
-        const opening = openingOf(node)
-        if (opening && isHeader(opening)) return
-        if (opening && isTabs(opening)) found = true
-      }
-      if (!found) ts.forEachChild(node, visit)
+      if (found) return
+      if (skipSlot && isOwnTabsSlot(node, headerOpening)) return
+      const opening = openingOf(node)
+      if (opening && isHeader(opening)) return
+      if (opening && isTabs(opening)) { found = true; return }
+      ts.forEachChild(node, visit)
     }
     ts.forEachChild(header, visit)
     return found
@@ -108,9 +101,9 @@ function analyzeHeaderWithTabsBorder() {
   let violations = 0
   const visit = (node) => {
     const opening = openingOf(node)
-    if (opening && isHeader(opening) && containsTabs(node)) {
+    if (opening && isHeader(opening) && findTabs(node, opening, false)) {
       applicable += 1
-      if (!hasTrueWithTabs(opening)) violations += 1
+      if (findTabs(node, opening, true)) violations += 1
     }
     ts.forEachChild(node, visit)
   }

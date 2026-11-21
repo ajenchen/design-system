@@ -1,4 +1,3 @@
-// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import { FieldControlGroup } from './field-control-group'
 import { ProductSearchDemo } from './_field-control-group-demo'
@@ -50,7 +49,7 @@ export const UsageGuidance: Story = {
       <UsageSection kind="whenNot">
         <TutorialRule title="❌ 多個欄位上下排列:用 FieldGroup">
           {/* 真的錯誤示範(稽核 M086):姓名與 Email 是兩個獨立欄位,硬接成一組 */}
-          <FieldControlGroup block>
+          <FieldControlGroup width="fill">
             <Input className="flex-1" placeholder="姓名" aria-label="姓名" />
             <Input className="flex-1" placeholder="Email" aria-label="Email" />
           </FieldControlGroup>
@@ -77,7 +76,7 @@ export const ContentGuidelines: Story = {
         <li>裡面的控件同一個尺寸 —— 不混用 sm / md / lg(高度要一致)</li>
         <li>控件各自管寬度 —— 固定寬的下拉 + 撐滿的輸入框是典型組合</li>
         <li>包進 Field 時,尺寸從 Field 自動繼承,控件不另外傳 size</li>
-        <li>可以放的控件:Input / NumberInput / Select / Combobox / DatePicker / Button(對齊 Ant 的限定清單)</li>
+        <li>可以放的控件:Input / NumberInput / Select / Combobox / DatePicker / Button(限定清單,對齊 <a href="https://github.com/ant-design/ant-design/blob/bf317a2426fa5a8465bb54f6d0f6e7825dcf0d01/components/space/index.en-US.md#L64-L74" className="text-primary hover:text-primary-hover font-medium" target="_blank" rel="noreferrer">Ant Space.Compact</a> 的做法)</li>
       </TutorialList>
     </TutorialPage>
   ),
@@ -90,8 +89,8 @@ export const SizeRule: Story = {
       <TutorialRule title="繼承 Field 尺寸 — 包進 Field 當控件">
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
-          <FieldControlGroup block>
-            <Select className="!w-[88px]" options={CODES} defaultValue="+886" aria-label="國碼" />
+          <FieldControlGroup width="fill">
+            <Select width={88} options={CODES} defaultValue="+886" aria-label="國碼" />
             <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
           </FieldControlGroup>
         </Field>
@@ -99,10 +98,10 @@ export const SizeRule: Story = {
       </TutorialRule>
 
       <TutorialRule title="單獨使用時逐一設尺寸 — 篩選列">
-        <FieldControlGroup block>
+        <FieldControlGroup width="fill">
           {/* 逐一設尺寸:每個控件明寫 size(稽核 L032) */}
-          <Select size="sm" className="!w-[140px]" options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
-          <Select size="sm" className="!w-[120px]" options={OPS} defaultValue="contains" aria-label="篩選運算子" />
+          <Select size="sm" width={140} options={FIELDS} defaultValue="name" aria-label="篩選欄位" />
+          <Select size="sm" width={120} options={OPS} defaultValue="contains" aria-label="篩選運算子" />
           <Input size="sm" className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
       </TutorialRule>

@@ -33,6 +33,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  BROWSER_REQUIRED_MARKER, INSTRUMENT_FAIL_MARKER, MISSING_BUILD_MARKER, SKIPPED_ENV_MARKER, STALE_BUILD_MARKER,
+} from './lib/launch-browser.mjs'
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const LAUNCH_BROWSER = join(REPO_ROOT, 'scripts/lib/launch-browser.mjs')
@@ -201,8 +204,43 @@ CASES.forEach(([name, spec, want, why, run = {}], index) => {
   else { console.log(`✗ ${name} —— ${why}\n   exit=${r.status}\n${r.out.split('\n').filter(Boolean).slice(0, 12).map((l) => '   ' + l).join('\n')}`); fail += 1 }
 })
 
+// ── printSelftestLine(2026-11-14,A7 ⑤):selftest 成功行含任何會被 classifyGateRun 讀成標記的字樣 → 丟例外、不印;乾淨的照印 ──
+// 字樣清單不另抄:每一格的字樣用真實的標記常數組出來(檔頭靜態 import;換字 → 這裡跟著換)。
+// 跑法跟上面 CASES 同一種:把呼叫寫成暫存 .mjs(LIB 的絕對路徑用樣板字串帶入,`--lib=` 照樣有效),spawnSync 去跑,
+// 看結束碼與輸出。不在本行程裡 `await import(LIB)` —— 那是動態載入模組,治理 harness 的來源政策禁止
+// (infra/governance/lib/harness-source-inventory.mjs 的 module-loader:dynamic-call;本檔是夜間 harness 的成員,
+// 一違規整個 runner 就被擋下,M37 第九種形狀的錨例同型)。
+// 子行程結束碼:0 = 照印;3 = printSelftestLine 丟了例外(stderr 是例外訊息);4 = lib 沒有匯出 printSelftestLine。
+const PRINT_THREW = 3
+const PRINT_NO_EXPORT = 4
+const MARKERS = [INSTRUMENT_FAIL_MARKER, BROWSER_REQUIRED_MARKER, MISSING_BUILD_MARKER, STALE_BUILD_MARKER, SKIPPED_ENV_MARKER]
+function runPrintSelftestLine(line) {
+  writeFileSync(join(work, 'scripts', 'print-selftest-line.mjs'), `
+import * as lib from ${JSON.stringify(LIB)}
+if (typeof lib.printSelftestLine !== 'function') { process.stderr.write('lib 沒有匯出 printSelftestLine'); process.exit(${PRINT_NO_EXPORT}) }
+try { lib.printSelftestLine(${JSON.stringify(line)}) } catch (error) { process.stderr.write(String(error instanceof Error ? error.message : error)); process.exit(${PRINT_THREW}) }
+process.exit(0)
+`)
+  const r = spawnSync(process.execPath, ['--', 'scripts/print-selftest-line.mjs'], { cwd: work, encoding: 'utf8' })
+  return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' }
+}
+const PRINT_CASES = [
+  ['乾淨的成功行照印', '✓ 對照組(假建置):以儀器失效的標記與結束碼 2 結束', true],
+  ...[...MARKERS, 'storybook-static missing', 'Failed to launch']
+    .map((marker, i) => [`含第 ${i + 1} 種標記字樣 → 丟例外`, `✓ 對照組成立 ${marker}`, false]),
+]
+for (const [name, line, printable] of PRINT_CASES) {
+  const r = runPrintSelftestLine(line)
+  if (r.status === PRINT_NO_EXPORT) { console.log(`✗ printSelftestLine:${name} —— lib 沒有匯出 printSelftestLine`); fail += 1; continue }
+  const threw = r.status === PRINT_THREW
+  const leaks = threw && MARKERS.some((m) => r.stderr.includes(m))
+  const ok = printable ? (r.status === 0 && r.stdout === `${line}\n`) : (threw && r.stdout === '' && !leaks)
+  if (ok) console.log(`✓ printSelftestLine:${name}`)
+  else { console.log(`✗ printSelftestLine:${name} —— exit=${r.status}、印出 ${JSON.stringify(r.stdout)}、例外 ${threw ? '有' : '無'}${leaks ? '(例外訊息本身含標記字樣)' : ''}${!threw && r.status !== 0 ? `\n   ${r.stderr.split('\n').filter(Boolean).slice(0, 6).join('\n   ')}` : ''}`); fail += 1 }
+}
+
 rmSync(work, { recursive: true, force: true })
 console.log(fail
-  ? `\n✗ ${fail} / ${CASES.length} 項不符${libArg ? `(lib = ${LIB})` : ''}`
-  : `\n✅ gate-selftest-meta PASS(${CASES.length} 格:缺前置 / 環境 / 必需瀏覽器 / 儀器失效 / 真紅 / 假綠 全對)`)
+  ? `\n✗ ${fail} / ${CASES.length + PRINT_CASES.length} 項不符${libArg ? `(lib = ${LIB})` : ''}`
+  : `\n✅ gate-selftest-meta PASS(${CASES.length} 格:缺前置 / 環境 / 必需瀏覽器 / 儀器失效 / 真紅 / 假綠 全對;printSelftestLine ${PRINT_CASES.length} 格)`)
 process.exit(fail ? 1 : 0)

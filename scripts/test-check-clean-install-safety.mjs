@@ -3,6 +3,13 @@
 //
 // Gate 斷言 published package 無 preinstall/install/postinstall。本 meta-test 在 design-system package.json
 // 注入一個 postinstall script → gate 必 exit 1(baseline PASS → 注入 FAIL → 還原 PASS)。
+//
+// 2026-11-20 起由 ci.yml verify-static 直呼(knowledge-prune WP-21),原本只在夜間 harness 跑。
+//
+// @gate-contract
+//   保證: check-clean-install-safety.mjs(--check) 在該紅的時候會紅 —— 在 packages/design-system/package.json 的 scripts 注入 postinstall,閘必須 exit 非 0;注入前與還原後同一支閘都必須 exit 0
+//   紅: 現況就紅(repo 已有真違規)、注入後閘仍 exit 0(偵測失效)、或還原後不綠 → 印出是哪一步並 exit 1
+//   綠: 三步都照預期時 exit 0;package.json 在 finally 寫回原文,不連網,不讀時間,重複跑結果相同
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
