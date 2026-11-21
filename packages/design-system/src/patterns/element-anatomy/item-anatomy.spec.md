@@ -416,7 +416,7 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 
 ## 連續 item 貼邊合法性(2026-04-22 canonical)
 
-**核心原則**(user 明示):連續 item 之間是否需要 gap,取決於**該 item 的永久視覺層會不會在視覺上跟相鄰 item 相連**——不是所有 item 都需要 gap,也不是所有 item 都可以貼邊。
+**核心原則**(user 明示):連續 item 之間是否需要 gap,取決於**該 item 的永久視覺層會不會在視覺上跟相鄰 item 相連**——不是所有 item 都需要 gap,也不是所有 item 都可以貼邊。**卡片列要不要有間距**(2026-11-17):user 問「卡片列的部分要看情況吧？卡片設計講求視覺對稱才有韻律，反而可能會很類似篩選條件那邊的條件排版」(問句),同日 r12 決策頁 AI 寫的卡片三種分法 user 回「都照你建議，你的理由合理」(對話紀錄 96d711a5-00d3-43ef-b37c-7309237e0e6c.jsonl:34266):各放一份獨立內容的卡片、元件裡的一串小卡(FileItem 見下方對照表)、同一題的選項卡(`../../components/AgentPanel/agent-decision-card.spec.md`「選項卡」)三種**都有間距、沒有一種貼齊** → 下方公式 1 不變;間距值只住 `../../tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題區 → 內容」第 3 題與各元件規格,本段不重述。
 
 ### 公式(3 條)
 
@@ -472,7 +472,7 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 建新 row/item 元件時,開 spec 必自問:
 
 1. 本元件**永久**視覺是:(a) standalone card/pill(bg + radius + inset)/ (b) flush full-width / (c) 完全 transparent?
-2. 若 (a) → spec 必明寫「list wrapper 必 gap ≥ Xpx」+ rationale
+2. 若 (a) → spec 必明寫「list wrapper 必 gap ≥ Xpx」+ rationale —— 這題就是原 meta-patterns M16「訂 standalone card/pill 容器 canonical 必同步訂 multi-instance gap canonical」(2026-11-22 `@watch` 觀察期 0 筆新 bug,降成本題;原列與逐筆判定在 `ds-canonical/skills/knowledge-prune/references/meta-pattern-history.md`)。機械面:FileItem 清單外層由 hook `check_item_list_gap.sh` 寫入當下擋(值照 `../../components/FileItem/file-item.spec.md`「List wrapper canonical」);其他卡片列靠 design-system-audit dim 21
 3. 若 (b)(c) → spec 寫「list wrapper 可 0 gap」+(b)列出 separator affordance 來源
 
 ### 反例(本 session 修正)

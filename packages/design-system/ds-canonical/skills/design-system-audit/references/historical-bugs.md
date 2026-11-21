@@ -245,7 +245,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 ### M15 — Product UI flow 必須 visual-audit coverable
 2026-04-22 Sheet / FileViewer 過去只有 trigger button stories,visual-audit 跑 `--scope=component:Sheet` 只截到 trigger 未 open state,被 user 點破「能抓到點擊打開的 modal 嗎?」才補 OpenSnapshot。若 M15 存在,新元件建立時就該有 OpenSnapshot。
 
-### M16 — Standalone card/pill 必同步訂 list gap
+### M16 — Standalone card/pill 必同步訂 list gap(2026-11-22 起是 item-anatomy.spec.md「連續 item 貼邊合法性」子規則,不再是 M-rule)
 2026-04-22 FileItem rich `border card` + compact `bg-secondary` 先前已訂 canonical,但 spec 只寫單 item 視覺沒寫連續 item gap,導致 file-upload.stories.tsx rich list 加 `border rounded-lg overflow-hidden` 強制邊框相黏、compact list 無 gap bg 塊連一大片。User 貼圖糾正才發現。世界級 benchmark:Polaris / Material M3 / Atlassian / Ant / Carbon / Apple HIG 6 家共識 — default flush row 0 gap + separator;standalone card stack 才需 gap。
 
 ### M17 — SSOT 必可傳播(非僅 markdown)

@@ -445,7 +445,7 @@ function analyzeChromeHeaderHandcraft() {
 
 // FileItem 清單的外層(list wrapper)—— `check_item_list_gap.sh` 的量法。
 // SSOT:components/FileItem/file-item.spec.md「List wrapper canonical」(gap 表)+「List wrapper 本身不加視覺」;
-// 規則的原理在 patterns/element-anatomy/item-anatomy.spec.md「連續 item 貼邊合法性」(meta-patterns M16)。
+// 規則的原理在 patterns/element-anatomy/item-anatomy.spec.md「連續 item 貼邊合法性」(原 meta-patterns M16)。
 // 外層 = FileItem 往上第一個 JSX 元素;中間只穿過 `{…}`、括號、條件式、`&&`、Fragment 與 `.map` / `.flatMap` 的 callback
 // (穿過 callback = 這一筆會重複出現)。FileItem 寫在別的函式裡(例:renderRow 再被呼叫)→ 認不出外層,不判。
 // 每個外層各自判,一行一筆:I = 認出的外層、E = 該外層有豁免標記、V = 違規(hook 只看 V);外層開頭那一行或緊接上一行有

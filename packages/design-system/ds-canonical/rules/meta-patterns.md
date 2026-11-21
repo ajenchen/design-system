@@ -1,4 +1,4 @@
-# Meta-Pattern 預警(32 active M-rules)
+# Meta-Pattern 預警(31 active M-rules)
 
 **mindset #6 的具體化**。每條吸收數十個具體 bug,是失敗記憶索引上游。任務前先過全部 M-rules(**權威清單見下方 cluster 表,本行不重述** —— 同一份列舉出現三處必然漂移;2026-09-21 新增 M37 時這裡就沒跟上,而 counter 只比數字不比清單所以零訊號)。
 
@@ -6,7 +6,7 @@
 
 ## 2026-05-10 cluster cross-link(per codex Q-13 deep prune audit + 2026-05-22 fold update)
 
-32 M-rules(M1-M32 + M36 + M37,M21/M27/M33/M34/M35 retired)分 6 cluster(舉一反三 grouping):
+31 M-rules(M1-M32 + M36 + M37,M16/M21/M27/M33/M34/M35 retired)分 6 cluster(舉一反三 grouping):
 
 | Cluster | M-rules | 共同主軸 |
 |---|---|---|
@@ -15,9 +15,9 @@
 | **C. Auto-integrate pipeline** | M14 / M19 / M31 | 對話結論 5-layer / trigger phrase auto-pipeline / claude-codex 5-step |
 | **D. Verify / similar-bug / visual coverage** | M10 / M13 / M15 | proactive scan / user 第 2 次截圖 / visual-audit-coverable |
 | **E. Propose-time discipline** | M18(含 M21 子規則)| M18 自檢題 / 新元件抽象前 prop variant test |
-| **F. Sharp invariants(各自獨立)** | M2 / M3 / M4 / M5 / M6 / M7(含 M34 子規則)/ M9 / M11 / M12 / M16@watch / M17 / M20(含 M33 子規則)/ M24 / M25 / M28 / M32 / M36 / M37 | sharp invariant(M30 歸 cluster A,曾誤雙列) |
+| **F. Sharp invariants(各自獨立)** | M2 / M3 / M4 / M5 / M6 / M7(含 M34 子規則)/ M9 / M11 / M12 / M17 / M20(含 M33 子規則)/ M24 / M25 / M28 / M32 / M36 / M37 | sharp invariant(M30 歸 cluster A,曾誤雙列) |
 
-`@watch` 標記(2026-05-15)= 該 M-rule 目前 absorbs 1-2 bugs(charter 要 ≥3)。1 quarter 觀察:無新 bug → demote 為既有 M-rule 子規則;有新 bug → 升 sharp keep。判法(怎麼數觀察期內提到它的 commit、先跑對照查詢)→ `skills/knowledge-prune/references/prune-dimensions-d5-d10.md`「D3 補充 — @watch 判法」;2026-11-21 那次判定(M25 升 sharp keep、M21 併入 M18)的逐筆依據在 `meta-pattern-history.md`。歷次合併 / 降級分析(2026-05-10 Task #19 / #20、2026-05-22 fold prune、skills 數量評估)不是規則本身,搬到 `skills/knowledge-prune/references/meta-pattern-history.md`(2026-11-17)。
+`@watch` 標記(2026-05-15)= 該 M-rule 目前 absorbs 1-2 bugs(charter 要 ≥3)。1 quarter 觀察:無新 bug → demote 為既有 M-rule 子規則;有新 bug → 升 sharp keep。判法(怎麼數觀察期內提到它的 commit、先跑對照查詢)→ `skills/knowledge-prune/references/prune-dimensions-d5-d10.md`「D3 補充 — @watch 判法」;2026-11-21(M25 升 sharp keep、M21 併入 M18)與 2026-11-22(M16 降成 item-anatomy.spec.md 子規則)兩次判定的逐筆依據在 `meta-pattern-history.md`。歷次合併 / 降級分析(2026-05-10 Task #19 / #20、2026-05-22 fold prune、skills 數量評估)不是規則本身,搬到 `skills/knowledge-prune/references/meta-pattern-history.md`(2026-11-17)。
 
 | # | Meta-Principle | 能吸收的 bug 類型(舉例,非窮舉) |
 |---|---|---|
@@ -36,7 +36,6 @@
 | **M13** | **User 第 2 次提相關問題 → 自動截圖 verify**。當 user 就同一視覺 / 行為主題第 2 次問 / 糾正,AI 必 invoke 截圖 verify(`visual-audit.mjs --scope=component:XXX`)。第 3 次才 verify = 違反。**Corollary**:user 指定「所有 X 都要 Y」,同 session 全部做完 + 建 hook 防線。 | avatar-NameCard migration 分批拖延 user 第 2 次催才全改 |
 | **M14** | **對話結論 → AUTO integrate pipeline**(不等 user 催)。每次 canonical / 設計決策 / 新 rule 結論時必執行 5-layer pipeline ≥ 3 層落地:M8 benchmark / SSOT home 識別 / spec / code / hook / AGENTS.md / memory / 驗證。User 問「有沒有整合到 X」= M14 violation。**Governance auto-trigger**:`session_start_governance_check.sh` 檢查 hook / memory / AGENTS.md / 上次 prune 達標 → 自動 inject /knowledge-prune directive(hook 數與 memory 索引先出 soft 提示、到 hard cap 升 BLOCKER;開場檔行數與上次 prune 天數只有 BLOCKER;**deep-audit 收尾例外 = 必自動跑、禁問 user**,SSOT → `design-system-audit` SKILL「Phase 4.5」Deep mode,2026-06-11 user 糾正 codify)。**數值 SSOT**:開場檔總行數 / hook 數 = `session_start_governance_check.sh`(檔頭「Checks + thresholds」註解 + Check 1 / 7);memory 索引上限 = `governance/memory/contract.json` 的 `maxIndexEntries`(session_start Check 8 與 CI 讀同一份);各檔行數上限 = `check_file_size_budget.sh` case 表;本 M-rule 不重述,避免 drift。 | chrome-header / dismiss / hoverCard 每個都 user 提醒才整合 |
 | **M15** | **Product UI flow 必須 visual-audit coverable**。任何 stakeholder-facing flow 必含 OpenSnapshot 類 stories(`defaultOpen` / `useState(true)` / `play()`)。禁留「需真人點擊才能看到的 state」未截圖。 | Sheet / FileViewer 只截 trigger 缺 OpenSnapshot |
-| **M16** | **訂 standalone card/pill 容器 canonical 必同步訂 multi-instance gap canonical**(`@watch` 2026-05-22)。3 條公式:同類 standalone → 必 gap;同類 permanent flush → 0 gap OK;混合語言 → 必取最保守 gap。Hook `check_item_list_gap.sh` 擋 + audit dim verify。**@watch 2026-05-22**:單 bug source(FileItem rich/compact)— 1 quarter 觀察是否 absorb ≥3 同類 bug,否則 demote 為 item-anatomy.spec.md 子規則。 | FileItem rich card + compact bg 連續相連 |
 | **M17** | **SSOT 必可傳播**(非僅 markdown)。同值 / 同公式 hard-code 在 3+ consumer = 必抽成 token / primitive / utility class;**其中「該不該開 token」的門檻只住 `packages/design-system/src/tokens/token-system.spec.md` 判斷流程第 0 題**(跨兩個以上元件要一起變、或隨密度 / 主題切換、或主人以外有人讀它、或設計系統裡別的元件要寫它),本條不重述。**兩層 SSOT 架構**:底層 token(值可調)+ primitive(結構封裝 + 消費 token)。 | mt-0.5 canonical 13 consumer hard-code 假 SSOT |
 | **M18** | **Propose-time 自檢 gate**(題目清單以 `propose-options` SKILL 的 Q0–Q5(含 Q1')為準,本條不寫題數)。列 option / 建議前必 inline 跑 **Q0 Pre-ASK self-verify problem 真存在**(2026-05-18 加,absorbs Sheet/inline-action/SurfaceBody 三題誤判)/ Q1 M8 benchmark / Q1' M23 DS canonical / Q2 M17 SSOT / Q3 Rule-of-3 / Q4 M10 下游吸收 / Q5 Issue 100% mapped。Reject 不列出,通過寫 6-Q 證據表。**Q0 強制動作**:propose 給 user 拍板前必 grep DS-wide + Read 相關 spec.md + Read consumer usage 確認 problem 真存在,沒 grep 就斷言「N 元件缺 X / 該 migrate」= 撤回 propose。SSOT → `packages/design-system/ds-canonical/skills/propose-options/SKILL.md`。Hook `check_propose_discipline.sh` r3 在 Stop 端擋 Q0(scope 僅本輪寫進 planning/report/handoff 開頭目錄的 md 的 cite-presence;chat reply propose 靠 discipline)。**+ Sub-rule M21(2026-11-21 由 @watch 降級併入;判定依據與原列 → `skills/knowledge-prune/references/meta-pattern-history.md`)**:**新元件 / 新 sub-component 抽象前必過 prop variant test**。當新元件名 = `<Existing>+suffix`(Time / Range / Color / Light / Dark / Filled / Outline / Compact / Rich)→ 強烈 signal 應為 prop variant on `<Existing>`。3-test 通過才能分(全失敗 → prop):(1) `<Existing>` 加 prop 無法達成同 DOM/behavior?(2) ≥3 家 world-class DS 用分離元件而非 prop(必 cite source)?(3) value 結構或 contract 真的不同(如 Range = [start, end])?Hook:folded 入 `check_naming_and_abstraction.sh` D.1(P0 BLOCK,2026-05-08 cluster D consolidation;escape @separate-component-rationale)。 | 2026-05-18 Sheet / inline-action / SurfaceBody 三題全錯誤 propose,grep 後 0 個真 gap(詳 historical-bugs.md,含 user verbatim);M21:DateTimePicker 從 DatePicker 拆 → 撤回合併 `<DatePicker showTime>`(2026-05-02);DataTableFilterPanel 5-file → 撤回 sub-file pattern |
 | **M19** | **Trigger phrase auto-pipeline**。「確保 / 一定 / 永不漂移 / ensure / always」trigger → 自動 5-layer ≥ 3 層落地 + M8 + M17 + M10。Substantive 依 `AGENTS.md # 自主執行 canonical` 分權：只有產品／UI／UX SSOT 真取捨 STOP；純工程／治理 canonical 自主落地。SSOT → `packages/design-system/ds-canonical/skills/ensure-canonical/SKILL.md`。 | story splitting 2026-04-26 user 第 N 次強調才落地 |

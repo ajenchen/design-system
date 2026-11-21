@@ -41,12 +41,32 @@
   - 9e7c1204(2026-07-18):ColumnVisibilityPanel 原本 Fragment + 固定 `max-h-72`,判為「真 drift」,改成 root `flex flex-col h-full min-h-0`(M25 viewport-aware scroll chain)。
   - 22ca01e4 / 6e16d3cd(2026-08-12,同一段訊息):DatePicker 兩處 raw `overflow-y-auto` 換 ScrollArea,「M25 壓縮鏈由 flex-1 min-h-0 照傳」。
   - d057fa2f(2026-05-30)、649ad4f1(2026-05-23):hook 引用與缺檔標註整理,不是 bug。
-- M16@watch 不在這次判定。
+- M16@watch 不在這次判定(2026-11-22 另判,見下一節)。
 
 M21 併入前的原列(從 `rules/meta-patterns.md` 搬來,原文不改;放在程式碼框裡,因為單獨一列不是完整的表格):
 
 ```md
 | **M21** | **新元件 / 新 sub-component 抽象前必過 prop variant test**。當新元件名 = `<Existing>+suffix`(Time / Range / Color / Light / Dark / Filled / Outline / Compact / Rich)→ 強烈 signal 應為 prop variant on `<Existing>`。3-test 通過才能分(全失敗 → prop):(1) `<Existing>` 加 prop 無法達成同 DOM/behavior?(2) ≥3 家 world-class DS 用分離元件而非 prop(必 cite source)?(3) value 結構或 contract 真的不同(如 Range = [start, end])?Hook:folded 入 `check_naming_and_abstraction.sh` D.1(P0 BLOCK,2026-05-08 cluster D consolidation;escape @separate-component-rationale)。 | DateTimePicker 從 DatePicker 拆 → 撤回合併 `<DatePicker showTime>`(2026-05-02);DataTableFilterPanel 5-file → 撤回 sub-file pattern |
+```
+
+## 2026-11-22 @watch 判定:M16 降成 item-anatomy.spec.md 子規則(knowledge-prune WP-USER)
+
+判法同上一節,在 68c260ee 上跑 `git log 68c260ee --since=2026-05-22 -F --grep=<M-ID> --format='%h %s'`(起算日 = M16 的 `@watch` 標記日)。
+
+- 對照:同一條指令換成 M37 → 66 筆,拿得到資料,下面的筆數才可信。
+- **M16:4 筆,逐筆讀 commit 訊息,0 筆是新 bug 被 M16 吸收** → 降級。M16 在 cluster F(各自獨立),沒有母規則可併;它自己那一列寫的去處是「demote 為 item-anatomy.spec.md 子規則」,照它:規則句本來就是 `patterns/element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」的「新 item 元件 checklist」第 2 題,三條公式也在同段,該段補「原 M16」與 user 對卡片列的回覆;M-rule 數 32 → 31,分群表與 counters 同一個 commit 改。
+  - fd119a82(2026-05-22):knowledge-prune 自己標 `@watch` 的那一輪,不是 bug。
+  - 0275ee8a(2026-05-26):補建 5 支文件寫了卻不存在的 hook(含 `check_item_list_gap.sh`),不是 bug。
+  - 3fe481a4(2026-05-26):稽核維度 57–61 補登記,不是 bug。
+  - 17453261(2026-11-21):上一節那次判定,訊息寫「M16@watch 不動」,不是 bug。
+  - 另查 `--grep=item_list_gap`(多出 78a096b1 補 hook 測試、82a7681e WP-15b 寫「本包不動」)與 `--grep=貼邊合法性`(0 筆):都不是 bug。
+- 2026-11-17 那一輪(A40 第 22 筆)沒降:當時 user 在問「卡片列的部分要看情況吧？卡片設計講求視覺對稱才有韻律，反而可能會很類似篩選條件那邊的條件排版」(問句;workflow 轉述,沒有對話紀錄行號),M16 管的正是卡片並排的間距,先降會把還沒定的規則寫成定案。同日 r12 決策頁第 1 題(AI 寫的卡片三種分法)與第 2 題,user 回「都照你建議，你的理由合理」(對話紀錄 96d711a5-00d3-43ef-b37c-7309237e0e6c.jsonl:34266)—— 三種都有間距、沒有一種貼齊,公式 1 不變,值住 `tokens/layoutSpace/layoutSpace.spec.md` 規則 3「標題區 → 內容」第 3 題;擋住降級的理由已不在。
+- 同一包的前一個 commit(D4-02)把 `check_item_list_gap.sh` 升為擋,原列裡的「預警」因此改成「擋」;下面的原列是刪掉當下的樣子。
+
+M16 降級前的原列(從 `rules/meta-patterns.md` 搬來;放在程式碼框裡,因為單獨一列不是完整的表格):
+
+```md
+| **M16** | **訂 standalone card/pill 容器 canonical 必同步訂 multi-instance gap canonical**(`@watch` 2026-05-22)。3 條公式:同類 standalone → 必 gap;同類 permanent flush → 0 gap OK;混合語言 → 必取最保守 gap。Hook `check_item_list_gap.sh` 擋 + audit dim verify。**@watch 2026-05-22**:單 bug source(FileItem rich/compact)— 1 quarter 觀察是否 absorb ≥3 同類 bug,否則 demote 為 item-anatomy.spec.md 子規則。 | FileItem rich card + compact bg 連續相連 |
 ```
 
 ## 已退役 M-rule 的 HTML 註解(原 meta-patterns.md 當時第 54–59 行,2026-11-17 knowledge-prune 搬來,原文不改)

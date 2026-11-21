@@ -6,7 +6,7 @@
 #       rich + surface=form(卡片)→ gap-2(8px);compact + surface=form → gap-1(4px);surface=upload-manager → gap-0
 #     與「List wrapper 本身不加視覺」:外層不加 border / rounded-* / overflow-hidden(user 2026-04-22 直指)。
 #   - 原理:patterns/element-anatomy/item-anatomy.spec.md「連續 item 貼邊合法性」(同類 standalone card/pill → 必 gap;
-#     混合 → 取最保守);本 hook 是 meta-patterns M16 的寫入當下機械面。
+#     混合 → 取最保守)。原為 meta-patterns M16,2026-11-22 降成該段子規則(@watch 觀察期 0 筆新 bug)。
 #   - 卡片列要不要有間距、多少:tokens/layoutSpace/layoutSpace.spec.md 規則 3「標題區 → 內容」第 3 題(2026-11-17 r12,
 #     user 採納 AI 寫的卡片三種分法)—— 元件裡的一串小卡由元件自己定,FileItem 的值就是上面那張表。
 #
@@ -23,7 +23,7 @@
 #   - 只擋「這次寫入新增的違規」:寫完的檔與磁碟現況各量一次,寫完多出來的才擋(同族 PreToolUse 只看
 #     這次寫進去的東西,不因既有程式卡住編輯)。2026-11-22 全樹重放:27 支含 FileItem 字樣的 .tsx(含 stories)
 #     認出 17 個清單外層、0 筆違規。
-#   - 範圍:所有 .tsx(含 *.stories.tsx —— M16 的錨例 file-upload.stories.tsx 就在 story 裡;只跳 *.test.tsx)。
+#   - 範圍:所有 .tsx(含 *.stories.tsx —— 原 M16 的錨例 file-upload.stories.tsx 就在 story 裡;只跳 *.test.tsx)。
 #     2026-11-22 前跳過 stories,而且 production 的清單都是 `.map` 只寫一次 <FileItem,所以實際上從沒出聲。
 #   - MenuItem 不判:item-anatomy.spec.md 對照表 MenuItem 是 permanent transparent → 0 gap 合法;
 #     舊版 regex 的 `<MenuItem variant="rich">` 全 DS 不存在。

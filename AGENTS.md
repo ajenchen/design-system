@@ -20,7 +20,7 @@
 
 | 檔案 | 何時必讀 |
 |---|---|
-| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(32 條 M-rules,fundamental)|
+| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(31 條 M-rules,fundamental)|
 | `packages/design-system/ds-canonical/rules/work-process.md` | 每個多包 / 多步任務開工前 |
 | `packages/design-system/ds-canonical/rules/spec-rules.md` | 編任何 `*.spec.md` 或 DS 內容 |
 | `packages/design-system/ds-canonical/rules/ui-development.md` | 編任何 `.tsx`/`.ts`(Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn / public-vs-internal)|

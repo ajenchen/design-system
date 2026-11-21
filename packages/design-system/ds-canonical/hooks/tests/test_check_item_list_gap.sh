@@ -158,7 +158,7 @@ expect_pass "*.test.tsx 跳過"
 run "$FIXTURE/apps/demo/src/notes.md" Write "$(list 'flex flex-col' 'mode="rich"')"
 expect_pass "非 .tsx 跳過"
 
-echo "── stories 也判(M16 錨例就在 story)"
+echo "── stories 也判(原 M16 的錨例就在 story)"
 run "$FIXTURE/apps/demo/src/attachments.stories.tsx" Write "$(list 'flex flex-col border rounded-lg overflow-hidden' 'mode="rich"')"
 expect_block "story 的 rich 清單外框 → 擋" '外層加了外框'
 
