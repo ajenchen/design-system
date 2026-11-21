@@ -387,6 +387,26 @@ export function keepFieldFocusBeforeUnmount(leaving: Element | null | undefined,
   owner.focus({ preventScroll: true })
 }
 
+/** 清空後按鈕隨之卸載 —— 焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)時交給誰(參數 = 那顆按鈕) */
+export type FieldClearFocusOwner = (button: HTMLElement) => HTMLElement | null | undefined
+
+/**
+ * 一鍵清空的「按下」:視需要擋冒泡 → 焦點在這顆按鈕上就先交給 owner(`keepFieldFocusBeforeUnmount`)→ 清。
+ * 順序有意義:先交焦點、再清 —— 清完按鈕就卸載,焦點若還在它身上會掉到 body。
+ * 2026-11-21(LINK-CLEAR)由 5 處各寫一份收成這一支:Field 家族的 ×(`field-clear-button.tsx` FieldClearButton —— Select / Combobox /
+ * DatePicker / 日期區間 / TimePicker / LinkInput)與 AgentPanel 決策卡「清除選取」(文字鈕,只共用按下這一段)。
+ */
+export function pressFieldClear(
+  event: ReactMouseEvent<HTMLElement> | undefined,
+  focusOwner: FieldClearFocusOwner,
+  onClear: () => void,
+  { stopPropagation = false }: { stopPropagation?: boolean } = {},
+): void {
+  if (stopPropagation) event?.stopPropagation()
+  if (event) keepFieldFocusBeforeUnmount(event.currentTarget, focusOwner(event.currentTarget))
+  onClear()
+}
+
 // ── Naked Variant Cell Row-Mode Alignment Propagation ──────────────────────
 // SSOT canonical(M19 / 2026-05-05):cell-as-input naked variant 元件**所有內部
 // wrapper**(`<span>` 包 Avatar+name 等)必 import + apply 此 SSOT,host cell

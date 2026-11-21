@@ -3,15 +3,16 @@
 // @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
 import { flushSync } from 'react-dom'
-import { X, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, type FieldClearFocusOwner } from '@/design-system/components/Field/field-wrapper'
+import { FieldClearButton } from '@/design-system/components/Field/field-clear-button'
 import { Tag } from '@/design-system/components/Tag/tag'
-import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
@@ -205,12 +206,13 @@ const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 
 /**
  * Inline clear button for Select trigger.
- * 共用 SSOT — Native + Custom 兩變體統一消費。差別僅 onClick 內是否 stopPropagation
- * (Custom trigger 是 combobox `<div>`,點 clear 不可冒泡到打開 menu;Native `<select>` 自有原生
+ * Native + Custom 兩變體統一消費;× 本身與「焦點交接 → 清」是 Field 家族共用的一份(`../Field/field-clear-button.tsx` FieldClearButton,
+ * 2026-11-21 LINK-CLEAR 收成一份),這裡只加 Select 自己的外層(`relative z-10`:畫在原生 / tag 模式那層透明 `<select>` 上面)與 label。
+ * 差別僅 onClick 內是否 stopPropagation(Custom trigger 是 combobox `<div>`,點 clear 不可冒泡到打開 menu;Native `<select>` 自有原生
  * 行為,不需 stopPropagation)。
  *
  * 消費的 SSOT:
- * - patterns/element-anatomy/item-anatomy.spec.md → ItemInlineAction(canonical row inline action)
+ * - components/Field/field-clear-button.tsx → FieldClearButton(ItemInlineAction + keepFieldFocusBeforeUnmount)
  */
 function SelectClearButton({
   size,
@@ -224,22 +226,17 @@ function SelectClearButton({
    * 清空後按鈕隨之卸載 —— 焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)時交給誰:Custom = 觸發欄位、Native = 原生 `<select>`
    * (field-wrapper.tsx `keepFieldFocusBeforeUnmount`;2026-09-30 前鍵盤按「清除選取」後焦點落在 body)。
    */
-  focusOwner: (button: HTMLElement) => HTMLElement | null | undefined
+  focusOwner: FieldClearFocusOwner
   stopPropagation?: boolean
 }) {
   return (
     <span className="relative z-10">
-      <ItemInlineAction
+      <FieldClearButton
         size={size}
-        action={{
-          icon: X,
-          label: '清除選取', // i18n-allow: DS default inline-action label
-          onClick: (e) => {
-            if (stopPropagation) e?.stopPropagation()
-            if (e) keepFieldFocusBeforeUnmount(e.currentTarget, focusOwner(e.currentTarget))
-            onClear()
-          },
-        }}
+        label="清除選取" // i18n-allow: DS default inline-action label
+        onClear={onClear}
+        focusOwner={focusOwner}
+        stopPropagation={stopPropagation}
       />
     </span>
   )

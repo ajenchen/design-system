@@ -5,15 +5,16 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { focusAfterCollectionRemoval } from '@/design-system/lib/collection-removal-focus'
 import { useKnownOptions } from '@/design-system/hooks/use-known-options'
-import { X, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { cn } from '@/lib/utils'
 import { overlayIndicatorMotion } from '@/design-system/tokens/motion/overlay-motion'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY, FIELD_TEXT_ENTRY_CURSOR } from '@/design-system/components/Field/field-wrapper'
+import { FieldClearButton } from '@/design-system/components/Field/field-clear-button'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
-import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowTagList, TAG_ROW_CONTAINER_CLASS, TAG_ROW_GAP_PX } from '@/design-system/components/OverflowIndicator/overflow-tag-list'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, moveHighlightToFirst, isRemoveLastValueKey, routeTypingToSearch, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { RemovalStatus, removalValueKey, useRemovalAnnouncement } from '@/design-system/components/SelectMenu/select-menu-removal-status'
@@ -23,7 +24,6 @@ import { fieldOpenProps } from '@/design-system/lib/composite-field-focus'
 import { isImeComposing } from '@/design-system/lib/ime-composition'
 
 // ── constants ───────────────────────────────────────────────────────────────
-
 // Tag 列間距:與單行 Tag 列(overflow-tag-list.tsx)同一個值
 const GAP = TAG_ROW_GAP_PX
 
@@ -853,21 +853,19 @@ function CustomCombobox({
         style={wrap && hasTags ? { height: tagHeight } : undefined}>
         {showClear && (
           <span className="pointer-events-auto">
-            <ItemInlineAction
+            {/* × 與「焦點交接 → 清」是 Field 家族共用的一份(../Field/field-clear-button.tsx,2026-11-21 LINK-CLEAR 收成一份)。
+                按鈕隨清空卸載:焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)先交給 owner(欄位內搜尋框,沒有就是觸發欄位),不掉到 body。 */}
+            <FieldClearButton
               size={size ?? 'md'}
-              action={{
-                icon: X,
-                label: '清除全部', // i18n-allow: DS default inline-action label
-                // 按鈕隨清空卸載:焦點在它身上(鍵盤按下 / Chrome 滑鼠按下)先交給 owner,不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount)。
-                // 一鍵清空連打到一半的關鍵字一起清(兩種搜尋框位置同一條;select-menu.spec.md「搜尋關鍵字何時保留、何時清空」一鍵清空列)
-                onClick: (e) => {
-                  e?.stopPropagation()
-                  keepFieldFocusBeforeUnmount(e?.currentTarget, inputRef.current ?? tagAreaRef.current?.closest<HTMLElement>('[role="combobox"]'))
-                  onChange?.([])
-                  setSearch('')
-                  // 清單開著:反白回第一列(2026-10-07 待辦總帳 K2;開了「不限」時第一列就是「不限」本身)
-                  if (open) moveHighlightToFirst(listboxId)
-                },
+              label="清除全部" // i18n-allow: DS default inline-action label
+              stopPropagation
+              focusOwner={() => inputRef.current ?? tagAreaRef.current?.closest<HTMLElement>('[role="combobox"]')}
+              // 一鍵清空連打到一半的關鍵字一起清(兩種搜尋框位置同一條;select-menu.spec.md「搜尋關鍵字何時保留、何時清空」一鍵清空列)
+              onClear={() => {
+                onChange?.([])
+                setSearch('')
+                // 清單開著:反白回第一列(2026-10-07 待辦總帳 K2;開了「不限」時第一列就是「不限」本身)
+                if (open) moveHighlightToFirst(listboxId)
               }}
             />
           </span>

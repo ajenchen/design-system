@@ -3,12 +3,13 @@
 import * as React from 'react'
 import { escapeLayerProps, isEscapeForControl, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
 import { useCompositeFieldBlur, fieldOpenProps } from '@/design-system/lib/composite-field-focus'
-import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
+import { Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { readonlyTabStopProps, fieldWrapperStyles, fieldWidthVariant, fieldWidthStyle, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { FieldClearButton } from '@/design-system/components/Field/field-clear-button'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
-import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
@@ -745,22 +746,20 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                   </span>
                 )}
                 {showClear && (
-                  <ItemInlineAction
+                  <FieldClearButton
                     size={size ?? 'md'}
-                    action={{
-                      icon: X,
-                      label: '清除日期', // i18n-allow: DS default inline-action label
-                      // Clear = 立刻 commit + 同步 draft(對齊 user 體感 / Ant trigger X 慣例)
-                      // 不走 needConfirm「等確定」語義 — X 在 trigger 上是 standard clear affordance,
-                      // 應立刻清空。dual-state 必同步:value('') + draft(null),否則 popover 開
-                      // 著時 displayValue=draft 仍顯示舊值(see line 318: displayValue = needConfirm ? draft : value)。
-                      onClick: (e) => {
-                        e?.stopPropagation()
-                        // 按鈕隨清空卸載:焦點在它身上先交回欄位(可打字 → 輸入框;否則觸發欄位),不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount)
-                        if (e) keepFieldFocusBeforeUnmount(e.currentTarget, typedInputRef.current ?? e.currentTarget.closest<HTMLElement>('[role="combobox"]'))
-                        onChange?.('')
-                        setDraft(null)
-                      },
+                    label="清除日期" // i18n-allow: DS default inline-action label
+                    stopPropagation
+                    // 按鈕隨清空卸載:焦點在它身上先交回欄位(可打字 → 輸入框;否則觸發欄位),不掉到 body
+                    //(Field 共用的 × ../Field/field-clear-button.tsx,交接 = field-wrapper.tsx keepFieldFocusBeforeUnmount)
+                    focusOwner={(button) => typedInputRef.current ?? button.closest<HTMLElement>('[role="combobox"]')}
+                    // Clear = 立刻 commit + 同步 draft(對齊 user 體感 / Ant trigger X 慣例)
+                    // 不走 needConfirm「等確定」語義 — X 在 trigger 上是 standard clear affordance,
+                    // 應立刻清空。dual-state 必同步:value('') + draft(null),否則 popover 開
+                    // 著時 displayValue=draft 仍顯示舊值(see line 318: displayValue = needConfirm ? draft : value)。
+                    onClear={() => {
+                      onChange?.('')
+                      setDraft(null)
                     }}
                   />
                 )}
@@ -1091,12 +1090,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const handleNow = () => {
       setActive(showTime ? nowIsoDateTime() : dateToIso(new Date()))
     }
-    const handleClearRange = (e?: React.MouseEvent<HTMLButtonElement>) => {
-      e?.stopPropagation()
-      // 按鈕隨清空卸載:焦點在它身上先交給起始日那顆鈕,不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount)
-      if (e) keepFieldFocusBeforeUnmount(e.currentTarget, startBtnRef.current)
-      // Clear = 立刻 commit + 同步 draft(對齊 single mode + user 體感)
-      // dual-state 同步,否則 popover 開著時 displayValue=draft 仍顯示舊 [start, end]
+    // 按鈕隨清空卸載:焦點在它身上先交給起始日那顆鈕,不掉到 body(Field 共用的 × ../Field/field-clear-button.tsx 先交接再呼叫這支)。
+    // Clear = 立刻 commit + 同步 draft(對齊 single mode + user 體感)
+    // dual-state 同步,否則 popover 開著時 displayValue=draft 仍顯示舊 [start, end]
+    const handleClearRange = () => {
       onChange?.([null, null])
       setDraft([null, null])
     }
@@ -1277,13 +1274,12 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
               <TooltipContent>{endTooltipActive ? endText : null}</TooltipContent>
             </Tooltip>
             {showClear && (
-              <ItemInlineAction
+              <FieldClearButton
                 size={size ?? 'md'}
-                action={{
-                  icon: X,
-                  label: '清除日期區間', // i18n-allow: DS default inline-action label
-                  onClick: handleClearRange,
-                }}
+                label="清除日期區間" // i18n-allow: DS default inline-action label
+                stopPropagation
+                focusOwner={() => startBtnRef.current}
+                onClear={handleClearRange}
               />
             )}
             <ItemSuffix className="pointer-events-none">

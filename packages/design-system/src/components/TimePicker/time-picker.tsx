@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { useCompositeFieldBlur, fieldOpenProps } from '@/design-system/lib/composite-field-focus'
-import { X, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
@@ -12,9 +12,9 @@ import {
   fieldWidthStyle,
   bareInputStyles,
   fieldDisplayTextClass,
-  keepFieldFocusBeforeUnmount,
 } from '@/design-system/components/Field/field-wrapper'
-import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { FieldClearButton } from '@/design-system/components/Field/field-clear-button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -428,18 +428,14 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               {displayText}
             </TruncatedText>
             {showClear && (
-              <ItemInlineAction
+              <FieldClearButton
                 size={size ?? 'md'}
-                action={{
-                  icon: X,
-                  label: '清除時間', // i18n-allow: DS default inline-action label
-                  onClick: (e) => {
-                    e?.stopPropagation()
-                    // 按鈕隨清空卸載:焦點在它身上先交回觸發欄位,不掉到 body(field-wrapper.tsx keepFieldFocusBeforeUnmount;2026-09-30 前實測落在 body)
-                    if (e) keepFieldFocusBeforeUnmount(e.currentTarget, e.currentTarget.closest<HTMLElement>('[role="combobox"]'))
-                    onChange?.('')
-                  },
-                }}
+                label="清除時間" // i18n-allow: DS default inline-action label
+                stopPropagation
+                // 按鈕隨清空卸載:焦點在它身上先交回觸發欄位,不掉到 body(Field 共用的 × ../Field/field-clear-button.tsx,
+                // 交接 = field-wrapper.tsx keepFieldFocusBeforeUnmount;2026-09-30 前實測落在 body)
+                focusOwner={(button) => button.closest<HTMLElement>('[role="combobox"]')}
+                onClear={() => onChange?.('')}
               />
             )}
             {EndIconCmp && (

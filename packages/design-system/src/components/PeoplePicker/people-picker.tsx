@@ -143,8 +143,8 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   searchIn?: 'menu' | 'trigger'
   /**
    * 一鍵清空(2026-08-05):X 在 ChevronDown 左,family SSOT → field-controls.spec.md「下拉箭頭」段。
-   * 機械轉發 wrapped Select(single)/ Combobox(multi)的 `clearable` — X 渲染與清空行為 SSOT 在基座
-   * (SelectClearButton / Combobox clear),本 wrapper 不另 render。何時開的判準繼承 select.spec.md
+   * 機械轉發 wrapped Select(single)/ Combobox(multi)的 `clearable` — X 渲染與清空行為 SSOT 在基座(Select「清除選取」/ Combobox
+   * 「清除全部」,都是 Field 共用的那一顆 `../Field/field-clear-button.tsx` FieldClearButton),本 wrapper 不另 render。何時開的判準繼承 select.spec.md
    * 「Clearable」:「無選擇是有效狀態」(選填欄位 / 可清 filter)才開;必填欄位不開。
    */
   clearable?: boolean

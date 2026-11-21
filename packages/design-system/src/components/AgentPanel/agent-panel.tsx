@@ -63,7 +63,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
-import { fieldChromeStyles, keepFieldFocusBeforeUnmount } from '@/design-system/components/Field/field-wrapper'
+import { fieldChromeStyles, keepFieldFocusBeforeUnmount, pressFieldClear } from '@/design-system/components/Field/field-wrapper'
 import {
   SurfaceHeader, SurfaceEyebrow,
   SurfaceFooter,
@@ -1797,15 +1797,16 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     // 「清除選取」(選填單選題,有選取時才渲染;agent-decision-card.spec.md「步進」):這一題回到沒有選取 ——
     // 答案與「其他」打到一半的字一起清(同 Select「Clearable」清除後回到 placeholder、打到一半的關鍵字一起清),錯誤一併清掉(值變了,規則 5)。
     // 鈕隨清除卸載:焦點在它身上(鍵盤 Enter / 空白、Chrome 滑鼠按下)時先交給第一個圓 —— APG radio「沒有選取時,Tab 進群組落在第一個」
-    // (https://www.w3.org/WAI/ARIA/apg/patterns/radio/),不掉到 body;交接走 Field 共用的 keepFieldFocusBeforeUnmount(Select / Combobox / DatePicker 同一支)。
+    // (https://www.w3.org/WAI/ARIA/apg/patterns/radio/),不掉到 body;「焦點交接 → 清」走 Field 共用的那一支(`../Field/field-wrapper.tsx`
+    // pressFieldClear,Select / Combobox / DatePicker / TimePicker / LinkInput 的 × 同一支;2026-11-21 LINK-CLEAR 收成一份)。這顆是文字鈕、不是 ×,只共用按下的那段。
     // 讀屏:焦點換到第一個圓,讀屏念它「未選取」—— 不另加播報(同 Select 一鍵清空;DS 只在焦點不動時才補念,select-menu-removal-status.tsx)。
     const showClear = !multi && Boolean(question.optional) && (answers[question.id] ?? '') !== ''
-    const clearSelection = (event: React.MouseEvent<HTMLButtonElement>) => {
-      keepFieldFocusBeforeUnmount(event.currentTarget, document.getElementById(`${optionIdBase}-${allOptions[0].value}`))
-      clearError(question.id)
-      setAnswers((prev) => ({ ...prev, [question.id]: '' }))
-      setOtherText((prev) => ({ ...prev, [question.id]: '' }))
-    }
+    const clearSelection = (event: React.MouseEvent<HTMLButtonElement>) =>
+      pressFieldClear(event, () => document.getElementById(`${optionIdBase}-${allOptions[0].value}`), () => {
+        clearError(question.id)
+        setAnswers((prev) => ({ ...prev, [question.id]: '' }))
+        setOtherText((prev) => ({ ...prev, [question.id]: '' }))
+      })
     // 選中「其他」= 指標按進輸入格的外框(含輸入格本身),或開始打字(值不是空字串);只用 Tab 經過不改選取 ——
     // 只用鍵盤的人才走得過這一格:選填題清掉後要能只用 Tab 走到「下一題」(WCAG 2.1.1 鍵盤),必答題 Tab 經過也不會把建議解換成「其他」。
     // 2026-11-10 前是 onFocus 就選中(「聚焦即選中」,#122),Tab 經過就換掉選取(agent-decision-card.spec.md 選項卡條)。
