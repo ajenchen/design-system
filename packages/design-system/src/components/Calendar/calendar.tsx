@@ -137,6 +137,11 @@ interface CalendarOwnProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'o
   todayLabel?: string
   /** 「新事件」CTA 文字。Override for i18n。CTA 是 toolbar 的固定元素、恆渲染(spec Toolbar 段;`onCreateEvent` 必填)。 */
   createLabel?: string
+  /**
+   * 一格超過 3 筆事件時,沒畫出來的那幾筆的計數文字(收到的是沒畫出來的筆數)。Override for i18n(同 `todayLabel` / `createLabel`);
+   * 預設 `+N more`(spec「Event tile 規則」超出 tile 限制)。2026-11-21 前寫死在元件裡、沒有 prop 可換,中文月曆裡只有這一句是英文。
+   */
+  moreLabel?: (count: number) => string
 }
 
 export type CalendarProps = CalendarOwnProps & CalendarDateCellProps & CalendarEventTileProps
@@ -253,6 +258,9 @@ function MonthEventTile({
   )
 }
 
+/** `moreLabel` 的預設:與 2026-11-21 前寫死的字相同(預設不變;改預設文案是文案語意,不在這裡改) */
+const defaultMoreLabel = (count: number) => `+${count} more`
+
 const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calendar({
   referenceDate: referenceDateProp,
   defaultReferenceDate,
@@ -273,6 +281,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   navAriaLabel = '行事曆月份導覽', // i18n-allow: DS default; consumer override via navAriaLabel prop
   todayLabel = '今天', // i18n-allow: DS default; consumer override via todayLabel prop
   createLabel = '新事件', // i18n-allow: DS default; consumer override via createLabel prop
+  moreLabel = defaultMoreLabel,
   ...props
 }, ref) {
   // 可點與否只看明示的 readOnlyDates / readOnlyEvents(M23(f);型別層保證沒宣告唯讀時回調一定在,
@@ -766,7 +775,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 })}
                 {overflowCount > 0 && (
                   <div className="text-caption text-fg-muted px-1.5">
-                    +{overflowCount} more
+                    {moreLabel(overflowCount)}
                   </div>
                 )}
               </div>

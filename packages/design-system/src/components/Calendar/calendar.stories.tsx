@@ -36,6 +36,8 @@ const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(
 // 2026-11-18 前沒傳,畫面是「July 2026」「Sun–Sat」配中文介面 —— 稽核 A113,AGENTS.md「單一檔案不中英夾雜」)。
 // test-only 的鍵盤夾具不是給人看的,照元件預設。
 const LOCALE = 'zh-TW'
+// 一格超過 3 筆時的計數文字跟著中文情境(元件預設 `+N more`,calendar.tsx `moreLabel`;2026-11-21 前元件寫死英文、換不掉)
+const MORE_LABEL = (count: number) => `還有 ${count} 個事件`
 
 /**
  * 團隊行事曆 — Notion / Google Calendar 替代品情境
@@ -56,7 +58,7 @@ export const TeamCalendar: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} />
       </div>
     )
   },
@@ -64,7 +66,7 @@ export const TeamCalendar: Story = {
 
 /**
  * 產品上線週 — 上線日一天塞滿 5 件事(發版、客服待命、上線公告、監控輪值、慶功)。
- * 每格最多畫 3 筆,超出的以「+N more」計數提示;這一則讓「+N more」在畫面上看得到。
+ * 每格最多畫 3 筆,超出的以計數文字提示(這裡傳中文「還有 N 個事件」,元件預設「+N more」);這一則讓它在畫面上看得到。
  */
 export const LaunchWeek: Story = {
   name: '產品上線週',
@@ -80,14 +82,14 @@ export const LaunchWeek: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} />
+        <CalendarDemo defaultReferenceDate={now} today={now} events={events} locale={LOCALE} moreLabel={MORE_LABEL} />
       </div>
     )
   },
   play: async ({ canvasElement }) => {
-    // 7/15 有 5 件事:只畫前 3 筆(全天事件排最前),其餘 2 筆以「+2 more」提示、不進 DOM
+    // 7/15 有 5 件事:只畫前 3 筆(全天事件排最前),其餘 2 筆以「還有 2 個事件」(moreLabel)提示、不進 DOM
     const canvas = within(canvasElement)
-    await expect(canvas.getByText('+2 more')).toBeVisible()
+    await expect(canvas.getByText('還有 2 個事件')).toBeVisible()
     await expect(canvas.queryByRole('button', { name: '事件:慶功 18:30' })).toBeNull()
   },
 }
@@ -110,7 +112,7 @@ export const ContentPublishingSchedule: Story = {
     ]
     return (
       <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-        <CalendarDemo events={events} defaultReferenceDate={now} today={now} locale={LOCALE} readOnlyDates />
+        <CalendarDemo events={events} defaultReferenceDate={now} today={now} locale={LOCALE} moreLabel={MORE_LABEL} readOnlyDates />
       </div>
     )
   },
@@ -121,7 +123,7 @@ export const ContentPublishingSchedule: Story = {
 export const ReadOnlyDatesCustomTileKeyboard: Story = {
   name: '唯讀日期 × 自訂事件方塊鍵盤',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:336「Enter/Space activation」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:337「Enter/Space activation」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">
@@ -157,7 +159,7 @@ export const EmptyCalendar: Story = {
   name: '空行事曆',
   render: () => (
     <div className="h-screen p-[var(--layout-space-loose)] bg-canvas">
-      <CalendarDemo events={[]} defaultReferenceDate={now} today={now} locale={LOCALE} readOnlyDates />
+      <CalendarDemo events={[]} defaultReferenceDate={now} today={now} locale={LOCALE} moreLabel={MORE_LABEL} readOnlyDates />
     </div>
   ),
 }
@@ -169,7 +171,7 @@ export const EmptyCalendar: Story = {
 export const CellBlankClickMovesKeyboardStop: Story = {
   name: '點格內空白帶鍵盤位置',
   tags: ['test-only'],
-  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:162「點格內空白處也把鍵盤位置帶過來」
+  // @example-basis: packages/design-system/src/components/Calendar/calendar.spec.md:163「點格內空白處也把鍵盤位置帶過來」
   parameters: { demoFocus: 'keep' },
   render: () => (
     <div className="h-screen p-4 bg-canvas">

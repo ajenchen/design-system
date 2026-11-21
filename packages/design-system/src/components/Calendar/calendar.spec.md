@@ -97,6 +97,7 @@ Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減�
   navAriaLabel="行事曆月份導覽"             // i18n override:月份導覽 <nav> landmark aria-label
   todayLabel="今天"                         // i18n override:「今天」按鈕文字
   createLabel="新事件"                      // i18n override:「新事件」CTA 文字
+  moreLabel={(count) => string}            // i18n override:一格超過 3 筆時的計數文字(收到沒畫出來的筆數;預設 `+N more`)
   className
 />
 ```
@@ -168,7 +169,7 @@ interface CalendarEvent {
 - **All-day event**(2026-06-01 補實作):淡底 tile + 左側實心 accent 條 + 字重略強,排在 cell 事件區頂端(`allDay` 事件排序在有時間事件之前);多日全天事件靠日期範圍 filter 在每個涵蓋日各顯示一條(非單一橫跨多欄的 grid-column span bar——month view per-cell 模型不做跨欄絕對定位)
 - **Hover tile**:事件方塊可點時滑過換成同色濃一格(淡底 step-1 → step-2;淺色變深、深色變亮 —— 色階號碼 = 離所在底色多遠,`../../tokens/color/color.spec.md`「Dark mode subtle」;2026-09-26 前深色 step-2 往純黑退,滑過變近黑);`readOnlyEvents` 時不亮(改用不帶滑過的同一組色 `CAT_SUBTLE`)、不是按鈕
   > 已知後果(實測 2026-09-26):第 7 階字在深色滑過中的格(第 2 階淡底疊 `#272727`)上,7 個色相對比 < 4.5(紅 3.07、靛 3.20、紫 3.22、洋紅 3.68、藍 3.75、深橘 3.77、青 4.36),全部 ≥ 3.0;user 2026-09-26 對此說「這個先忽略」→ 擱置,記在待辦總帳,不再提問。
-- **超出 tile 限制**:每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字,目前不可點擊(點擊展開 popover 列表為後續增量)
+- **超出 tile 限制**:每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字,目前不可點擊(點擊展開 popover 列表為後續增量)。文字由 `moreLabel` 換(收到沒畫出來的筆數,同 `todayLabel` / `createLabel` 的 i18n override 慣例;預設 `+N more` 不變)—— 2026-11-21 前寫死在元件裡,中文月曆裡只有這一句是英文、換不掉
 
 完整 cell + event tile 的 class / token 對照見 anatomy `ColorMatrix` story。
 
