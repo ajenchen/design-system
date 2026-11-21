@@ -205,7 +205,8 @@ Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 建立新 Meta-Pat
 
 | 項目 | Retire criteria |
 |------|-----------------|
-| Hook | 6 月 `hook-fires-per-hook.jsonl` 0 fire + 無 future-planned consumer。**前提:report 的 `summary.observation.blind` 必須是 `false`** —— 全盲時零筆不是證據,見 D2;全盲時改用靜態判準(references/prune-dimensions-d5-d10.md「遙測全盲時的靜態退場判準」) |
+| Hook | 6 月 `hook-fires-per-hook.jsonl` 0 fire + 無 future-planned consumer。**前提:report 的 `summary.observation.blind` 必須是 `false`** —— 全盲時零筆不是證據,見 D2;全盲時改用靜態判準(references/prune-dimensions-d5-d10.md「遙測全盲時的靜態退場判準」)。改名 / 合併過的 hook:fire log 以 hook 名當鍵,舊名的紀錄不算到新名,改名後未滿 6 個月的零筆也不是證據 |
+| Hook 判定收窄 | 加豁免、縮小比對範圍 = 放掉一部分保護,照退場審:(1) commit 寫出「收窄後哪一種真違規會被放行」;(2) 附一格「同樣寫法、放在違規情境」的測試(預期判違規),這格在收窄後的版本要紅 —— hook 照樣擋或警告;收窄後這格若放行,代表拿寫法當情境的代理(M37),不准合。錨例:8671e55c 收窄 `check_story_determinism` 只測誤報那幾行,連初次渲染資料的 id 一起放行;7c95b095 撤回並補上這種格(拿到 8671e55c 版會失敗) |
 | Skill | 3 月 0 invoke + 非 rare-event skill(release-cut 類可例外)。**前提同 Hook 列**:skill-invokes 要開遙測才寫、收不到 slash 呼叫,全盲時零筆不是證據 |
 | Meta-Pattern 條目 | 被新上游 meta 完全吸收 + grep 無引用 |
 | Memory file | 6 月未更新 + 現況已不符 + MEMORY.md 無 head pointer |
