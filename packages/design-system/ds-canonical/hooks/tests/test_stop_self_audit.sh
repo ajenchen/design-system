@@ -1247,5 +1247,91 @@ sealed_case "Test 124: 密封語料模式 + 普通回覆 → stop_self_audit 不
 sealed_case "Test 124b: 密封語料模式 + 請 user 決定沒寫 scope id → Mechanism 13 照擋(讀得到發版同意的正本)" \
   '這兩種做法要你決定。' 'ASK-ROUTE BLOCKER'
 
+# Tests 125-129b(2026-11-21,工作包 PROC-H 第 3 步子項):Mechanism 14 —— 平台 silent_turn_reminder 之後下一筆先跑工具
+# → 記一筆、下一回合注入;先回文字 → 不記。樣本 = 從 2026-11-18 舊 session 抽的去敏摘錄(fixtures/silent-turn/excerpt.jsonl,原樣):
+#   第 3 行 06:38:35Z 提醒 → 第 4 行只有 tool_use Read(紅樣本);第 14 行 06:41:38Z 提醒 → 第 15 行先有 text(綠樣本)。
+# 跑在正式預設:adapter 啟動 + 遙測關 + 正式語系 LC_ALL=C;鏈路同 Test 109(本 hook 寫功能狀態 → inject 下一回合讀出來注入)。
+SILENT_FIX="$SCRIPT_DIR/fixtures/silent-turn/excerpt.jsonl"
+SILENT_RED_KEY='2026-11-18T06:38:35.447Z'
+SILENT_GREEN_KEY='2026-11-18T06:41:38.046Z'
+silent_transcript() {
+  # $1 = 檔名;其餘 = 依序寫進去的段落:「@a,b」= 摘錄第 a 到 b 行,其他字串原樣一行
+  local file="$TMPDIR/$1" part; shift
+  : > "$file"
+  for part in "$@"; do
+    case "$part" in
+      @*) sed -n "${part#@}p" "$SILENT_FIX" >> "$file" ;;
+      *) printf '%s\n' "$part" >> "$file" ;;
+    esac
+  done
+  printf '%s\n' "$file"
+}
+silent_stop() {
+  # $1 = 狀態子目錄名;$2 = transcript 檔。跑一次 Stop(寫功能狀態)。
+  local state="$GIT_DIR/governance-runtime/$1"
+  mkdir -p "$state"
+  jq -nc --arg path "$2" '{transcript_path:$path,session_id:"silent",last_assistant_message:""}' \
+    | LC_ALL=C LANG=C GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY=0 GOVERNANCE_RUNTIME_ROOT="$GIT_DIR/governance-runtime" \
+      GOVERNANCE_STATE_DIR="$state" bash "$HOOK" >/dev/null 2>&1 || true
+}
+silent_inject() {
+  echo '{}' | GOVERNANCE_TELEMETRY_OPT_IN=0 GOVERNANCE_READ_ONLY=0 GOVERNANCE_RUNTIME_ROOT="$GIT_DIR/governance-runtime" \
+    GOVERNANCE_STATE_DIR="$GIT_DIR/governance-runtime/$1" bash "$INJECT_HOOK" 2>/dev/null || true
+}
+silent_count() {
+  # 功能狀態檔裡記到這筆提醒(鍵)的筆數;檔不在 = 0
+  local n
+  n=$(grep -cF "silent_turn_reminder $2 " "$GIT_DIR/governance-runtime/$1/self-audit-warnings.jsonl" 2>/dev/null) || true
+  printf '%s\n' "${n:-0}"
+}
+silent_result() {
+  # $1 名稱;$2 = 條件成立(1)與否;$3 = 失敗時的說明
+  if [ "$2" = "1" ]; then echo "  PASS  $1"; PASS=$((PASS+1)); else echo "  FAIL  $1 ($3)"; FAIL=$((FAIL+1)); fi
+}
+SILENT_ASK="$(rec_user '確定所有時間都花得有意義?')"
+# 紅樣本:記一筆,下一回合注入(注入文字帶提醒時間與工具名)
+T125=$(silent_transcript silent-125.jsonl "$SILENT_ASK" '@1,5')
+silent_stop silent-125 "$T125"
+S125_INJECT=$(silent_inject silent-125)
+ok=0
+[ "$(silent_count silent-125 "$SILENT_RED_KEY")" = "1" ] && printf '%s' "$S125_INJECT" | grep -qF '提醒後先跑工具' \
+  && printf '%s' "$S125_INJECT" | grep -qF "silent_turn_reminder $SILENT_RED_KEY 之後先跑 Read" && ok=1
+silent_result "Test 125: 紅樣本(06:38:35Z 提醒 → 下一筆只有 tool_use Read)→ 記一筆,下一回合注入" "$ok" \
+  "筆數=$(silent_count silent-125 "$SILENT_RED_KEY") inject=${S125_INJECT:0:160}"
+# 綠樣本:先回文字,不記也不注入
+T126=$(silent_transcript silent-126.jsonl "$SILENT_ASK" '@12,16')
+silent_stop silent-126 "$T126"
+S126_INJECT=$(silent_inject silent-126)
+ok=0
+[ "$(silent_count silent-126 "$SILENT_GREEN_KEY")" = "0" ] && ! printf '%s' "$S126_INJECT" | grep -qF '提醒後先跑工具' && ok=1
+silent_result "Test 126: 綠樣本(06:41:38Z 提醒 → 下一筆先有 text)→ 不記、不注入" "$ok" \
+  "筆數=$(silent_count silent-126 "$SILENT_GREEN_KEY") inject=${S126_INJECT:0:160}"
+# 整份摘錄(兩筆提醒在同一回合):只記紅的那筆
+T127=$(silent_transcript silent-127.jsonl "$SILENT_ASK" '@1,16')
+silent_stop silent-127 "$T127"
+ok=0
+[ "$(silent_count silent-127 "$SILENT_RED_KEY")" = "1" ] && [ "$(silent_count silent-127 "$SILENT_GREEN_KEY")" = "0" ] && ok=1
+silent_result "Test 127: 整份摘錄 → 只記 06:38:35Z 那筆,06:41:38Z 那筆不記" "$ok" \
+  "紅=$(silent_count silent-127 "$SILENT_RED_KEY") 綠=$(silent_count silent-127 "$SILENT_GREEN_KEY")"
+# 同一回合 Stop 跑第二次(被別的 hook 擋 → 補正回覆):同一筆提醒不記兩次
+T128=$(silent_transcript silent-128.jsonl "$SILENT_ASK" '@1,5' \
+  "$(rec_stop_feedback '🚨 CLAIM-VERIFY GAP BLOCKER:你 claim「verified」但本 turn 沒跑任何真驗證。')" "$(rec_text '撤回 claim,還沒驗證。')")
+silent_stop silent-128 "$T125"
+silent_stop silent-128 "$T128"
+ok=0
+[ "$(silent_count silent-128 "$SILENT_RED_KEY")" = "1" ] && ok=1
+silent_result "Test 128: 同一回合 Stop 跑兩次 → 同一筆提醒只記一筆" "$ok" "筆數=$(silent_count silent-128 "$SILENT_RED_KEY")"
+# 「下一筆」跳過只有 thinking 的紀錄;提醒在上一回合(之後 user 說了新的話)→ 本回合不記
+T129=$(silent_transcript silent-129.jsonl "$SILENT_ASK" '@1,3' "$(rec_thinking '先看檔案')" '@4,5')
+silent_stop silent-129 "$T129"
+ok=0
+[ "$(silent_count silent-129 "$SILENT_RED_KEY")" = "1" ] && ok=1
+silent_result "Test 129: 提醒 → 只有 thinking 的一筆 → tool_use Read → 照記" "$ok" "筆數=$(silent_count silent-129 "$SILENT_RED_KEY")"
+T129B=$(silent_transcript silent-129b.jsonl "$SILENT_ASK" '@1,3' "$(rec_user '先停一下,看這個')" '@4,5')
+silent_stop silent-129b "$T129B"
+ok=0
+[ "$(silent_count silent-129b "$SILENT_RED_KEY")" = "0" ] && ok=1
+silent_result "Test 129b: 提醒之後 user 說了新的話(下一筆回的是 user,不是提醒)→ 不記" "$ok" "筆數=$(silent_count silent-129b "$SILENT_RED_KEY")"
+
 echo "Results: $PASS PASS, $FAIL FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

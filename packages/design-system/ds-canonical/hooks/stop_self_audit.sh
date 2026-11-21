@@ -35,7 +35,8 @@ cd "$PROJECT_DIR" 2>/dev/null \
 # 兩種寫入、兩道開關(_log-fire.sh 檔頭同名段;2026-11-21 WP-06):
 #   遙測 STATE_DIR(要 GOVERNANCE_TELEMETRY_OPT_IN=1):Mechanism 3 的基線樣本、各 BLOCKER 的 .last-blocked-* 防重擋紀錄。
 #   功能狀態 WARN_STATE_DIR(adapter 啟動、非 READ_ONLY 就有,不看遙測開關):self-audit-warnings.jsonl ——
-#     inject_pending_self_audit.sh 下一回合讀它注入(M33 的 Mechanism 11 與其餘提醒都靠這一份送到下一回合)。
+#     inject_pending_self_audit.sh 下一回合讀它注入(M33 的 Mechanism 11 與其餘提醒都靠這一份送到下一回合);
+#     Mechanism 14 另外讀它去重(同一筆平台提醒不記兩次)。
 STATE_DIR="$(governance_runtime_state_dir 2>/dev/null || true)"
 STATE_WRITES=0
 [ -n "$STATE_DIR" ] && STATE_WRITES=1
@@ -877,6 +878,68 @@ if [ -n "$LAST_ASSISTANT" ]; then
       governance_hook_integrity_fail "ask-route SSOT unreadable or helper failed (rc=${ASK_ROUTE_RC}):$(jq -r '.error // empty' <<< "$ASK_ROUTE_OUT" 2>/dev/null)"
       ;;
   esac
+fi
+
+# ── Mechanism 14: 平台提醒「user 一陣子沒聽到你」之後先跑工具(2026-11-21,工作包 PROC-H 第 3 步子項;交接 process-audit 根因 8)──
+# 模型連續跑工具太久時,平台(Claude Code)會往 transcript 塞一筆
+#   {"type":"attachment","attachment":{"type":"silent_turn_reminder","text":"The user hasn't heard from you in a while — …"}}
+# 提醒之後的下一筆 assistant 紀錄若先呼叫工具、沒先回一句話 → 記一筆提醒。只記、不擋:走 Mechanism 11(M33)同一條路,
+# 寫進功能狀態的 self-audit-warnings.jsonl(本檔結尾,不看遙測開關),下一回合由 inject_pending_self_audit.sh 注入給模型。
+# 判法:
+#   - 「下一筆」只認 type 為 assistant(或沒有 type 的舊紀錄)的紀錄;只有 thinking 的紀錄跳過,看下一筆。
+#     第一個非空白的 text 區塊在前 = 先回了一句(不記);第一個 tool_use 在前 = 先跑工具(記)。
+#   - 範圍 = 本回合(LAST_USER_LINE 之後,lib/_turn_boundary.sh 的「最後一個 human」)。
+#   - 同一回合 Stop 會跑不只一次(被擋 → 補正),每筆提醒以它的 timestamp(沒有就用 uuid)當鍵:
+#     功能狀態檔裡已經記過同一個鍵就不再記;讀不到狀態檔時照記(最壞是多記一次,不會漏)。
+#   - 別的 provider 的 transcript 沒有這種紀錄 → 什麼都不做。
+# 樣本:tests/fixtures/silent-turn/excerpt.jsonl(從 2026-11-18 舊 session 抽的去敏摘錄,原樣;06:38:35Z 那筆提醒之後先跑 Read = 紅,
+# 06:41:38Z 那筆之後先回文字 = 綠)。兩面對照在 tests/test_stop_self_audit.sh Tests 125-129b。
+SILENT_TURN_HITS=""
+if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] \
+  && awk -v from="${LAST_USER_LINE:-0}" 'NR > from + 0 && index($0, "silent_turn_reminder") { found = 1; exit } END { exit !found }' \
+    "$TRANSCRIPT_PATH" 2>/dev/null; then
+  SILENT_TURN_HITS=$(tail -n +$((${LAST_USER_LINE:-0} + 1)) "$TRANSCRIPT_PATH" 2>/dev/null | jq -R -r -n '
+    def clean: tostring | gsub("[^A-Za-z0-9_:.+-]"; "");
+    reduce (inputs | fromjson? | select(type == "object")) as $r ({pending: null, hits: []};
+      if $r.type == "attachment" and (($r.attachment | type) == "object") and $r.attachment.type == "silent_turn_reminder" then
+        .pending = (($r.timestamp // $r.uuid // "") | clean)
+      elif .pending != null and ($r.type == null or $r.type == "assistant")
+        and (($r.message | type) == "object") and $r.message.role == "assistant" then
+        ([$r.message.content
+          | if type == "string" then (if test("\\S") then "text" else empty end)
+            elif type == "array" then (.[] | select(type == "object")
+              | if .type == "text" and ((.text | type) == "string") and (.text | test("\\S")) then "text"
+                elif .type == "tool_use" then "tool"
+                else empty end)
+            else empty end
+         ] | first) as $first
+        | ([$r.message.content | if type == "array" then (.[] | select(type == "object" and .type == "tool_use") | (.name // "?" | clean)) else empty end] | first) as $tool
+        | if $first == null then .
+          elif $first == "tool" then (.hits += [.pending + "|" + ($tool // "?")]) | .pending = null
+          else .pending = null end
+      else . end)
+    | .hits[]' 2>/dev/null)
+fi
+if [ -n "$SILENT_TURN_HITS" ]; then
+  SILENT_TURN_SEEN_LOG=""
+  if [ -n "$WARN_STATE_DIR" ]; then
+    SILENT_TURN_SEEN_LOG="$(GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL=1
+      export GOVERNANCE_TOOL_PROBE_SIDE_CHANNEL
+      governance_runtime_file_path self-audit-warnings.jsonl "$WARN_STATE_DIR" 2>/dev/null)" || SILENT_TURN_SEEN_LOG=""
+  fi
+  SILENT_TURN_NEW=""
+  # 一行一筆「鍵|工具名」;兩邊都已在 jq 裡只留 [A-Za-z0-9_:.+-],不會含分隔字元。
+  while IFS='|' read -r SILENT_TURN_KEY SILENT_TURN_TOOL; do
+    [ -n "$SILENT_TURN_KEY$SILENT_TURN_TOOL" ] || continue
+    if [ -n "$SILENT_TURN_KEY" ] && [ -n "$SILENT_TURN_SEEN_LOG" ] && [ -f "$SILENT_TURN_SEEN_LOG" ] \
+      && grep -qF "silent_turn_reminder ${SILENT_TURN_KEY} " "$SILENT_TURN_SEEN_LOG" 2>/dev/null; then
+      continue
+    fi
+    SILENT_TURN_NEW="${SILENT_TURN_NEW:+${SILENT_TURN_NEW};}silent_turn_reminder ${SILENT_TURN_KEY:-時間不明} 之後先跑 ${SILENT_TURN_TOOL:-?}"
+  done <<< "$SILENT_TURN_HITS"
+  if [ -n "$SILENT_TURN_NEW" ]; then
+    WARNINGS="${WARNINGS}\n  • 提醒後先跑工具:平台提醒「user 一陣子沒聽到你」之後,你下一筆直接呼叫工具,沒先回一句說在做什麼(${SILENT_TURN_NEW})。下次收到這個提醒,第一個動作是用一兩句話講在做什麼,再繼續。"
+  fi
 fi
 
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────

@@ -23,7 +23,8 @@
 # 判準是 scripts/lib/release-consent-language.mjs 的 isQuestionText(questionMarkers ∪ aNotAQuestions,release-workflow.json),
 # 經命令列 `--question` 呼叫。不另外加 PreToolUse 提示(那會是第二份,process-audit 第 552 行)。
 # 判準跑不起來(檔不在、node 失敗、輸出不是 question / statement)→ 照樣經 context 告訴模型「這次沒判斷」,不靜默。
-# 已知看不到:沒有問句記號的問句(「大概還要多久」);平台 silent_turn_reminder 之後的記帳未做(見 PROC-H 回報)。
+# 已知看不到:沒有問句記號的問句(「大概還要多久」)。
+# 事後那一半在 Stop 端:平台 silent_turn_reminder 之後下一筆若先跑工具,stop_self_audit.sh Mechanism 14 記一筆、下一回合注入。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 

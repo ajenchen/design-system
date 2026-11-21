@@ -21,6 +21,7 @@
 # 各 Mechanism 從哪一種紀錄算起(唯一的選擇表;改這裡要一起改對應測試):
 #   最後一個 human                    = 回合起點(LAST_USER_LINE):M1 驗證證據、M4 / M5 / M7 的本回合紀錄、M8b / M9 的 user 原話、
 #                                       M10 的「上一則 / 本則 user 提問」、M10b 的擋下紀錄與回報文字、M12 的推播 / 提問 / 回覆與 user 原話、
+#                                       Mechanism 14 的平台 silent_turn_reminder 與它之後的下一筆 assistant 紀錄(同一筆提醒以 timestamp 去重)、
 #                                       check_propose_discipline r2(本回合全部回覆)與 r3(本回合寫入)。背景通知、hook 回饋都不切回合。
 #   最後一個 human 或 wake            = Mechanism 6 推播的起點:背景通知叫醒的回覆沒人在看,要自己推播;hook 回饋不切,
 #                                       所以「推播 → 被別的 hook 擋 → 補正回覆」不必再推一次。
