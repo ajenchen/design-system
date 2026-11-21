@@ -73,6 +73,17 @@ Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_O
 { "kind": "hook", "hook": "your-hook.sh", "runtime": "bash" }
 ```
 
+## 降級與 clone 裡的編輯(2026-11-21 PROC-H)
+
+- **降級一律讓模型看得到**:一般模式下 adapter 出錯是 fail-open(放行),但 `scripts/run-provider-hook.mjs` 從 `failureNoticeEvent` 那段起
+  (`emitGovernanceNotice`)把「這批 hook 沒跑」經該事件的 context 通道告訴模型,不只寫 stderr;Stop 事件只在第一次停下
+  (`stop_hook_active` 為 false)時走 Claude 的 Stop additionalContext,續跑中照舊只給 user 看,避免連鎖續跑(見 `scripts/lib/provider-hook-output-transport.mjs`)。
+  hook 自己的儀器失效也照這條:例如 `check_bash_command_shape.sh` 讀不到 deny 清單時放行並送 context 通知。
+- **clone 裡的編輯不算經過寫入時 hook**:adapter 的 repo 根(`PROJECT_ROOT`)取自 `GOVERNANCE_PROJECT_DIR` / provider 的專案目錄變數
+  (session 開在主資料夾就是主資料夾),hook 讀的規則、spec、registrations 都是那一份。在 scratchpad 等別處的 clone 裡改檔,
+  hook 不會以 clone 當根執行;個別 hook 用路徑樣式比對時可能仍會觸發,但讀的是主資料夾的規則 —— 兩種情況都不能當成「clone 的改動過了寫入時檢查」。
+  clone 的改動要以 clone 為根跑合回前的全樹檢查(CI 導出的檢查與 `npm run hooks:test`,照 `rules/work-process.md`「合回點」)才算數。
+
 ## Hook 退出碼約定(portable command-hook contract)
 
 - `exit 0` — 正常,不 inject context
