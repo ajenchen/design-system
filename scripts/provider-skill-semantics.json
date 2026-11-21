@@ -220,8 +220,8 @@
         "provider-surface-path",
         "provider-transport"
       ],
-      "assumptionFindingCount": 58,
-      "assumptionFingerprint": "sha256:35b4887638ed408ee8b5f8a3d694f1d52293e39ce76d9a8d60b9bdbf41523173"
+      "assumptionFindingCount": 59,
+      "assumptionFingerprint": "sha256:f4bd1e2323aa2dd6639c27ac0f41e844879f4b23b73d517e27011b31e354571e"
     },
     {
       "name": "ensure-canonical",
