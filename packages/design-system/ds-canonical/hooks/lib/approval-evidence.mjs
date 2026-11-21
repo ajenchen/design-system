@@ -2031,7 +2031,7 @@ export function bashCommandWriteTargets(command, cwd, { isDirectory = isExisting
 
 // 命令列入口:兩邊都取實際路徑再比。import.meta.url 是實際路徑,argv[1] 是呼叫時給的路徑 —— 經過符號連結呼叫
 // (例:暫存區 work → mp1/target)兩邊不等,舊寫法 `import.meta.url === pathToFileURL(argv[1]).href` 會靜默
-// 不輸出、結束碼 0(2026-11-20 實測;test_stop_self_audit.sh Test 117 經符號連結呼叫的對照格)。
+// 不輸出、結束碼 0(2026-11-20 實測;test_stop_self_audit.sh Test 120 經符號連結呼叫的對照格)。
 function invokedAsCli() {
   if (!process.argv[1]) return false
   try {
