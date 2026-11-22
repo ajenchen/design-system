@@ -56,6 +56,9 @@ const PLAIN = 'design-system-components-linkinput-展示--default'
 const FIXTURE = 'fixture:link-input-clear' // open() 認得這個名字 → 開夾具頁(C10)
 const CLEAR = 'button[aria-label="清除網址"]'
 const PENCIL = 'button[aria-label="編輯連結"]'
+// 欄位的框 = 控件自己的外框(data-field-mode="edit")。包在 <Field> 裡的欄位(展示頁「可清除」第二則:儲存時檢查出的錯交給 Field)
+// Field 的根也帶 data-field-mode,但它另帶 data-field-orientation —— 排除掉,第 i 個框才是第 i 個 LinkInput
+const FRAME = '[data-field-mode="edit"]:not([data-field-orientation])'
 const FIGMA = 'https://www.figma.com/design/checkout-flow'
 
 class Instrument extends Error {}
@@ -78,7 +81,7 @@ const SAFARI_DEFAULT = `window.addEventListener('mousedown', (e) => {
 })`
 const BLOCK_ESCAPE = `window.addEventListener('keydown', (e) => { if (e.key === 'Escape') e.stopPropagation() }, true)`
 const BLOCK_FOCUSOUT = `window.addEventListener('focusout', (e) => { if (e.target instanceof Element && e.target.closest('[data-field-mode="edit"]')) e.stopPropagation() }, true)`
-const FAKE_CLEAR_IN_LINK_STATE = `(() => { const w = document.querySelectorAll('[data-field-mode="edit"]')[0]; const b = document.createElement('button'); b.setAttribute('aria-label', '清除網址'); w.appendChild(b) })()`
+const FAKE_CLEAR_IN_LINK_STATE = `(() => { const w = document.querySelectorAll('${FRAME}')[0]; const b = document.createElement('button'); b.setAttribute('aria-label', '清除網址'); w.appendChild(b) })()`
 // 「焦點移到同一個欄位的 × 不算離開」那一句(link-input.tsx handleBlur):isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget.parentElement })
 // 壓縮後識別字會換名,屬性名留著 —— 以屬性名的形狀找(容許空白:夾具是 esbuild 沒壓縮的輸出);改到 0 處 = 儀器失效(不准當成「改了也沒紅」)
 const SAME_FIELD_BLUR = /[A-Za-z_$][\w$]*\(\s*([A-Za-z_$][\w$]*)\.relatedTarget,\s*\{\s*trigger:\s*\1\.currentTarget\.parentElement\s*\}\s*\)/g
@@ -123,8 +126,8 @@ async function settle(what) {
   if (!r.ok) throw new Instrument(`${what}之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)`)
 }
 /** 第 i 個編輯模式欄位此刻的狀態(故事裡三個欄位依序:有連結 / 不合法的字 / 空白) */
-const probe = (i) => page.evaluate(({ i, CLEAR, PENCIL }) => {
-  const w = document.querySelectorAll('[data-field-mode="edit"]')[i]
+const probe = (i) => page.evaluate(({ i, CLEAR, PENCIL, FRAME }) => {
+  const w = document.querySelectorAll(FRAME)[i]
   if (!w) return null
   const input = w.querySelector('input')
   const clear = w.querySelector(CLEAR)
@@ -140,19 +143,19 @@ const probe = (i) => page.evaluate(({ i, CLEAR, PENCIL }) => {
     clearInset: clear ? Math.round((box.right - clear.getBoundingClientRect().right) * 100) / 100 : null,
     expectInset: Math.round((parseFloat(cs.borderRightWidth) + parseFloat(cs.paddingRight)) * 100) / 100,
   }
-}, { i, CLEAR, PENCIL })
+}, { i, CLEAR, PENCIL, FRAME })
 async function field(i, what) {
   const s = await probe(i)
   if (!s) throw new Instrument(`${what}:找不到第 ${i + 1} 個編輯模式欄位`)
   return s
 }
 async function clickIn(i, selector, what) {
-  const b = await page.evaluate(({ i, selector }) => {
-    const el = document.querySelectorAll('[data-field-mode="edit"]')[i]?.querySelector(selector)
+  const b = await page.evaluate(({ i, selector, FRAME }) => {
+    const el = document.querySelectorAll(FRAME)[i]?.querySelector(selector)
     if (!el) return null
     const r = el.getBoundingClientRect()
     return r.width > 0 && r.height > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : null
-  }, { i, selector })
+  }, { i, selector, FRAME })
   if (!b) throw new Instrument(`${what}:第 ${i + 1} 個欄位裡找不到 ${selector}`)
   await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2)
   await settle(what)

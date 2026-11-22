@@ -7,13 +7,17 @@
  *        aria-describedby 連得到這一行(WCAG 3.3.1)、aria-errormessage 指到同一行;onInvalidChange 收到 true + 草稿
  *     E2 接著打字 → 說明消失、aria-describedby 不再指它;onInvalidChange 收到 false
  *     E3 不合法的字按 Enter → 說明出現、焦點留在輸入框(說明出現不讓輸入框重掛)
- *     E4 errorText 換字生效(外部值本身不是網址:一掛上就是驗證過的樣子)
- *     E5 包在 Field 裡(使用端的 FieldError 沒字)→ 說明畫在 Field 的錯誤區:欄裡只有一行、在說明文字下面、間距 = Field 欄內 gap、
+ *     E7 外部存進來、本身不是網址的值照 blur 驗證(form-validation.spec.md「驗證時機」規則 1–2):一掛上不紅、沒有說明;
+ *        點進去 / Tab 進來、還沒離開也不驗
+ *     E4 errorText 換字生效(上一格離開欄位之後)
+ *     E5 包在 Field 裡(使用端的 FieldError 沒字)、離開之後 → 說明畫在 Field 的錯誤區:欄裡只有一行、在說明文字下面、間距 = Field 欄內 gap、
  *        id = 輸入框 aria-errormessage 且在 aria-describedby 裡
- *     E6 包在 Field 裡、使用端自己的 FieldError 有字 → 只有使用端那一行(不出兩行)
- *   紅: --selftest 在送到瀏覽器的夾具程式裡拿掉新行為,各組必紅(兩面對照):
+ *     E6 包在 Field 裡、使用端自己的 FieldError 有字、離開之後(LinkInput 自己也驗出不合法)→ 只有使用端那一行(不出兩行)
+ *   紅: --selftest 在送到瀏覽器的夾具程式裡造回錯的寫法,各組必紅(兩面對照):
  *     M1 不畫說明(errorLineText 換成 null)→ E1 / E4 / E5 紅;M2 aria-describedby 不接說明 → E1 紅;
- *     M3 Field 不讓使用端的字優先 → E6 紅;M4 打字不清錯誤 → E2 紅。改寫 0 處 = 儀器失效(不准當成「改了也沒紅」)
+ *     M3 Field 不讓使用端的字優先 → E6 紅;M4 打字不清錯誤 → E2 紅;
+ *     M5 外部存進來的值一掛上就驗(localError 初值 = 值非空白;夾具裡外部給的值都不是網址,等同 2026-11-22 第 1 次修正撤掉的那版)→ E7 紅。
+ *     改寫 0 處 = 儀器失效(不准當成「改了也沒紅」)
  *   綠: 現行原始碼全綠;夾具掛不起來 / 找不到要量的欄位 / 互動後版面不靜止 = 儀器失效(exit 2),不當通過
  * ─────
  * 為什麼:修前 LinkInput 自己驗出不合法時只有紅框、框下沒有字(form-validation.spec.md「A11y 預設」要紅框之外必有文字,WCAG 1.4.1 / 3.3.1),
@@ -157,15 +161,34 @@ const near = (a, b) => a != null && b != null && Math.abs(a - b) < 0.5
 
 async function runChecks() {
   await openFixture()
-  // ── E4 / E5 / E6:一掛上就量(外部值本身不是網址)──
+  // ── E7:外部存進來、本身不是網址的值 —— 一掛上不驗(blur 驗證,form-validation.spec.md 規則 1–2)──
+  for (const key of ['custom', 'field']) {
+    const s = await field(key, `E7 掛上 ${key}`)
+    ck('E7', `${key}:一掛上沒有紅框、沒有說明、沒有 aria-invalid`, !s.error && s.ariaInvalid == null && s.lines.length === 0, J(s))
+  }
+  // ── E7 → E4:點進 custom(還沒離開不驗),Tab 離開才出現換過的字 ──
+  await clickInput('custom', '點進 custom')
+  const cf = await field('custom', 'E7 點進 custom')
+  if (!cf.focus) throw new Instrument(`點進 custom 之後焦點不在輸入框:${J(cf)}`)
+  ck('E7', 'custom:點進去、還沒離開也不驗', !cf.error && cf.lines.length === 0, J(cf))
+  await press('Tab', 'custom Tab 離開')
   const custom = await field('custom', 'E4')
-  ck('E4', 'errorText 換字生效(一掛上就是驗證過的樣子)', custom.error && custom.lines.length === 1 && custom.lines[0] === FIXTURE_CUSTOM, J(custom))
+  ck('E4', 'errorText 換字生效(離開欄位之後)', custom.error && custom.lines.length === 1 && custom.lines[0] === FIXTURE_CUSTOM, J(custom))
   ck('E4', '換字那一行也接上 aria-describedby', custom.describedResolved, J(custom))
+  // ── E7 → E5:Tab 進到 field(還沒離開不驗),再 Tab 離開 → 畫在 Field 的錯誤區 ──
+  const ff = await field('field', 'E7 Tab 進 field')
+  if (!ff.focus) throw new Instrument(`從 custom 按 Tab 沒進到 field 的輸入框:${J(ff)}`)
+  ck('E7', 'field:Tab 進來、還沒離開也不驗', !ff.error && ff.lines.length === 0, J(ff))
+  await press('Tab', 'field Tab 離開')
   const inField = await field('field', 'E5')
   ck('E5', 'Field 裡:欄裡只有一行、是預設說明', inField.error && inField.lines.length === 1 && inField.lines[0] === DEFAULT_TEXT, J(inField))
   ck('E5', 'Field 裡:畫在 Field 的錯誤區(Field 欄的子元素、說明文字下面、間距 = 欄內 gap)',
     inField.inFieldColumn === true && inField.afterDescription === true && near(inField.gapBelowDescription, inField.fieldGap), J(inField))
   ck('E5', 'Field 裡:id = aria-errormessage 且在 aria-describedby 裡', inField.lineId && inField.errormessage === inField.lineId && inField.describedResolved, J(inField))
+  // ── E6:Tab 進到 consumer 再離開(LinkInput 自己也驗出不合法)→ 只有使用端那一行 ──
+  const pf = await field('consumer', 'E6 Tab 進 consumer')
+  if (!pf.focus) throw new Instrument(`從 field 按 Tab 沒進到 consumer 的輸入框:${J(pf)}`)
+  await press('Tab', 'consumer Tab 離開')
   const consumer = await field('consumer', 'E6')
   ck('E6', 'Field 裡使用端的 FieldError 有字:只有使用端那一行', consumer.error && consumer.lines.length === 1 && consumer.lines[0] === FIXTURE_CONSUMER, J(consumer))
   // ── E1:打不是網址的字、Tab 離開 ──
@@ -201,6 +224,13 @@ const MUTANTS = [
   { name: 'M2 aria-describedby 不接說明', patches: [[/,\s*errorLineId\d*\s*\]\s*\.filter\(Boolean\)/g, '].filter(Boolean)']], mustRed: ['E1'] },
   { name: 'M3 Field 不讓使用端的字優先', patches: [[/!consumerErrorShown\d*/g, 'true']], mustRed: ['E6'] },
   { name: 'M4 打字不清錯誤', patches: [[/if \(localError\d*\) setLocalError\d*\(false\);?/g, '']], mustRed: ['E2'] },
+  // 紅框的初值改成「值非空白就紅」:值的識別字取自緊鄰的上一行 useState(<值> ?? "")(esbuild 撞名會加數字尾碼,不寫死)
+  {
+    name: 'M5 外部存進來的值一掛上就驗',
+    patches: [[/(useState\((\w+) \?\? ""\);\s*const \[localError\d*, setLocalError\d*\] = \w+\.useState\()false\)/g,
+      (_, head, v) => `${head}() => !!${v} && ${v}.trim() !== "")`]],
+    mustRed: ['E7'],
+  },
 ]
 
 try {

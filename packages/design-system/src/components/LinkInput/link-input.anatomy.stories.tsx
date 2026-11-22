@@ -201,7 +201,7 @@ export const Overview = {
                 ['showDisplayEndIcon', 'boolean', 'false', 'view 態改包 Field naked wrapper（D-path opt-in，DataTable cell view↔edit 像素對齊；本元件沒有型別 icon，故只給 wrapper；DataTable 可編輯連結格的「編輯連結」鈕另由內部的 viewEditAction 畫在外殼右側槽，Button text xs、滑過格才出現）'],
                 ['clearable', 'boolean', 'false', '打字狀態、框裡有字時右側出現清除 ×：清掉草稿、焦點留在輸入框，不提交，之後照失焦 / Enter 規則結算；連結狀態沒有 ×（同 Select / DatePicker 的 clearable，選填欄位才開）'],
                 ['errorText', 'string', "'請輸入網址,例如 acme.com'", '網址不合法時框下那一行說明的字（只能換字、不能關掉）；包在 Field 裡畫在 Field 的錯誤區，使用端自己的 FieldError 有字時以使用端為準'],
-                ['onInvalidChange', '(invalid: boolean, draft: string) => void', '—', '自己的驗證結果有變時呼叫：結算出不合法、外部值本身不是網址 → true；打字、按 ×、Esc、結算成合法或空白 → false（不合法的字不經 onChange 送出）'],
+                ['onInvalidChange', '(invalid: boolean, draft: string) => void', '—', '自己的驗證結果有變時呼叫：結算（blur / Enter）出不合法 → true；打字、按 ×、Esc、結算成合法或空白 → false（不合法的字不經 onChange 送出）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -222,7 +222,6 @@ export const Overview = {
                 ['點擊外框裡 Pencil 以外的地方', '開啟連結（新分頁），不進入編輯'],
                 ['blur（合法 URL）', '切回 link 狀態，觸發 onChange'],
                 ['blur（不合法 URL）', '維持 input 狀態 + error 邊框 + 框下錯誤說明（errorText，預設「請輸入網址,例如 acme.com」）'],
-                ['值本身不是網址（外部存進來的）', '一顯示就是驗證過的樣子：input 狀態 + error 邊框 + 框下錯誤說明'],
                 ['blur（空值）', '清除值，顯示 placeholder'],
                 ['Enter', '等同 blur——觸發驗證'],
                 ['Escape', '取消編輯，回復原值，不觸發驗證'],

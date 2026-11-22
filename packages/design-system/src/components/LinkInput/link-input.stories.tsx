@@ -3,7 +3,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { LinkInput } from './link-input'
-import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldDescription, FieldError } from '@/design-system/components/Field/field'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof LinkInput> = {
@@ -78,15 +78,25 @@ function ClearableDemo() {
   // 三個選填欄位各管各的值:有連結 / 貼錯的字(不合法、框裡有字)/ 還沒填
   const [designLink, setDesignLink] = React.useState('https://www.figma.com/design/checkout-flow')
   const [specLink, setSpecLink] = React.useState('結帳流程需求文件 v3')
+  // 按下儲存時(使用端自己的檢查)查出「需求文件連結」不是網址:錯誤照 Field 家族的寫法交給 Field(`invalid` 紅框 + `<FieldError>` 那一行;
+  // link-input.spec.md「錯誤說明」範例)。值換掉了(提交新網址或清空)這次檢查就不算數,錯誤收掉。
+  const [specError, setSpecError] = React.useState('這不是網址,請貼上需求文件的連結')
+  const updateSpecLink = (next: string) => {
+    setSpecLink(next)
+    setSpecError('')
+  }
   const [ticketLink, setTicketLink] = React.useState('')
   return (
     <ExampleStack className="max-w-sm">
       <ExampleSection title="有連結:沒有 ×" description="連結狀態不變,右側只有 Pencil。按 Pencil 進入打字狀態後,框裡有字才出現 ×。">
         <LinkInput clearable value={designLink} onChange={setDesignLink} aria-label="設計稿連結" />
       </ExampleSection>
-      {/* 不合法的值:元件自己畫成已驗證的樣子(紅框 + 框下說明,link-input.spec.md「驗證」第 5 點),範例不另外加 error */}
-      <ExampleSection title="打字狀態、框裡有字:出現 ×" description="貼錯的字不是網址:紅框、框下一行說明。按 × 一鍵清掉重打(紅框與說明一起清掉);焦點留在輸入框,離開或按 Enter 才結算(空白 = 清值),Esc 還原。">
-        <LinkInput clearable value={specLink} onChange={setSpecLink} aria-label="需求文件連結" />
+      <ExampleSection title="打字狀態、框裡有字:出現 ×" description="按下儲存時檢查出貼錯的字不是網址:錯誤交給 Field,紅框、框下一行說明。按 × 一鍵清掉重打;焦點留在輸入框,離開或按 Enter 才結算(空白 = 清值、錯誤跟著收掉),Esc 還原。">
+        <Field invalid={!!specError}>
+          <FieldLabel>需求文件連結</FieldLabel>
+          <LinkInput clearable value={specLink} onChange={updateSpecLink} />
+          <FieldError>{specError}</FieldError>
+        </Field>
       </ExampleSection>
       <ExampleSection title="空白:沒有 ×" description="開始打字後才出現。">
         <LinkInput clearable value={ticketLink} onChange={setTicketLink} placeholder="貼上 Jira 工單網址" aria-label="Jira 工單連結" />
@@ -97,7 +107,8 @@ function ClearableDemo() {
 
 /* ── 錯誤說明 ── */
 // link-input.spec.md「錯誤說明」(2026-11-22,user 11-22 確認頁拍板丙):網址不合法時框下自帶一行說明;`errorText` 換字;
-// 包在 Field 裡就畫在 Field 的錯誤區(說明文字下面,同 FieldError)。兩個欄位的值都是外面存進來、不是網址的字 —— 元件一掛上就畫成已驗證的樣子。
+// 包在 Field 裡就畫在 Field 的錯誤區(說明文字下面,同 FieldError)。兩個欄位的值都是外面存進來、不是網址的字;照 blur 驗證
+// (form-validation.spec.md「驗證時機」),一掛上不驗、離開欄位後才出現。
 export const ErrorText: Story = {
   name: '錯誤說明',
   render: () => <ErrorTextDemo />,
@@ -108,10 +119,10 @@ function ErrorTextDemo() {
   const [meetingLink, setMeetingLink] = React.useState('週三下午三點 3F 會議室')
   return (
     <ExampleStack className="max-w-sm">
-      <ExampleSection title="預設說明" description="不給 errorText:框下是預設那句。打字就消失,離開欄位再驗一次。">
+      <ExampleSection title="預設說明" description="框裡的字不是網址、不給 errorText:點進框裡再離開(Tab 或點別處)後,紅框與框下預設那句才出現;再打字就消失,離開欄位再驗一次。">
         <LinkInput value={website} onChange={setWebsite} aria-label="公司網站" />
       </ExampleSection>
-      <ExampleSection title="換成自己的說明(errorText)" description="欄位的用途比「網址」更具體時,用 errorText 說清楚要貼什麼。包在 Field 裡時,這行畫在 Field 的錯誤區。">
+      <ExampleSection title="換成自己的說明(errorText)" description="欄位的用途比「網址」更具體時,用 errorText 說清楚要貼什麼;一樣是離開欄位後出現。包在 Field 裡時,這行畫在 Field 的錯誤區(說明文字下面)。">
         <Field>
           <FieldLabel>線上會議連結</FieldLabel>
           <LinkInput value={meetingLink} onChange={setMeetingLink} errorText="請貼上會議邀請裡的連結" />

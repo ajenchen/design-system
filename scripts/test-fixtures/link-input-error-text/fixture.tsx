@@ -3,11 +3,11 @@
 //
 // 為什麼不是 story:要量使用端拿到的驗證結果回呼(`onInvalidChange`)什麼時候被呼叫、帶什麼字,就得有一個把每次呼叫記下來的使用端;
 // 展示頁的範例不該為了量放計數器。另外「包在 Field 裡、使用端自己的 FieldError 有字」這種接法展示頁沒有(那是使用端的錯,不是元件的),在這裡擺一份。
-// 四個欄位(閘以 data-eti 找):
-//   typed    單獨用、一開始空白 —— 閘自己打不合法的字再離開;onInvalidChange 每次呼叫記進 data-invalid-log(「true:草稿」空白分隔)
-//   custom   單獨用、errorText 換字、外部值本身不是網址(一掛上就是驗證過的樣子)
-//   field    包在 Field 裡(有 FieldDescription、使用端的 FieldError 沒字)、外部值本身不是網址 → 說明畫在 Field 的錯誤區
-//   consumer 包在 Field 裡、使用端自己的 FieldError 有字、外部值本身不是網址 → 只有使用端那一行
+// 四個欄位(閘以 data-eti 找;Tab 順序 = 這個順序,最後一顆「下一個欄位」鈕):
+//   typed    單獨用、一開始空白 —— 閘自己打不合法的字再離開;onInvalidChange 每次呼叫記進 data-eti-log(「true:草稿」以 | 分隔)
+//   custom   單獨用、errorText 換字、外部值本身不是網址 —— 照 blur 驗證:一掛上、點進去都不驗,閘按 Tab 離開後才出現
+//   field    包在 Field 裡(有 FieldDescription、使用端的 FieldError 沒字)、外部值本身不是網址 → 離開後說明畫在 Field 的錯誤區
+//   consumer 包在 Field 裡、使用端自己的 FieldError 有字、外部值本身不是網址 → 離開後 LinkInput 也驗出不合法,仍只有使用端那一行
 // 夾具自己的版面用行內樣式:這個檔不在 Tailwind 的 @source 範圍裡,寫 class 不會產生樣式;DS 元件的樣式來自元件本身。
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'

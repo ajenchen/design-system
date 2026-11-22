@@ -80,26 +80,26 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 ## 驗證
 
-遵循 Field 共用驗證標準（blur validation;唯一例外是下方第 5 點,`../Field/form-validation.spec.md`「驗證時機」開頭記著同一條）：
+遵循 Field 共用驗證標準（blur validation）：
 
 1. **blur 時驗證**——使用者離開 field 時才檢查格式
 2. **開始打字時清除 error**——輸入任一字元即移除錯誤狀態(Escape 還原原值亦清除);單純重新 focus 不清除
 3. **Enter 提交**——結算草稿(等同離開 field 的驗證):合法 → 提交、切回連結狀態,焦點給鉛筆;網址無效 → 紅框、**焦點留在輸入框**;清空 → 清值、留在輸入框。2026-10-01 前 Enter 走 `blur()`,網址無效 / 清空時焦點掉到 `<body>`(實測);同日第一版在 keydown 當下同步聚焦鉛筆又沒 preventDefault,同一下 Enter 的 keypress 落到鉛筆上把編輯重開 —— 現改走 `../Field/field-edit-keys.ts` `editSettleKeyProps`(全 DS 就地編輯鍵盤結算 SSOT:IME guard + preventDefault),焦點在 commit 之後、只在真的掉了才搬
-4. **Escape 取消編輯**——回復原值，不觸發驗證;焦點給鉛筆(同 `../InlineEdit/inline-edit.spec.md`「退出 edit 態(focus 分流)」)。**正在編輯、或有打了還沒存的字,是焦點所在控件自己的一層**(2026-10-01;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):放在 Dialog / Sheet 裡第一下 Esc 只取消、浮層不關,第二下才關;它是同一個 `<input>` 上比 consumer 自己接的 `onKeyDown` 更內層的一層 —— 先收它,consumer 的 Esc 下一下才輪到(表單引擎目前接不上 LinkInput,見下段)。原值本身不是網址(第 5 點)時,還原後照舊是紅框 + 說明;框裡就是原值、沒打過字時沒有這一層(Esc 直接給浮層)
-5. **外部給的值本身不是網址 = 已驗證的不合法**(2026-11-22,LINK-ERRTEXT):編輯模式一顯示就是紅框 + 框下說明,跟離開欄位結算出來的樣子一樣;之後照上面 1–4 走(打字清掉、離開再驗)。理由:`onChange` 只會送出合法網址或空白,這種值一定是從外面存進來的(匯入、舊資料),不是使用者正在打的半截字 —— `../Field/form-validation.spec.md` 規則 1「focus 中不報錯」的理由(才打到一半)管不到它;不畫的話,框裡是不合法的字卻沒有任何提示。只有空白的字算空值、不算不合法(結算時也是清值)。2026-11-22 前要先點進去再離開一次才紅
+4. **Escape 取消編輯**——回復原值，不觸發驗證;焦點給鉛筆(同 `../InlineEdit/inline-edit.spec.md`「退出 edit 態(focus 分流)」)。**正在編輯、或有打了還沒存的字,是焦點所在控件自己的一層**(2026-10-01;`ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」):放在 Dialog / Sheet 裡第一下 Esc 只取消、浮層不關,第二下才關;它是同一個 `<input>` 上比 consumer 自己接的 `onKeyDown` 更內層的一層 —— 先收它,consumer 的 Esc 下一下才輪到(表單引擎目前接不上 LinkInput,見下段)
+
+**不在 `useFormValidation` `getInputProps` 的 v1 支援清單**(`../Field/form-validation.spec.md` v1 邊界 (a),2026-10-01 實測):連結狀態不渲 `<input>`,`getInputProps` 帶的 `name` / 歸屬標記 / Esc 層 / handler 到不了 —— 連結狀態下改過的值按 Esc 不回復(表單那一層輪不到),規則 8 也找不到帶 name 的元素;從輸入狀態被表單回復成合法網址時輸入框卸載、焦點掉到對話框殼。要接上得先定它在連結狀態的欄位語意(待辦總帳 N85)。
 
 ### 錯誤說明
 
 2026-11-22 起(user 11-22 確認頁題 1 留言「第一題可以照你建議，看哪種最SSOT且完整」= AI 建議丙:元件自帶預設說明 + 使用端可換字 + 驗證結果回呼)。`../Field/form-validation.spec.md`「驗證分層」把 URL 格式驗證歸 Field 元件自身、錯誤以「紅框 + error message」呈現,「A11y 預設」要紅框之外必有文字(WCAG 1.4.1 / 3.3.1);修前 LinkInput 自己驗出不合法時只有紅框,使用端也拿不到不合法的草稿(只在合法時呼叫 `onChange`),想寫字也寫不了。
 
-- **何時出現**:LinkInput 自己驗出不合法時(上方第 3 點離開欄位 / Enter 結算出來的、第 5 點外部值本身不是網址),框下一行;開始打字、按清除 ×、Esc 還原成合法 / 空白的原值時跟紅框一起消失(第 2 點)。只看 LinkInput 自己的驗證:使用端給的 `error` / `<Field invalid>` 不會讓這行出現(那是使用端的錯,字由使用端給)。表格格(`naked`)不畫,格的錯誤由表格顯示(`../DataTable/data-table.spec.md` cellErrors)
+- **何時出現**:LinkInput 自己驗出不合法時(上方第 1、3 點:離開欄位 / Enter 結算出來的),框下一行;外面存進來、本身不是網址的值也一樣,沒離開過欄位就不驗、不出這行(第 1 點;`../Field/form-validation.spec.md`「驗證時機」規則 1–2)。開始打字、按清除 ×、Esc 還原原值時跟紅框一起消失(第 2 點)。只看 LinkInput 自己的驗證:使用端給的 `error` / `<Field invalid>` 不會讓這行出現(那是使用端的錯,字由使用端給)。表格格(`naked`)不畫,格的錯誤由表格顯示(`../DataTable/data-table.spec.md` cellErrors)
 - **字**:預設「請輸入網址,例如 acme.com」(句型照 DS 既有的「請輸入…」;例子用沒寫 `https://` 的寫法,因為沒寫協定也收 —— 下方 URL 格式要求)。`errorText` 換字(欄位用途比「網址」具體時,例「請貼上會議邀請裡的連結」);只能換、不能關,空字串 = 預設那句
 - **長相與位置**:Field 家族的 `<FieldError>`(`text-body`、`text-error-text`、`role="alert"`)。**包在 `<Field>` 裡** = 交給 Field 的錯誤區畫(`../Field/field-context.ts` `registerControlError`):位置在說明文字(`FieldDescription`)下面、id = Field 的 `errorId`,跟使用端自己寫的 `<FieldError>` 同位置同長相;**單獨用** = 框下 4px(= Field 欄內的 `gap-1`;框與說明包在同一層,放進有 gap 的容器裡也是 4px)
 - **跟使用端的錯誤誰優先**:包在 Field 裡、使用端自己的 `<FieldError>` 有字時,只畫使用端那行(一個欄位只有一行錯誤);沒字(`<FieldError>{errors.link}</FieldError>` 而 `errors.link` 是空的)才畫 LinkInput 這行。紅框照舊(任一方有錯就紅)
 - **讀屏**:輸入框 `aria-invalid`,`aria-describedby` 加上這一行的 id(聚焦就念得到;WCAG 3.3.1),`aria-errormessage` 照 Field 家族指到同一行;這行出現時 `role="alert"` 播報
-- **驗證結果回呼 `onInvalidChange(invalid, draft)`**:上面「何時出現」那一態有變時呼叫 —— 變成不合法(含一掛上就不合法的外部值)→ `true`;打字、按 ×、Esc、結算成合法或空白 → `false`。`draft` 是當下框裡的字。用途:表單層要知道這格現在不合法(擋送出)、或要自己寫一段更完整的說明放進 `<FieldError>`(這時 Field 只畫使用端那行)
-
-**不在 `useFormValidation` `getInputProps` 的 v1 支援清單**(`../Field/form-validation.spec.md` v1 邊界 (a),2026-10-01 實測):連結狀態不渲 `<input>`,`getInputProps` 帶的 `name` / 歸屬標記 / Esc 層 / handler 到不了 —— 連結狀態下改過的值按 Esc 不回復(表單那一層輪不到),規則 8 也找不到帶 name 的元素;從輸入狀態被表單回復成合法網址時輸入框卸載、焦點掉到對話框殼。要接上得先定它在連結狀態的欄位語意(待辦總帳 N85)。
+- **驗證結果回呼 `onInvalidChange(invalid, draft)`**:上面「何時出現」那一態有變時呼叫 —— 變成不合法 → `true`;打字、按 ×、Esc、結算成合法或空白 → `false`。`draft` 是當下框裡的字。用途:表單層要知道這格現在不合法(擋送出)、或要自己寫一段更完整的說明放進 `<FieldError>`(這時 Field 只畫使用端那行)
+- **範例**:展示頁「錯誤說明」(預設字、`errorText` 換字;離開欄位後出現)、「可清除」第二則(使用端儲存時檢查出網址不合法:包在 `<Field invalid>` 裡、字放 `<FieldError>`,只出使用端那一行)
 
 ### 可清除(clearable)
 
@@ -149,7 +149,7 @@ URL 格式要求：`http://` 或 `https://` 開頭的網址;**沒寫協定、但
 - ❌ 不讓連結盒子撐滿整行(整框可點用延伸連結,盒子仍是文字寬)
 - ❌ 不在網址框裡留下「滑過沒變化卻點得開」或「滑過有底線卻點不開」的區塊——底線 + 手形的範圍 = 點擊範圍(Pencil 除外)
 - ❌ 不讓 link 狀態外框裡滑過會變色的地方點下去沒有反應——Pencil 以外都是連結
-- ❌ 不在打字過程中即時驗證格式——等 blur(外部存進來、本身不是網址的值除外,見「驗證」第 5 點)
+- ❌ 不在打字過程中即時驗證格式——等 blur
 - ❌ 不讓紅框沒有字——LinkInput 自己驗出不合法時框下一定有一行說明(`errorText` 只能換字);包在 Field 裡時跟使用端的錯誤只出一行
 - ❌ 不讓清除 × 當場提交或退出編輯——按 × 只清草稿、焦點留在輸入框,之後照「驗證」結算;焦點移到 × 不算離開欄位
 - ❌ 不放行別的協定(`javascript:` / `data:` / `mailto:` …)——只有網頁網址(含補上 `https://` 的網址樣字)才是合法值
