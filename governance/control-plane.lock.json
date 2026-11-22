@@ -10,7 +10,7 @@
   "contractDigest": "sha256:2999aed4c75bc36823db0b4ea5729744c0920f74b1cd2b2e1bfb4110dd825ef1",
   "files": [
     {
-      "hash": "sha256:50d006336afb2468d8c47c190dbd2e36afbddff9ed50d9feb123709a72a24135",
+      "hash": "sha256:36683f52013a3055f118d37f3810f5d8fde2509521d9a91ddad8a810a4384db7",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 59307,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:5812397116af68771924f66c83ef018aff292b52d7d648433c58336a8c3f65a7",
+      "hash": "sha256:43a9ad96033fe53a3eb83c6053180ed3a5f37422b2ee0787554f50c69eca415b",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 140202,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:afbbf0b8b4d355a8f4d30a5bd1ccd6e7a371df0717777472a1b857f407b22c9f",
+  "inputDigest": "sha256:004eae78e517ca55e97a8e93ea229128e7f18c9d2540cdd7e9f094950aec4bc9",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:cb6ec442735aa38604cf4e753b7c0c63bc356907e95b9c0a998c707f6c09af13",
+  "snapshotDigest": "sha256:03fb46ba6b615895e8c01afeb4fb8dc51fd3e651f3b5b9c983e10b17da1e2cba",
   "sources": [
     {
       "hash": "sha256:0ccefbf34761aef84f24e6ab167939f77cf63e1f11bfe79155f2fb4e98a5fc84",
@@ -1529,7 +1529,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3c85ddb9fdf30024a3ad9ba031fcb7e8aff5a61c8dbab3757779dea4224f19a8",
+      "hash": "sha256:142b1960e571790ef047c97d9e9d385921085fb1aa320697ebe8b698ca2befc3",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2200,7 +2200,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 232,
-      "hash": "sha256:ee56f02f8bc92544cc5271c92090a3d34cd0cdc896a99e4c560745fa3adb2b3d",
+      "hash": "sha256:5a372d3e809f965943206d93cff697fc0f3260759e1f1be22098e6af90a01fb6",
       "id": "governance-baseline-authority",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2311,7 +2311,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:07e1801047e97d28b12149d92500067193118cd848e94c47c0794fc23c5fb794",
+      "hash": "sha256:55d2e22e615f51ac4c56381412206378ee81a1888721c6f06c778f76fad14732",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
