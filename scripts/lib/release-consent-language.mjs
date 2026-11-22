@@ -35,7 +35,7 @@
 //    不記錄、也不撤回,而且**必須印出來讓人知道它被擋了**(靜默丟棄才是真正的傷害)。
 // 7. **只是提到**(2026-11-21,工作包 RC-LANG-FP)→ mention。每一處同意詞都不是在下指示:
 //    前面緊接 mentionPrefixes(上次 / 已 / 沒 …),或後面接的不是 directiveEndings(句尾或標點,中間可夾語助詞、
-//    收尾的引號 / 括號、刪節號、emoji)。
+//    收尾的引號 / 括號、刪節號、emoji,以及 courtesyTails 的禮貌 / 附和詞:謝謝 / OK / 好的 …)。
 //    例:「自上次發版後的異動」「還原已發布的 Button」。不記錄也不撤回,hook 要出聲。理由與邊界寫在函式內第 7 步。
 // 8. 其餘 → consent。
 //
@@ -56,7 +56,7 @@ const WORKFLOW_PATH = resolve(ROOT, 'infra/governance/release-workflow.json')
 export function loadConsentPolicy(path = WORKFLOW_PATH) {
   const policy = JSON.parse(readFileSync(path, 'utf8')).releaseConsent
   if (!policy) throw new Error('release-workflow.json 缺 releaseConsent 判準')
-  for (const key of ['consentPhrases', 'questionMarkers', 'denialMarkers', 'priorConsentAssertions', 'aNotAQuestions', 'conditionalMarkers', 'mentionPrefixes', 'directiveEndings']) {
+  for (const key of ['consentPhrases', 'questionMarkers', 'denialMarkers', 'priorConsentAssertions', 'aNotAQuestions', 'conditionalMarkers', 'mentionPrefixes', 'directiveEndings', 'courtesyTails']) {
     if (!Array.isArray(policy[key]) || policy[key].length === 0) {
       throw new Error(`releaseConsent.${key} 必須是非空陣列 —— 判準缺一項就等於那一面沒有防線`)
     }
@@ -87,11 +87,17 @@ export function isQuestionText(text, policy = loadConsentPolicy()) {
  *   directive  = 有一處是在「下指示」:前面沒有緊接 mentionPrefixes,而且後面緊接 directiveEndings
  *                (句尾或標點;中間可夾語助詞、收尾的引號 / 括號、刪節號、emoji)。
  *   unprefixed = 有一處前面沒有緊接 mentionPrefixes(不論後面接什麼)。
- * 兩份清單都住在 release-workflow.json;本函式只負責逐處套用。
+ * courtesyTails(謝謝 / OK / 好的 …)當成語助詞:比對句尾前先把它們拿掉,所以「發版 謝謝」「發版 OK 謝謝」與「發版」同判
+ *(2026-11-22,工作包 N1-PREP)。比對不分大小寫(OK / ok / Thanks 同一條)。拿掉的只有清單裡的詞:後面還接著別的字的
+ *(「發版 謝謝你們之前的幫忙」「發版 好像有問題」「發布好的版本」)拿掉之後剩下「們之前…」「像有問題」「版本」,仍不是句尾,照舊不算。
+ * 三份清單都住在 release-workflow.json;本函式只負責逐處套用。
  */
 function consentPhraseUses(text, policy) {
   const prefixes = policy.mentionPrefixes.map((item) => new RegExp(`(?:${item})$`, 'u'))
   const endings = policy.directiveEndings.map((item) => new RegExp(`^(?:${item})`, 'u'))
+  // 長的先比:「好的」要整個拿掉,不能先拿掉「好」留下「的」
+  const courtesy = [...policy.courtesyTails].sort((a, b) => b.length - a.length).map(escapeRegExp)
+  const courtesyPattern = courtesy.length ? new RegExp(`(?:${courtesy.join('|')})`, 'giu') : null
   let unprefixed = false
   for (const phrase of policy.consentPhrases) {
     for (let at = text.indexOf(phrase); at >= 0; at = text.indexOf(phrase, at + 1)) {
@@ -99,7 +105,8 @@ function consentPhraseUses(text, policy) {
       const after = text.slice(at + phrase.length)
       if (prefixes.some((pattern) => pattern.test(before))) continue
       unprefixed = true
-      if (endings.some((pattern) => pattern.test(after))) return { directive: true, unprefixed }
+      const rest = courtesyPattern ? after.replace(courtesyPattern, '') : after
+      if (endings.some((pattern) => pattern.test(rest))) return { directive: true, unprefixed }
     }
   }
   return { directive: false, unprefixed }
@@ -199,7 +206,12 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
   //    hook 對 mention 印「直接說「發版」即可」,user 照著連引號打出 「發版」 若仍判 mention,就永遠落不了地(繞圈);
   //    「發版🙏」「可以改，發版🙏」「（發版）」也是同一類。代價照實寫:轉述句「你說「發版」。」也判 consent
   //    (base f87872c8 本來就判 consent,不是新放寬)。引號 / 括號後面還接著字(「發版」流程、發版（beta.140）)仍是 mention。
-  //    仍是 mention、待主線 / user 決定的:「發版 謝謝」「發版 OK」這類同意詞後面接客套或受詞的說法(見 5h)。
+  //    2026-11-22(工作包 N1-PREP,帳本 J-b989803a2d):同意詞後面只接空白 / 標點 + 禮貌或附和詞(courtesyTails:謝謝 / 感謝 /
+  //    OK / 好的 …)再到句尾 → consent。RC-LANG-FP 之後「可以改，發版 謝謝」「發版 謝謝」「發版 OK」判 mention,hook 不落地、
+  //    要 user 再說一次「發版」;user 明說過不要一再要他說(governance/memory/feedback_solo_dev_workflow.md:12)。
+  //    詞表不分大小寫;👍 / 🙏 這類 emoji 不必列,directiveEndings 本來就把 emoji 當語助詞。只放寬這一類:
+  //    同意詞後面先接受詞(「發版到 npm 謝謝」)、接的不只是禮貌詞(「發版 謝謝你們之前的幫忙,但先不要」)仍是 mention;
+  //    否定 / 條件 / 問句在前面幾步就判定,不受詞表影響。`scripts/test-release-consent.mjs` 5i 兩面鎖住,並逐條拿掉詞證明量得到。
   if (!consentPhraseUses(value, policy).directive) {
     return { verdict: 'mention', reason: '講的是別次或已發生的事,或把發版當名詞 / 修飾語用;沒有一處是在指示現在發版' }
   }

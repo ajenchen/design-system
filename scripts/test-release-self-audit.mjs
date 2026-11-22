@@ -117,12 +117,14 @@ check('提問選項 label 是問句 → 不在要', () => assert.equal(asking('�
 // AI 端:同意詞後面還接著字(RC-LANG-FP 規格核對必修 1;合成句,不是 transcript 原文)。
 // 共用判準加了第 7 步 mention 之後,「說「X」」的 X 與選項 label 若只認 consent,下面這些要同意的說法就不再算在要
 // (base f87872c8 都算在要)。現在兩條路都交給 isReleaseRequestPhrase:consent,或同意詞前面不是 上次 / 已 / 沒 … 的 mention。
-const TRAILING_PHRASES = ['發版到 npm', '發布 beta.140', '發版 OK', 'ship it now', '發版 beta.140', '立刻發版並更新 Storybook', '發布到 npm']
+// 2026-11-22(工作包 N1-PREP):「發版 OK」同意詞後面只接附和詞,共用判準改判 consent(test-release-consent.mjs 5i),
+// 量不到 mention 那條路了,這裡換成同樣是同意詞後面接受詞的「發布新版本」。
+const TRAILING_PHRASES = ['發版到 npm', '發布 beta.140', '發布新版本', 'ship it now', '發版 beta.140', '立刻發版並更新 Storybook', '發布到 npm']
 for (const phrase of TRAILING_PHRASES) {
   // 先確認這幾格量的是 mention 那條路(判成 consent 的話,下面的格子在第一版 RC-LANG-FP 也會綠,量不到這次的修正)
   check(`AI 端前提:「${phrase}」共用判準判 mention`, () => assert.equal(classifyConsentPrompt(phrase, policy).verdict, 'mention', phrase))
 }
-for (const sentence of ['沒問題就回「發版到 npm」。', '請直接回「發布 beta.140」。', '沒問題就說「發版 OK」。', '請回「ship it now」。']) {
+for (const sentence of ['沒問題就回「發版到 npm」。', '請直接回「發布 beta.140」。', '沒問題就說「發布新版本」。', '請回「ship it now」。']) {
   check(`AI 端:請 user 說的話同意詞後面接著字仍算在要:${sentence}`, () => assert.equal(asking(sentence), true, sentence))
 }
 for (const label of ['發版 beta.140', '立刻發版並更新 Storybook', '發布到 npm', '發版（合併並發布）']) {

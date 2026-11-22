@@ -203,7 +203,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-build-graph-tests | `scripts/test-governance-build-graph.mjs` | `sha256:2fdc04c16353c7d1d9fbf159c7da70fc6019021e85115a74cd984f702736467f` |
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:359a7796f09ba1851a7497730151890948c2c1be6137f9f374b76558fd5742dc` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:3a3557632f81403571db6b58ce2393670d7c367de06f8f04ceb629cc2e9701eb` |
-| governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:505047eb762e5f2109dd9af3ebaf7d272b284f7d42c3453324b2e3ff23eb62a4` |
+| governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:dadaa15ae1f5f31649109efc42a8722f0eafab3f9f4403517ac1b8ba9d636b92` |
 | governance-control-plane-tests | `infra/governance/test/` | `sha256:9a482da37e0f5297a820504edb4c4487ba7cf8e8bfc0a2ae45ad2b701237f248` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:e353dc81c2d5f849876ec3f1579a1e3304aaa1749f52a3b48ae36610406fa26a` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:ee94362513e8c84d74cfa96997783b45a6a005c150d7303a7b42e7f484346d14` |
@@ -348,7 +348,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:f09d8088c4e3c3ef274b5c659cc6c35d0127e42d9826b5b63c0df7cc802cf6e1` |
+| repository-automation-corpus | `scripts` | `sha256:3693dfa1cc3e0ce2cd34abd6af2cdf40973ef7e06c25d0db19ad8e109b786c82` |
 | repository-ignore-boundary | `.gitignore` | `sha256:5d4a413c4947c7d63058cce0c93fa1adfa8c83efb41006e5b3876fd2706d81f8` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
@@ -358,8 +358,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | signed-release-tag-adversarial-tests | `infra/governance/test/signed-release-tag.test.mjs` | `sha256:3db02827a0d9edce2a07b559131836e3a0efa5ac45537a8388f7f97c37203587` |
 | signed-release-tag-verifier | `infra/governance/lib/signed-release-tag.mjs` | `sha256:d081048b17171cc3f469f2e460fb254023d3c866d35033cb689b366d2ddb8230` |
 | standard-release-orchestrator | `scripts/release-orchestrator.mjs` | `sha256:a25d661db24f7056798de62c5b86b9040860df8202250d9ed2dce4a65398b6a8` |
-| standard-release-workflow | `infra/governance/release-workflow.json` | `sha256:c00f898f2fac7356582abf2a69daf8223336fce810404622185e578df88d7d9e` |
-| standard-release-workflow-schema | `infra/governance/schemas/release-workflow.schema.json` | `sha256:cb3e411547348d63ed03871a47e863ba41487349842ea5d0ced2a8c8ef5b219b` |
+| standard-release-workflow | `infra/governance/release-workflow.json` | `sha256:6a2abe2e850b0899a66c39c2b2f3e5192893fd35c020ff0b8955fea39d6b2800` |
+| standard-release-workflow-schema | `infra/governance/schemas/release-workflow.schema.json` | `sha256:256f383628b01d1be37a9b32834338c62743a2638e6f8983a1f316faa38f2090` |
 | standard-release-workflow-tests | `infra/governance/test/release-workflow.test.mjs` | `sha256:4a04aa06f50fb3b5b48ffaf68c040f1becd3fb582ef42171940c59cd9bb04d26` |
 | storybook-package-contract | `packages/storybook-config/package.json` | `sha256:e93c9520bf25b755d1f2f446b899313de43a68aab8cb718b866d6c2cef86b1e6` |
 | visual-baseline-review-policy | `infra/governance/visual-baseline-review-policy.json` | `sha256:339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334` |

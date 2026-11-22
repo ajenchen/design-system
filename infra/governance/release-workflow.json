@@ -263,6 +263,20 @@
     ],
     "directiveEndings": [
       "(\\s|[吧啦了囉嘍喔哦唷呀啊咯～~]|[」』”\"’'）)\\]】〕〉》…⋯]|\\p{Extended_Pictographic}|\\p{Emoji_Modifier}|\\u{FE0F}|\\u200D)*($|[，,。．.！!；;、\\n]|[:：]\\s*$)"
+    ],
+    "courtesyTails": [
+      "謝謝",
+      "謝謝你",
+      "謝謝您",
+      "感謝",
+      "謝了",
+      "謝啦",
+      "thanks",
+      "thank you",
+      "thx",
+      "ok",
+      "好",
+      "好的"
     ]
   }
 }

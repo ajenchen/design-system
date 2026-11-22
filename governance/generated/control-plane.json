@@ -1757,7 +1757,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 57,
-      "hash": "sha256:505047eb762e5f2109dd9af3ebaf7d272b284f7d42c3453324b2e3ff23eb62a4",
+      "hash": "sha256:dadaa15ae1f5f31649109efc42a8722f0eafab3f9f4403517ac1b8ba9d636b92",
       "id": "governance-control-plane-schemas",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3094,7 +3094,7 @@
         "scripts/generated/"
       ],
       "files": 789,
-      "hash": "sha256:f09d8088c4e3c3ef274b5c659cc6c35d0127e42d9826b5b63c0df7cc802cf6e1",
+      "hash": "sha256:3693dfa1cc3e0ce2cd34abd6af2cdf40973ef7e06c25d0db19ad8e109b786c82",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3184,21 +3184,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c00f898f2fac7356582abf2a69daf8223336fce810404622185e578df88d7d9e",
+      "hash": "sha256:6a2abe2e850b0899a66c39c2b2f3e5192893fd35c020ff0b8955fea39d6b2800",
       "id": "standard-release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-workflow.json",
-      "size": 8494,
+      "size": 8714,
       "type": "file"
     },
     {
-      "hash": "sha256:cb3e411547348d63ed03871a47e863ba41487349842ea5d0ced2a8c8ef5b219b",
+      "hash": "sha256:256f383628b01d1be37a9b32834338c62743a2638e6f8983a1f316faa38f2090",
       "id": "standard-release-workflow-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/schemas/release-workflow.schema.json",
-      "size": 18155,
+      "size": 18391,
       "type": "file"
     },
     {
