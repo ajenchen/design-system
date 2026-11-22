@@ -85,7 +85,7 @@ function ErrorTextDemo() {
 // link-input.spec.md「可清除(clearable)」:選填的網址欄位開 clearable;× 只在打字狀態、框裡有字時出現,連結狀態照舊只有鉛筆。
 export const Clearable: Story = {
   name: '可清除',
-  parameters: { docs: { description: { story: '選填的網址欄位(不填也可以)才開 clearable:框裡有字時右邊出現 ×,一鍵清掉。' } } },
+  parameters: { docs: { description: { story: '選填的網址欄位(不填也可以)才需要這顆 ×(clearable):框裡有字時右邊出現,一鍵清掉。' } } },
   render: () => <ClearableDemo />,
 }
 
@@ -119,7 +119,7 @@ function SaveErrorDemo() {
   const [saveError, setSaveError] = React.useState('這個網址已經登記在「春季檔期」專案')
   return (
     <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
-      <p className="text-caption text-fg-muted">網址格式沒問題、按下儲存才查出的錯(例如網址已經被別的專案用了),跟其他欄位一樣交給 Field 顯示紅框與一行說明(invalid + FieldError)。使用者一開始修改就收掉:按鉛筆後打字或按 × 都算。LinkInput 要等離開欄位才回報新網址(onChange),所以接 onInput 當下清掉。</p>
+      <p className="text-caption text-fg-muted">網址格式沒問題、按下儲存才查出的錯(例如網址已經被別的專案用了),跟其他欄位一樣交給 Field 顯示紅框與一行說明(invalid + FieldError)。使用者一開始修改就收掉:按鉛筆後打字或按 × 都算。LinkInput 要等離開欄位才回報新網址(onChange),所以要在使用者一打字或按 × 的當下就把錯清掉(onInput)。</p>
       <Field invalid={!!saveError}>
         <FieldLabel>活動頁網址</FieldLabel>
         <LinkInput clearable value={landingPage} onChange={setLandingPage} onInput={() => setSaveError('')} />
