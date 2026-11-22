@@ -49,12 +49,12 @@
 
 ### 驗證時機(Blur Validation)
 
-所有 Field 統一使用 blur validation——使用者離開 field 時驗證，不在打字過程中即時驗證。
+所有 Field 統一使用 blur validation——使用者離開 field 時驗證，不在打字過程中即時驗證。**唯一例外**(2026-11-22,LINK-ERRTEXT):LinkInput 外部給的值本身不是網址時,編輯模式一顯示就是驗證過的樣子(紅框 + 框下說明),之後照下列規則走 —— 這種值只能是外面存進來的(匯入、舊資料;LinkInput 的 `onChange` 只送合法網址或空白),不是使用者正在打的半截字,規則 1 的理由管不到它;條文與理由的正本在 `../LinkInput/link-input.spec.md`「驗證」第 5 點。
 
 #### 尚未出錯的欄位
 
 1. **Focus 中不顯示錯誤**——即使輸入內容不合法,focus 狀態不驗證、不顯示 error
-2. **Blur 時驗證**——使用者離開 field 後才顯示 error(可執行層 bug fix,2026-10-01,待辦總帳 N67:因滑鼠按下 / 觸控點一下別的東西而離開時,這一格的驗證延到這一下按壓完成、click 已送出之後才跑;按住連結 / 圖片拖一段(原生拖曳,不會有 click)則在瀏覽器取消這一下按壓或拖曳結束時就補驗,「按著」不會卡住 —— 當場驗的話錯誤訊息在按下與放開之間長出來、把下方的按鈕推走,這一下點擊落空,送出 / 取消都沒發生(實測 CreateProjectForm 送出鈕被推 25px、對話框 footer 271.6 → 321.6);按到的是送出或重設就由它們接手,焦點回到這一格就不驗,鍵盤離開照舊立刻驗)
+2. **Blur 時驗證**——使用者離開 field 後才顯示 error,本節開頭的 LinkInput 例外除外(可執行層 bug fix,2026-10-01,待辦總帳 N67:因滑鼠按下 / 觸控點一下別的東西而離開時,這一格的驗證延到這一下按壓完成、click 已送出之後才跑;按住連結 / 圖片拖一段(原生拖曳,不會有 click)則在瀏覽器取消這一下按壓或拖曳結束時就補驗,「按著」不會卡住 —— 當場驗的話錯誤訊息在按下與放開之間長出來、把下方的按鈕推走,這一下點擊落空,送出 / 取消都沒發生(實測 CreateProjectForm 送出鈕被推 25px、對話框 footer 271.6 → 321.6);按到的是送出或重設就由它們接手,焦點回到這一格就不驗,鍵盤離開照舊立刻驗)
 3. **Enter 等同 blur**——觸發驗證並離開編輯(適用於單行 field)
 4. **Escape 取消**——回復原值，不觸發驗證。**放在 Dialog / Sheet / Popover 裡時,改過的欄位是「最內層」**(2026-10-01,待辦總帳 N68;規則與出處 `ds-canonical/references/keyboard-model-canonical.md`「焦點所在的控件自己那一層也算一層」,AI 推導):第一下 Escape 回復欄位、浮層不關,第二下才關;乾淨的欄位按 Escape 直接關浮層。控件自己的彈出層(可搜尋的 Select 清單、DatePicker 日曆)開著時,彈出層才是最內層 —— 那一下只關彈出層、**不**回復欄位(修前同一下兩件事都做)。機制:`getInputProps` 在欄位改過時掛 `data-escape-layer`,浮層守門 `../../lib/overlay-escape.ts` 看到就把那一下留給欄位;欄位的 Escape 先問 `isEscapeForControl`。**沒有接 `useFormValidation` 的 `<Input>` 沒有「原值」可回復,Escape 直接關浮層**(DS 內自己的對話框 / 側板表單範例因此一律接 hook,預覽看到的就是裁示的行為;結構示範與 test-only 夾具除外 —— 清單見 canonical 該節)
 
@@ -79,7 +79,7 @@
 
 | 層級 | 負責者 | 時機 | 範例 |
 |---|---|---|---|
-| **格式驗證** | Field 元件自身 | blur | email 格式、URL 格式、必填檢查 |
+| **格式驗證** | Field 元件自身 | blur(LinkInput 外部給的值本身不是網址:一顯示就驗,見「驗證時機」開頭的例外) | email 格式、URL 格式、必填檢查 |
 | **業務驗證** | Form 層 / 應用層 | submit | 名稱不可重複(API)、跨欄位邏輯 |
 
 兩者都透過 `error` prop / Field context 的 `invalid` 呈現,視覺上一致(紅框 + error message)。

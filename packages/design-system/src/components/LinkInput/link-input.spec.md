@@ -80,7 +80,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 ## 驗證
 
-遵循 Field 共用驗證標準（blur validation）：
+遵循 Field 共用驗證標準（blur validation;唯一例外是下方第 5 點,`../Field/form-validation.spec.md`「驗證時機」開頭記著同一條）：
 
 1. **blur 時驗證**——使用者離開 field 時才檢查格式
 2. **開始打字時清除 error**——輸入任一字元即移除錯誤狀態(Escape 還原原值亦清除);單純重新 focus 不清除
