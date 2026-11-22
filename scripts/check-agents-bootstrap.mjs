@@ -166,7 +166,9 @@ try {
 // 開場固定載入 = AGENTS.md + CLAUDE.md + rules/ 底下沒有 paths 前置設定的規則檔(Claude 每次對話都載入;目前 meta-patterns.md、
 // work-process.md)—— 名單從目錄機械算,新增一支常駐規則檔自動算進來,不必改本檔。上限 = 2026-11-22 第七個合回點(WP-AGENTS + WP-USER 合併後,M16 列已移出 meta-patterns)的實量,
 // 只在確定要讓開場變大時才改這個數字(改了 PR diff 看得到)。量的是正本;.claude/rules 是逐位元組投影(governance:check 管)。
-const OPENING_FILES_MAX_BYTES = 75_691
+// 2026-11-22 PROC-SSOT2 明改 75,691 → 76,256(+565):work-process.md v2 加兩句(選做法前先查會不會跨監督邊界;收尾給 user 的頁照
+// feedback_propose_discipline.md Sub-rule 7 篩)+ 版本紀錄一列 —— 兩條都是 user 11-22 指出的實際出錯,要所有 session 開場就讀到。
+const OPENING_FILES_MAX_BYTES = 76_256
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {
