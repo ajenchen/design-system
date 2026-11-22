@@ -1578,7 +1578,7 @@ export const IconActionPrimitiveDecision = {
               </tr>
             </thead>
             <tbody>
-              <tr><Td>Input / NumberInput / Combobox clear X(Input / NumberInput 由使用端經 <code className="font-mono">endAction</code> 傳入;Combobox 與 Select / DatePicker / TimePicker / LinkInput 是內建 <code className="font-mono">clearable</code>)</Td><Td>Field chrome padding</Td><Td mono>Inline Action</Td><Td>Embedded in host</Td></tr>
+              <tr><Td>Input / NumberInput / Combobox clear X</Td><Td>Field chrome padding</Td><Td mono>Inline Action</Td><Td>Embedded in host(Input / NumberInput 由使用端經 <code className="font-mono">endAction</code> 傳入;其餘元件內建 <code className="font-mono">clearable</code>)</Td></tr>
               <tr><Td>Tag dismiss X</Td><Td>Pill body</Td><Td mono>Inline Action</Td><Td>Colored host,繼承顏色</Td></tr>
               <tr><Td>Menu / TreeView suffix action</Td><Td>Row inline flow</Td><Td mono>Inline Action</Td><Td>Inline with content</Td></tr>
               <tr><Td>SidebarGroup header chevron</Td><Td>Aux toggle</Td><Td mono>Inline Action</Td><Td>Inline header toggle</Td></tr>
