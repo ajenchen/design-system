@@ -19,7 +19,7 @@
  *         深色溢出清單每人一列、Coachmark 頁腳(單步 / 多步)按鈕群靠右且 primary 在最右、
  *         Coachmark 媒體區貼齊(2026-11-13,R17 / R18):左右貼外殼內緣,上緣有標題列時貼標題列的分隔線、沒有時貼外殼頂(md / lg 量像素)。
  *         Coachmark 高度與捲動(2026-11-22,R19 / R20;coachmark.spec.md「高度與捲動」):1280×800 下「多步提示」第 1 步(3 行說明)說明底不低於頁腳頂、
- *         放得下時內容區不是 Tab 停點;「內容很長」內容區真的捲得動、Tab 到得了、按 End 捲到底後說明底不低於頁腳頂、標題列與頁腳整條在外殼與視窗裡(md / lg)。
+ *         放得下時內容區不是 Tab 停點;test-only「捲動回歸量測夾具」(故意超長、不是範例)內容區真的捲得動、Tab 到得了、按 End 捲到底後說明底不低於頁腳頂、標題列與頁腳整條在外殼與視窗裡(md / lg)。
  *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest`:靜態每列注入一個修前形狀(2026-10-20 前的原始碼片段)必須紅在那一列;
  *       真建置每列在頁面上拆掉修法(拿掉字色 / 陰影、移一則說明、把觸發點設成不可聚焦、換掉 CTA 的事件、拿掉欄的主題、
  *       寫回懸空的 aria-describedby、把卡片移開、把標題改回舊名、把地標名稱改回英文、把按鈕字改回英文、把兩個欄位值對調、拿掉欄位值的 break-words、
@@ -443,7 +443,7 @@ const ROWS = {
   R17: 'Coachmark 媒體區上緣貼齊:有標題列貼標題列的分隔線、沒有貼外殼頂(coachmark.spec.md「Media 區規則」位置;layoutSpace.spec.md 規則 2 結構分區不套表【AI 推導 2026-11-13】)',
   R18: 'Coachmark 媒體區左右貼齊外殼內緣(滿版;coachmark.spec.md「Media 區規則」位置)',
   R19: 'Coachmark 放得下時高度貼內容:1280×800「多步提示」第 1 步(3 行說明)說明底不低於頁腳頂、內容區不是 Tab 停點(coachmark.spec.md「高度與捲動」;user 2026-11-22「丙」)',
-  R20: 'Coachmark 超過可用高度時內容區捲動:「內容很長」內容區捲得動、Tab 到得了、鍵盤捲到底後說明底不低於頁腳頂,標題列與頁腳整條在外殼與視窗裡(coachmark.spec.md「高度與捲動」)',
+  R20: 'Coachmark 超過可用高度時內容區捲動:test-only「捲動回歸量測夾具」內容區捲得動、Tab 到得了、鍵盤捲到底後說明底不低於頁腳頂,標題列與頁腳整條在外殼與視窗裡(coachmark.spec.md「高度與捲動」)',
 }
 const results = new Map()
 const mark = (id, ok, detail = []) => {
@@ -866,14 +866,14 @@ async function runRuntime({ mutateRow = null } = {}) {
       }
       for (const density of ['md', 'lg']) {
         await open('design-system-components-coachmark-展示--long-content', { density })
-        await settleCoach(`Coachmark 內容很長(${density})打開、開場動畫跑完`)
+        await settleCoach(`Coachmark 捲動回歸量測夾具(${density})打開、開場動畫跑完`)
         await mutate('R20')
         await settle(200)
         const a = await readCoach()
-        if (!a || !a.hasDesc || !a.hasFoot || !a.hasHead) fail(`Coachmark 內容很長(${density}):讀不到卡片 / 說明 / 標題列 / 頁腳`)
+        if (!a || !a.hasDesc || !a.hasFoot || !a.hasHead) fail(`Coachmark 捲動回歸量測夾具(${density}):讀不到卡片 / 說明 / 標題列 / 頁腳`)
         const overflows = !!a.vp && a.vp.sh - a.vp.ch > 1
-        // 範例沒有真的超過可用高度 = 量不到捲動(儀器失效);拆掉修法的對照組不檢查這點
-        if (!SELFTEST && !overflows) fail(`Coachmark 內容很長(${density}):內容區沒有超過可用高度(scrollHeight ${a.vp?.sh} / clientHeight ${a.vp?.ch})—— 範例量不到捲動`)
+        // 夾具沒有真的超過可用高度 = 量不到捲動(儀器失效);拆掉修法的對照組不檢查這點
+        if (!SELFTEST && !overflows) fail(`Coachmark 捲動回歸量測夾具(${density}):內容區沒有超過可用高度(scrollHeight ${a.vp?.sh} / clientHeight ${a.vp?.ch})—— 夾具量不到捲動`)
         // 鍵盤:焦點在外殼(開啟時 focus content 容器)→ Tab 最多 4 下要到內容區,再按 End 捲到底
         let tabs = 0
         for (; tabs < 4; tabs++) {
@@ -886,13 +886,13 @@ async function runRuntime({ mutateRow = null } = {}) {
           await page.waitForFunction(() => { const v = document.querySelector('[role="dialog"][data-state="open"] [data-radix-scroll-area-viewport]'); return !!v && v.scrollTop + v.clientHeight >= v.scrollHeight - 1 }, null, { timeout: 3000, polling: 'raf' }).catch(() => {})
         }
         const b = await readCoach()
-        if (!b) fail(`Coachmark 內容很長(${density}):按鍵後卡片不見了`)
+        if (!b) fail(`Coachmark 捲動回歸量測夾具(${density}):按鍵後卡片不見了`)
         const inShell = b.headTop >= b.shellTop - 0.5 && b.footBottom <= b.shellBottom + 0.5
         const inWin = b.shellTop >= -0.5 && b.shellBottom <= b.winH + 0.5
         const scrolled = (b.vp?.st ?? 0) > 0
         const gap = b.footTop - b.descBottom
         rec('R20', overflows && reached && scrolled && gap >= -0.5 && inShell && inWin,
-          `內容很長 ${density} 1280×800:內容區${overflows ? '' : '沒有'}捲得動(${b.vp?.sh}/${b.vp?.ch})、Tab ${reached ? `${tabs} 下到得了` : '到不了'}內容區、End 後 scrollTop ${b.vp?.st ?? '-'}、說明底 → 頁腳頂 ${gap.toFixed(1)}px;標題列 / 頁腳${inShell ? '' : '不'}在外殼內(頁腳底 ${b.footBottom.toFixed(1)} / 外殼底 ${b.shellBottom.toFixed(1)})、外殼${inWin ? '' : '不'}在視窗內`)
+          `捲動回歸量測夾具 ${density} 1280×800:內容區${overflows ? '' : '沒有'}捲得動(${b.vp?.sh}/${b.vp?.ch})、Tab ${reached ? `${tabs} 下到得了` : '到不了'}內容區、End 後 scrollTop ${b.vp?.st ?? '-'}、說明底 → 頁腳頂 ${gap.toFixed(1)}px;標題列 / 頁腳${inShell ? '' : '不'}在外殼內(頁腳底 ${b.footBottom.toFixed(1)} / 外殼底 ${b.shellBottom.toFixed(1)})、外殼${inWin ? '' : '不'}在視窗內`)
       }
     } finally {
       await page.setViewportSize({ width: 1280, height: 900 })

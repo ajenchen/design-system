@@ -361,7 +361,7 @@ export const MediaContentRule: Story = {
           description="把目前篩選後的結果匯出成 Excel,欄位順序與排序都會保留。"
           anchor={<Button variant="tertiary" size="sm" startIcon={Download}>匯出報表</Button>}
         />
-        <ExampleCaption>↑ 點按鈕看卡片:內容放得下,高度貼內容、沒有捲動;內容很長時的樣子見展示頁「內容很長」</ExampleCaption>
+        <ExampleCaption>↑ 點按鈕看卡片:內容放得下,高度貼內容、沒有捲動;超過可用高度時怎麼捲,見上方說明與 coachmark.spec.md「高度與捲動」</ExampleCaption>
       </TutorialRule>
 
       <TutorialRule

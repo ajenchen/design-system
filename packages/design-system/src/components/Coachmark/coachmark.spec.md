@@ -140,7 +140,7 @@ Media + Body 合稱**內容區**:超過可用高度時只有這一區捲動,Head
 - **超過時內容區捲動**:Header(標題列)與 Footer(步驟計數 / 按鈕)不縮、永遠看得到;中間的內容區(Media + Body)包 `ScrollArea` 捲動 —— 與長內容 Popover 同款(`../../patterns/overlay-surface/overlay-surface.spec.md`「Popover 例外」「Coachmark」)
 - **鍵盤**:內容區真的捲得動時才進 Tab 順序(`tabIndex=0`,焦點框是 ScrollArea 自帶的 inset DS focus ring,`../ScrollArea/scroll-area.spec.md`),聚焦後方向鍵 / PageDown / End 捲動;放得下時不多這一站(overlay-surface.spec.md「Focus ownership」:短內容不是捲動區)
 - **放得下時畫面不變**:內容區高度 = 內容高度,Media 照樣貼齊外殼(「Media 區規則」位置)、Body 內距照 overlay-surface
-- 機械檢查:`scripts/overlay-story-contract-invariant.mjs` R19(放得下時說明底不低於頁腳頂、內容區不是 Tab 停點)/ R20(「內容很長」範例:內容區捲得動、可用鍵盤捲到底、標題列與頁腳在畫面內)
+- 機械檢查:`scripts/overlay-story-contract-invariant.mjs` R19(放得下時說明底不低於頁腳頂、內容區不是 Tab 停點)/ R20(展示檔裡標 `tags: ['test-only']` 的「內容超過可用高度:捲動回歸量測夾具」:內容區捲得動、可用鍵盤捲到底、標題列與頁腳在畫面內;夾具故意塞超長說明,只給量具用,不是範例)
 
 ---
 

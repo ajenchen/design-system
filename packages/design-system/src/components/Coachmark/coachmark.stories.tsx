@@ -126,7 +126,7 @@ function StepTour({ steps, kind }: { steps: typeof tourSteps; kind: 'new-feature
 
 // 多步導覽的錨點列放在畫面上方(2026-11-22 A63-COACHMARK):導覽卡通常指著頁面上方的工具列,卡片往下有整個畫面的高度。
 // 原本 layout 置中、錨點在視窗正中 → 1280×800 下卡片只剩約 370px 可用高度,3 行說明的第 3 行被壓到捲動區外、看起來像被頁腳蓋住。
-// 卡片本身的行為(放得下時高度貼內容、放不下時內容區捲動)見下方「內容很長」與 coachmark.spec.md「高度與捲動」。
+// 卡片本身的行為(放得下時高度貼內容、放不下時內容區捲動)見 coachmark.spec.md「高度與捲動」。
 const stepTourParameters = { layout: 'padded' as const }
 
 export const MultiStepTour: Story = {
@@ -167,11 +167,14 @@ export const TipsMultiStep: Story = {
   render: () => <StepTour steps={tipSteps} kind="tips" />,
 }
 
-// ── 內容很長:超過可用高度時內容區捲動 ─────────────────────────────────────────
-
+// ── test-only:捲動回歸量測夾具(閘 scripts/overlay-story-contract-invariant.mjs R20)──
+// 不是使用建議:說明故意寫到超過 1280×800 的可用高度,只為了讓量具量得到「內容區捲動、標題列與頁腳固定」;
+// 給讀者看的範例用日常長度的說明(story-rules.md「Technical probe visibility」「範例最高準則」、example-selection.md「極端不現實案例」)。
+// 內容超過可用高度時卡片怎麼長、怎麼捲,行為說明住 coachmark.spec.md「高度與捲動」。
+// story id(…--long-content)由 R20、a11y 基線與 ds-story-manifest.json 引用,改 export 名要一起改。
 export const LongContent: Story = {
-  name: '內容很長',
-  parameters: { docs: { description: { story: '卡片高度跟著內容長,說明寫幾行由使用端決定。內容超過畫面可用高度時,標題列與頁腳固定看得到,中間的媒體 + 說明區可以捲動(滑鼠 / 觸控板直接捲;鍵盤按 Tab 到內容區後用方向鍵或 PageDown),不會溢出畫面 —— 跟 Popover、下拉選單同一套。內容放得下時沒有捲動,也不多一個 Tab 停點。' } } },
+  name: '內容超過可用高度:捲動回歸量測夾具',
+  tags: ['test-only'],
   render: () => {
     const [open, setOpen] = React.useState(true)
     return (
