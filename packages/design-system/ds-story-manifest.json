@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-11-22T13:28:56.973Z"
+    "generatedAt": "2026-11-22T16:38:42.289Z"
   },
   "components": {
     "accordion": {
@@ -1055,11 +1055,11 @@
         "展示": [
           "design-system-components-linkinput-展示--default",
           "design-system-components-linkinput-展示--empty",
-          "design-system-components-linkinput-展示--validation",
-          "design-system-components-linkinput-展示--clearable",
           "design-system-components-linkinput-展示--error-text",
+          "design-system-components-linkinput-展示--clearable",
+          "design-system-components-linkinput-展示--save-error",
           "design-system-components-linkinput-展示--modes",
-          "design-system-components-linkinput-展示--view"
+          "design-system-components-linkinput-展示--custom-label"
         ],
         "設計規格": [
           "design-system-components-linkinput-設計規格--overview",

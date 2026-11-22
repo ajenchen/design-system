@@ -99,7 +99,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 - **跟使用端的錯誤誰優先**:包在 Field 裡、使用端自己的 `<FieldError>` 有字時,只畫使用端那行(一個欄位只有一行錯誤);沒字(`<FieldError>{errors.link}</FieldError>` 而 `errors.link` 是空的)才畫 LinkInput 這行。紅框照舊(任一方有錯就紅)
 - **讀屏**:輸入框 `aria-invalid`,`aria-describedby` 加上這一行的 id(聚焦就念得到;WCAG 3.3.1),`aria-errormessage` 照 Field 家族指到同一行;這行出現時 `role="alert"` 播報
 - **驗證結果回呼 `onInvalidChange(invalid, draft)`**:上面「何時出現」那一態有變時呼叫 —— 變成不合法 → `true`;打字、按 ×、Esc、結算成合法或空白 → `false`。`draft` 是當下框裡的字。用途:表單層要知道這格現在不合法(擋送出)、或要自己寫一段更完整的說明放進 `<FieldError>`(這時 Field 只畫使用端那行)
-- **範例**:展示頁「錯誤說明」(預設字、`errorText` 換字;離開欄位後出現)、「可清除」第二則(使用端儲存時檢查出網址不合法:包在 `<Field invalid>` 裡、字放 `<FieldError>`,只出使用端那一行;開始打字或按 × 時用 `onInput` 清掉)
+- **範例**:展示頁「錯誤說明」(預設字、`errorText` 換字;離開欄位後出現)、「儲存時查出的錯」(網址格式沒問題、按下儲存才查出的錯:包在 `<Field invalid>` 裡、字放 `<FieldError>`;按鉛筆後打字或按 × 時用 `onInput` 清掉)(2026-11-23 從「可清除」第二則移出:`../../../ds-canonical/rules/story-rules.md`「範例最高準則」每則只教一件事)
 
 ### 可清除(clearable)
 
@@ -107,7 +107,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 - **何時出現**:只在編輯模式的**打字狀態**(上方「Input 狀態」:正在編輯、無值、網址不合法)、**框裡有字**時,輸入框右側出現清除 ×;空白的框沒有。網址不合法、框裡有字時也有 —— 一鍵清掉重打。**連結狀態不變**:沒有 ×,右側照舊只有 Pencil;readonly / disabled / view 沒有
 - **長相**:Field 家族共用的那一顆(`../Field/field-clear-button.tsx` FieldClearButton = `ItemInlineAction` X,`../../patterns/element-anatomy/inline-action.spec.md`「Real case 表」clear X 列),名稱「清除網址」(「清除 + 清掉的是什麼」,同「清除日期」「清除時間」);右緣內距照 `../Field/field-controls.spec.md`「右側元素」
-- **按下**:清掉打的字(草稿)與紅框,**焦點留在輸入框**;**不**當場提交、不呼叫 `onChange`。**按下會送出 `input` 事件,跟原生輸入框清空一樣**(2026-11-22 起):按 × 是開始編輯,跟打字同一個事件 —— 使用端接的 `onInput` 收得到,自己給的錯(`<Field invalid>` + `<FieldError>`、表單層的錯)照 `../Field/form-validation.spec.md` 規則 5 當下清掉,不另開 prop(範例:展示頁「可清除」第二則)。2026-11-22 前按 × 只清元件自己的草稿與紅框、不送事件,使用端給的錯一直留到結算
+- **按下**:清掉打的字(草稿)與紅框,**焦點留在輸入框**;**不**當場提交、不呼叫 `onChange`。**按下會送出 `input` 事件,跟原生輸入框清空一樣**(2026-11-22 起):按 × 是開始編輯,跟打字同一個事件 —— 使用端接的 `onInput` 收得到,自己給的錯(`<Field invalid>` + `<FieldError>`、表單層的錯)照 `../Field/form-validation.spec.md` 規則 5 當下清掉,不另開 prop(範例:展示頁「儲存時查出的錯」)。2026-11-22 前按 × 只清元件自己的草稿與紅框、不送事件,使用端給的錯一直留到結算
 - **之後照既有規則結算**(上方「驗證」):離開欄位或 Enter —— 空白 = 清值(`onChange('')`)、合法 = 提交、不合法 = 紅框;Esc = 還原原值(打字狀態的 Esc 層照舊,見「驗證」4)
 - **焦點**:
   - 滑鼠:輸入框握著焦點時按 ×,焦點不動(擋 mousedown 預設、click 照常;`../../lib/pointer-press.ts` `keepFocusOnPointerPress`,Select / Combobox 欄位內搜尋框同一支);焦點本來不在欄位裡時,按完放進輸入框 —— 草稿已經跟值不同,得有一次離開才會結算

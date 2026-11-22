@@ -1,10 +1,12 @@
-// 「LinkInput 可清除」閘(scripts/link-input-clear-invariant.mjs)C10 的測試夾具 —— 閘自己掛載的頁面,不是 story。
+// 「LinkInput 可清除」閘(scripts/link-input-clear-invariant.mjs)C10 與 C1 空白欄位的測試夾具 —— 閘自己掛載的頁面,不是 story。
 // 由 scripts/lib/storybook-css-fixture.mjs 用 esbuild 打包、配同一份 storybook 建置的 CSS 在本機靜態頁開。
 //
 // 為什麼不是 story:C10 量的是使用端的 `onBlur` 什麼時候被呼叫(link-input.spec.md「可清除(clearable)」焦點段:輸入框 ↔ × 之間移動不呼叫、
 // 從 × 離開欄位才呼叫一次,事件的 currentTarget / target 是輸入框)。要量就得有一個接了 onBlur、把每次呼叫記下來的使用端;
 // 展示頁的「可清除」範例沒有接 onBlur,也不該為了量在讀者看的範例裡放計數器。
 // 每次 onBlur 被呼叫,把「currentTarget 標籤 / target 標籤」記進 `data-blur-log`(空白分隔,閘讀它);欄位後面一顆按鈕當「欄位外」的 tab stop。
+// 按鈕後面另放一個沒碰過的空白欄位(開了 clearable):C1「空白框沒有 ×」量它 —— 展示頁「可清除」2026-11-23 起不另放空白那則
+// (與「填寫網址」重複,按 × 清空後就看得到;story-rules.md「範例最高準則」);放在按鈕後面,C10 從 × 按 Tab 照舊落在按鈕上。
 // 夾具自己的版面用行內樣式:這個檔不在 Tailwind 的 @source 範圍裡,寫 class 不會產生樣式;DS 元件的樣式來自元件本身。
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
@@ -14,6 +16,7 @@ import { TooltipProvider } from '@/design-system/components/Tooltip/tooltip'
 
 function Fixture() {
   const [value, setValue] = React.useState('https://www.figma.com/design/checkout-flow')
+  const [ticket, setTicket] = React.useState('')
   const [log, setLog] = React.useState<string[]>([])
   const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     // 在 handler 裡同步讀(React 的合成事件 handler 回傳後 currentTarget 會被清掉)
@@ -26,6 +29,9 @@ function Fixture() {
         <LinkInput clearable value={value} onChange={setValue} onBlur={onBlur} aria-label="設計稿連結" />
       </div>
       <Button size="sm">下一個欄位</Button>
+      <div style={{ width: '100%' }}>
+        <LinkInput clearable value={ticket} onChange={setTicket} placeholder="貼上 Jira 工單網址" aria-label="Jira 工單連結" />
+      </div>
     </div>
   )
 }

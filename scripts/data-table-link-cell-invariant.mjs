@@ -255,7 +255,7 @@ function anchorReport() {
 for (const [label, url, waitFor] of [
   ['LinkInput 基本用法(編輯模式的連結狀態)', LI('default'), 'a[href]'],
   ['LinkInput 四模式(edit / view / readonly)', LI('modes'), 'a[href]'],
-  ['LinkInput 檢視樣式', LI('view'), 'a[href]'],
+  ['LinkInput 自訂顯示文字(檢視模式 + label)', LI('custom-label'), 'a[href]'],
   ['表格:' + TABLES.normal.label, TABLES.normal.url, '[data-column-id="url"] a[href]'],
   ['表格:' + TABLES.roadmap.label, TABLES.roadmap.url, '[data-column-id="spec"] a[href]'],
   ['表格:' + TABLES.sheet.label, TABLES.sheet.url, '[data-column-id="url"] a[href]'],
@@ -864,7 +864,7 @@ const stretchProbe = (scopeSel) => page.evaluate((scopeSel) => {
 const urlInputs = () => page.evaluate(() => document.querySelectorAll('input[type="url"]').length)
 currentBreak = 'L10'
 // need:這一頁必須量到的框(量不到 = 儀器失效,不靜默變空閘)
-for (const [label, url, need] of [['LinkInput 基本用法', LI('default'), ['editable']], ['LinkInput 四模式', LI('modes'), ['fixed', 'editable']], ['LinkInput 檢視樣式', LI('view'), ['fixed']]]) {
+for (const [label, url, need] of [['LinkInput 基本用法', LI('default'), ['editable']], ['LinkInput 四模式', LI('modes'), ['fixed', 'editable']], ['LinkInput 自訂顯示文字', LI('custom-label'), ['fixed']]]) {
   if (!(await open(url, 'a[href]'))) continue
   const all = await stretchProbe('body')
   const pts = all.filter((p) => !p.pencil), pencils = all.filter((p) => p.pencil)

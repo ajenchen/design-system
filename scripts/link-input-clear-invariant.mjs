@@ -2,7 +2,8 @@
 /**
  * @gate-contract
  *   保證: LinkInput `clearable`(link-input.spec.md「驗證」段「可清除(clearable)」,2026-11-21,user 2026-11-19 拍板提案 A)在真瀏覽器裡 ——
- *     C1 清除 × 只在打字狀態、框裡有字時出現:連結狀態沒有(只有 Pencil)、空白框沒有、沒開 clearable 沒有;× 右緣到框右緣 = 邊框 + 右內距
+ *     C1 清除 × 只在打字狀態、框裡有字時出現:連結狀態沒有(只有 Pencil)、空白框沒有(夾具裡沒碰過的空白欄位;展示頁 2026-11-23 起不另放空白那則)、
+ *        沒開 clearable 沒有;× 右緣到框右緣 = 邊框 + 右內距
  *     C2 滑鼠按 ×(編輯合法網址中):草稿清空、**留在打字狀態**(沒有退出編輯、沒有切回連結)、焦點在輸入框、× 消失
  *     C3 清掉之後按 Esc:還原原值、切回連結狀態、焦點給 Pencil
  *     C4 清掉之後點別處離開:照既有規則結算 —— 空白 = 清值(連結不回來、輸入框空白、不再有 Esc 層)
@@ -13,9 +14,10 @@
  *     C9 模擬 Safari(按按鈕不給焦點:mousedown 沒被擋就把焦點丟到 body):按 × 仍留在打字狀態
  *     C10 使用端的 onBlur 跟結算同一個時點(夾具 scripts/test-fixtures/link-input-clear/fixture.tsx —— 展示頁範例沒接 onBlur,見夾具檔頭):
  *         輸入框 Tab 到 ×、滑鼠按 × 都不呼叫;從 × 離開欄位呼叫一次;沒經過 × 直接離開照舊一次;每次 currentTarget / target 都是輸入框
- *     C11 使用端給的錯(展示頁「可清除」第二則:儲存時檢查出的錯,包在 <Field invalid> + <FieldError>,範例接 onInput 清)在**開始打字當下**與
- *         **按 × 當下**(都還沒離開、還沒結算)就消失 —— Field 錯誤區那一行、紅框、aria-invalid 都沒了(form-validation.spec.md 規則 5;
- *         link-input.spec.md「可清除」「按下」:按 × 跟原生輸入框清空一樣送出 input 事件)。對照:單純點進去、還沒打字時錯還在(「驗證」2)
+ *     C11 使用端給的錯(展示頁「儲存時查出的錯」:網址格式沒問題、儲存時才查出的錯,包在 <Field invalid> + <FieldError>,範例接 onInput 清;
+ *         2026-11-23 前在「可清除」第二則)在**開始打字當下**與**按 × 當下**(都還沒離開、還沒結算)就消失 —— Field 錯誤區那一行、紅框、
+ *         aria-invalid 都沒了(form-validation.spec.md 規則 5;link-input.spec.md「可清除」「按下」:按 × 跟原生輸入框清空一樣送出 input 事件)。
+ *         對照:按鉛筆進編輯、還沒打字時錯還在(單純進入編輯 / 聚焦不清,「驗證」2)
  *   紅: --selftest 造回「舊寫法」各組必紅(兩面對照,提案 A ②):
  *     S1 攔下 × 的 mousedown(元件擋不到預設)+ 模擬 Safari → C2 必紅(退出編輯);
  *     S2 把元件裡「焦點移到同一個欄位的 × 不算離開」那一句換成 false(改寫送到瀏覽器的 story / 夾具程式,改到 0 處 = 儀器失效)+ 攔下 × 的 mousedown → C2、C6、C10 必紅;
@@ -57,10 +59,11 @@ const br = await launchBrowserOrSkip({}, { cleanup: stopServers })
 
 const CLEARABLE = 'design-system-components-linkinput-展示--clearable'
 const PLAIN = 'design-system-components-linkinput-展示--default'
-const FIXTURE = 'fixture:link-input-clear' // open() 認得這個名字 → 開夾具頁(C10)
+const SAVE_ERROR = 'design-system-components-linkinput-展示--save-error'
+const FIXTURE = 'fixture:link-input-clear' // open() 認得這個名字 → 開夾具頁(C10;C1 的空白欄位)
 const CLEAR = 'button[aria-label="清除網址"]'
 const PENCIL = 'button[aria-label="編輯連結"]'
-// 欄位的框 = 控件自己的外框(data-field-mode="edit")。包在 <Field> 裡的欄位(展示頁「可清除」第二則:儲存時檢查出的錯交給 Field)
+// 欄位的框 = 控件自己的外框(data-field-mode="edit")。包在 <Field> 裡的欄位(展示頁「儲存時查出的錯」:儲存時查出的錯交給 Field)
 // Field 的根也帶 data-field-mode,但它另帶 data-field-orientation —— 排除掉,第 i 個框才是第 i 個 LinkInput
 const FRAME = '[data-field-mode="edit"]:not([data-field-orientation])'
 const FIGMA = 'https://www.figma.com/design/checkout-flow'
@@ -131,7 +134,7 @@ async function settle(what) {
   const r = await settleAfterInteraction(page, { frames: 10 })
   if (!r.ok) throw new Instrument(`${what}之後 ${r.framesWaited} 格內版面沒有靜止(變動 ${r.lateChanges} 次)`)
 }
-/** 第 i 個編輯模式欄位此刻的狀態(故事裡三個欄位依序:有連結 / 不合法的字 / 空白) */
+/** 第 i 個編輯模式欄位此刻的狀態(「可清除」兩個欄位依序:有連結 / 不合法的字;夾具:有連結 / 空白) */
 const probe = (i) => page.evaluate(({ i, CLEAR, PENCIL, FRAME }) => {
   const w = document.querySelectorAll(FRAME)[i]
   if (!w) return null
@@ -165,7 +168,7 @@ async function userError(i, what) {
     const line = root.querySelector('[data-field-slot="error"]')
     return { text: line ? line.textContent : null, frameError: w.hasAttribute('data-error'), ariaInvalid: w.querySelector('input')?.getAttribute('aria-invalid') === 'true' }
   }, { i, FRAME })
-  if (!e) throw new Instrument(`${what}:第 ${i + 1} 個欄位不在 <Field> 裡(展示頁「可清除」第二則該包在 Field 裡)`)
+  if (!e) throw new Instrument(`${what}:第 ${i + 1} 個欄位不在 <Field> 裡(展示頁「儲存時查出的錯」該包在 Field 裡)`)
   return { ...s, ...e }
 }
 async function clickIn(i, selector, what) {
@@ -196,10 +199,13 @@ const J = (v) => JSON.stringify(v)
 const CHECKS = {
   async C1() {
     await open(CLEARABLE, PENCIL)
-    const link = await field(0, 'C1'), bad = await field(1, 'C1'), empty = await field(2, 'C1')
+    const link = await field(0, 'C1'), bad = await field(1, 'C1')
     ck('C1', '連結狀態沒有 ×(只有 Pencil)', link.link === FIGMA && link.pencil && !link.clear, J(link))
     ck('C1', '不合法的字(打字狀態、框裡有字)有 ×', bad.input && bad.value !== '' && bad.clear, J(bad))
     ck('C1', '× 右緣到框右緣 = 邊框 + 右內距', bad.clearInset != null && Math.abs(bad.clearInset - bad.expectInset) < 0.5, `${bad.clearInset} vs ${bad.expectInset}`)
+    // 沒碰過的空白欄位(夾具第 2 個欄位):展示頁「可清除」2026-11-23 起不另放空白那則(與「填寫網址」重複;按 × 清空後就看得到)
+    await open(FIXTURE, PENCIL)
+    const empty = await field(1, 'C1 夾具的空白欄位')
     ck('C1', '空白框沒有 ×', empty.input && empty.value === '' && !empty.clear, J(empty))
     await open(PLAIN, PENCIL)
     await clickIn(0, PENCIL, '沒開 clearable 按 Pencil')
@@ -311,22 +317,26 @@ const CHECKS = {
     ck('C10', '沒經過 × 直接離開:onBlur 呼叫一次', !e.input && e.link === FIGMA && le.length === 1 && le[0] === ON_INPUT, `${J(e)} onBlur=${J(le)}`)
   },
   async C11() {
-    // 展示頁「可清除」第二則(需求文件連結):使用端在 Field 給的錯(儲存時的檢查)。開頁時要有,否則量不到「消失」
-    await open(CLEARABLE, PENCIL)
-    const a = await userError(1, 'C11 開頁')
-    if (!a.text || !a.frameError || !a.ariaInvalid) throw new Instrument(`C11 前置:第 2 個欄位開頁時該有使用端給的錯(紅框 + Field 錯誤區那一行):${J(a)}`)
-    // 單純點進去不清(link-input.spec.md「驗證」2「單純重新 focus 不清除」)—— 對照:下面的「消失」是編輯造成的,不是聚焦造成的
-    await clickIn(1, 'input', 'C11 點進輸入框')
-    const b = await userError(1, 'C11 點進去')
-    ck('C11', '點進去還沒打字:使用端給的錯還在(單純 focus 不清)', b.focus === 'input' && b.text === a.text && b.frameError && b.ariaInvalid, J(b))
+    // 展示頁「儲存時查出的錯」(活動頁網址):使用端在 Field 給的錯(儲存時伺服器查出)。開頁時要有,否則量不到「消失」
+    // 值是合法網址 → 開頁是連結狀態(紅框 + Field 錯誤區那一行;還沒有輸入框,aria-invalid 在下一步進編輯後量)
+    await open(SAVE_ERROR, PENCIL)
+    const a = await userError(0, 'C11 開頁')
+    if (!a.text || !a.frameError) throw new Instrument(`C11 前置:開頁時該有使用端給的錯(紅框 + Field 錯誤區那一行):${J(a)}`)
+    // 按鉛筆進編輯、還沒打字不清(link-input.spec.md「驗證」2「單純重新 focus 不清除」)—— 對照:下面的「消失」是編輯造成的,不是聚焦造成的
+    await clickIn(0, PENCIL, 'C11 按鉛筆')
+    const b = await userError(0, 'C11 按鉛筆')
+    ck('C11', '按鉛筆進編輯、還沒打字:使用端給的錯還在(單純 focus 不清)', b.input && b.focus === 'input' && b.text === a.text && b.frameError && b.ariaInvalid, J(b))
     // 開始打字當下(還沒離開、還沒結算)
     await page.keyboard.press('End'); await page.keyboard.type('x'); await settle('C11 打字')
-    const c = await userError(1, 'C11 打字')
+    const c = await userError(0, 'C11 打字')
     ck('C11', '開始打字當下:使用端給的錯消失(Field 錯誤區那一行、紅框、aria-invalid)', c.input && c.focus === 'input' && c.layer === true && !c.text && !c.frameError && !c.ariaInvalid, J(c))
     // 按 × 當下(草稿清空、焦點在輸入框、還沒結算 —— 仍有 Esc 層)
-    await open(CLEARABLE, PENCIL)
-    await clickIn(1, CLEAR, 'C11 按 ×')
-    const d = await userError(1, 'C11 按 ×')
+    await open(SAVE_ERROR, PENCIL)
+    await clickIn(0, PENCIL, 'C11 再按鉛筆')
+    const pre = await userError(0, 'C11 按 × 之前')
+    if (!pre.input || !pre.clear || !pre.text) throw new Instrument(`C11 前置:按鉛筆後該在打字狀態、有 ×、使用端的錯還在:${J(pre)}`)
+    await clickIn(0, CLEAR, 'C11 按 ×')
+    const d = await userError(0, 'C11 按 ×')
     ck('C11', '按 × 當下:使用端給的錯消失(Field 錯誤區那一行、紅框、aria-invalid)', d.input && d.value === '' && d.focus === 'input' && d.layer === true && !d.text && !d.frameError && !d.ariaInvalid, J(d))
   },
 }

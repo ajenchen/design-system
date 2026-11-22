@@ -581,7 +581,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 焦點本來不在欄位裡(Safari 點按鈕不給焦點)也一律放回輸入框 —— 草稿已經跟值不同,得有一次離開才會結算,不能留一個沒人結算的空框。
     // **按 × 跟原生輸入框清空一樣送出 `input` 事件**(2026-11-22 LINK-ERRTEXT 第 3 次修正):按 × 是「開始編輯」,使用端自己給的錯
     // (`<Field invalid>` + `<FieldError>`、表單層的錯)也要當下清掉(規則 5)—— 跟打字同一條路:使用端接的 `onInput` 收得到,
-    // 不另開 prop。2026-11-22 前只清元件自己的草稿與紅框,使用端什麼都收不到,它給的錯一直留到結算(展示頁「可清除」第二則實測)。
+    // 不另開 prop。2026-11-22 前只清元件自己的草稿與紅框,使用端什麼都收不到,它給的錯一直留到結算(當時展示頁「可清除」第二則實測;那個範例 2026-11-23 起是「儲存時查出的錯」)。
     const showClear = clearable && localValue !== ''
     const clearDraft = () => {
       const input = inputRef.current

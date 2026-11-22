@@ -39,10 +39,10 @@ export const UsageGuidance: Story = {
         <p>要儲存的完整外部網址,而且儲存後使用者會想直接點開:個人網站、文件連結、專案 repo、社群連結;需要網址格式驗證(離開欄位時檢查)。</p>
         <TutorialList>
           <li>
-            <StoryLink kind="Design System/Components/LinkInput/展示" name="空值">空值</StoryLink>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="填寫網址">填寫網址</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/LinkInput/展示" name="失焦驗證">Blur 驗證</StoryLink>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="錯誤說明">錯誤說明(離開欄位時檢查)</StoryLink>
           </li>
           <li>
             <StoryLink kind="Design System/Components/LinkInput/設計規格" name="尺寸對照表">尺寸</StoryLink>
@@ -51,7 +51,7 @@ export const UsageGuidance: Story = {
             <StoryLink kind="Design System/Components/LinkInput/展示" name="四模式">四模式</StoryLink>
           </li>
           <li>
-            <StoryLink kind="Design System/Components/LinkInput/展示" name="檢視樣式">展示樣式</StoryLink>
+            <StoryLink kind="Design System/Components/LinkInput/展示" name="自訂顯示文字">自訂顯示文字</StoryLink>
           </li>
         </TutorialList>
         <TutorialRule
