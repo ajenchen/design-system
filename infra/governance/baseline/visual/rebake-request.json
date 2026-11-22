@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "branch": "feat/batch1-ui-decisions-2026-11-10",
+  "update_baseline": true,
+  "reference_ref": "",
+  "reason": "N1 確認頁:本分支(第 1–7 層 + N1 前修正)動到的元件 / 範例 / 規格,在固定容器重拍給 user 看「可以改」",
+  "requestedAt": "2026-11-22T07:16:28Z"
+}
