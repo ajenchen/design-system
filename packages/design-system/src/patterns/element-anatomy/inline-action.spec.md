@@ -278,8 +278,10 @@ hook `check_story_invariants.sh` R1(原 `check_story_anatomy.sh` 規則 B,已 fo
 
 | Host family | Config prop | Escape hatch slot prop |
 |---|---|---|
-| Field family(Input / NumberInput / DatePicker / Combobox / LinkInput / TimePicker) | `endAction?: InlineActionConfig` | `endSlot?: React.ReactNode` |
+| Field family(Input / NumberInput) | `endAction?: InlineActionConfig` | `endSlot?: React.ReactNode` |
 | Row family(TreeView.TreeItem / SidebarMenuButton)| `inlineActions?: InlineActionConfig[]` | `inlineActionsSlot?: React.ReactNode` |
+
+DatePicker / Combobox / Select / TimePicker / LinkInput 沒有 `endAction` / `endSlot` prop(右側由元件自帶 chrome 獨佔),見下方「不適用清單」。
 
 ```tsx
 // ✅ 90% case

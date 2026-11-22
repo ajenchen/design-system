@@ -72,7 +72,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
    - hover `z-index: 3`(default 2 / hover 3 與 Ant 同值)([來源](https://github.com/ant-design/ant-design/blob/5632e40fceabdbcdfef7e536158aaf404898c867/components/style/compact-item.ts#L30-L46))
    - focus / focus-within `z-index: 4` —— 比滑過高一層(2026-11-13 起;改前與滑過同在 3)。只把聚焦那一格抬到最高是 Bootstrap 的做法(聚焦 `z-index: 5`、滑過不抬)([來源](https://github.com/twbs/bootstrap/blob/9062790fdb2379593a2973416dc5a3bfb203e4e3/scss/forms/_input-group.scss#L49-L53));誰在上、為什麼、來源見「States」的「聚焦 / 開著壓過滑過」
    - 成員自己的浮層開著(成員外框帶 `data-field-open`)`z-index: 4`(與聚焦同一層)—— 本 DS 自己的一條(2026-11-12 加;AI 推導,依據是本 DS 的欄位規則,不是引自上面兩家):浮層開著時焦點常已搬進浮層、`focus-within` 不成立,但那一格仍維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」),不抬高就會被 `-ml-px` 疊上來的鄰居蓋掉一邊
-   - disabled `z-index: 0`
+   - disabled `z-index: 0`(只限成員本身帶原生 `[disabled]` 的;停用的 Select / NumberInput 不降,見「States」下方「選擇器覆蓋範圍」)
 4. **Border radius 規則**:
    - 第一個子:右側 radii = 0(`rounded-r-none`)
    - 中間子:全 radii = 0(`rounded-none`)
@@ -145,7 +145,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 | hover(子)| 該 child border-hover | 3 |
 | focus / focus-within(子)| 該 child focus ring | 4(同一格又被滑過仍是 4)|
 | 自己的浮層開著(子,`data-field-open`)| 該 child 維持聚焦的框(規則住 `../Field/field.spec.md`「Field state machine SSOT」,這裡只管疊放)| 4(同一格又被滑過仍是 4)|
-| disabled(子)| 該 child disabled style + **FCG-local override `border-[var(--border-opaque)]`**(K12,2026-05-04) | 0(被滑過也是 0)|
+| disabled(子)| 該 child disabled style + **FCG-local override `border-[var(--border-opaque)]`**(K12,2026-05-04) | 0(被滑過也是 0)—— 只限成員本身帶原生 `[disabled]` 的;停用的 Select / NumberInput 改渲展示殼、不降,見下方「選擇器覆蓋範圍」|
 | error(子)| 該 child border-error | 2(預設層;滑過升 3、聚焦 / 自己的浮層開著升 4,蓋過鄰接 border)|
 
 **聚焦 / 開著壓過滑過(已定,2026-11-13)**:聚焦或自己的浮層開著的那一格 z-index 是 4,比滑過的 3 高一層 —— 那一格的框永遠四邊完整;滑鼠滑到它左邊或右邊的鄰居時,兩格共用的那條線仍是它的框色,不是鄰居滑過的灰。滑鼠點進去與鍵盤聚焦同一條規則。框是什麼顏色不歸本檔(一般欄位聚焦 / 開著 = `--primary`、驗證錯誤 = `--error`,住 `../Field/field.spec.md`「Field state machine SSOT」),本檔只管誰疊在上面。
