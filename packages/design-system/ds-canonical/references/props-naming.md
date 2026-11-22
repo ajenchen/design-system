@@ -124,4 +124,4 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 | 警告 / 提醒 | `TriangleAlert` | — |
 | 資訊 / 說明 | `Info` | — |
 
-**世界級對照**:Linear / Notion / GitHub / Figma 全部用 vertical 3-dots 作 overflow;horizontal 3-dots 專給 path/truncation(Breadcrumb / text ellipsis)。
+Overflow 一律用 vertical 3-dots;horizontal 3-dots 專給 path/truncation(Breadcrumb / text ellipsis)。

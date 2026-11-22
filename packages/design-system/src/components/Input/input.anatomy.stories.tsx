@@ -350,7 +350,7 @@ const InspectorInner = () => {
                     <Swatch value="--fg-muted" size="sm" /><span className="font-mono text-fg-secondary">--fg-muted</span><span className="text-fg-muted">default</span>
                   </span>
                   <span className="inline-flex items-center gap-1 text-[10px]">
-                    <Swatch value="--foreground" size="sm" /><span className="font-mono text-fg-secondary">--foreground</span><span className="text-fg-muted">hover</span>
+                    <Swatch value="--fg-secondary" size="sm" /><span className="font-mono text-fg-secondary">--fg-secondary</span><span className="text-fg-muted">hover</span>
                   </span>
                 </span>
               </PropRow>
@@ -490,7 +490,7 @@ export const ColorMatrix = {
                 <Td mono>endAction</Td>
                 <Td>操作動作（如清除）</Td>
                 <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
-                <Td><span className="inline-flex items-center gap-1"><Swatch value="--foreground" size="sm" /><span className="font-mono">--foreground</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-secondary" size="sm" /><span className="font-mono">--fg-secondary</span></span></Td>
                 <Td><span className="text-fg-muted">不渲染</span></Td>
               </tr>
             </tbody>

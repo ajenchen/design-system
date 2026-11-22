@@ -780,7 +780,7 @@ export const StateBehavior = {
           <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
             <span>showClear = clearable && value.length &gt; 0 && isEditable</span>
             <span>X 按鈕尺寸：sm/md = 16px icon + 18px hover bg，lg = 20px icon + 22px hover bg</span>
-            <span>clear 色彩：fg-muted → hover: foreground → active: foreground</span>
+            <span>clear 色彩：fg-muted → hover: fg-secondary → active: fg-secondary</span>
           </div>
         </ExampleSection>
 

@@ -1559,7 +1559,7 @@ export const IconActionPrimitiveDecision = {
         </div>
         <p className="text-caption text-fg-muted max-w-[720px]">
           <strong>核心原則:Row dedicated action 永遠 &le; 24px cap</strong>,不隨 row tier 放大——超過 24 的 action
-          會搶 content 視覺焦點,違反「資料 &gt; 行動」的視覺階層(世界級對照:Linear / Notion / Figma 全部 &le; 24)。
+          會搶 content 視覺焦點,違反「資料 &gt; 行動」的視覺階層。
         </p>
       </TutorialRule>
       {/* Real case table */}
@@ -1596,7 +1596,7 @@ export const IconActionPrimitiveDecision = {
       <TutorialRule
         paragraph={false}
         title="Dismiss 嚴格定義 — X close only"
-        note={<><code className="font-mono">dismiss</code> prop 僅屬 <strong>X(close)</strong>icon—— 「關閉 surface / 忽略訊息」的語意。Trash / Delete / Clear / Remove 都<strong>不算 dismiss</strong>, 即使視覺上也是 icon-only button,callback 用 <code className="font-mono">onDelete</code> / <code className="font-mono">onRemove</code> / <code className="font-mono">onClear</code>。 世界級對照:Material IconButton close / Polaris Banner.onDismiss / Apple HIG window close — 全部 icon = X。</>}
+        note={<><code className="font-mono">dismiss</code> prop 僅屬 <strong>X(close)</strong>icon—— 「關閉 surface / 忽略訊息」的語意。Trash / Delete / Clear / Remove 都<strong>不算 dismiss</strong>, 即使視覺上也是 icon-only button,callback 用 <code className="font-mono">onDelete</code> / <code className="font-mono">onRemove</code> / <code className="font-mono">onClear</code>。</>}
       >
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">

@@ -494,12 +494,12 @@ export const ColorMatrix = {
               </tr>
               <tr>
                 <Td mono>hover</Td>
-                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--foreground" size="sm" /><span className="font-mono text-[11px]">--foreground</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-secondary" size="sm" /><span className="font-mono text-[11px]">--fg-secondary</span></span></Td>
                 <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--neutral-hover" size="sm" /><span className="font-mono text-[11px]">--neutral-hover</span></span></Td>
               </tr>
               <tr>
                 <Td mono>active</Td>
-                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--foreground" size="sm" /><span className="font-mono text-[11px]">--foreground</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-secondary" size="sm" /><span className="font-mono text-[11px]">--fg-secondary</span></span></Td>
                 <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--neutral-active" size="sm" /><span className="font-mono text-[11px]">--neutral-active</span></span></Td>
               </tr>
             </tbody>
@@ -651,7 +651,7 @@ export const StateBehavior = {
                   endAction={{ icon: X, label: '清除', onClick: () => setClearValue(null) }}
                 />
               </div>
-              <span className="text-[11px] text-fg-muted">icon: fg-muted → hover: foreground + neutral-hover bg</span>
+              <span className="text-[11px] text-fg-muted">icon: fg-muted → hover: fg-secondary + neutral-hover bg</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="w-[200px]">

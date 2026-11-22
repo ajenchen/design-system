@@ -28,7 +28,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:d690a3a67697c7be99ffd54a9eac0c465a5202232c480a3a622ac8ea8159f3a2` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:3fc93cf7ea695f9f1b8ecd4b3d2da0a1cb9060ac768f0b2c604e19822f2484fc` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:469ddebfe1b24a1d1e234e6047dcb6a00111bcfa4110d8e4ff8f8a624041ebc9` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:00d8020f10e79a97e01256bb39e67e5f1b41291329a5af2427df4ee869319d06` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:cb7860e67a943a864b62e479fb058a78a6c2d252eac53acfe8bba51a8eb1b873` |
 | canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:45d0977b3ccd473011f736344523408575499f584c5fe11c1cc1a12cec4589fa` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:653ef8cebbd4fe03403e164bc5305578840841af46dcf013904828f70f6fbdfe` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:a65a7f9ee6dc6c56eab99f77876bb61297cc59909943ba4ab08705b2d110e86c` |

@@ -53,7 +53,7 @@ const COLOR_MAP: Record<ModeKey, Partial<Record<EditStateKey, ModeStateColors>>>
       value: '--primary',
       placeholder: '--fg-muted',
       pencil: '--fg-muted',
-      pencilHover: '--foreground',
+      pencilHover: '--fg-secondary',
     },
     input: {
       wrapper: { bg: '--surface', text: '--foreground', border: '--border' },
@@ -552,8 +552,8 @@ export const ColorMatrix = {
               <tr>
                 <Td>Pencil icon</Td>
                 <Td><TokenValue value="--fg-muted" /></Td>
-                <Td><TokenValue value="--foreground" /></Td>
-                <Td><TokenValue value="--foreground" /></Td>
+                <Td><TokenValue value="--fg-secondary" /></Td>
+                <Td><TokenValue value="--fg-secondary" /></Td>
               </tr>
               <tr>
                 <Td>Pencil bg</Td>
