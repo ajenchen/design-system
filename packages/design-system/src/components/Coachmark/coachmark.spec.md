@@ -97,6 +97,8 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 └────────────────────────────────┘
 ```
 
+Media + Body 合稱**內容區**:超過可用高度時只有這一區捲動,Header / Footer 固定(見「高度與捲動」)。
+
 ---
 
 ## Props 結構
@@ -126,6 +128,19 @@ SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己�
 **為什麼單步驟 CTA 不叫「下一步」**:「下一步」語義隱含「還有下一步」,single step 用它使用者會困惑「後面還有嗎?」。單步驟一律用「知道了 / Got it / Start」類完成詞。
 
 **為什麼有上一步時不顯示略過**:使用者按「下一步」進到 step 2+ 代表已投入進度,此時同時出現「上一步(回上一步)」和「略過(放棄全部)」語義衝突;想退出的使用者按 Esc / 關閉圖示即可(Radix 預設 Esc = dismiss)。
+
+---
+
+## 高度與捲動
+
+〔user 2026-11-22 拍板「丙」:「我以為高度應該要隨著內容自動在設計規格下長高，消費者自己去把控內容高度，但 coachmark 跟其他 select menu 一樣，萬一真的遇到很極端的狀況也不會溢出螢幕之外，會變成body 是可以捲動的，這樣才是最 SSOT 的方式吧？」〕
+
+- **高度隨內容**:外殼寬度固定(見「與 Popover 的關係」),高度跟著內容長;說明寫幾行由使用端決定,元件不設行數上限
+- **最高到可用高度**:上限沿用 Popover 外殼(`../Popover/popover.spec.md`「實作 —— 極長內容」:`max-h` = Radix 算出的觸發點那一側可用高度,已扣安全邊距),卡片不會超出視窗
+- **超過時內容區捲動**:Header(標題列)與 Footer(步驟計數 / 按鈕)不縮、永遠看得到;中間的內容區(Media + Body)包 `ScrollArea` 捲動 —— 與長內容 Popover 同款(`../../patterns/overlay-surface/overlay-surface.spec.md`「Popover 例外」「Coachmark」)
+- **鍵盤**:內容區真的捲得動時才進 Tab 順序(`tabIndex=0`,焦點框是 ScrollArea 自帶的 inset DS focus ring,`../ScrollArea/scroll-area.spec.md`),聚焦後方向鍵 / PageDown / End 捲動;放得下時不多這一站(overlay-surface.spec.md「Focus ownership」:短內容不是捲動區)
+- **放得下時畫面不變**:內容區高度 = 內容高度,Media 照樣貼齊外殼(「Media 區規則」位置)、Body 內距照 overlay-surface
+- 機械檢查:`scripts/overlay-story-contract-invariant.mjs` R19(放得下時說明底不低於頁腳頂、內容區不是 Tab 停點)/ R20(「內容很長」範例:內容區捲得動、可用鍵盤捲到底、標題列與頁腳在畫面內)
 
 ---
 
@@ -202,7 +217,6 @@ const steps = [
 - ❌ **不用 Coachmark 做錯誤提示**——錯誤是系統回饋使用者動作的結果,用 `Notice` / `Alert` / `Toast`。Coachmark 是主動推送教學,語意相反
 - ❌ **不用 Coachmark 做確認框**——確認破壞性動作必須阻斷流程,改用 `Dialog`
 - ❌ **Media 區不放互動元件**——按鈕 / 輸入 / checkbox 一律走 footer。Media 是視覺說明不是互動區
-- ❌ **Description 不寫超過 3 行**——Coachmark 是快速說明,超過 3 行改用 Dialog + 完整 body 或連結到說明文件
 - ❌ **不強迫完成 tour**——永遠提供退出機制(Esc / header Close / 第一步略過鍵)。沒有退出的 onboarding 讓使用者感到被綁架,反而降低完成率。註:header Close 僅在傳 `kind`(有 header)時才 render;無 `kind` 的 multi-step tour 第 2+ 步退出靠 Esc(永遠可用),multi-step 務必傳 `kind` 以提供 header Close 退出入口
 - ❌ **單步驟 CTA 不叫「下一步」**——沒有下一步就不用這個字眼,用 `'知道了'`(或 consumer 經 `doneLabel` 傳「開始使用」這類完成詞)
 - ❌ **有上一步時不同時顯示略過**——使用者投入進度後兩個退出路徑衝突(見 CTA 語義表)
@@ -213,7 +227,7 @@ const steps = [
 
 ## A11y 預設
 
-- **焦點管理**:Coachmark **刻意抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,對齊 `dialog.tsx` 的 `?? content` fallback canonical)——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(焦點在容器上按 Enter 無動作);按 Tab 移到 content 內第一個 tabbable(單步無 header 即推進 CTA;有 header 會先到 PopoverHeader 右上 Close X,多步則先經上一步 / 略過)。焦點**不**停在 trigger:non-modal Popover 焦點在 content 樹外時按 Tab 會觸發 focus-outside dismiss 誤關閉浮層,CTA 鍵盤永遠到不了(2026-07-05 D4 修;dismiss 機制詳 `popover.spec.md` A11y 段)。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
+- **焦點管理**:Coachmark **刻意抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,對齊 `dialog.tsx` 的 `?? content` fallback canonical)——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(焦點在容器上按 Enter 無動作);按 Tab 移到 content 內第一個 tabbable(單步無 header 即推進 CTA;有 header 會先到 PopoverHeader 右上 Close X,多步則先經上一步 / 略過;內容區捲得動時,Close X 之後先到內容區,見「高度與捲動」)。焦點**不**停在 trigger:non-modal Popover 焦點在 content 樹外時按 Tab 會觸發 focus-outside dismiss 誤關閉浮層,CTA 鍵盤永遠到不了(2026-07-05 D4 修;dismiss 機制詳 `popover.spec.md` A11y 段)。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
 - **Esc 關閉**:預設啟用——user 按 Esc 透過 Radix `onOpenChange` 關閉浮層(效果等同退出),**不觸發 `onSkip` callback**(Esc 是「關閉浮層」非「明確 skip」;若需區分 Esc-退出 vs Skip-按鈕 的追蹤事件,consumer 在略過鍵的 `onSkip` 處理)
 - **ARIA**:trigger 自動 `aria-expanded` / `aria-controls`,content `role="dialog"`(Radix 預設)
 - **Step 計數 tabular-nums**:螢幕閱讀器讀「第 2 步,共 3 步」語意清楚(完整句子,與 Steps 讀屏文字同一句)
@@ -239,6 +253,10 @@ disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 heade
 - `../HoverCard/hover-card.spec.md` — hover 觸發互動浮層
 - `../Notice/notice.spec.md` — 系統通知 / 錯誤訊息
 - 本 spec 的 Anatomy / 導覽狀態表與 `coachmark.tsx` — canonical authority
+
+## 變更紀錄
+
+- 2026-11-22:高度改成內容驅動(A63-COACHMARK)。拿掉「❌ Description 不寫超過 3 行」—— 那一條是 2026-04-19 `ee3e8f83`(標題是 ScrollArea thumb token 的修正)順手加進來的,沒有 user 決定紀錄(user 11-22:「我不記得我有定義過coachmark上限三行」);改照 user 11-22 拍板的「丙」:高度隨內容、最高到可用高度、超過時 Header / Footer 固定、內容區(Media + Body)捲動(見「高度與捲動」)。設計原則頁兩則「不超過 3 行」同步拿掉 / 改寫。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

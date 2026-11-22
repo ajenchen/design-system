@@ -12,6 +12,7 @@ import {
 } from '@/design-system/components/Popover/popover'
 import { Button } from '@/design-system/components/Button/button'
 import { AspectRatio } from '@/design-system/components/AspectRatio/aspect-ratio'
+import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 
 /**
@@ -40,9 +41,16 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
  *      後 focus content 容器本身(非第一個 CTA),避免使用者還在讀 body 時按 Enter 誤推進;
  *      按 Tab 才移到 content 內按鈕:**單步無 header** 時第一個 tabbable 即推進 CTA;**有 header
  *      (kind / headerTitle 會渲 PopoverHeader 右上 Close X)或多步** 時 DOM 順序上 Close X /
- *      上一步 / 略過 在推進 CTA 之前,需多按幾下 Tab。焦點不可停在 trigger:non-modal Popover 下
+ *      上一步 / 略過 在推進 CTA 之前,需多按幾下 Tab(內容區捲得動時,Close X 之後先到內容區)。焦點不可停在 trigger:non-modal Popover 下
  *      焦點在 DismissableLayer 外按 Tab 會觸發 focus-outside dismiss 誤關閉
  *      (2026-07-05 D4;對齊 dialog.tsx handleOpenAutoFocus `?? content` fallback,見 spec「A11y 預設」)。
+ *
+ * ── 高度隨內容,超過可用高度時內容區捲動(2026-11-22 user 拍板「丙」;spec「高度與捲動」)──
+ *   外殼沿用 PopoverContent 的可用高度上限(popover.tsx#PopoverContent max-h available-height);
+ *   Header / Footer 不縮、永遠看得到,中間「內容區」= Media + Body 一起包 ScrollArea(overlay-surface.spec.md
+ *   「Popover 例外」:長內容 Popover 走 ScrollArea)。放得下時內容區高度 = 內容,畫面跟以前一樣;
+ *   放不下才捲。內容區真的捲得動時才進 Tab 順序(tabIndex 0,ScrollArea 自帶 inset 焦點框,可用方向鍵 / PageDown 捲);
+ *   放得下時不加這一站(overlay-surface.spec.md「Focus ownership」:短內容不是捲動區,不製造多餘 tab stop)。
  *
  * ── 為什麼 Body+Footer 消費 overlay-surface ──
  * 避免 padding token 漂移:Dialog / Popover / Coachmark 三者共用同一套 Header/Body/Footer
@@ -144,6 +152,30 @@ const KIND_TITLE: Record<'tips' | 'new-features', string> = {
   'new-features': '新功能介紹',
 }
 
+/**
+ * 內容區(ScrollArea)現在捲不捲得動:捲得動才給 viewport tabIndex 0(見檔頭「高度隨內容」)。
+ * 量 Radix viewport 的 scrollHeight / clientHeight;viewport 本身(外殼被可用高度壓矮)或裡面的內容(圖片載入、文字換行)
+ * 尺寸一變就重量。差 1px 以內當放得下(小數像素捨入)。
+ */
+function useContentRegionOverflows(root: HTMLElement | null) {
+  const [overflows, setOverflows] = React.useState(false)
+  React.useLayoutEffect(() => {
+    const viewport = root?.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]')
+    if (!viewport) {
+      setOverflows(false)
+      return
+    }
+    const measure = () => setOverflows(viewport.scrollHeight - viewport.clientHeight > 1)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(viewport)
+    if (viewport.firstElementChild) observer.observe(viewport.firstElementChild)
+    return () => observer.disconnect()
+  }, [root])
+  return overflows
+}
+
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
   (
@@ -196,6 +228,11 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
     const bodyTitleId = React.useId()
     const bodyTitleLabelledBy = !headerTitle && title ? bodyTitleId : undefined
 
+    // 內容區(Media + Body)— 見檔頭「高度隨內容,超過可用高度時內容區捲動」
+    const hasContentRegion = Boolean(image || title || description)
+    const [contentRegion, setContentRegion] = React.useState<HTMLDivElement | null>(null)
+    const contentRegionOverflows = useContentRegionOverflows(contentRegion)
+
     return (
       <Popover open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>{children}</PopoverTrigger>
@@ -228,27 +265,40 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
             </PopoverHeader>
           )}
 
-          {image && (
-            <AspectRatio ratio={mediaRatio} className="w-full overflow-hidden bg-muted">
-              {image}
-            </AspectRatio>
-          )}
+          {hasContentRegion && (
+            // 內容區:Media + Body 一起捲(Header / Footer 是 shrink-0,永遠在外殼裡看得到)。
+            // flex-1 min-h-0 = 外殼被可用高度壓矮時只縮這一區(overlay-surface.spec.md「Viewport-aware scroll chain invariant」);
+            // fillX = 垂直捲動場景把 Radix viewport 內層的 display:table 中和成 block(同 DialogBody)。
+            <ScrollArea
+              ref={setContentRegion}
+              fillX
+              data-coachmark-content=""
+              className="flex-1 min-h-0"
+              viewportTabIndex={contentRegionOverflows ? 0 : null}
+            >
+              {image && (
+                <AspectRatio ratio={mediaRatio} className="w-full overflow-hidden bg-muted">
+                  {image}
+                </AspectRatio>
+              )}
 
-          {(title || description) && (
-            // 對齊 Dialog / Popover canonical:body 左對齊(不中置)
-            // Why: Coachmark 雖是 onboarding / feature discovery,但文字可讀性 > 視覺焦點;
-            // 中文 / 長句中置會「每行起點不同」造成閱讀鋸齒,左對齊最穩。
-            // 世界級參考:Notion / Linear / Figma onboarding tour 皆左對齊;Intercom Messenger 亦如是。
-            <PopoverBody className="flex flex-col">
-              {title && (
-                <h3 id={!headerTitle ? bodyTitleId : undefined} className="text-body-lg font-medium text-foreground">{title}</h3>
+              {(title || description) && (
+                // 對齊 Dialog / Popover canonical:body 左對齊(不中置)
+                // Why: Coachmark 雖是 onboarding / feature discovery,但文字可讀性 > 視覺焦點;
+                // 中文 / 長句中置會「每行起點不同」造成閱讀鋸齒,左對齊最穩。
+                // 世界級參考:Notion / Linear / Figma onboarding tour 皆左對齊;Intercom Messenger 亦如是。
+                <PopoverBody className="flex flex-col">
+                  {title && (
+                    <h3 id={!headerTitle ? bodyTitleId : undefined} className="text-body-lg font-medium text-foreground">{title}</h3>
+                  )}
+                  {description && (
+                    // title(body-lg 16)+ desc(body 14)→ reading-lg token(label tier 決定)
+                    // 對齊 Dialog / Sheet canonical;移除原 gap-1(4px)drift
+                    <p className="mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary">{description}</p>
+                  )}
+                </PopoverBody>
               )}
-              {description && (
-                // title(body-lg 16)+ desc(body 14)→ reading-lg token(label tier 決定)
-                // 對齊 Dialog / Sheet canonical;移除原 gap-1(4px)drift
-                <p className="mt-[var(--item-gap-label-desc-reading-lg)] text-body text-fg-secondary">{description}</p>
-              )}
-            </PopoverBody>
+            </ScrollArea>
           )}
 
           {hasFooterContent && (

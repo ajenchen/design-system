@@ -18,10 +18,13 @@
  *         Dialog 成員名片的 ID / 員工編號與列上一致、ProfileCard 欄位值(長 email)不畫進旁邊那一欄、多字欄位值只在空白處斷、
  *         深色溢出清單每人一列、Coachmark 頁腳(單步 / 多步)按鈕群靠右且 primary 在最右、
  *         Coachmark 媒體區貼齊(2026-11-13,R17 / R18):左右貼外殼內緣,上緣有標題列時貼標題列的分隔線、沒有時貼外殼頂(md / lg 量像素)。
+ *         Coachmark 高度與捲動(2026-11-22,R19 / R20;coachmark.spec.md「高度與捲動」):1280×800 下「多步提示」第 1 步(3 行說明)說明底不低於頁腳頂、
+ *         放得下時內容區不是 Tab 停點;「內容很長」內容區真的捲得動、Tab 到得了、按 End 捲到底後說明底不低於頁腳頂、標題列與頁腳整條在外殼與視窗裡(md / lg)。
  *   紅: 任一列不符 → 逐列點名 exit 1。`--selftest`:靜態每列注入一個修前形狀(2026-10-20 前的原始碼片段)必須紅在那一列;
  *       真建置每列在頁面上拆掉修法(拿掉字色 / 陰影、移一則說明、把觸發點設成不可聚焦、換掉 CTA 的事件、拿掉欄的主題、
  *       寫回懸空的 aria-describedby、把卡片移開、把標題改回舊名、把地標名稱改回英文、把按鈕字改回英文、把兩個欄位值對調、拿掉欄位值的 break-words、
- *       把 break-words 換成 break-all、把溢出清單改成橫排、把 Coachmark 頁腳改成靠左、Coachmark 媒體區上方 / 左邊各多 4px)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
+ *       把 break-words 換成 break-all、把溢出清單改成橫排、把 Coachmark 頁腳改成靠左、Coachmark 媒體區上方 / 左邊各多 4px、
+ *       Coachmark 外殼壓回置中觸發點時的可用高度 370px、Coachmark 內容區改成不縮)必須紅在那一列 —— 少一列沒紅 = 量具沒在量它宣稱的東西 → exit 1;
  *       另有「乾淨對照」:注入本來就正確的歷史句(S5)不得讓任何一列紅 —— 防止量具把對的東西判錯、逼人改寫正確的句子(M37)。
  *       對修前建置(`--build=<修前 storybook-static>`)跑 = 天然對照組。
  *   綠: 現行原始碼與建置每列都量到且符合;找不到要量的元素、story 開不起來、建置缺 = 儀器失效(exit 2,M37:沒量到 ≠ 沒發生),不讀成通過。
@@ -439,6 +442,8 @@ const ROWS = {
   R15: '深色溢出清單每人一列(同 hover-card.stories.tsx「溢出清單」/ overflow-indicator.stories.tsx 正規用法 flex-col;覆核 2026-10-21)',
   R17: 'Coachmark 媒體區上緣貼齊:有標題列貼標題列的分隔線、沒有貼外殼頂(coachmark.spec.md「Media 區規則」位置;layoutSpace.spec.md 規則 2 結構分區不套表【AI 推導 2026-11-13】)',
   R18: 'Coachmark 媒體區左右貼齊外殼內緣(滿版;coachmark.spec.md「Media 區規則」位置)',
+  R19: 'Coachmark 放得下時高度貼內容:1280×800「多步提示」第 1 步(3 行說明)說明底不低於頁腳頂、內容區不是 Tab 停點(coachmark.spec.md「高度與捲動」;user 2026-11-22「丙」)',
+  R20: 'Coachmark 超過可用高度時內容區捲動:「內容很長」內容區捲得動、Tab 到得了、鍵盤捲到底後說明底不低於頁腳頂,標題列與頁腳整條在外殼與視窗裡(coachmark.spec.md「高度與捲動」)',
 }
 const results = new Map()
 const mark = (id, ok, detail = []) => {
@@ -824,6 +829,75 @@ async function runRuntime({ mutateRow = null } = {}) {
       }
     }
 
+    // R19 / R20 Coachmark 高度與捲動(2026-11-22 A63-COACHMARK;coachmark.spec.md「高度與捲動」,user 11-22「丙」):量在 1280×800(PV4 量到第 3 行被蓋的尺寸)。
+    // 選擇器只認 role=dialog、說明 <p>、頁腳 [data-popover-footer]、Radix ScrollArea viewport —— 修前建置(沒有內容區)照樣量得到,R19 可當天然對照組。
+    const readCoach = () => page.evaluate(() => {
+      const shell = document.querySelector('[role="dialog"][data-state="open"]')
+      if (!shell) return null
+      const desc = [...shell.querySelectorAll('p')].pop()
+      const foot = shell.querySelector('[data-popover-footer]')
+      const head = shell.querySelector('[data-slot="surface-header"]')
+      const vp = shell.querySelector('[data-radix-scroll-area-viewport]')
+      const r = (el) => el?.getBoundingClientRect()
+      const sb = r(shell), db = r(desc), fb = r(foot), hb = r(head)
+      return {
+        hasDesc: !!desc, hasFoot: !!foot, hasHead: !!head, lines: desc ? Math.round(db.height / (parseFloat(getComputedStyle(desc).lineHeight) || 21)) : 0,
+        descBottom: db?.bottom ?? 0, footTop: fb?.top ?? 0, footBottom: fb?.bottom ?? 0, headTop: hb?.top ?? 0, headBottom: hb?.bottom ?? 0,
+        shellTop: sb.top, shellBottom: sb.bottom, winH: window.innerHeight,
+        vp: vp ? { tab: vp.getAttribute('tabindex'), sh: vp.scrollHeight, ch: vp.clientHeight, st: vp.scrollTop } : null,
+        activeIsVp: !!vp && document.activeElement === vp,
+      }
+    })
+    const settleCoach = (what) => waitFor(() => !!document.querySelector('[role="dialog"][data-state="open"] [data-popover-footer]') && document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming?.().iterations === Infinity), null, what)
+    await page.setViewportSize({ width: 1280, height: 800 })
+    try {
+      for (const density of ['md', 'lg']) {
+        await open('design-system-components-coachmark-展示--tips-multi-step', { density })
+        await settleCoach(`Coachmark 多步提示(${density})打開、開場動畫跑完`)
+        await mutate('R19')
+        await settle(200)
+        const m = await readCoach()
+        if (!m || !m.hasDesc || !m.hasFoot) fail(`Coachmark 多步提示(${density}):讀不到卡片 / 說明 / 頁腳`)
+        // 第 1 步說明要真的是 3 行(PV4 的那一格);少於 3 行 = 範例換了,量的不是原本那一格
+        if (!SELFTEST && m.lines < 3) fail(`Coachmark 多步提示(${density}):第 1 步說明只有 ${m.lines} 行 —— 範例換了,R19 量不到 3 行那一格`)
+        const gap = m.footTop - m.descBottom
+        const tabStop = m.vp?.tab === '0'
+        rec('R19', gap >= -0.5 && !tabStop && m.shellBottom <= m.winH + 0.5, `多步提示 ${density} 1280×800:說明底 → 頁腳頂 ${gap.toFixed(1)}px(應 ≥ 0)${tabStop ? ';放得下卻把內容區排進 Tab 順序' : ''};外殼底 ${m.shellBottom.toFixed(1)} / 視窗 ${m.winH}`)
+      }
+      for (const density of ['md', 'lg']) {
+        await open('design-system-components-coachmark-展示--long-content', { density })
+        await settleCoach(`Coachmark 內容很長(${density})打開、開場動畫跑完`)
+        await mutate('R20')
+        await settle(200)
+        const a = await readCoach()
+        if (!a || !a.hasDesc || !a.hasFoot || !a.hasHead) fail(`Coachmark 內容很長(${density}):讀不到卡片 / 說明 / 標題列 / 頁腳`)
+        const overflows = !!a.vp && a.vp.sh - a.vp.ch > 1
+        // 範例沒有真的超過可用高度 = 量不到捲動(儀器失效);拆掉修法的對照組不檢查這點
+        if (!SELFTEST && !overflows) fail(`Coachmark 內容很長(${density}):內容區沒有超過可用高度(scrollHeight ${a.vp?.sh} / clientHeight ${a.vp?.ch})—— 範例量不到捲動`)
+        // 鍵盤:焦點在外殼(開啟時 focus content 容器)→ Tab 最多 4 下要到內容區,再按 End 捲到底
+        let tabs = 0
+        for (; tabs < 4; tabs++) {
+          if ((await readCoach())?.activeIsVp) break
+          await page.keyboard.press('Tab')
+        }
+        const reached = !!(await readCoach())?.activeIsVp
+        if (reached) {
+          await page.keyboard.press('End')
+          await page.waitForFunction(() => { const v = document.querySelector('[role="dialog"][data-state="open"] [data-radix-scroll-area-viewport]'); return !!v && v.scrollTop + v.clientHeight >= v.scrollHeight - 1 }, null, { timeout: 3000, polling: 'raf' }).catch(() => {})
+        }
+        const b = await readCoach()
+        if (!b) fail(`Coachmark 內容很長(${density}):按鍵後卡片不見了`)
+        const inShell = b.headTop >= b.shellTop - 0.5 && b.footBottom <= b.shellBottom + 0.5
+        const inWin = b.shellTop >= -0.5 && b.shellBottom <= b.winH + 0.5
+        const scrolled = (b.vp?.st ?? 0) > 0
+        const gap = b.footTop - b.descBottom
+        rec('R20', overflows && reached && scrolled && gap >= -0.5 && inShell && inWin,
+          `內容很長 ${density} 1280×800:內容區${overflows ? '' : '沒有'}捲得動(${b.vp?.sh}/${b.vp?.ch})、Tab ${reached ? `${tabs} 下到得了` : '到不了'}內容區、End 後 scrollTop ${b.vp?.st ?? '-'}、說明底 → 頁腳頂 ${gap.toFixed(1)}px;標題列 / 頁腳${inShell ? '' : '不'}在外殼內(頁腳底 ${b.footBottom.toFixed(1)} / 外殼底 ${b.shellBottom.toFixed(1)})、外殼${inWin ? '' : '不'}在視窗內`)
+      }
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 900 })
+    }
+
     // R12 Dialog 成員名片
     await open('design-system-components-dialog-展示--list-body')
     // 「查看成員」按了才開(D2 甲,2026-10-28)
@@ -982,6 +1056,10 @@ const MUTATIONS = {
   R17: () => { const m = document.querySelector('[role="dialog"] [data-radix-aspect-ratio-wrapper]'); if (m) m.style.marginTop = '4px' },
   // R18:媒體區左邊多出 4px(不再滿版:左離外殼 4、右超出 4)
   R18: () => { const m = document.querySelector('[role="dialog"] [data-radix-aspect-ratio-wrapper]'); if (m) m.style.marginLeft = '4px' },
+  // R19:外殼壓回 PV4 量到的可用高度 370px(修前:錨點在 1280×800 視窗正中 → 第 3 行說明被壓到頁腳底下)
+  R19: () => { const c = document.querySelector('[role="dialog"][data-state="open"]'); if (c) c.style.maxHeight = '370px' },
+  // R20:內容區不縮(拿掉 flex-1 min-h-0 的效果)—— 外殼被可用高度卡住時頁腳被推到外殼外、內容區也不再捲得動
+  R20: () => { const c = document.querySelector('[role="dialog"][data-state="open"] [data-coachmark-content]'); if (c) { c.style.flex = 'none'; c.style.minHeight = 'auto' } },
   // R16:照 action-bar :109「沒有標題 → 靠左」的錯誤推論把頁腳改成靠左(單步卡)
   R16: () => { const card = document.querySelector('[role="dialog"].w-80'); const g = [...(card?.querySelectorAll('button') ?? [])].at(-1)?.closest('div')?.parentElement; if (g) g.style.justifyContent = 'flex-start' },
   // R15:2026-10-20 第一版修法 —— 溢出清單的名字直接放進 OverflowIndicator(ShrinkWrapList 橫排成一行)

@@ -124,9 +124,14 @@ function StepTour({ steps, kind }: { steps: typeof tourSteps; kind: 'new-feature
   )
 }
 
+// 多步導覽的錨點列放在畫面上方(2026-11-22 A63-COACHMARK):導覽卡通常指著頁面上方的工具列,卡片往下有整個畫面的高度。
+// 原本 layout 置中、錨點在視窗正中 → 1280×800 下卡片只剩約 370px 可用高度,3 行說明的第 3 行被壓到捲動區外、看起來像被頁腳蓋住。
+// 卡片本身的行為(放得下時高度貼內容、放不下時內容區捲動)見下方「內容很長」與 coachmark.spec.md「高度與捲動」。
+const stepTourParameters = { layout: 'padded' as const }
+
 export const MultiStepTour: Story = {
   name: '多步新手導覽',
-  parameters: { docs: { description: { story: '多步驟:`kind="new-features"` 在標題列提示脈絡;第 1 步有「略過」,按「下一步」進到第 2 步以後「略過」自動隱藏;最後一步推進鍵變「完成」。點任一個錨點會在那一步打開卡片。' } } },
+  parameters: { ...stepTourParameters, docs: { description: { story: '多步驟:`kind="new-features"` 在標題列提示脈絡;第 1 步有「略過」,按「下一步」進到第 2 步以後「略過」自動隱藏;最後一步推進鍵變「完成」。點任一個錨點會在那一步打開卡片。' } } },
   render: () => <StepTour steps={tourSteps} kind="new-features" />,
 }
 
@@ -158,8 +163,34 @@ const tipSteps = [
 
 export const TipsMultiStep: Story = {
   name: '多步提示',
-  parameters: { docs: { description: { story: '`kind="tips"` 的標題列文字是「使用技巧」(`new-features` 是「新功能介紹」),兩者都由元件內建對照表帶出,不必自己寫。' } } },
+  parameters: { ...stepTourParameters, docs: { description: { story: '`kind="tips"` 的標題列文字是「使用技巧」(`new-features` 是「新功能介紹」),兩者都由元件內建對照表帶出,不必自己寫。' } } },
   render: () => <StepTour steps={tipSteps} kind="tips" />,
+}
+
+// ── 內容很長:超過可用高度時內容區捲動 ─────────────────────────────────────────
+
+export const LongContent: Story = {
+  name: '內容很長',
+  parameters: { docs: { description: { story: '卡片高度跟著內容長,說明寫幾行由使用端決定。內容超過畫面可用高度時,標題列與頁腳固定看得到,中間的媒體 + 說明區可以捲動(滑鼠 / 觸控板直接捲;鍵盤按 Tab 到內容區後用方向鍵或 PageDown),不會溢出畫面 —— 跟 Popover、下拉選單同一套。內容放得下時沒有捲動,也不多一個 Tab 停點。' } } },
+  render: () => {
+    const [open, setOpen] = React.useState(true)
+    return (
+      <Coachmark
+        open={open}
+        onOpenChange={setOpen}
+        kind="new-features"
+        image={<MediaGradient from="var(--color-blue-6)" to="var(--color-purple-6)" icon={Sparkles} label="版本更新" />}
+        title="這次更新的重點"
+        description="報表可以排程寄送:設定每天、每週或每月的時間,系統會把最新結果寄給你指定的成員。篩選條件與欄位順序會一起保存,下次打開就是上次的樣子。匯出新增 PDF 格式,頁首會自動帶上專案名稱與匯出時間。圖表支援拖曳調整大小,版面會記在每個人的帳號裡,不影響其他成員。權限設定移到專案設定的「成員」分頁,可以一次調整多位成員。行動版也能查看儀表板,手機上點圖表可以看到每個數字的明細。"
+        onNext={() => setOpen(false)}
+        isLastStep  /* single-step → CTA = 「知道了」;有 kind → 標題列帶關閉鍵 */
+        side="bottom"
+        align="center"
+      >
+        <Button variant="tertiary" startIcon={Sparkles}>版本更新</Button>
+      </Coachmark>
+    )
+  },
 }
 
 // 備註(2026-04-21 決策):移除 `TextOnly` 與 `WithIllustration` 兩則範例。

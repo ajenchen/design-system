@@ -86,7 +86,7 @@ footer 按鈕左緣 vs header 標題),閘要量就得先指得到那三個部位
 
 **Popover 例外**:Popover 無 viewport-fill、內容預期短,PopoverBody 直接消費 SurfaceBody bare;若未來有長內容 Popover consumer,同樣應 wrap ScrollArea。
 
-**Coachmark 例外**:Coachmark 內容短(media + 2 行 title/description),不設計 body 捲動;不適用本規則。
+**Coachmark**(2026-11-22 改,與長內容 Popover 同款):高度隨內容、最高到 PopoverContent 的可用高度;超過時 Header / Footer 固定,中間內容區(Media + Body)包 `<ScrollArea className="flex-1 min-h-0">` 捲動,內容區真的捲得動時才給 viewport `tabIndex=0`(短內容不是捲動區,同上「Focus ownership」)。規格見 `../../components/Coachmark/coachmark.spec.md`「高度與捲動」。2026-11-22 前本段寫「Coachmark 內容短(media + 2 行 title/description),不設計 body 捲動」—— 前提來自 Coachmark 規格的「說明不超過 3 行」,那一條沒有 user 決定紀錄,user 11-22 拍板改成內容驅動高度後撤掉。
 
 ---
 
