@@ -65,7 +65,7 @@ function ErrorTextDemo() {
   const [meetingLink, setMeetingLink] = React.useState('週三下午三點 3F 會議室')
   return (
     <ExampleStack className="max-w-sm">
-      <ExampleSection title="預設的說明" description="這格存的是一句話、不是網址。點進框裡再離開(按 Tab 或點別處),框變紅、下面多一行說明請使用者填網址;一打字就消失,離開時再檢查一次。">
+      <ExampleSection title="預設的錯誤說明" description="這格存的是一句話、不是網址。點進框裡再離開(按 Tab 或點別處),框變紅、下面多一行說明請使用者填網址;一打字就消失,離開時再檢查一次。">
         <Field>
           <FieldLabel>公司網站</FieldLabel>
           <LinkInput value={website} onChange={setWebsite} />
