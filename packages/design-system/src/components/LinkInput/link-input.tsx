@@ -250,6 +250,7 @@ export interface LinkInputProps
    * 打字狀態可一鍵清空(2026-11-21,user 2026-11-19 拍板提案 A;link-input.spec.md「可清除(clearable)」)。與 Select / Combobox /
    * DatePicker / TimePicker 的 `clearable` 同名同語意、預設關:只在編輯模式的**打字狀態**、框裡有字時,右側出現清除 ×
    *(Field 共用的那一顆 `Field/field-clear-button.tsx`)。按 × = 清掉打的字(草稿)、焦點留在輸入框,**不**當場提交;
+   * 跟原生輸入框清空一樣送出 `input` 事件(使用端接的 `onInput` 收得到,例:清掉自己給的錯);
    * 之後照既有規則結算(離開 / Enter:空白 = 清值、合法 = 提交、不合法 = 紅框),Esc 還原原值。連結狀態沒有 ×(照舊只有 Pencil)。
    * 何時開照 select.spec.md「何時開 clearable」:「沒有網址」是有效值(選填)才開。
    */
@@ -578,11 +579,23 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 錯誤一併清掉(開始編輯就清錯誤,form-validation.spec.md 規則 5,同 handleChange)。
     // 焦點:鍵盤 / Chrome 滑鼠按下時焦點在 × 上 → FieldClearButton 先交回輸入框(field-wrapper.tsx keepFieldFocusBeforeUnmount,× 隨清空卸載);
     // 焦點本來不在欄位裡(Safari 點按鈕不給焦點)也一律放回輸入框 —— 草稿已經跟值不同,得有一次離開才會結算,不能留一個沒人結算的空框。
+    // **按 × 跟原生輸入框清空一樣送出 `input` 事件**(2026-11-22 LINK-ERRTEXT 第 3 次修正):按 × 是「開始編輯」,使用端自己給的錯
+    // (`<Field invalid>` + `<FieldError>`、表單層的錯)也要當下清掉(規則 5)—— 跟打字同一條路:使用端接的 `onInput` 收得到,
+    // 不另開 prop。2026-11-22 前只清元件自己的草稿與紅框,使用端什麼都收不到,它給的錯一直留到結算(展示頁「可清除」第二則實測)。
     const showClear = clearable && localValue !== ''
     const clearDraft = () => {
+      const input = inputRef.current
+      if (input) {
+        input.focus({ preventScroll: true })
+        // 寫值走 HTMLInputElement 原型上的 setter:React 受控輸入框記著上次的值,直接 `input.value = ''` 會被當成「沒變」而不送 React 的
+        // onChange(本元件的 handleChange 就收不到;同 Testing Library fireEvent 的做法)。事件冒泡,使用端的 onInput、
+        // React 的 onChange(= 本元件 handleChange:清草稿、清紅框)都經它
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '')
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+      // 事件沒走到 React(被外層攔下)時草稿與紅框照樣清 —— 與事件那條路同一個結果
       setLocalValue('')
       if (localError) setLocalError(false)
-      inputRef.current?.focus({ preventScroll: true })
     }
 
     // edit — text input mode（正在編輯、無值、或格式錯誤）

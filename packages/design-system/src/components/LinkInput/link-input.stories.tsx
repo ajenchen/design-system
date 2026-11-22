@@ -79,22 +79,19 @@ function ClearableDemo() {
   const [designLink, setDesignLink] = React.useState('https://www.figma.com/design/checkout-flow')
   const [specLink, setSpecLink] = React.useState('結帳流程需求文件 v3')
   // 按下儲存時(使用端自己的檢查)查出「需求文件連結」不是網址:錯誤照 Field 家族的寫法交給 Field(`invalid` 紅框 + `<FieldError>` 那一行;
-  // link-input.spec.md「錯誤說明」範例)。值換掉了(提交新網址或清空)這次檢查就不算數,錯誤收掉。
+  // link-input.spec.md「錯誤說明」範例)。一開始編輯就收掉(form-validation.spec.md 規則 5「開始編輯時立即清除 error,不論新輸入合法與否」):
+  // 打字與按 × 都會送出 input 事件(按 × 跟原生輸入框清空一樣;link-input.spec.md「可清除」),用 onInput 清掉。
   const [specError, setSpecError] = React.useState('這不是網址,請貼上需求文件的連結')
-  const updateSpecLink = (next: string) => {
-    setSpecLink(next)
-    setSpecError('')
-  }
   const [ticketLink, setTicketLink] = React.useState('')
   return (
     <ExampleStack className="max-w-sm">
       <ExampleSection title="有連結:沒有 ×" description="連結狀態不變,右側只有 Pencil。按 Pencil 進入打字狀態後,框裡有字才出現 ×。">
         <LinkInput clearable value={designLink} onChange={setDesignLink} aria-label="設計稿連結" />
       </ExampleSection>
-      <ExampleSection title="打字狀態、框裡有字:出現 ×" description="按下儲存時檢查出貼錯的字不是網址:錯誤交給 Field,紅框、框下一行說明。按 × 一鍵清掉重打;焦點留在輸入框,離開或按 Enter 才結算(空白 = 清值、錯誤跟著收掉),Esc 還原。">
+      <ExampleSection title="打字狀態、框裡有字:出現 ×" description="按下儲存時檢查出貼錯的字不是網址:錯誤交給 Field,紅框、框下一行說明。按 × 一鍵清掉重打,或直接開始打字,紅框與說明當下就消失(按 × 跟原生輸入框清空一樣送出 input 事件,這裡用 onInput 清掉儲存時給的錯);焦點留在輸入框,離開或按 Enter 才結算(空白 = 清值),Esc 還原。">
         <Field invalid={!!specError}>
           <FieldLabel>需求文件連結</FieldLabel>
-          <LinkInput clearable value={specLink} onChange={updateSpecLink} />
+          <LinkInput clearable value={specLink} onChange={setSpecLink} onInput={() => setSpecError('')} />
           <FieldError>{specError}</FieldError>
         </Field>
       </ExampleSection>

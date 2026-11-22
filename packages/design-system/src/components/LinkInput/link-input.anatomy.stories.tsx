@@ -199,7 +199,7 @@ export const Overview = {
                 ['disabled', 'boolean', 'false', '等同 mode="disabled"'],
                 ['label', 'string', '—', '自訂顯示文字（覆蓋自動 hostname 提取）'],
                 ['showDisplayEndIcon', 'boolean', 'false', 'view 態改包 Field naked wrapper（D-path opt-in，DataTable cell view↔edit 像素對齊；本元件沒有型別 icon，故只給 wrapper；DataTable 可編輯連結格的「編輯連結」鈕另由內部的 viewEditAction 畫在外殼右側槽，Button text xs、滑過格才出現）'],
-                ['clearable', 'boolean', 'false', '打字狀態、框裡有字時右側出現清除 ×：清掉草稿、焦點留在輸入框，不提交，之後照失焦 / Enter 規則結算；連結狀態沒有 ×（同 Select / DatePicker 的 clearable，選填欄位才開）'],
+                ['clearable', 'boolean', 'false', '打字狀態、框裡有字時右側出現清除 ×：清掉草稿、焦點留在輸入框，不提交（跟原生輸入框清空一樣送出 input 事件，onInput 收得到），之後照失焦 / Enter 規則結算；連結狀態沒有 ×（同 Select / DatePicker 的 clearable，選填欄位才開）'],
                 ['errorText', 'string', "'請輸入網址,例如 acme.com'", '網址不合法時框下那一行說明的字（只能換字、不能關掉）；包在 Field 裡畫在 Field 的錯誤區，使用端自己的 FieldError 有字時以使用端為準'],
                 ['onInvalidChange', '(invalid: boolean, draft: string) => void', '—', '自己的驗證結果有變時呼叫：結算（blur / Enter）出不合法 → true；打字、按 ×、Esc、結算成合法或空白 → false（不合法的字不經 onChange 送出）'],
               ].map(([p, t, d, desc]) => (
@@ -225,7 +225,7 @@ export const Overview = {
                 ['blur（空值）', '清除值，顯示 placeholder'],
                 ['Enter', '等同 blur——觸發驗證'],
                 ['Escape', '取消編輯，回復原值，不觸發驗證'],
-                ['點擊清除 ×（clearable）', '清掉打的字、焦點留在輸入框，不提交；之後照上面的 blur / Enter 結算，Escape 仍回復原值'],
+                ['點擊清除 ×（clearable）', '清掉打的字、焦點留在輸入框，不提交；送出 input 事件（同原生清空：使用端用 onInput 清掉自己給的錯）；之後照上面的 blur / Enter 結算，Escape 仍回復原值'],
                 ['焦點在輸入框與清除 × 之間移動', '不算離開欄位：不驗證、不觸發 onBlur；從 × 離開欄位才結算'],
               ].map(([trigger, effect]) => (
                 <tr key={trigger}><Td>{trigger}</Td><Td>{effect}</Td></tr>

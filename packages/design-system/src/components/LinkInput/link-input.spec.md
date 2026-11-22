@@ -93,13 +93,13 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 2026-11-22 起(user 11-22 確認頁題 1 留言「第一題可以照你建議，看哪種最SSOT且完整」= AI 建議丙:元件自帶預設說明 + 使用端可換字 + 驗證結果回呼)。`../Field/form-validation.spec.md`「驗證分層」把 URL 格式驗證歸 Field 元件自身、錯誤以「紅框 + error message」呈現,「A11y 預設」要紅框之外必有文字(WCAG 1.4.1 / 3.3.1);修前 LinkInput 自己驗出不合法時只有紅框,使用端也拿不到不合法的草稿(只在合法時呼叫 `onChange`),想寫字也寫不了。
 
-- **何時出現**:LinkInput 自己驗出不合法時(上方第 1、3 點:離開欄位 / Enter 結算出來的),框下一行;外面存進來、本身不是網址的值也一樣,沒離開過欄位就不驗、不出這行(第 1 點;`../Field/form-validation.spec.md`「驗證時機」規則 1–2)。開始打字、按清除 ×、Esc 還原原值時跟紅框一起消失(第 2 點)。只看 LinkInput 自己的驗證:使用端給的 `error` / `<Field invalid>` 不會讓這行出現(那是使用端的錯,字由使用端給)。表格格(`naked`)不畫,格的錯誤由表格顯示(`../DataTable/data-table.spec.md` cellErrors)
+- **何時出現**:LinkInput 自己驗出不合法時(上方第 1、3 點:離開欄位 / Enter 結算出來的),框下一行;外面存進來、本身不是網址的值也一樣,沒離開過欄位就不驗、不出這行(第 1 點;`../Field/form-validation.spec.md`「驗證時機」規則 1–2)。開始打字、按清除 ×、Esc 還原原值時跟紅框一起消失(第 2 點)。只看 LinkInput 自己的驗證:使用端給的 `error` / `<Field invalid>` 不會讓這行出現(那是使用端的錯,字由使用端給,也由使用端清:打字與按清除 × 都送出 `input` 事件,接 `onInput` 當下清掉 —— `../Field/form-validation.spec.md` 規則 5;見「可清除」「按下」)。表格格(`naked`)不畫,格的錯誤由表格顯示(`../DataTable/data-table.spec.md` cellErrors)
 - **字**:預設「請輸入網址,例如 acme.com」(句型照 DS 既有的「請輸入…」;例子用沒寫 `https://` 的寫法,因為沒寫協定也收 —— 下方 URL 格式要求)。`errorText` 換字(欄位用途比「網址」具體時,例「請貼上會議邀請裡的連結」);只能換、不能關,空字串 = 預設那句
 - **長相與位置**:Field 家族的 `<FieldError>`(`text-body`、`text-error-text`、`role="alert"`)。**包在 `<Field>` 裡** = 交給 Field 的錯誤區畫(`../Field/field-context.ts` `registerControlError`):位置在說明文字(`FieldDescription`)下面、id = Field 的 `errorId`,跟使用端自己寫的 `<FieldError>` 同位置同長相;**單獨用** = 框下 4px(= Field 欄內的 `gap-1`;框與說明包在同一層,放進有 gap 的容器裡也是 4px)
 - **跟使用端的錯誤誰優先**:包在 Field 裡、使用端自己的 `<FieldError>` 有字時,只畫使用端那行(一個欄位只有一行錯誤);沒字(`<FieldError>{errors.link}</FieldError>` 而 `errors.link` 是空的)才畫 LinkInput 這行。紅框照舊(任一方有錯就紅)
 - **讀屏**:輸入框 `aria-invalid`,`aria-describedby` 加上這一行的 id(聚焦就念得到;WCAG 3.3.1),`aria-errormessage` 照 Field 家族指到同一行;這行出現時 `role="alert"` 播報
 - **驗證結果回呼 `onInvalidChange(invalid, draft)`**:上面「何時出現」那一態有變時呼叫 —— 變成不合法 → `true`;打字、按 ×、Esc、結算成合法或空白 → `false`。`draft` 是當下框裡的字。用途:表單層要知道這格現在不合法(擋送出)、或要自己寫一段更完整的說明放進 `<FieldError>`(這時 Field 只畫使用端那行)
-- **範例**:展示頁「錯誤說明」(預設字、`errorText` 換字;離開欄位後出現)、「可清除」第二則(使用端儲存時檢查出網址不合法:包在 `<Field invalid>` 裡、字放 `<FieldError>`,只出使用端那一行)
+- **範例**:展示頁「錯誤說明」(預設字、`errorText` 換字;離開欄位後出現)、「可清除」第二則(使用端儲存時檢查出網址不合法:包在 `<Field invalid>` 裡、字放 `<FieldError>`,只出使用端那一行;開始打字或按 × 時用 `onInput` 清掉)
 
 ### 可清除(clearable)
 
@@ -107,7 +107,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 - **何時出現**:只在編輯模式的**打字狀態**(上方「Input 狀態」:正在編輯、無值、網址不合法)、**框裡有字**時,輸入框右側出現清除 ×;空白的框沒有。網址不合法、框裡有字時也有 —— 一鍵清掉重打。**連結狀態不變**:沒有 ×,右側照舊只有 Pencil;readonly / disabled / view 沒有
 - **長相**:Field 家族共用的那一顆(`../Field/field-clear-button.tsx` FieldClearButton = `ItemInlineAction` X,`../../patterns/element-anatomy/inline-action.spec.md`「Real case 表」clear X 列),名稱「清除網址」(「清除 + 清掉的是什麼」,同「清除日期」「清除時間」);右緣內距照 `../Field/field-controls.spec.md`「右側元素」
-- **按下**:清掉打的字(草稿)與紅框,**焦點留在輸入框**;**不**當場提交、不呼叫 `onChange`
+- **按下**:清掉打的字(草稿)與紅框,**焦點留在輸入框**;**不**當場提交、不呼叫 `onChange`。**按下會送出 `input` 事件,跟原生輸入框清空一樣**(2026-11-22 起):按 × 是開始編輯,跟打字同一個事件 —— 使用端接的 `onInput` 收得到,自己給的錯(`<Field invalid>` + `<FieldError>`、表單層的錯)照 `../Field/form-validation.spec.md` 規則 5 當下清掉,不另開 prop(範例:展示頁「可清除」第二則)。2026-11-22 前按 × 只清元件自己的草稿與紅框、不送事件,使用端給的錯一直留到結算
 - **之後照既有規則結算**(上方「驗證」):離開欄位或 Enter —— 空白 = 清值(`onChange('')`)、合法 = 提交、不合法 = 紅框;Esc = 還原原值(打字狀態的 Esc 層照舊,見「驗證」4)
 - **焦點**:
   - 滑鼠:輸入框握著焦點時按 ×,焦點不動(擋 mousedown 預設、click 照常;`../../lib/pointer-press.ts` `keepFocusOnPointerPress`,Select / Combobox 欄位內搜尋框同一支);焦點本來不在欄位裡時,按完放進輸入框 —— 草稿已經跟值不同,得有一次離開才會結算

@@ -1560,10 +1560,12 @@ jobs:
           # 鍵盤焦點同樣預覽、showTime 同一套;--selftest 把框的邊寬歸零證明會紅。SSOT date-picker.spec.md「區間預覽」。
           npm run test:datepicker-range-preview
           # LinkInput 可清除(2026-11-21 LINK-CLEAR,user 2026-11-19 拍板提案 A;link-input.spec.md「可清除(clearable)」):× 只在打字狀態有字時出現、
-          # 按 × 清草稿留在輸入框(不退出編輯)、照既有規則結算、Esc 還原;--selftest 造回舊寫法(焦點移到 × 算離開 / 按 × 焦點被搬走)必紅。
+          # 按 × 清草稿留在輸入框(不退出編輯)、照既有規則結算、Esc 還原、按 × 與開始打字當下使用端給的錯跟著消失(按 × 送出 input 事件);
+          # --selftest 造回舊寫法(焦點移到 × 算離開 / 按 × 焦點被搬走 / 按 × 不送 input 事件)必紅。
           npm run test:link-input-clear
           # LinkInput 錯誤說明(2026-11-22 LINK-ERRTEXT,user 11-22 確認頁拍板丙;link-input.spec.md「錯誤說明」):網址不合法時框下自帶一行說明、
-          # aria-describedby 連得到、打字消失、errorText 換字、包在 Field 裡畫在 Field 的錯誤區且使用端的字優先(只出一行);--selftest 拿掉新行為四組必紅。
+          # aria-describedby 連得到、打字消失、errorText 換字、包在 Field 裡畫在 Field 的錯誤區且使用端的字優先(只出一行)、外面存進來的不合法值照 blur 驗證
+          #(一掛上不驗);--selftest 在送到瀏覽器的夾具程式裡造回錯的寫法 5 組必紅(M1–M4 拿掉新行為,M5 把撤掉的「一掛上就驗」那一版做回來)。
           npm run test:link-input-error-text
           # 水平溢出「選到就露出來」(test:overflow-reveal-selected)2026-11-12 移到 verify-browser-layout;2026-11-14 再搬到 verify-browser-horizontal-overflow(見該 job 檔頭)。
           # useFormValidation 契約(2026-10-01 待辦總帳 N65 / N67):hook 原始碼 + 同名欄位的幾張表單、沒有 <form> 的 footer 送出區,

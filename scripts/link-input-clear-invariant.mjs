@@ -13,10 +13,14 @@
  *     C9 模擬 Safari(按按鈕不給焦點:mousedown 沒被擋就把焦點丟到 body):按 × 仍留在打字狀態
  *     C10 使用端的 onBlur 跟結算同一個時點(夾具 scripts/test-fixtures/link-input-clear/fixture.tsx —— 展示頁範例沒接 onBlur,見夾具檔頭):
  *         輸入框 Tab 到 ×、滑鼠按 × 都不呼叫;從 × 離開欄位呼叫一次;沒經過 × 直接離開照舊一次;每次 currentTarget / target 都是輸入框
+ *     C11 使用端給的錯(展示頁「可清除」第二則:儲存時檢查出的錯,包在 <Field invalid> + <FieldError>,範例接 onInput 清)在**開始打字當下**與
+ *         **按 × 當下**(都還沒離開、還沒結算)就消失 —— Field 錯誤區那一行、紅框、aria-invalid 都沒了(form-validation.spec.md 規則 5;
+ *         link-input.spec.md「可清除」「按下」:按 × 跟原生輸入框清空一樣送出 input 事件)。對照:單純點進去、還沒打字時錯還在(「驗證」2)
  *   紅: --selftest 造回「舊寫法」各組必紅(兩面對照,提案 A ②):
  *     S1 攔下 × 的 mousedown(元件擋不到預設)+ 模擬 Safari → C2 必紅(退出編輯);
  *     S2 把元件裡「焦點移到同一個欄位的 × 不算離開」那一句換成 false(改寫送到瀏覽器的 story / 夾具程式,改到 0 處 = 儀器失效)+ 攔下 × 的 mousedown → C2、C6、C10 必紅;
- *     S3 攔下 Esc(元件收不到)→ C3 必紅;S4 攔下 focusout(元件收不到離開)→ C4、C10 必紅;S5 在連結狀態的框裡塞一顆「清除網址」→ C1 必紅
+ *     S3 攔下 Esc(元件收不到)→ C3 必紅;S4 攔下 focusout(元件收不到離開)→ C4、C10 必紅;S5 在連結狀態的框裡塞一顆「清除網址」→ C1 必紅;
+ *     S6 攔下欄位裡程式送出的 input 事件(= 2026-11-22 前按 × 不送事件:草稿照清,使用端收不到;打字是使用者送的事件,不攔)→ C11 必紅
  *   綠: 現行建置全綠;story 開不起來 / 找不到要量的欄位 / 互動後版面不靜止 = 儀器失效(exit 2),不當通過
  * ─────
  * 為什麼(提案 A ②):LinkInput 的輸入框「離開就結算」(link-input.tsx handleBlur)。只把 × 接上「清字」的寫法,按 × 那一下輸入框先 blur,
@@ -81,6 +85,8 @@ const SAFARI_DEFAULT = `window.addEventListener('mousedown', (e) => {
 })`
 const BLOCK_ESCAPE = `window.addEventListener('keydown', (e) => { if (e.key === 'Escape') e.stopPropagation() }, true)`
 const BLOCK_FOCUSOUT = `window.addEventListener('focusout', (e) => { if (e.target instanceof Element && e.target.closest('[data-field-mode="edit"]')) e.stopPropagation() }, true)`
+// 程式送出的 input 事件(isTrusted = false;按 × 送的那一下)在到達 React 之前攔下;使用者打字的事件照常 —— 等同修前按 × 不送事件(元件自己照樣清草稿)
+const BLOCK_SCRIPTED_INPUT = `window.addEventListener('input', (e) => { if (!e.isTrusted && e.target instanceof Element && e.target.closest('[data-field-mode="edit"]')) e.stopPropagation() }, true)`
 const FAKE_CLEAR_IN_LINK_STATE = `(() => { const w = document.querySelectorAll('${FRAME}')[0]; const b = document.createElement('button'); b.setAttribute('aria-label', '清除網址'); w.appendChild(b) })()`
 // 「焦點移到同一個欄位的 × 不算離開」那一句(link-input.tsx handleBlur):isWithinCompositeField(e.relatedTarget, { trigger: e.currentTarget.parentElement })
 // 壓縮後識別字會換名,屬性名留著 —— 以屬性名的形狀找(容許空白:夾具是 esbuild 沒壓縮的輸出);改到 0 處 = 儀器失效(不准當成「改了也沒紅」)
@@ -148,6 +154,19 @@ async function field(i, what) {
   const s = await probe(i)
   if (!s) throw new Instrument(`${what}:找不到第 ${i + 1} 個編輯模式欄位`)
   return s
+}
+/** 第 i 個欄位 + 包著它的 <Field> 此刻的錯誤:Field 錯誤區那一行的字(使用端的 <FieldError>,或 LinkInput 自己的說明)、框的紅框、輸入框 aria-invalid(C11) */
+async function userError(i, what) {
+  const s = await field(i, what)
+  const e = await page.evaluate(({ i, FRAME }) => {
+    const w = document.querySelectorAll(FRAME)[i]
+    const root = w?.closest('[data-field-orientation]')
+    if (!root) return null
+    const line = root.querySelector('[data-field-slot="error"]')
+    return { text: line ? line.textContent : null, frameError: w.hasAttribute('data-error'), ariaInvalid: w.querySelector('input')?.getAttribute('aria-invalid') === 'true' }
+  }, { i, FRAME })
+  if (!e) throw new Instrument(`${what}:第 ${i + 1} 個欄位不在 <Field> 裡(展示頁「可清除」第二則該包在 Field 裡)`)
+  return { ...s, ...e }
 }
 async function clickIn(i, selector, what) {
   const b = await page.evaluate(({ i, selector, FRAME }) => {
@@ -291,11 +310,30 @@ const CHECKS = {
     const e = await field(0, 'C10 直接離開'), le = await blurLog('C10 直接離開')
     ck('C10', '沒經過 × 直接離開:onBlur 呼叫一次', !e.input && e.link === FIGMA && le.length === 1 && le[0] === ON_INPUT, `${J(e)} onBlur=${J(le)}`)
   },
+  async C11() {
+    // 展示頁「可清除」第二則(需求文件連結):使用端在 Field 給的錯(儲存時的檢查)。開頁時要有,否則量不到「消失」
+    await open(CLEARABLE, PENCIL)
+    const a = await userError(1, 'C11 開頁')
+    if (!a.text || !a.frameError || !a.ariaInvalid) throw new Instrument(`C11 前置:第 2 個欄位開頁時該有使用端給的錯(紅框 + Field 錯誤區那一行):${J(a)}`)
+    // 單純點進去不清(link-input.spec.md「驗證」2「單純重新 focus 不清除」)—— 對照:下面的「消失」是編輯造成的,不是聚焦造成的
+    await clickIn(1, 'input', 'C11 點進輸入框')
+    const b = await userError(1, 'C11 點進去')
+    ck('C11', '點進去還沒打字:使用端給的錯還在(單純 focus 不清)', b.focus === 'input' && b.text === a.text && b.frameError && b.ariaInvalid, J(b))
+    // 開始打字當下(還沒離開、還沒結算)
+    await page.keyboard.press('End'); await page.keyboard.type('x'); await settle('C11 打字')
+    const c = await userError(1, 'C11 打字')
+    ck('C11', '開始打字當下:使用端給的錯消失(Field 錯誤區那一行、紅框、aria-invalid)', c.input && c.focus === 'input' && c.layer === true && !c.text && !c.frameError && !c.ariaInvalid, J(c))
+    // 按 × 當下(草稿清空、焦點在輸入框、還沒結算 —— 仍有 Esc 層)
+    await open(CLEARABLE, PENCIL)
+    await clickIn(1, CLEAR, 'C11 按 ×')
+    const d = await userError(1, 'C11 按 ×')
+    ck('C11', '按 × 當下:使用端給的錯消失(Field 錯誤區那一行、紅框、aria-invalid)', d.input && d.value === '' && d.focus === 'input' && d.layer === true && !d.text && !d.frameError && !d.ariaInvalid, J(d))
+  },
 }
 
 // 主跑:每組一個乾淨的分頁;C9 另外掛「Safari 預設」
 const MAIN = [
-  { groups: ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C10'] },
+  { groups: ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C10', 'C11'] },
   { groups: ['C9'], init: [SAFARI_DEFAULT] },
 ]
 // 對照組:每組破法 → 指定的斷言必須至少一條紅
@@ -304,6 +342,7 @@ const MUTANTS = [
   { name: 'S3 元件收不到 Esc', init: [BLOCK_ESCAPE], groups: ['C3'], mustRed: ['C3'] },
   { name: 'S4 元件收不到離開', init: [BLOCK_FOCUSOUT], groups: ['C4', 'C10'], mustRed: ['C4', 'C10'] },
   { name: 'S5 連結狀態塞一顆 ×', groups: ['C1'], mustRed: ['C1'], after: FAKE_CLEAR_IN_LINK_STATE },
+  { name: 'S6 按 × 不送 input 事件(修前)', init: [BLOCK_SCRIPTED_INPUT], groups: ['C11'], mustRed: ['C11'] },
   // 改寫送出程式的這組排最後:開了 route 瀏覽器不走 HTTP 快取,但排最後就不必賭改寫過的檔有沒有被快取下來給後面的組用
   { name: 'S2 焦點移到 × 算離開(舊寫法)+ 擋不到 mousedown', init: [blockClearMouseDown(false)], patchSameFieldBlur: true, groups: ['C2', 'C6', 'C10'], mustRed: ['C2', 'C6', 'C10'] },
 ]
