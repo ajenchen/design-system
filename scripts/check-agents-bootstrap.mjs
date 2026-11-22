@@ -168,7 +168,9 @@ try {
 // 只在確定要讓開場變大時才改這個數字(改了 PR diff 看得到)。量的是正本;.claude/rules 是逐位元組投影(governance:check 管)。
 // 2026-11-22 PROC-SSOT2 明改 75,691 → 76,256(+565):work-process.md v2 加兩句(選做法前先查會不會跨監督邊界;收尾給 user 的頁照
 // feedback_propose_discipline.md Sub-rule 7 篩)+ 版本紀錄一列 —— 兩條都是 user 11-22 指出的實際出錯,要所有 session 開場就讀到。
-const OPENING_FILES_MAX_BYTES = 76_256
+// 2026-11-22 STORY-PROBE 明改 76,256 → 76,691(+435):work-process.md v3「每一包」加第 8 點(改到範例時實作與規格核對都照
+// story-rules.md「範例最高準則」「Technical probe visibility」核對)+ 版本紀錄一列 —— user 11-22 指出只給量具用的極端內容被做成給讀者看的範例。
+const OPENING_FILES_MAX_BYTES = 76_691
 const RULES_DIR = path.join(ROOT, 'packages/design-system/ds-canonical/rules')
 const alwaysLoadedRules = fs.existsSync(RULES_DIR)
   ? fs.readdirSync(RULES_DIR).filter((name) => name.endsWith('.md')).sort().filter((name) => {

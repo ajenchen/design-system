@@ -289,6 +289,12 @@
       "status": "reference",
       "executable": false,
       "reason": "Observed-quality evidence (two 2026-11-22 incidents the user pointed out, quoted verbatim) behind the two sentences added in packages/design-system/ds-canonical/rules/work-process.md v2; provenance only, the rule itself lives in that file."
+    },
+    {
+      "path": "governance/planning/2026-11-22-work-process-evidence-v3.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "Observed-quality evidence (one 2026-11-22 incident the user pointed out, quoted verbatim: an automation-only Coachmark story with extreme content shipped as a reader-facing example) behind item 8 added in packages/design-system/ds-canonical/rules/work-process.md v3; provenance only, the rule itself lives in that file."
     }
   ]
 }
