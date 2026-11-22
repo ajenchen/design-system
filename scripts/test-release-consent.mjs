@@ -340,10 +340,11 @@ try {
     assert.equal(classifyConsentPrompt(anchor, without).verdict, fallback, `拿掉「${marker}」之後「${anchor}」沒有改判 = 這一條量不到`)
   }
 
-  // 5i. 同意詞後面只接空白 / 標點 + 禮貌或附和詞,再到句尾 → consent(2026-11-22,工作包 N1-PREP;帳本 J-b989803a2d)。
+  // 5i. 同意詞後面只接空白 / 標點 + 禮貌或附和詞,一路到訊息結尾 → consent(2026-11-22,工作包 N1-PREP;帳本 J-b989803a2d)。
   //     RC-LANG-FP 之後這幾句判 mention:hook 不落地、請 user 再說一次「發版」—— user 明說過不要一再要他說
   //     (governance/memory/feedback_solo_dev_workflow.md:12)。詞表住 release-workflow.json 的 courtesyTails,比對不分大小寫;
-  //     判準把這些詞當成同意詞與句尾之間的語助詞(release-consent-language.mjs 第 7 步)。前三句是規格給的主線實測句。
+  //     只有同意詞後面整段到訊息結尾拿掉這些詞後只剩句尾(空白 / 標點 / 語助詞 / 收尾符號 / emoji)時才拿掉再比對
+  //     (release-consent-language.mjs 第 7 步)。前三句是規格給的主線實測句。
   const COURTESY_CONSENT = [
     '可以改，發版 謝謝', '發版 謝謝', '發版 OK', '發版 ok', '發版謝謝', '發版 好的', '發版 好', '發版 Thanks!', '發版 thank you',
     '發版 thx', 'ship it thx', '發版 感謝', '發版 謝了', '發版 謝啦', '發版 謝謝你', '發版 謝謝您', '發版 OK 謝謝', '發版 👍 謝謝', '「發版」 謝謝',
@@ -360,6 +361,13 @@ try {
   //     另一面:同意詞後面接的不只是禮貌詞,或句子另有否定 / 條件 / 問句 / 前綴 → 照舊不是同意。
   const COURTESY_NOT_CONSENT = [
     ['發版 謝謝你們之前的幫忙,但先不要', 'mention'], // 「謝謝」後面還接著字,不是句尾
+    //   禮貌詞後面隔標點再接字(N1-PREP 審查必修 1:第一版把同意詞後面整段的禮貌詞全部拿掉,這六句都被判成 consent、hook 會寫出收據)
+    ['發版 謝謝，但先不要', 'mention'],
+    ['發版 謝謝,但先不要', 'mention'],
+    ['發版 好的，但先不要', 'mention'],
+    ['發版 謝謝，先別', 'mention'],
+    ['發版 謝謝，算了', 'mention'],
+    ['發版 OK，開玩笑的', 'mention'],
     ['發版 好像有問題', 'mention'],
     ['發布好的版本', 'mention'],
     ['發版到 npm 謝謝', 'mention'], // 同意詞後面先接受詞(RC-LANG-FP 刻意保守那一類),禮貌詞不改變它
@@ -373,6 +381,20 @@ try {
   ]
   for (const [text, verdict] of COURTESY_NOT_CONSENT) {
     assert.equal(classifyConsentPrompt(text).verdict, verdict, `「${text}」必須判 ${verdict}`)
+    assert.throws(() => writeReleaseConsent({ headSha: head, branch, quote: text, source: 'manual-agent' }), /不構成發版同意/,
+      `「${text}」不得被手動落地成同意`)
+  }
+  //     這一類不只鎖字面例句:上面每一句只接禮貌詞的同意句,後面再接一段不是禮貌詞的尾巴(隔全形 / 半形標點或空白),
+  //     判定都必須與「沒有詞表」時相同、而且不是 consent —— 禮貌詞只在一路到訊息結尾時才算句尾。
+  const NOT_ONLY_COURTESY_TAILS = ['，但先不要', ',但先不要', '，先別', '，算了', '，開玩笑的', ' 但先不要']
+  for (const text of COURTESY_CONSENT) {
+    for (const tail of NOT_ONLY_COURTESY_TAILS) {
+      const sentence = `${text}${tail}`
+      const got = classifyConsentPrompt(sentence).verdict
+      assert.notEqual(got, 'consent', `「${sentence}」禮貌詞後面還接著字,不得判成同意`)
+      assert.equal(got, classifyConsentPrompt(sentence, { ...livePolicy, courtesyTails: [] }).verdict,
+        `「${sentence}」的判定被 courtesyTails 牽動了 —— 禮貌詞後面還接著字時應與沒有詞表時同判`)
+    }
   }
   //     會紅的對照組(只在記憶體裡複製判準,不寫檔):
   //     (a) 詞表清空 → 上面每一句改判回 mention,證明讓它們成立的是這份詞表、不是別的步驟;
@@ -392,7 +414,8 @@ try {
     assert.equal(classifyConsentPrompt(anchor, without).verdict, 'mention', `拿掉「${word}」之後「${anchor}」沒有改判 = 這一條量不到`)
   }
   //     (c) RC-LANG-FP 與先前鎖住的每一句(只是提到 / 否定 / 延後 / 條件 / 問句 / user 原話)在有沒有詞表時判定逐句相同 ——
-  //         這次只把「同意詞後面只接禮貌詞」從 mention 改成 consent,沒有動到其他任何一格。
+  //         詞表只會讓「同意詞後面到訊息結尾只剩禮貌詞與句尾」那一類從 mention 改成 consent,這張表裡的句子都不屬於那一類,
+  //         逐句核對判定沒有被詞表牽動(禮貌詞後面還接著字的那一類由上面兩段鎖住)。
   const LOCKED_BEFORE = [
     ...NOT_CONSENT.map(([, text]) => text), ...BOUNDARY.map(([text]) => text), ...REAL_USER.map(([, text]) => text),
     '「發版」流程', '發版（beta.140）', '發版：beta.140 已上線', '發版到 npm', '還不能發版嗎？', '為什麼不發版？', '需不需要發版？',

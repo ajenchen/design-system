@@ -35,7 +35,7 @@
 //    不記錄、也不撤回,而且**必須印出來讓人知道它被擋了**(靜默丟棄才是真正的傷害)。
 // 7. **只是提到**(2026-11-21,工作包 RC-LANG-FP)→ mention。每一處同意詞都不是在下指示:
 //    前面緊接 mentionPrefixes(上次 / 已 / 沒 …),或後面接的不是 directiveEndings(句尾或標點,中間可夾語助詞、
-//    收尾的引號 / 括號、刪節號、emoji,以及 courtesyTails 的禮貌 / 附和詞:謝謝 / OK / 好的 …)。
+//    收尾的引號 / 括號、刪節號、emoji;同意詞後面到訊息結尾只剩這些加 courtesyTails 的禮貌 / 附和詞 —— 謝謝 / OK / 好的 … —— 也算)。
 //    例:「自上次發版後的異動」「還原已發布的 Button」。不記錄也不撤回,hook 要出聲。理由與邊界寫在函式內第 7 步。
 // 8. 其餘 → consent。
 //
@@ -87,10 +87,13 @@ export function isQuestionText(text, policy = loadConsentPolicy()) {
  *   directive  = 有一處是在「下指示」:前面沒有緊接 mentionPrefixes,而且後面緊接 directiveEndings
  *                (句尾或標點;中間可夾語助詞、收尾的引號 / 括號、刪節號、emoji)。
  *   unprefixed = 有一處前面沒有緊接 mentionPrefixes(不論後面接什麼)。
- * courtesyTails(謝謝 / OK / 好的 …)當成語助詞:比對句尾前先把它們拿掉,所以「發版 謝謝」「發版 OK 謝謝」與「發版」同判
- *(2026-11-22,工作包 N1-PREP)。比對不分大小寫(OK / ok / Thanks 同一條)。拿掉的只有清單裡的詞:後面還接著別的字的
- *(「發版 謝謝你們之前的幫忙」「發版 好像有問題」「發布好的版本」)拿掉之後剩下「們之前…」「像有問題」「版本」,仍不是句尾,照舊不算。
- * 三份清單都住在 release-workflow.json;本函式只負責逐處套用。
+ * courtesyTails(謝謝 / OK / 好的 …,2026-11-22 工作包 N1-PREP):同意詞後面**整段到訊息結尾**拿掉這些詞之後,
+ * 只剩空白 / 標點 / 語助詞 / 收尾符號 / emoji(反覆套 directiveEndings 吃得到訊息結尾)時,才拿掉它們再比對句尾,
+ * 所以「發版 謝謝」「發版 OK 謝謝」「發版 謝謝！」與「發版」同判。比對不分大小寫(OK / ok / Thanks 同一條)。
+ * 其餘一律照原文比對,與沒有詞表時同判:禮貌詞後面還接著別的字的 ——「發版 謝謝，但先不要」「發版 OK，開玩笑的」
+ *(禮貌詞後面隔標點再接字)、「發版 謝謝你們之前的幫忙」「發版 好像有問題」「發布好的版本」(禮貌詞直接接字)——
+ * 都照 RC-LANG-FP 判 mention。
+ * 四份清單都住在 release-workflow.json;本函式只負責逐處套用。
  */
 function consentPhraseUses(text, policy) {
   const prefixes = policy.mentionPrefixes.map((item) => new RegExp(`(?:${item})$`, 'u'))
@@ -98,6 +101,17 @@ function consentPhraseUses(text, policy) {
   // 長的先比:「好的」要整個拿掉,不能先拿掉「好」留下「的」
   const courtesy = [...policy.courtesyTails].sort((a, b) => b.length - a.length).map(escapeRegExp)
   const courtesyPattern = courtesy.length ? new RegExp(`(?:${courtesy.join('|')})`, 'giu') : null
+  // 整段都只是句尾:從頭反覆吃 directiveEndings(空白 / 語助詞 / 收尾符號 / emoji,後接標點或訊息結尾),一路吃到訊息結尾才算。
+  // 吃不動(剩下的開頭不是句尾)或某次只吃到空字串卻還沒到結尾 → 不算。
+  const onlyEndingsToEnd = (rest) => {
+    let left = rest
+    while (left.length > 0) {
+      const step = Math.max(0, ...endings.map((pattern) => pattern.exec(left)?.[0].length ?? 0))
+      if (step === 0) return false
+      left = left.slice(step)
+    }
+    return true
+  }
   let unprefixed = false
   for (const phrase of policy.consentPhrases) {
     for (let at = text.indexOf(phrase); at >= 0; at = text.indexOf(phrase, at + 1)) {
@@ -105,7 +119,10 @@ function consentPhraseUses(text, policy) {
       const after = text.slice(at + phrase.length)
       if (prefixes.some((pattern) => pattern.test(before))) continue
       unprefixed = true
-      const rest = courtesyPattern ? after.replace(courtesyPattern, '') : after
+      // 禮貌詞只在「同意詞後面整段到訊息結尾,拿掉禮貌詞之後只剩句尾」時才拿掉;
+      // 後面還接著別的字(「發版 謝謝，但先不要」)就照原文比對,跟沒有詞表時同判(RC-LANG-FP 的判定)。
+      const stripped = courtesyPattern ? after.replace(courtesyPattern, '') : after
+      const rest = stripped !== after && onlyEndingsToEnd(stripped) ? stripped : after
       if (endings.some((pattern) => pattern.test(rest))) return { directive: true, unprefixed }
     }
   }
@@ -207,11 +224,15 @@ export function classifyConsentPrompt(text, policy = loadConsentPolicy()) {
   //    「發版🙏」「可以改，發版🙏」「（發版）」也是同一類。代價照實寫:轉述句「你說「發版」。」也判 consent
   //    (base f87872c8 本來就判 consent,不是新放寬)。引號 / 括號後面還接著字(「發版」流程、發版（beta.140）)仍是 mention。
   //    2026-11-22(工作包 N1-PREP,帳本 J-b989803a2d):同意詞後面只接空白 / 標點 + 禮貌或附和詞(courtesyTails:謝謝 / 感謝 /
-  //    OK / 好的 …)再到句尾 → consent。RC-LANG-FP 之後「可以改，發版 謝謝」「發版 謝謝」「發版 OK」判 mention,hook 不落地、
+  //    OK / 好的 …)一路到訊息結尾 → consent。RC-LANG-FP 之後「可以改，發版 謝謝」「發版 謝謝」「發版 OK」判 mention,hook 不落地、
   //    要 user 再說一次「發版」;user 明說過不要一再要他說(governance/memory/feedback_solo_dev_workflow.md:12)。
-  //    詞表不分大小寫;👍 / 🙏 這類 emoji 不必列,directiveEndings 本來就把 emoji 當語助詞。只放寬這一類:
-  //    同意詞後面先接受詞(「發版到 npm 謝謝」)、接的不只是禮貌詞(「發版 謝謝你們之前的幫忙,但先不要」)仍是 mention;
-  //    否定 / 條件 / 問句在前面幾步就判定,不受詞表影響。`scripts/test-release-consent.mjs` 5i 兩面鎖住,並逐條拿掉詞證明量得到。
+  //    詞表不分大小寫;👍 / 🙏 這類 emoji 不必列,directiveEndings 本來就把 emoji 當語助詞。只放寬這一類(N1-PREP 審查必修 1 收窄):
+  //    禮貌詞後面還接著別的字的,不論中間有沒有標點 ——「發版 謝謝，但先不要」「發版 OK，開玩笑的」「發版 謝謝，算了」
+  //    「發版 謝謝你們之前的幫忙,但先不要」—— 照原文比對,判定與沒有詞表時相同(mention);同意詞後面先接受詞(「發版到 npm 謝謝」)也是 mention。
+  //    刻意保守的邊界:「發版 謝謝。另外那個也看一下」這種禮貌詞後面另起一句的也照原文判 mention(hook 會出聲)。
+  //    沒有禮貌詞、標點直接接字的(「發版，但先不要」= consent)是 RC-LANG-FP 既有的標點邊界,這次不動。
+  //    否定 / 條件 / 問句在前面幾步就判定,不受詞表影響。`scripts/test-release-consent.mjs` 5i 兩面鎖住:逐條拿掉詞證明量得到,
+  //    並把每一句只接禮貌詞的同意句後面接上「，但先不要」這類尾巴,逐句核對判定與沒有詞表時相同。
   if (!consentPhraseUses(value, policy).directive) {
     return { verdict: 'mention', reason: '講的是別次或已發生的事,或把發版當名詞 / 修飾語用;沒有一處是在指示現在發版' }
   }
