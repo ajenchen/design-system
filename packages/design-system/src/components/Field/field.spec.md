@@ -222,6 +222,7 @@ Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `us
 | `size` | Control 自動同步尺寸（sm / md / lg） |
 | `orientation` | FieldLabel 的垂直對齊策略（horizontal 模式套用 padding-top 公式） |
 | `hasFieldWrapper` | Primitive 讀到此旗標時應忽略自己的 label / description prop，由 FieldLabel / FieldDescription 接管 |
+| `registerControlError` | Control 把**自己驗出來的**錯誤說明交給 Field 的錯誤區畫(畫法同 `<FieldError>`);使用端的 `<FieldError>` 有字時以使用端為準、只出一行。2026-11-22 起,目前只有 LinkInput 用(`../LinkInput/link-input.spec.md`「錯誤說明」);沒有 control 宣告時 Field 畫面不變 |
 
 ### Control 偏好尺寸（`fieldPreferredSize`）SSOT
 
@@ -268,9 +269,9 @@ Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:438-454`)
-- **游標一般箭頭**(`cursor-default`,`field.tsx:447`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
-- **disabled 時整顆不渲染**(`field.tsx:438`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(`field.tsx:454-470`)
+- **游標一般箭頭**(`cursor-default`,`field.tsx:463`):ⓘ 點下去不做事(Radix Tooltip 點擊只會收起說明),手形會讓人以為點了有作用。全域 `base.css` 讓所有 `<button>` 預設手形,所以要明寫 `cursor-default`,只刪 `cursor-pointer` 蓋不掉。〔2026-09-26 由手形改箭頭;user 條件式同意「I 可以從手形改掉，若改掉更合理的話」,AI 研究後提出、user 選「同意,照清單寫入」〕
+- **disabled 時整顆不渲染**(`field.tsx:454`)— info 是滑過／聚焦才浮出的補充說明,非類型身份 indicator,non-editable 隱藏
 - 設計定位:**給資訊的觸發處**(`ds-canonical/references/hit-area-canonical.md` 三-1),**不是**行內動作 —— 只借行內動作「顏色退後、滑過深一階」的長相,不套 `inline-action.spec.md` 的「必須手形」(那條給清除、顯示密碼這類按下去會做事的鈕)。label 的主要互動是 input,info 是輔助
 - 範例:`field.stories.tsx`「標籤旁的說明圖示」
 
@@ -283,6 +284,7 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 - `descriptionId` 讓 Control 自動 `aria-describedby`
 - `<FieldError>` 自帶 `role="alert"` 並有 id = `errorId`
 - 無 children 的 `<FieldError>` 不渲染，不佔位
+- 控件自己驗出來的錯誤(目前只有 LinkInput 的網址格式)經 `registerControlError` 由 Field 畫在同一個錯誤區、同一個 `errorId`;使用端的 `<FieldError>` 有字時只畫使用端那行(一個欄位只有一行錯誤)
 
 ---
 

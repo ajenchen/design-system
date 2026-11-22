@@ -77,7 +77,7 @@ export const UsageGuidance: Story = {
           <ExampleGroup>
             <ExampleCaption warn>❌ 錯用：把 slug 塞進 LinkInput</ExampleCaption>
             <LiveLinkInput value="my-design-system" aria-label="專案 slug（LinkInput 誤用）" />
-            <ExampleCaption warn>↑ blur 後會出現 error 邊框,因為「my-design-system」不是合法 URL</ExampleCaption>
+            <ExampleCaption warn>↑ 「my-design-system」不是網址:紅框 + 框下錯誤說明(存進來的值不是網址,一顯示就是驗證過的樣子)</ExampleCaption>
           </ExampleGroup>
         </TutorialRule>
         <TutorialList>

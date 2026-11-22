@@ -155,7 +155,7 @@ Error 是 boolean prop，獨立於 mode。只在 `edit` 模式下有視覺效果
 - Error 訊息在 Form 層級：help text 顯示在 input 下方
 - Field 不在尾部放狀態 icon（如 ⚠️）——邊框顏色已經傳達了 error 狀態
 
-Field wrapper 透過 context 注入的 key 是 `invalid`(**非 `error`**;field.tsx:122/211);各控件以 `useResolvedFieldInvalid` 合併自身 `error` prop 與 context `invalid`,消費者不需在每個控件手動傳。（`error` 另為 `fieldWrapperStyles` 內部 cva 軸名 + 各控件公開 boolean prop;Field 容器層 / context 一律用 `invalid`。）
+Field wrapper 透過 context 注入的 key 是 `invalid`(**非 `error`**;field.tsx:127/211);各控件以 `useResolvedFieldInvalid` 合併自身 `error` prop 與 context `invalid`,消費者不需在每個控件手動傳。（`error` 另為 `fieldWrapperStyles` 內部 cva 軸名 + 各控件公開 boolean prop;Field 容器層 / context 一律用 `invalid`。）
 
 ---
 

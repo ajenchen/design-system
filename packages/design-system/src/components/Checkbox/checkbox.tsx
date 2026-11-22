@@ -211,7 +211,7 @@ const Checkbox = React.forwardRef<
     // 2026-06-12 修:原本只看 resolvedDisabled(prop/fieldCtx),mode='disabled' 無人消費
     // → disabled boolean cell 渲出可 focus 的正常外觀 checkbox(違 field-controls.spec L286)
     const effectiveDisabled = resolvedDisabled || resolvedMode === 'disabled'
-    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:150-161)
+    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:154-165)
     const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
 
     // 2026-07-04 修:view / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props

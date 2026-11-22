@@ -3,6 +3,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { LinkInput } from './link-input'
+import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
 import { ExampleSection, ExampleStack } from '@/design-system/stories-helpers/examples/tutorial-page'
 
 const meta: Meta<typeof LinkInput> = {
@@ -59,7 +60,7 @@ export const Validation: Story = {
     const [value, setValue] = React.useState('')
     return (
       <div className="flex flex-col gap-[var(--layout-space-tight)] max-w-sm">
-        <p className="text-caption text-fg-muted">輸入不是網址的字(信箱、中間有空白)後按 Tab 離開，會出現 error 邊框。輸入網址後離開即自動切為藍色連結(github.com 這種沒寫 https:// 的會自動補上)。</p>
+        <p className="text-caption text-fg-muted">輸入不是網址的字(信箱、中間有空白)後按 Tab 離開，會出現紅框與框下一行說明;再打字就消失。輸入網址後離開即自動切為藍色連結(github.com 這種沒寫 https:// 的會自動補上)。</p>
         <LinkInput value={value} onChange={setValue} placeholder="輸入網址" />
       </div>
     )
@@ -83,11 +84,39 @@ function ClearableDemo() {
       <ExampleSection title="有連結:沒有 ×" description="連結狀態不變,右側只有 Pencil。按 Pencil 進入打字狀態後,框裡有字才出現 ×。">
         <LinkInput clearable value={designLink} onChange={setDesignLink} aria-label="設計稿連結" />
       </ExampleSection>
-      <ExampleSection title="打字狀態、框裡有字:出現 ×" description="貼錯的字不是網址,按 × 一鍵清掉重打;焦點留在輸入框,離開或按 Enter 才結算(空白 = 清值),Esc 還原。">
+      {/* 不合法的值:元件自己畫成已驗證的樣子(紅框 + 框下說明,link-input.spec.md「驗證」第 5 點),範例不另外加 error */}
+      <ExampleSection title="打字狀態、框裡有字:出現 ×" description="貼錯的字不是網址:紅框、框下一行說明。按 × 一鍵清掉重打(紅框與說明一起清掉);焦點留在輸入框,離開或按 Enter 才結算(空白 = 清值),Esc 還原。">
         <LinkInput clearable value={specLink} onChange={setSpecLink} aria-label="需求文件連結" />
       </ExampleSection>
       <ExampleSection title="空白:沒有 ×" description="開始打字後才出現。">
         <LinkInput clearable value={ticketLink} onChange={setTicketLink} placeholder="貼上 Jira 工單網址" aria-label="Jira 工單連結" />
+      </ExampleSection>
+    </ExampleStack>
+  )
+}
+
+/* ── 錯誤說明 ── */
+// link-input.spec.md「錯誤說明」(2026-11-22,user 11-22 確認頁拍板丙):網址不合法時框下自帶一行說明;`errorText` 換字;
+// 包在 Field 裡就畫在 Field 的錯誤區(說明文字下面,同 FieldError)。兩個欄位的值都是外面存進來、不是網址的字 —— 元件一掛上就畫成已驗證的樣子。
+export const ErrorText: Story = {
+  name: '錯誤說明',
+  render: () => <ErrorTextDemo />,
+}
+
+function ErrorTextDemo() {
+  const [website, setWebsite] = React.useState('官網還在架設中')
+  const [meetingLink, setMeetingLink] = React.useState('週三下午三點 3F 會議室')
+  return (
+    <ExampleStack className="max-w-sm">
+      <ExampleSection title="預設說明" description="不給 errorText:框下是預設那句。打字就消失,離開欄位再驗一次。">
+        <LinkInput value={website} onChange={setWebsite} aria-label="公司網站" />
+      </ExampleSection>
+      <ExampleSection title="換成自己的說明(errorText)" description="欄位的用途比「網址」更具體時,用 errorText 說清楚要貼什麼。包在 Field 裡時,這行畫在 Field 的錯誤區。">
+        <Field>
+          <FieldLabel>線上會議連結</FieldLabel>
+          <LinkInput value={meetingLink} onChange={setMeetingLink} errorText="請貼上會議邀請裡的連結" />
+          <FieldDescription>與會者會從這裡加入會議。</FieldDescription>
+        </Field>
       </ExampleSection>
     </ExampleStack>
   )

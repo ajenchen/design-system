@@ -49,6 +49,10 @@ export interface FieldContextValue {
   sizeExplicit: boolean
   /** Control 於掛載時宣告偏好尺寸(wrapper/HOC 遮蔽靜態 `fieldPreferredSize` 時的補位通道)。 */
   registerPreferredSize?: (preferred: FieldSize) => void
+  /** Control 把**自己驗出來的**錯誤說明交給 Field 的錯誤區畫(`null` = 收回;2026-11-22,目前只有 LinkInput 用,
+   *  `../LinkInput/link-input.spec.md`「錯誤說明」)。畫法同 `<FieldError>`(位置、字級、顏色、`role="alert"`、id = `errorId`);
+   *  使用端自己的 `<FieldError>` 有字時以使用端為準、不畫這行(一個欄位只有一行錯誤)。沒有 control 宣告時 Field 畫面不變。 */
+  registerControlError?: (text: string | null) => void
   orientation: FieldOrientation
   controlLayout: FieldControlLayout
   hasFieldWrapper: true

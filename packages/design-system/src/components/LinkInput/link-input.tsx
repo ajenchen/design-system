@@ -10,6 +10,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { editSettleKeyProps } from '@/design-system/components/Field/field-edit-keys'
 import { FieldClearButton } from '@/design-system/components/Field/field-clear-button'
+import { FieldError } from '@/design-system/components/Field/field'
 import { keepFocusOnPointerPress } from '@/design-system/lib/pointer-press'
 import { isWithinCompositeField } from '@/design-system/lib/composite-field-focus'
 import { escapeLayerProps, isEscapeTakenElsewhere } from '@/design-system/lib/overlay-escape'
@@ -56,6 +57,21 @@ function toWebUrl(value: string): string | null {
   const candidate = `https://${v}`
   return isHttpUrl(candidate) ? candidate : null
 }
+
+/**
+ * 外部給的值本身就不是網址(非空白、`toWebUrl` 判不合法)。編輯模式一掛上就畫成「已驗證、不合法」(紅框 + 框下說明),
+ * 跟離開欄位結算出來的樣子一樣(link-input.spec.md「驗證」第 5 點):`onChange` 只會送出合法網址或空白,這種值一定是從外面來的、
+ * 不是使用者正在打的半截字,「打字中不報錯」(form-validation.spec.md 規則 1)管不到它。只有空白的字算空值(結算時也是清值)。
+ */
+function isInvalidUrlValue(value: string | null | undefined): boolean {
+  return !!value && value.trim() !== '' && toWebUrl(value) == null
+}
+
+/**
+ * 網址不合法時框下那一行的預設字(2026-11-22,user 11-22 確認頁拍板丙;link-input.spec.md「驗證」「錯誤說明」)。
+ * 句型照 DS 既有的「請輸入…」;例子用沒寫 https:// 的寫法,因為沒寫協定也收(上方 toWebUrl 自動補)。使用端用 `errorText` 換字。
+ */
+const LINK_INPUT_DEFAULT_ERROR_TEXT = '請輸入網址,例如 acme.com' // i18n-allow: DS default validation message(同 FieldError 範例句型「請輸入…」)
 
 function formatHostname(url: string): string {
   try {
@@ -247,6 +263,18 @@ export interface LinkInputProps
    * 何時開照 select.spec.md「何時開 clearable」:「沒有網址」是有效值(選填)才開。
    */
   clearable?: boolean
+  /**
+   * 網址不合法時框下那一行說明的字(2026-11-22,user 11-22 確認頁拍板丙;link-input.spec.md「驗證」「錯誤說明」)。
+   * 不給(或空字串)= 預設「請輸入網址,例如 acme.com」。只能換字、不能關掉:紅框之外一定要有字(form-validation.spec.md「A11y 預設」)。
+   * 包在 `<Field>` 裡時這行出在 Field 的錯誤區(FieldError 同位置同長相);使用端自己的 `<FieldError>` 有字時以使用端為準,不出兩行。
+   */
+  errorText?: string
+  /**
+   * LinkInput 自己的驗證結果有變時呼叫(link-input.spec.md「驗證」「錯誤說明」):`invalid` = 現在是不是「網址不合法」那一態(紅框 + 說明),
+   * `draft` = 當下框裡的字。結算(離開 / Enter)出不合法、外部給的值本身不是網址 → true;開始打字、按 ×、Esc、結算成合法或空白 → false。
+   * 不合法的字不會經 `onChange` 送出來(onChange 只送合法網址或空白)—— 要自己寫說明、或在表單層擋送出,用這一支。
+   */
+  onInvalidChange?: (invalid: boolean, draft: string) => void
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -268,6 +296,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       viewEditAction,
       linkHitAreaFromHost = false,
       clearable = false,
+      errorText,
+      onInvalidChange,
       readOnly,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
@@ -301,7 +331,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // (同 beta.76 Combobox 同款修法;僅搬位置,hook 邏輯不變)。
     const [editing, setEditing] = React.useState(false)
     const [localValue, setLocalValue] = React.useState(value ?? '')
-    const [localError, setLocalError] = React.useState(false)
+    // 外部給的值本身不是網址 → 一開始就是「已驗證、不合法」(isInvalidUrlValue;link-input.spec.md「驗證」第 5 點)
+    const [localError, setLocalError] = React.useState(() => isInvalidUrlValue(value))
     const inputRef = React.useRef<HTMLInputElement | null>(null)
     const pencilRef = React.useRef<HTMLButtonElement | null>(null)
     // 鍵盤結算(Enter 提交 / Esc 取消)後焦點去哪(同 InlineEdit「退出 edit 態(focus 分流)」):結算讓輸入框卸載(切回連結狀態)時,
@@ -310,10 +341,37 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 同一下 Enter 的 keypress 落到鉛筆上又把編輯打開 —— 現改走 Field/field-edit-keys.ts(它會 preventDefault),焦點在 commit 之後才搬。
     const returnFocusRef = React.useRef(false)
 
-    // Sync external value → local
+    // Sync external value → local(沒在編輯時;外部的值本身不是網址 = 已驗證、不合法,同上方初值)
     React.useEffect(() => {
-      if (!editing) setLocalValue(value ?? '')
+      if (editing) return
+      setLocalValue(value ?? '')
+      setLocalError(isInvalidUrlValue(value))
     }, [value, editing])
+
+    // ── 錯誤說明(2026-11-22,user 11-22 確認頁拍板丙;link-input.spec.md「驗證」「錯誤說明」)──
+    // 自己驗出不合法(紅框那一態)時框下一行字:預設 LINK_INPUT_DEFAULT_ERROR_TEXT,`errorText` 換字。
+    // 包在 Field 裡 → 交給 Field 的錯誤區畫(Field/field-context.ts registerControlError:同 FieldError 的位置、長相、id;
+    // 使用端自己的 <FieldError> 有字時 Field 只畫使用端那行)。單獨用 → 自己在框下畫一個 FieldError(間距同 Field 的 gap-1)。
+    // 表格格(naked)不畫:格的錯誤由表格自己顯示(DataTable/data-table.spec.md cellErrors)。
+    const errorLineText = isEditable && localError && resolvedVariant !== 'naked' ? (errorText || LINK_INPUT_DEFAULT_ERROR_TEXT) : null
+    const registerControlError = fieldCtx?.registerControlError
+    const standaloneErrorId = `${React.useId()}-error`
+    // 這行字的 id:Field 裡 = Field 的 errorId(那一行由 Field 畫;使用端的字勝出時同一個 id 指的是使用端那行),單獨用 = 自己那行
+    const errorLineId = errorLineText == null ? undefined : registerControlError ? fieldCtx?.errorId : standaloneErrorId
+    // layout effect:跟紅框同一格畫面出現,不先閃一格沒字的紅框
+    React.useLayoutEffect(() => {
+      if (!registerControlError || errorLineText == null) return
+      registerControlError(errorLineText)
+      return () => registerControlError(null)
+    }, [registerControlError, errorLineText])
+    // 驗證結果回呼(`onInvalidChange`):只在「網址不合法」那一態有變時呼叫(含一掛上就不合法的外部值)
+    const ownInvalid = isEditable && localError
+    const reportedInvalidRef = React.useRef(false)
+    React.useEffect(() => {
+      if (reportedInvalidRef.current === ownInvalid) return
+      reportedInvalidRef.current = ownInvalid
+      onInvalidChange?.(ownInvalid, localValue)
+    })
 
     React.useEffect(() => {
       if (!returnFocusRef.current || editing) return
@@ -450,14 +508,17 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
 
     // Esc 層(ds-canonical/references/keyboard-model-canonical.md「焦點所在的控件自己那一層也算一層」):正在編輯、或有打了還沒存的字,
     // 這一下 Esc 歸本元件(放在 Dialog / Sheet 裡第一下只取消編輯、不關浮層);乾淨的輸入框沒有這一層。
-    const ownsEscape = editing || localError || localValue !== (value ?? '')
+    // 不看紅框(localError):打過的不合法字一定跟原值不同(上一條就算到);跟原值相同還紅著 = 外部給的值本身不是網址,
+    // Esc 還原後仍是同一個樣子,這一下沒有東西可收(2026-11-22 前這裡含 localError,那時外部的不合法值不會一開始就紅)。
+    const ownsEscape = editing || localValue !== (value ?? '')
     // Enter / Esc 走全 DS 就地編輯鍵盤結算 SSOT(Field/field-edit-keys.ts:IME guard + preventDefault + Esc 分層);2026-10-01 前這裡自己寫
     const settleKeys = editSettleKeyProps({
       onCommit: () => { returnFocusRef.current = true; settleDraft() },
       onCancel: () => {
         returnFocusRef.current = true
         setLocalValue(value ?? '')
-        setLocalError(false)
+        // 還原成原值當時的樣子:原值本身不是網址就照舊紅著(link-input.spec.md「驗證」第 5 點),不是就清掉
+        setLocalError(isInvalidUrlValue(value))
         setEditing(false)
       },
       escapeLayer: ownsEscape,
@@ -540,7 +601,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     }
 
     // edit — text input mode（正在編輯、無值、或格式錯誤）
-    return (
+    const inputFrame = (
       <div
         className={cn(
           fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error, width: fieldWidthVariant(width) }),
@@ -566,8 +627,9 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           placeholder={placeholder}
           aria-invalid={error || undefined}
           aria-required={fieldCtx?.required || undefined}
-          aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
-          aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
+          // 錯誤說明那一行也掛進 aria-describedby(WCAG 3.3.1;link-input.spec.md「錯誤說明」):讀屏聚焦就念得到,不只靠 aria-errormessage
+          aria-describedby={[ariaDescribedByProp ?? fieldCtx?.descriptionId, errorLineId].filter(Boolean).join(' ') || undefined}
+          aria-errormessage={ariaErrorMessageProp ?? (error ? (fieldCtx?.errorId ?? errorLineId) : undefined)}
           className={bareInputStyles}
           {...props}
           // 元件自己的 handler 列在 {...props} 之後(consumer 的在 handler 內先跑);settleKeys 帶的 Esc 層宣告(data-escape-layer)一起掛,
@@ -602,6 +664,18 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
             />
           </span>
         )}
+      </div>
+    )
+    // 包在 Field 裡(說明由 Field 的錯誤區畫)、或表格格(naked,不畫說明):只有框,DOM 跟修前一樣
+    if (registerControlError || resolvedVariant === 'naked') return inputFrame
+    // 單獨用:框 + 錯誤說明包在同一層 `flex-col gap-1`(= Field 欄內的排法,框下 4px),寬度跟框同一套(fill = 撐滿 / 數字 = 固定寬)。
+    // 這一層一律存在(不是有錯才包):說明出現 / 消失時框與輸入框不重掛,Enter 結算出不合法時焦點照舊留在輸入框;
+    // 不用 Fragment 讓說明當框的兄弟 —— 放在有 gap 的 flex 容器裡,容器的 gap 會疊進框與說明之間(實測展示頁 16 / 12px 疊成 20 / 16px)。
+    // 說明本身 = Field 家族同一個 FieldError(字級 / 顏色 / role="alert")。
+    return (
+      <div className={cn('flex flex-col gap-1 min-w-0', typeof width === 'number' ? 'max-w-full' : 'w-full')} style={fieldWidthStyle(width)}>
+        {inputFrame}
+        {errorLineText != null && <FieldError id={standaloneErrorId}>{errorLineText}</FieldError>}
       </div>
     )
   }

@@ -785,6 +785,7 @@
           "scripts/test-layout-space-story-coherence.mjs",
           "scripts/test-layout-space-utility-invariant.mjs",
           "scripts/test-link-input-clear-invariant.mjs",
+          "scripts/test-link-input-error-text-invariant.mjs",
           "scripts/test-link-input-url-display-invariant.mjs",
           "scripts/test-mirror-run-artifact-identity.mjs",
           "scripts/test-motion-ssot-invariant.mjs",

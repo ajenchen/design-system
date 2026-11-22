@@ -116,6 +116,11 @@ function detectPreferredSize(controlNodes: React.ReactNode[]): FieldSize | null 
   return null
 }
 
+/** FieldError 有沒有字可畫(沒字不渲染、不佔位)—— FieldError 自己與 Field「使用端的錯誤有沒有字」共用這一支 */
+function hasErrorContent(children: React.ReactNode): boolean {
+  return !(children == null || children === false || children === '')
+}
+
 // ── Field ───────────────────────────────────────────────────────────────────
 
 export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'id'> {
@@ -222,6 +227,14 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
     const registerPreferredSize = React.useCallback((preferred: FieldSize) => {
       setRegisteredSize((current) => (current === preferred ? current : preferred))
     }, [])
+    // Control 自己驗出來的錯誤說明(FieldContext.registerControlError;目前只有 LinkInput):使用端的 <FieldError> 有字時以使用端為準,
+    // 一個欄位只畫一行。沒有 control 宣告(其他所有用法)時 controlError 一直是 null,畫面不變。
+    const [controlError, registerControlError] = React.useState<string | null>(null)
+    const consumerErrorShown = errorNodes.some(
+      (node) => React.isValidElement<{ children?: React.ReactNode }>(node) && hasErrorContent(node.props.children),
+    )
+    const controlErrorNode = controlError != null && !consumerErrorShown ? <FieldError>{controlError}</FieldError> : null
+
     const detectedSize = detectPreferredSize(controlNodes)
     const resolvedPreferredSize = sizeProp ?? detectedSize ?? registeredSize
     const size: FieldSize = resolvedPreferredSize ?? 'md'
@@ -241,11 +254,12 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         size,
         sizeExplicit,
         registerPreferredSize,
+        registerControlError,
         orientation,
         controlLayout,
         hasFieldWrapper: true,
       }),
-      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, sizeExplicit, registerPreferredSize, orientation, controlLayout]
+      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, sizeExplicit, registerPreferredSize, registerControlError, orientation, controlLayout]
     )
 
     // Control area：兩種佈局模型,「第一行內容中線」都錨在 field-height/2,
@@ -304,6 +318,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
               {controlArea}
               {descriptionNodes}
               {errorNodes}
+              {controlErrorNode}
             </div>
           </div>
         </FieldContext.Provider>
@@ -328,6 +343,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
           {controlArea}
           {descriptionNodes}
           {errorNodes}
+          {controlErrorNode}
         </div>
       </FieldContext.Provider>
     )
@@ -498,7 +514,7 @@ const FieldError = React.forwardRef<
   const ctx = useFieldContext()
 
   // 無內容不渲染，避免空殼佔位
-  if (children == null || children === false || children === '') return null
+  if (!hasErrorContent(children)) return null
 
   return (
     <p
