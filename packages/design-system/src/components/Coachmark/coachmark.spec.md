@@ -263,4 +263,5 @@ disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 heade
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `aspect-ratio.spec.md`
+- `overlay-surface.spec.md`
 - `popover.spec.md`
